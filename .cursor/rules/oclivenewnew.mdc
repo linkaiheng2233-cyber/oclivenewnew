@@ -1,0 +1,19 @@
+---
+description: oclivenewnew Tauri+Rust 项目约束（编排、Repository、DTO、迁移）
+globs: "**/*"
+alwaysApply: true
+---
+
+# oclivenewnew
+
+1. **编排**：对话主流程在 `src-tauri/src/domain/chat_engine.rs` 的 `process_message`；业务公式留在各 `*_engine` / analyzer，避免 API 层堆逻辑。
+
+2. **持久化**：通过 `domain/repository.rs` 的 trait 与 `infrastructure/repositories.rs` 实现；SQL 与表结构以 `src-tauri/migrations/001_init.sql` 为准（如 `role_runtime`、`long_term_memory`）；禁止虚构表名。
+
+3. **Tauri**：命令在 `src-tauri/src/api/*.rs`，仅在 `src-tauri/src/lib.rs` 使用 `tauri::generate_handler!` 注册；保留 `.setup` 与 `AppState::manage`。
+
+4. **DTO**：前后端契约以 `src-tauri/src/models/dto.rs` 为准；回复字段为 **`reply`**，不是 `response`；`Emotion` 枚举见 `models/emotion.rs`（无 Joy/Fearful 等未定义变体）。
+
+5. **Prompt**：`PromptBuilder::build_prompt` 共五个参数，返回 `String`，最后一参为 `&str`，不要用 `?`。
+
+6. **周节奏与验收**：见 `handoff/WEEKLY_DEV_GUIDE.md`；认知清单见 `handoff/04_4.6_PROJECT_TRUTH_CHECKLIST.md`。

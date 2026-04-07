@@ -1,0 +1,1 @@
+ALTER TABLE role_runtime ADD COLUMN virtual_time_ms INTEGER NOT NULL DEFAULT 0;

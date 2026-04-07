@@ -1,0 +1,38 @@
+# N1N API Configuration for Continue
+# 使用 Claude Opus 4.6 模型
+
+name: N1N Config
+version: 1.0.0
+schema: v1
+
+# Define which models can be used
+# https://docs.continue.dev/customization/models
+models:
+  # 主力模型：Claude Opus 4.6（用于聊天、编辑、应用）
+  - name: Claude Opus 4.6
+    provider: openai                     # N1N 兼容 OpenAI 格式
+    model: claude-opus-4-6               # 你提供的模型名称
+    apiKey: sk-1bIRI0tNjQFB1Euj8kvaqfdzTUu5KYB5CJsKOERMsr9AWhoa
+    apiBase: https://api.n1n.ai/v1       # N1N 的 API 端点
+    roles: [chat, edit, apply]           # 承担主要任务
+
+  # 可选：更经济的备用模型（例如 DeepSeek，如果你需要的话可以取消注释）
+  # - name: N1N-DeepSeek
+  #   provider: openai
+  #   model: deepseek-chat
+  #   apiKey: sk-1bIRI0tNjQFB1Euj8kvaqfdzTUu5KYB5CJsKOERMsr9AWhoa
+  #   apiBase: https://api.n1n.ai/v1
+  #   roles: [chat]
+
+# 自动补全模型（用于代码补全，建议使用更小更快的模型）
+# 如果没有其他偏好，可以复用 Claude Opus 4.6（但可能稍慢）
+tabAutocompleteModel:
+  name: Claude Opus 4.6 (Auto)
+  provider: openai
+  model: claude-opus-4-6
+  apiKey: sk-1bIRI0tNjQFB1Euj8kvaqfdzTUu5KYB5CJsKOERMsr9AWhoa
+  apiBase: https://api.n1n.ai/v1
+
+# MCP Servers that Continue can access（可选，暂时留空）
+# https://docs.continue.dev/customization/mcp-tools
+mcpServers: []

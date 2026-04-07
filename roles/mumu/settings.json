@@ -1,0 +1,23 @@
+{
+  "schema_version": 1,
+  "model": "mumu:latest",
+  "evolution": {
+    "event_impact_factor": 1.0,
+    "ai_analysis_interval": 15,
+    "max_change_per_event": 0.05,
+    "max_total_change": 0.5
+  },
+  "identity_binding": "global",
+  "memory_config": {
+    "scene_weight_multiplier": 1.2,
+    "topic_weights": {
+      "home": { "日常": 0.75, "学习": 0.15, "工作": 0.1 },
+      "school": { "学习": 0.85, "日常": 0.15 },
+      "company": { "工作": 0.85, "日常": 0.15 },
+      "park": { "日常": 0.85, "娱乐": 0.15 }
+    }
+  },
+  "remote_presence": {
+    "default_enabled": true
+  }
+}

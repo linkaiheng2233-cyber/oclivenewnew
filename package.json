@@ -1,0 +1,38 @@
+{
+  "name": "oclivenewnew",
+  "private": true,
+  "version": "0.2.0",
+  "license": "MIT",
+  "type": "module",
+  "scripts": {
+    "dev": "vite",
+    "dev:tauri": "cd src-tauri && npx --no-install tauri dev -c tauri.vite-external.json",
+    "tauri:before-dev": "node scripts/tauri-npm.cjs dev",
+    "tauri:before-build": "node scripts/tauri-npm.cjs build",
+    "build": "vite build",
+    "preview": "vite preview",
+    "tauri": "tauri",
+    "tauri:dev": "tauri dev",
+    "tauri:build": "tauri build",
+    "check:rust:fmt": "cargo fmt --manifest-path src-tauri/Cargo.toml --all -- --check",
+    "check:rust:clippy": "cargo clippy --manifest-path src-tauri/Cargo.toml --all-targets --all-features -- -D warnings",
+    "check:rust:test": "cargo test --manifest-path src-tauri/Cargo.toml --lib",
+    "check:rust:test:all": "cargo test --manifest-path src-tauri/Cargo.toml",
+    "check:rust": "npm run check:rust:fmt && npm run check:rust:clippy && npm run check:rust:test",
+    "check": "npm run build && npm run check:rust",
+    "check:release": "npm run build && npm run check:rust:fmt && npm run check:rust:clippy && npm run check:rust:test:all"
+  },
+  "dependencies": {
+    "@sentry/vue": "^10.47.0",
+    "@tauri-apps/api": "1.5.6",
+    "pinia": "^3.0.4",
+    "pinia-plugin-persistedstate": "^4.7.1",
+    "vue": "^3.5.13",
+    "vue-virtual-scroller": "^2.0.0"
+  },
+  "devDependencies": {
+    "@tauri-apps/cli": "1.5.14",
+    "@vitejs/plugin-vue": "^5.2.1",
+    "vite": "^6.0.3"
+  }
+}

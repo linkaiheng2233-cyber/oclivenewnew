@@ -1,0 +1,40 @@
+{
+  "_oclive_creator_guide": {
+    "_说明": "以下划线 _ 开头的键仅作文档，应用加载时忽略。本文件可选；存在时字段覆盖 manifest.json 中同名项。",
+    "与_manifest_关系": "推荐把模型、演化、身份模式、记忆权重放在本文件；manifest 只保留门面与关系契约。旧版单文件 manifest 仍可只写一个 JSON。",
+    "schema_version": "当前为 1，便于日后迁移。",
+    "remote_presence": "可选。仅「安装默认是否勾选异地心声」；占位与轨迹总述见 manifest 的 life_trajectory；见 README_MANIFEST.md。",
+    "autonomous_scene": "可选。虚拟时间 jump_time 后按规则更新角色 current_scene（不改用户叙事）；见 README_MANIFEST.md「autonomous_scene」。",
+    "interaction_mode": "可选 immersive 或 pure_chat：角色包建议默认；运行时切换存数据库，导出包时仍写回此字段。",
+    "plugin_backends": "memory / emotion / event / prompt 可为 builtin、builtin_v2 或 remote；llm 为 ollama 或 remote。详见 creator-docs/plugin-and-architecture/PLUGIN_V1.md。"
+  },
+  "schema_version": 1,
+  "model": "qwen2.5:7b",
+  "evolution": {
+    "event_impact_factor": 1.0,
+    "ai_analysis_interval": 15,
+    "max_change_per_event": 0.05,
+    "max_total_change": 0.5
+  },
+  "identity_binding": "per_scene",
+  "memory_config": {
+    "scene_weight_multiplier": 1.2,
+    "topic_weights": {
+      "home": { "日常": 1.0 }
+    }
+  },
+  "interaction_mode": "immersive",
+  "remote_presence": {
+    "default_enabled": false
+  },
+  "autonomous_scene": {
+    "on_virtual_time": []
+  },
+  "plugin_backends": {
+    "memory": "builtin",
+    "emotion": "builtin",
+    "event": "builtin",
+    "prompt": "builtin",
+    "llm": "ollama"
+  }
+}

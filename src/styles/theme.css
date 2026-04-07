@@ -1,0 +1,61 @@
+/**
+ * 设计令牌：与 oclive-new/style.css（index 单页）对齐 — 深色底 + #d4a574 强调色
+ */
+:root {
+  --bg-page: #1a1a1f;
+  --bg-primary: #1e1e24;
+  --bg-secondary: #25252c;
+  --bg-status: #18181e;
+  --card-bg: #1e1e24;
+  --bg-elevated: #25252c;
+
+  --border-light: #2c2c34;
+  --border-focus: #d4a574;
+  --accent: #d4a574;
+
+  --bubble-bot-bg: #25252c;
+  --bubble-user-bg: #34303a;
+  --bubble-border: #2c2c34;
+
+  --btn-grad-a: #2c2c34;
+  --btn-grad-b: #25252c;
+  --btn-primary: #2c2c34;
+  --btn-primary-hover-a: #3a3a44;
+  --btn-primary-hover-b: #2c2c34;
+  --btn-disabled: #2a2a30;
+
+  --text-primary: #e0e0e0;
+  --text-secondary: #9a9aae;
+  --text-light: #6a6a7a;
+  --text-accent: #d4a574;
+
+  --success: #7cb87c;
+  --warning: #d4a574;
+  --error: #c97a7a;
+  --info: #7d94b2;
+
+  --shadow-app: 0 20px 40px rgba(0, 0, 0, 0.4);
+  --shadow-sm: 0 2px 12px rgba(0, 0, 0, 0.2);
+  --shadow-md: 0 8px 20px rgba(0, 0, 0, 0.3);
+  --shadow-btn-hover: 0 2px 8px rgba(0, 0, 0, 0.3);
+
+  --radius-app: 32px;
+  --radius-card: 20px;
+  --radius-bubble: 24px;
+  --radius-btn: 28px;
+  --radius-pill: 20px;
+
+  --ease: 0.2s ease;
+
+  /* 聊天区等：轨道贴近背景、滑块略亮，避免抢眼 */
+  --scrollbar-chat-track: rgba(255, 255, 255, 0.05);
+  --scrollbar-chat-thumb: rgba(255, 255, 255, 0.14);
+  --scrollbar-chat-thumb-hover: rgba(255, 255, 255, 0.22);
+}
+
+.card {
+  border-radius: var(--radius-card);
+  background: var(--card-bg);
+  border: 1px solid var(--border-light);
+  box-shadow: var(--shadow-sm);
+}

@@ -1,0 +1,94 @@
+{
+  "_oclive_creator_guide": {
+    "_说明": "本对象仅供创作者阅读。键名以 _ 开头，应用加载 manifest 时会忽略，不报错。标准 JSON 不支持 // 注释。",
+    "文档": "同目录 README_MANIFEST.md",
+    "双文件约定": "本文件放门面与契约：id、展示、七维、scenes、user_relations。引擎向配置（模型、演化、identity_binding、memory_config）推荐放在同目录 settings.json，见 settings.template.json；若存在 settings.json，其字段会覆盖 manifest 中同名项。应用保存角色时会写出 manifest 存根 + settings.json。仅含 manifest 的旧包仍可加载。",
+    "区块_0B_场景_scene_json": {
+      "路径": "roles/{角色id}/scenes/{场景id}/scene.json",
+      "time_windows": "空=任意虚拟时间可切入该场景；非空=仅虚拟时间落在 HH:MM 窗口内才允许切入",
+      "keywords_events": "参与切场景规则打分，与「切场景」强相关"
+    },
+    "区块_0C_应用策略_policy_toml": {
+      "路径": "src-tauri/config/policy.toml",
+      "scene_bindings": "场景 id → 使用哪套 profiles（情绪/记忆策略）",
+      "说明": "整应用共用，不是单个 .ocpak 内字段"
+    },
+    "区块_0D_环境变量_本机调试": {
+      "OCLIVE_EVENT_IMPACT_LLM": "默认开；0/false/off 关闭事件 LLM，用规则",
+      "OCLIVE_PORTRAIT_EMOTION_LLM": "默认开；关闭则立绘不用第二次 LLM",
+      "POLICY_EMOTION_*_POLICY_MEMORY_*": "覆盖 policy.toml 同名策略",
+      "OCLIVE_LLM_TEMPERATURE_TOP_P": "主对话与标签任务采样",
+      "OLLAMA_BASE_URL_MODEL": "端点与全局默认模型；角色 settings/manifest 的 model 仍优先于环境变量默认",
+      "OCLIVE_ROLES_DIR": "外部 roles 目录",
+      "OCLIVE_LIST_DEV_ROLES": "为 1/true 时 list_roles 包含 manifest.dev_only=true 的调试包",
+      "完整表": "README_MANIFEST.md「其它开关与调试入口」"
+    },
+    "区块_1_基础元数据": {
+      "id": "与文件夹 roles/{id} 同名，必填",
+      "name": "展示名，必填",
+      "version": "版本号",
+      "author": "作者",
+      "description": "短简介"
+    },
+    "区块_3_性格七维": {
+      "default_personality": "长度 7：倔强、黏人、敏感、强势、宽容、话多、温暖（仅写在 manifest）"
+    },
+    "区块_5_场景": {
+      "scenes": "场景 id 列表，可与 scenes/ 子目录合并"
+    },
+    "区块_6_用户身份": {
+      "user_relations": "键为关系 id，每项含 display_name、prompt_hint、favor_multiplier、initial_favorability",
+      "default_relation": "必须在 user_relations 的键中存在",
+      "dev_only": "可选 true：调试包默认不出现在角色列表，见 README 4.3"
+    },
+    "区块_6b_异地生活轨迹": {
+      "life_trajectory": "可选。summary/summary_lines；stub_ooc+stub_messages=关异地心声时「括注+旁白」轮换。模式默认见 settings.remote_presence.default_enabled"
+    },
+    "区块_6c_虚拟时间日程_life_schedule": {
+      "life_schedule": "可选。timezone_offset_minutes + entries（weekday 1–7、time_start/end、activity_id、label、preferred_scene_id、availability）。与 life_trajectory 并存；见 README_MANIFEST"
+    },
+    "引擎字段见_settings": "model、evolution、identity_binding、memory_config 见 settings.template.json 与 README「settings.json」小节"
+  },
+  "id": "your_role_id",
+  "name": "示例角色名（请修改）",
+  "version": "1.0.0",
+  "author": "你的名字",
+  "description": "一句话简介",
+  "default_personality": [0.5, 0.5, 0.5, 0.5, 0.5, 0.5, 0.5],
+  "scenes": ["home"],
+  "user_relations": {
+    "friend": {
+      "display_name": "好友",
+      "prompt_hint": "你们是好朋友",
+      "favor_multiplier": 1.0,
+      "initial_favorability": 50
+    }
+  },
+  "default_relation": "friend",
+  "life_trajectory": {
+    "summary_lines": [
+      "（可选）第一段：与用户不同场景时角色的生活节奏与碎碎念气质说明。",
+      "（可选）第二段：可继续补充禁忌、好感表现等。"
+    ],
+    "stub_ooc": "（你们不同场景，同景后再细聊。）",
+    "stub_messages": [
+      "她在写作业呢，想着你会给她带草莓蛋糕",
+      "她窝在沙发里刷手机，看到你的消息愣了一下才回"
+    ]
+  },
+  "_life_schedule_example": "以下为可选示例：按虚拟时间推断「此刻在做什么」；与 life_trajectory 不同",
+  "life_schedule": {
+    "timezone_offset_minutes": 480,
+    "entries": [
+      {
+        "weekday": 1,
+        "time_start": "09:00",
+        "time_end": "12:00",
+        "activity_id": "work",
+        "label": "上班",
+        "preferred_scene_id": "home",
+        "availability": "busy"
+      }
+    ]
+  }
+}

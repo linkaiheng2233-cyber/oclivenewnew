@@ -1,0 +1,13 @@
+{
+  "folders": [
+    {
+      "name": "oclivenewnew (runtime)",
+      "path": "."
+    },
+    {
+      "name": "oclive-pack-editor",
+      "path": "../oclive-pack-editor"
+    }
+  ],
+  "settings": {}
+}

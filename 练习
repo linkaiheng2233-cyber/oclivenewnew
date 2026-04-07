@@ -1,0 +1,118 @@
+// ========================
+// 数学工具模块
+// ========================
+mod math {
+    /// 加法
+    pub fn add(a: i32, b: i32) -> i32 {
+        a + b
+    }
+
+    /// 乘法
+    pub fn multiply(a: i32, b: i32) -> i32 {
+        a * b
+    }
+
+    /// 阶乘（递归）
+    pub fn factorial(n: u64) -> u64 {
+        if n <= 1 {
+            1
+        } else {
+            n * factorial(n - 1)
+        }
+    }
+}
+
+// ========================
+// 字符串工具模块
+// ========================
+mod string_utils {
+    /// 反转字符串
+    pub fn reverse(s: &str) -> String {
+        s.chars().rev().collect()
+    }
+
+    /// 统计单词数
+    pub fn word_count(s: &str) -> usize {
+        s.split_whitespace().count()
+    }
+
+    /// 判断是否是回文
+    pub fn is_palindrome(s: &str) -> bool {
+        let clean: String = s.chars().filter(|c| c.is_alphabetic()).collect();
+        let lower = clean.to_lowercase();
+        lower == reverse(&lower)
+    }
+}
+
+// ========================
+// 计算器结构体
+// ========================
+struct Calculator {
+    name: String,
+    value: i32,
+}
+
+impl Calculator {
+    /// 创建新计算器
+    pub fn new(name: &str) -> Self {
+        Calculator {
+            name: name.to_string(),
+            value: 0,
+        }
+    }
+
+    /// 加法
+    pub fn add(&mut self, x: i32) {
+        self.value = math::add(self.value, x);
+    }
+
+    /// 乘法
+    pub fn multiply(&mut self, x: i32) {
+        self.value = math::multiply(self.value, x);
+    }
+
+    /// 重置
+    pub fn reset(&mut self) {
+        self.value = 0;
+    }
+
+    /// 获取当前值
+    pub fn current(&self) -> i32 {
+        self.value
+    }
+
+    /// 显示状态
+    pub fn status(&self) -> String {
+        format!("{} 当前值: {}", self.name, self.value)
+    }
+}
+
+// ========================
+// 工具函数
+// ========================
+
+/// 处理一段文本：反转并统计单词数
+fn process_text(text: &str) -> String {
+    let reversed = string_utils::reverse(text);
+    let words = string_utils::word_count(text);
+    format!("反转后: {}\n单词数: {}", reversed, words)
+}
+
+/// 检查文本是否是回文（忽略标点和大小写）
+fn check_palindrome(text: &str) -> bool {
+    string_utils::is_palindrome(text)
+}
+
+/// 主函数
+fn main() {
+    let mut calc = Calculator::new("my_calc");
+    calc.add(10);
+    calc.multiply(2);
+    println!("{}", calc.status());
+
+    let text = "Hello world this is a test";
+    println!("{}", process_text(text));
+
+    let palindrome = "A man a plan a canal Panama";
+    println!("是否是回文: {}", check_palindrome(palindrome));
+}
