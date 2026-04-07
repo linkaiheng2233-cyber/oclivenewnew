@@ -11,6 +11,8 @@
 
 **在 oclive 中安装包**：除把目录放进 `roles/` 或设置 **`OCLIVE_ROLES_DIR`** 外，可在应用内 **导入 `.ocpak`、`.zip`（与 `.ocpak` 同为 ZIP）或已解压的包目录**（结构须与 `roles/{角色id}/` 一致）。详见 [roles/README_MANIFEST.md](../../roles/README_MANIFEST.md) 中「在 oclive 中导入角色包」。
 
+**使用启动器（可选）**：独立仓库 [oclive-launcher](https://github.com/supermumu/oclive-launcher) 提供 **从 zip 安装角色包** 到 `OCLIVE_ROLES_DIR`：选择编写器导出的 zip，在对话框中指定 **Ollama 模型名**（写入 `settings.json` 的 `model`）、可选是否覆盖已有 `model`，并支持一键 **`ollama pull`**。云端推理不走 Ollama，须将 `plugin_backends.llm` 设为 `remote` 且配置 `OCLIVE_REMOTE_LLM_URL`（见 [REMOTE_PLUGIN_PROTOCOL.md](../plugin-and-architecture/REMOTE_PLUGIN_PROTOCOL.md)）。详见启动器 README。
+
 建议将编写器 checkout 为与本仓库**同级**目录（例如 `D:\oclive-pack-editor` 与 `D:\oclivenewnew`），在 Cursor / VS Code 中用 **`oclive-pack-editor.code-workspace`** 多根联开两项目。
 
 ## 目录布局

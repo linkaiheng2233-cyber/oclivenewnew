@@ -1,6 +1,6 @@
 {
   "schema_version": 1,
-  "model": "mumu:latest",
+  "model": "qwen2.5:7b",
   "evolution": {
     "event_impact_factor": 1.0,
     "ai_analysis_interval": 15,

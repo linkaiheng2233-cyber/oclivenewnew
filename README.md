@@ -1,6 +1,6 @@
 # oclive（oclivenewnew）
 
-[![CI](https://github.com/linkaiheng2233-cyber/oclivenewnew/actions/workflows/ci.yml/badge.svg)](https://github.com/linkaiheng2233-cyber/oclivenewnew/actions/workflows/ci.yml)
+[![CI](https://github.com/supermumu/oclivenewnew/actions/workflows/ci.yml/badge.svg)](https://github.com/supermumu/oclivenewnew/actions/workflows/ci.yml)
 
 本地优先的桌面角色对话应用：**Tauri + Vue 3 + Rust**。引擎支持场景、虚拟时间、异地/共景、好感与记忆、可替换子系统（记忆检索 / 情绪 / 事件估计 / Prompt 组装），角色内容以 **`roles/{角色id}/`** 角色包分发。
 
@@ -35,7 +35,17 @@
 | **运行时（本仓库）** | 玩家使用的桌面客户端 + 对话引擎 |
 | **角色包** | `roles/` 下每角色一目录；**唯一对接面**为磁盘上的包目录（或 zip 解压后同等结构） |
 | **角色包编写器** | **独立仓库**（例如与本仓库**同级**目录 `oclive-pack-editor`），只负责产出包，不引用本仓库源码；多根工作区可用根目录 `oclive-pack-editor.code-workspace` 同时打开两项目 |
+| **启动器** | **独立仓库** [oclive-launcher](https://github.com/supermumu/oclive-launcher)：统一配置编写器与运行时路径、为 oclive 注入 **`OCLIVE_ROLES_DIR`**，并支持 **从 zip 安装角色包**（选择 `settings.json` 的 Ollama `model`、可选覆盖、**`ollama pull`**） |
 | **扩展** | 见 [creator-docs/plugin-and-architecture/EXTENSION_POINTS.md](creator-docs/plugin-and-architecture/EXTENSION_POINTS.md)；HTTP 侧车见 [creator-docs/plugin-and-architecture/CREATOR_PLUGIN_ARCHITECTURE.md](creator-docs/plugin-and-architecture/CREATOR_PLUGIN_ARCHITECTURE.md) |
+
+## 新用户：从下载到第一次对话
+
+1. **安装依赖**：Node.js、Ollama（对话默认走本地模型）。详见 [creator-docs/getting-started/CREATOR_WORKFLOW.md](creator-docs/getting-started/CREATOR_WORKFLOW.md)。
+2. **三仓库**（可选）：[oclivenewnew](https://github.com/supermumu/oclivenewnew)（本仓库）、[oclive-pack-editor](https://github.com/supermumu/oclive-pack-editor)、[oclive-launcher](https://github.com/supermumu/oclive-launcher)。同级克隆最省事。
+3. **角色包目录**：将环境变量 **`OCLIVE_ROLES_DIR`** 指向 **roles 根**（其下为各 `角色id/`）。可用启动器 **一键填入** 本仓库内 `roles/`；或使用启动器 **「从 zip 安装角色包」** 解压编写器导出包并写入模型名；亦可手动把 zip 解压到该根下。
+4. **运行本应用**：`npm run tauri:dev` 启动桌面客户端；在应用内加载 `roles/` 下的角色并开始对话。
+
+详细步骤与「编写器 → 磁盘 → 运行时」数据流见 **启动器 README** 与 [CREATOR_WORKFLOW.md](creator-docs/getting-started/CREATOR_WORKFLOW.md)。
 
 ## 环境要求
 

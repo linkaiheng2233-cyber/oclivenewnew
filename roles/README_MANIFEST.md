@@ -109,7 +109,7 @@
 
 入库前单段素材在存储层会按 UTF-8 字符数**截断到约 8000 字**；注入异地心声主 LLM 时还会再截到约 **4000 字**以控制上下文长度（过长会带「已截断」提示）。
 
-示例见 **`roles/mumu`**（`manifest.json` 的 `life_trajectory`、`settings.json` 的 `remote_presence.default_enabled`、`scenes/home/scene.json`、`scenes/company/away_life.txt`）。
+示例见 **`roles/mumu`**（`manifest.json` 的 `life_trajectory`、`settings.json` 的 `remote_presence.default_enabled`、`scenes/home/scene.json`、`scenes/company/away_life.txt`、**`knowledge/*.md` 世界观示例**）。
 
 ### `manifest.json` 可选块：`life_schedule`（虚拟时间日程 / 生活轨迹引擎）
 

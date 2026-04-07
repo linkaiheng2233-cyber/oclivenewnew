@@ -81,6 +81,7 @@ async fn week3_004_query_memories_and_events() {
         role_id: "mumu".to_string(),
         user_message: "hi".to_string(),
         scene_id: None,
+        session_id: None,
     };
     process_message(&state, &req).await.expect("send");
 
@@ -368,6 +369,7 @@ async fn week3_004_scene_relation_overrides_global_in_chat() {
             role_id: "shimeng".to_string(),
             user_message: "你今天怎么样".to_string(),
             scene_id: Some("default".to_string()),
+            session_id: None,
         },
     )
     .await
@@ -378,6 +380,7 @@ async fn week3_004_scene_relation_overrides_global_in_chat() {
             role_id: "shimeng".to_string(),
             user_message: "你今天怎么样".to_string(),
             scene_id: Some("school".to_string()),
+            session_id: None,
         },
     )
     .await

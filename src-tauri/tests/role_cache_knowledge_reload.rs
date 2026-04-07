@@ -71,6 +71,7 @@ async fn load_role_updates_role_cache_after_knowledge_file_change() {
         role_id: ROLE_ID.to_string(),
         user_message: "讲讲雾城".to_string(),
         scene_id: None,
+        session_id: None,
     };
     process_message(&state, &req)
         .await

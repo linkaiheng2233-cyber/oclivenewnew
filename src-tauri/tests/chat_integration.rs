@@ -24,6 +24,7 @@ async fn send_message_happy_path_mock_llm() {
         role_id: "mumu".to_string(),
         user_message: "今天天气不错".to_string(),
         scene_id: None,
+        session_id: None,
     };
 
     let res = process_message(&state, &req)
@@ -51,6 +52,7 @@ async fn send_message_persists_event_to_db() {
         role_id: "mumu".to_string(),
         user_message: "你太坏了，我生气了".to_string(),
         scene_id: None,
+        session_id: None,
     };
 
     let res = process_message(&state, &req)
