@@ -12,6 +12,7 @@
 - 新增 **[creator-docs/roadmap/BACKLOG_EXPERIENCE_AND_ECOSYSTEM.md](creator-docs/roadmap/BACKLOG_EXPERIENCE_AND_ECOSYSTEM.md)**：体验差异化方向（编写器试聊、启动器依赖、市场/UGC）与愿景对照；`VISION_ROADMAP_MONTHLY.md`、文档索引与根 README 已链入。
 - 新增 **[creator-docs/getting-started/PROJECT_OVERVIEW.md](creator-docs/getting-started/PROJECT_OVERVIEW.md)**：三件套分工、已落实能力、文档地图、命令、人机分工、愿景对照与发版极简清单。
 - **oclive-launcher**（另仓）：环境与排障页（Node/npm/Ollama/项目路径检测、重置配置、打开配置目录）；**[BACKLOG_EXPERIENCE_AND_ECOSYSTEM.md](creator-docs/roadmap/BACKLOG_EXPERIENCE_AND_ECOSYSTEM.md)** 补充启动器已落实项与长期路线引用。
+- **GitHub**：[GITHUB_REPO_CHECKLIST.md](creator-docs/getting-started/GITHUB_REPO_CHECKLIST.md)；Dependabot、PR 模板、CI 手动触发（`workflow_dispatch`）、README CI 徽章；**oclive-pack-editor** / **oclive-launcher** 同步 Dependabot 与 PR 模板。
 
 ---
 
