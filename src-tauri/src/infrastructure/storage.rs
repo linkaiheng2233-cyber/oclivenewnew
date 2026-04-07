@@ -1,8 +1,10 @@
 use crate::domain::knowledge_loader::{load_knowledge_index, should_load_knowledge};
 use crate::domain::role_manifest_validate::{
-    validate_disk_manifest, validate_role_interaction_mode,
+    log_plugin_backends_remote_missing_env, validate_disk_manifest,
+    validate_role_interaction_mode,
 };
 use crate::error::{AppError, Result};
+use crate::models::role_manifest_disk::{disk_manifest_from_role, disk_manifest_to_role};
 use crate::models::{DiskRoleManifest, DiskRoleSettings, DiskSceneConfig, Role};
 use chrono::Timelike;
 use serde_json;
@@ -106,7 +108,7 @@ impl RoleStorage {
         let merged_scenes = Self::merge_scene_ids(role_dir, &disk.scenes)?;
         validate_disk_manifest(&disk, &merged_scenes).map_err(AppError::InvalidParameter)?;
 
-        let mut role = disk.to_role();
+        let mut role = disk_manifest_to_role(&disk);
         if should_load_knowledge(&disk, role_dir) {
             let idx = load_knowledge_index(role_dir, &disk)?;
             role.knowledge_index = Some(Arc::new(idx));
@@ -120,6 +122,7 @@ impl RoleStorage {
             }
         }
         validate_role_interaction_mode(&role).map_err(AppError::InvalidParameter)?;
+        log_plugin_backends_remote_missing_env(&role);
 
         // 加载核心人设
         let core_personality_path = role_dir.join("core_personality.txt");
@@ -456,7 +459,7 @@ impl RoleStorage {
         let role_dir = self.roles_dir.join(&role.id);
         fs::create_dir_all(&role_dir).map_err(AppError::IoError)?;
 
-        let disk = DiskRoleManifest::from_role(role);
+        let disk = disk_manifest_from_role(role);
         let manifest_path = role_dir.join("manifest.json");
         let json = serde_json::to_string_pretty(&disk).map_err(AppError::SerializationError)?;
         fs::write(&manifest_path, json).map_err(AppError::IoError)?;

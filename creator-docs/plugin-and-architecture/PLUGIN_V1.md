@@ -12,6 +12,24 @@
 
 ---
 
+## `send_message` 编排顺序（与 `chat_engine`）
+
+共景主路径见源码 [`chat_engine/co_present.rs`](../../src-tauri/src/domain/chat_engine/co_present.rs) 的 `process_co_present`。入口为 [`chat_engine::process_message`](../../src-tauri/src/domain/chat_engine/mod.rs)（异地分支为 `process_remote_stub` / `process_remote_life`，事件链有简化）。与 **PLUGIN_V1** 子系统相关的顺序如下（与 DTO 流一致）：
+
+1. **`PluginHost`**：[`state::resolved_plugins_for`](../../src-tauri/src/state/mod.rs) → [`PluginHost::resolve_for_role`](../../src-tauri/src/domain/plugin_host.rs)，按 `role.plugin_backends` 绑定 `memory` / `emotion` / `event` / `prompt` / `llm`。
+2. **用户情绪**：`pl.emotion.analyze` → `EmotionResult`，对外为响应中的 `emotion`（`EmotionDto`）。
+3. **人格微调**：`PersonalityEngine::adjust_by_user_emotion`（消费用户情绪，非独立 trait 子系统）。
+4. **知识块**（可选）：包内 `knowledge_index` 检索；可与事件估计的 augment 合并。
+5. **事件影响**：`pl.event.estimate` → `EventImpactEstimate`；随后 `PersonalityEngine::evolve_by_event`。
+6. **记忆检索**：仓储读出候选 → 场景加权 → `pl.memory.rank_memories`（`MemoryRetrievalInput`）。
+7. **好感与关系阶段**：`compute_favor_and_relation`（输入含事件类型与影响因子等）。
+8. **Prompt**：`pl.prompt.top_topic_hint` + `pl.prompt.build_prompt`（`PromptInput`）。
+9. **主 LLM**：`pl.llm.generate` 等；后续含 bot 侧情绪、立绘、短期记忆写入、位移意图等（见同文件后半段）。
+
+门面与枚举的单一事实来源：`plugin_host.rs`、`models/plugin_backends.rs`、本文各节表格。
+
+---
+
 ## 记忆检索 `MemoryRetrieval`
 
 ### 输入：`MemoryRetrievalInput`

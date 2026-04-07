@@ -3,6 +3,9 @@ use std::collections::HashMap;
 
 use super::knowledge::KnowledgeIndex;
 use super::plugin_backends::PluginBackends;
+pub use oclive_validation::{
+    IdentityBinding, LifeAvailability, LifeScheduleDisk, LifeScheduleEntryDisk, LifeTrajectoryDisk,
+};
 use std::sync::Arc;
 
 /// 角色包内人设默认值（旧七维，与 `PersonalityVector` 字段一致）
@@ -103,102 +106,11 @@ fn default_initial_favorability() -> f64 {
     50.0
 }
 
-/// 用户身份与场景的关系：由角色包 manifest `identity_binding` 决定。
-#[derive(Debug, Clone, Copy, Serialize, Deserialize, PartialEq, Eq, Default)]
-#[serde(rename_all = "snake_case")]
-pub enum IdentityBinding {
-    /// 全剧单一身份：忽略 `role_scene_identity`，仅全局 `user_relation` / manifest 默认。
-    Global,
-    /// 每个场景可单独覆盖身份（`role_scene_identity` 优先于全局）。
-    #[default]
-    PerScene,
-}
-
 impl UserRelation {
     #[must_use]
     pub fn initial_favorability_clamped(&self) -> f64 {
         self.initial_favorability.clamp(0.0, 100.0)
     }
-}
-
-/// 角色包 `manifest.json` 中「异地生活轨迹」创作者设定（可选）。
-/// 模式开关（`default_enabled`）放在 `settings.json` 的 `remote_presence`。
-#[derive(Debug, Clone, Serialize, Deserialize, Default)]
-pub struct LifeTrajectoryDisk {
-    /// 异地时角色日常节奏、碎碎念风格、与用户「心有灵犀」的总体说明（注入异地心声 LLM，模型依人设延伸现编；总述为写法与气质约定，非固定台词）
-    #[serde(default)]
-    pub summary: Option<String>,
-    /// 与 `summary` 二选一：`summary_lines` 非空时优先按段拼接（manifest 里用 JSON 数组多行书写，便于阅读）
-    #[serde(default)]
-    pub summary_lines: Vec<String>,
-    /// 可选：固定 OOC 括注；与 `stub_messages` 同时配置时由引擎拼接为「stub_ooc + ， + 旁白」（不需要此结构时勿填）
-    #[serde(default)]
-    pub stub_ooc: Option<String>,
-    /// 未配置 `stub_ooc`：每元素为**整段占位**（创作者自定）。配置了 `stub_ooc`：每元素为**仅旁白句**（轮换）。
-    #[serde(default)]
-    pub stub_messages: Vec<String>,
-}
-
-impl LifeTrajectoryDisk {
-    /// 合并 `summary_lines` 与单字段 `summary`（`summary_lines` 非空时优先）。
-    #[must_use]
-    pub fn effective_summary(&self) -> Option<String> {
-        if !self.summary_lines.is_empty() {
-            let joined = self
-                .summary_lines
-                .iter()
-                .map(|s| s.trim())
-                .filter(|s| !s.is_empty())
-                .collect::<Vec<_>>()
-                .join("\n\n");
-            if !joined.is_empty() {
-                return Some(joined);
-            }
-        }
-        self.summary
-            .as_ref()
-            .map(|s| s.trim().to_string())
-            .filter(|s| !s.is_empty())
-    }
-}
-
-/// 日程片段：忙碌程度（供 prompt / UI；不直接改好感数值）
-#[derive(Debug, Clone, Copy, Serialize, Deserialize, PartialEq, Eq, Default)]
-#[serde(rename_all = "snake_case")]
-pub enum LifeAvailability {
-    #[default]
-    Free,
-    Distracted,
-    Busy,
-}
-
-/// 单条周内重复日程（本地时刻由 `LifeScheduleDisk::timezone_offset_minutes` 换算）
-#[derive(Debug, Clone, Serialize, Deserialize)]
-pub struct LifeScheduleEntryDisk {
-    /// 1 = 周一 … 7 = 周日（与 `chrono::Weekday::number_from_monday()` 一致）
-    pub weekday: u8,
-    /// 开始时刻 `HH:MM`（24 小时制）
-    pub time_start: String,
-    /// 结束时刻 `HH:MM`。若 **小于** `time_start`，表示窗口跨午夜（与 `hour_start`/`hour_end` 自主换场景规则一致）
-    pub time_end: String,
-    /// 机器可读活动键，如 `work` / `school`
-    pub activity_id: String,
-    /// 人类可读短标签，注入提示与 UI
-    pub label: String,
-    #[serde(default)]
-    pub preferred_scene_id: Option<String>,
-    #[serde(default)]
-    pub availability: Option<LifeAvailability>,
-}
-
-/// 创作者配置的「日常时间安排」（虚拟时间 → 当前活动）
-#[derive(Debug, Clone, Serialize, Deserialize, Default)]
-pub struct LifeScheduleDisk {
-    /// 相对 UTC 的分钟偏移，用于把 `virtual_time_ms` 换算成角色本地星期与时刻；省略则按 UTC
-    #[serde(default)]
-    pub timezone_offset_minutes: Option<i32>,
-    #[serde(default)]
-    pub entries: Vec<LifeScheduleEntryDisk>,
 }
 
 /// 由虚拟时间解析得到的当前生活态（引擎内部）

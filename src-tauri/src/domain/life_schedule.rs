@@ -11,24 +11,7 @@ fn availability_busy_level(a: Option<LifeAvailability>) -> f32 {
     }
 }
 
-/// 解析 `HH:MM` 为自午夜起的分钟数 \[0, 24*60)
-pub(crate) fn parse_hhmm(s: &str) -> Option<u16> {
-    let t = s.trim();
-    let mut parts = t.split(':');
-    let h: u32 = parts.next()?.parse().ok()?;
-    let m: u32 = parts.next()?.parse().ok()?;
-    if parts.next().is_some() {
-        return None;
-    }
-    if h >= 24 || m >= 60 {
-        return None;
-    }
-    let total = h * 60 + m;
-    if total >= 24 * 60 {
-        return None;
-    }
-    Some(total as u16)
-}
+pub(crate) use oclive_validation::parse_hhmm;
 
 fn minute_in_window(cur: u16, start: u16, end: u16) -> bool {
     if end < start {

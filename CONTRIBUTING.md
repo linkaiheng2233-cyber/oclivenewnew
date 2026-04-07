@@ -15,7 +15,7 @@
    - **发版或改引擎契约前**：`npm run check:release`（同上，且 **`cargo test` 含 `tests/` 集成与 doc-tests**），与 README「发版门槛」一致。
    - 分步：`npm run check:rust:fmt`、`check:rust:clippy`、`check:rust:test`，或 `cd src-tauri` 后手写同等命令。
    - **CI**：GitHub Actions 在 **Ubuntu 与 Windows** 上均跑 `cargo fmt` / `clippy` / `cargo test` 与 `npm run build`（见 `.github/workflows/ci.yml`）。
-   - Windows 若链接报 **LNK1104**，多为 `target\\debug\\*.exe` 被占用或并行链接冲突；关闭占用进程后重试，或单线程：`cd src-tauri && cargo test -j 1`。
+   - Windows 若链接报 **LNK1104**（无法写入 `target\\debug\\deps\\*.exe`），按顺序尝试：**①** 结束正在运行的同名程序 / 关掉仍附着在该 exe 上的调试器；**②** 勿同时开多个 `cargo build` / `cargo test`（易抢同一输出文件）；若日志里出现 **waiting for file lock on package cache**，等另一场 `cargo` 结束或只保留一个终端；**③** 临时降低并行：`cd src-tauri && cargo test -j 1` 或 `cargo build -j 1`；**④** 仍失败时，对 `target` 目录排除实时扫描（杀软）后重试；**⑤** 最后手段：`cargo clean` 后再构建（会全量重编）。
 
 ## 代码风格
 

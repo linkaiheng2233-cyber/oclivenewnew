@@ -25,6 +25,7 @@ dist-ssr
 
 # Rust / secrets
 src-tauri/target
+/target
 .env
 .env.*
 !.env.example

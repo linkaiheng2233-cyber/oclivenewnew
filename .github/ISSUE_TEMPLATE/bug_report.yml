@@ -1,0 +1,69 @@
+name: Bug Report
+description: Report a bug with reproducible context
+title: "[bug]: "
+labels: ["bug"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Thanks for the report.
+        For faster triage, include error code, hint, and minimal repro.
+
+  - type: input
+    id: error_code
+    attributes:
+      label: Error Code
+      description: e.g. invalid_role_path / chat_engine_failed / -32012
+      placeholder: invalid_role_path
+    validations:
+      required: false
+
+  - type: input
+    id: error_message
+    attributes:
+      label: Error Message
+      placeholder: role_path 不是目录：D:\roles\demo
+    validations:
+      required: true
+
+  - type: textarea
+    id: error_hint
+    attributes:
+      label: Error Hint (if any)
+      placeholder: 请传入包含 manifest.json 的角色目录绝对路径
+    validations:
+      required: false
+
+  - type: textarea
+    id: repro_steps
+    attributes:
+      label: Repro Steps
+      description: Minimal steps to reproduce
+      placeholder: |
+        1) Start oclive with --api
+        2) Open pack-editor chat panel
+        3) ...
+    validations:
+      required: true
+
+  - type: textarea
+    id: env_flags
+    attributes:
+      label: Environment Flags (mask secrets)
+      description: Only share variable names/boolean/set state. Do not paste tokens.
+      placeholder: |
+        OCLIVE_REMOTE_PLUGIN_URL = set
+        OCLIVE_REMOTE_LLM_URL = set
+        OCLIVE_REMOTE_PLUGIN_TIMEOUT_MS = 8000
+        OCLIVE_REMOTE_LLM_TIMEOUT_MS = 120000
+    validations:
+      required: false
+
+  - type: textarea
+    id: logs
+    attributes:
+      label: Relevant Logs
+      description: Include snippets for targets like oclive_chat / oclive_plugin
+    validations:
+      required: false
+

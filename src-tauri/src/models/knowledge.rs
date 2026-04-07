@@ -2,30 +2,13 @@
 //!
 //! 目录名固定为 **`knowledge/`**（不用 `worldview/`，与计划及 manifest 字段一致）。
 
-use serde::{Deserialize, Serialize};
+use serde::Deserialize;
 use std::collections::HashMap;
 use std::path::PathBuf;
 
 use super::EventType;
 
-/// manifest.json / settings.json 可选块：`"knowledge": { "enabled": true, "glob": "knowledge/**/*.md" }`
-#[derive(Debug, Clone, Serialize, Deserialize, Default)]
-pub struct KnowledgePackConfigDisk {
-    /// 为 `false` 时不加载（即使存在 `knowledge/` 目录）。
-    #[serde(default = "default_knowledge_enabled")]
-    pub enabled: bool,
-    /// 相对角色包根目录的 glob，默认扫描所有子目录下的 `.md`。
-    #[serde(default = "default_knowledge_glob")]
-    pub glob: String,
-}
-
-fn default_knowledge_enabled() -> bool {
-    true
-}
-
-fn default_knowledge_glob() -> String {
-    "knowledge/**/*.md".to_string()
-}
+pub use oclive_validation::KnowledgePackConfigDisk;
 
 /// 单条 front matter 中的 `event_hints` 子表（键为事件类型 snake_name）。
 #[derive(Debug, Clone, Deserialize)]

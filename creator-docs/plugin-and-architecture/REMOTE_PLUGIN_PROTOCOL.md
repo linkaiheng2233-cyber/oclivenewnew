@@ -10,6 +10,9 @@
 
 - 请求：**`POST`** 到环境变量给出的**完整 URL**（可含路径），例如 `http://127.0.0.1:8765/rpc`。  
 - **`Content-Type`**：宿主使用 `application/json` 发送 JSON 请求体。  
+- **协议头**：宿主固定附带  
+  - `x-oclive-remote-protocol: oclive-remote-jsonrpc-v1`  
+  - `x-oclive-client-version: <宿主版本>`（例如 `0.2.0`）  
 - **认证**：若设置 `OCLIVE_REMOTE_PLUGIN_TOKEN` / `OCLIVE_REMOTE_LLM_TOKEN`，宿主在请求头加入 **`Authorization: Bearer <token>`**。  
 - **超时**：由 `OCLIVE_REMOTE_PLUGIN_TIMEOUT_MS`（默认 8000 ms）与 `OCLIVE_REMOTE_LLM_TIMEOUT_MS`（默认 120000 ms）控制（宿主侧有上下限钳制，见源码 `config.rs`）。
 
@@ -59,6 +62,22 @@
 ```
 
 宿主在收到 `error` 时按**失败**处理并回退内置。
+
+#### 推荐错误码约定（产品化）
+
+宿主会把 `error.code`/`error.message`/`error.data` 直接带入日志；建议侧车统一使用下列码（兼容 JSON-RPC 标准码）：
+
+| code | name | 语义 |
+|------|------|------|
+| `-32700` | `parse_error` | 请求体不是合法 JSON |
+| `-32600` | `invalid_request` | JSON-RPC 包结构不合法 |
+| `-32601` | `method_not_found` | 方法不存在 |
+| `-32602` | `invalid_params` | 参数缺失或类型错误 |
+| `-32603` | `internal_error` | 侧车内部错误 |
+| `-32010` | `plugin_timeout` | 侧车上游（模型/检索）超时 |
+| `-32011` | `auth_failed` | Token 无效或权限不足 |
+| `-32012` | `rate_limited` | 限流 |
+| `-32013` | `upstream_unavailable` | 依赖服务不可用 |
 
 ### 1.5 HTTP 状态码
 

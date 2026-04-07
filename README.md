@@ -52,6 +52,21 @@ npm install
 npm run tauri:dev
 ```
 
+### 本地 HTTP API（编写器试聊 / 调试）
+
+使用与 GUI **同一可执行文件**，加 `--api` 在 **`127.0.0.1`** 上启动仅本地访问的 HTTP 服务（默认端口 **8420**，可用 `--port` 或环境变量 **`OCLIVE_API_PORT`** 覆盖）：
+
+```bash
+# 构建后，在可执行文件所在目录：
+./oclivenewnew --api
+./oclivenewnew --api --port 8420
+```
+
+- **`GET /health`**：返回纯文本 `ok`。
+- **`POST /chat`**：JSON 体 `{ "role_path": "D:/.../roles/某角色id", "message": "你好", "session_id": null }`，返回 `{ "reply": "..." }`。`role_path` 为含 `manifest.json` 的角色目录的**绝对或规范化路径**。
+
+与 Tauri IPC 相同，内部走 `chat_engine::process_message`；需本机 **Ollama** 等环境可用。
+
 仅前端静态资源：
 
 ```bash

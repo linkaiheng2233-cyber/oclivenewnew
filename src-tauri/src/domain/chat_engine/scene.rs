@@ -107,7 +107,8 @@ pub(super) fn parse_movement_intent_ai_output(raw: &str) -> Option<(bool, f64)> 
 pub(super) async fn detect_movement_intent(
     state: &AppState,
     llm: &Arc<dyn LlmClient>,
-    role_id: &str,
+    storage_role_id: &str,
+    db_role_id: &str,
     scene_id: &str,
     scenes: &[String],
     user_message: &str,
@@ -119,7 +120,7 @@ pub(super) async fn detect_movement_intent(
 
     let virtual_time_ms = state
         .db_manager
-        .get_virtual_time_ms(role_id)
+        .get_virtual_time_ms(db_role_id)
         .await
         .ok()
         .flatten()
@@ -132,15 +133,15 @@ pub(super) async fn detect_movement_intent(
         }
         if !state
             .storage
-            .is_scene_time_allowed(role_id, sid.as_str(), virtual_time_ms)
+            .is_scene_time_allowed(storage_role_id, sid.as_str(), virtual_time_ms)
         {
             continue;
         }
         candidate_scenes.push((
             sid.clone(),
-            state.storage.scene_display_name(role_id, sid),
-            state.storage.scene_keywords(role_id, sid),
-            state.storage.scene_events(role_id, sid),
+            state.storage.scene_display_name(storage_role_id, sid),
+            state.storage.scene_keywords(storage_role_id, sid),
+            state.storage.scene_events(storage_role_id, sid),
         ));
     }
 
@@ -155,7 +156,7 @@ pub(super) async fn detect_movement_intent(
     let candidate_lines = candidate_scenes
         .iter()
         .map(|(sid, label, kws, _)| {
-            let hint = state.storage.scene_switch_hint_line(role_id, sid);
+            let hint = state.storage.scene_switch_hint_line(storage_role_id, sid);
             format!(
                 "- id={} 名称={} keywords={} 摘要={}",
                 sid,

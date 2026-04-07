@@ -19,6 +19,13 @@ python server.py
 
 默认监听 `http://127.0.0.1:8765/rpc`（单一路径 POST JSON-RPC）。
 
+可选：通过环境变量模拟错误码/超时（用于联调错误处理链路）：
+
+```bash
+# 可选值：timeout / auth / rate_limit / upstream
+OCLIVE_DEMO_ERROR_MODE=rate_limit python server.py
+```
+
 ## 与 oclive 联调
 
 在启动桌面应用**之前**设置环境变量（PowerShell 示例）：
@@ -33,3 +40,11 @@ $env:OCLIVE_REMOTE_LLM_URL = "http://127.0.0.1:8765/rpc"
 ## 实现说明
 
 `server.py` 对每个方法返回**最小合法**占位数据；你可逐步替换为真实模型调用或业务逻辑。
+
+### 错误演示建议
+
+- `OCLIVE_DEMO_ERROR_MODE=timeout`：模拟慢响应（验证宿主超时与回退）。
+- `OCLIVE_DEMO_ERROR_MODE=auth`：返回 `-32011`（认证失败）。
+- `OCLIVE_DEMO_ERROR_MODE=rate_limit`：返回 `-32012`（限流）。
+- `OCLIVE_DEMO_ERROR_MODE=upstream`：返回 `-32013`（上游不可用）。
+- 或在正常模式下发送 `memory.rank` 且 `user_query` 含 `__RATE_LIMIT__`，触发按请求粒度的 `-32012`。

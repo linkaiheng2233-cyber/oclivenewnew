@@ -54,3 +54,55 @@ jobs:
           cache: npm
       - run: npm ci
       - run: npm run build
+
+  remote-plugin-demo:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+      - name: Start minimal remote plugin demo
+        run: |
+          python examples/remote_plugin_minimal/server.py > /tmp/remote_plugin_demo.log 2>&1 &
+          echo $! > /tmp/remote_plugin_demo.pid
+          sleep 1
+      - name: Smoke test memory.rank JSON-RPC
+        run: |
+          python - <<'PY'
+          import json
+          from urllib import request
+
+          body = json.dumps({
+              "jsonrpc": "2.0",
+              "id": 1,
+              "method": "memory.rank",
+              "params": {
+                  "memories": [{"id": "m1"}, {"id": "m2"}],
+                  "user_query": "hello",
+                  "scene_id": "default",
+                  "limit": 1
+              }
+          }).encode("utf-8")
+
+          req = request.Request(
+              "http://127.0.0.1:8765/rpc",
+              data=body,
+              headers={"Content-Type": "application/json"},
+              method="POST",
+          )
+          with request.urlopen(req, timeout=5) as resp:
+              raw = resp.read().decode("utf-8")
+          data = json.loads(raw)
+          assert data["jsonrpc"] == "2.0", raw
+          assert data["id"] == 1, raw
+          ids = data["result"]["ordered_ids"]
+          assert ids == ["m1"], raw
+          print("remote-plugin-demo smoke ok")
+          PY
+      - name: Stop demo server
+        if: always()
+        run: |
+          if [ -f /tmp/remote_plugin_demo.pid ]; then
+            kill "$(cat /tmp/remote_plugin_demo.pid)" || true
+          fi

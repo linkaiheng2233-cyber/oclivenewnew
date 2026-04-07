@@ -1,0 +1,7 @@
+[workspace]
+members = ["crates/oclive_validation", "src-tauri"]
+resolver = "2"
+
+[profile.release]
+opt-level = "z"
+lto = true

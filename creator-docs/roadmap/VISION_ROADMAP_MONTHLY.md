@@ -15,16 +15,16 @@
 
 ---
 
-## 第 1 月：契约与代码边界（地基）
+## 第 1 月：契约与代码边界（地基）— **已对齐当前实现**
 
 **目标**：不动产品行为的前提下，把「能换什么」说清楚、接稳。
 
 | 交付物 | 说明 |
 |--------|------|
-| `creator-docs/plugin-and-architecture/PLUGIN_V1.md`（或并入本文附录） | 记忆子系统输入/输出、情感/演化子系统输入/输出（DTO 级）；与现有 `chat_engine` 流程对齐。 |
-| `creator-docs/role-pack/PACK_VERSIONING.md` | 包版本、`schema_version`、`min_runtime_version`、未知字段策略（忽略/报错）。**已添加初版**（见仓库 [`PACK_VERSIONING.md`](../role-pack/PACK_VERSIONING.md)）。 |
-| Rust 门面 | `MemoryBackend` / `AffectEmotionPipeline`（命名以仓库为准）：**当前实现**全部作为 `Default` 实现接入，主流程只做编排。 |
-| manifest / `settings.json` | 增加 **`memory_backend` / `affect_backend`** 等枚举，**仅 `default` 生效**，其余值明确报错或日志提示「未实现」。 |
+| `creator-docs/plugin-and-architecture/PLUGIN_V1.md` | 各子系统 DTO、`settings.json` 枚举；**已补充**「`send_message` 编排顺序」与 `chat_engine` / `PluginHost` 对照。 |
+| `creator-docs/role-pack/PACK_VERSIONING.md` | 包版本、`schema_version`、`min_runtime_version`（预留）、未知字段策略；**已补充**第 1 月与 `plugin_backends` 的对照。 |
+| Rust 门面 | 以 **[`PluginHost`](../../src-tauri/src/domain/plugin_host.rs)** 为宿主：[`MemoryRetrieval`](../../src-tauri/src/domain/memory_retrieval.rs)、[`UserEmotionAnalyzer`](../../src-tauri/src/domain/user_emotion_analyzer.rs)、[`EventEstimator`](../../src-tauri/src/domain/event_estimator.rs)、[`PromptAssembler`](../../src-tauri/src/domain/prompt_assembler.rs)、[`LlmClient`](../../src-tauri/src/infrastructure/llm/mod.rs)；主流程只做编排。 |
+| `settings.json` | 使用嵌套对象 **`plugin_backends`**（`memory` / `emotion` / `event` / `prompt` / `llm`），见 [`plugin_backends.rs`](../../src-tauri/src/models/plugin_backends.rs)。**不再**使用独立字段名 `memory_backend` / `affect_backend`（早期愿景草案）；情感分析对应键 **`emotion`**。`builtin` / `builtin_v2` / `remote`（及 `llm`: `ollama` / `remote`）均为已实现枚举；`remote` 需环境变量时，加载角色时会 **记警告日志**（仍回退内置，与既有行为一致）。 |
 
 **验收**：全量 `cargo test`、`npm run build`；对话与好感等行为与本月前**无回归**（或仅有可说明的显式变更）。
 

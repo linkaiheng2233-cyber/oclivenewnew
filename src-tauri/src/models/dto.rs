@@ -14,6 +14,9 @@ pub struct SendMessageRequest {
     pub user_message: String,
     #[serde(default)]
     pub scene_id: Option<String>,
+    /// 可选：区分同角色的多路会话（如 HTTP 试聊「新会话」）；与 `role_id` 组合为内部 DB 命名空间。
+    #[serde(default)]
+    pub session_id: Option<String>,
 }
 
 #[derive(Debug, Serialize)]

@@ -44,6 +44,33 @@ pub(super) fn emotion_to_dto(r: &crate::domain::emotion_analyzer::EmotionResult)
     }
 }
 
+/// 会话级 SQLite 命名空间：HTTP 试聊传入 `session_id` 时与无 `session_id` 的默认对话隔离。
+pub(crate) fn conversation_state_role_id(manifest_role_id: &str, session_id: Option<&str>) -> String {
+    /// 控制 SQLite 键与日志长度，避免异常长 `session_id` 撑爆存储。
+    const MAX_SUFFIX_CHARS: usize = 64;
+    const MAX_TOTAL_CHARS: usize = 256;
+
+    let sid = session_id.map(str::trim).filter(|s| !s.is_empty());
+    match sid {
+        None => manifest_role_id.chars().take(MAX_TOTAL_CHARS).collect(),
+        Some(s) => {
+            let safe: String = s
+                .chars()
+                .map(|c| {
+                    if c.is_ascii_alphanumeric() || c == '-' || c == '_' {
+                        c
+                    } else {
+                        '_'
+                    }
+                })
+                .take(MAX_SUFFIX_CHARS)
+                .collect();
+            let out = format!("{}__sess__{}", manifest_role_id, safe);
+            out.chars().take(MAX_TOTAL_CHARS).collect()
+        }
+    }
+}
+
 /// 异地 + 关：占位文案，**不**写入短期记忆 / 事件 / 好感事务（避免无对话却涨好感）
 async fn process_remote_stub(
     state: &AppState,
@@ -51,26 +78,27 @@ async fn process_remote_stub(
     role: &Role,
     scene_id: &str,
     t0: Instant,
+    srid: &str,
 ) -> Result<SendMessageResponse> {
     let role_id = req.role_id.as_str();
     let user_message = req.user_message.as_str();
     let pl = state.resolved_plugins_for(role);
     let emotion_result = pl.emotion.analyze(user_message)?;
     let user_relation_key: String =
-        resolve_effective_user_relation_key(state, role, role_id, Some(scene_id)).await?;
+        resolve_effective_user_relation_key(state, role, srid, Some(scene_id)).await?;
     let relation_before = state
         .db_manager
-        .get_relation_state_for_identity(role_id, user_relation_key.as_str())
+        .get_relation_state_for_identity(srid, user_relation_key.as_str())
         .await?
-        .or(state.db_manager.get_relation_state(role_id).await?)
+        .or(state.db_manager.get_relation_state(srid).await?)
         .unwrap_or_else(|| "Stranger".to_string());
     let favorability_before = state
         .db_manager
-        .favorability_for_identity_with_runtime_fallback(role_id, user_relation_key.as_str())
+        .favorability_for_identity_with_runtime_fallback(srid, user_relation_key.as_str())
         .await?;
     let portrait_emotion_str = state
         .db_manager
-        .get_current_emotion(role_id)
+        .get_current_emotion(srid)
         .await?
         .unwrap_or_else(|| "neutral".to_string());
     let reply = compose_remote_stub_reply(role);
@@ -111,16 +139,18 @@ async fn process_remote_life(
     scene_id: &str,
     character_scene_id: &str,
     t0: Instant,
+    mrid: &str,
+    srid: &str,
 ) -> Result<SendMessageResponse> {
     let role_id = req.role_id.as_str();
     let user_message = req.user_message.as_str();
     let event_runtime = state
         .db_manager
-        .get_event_impact_factor(role_id)
+        .get_event_impact_factor(srid)
         .await?
         .unwrap_or(role.evolution_config.event_impact_factor);
 
-    let mut personality = state.get_current_personality(role_id, role).await?;
+    let mut personality = state.get_current_personality(srid, role).await?;
 
     let pl = state.resolved_plugins_for(role);
     let emotion_result = pl.emotion.analyze(user_message)?;
@@ -129,7 +159,7 @@ async fn process_remote_life(
 
     let ollama_model = role.resolve_ollama_model(state.ollama_model.as_str());
     let (recent_turns, _recent_turns_for_event, recent_events_for_event) =
-        load_recent_context(state, role_id).await?;
+        load_recent_context(state, srid).await?;
 
     personality = PersonalityEngine::adjust_by_user_emotion(
         personality,
@@ -147,7 +177,7 @@ async fn process_remote_life(
         &role.evolution_bounds,
     );
 
-    let mut memories = state.memory_repo.load_memories(role_id, 10).await?;
+    let mut memories = state.memory_repo.load_memories(srid, 10).await?;
     let scene_m = role
         .memory_config
         .as_ref()
@@ -162,23 +192,23 @@ async fn process_remote_life(
     });
 
     let user_relation_key: String =
-        resolve_effective_user_relation_key(state, role, role_id, Some(scene_id)).await?;
+        resolve_effective_user_relation_key(state, role, srid, Some(scene_id)).await?;
     let rf = relation_favor_for_key(role, user_relation_key.as_str());
 
     let relation_before = state
         .db_manager
-        .get_relation_state_for_identity(role_id, user_relation_key.as_str())
+        .get_relation_state_for_identity(srid, user_relation_key.as_str())
         .await?
-        .or(state.db_manager.get_relation_state(role_id).await?)
+        .or(state.db_manager.get_relation_state(srid).await?)
         .unwrap_or_else(|| "Stranger".to_string());
     let seed_favor = role.initial_favorability_for_relation(user_relation_key.as_str());
     state
         .db_manager
-        .ensure_identity_stats_row(role_id, user_relation_key.as_str(), seed_favor)
+        .ensure_identity_stats_row(srid, user_relation_key.as_str(), seed_favor)
         .await?;
     let favorability_before = state
         .db_manager
-        .favorability_for_identity_with_runtime_fallback(role_id, user_relation_key.as_str())
+        .favorability_for_identity_with_runtime_fallback(srid, user_relation_key.as_str())
         .await?;
     let favor_relation_input = FavorRelationInput {
         relation_before: relation_before.as_str(),
@@ -194,14 +224,14 @@ async fn process_remote_life(
 
     let char_label = state
         .storage
-        .scene_display_name(role_id, character_scene_id);
-    let user_label = state.storage.scene_display_name(role_id, scene_id);
+        .scene_display_name(mrid, character_scene_id);
+    let user_label = state.storage.scene_display_name(mrid, scene_id);
     let away_material = state
         .storage
-        .away_life_material(role_id, character_scene_id, scene_id);
+        .away_life_material(mrid, character_scene_id, scene_id);
     let vt_ms = state
         .db_manager
-        .get_virtual_time_ms(role_id)
+        .get_virtual_time_ms(srid)
         .await?
         .unwrap_or(0);
     let vt_label = if vt_ms > 0 {
@@ -270,7 +300,7 @@ async fn process_remote_life(
         relation_after.as_str(),
     ));
     let bot_emotion_result = pl.emotion.analyze(&reply)?;
-    let previous_emotion = state.db_manager.get_current_emotion(role_id).await?;
+    let previous_emotion = state.db_manager.get_current_emotion(srid).await?;
     let policies = state.policies_for_scene(Some(scene_id));
     let bot_emotion = policies
         .emotion
@@ -287,7 +317,7 @@ async fn process_remote_life(
         0,
         Memory {
             id: "__relation_state__".to_string(),
-            role_id: role_id.to_string(),
+            role_id: srid.to_string(),
             content: format!(
                 "当前关系阶段: {} -> {}",
                 relation_before,
@@ -300,7 +330,7 @@ async fn process_remote_life(
         },
     );
     let policy_ctx = PolicyContext {
-        role_id,
+        role_id: srid,
         user_message,
         reply: &reply,
         event: &event,
@@ -335,7 +365,7 @@ async fn process_remote_life(
     let favor_current = state
         .db_manager
         .apply_chat_turn_atomic(crate::infrastructure::db::ChatTurnTxInput {
-            role_id,
+            role_id: srid,
             personality: &personality,
             current_emotion: bot_emotion_str.as_str(),
             relation_state: relation_after.as_str(),
@@ -354,19 +384,20 @@ async fn process_remote_life(
     let delta_out = PersonalityVector::sub_components(&personality, &core_v);
     state
         .db_manager
-        .set_core_delta_personality_json(role_id, &core_v.to_json_vec(), &delta_out.to_json_vec())
+        .set_core_delta_personality_json(srid, &core_v.to_json_vec(), &delta_out.to_json_vec())
         .await?;
 
     state
         .personality_cache
         .write()
-        .insert(role_id.to_string(), personality.clone());
+        .insert(srid.to_string(), personality.clone());
 
-    let scenes = state.storage.list_scene_ids(role_id)?;
+    let scenes = state.storage.list_scene_ids(mrid)?;
     let movement = detect_movement_intent(
         state,
         &pl.llm,
-        role_id,
+        mrid,
+        srid,
         scene_id,
         &scenes,
         user_message,
@@ -414,51 +445,56 @@ pub async fn process_message(
     state: &AppState,
     req: &SendMessageRequest,
 ) -> Result<SendMessageResponse> {
-    let role_id = req.role_id.as_str();
+    let mrid = req.role_id.as_str();
+    let state_rid = conversation_state_role_id(mrid, req.session_id.as_deref());
+    let srid = state_rid.as_str();
     let requested_scene_id = req
         .scene_id
         .clone()
         .unwrap_or_else(|| "default".to_string());
-    let (scene_id, scenes) = validate_scene_id(state, role_id, requested_scene_id)?;
+    let (scene_id, scenes) = validate_scene_id(state, mrid, requested_scene_id)?;
     let t0 = Instant::now();
     log::info!(
         target: "oclive_chat",
-        "send_message start role_id={} scene_id={}",
-        role_id,
-        scene_id
+        "send_message start role_id={} scene_id={} session_ns={}",
+        mrid,
+        scene_id,
+        srid
     );
 
-    state.db_manager.ensure_role_runtime(role_id).await?;
+    state.db_manager.ensure_role_runtime(srid).await?;
 
-    let role = ensure_role_loaded(state, role_id).await?;
+    let role = ensure_role_loaded(state, mrid).await?;
     state
         .db_manager
-        .ensure_interaction_mode_seeded(role_id, role.interaction_mode.as_deref())
+        .ensure_interaction_mode_seeded(srid, role.interaction_mode.as_deref())
         .await?;
 
     state
         .db_manager
-        .set_user_presence_scene(role_id, scene_id.as_str())
+        .set_user_presence_scene(srid, scene_id.as_str())
         .await?;
 
-    let current_scene = state.db_manager.get_current_scene(role_id).await?;
+    let current_scene = state.db_manager.get_current_scene(srid).await?;
     let immersive = state
         .db_manager
-        .get_interaction_mode(role_id)
+        .get_interaction_mode(srid)
         .await?
         .is_immersive();
-    let remote_life_enabled = state.db_manager.get_remote_life_enabled(role_id).await?;
+    let remote_life_enabled = state.db_manager.get_remote_life_enabled(srid).await?;
     let is_remote =
         immersive && user_is_remote_from_character(scene_id.as_str(), current_scene.as_deref());
     if is_remote {
         if !remote_life_enabled {
-            return process_remote_stub(state, req, &role, scene_id.as_str(), t0).await;
+            return process_remote_stub(state, req, &role, scene_id.as_str(), t0, srid).await;
         }
         let char_scene = current_scene.as_deref().unwrap_or("default");
-        return process_remote_life(state, req, &role, scene_id.as_str(), char_scene, t0).await;
+        return process_remote_life(state, req, &role, scene_id.as_str(), char_scene, t0, mrid, srid)
+            .await;
     }
 
-    co_present::process_co_present(state, req, &role, scene_id, scenes, immersive, t0).await
+    co_present::process_co_present(state, req, &role, scene_id, scenes, immersive, t0, mrid, srid)
+        .await
 }
 
 async fn ensure_role_loaded(state: &AppState, role_id: &str) -> Result<Role> {
@@ -478,7 +514,28 @@ mod tests {
     use crate::domain::chat_turn_rules::{
         avoid_fast_promote_score, smooth_favor_delta_for_short_streak, soft_append_guard,
     };
+    use crate::domain::chat_engine::conversation_state_role_id;
     use crate::models::{Event, EventType};
+
+    #[test]
+    fn conversation_state_role_id_none_matches_manifest_id() {
+        assert_eq!(conversation_state_role_id("role_a", None), "role_a");
+    }
+
+    #[test]
+    fn conversation_state_role_id_distinct_sessions() {
+        let a = conversation_state_role_id("role_a", Some("sess-1"));
+        let b = conversation_state_role_id("role_a", Some("sess-2"));
+        assert_ne!(a, b);
+        assert!(a.contains("__sess__"));
+    }
+
+    #[test]
+    fn conversation_state_role_id_caps_total_length() {
+        let long = "x".repeat(400);
+        let out = conversation_state_role_id("r", Some(&long));
+        assert!(out.chars().count() <= 256);
+    }
 
     #[test]
     fn soft_append_triggers_for_quarrel_with_sweet_words() {

@@ -27,7 +27,16 @@
 ## 校验链
 
 - 合并后的磁盘 manifest 经 **`validate_disk_manifest`**（[`role_manifest_validate`](../../src-tauri/src/domain/role_manifest_validate.rs)）再转为运行时 `Role`。
+- 加载完成后另有 **`validate_role_interaction_mode`**；若 `plugin_backends` 声明 **`remote`** 但未设置对应 `OCLIVE_REMOTE_*` 环境变量，运行时会 **`log::warn`**（不阻止加载；运行时仍按 PLUGIN_V1 回退内置或进程内 LLM）。见 [`log_plugin_backends_remote_missing_env`](../../src-tauri/src/domain/role_manifest_validate.rs)。
 - 修改契约时同步：**Rust 校验**、`roles/README_MANIFEST.md`、**本文件**、必要时 **PLUGIN_V1**。
+
+## 第 1 月里程碑（契约边界）— 与源码对齐
+
+路线图「第 1 月」中的**可替换子系统**在本仓库已落实为：
+
+- **契约文档**：[`PLUGIN_V1.md`](../plugin-and-architecture/PLUGIN_V1.md)（含 `send_message` 编排）、本文与 [`VISION_ROADMAP_MONTHLY.md`](../roadmap/VISION_ROADMAP_MONTHLY.md) 第 1 月条目（已更新为 `plugin_backends` 命名）。
+- **代码边界**：[`PluginHost`](../../src-tauri/src/domain/plugin_host.rs) + [`PluginBackends`](../../src-tauri/src/models/plugin_backends.rs)；**不是**单独的 `memory_backend` / `affect_backend` 顶层 manifest 字段。
+- **`min_runtime_version`**：仍为预留；落地时需与宿主应用版本单一来源对齐后再启用校验。
 
 ## `knowledge`（世界观知识，可选）
 

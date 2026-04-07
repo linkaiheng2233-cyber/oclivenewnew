@@ -2,6 +2,7 @@ pub mod api;
 pub mod domain;
 pub mod env_flags;
 pub mod error;
+pub mod http_api;
 pub mod infrastructure;
 pub mod models;
 pub mod state;
@@ -59,6 +60,19 @@ fn resolve_roles_dir_for_app(app: &tauri::App) -> PathBuf {
         dev.display()
     );
     dev
+}
+
+/// 本地 HTTP API 模式（`--api`），供编写器试聊等；阻塞至进程退出。
+pub fn run_api_server(port: u16) {
+    let rt = tokio::runtime::Builder::new_multi_thread()
+        .enable_all()
+        .build()
+        .expect("tokio runtime");
+    let r = rt.block_on(http_api::serve_api(port));
+    if let Err(e) = r {
+        eprintln!("{}", e);
+        std::process::exit(1);
+    }
 }
 
 #[cfg_attr(mobile, tauri::mobile_entry_point)]

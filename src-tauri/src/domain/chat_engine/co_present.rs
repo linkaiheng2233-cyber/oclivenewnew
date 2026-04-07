@@ -34,19 +34,20 @@ pub(crate) async fn process_co_present(
     scenes: Vec<String>,
     immersive: bool,
     t0: Instant,
+    mrid: &str,
+    srid: &str,
 ) -> Result<SendMessageResponse> {
-    let role_id = req.role_id.as_str();
     let user_message = req.user_message.as_str();
     let policies = state.policies_for_scene(Some(scene_id.as_str()));
     let pl = state.resolved_plugins_for(role);
 
     let event_runtime = state
         .db_manager
-        .get_event_impact_factor(role_id)
+        .get_event_impact_factor(srid)
         .await?
         .unwrap_or(role.evolution_config.event_impact_factor);
 
-    let mut personality = state.get_current_personality(role_id, role).await?;
+    let mut personality = state.get_current_personality(srid, role).await?;
 
     let emotion_result = pl.emotion.analyze(user_message)?;
     let user_emotion = emotion_result.to_emotion();
@@ -54,7 +55,7 @@ pub(crate) async fn process_co_present(
 
     let ollama_model = role.resolve_ollama_model(state.ollama_model.as_str());
     let (recent_turns, recent_turns_for_event, recent_events_for_event) =
-        load_recent_context(state, role_id).await?;
+        load_recent_context(state, srid).await?;
 
     personality = PersonalityEngine::adjust_by_user_emotion(
         personality,
@@ -99,7 +100,7 @@ pub(crate) async fn process_co_present(
         &role.evolution_bounds,
     );
 
-    let mut memories = state.memory_repo.load_memories(role_id, 10).await?;
+    let mut memories = state.memory_repo.load_memories(srid, 10).await?;
     let scene_m = role
         .memory_config
         .as_ref()
@@ -114,23 +115,23 @@ pub(crate) async fn process_co_present(
     });
 
     let user_relation_key: String =
-        resolve_effective_user_relation_key(state, role, role_id, Some(scene_id.as_str())).await?;
+        resolve_effective_user_relation_key(state, role, srid, Some(scene_id.as_str())).await?;
     let rf = relation_favor_for_key(role, user_relation_key.as_str());
 
     let relation_before = state
         .db_manager
-        .get_relation_state_for_identity(role_id, user_relation_key.as_str())
+        .get_relation_state_for_identity(srid, user_relation_key.as_str())
         .await?
-        .or(state.db_manager.get_relation_state(role_id).await?)
+        .or(state.db_manager.get_relation_state(srid).await?)
         .unwrap_or_else(|| "Stranger".to_string());
     let seed_favor = role.initial_favorability_for_relation(user_relation_key.as_str());
     state
         .db_manager
-        .ensure_identity_stats_row(role_id, user_relation_key.as_str(), seed_favor)
+        .ensure_identity_stats_row(srid, user_relation_key.as_str(), seed_favor)
         .await?;
     let favorability_before = state
         .db_manager
-        .favorability_for_identity_with_runtime_fallback(role_id, user_relation_key.as_str())
+        .favorability_for_identity_with_runtime_fallback(srid, user_relation_key.as_str())
         .await?;
     let event_confidence = ai_event_confidence;
     let favor_relation_input = FavorRelationInput {
@@ -145,10 +146,10 @@ pub(crate) async fn process_co_present(
     };
     let (favor_delta, relation_after) = compute_favor_and_relation(&favor_relation_input);
 
-    let scene_label = state.storage.scene_display_name(role_id, scene_id.as_str());
+    let scene_label = state.storage.scene_display_name(mrid, scene_id.as_str());
     let scene_detail_buf = state
         .storage
-        .scene_prompt_enrichment(role_id, scene_id.as_str());
+        .scene_prompt_enrichment(mrid, scene_id.as_str());
     let top_topic = pl.prompt.top_topic_hint(role, scene_id.as_str());
     let topic_line = top_topic
         .map(|t| format!("在「{}」下，你们可能会多聊「{}」相关的事。", scene_label, t))
@@ -156,7 +157,7 @@ pub(crate) async fn process_co_present(
 
     let virtual_time_ms = state
         .db_manager
-        .get_virtual_time_ms(role_id)
+        .get_virtual_time_ms(srid)
         .await?
         .unwrap_or(0);
     let life_context_line: String = if immersive {
@@ -223,7 +224,7 @@ pub(crate) async fn process_co_present(
         relation_after.as_str(),
     ));
     let bot_emotion_result = pl.emotion.analyze(&reply)?;
-    let previous_emotion = state.db_manager.get_current_emotion(role_id).await?;
+    let previous_emotion = state.db_manager.get_current_emotion(srid).await?;
     let bot_emotion = policies
         .emotion
         .resolve_current_emotion(previous_emotion.as_deref(), &bot_emotion_result);
@@ -240,7 +241,7 @@ pub(crate) async fn process_co_present(
         0,
         Memory {
             id: "__relation_state__".to_string(),
-            role_id: role_id.to_string(),
+            role_id: srid.to_string(),
             content: format!(
                 "当前关系阶段: {} -> {}",
                 relation_before,
@@ -253,7 +254,7 @@ pub(crate) async fn process_co_present(
         },
     );
     let policy_ctx = PolicyContext {
-        role_id,
+        role_id: srid,
         user_message,
         reply: &reply,
         event: &event,
@@ -288,7 +289,7 @@ pub(crate) async fn process_co_present(
     let favor_current = state
         .db_manager
         .apply_chat_turn_atomic(crate::infrastructure::db::ChatTurnTxInput {
-            role_id,
+            role_id: srid,
             personality: &personality,
             // 与用户可见语气一致：用语义情绪驱动立绘/状态；立绘 LLM 细调仍通过返回值 portrait_emotion 下发前端
             current_emotion: bot_emotion_str.as_str(),
@@ -308,14 +309,14 @@ pub(crate) async fn process_co_present(
     let delta_out = PersonalityVector::sub_components(&personality, &core_v);
     state
         .db_manager
-        .set_core_delta_personality_json(role_id, &core_v.to_json_vec(), &delta_out.to_json_vec())
+        .set_core_delta_personality_json(srid, &core_v.to_json_vec(), &delta_out.to_json_vec())
         .await?;
 
     // 在事务提交后再更新缓存，避免 DB 失败时缓存脏写。
     state
         .personality_cache
         .write()
-        .insert(role_id.to_string(), personality.clone());
+        .insert(srid.to_string(), personality.clone());
 
     let events = vec![DetectedEventDto {
         event_type: format!("{:?}", event.event_type),
@@ -325,7 +326,8 @@ pub(crate) async fn process_co_present(
     let movement = detect_movement_intent(
         state,
         &pl.llm,
-        role_id,
+        mrid,
+        srid,
         scene_id.as_str(),
         &scenes,
         user_message,
@@ -343,7 +345,7 @@ pub(crate) async fn process_co_present(
     log::info!(
         target: "oclive_chat",
         "send_message ok role_id={} scene_id={} main_llm_fallback={} duration_ms={} offer_destination_picker={} offer_together_travel={}",
-        role_id,
+        mrid,
         scene_id,
         main_llm_fallback,
         duration_ms,

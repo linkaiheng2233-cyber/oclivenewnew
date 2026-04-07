@@ -53,7 +53,7 @@ fn load_knowledge_index_parses_front_matter_and_merge_hints() {
     );
 
     let snippet = KnowledgeIndex::format_for_prompt(chunks.as_slice(), 2000);
-    let disk_role = disk.to_role();
+    let disk_role = oclivenewnew_tauri::models::role_manifest_disk::disk_manifest_to_role(&disk);
     let personality = PersonalityVector::from(&disk_role.default_personality);
     let prompt = PromptBuilder::build_prompt(&PromptInput {
         role: &disk_role,

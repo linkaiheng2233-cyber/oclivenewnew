@@ -2,7 +2,7 @@
 
 use crate::error::{AppError, Result};
 use crate::models::knowledge::{
-    EventHintEntryDisk, KnowledgeChunk, KnowledgeIndex, KnowledgePackConfigDisk,
+    EventHintEntryDisk, KnowledgeChunk, KnowledgeIndex,
 };
 use crate::models::role_manifest_disk::DiskRoleManifest;
 use crate::models::EventType;
@@ -204,12 +204,4 @@ pub fn load_knowledge_index(role_dir: &Path, disk: &DiskRoleManifest) -> Result<
     Ok(KnowledgeIndex { chunks })
 }
 
-/// 供校验层调用：仅校验 `KnowledgePackConfigDisk` 字段合理性（不读文件）。
-pub fn validate_knowledge_manifest_disk(
-    k: &KnowledgePackConfigDisk,
-) -> std::result::Result<(), String> {
-    if k.glob.trim().is_empty() {
-        return Err("manifest / settings：knowledge.glob 不能为空".to_string());
-    }
-    Ok(())
-}
+pub use oclive_validation::validate_knowledge_manifest_disk;
