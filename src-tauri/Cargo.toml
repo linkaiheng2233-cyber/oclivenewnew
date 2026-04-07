@@ -29,7 +29,7 @@ once_cell = "1.0"
 tempfile = "3.8"
 toml = "0.8"
 walkdir = "2.5"
-zip = { version = "0.6", default-features = false, features = ["deflate"] }
+zip = { version = "8.5", default-features = false, features = ["deflate"] }
 
 [build-dependencies]
 tauri-build = { version = "1.5", features = [] }
