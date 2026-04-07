@@ -10,7 +10,7 @@
 
 | 我想… | 阅读 |
 |------|------|
-| **用启动器安装 zip 角色包、选本机 Ollama 模型、一键 pull** | **[oclive-launcher README](https://github.com/supermumu/oclive-launcher/blob/main/README.md)**（独立仓库） |
+| **用启动器安装 zip 角色包、选本机 Ollama 模型、一键 pull** | **[oclive-launcher README](https://github.com/linkaiheng2233-cyber/oclive-launcher/blob/main/README.md)**（独立仓库） |
 | **理清项目全貌 / 人机分工 / 命令与发版清单** | **[PROJECT_OVERVIEW.md](PROJECT_OVERVIEW.md)** |
 | 报错后如何快速定位与提 issue | **[ERROR_CODES.md](ERROR_CODES.md)** |
 | **GitHub：Dependabot、手动跑 CI、网页上要点的设置** | **[GITHUB_REPO_CHECKLIST.md](GITHUB_REPO_CHECKLIST.md)** |

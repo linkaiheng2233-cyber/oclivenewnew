@@ -34,9 +34,9 @@
 
 ## 三仓库链接（便于设置）
 
-- [oclivenewnew](https://github.com/supermumu/oclivenewnew) — 运行时  
-- [oclive-pack-editor](https://github.com/supermumu/oclive-pack-editor) — 编写器  
-- [oclive-launcher](https://github.com/supermumu/oclive-launcher) — 启动器  
+- [oclivenewnew](https://github.com/linkaiheng2233-cyber/oclivenewnew) — 运行时  
+- [oclive-pack-editor](https://github.com/linkaiheng2233-cyber/oclive-pack-editor) — 编写器  
+- [oclive-launcher](https://github.com/linkaiheng2233-cyber/oclive-launcher) — 启动器  
 
 若仓库名或所有者变更，请同步更新各 README 里的 CI 徽章 URL。
 
