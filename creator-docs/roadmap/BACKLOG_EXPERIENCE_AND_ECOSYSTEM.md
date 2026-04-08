@@ -35,6 +35,7 @@
 | 涉及仓库 | 三件套 + **服务端/索引策略**（若建中央仓库）；与 [PACK_VERSIONING.md](../role-pack/PACK_VERSIONING.md)、`schema_version`、签名与信任模型强相关。 |
 | 实现时需考虑 | 与现有 **磁盘导入 / `.ocpak`** 的关系；安全（签名、来源校验）、与 [REMOTE_PLUGIN_PROTOCOL.md](../plugin-and-architecture/REMOTE_PLUGIN_PROTOCOL.md) 及月 4「外接协议」的边界。 |
 | 状态 | **待产品决策与排期**（通常晚于单机闭环与契约稳定）。 |
+| 落地说明（发版与市场同发、启动器入口、分阶段） | **[MARKET_LAUNCHER_INTEGRATION.md](MARKET_LAUNCHER_INTEGRATION.md)** |
 
 ### 4. 开源协作
 
