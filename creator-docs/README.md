@@ -11,7 +11,7 @@
 | **[getting-started/](getting-started/)** | 文档总索引、入门与角色包工作流、[GitHub 仓库清单](getting-started/GITHUB_REPO_CHECKLIST.md) |
 | **[plugin-and-architecture/](plugin-and-architecture/)** | `plugin_backends` 契约、扩展点、HTTP JSON-RPC 协议、替换模块 |
 | **[role-pack/](role-pack/)** | 包版本、场景、用户身份、角色包自定义 |
-| **[roadmap/](roadmap/)** | 愿景与按月路线图、[体验差异化 backlog](roadmap/BACKLOG_EXPERIENCE_AND_ECOSYSTEM.md)、[后日待办 · 工具链与 CI](roadmap/SOMEDAY_TOOLCHAIN_CI.md)、[市场 · 启动器联动](roadmap/MARKET_LAUNCHER_INTEGRATION.md) |
+| **[roadmap/](roadmap/)** | 愿景与按月路线图、[体验差异化 backlog](roadmap/BACKLOG_EXPERIENCE_AND_ECOSYSTEM.md)、[后日待办 · 工具链与 CI](roadmap/SOMEDAY_TOOLCHAIN_CI.md)、[市场 · 启动器联动](roadmap/MARKET_LAUNCHER_INTEGRATION.md)、[社区站愿景（三板块）](roadmap/COMMUNITY_WEB_VISION.md) |
 
 ---
 

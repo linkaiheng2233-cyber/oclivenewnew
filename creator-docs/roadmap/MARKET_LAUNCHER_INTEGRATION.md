@@ -90,5 +90,6 @@
 
 ## 6. 相关索引
 
+- **社区站整体形态（论坛 / 角色包 / 插件三板块、Discord 取舍）**：[COMMUNITY_WEB_VISION.md](./COMMUNITY_WEB_VISION.md)  
 - 体验向总 backlog：[BACKLOG_EXPERIENCE_AND_ECOSYSTEM.md](./BACKLOG_EXPERIENCE_AND_ECOSYSTEM.md)  
 - 工具链后发事项备忘：[SOMEDAY_TOOLCHAIN_CI.md](./SOMEDAY_TOOLCHAIN_CI.md)

@@ -17,6 +17,7 @@
 | 体验差异化 backlog（与愿景对照） | [creator-docs/roadmap/BACKLOG_EXPERIENCE_AND_ECOSYSTEM.md](creator-docs/roadmap/BACKLOG_EXPERIENCE_AND_ECOSYSTEM.md) |
 | 后日待办（工具链 / CI · 性价比备忘） | [creator-docs/roadmap/SOMEDAY_TOOLCHAIN_CI.md](creator-docs/roadmap/SOMEDAY_TOOLCHAIN_CI.md) |
 | 市场 · 启动器联动（发版同发、分阶段） | [creator-docs/roadmap/MARKET_LAUNCHER_INTEGRATION.md](creator-docs/roadmap/MARKET_LAUNCHER_INTEGRATION.md) |
+| 社区站愿景（网页 · 论坛 / 角色包 / 插件） | [creator-docs/roadmap/COMMUNITY_WEB_VISION.md](creator-docs/roadmap/COMMUNITY_WEB_VISION.md) |
 | 插件契约 v1 | [creator-docs/plugin-and-architecture/PLUGIN_V1.md](creator-docs/plugin-and-architecture/PLUGIN_V1.md) |
 | 包版本与兼容性 | [creator-docs/role-pack/PACK_VERSIONING.md](creator-docs/role-pack/PACK_VERSIONING.md) |
 | 创作者工作流 | [creator-docs/getting-started/CREATOR_WORKFLOW.md](creator-docs/getting-started/CREATOR_WORKFLOW.md)（含 **`OCLIVE_ROLES_DIR`**、编写器分工） |
