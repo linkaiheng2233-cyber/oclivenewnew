@@ -20,13 +20,13 @@ pub fn validate_manifest_wasm(
     let scenes: Vec<String> = serde_json::from_str(merged_scene_ids_json).map_err(|e| {
         JsValue::from_str(&format!("merged_scene_ids JSON 解析失败：{}", e))
     })?;
-    validate_disk_manifest(&disk, &scenes).map_err(JsValue::from_str)?;
+    validate_disk_manifest(&disk, &scenes).map_err(|e| JsValue::from_str(&e))?;
     if !host_runtime_version.trim().is_empty() {
         validate_min_runtime_version(
             disk.min_runtime_version.as_deref(),
             host_runtime_version.trim(),
         )
-        .map_err(JsValue::from_str)?;
+        .map_err(|e| JsValue::from_str(&e))?;
     }
     Ok(())
 }
