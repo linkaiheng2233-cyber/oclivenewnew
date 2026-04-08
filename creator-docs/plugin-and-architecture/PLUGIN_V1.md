@@ -128,7 +128,7 @@
 | 值 | 含义 |
 |----|------|
 | `ollama` | 应用启动时注入的默认客户端（通常为 `OllamaClient` 包装） |
-| `remote` | HTTP `llm.generate` / `llm.generate_tag`（需 `OCLIVE_REMOTE_LLM_URL`；未配置则委托进程内默认 LLM 并记日志） |
+| `remote` | HTTP `llm.generate` / `llm.generate_tag`（需 `OCLIVE_REMOTE_LLM_URL`；未配置则委托进程内默认 LLM 并记日志）。环境变量 **`OCLIVE_LLM_BACKEND=remote|ollama`** 可在加载角色时覆盖本字段（例如由 **oclive-launcher** 注入）。 |
 
 ---
 

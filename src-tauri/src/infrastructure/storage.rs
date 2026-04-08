@@ -5,7 +5,7 @@ use crate::domain::role_manifest_validate::{
 };
 use crate::error::{AppError, Result};
 use crate::models::role_manifest_disk::{disk_manifest_from_role, disk_manifest_to_role};
-use crate::models::{DiskRoleManifest, DiskRoleSettings, DiskSceneConfig, Role};
+use crate::models::{DiskRoleManifest, DiskRoleSettings, DiskSceneConfig, LlmBackend, Role};
 use chrono::Timelike;
 use serde_json;
 use std::collections::BTreeSet;
@@ -121,6 +121,7 @@ impl RoleStorage {
                 role.plugin_backends = pb.clone();
             }
         }
+        apply_llm_backend_env_override(&mut role);
         validate_role_interaction_mode(&role).map_err(AppError::InvalidParameter)?;
         log_plugin_backends_remote_missing_env(&role);
 
@@ -481,6 +482,17 @@ impl RoleStorage {
         fs::write(&core_personality_path, content).map_err(AppError::IoError)?;
 
         Ok(())
+    }
+}
+
+/// 启动器或高级用户可通过 `OCLIVE_LLM_BACKEND=ollama|remote` 覆盖角色包 `settings.json` 中的 `plugin_backends.llm`。
+fn apply_llm_backend_env_override(role: &mut Role) {
+    if let Ok(v) = std::env::var("OCLIVE_LLM_BACKEND") {
+        match v.trim().to_lowercase().as_str() {
+            "ollama" => role.plugin_backends.llm = LlmBackend::Ollama,
+            "remote" => role.plugin_backends.llm = LlmBackend::Remote,
+            _ => {}
+        }
     }
 }
 
