@@ -7,6 +7,7 @@
 - **共享 crate `crates/oclive_validation`**：`validate_disk_manifest`、`parse_hhmm`、`KnowledgePackConfigDisk` 等与磁盘 manifest 相关的校验与 DTO 单一来源；运行时依赖该 crate，编写器可用 **wasm**（`--features wasm`，目标 `wasm32-unknown-unknown`）调用 `validate_manifest_wasm`。
 - **本地 HTTP API**：可执行文件支持 `--api` / `--port`（或 `OCLIVE_API_PORT`），默认 `http://127.0.0.1:8420`，提供 `GET /health`、`POST /chat`（`role_path` + `message`，可选 `session_id`），供编写器试聊等工具调用。`session_id` 会映射为内部 SQLite 会话键 `{manifest_role_id}__sess__{sanitized}`，与无 `session_id` 的默认对话隔离；JSON 响应含 `reply` 与回显的 `session_id`。`POST /chat` 对 **空 `message`** 返回 400；会话键总长度限制为 **256** 字符以防异常输入。
 - **角色加载**：若 `plugin_backends` 声明 `remote` 但未设置 `OCLIVE_REMOTE_PLUGIN_URL` / `OCLIVE_REMOTE_LLM_URL`，在 `load_role_from_dir` 成功路径上记 `oclive_plugin` 警告（行为仍为回退内置，与 PLUGIN_V1 一致）。
+- **角色包契约收紧**：`manifest.json` 可选 **`min_runtime_version`**（semver）；宿主版本低于要求时 **`load_role` 拒绝加载**。根对象 **顶层键白名单**（`oclive_validation::json_keys`）；`manifest` / `settings` 中不允许的顶层键报错，**`_` 前缀说明键**仍允许。共享 crate 增加 **`validate_min_runtime_version`**；wasm 侧 **`validate_manifest_wasm`** 第三参为宿主版本字符串。
 - **CI**：`oclivenewnew` 在 Ubuntu 与 Windows 上运行 Rust（fmt / clippy / `cargo test`）与 `npm run build`；**oclive-pack-editor**、**oclive-launcher** 各自增加/对齐双平台 workflow。
 - **npm**：新增 `npm run check:release`（发版门槛：全量 `cargo test`）；README 补充 Sentry / 离线安装包说明。
 
