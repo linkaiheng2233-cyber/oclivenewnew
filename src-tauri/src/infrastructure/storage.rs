@@ -3,6 +3,9 @@ use crate::domain::role_manifest_validate::{
     log_plugin_backends_remote_missing_env, validate_disk_manifest,
     validate_role_interaction_mode,
 };
+use oclive_validation::{
+    validate_manifest_top_level_keys, validate_min_runtime_version, validate_settings_top_level_keys,
+};
 use crate::error::{AppError, Result};
 use crate::models::role_manifest_disk::{disk_manifest_from_role, disk_manifest_to_role};
 use crate::models::{DiskRoleManifest, DiskRoleSettings, DiskSceneConfig, LlmBackend, Role};
@@ -92,21 +95,36 @@ impl RoleStorage {
 
         let manifest_content = fs::read_to_string(&manifest_path).map_err(AppError::IoError)?;
 
-        let mut disk: DiskRoleManifest =
+        let manifest_value: serde_json::Value =
             serde_json::from_str(&manifest_content).map_err(AppError::SerializationError)?;
+        if let serde_json::Value::Object(ref map) = manifest_value {
+            validate_manifest_top_level_keys(map).map_err(AppError::InvalidParameter)?;
+        }
+        let mut disk: DiskRoleManifest =
+            serde_json::from_value(manifest_value).map_err(AppError::SerializationError)?;
 
         let mut settings_opt: Option<DiskRoleSettings> = None;
         let settings_path = role_dir.join("settings.json");
         if settings_path.exists() {
             let settings_content = fs::read_to_string(&settings_path).map_err(AppError::IoError)?;
-            let settings: DiskRoleSettings =
+            let settings_value: serde_json::Value =
                 serde_json::from_str(&settings_content).map_err(AppError::SerializationError)?;
+            if let serde_json::Value::Object(ref map) = settings_value {
+                validate_settings_top_level_keys(map).map_err(AppError::InvalidParameter)?;
+            }
+            let settings: DiskRoleSettings =
+                serde_json::from_value(settings_value).map_err(AppError::SerializationError)?;
             settings.apply_to_manifest(&mut disk);
             settings_opt = Some(settings);
         }
 
         let merged_scenes = Self::merge_scene_ids(role_dir, &disk.scenes)?;
         validate_disk_manifest(&disk, &merged_scenes).map_err(AppError::InvalidParameter)?;
+        validate_min_runtime_version(
+            disk.min_runtime_version.as_deref(),
+            env!("CARGO_PKG_VERSION"),
+        )
+        .map_err(AppError::InvalidParameter)?;
 
         let mut role = disk_manifest_to_role(&disk);
         if should_load_knowledge(&disk, role_dir) {
@@ -485,14 +503,19 @@ impl RoleStorage {
     }
 }
 
-/// 启动器或高级用户可通过 `OCLIVE_LLM_BACKEND=ollama|remote` 覆盖角色包 `settings.json` 中的 `plugin_backends.llm`。
+/// 与 oclive-launcher 注入的取值一致：`ollama` / `remote`（大小写不敏感），覆盖磁盘 `plugin_backends.llm`。
 fn apply_llm_backend_env_override(role: &mut Role) {
-    if let Ok(v) = std::env::var("OCLIVE_LLM_BACKEND") {
-        match v.trim().to_lowercase().as_str() {
-            "ollama" => role.plugin_backends.llm = LlmBackend::Ollama,
-            "remote" => role.plugin_backends.llm = LlmBackend::Remote,
-            _ => {}
-        }
+    let Ok(v) = std::env::var("OCLIVE_LLM_BACKEND") else {
+        return;
+    };
+    let t = v.trim();
+    if t.is_empty() {
+        return;
+    }
+    if t.eq_ignore_ascii_case("ollama") {
+        role.plugin_backends.llm = LlmBackend::Ollama;
+    } else if t.eq_ignore_ascii_case("remote") {
+        role.plugin_backends.llm = LlmBackend::Remote;
     }
 }
 
@@ -573,6 +596,7 @@ mod tests {
             remote_presence: None,
             autonomous_scene: None,
             interaction_mode: None,
+            min_runtime_version: None,
             dev_only: false,
             plugin_backends: crate::models::PluginBackends::default(),
             knowledge_index: None,

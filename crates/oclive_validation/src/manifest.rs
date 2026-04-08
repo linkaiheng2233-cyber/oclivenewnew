@@ -123,6 +123,9 @@ pub struct DiskRoleManifest {
     pub dev_only: bool,
     #[serde(default)]
     pub knowledge: Option<KnowledgePackConfigDisk>,
+    /// 最低 oclive 宿主版本（semver，如 `"0.2.0"`）；省略则不检查。
+    #[serde(default)]
+    pub min_runtime_version: Option<String>,
 }
 
 fn is_false(b: &bool) -> bool {

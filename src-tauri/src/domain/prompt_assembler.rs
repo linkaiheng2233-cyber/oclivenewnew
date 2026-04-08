@@ -120,6 +120,7 @@ mod tests {
             remote_presence: None,
             autonomous_scene: None,
             interaction_mode: None,
+            min_runtime_version: None,
             dev_only: false,
             plugin_backends: crate::models::PluginBackends::default(),
             knowledge_index: None,

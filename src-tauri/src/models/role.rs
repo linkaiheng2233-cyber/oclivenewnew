@@ -191,6 +191,9 @@ pub struct Role {
     /// `settings.json` 可选：`immersive` | `pure_chat`；运行时持久化见 `role_runtime.interaction_mode`
     #[serde(default)]
     pub interaction_mode: Option<String>,
+    /// 角色包 `manifest.min_runtime_version`：要求的最低 oclive 版本；省略表示不检查。
+    #[serde(default)]
+    pub min_runtime_version: Option<String>,
     /// 为 true 时默认不出现在 `list_roles`（仓库内调试/身份示例包）；`load_role` 仍可按 id 加载。见环境变量 `OCLIVE_LIST_DEV_ROLES`。
     #[serde(default)]
     pub dev_only: bool,
@@ -232,6 +235,7 @@ impl Default for Role {
             remote_presence: None,
             autonomous_scene: None,
             interaction_mode: None,
+            min_runtime_version: None,
             dev_only: false,
             plugin_backends: PluginBackends::default(),
             knowledge_index: None,

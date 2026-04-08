@@ -1,4 +1,5 @@
 //! `role_cache` 与磁盘知识文件：`load_role` 后应对话使用最新 `knowledge_index`。
+//! 覆盖「包内知识更新后行为可观测」类需求（路线图第 5 月：换知识内容 / 版本后同一追问应反映新正文）。
 
 use oclivenewnew_tauri::api::role::{get_role_info_impl, load_role_impl};
 use oclivenewnew_tauri::domain::chat_engine::process_message;

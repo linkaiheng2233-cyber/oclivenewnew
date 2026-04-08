@@ -14,19 +14,21 @@
 - 各后端枚举与语义见 **[PLUGIN_V1.md](../plugin-and-architecture/PLUGIN_V1.md)**。
 - **未知枚举值**：反序列化可能失败，需修正拼写或扩展 `serde` 接受别名（若日后增加）。
 
-## `min_runtime_version`（预留）
+## `min_runtime_version`（manifest，可选）
 
-- **状态**：路线图字段；**当前仓库可不写**。若将来加入，建议形式为 **semver 字符串**（如 `"0.3.0"`），由宿主在加载角色前比较 **应用版本 ≥ min**，否则拒绝加载并提示升级 oclive。
-- 落地时需与 **Tauri / Cargo 版本** 单一来源对齐，避免手写漂移。
+- **字段**：`manifest.json` 顶层 **`min_runtime_version`**（`Option<String>`），见共享 crate [`DiskRoleManifest`](../../crates/oclive_validation/src/manifest.rs)。
+- **形式**：**semver**（如 `"0.2.0"`），由 [`semver`](https://crates.io/crates/semver) 解析；与 **oclivenewnew 应用版本**比较（`src-tauri/Cargo.toml` 的 `version`，编译期 `env!("CARGO_PKG_VERSION")`）。
+- **语义**：若 **宿主版本低于** `min_runtime_version`，`load_role` **拒绝加载**并返回可读错误（提示升级 oclive）。省略该字段则不检查。
+- **编写器**：`oclive-pack-editor` 中 `HOST_RUNTIME_VERSION`（`src/lib/hostRuntimeVersion.ts`）应与上述 **Cargo 版本**同步；`npm run wasm:build` 生成的校验 wasm 与 [`validate_min_runtime_version`](../../crates/oclive_validation/src/validate.rs) 一致。
 
-## 未知 JSON 键
+## 未知 JSON 键（顶层收紧）
 
-- **`manifest.json` / `settings.json`**：以各结构体的 `serde` 属性为准；未使用 `deny_unknown_fields` 的表在解析时可能 **忽略**多余键（便于向前兼容）。若某结构体启用 **拒绝未知字段**，多余键将导致加载失败——以该类型的定义为准。
-- **推荐**：创作者专用键使用 **`_` 前缀**（见 README_MANIFEST），加载器忽略。
+- **`manifest.json` / `settings.json` 根对象**：加载时在反序列化前执行 **顶层键白名单**（[`json_keys`](../../crates/oclive_validation/src/json_keys.rs)）：不在白名单内的键 **报错**；**以下划线 `_` 开头的键**视为创作者说明，**允许**（见 [`roles/README_MANIFEST.md`](../../roles/README_MANIFEST.md)）。
+- **嵌套对象**内多出的键仍主要由 **serde 结构体**决定是否忽略（与历史行为一致）；若需进一步收紧，再单独开契约变更。
 
 ## 校验链
 
-- 合并后的磁盘 manifest 经 **`validate_disk_manifest`**（[`role_manifest_validate`](../../src-tauri/src/domain/role_manifest_validate.rs)）再转为运行时 `Role`。
+- 合并后的磁盘 manifest 经 **`validate_disk_manifest`**（[`role_manifest_validate`](../../src-tauri/src/domain/role_manifest_validate.rs)）与 **`validate_min_runtime_version`** 再转为运行时 `Role`。
 - 加载完成后另有 **`validate_role_interaction_mode`**；若 `plugin_backends` 声明 **`remote`** 但未设置对应 `OCLIVE_REMOTE_*` 环境变量，运行时会 **`log::warn`**（不阻止加载；运行时仍按 PLUGIN_V1 回退内置或进程内 LLM）。见 [`log_plugin_backends_remote_missing_env`](../../src-tauri/src/domain/role_manifest_validate.rs)。
 - 修改契约时同步：**Rust 校验**、`roles/README_MANIFEST.md`、**本文件**、必要时 **PLUGIN_V1**。
 
@@ -36,7 +38,7 @@
 
 - **契约文档**：[`PLUGIN_V1.md`](../plugin-and-architecture/PLUGIN_V1.md)（含 `send_message` 编排）、本文与 [`VISION_ROADMAP_MONTHLY.md`](../roadmap/VISION_ROADMAP_MONTHLY.md) 第 1 月条目（已更新为 `plugin_backends` 命名）。
 - **代码边界**：[`PluginHost`](../../src-tauri/src/domain/plugin_host.rs) + [`PluginBackends`](../../src-tauri/src/models/plugin_backends.rs)；**不是**单独的 `memory_backend` / `affect_backend` 顶层 manifest 字段。
-- **`min_runtime_version`**：仍为预留；落地时需与宿主应用版本单一来源对齐后再启用校验。
+- **`min_runtime_version`**：已启用，与 **`src-tauri/Cargo.toml` `version`** 对齐比较。
 
 ## `knowledge`（世界观知识，可选）
 

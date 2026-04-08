@@ -63,6 +63,7 @@ pub fn disk_manifest_from_role(role: &Role) -> DiskRoleManifest {
         life_schedule: role.life_schedule.clone(),
         dev_only: role.dev_only,
         knowledge: None,
+        min_runtime_version: role.min_runtime_version.clone(),
     }
 }
 
@@ -124,6 +125,7 @@ pub fn disk_manifest_to_role(d: &DiskRoleManifest) -> Role {
         remote_presence: None,
         autonomous_scene: None,
         interaction_mode: None,
+        min_runtime_version: d.min_runtime_version.clone(),
         dev_only: d.dev_only,
         plugin_backends: super::PluginBackends::default(),
         knowledge_index: None,

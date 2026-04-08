@@ -4,8 +4,8 @@
 
 ## 短期（当前）
 
-- **权威**：运行时 **`load_role`** 与合并后的 **`validate_disk_manifest`**（`src-tauri/src/domain/role_manifest_validate.rs`）。  
-- **编写器**：在导出前做与上述逻辑**方向一致**的轻量检查（id、name、`user_relations`、`default_relation`、`topic_weights` 场景键等），避免明显无效包；**不**保证与 Rust 逐条报错文案完全一致。  
+- **权威**：运行时 **`load_role`**：顶层 JSON 键白名单（`oclive_validation::json_keys`）、合并后的 **`validate_disk_manifest`**、**`validate_min_runtime_version`**（与 `CARGO_PKG_VERSION` 比较），见 `src-tauri/src/infrastructure/storage.rs`。  
+- **编写器**：导出前运行 **`manifest.json` / `settings.json` 顶层键检查**（与 Rust 白名单一致，见 `oclive-pack-editor/src/lib/jsonKeys.ts`）；若已构建 wasm（`npm run wasm:build`），则 **`validateManifestWasm`** 与 **`validate_disk_manifest` + `validate_min_runtime_version`** 同源；否则回退 TypeScript 轻量检查 + **`validateMinRuntimeVersion`**（`HOST_RUNTIME_VERSION` 须与 oclivenewnew `Cargo.toml` 对齐）。  
 - **验收**：导出包 → 设置 **`OCLIVE_ROLES_DIR`** 指向 roles 根 → 在 oclive 中加载并对话。
 
 ## 中期（可选）

@@ -2490,6 +2490,7 @@ dependencies = [
 name = "oclive_validation"
 version = "0.1.0"
 dependencies = [
+ "semver",
  "serde",
  "serde_json",
  "wasm-bindgen",

@@ -1,7 +1,35 @@
 //! 与运行时原 `role_manifest_validate::validate_disk_manifest` 行为一致。
 
 use crate::manifest::{DiskRoleManifest, KnowledgePackConfigDisk, LifeScheduleDisk};
+use semver::Version;
 use std::collections::HashSet;
+
+/// 比较角色包要求的最低宿主版本与当前 oclive 版本（`min_req` 为 `None` 或空则跳过）。
+pub fn validate_min_runtime_version(min_req: Option<&str>, host_version: &str) -> Result<(), String> {
+    let req = min_req.map(str::trim).filter(|s| !s.is_empty());
+    let Some(req) = req else {
+        return Ok(());
+    };
+    let min_v = Version::parse(req).map_err(|e| {
+        format!(
+            "角色包 manifest：min_runtime_version「{}」不是合法语义化版本（例如 0.2.0）：{}",
+            req, e
+        )
+    })?;
+    let host = Version::parse(host_version.trim()).map_err(|e| {
+        format!(
+            "宿主版本「{}」解析失败：{}（此为 oclive 程序错误，请反馈）",
+            host_version, e
+        )
+    })?;
+    if host < min_v {
+        return Err(format!(
+            "当前 oclive 版本为 {}，本角色包要求最低 {}（manifest.min_runtime_version）。请升级 oclive 后再加载。",
+            host, min_v
+        ));
+    }
+    Ok(())
+}
 
 /// 解析 `HH:MM` 为自午夜起的分钟数 \[0, 24*60)（与 `domain/life_schedule` 一致）
 pub fn parse_hhmm(s: &str) -> Option<u16> {
@@ -275,6 +303,24 @@ mod tests {
             life_schedule: None,
             dev_only: false,
             knowledge: None,
+            min_runtime_version: None,
         }
+    }
+
+    #[test]
+    fn min_runtime_accepts_equal_or_newer_host() {
+        assert!(validate_min_runtime_version(Some("0.2.0"), "0.2.0").is_ok());
+        assert!(validate_min_runtime_version(Some("0.1.0"), "0.2.0").is_ok());
+    }
+
+    #[test]
+    fn min_runtime_rejects_older_host() {
+        let e = validate_min_runtime_version(Some("0.9.0"), "0.2.0").unwrap_err();
+        assert!(e.contains("0.9.0"));
+    }
+
+    #[test]
+    fn min_runtime_skips_when_none() {
+        assert!(validate_min_runtime_version(None, "0.1.0").is_ok());
     }
 }
