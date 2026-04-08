@@ -69,7 +69,54 @@
 
 ---
 
-## 6. 相关索引
+## 6. 是否需要新开项目 / 仓库
+
+| 做法 | 适用 |
+|------|------|
+| **新建独立仓库**（推荐默认） | 例如 `oclive-community`、`oclive-portal`。社区站 = **Web（+ 可选后端）**，与 **Tauri 桌面三件套** 依赖、CI、发版节奏不同；权限与 Issue 也更清晰。 |
+| **Monorepo 子目录** | 在现有组织下加 `community-web/` 或放在 `oclivenewnew` 的 `web/`——适合 **你一人维护**、希望一个 PR 同时改文档与站点；缺点是主仓 CI 变重、克隆体积变大。 |
+| **不要**塞进编写器 / 启动器仓 | `oclive-pack-editor`、`oclive-launcher` 应保持 **桌面工具** 边界；社区站另起工程更符合长期维护。 |
+
+**结论**：**建议新开一个（或一组）Web 工程**；是否与主仓同 repo 按团队规模选。
+
+---
+
+## 7. 有哪些技术可以实现（按层次选）
+
+以下为常见组合，可混搭；**贴吧级论坛 + 角色包展示 + 登录上传** 通常至少要 **前端 + 后端或 BaaS**。
+
+### 7.1 前端站点（页面、角色包展示栏、导航）
+
+- **静态 / SSG**：**Astro**、**Vite + Vue/React**、**Next.js**（静态导出）、**Hugo**（偏文档向）。  
+- **部署**：GitHub Pages、Cloudflare Pages、**国内** 云静态托管（需域名与备案时按服务商要求）。
+
+### 7.2 论坛（贴吧式版块 / 楼中楼）
+
+- **成熟论坛产品（自托管）**：**Discourse**（Ruby，Docker 常见）、**Flarum**（PHP）、**NodeBB**（Node）。省掉大量帖子/权限/反垃圾基建。  
+- **SaaS**：按预算与合规选国内/国际托管论坛服务。  
+- **自研**：仅当产品有极强定制需求；成本高。
+
+### 7.3 账号、评论、聊天记录与文件上传
+
+- **BaaS（快）**：**Supabase**、**Firebase**；国内可用 **腾讯云开发**、**阿里云** 等带认证+存储的一体方案（注意访问与合规）。  
+- **自研 API**：**Node（Nest / Fastify / Hono）**、**Python（FastAPI / Django）**、**Go** + **PostgreSQL**；文件走 **对象存储**（S3 协议：阿里云 OSS、腾讯 COS、Cloudflare R2 等）+ **CDN**。
+
+### 7.4 角色包索引（catalog）与下载
+
+- **首版**：`catalog.json` 由 CI 生成，与静态站一起部署（见 [MARKET_LAUNCHER_INTEGRATION.md](./MARKET_LAUNCHER_INTEGRATION.md)）。  
+- **进阶**：后台管理或创作者投稿 → 写库 → 再生成 JSON / 走 API。
+
+### 7.5 插件区
+
+- 以 **文档页 + 外链 GitHub** 为主即可；与运行时 **Remote 协议** 一致，无需特殊「插件运行时」。
+
+### 7.6 国内访问与合规（提醒）
+
+- 面向国内用户的主站，需预留 **备案、内容审核、用户协议** 等运营要求；**Discord** 不能替代主站（见 §3）。
+
+---
+
+## 8. 相关索引
 
 - 市场与启动器联动：[MARKET_LAUNCHER_INTEGRATION.md](./MARKET_LAUNCHER_INTEGRATION.md)  
 - 体验向 backlog：[BACKLOG_EXPERIENCE_AND_ECOSYSTEM.md](./BACKLOG_EXPERIENCE_AND_ECOSYSTEM.md)  
