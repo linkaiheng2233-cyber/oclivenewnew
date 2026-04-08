@@ -37,6 +37,7 @@
 - 明确 **插件 = Remote HTTP 侧车**（或将来官方列出的二进制工具），**不是**宿主内动态插件。
 - 内容：侧车 README 摘要、环境变量示例、与角色包 `plugin_backends` 的搭配说明、**讨论帖链接**。
 - 重度实现仍建议链到 **仓库 / Release**，网站做 **索引与发现**。
+- **落地页结构、`plugins.json` 字段、路由示例**：见 **[PLUGIN_WEB_SECTION.md](./PLUGIN_WEB_SECTION.md)**。
 
 ---
 

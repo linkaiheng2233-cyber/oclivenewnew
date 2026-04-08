@@ -13,6 +13,7 @@
 
 ### Documentation
 
+- 新增 **[creator-docs/roadmap/PLUGIN_WEB_SECTION.md](creator-docs/roadmap/PLUGIN_WEB_SECTION.md)**：社区站 **插件区** 路由建议、`plugins.json` 清单字段、与 Remote 协议文档的衔接、与角色包板块边界。  
 - 新增 **[creator-docs/roadmap/COMMUNITY_WEB_VISION.md](creator-docs/roadmap/COMMUNITY_WEB_VISION.md)**：网页社区站愿景——**论坛（贴吧式）/ 角色包（C 站式）/ 插件区** 三板块、聊天记录与评论边界、Discord 取舍建议；与 MARKET 文档互链；补充 **是否新仓** 与 **技术栈分层（前端 / 论坛产品 / BaaS 或自研 API / 对象存储）**。  
 - 新增 **[creator-docs/roadmap/MARKET_LAUNCHER_INTEGRATION.md](creator-docs/roadmap/MARKET_LAUNCHER_INTEGRATION.md)**：角色包 / 插件市场与启动器联动（发版同发、静态索引、阶段 A/B/C、CI 绑定思路）；文档索引、根 README、`BACKLOG_EXPERIENCE_AND_ECOSYSTEM` 第三节与 **oclive-launcher** README 已链入；补充 **社区发现型站点（类比 Civitai 体验）** 与 oclive 角色包字段的对应表及 UGC 隐含成本说明。
 - 新增 **[creator-docs/roadmap/SOMEDAY_TOOLCHAIN_CI.md](creator-docs/roadmap/SOMEDAY_TOOLCHAIN_CI.md)**：后日待办（工具链 / CI 性价比备忘，非阻塞）；文档索引与根 README 已链入。
