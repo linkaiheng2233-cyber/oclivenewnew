@@ -4,6 +4,22 @@
 
 **相关契约**：包版本与字段见 [../role-pack/PACK_VERSIONING.md](../role-pack/PACK_VERSIONING.md)；侧车插件协议见 [../plugin-and-architecture/REMOTE_PLUGIN_PROTOCOL.md](../plugin-and-architecture/REMOTE_PLUGIN_PROTOCOL.md)。市场解决的是 **分发与发现**，不是替代 Remote 协议本身。
 
+### 产品参照：社区发现型站点（类比 Comfy 生态常用的「C 站」体验）
+
+目标若对齐 **Civitai 一类站点**，核心不是「一个 zip 列表」，而是 **可逛、可搜、可对比、可追更**：
+
+| 常见能力 | 在 oclive 里的对应物 |
+|----------|----------------------|
+| 列表 / 筛选 / 标签 | 按题材、兼容 oclive 版本、`schema_version`、标签（自定义）筛 **角色包** |
+| 详情页 | 展示 `manifest` 摘要、截图、更新说明、**多版本历史**（同一 `id` 多条 Release） |
+| 创作者主页 | 账号 / 组织维度聚合作品（需账号体系） |
+| 互动数据 | 下载次数、收藏、评论（可选；需后端与反作弊） |
+| 主文件 | `.zip` / `.ocpak` 与 [PACK_VERSIONING.md](../role-pack/PACK_VERSIONING.md) 一致 |
+
+这意味着 **阶段 A（纯静态 `catalog.json`）** 仍可作为冷启动；要做到「像 C 站」，**阶段 C 会明显变重**：账号与上传、对象存储与 CDN、审核与举报、合规与版权策略等，需单独产品与技术设计，**与本文 §2 各阶段并行规划**，避免先做网站再发现架构扛不住 UGC。
+
+**边界**：市场分发 **角色包**；**ComfyUI 工作流 / 模型文件** 与 oclive 角色包不同，除非你们明确扩展品类，否则不宜混在同一套「包」契约里。
+
 ---
 
 ## 1. 目标体验（验收口径）
