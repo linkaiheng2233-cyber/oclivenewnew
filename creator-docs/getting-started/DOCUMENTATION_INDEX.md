@@ -42,6 +42,7 @@
 5. [../plugin-and-architecture/REMOTE_PLUGIN_PROTOCOL.md](../plugin-and-architecture/REMOTE_PLUGIN_PROTOCOL.md) — JSON-RPC 方法、params/result、**完整 JSON 示例**  
 6. [examples/remote_plugin_minimal/README.md](../../examples/remote_plugin_minimal/README.md) — 最小 Python 侧车联调  
 7. [examples/remote_plugin_openai_compat/README.md](../../examples/remote_plugin_openai_compat/README.md) — OpenAI 兼容 `chat/completions` 范例（BYOK）  
+8. [examples/common/README.md](../../examples/common/README.md) — 侧车示例共用 JSON-RPC / 非 LLM 占位模块  
 
 ---
 
