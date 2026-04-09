@@ -57,9 +57,17 @@ python server.py
 
 ---
 
-## 4. 接上真实闭源模型（你要改代码）
+## 4. 接上真实闭源模型
 
-最小示例里 **`llm.generate`** / **`llm.generate_tag`** 返回固定占位符。接入真实 API 时，在侧车内：
+最小示例里 **`llm.generate`** / **`llm.generate_tag`** 返回固定占位符。接入真实 API 有两种常见方式：
+
+### 4.1 直接使用现成范例（推荐）
+
+仓库 **[examples/remote_plugin_openai_compat/README.md](../../examples/remote_plugin_openai_compat/README.md)**：用 **`requests`** 调用 **OpenAI 兼容** 的 `chat/completions`，支持 **`OPENAI_API_KEY`**、**`OPENAI_BASE_URL`**、**`OPENAI_MODEL`**（详见该目录 **`.env.example`**）。安装依赖后 `python server.py`，再把启动器里的 Remote LLM URL 指到 `http://127.0.0.1:8765/rpc`（端口以控制台输出为准）。
+
+### 4.2 自己改侧车代码
+
+在侧车内：
 
 1. 读取 JSON-RPC **`params.prompt`**、**`params.model`**（见 REMOTE_PLUGIN_PROTOCOL **§4.6**）。  
 2. 用 HTTPS 调用厂商接口（请求头带上 **你的 API Key**）。  
@@ -83,3 +91,4 @@ python server.py
 | [REMOTE_PLUGIN_PROTOCOL.md](../plugin-and-architecture/REMOTE_PLUGIN_PROTOCOL.md) | 方法名、`params`/`result`、请求头 |
 | [CREATOR_PLUGIN_ARCHITECTURE.md](../plugin-and-architecture/CREATOR_PLUGIN_ARCHITECTURE.md) | 环境变量总览、与角色包关系 |
 | [examples/remote_plugin_minimal/README.md](../../examples/remote_plugin_minimal/README.md) | 最小 Python 侧车启动与联调命令 |
+| [examples/remote_plugin_openai_compat/README.md](../../examples/remote_plugin_openai_compat/README.md) | **OpenAI 兼容 API**（`requests` + 环境变量 Key） |

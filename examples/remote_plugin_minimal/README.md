@@ -2,7 +2,7 @@
 
 用于验证宿主 [`OCLIVE_REMOTE_PLUGIN_URL`](../../creator-docs/plugin-and-architecture/CREATOR_PLUGIN_ARCHITECTURE.md) / [`OCLIVE_REMOTE_LLM_URL`](../../creator-docs/plugin-and-architecture/CREATOR_PLUGIN_ARCHITECTURE.md) 与 **[REMOTE_PLUGIN_PROTOCOL.md](../../creator-docs/plugin-and-architecture/REMOTE_PLUGIN_PROTOCOL.md)**（**完整请求/响应 JSON 以协议文档为准**）的对接。
 
-**非生产级**：无鉴权加固、无并发压测，仅演示请求形状与占位返回。要在本机接 **闭源云端 API**（用户自带 Key），请先读用户向说明：**[SIDECAR_LLM_USER_GUIDE.md](../../creator-docs/getting-started/SIDECAR_LLM_USER_GUIDE.md)**，再在 `server.py` 的 `llm.generate` / `llm.generate_tag` 分支中替换为真实 HTTPS 调用。
+**非生产级**：无鉴权加固、无并发压测，仅演示请求形状与占位返回。要在本机接 **闭源云端 API**（用户自带 Key），可读 **[SIDECAR_LLM_USER_GUIDE.md](../../creator-docs/getting-started/SIDECAR_LLM_USER_GUIDE.md)**，或直接使用 **`requests` 范例** **[../remote_plugin_openai_compat/README.md](../remote_plugin_openai_compat/README.md)**；亦可 fork 本目录在 `llm.generate` / `llm.generate_tag` 中自行调用 HTTPS。
 
 **全库文档索引**：[../../creator-docs/getting-started/DOCUMENTATION_INDEX.md](../../creator-docs/getting-started/DOCUMENTATION_INDEX.md)
 
