@@ -31,9 +31,9 @@ python server.py
 | 项目 | `remote_plugin_minimal` | 本目录 |
 |------|-------------------------|--------|
 | `llm.*` | 固定占位字符串 | **真实 HTTPS 调用** |
-| 依赖 | 仅标准库 | `requests`、`python-dotenv`（可选加载 `.env`） |
+| 依赖 | 仅标准库 + **共用 `../common/`** | `requests`、`python-dotenv`（可选加载 `.env`） |
 
-非 LLM 方法（memory / emotion 等）仍为占位，与最小示例一致，便于同一 URL 联调。
+非 LLM 方法（memory / emotion 等）来自共享模块 **`../common/oclive_stub_handlers.py`**，与最小示例行为一致，便于同一 URL 联调。HTTP/JSON-RPC 骨架见 **[../common/README.md](../common/README.md)**。
 
 ## 故障排查
 

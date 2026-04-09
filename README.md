@@ -29,6 +29,7 @@
 | **本机侧车 + 闭源 API（BYOK，用户向）** | [creator-docs/getting-started/SIDECAR_LLM_USER_GUIDE.md](creator-docs/getting-started/SIDECAR_LLM_USER_GUIDE.md) |
 | 最小侧车示例（Python） | [examples/remote_plugin_minimal/README.md](examples/remote_plugin_minimal/README.md) |
 | 侧车范例：OpenAI 兼容 API | [examples/remote_plugin_openai_compat/README.md](examples/remote_plugin_openai_compat/README.md) |
+| 侧车示例共用模块（JSON-RPC / 非 LLM 占位） | [examples/common/README.md](examples/common/README.md) |
 | 角色 manifest 说明 | [roles/README_MANIFEST.md](roles/README_MANIFEST.md)（含应用内 **导入 `.ocpak` / `.zip` / 文件夹**） |
 | 角色包导入 — 手工测试清单 | [roles/TESTING_ROLE_PACK_IMPORT.md](roles/TESTING_ROLE_PACK_IMPORT.md) |
 

@@ -2,15 +2,19 @@
 """
 JSON-RPC 侧车：llm.generate / llm.generate_tag 转发到 OpenAI 兼容 HTTPS API（chat/completions）。
 
-其余方法与 remote_plugin_minimal 相同，占位返回，便于把 PLUGIN 与 LLM 指到同一 URL 联调。
+其余方法与 remote_plugin_minimal 相同（共享 ../common/oclive_stub_handlers.py）。
 
 协议：creator-docs/plugin-and-architecture/REMOTE_PLUGIN_PROTOCOL.md
 依赖：pip install -r requirements.txt
 """
-from http.server import HTTPServer, BaseHTTPRequestHandler
+from pathlib import Path
 import json
 import os
 import sys
+
+_ROOT = Path(__file__).resolve().parent.parent
+if str(_ROOT) not in sys.path:
+    sys.path.insert(0, str(_ROOT))
 
 try:
     from dotenv import load_dotenv
@@ -25,20 +29,12 @@ except ImportError as e:
     print("Missing dependency: pip install -r requirements.txt", file=sys.stderr)
     raise e
 
+from common.jsonrpc_http import rpc_error, run_server  # noqa: E402
+from common.oclive_stub_handlers import handle_stub_plugin_method  # noqa: E402
+
 HOST = "127.0.0.1"
 PORT = int(os.environ.get("SIDECAR_PORT", "8765"))
 PATH = "/rpc"
-
-
-def rpc_result(req_id, result):
-    return {"jsonrpc": "2.0", "id": req_id, "result": result}
-
-
-def rpc_error(req_id, code, message, data=None):
-    err = {"code": code, "message": message}
-    if data is not None:
-        err["data"] = data
-    return {"jsonrpc": "2.0", "id": req_id, "error": err}
 
 
 def _openai_chat(prompt: str, model: str, tag_mode: bool):
@@ -107,7 +103,6 @@ def _openai_chat(prompt: str, model: str, tag_mode: bool):
         return rpc_error(None, -32603, "upstream message has no content", {"raw": data})
 
     if isinstance(text, list):
-        # Some APIs return content as list of parts
         text = "".join(
             p.get("text", "") if isinstance(p, dict) else str(p) for p in text
         )
@@ -119,90 +114,26 @@ def handle_method(_method, params):
     if not isinstance(params, dict):
         params = {}
 
-    if _method == "memory.rank":
-        memories = params.get("memories") or []
-        limit = int(params.get("limit") or 8)
-        ids = [m.get("id") for m in memories if isinstance(m, dict) and m.get("id")]
-        return {"ordered_ids": ids[:limit]}
-
-    if _method == "emotion.analyze":
-        return {
-            "joy": 0.0,
-            "sadness": 0.0,
-            "anger": 0.0,
-            "fear": 0.0,
-            "surprise": 0.0,
-            "disgust": 0.0,
-            "neutral": 1.0,
-        }
-
-    if _method == "event.estimate":
-        return {"event_type": {"Ignore": None}, "impact_factor": 0.0, "confidence": 0.5}
-
-    if _method == "prompt.build_prompt":
-        return {"prompt": "[openai-compat stub] implement prompt.build_prompt in your fork if needed.\n"}
-
-    if _method == "prompt.top_topic_hint":
-        return {"hint": None}
-
     if _method == "llm.generate":
         prompt = params.get("prompt") or ""
         model = params.get("model") or ""
-        out = _openai_chat(str(prompt), str(model), tag_mode=False)
-        return out
+        return _openai_chat(str(prompt), str(model), tag_mode=False)
 
     if _method == "llm.generate_tag":
         prompt = params.get("prompt") or ""
         model = params.get("model") or ""
-        out = _openai_chat(str(prompt), str(model), tag_mode=True)
-        return out
+        return _openai_chat(str(prompt), str(model), tag_mode=True)
 
-    return None
-
-
-class Handler(BaseHTTPRequestHandler):
-    def log_message(self, fmt, *args):
-        sys.stderr.write("%s - %s\n" % (self.address_string(), args[0] % args[1:]))
-
-    def do_POST(self):
-        if self.path != PATH:
-            self.send_error(404)
-            return
-        length = int(self.headers.get("Content-Length") or 0)
-        body = self.rfile.read(length).decode("utf-8", errors="replace")
-        try:
-            req = json.loads(body)
-        except json.JSONDecodeError:
-            self.send_response(400)
-            self.end_headers()
-            return
-        req_id = req.get("id")
-        method = req.get("method")
-        params = req.get("params")
-        if req.get("jsonrpc") != "2.0" or not method:
-            out = rpc_error(req_id, -32600, "Invalid Request")
-        else:
-            result = handle_method(method, params)
-            if isinstance(result, dict) and "error" in result:
-                out = dict(result)
-                out["id"] = req_id
-            elif result is None:
-                out = rpc_error(req_id, -32601, "Method not found: " + str(method))
-            else:
-                out = rpc_result(req_id, result)
-        raw = json.dumps(out, ensure_ascii=False).encode("utf-8")
-        self.send_response(200)
-        self.send_header("Content-Type", "application/json; charset=utf-8")
-        self.send_header("Content-Length", str(len(raw)))
-        self.end_headers()
-        self.wfile.write(raw)
+    return handle_stub_plugin_method(_method, params)
 
 
 def main():
-    httpd = HTTPServer((HOST, PORT), Handler)
-    print("oclive OpenAI-compatible sidecar on http://%s:%s%s" % (HOST, PORT, PATH))
-    print("Set OPENAI_API_KEY (and optionally OPENAI_BASE_URL / OPENAI_MODEL).")
-    httpd.serve_forever()
+    banner = (
+        "oclive OpenAI-compatible sidecar on http://%s:%s%s\n"
+        "Set OPENAI_API_KEY (and optionally OPENAI_BASE_URL / OPENAI_MODEL)."
+        % (HOST, PORT, PATH)
+    )
+    run_server(HOST, PORT, PATH, handle_method, banner)
 
 
 if __name__ == "__main__":
