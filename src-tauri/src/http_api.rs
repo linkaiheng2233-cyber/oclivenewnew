@@ -23,11 +23,16 @@ pub struct ChatApiRequest {
     pub message: String,
     #[serde(default)]
     pub session_id: Option<String>,
+    /// 可选：与主应用 `send_message` 一致；未传则由引擎按会话状态推断。
+    #[serde(default)]
+    pub scene_id: Option<String>,
 }
 
+/// 与 `SendMessageResponse` 字段一致，并额外回显 `session_id`；供编写器试聊展示状态条。
 #[derive(Debug, Serialize)]
 pub struct ChatApiResponse {
-    pub reply: String,
+    #[serde(flatten)]
+    pub data: SendMessageResponse,
     /// 回显客户端提交的会话 id（便于编写器与日志对齐；未提交则为 `null`）。
     #[serde(skip_serializing_if = "Option::is_none")]
     pub session_id: Option<String>,
@@ -114,7 +119,7 @@ async fn chat(
     let req = SendMessageRequest {
         role_id: role.id.clone(),
         user_message,
-        scene_id: None,
+        scene_id: body.scene_id,
         session_id: body.session_id,
     };
 
@@ -130,7 +135,7 @@ async fn chat(
         })?;
 
     Ok(Json(ChatApiResponse {
-        reply: res.reply,
+        data: res,
         session_id: session_echo,
     }))
 }
