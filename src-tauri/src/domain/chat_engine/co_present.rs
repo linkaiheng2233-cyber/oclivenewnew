@@ -16,7 +16,7 @@ use crate::models::dto::{
     SCHEMA_VERSION,
 };
 use crate::models::knowledge::KnowledgeIndex;
-use crate::models::{Event, Memory, PersonalityVector, Role};
+use crate::models::{Event, Memory, PersonalitySource, PersonalityVector, Role};
 use crate::state::AppState;
 use chrono::Utc;
 use std::time::Instant;
@@ -26,6 +26,7 @@ use super::emotion_to_dto;
 use super::favor::{compute_favor_and_relation, FavorRelationInput};
 use super::scene::{detect_movement_intent, movement_ui_flags};
 
+#[allow(clippy::too_many_arguments)] // 编排入口：场景 / 计时 / 多 id 与 `Role` 并列传入，不宜为 clippy 强塞单结构体
 pub(crate) async fn process_co_present(
     state: &AppState,
     req: &SendMessageRequest,
@@ -36,7 +37,9 @@ pub(crate) async fn process_co_present(
     t0: Instant,
     mrid: &str,
     srid: &str,
+    preflight_ms: u64,
 ) -> Result<SendMessageResponse> {
+    let t_cp0 = Instant::now();
     let user_message = req.user_message.as_str();
     let policies = state.policies_for_scene(Some(scene_id.as_str()));
     let pl = state.resolved_plugins_for(role);
@@ -47,21 +50,27 @@ pub(crate) async fn process_co_present(
         .await?
         .unwrap_or(role.evolution_config.event_impact_factor);
 
+    let mutable_for_prompt = state.db_manager.get_mutable_personality(srid).await?;
+
     let mut personality = state.get_current_personality(srid, role).await?;
 
     let emotion_result = pl.emotion.analyze(user_message)?;
     let user_emotion = emotion_result.to_emotion();
     let user_emotion_str = user_emotion.to_string();
+    let user_emotion_prompt =
+        crate::domain::emotion_analyzer::EmotionAnalyzer::format_for_prompt(&emotion_result);
 
     let ollama_model = role.resolve_ollama_model(state.ollama_model.as_str());
     let (recent_turns, recent_turns_for_event, recent_events_for_event) =
         load_recent_context(state, srid).await?;
 
-    personality = PersonalityEngine::adjust_by_user_emotion(
-        personality,
-        &user_emotion_str,
-        &role.evolution_bounds,
-    );
+    if role.evolution_config.personality_source != PersonalitySource::Profile {
+        personality = PersonalityEngine::adjust_by_user_emotion(
+            personality,
+            &user_emotion_str,
+            &role.evolution_bounds,
+        );
+    }
 
     let knowledge_chunks = role
         .knowledge_index
@@ -85,6 +94,7 @@ pub(crate) async fn process_co_present(
             user_message,
             &user_emotion,
             &personality,
+            role.evolution_config.personality_source,
             &recent_turns_for_event,
             &recent_events_for_event,
             knowledge_augment_opt.as_ref(),
@@ -94,11 +104,13 @@ pub(crate) async fn process_co_present(
     let ai_impact_factor_final = estimate.impact_factor;
     let ai_event_confidence = estimate.confidence;
 
-    personality = PersonalityEngine::evolve_by_event(
-        personality,
-        ai_impact_factor_final * event_runtime,
-        &role.evolution_bounds,
-    );
+    if role.evolution_config.personality_source != PersonalitySource::Profile {
+        personality = PersonalityEngine::evolve_by_event(
+            personality,
+            ai_impact_factor_final * event_runtime,
+            &role.evolution_bounds,
+        );
+    }
 
     let mut memories = state.memory_repo.load_memories(srid, 10).await?;
     let scene_m = role
@@ -181,7 +193,7 @@ pub(crate) async fn process_co_present(
         personality: &personality,
         memories: &relevant,
         user_input: user_message,
-        user_emotion: &user_emotion_str,
+        user_emotion: user_emotion_prompt.as_str(),
         user_relation_id: user_relation_key.as_str(),
         relation_hint: rf.relation_hint,
         relation_before: relation_before.as_str(),
@@ -195,8 +207,11 @@ pub(crate) async fn process_co_present(
         topic_hint_line: &topic_line,
         life_context_line: life_context_line.as_str(),
         worldview_snippet: worldview_snippet.as_str(),
+        mutable_personality: mutable_for_prompt.as_str(),
     });
 
+    let pre_main_llm_ms = t_cp0.elapsed().as_millis() as u64;
+    let t_main_llm = Instant::now();
     let mut main_llm_fallback = false;
     let reply_raw = match pl.llm.generate(ollama_model.as_str(), &prompt).await {
         Ok(s) => s,
@@ -217,6 +232,8 @@ pub(crate) async fn process_co_present(
             )
         }
     };
+    let main_llm_ms = t_main_llm.elapsed().as_millis() as u64;
+    let t_post_llm = Instant::now();
     let reply = strip_hallucination_tokens(&soft_append_guard(
         &reply_raw,
         &ai_event_type,
@@ -306,17 +323,63 @@ pub(crate) async fn process_co_present(
         })
         .await?;
 
-    let delta_out = PersonalityVector::sub_components(&personality, &core_v);
-    state
-        .db_manager
-        .set_core_delta_personality_json(srid, &core_v.to_json_vec(), &delta_out.to_json_vec())
-        .await?;
-
-    // 在事务提交后再更新缓存，避免 DB 失败时缓存脏写。
-    state
-        .personality_cache
-        .write()
-        .insert(srid.to_string(), personality.clone());
+    if role.evolution_config.personality_source == PersonalitySource::Profile {
+        let prev = state.db_manager.get_mutable_personality(srid).await?;
+        let impact_scaled = (ai_impact_factor_final * event_runtime).clamp(-1.0, 1.0);
+        let next = match crate::domain::mutable_profile_llm::evolve_mutable_personality_with_llm(
+            &pl.llm,
+            ollama_model.as_str(),
+            crate::domain::mutable_profile_llm::MutableEvolutionInput {
+                role_name: role.name.as_str(),
+                core_personality: role.core_personality.as_str(),
+                prev_mutable: prev.as_str(),
+                user_message,
+                bot_reply: reply.as_str(),
+                user_emotion: user_emotion_str.as_str(),
+                event_type: &ai_event_type,
+                impact_scaled,
+                evolution: &role.evolution_config,
+            },
+        )
+        .await
+        {
+            Ok(s) => s,
+            Err(e) => {
+                log::warn!(
+                    target: "oclive_chat",
+                    "mutable_profile_llm failed role_id={} err={}; keeping previous archive",
+                    srid,
+                    e
+                );
+                prev.clone()
+            }
+        };
+        state
+            .db_manager
+            .set_mutable_personality(srid, &next)
+            .await?;
+        let personality_after =
+            crate::domain::profile_personality::effective_vector_from_profile(role, &next);
+        let delta_out = PersonalityVector::sub_components(&personality_after, &core_v);
+        state
+            .db_manager
+            .set_core_delta_personality_json(srid, &core_v.to_json_vec(), &delta_out.to_json_vec())
+            .await?;
+        state
+            .personality_cache
+            .write()
+            .insert(srid.to_string(), personality_after);
+    } else {
+        let delta_out = PersonalityVector::sub_components(&personality, &core_v);
+        state
+            .db_manager
+            .set_core_delta_personality_json(srid, &core_v.to_json_vec(), &delta_out.to_json_vec())
+            .await?;
+        state
+            .personality_cache
+            .write()
+            .insert(srid.to_string(), personality.clone());
+    }
 
     let events = vec![DetectedEventDto {
         event_type: format!("{:?}", event.event_type),
@@ -341,16 +404,26 @@ pub(crate) async fn process_co_present(
         offer_together_travel = false;
     }
 
+    let post_llm_ms = t_post_llm.elapsed().as_millis() as u64;
     let duration_ms = t0.elapsed().as_millis() as u64;
     log::info!(
         target: "oclive_chat",
-        "send_message ok role_id={} scene_id={} main_llm_fallback={} duration_ms={} offer_destination_picker={} offer_together_travel={}",
+        "send_message co_present role_id={} scene_id={} duration_ms={} main_llm_fallback={} offer_destination_picker={} offer_together_travel={}",
         mrid,
         scene_id,
-        main_llm_fallback,
         duration_ms,
+        main_llm_fallback,
         offer_destination_picker,
         offer_together_travel
+    );
+    log::debug!(
+        target: "oclive_chat",
+        "send_message co_present timing preflight_ms={} pre_main_llm_ms={} main_llm_ms={} post_llm_ms={} duration_ms={}",
+        preflight_ms,
+        pre_main_llm_ms,
+        main_llm_ms,
+        post_llm_ms,
+        duration_ms
     );
 
     Ok(SendMessageResponse {

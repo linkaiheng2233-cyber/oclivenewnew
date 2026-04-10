@@ -72,6 +72,7 @@ impl DiskRoleSettings {
                 ai_analysis_interval: role.evolution_config.ai_analysis_interval,
                 max_change_per_event: role.evolution_config.max_change_per_event,
                 max_total_change: role.evolution_config.max_total_change,
+                personality_source: role.evolution_config.personality_source,
             }),
             memory_config: Some(MemoryConfigDisk {
                 scene_weight_multiplier: memory_config.scene_weight_multiplier,

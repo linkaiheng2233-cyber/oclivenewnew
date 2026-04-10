@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { computed, ref } from "vue";
 import ChatExportBar from "./ChatExportBar.vue";
+import HelpHint from "./HelpHint.vue";
 import RolePackBar from "./RolePackBar.vue";
 import RoleRuntimePanel from "./RoleRuntimePanel.vue";
 import { useChatStore } from "../stores/chatStore";
@@ -112,7 +113,15 @@ function presenceLabel(mode: string): string {
   <transition name="slide">
     <aside v-if="visible" class="debug debug-scroll">
       <div class="title">
-        <strong>🎛️ 开发面板</strong>
+        <div class="title-leading">
+          <strong>🎛️ 开发面板</strong>
+          <HelpHint
+            :paragraphs="[
+              '供开发与排错：查看好感度、性格维度、近期事件与记忆摘要；可重载策略、生成独白、导入或管理角色包等。',
+              '快捷键 Ctrl+Shift+D（同时按住 Ctrl、Shift，再按字母 D）可随时打开或关闭本面板；按 Esc 也可关闭。顶栏「更多」里亦可点「打开调试面板」。',
+            ]"
+          />
+        </div>
         <button type="button" aria-label="关闭" @click="emit('close')">✕</button>
       </div>
 
@@ -180,7 +189,13 @@ function presenceLabel(mode: string): string {
       </div>
 
       <div class="dev-card">
-        <div class="dev-title"><span>🎭</span> 性格向量</div>
+        <div class="dev-title dev-title--row">
+          <span><span>🎭</span> 性格向量</span>
+          <HelpHint
+            v-if="roleStore.roleInfo.personalitySource === 'profile'"
+            text="当前包为「档案」人格来源：此处七维多为运行时从核心与可变性格档案归纳的视图，便于理解，不是唯一数据源。"
+          />
+        </div>
         <div class="trait-grid">
           <div
             v-for="key in PERSONALITY_TRAIT_KEYS"
@@ -292,6 +307,11 @@ function presenceLabel(mode: string): string {
   align-items: center;
   gap: 6px;
 }
+.dev-title--row {
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 8px;
+}
 .dev-emoji {
   margin-left: auto;
   font-size: 20px;
@@ -304,14 +324,18 @@ function presenceLabel(mode: string): string {
 }
 .fav-bar {
   height: 6px;
-  background: #2a2a30;
+  background: color-mix(in srgb, var(--bg-elevated) 65%, var(--border-light) 35%);
   border-radius: 3px;
   overflow: hidden;
   margin: 10px 0 6px;
 }
 .fav-fill {
   height: 100%;
-  background: linear-gradient(90deg, var(--accent), #c98a5c);
+  background: linear-gradient(
+    90deg,
+    var(--accent),
+    color-mix(in srgb, var(--accent) 72%, #d4a574 28%)
+  );
   border-radius: 3px;
   transition: width 0.3s ease;
 }
@@ -334,7 +358,7 @@ function presenceLabel(mode: string): string {
   justify-content: space-between;
   align-items: center;
   font-size: 12px;
-  border: 1px solid #2f2f38;
+  border: 1px solid var(--border-light);
 }
 .trait-name {
   color: var(--text-secondary);
@@ -383,16 +407,30 @@ function presenceLabel(mode: string): string {
   background: var(--bg-primary);
   border-radius: var(--radius-card);
   border: 1px solid var(--border-light);
-  box-shadow: 0 20px 40px rgba(0, 0, 0, 0.5);
+  box-shadow: var(--shadow-md), var(--shadow-app);
   color: var(--text-primary);
 }
 .title {
   display: flex;
   justify-content: space-between;
-  align-items: center;
+  align-items: flex-start;
+  gap: 12px;
   margin-bottom: 16px;
   padding-bottom: 10px;
   border-bottom: 1px solid var(--border-light);
+}
+.title-leading {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 6px 8px;
+  min-width: 0;
+}
+.title-leading :deep(.help-hint) {
+  z-index: 10050;
+}
+.title-leading :deep(.help-hint.help-hint--open) {
+  z-index: 10060;
 }
 .title strong {
   color: var(--text-accent);

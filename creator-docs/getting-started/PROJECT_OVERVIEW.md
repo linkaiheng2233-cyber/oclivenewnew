@@ -32,6 +32,8 @@
 | **总索引** | [DOCUMENTATION_INDEX.md](DOCUMENTATION_INDEX.md) |
 | **创作者：从包到 oclive** | [CREATOR_WORKFLOW.md](CREATOR_WORKFLOW.md) |
 | **manifest / 导入** | [roles/README_MANIFEST.md](../../roles/README_MANIFEST.md) |
+| **性格档案设计轴心** | [docs/personality-archive-notes.md](../../docs/personality-archive-notes.md) |
+| **思路变化（以前 vs 现在）** | [docs/design-axis-evolution.md](../../docs/design-axis-evolution.md) |
 | **导入手工测试清单** | [roles/TESTING_ROLE_PACK_IMPORT.md](../../roles/TESTING_ROLE_PACK_IMPORT.md) |
 | **按月愿景** | [../roadmap/VISION_ROADMAP_MONTHLY.md](../roadmap/VISION_ROADMAP_MONTHLY.md) |
 | **体验向 backlog（试聊 / 启动器 / 市场）** | [../roadmap/BACKLOG_EXPERIENCE_AND_ECOSYSTEM.md](../roadmap/BACKLOG_EXPERIENCE_AND_ECOSYSTEM.md) |

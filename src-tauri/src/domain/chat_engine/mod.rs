@@ -23,13 +23,16 @@ use crate::error::Result;
 use crate::models::dto::{
     EmotionDto, PresenceMode, SendMessageRequest, SendMessageResponse, API_VERSION, SCHEMA_VERSION,
 };
-use crate::models::{Event, EventType, KnowledgeIndex, Memory, PersonalityVector, Role};
+use crate::models::{
+    Event, EventType, KnowledgeIndex, Memory, PersonalitySource, PersonalityVector, Role,
+};
 use crate::state::AppState;
 use chrono::Utc;
 use context::{load_recent_context, validate_scene_id};
 use favor::{compute_favor_and_relation, FavorRelationInput};
 use presence::user_is_remote_from_character;
 use scene::{detect_movement_intent, movement_ui_flags};
+use std::sync::Arc;
 use std::time::Instant;
 
 pub(super) fn emotion_to_dto(r: &crate::domain::emotion_analyzer::EmotionResult) -> EmotionDto {
@@ -45,7 +48,10 @@ pub(super) fn emotion_to_dto(r: &crate::domain::emotion_analyzer::EmotionResult)
 }
 
 /// 会话级 SQLite 命名空间：HTTP 试聊传入 `session_id` 时与无 `session_id` 的默认对话隔离。
-pub(crate) fn conversation_state_role_id(manifest_role_id: &str, session_id: Option<&str>) -> String {
+pub(crate) fn conversation_state_role_id(
+    manifest_role_id: &str,
+    session_id: Option<&str>,
+) -> String {
     /// 控制 SQLite 键与日志长度，避免异常长 `session_id` 撑爆存储。
     const MAX_SUFFIX_CHARS: usize = 64;
     const MAX_TOTAL_CHARS: usize = 256;
@@ -79,6 +85,7 @@ async fn process_remote_stub(
     scene_id: &str,
     t0: Instant,
     srid: &str,
+    preflight_ms: u64,
 ) -> Result<SendMessageResponse> {
     let role_id = req.role_id.as_str();
     let user_message = req.user_message.as_str();
@@ -110,6 +117,12 @@ async fn process_remote_stub(
         scene_id,
         duration_ms
     );
+    log::debug!(
+        target: "oclive_chat",
+        "send_message remote_stub timing preflight_ms={} duration_ms={}",
+        preflight_ms,
+        duration_ms
+    );
     Ok(SendMessageResponse {
         api_version: API_VERSION,
         schema: SCHEMA_VERSION,
@@ -132,6 +145,7 @@ async fn process_remote_stub(
 }
 
 /// 异地 + 开：专用 LLM；跳过事件影响探测，以 `Ignore` + 零振幅参与好感事务（仍更新短期记忆等）
+#[allow(clippy::too_many_arguments)] // 与 `process_co_present` 同级编排入口
 async fn process_remote_life(
     state: &AppState,
     req: &SendMessageRequest,
@@ -141,7 +155,9 @@ async fn process_remote_life(
     t0: Instant,
     mrid: &str,
     srid: &str,
+    preflight_ms: u64,
 ) -> Result<SendMessageResponse> {
+    let t_path = Instant::now();
     let role_id = req.role_id.as_str();
     let user_message = req.user_message.as_str();
     let event_runtime = state
@@ -149,6 +165,8 @@ async fn process_remote_life(
         .get_event_impact_factor(srid)
         .await?
         .unwrap_or(role.evolution_config.event_impact_factor);
+
+    let mutable_for_prompt = state.db_manager.get_mutable_personality(srid).await?;
 
     let mut personality = state.get_current_personality(srid, role).await?;
 
@@ -161,21 +179,25 @@ async fn process_remote_life(
     let (recent_turns, _recent_turns_for_event, recent_events_for_event) =
         load_recent_context(state, srid).await?;
 
-    personality = PersonalityEngine::adjust_by_user_emotion(
-        personality,
-        &user_emotion_str,
-        &role.evolution_bounds,
-    );
+    if role.evolution_config.personality_source != PersonalitySource::Profile {
+        personality = PersonalityEngine::adjust_by_user_emotion(
+            personality,
+            &user_emotion_str,
+            &role.evolution_bounds,
+        );
+    }
 
     let ai_event_type = EventType::Ignore;
     let ai_impact_factor_final = 0.0_f64;
     let ai_event_confidence = 0.0_f32;
 
-    personality = PersonalityEngine::evolve_by_event(
-        personality,
-        ai_impact_factor_final * event_runtime,
-        &role.evolution_bounds,
-    );
+    if role.evolution_config.personality_source != PersonalitySource::Profile {
+        personality = PersonalityEngine::evolve_by_event(
+            personality,
+            ai_impact_factor_final * event_runtime,
+            &role.evolution_bounds,
+        );
+    }
 
     let mut memories = state.memory_repo.load_memories(srid, 10).await?;
     let scene_m = role
@@ -222,9 +244,7 @@ async fn process_remote_life(
     };
     let (favor_delta, relation_after) = compute_favor_and_relation(&favor_relation_input);
 
-    let char_label = state
-        .storage
-        .scene_display_name(mrid, character_scene_id);
+    let char_label = state.storage.scene_display_name(mrid, character_scene_id);
     let user_label = state.storage.scene_display_name(mrid, scene_id);
     let away_material = state
         .storage
@@ -260,6 +280,11 @@ async fn process_remote_life(
         KnowledgeIndex::format_for_prompt(knowledge_chunks.as_slice(), 6000)
     };
 
+    let remote_mutable = if role.evolution_config.personality_source == PersonalitySource::Profile {
+        mutable_for_prompt.as_str()
+    } else {
+        ""
+    };
     let prompt = build_remote_life_prompt(
         role,
         away_material.as_str(),
@@ -271,8 +296,11 @@ async fn process_remote_life(
         vt_label.as_str(),
         life_schedule_line.as_str(),
         worldview_snippet.as_str(),
+        remote_mutable,
     );
 
+    let pre_main_llm_ms = t_path.elapsed().as_millis() as u64;
+    let t_main_llm = Instant::now();
     let mut main_llm_fallback = false;
     let reply_raw = match pl.llm.generate(ollama_model.as_str(), &prompt).await {
         Ok(s) => s,
@@ -293,6 +321,8 @@ async fn process_remote_life(
             )
         }
     };
+    let main_llm_ms = t_main_llm.elapsed().as_millis() as u64;
+    let t_post_llm = Instant::now();
     let reply = strip_hallucination_tokens(&soft_append_guard(
         &reply_raw,
         &ai_event_type,
@@ -381,16 +411,63 @@ async fn process_remote_life(
         })
         .await?;
 
-    let delta_out = PersonalityVector::sub_components(&personality, &core_v);
-    state
-        .db_manager
-        .set_core_delta_personality_json(srid, &core_v.to_json_vec(), &delta_out.to_json_vec())
-        .await?;
-
-    state
-        .personality_cache
-        .write()
-        .insert(srid.to_string(), personality.clone());
+    if role.evolution_config.personality_source == PersonalitySource::Profile {
+        let prev = state.db_manager.get_mutable_personality(srid).await?;
+        let impact_scaled = (ai_impact_factor_final * event_runtime).clamp(-1.0, 1.0);
+        let next = match crate::domain::mutable_profile_llm::evolve_mutable_personality_with_llm(
+            &pl.llm,
+            ollama_model.as_str(),
+            crate::domain::mutable_profile_llm::MutableEvolutionInput {
+                role_name: role.name.as_str(),
+                core_personality: role.core_personality.as_str(),
+                prev_mutable: prev.as_str(),
+                user_message,
+                bot_reply: reply.as_str(),
+                user_emotion: user_emotion_str.as_str(),
+                event_type: &ai_event_type,
+                impact_scaled,
+                evolution: &role.evolution_config,
+            },
+        )
+        .await
+        {
+            Ok(s) => s,
+            Err(e) => {
+                log::warn!(
+                    target: "oclive_chat",
+                    "mutable_profile_llm remote_life failed role_id={} err={}; keeping previous archive",
+                    srid,
+                    e
+                );
+                prev.clone()
+            }
+        };
+        state
+            .db_manager
+            .set_mutable_personality(srid, &next)
+            .await?;
+        let personality_after =
+            crate::domain::profile_personality::effective_vector_from_profile(role, &next);
+        let delta_out = PersonalityVector::sub_components(&personality_after, &core_v);
+        state
+            .db_manager
+            .set_core_delta_personality_json(srid, &core_v.to_json_vec(), &delta_out.to_json_vec())
+            .await?;
+        state
+            .personality_cache
+            .write()
+            .insert(srid.to_string(), personality_after);
+    } else {
+        let delta_out = PersonalityVector::sub_components(&personality, &core_v);
+        state
+            .db_manager
+            .set_core_delta_personality_json(srid, &core_v.to_json_vec(), &delta_out.to_json_vec())
+            .await?;
+        state
+            .personality_cache
+            .write()
+            .insert(srid.to_string(), personality.clone());
+    }
 
     let scenes = state.storage.list_scene_ids(mrid)?;
     let movement = detect_movement_intent(
@@ -407,16 +484,26 @@ async fn process_remote_life(
     let (offer_destination_picker, offer_together_travel) =
         movement_ui_flags(movement, user_message);
 
+    let post_llm_ms = t_post_llm.elapsed().as_millis() as u64;
     let duration_ms = t0.elapsed().as_millis() as u64;
     log::info!(
         target: "oclive_chat",
-        "send_message remote_life role_id={} scene_id={} main_llm_fallback={} duration_ms={} offer_destination_picker={} offer_together_travel={}",
+        "send_message remote_life role_id={} scene_id={} duration_ms={} main_llm_fallback={} offer_destination_picker={} offer_together_travel={}",
         role_id,
         scene_id,
-        main_llm_fallback,
         duration_ms,
+        main_llm_fallback,
         offer_destination_picker,
         offer_together_travel
+    );
+    log::debug!(
+        target: "oclive_chat",
+        "send_message remote_life timing preflight_ms={} pre_main_llm_ms={} main_llm_ms={} post_llm_ms={} duration_ms={}",
+        preflight_ms,
+        pre_main_llm_ms,
+        main_llm_ms,
+        post_llm_ms,
+        duration_ms
     );
 
     Ok(SendMessageResponse {
@@ -454,7 +541,7 @@ pub async fn process_message(
         .unwrap_or_else(|| "default".to_string());
     let (scene_id, scenes) = validate_scene_id(state, mrid, requested_scene_id)?;
     let t0 = Instant::now();
-    log::info!(
+    log::debug!(
         target: "oclive_chat",
         "send_message start role_id={} scene_id={} session_ns={}",
         mrid,
@@ -484,37 +571,60 @@ pub async fn process_message(
     let remote_life_enabled = state.db_manager.get_remote_life_enabled(srid).await?;
     let is_remote =
         immersive && user_is_remote_from_character(scene_id.as_str(), current_scene.as_deref());
+    let preflight_ms = t0.elapsed().as_millis() as u64;
     if is_remote {
         if !remote_life_enabled {
-            return process_remote_stub(state, req, &role, scene_id.as_str(), t0, srid).await;
+            return process_remote_stub(
+                state,
+                req,
+                role.as_ref(),
+                scene_id.as_str(),
+                t0,
+                srid,
+                preflight_ms,
+            )
+            .await;
         }
         let char_scene = current_scene.as_deref().unwrap_or("default");
-        return process_remote_life(state, req, &role, scene_id.as_str(), char_scene, t0, mrid, srid)
-            .await;
+        return process_remote_life(
+            state,
+            req,
+            role.as_ref(),
+            scene_id.as_str(),
+            char_scene,
+            t0,
+            mrid,
+            srid,
+            preflight_ms,
+        )
+        .await;
     }
 
-    co_present::process_co_present(state, req, &role, scene_id, scenes, immersive, t0, mrid, srid)
-        .await
+    co_present::process_co_present(
+        state,
+        req,
+        role.as_ref(),
+        scene_id,
+        scenes,
+        immersive,
+        t0,
+        mrid,
+        srid,
+        preflight_ms,
+    )
+    .await
 }
 
-async fn ensure_role_loaded(state: &AppState, role_id: &str) -> Result<Role> {
-    if let Some(r) = state.role_cache.read().get(role_id).cloned() {
-        return Ok(r);
-    }
-    let role = state.storage.load_role(role_id)?;
-    state
-        .role_cache
-        .write()
-        .insert(role_id.to_string(), role.clone());
-    Ok(role)
+async fn ensure_role_loaded(state: &AppState, role_id: &str) -> Result<Arc<Role>> {
+    state.load_role_cached(role_id)
 }
 
 #[cfg(test)]
 mod tests {
+    use crate::domain::chat_engine::conversation_state_role_id;
     use crate::domain::chat_turn_rules::{
         avoid_fast_promote_score, smooth_favor_delta_for_short_streak, soft_append_guard,
     };
-    use crate::domain::chat_engine::conversation_state_role_id;
     use crate::models::{Event, EventType};
 
     #[test]

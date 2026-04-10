@@ -5,7 +5,7 @@ use crate::domain::prompt_builder::PromptInput;
 use crate::domain::BuiltinPromptAssembler;
 use crate::infrastructure::remote_plugin::config::RemotePluginHttpConfig;
 use crate::infrastructure::remote_plugin::jsonrpc;
-use crate::models::Role;
+use crate::models::{PersonalitySource, Role};
 use serde_json::json;
 
 pub struct RemotePromptAssemblerHttp {
@@ -100,6 +100,8 @@ struct PromptInputSnapshot<'a> {
 #[derive(serde::Serialize)]
 struct PromptInputFlat<'a> {
     role: &'a Role,
+    /// 与 `role.evolution_config.personality_source` 一致；便于侧车不必从嵌套 `role` 解析。
+    personality_source: PersonalitySource,
     personality: &'a crate::models::PersonalityVector,
     memories: &'a [crate::models::Memory],
     user_input: &'a str,
@@ -123,6 +125,7 @@ impl<'a> PromptInputSnapshot<'a> {
         Self {
             flat: PromptInputFlat {
                 role: input.role,
+                personality_source: input.role.evolution_config.personality_source,
                 personality: input.personality,
                 memories: input.memories,
                 user_input: input.user_input,

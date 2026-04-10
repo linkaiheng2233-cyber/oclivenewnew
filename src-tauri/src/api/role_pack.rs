@@ -3,6 +3,7 @@ use crate::infrastructure::{export_role_pack, import_role_pack, peek_role_pack_m
 use crate::models::dto::RolePackPeekResponse;
 use crate::state::AppState;
 use std::path::PathBuf;
+use std::sync::Arc;
 use tauri::Manager;
 use tauri::State;
 
@@ -22,8 +23,10 @@ pub async fn peek_role_pack_command(
     _state: State<'_, AppState>,
 ) -> Result<RolePackPeekResponse, String> {
     let p = PathBuf::from(src_path);
-    let (id, name, version) =
-        peek_role_pack_manifest(&p).map_err(|e: AppError| e.to_frontend_error())?;
+    let (id, name, version) = tokio::task::spawn_blocking(move || peek_role_pack_manifest(&p))
+        .await
+        .map_err(|e| format!("预览任务异常: {}", e))?
+        .map_err(|e: AppError| e.to_frontend_error())?;
     Ok(RolePackPeekResponse { id, name, version })
 }
 
@@ -50,7 +53,12 @@ pub async fn import_role_pack_command(
         .storage
         .load_role(&role_id)
         .map_err(|e| e.to_frontend_error())?;
-    state.role_cache.write().insert(role_id.clone(), role);
+    state.invalidate_personality_cache_for_role(&role_id);
+
+    state
+        .role_cache
+        .write()
+        .insert(role_id.clone(), Arc::new(role));
 
     Ok(role_id)
 }

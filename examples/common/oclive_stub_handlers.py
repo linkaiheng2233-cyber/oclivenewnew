@@ -2,6 +2,9 @@
 Shared non-LLM JSON-RPC stubs for sidecar examples (memory / emotion / event / prompt).
 
 LLM methods are *not* implemented here — each example supplies its own llm.generate / llm.generate_tag.
+
+Note: the host may send extra keys in params (e.g. event.estimate / prompt.build_prompt include
+personality_source: \"vector\" | \"profile\"). These stubs ignore unknown fields.
 """
 from typing import Any, Dict, Optional
 

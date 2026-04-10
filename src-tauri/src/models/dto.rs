@@ -3,6 +3,7 @@
 use crate::models::plugin_backends::PluginBackends;
 use crate::models::role::IdentityBinding;
 use crate::models::role::LifeState;
+use crate::models::role::PersonalitySource;
 use serde::{Deserialize, Serialize};
 
 pub const API_VERSION: u32 = 1;
@@ -121,6 +122,9 @@ pub struct RoleData {
     pub remote_life_pack_default: Option<bool>,
     /// 有效事件影响系数（DB 覆盖 manifest 默认值）
     pub event_impact_factor: f64,
+    /// `evolution.personality_source`：`vector` | `profile`
+    #[serde(default)]
+    pub personality_source: PersonalitySource,
     /// 本角色实际使用的 Ollama 模型（manifest → `OLLAMA_MODEL` → 全局默认）
     pub effective_ollama_model: String,
     /// 身份是否与场景绑定（manifest `identity_binding`）
@@ -181,6 +185,9 @@ pub struct RoleInfo {
     pub current_favorability: f64,
     pub current_emotion: String,
     pub personality_vector: Vec<f64>,
+    /// `evolution.personality_source`：`vector` | `profile`
+    #[serde(default)]
+    pub personality_source: PersonalitySource,
     pub last_interaction: Option<String>,
     /// 可用场景 id（manifest + `scenes/` 目录）
     pub scenes: Vec<String>,

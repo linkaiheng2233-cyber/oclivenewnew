@@ -1,9 +1,7 @@
 //! 从角色包目录加载 [`KnowledgeIndex`](crate::models::knowledge::KnowledgeIndex)：Markdown + YAML front matter。
 
 use crate::error::{AppError, Result};
-use crate::models::knowledge::{
-    EventHintEntryDisk, KnowledgeChunk, KnowledgeIndex,
-};
+use crate::models::knowledge::{EventHintEntryDisk, KnowledgeChunk, KnowledgeIndex};
 use crate::models::role_manifest_disk::DiskRoleManifest;
 use crate::models::EventType;
 use serde::Deserialize;

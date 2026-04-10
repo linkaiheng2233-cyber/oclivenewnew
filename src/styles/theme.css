@@ -1,53 +1,185 @@
 /**
- * 设计令牌：与 oclive-new/style.css（index 单页）对齐 — 深色底 + #d4a574 强调色
+ * 与 oclive-launcher、oclive-pack-editor 对齐的 Fluent 令牌 + oclive 语义别名。
+ * 默认浅色暖灰壳；html[data-theme="dark"] 为深色（与编写器深色一致）。
  */
 :root {
-  --bg-page: #1a1a1f;
-  --bg-primary: #1e1e24;
-  --bg-secondary: #25252c;
-  --bg-status: #18181e;
-  --card-bg: #1e1e24;
-  --bg-elevated: #25252c;
+  color-scheme: light;
+  --font-ui:
+    "Segoe UI", "Segoe UI Variable", "Microsoft YaHei", "PingFang SC", system-ui,
+    -apple-system, sans-serif;
+  --oclive-ui-scale: 1;
 
-  --border-light: #2c2c34;
-  --border-focus: #d4a574;
-  --accent: #d4a574;
+  /* —— Fluent 浅色（与 launcher style.css 同步）—— */
+  --fluent-bg-page: #e7e2d9;
+  --fluent-bg-card: #f6f3ec;
+  --fluent-bg-subtle: #ede8df;
+  --fluent-bg-input: #faf8f3;
+  --fluent-border-stroke: #d6cfc3;
+  --fluent-border-control: #c4bcb0;
+  --fluent-border-focus: #6f8f86;
+  --fluent-shadow-card:
+    0 1px 2px rgba(42, 34, 26, 0.05),
+    0 6px 18px rgba(42, 34, 26, 0.06);
+  --fluent-shadow-soft: 0 1px 3px rgba(42, 34, 26, 0.05);
+  --fluent-text-primary: #2c2722;
+  --fluent-text-secondary: #5a5349;
+  --fluent-text-disabled: #948c82;
+  --fluent-accent: #4a6b62;
+  --fluent-accent-hover: #3d5a52;
+  --fluent-accent-subtle: rgba(74, 107, 98, 0.14);
+  --fluent-success-text: #3f6b4d;
+  --fluent-danger-text: #8a3a3a;
+  --fluent-warning-text: #66552e;
+  --fluent-info-muted: #6a6560;
 
-  --bubble-bot-bg: #25252c;
-  --bubble-user-bg: #34303a;
-  --bubble-border: #2c2c34;
+  --dialog-backdrop: rgba(48, 44, 40, 0.38);
+  --dialog-panel-bg: color-mix(in srgb, var(--fluent-bg-card) 97%, var(--fluent-border-stroke) 3%);
 
-  --btn-grad-a: #2c2c34;
-  --btn-grad-b: #25252c;
-  --btn-primary: #2c2c34;
-  --btn-primary-hover-a: #3a3a44;
-  --btn-primary-hover-b: #2c2c34;
-  --btn-disabled: #2a2a30;
+  --rail-accent-runtime: #6a5f8a;
+  --rail-accent-runtime-bg: rgba(106, 95, 138, 0.13);
 
-  --text-primary: #e0e0e0;
-  --text-secondary: #9a9aae;
-  --text-light: #6a6a7a;
-  --text-accent: #d4a574;
+  --shell-page-bg:
+    radial-gradient(ellipse 90% 55% at 100% -5%, color-mix(in srgb, #b89a6e 16%, transparent), transparent 52%),
+    radial-gradient(ellipse 75% 48% at 0% 100%, color-mix(in srgb, #7d9c91 12%, transparent), transparent 50%),
+    var(--fluent-bg-page);
 
-  --success: #7cb87c;
-  --warning: #d4a574;
-  --error: #c97a7a;
-  --info: #7d94b2;
+  /* —— oclive 组件使用的语义（映射到 Fluent）—— */
+  --bg-page: var(--fluent-bg-page);
+  --bg-primary: var(--fluent-bg-card);
+  --bg-secondary: var(--fluent-bg-subtle);
+  --bg-status: color-mix(in srgb, var(--fluent-bg-subtle) 82%, var(--fluent-border-stroke) 18%);
+  --card-bg: var(--fluent-bg-card);
+  --bg-elevated: var(--fluent-bg-input);
+  --bg-panel: var(--fluent-bg-card);
 
-  --shadow-app: 0 20px 40px rgba(0, 0, 0, 0.4);
-  --shadow-sm: 0 2px 12px rgba(0, 0, 0, 0.2);
-  --shadow-md: 0 8px 20px rgba(0, 0, 0, 0.3);
-  --shadow-btn-hover: 0 2px 8px rgba(0, 0, 0, 0.3);
+  --border-light: var(--fluent-border-stroke);
+  --border-focus: var(--fluent-border-focus);
+  --accent: var(--fluent-accent);
+  --text-primary: var(--fluent-text-primary);
+  --text-secondary: var(--fluent-text-secondary);
+  --text-light: var(--fluent-text-disabled);
+  --text-accent: var(--fluent-accent);
 
-  --radius-app: 32px;
-  --radius-card: 20px;
-  --radius-bubble: 24px;
-  --radius-btn: 28px;
-  --radius-pill: 20px;
+  --bubble-bot-bg: #fffcf7;
+  --bubble-user-bg: color-mix(in srgb, var(--fluent-bg-input) 72%, var(--fluent-accent-subtle) 28%);
+  --bubble-border: var(--fluent-border-stroke);
+
+  --btn-grad-a: color-mix(in srgb, var(--fluent-bg-subtle) 55%, #fff 45%);
+  --btn-grad-b: color-mix(in srgb, var(--fluent-bg-card) 50%, var(--fluent-bg-subtle) 50%);
+  --btn-primary: var(--fluent-bg-subtle);
+  --btn-primary-hover-a: color-mix(in srgb, var(--fluent-bg-subtle) 70%, var(--fluent-accent) 8%);
+  --btn-primary-hover-b: var(--fluent-bg-card);
+  --btn-disabled: var(--fluent-border-control);
+
+  --success: var(--fluent-success-text);
+  --warning: #c4ae7a;
+  --error: var(--fluent-danger-text);
+  --info: var(--fluent-info-muted);
+
+  --shadow-app: var(--fluent-shadow-card);
+  --shadow-sm: var(--fluent-shadow-soft);
+  --shadow-md: 0 4px 22px rgba(42, 34, 26, 0.09);
+  --shadow-btn-hover: 0 2px 12px rgba(42, 34, 26, 0.12);
+  --shadow-bubble:
+    0 1px 2px rgba(42, 34, 26, 0.04),
+    0 3px 12px rgba(42, 34, 26, 0.06);
+
+  --focus-ring-color: var(--fluent-border-focus);
+  --control-transition: border-color 0.18s ease, box-shadow 0.18s ease, background 0.18s ease;
+  --frame-inset-highlight: inset 0 1px 0 rgba(255, 255, 255, 0.9);
+
+  --radius-app: 16px;
+  --radius-card: 12px;
+  --radius-bubble: 12px;
+  --radius-btn: 10px;
+  --radius-pill: 10px;
+
+  --scrollbar-chat-track: rgba(42, 34, 26, 0.06);
+  --scrollbar-chat-thumb: rgba(42, 34, 26, 0.2);
+  --scrollbar-chat-thumb-hover: rgba(42, 34, 26, 0.32);
 
   --ease: 0.2s ease;
+}
 
-  /* 聊天区等：轨道贴近背景、滑块略亮，避免抢眼 */
+html[data-theme="dark"] {
+  color-scheme: dark;
+
+  --fluent-bg-page: #1a1d24;
+  --fluent-bg-card: #252830;
+  --fluent-bg-subtle: #2f3440;
+  --fluent-bg-input: #1e2128;
+  --fluent-border-stroke: #3d4451;
+  --fluent-border-control: #4d5565;
+  --fluent-border-focus: #8f96a3;
+  --fluent-shadow-card: 0 4px 24px rgba(0, 0, 0, 0.45);
+  --fluent-shadow-soft: 0 2px 8px rgba(0, 0, 0, 0.35);
+  --fluent-text-primary: #e8e6e3;
+  --fluent-text-secondary: #b0aca6;
+  --fluent-text-disabled: #8a8580;
+  --fluent-accent: #aeb4bf;
+  --fluent-accent-hover: #c8ced8;
+  --fluent-accent-subtle: rgba(255, 255, 255, 0.07);
+  --fluent-success-text: #92c353;
+  --fluent-danger-text: #f9a7ad;
+  --fluent-warning-text: #ffd44d;
+  --fluent-info-muted: #a8a4a0;
+
+  --dialog-backdrop: rgba(14, 16, 20, 0.58);
+  --dialog-panel-bg: color-mix(in srgb, var(--fluent-bg-card) 96%, var(--fluent-border-stroke) 4%);
+
+  --rail-accent-runtime: #b4a7ff;
+  --rail-accent-runtime-bg: rgba(180, 167, 255, 0.18);
+
+  --shell-page-bg:
+    radial-gradient(115% 95% at 0% 0%, rgba(36, 44, 58, 0.85), transparent 58%),
+    radial-gradient(100% 92% at 100% 100%, rgba(28, 34, 48, 0.82), transparent 56%),
+    linear-gradient(168deg, #0f1218 0%, #181c24 45%, #12151c 100%);
+
+  --bg-page: var(--fluent-bg-page);
+  --bg-primary: var(--fluent-bg-card);
+  --bg-secondary: var(--fluent-bg-subtle);
+  --bg-status: #181b22;
+  --card-bg: var(--fluent-bg-card);
+  --bg-elevated: var(--fluent-bg-input);
+  --bg-panel: var(--fluent-bg-card);
+
+  --border-light: var(--fluent-border-stroke);
+  --border-focus: var(--fluent-border-focus);
+  --accent: var(--fluent-accent);
+  --text-primary: var(--fluent-text-primary);
+  --text-secondary: var(--fluent-text-secondary);
+  --text-light: var(--fluent-text-disabled);
+  --text-accent: var(--fluent-accent);
+
+  --bubble-bot-bg: #2a2f3a;
+  --bubble-user-bg: color-mix(in srgb, var(--fluent-bg-input) 65%, var(--fluent-accent-subtle) 35%);
+  --bubble-border: var(--fluent-border-stroke);
+
+  --btn-grad-a: #343a48;
+  --btn-grad-b: #2a2f3a;
+  --btn-primary: #2f3440;
+  --btn-primary-hover-a: #3d4455;
+  --btn-primary-hover-b: #2f3542;
+  --btn-disabled: #2a2f38;
+
+  --success: var(--fluent-success-text);
+  --warning: #c19c23;
+  --error: #f1707b;
+  --info: var(--fluent-info-muted);
+
+  --shadow-app:
+    0 1px 2px rgba(0, 0, 0, 0.28),
+    0 16px 42px rgba(0, 0, 0, 0.42);
+  --shadow-sm: 0 2px 10px rgba(0, 0, 0, 0.22);
+  --shadow-md: 0 6px 22px rgba(0, 0, 0, 0.34);
+  --shadow-btn-hover: 0 2px 8px rgba(0, 0, 0, 0.3);
+  --shadow-bubble:
+    0 1px 2px rgba(0, 0, 0, 0.18),
+    0 4px 14px rgba(0, 0, 0, 0.2);
+
+  --focus-ring-color: #9aa3ae;
+  --frame-inset-highlight: inset 0 1px 0 rgba(255, 255, 255, 0.08);
+
   --scrollbar-chat-track: rgba(255, 255, 255, 0.05);
   --scrollbar-chat-thumb: rgba(255, 255, 255, 0.14);
   --scrollbar-chat-thumb-hover: rgba(255, 255, 255, 0.22);

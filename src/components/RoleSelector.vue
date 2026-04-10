@@ -62,15 +62,22 @@ const emit = defineEmits<{ changeRole: [string]; changeRelation: [string] }>();
   font-weight: 500;
 }
 .select {
-  border: none;
+  border: 1px solid var(--border-light);
   border-radius: var(--radius-pill);
   padding: 6px 12px;
   color: var(--text-accent);
-  background: var(--border-light);
+  background: var(--bg-elevated);
   font-size: 13px;
   font-weight: 500;
   cursor: pointer;
   outline: none;
+}
+.select:focus {
+  outline: none;
+}
+.select:focus-visible {
+  border-color: var(--accent);
+  box-shadow: 0 0 0 2px color-mix(in srgb, var(--focus-ring-color) 32%, transparent);
 }
 .selector-row--topbar {
   padding: 0;

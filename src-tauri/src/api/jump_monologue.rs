@@ -13,8 +13,7 @@ pub async fn generate_monologue_lines(
         return Ok(vec![]);
     }
     let role = state
-        .storage
-        .load_role(role_id)
+        .load_role_cached(role_id)
         .map_err(|e| e.to_frontend_error())?;
     let scene = state
         .db_manager
@@ -55,7 +54,7 @@ pub async fn generate_monologue_lines(
         })
         .collect();
 
-    let pl = state.resolved_plugins_for(&role);
+    let pl = state.resolved_plugins_for(role.as_ref());
     let ollama_model = role.resolve_ollama_model(state.ollama_model.as_str());
     let mut out = Vec::new();
     for (i, p) in prompts.into_iter().enumerate() {

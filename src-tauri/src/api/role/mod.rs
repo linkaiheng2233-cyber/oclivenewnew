@@ -12,6 +12,7 @@ use crate::models::dto::{
 };
 use crate::models::role::IdentityBinding;
 use crate::state::AppState;
+use std::sync::Arc;
 use tauri::State;
 
 use interaction::resolve_interaction_ui_snapshot;
@@ -33,6 +34,9 @@ pub async fn load_role_impl(
         .storage
         .load_role(role_id)
         .map_err(|e| e.to_frontend_error())?;
+    let role = Arc::new(role);
+
+    state.invalidate_personality_cache_for_role(role_id);
 
     state
         .db_manager
@@ -49,7 +53,7 @@ pub async fn load_role_impl(
     }
 
     let personality = state
-        .get_current_personality(role_id, &role)
+        .get_current_personality(role_id, role.as_ref())
         .await
         .map_err(|e| e.to_frontend_error())?;
 
@@ -58,8 +62,8 @@ pub async fn load_role_impl(
         .get_current_scene(role_id)
         .await
         .map_err(|e| e.to_frontend_error())?;
-    let rt = role_runtime_extras(state, role_id, current_scene.as_deref(), &role).await?;
-    maybe_seed_initial_favorability_with_extras(state, role_id, &role, &rt).await?;
+    let rt = role_runtime_extras(state, role_id, current_scene.as_deref(), role.as_ref()).await?;
+    maybe_seed_initial_favorability_with_extras(state, role_id, role.as_ref(), &rt).await?;
     let current_favorability = current_favorability_for_effective_identity(
         state,
         role_id,
@@ -98,12 +102,12 @@ pub async fn load_role_impl(
         .map_err(|e| e.to_frontend_error())?
         .unwrap_or(0);
     let interaction =
-        resolve_interaction_ui_snapshot(state, role_id, &role, virtual_time_ms).await?;
+        resolve_interaction_ui_snapshot(state, role_id, role.as_ref(), virtual_time_ms).await?;
 
     state
         .role_cache
         .write()
-        .insert(role_id.to_string(), role.clone());
+        .insert(role_id.to_string(), Arc::clone(&role));
 
     Ok(RoleData {
         role_id: role_id.to_string(),
@@ -129,6 +133,7 @@ pub async fn load_role_impl(
         remote_life_enabled,
         remote_life_pack_default,
         event_impact_factor: rt.event_impact_factor,
+        personality_source: role.evolution_config.personality_source,
         effective_ollama_model,
         identity_binding: role.identity_binding,
         interaction_mode: interaction.mode_str,
@@ -152,8 +157,7 @@ pub async fn get_role_info_impl(state: &AppState, role_id: &str) -> Result<RoleI
     }
 
     let role = state
-        .storage
-        .load_role(role_id)
+        .load_role_cached(role_id)
         .map_err(|e| e.to_frontend_error())?;
 
     let current_scene = state
@@ -166,11 +170,11 @@ pub async fn get_role_info_impl(state: &AppState, role_id: &str) -> Result<RoleI
         .get_user_presence_scene(role_id)
         .await
         .map_err(|e| e.to_frontend_error())?;
-    let rt = role_runtime_extras(state, role_id, current_scene.as_deref(), &role).await?;
-    maybe_seed_initial_favorability_with_extras(state, role_id, &role, &rt).await?;
+    let rt = role_runtime_extras(state, role_id, current_scene.as_deref(), role.as_ref()).await?;
+    maybe_seed_initial_favorability_with_extras(state, role_id, role.as_ref(), &rt).await?;
 
     let personality = state
-        .get_current_personality(role_id, &role)
+        .get_current_personality(role_id, role.as_ref())
         .await
         .map_err(|e| e.to_frontend_error())?;
 
@@ -218,7 +222,7 @@ pub async fn get_role_info_impl(state: &AppState, role_id: &str) -> Result<RoleI
         .and_then(|r| r.default_enabled);
 
     let interaction =
-        resolve_interaction_ui_snapshot(state, role_id, &role, virtual_time_ms).await?;
+        resolve_interaction_ui_snapshot(state, role_id, role.as_ref(), virtual_time_ms).await?;
 
     let (knowledge_enabled, knowledge_chunk_count) = match &role.knowledge_index {
         Some(idx) => (true, idx.chunks.len() as i32),
@@ -239,6 +243,7 @@ pub async fn get_role_info_impl(state: &AppState, role_id: &str) -> Result<RoleI
             .map_err(|e| e.to_frontend_error())?
             .unwrap_or_else(|| "Neutral".to_string()),
         personality_vector: personality.to_vec7(),
+        personality_source: role.evolution_config.personality_source,
         last_interaction,
         scenes,
         scene_labels,
@@ -326,8 +331,7 @@ pub async fn set_user_relation_impl(
         .to_frontend_error());
     }
     let role = state
-        .storage
-        .load_role(&req.role_id)
+        .load_role_cached(&req.role_id)
         .map_err(|e| e.to_frontend_error())?;
 
     if matches!(role.identity_binding, IdentityBinding::Global) {
@@ -402,8 +406,7 @@ pub async fn set_evolution_factor_impl(
         .to_frontend_error());
     }
     state
-        .storage
-        .load_role(&req.role_id)
+        .load_role_cached(&req.role_id)
         .map_err(|e| e.to_frontend_error())?;
     if !state
         .db_manager
@@ -440,8 +443,7 @@ pub async fn clear_scene_user_relation_impl(
         .to_frontend_error());
     }
     let role = state
-        .storage
-        .load_role(&req.role_id)
+        .load_role_cached(&req.role_id)
         .map_err(|e| e.to_frontend_error())?;
     if matches!(role.identity_binding, IdentityBinding::Global) {
         return Err(AppError::InvalidParameter(
@@ -485,8 +487,7 @@ pub async fn set_scene_user_relation_impl(
         .to_frontend_error());
     }
     let role = state
-        .storage
-        .load_role(&req.role_id)
+        .load_role_cached(&req.role_id)
         .map_err(|e| e.to_frontend_error())?;
     if matches!(role.identity_binding, IdentityBinding::Global) {
         return Err(AppError::InvalidParameter(
@@ -545,8 +546,7 @@ pub async fn set_remote_life_enabled_impl(
     req: &SetRemoteLifeEnabledRequest,
 ) -> Result<RoleInfo, String> {
     state
-        .storage
-        .load_role(&req.role_id)
+        .load_role_cached(&req.role_id)
         .map_err(|e| e.to_frontend_error())?;
     if !state
         .db_manager
@@ -580,8 +580,7 @@ pub async fn set_role_interaction_mode_impl(
     req: &SetRoleInteractionModeRequest,
 ) -> Result<RoleInfo, String> {
     state
-        .storage
-        .load_role(&req.role_id)
+        .load_role_cached(&req.role_id)
         .map_err(|e| e.to_frontend_error())?;
     if !state
         .db_manager

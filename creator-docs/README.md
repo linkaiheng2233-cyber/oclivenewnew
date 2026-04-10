@@ -19,7 +19,7 @@
 
 1. 打开 **[getting-started/DOCUMENTATION_INDEX.md](getting-started/DOCUMENTATION_INDEX.md)**，按「快速入口」表选读。  
 2. 先看错误与排障：**[getting-started/ERROR_CODES.md](getting-started/ERROR_CODES.md)**（用户提示与开发日志对齐）。  
-3. 做角色包内容： **[getting-started/CREATOR_WORKFLOW.md](getting-started/CREATOR_WORKFLOW.md)**（运行时与**独立编写器**分工、**`OCLIVE_ROLES_DIR`**）+ 仓库 **[roles/README_MANIFEST.md](../roles/README_MANIFEST.md)**。编写器为另仓（如 **`oclive-pack-editor`**），包为唯一对接面。  
+3. 做角色包内容： **[getting-started/CREATOR_WORKFLOW.md](getting-started/CREATOR_WORKFLOW.md)**（运行时与**独立编写器**分工、**`OCLIVE_ROLES_DIR`**）+ 仓库 **[roles/README_MANIFEST.md](../roles/README_MANIFEST.md)**；性格档案轴心见 **[docs/personality-archive-notes.md](../docs/personality-archive-notes.md)**，思路演进见 **[docs/design-axis-evolution.md](../docs/design-axis-evolution.md)**。编写器为另仓（如 **`oclive-pack-editor`**），包为唯一对接面。  
 4. 做 HTTP 侧车： **[plugin-and-architecture/CREATOR_PLUGIN_ARCHITECTURE.md](plugin-and-architecture/CREATOR_PLUGIN_ARCHITECTURE.md)** + **[plugin-and-architecture/REMOTE_PLUGIN_PROTOCOL.md](plugin-and-architecture/REMOTE_PLUGIN_PROTOCOL.md)**。  
 5. **用户向：本机侧车 + 自带 Key 接闭源模型**：[getting-started/SIDECAR_LLM_USER_GUIDE.md](getting-started/SIDECAR_LLM_USER_GUIDE.md)。  
 6. 联调示例： **[examples/remote_plugin_minimal/README.md](../examples/remote_plugin_minimal/README.md)**；**OpenAI 兼容（requests + BYOK）**：[examples/remote_plugin_openai_compat/README.md](../examples/remote_plugin_openai_compat/README.md)。

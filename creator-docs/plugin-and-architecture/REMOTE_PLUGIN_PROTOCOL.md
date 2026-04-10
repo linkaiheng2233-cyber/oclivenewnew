@@ -157,6 +157,15 @@
 }
 ```
 
+### 3.4 `PersonalitySource`（`event.estimate` / `prompt.build_prompt`）
+
+宿主编排层使用的性格驱动枚举；JSON 中为 **字符串**（**不是** §3.1 `EventType` 那样的外包对象）：
+
+- `"vector"`：七维向量参与事件后演化等传统路径。
+- `"profile"`：以核心 + 可变性格档案为准，七维多为归纳视图。
+
+`event.estimate` 与 `prompt.build_prompt` 的 `params` 均含顶层字段 **`personality_source`**（与 `role.evolution_config.personality_source` / 包内 `evolution.personality_source` 一致）。侧车可只读该字段而不必从嵌套 `role` 解析。
+
 ---
 
 ## 4. 方法详解与示例
@@ -262,8 +271,10 @@
 | `user_message` | 字符串 |
 | `user_emotion` | `Emotion`（§3.2） |
 | `personality` | `PersonalityVector`（七维 `f64`，与 Rust 模型一致） |
+| `personality_source` | 字符串：`"vector"` 或 `"profile"`（§3.4） |
 | `recent_turns` | 二元组数组 `[[user, bot], ...]`，字符串 |
 | `recent_events` | `Event[]`（`event_type` 为 §3.1 形状，`user_emotion`/`bot_emotion` 为字符串） |
+| `knowledge_augment` | 对象或 `null`；与宿主检索到的世界观 augment 一致（可省略） |
 
 **result**：即 **`EventImpactEstimate`**
 
@@ -290,6 +301,7 @@
 **params**：扁平对象，字段与宿主 `PromptInput` 序列化一致，主要包括：
 
 - `role`：完整 `Role` JSON（体积较大）  
+- **`personality_source`**：字符串（§3.4），与 `role.evolution_config.personality_source` 一致  
 - `personality`、`memories`、`user_input`、`user_emotion`、`user_relation_id`、`relation_hint`、`relation_before`、`favorability_before`、`relation_preview`、`favorability_preview`  
 - `event_type`（`EventType`）、`impact_factor`  
 - `scene_label`、`scene_detail`、`topic_hint_line`、`life_context_line`  

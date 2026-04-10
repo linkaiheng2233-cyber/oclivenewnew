@@ -95,6 +95,7 @@ pub fn compose_remote_stub_reply(role: &Role) -> String {
 ///
 /// `worldview_snippet` 为 [`crate::models::knowledge::KnowledgeIndex::format_for_prompt`] 的输出；空则跳过【世界观设定】段（与共景主对话语义对齐）。
 #[allow(clippy::too_many_arguments)]
+/// `mutable_personality`：人设优先模式下由 LLM 维护的「可变性格档案」全文；空则跳过该段。
 pub fn build_remote_life_prompt(
     role: &Role,
     away_material: &str,
@@ -106,6 +107,7 @@ pub fn build_remote_life_prompt(
     virtual_time_label: &str,
     life_schedule_line: &str,
     worldview_snippet: &str,
+    mutable_personality: &str,
 ) -> String {
     let core = role.core_personality.trim();
     let core_hint = if core.len() > 2800 {
@@ -152,6 +154,15 @@ pub fn build_remote_life_prompt(
         )
     };
 
+    let mutable_block = if mutable_personality.trim().is_empty() {
+        String::new()
+    } else {
+        format!(
+            "\n【可变性格档案】（对话维护，非创作者手写；与核心摘要冲突时以核心为准）\n{}\n",
+            mutable_personality.trim()
+        )
+    };
+
     format!(
         r#"你是角色「{name}」。
 
@@ -161,8 +172,7 @@ pub fn build_remote_life_prompt(
 【关系阶段】{rel} · 【好感度约】{fav:.1}
 
 【人设摘要】
-{core}
-{summary}{worldview}
+{core}{mutable}{summary}{worldview}
 【创作者提供的「你当前场景」异地素材】
 {material}
 
@@ -178,6 +188,7 @@ pub fn build_remote_life_prompt(
         rel = relation_state,
         fav = favorability,
         core = core_hint,
+        mutable = mutable_block,
         summary = summary_block,
         worldview = worldview_block,
         material = material_block,
@@ -225,6 +236,7 @@ mod tests {
             "2026-01-01",
             "",
             "雾城设定：永不天亮。",
+            "",
         );
         assert!(p.contains("【世界观设定】"));
         assert!(p.contains("永不天亮"));

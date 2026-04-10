@@ -9,6 +9,7 @@ import {
   setRemoteLifeEnabled,
   setUserRelation,
 } from "../utils/tauri-api";
+import HelpHint from "./HelpHint.vue";
 
 const roleStore = useRoleStore();
 const uiStore = useUiStore();
@@ -16,6 +17,23 @@ const localFactor = ref(roleStore.roleInfo.eventImpactFactor);
 const busy = ref(false);
 
 const pluginBackends = computed(() => roleStore.roleInfo.pluginBackends);
+
+const personalitySourceLabel = computed(() =>
+  roleStore.roleInfo.personalitySource === "profile"
+    ? "档案（可变正文由对话维护）"
+    : "七维向量",
+);
+
+const personalitySourceHintParagraphs = computed(() =>
+  roleStore.roleInfo.personalitySource === "profile"
+    ? [
+        "人格来源为 profile：运行时以核心性格档案与数据库中的「可变性格档案」为准；界面七维多为从正文归纳的视图。",
+        "与 vector 模式（七维直接参与事件演化）不同；设计说明见仓库 docs/personality-archive-notes.md。",
+      ]
+    : [
+        "人格来源为 vector：事件与情绪按七维精细化调整；与 settings 中 evolution.personality_source 一致。",
+      ],
+);
 
 const relationRows = computed(() =>
   buildRelationDropdownOptions(
@@ -106,6 +124,12 @@ function onFactorEnter(ev: KeyboardEvent) {
       >
         模块后端：mem {{ pluginBackends.memory }} · emotion {{ pluginBackends.emotion }} · event {{ pluginBackends.event }} · prompt {{ pluginBackends.prompt }} · llm {{ pluginBackends.llm }}
       </p>
+      <p class="sub personality-source-line">
+        <span class="ps-inline">
+          人格来源：<strong>{{ personalitySourceLabel }}</strong>
+          <HelpHint :paragraphs="personalitySourceHintParagraphs" />
+        </span>
+      </p>
     </div>
     <div v-if="roleStore.interactionImmersive" class="row row-check">
       <label for="remote-life">异地心声</label>
@@ -192,6 +216,15 @@ function onFactorEnter(ev: KeyboardEvent) {
   font-size: 11px;
   line-height: 1.4;
   word-break: break-word;
+}
+.personality-source-line {
+  margin-top: 8px;
+}
+.ps-inline {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  flex-wrap: wrap;
 }
 .row {
   display: flex;

@@ -984,6 +984,31 @@ impl DbManager {
         Ok(())
     }
 
+    /// 人设优先模式：相处中由模型维护的「可变性格档案」正文（与 manifest 核心性格档案并列）。
+    pub async fn get_mutable_personality(&self, role_id: &str) -> Result<String> {
+        let row: Option<(Option<String>,)> =
+            sqlx::query_as("SELECT mutable_personality FROM role_runtime WHERE role_id = ?")
+                .bind(role_id)
+                .fetch_optional(&self.pool)
+                .await
+                .map_err(|e| AppError::DatabaseError(e.to_string()))?;
+        Ok(row.and_then(|(c,)| c).unwrap_or_default())
+    }
+
+    pub async fn set_mutable_personality(&self, role_id: &str, text: &str) -> Result<()> {
+        let now = Utc::now().to_rfc3339();
+        sqlx::query(
+            "UPDATE role_runtime SET mutable_personality = ?, updated_at = ? WHERE role_id = ?",
+        )
+        .bind(text)
+        .bind(&now)
+        .bind(role_id)
+        .execute(&self.pool)
+        .await
+        .map_err(|e| AppError::DatabaseError(e.to_string()))?;
+        Ok(())
+    }
+
     // ===== 好感度操作 =====
 
     /// 确保 `role_runtime` 中存在该角色（性格/记忆外键依赖）
@@ -1551,6 +1576,10 @@ mod tests {
         .execute(&pool)
         .await
         .map_err(|e| AppError::DatabaseError(e.to_string()))?;
+        sqlx::query(include_str!("../../migrations/013_mutable_personality.sql"))
+            .execute(&pool)
+            .await
+            .map_err(|e| AppError::DatabaseError(e.to_string()))?;
 
         // 为测试创建角色运行时记录
         sqlx::query("INSERT INTO role_runtime (role_id, current_favorability) VALUES (?, ?)")

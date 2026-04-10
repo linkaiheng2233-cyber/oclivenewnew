@@ -7,7 +7,9 @@ use crate::domain::memory_retrieval::MemoryRetrievalInput;
 use crate::domain::plugin_host::{PluginHost, ResolvedRolePlugins};
 use crate::domain::{EventDetector, MemoryEngine, PersonalityEngine, PromptInput};
 use crate::infrastructure::llm::{LlmClient, MockLlmClient};
-use crate::models::{Emotion, Event, EventType, Memory, PersonalityVector, Role};
+use crate::models::{
+    Emotion, Event, EventType, Memory, PersonalitySource, PersonalityVector, Role,
+};
 use std::sync::Arc;
 
 fn resolved_plugins_dummy(role: &Role) -> ResolvedRolePlugins {
@@ -86,25 +88,29 @@ impl RoleManager {
 
         let user_emotion = emotion_result.to_emotion();
         let user_emotion_str = user_emotion.to_string();
+        let user_emotion_prompt =
+            crate::domain::emotion_analyzer::EmotionAnalyzer::format_for_prompt(&emotion_result);
 
         // 2. 检测事件
         let event = EventDetector::detect(user_input, &user_emotion, &Emotion::Neutral).ok();
 
-        // 3. 调整性格
+        // 3. 调整性格（人设优先模式由档案归纳七维，此处不直接推向量）
         let mut updated_personality = self.personality.clone();
-        updated_personality = PersonalityEngine::adjust_by_user_emotion(
-            updated_personality,
-            &user_emotion_str,
-            &self.role.evolution_bounds,
-        );
-
-        if let Some(ref evt) = event {
-            let impact = EventDetector::get_impact_factor(&evt.event_type);
-            updated_personality = PersonalityEngine::evolve_by_event(
+        if self.role.evolution_config.personality_source != PersonalitySource::Profile {
+            updated_personality = PersonalityEngine::adjust_by_user_emotion(
                 updated_personality,
-                impact,
+                &user_emotion_str,
                 &self.role.evolution_bounds,
             );
+
+            if let Some(ref evt) = event {
+                let impact = EventDetector::get_impact_factor(&evt.event_type);
+                updated_personality = PersonalityEngine::evolve_by_event(
+                    updated_personality,
+                    impact,
+                    &self.role.evolution_bounds,
+                );
+            }
         }
 
         // 4. 添加短期记忆
@@ -133,7 +139,7 @@ impl RoleManager {
             personality: &updated_personality,
             memories: &relevant_memories,
             user_input,
-            user_emotion: &user_emotion_str,
+            user_emotion: user_emotion_prompt.as_str(),
             user_relation_id: "",
             relation_hint: "",
             relation_before: "Stranger",
@@ -153,6 +159,7 @@ impl RoleManager {
             topic_hint_line: "",
             life_context_line: "",
             worldview_snippet: "",
+            mutable_personality: "",
         });
 
         // 7. 更新性格

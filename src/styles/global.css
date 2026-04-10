@@ -8,7 +8,8 @@
 
 /* 根字号随窗口缩放（Tauri 可调窗口）；继承字号的区域会跟著变 */
 html {
-  font-size: clamp(12px, calc(9px + 0.7vmin), 20px);
+  /* 与 launcher / pack-editor：vmin 缩放 × 用户档位 */
+  font-size: calc(clamp(12px, calc(8px + 0.85vmin), 22px) * var(--oclive-ui-scale, 1));
 }
 
 html,
@@ -26,15 +27,27 @@ body {
 }
 
 body {
-  font-family: "Microsoft YaHei", "Segoe UI", "PingFang SC", sans-serif;
+  font-family: var(--font-ui);
   font-size: 1rem;
-  background: var(--bg-page);
+  line-height: 1.5;
+  background: var(--shell-page-bg);
   color: var(--text-primary);
   -webkit-font-smoothing: antialiased;
+  text-rendering: optimizeLegibility;
+}
+
+input[type="text"],
+input[type="number"],
+input[type="password"],
+input[type="url"],
+input[type="search"],
+select,
+textarea {
+  transition: var(--control-transition);
 }
 
 ::selection {
-  background: rgba(212, 165, 116, 0.35);
+  background: color-mix(in srgb, var(--accent) 28%, transparent);
   color: var(--text-primary);
 }
 

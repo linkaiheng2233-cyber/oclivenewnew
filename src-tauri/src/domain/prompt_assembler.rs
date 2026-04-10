@@ -151,6 +151,7 @@ mod tests {
             topic_hint_line: "",
             life_context_line: "",
             worldview_snippet: "",
+            mutable_personality: "",
         };
         let a = BuiltinPromptAssembler.build_prompt(&input);
         let b = BuiltinPromptAssemblerV2.build_prompt(&input);

@@ -172,6 +172,9 @@ export interface PluginBackends {
  * 身份相关：`default_relation` 来自角色包；`current_user_relation` 为解析后的有效键（`identity_binding: per_scene` 时场景覆盖优先，否则为全局 manifest 默认或 DB）；
  * `use_manifest_default` 仅表示用户是否选了「默认身份」选项；好感/阶段与当前有效身份一致。
  */
+/** `evolution.personality_source` */
+export type PersonalitySource = "vector" | "profile";
+
 export interface RoleData {
   role_id: string;
   name: string;
@@ -194,6 +197,8 @@ export interface RoleData {
   /** 角色包建议默认是否开启异地心声（settings.json → remote_presence.default_enabled） */
   remote_life_pack_default: boolean | null;
   event_impact_factor: number;
+  /** `evolution.personality_source`；缺省为 vector */
+  personality_source?: PersonalitySource;
   /** manifest → OLLAMA_MODEL → 全局默认 */
   effective_ollama_model: string;
   /** 全局单一身份 vs 按场景覆盖（manifest `identity_binding`） */
@@ -223,6 +228,8 @@ export interface RoleInfo {
   current_favorability: number;
   current_emotion: string;
   personality_vector: number[];
+  /** `evolution.personality_source`；缺省为 vector */
+  personality_source?: PersonalitySource;
   last_interaction?: string | null;
   scenes: string[];
   /** 与 scenes 顺序一致；label 来自角色包 scene.json 或内置映射 */

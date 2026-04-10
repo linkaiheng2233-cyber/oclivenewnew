@@ -42,7 +42,7 @@ export const useChatStore = defineStore(
     getters: {
       /**
        * 指定角色×场景的消息列表（不读其它 store；调用方传入 currentRoleId / sceneId）。
-       * 兼容旧版 messageMap[roleId] 为数组时，会迁移到 [sceneId] 桶。
+       * 旧版 messageMap[roleId] 为数组时只读返回；写入路径（addMessage / clearMessages 等）会迁入分桶结构。
        */
       messagesForRoleScene: (state) => {
         return (roleId: string, sceneId: string): ChatMessage[] => {
@@ -52,8 +52,6 @@ export const useChatStore = defineStore(
             unknown
           >)[roleId];
           if (Array.isArray(roleBucket)) {
-            (state.messageMap as Record<string, Record<string, ChatMessage[]>>)[roleId] =
-              { [sid]: roleBucket as ChatMessage[] };
             return roleBucket as ChatMessage[];
           }
           const sceneBucket = (roleBucket as Record<string, ChatMessage[]> | undefined)?.[

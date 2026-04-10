@@ -22,7 +22,7 @@ roles/<角色 id>/
 ```text
 roles/<角色 id>/
 ├── manifest.json           # 必填：角色元数据、用户身份、场景列表、记忆策略等
-├── core_personality.txt    # 强烈建议：全局人设长文，供主模型阅读
+├── core_personality.txt    # 强烈建议：核心性格档案（包内长文），供主模型阅读；运行时不可由模型改写
 ├── config.json             # 可选：虚拟时间等
 └── scenes/                 # 推荐：按场景分子目录
     ├── <scene_id>/
@@ -31,7 +31,7 @@ roles/<角色 id>/
     └── ...
 ```
 
-加载时，程序会读取 `manifest.json` 并校验；再通过 `core_personality.txt`、`scenes/` 补全对话与展示信息。
+加载时，程序会读取 `manifest.json` 并校验；再通过 `core_personality.txt`、`scenes/` 补全对话与展示信息。若 `settings.json` 中 **`evolution.personality_source`** 为 **`profile`**，对话后的 **可变性格档案**仅存本地数据库并由模型维护，包内不可手写；详见 **[docs/personality-archive-notes.md](../../docs/personality-archive-notes.md)**。
 
 ---
 
@@ -45,7 +45,7 @@ roles/<角色 id>/
 | `name` | 角色在列表里显示的名称（可与内部称呼不同）。 |
 | `version` / `author` / `description` | 版本、作者、简介。 |
 | `model` | 可选；指定本角色默认使用的 Ollama 模型名（也可在应用环境或界面中选择）。 |
-| `default_personality` | 可选；七维性格初值（倔强、黏人、敏感、强势、宽容、话多、温暖），每项约 0～1。 |
+| `default_personality` | 可选；七维性格初值（倔强、黏人、敏感、强势、宽容、话多、温暖），每项约 0～1。`profile` 人格来源下多为视图，仍建议填写。 |
 | `scenes` | 场景 id 列表；会与 `scenes/` 下子目录**合并去重**，详见场景指南。 |
 
 ### 3.2 `user_relations`：玩家「身份」的核心配置
@@ -93,14 +93,14 @@ roles/<角色 id>/
 
 ### 3.5 `evolution`（可选）
 
-与事件影响、性格演化幅度等相关；可按作品节奏调整，缺省亦有合理默认。
+与事件影响、**人格来源**（`personality_source`）、可变档案更新步长（`max_change_per_event`）等相关；可按作品节奏调整，缺省亦有合理默认。摘要见 [roles/README_MANIFEST.md](../../roles/README_MANIFEST.md) §5.3。
 
 ---
 
-## 4. `core_personality.txt`：人设与用户身份的配合
+## 4. `core_personality.txt`：核心性格档案与用户身份的配合
 
-`core_personality.txt` 描述**角色本身**是谁、如何说话、有哪些禁区。  
-**用户身份**（父母 / 同学 / 恋人等）主要在 `user_relations` 与 `prompt_hint` 里定义。两者应一致：例如「用户扮演父母」的包，人设侧应写子女视角，避免与 `prompt_hint` 冲突。
+`core_personality.txt` 是包内 **核心性格档案**：描述**角色本身**是谁、如何说话、有哪些禁区；运行时 **不得**由模型改写该正文。  
+**用户身份**（父母 / 同学 / 恋人等）主要在 `user_relations` 与 `prompt_hint` 里定义。两者应一致：例如「用户扮演父母」的包，档案侧应写子女视角，避免与 `prompt_hint` 冲突。
 
 ---
 
@@ -115,13 +115,14 @@ roles/<角色 id>/
 1. 新建 `roles/<你的角色 id>/`，先写好 **`manifest.json`** 的 `id`、`name`、`user_relations`、`default_relation`。  
 2. 为每个身份写好 **`display_name`** 与 **`prompt_hint`**，并设好 **`initial_favorability`** 与 **`favor_multiplier`**。  
 3. 配置 **`scenes`** 与 `scenes/<scene_id>/`，需要时再填 **`topic_weights`**。  
-4. 撰写 **`core_personality.txt`**，与身份设定对齐。  
+4. 撰写 **`core_personality.txt`**（核心性格档案），与身份设定对齐；若使用 **`profile`** 人格来源，在 `settings.json` 的 **`evolution`** 中配置 `max_change_per_event` 等，勿尝试在包内手写运行时可变档案。  
 5. 在应用内加载角色，检查**身份下拉框**称谓、场景列表与对话是否符合预期。  
 
 ---
 
 ## 7. 延伸阅读
 
+- [docs/personality-archive-notes.md](../../docs/personality-archive-notes.md) — 核心/可变档案与 `personality_source` 设计轴心。  
 - [《创作者说明：用户身份与初始好感》](./CREATOR_USER_RELATIONS.md) — `display_name`、`default_relation`、好感与 `topic_weights` 校验要点。  
 - [《角色包场景系统 — 创作者使用指南》](./CREATOR_SCENE_GUIDE.md) — 场景目录、`scene.json`、`description.txt` 与场景切换。  
 

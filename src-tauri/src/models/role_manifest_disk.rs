@@ -4,10 +4,10 @@
 
 use std::collections::HashMap;
 
+use oclive_validation::IdentityBinding;
 pub use oclive_validation::{
     DiskRoleManifest, EvolutionConfigDisk, MemoryConfigDisk, UserRelationDisk,
 };
-use oclive_validation::IdentityBinding;
 
 use super::role::{
     EvolutionBounds, EvolutionConfig, LifeTrajectoryDisk, MemoryConfig, PersonalityDefaults, Role,
@@ -53,7 +53,13 @@ pub fn disk_manifest_from_role(role: &Role) -> DiskRoleManifest {
         description: role.description.clone(),
         ollama_model: None,
         default_personality,
-        evolution: EvolutionConfigDisk::default(),
+        evolution: EvolutionConfigDisk {
+            event_impact_factor: role.evolution_config.event_impact_factor,
+            ai_analysis_interval: role.evolution_config.ai_analysis_interval,
+            max_change_per_event: role.evolution_config.max_change_per_event,
+            max_total_change: role.evolution_config.max_total_change,
+            personality_source: role.evolution_config.personality_source,
+        },
         scenes: vec![],
         user_relations,
         default_relation: role.default_relation.clone(),
@@ -94,6 +100,7 @@ pub fn disk_manifest_to_role(d: &DiskRoleManifest) -> Role {
         ai_analysis_interval: d.evolution.ai_analysis_interval,
         max_change_per_event: d.evolution.max_change_per_event,
         max_total_change: d.evolution.max_total_change,
+        personality_source: d.evolution.personality_source,
     };
 
     let memory_config = MemoryConfig {

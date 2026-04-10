@@ -5,6 +5,29 @@
     <link rel="icon" type="image/svg+xml" href="/vite.svg" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>沐沐 - 桌面AI伴侣</title>
+    <script>
+      (function () {
+        try {
+          var k = "oclive-runtime-theme";
+          var v = localStorage.getItem(k);
+          var t = "light";
+          if (v === "dark") t = "dark";
+          else if (v === "light") t = "light";
+          else if (window.matchMedia("(prefers-color-scheme: dark)").matches)
+            t = "dark";
+          document.documentElement.setAttribute("data-theme", t);
+        } catch (e) {
+          document.documentElement.setAttribute("data-theme", "light");
+        }
+        try {
+          var sk = "oclive-runtime-ui-scale";
+          var sv = localStorage.getItem(sk);
+          var s = 1;
+          if (sv != null && sv !== "" && isFinite(Number(sv))) s = Number(sv);
+          document.documentElement.style.setProperty("--oclive-ui-scale", String(s));
+        } catch (e2) {}
+      })();
+    </script>
   </head>
 
   <body>

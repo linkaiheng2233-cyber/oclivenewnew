@@ -1,15 +1,15 @@
 use crate::domain::knowledge_loader::{load_knowledge_index, should_load_knowledge};
 use crate::domain::role_manifest_validate::{
-    log_plugin_backends_remote_missing_env, validate_disk_manifest,
-    validate_role_interaction_mode,
-};
-use oclive_validation::{
-    validate_manifest_top_level_keys, validate_min_runtime_version, validate_settings_top_level_keys,
+    log_plugin_backends_remote_missing_env, validate_disk_manifest, validate_role_interaction_mode,
 };
 use crate::error::{AppError, Result};
 use crate::models::role_manifest_disk::{disk_manifest_from_role, disk_manifest_to_role};
 use crate::models::{DiskRoleManifest, DiskRoleSettings, DiskSceneConfig, LlmBackend, Role};
 use chrono::Timelike;
+use oclive_validation::{
+    validate_manifest_top_level_keys, validate_min_runtime_version,
+    validate_settings_top_level_keys,
+};
 use serde_json;
 use std::collections::BTreeSet;
 use std::fs;
@@ -583,6 +583,7 @@ mod tests {
                 ai_analysis_interval: 20,
                 max_change_per_event: 0.1,
                 max_total_change: 0.6,
+                personality_source: Default::default(),
             },
             memory_config: Some(MemoryConfig {
                 scene_weight_multiplier: 2.0,

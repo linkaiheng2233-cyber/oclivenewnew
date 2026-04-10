@@ -5,7 +5,10 @@ use semver::Version;
 use std::collections::HashSet;
 
 /// 比较角色包要求的最低宿主版本与当前 oclive 版本（`min_req` 为 `None` 或空则跳过）。
-pub fn validate_min_runtime_version(min_req: Option<&str>, host_version: &str) -> Result<(), String> {
+pub fn validate_min_runtime_version(
+    min_req: Option<&str>,
+    host_version: &str,
+) -> Result<(), String> {
     let req = min_req.map(str::trim).filter(|s| !s.is_empty());
     let Some(req) = req else {
         return Ok(());

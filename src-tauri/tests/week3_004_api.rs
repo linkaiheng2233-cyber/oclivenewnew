@@ -18,7 +18,7 @@ use oclivenewnew_tauri::models::dto::{
     SetEvolutionFactorRequest, SetSceneUserRelationRequest, SetUserRelationRequest,
     SwitchSceneRequest,
 };
-use oclivenewnew_tauri::models::role::IdentityBinding;
+use oclivenewnew_tauri::models::role::{IdentityBinding, PersonalitySource};
 use oclivenewnew_tauri::state::AppState;
 use std::path::PathBuf;
 use std::sync::Arc;
@@ -47,12 +47,22 @@ async fn week3_004_load_role_and_get_info() {
         "neutral",
         "启动 load_role 立绘应回到正常"
     );
+    assert_eq!(
+        data.personality_source,
+        PersonalitySource::Vector,
+        "mumu 包未写 personality_source 时应默认为 vector"
+    );
 
     let info = get_role_info_impl(&state, "mumu")
         .await
         .expect("get_role_info");
     assert_eq!(info.role_id, "mumu");
     assert_eq!(info.current_emotion.to_ascii_lowercase(), "neutral");
+    assert_eq!(
+        info.personality_source,
+        PersonalitySource::Vector,
+        "get_role_info 应与包内 evolution.personality_source 一致"
+    );
 }
 
 #[tokio::test]

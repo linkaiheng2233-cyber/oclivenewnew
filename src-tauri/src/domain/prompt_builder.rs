@@ -1,6 +1,6 @@
 //! 提示词构建：角色、记忆、关系与场景话题提示
 
-use crate::models::{EventType, Memory, PersonalityVector, Role};
+use crate::models::{EventType, Memory, PersonalitySource, PersonalityVector, Role};
 
 /// 主对话 `build_prompt` 的输入，避免长参数列表与调用处错位。
 pub struct PromptInput<'a> {
@@ -26,6 +26,8 @@ pub struct PromptInput<'a> {
     pub life_context_line: &'a str,
     /// 本回合检索到的世界观知识片段；空则跳过【世界观设定】段
     pub worldview_snippet: &'a str,
+    /// 人设优先模式下 DB 中的「可变性格档案」全文；`vector` 模式传空串即可。
+    pub mutable_personality: &'a str,
 }
 
 pub struct PromptBuilder;
@@ -84,7 +86,11 @@ impl PromptBuilder {
 
     pub fn build_prompt(input: &PromptInput<'_>) -> String {
         let mut prompt = String::new();
-        prompt.push_str(&Self::build_role_definition(input.role, input.personality));
+        prompt.push_str(&Self::build_role_definition(
+            input.role,
+            input.personality,
+            input.mutable_personality,
+        ));
         prompt.push_str("\n\n");
         Self::push_user_identity_section(&mut prompt, input);
         if !input.scene_label.is_empty()
@@ -168,14 +174,40 @@ impl PromptBuilder {
         }
     }
 
-    fn build_role_definition(role: &Role, personality: &PersonalityVector) -> String {
+    fn build_role_definition(
+        role: &Role,
+        personality: &PersonalityVector,
+        mutable_personality: &str,
+    ) -> String {
+        let profile_primary =
+            role.evolution_config.personality_source == PersonalitySource::Profile;
         let mut definition = String::new();
         definition.push_str(&format!("你是{}。\n", role.name));
         definition.push_str(&format!("描述: {}\n", role.description));
-        if !role.core_personality.trim().is_empty() {
+        if profile_primary {
+            if !role.core_personality.trim().is_empty() {
+                definition.push_str(&format!(
+                    "核心性格档案（创作者与用户设定，运行时 AI 不得改写；与可变档案冲突时以本段为准）:\n{}\n",
+                    role.core_personality.trim()
+                ));
+            }
+            let m = mutable_personality.trim();
+            if !m.is_empty() {
+                definition.push_str(
+                    "【可变性格档案】（由模型在规则内根据对话维护，用于抓住相处中的有限变化；创作者不可手写本条；与核心档案冲突时以核心为准）\n",
+                );
+                definition.push_str(m);
+                definition.push_str("\n\n");
+            }
+            definition.push_str(
+                "【七维视图】（仅由「核心 + 可变档案」正文经规则归纳的辅助读数，帮助把握语气松紧；**不是**性格主数据源；与上文档案冲突时以档案正文为准）\n",
+            );
+        } else if !role.core_personality.trim().is_empty() {
             definition.push_str(&format!("核心人设:\n{}\n", role.core_personality.trim()));
         }
-        definition.push_str("\n当前性格（自然语言）:\n");
+        if !profile_primary {
+            definition.push_str("\n当前性格（自然语言）:\n");
+        }
         definition.push_str(&format!(
             "- 倔强: {}\n",
             Self::dim_label(personality.stubbornness, "偏低", "一般", "偏高")
@@ -220,7 +252,9 @@ impl PromptBuilder {
 
     fn build_current_state(personality: &PersonalityVector, user_emotion: &str) -> String {
         let mut state = String::from("当前状态:\n");
-        state.push_str(&format!("用户情绪: {}\n", user_emotion));
+        state.push_str("用户语气线索（内置情感引擎；请先对齐再编内容）:\n");
+        state.push_str(user_emotion.trim());
+        state.push('\n');
         let balance = (personality.forgiveness + personality.warmth) / 2.0;
         let mood = if balance > 0.65 {
             "偏温柔、好说话"
@@ -396,6 +430,7 @@ mod tests {
     use super::*;
     use crate::models::EventType;
     use crate::models::EvolutionBounds;
+    use crate::models::PersonalitySource;
     use chrono::Utc;
 
     fn create_test_role() -> Role {
@@ -483,6 +518,7 @@ mod tests {
             topic_hint_line: "在「家」下，你们可能会多聊日常。",
             life_context_line: "",
             worldview_snippet: "",
+            mutable_personality: "",
         });
 
         assert!(prompt.contains("Test Role"));
@@ -498,6 +534,8 @@ mod tests {
         assert!(prompt.contains("Praise"));
         assert!(prompt.contains("场景设定"));
         assert!(prompt.contains("客厅灯暖洋洋"));
+        assert!(prompt.contains("用户语气线索"));
+        assert!(prompt.contains("happy"));
     }
 
     #[test]
@@ -523,6 +561,7 @@ mod tests {
             topic_hint_line: "",
             life_context_line: "",
             worldview_snippet: "",
+            mutable_personality: "",
         });
 
         assert!(prompt.contains("家人/长辈场景补充"));
@@ -573,6 +612,7 @@ mod tests {
             topic_hint_line: "",
             life_context_line: "",
             worldview_snippet: "",
+            mutable_personality: "",
         });
 
         assert!(prompt.contains("倔强"));
@@ -602,6 +642,7 @@ mod tests {
             topic_hint_line: "",
             life_context_line: "",
             worldview_snippet: "",
+            mutable_personality: "",
         });
 
         assert!(prompt.contains("用户说"));
@@ -639,6 +680,7 @@ mod tests {
             topic_hint_line: "",
             life_context_line: "",
             worldview_snippet: "",
+            mutable_personality: "",
         });
 
         assert!(prompt.contains("边界语气控制指引"));
@@ -676,6 +718,7 @@ mod tests {
             topic_hint_line: "",
             life_context_line: "",
             worldview_snippet: "",
+            mutable_personality: "",
         });
 
         assert!(prompt.contains("边界语气控制指引"));
@@ -706,8 +749,41 @@ mod tests {
             topic_hint_line: "",
             life_context_line: "",
             worldview_snippet: "",
+            mutable_personality: "",
         });
 
         assert!(!prompt.contains("边界语气控制指引"));
+    }
+
+    #[test]
+    fn profile_mode_shows_mutable_and_summary_header() {
+        let mut role = create_test_role();
+        role.evolution_config.personality_source = PersonalitySource::Profile;
+        let personality = create_test_personality();
+        let prompt = PromptBuilder::build_prompt(&PromptInput {
+            role: &role,
+            personality: &personality,
+            memories: &[],
+            user_input: "hi",
+            user_emotion: "neutral",
+            user_relation_id: "",
+            relation_hint: "",
+            relation_before: "Stranger",
+            favorability_before: 0.0,
+            relation_preview: "Stranger",
+            favorability_preview: 0.0,
+            event_type: &EventType::Ignore,
+            impact_factor: 0.0,
+            scene_label: "",
+            scene_detail: "",
+            topic_hint_line: "",
+            life_context_line: "",
+            worldview_snippet: "",
+            mutable_personality: "最近更黏人了。",
+        });
+        assert!(prompt.contains("【可变性格档案】"));
+        assert!(prompt.contains("更黏人"));
+        assert!(prompt.contains("【七维视图】"));
+        assert!(prompt.contains("核心性格档案（创作者与用户设定"));
     }
 }

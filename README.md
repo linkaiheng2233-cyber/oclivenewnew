@@ -31,6 +31,8 @@
 | 侧车范例：OpenAI 兼容 API | [examples/remote_plugin_openai_compat/README.md](examples/remote_plugin_openai_compat/README.md) |
 | 侧车示例共用模块（JSON-RPC / 非 LLM 占位） | [examples/common/README.md](examples/common/README.md) |
 | 角色 manifest 说明 | [roles/README_MANIFEST.md](roles/README_MANIFEST.md)（含应用内 **导入 `.ocpak` / `.zip` / 文件夹**） |
+| **性格档案（核心 / 可变 / 七维视图）** | [docs/personality-archive-notes.md](docs/personality-archive-notes.md)（与 `evolution.personality_source` 对齐） |
+| **设计思路演进记录** | [docs/design-axis-evolution.md](docs/design-axis-evolution.md) |
 | 角色包导入 — 手工测试清单 | [roles/TESTING_ROLE_PACK_IMPORT.md](roles/TESTING_ROLE_PACK_IMPORT.md) |
 
 **说明**：旧路径 `docs/*.md` 已迁移至 `creator-docs/`，见 [docs/README.md](docs/README.md)。**开发史料归档**（交接日志索引）：[ARCHIVE_PROJECT_HISTORY.md](ARCHIVE_PROJECT_HISTORY.md)。

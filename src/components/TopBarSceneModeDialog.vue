@@ -47,7 +47,7 @@ const emit = defineEmits<{
   display: flex;
   align-items: center;
   justify-content: center;
-  background: color-mix(in srgb, var(--bg-page) 55%, transparent);
+  background: var(--dialog-backdrop, color-mix(in srgb, var(--bg-page) 55%, transparent));
   padding: 16px;
 }
 .scene-mode-dialog {
@@ -56,8 +56,8 @@ const emit = defineEmits<{
   padding: 18px 20px;
   border-radius: var(--radius-app);
   border: 1px solid var(--border-light);
-  background: var(--bg-primary);
-  box-shadow: var(--shadow-app);
+  background: var(--dialog-panel-bg, var(--bg-primary));
+  box-shadow: var(--shadow-md), var(--frame-inset-highlight);
 }
 .scene-mode-title {
   margin: 0 0 8px;

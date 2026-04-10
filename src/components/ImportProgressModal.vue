@@ -38,7 +38,7 @@ defineProps<{
   align-items: center;
   justify-content: center;
   padding: 20px;
-  background: rgba(0, 0, 0, 0.5);
+  background: var(--dialog-backdrop, rgba(0, 0, 0, 0.5));
 }
 .modal-card {
   width: 100%;

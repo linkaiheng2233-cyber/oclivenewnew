@@ -163,18 +163,21 @@ pub async fn jump_time_impl(
     }
 
     let role = state
-        .storage
-        .load_role(&req.role_id)
+        .load_role_cached(&req.role_id)
         .map_err(|e| e.to_frontend_error())?;
     let current_scene = state
         .db_manager
         .get_current_scene(&req.role_id)
         .await
         .map_err(|e| e.to_frontend_error())?;
-    let eff_key =
-        resolve_effective_user_relation_key(state, &role, &req.role_id, current_scene.as_deref())
-            .await
-            .map_err(|e| e.to_frontend_error())?;
+    let eff_key = resolve_effective_user_relation_key(
+        state,
+        role.as_ref(),
+        &req.role_id,
+        current_scene.as_deref(),
+    )
+    .await
+    .map_err(|e| e.to_frontend_error())?;
 
     let favor_before = state
         .db_manager
@@ -228,7 +231,7 @@ pub async fn jump_time_impl(
         .await
         .map_err(|e| e.to_frontend_error())?;
     let autonomous_scene =
-        apply_autonomous_scene_after_jump(state, &req.role_id, &role, ms).await?;
+        apply_autonomous_scene_after_jump(state, &req.role_id, role.as_ref(), ms).await?;
     let ts = get_time_state_impl(state, &req.role_id).await?;
 
     let favor_after = state

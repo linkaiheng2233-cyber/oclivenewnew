@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { computed, nextTick, onBeforeUnmount, onMounted, ref, watch } from "vue";
 import AutonomousSceneNotice from "./components/AutonomousSceneNotice.vue";
+import HelpHint from "./components/HelpHint.vue";
 import CharacterInfo from "./components/CharacterInfo.vue";
 import ChatInput from "./components/ChatInput.vue";
 import ChatMessageList from "./components/ChatMessageList.vue";
@@ -16,6 +17,7 @@ import { useRoleStore } from "./stores/roleStore";
 import { useUiStore } from "./stores/uiStore";
 import { buildRelationDropdownOptions } from "./utils/relationOptions";
 import { useAppToast } from "./composables/useAppToast";
+import { useOcliveAppearance } from "./composables/useOcliveAppearance";
 import { useNarrativeScene } from "./composables/useNarrativeScene";
 import { useSceneDestination } from "./composables/useSceneDestination";
 import {
@@ -32,6 +34,7 @@ const chatStore = useChatStore();
 const debugStore = useDebugStore();
 const uiStore = useUiStore();
 const { toast, showToast } = useAppToast();
+const { themeCycleLabel, cycleTheme, bumpScale, scaleLabel } = useOcliveAppearance();
 const { applyResolvedNarrativeScene } = useNarrativeScene();
 const {
   sceneTransition,
@@ -43,7 +46,7 @@ const {
 const chatListRef = ref<InstanceType<typeof ChatMessageList> | null>(null);
 const roleSwitching = ref(false);
 
-/** 人设回复结束后，若本句含位移意图且有多场景，显示目的地条 */
+/** 角色回复结束后，若本句含位移意图且有多场景，显示目的地条 */
 const postReplySceneBarVisible = ref(false);
 const postReplySceneSelectedId = ref("");
 /** 邀请同行语义：选目的地后同行或仅叙事 */
@@ -63,6 +66,15 @@ const autonomousSceneNotice = ref<{
 const wideSplitLayout = ref(typeof window !== "undefined" && window.innerWidth > 720);
 function refreshSplitLayout(): void {
   wideSplitLayout.value = typeof window !== "undefined" && window.innerWidth > 720;
+}
+
+let splitLayoutResizeRaf = 0;
+function scheduleRefreshSplitLayout(): void {
+  if (splitLayoutResizeRaf !== 0) return;
+  splitLayoutResizeRaf = requestAnimationFrame(() => {
+    splitLayoutResizeRaf = 0;
+    refreshSplitLayout();
+  });
 }
 
 const relationOptions = computed(() =>
@@ -91,6 +103,21 @@ const sceneDestinationOptions = computed(() => {
 const messages = computed(() =>
   chatStore.messagesForRoleScene(roleStore.currentRoleId, uiStore.sceneId),
 );
+
+const topMoreOpen = ref(false);
+const topBarRef = ref<HTMLElement | null>(null);
+let morePanelClickListenTimer: ReturnType<typeof setTimeout> | null = null;
+
+function toggleTopMore(e: Event) {
+  e.stopPropagation();
+  topMoreOpen.value = !topMoreOpen.value;
+}
+
+function onDocumentClickCloseMore(e: MouseEvent) {
+  if (!topMoreOpen.value) return;
+  const el = topBarRef.value;
+  if (el && !el.contains(e.target as Node)) topMoreOpen.value = false;
+}
 const sceneHistorySplitIndex = computed(() =>
   chatStore.sceneHistorySplitForRoleScene(roleStore.currentRoleId, uiStore.sceneId),
 );
@@ -289,6 +316,18 @@ async function onReloadPolicy() {
 }
 
 function onHotkey(e: KeyboardEvent) {
+  if (e.key === "Escape") {
+    if (topMoreOpen.value) {
+      e.preventDefault();
+      topMoreOpen.value = false;
+      return;
+    }
+    if (debugStore.visible) {
+      e.preventDefault();
+      debugStore.toggle();
+      return;
+    }
+  }
   if (e.ctrlKey && e.shiftKey && e.key.toLowerCase() === "d") {
     e.preventDefault();
     debugStore.toggle();
@@ -316,15 +355,37 @@ onMounted(() => {
     showToast("error", err.message);
   });
   window.addEventListener("keydown", onHotkey);
-  window.addEventListener("resize", refreshSplitLayout);
+  window.addEventListener("resize", scheduleRefreshSplitLayout);
   refreshSplitLayout();
   initialize();
 });
 
+watch(topMoreOpen, (open) => {
+  if (morePanelClickListenTimer != null) {
+    clearTimeout(morePanelClickListenTimer);
+    morePanelClickListenTimer = null;
+  }
+  document.removeEventListener("click", onDocumentClickCloseMore);
+  if (open) {
+    nextTick(() => {
+      morePanelClickListenTimer = setTimeout(() => {
+        morePanelClickListenTimer = null;
+        document.addEventListener("click", onDocumentClickCloseMore);
+      }, 0);
+    });
+  }
+});
+
 onBeforeUnmount(() => {
+  if (morePanelClickListenTimer != null) clearTimeout(morePanelClickListenTimer);
+  document.removeEventListener("click", onDocumentClickCloseMore);
+  if (splitLayoutResizeRaf !== 0) {
+    cancelAnimationFrame(splitLayoutResizeRaf);
+    splitLayoutResizeRaf = 0;
+  }
   setErrorReporter(null);
   window.removeEventListener("keydown", onHotkey);
-  window.removeEventListener("resize", refreshSplitLayout);
+  window.removeEventListener("resize", scheduleRefreshSplitLayout);
 });
 </script>
 
@@ -332,62 +393,11 @@ onBeforeUnmount(() => {
   <main class="layout">
     <div class="app-frame">
     <!-- 对齐 oclive-new：顶栏角色 + 时间/场景 -->
-    <header class="top-bar">
-      <RoleSelector
-        variant="topbar"
-        :sections="['role']"
-        :current-role-id="roleStore.currentRoleId"
-        :current-relation="roleStore.relationSelectValue"
-        :roles="roleStore.roles"
-        :relations="relationOptions"
-        :loading="chatStore.isLoading"
-        @change-role="onSwitchRole"
-        @change-relation="onChangeRelation"
-      />
-      <div class="interaction-mode-wrap">
-        <label class="interaction-mode-label" for="interaction-mode">模式</label>
-        <select
-          id="interaction-mode"
-          class="interaction-mode-select"
-          :value="roleStore.roleInfo.interactionMode"
-          title="沉浸：虚拟时间、场景、日程与异地心声；纯聊：仅对话，隐藏上述能力"
-          @change="onInteractionModeChange"
-        >
-          <option value="immersive">沉浸</option>
-          <option value="pure_chat">纯聊</option>
-        </select>
-      </div>
-      <div class="time-section">
-        <template v-if="roleStore.interactionImmersive">
-        <VirtualTimeBar
-          compact
-          :role-id="roleStore.currentRoleId"
-          @notify="(p) => showToast(p.type, p.message)"
-          @refreshed="roleStore.refreshRoleInfo"
-          @jump-complete="onVirtualTimeJumpComplete"
-        />
-        <div v-if="allSceneOptions.length > 0" class="scene-row">
-          <label class="scene-row-label" for="top-scene-select">叙事</label>
-          <select
-            id="top-scene-select"
-            class="scene-select"
-            :value="uiStore.sceneId"
-            @change="onTopBarSceneChange($event)"
-          >
-            <option
-              v-for="s in allSceneOptions"
-              :key="s.id"
-              :value="s.id"
-            >
-              {{ s.label }}
-            </option>
-          </select>
-          <span class="scene-row-hint">角色在：{{ characterSceneLabel() }}</span>
-        </div>
-        </template>
+    <header ref="topBarRef" class="top-bar">
+      <div class="top-bar-row">
         <RoleSelector
           variant="topbar"
-          :sections="['relation']"
+          :sections="['role']"
           :current-role-id="roleStore.currentRoleId"
           :current-relation="roleStore.relationSelectValue"
           :roles="roleStore.roles"
@@ -396,6 +406,184 @@ onBeforeUnmount(() => {
           @change-role="onSwitchRole"
           @change-relation="onChangeRelation"
         />
+        <button
+          type="button"
+          class="more-toggle"
+          :aria-expanded="topMoreOpen"
+          aria-controls="top-more-panel"
+          @click="toggleTopMore"
+        >
+          {{ topMoreOpen ? "收起" : "更多" }}
+        </button>
+      </div>
+
+      <div
+        v-show="topMoreOpen"
+        id="top-more-panel"
+        class="top-more-panel"
+        role="region"
+        aria-label="更多功能"
+        @click.stop
+      >
+        <div class="more-grid">
+          <div class="more-tile more-tile--xs">
+            <div class="more-tile-head">
+              <span class="more-label">互动模式</span>
+              <HelpHint
+                :paragraphs="[
+                  '沉浸：启用虚拟时间、叙事场景、日程推断与位移相关能力。',
+                  '纯聊：只保留对话，隐藏场景与时间条，适合日常闲聊。',
+                ]"
+              />
+            </div>
+            <div class="more-tile-body">
+              <select
+                id="interaction-mode"
+                class="interaction-mode-select more-select more-select--fill"
+                :value="roleStore.roleInfo.interactionMode"
+                @change="onInteractionModeChange"
+              >
+                <option value="immersive">沉浸</option>
+                <option value="pure_chat">纯聊</option>
+              </select>
+            </div>
+          </div>
+
+          <div class="more-tile more-tile--sm">
+            <div class="more-tile-head">
+              <span class="more-label">身份</span>
+              <HelpHint text="与角色相处时的关系身份（如朋友、恋人等），影响对话与关系数值；与包内「核心性格档案」不同，后者写在 core_personality.txt。" />
+            </div>
+            <div class="more-tile-body more-tile-body--selector">
+              <RoleSelector
+                variant="topbar"
+                :sections="['relation']"
+                :current-role-id="roleStore.currentRoleId"
+                :current-relation="roleStore.relationSelectValue"
+                :roles="roleStore.roles"
+                :relations="relationOptions"
+                :loading="chatStore.isLoading"
+                @change-role="onSwitchRole"
+                @change-relation="onChangeRelation"
+              />
+            </div>
+          </div>
+
+          <div class="more-tile more-tile--lg">
+            <div class="more-tile-head">
+              <span class="more-label">界面</span>
+              <HelpHint
+                :paragraphs="[
+                  '字号 A− / A+ 与编写器、启动器使用同一套档位，会保存在本机。',
+                  '主题为浅色 / 深色 / 跟随系统，亦会记住。',
+                ]"
+              />
+            </div>
+            <div class="more-tile-body">
+              <div class="top-bar-appearance" role="toolbar" aria-label="外观与字号">
+                <div class="appearance-scale" aria-label="界面大小">
+                  <button
+                    type="button"
+                    class="appearance-icon-btn"
+                    title="缩小"
+                    aria-label="缩小界面"
+                    @click="bumpScale(-1)"
+                  >
+                    A−
+                  </button>
+                  <span
+                    class="appearance-scale-value"
+                    :title="'相对默认字号：' + scaleLabel"
+                  >{{ scaleLabel }}</span>
+                  <button
+                    type="button"
+                    class="appearance-icon-btn"
+                    title="放大"
+                    aria-label="放大界面"
+                    @click="bumpScale(1)"
+                  >
+                    A+
+                  </button>
+                </div>
+                <button
+                  type="button"
+                  class="appearance-theme-btn"
+                  :title="'主题：' + themeCycleLabel + '（点击切换）'"
+                  @click="cycleTheme"
+                >
+                  {{
+                    themeCycleLabel === "跟随系统"
+                      ? "◐"
+                      : themeCycleLabel === "深色"
+                        ? "🌙"
+                        : "☀️"
+                  }}
+                  {{ themeCycleLabel }}
+                </button>
+              </div>
+            </div>
+          </div>
+
+          <div class="more-tile more-tile--action">
+            <div class="more-tile-head">
+              <span class="more-label">调试</span>
+              <HelpHint
+                text="开发者与排错用：好感、记忆、策略重载等。Ctrl+Shift+D 可开关调试窗；顶栏「更多」展开时按 Esc 先收起本栏。"
+              />
+            </div>
+            <div class="more-tile-body">
+              <button type="button" class="more-debug-btn more-debug-btn--fill" @click="debugStore.toggle">
+                打开调试面板
+              </button>
+            </div>
+          </div>
+
+          <template v-if="roleStore.interactionImmersive">
+            <div class="more-tile more-tile--third">
+              <div class="more-tile-head more-tile-head--tight">
+                <span class="more-label">虚拟时间</span>
+                <HelpHint
+                  :paragraphs="[
+                    '故事内的时间，与真实时钟独立。点击时间可打开滚轮调整。',
+                    '可用快捷按钮推进时间；部分角色包会在跳转后触发场景或独白。',
+                  ]"
+                />
+              </div>
+              <div class="more-tile-body more-tile-body--row">
+                <VirtualTimeBar
+                  compact
+                  class="more-vtime"
+                  :role-id="roleStore.currentRoleId"
+                  @notify="(p) => showToast(p.type, p.message)"
+                  @refreshed="roleStore.refreshRoleInfo"
+                  @jump-complete="onVirtualTimeJumpComplete"
+                />
+              </div>
+            </div>
+
+            <div v-if="allSceneOptions.length > 0" class="more-tile more-tile--third">
+              <div class="more-tile-head more-tile-head--tight">
+                <span class="more-label">叙事场景</span>
+                <HelpHint
+                  text="你当前叙事的场景；与角色包中的场景配置一致。切换后可能触发历史记录折叠分界。"
+                />
+              </div>
+              <div class="more-tile-body more-tile-body--scene more-tile-body--scene-inline">
+                <select
+                  id="top-scene-select"
+                  class="scene-select more-select more-select--fill"
+                  :value="uiStore.sceneId"
+                  @change="onTopBarSceneChange($event)"
+                >
+                  <option v-for="s in allSceneOptions" :key="s.id" :value="s.id">
+                    {{ s.label }}
+                  </option>
+                </select>
+                <span class="scene-row-hint scene-row-hint--tile">角色在：{{ characterSceneLabel() }}</span>
+              </div>
+            </div>
+          </template>
+        </div>
       </div>
     </header>
 
@@ -507,7 +695,7 @@ onBeforeUnmount(() => {
   justify-content: stretch;
   align-items: stretch;
   padding: 6px 8px;
-  background: var(--bg-page);
+  background: var(--shell-page-bg);
   box-sizing: border-box;
   overflow: hidden;
 }
@@ -523,19 +711,305 @@ onBeforeUnmount(() => {
   background: var(--bg-primary);
   border-radius: var(--radius-app);
   border: 1px solid var(--border-light);
-  box-shadow: var(--shadow-app);
+  box-shadow: var(--shadow-app), var(--frame-inset-highlight);
   overflow: hidden;
 }
 .top-bar {
   flex-shrink: 0;
   display: flex;
+  flex-direction: column;
+  align-items: stretch;
+  gap: 0;
+  padding: 10px 14px 12px;
+  background: color-mix(in srgb, var(--bg-secondary) 92%, var(--rail-accent-runtime-bg) 8%);
+  border-bottom: 1px solid var(--border-light);
+  border-left: 3px solid var(--rail-accent-runtime);
+  box-shadow: 0 1px 0 color-mix(in srgb, var(--accent) 12%, transparent);
+}
+.top-bar-row {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
   justify-content: space-between;
+  gap: 10px;
+}
+.more-toggle {
+  flex-shrink: 0;
+  padding: 6px 14px;
+  border-radius: var(--radius-btn);
+  border: 1px solid var(--border-light);
+  background: var(--bg-elevated);
+  color: var(--text-primary);
+  font-size: 12px;
+  font-weight: 600;
+  font-family: var(--font-ui);
+  cursor: pointer;
+  transition: var(--control-transition);
+}
+.more-toggle:hover {
+  border-color: color-mix(in srgb, var(--border-light) 70%, var(--text-secondary) 30%);
+  color: var(--text-accent);
+}
+.more-toggle:focus {
+  outline: none;
+}
+.more-toggle:focus-visible {
+  box-shadow: 0 0 0 2px color-mix(in srgb, var(--focus-ring-color) 35%, transparent);
+}
+.top-more-panel {
+  margin-top: 10px;
+  padding-top: 12px;
+  border-top: 1px solid var(--border-light);
+}
+.top-more-panel .interaction-mode-select,
+.top-more-panel .scene-select {
+  font-size: 13px;
+  padding: 6px 10px;
+  line-height: 1.4;
+}
+.top-more-panel .appearance-icon-btn,
+.top-more-panel .appearance-theme-btn {
+  font-size: 13px;
+  min-height: 30px;
+}
+.top-more-panel .more-debug-btn {
+  font-size: 13px;
+  padding: 8px 12px;
+}
+.more-grid {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: flex-start;
+  align-items: flex-start;
+  align-content: flex-start;
+  gap: 12px 16px;
+}
+.more-tile {
+  box-sizing: border-box;
+  min-width: 0;
+  padding: 12px 14px;
+  border-radius: var(--radius-btn);
+  border: 1px solid var(--border-light);
+  background: color-mix(in srgb, var(--bg-elevated) 72%, transparent);
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  box-shadow: var(--shadow-sm);
+}
+/* 按功能自然占地：不强行 flex-grow 拉满整行，宽裕时右侧留白 */
+.more-tile--xs {
+  flex: 0 0 auto;
+  width: min(12rem, 100%);
+}
+.more-tile--sm {
+  flex: 0 0 auto;
+  width: min(17rem, 100%);
+}
+.more-tile--lg {
+  flex: 0 0 auto;
+  width: min(22rem, 100%);
+}
+.more-tile--action {
+  flex: 0 0 auto;
+  width: min(13rem, 100%);
+}
+/* 虚拟时间、叙事场景：约一行三分之一宽，不拉满；窄屏仍单列满宽 */
+.more-tile--third {
+  flex: 0 0 calc((100% - 32px) / 3);
+  width: calc((100% - 32px) / 3);
+  max-width: calc((100% - 32px) / 3);
+  min-width: 0;
+  padding: 12px 14px;
+  gap: 10px;
+  box-sizing: border-box;
+}
+.more-tile-head--tight {
+  justify-content: flex-start;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 6px 8px;
+}
+.more-tile-head--tight .more-label {
+  padding-top: 0;
+}
+@media (max-width: 560px) {
+  .more-tile--xs,
+  .more-tile--sm,
+  .more-tile--lg,
+  .more-tile--action {
+    width: 100%;
+  }
+  .more-tile--third {
+    flex: 1 1 100%;
+    width: 100%;
+    max-width: 100%;
+  }
+}
+.more-tile-head {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 8px;
+}
+.more-label {
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--text-secondary);
+  line-height: 1.45;
+  padding-top: 2px;
+}
+.more-tile-body {
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+.more-tile-body--row {
+  flex-direction: row;
+  flex-wrap: wrap;
+  align-items: center;
+}
+.more-tile-body--scene {
+  display: grid;
+  grid-template-columns: minmax(0, 1.2fr) minmax(0, 1fr);
+  gap: 8px 12px;
+  align-items: center;
+}
+.more-tile-body--scene-inline {
+  display: flex;
+  flex-direction: row;
+  flex-wrap: wrap;
+  align-items: flex-start;
+  gap: 8px 12px;
+}
+.more-tile-body--scene-inline .more-select--fill,
+.more-tile-body--scene-inline .scene-select {
+  flex: 0 1 14rem;
+  min-width: min(12rem, 100%);
+  max-width: 100%;
+}
+@media (max-width: 520px) {
+  .more-tile-body--scene {
+    grid-template-columns: 1fr;
+  }
+}
+.more-tile-body--selector :deep(.selector-row--topbar) {
+  width: 100%;
+  flex-wrap: wrap;
   align-items: center;
   gap: 8px;
-  padding: 12px 16px;
-  background: var(--bg-secondary);
-  border-bottom: 1px solid var(--border-light);
+}
+.more-tile-body--selector :deep(.select) {
+  min-width: 0;
+  flex: 1 1 8rem;
+  max-width: 100%;
+}
+.more-select--fill {
+  width: 100%;
+  max-width: none;
+  box-sizing: border-box;
+}
+.more-vtime {
+  flex: 1 1 12rem;
+  min-width: 0;
+  width: 100%;
+}
+.scene-row-hint--tile {
+  font-size: 12px;
+  color: var(--text-secondary);
+  line-height: 1.5;
+  min-width: min(12rem, 100%);
+  flex: 1 1 12rem;
+  max-width: 100%;
+}
+.more-tile--third :deep(.vtime--compact) {
+  gap: 6px;
   flex-wrap: wrap;
+}
+.more-tile--third :deep(.vtime--compact .time-display) {
+  max-width: 100%;
+  padding: 5px 8px;
+  font-size: 12px;
+}
+.more-tile--third :deep(.vtime--compact .label-icon) {
+  font-size: 14px;
+}
+.more-debug-btn {
+  padding: 8px 12px;
+  border-radius: var(--radius-btn);
+  border: 1px solid var(--border-light);
+  background: var(--bg-elevated);
+  color: var(--text-secondary);
+  font-size: 12px;
+  font-family: var(--font-ui);
+  cursor: pointer;
+  transition: var(--control-transition);
+}
+.more-debug-btn--fill {
+  width: 100%;
+  box-sizing: border-box;
+}
+.more-debug-btn:hover {
+  color: var(--text-primary);
+  border-color: var(--border-focus);
+}
+.top-bar-appearance {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+  width: 100%;
+}
+.top-more-panel .top-bar-appearance {
+  margin-left: 0;
+}
+.appearance-scale {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 2px 6px;
+  border-radius: var(--radius-btn);
+  border: 1px solid var(--border-light);
+  background: color-mix(in srgb, var(--bg-elevated) 88%, transparent);
+  box-shadow: var(--shadow-sm), var(--frame-inset-highlight);
+}
+.appearance-scale-value {
+  min-width: 2.6rem;
+  text-align: center;
+  font-size: 11px;
+  font-weight: 600;
+  color: var(--text-secondary);
+  font-variant-numeric: tabular-nums;
+}
+.appearance-icon-btn,
+.appearance-theme-btn {
+  padding: 4px 8px;
+  min-height: 28px;
+  border-radius: var(--radius-btn);
+  border: 1px solid var(--border-light);
+  background: var(--bg-elevated);
+  color: var(--text-primary);
+  cursor: pointer;
+  font-size: 12px;
+  font-weight: 500;
+  font-family: var(--font-ui);
+  transition: var(--control-transition);
+}
+.appearance-icon-btn:hover,
+.appearance-theme-btn:hover {
+  border-color: var(--accent);
+  color: var(--text-accent);
+}
+.appearance-icon-btn:focus,
+.appearance-theme-btn:focus {
+  outline: none;
+}
+.appearance-icon-btn:focus-visible,
+.appearance-theme-btn:focus-visible {
+  box-shadow: 0 0 0 2px color-mix(in srgb, var(--focus-ring-color) 35%, transparent);
+}
+.appearance-theme-btn {
+  white-space: nowrap;
 }
 .interaction-mode-wrap {
   display: flex;
@@ -556,6 +1030,13 @@ onBeforeUnmount(() => {
   font-size: 12px;
   color: var(--text-primary);
   background: var(--bg-elevated);
+}
+.interaction-mode-select:focus {
+  outline: none;
+}
+.interaction-mode-select:focus-visible {
+  border-color: var(--accent);
+  box-shadow: 0 0 0 2px color-mix(in srgb, var(--focus-ring-color) 35%, transparent);
 }
 .time-section {
   display: flex;
@@ -585,6 +1066,13 @@ onBeforeUnmount(() => {
   font-size: 12px;
   color: var(--text-primary);
   background: var(--bg-elevated);
+}
+.scene-select:focus {
+  outline: none;
+}
+.scene-select:focus-visible {
+  border-color: var(--accent);
+  box-shadow: 0 0 0 2px color-mix(in srgb, var(--focus-ring-color) 35%, transparent);
 }
 .scene-row-hint {
   font-size: 11px;
@@ -624,7 +1112,8 @@ onBeforeUnmount(() => {
   overflow-x: hidden;
   overflow-y: auto;
   border-right: 1px solid var(--border-light);
-  background: var(--bg-secondary);
+  background: color-mix(in srgb, var(--bg-secondary) 96%, var(--accent) 4%);
+  box-shadow: inset -1px 0 0 color-mix(in srgb, var(--border-light) 65%, transparent);
 }
 .split-row--narrow .left-pane {
   flex: 0 0 auto;
@@ -665,20 +1154,26 @@ onBeforeUnmount(() => {
   overflow: hidden;
   background: var(--bg-primary);
 }
-/* 聊天记录仅在右侧栏滚动 */
+/* 聊天记录仅在右侧栏滚动；底部多留空，避免气泡+阴影被输入区视觉上压住 */
 .chat-scroll-wrap {
   flex: 1;
   min-height: 0;
   overflow-y: auto;
   overflow-x: hidden;
-  padding: 12px 18px 16px;
+  padding: 12px 18px max(52px, calc(32px + env(safe-area-inset-bottom, 0px)));
+  scroll-padding-bottom: 44px;
   background: var(--bg-primary);
   -webkit-overflow-scrolling: touch;
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.04);
 }
 .input-area {
   flex-shrink: 0;
+  position: relative;
+  z-index: 1;
   border-top: 1px solid var(--border-light);
   background: var(--bg-primary);
+  /* 略收阴影，减少「盖住最后一泡」的错觉 */
+  box-shadow: 0 -2px 14px color-mix(in srgb, var(--text-primary) 8%, transparent);
 }
 .fade-enter-active,
 .fade-leave-active {

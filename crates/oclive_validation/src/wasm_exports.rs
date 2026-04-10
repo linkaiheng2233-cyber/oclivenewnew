@@ -14,12 +14,10 @@ pub fn validate_manifest_wasm(
     merged_scene_ids_json: &str,
     host_runtime_version: &str,
 ) -> Result<(), JsValue> {
-    let disk: DiskRoleManifest = serde_json::from_str(manifest_json).map_err(|e| {
-        JsValue::from_str(&format!("manifest.json 解析失败：{}", e))
-    })?;
-    let scenes: Vec<String> = serde_json::from_str(merged_scene_ids_json).map_err(|e| {
-        JsValue::from_str(&format!("merged_scene_ids JSON 解析失败：{}", e))
-    })?;
+    let disk: DiskRoleManifest = serde_json::from_str(manifest_json)
+        .map_err(|e| JsValue::from_str(&format!("manifest.json 解析失败：{}", e)))?;
+    let scenes: Vec<String> = serde_json::from_str(merged_scene_ids_json)
+        .map_err(|e| JsValue::from_str(&format!("merged_scene_ids JSON 解析失败：{}", e)))?;
     validate_disk_manifest(&disk, &scenes).map_err(|e| JsValue::from_str(&e))?;
     if !host_runtime_version.trim().is_empty() {
         validate_min_runtime_version(

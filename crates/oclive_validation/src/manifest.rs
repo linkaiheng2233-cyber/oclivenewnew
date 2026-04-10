@@ -132,6 +132,15 @@ fn is_false(b: &bool) -> bool {
     !*b
 }
 
+/// 性格驱动方式：`vector` 为历史七维增量演化；`profile` 以人设正文（核心 + 可变档案）为准，七维由正文归纳。
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Default, Serialize, Deserialize)]
+#[serde(rename_all = "snake_case")]
+pub enum PersonalitySource {
+    #[default]
+    Vector,
+    Profile,
+}
+
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct EvolutionConfigDisk {
     #[serde(default = "default_one")]
@@ -142,6 +151,8 @@ pub struct EvolutionConfigDisk {
     pub max_change_per_event: f64,
     #[serde(default = "default_max_total")]
     pub max_total_change: f64,
+    #[serde(default)]
+    pub personality_source: PersonalitySource,
 }
 
 fn default_one() -> f64 {
@@ -164,6 +175,7 @@ impl Default for EvolutionConfigDisk {
             ai_analysis_interval: default_ai_interval(),
             max_change_per_event: default_max_change(),
             max_total_change: default_max_total(),
+            personality_source: PersonalitySource::default(),
         }
     }
 }

@@ -22,27 +22,31 @@ defineProps<{
   padding: 10px 14px;
   border-radius: var(--radius-card);
   border: 1px solid var(--border-light);
-  box-shadow: var(--shadow-md);
+  box-shadow: var(--shadow-md), var(--frame-inset-highlight);
+  backdrop-filter: blur(10px) saturate(108%);
+  -webkit-backdrop-filter: blur(10px) saturate(108%);
   z-index: 12000;
   font-size: 13px;
 }
 .success {
-  background: rgba(124, 184, 124, 0.25);
-  border-color: var(--success);
-  color: #e8f5e8;
+  background: color-mix(in srgb, var(--success) 16%, var(--bg-elevated));
+  border-color: color-mix(in srgb, var(--success) 55%, var(--border-light));
+  color: var(--text-primary);
 }
 .error {
-  background: rgba(201, 122, 122, 0.3);
+  background: color-mix(in srgb, var(--error) 18%, var(--bg-elevated));
   border-color: var(--error);
+  color: var(--text-primary);
 }
 .warning {
-  background: rgba(212, 165, 116, 0.2);
+  background: color-mix(in srgb, var(--warning) 14%, var(--bg-elevated));
   border-color: var(--warning);
-  color: var(--text-accent);
+  color: var(--text-primary);
 }
 .info {
-  background: rgba(125, 148, 178, 0.25);
-  border-color: var(--info);
+  background: color-mix(in srgb, var(--info) 14%, var(--bg-elevated));
+  border-color: color-mix(in srgb, var(--info) 45%, var(--border-light));
+  color: var(--text-primary);
 }
 .toast-enter-active,
 .toast-leave-active {

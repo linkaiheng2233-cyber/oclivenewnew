@@ -5,7 +5,7 @@ use crate::domain::event_impact_ai::EventImpactEstimate;
 use crate::error::Result;
 use crate::infrastructure::llm::LlmClient;
 use crate::models::knowledge::KnowledgeEventAugment;
-use crate::models::{Emotion, Event, PersonalityVector};
+use crate::models::{Emotion, Event, PersonalitySource, PersonalityVector};
 use async_trait::async_trait;
 use std::sync::atomic::{AtomicBool, Ordering};
 use std::sync::Arc;
@@ -19,6 +19,7 @@ pub trait EventEstimator: Send + Sync {
         user_message: &str,
         user_emotion: &Emotion,
         personality: &PersonalityVector,
+        personality_source: PersonalitySource,
         recent_turns: &[(String, String)],
         recent_events: &[Event],
         knowledge_augment: Option<&KnowledgeEventAugment>,
@@ -36,6 +37,7 @@ impl EventEstimator for BuiltinEventEstimator {
         user_message: &str,
         user_emotion: &Emotion,
         personality: &PersonalityVector,
+        _personality_source: PersonalitySource,
         recent_turns: &[(String, String)],
         recent_events: &[Event],
         knowledge_augment: Option<&KnowledgeEventAugment>,
@@ -66,6 +68,7 @@ impl EventEstimator for BuiltinEventEstimatorV2 {
         user_message: &str,
         user_emotion: &Emotion,
         personality: &PersonalityVector,
+        personality_source: PersonalitySource,
         recent_turns: &[(String, String)],
         recent_events: &[Event],
         knowledge_augment: Option<&KnowledgeEventAugment>,
@@ -77,6 +80,7 @@ impl EventEstimator for BuiltinEventEstimatorV2 {
                 user_message,
                 user_emotion,
                 personality,
+                personality_source,
                 recent_turns,
                 recent_events,
                 knowledge_augment,
@@ -123,6 +127,7 @@ impl EventEstimator for RemoteEventEstimatorPlaceholder {
         user_message: &str,
         user_emotion: &Emotion,
         personality: &PersonalityVector,
+        personality_source: PersonalitySource,
         recent_turns: &[(String, String)],
         recent_events: &[Event],
         knowledge_augment: Option<&KnowledgeEventAugment>,
@@ -135,6 +140,7 @@ impl EventEstimator for RemoteEventEstimatorPlaceholder {
                 user_message,
                 user_emotion,
                 personality,
+                personality_source,
                 recent_turns,
                 recent_events,
                 knowledge_augment,
@@ -153,7 +159,7 @@ impl Default for RemoteEventEstimatorPlaceholder {
 mod tests {
     use super::*;
     use crate::infrastructure::llm::MockLlmClient;
-    use crate::models::{Emotion, PersonalityVector};
+    use crate::models::{Emotion, PersonalitySource, PersonalityVector};
     use std::sync::Arc;
 
     struct EnvUnsetGuard {
@@ -188,11 +194,31 @@ mod tests {
         let msg = "我很抱怨这个";
         let user_emotion = Emotion::Sad;
         let b = BuiltinEventEstimator
-            .estimate(&llm, "m", msg, &user_emotion, &p, &[], &[], None)
+            .estimate(
+                &llm,
+                "m",
+                msg,
+                &user_emotion,
+                &p,
+                PersonalitySource::Vector,
+                &[],
+                &[],
+                None,
+            )
             .await
             .unwrap();
         let v2 = BuiltinEventEstimatorV2
-            .estimate(&llm, "m", msg, &user_emotion, &p, &[], &[], None)
+            .estimate(
+                &llm,
+                "m",
+                msg,
+                &user_emotion,
+                &p,
+                PersonalitySource::Vector,
+                &[],
+                &[],
+                None,
+            )
             .await
             .unwrap();
         assert_eq!(b.event_type, v2.event_type);

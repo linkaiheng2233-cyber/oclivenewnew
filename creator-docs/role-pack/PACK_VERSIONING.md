@@ -46,10 +46,16 @@
 - **字段**：`enabled`（`bool`）、`glob`（`string`，须以 `knowledge/` 开头；默认 `knowledge/**/*.md`）。
 - **校验**：`glob` 不能为空字符串（见 `validate_knowledge_manifest_disk`）。
 
+## `evolution.personality_source`（摘要）
+
+- **字段**：`vector`（默认）或 `profile`，见 `EvolutionConfigDisk` / 共享校验。
+- **语义摘要**：`profile` 表示 **核心性格档案**（`core_personality.txt`）+ **运行时可变档案**（DB，模型维护）；**七维**多为视图。细则见 **[docs/personality-archive-notes.md](../../docs/personality-archive-notes.md)** 与 [roles/README_MANIFEST.md](../../roles/README_MANIFEST.md) §5.3。
+
 ## 相关文档
 
 - [EDITOR_VALIDATION_ROADMAP.md](./EDITOR_VALIDATION_ROADMAP.md) — 编写器与运行时 **校验分工**（短期以 `load_role` 为准；中期可选 crate/CLI）  
 - [../getting-started/DOCUMENTATION_INDEX.md](../getting-started/DOCUMENTATION_INDEX.md) — 文档总索引与阅读顺序  
+- [docs/personality-archive-notes.md](../../docs/personality-archive-notes.md) — 性格档案设计轴心  
 - [../plugin-and-architecture/PLUGIN_V1.md](../plugin-and-architecture/PLUGIN_V1.md) — 可替换子系统契约与 `plugin_backends` 枚举  
 - [../plugin-and-architecture/REMOTE_PLUGIN_PROTOCOL.md](../plugin-and-architecture/REMOTE_PLUGIN_PROTOCOL.md) — HTTP 侧车 JSON-RPC  
 - [../roadmap/VISION_ROADMAP_MONTHLY.md](../roadmap/VISION_ROADMAP_MONTHLY.md) — 产品里程碑  

@@ -104,6 +104,7 @@ pub(super) fn parse_movement_intent_ai_output(raw: &str) -> Option<(bool, f64)> 
 }
 
 /// 是否应向前端提供「选目的地」条：不写入 DB、不解析 `scene_id`。
+#[allow(clippy::too_many_arguments)] // LLM 位移意图：需 storage/db id、场景列表与模型名等并列参数
 pub(super) async fn detect_movement_intent(
     state: &AppState,
     llm: &Arc<dyn LlmClient>,

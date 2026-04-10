@@ -24,7 +24,8 @@
 ## 编写方式（当前）
 
 1. 复制示例包（如 `roles/mumu/`）或 [manifest 模板](../roles/manifest.template.json)。
-2. 编辑 `manifest.json` / `settings.json` / `core_personality.txt` 与场景资源。
+2. 编辑 `manifest.json` / `settings.json` / `core_personality.txt` 与场景资源。  
+   - **`core_personality.txt`** 即包内 **核心性格档案**（运行时不可由模型改写）。若 `settings.json` 里 **`evolution.personality_source`** 为 **`profile`**，对话后的 **可变性格档案**仅存运行时数据库、由模型维护，包内不可手写，只能通过 `evolution`（如 `max_change_per_event`）调强弱；**七维**在该模式下多为视图，仍建议填写。详见 **[docs/personality-archive-notes.md](../../docs/personality-archive-notes.md)** 与 [roles/README_MANIFEST.md](../../roles/README_MANIFEST.md)。
 3. 设置环境变量 **`OCLIVE_ROLES_DIR`** 指向含 `roles/` 的父目录，或把包放在项目/应用资源约定的 `roles/` 下。
 4. 启动应用，**加载角色**后对话验证。
 

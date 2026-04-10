@@ -255,7 +255,7 @@ function onImportFolder(): void {
   align-items: center;
   justify-content: center;
   padding: 20px;
-  background: rgba(0, 0, 0, 0.45);
+  background: var(--dialog-backdrop, rgba(0, 0, 0, 0.45));
 }
 .modal-card {
   max-width: 400px;

@@ -5,14 +5,23 @@
 ### Engineering
 
 - **共享 crate `crates/oclive_validation`**：`validate_disk_manifest`、`parse_hhmm`、`KnowledgePackConfigDisk` 等与磁盘 manifest 相关的校验与 DTO 单一来源；运行时依赖该 crate，编写器可用 **wasm**（`--features wasm`，目标 `wasm32-unknown-unknown`）调用 `validate_manifest_wasm`。
-- **本地 HTTP API**：可执行文件支持 `--api` / `--port`（或 `OCLIVE_API_PORT`），默认 `http://127.0.0.1:8420`，提供 `GET /health`、`POST /chat`（`role_path` + `message`，可选 `session_id`），供编写器试聊等工具调用。`session_id` 会映射为内部 SQLite 会话键 `{manifest_role_id}__sess__{sanitized}`，与无 `session_id` 的默认对话隔离；JSON 响应含 `reply` 与回显的 `session_id`。`POST /chat` 对 **空 `message`** 返回 400；会话键总长度限制为 **256** 字符以防异常输入。
+- **本地 HTTP API**：可执行文件支持 `--api` / `--port`（或 `OCLIVE_API_PORT`），默认 `http://127.0.0.1:8420`，提供 `GET /health`、`POST /chat`（`role_path` + `message`，可选 `session_id`），供编写器试聊等工具调用。`session_id` 会映射为内部 SQLite 会话键 `{manifest_role_id}__sess__{sanitized}`，与无 `session_id` 的默认对话隔离；JSON 响应含 `reply`、回显的 `session_id`，以及在扁平 `SendMessageResponse` 字段之外同层的 **`personality_source`**（`vector`|`profile`，与包内 `evolution` 一致）。`POST /chat` 对 **空 `message`** 返回 400；会话键总长度限制为 **256** 字符以防异常输入。**`POST /chat`** 在 Tokio 上使用 **`spawn_blocking`** 执行目录探测与 `load_role_from_dir`，避免阻塞异步运行时线程（与 `import_role_pack` 一致）。
+- **Tauri**：`peek_role_pack` 预览 manifest 改为 **`spawn_blocking`**，避免在异步命令线程上长时间读压缩包/磁盘。
+- **Clippy**：`chat_engine` 编排入口 `process_co_present` / `process_remote_life` 与 `detect_movement_intent` 显式 **`allow(too_many_arguments)`** 并注释原因，使 `cargo clippy -- -D warnings` 与 CI 一致通过。
+- **HTTP API 测试**：新增 `tests/http_api_chat.rs`，`tower::oneshot` 覆盖 `GET /health`、`POST /chat`（空消息 400、成功含 `personality_source` + `reply`）；导出 **`api_router`** 与 `serve_api` 共用路由。
 - **角色加载**：若 `plugin_backends` 声明 `remote` 但未设置 `OCLIVE_REMOTE_PLUGIN_URL` / `OCLIVE_REMOTE_LLM_URL`，在 `load_role_from_dir` 成功路径上记 `oclive_plugin` 警告（行为仍为回退内置，与 PLUGIN_V1 一致）。
 - **角色包契约收紧**：`manifest.json` 可选 **`min_runtime_version`**（semver）；宿主版本低于要求时 **`load_role` 拒绝加载**。根对象 **顶层键白名单**（`oclive_validation::json_keys`）；`manifest` / `settings` 中不允许的顶层键报错，**`_` 前缀说明键**仍允许。共享 crate 增加 **`validate_min_runtime_version`**；wasm 侧 **`validate_manifest_wasm`** 第三参为宿主版本字符串。
 - **CI**：`oclivenewnew` 在 Ubuntu 与 Windows 上运行 Rust（fmt / clippy / `cargo test`）与 `npm run build`；**oclive-pack-editor**、**oclive-launcher** 各自增加/对齐双平台 workflow。
 - **npm**：新增 `npm run check:release`（发版门槛：全量 `cargo test`）；README 补充 Sentry / 离线安装包说明。
+- **界面**：顶栏「身份」HelpHint 区分关系身份与核心性格档案；注释「人设回复」改为「角色回复」。
+- **API / UI**：`RoleInfo` 与 `RoleData` 增加 **`personality_source`**（`vector` | `profile`），与 `evolution` 一致；前端 `roleStore` 与调试面板「性格向量」在 **profile** 下显示视图说明 HelpHint。
+- **Remote 插件**：`EventEstimator::estimate` 与 `event.estimate` 的 `params` 增加 **`personality_source`**；`prompt.build_prompt` 的 `params` 在完整 `role` 之外另含顶层 **`personality_source`**（与 `role.evolution_config` 一致）。
+- **主界面**：`RoleRuntimePanel` 展示当前 **人格来源**（vector / 档案）与 HelpHint，与调试面板文案对齐。
 
 ### Documentation
 
+- **PLUGIN_V1 / Remote 协议**：[PLUGIN_V1.md](creator-docs/plugin-and-architecture/PLUGIN_V1.md) 补充 `RoleInfo` / `RoleData`、HTTP `/chat` 与 `prompt.build_prompt` 的 **`personality_source`**；[REMOTE_PLUGIN_PROTOCOL.md](creator-docs/plugin-and-architecture/REMOTE_PLUGIN_PROTOCOL.md) 新增 §3.4 与 `event.estimate` 参数表行。
+- **性格档案设计轴心**：重写 **[docs/personality-archive-notes.md](docs/personality-archive-notes.md)**（核心/可变档案、`personality_source`、七维视图、三应用分工）；新增 **[docs/design-axis-evolution.md](docs/design-axis-evolution.md)** 记录思路变化（旧 handoff 不删）；根 README、`creator-docs` 索引与入门文档、`roles/README_MANIFEST.md` §二 §5.3、`PACK_VERSIONING.md`、`CREATOR_ROLE_PACK_CUSTOMIZATION.md`、`CREATOR_SCENE_GUIDE.md`、`CREATOR_PLUGIN_ARCHITECTURE.md` 等与之一致并互链；**`roles/settings.template.json`** 的 `evolution` 显式包含 **`personality_source`**。
 - 新增 **[creator-docs/getting-started/SIDECAR_LLM_USER_GUIDE.md](creator-docs/getting-started/SIDECAR_LLM_USER_GUIDE.md)**：本机侧车 + 用户自带 Key（BYOK）接闭源云端模型的用户向步骤；与 `REMOTE_PLUGIN_PROTOCOL`、`examples/remote_plugin_minimal`、启动器注入环境变量互链；文档索引与根 README 已链入。
 - 新增 **[examples/remote_plugin_openai_compat/](examples/remote_plugin_openai_compat/)**：OpenAI 兼容 `chat/completions` 侧车示例（`requests` + `.env.example`）；`SIDECAR_LLM_USER_GUIDE` 与文档索引已链入。
 - **示例重构**：抽出 **[examples/common/](examples/common/)**（`jsonrpc_http.py`、`oclive_stub_handlers.py`），最小侧车与 OpenAI 范例共用 JSON-RPC 与非 LLM 占位，降低重复职责。

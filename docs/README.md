@@ -14,3 +14,8 @@
 | `docs/VISION_ROADMAP_MONTHLY.md` | `creator-docs/roadmap/VISION_ROADMAP_MONTHLY.md` |
 
 开发过程日志与交接材料归档见根目录 **[ARCHIVE_PROJECT_HISTORY.md](../ARCHIVE_PROJECT_HISTORY.md)**。
+
+## 性格档案（设计轴心）
+
+- **[人设档案：设计轴心与备忘](personality-archive-notes.md)**：核心/可变档案、`personality_source`、七维视图、三应用分工；远期「成长引擎」仅备忘。
+- **[设计轴心：思路变化记录](design-axis-evolution.md)**：以前 vs 现在、推进方式；旧 handoff 保留，冲突以 `personality-archive-notes` 与契约为准。

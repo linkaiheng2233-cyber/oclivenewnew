@@ -11,10 +11,11 @@ pub use json_keys::{validate_manifest_top_level_keys, validate_settings_top_leve
 pub use manifest::{
     DiskRoleManifest, EvolutionConfigDisk, IdentityBinding, KnowledgePackConfigDisk,
     LifeAvailability, LifeScheduleDisk, LifeScheduleEntryDisk, LifeTrajectoryDisk,
-    MemoryConfigDisk, UserRelationDisk,
+    MemoryConfigDisk, PersonalitySource, UserRelationDisk,
 };
 pub use validate::{
-    parse_hhmm, validate_disk_manifest, validate_knowledge_manifest_disk, validate_min_runtime_version,
+    parse_hhmm, validate_disk_manifest, validate_knowledge_manifest_disk,
+    validate_min_runtime_version,
 };
 
 #[cfg(all(feature = "wasm", target_arch = "wasm32"))]

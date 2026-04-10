@@ -41,6 +41,8 @@ type RoleInfoState = {
   /** 好感度关系阶段，与后端 `RelationState` 一致 */
   relationState: string;
   eventImpactFactor: number;
+  /** `evolution.personality_source` */
+  personalitySource: "vector" | "profile";
   effectiveOllamaModel: string;
   /** 与 manifest `identity_binding` 一致 */
   identityBinding: "global" | "per_scene";
@@ -80,6 +82,8 @@ function mapRoleInfo(info: RoleInfo): RoleInfoState {
     useManifestDefault: info.use_manifest_default ?? false,
     relationState: info.relation_state ?? "Stranger",
     eventImpactFactor: info.event_impact_factor ?? 1,
+    personalitySource:
+      info.personality_source === "profile" ? "profile" : "vector",
     effectiveOllamaModel: info.effective_ollama_model ?? "",
     identityBinding: info.identity_binding ?? "per_scene",
     remoteLifeEnabled: info.remote_life_enabled ?? false,
@@ -120,6 +124,7 @@ export const useRoleStore = defineStore(
         useManifestDefault: false,
         relationState: "Stranger",
         eventImpactFactor: 1,
+        personalitySource: "vector",
         effectiveOllamaModel: "",
         identityBinding: "per_scene",
         remoteLifeEnabled: false,

@@ -1,6 +1,6 @@
 # 角色包 `manifest.json` 与 `settings.json`（创作者）
 
-- **`manifest.json`** 路径：**`roles/{角色id}/manifest.json`**，与角色文件夹同名。门面与主要契约：**id、展示信息、七维、`scenes`、`user_relations`、`default_relation`** 等。完整示例见 **`manifest.template.json`**。
+- **`manifest.json`** 路径：**`roles/{角色id}/manifest.json`**，与角色文件夹同名。门面与主要契约：**id、展示信息、性格七维 `default_personality`、`scenes`、`user_relations`、`default_relation`** 等（七维与 **`evolution.personality_source`** 的关系见下文 §二、§5.3）。完整示例见 **`manifest.template.json`**。
 - **`settings.json`**（**可选**）路径：**`roles/{角色id}/settings.json`**。进阶引擎向配置：**`model`、`evolution`、`identity_binding`、`memory_config`**。完整示例见 **`settings.template.json`**。  
 **推荐**创作者新包采用「manifest 门面 + settings 引擎」；应用内保存角色时也会写出这两份文件（manifest 存根 + settings 完整引擎段）。
 
@@ -230,6 +230,8 @@
 |------|------|------|
 | `default_personality` | number[]，长度 7 | **可选**；缺省由应用内部默认。顺序固定为：**倔强、黏人、敏感、强势、宽容、话多、温暖**（与内部 `PersonalityVector` / 旧七维一致）。每项约 `0.0～1.0`。 |
 
+**与 `evolution.personality_source` 的关系**：当设置为 **`profile`**（人格来源「档案」，见 §5.3）时，界面中的性格条等多从 **核心性格档案**（`core_personality.txt`）与 **运行时可变档案**（DB，由模型维护）归纳而来，本数组仍写入包内作为**默认与参考**。**`vector`**（经典，默认）模式下，七维仍是主要的数值侧锚点之一。
+
 ---
 
 ## 三、场景 `scenes`
@@ -275,7 +277,7 @@
 
 ## 五、settings.json 引擎字段（推荐）
 
-下列字段位于 **`settings.json`**（或旧版全部写在 **manifest** 亦可；合并后 **`settings` 覆盖 manifest**）。结构体见源码 `DiskRoleSettings`、`DiskRoleManifest` 中对应段。
+下列字段位于 **`settings.json`**（或旧版全部写在 **manifest** 亦可；合并后 **`settings` 覆盖 manifest**）。结构体见源码 `DiskRoleSettings`、`DiskRoleManifest` 中对应段。运行时 **`get_role_info` / `load_role`** 的 JSON 中会包含 **`personality_source`**，供界面与工具识别档案模式。宿主 **`--api`** 下每条 **`POST /chat`** 的成功响应 JSON 亦含同名字段（与包内 `evolution` 一致）。
 
 ### 5.1 `schema_version`
 
@@ -291,14 +293,15 @@
 
 ### 5.3 演化参数 `evolution`
 
-控制事件对性格演化等（细项以源码 `EvolutionConfig` / `EvolutionConfigDisk` 为准）。
+控制事件与 **档案模式** 下游走（细项以源码 `EvolutionConfig` / `EvolutionConfigDisk` 为准）。设计理念见仓库 **[docs/personality-archive-notes.md](../docs/personality-archive-notes.md)**。
 
 | 字段 | 说明 |
 |------|------|
-| `event_impact_factor` | 事件对性格演化影响的总系数（默认常见为 `1.0`）。 |
+| `personality_source` | **可选**。`vector`（默认）：以七维增量等为主驱动。`profile`：**档案模式**——包内 **`core_personality.txt`** 为锁定的 **核心性格档案**；**可变性格档案**仅存运行时 DB、由模型在对话后更新，创作者不可手写该正文，只能通过本段数值调强弱。 |
+| `event_impact_factor` | 事件对演化影响的总系数（默认常见为 `1.0`）。**`profile`** 下对七维直接增量的影响会弱化，变化更多体现在可变档案。 |
 | `ai_analysis_interval` | 与 AI 分析节奏相关的间隔参数（默认如 `15`）。 |
-| `max_change_per_event` | 单次事件性格变化上限。 |
-| `max_total_change` | 累计变化上限。 |
+| `max_change_per_event` | 约束模型 **单轮更新可变档案** 的步长语义；**`profile`** 下尤其重要。 |
+| `max_total_change` | 累计变化上限（与经典演化路径相关；具体以引擎为准）。 |
 
 ### 5.4 `identity_binding`
 

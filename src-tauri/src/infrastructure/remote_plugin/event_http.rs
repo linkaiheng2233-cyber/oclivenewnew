@@ -1,4 +1,5 @@
 //! JSON-RPC：`event.estimate` — 侧车返回 [`EventImpactEstimate`](crate::domain::event_impact_ai::EventImpactEstimate)。
+//! `params` 含 `personality_source`（`vector`|`profile`），与包内 `evolution` 一致；侧车可忽略。
 
 use crate::domain::event_estimator::EventEstimator;
 use crate::domain::event_impact_ai::EventImpactEstimate;
@@ -8,7 +9,7 @@ use crate::infrastructure::llm::LlmClient;
 use crate::infrastructure::remote_plugin::config::RemotePluginHttpConfig;
 use crate::infrastructure::remote_plugin::jsonrpc;
 use crate::models::knowledge::KnowledgeEventAugment;
-use crate::models::{Emotion, Event, PersonalityVector};
+use crate::models::{Emotion, Event, PersonalitySource, PersonalityVector};
 use async_trait::async_trait;
 use serde_json::json;
 use std::sync::Arc;
@@ -42,6 +43,7 @@ impl EventEstimator for RemoteEventEstimatorHttp {
         user_message: &str,
         user_emotion: &Emotion,
         personality: &PersonalityVector,
+        personality_source: PersonalitySource,
         recent_turns: &[(String, String)],
         recent_events: &[Event],
         knowledge_augment: Option<&KnowledgeEventAugment>,
@@ -51,6 +53,7 @@ impl EventEstimator for RemoteEventEstimatorHttp {
             "user_message": user_message,
             "user_emotion": user_emotion,
             "personality": personality,
+            "personality_source": personality_source,
             "recent_turns": recent_turns,
             "recent_events": recent_events,
             "knowledge_augment": knowledge_augment.map(|a| &a.by_event),
@@ -83,6 +86,7 @@ impl EventEstimator for RemoteEventEstimatorHttp {
                         user_message,
                         user_emotion,
                         personality,
+                        personality_source,
                         recent_turns,
                         recent_events,
                         knowledge_augment,

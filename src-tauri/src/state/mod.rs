@@ -12,8 +12,8 @@ use crate::infrastructure::llm::LlmClient;
 use crate::infrastructure::ollama_client::OllamaClient;
 use crate::infrastructure::repositories::{SqliteFavorabilityRepository, SqliteMemoryRepository};
 use crate::infrastructure::storage::RoleStorage;
-use crate::models::{PersonalityVector, PluginBackends, Role};
-use parking_lot::RwLock;
+use crate::models::{PersonalitySource, PersonalityVector, PluginBackends, Role};
+use parking_lot::{Mutex, RwLock};
 use serde::Deserialize;
 use sqlx::sqlite::{SqliteConnectOptions, SqlitePoolOptions};
 use std::collections::HashMap;
@@ -226,7 +226,9 @@ pub struct AppState {
     pub memory_repo: Arc<dyn MemoryRepository>,
     pub favorability_repo: Arc<dyn FavorabilityRepository>,
     pub llm: Arc<dyn LlmClient>,
-    pub role_cache: Arc<RwLock<HashMap<String, Role>>>,
+    pub role_cache: Arc<RwLock<HashMap<String, Arc<Role>>>>,
+    /// 同一 `role_id` 冷加载串行化；表项在无人再持有对应 `Arc` 时移除（见 [`AppState::load_role_cached`]）。
+    role_load_inflight: Mutex<HashMap<String, Arc<Mutex<()>>>>,
     pub personality_cache: Arc<RwLock<HashMap<String, PersonalityVector>>>,
     pub storage: RoleStorage,
     policy_runtime: Arc<RwLock<PolicyRuntime>>,
@@ -320,6 +322,7 @@ impl AppState {
             favorability_repo,
             llm,
             role_cache: Arc::new(RwLock::new(HashMap::new())),
+            role_load_inflight: Mutex::new(HashMap::new()),
             personality_cache: Arc::new(RwLock::new(HashMap::new())),
             storage,
             policy_runtime: Arc::new(RwLock::new(runtime)),
@@ -379,6 +382,7 @@ impl AppState {
             favorability_repo,
             llm,
             role_cache: Arc::new(RwLock::new(HashMap::new())),
+            role_load_inflight: Mutex::new(HashMap::new()),
             personality_cache: Arc::new(RwLock::new(HashMap::new())),
             storage,
             policy_runtime: Arc::new(RwLock::new(runtime)),
@@ -412,7 +416,58 @@ impl AppState {
         Ok(count)
     }
 
-    /// 当前有效性格：`manifest` 核心 + `role_runtime.delta_personality`，再按 `evolution_bounds` 限幅。
+    /// 优先使用 [`Self::role_cache`]（与 [`crate::domain::chat_engine`] 一致）；未命中时从磁盘加载并写入缓存。
+    ///
+    /// 同一 `role_id` 在 [`Self::role_load_inflight`] 下串行冷加载；写缓存前再查一次。本线程退出时若已无其它 waiter，从 inflight 表摘掉该键，避免无限增长。
+    pub fn load_role_cached(&self, role_id: &str) -> Result<Arc<Role>> {
+        if let Some(r) = self.role_cache.read().get(role_id) {
+            return Ok(Arc::clone(r));
+        }
+        let key = role_id.to_string();
+        let gate = {
+            let mut inflight = self.role_load_inflight.lock();
+            inflight
+                .entry(key.clone())
+                .or_insert_with(|| Arc::new(Mutex::new(())))
+                .clone()
+        };
+        let _serial = gate.lock();
+
+        let loaded = (|| -> Result<Arc<Role>> {
+            if let Some(r) = self.role_cache.read().get(role_id) {
+                return Ok(Arc::clone(r));
+            }
+            let role = self.storage.load_role(role_id)?;
+            let candidate = Arc::new(role);
+            let mut map = self.role_cache.write();
+            if let Some(r) = map.get(role_id) {
+                return Ok(Arc::clone(r));
+            }
+            map.insert(role_id.to_string(), Arc::clone(&candidate));
+            Ok(candidate)
+        })();
+
+        drop(_serial);
+        drop(gate);
+        let mut inflight = self.role_load_inflight.lock();
+        if let Some(e) = inflight.get(&key) {
+            if Arc::strong_count(e) == 1 {
+                inflight.remove(&key);
+            }
+        }
+
+        loaded
+    }
+
+    /// 丢弃该 manifest 角色及其试聊会话命名空间下的有效性格缓存（磁盘包重载、`default_personality` / 边界等已变时必须调用）。
+    pub fn invalidate_personality_cache_for_role(&self, manifest_role_id: &str) {
+        let mut cache = self.personality_cache.write();
+        cache.remove(manifest_role_id);
+        let prefix = format!("{}__sess__", manifest_role_id);
+        cache.retain(|k, _| !k.starts_with(&prefix));
+    }
+
+    /// 当前有效性格：`vector` 模式为 `default_personality` + `delta`；`profile` 模式由核心性格档案 + DB「可变性格档案」归纳七维。
     pub async fn get_current_personality(
         &self,
         role_id: &str,
@@ -421,18 +476,23 @@ impl AppState {
         if let Some(p) = self.personality_cache.read().get(role_id) {
             return Ok(p.clone());
         }
-        let (_, delta_s) = self
-            .db_manager
-            .get_core_delta_personality_json(role_id)
-            .await?;
-        let delta_v = delta_s
-            .and_then(|s| PersonalityVector::from_json_vec(&s).ok())
-            .unwrap_or_else(PersonalityVector::zero);
-        let effective = PersonalityVector::effective_from_core_delta(
-            &role.default_personality,
-            &delta_v,
-            &role.evolution_bounds,
-        );
+        let effective = if role.evolution_config.personality_source == PersonalitySource::Profile {
+            let mutable = self.db_manager.get_mutable_personality(role_id).await?;
+            crate::domain::profile_personality::effective_vector_from_profile(role, &mutable)
+        } else {
+            let (_, delta_s) = self
+                .db_manager
+                .get_core_delta_personality_json(role_id)
+                .await?;
+            let delta_v = delta_s
+                .and_then(|s| PersonalityVector::from_json_vec(&s).ok())
+                .unwrap_or_else(PersonalityVector::zero);
+            PersonalityVector::effective_from_core_delta(
+                &role.default_personality,
+                &delta_v,
+                &role.evolution_bounds,
+            )
+        };
         self.personality_cache
             .write()
             .insert(role_id.to_string(), effective.clone());
@@ -470,6 +530,36 @@ impl AppState {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use crate::models::PersonalityVector;
+
+    #[tokio::test]
+    async fn invalidate_personality_cache_for_role_clears_manifest_and_sess_keys() {
+        let state = AppState::new_in_memory_with_llm(
+            Arc::new(crate::infrastructure::llm::MockLlmClient {
+                reply: "ok".to_string(),
+            }),
+            "./roles",
+        )
+        .await
+        .expect("state");
+        state
+            .personality_cache
+            .write()
+            .insert("r1".to_string(), PersonalityVector::zero());
+        state
+            .personality_cache
+            .write()
+            .insert("r1__sess__abc".to_string(), PersonalityVector::zero());
+        state
+            .personality_cache
+            .write()
+            .insert("r2".to_string(), PersonalityVector::zero());
+        state.invalidate_personality_cache_for_role("r1");
+        let c = state.personality_cache.read();
+        assert!(!c.contains_key("r1"));
+        assert!(!c.contains_key("r1__sess__abc"));
+        assert!(c.contains_key("r2"));
+    }
 
     #[tokio::test]
     async fn test_app_state_creation() {

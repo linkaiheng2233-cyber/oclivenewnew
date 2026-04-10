@@ -84,8 +84,15 @@ function onKeydown(e: KeyboardEvent) {
   color: var(--text-light);
 }
 .input:focus {
+  outline: none;
   border-color: var(--accent);
-  box-shadow: 0 0 0 2px rgba(212, 165, 116, 0.15);
+  box-shadow: 0 0 0 2px color-mix(in srgb, var(--accent) 22%, transparent);
+}
+.input:focus-visible {
+  border-color: var(--accent);
+  box-shadow:
+    0 0 0 2px color-mix(in srgb, var(--focus-ring-color) 28%, transparent),
+    0 0 0 4px color-mix(in srgb, var(--focus-ring-color) 12%, transparent);
 }
 /* 仅屏幕阅读器可见，消除「无关联 label」告警 */
 .sr-only {
@@ -121,6 +128,15 @@ function onKeydown(e: KeyboardEvent) {
   border-color: var(--accent);
   transform: translateY(-1px);
   box-shadow: var(--shadow-btn-hover);
+}
+.send:focus {
+  outline: none;
+}
+.send:focus-visible {
+  border-color: var(--accent);
+  box-shadow:
+    var(--shadow-btn-hover),
+    0 0 0 2px color-mix(in srgb, var(--focus-ring-color) 45%, transparent);
 }
 .send:active {
   transform: translateY(0);

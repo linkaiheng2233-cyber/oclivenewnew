@@ -5,6 +5,7 @@ use super::knowledge::KnowledgeIndex;
 use super::plugin_backends::PluginBackends;
 pub use oclive_validation::{
     IdentityBinding, LifeAvailability, LifeScheduleDisk, LifeScheduleEntryDisk, LifeTrajectoryDisk,
+    PersonalitySource,
 };
 use std::sync::Arc;
 
@@ -52,6 +53,9 @@ pub struct EvolutionConfig {
     pub ai_analysis_interval: i32,
     pub max_change_per_event: f64,
     pub max_total_change: f64,
+    /// `vector`：沿用七维增量；`profile`：以核心性格档案 + 运行时「可变性格档案」（**仅由 LLM 根据对话维护**）为准；七维为由正文归纳的**视图**，仅供理解与 UI。
+    #[serde(default)]
+    pub personality_source: PersonalitySource,
 }
 
 impl Default for EvolutionConfig {
@@ -61,6 +65,7 @@ impl Default for EvolutionConfig {
             ai_analysis_interval: 15,
             max_change_per_event: 0.05,
             max_total_change: 0.5,
+            personality_source: PersonalitySource::default(),
         }
     }
 }
@@ -160,6 +165,7 @@ pub struct Role {
     pub description: String,
     pub version: String,
     pub author: String,
+    /// **核心性格档案**：创作者与用户设定的固定人设；运行时 **AI 不得改写**（见 `mutable_profile_llm`），与可变档案共同构成完整人设。
     pub core_personality: String,
     pub default_personality: PersonalityDefaults,
     pub evolution_bounds: EvolutionBounds,

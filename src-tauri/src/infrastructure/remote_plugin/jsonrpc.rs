@@ -120,10 +120,9 @@ fn parse_jsonrpc_result(text: &str, method: &str, expected_id: u64) -> Result<Va
             method, text
         )));
     }
-    let id = v
-        .get("id")
-        .and_then(|x| x.as_u64())
-        .ok_or_else(|| AppError::OllamaError(format!("jsonrpc missing/invalid id method={}", method)))?;
+    let id = v.get("id").and_then(|x| x.as_u64()).ok_or_else(|| {
+        AppError::OllamaError(format!("jsonrpc missing/invalid id method={}", method))
+    })?;
     if id != expected_id {
         return Err(AppError::OllamaError(format!(
             "jsonrpc id mismatch method={} expected={} actual={}",
