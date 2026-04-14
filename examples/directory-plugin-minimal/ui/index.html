@@ -1,0 +1,45 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Oclive — 目录插件最小示例</title>
+    <style>
+      body {
+        font-family: system-ui, sans-serif;
+        margin: 2rem;
+        line-height: 1.5;
+      }
+      pre {
+        background: #f4f4f5;
+        padding: 1rem;
+        overflow: auto;
+      }
+    </style>
+  </head>
+  <body>
+    <h1>目录插件整壳（最小示例）</h1>
+    <p>若你能看到本页，说明 <code>https://ocliveplugin.localhost/…</code> 与整壳引导已生效。</p>
+    <h2>get_directory_plugin_bootstrap</h2>
+    <pre id="boot">加载中…</pre>
+    <script>
+      (function () {
+        var ta = window.__TAURI__;
+        var invoke = ta && ta.tauri && ta.tauri.invoke;
+        var el = document.getElementById("boot");
+        if (!invoke) {
+          el.textContent =
+            "未找到 window.__TAURI__.tauri.invoke。请从 Oclive Tauri 窗口打开本页，并确认 tauri.conf.json 已为 ocliveplugin.localhost 配置 dangerousRemoteDomainIpcAccess。";
+          return;
+        }
+        invoke("get_directory_plugin_bootstrap")
+          .then(function (b) {
+            el.textContent = JSON.stringify(b, null, 2);
+          })
+          .catch(function (e) {
+            el.textContent = String(e);
+          });
+      })();
+    </script>
+  </body>
+</html>

@@ -9,6 +9,8 @@ import {
   switchRole as invokeSwitchRole,
   type LifeStateDto,
   type PluginBackends,
+  type PluginBackendsSourceMap,
+  type PluginBackendsOverride,
   type RoleInfo,
   type UserRelationDto,
 } from "../utils/tauri-api";
@@ -56,6 +58,12 @@ type RoleInfoState = {
   currentLife: LifeStateDto | null;
   /** 与角色包 `settings.json` → `plugin_backends` 一致 */
   pluginBackends: PluginBackends;
+  /** 会话级覆盖（null 表示无覆盖） */
+  pluginBackendsSessionOverride: PluginBackendsOverride | null;
+  /** 叠加会话覆盖后的有效后端 */
+  pluginBackendsEffective: PluginBackends;
+  /** 叠加会话覆盖后的来源快照（pack/session/env） */
+  pluginBackendsEffectiveSources: PluginBackendsSourceMap;
   /** 是否已加载世界观知识索引（`get_role_info`） */
   knowledgeEnabled: boolean;
   /** 知识块条数 */
@@ -94,6 +102,16 @@ function mapRoleInfo(info: RoleInfo): RoleInfoState {
     ),
     currentLife: info.current_life ?? null,
     pluginBackends: info.plugin_backends,
+    pluginBackendsSessionOverride: info.plugin_backends_session_override ?? null,
+    pluginBackendsEffective:
+      info.plugin_backends_effective ?? info.plugin_backends,
+    pluginBackendsEffectiveSources: info.plugin_backends_effective_sources ?? {
+      memory: "pack_default",
+      emotion: "pack_default",
+      event: "pack_default",
+      prompt: "pack_default",
+      llm: "pack_default",
+    },
     knowledgeEnabled: info.knowledge_enabled ?? false,
     knowledgeChunkCount: info.knowledge_chunk_count ?? 0,
   };
@@ -138,6 +156,21 @@ export const useRoleStore = defineStore(
           event: "builtin",
           prompt: "builtin",
           llm: "ollama",
+        },
+        pluginBackendsSessionOverride: null,
+        pluginBackendsEffective: {
+          memory: "builtin",
+          emotion: "builtin",
+          event: "builtin",
+          prompt: "builtin",
+          llm: "ollama",
+        },
+        pluginBackendsEffectiveSources: {
+          memory: "pack_default",
+          emotion: "pack_default",
+          event: "pack_default",
+          prompt: "pack_default",
+          llm: "pack_default",
         },
         knowledgeEnabled: false,
         knowledgeChunkCount: 0,

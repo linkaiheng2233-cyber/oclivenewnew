@@ -11,6 +11,7 @@ const emit = defineEmits<{
 }>();
 
 const exportAllRoles = ref(false);
+const includePluginDebug = ref(false);
 const busy = ref(false);
 
 async function runExport(format: "json" | "txt") {
@@ -20,6 +21,8 @@ async function runExport(format: "json" | "txt") {
       roleId: exportAllRoles.value ? undefined : props.roleId,
       allRoles: exportAllRoles.value,
       format,
+      includePluginResolutionDebug:
+        includePluginDebug.value && !exportAllRoles.value,
     });
     const filters =
       format === "json"
@@ -68,6 +71,14 @@ async function runExport(format: "json" | "txt") {
     <label class="chk">
       <input v-model="exportAllRoles" type="checkbox" :disabled="busy" />
       导出全部角色
+    </label>
+    <label class="chk">
+      <input
+        v-model="includePluginDebug"
+        type="checkbox"
+        :disabled="busy || exportAllRoles"
+      />
+      附带插件诊断（单角色）
     </label>
     <button
       type="button"

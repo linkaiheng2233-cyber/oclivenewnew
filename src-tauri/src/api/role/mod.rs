@@ -6,10 +6,16 @@ mod runtime;
 
 use crate::error::AppError;
 use crate::models::dto::{
-    ClearSceneUserRelationRequest, RoleData, RoleInfo, RoleSummary, SceneLabelEntry,
+    ClearSceneUserRelationRequest, GetPluginResolutionDebugRequest, GetRoleInfoRequest,
+    PluginResolutionDebugInfo, RoleData, RoleInfo, RoleSummary, SceneLabelEntry,
     SetEvolutionFactorRequest, SetRemoteLifeEnabledRequest, SetRoleInteractionModeRequest,
-    SetSceneUserRelationRequest, SetUserRelationRequest, OCLIVE_DEFAULT_RELATION_SENTINEL,
+    SetSceneUserRelationRequest, SetSessionPluginBackendRequest, SetUserRelationRequest,
+    API_VERSION, OCLIVE_DEFAULT_RELATION_SENTINEL, SCHEMA_VERSION,
 };
+use crate::models::plugin_backends::{
+    EmotionBackend, EventBackend, LlmBackend, MemoryBackend, PromptBackend,
+};
+use crate::infrastructure::storage::resolve_llm_backend_env_override;
 use crate::models::role::IdentityBinding;
 use crate::state::AppState;
 use std::sync::Arc;
@@ -20,9 +26,33 @@ use runtime::{
     current_favorability_for_effective_identity, maybe_seed_initial_favorability_with_extras,
     resolve_relation_state_for_ui, role_runtime_extras,
 };
+use serde::de::DeserializeOwned;
+use serde_json::Value;
 
 const EVENT_IMPACT_MIN: f64 = 0.05;
 const EVENT_IMPACT_MAX: f64 = 5.0;
+
+fn session_namespace(role_id: &str, session_id: Option<&str>) -> String {
+    crate::domain::chat_engine::conversation_state_role_id(role_id, session_id)
+}
+
+fn parse_backend_wire<T: DeserializeOwned>(module: &str, value: &str) -> Result<T, String> {
+    let t = value.trim();
+    if t.is_empty() {
+        return Err(AppError::InvalidParameter(format!(
+            "session backend override: module={} backend 不能为空",
+            module
+        ))
+        .to_frontend_error());
+    }
+    serde_json::from_value::<T>(Value::String(t.to_string())).map_err(|_| {
+        AppError::InvalidParameter(format!(
+            "session backend override: module={} backend={} 非法",
+            module, t
+        ))
+        .to_frontend_error()
+    })
+}
 
 /// `reset_portrait_emotion`：为 `true` 时（应用启动 `load_role`）立绘重置为 `neutral`；切换角色时为 `false` 以保留各角色上次立绘状态。
 pub async fn load_role_impl(
@@ -108,6 +138,12 @@ pub async fn load_role_impl(
         .role_cache
         .write()
         .insert(role_id.to_string(), Arc::clone(&role));
+    let session_ns = session_namespace(role_id, None);
+    let plugin_backends_session_override = state.session_backend_override(session_ns.as_str());
+    let plugin_backends_effective =
+        state.effective_plugin_backends_for_session(role.as_ref(), session_ns.as_str());
+    let plugin_backends_effective_sources =
+        state.effective_plugin_backend_sources_for_session(session_ns.as_str());
 
     Ok(RoleData {
         role_id: role_id.to_string(),
@@ -140,13 +176,21 @@ pub async fn load_role_impl(
         interaction_mode_pack_default: interaction.pack_default,
         current_life: interaction.current_life,
         plugin_backends: role.plugin_backends.clone(),
+        plugin_backends_session_override,
+        plugin_backends_effective,
+        plugin_backends_effective_sources,
     })
 }
 
-pub async fn get_role_info_impl(state: &AppState, role_id: &str) -> Result<RoleInfo, String> {
+pub async fn get_role_info_impl(
+    state: &AppState,
+    role_id: &str,
+    session_id: Option<&str>,
+) -> Result<RoleInfo, String> {
+    let session_ns = session_namespace(role_id, session_id);
     if !state
         .db_manager
-        .role_runtime_exists(role_id)
+        .role_runtime_exists(session_ns.as_str())
         .await
         .map_err(|e| e.to_frontend_error())?
     {
@@ -159,6 +203,11 @@ pub async fn get_role_info_impl(state: &AppState, role_id: &str) -> Result<RoleI
     let role = state
         .load_role_cached(role_id)
         .map_err(|e| e.to_frontend_error())?;
+    let plugin_backends_session_override = state.session_backend_override(session_ns.as_str());
+    let plugin_backends_effective =
+        state.effective_plugin_backends_for_session(role.as_ref(), session_ns.as_str());
+    let plugin_backends_effective_sources =
+        state.effective_plugin_backend_sources_for_session(session_ns.as_str());
 
     let current_scene = state
         .db_manager
@@ -264,6 +313,9 @@ pub async fn get_role_info_impl(state: &AppState, role_id: &str) -> Result<RoleI
         interaction_mode_pack_default: interaction.pack_default,
         current_life: interaction.current_life,
         plugin_backends: role.plugin_backends.clone(),
+        plugin_backends_session_override,
+        plugin_backends_effective,
+        plugin_backends_effective_sources,
         knowledge_enabled,
         knowledge_chunk_count,
     })
@@ -289,7 +341,7 @@ pub async fn list_roles_impl(state: &AppState) -> Result<Vec<RoleSummary>, Strin
 
 pub async fn switch_role_impl(state: &AppState, role_id: &str) -> Result<RoleInfo, String> {
     load_role_impl(state, role_id, false).await?;
-    get_role_info_impl(state, role_id).await
+    get_role_info_impl(state, role_id, None).await
 }
 
 #[tauri::command]
@@ -299,10 +351,10 @@ pub async fn load_role(role_id: String, state: State<'_, AppState>) -> Result<Ro
 
 #[tauri::command]
 pub async fn get_role_info(
-    role_id: String,
+    req: GetRoleInfoRequest,
     state: State<'_, AppState>,
 ) -> Result<RoleInfo, String> {
-    get_role_info_impl(&state, &role_id).await
+    get_role_info_impl(&state, &req.role_id, req.session_id.as_deref()).await
 }
 
 #[tauri::command]
@@ -360,7 +412,7 @@ pub async fn set_user_relation_impl(
             .mirror_runtime_from_identity(&req.role_id, &eff)
             .await
             .map_err(|e| e.to_frontend_error())?;
-        return get_role_info_impl(state, &req.role_id).await;
+        return get_role_info_impl(state, &req.role_id, None).await;
     }
 
     if !role.user_relations.iter().any(|r| r.id == req.relation) {
@@ -390,7 +442,7 @@ pub async fn set_user_relation_impl(
         .mirror_runtime_from_identity(&req.role_id, &req.relation)
         .await
         .map_err(|e| e.to_frontend_error())?;
-    get_role_info_impl(state, &req.role_id).await
+    get_role_info_impl(state, &req.role_id, None).await
 }
 
 pub async fn set_evolution_factor_impl(
@@ -424,7 +476,7 @@ pub async fn set_evolution_factor_impl(
         .set_event_impact_factor(&req.role_id, f)
         .await
         .map_err(|e| e.to_frontend_error())?;
-    get_role_info_impl(state, &req.role_id).await
+    get_role_info_impl(state, &req.role_id, None).await
 }
 
 pub async fn clear_scene_user_relation_impl(
@@ -468,7 +520,7 @@ pub async fn clear_scene_user_relation_impl(
         .clear_user_relation_for_scene(&req.role_id, &req.scene_id)
         .await
         .map_err(|e| e.to_frontend_error())?;
-    get_role_info_impl(state, &req.role_id).await
+    get_role_info_impl(state, &req.role_id, None).await
 }
 
 pub async fn set_scene_user_relation_impl(
@@ -522,7 +574,7 @@ pub async fn set_scene_user_relation_impl(
         .set_user_relation_for_scene(&req.role_id, &req.scene_id, &req.relation)
         .await
         .map_err(|e| e.to_frontend_error())?;
-    get_role_info_impl(state, &req.role_id).await
+    get_role_info_impl(state, &req.role_id, None).await
 }
 
 #[tauri::command]
@@ -564,7 +616,7 @@ pub async fn set_remote_life_enabled_impl(
         .set_remote_life_enabled(&req.role_id, req.enabled)
         .await
         .map_err(|e| e.to_frontend_error())?;
-    get_role_info_impl(state, &req.role_id).await
+    get_role_info_impl(state, &req.role_id, None).await
 }
 
 #[tauri::command]
@@ -598,7 +650,7 @@ pub async fn set_role_interaction_mode_impl(
         .set_interaction_mode_for_role(&req.role_id, req.mode.trim())
         .await
         .map_err(|e| e.to_frontend_error())?;
-    get_role_info_impl(state, &req.role_id).await
+    get_role_info_impl(state, &req.role_id, None).await
 }
 
 #[tauri::command]
@@ -607,6 +659,173 @@ pub async fn set_role_interaction_mode(
     state: State<'_, AppState>,
 ) -> Result<RoleInfo, String> {
     set_role_interaction_mode_impl(&state, &req).await
+}
+
+pub async fn set_session_plugin_backend_impl(
+    state: &AppState,
+    req: &SetSessionPluginBackendRequest,
+) -> Result<RoleInfo, String> {
+    state
+        .load_role_cached(&req.role_id)
+        .map_err(|e| e.to_frontend_error())?;
+    let ns = session_namespace(&req.role_id, req.session_id.as_deref());
+    state
+        .db_manager
+        .ensure_role_runtime(ns.as_str())
+        .await
+        .map_err(|e| e.to_frontend_error())?;
+    let mut next = state
+        .session_backend_override(ns.as_str())
+        .unwrap_or_default();
+    let module = req.module.trim().to_ascii_lowercase();
+    if req.local_memory_provider_id.is_some() && module.as_str() != "memory" {
+        return Err(AppError::InvalidParameter(
+            "local_memory_provider_id only supports module=memory".to_string(),
+        )
+        .to_frontend_error());
+    }
+    match module.as_str() {
+        "memory" => {
+            if let Some(backend) = req.backend.as_ref() {
+                next.memory = backend
+                    .as_deref()
+                    .map(|v| parse_backend_wire::<MemoryBackend>("memory", v))
+                    .transpose()?;
+            }
+            if let Some(provider_id) = req.local_memory_provider_id.as_ref() {
+                let t = provider_id.trim();
+                if t.is_empty() {
+                    next.local_memory_provider_id = None;
+                } else {
+                    next.local_memory_provider_id = Some(t.to_string());
+                }
+            }
+        }
+        "emotion" => {
+            if let Some(backend) = req.backend.as_ref() {
+                next.emotion = backend
+                    .as_deref()
+                    .map(|v| parse_backend_wire::<EmotionBackend>("emotion", v))
+                    .transpose()?;
+            }
+        }
+        "event" => {
+            if let Some(backend) = req.backend.as_ref() {
+                next.event = backend
+                    .as_deref()
+                    .map(|v| parse_backend_wire::<EventBackend>("event", v))
+                    .transpose()?;
+            }
+        }
+        "prompt" => {
+            if let Some(backend) = req.backend.as_ref() {
+                next.prompt = backend
+                    .as_deref()
+                    .map(|v| parse_backend_wire::<PromptBackend>("prompt", v))
+                    .transpose()?;
+            }
+        }
+        "llm" => {
+            if let Some(backend) = req.backend.as_ref() {
+                next.llm = backend
+                    .as_deref()
+                    .map(|v| parse_backend_wire::<LlmBackend>("llm", v))
+                    .transpose()?;
+            }
+        }
+        _ => {
+            return Err(AppError::InvalidParameter(format!(
+                "session backend override: unknown module {}",
+                req.module
+            ))
+            .to_frontend_error());
+        }
+    }
+    if next.is_empty() {
+        state.clear_session_backend_override(ns.as_str());
+    } else {
+        state.set_session_backend_override(ns.as_str(), next);
+    }
+    get_role_info_impl(state, &req.role_id, req.session_id.as_deref()).await
+}
+
+#[tauri::command]
+pub async fn set_session_plugin_backend(
+    req: SetSessionPluginBackendRequest,
+    state: State<'_, AppState>,
+) -> Result<RoleInfo, String> {
+    set_session_plugin_backend_impl(&state, &req).await
+}
+
+pub async fn get_plugin_resolution_debug_impl(
+    state: &AppState,
+    req: &GetPluginResolutionDebugRequest,
+) -> Result<PluginResolutionDebugInfo, String> {
+    build_plugin_resolution_debug_info(state, &req.role_id, req.session_id.as_deref()).await
+}
+
+#[tauri::command]
+pub async fn get_plugin_resolution_debug(
+    req: GetPluginResolutionDebugRequest,
+    state: State<'_, AppState>,
+) -> Result<PluginResolutionDebugInfo, String> {
+    get_plugin_resolution_debug_impl(&state, &req).await
+}
+
+pub(crate) async fn build_plugin_resolution_debug_info(
+    state: &AppState,
+    role_id: &str,
+    session_id: Option<&str>,
+) -> Result<PluginResolutionDebugInfo, String> {
+    let role = state
+        .load_role_cached(role_id)
+        .map_err(|e| e.to_frontend_error())?;
+    let session_ns = session_namespace(role_id, session_id);
+    state
+        .db_manager
+        .ensure_role_runtime(session_ns.as_str())
+        .await
+        .map_err(|e| e.to_frontend_error())?;
+    let session_override = state.session_backend_override(session_ns.as_str());
+    let effective = state.effective_plugin_backends_for_session(role.as_ref(), session_ns.as_str());
+    let effective_sources = state.effective_plugin_backend_sources_for_session(session_ns.as_str());
+    let llm_env_override = resolve_llm_backend_env_override().map(|b| match b {
+        LlmBackend::Ollama => "ollama".to_string(),
+        LlmBackend::Remote => "remote".to_string(),
+        LlmBackend::Directory => "directory".to_string(),
+    });
+    let remote_plugin_url_configured = std::env::var("OCLIVE_REMOTE_PLUGIN_URL")
+        .ok()
+        .map(|v| !v.trim().is_empty())
+        .unwrap_or(false);
+    let remote_llm_url_configured = std::env::var("OCLIVE_REMOTE_LLM_URL")
+        .ok()
+        .map(|v| !v.trim().is_empty())
+        .unwrap_or(false);
+    let mut local_provider_ids: Vec<String> = state
+        .local_plugin_all_providers()
+        .iter()
+        .map(|d| d.provider_id.clone())
+        .collect();
+    local_provider_ids.sort();
+    local_provider_ids.dedup();
+
+    Ok(PluginResolutionDebugInfo {
+        app_version: env!("CARGO_PKG_VERSION").to_string(),
+        api_version: API_VERSION,
+        schema_version: SCHEMA_VERSION,
+        role_id: role_id.to_string(),
+        session_namespace: session_ns,
+        plugin_backends_pack_default: role.plugin_backends.clone(),
+        plugin_backends_session_override: session_override,
+        plugin_backends_effective: effective,
+        plugin_backends_effective_sources: effective_sources,
+        llm_env_override,
+        remote_plugin_url_configured,
+        remote_llm_url_configured,
+        local_provider_count: local_provider_ids.len(),
+        local_provider_ids,
+    })
 }
 
 #[tauri::command]

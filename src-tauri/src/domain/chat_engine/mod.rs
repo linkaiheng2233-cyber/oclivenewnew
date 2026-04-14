@@ -24,7 +24,8 @@ use crate::models::dto::{
     EmotionDto, PresenceMode, SendMessageRequest, SendMessageResponse, API_VERSION, SCHEMA_VERSION,
 };
 use crate::models::{
-    Event, EventType, KnowledgeIndex, Memory, PersonalitySource, PersonalityVector, Role,
+    Event, EventType, KnowledgeIndex, Memory, PersonalitySource, PersonalityVector,
+    PluginBackends, PluginBackendsSourceMap, Role,
 };
 use crate::state::AppState;
 use chrono::Utc;
@@ -45,6 +46,25 @@ pub(super) fn emotion_to_dto(r: &crate::domain::emotion_analyzer::EmotionResult)
         disgust: r.disgust as f32,
         neutral: r.neutral as f32,
     }
+}
+
+fn backend_resolution_summary(
+    effective: &PluginBackends,
+    sources: &PluginBackendsSourceMap,
+) -> String {
+    format!(
+        "mem={:?}({:?}) emotion={:?}({:?}) event={:?}({:?}) prompt={:?}({:?}) llm={:?}({:?})",
+        effective.memory,
+        sources.memory,
+        effective.emotion,
+        sources.emotion,
+        effective.event,
+        sources.event,
+        effective.prompt,
+        sources.prompt,
+        effective.llm,
+        sources.llm
+    )
 }
 
 /// 会话级 SQLite 命名空间：HTTP 试聊传入 `session_id` 时与无 `session_id` 的默认对话隔离。
@@ -89,7 +109,7 @@ async fn process_remote_stub(
 ) -> Result<SendMessageResponse> {
     let role_id = req.role_id.as_str();
     let user_message = req.user_message.as_str();
-    let pl = state.resolved_plugins_for(role);
+    let pl = state.resolved_plugins_for_session(role, Some(srid));
     let emotion_result = pl.emotion.analyze(user_message)?;
     let user_relation_key: String =
         resolve_effective_user_relation_key(state, role, srid, Some(scene_id)).await?;
@@ -170,7 +190,7 @@ async fn process_remote_life(
 
     let mut personality = state.get_current_personality(srid, role).await?;
 
-    let pl = state.resolved_plugins_for(role);
+    let pl = state.resolved_plugins_for_session(role, Some(srid));
     let emotion_result = pl.emotion.analyze(user_message)?;
     let user_emotion = emotion_result.to_emotion();
     let user_emotion_str = user_emotion.to_string();
@@ -556,6 +576,16 @@ pub async fn process_message(
         .db_manager
         .ensure_interaction_mode_seeded(srid, role.interaction_mode.as_deref())
         .await?;
+    let effective_backends = state.effective_plugin_backends_for_session(role.as_ref(), srid);
+    let effective_sources = state.effective_plugin_backend_sources_for_session(srid);
+    log::debug!(
+        target: "oclive_chat",
+        "send_message backends role_id={} scene_id={} session_ns={} {}",
+        mrid,
+        scene_id,
+        srid,
+        backend_resolution_summary(&effective_backends, &effective_sources)
+    );
 
     state
         .db_manager
@@ -621,11 +651,14 @@ async fn ensure_role_loaded(state: &AppState, role_id: &str) -> Result<Arc<Role>
 
 #[cfg(test)]
 mod tests {
-    use crate::domain::chat_engine::conversation_state_role_id;
+    use crate::domain::chat_engine::{backend_resolution_summary, conversation_state_role_id};
     use crate::domain::chat_turn_rules::{
         avoid_fast_promote_score, smooth_favor_delta_for_short_streak, soft_append_guard,
     };
-    use crate::models::{Event, EventType};
+    use crate::models::{
+        EmotionBackend, Event, EventBackend, EventType, LlmBackend, MemoryBackend, PluginBackendSource,
+        PluginBackends, PluginBackendsSourceMap, PromptBackend,
+    };
 
     #[test]
     fn conversation_state_role_id_none_matches_manifest_id() {
@@ -645,6 +678,28 @@ mod tests {
         let long = "x".repeat(400);
         let out = conversation_state_role_id("r", Some(&long));
         assert!(out.chars().count() <= 256);
+    }
+
+    #[test]
+    fn backend_resolution_summary_contains_backend_and_source_pairs() {
+        let effective = PluginBackends {
+            memory: MemoryBackend::Remote,
+            emotion: EmotionBackend::Builtin,
+            event: EventBackend::BuiltinV2,
+            prompt: PromptBackend::Remote,
+            llm: LlmBackend::Remote,
+            ..Default::default()
+        };
+        let sources = PluginBackendsSourceMap {
+            memory: PluginBackendSource::SessionOverride,
+            emotion: PluginBackendSource::PackDefault,
+            event: PluginBackendSource::SessionOverride,
+            prompt: PluginBackendSource::PackDefault,
+            llm: PluginBackendSource::EnvOverride,
+        };
+        let out = backend_resolution_summary(&effective, &sources);
+        assert!(out.contains("mem=Remote(SessionOverride)"));
+        assert!(out.contains("llm=Remote(EnvOverride)"));
     }
 
     #[test]

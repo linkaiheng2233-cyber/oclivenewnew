@@ -160,11 +160,49 @@ export interface LifeStateDto {
 
 /** 与 `settings.json` → `plugin_backends` 一致（snake_case，与后端 serde 对齐） */
 export interface PluginBackends {
-  memory: "builtin" | "builtin_v2" | "remote";
+  memory: "builtin" | "builtin_v2" | "remote" | "local";
+  /** `memory === "local"` 时可选：与 `_local_plugins` 中 descriptor 的 `provider_id` 一致 */
+  local_memory_provider_id?: string | null;
   emotion: "builtin" | "builtin_v2" | "remote";
   event: "builtin" | "builtin_v2" | "remote";
   prompt: "builtin" | "builtin_v2" | "remote";
   llm: "ollama" | "remote";
+}
+
+export interface PluginBackendsOverride {
+  memory?: PluginBackends["memory"] | null;
+  local_memory_provider_id?: string | null;
+  emotion?: PluginBackends["emotion"] | null;
+  event?: PluginBackends["event"] | null;
+  prompt?: PluginBackends["prompt"] | null;
+  llm?: PluginBackends["llm"] | null;
+}
+
+export type PluginBackendSource = "pack_default" | "session_override" | "env_override";
+
+export interface PluginBackendsSourceMap {
+  memory: PluginBackendSource;
+  emotion: PluginBackendSource;
+  event: PluginBackendSource;
+  prompt: PluginBackendSource;
+  llm: PluginBackendSource;
+}
+
+export interface PluginResolutionDebugInfo {
+  app_version: string;
+  api_version: number;
+  schema_version: number;
+  role_id: string;
+  session_namespace: string;
+  plugin_backends_pack_default: PluginBackends;
+  plugin_backends_session_override?: PluginBackendsOverride | null;
+  plugin_backends_effective: PluginBackends;
+  plugin_backends_effective_sources: PluginBackendsSourceMap;
+  llm_env_override?: "ollama" | "remote" | null;
+  remote_plugin_url_configured: boolean;
+  remote_llm_url_configured: boolean;
+  local_provider_ids: string[];
+  local_provider_count: number;
 }
 
 /**
@@ -211,6 +249,12 @@ export interface RoleData {
   current_life: LifeStateDto | null;
   /** 模块化子系统后端（与 `PluginHost` 解析一致） */
   plugin_backends: PluginBackends;
+  /** 当前会话覆盖（无覆盖时为 null） */
+  plugin_backends_session_override?: PluginBackendsOverride | null;
+  /** 叠加会话覆盖后的有效后端 */
+  plugin_backends_effective?: PluginBackends;
+  /** 叠加后的后端来源（pack/session/env） */
+  plugin_backends_effective_sources?: PluginBackendsSourceMap;
 }
 
 export interface SceneLabelEntry {
@@ -258,6 +302,12 @@ export interface RoleInfo {
   current_life: LifeStateDto | null;
   /** 模块化子系统后端（与 `load_role` 一致） */
   plugin_backends: PluginBackends;
+  /** 当前会话覆盖（无覆盖时为 null） */
+  plugin_backends_session_override?: PluginBackendsOverride | null;
+  /** 叠加会话覆盖后的有效后端 */
+  plugin_backends_effective?: PluginBackends;
+  /** 叠加后的后端来源（pack/session/env） */
+  plugin_backends_effective_sources?: PluginBackendsSourceMap;
   /** 是否已从磁盘构建世界观知识索引 */
   knowledge_enabled?: boolean;
   /** 知识块条数；未加载索引时为 0 */
@@ -356,8 +406,17 @@ export async function resolveRoleAssetPath(
   });
 }
 
-export async function getRoleInfo(roleId: string): Promise<RoleInfo> {
-  return invokeWithFriendlyError<RoleInfo>("get_role_info", { roleId });
+/** `sessionId` 与发消息的会话 id 一致时，返回该命名空间下的 `plugin_backends_*` 等快照。 */
+export async function getRoleInfo(
+  roleId: string,
+  sessionId?: string | null,
+): Promise<RoleInfo> {
+  return invokeWithFriendlyError<RoleInfo>("get_role_info", {
+    req: {
+      role_id: roleId,
+      session_id: sessionId ?? null,
+    },
+  });
 }
 
 export async function queryMemories(
@@ -425,6 +484,44 @@ export async function setRoleInteractionMode(
   return invokeWithFriendlyError<RoleInfo>("set_role_interaction_mode", {
     req: { role_id: roleId, mode },
   });
+}
+
+export async function setSessionPluginBackend(
+  roleId: string,
+  module: "memory" | "emotion" | "event" | "prompt" | "llm",
+  backend?: string | null,
+  localMemoryProviderId?: string,
+  sessionId?: string | null,
+): Promise<RoleInfo> {
+  const req: Record<string, unknown> = {
+    role_id: roleId,
+    module,
+    session_id: sessionId ?? null,
+  };
+  if (backend !== undefined) {
+    req.backend = backend;
+  }
+  if (localMemoryProviderId !== undefined) {
+    req.local_memory_provider_id = localMemoryProviderId;
+  }
+  return invokeWithFriendlyError<RoleInfo>("set_session_plugin_backend", {
+    req,
+  });
+}
+
+export async function getPluginResolutionDebug(
+  roleId: string,
+  sessionId?: string | null,
+): Promise<PluginResolutionDebugInfo> {
+  return invokeWithFriendlyError<PluginResolutionDebugInfo>(
+    "get_plugin_resolution_debug",
+    {
+      req: {
+        role_id: roleId,
+        session_id: sessionId ?? null,
+      },
+    },
+  );
 }
 
 export async function switchScene(
@@ -530,12 +627,46 @@ export async function exportChatLogs(params: {
   roleId?: string;
   allRoles?: boolean;
   format: "json" | "txt";
+  includePluginResolutionDebug?: boolean;
+  sessionId?: string | null;
 }): Promise<ExportChatLogsResponse> {
   return invokeWithFriendlyError<ExportChatLogsResponse>("export_chat_logs", {
     req: {
       role_id: params.roleId ?? null,
       all_roles: params.allRoles ?? false,
       format: params.format,
+      include_plugin_resolution_debug: params.includePluginResolutionDebug ?? false,
+      session_id: params.sessionId ?? null,
+    },
+  });
+}
+
+/** 目录插件启动引导（整壳 URL、已扫描插件 id、开发者模式）。 */
+export interface DirectoryPluginBootstrap {
+  shellUrl?: string | null;
+  shellPluginId?: string | null;
+  pluginIds: string[];
+  developerMode: boolean;
+}
+
+export async function getDirectoryPluginBootstrap(): Promise<DirectoryPluginBootstrap> {
+  return invokeWithFriendlyError<DirectoryPluginBootstrap>(
+    "get_directory_plugin_bootstrap",
+    {},
+  );
+}
+
+/** B2：对指定目录插件懒启动后透传 JSON-RPC（方法名与 params 由插件定义）。 */
+export async function directoryPluginInvoke(
+  pluginId: string,
+  method: string,
+  params: unknown = {},
+): Promise<unknown> {
+  return invokeWithFriendlyError<unknown>("directory_plugin_invoke", {
+    req: {
+      pluginId,
+      method,
+      params,
     },
   });
 }

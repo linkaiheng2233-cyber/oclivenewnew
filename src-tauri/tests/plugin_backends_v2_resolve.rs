@@ -13,7 +13,7 @@ fn resolve_role_with_all_builtin_v2() {
     let llm: Arc<dyn LlmClient> = Arc::new(MockLlmClient {
         reply: String::new(),
     });
-    let host = PluginHost::new(llm);
+    let host = PluginHost::new(llm, None);
     let role = Role {
         plugin_backends: PluginBackends {
             memory: MemoryBackend::BuiltinV2,
@@ -21,6 +21,7 @@ fn resolve_role_with_all_builtin_v2() {
             event: EventBackend::BuiltinV2,
             prompt: PromptBackend::BuiltinV2,
             llm: LlmBackend::Ollama,
+            ..Default::default()
         },
         ..Default::default()
     };

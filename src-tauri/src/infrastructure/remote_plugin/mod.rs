@@ -14,6 +14,11 @@ mod memory_http;
 mod prompt_http;
 
 pub use config::RemotePluginHttpConfig;
+pub use emotion_http::RemoteUserEmotionAnalyzerHttp;
+pub use event_http::RemoteEventEstimatorHttp;
+pub use llm_http::RemoteLlmHttp;
+pub use memory_http::RemoteMemoryRetrievalHttp;
+pub use prompt_http::RemotePromptAssemblerHttp;
 
 use crate::domain::event_estimator::{EventEstimator, RemoteEventEstimatorPlaceholder};
 use crate::domain::memory_retrieval::{MemoryRetrieval, RemoteMemoryRetrievalPlaceholder};
@@ -22,12 +27,12 @@ use crate::domain::user_emotion_analyzer::{
     RemoteUserEmotionAnalyzerPlaceholder, UserEmotionAnalyzer,
 };
 use crate::infrastructure::llm::{LlmClient, RemoteLlmPlaceholder};
-use emotion_http::RemoteUserEmotionAnalyzerHttp;
-use event_http::RemoteEventEstimatorHttp;
-use llm_http::RemoteLlmHttp;
-use memory_http::RemoteMemoryRetrievalHttp;
-use prompt_http::RemotePromptAssemblerHttp;
+use serde_json::Value;
 use std::sync::Arc;
+
+use crate::error::{AppError, Result};
+pub use jsonrpc::RemoteRpcChannel;
+use jsonrpc::call_blocking;
 
 /// 四类 `plugin_backends.* = remote` 共用一套配置，只读一次环境变量并打一条日志。
 pub(crate) struct PluginRemoteGroup {
@@ -72,4 +77,32 @@ pub fn llm_remote_backend(default_llm: Arc<dyn LlmClient>) -> Arc<dyn LlmClient>
     } else {
         Arc::new(RemoteLlmPlaceholder::new(default_llm))
     }
+}
+
+/// 对目录插件（或任意已解析 RPC 根 URL）发起单次 JSON-RPC `call`（阻塞）；供 `directory_plugin_invoke` 等使用。
+pub fn invoke_directory_plugin_rpc_blocking(
+    url: &str,
+    method: &str,
+    params: Value,
+    channel: RemoteRpcChannel,
+) -> Result<Value> {
+    let cfg = RemotePluginHttpConfig::for_directory_plugin_rpc(url, matches!(channel, RemoteRpcChannel::Llm));
+    let client = reqwest::blocking::Client::builder()
+        .connect_timeout(cfg.connect_timeout())
+        .timeout(cfg.timeout)
+        .build()
+        .map_err(|e| {
+            AppError::OllamaError(format!(
+                "directory plugin reqwest client build failed: {}",
+                e
+            ))
+        })?;
+    call_blocking(
+        channel,
+        &client,
+        &cfg.endpoint,
+        method,
+        params,
+        cfg.bearer_token.as_deref(),
+    )
 }

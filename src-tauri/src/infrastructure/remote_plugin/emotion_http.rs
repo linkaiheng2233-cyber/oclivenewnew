@@ -5,8 +5,10 @@ use crate::domain::user_emotion_analyzer::UserEmotionAnalyzer;
 use crate::domain::BuiltinUserEmotionAnalyzer;
 use crate::error::Result;
 use crate::infrastructure::remote_plugin::config::RemotePluginHttpConfig;
-use crate::infrastructure::remote_plugin::jsonrpc;
+use crate::infrastructure::remote_plugin::jsonrpc::{self, RemoteRpcChannel};
 use serde_json::json;
+
+const METHOD_EMOTION_ANALYZE: &str = "emotion.analyze";
 
 pub struct RemoteUserEmotionAnalyzerHttp {
     client: reqwest::blocking::Client,
@@ -32,9 +34,10 @@ impl UserEmotionAnalyzer for RemoteUserEmotionAnalyzerHttp {
     fn analyze(&self, text: &str) -> Result<EmotionResult> {
         let params = json!({ "text": text });
         match jsonrpc::call_blocking(
+            RemoteRpcChannel::Plugin,
             &self.client,
             &self.cfg.endpoint,
-            "emotion.analyze",
+            METHOD_EMOTION_ANALYZE,
             params,
             self.cfg.bearer_token.as_deref(),
         ) {
@@ -47,11 +50,22 @@ impl UserEmotionAnalyzer for RemoteUserEmotionAnalyzerHttp {
             Err(e) => {
                 log::warn!(
                     target: "oclive_plugin",
-                    "emotion.analyze remote failed: {}; builtin fallback",
+                    "emotion.analyze remote failed endpoint={} err={}; fallback=builtin",
+                    self.cfg.endpoint,
                     e
                 );
                 self.fallback.analyze(text)
             }
         }
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn method_name_matches_remote_protocol() {
+        assert_eq!(METHOD_EMOTION_ANALYZE, "emotion.analyze");
     }
 }

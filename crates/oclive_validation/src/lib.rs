@@ -15,7 +15,8 @@ pub use manifest::{
 };
 pub use validate::{
     parse_hhmm, validate_disk_manifest, validate_knowledge_manifest_disk,
-    validate_min_runtime_version,
+    validate_min_runtime_version, validate_min_runtime_version_for_local_plugin,
+    validate_settings_schema_version,
 };
 
 #[cfg(all(feature = "wasm", target_arch = "wasm32"))]

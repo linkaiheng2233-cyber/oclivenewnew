@@ -1,6 +1,8 @@
 //! 前后端契约（Tauri invoke）
 
 use crate::models::plugin_backends::PluginBackends;
+use crate::models::plugin_backends::PluginBackendsSourceMap;
+use crate::models::plugin_backends::PluginBackendsOverride;
 use crate::models::role::IdentityBinding;
 use crate::models::role::LifeState;
 use crate::models::role::PersonalitySource;
@@ -139,6 +141,15 @@ pub struct RoleData {
     /// `settings.json` → `plugin_backends`（与运行时 `PluginHost` 解析一致）
     #[serde(default)]
     pub plugin_backends: PluginBackends,
+    /// 会话级覆盖（仅当前会话命名空间；无覆盖为 `null`）。
+    #[serde(default)]
+    pub plugin_backends_session_override: Option<PluginBackendsOverride>,
+    /// 会话级覆盖叠加后的有效后端（供运行时面板展示与切换回显）。
+    #[serde(default)]
+    pub plugin_backends_effective: PluginBackends,
+    /// 有效后端来源（pack/session/env）。
+    #[serde(default)]
+    pub plugin_backends_effective_sources: PluginBackendsSourceMap,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -224,6 +235,15 @@ pub struct RoleInfo {
     /// `settings.json` → `plugin_backends`（与 `load_role` / 编排层一致）
     #[serde(default)]
     pub plugin_backends: PluginBackends,
+    /// 会话级覆盖（仅当前会话命名空间；无覆盖为 `null`）。
+    #[serde(default)]
+    pub plugin_backends_session_override: Option<PluginBackendsOverride>,
+    /// 会话级覆盖叠加后的有效后端（供运行时面板展示与切换回显）。
+    #[serde(default)]
+    pub plugin_backends_effective: PluginBackends,
+    /// 有效后端来源（pack/session/env）。
+    #[serde(default)]
+    pub plugin_backends_effective_sources: PluginBackendsSourceMap,
     /// 当前磁盘加载的角色是否含世界观知识索引（`knowledge_index` 已构建）
     #[serde(default)]
     pub knowledge_enabled: bool,
@@ -268,6 +288,62 @@ pub struct SetEvolutionFactorRequest {
 pub struct SetRemoteLifeEnabledRequest {
     pub role_id: String,
     pub enabled: bool,
+}
+
+#[derive(Debug, Clone, Deserialize)]
+pub struct SetSessionPluginBackendRequest {
+    pub role_id: String,
+    /// `memory` | `emotion` | `event` | `prompt` | `llm`
+    pub module: String,
+    /// 后端值（snake_case）三态：
+    /// - 字段缺省：不修改该模块覆盖；
+    /// - `null`：移除该模块会话覆盖并回退角色包默认；
+    /// - `"xxx"`：设置为指定后端。
+    #[serde(default)]
+    pub backend: Option<Option<String>>,
+    /// 仅当 `module = memory` 时生效：trim 后非空则设置本会话 `local_memory_provider_id`；
+    /// 空串表示清除该字段的会话覆盖。字段缺省表示不修改该字段。
+    #[serde(default)]
+    pub local_memory_provider_id: Option<String>,
+    /// 可选：HTTP 试聊等多会话场景下指定会话 id；缺省表示角色默认会话。
+    #[serde(default)]
+    pub session_id: Option<String>,
+}
+
+/// 查询运行时快照；`session_id` 与 `SendMessageRequest` 中同名字段同语义（多路试聊等）。
+#[derive(Debug, Clone, Deserialize)]
+pub struct GetRoleInfoRequest {
+    pub role_id: String,
+    #[serde(default)]
+    pub session_id: Option<String>,
+}
+
+#[derive(Debug, Clone, Deserialize)]
+pub struct GetPluginResolutionDebugRequest {
+    pub role_id: String,
+    #[serde(default)]
+    pub session_id: Option<String>,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct PluginResolutionDebugInfo {
+    pub app_version: String,
+    pub api_version: u32,
+    pub schema_version: u32,
+    pub role_id: String,
+    pub session_namespace: String,
+    pub plugin_backends_pack_default: PluginBackends,
+    #[serde(default)]
+    pub plugin_backends_session_override: Option<PluginBackendsOverride>,
+    pub plugin_backends_effective: PluginBackends,
+    pub plugin_backends_effective_sources: PluginBackendsSourceMap,
+    #[serde(default)]
+    pub llm_env_override: Option<String>,
+    pub remote_plugin_url_configured: bool,
+    pub remote_llm_url_configured: bool,
+    #[serde(default)]
+    pub local_provider_ids: Vec<String>,
+    pub local_provider_count: usize,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -358,6 +434,12 @@ pub struct ExportChatLogsRequest {
     #[serde(default)]
     pub all_roles: bool,
     pub format: String,
+    /// 可选：在导出内容中附加插件后端解析诊断（默认关闭；`all_roles=true` 时忽略）。
+    #[serde(default)]
+    pub include_plugin_resolution_debug: bool,
+    /// 可选：诊断命名空间使用的会话 id（仅 `include_plugin_resolution_debug=true` 且单角色导出时生效）。
+    #[serde(default)]
+    pub session_id: Option<String>,
 }
 
 #[derive(Debug, Clone, Serialize)]

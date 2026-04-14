@@ -3,6 +3,7 @@
 use crate::domain::memory_engine::MemoryEngine;
 use crate::models::{Memory, MemoryContext};
 use std::sync::atomic::{AtomicBool, Ordering};
+use std::sync::Arc;
 
 /// 与 `creator-docs/plugin-and-architecture/PLUGIN_V1.md` 对齐的检索输入
 pub struct MemoryRetrievalInput<'a> {
@@ -16,6 +17,12 @@ pub trait MemoryRetrieval: Send + Sync {
     fn rank_memories(&self, input: MemoryRetrievalInput<'_>) -> Vec<Memory>;
     fn build_context(&self, memories: &[Memory], max_tokens: usize) -> MemoryContext;
     fn search_memories(&self, keyword: &str, memories: &[Memory]) -> Vec<Memory>;
+
+    /// 遥测 / 单测：仅 `LocalPluginMemoryRetrieval` 返回选中的本地 `provider_id`。
+    #[must_use]
+    fn diagnostic_local_provider_id(&self) -> Option<&str> {
+        None
+    }
 }
 
 /// 内置：按重要性 × 权重排序（与历史行为一致）
@@ -139,11 +146,52 @@ impl Default for RemoteMemoryRetrievalPlaceholder {
     }
 }
 
+/// `plugin_backends.memory = local`：按注册表选中的本地 provider（当前仅用于观测与后续接入；排序委托 `fallback`）。
+pub struct LocalPluginMemoryRetrieval {
+    fallback: Arc<dyn MemoryRetrieval>,
+    resolved_provider_id: Option<String>,
+}
+
+impl LocalPluginMemoryRetrieval {
+    pub fn new(fallback: Arc<dyn MemoryRetrieval>, resolved_provider_id: Option<String>) -> Self {
+        Self {
+            fallback,
+            resolved_provider_id,
+        }
+    }
+}
+
+impl MemoryRetrieval for LocalPluginMemoryRetrieval {
+    fn diagnostic_local_provider_id(&self) -> Option<&str> {
+        self.resolved_provider_id.as_deref()
+    }
+
+    fn rank_memories(&self, input: MemoryRetrievalInput<'_>) -> Vec<Memory> {
+        if let Some(id) = &self.resolved_provider_id {
+            log::debug!(
+                target: "oclive_plugin",
+                "memory.local rank_memories provider_id={} (stub delegates to builtin_v2 slot)",
+                id
+            );
+        }
+        self.fallback.rank_memories(input)
+    }
+
+    fn build_context(&self, memories: &[Memory], max_tokens: usize) -> MemoryContext {
+        self.fallback.build_context(memories, max_tokens)
+    }
+
+    fn search_memories(&self, keyword: &str, memories: &[Memory]) -> Vec<Memory> {
+        self.fallback.search_memories(keyword, memories)
+    }
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
     use crate::models::Memory;
     use chrono::Utc;
+    use std::sync::Arc;
 
     #[test]
     fn builtin_v2_can_outrank_higher_score_when_query_overlaps() {
@@ -184,5 +232,40 @@ mod tests {
         };
         let top_v2 = BuiltinMemoryRetrievalV2.rank_memories(input_v2);
         assert_eq!(top_v2[0].id, "match");
+    }
+
+    #[test]
+    fn local_plugin_memory_stub_matches_fallback_ranking() {
+        let t = Utc::now();
+        let m_a = Memory {
+            id: "a".into(),
+            role_id: "r".into(),
+            content: "alpha token".into(),
+            importance: 1.0,
+            weight: 1.0,
+            created_at: t,
+            scene_id: None,
+        };
+        let m_b = Memory {
+            id: "b".into(),
+            role_id: "r".into(),
+            content: "no overlap".into(),
+            importance: 1.2,
+            weight: 1.0,
+            created_at: t,
+            scene_id: None,
+        };
+        let slice = &[m_a.clone(), m_b.clone()];
+        let mk_input = || MemoryRetrievalInput {
+            memories: slice,
+            user_query: "alpha",
+            scene_id: None,
+            limit: 1,
+        };
+        let v2 = Arc::new(BuiltinMemoryRetrievalV2) as Arc<dyn MemoryRetrieval>;
+        let local = LocalPluginMemoryRetrieval::new(v2.clone(), Some("demo.local".into()));
+        let a: Vec<_> = local.rank_memories(mk_input()).into_iter().map(|m| m.id).collect();
+        let b: Vec<_> = v2.rank_memories(mk_input()).into_iter().map(|m| m.id).collect();
+        assert_eq!(a, b);
     }
 }

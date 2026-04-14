@@ -4,21 +4,50 @@ use crate::manifest::{DiskRoleManifest, KnowledgePackConfigDisk, LifeScheduleDis
 use semver::Version;
 use std::collections::HashSet;
 
-/// 比较角色包要求的最低宿主版本与当前 oclive 版本（`min_req` 为 `None` 或空则跳过）。
-pub fn validate_min_runtime_version(
+#[derive(Clone, Copy)]
+enum MinRuntimeVersionSource {
+    RolePackManifest,
+    LocalPluginDescriptor,
+}
+
+impl MinRuntimeVersionSource {
+    fn invalid_parse_msg(self, req: &str, err: &semver::Error) -> String {
+        match self {
+            Self::RolePackManifest => format!(
+                "角色包 manifest：min_runtime_version「{}」不是合法语义化版本（例如 0.2.0）：{}",
+                req, err
+            ),
+            Self::LocalPluginDescriptor => format!(
+                "本地插件：min_runtime_version「{}」不是合法语义化版本（例如 0.2.0）：{}",
+                req, err
+            ),
+        }
+    }
+
+    fn below_minimum_msg(self, host: &Version, min_v: &Version) -> String {
+        match self {
+            Self::RolePackManifest => format!(
+                "当前 oclive 版本为 {}，本角色包要求最低 {}（manifest.min_runtime_version）。请升级 oclive 后再加载。",
+                host, min_v
+            ),
+            Self::LocalPluginDescriptor => format!(
+                "当前 oclive 版本为 {}，该本地插件描述要求最低 {}（min_runtime_version）。请升级 oclive 后再使用。",
+                host, min_v
+            ),
+        }
+    }
+}
+
+fn validate_min_runtime_version_for_source(
     min_req: Option<&str>,
     host_version: &str,
+    source: MinRuntimeVersionSource,
 ) -> Result<(), String> {
     let req = min_req.map(str::trim).filter(|s| !s.is_empty());
     let Some(req) = req else {
         return Ok(());
     };
-    let min_v = Version::parse(req).map_err(|e| {
-        format!(
-            "角色包 manifest：min_runtime_version「{}」不是合法语义化版本（例如 0.2.0）：{}",
-            req, e
-        )
-    })?;
+    let min_v = Version::parse(req).map_err(|e| source.invalid_parse_msg(req, &e))?;
     let host = Version::parse(host_version.trim()).map_err(|e| {
         format!(
             "宿主版本「{}」解析失败：{}（此为 oclive 程序错误，请反馈）",
@@ -26,9 +55,47 @@ pub fn validate_min_runtime_version(
         )
     })?;
     if host < min_v {
+        return Err(source.below_minimum_msg(&host, &min_v));
+    }
+    Ok(())
+}
+
+/// 比较角色包要求的最低宿主版本与当前 oclive 版本（`min_req` 为 `None` 或空则跳过）。
+pub fn validate_min_runtime_version(
+    min_req: Option<&str>,
+    host_version: &str,
+) -> Result<(), String> {
+    validate_min_runtime_version_for_source(
+        min_req,
+        host_version,
+        MinRuntimeVersionSource::RolePackManifest,
+    )
+}
+
+/// 本地插件描述中的 `min_runtime_version` 与宿主版本比较（`min_req` 为 `None` 或空则跳过；语义与 [`validate_min_runtime_version`] 一致，错误文案指向本地插件）。
+pub fn validate_min_runtime_version_for_local_plugin(
+    min_req: Option<&str>,
+    host_version: &str,
+) -> Result<(), String> {
+    validate_min_runtime_version_for_source(
+        min_req,
+        host_version,
+        MinRuntimeVersionSource::LocalPluginDescriptor,
+    )
+}
+
+/// 校验 `settings.json.schema_version` 与宿主支持范围（当前只接受 `<= current_supported`）。
+pub fn validate_settings_schema_version(
+    schema_version: u32,
+    current_supported: u32,
+) -> Result<(), String> {
+    if schema_version == 0 {
+        return Err("角色包 settings：schema_version 必须为正整数".to_string());
+    }
+    if schema_version > current_supported {
         return Err(format!(
-            "当前 oclive 版本为 {}，本角色包要求最低 {}（manifest.min_runtime_version）。请升级 oclive 后再加载。",
-            host, min_v
+            "当前 oclive 仅支持 settings schema_version <= {}，而角色包为 {}。请升级 oclive 后再加载。",
+            current_supported, schema_version
         ));
     }
     Ok(())
@@ -325,5 +392,31 @@ mod tests {
     #[test]
     fn min_runtime_skips_when_none() {
         assert!(validate_min_runtime_version(None, "0.1.0").is_ok());
+    }
+
+    #[test]
+    fn local_plugin_min_runtime_invalid_semver_mentions_local() {
+        let e = validate_min_runtime_version_for_local_plugin(Some("not-a-semver"), "0.2.0")
+            .expect_err("invalid semver");
+        assert!(e.contains("本地插件"));
+    }
+
+    #[test]
+    fn local_plugin_min_runtime_below_host_mentions_local() {
+        let e = validate_min_runtime_version_for_local_plugin(Some("99.0.0"), "0.2.0").expect_err("too new");
+        assert!(e.contains("本地插件"));
+        assert!(e.contains("99.0.0"));
+    }
+
+    #[test]
+    fn settings_schema_version_rejects_future_version() {
+        let err = validate_settings_schema_version(2, 1).expect_err("future version");
+        assert!(err.contains("schema_version"));
+    }
+
+    #[test]
+    fn settings_schema_version_accepts_current_or_lower() {
+        assert!(validate_settings_schema_version(1, 1).is_ok());
+        assert!(validate_settings_schema_version(1, 2).is_ok());
     }
 }

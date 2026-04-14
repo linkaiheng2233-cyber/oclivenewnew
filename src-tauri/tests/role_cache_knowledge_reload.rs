@@ -95,7 +95,7 @@ async fn load_role_updates_role_cache_after_knowledge_file_change() {
     );
     assert!(!body_old.contains(CACHE_NEW));
 
-    let info = get_role_info_impl(&state, ROLE_ID)
+    let info = get_role_info_impl(&state, ROLE_ID, None)
         .await
         .expect("get_role_info");
     assert!(info.knowledge_enabled);
@@ -132,7 +132,7 @@ async fn load_role_updates_role_cache_after_knowledge_file_change() {
     );
     assert!(!body_new.contains(CACHE_OLD));
 
-    let info2 = get_role_info_impl(&state, ROLE_ID)
+    let info2 = get_role_info_impl(&state, ROLE_ID, None)
         .await
         .expect("get_role_info after reload");
     assert!(info2.knowledge_enabled);

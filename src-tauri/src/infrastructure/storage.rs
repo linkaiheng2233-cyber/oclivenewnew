@@ -4,11 +4,14 @@ use crate::domain::role_manifest_validate::{
 };
 use crate::error::{AppError, Result};
 use crate::models::role_manifest_disk::{disk_manifest_from_role, disk_manifest_to_role};
-use crate::models::{DiskRoleManifest, DiskRoleSettings, DiskSceneConfig, LlmBackend, Role};
+use crate::models::{
+    role_settings_disk::CURRENT_SETTINGS_SCHEMA_VERSION, DiskRoleManifest, DiskRoleSettings,
+    DiskSceneConfig, LlmBackend, Role,
+};
 use chrono::Timelike;
 use oclive_validation::{
     validate_manifest_top_level_keys, validate_min_runtime_version,
-    validate_settings_top_level_keys,
+    validate_settings_schema_version, validate_settings_top_level_keys,
 };
 use serde_json;
 use std::collections::BTreeSet;
@@ -114,6 +117,11 @@ impl RoleStorage {
             }
             let settings: DiskRoleSettings =
                 serde_json::from_value(settings_value).map_err(AppError::SerializationError)?;
+            validate_settings_schema_version(
+                settings.schema_version,
+                CURRENT_SETTINGS_SCHEMA_VERSION,
+            )
+            .map_err(AppError::InvalidParameter)?;
             settings.apply_to_manifest(&mut disk);
             settings_opt = Some(settings);
         }
@@ -503,19 +511,30 @@ impl RoleStorage {
     }
 }
 
-/// 与 oclive-launcher 注入的取值一致：`ollama` / `remote`（大小写不敏感），覆盖磁盘 `plugin_backends.llm`。
-fn apply_llm_backend_env_override(role: &mut Role) {
+/// 与 oclive-launcher 注入的取值一致：`ollama` / `remote`（大小写不敏感）。
+pub(crate) fn resolve_llm_backend_env_override() -> Option<LlmBackend> {
     let Ok(v) = std::env::var("OCLIVE_LLM_BACKEND") else {
-        return;
+        return None;
     };
     let t = v.trim();
     if t.is_empty() {
-        return;
+        return None;
     }
     if t.eq_ignore_ascii_case("ollama") {
-        role.plugin_backends.llm = LlmBackend::Ollama;
+        Some(LlmBackend::Ollama)
     } else if t.eq_ignore_ascii_case("remote") {
-        role.plugin_backends.llm = LlmBackend::Remote;
+        Some(LlmBackend::Remote)
+    } else if t.eq_ignore_ascii_case("directory") {
+        Some(LlmBackend::Directory)
+    } else {
+        None
+    }
+}
+
+/// 与 oclive-launcher 注入的取值一致：`ollama` / `remote`（大小写不敏感），覆盖磁盘 `plugin_backends.llm`。
+fn apply_llm_backend_env_override(role: &mut Role) {
+    if let Some(v) = resolve_llm_backend_env_override() {
+        role.plugin_backends.llm = v;
     }
 }
 

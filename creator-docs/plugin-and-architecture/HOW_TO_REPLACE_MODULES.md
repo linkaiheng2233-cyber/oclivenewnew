@@ -12,11 +12,11 @@
 
 | 模块 | 职责 | Rust trait | `settings.json` 字段（`plugin_backends` 下） | 默认实现 |
 |------|------|------------|---------------------------------------------|----------|
-| **记忆检索** | 长期记忆排序、上下文、关键词搜索 | `MemoryRetrieval` | `memory`: `builtin` / `builtin_v2` / `remote` | `BuiltinMemoryRetrieval`、`BuiltinMemoryRetrievalV2` |
-| **用户句情绪** | 从文本得到七维情绪 | `UserEmotionAnalyzer` | `emotion`: `builtin` / `builtin_v2` / `remote` | `BuiltinUserEmotionAnalyzer`、`BuiltinUserEmotionAnalyzerV2` |
-| **事件影响** | LLM 估计事件类型与影响因子 | `EventEstimator` | `event`: `builtin` / `builtin_v2` / `remote` | `BuiltinEventEstimator`、`BuiltinEventEstimatorV2` |
-| **Prompt 组装** | 主对话 system/user 字符串 | `PromptAssembler` | `prompt`: `builtin` / `builtin_v2` / `remote` | `BuiltinPromptAssembler`、`BuiltinPromptAssemblerV2` |
-| **LLM 推理** | 调用大模型生成 | `LlmClient` | `llm`: `ollama` / `remote` | `ollama`：进程注入的客户端；`remote`：`OCLIVE_REMOTE_LLM_URL` 的 JSON-RPC，未配置则委托默认 LLM |
+| **记忆检索** | 长期记忆排序、上下文、关键词搜索 | `MemoryRetrieval` | `memory`: `builtin` / `builtin_v2` / `remote` / `directory` | `BuiltinMemoryRetrieval`、`BuiltinMemoryRetrievalV2`；**`directory`** 需 `directory_plugins.memory` 指向 `plugins/<id>/` |
+| **用户句情绪** | 从文本得到七维情绪 | `UserEmotionAnalyzer` | `emotion`: `builtin` / `builtin_v2` / `remote` / `directory` | 同上；**`directory`** 需 `directory_plugins.emotion` |
+| **事件影响** | LLM 估计事件类型与影响因子 | `EventEstimator` | `event`: `builtin` / `builtin_v2` / `remote` / `directory` | 同上；**`directory`** 需 `directory_plugins.event` |
+| **Prompt 组装** | 主对话 system/user 字符串 | `PromptAssembler` | `prompt`: `builtin` / `builtin_v2` / `remote` / `directory` | 同上；**`directory`** 需 `directory_plugins.prompt` |
+| **LLM 推理** | 调用大模型生成 | `LlmClient` | `llm`: `ollama` / `remote` / `directory` | `ollama`：进程注入的客户端；`remote`：`OCLIVE_REMOTE_LLM_URL` 的 JSON-RPC，未配置则委托默认 LLM；**`directory`** 需 `directory_plugins.llm`（子进程 URL，无需 `OCLIVE_REMOTE_LLM_URL`） |
 | **长期记忆存储** | 读写 SQLite 中的记忆行 | `MemoryRepository` | *（未挂 plugin_backends，换库需改基础设施）* | `SqliteMemoryRepository` |
 | **策略（情感/事件/记忆条）** | 是否写入、重要性等 | `EmotionPolicy` 等 | `config/policy.toml` 场景 profile | `Default*` |
 
@@ -55,6 +55,14 @@
 
 ---
 
+## 三 b、Directory（`plugins/` 目录插件，与 Remote 同协议）
+
+- 在角色包 **`plugin_backends.* = directory`**，并在 **`directory_plugins`** 中为每个用到的槽填写 **`manifest.json` 的 `id`**（与 `plugins/<id>/` 目录名一致）。  
+- 宿主扫描 `plugins/`、按 manifest 启动子进程、从 stdout 读取 JSON-RPC **base URL**，之后与 Remote 一样走 HTTP（方法名仍见 [REMOTE_PLUGIN_PROTOCOL.md](REMOTE_PLUGIN_PROTOCOL.md)）。  
+- 整壳 UI、`directory_plugin_invoke`、开发者模式与最小示例：**[DIRECTORY_PLUGINS.md](DIRECTORY_PLUGINS.md)**。
+
+---
+
 ## 四、一般不通过 `plugin_backends` 换的部分
 
 - **`LlmClient` 进程级实现**：换网关/云 API 可在 [`infrastructure/llm.rs`](../../src-tauri/src/infrastructure/llm.rs) 增加新实现并在 `AppState::new` 里注入；或通过 **`OCLIVE_REMOTE_LLM_URL`** 使用远程 JSON-RPC（见 [REMOTE_PLUGIN_PROTOCOL.md](REMOTE_PLUGIN_PROTOCOL.md)）。
@@ -68,6 +76,7 @@
 |------|------|
 | 宿主聚合 | `src-tauri/src/domain/plugin_host.rs` |
 | Remote HTTP 客户端 | `src-tauri/src/infrastructure/remote_plugin/` |
+| 目录插件扫描 / 子进程 / RPC URL | `src-tauri/src/infrastructure/directory_plugins/` |
 | 运行时解析 | `AppState::resolved_plugins_for` — `src-tauri/src/state/mod.rs` |
 | 对话主链 | `src-tauri/src/domain/chat_engine/co_present.rs` 等 |
 | 测试用演示 | `RoleManager::with_memory_retrieval` — `src-tauri/src/domain/role_manager.rs` |

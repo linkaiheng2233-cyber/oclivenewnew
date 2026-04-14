@@ -7,12 +7,14 @@ use crate::domain::BuiltinEventEstimator;
 use crate::error::Result;
 use crate::infrastructure::llm::LlmClient;
 use crate::infrastructure::remote_plugin::config::RemotePluginHttpConfig;
-use crate::infrastructure::remote_plugin::jsonrpc;
+use crate::infrastructure::remote_plugin::jsonrpc::{self, RemoteRpcChannel};
 use crate::models::knowledge::KnowledgeEventAugment;
 use crate::models::{Emotion, Event, PersonalitySource, PersonalityVector};
 use async_trait::async_trait;
 use serde_json::json;
 use std::sync::Arc;
+
+const METHOD_EVENT_ESTIMATE: &str = "event.estimate";
 
 pub struct RemoteEventEstimatorHttp {
     client: reqwest::Client,
@@ -23,6 +25,7 @@ pub struct RemoteEventEstimatorHttp {
 impl RemoteEventEstimatorHttp {
     pub fn new(cfg: RemotePluginHttpConfig) -> Self {
         let client = reqwest::Client::builder()
+            .connect_timeout(cfg.connect_timeout())
             .timeout(cfg.timeout)
             .build()
             .expect("reqwest async client");
@@ -59,9 +62,10 @@ impl EventEstimator for RemoteEventEstimatorHttp {
             "knowledge_augment": knowledge_augment.map(|a| &a.by_event),
         });
         match jsonrpc::call_async(
+            RemoteRpcChannel::Plugin,
             &self.client,
             &self.cfg.endpoint,
-            "event.estimate",
+            METHOD_EVENT_ESTIMATE,
             params,
             self.cfg.bearer_token.as_deref(),
         )
@@ -76,7 +80,8 @@ impl EventEstimator for RemoteEventEstimatorHttp {
             Err(e) => {
                 log::warn!(
                     target: "oclive_plugin",
-                    "event.estimate remote failed: {}; builtin fallback",
+                    "event.estimate remote failed endpoint={} err={}; fallback=builtin",
+                    self.cfg.endpoint,
                     e
                 );
                 self.fallback
@@ -94,5 +99,15 @@ impl EventEstimator for RemoteEventEstimatorHttp {
                     .await
             }
         }
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn method_name_matches_remote_protocol() {
+        assert_eq!(METHOD_EVENT_ESTIMATE, "event.estimate");
     }
 }

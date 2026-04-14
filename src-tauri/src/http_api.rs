@@ -193,7 +193,12 @@ pub fn api_router(app_state: Arc<AppState>) -> Router {
 pub async fn serve_api(port: u16) -> Result<(), String> {
     let db_path = std::env::temp_dir().join(format!("oclive_api_{}.db", port));
     let roles_dir = crate::state::resolve_roles_dir();
-    let app_state = AppState::new(&db_path, Some(roles_dir))
+    let app_data_dir = db_path
+        .parent()
+        .map(|p| p.join("oclive_api_app_data"))
+        .unwrap_or_else(|| std::env::temp_dir().join("oclive_api_app_data"));
+    let _ = std::fs::create_dir_all(&app_data_dir);
+    let app_state = AppState::new(&db_path, Some(roles_dir), &app_data_dir)
         .await
         .map_err(|e| e.to_string())?;
     let app_state = Arc::new(app_state);

@@ -2,17 +2,22 @@ use crate::domain::plugin_host::{PluginHost, ResolvedRolePlugins};
 use crate::domain::repository::{FavorabilityRepository, MemoryRepository};
 use crate::domain::{
     DefaultEmotionPolicy, DefaultEventPolicy, DefaultMemoryPolicy, EmotionPolicy,
-    EmotionPolicyConfig, EventEstimator, EventPolicy, MemoryPolicy, MemoryPolicyConfig,
-    MemoryRetrieval, PolicyConfig, PromptAssembler, UserEmotionAnalyzer,
+    EmotionPolicyConfig, EventEstimator, EventPolicy, FileManifestLocalPluginBridge,
+    LocalPluginBridge, LocalPluginCapability, LocalPluginProviderDescriptor, MemoryPolicy,
+    MemoryPolicyConfig, MemoryRetrieval, PolicyConfig, PromptAssembler, UserEmotionAnalyzer,
 };
 use crate::error::Result;
 use crate::infrastructure::db::DbManager;
+use crate::infrastructure::directory_plugins::DirectoryPluginRuntime;
 use crate::infrastructure::llm::ollama_llm;
 use crate::infrastructure::llm::LlmClient;
 use crate::infrastructure::ollama_client::OllamaClient;
 use crate::infrastructure::repositories::{SqliteFavorabilityRepository, SqliteMemoryRepository};
-use crate::infrastructure::storage::RoleStorage;
-use crate::models::{PersonalitySource, PersonalityVector, PluginBackends, Role};
+use crate::infrastructure::storage::{resolve_llm_backend_env_override, RoleStorage};
+use crate::models::{
+    PersonalitySource, PersonalityVector, PluginBackendSource, PluginBackends,
+    PluginBackendsOverride, PluginBackendsSourceMap, Role,
+};
 use parking_lot::{Mutex, RwLock};
 use serde::Deserialize;
 use sqlx::sqlite::{SqliteConnectOptions, SqlitePoolOptions};
@@ -236,6 +241,10 @@ pub struct AppState {
     pub ollama_model: String,
     /// 可替换子系统实现（按 `Role.plugin_backends` 选择）
     pub plugins: PluginHost,
+    /// 目录式插件（`plugins/*/manifest.json`）扫描与懒启动。
+    pub directory_plugins: Arc<DirectoryPluginRuntime>,
+    /// 会话级后端覆盖（key 为对话命名空间，如 `role_id` 或 `role_id__sess__{session}`）。
+    session_plugin_overrides: Arc<RwLock<HashMap<String, PluginBackendsOverride>>>,
 }
 
 impl AppState {
@@ -262,9 +271,11 @@ impl AppState {
     }
 
     /// `roles_dir_override`：打包应用传入 `resource_dir/roles`；`None` 时用 [`resolve_roles_dir`]。
+    /// `app_data_dir`：应用数据目录（与 SQLite 同级），用于 `oclive_host_plugins.json` 与 `plugins/` 扫描根之一。
     pub async fn new(
         db_path: impl AsRef<Path>,
         roles_dir_override: Option<PathBuf>,
+        app_data_dir: impl AsRef<Path>,
     ) -> Result<Self> {
         let path = db_path.as_ref();
         let db = if path == Path::new(":memory:") {
@@ -314,7 +325,9 @@ impl AppState {
         let runtime = Self::build_policy_sets_from_registry(registry);
 
         let storage = RoleStorage::new(roles_dir_override.unwrap_or_else(resolve_roles_dir));
-        let plugins = PluginHost::new(llm.clone());
+        let directory_plugins = DirectoryPluginRuntime::bootstrap(storage.roles_dir(), app_data_dir.as_ref());
+        let plugins = PluginHost::new(llm.clone(), Some(directory_plugins.clone()));
+        Self::bootstrap_local_plugin_providers(&plugins, storage.roles_dir());
 
         Ok(Self {
             db_manager,
@@ -328,6 +341,8 @@ impl AppState {
             policy_runtime: Arc::new(RwLock::new(runtime)),
             ollama_model,
             plugins,
+            directory_plugins,
+            session_plugin_overrides: Arc::new(RwLock::new(HashMap::new())),
         })
     }
 
@@ -363,6 +378,9 @@ impl AppState {
             Arc::new(SqliteFavorabilityRepository::new(db_manager.clone()));
 
         let storage = RoleStorage::new(roles_dir);
+        let app_data_dir = storage.roles_dir().join(".oclive_directory_plugin_data");
+        let _ = fs::create_dir_all(&app_data_dir);
+        let directory_plugins = DirectoryPluginRuntime::bootstrap(storage.roles_dir(), &app_data_dir);
         let runtime = if let Some(path) = policy_file {
             let registry = load_policy_registry_from_path(path, false)
                 .unwrap_or_else(|_| PolicyRegistryFile::with_defaults());
@@ -374,7 +392,8 @@ impl AppState {
             }
         };
 
-        let plugins = PluginHost::new(llm.clone());
+        let plugins = PluginHost::new(llm.clone(), Some(directory_plugins.clone()));
+        Self::bootstrap_local_plugin_providers(&plugins, storage.roles_dir());
 
         Ok(Self {
             db_manager,
@@ -388,6 +407,8 @@ impl AppState {
             policy_runtime: Arc::new(RwLock::new(runtime)),
             ollama_model: "test-model".to_string(),
             plugins,
+            directory_plugins,
+            session_plugin_overrides: Arc::new(RwLock::new(HashMap::new())),
         })
     }
 
@@ -504,26 +525,157 @@ impl AppState {
         self.plugins.resolve_for_role(role)
     }
 
+    /// 会话级后端解析：在角色包 `plugin_backends` 上叠加覆盖后再绑定实现。
+    pub fn resolved_plugins_for_session(
+        &self,
+        role: &Role,
+        session_namespace: Option<&str>,
+    ) -> ResolvedRolePlugins {
+        let ov = session_namespace.and_then(|ns| self.session_backend_override(ns));
+        self.plugins.resolve_for_role_with_override(role, ov.as_ref())
+    }
+
     pub fn memory_retrieval_for(&self, role: &Role) -> Arc<dyn MemoryRetrieval> {
-        self.plugins.memory_retrieval(role.plugin_backends.memory)
+        self.plugins
+            .memory_retrieval_for_plugin_backends(&role.plugin_backends)
     }
 
     pub fn user_emotion_analyzer_for(&self, role: &Role) -> Arc<dyn UserEmotionAnalyzer> {
         self.plugins
-            .user_emotion_analyzer(role.plugin_backends.emotion)
+            .user_emotion_analyzer_for_backends(&role.plugin_backends)
     }
 
     pub fn event_estimator_for(&self, role: &Role) -> Arc<dyn EventEstimator> {
-        self.plugins.event_estimator(role.plugin_backends.event)
+        self.plugins
+            .event_estimator_for_backends(&role.plugin_backends)
     }
 
     pub fn prompt_assembler_for(&self, role: &Role) -> Arc<dyn PromptAssembler> {
-        self.plugins.prompt_assembler(role.plugin_backends.prompt)
+        self.plugins
+            .prompt_assembler_for_backends(&role.plugin_backends)
     }
 
     /// 测试或遥测：当前角色包声明的后端集合
     pub fn plugin_backends_snapshot(&self, role: &Role) -> PluginBackends {
         role.plugin_backends.clone()
+    }
+
+    #[must_use]
+    pub fn session_backend_override(&self, session_namespace: &str) -> Option<PluginBackendsOverride> {
+        self.session_plugin_overrides
+            .read()
+            .get(session_namespace)
+            .cloned()
+    }
+
+    pub fn set_session_backend_override(
+        &self,
+        session_namespace: &str,
+        override_backends: PluginBackendsOverride,
+    ) {
+        if override_backends.is_empty() {
+            self.session_plugin_overrides.write().remove(session_namespace);
+            return;
+        }
+        self.session_plugin_overrides
+            .write()
+            .insert(session_namespace.to_string(), override_backends);
+    }
+
+    pub fn clear_session_backend_override(&self, session_namespace: &str) {
+        self.session_plugin_overrides.write().remove(session_namespace);
+    }
+
+    #[must_use]
+    pub fn effective_plugin_backends_for_session(
+        &self,
+        role: &Role,
+        session_namespace: &str,
+    ) -> PluginBackends {
+        self.session_backend_override(session_namespace)
+            .map(|ov| ov.apply_to(&role.plugin_backends))
+            .unwrap_or_else(|| role.plugin_backends.clone())
+    }
+
+    #[must_use]
+    pub fn effective_plugin_backend_sources_for_session(
+        &self,
+        session_namespace: &str,
+    ) -> PluginBackendsSourceMap {
+        let session_ov = self.session_backend_override(session_namespace);
+        let mut out = PluginBackendsSourceMap::default();
+        if let Some(ov) = session_ov {
+            if ov.memory.is_some() || ov.local_memory_provider_id.is_some() {
+                out.memory = PluginBackendSource::SessionOverride;
+            }
+            if ov.emotion.is_some() {
+                out.emotion = PluginBackendSource::SessionOverride;
+            }
+            if ov.event.is_some() {
+                out.event = PluginBackendSource::SessionOverride;
+            }
+            if ov.prompt.is_some() {
+                out.prompt = PluginBackendSource::SessionOverride;
+            }
+            if ov.llm.is_some() {
+                out.llm = PluginBackendSource::SessionOverride;
+            }
+        }
+        if out.llm == PluginBackendSource::PackDefault
+            && resolve_llm_backend_env_override().is_some()
+        {
+            out.llm = PluginBackendSource::EnvOverride;
+        }
+        out
+    }
+
+    pub fn register_local_plugin_provider(
+        &self,
+        descriptor: LocalPluginProviderDescriptor,
+    ) -> std::result::Result<(), String> {
+        self.plugins.register_local_provider(descriptor)
+    }
+
+    #[must_use]
+    pub fn local_plugin_providers(
+        &self,
+        capability: LocalPluginCapability,
+    ) -> Vec<Arc<LocalPluginProviderDescriptor>> {
+        self.plugins.local_providers_for(capability)
+    }
+
+    #[must_use]
+    pub fn local_plugin_all_providers(&self) -> Vec<Arc<LocalPluginProviderDescriptor>> {
+        self.plugins.local_all_providers()
+    }
+
+    fn bootstrap_local_plugin_providers(plugins: &PluginHost, roles_dir: &Path) {
+        let manifest_dir = roles_dir.join("_local_plugins");
+        let bridge = FileManifestLocalPluginBridge::new(&manifest_dir);
+        let discovered = bridge.discover_providers();
+        if discovered.is_empty() {
+            return;
+        }
+        let mut registered = 0usize;
+        for desc in discovered {
+            match plugins.register_local_provider(desc.clone()) {
+                Ok(()) => registered += 1,
+                Err(e) => log::warn!(
+                    target: "oclive_plugin",
+                    "local plugin register failed provider_id={} bridge={} err={}",
+                    desc.provider_id,
+                    bridge.bridge_name(),
+                    e
+                ),
+            }
+        }
+        log::info!(
+            target: "oclive_plugin",
+            "local plugin bootstrap bridge={} dir={} registered={}",
+            bridge.bridge_name(),
+            bridge.manifest_dir().display(),
+            registered
+        );
     }
 }
 
@@ -531,6 +683,8 @@ impl AppState {
 mod tests {
     use super::*;
     use crate::models::PersonalityVector;
+    use std::fs;
+    use tempfile::TempDir;
 
     #[tokio::test]
     async fn invalidate_personality_cache_for_role_clears_manifest_and_sess_keys() {
@@ -563,7 +717,8 @@ mod tests {
 
     #[tokio::test]
     async fn test_app_state_creation() {
-        let state = AppState::new(":memory:", None).await;
+        let tmp = TempDir::new().expect("temp");
+        let state = AppState::new(":memory:", None, tmp.path()).await;
         assert!(state.is_ok());
     }
 
@@ -580,5 +735,34 @@ mod tests {
         let default_ptr = Arc::as_ptr(&state.policies_for_scene(None)) as usize;
         let scene_ptr = Arc::as_ptr(&state.policies_for_scene(Some("unknown_scene"))) as usize;
         assert_eq!(default_ptr, scene_ptr);
+    }
+
+    #[tokio::test]
+    async fn bootstrap_local_plugins_from_manifest_dir() {
+        let dir = TempDir::new().expect("temp");
+        let local_dir = dir.path().join("_local_plugins");
+        fs::create_dir_all(&local_dir).expect("mkdir");
+        fs::write(
+            local_dir.join("demo.json"),
+            r#"{
+  "provider_id": "demo.local",
+  "schema_version": 1,
+  "capabilities": ["memory"]
+}"#,
+        )
+        .expect("write");
+
+        let state = AppState::new_in_memory_with_llm(
+            Arc::new(crate::infrastructure::llm::MockLlmClient {
+                reply: "ok".to_string(),
+            }),
+            dir.path(),
+        )
+        .await
+        .expect("state should build");
+
+        let providers = state.local_plugin_providers(LocalPluginCapability::Memory);
+        assert_eq!(providers.len(), 1);
+        assert_eq!(providers[0].provider_id, "demo.local");
     }
 }

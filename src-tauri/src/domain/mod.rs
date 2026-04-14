@@ -1,5 +1,7 @@
 pub mod knowledge_loader;
 pub mod life_schedule;
+pub mod local_plugin_bridge;
+pub mod local_plugin_memory_pick;
 pub mod role_manifest_validate;
 pub mod user_identity;
 
@@ -34,8 +36,12 @@ pub use event_detector::EventDetector;
 pub use event_estimator::{BuiltinEventEstimator, EventEstimator, RemoteEventEstimatorPlaceholder};
 pub use memory_engine::MemoryEngine;
 pub use memory_retrieval::{
-    BuiltinMemoryRetrieval, BuiltinMemoryRetrievalV2, MemoryRetrieval, MemoryRetrievalInput,
-    RemoteMemoryRetrievalPlaceholder,
+    BuiltinMemoryRetrieval, BuiltinMemoryRetrievalV2, LocalPluginMemoryRetrieval, MemoryRetrieval,
+    MemoryRetrievalInput, RemoteMemoryRetrievalPlaceholder,
+};
+pub use local_plugin_bridge::{
+    FileManifestLocalPluginBridge, LocalPluginBridge, LocalPluginCapability,
+    LocalPluginProviderDescriptor, LocalPluginRegistry, LOCAL_PLUGIN_SCHEMA_VERSION,
 };
 pub use personality_engine::PersonalityEngine;
 pub use plugin_host::{PluginHost, ResolvedRolePlugins};

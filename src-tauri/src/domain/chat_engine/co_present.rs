@@ -42,7 +42,7 @@ pub(crate) async fn process_co_present(
     let t_cp0 = Instant::now();
     let user_message = req.user_message.as_str();
     let policies = state.policies_for_scene(Some(scene_id.as_str()));
-    let pl = state.resolved_plugins_for(role);
+    let pl = state.resolved_plugins_for_session(role, Some(srid));
 
     let event_runtime = state
         .db_manager

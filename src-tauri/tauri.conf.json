@@ -48,7 +48,15 @@
       ]
     },
     "security": {
-      "csp": null
+      "csp": null,
+      "dangerousRemoteDomainIpcAccess": [
+        {
+          "domain": "https://ocliveplugin.localhost",
+          "windows": ["main"],
+          "enableTauriAPI": true,
+          "plugins": ["*"]
+        }
+      ]
     },
     "windows": [
       {

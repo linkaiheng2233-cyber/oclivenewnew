@@ -1,0 +1,12 @@
+{
+  "schema_version": 1,
+  "id": "com.oclive.example.minimal",
+  "version": "0.1.0",
+  "shell": {
+    "entry": "ui/index.html"
+  },
+  "process": {
+    "command": "node",
+    "args": ["rpc_server.mjs"]
+  }
+}

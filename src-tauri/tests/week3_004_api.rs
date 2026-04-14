@@ -5,20 +5,27 @@
 //! 而非停留在全局列上一场景镜像值。
 
 use oclivenewnew_tauri::api::event::{create_event_impl, query_events_impl};
+use oclivenewnew_tauri::api::export::export_chat_logs_impl;
 use oclivenewnew_tauri::api::memory::query_memories_impl;
 use oclivenewnew_tauri::api::role::{
-    get_role_info_impl, list_roles_impl, load_role_impl, set_evolution_factor_impl,
-    set_scene_user_relation_impl, set_user_relation_impl, switch_role_impl,
+    get_plugin_resolution_debug_impl, get_role_info_impl, list_roles_impl, load_role_impl,
+    set_evolution_factor_impl,
+    set_scene_user_relation_impl, set_session_plugin_backend_impl, set_user_relation_impl,
+    switch_role_impl,
 };
 use oclivenewnew_tauri::api::scene::switch_scene_impl;
 use oclivenewnew_tauri::domain::chat_engine::process_message;
 use oclivenewnew_tauri::infrastructure::MockLlmClient;
 use oclivenewnew_tauri::models::dto::{
-    CreateEventRequest, QueryEventsRequest, QueryMemoriesRequest, SendMessageRequest,
-    SetEvolutionFactorRequest, SetSceneUserRelationRequest, SetUserRelationRequest,
+    CreateEventRequest, ExportChatLogsRequest, GetPluginResolutionDebugRequest, QueryEventsRequest,
+    QueryMemoriesRequest, SendMessageRequest, SetEvolutionFactorRequest,
+    SetSceneUserRelationRequest, SetSessionPluginBackendRequest, SetUserRelationRequest,
     SwitchSceneRequest,
 };
-use oclivenewnew_tauri::models::role::{IdentityBinding, PersonalitySource};
+use oclivenewnew_tauri::models::{
+    role::IdentityBinding, MemoryBackend, PersonalitySource, PluginBackendSource,
+};
+use oclivenewnew_tauri::models::dto::{API_VERSION, SCHEMA_VERSION};
 use oclivenewnew_tauri::state::AppState;
 use std::path::PathBuf;
 use std::sync::Arc;
@@ -53,7 +60,7 @@ async fn week3_004_load_role_and_get_info() {
         "mumu 包未写 personality_source 时应默认为 vector"
     );
 
-    let info = get_role_info_impl(&state, "mumu")
+    let info = get_role_info_impl(&state, "mumu", None)
         .await
         .expect("get_role_info");
     assert_eq!(info.role_id, "mumu");
@@ -74,8 +81,296 @@ async fn week3_004_get_role_info_before_runtime_fails() {
         .await
         .expect("state");
 
-    let err = get_role_info_impl(&state, "mumu").await.unwrap_err();
+    let err = get_role_info_impl(&state, "mumu", None).await.unwrap_err();
     assert!(err.contains("load_role"));
+}
+
+#[tokio::test]
+async fn week3_004_session_backend_override_uses_session_namespace() {
+    let llm = Arc::new(MockLlmClient {
+        reply: "ok".to_string(),
+    });
+    let state = AppState::new_in_memory_with_llm(llm, roles_dir())
+        .await
+        .expect("state");
+    load_role_impl(&state, "mumu", true)
+        .await
+        .expect("load_role");
+
+    let session_info = set_session_plugin_backend_impl(
+        &state,
+        &SetSessionPluginBackendRequest {
+            role_id: "mumu".to_string(),
+            module: "memory".to_string(),
+            backend: Some(Some("remote".to_string())),
+            local_memory_provider_id: None,
+            session_id: Some("sess-a".to_string()),
+        },
+    )
+    .await
+    .expect("set session backend");
+    assert_eq!(session_info.plugin_backends_effective.memory, MemoryBackend::Remote);
+    assert_eq!(
+        session_info.plugin_backends_effective_sources.memory,
+        PluginBackendSource::SessionOverride
+    );
+
+    let same_session = get_role_info_impl(&state, "mumu", Some("sess-a"))
+        .await
+        .expect("get same session role info");
+    assert_eq!(same_session.plugin_backends_effective.memory, MemoryBackend::Remote);
+    assert_eq!(
+        same_session.plugin_backends_effective_sources.memory,
+        PluginBackendSource::SessionOverride
+    );
+
+    let default_session = get_role_info_impl(&state, "mumu", None)
+        .await
+        .expect("get default session role info");
+    assert_eq!(
+        default_session.plugin_backends_effective.memory,
+        default_session.plugin_backends.memory
+    );
+    assert_eq!(
+        default_session.plugin_backends_effective_sources.memory,
+        PluginBackendSource::PackDefault
+    );
+}
+
+#[tokio::test]
+async fn week3_004_session_memory_local_provider_id_without_touching_memory_enum() {
+    let llm = Arc::new(MockLlmClient {
+        reply: "ok".to_string(),
+    });
+    let state = AppState::new_in_memory_with_llm(llm, roles_dir())
+        .await
+        .expect("state");
+    load_role_impl(&state, "mumu", true)
+        .await
+        .expect("load_role");
+
+    set_session_plugin_backend_impl(
+        &state,
+        &SetSessionPluginBackendRequest {
+            role_id: "mumu".to_string(),
+            module: "memory".to_string(),
+            backend: Some(Some("local".to_string())),
+            local_memory_provider_id: None,
+            session_id: Some("sess-local-pick".to_string()),
+        },
+    )
+    .await
+    .expect("set memory local");
+
+    let after_pick = set_session_plugin_backend_impl(
+        &state,
+        &SetSessionPluginBackendRequest {
+            role_id: "mumu".to_string(),
+            module: "memory".to_string(),
+            backend: None,
+            local_memory_provider_id: Some("  my_local_mem  ".to_string()),
+            session_id: Some("sess-local-pick".to_string()),
+        },
+    )
+    .await
+    .expect("set local memory provider id");
+
+    assert_eq!(
+        after_pick.plugin_backends_effective.memory,
+        MemoryBackend::Local
+    );
+    assert_eq!(
+        after_pick
+            .plugin_backends_effective
+            .local_memory_provider_id
+            .as_deref(),
+        Some("my_local_mem")
+    );
+    assert_eq!(
+        after_pick.plugin_backends_effective_sources.memory,
+        PluginBackendSource::SessionOverride
+    );
+
+    let cleared = set_session_plugin_backend_impl(
+        &state,
+        &SetSessionPluginBackendRequest {
+            role_id: "mumu".to_string(),
+            module: "memory".to_string(),
+            backend: None,
+            local_memory_provider_id: Some("   ".to_string()),
+            session_id: Some("sess-local-pick".to_string()),
+        },
+    )
+    .await
+    .expect("clear local provider id override");
+
+    assert_eq!(
+        cleared.plugin_backends_effective.memory,
+        MemoryBackend::Local
+    );
+    assert!(cleared.plugin_backends_effective.local_memory_provider_id.is_none());
+    assert_eq!(
+        cleared.plugin_backends_effective_sources.memory,
+        PluginBackendSource::SessionOverride
+    );
+}
+
+#[tokio::test]
+async fn week3_004_session_backend_explicit_null_clears_module_override() {
+    let llm = Arc::new(MockLlmClient {
+        reply: "ok".to_string(),
+    });
+    let state = AppState::new_in_memory_with_llm(llm, roles_dir())
+        .await
+        .expect("state");
+    load_role_impl(&state, "mumu", true)
+        .await
+        .expect("load_role");
+
+    let set_remote = set_session_plugin_backend_impl(
+        &state,
+        &SetSessionPluginBackendRequest {
+            role_id: "mumu".to_string(),
+            module: "memory".to_string(),
+            backend: Some(Some("remote".to_string())),
+            local_memory_provider_id: None,
+            session_id: Some("sess-clear-memory".to_string()),
+        },
+    )
+    .await
+    .expect("set remote override");
+    assert_eq!(set_remote.plugin_backends_effective.memory, MemoryBackend::Remote);
+    assert_eq!(
+        set_remote.plugin_backends_effective_sources.memory,
+        PluginBackendSource::SessionOverride
+    );
+
+    let cleared = set_session_plugin_backend_impl(
+        &state,
+        &SetSessionPluginBackendRequest {
+            role_id: "mumu".to_string(),
+            module: "memory".to_string(),
+            backend: Some(None),
+            local_memory_provider_id: None,
+            session_id: Some("sess-clear-memory".to_string()),
+        },
+    )
+    .await
+    .expect("clear memory override");
+
+    assert_eq!(
+        cleared.plugin_backends_effective.memory,
+        cleared.plugin_backends.memory
+    );
+    assert_eq!(
+        cleared.plugin_backends_effective_sources.memory,
+        PluginBackendSource::PackDefault
+    );
+}
+
+#[tokio::test]
+async fn week3_004_local_memory_provider_id_rejects_non_memory_module() {
+    let llm = Arc::new(MockLlmClient {
+        reply: "ok".to_string(),
+    });
+    let state = AppState::new_in_memory_with_llm(llm, roles_dir())
+        .await
+        .expect("state");
+    load_role_impl(&state, "mumu", true)
+        .await
+        .expect("load_role");
+
+    let err = set_session_plugin_backend_impl(
+        &state,
+        &SetSessionPluginBackendRequest {
+            role_id: "mumu".to_string(),
+            module: "prompt".to_string(),
+            backend: None,
+            local_memory_provider_id: Some("provider_a".to_string()),
+            session_id: Some("sess-invalid-provider-field".to_string()),
+        },
+    )
+    .await
+    .unwrap_err();
+    assert!(err.contains("module=memory"));
+}
+
+#[tokio::test]
+async fn week3_004_plugin_resolution_debug_reports_session_override_and_namespace() {
+    let llm = Arc::new(MockLlmClient {
+        reply: "ok".to_string(),
+    });
+    let state = AppState::new_in_memory_with_llm(llm, roles_dir())
+        .await
+        .expect("state");
+    load_role_impl(&state, "mumu", true)
+        .await
+        .expect("load_role");
+
+    set_session_plugin_backend_impl(
+        &state,
+        &SetSessionPluginBackendRequest {
+            role_id: "mumu".to_string(),
+            module: "memory".to_string(),
+            backend: Some(Some("remote".to_string())),
+            local_memory_provider_id: None,
+            session_id: Some("diag-sess".to_string()),
+        },
+    )
+    .await
+    .expect("set override");
+
+    let debug = get_plugin_resolution_debug_impl(
+        &state,
+        &GetPluginResolutionDebugRequest {
+            role_id: "mumu".to_string(),
+            session_id: Some("diag-sess".to_string()),
+        },
+    )
+    .await
+    .expect("debug info");
+
+    assert_eq!(debug.session_namespace, "mumu__sess__diag-sess");
+    assert_eq!(debug.api_version, API_VERSION);
+    assert_eq!(debug.schema_version, SCHEMA_VERSION);
+    assert!(!debug.app_version.trim().is_empty());
+    assert_eq!(debug.local_provider_count, 0);
+    assert!(debug.local_provider_ids.is_empty());
+    assert_eq!(debug.plugin_backends_effective.memory, MemoryBackend::Remote);
+    assert_eq!(
+        debug.plugin_backends_effective_sources.memory,
+        PluginBackendSource::SessionOverride
+    );
+}
+
+#[tokio::test]
+async fn week3_004_export_chat_logs_with_plugin_debug_includes_section() {
+    let llm = Arc::new(MockLlmClient {
+        reply: "ok".to_string(),
+    });
+    let state = AppState::new_in_memory_with_llm(llm, roles_dir())
+        .await
+        .expect("state");
+    load_role_impl(&state, "mumu", true)
+        .await
+        .expect("load_role");
+
+    let out = export_chat_logs_impl(
+        &state,
+        &ExportChatLogsRequest {
+            role_id: Some("mumu".to_string()),
+            all_roles: false,
+            format: "txt".to_string(),
+            include_plugin_resolution_debug: true,
+            session_id: None,
+        },
+    )
+    .await
+    .expect("export");
+    assert!(out.content.contains("## 插件解析诊断"));
+    assert!(out.content.contains("app_version:"));
+    assert!(out.content.contains("session_namespace: mumu"));
+    assert!(out.content.contains("local_providers: count=0 ids=none"));
 }
 
 #[tokio::test]

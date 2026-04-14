@@ -4,10 +4,12 @@ use crate::domain::memory_engine::MemoryEngine;
 use crate::domain::memory_retrieval::{MemoryRetrieval, MemoryRetrievalInput};
 use crate::domain::BuiltinMemoryRetrieval;
 use crate::infrastructure::remote_plugin::config::RemotePluginHttpConfig;
-use crate::infrastructure::remote_plugin::jsonrpc;
+use crate::infrastructure::remote_plugin::jsonrpc::{self, RemoteRpcChannel};
 use crate::models::{Memory, MemoryContext};
 use serde_json::{json, Value};
 use std::collections::{HashMap, HashSet};
+
+const METHOD_MEMORY_RANK: &str = "memory.rank";
 
 pub struct RemoteMemoryRetrievalHttp {
     client: reqwest::blocking::Client,
@@ -18,6 +20,7 @@ pub struct RemoteMemoryRetrievalHttp {
 impl RemoteMemoryRetrievalHttp {
     pub fn new(cfg: RemotePluginHttpConfig) -> Self {
         let client = reqwest::blocking::Client::builder()
+            .connect_timeout(cfg.connect_timeout())
             .timeout(cfg.timeout)
             .build()
             .expect("reqwest blocking client");
@@ -37,9 +40,10 @@ impl RemoteMemoryRetrievalHttp {
             "limit": input.limit,
         });
         let result = jsonrpc::call_blocking(
+            RemoteRpcChannel::Plugin,
             &self.client,
             &self.cfg.endpoint,
-            "memory.rank",
+            METHOD_MEMORY_RANK,
             params,
             self.cfg.bearer_token.as_deref(),
         )
@@ -90,7 +94,8 @@ impl MemoryRetrieval for RemoteMemoryRetrievalHttp {
             _ => {
                 log::warn!(
                     target: "oclive_plugin",
-                    "memory.rank remote failed or empty; using builtin ranking"
+                    "memory.rank remote failed or empty endpoint={} fallback=builtin",
+                    self.cfg.endpoint
                 );
                 self.fallback.rank_memories(input)
             }
@@ -127,5 +132,10 @@ mod tests {
         assert_eq!(out.len(), 2);
         assert_eq!(out[0].id, "c");
         assert_eq!(out[1].id, "a");
+    }
+
+    #[test]
+    fn method_name_matches_remote_protocol() {
+        assert_eq!(METHOD_MEMORY_RANK, "memory.rank");
     }
 }

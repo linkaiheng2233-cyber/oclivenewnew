@@ -3,6 +3,7 @@
 //! 提供基础服务和数据访问功能
 
 pub mod cache;
+pub mod directory_plugins;
 pub mod db;
 pub mod llm;
 pub mod llm_params;

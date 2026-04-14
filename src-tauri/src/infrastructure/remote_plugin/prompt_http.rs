@@ -4,9 +4,12 @@ use crate::domain::prompt_assembler::PromptAssembler;
 use crate::domain::prompt_builder::PromptInput;
 use crate::domain::BuiltinPromptAssembler;
 use crate::infrastructure::remote_plugin::config::RemotePluginHttpConfig;
-use crate::infrastructure::remote_plugin::jsonrpc;
+use crate::infrastructure::remote_plugin::jsonrpc::{self, RemoteRpcChannel};
 use crate::models::{PersonalitySource, Role};
 use serde_json::json;
+
+const METHOD_PROMPT_BUILD: &str = "prompt.build_prompt";
+const METHOD_PROMPT_TOPIC_HINT: &str = "prompt.top_topic_hint";
 
 pub struct RemotePromptAssemblerHttp {
     client: reqwest::blocking::Client,
@@ -17,6 +20,7 @@ pub struct RemotePromptAssemblerHttp {
 impl RemotePromptAssemblerHttp {
     pub fn new(cfg: RemotePluginHttpConfig) -> Self {
         let client = reqwest::blocking::Client::builder()
+            .connect_timeout(cfg.connect_timeout())
             .timeout(cfg.timeout)
             .build()
             .expect("reqwest blocking client");
@@ -42,9 +46,10 @@ impl PromptAssembler for RemotePromptAssemblerHttp {
             }
         };
         match jsonrpc::call_blocking(
+            RemoteRpcChannel::Plugin,
             &self.client,
             &self.cfg.endpoint,
-            "prompt.build_prompt",
+            METHOD_PROMPT_BUILD,
             params,
             self.cfg.bearer_token.as_deref(),
         ) {
@@ -61,7 +66,8 @@ impl PromptAssembler for RemotePromptAssemblerHttp {
             Err(e) => {
                 log::warn!(
                     target: "oclive_plugin",
-                    "prompt.build_prompt remote failed: {}; builtin",
+                    "prompt.build_prompt remote failed endpoint={} err={}; fallback=builtin",
+                    self.cfg.endpoint,
                     e
                 );
                 self.fallback.build_prompt(input)
@@ -75,9 +81,10 @@ impl PromptAssembler for RemotePromptAssemblerHttp {
             "scene_id": scene_id,
         });
         match jsonrpc::call_blocking(
+            RemoteRpcChannel::Plugin,
             &self.client,
             &self.cfg.endpoint,
-            "prompt.top_topic_hint",
+            METHOD_PROMPT_TOPIC_HINT,
             params,
             self.cfg.bearer_token.as_deref(),
         ) {
@@ -144,5 +151,16 @@ impl<'a> PromptInputSnapshot<'a> {
                 life_context_line: input.life_context_line,
             },
         }
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn method_names_match_remote_protocol() {
+        assert_eq!(METHOD_PROMPT_BUILD, "prompt.build_prompt");
+        assert_eq!(METHOD_PROMPT_TOPIC_HINT, "prompt.top_topic_hint");
     }
 }

@@ -7,8 +7,10 @@ use super::plugin_backends::PluginBackends;
 use super::role::{AutonomousSceneConfig, IdentityBinding, RemotePresenceConfig, Role};
 use super::role_manifest_disk::{DiskRoleManifest, EvolutionConfigDisk, MemoryConfigDisk};
 
+pub const CURRENT_SETTINGS_SCHEMA_VERSION: u32 = 1;
+
 fn default_schema_version() -> u32 {
-    1
+    CURRENT_SETTINGS_SCHEMA_VERSION
 }
 
 /// 角色包引擎设置（可与 `manifest.json` 分文件存放）。

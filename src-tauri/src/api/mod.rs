@@ -1,4 +1,5 @@
 pub mod chat;
+pub mod directory_plugin;
 pub mod event;
 pub mod export;
 pub mod jump_monologue;
@@ -11,6 +12,9 @@ pub mod scene;
 pub mod time;
 
 pub use chat::send_message;
+pub use directory_plugin::{
+    directory_plugin_invoke, get_directory_plugin_bootstrap,
+};
 pub use event::{create_event, query_events};
 pub use export::export_chat_logs;
 pub use memory::query_memories;
