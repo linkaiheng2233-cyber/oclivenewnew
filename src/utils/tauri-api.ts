@@ -798,16 +798,6 @@ export async function getDirectoryPluginBootstrap(
   return p;
 }
 
-export async function isHostEventSubscribed(
-  event: string,
-  roleId?: string | null,
-): Promise<boolean> {
-  return invokeWithFriendlyError<boolean>("is_host_event_subscribed", {
-    event,
-    role_id: roleId ?? null,
-  });
-}
-
 /** 与 `app_data/plugin_state.json` 中单角色 slots 段一致（snake_case）。 */
 export interface PluginStateFile {
   disabled_plugins: string[];
