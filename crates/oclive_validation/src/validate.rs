@@ -403,7 +403,8 @@ mod tests {
 
     #[test]
     fn local_plugin_min_runtime_below_host_mentions_local() {
-        let e = validate_min_runtime_version_for_local_plugin(Some("99.0.0"), "0.2.0").expect_err("too new");
+        let e = validate_min_runtime_version_for_local_plugin(Some("99.0.0"), "0.2.0")
+            .expect_err("too new");
         assert!(e.contains("本地插件"));
         assert!(e.contains("99.0.0"));
     }

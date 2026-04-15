@@ -8,9 +8,9 @@ use crate::api::directory_plugin::directory_plugin_bootstrap_dto;
 use crate::api::event::create_event_impl;
 use crate::api::role::{get_role_info_impl, list_roles_impl, switch_role_impl};
 use crate::api::time::get_time_state_impl;
-use crate::models::dto::CreateEventRequest;
 use crate::domain::chat_engine::{conversation_state_role_id, process_message};
 use crate::infrastructure::directory_plugins::{normalize_plugin_rel, OclivePluginManifest};
+use crate::models::dto::CreateEventRequest;
 use crate::models::dto::{GetRoleInfoRequest, SendMessageRequest};
 use crate::state::AppState;
 use serde::Deserialize;
@@ -66,7 +66,10 @@ fn requires_typed_shell(cmd: &str) -> bool {
     )
 }
 
-fn validate_shell_ocliveplugin(manifest: &OclivePluginManifest, asset_rel: &str) -> Result<(), String> {
+fn validate_shell_ocliveplugin(
+    manifest: &OclivePluginManifest,
+    asset_rel: &str,
+) -> Result<(), String> {
     if manifest.plugin_type.as_deref().map(str::trim) != Some("ocliveplugin") {
         return Err(
             "this command requires manifest \"type\": \"ocliveplugin\" and shell.bridge.invoke permission"
@@ -77,7 +80,9 @@ fn validate_shell_ocliveplugin(manifest: &OclivePluginManifest, asset_rel: &str)
         return Err("this command is only allowed for shell plugins".to_string());
     };
     if normalize_plugin_rel(asset_rel) != normalize_plugin_rel(&sh.entry) {
-        return Err("this command must be invoked from shell.entry HTML (not ui_slots)".to_string());
+        return Err(
+            "this command must be invoked from shell.entry HTML (not ui_slots)".to_string(),
+        );
     }
     Ok(())
 }
@@ -101,7 +106,8 @@ fn validate_bridge(
         let tok = required_permission_token(command);
         return Err(format!(
             "bridge.invoke must include command {:?} or permission {:?}",
-            command, tok.as_str()
+            command,
+            tok.as_str()
         ));
     }
     if requires_typed_shell(command) {
@@ -158,10 +164,7 @@ async fn dispatch_bridge_command(
                 .and_then(|v| v.as_u64())
                 .unwrap_or(50)
                 .clamp(1, 500) as usize;
-            let offset = params
-                .get("offset")
-                .and_then(|v| v.as_u64())
-                .unwrap_or(0) as usize;
+            let offset = params.get("offset").and_then(|v| v.as_u64()).unwrap_or(0) as usize;
             let ns = conversation_state_role_id(role_id, session_id.as_deref());
             let rows = state
                 .db_manager

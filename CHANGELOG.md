@@ -19,12 +19,14 @@
 
 ### Performance
 
+- 对 `get_directory_plugin_catalog` 的 IPC 合并并发 in-flight 请求（全局单次调用）。
 - 对 `get_directory_plugin_bootstrap` 的 IPC 按 `role_id` 合并并发请求，减少多插槽同时挂载时的重复调用。
 - 开发者模式下 Vue 插槽：安全扫描读入的源码复用于 `vue3-sfc-loader`，避免对同一 `.vue` 二次 `read_plugin_asset_text`。
 - Rust：`directory_plugin_bootstrap_dto` 在构建 `ui_slots` 的同一趟扫描中合并 `subscribed_host_events`，每个已启用插件目录只解析一次 `manifest.json`（整壳 URL 仍单独解析一次）。
 
 ### Engineering
 
+- **Clippy / rustfmt**：全量 `cargo clippy -- -D warnings` 清零（`is_none_or`、`lines` 读错误处理、`clamp`、`contains`、URI 协议 needless borrow 等）；工作区 **`cargo fmt --all`** 与 CI `rustfmt --check` 对齐。
 - **共享 crate `crates/oclive_validation`**：`validate_disk_manifest`、`parse_hhmm`、`KnowledgePackConfigDisk` 等与磁盘 manifest 相关的校验与 DTO 单一来源；运行时依赖该 crate，编写器可用 **wasm**（`--features wasm`，目标 `wasm32-unknown-unknown`）调用 `validate_manifest_wasm`。
 - **本地 HTTP API**：可执行文件支持 `--api` / `--port`（或 `OCLIVE_API_PORT`），默认 `http://127.0.0.1:8420`，提供 `GET /health`、`POST /chat`（`role_path` + `message`，可选 `session_id`），供编写器试聊等工具调用。`session_id` 会映射为内部 SQLite 会话键 `{manifest_role_id}__sess__{sanitized}`，与无 `session_id` 的默认对话隔离；JSON 响应含 `reply`、回显的 `session_id`，以及在扁平 `SendMessageResponse` 字段之外同层的 **`personality_source`**（`vector`|`profile`，与包内 `evolution` 一致）。`POST /chat` 对 **空 `message`** 返回 400；会话键总长度限制为 **256** 字符以防异常输入。**`POST /chat`** 在 Tokio 上使用 **`spawn_blocking`** 执行目录探测与 `load_role_from_dir`，避免阻塞异步运行时线程（与 `import_role_pack` 一致）。
 - **Tauri**：`peek_role_pack` 预览 manifest 改为 **`spawn_blocking`**，避免在异步命令线程上长时间读压缩包/磁盘。

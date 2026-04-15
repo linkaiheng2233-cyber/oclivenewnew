@@ -230,8 +230,18 @@ mod tests {
                 capabilities: vec![LocalPluginCapability::Memory, LocalPluginCapability::Prompt],
             })
             .expect("register");
-        assert_eq!(registry.providers_for_capability(LocalPluginCapability::Memory).len(), 1);
-        assert_eq!(registry.providers_for_capability(LocalPluginCapability::Llm).len(), 0);
+        assert_eq!(
+            registry
+                .providers_for_capability(LocalPluginCapability::Memory)
+                .len(),
+            1
+        );
+        assert_eq!(
+            registry
+                .providers_for_capability(LocalPluginCapability::Llm)
+                .len(),
+            0
+        );
     }
 
     #[test]

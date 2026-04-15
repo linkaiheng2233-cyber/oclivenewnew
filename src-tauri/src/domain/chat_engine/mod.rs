@@ -24,8 +24,8 @@ use crate::models::dto::{
     EmotionDto, PresenceMode, SendMessageRequest, SendMessageResponse, API_VERSION, SCHEMA_VERSION,
 };
 use crate::models::{
-    Event, EventType, KnowledgeIndex, Memory, PersonalitySource, PersonalityVector,
-    PluginBackends, PluginBackendsSourceMap, Role,
+    Event, EventType, KnowledgeIndex, Memory, PersonalitySource, PersonalityVector, PluginBackends,
+    PluginBackendsSourceMap, Role,
 };
 use crate::state::AppState;
 use chrono::Utc;
@@ -656,8 +656,8 @@ mod tests {
         avoid_fast_promote_score, smooth_favor_delta_for_short_streak, soft_append_guard,
     };
     use crate::models::{
-        EmotionBackend, Event, EventBackend, EventType, LlmBackend, MemoryBackend, PluginBackendSource,
-        PluginBackends, PluginBackendsSourceMap, PromptBackend,
+        EmotionBackend, Event, EventBackend, EventType, LlmBackend, MemoryBackend,
+        PluginBackendSource, PluginBackends, PluginBackendsSourceMap, PromptBackend,
     };
 
     #[test]

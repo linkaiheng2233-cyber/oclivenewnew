@@ -49,35 +49,35 @@ pub fn log_plugin_backends_remote_missing_env(role: &Role) {
     let needs_dir_prompt = matches!(pb.prompt, PromptBackend::Directory);
     let needs_dir_llm = matches!(pb.llm, LlmBackend::Directory);
     let slots = &pb.directory_plugins;
-    if needs_dir_memory && slots.memory.as_ref().map_or(true, |s| s.trim().is_empty()) {
+    if needs_dir_memory && slots.memory.as_ref().is_none_or(|s| s.trim().is_empty()) {
         log::warn!(
             target: "oclive_plugin",
             "role_id={} plugin_backends.memory=directory 但未配置 directory_plugins.memory；运行时回退 builtin",
             role.id
         );
     }
-    if needs_dir_emotion && slots.emotion.as_ref().map_or(true, |s| s.trim().is_empty()) {
+    if needs_dir_emotion && slots.emotion.as_ref().is_none_or(|s| s.trim().is_empty()) {
         log::warn!(
             target: "oclive_plugin",
             "role_id={} plugin_backends.emotion=directory 但未配置 directory_plugins.emotion；运行时回退 builtin",
             role.id
         );
     }
-    if needs_dir_event && slots.event.as_ref().map_or(true, |s| s.trim().is_empty()) {
+    if needs_dir_event && slots.event.as_ref().is_none_or(|s| s.trim().is_empty()) {
         log::warn!(
             target: "oclive_plugin",
             "role_id={} plugin_backends.event=directory 但未配置 directory_plugins.event；运行时回退 builtin",
             role.id
         );
     }
-    if needs_dir_prompt && slots.prompt.as_ref().map_or(true, |s| s.trim().is_empty()) {
+    if needs_dir_prompt && slots.prompt.as_ref().is_none_or(|s| s.trim().is_empty()) {
         log::warn!(
             target: "oclive_plugin",
             "role_id={} plugin_backends.prompt=directory 但未配置 directory_plugins.prompt；运行时回退 builtin",
             role.id
         );
     }
-    if needs_dir_llm && slots.llm.as_ref().map_or(true, |s| s.trim().is_empty()) {
+    if needs_dir_llm && slots.llm.as_ref().is_none_or(|s| s.trim().is_empty()) {
         log::warn!(
             target: "oclive_plugin",
             "role_id={} plugin_backends.llm=directory 但未配置 directory_plugins.llm；运行时回退 Ollama",

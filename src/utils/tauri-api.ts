@@ -846,11 +846,28 @@ export interface DirectoryPluginCatalogEntry {
   provides: string[];
 }
 
+/** 并发 `get_directory_plugin_catalog` 合并为单次 IPC（无 role 参数，全局共用一个 in-flight）。 */
+const directoryCatalogInflight = new Map<
+  string,
+  Promise<DirectoryPluginCatalogEntry[]>
+>();
+const DIRECTORY_CATALOG_COALESCE_KEY = "__global__";
+
 export async function getDirectoryPluginCatalog(): Promise<DirectoryPluginCatalogEntry[]> {
-  return invokeWithFriendlyError<DirectoryPluginCatalogEntry[]>(
+  const existing = directoryCatalogInflight.get(DIRECTORY_CATALOG_COALESCE_KEY);
+  if (existing) {
+    return existing;
+  }
+  const p = invokeWithFriendlyError<DirectoryPluginCatalogEntry[]>(
     "get_directory_plugin_catalog",
     {},
-  );
+  ).finally(() => {
+    if (directoryCatalogInflight.get(DIRECTORY_CATALOG_COALESCE_KEY) === p) {
+      directoryCatalogInflight.delete(DIRECTORY_CATALOG_COALESCE_KEY);
+    }
+  });
+  directoryCatalogInflight.set(DIRECTORY_CATALOG_COALESCE_KEY, p);
+  return p;
 }
 
 export async function getPluginState(roleId: string): Promise<RolePluginState> {

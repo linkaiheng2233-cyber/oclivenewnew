@@ -34,14 +34,14 @@ pub use chat_engine::process_message;
 pub use emotion_analyzer::EmotionAnalyzer;
 pub use event_detector::EventDetector;
 pub use event_estimator::{BuiltinEventEstimator, EventEstimator, RemoteEventEstimatorPlaceholder};
+pub use local_plugin_bridge::{
+    FileManifestLocalPluginBridge, LocalPluginBridge, LocalPluginCapability,
+    LocalPluginProviderDescriptor, LocalPluginRegistry, LOCAL_PLUGIN_SCHEMA_VERSION,
+};
 pub use memory_engine::MemoryEngine;
 pub use memory_retrieval::{
     BuiltinMemoryRetrieval, BuiltinMemoryRetrievalV2, LocalPluginMemoryRetrieval, MemoryRetrieval,
     MemoryRetrievalInput, RemoteMemoryRetrievalPlaceholder,
-};
-pub use local_plugin_bridge::{
-    FileManifestLocalPluginBridge, LocalPluginBridge, LocalPluginCapability,
-    LocalPluginProviderDescriptor, LocalPluginRegistry, LOCAL_PLUGIN_SCHEMA_VERSION,
 };
 pub use personality_engine::PersonalityEngine;
 pub use plugin_host::{PluginHost, ResolvedRolePlugins};

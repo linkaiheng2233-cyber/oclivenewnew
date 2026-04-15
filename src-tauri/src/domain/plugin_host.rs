@@ -21,8 +21,8 @@ use crate::domain::user_emotion_analyzer::{
 use crate::infrastructure::directory_plugins::DirectoryPluginRuntime;
 use crate::infrastructure::llm::LlmClient;
 use crate::infrastructure::remote_plugin::{
-    self, RemoteEventEstimatorHttp, RemoteLlmHttp, RemoteMemoryRetrievalHttp, RemotePluginHttpConfig,
-    RemotePromptAssemblerHttp, RemoteUserEmotionAnalyzerHttp,
+    self, RemoteEventEstimatorHttp, RemoteLlmHttp, RemoteMemoryRetrievalHttp,
+    RemotePluginHttpConfig, RemotePromptAssemblerHttp, RemoteUserEmotionAnalyzerHttp,
 };
 use crate::models::{
     DirectoryPluginSlots, EmotionBackend, EventBackend, LlmBackend, MemoryBackend, PluginBackends,
@@ -61,12 +61,21 @@ pub struct BackendRegistry {
     directory_runtime: Option<Arc<DirectoryPluginRuntime>>,
 }
 
-fn directory_slot_id(slots: &DirectoryPluginSlots, pick: impl FnOnce(&DirectoryPluginSlots) -> &Option<String>) -> Option<String> {
-    pick(slots).as_ref().map(|s| s.trim().to_string()).filter(|s| !s.is_empty())
+fn directory_slot_id(
+    slots: &DirectoryPluginSlots,
+    pick: impl FnOnce(&DirectoryPluginSlots) -> &Option<String>,
+) -> Option<String> {
+    pick(slots)
+        .as_ref()
+        .map(|s| s.trim().to_string())
+        .filter(|s| !s.is_empty())
 }
 
 impl BackendRegistry {
-    fn from_runtime(llm: Arc<dyn LlmClient>, directory_runtime: Option<Arc<DirectoryPluginRuntime>>) -> Self {
+    fn from_runtime(
+        llm: Arc<dyn LlmClient>,
+        directory_runtime: Option<Arc<DirectoryPluginRuntime>>,
+    ) -> Self {
         let llm_ollama = llm.clone();
         let llm_remote = remote_plugin::llm_remote_backend(llm);
         let rem = remote_plugin::plugin_remote_group();
@@ -137,7 +146,10 @@ impl BackendRegistry {
         }
     }
 
-    fn memory_retrieval_for_plugin_backends(&self, backends: &PluginBackends) -> Arc<dyn MemoryRetrieval> {
+    fn memory_retrieval_for_plugin_backends(
+        &self,
+        backends: &PluginBackends,
+    ) -> Arc<dyn MemoryRetrieval> {
         match backends.memory {
             MemoryBackend::Builtin => self.memory_builtin.clone(),
             MemoryBackend::BuiltinV2 => self.memory_builtin_v2.clone(),
@@ -217,7 +229,10 @@ impl BackendRegistry {
         }
     }
 
-    fn user_emotion_analyzer_for_backends(&self, backends: &PluginBackends) -> Arc<dyn UserEmotionAnalyzer> {
+    fn user_emotion_analyzer_for_backends(
+        &self,
+        backends: &PluginBackends,
+    ) -> Arc<dyn UserEmotionAnalyzer> {
         match backends.emotion {
             EmotionBackend::Builtin => self.emotion_builtin.clone(),
             EmotionBackend::BuiltinV2 => self.emotion_builtin_v2.clone(),
@@ -410,7 +425,10 @@ pub struct PluginHost {
 }
 
 impl PluginHost {
-    pub fn new(llm: Arc<dyn LlmClient>, directory_runtime: Option<Arc<DirectoryPluginRuntime>>) -> Self {
+    pub fn new(
+        llm: Arc<dyn LlmClient>,
+        directory_runtime: Option<Arc<DirectoryPluginRuntime>>,
+    ) -> Self {
         Self {
             registry: BackendRegistry::from_runtime(llm, directory_runtime),
         }
@@ -459,7 +477,10 @@ impl PluginHost {
         self.registry.user_emotion_analyzer(b)
     }
 
-    pub fn user_emotion_analyzer_for_backends(&self, backends: &PluginBackends) -> Arc<dyn UserEmotionAnalyzer> {
+    pub fn user_emotion_analyzer_for_backends(
+        &self,
+        backends: &PluginBackends,
+    ) -> Arc<dyn UserEmotionAnalyzer> {
         self.registry.user_emotion_analyzer_for_backends(backends)
     }
 
@@ -467,7 +488,10 @@ impl PluginHost {
         self.registry.event_estimator(b)
     }
 
-    pub fn event_estimator_for_backends(&self, backends: &PluginBackends) -> Arc<dyn EventEstimator> {
+    pub fn event_estimator_for_backends(
+        &self,
+        backends: &PluginBackends,
+    ) -> Arc<dyn EventEstimator> {
         self.registry.event_estimator_for_backends(backends)
     }
 
@@ -475,7 +499,10 @@ impl PluginHost {
         self.registry.prompt_assembler(b)
     }
 
-    pub fn prompt_assembler_for_backends(&self, backends: &PluginBackends) -> Arc<dyn PromptAssembler> {
+    pub fn prompt_assembler_for_backends(
+        &self,
+        backends: &PluginBackends,
+    ) -> Arc<dyn PromptAssembler> {
         self.registry.prompt_assembler_for_backends(backends)
     }
 
@@ -589,8 +616,14 @@ mod tests {
             capabilities: vec![LocalPluginCapability::Prompt],
         })
         .expect("register local provider");
-        assert_eq!(h.local_providers_for(LocalPluginCapability::Prompt).len(), 1);
-        assert_eq!(h.local_providers_for(LocalPluginCapability::Memory).len(), 0);
+        assert_eq!(
+            h.local_providers_for(LocalPluginCapability::Prompt).len(),
+            1
+        );
+        assert_eq!(
+            h.local_providers_for(LocalPluginCapability::Memory).len(),
+            0
+        );
     }
 
     #[test]
@@ -636,7 +669,12 @@ mod tests {
             pl.memory.diagnostic_local_provider_id(),
             Some("mem.local.one")
         );
-        let a: Vec<_> = pl.memory.rank_memories(mk()).into_iter().map(|m| m.id).collect();
+        let a: Vec<_> = pl
+            .memory
+            .rank_memories(mk())
+            .into_iter()
+            .map(|m| m.id)
+            .collect();
         let b: Vec<_> = v2.rank_memories(mk()).into_iter().map(|m| m.id).collect();
         assert_eq!(a, b);
     }

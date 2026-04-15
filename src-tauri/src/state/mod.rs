@@ -325,7 +325,8 @@ impl AppState {
         let runtime = Self::build_policy_sets_from_registry(registry);
 
         let storage = RoleStorage::new(roles_dir_override.unwrap_or_else(resolve_roles_dir));
-        let directory_plugins = DirectoryPluginRuntime::bootstrap(storage.roles_dir(), app_data_dir.as_ref());
+        let directory_plugins =
+            DirectoryPluginRuntime::bootstrap(storage.roles_dir(), app_data_dir.as_ref());
         let plugins = PluginHost::new(llm.clone(), Some(directory_plugins.clone()));
         Self::bootstrap_local_plugin_providers(&plugins, storage.roles_dir());
 
@@ -380,7 +381,8 @@ impl AppState {
         let storage = RoleStorage::new(roles_dir);
         let app_data_dir = storage.roles_dir().join(".oclive_directory_plugin_data");
         let _ = fs::create_dir_all(&app_data_dir);
-        let directory_plugins = DirectoryPluginRuntime::bootstrap(storage.roles_dir(), &app_data_dir);
+        let directory_plugins =
+            DirectoryPluginRuntime::bootstrap(storage.roles_dir(), &app_data_dir);
         let runtime = if let Some(path) = policy_file {
             let registry = load_policy_registry_from_path(path, false)
                 .unwrap_or_else(|_| PolicyRegistryFile::with_defaults());
@@ -532,7 +534,8 @@ impl AppState {
         session_namespace: Option<&str>,
     ) -> ResolvedRolePlugins {
         let ov = session_namespace.and_then(|ns| self.session_backend_override(ns));
-        self.plugins.resolve_for_role_with_override(role, ov.as_ref())
+        self.plugins
+            .resolve_for_role_with_override(role, ov.as_ref())
     }
 
     pub fn memory_retrieval_for(&self, role: &Role) -> Arc<dyn MemoryRetrieval> {
@@ -561,7 +564,10 @@ impl AppState {
     }
 
     #[must_use]
-    pub fn session_backend_override(&self, session_namespace: &str) -> Option<PluginBackendsOverride> {
+    pub fn session_backend_override(
+        &self,
+        session_namespace: &str,
+    ) -> Option<PluginBackendsOverride> {
         self.session_plugin_overrides
             .read()
             .get(session_namespace)
@@ -574,7 +580,9 @@ impl AppState {
         override_backends: PluginBackendsOverride,
     ) {
         if override_backends.is_empty() {
-            self.session_plugin_overrides.write().remove(session_namespace);
+            self.session_plugin_overrides
+                .write()
+                .remove(session_namespace);
             return;
         }
         self.session_plugin_overrides
@@ -583,7 +591,9 @@ impl AppState {
     }
 
     pub fn clear_session_backend_override(&self, session_namespace: &str) {
-        self.session_plugin_overrides.write().remove(session_namespace);
+        self.session_plugin_overrides
+            .write()
+            .remove(session_namespace);
     }
 
     #[must_use]

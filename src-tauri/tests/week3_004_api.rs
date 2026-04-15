@@ -9,9 +9,8 @@ use oclivenewnew_tauri::api::export::export_chat_logs_impl;
 use oclivenewnew_tauri::api::memory::query_memories_impl;
 use oclivenewnew_tauri::api::role::{
     get_plugin_resolution_debug_impl, get_role_info_impl, list_roles_impl, load_role_impl,
-    set_evolution_factor_impl,
-    set_scene_user_relation_impl, set_session_plugin_backend_impl, set_user_relation_impl,
-    switch_role_impl,
+    set_evolution_factor_impl, set_scene_user_relation_impl, set_session_plugin_backend_impl,
+    set_user_relation_impl, switch_role_impl,
 };
 use oclivenewnew_tauri::api::scene::switch_scene_impl;
 use oclivenewnew_tauri::domain::chat_engine::process_message;
@@ -22,10 +21,10 @@ use oclivenewnew_tauri::models::dto::{
     SetSceneUserRelationRequest, SetSessionPluginBackendRequest, SetUserRelationRequest,
     SwitchSceneRequest,
 };
+use oclivenewnew_tauri::models::dto::{API_VERSION, SCHEMA_VERSION};
 use oclivenewnew_tauri::models::{
     role::IdentityBinding, MemoryBackend, PersonalitySource, PluginBackendSource,
 };
-use oclivenewnew_tauri::models::dto::{API_VERSION, SCHEMA_VERSION};
 use oclivenewnew_tauri::state::AppState;
 use std::path::PathBuf;
 use std::sync::Arc;
@@ -109,7 +108,10 @@ async fn week3_004_session_backend_override_uses_session_namespace() {
     )
     .await
     .expect("set session backend");
-    assert_eq!(session_info.plugin_backends_effective.memory, MemoryBackend::Remote);
+    assert_eq!(
+        session_info.plugin_backends_effective.memory,
+        MemoryBackend::Remote
+    );
     assert_eq!(
         session_info.plugin_backends_effective_sources.memory,
         PluginBackendSource::SessionOverride
@@ -118,7 +120,10 @@ async fn week3_004_session_backend_override_uses_session_namespace() {
     let same_session = get_role_info_impl(&state, "mumu", Some("sess-a"))
         .await
         .expect("get same session role info");
-    assert_eq!(same_session.plugin_backends_effective.memory, MemoryBackend::Remote);
+    assert_eq!(
+        same_session.plugin_backends_effective.memory,
+        MemoryBackend::Remote
+    );
     assert_eq!(
         same_session.plugin_backends_effective_sources.memory,
         PluginBackendSource::SessionOverride
@@ -208,7 +213,10 @@ async fn week3_004_session_memory_local_provider_id_without_touching_memory_enum
         cleared.plugin_backends_effective.memory,
         MemoryBackend::Local
     );
-    assert!(cleared.plugin_backends_effective.local_memory_provider_id.is_none());
+    assert!(cleared
+        .plugin_backends_effective
+        .local_memory_provider_id
+        .is_none());
     assert_eq!(
         cleared.plugin_backends_effective_sources.memory,
         PluginBackendSource::SessionOverride
@@ -239,7 +247,10 @@ async fn week3_004_session_backend_explicit_null_clears_module_override() {
     )
     .await
     .expect("set remote override");
-    assert_eq!(set_remote.plugin_backends_effective.memory, MemoryBackend::Remote);
+    assert_eq!(
+        set_remote.plugin_backends_effective.memory,
+        MemoryBackend::Remote
+    );
     assert_eq!(
         set_remote.plugin_backends_effective_sources.memory,
         PluginBackendSource::SessionOverride
@@ -336,7 +347,10 @@ async fn week3_004_plugin_resolution_debug_reports_session_override_and_namespac
     assert!(!debug.app_version.trim().is_empty());
     assert_eq!(debug.local_provider_count, 0);
     assert!(debug.local_provider_ids.is_empty());
-    assert_eq!(debug.plugin_backends_effective.memory, MemoryBackend::Remote);
+    assert_eq!(
+        debug.plugin_backends_effective.memory,
+        MemoryBackend::Remote
+    );
     assert_eq!(
         debug.plugin_backends_effective_sources.memory,
         PluginBackendSource::SessionOverride

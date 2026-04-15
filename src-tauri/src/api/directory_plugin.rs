@@ -5,8 +5,10 @@ use crate::infrastructure::directory_plugins::{
     normalize_plugin_rel, HostPluginsFile, OclivePluginManifest,
 };
 use crate::infrastructure::plugin_state::{PluginStateFile, RolePluginState};
+use crate::infrastructure::remote_plugin::{
+    invoke_directory_plugin_rpc_blocking, RemoteRpcChannel,
+};
 use crate::models::ui_config::UiConfig;
-use crate::infrastructure::remote_plugin::{invoke_directory_plugin_rpc_blocking, RemoteRpcChannel};
 use crate::state::AppState;
 use serde::Serialize;
 use serde_json::Value;
@@ -91,10 +93,8 @@ fn collect_subscribed_host_events(state: &AppState, pst: &PluginStateFile) -> Ve
 
 /// 对**同一插槽**的条目按 `plugin_state.slot_order[slot]` 排序。
 fn order_plugin_slots(mut slots: Vec<PluginUiSlotDto>, order: &[String]) -> Vec<PluginUiSlotDto> {
-    let mut by_id: HashMap<String, PluginUiSlotDto> = slots
-        .drain(..)
-        .map(|s| (s.plugin_id.clone(), s))
-        .collect();
+    let mut by_id: HashMap<String, PluginUiSlotDto> =
+        slots.drain(..).map(|s| (s.plugin_id.clone(), s)).collect();
     let mut out = Vec::new();
     for id in order {
         if let Some(s) = by_id.remove(id.as_str()) {
@@ -109,7 +109,10 @@ fn order_plugin_slots(mut slots: Vec<PluginUiSlotDto>, order: &[String]) -> Vec<
 
 /// 供 `get_directory_plugin_bootstrap` 与 `plugin_bridge_invoke` 共用。
 /// `role_id`：当前角色；省略时尝试 `oclive_last_role_id.txt`，再回退旧版全局插件状态。
-pub fn directory_plugin_bootstrap_dto(state: &AppState, role_id: Option<String>) -> DirectoryPluginBootstrapDto {
+pub fn directory_plugin_bootstrap_dto(
+    state: &AppState,
+    role_id: Option<String>,
+) -> DirectoryPluginBootstrapDto {
     let rt = &state.directory_plugins;
     let host = rt.host();
     let rid = role_id
@@ -172,10 +175,7 @@ pub fn directory_plugin_bootstrap_dto(state: &AppState, role_id: Option<String>)
                 .map(|s| s.trim())
                 .filter(|s| !s.is_empty())
                 .map(|s| s.replace('\\', "/"));
-            let url = format!(
-                "https://ocliveplugin.localhost/{}/{}",
-                pid, entry_norm
-            );
+            let url = format!("https://ocliveplugin.localhost/{}/{}", pid, entry_norm);
             ui_slots.push(PluginUiSlotDto {
                 plugin_id: pid.clone(),
                 slot: decl.slot.clone(),
@@ -234,7 +234,10 @@ pub fn directory_plugin_bootstrap_dto(state: &AppState, role_id: Option<String>)
     }
 }
 
-fn shell_plugin_id_resolved(host: &HostPluginsFile, role: Option<&RolePluginState>) -> Option<String> {
+fn shell_plugin_id_resolved(
+    host: &HostPluginsFile,
+    role: Option<&RolePluginState>,
+) -> Option<String> {
     if let Ok(v) = std::env::var("OCLIVE_SHELL_PLUGIN_ID") {
         let t = v.trim().to_string();
         if !t.is_empty() {
@@ -364,7 +367,9 @@ pub struct DirectoryPluginCatalogEntry {
 }
 
 #[tauri::command]
-pub fn get_directory_plugin_catalog(state: State<'_, AppState>) -> Result<Vec<DirectoryPluginCatalogEntry>, String> {
+pub fn get_directory_plugin_catalog(
+    state: State<'_, AppState>,
+) -> Result<Vec<DirectoryPluginCatalogEntry>, String> {
     let rt = &state.directory_plugins;
     let roots = rt.plugin_roots.read();
     let mut out: Vec<DirectoryPluginCatalogEntry> = roots
@@ -372,11 +377,8 @@ pub fn get_directory_plugin_catalog(state: State<'_, AppState>) -> Result<Vec<Di
         .filter_map(|(pid, root)| {
             let manifest = OclivePluginManifest::load_from_dir(root).ok()?;
             let is_shell = manifest.shell.is_some();
-            let ui_slot_names: Vec<String> = manifest
-                .ui_slots
-                .iter()
-                .map(|u| u.slot.clone())
-                .collect();
+            let ui_slot_names: Vec<String> =
+                manifest.ui_slots.iter().map(|u| u.slot.clone()).collect();
             Some(DirectoryPluginCatalogEntry {
                 id: pid.clone(),
                 version: manifest.version.clone(),
@@ -419,7 +421,10 @@ impl From<RolePluginStateDto> for RolePluginState {
 }
 
 #[tauri::command]
-pub fn get_plugin_state(role_id: String, state: State<'_, AppState>) -> Result<RolePluginStateDto, String> {
+pub fn get_plugin_state(
+    role_id: String,
+    state: State<'_, AppState>,
+) -> Result<RolePluginStateDto, String> {
     Ok(state
         .directory_plugins
         .role_plugin_state_for(role_id.trim())
@@ -437,11 +442,13 @@ pub fn save_plugin_state(
 }
 
 #[tauri::command]
-pub fn reset_plugin_state_to_role_default(role_id: String, app: State<'_, AppState>) -> Result<(), String> {
+pub fn reset_plugin_state_to_role_default(
+    role_id: String,
+    app: State<'_, AppState>,
+) -> Result<(), String> {
     let path = app.storage.roles_dir().join(role_id.trim()).join("ui.json");
     let ui = UiConfig::load_from_path(&path);
-    app
-        .directory_plugins
+    app.directory_plugins
         .reset_role_plugin_state_from_ui(role_id.trim(), &ui)
 }
 

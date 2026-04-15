@@ -15,7 +15,7 @@ impl RemotePluginHttpConfig {
     pub fn connect_timeout(&self) -> Duration {
         let ms = self.timeout.as_millis() as u64;
         let quarter = ms / 4;
-        Duration::from_millis(quarter.max(500).min(15_000))
+        Duration::from_millis(quarter.clamp(500, 15_000))
     }
 
     /// `OCLIVE_REMOTE_PLUGIN_URL`：非空则启用远程插件 HTTP 客户端（与 `memory`/`emotion`/`event`/`prompt` 的 remote 配合）。

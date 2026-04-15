@@ -6,6 +6,6 @@ mod manifest;
 mod runtime;
 
 pub use manifest::{
-    BridgeConfig, OclivePluginManifest, ShellSection, UiSlotDecl, normalize_plugin_rel,
+    normalize_plugin_rel, BridgeConfig, OclivePluginManifest, ShellSection, UiSlotDecl,
 };
 pub use runtime::{DirectoryPluginRuntime, HostPluginsFile, PluginScanSummary};

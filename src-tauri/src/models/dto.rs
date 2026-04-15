@@ -3,10 +3,10 @@
 use crate::models::plugin_backends::PluginBackends;
 use crate::models::plugin_backends::PluginBackendsOverride;
 use crate::models::plugin_backends::PluginBackendsSourceMap;
-use crate::models::ui_config::UiConfig;
 use crate::models::role::IdentityBinding;
 use crate::models::role::LifeState;
 use crate::models::role::PersonalitySource;
+use crate::models::ui_config::UiConfig;
 use serde::{Deserialize, Serialize};
 
 pub const API_VERSION: u32 = 1;

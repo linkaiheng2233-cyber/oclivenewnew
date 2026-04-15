@@ -31,8 +31,8 @@ use serde_json::Value;
 use std::sync::Arc;
 
 use crate::error::{AppError, Result};
-pub use jsonrpc::RemoteRpcChannel;
 use jsonrpc::call_blocking;
+pub use jsonrpc::RemoteRpcChannel;
 
 /// 四类 `plugin_backends.* = remote` 共用一套配置，只读一次环境变量并打一条日志。
 pub(crate) struct PluginRemoteGroup {
@@ -86,7 +86,10 @@ pub fn invoke_directory_plugin_rpc_blocking(
     params: Value,
     channel: RemoteRpcChannel,
 ) -> Result<Value> {
-    let cfg = RemotePluginHttpConfig::for_directory_plugin_rpc(url, matches!(channel, RemoteRpcChannel::Llm));
+    let cfg = RemotePluginHttpConfig::for_directory_plugin_rpc(
+        url,
+        matches!(channel, RemoteRpcChannel::Llm),
+    );
     let client = reqwest::blocking::Client::builder()
         .connect_timeout(cfg.connect_timeout())
         .timeout(cfg.timeout)

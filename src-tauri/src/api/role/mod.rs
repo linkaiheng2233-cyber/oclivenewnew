@@ -5,6 +5,7 @@ mod interaction;
 mod runtime;
 
 use crate::error::AppError;
+use crate::infrastructure::storage::resolve_llm_backend_env_override;
 use crate::models::dto::{
     ClearSceneUserRelationRequest, GetPluginResolutionDebugRequest, GetRoleInfoRequest,
     PluginResolutionDebugInfo, RoleData, RoleInfo, RoleSummary, SceneLabelEntry,
@@ -15,7 +16,6 @@ use crate::models::dto::{
 use crate::models::plugin_backends::{
     EmotionBackend, EventBackend, LlmBackend, MemoryBackend, PromptBackend,
 };
-use crate::infrastructure::storage::resolve_llm_backend_env_override;
 use crate::models::role::IdentityBinding;
 use crate::state::AppState;
 use std::sync::Arc;

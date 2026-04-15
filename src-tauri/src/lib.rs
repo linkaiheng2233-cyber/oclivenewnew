@@ -95,7 +95,7 @@ fn plugin_asset_from_request_uri(uri: &str) -> Option<(String, String)> {
     let mut parts = path_only.split('/').filter(|s| !s.is_empty());
     let plugin_id = parts.next()?.to_string();
     let rest: Vec<&str> = parts.collect();
-    if rest.iter().any(|s| *s == "..") {
+    if rest.contains(&"..") {
         return None;
     }
     let rel = rest.join("/");
@@ -109,9 +109,9 @@ fn serve_ocliveplugin_asset(
     app: &AppHandle,
     request: &Request,
 ) -> Result<Response, Box<dyn std::error::Error>> {
-    let state = app.try_state::<state::AppState>().ok_or_else(|| {
-        Box::<dyn std::error::Error>::from("app state not ready")
-    })?;
+    let state = app
+        .try_state::<state::AppState>()
+        .ok_or_else(|| Box::<dyn std::error::Error>::from("app state not ready"))?;
     let uri = request.uri().to_string();
     let Some((plugin_id, rel)) = plugin_asset_from_request_uri(&uri) else {
         return ResponseBuilder::new()
@@ -137,9 +137,7 @@ fn serve_ocliveplugin_asset(
             .body(format!("unknown plugin_id={}", plugin_id).into_bytes());
     };
     let path = root.join(&rel);
-    let root_norm = root
-        .canonicalize()
-        .unwrap_or_else(|_| root.clone());
+    let root_norm = root.canonicalize().unwrap_or_else(|_| root.clone());
     let mut data = match fs::read(&path) {
         Ok(b) => b,
         Err(_) => {
@@ -238,7 +236,7 @@ pub fn run() {
     let _ = env_logger::try_init();
     tauri::Builder::default()
         .register_uri_scheme_protocol("ocliveplugin", |app, request| {
-            serve_ocliveplugin_asset(app, &request)
+            serve_ocliveplugin_asset(app, request)
         })
         .setup(|app| {
             let app_dir = app

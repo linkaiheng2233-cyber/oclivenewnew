@@ -83,19 +83,11 @@ pub struct DirectoryPluginSlots {
 impl DirectoryPluginSlots {
     #[must_use]
     pub fn is_empty(&self) -> bool {
-        self.memory
-            .as_ref()
-            .map_or(true, |s| s.trim().is_empty())
-            && self
-                .emotion
-                .as_ref()
-                .map_or(true, |s| s.trim().is_empty())
-            && self.event.as_ref().map_or(true, |s| s.trim().is_empty())
-            && self
-                .prompt
-                .as_ref()
-                .map_or(true, |s| s.trim().is_empty())
-            && self.llm.as_ref().map_or(true, |s| s.trim().is_empty())
+        self.memory.as_ref().is_none_or(|s| s.trim().is_empty())
+            && self.emotion.as_ref().is_none_or(|s| s.trim().is_empty())
+            && self.event.as_ref().is_none_or(|s| s.trim().is_empty())
+            && self.prompt.as_ref().is_none_or(|s| s.trim().is_empty())
+            && self.llm.as_ref().is_none_or(|s| s.trim().is_empty())
     }
 }
 
@@ -194,10 +186,22 @@ impl PluginBackendsOverride {
         let directory_plugins = match &self.directory_plugins {
             None => base.directory_plugins.clone(),
             Some(ov) => DirectoryPluginSlots {
-                memory: trimmed_or_fallback(ov.memory.as_deref(), base.directory_plugins.memory.as_deref()),
-                emotion: trimmed_or_fallback(ov.emotion.as_deref(), base.directory_plugins.emotion.as_deref()),
-                event: trimmed_or_fallback(ov.event.as_deref(), base.directory_plugins.event.as_deref()),
-                prompt: trimmed_or_fallback(ov.prompt.as_deref(), base.directory_plugins.prompt.as_deref()),
+                memory: trimmed_or_fallback(
+                    ov.memory.as_deref(),
+                    base.directory_plugins.memory.as_deref(),
+                ),
+                emotion: trimmed_or_fallback(
+                    ov.emotion.as_deref(),
+                    base.directory_plugins.emotion.as_deref(),
+                ),
+                event: trimmed_or_fallback(
+                    ov.event.as_deref(),
+                    base.directory_plugins.event.as_deref(),
+                ),
+                prompt: trimmed_or_fallback(
+                    ov.prompt.as_deref(),
+                    base.directory_plugins.prompt.as_deref(),
+                ),
                 llm: trimmed_or_fallback(ov.llm.as_deref(), base.directory_plugins.llm.as_deref()),
             },
         };

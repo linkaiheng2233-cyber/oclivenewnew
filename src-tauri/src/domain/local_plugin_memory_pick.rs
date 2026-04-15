@@ -11,7 +11,10 @@ pub struct LocalMemoryPick {
 }
 
 /// `ids` 可为任意顺序；内部会排序去重。`preferred` 为 trim 后非空则优先精确匹配。
-pub fn pick_local_memory_provider(mut ids: Vec<String>, preferred: Option<&str>) -> LocalMemoryPick {
+pub fn pick_local_memory_provider(
+    mut ids: Vec<String>,
+    preferred: Option<&str>,
+) -> LocalMemoryPick {
     ids.sort();
     ids.dedup();
     let pref = preferred.map(str::trim).filter(|s| !s.is_empty());
@@ -55,11 +58,14 @@ mod tests {
     #[test]
     fn empty_ids() {
         let p = pick_local_memory_provider(vec![], None);
-        assert_eq!(p, LocalMemoryPick {
-            provider_id: None,
-            hint_missed: false,
-            ambiguous_lexicographic: false,
-        });
+        assert_eq!(
+            p,
+            LocalMemoryPick {
+                provider_id: None,
+                hint_missed: false,
+                ambiguous_lexicographic: false,
+            }
+        );
         let p2 = pick_local_memory_provider(vec![], Some("x"));
         assert!(p2.hint_missed);
         assert!(p2.provider_id.is_none());

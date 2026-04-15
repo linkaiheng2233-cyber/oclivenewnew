@@ -264,8 +264,16 @@ mod tests {
         };
         let v2 = Arc::new(BuiltinMemoryRetrievalV2) as Arc<dyn MemoryRetrieval>;
         let local = LocalPluginMemoryRetrieval::new(v2.clone(), Some("demo.local".into()));
-        let a: Vec<_> = local.rank_memories(mk_input()).into_iter().map(|m| m.id).collect();
-        let b: Vec<_> = v2.rank_memories(mk_input()).into_iter().map(|m| m.id).collect();
+        let a: Vec<_> = local
+            .rank_memories(mk_input())
+            .into_iter()
+            .map(|m| m.id)
+            .collect();
+        let b: Vec<_> = v2
+            .rank_memories(mk_input())
+            .into_iter()
+            .map(|m| m.id)
+            .collect();
         assert_eq!(a, b);
     }
 }

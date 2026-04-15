@@ -68,8 +68,7 @@ fn apply_slot(slot: &str, sc: &SlotConfig, out: &mut PluginStateFile) {
         out.slot_order.insert(slot.to_string(), order);
     }
     if !hidden.is_empty() {
-        out
-            .disabled_slot_contributions
+        out.disabled_slot_contributions
             .insert(slot.to_string(), hidden);
     }
 }
@@ -167,7 +166,6 @@ impl RolePluginState {
 
     #[must_use]
     pub fn is_slot_contribution_disabled(&self, slot: &str, plugin_id: &str) -> bool {
-        self.slots
-            .is_slot_contribution_disabled(slot, plugin_id)
+        self.slots.is_slot_contribution_disabled(slot, plugin_id)
     }
 }

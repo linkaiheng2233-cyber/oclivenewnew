@@ -107,17 +107,18 @@ fn default_scan_roots(roles_dir: &Path, app_data: &Path, host: &HostPluginsFile)
     roots
 }
 
-pub fn scan_plugins(roles_dir: &Path, app_data: &Path, host: &HostPluginsFile) -> PluginScanSummary {
+pub fn scan_plugins(
+    roles_dir: &Path,
+    app_data: &Path,
+    host: &HostPluginsFile,
+) -> PluginScanSummary {
     let mut roots = HashMap::new();
     for r in default_scan_roots(roles_dir, app_data, host) {
         collect_plugin_dirs(&r, &mut roots);
     }
     let mut plugin_ids: Vec<String> = roots.keys().cloned().collect();
     plugin_ids.sort();
-    PluginScanSummary {
-        plugin_ids,
-        roots,
-    }
+    PluginScanSummary { plugin_ids, roots }
 }
 
 fn parse_ready_line(line: &str, prefix: &str) -> Option<String> {
@@ -202,14 +203,14 @@ impl DirectoryPluginRuntime {
     #[must_use]
     pub fn role_plugin_state_for(&self, role_id: &str) -> RolePluginState {
         let store = self.plugin_state_store.read();
-        store
-            .roles
-            .get(role_id)
-            .cloned()
-            .unwrap_or_default()
+        store.roles.get(role_id).cloned().unwrap_or_default()
     }
 
-    pub fn save_role_plugin_state(&self, role_id: &str, mut state: RolePluginState) -> Result<(), String> {
+    pub fn save_role_plugin_state(
+        &self,
+        role_id: &str,
+        mut state: RolePluginState,
+    ) -> Result<(), String> {
         self.sanitize_role_shell(&mut state);
         let mut store = self.plugin_state_store.write();
         store.roles.insert(role_id.trim().to_string(), state);
@@ -254,7 +255,11 @@ impl DirectoryPluginRuntime {
     }
 
     /// 用磁盘上的 `ui.json` 覆盖该角色的用户记录（「重置为角色包推荐」）。
-    pub fn reset_role_plugin_state_from_ui(&self, role_id: &str, ui: &UiConfig) -> Result<(), String> {
+    pub fn reset_role_plugin_state_from_ui(
+        &self,
+        role_id: &str,
+        ui: &UiConfig,
+    ) -> Result<(), String> {
         let mut new_state = RolePluginState::from_ui_config(ui);
         self.sanitize_role_shell(&mut new_state);
         let mut store = self.plugin_state_store.write();
@@ -298,7 +303,8 @@ impl DirectoryPluginRuntime {
             state.shell_plugin_id.clear();
             return;
         };
-        let ok = manifest.plugin_type.as_deref() == Some("ocliveplugin") && manifest.shell.is_some();
+        let ok =
+            manifest.plugin_type.as_deref() == Some("ocliveplugin") && manifest.shell.is_some();
         if !ok {
             log::warn!(
                 target: "oclive_plugin",
@@ -396,8 +402,11 @@ impl DirectoryPluginRuntime {
         let lines_clone = lines.clone();
         thread::spawn(move || {
             let r = BufReader::new(stdout);
-            for line in r.lines().flatten() {
-                lines_clone.lock().push(line);
+            for result in r.lines() {
+                match result {
+                    Ok(line) => lines_clone.lock().push(line),
+                    Err(_) => break,
+                }
             }
         });
         let deadline = Instant::now() + Duration::from_secs(30);
