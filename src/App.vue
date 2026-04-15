@@ -267,7 +267,7 @@ async function onSwitchRole(nextRoleId: string) {
     roleSwitching.value = true;
     await roleStore.switchRole(nextRoleId);
     await pluginStore.syncDirectoryPluginBootstrap();
-    hostEventBus.emit("role:switched", { roleId: nextRoleId });
+    hostEventBus.emitBuiltin("role:switched", { roleId: nextRoleId });
     applyResolvedNarrativeScene();
     await debugStore.loadDebugData();
     showToast("success", `已切换角色: ${nextRoleId}`);

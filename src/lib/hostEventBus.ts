@@ -13,15 +13,29 @@ export function clearHostEventSubscribedEvents(): void {
   subscribed = null;
 }
 
-/** 宿主与插件插槽共用的事件总线（内置事件名见文档）。未在 manifest `bridge.events` 中声明的内置事件不会广播。 */
+function shouldEmitBuiltin(type: string): boolean {
+  if (subscribed === null) {
+    return true;
+  }
+  return subscribed.has(type);
+}
+
+/**
+ * 宿主与插件插槽共用的事件总线。
+ * - `emitBuiltin`：仅用于宿主内置事件，受 manifest `bridge.events` 订阅过滤。
+ * - `emit`：用于插件自定义事件，不做订阅过滤，避免误伤插件内部通信。
+ */
 export const hostEventBus = {
   all: bus.all,
   on: bus.on.bind(bus),
   off: bus.off.bind(bus),
-  emit(type: string, event?: unknown) {
-    if (subscribed !== null && !subscribed.has(type)) {
+  emitBuiltin(type: string, event?: unknown) {
+    if (!shouldEmitBuiltin(type)) {
       return;
     }
+    bus.emit(type, event);
+  },
+  emit(type: string, event?: unknown) {
     bus.emit(type, event);
   },
 };

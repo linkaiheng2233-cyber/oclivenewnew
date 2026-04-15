@@ -244,7 +244,7 @@ export const useChatStore = defineStore(
             }
             roleStore.updateRelationState(res.relation_state);
           }
-          hostEventBus.emit("message:sent", {
+          hostEventBus.emitBuiltin("message:sent", {
             message: content,
             reply: pres.replyText,
           });

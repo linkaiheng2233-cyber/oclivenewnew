@@ -30,7 +30,7 @@ export function usePackUiTheme(): void {
       push("--fluent-accent", pc);
       push("--accent", pc);
       push("--text-accent", pc);
-      hostEventBus.emit("theme:changed", { primaryColor: pc });
+      hostEventBus.emitBuiltin("theme:changed", { primaryColor: pc });
     }
     const bg = t?.backgroundColor?.trim();
     if (bg) {
