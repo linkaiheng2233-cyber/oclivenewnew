@@ -1,6 +1,6 @@
 /**
  * Vue 插槽源码静态扫描（黑名单）。
- * 扩展规则时：在 `scanScriptAst` 的 `simple(...)` 回调中增加分支，并保持文案与 `ScanResult.warnings` 可读。
+ * 扩展规则时：优先在 `DANGEROUS_PATTERNS` 增加 token，再按需补充 AST 规则，保持文案可读。
  */
 import * as acorn from "acorn";
 import { simple } from "acorn-walk";
@@ -8,6 +8,17 @@ import { simple } from "acorn-walk";
 export interface ScanResult {
   warnings: string[];
 }
+
+export const DANGEROUS_PATTERNS = [
+  { token: "window.__TAURI__", warning: "检测到 `window.__TAURI__` / `window.tauri` 访问" },
+  { token: "window.tauri", warning: "检测到 `window.__TAURI__` / `window.tauri` 访问" },
+  { token: "fetch(", warning: "检测到 `fetch` 调用" },
+  { token: "XMLHttpRequest", warning: "检测到 `XMLHttpRequest`" },
+  { token: "document.cookie", warning: "检测到 `document.cookie`" },
+  { token: "localStorage.setItem", warning: "检测到 `localStorage` 读写" },
+  { token: "localStorage.getItem", warning: "检测到 `localStorage` 读写" },
+  { token: "eval(", warning: "检测到 `eval` 调用" },
+] as const;
 
 function extractScriptBodies(sfc: string): string[] {
   const out: string[] = [];
@@ -24,6 +35,18 @@ function pushDedupe(set: Set<string>, list: string[], msg: string): void {
   if (!set.has(msg)) {
     set.add(msg);
     list.push(msg);
+  }
+}
+
+function shouldRunAstScan(source: string): boolean {
+  return DANGEROUS_PATTERNS.some((p) => source.includes(p.token));
+}
+
+function scanByStringPatterns(source: string, dedupe: Set<string>, warnings: string[]): void {
+  for (const p of DANGEROUS_PATTERNS) {
+    if (source.includes(p.token)) {
+      pushDedupe(dedupe, warnings, p.warning);
+    }
   }
 }
 
@@ -99,6 +122,11 @@ function scanScriptAst(source: string, dedupe: Set<string>, warnings: string[]):
 export function scanVueComponentSource(source: string): ScanResult {
   const warnings: string[] = [];
   const dedupe = new Set<string>();
+  if (!shouldRunAstScan(source)) {
+    return { warnings };
+  }
+  // 先跑字符串黑名单（覆盖 template/inline 表达式），再用 AST 降低漏报。
+  scanByStringPatterns(source, dedupe, warnings);
   for (const block of extractScriptBodies(source)) {
     scanScriptAst(block, dedupe, warnings);
   }
