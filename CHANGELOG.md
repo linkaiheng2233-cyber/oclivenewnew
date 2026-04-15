@@ -2,6 +2,21 @@
 
 ## [Unreleased]
 
+### Added
+
+- 插件清单支持声明订阅的宿主事件（`shell.bridge.events` 或 `ui_slots[].bridge.events`），避免不必要的事件广播。
+- 设置页「常规」区域增加「强制 iframe 模式」开关，开启后所有插件界面统一使用 iframe 渲染，获得最高级别沙箱隔离。
+- 开发者模式下加载 Vue 插槽组件时，对源码进行静态安全扫描（基于 acorn），检测到危险 API 时弹出警告对话框，由用户决定是否继续。
+
+### Changed
+
+- 调整切换角色后的事件广播时机，确保插件订阅信息已同步再发送 `role:switched`。
+- 插件引导信息（`get_directory_plugin_bootstrap`）返回值增加 `subscribedHostEvents` 字段。
+
+### Fixed
+
+- 修复多个插槽组件并发拉取引导信息时事件订阅集合可能不一致的问题。
+
 ### Engineering
 
 - **共享 crate `crates/oclive_validation`**：`validate_disk_manifest`、`parse_hhmm`、`KnowledgePackConfigDisk` 等与磁盘 manifest 相关的校验与 DTO 单一来源；运行时依赖该 crate，编写器可用 **wasm**（`--features wasm`，目标 `wasm32-unknown-unknown`）调用 `validate_manifest_wasm`。

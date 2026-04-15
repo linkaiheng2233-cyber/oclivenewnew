@@ -66,6 +66,11 @@ pub async fn load_role_impl(
         .map_err(|e| e.to_frontend_error())?;
     let role = Arc::new(role);
 
+    state.directory_plugins.set_active_role_id(role_id);
+    state
+        .directory_plugins
+        .ensure_role_plugin_state(role_id, &role.ui_config);
+
     state.invalidate_personality_cache_for_role(role_id);
 
     state
@@ -179,6 +184,7 @@ pub async fn load_role_impl(
         plugin_backends_session_override,
         plugin_backends_effective,
         plugin_backends_effective_sources,
+        pack_ui_config: role.ui_config.clone(),
     })
 }
 
@@ -318,6 +324,7 @@ pub async fn get_role_info_impl(
         plugin_backends_effective_sources,
         knowledge_enabled,
         knowledge_chunk_count,
+        pack_ui_config: role.ui_config.clone(),
     })
 }
 

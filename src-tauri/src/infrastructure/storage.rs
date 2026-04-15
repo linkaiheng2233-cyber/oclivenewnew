@@ -6,7 +6,7 @@ use crate::error::{AppError, Result};
 use crate::models::role_manifest_disk::{disk_manifest_from_role, disk_manifest_to_role};
 use crate::models::{
     role_settings_disk::CURRENT_SETTINGS_SCHEMA_VERSION, DiskRoleManifest, DiskRoleSettings,
-    DiskSceneConfig, LlmBackend, Role,
+    DiskSceneConfig, LlmBackend, Role, UiConfig,
 };
 use chrono::Timelike;
 use oclive_validation::{
@@ -135,6 +135,7 @@ impl RoleStorage {
         .map_err(AppError::InvalidParameter)?;
 
         let mut role = disk_manifest_to_role(&disk);
+        role.ui_config = UiConfig::load_from_path(&role_dir.join("ui.json"));
         if should_load_knowledge(&disk, role_dir) {
             let idx = load_knowledge_index(role_dir, &disk)?;
             role.knowledge_index = Some(Arc::new(idx));
@@ -619,6 +620,7 @@ mod tests {
             min_runtime_version: None,
             dev_only: false,
             plugin_backends: crate::models::PluginBackends::default(),
+            ui_config: crate::models::UiConfig::default(),
             knowledge_index: None,
         };
 

@@ -11,8 +11,11 @@ import {
   type PluginBackends,
   type PluginBackendsSourceMap,
   type PluginBackendsOverride,
+  type PackUiConfig,
   type RoleInfo,
   type UserRelationDto,
+  emptyPackUiConfig,
+  normalizePackUiConfig,
 } from "../utils/tauri-api";
 import {
   normalizeInteractionMode,
@@ -68,6 +71,8 @@ type RoleInfoState = {
   knowledgeEnabled: boolean;
   /** 知识块条数 */
   knowledgeChunkCount: number;
+  /** 角色包 `ui.json` 规范化快照（主题 / 布局 / 插槽） */
+  packUiConfig: PackUiConfig;
 };
 
 function mapRoleInfo(info: RoleInfo): RoleInfoState {
@@ -114,6 +119,7 @@ function mapRoleInfo(info: RoleInfo): RoleInfoState {
     },
     knowledgeEnabled: info.knowledge_enabled ?? false,
     knowledgeChunkCount: info.knowledge_chunk_count ?? 0,
+    packUiConfig: normalizePackUiConfig(info.pack_ui_config),
   };
 }
 
@@ -156,6 +162,7 @@ export const useRoleStore = defineStore(
           event: "builtin",
           prompt: "builtin",
           llm: "ollama",
+          directory_plugins: {},
         },
         pluginBackendsSessionOverride: null,
         pluginBackendsEffective: {
@@ -164,6 +171,7 @@ export const useRoleStore = defineStore(
           event: "builtin",
           prompt: "builtin",
           llm: "ollama",
+          directory_plugins: {},
         },
         pluginBackendsEffectiveSources: {
           memory: "pack_default",
@@ -174,6 +182,7 @@ export const useRoleStore = defineStore(
         },
         knowledgeEnabled: false,
         knowledgeChunkCount: 0,
+        packUiConfig: emptyPackUiConfig(),
       } as RoleInfoState,
     }),
     actions: {

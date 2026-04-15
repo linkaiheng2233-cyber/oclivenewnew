@@ -2,8 +2,11 @@
 import { computed, nextTick, onBeforeUnmount, onMounted, ref, watch } from "vue";
 import AutonomousSceneNotice from "./components/AutonomousSceneNotice.vue";
 import HelpHint from "./components/HelpHint.vue";
-import CharacterInfo from "./components/CharacterInfo.vue";
+import RoleDetailView from "./views/RoleDetailView.vue";
 import ChatInput from "./components/ChatInput.vue";
+import ChatPluginToolbarSlots from "./components/ChatPluginToolbarSlots.vue";
+import PluginManagerPanel from "./views/PluginManagerPanel.vue";
+import SettingsView from "./views/SettingsView.vue";
 import ChatMessageList from "./components/ChatMessageList.vue";
 import DebugPanel from "./components/DebugPanel.vue";
 import RoleSelector from "./components/RoleSelector.vue";
@@ -15,11 +18,14 @@ import { useChatStore } from "./stores/chatStore";
 import { useDebugStore } from "./stores/debugStore";
 import { useRoleStore } from "./stores/roleStore";
 import { useUiStore } from "./stores/uiStore";
+import { usePluginStore } from "./stores/pluginStore";
 import { buildRelationDropdownOptions } from "./utils/relationOptions";
 import { useAppToast } from "./composables/useAppToast";
 import { useOcliveAppearance } from "./composables/useOcliveAppearance";
 import { useNarrativeScene } from "./composables/useNarrativeScene";
 import { useSceneDestination } from "./composables/useSceneDestination";
+import { usePackUiTheme } from "./composables/useTheme";
+import { hostEventBus } from "./lib/hostEventBus";
 import {
   loadRole,
   OCLIVE_DEFAULT_RELATION_SENTINEL,
@@ -30,9 +36,11 @@ import {
 } from "./utils/tauri-api";
 
 const roleStore = useRoleStore();
+usePackUiTheme();
 const chatStore = useChatStore();
 const debugStore = useDebugStore();
 const uiStore = useUiStore();
+const pluginStore = usePluginStore();
 const { toast, showToast } = useAppToast();
 const { themeCycleLabel, cycleTheme, bumpScale, scaleLabel } = useOcliveAppearance();
 const { applyResolvedNarrativeScene } = useNarrativeScene();
@@ -105,6 +113,7 @@ const messages = computed(() =>
 );
 
 const topMoreOpen = ref(false);
+const settingsViewOpen = ref(false);
 const topBarRef = ref<HTMLElement | null>(null);
 let morePanelClickListenTimer: ReturnType<typeof setTimeout> | null = null;
 
@@ -121,6 +130,19 @@ function onDocumentClickCloseMore(e: MouseEvent) {
 const sceneHistorySplitIndex = computed(() =>
   chatStore.sceneHistorySplitForRoleScene(roleStore.currentRoleId, uiStore.sceneId),
 );
+
+/** 角色包 `ui.json` → layout；空字段视为 left / bottom */
+const packLayoutResolved = computed(() => {
+  const l = roleStore.roleInfo.packUiConfig?.layout ?? {
+    sidebar: "",
+    chatInput: "",
+  };
+  const sidebar = l.sidebar === "right" ? "right" : "left";
+  const chatInput = l.chatInput === "top" ? "top" : "bottom";
+  return { sidebar, chatInput };
+});
+const sidebarRight = computed(() => packLayoutResolved.value.sidebar === "right");
+const chatInputTop = computed(() => packLayoutResolved.value.chatInput === "top");
 const roleName = computed(() => roleStore.roleInfo.name || "沐沐");
 const emotion = computed(() => roleStore.roleInfo.currentEmotion || "neutral");
 
@@ -159,6 +181,7 @@ async function initialize() {
   try {
     await roleStore.loadRoles();
     await loadRole(roleStore.currentRoleId);
+    await pluginStore.refresh();
     await roleStore.refreshRoleInfo();
     applyResolvedNarrativeScene();
     await debugStore.loadDebugData();
@@ -243,6 +266,8 @@ async function onSwitchRole(nextRoleId: string) {
   try {
     roleSwitching.value = true;
     await roleStore.switchRole(nextRoleId);
+    await pluginStore.syncDirectoryPluginBootstrap();
+    hostEventBus.emit("role:switched", { roleId: nextRoleId });
     applyResolvedNarrativeScene();
     await debugStore.loadDebugData();
     showToast("success", `已切换角色: ${nextRoleId}`);
@@ -283,6 +308,7 @@ async function onPackImported(roleId: string) {
   try {
     roleStore.currentRoleId = roleId;
     await loadRole(roleId);
+    await pluginStore.refresh();
     await roleStore.refreshRoleInfo();
     await roleStore.loadRoles();
     applyResolvedNarrativeScene();
@@ -317,6 +343,16 @@ async function onReloadPolicy() {
 
 function onHotkey(e: KeyboardEvent) {
   if (e.key === "Escape") {
+    if (pluginStore.panelVisible) {
+      e.preventDefault();
+      pluginStore.closePanel();
+      return;
+    }
+    if (settingsViewOpen.value) {
+      e.preventDefault();
+      settingsViewOpen.value = false;
+      return;
+    }
     if (topMoreOpen.value) {
       e.preventDefault();
       topMoreOpen.value = false;
@@ -327,6 +363,11 @@ function onHotkey(e: KeyboardEvent) {
       debugStore.toggle();
       return;
     }
+  }
+  if (e.ctrlKey && e.shiftKey && e.key.toLowerCase() === "f") {
+    e.preventDefault();
+    void pluginStore.openPanel();
+    return;
   }
   if (e.ctrlKey && e.shiftKey && e.key.toLowerCase() === "d") {
     e.preventDefault();
@@ -526,6 +567,22 @@ onBeforeUnmount(() => {
 
           <div class="more-tile more-tile--action">
             <div class="more-tile-head">
+              <span class="more-label">设置</span>
+              <HelpHint text="应用内设置：外观与交互说明见「界面」瓦片；插件扩展页可嵌入目录插件 settings.panel 配置页。" />
+            </div>
+            <div class="more-tile-body">
+              <button
+                type="button"
+                class="more-debug-btn more-debug-btn--fill"
+                @click="settingsViewOpen = true"
+              >
+                打开设置
+              </button>
+            </div>
+          </div>
+
+          <div class="more-tile more-tile--action">
+            <div class="more-tile-head">
               <span class="more-label">调试</span>
               <HelpHint
                 text="开发者与排错用：好感、记忆、策略重载等。Ctrl+Shift+D 可开关调试窗；顶栏「更多」展开时按 Esc 先收起本栏。"
@@ -605,14 +662,21 @@ onBeforeUnmount(() => {
     />
 
     <div class="main-content">
-      <div class="split-row" :class="{ 'split-row--narrow': !wideSplitLayout }">
+      <div
+        class="split-row"
+        :class="{
+          'split-row--narrow': !wideSplitLayout,
+          'split-row--sidebar-right': sidebarRight,
+        }"
+      >
         <aside class="left-pane">
-          <CharacterInfo
+          <RoleDetailView
             class="character-block"
             :layout="wideSplitLayout ? 'sidebar' : 'stack'"
             :role-id="roleStore.currentRoleId"
             :name="roleName"
             :emotion="emotion"
+            :bootstrap-epoch="pluginStore.bootstrapEpoch"
           />
           <div class="left-pane-status" aria-label="好感度">
             好感度 {{ Math.round(roleStore.roleInfo.favorability) }} {{ statusHeart }}
@@ -632,7 +696,7 @@ onBeforeUnmount(() => {
             @dismiss="dismissAutonomousSceneNotice"
           />
         </aside>
-        <div class="right-pane">
+        <div class="right-pane" :class="{ 'right-pane--input-top': chatInputTop }">
           <div class="chat-scroll-wrap chat-list">
             <transition name="fade">
               <ChatMessageList
@@ -646,6 +710,7 @@ onBeforeUnmount(() => {
             </transition>
           </div>
           <section class="input-area">
+            <ChatPluginToolbarSlots :bootstrap-epoch="pluginStore.bootstrapEpoch" />
             <SceneTravelBars
               v-if="roleStore.interactionImmersive"
               :together-visible="togetherTravelBarVisible"
@@ -681,6 +746,10 @@ onBeforeUnmount(() => {
     />
 
     <Toast :show="toast.show" :type="toast.type" :message="toast.message" />
+
+    <PluginManagerPanel />
+
+    <SettingsView :visible="settingsViewOpen" @close="settingsViewOpen = false" />
     </div>
   </main>
 </template>
@@ -1102,6 +1171,18 @@ onBeforeUnmount(() => {
 .split-row--narrow {
   flex-direction: column;
 }
+/* 宽屏：立绘在右；窄屏：对话在上、立绘在下 */
+.split-row--sidebar-right:not(.split-row--narrow) {
+  flex-direction: row-reverse;
+}
+.split-row--sidebar-right:not(.split-row--narrow) .left-pane {
+  border-right: none;
+  border-left: 1px solid var(--border-light);
+  box-shadow: inset 1px 0 0 color-mix(in srgb, var(--border-light) 65%, transparent);
+}
+.split-row--sidebar-right.split-row--narrow {
+  flex-direction: column-reverse;
+}
 .left-pane {
   flex: 0 0 clamp(248px, 28vw, 360px);
   max-width: 40%;
@@ -1153,6 +1234,9 @@ onBeforeUnmount(() => {
   flex-direction: column;
   overflow: hidden;
   background: var(--bg-primary);
+}
+.right-pane--input-top {
+  flex-direction: column-reverse;
 }
 /* 聊天记录仅在右侧栏滚动；底部多留空，避免气泡+阴影被输入区视觉上压住 */
 .chat-scroll-wrap {

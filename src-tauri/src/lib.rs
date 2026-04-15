@@ -13,6 +13,56 @@ use std::path::{Path, PathBuf};
 use tauri::http::{Request, Response, ResponseBuilder};
 use tauri::{AppHandle, Manager};
 
+use crate::infrastructure::directory_plugins::OclivePluginManifest;
+
+/// 向插件 HTML 注入 `window.OclivePluginBridge`（manifest 中 `bridge` + 白名单）。
+fn inject_plugin_bridge_script(
+    html: &str,
+    plugin_id: &str,
+    asset_rel: &str,
+    manifest: &OclivePluginManifest,
+) -> String {
+    if !manifest.should_inject_bridge(asset_rel) {
+        return html.to_string();
+    }
+    let Some(b) = manifest.bridge_for_asset_rel(asset_rel) else {
+        return html.to_string();
+    };
+    let inv = serde_json::to_string(&b.invoke).unwrap_or_else(|_| "[]".to_string());
+    let ev = serde_json::to_string(&b.events).unwrap_or_else(|_| "[]".to_string());
+    let pid = serde_json::to_string(plugin_id).unwrap_or_else(|_| "\"\"".to_string());
+    let arel = serde_json::to_string(asset_rel).unwrap_or_else(|_| "\"\"".to_string());
+    let script = format!(
+        "<script>(function(){{\
+var PLUGIN_ID={pid};var ASSET_REL={arel};var INV={inv};var EVT={ev};\
+var CMD_PERM={{\"get_conversation\":\"read:conversation\",\"get_roles\":\"read:roles\",\"get_current_role\":\"read:current_role\",\"update_memory\":\"write:memory\",\"delete_memory\":\"write:memory\",\"update_emotion\":\"write:emotion\",\"update_event\":\"write:event\",\"update_prompt\":\"write:prompt\"}};\
+function bridgeAllowed(n){{if(INV.indexOf(n)>=0)return true;var p=CMD_PERM[n];return p&&INV.indexOf(p)>=0;}}\
+function invoke(n,p){{if(!bridgeAllowed(n))return Promise.reject(new Error('invoke denied:'+n));\
+var _inv=window.__TAURI__&&(window.__TAURI__.invoke||(window.__TAURI__.tauri&&window.__TAURI__.tauri.invoke));\
+if(!_inv)return Promise.reject(new Error('no invoke API'));\
+return _inv('plugin_bridge_invoke',{{req:{{pluginId:PLUGIN_ID,assetRel:ASSET_REL,command:n,params:p!=null?p:{{}}}}}});}}\
+function listen(e,c){{if(!EVT.includes(e))return Promise.reject(new Error('event denied:'+e));\
+var T=window.__TAURI__;var t=T&&(T.event||(T.tauri&&T.tauri.event));if(!t)return Promise.reject(new Error('no event API'));\
+return t.listen(e,c);}}\
+window.OclivePluginBridge={{invoke:invoke,listen:listen,allowedInvoke:INV,allowedEvents:EVT}};\
+}})();</script>",
+        pid = pid,
+        arel = arel,
+        inv = inv,
+        ev = ev
+    );
+    let lower = html.to_ascii_lowercase();
+    if let Some(idx) = lower.rfind("</body>") {
+        let mut out = String::with_capacity(html.len() + script.len());
+        out.push_str(&html[..idx]);
+        out.push_str(&script);
+        out.push_str(&html[idx..]);
+        out
+    } else {
+        format!("{html}{script}")
+    }
+}
+
 fn mime_for_plugin_asset(rel: &str) -> &'static str {
     let ext = Path::new(rel)
         .extension()
@@ -69,6 +119,16 @@ fn serve_ocliveplugin_asset(
             .mimetype("text/plain; charset=utf-8")
             .body(b"unknown uri".to_vec());
     };
+    if state
+        .directory_plugins
+        .plugin_state_snapshot()
+        .is_plugin_disabled(plugin_id.trim())
+    {
+        return ResponseBuilder::new()
+            .status(403)
+            .mimetype("text/plain; charset=utf-8")
+            .body(b"plugin disabled".to_vec());
+    }
     let roots = state.directory_plugins.plugin_roots.read();
     let Some(root) = roots.get(&plugin_id) else {
         return ResponseBuilder::new()
@@ -80,7 +140,7 @@ fn serve_ocliveplugin_asset(
     let root_norm = root
         .canonicalize()
         .unwrap_or_else(|_| root.clone());
-    let data = match fs::read(&path) {
+    let mut data = match fs::read(&path) {
         Ok(b) => b,
         Err(_) => {
             return ResponseBuilder::new()
@@ -95,6 +155,14 @@ fn serve_ocliveplugin_asset(
             .status(403)
             .mimetype("text/plain; charset=utf-8")
             .body(b"forbidden".to_vec());
+    }
+    if mime_for_plugin_asset(&rel).starts_with("text/html") {
+        if let Ok(manifest) = OclivePluginManifest::load_from_dir(root) {
+            if let Ok(s) = String::from_utf8(data.clone()) {
+                let injected = inject_plugin_bridge_script(&s, &plugin_id, &rel, &manifest);
+                data = injected.into_bytes();
+            }
+        }
     }
     ResponseBuilder::new()
         .status(200)
@@ -217,7 +285,14 @@ pub fn run() {
             api::event::create_event,
             api::policy::reload_policy_plugins,
             api::directory_plugin::get_directory_plugin_bootstrap,
+            api::directory_plugin::read_plugin_asset_text,
+            api::directory_plugin::is_host_event_subscribed,
+            api::directory_plugin::get_directory_plugin_catalog,
+            api::directory_plugin::get_plugin_state,
+            api::directory_plugin::save_plugin_state,
+            api::directory_plugin::reset_plugin_state_to_role_default,
             api::directory_plugin::directory_plugin_invoke,
+            api::plugin_bridge::plugin_bridge_invoke,
         ])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");

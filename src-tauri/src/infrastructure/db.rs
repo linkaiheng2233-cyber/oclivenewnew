@@ -633,6 +633,17 @@ impl DbManager {
         Ok(())
     }
 
+    /// 删除指定角色的长期记忆（`id` 须属于该 `role_id`）
+    pub async fn delete_memory_for_role(&self, role_id: &str, memory_id: &str) -> Result<bool> {
+        let r = sqlx::query("DELETE FROM long_term_memory WHERE id = ? AND role_id = ?")
+            .bind(memory_id)
+            .bind(role_id)
+            .execute(&self.pool)
+            .await
+            .map_err(|e| AppError::DatabaseError(e.to_string()))?;
+        Ok(r.rows_affected() > 0)
+    }
+
     // ===== 性格操作 =====
 
     /// 保存性格向量

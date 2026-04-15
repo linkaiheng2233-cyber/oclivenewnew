@@ -27,7 +27,7 @@
 }
 ```
 
-重启应用后，若内置 UI 被整壳替换，应看到示例页；页面会调用 `get_directory_plugin_bootstrap` 并打印 JSON。
+重启应用后，若内置 UI 被整壳替换，应看到示例页；页面会经 **`OclivePluginBridge`** 调用 `get_directory_plugin_bootstrap` 并打印 JSON。`manifest.json` 含 **`"type": "ocliveplugin"`** 与 **`shell.bridge.invoke`**（含 `send_message`、`read:conversation` 等权限示例），用于接管主对话能力。
 
 ## 与 `plugin_backends` 联调
 

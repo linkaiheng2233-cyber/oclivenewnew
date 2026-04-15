@@ -45,7 +45,7 @@
 | **角色包** | `roles/` 下每角色一目录；**唯一对接面**为磁盘上的包目录（或 zip 解压后同等结构） |
 | **角色包编写器** | **独立仓库**（例如与本仓库**同级**目录 `oclive-pack-editor`），只负责产出包，不引用本仓库源码；多根工作区可用根目录 `oclive-pack-editor.code-workspace` 同时打开两项目 |
 | **启动器** | **独立仓库** [oclive-launcher](https://github.com/linkaiheng2233-cyber/oclive-launcher)：统一配置编写器与运行时路径、为 oclive 注入 **`OCLIVE_ROLES_DIR`**，并支持 **从 zip 安装角色包**（选择 `settings.json` 的 Ollama `model`、可选覆盖、**`ollama pull`**） |
-| **扩展** | 见 [creator-docs/plugin-and-architecture/EXTENSION_POINTS.md](creator-docs/plugin-and-architecture/EXTENSION_POINTS.md)；HTTP 侧车见 [creator-docs/plugin-and-architecture/CREATOR_PLUGIN_ARCHITECTURE.md](creator-docs/plugin-and-architecture/CREATOR_PLUGIN_ARCHITECTURE.md) |
+| **扩展** | 见 [creator-docs/plugin-and-architecture/EXTENSION_POINTS.md](creator-docs/plugin-and-architecture/EXTENSION_POINTS.md)；HTTP 侧车见 [creator-docs/plugin-and-architecture/CREATOR_PLUGIN_ARCHITECTURE.md](creator-docs/plugin-and-architecture/CREATOR_PLUGIN_ARCHITECTURE.md)；**目录式插件**（整壳 / 嵌入插槽、manifest）见 [creator-docs/plugin-and-architecture/DIRECTORY_PLUGINS.md](creator-docs/plugin-and-architecture/DIRECTORY_PLUGINS.md) |
 
 **契约与版本（摘要）**：`manifest.min_runtime_version`、根对象顶层键白名单、`validate_disk_manifest` 等以 [PACK_VERSIONING.md](creator-docs/role-pack/PACK_VERSIONING.md) 与 `RoleStorage::load_role` 为准。编写器侧 **`HOST_RUNTIME_VERSION`**（`oclive-pack-editor`）应与 **`src-tauri/Cargo.toml` 的 `version`** 一致。
 
@@ -67,6 +67,8 @@
 ## 开发
 
 本机调试外部角色目录时，可设置环境变量 **`OCLIVE_ROLES_DIR`** 指向 **roles 根**（其下为各 `角色id/` 子目录，内含 `manifest.json`）。详见 [roles/README_MANIFEST.md](roles/README_MANIFEST.md) 与 [creator-docs/getting-started/CREATOR_WORKFLOW.md](creator-docs/getting-started/CREATOR_WORKFLOW.md)。
+
+**插件开发（目录式插件）**：支持以 **Vue 单文件组件** 作为嵌入插槽 UI，契约与整壳、iframe 回退、事件订阅与安全选项见 **[DIRECTORY_PLUGINS.md](creator-docs/plugin-and-architecture/DIRECTORY_PLUGINS.md)**。
 
 ```bash
 npm install

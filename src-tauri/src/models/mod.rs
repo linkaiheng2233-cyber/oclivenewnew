@@ -13,6 +13,7 @@ pub mod role;
 pub mod role_manifest_disk;
 pub mod role_settings_disk;
 pub mod scene_disk;
+pub mod ui_config;
 
 pub use chat::*;
 pub use dto::*;
@@ -29,3 +30,4 @@ pub use role::*;
 pub use role_manifest_disk::DiskRoleManifest;
 pub use role_settings_disk::DiskRoleSettings;
 pub use scene_disk::{DiskSceneConfig, DiskSceneTimeWindow};
+pub use ui_config::{LayoutConfig, SlotConfig, ThemeConfig, UiConfig, UiSlots};

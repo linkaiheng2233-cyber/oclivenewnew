@@ -5,6 +5,7 @@ pub mod export;
 pub mod jump_monologue;
 pub mod memory;
 pub mod monologue;
+pub mod plugin_bridge;
 pub mod policy;
 pub mod role;
 pub mod role_pack;
@@ -15,6 +16,7 @@ pub use chat::send_message;
 pub use directory_plugin::{
     directory_plugin_invoke, get_directory_plugin_bootstrap,
 };
+pub use plugin_bridge::plugin_bridge_invoke;
 pub use event::{create_event, query_events};
 pub use export::export_chat_logs;
 pub use memory::query_memories;

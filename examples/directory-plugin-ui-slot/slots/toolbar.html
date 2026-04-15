@@ -1,0 +1,35 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="utf-8" />
+    <title>toolbar slot</title>
+    <style>
+      body {
+        margin: 0;
+        padding: 4px 8px;
+        font: 12px/1.4 system-ui, sans-serif;
+        color: #e8e8ec;
+        background: transparent;
+      }
+    </style>
+  </head>
+  <body>
+    <span id="label">插件工具栏</span>
+    <script>
+      (function () {
+        var el = document.getElementById("label");
+        if (!window.OclivePluginBridge) {
+          el.textContent = "无 OclivePluginBridge";
+          return;
+        }
+        window.OclivePluginBridge.invoke("list_roles", {})
+          .then(function (rows) {
+            el.textContent = "角色数: " + (Array.isArray(rows) ? rows.length : "?");
+          })
+          .catch(function (e) {
+            el.textContent = String(e && e.message ? e.message : e);
+          });
+      })();
+    </script>
+  </body>
+</html>

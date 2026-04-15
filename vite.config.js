@@ -7,6 +7,10 @@ const host = process.env.TAURI_DEV_HOST;
 export default defineConfig(async () => ({
   plugins: [vue()],
 
+  optimizeDeps: {
+    include: ["vue3-sfc-loader", "mitt"],
+  },
+
   build: {
     rollupOptions: {
       output: {
@@ -16,6 +20,7 @@ export default defineConfig(async () => ({
           if (id.includes("@tauri-apps")) return "vendor-tauri";
           if (id.includes("vue-virtual-scroller")) return "vendor-scroller";
           if (id.includes("pinia")) return "vendor-pinia";
+          if (id.includes("vue3-sfc-loader")) return "vendor-vue-sfc";
           if (id.includes("/vue/") || id.includes("@vue/")) return "vendor-vue";
         },
       },

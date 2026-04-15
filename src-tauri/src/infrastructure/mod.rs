@@ -9,6 +9,7 @@ pub mod llm;
 pub mod llm_params;
 pub mod ollama_client;
 pub mod ollama_timeouts;
+pub mod plugin_state;
 pub mod remote_plugin;
 pub mod repositories;
 pub mod role_pack;

@@ -3,6 +3,7 @@ use std::collections::HashMap;
 
 use super::knowledge::KnowledgeIndex;
 use super::plugin_backends::PluginBackends;
+use super::ui_config::UiConfig;
 pub use oclive_validation::{
     IdentityBinding, LifeAvailability, LifeScheduleDisk, LifeScheduleEntryDisk, LifeTrajectoryDisk,
     PersonalitySource,
@@ -209,6 +210,9 @@ pub struct Role {
     /// `knowledge/` 加载后的索引（仅内存；由 [`crate::infrastructure::storage::RoleStorage`] 填充）
     #[serde(skip)]
     pub knowledge_index: Option<Arc<KnowledgeIndex>>,
+    /// 角色包 `ui.json`（仅内存；由 [`crate::infrastructure::storage::RoleStorage`] 填充）
+    #[serde(skip)]
+    pub ui_config: UiConfig,
 }
 
 impl Default for Role {
@@ -245,6 +249,7 @@ impl Default for Role {
             dev_only: false,
             plugin_backends: PluginBackends::default(),
             knowledge_index: None,
+            ui_config: UiConfig::default(),
         }
     }
 }

@@ -158,15 +158,26 @@ export interface LifeStateDto {
   preferred_scene_id: string | null;
 }
 
+/** 与 `plugin_backends.directory_plugins` 一致（snake_case JSON 字段） */
+export interface DirectoryPluginSlots {
+  memory?: string | null;
+  emotion?: string | null;
+  event?: string | null;
+  prompt?: string | null;
+  llm?: string | null;
+}
+
 /** 与 `settings.json` → `plugin_backends` 一致（snake_case，与后端 serde 对齐） */
 export interface PluginBackends {
-  memory: "builtin" | "builtin_v2" | "remote" | "local";
+  memory: "builtin" | "builtin_v2" | "remote" | "local" | "directory";
   /** `memory === "local"` 时可选：与 `_local_plugins` 中 descriptor 的 `provider_id` 一致 */
   local_memory_provider_id?: string | null;
-  emotion: "builtin" | "builtin_v2" | "remote";
-  event: "builtin" | "builtin_v2" | "remote";
-  prompt: "builtin" | "builtin_v2" | "remote";
-  llm: "ollama" | "remote";
+  emotion: "builtin" | "builtin_v2" | "remote" | "directory";
+  event: "builtin" | "builtin_v2" | "remote" | "directory";
+  prompt: "builtin" | "builtin_v2" | "remote" | "directory";
+  llm: "ollama" | "remote" | "directory";
+  /** 各模块为 `directory` 时对应的 manifest `id`（见 DIRECTORY_PLUGINS.md） */
+  directory_plugins?: DirectoryPluginSlots;
 }
 
 export interface PluginBackendsOverride {
@@ -176,6 +187,8 @@ export interface PluginBackendsOverride {
   event?: PluginBackends["event"] | null;
   prompt?: PluginBackends["prompt"] | null;
   llm?: PluginBackends["llm"] | null;
+  /** 会话级与包内按槽合并（当前 UI 未编辑；仅展示与调试） */
+  directory_plugins?: DirectoryPluginSlots | null;
 }
 
 export type PluginBackendSource = "pack_default" | "session_override" | "env_override";
@@ -198,7 +211,7 @@ export interface PluginResolutionDebugInfo {
   plugin_backends_session_override?: PluginBackendsOverride | null;
   plugin_backends_effective: PluginBackends;
   plugin_backends_effective_sources: PluginBackendsSourceMap;
-  llm_env_override?: "ollama" | "remote" | null;
+  llm_env_override?: string | null;
   remote_plugin_url_configured: boolean;
   remote_llm_url_configured: boolean;
   local_provider_ids: string[];
@@ -212,6 +225,81 @@ export interface PluginResolutionDebugInfo {
  */
 /** `evolution.personality_source` */
 export type PersonalitySource = "vector" | "profile";
+
+/** 角色包根目录 `ui.json`（与后端 `UiConfig` 对齐；插槽键含点号） */
+export interface PackUiSlotConfig {
+  order: string[];
+  visible: string[];
+}
+
+export interface PackUiSlots {
+  chat_toolbar: PackUiSlotConfig;
+  "settings.panel": PackUiSlotConfig;
+  "role.detail": PackUiSlotConfig;
+}
+
+export interface PackUiTheme {
+  primaryColor?: string;
+  backgroundColor?: string;
+  fontFamily?: string;
+}
+
+export interface PackUiLayout {
+  sidebar?: string;
+  chatInput?: string;
+}
+
+export interface PackUiConfig {
+  shell: string;
+  theme: PackUiTheme;
+  layout: PackUiLayout;
+  slots: PackUiSlots;
+}
+
+export function emptyPackUiConfig(): PackUiConfig {
+  return {
+    shell: "",
+    theme: { primaryColor: "", backgroundColor: "", fontFamily: "" },
+    layout: { sidebar: "", chatInput: "" },
+    slots: {
+      chat_toolbar: { order: [], visible: [] },
+      "settings.panel": { order: [], visible: [] },
+      "role.detail": { order: [], visible: [] },
+    },
+  };
+}
+
+export function normalizePackUiConfig(
+  raw: PackUiConfig | undefined | null,
+): PackUiConfig {
+  const e = emptyPackUiConfig();
+  if (!raw) return e;
+  const slots = raw.slots;
+  const slot = (k: keyof PackUiSlots): PackUiSlotConfig => {
+    const s = slots?.[k];
+    return {
+      order: Array.isArray(s?.order) ? s!.order.map(String) : [],
+      visible: Array.isArray(s?.visible) ? s!.visible.map(String) : [],
+    };
+  };
+  return {
+    shell: typeof raw.shell === "string" ? raw.shell : e.shell,
+    theme: {
+      primaryColor: raw.theme?.primaryColor?.trim() ?? "",
+      backgroundColor: raw.theme?.backgroundColor?.trim() ?? "",
+      fontFamily: raw.theme?.fontFamily?.trim() ?? "",
+    },
+    layout: {
+      sidebar: (raw.layout?.sidebar ?? "").trim().toLowerCase(),
+      chatInput: (raw.layout?.chatInput ?? "").trim().toLowerCase(),
+    },
+    slots: {
+      chat_toolbar: slot("chat_toolbar"),
+      "settings.panel": slot("settings.panel"),
+      "role.detail": slot("role.detail"),
+    },
+  };
+}
 
 export interface RoleData {
   role_id: string;
@@ -255,6 +343,8 @@ export interface RoleData {
   plugin_backends_effective?: PluginBackends;
   /** 叠加后的后端来源（pack/session/env） */
   plugin_backends_effective_sources?: PluginBackendsSourceMap;
+  /** 角色包 `ui.json`（主题、布局、插槽） */
+  pack_ui_config: PackUiConfig;
 }
 
 export interface SceneLabelEntry {
@@ -312,6 +402,8 @@ export interface RoleInfo {
   knowledge_enabled?: boolean;
   /** 知识块条数；未加载索引时为 0 */
   knowledge_chunk_count?: number;
+  /** 角色包 `ui.json`（主题、布局、插槽） */
+  pack_ui_config: PackUiConfig;
 }
 
 /** `switch_scene` 扁平化返回：RoleInfo 字段 + 可选场景欢迎语 */
@@ -489,6 +581,7 @@ export async function setRoleInteractionMode(
 export async function setSessionPluginBackend(
   roleId: string,
   module: "memory" | "emotion" | "event" | "prompt" | "llm",
+  /** 与后端 `parse_backend_wire` 一致，如 `builtin_v2`、`directory`、`remote` */
   backend?: string | null,
   localMemoryProviderId?: string,
   sessionId?: string | null,
@@ -641,19 +734,126 @@ export async function exportChatLogs(params: {
   });
 }
 
-/** 目录插件启动引导（整壳 URL、已扫描插件 id、开发者模式）。 */
+/** 嵌入主界面插槽（`chat_toolbar` / `settings.panel`），由 bootstrap 返回。 */
+export interface PluginUiSlotInfo {
+  pluginId: string;
+  slot: string;
+  /** manifest `ui_slots[].entry`（相对插件根） */
+  entry: string;
+  /** manifest `vueComponent`；存在时优先原生 Vue，失败则回退 `url` iframe */
+  vueComponent?: string | null;
+  url: string;
+}
+
+/** 读取目录插件根下文本文件（宿主编译 `.vue` 等）。 */
+export async function readPluginAssetText(
+  pluginId: string,
+  rel: string,
+): Promise<string> {
+  return invokeWithFriendlyError<string>("read_plugin_asset_text", {
+    pluginId,
+    rel,
+  });
+}
+
+/** 目录插件启动引导（整壳 URL、已扫描插件 id、开发者模式、UI 插槽）。 */
 export interface DirectoryPluginBootstrap {
   shellUrl?: string | null;
   shellPluginId?: string | null;
   pluginIds: string[];
   developerMode: boolean;
+  /** 当前角色下已启用插件在 manifest `bridge.events` 中声明的宿主事件名。 */
+  subscribedHostEvents: string[];
+  uiSlots: PluginUiSlotInfo[];
 }
 
-export async function getDirectoryPluginBootstrap(): Promise<DirectoryPluginBootstrap> {
+export async function getDirectoryPluginBootstrap(
+  roleId?: string | null,
+): Promise<DirectoryPluginBootstrap> {
   return invokeWithFriendlyError<DirectoryPluginBootstrap>(
     "get_directory_plugin_bootstrap",
+    { role_id: roleId ?? null },
+  );
+}
+
+export async function isHostEventSubscribed(
+  event: string,
+  roleId?: string | null,
+): Promise<boolean> {
+  return invokeWithFriendlyError<boolean>("is_host_event_subscribed", {
+    event,
+    role_id: roleId ?? null,
+  });
+}
+
+/** 与 `app_data/plugin_state.json` 中单角色 slots 段一致（snake_case）。 */
+export interface PluginStateFile {
+  disabled_plugins: string[];
+  slot_order: Record<string, string[]>;
+  disabled_slot_contributions: Record<string, string[]>;
+  /** 为真时忽略 `vueComponent`，嵌入插槽仅用 iframe。 */
+  force_iframe_mode?: boolean;
+}
+
+/** 单角色的目录插件 UI 状态（含整壳 id，与后端 `RolePluginStateDto` 一致）。 */
+export interface RolePluginState extends PluginStateFile {
+  shellPluginId: string;
+}
+
+/** 角色包根目录 `ui.json`（与编写器 / 后端 `UiConfig` 一致）。 */
+export interface SlotConfig {
+  order: string[];
+  visible: string[];
+}
+
+export interface UiConfig {
+  shell: string;
+  slots: {
+    chat_toolbar: SlotConfig;
+    "settings.panel": SlotConfig;
+    "role.detail": SlotConfig;
+  };
+}
+
+export interface DirectoryPluginCatalogEntry {
+  id: string;
+  version: string;
+  pluginType?: string | null;
+  isShell: boolean;
+  uiSlotNames: string[];
+  provides: string[];
+}
+
+export async function getDirectoryPluginCatalog(): Promise<DirectoryPluginCatalogEntry[]> {
+  return invokeWithFriendlyError<DirectoryPluginCatalogEntry[]>(
+    "get_directory_plugin_catalog",
     {},
   );
+}
+
+export async function getPluginState(roleId: string): Promise<RolePluginState> {
+  return invokeWithFriendlyError<RolePluginState>("get_plugin_state", {
+    role_id: roleId,
+  });
+}
+
+export async function savePluginState(
+  roleId: string,
+  state: RolePluginState,
+): Promise<void> {
+  return invokeWithFriendlyError<void>("save_plugin_state", {
+    role_id: roleId,
+    state,
+  });
+}
+
+/** 用磁盘上的 `ui.json` 覆盖该角色的本地插件 UI 状态。 */
+export async function resetPluginStateToRoleDefault(
+  roleId: string,
+): Promise<void> {
+  return invokeWithFriendlyError<void>("reset_plugin_state_to_role_default", {
+    role_id: roleId,
+  });
 }
 
 /** B2：对指定目录插件懒启动后透传 JSON-RPC（方法名与 params 由插件定义）。 */
@@ -667,6 +867,116 @@ export async function directoryPluginInvoke(
       pluginId,
       method,
       params,
+    },
+  });
+}
+
+/**
+ * manifest `shell.bridge.invoke` 可声明 **命令名** 或 **权限别名**（后者用于 `get_conversation` → `read:conversation` 等）。
+ * 敏感命令（聊天/角色切换）还要求 **`type`: `"ocliveplugin"`** 且页面为 **`shell.entry`**。
+ */
+export type PluginBridgeManifestToken =
+  | "send_message"
+  | "read:conversation"
+  | "switch_role"
+  | "read:roles"
+  | "read:current_role"
+  | "get_role_info"
+  | "list_roles"
+  | "get_time_state"
+  | "get_directory_plugin_bootstrap"
+  | "get_conversation"
+  | "get_roles"
+  | "get_current_role"
+  | "update_memory"
+  | "delete_memory"
+  | "update_emotion"
+  | "update_event"
+  | "update_prompt"
+  | "write:memory"
+  | "write:emotion"
+  | "write:event"
+  | "write:prompt";
+
+/** 整壳 `OclivePluginBridge.invoke('update_memory', params)` */
+export interface PluginBridgeUpdateMemoryParams {
+  role_id: string;
+  content: string;
+  /** 0–1，默认 0.5 */
+  importance?: number;
+}
+
+export interface PluginBridgeDeleteMemoryParams {
+  role_id: string;
+  memory_id: string;
+}
+
+export interface PluginBridgeUpdateEmotionParams {
+  role_id: string;
+  emotion: string;
+}
+
+export interface PluginBridgeUpdateEventParams {
+  role_id: string;
+  event_type: string;
+  description?: string | null;
+}
+
+/** 预留；宿主未实现动态提示词片段时返回 `not_implemented`。 */
+export interface PluginBridgeUpdatePromptParams {
+  role_id: string;
+  /** 由后续宿主契约定义 */
+  fragment_key?: string;
+  content?: string;
+}
+
+/** `plugin_bridge_invoke` → `send_message`（字段与 {@link SendMessageRequest} 一致；可提供 `text` 代替 `user_message`） */
+export interface PluginBridgeSendMessageParams {
+  role_id: string;
+  user_message: string;
+  scene_id?: string | null;
+  session_id?: string | null;
+  /** 与 `user_message` 二选一 */
+  text?: string;
+}
+
+export interface PluginBridgeGetConversationParams {
+  role_id: string;
+  session_id?: string | null;
+  limit?: number;
+  offset?: number;
+}
+
+export interface PluginBridgeConversationTurn {
+  user_input: string;
+  bot_reply: string;
+  emotion: string;
+  scene: string | null;
+  created_at: string;
+}
+
+export interface PluginBridgeGetConversationResult {
+  role_id: string;
+  session_namespace: string;
+  total: number;
+  limit: number;
+  offset: number;
+  items: PluginBridgeConversationTurn[];
+}
+
+/** 目录插件页 `OclivePluginBridge.invoke` 对应的后端入口（一般无需在主 UI 调用）。 */
+export async function pluginBridgeInvoke(req: {
+  pluginId: string;
+  assetRel: string;
+  command: string;
+  params?: unknown;
+}): Promise<unknown> {
+  return invokeWithFriendlyError<unknown>("plugin_bridge_invoke", {
+    req: {
+      pluginId: req.pluginId,
+      assetRel: req.assetRel,
+      command: req.command,
+      params: req.params ?? {},
     },
   });
 }

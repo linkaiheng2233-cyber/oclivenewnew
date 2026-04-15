@@ -24,21 +24,32 @@
     <pre id="boot">加载中…</pre>
     <script>
       (function () {
-        var ta = window.__TAURI__;
-        var invoke = ta && ta.tauri && ta.tauri.invoke;
         var el = document.getElementById("boot");
-        if (!invoke) {
-          el.textContent =
-            "未找到 window.__TAURI__.tauri.invoke。请从 Oclive Tauri 窗口打开本页，并确认 tauri.conf.json 已为 ocliveplugin.localhost 配置 dangerousRemoteDomainIpcAccess。";
-          return;
+        function run(invokeFn) {
+          invokeFn("get_directory_plugin_bootstrap", {})
+            .then(function (b) {
+              el.textContent = JSON.stringify(b, null, 2);
+            })
+            .catch(function (e) {
+              el.textContent = String(e);
+            });
         }
-        invoke("get_directory_plugin_bootstrap")
-          .then(function (b) {
-            el.textContent = JSON.stringify(b, null, 2);
-          })
-          .catch(function (e) {
-            el.textContent = String(e);
+        if (window.OclivePluginBridge) {
+          run(function (cmd, p) {
+            return window.OclivePluginBridge.invoke(cmd, p);
           });
+        } else {
+          var ta = window.__TAURI__;
+          var invoke =
+            ta &&
+            (ta.invoke || (ta.tauri && ta.tauri.invoke));
+          if (!invoke) {
+            el.textContent =
+              "未找到桥接或 __TAURI__.invoke。请从 Oclive Tauri 窗口打开本页，并配置 dangerousRemoteDomainIpcAccess；或在 manifest shell.bridge 中声明 invoke 白名单。";
+            return;
+          }
+          run(invoke);
+        }
       })();
     </script>
   </body>

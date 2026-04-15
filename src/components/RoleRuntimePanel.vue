@@ -12,6 +12,10 @@ import {
   setUserRelation,
 } from "../utils/tauri-api";
 import HelpHint from "./HelpHint.vue";
+import {
+  formatDirectoryPluginSlots,
+  usesDirectoryPlugins,
+} from "../utils/pluginBackendsDisplay";
 
 const roleStore = useRoleStore();
 const uiStore = useUiStore();
@@ -40,29 +44,41 @@ const pluginBackendRows = [
   {
     key: "memory",
     label: "Memory",
-    options: ["builtin", "builtin_v2", "remote", "local"],
+    options: ["builtin", "builtin_v2", "remote", "local", "directory"],
   },
   {
     key: "emotion",
     label: "Emotion",
-    options: ["builtin", "builtin_v2", "remote"],
+    options: ["builtin", "builtin_v2", "remote", "directory"],
   },
   {
     key: "event",
     label: "Event",
-    options: ["builtin", "builtin_v2", "remote"],
+    options: ["builtin", "builtin_v2", "remote", "directory"],
   },
   {
     key: "prompt",
     label: "Prompt",
-    options: ["builtin", "builtin_v2", "remote"],
+    options: ["builtin", "builtin_v2", "remote", "directory"],
   },
   {
     key: "llm",
     label: "LLM",
-    options: ["ollama", "remote"],
+    options: ["ollama", "remote", "directory"],
   },
 ] as const;
+
+const directoryPluginsPackLine = computed(() => {
+  const pb = pluginBackends.value;
+  if (!usesDirectoryPlugins(pb)) return "";
+  return `包 · directory_plugins：${formatDirectoryPluginSlots(pb.directory_plugins)}`;
+});
+
+const directoryPluginsEffectiveLine = computed(() => {
+  const pb = pluginBackendsEffective.value;
+  if (!usesDirectoryPlugins(pb)) return "";
+  return `生效 · directory_plugins：${formatDirectoryPluginSlots(pb.directory_plugins)}`;
+});
 
 const personalitySourceLabel = computed(() =>
   roleStore.roleInfo.personalitySource === "profile"
@@ -217,6 +233,8 @@ async function refreshPluginDebugSnapshot() {
     `effective event=${debug.plugin_backends_effective.event}(${debug.plugin_backends_effective_sources.event})`,
     `effective prompt=${debug.plugin_backends_effective.prompt}(${debug.plugin_backends_effective_sources.prompt})`,
     `effective llm=${debug.plugin_backends_effective.llm}(${debug.plugin_backends_effective_sources.llm})`,
+    `pack directory_plugins=${formatDirectoryPluginSlots(debug.plugin_backends_pack_default.directory_plugins)}`,
+    `effective directory_plugins=${formatDirectoryPluginSlots(debug.plugin_backends_effective.directory_plugins)}`,
     `env llm_override=${debug.llm_env_override ?? "none"}`,
     `env remote_plugin_url=${debug.remote_plugin_url_configured ? "set" : "unset"}`,
     `env remote_llm_url=${debug.remote_llm_url_configured ? "set" : "unset"}`,
@@ -266,6 +284,12 @@ async function copyPluginDebugSnapshot() {
         title="会话级覆盖叠加后的实际生效后端"
       >
         会话生效：mem {{ pluginBackendsEffective.memory }} · emotion {{ pluginBackendsEffective.emotion }} · event {{ pluginBackendsEffective.event }} · prompt {{ pluginBackendsEffective.prompt }} · llm {{ pluginBackendsEffective.llm }}
+      </p>
+      <p v-if="directoryPluginsPackLine" class="sub plugin-backends" title="settings.json → plugin_backends.directory_plugins">
+        {{ directoryPluginsPackLine }}
+      </p>
+      <p v-if="directoryPluginsEffectiveLine" class="sub plugin-backends" title="叠加会话覆盖后的 directory_plugins 槽位">
+        {{ directoryPluginsEffectiveLine }}
       </p>
       <p v-if="pluginBackendsSessionOverride" class="sub plugin-override-hint">
         当前会话已启用模块覆盖（仅本会话生效，不写入角色包）。

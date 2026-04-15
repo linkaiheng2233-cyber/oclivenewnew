@@ -29,3 +29,6 @@ src-tauri/target
 .env
 .env.*
 !.env.example
+
+# Local directory-plugin runtime state under roles root (dev)
+roles/.oclive_directory_plugin_data/

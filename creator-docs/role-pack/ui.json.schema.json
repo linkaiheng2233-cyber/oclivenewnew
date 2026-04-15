@@ -1,0 +1,75 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://oclive.dev/schemas/role-pack/ui.json",
+  "title": "Oclive role pack ui.json",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["shell", "slots"],
+  "properties": {
+    "shell": {
+      "type": "string",
+      "description": "整壳目录插件 id；空字符串表示使用 Oclive 内置主界面。"
+    },
+    "theme": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "primaryColor": {
+          "type": "string",
+          "description": "主色调（CSS 颜色），供内置界面与插槽参考。"
+        },
+        "backgroundColor": {
+          "type": "string",
+          "description": "页面背景色（CSS 颜色）。"
+        },
+        "fontFamily": {
+          "type": "string",
+          "description": "界面字体族（CSS font-family 片段，如 system-ui 或具体字体栈）。"
+        }
+      }
+    },
+    "layout": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "sidebar": {
+          "type": "string",
+          "description": "侧栏（立绘区）相对聊天区：`left` | `right`；空字符串表示内置默认（左侧）。"
+        },
+        "chatInput": {
+          "type": "string",
+          "description": "输入区相对消息列表：`bottom` | `top`；空字符串表示内置默认（底部）。"
+        }
+      }
+    },
+    "slots": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["chat_toolbar", "settings.panel", "role.detail"],
+      "properties": {
+        "chat_toolbar": { "$ref": "#/$defs/slot" },
+        "settings.panel": { "$ref": "#/$defs/slot" },
+        "role.detail": { "$ref": "#/$defs/slot" }
+      }
+    }
+  },
+  "$defs": {
+    "slot": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["order", "visible"],
+      "properties": {
+        "order": {
+          "type": "array",
+          "items": { "type": "string" },
+          "description": "该插槽内插件 id 顺序。"
+        },
+        "visible": {
+          "type": "array",
+          "items": { "type": "string" },
+          "description": "默认可见的插件 id；必须是 order 的子集。"
+        }
+      }
+    }
+  }
+}

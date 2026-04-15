@@ -95,6 +95,107 @@
 ]
 ```
 
+### 4.1 整壳前端桥接（`shell.bridge`）
+
+若 **`shell`** 下声明 **`bridge`**，且 **`invoke`** / **`events`** 非空，宿主在提供该 **`shell.entry` 对应 HTML** 时会在 `</body>` 前注入脚本，挂载 **`window.OclivePluginBridge`**：
+
+- **`invoke(command, params)`**：manifest 的 **`bridge.invoke`** 为**权限列表**：可写 **命令名**（如 `send_message`）或 **权限别名**（如 `read:conversation`）；与下表对应。由 **`plugin_bridge_invoke`** 二次校验。
+- **`listen(event, handler)`**：仅允许 **`bridge.events`** 中的事件名（依赖 WebView 内 `__TAURI__.event`）。
+
+**整壳深度集成**：下列命令除需 **`bridge.invoke`** 命中外，还要求 manifest 顶层 **`"type": "ocliveplugin"`**，且调用页为 **`shell.entry`**（**`ui_slots` 页不得调用**，避免越权）：
+
+| `OclivePluginBridge.invoke` 命令 | manifest 权限（`invoke` 数组中任写其一即可） | 说明 |
+|-----------------------------------|---------------------------------------------|------|
+| **`send_message`** | `send_message` | 走 `process_message`，参数同 `send_message`（可用 `text` 代替 `user_message`） |
+| **`get_conversation`** | `get_conversation` 或 **`read:conversation`** | 读短期对话；`params`: `role_id`, 可选 `session_id` / `limit` / `offset` |
+| **`switch_role`** | `switch_role` | `params`: `{ "role_id": "..." }`，等价于宿主 `switch_role` |
+| **`get_roles`** | `get_roles` 或 **`read:roles`** | 等价于 `list_roles` |
+| **`get_current_role`** | `get_current_role` 或 **`read:current_role`** | 等价于 `get_role_info`，`params` 同 `get_role_info`（`role_id` + 可选 `session_id`） |
+| **`update_memory`** | **`write:memory`** 或 `update_memory` | 写入长期记忆；`params`: `role_id`, `content`, 可选 `importance`（0–1，默认 0.5） |
+| **`delete_memory`** | **`write:memory`** 或 `delete_memory` | 删除长期记忆；`params`: `role_id`, `memory_id`（须属于该角色） |
+| **`update_emotion`** | **`write:emotion`** 或 `update_emotion` | 更新 `role_runtime.current_emotion`；`params`: `role_id`, `emotion` |
+| **`update_event`** | **`write:event`** 或 `update_event` | 与 `create_event` 等价；`params`: `role_id`, `event_type`, 可选 `description`（事件类型枚举同 `CreateEventRequest`） |
+| **`update_prompt`** | **`write:prompt`** 或 `update_prompt` | 预留：当前宿主返回 `not_implemented`，待动态提示词片段契约落地 |
+
+**不强制 `type: ocliveplugin` 的桥接命令**（亦需在 **`bridge.invoke`** 中声明）：`get_role_info`、`list_roles`、`get_time_state`、`get_directory_plugin_bootstrap` 等。未声明的调用一律拒绝。
+
+**写入类命令**（`update_memory` / `delete_memory` / `update_emotion` / `update_event` / `update_prompt`）与上表「聊天/角色」敏感命令相同：**必须** `type: ocliveplugin` 且自 **`shell.entry`** 页调用。
+
+### 4.2 主界面 UI 插槽（`ui_slots`）
+
+官方支持的 **`slot`** 值：
+
+| `slot` | 宿主位置 | 说明 |
+|--------|----------|------|
+| **`chat_toolbar`** | 聊天输入区上方 | 窄条工具栏，适合快捷操作 |
+| **`settings.panel`** | **设置 → 插件扩展**（顶栏「更多」→「打开设置」） | 较大区域，适合插件配置表单；可用 **选项卡** 在多个 `settings.panel` 插件间切换 |
+| **`role.detail`** | 左侧 **角色详情**（立绘与名称下方，好感度条上方） | 垂直 iframe 列表，适合与当前角色相关的扩展信息或快捷编辑 |
+
+通用规则：
+
+- 若 manifest **无** **`shell`** 段，可在 **`ui_slots`** 中声明嵌入 UI：**`entry`** 为相对插件根的 HTML（**iframe 回退**）。
+- 可选 **`vueComponent`**：相对插件根的 **`.vue`** 路径（如 `"slots/ToolbarButton.vue"`）。主界面优先在宿主 Vue 内用运行时编译器加载该组件；**加载失败时自动回退**到上述 iframe（`https://ocliveplugin.localhost/<id>/<entry>`）。
+- **含 `shell` 的插件不参与插槽**（避免与整壳重复）。
+- 插槽页若需调用宿主能力：在对应 **`ui_slots[]` 条目**上配置 **`bridge`**。iframe 页仅当请求资源与 **`entry`** 一致时注入 `OclivePluginBridge`；**原生 Vue 插槽**通过 `inject('oclive')` 获得 API（见下），`plugin_bridge_invoke` 校验时使用 manifest 中的 **`entry`** 作为 **`assetRel`**（与 `bridge` 白名单一致）。
+- 示例：`examples/directory-plugin-ui-slot/`（仅 iframe）；**`examples/directory-plugin-ui-slot-vue/`**（`vueComponent` + 回退 HTML）。
+
+### 4.2.1 原生 Vue 插槽（`vueComponent`）
+
+| 字段 | 说明 |
+|------|------|
+| **`entry`** | 必填；iframe URL 与 bridge 权限锚点（`assetRel` 使用本字段的规范化相对路径）。 |
+| **`vueComponent`** | 可选；插件根下 `.vue` 文件相对路径。组件需 `export default` 符合 Vue 3 组件；模板内使用 **`const oclive = inject('oclive')`**。 |
+
+**`oclive` 对象（与整壳桥接能力对齐，经同一 `plugin_bridge_invoke` 后端）：**
+
+- **`oclive.invoke(command, params?)`**：等价于 iframe 内 `OclivePluginBridge.invoke`。
+- **`oclive.pluginId`** / **`oclive.bridgeAssetRel`**：当前插件 id 与桥接用 `entry` 路径。
+- **`oclive.events.emit` / `on` / `off`**：宿主 **mitt** 事件总线（见 4.3）；`on` 注册的监听在**组件卸载时自动移除**。
+
+样式可直接使用宿主 **CSS 变量**（如 `--fluent-accent`、`--bg-primary`、`--font-ui`、`--border-light` 等，见 `src/styles/theme.css`）。
+
+**安全说明**：插件组件与主界面同 JS 上下文；请勿在插件中直接使用 `window.__TAURI__`，应只通过 `oclive.invoke` 访问白名单命令。宿主不对插件做完整沙箱隔离。
+
+### 4.3 事件总线（宿主内置）
+
+| 事件名 | 触发时机 | `data`（建议可 JSON 序列化） |
+|--------|----------|-------------------------------|
+| **`role:switched`** | 用户切换当前角色成功 | `{ roleId: string }` |
+| **`message:sent`** | 用户发送消息且本轮回复已返回 | `{ message: string, reply: string }` |
+| **`theme:changed`** | 角色包 `ui.json` 主题主色应用到界面 | `{ primaryColor: string }` |
+
+**按需广播（隐私与性能）**：宿主仅在**当前角色下已启用**的插件中，至少有一个在 manifest 的 **`shell.bridge.events`** 或某一 **`ui_slots[].bridge.events`** 中声明了该事件名时，才会向 Vue 插槽内的 `oclive.events` / mitt 总线广播对应内置事件。未声明则**不广播**（等同未监听）。`get_directory_plugin_bootstrap` 返回的 **`subscribedHostEvents`**（camelCase）为当前应广播的内置事件名列表（去重排序）；Tauri 命令 **`is_host_event_subscribed`** 也可按事件名查询。
+
+自定义事件建议使用 **`插件ID:事件名`**（如 `com.example.foo:refresh`），避免冲突。iframe 内页面如需订阅，需在后续版本扩展 `OclivePluginBridge`（当前以 Vue 插槽为主）。
+
+### 4.3.1 原生 Vue 安全扫描（开发者模式）
+
+当 **`get_directory_plugin_bootstrap.developerMode`** 为真时，宿主在编译 `.vue` 前会对脚本做静态 AST 扫描；若匹配危险模式（如 `fetch`、`eval`、`document.cookie`、`localStorage`、`window.__TAURI__` 等），会弹出确认框，用户取消则该插槽回退行为与编译失败一致（可再走 iframe）。
+
+### 4.3.2 强制 iframe 模式
+
+应用数据 **`plugin_state.json`** 按角色存储的 **`force_iframe_mode`**（默认 `false`）为真时，宿主**忽略** manifest 的 **`vueComponent`**，嵌入插槽一律使用 iframe（`entry` URL），以获得更强隔离。设置页可切换该项；保存后建议**重启应用**以完全生效。
+
+**`get_directory_plugin_bootstrap` → `uiSlots`** 会返回上述插槽的条目（已按 `app_data/plugin_state.json` 中的 **`slot_order`** 分插槽排序）。示例：
+
+```json
+{
+  "disabled_plugins": [],
+  "slot_order": {
+    "chat_toolbar": ["com.example.toolbar_a", "com.example.toolbar_b"],
+    "settings.panel": ["com.example.settings_a", "com.example.settings_b"],
+    "role.detail": ["com.example.role_extra"]
+  },
+  "disabled_slot_contributions": {
+    "chat_toolbar": [],
+    "settings.panel": [],
+    "role.detail": []
+  }
+}
+```
+
+在 **插件管理**（Ctrl+Shift+F）中可为每个插槽单独拖拽排序，或勾选「隐藏 … 嵌入」仅关闭该插槽 iframe（不卸载插件进程，除非同时停用插件）。
+
 ---
 
 ## 5. 门面命令（B2）
@@ -103,8 +204,11 @@
 
 | Tauri 命令 | 作用 |
 |------------|------|
-| **`get_directory_plugin_bootstrap`** | 返回 `shellUrl`、`shellPluginId`、`pluginIds`、`developerMode`（字段名为 camelCase JSON） |
+| **`get_directory_plugin_bootstrap`** | 返回 `shellUrl`、`shellPluginId`、`pluginIds`、`developerMode`、`subscribedHostEvents`、`uiSlots`（嵌入插槽列表，camelCase JSON） |
+| **`is_host_event_subscribed`** | `event` + 可选 `role_id`：当前角色下是否有已启用插件在 manifest `bridge.events` 中声明该事件名 |
 | **`directory_plugin_invoke`** | 懒启动目标插件后，向其 RPC URL 发送一次 JSON-RPC **`method`** / **`params`** |
+| **`plugin_bridge_invoke`** | 目录插件页经 **`OclivePluginBridge.invoke`** 或宿主 Vue 插槽 **`oclive.invoke`** 调用；校验 **`pluginId` + `assetRel`** 与 manifest **`bridge.invoke` 白名单** 后转发到受控宿主逻辑 |
+| **`read_plugin_asset_text`** | 宿主读取插件根下文本文件（用于编译 `.vue`）；路径不得含 `..` 或越出插件目录 |
 
 **前端 `invoke` 载荷**（与仓库其它命令一致，单结构体参数包在 **`req`** 下）：
 
@@ -142,16 +246,20 @@
 | 扫描 / manifest / 懒启动 / shell URL | `src-tauri/src/infrastructure/directory_plugins/` |
 | 枚举与 `directory_plugins` 槽位 | `src-tauri/src/models/plugin_backends.rs` |
 | 五模块解析与 HTTP 复用 | `src-tauri/src/domain/plugin_host.rs`、`src-tauri/src/infrastructure/remote_plugin/` |
-| Tauri 命令 | `src-tauri/src/api/directory_plugin.rs` |
+| Tauri 命令 | `src-tauri/src/api/directory_plugin.rs`、`src-tauri/src/api/plugin_bridge.rs` |
 | 自定义协议 + 启动 | `src-tauri/src/lib.rs` |
 | 内置 UI 启动引导 | `src/main.js` |
-| 前端封装 | `src/utils/tauri-api.ts`（`getDirectoryPluginBootstrap`、`directoryPluginInvoke`） |
+| 聊天工具栏插槽 | `src/components/ChatPluginToolbarSlots.vue` |
+| 设置页插槽 | `src/components/PluginSettingsPanelSlots.vue`、`src/views/SettingsView.vue` |
+| 角色详情插槽 | `src/components/PluginRoleDetailSlots.vue`、`src/views/RoleDetailView.vue` |
+| 前端封装 | `src/utils/tauri-api.ts`（`getDirectoryPluginBootstrap`、`directoryPluginInvoke`、`pluginBridgeInvoke`） |
 
 ---
 
 ## 8. 仓库内最小示例
 
-见 **`examples/directory-plugin-minimal/`**：可复制到 `plugins/<id>/` 或加入 `extra_plugin_roots` 后，配置 `shell_plugin_id` 与（可选）`plugin_backends` 做联调。
+见 **`examples/directory-plugin-minimal/`**：可复制到 `plugins/<id>/` 或加入 `extra_plugin_roots` 后，配置 `shell_plugin_id` 与（可选）`plugin_backends` 做联调。  
+**非整壳 + 工具栏插槽**：**`examples/directory-plugin-ui-slot/`**；**原生 Vue 工具栏 + iframe 回退**：**`examples/directory-plugin-ui-slot-vue/`**。
 
 ---
 

@@ -9,6 +9,7 @@ import { getRelationUpgradeMessage } from "../utils/relation";
 import { useDebugStore } from "./debugStore";
 import { useRoleStore } from "./roleStore";
 import { useUiStore } from "./uiStore";
+import { hostEventBus } from "../lib/hostEventBus";
 
 export type ChatMessage = {
   id: string;
@@ -243,6 +244,10 @@ export const useChatStore = defineStore(
             }
             roleStore.updateRelationState(res.relation_state);
           }
+          hostEventBus.emit("message:sent", {
+            message: content,
+            reply: pres.replyText,
+          });
           return res;
         } finally {
           this.isLoading = false;

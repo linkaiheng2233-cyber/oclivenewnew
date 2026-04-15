@@ -241,6 +241,7 @@ mod tests {
             min_runtime_version: None,
             dev_only: false,
             plugin_backends: crate::models::PluginBackends::default(),
+            ui_config: crate::models::UiConfig::default(),
             knowledge_index: None,
         }
     }

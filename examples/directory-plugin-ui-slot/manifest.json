@@ -1,0 +1,18 @@
+{
+  "schema_version": 1,
+  "id": "com.oclive.example.ui_slot_toolbar",
+  "version": "0.1.0",
+  "ui_slots": [
+    {
+      "slot": "chat_toolbar",
+      "entry": "slots/toolbar.html",
+      "bridge": {
+        "invoke": [
+          "get_directory_plugin_bootstrap",
+          "list_roles"
+        ],
+        "events": []
+      }
+    }
+  ]
+}

@@ -1,8 +1,9 @@
 //! 前后端契约（Tauri invoke）
 
 use crate::models::plugin_backends::PluginBackends;
-use crate::models::plugin_backends::PluginBackendsSourceMap;
 use crate::models::plugin_backends::PluginBackendsOverride;
+use crate::models::plugin_backends::PluginBackendsSourceMap;
+use crate::models::ui_config::UiConfig;
 use crate::models::role::IdentityBinding;
 use crate::models::role::LifeState;
 use crate::models::role::PersonalitySource;
@@ -150,6 +151,9 @@ pub struct RoleData {
     /// 有效后端来源（pack/session/env）。
     #[serde(default)]
     pub plugin_backends_effective_sources: PluginBackendsSourceMap,
+    /// 角色包根目录 `ui.json`（主题、布局、插槽等）。
+    #[serde(default)]
+    pub pack_ui_config: UiConfig,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -250,6 +254,9 @@ pub struct RoleInfo {
     /// `knowledge_index.chunks` 条数；未加载索引时为 0
     #[serde(default)]
     pub knowledge_chunk_count: i32,
+    /// 角色包根目录 `ui.json`（主题、布局、插槽等）。
+    #[serde(default)]
+    pub pack_ui_config: UiConfig,
 }
 
 #[derive(Debug, Clone, Serialize)]

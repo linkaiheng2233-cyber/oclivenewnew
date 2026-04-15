@@ -1,9 +1,28 @@
 {
   "schema_version": 1,
+  "type": "ocliveplugin",
   "id": "com.oclive.example.minimal",
   "version": "0.1.0",
   "shell": {
-    "entry": "ui/index.html"
+    "entry": "ui/index.html",
+    "bridge": {
+      "invoke": [
+        "send_message",
+        "read:conversation",
+        "switch_role",
+        "read:roles",
+        "read:current_role",
+        "get_directory_plugin_bootstrap",
+        "list_roles",
+        "get_role_info",
+        "get_time_state",
+        "write:memory",
+        "write:emotion",
+        "write:event",
+        "write:prompt"
+      ],
+      "events": []
+    }
   },
   "process": {
     "command": "node",
