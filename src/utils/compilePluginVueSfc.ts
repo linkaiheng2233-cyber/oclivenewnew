@@ -24,15 +24,22 @@ function joinUnder(baseDir: string, rel: string): string {
   return stack.join("/");
 }
 
+export type LoadPluginVueOptions = {
+  /** 入口 `.vue` 已读入的源码（如安全扫描后），避免对同一文件二次 `read_plugin_asset_text`。 */
+  preloadedEntrySource?: string;
+};
+
 /**
  * 从目录插件根编译并加载 `.vue`（运行时 `vue3-sfc-loader`）；失败返回 `null` 以便回退 iframe。
  */
 export async function loadPluginVueComponent(
   pluginId: string,
   vueRel: string,
+  opts?: LoadPluginVueOptions,
 ): Promise<Component | null> {
   const rel0 = vueRel.replace(/\\/g, "/").replace(/^\/+/, "");
   const entry = uri(pluginId, rel0);
+  const pre = opts?.preloadedEntrySource;
 
   const moduleCache = Object.assign(Object.create(null), {
     vue: Vue,
@@ -52,6 +59,15 @@ export async function loadPluginVueComponent(
     const rel = body.slice(slash + 1);
     if (pid !== pluginId) {
       throw new Error(`cross-plugin import denied: ${p}`);
+    }
+    if (pre !== undefined && pre.length > 0 && full === entry) {
+      const text = pre;
+      return {
+        getContentData: (asBinary: boolean) =>
+          asBinary
+            ? Promise.resolve(new TextEncoder().encode(text).buffer)
+            : Promise.resolve(text),
+      };
     }
     const text = await readPluginAssetText(pid, rel);
     return {

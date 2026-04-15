@@ -2,7 +2,6 @@
 import { storeToRefs } from "pinia";
 import { onMounted, ref, watch } from "vue";
 import AsyncPluginVue from "./AsyncPluginVue.vue";
-import { setHostEventSubscribedEvents } from "../lib/hostEventBus";
 import {
   getDirectoryPluginBootstrap,
   type PluginUiSlotInfo,
@@ -34,8 +33,7 @@ async function loadSlots() {
   loadError.value = null;
   try {
     const boot = await getDirectoryPluginBootstrap(currentRoleId.value);
-    setHostEventSubscribedEvents(boot.subscribedHostEvents ?? []);
-    pluginStore.developerMode = boot.developerMode ?? false;
+    pluginStore.applyDirectoryBootstrap(boot);
     panelSlots.value = (boot.uiSlots ?? []).filter((s) => s.slot === SETTINGS_PANEL);
     if (activeTab.value >= panelSlots.value.length) {
       activeTab.value = 0;

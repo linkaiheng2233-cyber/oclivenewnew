@@ -1,3 +1,7 @@
+/**
+ * Vue 插槽源码静态扫描（黑名单）。
+ * 扩展规则时：在 `scanScriptAst` 的 `simple(...)` 回调中增加分支，并保持文案与 `ScanResult.warnings` 可读。
+ */
 import * as acorn from "acorn";
 import { simple } from "acorn-walk";
 

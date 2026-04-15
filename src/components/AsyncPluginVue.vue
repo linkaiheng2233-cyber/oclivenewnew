@@ -43,10 +43,14 @@ watch(
   () => [props.pluginId, props.vueComponent] as const,
   async () => {
     loaded.value = null;
+    let preloadedEntrySource: string | undefined;
     if (developerMode.value) {
       try {
-        const src = await readPluginAssetText(props.pluginId, props.vueComponent);
-        const { warnings } = scanVueComponentSource(src);
+        preloadedEntrySource = await readPluginAssetText(
+          props.pluginId,
+          props.vueComponent,
+        );
+        const { warnings } = scanVueComponentSource(preloadedEntrySource);
         if (warnings.length > 0) {
           const ok = await confirm(
             `此插件包含潜在危险代码：\n${warnings.map((w) => `- ${w}`).join("\n")}\n\n是否继续加载？`,
@@ -59,11 +63,15 @@ watch(
         }
       } catch (e) {
         console.warn("[AsyncPluginVue] security scan skipped", e);
+        preloadedEntrySource = undefined;
       }
     }
     const c = await loadPluginVueComponent(
       props.pluginId,
       props.vueComponent,
+      preloadedEntrySource
+        ? { preloadedEntrySource }
+        : undefined,
     );
     if (!c) {
       emit("failed");

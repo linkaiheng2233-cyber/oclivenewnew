@@ -767,13 +767,35 @@ export interface DirectoryPluginBootstrap {
   uiSlots: PluginUiSlotInfo[];
 }
 
+/** 同一 `role_id` 上并发的 bootstrap 合并为单次 IPC，避免多插槽同时挂载时重复打后端。 */
+const directoryBootstrapInflight = new Map<
+  string,
+  Promise<DirectoryPluginBootstrap>
+>();
+
+function directoryBootstrapCacheKey(roleId?: string | null): string {
+  const t = (roleId ?? "").trim();
+  return t.length > 0 ? t : "__default__";
+}
+
 export async function getDirectoryPluginBootstrap(
   roleId?: string | null,
 ): Promise<DirectoryPluginBootstrap> {
-  return invokeWithFriendlyError<DirectoryPluginBootstrap>(
+  const key = directoryBootstrapCacheKey(roleId);
+  const existing = directoryBootstrapInflight.get(key);
+  if (existing) {
+    return existing;
+  }
+  const p = invokeWithFriendlyError<DirectoryPluginBootstrap>(
     "get_directory_plugin_bootstrap",
     { role_id: roleId ?? null },
-  );
+  ).finally(() => {
+    if (directoryBootstrapInflight.get(key) === p) {
+      directoryBootstrapInflight.delete(key);
+    }
+  });
+  directoryBootstrapInflight.set(key, p);
+  return p;
 }
 
 export async function isHostEventSubscribed(

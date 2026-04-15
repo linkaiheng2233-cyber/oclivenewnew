@@ -6,6 +6,7 @@ import {
   getPluginState,
   resetPluginStateToRoleDefault,
   savePluginState,
+  type DirectoryPluginBootstrap,
   type DirectoryPluginCatalogEntry,
   type RolePluginState,
 } from "../utils/tauri-api";
@@ -41,12 +42,16 @@ export const usePluginStore = defineStore("plugin", {
     bootstrapEpoch: 0,
   }),
   actions: {
+    /** 由 bootstrap DTO 更新宿主事件订阅与开发者模式（插槽与 `refresh` / `sync` 共用）。 */
+    applyDirectoryBootstrap(boot: DirectoryPluginBootstrap) {
+      setHostEventSubscribedEvents(boot.subscribedHostEvents ?? []);
+      this.developerMode = boot.developerMode ?? false;
+    },
     /** 角色切换或插件启用状态变更后更新宿主事件订阅与开发者模式（不拉 catalog）。 */
     async syncDirectoryPluginBootstrap() {
       const roleId = useRoleStore().currentRoleId;
       const boot = await getDirectoryPluginBootstrap(roleId);
-      setHostEventSubscribedEvents(boot.subscribedHostEvents ?? []);
-      this.developerMode = boot.developerMode ?? false;
+      this.applyDirectoryBootstrap(boot);
     },
     async openPanel() {
       this.panelVisible = true;
@@ -80,8 +85,7 @@ export const usePluginStore = defineStore("plugin", {
           disabled_slot_contributions: { ...st.disabled_slot_contributions },
           force_iframe_mode: st.force_iframe_mode ?? false,
         };
-        setHostEventSubscribedEvents(boot.subscribedHostEvents ?? []);
-        this.developerMode = boot.developerMode ?? false;
+        this.applyDirectoryBootstrap(boot);
       } catch (e) {
         this.error = e instanceof Error ? e.message : String(e);
       } finally {
