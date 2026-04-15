@@ -29,6 +29,65 @@ function emptyState(): RolePluginState {
   };
 }
 
+function arraysEqual(a: string[] = [], b: string[] = []): boolean {
+  if (a === b) return true;
+  if (a.length !== b.length) return false;
+  for (let i = 0; i < a.length; i += 1) {
+    if (a[i] !== b[i]) return false;
+  }
+  return true;
+}
+
+function recordOfArraysEqual(
+  a: Record<string, string[]> = {},
+  b: Record<string, string[]> = {},
+): boolean {
+  const ka = Object.keys(a);
+  const kb = Object.keys(b);
+  if (ka.length !== kb.length) return false;
+  for (const k of ka) {
+    if (!(k in b)) return false;
+    if (!arraysEqual(a[k], b[k])) return false;
+  }
+  return true;
+}
+
+function catalogEqual(
+  a: DirectoryPluginCatalogEntry[],
+  b: DirectoryPluginCatalogEntry[],
+): boolean {
+  if (a === b) return true;
+  if (a.length !== b.length) return false;
+  for (let i = 0; i < a.length; i += 1) {
+    const x = a[i];
+    const y = b[i];
+    if (
+      x.id !== y.id ||
+      x.version !== y.version ||
+      (x.pluginType ?? null) !== (y.pluginType ?? null) ||
+      x.isShell !== y.isShell ||
+      !arraysEqual(x.uiSlotNames ?? [], y.uiSlotNames ?? []) ||
+      !arraysEqual(x.provides ?? [], y.provides ?? [])
+    ) {
+      return false;
+    }
+  }
+  return true;
+}
+
+function rolePluginStateEqual(a: RolePluginState, b: RolePluginState): boolean {
+  return (
+    a.shellPluginId === b.shellPluginId &&
+    (a.force_iframe_mode ?? false) === (b.force_iframe_mode ?? false) &&
+    arraysEqual(a.disabled_plugins ?? [], b.disabled_plugins ?? []) &&
+    recordOfArraysEqual(a.slot_order ?? {}, b.slot_order ?? {}) &&
+    recordOfArraysEqual(
+      a.disabled_slot_contributions ?? {},
+      b.disabled_slot_contributions ?? {},
+    )
+  );
+}
+
 export const usePluginStore = defineStore("plugin", {
   state: () => ({
     panelVisible: false,
@@ -77,14 +136,19 @@ export const usePluginStore = defineStore("plugin", {
           getPluginState(roleId),
           getDirectoryPluginBootstrap(roleId),
         ]);
-        this.catalog = cat;
-        this.pluginState = {
+        const nextState: RolePluginState = {
           shellPluginId: st.shellPluginId ?? "",
           disabled_plugins: [...(st.disabled_plugins ?? [])],
           slot_order: { ...st.slot_order },
           disabled_slot_contributions: { ...st.disabled_slot_contributions },
           force_iframe_mode: st.force_iframe_mode ?? false,
         };
+        if (!catalogEqual(this.catalog, cat)) {
+          this.catalog = cat;
+        }
+        if (!rolePluginStateEqual(this.pluginState, nextState)) {
+          this.pluginState = nextState;
+        }
         this.applyDirectoryBootstrap(boot);
       } catch (e) {
         this.error = e instanceof Error ? e.message : String(e);

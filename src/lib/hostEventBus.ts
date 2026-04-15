@@ -3,14 +3,22 @@ import mitt from "mitt";
 const bus = mitt<Record<string, unknown>>();
 /** `null`：尚未同步，不拦截（仅启动极短窗口）；同步后为空集表示无任何订阅。 */
 let subscribed: Set<string> | null = null;
+let subscribedSignature = "";
 
 export function setHostEventSubscribedEvents(events: string[]): void {
-  subscribed = new Set(events.map((e) => e.trim()).filter(Boolean));
+  const normalized = events.map((e) => e.trim()).filter(Boolean);
+  const nextSignature = normalized.join("\u001f");
+  if (subscribed !== null && nextSignature === subscribedSignature) {
+    return;
+  }
+  subscribed = new Set(normalized);
+  subscribedSignature = nextSignature;
 }
 
 /** 测试或热更新用：恢复为未同步状态。 */
 export function clearHostEventSubscribedEvents(): void {
   subscribed = null;
+  subscribedSignature = "";
 }
 
 function shouldEmitBuiltin(type: string): boolean {
