@@ -43,6 +43,36 @@ pub struct DirectoryPluginBootstrapDto {
     pub ui_slots: Vec<PluginUiSlotDto>,
 }
 
+/// 将 manifest 内 `shell.bridge` / `ui_slots[].bridge` 的 `events` 并入集合（与 `is_host_event_subscribed` 语义一致）。
+fn merge_manifest_bridge_events(manifest: &OclivePluginManifest, set: &mut HashSet<String>) {
+    if let Some(sh) = &manifest.shell {
+        if let Some(b) = &sh.bridge {
+            for e in &b.events {
+                let t = e.trim();
+                if !t.is_empty() {
+                    set.insert(t.to_string());
+                }
+            }
+        }
+    }
+    for us in &manifest.ui_slots {
+        if let Some(b) = &us.bridge {
+            for e in &b.events {
+                let t = e.trim();
+                if !t.is_empty() {
+                    set.insert(t.to_string());
+                }
+            }
+        }
+    }
+}
+
+fn subscribed_events_sorted_vec(set: HashSet<String>) -> Vec<String> {
+    let mut v: Vec<String> = set.into_iter().collect();
+    v.sort_unstable();
+    v
+}
+
 /// 收集「未全局禁用」的插件在 `shell.bridge` / `ui_slots[].bridge` 中声明的 `events`。
 fn collect_subscribed_host_events(state: &AppState, pst: &PluginStateFile) -> Vec<String> {
     let mut set = HashSet::new();
@@ -54,30 +84,9 @@ fn collect_subscribed_host_events(state: &AppState, pst: &PluginStateFile) -> Ve
         let Ok(manifest) = OclivePluginManifest::load_from_dir(root) else {
             continue;
         };
-        if let Some(sh) = &manifest.shell {
-            if let Some(b) = &sh.bridge {
-                for e in &b.events {
-                    let t = e.trim();
-                    if !t.is_empty() {
-                        set.insert(t.to_string());
-                    }
-                }
-            }
-        }
-        for us in &manifest.ui_slots {
-            if let Some(b) = &us.bridge {
-                for e in &b.events {
-                    let t = e.trim();
-                    if !t.is_empty() {
-                        set.insert(t.to_string());
-                    }
-                }
-            }
-        }
+        merge_manifest_bridge_events(&manifest, &mut set);
     }
-    let mut v: Vec<String> = set.into_iter().collect();
-    v.sort_unstable();
-    v
+    subscribed_events_sorted_vec(set)
 }
 
 /// 对**同一插槽**的条目按 `plugin_state.slot_order[slot]` 排序。
@@ -132,6 +141,7 @@ pub fn directory_plugin_bootstrap_dto(state: &AppState, role_id: Option<String>)
     });
 
     let mut ui_slots = Vec::new();
+    let mut subscribed_set = HashSet::new();
     let roots = rt.plugin_roots.read();
     for (pid, root) in roots.iter() {
         if pst.is_plugin_disabled(pid) {
@@ -140,6 +150,7 @@ pub fn directory_plugin_bootstrap_dto(state: &AppState, role_id: Option<String>)
         let Ok(manifest) = OclivePluginManifest::load_from_dir(root) else {
             continue;
         };
+        merge_manifest_bridge_events(&manifest, &mut subscribed_set);
         if manifest.shell.is_some() {
             continue;
         }
@@ -211,7 +222,7 @@ pub fn directory_plugin_bootstrap_dto(state: &AppState, role_id: Option<String>)
     ui_slots.extend(settings);
     ui_slots.extend(role_detail);
 
-    let subscribed_host_events = collect_subscribed_host_events(state, pst);
+    let subscribed_host_events = subscribed_events_sorted_vec(subscribed_set);
 
     DirectoryPluginBootstrapDto {
         shell_url,

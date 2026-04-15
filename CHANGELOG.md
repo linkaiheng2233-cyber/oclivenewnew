@@ -21,6 +21,7 @@
 
 - 对 `get_directory_plugin_bootstrap` 的 IPC 按 `role_id` 合并并发请求，减少多插槽同时挂载时的重复调用。
 - 开发者模式下 Vue 插槽：安全扫描读入的源码复用于 `vue3-sfc-loader`，避免对同一 `.vue` 二次 `read_plugin_asset_text`。
+- Rust：`directory_plugin_bootstrap_dto` 在构建 `ui_slots` 的同一趟扫描中合并 `subscribed_host_events`，每个已启用插件目录只解析一次 `manifest.json`（整壳 URL 仍单独解析一次）。
 
 ### Engineering
 
