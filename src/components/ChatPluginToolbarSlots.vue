@@ -1,13 +1,7 @@
 <script setup lang="ts">
-import { storeToRefs } from "pinia";
-import { onMounted, ref, watch } from "vue";
 import AsyncPluginVue from "./AsyncPluginVue.vue";
-import {
-  getDirectoryPluginBootstrap,
-  type PluginUiSlotInfo,
-} from "../utils/tauri-api";
-import { usePluginStore } from "../stores/pluginStore";
-import { useRoleStore } from "../stores/roleStore";
+import { useDirectoryPluginSlotEmbed } from "../composables/useDirectoryPluginSlotEmbed";
+import { SLOT_CHAT_TOOLBAR } from "../stores/pluginStore";
 
 const props = withDefaults(
   defineProps<{
@@ -17,68 +11,23 @@ const props = withDefaults(
   { bootstrapEpoch: 0 },
 );
 
-const roleStore = useRoleStore();
-const { currentRoleId } = storeToRefs(roleStore);
-const pluginStore = usePluginStore();
-
-const slots = ref<PluginUiSlotInfo[]>([]);
-const loadError = ref<string | null>(null);
-/** pluginId -> 加载失败 */
-const frameErrors = ref<Record<string, string>>({});
-/** Vue 编译/运行失败时回退 iframe */
-const vueFallback = ref<Record<string, boolean>>({});
-
-const CHAT_TOOLBAR = "chat_toolbar";
-
-async function loadSlots() {
-  loadError.value = null;
-  try {
-    const boot = await getDirectoryPluginBootstrap(currentRoleId.value);
-    pluginStore.applyDirectoryBootstrap(boot);
-    slots.value = (boot.uiSlots ?? []).filter((s) => s.slot === CHAT_TOOLBAR);
-  } catch (e) {
-    loadError.value = e instanceof Error ? e.message : String(e);
-  }
-}
-
-onMounted(loadSlots);
-watch(
-  () => [props.bootstrapEpoch, currentRoleId.value] as const,
-  () => {
-    vueFallback.value = {};
-    void loadSlots();
-  },
-);
-
-function onFrameError(pluginId: string) {
-  frameErrors.value = {
-    ...frameErrors.value,
-    [pluginId]: "页面加载失败",
-  };
-}
-
-function onVueFailed(pluginId: string) {
-  vueFallback.value = { ...vueFallback.value, [pluginId]: true };
-}
-
-function showIframe(s: PluginUiSlotInfo): boolean {
-  if (pluginStore.pluginState.force_iframe_mode) return true;
-  const vc = s.vueComponent?.trim();
-  if (!vc) return true;
-  return vueFallback.value[s.pluginId] === true;
-}
-
-function showVue(s: PluginUiSlotInfo): boolean {
-  if (pluginStore.pluginState.force_iframe_mode) return false;
-  const vc = s.vueComponent?.trim();
-  if (!vc) return false;
-  return vueFallback.value[s.pluginId] !== true;
-}
+const {
+  pluginError,
+  slots,
+  frameErrors,
+  onFrameError,
+  onVueFailed,
+  showIframe,
+  showVue,
+} = useDirectoryPluginSlotEmbed({
+  slot: SLOT_CHAT_TOOLBAR,
+  bootstrapEpoch: () => props.bootstrapEpoch,
+});
 </script>
 
 <template>
-  <div v-if="loadError" class="plugin-toolbar plugin-toolbar--error" role="status">
-    {{ loadError }}
+  <div v-if="pluginError" class="plugin-toolbar plugin-toolbar--error" role="status">
+    {{ pluginError }}
   </div>
   <div
     v-else-if="slots.length > 0"

@@ -2,7 +2,7 @@
 //!
 //! - **权限令牌**：部分命令使用 `read:*` 形式（见 `required_permission_token`）；`invoke` 数组中声明 **命令名或对应权限名** 均可通过校验。
 //! - **整壳深度集成**：`send_message` / `get_conversation` / `switch_role` / `get_roles` / `get_current_role` 还要求
-//!   `manifest.type == "ocliveplugin"` 且请求来自 **`shell.entry`** 对应 HTML（非 `ui_slots` 页）。
+//!   `manifest.type == "ocliveplugin"` 且请求来自 **`shell.entry`** 对应 HTML 或 **`shell.vueEntry`** 宿主 Vue 入口（非 `ui_slots` 页）。
 
 use crate::api::directory_plugin::directory_plugin_bootstrap_dto;
 use crate::api::event::create_event_impl;
@@ -79,9 +79,20 @@ fn validate_shell_ocliveplugin(
     let Some(sh) = &manifest.shell else {
         return Err("this command is only allowed for shell plugins".to_string());
     };
-    if normalize_plugin_rel(asset_rel) != normalize_plugin_rel(&sh.entry) {
+    let rel = normalize_plugin_rel(asset_rel);
+    let from_entry = rel == normalize_plugin_rel(&sh.entry);
+    let from_vue = sh
+        .vue_entry
+        .as_ref()
+        .map(|v| {
+            let t = v.trim();
+            !t.is_empty() && rel == normalize_plugin_rel(t)
+        })
+        .unwrap_or(false);
+    if !from_entry && !from_vue {
         return Err(
-            "this command must be invoked from shell.entry HTML (not ui_slots)".to_string(),
+            "this command must be invoked from shell.entry or shell.vueEntry (not ui_slots)"
+                .to_string(),
         );
     }
     Ok(())

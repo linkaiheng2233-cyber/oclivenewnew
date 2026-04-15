@@ -10,8 +10,8 @@ import "./styles/global.css";
 import { tryReplaceWithDirectoryShell } from "./utils/directoryShellBootstrap";
 
 void (async () => {
-  const redirected = await tryReplaceWithDirectoryShell();
-  if (redirected) {
+  const tookShell = await tryReplaceWithDirectoryShell();
+  if (tookShell) {
     return;
   }
 

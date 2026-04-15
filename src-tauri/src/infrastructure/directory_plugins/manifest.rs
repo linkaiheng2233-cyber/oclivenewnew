@@ -18,6 +18,9 @@ pub struct BridgeConfig {
 pub struct ShellSection {
     /// 相对插件根，如 `ui/index.html`
     pub entry: String,
+    /// 可选：整壳主界面用原生 Vue 渲染（相对插件根的 `.vue`）；与 `entry` 二选一优先时见宿主引导逻辑。
+    #[serde(default, rename = "vueEntry")]
+    pub vue_entry: Option<String>,
     /// 非空时由宿主向该 HTML 注入 `window.OclivePluginBridge`。
     #[serde(default)]
     pub bridge: Option<BridgeConfig>,
@@ -87,6 +90,12 @@ impl OclivePluginManifest {
         if let Some(sh) = &self.shell {
             if normalize_plugin_rel(&sh.entry) == n {
                 return sh.bridge.as_ref();
+            }
+            if let Some(ref vc) = sh.vue_entry {
+                let vc = vc.trim();
+                if !vc.is_empty() && normalize_plugin_rel(vc) == n {
+                    return sh.bridge.as_ref();
+                }
             }
         }
         for us in &self.ui_slots {

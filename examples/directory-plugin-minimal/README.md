@@ -1,6 +1,6 @@
 # 最小目录插件示例（Directory Plugin Minimal）
 
-演示：**manifest**、**整壳静态页**、**Node 子进程 JSON-RPC 侧车**（stdout 打印 `OCLIVE_READY`）。
+演示：**manifest**、**整壳**（可选 **`shell.vueEntry`** 走宿主 Vue，否则 **`shell.entry`** HTML）、**Node 子进程 JSON-RPC 侧车**（stdout 打印 `OCLIVE_READY`）。
 
 ## 要求
 
@@ -27,7 +27,7 @@
 }
 ```
 
-重启应用后，若内置 UI 被整壳替换，应看到示例页；页面会经 **`OclivePluginBridge`** 调用 `get_directory_plugin_bootstrap` 并打印 JSON。`manifest.json` 含 **`"type": "ocliveplugin"`** 与 **`shell.bridge.invoke`**（含 `send_message`、`read:conversation` 等权限示例），用于接管主对话能力。
+重启应用后，若内置 UI 被整壳替换：默认在 **`force_iframe_mode` 关闭**且 **`shell.vueEntry`** 指向存在的 `.vue` 时，宿主用 **Vue** 渲染整壳（`inject('oclive')` 与插槽一致）；否则会打开 **`shell.entry`** HTML。HTML 页会经 **`OclivePluginBridge`** 调用 `get_directory_plugin_bootstrap` 并打印 JSON。`manifest.json` 含 **`"type": "ocliveplugin"`** 与 **`shell.bridge.invoke`**（含 `send_message`、`read:conversation`、`get_current_role` 等权限示例），用于接管主对话能力。
 
 ## 与 `plugin_backends` 联调
 
@@ -37,6 +37,7 @@
 
 | 文件 | 作用 |
 |------|------|
-| `manifest.json` | 插件 id、shell、process |
-| `ui/index.html` | 整壳入口页 |
+| `manifest.json` | 插件 id、shell（`entry` / `vueEntry`）、process |
+| `Shell.vue` | 整壳 Vue 入口（与 `shell.vueEntry` 对应） |
+| `ui/index.html` | 整壳 HTML 入口（`vueEntry` 不可用或强制 iframe 时） |
 | `rpc_server.mjs` | 监听随机端口，打印 `OCLIVE_READY http://127.0.0.1:<port>/rpc` |

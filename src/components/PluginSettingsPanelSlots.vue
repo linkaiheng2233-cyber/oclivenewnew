@@ -1,13 +1,8 @@
 <script setup lang="ts">
-import { storeToRefs } from "pinia";
-import { onMounted, ref, watch } from "vue";
+import { ref, watch } from "vue";
 import AsyncPluginVue from "./AsyncPluginVue.vue";
-import {
-  getDirectoryPluginBootstrap,
-  type PluginUiSlotInfo,
-} from "../utils/tauri-api";
-import { usePluginStore } from "../stores/pluginStore";
-import { useRoleStore } from "../stores/roleStore";
+import { useDirectoryPluginSlotEmbed } from "../composables/useDirectoryPluginSlotEmbed";
+import { SLOT_SETTINGS_PANEL } from "../stores/pluginStore";
 
 const props = withDefaults(
   defineProps<{
@@ -17,77 +12,32 @@ const props = withDefaults(
   { bootstrapEpoch: 0 },
 );
 
-const roleStore = useRoleStore();
-const { currentRoleId } = storeToRefs(roleStore);
-const pluginStore = usePluginStore();
+const {
+  pluginError,
+  slots: panelSlots,
+  frameErrors,
+  onFrameError,
+  onVueFailed,
+  showIframe,
+  showVue,
+} = useDirectoryPluginSlotEmbed({
+  slot: SLOT_SETTINGS_PANEL,
+  bootstrapEpoch: () => props.bootstrapEpoch,
+});
 
-const SETTINGS_PANEL = "settings.panel";
-
-const panelSlots = ref<PluginUiSlotInfo[]>([]);
-const loadError = ref<string | null>(null);
-const frameErrors = ref<Record<string, string>>({});
-const vueFallback = ref<Record<string, boolean>>({});
 const activeTab = ref(0);
-
-async function loadSlots() {
-  loadError.value = null;
-  try {
-    const boot = await getDirectoryPluginBootstrap(currentRoleId.value);
-    pluginStore.applyDirectoryBootstrap(boot);
-    panelSlots.value = (boot.uiSlots ?? []).filter((s) => s.slot === SETTINGS_PANEL);
-    if (activeTab.value >= panelSlots.value.length) {
-      activeTab.value = 0;
-    }
-  } catch (e) {
-    loadError.value = e instanceof Error ? e.message : String(e);
-  }
-}
-
-onMounted(loadSlots);
-watch(
-  () => [props.bootstrapEpoch, currentRoleId.value] as const,
-  () => {
-    vueFallback.value = {};
-    void loadSlots();
-  },
-);
 
 watch(panelSlots, (list) => {
   if (activeTab.value >= list.length) {
     activeTab.value = 0;
   }
 });
-
-function onFrameError(pluginId: string) {
-  frameErrors.value = {
-    ...frameErrors.value,
-    [pluginId]: "页面加载失败",
-  };
-}
-
-function onVueFailed(pluginId: string) {
-  vueFallback.value = { ...vueFallback.value, [pluginId]: true };
-}
-
-function showIframe(s: PluginUiSlotInfo): boolean {
-  if (pluginStore.pluginState.force_iframe_mode) return true;
-  const vc = s.vueComponent?.trim();
-  if (!vc) return true;
-  return vueFallback.value[s.pluginId] === true;
-}
-
-function showVue(s: PluginUiSlotInfo): boolean {
-  if (pluginStore.pluginState.force_iframe_mode) return false;
-  const vc = s.vueComponent?.trim();
-  if (!vc) return false;
-  return vueFallback.value[s.pluginId] !== true;
-}
 </script>
 
 <template>
   <div class="psp-root">
-    <div v-if="loadError" class="psp-msg psp-msg--err" role="status">
-      {{ loadError }}
+    <div v-if="pluginError" class="psp-msg psp-msg--err" role="status">
+      {{ pluginError }}
     </div>
     <template v-else-if="panelSlots.length > 0">
       <div class="psp-tabs" role="tablist" aria-label="插件设置页">

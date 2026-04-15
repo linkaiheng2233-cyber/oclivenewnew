@@ -37,7 +37,7 @@
 | `schema_version` | `number` | 当前仅接受 **`1`** |
 | `id` | `string` | 全局唯一；与 `directory_plugins.*` 槽位对应 |
 | `version` | `string` | 建议 SemVer 文本 |
-| `shell` | `object?` | **`entry`**：相对插件根的 HTML 入口（整壳 B1） |
+| `shell` | `object?` | **`entry`**：相对插件根的 HTML 入口（整壳 B1，回退用）；**`vueEntry?`**：相对插件根的 `.vue`，在 **`force_iframe_mode` 关闭** 且文件可读时由宿主用 Vue 渲染整壳（与插槽 `vueComponent` 体验一致；失败则回退 `entry`） |
 | `process` | `object?` | **`command`** / **`args[]`** / **`cwd?`**（`cwd` 相对插件根，可省略则默认为插件根） |
 | `ready_prefix` | `string?` | 默认 **`OCLIVE_READY`**；就绪行 = 此前缀 + 空格 + **JSON-RPC 根 URL**（须 `http://` 或 `https://`） |
 
@@ -78,7 +78,11 @@
 
 ## 4. 整壳 UI（B1）
 
-当 **`shell_plugin_id`**（文件或 `OCLIVE_SHELL_PLUGIN_ID`）指向已扫描到的插件，且其 manifest 含 **`shell.entry`** 时，内置前端在挂载前调用 **`get_directory_plugin_bootstrap`**；若返回 **`shellUrl`**，则对主窗口执行 **`location.replace(shellUrl)`**。
+当 **`shell_plugin_id`**（文件或 `OCLIVE_SHELL_PLUGIN_ID`）指向已扫描到的插件，且其 manifest 含 **`shell.entry`** 时，内置前端在挂载主应用**之前**调用 **`get_directory_plugin_bootstrap`**（可省略 `role_id`，与旧行为一致）。
+
+- **`force_iframe_mode`**（bootstrap 与 `plugin_state` 一致）：为真时**忽略** **`shell.vueEntry`**，若存在 **`shellUrl`** 且当前文档 URL 与之不同，则 **`location.replace(shellUrl)`**（HTML 整壳）。
+- 否则若 manifest 含非空的 **`shell.vueEntry`**，且 **`read_plugin_asset_text`** 能读到该 `.vue`：宿主在 **`#app`** 挂载轻量 Vue 根（**`DirectoryShellApp.vue`** + **`AsyncPluginVue`**），`inject('oclive')` 与插槽一致；**`plugin_bridge_invoke` 的 `assetRel` 应传 `vueEntry` 路径**（与敏感命令门禁「整壳页」判定一致）。
+- 若未走 Vue（无 `vueEntry`、读文件失败、或用户强制 iframe）：若 **`shellUrl`** 与当前页不同，则 **`location.replace(shellUrl)`**。
 
 **`shellUrl` 形态**：`https://ocliveplugin.localhost/<manifest.id>/<entry>`（Windows WebView2 下由 Tauri 将自定义协议映射为该 HTTPS 主机名）。
 
@@ -97,12 +101,12 @@
 
 ### 4.1 整壳前端桥接（`shell.bridge`）
 
-若 **`shell`** 下声明 **`bridge`**，且 **`invoke`** / **`events`** 非空，宿主在提供该 **`shell.entry` 对应 HTML** 时会在 `</body>` 前注入脚本，挂载 **`window.OclivePluginBridge`**：
+若 **`shell`** 下声明 **`bridge`**，且 **`invoke`** / **`events`** 非空：宿主在提供 **`shell.entry` 对应 HTML** 时会在 `</body>` 前注入脚本，挂载 **`window.OclivePluginBridge`**；若走 **`shell.vueEntry`** Vue 整壳，则由 **`provide('oclive', …)`** 注入同一套 **`invoke` / `events`**（底层仍走 **`plugin_bridge_invoke`**）。
 
 - **`invoke(command, params)`**：manifest 的 **`bridge.invoke`** 为**权限列表**：可写 **命令名**（如 `send_message`）或 **权限别名**（如 `read:conversation`）；与下表对应。由 **`plugin_bridge_invoke`** 二次校验。
 - **`listen(event, handler)`**：仅允许 **`bridge.events`** 中的事件名（依赖 WebView 内 `__TAURI__.event`）。
 
-**整壳深度集成**：下列命令除需 **`bridge.invoke`** 命中外，还要求 manifest 顶层 **`"type": "ocliveplugin"`**，且调用页为 **`shell.entry`**（**`ui_slots` 页不得调用**，避免越权）：
+**整壳深度集成**：下列命令除需 **`bridge.invoke`** 命中外，还要求 manifest 顶层 **`"type": "ocliveplugin"`**，且调用来源为 **`shell.entry` 对应 HTML** 或 **`shell.vueEntry` 宿主 Vue 页**（**`ui_slots` 页不得调用**，避免越权）：
 
 | `OclivePluginBridge.invoke` 命令 | manifest 权限（`invoke` 数组中任写其一即可） | 说明 |
 |-----------------------------------|---------------------------------------------|------|
@@ -119,7 +123,7 @@
 
 **不强制 `type: ocliveplugin` 的桥接命令**（亦需在 **`bridge.invoke`** 中声明）：`get_role_info`、`list_roles`、`get_time_state`、`get_directory_plugin_bootstrap` 等。未声明的调用一律拒绝。
 
-**写入类命令**（`update_memory` / `delete_memory` / `update_emotion` / `update_event` / `update_prompt`）与上表「聊天/角色」敏感命令相同：**必须** `type: ocliveplugin` 且自 **`shell.entry`** 页调用。
+**写入类命令**（`update_memory` / `delete_memory` / `update_emotion` / `update_event` / `update_prompt`）与上表「聊天/角色」敏感命令相同：**必须** `type: ocliveplugin` 且自 **`shell.entry` HTML** 或 **`shell.vueEntry` Vue** 调用。
 
 ### 4.2 主界面 UI 插槽（`ui_slots`）
 
@@ -246,9 +250,9 @@
 | 扫描 / manifest / 懒启动 / shell URL | `src-tauri/src/infrastructure/directory_plugins/` |
 | 枚举与 `directory_plugins` 槽位 | `src-tauri/src/models/plugin_backends.rs` |
 | 五模块解析与 HTTP 复用 | `src-tauri/src/domain/plugin_host.rs`、`src-tauri/src/infrastructure/remote_plugin/` |
-| Tauri 命令 | `src-tauri/src/api/directory_plugin.rs`、`src-tauri/src/api/plugin_bridge.rs` |
+| Tauri 命令 | `src-tauri/src/api/directory_plugin.rs`、`src-tauri/src/api/plugin_bridge.rs`、`src-tauri/src/api/plugin_update.rs`（本地 zip 覆盖 / 更新检查预留） |
 | 自定义协议 + 启动 | `src-tauri/src/lib.rs` |
-| 内置 UI 启动引导 | `src/main.js` |
+| 内置 UI 启动引导 | `src/main.js`、`src/utils/directoryShellBootstrap.ts`、`src/DirectoryShellApp.vue` |
 | 聊天工具栏插槽 | `src/components/ChatPluginToolbarSlots.vue` |
 | 设置页插槽 | `src/components/PluginSettingsPanelSlots.vue`、`src/views/SettingsView.vue` |
 | 角色详情插槽 | `src/components/PluginRoleDetailSlots.vue`、`src/views/RoleDetailView.vue` |
@@ -258,7 +262,7 @@
 
 ## 8. 仓库内最小示例
 
-见 **`examples/directory-plugin-minimal/`**：可复制到 `plugins/<id>/` 或加入 `extra_plugin_roots` 后，配置 `shell_plugin_id` 与（可选）`plugin_backends` 做联调。  
+见 **`examples/directory-plugin-minimal/`**（含 **`Shell.vue`** + **`shell.vueEntry`** 示例）：可复制到 `plugins/<id>/` 或加入 `extra_plugin_roots` 后，配置 `shell_plugin_id` 与（可选）`plugin_backends` 做联调。  
 **非整壳 + 工具栏插槽**：**`examples/directory-plugin-ui-slot/`**；**原生 Vue 工具栏 + iframe 回退**：**`examples/directory-plugin-ui-slot-vue/`**。
 
 ---
@@ -268,7 +272,9 @@
 | 现象 | 可能原因 |
 |------|----------|
 | 仍走 builtin / Ollama，日志提示 directory 缺失槽位 | `plugin_backends.* = directory` 但 **`directory_plugins.<槽>`** 未填或与 manifest **`id`** 不一致 |
-| 整壳未跳转 | **`shell_plugin_id`** 未设或插件未扫描到；manifest 缺 **`shell.entry`**；`get_directory_plugin_bootstrap` 返回的 **`shellUrl`** 为空 |
+| 整壳未跳转 / 仍显示内置 UI | **`shell_plugin_id`** 未设或插件未扫描到；manifest 缺 **`shell.entry`**；`get_directory_plugin_bootstrap` 返回的 **`shellUrl`** 为空；或 **`force_iframe_mode`** 为真且未发生 `location.replace` |
+| Vue 整壳回退到 HTML | **`shell.vueEntry`** 路径错误或文件不存在；Vue 编译失败（`AsyncPluginVue` 触发失败回退）；**`force_iframe_mode`** 开启 |
+| 插件管理「从本地 zip 更新」失败 | zip 内无有效 **`manifest.json`**（根或单一顶层目录）；**`manifest.id`** 与所选插件 id 不一致；目标目录无法删除（占用中） |
 | 整壳页里 **`invoke` 失败** | **`tauri.conf.json`** 未为 **`https://ocliveplugin.localhost`** 配置 **`dangerousRemoteDomainIpcAccess`**；或页面未在 Tauri WebView 内打开 |
 | 子进程启动失败 / 无 RPC | **`process.command`** 在 PATH 中不可用（如未装 Node）；**`manifest.json`** 语法错误；子进程未在超时内向 stdout 打印 **`OCLIVE_READY <url>`** |
 | **`directory_plugin_invoke`** 报错 | **`pluginId`** 未扫描到；目标插件缺 **`process`** 节无法懒启动 RPC |

@@ -34,7 +34,7 @@ function makeEvents(): OcliveEvents {
   };
 }
 
-/** 供 `provide('oclive', …)`；`bridgeAssetRel` 为 manifest 插槽 `entry`。 */
+/** 供 `provide('oclive', …)`；`bridgeAssetRel` 为 manifest 资源路径（插槽 `entry`、或整壳 `shell.vueEntry` 等），与 `plugin_bridge_invoke` 的 `assetRel` 一致。 */
 export function createOcliveApi(
   pluginId: string,
   bridgeAssetRel: string,

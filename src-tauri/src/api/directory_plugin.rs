@@ -37,6 +37,11 @@ const EMBEDDED_UI_SLOT_NAMES: &[&str] = &["chat_toolbar", "settings.panel", "rol
 pub struct DirectoryPluginBootstrapDto {
     pub shell_url: Option<String>,
     pub shell_plugin_id: Option<String>,
+    /// 整壳 `manifest.shell.vueEntry`（相对插件根）；与 `force_iframe_mode` 共同决定是否走宿主 Vue 入口。
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub shell_vue_entry: Option<String>,
+    /// 来自 `plugin_state`：为真时整壳与插槽均仅用 iframe，忽略 Vue 入口。
+    pub force_iframe_mode: bool,
     pub plugin_ids: Vec<String>,
     pub developer_mode: bool,
     /// 当前角色下、已启用插件在 manifest `bridge.events` 中声明的宿主事件名（去重排序）。
@@ -142,6 +147,18 @@ pub fn directory_plugin_bootstrap_dto(
         let entry = manifest.shell.as_ref()?.entry.as_str();
         rt.shell_url_for(pid, entry)
     });
+    let shell_vue_entry = shell_plugin_id.as_ref().and_then(|pid| {
+        let roots = rt.plugin_roots.read();
+        let root = roots.get(pid)?;
+        let manifest = OclivePluginManifest::load_from_dir(root).ok()?;
+        let sh = manifest.shell.as_ref()?;
+        let ve = sh.vue_entry.as_ref()?.trim();
+        if ve.is_empty() {
+            None
+        } else {
+            Some(ve.replace('\\', "/"))
+        }
+    });
 
     let mut ui_slots = Vec::new();
     let mut subscribed_set = HashSet::new();
@@ -227,6 +244,8 @@ pub fn directory_plugin_bootstrap_dto(
     DirectoryPluginBootstrapDto {
         shell_url,
         shell_plugin_id,
+        shell_vue_entry,
+        force_iframe_mode: pst.force_iframe_mode,
         plugin_ids: plugin_ids_sorted,
         developer_mode: host.developer_effective(),
         subscribed_host_events,

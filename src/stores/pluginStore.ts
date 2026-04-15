@@ -1,6 +1,8 @@
 import { defineStore } from "pinia";
 import { setHostEventSubscribedEvents } from "../lib/hostEventBus";
 import {
+  checkPluginUpdates,
+  extractPluginZip,
   getDirectoryPluginBootstrap,
   getDirectoryPluginCatalog,
   getPluginState,
@@ -8,6 +10,8 @@ import {
   savePluginState,
   type DirectoryPluginBootstrap,
   type DirectoryPluginCatalogEntry,
+  type PluginUpdateInfo,
+  type PluginUiSlotInfo,
   type RolePluginState,
 } from "../utils/tauri-api";
 import { useRoleStore } from "./roleStore";
@@ -18,6 +22,9 @@ type SlotOrderMemo = {
 };
 
 const slotOrderMemo = new Map<string, SlotOrderMemo>();
+
+/** 并发 `refresh()` 合并为单次执行（共享 Promise）。 */
+let refreshPromise: Promise<void> | null = null;
 
 /** 聊天输入区上方工具栏 */
 export const SLOT_CHAT_TOOLBAR = "chat_toolbar";
@@ -110,24 +117,61 @@ export const usePluginStore = defineStore("plugin", {
     pluginState: emptyState() as RolePluginState,
     /** 与 `get_directory_plugin_bootstrap.developer_mode` 一致（扫描额外插件根等）。 */
     developerMode: false,
+    /** 最近一次 bootstrap 的嵌入插槽列表（与 `get_directory_plugin_bootstrap.uiSlots` 一致）。 */
+    bootstrapUiSlots: [] as PluginUiSlotInfo[],
     /** 变更后嵌入插槽组件会重新拉 bootstrap */
     bootstrapEpoch: 0,
+    /** `check_plugin_updates` 最近一次结果（按插件 id）。 */
+    pluginUpdateById: {} as Record<string, PluginUpdateInfo>,
+    pluginUpdatesCheckLoading: false,
+    extractingPluginId: null as string | null,
   }),
   actions: {
     /** 由 bootstrap DTO 更新宿主事件订阅与开发者模式（插槽与 `refresh` / `sync` 共用）。 */
     applyDirectoryBootstrap(boot: DirectoryPluginBootstrap) {
       setHostEventSubscribedEvents(boot.subscribedHostEvents ?? []);
       this.developerMode = boot.developerMode ?? false;
+      this.bootstrapUiSlots = boot.uiSlots ?? [];
     },
     /** 角色切换或插件启用状态变更后更新宿主事件订阅与开发者模式（不拉 catalog）。 */
     async syncDirectoryPluginBootstrap() {
       const roleId = useRoleStore().currentRoleId;
-      const boot = await getDirectoryPluginBootstrap(roleId);
-      this.applyDirectoryBootstrap(boot);
+      try {
+        const boot = await getDirectoryPluginBootstrap(roleId);
+        this.applyDirectoryBootstrap(boot);
+      } catch (e) {
+        this.error = e instanceof Error ? e.message : String(e);
+      }
     },
     async openPanel() {
       this.panelVisible = true;
       await this.refresh();
+    },
+    async checkPluginUpdatesFromRegistry() {
+      this.pluginUpdatesCheckLoading = true;
+      this.error = null;
+      try {
+        const ids = this.catalog.map((c) => c.id);
+        this.pluginUpdateById = await checkPluginUpdates(ids);
+      } catch (e) {
+        this.error = e instanceof Error ? e.message : String(e);
+      } finally {
+        this.pluginUpdatesCheckLoading = false;
+      }
+    },
+    async installPluginFromLocalZip(pluginId: string, zipPath: string) {
+      this.extractingPluginId = pluginId;
+      this.error = null;
+      try {
+        await extractPluginZip(zipPath, pluginId);
+        await this.refresh();
+        this.bootstrapEpoch += 1;
+      } catch (e) {
+        this.error = e instanceof Error ? e.message : String(e);
+        throw e;
+      } finally {
+        this.extractingPluginId = null;
+      }
     },
     closePanel() {
       this.panelVisible = false;
@@ -140,46 +184,54 @@ export const usePluginStore = defineStore("plugin", {
       }
     },
     async refresh() {
+      if (refreshPromise) {
+        return refreshPromise;
+      }
       this.loading = true;
       this.error = null;
-      try {
-        const roleId = useRoleStore().currentRoleId;
-        const [cat, st, boot] = await Promise.all([
-          getDirectoryPluginCatalog(),
-          getPluginState(roleId),
-          getDirectoryPluginBootstrap(roleId),
-        ]);
-        const nextState: RolePluginState = {
-          shellPluginId: st.shellPluginId ?? "",
-          disabled_plugins: [...(st.disabled_plugins ?? [])],
-          slot_order: { ...st.slot_order },
-          disabled_slot_contributions: { ...st.disabled_slot_contributions },
-          force_iframe_mode: st.force_iframe_mode ?? false,
-        };
-        if (!catalogEqual(this.catalog, cat)) {
-          this.catalog = cat;
-          const bySlot: Record<string, string[]> = {};
-          for (const p of cat) {
-            if (p.isShell) continue;
-            for (const slotName of p.uiSlotNames ?? []) {
-              if (!bySlot[slotName]) bySlot[slotName] = [];
-              bySlot[slotName].push(p.id);
+      refreshPromise = (async () => {
+        try {
+          const roleId = useRoleStore().currentRoleId;
+          const [cat, st, boot] = await Promise.all([
+            getDirectoryPluginCatalog(),
+            getPluginState(roleId),
+            getDirectoryPluginBootstrap(roleId),
+          ]);
+          const nextState: RolePluginState = {
+            shellPluginId: st.shellPluginId ?? "",
+            disabled_plugins: [...(st.disabled_plugins ?? [])],
+            slot_order: { ...st.slot_order },
+            disabled_slot_contributions: { ...st.disabled_slot_contributions },
+            force_iframe_mode: st.force_iframe_mode ?? false,
+          };
+          if (!catalogEqual(this.catalog, cat)) {
+            this.catalog = cat;
+            slotOrderMemo.clear();
+            const bySlot: Record<string, string[]> = {};
+            for (const p of cat) {
+              if (p.isShell) continue;
+              for (const slotName of p.uiSlotNames ?? []) {
+                if (!bySlot[slotName]) bySlot[slotName] = [];
+                bySlot[slotName].push(p.id);
+              }
             }
+            for (const slotName of Object.keys(bySlot)) {
+              bySlot[slotName].sort();
+            }
+            this.catalogCandidatesBySlot = bySlot;
           }
-          for (const slotName of Object.keys(bySlot)) {
-            bySlot[slotName].sort();
+          if (!rolePluginStateEqual(this.pluginState, nextState)) {
+            this.pluginState = nextState;
           }
-          this.catalogCandidatesBySlot = bySlot;
+          this.applyDirectoryBootstrap(boot);
+        } catch (e) {
+          this.error = e instanceof Error ? e.message : String(e);
+        } finally {
+          this.loading = false;
+          refreshPromise = null;
         }
-        if (!rolePluginStateEqual(this.pluginState, nextState)) {
-          this.pluginState = nextState;
-        }
-        this.applyDirectoryBootstrap(boot);
-      } catch (e) {
-        this.error = e instanceof Error ? e.message : String(e);
-      } finally {
-        this.loading = false;
-      }
+      })();
+      return refreshPromise;
     },
     async persist() {
       const roleId = useRoleStore().currentRoleId;
@@ -223,7 +275,7 @@ export const usePluginStore = defineStore("plugin", {
           seen.add(id);
         }
       }
-      for (const id of [...candidates].sort()) {
+      for (const id of candidates) {
         if (!seen.has(id)) {
           out.push(id);
         }

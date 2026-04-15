@@ -327,6 +327,37 @@ impl DirectoryPluginRuntime {
         &self.host
     }
 
+    #[must_use]
+    pub fn app_data_dir(&self) -> &Path {
+        &self.app_data_dir
+    }
+
+    /// 终止子进程并丢弃 RPC 缓存（插件目录被替换后应调用，再 `rescan_plugin_roots`）。
+    pub fn clear_plugin_process(&self, plugin_id: &str) {
+        let id = plugin_id.trim();
+        if id.is_empty() {
+            return;
+        }
+        if let Some(mut child) = self.children.lock().remove(id) {
+            let _ = child.kill();
+            let _ = child.wait();
+        }
+        self.rpc_urls.lock().remove(id);
+        self.startup_locks.lock().remove(id);
+    }
+
+    /// 重新扫描 `plugins/` 等根目录并替换内存中的 `plugin_roots`。
+    pub fn rescan_plugin_roots(&self, roles_dir: &Path) {
+        let scan = scan_plugins(roles_dir, &self.app_data_dir, &self.host);
+        let n = scan.roots.len();
+        *self.plugin_roots.write() = scan.roots;
+        log::info!(
+            target: "oclive_plugin",
+            "plugin roots rescanned count={}",
+            n
+        );
+    }
+
     pub fn shell_url_for(&self, plugin_id: &str, entry: &str) -> Option<String> {
         let roots = self.plugin_roots.read();
         if !roots.contains_key(plugin_id) {

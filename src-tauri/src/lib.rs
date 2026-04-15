@@ -291,6 +291,8 @@ pub fn run() {
             api::directory_plugin::reset_plugin_state_to_role_default,
             api::directory_plugin::directory_plugin_invoke,
             api::plugin_bridge::plugin_bridge_invoke,
+            api::plugin_update::check_plugin_updates,
+            api::plugin_update::extract_plugin_zip,
         ])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");

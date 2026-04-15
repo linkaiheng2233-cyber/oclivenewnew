@@ -29,6 +29,8 @@
 - `setHostEventSubscribedEvents` 增加签名短路，相同订阅集合不重复重建 `Set`。
 - `pluginStore.pluginsOrderedForSlot` 增加 slot 级 memo，并将顺序过滤从 `includes` 改为 `Set` 查找，减少频繁读取时的重复排序与线性扫描开销。
 - `pluginStore` 在 `catalog` 变化时一次性预计算 `catalogCandidatesBySlot`（已排序），`pluginsOrderedForSlot` 直接复用，避免每次筛选/排序目录插件清单。
+- `pluginStore.refresh()` 合并并发调用为共享 in-flight Promise，避免重复拉取 catalog / state / bootstrap；`applyDirectoryBootstrap` 将 `ui_slots` 写入 `bootstrapUiSlots`，各插槽组件从 store 读取，减少重复的 `get_directory_plugin_bootstrap` 前端请求。
+- 嵌入插槽（聊天工具栏 / 设置页 / 角色详情）共用 `useDirectoryPluginSlotEmbed` composable；`pluginStore` 在目录 `catalog` 变更时 `slotOrderMemo.clear()`，避免旧 memo 与新区块长期并存。
 
 ### Engineering
 

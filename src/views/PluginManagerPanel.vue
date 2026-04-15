@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import { open } from "@tauri-apps/api/dialog";
 import { computed } from "vue";
 import PluginListItem from "../components/PluginListItem.vue";
 import { useAppToast } from "../composables/useAppToast";
@@ -79,6 +80,35 @@ async function onResetToPackDefault() {
     showToast("error", e instanceof Error ? e.message : String(e));
   }
 }
+
+async function onCheckUpdates() {
+  try {
+    await pluginStore.checkPluginUpdatesFromRegistry();
+    if (pluginStore.error) {
+      showToast("error", pluginStore.error);
+    } else {
+      showToast("success", "检查完成（在线版本接口预留中）。");
+    }
+  } catch (e) {
+    showToast("error", e instanceof Error ? e.message : String(e));
+  }
+}
+
+async function onUpdateFromZip(pluginId: string) {
+  const path = await open({
+    multiple: false,
+    filters: [{ name: "Zip", extensions: ["zip"] }],
+  });
+  if (path === null || Array.isArray(path)) {
+    return;
+  }
+  try {
+    await pluginStore.installPluginFromLocalZip(pluginId, path);
+    showToast("success", "更新完成，请重启应用生效。");
+  } catch (e) {
+    showToast("error", e instanceof Error ? e.message : String(e));
+  }
+}
 </script>
 
 <template>
@@ -105,9 +135,19 @@ async function onResetToPackDefault() {
 
         <template v-else>
           <section class="pm-section">
-            <h3 class="pm-h3">已安装插件</h3>
+            <div class="pm-section-head">
+              <h3 class="pm-h3">已安装插件</h3>
+              <button
+                type="button"
+                class="pm-btn secondary pm-btn--sm"
+                :disabled="pluginStore.pluginUpdatesCheckLoading"
+                @click="onCheckUpdates"
+              >
+                检查更新
+              </button>
+            </div>
             <ul class="pm-list">
-              <li v-for="p in pluginStore.catalog" :key="p.id">
+              <li v-for="p in pluginStore.catalog" :key="p.id" class="pm-plugin-row">
                 <PluginListItem
                   :entry="p"
                   :plugin-disabled="pluginStore.isPluginDisabled(p.id)"
@@ -123,6 +163,20 @@ async function onResetToPackDefault() {
                     pluginStore.setSlotContributionDisabled(SLOT_SETTINGS_PANEL, p.id, $event)
                   "
                 />
+                <div class="pm-plugin-actions">
+                  <span
+                    v-if="pluginStore.pluginUpdateById[p.id]?.hasUpdate"
+                    class="pm-badge"
+                  >有新版本</span>
+                  <button
+                    type="button"
+                    class="pm-btn secondary pm-btn--sm"
+                    :disabled="pluginStore.extractingPluginId === p.id"
+                    @click="onUpdateFromZip(p.id)"
+                  >
+                    从本地 zip 更新
+                  </button>
+                </div>
               </li>
             </ul>
             <p v-if="!pluginStore.catalog.length" class="pm-muted">未扫描到目录插件（请将插件放入 roles 同级的 plugins/ 等目录）。</p>
@@ -257,9 +311,39 @@ async function onResetToPackDefault() {
 .pm-section {
   margin-bottom: 16px;
 }
+.pm-section-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  margin-bottom: 8px;
+}
 .pm-h3 {
-  margin: 0 0 8px;
+  margin: 0;
   font-size: 14px;
+}
+.pm-plugin-row {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+.pm-plugin-actions {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+  padding-left: 2px;
+}
+.pm-badge {
+  font-size: 11px;
+  padding: 2px 8px;
+  border-radius: 999px;
+  background: color-mix(in srgb, var(--accent, #3b82f6) 18%, var(--bg-elevated));
+  color: var(--text-primary);
+}
+.pm-btn--sm {
+  padding: 5px 10px;
+  font-size: 12px;
 }
 .pm-hint {
   margin: 0 0 8px;

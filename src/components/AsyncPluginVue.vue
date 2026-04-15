@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import type { Component } from "vue";
-import { defineComponent, h, provide, shallowRef, watch } from "vue";
+import { computed, defineComponent, h, provide, shallowRef, watch } from "vue";
 import { confirm } from "@tauri-apps/api/dialog";
 import { storeToRefs } from "pinia";
 import { loadPluginVueComponent } from "../utils/compilePluginVueSfc";
@@ -13,6 +13,11 @@ const props = defineProps<{
   pluginId: string;
   vueComponent: string;
   bridgeAssetRel: string;
+  /**
+   * 传入布尔值时固定使用该设置（整壳 Vue 入口无 `pluginStore` 同步）；
+   * 省略时从 `pluginStore.developerMode` 读取（嵌入主应用插槽）。
+   */
+  developerMode?: boolean;
 }>();
 
 const emit = defineEmits<{
@@ -20,7 +25,12 @@ const emit = defineEmits<{
 }>();
 
 const pluginStore = usePluginStore();
-const { developerMode } = storeToRefs(pluginStore);
+const { developerMode: storeDeveloperMode } = storeToRefs(pluginStore);
+const effectiveDeveloperMode = computed(() =>
+  typeof props.developerMode === "boolean"
+    ? props.developerMode
+    : storeDeveloperMode.value,
+);
 
 const loaded = shallowRef<Component | null>(null);
 
@@ -40,11 +50,11 @@ const VueSlotInner = defineComponent({
 });
 
 watch(
-  () => [props.pluginId, props.vueComponent] as const,
+  () => [props.pluginId, props.vueComponent, effectiveDeveloperMode.value] as const,
   async () => {
     loaded.value = null;
     let preloadedEntrySource: string | undefined;
-    if (developerMode.value) {
+    if (effectiveDeveloperMode.value) {
       try {
         preloadedEntrySource = await readPluginAssetText(
           props.pluginId,

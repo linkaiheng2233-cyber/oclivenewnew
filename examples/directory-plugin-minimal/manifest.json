@@ -5,6 +5,7 @@
   "version": "0.1.0",
   "shell": {
     "entry": "ui/index.html",
+    "vueEntry": "Shell.vue",
     "bridge": {
       "invoke": [
         "send_message",

@@ -760,11 +760,41 @@ export async function readPluginAssetText(
 export interface DirectoryPluginBootstrap {
   shellUrl?: string | null;
   shellPluginId?: string | null;
+  /** 整壳 `manifest.shell.vueEntry`（相对插件根）；与 `forceIframeMode` 决定是否走宿主 Vue 整壳。 */
+  shellVueEntry?: string | null;
+  /** 与 `plugin_state.force_iframe_mode` 一致；为真时忽略 Vue 整壳与插槽 Vue。 */
+  forceIframeMode?: boolean;
   pluginIds: string[];
   developerMode: boolean;
   /** 当前角色下已启用插件在 manifest `bridge.events` 中声明的宿主事件名。 */
   subscribedHostEvents: string[];
   uiSlots: PluginUiSlotInfo[];
+}
+
+/** `check_plugin_updates` 单插件结果（在线检查预留）。 */
+export interface PluginUpdateInfo {
+  hasUpdate: boolean;
+  latestVersion?: string | null;
+  message?: string | null;
+}
+
+export async function checkPluginUpdates(
+  pluginIds: string[],
+): Promise<Record<string, PluginUpdateInfo>> {
+  return invokeWithFriendlyError<Record<string, PluginUpdateInfo>>(
+    "check_plugin_updates",
+    { plugin_ids: pluginIds },
+  );
+}
+
+export async function extractPluginZip(
+  zipPath: string,
+  pluginId: string,
+): Promise<void> {
+  return invokeWithFriendlyError<void>("extract_plugin_zip", {
+    zip_path: zipPath,
+    plugin_id: pluginId,
+  });
 }
 
 /** 同一 `role_id` 上并发的 bootstrap 合并为单次 IPC，避免多插槽同时挂载时重复打后端。 */
@@ -923,7 +953,7 @@ export async function directoryPluginInvoke(
 
 /**
  * manifest `shell.bridge.invoke` 可声明 **命令名** 或 **权限别名**（后者用于 `get_conversation` → `read:conversation` 等）。
- * 敏感命令（聊天/角色切换）还要求 **`type`: `"ocliveplugin"`** 且页面为 **`shell.entry`**。
+ * 敏感命令（聊天/角色切换）还要求 **`type`: `"ocliveplugin"`** 且来源为 **`shell.entry`** HTML 或 **`shell.vueEntry`** Vue 整壳。
  */
 export type PluginBridgeManifestToken =
   | "send_message"
