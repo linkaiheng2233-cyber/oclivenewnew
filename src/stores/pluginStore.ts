@@ -105,6 +105,8 @@ export const usePluginStore = defineStore("plugin", {
     loading: false,
     error: null as string | null,
     catalog: [] as DirectoryPluginCatalogEntry[],
+    /** 目录插件 catalog 预计算：各 slot 对应的非整壳插件 id（已排序）。 */
+    catalogCandidatesBySlot: {} as Record<string, string[]>,
     pluginState: emptyState() as RolePluginState,
     /** 与 `get_directory_plugin_bootstrap.developer_mode` 一致（扫描额外插件根等）。 */
     developerMode: false,
@@ -156,6 +158,18 @@ export const usePluginStore = defineStore("plugin", {
         };
         if (!catalogEqual(this.catalog, cat)) {
           this.catalog = cat;
+          const bySlot: Record<string, string[]> = {};
+          for (const p of cat) {
+            if (p.isShell) continue;
+            for (const slotName of p.uiSlotNames ?? []) {
+              if (!bySlot[slotName]) bySlot[slotName] = [];
+              bySlot[slotName].push(p.id);
+            }
+          }
+          for (const slotName of Object.keys(bySlot)) {
+            bySlot[slotName].sort();
+          }
+          this.catalogCandidatesBySlot = bySlot;
         }
         if (!rolePluginStateEqual(this.pluginState, nextState)) {
           this.pluginState = nextState;
@@ -193,9 +207,7 @@ export const usePluginStore = defineStore("plugin", {
     },
     /** 某插槽下、按 manifest 声明了该槽的非整壳插件 id 顺序（含未在 slot_order 中的，字典序补全）。 */
     pluginsOrderedForSlot(slot: string): string[] {
-      const candidates = this.catalog
-        .filter((p) => !p.isShell && p.uiSlotNames.includes(slot))
-        .map((p) => p.id);
+      const candidates = this.catalogCandidatesBySlot[slot] ?? [];
       const order = this.pluginState.slot_order[slot] ?? [];
       const signature = buildSlotOrderSignature(candidates, order);
       const memo = slotOrderMemo.get(slot);

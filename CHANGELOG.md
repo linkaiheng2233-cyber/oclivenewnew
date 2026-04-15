@@ -28,6 +28,7 @@
 - `pluginStore.refresh()` 仅在目录插件 `catalog` / `pluginState` 实际变化时才替换状态对象，减少无效重渲染。
 - `setHostEventSubscribedEvents` 增加签名短路，相同订阅集合不重复重建 `Set`。
 - `pluginStore.pluginsOrderedForSlot` 增加 slot 级 memo，并将顺序过滤从 `includes` 改为 `Set` 查找，减少频繁读取时的重复排序与线性扫描开销。
+- `pluginStore` 在 `catalog` 变化时一次性预计算 `catalogCandidatesBySlot`（已排序），`pluginsOrderedForSlot` 直接复用，避免每次筛选/排序目录插件清单。
 
 ### Engineering
 
