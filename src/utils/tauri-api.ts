@@ -812,6 +812,14 @@ export interface RolePluginState extends PluginStateFile {
   shellPluginId: string;
 }
 
+/** 并发 `get_plugin_state(role_id)` 合并为单次 IPC（按 role_id 维度）。 */
+const pluginStateInflight = new Map<string, Promise<RolePluginState>>();
+
+function pluginStateCacheKey(roleId: string): string {
+  const t = roleId.trim();
+  return t.length > 0 ? t : "__default__";
+}
+
 /** 角色包根目录 `ui.json`（与编写器 / 后端 `UiConfig` 一致）。 */
 export interface SlotConfig {
   order: string[];
@@ -861,15 +869,27 @@ export async function getDirectoryPluginCatalog(): Promise<DirectoryPluginCatalo
 }
 
 export async function getPluginState(roleId: string): Promise<RolePluginState> {
-  return invokeWithFriendlyError<RolePluginState>("get_plugin_state", {
+  const key = pluginStateCacheKey(roleId);
+  const existing = pluginStateInflight.get(key);
+  if (existing) {
+    return existing;
+  }
+  const p = invokeWithFriendlyError<RolePluginState>("get_plugin_state", {
     role_id: roleId,
+  }).finally(() => {
+    if (pluginStateInflight.get(key) === p) {
+      pluginStateInflight.delete(key);
+    }
   });
+  pluginStateInflight.set(key, p);
+  return p;
 }
 
 export async function savePluginState(
   roleId: string,
   state: RolePluginState,
 ): Promise<void> {
+  pluginStateInflight.delete(pluginStateCacheKey(roleId));
   return invokeWithFriendlyError<void>("save_plugin_state", {
     role_id: roleId,
     state,
@@ -880,6 +900,7 @@ export async function savePluginState(
 export async function resetPluginStateToRoleDefault(
   roleId: string,
 ): Promise<void> {
+  pluginStateInflight.delete(pluginStateCacheKey(roleId));
   return invokeWithFriendlyError<void>("reset_plugin_state_to_role_default", {
     role_id: roleId,
   });
