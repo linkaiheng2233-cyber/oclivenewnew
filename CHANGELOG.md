@@ -27,6 +27,7 @@
 - Rust：`directory_plugin_bootstrap_dto` 在构建 `ui_slots` 的同一趟扫描中合并 `subscribed_host_events`，每个已启用插件目录只解析一次 `manifest.json`（整壳 URL 仍单独解析一次）。
 - `pluginStore.refresh()` 仅在目录插件 `catalog` / `pluginState` 实际变化时才替换状态对象，减少无效重渲染。
 - `setHostEventSubscribedEvents` 增加签名短路，相同订阅集合不重复重建 `Set`。
+- `pluginStore.pluginsOrderedForSlot` 增加 slot 级 memo，并将顺序过滤从 `includes` 改为 `Set` 查找，减少频繁读取时的重复排序与线性扫描开销。
 
 ### Engineering
 

@@ -12,6 +12,13 @@ import {
 } from "../utils/tauri-api";
 import { useRoleStore } from "./roleStore";
 
+type SlotOrderMemo = {
+  signature: string;
+  value: string[];
+};
+
+const slotOrderMemo = new Map<string, SlotOrderMemo>();
+
 /** 聊天输入区上方工具栏 */
 export const SLOT_CHAT_TOOLBAR = "chat_toolbar";
 /** 应用内「设置 → 插件扩展」页嵌入 */
@@ -86,6 +93,10 @@ function rolePluginStateEqual(a: RolePluginState, b: RolePluginState): boolean {
       b.disabled_slot_contributions ?? {},
     )
   );
+}
+
+function buildSlotOrderSignature(candidates: string[], order: string[]): string {
+  return `${candidates.join("\u001f")}\u001e${order.join("\u001f")}`;
 }
 
 export const usePluginStore = defineStore("plugin", {
@@ -186,10 +197,16 @@ export const usePluginStore = defineStore("plugin", {
         .filter((p) => !p.isShell && p.uiSlotNames.includes(slot))
         .map((p) => p.id);
       const order = this.pluginState.slot_order[slot] ?? [];
+      const signature = buildSlotOrderSignature(candidates, order);
+      const memo = slotOrderMemo.get(slot);
+      if (memo && memo.signature === signature) {
+        return [...memo.value];
+      }
+      const candidateSet = new Set(candidates);
       const seen = new Set<string>();
       const out: string[] = [];
       for (const id of order) {
-        if (candidates.includes(id) && !seen.has(id)) {
+        if (candidateSet.has(id) && !seen.has(id)) {
           out.push(id);
           seen.add(id);
         }
@@ -199,6 +216,7 @@ export const usePluginStore = defineStore("plugin", {
           out.push(id);
         }
       }
+      slotOrderMemo.set(slot, { signature, value: out });
       return out;
     },
     isSlotContributionDisabled(slot: string, pluginId: string): boolean {
