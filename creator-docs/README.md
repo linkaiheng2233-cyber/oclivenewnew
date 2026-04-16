@@ -27,6 +27,7 @@
 4. 做 HTTP 侧车： **[plugin-and-architecture/CREATOR_PLUGIN_ARCHITECTURE.md](plugin-and-architecture/CREATOR_PLUGIN_ARCHITECTURE.md)** + **[plugin-and-architecture/REMOTE_PLUGIN_PROTOCOL.md](plugin-and-architecture/REMOTE_PLUGIN_PROTOCOL.md)**。  
 5. **用户向：本机侧车 + 自带 Key 接闭源模型**：[getting-started/SIDECAR_LLM_USER_GUIDE.md](getting-started/SIDECAR_LLM_USER_GUIDE.md)。  
 6. 联调示例： **[examples/remote_plugin_minimal/README.md](../examples/remote_plugin_minimal/README.md)**；**OpenAI 兼容（requests + BYOK）**：[examples/remote_plugin_openai_compat/README.md](../examples/remote_plugin_openai_compat/README.md)。
+7. 管理目录插件：主界面 **`Ctrl+Shift+F`** 打开插件管理；用户常见问题见 **[FAQ.md](FAQ.md)**（含 mumu 默认模块与重置布局说明）。
 
 ---
 

@@ -64,6 +64,33 @@
 
 ---
 
+### Q: 在哪里管理插件（启用、停用、排序、更新）？
+
+**A:**
+
+1. 在主界面按 **`Ctrl+Shift+F`** 打开 **插件管理** 弹层。  
+2. 面板支持：
+   - 启用/停用插件（含批量）
+   - 按插槽拖拽排序（`chat_toolbar`、`settings.panel`、`role.detail`、`sidebar`、`chat.header`）
+   - 从本地 zip 更新插件
+3. 调整后点击 **保存**；若涉及停用进程插件，建议重启应用以完全释放。
+4. 误操作可点 **重置为角色包推荐**，恢复到该角色 `ui.json` 的默认布局。
+
+---
+
+### Q: mumu 现在默认有哪些前端模块？
+
+**A:** 当前 `roles/mumu/ui.json` 默认启用了 4 个前端模块（目录插件）：
+
+- `chat.header`：`com.oclive.mumu.chat-header-status`（头部状态）
+- `chat_toolbar`：`com.oclive.mumu.quick-actions`（快捷动作）
+- `sidebar`：`com.oclive.mumu.sidebar-glance`（侧栏概览）
+- `settings.panel`：`com.oclive.mumu.settings-panel`（设置面板）
+
+若你看不到这些模块，通常是本地 `plugin_state.json` 覆盖了角色包默认布局；在插件管理中执行 **重置为角色包推荐** 即可恢复。
+
+---
+
 ### Q: 开发者模式的热重载不生效？
 
 **A:**
