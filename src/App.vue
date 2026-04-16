@@ -34,6 +34,7 @@ import {
   loadRole,
   OCLIVE_DEFAULT_RELATION_SENTINEL,
   setErrorReporter,
+  setRemoteLifeEnabled,
   setRoleInteractionMode,
   setUserRelation,
   type JumpTimeResponse,
@@ -69,6 +70,10 @@ const topBarSceneDialogVisible = ref(false);
 const pendingTopBarSceneId = ref("");
 const quickActionSendEvent = "com.oclive.mumu.quick-actions:send_phrase";
 const quickActionTravelEvent = "com.oclive.mumu.quick-actions:travel";
+const settingsSetRemoteLifeEvent = "com.oclive.mumu.settings-panel:set_remote_life";
+const settingsSetInteractionModeEvent =
+  "com.oclive.mumu.settings-panel:set_interaction_mode";
+const settingsCycleThemeEvent = "com.oclive.mumu.settings-panel:cycle_theme";
 /** 虚拟时间跳转触发 autonomous_scene 规则时，左下角系统提示 */
 const autonomousSceneNotice = ref<{
   visible: boolean;
@@ -208,6 +213,47 @@ async function onInteractionModeChange(ev: Event) {
   } catch (err) {
     showToast("error", err instanceof Error ? err.message : String(err));
   }
+}
+
+async function onPluginSetRemoteLife(payload: unknown): Promise<void> {
+  const enabledRaw = (payload as { enabled?: boolean } | null)?.enabled;
+  if (typeof enabledRaw !== "boolean") return;
+  try {
+    const info = await setRemoteLifeEnabled(roleStore.currentRoleId, enabledRaw);
+    roleStore.applyRoleInfo(info);
+    showToast("success", `异地心声已${enabledRaw ? "开启" : "关闭"}`);
+  } catch (err) {
+    showToast("error", err instanceof Error ? err.message : String(err));
+  }
+}
+
+async function onPluginSetInteractionMode(payload: unknown): Promise<void> {
+  const mode = (payload as { mode?: string } | null)?.mode;
+  if (mode !== "immersive" && mode !== "pure_chat") return;
+  try {
+    const info = await setRoleInteractionMode(roleStore.currentRoleId, mode);
+    roleStore.applyRoleInfo(info);
+    if (mode === "pure_chat") {
+      postReplySceneBarVisible.value = false;
+      postReplySceneSelectedId.value = "";
+      togetherTravelBarVisible.value = false;
+      togetherTravelSelectedId.value = "";
+      topBarSceneDialogVisible.value = false;
+      pendingTopBarSceneId.value = "";
+      autonomousSceneNotice.value = {
+        visible: false,
+        fromLabel: "",
+        toLabel: "",
+      };
+    }
+    showToast("success", `互动模式已切换为${mode === "immersive" ? "沉浸" : "纯聊"}`);
+  } catch (err) {
+    showToast("error", err instanceof Error ? err.message : String(err));
+  }
+}
+
+function onPluginCycleTheme(): void {
+  cycleTheme();
 }
 
 async function initialize() {
@@ -456,6 +502,9 @@ onMounted(() => {
   });
   hostEventBus.on(quickActionSendEvent, onPluginQuickActionSend);
   hostEventBus.on(quickActionTravelEvent, onPluginQuickActionTravel);
+  hostEventBus.on(settingsSetRemoteLifeEvent, onPluginSetRemoteLife);
+  hostEventBus.on(settingsSetInteractionModeEvent, onPluginSetInteractionMode);
+  hostEventBus.on(settingsCycleThemeEvent, onPluginCycleTheme);
   window.addEventListener("keydown", onHotkey);
   window.addEventListener("keydown", onCtrlHoldHintKeydown);
   window.addEventListener("keyup", onCtrlHoldHintKeyup);
@@ -498,6 +547,9 @@ onBeforeUnmount(() => {
   window.removeEventListener("keydown", onHotkey);
   hostEventBus.off(quickActionSendEvent, onPluginQuickActionSend);
   hostEventBus.off(quickActionTravelEvent, onPluginQuickActionTravel);
+  hostEventBus.off(settingsSetRemoteLifeEvent, onPluginSetRemoteLife);
+  hostEventBus.off(settingsSetInteractionModeEvent, onPluginSetInteractionMode);
+  hostEventBus.off(settingsCycleThemeEvent, onPluginCycleTheme);
   window.removeEventListener("keydown", onCtrlHoldHintKeydown);
   window.removeEventListener("keyup", onCtrlHoldHintKeyup);
   window.removeEventListener("resize", scheduleRefreshSplitLayout);

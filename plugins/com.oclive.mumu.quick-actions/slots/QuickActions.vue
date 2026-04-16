@@ -111,8 +111,8 @@ onUnmounted(() => {
 </script>
 
 <template>
-  <div class="qa-wrap">
-    <div class="group">
+  <section class="panel" aria-label="mumu 快捷动作">
+    <div class="group group-phrases">
       <button
         v-for="p in quickPhrases"
         :key="p.label"
@@ -125,7 +125,7 @@ onUnmounted(() => {
         {{ p.label }}
       </button>
     </div>
-    <div class="group">
+    <div class="group group-travel">
       <select v-model="selectedSceneId" class="sel" :disabled="loading || sceneOptions.length === 0">
         <option v-for="s in sceneOptions" :key="s.id" :value="s.id">
           {{ s.label }}
@@ -149,52 +149,94 @@ onUnmounted(() => {
       </button>
     </div>
     <p v-if="errText" class="err" :title="errText">快捷动作不可用：{{ errText }}</p>
-  </div>
+  </section>
 </template>
 
 <style scoped>
-.qa-wrap {
+.panel {
+  --ui-trans-fast: 140ms;
+  --ui-state-danger-fg: var(--text-danger, #c33);
+  --ui-state-neutral-fg: var(--text-secondary, #736a5e);
   display: flex;
-  flex-wrap: wrap;
-  gap: 8px 10px;
-  align-items: center;
+  flex-direction: column;
+  gap: 8px;
   width: 100%;
-  min-height: 34px;
+  box-sizing: border-box;
+  padding: 10px;
+  border-radius: 16px;
+  border: 1px solid color-mix(in srgb, var(--border-light, #ddd2c4) 68%, transparent);
+  background:
+    linear-gradient(
+      170deg,
+      color-mix(in srgb, var(--bg-primary, #fffdf9) 82%, white 18%),
+      color-mix(in srgb, var(--bg-elevated, #f7f2ea) 88%, white 12%)
+    );
+  backdrop-filter: blur(14px) saturate(112%);
+  -webkit-backdrop-filter: blur(14px) saturate(112%);
+  box-shadow:
+    0 8px 20px color-mix(in srgb, var(--text-primary, #3f3a33) 7%, transparent),
+    inset 0 1px 0 color-mix(in srgb, white 68%, transparent);
 }
 .group {
   display: flex;
   flex-wrap: wrap;
   gap: 6px;
   align-items: center;
+  width: 100%;
+}
+.group-phrases {
+  justify-content: flex-start;
+}
+.group-travel {
+  justify-content: flex-start;
 }
 .btn,
 .sel {
-  min-height: 30px;
-  border-radius: var(--radius-btn, 8px);
-  border: 1px solid var(--border-light, #ddd2c4);
-  background: var(--bg-elevated, #f7f2ea);
+  min-height: 31px;
+  border-radius: 10px;
+  border: 1px solid color-mix(in srgb, var(--border-light, #ddd2c4) 74%, transparent);
+  background: color-mix(in srgb, var(--bg-primary, #fffdf9) 90%, transparent);
   color: var(--text-primary, #3f3a33);
-  font-size: 12px;
+  font-size: 11.5px;
   padding: 4px 10px;
+  transition:
+    border-color var(--ui-trans-fast) ease,
+    transform var(--ui-trans-fast) ease,
+    filter var(--ui-trans-fast) ease;
 }
 .btn {
   cursor: pointer;
 }
 .btn:hover {
-  border-color: var(--accent, #8f7f6a);
+  border-color: color-mix(in srgb, var(--accent, #8f7f6a) 56%, transparent);
+  transform: translateY(-0.5px);
 }
 .btn-primary {
-  background: linear-gradient(135deg, var(--btn-grad-a, #c7b79f), var(--btn-grad-b, #b6a189));
+  background:
+    linear-gradient(
+      140deg,
+      color-mix(in srgb, var(--btn-grad-a, #c7b79f) 86%, white 14%),
+      color-mix(in srgb, var(--btn-grad-b, #b6a189) 92%, white 8%)
+    );
   color: var(--text-accent, #2a241d);
-  border-color: var(--accent, #8f7f6a);
+  border-color: color-mix(in srgb, var(--accent, #8f7f6a) 62%, transparent);
+}
+.btn:disabled,
+.sel:disabled {
+  cursor: not-allowed;
+  opacity: 0.62;
+  transform: none;
+}
+.btn:disabled:hover {
+  border-color: color-mix(in srgb, var(--border-light, #ddd2c4) 74%, transparent);
 }
 .sel {
-  min-width: 130px;
+  min-width: 150px;
 }
 .err {
   margin: 0;
   font-size: 11px;
-  color: var(--text-danger, #c33);
+  color: var(--ui-state-danger-fg);
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;

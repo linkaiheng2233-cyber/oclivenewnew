@@ -131,59 +131,96 @@ const roleBadge = computed(() => (roleId.value ? `角色：${roleId.value}` : "�
 </script>
 
 <template>
-  <div class="status-wrap">
-    <div class="line">
-      <span class="pill">{{ roleBadge }}</span>
-      <span class="pill">版本：{{ versionText }}</span>
-      <span class="pill">关系：{{ relationText }}</span>
+  <section class="panel">
+    <div class="panel-head">
+      <strong>聊天头部状态</strong>
+      <span v-if="busy" class="sync">同步中</span>
     </div>
     <div class="line">
-      <span class="pill">场景：{{ sceneText }}</span>
-      <span class="pill">{{ remoteText }}</span>
-      <span v-if="busy" class="tip">更新中…</span>
+      <span class="chip">{{ roleBadge }}</span>
+      <span class="chip">版本：{{ versionText }}</span>
+      <span class="chip">关系：{{ relationText }}</span>
+    </div>
+    <div class="line">
+      <span class="chip">场景：{{ sceneText }}</span>
+      <span class="chip">{{ remoteText }}</span>
     </div>
     <p v-if="errText" class="err" :title="errText">状态读取失败：{{ errText }}</p>
-  </div>
+  </section>
 </template>
 
 <style scoped>
-.status-wrap {
+.panel {
+  --ui-trans-fast: 140ms;
+  --ui-state-warn-fg: color-mix(in srgb, var(--accent, #8f7f6a) 88%, black 12%);
+  --ui-state-warn-bg: color-mix(in srgb, var(--accent, #8f7f6a) 12%, transparent);
+  --ui-state-warn-border: color-mix(in srgb, var(--accent, #8f7f6a) 42%, transparent);
+  --ui-state-danger-fg: var(--text-danger, #c33);
   width: 100%;
-  min-height: 52px;
+  min-height: 60px;
   display: flex;
   flex-direction: column;
-  gap: 6px;
-  padding: 6px 8px;
+  gap: 7px;
+  padding: 10px 12px;
   box-sizing: border-box;
-  border: 1px solid var(--border-light, #ddd2c4);
-  border-radius: 10px;
-  background: var(--bg-elevated, #f7f2ea);
-  color: var(--text-secondary, #5c564c);
+  border-radius: 16px;
+  border: 1px solid color-mix(in srgb, var(--border-light, #ddd2c4) 68%, transparent);
+  background:
+    linear-gradient(
+      170deg,
+      color-mix(in srgb, var(--bg-primary, #fffdf9) 82%, white 18%),
+      color-mix(in srgb, var(--bg-elevated, #f7f2ea) 88%, white 12%)
+    );
+  backdrop-filter: blur(14px) saturate(112%);
+  -webkit-backdrop-filter: blur(14px) saturate(112%);
+  box-shadow:
+    0 8px 20px color-mix(in srgb, var(--text-primary, #3f3a33) 7%, transparent),
+    inset 0 1px 0 color-mix(in srgb, white 68%, transparent);
+  color: var(--text-primary, #3f3a33);
+}
+.panel-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+}
+.panel-head strong {
   font-size: 12px;
+  font-weight: 620;
+  color: var(--text-secondary, #736a5e);
+}
+.sync {
+  font-size: 10px;
+  padding: 2px 8px;
+  border-radius: 999px;
+  border: 1px solid var(--ui-state-warn-border);
+  color: var(--ui-state-warn-fg);
+  background: var(--ui-state-warn-bg);
 }
 .line {
   display: flex;
   flex-wrap: wrap;
   gap: 6px;
 }
-.pill {
+.chip {
   display: inline-flex;
   align-items: center;
-  min-height: 22px;
-  padding: 1px 8px;
+  min-height: 23px;
+  padding: 2px 9px;
   border-radius: 999px;
-  border: 1px solid var(--border-light, #ddd2c4);
-  background: var(--bg-primary, #fffdf9);
+  border: 1px solid color-mix(in srgb, var(--border-light, #ddd2c4) 74%, transparent);
+  background: color-mix(in srgb, var(--bg-primary, #fffdf9) 90%, transparent);
   color: var(--text-primary, #3f3a33);
-}
-.tip {
-  color: var(--text-secondary, #7a7369);
   font-size: 11px;
-  align-self: center;
+  line-height: 1.2;
+  transition:
+    border-color var(--ui-trans-fast) ease,
+    background-color var(--ui-trans-fast) ease,
+    color var(--ui-trans-fast) ease;
 }
 .err {
   margin: 0;
-  color: var(--text-danger, #c33);
+  color: var(--ui-state-danger-fg);
   font-size: 11px;
   white-space: nowrap;
   overflow: hidden;

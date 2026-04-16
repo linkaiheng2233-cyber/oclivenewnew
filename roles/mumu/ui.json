@@ -19,16 +19,24 @@
       ]
     },
     "settings.panel": {
-      "order": [],
-      "visible": []
+      "order": [
+        "com.oclive.mumu.settings-panel"
+      ],
+      "visible": [
+        "com.oclive.mumu.settings-panel"
+      ]
     },
     "role.detail": {
       "order": [],
       "visible": []
     },
     "sidebar": {
-      "order": [],
-      "visible": []
+      "order": [
+        "com.oclive.mumu.sidebar-glance"
+      ],
+      "visible": [
+        "com.oclive.mumu.sidebar-glance"
+      ]
     },
     "chat.header": {
       "order": [

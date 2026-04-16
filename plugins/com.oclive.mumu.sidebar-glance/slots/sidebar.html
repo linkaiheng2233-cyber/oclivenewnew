@@ -1,0 +1,38 @@
+<!doctype html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Mumu Sidebar Glance</title>
+    <style>
+      :root {
+        color-scheme: light dark;
+      }
+      body {
+        margin: 0;
+        font-family: system-ui, -apple-system, "Segoe UI", sans-serif;
+        background: transparent;
+      }
+      .fallback {
+        box-sizing: border-box;
+        width: 100%;
+        min-height: 108px;
+        padding: 12px;
+        border-radius: 14px;
+        border: 1px solid rgba(150, 140, 126, 0.26);
+        background: rgba(252, 247, 240, 0.72);
+        backdrop-filter: blur(14px);
+        -webkit-backdrop-filter: blur(14px);
+        color: #4b443b;
+        font-size: 12px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        text-align: center;
+      }
+    </style>
+  </head>
+  <body>
+    <div class="fallback">mumu 侧栏概览（iframe 回退）</div>
+  </body>
+</html>
