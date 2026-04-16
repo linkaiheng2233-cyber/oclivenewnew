@@ -20,6 +20,7 @@
     "check:rust:test": "cargo test --manifest-path src-tauri/Cargo.toml --lib",
     "check:rust:test:all": "cargo test --manifest-path src-tauri/Cargo.toml",
     "check:rust": "npm run check:rust:fmt && npm run check:rust:clippy && npm run check:rust:test",
+    "check:license": "node scripts/check-license-readiness.mjs",
     "check": "npm run build && npm run check:rust",
     "check:release": "npm run build && npm run check:rust:fmt && npm run check:rust:clippy && npm run check:rust:test:all",
     "scaffold:ui-plugin": "node scripts/scaffold-ui-slot-plugin.mjs"

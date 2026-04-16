@@ -22,6 +22,7 @@
 | **目录式进程插件**（`plugins/`、`manifest.json`、整壳、`directory_plugin_invoke`、开发者模式） | **[../plugin-and-architecture/DIRECTORY_PLUGINS.md](../plugin-and-architecture/DIRECTORY_PLUGINS.md)** |
 | **整壳 / 插槽 `invoke` 命令表、权限别名、错误码** | **[../plugin-and-architecture/BRIDGE_API_REFERENCE.md](../plugin-and-architecture/BRIDGE_API_REFERENCE.md)** |
 | **配置文件位置**（`plugin_state`、`ui.json`、`oclive_last_role_id`） | **[../guides/CONFIGURATION_FILES.md](../guides/CONFIGURATION_FILES.md)** |
+| **开源协议怎么定（主程序/官方插件/第三方）** | **[../LICENSE_POLICY.md](../LICENSE_POLICY.md)** |
 | **我想管理插件（启用/停用/拖拽排序/本地 zip 更新）** | **[../plugin-and-architecture/DIRECTORY_PLUGINS.md](../plugin-and-architecture/DIRECTORY_PLUGINS.md)**（插件管理面板，快捷键 `Ctrl+Shift+F`） |
 | **mumu 默认前端模块（chat.header / chat_toolbar / role.detail / sidebar / settings.panel）** | **[../FAQ.md](../FAQ.md)**（用户向 Q&A） |
 | **mumu 模块发版前验收清单** | **[../guides/MUMU_UI_ACCEPTANCE_CHECKLIST.md](../guides/MUMU_UI_ACCEPTANCE_CHECKLIST.md)** |

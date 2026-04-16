@@ -12,6 +12,7 @@
 | **[guides/](guides/)** | [配置文件说明](guides/CONFIGURATION_FILES.md)（`plugin_state`、`ui.json`、应用数据路径等）、[mumu 模块验收清单](guides/MUMU_UI_ACCEPTANCE_CHECKLIST.md) |
 | **[plugin-and-architecture/](plugin-and-architecture/)** | `plugin_backends` 契约、扩展点、HTTP JSON-RPC 协议、[整壳桥接 API 参考](plugin-and-architecture/BRIDGE_API_REFERENCE.md)、替换模块 |
 | **[FAQ.md](FAQ.md)** | 插件与角色包常见问题 |
+| **[LICENSE_POLICY.md](LICENSE_POLICY.md)** | 主程序与插件的开源协议策略（发布前最小检查） |
 | **[COMPATIBILITY.md](COMPATIBILITY.md)** | 编写器与主程序版本、`ui.json` 兼容表 |
 | **[video-script/](video-script/)** | [5 分钟工具栏插件视频脚本](video-script/PLUGIN_DEVELOPMENT_SCRIPT.md) |
 | **[role-pack/](role-pack/)** | 包版本、场景、用户身份、角色包自定义 |

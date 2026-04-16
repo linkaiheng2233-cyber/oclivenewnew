@@ -89,7 +89,10 @@
 2. 三仓 push 后 **CI 通过**。  
 3. 版本号与 `CHANGELOG` 已更新。  
 4. 按 `TESTING_ROLE_PACK_IMPORT.md` 或等价冒烟过一遍。  
-5. 分发方式明确：当前 **未配置 Tauri 在线更新** 时，以 **离线安装包** 为准（见根 `README`）。
+5. 协议检查：主仓与本次新增官方插件均有 `LICENSE`（见 [../LICENSE_POLICY.md](../LICENSE_POLICY.md)）。  
+6. 分发方式明确：当前 **未配置 Tauri 在线更新** 时，以 **离线安装包** 为准（见根 `README`）。
+
+> 协议存在性可用 `npm run check:license` 快速检查。
 
 ---
 
