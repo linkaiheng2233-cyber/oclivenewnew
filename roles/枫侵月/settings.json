@@ -1,0 +1,23 @@
+{
+  "schema_version": 1,
+  "model": "qwen2.5:7b",
+  "identity_binding": "global",
+  "evolution": {
+    "event_impact_factor": 1.0,
+    "ai_analysis_interval": 15,
+    "max_change_per_event": 0.05,
+    "max_total_change": 0.5,
+    "personality_source": "profile"
+  },
+  "memory_config": {
+    "scene_weight_multiplier": 1.2,
+    "topic_weights": {
+      "home": { "日常": 0.75, "学习": 0.15, "娱乐": 0.1 },
+      "school": { "学习": 0.8, "日常": 0.2 },
+      "park": { "日常": 0.7, "娱乐": 0.3 }
+    }
+  },
+  "remote_presence": {
+    "default_enabled": true
+  }
+}

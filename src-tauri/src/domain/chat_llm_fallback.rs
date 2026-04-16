@@ -109,6 +109,7 @@ mod tests {
             plugin_backends: crate::models::PluginBackends::default(),
             ui_config: crate::models::UiConfig::default(),
             knowledge_index: None,
+            author_pack: None,
         }
     }
 

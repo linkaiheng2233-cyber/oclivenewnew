@@ -49,7 +49,7 @@ watch(panelSlots, (list) => {
       <div class="psp-tabs" role="tablist" aria-label="插件设置页">
         <button
           v-for="(s, i) in panelSlots"
-          :key="s.pluginId"
+          :key="`${s.pluginId}:${s.appearanceId ?? ''}`"
           type="button"
           role="tab"
           class="psp-tab"
@@ -62,7 +62,7 @@ watch(panelSlots, (list) => {
       <div
         v-for="(s, i) in panelSlots"
         v-show="activeTab === i"
-        :key="`frame-${s.pluginId}`"
+        :key="`frame-${s.pluginId}-${s.appearanceId ?? ''}`"
         class="psp-frame-wrap"
         role="tabpanel"
       >
@@ -79,7 +79,7 @@ watch(panelSlots, (list) => {
         />
         <iframe
           v-if="showIframe(s)"
-          :key="`if-${s.pluginId}-${reloadNonceFor(s.pluginId)}`"
+          :key="`if-${s.pluginId}-${s.appearanceId ?? ''}-${reloadNonceFor(s.pluginId)}`"
           class="psp-frame"
           :src="s.url"
           :title="`plugin settings ${s.pluginId}`"

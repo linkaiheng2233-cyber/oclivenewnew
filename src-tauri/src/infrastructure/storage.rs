@@ -5,8 +5,8 @@ use crate::domain::role_manifest_validate::{
 use crate::error::{AppError, Result};
 use crate::models::role_manifest_disk::{disk_manifest_from_role, disk_manifest_to_role};
 use crate::models::{
-    role_settings_disk::CURRENT_SETTINGS_SCHEMA_VERSION, DiskRoleManifest, DiskRoleSettings,
-    DiskSceneConfig, LlmBackend, Role, UiConfig,
+    author_pack::AuthorPackFile, role_settings_disk::CURRENT_SETTINGS_SCHEMA_VERSION,
+    DiskRoleManifest, DiskRoleSettings, DiskSceneConfig, LlmBackend, Role, UiConfig,
 };
 use chrono::Timelike;
 use oclive_validation::{
@@ -68,6 +68,11 @@ impl RoleStorage {
         let mut roles = Vec::new();
 
         if !self.roles_dir.exists() {
+            log::warn!(
+                target: "oclive_roles",
+                "roles_dir does not exist: {} — list_roles will be empty; set OCLIVE_ROLES_DIR or fix cwd / exe-relative discovery",
+                self.roles_dir.display()
+            );
             return Ok(roles);
         }
 
@@ -76,8 +81,16 @@ impl RoleStorage {
             let path = entry.path();
 
             if path.is_dir() {
-                if let Ok(role) = self.load_role_from_dir(&path) {
-                    roles.push(role);
+                match self.load_role_from_dir(&path) {
+                    Ok(role) => roles.push(role),
+                    Err(e) => {
+                        log::warn!(
+                            target: "oclive_role",
+                            "skip role directory {}: {}",
+                            path.display(),
+                            e
+                        );
+                    }
                 }
             }
         }
@@ -91,8 +104,9 @@ impl RoleStorage {
 
         if !manifest_path.exists() {
             return Err(AppError::RoleNotFound(format!(
-                "manifest.json not found in {:?}",
-                role_dir
+                "manifest.json not found in {:?} (roles_dir={})",
+                role_dir,
+                self.roles_dir.display()
             )));
         }
 
@@ -136,6 +150,29 @@ impl RoleStorage {
 
         let mut role = disk_manifest_to_role(&disk);
         role.ui_config = UiConfig::load_from_path(&role_dir.join("ui.json"));
+        let author_path = role_dir.join("author.json");
+        if author_path.is_file() {
+            match std::fs::read_to_string(&author_path) {
+                Ok(s) => {
+                    role.author_pack = AuthorPackFile::from_json_str(&s);
+                    if role.author_pack.is_none() {
+                        log::warn!(
+                            target: "oclive_role",
+                            "author.json invalid JSON: {}",
+                            author_path.display()
+                        );
+                    }
+                }
+                Err(e) => {
+                    log::warn!(
+                        target: "oclive_role",
+                        "author.json unreadable: {} — {}",
+                        author_path.display(),
+                        e
+                    );
+                }
+            }
+        }
         if should_load_knowledge(&disk, role_dir) {
             let idx = load_knowledge_index(role_dir, &disk)?;
             role.knowledge_index = Some(Arc::new(idx));
@@ -164,7 +201,14 @@ impl RoleStorage {
 
     /// 加载指定角色
     pub fn load_role(&self, role_id: &str) -> Result<Role> {
-        let role_dir = self.roles_dir.join(role_id);
+        let rid = role_id.trim();
+        if rid.is_empty() {
+            return Err(AppError::RoleNotFound(format!(
+                "role_id is empty; roles_dir={}",
+                self.roles_dir.display()
+            )));
+        }
+        let role_dir = self.roles_dir.join(rid);
         self.load_role_from_dir(&role_dir)
     }
 
@@ -622,6 +666,7 @@ mod tests {
             plugin_backends: crate::models::PluginBackends::default(),
             ui_config: crate::models::UiConfig::default(),
             knowledge_index: None,
+            author_pack: None,
         };
 
         storage.save_role_manifest(&role).unwrap();
@@ -645,5 +690,49 @@ mod tests {
             mem.topic_weights.get("default").unwrap().get("日常"),
             Some(&0.5)
         );
+    }
+
+    #[test]
+    fn plugin_state_ui_baseline_prefers_author_suggested_ui_when_non_empty() {
+        let mut ui_from_disk = crate::models::UiConfig::default();
+        ui_from_disk.shell = "from_ui_json".into();
+        let mut suggested = crate::models::UiConfig::default();
+        suggested.shell = "from_author".into();
+        let role = Role {
+            ui_config: ui_from_disk,
+            author_pack: Some(crate::models::AuthorPackFile {
+                suggested_ui: Some(suggested.clone()),
+                ..Default::default()
+            }),
+            ..Role::default()
+        };
+        assert_eq!(role.plugin_state_ui_baseline().shell, "from_author");
+    }
+
+    #[test]
+    fn plugin_state_ui_baseline_falls_back_to_ui_json_when_author_suggested_empty() {
+        let mut ui_from_disk = crate::models::UiConfig::default();
+        ui_from_disk.shell = "from_ui_json".into();
+        let role = Role {
+            ui_config: ui_from_disk.clone(),
+            author_pack: Some(crate::models::AuthorPackFile {
+                suggested_ui: Some(crate::models::UiConfig::default()),
+                ..Default::default()
+            }),
+            ..Role::default()
+        };
+        assert_eq!(role.plugin_state_ui_baseline().shell, "from_ui_json");
+    }
+
+    #[test]
+    fn plugin_state_ui_baseline_without_author_uses_ui_json() {
+        let mut ui_from_disk = crate::models::UiConfig::default();
+        ui_from_disk.shell = "only_pack".into();
+        let role = Role {
+            ui_config: ui_from_disk.clone(),
+            author_pack: None,
+            ..Role::default()
+        };
+        assert_eq!(role.plugin_state_ui_baseline().shell, "only_pack");
     }
 }

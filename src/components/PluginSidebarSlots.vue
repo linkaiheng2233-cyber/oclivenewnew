@@ -34,7 +34,7 @@ const {
 <template>
   <div v-if="pluginError" class="psb-msg psb-msg--err" role="status">{{ pluginError }}</div>
   <div v-else-if="slots.length > 0" class="psb-list" aria-label="侧边栏插件插槽">
-    <div v-for="s in slots" :key="s.pluginId" class="psb-item">
+    <div v-for="s in slots" :key="`${s.pluginId}:${s.appearanceId ?? ''}`" class="psb-item">
       <AsyncPluginVue
         v-if="showVue(s)"
         class="psb-vue"
@@ -47,7 +47,7 @@ const {
       />
       <iframe
         v-if="showIframe(s)"
-        :key="`if-${s.pluginId}-${reloadNonceFor(s.pluginId)}`"
+        :key="`if-${s.pluginId}-${s.appearanceId ?? ''}-${reloadNonceFor(s.pluginId)}`"
         class="psb-frame"
         :src="s.url"
         :title="`plugin sidebar ${s.pluginId}`"

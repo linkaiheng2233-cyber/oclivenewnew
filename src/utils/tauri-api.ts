@@ -77,6 +77,15 @@ export function toFriendlyErrorMessage(err: unknown): string {
     const bracket = raw.indexOf("]");
     if (bracket !== -1) return raw.slice(bracket + 1).trim();
   }
+  if (code === "ROLE_NOT_FOUND") {
+    const bracket = raw.indexOf("]");
+    if (bracket !== -1) {
+      const detail = raw.slice(bracket + 1).trim();
+      if (detail.startsWith("Role not found:")) {
+        return `角色不存在或找不到 manifest。${detail.slice("Role not found:".length).trim()}`;
+      }
+    }
+  }
   if (code === "IO_ERROR" && raw.includes("host json")) {
     return "插件桥返回的数据无法序列化为 JSON，可能是宿主与插件接口不兼容，请查看控制台日志。";
   }
@@ -297,6 +306,25 @@ export function emptyPackUiConfig(): PackUiConfig {
   };
 }
 
+/** 与后端 `models::author_pack::AuthorPackFile` 对齐（snake_case 字段）。 */
+export interface AuthorRecommendedPlugin {
+  id: string;
+  version_range?: string | null;
+  slots?: string[];
+  for_backends?: string[];
+  optional?: boolean;
+  note?: string | null;
+}
+
+export interface AuthorPackFile {
+  schema_version: number;
+  summary?: string;
+  detail_markdown?: string;
+  recommended_plugins?: AuthorRecommendedPlugin[];
+  suggested_ui?: PackUiConfig | null;
+  suggested_plugin_backends?: PluginBackends | null;
+}
+
 export function normalizePackUiConfig(
   raw: PackUiConfig | undefined | null,
 ): PackUiConfig {
@@ -375,6 +403,10 @@ export interface RoleData {
   plugin_backends_effective_sources?: PluginBackendsSourceMap;
   /** 角色包 `ui.json`（主题、布局、插槽） */
   pack_ui_config: PackUiConfig;
+  /** `author.suggested_ui` 优先时的有效 UI 基线（与后端 `pack_ui_baseline` 一致） */
+  pack_ui_baseline?: PackUiConfig;
+  /** 可选 `author.json` */
+  author_pack?: AuthorPackFile | null;
 }
 
 export interface SceneLabelEntry {
@@ -434,6 +466,8 @@ export interface RoleInfo {
   knowledge_chunk_count?: number;
   /** 角色包 `ui.json`（主题、布局、插槽） */
   pack_ui_config: PackUiConfig;
+  pack_ui_baseline?: PackUiConfig;
+  author_pack?: AuthorPackFile | null;
 }
 
 /** `switch_scene` 扁平化返回：RoleInfo 字段 + 可选场景欢迎语 */
@@ -632,6 +666,19 @@ export async function setSessionPluginBackend(
   });
 }
 
+/** 将 `author.json` → `suggested_plugin_backends` 写入当前会话后端覆盖。 */
+export async function applyAuthorSuggestedPluginBackends(
+  roleId: string,
+  sessionId?: string | null,
+): Promise<RoleInfo> {
+  return invokeWithFriendlyError<RoleInfo>("apply_author_suggested_plugin_backends", {
+    req: {
+      role_id: roleId,
+      session_id: sessionId ?? null,
+    },
+  });
+}
+
 export async function getPluginResolutionDebug(
   roleId: string,
   sessionId?: string | null,
@@ -768,6 +815,10 @@ export async function exportChatLogs(params: {
 export interface PluginUiSlotInfo {
   pluginId: string;
   slot: string;
+  /** manifest `ui_slots[].appearance_id`；空字符串为默认变体 */
+  appearanceId?: string;
+  /** manifest `ui_slots[].label` */
+  label?: string | null;
   /** manifest `ui_slots[].entry`（相对插件根） */
   entry: string;
   /** manifest `vueComponent`；存在时优先原生 Vue，失败则回退 `url` iframe */
@@ -863,6 +914,8 @@ export interface PluginStateFile {
   disabled_plugins: string[];
   slot_order: Record<string, string[]>;
   disabled_slot_contributions: Record<string, string[]>;
+  /** `plugin_id` → `slot` → `appearance_id` */
+  slot_appearance?: Record<string, Record<string, string>>;
   /** 为真时忽略 `vueComponent`，嵌入插槽仅用 iframe。 */
   force_iframe_mode?: boolean;
 }
@@ -872,8 +925,14 @@ export interface RolePluginState extends PluginStateFile {
   shellPluginId: string;
 }
 
+export interface PluginStateGetResponse {
+  role: RolePluginState;
+  /** 后端 `serde(rename_all = "camelCase")` → `globalDefaults` */
+  globalDefaults: RolePluginState;
+}
+
 /** 并发 `get_plugin_state(role_id)` 合并为单次 IPC（按 role_id 维度）。 */
-const pluginStateInflight = new Map<string, Promise<RolePluginState>>();
+const pluginStateInflight = new Map<string, Promise<PluginStateGetResponse>>();
 
 function pluginStateCacheKey(roleId: string): string {
   const t = roleId.trim();
@@ -884,6 +943,8 @@ function pluginStateCacheKey(roleId: string): string {
 export interface SlotConfig {
   order: string[];
   visible: string[];
+  /** 插件 id → 默认 `appearance_id`（该槽内） */
+  appearance?: Record<string, string>;
 }
 
 export interface UiConfig {
@@ -894,7 +955,18 @@ export interface UiConfig {
     "role.detail": SlotConfig;
     sidebar: SlotConfig;
     "chat.header": SlotConfig;
+    "settings.plugins": SlotConfig;
+    "settings.advanced": SlotConfig;
+    "overlay.floating": SlotConfig;
+    "launcher.palette": SlotConfig;
+    "debug.dock": SlotConfig;
   };
+}
+
+export interface UiSlotVariantInfo {
+  slot: string;
+  appearanceId: string;
+  label?: string | null;
 }
 
 export interface DirectoryPluginCatalogEntry {
@@ -903,6 +975,8 @@ export interface DirectoryPluginCatalogEntry {
   pluginType?: string | null;
   isShell: boolean;
   uiSlotNames: string[];
+  /** 每条 manifest `ui_slots`（嵌入槽）一条 */
+  uiSlotVariants?: UiSlotVariantInfo[];
   provides: string[];
   /** `ok` / `missing` / `mismatch` */
   dependencyStatus: string;
@@ -933,14 +1007,16 @@ export async function getDirectoryPluginCatalog(): Promise<DirectoryPluginCatalo
   return p;
 }
 
-export async function getPluginState(roleId: string): Promise<RolePluginState> {
+export async function getPluginState(
+  roleId: string,
+): Promise<PluginStateGetResponse> {
   const key = pluginStateCacheKey(roleId);
   const existing = pluginStateInflight.get(key);
   if (existing) {
     return existing;
   }
-  const p = invokeWithFriendlyError<RolePluginState>("get_plugin_state", {
-    role_id: roleId,
+  const p = invokeWithFriendlyError<PluginStateGetResponse>("get_plugin_state", {
+    roleId,
   }).finally(() => {
     if (pluginStateInflight.get(key) === p) {
       pluginStateInflight.delete(key);
@@ -956,7 +1032,16 @@ export async function savePluginState(
 ): Promise<void> {
   pluginStateInflight.delete(pluginStateCacheKey(roleId));
   return invokeWithFriendlyError<void>("save_plugin_state", {
-    role_id: roleId,
+    roleId,
+    state,
+  });
+}
+
+export async function saveGlobalPluginState(
+  state: RolePluginState,
+): Promise<void> {
+  pluginStateInflight.clear();
+  return invokeWithFriendlyError<void>("save_global_plugin_state", {
     state,
   });
 }
@@ -967,7 +1052,40 @@ export async function resetPluginStateToRoleDefault(
 ): Promise<void> {
   pluginStateInflight.delete(pluginStateCacheKey(roleId));
   return invokeWithFriendlyError<void>("reset_plugin_state_to_role_default", {
-    role_id: roleId,
+    roleId,
+  });
+}
+
+export type HotkeyAction =
+  | {
+      type: "openPluginSlot";
+      pluginId: string;
+      slot: string;
+      appearanceId?: string;
+    }
+  | { type: "openLauncherList" };
+
+export interface HotkeyBinding {
+  id: string;
+  accelerator: string;
+  enabled: boolean;
+  action: HotkeyAction;
+}
+
+export interface HotkeyBindingsFile {
+  schemaVersion: number;
+  bindings: HotkeyBinding[];
+}
+
+export async function getHotkeyBindings(): Promise<HotkeyBindingsFile> {
+  return invokeWithFriendlyError<HotkeyBindingsFile>("get_hotkey_bindings", {});
+}
+
+export async function saveHotkeyBindings(
+  file: HotkeyBindingsFile,
+): Promise<void> {
+  return invokeWithFriendlyError<void>("save_hotkey_bindings", {
+    bindings: file,
   });
 }
 

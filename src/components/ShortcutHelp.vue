@@ -1,7 +1,15 @@
 <script setup lang="ts">
-defineProps<{
-  modelValue: boolean;
-}>();
+import PluginSlotEmbed from "./PluginSlotEmbed.vue";
+import { SLOT_LAUNCHER_PALETTE } from "../stores/pluginStore";
+
+withDefaults(
+  defineProps<{
+    modelValue: boolean;
+    /** 与插件 bootstrap 同步 */
+    bootstrapEpoch?: number;
+  }>(),
+  { bootstrapEpoch: 0 },
+);
 
 const emit = defineEmits<{
   "update:modelValue": [value: boolean];
@@ -44,6 +52,14 @@ const rows: { keys: string; desc: string }[] = [
           </tbody>
         </table>
         <p class="sh-foot">更多快捷键将随功能迭代补充。</p>
+        <section class="sh-slot" aria-label="启动器插槽">
+          <h3 class="sh-slot-h">插件槽（launcher.palette）</h3>
+          <PluginSlotEmbed
+            :slot-name="SLOT_LAUNCHER_PALETTE"
+            aria-label="启动器插槽"
+            :bootstrap-epoch="bootstrapEpoch"
+          />
+        </section>
       </div>
     </div>
   </Teleport>
@@ -111,5 +127,14 @@ const rows: { keys: string; desc: string }[] = [
   margin: 12px 0 0;
   font-size: 12px;
   color: var(--text-secondary);
+}
+.sh-slot {
+  margin-top: 14px;
+  padding-top: 12px;
+  border-top: 1px solid color-mix(in srgb, var(--border-light) 60%, transparent);
+}
+.sh-slot-h {
+  margin: 0 0 8px;
+  font-size: 13px;
 }
 </style>

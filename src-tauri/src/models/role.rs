@@ -1,6 +1,7 @@
 use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
 
+use super::author_pack::AuthorPackFile;
 use super::knowledge::KnowledgeIndex;
 use super::plugin_backends::PluginBackends;
 use super::ui_config::UiConfig;
@@ -213,6 +214,9 @@ pub struct Role {
     /// 角色包 `ui.json`（仅内存；由 [`crate::infrastructure::storage::RoleStorage`] 填充）
     #[serde(skip)]
     pub ui_config: UiConfig,
+    /// 角色包 `author.json`（可选；仅内存）
+    #[serde(skip)]
+    pub author_pack: Option<AuthorPackFile>,
 }
 
 impl Default for Role {
@@ -250,11 +254,25 @@ impl Default for Role {
             plugin_backends: PluginBackends::default(),
             knowledge_index: None,
             ui_config: UiConfig::default(),
+            author_pack: None,
         }
     }
 }
 
 impl Role {
+    /// 插件 `plugin_state` 种子/重置时使用的 UI 基线：`author.suggested_ui`（非空）优先，否则 `ui.json`。
+    #[must_use]
+    pub fn plugin_state_ui_baseline(&self) -> &UiConfig {
+        if let Some(ref ap) = self.author_pack {
+            if let Some(ref sug) = ap.suggested_ui {
+                if !sug.is_effectively_empty() {
+                    return sug;
+                }
+            }
+        }
+        &self.ui_config
+    }
+
     /// 某身份 id 在角色包中配置的初始好感度；未知身份回退 50。
     #[must_use]
     pub fn initial_favorability_for_relation(&self, relation_id: &str) -> f64 {

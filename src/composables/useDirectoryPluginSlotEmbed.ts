@@ -11,7 +11,7 @@ import { useRoleStore } from "../stores/roleStore";
  * 错误状态由 {@link useKeyedPluginErrors} 统一管理。
  */
 export function useDirectoryPluginSlotEmbed(options: {
-  slot: string;
+  slot: MaybeRefOrGetter<string>;
   /** 与插件保存/刷新联动（如 `pluginStore.bootstrapEpoch`） */
   bootstrapEpoch: MaybeRefOrGetter<number>;
 }) {
@@ -29,7 +29,7 @@ export function useDirectoryPluginSlotEmbed(options: {
   } = useKeyedPluginErrors();
 
   const slots = computed<PluginUiSlotInfo[]>(() =>
-    (bootstrapUiSlots.value ?? []).filter((s) => s.slot === options.slot),
+    (bootstrapUiSlots.value ?? []).filter((s) => s.slot === toValue(options.slot)),
   );
 
   const vueFallback = ref<Record<string, boolean>>({});

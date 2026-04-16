@@ -40,9 +40,9 @@ function relationLabel(info: RoleInfoPayload): string {
   const effective = current || fallback;
   const row = rows.find((x) => x.id === effective);
   if (info.use_manifest_default) {
-    return `默认身份（${row?.name ?? effective || "—"}）`;
+    return `默认身份（${(row?.name ?? effective) || "—"}）`;
   }
-  return row?.name ?? effective || "—";
+  return (row?.name ?? effective) || "—";
 }
 
 function sceneLabel(info: RoleInfoPayload): string {

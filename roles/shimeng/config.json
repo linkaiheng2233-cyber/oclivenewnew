@@ -1,1 +1,7 @@
-{"time": {"decay_on_jump": false, "decay_per_day": 0, "speed": 3.0}}
+{
+  "time": {
+    "decay_on_jump": false,
+    "decay_per_day": 0,
+    "speed": 3.0
+  }
+}

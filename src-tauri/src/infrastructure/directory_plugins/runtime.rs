@@ -1,6 +1,6 @@
 //! 扫描根目录、解析 manifest、懒启动子进程并缓存 RPC URL。
 
-use super::manifest::OclivePluginManifest;
+use super::manifest::{normalize_ui_slot_appearance_id, OclivePluginManifest};
 use crate::infrastructure::plugin_state::{PluginStateFile, PluginStateStore, RolePluginState};
 use crate::models::ui_config::UiConfig;
 use parking_lot::{Mutex, RwLock};
@@ -213,12 +213,15 @@ impl DirectoryPluginRuntime {
     pub fn effective_slots(&self) -> PluginStateFile {
         let store = self.plugin_state_store.read();
         if let Some(id) = self.active_role_id.read().as_ref() {
-            if let Some(rs) = store.roles.get(id) {
-                return rs.slots.clone();
-            }
+            let raw = store.roles.get(id).cloned().unwrap_or_default();
+            let merged = RolePluginState::merge_global_defaults(store.global.as_ref(), &raw);
+            return merged.slots;
         }
         if let Some(leg) = &store.legacy_v1 {
             return leg.clone();
+        }
+        if let Some(g) = &store.global {
+            return g.slots.clone();
         }
         PluginStateFile::default()
     }
@@ -228,10 +231,37 @@ impl DirectoryPluginRuntime {
         self.effective_slots()
     }
 
+    /// 磁盘上按 `role_id` 存储的原始状态（不含 `global` 合并）。
+    #[must_use]
+    pub fn role_plugin_state_stored_for(&self, role_id: &str) -> RolePluginState {
+        let store = self.plugin_state_store.read();
+        store.roles.get(role_id).cloned().unwrap_or_default()
+    }
+
+    /// 将 `global` 默认与按角色存储合并后的有效状态（整壳 / 插槽 / 禁用等）。
     #[must_use]
     pub fn role_plugin_state_for(&self, role_id: &str) -> RolePluginState {
         let store = self.plugin_state_store.read();
-        store.roles.get(role_id).cloned().unwrap_or_default()
+        let raw = store.roles.get(role_id).cloned().unwrap_or_default();
+        RolePluginState::merge_global_defaults(store.global.as_ref(), &raw)
+    }
+
+    #[must_use]
+    pub fn global_plugin_state(&self) -> RolePluginState {
+        self.plugin_state_store
+            .read()
+            .global
+            .clone()
+            .unwrap_or_default()
+    }
+
+    pub fn save_global_plugin_state(&self, mut state: RolePluginState) -> Result<(), String> {
+        self.sanitize_role_shell(&mut state);
+        let mut store = self.plugin_state_store.write();
+        store.global = Some(state);
+        store.schema_version = 3;
+        drop(store);
+        self.persist_plugin_state_store()
     }
 
     pub fn save_role_plugin_state(
@@ -241,6 +271,7 @@ impl DirectoryPluginRuntime {
     ) -> Result<(), String> {
         self.sanitize_role_shell(&mut state);
         let mut store = self.plugin_state_store.write();
+        store.schema_version = 3;
         store.roles.insert(role_id.trim().to_string(), state);
         drop(store);
         self.persist_plugin_state_store()
@@ -277,6 +308,7 @@ impl DirectoryPluginRuntime {
         if store.roles.contains_key(role_id) {
             return;
         }
+        store.schema_version = 3;
         store.roles.insert(role_id.to_string(), new_state);
         drop(store);
         let _ = self.persist_plugin_state_store();
@@ -329,36 +361,58 @@ impl DirectoryPluginRuntime {
             .filter(|s| !s.is_empty())
     }
 
-    fn sanitize_role_shell(&self, state: &mut RolePluginState) {
+    pub(crate) fn sanitize_role_shell(&self, state: &mut RolePluginState) {
         let sid = state.shell_plugin_id.trim();
         if sid.is_empty() {
             state.shell_plugin_id.clear();
-            return;
+        } else {
+            let roots = self.plugin_roots.read();
+            if let Some(root) = roots.get(sid) {
+                if let Ok(manifest) = OclivePluginManifest::load_from_dir(root) {
+                    let ok = manifest.plugin_type.as_deref() == Some("ocliveplugin")
+                        && manifest.shell.is_some();
+                    if !ok {
+                        log::warn!(
+                            target: "oclive_plugin",
+                            "invalid shell plugin (require type=ocliveplugin + shell): {}",
+                            sid
+                        );
+                        state.shell_plugin_id.clear();
+                    }
+                } else {
+                    state.shell_plugin_id.clear();
+                }
+            } else {
+                log::warn!(
+                    target: "oclive_plugin",
+                    "shell plugin id not in scan roots: {}",
+                    sid
+                );
+                state.shell_plugin_id.clear();
+            }
         }
-        let roots = self.plugin_roots.read();
-        let Some(root) = roots.get(sid) else {
-            log::warn!(
-                target: "oclive_plugin",
-                "shell plugin id not in scan roots: {}",
-                sid
-            );
-            state.shell_plugin_id.clear();
-            return;
-        };
-        let Ok(manifest) = OclivePluginManifest::load_from_dir(root) else {
-            state.shell_plugin_id.clear();
-            return;
-        };
-        let ok =
-            manifest.plugin_type.as_deref() == Some("ocliveplugin") && manifest.shell.is_some();
-        if !ok {
-            log::warn!(
-                target: "oclive_plugin",
-                "invalid shell plugin (require type=ocliveplugin + shell): {}",
-                sid
-            );
-            state.shell_plugin_id.clear();
-        }
+        Self::sanitize_slot_appearance_maps(&self.plugin_roots.read(), &mut state.slots);
+    }
+
+    fn sanitize_slot_appearance_maps(
+        roots: &std::collections::HashMap<String, PathBuf>,
+        slots: &mut PluginStateFile,
+    ) {
+        slots.slot_appearance.retain(|pid, by_slot| {
+            let Some(root) = roots.get(pid) else {
+                return false;
+            };
+            let Ok(manifest) = OclivePluginManifest::load_from_dir(root) else {
+                return false;
+            };
+            by_slot.retain(|slot, aid| {
+                let want = normalize_ui_slot_appearance_id(aid);
+                manifest.ui_slots.iter().any(|d| {
+                    d.slot == *slot && normalize_ui_slot_appearance_id(&d.appearance_id) == want
+                })
+            });
+            !by_slot.is_empty()
+        });
     }
 
     pub fn reload_plugin_state(&self) -> Result<(), String> {

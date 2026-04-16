@@ -34,7 +34,7 @@ const {
 <template>
   <div v-if="pluginError" class="prd-msg prd-msg--err" role="status">{{ pluginError }}</div>
   <div v-else-if="slots.length > 0" class="prd-list" aria-label="角色详情插件插槽">
-    <div v-for="s in slots" :key="s.pluginId" class="prd-item">
+    <div v-for="s in slots" :key="`${s.pluginId}:${s.appearanceId ?? ''}`" class="prd-item">
       <AsyncPluginVue
         v-if="showVue(s)"
         class="prd-vue"
@@ -47,7 +47,7 @@ const {
       />
       <iframe
         v-if="showIframe(s)"
-        :key="`if-${s.pluginId}-${reloadNonceFor(s.pluginId)}`"
+        :key="`if-${s.pluginId}-${s.appearanceId ?? ''}-${reloadNonceFor(s.pluginId)}`"
         class="prd-frame"
         :src="s.url"
         :title="`plugin role.detail ${s.pluginId}`"

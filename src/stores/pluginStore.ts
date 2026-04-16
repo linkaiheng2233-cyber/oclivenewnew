@@ -7,12 +7,14 @@ import {
   getDirectoryPluginCatalog,
   getPluginState,
   resetPluginStateToRoleDefault,
+  saveGlobalPluginState,
   savePluginState,
   type DirectoryPluginBootstrap,
   type DirectoryPluginCatalogEntry,
   type PluginUpdateInfo,
   type PluginUiSlotInfo,
   type RolePluginState,
+  type UiSlotVariantInfo,
 } from "../utils/tauri-api";
 import { useRoleStore } from "./roleStore";
 
@@ -36,6 +38,30 @@ export const SLOT_ROLE_DETAIL = "role.detail";
 export const SLOT_SIDEBAR = "sidebar";
 /** 右侧聊天列顶部（消息列表上方） */
 export const SLOT_CHAT_HEADER = "chat.header";
+/** 插件管理面板内嵌 */
+export const SLOT_SETTINGS_PLUGINS = "settings.plugins";
+/** 设置对话框 · 扩展区（常规） */
+export const SLOT_SETTINGS_ADVANCED = "settings.advanced";
+/** 全局浮层模板区 */
+export const SLOT_OVERLAY_FLOATING = "overlay.floating";
+/** 快捷键说明 / 启动器聚合 */
+export const SLOT_LAUNCHER_PALETTE = "launcher.palette";
+/** 调试面板扩展 */
+export const SLOT_DEBUG_DOCK = "debug.dock";
+
+/** 与后端 `EMBEDDED_UI_SLOT_NAMES` 顺序一致（用于遍历）。 */
+export const ALL_EMBEDDED_SLOT_NAMES: readonly string[] = [
+  SLOT_CHAT_TOOLBAR,
+  SLOT_SETTINGS_PANEL,
+  SLOT_ROLE_DETAIL,
+  SLOT_SIDEBAR,
+  SLOT_CHAT_HEADER,
+  SLOT_SETTINGS_PLUGINS,
+  SLOT_SETTINGS_ADVANCED,
+  SLOT_OVERLAY_FLOATING,
+  SLOT_LAUNCHER_PALETTE,
+  SLOT_DEBUG_DOCK,
+];
 
 function emptyState(): RolePluginState {
   return {
@@ -43,6 +69,7 @@ function emptyState(): RolePluginState {
     disabled_plugins: [],
     slot_order: {},
     disabled_slot_contributions: {},
+    slot_appearance: {},
     force_iframe_mode: false,
   };
 }
@@ -70,6 +97,27 @@ function recordOfArraysEqual(
   return true;
 }
 
+function uiSlotVariantsEqual(
+  a: UiSlotVariantInfo[] | undefined,
+  b: UiSlotVariantInfo[] | undefined,
+): boolean {
+  const x = a ?? [];
+  const y = b ?? [];
+  if (x.length !== y.length) return false;
+  for (let i = 0; i < x.length; i += 1) {
+    const p = x[i];
+    const q = y[i];
+    if (
+      p.slot !== q.slot ||
+      p.appearanceId !== q.appearanceId ||
+      (p.label ?? "") !== (q.label ?? "")
+    ) {
+      return false;
+    }
+  }
+  return true;
+}
+
 function catalogEqual(
   a: DirectoryPluginCatalogEntry[],
   b: DirectoryPluginCatalogEntry[],
@@ -86,10 +134,37 @@ function catalogEqual(
       x.isShell !== y.isShell ||
       (x.dependencyStatus ?? "ok") !== (y.dependencyStatus ?? "ok") ||
       !arraysEqual(x.uiSlotNames ?? [], y.uiSlotNames ?? []) ||
+      !uiSlotVariantsEqual(x.uiSlotVariants, y.uiSlotVariants) ||
       !arraysEqual(x.provides ?? [], y.provides ?? []) ||
       !arraysEqual(x.dependencyIssues ?? [], y.dependencyIssues ?? [])
     ) {
       return false;
+    }
+  }
+  return true;
+}
+
+function slotAppearanceEqual(
+  a: Record<string, Record<string, string>> | undefined,
+  b: Record<string, Record<string, string>> | undefined,
+): boolean {
+  const aa = a ?? {};
+  const bb = b ?? {};
+  const keysA = Object.keys(aa).sort();
+  const keysB = Object.keys(bb).sort();
+  if (keysA.length !== keysB.length) return false;
+  for (let i = 0; i < keysA.length; i += 1) {
+    if (keysA[i] !== keysB[i]) return false;
+    const pid = keysA[i]!;
+    const ia = aa[pid]!;
+    const ib = bb[pid]!;
+    const skA = Object.keys(ia).sort();
+    const skB = Object.keys(ib).sort();
+    if (skA.length !== skB.length) return false;
+    for (let j = 0; j < skA.length; j += 1) {
+      if (skA[j] !== skB[j]) return false;
+      const slot = skA[j]!;
+      if (ia[slot] !== ib[slot]) return false;
     }
   }
   return true;
@@ -104,12 +179,31 @@ function rolePluginStateEqual(a: RolePluginState, b: RolePluginState): boolean {
     recordOfArraysEqual(
       a.disabled_slot_contributions ?? {},
       b.disabled_slot_contributions ?? {},
-    )
+    ) &&
+    slotAppearanceEqual(a.slot_appearance, b.slot_appearance)
   );
 }
 
 function buildSlotOrderSignature(candidates: string[], order: string[]): string {
   return `${candidates.join("\u001f")}\u001e${order.join("\u001f")}`;
+}
+
+export type PluginPersistScope = "role" | "global";
+
+function clonePluginState(s: RolePluginState): RolePluginState {
+  const sa = s.slot_appearance ?? {};
+  const slot_appearance: Record<string, Record<string, string>> = {};
+  for (const pid of Object.keys(sa)) {
+    slot_appearance[pid] = { ...sa[pid] };
+  }
+  return {
+    shellPluginId: s.shellPluginId ?? "",
+    disabled_plugins: [...(s.disabled_plugins ?? [])],
+    slot_order: { ...s.slot_order },
+    disabled_slot_contributions: { ...s.disabled_slot_contributions },
+    slot_appearance,
+    force_iframe_mode: s.force_iframe_mode ?? false,
+  };
 }
 
 export const usePluginStore = defineStore("plugin", {
@@ -121,6 +215,13 @@ export const usePluginStore = defineStore("plugin", {
     /** 目录插件 catalog 预计算：各 slot 对应的非整壳插件 id（已排序）。 */
     catalogCandidatesBySlot: {} as Record<string, string[]>,
     pluginState: emptyState() as RolePluginState,
+    /** 最近一次 `get_plugin_state` 的按角色 / 全局原始行（切换「保存到」时回填）。 */
+    pluginStateBundle: null as {
+      role: RolePluginState;
+      globalDefaults: RolePluginState;
+    } | null,
+    /** 保存目标：`role` 写入当前角色；`global` 写入跨角色默认。 */
+    persistScope: "role" as PluginPersistScope,
     /** 与 `get_directory_plugin_bootstrap.developer_mode` 一致（扫描额外插件根等）。 */
     developerMode: false,
     /** 最近一次 bootstrap 的嵌入插槽列表（与 `get_directory_plugin_bootstrap.uiSlots` 一致）。 */
@@ -182,6 +283,19 @@ export const usePluginStore = defineStore("plugin", {
     closePanel() {
       this.panelVisible = false;
     },
+    setPersistScope(scope: PluginPersistScope) {
+      if (this.persistScope === scope) {
+        return;
+      }
+      const b = this.pluginStateBundle;
+      if (b) {
+        this.pluginState =
+          scope === "role"
+            ? clonePluginState(b.role)
+            : clonePluginState(b.globalDefaults);
+      }
+      this.persistScope = scope;
+    },
     togglePanel() {
       if (this.panelVisible) {
         this.closePanel();
@@ -198,18 +312,18 @@ export const usePluginStore = defineStore("plugin", {
       refreshPromise = (async () => {
         try {
           const roleId = useRoleStore().currentRoleId;
-          const [cat, st, boot] = await Promise.all([
+          const [cat, bundle, boot] = await Promise.all([
             getDirectoryPluginCatalog(),
             getPluginState(roleId),
             getDirectoryPluginBootstrap(roleId),
           ]);
-          const nextState: RolePluginState = {
-            shellPluginId: st.shellPluginId ?? "",
-            disabled_plugins: [...(st.disabled_plugins ?? [])],
-            slot_order: { ...st.slot_order },
-            disabled_slot_contributions: { ...st.disabled_slot_contributions },
-            force_iframe_mode: st.force_iframe_mode ?? false,
+          this.pluginStateBundle = {
+            role: clonePluginState(bundle.role),
+            globalDefaults: clonePluginState(bundle.globalDefaults),
           };
+          const st =
+            this.persistScope === "role" ? bundle.role : bundle.globalDefaults;
+          const nextState = clonePluginState(st);
           if (!catalogEqual(this.catalog, cat)) {
             this.catalog = cat;
             slotOrderMemo.clear();
@@ -241,7 +355,19 @@ export const usePluginStore = defineStore("plugin", {
     },
     async persist() {
       const roleId = useRoleStore().currentRoleId;
-      await savePluginState(roleId, this.pluginState);
+      if (this.persistScope === "global") {
+        await saveGlobalPluginState(this.pluginState);
+        if (this.pluginStateBundle) {
+          this.pluginStateBundle.globalDefaults = clonePluginState(
+            this.pluginState,
+          );
+        }
+      } else {
+        await savePluginState(roleId, this.pluginState);
+        if (this.pluginStateBundle) {
+          this.pluginStateBundle.role = clonePluginState(this.pluginState);
+        }
+      }
       this.bootstrapEpoch += 1;
       await this.syncDirectoryPluginBootstrap();
     },
@@ -351,6 +477,31 @@ export const usePluginStore = defineStore("plugin", {
       this.pluginState.disabled_slot_contributions = {
         ...this.pluginState.disabled_slot_contributions,
         [slot]: cur,
+      };
+    },
+    /** 设置某插件在某槽的选中外观（`appearance_id`）；空字符串表示清除为 manifest 默认。 */
+    setSlotAppearance(pluginId: string, slot: string, appearanceId: string) {
+      const pid = pluginId.trim();
+      const sl = slot.trim();
+      if (!pid || !sl) return;
+      const nextOuter: Record<string, Record<string, string>> = {
+        ...(this.pluginState.slot_appearance ?? {}),
+      };
+      const inner = { ...(nextOuter[pid] ?? {}) };
+      const aid = appearanceId.trim();
+      if (aid === "") {
+        delete inner[sl];
+      } else {
+        inner[sl] = aid;
+      }
+      if (Object.keys(inner).length === 0) {
+        delete nextOuter[pid];
+      } else {
+        nextOuter[pid] = inner;
+      }
+      this.pluginState = {
+        ...this.pluginState,
+        slot_appearance: nextOuter,
       };
     },
     movePluginInSlotOrder(slot: string, fromIndex: number, toIndex: number) {

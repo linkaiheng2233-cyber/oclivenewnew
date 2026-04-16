@@ -38,10 +38,19 @@ pub struct ProcessSection {
     pub cwd: Option<String>,
 }
 
-/// 非整壳模式下在主界面挂载的 UI（官方插槽：`chat_toolbar`、`settings.panel`、`role.detail`）。
+/// 非整壳模式下在主界面挂载的 UI（官方语义插槽名见宿主 `EMBEDDED_UI_SLOT_NAMES`）。
+///
+/// **同一 `slot` 多条声明**：每条须有唯一 `appearance_id`（空字符串表示「默认」变体，同一 `slot` 至多一条）。
+/// `label` 为管理界面展示用，可选。
 #[derive(Debug, Clone, Deserialize)]
 pub struct UiSlotDecl {
     pub slot: String,
+    /// 同一 `slot` 多外观时用于区分；缺省或空字符串表示默认单外观。
+    #[serde(default)]
+    pub appearance_id: String,
+    /// 管理界面、目录等展示用名称。
+    #[serde(default)]
+    pub label: Option<String>,
     pub entry: String,
     /// 可选：相对插件根的 `.vue` 路径，由主界面原生渲染（失败则回退 `entry` iframe）。
     #[serde(default, rename = "vueComponent")]
@@ -149,6 +158,7 @@ impl OclivePluginManifest {
                 m.version
             ));
         }
+        validate_ui_slot_appearance_ids(&m)?;
         if let Some(ref sh) = m.shell {
             if sh.entry.trim().is_empty() {
                 return Err(format!(
@@ -159,4 +169,32 @@ impl OclivePluginManifest {
         }
         Ok(m)
     }
+}
+
+/// 与持久化、`plugin_state` 比较时使用的 `appearance_id` 规范化（trim）。
+#[must_use]
+pub fn normalize_ui_slot_appearance_id(s: &str) -> String {
+    s.trim().to_string()
+}
+
+fn normalize_appearance_id(s: &str) -> String {
+    normalize_ui_slot_appearance_id(s)
+}
+
+/// 同一 manifest 内：每个 `(slot, appearance_id)` 至多出现一次（`appearance_id` 按 trim 后比较；空为默认键）。
+fn validate_ui_slot_appearance_ids(m: &OclivePluginManifest) -> Result<(), String> {
+    use std::collections::HashSet;
+    let mut seen: HashSet<(String, String)> = HashSet::new();
+    for us in &m.ui_slots {
+        let slot = us.slot.trim().to_string();
+        let aid = normalize_appearance_id(&us.appearance_id);
+        let key = (slot, aid);
+        if !seen.insert(key.clone()) {
+            return Err(format!(
+                "manifest: duplicate ui_slots for slot {:?} with appearance_id {:?}",
+                key.0, key.1
+            ));
+        }
+    }
+    Ok(())
 }

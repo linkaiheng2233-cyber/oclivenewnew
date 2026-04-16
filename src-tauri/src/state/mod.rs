@@ -40,6 +40,25 @@ pub fn resolve_roles_dir() -> PathBuf {
             return p;
         }
     }
+    // 不依赖 cwd：从当前 exe 向上查找名为 `roles` 的目录（典型：`target/debug/*.exe` → 仓库根 `roles/`）。
+    if let Ok(exe) = std::env::current_exe() {
+        let mut cur = exe.parent().map(|p| p.to_path_buf());
+        for _ in 0..12 {
+            let Some(dir) = cur else {
+                break;
+            };
+            let candidate = dir.join("roles");
+            if candidate.is_dir() {
+                log::info!(
+                    target: "oclive_roles",
+                    "resolve_roles_dir: near_exe -> {}",
+                    candidate.display()
+                );
+                return candidate;
+            }
+            cur = dir.parent().map(|p| p.to_path_buf());
+        }
+    }
     if let Ok(cwd) = std::env::current_dir() {
         let a = cwd.join("roles");
         if a.is_dir() {

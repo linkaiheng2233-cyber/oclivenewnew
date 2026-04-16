@@ -1,0 +1,42 @@
+{
+  "schema_version": 1,
+  "summary": "毒舌傲娇的同班少女柳木诗梦：嘴硬心软，被看穿会慌，用刺话护着害羞",
+  "detail_markdown": "人设全文见 **`core_personality.txt`**（叶梦的姐姐、主人公同班）。本包场景以「日常/放松」与「学校」为主；异地时她按自己所在处过日子，别把气话当真。\n\n目录插件与 `ui.json` 布局与官方沐沐壳一致，便于开箱；可在插件管理中替换为你自己的插槽组合。",
+  "recommended_plugins": [
+    {
+      "id": "com.oclive.mumu.quick-actions",
+      "version_range": "^1.0.0",
+      "slots": ["chat_toolbar"],
+      "optional": false,
+      "note": "聊天工具栏"
+    },
+    {
+      "id": "com.oclive.mumu.settings-panel",
+      "version_range": "^1.0.0",
+      "slots": ["settings.panel"],
+      "optional": false,
+      "note": "设置侧栏面板"
+    },
+    {
+      "id": "com.oclive.mumu.role-detail-card",
+      "version_range": "^1.0.0",
+      "slots": ["role.detail"],
+      "optional": false,
+      "note": "角色详情卡片"
+    },
+    {
+      "id": "com.oclive.mumu.sidebar-glance",
+      "version_range": "^1.0.0",
+      "slots": ["sidebar"],
+      "optional": false,
+      "note": "侧边栏一览"
+    },
+    {
+      "id": "com.oclive.mumu.chat-header-status",
+      "version_range": "^1.0.0",
+      "slots": ["chat.header"],
+      "optional": false,
+      "note": "顶栏状态与叙事"
+    }
+  ]
+}

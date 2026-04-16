@@ -7,7 +7,9 @@ import ChatInput from "./components/ChatInput.vue";
 import ChatPluginToolbarSlots from "./components/ChatPluginToolbarSlots.vue";
 import PluginChatHeaderSlots from "./components/PluginChatHeaderSlots.vue";
 import PluginSidebarSlots from "./components/PluginSidebarSlots.vue";
+import HotkeyHost from "./components/HotkeyHost.vue";
 import PluginManagerPanel from "./views/PluginManagerPanel.vue";
+import PluginSlotEmbed from "./components/PluginSlotEmbed.vue";
 import SettingsView from "./views/SettingsView.vue";
 import ChatMessageList from "./components/ChatMessageList.vue";
 import DebugPanel from "./components/DebugPanel.vue";
@@ -283,6 +285,13 @@ async function onPluginResetLayout(): Promise<void> {
 async function initialize() {
   try {
     await roleStore.loadRoles();
+    if (!roleStore.currentRoleId.trim()) {
+      showToast(
+        "error",
+        "未扫描到任何可用角色包（roles 目录为空或全部校验失败）。请检查宿主使用的 roles 路径：开发可设置环境变量 OCLIVE_ROLES_DIR 指向仓库的 roles 文件夹。",
+      );
+      return;
+    }
     await loadRole(roleStore.currentRoleId);
     await pluginStore.refresh();
     await roleStore.refreshRoleInfo();
@@ -913,11 +922,20 @@ onBeforeUnmount(() => {
     />
 
     <Toast :show="toast.show" :type="toast.type" :message="toast.message" />
-    <ShortcutHelp v-model="shortcutHelpOpen" />
+    <ShortcutHelp v-model="shortcutHelpOpen" :bootstrap-epoch="pluginStore.bootstrapEpoch" />
 
     <PluginManagerPanel />
 
     <SettingsView :visible="settingsViewOpen" @close="settingsViewOpen = false" />
+
+    <div class="app-floating-slot" aria-hidden="true">
+      <PluginSlotEmbed
+        slot-name="overlay.floating"
+        aria-label="浮层插件区"
+        :bootstrap-epoch="pluginStore.bootstrapEpoch"
+      />
+    </div>
+    <HotkeyHost />
     </div>
   </main>
 </template>
@@ -950,6 +968,17 @@ onBeforeUnmount(() => {
   border: 1px solid var(--border-light);
   box-shadow: var(--shadow-app), var(--frame-inset-highlight);
   overflow: hidden;
+}
+.app-floating-slot {
+  position: fixed;
+  right: 12px;
+  bottom: 12px;
+  z-index: 10020;
+  max-width: min(400px, calc(100vw - 24px));
+  pointer-events: none;
+}
+.app-floating-slot :deep(.pse) {
+  pointer-events: auto;
 }
 .top-bar {
   flex-shrink: 0;

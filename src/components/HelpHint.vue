@@ -149,12 +149,15 @@ onUnmounted(() => {
   left: 0;
   top: calc(100% + 8px);
   z-index: 901;
-  min-width: min(18rem, calc(100vw - 2rem));
-  max-width: min(32rem, calc(100vw - 1.5rem));
-  padding: 0.65rem 0.9rem;
-  font-size: 0.8125rem;
+  /* 舒适阅读宽度：约 55–65 字符一行，随视口缩放 */
+  width: min(65ch, calc(100vw - 2rem));
+  max-width: min(40rem, calc(100vw - 1.25rem));
+  min-width: min(14rem, calc(100vw - 2rem));
+  padding: clamp(0.55rem, 0.45rem + 0.35vw, 0.85rem)
+    clamp(0.75rem, 0.55rem + 0.6vw, 1.15rem);
+  font-size: clamp(0.8125rem, 0.76rem + 0.25vw, 0.9375rem);
   font-weight: 400;
-  line-height: 1.55;
+  line-height: 1.65;
   color: var(--text-primary);
   background: color-mix(in srgb, var(--card-bg) 92%, transparent);
   backdrop-filter: blur(10px) saturate(106%);
@@ -162,12 +165,16 @@ onUnmounted(() => {
   border: 1px solid var(--border-light);
   border-radius: var(--radius-card);
   box-shadow: var(--shadow-md), var(--frame-inset-highlight);
-  max-height: min(70vh, 24rem);
+  max-height: min(78vh, 34rem);
   overflow-y: auto;
+  overflow-x: hidden;
+  text-wrap: pretty;
 }
 
 .help-pop-p {
-  margin: 0 0 0.5rem;
+  margin: 0 0 0.55em;
+  text-align: start;
+  hyphens: auto;
 }
 
 .help-pop-p:last-child {

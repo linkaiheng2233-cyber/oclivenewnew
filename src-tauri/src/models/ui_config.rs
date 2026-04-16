@@ -1,6 +1,7 @@
 //! 角色包根目录 `ui.json`：创作者推荐的前端布局（整壳、主题、布局与嵌入插槽）。
 
 use serde::{Deserialize, Serialize};
+use std::collections::HashMap;
 use std::path::Path;
 
 /// 角色包建议的主题变量（供内置界面与插槽 iframe 通过 CSS 变量参考）。
@@ -52,6 +53,16 @@ pub struct UiSlots {
     pub sidebar: SlotConfig,
     #[serde(rename = "chat.header", default)]
     pub chat_header: SlotConfig,
+    #[serde(rename = "settings.plugins", default)]
+    pub settings_plugins: SlotConfig,
+    #[serde(rename = "settings.advanced", default)]
+    pub settings_advanced: SlotConfig,
+    #[serde(rename = "overlay.floating", default)]
+    pub overlay_floating: SlotConfig,
+    #[serde(rename = "launcher.palette", default)]
+    pub launcher_palette: SlotConfig,
+    #[serde(rename = "debug.dock", default)]
+    pub debug_dock: SlotConfig,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize, Default, PartialEq, Eq)]
@@ -60,6 +71,9 @@ pub struct SlotConfig {
     pub order: Vec<String>,
     #[serde(default)]
     pub visible: Vec<String>,
+    /// 该插槽内按插件 id 指定的默认外观（`appearance_id`，与 manifest `ui_slots[].appearance_id` 一致）。
+    #[serde(default)]
+    pub appearance: HashMap<String, String>,
 }
 
 impl UiConfig {
@@ -86,5 +100,10 @@ impl UiConfig {
             && self.slots.role_detail.order.is_empty()
             && self.slots.sidebar.order.is_empty()
             && self.slots.chat_header.order.is_empty()
+            && self.slots.settings_plugins.order.is_empty()
+            && self.slots.settings_advanced.order.is_empty()
+            && self.slots.overlay_floating.order.is_empty()
+            && self.slots.launcher_palette.order.is_empty()
+            && self.slots.debug_dock.order.is_empty()
     }
 }

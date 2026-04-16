@@ -137,6 +137,7 @@ pub fn disk_manifest_to_role(d: &DiskRoleManifest) -> Role {
         plugin_backends: super::PluginBackends::default(),
         knowledge_index: None,
         ui_config: super::UiConfig::default(),
+        author_pack: None,
     }
 }
 

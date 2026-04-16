@@ -3,14 +3,13 @@
 use crate::api::error::ApiError;
 use crate::error::AppError;
 use crate::infrastructure::directory_plugins::{
-    dependency_report, normalize_plugin_rel, parse_manifest_version, plugin_scan_container_roots,
-    HostPluginsFile, OclivePluginManifest,
+    dependency_report, normalize_plugin_rel, normalize_ui_slot_appearance_id, parse_manifest_version,
+    plugin_scan_container_roots, HostPluginsFile, OclivePluginManifest, UiSlotDecl,
 };
 use crate::infrastructure::plugin_state::{PluginStateFile, RolePluginState};
 use crate::infrastructure::remote_plugin::{
     invoke_directory_plugin_rpc_blocking, RemoteRpcChannel,
 };
-use crate::models::ui_config::UiConfig;
 use crate::state::AppState;
 use once_cell::sync::Lazy;
 use parking_lot::Mutex;
@@ -27,8 +26,13 @@ use tauri::State;
 #[serde(rename_all = "camelCase")]
 pub struct PluginUiSlotDto {
     pub plugin_id: String,
-    /// 官方嵌入插槽：`chat_toolbar` / `settings.panel` / `role.detail` / `sidebar` / `chat.header`
+    /// 官方语义插槽名（见 `EMBEDDED_UI_SLOT_NAMES`）。
     pub slot: String,
+    /// 与 manifest `ui_slots[].appearance_id` 一致；空字符串表示默认变体。
+    pub appearance_id: String,
+    /// 展示用标签（来自 manifest，可选）。
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub label: Option<String>,
     /// 相对插件根，与 manifest `ui_slots[].entry` 一致（iframe 与 `plugin_bridge` 校验）。
     pub entry: String,
     /// 可选：相对插件根的 `.vue` 路径（`manifest.vueComponent`）。
@@ -44,7 +48,62 @@ const EMBEDDED_UI_SLOT_NAMES: &[&str] = &[
     "role.detail",
     "sidebar",
     "chat.header",
+    "settings.plugins",
+    "settings.advanced",
+    "overlay.floating",
+    "launcher.palette",
+    "debug.dock",
 ];
+
+fn pick_ui_slot_decl<'a>(
+    decls: &[&'a UiSlotDecl],
+    selected: Option<&str>,
+) -> Option<&'a UiSlotDecl> {
+    if decls.is_empty() {
+        return None;
+    }
+    let want = selected
+        .map(str::trim)
+        .filter(|s| !s.is_empty())
+        .map(normalize_ui_slot_appearance_id);
+    if let Some(ref w) = want {
+        for d in decls {
+            if normalize_ui_slot_appearance_id(&d.appearance_id) == *w {
+                return Some(*d);
+            }
+        }
+    }
+    for d in decls {
+        if normalize_ui_slot_appearance_id(&d.appearance_id).is_empty() {
+            return Some(*d);
+        }
+    }
+    Some(decls[0])
+}
+
+fn plugin_ui_slot_dto_from_decl(pid: &str, decl: &UiSlotDecl) -> Option<PluginUiSlotDto> {
+    let entry = decl.entry.trim().trim_start_matches(['/', '\\']);
+    if entry.is_empty() {
+        return None;
+    }
+    let entry_norm = entry.replace('\\', "/");
+    let vue_component = decl
+        .vue_component
+        .as_ref()
+        .map(|s| s.trim())
+        .filter(|s| !s.is_empty())
+        .map(|s| s.replace('\\', "/"));
+    let url = format!("https://ocliveplugin.localhost/{}/{}", pid, entry_norm);
+    Some(PluginUiSlotDto {
+        plugin_id: pid.to_string(),
+        slot: decl.slot.clone(),
+        appearance_id: normalize_ui_slot_appearance_id(&decl.appearance_id),
+        label: decl.label.clone(),
+        entry: entry_norm,
+        vue_component,
+        url,
+    })
+}
 
 #[derive(Debug, Serialize)]
 #[serde(rename_all = "camelCase")]
@@ -141,12 +200,16 @@ pub fn directory_plugin_bootstrap_dto(
         .map(|s| s.to_string())
         .or_else(|| rt.read_last_role_id_from_disk());
     let role_state = if let Some(ref id) = rid {
-        rt.role_plugin_state_for(id)
+        let mut s = rt.role_plugin_state_for(id);
+        rt.sanitize_role_shell(&mut s);
+        s
     } else {
-        RolePluginState {
+        let mut s = RolePluginState {
             shell_plugin_id: String::new(),
             slots: rt.effective_slots(),
-        }
+        };
+        rt.sanitize_role_shell(&mut s);
+        s
     };
     let pst = &role_state.slots;
     let mut plugin_ids_sorted: Vec<String> = rt.plugin_roots.read().keys().cloned().collect();
@@ -188,94 +251,50 @@ pub fn directory_plugin_bootstrap_dto(
         if manifest.shell.is_some() {
             continue;
         }
+        let appearance_for = pst.slot_appearance.get(pid);
+        let mut by_slot: HashMap<String, Vec<&UiSlotDecl>> = HashMap::new();
         for decl in &manifest.ui_slots {
             if !EMBEDDED_UI_SLOT_NAMES.contains(&decl.slot.as_str()) {
                 continue;
             }
-            if pst.is_slot_contribution_disabled(decl.slot.as_str(), pid) {
+            by_slot
+                .entry(decl.slot.clone())
+                .or_default()
+                .push(decl);
+        }
+        for (slot_name, decls) in by_slot {
+            if pst.is_slot_contribution_disabled(&slot_name, pid) {
                 continue;
             }
-            let entry = decl.entry.trim().trim_start_matches(['/', '\\']);
-            if entry.is_empty() {
+            let sel = appearance_for
+                .and_then(|m| m.get(&slot_name))
+                .map(|s| s.as_str());
+            let decl_refs: Vec<&UiSlotDecl> = decls.iter().copied().collect();
+            let Some(picked) = pick_ui_slot_decl(&decl_refs, sel) else {
                 continue;
-            }
-            let entry_norm = entry.replace('\\', "/");
-            let vue_component = decl
-                .vue_component
-                .as_ref()
-                .map(|s| s.trim())
-                .filter(|s| !s.is_empty())
-                .map(|s| s.replace('\\', "/"));
-            let url = format!("https://ocliveplugin.localhost/{}/{}", pid, entry_norm);
-            ui_slots.push(PluginUiSlotDto {
-                plugin_id: pid.clone(),
-                slot: decl.slot.clone(),
-                entry: entry_norm,
-                vue_component,
-                url,
-            });
+            };
+            let Some(dto) = plugin_ui_slot_dto_from_decl(pid, picked) else {
+                continue;
+            };
+            ui_slots.push(dto);
         }
     }
-    let mut chat: Vec<_> = ui_slots
-        .iter()
-        .filter(|s| s.slot == "chat_toolbar")
-        .cloned()
-        .collect();
-    let mut settings: Vec<_> = ui_slots
-        .iter()
-        .filter(|s| s.slot == "settings.panel")
-        .cloned()
-        .collect();
-    let mut role_detail: Vec<_> = ui_slots
-        .iter()
-        .filter(|s| s.slot == "role.detail")
-        .cloned()
-        .collect();
-    let mut sidebar: Vec<_> = ui_slots
-        .iter()
-        .filter(|s| s.slot == "sidebar")
-        .cloned()
-        .collect();
-    let mut chat_header: Vec<_> = ui_slots
-        .iter()
-        .filter(|s| s.slot == "chat.header")
-        .cloned()
-        .collect();
-    let order_ct = pst
-        .slot_order
-        .get("chat_toolbar")
-        .map(|v| v.as_slice())
-        .unwrap_or(&[]);
-    let order_sp = pst
-        .slot_order
-        .get("settings.panel")
-        .map(|v| v.as_slice())
-        .unwrap_or(&[]);
-    let order_rd = pst
-        .slot_order
-        .get("role.detail")
-        .map(|v| v.as_slice())
-        .unwrap_or(&[]);
-    let order_sb = pst
-        .slot_order
-        .get("sidebar")
-        .map(|v| v.as_slice())
-        .unwrap_or(&[]);
-    let order_ch = pst
-        .slot_order
-        .get("chat.header")
-        .map(|v| v.as_slice())
-        .unwrap_or(&[]);
-    chat = order_plugin_slots(chat, order_ct);
-    settings = order_plugin_slots(settings, order_sp);
-    role_detail = order_plugin_slots(role_detail, order_rd);
-    sidebar = order_plugin_slots(sidebar, order_sb);
-    chat_header = order_plugin_slots(chat_header, order_ch);
-    let mut ui_slots = chat;
-    ui_slots.extend(settings);
-    ui_slots.extend(role_detail);
-    ui_slots.extend(sidebar);
-    ui_slots.extend(chat_header);
+    let mut ui_slots_ordered = Vec::new();
+    for slot_name in EMBEDDED_UI_SLOT_NAMES {
+        let mut bucket: Vec<_> = ui_slots
+            .iter()
+            .filter(|s| s.slot == *slot_name)
+            .cloned()
+            .collect();
+        let order = pst
+            .slot_order
+            .get(*slot_name)
+            .map(|v| v.as_slice())
+            .unwrap_or(&[]);
+        bucket = order_plugin_slots(bucket, order);
+        ui_slots_ordered.extend(bucket);
+    }
+    let ui_slots = ui_slots_ordered;
 
     let subscribed_host_events = subscribed_events_sorted_vec(subscribed_set);
 
@@ -444,14 +463,26 @@ pub fn directory_plugin_invoke(
 
 #[derive(Debug, Clone, Serialize)]
 #[serde(rename_all = "camelCase")]
+pub struct UiSlotVariantDto {
+    pub slot: String,
+    pub appearance_id: String,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub label: Option<String>,
+}
+
+#[derive(Debug, Clone, Serialize)]
+#[serde(rename_all = "camelCase")]
 pub struct DirectoryPluginCatalogEntry {
     pub id: String,
     pub version: String,
     #[serde(skip_serializing_if = "Option::is_none")]
     pub plugin_type: Option<String>,
     pub is_shell: bool,
-    /// 声明的 UI 插槽名（如 `chat_toolbar`）。
+    /// 声明的 UI 插槽名（如 `chat_toolbar`）；同一槽多外观时仍只出现一次槽名。
     pub ui_slot_names: Vec<String>,
+    /// 每条 manifest `ui_slots`（嵌入槽）对应一条，含 `appearance_id` / `label`。
+    #[serde(default, skip_serializing_if = "Vec::is_empty")]
+    pub ui_slot_variants: Vec<UiSlotVariantDto>,
     pub provides: Vec<String>,
     /// `ok` / `missing` / `mismatch`
     pub dependency_status: String,
@@ -508,8 +539,22 @@ fn build_directory_plugin_catalog(state: &AppState) -> Vec<DirectoryPluginCatalo
         .filter_map(|(pid, root)| {
             let manifest = OclivePluginManifest::load_from_dir(root).ok()?;
             let is_shell = manifest.shell.is_some();
-            let ui_slot_names: Vec<String> =
-                manifest.ui_slots.iter().map(|u| u.slot.clone()).collect();
+            let mut ui_slot_names: Vec<String> = Vec::new();
+            let mut seen_slot: HashSet<String> = HashSet::new();
+            let mut ui_slot_variants: Vec<UiSlotVariantDto> = Vec::new();
+            for u in &manifest.ui_slots {
+                if !EMBEDDED_UI_SLOT_NAMES.contains(&u.slot.as_str()) {
+                    continue;
+                }
+                ui_slot_variants.push(UiSlotVariantDto {
+                    slot: u.slot.clone(),
+                    appearance_id: normalize_ui_slot_appearance_id(&u.appearance_id),
+                    label: u.label.clone(),
+                });
+                if seen_slot.insert(u.slot.clone()) {
+                    ui_slot_names.push(u.slot.clone());
+                }
+            }
             let (dependency_status, dependency_issues) =
                 dependency_report(&manifest, &version_by_id);
             Some(DirectoryPluginCatalogEntry {
@@ -518,6 +563,7 @@ fn build_directory_plugin_catalog(state: &AppState) -> Vec<DirectoryPluginCatalo
                 plugin_type: manifest.plugin_type.clone(),
                 is_shell,
                 ui_slot_names,
+                ui_slot_variants,
                 provides: manifest.provides.clone(),
                 dependency_status,
                 dependency_issues,
@@ -582,15 +628,26 @@ impl From<RolePluginStateDto> for RolePluginState {
     }
 }
 
+#[derive(Debug, Clone, serde::Serialize, serde::Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct PluginStateGetResponse {
+    /// 当前角色在 `plugin_state.json` 中单独保存的状态（未与全局默认合并）。
+    pub role: RolePluginStateDto,
+    /// 全局默认（插件管理「全局默认」）；与 `role` 合并后驱动实际嵌入与整壳。
+    pub global_defaults: RolePluginStateDto,
+}
+
 #[tauri::command]
 pub fn get_plugin_state(
     role_id: String,
     state: State<'_, AppState>,
-) -> Result<RolePluginStateDto, String> {
-    Ok(state
-        .directory_plugins
-        .role_plugin_state_for(role_id.trim())
-        .into())
+) -> Result<PluginStateGetResponse, String> {
+    let rt = &state.directory_plugins;
+    let rid = role_id.trim();
+    Ok(PluginStateGetResponse {
+        role: rt.role_plugin_state_stored_for(rid).into(),
+        global_defaults: rt.global_plugin_state().into(),
+    })
 }
 
 #[tauri::command]
@@ -604,14 +661,25 @@ pub fn save_plugin_state(
 }
 
 #[tauri::command]
+pub fn save_global_plugin_state(
+    state: RolePluginStateDto,
+    app: State<'_, AppState>,
+) -> Result<(), String> {
+    app.directory_plugins.save_global_plugin_state(state.into())
+}
+
+#[tauri::command]
 pub fn reset_plugin_state_to_role_default(
     role_id: String,
     app: State<'_, AppState>,
 ) -> Result<(), String> {
-    let path = app.storage.roles_dir().join(role_id.trim()).join("ui.json");
-    let ui = UiConfig::load_from_path(&path);
+    let role = app
+        .storage
+        .load_role(role_id.trim())
+        .map_err(|e| e.to_string())?;
+    let ui = role.plugin_state_ui_baseline();
     app.directory_plugins
-        .reset_role_plugin_state_from_ui(role_id.trim(), &ui)
+        .reset_role_plugin_state_from_ui(role_id.trim(), ui)
 }
 
 #[cfg(test)]

@@ -10,7 +10,8 @@ mod watcher;
 
 pub use dependency::dependency_report;
 pub use manifest::{
-    normalize_plugin_rel, BridgeConfig, OclivePluginManifest, ShellSection, UiSlotDecl,
+    normalize_plugin_rel, normalize_ui_slot_appearance_id, BridgeConfig, OclivePluginManifest,
+    ShellSection, UiSlotDecl,
 };
 pub use runtime::{
     plugin_scan_container_roots, DirectoryPluginRuntime, HostPluginsFile, PluginScanSummary,

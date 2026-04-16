@@ -1,0 +1,22 @@
+{
+  "schema_version": 1,
+  "model": "qwen2.5:7b",
+  "identity_binding": "global",
+  "evolution": {
+    "event_impact_factor": 1.0,
+    "ai_analysis_interval": 15,
+    "max_change_per_event": 0.05,
+    "max_total_change": 0.5,
+    "personality_source": "profile"
+  },
+  "memory_config": {
+    "scene_weight_multiplier": 1.2,
+    "topic_weights": {
+      "school": { "学习": 0.85, "日常": 0.15 },
+      "default": { "日常": 0.9, "学习": 0.1 }
+    }
+  },
+  "remote_presence": {
+    "default_enabled": true
+  }
+}

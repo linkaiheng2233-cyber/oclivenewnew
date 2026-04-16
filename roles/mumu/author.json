@@ -1,0 +1,42 @@
+{
+  "schema_version": 1,
+  "summary": "嘴硬心软的同居妹妹型角色：话题面宽、少重复套路，甜只作点缀",
+  "detail_markdown": "本包附带 **沐沐官方目录插件**（`com.oclive.mumu.*`），与 `ui.json` 中的插槽推荐一致。前端插槽与主题基线仍以 `ui.json` 为准；此处仅作文案说明与插件 ID 推荐，便于市场与文档引用。\n\n若你自行维护 `author.json`，可在 `suggested_ui` 中写入与 `ui.json` 同形的布局；非空时宿主会优先用其作为插件 UI 种子与「重置为角色包推荐」的基线。",
+  "recommended_plugins": [
+    {
+      "id": "com.oclive.mumu.quick-actions",
+      "version_range": "^1.0.0",
+      "slots": ["chat_toolbar"],
+      "optional": false,
+      "note": "聊天工具栏快捷操作"
+    },
+    {
+      "id": "com.oclive.mumu.settings-panel",
+      "version_range": "^1.0.0",
+      "slots": ["settings.panel"],
+      "optional": false,
+      "note": "设置侧栏中的沐沐专属面板"
+    },
+    {
+      "id": "com.oclive.mumu.role-detail-card",
+      "version_range": "^1.0.0",
+      "slots": ["role.detail"],
+      "optional": false,
+      "note": "角色详情卡片"
+    },
+    {
+      "id": "com.oclive.mumu.sidebar-glance",
+      "version_range": "^1.0.0",
+      "slots": ["sidebar"],
+      "optional": false,
+      "note": "侧边栏一览"
+    },
+    {
+      "id": "com.oclive.mumu.chat-header-status",
+      "version_range": "^1.0.0",
+      "slots": ["chat.header"],
+      "optional": false,
+      "note": "顶栏状态与叙事入口"
+    }
+  ]
+}

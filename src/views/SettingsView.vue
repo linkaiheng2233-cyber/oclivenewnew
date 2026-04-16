@@ -1,9 +1,11 @@
 <script setup lang="ts">
 import { ref } from "vue";
 import HelpHint from "../components/HelpHint.vue";
+import HotkeySettingsSection from "../components/HotkeySettingsSection.vue";
 import PluginSettingsPanelSlots from "../components/PluginSettingsPanelSlots.vue";
+import PluginSlotEmbed from "../components/PluginSlotEmbed.vue";
 import { useAppToast } from "../composables/useAppToast";
-import { usePluginStore } from "../stores/pluginStore";
+import { SLOT_SETTINGS_ADVANCED, usePluginStore } from "../stores/pluginStore";
 
 defineProps<{
   visible: boolean;
@@ -88,6 +90,16 @@ async function onToggleForceIframe(e: Event) {
             </p>
           </section>
           <section class="sv-section">
+            <h3 class="sv-h3">扩展区（settings.advanced）</h3>
+            <p class="sv-muted">manifest 中声明 <code>settings.advanced</code> 的插件显示于此。</p>
+            <PluginSlotEmbed
+              :slot-name="SLOT_SETTINGS_ADVANCED"
+              aria-label="设置扩展区"
+              :bootstrap-epoch="pluginStore.bootstrapEpoch"
+            />
+          </section>
+
+          <section class="sv-section">
             <div class="sv-row-h">
               <span class="sv-label">安全</span>
             </div>
@@ -120,6 +132,8 @@ async function onToggleForceIframe(e: Event) {
             </div>
             <PluginSettingsPanelSlots :bootstrap-epoch="pluginStore.bootstrapEpoch" />
           </section>
+
+          <HotkeySettingsSection />
         </div>
       </div>
     </div>

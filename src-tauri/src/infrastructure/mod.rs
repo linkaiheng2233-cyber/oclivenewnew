@@ -5,6 +5,7 @@
 pub mod cache;
 pub mod db;
 pub mod directory_plugins;
+pub mod hotkey_bindings;
 pub mod llm;
 pub mod llm_params;
 pub mod ollama_client;

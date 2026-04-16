@@ -42,7 +42,7 @@ const {
   >
     <div
       v-for="s in slots"
-      :key="s.pluginId"
+      :key="`${s.pluginId}:${s.appearanceId ?? ''}`"
       class="plugin-toolbar-slot"
     >
       <AsyncPluginVue
@@ -57,7 +57,7 @@ const {
       />
       <iframe
         v-if="showIframe(s)"
-        :key="`if-${s.pluginId}-${reloadNonceFor(s.pluginId)}`"
+        :key="`if-${s.pluginId}-${s.appearanceId ?? ''}-${reloadNonceFor(s.pluginId)}`"
         class="plugin-toolbar-frame"
         :src="s.url"
         :title="`plugin ${s.pluginId}`"

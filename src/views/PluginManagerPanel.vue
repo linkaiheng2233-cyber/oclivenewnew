@@ -1,22 +1,44 @@
 <script setup lang="ts">
 import { open } from "@tauri-apps/api/dialog";
 import { computed, ref, watch } from "vue";
+
+type PmMainTab = "plugins" | "slots";
 import PluginListItem from "../components/PluginListItem.vue";
+import PmSlotRow from "../components/PmSlotRow.vue";
+import PluginSlotEmbed from "../components/PluginSlotEmbed.vue";
 import { useAppToast } from "../composables/useAppToast";
 import {
   SLOT_CHAT_HEADER,
   SLOT_CHAT_TOOLBAR,
+  SLOT_DEBUG_DOCK,
+  SLOT_LAUNCHER_PALETTE,
+  SLOT_OVERLAY_FLOATING,
   SLOT_ROLE_DETAIL,
+  SLOT_SETTINGS_ADVANCED,
   SLOT_SETTINGS_PANEL,
+  SLOT_SETTINGS_PLUGINS,
   SLOT_SIDEBAR,
   usePluginStore,
 } from "../stores/pluginStore";
+import { useRoleStore } from "../stores/roleStore";
+import { applyAuthorSuggestedPluginBackends } from "../utils/tauri-api";
 
 const pluginStore = usePluginStore();
+const roleStore = useRoleStore();
 const { showToast } = useAppToast();
 
 const batchMode = ref(false);
 const batchSelected = ref<Record<string, boolean>>({});
+const mainTab = ref<PmMainTab>("plugins");
+
+watch(
+  () => pluginStore.panelVisible,
+  (open) => {
+    if (open) {
+      mainTab.value = "plugins";
+    }
+  },
+);
 
 function clearBatchSelection(): void {
   batchSelected.value = {};
@@ -115,75 +137,41 @@ const settingsPanelOrder = computed(() =>
 const roleDetailOrder = computed(() => pluginStore.pluginsOrderedForSlot(SLOT_ROLE_DETAIL));
 const sidebarOrder = computed(() => pluginStore.pluginsOrderedForSlot(SLOT_SIDEBAR));
 const chatHeaderOrder = computed(() => pluginStore.pluginsOrderedForSlot(SLOT_CHAT_HEADER));
+const settingsPluginsOrder = computed(() =>
+  pluginStore.pluginsOrderedForSlot(SLOT_SETTINGS_PLUGINS),
+);
+const settingsAdvancedOrder = computed(() =>
+  pluginStore.pluginsOrderedForSlot(SLOT_SETTINGS_ADVANCED),
+);
+const overlayFloatingOrder = computed(() =>
+  pluginStore.pluginsOrderedForSlot(SLOT_OVERLAY_FLOATING),
+);
+const launcherPaletteOrder = computed(() =>
+  pluginStore.pluginsOrderedForSlot(SLOT_LAUNCHER_PALETTE),
+);
+const debugDockOrder = computed(() => pluginStore.pluginsOrderedForSlot(SLOT_DEBUG_DOCK));
 
-let dragToolbarIndex: number | null = null;
-let dragSettingsIndex: number | null = null;
-let dragRoleDetailIndex: number | null = null;
-let dragSidebarIndex: number | null = null;
-let dragChatHeaderIndex: number | null = null;
+let dragSlot: { slot: string; index: number } | null = null;
 
-function onDragToolbarStart(i: number) {
-  dragToolbarIndex = i;
-}
-
-function onDragSettingsStart(i: number) {
-  dragSettingsIndex = i;
-}
-
-function onDragRoleDetailStart(i: number) {
-  dragRoleDetailIndex = i;
-}
-
-function onDragSidebarStart(i: number) {
-  dragSidebarIndex = i;
-}
-
-function onDragChatHeaderStart(i: number) {
-  dragChatHeaderIndex = i;
+function onDragSlotStart(slot: string, index: number) {
+  dragSlot = { slot, index };
 }
 
 function onDragOver(e: DragEvent) {
   e.preventDefault();
 }
 
-function onDropToolbar(i: number) {
-  if (dragToolbarIndex === null || dragToolbarIndex === i) {
+function onDropSlot(slot: string, index: number) {
+  if (!dragSlot || dragSlot.slot !== slot) {
+    dragSlot = null;
     return;
   }
-  pluginStore.moveToolbarPlugin(dragToolbarIndex, i);
-  dragToolbarIndex = null;
-}
-
-function onDropSettings(i: number) {
-  if (dragSettingsIndex === null || dragSettingsIndex === i) {
+  if (dragSlot.index === index) {
+    dragSlot = null;
     return;
   }
-  pluginStore.movePluginInSlotOrder(SLOT_SETTINGS_PANEL, dragSettingsIndex, i);
-  dragSettingsIndex = null;
-}
-
-function onDropRoleDetail(i: number) {
-  if (dragRoleDetailIndex === null || dragRoleDetailIndex === i) {
-    return;
-  }
-  pluginStore.movePluginInSlotOrder(SLOT_ROLE_DETAIL, dragRoleDetailIndex, i);
-  dragRoleDetailIndex = null;
-}
-
-function onDropSidebar(i: number) {
-  if (dragSidebarIndex === null || dragSidebarIndex === i) {
-    return;
-  }
-  pluginStore.movePluginInSlotOrder(SLOT_SIDEBAR, dragSidebarIndex, i);
-  dragSidebarIndex = null;
-}
-
-function onDropChatHeader(i: number) {
-  if (dragChatHeaderIndex === null || dragChatHeaderIndex === i) {
-    return;
-  }
-  pluginStore.movePluginInSlotOrder(SLOT_CHAT_HEADER, dragChatHeaderIndex, i);
-  dragChatHeaderIndex = null;
+  pluginStore.movePluginInSlotOrder(slot, dragSlot.index, index);
+  dragSlot = null;
 }
 
 async function onSave() {
@@ -197,8 +185,24 @@ async function onSave() {
 
 async function onResetToPackDefault() {
   try {
+    if (pluginStore.persistScope === "global") {
+      pluginStore.setPersistScope("role");
+    }
     await pluginStore.resetToRolePackDefault();
-    showToast("success", "已重置为当前角色包 ui.json 的推荐布局。");
+    showToast(
+      "success",
+      "已重置为当前角色包推荐布局（author.suggested_ui 优先，否则 ui.json）。",
+    );
+  } catch (e) {
+    showToast("error", e instanceof Error ? e.message : String(e));
+  }
+}
+
+async function onApplyAuthorSuggestedBackends() {
+  try {
+    const info = await applyAuthorSuggestedPluginBackends(roleStore.currentRoleId);
+    roleStore.applyRoleInfo(info);
+    showToast("success", "已应用 author.json 中的 suggested_plugin_backends（会话级，未改 settings.json）。");
   } catch (e) {
     showToast("error", e instanceof Error ? e.message : String(e));
   }
@@ -247,7 +251,9 @@ async function onUpdateFromZip(pluginId: string) {
       <div class="pm-dialog" @click.stop>
         <header class="pm-head">
           <h2 class="pm-title">插件管理</h2>
-          <p class="pm-sub">快捷键 Ctrl+Shift+F · 停用插件与工具栏顺序写入本地配置；停用后建议重启应用以完全释放进程。</p>
+          <p class="pm-sub">
+            Ctrl+Shift+F 打开/关闭 · 保存后生效；停用插件建议重启应用。
+          </p>
           <button type="button" class="pm-close" aria-label="关闭" @click="pluginStore.closePanel()">
             ×
           </button>
@@ -257,6 +263,95 @@ async function onUpdateFromZip(pluginId: string) {
         <p v-else-if="pluginStore.error" class="pm-err">{{ pluginStore.error }}</p>
 
         <template v-else>
+          <div class="pm-tabs" role="tablist" aria-label="插件管理分区">
+            <button
+              type="button"
+              role="tab"
+              class="pm-tab"
+              :class="{ 'pm-tab--active': mainTab === 'plugins' }"
+              :aria-selected="mainTab === 'plugins'"
+              @click="mainTab = 'plugins'"
+            >
+              已安装插件
+            </button>
+            <button
+              type="button"
+              role="tab"
+              class="pm-tab"
+              :class="{ 'pm-tab--active': mainTab === 'slots' }"
+              :aria-selected="mainTab === 'slots'"
+              @click="mainTab = 'slots'"
+            >
+              插槽顺序
+            </button>
+          </div>
+
+          <div v-show="mainTab === 'plugins'" class="pm-tab-panel" role="tabpanel">
+          <section class="pm-section">
+            <h3 class="pm-h3">保存目标</h3>
+            <p class="pm-hint">
+              「全局默认」对所有角色生效并与各角色设置合并（整壳与插槽以当前角色为准；全局禁用插件为并集）。
+            </p>
+            <div class="pm-scope-row" role="group" aria-label="插件配置保存范围">
+              <label class="pm-scope-label">
+                <input
+                  type="radio"
+                  name="pm-persist-scope"
+                  :checked="pluginStore.persistScope === 'role'"
+                  @change="pluginStore.setPersistScope('role')"
+                />
+                仅当前角色
+              </label>
+              <label class="pm-scope-label">
+                <input
+                  type="radio"
+                  name="pm-persist-scope"
+                  :checked="pluginStore.persistScope === 'global'"
+                  @change="pluginStore.setPersistScope('global')"
+                />
+                全局默认
+              </label>
+            </div>
+          </section>
+
+          <section
+            v-if="roleStore.roleInfo.authorPack?.suggested_plugin_backends"
+            class="pm-section"
+          >
+            <h3 class="pm-h3">作者建议 · 后端</h3>
+            <p class="pm-hint">
+              将 author.json 中的 suggested_plugin_backends 写入本会话的后端覆盖（与运行时面板一致）。
+            </p>
+            <button
+              type="button"
+              class="pm-btn secondary pm-btn--sm"
+              @click="onApplyAuthorSuggestedBackends"
+            >
+              应用作者建议的后端
+            </button>
+          </section>
+
+          <section v-if="roleStore.roleInfo.authorPack" class="pm-section">
+            <h3 class="pm-h3">作者与推荐</h3>
+            <p v-if="roleStore.roleInfo.authorPack.summary" class="pm-author-summary">
+              {{ roleStore.roleInfo.authorPack.summary }}
+            </p>
+            <ul
+              v-if="(roleStore.roleInfo.authorPack.recommended_plugins ?? []).length"
+              class="pm-rec-list"
+            >
+              <li
+                v-for="(rp, idx) in roleStore.roleInfo.authorPack.recommended_plugins"
+                :key="`${rp.id}-${idx}`"
+              >
+                <strong>{{ rp.id }}</strong>
+                <span v-if="rp.version_range" class="pm-muted"> · {{ rp.version_range }}</span>
+                <span v-if="rp.optional" class="pm-muted">（可选）</span>
+              </li>
+            </ul>
+            <p v-else class="pm-muted">未列出 recommended_plugins。</p>
+          </section>
+
           <section class="pm-section">
             <div class="pm-section-head">
               <h3 class="pm-h3">已安装插件</h3>
@@ -348,6 +443,46 @@ async function onUpdateFromZip(pluginId: string) {
             </ul>
             <p v-if="!pluginStore.catalog.length" class="pm-muted">未扫描到目录插件（请将插件放入 roles 同级的 plugins/ 等目录）。</p>
           </section>
+          </div>
+
+          <div
+            v-show="mainTab === 'slots'"
+            class="pm-tab-panel pm-tab-panel--slots"
+            role="tabpanel"
+          >
+          <section class="pm-section pm-embed-slot">
+            <h3 class="pm-h3">插件管理页预览（只读）</h3>
+            <p class="pm-hint">
+              与下方「settings.plugins」为同一插槽；预览不可操作，请在列表中拖拽排序。
+            </p>
+            <div class="pm-embed-preview" aria-hidden="true">
+              <PluginSlotEmbed
+                slot-name="settings.plugins"
+                :bootstrap-epoch="pluginStore.bootstrapEpoch"
+              />
+            </div>
+          </section>
+
+          <section class="pm-section">
+            <h3 class="pm-h3">settings.plugins 顺序</h3>
+            <p class="pm-hint">本页内嵌区；拖拽排序，可选外观。</p>
+            <ol class="pm-order" aria-label="插件管理页槽顺序">
+              <li
+                v-for="(id, i) in settingsPluginsOrder"
+                :key="`spl-${id}`"
+                class="pm-order-item pm-order-item--row"
+                draggable="true"
+                @dragstart="onDragSlotStart(SLOT_SETTINGS_PLUGINS, i)"
+                @dragover="onDragOver"
+                @drop="onDropSlot(SLOT_SETTINGS_PLUGINS, i)"
+              >
+                <span class="pm-grip" aria-hidden="true">⋮⋮</span>
+                <span class="pm-order-id">{{ id }}</span>
+                <PmSlotRow :plugin-id="id" :slot-key="SLOT_SETTINGS_PLUGINS" />
+              </li>
+            </ol>
+            <p v-if="!settingsPluginsOrder.length" class="pm-muted">当前无 settings.plugins 插槽插件。</p>
+          </section>
 
           <section class="pm-section">
             <h3 class="pm-h3">chat_toolbar 顺序</h3>
@@ -356,14 +491,15 @@ async function onUpdateFromZip(pluginId: string) {
               <li
                 v-for="(id, i) in toolbarOrder"
                 :key="id"
-                class="pm-order-item"
+                class="pm-order-item pm-order-item--row"
                 draggable="true"
-                @dragstart="onDragToolbarStart(i)"
+                @dragstart="onDragSlotStart(SLOT_CHAT_TOOLBAR, i)"
                 @dragover="onDragOver"
-                @drop="onDropToolbar(i)"
+                @drop="onDropSlot(SLOT_CHAT_TOOLBAR, i)"
               >
                 <span class="pm-grip" aria-hidden="true">⋮⋮</span>
-                {{ id }}
+                <span class="pm-order-id">{{ id }}</span>
+                <PmSlotRow :plugin-id="id" :slot-key="SLOT_CHAT_TOOLBAR" />
               </li>
             </ol>
             <p v-if="!toolbarOrder.length" class="pm-muted">当前无 chat_toolbar 插槽插件。</p>
@@ -376,14 +512,15 @@ async function onUpdateFromZip(pluginId: string) {
               <li
                 v-for="(id, i) in settingsPanelOrder"
                 :key="`sp-${id}`"
-                class="pm-order-item"
+                class="pm-order-item pm-order-item--row"
                 draggable="true"
-                @dragstart="onDragSettingsStart(i)"
+                @dragstart="onDragSlotStart(SLOT_SETTINGS_PANEL, i)"
                 @dragover="onDragOver"
-                @drop="onDropSettings(i)"
+                @drop="onDropSlot(SLOT_SETTINGS_PANEL, i)"
               >
                 <span class="pm-grip" aria-hidden="true">⋮⋮</span>
-                {{ id }}
+                <span class="pm-order-id">{{ id }}</span>
+                <PmSlotRow :plugin-id="id" :slot-key="SLOT_SETTINGS_PANEL" />
               </li>
             </ol>
             <p v-if="!settingsPanelOrder.length" class="pm-muted">当前无 settings.panel 插槽插件。</p>
@@ -396,14 +533,15 @@ async function onUpdateFromZip(pluginId: string) {
               <li
                 v-for="(id, i) in roleDetailOrder"
                 :key="`rd-${id}`"
-                class="pm-order-item"
+                class="pm-order-item pm-order-item--row"
                 draggable="true"
-                @dragstart="onDragRoleDetailStart(i)"
+                @dragstart="onDragSlotStart(SLOT_ROLE_DETAIL, i)"
                 @dragover="onDragOver"
-                @drop="onDropRoleDetail(i)"
+                @drop="onDropSlot(SLOT_ROLE_DETAIL, i)"
               >
                 <span class="pm-grip" aria-hidden="true">⋮⋮</span>
-                {{ id }}
+                <span class="pm-order-id">{{ id }}</span>
+                <PmSlotRow :plugin-id="id" :slot-key="SLOT_ROLE_DETAIL" />
               </li>
             </ol>
             <p v-if="!roleDetailOrder.length" class="pm-muted">当前无 role.detail 插槽插件。</p>
@@ -416,14 +554,15 @@ async function onUpdateFromZip(pluginId: string) {
               <li
                 v-for="(id, i) in sidebarOrder"
                 :key="`sb-${id}`"
-                class="pm-order-item"
+                class="pm-order-item pm-order-item--row"
                 draggable="true"
-                @dragstart="onDragSidebarStart(i)"
+                @dragstart="onDragSlotStart(SLOT_SIDEBAR, i)"
                 @dragover="onDragOver"
-                @drop="onDropSidebar(i)"
+                @drop="onDropSlot(SLOT_SIDEBAR, i)"
               >
                 <span class="pm-grip" aria-hidden="true">⋮⋮</span>
-                {{ id }}
+                <span class="pm-order-id">{{ id }}</span>
+                <PmSlotRow :plugin-id="id" :slot-key="SLOT_SIDEBAR" />
               </li>
             </ol>
             <p v-if="!sidebarOrder.length" class="pm-muted">当前无 sidebar 插槽插件。</p>
@@ -436,18 +575,104 @@ async function onUpdateFromZip(pluginId: string) {
               <li
                 v-for="(id, i) in chatHeaderOrder"
                 :key="`ch-${id}`"
-                class="pm-order-item"
+                class="pm-order-item pm-order-item--row"
                 draggable="true"
-                @dragstart="onDragChatHeaderStart(i)"
+                @dragstart="onDragSlotStart(SLOT_CHAT_HEADER, i)"
                 @dragover="onDragOver"
-                @drop="onDropChatHeader(i)"
+                @drop="onDropSlot(SLOT_CHAT_HEADER, i)"
               >
                 <span class="pm-grip" aria-hidden="true">⋮⋮</span>
-                {{ id }}
+                <span class="pm-order-id">{{ id }}</span>
+                <PmSlotRow :plugin-id="id" :slot-key="SLOT_CHAT_HEADER" />
               </li>
             </ol>
             <p v-if="!chatHeaderOrder.length" class="pm-muted">当前无 chat.header 插槽插件。</p>
           </section>
+
+          <section class="pm-section">
+            <h3 class="pm-h3">settings.advanced 顺序</h3>
+            <p class="pm-hint">设置对话框「常规」扩展区；拖拽排序。</p>
+            <ol class="pm-order" aria-label="settings.advanced 顺序">
+              <li
+                v-for="(id, i) in settingsAdvancedOrder"
+                :key="`sa-${id}`"
+                class="pm-order-item pm-order-item--row"
+                draggable="true"
+                @dragstart="onDragSlotStart(SLOT_SETTINGS_ADVANCED, i)"
+                @dragover="onDragOver"
+                @drop="onDropSlot(SLOT_SETTINGS_ADVANCED, i)"
+              >
+                <span class="pm-grip" aria-hidden="true">⋮⋮</span>
+                <span class="pm-order-id">{{ id }}</span>
+                <PmSlotRow :plugin-id="id" :slot-key="SLOT_SETTINGS_ADVANCED" />
+              </li>
+            </ol>
+            <p v-if="!settingsAdvancedOrder.length" class="pm-muted">当前无 settings.advanced 插槽插件。</p>
+          </section>
+
+          <section class="pm-section">
+            <h3 class="pm-h3">overlay.floating 顺序</h3>
+            <p class="pm-hint">主界面右下角浮层模板区；拖拽排序。</p>
+            <ol class="pm-order" aria-label="overlay.floating 顺序">
+              <li
+                v-for="(id, i) in overlayFloatingOrder"
+                :key="`of-${id}`"
+                class="pm-order-item pm-order-item--row"
+                draggable="true"
+                @dragstart="onDragSlotStart(SLOT_OVERLAY_FLOATING, i)"
+                @dragover="onDragOver"
+                @drop="onDropSlot(SLOT_OVERLAY_FLOATING, i)"
+              >
+                <span class="pm-grip" aria-hidden="true">⋮⋮</span>
+                <span class="pm-order-id">{{ id }}</span>
+                <PmSlotRow :plugin-id="id" :slot-key="SLOT_OVERLAY_FLOATING" />
+              </li>
+            </ol>
+            <p v-if="!overlayFloatingOrder.length" class="pm-muted">当前无 overlay.floating 插槽插件。</p>
+          </section>
+
+          <section class="pm-section">
+            <h3 class="pm-h3">launcher.palette 顺序</h3>
+            <p class="pm-hint">快捷键说明浮层内聚合区；拖拽排序。</p>
+            <ol class="pm-order" aria-label="launcher.palette 顺序">
+              <li
+                v-for="(id, i) in launcherPaletteOrder"
+                :key="`lp-${id}`"
+                class="pm-order-item pm-order-item--row"
+                draggable="true"
+                @dragstart="onDragSlotStart(SLOT_LAUNCHER_PALETTE, i)"
+                @dragover="onDragOver"
+                @drop="onDropSlot(SLOT_LAUNCHER_PALETTE, i)"
+              >
+                <span class="pm-grip" aria-hidden="true">⋮⋮</span>
+                <span class="pm-order-id">{{ id }}</span>
+                <PmSlotRow :plugin-id="id" :slot-key="SLOT_LAUNCHER_PALETTE" />
+              </li>
+            </ol>
+            <p v-if="!launcherPaletteOrder.length" class="pm-muted">当前无 launcher.palette 插槽插件。</p>
+          </section>
+
+          <section class="pm-section">
+            <h3 class="pm-h3">debug.dock 顺序</h3>
+            <p class="pm-hint">调试面板内扩展区；拖拽排序。</p>
+            <ol class="pm-order" aria-label="debug.dock 顺序">
+              <li
+                v-for="(id, i) in debugDockOrder"
+                :key="`dd-${id}`"
+                class="pm-order-item pm-order-item--row"
+                draggable="true"
+                @dragstart="onDragSlotStart(SLOT_DEBUG_DOCK, i)"
+                @dragover="onDragOver"
+                @drop="onDropSlot(SLOT_DEBUG_DOCK, i)"
+              >
+                <span class="pm-grip" aria-hidden="true">⋮⋮</span>
+                <span class="pm-order-id">{{ id }}</span>
+                <PmSlotRow :plugin-id="id" :slot-key="SLOT_DEBUG_DOCK" />
+              </li>
+            </ol>
+            <p v-if="!debugDockOrder.length" class="pm-muted">当前无 debug.dock 插槽插件。</p>
+          </section>
+          </div>
 
           <footer class="pm-foot">
             <button type="button" class="pm-btn secondary" @click="pluginStore.closePanel()">关闭</button>
@@ -475,14 +700,55 @@ async function onUpdateFromZip(pluginId: string) {
 }
 .pm-dialog {
   position: relative;
-  width: min(560px, 100%);
-  max-height: min(88vh, 720px);
+  width: min(680px, 100%);
+  max-height: min(88vh, 760px);
   overflow: auto;
   padding: 16px 18px 14px;
   border-radius: var(--radius-app);
   border: 1px solid var(--border-light);
   background: var(--bg-primary);
   box-shadow: var(--shadow-app);
+}
+.pm-tabs {
+  display: flex;
+  gap: 4px;
+  margin-bottom: 14px;
+  padding: 4px;
+  border-radius: 10px;
+  background: color-mix(in srgb, var(--border-light) 35%, transparent);
+}
+.pm-tab {
+  flex: 1;
+  min-width: 0;
+  padding: 8px 12px;
+  border: none;
+  border-radius: 8px;
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+  color: var(--text-secondary);
+  background: transparent;
+  transition: background 0.15s ease, color 0.15s ease;
+}
+.pm-tab:hover {
+  color: var(--text-primary);
+  background: color-mix(in srgb, var(--bg-elevated) 80%, transparent);
+}
+.pm-tab--active {
+  color: var(--text-primary);
+  background: var(--bg-primary);
+  box-shadow: var(--shadow-sm);
+}
+.pm-tab-panel {
+  min-height: 0;
+}
+.pm-embed-preview {
+  pointer-events: none;
+  user-select: none;
+  opacity: 0.97;
+  border-radius: 8px;
+  overflow: hidden;
+  border: 1px dashed color-mix(in srgb, var(--border-light) 85%, transparent);
 }
 .pm-head {
   padding-right: 32px;
@@ -616,10 +882,45 @@ async function onUpdateFromZip(pluginId: string) {
   cursor: grab;
   background: var(--bg-elevated);
 }
+.pm-order-item--row {
+  flex-wrap: wrap;
+}
+.pm-order-id {
+  flex: 1;
+  min-width: 0;
+  word-break: break-all;
+}
+.pm-embed-slot code {
+  font-size: 11px;
+}
 .pm-grip {
   color: var(--text-secondary);
   font-size: 12px;
   user-select: none;
+}
+.pm-scope-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 14px;
+  margin-top: 6px;
+}
+.pm-scope-label {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 13px;
+  cursor: pointer;
+}
+.pm-author-summary {
+  margin: 0 0 8px;
+  font-size: 13px;
+  line-height: 1.45;
+}
+.pm-rec-list {
+  margin: 0;
+  padding-left: 18px;
+  font-size: 13px;
+  line-height: 1.5;
 }
 .pm-muted {
   font-size: 13px;

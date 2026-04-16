@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { computed, ref } from "vue";
 import ChatExportBar from "./ChatExportBar.vue";
+import PluginSlotEmbed from "./PluginSlotEmbed.vue";
 import HelpHint from "./HelpHint.vue";
 import RolePackBar from "./RolePackBar.vue";
 import RoleRuntimePanel from "./RoleRuntimePanel.vue";
@@ -8,6 +9,7 @@ import { useChatStore } from "../stores/chatStore";
 import { useDebugStore } from "../stores/debugStore";
 import { useRoleStore } from "../stores/roleStore";
 import { useUiStore } from "../stores/uiStore";
+import { SLOT_DEBUG_DOCK, usePluginStore } from "../stores/pluginStore";
 import { generateMonologue } from "../utils/tauri-api";
 import {
   PERSONALITY_TRAIT_KEYS,
@@ -28,6 +30,7 @@ const roleStore = useRoleStore();
 const debugStore = useDebugStore();
 const chatStore = useChatStore();
 const uiStore = useUiStore();
+const pluginStore = usePluginStore();
 const monoLoading = ref(false);
 
 const emit = defineEmits<{
@@ -124,6 +127,14 @@ function presenceLabel(mode: string): string {
         </div>
         <button type="button" aria-label="关闭" @click="emit('close')">✕</button>
       </div>
+
+      <section class="debug-dock-slot" aria-label="debug.dock">
+        <PluginSlotEmbed
+          :slot-name="SLOT_DEBUG_DOCK"
+          aria-label="调试面板扩展槽"
+          :bootstrap-epoch="pluginStore.bootstrapEpoch"
+        />
+      </section>
 
       <div class="debug-toolbar">
         <RolePackBar

@@ -1,0 +1,54 @@
+{
+  "shell": "",
+  "theme": {
+    "primaryColor": "",
+    "backgroundColor": "",
+    "fontFamily": ""
+  },
+  "layout": {
+    "sidebar": "left",
+    "chatInput": "bottom"
+  },
+  "slots": {
+    "chat_toolbar": {
+      "order": [
+        "com.oclive.mumu.quick-actions"
+      ],
+      "visible": [
+        "com.oclive.mumu.quick-actions"
+      ]
+    },
+    "settings.panel": {
+      "order": [
+        "com.oclive.mumu.settings-panel"
+      ],
+      "visible": [
+        "com.oclive.mumu.settings-panel"
+      ]
+    },
+    "role.detail": {
+      "order": [
+        "com.oclive.mumu.role-detail-card"
+      ],
+      "visible": [
+        "com.oclive.mumu.role-detail-card"
+      ]
+    },
+    "sidebar": {
+      "order": [
+        "com.oclive.mumu.sidebar-glance"
+      ],
+      "visible": [
+        "com.oclive.mumu.sidebar-glance"
+      ]
+    },
+    "chat.header": {
+      "order": [
+        "com.oclive.mumu.chat-header-status"
+      ],
+      "visible": [
+        "com.oclive.mumu.chat-header-status"
+      ]
+    }
+  }
+}

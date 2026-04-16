@@ -1,5 +1,6 @@
 //! 前后端契约（Tauri invoke）
 
+use crate::models::author_pack::AuthorPackFile;
 use crate::models::plugin_backends::PluginBackends;
 use crate::models::plugin_backends::PluginBackendsOverride;
 use crate::models::plugin_backends::PluginBackendsSourceMap;
@@ -10,7 +11,7 @@ use crate::models::ui_config::UiConfig;
 use serde::{Deserialize, Serialize};
 
 pub const API_VERSION: u32 = 1;
-pub const SCHEMA_VERSION: u32 = 11;
+pub const SCHEMA_VERSION: u32 = 12;
 
 #[derive(Debug, Deserialize)]
 pub struct SendMessageRequest {
@@ -154,6 +155,12 @@ pub struct RoleData {
     /// 角色包根目录 `ui.json`（主题、布局、插槽等）。
     #[serde(default)]
     pub pack_ui_config: UiConfig,
+    /// `author.suggested_ui`（若非空）否则与 `pack_ui_config` 相同；插件 UI 种子/重置基线。
+    #[serde(default)]
+    pub pack_ui_baseline: UiConfig,
+    /// 可选 `author.json` 全文（推荐插件、建议后端等）。
+    #[serde(default)]
+    pub author_pack: Option<AuthorPackFile>,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -257,6 +264,12 @@ pub struct RoleInfo {
     /// 角色包根目录 `ui.json`（主题、布局、插槽等）。
     #[serde(default)]
     pub pack_ui_config: UiConfig,
+    /// `author.suggested_ui`（若非空）否则与 `pack_ui_config` 相同；插件 UI 种子/重置基线。
+    #[serde(default)]
+    pub pack_ui_baseline: UiConfig,
+    /// 可选 `author.json`。
+    #[serde(default)]
+    pub author_pack: Option<AuthorPackFile>,
 }
 
 #[derive(Debug, Clone, Serialize)]

@@ -1,3 +1,4 @@
+pub mod author_pack;
 pub mod chat;
 pub mod dto;
 pub mod emotion;
@@ -15,6 +16,7 @@ pub mod role_settings_disk;
 pub mod scene_disk;
 pub mod ui_config;
 
+pub use author_pack::{AuthorPackFile, AuthorRecommendedPlugin};
 pub use chat::*;
 pub use dto::*;
 pub use emotion::*;

@@ -14,7 +14,7 @@ use crate::models::dto::{
     API_VERSION, OCLIVE_DEFAULT_RELATION_SENTINEL, SCHEMA_VERSION,
 };
 use crate::models::plugin_backends::{
-    EmotionBackend, EventBackend, LlmBackend, MemoryBackend, PromptBackend,
+    EmotionBackend, EventBackend, LlmBackend, MemoryBackend, PluginBackendsOverride, PromptBackend,
 };
 use crate::models::role::IdentityBinding;
 use crate::state::AppState;
@@ -32,7 +32,7 @@ use serde_json::{json, Value};
 const EVENT_IMPACT_MIN: f64 = 0.05;
 const EVENT_IMPACT_MAX: f64 = 5.0;
 
-fn session_namespace(role_id: &str, session_id: Option<&str>) -> String {
+pub(crate) fn session_namespace(role_id: &str, session_id: Option<&str>) -> String {
     crate::domain::chat_engine::conversation_state_role_id(role_id, session_id)
 }
 
@@ -69,7 +69,7 @@ pub async fn load_role_impl(
     state.directory_plugins.set_active_role_id(role_id);
     state
         .directory_plugins
-        .ensure_role_plugin_state(role_id, &role.ui_config);
+        .ensure_role_plugin_state(role_id, role.plugin_state_ui_baseline());
 
     state.invalidate_personality_cache_for_role(role_id);
 
@@ -185,6 +185,8 @@ pub async fn load_role_impl(
         plugin_backends_effective,
         plugin_backends_effective_sources,
         pack_ui_config: role.ui_config.clone(),
+        pack_ui_baseline: role.plugin_state_ui_baseline().clone(),
+        author_pack: role.author_pack.clone(),
     })
 }
 
@@ -325,6 +327,8 @@ pub async fn get_role_info_impl(
         knowledge_enabled,
         knowledge_chunk_count,
         pack_ui_config: role.ui_config.clone(),
+        pack_ui_baseline: role.plugin_state_ui_baseline().clone(),
+        author_pack: role.author_pack.clone(),
     })
 }
 
@@ -762,6 +766,57 @@ pub async fn set_session_plugin_backend(
     state: State<'_, AppState>,
 ) -> Result<RoleInfo, String> {
     set_session_plugin_backend_impl(&state, &req).await
+}
+
+#[derive(Debug, serde::Deserialize)]
+pub struct ApplyAuthorSuggestedBackendsRequest {
+    pub role_id: String,
+    #[serde(default)]
+    pub session_id: Option<String>,
+}
+
+/// 将 `author.json` → `suggested_plugin_backends` 写入当前会话命名空间的后端覆盖（不写回角色包）。
+#[tauri::command]
+pub async fn apply_author_suggested_plugin_backends(
+    req: ApplyAuthorSuggestedBackendsRequest,
+    state: State<'_, AppState>,
+) -> Result<RoleInfo, String> {
+    let role_id = req.role_id.trim();
+    if role_id.is_empty() {
+        return Err(AppError::InvalidParameter("role_id required".into()).to_frontend_error());
+    }
+    let role = state
+        .storage
+        .load_role(role_id)
+        .map_err(|e| e.to_frontend_error())?;
+    let Some(sugg) = role
+        .author_pack
+        .as_ref()
+        .and_then(|a| a.suggested_plugin_backends.as_ref())
+        .cloned()
+    else {
+        return Err(AppError::InvalidParameter(
+            "该角色包未提供 author.json suggested_plugin_backends".into(),
+        )
+        .to_frontend_error());
+    };
+    let ns = session_namespace(role_id, req.session_id.as_deref());
+    state
+        .db_manager
+        .ensure_role_runtime(ns.as_str())
+        .await
+        .map_err(|e| e.to_frontend_error())?;
+    let ov = PluginBackendsOverride {
+        memory: Some(sugg.memory),
+        emotion: Some(sugg.emotion),
+        event: Some(sugg.event),
+        prompt: Some(sugg.prompt),
+        llm: Some(sugg.llm),
+        local_memory_provider_id: sugg.local_memory_provider_id.clone(),
+        directory_plugins: Some(sugg.directory_plugins.clone()),
+    };
+    state.set_session_backend_override(ns.as_str(), ov);
+    get_role_info_impl(&state, role_id, req.session_id.as_deref()).await
 }
 
 pub async fn get_plugin_resolution_debug_impl(

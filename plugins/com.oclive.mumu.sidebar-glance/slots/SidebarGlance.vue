@@ -59,9 +59,9 @@ function relationName(info: RoleInfoPayload): string {
   const chosen = cur || def;
   const hit = rows.find((x) => x.id === chosen);
   if (info.use_manifest_default) {
-    return `默认 · ${hit?.name ?? chosen || "—"}`;
+    return `默认 · ${(hit?.name ?? chosen) || "—"}`;
   }
-  return hit?.name ?? chosen || "—";
+  return (hit?.name ?? chosen) || "—";
 }
 
 function sceneLine(info: RoleInfoPayload): string {

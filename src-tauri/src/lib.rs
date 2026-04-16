@@ -169,7 +169,12 @@ fn serve_ocliveplugin_asset(
         .body(data)
 }
 
-/// 优先 `OCLIVE_ROLES_DIR`，其次打包资源目录下的 `roles/`（对应 `bundle.resources`），否则开发态 [`state::resolve_roles_dir`]。
+/// 优先 `OCLIVE_ROLES_DIR`。
+///
+/// **开发构建**（`debug_assertions`）：优先 [`state::resolve_roles_dir`]（仓库根 `roles/`、`cwd/../roles` 等），
+/// 避免 `tauri dev` 时误用 `resource_dir/roles`（来自上次打包拷贝到 `target/.../resources` 的**旧快照**）。
+///
+/// **发布构建**：使用打包资源目录下的 `roles/`（`bundle.resources`），再回退到 [`state::resolve_roles_dir`]。
 fn resolve_roles_dir_for_app(app: &tauri::App) -> PathBuf {
     if let Ok(custom) = std::env::var("OCLIVE_ROLES_DIR") {
         let p = PathBuf::from(custom);
@@ -185,6 +190,23 @@ fn resolve_roles_dir_for_app(app: &tauri::App) -> PathBuf {
             target: "oclive_roles",
             "OCLIVE_ROLES_DIR is set but not a directory: {}",
             p.display()
+        );
+    }
+    #[cfg(debug_assertions)]
+    {
+        let dev = state::resolve_roles_dir();
+        if dev.is_dir() {
+            log::info!(
+                target: "oclive_roles",
+                "dev build: prefer repo roles -> {}",
+                dev.display()
+            );
+            return dev;
+        }
+        log::warn!(
+            target: "oclive_roles",
+            "dev build: resolve_roles_dir not a directory ({}); trying bundled",
+            dev.display()
         );
     }
     match app.path_resolver().resource_dir() {
@@ -254,6 +276,14 @@ pub fn run() {
             .expect("Failed to initialize app state");
 
             app.manage(app_state);
+            let hk = crate::infrastructure::hotkey_bindings::HotkeyBindingsFile::load(
+                app.state::<AppState>()
+                    .directory_plugins
+                    .app_data_dir(),
+            );
+            if let Err(e) = crate::api::hotkeys::apply_global_hotkeys(&app.handle(), &hk) {
+                log::warn!(target: "oclive_hotkey", "initial global shortcuts: {}", e);
+            }
             start_plugin_fs_watcher(
                 app.handle().clone(),
                 &app.state::<AppState>(),
@@ -274,6 +304,7 @@ pub fn run() {
             api::role::set_remote_life_enabled,
             api::role::set_role_interaction_mode,
             api::role::set_session_plugin_backend,
+            api::role::apply_author_suggested_plugin_backends,
             api::role::get_plugin_resolution_debug,
             api::role::resolve_role_asset_path,
             api::role_pack::export_role_pack_command,
@@ -295,7 +326,10 @@ pub fn run() {
             api::directory_plugin::get_directory_plugin_catalog,
             api::directory_plugin::get_plugin_state,
             api::directory_plugin::save_plugin_state,
+            api::directory_plugin::save_global_plugin_state,
             api::directory_plugin::reset_plugin_state_to_role_default,
+            api::hotkeys::get_hotkey_bindings,
+            api::hotkeys::save_hotkey_bindings,
             api::directory_plugin::directory_plugin_invoke,
             api::plugin_bridge::plugin_bridge_invoke,
             api::plugin_update::check_plugin_updates,

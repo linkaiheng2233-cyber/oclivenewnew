@@ -4,6 +4,7 @@ pub mod directory_plugin;
 pub mod error;
 pub mod event;
 pub mod export;
+pub mod hotkeys;
 pub mod jump_monologue;
 pub mod memory;
 pub mod monologue;

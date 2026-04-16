@@ -11,6 +11,7 @@ import {
   type PluginBackends,
   type PluginBackendsSourceMap,
   type PluginBackendsOverride,
+  type AuthorPackFile,
   type PackUiConfig,
   type RoleInfo,
   type UserRelationDto,
@@ -73,6 +74,8 @@ type RoleInfoState = {
   knowledgeChunkCount: number;
   /** 角色包 `ui.json` 规范化快照（主题 / 布局 / 插槽） */
   packUiConfig: PackUiConfig;
+  /** 可选 `author.json`（推荐插件、建议后端等） */
+  authorPack: AuthorPackFile | null;
 };
 
 function mapRoleInfo(info: RoleInfo): RoleInfoState {
@@ -119,7 +122,10 @@ function mapRoleInfo(info: RoleInfo): RoleInfoState {
     },
     knowledgeEnabled: info.knowledge_enabled ?? false,
     knowledgeChunkCount: info.knowledge_chunk_count ?? 0,
-    packUiConfig: normalizePackUiConfig(info.pack_ui_config),
+    packUiConfig: normalizePackUiConfig(
+      info.pack_ui_baseline ?? info.pack_ui_config,
+    ),
+    authorPack: info.author_pack ?? null,
   };
 }
 
@@ -183,12 +189,17 @@ export const useRoleStore = defineStore(
         knowledgeEnabled: false,
         knowledgeChunkCount: 0,
         packUiConfig: emptyPackUiConfig(),
+        authorPack: null,
       } as RoleInfoState,
     }),
     actions: {
       async loadRoles() {
         this.roles = await listRoles();
-        if (!this.roles.find((r) => r.id === this.currentRoleId) && this.roles.length > 0) {
+        if (this.roles.length === 0) {
+          this.currentRoleId = "";
+          return;
+        }
+        if (!this.roles.some((r) => r.id === this.currentRoleId)) {
           this.currentRoleId = this.roles[0].id;
         }
       },
