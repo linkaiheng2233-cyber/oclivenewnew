@@ -5,6 +5,8 @@ import HelpHint from "./components/HelpHint.vue";
 import RoleDetailView from "./views/RoleDetailView.vue";
 import ChatInput from "./components/ChatInput.vue";
 import ChatPluginToolbarSlots from "./components/ChatPluginToolbarSlots.vue";
+import PluginChatHeaderSlots from "./components/PluginChatHeaderSlots.vue";
+import PluginSidebarSlots from "./components/PluginSidebarSlots.vue";
 import PluginManagerPanel from "./views/PluginManagerPanel.vue";
 import SettingsView from "./views/SettingsView.vue";
 import ChatMessageList from "./components/ChatMessageList.vue";
@@ -12,6 +14,7 @@ import DebugPanel from "./components/DebugPanel.vue";
 import RoleSelector from "./components/RoleSelector.vue";
 import SceneTravelBars from "./components/SceneTravelBars.vue";
 import TopBarSceneModeDialog from "./components/TopBarSceneModeDialog.vue";
+import ShortcutHelp from "./components/ShortcutHelp.vue";
 import Toast from "./components/Toast.vue";
 import VirtualTimeBar from "./components/VirtualTimeBar.vue";
 import { useChatStore } from "./stores/chatStore";
@@ -19,6 +22,7 @@ import { useDebugStore } from "./stores/debugStore";
 import { useRoleStore } from "./stores/roleStore";
 import { useUiStore } from "./stores/uiStore";
 import { usePluginStore } from "./stores/pluginStore";
+import { listen } from "@tauri-apps/api/event";
 import { buildRelationDropdownOptions } from "./utils/relationOptions";
 import { useAppToast } from "./composables/useAppToast";
 import { useOcliveAppearance } from "./composables/useOcliveAppearance";
@@ -63,12 +67,41 @@ const togetherTravelSelectedId = ref("");
 /** 顶栏改场景：叙事独行 / 同行 */
 const topBarSceneDialogVisible = ref(false);
 const pendingTopBarSceneId = ref("");
+const quickActionSendEvent = "com.oclive.mumu.quick-actions:send_phrase";
+const quickActionTravelEvent = "com.oclive.mumu.quick-actions:travel";
 /** 虚拟时间跳转触发 autonomous_scene 规则时，左下角系统提示 */
 const autonomousSceneNotice = ref<{
   visible: boolean;
   fromLabel: string;
   toLabel: string;
 }>({ visible: false, fromLabel: "", toLabel: "" });
+
+const shortcutHelpOpen = ref(false);
+let ctrlLongPressTimer: ReturnType<typeof setTimeout> | null = null;
+
+function clearCtrlLongPressTimer(): void {
+  if (ctrlLongPressTimer != null) {
+    window.clearTimeout(ctrlLongPressTimer);
+    ctrlLongPressTimer = null;
+  }
+}
+
+function onCtrlHoldHintKeydown(e: KeyboardEvent): void {
+  if (e.key !== "Control" || e.repeat) {
+    return;
+  }
+  clearCtrlLongPressTimer();
+  ctrlLongPressTimer = window.setTimeout(() => {
+    ctrlLongPressTimer = null;
+    shortcutHelpOpen.value = true;
+  }, 1000);
+}
+
+function onCtrlHoldHintKeyup(e: KeyboardEvent): void {
+  if (e.key === "Control") {
+    clearCtrlLongPressTimer();
+  }
+}
 
 /** 宽屏左右分栏；窄屏改为上下堆叠，立绘用 stack 布局更易读 */
 const wideSplitLayout = ref(typeof window !== "undefined" && window.innerWidth > 720);
@@ -183,6 +216,7 @@ async function initialize() {
     await loadRole(roleStore.currentRoleId);
     await pluginStore.refresh();
     await roleStore.refreshRoleInfo();
+    hostEventBus.emitBuiltin("role:switched", { roleId: roleStore.currentRoleId });
     applyResolvedNarrativeScene();
     await debugStore.loadDebugData();
   } catch (err) {
@@ -215,6 +249,14 @@ async function onSend(payload: { content: string }) {
   } catch (err) {
     showToast("error", err instanceof Error ? err.message : String(err));
   }
+}
+
+function onPluginQuickActionSend(payload: unknown): void {
+  if (chatStore.isLoading) return;
+  const text = (payload as { text?: string } | null)?.text;
+  const content = typeof text === "string" ? text.trim() : "";
+  if (!content) return;
+  void onSend({ content });
 }
 
 async function confirmPostReplyScene(together: boolean) {
@@ -260,6 +302,16 @@ async function confirmTopBarScene(together: boolean) {
   topBarSceneDialogVisible.value = false;
   pendingTopBarSceneId.value = "";
   await applySceneDestination(id, together);
+}
+
+function onPluginQuickActionTravel(payload: unknown): void {
+  const sceneId = (payload as { sceneId?: string } | null)?.sceneId;
+  const togetherRaw = (payload as { together?: boolean } | null)?.together;
+  const id = typeof sceneId === "string" ? sceneId.trim() : "";
+  if (!id) return;
+  if (!allSceneOptions.value.some((s) => s.id === id)) return;
+  const together = togetherRaw === true;
+  void applySceneDestination(id, together);
 }
 
 async function onSwitchRole(nextRoleId: string) {
@@ -343,6 +395,11 @@ async function onReloadPolicy() {
 
 function onHotkey(e: KeyboardEvent) {
   if (e.key === "Escape") {
+    if (shortcutHelpOpen.value) {
+      e.preventDefault();
+      shortcutHelpOpen.value = false;
+      return;
+    }
     if (pluginStore.panelVisible) {
       e.preventDefault();
       pluginStore.closePanel();
@@ -391,14 +448,27 @@ watch(
   },
 );
 
+let unlistenPluginFs: (() => void) | undefined;
+
 onMounted(() => {
   setErrorReporter((err) => {
     showToast("error", err.message);
   });
+  hostEventBus.on(quickActionSendEvent, onPluginQuickActionSend);
+  hostEventBus.on(quickActionTravelEvent, onPluginQuickActionTravel);
   window.addEventListener("keydown", onHotkey);
+  window.addEventListener("keydown", onCtrlHoldHintKeydown);
+  window.addEventListener("keyup", onCtrlHoldHintKeyup);
   window.addEventListener("resize", scheduleRefreshSplitLayout);
   refreshSplitLayout();
   initialize();
+  void listen("plugin:changed", () => {
+    void pluginStore.onPluginFilesChanged().then(() => {
+      showToast("success", "检测到插件变更，已自动刷新");
+    });
+  }).then((u) => {
+    unlistenPluginFs = u;
+  });
 });
 
 watch(topMoreOpen, (open) => {
@@ -426,7 +496,13 @@ onBeforeUnmount(() => {
   }
   setErrorReporter(null);
   window.removeEventListener("keydown", onHotkey);
+  hostEventBus.off(quickActionSendEvent, onPluginQuickActionSend);
+  hostEventBus.off(quickActionTravelEvent, onPluginQuickActionTravel);
+  window.removeEventListener("keydown", onCtrlHoldHintKeydown);
+  window.removeEventListener("keyup", onCtrlHoldHintKeyup);
   window.removeEventListener("resize", scheduleRefreshSplitLayout);
+  clearCtrlLongPressTimer();
+  unlistenPluginFs?.();
 });
 </script>
 
@@ -447,6 +523,15 @@ onBeforeUnmount(() => {
           @change-role="onSwitchRole"
           @change-relation="onChangeRelation"
         />
+        <button
+          type="button"
+          class="shortcut-help-btn"
+          title="快捷键说明"
+          aria-label="快捷键说明"
+          @click="shortcutHelpOpen = true"
+        >
+          ?
+        </button>
         <button
           type="button"
           class="more-toggle"
@@ -678,6 +763,7 @@ onBeforeUnmount(() => {
             :emotion="emotion"
             :bootstrap-epoch="pluginStore.bootstrapEpoch"
           />
+          <PluginSidebarSlots :bootstrap-epoch="pluginStore.bootstrapEpoch" />
           <div class="left-pane-status" aria-label="好感度">
             好感度 {{ Math.round(roleStore.roleInfo.favorability) }} {{ statusHeart }}
           </div>
@@ -697,6 +783,7 @@ onBeforeUnmount(() => {
           />
         </aside>
         <div class="right-pane" :class="{ 'right-pane--input-top': chatInputTop }">
+          <PluginChatHeaderSlots :bootstrap-epoch="pluginStore.bootstrapEpoch" />
           <div class="chat-scroll-wrap chat-list">
             <transition name="fade">
               <ChatMessageList
@@ -746,6 +833,7 @@ onBeforeUnmount(() => {
     />
 
     <Toast :show="toast.show" :type="toast.type" :message="toast.message" />
+    <ShortcutHelp v-model="shortcutHelpOpen" />
 
     <PluginManagerPanel />
 
@@ -801,6 +889,32 @@ onBeforeUnmount(() => {
   align-items: center;
   justify-content: space-between;
   gap: 10px;
+}
+.shortcut-help-btn {
+  flex-shrink: 0;
+  width: 32px;
+  height: 32px;
+  padding: 0;
+  border-radius: var(--radius-btn);
+  border: 1px solid var(--border-light);
+  background: var(--bg-elevated);
+  color: var(--text-secondary);
+  font-size: 14px;
+  font-weight: 700;
+  font-family: var(--font-ui);
+  line-height: 1;
+  cursor: pointer;
+  transition: var(--control-transition);
+}
+.shortcut-help-btn:hover {
+  border-color: color-mix(in srgb, var(--border-light) 70%, var(--text-secondary) 30%);
+  color: var(--text-accent);
+}
+.shortcut-help-btn:focus {
+  outline: none;
+}
+.shortcut-help-btn:focus-visible {
+  box-shadow: 0 0 0 2px color-mix(in srgb, var(--focus-ring-color) 35%, transparent);
 }
 .more-toggle {
   flex-shrink: 0;

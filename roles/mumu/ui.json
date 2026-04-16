@@ -1,0 +1,42 @@
+{
+  "shell": "",
+  "theme": {
+    "primaryColor": "",
+    "backgroundColor": "",
+    "fontFamily": ""
+  },
+  "layout": {
+    "sidebar": "left",
+    "chatInput": "bottom"
+  },
+  "slots": {
+    "chat_toolbar": {
+      "order": [
+        "com.oclive.mumu.quick-actions"
+      ],
+      "visible": [
+        "com.oclive.mumu.quick-actions"
+      ]
+    },
+    "settings.panel": {
+      "order": [],
+      "visible": []
+    },
+    "role.detail": {
+      "order": [],
+      "visible": []
+    },
+    "sidebar": {
+      "order": [],
+      "visible": []
+    },
+    "chat.header": {
+      "order": [
+        "com.oclive.mumu.chat-header-status"
+      ],
+      "visible": [
+        "com.oclive.mumu.chat-header-status"
+      ]
+    }
+  }
+}

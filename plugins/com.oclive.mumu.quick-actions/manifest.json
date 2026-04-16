@@ -1,0 +1,16 @@
+{
+  "schema_version": 1,
+  "id": "com.oclive.mumu.quick-actions",
+  "version": "0.1.0",
+  "ui_slots": [
+    {
+      "slot": "chat_toolbar",
+      "entry": "slots/toolbar.html",
+      "vueComponent": "slots/QuickActions.vue",
+      "bridge": {
+        "invoke": ["list_roles", "get_role_info"],
+        "events": ["role:switched", "message:sent"]
+      }
+    }
+  ]
+}
