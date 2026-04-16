@@ -1,0 +1,63 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>整壳加载失败</title>
+    <style>
+      :root {
+        --bg: #1a1a1e;
+        --fg: #e8e8ec;
+        --muted: #9898a8;
+        --border: #3a3a44;
+      }
+      body {
+        margin: 0;
+        min-height: 100vh;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-family: system-ui, -apple-system, "Segoe UI", sans-serif;
+        background: var(--bg);
+        color: var(--fg);
+        padding: 24px;
+        box-sizing: border-box;
+      }
+      .card {
+        max-width: 420px;
+        border: 1px solid var(--border);
+        border-radius: 10px;
+        padding: 20px 22px;
+        background: #222228;
+      }
+      h1 {
+        margin: 0 0 10px;
+        font-size: 18px;
+        font-weight: 600;
+      }
+      p {
+        margin: 0;
+        font-size: 14px;
+        line-height: 1.5;
+        color: var(--muted);
+      }
+      code {
+        font-size: 12px;
+        word-break: break-all;
+      }
+    </style>
+  </head>
+  <body>
+    <div class="card">
+      <h1>无法加载整壳插件页面</h1>
+      <p id="msg">请检查插件入口路径、文件是否存在，或查看控制台日志。</p>
+    </div>
+    <script>
+      var q = new URLSearchParams(window.location.search);
+      var r = q.get("reason");
+      if (r) {
+        document.getElementById("msg").textContent = decodeURIComponent(r);
+      }
+    </script>
+  </body>
+</html>

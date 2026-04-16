@@ -10,6 +10,7 @@
     "tauri:before-dev": "node scripts/tauri-npm.cjs dev",
     "tauri:before-build": "node scripts/tauri-npm.cjs build",
     "build": "vite build",
+    "build:analyze": "vite build --mode analyze",
     "preview": "vite preview",
     "tauri": "tauri",
     "tauri:dev": "tauri dev",
@@ -37,6 +38,7 @@
   "devDependencies": {
     "@tauri-apps/cli": "1.5.14",
     "@vitejs/plugin-vue": "^5.2.1",
+    "rollup-plugin-visualizer": "^7.0.1",
     "vite": "^6.0.3"
   }
 }

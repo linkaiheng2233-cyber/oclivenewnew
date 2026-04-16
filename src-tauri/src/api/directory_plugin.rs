@@ -1,8 +1,10 @@
 //! 目录式插件：启动引导与 JSON-RPC 透传（B2）。
 
+use crate::api::error::ApiError;
 use crate::error::AppError;
 use crate::infrastructure::directory_plugins::{
-    normalize_plugin_rel, HostPluginsFile, OclivePluginManifest,
+    dependency_report, normalize_plugin_rel, parse_manifest_version, plugin_scan_container_roots,
+    HostPluginsFile, OclivePluginManifest,
 };
 use crate::infrastructure::plugin_state::{PluginStateFile, RolePluginState};
 use crate::infrastructure::remote_plugin::{
@@ -10,16 +12,22 @@ use crate::infrastructure::remote_plugin::{
 };
 use crate::models::ui_config::UiConfig;
 use crate::state::AppState;
+use semver::Version;
 use serde::Serialize;
+use once_cell::sync::Lazy;
+use parking_lot::Mutex;
 use serde_json::Value;
+use std::collections::hash_map::DefaultHasher;
 use std::collections::{HashMap, HashSet};
+use std::hash::{Hash, Hasher};
+use std::time::{Duration, Instant};
 use tauri::State;
 
 #[derive(Debug, Clone, Serialize)]
 #[serde(rename_all = "camelCase")]
 pub struct PluginUiSlotDto {
     pub plugin_id: String,
-    /// 官方嵌入插槽：`chat_toolbar` / `settings.panel` / `role.detail`
+    /// 官方嵌入插槽：`chat_toolbar` / `settings.panel` / `role.detail` / `sidebar` / `chat.header`
     pub slot: String,
     /// 相对插件根，与 manifest `ui_slots[].entry` 一致（iframe 与 `plugin_bridge` 校验）。
     pub entry: String,
@@ -30,7 +38,13 @@ pub struct PluginUiSlotDto {
 }
 
 /// 非整壳插件可声明的嵌入 UI 插槽（与前端消费一致）。
-const EMBEDDED_UI_SLOT_NAMES: &[&str] = &["chat_toolbar", "settings.panel", "role.detail"];
+const EMBEDDED_UI_SLOT_NAMES: &[&str] = &[
+    "chat_toolbar",
+    "settings.panel",
+    "role.detail",
+    "sidebar",
+    "chat.header",
+];
 
 #[derive(Debug, Serialize)]
 #[serde(rename_all = "camelCase")]
@@ -217,6 +231,16 @@ pub fn directory_plugin_bootstrap_dto(
         .filter(|s| s.slot == "role.detail")
         .cloned()
         .collect();
+    let mut sidebar: Vec<_> = ui_slots
+        .iter()
+        .filter(|s| s.slot == "sidebar")
+        .cloned()
+        .collect();
+    let mut chat_header: Vec<_> = ui_slots
+        .iter()
+        .filter(|s| s.slot == "chat.header")
+        .cloned()
+        .collect();
     let order_ct = pst
         .slot_order
         .get("chat_toolbar")
@@ -232,12 +256,26 @@ pub fn directory_plugin_bootstrap_dto(
         .get("role.detail")
         .map(|v| v.as_slice())
         .unwrap_or(&[]);
+    let order_sb = pst
+        .slot_order
+        .get("sidebar")
+        .map(|v| v.as_slice())
+        .unwrap_or(&[]);
+    let order_ch = pst
+        .slot_order
+        .get("chat.header")
+        .map(|v| v.as_slice())
+        .unwrap_or(&[]);
     chat = order_plugin_slots(chat, order_ct);
     settings = order_plugin_slots(settings, order_sp);
     role_detail = order_plugin_slots(role_detail, order_rd);
+    sidebar = order_plugin_slots(sidebar, order_sb);
+    chat_header = order_plugin_slots(chat_header, order_ch);
     let mut ui_slots = chat;
     ui_slots.extend(settings);
     ui_slots.extend(role_detail);
+    ui_slots.extend(sidebar);
+    ui_slots.extend(chat_header);
 
     let subscribed_host_events = subscribed_events_sorted_vec(subscribed_set);
 
@@ -292,30 +330,66 @@ pub fn read_plugin_asset_text(
 ) -> Result<String, String> {
     let pid = plugin_id.trim();
     if pid.is_empty() {
-        return Err("plugin_id required".to_string());
+        return Err(
+            ApiError::InvalidParameter {
+                message: "plugin_id required".into(),
+            }
+            .to_string(),
+        );
     }
     let rel = normalize_plugin_rel(rel.trim());
     if rel.is_empty() {
-        return Err("rel required".to_string());
+        return Err(
+            ApiError::InvalidParameter {
+                message: "rel required".into(),
+            }
+            .to_string(),
+        );
     }
     if rel.split('/').any(|p| p == "..") {
-        return Err("invalid rel path".to_string());
+        return Err(
+            ApiError::InvalidParameter {
+                message: "invalid rel path".into(),
+            }
+            .to_string(),
+        );
     }
     let roots = state.directory_plugins.plugin_roots.read();
     let root = roots
         .get(pid)
-        .ok_or_else(|| format!("unknown plugin_id={}", pid))?;
+        .ok_or_else(|| {
+            ApiError::PluginNotFound {
+                plugin_id: pid.to_string(),
+            }
+            .to_string()
+        })?;
     let path = root.join(&rel);
-    let root_canon = root
-        .canonicalize()
-        .map_err(|e| format!("plugin root: {}", e))?;
-    let path_canon = path
-        .canonicalize()
-        .map_err(|e| format!("read_plugin_asset_text: {}", e))?;
+    let root_canon = root.canonicalize().map_err(|e| {
+        ApiError::Io {
+            message: format!("plugin root: {}", e),
+        }
+        .to_string()
+    })?;
+    let path_canon = path.canonicalize().map_err(|e| {
+        ApiError::Io {
+            message: format!("read_plugin_asset_text: {}", e),
+        }
+        .to_string()
+    })?;
     if !path_canon.starts_with(&root_canon) {
-        return Err("path escapes plugin directory".to_string());
+        return Err(
+            ApiError::PermissionDenied {
+                message: "path escapes plugin directory".into(),
+            }
+            .to_string(),
+        );
     }
-    std::fs::read_to_string(&path_canon).map_err(|e| e.to_string())
+    std::fs::read_to_string(&path_canon).map_err(|e| {
+        ApiError::Io {
+            message: e.to_string(),
+        }
+        .to_string()
+    })
 }
 
 /// 查询某宿主内置事件名是否被当前角色下已启用插件订阅（与 `subscribed_host_events` 一致）。
@@ -360,9 +434,17 @@ pub fn directory_plugin_invoke(
 ) -> Result<Value, String> {
     let pid = req.plugin_id.trim();
     if pid.is_empty() {
-        return Err("plugin_id empty".to_string());
+        return Err(
+            ApiError::InvalidParameter {
+                message: "plugin_id required".into(),
+            }
+            .to_string(),
+        );
     }
-    let url = state.directory_plugins.ensure_rpc_url(pid)?;
+    let url = state
+        .directory_plugins
+        .ensure_rpc_url(pid)
+        .map_err(|e| crate::api::error::map_directory_rpc_url_error(pid, e))?;
     invoke_directory_plugin_rpc_blocking(
         &url,
         req.method.trim(),
@@ -383,14 +465,56 @@ pub struct DirectoryPluginCatalogEntry {
     /// 声明的 UI 插槽名（如 `chat_toolbar`）。
     pub ui_slot_names: Vec<String>,
     pub provides: Vec<String>,
+    /// `ok` / `missing` / `mismatch`
+    pub dependency_status: String,
+    #[serde(skip_serializing_if = "Vec::is_empty")]
+    pub dependency_issues: Vec<String>,
 }
 
-#[tauri::command]
-pub fn get_directory_plugin_catalog(
-    state: State<'_, AppState>,
-) -> Result<Vec<DirectoryPluginCatalogEntry>, String> {
+struct PluginCatalogCacheValue {
+    fingerprint: u64,
+    stored_at: Instant,
+    entries: Vec<DirectoryPluginCatalogEntry>,
+}
+
+static PLUGIN_CATALOG_CACHE: Lazy<Mutex<Option<PluginCatalogCacheValue>>> =
+    Lazy::new(|| Mutex::new(None));
+
+fn plugin_catalog_fingerprint(state: &AppState) -> std::io::Result<u64> {
+    let roles = state.storage.roles_dir();
+    let app_data = state.directory_plugins.app_data_dir();
+    let host = state.directory_plugins.host();
+    let roots = plugin_scan_container_roots(roles, app_data, host);
+    let mut h = DefaultHasher::new();
+    state
+        .directory_plugins
+        .catalog_cache_invalidation_gen()
+        .hash(&mut h);
+    for r in roots {
+        r.hash(&mut h);
+        if let Ok(meta) = std::fs::metadata(&r) {
+            if let Ok(t) = meta.modified() {
+                if let Ok(d) = t.duration_since(std::time::UNIX_EPOCH) {
+                    d.as_secs().hash(&mut h);
+                    d.subsec_nanos().hash(&mut h);
+                }
+            }
+        }
+    }
+    Ok(h.finish())
+}
+
+fn build_directory_plugin_catalog(state: &AppState) -> Vec<DirectoryPluginCatalogEntry> {
     let rt = &state.directory_plugins;
     let roots = rt.plugin_roots.read();
+    let mut version_by_id: HashMap<String, Version> = HashMap::new();
+    for (pid, root) in roots.iter() {
+        if let Ok(m) = OclivePluginManifest::load_from_dir(root) {
+            if let Some(v) = parse_manifest_version(&m.version) {
+                version_by_id.insert(pid.clone(), v);
+            }
+        }
+    }
     let mut out: Vec<DirectoryPluginCatalogEntry> = roots
         .iter()
         .filter_map(|(pid, root)| {
@@ -398,6 +522,8 @@ pub fn get_directory_plugin_catalog(
             let is_shell = manifest.shell.is_some();
             let ui_slot_names: Vec<String> =
                 manifest.ui_slots.iter().map(|u| u.slot.clone()).collect();
+            let (dependency_status, dependency_issues) =
+                dependency_report(&manifest, &version_by_id);
             Some(DirectoryPluginCatalogEntry {
                 id: pid.clone(),
                 version: manifest.version.clone(),
@@ -405,10 +531,39 @@ pub fn get_directory_plugin_catalog(
                 is_shell,
                 ui_slot_names,
                 provides: manifest.provides.clone(),
+                dependency_status,
+                dependency_issues,
             })
         })
         .collect();
     out.sort_by(|a, b| a.id.cmp(&b.id));
+    out
+}
+
+#[tauri::command]
+pub fn get_directory_plugin_catalog(
+    state: State<'_, AppState>,
+) -> Result<Vec<DirectoryPluginCatalogEntry>, String> {
+    let fp = plugin_catalog_fingerprint(&state).map_err(|e| {
+        ApiError::Io {
+            message: e.to_string(),
+        }
+        .to_string()
+    })?;
+    {
+        let lock = PLUGIN_CATALOG_CACHE.lock();
+        if let Some(cached) = lock.as_ref() {
+            if cached.fingerprint == fp && cached.stored_at.elapsed() < Duration::from_secs(5) {
+                return Ok(cached.entries.clone());
+            }
+        }
+    }
+    let out = build_directory_plugin_catalog(&state);
+    *PLUGIN_CATALOG_CACHE.lock() = Some(PluginCatalogCacheValue {
+        fingerprint: fp,
+        stored_at: Instant::now(),
+        entries: out.clone(),
+    });
     Ok(out)
 }
 

@@ -9,7 +9,11 @@
 | 文件夹 | 内容 |
 |--------|------|
 | **[getting-started/](getting-started/)** | 文档总索引、入门与角色包工作流、[GitHub 仓库清单](getting-started/GITHUB_REPO_CHECKLIST.md) |
-| **[plugin-and-architecture/](plugin-and-architecture/)** | `plugin_backends` 契约、扩展点、HTTP JSON-RPC 协议、替换模块 |
+| **[guides/](guides/)** | [配置文件说明](guides/CONFIGURATION_FILES.md)（`plugin_state`、`ui.json`、应用数据路径等） |
+| **[plugin-and-architecture/](plugin-and-architecture/)** | `plugin_backends` 契约、扩展点、HTTP JSON-RPC 协议、[整壳桥接 API 参考](plugin-and-architecture/BRIDGE_API_REFERENCE.md)、替换模块 |
+| **[FAQ.md](FAQ.md)** | 插件与角色包常见问题 |
+| **[COMPATIBILITY.md](COMPATIBILITY.md)** | 编写器与主程序版本、`ui.json` 兼容表 |
+| **[video-script/](video-script/)** | [5 分钟工具栏插件视频脚本](video-script/PLUGIN_DEVELOPMENT_SCRIPT.md) |
 | **[role-pack/](role-pack/)** | 包版本、场景、用户身份、角色包自定义 |
 | **[roadmap/](roadmap/)** | 愿景与按月路线图、[体验差异化 backlog](roadmap/BACKLOG_EXPERIENCE_AND_ECOSYSTEM.md)、[后日待办 · 工具链与 CI](roadmap/SOMEDAY_TOOLCHAIN_CI.md)、[市场 · 启动器联动](roadmap/MARKET_LAUNCHER_INTEGRATION.md)、[社区站愿景（三板块）](roadmap/COMMUNITY_WEB_VISION.md)、[插件区网站 IA](roadmap/PLUGIN_WEB_SECTION.md) |
 

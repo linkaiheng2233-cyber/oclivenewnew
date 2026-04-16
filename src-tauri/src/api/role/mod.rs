@@ -27,7 +27,7 @@ use runtime::{
     resolve_relation_state_for_ui, role_runtime_extras,
 };
 use serde::de::DeserializeOwned;
-use serde_json::Value;
+use serde_json::{json, Value};
 
 const EVENT_IMPACT_MIN: f64 = 0.05;
 const EVENT_IMPACT_MAX: f64 = 5.0;
@@ -849,6 +849,36 @@ pub async fn clear_scene_user_relation(
     state: State<'_, AppState>,
 ) -> Result<RoleInfo, String> {
     clear_scene_user_relation_impl(&state, &req).await
+}
+
+/// 删除本地角色目录及该 manifest 角色（含 `__sess__` 会话命名空间）的 DB 状态。
+pub async fn delete_role_impl(state: &AppState, role_id: String) -> Result<Value, String> {
+    let rid = role_id.trim();
+    if rid.is_empty() {
+        return Err("delete_role: role_id required".to_string());
+    }
+    let removed_ns = state
+        .db_manager
+        .delete_all_data_for_manifest_role(rid)
+        .await
+        .map_err(|e| e.to_frontend_error())?;
+    for ns in &removed_ns {
+        state.clear_session_backend_override(ns);
+    }
+    let dir = state.storage.roles_dir().join(rid);
+    if dir.exists() {
+        let dir_owned = dir.clone();
+        tokio::task::spawn_blocking(move || std::fs::remove_dir_all(&dir_owned))
+            .await
+            .map_err(|e| format!("delete_role: join {e}"))?
+            .map_err(|e: std::io::Error| e.to_string())?;
+    }
+    state
+        .directory_plugins
+        .remove_role_plugin_state(rid)?;
+    state.role_cache.write().remove(rid);
+    state.invalidate_personality_cache_for_role(rid);
+    Ok(json!({ "ok": true, "role_id": rid }))
 }
 
 /// 去掉 Windows 冗长路径前缀 `\\?\`，避免前端路径异常。

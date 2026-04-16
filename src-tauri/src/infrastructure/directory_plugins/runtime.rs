@@ -9,6 +9,7 @@ use std::collections::HashMap;
 use std::io::{BufRead, BufReader};
 use std::path::{Path, PathBuf};
 use std::process::{Command, Stdio};
+use std::sync::atomic::{AtomicU64, Ordering};
 use std::sync::Arc;
 use std::thread;
 use std::time::{Duration, Instant};
@@ -65,22 +66,37 @@ fn collect_plugin_dirs(root: &Path, out: &mut HashMap<String, PathBuf>) {
         if !mf.is_file() {
             continue;
         }
-        if let Ok(m) = OclivePluginManifest::load_from_dir(&p) {
-            let id = m.id.trim().to_string();
-            if let Some(prev) = out.insert(id.clone(), p.clone()) {
+        match OclivePluginManifest::load_from_dir(&p) {
+            Ok(m) => {
+                let id = m.id.trim().to_string();
+                if let Some(prev) = out.insert(id.clone(), p.clone()) {
+                    log::warn!(
+                        target: "oclive_plugin",
+                        "directory plugin id={} duplicate; replacing path={} with {}",
+                        id,
+                        prev.display(),
+                        p.display()
+                    );
+                }
+            }
+            Err(e) => {
                 log::warn!(
                     target: "oclive_plugin",
-                    "directory plugin id={} duplicate; replacing path={} with {}",
-                    id,
-                    prev.display(),
-                    p.display()
+                    "skipping plugin directory (manifest invalid or unreadable): {} — {}",
+                    p.display(),
+                    e
                 );
             }
         }
     }
 }
 
-fn default_scan_roots(roles_dir: &Path, app_data: &Path, host: &HostPluginsFile) -> Vec<PathBuf> {
+/// 插件包所在容器目录（`plugins/` 等），用于扫描与（开发者模式）文件监听。
+pub fn plugin_scan_container_roots(
+    roles_dir: &Path,
+    app_data: &Path,
+    host: &HostPluginsFile,
+) -> Vec<PathBuf> {
     let mut roots = Vec::new();
     if let Some(parent) = roles_dir.parent() {
         let p = parent.join("plugins");
@@ -105,6 +121,10 @@ fn default_scan_roots(roles_dir: &Path, app_data: &Path, host: &HostPluginsFile)
         }
     }
     roots
+}
+
+fn default_scan_roots(roles_dir: &Path, app_data: &Path, host: &HostPluginsFile) -> Vec<PathBuf> {
+    plugin_scan_container_roots(roles_dir, app_data, host)
 }
 
 pub fn scan_plugins(
@@ -144,6 +164,8 @@ pub struct DirectoryPluginRuntime {
     plugin_state_store: Arc<RwLock<PluginStateStore>>,
     /// 当前主界面所加载的角色（用于插槽/禁用解析；资产网关与 RPC 共用）。
     active_role_id: Arc<RwLock<Option<String>>>,
+    /// 与 `get_directory_plugin_catalog` 短时缓存联动；`rescan_plugin_roots` 时递增使缓存失效。
+    catalog_invalidate_gen: AtomicU64,
 }
 
 impl DirectoryPluginRuntime {
@@ -168,7 +190,13 @@ impl DirectoryPluginRuntime {
             app_data_dir,
             plugin_state_store,
             active_role_id: Arc::new(RwLock::new(None)),
+            catalog_invalidate_gen: AtomicU64::new(0),
         })
+    }
+
+    #[must_use]
+    pub fn catalog_cache_invalidation_gen(&self) -> u64 {
+        self.catalog_invalidate_gen.load(Ordering::Relaxed)
     }
 
     fn plugin_state_path(&self) -> PathBuf {
@@ -274,6 +302,24 @@ impl DirectoryPluginRuntime {
         let _ = std::fs::write(&p, role_id.trim());
     }
 
+    /// 删除某角色的插件 UI 状态；若当前活跃角色相同则清空活跃标记。
+    pub fn remove_role_plugin_state(&self, role_id: &str) -> Result<(), String> {
+        let rid = role_id.trim();
+        if rid.is_empty() {
+            return Ok(());
+        }
+        {
+            let mut store = self.plugin_state_store.write();
+            store.roles.remove(rid);
+        }
+        let mut ar = self.active_role_id.write();
+        if ar.as_deref() == Some(rid) {
+            *ar = None;
+        }
+        drop(ar);
+        self.persist_plugin_state_store()
+    }
+
     #[must_use]
     pub fn read_last_role_id_from_disk(&self) -> Option<String> {
         let p = self.app_data_dir.join("oclive_last_role_id.txt");
@@ -348,6 +394,10 @@ impl DirectoryPluginRuntime {
 
     /// 重新扫描 `plugins/` 等根目录并替换内存中的 `plugin_roots`。
     pub fn rescan_plugin_roots(&self, roles_dir: &Path) {
+        for id in self.rpc_urls.lock().keys().cloned().collect::<Vec<_>>() {
+            self.clear_plugin_process(&id);
+        }
+        self.catalog_invalidate_gen.fetch_add(1, Ordering::Relaxed);
         let scan = scan_plugins(roles_dir, &self.app_data_dir, &self.host);
         let n = scan.roots.len();
         *self.plugin_roots.write() = scan.roots;

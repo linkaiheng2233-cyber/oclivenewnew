@@ -1,5 +1,7 @@
 pub mod chat;
+pub mod conversation;
 pub mod directory_plugin;
+pub mod error;
 pub mod event;
 pub mod export;
 pub mod jump_monologue;
@@ -11,6 +13,7 @@ pub mod policy;
 pub mod role;
 pub mod role_pack;
 pub mod scene;
+pub mod settings;
 pub mod time;
 
 pub use chat::send_message;

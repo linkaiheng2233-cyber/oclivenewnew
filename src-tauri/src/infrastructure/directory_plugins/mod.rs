@@ -2,10 +2,18 @@
 //!
 //! 契约见 `creator-docs/plugin-and-architecture/DIRECTORY_PLUGINS.md`。
 
+mod dependency;
 mod manifest;
 mod runtime;
+mod version;
+mod watcher;
 
+pub use dependency::dependency_report;
+pub use version::parse_manifest_version;
 pub use manifest::{
     normalize_plugin_rel, BridgeConfig, OclivePluginManifest, ShellSection, UiSlotDecl,
 };
-pub use runtime::{DirectoryPluginRuntime, HostPluginsFile, PluginScanSummary};
+pub use runtime::{
+    plugin_scan_container_roots, DirectoryPluginRuntime, HostPluginsFile, PluginScanSummary,
+};
+pub use watcher::start_plugin_fs_watcher;

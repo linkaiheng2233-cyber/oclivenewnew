@@ -2,7 +2,7 @@
 import AsyncPluginVue from "./AsyncPluginVue.vue";
 import PluginErrorPlaceholder from "./PluginErrorPlaceholder.vue";
 import { useDirectoryPluginSlotEmbed } from "../composables/useDirectoryPluginSlotEmbed";
-import { SLOT_ROLE_DETAIL } from "../stores/pluginStore";
+import { SLOT_SIDEBAR } from "../stores/pluginStore";
 
 const props = withDefaults(
   defineProps<{
@@ -26,18 +26,18 @@ const {
   showIframe,
   showVue,
 } = useDirectoryPluginSlotEmbed({
-  slot: SLOT_ROLE_DETAIL,
+  slot: SLOT_SIDEBAR,
   bootstrapEpoch: () => props.bootstrapEpoch,
 });
 </script>
 
 <template>
-  <div v-if="pluginError" class="prd-msg prd-msg--err" role="status">{{ pluginError }}</div>
-  <div v-else-if="slots.length > 0" class="prd-list" aria-label="角色详情插件插槽">
-    <div v-for="s in slots" :key="s.pluginId" class="prd-item">
+  <div v-if="pluginError" class="psb-msg psb-msg--err" role="status">{{ pluginError }}</div>
+  <div v-else-if="slots.length > 0" class="psb-list" aria-label="侧边栏插件插槽">
+    <div v-for="s in slots" :key="s.pluginId" class="psb-item">
       <AsyncPluginVue
         v-if="showVue(s)"
-        class="prd-vue"
+        class="psb-vue"
         :plugin-id="s.pluginId"
         :vue-component="s.vueComponent!"
         :bridge-asset-rel="s.entry"
@@ -48,9 +48,9 @@ const {
       <iframe
         v-if="showIframe(s)"
         :key="`if-${s.pluginId}-${reloadNonceFor(s.pluginId)}`"
-        class="prd-frame"
+        class="psb-frame"
         :src="s.url"
-        :title="`plugin role.detail ${s.pluginId}`"
+        :title="`plugin sidebar ${s.pluginId}`"
         loading="lazy"
         referrerpolicy="no-referrer"
         @load="onFrameLoad(s.pluginId)"
@@ -58,7 +58,7 @@ const {
       />
       <PluginErrorPlaceholder
         v-if="frameErrors[s.pluginId]"
-        class="prd-fail"
+        class="psb-fail"
         :message="frameErrors[s.pluginId]!"
         :detail="frameErrorDetails[s.pluginId] || undefined"
         :show-fallback="false"
@@ -69,38 +69,38 @@ const {
 </template>
 
 <style scoped>
-.prd-list {
+.psb-list {
   display: flex;
   flex-direction: column;
   gap: 10px;
   width: 100%;
 }
-.prd-item {
+.psb-item {
   display: flex;
   flex-direction: column;
   gap: 4px;
   min-height: 0;
 }
-.prd-frame {
+.psb-frame {
   width: 100%;
-  min-height: 120px;
-  height: 180px;
+  min-height: 96px;
+  height: 140px;
   border: 1px solid var(--border-light);
   border-radius: var(--radius-btn);
   background: var(--bg-elevated);
 }
-.prd-vue {
+.psb-vue {
   width: 100%;
-  min-height: 100px;
+  min-height: 80px;
 }
-.prd-msg {
+.psb-msg {
   margin: 0;
   font-size: 12px;
 }
-.prd-msg--err {
+.psb-msg--err {
   color: var(--text-danger, #c33);
 }
-.prd-msg--muted {
+.psb-msg--muted {
   color: var(--text-secondary);
 }
 </style>

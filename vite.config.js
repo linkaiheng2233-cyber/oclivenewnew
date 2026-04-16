@@ -1,11 +1,21 @@
 import { defineConfig } from "vite";
 import vue from "@vitejs/plugin-vue";
+import { visualizer } from "rollup-plugin-visualizer";
 
 const host = process.env.TAURI_DEV_HOST;
 
 // https://vite.dev/config/
-export default defineConfig(async () => ({
-  plugins: [vue()],
+export default defineConfig(({ mode }) => ({
+  plugins: [
+    vue(),
+    mode === "analyze" &&
+      visualizer({
+        filename: "dist/stats.html",
+        gzipSize: true,
+        brotliSize: true,
+        open: false,
+      }),
+  ].filter(Boolean),
 
   optimizeDeps: {
     include: ["vue3-sfc-loader", "mitt"],
@@ -20,18 +30,14 @@ export default defineConfig(async () => ({
           if (id.includes("@tauri-apps")) return "vendor-tauri";
           if (id.includes("vue-virtual-scroller")) return "vendor-scroller";
           if (id.includes("pinia")) return "vendor-pinia";
-          if (id.includes("vue3-sfc-loader")) return "vendor-vue-sfc";
+          // vue3-sfc-loader 仅经动态 import 加载，不打入首屏 vendor
           if (id.includes("/vue/") || id.includes("@vue/")) return "vendor-vue";
         },
       },
     },
   },
 
-  // Vite options tailored for Tauri development and only applied in `tauri dev` or `tauri build`
-  //
-  // 1. prevent Vite from obscuring rust errors
   clearScreen: false,
-  // 2. tauri expects a fixed port, fail if that port is not available
   server: {
     port: 1420,
     strictPort: true,
@@ -44,7 +50,6 @@ export default defineConfig(async () => ({
         }
       : undefined,
     watch: {
-      // 3. tell Vite to ignore watching `src-tauri`
       ignored: ["**/src-tauri/**"],
     },
   },

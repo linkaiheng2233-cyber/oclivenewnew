@@ -37,6 +37,8 @@ impl RolePluginState {
         apply_slot("chat_toolbar", &cfg.slots.chat_toolbar, &mut slots);
         apply_slot("settings.panel", &cfg.slots.settings_panel, &mut slots);
         apply_slot("role.detail", &cfg.slots.role_detail, &mut slots);
+        apply_slot("sidebar", &cfg.slots.sidebar, &mut slots);
+        apply_slot("chat.header", &cfg.slots.chat_header, &mut slots);
         Self {
             shell_plugin_id: cfg.shell.trim().to_string(),
             slots,

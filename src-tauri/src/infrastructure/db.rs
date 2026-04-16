@@ -1527,6 +1527,93 @@ impl DbManager {
 
         Ok(events)
     }
+
+    /// 列出所有短期对话命名空间（`short_term_memory.role_id`）及轮数、最后一条时间。
+    pub async fn list_conversation_sessions(
+        &self,
+    ) -> Result<Vec<(String, i64, Option<String>)>> {
+        let rows = sqlx::query_as::<_, (String, i64, Option<String>)>(
+            "SELECT role_id, COUNT(*), MAX(created_at)
+             FROM short_term_memory
+             GROUP BY role_id
+             ORDER BY MAX(created_at) DESC",
+        )
+        .fetch_all(&self.pool)
+        .await
+        .map_err(|e| AppError::DatabaseError(e.to_string()))?;
+        Ok(rows)
+    }
+
+    /// 写入或更新 `app_settings` 单行。
+    pub async fn upsert_app_setting(&self, key: &str, value: &str) -> Result<()> {
+        sqlx::query(
+            "INSERT INTO app_settings (key, value) VALUES (?, ?)
+             ON CONFLICT(key) DO UPDATE SET value = excluded.value",
+        )
+        .bind(key)
+        .bind(value)
+        .execute(&self.pool)
+        .await
+        .map_err(|e| AppError::DatabaseError(e.to_string()))?;
+        Ok(())
+    }
+
+    /// 删除 manifest 角色 id 及其所有会话命名空间（`{id}__sess__*`）在 DB 中的运行时数据；返回已删除的 `role_id` 键列表。
+    pub async fn delete_all_data_for_manifest_role(
+        &self,
+        manifest_role_id: &str,
+    ) -> Result<Vec<String>> {
+        let mid = manifest_role_id.trim();
+        if mid.is_empty() {
+            return Err(AppError::InvalidParameter(
+                "manifest role_id empty".to_string(),
+            ));
+        }
+        let pattern = format!("{mid}__sess__*");
+        let ids: Vec<String> = sqlx::query_scalar::<_, String>(
+            "SELECT role_id FROM role_runtime WHERE role_id = ? OR role_id GLOB ?",
+        )
+        .bind(mid)
+        .bind(&pattern)
+        .fetch_all(&self.pool)
+        .await
+        .map_err(|e| AppError::DatabaseError(e.to_string()))?;
+
+        let mut tx = self
+            .pool
+            .begin()
+            .await
+            .map_err(|e| AppError::DatabaseError(e.to_string()))?;
+
+        for id in &ids {
+            for sql in [
+                "DELETE FROM short_term_memory WHERE role_id = ?",
+                "DELETE FROM long_term_memory WHERE role_id = ?",
+                "DELETE FROM events WHERE role_id = ?",
+                "DELETE FROM favorability_history WHERE role_id = ?",
+                "DELETE FROM personality_vector WHERE role_id = ?",
+                "DELETE FROM operation_logs WHERE role_id = ?",
+                "DELETE FROM role_scene_identity WHERE role_id = ?",
+                "DELETE FROM role_identity_stats WHERE role_id = ?",
+            ] {
+                sqlx::query(sql)
+                    .bind(id)
+                    .execute(&mut *tx)
+                    .await
+                    .map_err(|e| AppError::DatabaseError(e.to_string()))?;
+            }
+            sqlx::query("DELETE FROM role_runtime WHERE role_id = ?")
+                .bind(id)
+                .execute(&mut *tx)
+                .await
+                .map_err(|e| AppError::DatabaseError(e.to_string()))?;
+        }
+
+        tx.commit()
+            .await
+            .map_err(|e| AppError::DatabaseError(e.to_string()))?;
+        Ok(ids)
+    }
 }
 
 #[cfg(test)]

@@ -30,6 +30,8 @@ once_cell = "1.0"
 tempfile = "3.8"
 toml = "0.8"
 walkdir = "2.5"
+semver = "1.0"
+notify = "6"
 zip = { version = "0.6", default-features = false, features = ["deflate"] }
 axum = "0.7"
 tower-http = { version = "0.5", features = ["cors"] }

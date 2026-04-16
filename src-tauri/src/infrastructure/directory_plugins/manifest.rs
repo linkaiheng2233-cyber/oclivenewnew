@@ -1,6 +1,8 @@
 //! `plugins/<id>/manifest.json`
 
+use super::version::parse_manifest_version;
 use serde::Deserialize;
+use std::collections::HashMap;
 use std::path::Path;
 
 /// 整壳 / UI 插槽页可调用的宿主能力白名单（`plugin_bridge_invoke`）。
@@ -69,6 +71,9 @@ pub struct OclivePluginManifest {
     /// stdout 就绪行前缀，默认 `OCLIVE_READY`
     #[serde(default = "default_ready_prefix")]
     pub ready_prefix: String,
+    /// 可选：依赖的其他目录插件 id → semver 范围（如 `^2.0.0`、`>=1.0.0`）。
+    #[serde(default)]
+    pub dependencies: Option<HashMap<String, String>>,
 }
 
 /// 规范化 manifest 内相对路径，与请求 URI 中 `rel` 比较。
@@ -133,6 +138,24 @@ impl OclivePluginManifest {
         }
         if m.id.trim().is_empty() {
             return Err(format!("manifest {}: id empty", p.display()));
+        }
+        if m.version.trim().is_empty() {
+            return Err(format!("manifest {}: version empty", p.display()));
+        }
+        if parse_manifest_version(&m.version).is_none() {
+            return Err(format!(
+                "manifest {}: version must be valid semver (e.g. 1.2.3), got {:?}",
+                p.display(),
+                m.version
+            ));
+        }
+        if let Some(ref sh) = m.shell {
+            if sh.entry.trim().is_empty() {
+                return Err(format!(
+                    "manifest {}: shell.entry required when shell is set",
+                    p.display()
+                ));
+            }
         }
         Ok(m)
     }

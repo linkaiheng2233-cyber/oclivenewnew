@@ -1,28 +1,54 @@
 <script setup lang="ts">
 import type { DirectoryPluginCatalogEntry } from "../utils/tauri-api";
 
-defineProps<{
-  entry: DirectoryPluginCatalogEntry;
-  /** 全局禁用（停用插件） */
-  pluginDisabled: boolean;
+const props = withDefaults(
+  defineProps<{
+    entry: DirectoryPluginCatalogEntry;
+    /** 管理面板批量选择模式 */
+    batchSelectMode?: boolean;
+    /** 批量选中 */
+    batchSelected?: boolean;
+    /** 全局禁用（停用插件） */
+    pluginDisabled: boolean;
   /** 仅隐藏 chat_toolbar 嵌入（整壳插件此项不适用） */
   toolbarContributionDisabled: boolean;
   /** 仅隐藏 settings.panel 嵌入 */
   settingsPanelContributionDisabled: boolean;
   /** 仅隐藏 role.detail 嵌入 */
   roleDetailContributionDisabled: boolean;
-}>();
+  /** 仅隐藏 sidebar 嵌入 */
+  sidebarContributionDisabled: boolean;
+  /** 仅隐藏 chat.header 嵌入 */
+  chatHeaderContributionDisabled: boolean;
+  }>(),
+  {
+    batchSelectMode: false,
+    batchSelected: false,
+  },
+);
 
 const emit = defineEmits<{
+  "update:batchSelected": [value: boolean];
   "update:pluginDisabled": [value: boolean];
   "update:toolbarContributionDisabled": [value: boolean];
   "update:settingsPanelContributionDisabled": [value: boolean];
   "update:roleDetailContributionDisabled": [value: boolean];
+  "update:sidebarContributionDisabled": [value: boolean];
+  "update:chatHeaderContributionDisabled": [value: boolean];
 }>();
 </script>
 
 <template>
   <div class="pli" role="group" :aria-label="`插件 ${entry.id}`">
+    <label v-if="batchSelectMode" class="pli-batch chk">
+      <input
+        type="checkbox"
+        :checked="batchSelected"
+        @change="
+          emit('update:batchSelected', ($event.target as HTMLInputElement).checked)
+        "
+      />
+    </label>
     <div class="pli-main">
       <div class="pli-title">
         <span class="pli-id">{{ entry.id }}</span>
@@ -37,12 +63,20 @@ const emit = defineEmits<{
       <p v-if="entry.uiSlotNames.length && !entry.isShell" class="pli-meta">
         UI 插槽: {{ entry.uiSlotNames.join(", ") }}
       </p>
+      <p
+        v-if="entry.dependencyStatus && entry.dependencyStatus !== 'ok'"
+        class="pli-deps"
+      >
+        依赖未满足（{{ entry.dependencyStatus }}）：
+        {{ (entry.dependencyIssues ?? []).join("；") }}
+      </p>
     </div>
     <div class="pli-actions">
       <label class="chk">
         <input
           type="checkbox"
           :checked="pluginDisabled"
+          :disabled="pluginDisabled && entry.dependencyStatus !== 'ok'"
           @change="emit('update:pluginDisabled', ($event.target as HTMLInputElement).checked)"
         />
         停用插件
@@ -86,6 +120,32 @@ const emit = defineEmits<{
         />
         隐藏角色详情嵌入
       </label>
+      <label v-if="!entry.isShell && entry.uiSlotNames.includes('sidebar')" class="chk">
+        <input
+          type="checkbox"
+          :checked="sidebarContributionDisabled"
+          @change="
+            emit(
+              'update:sidebarContributionDisabled',
+              ($event.target as HTMLInputElement).checked,
+            )
+          "
+        />
+        隐藏侧边栏嵌入
+      </label>
+      <label v-if="!entry.isShell && entry.uiSlotNames.includes('chat.header')" class="chk">
+        <input
+          type="checkbox"
+          :checked="chatHeaderContributionDisabled"
+          @change="
+            emit(
+              'update:chatHeaderContributionDisabled',
+              ($event.target as HTMLInputElement).checked,
+            )
+          "
+        />
+        隐藏聊天头部嵌入
+      </label>
     </div>
   </div>
 </template>
@@ -101,6 +161,10 @@ const emit = defineEmits<{
   border: 1px solid var(--border-light);
   border-radius: var(--radius-btn);
   background: var(--bg-elevated);
+}
+.pli-batch {
+  align-self: flex-start;
+  padding-top: 2px;
 }
 .pli-title {
   display: flex;
@@ -130,6 +194,12 @@ const emit = defineEmits<{
   margin: 4px 0 0;
   font-size: 11px;
   color: var(--text-secondary);
+  line-height: 1.35;
+}
+.pli-deps {
+  margin: 6px 0 0;
+  font-size: 11px;
+  color: var(--text-danger, #c33);
   line-height: 1.35;
 }
 .pli-actions {

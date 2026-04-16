@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import AsyncPluginVue from "./AsyncPluginVue.vue";
+import PluginErrorPlaceholder from "./PluginErrorPlaceholder.vue";
 import { useDirectoryPluginSlotEmbed } from "../composables/useDirectoryPluginSlotEmbed";
 import { SLOT_CHAT_TOOLBAR } from "../stores/pluginStore";
 
@@ -15,8 +16,13 @@ const {
   pluginError,
   slots,
   frameErrors,
+  frameErrorDetails,
+  reloadNonceFor,
   onFrameError,
+  onFrameLoad,
   onVueFailed,
+  onVueCompileError,
+  retrySlot,
   showIframe,
   showVue,
 } = useDirectoryPluginSlotEmbed({
@@ -34,33 +40,41 @@ const {
     class="plugin-toolbar"
     aria-label="插件工具栏"
   >
-    <template v-for="s in slots" :key="s.pluginId">
+    <div
+      v-for="s in slots"
+      :key="s.pluginId"
+      class="plugin-toolbar-slot"
+    >
       <AsyncPluginVue
         v-if="showVue(s)"
         class="plugin-toolbar-vue"
         :plugin-id="s.pluginId"
         :vue-component="s.vueComponent!"
         :bridge-asset-rel="s.entry"
+        :reload-nonce="reloadNonceFor(s.pluginId)"
         @failed="onVueFailed(s.pluginId)"
+        @compile-error="onVueCompileError(s.pluginId, $event)"
       />
       <iframe
         v-if="showIframe(s)"
+        :key="`if-${s.pluginId}-${reloadNonceFor(s.pluginId)}`"
         class="plugin-toolbar-frame"
         :src="s.url"
         :title="`plugin ${s.pluginId}`"
         loading="lazy"
         referrerpolicy="no-referrer"
+        @load="onFrameLoad(s.pluginId)"
         @error="onFrameError(s.pluginId)"
       />
-    </template>
-    <span
-      v-for="s in slots"
-      v-show="frameErrors[s.pluginId]"
-      :key="`err-${s.pluginId}`"
-      class="plugin-toolbar-fail"
-    >
-      {{ frameErrors[s.pluginId] }}
-    </span>
+      <PluginErrorPlaceholder
+        v-if="frameErrors[s.pluginId]"
+        class="plugin-toolbar-fail"
+        :message="frameErrors[s.pluginId]!"
+        :detail="frameErrorDetails[s.pluginId] || undefined"
+        :show-fallback="false"
+        @retry="retrySlot(s)"
+      />
+    </div>
   </div>
 </template>
 
@@ -74,6 +88,12 @@ const {
   padding: 6px 18px 0;
   background: var(--bg-primary);
   border-bottom: 1px solid color-mix(in srgb, var(--border-light) 80%, transparent);
+}
+.plugin-toolbar-slot {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
 }
 .plugin-toolbar--error {
   font-size: 12px;
@@ -99,7 +119,6 @@ const {
   align-items: center;
 }
 .plugin-toolbar-fail {
-  font-size: 11px;
-  color: var(--text-secondary);
+  max-width: min(420px, 100%);
 }
 </style>

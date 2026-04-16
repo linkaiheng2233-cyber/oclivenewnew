@@ -1,4 +1,4 @@
-//! 角色包根目录 `ui.json`：创作者推荐的前端布局（整壳、主题、布局与三插槽）。
+//! 角色包根目录 `ui.json`：创作者推荐的前端布局（整壳、主题、布局与嵌入插槽）。
 
 use serde::{Deserialize, Serialize};
 use std::path::Path;
@@ -48,6 +48,10 @@ pub struct UiSlots {
     pub settings_panel: SlotConfig,
     #[serde(rename = "role.detail", default)]
     pub role_detail: SlotConfig,
+    #[serde(default)]
+    pub sidebar: SlotConfig,
+    #[serde(rename = "chat.header", default)]
+    pub chat_header: SlotConfig,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize, Default, PartialEq, Eq)]
@@ -80,5 +84,7 @@ impl UiConfig {
             && self.slots.chat_toolbar.order.is_empty()
             && self.slots.settings_panel.order.is_empty()
             && self.slots.role_detail.order.is_empty()
+            && self.slots.sidebar.order.is_empty()
+            && self.slots.chat_header.order.is_empty()
     }
 }

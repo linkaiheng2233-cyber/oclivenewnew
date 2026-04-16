@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { ref, watch } from "vue";
 import AsyncPluginVue from "./AsyncPluginVue.vue";
+import PluginErrorPlaceholder from "./PluginErrorPlaceholder.vue";
 import { useDirectoryPluginSlotEmbed } from "../composables/useDirectoryPluginSlotEmbed";
 import { SLOT_SETTINGS_PANEL } from "../stores/pluginStore";
 
@@ -16,8 +17,13 @@ const {
   pluginError,
   slots: panelSlots,
   frameErrors,
+  frameErrorDetails,
+  reloadNonceFor,
   onFrameError,
+  onFrameLoad,
   onVueFailed,
+  onVueCompileError,
+  retrySlot,
   showIframe,
   showVue,
 } = useDirectoryPluginSlotEmbed({
@@ -66,20 +72,30 @@ watch(panelSlots, (list) => {
           :plugin-id="s.pluginId"
           :vue-component="s.vueComponent!"
           :bridge-asset-rel="s.entry"
+          :reload-nonce="reloadNonceFor(s.pluginId)"
+          skeleton-variant="block"
           @failed="onVueFailed(s.pluginId)"
+          @compile-error="onVueCompileError(s.pluginId, $event)"
         />
         <iframe
           v-if="showIframe(s)"
+          :key="`if-${s.pluginId}-${reloadNonceFor(s.pluginId)}`"
           class="psp-frame"
           :src="s.url"
           :title="`plugin settings ${s.pluginId}`"
           loading="lazy"
           referrerpolicy="no-referrer"
+          @load="onFrameLoad(s.pluginId)"
           @error="onFrameError(s.pluginId)"
         />
-        <p v-if="frameErrors[s.pluginId]" class="psp-msg psp-msg--warn">
-          {{ frameErrors[s.pluginId] }}
-        </p>
+        <PluginErrorPlaceholder
+          v-if="frameErrors[s.pluginId]"
+          class="psp-fail"
+          :message="frameErrors[s.pluginId]!"
+          :detail="frameErrorDetails[s.pluginId] || undefined"
+          :show-fallback="false"
+          @retry="retrySlot(s)"
+        />
       </div>
     </template>
     <p v-else class="psp-msg psp-msg--muted">暂无声明 <code>settings.panel</code> 插槽的插件。</p>

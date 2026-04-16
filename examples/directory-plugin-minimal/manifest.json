@@ -20,7 +20,12 @@
         "write:memory",
         "write:emotion",
         "write:event",
-        "write:prompt"
+        "write:prompt",
+        "export:conversation",
+        "import:role",
+        "delete:role",
+        "write:settings",
+        "read:conversations"
       ],
       "events": []
     }

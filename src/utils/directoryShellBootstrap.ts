@@ -40,11 +40,28 @@ export async function tryReplaceWithDirectoryShell(): Promise<boolean> {
     const vueEntry =
       typeof boot.shellVueEntry === "string" ? boot.shellVueEntry.trim() : "";
 
+    function redirectShellError(reason: string): void {
+      const u = new URL("plugin-shell-error.html", window.location.href);
+      u.searchParams.set("reason", reason);
+      window.location.replace(u.toString());
+    }
+
+    async function shellHtmlReachable(url: string): Promise<boolean> {
+      try {
+        const r = await fetch(url, { method: "GET", cache: "no-store" });
+        return r.ok;
+      } catch {
+        return false;
+      }
+    }
+
     if (!forceIframe && vueEntry.length > 0) {
       try {
         await readPluginAssetText(shellPid, vueEntry);
       } catch {
-        window.location.replace(shellUrl);
+        redirectShellError(
+          encodeURIComponent(`无法读取整壳 Vue 入口：${vueEntry}`),
+        );
         return true;
       }
       const pinia = createPinia();
@@ -63,6 +80,13 @@ export async function tryReplaceWithDirectoryShell(): Promise<boolean> {
     const here = window.location.href.split("#")[0];
     const target = shellUrl.split("#")[0];
     if (here !== target) {
+      const ok = await shellHtmlReachable(shellUrl);
+      if (!ok) {
+        redirectShellError(
+          encodeURIComponent("无法加载整壳 HTML 入口，请检查 shell.entry 路径与文件是否存在"),
+        );
+        return true;
+      }
       window.location.replace(shellUrl);
       return true;
     }

@@ -13,7 +13,8 @@ use std::path::{Path, PathBuf};
 use tauri::http::{Request, Response, ResponseBuilder};
 use tauri::{AppHandle, Manager};
 
-use crate::infrastructure::directory_plugins::OclivePluginManifest;
+use crate::infrastructure::directory_plugins::{start_plugin_fs_watcher, OclivePluginManifest};
+use crate::state::AppState;
 
 /// 向插件 HTML 注入 `window.OclivePluginBridge`（manifest 中 `bridge` + 白名单）。
 fn inject_plugin_bridge_script(
@@ -35,7 +36,7 @@ fn inject_plugin_bridge_script(
     let script = format!(
         "<script>(function(){{\
 var PLUGIN_ID={pid};var ASSET_REL={arel};var INV={inv};var EVT={ev};\
-var CMD_PERM={{\"get_conversation\":\"read:conversation\",\"get_roles\":\"read:roles\",\"get_current_role\":\"read:current_role\",\"update_memory\":\"write:memory\",\"delete_memory\":\"write:memory\",\"update_emotion\":\"write:emotion\",\"update_event\":\"write:event\",\"update_prompt\":\"write:prompt\"}};\
+var CMD_PERM={{\"get_conversation\":\"read:conversation\",\"get_roles\":\"read:roles\",\"get_current_role\":\"read:current_role\",\"update_memory\":\"write:memory\",\"delete_memory\":\"write:memory\",\"update_emotion\":\"write:emotion\",\"update_event\":\"write:event\",\"update_prompt\":\"write:prompt\",\"export_conversation\":\"export:conversation\",\"import_role\":\"import:role\",\"delete_role\":\"delete:role\",\"update_settings\":\"write:settings\",\"get_conversation_list\":\"read:conversations\"}};\
 function bridgeAllowed(n){{if(INV.indexOf(n)>=0)return true;var p=CMD_PERM[n];return p&&INV.indexOf(p)>=0;}}\
 function invoke(n,p){{if(!bridgeAllowed(n))return Promise.reject(new Error('invoke denied:'+n));\
 var _inv=window.__TAURI__&&(window.__TAURI__.invoke||(window.__TAURI__.tauri&&window.__TAURI__.tauri.invoke));\
@@ -246,12 +247,18 @@ pub fn run() {
             fs::create_dir_all(&app_dir).expect("create app_data_dir");
             let db_path = app_dir.join("app.db");
             let roles_dir = resolve_roles_dir_for_app(app);
+            let roles_for_watcher = roles_dir.clone();
             let app_state = tauri::async_runtime::block_on(async {
                 state::AppState::new(&db_path, Some(roles_dir), &app_dir).await
             })
             .expect("Failed to initialize app state");
 
             app.manage(app_state);
+            start_plugin_fs_watcher(
+                app.handle().clone(),
+                &app.state::<AppState>(),
+                roles_for_watcher,
+            );
             Ok(())
         })
         .invoke_handler(tauri::generate_handler![

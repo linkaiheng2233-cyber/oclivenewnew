@@ -40,6 +40,7 @@
 | `shell` | `object?` | **`entry`**：相对插件根的 HTML 入口（整壳 B1，回退用）；**`vueEntry?`**：相对插件根的 `.vue`，在 **`force_iframe_mode` 关闭** 且文件可读时由宿主用 Vue 渲染整壳（与插槽 `vueComponent` 体验一致；失败则回退 `entry`） |
 | `process` | `object?` | **`command`** / **`args[]`** / **`cwd?`**（`cwd` 相对插件根，可省略则默认为插件根） |
 | `ready_prefix` | `string?` | 默认 **`OCLIVE_READY`**；就绪行 = 此前缀 + 空格 + **JSON-RPC 根 URL**（须 `http://` 或 `https://`） |
+| `dependencies` | `object?` | 可选：其它目录插件 **`id` → semver 范围**（如 `">=1.0.0"`、`"^2.0.0"`）；缺失或版本不符时该插件在管理面板标记为依赖不满足且不可启用 |
 
 **懒启动**：首次需要该插件的 RPC（五模块 `directory`、`directory_plugin_invoke`、或需解析 shell manifest）时启动子进程，并缓存 **RPC URL** 与 **子进程**（当前实现不随角色切换回收子进程；应用退出时释放）。并发多次触发同一 `id` 时，宿主对单次启动加锁，避免重复子进程。
 
@@ -119,11 +120,16 @@
 | **`delete_memory`** | **`write:memory`** 或 `delete_memory` | 删除长期记忆；`params`: `role_id`, `memory_id`（须属于该角色） |
 | **`update_emotion`** | **`write:emotion`** 或 `update_emotion` | 更新 `role_runtime.current_emotion`；`params`: `role_id`, `emotion` |
 | **`update_event`** | **`write:event`** 或 `update_event` | 与 `create_event` 等价；`params`: `role_id`, `event_type`, 可选 `description`（事件类型枚举同 `CreateEventRequest`） |
+| **`export_conversation`** | **`export:conversation`** 或 `export_conversation` | 导出当前角色聊天记录；`params`: `role_id`，可选 `format`（`json` \| `txt`，默认 `json`）、`session_id`；返回 `content`、`suggested_filename`（与 `export_chat_logs` 一致） |
+| **`import_role`** | **`import:role`** 或 `import_role` | 导入角色包；`params`: `path`（或 `src_path`），可选 `overwrite`；返回 `role_id`、`ok` |
 | **`update_prompt`** | **`write:prompt`** 或 `update_prompt` | 预留：当前宿主返回 `not_implemented`，待动态提示词片段契约落地 |
+| **`delete_role`** | **`delete:role`** 或 `delete_role` | 删除本地角色包及相关数据；`params`: `role_id` 或 `roleId` |
+| **`update_settings`** | **`write:settings`** 或 `update_settings` | 更新允许的应用设置（白名单字段，如 `theme` / `ui_theme`、`interaction_mode`） |
+| **`get_conversation_list`** | **`read:conversations`** 或 `get_conversation_list` | 返回本地会话元数据列表：`items[]` 含 `session_namespace`、`turn_count`、`last_at` |
 
 **不强制 `type: ocliveplugin` 的桥接命令**（亦需在 **`bridge.invoke`** 中声明）：`get_role_info`、`list_roles`、`get_time_state`、`get_directory_plugin_bootstrap` 等。未声明的调用一律拒绝。
 
-**写入类命令**（`update_memory` / `delete_memory` / `update_emotion` / `update_event` / `update_prompt`）与上表「聊天/角色」敏感命令相同：**必须** `type: ocliveplugin` 且自 **`shell.entry` HTML** 或 **`shell.vueEntry` Vue** 调用。
+**写入类命令**（`update_memory` / `delete_memory` / `update_emotion` / `update_event` / `update_prompt`）以及 **`export_conversation`** / **`import_role`** 与上表「聊天/角色」敏感命令相同：**必须** `type: ocliveplugin` 且自 **`shell.entry` HTML** 或 **`shell.vueEntry` Vue** 调用。
 
 ### 4.2 主界面 UI 插槽（`ui_slots`）
 
@@ -134,6 +140,8 @@
 | **`chat_toolbar`** | 聊天输入区上方 | 窄条工具栏，适合快捷操作 |
 | **`settings.panel`** | **设置 → 插件扩展**（顶栏「更多」→「打开设置」） | 较大区域，适合插件配置表单；可用 **选项卡** 在多个 `settings.panel` 插件间切换 |
 | **`role.detail`** | 左侧 **角色详情**（立绘与名称下方，好感度条上方） | 垂直 iframe 列表，适合与当前角色相关的扩展信息或快捷编辑 |
+| **`sidebar`** | 左侧栏 **角色块下方**（好感度条上方） | 侧栏扩展区，适合与当前角色相关的竖向信息或工具 |
+| **`chat.header`** | 右侧聊天列 **消息列表上方** | 聊天页顶栏区域，适合会话级提示或快捷条 |
 
 通用规则：
 
@@ -155,6 +163,8 @@
 - **`oclive.invoke(command, params?)`**：等价于 iframe 内 `OclivePluginBridge.invoke`。
 - **`oclive.pluginId`** / **`oclive.bridgeAssetRel`**：当前插件 id 与桥接用 `entry` 路径。
 - **`oclive.events.emit` / `on` / `off`**：宿主 **mitt** 事件总线（见 4.3）；`on` 注册的监听在**组件卸载时自动移除**。
+- **`oclive.events.request(event, data?, timeoutMs?)`**：向已用 **`onRequest`** 注册的监听方发起**请求—响应**；事件名须为 **`某插件ID:名称`**（可跨插件，不要求与调用方 id 一致）；返回 **`Promise`**，超时默认 15s。多监听方时为 **`Promise.race`**（首个 fulfilled 的结果）。
+- **`oclive.events.onRequest` / `offRequest`**：注册/移除请求处理器；`handler` 可同步或异步返回值。
 
 样式可直接使用宿主 **CSS 变量**（如 `--fluent-accent`、`--bg-primary`、`--font-ui`、`--border-light` 等，见 `src/styles/theme.css`）。
 
@@ -170,11 +180,18 @@
 
 **按需广播（隐私与性能）**：宿主仅在**当前角色下已启用**的插件中，至少有一个在 manifest 的 **`shell.bridge.events`** 或某一 **`ui_slots[].bridge.events`** 中声明了该事件名时，才会向 Vue 插槽内的 `oclive.events` / mitt 总线广播对应内置事件。未声明则**不广播**（等同未监听）。`get_directory_plugin_bootstrap` 返回的 **`subscribedHostEvents`**（camelCase）为当前应广播的内置事件名列表（去重排序）；Tauri 命令 **`is_host_event_subscribed`** 也可按事件名查询。
 
-自定义事件建议使用 **`插件ID:事件名`**（如 `com.example.foo:refresh`），避免冲突。iframe 内页面如需订阅，需在后续版本扩展 `OclivePluginBridge`（当前以 Vue 插槽为主）。
+**插件侧 `oclive.events` 命名空间（宿主校验）**
+
+- **`emit`**：事件名须匹配 `/^[a-zA-Z0-9.-]+:/`，且**冒号前**的命名空间须**等于当前插件** `manifest.id`（例如插件 `com.a` 仅可 `emit('com.a:refresh')`）。`refresh`、`com.b:x`、无前缀等调用会被拒绝并 **`console.warn`**。
+- **`on` / `off`**：允许 **`插件ID:…`** 形式（可监听其他插件发出的命名空间事件），或 **`oclive:`** 前缀的**内置事件**监听：例如 `oclive:role:switched` 对应总线上的 **`role:switched`**（与 `emitBuiltin` 使用的事件键一致）。
+- **正例**：`com.my.plugin:sidebar-toggle`（emit）；`com.other.plugin:updated`（on，跨插件）；`oclive:message:sent`（on，内置）。
+- **反例**：`emit('refresh')`；`emit('com.other: x')`（在 `com.a` 插件内）。
 
 ### 4.3.1 原生 Vue 安全扫描（开发者模式）
 
 当 **`get_directory_plugin_bootstrap.developerMode`** 为真时，宿主在编译 `.vue` 前会对脚本做静态 AST 扫描；若匹配危险模式（如 `fetch`、`eval`、`document.cookie`、`localStorage`、`window.__TAURI__` 等），会弹出确认框，用户取消则该插槽回退行为与编译失败一致（可再走 iframe）。
+
+**编译失败提示**：`vue3-sfc-loader` 报错时，插槽 UI 展示 **插件 id、组件路径、可读摘要**；可通过 **「查看详情」** 展开原始堆栈。
 
 ### 4.3.2 强制 iframe 模式
 
@@ -188,12 +205,16 @@
   "slot_order": {
     "chat_toolbar": ["com.example.toolbar_a", "com.example.toolbar_b"],
     "settings.panel": ["com.example.settings_a", "com.example.settings_b"],
-    "role.detail": ["com.example.role_extra"]
+    "role.detail": ["com.example.role_extra"],
+    "sidebar": ["com.example.sidebar_a"],
+    "chat.header": ["com.example.chat_header_a"]
   },
   "disabled_slot_contributions": {
     "chat_toolbar": [],
     "settings.panel": [],
-    "role.detail": []
+    "role.detail": [],
+    "sidebar": [],
+    "chat.header": []
   }
 }
 ```

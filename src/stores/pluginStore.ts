@@ -32,6 +32,10 @@ export const SLOT_CHAT_TOOLBAR = "chat_toolbar";
 export const SLOT_SETTINGS_PANEL = "settings.panel";
 /** 左侧角色详情区底部（立绘与名称下方） */
 export const SLOT_ROLE_DETAIL = "role.detail";
+/** 左侧栏角色块下方（好感度条上方），整列侧栏扩展区 */
+export const SLOT_SIDEBAR = "sidebar";
+/** 右侧聊天列顶部（消息列表上方） */
+export const SLOT_CHAT_HEADER = "chat.header";
 
 function emptyState(): RolePluginState {
   return {
@@ -80,8 +84,10 @@ function catalogEqual(
       x.version !== y.version ||
       (x.pluginType ?? null) !== (y.pluginType ?? null) ||
       x.isShell !== y.isShell ||
+      (x.dependencyStatus ?? "ok") !== (y.dependencyStatus ?? "ok") ||
       !arraysEqual(x.uiSlotNames ?? [], y.uiSlotNames ?? []) ||
-      !arraysEqual(x.provides ?? [], y.provides ?? [])
+      !arraysEqual(x.provides ?? [], y.provides ?? []) ||
+      !arraysEqual(x.dependencyIssues ?? [], y.dependencyIssues ?? [])
     ) {
       return false;
     }
@@ -249,6 +255,14 @@ export const usePluginStore = defineStore("plugin", {
       return this.pluginState.disabled_plugins.includes(id);
     },
     setPluginDisabled(id: string, disabled: boolean) {
+      if (!disabled) {
+        const entry = this.catalog.find((c) => c.id === id);
+        if (entry && entry.dependencyStatus !== "ok") {
+          throw new Error(
+            `插件「${id}」依赖未满足，无法启用。${(entry.dependencyIssues ?? []).join("；")}`,
+          );
+        }
+      }
       const set = new Set(this.pluginState.disabled_plugins);
       if (disabled) {
         set.add(id);
@@ -256,6 +270,45 @@ export const usePluginStore = defineStore("plugin", {
         set.delete(id);
       }
       this.pluginState.disabled_plugins = [...set].sort();
+    },
+    /** 开发者模式：文件监听触发后刷新 catalog 与 bootstrap（整壳/插槽热重载）。 */
+    async onPluginFilesChanged() {
+      await this.refresh();
+      this.bootstrapEpoch += 1;
+      await this.syncDirectoryPluginBootstrap();
+    },
+    batchDisablePluginIds(ids: string[]) {
+      const set = new Set(this.pluginState.disabled_plugins);
+      for (const id of ids) {
+        set.add(id);
+      }
+      this.pluginState.disabled_plugins = [...set].sort();
+    },
+    batchEnablePluginIds(ids: string[]) {
+      for (const id of ids) {
+        const entry = this.catalog.find((c) => c.id === id);
+        if (entry && entry.dependencyStatus !== "ok") {
+          throw new Error(
+            `插件「${id}」依赖未满足，无法启用。${(entry.dependencyIssues ?? []).join("；")}`,
+          );
+        }
+      }
+      const set = new Set(this.pluginState.disabled_plugins);
+      for (const id of ids) {
+        set.delete(id);
+      }
+      this.pluginState.disabled_plugins = [...set].sort();
+    },
+    /** 对「检测到有更新」的插件提示需 zip 导入（在线静默更新未接入）。 */
+    async batchUpdatePluginIds(
+      ids: string[],
+    ): Promise<{ count: number; targets: string[] }> {
+      await this.checkPluginUpdatesFromRegistry();
+      const targets = ids.filter((id) => this.pluginUpdateById[id]?.hasUpdate);
+      if (targets.length === 0) {
+        return { count: 0, targets: [] };
+      }
+      return { count: targets.length, targets };
     },
     /** 某插槽下、按 manifest 声明了该槽的非整壳插件 id 顺序（含未在 slot_order 中的，字典序补全）。 */
     pluginsOrderedForSlot(slot: string): string[] {

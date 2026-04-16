@@ -1,27 +1,49 @@
 <script setup lang="ts">
 import type { Component } from "vue";
-import { computed, defineComponent, h, provide, shallowRef, watch } from "vue";
+import {
+  computed,
+  defineComponent,
+  h,
+  provide,
+  ref,
+  shallowRef,
+  watch,
+  withDefaults,
+} from "vue";
 import { confirm } from "@tauri-apps/api/dialog";
 import { storeToRefs } from "pinia";
-import { loadPluginVueComponent } from "../utils/compilePluginVueSfc";
+import {
+  loadPluginVueComponent,
+  PluginVueCompileError,
+} from "../utils/compilePluginVueSfc";
 import { createOcliveApi, type OcliveApi } from "../composables/useOclive";
 import { usePluginStore } from "../stores/pluginStore";
 import { readPluginAssetText } from "../utils/tauri-api";
 import { scanVueComponentSource } from "../utils/vueComponentSecurity";
+import PluginSkeleton from "./PluginSkeleton.vue";
 
-const props = defineProps<{
-  pluginId: string;
-  vueComponent: string;
-  bridgeAssetRel: string;
-  /**
-   * 传入布尔值时固定使用该设置（整壳 Vue 入口无 `pluginStore` 同步）；
-   * 省略时从 `pluginStore.developerMode` 读取（嵌入主应用插槽）。
-   */
-  developerMode?: boolean;
-}>();
+const props = withDefaults(
+  defineProps<{
+    pluginId: string;
+    vueComponent: string;
+    bridgeAssetRel: string;
+    /**
+     * 传入布尔值时固定使用该设置（整壳 Vue 入口无 `pluginStore` 同步）；
+     * 省略时从 `pluginStore.developerMode` 读取（嵌入主应用插槽）。
+     */
+    developerMode?: boolean;
+    /** 父级递增以强制重新加载（重试）。 */
+    reloadNonce?: number;
+    /** 加载占位骨架形态 */
+    skeletonVariant?: "toolbar" | "block";
+  }>(),
+  { skeletonVariant: "toolbar" },
+);
 
 const emit = defineEmits<{
   failed: [];
+  compileError: [error: PluginVueCompileError];
+  loading: [value: boolean];
 }>();
 
 const pluginStore = usePluginStore();
@@ -33,6 +55,7 @@ const effectiveDeveloperMode = computed(() =>
 );
 
 const loaded = shallowRef<Component | null>(null);
+const loading = ref(false);
 
 /** 在子组件 setup 内调用 createOcliveApi，保证 `on` 的卸载钩子绑定到正确实例 */
 const VueSlotInner = defineComponent({
@@ -50,9 +73,17 @@ const VueSlotInner = defineComponent({
 });
 
 watch(
-  () => [props.pluginId, props.vueComponent, effectiveDeveloperMode.value] as const,
+  () =>
+    [
+      props.pluginId,
+      props.vueComponent,
+      effectiveDeveloperMode.value,
+      props.reloadNonce ?? 0,
+    ] as const,
   async () => {
     loaded.value = null;
+    loading.value = true;
+    emit("loading", true);
     let preloadedEntrySource: string | undefined;
     if (effectiveDeveloperMode.value) {
       try {
@@ -76,29 +107,51 @@ watch(
         preloadedEntrySource = undefined;
       }
     }
-    const c = await loadPluginVueComponent(
-      props.pluginId,
-      props.vueComponent,
-      preloadedEntrySource
-        ? { preloadedEntrySource }
-        : undefined,
-    );
-    if (!c) {
-      emit("failed");
-      return;
+    try {
+      const c = await loadPluginVueComponent(
+        props.pluginId,
+        props.vueComponent,
+        preloadedEntrySource
+          ? { preloadedEntrySource }
+          : undefined,
+      );
+      if (!c) {
+        emit("failed");
+        return;
+      }
+      loaded.value = c;
+    } catch (e) {
+      if (e instanceof PluginVueCompileError) {
+        emit("compileError", e);
+        return;
+      }
+      throw e;
+    } finally {
+      loading.value = false;
+      emit("loading", false);
     }
-    loaded.value = c;
   },
   { immediate: true },
 );
 </script>
 
 <template>
+  <PluginSkeleton
+    v-if="loading && !loaded"
+    class="apv-skel"
+    :variant="props.skeletonVariant"
+  />
   <VueSlotInner
-    v-if="loaded"
-    :key="`${pluginId}-${bridgeAssetRel}`"
+    v-else-if="loaded"
+    :key="`${pluginId}-${bridgeAssetRel}-${reloadNonce ?? 0}`"
     :comp="loaded"
     :plugin-id="pluginId"
     :bridge-asset-rel="bridgeAssetRel"
   />
 </template>
+
+<style scoped>
+.apv-skel {
+  min-width: 120px;
+}
+</style>

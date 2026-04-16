@@ -17,6 +17,12 @@ export const DANGEROUS_PATTERNS = [
   { token: "document.cookie", warning: "检测到 `document.cookie`" },
   { token: "localStorage.setItem", warning: "检测到 `localStorage` 读写" },
   { token: "localStorage.getItem", warning: "检测到 `localStorage` 读写" },
+  { token: "localStorage.removeItem", warning: "检测到 `localStorage` 读写" },
+  { token: "sessionStorage.", warning: "检测到 `sessionStorage` 访问" },
+  { token: "indexedDB.open", warning: "检测到 `indexedDB` 访问" },
+  { token: "indexedDB.", warning: "检测到 `indexedDB` 访问" },
+  { token: "new WebSocket", warning: "检测到 `WebSocket` 连接" },
+  { token: "WebSocket(", warning: "检测到 `WebSocket` 连接" },
   { token: "eval(", warning: "检测到 `eval` 调用" },
 ] as const;
 

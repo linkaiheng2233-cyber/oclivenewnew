@@ -37,6 +37,10 @@ defineProps<{
   background: color-mix(in srgb, var(--error) 18%, var(--bg-elevated));
   border-color: var(--error);
   color: var(--text-primary);
+  font-weight: 500;
+  line-height: 1.45;
+  box-shadow: inset 3px 0 0 0 var(--error), var(--shadow-md),
+    var(--frame-inset-highlight);
 }
 .warning {
   background: color-mix(in srgb, var(--warning) 14%, var(--bg-elevated));

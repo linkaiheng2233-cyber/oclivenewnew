@@ -18,6 +18,9 @@ export const TransactionErrorMessages: Record<string, string> = {
 const CommonErrorMessages: Record<string, string> = {
   DB_ERROR: "数据库操作失败，请稍后重试。",
   IO_ERROR: "本地文件读写失败，请检查环境权限。",
+  API_PLUGIN_NOT_FOUND: "未找到该目录插件或插件未扫描到，请检查插件 id 与安装路径。",
+  API_PERMISSION_DENIED: "插件权限不足，请在 manifest 中声明所需权限。",
+  API_INVALID_MANIFEST: "插件 manifest 无效，请检查 manifest.json。",
   LLM_ERROR:
     "模型调用失败（常见：Ollama 未启动、模型未下载或名称不对）。请执行 ollama list，并设置环境变量 OLLAMA_MODEL 为已有模型名；默认 qwen2.5:7b。",
   ROLE_NOT_FOUND: "角色不存在，请确认 role_id。",
@@ -49,12 +52,33 @@ export function setErrorReporter(reporter: ErrorReporter | null): void {
   errorReporter = reporter;
 }
 
+/** 从 `invoke` 抛出的字符串中解析 `[CODE]`（与 Rust `ApiError` 等一致）。 */
+export function parseApiErrorCode(err: unknown): string | undefined {
+  return parseBackendError(err).code;
+}
+
+/** 是否为目录插件未找到类错误（便于 UI 分支）。 */
+export function isPluginNotFoundError(err: unknown): boolean {
+  return parseApiErrorCode(err) === "API_PLUGIN_NOT_FOUND";
+}
+
+export function isPermissionDeniedError(err: unknown): boolean {
+  return parseApiErrorCode(err) === "API_PERMISSION_DENIED";
+}
+
+export function isInvalidParameterError(err: unknown): boolean {
+  return parseApiErrorCode(err) === "INVALID_PARAMETER";
+}
+
 export function toFriendlyErrorMessage(err: unknown): string {
   const { code, raw } = parseBackendError(err);
   if (!code) return raw;
   if (code === "INVALID_PARAMETER" && raw.includes("角色包格式错误")) {
     const bracket = raw.indexOf("]");
     if (bracket !== -1) return raw.slice(bracket + 1).trim();
+  }
+  if (code === "IO_ERROR" && raw.includes("host json")) {
+    return "插件桥返回的数据无法序列化为 JSON，可能是宿主与插件接口不兼容，请查看控制台日志。";
   }
   return TransactionErrorMessages[code] ?? CommonErrorMessages[code] ?? raw;
 }
@@ -236,6 +260,8 @@ export interface PackUiSlots {
   chat_toolbar: PackUiSlotConfig;
   "settings.panel": PackUiSlotConfig;
   "role.detail": PackUiSlotConfig;
+  sidebar: PackUiSlotConfig;
+  "chat.header": PackUiSlotConfig;
 }
 
 export interface PackUiTheme {
@@ -265,6 +291,8 @@ export function emptyPackUiConfig(): PackUiConfig {
       chat_toolbar: { order: [], visible: [] },
       "settings.panel": { order: [], visible: [] },
       "role.detail": { order: [], visible: [] },
+      sidebar: { order: [], visible: [] },
+      "chat.header": { order: [], visible: [] },
     },
   };
 }
@@ -297,6 +325,8 @@ export function normalizePackUiConfig(
       chat_toolbar: slot("chat_toolbar"),
       "settings.panel": slot("settings.panel"),
       "role.detail": slot("role.detail"),
+      sidebar: slot("sidebar"),
+      "chat.header": slot("chat.header"),
     },
   };
 }
@@ -862,6 +892,8 @@ export interface UiConfig {
     chat_toolbar: SlotConfig;
     "settings.panel": SlotConfig;
     "role.detail": SlotConfig;
+    sidebar: SlotConfig;
+    "chat.header": SlotConfig;
   };
 }
 
@@ -872,6 +904,9 @@ export interface DirectoryPluginCatalogEntry {
   isShell: boolean;
   uiSlotNames: string[];
   provides: string[];
+  /** `ok` / `missing` / `mismatch` */
+  dependencyStatus: string;
+  dependencyIssues: string[];
 }
 
 /** 并发 `get_directory_plugin_catalog` 合并为单次 IPC（无 role 参数，全局共用一个 in-flight）。 */
@@ -976,7 +1011,17 @@ export type PluginBridgeManifestToken =
   | "write:memory"
   | "write:emotion"
   | "write:event"
-  | "write:prompt";
+  | "write:prompt"
+  | "export_conversation"
+  | "import_role"
+  | "export:conversation"
+  | "import:role"
+  | "delete_role"
+  | "update_settings"
+  | "get_conversation_list"
+  | "delete:role"
+  | "write:settings"
+  | "read:conversations";
 
 /** 整壳 `OclivePluginBridge.invoke('update_memory', params)` */
 export interface PluginBridgeUpdateMemoryParams {
@@ -1042,6 +1087,62 @@ export interface PluginBridgeGetConversationResult {
   limit: number;
   offset: number;
   items: PluginBridgeConversationTurn[];
+}
+
+/** `export_conversation` → 与 `export_chat_logs` 单角色导出一致（`format`: `json` | `txt`）。 */
+export interface PluginBridgeExportConversationParams {
+  role_id: string;
+  format?: string;
+  session_id?: string | null;
+}
+
+export interface PluginBridgeExportConversationResult {
+  content: string;
+  suggested_filename: string;
+}
+
+/** `import_role`：从 `.zip` / `.ocpak` 或已解压目录导入角色包。 */
+export interface PluginBridgeImportRoleParams {
+  path: string;
+  /** 与 `src_path` 二选一 */
+  src_path?: string;
+  overwrite?: boolean;
+}
+
+export interface PluginBridgeImportRoleResult {
+  role_id: string;
+  ok: boolean;
+}
+
+/** `delete_role`：删除本地角色包及相关数据。 */
+export interface PluginBridgeDeleteRoleParams {
+  role_id?: string;
+  roleId?: string;
+}
+
+export interface PluginBridgeDeleteRoleResult {
+  ok: boolean;
+  role_id: string;
+}
+
+/** `update_settings`：更新允许的应用设置（整壳白名单字段）。 */
+export interface PluginBridgeUpdateSettingsParams {
+  /** 与 `ui_theme` 二选一 */
+  theme?: "light" | "dark" | "system";
+  ui_theme?: "light" | "dark" | "system";
+  interaction_mode?: string;
+  [key: string]: unknown;
+}
+
+/** `get_conversation_list`：列出本地会话元数据。 */
+export interface PluginBridgeConversationListItem {
+  session_namespace: string;
+  turn_count: number;
+  last_at: string | null;
+}
+
+export interface PluginBridgeGetConversationListResult {
+  items: PluginBridgeConversationListItem[];
 }
 
 /** 目录插件页 `OclivePluginBridge.invoke` 对应的后端入口（一般无需在主 UI 调用）。 */
