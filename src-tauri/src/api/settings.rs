@@ -28,9 +28,9 @@ pub async fn update_settings_impl(state: &AppState, params: &Value) -> Result<Va
                     .map_err(|e| e.to_frontend_error())?;
             }
             "interaction_mode" => {
-                let s = v
-                    .as_str()
-                    .ok_or_else(|| "update_settings: interaction_mode must be a string".to_string())?;
+                let s = v.as_str().ok_or_else(|| {
+                    "update_settings: interaction_mode must be a string".to_string()
+                })?;
                 InteractionMode::validate_optional_pack_field(Some(s))?;
                 let n = InteractionMode::normalize(Some(s));
                 state

@@ -82,10 +82,8 @@ mod tests {
 
     #[test]
     fn map_rpc_unknown_plugin() {
-        let s = map_directory_rpc_url_error(
-            "my_plug",
-            "unknown directory plugin_id=my_plug".into(),
-        );
+        let s =
+            map_directory_rpc_url_error("my_plug", "unknown directory plugin_id=my_plug".into());
         assert!(s.starts_with("[API_PLUGIN_NOT_FOUND]"));
         assert!(s.contains("my_plug"));
     }

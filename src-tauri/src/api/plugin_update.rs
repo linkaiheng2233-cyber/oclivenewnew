@@ -49,7 +49,9 @@ fn unzip_archive(zip_path: &Path, dst: &Path) -> Result<(), String> {
     let file = File::open(zip_path).map_err(|e| format!("打开 zip: {}", e))?;
     let mut archive = ZipArchive::new(file).map_err(|e| format!("解析 zip: {}", e))?;
     for i in 0..archive.len() {
-        let mut entry = archive.by_index(i).map_err(|e| format!("zip 条目 {}: {}", i, e))?;
+        let mut entry = archive
+            .by_index(i)
+            .map_err(|e| format!("zip 条目 {}: {}", i, e))?;
         let rel = match entry.enclosed_name() {
             Some(p) => p.to_path_buf(),
             None => {
@@ -91,10 +93,7 @@ fn find_manifest_root(dir: &Path) -> Result<PathBuf, String> {
 
 fn copy_dir_all(src: &Path, dst: &Path) -> Result<(), String> {
     for entry in WalkDir::new(src).into_iter().filter_map(|e| e.ok()) {
-        let rel = entry
-            .path()
-            .strip_prefix(src)
-            .map_err(|e| e.to_string())?;
+        let rel = entry.path().strip_prefix(src).map_err(|e| e.to_string())?;
         let out = dst.join(rel);
         if entry.file_type().is_dir() {
             fs::create_dir_all(&out).map_err(|e| e.to_string())?;

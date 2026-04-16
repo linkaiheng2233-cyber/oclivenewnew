@@ -38,11 +38,11 @@ function onKeydown(e: KeyboardEvent) {
 }
 
 onMounted(() => {
-  hostEventBus.on("com.oclive.mumu.sidebar-glance:set_input_draft", onSetDraftInput);
+  hostEventBus.on("chat:set_input_draft", onSetDraftInput);
 });
 
 onBeforeUnmount(() => {
-  hostEventBus.off("com.oclive.mumu.sidebar-glance:set_input_draft", onSetDraftInput);
+  hostEventBus.off("chat:set_input_draft", onSetDraftInput);
 });
 </script>
 

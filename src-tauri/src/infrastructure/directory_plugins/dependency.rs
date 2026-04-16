@@ -31,10 +31,7 @@ pub fn dependency_report(
             Ok(r) => r,
             Err(e) => {
                 any_mismatch = true;
-                issues.push(format!(
-                    "依赖 {} 的版本范围无效: {} ({})",
-                    dep, req_s, e
-                ));
+                issues.push(format!("依赖 {} 的版本范围无效: {} ({})", dep, req_s, e));
                 continue;
             }
         };

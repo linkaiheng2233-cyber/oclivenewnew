@@ -1529,9 +1529,7 @@ impl DbManager {
     }
 
     /// 列出所有短期对话命名空间（`short_term_memory.role_id`）及轮数、最后一条时间。
-    pub async fn list_conversation_sessions(
-        &self,
-    ) -> Result<Vec<(String, i64, Option<String>)>> {
+    pub async fn list_conversation_sessions(&self) -> Result<Vec<(String, i64, Option<String>)>> {
         let rows = sqlx::query_as::<_, (String, i64, Option<String>)>(
             "SELECT role_id, COUNT(*), MAX(created_at)
              FROM short_term_memory

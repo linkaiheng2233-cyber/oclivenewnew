@@ -70,6 +70,8 @@ const topBarSceneDialogVisible = ref(false);
 const pendingTopBarSceneId = ref("");
 const quickActionSendEvent = "com.oclive.mumu.quick-actions:send_phrase";
 const quickActionTravelEvent = "com.oclive.mumu.quick-actions:travel";
+const pluginSetInputDraftEvent = "com.oclive.mumu.sidebar-glance:set_input_draft";
+const hostSetInputDraftEvent = "chat:set_input_draft";
 const settingsSetRemoteLifeEvent = "com.oclive.mumu.settings-panel:set_remote_life";
 const settingsSetInteractionModeEvent =
   "com.oclive.mumu.settings-panel:set_interaction_mode";
@@ -256,6 +258,10 @@ async function onPluginSetInteractionMode(payload: unknown): Promise<void> {
 
 function onPluginCycleTheme(): void {
   cycleTheme();
+}
+
+function onPluginSetInputDraft(payload: unknown): void {
+  hostEventBus.emit(hostSetInputDraftEvent, payload);
 }
 
 async function onPluginResetLayout(): Promise<void> {
@@ -520,6 +526,7 @@ onMounted(() => {
   });
   hostEventBus.on(quickActionSendEvent, onPluginQuickActionSend);
   hostEventBus.on(quickActionTravelEvent, onPluginQuickActionTravel);
+  hostEventBus.on(pluginSetInputDraftEvent, onPluginSetInputDraft);
   hostEventBus.on(settingsSetRemoteLifeEvent, onPluginSetRemoteLife);
   hostEventBus.on(settingsSetInteractionModeEvent, onPluginSetInteractionMode);
   hostEventBus.on(settingsCycleThemeEvent, onPluginCycleTheme);
@@ -566,6 +573,7 @@ onBeforeUnmount(() => {
   window.removeEventListener("keydown", onHotkey);
   hostEventBus.off(quickActionSendEvent, onPluginQuickActionSend);
   hostEventBus.off(quickActionTravelEvent, onPluginQuickActionTravel);
+  hostEventBus.off(pluginSetInputDraftEvent, onPluginSetInputDraft);
   hostEventBus.off(settingsSetRemoteLifeEvent, onPluginSetRemoteLife);
   hostEventBus.off(settingsSetInteractionModeEvent, onPluginSetInteractionMode);
   hostEventBus.off(settingsCycleThemeEvent, onPluginCycleTheme);

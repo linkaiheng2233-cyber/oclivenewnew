@@ -12,10 +12,10 @@ use crate::infrastructure::remote_plugin::{
 };
 use crate::models::ui_config::UiConfig;
 use crate::state::AppState;
-use semver::Version;
-use serde::Serialize;
 use once_cell::sync::Lazy;
 use parking_lot::Mutex;
+use semver::Version;
+use serde::Serialize;
 use serde_json::Value;
 use std::collections::hash_map::DefaultHasher;
 use std::collections::{HashMap, HashSet};
@@ -330,39 +330,31 @@ pub fn read_plugin_asset_text(
 ) -> Result<String, String> {
     let pid = plugin_id.trim();
     if pid.is_empty() {
-        return Err(
-            ApiError::InvalidParameter {
-                message: "plugin_id required".into(),
-            }
-            .to_string(),
-        );
+        return Err(ApiError::InvalidParameter {
+            message: "plugin_id required".into(),
+        }
+        .to_string());
     }
     let rel = normalize_plugin_rel(rel.trim());
     if rel.is_empty() {
-        return Err(
-            ApiError::InvalidParameter {
-                message: "rel required".into(),
-            }
-            .to_string(),
-        );
+        return Err(ApiError::InvalidParameter {
+            message: "rel required".into(),
+        }
+        .to_string());
     }
     if rel.split('/').any(|p| p == "..") {
-        return Err(
-            ApiError::InvalidParameter {
-                message: "invalid rel path".into(),
-            }
-            .to_string(),
-        );
+        return Err(ApiError::InvalidParameter {
+            message: "invalid rel path".into(),
+        }
+        .to_string());
     }
     let roots = state.directory_plugins.plugin_roots.read();
-    let root = roots
-        .get(pid)
-        .ok_or_else(|| {
-            ApiError::PluginNotFound {
-                plugin_id: pid.to_string(),
-            }
-            .to_string()
-        })?;
+    let root = roots.get(pid).ok_or_else(|| {
+        ApiError::PluginNotFound {
+            plugin_id: pid.to_string(),
+        }
+        .to_string()
+    })?;
     let path = root.join(&rel);
     let root_canon = root.canonicalize().map_err(|e| {
         ApiError::Io {
@@ -377,12 +369,10 @@ pub fn read_plugin_asset_text(
         .to_string()
     })?;
     if !path_canon.starts_with(&root_canon) {
-        return Err(
-            ApiError::PermissionDenied {
-                message: "path escapes plugin directory".into(),
-            }
-            .to_string(),
-        );
+        return Err(ApiError::PermissionDenied {
+            message: "path escapes plugin directory".into(),
+        }
+        .to_string());
     }
     std::fs::read_to_string(&path_canon).map_err(|e| {
         ApiError::Io {
@@ -434,12 +424,10 @@ pub fn directory_plugin_invoke(
 ) -> Result<Value, String> {
     let pid = req.plugin_id.trim();
     if pid.is_empty() {
-        return Err(
-            ApiError::InvalidParameter {
-                message: "plugin_id required".into(),
-            }
-            .to_string(),
-        );
+        return Err(ApiError::InvalidParameter {
+            message: "plugin_id required".into(),
+        }
+        .to_string());
     }
     let url = state
         .directory_plugins

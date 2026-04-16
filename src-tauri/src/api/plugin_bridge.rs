@@ -10,9 +10,7 @@ use crate::api::directory_plugin::directory_plugin_bootstrap_dto;
 use crate::api::error::ApiError;
 use crate::api::event::create_event_impl;
 use crate::api::export::export_chat_logs_impl;
-use crate::api::role::{
-    delete_role_impl, get_role_info_impl, list_roles_impl, switch_role_impl,
-};
+use crate::api::role::{delete_role_impl, get_role_info_impl, list_roles_impl, switch_role_impl};
 use crate::api::settings::update_settings_impl;
 use crate::api::time::get_time_state_impl;
 use crate::domain::chat_engine::{conversation_state_role_id, process_message};
@@ -124,12 +122,10 @@ fn validate_shell_ocliveplugin(
         );
     }
     let Some(sh) = &manifest.shell else {
-        return Err(
-            ApiError::PermissionDenied {
-                message: "this command is only allowed for shell plugins".into(),
-            }
-            .to_string(),
-        );
+        return Err(ApiError::PermissionDenied {
+            message: "this command is only allowed for shell plugins".into(),
+        }
+        .to_string());
     };
     let rel = normalize_plugin_rel(asset_rel);
     let from_entry = rel == normalize_plugin_rel(&sh.entry);
@@ -142,13 +138,12 @@ fn validate_shell_ocliveplugin(
         })
         .unwrap_or(false);
     if !from_entry && !from_vue {
-        return Err(
-            ApiError::PermissionDenied {
-                message: "this command must be invoked from shell.entry or shell.vueEntry (not ui_slots)"
+        return Err(ApiError::PermissionDenied {
+            message:
+                "this command must be invoked from shell.entry or shell.vueEntry (not ui_slots)"
                     .into(),
-            }
-            .to_string(),
-        );
+        }
+        .to_string());
     }
     Ok(())
 }
@@ -166,33 +161,25 @@ fn validate_bridge(
         }
         .to_string()
     })?;
-    let manifest = OclivePluginManifest::load_from_dir(root).map_err(|e| {
-        ApiError::InvalidManifest {
-            message: e,
-        }
-        .to_string()
-    })?;
+    let manifest = OclivePluginManifest::load_from_dir(root)
+        .map_err(|e| ApiError::InvalidManifest { message: e }.to_string())?;
     let rel = normalize_plugin_rel(asset_rel);
     let Some(b) = manifest.bridge_for_asset_rel(&rel) else {
-        return Err(
-            ApiError::PermissionDenied {
-                message: "asset has no bridge config".into(),
-            }
-            .to_string(),
-        );
+        return Err(ApiError::PermissionDenied {
+            message: "asset has no bridge config".into(),
+        }
+        .to_string());
     };
     if !invoke_list_allows(&b.invoke, command) {
         let tok = required_permission_token(command);
-        return Err(
-            ApiError::PermissionDenied {
-                message: format!(
-                    "bridge.invoke must include command {:?} or permission {:?}",
-                    command,
-                    tok.as_str()
-                ),
-            }
-            .to_string(),
-        );
+        return Err(ApiError::PermissionDenied {
+            message: format!(
+                "bridge.invoke must include command {:?} or permission {:?}",
+                command,
+                tok.as_str()
+            ),
+        }
+        .to_string());
     }
     if requires_typed_shell(command) {
         validate_shell_ocliveplugin(&manifest, &rel)?;
@@ -217,7 +204,9 @@ fn parse_send_message_request(params: &Value) -> Result<SendMessageRequest, Stri
         return Err(bridge_invalid("send_message: role_id required"));
     }
     if r.user_message.trim().is_empty() {
-        return Err(bridge_invalid("send_message: user_message or text required"));
+        return Err(bridge_invalid(
+            "send_message: user_message or text required",
+        ));
     }
     Ok(r)
 }
@@ -296,7 +285,8 @@ async fn dispatch_bridge_command(
                 serde_json::from_value(inner.clone())
                     .map_err(|e| bridge_bad_json("get_current_role.req", e))?
             } else {
-                serde_json::from_value(params).map_err(|e| bridge_bad_json("get_current_role", e))?
+                serde_json::from_value(params)
+                    .map_err(|e| bridge_bad_json("get_current_role", e))?
             };
             let r = get_role_info_impl(state, &req.role_id, req.session_id.as_deref()).await?;
             serde_json::to_value(r).map_err(|e| bridge_serialize_host(command, e))
@@ -305,7 +295,8 @@ async fn dispatch_bridge_command(
             let req: GetRoleInfoRequest = if params.is_null() {
                 return Err(bridge_invalid("get_role_info: missing params"));
             } else if let Some(inner) = params.get("req") {
-                serde_json::from_value(inner.clone()).map_err(|e| bridge_bad_json("get_role_info.req", e))?
+                serde_json::from_value(inner.clone())
+                    .map_err(|e| bridge_bad_json("get_role_info.req", e))?
             } else {
                 serde_json::from_value(params).map_err(|e| bridge_bad_json("get_role_info", e))?
             };
@@ -502,12 +493,10 @@ async fn dispatch_bridge_command(
             "error": "not_implemented",
             "message": "dynamic prompt template fragments are not wired in the host yet"
         })),
-        _ => Err(
-            ApiError::InvalidParameter {
-                message: format!("unsupported bridge command: {}", command),
-            }
-            .to_string(),
-        ),
+        _ => Err(ApiError::InvalidParameter {
+            message: format!("unsupported bridge command: {}", command),
+        }
+        .to_string()),
     }
 }
 
@@ -520,12 +509,10 @@ pub async fn plugin_bridge_invoke(
     let asset = normalize_plugin_rel(req.asset_rel.trim());
     let cmd = req.command.trim();
     if pid.is_empty() || asset.is_empty() || cmd.is_empty() {
-        return Err(
-            ApiError::InvalidParameter {
-                message: "plugin_id, asset_rel, command required".into(),
-            }
-            .to_string(),
-        );
+        return Err(ApiError::InvalidParameter {
+            message: "plugin_id, asset_rel, command required".into(),
+        }
+        .to_string());
     }
     validate_bridge(&state, pid, &asset, cmd)?;
     dispatch_bridge_command(&state, cmd, req.params).await
