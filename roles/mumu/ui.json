@@ -27,8 +27,12 @@
       ]
     },
     "role.detail": {
-      "order": [],
-      "visible": []
+      "order": [
+        "com.oclive.mumu.role-detail-card"
+      ],
+      "visible": [
+        "com.oclive.mumu.role-detail-card"
+      ]
     },
     "sidebar": {
       "order": [

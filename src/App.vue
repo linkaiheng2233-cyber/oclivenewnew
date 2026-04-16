@@ -74,6 +74,8 @@ const settingsSetRemoteLifeEvent = "com.oclive.mumu.settings-panel:set_remote_li
 const settingsSetInteractionModeEvent =
   "com.oclive.mumu.settings-panel:set_interaction_mode";
 const settingsCycleThemeEvent = "com.oclive.mumu.settings-panel:cycle_theme";
+const settingsResetLayoutEvent = "com.oclive.mumu.settings-panel:request_reset_layout";
+const settingsResetLayoutResultEvent = "com.oclive.mumu.settings-panel:reset_layout_result";
 /** 虚拟时间跳转触发 autonomous_scene 规则时，左下角系统提示 */
 const autonomousSceneNotice = ref<{
   visible: boolean;
@@ -254,6 +256,22 @@ async function onPluginSetInteractionMode(payload: unknown): Promise<void> {
 
 function onPluginCycleTheme(): void {
   cycleTheme();
+}
+
+async function onPluginResetLayout(): Promise<void> {
+  try {
+    await pluginStore.resetToRolePackDefault();
+    const message = "已恢复为角色包推荐布局。";
+    hostEventBus.emit(settingsResetLayoutResultEvent, { ok: true, message });
+    showToast("success", message);
+  } catch (err) {
+    const message = err instanceof Error ? err.message : String(err);
+    hostEventBus.emit(settingsResetLayoutResultEvent, {
+      ok: false,
+      message: `恢复失败：${message}`,
+    });
+    showToast("error", message);
+  }
 }
 
 async function initialize() {
@@ -505,6 +523,7 @@ onMounted(() => {
   hostEventBus.on(settingsSetRemoteLifeEvent, onPluginSetRemoteLife);
   hostEventBus.on(settingsSetInteractionModeEvent, onPluginSetInteractionMode);
   hostEventBus.on(settingsCycleThemeEvent, onPluginCycleTheme);
+  hostEventBus.on(settingsResetLayoutEvent, onPluginResetLayout);
   window.addEventListener("keydown", onHotkey);
   window.addEventListener("keydown", onCtrlHoldHintKeydown);
   window.addEventListener("keyup", onCtrlHoldHintKeyup);
@@ -550,6 +569,7 @@ onBeforeUnmount(() => {
   hostEventBus.off(settingsSetRemoteLifeEvent, onPluginSetRemoteLife);
   hostEventBus.off(settingsSetInteractionModeEvent, onPluginSetInteractionMode);
   hostEventBus.off(settingsCycleThemeEvent, onPluginCycleTheme);
+  hostEventBus.off(settingsResetLayoutEvent, onPluginResetLayout);
   window.removeEventListener("keydown", onCtrlHoldHintKeydown);
   window.removeEventListener("keyup", onCtrlHoldHintKeyup);
   window.removeEventListener("resize", scheduleRefreshSplitLayout);

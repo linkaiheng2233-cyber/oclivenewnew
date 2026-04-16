@@ -21,6 +21,8 @@ type RoleInfoPayload = {
 const EVT_SET_REMOTE = "com.oclive.mumu.settings-panel:set_remote_life";
 const EVT_SET_MODE = "com.oclive.mumu.settings-panel:set_interaction_mode";
 const EVT_CYCLE_THEME = "com.oclive.mumu.settings-panel:cycle_theme";
+const EVT_REQUEST_RESET_LAYOUT = "com.oclive.mumu.settings-panel:request_reset_layout";
+const EVT_RESET_LAYOUT_RESULT = "com.oclive.mumu.settings-panel:reset_layout_result";
 
 const oclive = inject<OcliveApi | null>("oclive", null);
 const roleId = ref("");
@@ -29,6 +31,9 @@ const remoteLife = ref(false);
 const interactionMode = ref<"immersive" | "pure_chat">("immersive");
 const loading = ref(false);
 const err = ref("");
+const actionBusy = ref(false);
+const actionHint = ref("");
+const actionType = ref<"success" | "error" | "info">("info");
 
 async function resolveCurrentRoleId(): Promise<string> {
   if (!oclive) return "";
@@ -97,11 +102,41 @@ function onCycleTheme(): void {
   oclive.events.emit(EVT_CYCLE_THEME, {});
 }
 
+function onResetToPackDefault(): void {
+  if (!oclive || actionBusy.value) return;
+  const approved = window.confirm(
+    "将恢复当前角色包 ui.json 推荐布局，并覆盖你在插件管理里的插槽显示/排序。继续吗？",
+  );
+  if (!approved) {
+    actionType.value = "info";
+    actionHint.value = "已取消恢复默认布局。";
+    return;
+  }
+  actionBusy.value = true;
+  actionType.value = "info";
+  actionHint.value = "正在请求恢复默认布局…";
+  oclive.events.emit(EVT_REQUEST_RESET_LAYOUT, {});
+}
+
+function onResetResult(payload: unknown): void {
+  const ok = (payload as { ok?: boolean } | null)?.ok === true;
+  const msg = (payload as { message?: string } | null)?.message;
+  actionBusy.value = false;
+  actionType.value = ok ? "success" : "error";
+  actionHint.value =
+    typeof msg === "string" && msg.trim().length > 0
+      ? msg.trim()
+      : ok
+        ? "已恢复为角色包推荐布局。"
+        : "恢复默认布局失败，请稍后重试。";
+}
+
 onMounted(() => {
   if (!oclive) return;
   oclive.events.on("oclive:role:switched", onRoleSwitched);
   oclive.events.on("oclive:message:sent", onHostRefresh);
   oclive.events.on("oclive:theme:changed", onHostRefresh);
+  oclive.events.on(EVT_RESET_LAYOUT_RESULT, onResetResult);
   void refresh();
 });
 
@@ -110,6 +145,7 @@ onUnmounted(() => {
   oclive.events.off("oclive:role:switched", onRoleSwitched);
   oclive.events.off("oclive:message:sent", onHostRefresh);
   oclive.events.off("oclive:theme:changed", onHostRefresh);
+  oclive.events.off(EVT_RESET_LAYOUT_RESULT, onResetResult);
 });
 </script>
 
@@ -154,6 +190,27 @@ onUnmounted(() => {
         切换主题
       </button>
     </div>
+
+    <div class="row row-danger">
+      <div class="left">
+        <strong>恢复默认布局</strong>
+        <small>覆盖本角色的插件可见性与排序，回到 ui.json 推荐值</small>
+      </div>
+      <button type="button" class="btn btn-danger" :disabled="loading || actionBusy" @click="onResetToPackDefault">
+        {{ actionBusy ? "处理中…" : "恢复默认" }}
+      </button>
+    </div>
+
+    <p
+      v-if="actionHint"
+      class="hint"
+      :class="{
+        'hint--ok': actionType === 'success',
+        'hint--err': actionType === 'error',
+      }"
+    >
+      {{ actionHint }}
+    </p>
 
     <p v-if="err" class="err" :title="err">读取失败：{{ err }}</p>
   </section>
@@ -298,6 +355,24 @@ onUnmounted(() => {
 }
 .row-theme .btn {
   min-width: 88px;
+}
+.btn-danger {
+  border-color: color-mix(in srgb, var(--ui-state-danger-fg) 45%, transparent);
+  color: var(--ui-state-danger-fg);
+}
+.btn-danger:hover {
+  border-color: color-mix(in srgb, var(--ui-state-danger-fg) 70%, transparent);
+}
+.hint {
+  margin: 8px 0 0;
+  font-size: 11px;
+  color: var(--text-secondary, #736a5e);
+}
+.hint--ok {
+  color: color-mix(in srgb, var(--accent, #8f7f6a) 80%, black 20%);
+}
+.hint--err {
+  color: var(--ui-state-danger-fg);
 }
 .err {
   margin: 10px 0 0;

@@ -9,7 +9,7 @@
 | 文件夹 | 内容 |
 |--------|------|
 | **[getting-started/](getting-started/)** | 文档总索引、入门与角色包工作流、[GitHub 仓库清单](getting-started/GITHUB_REPO_CHECKLIST.md) |
-| **[guides/](guides/)** | [配置文件说明](guides/CONFIGURATION_FILES.md)（`plugin_state`、`ui.json`、应用数据路径等） |
+| **[guides/](guides/)** | [配置文件说明](guides/CONFIGURATION_FILES.md)（`plugin_state`、`ui.json`、应用数据路径等）、[mumu 模块验收清单](guides/MUMU_UI_ACCEPTANCE_CHECKLIST.md) |
 | **[plugin-and-architecture/](plugin-and-architecture/)** | `plugin_backends` 契约、扩展点、HTTP JSON-RPC 协议、[整壳桥接 API 参考](plugin-and-architecture/BRIDGE_API_REFERENCE.md)、替换模块 |
 | **[FAQ.md](FAQ.md)** | 插件与角色包常见问题 |
 | **[COMPATIBILITY.md](COMPATIBILITY.md)** | 编写器与主程序版本、`ui.json` 兼容表 |

@@ -80,14 +80,17 @@
 
 ### Q: mumu 现在默认有哪些前端模块？
 
-**A:** 当前 `roles/mumu/ui.json` 默认启用了 4 个前端模块（目录插件）：
+**A:** 当前 `roles/mumu/ui.json` 默认启用了 5 个前端模块（目录插件）：
 
 - `chat.header`：`com.oclive.mumu.chat-header-status`（头部状态）
 - `chat_toolbar`：`com.oclive.mumu.quick-actions`（快捷动作）
+- `role.detail`：`com.oclive.mumu.role-detail-card`（角色详情卡）
 - `sidebar`：`com.oclive.mumu.sidebar-glance`（侧栏概览）
 - `settings.panel`：`com.oclive.mumu.settings-panel`（设置面板）
 
 若你看不到这些模块，通常是本地 `plugin_state.json` 覆盖了角色包默认布局；在插件管理中执行 **重置为角色包推荐** 即可恢复。
+
+其中 `sidebar` 模块新增了 **建议下一句** 按钮：只会把文本填入输入框，不会自动发送。
 
 ---
 

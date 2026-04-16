@@ -286,6 +286,14 @@
 见 **`examples/directory-plugin-minimal/`**（含 **`Shell.vue`** + **`shell.vueEntry`** 示例）：可复制到 `plugins/<id>/` 或加入 `extra_plugin_roots` 后，配置 `shell_plugin_id` 与（可选）`plugin_backends` 做联调。  
 **非整壳 + 工具栏插槽**：**`examples/directory-plugin-ui-slot/`**；**原生 Vue 工具栏 + iframe 回退**：**`examples/directory-plugin-ui-slot-vue/`**。
 
+快速起手可用脚手架命令：
+
+```bash
+npm run scaffold:ui-plugin -- --id com.example.my-slot --slot role.detail --title "My Slot Card"
+```
+
+命令会生成 `plugins/<id>/manifest.json`、`slots/slot.html`、`slots/SlotCard.vue` 三个文件；再把该插件 id 加入目标角色的 `ui.json` 对应 `slots.<slot>.order/visible` 即可。
+
 ---
 
 ## 9. 排错（常见问题）

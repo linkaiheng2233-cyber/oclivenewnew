@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { inject, onMounted, onUnmounted, ref } from "vue";
+import { computed, inject, onMounted, onUnmounted, ref } from "vue";
 
 type OcliveApi = {
   invoke(command: string, params?: unknown): Promise<unknown>;
@@ -26,6 +26,7 @@ type RoleInfoPayload = {
 };
 
 const oclive = inject<OcliveApi | null>("oclive", null);
+const EVT_SET_DRAFT = "com.oclive.mumu.sidebar-glance:set_input_draft";
 
 const roleId = ref("");
 const roleName = ref("沐沐");
@@ -37,6 +38,19 @@ const lifeLabel = ref("—");
 const version = ref("—");
 const busy = ref(false);
 const err = ref("");
+
+const draftSuggestions = computed(() => [
+  `今天看到你在「${scene.value}」，现在心情怎么样？`,
+  `关于${relation.value}这件事，我想听你更真实一点的想法。`,
+  `你现在是「${lifeLabel.value}」，我可以怎么陪你更舒服？`,
+]);
+
+function pushDraft(text: string): void {
+  if (!oclive) return;
+  const content = text.trim();
+  if (!content) return;
+  oclive.events.emit(EVT_SET_DRAFT, { text: content });
+}
 
 function relationName(info: RoleInfoPayload): string {
   const rows = Array.isArray(info.user_relations) ? info.user_relations : [];
@@ -175,6 +189,23 @@ onUnmounted(() => {
       </div>
     </dl>
 
+    <section class="draft-box" aria-label="建议下一句（仅填充输入框）">
+      <p class="draft-title">建议下一句（不会自动发送）</p>
+      <div class="draft-actions">
+        <button
+          v-for="line in draftSuggestions"
+          :key="line"
+          type="button"
+          class="draft-btn"
+          :disabled="busy"
+          :title="line"
+          @click="pushDraft(line)"
+        >
+          {{ line }}
+        </button>
+      </div>
+    </section>
+
     <p v-if="err" class="err" :title="err">读取失败：{{ err }}</p>
   </aside>
 </template>
@@ -268,5 +299,44 @@ dd {
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
+}
+.draft-box {
+  margin-top: 10px;
+  padding-top: 10px;
+  border-top: 1px solid color-mix(in srgb, var(--border-light, #ddd2c4) 70%, transparent);
+}
+.draft-title {
+  margin: 0 0 6px;
+  font-size: 11px;
+  color: var(--text-secondary, #736a5e);
+}
+.draft-actions {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+.draft-btn {
+  width: 100%;
+  text-align: left;
+  font-size: 11px;
+  line-height: 1.35;
+  border-radius: 10px;
+  border: 1px solid color-mix(in srgb, var(--border-light, #ddd2c4) 74%, transparent);
+  background: color-mix(in srgb, var(--bg-primary, #fffdf9) 90%, transparent);
+  color: var(--text-primary, #3f3a33);
+  padding: 7px 9px;
+  cursor: pointer;
+  transition:
+    border-color var(--ui-trans-fast) ease,
+    transform var(--ui-trans-fast) ease;
+}
+.draft-btn:hover {
+  border-color: color-mix(in srgb, var(--accent, #8f7f6a) 56%, transparent);
+  transform: translateY(-0.5px);
+}
+.draft-btn:disabled {
+  cursor: not-allowed;
+  opacity: 0.62;
+  transform: none;
 }
 </style>

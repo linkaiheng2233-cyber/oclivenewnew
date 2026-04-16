@@ -1,5 +1,6 @@
 <script setup lang="ts">
-import { ref } from "vue";
+import { nextTick, onBeforeUnmount, onMounted, ref } from "vue";
+import { hostEventBus } from "../lib/hostEventBus";
 
 const props = defineProps<{ loading: boolean }>();
 
@@ -8,6 +9,18 @@ const emit = defineEmits<{
 }>();
 
 const text = ref("");
+const textAreaEl = ref<HTMLTextAreaElement | null>(null);
+
+function onSetDraftInput(payload: unknown): void {
+  const raw = (payload as { text?: string } | null)?.text;
+  const next = typeof raw === "string" ? raw.trim() : "";
+  if (!next) return;
+  text.value = next;
+  void nextTick(() => {
+    textAreaEl.value?.focus();
+    textAreaEl.value?.setSelectionRange(next.length, next.length);
+  });
+}
 
 function submit() {
   const value = text.value.trim();
@@ -23,6 +36,14 @@ function onKeydown(e: KeyboardEvent) {
   e.preventDefault();
   submit();
 }
+
+onMounted(() => {
+  hostEventBus.on("com.oclive.mumu.sidebar-glance:set_input_draft", onSetDraftInput);
+});
+
+onBeforeUnmount(() => {
+  hostEventBus.off("com.oclive.mumu.sidebar-glance:set_input_draft", onSetDraftInput);
+});
 </script>
 
 <template>
@@ -30,6 +51,7 @@ function onKeydown(e: KeyboardEvent) {
     <div class="input-col">
       <label class="sr-only" for="chat-user-message">输入消息</label>
       <textarea
+        ref="textAreaEl"
         id="chat-user-message"
         v-model="text"
         class="input"
