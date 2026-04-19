@@ -1,7 +1,9 @@
 //! 世界观知识包：加载、检索、Prompt 片段与 event_hints 合并。
 
 use oclivenewnew_tauri::domain::knowledge_loader::load_knowledge_index;
-use oclivenewnew_tauri::domain::prompt_builder::{PromptBuilder, PromptInput};
+use oclivenewnew_tauri::domain::prompt_builder::{
+    effective_reply_quality_anchor, PromptBuilder, PromptInput,
+};
 use oclivenewnew_tauri::models::knowledge::KnowledgeIndex;
 use oclivenewnew_tauri::models::role_manifest_disk::DiskRoleManifest;
 use oclivenewnew_tauri::models::{EventType, PersonalityVector};
@@ -75,6 +77,7 @@ fn load_knowledge_index_parses_front_matter_and_merge_hints() {
         life_context_line: "",
         worldview_snippet: snippet.as_str(),
         mutable_personality: "",
+        reply_quality_anchor: effective_reply_quality_anchor(&disk_role),
     });
     assert!(prompt.contains("【世界观设定】"));
     assert!(prompt.contains("雾城"));
