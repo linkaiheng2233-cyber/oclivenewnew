@@ -1,7 +1,7 @@
 {
   "schema_version": 1,
   "model": "qwen2.5:7b",
-  "identity_binding": "global",
+  "identity_binding": "per_scene",
   "evolution": {
     "event_impact_factor": 1.0,
     "ai_analysis_interval": 15,
