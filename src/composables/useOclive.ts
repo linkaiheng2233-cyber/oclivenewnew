@@ -1,4 +1,5 @@
 import { getCurrentInstance, onUnmounted } from "vue";
+import { readHostAppearance } from "../lib/hostAppearance";
 import { pluginBridgeInvoke } from "../utils/tauri-api";
 import { hostEventBus } from "../lib/hostEventBus";
 
@@ -34,6 +35,8 @@ export interface OcliveApi {
   pluginId: string;
   bridgeAssetRel: string;
   invoke(command: string, params?: unknown): Promise<unknown>;
+  /** 与顶栏外观一致：有效深浅色、`html` 根字号缩放系数（`--oclive-ui-scale`） */
+  getAppearance(): ReturnType<typeof readHostAppearance>;
   events: OcliveEvents;
 }
 
@@ -59,7 +62,7 @@ function validateEmitEvent(pluginId: string, raw: string): boolean {
   return true;
 }
 
-/** `oclive:role:switched` → 总线键 `role:switched`；否则须为完整 `pluginId:…` 名。 */
+/** `oclive:role:switched` → `role:switched`；`oclive:appearance:changed` → `appearance:changed`；否则须为完整 `pluginId:…` 名。 */
 function resolveListenEventName(raw: string): string | null {
   const t = raw.trim();
   if (!t) {
@@ -195,6 +198,9 @@ export function createOcliveApi(
   return {
     pluginId,
     bridgeAssetRel,
+    getAppearance() {
+      return readHostAppearance();
+    },
     async invoke(command: string, params?: unknown) {
       return pluginBridgeInvoke({
         pluginId,

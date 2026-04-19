@@ -31,6 +31,7 @@ function shouldEmitBuiltin(type: string): boolean {
 /**
  * 宿主与插件插槽共用的事件总线。
  * - `emitBuiltin`：仅用于宿主内置事件，受 manifest `bridge.events` 订阅过滤。
+ *   常见键：`role:switched`、`role:info:updated`、`appearance:changed`、`message:sent`、`theme:changed`。
  * - `emit`：用于插件自定义事件，不做订阅过滤；插件侧应通过 `useOclive` 的 `events.emit`（带命名空间校验）。
  */
 export const hostEventBus = {

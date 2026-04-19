@@ -5,6 +5,10 @@ import {
   type SendMessageResponse,
 } from "../utils/tauri-api";
 import { presentationFromSendResponse } from "../utils/replyPresentation";
+import {
+  assistantDialogueFromSplit,
+  splitRoleplayReply,
+} from "../utils/roleplayReplySplit";
 import { getRelationUpgradeMessage } from "../utils/relation";
 import { useDebugStore } from "./debugStore";
 import { useRoleStore } from "./roleStore";
@@ -22,6 +26,8 @@ export type ChatMessage = {
   presenceVariant?: PresenceMode;
   /** 主 LLM 失败时的备用短回复（与后端 `reply_is_fallback` 一致） */
   replyIsFallback?: boolean;
+  /** 从主回复拆出的旁白/内心/动作（仅 assistant；主 content 为对白） */
+  aside?: string;
 };
 
 type RoleSceneMessageMap = Record<string, Record<string, ChatMessage[]>>;
@@ -132,7 +138,7 @@ export const useChatStore = defineStore(
 
       /** 助手消息（沐沐的回复/独白等） */
       addAssistantMessage(
-        content: string,
+        rawContent: string,
         emotion?: string,
         sceneId?: string,
         presenceVariant?: PresenceMode,
@@ -142,14 +148,18 @@ export const useChatStore = defineStore(
         const uiStore = useUiStore();
         const sid = sceneId ?? uiStore.sceneId ?? "default";
         const ts = Date.now();
+        const split = splitRoleplayReply(rawContent);
+        const aside = split.aside.trim();
+        const dialogue = assistantDialogueFromSplit(rawContent, split);
         const message: ChatMessage = {
           id: `a-${ts}-${Math.random().toString(36).slice(2, 9)}`,
           role: "assistant",
-          content,
+          content: dialogue,
           timestamp: ts,
           emotion,
           presenceVariant,
           replyIsFallback,
+          ...(aside.length > 0 ? { aside } : {}),
         };
         this.addMessage(roleStore.currentRoleId, sid, message);
       },
@@ -229,6 +239,7 @@ export const useChatStore = defineStore(
             pres.presenceVariant,
             pres.replyIsFallback,
           );
+          const split = splitRoleplayReply(pres.replyText);
           useDebugStore().recordKnowledgeFromSend(res);
           roleStore.updateLocalAfterMessage(
             pres.assistantEmotionLabel,
@@ -246,7 +257,8 @@ export const useChatStore = defineStore(
           }
           hostEventBus.emitBuiltin("message:sent", {
             message: content,
-            reply: pres.replyText,
+            reply: assistantDialogueFromSplit(pres.replyText, split),
+            reply_aside: split.aside,
           });
           return res;
         } finally {

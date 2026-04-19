@@ -7,6 +7,7 @@ import ChatInput from "./components/ChatInput.vue";
 import ChatPluginToolbarSlots from "./components/ChatPluginToolbarSlots.vue";
 import PluginChatHeaderSlots from "./components/PluginChatHeaderSlots.vue";
 import PluginSidebarSlots from "./components/PluginSidebarSlots.vue";
+import RoleplayAsidePanel from "./components/RoleplayAsidePanel.vue";
 import HotkeyHost from "./components/HotkeyHost.vue";
 import PluginManagerPanel from "./views/PluginManagerPanel.vue";
 import PluginSlotEmbed from "./components/PluginSlotEmbed.vue";
@@ -70,10 +71,7 @@ const togetherTravelSelectedId = ref("");
 /** 顶栏改场景：叙事独行 / 同行 */
 const topBarSceneDialogVisible = ref(false);
 const pendingTopBarSceneId = ref("");
-const quickActionSendEvent = "com.oclive.mumu.quick-actions:send_phrase";
 const quickActionTravelEvent = "com.oclive.mumu.quick-actions:travel";
-const pluginSetInputDraftEvent = "com.oclive.mumu.sidebar-glance:set_input_draft";
-const hostSetInputDraftEvent = "chat:set_input_draft";
 const settingsSetRemoteLifeEvent = "com.oclive.mumu.settings-panel:set_remote_life";
 const settingsSetInteractionModeEvent =
   "com.oclive.mumu.settings-panel:set_interaction_mode";
@@ -155,6 +153,19 @@ const sceneDestinationOptions = computed(() => {
 const messages = computed(() =>
   chatStore.messagesForRoleScene(roleStore.currentRoleId, uiStore.sceneId),
 );
+
+/** 本场景最近一条助手消息拆出的旁白/内心（供左侧叙事区，与主气泡对白分离） */
+const latestRoleplayAside = computed(() => {
+  const list = messages.value;
+  for (let i = list.length - 1; i >= 0; i--) {
+    const m = list[i];
+    if (m.role === "assistant") {
+      const a = m.aside?.trim();
+      if (a) return a;
+    }
+  }
+  return "";
+});
 
 const topMoreOpen = ref(false);
 const settingsViewOpen = ref(false);
@@ -262,10 +273,6 @@ function onPluginCycleTheme(): void {
   cycleTheme();
 }
 
-function onPluginSetInputDraft(payload: unknown): void {
-  hostEventBus.emit(hostSetInputDraftEvent, payload);
-}
-
 async function onPluginResetLayout(): Promise<void> {
   try {
     await pluginStore.resetToRolePackDefault();
@@ -328,14 +335,6 @@ async function onSend(payload: { content: string }) {
   } catch (err) {
     showToast("error", err instanceof Error ? err.message : String(err));
   }
-}
-
-function onPluginQuickActionSend(payload: unknown): void {
-  if (chatStore.isLoading) return;
-  const text = (payload as { text?: string } | null)?.text;
-  const content = typeof text === "string" ? text.trim() : "";
-  if (!content) return;
-  void onSend({ content });
 }
 
 async function confirmPostReplyScene(together: boolean) {
@@ -533,9 +532,7 @@ onMounted(() => {
   setErrorReporter((err) => {
     showToast("error", err.message);
   });
-  hostEventBus.on(quickActionSendEvent, onPluginQuickActionSend);
   hostEventBus.on(quickActionTravelEvent, onPluginQuickActionTravel);
-  hostEventBus.on(pluginSetInputDraftEvent, onPluginSetInputDraft);
   hostEventBus.on(settingsSetRemoteLifeEvent, onPluginSetRemoteLife);
   hostEventBus.on(settingsSetInteractionModeEvent, onPluginSetInteractionMode);
   hostEventBus.on(settingsCycleThemeEvent, onPluginCycleTheme);
@@ -580,9 +577,7 @@ onBeforeUnmount(() => {
   }
   setErrorReporter(null);
   window.removeEventListener("keydown", onHotkey);
-  hostEventBus.off(quickActionSendEvent, onPluginQuickActionSend);
   hostEventBus.off(quickActionTravelEvent, onPluginQuickActionTravel);
-  hostEventBus.off(pluginSetInputDraftEvent, onPluginSetInputDraft);
   hostEventBus.off(settingsSetRemoteLifeEvent, onPluginSetRemoteLife);
   hostEventBus.off(settingsSetInteractionModeEvent, onPluginSetInteractionMode);
   hostEventBus.off(settingsCycleThemeEvent, onPluginCycleTheme);
@@ -852,6 +847,7 @@ onBeforeUnmount(() => {
             :emotion="emotion"
             :bootstrap-epoch="pluginStore.bootstrapEpoch"
           />
+          <RoleplayAsidePanel :text="latestRoleplayAside" />
           <PluginSidebarSlots :bootstrap-epoch="pluginStore.bootstrapEpoch" />
           <div class="left-pane-status" aria-label="好感度">
             好感度 {{ Math.round(roleStore.roleInfo.favorability) }} {{ statusHeart }}

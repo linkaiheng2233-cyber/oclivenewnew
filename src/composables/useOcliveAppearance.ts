@@ -1,4 +1,6 @@
 import { computed, onMounted, onUnmounted, ref, watch } from "vue";
+import { hostEventBus } from "../lib/hostEventBus";
+import { readHostAppearance } from "../lib/hostAppearance";
 
 const THEME_STORAGE_KEY = "oclive-runtime-theme";
 const SCALE_STORAGE_KEY = "oclive-runtime-ui-scale";
@@ -70,6 +72,14 @@ export function useOcliveAppearance() {
     );
   }
 
+  function emitAppearanceChanged(): void {
+    const snap = readHostAppearance();
+    hostEventBus.emitBuiltin("appearance:changed", {
+      ...snap,
+      themePreference: themePreference.value,
+    });
+  }
+
   let removeSchemeListener: (() => void) | undefined;
 
   onMounted(() => {
@@ -77,10 +87,14 @@ export function useOcliveAppearance() {
     uiScaleIndex.value = readStoredScaleIndex();
     applyThemeToDocument();
     applyScaleToDocument();
+    emitAppearanceChanged();
 
     const mq = window.matchMedia("(prefers-color-scheme: dark)");
     const onScheme = () => {
-      if (themePreference.value === "system") applyThemeToDocument();
+      if (themePreference.value === "system") {
+        applyThemeToDocument();
+        emitAppearanceChanged();
+      }
     };
     mq.addEventListener("change", onScheme);
     removeSchemeListener = () => mq.removeEventListener("change", onScheme);
@@ -97,6 +111,7 @@ export function useOcliveAppearance() {
       /* ignore */
     }
     applyThemeToDocument();
+    emitAppearanceChanged();
   });
 
   watch(uiScaleIndex, (i) => {
@@ -107,6 +122,7 @@ export function useOcliveAppearance() {
       /* ignore */
     }
     applyScaleToDocument();
+    emitAppearanceChanged();
   });
 
   const themeCycleLabel = computed(() => {

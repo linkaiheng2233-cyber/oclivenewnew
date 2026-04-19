@@ -22,6 +22,7 @@ import {
   normalizeInteractionMode,
   packDefaultFromApi,
 } from "../utils/interactionMode";
+import { hostEventBus } from "../lib/hostEventBus";
 
 type RoleOption = { id: string; name: string };
 
@@ -206,15 +207,19 @@ export const useRoleStore = defineStore(
       async switchRole(roleId: string) {
         const info = await invokeSwitchRole(roleId);
         this.currentRoleId = roleId;
-        this.roleInfo = mapRoleInfo(info);
+        this.applyRoleInfo(info);
       },
       async refreshRoleInfo() {
         const info = await getRoleInfo(this.currentRoleId);
-        this.roleInfo = mapRoleInfo(info);
+        this.applyRoleInfo(info);
       },
       /** 使用已拿到的 `RoleInfo`（如 `switch_scene`）避免多余请求 */
       applyRoleInfo(info: RoleInfo) {
         this.roleInfo = mapRoleInfo(info);
+        const rid = (info.role_id ?? this.currentRoleId ?? "").trim();
+        if (rid) {
+          hostEventBus.emitBuiltin("role:info:updated", { roleId: rid });
+        }
       },
       updateLocalAfterMessage(emotion: string, favorabilityCurrent: number) {
         this.roleInfo.currentEmotion = emotion;
