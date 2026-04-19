@@ -36,6 +36,7 @@ const SETTINGS_KEYS: &[&str] = &[
     "interaction_mode",
     "plugin_backends",
     "knowledge",
+    "reply_quality_anchor",
 ];
 
 /// 校验 `manifest.json` 根对象键名。
