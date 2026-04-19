@@ -3,6 +3,7 @@ import { inject, onMounted, onUnmounted, ref } from "vue";
 
 type OcliveApi = {
   invoke(command: string, params?: unknown): Promise<unknown>;
+  getAppearance?: () => { effectiveTheme: "light" | "dark"; scale: number };
   events: {
     emit(event: string, data?: unknown): void;
     on(event: string, handler: (data: unknown) => void): void;
@@ -134,8 +135,8 @@ function onResetResult(payload: unknown): void {
 onMounted(() => {
   if (!oclive) return;
   oclive.events.on("oclive:role:switched", onRoleSwitched);
+  oclive.events.on("oclive:role:info:updated", onRoleSwitched);
   oclive.events.on("oclive:message:sent", onHostRefresh);
-  oclive.events.on("oclive:theme:changed", onHostRefresh);
   oclive.events.on(EVT_RESET_LAYOUT_RESULT, onResetResult);
   void refresh();
 });
@@ -143,14 +144,14 @@ onMounted(() => {
 onUnmounted(() => {
   if (!oclive) return;
   oclive.events.off("oclive:role:switched", onRoleSwitched);
+  oclive.events.off("oclive:role:info:updated", onRoleSwitched);
   oclive.events.off("oclive:message:sent", onHostRefresh);
-  oclive.events.off("oclive:theme:changed", onHostRefresh);
   oclive.events.off(EVT_RESET_LAYOUT_RESULT, onResetResult);
 });
 </script>
 
 <template>
-  <section class="panel" aria-label="mumu 外观与互动设置">
+  <section class="panel mumu-surface" aria-label="mumu 外观与互动设置">
     <header class="head">
       <div>
         <h3>{{ roleName }} 设置</h3>
@@ -219,49 +220,47 @@ onUnmounted(() => {
 <style scoped>
 .panel {
   --ui-trans-fast: 140ms;
-  --ui-state-warn-fg: color-mix(in srgb, var(--accent, #8f7f6a) 88%, black 12%);
-  --ui-state-warn-bg: color-mix(in srgb, var(--accent, #8f7f6a) 12%, transparent);
-  --ui-state-warn-border: color-mix(in srgb, var(--accent, #8f7f6a) 40%, transparent);
-  --ui-state-danger-fg: var(--text-danger, #c33);
+  --ui-state-warn-fg: color-mix(in srgb, var(--accent) 88%, var(--text-primary) 12%);
+  --ui-state-warn-bg: color-mix(in srgb, var(--accent) 14%, transparent);
+  --ui-state-warn-border: color-mix(in srgb, var(--accent) 40%, var(--border-light) 60%);
+}
+.mumu-surface {
+  font-family: var(--font-ui);
+  font-size: 0.875rem;
+  line-height: 1.45;
+  color: var(--text-primary);
   width: 100%;
   box-sizing: border-box;
-  padding: 14px;
-  border-radius: 16px;
-  border: 1px solid color-mix(in srgb, var(--border-light, #ddd2c4) 68%, transparent);
-  background:
-    linear-gradient(
-      170deg,
-      color-mix(in srgb, var(--bg-primary, #fffdf9) 82%, white 18%),
-      color-mix(in srgb, var(--bg-elevated, #f7f2ea) 88%, white 12%)
-    );
-  backdrop-filter: blur(14px) saturate(110%);
-  -webkit-backdrop-filter: blur(14px) saturate(110%);
-  box-shadow:
-    0 8px 22px color-mix(in srgb, var(--text-primary, #3f3a33) 7%, transparent),
-    inset 0 1px 0 color-mix(in srgb, white 70%, transparent);
-  color: var(--text-primary, #3f3a33);
+  padding: 0.875rem;
+  border-radius: var(--radius-app);
+  border: 1px solid var(--border-light);
+  background: var(--bg-elevated);
+  box-shadow: var(--shadow-sm), var(--frame-inset-highlight);
+  backdrop-filter: blur(12px) saturate(110%);
+  -webkit-backdrop-filter: blur(12px) saturate(110%);
+  -webkit-font-smoothing: antialiased;
 }
 .head {
   display: flex;
   align-items: flex-start;
   justify-content: space-between;
-  gap: 10px;
-  margin-bottom: 12px;
+  gap: 0.625rem;
+  margin-bottom: 0.75rem;
 }
 .head h3 {
   margin: 0;
-  font-size: 14px;
+  font-size: 0.875rem;
   font-weight: 620;
 }
 .head p {
-  margin: 2px 0 0;
-  font-size: 11px;
-  color: var(--text-secondary, #736a5e);
+  margin: 0.125rem 0 0;
+  font-size: 0.6875rem;
+  color: var(--text-secondary);
 }
 .badge {
-  font-size: 10px;
+  font-size: 0.625rem;
   border-radius: 999px;
-  padding: 2px 8px;
+  padding: 0.125rem 0.5rem;
   border: 1px solid var(--ui-state-warn-border);
   color: var(--ui-state-warn-fg);
   background: var(--ui-state-warn-bg);
@@ -270,38 +269,38 @@ onUnmounted(() => {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  gap: 12px;
-  padding: 10px 0;
-  border-top: 1px solid color-mix(in srgb, var(--border-light, #ddd2c4) 65%, transparent);
+  gap: 0.75rem;
+  padding: 0.625rem 0;
+  border-top: 1px solid var(--border-light);
 }
 .row:first-of-type {
   border-top: none;
-  padding-top: 2px;
+  padding-top: 0.125rem;
 }
 .left {
   display: flex;
   flex-direction: column;
-  gap: 2px;
+  gap: 0.125rem;
   min-width: 0;
 }
 .left strong {
-  font-size: 12px;
+  font-size: 0.75rem;
   font-weight: 600;
 }
 .left small {
-  font-size: 11px;
-  color: var(--text-secondary, #736a5e);
+  font-size: 0.6875rem;
+  color: var(--text-secondary);
   line-height: 1.3;
 }
 .select,
 .btn {
-  min-height: 30px;
-  border-radius: 10px;
-  border: 1px solid color-mix(in srgb, var(--border-light, #ddd2c4) 78%, transparent);
-  background: color-mix(in srgb, var(--bg-primary, #fffdf9) 92%, transparent);
-  color: var(--text-primary, #3f3a33);
-  font-size: 12px;
-  padding: 4px 10px;
+  min-height: 1.875rem;
+  border-radius: var(--radius-btn);
+  border: 1px solid var(--border-light);
+  background: var(--bg-primary);
+  color: var(--text-primary);
+  font-size: 0.75rem;
+  padding: 0.25rem 0.625rem;
   transition:
     border-color var(--ui-trans-fast) ease,
     transform var(--ui-trans-fast) ease,
@@ -311,7 +310,7 @@ onUnmounted(() => {
   cursor: pointer;
 }
 .btn:hover {
-  border-color: color-mix(in srgb, var(--accent, #8f7f6a) 55%, transparent);
+  border-color: color-mix(in srgb, var(--accent) 55%, var(--border-light) 45%);
   transform: translateY(-0.5px);
 }
 .switch {
@@ -326,58 +325,58 @@ onUnmounted(() => {
   height: 0;
 }
 .switch span {
-  width: 44px;
-  height: 25px;
+  width: 2.75rem;
+  height: 1.5625rem;
   border-radius: 999px;
-  border: 1px solid color-mix(in srgb, var(--border-light, #ddd2c4) 80%, transparent);
-  background: color-mix(in srgb, var(--bg-elevated, #f7f2ea) 90%, transparent);
+  border: 1px solid var(--border-light);
+  background: var(--bg-secondary);
   position: relative;
   transition: all var(--ui-trans-fast) ease;
 }
 .switch span::before {
   content: "";
   position: absolute;
-  top: 2px;
-  left: 2px;
-  width: 19px;
-  height: 19px;
+  top: 0.125rem;
+  left: 0.125rem;
+  width: 1.1875rem;
+  height: 1.1875rem;
   border-radius: 50%;
-  background: white;
-  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.18);
+  background: var(--bg-primary);
+  box-shadow: var(--shadow-sm);
   transition: transform var(--ui-trans-fast) ease;
 }
 .switch input:checked + span {
-  background: color-mix(in srgb, var(--accent, #8f7f6a) 70%, white 30%);
-  border-color: color-mix(in srgb, var(--accent, #8f7f6a) 65%, transparent);
+  background: color-mix(in srgb, var(--accent) 35%, var(--bg-secondary) 65%);
+  border-color: color-mix(in srgb, var(--accent) 50%, var(--border-light) 50%);
 }
 .switch input:checked + span::before {
-  transform: translateX(19px);
+  transform: translateX(1.1875rem);
 }
 .row-theme .btn {
-  min-width: 88px;
+  min-width: 5.5rem;
 }
 .btn-danger {
-  border-color: color-mix(in srgb, var(--ui-state-danger-fg) 45%, transparent);
-  color: var(--ui-state-danger-fg);
+  border-color: color-mix(in srgb, var(--error) 45%, var(--border-light) 55%);
+  color: var(--error);
 }
 .btn-danger:hover {
-  border-color: color-mix(in srgb, var(--ui-state-danger-fg) 70%, transparent);
+  border-color: color-mix(in srgb, var(--error) 70%, var(--border-light) 30%);
 }
 .hint {
-  margin: 8px 0 0;
-  font-size: 11px;
-  color: var(--text-secondary, #736a5e);
+  margin: 0.5rem 0 0;
+  font-size: 0.6875rem;
+  color: var(--text-secondary);
 }
 .hint--ok {
-  color: color-mix(in srgb, var(--accent, #8f7f6a) 80%, black 20%);
+  color: var(--success);
 }
 .hint--err {
-  color: var(--ui-state-danger-fg);
+  color: var(--error);
 }
 .err {
-  margin: 10px 0 0;
-  color: var(--ui-state-danger-fg);
-  font-size: 11px;
+  margin: 0.625rem 0 0;
+  color: var(--error);
+  font-size: 0.6875rem;
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;

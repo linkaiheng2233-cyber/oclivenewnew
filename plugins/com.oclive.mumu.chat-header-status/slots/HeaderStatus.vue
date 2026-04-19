@@ -3,6 +3,7 @@ import { computed, inject, onMounted, onUnmounted, ref } from "vue";
 
 type OcliveApi = {
   invoke(command: string, params?: unknown): Promise<unknown>;
+  getAppearance?: () => { effectiveTheme: "light" | "dark"; scale: number };
   events: {
     on(event: string, handler: (data: unknown) => void): void;
     off(event: string, handler: (data: unknown) => void): void;
@@ -117,6 +118,7 @@ function onMessageSent(): void {
 onMounted(() => {
   if (!oclive) return;
   oclive.events.on("oclive:role:switched", onRoleSwitched);
+  oclive.events.on("oclive:role:info:updated", onRoleSwitched);
   oclive.events.on("oclive:message:sent", onMessageSent);
   void refresh();
 });
@@ -124,6 +126,7 @@ onMounted(() => {
 onUnmounted(() => {
   if (!oclive) return;
   oclive.events.off("oclive:role:switched", onRoleSwitched);
+  oclive.events.off("oclive:role:info:updated", onRoleSwitched);
   oclive.events.off("oclive:message:sent", onMessageSent);
 });
 
@@ -131,7 +134,7 @@ const roleBadge = computed(() => (roleId.value ? `角色：${roleId.value}` : "�
 </script>
 
 <template>
-  <section class="panel">
+  <section class="panel mumu-surface">
     <div class="panel-head">
       <strong>聊天头部状态</strong>
       <span v-if="busy" class="sync">同步中</span>
@@ -152,46 +155,44 @@ const roleBadge = computed(() => (roleId.value ? `角色：${roleId.value}` : "�
 <style scoped>
 .panel {
   --ui-trans-fast: 140ms;
-  --ui-state-warn-fg: color-mix(in srgb, var(--accent, #8f7f6a) 88%, black 12%);
-  --ui-state-warn-bg: color-mix(in srgb, var(--accent, #8f7f6a) 12%, transparent);
-  --ui-state-warn-border: color-mix(in srgb, var(--accent, #8f7f6a) 42%, transparent);
-  --ui-state-danger-fg: var(--text-danger, #c33);
+  --ui-state-warn-fg: color-mix(in srgb, var(--accent) 88%, var(--text-primary) 12%);
+  --ui-state-warn-bg: color-mix(in srgb, var(--accent) 14%, transparent);
+  --ui-state-warn-border: color-mix(in srgb, var(--accent) 42%, var(--border-light) 58%);
+}
+.mumu-surface {
+  font-family: var(--font-ui);
+  font-size: 0.875rem;
+  line-height: 1.45;
+  color: var(--text-primary);
   width: 100%;
-  min-height: 60px;
+  min-height: 3.75rem;
   display: flex;
   flex-direction: column;
-  gap: 7px;
-  padding: 10px 12px;
+  gap: 0.4375rem;
+  padding: 0.625rem 0.75rem;
   box-sizing: border-box;
-  border-radius: 16px;
-  border: 1px solid color-mix(in srgb, var(--border-light, #ddd2c4) 68%, transparent);
-  background:
-    linear-gradient(
-      170deg,
-      color-mix(in srgb, var(--bg-primary, #fffdf9) 82%, white 18%),
-      color-mix(in srgb, var(--bg-elevated, #f7f2ea) 88%, white 12%)
-    );
-  backdrop-filter: blur(14px) saturate(112%);
-  -webkit-backdrop-filter: blur(14px) saturate(112%);
-  box-shadow:
-    0 8px 20px color-mix(in srgb, var(--text-primary, #3f3a33) 7%, transparent),
-    inset 0 1px 0 color-mix(in srgb, white 68%, transparent);
-  color: var(--text-primary, #3f3a33);
+  border-radius: var(--radius-app);
+  border: 1px solid var(--border-light);
+  background: var(--bg-elevated);
+  box-shadow: var(--shadow-sm), var(--frame-inset-highlight);
+  backdrop-filter: blur(12px) saturate(110%);
+  -webkit-backdrop-filter: blur(12px) saturate(110%);
+  -webkit-font-smoothing: antialiased;
 }
 .panel-head {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  gap: 8px;
+  gap: 0.5rem;
 }
 .panel-head strong {
-  font-size: 12px;
+  font-size: 0.75rem;
   font-weight: 620;
-  color: var(--text-secondary, #736a5e);
+  color: var(--text-secondary);
 }
 .sync {
-  font-size: 10px;
-  padding: 2px 8px;
+  font-size: 0.625rem;
+  padding: 0.125rem 0.5rem;
   border-radius: 999px;
   border: 1px solid var(--ui-state-warn-border);
   color: var(--ui-state-warn-fg);
@@ -200,18 +201,18 @@ const roleBadge = computed(() => (roleId.value ? `角色：${roleId.value}` : "�
 .line {
   display: flex;
   flex-wrap: wrap;
-  gap: 6px;
+  gap: 0.375rem;
 }
 .chip {
   display: inline-flex;
   align-items: center;
-  min-height: 23px;
-  padding: 2px 9px;
+  min-height: 1.4375rem;
+  padding: 0.125rem 0.5625rem;
   border-radius: 999px;
-  border: 1px solid color-mix(in srgb, var(--border-light, #ddd2c4) 74%, transparent);
-  background: color-mix(in srgb, var(--bg-primary, #fffdf9) 90%, transparent);
-  color: var(--text-primary, #3f3a33);
-  font-size: 11px;
+  border: 1px solid var(--border-light);
+  background: var(--bg-primary);
+  color: var(--text-primary);
+  font-size: 0.6875rem;
   line-height: 1.2;
   transition:
     border-color var(--ui-trans-fast) ease,
@@ -220,8 +221,8 @@ const roleBadge = computed(() => (roleId.value ? `角色：${roleId.value}` : "�
 }
 .err {
   margin: 0;
-  color: var(--ui-state-danger-fg);
-  font-size: 11px;
+  color: var(--error);
+  font-size: 0.6875rem;
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;

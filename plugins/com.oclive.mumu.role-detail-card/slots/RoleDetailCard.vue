@@ -3,6 +3,7 @@ import { computed, inject, onMounted, onUnmounted, ref } from "vue";
 
 type OcliveApi = {
   invoke(command: string, params?: unknown): Promise<unknown>;
+  getAppearance?: () => { effectiveTheme: "light" | "dark"; scale: number };
   events: {
     on(event: string, handler: (data: unknown) => void): void;
     off(event: string, handler: (data: unknown) => void): void;
@@ -149,21 +150,21 @@ function onHostRefresh(): void {
 onMounted(() => {
   if (!oclive) return;
   oclive.events.on("oclive:role:switched", onRoleSwitched);
+  oclive.events.on("oclive:role:info:updated", onRoleSwitched);
   oclive.events.on("oclive:message:sent", onHostRefresh);
-  oclive.events.on("oclive:theme:changed", onHostRefresh);
   void refresh();
 });
 
 onUnmounted(() => {
   if (!oclive) return;
   oclive.events.off("oclive:role:switched", onRoleSwitched);
+  oclive.events.off("oclive:role:info:updated", onRoleSwitched);
   oclive.events.off("oclive:message:sent", onHostRefresh);
-  oclive.events.off("oclive:theme:changed", onHostRefresh);
 });
 </script>
 
 <template>
-  <section class="card" aria-label="mumu 角色详情扩展卡片">
+  <section class="card mumu-surface" aria-label="mumu 角色详情扩展卡片">
     <header class="head">
       <div>
         <h3>{{ roleName }}</h3>
@@ -213,48 +214,47 @@ onUnmounted(() => {
 <style scoped>
 .card {
   --ui-trans-fast: 140ms;
-  --ui-state-warn-fg: color-mix(in srgb, var(--accent, #8f7f6a) 88%, black 12%);
-  --ui-state-warn-bg: color-mix(in srgb, var(--accent, #8f7f6a) 12%, transparent);
-  --ui-state-warn-border: color-mix(in srgb, var(--accent, #8f7f6a) 40%, transparent);
-  --ui-state-danger-fg: var(--text-danger, #c33);
+  --ui-state-warn-fg: color-mix(in srgb, var(--accent) 88%, var(--text-primary) 12%);
+  --ui-state-warn-bg: color-mix(in srgb, var(--accent) 14%, transparent);
+  --ui-state-warn-border: color-mix(in srgb, var(--accent) 40%, var(--border-light) 60%);
+}
+.mumu-surface {
+  font-family: var(--font-ui);
+  font-size: 0.875rem;
+  line-height: 1.45;
+  color: var(--text-primary);
   width: 100%;
   box-sizing: border-box;
-  padding: 12px;
-  border-radius: 16px;
-  border: 1px solid color-mix(in srgb, var(--border-light, #ddd2c4) 68%, transparent);
-  background: linear-gradient(
-    170deg,
-    color-mix(in srgb, var(--bg-primary, #fffdf9) 82%, white 18%),
-    color-mix(in srgb, var(--bg-elevated, #f7f2ea) 88%, white 12%)
-  );
-  backdrop-filter: blur(14px) saturate(112%);
-  -webkit-backdrop-filter: blur(14px) saturate(112%);
-  box-shadow:
-    0 8px 20px color-mix(in srgb, var(--text-primary, #3f3a33) 7%, transparent),
-    inset 0 1px 0 color-mix(in srgb, white 68%, transparent);
-  color: var(--text-primary, #3f3a33);
+  padding: 0.75rem;
+  border-radius: var(--radius-app);
+  border: 1px solid var(--border-light);
+  background: var(--bg-elevated);
+  box-shadow: var(--shadow-sm), var(--frame-inset-highlight);
+  backdrop-filter: blur(12px) saturate(110%);
+  -webkit-backdrop-filter: blur(12px) saturate(110%);
+  -webkit-font-smoothing: antialiased;
 }
 .head {
   display: flex;
   justify-content: space-between;
   align-items: flex-start;
-  gap: 10px;
-  margin-bottom: 10px;
+  gap: 0.625rem;
+  margin-bottom: 0.625rem;
 }
 .head h3 {
   margin: 0;
-  font-size: 14px;
+  font-size: 0.875rem;
   font-weight: 620;
 }
 .head p {
-  margin: 2px 0 0;
-  font-size: 11px;
-  color: var(--text-secondary, #736a5e);
+  margin: 0.125rem 0 0;
+  font-size: 0.6875rem;
+  color: var(--text-secondary);
 }
 .badge {
-  font-size: 10px;
+  font-size: 0.625rem;
   border-radius: 999px;
-  padding: 2px 8px;
+  padding: 0.125rem 0.5rem;
   border: 1px solid var(--ui-state-warn-border);
   color: var(--ui-state-warn-fg);
   background: var(--ui-state-warn-bg);
@@ -264,52 +264,52 @@ onUnmounted(() => {
   margin: 0;
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
-  gap: 8px;
+  gap: 0.5rem;
 }
 .item {
   min-width: 0;
-  border-radius: 10px;
-  border: 1px solid color-mix(in srgb, var(--border-light, #ddd2c4) 70%, transparent);
-  background: color-mix(in srgb, var(--bg-primary, #fffdf9) 90%, transparent);
-  padding: 8px;
+  border-radius: var(--radius-btn);
+  border: 1px solid var(--border-light);
+  background: var(--bg-primary);
+  padding: 0.5rem;
 }
 .item-wide {
   grid-column: 1 / -1;
 }
 dt {
-  margin: 0 0 3px;
-  font-size: 11px;
-  color: var(--text-secondary, #736a5e);
+  margin: 0 0 0.1875rem;
+  font-size: 0.6875rem;
+  color: var(--text-secondary);
 }
 dd {
   margin: 0;
-  font-size: 12px;
+  font-size: 0.75rem;
   line-height: 1.35;
   word-break: break-word;
 }
 .tips {
-  margin-top: 10px;
-  padding-top: 10px;
-  border-top: 1px solid color-mix(in srgb, var(--border-light, #ddd2c4) 70%, transparent);
+  margin-top: 0.625rem;
+  padding-top: 0.625rem;
+  border-top: 1px solid var(--border-light);
 }
 .tip {
-  margin: 0 0 6px;
-  font-size: 11px;
-  color: var(--text-secondary, #736a5e);
+  margin: 0 0 0.375rem;
+  font-size: 0.6875rem;
+  color: var(--text-secondary);
 }
 .tips ul {
   margin: 0;
-  padding: 0 0 0 16px;
-  font-size: 11px;
-  color: var(--text-secondary, #736a5e);
+  padding: 0 0 0 1rem;
+  font-size: 0.6875rem;
+  color: var(--text-secondary);
 }
 .tips li + li {
-  margin-top: 2px;
+  margin-top: 0.125rem;
 }
 .err {
-  margin: 10px 0 0;
-  color: var(--ui-state-danger-fg);
-  font-size: 11px;
+  margin: 0.625rem 0 0;
+  color: var(--error);
+  font-size: 0.6875rem;
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;

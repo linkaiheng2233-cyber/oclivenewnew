@@ -1,7 +1,7 @@
 {
   "schema_version": 1,
   "id": "com.oclive.mumu.settings-panel",
-  "version": "0.1.0",
+  "version": "0.3.0",
   "ui_slots": [
     {
       "slot": "settings.panel",
@@ -9,7 +9,7 @@
       "vueComponent": "slots/SettingsPanel.vue",
       "bridge": {
         "invoke": ["list_roles", "get_role_info"],
-        "events": ["role:switched", "message:sent", "theme:changed"]
+        "events": ["role:switched", "role:info:updated", "message:sent", "appearance:changed"]
       }
     }
   ]
