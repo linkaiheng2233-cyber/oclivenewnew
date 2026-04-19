@@ -24,6 +24,7 @@ dist-ssr
 *.sw?
 
 # Rust / secrets
+src-tauri/.sqlx_prepare.db
 src-tauri/target
 /target
 .env
