@@ -7,7 +7,8 @@
     "autonomous_scene": "可选。虚拟时间 jump_time 后按规则更新角色 current_scene（不改用户叙事）；见 README_MANIFEST.md「autonomous_scene」。",
     "interaction_mode": "可选 immersive 或 pure_chat：角色包建议默认；运行时切换存数据库，导出包时仍写回此字段。",
     "plugin_backends": "memory / emotion / event / prompt 可为 builtin、builtin_v2 或 remote；llm 为 ollama 或 remote。详见 creator-docs/plugin-and-architecture/PLUGIN_V1.md。",
-    "evolution_personality_source": "evolution.personality_source：vector（默认，经典，七维增量为主）或 profile（档案：核心性格档案 + 运行时可变档案，七维多为视图）。详见仓库 docs/personality-archive-notes.md 与 docs/design-axis-evolution.md。"
+    "evolution_personality_source": "evolution.personality_source：vector（默认，经典，七维增量为主）或 profile（档案：核心性格档案 + 运行时可变档案，七维多为视图）。详见仓库 docs/personality-archive-notes.md 与 docs/design-axis-evolution.md。",
+    "reply_quality_anchor": "可选。主对话注入的「质量锚点」全文（类似 ComfyUI 正面质量词）；非空则替换引擎默认，写在「用户说」之前。"
   },
   "schema_version": 1,
   "model": "qwen2.5:7b",
