@@ -4,6 +4,10 @@
 
 本地优先的桌面角色对话应用：**Tauri + Vue 3 + Rust**。引擎支持场景、虚拟时间、异地/共景、好感与记忆、可替换子系统（记忆检索 / 情绪 / 事件估计 / Prompt 组装），角色内容以 **`roles/{角色id}/`** 角色包分发。
 
+## 平台愿景（开放实验场）
+
+在 **本地优先、可替换子系统、角色包为唯一对接面** 的前提下，oclive 希望成为创作者与玩家都能 **安全实验** 的桌面底座：契约与 CI 守住兼容边界，侧车与目录式插件降低扩展成本。**愿景摘要**见 [creator-docs/roadmap/VISION_OPEN_LAB.md](creator-docs/roadmap/VISION_OPEN_LAB.md)；分阶段路线见 [creator-docs/roadmap/VISION_ROADMAP_MONTHLY.md](creator-docs/roadmap/VISION_ROADMAP_MONTHLY.md)。
+
 ## 文档（创作者与扩展）
 
 **入口**：[creator-docs/README.md](creator-docs/README.md)（含目录说明与阅读顺序）
@@ -14,6 +18,7 @@
 | **项目全貌（三件套、事项、命令）** | [creator-docs/getting-started/PROJECT_OVERVIEW.md](creator-docs/getting-started/PROJECT_OVERVIEW.md) |
 | **GitHub：CI / Dependabot / 网页设置清单** | [creator-docs/getting-started/GITHUB_REPO_CHECKLIST.md](creator-docs/getting-started/GITHUB_REPO_CHECKLIST.md) |
 | 愿景与按月路线 | [creator-docs/roadmap/VISION_ROADMAP_MONTHLY.md](creator-docs/roadmap/VISION_ROADMAP_MONTHLY.md) |
+| **开放实验场（愿景摘要）** | [creator-docs/roadmap/VISION_OPEN_LAB.md](creator-docs/roadmap/VISION_OPEN_LAB.md) |
 | 体验差异化 backlog（与愿景对照） | [creator-docs/roadmap/BACKLOG_EXPERIENCE_AND_ECOSYSTEM.md](creator-docs/roadmap/BACKLOG_EXPERIENCE_AND_ECOSYSTEM.md) |
 | 后日待办（工具链 / CI · 性价比备忘） | [creator-docs/roadmap/SOMEDAY_TOOLCHAIN_CI.md](creator-docs/roadmap/SOMEDAY_TOOLCHAIN_CI.md) |
 | 市场 · 启动器联动（发版同发、分阶段） | [creator-docs/roadmap/MARKET_LAUNCHER_INTEGRATION.md](creator-docs/roadmap/MARKET_LAUNCHER_INTEGRATION.md) |
