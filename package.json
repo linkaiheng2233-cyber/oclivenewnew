@@ -8,6 +8,7 @@
     "dev": "vite",
     "dev:probe": "node scripts/dev-probe.mjs",
     "verify:ui": "node scripts/verify-frontend-patches.mjs",
+    "tauri:dev:verify": "npm run verify:ui && npm run tauri:dev",
     "start:dev": "npm run tauri:dev",
     "dev:tauri": "cd src-tauri && npx --no-install tauri dev -c tauri.vite-external.json",
     "tauri:before-dev": "node scripts/tauri-npm.cjs dev",
