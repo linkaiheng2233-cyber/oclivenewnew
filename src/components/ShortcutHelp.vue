@@ -16,7 +16,7 @@ const emit = defineEmits<{
 }>();
 
 const rows: { keys: string; desc: string }[] = [
-  { keys: "Ctrl + Shift + F", desc: "打开插件管理面板" },
+  { keys: "Ctrl + Shift + F", desc: "打开插件与后端管理（界面插件 / 后端模块 / 插槽顺序）" },
   { keys: "Ctrl（长按约 1 秒）", desc: "打开本快捷键说明" },
 ];
 </script>

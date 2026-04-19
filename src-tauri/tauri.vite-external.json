@@ -1,6 +1,8 @@
 {
   "build": {
     "beforeDevCommand": null,
-    "beforeBuildCommand": null
+    "beforeBuildCommand": null,
+    "devPath": "http://localhost:1420",
+    "distDir": "../dist"
   }
 }

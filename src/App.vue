@@ -501,7 +501,7 @@ function onHotkey(e: KeyboardEvent) {
   }
   if (e.ctrlKey && e.shiftKey && e.key.toLowerCase() === "f") {
     e.preventDefault();
-    void pluginStore.openPanel();
+    pluginStore.togglePanel();
     return;
   }
   if (e.ctrlKey && e.shiftKey && e.key.toLowerCase() === "d") {
@@ -618,6 +618,18 @@ onBeforeUnmount(() => {
         </button>
         <button
           type="button"
+          class="settings-gear-btn"
+          title="设置：扩展区、安全、快捷键与插件配置页"
+          aria-label="打开设置"
+          @click="
+            settingsViewOpen = true;
+            topMoreOpen = false;
+          "
+        >
+          ⚙
+        </button>
+        <button
+          type="button"
           class="more-toggle"
           :aria-expanded="topMoreOpen"
           aria-controls="top-more-panel"
@@ -731,22 +743,6 @@ onBeforeUnmount(() => {
                   {{ themeCycleLabel }}
                 </button>
               </div>
-            </div>
-          </div>
-
-          <div class="more-tile more-tile--action">
-            <div class="more-tile-head">
-              <span class="more-label">设置</span>
-              <HelpHint text="应用内设置：外观与交互说明见「界面」瓦片；插件扩展页可嵌入目录插件 settings.panel 配置页。" />
-            </div>
-            <div class="more-tile-body">
-              <button
-                type="button"
-                class="more-debug-btn more-debug-btn--fill"
-                @click="settingsViewOpen = true"
-              >
-                打开设置
-              </button>
             </div>
           </div>
 
@@ -1019,6 +1015,30 @@ onBeforeUnmount(() => {
   outline: none;
 }
 .shortcut-help-btn:focus-visible {
+  box-shadow: 0 0 0 2px color-mix(in srgb, var(--focus-ring-color) 35%, transparent);
+}
+.settings-gear-btn {
+  flex-shrink: 0;
+  width: 32px;
+  height: 32px;
+  padding: 0;
+  border-radius: var(--radius-btn);
+  border: 1px solid var(--border-light);
+  background: var(--bg-elevated);
+  color: var(--text-secondary);
+  font-size: 16px;
+  line-height: 1;
+  cursor: pointer;
+  transition: var(--control-transition);
+}
+.settings-gear-btn:hover {
+  border-color: color-mix(in srgb, var(--border-light) 70%, var(--text-secondary) 30%);
+  color: var(--text-accent);
+}
+.settings-gear-btn:focus {
+  outline: none;
+}
+.settings-gear-btn:focus-visible {
   box-shadow: 0 0 0 2px color-mix(in srgb, var(--focus-ring-color) 35%, transparent);
 }
 .more-toggle {

@@ -206,9 +206,12 @@ function clonePluginState(s: RolePluginState): RolePluginState {
   };
 }
 
+export type PluginPanelMainTab = "plugins" | "backends" | "slots";
+
 export const usePluginStore = defineStore("plugin", {
   state: () => ({
     panelVisible: false,
+    panelMainTab: "plugins" as PluginPanelMainTab,
     loading: false,
     error: null as string | null,
     catalog: [] as DirectoryPluginCatalogEntry[],
@@ -250,7 +253,10 @@ export const usePluginStore = defineStore("plugin", {
         this.error = e instanceof Error ? e.message : String(e);
       }
     },
-    async openPanel() {
+    async openPanel(tab?: PluginPanelMainTab) {
+      if (tab) {
+        this.panelMainTab = tab;
+      }
       this.panelVisible = true;
       await this.refresh();
     },

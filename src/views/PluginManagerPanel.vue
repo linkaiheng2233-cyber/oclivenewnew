@@ -1,8 +1,7 @@
 <script setup lang="ts">
 import { open } from "@tauri-apps/api/dialog";
 import { computed, ref, watch } from "vue";
-
-type PmMainTab = "plugins" | "slots";
+import PluginBackendSessionPanel from "../components/PluginBackendSessionPanel.vue";
 import PluginListItem from "../components/PluginListItem.vue";
 import PmSlotRow from "../components/PmSlotRow.vue";
 import PluginSlotEmbed from "../components/PluginSlotEmbed.vue";
@@ -29,16 +28,6 @@ const { showToast } = useAppToast();
 
 const batchMode = ref(false);
 const batchSelected = ref<Record<string, boolean>>({});
-const mainTab = ref<PmMainTab>("plugins");
-
-watch(
-  () => pluginStore.panelVisible,
-  (open) => {
-    if (open) {
-      mainTab.value = "plugins";
-    }
-  },
-);
 
 function clearBatchSelection(): void {
   batchSelected.value = {};
@@ -245,14 +234,14 @@ async function onUpdateFromZip(pluginId: string) {
       class="pm-backdrop"
       role="dialog"
       aria-modal="true"
-      aria-label="插件管理"
+      aria-label="插件与后端管理"
       @click.self="pluginStore.closePanel()"
     >
       <div class="pm-dialog" @click.stop>
         <header class="pm-head">
-          <h2 class="pm-title">插件管理</h2>
+          <h2 class="pm-title">插件与后端管理</h2>
           <p class="pm-sub">
-            Ctrl+Shift+F 打开/关闭 · 保存后生效；停用插件建议重启应用。
+            Ctrl+Shift+F 打开/关闭 · 界面插件与插槽保存后生效；停用插件建议重启应用。
           </p>
           <button type="button" class="pm-close" aria-label="关闭" @click="pluginStore.closePanel()">
             ×
@@ -263,30 +252,44 @@ async function onUpdateFromZip(pluginId: string) {
         <p v-else-if="pluginStore.error" class="pm-err">{{ pluginStore.error }}</p>
 
         <template v-else>
-          <div class="pm-tabs" role="tablist" aria-label="插件管理分区">
+          <div class="pm-tabs" role="tablist" aria-label="插件与后端管理分区">
             <button
               type="button"
               role="tab"
               class="pm-tab"
-              :class="{ 'pm-tab--active': mainTab === 'plugins' }"
-              :aria-selected="mainTab === 'plugins'"
-              @click="mainTab = 'plugins'"
+              :class="{ 'pm-tab--active': pluginStore.panelMainTab === 'plugins' }"
+              :aria-selected="pluginStore.panelMainTab === 'plugins'"
+              @click="pluginStore.panelMainTab = 'plugins'"
             >
-              已安装插件
+              界面插件
             </button>
             <button
               type="button"
               role="tab"
               class="pm-tab"
-              :class="{ 'pm-tab--active': mainTab === 'slots' }"
-              :aria-selected="mainTab === 'slots'"
-              @click="mainTab = 'slots'"
+              :class="{ 'pm-tab--active': pluginStore.panelMainTab === 'backends' }"
+              :aria-selected="pluginStore.panelMainTab === 'backends'"
+              @click="pluginStore.panelMainTab = 'backends'"
+            >
+              后端模块
+            </button>
+            <button
+              type="button"
+              role="tab"
+              class="pm-tab"
+              :class="{ 'pm-tab--active': pluginStore.panelMainTab === 'slots' }"
+              :aria-selected="pluginStore.panelMainTab === 'slots'"
+              @click="pluginStore.panelMainTab = 'slots'"
             >
               插槽顺序
             </button>
           </div>
 
-          <div v-show="mainTab === 'plugins'" class="pm-tab-panel" role="tabpanel">
+          <div
+            v-show="pluginStore.panelMainTab === 'plugins'"
+            class="pm-tab-panel"
+            role="tabpanel"
+          >
           <section class="pm-section">
             <h3 class="pm-h3">保存目标</h3>
             <p class="pm-hint">
@@ -320,7 +323,7 @@ async function onUpdateFromZip(pluginId: string) {
           >
             <h3 class="pm-h3">作者建议 · 后端</h3>
             <p class="pm-hint">
-              将 author.json 中的 suggested_plugin_backends 写入本会话的后端覆盖（与运行时面板一致）。
+              将 author.json 中的 suggested_plugin_backends 写入本会话的后端覆盖（与「后端模块」Tab 一致）。
             </p>
             <button
               type="button"
@@ -446,7 +449,15 @@ async function onUpdateFromZip(pluginId: string) {
           </div>
 
           <div
-            v-show="mainTab === 'slots'"
+            v-show="pluginStore.panelMainTab === 'backends'"
+            class="pm-tab-panel pm-tab-panel--backends"
+            role="tabpanel"
+          >
+            <PluginBackendSessionPanel />
+          </div>
+
+          <div
+            v-show="pluginStore.panelMainTab === 'slots'"
             class="pm-tab-panel pm-tab-panel--slots"
             role="tabpanel"
           >
