@@ -10,6 +10,7 @@
     "verify:ui": "node scripts/verify-frontend-patches.mjs",
     "tauri:dev:verify": "npm run verify:ui && npm run tauri:dev",
     "start:dev": "npm run tauri:dev",
+    "push:origin": "git push origin main && git push origin --tags",
     "dev:tauri": "cd src-tauri && npx --no-install tauri dev -c tauri.vite-external.json",
     "tauri:before-dev": "node scripts/tauri-npm.cjs dev",
     "tauri:before-build": "node scripts/tauri-npm.cjs build",
