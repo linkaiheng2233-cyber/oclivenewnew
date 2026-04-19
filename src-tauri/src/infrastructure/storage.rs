@@ -184,6 +184,7 @@ impl RoleStorage {
             if let Some(ref pb) = s.plugin_backends {
                 role.plugin_backends = pb.clone();
             }
+            role.reply_quality_anchor = s.reply_quality_anchor.clone();
         }
         apply_llm_backend_env_override(&mut role);
         validate_role_interaction_mode(&role).map_err(AppError::InvalidParameter)?;
@@ -667,6 +668,7 @@ mod tests {
             ui_config: crate::models::UiConfig::default(),
             knowledge_index: None,
             author_pack: None,
+            reply_quality_anchor: None,
         };
 
         storage.save_role_manifest(&role).unwrap();

@@ -8,7 +8,7 @@ use crate::domain::memory_retrieval::MemoryRetrievalInput;
 use crate::domain::personality_engine::PersonalityEngine;
 use crate::domain::policy::PolicyContext;
 use crate::domain::portrait_emotion_engine::resolve_portrait_emotion;
-use crate::domain::prompt_builder::PromptInput;
+use crate::domain::prompt_builder::{effective_reply_quality_anchor, PromptInput};
 use crate::domain::user_identity::resolve_effective_user_relation_key;
 use crate::error::Result;
 use crate::models::dto::{
@@ -208,6 +208,7 @@ pub(crate) async fn process_co_present(
         life_context_line: life_context_line.as_str(),
         worldview_snippet: worldview_snippet.as_str(),
         mutable_personality: mutable_for_prompt.as_str(),
+        reply_quality_anchor: effective_reply_quality_anchor(role),
     });
 
     let pre_main_llm_ms = t_cp0.elapsed().as_millis() as u64;

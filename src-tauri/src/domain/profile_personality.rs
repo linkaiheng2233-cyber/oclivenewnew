@@ -100,6 +100,7 @@ mod tests {
             ui_config: crate::models::UiConfig::default(),
             knowledge_index: None,
             author_pack: None,
+            reply_quality_anchor: None,
         }
     }
 

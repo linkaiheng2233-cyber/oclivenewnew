@@ -43,7 +43,11 @@ impl RolePluginState {
         apply_slot("sidebar", &cfg.slots.sidebar, &mut slots);
         apply_slot("chat.header", &cfg.slots.chat_header, &mut slots);
         apply_slot("settings.plugins", &cfg.slots.settings_plugins, &mut slots);
-        apply_slot("settings.advanced", &cfg.slots.settings_advanced, &mut slots);
+        apply_slot(
+            "settings.advanced",
+            &cfg.slots.settings_advanced,
+            &mut slots,
+        );
         apply_slot("overlay.floating", &cfg.slots.overlay_floating, &mut slots);
         apply_slot("launcher.palette", &cfg.slots.launcher_palette, &mut slots);
         apply_slot("debug.dock", &cfg.slots.debug_dock, &mut slots);

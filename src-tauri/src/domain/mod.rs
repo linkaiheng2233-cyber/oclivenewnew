@@ -10,6 +10,7 @@ pub mod chat_engine;
 pub mod chat_llm_fallback;
 pub mod chat_turn;
 pub mod chat_turn_rules;
+pub mod complex_emotion;
 pub mod emotion_analyzer;
 pub mod event_detector;
 pub mod event_estimator;
@@ -53,7 +54,9 @@ pub use policy::{
 pub use prompt_assembler::{
     BuiltinPromptAssembler, PromptAssembler, RemotePromptAssemblerPlaceholder,
 };
-pub use prompt_builder::{PromptBuilder, PromptInput};
+pub use prompt_builder::{
+    effective_reply_quality_anchor, PromptBuilder, PromptInput, DEFAULT_REPLY_QUALITY_ANCHOR,
+};
 pub use relation_engine::{RelationEngine, RelationState};
 pub use repository::{FavorabilityRepository, MemoryRepository};
 pub use role_manager::RoleManager;

@@ -39,6 +39,9 @@ pub struct DiskRoleSettings {
     /// 覆盖 manifest 中的世界观知识开关与 glob（可选）
     #[serde(default)]
     pub knowledge: Option<KnowledgePackConfigDisk>,
+    /// 主对话「质量锚点」全文（类似 ComfyUI 正面质量词）；非空则替换引擎默认
+    #[serde(default)]
+    pub reply_quality_anchor: Option<String>,
 }
 
 impl DiskRoleSettings {
@@ -90,6 +93,7 @@ impl DiskRoleSettings {
             interaction_mode: role.interaction_mode.clone(),
             plugin_backends: Some(role.plugin_backends.clone()),
             knowledge: None,
+            reply_quality_anchor: role.reply_quality_anchor.clone(),
         }
     }
 }
@@ -107,6 +111,7 @@ impl Default for DiskRoleSettings {
             interaction_mode: None,
             plugin_backends: None,
             knowledge: None,
+            reply_quality_anchor: None,
         }
     }
 }

@@ -62,6 +62,36 @@ impl RemotePluginHttpConfig {
         })
     }
 
+    /// `OCLIVE_COMPLEX_EMOTION_URL`：复杂情感 Remote 侧车（`complex_emotion.resolve_turn`）。
+    /// 兼容旧名 `OCLIVE_REMOTE_COMPLEX_EMOTION_URL`。
+    pub fn from_env_complex_emotion() -> Option<Self> {
+        let endpoint = std::env::var("OCLIVE_COMPLEX_EMOTION_URL")
+            .ok()
+            .filter(|s| !s.trim().is_empty())
+            .or_else(|| {
+                std::env::var("OCLIVE_REMOTE_COMPLEX_EMOTION_URL")
+                    .ok()
+                    .filter(|s| !s.trim().is_empty())
+            })?;
+        let t = endpoint.trim();
+        if t.is_empty() {
+            return None;
+        }
+        let timeout_ms = std::env::var("OCLIVE_COMPLEX_EMOTION_TIMEOUT_MS")
+            .ok()
+            .and_then(|s| s.parse::<u64>().ok())
+            .unwrap_or(8_000);
+        let bearer_token = std::env::var("OCLIVE_COMPLEX_EMOTION_TOKEN")
+            .ok()
+            .map(|s| s.trim().to_string())
+            .filter(|s| !s.is_empty());
+        Some(Self {
+            endpoint: t.to_string(),
+            timeout: Duration::from_millis(timeout_ms.clamp(500, 120_000)),
+            bearer_token,
+        })
+    }
+
     /// 目录插件懒启动后得到的 JSON-RPC 根 URL（与 env 侧车共用超时 / 鉴权环境变量名前缀 `OCLIVE_DIRECTORY_*`）。
     pub fn for_directory_plugin_rpc(endpoint: impl Into<String>, is_llm: bool) -> Self {
         let endpoint = endpoint.into();

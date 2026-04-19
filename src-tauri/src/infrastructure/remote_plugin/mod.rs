@@ -5,6 +5,7 @@
 //!
 //! 详见 `docs/REMOTE_PLUGIN_PROTOCOL.md`。
 
+mod complex_emotion_http;
 mod config;
 mod emotion_http;
 mod event_http;
@@ -13,6 +14,7 @@ mod llm_http;
 mod memory_http;
 mod prompt_http;
 
+pub use complex_emotion_http::RemoteComplexEmotionHttp;
 pub use config::RemotePluginHttpConfig;
 pub use emotion_http::RemoteUserEmotionAnalyzerHttp;
 pub use event_http::RemoteEventEstimatorHttp;

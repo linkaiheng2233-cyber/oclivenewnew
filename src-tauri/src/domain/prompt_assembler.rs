@@ -88,7 +88,7 @@ impl Default for RemotePromptAssemblerPlaceholder {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::domain::prompt_builder::PromptInput;
+    use crate::domain::prompt_builder::{effective_reply_quality_anchor, PromptInput};
     use crate::models::{EventType, EvolutionBounds, Memory, PersonalityVector, Role};
 
     fn minimal_role() -> Role {
@@ -126,6 +126,7 @@ mod tests {
             ui_config: crate::models::UiConfig::default(),
             knowledge_index: None,
             author_pack: None,
+            reply_quality_anchor: None,
         }
     }
 
@@ -154,6 +155,7 @@ mod tests {
             life_context_line: "",
             worldview_snippet: "",
             mutable_personality: "",
+            reply_quality_anchor: effective_reply_quality_anchor(&role),
         };
         let a = BuiltinPromptAssembler.build_prompt(&input);
         let b = BuiltinPromptAssemblerV2.build_prompt(&input);

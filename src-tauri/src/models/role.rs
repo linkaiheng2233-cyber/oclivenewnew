@@ -217,6 +217,9 @@ pub struct Role {
     /// 角色包 `author.json`（可选；仅内存）
     #[serde(skip)]
     pub author_pack: Option<AuthorPackFile>,
+    /// `settings.json` 可选：主对话「质量锚点」全文；非空则替换引擎默认（见 `prompt_builder::DEFAULT_REPLY_QUALITY_ANCHOR`）。
+    #[serde(default)]
+    pub reply_quality_anchor: Option<String>,
 }
 
 impl Default for Role {
@@ -255,6 +258,7 @@ impl Default for Role {
             knowledge_index: None,
             ui_config: UiConfig::default(),
             author_pack: None,
+            reply_quality_anchor: None,
         }
     }
 }

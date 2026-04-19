@@ -28,6 +28,31 @@ pub struct PromptInput<'a> {
     pub worldview_snippet: &'a str,
     /// 人设优先模式下 DB 中的「可变性格档案」全文；`vector` 模式传空串即可。
     pub mutable_personality: &'a str,
+    /// 合并后的「回复质量锚点」（引擎默认或 `settings.json` 覆盖）；注入在「用户说」之前。
+    pub reply_quality_anchor: &'a str,
+}
+
+/// 引擎默认：固定「质量 + 边界」段（角色包 `reply_quality_anchor` 可整段覆盖）；与下文【回复结构】呼应。
+pub const DEFAULT_REPLY_QUALITY_ANCHOR: &str = "【回复质量锚点】（每轮须遵守）\n\
+- **禁止复述用户**：不得以复述、照搬、仅替换少量词的方式重复用户刚说的话（包括把用户整句改述后当作你的开场）；用**全新措辞**接内容或情绪。\n\
+- **不替用户说话**：不要替用户拟定其尚未说出的具体台词、内心独白或整段立场；可共情、追问或邀请对方自己表达。\n\
+- **状态延续（对话状态机）**：须与上文「本轮事件与关系状态机」「当前状态」及最近对话一致**推进**；用户仅简短确认/应答（如「好」「嗯」「行」「知道了」）时，视为对**当前未决话题或你上一句提议**的回应——应顺势落实、收束或轻量推进，**勿**重新开场寒暄、**勿**重复你已说过的关心/提议（除非对方明显没听见或改口）。\n\
+- **篇幅与节奏（非字数配额）**：按用户本句的**信息量与情绪强度**调节密度，而非固定比例或字数上限。用户极短或仅确认时，回复宜**短而贴切**（对齐情绪、确认约定、一句推进即可），避免堆叠模板、避免为「显得热情」而写成长段；用户倾诉较多或明确提问时，再充分展开。勿与用户消息长度盲目攀比。\n\
+- **倾诉优先，不聊死**：当用户透露委屈、挫败、被责备、压力等倾诉信号时，先回应其遭遇与情绪，再给一个贴题追问或短反馈，让对话能继续；不要立刻转去闲聊邀约、重复万能安慰，或用一句话把话题封死。\n\
+- **人设化倾听**：倾听方式受核心人设与七维影响，不强制“标准安慰模板”。可表现为同情、冷静分析、克制旁观、带锋芒的吐槽等，但须与人设一致，且不得恶意羞辱或无端攻击用户。\n\
+- 使用自然、连贯的中文口语；避免同一套空洞寒暄、机械模板与无意义填充。\n\
+- 保持人设、关系阶段与当前情绪一致；勿输出乱码、无关联英文碎片或填充词堆叠。\n\
+- 称呼、距离感须符合人设与当前关系阶段；勿使用无意义重复音节或陌生不当昵称。\n\
+- 先直接回应用户本句的具体内容、问题或情绪，再视需要延伸或反问；避免整段与用户输入无关的自说自话。\n\
+- 避免连续多句同一套话或同一问法；勿重复用户已经回答过的问题。\n\
+- 勿机械模仿用户消息里的颜文字密度或句式；用户未大量使用时保持自然口语。\n";
+
+#[must_use]
+pub fn effective_reply_quality_anchor(role: &crate::models::Role) -> &str {
+    match role.reply_quality_anchor.as_deref() {
+        Some(s) if !s.trim().is_empty() => s.trim(),
+        _ => DEFAULT_REPLY_QUALITY_ANCHOR,
+    }
 }
 
 pub struct PromptBuilder;
@@ -148,18 +173,19 @@ impl PromptBuilder {
             input.user_emotion,
         ));
         prompt.push_str("\n\n");
+        if !input.reply_quality_anchor.trim().is_empty() {
+            prompt.push_str(input.reply_quality_anchor.trim());
+            prompt.push_str("\n\n");
+        }
         prompt.push_str(&format!("用户说: {}", input.user_input));
         prompt.push_str("\n\n");
         prompt.push_str("【回复结构】\n");
         prompt.push_str(
-            "- 先直接回应用户本句的具体内容、问题或情绪，再自然延伸或反问；整体篇幅建议约一半紧扣用户输入，一半为相关延伸，避免整段与用户发言无关的自说自话。\n",
+            "- 须与上文【回复质量锚点】一致：先接住用户本句；出现倾诉信号时先回应遭遇与情绪，再视需要延伸或反问；勿与用户本句基本同义的复述式开场。\n",
         );
         prompt.push_str(
-            "- 不要使用无意义的重复音节、乱码式英文碎片或陌生昵称；称呼须符合人设与当前关系阶段。\n",
+            "- 展开程度与篇幅须遵守锚点中的「篇幅与节奏」与「状态延续」：用户极短时勿强行写成长段或重复上文已交代内容。\n",
         );
-        prompt.push_str("- 避免连续多句同一套话或同一问法；勿重复用户已经回答过的问题。\n");
-        prompt
-            .push_str("- 勿机械模仿用户消息里的颜文字密度或句式；用户未大量使用时保持自然口语。\n");
         prompt.push_str("\n请以角色身份自然地回复，保持一致的性格和语气。");
         prompt
     }
@@ -263,8 +289,21 @@ impl PromptBuilder {
         } else {
             "偏硬、易较真"
         };
-        state.push_str(&format!("我的心情倾向: {}", mood));
+        state.push_str(&format!("我的心情倾向: {}\n", mood));
+        state.push_str(Self::listening_style_hint(personality));
         state
+    }
+
+    fn listening_style_hint(personality: &PersonalityVector) -> &'static str {
+        if personality.warmth >= 0.65 && personality.sensitivity >= 0.6 {
+            "倾诉应对倾向: 先共情安抚，再用一问一答陪伴展开。"
+        } else if personality.assertiveness >= 0.65 {
+            "倾诉应对倾向: 可直接点评或吐槽，但要先承认对方情绪，再表达立场，避免上来训话。"
+        } else if personality.warmth <= 0.35 && personality.sensitivity <= 0.35 {
+            "倾诉应对倾向: 可偏克制或冷感，但仍要先回应事实与情绪，不要敷衍转移。"
+        } else {
+            "倾诉应对倾向: 先接情绪，再追问一个细节，按对方反馈决定是否展开。"
+        }
     }
 
     fn build_event_relation_state(
@@ -468,6 +507,7 @@ mod tests {
             ui_config: crate::models::UiConfig::default(),
             knowledge_index: None,
             author_pack: None,
+            reply_quality_anchor: None,
         }
     }
 
@@ -521,6 +561,7 @@ mod tests {
             life_context_line: "",
             worldview_snippet: "",
             mutable_personality: "",
+            reply_quality_anchor: effective_reply_quality_anchor(&role),
         });
 
         assert!(prompt.contains("Test Role"));
@@ -538,6 +579,12 @@ mod tests {
         assert!(prompt.contains("客厅灯暖洋洋"));
         assert!(prompt.contains("用户语气线索"));
         assert!(prompt.contains("happy"));
+        assert!(prompt.contains("【回复质量锚点】"));
+        assert!(prompt.contains("禁止复述用户"));
+        assert!(prompt.contains("状态延续"));
+        assert!(prompt.contains("篇幅与节奏"));
+        assert!(prompt.contains("倾诉优先"));
+        assert!(prompt.contains("倾诉应对倾向"));
     }
 
     #[test]
@@ -564,6 +611,7 @@ mod tests {
             life_context_line: "",
             worldview_snippet: "",
             mutable_personality: "",
+            reply_quality_anchor: effective_reply_quality_anchor(&role),
         });
 
         assert!(prompt.contains("家人/长辈场景补充"));
@@ -615,6 +663,7 @@ mod tests {
             life_context_line: "",
             worldview_snippet: "",
             mutable_personality: "",
+            reply_quality_anchor: effective_reply_quality_anchor(&role),
         });
 
         assert!(prompt.contains("倔强"));
@@ -645,6 +694,7 @@ mod tests {
             life_context_line: "",
             worldview_snippet: "",
             mutable_personality: "",
+            reply_quality_anchor: effective_reply_quality_anchor(&role),
         });
 
         assert!(prompt.contains("用户说"));
@@ -683,6 +733,7 @@ mod tests {
             life_context_line: "",
             worldview_snippet: "",
             mutable_personality: "",
+            reply_quality_anchor: effective_reply_quality_anchor(&role),
         });
 
         assert!(prompt.contains("边界语气控制指引"));
@@ -721,6 +772,7 @@ mod tests {
             life_context_line: "",
             worldview_snippet: "",
             mutable_personality: "",
+            reply_quality_anchor: effective_reply_quality_anchor(&role),
         });
 
         assert!(prompt.contains("边界语气控制指引"));
@@ -752,6 +804,7 @@ mod tests {
             life_context_line: "",
             worldview_snippet: "",
             mutable_personality: "",
+            reply_quality_anchor: effective_reply_quality_anchor(&role),
         });
 
         assert!(!prompt.contains("边界语气控制指引"));
@@ -782,10 +835,42 @@ mod tests {
             life_context_line: "",
             worldview_snippet: "",
             mutable_personality: "最近更黏人了。",
+            reply_quality_anchor: effective_reply_quality_anchor(&role),
         });
         assert!(prompt.contains("【可变性格档案】"));
         assert!(prompt.contains("更黏人"));
         assert!(prompt.contains("【七维视图】"));
         assert!(prompt.contains("核心性格档案（创作者与用户设定"));
+    }
+
+    #[test]
+    fn reply_quality_anchor_custom_overrides_default() {
+        let mut role = create_test_role();
+        role.reply_quality_anchor = Some("【包级质量锚点】仅测试覆盖用。".to_string());
+        let personality = create_test_personality();
+        let prompt = PromptBuilder::build_prompt(&PromptInput {
+            role: &role,
+            personality: &personality,
+            memories: &[],
+            user_input: "hi",
+            user_emotion: "neutral",
+            user_relation_id: "",
+            relation_hint: "",
+            relation_before: "Stranger",
+            favorability_before: 0.0,
+            relation_preview: "Stranger",
+            favorability_preview: 0.0,
+            event_type: &EventType::Ignore,
+            impact_factor: 0.0,
+            scene_label: "",
+            scene_detail: "",
+            topic_hint_line: "",
+            life_context_line: "",
+            worldview_snippet: "",
+            mutable_personality: "",
+            reply_quality_anchor: effective_reply_quality_anchor(&role),
+        });
+        assert!(prompt.contains("【包级质量锚点】仅测试覆盖用。"));
+        assert!(!prompt.contains("【回复质量锚点】（每轮须遵守）"));
     }
 }

@@ -125,6 +125,9 @@ struct PromptInputFlat<'a> {
     scene_detail: &'a str,
     topic_hint_line: &'a str,
     life_context_line: &'a str,
+    worldview_snippet: &'a str,
+    mutable_personality: &'a str,
+    reply_quality_anchor: &'a str,
 }
 
 impl<'a> PromptInputSnapshot<'a> {
@@ -149,6 +152,9 @@ impl<'a> PromptInputSnapshot<'a> {
                 scene_detail: input.scene_detail,
                 topic_hint_line: input.topic_hint_line,
                 life_context_line: input.life_context_line,
+                worldview_snippet: input.worldview_snippet,
+                mutable_personality: input.mutable_personality,
+                reply_quality_anchor: input.reply_quality_anchor,
             },
         }
     }

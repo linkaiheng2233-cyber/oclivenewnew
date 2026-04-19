@@ -5,7 +5,10 @@
 
 use crate::domain::memory_retrieval::MemoryRetrievalInput;
 use crate::domain::plugin_host::{PluginHost, ResolvedRolePlugins};
-use crate::domain::{EventDetector, MemoryEngine, PersonalityEngine, PromptInput};
+use crate::domain::{
+    prompt_builder::effective_reply_quality_anchor, EventDetector, MemoryEngine, PersonalityEngine,
+    PromptInput,
+};
 use crate::infrastructure::llm::{LlmClient, MockLlmClient};
 use crate::models::{
     Emotion, Event, EventType, Memory, PersonalitySource, PersonalityVector, Role,
@@ -160,6 +163,7 @@ impl RoleManager {
             life_context_line: "",
             worldview_snippet: "",
             mutable_personality: "",
+            reply_quality_anchor: effective_reply_quality_anchor(&self.role),
         });
 
         // 7. 更新性格
@@ -244,6 +248,7 @@ mod tests {
             ui_config: crate::models::UiConfig::default(),
             knowledge_index: None,
             author_pack: None,
+            reply_quality_anchor: None,
         }
     }
 

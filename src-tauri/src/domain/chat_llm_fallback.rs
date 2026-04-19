@@ -29,17 +29,19 @@ pub fn fallback_reply_for_llm_failure(
     let low_intimacy = ctx.favorability_before < 35.0
         || matches!(ctx.relation_before, "Stranger" | "Acquaintance" | "Friend");
     let preview_upward = ctx.relation_before != ctx.relation_preview;
-    let transition_hint = if preview_upward {
-        "语气先自然延续、只小幅升温。"
-    } else {
-        "语气保持当前关系边界，不突兀升阶。"
-    };
-    let stance = if conflict_mode {
-        "我听到了。我们先把这件事说清楚。"
+    // 仅作台词，不出现「语气/升阶」等幕后提示语（否则会像系统提示泄露到聊天里）。
+    let body = if conflict_mode {
+        "我们先把这件事说清楚，你慢慢讲。"
     } else if low_intimacy {
-        "我知道了，我们先从这一步说起。"
+        if preview_upward {
+            "我听到了。你想聊什么都可以，我们一步一步来。"
+        } else {
+            "嗯，我听到了。你接着说。"
+        }
+    } else if preview_upward {
+        "好，我懂你的意思了，我们继续。"
     } else {
-        "我接住你的意思了，我们继续。"
+        "嗯，我在听，你继续。"
     };
     let base = if t < 0.35 {
         format!(
@@ -49,14 +51,11 @@ pub fn fallback_reply_for_llm_failure(
             if conflict_mode { "。" } else { "…" }
         )
     } else if t < 0.55 {
-        format!(
-            "（有点卡）{}：你说的「{}」，{} {}",
-            role.name, snippet, stance, transition_hint
-        )
+        format!("（有点卡）{}：你刚说的「{}」，{}", role.name, snippet, body)
     } else {
         format!(
-            "（模型暂时连不上，先这样回你）{}：关于「{}」，{} {}",
-            role.name, snippet, stance, transition_hint
+            "（模型暂时连不上，先这样回你）{}：关于「{}」，{}",
+            role.name, snippet, body
         )
     };
     let count = base.chars().count();
@@ -110,6 +109,7 @@ mod tests {
             ui_config: crate::models::UiConfig::default(),
             knowledge_index: None,
             author_pack: None,
+            reply_quality_anchor: None,
         }
     }
 
