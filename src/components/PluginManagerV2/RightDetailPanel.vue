@@ -18,6 +18,14 @@ const templateComponent = computed(() => {
   if (!props.item) return null;
   return pluginUiTemplateMap[props.item.uiTemplate];
 });
+
+const changeNotice = computed(() => {
+  if (!props.item) return "";
+  if (props.item.uiTemplate === "endpoint-config") {
+    return "只读说明：此处不会写入任何配置；请在环境变量或角色包中修改后重载应用。";
+  }
+  return "变更预览：点击下方「应用改动」后写入当前会话（不修改角色包 settings.json；若与环境变量冲突，以环境解析为准）。";
+});
 </script>
 
 <template>
@@ -29,6 +37,7 @@ const templateComponent = computed(() => {
       <div v-if="item" class="pm2-detail">
         <h3 class="pm2-detail-title">{{ item.title }}</h3>
         <p class="pm2-detail-desc">{{ item.description }}</p>
+        <p class="pm2-change-notice" role="note">{{ changeNotice }}</p>
         <component
           :is="templateComponent"
           v-if="templateComponent"
@@ -85,6 +94,16 @@ const templateComponent = computed(() => {
   font-size: 12px;
   color: var(--text-secondary);
   line-height: 1.45;
+}
+.pm2-change-notice {
+  margin: 0;
+  padding: 8px 10px;
+  font-size: 11px;
+  line-height: 1.45;
+  color: var(--text-secondary);
+  border-radius: 8px;
+  border: 1px solid color-mix(in srgb, var(--border-light) 85%, var(--accent) 15%);
+  background: color-mix(in srgb, var(--bg-primary) 82%, var(--accent-soft) 18%);
 }
 .pm2-placeholder {
   margin: 10px 0 0;

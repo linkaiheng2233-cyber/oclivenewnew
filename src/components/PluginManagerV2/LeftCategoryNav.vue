@@ -100,23 +100,42 @@ const openGroups = ref({
 <style scoped>
 .pm2-left {
   border-right: 1px solid var(--border-light);
-  padding-right: 10px;
+  padding: 10px 12px 10px 4px;
   min-width: 200px;
+  border-radius: 10px;
+  background: color-mix(in srgb, var(--bg-elevated) 55%, var(--bg-primary));
+  box-shadow:
+    inset 0 1px 0 color-mix(in srgb, #fff 8%, transparent),
+    inset 0 -1px 0 color-mix(in srgb, #000 12%, transparent);
 }
 .pm2-left-title {
   margin: 0 0 8px;
-  font-size: 14px;
+  font-size: 13px;
+  font-weight: 800;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: var(--text-secondary);
 }
 .pm2-left-list {
   margin: 0;
-  padding: 0;
+  padding: 6px;
   list-style: none;
   display: flex;
   flex-direction: column;
   gap: 6px;
+  border-radius: 8px;
+  border: 1px solid color-mix(in srgb, var(--border-light) 90%, #000 10%);
+  background: color-mix(in srgb, var(--bg-primary) 88%, transparent);
 }
 .pm2-group {
   margin-top: 10px;
+  padding: 8px;
+  border-radius: 10px;
+  border: 2px solid color-mix(in srgb, var(--border-light) 75%, #000 25%);
+  background: color-mix(in srgb, var(--bg-primary) 92%, var(--bg-elevated));
+  box-shadow:
+    inset 2px 2px 0 color-mix(in srgb, #fff 6%, transparent),
+    inset -2px -2px 0 color-mix(in srgb, #000 10%, transparent);
 }
 .pm2-group-title {
   width: 100%;
@@ -126,12 +145,19 @@ const openGroups = ref({
   gap: 8px;
   text-align: left;
   padding: 6px 8px;
-  border: 1px dashed var(--border-light);
-  border-radius: 8px;
-  background: var(--bg-elevated);
+  border: 1px solid color-mix(in srgb, var(--border-light) 80%, #000 20%);
+  border-radius: 6px;
+  background: linear-gradient(
+    180deg,
+    color-mix(in srgb, var(--bg-elevated) 88%, #fff 12%) 0%,
+    color-mix(in srgb, var(--bg-elevated) 55%, #000 8%) 100%
+  );
   color: var(--text-primary);
   cursor: pointer;
-  font-size: 12px;
+  font-size: 11px;
+  font-weight: 800;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
 }
 .pm2-arrow {
   font-size: 11px;
@@ -145,24 +171,28 @@ const openGroups = ref({
   gap: 8px;
   padding: 7px 8px;
   border: 1px solid transparent;
-  border-radius: 8px;
+  border-radius: 6px;
   background: transparent;
   color: var(--text-secondary);
   cursor: pointer;
 }
 .pm2-left-btn:hover {
-  border-color: var(--border-light);
+  border-color: color-mix(in srgb, var(--border-light) 85%, var(--accent) 15%);
   color: var(--text-primary);
 }
 .pm2-left-btn.is-active {
-  border-color: var(--border-light);
-  background: color-mix(in srgb, var(--bg-elevated) 70%, var(--accent-soft) 30%);
+  border-color: color-mix(in srgb, var(--border-light) 60%, var(--accent) 40%);
+  background: color-mix(in srgb, var(--bg-elevated) 65%, var(--accent-soft) 35%);
   color: var(--text-primary);
+  box-shadow: inset 0 -1px 0 color-mix(in srgb, var(--accent) 25%, transparent);
 }
 .pm2-badge {
   font-size: 11px;
-  border-radius: 999px;
-  border: 1px solid var(--border-light);
-  padding: 0 7px;
+  border-radius: 4px;
+  border: 1px solid color-mix(in srgb, var(--border-light) 80%, #000 20%);
+  padding: 0 6px;
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+  background: color-mix(in srgb, var(--bg-primary) 75%, transparent);
 }
 </style>

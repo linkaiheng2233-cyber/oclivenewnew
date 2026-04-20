@@ -1,7 +1,8 @@
 <script setup lang="ts">
+import { computed } from "vue";
 import type { PluginV2CardItem } from "../../composables/usePluginManagerV2";
 
-defineProps<{
+const props = defineProps<{
   item: PluginV2CardItem;
   selected?: boolean;
 }>();
@@ -9,6 +10,26 @@ defineProps<{
 const emit = defineEmits<{
   select: [];
 }>();
+
+const typeLabel = computed(() => {
+  const t = props.item.type;
+  if (t === "builtin") return "内置";
+  if (t === "remote") return "远程";
+  return "目录插件";
+});
+
+const sourceKind = computed(() => {
+  const s = props.item.sourceLabel;
+  if (s.includes("会话")) return "session";
+  if (s.includes("环境")) return "env";
+  return "pack";
+});
+
+const riskLabel = computed(() => {
+  if (props.item.status === "needs_config") return "缺配置";
+  if (sourceKind.value === "env") return "环境优先";
+  return "";
+});
 </script>
 
 <template>
@@ -28,9 +49,10 @@ const emit = defineEmits<{
     </div>
     <p class="pm2-card-desc">{{ item.description }}</p>
     <div class="pm2-card-meta">
-      <span>{{ item.moduleLabel }}</span>
-      <span>{{ item.type === "builtin" ? "内置" : item.type === "remote" ? "远程" : "目录插件" }}</span>
-      <span>{{ item.sourceLabel }}</span>
+      <span class="pm2-chip pm2-chip--module">{{ item.moduleLabel }}</span>
+      <span class="pm2-chip pm2-chip--type">{{ typeLabel }}</span>
+      <span class="pm2-chip" :class="`pm2-chip--source-${sourceKind}`">{{ item.sourceLabel }}</span>
+      <span v-if="riskLabel" class="pm2-chip pm2-chip--risk">{{ riskLabel }}</span>
     </div>
   </button>
 </template>
@@ -95,8 +117,44 @@ const emit = defineEmits<{
 .pm2-card-meta {
   display: flex;
   flex-wrap: wrap;
-  gap: 8px;
+  gap: 6px;
   font-size: 11px;
+  align-items: center;
+}
+.pm2-chip {
+  display: inline-flex;
+  align-items: center;
+  padding: 2px 8px;
+  border-radius: 6px;
+  border: 1px solid var(--border-light);
+  line-height: 1.25;
+  font-weight: 600;
   color: var(--text-secondary);
+  background: color-mix(in srgb, var(--bg-elevated) 55%, transparent);
+}
+.pm2-chip--module {
+  border-style: solid;
+  border-color: color-mix(in srgb, var(--border-light) 70%, var(--accent) 30%);
+}
+.pm2-chip--type {
+  font-variant-numeric: tabular-nums;
+}
+.pm2-chip--source-pack {
+  color: var(--text-secondary);
+}
+.pm2-chip--source-session {
+  color: color-mix(in srgb, #1d4ed8 88%, var(--text-primary));
+  background: color-mix(in srgb, #3b82f6 14%, var(--bg-primary));
+  border-color: color-mix(in srgb, #3b82f6 35%, transparent);
+}
+.pm2-chip--source-env {
+  color: color-mix(in srgb, #6d28d9 90%, var(--text-primary));
+  background: color-mix(in srgb, #a855f7 14%, var(--bg-primary));
+  border-color: color-mix(in srgb, #a855f7 35%, transparent);
+}
+.pm2-chip--risk {
+  color: color-mix(in srgb, #92400e 90%, var(--text-primary));
+  background: color-mix(in srgb, #f59e0b 18%, var(--bg-primary));
+  border-color: color-mix(in srgb, #f59e0b 40%, transparent);
 }
 </style>
