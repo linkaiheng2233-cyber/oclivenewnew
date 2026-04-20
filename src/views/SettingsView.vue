@@ -6,6 +6,7 @@ import PluginSettingsPanelSlots from "../components/PluginSettingsPanelSlots.vue
 import PluginSlotEmbed from "../components/PluginSlotEmbed.vue";
 import { useAppToast } from "../composables/useAppToast";
 import { SLOT_SETTINGS_ADVANCED, usePluginStore } from "../stores/pluginStore";
+import { useUiStore } from "../stores/uiStore";
 
 defineProps<{
   visible: boolean;
@@ -16,6 +17,7 @@ const emit = defineEmits<{
 }>();
 
 const pluginStore = usePluginStore();
+const uiStore = useUiStore();
 const { showToast } = useAppToast();
 
 type SettingsTab = "general" | "plugins";
@@ -88,6 +90,27 @@ async function onToggleForceIframe(e: Event) {
             <p class="sv-muted">
               虚拟时间、叙事场景等仅在沉浸模式下显示于「更多」。
             </p>
+          </section>
+          <section class="sv-section">
+            <div class="sv-row-h">
+              <span class="sv-label">实验性功能</span>
+              <HelpHint
+                text="灰度入口：用于预览新版插件管理界面（V2）。若当前构建未集成 V2，会继续使用现有专业模式。"
+              />
+            </div>
+            <label class="sv-toggle-row">
+              <input
+                type="checkbox"
+                :checked="uiStore.experimentalPluginManagerV2 === true"
+                @change="uiStore.setExperimentalPluginManagerV2(($event.target as HTMLInputElement).checked)"
+              />
+              <span class="sv-toggle-text">
+                <strong>启用新版插件管理界面（V2 预览）</strong>
+                <span class="sv-muted sv-toggle-desc">
+                  开启后，Ctrl+Shift+F 与「更多」里的入口将优先尝试打开 V2。
+                </span>
+              </span>
+            </label>
           </section>
           <section class="sv-section">
             <h3 class="sv-h3">扩展区（settings.advanced）</h3>
