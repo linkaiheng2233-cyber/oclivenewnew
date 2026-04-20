@@ -29,7 +29,7 @@ const { showToast } = useAppToast();
 
 const batchMode = ref(false);
 const batchSelected = ref<Record<string, boolean>>({});
-/** 已安装列表中「开发者调试」折叠（所有目录插件均可展开；无 `process` 时仅无法在此启动子进程） */
+/** 已安装列表中「调试台」折叠（所有目录插件均可展开；无 `process` 时仅无法在此启动子进程） */
 const pluginDebugOpen = ref<Record<string, boolean>>({});
 
 function togglePluginDebug(id: string) {
@@ -241,25 +241,32 @@ async function onUpdateFromZip(pluginId: string) {
       class="pm-backdrop"
       role="dialog"
       aria-modal="true"
-      aria-label="插件与后端管理"
+      aria-label="插件工作台（专业模式）"
       @click.self="pluginStore.closePanel()"
     >
-      <div class="pm-dialog" @click.stop>
+      <div class="pm-dialog pm-dialog--studio" @click.stop>
         <header class="pm-head">
-          <h2 class="pm-title">插件与后端管理</h2>
+          <div class="pm-head-row">
+            <h2 class="pm-title">插件工作台</h2>
+            <span
+              class="pm-studio-badge"
+              title="面向创作者与排错：目录插件、后端与会话覆盖"
+            >专业模式</span>
+          </div>
           <p class="pm-sub">
-            Ctrl+Shift+F 打开/关闭 · 界面插件与插槽保存后生效；停用插件建议重启应用。
+            <kbd class="pm-kbd">Ctrl</kbd>+<kbd class="pm-kbd">Shift</kbd>+<kbd class="pm-kbd">F</kbd>
+            开关本窗口 · 保存后插槽/启用状态建议重启应用生效
           </p>
           <button type="button" class="pm-close" aria-label="关闭" @click="pluginStore.closePanel()">
             ×
           </button>
         </header>
 
-        <div v-if="pluginStore.loading" class="pm-muted">加载中…</div>
-        <p v-else-if="pluginStore.error" class="pm-err">{{ pluginStore.error }}</p>
+        <div v-if="pluginStore.loading" class="pm-muted pm-dialog-pad">加载中…</div>
+        <p v-else-if="pluginStore.error" class="pm-err pm-dialog-pad">{{ pluginStore.error }}</p>
 
         <template v-else>
-          <div class="pm-tabs" role="tablist" aria-label="插件与后端管理分区">
+          <div class="pm-tabs" role="tablist" aria-label="插件工作台分区">
             <button
               type="button"
               role="tab"
@@ -292,6 +299,7 @@ async function onUpdateFromZip(pluginId: string) {
             </button>
           </div>
 
+          <div class="pm-scroll">
           <div
             v-show="pluginStore.panelMainTab === 'plugins'"
             class="pm-tab-panel"
@@ -362,7 +370,7 @@ async function onUpdateFromZip(pluginId: string) {
             <p v-else class="pm-muted">未列出 recommended_plugins。</p>
           </section>
 
-          <section class="pm-section">
+          <section class="pm-section pm-section--catalog">
             <div class="pm-section-head">
               <h3 class="pm-h3">已安装插件</h3>
               <div class="pm-section-actions">
@@ -445,7 +453,7 @@ async function onUpdateFromZip(pluginId: string) {
                     class="pm-btn secondary pm-btn--sm"
                     @click="togglePluginDebug(p.id)"
                   >
-                    {{ pluginDebugOpen[p.id] ? "▼" : "▶" }} 开发者调试
+                    {{ pluginDebugOpen[p.id] ? "▼" : "▶" }} 调试台
                   </button>
                   <button
                     type="button"
@@ -705,6 +713,7 @@ async function onUpdateFromZip(pluginId: string) {
             <p v-if="!debugDockOrder.length" class="pm-muted">当前无 debug.dock 插槽插件。</p>
           </section>
           </div>
+          </div>
 
           <footer class="pm-foot">
             <button type="button" class="pm-btn secondary" @click="pluginStore.closePanel()">关闭</button>
@@ -741,35 +750,64 @@ async function onUpdateFromZip(pluginId: string) {
   background: var(--bg-primary);
   box-shadow: var(--shadow-app);
 }
+.pm-dialog--studio {
+  width: min(1080px, 100%);
+  max-height: min(92vh, 900px);
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  padding: 0;
+  border-radius: 12px;
+  border: 1px solid color-mix(in srgb, var(--border-light) 70%, var(--accent, #3b82f6) 18%);
+  box-shadow:
+    var(--shadow-app),
+    0 0 0 1px color-mix(in srgb, var(--bg-primary) 70%, transparent);
+}
+.pm-dialog-pad {
+  padding: 12px 18px;
+}
+.pm-scroll {
+  flex: 1;
+  min-height: 0;
+  overflow: auto;
+  padding: 12px 18px 8px;
+}
 .pm-tabs {
   display: flex;
-  gap: 4px;
-  margin-bottom: 14px;
-  padding: 4px;
-  border-radius: 10px;
-  background: color-mix(in srgb, var(--border-light) 35%, transparent);
+  gap: 0;
+  flex-shrink: 0;
+  padding: 0 12px;
+  border-bottom: 1px solid var(--border-light);
+  background: color-mix(in srgb, var(--bg-elevated) 55%, var(--bg-primary));
 }
 .pm-tab {
   flex: 1;
   min-width: 0;
-  padding: 8px 12px;
+  padding: 10px 12px;
+  margin-bottom: -1px;
   border: none;
-  border-radius: 8px;
-  font-size: 13px;
+  border-bottom: 2px solid transparent;
+  border-radius: 0;
+  font-size: 12px;
   font-weight: 600;
+  letter-spacing: 0.02em;
   cursor: pointer;
   color: var(--text-secondary);
   background: transparent;
-  transition: background 0.15s ease, color 0.15s ease;
+  transition:
+    color 0.12s ease,
+    border-color 0.12s ease,
+    background 0.12s ease;
 }
 .pm-tab:hover {
   color: var(--text-primary);
-  background: color-mix(in srgb, var(--bg-elevated) 80%, transparent);
+  background: color-mix(in srgb, var(--bg-primary) 40%, transparent);
 }
 .pm-tab--active {
   color: var(--text-primary);
-  background: var(--bg-primary);
-  box-shadow: var(--shadow-sm);
+  background: transparent;
+  border-bottom-color: var(--accent, #3b82f6);
+  box-shadow: none;
 }
 .pm-tab-panel {
   min-height: 0;
@@ -783,23 +821,57 @@ async function onUpdateFromZip(pluginId: string) {
   border: 1px dashed color-mix(in srgb, var(--border-light) 85%, transparent);
 }
 .pm-head {
-  padding-right: 32px;
-  margin-bottom: 12px;
+  flex-shrink: 0;
+  padding: 14px 40px 12px 18px;
+  margin: 0;
+  border-bottom: 1px solid var(--border-light);
+  background: color-mix(in srgb, var(--bg-elevated) 40%, var(--bg-primary));
+}
+.pm-head-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex-wrap: wrap;
 }
 .pm-title {
-  margin: 0 0 6px;
-  font-size: 18px;
+  margin: 0;
+  font-size: 17px;
+  font-weight: 700;
+  letter-spacing: -0.02em;
+}
+.pm-studio-badge {
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  padding: 3px 8px;
+  border-radius: 4px;
+  border: 1px solid color-mix(in srgb, var(--accent, #3b82f6) 45%, var(--border-light));
+  color: color-mix(in srgb, var(--accent, #3b82f6) 92%, var(--text-primary));
+  background: color-mix(in srgb, var(--accent, #3b82f6) 12%, var(--bg-primary));
 }
 .pm-sub {
-  margin: 0;
-  font-size: 12px;
+  margin: 6px 0 0;
+  font-size: 11px;
   color: var(--text-secondary);
-  line-height: 1.45;
+  line-height: 1.5;
+}
+.pm-kbd {
+  display: inline-block;
+  padding: 1px 5px;
+  margin: 0 1px;
+  font-size: 10px;
+  font-family: ui-monospace, Menlo, Consolas, monospace;
+  border-radius: 4px;
+  border: 1px solid var(--border-light);
+  background: var(--bg-primary);
+  color: var(--text-primary);
+  box-shadow: 0 1px 0 color-mix(in srgb, var(--border-light) 80%, transparent);
 }
 .pm-close {
   position: absolute;
-  top: 10px;
-  right: 10px;
+  top: 12px;
+  right: 12px;
   width: 32px;
   height: 32px;
   border: none;
@@ -814,7 +886,14 @@ async function onUpdateFromZip(pluginId: string) {
   background: color-mix(in srgb, var(--border-light) 60%, transparent);
 }
 .pm-section {
-  margin-bottom: 16px;
+  margin-bottom: 18px;
+}
+.pm-section--catalog {
+  padding: 12px 14px 14px;
+  border-radius: 10px;
+  border: 1px solid var(--border-light);
+  background: color-mix(in srgb, var(--bg-elevated) 65%, var(--bg-primary));
+  box-shadow: inset 0 1px 0 color-mix(in srgb, #fff 6%, transparent);
 }
 .pm-section-head {
   display: flex;
@@ -863,6 +942,13 @@ async function onUpdateFromZip(pluginId: string) {
   display: flex;
   flex-direction: column;
   gap: 8px;
+  padding: 10px 12px;
+  border-radius: 8px;
+  border: 1px solid color-mix(in srgb, var(--border-light) 90%, transparent);
+  background: var(--bg-primary);
+}
+.pm-plugin-row:hover {
+  border-color: color-mix(in srgb, var(--accent, #3b82f6) 28%, var(--border-light));
 }
 .pm-plugin-actions {
   display: flex;
@@ -969,10 +1055,13 @@ async function onUpdateFromZip(pluginId: string) {
 .pm-foot {
   display: flex;
   justify-content: flex-end;
+  align-items: center;
   gap: 10px;
-  margin-top: 8px;
-  padding-top: 12px;
+  flex-shrink: 0;
+  margin: 0;
+  padding: 12px 18px;
   border-top: 1px solid var(--border-light);
+  background: color-mix(in srgb, var(--bg-elevated) 50%, var(--bg-primary));
 }
 .pm-btn {
   padding: 8px 14px;

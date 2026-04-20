@@ -25,6 +25,11 @@ const pluginIdRef = computed(() => props.pluginId);
 const dbg = usePluginDebug(pluginIdRef);
 const { processInfo, allProcesses, methods, logs, lastResponse, busy } = dbg;
 
+const statusLabel = computed(() => {
+  if (processInfo.value) return `运行中 · PID ${processInfo.value.pid}`;
+  return "未运行";
+});
+
 watch(
   () => props.expanded,
   async (v) => {
@@ -79,170 +84,302 @@ function onApplyHistory(item: RpcHistoryItem) {
 
 <template>
   <div class="pm-dbg-root">
-    <nav class="pm-dbg-nav" aria-label="调试分区">
-      <button
-        type="button"
-        class="pm-dbg-nav-btn"
-        :class="{ active: section === 'process' }"
-        @click="section = 'process'"
-      >
-        进程状态
-      </button>
-      <button
-        type="button"
-        class="pm-dbg-nav-btn"
-        :class="{ active: section === 'rpc' }"
-        @click="section = 'rpc'"
-      >
-        RPC 测试
-      </button>
-      <button
-        type="button"
-        class="pm-dbg-nav-btn"
-        :class="{ active: section === 'logs' }"
-        @click="section = 'logs'"
-      >
-        日志
-      </button>
-    </nav>
-    <div class="pm-dbg-mid">
-      <ProcessMonitor
-        v-show="section === 'process'"
-        :plugin-id="pluginId"
-        :spawn-supported="props.spawnSupported"
-        :process-info="processInfo"
-        :all-processes="allProcesses"
-        :busy="busy"
-        @spawn="dbg.onSpawn()"
-        @kill="dbg.onKill()"
-        @restart="dbg.onRestart()"
-        @refresh-all="dbg.refreshProcess()"
-        @kill-managed="onKillManaged"
-      />
-      <RpcTester
-        v-show="section === 'rpc'"
-        v-model:method="rpcMethod"
-        v-model:params="rpcParams"
-        :datalist-id="`pm-dbg-methods-${pluginId}`"
-        :methods="methods"
-        :busy="busy"
-        :history="dbg.history"
-        @discover="dbg.refreshMethods()"
-        @send="dbg.runRpc(rpcMethod, rpcParams)"
-        @apply-history="onApplyHistory"
-      />
-      <p v-show="section === 'logs'" class="pm-dbg-hint">
-        日志由宿主环形缓冲提供（约 1000 行）；轮询刷新。
-      </p>
-    </div>
-    <div class="pm-dbg-right">
-      <div class="pm-dbg-resp">
-        <div class="pm-dbg-resp-h">响应</div>
-        <pre class="pm-dbg-pre">{{ lastResponse || "（尚无 RPC 响应）" }}</pre>
+    <header class="pm-dbg-chrome">
+      <div class="pm-dbg-chrome-left">
+        <span class="pm-dbg-chrome-label">Target</span>
+        <code class="pm-dbg-chrome-id">{{ pluginId }}</code>
+        <span
+          class="pm-dbg-chrome-status"
+          :class="{ live: !!processInfo }"
+          :title="statusLabel"
+        >{{ statusLabel }}</span>
       </div>
-      <div class="pm-dbg-resp log-block">
-        <div class="pm-dbg-resp-h">实时日志</div>
-        <LogViewer
-          :lines="logs"
-          @clear="dbg.onClearLogs()"
-          @export="
-            () => {
-              const blob = new Blob([dbg.exportLogsText()], { type: 'text/plain;charset=utf-8' });
-              const a = document.createElement('a');
-              a.href = URL.createObjectURL(blob);
-              a.download = `${pluginId}-plugin-debug.log`;
-              a.click();
-              URL.revokeObjectURL(a.href);
-            }
-          "
+      <nav class="pm-dbg-tabs" aria-label="调试分区">
+        <button
+          type="button"
+          class="pm-dbg-tab"
+          :class="{ active: section === 'process' }"
+          @click="section = 'process'"
+        >
+          进程
+        </button>
+        <button
+          type="button"
+          class="pm-dbg-tab"
+          :class="{ active: section === 'rpc' }"
+          @click="section = 'rpc'"
+        >
+          RPC
+        </button>
+        <button
+          type="button"
+          class="pm-dbg-tab"
+          :class="{ active: section === 'logs' }"
+          @click="section = 'logs'"
+        >
+          控制台
+        </button>
+      </nav>
+    </header>
+
+    <div class="pm-dbg-workspace">
+      <div class="pm-dbg-editor">
+        <ProcessMonitor
+          v-show="section === 'process'"
+          :plugin-id="pluginId"
+          :spawn-supported="props.spawnSupported"
+          :process-info="processInfo"
+          :all-processes="allProcesses"
+          :busy="busy"
+          @spawn="dbg.onSpawn()"
+          @kill="dbg.onKill()"
+          @restart="dbg.onRestart()"
+          @refresh-all="dbg.refreshProcess()"
+          @kill-managed="onKillManaged"
         />
+        <RpcTester
+          v-show="section === 'rpc'"
+          v-model:method="rpcMethod"
+          v-model:params="rpcParams"
+          :datalist-id="`pm-dbg-methods-${pluginId}`"
+          :methods="methods"
+          :busy="busy"
+          :history="dbg.history"
+          @discover="dbg.refreshMethods()"
+          @send="dbg.runRpc(rpcMethod, rpcParams)"
+          @apply-history="onApplyHistory"
+        />
+        <div v-show="section === 'logs'" class="pm-dbg-console-tab">
+          <p class="pm-dbg-console-hint">
+            下方 <strong>Output</strong> 为环形缓冲（约 1000 行），宿主轮询刷新；与主流 IDE 底部控制台类似。
+          </p>
+        </div>
       </div>
+
+      <aside class="pm-dbg-inspector" aria-label="响应与输出">
+        <section class="pm-dbg-panel">
+          <div class="pm-dbg-panel-h">
+            <span class="pm-dbg-panel-title">Response</span>
+            <span class="pm-dbg-panel-meta">JSON-RPC</span>
+          </div>
+          <pre class="pm-dbg-pre">{{ lastResponse || "（尚无响应）" }}</pre>
+        </section>
+        <section class="pm-dbg-panel pm-dbg-panel--grow">
+          <div class="pm-dbg-panel-h">
+            <span class="pm-dbg-panel-title">Output</span>
+            <span class="pm-dbg-panel-meta">stdout / stderr</span>
+          </div>
+          <LogViewer
+            :lines="logs"
+            @clear="dbg.onClearLogs()"
+            @export="
+              () => {
+                const blob = new Blob([dbg.exportLogsText()], { type: 'text/plain;charset=utf-8' });
+                const a = document.createElement('a');
+                a.href = URL.createObjectURL(blob);
+                a.download = `${pluginId}-plugin-debug.log`;
+                a.click();
+                URL.revokeObjectURL(a.href);
+              }
+            "
+          />
+        </section>
+      </aside>
     </div>
   </div>
 </template>
 
 <style scoped>
 .pm-dbg-root {
-  display: grid;
-  grid-template-columns: minmax(140px, 180px) minmax(0, 1fr) minmax(200px, 280px);
-  gap: 10px;
-  margin-top: 10px;
-  padding: 10px;
-  border-radius: 10px;
-  border: 1px solid color-mix(in srgb, var(--border-light) 80%, var(--accent) 15%);
-  background: color-mix(in srgb, var(--bg-primary) 94%, var(--accent-soft) 6%);
-  min-height: 280px;
-}
-@media (max-width: 900px) {
-  .pm-dbg-root {
-    grid-template-columns: 1fr;
-  }
-}
-.pm-dbg-nav {
   display: flex;
   flex-direction: column;
-  gap: 4px;
+  min-height: 320px;
+  max-height: min(70vh, 640px);
+  margin-top: 8px;
+  border-radius: 10px;
+  border: 1px solid var(--border-light);
+  background: color-mix(in srgb, var(--bg-primary) 88%, var(--bg-elevated));
+  overflow: hidden;
 }
-.pm-dbg-nav-btn {
-  text-align: left;
+.pm-dbg-chrome {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px 12px;
   padding: 8px 10px;
-  border-radius: 8px;
-  border: 1px solid transparent;
-  background: transparent;
+  border-bottom: 1px solid var(--border-light);
+  background: color-mix(in srgb, var(--bg-elevated) 70%, var(--bg-primary));
+}
+.pm-dbg-chrome-left {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+  min-width: 0;
+}
+.pm-dbg-chrome-label {
+  font-size: 10px;
+  font-weight: 800;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--text-secondary);
+}
+.pm-dbg-chrome-id {
   font-size: 12px;
+  font-family: ui-monospace, Menlo, Consolas, monospace;
+  padding: 2px 8px;
+  border-radius: 4px;
+  border: 1px solid var(--border-light);
+  background: var(--bg-primary);
+  color: var(--text-primary);
+  max-width: 100%;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.pm-dbg-chrome-status {
+  font-size: 11px;
+  font-weight: 600;
+  padding: 2px 8px;
+  border-radius: 999px;
+  border: 1px solid var(--border-light);
+  color: var(--text-secondary);
+  max-width: 220px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.pm-dbg-chrome-status.live {
+  border-color: color-mix(in srgb, #22c55e 45%, var(--border-light));
+  color: color-mix(in srgb, #166534 90%, var(--text-primary));
+  background: color-mix(in srgb, #22c55e 12%, var(--bg-primary));
+}
+.pm-dbg-tabs {
+  display: flex;
+  gap: 2px;
+}
+.pm-dbg-tab {
+  padding: 6px 12px;
+  border: none;
+  border-radius: 6px;
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
   cursor: pointer;
   color: var(--text-secondary);
+  background: transparent;
+  transition:
+    background 0.12s ease,
+    color 0.12s ease;
 }
-.pm-dbg-nav-btn.active {
-  border-color: var(--border-light);
-  background: var(--bg-elevated);
+.pm-dbg-tab:hover {
   color: var(--text-primary);
-  font-weight: 600;
+  background: color-mix(in srgb, var(--bg-primary) 55%, transparent);
 }
-.pm-dbg-mid {
+.pm-dbg-tab.active {
+  color: var(--text-primary);
+  background: var(--bg-primary);
+  box-shadow: 0 0 0 1px var(--border-light);
+}
+.pm-dbg-workspace {
+  flex: 1;
+  min-height: 0;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(260px, 34%);
+  gap: 0;
+}
+@media (max-width: 820px) {
+  .pm-dbg-workspace {
+    grid-template-columns: 1fr;
+  }
+  .pm-dbg-inspector {
+    border-left: none !important;
+    border-top: 1px solid var(--border-light);
+    max-height: 280px;
+  }
+}
+.pm-dbg-editor {
   min-width: 0;
-  min-height: 200px;
+  min-height: 0;
+  padding: 10px 12px;
+  overflow: auto;
+  border-right: 1px solid var(--border-light);
 }
-.pm-dbg-hint {
+.pm-dbg-console-tab {
+  padding: 4px 0 8px;
+}
+.pm-dbg-console-hint {
   margin: 0;
-  font-size: 12px;
+  font-size: 11px;
+  line-height: 1.5;
   color: var(--text-secondary);
 }
-.pm-dbg-right {
+.pm-dbg-inspector {
   display: flex;
   flex-direction: column;
-  gap: 8px;
+  gap: 0;
   min-width: 0;
   min-height: 0;
+  background: color-mix(in srgb, var(--bg-primary) 75%, #000000 6%);
 }
-.pm-dbg-resp {
+.pm-dbg-panel {
   display: flex;
   flex-direction: column;
-  gap: 4px;
+  gap: 6px;
+  padding: 8px 10px;
+  border-bottom: 1px solid var(--border-light);
   min-height: 0;
 }
-.pm-dbg-resp.log-block {
+.pm-dbg-panel--grow {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  border-bottom: none;
+  min-height: 140px;
+}
+.pm-dbg-panel--grow :deep(.pm-dbg-log) {
+  flex: 1;
+  min-height: 0;
+}
+.pm-dbg-panel--grow :deep(.pm-dbg-log-body) {
+  max-height: none;
   flex: 1;
   min-height: 120px;
 }
-.pm-dbg-resp-h {
-  font-size: 11px;
-  font-weight: 700;
+.pm-dbg-panel-h {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 8px;
+}
+.pm-dbg-panel-title {
+  font-size: 10px;
+  font-weight: 800;
+  letter-spacing: 0.12em;
   text-transform: uppercase;
-  letter-spacing: 0.06em;
   color: var(--text-secondary);
+}
+.pm-dbg-panel-meta {
+  font-size: 10px;
+  color: var(--text-secondary);
+  font-family: ui-monospace, Menlo, Consolas, monospace;
 }
 .pm-dbg-pre {
   margin: 0;
+  flex: 1;
+  min-height: 100px;
+  max-height: 200px;
   padding: 8px;
-  border-radius: 8px;
+  border-radius: 6px;
   border: 1px solid var(--border-light);
-  background: var(--bg-primary);
+  background: color-mix(in srgb, var(--bg-primary) 92%, #000000 8%);
   font-family: ui-monospace, Menlo, Consolas, monospace;
   font-size: 11px;
-  max-height: 160px;
+  line-height: 1.45;
   overflow: auto;
   white-space: pre-wrap;
   word-break: break-word;
+  color: var(--text-primary);
 }
 </style>

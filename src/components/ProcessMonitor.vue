@@ -30,8 +30,7 @@ const emit = defineEmits<{
     </div>
     <p v-if="processInfo" class="pm-dbg-mono">{{ processInfo.rpcUrl }}</p>
     <p v-if="spawnSupported === false" class="pm-dbg-warn">
-      此插件 manifest 未声明 <code>process</code>，无法在此启动 JSON-RPC 子进程；若插件已由宿主或其它方式拉起，仍可在「RPC
-      测试」里对已就绪的端点发请求。
+      此插件 manifest 未声明 <code>process</code>，无法在此启动 JSON-RPC 子进程；若插件已由宿主或其它方式拉起，仍可在「<strong>RPC</strong>」标签对已就绪端点发请求。
     </p>
     <div class="pm-dbg-actions">
       <button
