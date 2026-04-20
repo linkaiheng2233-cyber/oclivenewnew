@@ -200,6 +200,108 @@
 
 TypeScript 侧 `SendMessageResponse`（`src/utils/tauri-api.ts`）必须与 `models/dto.rs` 一致：**回复字段名为 `reply`**；`presence_mode`、`reply_is_fallback`、`schema`、`api_version` 用于展示策略（见 `src/utils/replyPresentation.ts`）。
 
+---
+
+## 前端 UI 模板配置（Plugin Manager V2）
+
+为降低创作者接入成本，V2 面板支持通过 manifest 声明 UI 模板并按 schema 渲染。后端新增插件时，优先复用同类型模板。
+
+### `ui_template` 可选值
+
+| 值 | 适用场景 |
+|---|---|
+| `endpoint-config` | 需要填写服务地址（如远程 HTTP 侧车） |
+| `provider-selector` | 从多个后端实现中选择一个（如 builtin / remote / directory） |
+| `slot-selector` | 以“槽位”语义选择后端（面向非技术用户） |
+| `switch-toggle` | 布尔开关（如启用远程模式） |
+
+### `ui_schema` 字段定义（示例）
+
+`ui_schema.fields` 建议使用数组，每个字段建议包含以下键：
+
+| 键 | 类型 | 说明 |
+|---|---|---|
+| `key` | `string` | 配置字段唯一键 |
+| `label` | `string` | 展示给用户的标题 |
+| `type` | `string` | 字段类型（如 `text` / `select` / `switch`） |
+| `required` | `boolean` | 是否必填 |
+| `default` | `any` | 默认值 |
+
+示例：
+
+```json
+{
+  "ui_schema": {
+    "fields": [
+      {
+        "key": "endpoint_url",
+        "label": "服务地址",
+        "type": "text",
+        "required": true,
+        "default": "http://127.0.0.1:8000"
+      },
+      {
+        "key": "backend",
+        "label": "后端方案",
+        "type": "select",
+        "required": true,
+        "default": "builtin_v2"
+      }
+    ]
+  }
+}
+```
+
+### `category` 字段
+
+用于声明插件所属模块，供 V2 左栏分类与筛选使用。建议值：
+
+- `llm`
+- `emotion`
+- `complex_emotion`
+- `event`
+- `prompt`
+- `memory`
+
+### `description_zh` 字段
+
+用于卡片大白话展示，面向创作者与普通用户，建议一句话说明“这项配置会影响什么”。
+
+示例：
+
+```json
+{
+  "description_zh": "决定回复由本地模型还是远程服务生成。"
+}
+```
+
+### 完整 manifest 示例（节选）
+
+```json
+{
+  "id": "example.llm.remote.bridge",
+  "name": "示例 LLM 远程桥",
+  "version": "0.1.0",
+  "category": "llm",
+  "description_zh": "用于把回复生成切换到远程 HTTP 服务。",
+  "ui_template": "endpoint-config",
+  "ui_schema": {
+    "fields": [
+      {
+        "key": "endpoint_url",
+        "label": "服务地址",
+        "type": "text",
+        "required": true,
+        "default": "http://127.0.0.1:8000"
+      }
+    ]
+  },
+  "plugin_backends": {
+    "llm": "remote"
+  }
+}
+```
+
 ### `RoleInfo` / `RoleData` 与本地 HTTP `POST /chat`
 
 - Tauri **`get_role_info`**（`GetRoleInfoRequest`，可选 **`session_id`**）、**`load_role`** 返回体含 **`personality_source`**：JSON 字符串 **`vector`** | **`profile`**，与角色包 **`evolution.personality_source`** 一致（见 `src-tauri/src/models/dto.rs`）。
