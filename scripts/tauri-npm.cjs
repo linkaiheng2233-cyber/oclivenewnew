@@ -39,8 +39,9 @@ function ensureV2Guard() {
     {
       rel: "src/views/PluginManagerV2Panel.vue",
       needles: [
-        "插件与后端管理 V2（预览）",
-        "<PluginBackendSessionPanel />",
+        'import { PluginManagerV2 } from "../components/PluginManagerV2"',
+        "<PluginManagerV2",
+        'aria-label="插件与后端管理 V2"',
       ],
     },
     {
@@ -67,7 +68,7 @@ function ensureV2Guard() {
   );
   for (const line of failures) console.error(line);
   console.error(
-    "[tauri-npm] Quick recovery: git restore --source=764430c -- src/App.vue src/views/PluginManagerV2Panel.vue src/views/SettingsView.vue src/stores/uiStore.ts",
+    "[tauri-npm] Quick recovery: git checkout main && git pull && git restore --source=HEAD -- src/App.vue src/views/PluginManagerV2Panel.vue src/views/SettingsView.vue src/stores/uiStore.ts",
   );
   console.error(
     "[tauri-npm] If you intentionally changed these files, rerun with OCLIVE_DEV_GUARD=0.",
