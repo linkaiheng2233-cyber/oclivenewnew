@@ -46,7 +46,7 @@
   },
   "devDependencies": {
     "@tauri-apps/cli": "1.5.14",
-    "@vitejs/plugin-vue": "^5.2.1",
+    "@vitejs/plugin-vue": "^6.0.6",
     "rollup-plugin-visualizer": "^7.0.1",
     "vite": "^6.0.3",
     "vite-plugin-monaco-editor": "^1.1.0"
