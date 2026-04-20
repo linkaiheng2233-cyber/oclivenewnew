@@ -14,6 +14,7 @@ const mode = process.argv[2] === "build" ? "build" : "dev";
 
 const child = spawn(process.execPath, [npmScript, mode], {
   stdio: "inherit",
-  shell: true,
+  // Avoid Windows path splitting issues with "C:\\Program Files\\...\\node.exe".
+  shell: false,
 });
 child.on("exit", (code) => process.exit(code ?? 0));
