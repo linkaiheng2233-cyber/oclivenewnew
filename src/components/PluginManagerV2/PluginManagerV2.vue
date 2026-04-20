@@ -104,6 +104,8 @@ async function onApply(payload: Record<string, unknown>) {
 
 <style scoped>
 .pm2-root {
+  flex: 1;
+  min-height: 0;
   display: flex;
   flex-direction: column;
   gap: 12px;
@@ -169,13 +171,25 @@ async function onApply(payload: Record<string, unknown>) {
   background: transparent;
 }
 .pm2-grid {
+  flex: 1;
+  min-height: 0;
   display: grid;
-  grid-template-columns: 210px minmax(0, 1fr) 300px;
+  grid-template-columns: 248px minmax(0, 1fr) 300px;
+  grid-template-rows: minmax(0, 1fr);
   gap: 12px;
+  align-items: stretch;
+}
+.pm2-grid > * {
+  min-height: 0;
 }
 @media (max-width: 1080px) {
   .pm2-grid {
     grid-template-columns: 1fr;
+    grid-template-rows: none;
+    grid-auto-rows: auto;
+    flex: 1 1 auto;
+    min-height: 0;
+    overflow: auto;
   }
 }
 </style>

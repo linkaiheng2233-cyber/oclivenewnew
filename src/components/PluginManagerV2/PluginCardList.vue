@@ -42,6 +42,9 @@ const emit = defineEmits<{
   flex-direction: column;
   gap: 10px;
   min-width: 0;
+  min-height: 0;
+  height: 100%;
+  overflow: hidden;
 }
 .pm2-search {
   padding: 8px 10px;
@@ -50,10 +53,11 @@ const emit = defineEmits<{
   background: var(--bg-elevated);
 }
 .pm2-list {
+  flex: 1;
+  min-height: 0;
   display: flex;
   flex-direction: column;
   gap: 8px;
-  max-height: 62vh;
   overflow: auto;
   padding-right: 4px;
 }

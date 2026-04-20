@@ -53,13 +53,16 @@ const changeNotice = computed(() => {
 
 <style scoped>
 .pm2-right {
+  box-sizing: border-box;
   border-left: 1px solid var(--border-light);
   padding-left: 10px;
-  width: 300px;
+  width: 100%;
+  min-width: 0;
+  min-height: 0;
+  height: 100%;
+  overflow-x: hidden;
+  overflow-y: auto;
   flex-shrink: 0;
-  position: sticky;
-  top: 0;
-  align-self: start;
 }
 .pm2-right.collapsed {
   width: 48px;

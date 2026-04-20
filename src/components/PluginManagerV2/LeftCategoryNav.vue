@@ -157,11 +157,14 @@ function toggleFolder(key: keyof typeof openFolders.value) {
 
 <style scoped>
 .ws-explorer {
+  box-sizing: border-box;
+  width: 100%;
+  min-width: 0;
+  height: 100%;
   border-right: 1px solid var(--border-light);
   padding: 8px 10px 10px 6px;
-  min-width: 220px;
-  max-height: 70vh;
-  overflow: auto;
+  overflow-x: hidden;
+  overflow-y: auto;
   border-radius: 10px;
   background: color-mix(in srgb, var(--bg-elevated) 45%, var(--bg-primary));
   font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, "Liberation Mono", monospace;
