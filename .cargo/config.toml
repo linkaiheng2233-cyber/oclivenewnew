@@ -1,0 +1,8 @@
+# Rust 构建产物（target）移出仓库根目录，与「源码 + 配置」分离：
+# - 看磁盘时：本仓库文件夹更接近「实际需要备份/同步」的体积
+# - 用户安装的软件仍只含发布包，不包含本目录
+#
+# 产物路径：与仓库同级目录 ../oclive-dev-artifacts/oclivenewnew-cargo-target/
+# 若你曾在本仓库内编过译，可手动删除旧的 src-tauri/target 以释放空间（配置生效后不再使用）。
+[build]
+target-dir = "../oclive-dev-artifacts/oclivenewnew-cargo-target"

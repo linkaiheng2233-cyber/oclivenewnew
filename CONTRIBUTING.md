@@ -26,7 +26,7 @@
 ## 不要提交
 
 - 密钥、Token、个人路径；勿将 `.env` 提交入库（见 `.gitignore`）。
-- `src-tauri/target`（构建产物）。
+- Rust 构建产物：由根目录 [`.cargo/config.toml`](.cargo/config.toml) 写到仓库外 **`../oclive-dev-artifacts/oclivenewnew-cargo-target/`**（与「克隆下来的源码」分开，便于看磁盘占用）。若本地仍有历史目录 `src-tauri/target/`，可删除；桌面包一般在 **外置 target** 的 `release/bundle/` 下（与旧文档中的 `src-tauri/target/release/bundle/` 等价，只是根路径不同）。
 
 ## 讨论与路线图
 
