@@ -9,6 +9,7 @@ pub mod jump_monologue;
 pub mod memory;
 pub mod monologue;
 pub mod plugin_bridge;
+pub mod plugin_debug;
 pub mod plugin_update;
 pub mod policy;
 pub mod role;

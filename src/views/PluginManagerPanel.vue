@@ -2,6 +2,7 @@
 import { open } from "@tauri-apps/api/dialog";
 import { computed, ref, watch } from "vue";
 import PluginBackendSessionPanel from "../components/PluginBackendSessionPanel.vue";
+import PluginDebugPanel from "../components/PluginDebugPanel.vue";
 import PluginListItem from "../components/PluginListItem.vue";
 import PmSlotRow from "../components/PmSlotRow.vue";
 import PluginSlotEmbed from "../components/PluginSlotEmbed.vue";
@@ -28,6 +29,12 @@ const { showToast } = useAppToast();
 
 const batchMode = ref(false);
 const batchSelected = ref<Record<string, boolean>>({});
+/** 已安装列表中「开发者调试」折叠（仅 hasRpcProcess 插件显示入口） */
+const pluginDebugOpen = ref<Record<string, boolean>>({});
+
+function togglePluginDebug(id: string) {
+  pluginDebugOpen.value = { ...pluginDebugOpen.value, [id]: !pluginDebugOpen.value[id] };
+}
 
 function clearBatchSelection(): void {
   batchSelected.value = {};
@@ -434,6 +441,14 @@ async function onUpdateFromZip(pluginId: string) {
                     class="pm-badge"
                   >有新版本</span>
                   <button
+                    v-if="p.hasRpcProcess"
+                    type="button"
+                    class="pm-btn secondary pm-btn--sm"
+                    @click="togglePluginDebug(p.id)"
+                  >
+                    {{ pluginDebugOpen[p.id] ? "▼" : "▶" }} 开发者调试
+                  </button>
+                  <button
                     type="button"
                     class="pm-btn secondary pm-btn--sm"
                     :disabled="pluginStore.extractingPluginId === p.id"
@@ -441,6 +456,9 @@ async function onUpdateFromZip(pluginId: string) {
                   >
                     从本地 zip 更新
                   </button>
+                </div>
+                <div v-if="p.hasRpcProcess && pluginDebugOpen[p.id]" class="pm-plugin-dev-wrap">
+                  <PluginDebugPanel :plugin-id="p.id" :expanded="true" />
                 </div>
               </li>
             </ul>
@@ -849,6 +867,10 @@ async function onUpdateFromZip(pluginId: string) {
   align-items: center;
   gap: 8px;
   padding-left: 2px;
+}
+.pm-plugin-dev-wrap {
+  width: 100%;
+  min-width: 0;
 }
 .pm-badge {
   font-size: 11px;

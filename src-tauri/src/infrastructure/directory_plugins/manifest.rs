@@ -80,6 +80,9 @@ pub struct OclivePluginManifest {
     /// stdout 就绪行前缀，默认 `OCLIVE_READY`
     #[serde(default = "default_ready_prefix")]
     pub ready_prefix: String,
+    /// 可选：声明 JSON-RPC 方法名（供开发者调试面板降级展示；可与运行时 `rpc.discover` 合并）。
+    #[serde(default, rename = "rpcMethods")]
+    pub rpc_methods: Vec<String>,
     /// 可选：依赖的其他目录插件 id → semver 范围（如 `^2.0.0`、`>=1.0.0`）。
     #[serde(default)]
     pub dependencies: Option<HashMap<String, String>>,

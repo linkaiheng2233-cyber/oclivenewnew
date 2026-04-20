@@ -977,6 +977,8 @@ export interface DirectoryPluginCatalogEntry {
   id: string;
   version: string;
   pluginType?: string | null;
+  /** manifest 是否含 `process`（可调试 RPC 子进程） */
+  hasRpcProcess: boolean;
   isShell: boolean;
   uiSlotNames: string[];
   /** 每条 manifest `ui_slots`（嵌入槽）一条 */
@@ -1105,6 +1107,68 @@ export async function directoryPluginInvoke(
       method,
       params,
     },
+  });
+}
+
+/** 开发者调试：目录插件 RPC 子进程快照（与后端 `PluginProcessDebugInfo` 一致）。 */
+export interface PluginProcessDebugInfo {
+  pluginId: string;
+  pid: number;
+  rpcUrl: string;
+  startedAtMs: number;
+  cpuPercent?: number | null;
+  memoryKb?: number | null;
+}
+
+export async function spawnPluginForTest(
+  pluginId: string,
+  configJson?: string | null,
+): Promise<PluginProcessDebugInfo> {
+  return invokeWithFriendlyError<PluginProcessDebugInfo>("spawn_plugin_for_test", {
+    plugin_id: pluginId,
+    config_json: configJson ?? null,
+  });
+}
+
+export async function killPluginProcess(pluginId: string): Promise<void> {
+  return invokeWithFriendlyError<void>("kill_plugin_process", { plugin_id: pluginId });
+}
+
+export async function listPluginProcesses(): Promise<PluginProcessDebugInfo[]> {
+  return invokeWithFriendlyError<PluginProcessDebugInfo[]>("list_plugin_processes", {});
+}
+
+export async function getPluginLogs(
+  pluginId: string,
+  lines: number,
+): Promise<string[]> {
+  return invokeWithFriendlyError<string[]>("get_plugin_logs", {
+    plugin_id: pluginId,
+    lines,
+  });
+}
+
+export async function clearPluginLogs(pluginId: string): Promise<void> {
+  return invokeWithFriendlyError<void>("clear_plugin_logs", { plugin_id: pluginId });
+}
+
+export async function testPluginMethod(
+  pluginId: string,
+  method: string,
+  params: unknown = {},
+): Promise<unknown> {
+  return invokeWithFriendlyError<unknown>("test_plugin_method", {
+    req: {
+      pluginId,
+      method,
+      params,
+    },
+  });
+}
+
+export async function discoverPluginMethods(pluginId: string): Promise<string[]> {
+  return invokeWithFriendlyError<string[]>("discover_plugin_methods", {
+    plugin_id: pluginId,
   });
 }
 
