@@ -78,12 +78,12 @@ async function onToggleForceIframe(e: Event) {
 
         <div v-show="tab === 'general'" class="sv-body">
           <p class="sv-lead">
-            顶栏 <strong>⚙</strong> 打开本页；字号、主题、互动模式、身份等在<strong>「更多」</strong>；目录插件与后端会话覆盖用 <strong>Ctrl+Shift+F</strong>。
+            顶栏<strong>「更多」</strong>集中设置入口；打开设置可用 <strong>Ctrl+Shift+S</strong>；目录插件与后端会话覆盖用 <strong>Ctrl+Shift+F</strong>。
           </p>
           <section class="sv-section">
             <div class="sv-row-h">
               <span class="sv-label">快捷</span>
-              <HelpHint text="Ctrl+Shift+F 打开插件与后端管理；Ctrl+Shift+D 开关调试面板。" />
+              <HelpHint text="Ctrl+Shift+S 打开设置；Ctrl+Shift+F 打开插件与后端管理；Ctrl+Shift+D 开关调试面板。" />
             </div>
             <p class="sv-muted">
               虚拟时间、叙事场景等仅在沉浸模式下显示于「更多」。

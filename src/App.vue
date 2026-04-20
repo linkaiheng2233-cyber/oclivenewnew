@@ -177,6 +177,21 @@ function toggleTopMore(e: Event) {
   topMoreOpen.value = !topMoreOpen.value;
 }
 
+function openShortcutHelp(): void {
+  shortcutHelpOpen.value = true;
+  topMoreOpen.value = false;
+}
+
+function openSettingsView(): void {
+  settingsViewOpen.value = true;
+  topMoreOpen.value = false;
+}
+
+function openPluginManagerPanel(): void {
+  pluginStore.togglePanel();
+  topMoreOpen.value = false;
+}
+
 function onDocumentClickCloseMore(e: MouseEvent) {
   if (!topMoreOpen.value) return;
   const el = topBarRef.value;
@@ -501,7 +516,12 @@ function onHotkey(e: KeyboardEvent) {
   }
   if (e.ctrlKey && e.shiftKey && e.key.toLowerCase() === "f") {
     e.preventDefault();
-    pluginStore.togglePanel();
+    openPluginManagerPanel();
+    return;
+  }
+  if (e.ctrlKey && e.shiftKey && e.key.toLowerCase() === "s") {
+    e.preventDefault();
+    openSettingsView();
     return;
   }
   if (e.ctrlKey && e.shiftKey && e.key.toLowerCase() === "d") {
@@ -607,27 +627,6 @@ onBeforeUnmount(() => {
           @change-role="onSwitchRole"
           @change-relation="onChangeRelation"
         />
-        <button
-          type="button"
-          class="shortcut-help-btn"
-          title="快捷键说明"
-          aria-label="快捷键说明"
-          @click="shortcutHelpOpen = true"
-        >
-          ?
-        </button>
-        <button
-          type="button"
-          class="settings-gear-btn"
-          title="设置：扩展区、安全、快捷键与插件配置页"
-          aria-label="打开设置"
-          @click="
-            settingsViewOpen = true;
-            topMoreOpen = false;
-          "
-        >
-          ⚙
-        </button>
         <button
           type="button"
           class="more-toggle"
@@ -743,6 +742,34 @@ onBeforeUnmount(() => {
                   {{ themeCycleLabel }}
                 </button>
               </div>
+            </div>
+          </div>
+
+          <div class="more-tile more-tile--action settings-entry-tile">
+            <div class="more-tile-head">
+              <span class="more-label">设置入口</span>
+              <HelpHint
+                text="将快捷键说明、设置页、插件与后端管理集中到同一处。快捷键：Ctrl+Shift+S 打开设置，Ctrl+Shift+F 打开插件与后端管理。"
+              />
+            </div>
+            <div class="more-tile-body settings-entry-actions" role="group" aria-label="设置入口集合">
+              <button type="button" class="more-debug-btn more-debug-btn--fill settings-entry-btn" @click="openShortcutHelp">
+                快捷键说明
+              </button>
+              <button
+                type="button"
+                class="more-debug-btn more-debug-btn--fill settings-entry-btn settings-entry-btn--primary settings-gear-btn"
+                @click="openSettingsView"
+              >
+                ⚙ 设置
+              </button>
+              <button
+                type="button"
+                class="more-debug-btn more-debug-btn--fill settings-entry-btn"
+                @click="openPluginManagerPanel"
+              >
+                插件与后端
+              </button>
             </div>
           </div>
 
@@ -991,55 +1018,31 @@ onBeforeUnmount(() => {
   justify-content: space-between;
   gap: 10px;
 }
-.shortcut-help-btn {
-  flex-shrink: 0;
-  width: 32px;
-  height: 32px;
-  padding: 0;
-  border-radius: var(--radius-btn);
-  border: 1px solid var(--border-light);
-  background: var(--bg-elevated);
-  color: var(--text-secondary);
-  font-size: 14px;
-  font-weight: 700;
-  font-family: var(--font-ui);
-  line-height: 1;
-  cursor: pointer;
-  transition: var(--control-transition);
+.settings-entry-tile {
+  min-width: min(24rem, 100%);
 }
-.shortcut-help-btn:hover {
-  border-color: color-mix(in srgb, var(--border-light) 70%, var(--text-secondary) 30%);
+.settings-entry-actions {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 8px;
+}
+.settings-entry-btn {
+  min-height: 34px;
+  font-size: 12px;
+  font-weight: 600;
+}
+.settings-entry-btn--primary {
+  border-color: color-mix(in srgb, var(--accent) 48%, var(--border-light) 52%);
   color: var(--text-accent);
-}
-.shortcut-help-btn:focus {
-  outline: none;
-}
-.shortcut-help-btn:focus-visible {
-  box-shadow: 0 0 0 2px color-mix(in srgb, var(--focus-ring-color) 35%, transparent);
+  background: color-mix(in srgb, var(--bg-elevated) 75%, var(--accent-soft) 25%);
 }
 .settings-gear-btn {
-  flex-shrink: 0;
-  width: 32px;
-  height: 32px;
-  padding: 0;
-  border-radius: var(--radius-btn);
-  border: 1px solid var(--border-light);
-  background: var(--bg-elevated);
-  color: var(--text-secondary);
-  font-size: 16px;
-  line-height: 1;
-  cursor: pointer;
-  transition: var(--control-transition);
+  justify-content: center;
 }
-.settings-gear-btn:hover {
-  border-color: color-mix(in srgb, var(--border-light) 70%, var(--text-secondary) 30%);
-  color: var(--text-accent);
-}
-.settings-gear-btn:focus {
-  outline: none;
-}
-.settings-gear-btn:focus-visible {
-  box-shadow: 0 0 0 2px color-mix(in srgb, var(--focus-ring-color) 35%, transparent);
+@media (max-width: 680px) {
+  .settings-entry-actions {
+    grid-template-columns: 1fr;
+  }
 }
 .more-toggle {
   flex-shrink: 0;
