@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { computed } from "vue";
 import PluginSlotEmbed from "./PluginSlotEmbed.vue";
+import { shortcutHelpCtrlShiftFDescription } from "../lib/pluginManagerEntryCopy";
 import { SLOT_LAUNCHER_PALETTE } from "../stores/pluginStore";
 import { useUiStore } from "../stores/uiStore";
 
@@ -20,9 +21,9 @@ const emit = defineEmits<{
 const uiStore = useUiStore();
 
 const rows = computed(() => {
-  const pluginF = uiStore.experimentalPluginManagerV2
-    ? "打开插件管理（V2 预览）；关闭设置中的「V2 预览」后恢复为专业模式（V1）"
-    : "打开专业模式（V1）插件与后端管理（含界面插件 · 开发者调试）";
+  const pluginF = shortcutHelpCtrlShiftFDescription(
+    uiStore.experimentalPluginManagerV2,
+  );
   return [
     { keys: "Ctrl + Shift + S", desc: "打开设置（扩展区、安全、快捷键与插件配置）" },
     { keys: "Ctrl + Shift + F", desc: pluginF },

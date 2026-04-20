@@ -5,6 +5,13 @@ import HotkeySettingsSection from "../components/HotkeySettingsSection.vue";
 import PluginSettingsPanelSlots from "../components/PluginSettingsPanelSlots.vue";
 import PluginSlotEmbed from "../components/PluginSlotEmbed.vue";
 import { useAppToast } from "../composables/useAppToast";
+import {
+  settingsExperimentalSectionHelpHint,
+  settingsExperimentalToggleDescriptionHtml,
+  settingsGeneralLeadHtml,
+  settingsOpenV2PreviewButtonLabel,
+  settingsShortcutsHelpHint,
+} from "../lib/pluginManagerEntryCopy";
 import { SLOT_SETTINGS_ADVANCED, usePluginStore } from "../stores/pluginStore";
 import { useUiStore } from "../stores/uiStore";
 
@@ -81,13 +88,11 @@ async function onToggleForceIframe(e: Event) {
         </nav>
 
         <div v-show="tab === 'general'" class="sv-body">
-          <p class="sv-lead">
-            顶栏<strong>「更多」</strong>集中设置入口；打开设置可用 <strong>Ctrl+Shift+S</strong>；<strong>Ctrl+Shift+F</strong> 打开插件管理（未勾选下方「V2 预览」时为<strong>专业模式（V1）</strong>；勾选后同一快捷键为<strong>V2 预览</strong>，V1 可从 V2 内入口打开）。
-          </p>
+          <p class="sv-lead" v-html="settingsGeneralLeadHtml()" />
           <section class="sv-section">
             <div class="sv-row-h">
               <span class="sv-label">快捷</span>
-              <HelpHint text="Ctrl+Shift+S 打开设置；Ctrl+Shift+F 打开插件管理（V1/V2 由下方实验性勾选决定）；Ctrl+Shift+D 开关调试面板。" />
+              <HelpHint :text="settingsShortcutsHelpHint()" />
             </div>
             <p class="sv-muted">
               虚拟时间、叙事场景等仅在沉浸模式下显示于「更多」。
@@ -96,9 +101,7 @@ async function onToggleForceIframe(e: Event) {
           <section class="sv-section">
             <div class="sv-row-h">
               <span class="sv-label">实验性功能</span>
-              <HelpHint
-                text="灰度入口：用于预览新版插件管理界面（V2）。若当前构建未集成 V2，会继续使用现有专业模式。"
-              />
+              <HelpHint :text="settingsExperimentalSectionHelpHint()" />
             </div>
             <label class="sv-toggle-row">
               <input
@@ -108,14 +111,12 @@ async function onToggleForceIframe(e: Event) {
               />
               <span class="sv-toggle-text">
                 <strong>启用新版插件管理界面（V2 预览）</strong>
-                <span class="sv-muted sv-toggle-desc">
-                  开启后，<strong>Ctrl+Shift+F</strong> 与顶栏「更多」里的插件管理入口将<strong>打开并切换 V2 预览</strong>（设置会记住此项）。需要「开发者调试」等完整能力时，请在 V2 内进入<strong>专业模式（V1）</strong>；也可关闭本项恢复默认。
-                </span>
+                <span class="sv-muted sv-toggle-desc" v-html="settingsExperimentalToggleDescriptionHtml()" />
               </span>
             </label>
             <div v-if="uiStore.experimentalPluginManagerV2" class="sv-v2-launch">
               <button type="button" class="sv-v2-launch-btn" @click="emit('openPluginV2')">
-                打开插件管理 V2 预览
+                {{ settingsOpenV2PreviewButtonLabel() }}
               </button>
             </div>
           </section>

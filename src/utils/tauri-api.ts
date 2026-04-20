@@ -1122,6 +1122,7 @@ export interface PluginProcessDebugInfo {
   memoryKb?: number | null;
 }
 
+/** 扁平 Tauri command 参数在 IPC 上为 camelCase（与 Rust 侧 `snake_case` 形参对应）。 */
 export async function spawnPluginForTest(
   pluginId: string,
   configJson?: string | null,

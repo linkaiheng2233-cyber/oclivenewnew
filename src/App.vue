@@ -33,6 +33,7 @@ import { useOcliveAppearance } from "./composables/useOcliveAppearance";
 import { useNarrativeScene } from "./composables/useNarrativeScene";
 import { useSceneDestination } from "./composables/useSceneDestination";
 import { usePackUiTheme } from "./composables/useTheme";
+import { usePluginManagerWindow } from "./composables/usePluginManagerWindow";
 import { hostEventBus } from "./lib/hostEventBus";
 import {
   loadRole,
@@ -170,27 +171,22 @@ const latestRoleplayAside = computed(() => {
 
 const topMoreOpen = ref(false);
 const settingsViewOpen = ref(false);
-const pluginManagerV2Open = ref(false);
 
-const pluginManagerMoreBtnLabel = computed(() =>
-  uiStore.experimentalPluginManagerV2 ? "插件管理（V2）" : "插件与后端（V1）",
-);
-
-const settingsEntryMoreHelp = computed(() => {
-  const tail = " Ctrl+Shift+D 开关调试面板。";
-  if (uiStore.experimentalPluginManagerV2) {
-    return (
-      "将快捷键说明、设置页、插件管理集中到同一处。快捷键：Ctrl+Shift+S 打开设置；" +
-      "Ctrl+Shift+F 与下方按钮打开插件管理（V2 预览）；在设置中关闭「V2 预览」可恢复专业模式（V1）。" +
-      tail
-    );
-  }
-  return (
-    "将快捷键说明、设置页、插件与后端管理集中到同一处。快捷键：Ctrl+Shift+S 打开设置；" +
-    "Ctrl+Shift+F 打开专业模式（V1）插件与后端管理（含开发者调试）。" +
-    tail
-  );
+const {
+  pluginManagerV2Open,
+  openPluginManagerPanel,
+  openPluginManagerV2Preview,
+  pluginManagerMoreBtnLabel,
+  settingsEntryMoreHelp,
+} = usePluginManagerWindow({
+  closeMoreMenu: () => {
+    topMoreOpen.value = false;
+  },
+  closeSettingsView: () => {
+    settingsViewOpen.value = false;
+  },
 });
+
 const topBarRef = ref<HTMLElement | null>(null);
 let morePanelClickListenTimer: ReturnType<typeof setTimeout> | null = null;
 
@@ -207,30 +203,6 @@ function openShortcutHelp(): void {
 function openSettingsView(): void {
   settingsViewOpen.value = true;
   topMoreOpen.value = false;
-}
-
-function openPluginManagerPanel(): void {
-  // 是否打开 V2 由设置里「实验性功能」勾选（persist 在 uiStore）决定；V1 仍可从 V2 内入口进入（含开发者调试）。
-  if (uiStore.experimentalPluginManagerV2) {
-    pluginStore.closePanel();
-    pluginManagerV2Open.value = !pluginManagerV2Open.value;
-    topMoreOpen.value = false;
-    return;
-  }
-  pluginManagerV2Open.value = false;
-  if (pluginStore.panelVisible) {
-    pluginStore.closePanel();
-  } else {
-    void pluginStore.openPanel();
-  }
-  topMoreOpen.value = false;
-}
-
-function openPluginManagerV2Preview(): void {
-  pluginStore.closePanel();
-  pluginManagerV2Open.value = true;
-  topMoreOpen.value = false;
-  settingsViewOpen.value = false;
 }
 
 function onDocumentClickCloseMore(e: MouseEvent) {
@@ -589,15 +561,6 @@ watch(
   () => debugStore.visible,
   (v) => {
     if (v) void debugStore.loadDebugData();
-  },
-);
-
-watch(
-  () => uiStore.experimentalPluginManagerV2,
-  (v) => {
-    if (!v) {
-      pluginManagerV2Open.value = false;
-    }
   },
 );
 

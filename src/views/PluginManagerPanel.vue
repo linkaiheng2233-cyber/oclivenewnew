@@ -2,8 +2,7 @@
 import { open } from "@tauri-apps/api/dialog";
 import { computed, ref, watch } from "vue";
 import PluginBackendSessionPanel from "../components/PluginBackendSessionPanel.vue";
-import PluginDebugPanel from "../components/PluginDebugPanel.vue";
-import PluginListItem from "../components/PluginListItem.vue";
+import InstalledPluginWorkspaceDetail from "../components/InstalledPluginWorkspaceDetail.vue";
 import PmSlotRow from "../components/PmSlotRow.vue";
 import PluginSlotEmbed from "../components/PluginSlotEmbed.vue";
 import { useAppToast } from "../composables/useAppToast";
@@ -112,14 +111,6 @@ async function onBatchDisable() {
   pluginStore.batchDisablePluginIds(ids);
   showToast("success", `已停用 ${ids.length} 个插件；保存后生效，建议重启应用。`);
   clearBatchSelection();
-}
-
-function onPluginDisabledRow(id: string, disabled: boolean): void {
-  try {
-    pluginStore.setPluginDisabled(id, disabled);
-  } catch (e) {
-    showToast("error", e instanceof Error ? e.message : String(e));
-  }
 }
 
 async function onBatchUpdate() {
@@ -496,92 +487,14 @@ async function onUpdateFromZip(pluginId: string) {
                   </div>
                 </div>
                 <div class="pm-wb-main-body">
-                  <PluginListItem
+                  <InstalledPluginWorkspaceDetail
                     :entry="selectedWorkspacePlugin"
-                    :batch-select-mode="batchMode"
+                    :batch-mode="batchMode"
                     :batch-selected="!!batchSelected[selectedWorkspacePlugin.id]"
                     @update:batch-selected="
                       setBatchSelected(selectedWorkspacePlugin.id, $event)
                     "
-                    :plugin-disabled="
-                      pluginStore.isPluginDisabled(selectedWorkspacePlugin.id)
-                    "
-                    :toolbar-contribution-disabled="
-                      pluginStore.isToolbarContributionDisabled(
-                        selectedWorkspacePlugin.id,
-                      )
-                    "
-                    :settings-panel-contribution-disabled="
-                      pluginStore.isSlotContributionDisabled(
-                        SLOT_SETTINGS_PANEL,
-                        selectedWorkspacePlugin.id,
-                      )
-                    "
-                    :role-detail-contribution-disabled="
-                      pluginStore.isSlotContributionDisabled(
-                        SLOT_ROLE_DETAIL,
-                        selectedWorkspacePlugin.id,
-                      )
-                    "
-                    :sidebar-contribution-disabled="
-                      pluginStore.isSlotContributionDisabled(
-                        SLOT_SIDEBAR,
-                        selectedWorkspacePlugin.id,
-                      )
-                    "
-                    :chat-header-contribution-disabled="
-                      pluginStore.isSlotContributionDisabled(
-                        SLOT_CHAT_HEADER,
-                        selectedWorkspacePlugin.id,
-                      )
-                    "
-                    @update:plugin-disabled="
-                      onPluginDisabledRow(selectedWorkspacePlugin.id, $event)
-                    "
-                    @update:toolbar-contribution-disabled="
-                      pluginStore.setToolbarContributionDisabled(
-                        selectedWorkspacePlugin.id,
-                        $event,
-                      )
-                    "
-                    @update:settings-panel-contribution-disabled="
-                      pluginStore.setSlotContributionDisabled(
-                        SLOT_SETTINGS_PANEL,
-                        selectedWorkspacePlugin.id,
-                        $event,
-                      )
-                    "
-                    @update:role-detail-contribution-disabled="
-                      pluginStore.setSlotContributionDisabled(
-                        SLOT_ROLE_DETAIL,
-                        selectedWorkspacePlugin.id,
-                        $event,
-                      )
-                    "
-                    @update:sidebar-contribution-disabled="
-                      pluginStore.setSlotContributionDisabled(
-                        SLOT_SIDEBAR,
-                        selectedWorkspacePlugin.id,
-                        $event,
-                      )
-                    "
-                    @update:chat-header-contribution-disabled="
-                      pluginStore.setSlotContributionDisabled(
-                        SLOT_CHAT_HEADER,
-                        selectedWorkspacePlugin.id,
-                        $event,
-                      )
-                    "
                   />
-                  <div class="pm-wb-debug">
-                    <div class="pm-wb-debug-h">调试台</div>
-                    <PluginDebugPanel
-                      :key="selectedWorkspacePlugin.id"
-                      :plugin-id="selectedWorkspacePlugin.id"
-                      :expanded="true"
-                      :spawn-supported="selectedWorkspacePlugin.hasRpcProcess"
-                    />
-                  </div>
                 </div>
               </main>
             </div>
