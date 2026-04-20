@@ -76,6 +76,11 @@ async function onApply(payload: Record<string, unknown>) {
         <button type="button" class="pm2-btn" @click="emit('close')">{{ term("action.close") }}</button>
       </div>
     </header>
+    <div class="pm2-legend" aria-label="状态说明">
+      <span class="pm2-legend-item is-enabled">已启用：当前配置可直接生效</span>
+      <span class="pm2-legend-item is-pending">还需配置：通常缺少目录插件 ID</span>
+      <span class="pm2-legend-item is-disabled">已关闭：当前链路未启用</span>
+    </div>
 
     <div class="pm2-grid">
       <LeftCategoryNav v-model="selectedCategory" :categories="categories" />
@@ -117,11 +122,41 @@ async function onApply(payload: Record<string, unknown>) {
   margin: 0;
   font-size: 12px;
   color: var(--text-secondary);
+  line-height: 1.45;
 }
 .pm2-actions {
   display: flex;
   align-items: center;
   gap: 8px;
+}
+.pm2-legend {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  padding: 8px;
+  border: 1px dashed var(--border-light);
+  border-radius: 8px;
+  background: var(--bg-elevated);
+}
+.pm2-legend-item {
+  display: inline-flex;
+  align-items: center;
+  padding: 4px 8px;
+  border-radius: 999px;
+  font-size: 11px;
+  line-height: 1.2;
+}
+.pm2-legend-item.is-enabled {
+  background: color-mix(in srgb, #16a34a 16%, var(--bg-primary));
+  color: color-mix(in srgb, #166534 80%, var(--text-primary));
+}
+.pm2-legend-item.is-pending {
+  background: color-mix(in srgb, #f59e0b 20%, var(--bg-primary));
+  color: color-mix(in srgb, #92400e 85%, var(--text-primary));
+}
+.pm2-legend-item.is-disabled {
+  background: color-mix(in srgb, #64748b 18%, var(--bg-primary));
+  color: var(--text-secondary);
 }
 .pm2-btn {
   padding: 7px 12px;

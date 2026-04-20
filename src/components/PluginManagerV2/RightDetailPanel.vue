@@ -48,6 +48,9 @@ const templateComponent = computed(() => {
   padding-left: 10px;
   width: 300px;
   flex-shrink: 0;
+  position: sticky;
+  top: 0;
+  align-self: start;
 }
 .pm2-right.collapsed {
   width: 48px;
@@ -61,12 +64,17 @@ const templateComponent = computed(() => {
   background: var(--bg-elevated);
   font-size: 12px;
   cursor: pointer;
+  font-weight: 600;
 }
 .pm2-detail {
   margin-top: 10px;
   display: flex;
   flex-direction: column;
   gap: 10px;
+  padding: 10px;
+  border: 1px dashed var(--border-light);
+  border-radius: 10px;
+  background: color-mix(in srgb, var(--bg-elevated) 72%, transparent);
 }
 .pm2-detail-title {
   margin: 0;

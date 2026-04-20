@@ -37,7 +37,8 @@ const openGroups = ref({
 
     <section class="pm2-group">
       <button type="button" class="pm2-group-title" @click="openGroups.module = !openGroups.module">
-        按模块
+        <span>按模块</span>
+        <span class="pm2-arrow">{{ openGroups.module ? "▾" : "▸" }}</span>
       </button>
       <ul v-if="openGroups.module" class="pm2-left-list">
         <li v-for="row in categories.filter((x) => x.id.startsWith('module:'))" :key="row.id">
@@ -56,7 +57,8 @@ const openGroups = ref({
 
     <section class="pm2-group">
       <button type="button" class="pm2-group-title" @click="openGroups.type = !openGroups.type">
-        按实现方式
+        <span>按实现方式</span>
+        <span class="pm2-arrow">{{ openGroups.type ? "▾" : "▸" }}</span>
       </button>
       <ul v-if="openGroups.type" class="pm2-left-list">
         <li v-for="row in categories.filter((x) => x.id.startsWith('type:'))" :key="row.id">
@@ -75,7 +77,8 @@ const openGroups = ref({
 
     <section class="pm2-group">
       <button type="button" class="pm2-group-title" @click="openGroups.status = !openGroups.status">
-        按状态
+        <span>按状态</span>
+        <span class="pm2-arrow">{{ openGroups.status ? "▾" : "▸" }}</span>
       </button>
       <ul v-if="openGroups.status" class="pm2-left-list">
         <li v-for="row in categories.filter((x) => x.id.startsWith('status:'))" :key="row.id">
@@ -117,6 +120,10 @@ const openGroups = ref({
 }
 .pm2-group-title {
   width: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
   text-align: left;
   padding: 6px 8px;
   border: 1px dashed var(--border-light);
@@ -125,6 +132,10 @@ const openGroups = ref({
   color: var(--text-primary);
   cursor: pointer;
   font-size: 12px;
+}
+.pm2-arrow {
+  font-size: 11px;
+  color: var(--text-secondary);
 }
 .pm2-left-btn {
   width: 100%;
@@ -145,7 +156,7 @@ const openGroups = ref({
 }
 .pm2-left-btn.is-active {
   border-color: var(--border-light);
-  background: var(--bg-elevated);
+  background: color-mix(in srgb, var(--bg-elevated) 70%, var(--accent-soft) 30%);
   color: var(--text-primary);
 }
 .pm2-badge {
