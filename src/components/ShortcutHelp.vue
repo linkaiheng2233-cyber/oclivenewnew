@@ -1,6 +1,8 @@
 <script setup lang="ts">
+import { computed } from "vue";
 import PluginSlotEmbed from "./PluginSlotEmbed.vue";
 import { SLOT_LAUNCHER_PALETTE } from "../stores/pluginStore";
+import { useUiStore } from "../stores/uiStore";
 
 withDefaults(
   defineProps<{
@@ -15,11 +17,18 @@ const emit = defineEmits<{
   "update:modelValue": [value: boolean];
 }>();
 
-const rows: { keys: string; desc: string }[] = [
-  { keys: "Ctrl + Shift + S", desc: "打开设置（扩展区、安全、快捷键与插件配置）" },
-  { keys: "Ctrl + Shift + F", desc: "打开专业模式（V1）插件与后端管理（含界面插件 · 开发者调试）" },
-  { keys: "Ctrl（长按约 1 秒）", desc: "打开本快捷键说明" },
-];
+const uiStore = useUiStore();
+
+const rows = computed(() => {
+  const pluginF = uiStore.experimentalPluginManagerV2
+    ? "打开插件管理（V2 预览）；关闭设置中的「V2 预览」后恢复为专业模式（V1）"
+    : "打开专业模式（V1）插件与后端管理（含界面插件 · 开发者调试）";
+  return [
+    { keys: "Ctrl + Shift + S", desc: "打开设置（扩展区、安全、快捷键与插件配置）" },
+    { keys: "Ctrl + Shift + F", desc: pluginF },
+    { keys: "Ctrl（长按约 1 秒）", desc: "打开本快捷键说明" },
+  ];
+});
 </script>
 
 <template>
@@ -46,7 +55,7 @@ const rows: { keys: string; desc: string }[] = [
         </header>
         <table class="sh-table">
           <tbody>
-            <tr v-for="(r, i) in rows" :key="i">
+            <tr v-for="(r, i) in rows" :key="`${r.keys}-${i}`">
               <td class="sh-keys">{{ r.keys }}</td>
               <td class="sh-desc">{{ r.desc }}</td>
             </tr>

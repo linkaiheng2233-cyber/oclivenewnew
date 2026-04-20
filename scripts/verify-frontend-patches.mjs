@@ -24,10 +24,10 @@ const checks = [
       readFileSync(join(root, "src/stores/pluginStore.ts"), "utf8").includes("panelMainTab"),
   },
   {
-    name: "PluginManagerPanel has 插件与后端管理",
+    name: "PluginManagerPanel has V1 professional chrome (插件工作台)",
     ok: () =>
       readFileSync(join(root, "src/views/PluginManagerPanel.vue"), "utf8").includes(
-        "插件与后端管理",
+        "插件工作台",
       ),
   },
   {
@@ -35,9 +35,9 @@ const checks = [
     ok: () => readFileSync(join(root, "src/App.vue"), "utf8").includes("settings-gear-btn"),
   },
   {
-    name: "App.vue uses togglePanel for Ctrl+Shift+F",
+    name: "App.vue routes plugin manager via openPluginManagerPanel",
     ok: () =>
-      readFileSync(join(root, "src/App.vue"), "utf8").includes("pluginStore.togglePanel()"),
+      readFileSync(join(root, "src/App.vue"), "utf8").includes("openPluginManagerPanel"),
   },
 ];
 

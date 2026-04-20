@@ -171,6 +171,26 @@ const latestRoleplayAside = computed(() => {
 const topMoreOpen = ref(false);
 const settingsViewOpen = ref(false);
 const pluginManagerV2Open = ref(false);
+
+const pluginManagerMoreBtnLabel = computed(() =>
+  uiStore.experimentalPluginManagerV2 ? "插件管理（V2）" : "插件与后端（V1）",
+);
+
+const settingsEntryMoreHelp = computed(() => {
+  const tail = " Ctrl+Shift+D 开关调试面板。";
+  if (uiStore.experimentalPluginManagerV2) {
+    return (
+      "将快捷键说明、设置页、插件管理集中到同一处。快捷键：Ctrl+Shift+S 打开设置；" +
+      "Ctrl+Shift+F 与下方按钮打开插件管理（V2 预览）；在设置中关闭「V2 预览」可恢复专业模式（V1）。" +
+      tail
+    );
+  }
+  return (
+    "将快捷键说明、设置页、插件与后端管理集中到同一处。快捷键：Ctrl+Shift+S 打开设置；" +
+    "Ctrl+Shift+F 打开专业模式（V1）插件与后端管理（含开发者调试）。" +
+    tail
+  );
+});
 const topBarRef = ref<HTMLElement | null>(null);
 let morePanelClickListenTimer: ReturnType<typeof setTimeout> | null = null;
 
@@ -190,7 +210,13 @@ function openSettingsView(): void {
 }
 
 function openPluginManagerPanel(): void {
-  // 专业模式（V1）含「开发者调试」等完整能力；V2 为简易预览，仅从设置或 V2 内入口打开。
+  // 是否打开 V2 由设置里「实验性功能」勾选（persist 在 uiStore）决定；V1 仍可从 V2 内入口进入（含开发者调试）。
+  if (uiStore.experimentalPluginManagerV2) {
+    pluginStore.closePanel();
+    pluginManagerV2Open.value = !pluginManagerV2Open.value;
+    topMoreOpen.value = false;
+    return;
+  }
   pluginManagerV2Open.value = false;
   if (pluginStore.panelVisible) {
     pluginStore.closePanel();
@@ -566,6 +592,15 @@ watch(
   },
 );
 
+watch(
+  () => uiStore.experimentalPluginManagerV2,
+  (v) => {
+    if (!v) {
+      pluginManagerV2Open.value = false;
+    }
+  },
+);
+
 let unlistenPluginFs: (() => void) | undefined;
 
 onMounted(() => {
@@ -768,9 +803,7 @@ onBeforeUnmount(() => {
           <div class="more-tile more-tile--action settings-entry-tile">
             <div class="more-tile-head">
               <span class="more-label">设置入口</span>
-              <HelpHint
-                text="将快捷键说明、设置页、插件与后端管理集中到同一处。快捷键：Ctrl+Shift+S 打开设置，Ctrl+Shift+F 打开专业模式（V1）插件与后端管理（含开发者调试）。"
-              />
+              <HelpHint :text="settingsEntryMoreHelp" />
             </div>
             <div class="more-tile-body settings-entry-actions" role="group" aria-label="设置入口集合">
               <button type="button" class="more-debug-btn more-debug-btn--fill settings-entry-btn" @click="openShortcutHelp">
@@ -788,7 +821,7 @@ onBeforeUnmount(() => {
                 class="more-debug-btn more-debug-btn--fill settings-entry-btn"
                 @click="openPluginManagerPanel"
               >
-                插件与后端（V1）
+                {{ pluginManagerMoreBtnLabel }}
               </button>
             </div>
           </div>
