@@ -32,7 +32,8 @@ function ensureV2Guard() {
       rel: "src/App.vue",
       needles: [
         "import PluginManagerV2Panel",
-        "uiStore.experimentalPluginManagerV2",
+        // V2 仍挂载；快捷键默认走 V1 后不再在 openPluginManagerPanel 里引用 experimental 开关
+        "openPluginManagerV2Preview",
         "<PluginManagerV2Panel",
       ],
     },
