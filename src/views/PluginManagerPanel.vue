@@ -737,7 +737,7 @@ async function onUpdateFromZip(pluginId: string) {
   align-items: center;
   justify-content: center;
   padding: 16px;
-  background: color-mix(in srgb, #000 45%, transparent);
+  background: var(--dialog-backdrop, color-mix(in srgb, #000 45%, transparent));
 }
 .pm-dialog {
   position: relative;
@@ -757,11 +757,10 @@ async function onUpdateFromZip(pluginId: string) {
   flex-direction: column;
   overflow: hidden;
   padding: 0;
-  border-radius: 12px;
-  border: 1px solid color-mix(in srgb, var(--border-light) 70%, var(--accent, #3b82f6) 18%);
-  box-shadow:
-    var(--shadow-app),
-    0 0 0 1px color-mix(in srgb, var(--bg-primary) 70%, transparent);
+  border-radius: var(--radius-app);
+  border: 1px solid var(--border-light);
+  background: var(--bg-primary);
+  box-shadow: var(--shadow-app);
 }
 .pm-dialog-pad {
   padding: 12px 18px;
@@ -774,40 +773,36 @@ async function onUpdateFromZip(pluginId: string) {
 }
 .pm-tabs {
   display: flex;
-  gap: 0;
+  flex-wrap: wrap;
+  gap: 8px;
   flex-shrink: 0;
-  padding: 0 12px;
+  padding: 0 18px 10px;
+  margin: 0;
   border-bottom: 1px solid var(--border-light);
-  background: color-mix(in srgb, var(--bg-elevated) 55%, var(--bg-primary));
+  background: var(--bg-primary);
 }
 .pm-tab {
-  flex: 1;
+  flex: 1 1 auto;
   min-width: 0;
-  padding: 10px 12px;
-  margin-bottom: -1px;
-  border: none;
-  border-bottom: 2px solid transparent;
-  border-radius: 0;
-  font-size: 12px;
-  font-weight: 600;
-  letter-spacing: 0.02em;
+  padding: 6px 12px;
+  border: 1px solid transparent;
+  border-radius: 6px;
+  font-size: 13px;
+  font-weight: 500;
   cursor: pointer;
   color: var(--text-secondary);
   background: transparent;
-  transition:
-    color 0.12s ease,
-    border-color 0.12s ease,
-    background 0.12s ease;
+  transition: var(--control-transition, border-color 0.18s ease, background 0.18s ease);
 }
 .pm-tab:hover {
   color: var(--text-primary);
-  background: color-mix(in srgb, var(--bg-primary) 40%, transparent);
+  background: color-mix(in srgb, var(--bg-elevated) 55%, transparent);
 }
 .pm-tab--active {
   color: var(--text-primary);
-  background: transparent;
-  border-bottom-color: var(--accent, #3b82f6);
-  box-shadow: none;
+  border-color: var(--border-light);
+  background: var(--bg-elevated);
+  font-weight: 600;
 }
 .pm-tab-panel {
   min-height: 0;
@@ -816,16 +811,16 @@ async function onUpdateFromZip(pluginId: string) {
   pointer-events: none;
   user-select: none;
   opacity: 0.97;
-  border-radius: 8px;
+  border-radius: var(--radius-card);
   overflow: hidden;
   border: 1px dashed color-mix(in srgb, var(--border-light) 85%, transparent);
 }
 .pm-head {
   flex-shrink: 0;
-  padding: 14px 40px 12px 18px;
+  padding: 16px 40px 12px 18px;
   margin: 0;
   border-bottom: 1px solid var(--border-light);
-  background: color-mix(in srgb, var(--bg-elevated) 40%, var(--bg-primary));
+  background: var(--bg-primary);
 }
 .pm-head-row {
   display: flex;
@@ -835,38 +830,34 @@ async function onUpdateFromZip(pluginId: string) {
 }
 .pm-title {
   margin: 0;
-  font-size: 17px;
-  font-weight: 700;
-  letter-spacing: -0.02em;
+  font-size: 18px;
+  font-weight: 600;
 }
 .pm-studio-badge {
-  font-size: 10px;
-  font-weight: 700;
-  letter-spacing: 0.12em;
-  text-transform: uppercase;
-  padding: 3px 8px;
-  border-radius: 4px;
-  border: 1px solid color-mix(in srgb, var(--accent, #3b82f6) 45%, var(--border-light));
-  color: color-mix(in srgb, var(--accent, #3b82f6) 92%, var(--text-primary));
-  background: color-mix(in srgb, var(--accent, #3b82f6) 12%, var(--bg-primary));
+  font-size: 11px;
+  font-weight: 600;
+  padding: 4px 10px;
+  border-radius: var(--radius-pill);
+  border: 1px solid var(--border-light);
+  color: var(--text-accent);
+  background: color-mix(in srgb, var(--accent) 12%, var(--bg-elevated));
 }
 .pm-sub {
-  margin: 6px 0 0;
-  font-size: 11px;
+  margin: 8px 0 0;
+  font-size: 12px;
   color: var(--text-secondary);
-  line-height: 1.5;
+  line-height: 1.45;
 }
 .pm-kbd {
   display: inline-block;
-  padding: 1px 5px;
-  margin: 0 1px;
-  font-size: 10px;
+  padding: 2px 6px;
+  margin: 0 2px;
+  font-size: 11px;
   font-family: ui-monospace, Menlo, Consolas, monospace;
-  border-radius: 4px;
+  border-radius: 6px;
   border: 1px solid var(--border-light);
-  background: var(--bg-primary);
+  background: var(--bg-elevated);
   color: var(--text-primary);
-  box-shadow: 0 1px 0 color-mix(in srgb, var(--border-light) 80%, transparent);
 }
 .pm-close {
   position: absolute;
@@ -890,10 +881,10 @@ async function onUpdateFromZip(pluginId: string) {
 }
 .pm-section--catalog {
   padding: 12px 14px 14px;
-  border-radius: 10px;
+  border-radius: var(--radius-card);
   border: 1px solid var(--border-light);
-  background: color-mix(in srgb, var(--bg-elevated) 65%, var(--bg-primary));
-  box-shadow: inset 0 1px 0 color-mix(in srgb, #fff 6%, transparent);
+  background: var(--bg-secondary);
+  box-shadow: var(--shadow-sm);
 }
 .pm-section-head {
   display: flex;
@@ -943,12 +934,13 @@ async function onUpdateFromZip(pluginId: string) {
   flex-direction: column;
   gap: 8px;
   padding: 10px 12px;
-  border-radius: 8px;
-  border: 1px solid color-mix(in srgb, var(--border-light) 90%, transparent);
+  border-radius: var(--radius-card);
+  border: 1px solid var(--border-light);
   background: var(--bg-primary);
+  box-shadow: var(--shadow-sm);
 }
 .pm-plugin-row:hover {
-  border-color: color-mix(in srgb, var(--accent, #3b82f6) 28%, var(--border-light));
+  border-color: color-mix(in srgb, var(--accent) 22%, var(--border-light));
 }
 .pm-plugin-actions {
   display: flex;
@@ -965,7 +957,7 @@ async function onUpdateFromZip(pluginId: string) {
   font-size: 11px;
   padding: 2px 8px;
   border-radius: 999px;
-  background: color-mix(in srgb, var(--accent, #3b82f6) 18%, var(--bg-elevated));
+  background: color-mix(in srgb, var(--accent) 14%, var(--bg-elevated));
   color: var(--text-primary);
 }
 .pm-btn--sm {
@@ -1000,7 +992,7 @@ async function onUpdateFromZip(pluginId: string) {
   padding: 8px 10px;
   font-size: 13px;
   border: 1px dashed var(--border-light);
-  border-radius: 6px;
+  border-radius: var(--radius-btn);
   cursor: grab;
   background: var(--bg-elevated);
 }
@@ -1049,7 +1041,7 @@ async function onUpdateFromZip(pluginId: string) {
   color: var(--text-secondary);
 }
 .pm-err {
-  color: var(--text-danger, #c33);
+  color: var(--error);
   font-size: 13px;
 }
 .pm-foot {
@@ -1061,7 +1053,7 @@ async function onUpdateFromZip(pluginId: string) {
   margin: 0;
   padding: 12px 18px;
   border-top: 1px solid var(--border-light);
-  background: color-mix(in srgb, var(--bg-elevated) 50%, var(--bg-primary));
+  background: var(--bg-primary);
 }
 .pm-btn {
   padding: 8px 14px;
@@ -1074,8 +1066,11 @@ async function onUpdateFromZip(pluginId: string) {
   background: transparent;
 }
 .pm-btn.primary {
-  background: var(--accent, #3b82f6);
-  color: #fff;
-  border-color: transparent;
+  background: var(--accent);
+  color: var(--bg-elevated);
+  border-color: color-mix(in srgb, var(--accent) 85%, var(--text-primary) 15%);
+}
+.pm-btn.primary:hover {
+  filter: brightness(1.05);
 }
 </style>

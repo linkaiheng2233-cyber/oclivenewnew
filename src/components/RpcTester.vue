@@ -104,7 +104,7 @@ function onFormat() {
   flex: 1;
   min-width: 140px;
   padding: 6px 8px;
-  border-radius: 6px;
+  border-radius: var(--radius-btn);
   border: 1px solid var(--border-light);
   background: var(--bg-primary);
   font-family: ui-monospace, Menlo, Consolas, monospace;
@@ -114,7 +114,7 @@ function onFormat() {
   width: 100%;
   box-sizing: border-box;
   padding: 8px;
-  border-radius: 8px;
+  border-radius: var(--radius-btn);
   border: 1px solid var(--border-light);
   background: var(--bg-primary);
   font-family: ui-monospace, Menlo, Consolas, monospace;
@@ -128,7 +128,7 @@ function onFormat() {
 }
 .pm-dbg-btn {
   padding: 5px 10px;
-  border-radius: 6px;
+  border-radius: var(--radius-btn);
   border: 1px solid var(--border-light);
   background: var(--bg-elevated);
   font-size: 12px;

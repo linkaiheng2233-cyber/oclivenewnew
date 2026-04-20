@@ -86,7 +86,7 @@ function onApplyHistory(item: RpcHistoryItem) {
   <div class="pm-dbg-root">
     <header class="pm-dbg-chrome">
       <div class="pm-dbg-chrome-left">
-        <span class="pm-dbg-chrome-label">Target</span>
+        <span class="pm-dbg-chrome-label">目标</span>
         <code class="pm-dbg-chrome-id">{{ pluginId }}</code>
         <span
           class="pm-dbg-chrome-status"
@@ -156,17 +156,17 @@ function onApplyHistory(item: RpcHistoryItem) {
         </div>
       </div>
 
-      <aside class="pm-dbg-inspector" aria-label="响应与输出">
+      <aside class="pm-dbg-inspector" aria-label="响应与日志输出">
         <section class="pm-dbg-panel">
           <div class="pm-dbg-panel-h">
-            <span class="pm-dbg-panel-title">Response</span>
+            <span class="pm-dbg-panel-title">响应</span>
             <span class="pm-dbg-panel-meta">JSON-RPC</span>
           </div>
           <pre class="pm-dbg-pre">{{ lastResponse || "（尚无响应）" }}</pre>
         </section>
         <section class="pm-dbg-panel pm-dbg-panel--grow">
           <div class="pm-dbg-panel-h">
-            <span class="pm-dbg-panel-title">Output</span>
+            <span class="pm-dbg-panel-title">输出</span>
             <span class="pm-dbg-panel-meta">stdout / stderr</span>
           </div>
           <LogViewer
@@ -196,9 +196,10 @@ function onApplyHistory(item: RpcHistoryItem) {
   min-height: 320px;
   max-height: min(70vh, 640px);
   margin-top: 8px;
-  border-radius: 10px;
+  border-radius: var(--radius-card);
   border: 1px solid var(--border-light);
-  background: color-mix(in srgb, var(--bg-primary) 88%, var(--bg-elevated));
+  background: var(--bg-primary);
+  box-shadow: var(--shadow-sm);
   overflow: hidden;
 }
 .pm-dbg-chrome {
@@ -207,9 +208,9 @@ function onApplyHistory(item: RpcHistoryItem) {
   align-items: center;
   justify-content: space-between;
   gap: 8px 12px;
-  padding: 8px 10px;
+  padding: 10px 12px;
   border-bottom: 1px solid var(--border-light);
-  background: color-mix(in srgb, var(--bg-elevated) 70%, var(--bg-primary));
+  background: var(--bg-primary);
 }
 .pm-dbg-chrome-left {
   display: flex;
@@ -219,19 +220,17 @@ function onApplyHistory(item: RpcHistoryItem) {
   min-width: 0;
 }
 .pm-dbg-chrome-label {
-  font-size: 10px;
-  font-weight: 800;
-  letter-spacing: 0.14em;
-  text-transform: uppercase;
+  font-size: 12px;
+  font-weight: 600;
   color: var(--text-secondary);
 }
 .pm-dbg-chrome-id {
   font-size: 12px;
   font-family: ui-monospace, Menlo, Consolas, monospace;
-  padding: 2px 8px;
-  border-radius: 4px;
+  padding: 3px 8px;
+  border-radius: 6px;
   border: 1px solid var(--border-light);
-  background: var(--bg-primary);
+  background: var(--bg-elevated);
   color: var(--text-primary);
   max-width: 100%;
   overflow: hidden;
@@ -250,37 +249,35 @@ function onApplyHistory(item: RpcHistoryItem) {
   text-overflow: ellipsis;
 }
 .pm-dbg-chrome-status.live {
-  border-color: color-mix(in srgb, #22c55e 45%, var(--border-light));
-  color: color-mix(in srgb, #166534 90%, var(--text-primary));
-  background: color-mix(in srgb, #22c55e 12%, var(--bg-primary));
+  border-color: color-mix(in srgb, var(--success) 40%, var(--border-light));
+  color: var(--success);
+  background: color-mix(in srgb, var(--success) 10%, var(--bg-elevated));
 }
 .pm-dbg-tabs {
   display: flex;
-  gap: 2px;
+  flex-wrap: wrap;
+  gap: 6px;
 }
 .pm-dbg-tab {
   padding: 6px 12px;
-  border: none;
+  border: 1px solid transparent;
   border-radius: 6px;
-  font-size: 11px;
-  font-weight: 700;
-  letter-spacing: 0.04em;
-  text-transform: uppercase;
+  font-size: 13px;
+  font-weight: 500;
   cursor: pointer;
   color: var(--text-secondary);
   background: transparent;
-  transition:
-    background 0.12s ease,
-    color 0.12s ease;
+  transition: var(--control-transition, border-color 0.18s ease, background 0.18s ease);
 }
 .pm-dbg-tab:hover {
   color: var(--text-primary);
-  background: color-mix(in srgb, var(--bg-primary) 55%, transparent);
+  background: color-mix(in srgb, var(--bg-elevated) 55%, transparent);
 }
 .pm-dbg-tab.active {
   color: var(--text-primary);
-  background: var(--bg-primary);
-  box-shadow: 0 0 0 1px var(--border-light);
+  border-color: var(--border-light);
+  background: var(--bg-elevated);
+  font-weight: 600;
 }
 .pm-dbg-workspace {
   flex: 1;
@@ -311,8 +308,8 @@ function onApplyHistory(item: RpcHistoryItem) {
 }
 .pm-dbg-console-hint {
   margin: 0;
-  font-size: 11px;
-  line-height: 1.5;
+  font-size: 12px;
+  line-height: 1.45;
   color: var(--text-secondary);
 }
 .pm-dbg-inspector {
@@ -321,7 +318,7 @@ function onApplyHistory(item: RpcHistoryItem) {
   gap: 0;
   min-width: 0;
   min-height: 0;
-  background: color-mix(in srgb, var(--bg-primary) 75%, #000000 6%);
+  background: var(--bg-secondary);
 }
 .pm-dbg-panel {
   display: flex;
@@ -354,14 +351,12 @@ function onApplyHistory(item: RpcHistoryItem) {
   gap: 8px;
 }
 .pm-dbg-panel-title {
-  font-size: 10px;
-  font-weight: 800;
-  letter-spacing: 0.12em;
-  text-transform: uppercase;
-  color: var(--text-secondary);
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--text-primary);
 }
 .pm-dbg-panel-meta {
-  font-size: 10px;
+  font-size: 11px;
   color: var(--text-secondary);
   font-family: ui-monospace, Menlo, Consolas, monospace;
 }
@@ -371,11 +366,11 @@ function onApplyHistory(item: RpcHistoryItem) {
   min-height: 100px;
   max-height: 200px;
   padding: 8px;
-  border-radius: 6px;
+  border-radius: var(--radius-btn);
   border: 1px solid var(--border-light);
-  background: color-mix(in srgb, var(--bg-primary) 92%, #000000 8%);
+  background: var(--bg-elevated);
   font-family: ui-monospace, Menlo, Consolas, monospace;
-  font-size: 11px;
+  font-size: 12px;
   line-height: 1.45;
   overflow: auto;
   white-space: pre-wrap;

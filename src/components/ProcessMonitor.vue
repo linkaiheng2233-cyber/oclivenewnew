@@ -108,8 +108,9 @@ const emit = defineEmits<{
   background: var(--bg-primary);
 }
 .pm-dbg-pill.ok {
-  border-color: color-mix(in srgb, #16a34a 40%, var(--border-light));
-  color: color-mix(in srgb, #166534 90%, var(--text-primary));
+  border-color: color-mix(in srgb, var(--success) 38%, var(--border-light));
+  color: var(--success);
+  background: color-mix(in srgb, var(--success) 8%, var(--bg-elevated));
 }
 .pm-dbg-mono {
   margin: 0;
@@ -125,7 +126,7 @@ const emit = defineEmits<{
 }
 .pm-dbg-btn {
   padding: 5px 10px;
-  border-radius: 6px;
+  border-radius: var(--radius-btn);
   border: 1px solid var(--border-light);
   background: var(--bg-elevated);
   font-size: 12px;
@@ -139,8 +140,8 @@ const emit = defineEmits<{
   background: transparent;
 }
 .pm-dbg-btn.danger {
-  border-color: color-mix(in srgb, #dc2626 35%, var(--border-light));
-  color: var(--text-danger, #b91c1c);
+  border-color: color-mix(in srgb, var(--error) 35%, var(--border-light));
+  color: var(--error);
 }
 .pm-dbg-global {
   margin-top: 8px;

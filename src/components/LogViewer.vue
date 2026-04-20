@@ -60,13 +60,13 @@ function lineClass(line: string): string {
   flex: 1;
   min-width: 120px;
   padding: 5px 8px;
-  border-radius: 6px;
+  border-radius: var(--radius-btn);
   border: 1px solid var(--border-light);
   font-size: 12px;
 }
 .pm-dbg-btn {
   padding: 5px 10px;
-  border-radius: 6px;
+  border-radius: var(--radius-btn);
   border: 1px solid var(--border-light);
   background: var(--bg-elevated);
   font-size: 12px;
@@ -81,9 +81,9 @@ function lineClass(line: string): string {
   max-height: 220px;
   overflow: auto;
   padding: 6px 8px;
-  border-radius: 8px;
+  border-radius: var(--radius-btn);
   border: 1px solid var(--border-light);
-  background: color-mix(in srgb, var(--bg-primary) 92%, #000 8%);
+  background: var(--bg-elevated);
   font-family: ui-monospace, Menlo, Consolas, monospace;
   font-size: 11px;
   line-height: 1.4;
@@ -93,7 +93,7 @@ function lineClass(line: string): string {
   word-break: break-word;
 }
 .pm-dbg-line.is-err {
-  color: var(--text-danger, #f87171);
+  color: var(--error);
 }
 .pm-dbg-line.is-warn {
   color: color-mix(in srgb, #fbbf24 85%, var(--text-primary));
