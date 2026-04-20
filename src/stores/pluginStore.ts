@@ -131,6 +131,8 @@ function catalogEqual(
       x.id !== y.id ||
       x.version !== y.version ||
       (x.pluginType ?? null) !== (y.pluginType ?? null) ||
+      x.hasRpcProcess !== y.hasRpcProcess ||
+      (x.declaresRpcMethods ?? false) !== (y.declaresRpcMethods ?? false) ||
       x.isShell !== y.isShell ||
       (x.dependencyStatus ?? "ok") !== (y.dependencyStatus ?? "ok") ||
       !arraysEqual(x.uiSlotNames ?? [], y.uiSlotNames ?? []) ||

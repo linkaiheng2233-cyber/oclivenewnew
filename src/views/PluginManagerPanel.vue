@@ -29,7 +29,7 @@ const { showToast } = useAppToast();
 
 const batchMode = ref(false);
 const batchSelected = ref<Record<string, boolean>>({});
-/** 已安装列表中「开发者调试」折叠（仅 hasRpcProcess 插件显示入口） */
+/** 已安装列表中「开发者调试」折叠（所有目录插件均可展开；无 `process` 时仅无法在此启动子进程） */
 const pluginDebugOpen = ref<Record<string, boolean>>({});
 
 function togglePluginDebug(id: string) {
@@ -441,7 +441,6 @@ async function onUpdateFromZip(pluginId: string) {
                     class="pm-badge"
                   >有新版本</span>
                   <button
-                    v-if="p.hasRpcProcess"
                     type="button"
                     class="pm-btn secondary pm-btn--sm"
                     @click="togglePluginDebug(p.id)"
@@ -457,8 +456,12 @@ async function onUpdateFromZip(pluginId: string) {
                     从本地 zip 更新
                   </button>
                 </div>
-                <div v-if="p.hasRpcProcess && pluginDebugOpen[p.id]" class="pm-plugin-dev-wrap">
-                  <PluginDebugPanel :plugin-id="p.id" :expanded="true" />
+                <div v-if="pluginDebugOpen[p.id]" class="pm-plugin-dev-wrap">
+                  <PluginDebugPanel
+                    :plugin-id="p.id"
+                    :expanded="true"
+                    :spawn-supported="p.hasRpcProcess"
+                  />
                 </div>
               </li>
             </ul>

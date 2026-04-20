@@ -477,8 +477,10 @@ pub struct DirectoryPluginCatalogEntry {
     pub version: String,
     #[serde(skip_serializing_if = "Option::is_none")]
     pub plugin_type: Option<String>,
-    /// manifest 是否声明 `process`（可拉起 JSON-RPC 子进程）。
+    /// manifest 是否声明 `process`（可在此面板「启动」JSON-RPC 子进程）。
     pub has_rpc_process: bool,
+    /// manifest 是否声明了 `rpcMethods`（便于调试面板预填方法；无 `process` 时仍可手填 RPC 测已运行实例）。
+    pub declares_rpc_methods: bool,
     pub is_shell: bool,
     /// 声明的 UI 插槽名（如 `chat_toolbar`）；同一槽多外观时仍只出现一次槽名。
     pub ui_slot_names: Vec<String>,
@@ -542,6 +544,7 @@ fn build_directory_plugin_catalog(state: &AppState) -> Vec<DirectoryPluginCatalo
             let manifest = OclivePluginManifest::load_from_dir(root).ok()?;
             let is_shell = manifest.shell.is_some();
             let has_rpc_process = manifest.process.is_some();
+            let declares_rpc_methods = !manifest.rpc_methods.is_empty();
             let mut ui_slot_names: Vec<String> = Vec::new();
             let mut seen_slot: HashSet<String> = HashSet::new();
             let mut ui_slot_variants: Vec<UiSlotVariantDto> = Vec::new();
@@ -565,6 +568,7 @@ fn build_directory_plugin_catalog(state: &AppState) -> Vec<DirectoryPluginCatalo
                 version: manifest.version.clone(),
                 plugin_type: manifest.plugin_type.clone(),
                 has_rpc_process,
+                declares_rpc_methods,
                 is_shell,
                 ui_slot_names,
                 ui_slot_variants,

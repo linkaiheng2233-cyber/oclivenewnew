@@ -1,4 +1,11 @@
-import { onUnmounted, ref, shallowRef, toValue, type MaybeRefOrGetter } from "vue";
+import {
+  onUnmounted,
+  ref,
+  shallowRef,
+  toValue,
+  watch,
+  type MaybeRefOrGetter,
+} from "vue";
 import type { PluginProcessDebugInfo } from "../utils/tauri-api";
 import {
   clearPluginLogs,
@@ -27,6 +34,7 @@ export function usePluginDebug(pluginId: MaybeRefOrGetter<string>) {
   const logs = ref<string[]>([]);
   const lastResponse = ref("");
   const busy = ref(false);
+  const history = ref<RpcHistoryItem[]>([]);
   let logTimer: ReturnType<typeof setInterval> | null = null;
 
   const pid = () => String(toValue(pluginId)).trim();
@@ -44,6 +52,18 @@ export function usePluginDebug(pluginId: MaybeRefOrGetter<string>) {
     }
   }
 
+  function refreshHistory() {
+    history.value = loadHistory();
+  }
+
+  watch(
+    () => toValue(pluginId),
+    () => {
+      refreshHistory();
+    },
+    { immediate: true },
+  );
+
   function saveHistoryItem(method: string, paramsText: string) {
     const id = pid();
     if (!id) return;
@@ -56,6 +76,7 @@ export function usePluginDebug(pluginId: MaybeRefOrGetter<string>) {
     };
     cur.unshift(item);
     sessionStorage.setItem(historyKey(id), JSON.stringify(cur.slice(0, HISTORY_CAP)));
+    refreshHistory();
   }
 
   function startLogPolling() {
@@ -188,6 +209,7 @@ export function usePluginDebug(pluginId: MaybeRefOrGetter<string>) {
     logs,
     lastResponse,
     busy,
+    history,
     loadHistory,
     startLogPolling,
     stopLogPolling,

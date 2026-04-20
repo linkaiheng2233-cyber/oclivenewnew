@@ -3,6 +3,8 @@ import type { PluginProcessDebugInfo } from "../utils/tauri-api";
 
 defineProps<{
   pluginId: string;
+  /** manifest 是否声明 `process`；为 false 时无法在本面板启动子进程 */
+  spawnSupported?: boolean;
   processInfo: PluginProcessDebugInfo | null;
   allProcesses: PluginProcessDebugInfo[];
   busy: boolean;
@@ -27,8 +29,17 @@ const emit = defineEmits<{
       <span v-else class="pm-dbg-pill">未启动</span>
     </div>
     <p v-if="processInfo" class="pm-dbg-mono">{{ processInfo.rpcUrl }}</p>
+    <p v-if="spawnSupported === false" class="pm-dbg-warn">
+      此插件 manifest 未声明 <code>process</code>，无法在此启动 JSON-RPC 子进程；若插件已由宿主或其它方式拉起，仍可在「RPC
+      测试」里对已就绪的端点发请求。
+    </p>
     <div class="pm-dbg-actions">
-      <button type="button" class="pm-dbg-btn" :disabled="busy" @click="emit('spawn')">
+      <button
+        type="button"
+        class="pm-dbg-btn"
+        :disabled="busy || spawnSupported === false"
+        @click="emit('spawn')"
+      >
         启动
       </button>
       <button type="button" class="pm-dbg-btn" :disabled="busy || !processInfo" @click="emit('kill')">
@@ -62,6 +73,19 @@ const emit = defineEmits<{
 </template>
 
 <style scoped>
+.pm-dbg-warn {
+  margin: 0;
+  padding: 8px;
+  border-radius: 8px;
+  font-size: 11px;
+  line-height: 1.45;
+  color: var(--text-secondary);
+  background: color-mix(in srgb, var(--accent-soft) 35%, var(--bg-primary));
+  border: 1px solid var(--border-light);
+}
+.pm-dbg-warn code {
+  font-size: 10px;
+}
 .pm-dbg-proc {
   display: flex;
   flex-direction: column;

@@ -7,10 +7,15 @@ import LogViewer from "./LogViewer.vue";
 import ProcessMonitor from "./ProcessMonitor.vue";
 import RpcTester from "./RpcTester.vue";
 
-const props = defineProps<{
-  pluginId: string;
-  expanded: boolean;
-}>();
+const props = withDefaults(
+  defineProps<{
+    pluginId: string;
+    expanded: boolean;
+    /** manifest 是否含 `process`；为 false 时「启动」会失败，仍可 RPC 测已运行的实例 */
+    spawnSupported?: boolean;
+  }>(),
+  { spawnSupported: true },
+);
 
 const section = ref<"process" | "rpc" | "logs">("process");
 const rpcMethod = ref("");
@@ -104,6 +109,7 @@ function onApplyHistory(item: RpcHistoryItem) {
       <ProcessMonitor
         v-show="section === 'process'"
         :plugin-id="pluginId"
+        :spawn-supported="props.spawnSupported"
         :process-info="processInfo"
         :all-processes="allProcesses"
         :busy="busy"
@@ -120,7 +126,7 @@ function onApplyHistory(item: RpcHistoryItem) {
         :datalist-id="`pm-dbg-methods-${pluginId}`"
         :methods="methods"
         :busy="busy"
-        :history="dbg.loadHistory()"
+        :history="dbg.history"
         @discover="dbg.refreshMethods()"
         @send="dbg.runRpc(rpcMethod, rpcParams)"
         @apply-history="onApplyHistory"

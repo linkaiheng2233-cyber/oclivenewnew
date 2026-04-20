@@ -977,8 +977,10 @@ export interface DirectoryPluginCatalogEntry {
   id: string;
   version: string;
   pluginType?: string | null;
-  /** manifest 是否含 `process`（可调试 RPC 子进程） */
+  /** manifest 是否含 `process`（可在此面板启动 JSON-RPC 子进程） */
   hasRpcProcess: boolean;
+  /** manifest 是否声明 `rpcMethods`（调试面板可预填方法名） */
+  declaresRpcMethods?: boolean;
   isShell: boolean;
   uiSlotNames: string[];
   /** 每条 manifest `ui_slots`（嵌入槽）一条 */
