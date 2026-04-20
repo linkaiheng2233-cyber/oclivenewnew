@@ -1127,13 +1127,13 @@ export async function spawnPluginForTest(
   configJson?: string | null,
 ): Promise<PluginProcessDebugInfo> {
   return invokeWithFriendlyError<PluginProcessDebugInfo>("spawn_plugin_for_test", {
-    plugin_id: pluginId,
-    config_json: configJson ?? null,
+    pluginId,
+    configJson: configJson ?? null,
   });
 }
 
 export async function killPluginProcess(pluginId: string): Promise<void> {
-  return invokeWithFriendlyError<void>("kill_plugin_process", { plugin_id: pluginId });
+  return invokeWithFriendlyError<void>("kill_plugin_process", { pluginId });
 }
 
 export async function listPluginProcesses(): Promise<PluginProcessDebugInfo[]> {
@@ -1145,13 +1145,13 @@ export async function getPluginLogs(
   lines: number,
 ): Promise<string[]> {
   return invokeWithFriendlyError<string[]>("get_plugin_logs", {
-    plugin_id: pluginId,
+    pluginId,
     lines,
   });
 }
 
 export async function clearPluginLogs(pluginId: string): Promise<void> {
-  return invokeWithFriendlyError<void>("clear_plugin_logs", { plugin_id: pluginId });
+  return invokeWithFriendlyError<void>("clear_plugin_logs", { pluginId });
 }
 
 export async function testPluginMethod(
@@ -1170,7 +1170,7 @@ export async function testPluginMethod(
 
 export async function discoverPluginMethods(pluginId: string): Promise<string[]> {
   return invokeWithFriendlyError<string[]>("discover_plugin_methods", {
-    plugin_id: pluginId,
+    pluginId,
   });
 }
 
