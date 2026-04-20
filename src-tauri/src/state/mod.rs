@@ -26,11 +26,22 @@ use std::fs;
 use std::path::{Path, PathBuf};
 use std::sync::Arc;
 
+/// 自动发现时要求至少有一个「子目录 + manifest.json」，避免误用盘符根上空的 `D:\roles` 等。
+fn roles_dir_has_any_role_pack(roles_root: &Path) -> bool {
+    let Ok(rd) = fs::read_dir(roles_root) else {
+        return false;
+    };
+    rd.flatten().any(|e| {
+        let p = e.path();
+        p.is_dir() && p.join("manifest.json").is_file()
+    })
+}
+
 /// 开发时进程 cwd 可能是 `src-tauri/`，优先定位到项目根的 `roles/`。
 /// 日志 target：`oclive_roles`（与 `lib.rs` 中打包路径日志一致，便于过滤）。
 pub fn resolve_roles_dir() -> PathBuf {
     if let Ok(custom) = std::env::var("OCLIVE_ROLES_DIR") {
-        let p = PathBuf::from(custom);
+        let p = PathBuf::from(&custom);
         if p.is_dir() {
             log::info!(
                 target: "oclive_roles",
@@ -38,6 +49,38 @@ pub fn resolve_roles_dir() -> PathBuf {
                 p.display()
             );
             return p;
+        }
+        log::warn!(
+            target: "oclive_roles",
+            "OCLIVE_ROLES_DIR is set but not a directory ({}); ignoring",
+            custom
+        );
+    }
+    // 开发构建：exe 在仓库外 target-dir（`.cargo/config.toml`）时，向上搜不到本仓 `roles/`。
+    // 用编译期 `src-tauri` 路径定位仓库根（勿用于 release 安装包逻辑；见下方 `debug_assertions`）。
+    #[cfg(debug_assertions)]
+    {
+        let from_manifest =
+            PathBuf::from(env!("CARGO_MANIFEST_DIR")).join("..").join("roles");
+        match from_manifest.canonicalize() {
+            Ok(canon) if canon.is_dir() => {
+                log::info!(
+                    target: "oclive_roles",
+                    "resolve_roles_dir: manifest-relative -> {}",
+                    canon.display()
+                );
+                return canon;
+            }
+            _ => {
+                if from_manifest.is_dir() {
+                    log::info!(
+                        target: "oclive_roles",
+                        "resolve_roles_dir: manifest-relative (non-canon) -> {}",
+                        from_manifest.display()
+                    );
+                    return from_manifest;
+                }
+            }
         }
     }
     // 不依赖 cwd：从当前 exe 向上查找名为 `roles` 的目录（典型：`target/debug/*.exe` → 仓库根 `roles/`）。
@@ -48,7 +91,7 @@ pub fn resolve_roles_dir() -> PathBuf {
                 break;
             };
             let candidate = dir.join("roles");
-            if candidate.is_dir() {
+            if candidate.is_dir() && roles_dir_has_any_role_pack(&candidate) {
                 log::info!(
                     target: "oclive_roles",
                     "resolve_roles_dir: near_exe -> {}",
@@ -61,7 +104,7 @@ pub fn resolve_roles_dir() -> PathBuf {
     }
     if let Ok(cwd) = std::env::current_dir() {
         let a = cwd.join("roles");
-        if a.is_dir() {
+        if a.is_dir() && roles_dir_has_any_role_pack(&a) {
             log::info!(
                 target: "oclive_roles",
                 "resolve_roles_dir: cwd/roles -> {}",
@@ -71,7 +114,7 @@ pub fn resolve_roles_dir() -> PathBuf {
         }
         let b = cwd.join("..").join("roles");
         if let Ok(canon) = b.canonicalize() {
-            if canon.is_dir() {
+            if canon.is_dir() && roles_dir_has_any_role_pack(&canon) {
                 log::info!(
                     target: "oclive_roles",
                     "resolve_roles_dir: ../roles -> {}",
