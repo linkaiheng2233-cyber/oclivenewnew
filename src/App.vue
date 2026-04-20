@@ -190,13 +190,21 @@ function openSettingsView(): void {
 }
 
 function openPluginManagerPanel(): void {
-  if (uiStore.experimentalPluginManagerV2) {
-    pluginManagerV2Open.value = true;
+  // 专业模式（V1）含「开发者调试」等完整能力；V2 为简易预览，仅从设置或 V2 内入口打开。
+  pluginManagerV2Open.value = false;
+  if (pluginStore.panelVisible) {
     pluginStore.closePanel();
   } else {
-    pluginStore.togglePanel();
+    void pluginStore.openPanel();
   }
   topMoreOpen.value = false;
+}
+
+function openPluginManagerV2Preview(): void {
+  pluginStore.closePanel();
+  pluginManagerV2Open.value = true;
+  topMoreOpen.value = false;
+  settingsViewOpen.value = false;
 }
 
 function onDocumentClickCloseMore(e: MouseEvent) {
@@ -761,7 +769,7 @@ onBeforeUnmount(() => {
             <div class="more-tile-head">
               <span class="more-label">设置入口</span>
               <HelpHint
-                text="将快捷键说明、设置页、插件与后端管理集中到同一处。快捷键：Ctrl+Shift+S 打开设置，Ctrl+Shift+F 打开插件与后端管理。"
+                text="将快捷键说明、设置页、插件与后端管理集中到同一处。快捷键：Ctrl+Shift+S 打开设置，Ctrl+Shift+F 打开专业模式（V1）插件与后端管理（含开发者调试）。"
               />
             </div>
             <div class="more-tile-body settings-entry-actions" role="group" aria-label="设置入口集合">
@@ -780,7 +788,7 @@ onBeforeUnmount(() => {
                 class="more-debug-btn more-debug-btn--fill settings-entry-btn"
                 @click="openPluginManagerPanel"
               >
-                插件与后端
+                插件与后端（V1）
               </button>
             </div>
           </div>
@@ -961,11 +969,15 @@ onBeforeUnmount(() => {
       @close="pluginManagerV2Open = false"
       @open-v1="
         pluginManagerV2Open = false;
-        pluginStore.openPanel('backends');
+        void pluginStore.openPanel('plugins');
       "
     />
 
-    <SettingsView :visible="settingsViewOpen" @close="settingsViewOpen = false" />
+    <SettingsView
+      :visible="settingsViewOpen"
+      @close="settingsViewOpen = false"
+      @open-plugin-v2="openPluginManagerV2Preview"
+    />
 
     <div class="app-floating-slot" aria-hidden="true">
       <PluginSlotEmbed
