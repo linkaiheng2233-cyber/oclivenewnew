@@ -10,6 +10,7 @@ import PluginSidebarSlots from "./components/PluginSidebarSlots.vue";
 import RoleplayAsidePanel from "./components/RoleplayAsidePanel.vue";
 import HotkeyHost from "./components/HotkeyHost.vue";
 import PluginManagerPanel from "./views/PluginManagerPanel.vue";
+import PluginManagerV2Panel from "./views/PluginManagerV2Panel.vue";
 import PluginSlotEmbed from "./components/PluginSlotEmbed.vue";
 import SettingsView from "./views/SettingsView.vue";
 import ChatMessageList from "./components/ChatMessageList.vue";
@@ -169,6 +170,7 @@ const latestRoleplayAside = computed(() => {
 
 const topMoreOpen = ref(false);
 const settingsViewOpen = ref(false);
+const pluginManagerV2Open = ref(false);
 const topBarRef = ref<HTMLElement | null>(null);
 let morePanelClickListenTimer: ReturnType<typeof setTimeout> | null = null;
 
@@ -188,7 +190,12 @@ function openSettingsView(): void {
 }
 
 function openPluginManagerPanel(): void {
-  pluginStore.togglePanel();
+  if (uiStore.experimentalPluginManagerV2) {
+    pluginManagerV2Open.value = true;
+    pluginStore.closePanel();
+  } else {
+    pluginStore.togglePanel();
+  }
   topMoreOpen.value = false;
 }
 
@@ -488,6 +495,11 @@ async function onReloadPolicy() {
 
 function onHotkey(e: KeyboardEvent) {
   if (e.key === "Escape") {
+    if (pluginManagerV2Open.value) {
+      e.preventDefault();
+      pluginManagerV2Open.value = false;
+      return;
+    }
     if (shortcutHelpOpen.value) {
       e.preventDefault();
       shortcutHelpOpen.value = false;
@@ -944,6 +956,14 @@ onBeforeUnmount(() => {
     <ShortcutHelp v-model="shortcutHelpOpen" :bootstrap-epoch="pluginStore.bootstrapEpoch" />
 
     <PluginManagerPanel />
+    <PluginManagerV2Panel
+      :visible="pluginManagerV2Open"
+      @close="pluginManagerV2Open = false"
+      @open-v1="
+        pluginManagerV2Open = false;
+        pluginStore.openPanel('backends');
+      "
+    />
 
     <SettingsView :visible="settingsViewOpen" @close="settingsViewOpen = false" />
 
