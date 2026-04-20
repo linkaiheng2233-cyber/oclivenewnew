@@ -29,11 +29,15 @@ const { showToast } = useAppToast();
 
 const batchMode = ref(false);
 const batchSelected = ref<Record<string, boolean>>({});
-/** 已安装列表中「调试台」折叠（所有目录插件均可展开；无 `process` 时仅无法在此启动子进程） */
-const pluginDebugOpen = ref<Record<string, boolean>>({});
+/** 已安装区：侧栏当前选中（右侧单一配置 + 调试台） */
+const selectedWorkspacePluginId = ref("");
 
-function togglePluginDebug(id: string) {
-  pluginDebugOpen.value = { ...pluginDebugOpen.value, [id]: !pluginDebugOpen.value[id] };
+const selectedWorkspacePlugin = computed(() =>
+  pluginStore.catalog.find((c) => c.id === selectedWorkspacePluginId.value) ?? null,
+);
+
+function selectWorkspacePlugin(id: string): void {
+  selectedWorkspacePluginId.value = id;
 }
 
 function clearBatchSelection(): void {
@@ -56,7 +60,20 @@ watch(
       }
     }
     batchSelected.value = next;
+
+    const ids = pluginStore.catalog.map((c) => c.id);
+    if (ids.length === 0) {
+      selectedWorkspacePluginId.value = "";
+      return;
+    }
+    if (
+      !selectedWorkspacePluginId.value ||
+      !ids.includes(selectedWorkspacePluginId.value)
+    ) {
+      selectedWorkspacePluginId.value = ids[0] ?? "";
+    }
   },
+  { immediate: true },
 );
 
 const batchSelectedCount = computed(
@@ -405,75 +422,169 @@ async function onUpdateFromZip(pluginId: string) {
                 批量检查更新
               </button>
             </div>
-            <ul class="pm-list">
-              <li v-for="p in pluginStore.catalog" :key="p.id" class="pm-plugin-row">
-                <PluginListItem
-                  :entry="p"
-                  :batch-select-mode="batchMode"
-                  :batch-selected="!!batchSelected[p.id]"
-                  @update:batch-selected="setBatchSelected(p.id, $event)"
-                  :plugin-disabled="pluginStore.isPluginDisabled(p.id)"
-                  :toolbar-contribution-disabled="pluginStore.isToolbarContributionDisabled(p.id)"
-                  :settings-panel-contribution-disabled="
-                    pluginStore.isSlotContributionDisabled(SLOT_SETTINGS_PANEL, p.id)
-                  "
-                  :role-detail-contribution-disabled="
-                    pluginStore.isSlotContributionDisabled(SLOT_ROLE_DETAIL, p.id)
-                  "
-                  :sidebar-contribution-disabled="
-                    pluginStore.isSlotContributionDisabled(SLOT_SIDEBAR, p.id)
-                  "
-                  :chat-header-contribution-disabled="
-                    pluginStore.isSlotContributionDisabled(SLOT_CHAT_HEADER, p.id)
-                  "
-                  @update:plugin-disabled="onPluginDisabledRow(p.id, $event)"
-                  @update:toolbar-contribution-disabled="
-                    pluginStore.setToolbarContributionDisabled(p.id, $event)
-                  "
-                  @update:settings-panel-contribution-disabled="
-                    pluginStore.setSlotContributionDisabled(SLOT_SETTINGS_PANEL, p.id, $event)
-                  "
-                  @update:role-detail-contribution-disabled="
-                    pluginStore.setSlotContributionDisabled(SLOT_ROLE_DETAIL, p.id, $event)
-                  "
-                  @update:sidebar-contribution-disabled="
-                    pluginStore.setSlotContributionDisabled(SLOT_SIDEBAR, p.id, $event)
-                  "
-                  @update:chat-header-contribution-disabled="
-                    pluginStore.setSlotContributionDisabled(SLOT_CHAT_HEADER, p.id, $event)
-                  "
-                />
-                <div class="pm-plugin-actions">
-                  <span
-                    v-if="pluginStore.pluginUpdateById[p.id]?.hasUpdate"
-                    class="pm-badge"
-                  >有新版本</span>
-                  <button
-                    type="button"
-                    class="pm-btn secondary pm-btn--sm"
-                    @click="togglePluginDebug(p.id)"
-                  >
-                    {{ pluginDebugOpen[p.id] ? "▼" : "▶" }} 调试台
-                  </button>
-                  <button
-                    type="button"
-                    class="pm-btn secondary pm-btn--sm"
-                    :disabled="pluginStore.extractingPluginId === p.id"
-                    @click="onUpdateFromZip(p.id)"
-                  >
-                    从本地 zip 更新
-                  </button>
+            <p v-if="!pluginStore.catalog.length" class="pm-muted">
+              未扫描到目录插件（请将插件放入 roles 同级的 plugins/ 等目录）。
+            </p>
+
+            <div v-else class="pm-wb" aria-label="插件工作区">
+              <aside class="pm-wb-sidebar">
+                <div class="pm-wb-sidebar-head">
+                  <span class="pm-wb-sidebar-title">目录</span>
+                  <span class="pm-wb-sidebar-count">{{ pluginStore.catalog.length }}</span>
                 </div>
-                <div v-if="pluginDebugOpen[p.id]" class="pm-plugin-dev-wrap">
-                  <PluginDebugPanel
-                    :plugin-id="p.id"
-                    :expanded="true"
-                    :spawn-supported="p.hasRpcProcess"
+                <ul class="pm-wb-list" role="listbox" aria-label="已安装目录插件">
+                  <li v-for="p in pluginStore.catalog" :key="p.id" class="pm-wb-li">
+                    <label v-if="batchMode" class="pm-wb-batch chk" @click.stop>
+                      <input
+                        type="checkbox"
+                        :checked="!!batchSelected[p.id]"
+                        @change="
+                          setBatchSelected(
+                            p.id,
+                            ($event.target as HTMLInputElement).checked,
+                          )
+                        "
+                      />
+                    </label>
+                    <button
+                      type="button"
+                      class="pm-wb-item"
+                      :class="{ 'pm-wb-item--active': p.id === selectedWorkspacePluginId }"
+                      role="option"
+                      :aria-selected="p.id === selectedWorkspacePluginId"
+                      @click="selectWorkspacePlugin(p.id)"
+                    >
+                      <span class="pm-wb-item-id">{{ p.id }}</span>
+                      <span class="pm-wb-item-row2">
+                        <span class="pm-wb-item-ver">v{{ p.version }}</span>
+                        <span class="pm-wb-chip">{{ p.isShell ? "整壳" : "目录" }}</span>
+                        <span
+                          v-if="pluginStore.pluginUpdateById[p.id]?.hasUpdate"
+                          class="pm-wb-pill"
+                        >更新</span>
+                      </span>
+                    </button>
+                  </li>
+                </ul>
+              </aside>
+
+              <main v-if="selectedWorkspacePlugin" class="pm-wb-main">
+                <div class="pm-wb-main-head">
+                  <div class="pm-wb-main-titles">
+                    <h4 class="pm-wb-main-h">{{ selectedWorkspacePlugin.id }}</h4>
+                    <span class="pm-wb-main-sub">
+                      配置与调试 · 左侧切换插件即可保留本区布局
+                    </span>
+                  </div>
+                  <div class="pm-wb-main-actions">
+                    <span
+                      v-if="
+                        pluginStore.pluginUpdateById[selectedWorkspacePlugin.id]?.hasUpdate
+                      "
+                      class="pm-badge"
+                    >有新版本</span>
+                    <button
+                      type="button"
+                      class="pm-btn secondary pm-btn--sm"
+                      :disabled="
+                        pluginStore.extractingPluginId === selectedWorkspacePlugin.id
+                      "
+                      @click="onUpdateFromZip(selectedWorkspacePlugin.id)"
+                    >
+                      从本地 zip 更新
+                    </button>
+                  </div>
+                </div>
+                <div class="pm-wb-main-body">
+                  <PluginListItem
+                    :entry="selectedWorkspacePlugin"
+                    :batch-select-mode="batchMode"
+                    :batch-selected="!!batchSelected[selectedWorkspacePlugin.id]"
+                    @update:batch-selected="
+                      setBatchSelected(selectedWorkspacePlugin.id, $event)
+                    "
+                    :plugin-disabled="
+                      pluginStore.isPluginDisabled(selectedWorkspacePlugin.id)
+                    "
+                    :toolbar-contribution-disabled="
+                      pluginStore.isToolbarContributionDisabled(
+                        selectedWorkspacePlugin.id,
+                      )
+                    "
+                    :settings-panel-contribution-disabled="
+                      pluginStore.isSlotContributionDisabled(
+                        SLOT_SETTINGS_PANEL,
+                        selectedWorkspacePlugin.id,
+                      )
+                    "
+                    :role-detail-contribution-disabled="
+                      pluginStore.isSlotContributionDisabled(
+                        SLOT_ROLE_DETAIL,
+                        selectedWorkspacePlugin.id,
+                      )
+                    "
+                    :sidebar-contribution-disabled="
+                      pluginStore.isSlotContributionDisabled(
+                        SLOT_SIDEBAR,
+                        selectedWorkspacePlugin.id,
+                      )
+                    "
+                    :chat-header-contribution-disabled="
+                      pluginStore.isSlotContributionDisabled(
+                        SLOT_CHAT_HEADER,
+                        selectedWorkspacePlugin.id,
+                      )
+                    "
+                    @update:plugin-disabled="
+                      onPluginDisabledRow(selectedWorkspacePlugin.id, $event)
+                    "
+                    @update:toolbar-contribution-disabled="
+                      pluginStore.setToolbarContributionDisabled(
+                        selectedWorkspacePlugin.id,
+                        $event,
+                      )
+                    "
+                    @update:settings-panel-contribution-disabled="
+                      pluginStore.setSlotContributionDisabled(
+                        SLOT_SETTINGS_PANEL,
+                        selectedWorkspacePlugin.id,
+                        $event,
+                      )
+                    "
+                    @update:role-detail-contribution-disabled="
+                      pluginStore.setSlotContributionDisabled(
+                        SLOT_ROLE_DETAIL,
+                        selectedWorkspacePlugin.id,
+                        $event,
+                      )
+                    "
+                    @update:sidebar-contribution-disabled="
+                      pluginStore.setSlotContributionDisabled(
+                        SLOT_SIDEBAR,
+                        selectedWorkspacePlugin.id,
+                        $event,
+                      )
+                    "
+                    @update:chat-header-contribution-disabled="
+                      pluginStore.setSlotContributionDisabled(
+                        SLOT_CHAT_HEADER,
+                        selectedWorkspacePlugin.id,
+                        $event,
+                      )
+                    "
                   />
+                  <div class="pm-wb-debug">
+                    <div class="pm-wb-debug-h">调试台</div>
+                    <PluginDebugPanel
+                      :key="selectedWorkspacePlugin.id"
+                      :plugin-id="selectedWorkspacePlugin.id"
+                      :expanded="true"
+                      :spawn-supported="selectedWorkspacePlugin.hasRpcProcess"
+                    />
+                  </div>
                 </div>
-              </li>
-            </ul>
-            <p v-if="!pluginStore.catalog.length" class="pm-muted">未扫描到目录插件（请将插件放入 roles 同级的 plugins/ 等目录）。</p>
+              </main>
+            </div>
           </section>
           </div>
 
@@ -929,30 +1040,192 @@ async function onUpdateFromZip(pluginId: string) {
   margin: 0;
   font-size: 14px;
 }
-.pm-plugin-row {
+
+/* 已安装区：侧栏目录 + 右侧单一配置与调试台 */
+.pm-wb {
+  display: grid;
+  grid-template-columns: minmax(200px, 260px) minmax(0, 1fr);
+  gap: 0;
+  min-height: min(520px, 58vh);
+  max-height: min(62vh, 640px);
+  margin-top: 4px;
+  border: 1px solid var(--border-light);
+  border-radius: var(--radius-card);
+  overflow: hidden;
+  background: var(--bg-primary);
+}
+.pm-wb-sidebar {
+  border-right: 1px solid var(--border-light);
+  background: var(--bg-secondary);
   display: flex;
   flex-direction: column;
-  gap: 8px;
-  padding: 10px 12px;
-  border-radius: var(--radius-card);
+  min-height: 0;
+}
+.pm-wb-sidebar-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 8px 10px;
+  border-bottom: 1px solid var(--border-light);
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--text-secondary);
+}
+.pm-wb-sidebar-title {
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+.pm-wb-sidebar-count {
+  font-variant-numeric: tabular-nums;
+  padding: 2px 8px;
+  border-radius: 999px;
   border: 1px solid var(--border-light);
   background: var(--bg-primary);
-  box-shadow: var(--shadow-sm);
+  font-size: 11px;
 }
-.pm-plugin-row:hover {
-  border-color: color-mix(in srgb, var(--accent) 22%, var(--border-light));
+.pm-wb-list {
+  list-style: none;
+  margin: 0;
+  padding: 4px 0;
+  overflow: auto;
+  flex: 1;
+  min-height: 0;
 }
-.pm-plugin-actions {
+.pm-wb-li {
+  display: flex;
+  align-items: stretch;
+  border-bottom: 1px solid
+    color-mix(in srgb, var(--border-light) 70%, transparent);
+}
+.pm-wb-batch {
+  display: flex;
+  align-items: center;
+  padding: 0 8px;
+  flex-shrink: 0;
+}
+.pm-wb-item {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: stretch;
+  gap: 2px;
+  padding: 8px 10px;
+  border: none;
+  background: transparent;
+  cursor: pointer;
+  text-align: left;
+  font: inherit;
+  color: var(--text-primary);
+  transition: background 0.15s ease;
+}
+.pm-wb-item:hover {
+  background: color-mix(in srgb, var(--bg-elevated) 55%, transparent);
+}
+.pm-wb-item--active {
+  background: var(--bg-elevated);
+  box-shadow: inset 3px 0 0 0 var(--accent);
+}
+.pm-wb-item-id {
+  font-family: ui-monospace, Menlo, Consolas, monospace;
+  font-size: 12px;
+  font-weight: 600;
+  word-break: break-all;
+}
+.pm-wb-item-row2 {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  align-items: center;
+}
+.pm-wb-item-ver {
+  font-size: 11px;
+  color: var(--text-secondary);
+}
+.pm-wb-chip {
+  font-size: 10px;
+  padding: 1px 6px;
+  border-radius: 4px;
+  border: 1px solid var(--border-light);
+  color: var(--text-secondary);
+}
+.pm-wb-pill {
+  font-size: 10px;
+  font-weight: 600;
+  padding: 1px 6px;
+  border-radius: 999px;
+  background: color-mix(in srgb, var(--accent) 14%, var(--bg-primary));
+  color: var(--text-accent);
+}
+.pm-wb-main {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+  min-height: 0;
+  overflow: hidden;
+}
+.pm-wb-main-head {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 8px 12px;
+  padding: 10px 12px;
+  border-bottom: 1px solid var(--border-light);
+  background: var(--bg-primary);
+}
+.pm-wb-main-titles {
+  min-width: 0;
+}
+.pm-wb-main-h {
+  margin: 0;
+  font-size: 15px;
+  font-weight: 600;
+  font-family: ui-monospace, Menlo, Consolas, monospace;
+}
+.pm-wb-main-sub {
+  display: block;
+  margin-top: 2px;
+  font-size: 11px;
+  color: var(--text-secondary);
+}
+.pm-wb-main-actions {
   display: flex;
   flex-wrap: wrap;
   align-items: center;
   gap: 8px;
-  padding-left: 2px;
 }
-.pm-plugin-dev-wrap {
-  width: 100%;
-  min-width: 0;
+.pm-wb-main-body {
+  flex: 1;
+  min-height: 0;
+  overflow: auto;
+  padding: 10px 12px 12px;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
 }
+.pm-wb-debug {
+  border-top: 1px dashed var(--border-light);
+  padding-top: 10px;
+}
+.pm-wb-debug-h {
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--text-secondary);
+  margin-bottom: 6px;
+}
+@media (max-width: 720px) {
+  .pm-wb {
+    grid-template-columns: 1fr;
+    max-height: none;
+  }
+  .pm-wb-sidebar {
+    border-right: none;
+    border-bottom: 1px solid var(--border-light);
+    max-height: 200px;
+  }
+}
+
 .pm-badge {
   font-size: 11px;
   padding: 2px 8px;
@@ -968,14 +1241,6 @@ async function onUpdateFromZip(pluginId: string) {
   margin: 0 0 8px;
   font-size: 12px;
   color: var(--text-secondary);
-}
-.pm-list {
-  margin: 0;
-  padding: 0;
-  list-style: none;
-  display: flex;
-  flex-direction: column;
-  gap: 8px;
 }
 .pm-order {
   margin: 0;
