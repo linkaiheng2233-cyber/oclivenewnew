@@ -293,6 +293,7 @@ pub fn run() {
         })
         .invoke_handler(tauri::generate_handler![
             api::agent::list_mcp_servers,
+            api::agent::list_mcp_tools,
             api::agent::call_mcp_tool,
             api::agent::get_agent_debug_traces,
             api::agent::clear_agent_debug_traces,
@@ -335,6 +336,8 @@ pub fn run() {
             api::hotkeys::get_hotkey_bindings,
             api::hotkeys::save_hotkey_bindings,
             api::directory_plugin::directory_plugin_invoke,
+            api::plugin_scaffold::create_plugin_scaffold,
+            api::plugin_pack::pack_plugin,
             api::plugin_debug::spawn_plugin_for_test,
             api::plugin_debug::kill_plugin_process,
             api::plugin_debug::list_plugin_processes,

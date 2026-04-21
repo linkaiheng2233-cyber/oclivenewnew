@@ -2,6 +2,7 @@
 import { computed, ref, watch } from "vue";
 import { useRoleStore } from "../stores/roleStore";
 import {
+  packPlugin,
   getPluginResolutionDebug,
   setRemoteLifeEnabled,
   setSessionPluginBackend,
@@ -25,6 +26,7 @@ const pluginBackendsEffectiveSources = computed(
 const pluginDebugSnapshot = ref("");
 const pluginDebugCopyStatus = ref("");
 const localMemoryProviderDraft = ref("");
+const packStatus = ref("");
 const sourceLabel: Record<"pack_default" | "session_override" | "env_override", string> = {
   pack_default: "包默认",
   session_override: "会话覆盖",
@@ -134,6 +136,27 @@ async function copyPluginDebugSnapshot() {
     pluginDebugCopyStatus.value = "";
   }, 1800);
 }
+
+async function onPackCurrentPlugin(): Promise<void> {
+  const active = roleStore.roleInfo.pluginBackendsEffective.directory_plugins?.agent;
+  const target =
+    active && active.trim()
+      ? active.trim()
+      : roleStore.roleInfo.pluginBackendsEffective.directory_plugins?.llm?.trim() || "";
+  if (!target) {
+    packStatus.value = "请先在目录插件槽位中配置目标插件（agent 或 llm）。";
+    return;
+  }
+  busy.value = true;
+  try {
+    const r = await packPlugin(target);
+    packStatus.value = `打包完成：${r.archive_path}（sha256=${r.sha256.slice(0, 12)}...）`;
+  } catch (e) {
+    packStatus.value = e instanceof Error ? e.message : String(e);
+  } finally {
+    busy.value = false;
+  }
+}
 </script>
 
 <template>
@@ -215,6 +238,13 @@ async function copyPluginDebugSnapshot() {
           复制
         </button>
         <span v-if="pluginDebugCopyStatus" class="debug-copy-status">{{ pluginDebugCopyStatus }}</span>
+      </div>
+      <div class="row backend-row">
+        <label>打包插件</label>
+        <button type="button" class="btn tiny" :disabled="busy" @click="onPackCurrentPlugin">
+          一键打包（agent/llm）
+        </button>
+        <span v-if="packStatus" class="debug-copy-status">{{ packStatus }}</span>
       </div>
       <pre v-if="pluginDebugSnapshot" class="backend-debug">{{ pluginDebugSnapshot }}</pre>
     </div>

@@ -1222,6 +1222,12 @@ export async function listMcpServers(): Promise<McpServerManifest[]> {
   return invokeWithFriendlyError<McpServerManifest[]>("list_mcp_servers", {});
 }
 
+export async function listMcpTools(serverId: string): Promise<McpToolManifest[]> {
+  return invokeWithFriendlyError<McpToolManifest[]>("list_mcp_tools", {
+    req: { server_id: serverId },
+  });
+}
+
 export async function callMcpTool(
   serverId: string,
   toolName: string,
@@ -1242,6 +1248,53 @@ export async function getAgentDebugTraces(): Promise<AgentDebugTrace[]> {
 
 export async function clearAgentDebugTraces(): Promise<void> {
   return invokeWithFriendlyError<void>("clear_agent_debug_traces", {});
+}
+
+export interface CreatePluginScaffoldRequest {
+  pluginId: string;
+  pluginName: string;
+  language: "node" | "python" | "rust";
+  pluginType: "skill" | "agent" | "module_ext";
+  baseDir?: string;
+}
+
+export interface CreatePluginScaffoldResponse {
+  plugin_dir: string;
+}
+
+export async function createPluginScaffold(
+  req: CreatePluginScaffoldRequest,
+): Promise<CreatePluginScaffoldResponse> {
+  return invokeWithFriendlyError<CreatePluginScaffoldResponse>(
+    "create_plugin_scaffold",
+    {
+      req: {
+        plugin_id: req.pluginId,
+        plugin_name: req.pluginName,
+        language: req.language,
+        plugin_type: req.pluginType,
+        base_dir: req.baseDir ?? null,
+      },
+    },
+  );
+}
+
+export interface PackPluginResponse {
+  archive_path: string;
+  signature_path: string;
+  sha256: string;
+}
+
+export async function packPlugin(
+  pluginId: string,
+  outputDir?: string | null,
+): Promise<PackPluginResponse> {
+  return invokeWithFriendlyError<PackPluginResponse>("pack_plugin", {
+    req: {
+      plugin_id: pluginId,
+      output_dir: outputDir ?? null,
+    },
+  });
 }
 
 /**

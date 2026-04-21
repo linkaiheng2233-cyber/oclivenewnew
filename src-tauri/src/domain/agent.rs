@@ -1,10 +1,13 @@
 use crate::error::Result;
 use crate::infrastructure::llm::LlmClient;
+use crate::infrastructure::function_call_parser::{
+    parse_from_llm_response, to_function_calling_schema, ToolSchemaInput,
+};
 use crate::infrastructure::mcp_client::{McpClient, McpServerManifest, McpToolCallResult};
 use async_trait::async_trait;
 use parking_lot::RwLock;
 use serde::{Deserialize, Serialize};
-use serde_json::{json, Value};
+use serde_json::Value;
 use std::sync::Arc;
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -86,6 +89,13 @@ impl BuiltinReActAgent {
         self.mcp.list_servers()
     }
 
+    pub fn list_mcp_tools(
+        &self,
+        server_id: &str,
+    ) -> Result<Vec<crate::infrastructure::mcp_client::McpToolManifest>> {
+        self.mcp.list_tools(server_id)
+    }
+
     pub fn call_tool_direct(
         &self,
         server_id: &str,
@@ -95,34 +105,56 @@ impl BuiltinReActAgent {
         self.mcp.call_tool(server_id, tool_name, params)
     }
 
-    fn first_weather_server(&self) -> Option<McpServerManifest> {
-        self.mcp
-            .list_servers()
-            .into_iter()
-            .find(|s| s.tools.iter().any(|t| t.name == "get_weather"))
+    fn collect_tool_schema_inputs(&self) -> Vec<ToolSchemaInput> {
+        let mut out: Vec<ToolSchemaInput> = Vec::new();
+        for s in self.mcp.list_servers() {
+            let tools = self.mcp.list_tools(s.id.as_str()).unwrap_or_else(|_| s.tools.clone());
+            for t in tools {
+                let name = t.name.trim().to_string();
+                if name.is_empty() {
+                    continue;
+                }
+                let desc = t
+                    .description
+                    .as_ref()
+                    .map(|d| format!("server={} {}", s.id, d))
+                    .or_else(|| Some(format!("server={}", s.id)));
+                out.push(ToolSchemaInput {
+                    name,
+                    description: desc,
+                });
+            }
+        }
+        out.sort_by(|a, b| a.name.cmp(&b.name));
+        out.dedup_by(|a, b| a.name == b.name);
+        out
     }
 
-    fn extract_city_with_fallback(&self, message: &str, llm_raw: &str) -> String {
-        if let Ok(v) = serde_json::from_str::<Value>(llm_raw) {
-            if let Some(city) = v.get("city").and_then(|x| x.as_str()) {
-                let t = city.trim();
-                if !t.is_empty() {
-                    return t.to_string();
-                }
+    fn server_for_tool(&self, tool_name: &str) -> Option<McpServerManifest> {
+        for s in self.mcp.list_servers() {
+            let listed = self.mcp.list_tools(s.id.as_str()).unwrap_or_else(|_| s.tools.clone());
+            if listed.iter().any(|t| t.name.trim() == tool_name) {
+                return Some(s);
             }
         }
-        let msg = message.trim();
-        let markers = ["帮我查一下", "查一下", "查询", "查"];
-        for m in markers {
-            if let Some(rest) = msg.strip_prefix(m) {
-                let c = rest.replace("天气", "").replace('的', "");
-                let t = c.trim();
-                if !t.is_empty() {
-                    return t.to_string();
-                }
+        None
+    }
+
+    fn extract_final_answer(raw: &str) -> Option<String> {
+        let v = serde_json::from_str::<Value>(raw).ok()?;
+        if let Some(s) = v.get("final_answer").and_then(|x| x.as_str()) {
+            let t = s.trim();
+            if !t.is_empty() {
+                return Some(t.to_string());
             }
         }
-        "深圳".to_string()
+        if let Some(s) = v.get("answer").and_then(|x| x.as_str()) {
+            let t = s.trim();
+            if !t.is_empty() {
+                return Some(t.to_string());
+            }
+        }
+        None
     }
 }
 
@@ -130,7 +162,14 @@ impl BuiltinReActAgent {
 impl AgentProvider for BuiltinReActAgent {
     async fn process(&self, input: AgentInput) -> Result<AgentOutput> {
         let message = input.message.trim().to_string();
-        if !message.contains("天气") {
+        if message.is_empty() {
+            return Ok(AgentOutput {
+                handled: false,
+                reply: String::new(),
+            });
+        }
+        let tool_schema_inputs = self.collect_tool_schema_inputs();
+        if tool_schema_inputs.is_empty() {
             return Ok(AgentOutput {
                 handled: false,
                 reply: String::new(),
@@ -146,71 +185,98 @@ impl AgentProvider for BuiltinReActAgent {
             reply: String::new(),
             error: None,
         };
-
-        let Some(server) = self.first_weather_server() else {
-            let reply = "我想帮你查天气，但当前没有可用的 weather skill（请先配置 MCP server）。".to_string();
-            trace.plan = "intent=weather; tool=none".to_string();
-            trace.reply = reply.clone();
-            trace.error = Some("missing weather skill".to_string());
-            self.push_trace(trace);
-            return Ok(AgentOutput {
-                handled: true,
-                reply,
-            });
-        };
-
-        let planner_prompt = format!(
-            "你是任务规划器。用户输入：{msg}\n\
-            只输出 JSON：{{\"intent\":\"weather\",\"city\":\"城市名\",\"tool\":\"get_weather\"}}。",
-            msg = message
-        );
-        let llm_plan_raw = self
-            .llm
-            .generate_tag(input.model.as_str(), planner_prompt.as_str())
-            .await
-            .unwrap_or_else(|_| "{}".to_string());
-        let city = self.extract_city_with_fallback(message.as_str(), llm_plan_raw.as_str());
         trace.plan = format!(
-            "intent=weather; server={}; tool=get_weather; city={}",
-            server.id, city
+            "react + function-calling; tools={}",
+            tool_schema_inputs
+                .iter()
+                .map(|t| t.name.clone())
+                .collect::<Vec<String>>()
+                .join(",")
         );
-
-        let params = json!({ "city": city });
-        match self
-            .mcp
-            .call_tool(server.id.as_str(), "get_weather", params.clone())
-        {
-            Ok(tool_result) => {
-                trace.tool_calls.push(AgentToolCallTrace {
-                    server_id: tool_result.server_id.clone(),
-                    tool_name: tool_result.tool_name.clone(),
-                    params,
-                    result: tool_result.result.clone(),
+        let schema = to_function_calling_schema(&tool_schema_inputs);
+        let mut observations: Vec<String> = Vec::new();
+        for _ in 0..3 {
+            let prompt = format!(
+                "你是 oclive Agent。可用函数 schema: {schema}\n\
+                 用户请求: {msg}\n\
+                 观察历史: {obs}\n\
+                 你必须输出 JSON：\n\
+                 1) 若要调工具: {{\"tool_calls\":[{{\"id\":\"1\",\"function\":{{\"name\":\"tool_name\",\"arguments\":{{...}}}}}}]}}\n\
+                 2) 若可直接回答: {{\"final_answer\":\"...\"}}\n\
+                 不要输出 markdown。",
+                schema = schema,
+                msg = message,
+                obs = observations.join(" | ")
+            );
+            let llm_raw = self
+                .llm
+                .generate(input.model.as_str(), prompt.as_str())
+                .await
+                .unwrap_or_else(|_| "{}".to_string());
+            if let Some(answer) = Self::extract_final_answer(&llm_raw) {
+                trace.reply = answer.clone();
+                self.push_trace(trace);
+                return Ok(AgentOutput {
+                    handled: true,
+                    reply: answer,
                 });
-                let reply = if let Some(s) = tool_result.result.get("summary").and_then(|x| x.as_str()) {
-                    s.to_string()
-                } else if let Some(s) = tool_result.result.get("text").and_then(|x| x.as_str()) {
-                    s.to_string()
-                } else {
-                    format!("天气结果：{}", tool_result.result)
-                };
-                trace.reply = reply.clone();
-                self.push_trace(trace);
-                Ok(AgentOutput {
-                    handled: true,
-                    reply,
-                })
             }
-            Err(e) => {
-                let reply = format!("天气查询失败：{}", e);
-                trace.error = Some(e.to_string());
-                trace.reply = reply.clone();
-                self.push_trace(trace);
-                Ok(AgentOutput {
-                    handled: true,
-                    reply,
-                })
+            let calls = parse_from_llm_response(&llm_raw);
+            if calls.is_empty() {
+                break;
+            }
+            for call in calls {
+                let tool_name = call.function.name.trim().to_string();
+                if tool_name.is_empty() {
+                    continue;
+                }
+                let Some(server) = self.server_for_tool(tool_name.as_str()) else {
+                    let msg = format!("tool {} has no mapped server", tool_name);
+                    trace.error = Some(msg.clone());
+                    observations.push(msg);
+                    continue;
+                };
+                match self.mcp.call_tool(
+                    server.id.as_str(),
+                    tool_name.as_str(),
+                    call.function.arguments.clone(),
+                ) {
+                    Ok(result) => {
+                        trace.tool_calls.push(AgentToolCallTrace {
+                            server_id: result.server_id.clone(),
+                            tool_name: result.tool_name.clone(),
+                            params: call.function.arguments.clone(),
+                            result: result.result.clone(),
+                        });
+                        observations.push(format!(
+                            "{}.{} -> {}",
+                            result.server_id, result.tool_name, result.result
+                        ));
+                    }
+                    Err(e) => {
+                        let msg = format!("tool {} failed: {}", tool_name, e);
+                        trace.error = Some(msg.clone());
+                        observations.push(msg);
+                    }
+                }
             }
         }
+        let fallback = if let Some(last) = trace.tool_calls.last() {
+            if let Some(s) = last.result.get("summary").and_then(|x| x.as_str()) {
+                s.to_string()
+            } else {
+                format!("工具调用完成：{}", last.result)
+            }
+        } else if let Some(e) = trace.error.clone() {
+            format!("Agent 执行未完成：{}", e)
+        } else {
+            "我已尝试调度工具，但模型没有返回可执行的 function call。".to_string()
+        };
+        trace.reply = fallback.clone();
+        self.push_trace(trace);
+        Ok(AgentOutput {
+            handled: true,
+            reply: fallback,
+        })
     }
 }

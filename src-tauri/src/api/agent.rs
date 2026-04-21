@@ -11,9 +11,22 @@ pub struct CallMcpToolRequest {
     pub params: Value,
 }
 
+#[derive(Debug, Deserialize)]
+pub struct ListMcpToolsRequest {
+    pub server_id: String,
+}
+
 #[tauri::command]
 pub fn list_mcp_servers(state: State<'_, AppState>) -> Result<Value, String> {
     serde_json::to_value(state.plugins.list_mcp_servers()).map_err(|e| e.to_string())
+}
+
+#[tauri::command]
+pub fn list_mcp_tools(req: ListMcpToolsRequest, state: State<'_, AppState>) -> Result<Value, String> {
+    state
+        .plugins
+        .list_mcp_tools(req.server_id.as_str())
+        .and_then(|r| serde_json::to_value(r).map_err(|e| e.to_string()))
 }
 
 #[tauri::command]

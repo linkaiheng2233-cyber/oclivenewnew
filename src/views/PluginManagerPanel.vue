@@ -3,6 +3,7 @@ import { open } from "@tauri-apps/api/dialog";
 import { computed, ref, watch } from "vue";
 import PluginBackendSessionPanel from "../components/PluginBackendSessionPanel.vue";
 import InstalledPluginWorkspaceDetail from "../components/InstalledPluginWorkspaceDetail.vue";
+import PluginScaffoldWizard from "../components/PluginScaffoldWizard.vue";
 import PmSlotRow from "../components/PmSlotRow.vue";
 import PluginSlotEmbed from "../components/PluginSlotEmbed.vue";
 import { useAppToast } from "../composables/useAppToast";
@@ -20,7 +21,7 @@ import {
   usePluginStore,
 } from "../stores/pluginStore";
 import { useRoleStore } from "../stores/roleStore";
-import { applyAuthorSuggestedPluginBackends } from "../utils/tauri-api";
+import { applyAuthorSuggestedPluginBackends, packPlugin } from "../utils/tauri-api";
 
 const pluginStore = usePluginStore();
 const roleStore = useRoleStore();
@@ -28,6 +29,8 @@ const { showToast } = useAppToast();
 
 const batchMode = ref(false);
 const batchSelected = ref<Record<string, boolean>>({});
+const scaffoldWizardVisible = ref(false);
+const pluginPackStatus = ref("");
 /** 已安装区：侧栏当前选中（右侧单一配置 + 调试台） */
 const selectedWorkspacePluginId = ref("");
 
@@ -240,6 +243,20 @@ async function onUpdateFromZip(pluginId: string) {
     showToast("error", e instanceof Error ? e.message : String(e));
   }
 }
+
+async function onPackSelectedPlugin(): Promise<void> {
+  const pid = selectedWorkspacePlugin.value?.id?.trim() ?? "";
+  if (!pid) {
+    pluginPackStatus.value = "请先在目录中选择一个插件。";
+    return;
+  }
+  try {
+    const r = await packPlugin(pid);
+    pluginPackStatus.value = `打包完成：${r.archive_path}`;
+  } catch (e) {
+    pluginPackStatus.value = e instanceof Error ? e.message : String(e);
+  }
+}
 </script>
 
 <template>
@@ -389,6 +406,21 @@ async function onUpdateFromZip(pluginId: string) {
                 <button
                   type="button"
                   class="pm-btn secondary pm-btn--sm"
+                  @click="scaffoldWizardVisible = true"
+                >
+                  新建插件
+                </button>
+                <button
+                  type="button"
+                  class="pm-btn secondary pm-btn--sm"
+                  :disabled="!selectedWorkspacePlugin"
+                  @click="onPackSelectedPlugin"
+                >
+                  打包当前插件
+                </button>
+                <button
+                  type="button"
+                  class="pm-btn secondary pm-btn--sm"
                   :disabled="pluginStore.pluginUpdatesCheckLoading"
                   @click="onCheckUpdates"
                 >
@@ -396,6 +428,7 @@ async function onUpdateFromZip(pluginId: string) {
                 </button>
               </div>
             </div>
+            <p v-if="pluginPackStatus" class="pm-hint">{{ pluginPackStatus }}</p>
             <div
               v-if="batchMode && batchSelectedCount > 0"
               class="pm-batch-bar"
@@ -749,6 +782,14 @@ async function onUpdateFromZip(pluginId: string) {
         </template>
       </div>
     </div>
+    <PluginScaffoldWizard
+      :visible="scaffoldWizardVisible"
+      @close="scaffoldWizardVisible = false"
+      @created="
+        scaffoldWizardVisible = false;
+        void pluginStore.refresh();
+      "
+    />
   </Teleport>
 </template>
 

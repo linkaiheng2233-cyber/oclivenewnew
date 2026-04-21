@@ -11,6 +11,8 @@ pub mod memory;
 pub mod monologue;
 pub mod plugin_bridge;
 pub mod plugin_debug;
+pub mod plugin_pack;
+pub mod plugin_scaffold;
 pub mod plugin_update;
 pub mod policy;
 pub mod role;

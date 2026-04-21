@@ -99,6 +99,12 @@ impl BackendRegistry {
         self.agent_builtin.list_mcp_servers()
     }
 
+    fn list_mcp_tools(&self, server_id: &str) -> std::result::Result<Vec<crate::infrastructure::mcp_client::McpToolManifest>, String> {
+        self.agent_builtin
+            .list_mcp_tools(server_id)
+            .map_err(|e| e.to_frontend_error())
+    }
+
     fn call_mcp_tool(
         &self,
         server_id: &str,
@@ -573,6 +579,13 @@ impl PluginHost {
     #[must_use]
     pub fn list_mcp_servers(&self) -> Vec<McpServerManifest> {
         self.registry.list_mcp_servers()
+    }
+
+    pub fn list_mcp_tools(
+        &self,
+        server_id: &str,
+    ) -> std::result::Result<Vec<crate::infrastructure::mcp_client::McpToolManifest>, String> {
+        self.registry.list_mcp_tools(server_id)
     }
 
     pub fn call_mcp_tool(

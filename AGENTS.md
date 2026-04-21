@@ -27,3 +27,20 @@
   - [`src-tauri/src/api/agent.rs`](src-tauri/src/api/agent.rs)：`list_mcp_servers` / `call_mcp_tool` / `get_agent_debug_traces` / `clear_agent_debug_traces`。
 - **调试 UI**：[`src/components/AgentDebugPanel.vue`](src/components/AgentDebugPanel.vue) 挂在「插件与后端管理 → 后端模块」页，用于查看 Agent 任务拆解与工具调用链路。
 - **示例 Skill**：[`examples/weather_skill/`](examples/weather_skill/) 提供最小 Node MCP server（`get_weather(city)`）与示例 server manifest。
+
+### Agent / Skill 通用接入标准（v1）
+
+- **MCP 配置目录**：`{app_data}/mcp-servers/*.json`，支持 `transport=http|stdio`、`timeout_ms`、`tools` 预声明；运行时可 `list_mcp_servers`、`list_mcp_tools`、`call_mcp_tool`。
+- **Function Calling**：后端统一走 [`src-tauri/src/infrastructure/function_call_parser.rs`](src-tauri/src/infrastructure/function_call_parser.rs)：
+  - `parse_from_llm_response` 解析 `tool_calls[]` 与 `function_call` 两种主流输出；
+  - `to_function_calling_schema` 将 MCP tool 列表转为函数 schema。
+- **Agent 路由**：`plugin_backends.agent` 为第七模块，与其他模块保持同样的包默认 / 会话覆盖 / 来源快照语义。
+
+### 创作者工具链（v1）
+
+- **脚手架**：`create_plugin_scaffold`（后端）+ `PluginScaffoldWizard.vue`（前端）生成 `manifest.json` + 语言模板 + README，并打开目标目录。
+- **一键打包**：`pack_plugin` 校验 manifest 后输出 `.oclive-plugin` 与 `*.signature.json`（SHA-256）。
+- **调试体验**：
+  - `AgentDebugPanel.vue` 支持模板库（含 localStorage 自定义模板）、请求历史与 Diff 对比；
+  - `EnvVarManager.vue` 管理 `OCLIVE_*` 会话草稿并复制 PowerShell 设置命令；
+  - `PluginScaffoldWizard.vue` 内置 manifest 实时校验（必填字段与权限枚举约束）。
