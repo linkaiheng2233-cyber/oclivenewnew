@@ -44,7 +44,7 @@ pub struct PluginIndexFile {
 }
 
 pub const DEFAULT_PLUGIN_INDEX_URL: &str =
-    "https://raw.githubusercontent.com/awesome-oclive-plugins/awesome-oclive-plugins/main/plugins.json";
+    "https://raw.githubusercontent.com/linkaiheng2233-cyber/awesome-oclive-plugins/main/plugins.json";
 
 fn plugins_dir(state: &AppState) -> PathBuf {
     state.directory_plugins.app_data_dir().join("plugins")

@@ -567,6 +567,27 @@ watch(
 );
 
 let unlistenPluginFs: (() => void) | undefined;
+let unlistenProtocolInstall: (() => void) | undefined;
+
+async function runPendingProtocolInstallsFromQueue(): Promise<void> {
+  try {
+    const pending = await consumePendingProtocolInstalls();
+    for (const p of pending) {
+      const git = p.gitUrl?.trim();
+      if (!git) continue;
+      try {
+        const r = await installPluginFromGit(git);
+        showToast("success", `已通过网页链接安装插件：${r.installedPluginId}`);
+        await pluginStore.refresh();
+        openPluginManagerPanel();
+      } catch (e) {
+        showToast("error", e instanceof Error ? e.message : String(e));
+      }
+    }
+  } catch (e) {
+    console.warn("consume_pending_protocol_installs", e);
+  }
+}
 
 onMounted(() => {
   setErrorReporter((err) => {
@@ -591,25 +612,13 @@ onMounted(() => {
     unlistenPluginFs = u;
   });
 
-  void (async () => {
-    try {
-      const pending = await consumePendingProtocolInstalls();
-      for (const p of pending) {
-        const git = p.gitUrl?.trim();
-        if (!git) continue;
-        try {
-          const r = await installPluginFromGit(git);
-          showToast("success", `已通过网页链接安装插件：${r.installedPluginId}`);
-          await pluginStore.refresh();
-          openPluginManagerPanel();
-        } catch (e) {
-          showToast("error", e instanceof Error ? e.message : String(e));
-        }
-      }
-    } catch (e) {
-      console.warn("consume_pending_protocol_installs", e);
-    }
-  })();
+  void listen("protocol:pending_install", () => {
+    void runPendingProtocolInstallsFromQueue();
+  }).then((u) => {
+    unlistenProtocolInstall = u;
+  });
+
+  void runPendingProtocolInstallsFromQueue();
 });
 
 watch(topMoreOpen, (open) => {
@@ -647,6 +656,7 @@ onBeforeUnmount(() => {
   window.removeEventListener("resize", scheduleRefreshSplitLayout);
   clearCtrlLongPressTimer();
   unlistenPluginFs?.();
+  unlistenProtocolInstall?.();
 });
 </script>
 

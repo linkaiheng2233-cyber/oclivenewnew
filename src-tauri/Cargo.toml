@@ -36,6 +36,7 @@ zip = { version = "0.6", default-features = false, features = ["deflate"] }
 axum = "0.7"
 tower-http = { version = "0.5", features = ["cors"] }
 sha2 = "0.11.0"
+tauri-plugin-deep-link = "0.1.2"
 
 [dev-dependencies]
 tower = { version = "0.4", features = ["util"] }

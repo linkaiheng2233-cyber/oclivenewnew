@@ -258,11 +258,32 @@ pub fn run_api_server(port: u16) {
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
 pub fn run() {
     let _ = env_logger::try_init();
+    // 与 `tauri.conf.json` → `bundle.identifier` 一致；`tauri-plugin-deep-link` 用于单实例与 IPC。
+    #[cfg(desktop)]
+    tauri_plugin_deep_link::prepare("com.oclivenewnew.app");
     tauri::Builder::default()
         .register_uri_scheme_protocol("ocliveplugin", |app, request| {
             serve_ocliveplugin_asset(app, request)
         })
         .setup(|app| {
+            #[cfg(desktop)]
+            {
+                let app_h = app.handle().clone();
+                if let Err(e) = tauri_plugin_deep_link::register("oclive", move |url: String| {
+                    log::info!(target: "oclive_deep_link", "oclive deep link: {}", url);
+                    seed_pending_install_urls_from_args(std::iter::once(url));
+                    let _ = app_h.emit_all(
+                        "protocol:pending_install",
+                        serde_json::json!({ "reason": "deep-link" }),
+                    );
+                }) {
+                    log::warn!(
+                        target: "oclive_deep_link",
+                        "register oclive:// handler failed: {}",
+                        e
+                    );
+                }
+            }
             seed_pending_install_urls_from_args(std::env::args());
             let app_dir = app
                 .path_resolver()
