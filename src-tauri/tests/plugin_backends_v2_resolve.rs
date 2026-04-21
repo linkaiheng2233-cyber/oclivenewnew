@@ -6,6 +6,7 @@ use oclivenewnew_tauri::infrastructure::MockLlmClient;
 use oclivenewnew_tauri::models::{
     EmotionBackend, EventBackend, LlmBackend, MemoryBackend, PluginBackends, PromptBackend, Role,
 };
+use std::path::PathBuf;
 use std::sync::Arc;
 
 #[test]
@@ -13,7 +14,7 @@ fn resolve_role_with_all_builtin_v2() {
     let llm: Arc<dyn LlmClient> = Arc::new(MockLlmClient {
         reply: String::new(),
     });
-    let host = PluginHost::new(llm, None);
+    let host = PluginHost::new(llm, None, PathBuf::from("."));
     let role = Role {
         plugin_backends: PluginBackends {
             memory: MemoryBackend::BuiltinV2,

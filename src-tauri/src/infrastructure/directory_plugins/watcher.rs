@@ -7,7 +7,7 @@ use serde_json::json;
 use std::path::PathBuf;
 use std::sync::mpsc::channel;
 use std::time::Duration;
-use tauri::Manager;
+use tauri::Emitter;
 
 /// 在独立线程中监听 `plugin_scan_container_roots` 返回的目录；失败仅打日志。
 pub fn start_plugin_fs_watcher(app: tauri::AppHandle, state: &AppState, roles_dir: PathBuf) {
@@ -67,7 +67,7 @@ pub fn start_plugin_fs_watcher(app: tauri::AppHandle, state: &AppState, roles_di
             while rx.try_recv().is_ok() {}
 
             runtime.rescan_plugin_roots(roles_for_rescan.as_path());
-            let _ = app_emit.emit_all(
+            let _ = app_emit.emit(
                 "plugin:changed",
                 json!({ "source": "fs", "containerRoots": n_roots }),
             );

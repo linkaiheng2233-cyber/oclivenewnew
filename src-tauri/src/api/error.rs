@@ -47,7 +47,7 @@ impl From<ApiError> for String {
     }
 }
 
-impl From<ApiError> for tauri::InvokeError {
+impl From<ApiError> for tauri::ipc::InvokeError {
     fn from(e: ApiError) -> Self {
         Self::from(String::from(e))
     }

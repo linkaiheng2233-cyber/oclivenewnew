@@ -3,7 +3,10 @@
 use crate::infrastructure::hotkey_bindings::{HotkeyAction, HotkeyBindingsFile};
 use crate::state::AppState;
 use serde::Serialize;
-use tauri::{AppHandle, GlobalShortcutManager, Manager, State};
+use tauri::{AppHandle, Emitter, State};
+
+#[cfg(not(any(target_os = "android", target_os = "ios")))]
+use tauri_plugin_global_shortcut::{GlobalShortcutExt, ShortcutState};
 
 #[derive(Clone, Serialize)]
 #[serde(rename_all = "camelCase")]
@@ -30,10 +33,11 @@ fn validate_hotkey_bindings(file: &HotkeyBindingsFile) -> Result<(), String> {
 }
 
 /// 注销全部后按配置注册；仅 `enabled` 为真且 `accelerator` 非空的条目会注册。
+#[cfg(not(any(target_os = "android", target_os = "ios")))]
 pub fn apply_global_hotkeys(app: &AppHandle, file: &HotkeyBindingsFile) -> Result<(), String> {
     validate_hotkey_bindings(file)?;
-    let mut mgr = app.global_shortcut_manager();
-    mgr.unregister_all().map_err(|e| e.to_string())?;
+    let gs = app.global_shortcut();
+    gs.unregister_all().map_err(|e| e.to_string())?;
     for b in &file.bindings {
         if !b.enabled {
             continue;
@@ -42,19 +46,27 @@ pub fn apply_global_hotkeys(app: &AppHandle, file: &HotkeyBindingsFile) -> Resul
         if acc.is_empty() {
             continue;
         }
-        let app_clone = app.clone();
         let id = b.id.clone();
         let action = b.action.clone();
         let acc_owned = acc.to_string();
-        mgr.register(&acc_owned, move || {
+        gs.on_shortcut(acc_owned.as_str(), move |app, _shortcut, event| {
+            if event.state != ShortcutState::Pressed {
+                return;
+            }
             let payload = HotkeyActionEvent {
                 binding_id: id.clone(),
                 action: action.clone(),
             };
-            let _ = app_clone.emit_all("hotkey-action", payload);
+            let _ = app.emit("hotkey-action", payload);
         })
         .map_err(|e| format!("register {}: {}", acc_owned, e))?;
     }
+    Ok(())
+}
+
+#[cfg(any(target_os = "android", target_os = "ios"))]
+pub fn apply_global_hotkeys(_app: &AppHandle, file: &HotkeyBindingsFile) -> Result<(), String> {
+    validate_hotkey_bindings(file)?;
     Ok(())
 }
 

@@ -32,9 +32,9 @@ pub enum AppError {
 
 pub type Result<T> = std::result::Result<T, AppError>;
 
-impl From<AppError> for tauri::InvokeError {
+impl From<AppError> for tauri::ipc::InvokeError {
     fn from(err: AppError) -> Self {
-        tauri::InvokeError::from(err.to_string())
+        tauri::ipc::InvokeError::from(err.to_string())
     }
 }
 

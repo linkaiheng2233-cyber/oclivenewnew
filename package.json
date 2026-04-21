@@ -32,7 +32,9 @@
   },
   "dependencies": {
     "@sentry/vue": "^10.47.0",
-    "@tauri-apps/api": "1.5.6",
+    "@tauri-apps/api": "^2.0.0",
+    "@tauri-apps/plugin-dialog": "^2.0.0",
+    "@tauri-apps/plugin-fs": "^2.0.0",
     "acorn": "^8.16.0",
     "acorn-walk": "^8.3.5",
     "idb-keyval": "^6.2.2",
@@ -45,7 +47,7 @@
     "vue3-sfc-loader": "^0.9.5"
   },
   "devDependencies": {
-    "@tauri-apps/cli": "1.5.14",
+    "@tauri-apps/cli": "^2.0.0",
     "@vitejs/plugin-vue": "^5.2.1",
     "rollup-plugin-visualizer": "^7.0.1",
     "vite": "^6.0.3",

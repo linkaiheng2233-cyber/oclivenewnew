@@ -3,8 +3,8 @@ use crate::state::AppState;
 use serde::{Deserialize, Serialize};
 use std::fs;
 use std::path::{Path, PathBuf};
-use tauri::Manager;
 use tauri::State;
+use tauri_plugin_opener::OpenerExt;
 
 #[derive(Debug, Clone, Deserialize)]
 #[serde(rename_all = "camelCase")]
@@ -145,11 +145,9 @@ pub fn create_plugin_scaffold(
     ) {
         return Err(e.to_frontend_error());
     }
-    let _ = tauri::api::shell::open(
-        &app.shell_scope(),
-        plugin_dir.to_string_lossy().to_string(),
-        None,
-    );
+    let _ = app
+        .opener()
+        .open_path(plugin_dir.to_string_lossy().to_string(), None::<&str>);
     Ok(CreatePluginScaffoldResponse {
         plugin_dir: plugin_dir.to_string_lossy().to_string(),
     })

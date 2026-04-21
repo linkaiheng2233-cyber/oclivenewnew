@@ -10,8 +10,8 @@ pub mod utils;
 
 use std::fs;
 use std::path::{Path, PathBuf};
-use tauri::http::{Request, Response, ResponseBuilder};
-use tauri::{AppHandle, Manager};
+use tauri::http::{header, StatusCode};
+use tauri::{AppHandle, Emitter, Manager};
 
 use crate::infrastructure::deep_link::seed_pending_install_urls_from_args;
 use crate::infrastructure::directory_plugins::{start_plugin_fs_watcher, OclivePluginManifest};
@@ -107,54 +107,69 @@ fn plugin_asset_from_request_uri(uri: &str) -> Option<(String, String)> {
     Some((plugin_id, rel))
 }
 
+fn ocliveplugin_http_response(
+    status: StatusCode,
+    content_type: &'static str,
+    body: Vec<u8>,
+) -> tauri::http::Response<Vec<u8>> {
+    tauri::http::Response::builder()
+        .status(status)
+        .header(header::CONTENT_TYPE, content_type)
+        .body(body)
+        .unwrap_or_else(|_| {
+            tauri::http::Response::builder()
+                .status(StatusCode::INTERNAL_SERVER_ERROR)
+                .body(Vec::new())
+                .unwrap()
+        })
+}
+
 fn serve_ocliveplugin_asset(
     app: &AppHandle,
-    request: &Request,
-) -> Result<Response, Box<dyn std::error::Error>> {
-    let state = app
-        .try_state::<state::AppState>()
-        .ok_or_else(|| Box::<dyn std::error::Error>::from("app state not ready"))?;
+    request: &tauri::http::Request<Vec<u8>>,
+) -> tauri::http::Response<Vec<u8>> {
+    const TEXT_PLAIN: &str = "text/plain; charset=utf-8";
+    let Some(state) = app.try_state::<state::AppState>() else {
+        return ocliveplugin_http_response(
+            StatusCode::INTERNAL_SERVER_ERROR,
+            TEXT_PLAIN,
+            b"app state not ready".to_vec(),
+        );
+    };
     let uri = request.uri().to_string();
     let Some((plugin_id, rel)) = plugin_asset_from_request_uri(&uri) else {
-        return ResponseBuilder::new()
-            .status(404)
-            .mimetype("text/plain; charset=utf-8")
-            .body(b"unknown uri".to_vec());
+        return ocliveplugin_http_response(StatusCode::NOT_FOUND, TEXT_PLAIN, b"unknown uri".to_vec());
     };
     if state
         .directory_plugins
         .plugin_state_snapshot()
         .is_plugin_disabled(plugin_id.trim())
     {
-        return ResponseBuilder::new()
-            .status(403)
-            .mimetype("text/plain; charset=utf-8")
-            .body(b"plugin disabled".to_vec());
+        return ocliveplugin_http_response(
+            StatusCode::FORBIDDEN,
+            TEXT_PLAIN,
+            b"plugin disabled".to_vec(),
+        );
     }
     let roots = state.directory_plugins.plugin_roots.read();
     let Some(root) = roots.get(&plugin_id) else {
-        return ResponseBuilder::new()
-            .status(404)
-            .mimetype("text/plain; charset=utf-8")
-            .body(format!("unknown plugin_id={}", plugin_id).into_bytes());
+        return ocliveplugin_http_response(
+            StatusCode::NOT_FOUND,
+            TEXT_PLAIN,
+            format!("unknown plugin_id={}", plugin_id).into_bytes(),
+        );
     };
     let path = root.join(&rel);
     let root_norm = root.canonicalize().unwrap_or_else(|_| root.clone());
     let mut data = match fs::read(&path) {
         Ok(b) => b,
         Err(_) => {
-            return ResponseBuilder::new()
-                .status(404)
-                .mimetype("text/plain; charset=utf-8")
-                .body(b"not found".to_vec());
+            return ocliveplugin_http_response(StatusCode::NOT_FOUND, TEXT_PLAIN, b"not found".to_vec());
         }
     };
     let path_norm = path.canonicalize().unwrap_or(path.clone());
     if !path_norm.starts_with(&root_norm) {
-        return ResponseBuilder::new()
-            .status(403)
-            .mimetype("text/plain; charset=utf-8")
-            .body(b"forbidden".to_vec());
+        return ocliveplugin_http_response(StatusCode::FORBIDDEN, TEXT_PLAIN, b"forbidden".to_vec());
     }
     if mime_for_plugin_asset(&rel).starts_with("text/html") {
         if let Ok(manifest) = OclivePluginManifest::load_from_dir(root) {
@@ -164,10 +179,8 @@ fn serve_ocliveplugin_asset(
             }
         }
     }
-    ResponseBuilder::new()
-        .status(200)
-        .mimetype(mime_for_plugin_asset(&rel))
-        .body(data)
+    let mime = mime_for_plugin_asset(&rel);
+    ocliveplugin_http_response(StatusCode::OK, mime, data)
 }
 
 /// 优先 `OCLIVE_ROLES_DIR`。
@@ -210,8 +223,8 @@ fn resolve_roles_dir_for_app(app: &tauri::App) -> PathBuf {
             dev.display()
         );
     }
-    match app.path_resolver().resource_dir() {
-        Some(res) => {
+    match app.path().resource_dir() {
+        Ok(res) => {
             log::info!(target: "oclive_roles", "tauri resource_dir -> {}", res.display());
             let bundled = res.join("roles");
             if bundled.is_dir() {
@@ -228,9 +241,10 @@ fn resolve_roles_dir_for_app(app: &tauri::App) -> PathBuf {
                 bundled.display()
             );
         }
-        None => log::warn!(
+        Err(e) => log::warn!(
             target: "oclive_roles",
-            "resource_dir() is None; falling back to dev resolve_roles_dir"
+            "resource_dir() failed: {}; falling back to dev resolve_roles_dir",
+            e
         ),
     }
     let dev = state::resolve_roles_dir();
@@ -261,9 +275,18 @@ pub fn run() {
     // 与 `tauri.conf.json` → `bundle.identifier` 一致；`tauri-plugin-deep-link` 用于单实例与 IPC。
     #[cfg(desktop)]
     tauri_plugin_deep_link::prepare("com.oclivenewnew.app");
-    tauri::Builder::default()
-        .register_uri_scheme_protocol("ocliveplugin", |app, request| {
-            serve_ocliveplugin_asset(app, request)
+    let mut builder = tauri::Builder::default()
+        .plugin(tauri_plugin_shell::init())
+        .plugin(tauri_plugin_opener::init())
+        .plugin(tauri_plugin_fs::init())
+        .plugin(tauri_plugin_dialog::init());
+    #[cfg(not(any(target_os = "android", target_os = "ios")))]
+    {
+        builder = builder.plugin(tauri_plugin_global_shortcut::Builder::new().build());
+    }
+    builder
+        .register_uri_scheme_protocol("ocliveplugin", |ctx, request| {
+            serve_ocliveplugin_asset(ctx.app_handle(), &request)
         })
         .setup(|app| {
             #[cfg(desktop)]
@@ -272,7 +295,7 @@ pub fn run() {
                 if let Err(e) = tauri_plugin_deep_link::register("oclive", move |url: String| {
                     log::info!(target: "oclive_deep_link", "oclive deep link: {}", url);
                     seed_pending_install_urls_from_args(std::iter::once(url));
-                    let _ = app_h.emit_all(
+                    let _ = app_h.emit(
                         "protocol:pending_install",
                         serde_json::json!({ "reason": "deep-link" }),
                     );
@@ -285,10 +308,7 @@ pub fn run() {
                 }
             }
             seed_pending_install_urls_from_args(std::env::args());
-            let app_dir = app
-                .path_resolver()
-                .app_data_dir()
-                .expect("resolve app_data_dir");
+            let app_dir = app.path().app_data_dir().expect("resolve app_data_dir");
             fs::create_dir_all(&app_dir).expect("create app_data_dir");
             let db_path = app_dir.join("app.db");
             let roles_dir = resolve_roles_dir_for_app(app);
