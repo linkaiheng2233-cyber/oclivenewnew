@@ -42,4 +42,4 @@ tauri-plugin-deep-link = "0.1.2"
 tower = { version = "0.4", features = ["util"] }
 
 [build-dependencies]
-tauri-build = { version = "1.5", features = [] }
+tauri-build = { version = "2.2", features = [] }
