@@ -477,6 +477,8 @@ pub struct DirectoryPluginCatalogEntry {
     pub version: String,
     #[serde(skip_serializing_if = "Option::is_none")]
     pub plugin_type: Option<String>,
+    /// manifest 含 `uiTemplate` 或 `uiSchema.fields` 时可在宿主编辑私有 `config.json`。
+    pub has_ui_settings: bool,
     /// manifest 是否声明 `process`（可在此面板「启动」JSON-RPC 子进程）。
     pub has_rpc_process: bool,
     /// manifest 是否声明了 `rpcMethods`（便于调试面板预填方法；无 `process` 时仍可手填 RPC 测已运行实例）。
@@ -543,6 +545,12 @@ fn build_directory_plugin_catalog(state: &AppState) -> Vec<DirectoryPluginCatalo
         .filter_map(|(pid, root)| {
             let manifest = OclivePluginManifest::load_from_dir(root).ok()?;
             let is_shell = manifest.shell.is_some();
+            let has_ui_settings = manifest.ui_template.is_some()
+                || manifest
+                    .ui_schema
+                    .as_ref()
+                    .map(|s| !s.fields.is_empty())
+                    .unwrap_or(false);
             let has_rpc_process = manifest.process.is_some();
             let declares_rpc_methods = !manifest.rpc_methods.is_empty();
             let mut ui_slot_names: Vec<String> = Vec::new();
@@ -567,6 +575,7 @@ fn build_directory_plugin_catalog(state: &AppState) -> Vec<DirectoryPluginCatalo
                 id: pid.clone(),
                 version: manifest.version.clone(),
                 plugin_type: manifest.plugin_type.clone(),
+                has_ui_settings,
                 has_rpc_process,
                 declares_rpc_methods,
                 is_shell,

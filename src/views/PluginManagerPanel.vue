@@ -21,11 +21,24 @@ import {
   usePluginStore,
 } from "../stores/pluginStore";
 import { useRoleStore } from "../stores/roleStore";
-import { applyAuthorSuggestedPluginBackends, packPlugin } from "../utils/tauri-api";
+import {
+  applyAuthorSuggestedPluginBackends,
+  packPlugin,
+  type PluginMarketEntryDto,
+} from "../utils/tauri-api";
 
 const pluginStore = usePluginStore();
 const roleStore = useRoleStore();
 const { showToast } = useAppToast();
+
+watch(
+  () => pluginStore.panelVisible,
+  (vis) => {
+    if (vis) {
+      void pluginStore.loadCachedPluginMarket();
+    }
+  },
+);
 
 const batchMode = ref(false);
 const batchSelected = ref<Record<string, boolean>>({});
@@ -122,16 +135,58 @@ async function onBatchUpdate() {
     return;
   }
   try {
-    const r = await pluginStore.batchUpdatePluginIds(ids);
-    if (r.count === 0) {
-      showToast("info", "所选插件当前无在线更新记录；请使用「从本地 zip 更新」。");
-    } else {
-      showToast(
-        "info",
-        `检测到 ${r.count} 个插件可能有更新（${r.targets.join("、")}）。请分别使用「从本地 zip 更新」导入包。`,
-      );
-    }
+    await pluginStore.batchUpdatePluginsFromGitIndex(ids);
+    showToast("success", "已从索引 Git 源拉取更新（ff-only）；若失败请查看错误提示。");
     clearBatchSelection();
+  } catch (e) {
+    showToast("error", e instanceof Error ? e.message : String(e));
+  }
+}
+
+async function onSyncMarketIndex() {
+  try {
+    await pluginStore.syncPluginMarket();
+    if (pluginStore.pluginMarketSnapshot?.warning) {
+      showToast("info", pluginStore.pluginMarketSnapshot.warning);
+    } else {
+      showToast("success", "索引已同步。");
+    }
+  } catch (e) {
+    showToast("error", e instanceof Error ? e.message : String(e));
+  }
+}
+
+async function onInstallMarketEntry(row: PluginMarketEntryDto) {
+  if ((row.missingDependencies ?? []).length > 0) {
+    showToast(
+      "error",
+      `依赖未满足，无法安装：${row.missingDependencies.join("、")}`,
+    );
+    return;
+  }
+  try {
+    await pluginStore.installFromPluginMarket(row.id, row.git);
+    showToast("success", `已安装 ${row.id}，建议保存配置并视需要重启应用。`);
+  } catch (e) {
+    showToast("error", e instanceof Error ? e.message : String(e));
+  }
+}
+
+async function onUpdateMarketEntry(row: PluginMarketEntryDto) {
+  try {
+    await pluginStore.updateInstalledPluginFromGit(row.id);
+    showToast("success", `已更新 ${row.id}（git pull --ff-only）。`);
+  } catch (e) {
+    showToast("error", e instanceof Error ? e.message : String(e));
+  }
+}
+
+async function onGitPullWorkspacePlugin() {
+  const pid = selectedWorkspacePlugin.value?.id?.trim() ?? "";
+  if (!pid) return;
+  try {
+    await pluginStore.updateInstalledPluginFromGit(pid);
+    showToast("success", "已从远程 Git 拉取更新。");
   } catch (e) {
     showToast("error", e instanceof Error ? e.message : String(e));
   }
@@ -395,6 +450,85 @@ async function onPackSelectedPlugin(): Promise<void> {
             <p v-else class="pm-muted">未列出 recommended_plugins。</p>
           </section>
 
+          <section class="pm-section">
+            <div class="pm-section-head">
+              <h3 class="pm-h3">社区索引</h3>
+              <div class="pm-section-actions">
+                <button
+                  type="button"
+                  class="pm-btn secondary pm-btn--sm"
+                  :disabled="pluginStore.pluginMarketSyncing"
+                  @click="onSyncMarketIndex"
+                >
+                  {{ pluginStore.pluginMarketSyncing ? "同步中…" : "同步在线索引" }}
+                </button>
+              </div>
+            </div>
+            <p v-if="pluginStore.pluginMarketError" class="pm-err">{{ pluginStore.pluginMarketError }}</p>
+            <p
+              v-else-if="pluginStore.pluginMarketSnapshot?.warning"
+              class="pm-hint"
+            >
+              {{ pluginStore.pluginMarketSnapshot.warning }}
+            </p>
+            <p v-if="pluginStore.pluginMarketSnapshot?.offlineMode" class="pm-hint">
+              当前为离线模式（使用本地缓存索引）。
+            </p>
+            <p
+              v-if="
+                !pluginStore.pluginMarketSnapshot?.plugins?.length &&
+                !pluginStore.pluginMarketError
+              "
+              class="pm-muted"
+            >
+              尚无索引数据，请点击「同步在线索引」。
+            </p>
+            <ul
+              v-else-if="(pluginStore.pluginMarketSnapshot?.plugins?.length ?? 0) > 0"
+              class="pm-market-list"
+            >
+              <li
+                v-for="row in pluginStore.pluginMarketSnapshot!.plugins"
+                :key="row.id"
+                class="pm-market-li"
+              >
+                <div class="pm-market-main">
+                  <strong>{{ row.id }}</strong>
+                  <span class="pm-muted"> · {{ row.name }} · v{{ row.version }}</span>
+                  <p v-if="row.description" class="pm-market-desc">{{ row.description }}</p>
+                  <p
+                    v-if="(row.missingDependencies ?? []).length"
+                    class="pm-err pm-market-deps"
+                  >
+                    依赖缺失：{{ row.missingDependencies.join("、") }}
+                  </p>
+                </div>
+                <div class="pm-market-actions">
+                  <button
+                    v-if="!row.installed"
+                    type="button"
+                    class="pm-btn secondary pm-btn--sm"
+                    @click="onInstallMarketEntry(row)"
+                  >
+                    安装
+                  </button>
+                  <template v-else>
+                    <span v-if="row.hasUpdate" class="pm-badge">可更新</span>
+                    <span v-else class="pm-muted">已安装</span>
+                    <button
+                      v-if="row.hasUpdate"
+                      type="button"
+                      class="pm-btn secondary pm-btn--sm"
+                      @click="onUpdateMarketEntry(row)"
+                    >
+                      更新
+                    </button>
+                  </template>
+                </div>
+              </li>
+            </ul>
+          </section>
+
           <section class="pm-section pm-section--catalog">
             <div class="pm-section-head">
               <h3 class="pm-h3">已安装插件</h3>
@@ -443,7 +577,7 @@ async function onPackSelectedPlugin(): Promise<void> {
                 批量停用
               </button>
               <button type="button" class="pm-btn secondary pm-btn--sm" @click="onBatchUpdate">
-                批量检查更新
+                批量从 Git 更新
               </button>
             </div>
             <p v-if="!pluginStore.catalog.length" class="pm-muted">
@@ -507,6 +641,13 @@ async function onPackSelectedPlugin(): Promise<void> {
                       "
                       class="pm-badge"
                     >有新版本</span>
+                    <button
+                      type="button"
+                      class="pm-btn secondary pm-btn--sm"
+                      @click="onGitPullWorkspacePlugin"
+                    >
+                      从 Git 拉取更新
+                    </button>
                     <button
                       type="button"
                       class="pm-btn secondary pm-btn--sm"
@@ -950,6 +1091,48 @@ async function onPackSelectedPlugin(): Promise<void> {
   border: 1px solid var(--border-light);
   background: var(--bg-secondary);
   box-shadow: var(--shadow-sm);
+}
+.pm-market-list {
+  list-style: none;
+  margin: 8px 0 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  max-height: 240px;
+  overflow: auto;
+}
+.pm-market-li {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 10px;
+  padding: 10px 12px;
+  border-radius: 10px;
+  border: 1px solid var(--border-light);
+  background: var(--bg-secondary);
+  font-size: 13px;
+}
+.pm-market-main {
+  flex: 1 1 200px;
+  min-width: 0;
+}
+.pm-market-desc {
+  margin: 6px 0 0;
+  font-size: 12px;
+  color: var(--text-secondary);
+  line-height: 1.45;
+}
+.pm-market-deps {
+  margin: 6px 0 0;
+  font-size: 12px;
+}
+.pm-market-actions {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
 }
 .pm-section-head {
   display: flex;

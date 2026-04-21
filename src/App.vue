@@ -36,6 +36,8 @@ import { usePackUiTheme } from "./composables/useTheme";
 import { usePluginManagerWindow } from "./composables/usePluginManagerWindow";
 import { hostEventBus } from "./lib/hostEventBus";
 import {
+  consumePendingProtocolInstalls,
+  installPluginFromGit,
   loadRole,
   OCLIVE_DEFAULT_RELATION_SENTINEL,
   setErrorReporter,
@@ -588,6 +590,26 @@ onMounted(() => {
   }).then((u) => {
     unlistenPluginFs = u;
   });
+
+  void (async () => {
+    try {
+      const pending = await consumePendingProtocolInstalls();
+      for (const p of pending) {
+        const git = p.gitUrl?.trim();
+        if (!git) continue;
+        try {
+          const r = await installPluginFromGit(git);
+          showToast("success", `已通过网页链接安装插件：${r.installedPluginId}`);
+          await pluginStore.refresh();
+          openPluginManagerPanel();
+        } catch (e) {
+          showToast("error", e instanceof Error ? e.message : String(e));
+        }
+      }
+    } catch (e) {
+      console.warn("consume_pending_protocol_installs", e);
+    }
+  })();
 });
 
 watch(topMoreOpen, (open) => {

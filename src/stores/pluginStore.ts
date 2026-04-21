@@ -1,16 +1,23 @@
 import { defineStore } from "pinia";
 import { setHostEventSubscribedEvents } from "../lib/hostEventBus";
 import {
+  batchUpdatePlugins,
   checkPluginUpdates,
   extractPluginZip,
+  getCachedPluginIndex,
   getDirectoryPluginBootstrap,
   getDirectoryPluginCatalog,
   getPluginState,
+  installPluginFromMarket,
   resetPluginStateToRoleDefault,
   saveGlobalPluginState,
   savePluginState,
+  syncPluginIndexCommand,
+  uninstallPluginFromMarket,
+  updatePluginFromMarket,
   type DirectoryPluginBootstrap,
   type DirectoryPluginCatalogEntry,
+  type PluginMarketSnapshotDto,
   type PluginUpdateInfo,
   type PluginUiSlotInfo,
   type RolePluginState,
@@ -131,6 +138,7 @@ function catalogEqual(
       x.id !== y.id ||
       x.version !== y.version ||
       (x.pluginType ?? null) !== (y.pluginType ?? null) ||
+      (x.hasUiSettings ?? false) !== (y.hasUiSettings ?? false) ||
       x.hasRpcProcess !== y.hasRpcProcess ||
       (x.declaresRpcMethods ?? false) !== (y.declaresRpcMethods ?? false) ||
       x.isShell !== y.isShell ||
@@ -237,6 +245,10 @@ export const usePluginStore = defineStore("plugin", {
     pluginUpdateById: {} as Record<string, PluginUpdateInfo>,
     pluginUpdatesCheckLoading: false,
     extractingPluginId: null as string | null,
+    /** 最近一次 `get_cached_plugin_index` / `sync_plugin_index_command` 快照 */
+    pluginMarketSnapshot: null as PluginMarketSnapshotDto | null,
+    pluginMarketSyncing: false,
+    pluginMarketError: null as string | null,
   }),
   actions: {
     /** 由 bootstrap DTO 更新宿主事件订阅与开发者模式（插槽与 `refresh` / `sync` 共用）。 */
@@ -261,6 +273,49 @@ export const usePluginStore = defineStore("plugin", {
       }
       this.panelVisible = true;
       await this.refresh();
+    },
+    async loadCachedPluginMarket() {
+      this.pluginMarketError = null;
+      try {
+        this.pluginMarketSnapshot = await getCachedPluginIndex();
+      } catch (e) {
+        this.pluginMarketError = e instanceof Error ? e.message : String(e);
+      }
+    },
+    async syncPluginMarket(indexUrl?: string | null) {
+      this.pluginMarketSyncing = true;
+      this.pluginMarketError = null;
+      try {
+        this.pluginMarketSnapshot = await syncPluginIndexCommand(
+          indexUrl ?? undefined,
+        );
+        await this.refresh();
+      } catch (e) {
+        this.pluginMarketError = e instanceof Error ? e.message : String(e);
+        throw e;
+      } finally {
+        this.pluginMarketSyncing = false;
+      }
+    },
+    async installFromPluginMarket(pluginId: string, gitUrl?: string | null) {
+      await installPluginFromMarket(pluginId, gitUrl ?? null);
+      await this.refresh();
+      this.bootstrapEpoch += 1;
+    },
+    async updateInstalledPluginFromGit(pluginId: string) {
+      await updatePluginFromMarket(pluginId);
+      await this.refresh();
+      this.bootstrapEpoch += 1;
+    },
+    async uninstallPluginFromGitIndex(pluginId: string) {
+      await uninstallPluginFromMarket(pluginId);
+      await this.refresh();
+      this.bootstrapEpoch += 1;
+    },
+    async batchUpdatePluginsFromGitIndex(pluginIds: string[]) {
+      await batchUpdatePlugins(pluginIds);
+      await this.refresh();
+      this.bootstrapEpoch += 1;
     },
     async checkPluginUpdatesFromRegistry() {
       this.pluginUpdatesCheckLoading = true;

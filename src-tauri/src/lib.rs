@@ -13,6 +13,7 @@ use std::path::{Path, PathBuf};
 use tauri::http::{Request, Response, ResponseBuilder};
 use tauri::{AppHandle, Manager};
 
+use crate::infrastructure::deep_link::seed_pending_install_urls_from_args;
 use crate::infrastructure::directory_plugins::{start_plugin_fs_watcher, OclivePluginManifest};
 use crate::state::AppState;
 
@@ -262,6 +263,7 @@ pub fn run() {
             serve_ocliveplugin_asset(app, request)
         })
         .setup(|app| {
+            seed_pending_install_urls_from_args(std::env::args());
             let app_dir = app
                 .path_resolver()
                 .app_data_dir()
@@ -348,6 +350,17 @@ pub fn run() {
             api::plugin_bridge::plugin_bridge_invoke,
             api::plugin_update::check_plugin_updates,
             api::plugin_update::extract_plugin_zip,
+            api::plugin_index::sync_plugin_index_command,
+            api::plugin_index::get_cached_plugin_index,
+            api::plugin_index::install_plugin_from_market,
+            api::plugin_index::install_plugin_from_git,
+            api::plugin_index::update_plugin_from_market,
+            api::plugin_index::uninstall_plugin_from_market,
+            api::plugin_index::batch_update_plugins,
+            api::plugin_index::batch_uninstall_plugins,
+            api::plugin_index::consume_pending_protocol_installs,
+            api::plugin_config::get_plugin_settings_ui,
+            api::plugin_config::set_plugin_settings_config,
         ])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");

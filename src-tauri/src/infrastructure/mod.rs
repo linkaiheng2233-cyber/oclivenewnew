@@ -4,6 +4,7 @@
 
 pub mod cache;
 pub mod db;
+pub mod deep_link;
 pub mod directory_plugins;
 pub mod function_call_parser;
 pub mod hotkey_bindings;
@@ -12,6 +13,8 @@ pub mod llm_params;
 pub mod mcp_client;
 pub mod ollama_client;
 pub mod ollama_timeouts;
+pub mod plugin_data;
+pub mod plugin_installer;
 pub mod plugin_state;
 pub mod remote_plugin;
 pub mod repositories;

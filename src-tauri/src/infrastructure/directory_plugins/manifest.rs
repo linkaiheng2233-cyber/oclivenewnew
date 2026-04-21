@@ -42,6 +42,25 @@ pub struct ProcessSection {
 ///
 /// **同一 `slot` 多条声明**：每条须有唯一 `appearance_id`（空字符串表示「默认」变体，同一 `slot` 至多一条）。
 /// `label` 为管理界面展示用，可选。
+/// 插件管理「设置」页动态表单字段（与 `PLUGIN_INDEX.md` / 前端 `PluginSettings.vue` 契约一致）。
+#[derive(Debug, Clone, Deserialize)]
+pub struct UiSchemaField {
+    pub key: String,
+    pub label: String,
+    #[serde(rename = "type")]
+    pub field_type: String,
+    #[serde(default)]
+    pub required: bool,
+    #[serde(default)]
+    pub default: Option<serde_json::Value>,
+}
+
+#[derive(Debug, Clone, Deserialize, Default)]
+pub struct UiSchemaSection {
+    #[serde(default)]
+    pub fields: Vec<UiSchemaField>,
+}
+
 #[derive(Debug, Clone, Deserialize)]
 pub struct UiSlotDecl {
     pub slot: String,
@@ -86,6 +105,12 @@ pub struct OclivePluginManifest {
     /// 可选：依赖的其他目录插件 id → semver 范围（如 `^2.0.0`、`>=1.0.0`）。
     #[serde(default)]
     pub dependencies: Option<HashMap<String, String>>,
+    /// 可选：`endpoint-config` / `provider-selector` / `slot-selector` / `switch-toggle`。
+    #[serde(default, rename = "uiTemplate")]
+    pub ui_template: Option<String>,
+    /// 可选：动态表单 schema（`fields` 数组）。
+    #[serde(default, rename = "uiSchema")]
+    pub ui_schema: Option<UiSchemaSection>,
 }
 
 /// 规范化 manifest 内相对路径，与请求 URI 中 `rel` 比较。

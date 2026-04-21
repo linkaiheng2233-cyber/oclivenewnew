@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import PluginPrivateSettingsForm from "./PluginPrivateSettingsForm.vue";
 import PluginDebugPanel from "./PluginDebugPanel.vue";
 import PluginListItem from "./PluginListItem.vue";
 import { useAppToast } from "../composables/useAppToast";
@@ -71,6 +72,10 @@ function onPluginDisabledRow(id: string, disabled: boolean): void {
         pluginStore.setSlotContributionDisabled(SLOT_CHAT_HEADER, entry.id, $event)
       "
     />
+    <div v-if="entry.hasUiSettings" class="ipwd-settings">
+      <div class="ipwd-settings-h">插件私有设置</div>
+      <PluginPrivateSettingsForm :plugin-id="entry.id" />
+    </div>
     <div class="ipwd-debug">
       <div class="ipwd-debug-h">调试台</div>
       <PluginDebugPanel
@@ -89,6 +94,16 @@ function onPluginDisabledRow(id: string, disabled: boolean): void {
   flex-direction: column;
   gap: 12px;
   min-width: 0;
+}
+.ipwd-settings {
+  border-top: 1px dashed var(--border-light);
+  padding-top: 10px;
+}
+.ipwd-settings-h {
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--text-secondary);
+  margin-bottom: 8px;
 }
 .ipwd-debug {
   border-top: 1px dashed var(--border-light);

@@ -981,6 +981,8 @@ export interface DirectoryPluginCatalogEntry {
   id: string;
   version: string;
   pluginType?: string | null;
+  /** manifest 含 `uiTemplate` 或 `uiSchema.fields` */
+  hasUiSettings?: boolean;
   /** manifest 是否含 `process`（可在此面板启动 JSON-RPC 子进程） */
   hasRpcProcess: boolean;
   /** manifest 是否声明 `rpcMethods`（调试面板可预填方法名） */
@@ -1065,6 +1067,140 @@ export async function resetPluginStateToRoleDefault(
   pluginStateInflight.delete(pluginStateCacheKey(roleId));
   return invokeWithFriendlyError<void>("reset_plugin_state_to_role_default", {
     roleId,
+  });
+}
+
+/** 网页索引中的单条插件（与 `plugin_installer::PluginIndexEntry` 一致，camelCase）。 */
+export interface PluginIndexEntryDto {
+  id: string;
+  name: string;
+  description: string;
+  author: string;
+  version: string;
+  git: string;
+  permissions: string[];
+  tags: string[];
+  category?: string | null;
+  source?: string | null;
+  changelog?: string | null;
+  dependencies: Record<string, string>;
+}
+
+export interface PluginMarketEntryDto extends PluginIndexEntryDto {
+  installed: boolean;
+  installedVersion?: string | null;
+  hasUpdate: boolean;
+  missingDependencies: string[];
+}
+
+export interface PluginMarketSnapshotDto {
+  plugins: PluginMarketEntryDto[];
+  offlineMode: boolean;
+  source: string;
+  warning?: string | null;
+}
+
+export interface PendingProtocolInstallDto {
+  gitUrl: string;
+}
+
+export interface InstallPluginFromMarketResponseDto {
+  installedPluginId: string;
+}
+
+export async function syncPluginIndexCommand(
+  indexUrl?: string | null,
+): Promise<PluginMarketSnapshotDto> {
+  return invokeWithFriendlyError<PluginMarketSnapshotDto>(
+    "sync_plugin_index_command",
+    { indexUrl: indexUrl ?? null },
+  );
+}
+
+export async function getCachedPluginIndex(): Promise<PluginMarketSnapshotDto> {
+  return invokeWithFriendlyError<PluginMarketSnapshotDto>(
+    "get_cached_plugin_index",
+    {},
+  );
+}
+
+export async function installPluginFromMarket(
+  pluginId: string,
+  gitUrl?: string | null,
+): Promise<InstallPluginFromMarketResponseDto> {
+  return invokeWithFriendlyError<InstallPluginFromMarketResponseDto>(
+    "install_plugin_from_market",
+    { pluginId, gitUrl: gitUrl ?? null },
+  );
+}
+
+export async function installPluginFromGit(
+  gitUrl: string,
+): Promise<InstallPluginFromMarketResponseDto> {
+  return invokeWithFriendlyError<InstallPluginFromMarketResponseDto>(
+    "install_plugin_from_git",
+    { req: { gitUrl } },
+  );
+}
+
+export async function updatePluginFromMarket(pluginId: string): Promise<void> {
+  return invokeWithFriendlyError<void>("update_plugin_from_market", {
+    pluginId,
+  });
+}
+
+export async function uninstallPluginFromMarket(pluginId: string): Promise<void> {
+  return invokeWithFriendlyError<void>("uninstall_plugin_from_market", {
+    pluginId,
+  });
+}
+
+export async function batchUpdatePlugins(pluginIds: string[]): Promise<void> {
+  return invokeWithFriendlyError<void>("batch_update_plugins", { pluginIds });
+}
+
+export async function batchUninstallPlugins(pluginIds: string[]): Promise<void> {
+  return invokeWithFriendlyError<void>("batch_uninstall_plugins", { pluginIds });
+}
+
+export async function consumePendingProtocolInstalls(): Promise<
+  PendingProtocolInstallDto[]
+> {
+  return invokeWithFriendlyError<PendingProtocolInstallDto[]>(
+    "consume_pending_protocol_installs",
+    {},
+  );
+}
+
+export interface UiSchemaFieldDto {
+  key: string;
+  label: string;
+  type: string;
+  required: boolean;
+  default?: unknown;
+}
+
+export interface PluginUiSettingsDto {
+  uiTemplate?: string | null;
+  fields: UiSchemaFieldDto[];
+  config: Record<string, unknown>;
+}
+
+export async function getPluginSettingsUi(
+  pluginId: string,
+): Promise<PluginUiSettingsDto> {
+  return invokeWithFriendlyError<PluginUiSettingsDto>("get_plugin_settings_ui", {
+    pluginId,
+  });
+}
+
+export async function setPluginSettingsConfig(
+  pluginId: string,
+  config: Record<string, unknown>,
+): Promise<void> {
+  return invokeWithFriendlyError<void>("set_plugin_settings_config", {
+    pluginId,
+    config,
   });
 }
 
