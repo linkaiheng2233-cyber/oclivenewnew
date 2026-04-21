@@ -52,6 +52,16 @@ pub enum PromptBackend {
     Directory,
 }
 
+/// Agent 任务编排后端（工具调度 / ReAct）
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Default, Serialize, Deserialize)]
+#[serde(rename_all = "snake_case")]
+pub enum AgentBackend {
+    #[default]
+    Builtin,
+    Remote,
+    Directory,
+}
+
 /// 主对话 LLM 调用后端（[`LlmClient`](crate::infrastructure::llm::LlmClient)）
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Default, Serialize, Deserialize)]
 #[serde(rename_all = "snake_case")]
@@ -78,6 +88,8 @@ pub struct DirectoryPluginSlots {
     pub prompt: Option<String>,
     #[serde(default)]
     pub llm: Option<String>,
+    #[serde(default)]
+    pub agent: Option<String>,
 }
 
 impl DirectoryPluginSlots {
@@ -88,6 +100,7 @@ impl DirectoryPluginSlots {
             && self.event.as_ref().is_none_or(|s| s.trim().is_empty())
             && self.prompt.as_ref().is_none_or(|s| s.trim().is_empty())
             && self.llm.as_ref().is_none_or(|s| s.trim().is_empty())
+            && self.agent.as_ref().is_none_or(|s| s.trim().is_empty())
     }
 }
 
@@ -107,6 +120,8 @@ pub struct PluginBackends {
     pub prompt: PromptBackend,
     #[serde(default)]
     pub llm: LlmBackend,
+    #[serde(default)]
+    pub agent: AgentBackend,
     /// `memory` / `emotion` / `event` / `prompt` / `llm` 为 `directory` 时在此给出插件 id。
     #[serde(default)]
     pub directory_plugins: DirectoryPluginSlots,
@@ -135,6 +150,8 @@ pub struct PluginBackendsSourceMap {
     pub prompt: PluginBackendSource,
     #[serde(default)]
     pub llm: PluginBackendSource,
+    #[serde(default)]
+    pub agent: PluginBackendSource,
 }
 
 /// 会话级覆盖：仅 `Some` 字段会替换角色包 `plugin_backends` 对应模块。
@@ -153,6 +170,8 @@ pub struct PluginBackendsOverride {
     pub prompt: Option<PromptBackend>,
     #[serde(default)]
     pub llm: Option<LlmBackend>,
+    #[serde(default)]
+    pub agent: Option<AgentBackend>,
     /// 会话级覆盖目录插件槽位（`Some` 时与包内字段按槽合并，见 [`Self::apply_to`]）。
     #[serde(default)]
     pub directory_plugins: Option<DirectoryPluginSlots>,
@@ -167,6 +186,7 @@ impl PluginBackendsOverride {
             && self.event.is_none()
             && self.prompt.is_none()
             && self.llm.is_none()
+            && self.agent.is_none()
             && self.directory_plugins.is_none()
     }
 
@@ -203,6 +223,10 @@ impl PluginBackendsOverride {
                     base.directory_plugins.prompt.as_deref(),
                 ),
                 llm: trimmed_or_fallback(ov.llm.as_deref(), base.directory_plugins.llm.as_deref()),
+                agent: trimmed_or_fallback(
+                    ov.agent.as_deref(),
+                    base.directory_plugins.agent.as_deref(),
+                ),
             },
         };
         PluginBackends {
@@ -212,6 +236,7 @@ impl PluginBackendsOverride {
             event: self.event.unwrap_or(base.event),
             prompt: self.prompt.unwrap_or(base.prompt),
             llm: self.llm.unwrap_or(base.llm),
+            agent: self.agent.unwrap_or(base.agent),
             directory_plugins,
         }
     }

@@ -19,7 +19,7 @@ fn resolved_plugins_dummy(role: &Role) -> ResolvedRolePlugins {
     let dummy_llm: Arc<dyn LlmClient> = Arc::new(MockLlmClient {
         reply: String::new(),
     });
-    PluginHost::new(dummy_llm, None).resolve_for_role(role)
+    PluginHost::new(dummy_llm, None, std::env::temp_dir()).resolve_for_role(role)
 }
 
 /// 角色管理器

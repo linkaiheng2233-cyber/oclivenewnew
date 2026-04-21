@@ -6,6 +6,7 @@ pub mod role_manifest_validate;
 pub mod user_identity;
 
 pub mod affect_policy;
+pub mod agent;
 pub mod chat_engine;
 pub mod chat_llm_fallback;
 pub mod chat_turn;
@@ -32,6 +33,7 @@ pub mod role_manager;
 pub mod user_emotion_analyzer;
 
 pub use chat_engine::process_message;
+pub use agent::{AgentDebugTrace, AgentInput, AgentOutput, AgentProvider, BuiltinReActAgent};
 pub use emotion_analyzer::EmotionAnalyzer;
 pub use event_detector::EventDetector;
 pub use event_estimator::{BuiltinEventEstimator, EventEstimator, RemoteEventEstimatorPlaceholder};

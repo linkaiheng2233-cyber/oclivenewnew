@@ -10,6 +10,7 @@ import {
   formatDirectoryPluginSlots,
   usesDirectoryPlugins,
 } from "../utils/pluginBackendsDisplay";
+import AgentDebugPanel from "./AgentDebugPanel.vue";
 
 const roleStore = useRoleStore();
 const busy = ref(false);
@@ -35,6 +36,7 @@ const pluginBackendRows = [
   { key: "event" as const, label: "Event", options: ["builtin", "builtin_v2", "remote", "directory"] },
   { key: "prompt" as const, label: "Prompt", options: ["builtin", "builtin_v2", "remote", "directory"] },
   { key: "llm" as const, label: "LLM", options: ["ollama", "remote", "directory"] },
+  { key: "agent" as const, label: "Agent", options: ["builtin", "remote", "directory"] },
 ];
 const directoryPluginsPackLine = computed(() => {
   const pb = pluginBackends.value;
@@ -69,7 +71,7 @@ async function onRemoteLifeChange(ev: Event) {
   }
 }
 async function onPluginBackendChange(
-  module: "memory" | "emotion" | "event" | "prompt" | "llm",
+  module: "memory" | "emotion" | "event" | "prompt" | "llm" | "agent",
   ev: Event,
 ) {
   const selected = (ev.target as HTMLSelectElement).value;
@@ -108,6 +110,7 @@ async function refreshPluginDebugSnapshot() {
     `effective event=${debug.plugin_backends_effective.event}(${debug.plugin_backends_effective_sources.event})`,
     `effective prompt=${debug.plugin_backends_effective.prompt}(${debug.plugin_backends_effective_sources.prompt})`,
     `effective llm=${debug.plugin_backends_effective.llm}(${debug.plugin_backends_effective_sources.llm})`,
+    `effective agent=${debug.plugin_backends_effective.agent}(${debug.plugin_backends_effective_sources.agent})`,
     `pack directory_plugins=${formatDirectoryPluginSlots(debug.plugin_backends_pack_default.directory_plugins)}`,
     `effective directory_plugins=${formatDirectoryPluginSlots(debug.plugin_backends_effective.directory_plugins)}`,
     `env llm_override=${debug.llm_env_override ?? "none"}`,
@@ -141,12 +144,11 @@ async function copyPluginDebugSnapshot() {
     <div class="pb-meta">
       <p class="sub plugin-backends" title="settings.json → plugin_backends">
         模块后端：mem {{ pluginBackends.memory }} · emotion {{ pluginBackends.emotion }} · event
-        {{ pluginBackends.event }} · prompt {{ pluginBackends.prompt }} · llm {{ pluginBackends.llm }}
+        {{ pluginBackends.event }} · prompt {{ pluginBackends.prompt }} · llm {{ pluginBackends.llm }} · agent {{ pluginBackends.agent }}
       </p>
       <p class="sub plugin-backends" title="会话生效">
         会话生效：mem {{ pluginBackendsEffective.memory }} · emotion {{ pluginBackendsEffective.emotion }} · event
-        {{ pluginBackendsEffective.event }} · prompt {{ pluginBackendsEffective.prompt }} · llm
-        {{ pluginBackendsEffective.llm }}
+        {{ pluginBackendsEffective.event }} · prompt {{ pluginBackendsEffective.prompt }} · llm {{ pluginBackendsEffective.llm }} · agent {{ pluginBackendsEffective.agent }}
       </p>
       <p v-if="directoryPluginsPackLine" class="sub plugin-backends">{{ directoryPluginsPackLine }}</p>
       <p v-if="directoryPluginsEffectiveLine" class="sub plugin-backends">{{ directoryPluginsEffectiveLine }}</p>
@@ -157,8 +159,7 @@ async function copyPluginDebugSnapshot() {
         来源：mem {{ sourceLabel[pluginBackendsEffectiveSources.memory] }} · emotion
         {{ sourceLabel[pluginBackendsEffectiveSources.emotion] }} · event
         {{ sourceLabel[pluginBackendsEffectiveSources.event] }} · prompt
-        {{ sourceLabel[pluginBackendsEffectiveSources.prompt] }} · llm
-        {{ sourceLabel[pluginBackendsEffectiveSources.llm] }}
+        {{ sourceLabel[pluginBackendsEffectiveSources.prompt] }} · llm {{ sourceLabel[pluginBackendsEffectiveSources.llm] }} · agent {{ sourceLabel[pluginBackendsEffectiveSources.agent] }}
       </p>
     </div>
     <div v-if="roleStore.interactionImmersive" class="row row-check">
@@ -218,6 +219,7 @@ async function copyPluginDebugSnapshot() {
       <pre v-if="pluginDebugSnapshot" class="backend-debug">{{ pluginDebugSnapshot }}</pre>
     </div>
   </div>
+  <AgentDebugPanel />
 </template>
 
 <style scoped>

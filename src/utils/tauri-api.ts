@@ -198,6 +198,7 @@ export interface DirectoryPluginSlots {
   event?: string | null;
   prompt?: string | null;
   llm?: string | null;
+  agent?: string | null;
 }
 
 /** 与 `settings.json` → `plugin_backends` 一致（snake_case，与后端 serde 对齐） */
@@ -209,6 +210,7 @@ export interface PluginBackends {
   event: "builtin" | "builtin_v2" | "remote" | "directory";
   prompt: "builtin" | "builtin_v2" | "remote" | "directory";
   llm: "ollama" | "remote" | "directory";
+  agent: "builtin" | "remote" | "directory";
   /** 各模块为 `directory` 时对应的 manifest `id`（见 DIRECTORY_PLUGINS.md） */
   directory_plugins?: DirectoryPluginSlots;
 }
@@ -220,6 +222,7 @@ export interface PluginBackendsOverride {
   event?: PluginBackends["event"] | null;
   prompt?: PluginBackends["prompt"] | null;
   llm?: PluginBackends["llm"] | null;
+  agent?: PluginBackends["agent"] | null;
   /** 会话级与包内按槽合并（当前 UI 未编辑；仅展示与调试） */
   directory_plugins?: DirectoryPluginSlots | null;
 }
@@ -232,6 +235,7 @@ export interface PluginBackendsSourceMap {
   event: PluginBackendSource;
   prompt: PluginBackendSource;
   llm: PluginBackendSource;
+  agent: PluginBackendSource;
 }
 
 export interface PluginResolutionDebugInfo {
@@ -644,7 +648,7 @@ export async function setRoleInteractionMode(
 
 export async function setSessionPluginBackend(
   roleId: string,
-  module: "memory" | "emotion" | "event" | "prompt" | "llm",
+  module: "memory" | "emotion" | "event" | "prompt" | "llm" | "agent",
   /** 与后端 `parse_backend_wire` 一致，如 `builtin_v2`、`directory`、`remote` */
   backend?: string | null,
   localMemoryProviderId?: string,
@@ -1173,6 +1177,71 @@ export async function discoverPluginMethods(pluginId: string): Promise<string[]>
   return invokeWithFriendlyError<string[]>("discover_plugin_methods", {
     pluginId,
   });
+}
+
+export interface McpToolManifest {
+  name: string;
+  description?: string | null;
+}
+
+export interface McpServerManifest {
+  id: string;
+  name: string;
+  transport?: string;
+  url?: string | null;
+  command?: string | null;
+  args?: string[];
+  tools?: McpToolManifest[];
+}
+
+export interface McpToolCallResult {
+  server_id: string;
+  tool_name: string;
+  result: unknown;
+}
+
+export interface AgentToolCallTrace {
+  server_id: string;
+  tool_name: string;
+  params: unknown;
+  result: unknown;
+}
+
+export interface AgentDebugTrace {
+  timestamp_ms: number;
+  role_id: string;
+  session_namespace: string;
+  message: string;
+  plan: string;
+  tool_calls: AgentToolCallTrace[];
+  reply: string;
+  error?: string | null;
+}
+
+export async function listMcpServers(): Promise<McpServerManifest[]> {
+  return invokeWithFriendlyError<McpServerManifest[]>("list_mcp_servers", {});
+}
+
+export async function callMcpTool(
+  serverId: string,
+  toolName: string,
+  params: unknown = {},
+): Promise<McpToolCallResult> {
+  return invokeWithFriendlyError<McpToolCallResult>("call_mcp_tool", {
+    req: {
+      server_id: serverId,
+      tool_name: toolName,
+      params,
+    },
+  });
+}
+
+export async function getAgentDebugTraces(): Promise<AgentDebugTrace[]> {
+  return invokeWithFriendlyError<AgentDebugTrace[]>("get_agent_debug_traces", {});
+}
+
+export async function clearAgentDebugTraces(): Promise<void> {
+  return invokeWithFriendlyError<void>("clear_agent_debug_traces", {});
 }
 
 /**

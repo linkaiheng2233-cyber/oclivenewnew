@@ -14,7 +14,8 @@ use crate::models::dto::{
     API_VERSION, OCLIVE_DEFAULT_RELATION_SENTINEL, SCHEMA_VERSION,
 };
 use crate::models::plugin_backends::{
-    EmotionBackend, EventBackend, LlmBackend, MemoryBackend, PluginBackendsOverride, PromptBackend,
+    AgentBackend, EmotionBackend, EventBackend, LlmBackend, MemoryBackend, PluginBackendsOverride,
+    PromptBackend,
 };
 use crate::models::role::IdentityBinding;
 use crate::state::AppState;
@@ -744,6 +745,14 @@ pub async fn set_session_plugin_backend_impl(
                     .transpose()?;
             }
         }
+        "agent" => {
+            if let Some(backend) = req.backend.as_ref() {
+                next.agent = backend
+                    .as_deref()
+                    .map(|v| parse_backend_wire::<AgentBackend>("agent", v))
+                    .transpose()?;
+            }
+        }
         _ => {
             return Err(AppError::InvalidParameter(format!(
                 "session backend override: unknown module {}",
@@ -812,6 +821,7 @@ pub async fn apply_author_suggested_plugin_backends(
         event: Some(sugg.event),
         prompt: Some(sugg.prompt),
         llm: Some(sugg.llm),
+        agent: Some(sugg.agent),
         local_memory_provider_id: sugg.local_memory_provider_id.clone(),
         directory_plugins: Some(sugg.directory_plugins.clone()),
     };

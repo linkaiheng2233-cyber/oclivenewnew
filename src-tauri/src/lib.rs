@@ -292,6 +292,10 @@ pub fn run() {
             Ok(())
         })
         .invoke_handler(tauri::generate_handler![
+            api::agent::list_mcp_servers,
+            api::agent::call_mcp_tool,
+            api::agent::get_agent_debug_traces,
+            api::agent::clear_agent_debug_traces,
             api::chat::send_message,
             api::role::load_role,
             api::role::get_role_info,

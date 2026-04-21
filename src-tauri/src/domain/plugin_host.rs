@@ -5,6 +5,7 @@
 use crate::domain::event_estimator::{
     BuiltinEventEstimator, BuiltinEventEstimatorV2, EventEstimator,
 };
+use crate::domain::agent::{AgentDebugTrace, AgentProvider, BuiltinReActAgent};
 use crate::domain::local_plugin_bridge::{
     LocalPluginCapability, LocalPluginProviderDescriptor, LocalPluginRegistry,
 };
@@ -20,15 +21,18 @@ use crate::domain::user_emotion_analyzer::{
 };
 use crate::infrastructure::directory_plugins::DirectoryPluginRuntime;
 use crate::infrastructure::llm::LlmClient;
+use crate::infrastructure::mcp_client::{McpClient, McpServerManifest, McpToolCallResult};
 use crate::infrastructure::remote_plugin::{
     self, RemoteEventEstimatorHttp, RemoteLlmHttp, RemoteMemoryRetrievalHttp,
     RemotePluginHttpConfig, RemotePromptAssemblerHttp, RemoteUserEmotionAnalyzerHttp,
 };
 use crate::models::{
-    DirectoryPluginSlots, EmotionBackend, EventBackend, LlmBackend, MemoryBackend, PluginBackends,
-    PluginBackendsOverride, PromptBackend, Role,
+    AgentBackend, DirectoryPluginSlots, EmotionBackend, EventBackend, LlmBackend, MemoryBackend,
+    PluginBackends, PluginBackendsOverride, PromptBackend, Role,
 };
 use parking_lot::RwLock;
+use serde_json::Value;
+use std::path::PathBuf;
 use std::sync::Arc;
 
 /// 已按 `role.plugin_backends` 解析的实现句柄；单次 `send_message` 内应只解析一次并复用。
@@ -39,6 +43,7 @@ pub struct ResolvedRolePlugins {
     pub event: Arc<dyn EventEstimator>,
     pub prompt: Arc<dyn PromptAssembler>,
     pub llm: Arc<dyn LlmClient>,
+    pub agent: Arc<dyn AgentProvider>,
 }
 
 /// 后端注册表：管理 builtin / remote 插槽，并预留本地 provider 注册骨架。
@@ -57,6 +62,9 @@ pub struct BackendRegistry {
     prompt_remote: Arc<dyn PromptAssembler>,
     llm_ollama: Arc<dyn LlmClient>,
     llm_remote: Arc<dyn LlmClient>,
+    agent_builtin: Arc<BuiltinReActAgent>,
+    agent_remote: Arc<dyn AgentProvider>,
+    agent_directory: Arc<dyn AgentProvider>,
     local_plugins: RwLock<LocalPluginRegistry>,
     directory_runtime: Option<Arc<DirectoryPluginRuntime>>,
 }
@@ -72,12 +80,55 @@ fn directory_slot_id(
 }
 
 impl BackendRegistry {
+    fn agent_for_plugin_backends(&self, backends: &PluginBackends) -> Arc<dyn AgentProvider> {
+        match backends.agent {
+            AgentBackend::Builtin => self.agent_builtin.clone(),
+            AgentBackend::Remote => self.agent_remote.clone(),
+            AgentBackend::Directory => self.agent_directory.clone(),
+        }
+    }
+
+    fn agent_for(&self, b: AgentBackend) -> Arc<dyn AgentProvider> {
+        self.agent_for_plugin_backends(&PluginBackends {
+            agent: b,
+            ..Default::default()
+        })
+    }
+
+    fn list_mcp_servers(&self) -> Vec<McpServerManifest> {
+        self.agent_builtin.list_mcp_servers()
+    }
+
+    fn call_mcp_tool(
+        &self,
+        server_id: &str,
+        tool_name: &str,
+        params: Value,
+    ) -> std::result::Result<McpToolCallResult, String> {
+        self.agent_builtin
+            .call_tool_direct(server_id, tool_name, params)
+            .map_err(|e| e.to_frontend_error())
+    }
+
+    fn recent_agent_traces(&self) -> Vec<AgentDebugTrace> {
+        self.agent_builtin.recent_traces()
+    }
+
+    fn clear_agent_traces(&self) {
+        self.agent_builtin.clear_traces();
+    }
+
     fn from_runtime(
         llm: Arc<dyn LlmClient>,
         directory_runtime: Option<Arc<DirectoryPluginRuntime>>,
+        app_data_dir: PathBuf,
     ) -> Self {
         let llm_ollama = llm.clone();
         let llm_remote = remote_plugin::llm_remote_backend(llm);
+        let mcp = Arc::new(McpClient::new(app_data_dir));
+        let agent_builtin = Arc::new(BuiltinReActAgent::new(llm_ollama.clone(), mcp));
+        let agent_remote: Arc<dyn AgentProvider> = agent_builtin.clone();
+        let agent_directory: Arc<dyn AgentProvider> = agent_builtin.clone();
         let rem = remote_plugin::plugin_remote_group();
         Self {
             memory_builtin: Arc::new(BuiltinMemoryRetrieval),
@@ -94,6 +145,9 @@ impl BackendRegistry {
             prompt_remote: rem.prompt,
             llm_ollama,
             llm_remote,
+            agent_builtin,
+            agent_remote,
+            agent_directory,
             local_plugins: RwLock::new(LocalPluginRegistry::default()),
             directory_runtime,
         }
@@ -415,6 +469,7 @@ impl PluginResolver {
             event: registry.event_estimator_for_backends(&effective),
             prompt: registry.prompt_assembler_for_backends(&effective),
             llm: registry.llm_for_plugin_backends(&effective),
+            agent: registry.agent_for_plugin_backends(&effective),
         }
     }
 }
@@ -428,9 +483,10 @@ impl PluginHost {
     pub fn new(
         llm: Arc<dyn LlmClient>,
         directory_runtime: Option<Arc<DirectoryPluginRuntime>>,
+        app_data_dir: PathBuf,
     ) -> Self {
         Self {
-            registry: BackendRegistry::from_runtime(llm, directory_runtime),
+            registry: BackendRegistry::from_runtime(llm, directory_runtime, app_data_dir),
         }
     }
 
@@ -460,6 +516,14 @@ impl PluginHost {
 
     pub fn llm_for_plugin_backends(&self, backends: &PluginBackends) -> Arc<dyn LlmClient> {
         self.registry.llm_for_plugin_backends(backends)
+    }
+
+    pub fn agent_for(&self, b: AgentBackend) -> Arc<dyn AgentProvider> {
+        self.registry.agent_for(b)
+    }
+
+    pub fn agent_for_plugin_backends(&self, backends: &PluginBackends) -> Arc<dyn AgentProvider> {
+        self.registry.agent_for_plugin_backends(backends)
     }
 
     pub fn memory_retrieval_for_plugin_backends(
@@ -506,6 +570,29 @@ impl PluginHost {
         self.registry.prompt_assembler_for_backends(backends)
     }
 
+    #[must_use]
+    pub fn list_mcp_servers(&self) -> Vec<McpServerManifest> {
+        self.registry.list_mcp_servers()
+    }
+
+    pub fn call_mcp_tool(
+        &self,
+        server_id: &str,
+        tool_name: &str,
+        params: Value,
+    ) -> std::result::Result<McpToolCallResult, String> {
+        self.registry.call_mcp_tool(server_id, tool_name, params)
+    }
+
+    #[must_use]
+    pub fn recent_agent_traces(&self) -> Vec<AgentDebugTrace> {
+        self.registry.recent_agent_traces()
+    }
+
+    pub fn clear_agent_traces(&self) {
+        self.registry.clear_agent_traces();
+    }
+
     /// 解析当前角色包声明的全部后端（一次克隆五套 `Arc`，供整段对话复用）。
     pub fn resolve_for_role(&self, role: &Role) -> ResolvedRolePlugins {
         PluginResolver::resolve(&self.registry, &role.plugin_backends, None)
@@ -542,7 +629,7 @@ mod tests {
         let llm: Arc<dyn LlmClient> = Arc::new(MockLlmClient {
             reply: String::new(),
         });
-        PluginHost::new(llm, None)
+        PluginHost::new(llm, None, std::env::temp_dir())
     }
 
     #[test]

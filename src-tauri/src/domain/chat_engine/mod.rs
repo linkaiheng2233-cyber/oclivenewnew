@@ -12,6 +12,7 @@ mod scene;
 use crate::domain::chat_llm_fallback::{fallback_reply_for_llm_failure, FallbackReplyContext};
 use crate::domain::chat_turn::{relation_favor_for_key, weight_memories_for_scene};
 use crate::domain::chat_turn_rules::{soft_append_guard, strip_hallucination_tokens};
+use crate::domain::agent::AgentInput;
 use crate::domain::life_schedule::{format_life_prompt_line, resolve_life_state};
 use crate::domain::memory_retrieval::MemoryRetrievalInput;
 use crate::domain::personality_engine::PersonalityEngine;
@@ -53,7 +54,7 @@ fn backend_resolution_summary(
     sources: &PluginBackendsSourceMap,
 ) -> String {
     format!(
-        "mem={:?}({:?}) emotion={:?}({:?}) event={:?}({:?}) prompt={:?}({:?}) llm={:?}({:?})",
+        "mem={:?}({:?}) emotion={:?}({:?}) event={:?}({:?}) prompt={:?}({:?}) llm={:?}({:?}) agent={:?}({:?})",
         effective.memory,
         sources.memory,
         effective.emotion,
@@ -63,7 +64,9 @@ fn backend_resolution_summary(
         effective.prompt,
         sources.prompt,
         effective.llm,
-        sources.llm
+        sources.llm,
+        effective.agent,
+        sources.agent
     )
 }
 
@@ -587,6 +590,61 @@ pub async fn process_message(
         backend_resolution_summary(&effective_backends, &effective_sources)
     );
 
+    let pl = state.resolved_plugins_for_session(role.as_ref(), Some(srid));
+    let agent_out = pl
+        .agent
+        .process(AgentInput {
+            role_id: mrid.to_string(),
+            session_namespace: srid.to_string(),
+            message: req.user_message.clone(),
+            model: role.resolve_ollama_model(state.ollama_model.as_str()),
+        })
+        .await?;
+    if agent_out.handled {
+        state
+            .db_manager
+            .set_user_presence_scene(srid, scene_id.as_str())
+            .await?;
+        let emotion_result = pl.emotion.analyze(req.user_message.as_str())?;
+        let user_relation_key =
+            resolve_effective_user_relation_key(state, role.as_ref(), srid, Some(scene_id.as_str()))
+                .await?;
+        let relation_state = state
+            .db_manager
+            .get_relation_state_for_identity(srid, user_relation_key.as_str())
+            .await?
+            .or(state.db_manager.get_relation_state(srid).await?)
+            .unwrap_or_else(|| "Stranger".to_string());
+        let favor_current = state
+            .db_manager
+            .favorability_for_identity_with_runtime_fallback(srid, user_relation_key.as_str())
+            .await?;
+        let portrait_emotion = state
+            .db_manager
+            .get_current_emotion(srid)
+            .await?
+            .unwrap_or_else(|| "neutral".to_string());
+        return Ok(SendMessageResponse {
+            api_version: API_VERSION,
+            schema: SCHEMA_VERSION,
+            presence_mode: PresenceMode::CoPresent,
+            relation_state,
+            reply: agent_out.reply,
+            emotion: emotion_to_dto(&emotion_result),
+            bot_emotion: portrait_emotion.clone(),
+            portrait_emotion,
+            favorability_delta: 0.0,
+            favorability_current: favor_current as f32,
+            events: vec![],
+            scene_id,
+            offer_destination_picker: false,
+            offer_together_travel: false,
+            reply_is_fallback: false,
+            knowledge_chunks_in_prompt: 0,
+            timestamp: chrono::Utc::now().timestamp_millis(),
+        });
+    }
+
     state
         .db_manager
         .set_user_presence_scene(srid, scene_id.as_str())
@@ -696,6 +754,7 @@ mod tests {
             event: PluginBackendSource::SessionOverride,
             prompt: PluginBackendSource::PackDefault,
             llm: PluginBackendSource::EnvOverride,
+            agent: PluginBackendSource::PackDefault,
         };
         let out = backend_resolution_summary(&effective, &sources);
         assert!(out.contains("mem=Remote(SessionOverride)"));

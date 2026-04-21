@@ -6,6 +6,7 @@ const SLOT_KEYS: (keyof DirectoryPluginSlots)[] = [
   "event",
   "prompt",
   "llm",
+  "agent",
 ];
 
 /** 将 `directory_plugins` 槽位格式化为单行调试文本；全空返回 `none`。 */
@@ -29,7 +30,8 @@ export function usesDirectoryPlugins(pb: PluginBackends): boolean {
     pb.emotion === "directory" ||
     pb.event === "directory" ||
     pb.prompt === "directory" ||
-    pb.llm === "directory"
+    pb.llm === "directory" ||
+    pb.agent === "directory"
   ) {
     return true;
   }

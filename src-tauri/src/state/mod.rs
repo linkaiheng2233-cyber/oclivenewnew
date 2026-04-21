@@ -389,7 +389,11 @@ impl AppState {
         let storage = RoleStorage::new(roles_dir_override.unwrap_or_else(resolve_roles_dir));
         let directory_plugins =
             DirectoryPluginRuntime::bootstrap(storage.roles_dir(), app_data_dir.as_ref());
-        let plugins = PluginHost::new(llm.clone(), Some(directory_plugins.clone()));
+        let plugins = PluginHost::new(
+            llm.clone(),
+            Some(directory_plugins.clone()),
+            app_data_dir.as_ref().to_path_buf(),
+        );
         Self::bootstrap_local_plugin_providers(&plugins, storage.roles_dir());
 
         Ok(Self {
@@ -456,7 +460,11 @@ impl AppState {
             }
         };
 
-        let plugins = PluginHost::new(llm.clone(), Some(directory_plugins.clone()));
+        let plugins = PluginHost::new(
+            llm.clone(),
+            Some(directory_plugins.clone()),
+            app_data_dir.clone(),
+        );
         Self::bootstrap_local_plugin_providers(&plugins, storage.roles_dir());
 
         Ok(Self {
@@ -691,6 +699,9 @@ impl AppState {
             }
             if ov.llm.is_some() {
                 out.llm = PluginBackendSource::SessionOverride;
+            }
+            if ov.agent.is_some() {
+                out.agent = PluginBackendSource::SessionOverride;
             }
         }
         if out.llm == PluginBackendSource::PackDefault

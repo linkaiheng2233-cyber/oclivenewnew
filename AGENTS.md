@@ -17,3 +17,13 @@
 - **V1 / V2 路由**：`uiStore.experimentalPluginManagerV2`（Pinia 持久化）为唯一开关；顶栏「更多」与 **Ctrl+Shift+F** 的打开逻辑集中在 [`src/composables/usePluginManagerWindow.ts`](src/composables/usePluginManagerWindow.ts)。设置页与快捷键说明中的**用户可见文案**集中在 [`src/lib/pluginManagerEntryCopy.ts`](src/lib/pluginManagerEntryCopy.ts)，避免多处硬编码漂移（设置里需 `v-html` 的段落仅输出静态 HTML，勿拼接用户输入）。
 - **V1 已安装区 UI**：侧栏 + 右侧「单插件配置 + 调试台」抽为 [`src/components/InstalledPluginWorkspaceDetail.vue`](src/components/InstalledPluginWorkspaceDetail.vue)，由 [`src/views/PluginManagerPanel.vue`](src/views/PluginManagerPanel.vue) 引用。
 - **`invoke` 参数名**：Tauri 将 Rust 命令的 `snake_case` 形参映射为前端的 **camelCase** 键（如 `plugin_id` → `pluginId`）。[`src/utils/tauri-api.ts`](src/utils/tauri-api.ts) 中 `get_plugin_logs`、`spawn_plugin_for_test` 等须与之一致；若命令仍手写 `snake_case` 载荷，会出现「missing required key `pluginId`」类错误。
+
+### Agent / Skill（最小闭环）
+
+- **第七模块**：`plugin_backends` 新增 `agent`（`builtin` / `remote` / `directory`）与 `directory_plugins.agent` 槽位；会话覆盖与来源快照同样包含 `agent`。
+- **后端骨架**：
+  - [`src-tauri/src/domain/agent.rs`](src-tauri/src/domain/agent.rs)：`AgentProvider` trait 与 `BuiltinReActAgent`。
+  - [`src-tauri/src/infrastructure/mcp_client.rs`](src-tauri/src/infrastructure/mcp_client.rs)：扫描 `{app_data}/mcp-servers/*.json`、列出 server、调用工具（http/stdio）。
+  - [`src-tauri/src/api/agent.rs`](src-tauri/src/api/agent.rs)：`list_mcp_servers` / `call_mcp_tool` / `get_agent_debug_traces` / `clear_agent_debug_traces`。
+- **调试 UI**：[`src/components/AgentDebugPanel.vue`](src/components/AgentDebugPanel.vue) 挂在「插件与后端管理 → 后端模块」页，用于查看 Agent 任务拆解与工具调用链路。
+- **示例 Skill**：[`examples/weather_skill/`](examples/weather_skill/) 提供最小 Node MCP server（`get_weather(city)`）与示例 server manifest。

@@ -76,15 +76,16 @@ fn build_txt(
         ));
         s.push_str(&format!("session_namespace: {}\n", d.session_namespace));
         s.push_str(&format!(
-            "pack_default: mem={:?} emotion={:?} event={:?} prompt={:?} llm={:?}\n",
+            "pack_default: mem={:?} emotion={:?} event={:?} prompt={:?} llm={:?} agent={:?}\n",
             d.plugin_backends_pack_default.memory,
             d.plugin_backends_pack_default.emotion,
             d.plugin_backends_pack_default.event,
             d.plugin_backends_pack_default.prompt,
-            d.plugin_backends_pack_default.llm
+            d.plugin_backends_pack_default.llm,
+            d.plugin_backends_pack_default.agent
         ));
         s.push_str(&format!(
-            "effective: mem={:?}({:?}) emotion={:?}({:?}) event={:?}({:?}) prompt={:?}({:?}) llm={:?}({:?})\n",
+            "effective: mem={:?}({:?}) emotion={:?}({:?}) event={:?}({:?}) prompt={:?}({:?}) llm={:?}({:?}) agent={:?}({:?})\n",
             d.plugin_backends_effective.memory,
             d.plugin_backends_effective_sources.memory,
             d.plugin_backends_effective.emotion,
@@ -94,7 +95,9 @@ fn build_txt(
             d.plugin_backends_effective.prompt,
             d.plugin_backends_effective_sources.prompt,
             d.plugin_backends_effective.llm,
-            d.plugin_backends_effective_sources.llm
+            d.plugin_backends_effective_sources.llm,
+            d.plugin_backends_effective.agent,
+            d.plugin_backends_effective_sources.agent
         ));
         s.push_str(&format!(
             "env: llm_override={} remote_plugin_url={} remote_llm_url={}\n\n",
