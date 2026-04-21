@@ -218,9 +218,18 @@ function clonePluginState(s: RolePluginState): RolePluginState {
 
 export type PluginPanelMainTab = "plugins" | "backends" | "slots";
 
+/** 专业模式顶层：已装插件/后端/插槽 vs 社区索引市场 */
+export type PluginPanelRootTab = "manage" | "market";
+
+export type OpenPluginPanelArg =
+  | PluginPanelMainTab
+  | { tab?: PluginPanelMainTab; root?: PluginPanelRootTab };
+
 export const usePluginStore = defineStore("plugin", {
   state: () => ({
     panelVisible: false,
+    /** 插件管理（界面插件 / 后端 / 插槽）与插件市场（社区索引）分栏 */
+    panelRootTab: "manage" as PluginPanelRootTab,
     panelMainTab: "plugins" as PluginPanelMainTab,
     loading: false,
     error: null as string | null,
@@ -267,9 +276,22 @@ export const usePluginStore = defineStore("plugin", {
         this.error = e instanceof Error ? e.message : String(e);
       }
     },
-    async openPanel(tab?: PluginPanelMainTab) {
-      if (tab) {
-        this.panelMainTab = tab;
+    async openPanel(arg?: OpenPluginPanelArg) {
+      if (arg === undefined) {
+        this.panelVisible = true;
+        await this.refresh();
+        return;
+      }
+      if (typeof arg === "string") {
+        this.panelMainTab = arg;
+        this.panelRootTab = "manage";
+      } else {
+        if (arg.tab !== undefined) {
+          this.panelMainTab = arg.tab;
+        }
+        if (arg.root !== undefined) {
+          this.panelRootTab = arg.root;
+        }
       }
       this.panelVisible = true;
       await this.refresh();
