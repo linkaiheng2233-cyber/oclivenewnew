@@ -31,8 +31,7 @@
         "height": 600,
         "resizable": true,
         "title": "oclivenewnew",
-        "width": 800,
-        "useHttpsScheme": true
+        "width": 800
       }
     ],
     "security": {
