@@ -1,9 +1,7 @@
-import { invoke } from "@tauri-apps/api/tauri";
 import { createApp } from "vue";
 import { createPinia } from "pinia";
 import DirectoryShellApp from "../DirectoryShellApp.vue";
-import type { DirectoryPluginBootstrap } from "./tauri-api";
-import { readPluginAssetText } from "./tauri-api";
+import { getDirectoryPluginBootstrap, readPluginAssetText } from "./tauri-api";
 
 export function isTauriRuntime(): boolean {
   return (
@@ -21,9 +19,7 @@ export function isTauriRuntime(): boolean {
 export async function tryReplaceWithDirectoryShell(): Promise<boolean> {
   if (!isTauriRuntime()) return false;
   try {
-    const boot = await invoke<DirectoryPluginBootstrap>("get_directory_plugin_bootstrap", {
-      role_id: null,
-    });
+    const boot = await getDirectoryPluginBootstrap(null);
     const shellUrl =
       typeof boot?.shellUrl === "string" && boot.shellUrl.length > 0
         ? boot.shellUrl

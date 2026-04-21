@@ -1,4 +1,4 @@
-import { invoke } from "@tauri-apps/api/tauri";
+import { invoke } from "@tauri-apps/api/core";
 
 export const TransactionErrorMessages: Record<string, string> = {
   TXN_BEGIN_FAILED: "事务启动失败，请稍后重试。",
@@ -772,8 +772,8 @@ export async function exportRolePack(
   destPath: string,
 ): Promise<void> {
   return invokeWithFriendlyError<void>("export_role_pack_command", {
-    role_id: roleId,
-    dest_path: destPath,
+    roleId,
+    destPath,
   });
 }
 
@@ -786,7 +786,7 @@ export interface RolePackPeek {
 /** 预览角色包：`srcPath` 可为 `.ocpak` / `.zip` 或已解压目录（与 `roles/{id}/` 一致）。 */
 export async function peekRolePack(srcPath: string): Promise<RolePackPeek> {
   return invokeWithFriendlyError<RolePackPeek>("peek_role_pack_command", {
-    src_path: srcPath,
+    srcPath,
   });
 }
 
@@ -796,7 +796,7 @@ export async function importRolePack(
   overwrite: boolean,
 ): Promise<string> {
   return invokeWithFriendlyError<string>("import_role_pack_command", {
-    src_path: srcPath,
+    srcPath,
     overwrite,
   });
 }
@@ -872,7 +872,7 @@ export async function checkPluginUpdates(
 ): Promise<Record<string, PluginUpdateInfo>> {
   return invokeWithFriendlyError<Record<string, PluginUpdateInfo>>(
     "check_plugin_updates",
-    { plugin_ids: pluginIds },
+    { pluginIds },
   );
 }
 
@@ -881,8 +881,8 @@ export async function extractPluginZip(
   pluginId: string,
 ): Promise<void> {
   return invokeWithFriendlyError<void>("extract_plugin_zip", {
-    zip_path: zipPath,
-    plugin_id: pluginId,
+    zipPath,
+    pluginId,
   });
 }
 
@@ -907,7 +907,7 @@ export async function getDirectoryPluginBootstrap(
   }
   const p = invokeWithFriendlyError<DirectoryPluginBootstrap>(
     "get_directory_plugin_bootstrap",
-    { role_id: roleId ?? null },
+    { roleId: roleId ?? null },
   ).finally(() => {
     if (directoryBootstrapInflight.get(key) === p) {
       directoryBootstrapInflight.delete(key);
@@ -1405,11 +1405,11 @@ export async function createPluginScaffold(
     "create_plugin_scaffold",
     {
       req: {
-        plugin_id: req.pluginId,
-        plugin_name: req.pluginName,
+        pluginId: req.pluginId,
+        pluginName: req.pluginName,
         language: req.language,
-        plugin_type: req.pluginType,
-        base_dir: req.baseDir ?? null,
+        pluginType: req.pluginType,
+        baseDir: req.baseDir ?? null,
       },
     },
   );
@@ -1427,8 +1427,8 @@ export async function packPlugin(
 ): Promise<PackPluginResponse> {
   return invokeWithFriendlyError<PackPluginResponse>("pack_plugin", {
     req: {
-      plugin_id: pluginId,
-      output_dir: outputDir ?? null,
+      pluginId,
+      outputDir: outputDir ?? null,
     },
   });
 }

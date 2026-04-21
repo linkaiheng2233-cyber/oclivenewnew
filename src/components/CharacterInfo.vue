@@ -1,6 +1,6 @@
 <script setup lang="ts">
-import { readBinaryFile } from "@tauri-apps/api/fs";
-import { convertFileSrc } from "@tauri-apps/api/tauri";
+import { readFile } from "@tauri-apps/plugin-fs";
+import { convertFileSrc } from "@tauri-apps/api/core";
 import { onBeforeUnmount, ref, watch } from "vue";
 import {
   emotionToAssetFilename,
@@ -86,10 +86,10 @@ async function refreshPortrait(): Promise<void> {
     }
     if (!path) continue;
 
-    /* 优先 readBinaryFile + Blob：不依赖 asset 自定义协议，避免 net::ERR_CONNECTION_REFUSED */
+    /* 优先 plugin-fs readFile + Blob：不依赖 asset 自定义协议，避免 net::ERR_CONNECTION_REFUSED */
     if (isTauri()) {
       try {
-        const bytes = await readBinaryFile(path);
+        const bytes = await readFile(path);
         const mime = filename.endsWith(".webp")
           ? "image/webp"
           : filename.endsWith(".jpg") || filename.endsWith(".jpeg")
@@ -105,7 +105,7 @@ async function refreshPortrait(): Promise<void> {
         break;
       } catch (e) {
         console.warn(
-          "[CharacterInfo] readBinaryFile failed, fallback convertFileSrc",
+          "[CharacterInfo] readFile failed, fallback convertFileSrc",
           e,
         );
       }
