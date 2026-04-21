@@ -75,7 +75,9 @@ pub fn parse_from_llm_response(text: &str) -> Vec<ToolCall> {
             return Vec::new();
         }
         let args = match fc.get("arguments") {
-            Some(Value::String(s)) => serde_json::from_str::<Value>(s).unwrap_or_else(|_| json!({})),
+            Some(Value::String(s)) => {
+                serde_json::from_str::<Value>(s).unwrap_or_else(|_| json!({}))
+            }
             Some(v) => v.clone(),
             None => json!({}),
         };

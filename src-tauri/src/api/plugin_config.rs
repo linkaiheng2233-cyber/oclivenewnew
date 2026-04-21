@@ -2,8 +2,12 @@
 
 use crate::api::error::ApiError;
 use crate::infrastructure::directory_plugins::OclivePluginManifest;
-use crate::infrastructure::plugin_data::{ensure_default_config_for_manifest, read_config_json, write_config_json};
-use crate::infrastructure::remote_plugin::{invoke_directory_plugin_rpc_blocking, RemoteRpcChannel};
+use crate::infrastructure::plugin_data::{
+    ensure_default_config_for_manifest, read_config_json, write_config_json,
+};
+use crate::infrastructure::remote_plugin::{
+    invoke_directory_plugin_rpc_blocking, RemoteRpcChannel,
+};
 use crate::state::AppState;
 use serde::Serialize;
 use serde_json::{json, Value};
@@ -41,10 +45,12 @@ fn plugin_root(state: &AppState, plugin_id: &str) -> Result<PathBuf, String> {
         .to_string());
     }
     let roots = state.directory_plugins.plugin_roots.read();
-    roots
-        .get(pid)
-        .cloned()
-        .ok_or_else(|| ApiError::PluginNotFound { plugin_id: pid.to_string() }.to_string())
+    roots.get(pid).cloned().ok_or_else(|| {
+        ApiError::PluginNotFound {
+            plugin_id: pid.to_string(),
+        }
+        .to_string()
+    })
 }
 
 #[tauri::command]

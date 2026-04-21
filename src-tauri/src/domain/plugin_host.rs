@@ -2,10 +2,10 @@
 //!
 //! 与仓库 `creator-docs/plugin-and-architecture/PLUGIN_V1.md` 契约一致；`Remote` 在设置 `OCLIVE_REMOTE_*` 时走 HTTP JSON-RPC，否则回退内置。
 
+use crate::domain::agent::{AgentDebugTrace, AgentProvider, BuiltinReActAgent};
 use crate::domain::event_estimator::{
     BuiltinEventEstimator, BuiltinEventEstimatorV2, EventEstimator,
 };
-use crate::domain::agent::{AgentDebugTrace, AgentProvider, BuiltinReActAgent};
 use crate::domain::local_plugin_bridge::{
     LocalPluginCapability, LocalPluginProviderDescriptor, LocalPluginRegistry,
 };
@@ -99,7 +99,10 @@ impl BackendRegistry {
         self.agent_builtin.list_mcp_servers()
     }
 
-    fn list_mcp_tools(&self, server_id: &str) -> std::result::Result<Vec<crate::infrastructure::mcp_client::McpToolManifest>, String> {
+    fn list_mcp_tools(
+        &self,
+        server_id: &str,
+    ) -> std::result::Result<Vec<crate::infrastructure::mcp_client::McpToolManifest>, String> {
         self.agent_builtin
             .list_mcp_tools(server_id)
             .map_err(|e| e.to_frontend_error())

@@ -572,10 +572,13 @@ impl DirectoryPluginRuntime {
             .cloned()
             .ok_or_else(|| format!("unknown directory plugin_id={}", id))?;
         let manifest = OclivePluginManifest::load_from_dir(&root)?;
-        let (url, child, started_ms) = self.spawn_child_handshake(id, root, manifest, config_json)?;
+        let (url, child, started_ms) =
+            self.spawn_child_handshake(id, root, manifest, config_json)?;
         self.children.lock().insert(id.to_string(), child);
         self.rpc_urls.lock().insert(id.to_string(), url.clone());
-        self.process_started_ms.lock().insert(id.to_string(), started_ms);
+        self.process_started_ms
+            .lock()
+            .insert(id.to_string(), started_ms);
         log::info!(
             target: "oclive_plugin",
             "directory plugin id={} rpc_url={}",
@@ -659,9 +662,7 @@ impl DirectoryPluginRuntime {
                 match result {
                     Ok(line) => {
                         handshake_out.lock().push(line.clone());
-                        ring_out
-                            .lock()
-                            .push_line(format!("[stdout] {}", line));
+                        ring_out.lock().push_line(format!("[stdout] {}", line));
                     }
                     Err(_) => break,
                 }
@@ -718,12 +719,7 @@ impl DirectoryPluginRuntime {
                 .get(id)
                 .ok_or_else(|| "internal: child map inconsistent".to_string())?;
             let pid = child.id();
-            let url = self
-                .rpc_urls
-                .lock()
-                .get(id)
-                .cloned()
-                .unwrap_or_default();
+            let url = self.rpc_urls.lock().get(id).cloned().unwrap_or_default();
             let started_ms = self.process_started_ms.lock().get(id).copied().unwrap_or(0);
             return Ok(PluginProcessDebugInfo {
                 plugin_id: id.to_string(),

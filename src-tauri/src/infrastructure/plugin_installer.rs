@@ -51,11 +51,17 @@ fn plugins_dir(state: &AppState) -> PathBuf {
 }
 
 fn cache_path(state: &AppState) -> PathBuf {
-    state.directory_plugins.app_data_dir().join("plugin_index_cache.json")
+    state
+        .directory_plugins
+        .app_data_dir()
+        .join("plugin_index_cache.json")
 }
 
 fn plugin_state_store_path(state: &AppState) -> PathBuf {
-    state.directory_plugins.app_data_dir().join("plugin_state.json")
+    state
+        .directory_plugins
+        .app_data_dir()
+        .join("plugin_state.json")
 }
 
 pub fn load_cached_index(state: &AppState) -> Result<PluginIndexFile, AppError> {
@@ -212,7 +218,13 @@ pub fn install_plugin(
         )));
     }
     run_git(
-        &["clone", "--depth", "1", url, target.to_string_lossy().as_ref()],
+        &[
+            "clone",
+            "--depth",
+            "1",
+            url,
+            target.to_string_lossy().as_ref(),
+        ],
         None,
     )?;
     let manifest = OclivePluginManifest::load_from_dir(&target)

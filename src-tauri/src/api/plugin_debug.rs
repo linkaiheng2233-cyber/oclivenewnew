@@ -3,7 +3,9 @@
 use crate::api::error::ApiError;
 use crate::error::AppError;
 use crate::infrastructure::directory_plugins::{OclivePluginManifest, PluginProcessDebugInfo};
-use crate::infrastructure::remote_plugin::{invoke_directory_plugin_rpc_blocking, RemoteRpcChannel};
+use crate::infrastructure::remote_plugin::{
+    invoke_directory_plugin_rpc_blocking, RemoteRpcChannel,
+};
 use crate::state::AppState;
 use serde::Deserialize;
 use serde_json::{json, Value};
@@ -69,7 +71,10 @@ pub struct TestPluginMethodDto {
 }
 
 #[tauri::command]
-pub fn test_plugin_method(req: TestPluginMethodDto, state: State<'_, AppState>) -> Result<Value, String> {
+pub fn test_plugin_method(
+    req: TestPluginMethodDto,
+    state: State<'_, AppState>,
+) -> Result<Value, String> {
     let pid = req.plugin_id.trim();
     if pid.is_empty() {
         return Err(ApiError::InvalidParameter {
@@ -88,13 +93,8 @@ pub fn test_plugin_method(req: TestPluginMethodDto, state: State<'_, AppState>) 
         .directory_plugins
         .ensure_rpc_url_for_debug(pid, None)
         .map_err(|e| e)?;
-    invoke_directory_plugin_rpc_blocking(
-        &url,
-        method,
-        req.params,
-        RemoteRpcChannel::Plugin,
-    )
-    .map_err(|e: AppError| e.to_frontend_error())
+    invoke_directory_plugin_rpc_blocking(&url, method, req.params, RemoteRpcChannel::Plugin)
+        .map_err(|e: AppError| e.to_frontend_error())
 }
 
 #[tauri::command]
@@ -111,18 +111,20 @@ pub fn discover_plugin_methods(
     }
     let root = {
         let roots = state.directory_plugins.plugin_roots.read();
-        roots
-            .get(pid)
-            .cloned()
-            .ok_or_else(|| {
-                ApiError::PluginNotFound {
-                    plugin_id: pid.to_string(),
-                }
-                .to_string()
-            })?
+        roots.get(pid).cloned().ok_or_else(|| {
+            ApiError::PluginNotFound {
+                plugin_id: pid.to_string(),
+            }
+            .to_string()
+        })?
     };
     let manifest = OclivePluginManifest::load_from_dir(&root)?;
-    let mut out: Vec<String> = manifest.rpc_methods.iter().map(|s| s.trim().to_string()).filter(|s| !s.is_empty()).collect();
+    let mut out: Vec<String> = manifest
+        .rpc_methods
+        .iter()
+        .map(|s| s.trim().to_string())
+        .filter(|s| !s.is_empty())
+        .collect();
 
     let url = match state.directory_plugins.ensure_rpc_url_for_debug(pid, None) {
         Ok(u) => u,

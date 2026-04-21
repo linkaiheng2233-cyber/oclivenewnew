@@ -1,8 +1,8 @@
 use crate::error::Result;
-use crate::infrastructure::llm::LlmClient;
 use crate::infrastructure::function_call_parser::{
     parse_from_llm_response, to_function_calling_schema, ToolSchemaInput,
 };
+use crate::infrastructure::llm::LlmClient;
 use crate::infrastructure::mcp_client::{McpClient, McpServerManifest, McpToolCallResult};
 use async_trait::async_trait;
 use parking_lot::RwLock;
@@ -108,7 +108,10 @@ impl BuiltinReActAgent {
     fn collect_tool_schema_inputs(&self) -> Vec<ToolSchemaInput> {
         let mut out: Vec<ToolSchemaInput> = Vec::new();
         for s in self.mcp.list_servers() {
-            let tools = self.mcp.list_tools(s.id.as_str()).unwrap_or_else(|_| s.tools.clone());
+            let tools = self
+                .mcp
+                .list_tools(s.id.as_str())
+                .unwrap_or_else(|_| s.tools.clone());
             for t in tools {
                 let name = t.name.trim().to_string();
                 if name.is_empty() {
@@ -132,7 +135,10 @@ impl BuiltinReActAgent {
 
     fn server_for_tool(&self, tool_name: &str) -> Option<McpServerManifest> {
         for s in self.mcp.list_servers() {
-            let listed = self.mcp.list_tools(s.id.as_str()).unwrap_or_else(|_| s.tools.clone());
+            let listed = self
+                .mcp
+                .list_tools(s.id.as_str())
+                .unwrap_or_else(|_| s.tools.clone());
             if listed.iter().any(|t| t.name.trim() == tool_name) {
                 return Some(s);
             }

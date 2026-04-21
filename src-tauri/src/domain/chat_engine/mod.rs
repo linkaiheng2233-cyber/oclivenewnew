@@ -9,10 +9,10 @@ mod favor;
 mod presence;
 mod scene;
 
+use crate::domain::agent::AgentInput;
 use crate::domain::chat_llm_fallback::{fallback_reply_for_llm_failure, FallbackReplyContext};
 use crate::domain::chat_turn::{relation_favor_for_key, weight_memories_for_scene};
 use crate::domain::chat_turn_rules::{soft_append_guard, strip_hallucination_tokens};
-use crate::domain::agent::AgentInput;
 use crate::domain::life_schedule::{format_life_prompt_line, resolve_life_state};
 use crate::domain::memory_retrieval::MemoryRetrievalInput;
 use crate::domain::personality_engine::PersonalityEngine;
@@ -606,9 +606,13 @@ pub async fn process_message(
             .set_user_presence_scene(srid, scene_id.as_str())
             .await?;
         let emotion_result = pl.emotion.analyze(req.user_message.as_str())?;
-        let user_relation_key =
-            resolve_effective_user_relation_key(state, role.as_ref(), srid, Some(scene_id.as_str()))
-                .await?;
+        let user_relation_key = resolve_effective_user_relation_key(
+            state,
+            role.as_ref(),
+            srid,
+            Some(scene_id.as_str()),
+        )
+        .await?;
         let relation_state = state
             .db_manager
             .get_relation_state_for_identity(srid, user_relation_key.as_str())

@@ -160,7 +160,12 @@ impl McpClient {
         }
     }
 
-    pub fn call_tool(&self, server_id: &str, tool_name: &str, params: Value) -> Result<McpToolCallResult> {
+    pub fn call_tool(
+        &self,
+        server_id: &str,
+        tool_name: &str,
+        params: Value,
+    ) -> Result<McpToolCallResult> {
         let server = self.find_server(server_id)?;
         let tool = tool_name.trim();
         if tool.is_empty() {
@@ -197,15 +202,16 @@ impl McpClient {
             .timeout(self.timeout_for(server))
             .build()
             .map_err(|e| AppError::Unknown(format!("mcp http client error: {}", e)))?;
-        let resp = cli
-            .post(url)
-            .json(&payload)
-            .send()
-            .map_err(|e| AppError::Unknown(format!("mcp http call failed ({}): {}", server.id, e)))?;
+        let resp = cli.post(url).json(&payload).send().map_err(|e| {
+            AppError::Unknown(format!("mcp http call failed ({}): {}", server.id, e))
+        })?;
         let status = resp.status();
-        let body: Value = resp
-            .json()
-            .map_err(|e| AppError::Unknown(format!("mcp http json decode failed ({}): {}", server.id, e)))?;
+        let body: Value = resp.json().map_err(|e| {
+            AppError::Unknown(format!(
+                "mcp http json decode failed ({}): {}",
+                server.id, e
+            ))
+        })?;
         if !status.is_success() {
             return Err(AppError::Unknown(format!(
                 "mcp http protocol error server={} status={} body={}",
@@ -233,20 +239,21 @@ impl McpClient {
             .stdout(Stdio::piped())
             .stderr(Stdio::piped())
             .spawn()
-            .map_err(|e| AppError::Unknown(format!("spawn mcp stdio failed ({}): {}", server.id, e)))?;
+            .map_err(|e| {
+                AppError::Unknown(format!("spawn mcp stdio failed ({}): {}", server.id, e))
+            })?;
         if let Some(stdin) = child.stdin.as_mut() {
             let body = serde_json::to_vec(&payload)?;
-            stdin
-                .write_all(&body)
-                .map_err(|e| AppError::Unknown(format!("mcp stdin write failed ({}): {}", server.id, e)))?;
+            stdin.write_all(&body).map_err(|e| {
+                AppError::Unknown(format!("mcp stdin write failed ({}): {}", server.id, e))
+            })?;
         }
         let timeout = self.timeout_for(server);
         let start = Instant::now();
         loop {
-            if let Some(_status) = child
-                .try_wait()
-                .map_err(|e| AppError::Unknown(format!("mcp stdio wait failed ({}): {}", server.id, e)))?
-            {
+            if let Some(_status) = child.try_wait().map_err(|e| {
+                AppError::Unknown(format!("mcp stdio wait failed ({}): {}", server.id, e))
+            })? {
                 break;
             }
             if start.elapsed() > timeout {
@@ -259,9 +266,12 @@ impl McpClient {
             }
             thread::sleep(Duration::from_millis(20));
         }
-        let out = child
-            .wait_with_output()
-            .map_err(|e| AppError::Unknown(format!("mcp stdio read output failed ({}): {}", server.id, e)))?;
+        let out = child.wait_with_output().map_err(|e| {
+            AppError::Unknown(format!(
+                "mcp stdio read output failed ({}): {}",
+                server.id, e
+            ))
+        })?;
         if !out.status.success() {
             return Err(AppError::Unknown(format!(
                 "mcp stdio protocol error server={} exit={} stderr={}",
@@ -275,7 +285,10 @@ impl McpClient {
             return Ok(json!({}));
         }
         let v: Value = serde_json::from_str(&text).map_err(|e| {
-            AppError::Unknown(format!("mcp stdio json decode failed server={} err={}", server.id, e))
+            AppError::Unknown(format!(
+                "mcp stdio json decode failed server={} err={}",
+                server.id, e
+            ))
         })?;
         Ok(v)
     }

@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { ref } from "vue";
 import { listen, type UnlistenFn } from "@tauri-apps/api/event";
-import { open, save } from "@tauri-apps/api/dialog";
+import { open, save } from "@tauri-apps/plugin-dialog";
 import { useRoleStore } from "../stores/roleStore";
 import {
   exportRolePack,

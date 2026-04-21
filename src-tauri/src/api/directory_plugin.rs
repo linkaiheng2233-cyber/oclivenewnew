@@ -3,8 +3,9 @@
 use crate::api::error::ApiError;
 use crate::error::AppError;
 use crate::infrastructure::directory_plugins::{
-    dependency_report, normalize_plugin_rel, normalize_ui_slot_appearance_id, parse_manifest_version,
-    plugin_scan_container_roots, HostPluginsFile, OclivePluginManifest, UiSlotDecl,
+    dependency_report, normalize_plugin_rel, normalize_ui_slot_appearance_id,
+    parse_manifest_version, plugin_scan_container_roots, HostPluginsFile, OclivePluginManifest,
+    UiSlotDecl,
 };
 use crate::infrastructure::plugin_state::{PluginStateFile, RolePluginState};
 use crate::infrastructure::remote_plugin::{
@@ -257,10 +258,7 @@ pub fn directory_plugin_bootstrap_dto(
             if !EMBEDDED_UI_SLOT_NAMES.contains(&decl.slot.as_str()) {
                 continue;
             }
-            by_slot
-                .entry(decl.slot.clone())
-                .or_default()
-                .push(decl);
+            by_slot.entry(decl.slot.clone()).or_default().push(decl);
         }
         for (slot_name, decls) in by_slot {
             if pst.is_slot_contribution_disabled(&slot_name, pid) {

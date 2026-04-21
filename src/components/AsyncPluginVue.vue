@@ -10,7 +10,7 @@ import {
   watch,
   withDefaults,
 } from "vue";
-import { confirm } from "@tauri-apps/api/dialog";
+import { confirm } from "@tauri-apps/plugin-dialog";
 import { storeToRefs } from "pinia";
 import {
   loadPluginVueComponent,

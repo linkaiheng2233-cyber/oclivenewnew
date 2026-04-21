@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { ref } from "vue";
-import { save } from "@tauri-apps/api/dialog";
-import { writeTextFile } from "@tauri-apps/api/fs";
+import { save } from "@tauri-apps/plugin-dialog";
+import { writeTextFile } from "@tauri-apps/plugin-fs";
 import { exportChatLogs } from "../utils/tauri-api";
 import { downloadTextFile } from "../utils/download";
 
