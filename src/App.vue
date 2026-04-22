@@ -9,6 +9,7 @@ import PluginChatHeaderSlots from "./components/PluginChatHeaderSlots.vue";
 import PluginSidebarSlots from "./components/PluginSidebarSlots.vue";
 import RoleplayAsidePanel from "./components/RoleplayAsidePanel.vue";
 import HotkeyHost from "./components/HotkeyHost.vue";
+import OcliveManagerPanel from "./views/OcliveManagerPanel.vue";
 import PluginManagerPanel from "./views/PluginManagerPanel.vue";
 import PluginManagerV2Panel from "./views/PluginManagerV2Panel.vue";
 import PluginSlotEmbed from "./components/PluginSlotEmbed.vue";
@@ -176,9 +177,12 @@ const settingsViewOpen = ref(false);
 
 const {
   pluginManagerV2Open,
+  ocliveManagerOpen,
   openPluginManagerPanel,
+  openOcliveManagerPanel,
   openPluginManagerV2Preview,
-  pluginManagerMoreBtnLabel,
+  pluginManageMoreBtnLabel,
+  ocliveManagerMoreBtnLabel,
   settingsEntryMoreHelp,
 } = usePluginManagerWindow({
   closeMoreMenu: () => {
@@ -503,6 +507,11 @@ async function onReloadPolicy() {
 
 function onHotkey(e: KeyboardEvent) {
   if (e.key === "Escape") {
+    if (ocliveManagerOpen.value) {
+      e.preventDefault();
+      ocliveManagerOpen.value = false;
+      return;
+    }
     if (pluginManagerV2Open.value) {
       e.preventDefault();
       pluginManagerV2Open.value = false;
@@ -533,6 +542,11 @@ function onHotkey(e: KeyboardEvent) {
       debugStore.toggle();
       return;
     }
+  }
+  if (e.ctrlKey && e.shiftKey && e.key.toLowerCase() === "a") {
+    e.preventDefault();
+    openOcliveManagerPanel();
+    return;
   }
   if (e.ctrlKey && e.shiftKey && e.key.toLowerCase() === "f") {
     e.preventDefault();
@@ -816,7 +830,14 @@ onBeforeUnmount(() => {
                 class="more-debug-btn more-debug-btn--fill settings-entry-btn"
                 @click="openPluginManagerPanel"
               >
-                {{ pluginManagerMoreBtnLabel }}
+                {{ pluginManageMoreBtnLabel }}
+              </button>
+              <button
+                type="button"
+                class="more-debug-btn more-debug-btn--fill settings-entry-btn"
+                @click="openOcliveManagerPanel"
+              >
+                {{ ocliveManagerMoreBtnLabel }}
               </button>
             </div>
           </div>
@@ -992,6 +1013,14 @@ onBeforeUnmount(() => {
     <ShortcutHelp v-model="shortcutHelpOpen" :bootstrap-epoch="pluginStore.bootstrapEpoch" />
 
     <PluginManagerPanel />
+    <OcliveManagerPanel
+      :visible="ocliveManagerOpen"
+      @close="ocliveManagerOpen = false"
+      @open-manage="
+        ocliveManagerOpen = false;
+        openPluginManagerPanel();
+      "
+    />
     <PluginManagerV2Panel
       :visible="pluginManagerV2Open"
       @close="pluginManagerV2Open = false"
@@ -1083,7 +1112,7 @@ onBeforeUnmount(() => {
 }
 .settings-entry-actions {
   display: grid;
-  grid-template-columns: repeat(3, minmax(0, 1fr));
+  grid-template-columns: repeat(4, minmax(0, 1fr));
   gap: 8px;
 }
 .settings-entry-btn {

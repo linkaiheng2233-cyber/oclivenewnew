@@ -1,6 +1,7 @@
 import { computed, ref, watch } from "vue";
 import {
-  moreMenuPluginButtonLabel,
+  moreMenuOcliveManagerButtonLabel,
+  moreMenuPluginManageButtonLabel,
   moreMenuTileHelpText,
 } from "../lib/pluginManagerEntryCopy";
 import { usePluginStore } from "../stores/pluginStore";
@@ -21,22 +22,17 @@ export function usePluginManagerWindow(opts: UsePluginManagerWindowOptions) {
   const uiStore = useUiStore();
   const pluginStore = usePluginStore();
   const pluginManagerV2Open = ref(false);
+  const ocliveManagerOpen = ref(false);
 
-  const pluginManagerMoreBtnLabel = computed(() =>
-    moreMenuPluginButtonLabel(uiStore.experimentalPluginManagerV2),
-  );
+  const pluginManageMoreBtnLabel = computed(() => moreMenuPluginManageButtonLabel());
+  const ocliveManagerMoreBtnLabel = computed(() => moreMenuOcliveManagerButtonLabel());
 
   const settingsEntryMoreHelp = computed(() =>
     moreMenuTileHelpText(uiStore.experimentalPluginManagerV2),
   );
 
   function openPluginManagerPanel(): void {
-    if (uiStore.experimentalPluginManagerV2) {
-      pluginStore.closePanel();
-      pluginManagerV2Open.value = !pluginManagerV2Open.value;
-      opts.closeMoreMenu();
-      return;
-    }
+    ocliveManagerOpen.value = false;
     pluginManagerV2Open.value = false;
     if (pluginStore.panelVisible) {
       pluginStore.closePanel();
@@ -46,7 +42,15 @@ export function usePluginManagerWindow(opts: UsePluginManagerWindowOptions) {
     opts.closeMoreMenu();
   }
 
+  function openOcliveManagerPanel(): void {
+    pluginStore.closePanel();
+    pluginManagerV2Open.value = false;
+    ocliveManagerOpen.value = !ocliveManagerOpen.value;
+    opts.closeMoreMenu();
+  }
+
   function openPluginManagerV2Preview(): void {
+    ocliveManagerOpen.value = false;
     pluginStore.closePanel();
     pluginManagerV2Open.value = true;
     opts.closeMoreMenu();
@@ -64,9 +68,12 @@ export function usePluginManagerWindow(opts: UsePluginManagerWindowOptions) {
 
   return {
     pluginManagerV2Open,
+    ocliveManagerOpen,
     openPluginManagerPanel,
+    openOcliveManagerPanel,
     openPluginManagerV2Preview,
-    pluginManagerMoreBtnLabel,
+    pluginManageMoreBtnLabel,
+    ocliveManagerMoreBtnLabel,
     settingsEntryMoreHelp,
   };
 }

@@ -24,21 +24,11 @@ import { useRoleStore } from "../stores/roleStore";
 import {
   applyAuthorSuggestedPluginBackends,
   packPlugin,
-  type PluginMarketEntryDto,
 } from "../utils/tauri-api";
 
 const pluginStore = usePluginStore();
 const roleStore = useRoleStore();
 const { showToast } = useAppToast();
-
-watch(
-  () => pluginStore.panelVisible,
-  (vis) => {
-    if (vis) {
-      void pluginStore.loadCachedPluginMarket();
-    }
-  },
-);
 
 const batchMode = ref(false);
 const batchSelected = ref<Record<string, boolean>>({});
@@ -141,53 +131,6 @@ async function onBatchUpdate() {
   } catch (e) {
     showToast("error", e instanceof Error ? e.message : String(e));
   }
-}
-
-async function onSyncMarketIndex() {
-  try {
-    await pluginStore.syncPluginMarket();
-    if (pluginStore.pluginMarketSnapshot?.warning) {
-      showToast("info", pluginStore.pluginMarketSnapshot.warning);
-    } else {
-      showToast("success", "索引已同步。");
-    }
-  } catch (e) {
-    showToast("error", e instanceof Error ? e.message : String(e));
-  }
-}
-
-async function onInstallMarketEntry(row: PluginMarketEntryDto) {
-  if ((row.missingDependencies ?? []).length > 0) {
-    showToast(
-      "error",
-      `依赖未满足，无法安装：${row.missingDependencies.join("、")}`,
-    );
-    return;
-  }
-  try {
-    await pluginStore.installFromPluginMarket(row.id, row.git);
-    showToast("success", `已安装 ${row.id}，建议保存配置并视需要重启应用。`);
-  } catch (e) {
-    showToast("error", e instanceof Error ? e.message : String(e));
-  }
-}
-
-async function onUpdateMarketEntry(row: PluginMarketEntryDto) {
-  try {
-    await pluginStore.updateInstalledPluginFromGit(row.id);
-    showToast("success", `已更新 ${row.id}（git pull --ff-only）。`);
-  } catch (e) {
-    showToast("error", e instanceof Error ? e.message : String(e));
-  }
-}
-
-function onSelectManageRoot(): void {
-  pluginStore.panelRootTab = "manage";
-}
-
-function onSelectMarketRoot(): void {
-  pluginStore.panelRootTab = "market";
-  void pluginStore.loadCachedPluginMarket();
 }
 
 async function onGitPullWorkspacePlugin() {
@@ -330,21 +273,21 @@ async function onPackSelectedPlugin(): Promise<void> {
       class="pm-backdrop"
       role="dialog"
       aria-modal="true"
-      aria-label="OCLive 管理器（专业模式）"
+      aria-label="插件管理（专业模式）"
       @click.self="pluginStore.closePanel()"
     >
       <div class="pm-dialog pm-dialog--studio" @click.stop>
         <header class="pm-head">
           <div class="pm-head-row">
-            <h2 class="pm-title">OCLive 管理器</h2>
+            <h2 class="pm-title">插件管理</h2>
             <span
               class="pm-studio-badge"
-              title="插件管理与插件市场已分栏；创作者与排错请用插件管理"
+              title="本窗口用于本地插件管理与调试；插件市场请用 OCLive Manager（Ctrl+Shift+A）"
             >专业模式</span>
           </div>
           <p class="pm-sub">
             <kbd class="pm-kbd">Ctrl</kbd>+<kbd class="pm-kbd">Shift</kbd>+<kbd class="pm-kbd">F</kbd>
-            开关本窗口 · 「插件管理」与「插件市场」为两个分区 · 保存后建议重启应用以完全生效
+            开关本窗口（插件管理） · 插件市场请用 Ctrl+Shift+A 打开 OCLive Manager
           </p>
           <button type="button" class="pm-close" aria-label="关闭" @click="pluginStore.closePanel()">
             ×
@@ -355,33 +298,6 @@ async function onPackSelectedPlugin(): Promise<void> {
         <p v-else-if="pluginStore.error" class="pm-err pm-dialog-pad">{{ pluginStore.error }}</p>
 
         <template v-else>
-          <div class="pm-root-tabs" role="tablist" aria-label="OCLive 管理器分区">
-            <button
-              type="button"
-              role="tab"
-              class="pm-root-tab"
-              :class="{ 'pm-root-tab--active': pluginStore.panelRootTab === 'manage' }"
-              :aria-selected="pluginStore.panelRootTab === 'manage'"
-              @click="onSelectManageRoot"
-            >
-              插件管理
-            </button>
-            <button
-              type="button"
-              role="tab"
-              class="pm-root-tab"
-              :class="{ 'pm-root-tab--active': pluginStore.panelRootTab === 'market' }"
-              :aria-selected="pluginStore.panelRootTab === 'market'"
-              @click="onSelectMarketRoot"
-            >
-              插件市场
-            </button>
-          </div>
-
-          <div
-            v-show="pluginStore.panelRootTab === 'manage'"
-            class="pm-manage"
-          >
           <div class="pm-tabs" role="tablist" aria-label="插件管理分区">
             <button
               type="button"
@@ -869,94 +785,6 @@ async function onPackSelectedPlugin(): Promise<void> {
           </section>
           </div>
           </div>
-          </div>
-
-          <div
-            v-show="pluginStore.panelRootTab === 'market'"
-            class="pm-scroll pm-scroll--market"
-          >
-            <section class="pm-section">
-              <p class="pm-hint">
-                从远程索引浏览、安装与更新目录插件；已安装后的启用与插槽排序请在「插件管理」中操作。
-              </p>
-              <div class="pm-section-head">
-                <h3 class="pm-h3">社区索引</h3>
-                <div class="pm-section-actions">
-                  <button
-                    type="button"
-                    class="pm-btn secondary pm-btn--sm"
-                    :disabled="pluginStore.pluginMarketSyncing"
-                    @click="onSyncMarketIndex"
-                  >
-                    {{ pluginStore.pluginMarketSyncing ? "同步中…" : "同步在线索引" }}
-                  </button>
-                </div>
-              </div>
-              <p v-if="pluginStore.pluginMarketError" class="pm-err">{{ pluginStore.pluginMarketError }}</p>
-              <p
-                v-else-if="pluginStore.pluginMarketSnapshot?.warning"
-                class="pm-hint"
-              >
-                {{ pluginStore.pluginMarketSnapshot.warning }}
-              </p>
-              <p v-if="pluginStore.pluginMarketSnapshot?.offlineMode" class="pm-hint">
-                当前为离线模式（使用本地缓存索引）。
-              </p>
-              <p
-                v-if="
-                  !pluginStore.pluginMarketSnapshot?.plugins?.length &&
-                  !pluginStore.pluginMarketError
-                "
-                class="pm-muted"
-              >
-                尚无索引数据，请点击「同步在线索引」。
-              </p>
-              <ul
-                v-else-if="(pluginStore.pluginMarketSnapshot?.plugins?.length ?? 0) > 0"
-                class="pm-market-list"
-              >
-                <li
-                  v-for="row in pluginStore.pluginMarketSnapshot!.plugins"
-                  :key="row.id"
-                  class="pm-market-li"
-                >
-                  <div class="pm-market-main">
-                    <strong>{{ row.id }}</strong>
-                    <span class="pm-muted"> · {{ row.name }} · v{{ row.version }}</span>
-                    <p v-if="row.description" class="pm-market-desc">{{ row.description }}</p>
-                    <p
-                      v-if="(row.missingDependencies ?? []).length"
-                      class="pm-err pm-market-deps"
-                    >
-                      依赖缺失：{{ row.missingDependencies.join("、") }}
-                    </p>
-                  </div>
-                  <div class="pm-market-actions">
-                    <button
-                      v-if="!row.installed"
-                      type="button"
-                      class="pm-btn secondary pm-btn--sm"
-                      @click="onInstallMarketEntry(row)"
-                    >
-                      安装
-                    </button>
-                    <template v-else>
-                      <span v-if="row.hasUpdate" class="pm-badge">可更新</span>
-                      <span v-else class="pm-muted">已安装</span>
-                      <button
-                        v-if="row.hasUpdate"
-                        type="button"
-                        class="pm-btn secondary pm-btn--sm"
-                        @click="onUpdateMarketEntry(row)"
-                      >
-                        更新
-                      </button>
-                    </template>
-                  </div>
-                </li>
-              </ul>
-            </section>
-          </div>
 
           <footer class="pm-foot">
             <button type="button" class="pm-btn secondary" @click="pluginStore.closePanel()">关闭</button>
@@ -1016,52 +844,11 @@ async function onPackSelectedPlugin(): Promise<void> {
 .pm-dialog-pad {
   padding: 12px 18px;
 }
-.pm-root-tabs {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 10px;
-  flex-shrink: 0;
-  padding: 12px 18px 10px;
-  border-bottom: 1px solid color-mix(in srgb, var(--accent, #6c9) 22%, var(--border-light));
-  background: color-mix(in srgb, var(--bg-elevated) 40%, var(--bg-primary));
-}
-.pm-root-tab {
-  flex: 1 1 140px;
-  min-width: 0;
-  padding: 8px 14px;
-  border-radius: 10px;
-  border: 1px solid var(--border-light);
-  font-size: 14px;
-  font-weight: 600;
-  cursor: pointer;
-  color: var(--text-secondary);
-  background: var(--bg-primary);
-  transition: var(--control-transition, border-color 0.18s ease, background 0.18s ease);
-}
-.pm-root-tab:hover {
-  color: var(--text-primary);
-  border-color: color-mix(in srgb, var(--border-light) 70%, var(--accent, #6c9));
-}
-.pm-root-tab--active {
-  color: var(--text-accent);
-  border-color: color-mix(in srgb, var(--accent, #6c9) 45%, var(--border-light));
-  background: color-mix(in srgb, var(--bg-elevated) 80%, transparent);
-}
-.pm-manage {
-  flex: 1;
-  min-height: 0;
-  display: flex;
-  flex-direction: column;
-  overflow: hidden;
-}
 .pm-scroll {
   flex: 1;
   min-height: 0;
   overflow: auto;
   padding: 12px 18px 8px;
-}
-.pm-scroll--market .pm-market-list {
-  max-height: min(520px, 62vh);
 }
 .pm-tabs {
   display: flex;
