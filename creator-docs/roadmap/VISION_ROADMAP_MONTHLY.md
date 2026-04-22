@@ -68,7 +68,7 @@
 | 协议草案 | 推荐 **子进程 + JSON-RPC（stdin/stdout 或本地端口）** 或 **gRPC**；文档写清版本、超时、错误码。 |
 | 试点 | **记忆侧车**优先（重 IO、适合进程隔离）；情感管线可仍内置。 |
 | 安全 | 不默认任意执行；manifest 声明可执行路径或 URL，用户确认策略写进文档。 |
-| CI / 开源准备 | `LICENSE`、根 `README` 项目化、`.gitignore` 与密钥扫描；可选 GitHub Actions：`cargo test` + `npm run build`。**本仓库已加** `LICENSE`（MIT）、重写 `README`、`CONTRIBUTING` / `SECURITY`、`.github/workflows/ci.yml`。 |
+| CI / 开源准备 | `LICENSE`、根 `README` 项目化、`.gitignore` 与密钥扫描；可选 GitHub Actions：`cargo test` + `npm run build`。**本仓库已加** `LICENSE`（AGPL-3.0 + Oclive 插件例外）、重写 `README`、`CONTRIBUTING` / `SECURITY`、`.github/workflows/ci.yml`。 |
 
 **验收**：一个**最小外部 demo 插件**（任意语言）可被 oclive 调通一轮「检索/写入」mock。
 

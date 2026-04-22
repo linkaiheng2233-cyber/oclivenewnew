@@ -6,9 +6,9 @@
 
 ## 1) 主程序仓库（oclivenewnew）
 
-- 当前协议：**MIT**（见仓库根 `LICENSE`）。
-- 对外文档应明确写出：`Licensed under MIT`.
-- 版本发布前，检查 `LICENSE` 文件存在且内容未损坏。
+- 当前协议：**GNU Affero General Public License v3.0（AGPL-3.0）**，并在仓库根 `LICENSE` 正文之后附有 **Oclive 插件例外**（允许仅通过文档化扩展面接入的独立插件使用其他许可）。
+- 对外文档应明确写出 SPDX：`AGPL-3.0`，并说明插件例外见根 `LICENSE` 附录（例外不构成对 AGPL 的替代；修改主程序或网络提供 AGPL 覆盖版本仍须遵守 AGPL，含第 13 条）。
+- 版本发布前，检查 `LICENSE` 文件存在且 AGPL 正文与例外附录均未损坏。
 
 ---
 
@@ -16,11 +16,11 @@
 
 默认要求：
 
-1. 每个官方插件仓库/目录都应有独立 `LICENSE`（默认 MIT）。
-2. README 顶部建议声明协议（如 `Licensed under MIT`）。
+1. 每个官方插件仓库/目录都应有独立 `LICENSE`（可与主程序不同；官方示例仍常用宽松许可以便二次分发）。
+2. README 顶部建议声明协议（例如 `SPDX-License-Identifier: MIT` 或作者自选）。
 3. 发布前清单中增加“协议文件存在性检查”。
 
-> 当前脚手架 `npm run scaffold:ui-plugin` 已默认生成 MIT `LICENSE`，用于减少漏项。
+> 当前脚手架 `npm run scaffold:ui-plugin` 仍默认生成 MIT 风格 `LICENSE`，用于减少漏项；第三方可改为自己需要的许可。
 
 ---
 

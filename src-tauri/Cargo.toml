@@ -2,7 +2,7 @@
 name = "oclivenewnew-tauri"
 version = "0.2.0"
 edition = "2021"
-license = "MIT"
+license = "AGPL-3.0"
 description = "oclive desktop companion — Tauri + Vue + Rust dialogue engine"
 
 [features]

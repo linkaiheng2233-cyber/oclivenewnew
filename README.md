@@ -156,7 +156,7 @@ cd src-tauri && npx tauri build
 
 ## 许可证
 
-MIT，见 [LICENSE](LICENSE)。
+GNU Affero General Public License v3.0（AGPL-3.0），并在 `LICENSE` 末尾附有 **Oclive 插件例外**（允许仅通过文档化扩展面接入的独立插件使用其他许可）。详见 [LICENSE](LICENSE)。
 
 ## 贡献与安全
 
