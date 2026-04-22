@@ -32,7 +32,7 @@
   },
   "dependencies": {
     "@sentry/vue": "^10.47.0",
-    "@tauri-apps/api": "1.5.6",
+    "@tauri-apps/api": "2.10.1",
     "acorn": "^8.16.0",
     "acorn-walk": "^8.3.5",
     "idb-keyval": "^6.2.2",
