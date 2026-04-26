@@ -4,6 +4,7 @@
 //   1. Oclive: Connect — 连接 OOCP WS，在状态栏显示 capabilities.version
 //   2. Oclive: Disconnect — 断开连接
 //   3. Oclive: Show Chat — 打开 webview 聊天面板（发送消息 → 显示 reply）
+//   4. Oclive: Select Role — 选择 role_id（用于 session.create / chat）
 
 import * as vscode from "vscode";
 import { connectOocp, OocpClient, OocpCapabilities } from "@oclive/oocp-client";
@@ -22,10 +23,15 @@ let client: OocpClient | null = null;
 let capabilities: OocpCapabilities | null = null;
 let chatPanel: vscode.WebviewPanel | undefined;
 let sessionNs: string | null = null;
+let selectedRoleId: string | null = null;
+let selectedRoleName: string | null = null;
 
 // ── 扩展激活 ──
 
 export function activate(context: vscode.ExtensionContext) {
+  selectedRoleId = context.globalState.get<string>("oclive.selectedRoleId") ?? null;
+  selectedRoleName = context.globalState.get<string>("oclive.selectedRoleName") ?? null;
+
   statusBarItem = vscode.window.createStatusBarItem(
     vscode.StatusBarAlignment.Left,
     100,
@@ -45,6 +51,11 @@ export function activate(context: vscode.ExtensionContext) {
   context.subscriptions.push(
     vscode.commands.registerCommand("oclive.showChat", () =>
       showChatPanel(context),
+    ),
+  );
+  context.subscriptions.push(
+    vscode.commands.registerCommand("oclive.selectRole", () =>
+      selectRole(context),
     ),
   );
 }
@@ -130,7 +141,11 @@ function updateStatusBar(): void {
     statusBarItem.tooltip =
       "Connected (" +
       capabilities.methods.length +
-      " methods) — click to disconnect";
+      " methods)" +
+      (selectedRoleId
+        ? ` — role: ${selectedRoleName ?? selectedRoleId} (Select Role to change)`
+        : " — role: (not selected; auto-pick first)") +
+      " — click to disconnect";
     statusBarItem.command = "oclive.disconnect";
   } else {
     statusBarItem.text = "$(debug-disconnect) Oclive OOCP";
@@ -138,6 +153,98 @@ function updateStatusBar(): void {
     statusBarItem.command = "oclive.connect";
   }
   statusBarItem.show();
+}
+
+// ── 角色选择 ────────────────────────────────────────────────────────────────
+
+type RoleLike = Record<string, unknown>;
+
+function extractRoleId(r: RoleLike): string {
+  return (
+    (r.role_id as string) ||
+    (r.manifestId as string) ||
+    (r.id as string) ||
+    ""
+  );
+}
+
+function extractRoleName(r: RoleLike): string {
+  return (
+    (r.name as string) ||
+    (r.display_name as string) ||
+    (r.displayName as string) ||
+    ""
+  );
+}
+
+async function listRoles(): Promise<RoleLike[]> {
+  if (!client || !client.connected) return [];
+  const roleListResp = await client.call("role.list", {});
+  const roles = roleListResp.result;
+  if (Array.isArray(roles)) return roles as RoleLike[];
+  if (
+    roles &&
+    typeof roles === "object" &&
+    "roles" in roles &&
+    Array.isArray((roles as Record<string, unknown>).roles)
+  ) {
+    return (roles as Record<string, unknown>).roles as RoleLike[];
+  }
+  return [];
+}
+
+async function selectRole(context: vscode.ExtensionContext): Promise<void> {
+  if (!client || !client.connected) {
+    vscode.window.showErrorMessage(
+      "Oclive: not connected. Run Oclive: Connect first.",
+    );
+    return;
+  }
+
+  const roles = await listRoles();
+  if (roles.length === 0) {
+    vscode.window.showErrorMessage("Oclive: no roles found (role.list empty).");
+    return;
+  }
+
+  const items = roles
+    .map((r) => {
+      const id = extractRoleId(r);
+      if (!id) return null;
+      const name = extractRoleName(r);
+      return {
+        label: name ? name : id,
+        description: name ? id : undefined,
+        id,
+        name,
+      };
+    })
+    .filter(Boolean) as Array<{
+    label: string;
+    description?: string;
+    id: string;
+    name: string;
+  }>;
+
+  const picked = await vscode.window.showQuickPick(items, {
+    title: "Select Oclive role",
+    placeHolder: "Choose a role_id for session.create / chat",
+    canPickMany: false,
+  });
+
+  if (!picked) return;
+
+  selectedRoleId = picked.id;
+  selectedRoleName = picked.name || null;
+  sessionNs = null; // role change invalidates current session
+
+  await context.globalState.update("oclive.selectedRoleId", selectedRoleId);
+  await context.globalState.update("oclive.selectedRoleName", selectedRoleName);
+
+  updateStatusBar();
+  vscode.window.showInformationMessage(
+    `Oclive: selected role ${picked.label} (${picked.id})`,
+  );
 }
 
 // ── 聊天 webview 面板 ──
@@ -182,22 +289,7 @@ function showChatPanel(context: vscode.ExtensionContext): void {
 
             // 如果没有 session，先查询角色列表再创建会话
             if (!sessionNs) {
-              const roleListResp = await client.call("role.list", {});
-              const roles = roleListResp.result;
-              let extractedRoles: unknown[] = [];
-
-              if (Array.isArray(roles)) {
-                extractedRoles = roles;
-              } else if (
-                roles &&
-                typeof roles === "object" &&
-                "roles" in roles &&
-                Array.isArray((roles as Record<string, unknown>).roles)
-              ) {
-                extractedRoles = (roles as Record<string, unknown>)
-                  .roles as unknown[];
-              }
-
+              const extractedRoles = await listRoles();
               if (extractedRoles.length === 0) {
                 postToChat({
                   type: "error",
@@ -207,19 +299,19 @@ function showChatPanel(context: vscode.ExtensionContext): void {
                 return;
               }
 
-              const firstRole = extractedRoles[0] as Record<string, unknown>;
-              // 兼容常见字段名
-              const roleId: string =
-                (firstRole.role_id as string) ||
-                (firstRole.manifestId as string) ||
-                (firstRole.id as string) ||
-                "";
+              let roleId = selectedRoleId;
+              if (!roleId) {
+                const firstRole = extractedRoles[0] as RoleLike;
+                roleId = extractRoleId(firstRole);
+                selectedRoleId = roleId || null;
+                selectedRoleName = roleId ? extractRoleName(firstRole) || null : null;
+              }
               if (!roleId) {
                 postToChat({
                   type: "error",
                   content:
                     "无法从 role.list 结果中提取 role_id。\n返回数据: " +
-                    JSON.stringify(firstRole, null, 2),
+                    JSON.stringify(extractedRoles[0], null, 2),
                 });
                 return;
               }
@@ -251,7 +343,11 @@ function showChatPanel(context: vscode.ExtensionContext): void {
 
               postToChat({
                 type: "system",
-                content: "会话已创建 (role=" + roleId + ")",
+                content:
+                  "会话已创建 (role=" +
+                  (selectedRoleName ? `${selectedRoleName} / ` : "") +
+                  roleId +
+                  ")",
               });
             }
 
