@@ -5,6 +5,7 @@
 //! `POST /chat` 成功响应在扁平化的 `SendMessageResponse` 字段之外另含 **`personality_source`**
 //!（与包内 `settings.json` → `evolution.personality_source` 一致：`vector` | `profile`），便于试聊工具区分人格模式。
 
+use crate::domain::adapters::oocp_ws;
 use crate::domain::chat_engine::process_message;
 use crate::error::AppError;
 use crate::models::dto::{SendMessageRequest, SendMessageResponse};
@@ -176,6 +177,7 @@ async fn chat(
 }
 
 /// 与 [`serve_api`] 相同的路由树，供集成测试 `tower::ServiceExt::oneshot` 使用（无需绑端口）。
+/// 已合并 OOCP WebSocket 路由（`/oocp`）。
 pub fn api_router(app_state: Arc<AppState>) -> Router {
     let cors = CorsLayer::new()
         .allow_origin(Any)
@@ -185,6 +187,7 @@ pub fn api_router(app_state: Arc<AppState>) -> Router {
     Router::new()
         .route("/health", get(health))
         .route("/chat", post(chat))
+        .merge(oocp_ws::oocp_ws_router())
         .layer(cors)
         .with_state(app_state)
 }
