@@ -41,7 +41,16 @@ fn make_event(event: impl Into<String>, payload: Value) -> OocpEvent {
 
 // ── Capabilities ───────────────────────────────────────────────────────────
 
+/// 读取 OOCP 共享令牌（复用 WS 层的相同逻辑）。
+fn oocp_api_token() -> Option<String> {
+    std::env::var("OOCP_API_TOKEN")
+        .ok()
+        .map(|s| s.trim().to_string())
+        .filter(|s| !s.is_empty())
+}
+
 pub fn get_capabilities() -> OocpCapabilities {
+    let auth_required = oocp_api_token().is_some();
     OocpCapabilities {
         msg_type: "capabilities",
         version: OOCP_VERSION,
@@ -51,7 +60,7 @@ pub fn get_capabilities() -> OocpCapabilities {
             max_concurrent_requests: 8,
             max_message_chars: 4096,
         },
-        auth_required: true,
+        auth_required,
     }
 }
 
