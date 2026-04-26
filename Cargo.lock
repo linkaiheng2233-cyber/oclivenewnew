@@ -2676,6 +2676,14 @@ dependencies = [
 ]
 
 [[package]]
+name = "oclive_core"
+version = "0.1.0"
+dependencies = [
+ "serde",
+ "serde_json",
+]
+
+[[package]]
 name = "oclive_validation"
 version = "0.1.0"
 dependencies = [
@@ -2694,8 +2702,10 @@ dependencies = [
  "axum",
  "chrono",
  "env_logger",
+ "futures-util",
  "log",
  "notify",
+ "oclive_core",
  "oclive_validation",
  "once_cell",
  "parking_lot",
