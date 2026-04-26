@@ -125,7 +125,7 @@ export function connectOocp(
           // 等待 capabilities 首帧
         });
 
-        socket.on("message", (raw) => {
+        socket.on("message", (raw: WebSocket.Data) => {
           let msg: OocpMessage;
           try {
             msg = JSON.parse(raw.toString()) as OocpMessage;
@@ -207,7 +207,7 @@ export function connectOocp(
           cleanup();
         });
 
-        socket.on("error", (e) => {
+        socket.on("error", (e: Error) => {
           const reason = e.message || "connection error";
           lifecycle?.onError?.(new Error(reason));
           connectReject?.(new Error(reason));
