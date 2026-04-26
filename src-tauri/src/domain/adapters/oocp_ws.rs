@@ -208,7 +208,7 @@ async fn handle_text_frame(
     // 检查消息大小限制（capabilities.limits.max_message_chars）。
     {
         let caps = crate::domain::core::oocp_handler::get_capabilities();
-        if text.len() > caps.limits.max_message_chars {
+        if text.len() > caps.limits.max_message_chars as usize {
             let err = crate::models::oocp::OocpError {
                 msg_type: "error",
                 id: serde_json::Value::Null,
