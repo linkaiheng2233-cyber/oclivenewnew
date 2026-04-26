@@ -1,0 +1,60 @@
+{
+  "name": "oclive-vscode",
+  "displayName": "Oclive OOCP",
+  "description": "Oclive VSCode distribution — OOCP WebSocket 客户端",
+  "version": "0.1.0",
+  "publisher": "oclive",
+  "license": "AGPL-3.0",
+  "engines": {
+    "vscode": "^1.80.0"
+  },
+  "activationEvents": [],
+  "main": "./out/extension.js",
+  "contributes": {
+    "commands": [
+      {
+        "command": "oclive.connect",
+        "title": "Oclive: Connect"
+      },
+      {
+        "command": "oclive.disconnect",
+        "title": "Oclive: Disconnect"
+      },
+      {
+        "command": "oclive.showChat",
+        "title": "Oclive: Show Chat"
+      }
+    ],
+    "configuration": {
+      "type": "object",
+      "title": "Oclive",
+      "properties": {
+        "oclive.oocp.url": {
+          "type": "string",
+          "default": "ws://127.0.0.1:48888/oocp",
+          "description": "OOCP WebSocket URL"
+        },
+        "oclive.oocp.token": {
+          "type": "string",
+          "default": "",
+          "description": "OOCP auth token (对应服务端 OOCP_API_TOKEN)"
+        }
+      }
+    }
+  },
+  "scripts": {
+    "vscode:prepublish": "npm run compile",
+    "compile": "tsc -p ./",
+    "watch": "tsc -watch -p ./",
+    "lint": "eslint src --ext ts"
+  },
+  "devDependencies": {
+    "@types/node": "^18.0.0",
+    "@types/vscode": "^1.80.0",
+    "@types/ws": "^8.5.0",
+    "typescript": "^5.6.0"
+  },
+  "dependencies": {
+    "ws": "^8.16.0"
+  }
+}
