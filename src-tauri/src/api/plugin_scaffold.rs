@@ -131,10 +131,11 @@ pub fn create_plugin_scaffold(
     }
     let plugin_dir = base.join(plugin_id.as_str());
     if plugin_dir.exists() {
-        return Err(
-            AppError::InvalidParameter(format!("plugin dir already exists: {}", plugin_dir.display()))
-                .to_frontend_error(),
-        );
+        return Err(AppError::InvalidParameter(format!(
+            "plugin dir already exists: {}",
+            plugin_dir.display()
+        ))
+        .to_frontend_error());
     }
     if let Err(e) = write_template_files(
         &plugin_dir,

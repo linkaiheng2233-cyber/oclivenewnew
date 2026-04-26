@@ -6,8 +6,8 @@
 //!
 //! 当前阶段：模块骨架；实现逐步迁入。
 
-pub mod tauri_oocp_handler;
 pub mod oocp_ws;
+pub mod tauri_oocp_handler;
 
 // TODO P0-A：实现 Tauri invoke → core 映射
 // pub mod tauri_invoke;

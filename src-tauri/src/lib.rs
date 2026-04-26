@@ -300,9 +300,7 @@ pub fn run() {
 
             app.manage(app_state);
             let hk = crate::infrastructure::hotkey_bindings::HotkeyBindingsFile::load(
-                app.state::<AppState>()
-                    .directory_plugins
-                    .app_data_dir(),
+                app.state::<AppState>().directory_plugins.app_data_dir(),
             );
             if let Err(e) = crate::api::hotkeys::apply_global_hotkeys(&app.handle(), &hk) {
                 log::warn!(target: "oclive_hotkey", "initial global shortcuts: {}", e);

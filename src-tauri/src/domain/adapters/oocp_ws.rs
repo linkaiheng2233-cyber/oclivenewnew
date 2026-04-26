@@ -114,10 +114,7 @@ async fn handle_oocp_socket(socket: WebSocket, app_state: Arc<AppState>) {
     {
         let caps = crate::domain::core::oocp_handler::get_capabilities();
         let payload = serde_json::to_string(&caps).unwrap_or_else(|_| "{}".to_string());
-        if let Err(e) = writer
-            .send(Message::Text(payload.into()))
-            .await
-        {
+        if let Err(e) = writer.send(Message::Text(payload.into())).await {
             log::warn!(target: "oclive_oocp_ws", "failed to send capabilities: {}", e);
             return;
         }

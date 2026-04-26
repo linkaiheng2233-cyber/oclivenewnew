@@ -83,20 +83,18 @@ impl OocpMethodHandler for TauriOocpHandler {
         }))
     }
 
-    async fn session_destroy(
-        &mut self,
-        _session_ns: &str,
-    ) -> Result<Value, MethodError> {
+    async fn session_destroy(&mut self, _session_ns: &str) -> Result<Value, MethodError> {
         // v0.1 最小实现：不清理内存/DB。
         Ok(json!({}))
     }
 
-    async fn session_get_state(
-        &mut self,
-        session_ns: &str,
-    ) -> Result<Value, MethodError> {
-        let (role_id, _) = parse_session_ns(session_ns)
-            .ok_or_else(|| err(OocpErrorCode::InvalidParams, format!("无效的 session_ns: {}", session_ns)))?;
+    async fn session_get_state(&mut self, session_ns: &str) -> Result<Value, MethodError> {
+        let (role_id, _) = parse_session_ns(session_ns).ok_or_else(|| {
+            err(
+                OocpErrorCode::InvalidParams,
+                format!("无效的 session_ns: {}", session_ns),
+            )
+        })?;
 
         // TODO P0-C: 委托到 role_manager / DB 查询角色运行时状态。
         // 当前为占位实现。
@@ -118,8 +116,12 @@ impl OocpMethodHandler for TauriOocpHandler {
         session_ns: &str,
         scene_id: &str,
     ) -> Result<Value, MethodError> {
-        let (_role_id, _session_id) = parse_session_ns(session_ns)
-            .ok_or_else(|| err(OocpErrorCode::InvalidParams, format!("无效的 session_ns: {}", session_ns)))?;
+        let (_role_id, _session_id) = parse_session_ns(session_ns).ok_or_else(|| {
+            err(
+                OocpErrorCode::InvalidParams,
+                format!("无效的 session_ns: {}", session_ns),
+            )
+        })?;
 
         // TODO P0-C: 委托到 scene_store / role_manager 加载场景配置。
         // 当前为占位实现。
@@ -146,8 +148,12 @@ impl OocpMethodHandler for TauriOocpHandler {
         session_ns: &str,
         mode: &str,
     ) -> Result<Value, MethodError> {
-        let (_role_id, _session_id) = parse_session_ns(session_ns)
-            .ok_or_else(|| err(OocpErrorCode::InvalidParams, format!("无效的 session_ns: {}", session_ns)))?;
+        let (_role_id, _session_id) = parse_session_ns(session_ns).ok_or_else(|| {
+            err(
+                OocpErrorCode::InvalidParams,
+                format!("无效的 session_ns: {}", session_ns),
+            )
+        })?;
 
         // TODO P0-C: 委托到 role_runtime DB 更新。
         // 当前为占位实现。
@@ -160,8 +166,12 @@ impl OocpMethodHandler for TauriOocpHandler {
         format: &str,
         _path: Option<&str>,
     ) -> Result<Value, MethodError> {
-        let (_role_id, _) = parse_session_ns(session_ns)
-            .ok_or_else(|| err(OocpErrorCode::InvalidParams, format!("无效的 session_ns: {}", session_ns)))?;
+        let (_role_id, _) = parse_session_ns(session_ns).ok_or_else(|| {
+            err(
+                OocpErrorCode::InvalidParams,
+                format!("无效的 session_ns: {}", session_ns),
+            )
+        })?;
 
         // TODO P0-C: 委托到 export 模块。
         // 当前为占位实现。
@@ -179,8 +189,12 @@ impl OocpMethodHandler for TauriOocpHandler {
         user_message: &str,
         _scene_id: Option<&str>,
     ) -> Result<Value, MethodError> {
-        let (role_id, session_id) = parse_session_ns(session_ns)
-            .ok_or_else(|| err(OocpErrorCode::InvalidParams, format!("无效的 session_ns: {}", session_ns)))?;
+        let (role_id, session_id) = parse_session_ns(session_ns).ok_or_else(|| {
+            err(
+                OocpErrorCode::InvalidParams,
+                format!("无效的 session_ns: {}", session_ns),
+            )
+        })?;
 
         // 委托到现有的 chat_engine。
         let req = crate::models::dto::SendMessageRequest {
@@ -203,8 +217,12 @@ impl OocpMethodHandler for TauriOocpHandler {
         session_ns: &str,
         context: Option<&str>,
     ) -> Result<Value, MethodError> {
-        let (_role_id, _session_id) = parse_session_ns(session_ns)
-            .ok_or_else(|| err(OocpErrorCode::InvalidParams, format!("无效的 session_ns: {}", session_ns)))?;
+        let (_role_id, _session_id) = parse_session_ns(session_ns).ok_or_else(|| {
+            err(
+                OocpErrorCode::InvalidParams,
+                format!("无效的 session_ns: {}", session_ns),
+            )
+        })?;
 
         // TODO P0-C: 委托到 monologue engine。
         // 当前为占位实现。
@@ -227,18 +245,13 @@ impl OocpMethodHandler for TauriOocpHandler {
 
     // ── 角色 ──────────────────────────────────────────────────────────────
 
-    async fn role_list(
-        &mut self,
-    ) -> Result<Value, MethodError> {
+    async fn role_list(&mut self) -> Result<Value, MethodError> {
         // TODO P0-C: 委托到 role_manager 获取已加载角色列表。
         // 当前为占位实现。
         Ok(json!([]))
     }
 
-    async fn role_get_info(
-        &mut self,
-        role_id: &str,
-    ) -> Result<Value, MethodError> {
+    async fn role_get_info(&mut self, role_id: &str) -> Result<Value, MethodError> {
         // TODO P0-C: 委托到 role_manager。
         // 当前为占位实现。
         Ok(json!({
@@ -254,8 +267,12 @@ impl OocpMethodHandler for TauriOocpHandler {
         session_ns: &str,
         enabled: bool,
     ) -> Result<Value, MethodError> {
-        let (_role_id, _session_id) = parse_session_ns(session_ns)
-            .ok_or_else(|| err(OocpErrorCode::InvalidParams, format!("无效的 session_ns: {}", session_ns)))?;
+        let (_role_id, _session_id) = parse_session_ns(session_ns).ok_or_else(|| {
+            err(
+                OocpErrorCode::InvalidParams,
+                format!("无效的 session_ns: {}", session_ns),
+            )
+        })?;
 
         // TODO P0-C: 委托到 role_manager。
         // 当前为占位实现。
@@ -264,9 +281,7 @@ impl OocpMethodHandler for TauriOocpHandler {
 
     // ── 时间 ──────────────────────────────────────────────────────────────
 
-    async fn time_get_state(
-        &mut self,
-    ) -> Result<Value, MethodError> {
+    async fn time_get_state(&mut self) -> Result<Value, MethodError> {
         // TODO P0-C: 委托到 time engine。
         // 当前为占位实现。
         Ok(json!({
@@ -281,8 +296,12 @@ impl OocpMethodHandler for TauriOocpHandler {
         session_ns: &str,
         target_time_ms: i64,
     ) -> Result<Value, MethodError> {
-        let (_role_id, _session_id) = parse_session_ns(session_ns)
-            .ok_or_else(|| err(OocpErrorCode::InvalidParams, format!("无效的 session_ns: {}", session_ns)))?;
+        let (_role_id, _session_id) = parse_session_ns(session_ns).ok_or_else(|| {
+            err(
+                OocpErrorCode::InvalidParams,
+                format!("无效的 session_ns: {}", session_ns),
+            )
+        })?;
 
         // TODO P0-C: 委托到 time engine。
         // 当前为占位实现。

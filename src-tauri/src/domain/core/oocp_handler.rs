@@ -4,8 +4,8 @@
 //! 所有外部依赖通过 traits 或函数参数注入。
 
 use crate::models::oocp::{
-    OocpCapabilities, OocpError, OocpErrorBody, OocpErrorCode, OocpEvent, OocpLimits,
-    OocpRequest, OocpResponse, OOCP_EVENTS, OOCP_METHODS, OOCP_VERSION,
+    OocpCapabilities, OocpError, OocpErrorBody, OocpErrorCode, OocpEvent, OocpLimits, OocpRequest,
+    OocpResponse, OOCP_EVENTS, OOCP_METHODS, OOCP_VERSION,
 };
 use serde_json::{json, Value};
 
@@ -107,11 +107,7 @@ pub async fn dispatch_oocp_request(
     let id = req.id.clone();
     match handle_method(req, handler).await {
         Ok(result) => OocpHandled::Response(make_response(id, result)),
-        Err(e) => OocpHandled::Error(make_error(
-            id,
-            e.code,
-            e.message,
-        )),
+        Err(e) => OocpHandled::Error(make_error(id, e.code, e.message)),
     }
 }
 
@@ -162,13 +158,17 @@ pub(crate) async fn handle_method(
         "session.switch_interaction_mode" => {
             let session_ns = get_str(&req.params, "session_ns")?;
             let mode = get_str(&req.params, "mode")?;
-            handler.session_switch_interaction_mode(session_ns, mode).await
+            handler
+                .session_switch_interaction_mode(session_ns, mode)
+                .await
         }
         "session.export_chat_logs" => {
             let session_ns = get_str(&req.params, "session_ns")?;
             let format = get_str(&req.params, "format")?;
             let path = get_str_opt(&req.params, "path");
-            handler.session_export_chat_logs(session_ns, format, path).await
+            handler
+                .session_export_chat_logs(session_ns, format, path)
+                .await
         }
 
         // ── 对话 ──
@@ -176,7 +176,9 @@ pub(crate) async fn handle_method(
             let session_ns = get_str(&req.params, "session_ns")?;
             let user_message = get_str(&req.params, "user_message")?;
             let scene_id = get_str_opt(&req.params, "scene_id");
-            handler.chat_send_message(session_ns, user_message, scene_id).await
+            handler
+                .chat_send_message(session_ns, user_message, scene_id)
+                .await
         }
         "chat.generate_monologue" => {
             let session_ns = get_str(&req.params, "session_ns")?;
@@ -185,9 +187,7 @@ pub(crate) async fn handle_method(
         }
 
         // ── 角色 ──
-        "role.list" => {
-            handler.role_list().await
-        }
+        "role.list" => handler.role_list().await,
         "role.get_info" => {
             let role_id = get_str(&req.params, "role_id")?;
             handler.role_get_info(role_id).await
@@ -199,13 +199,11 @@ pub(crate) async fn handle_method(
         }
 
         // ── 时间 ──
-        "time.get_state" => {
-            handler.time_get_state().await
-        }
+        "time.get_state" => handler.time_get_state().await,
         "time.jump" => {
             let session_ns = get_str(&req.params, "session_ns")?;
-            let target_time_ms = get_i64_opt(&req.params, "target_time_ms")
-                .ok_or_else(|| MethodError {
+            let target_time_ms =
+                get_i64_opt(&req.params, "target_time_ms").ok_or_else(|| MethodError {
                     code: OocpErrorCode::InvalidParams,
                     message: "缺少必填参数 target_time_ms".into(),
                 })?;
@@ -217,7 +215,9 @@ pub(crate) async fn handle_method(
             let server_id = get_str(&req.params, "server_id")?;
             let tool_name = get_str(&req.params, "tool_name")?;
             let arguments = req.params.get("arguments").cloned().unwrap_or(Value::Null);
-            handler.agent_call_mcp_tool(server_id, tool_name, arguments).await
+            handler
+                .agent_call_mcp_tool(server_id, tool_name, arguments)
+                .await
         }
 
         other => Err(MethodError {
@@ -272,16 +272,10 @@ pub trait OocpMethodHandler {
     ) -> Result<Value, MethodError>;
 
     /// 销毁会话，返回 `{}`。
-    async fn session_destroy(
-        &mut self,
-        session_ns: &str,
-    ) -> Result<Value, MethodError>;
+    async fn session_destroy(&mut self, session_ns: &str) -> Result<Value, MethodError>;
 
     /// 获取会话状态快照。
-    async fn session_get_state(
-        &mut self,
-        session_ns: &str,
-    ) -> Result<Value, MethodError>;
+    async fn session_get_state(&mut self, session_ns: &str) -> Result<Value, MethodError>;
 
     /// 切换场景。
     async fn session_switch_scene(
@@ -326,10 +320,7 @@ pub trait OocpMethodHandler {
     async fn role_list(&mut self) -> Result<Value, MethodError>;
 
     /// 获取角色详情。
-    async fn role_get_info(
-        &mut self,
-        role_id: &str,
-    ) -> Result<Value, MethodError>;
+    async fn role_get_info(&mut self, role_id: &str) -> Result<Value, MethodError>;
 
     /// 开关异地心声。
     async fn role_set_remote_life(

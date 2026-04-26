@@ -7,8 +7,8 @@
 // ── 顶层消息 ──────────────────────────────────────────────────────────────
 
 pub use oclive_core::oocp::{
-    OocpCapabilities, OocpError, OocpErrorBody, OocpErrorCode, OocpEvent, OocpLimits,
-    OocpRequest, OocpResponse,
+    OocpCapabilities, OocpError, OocpErrorBody, OocpErrorCode, OocpEvent, OocpLimits, OocpRequest,
+    OocpResponse,
 };
 
 // ── Capabilities 常量 ─────────────────────────────────────────────────────
