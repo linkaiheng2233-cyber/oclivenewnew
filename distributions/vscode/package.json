@@ -8,7 +8,11 @@
   "engines": {
     "vscode": "^1.80.0"
   },
-  "activationEvents": [],
+  "activationEvents": [
+    "onCommand:oclive.connect",
+    "onCommand:oclive.disconnect",
+    "onCommand:oclive.showChat"
+  ],
   "main": "./out/extension.js",
   "contributes": {
     "commands": [
