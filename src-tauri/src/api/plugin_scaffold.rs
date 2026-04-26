@@ -146,11 +146,7 @@ pub fn create_plugin_scaffold(
     ) {
         return Err(e.to_frontend_error());
     }
-    let _ = tauri::api::shell::open(
-        &app.shell_scope(),
-        plugin_dir.to_string_lossy().to_string(),
-        None,
-    );
+    let _ = tauri::api::shell::open(&app.shell_scope(), plugin_dir.to_string_lossy(), None);
     Ok(CreatePluginScaffoldResponse {
         plugin_dir: plugin_dir.to_string_lossy().to_string(),
     })

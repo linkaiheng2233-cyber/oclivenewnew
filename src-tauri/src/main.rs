@@ -13,13 +13,11 @@ fn main() {
     while i < args.len() {
         match args[i].as_str() {
             "--api" => api = true,
-            "--port" => {
-                if i + 1 < args.len() {
-                    if let Ok(p) = args[i + 1].parse::<u16>() {
-                        port = p;
-                    }
-                    i += 1;
+            "--port" if i + 1 < args.len() => {
+                if let Ok(p) = args[i + 1].parse::<u16>() {
+                    port = p;
                 }
+                i += 1;
             }
             _ => {}
         }

@@ -12,7 +12,7 @@ use crate::state::AppState;
 use axum::extract::ws::{Message, WebSocket, WebSocketUpgrade};
 use axum::extract::{Query, State};
 use axum::http::HeaderMap;
-use axum::response::Response;
+use axum::response::{IntoResponse, Response};
 use axum::routing::get;
 use axum::Router;
 use futures_util::stream::StreamExt;
@@ -59,14 +59,15 @@ fn subtle_compare(a: &str, b: &str) -> bool {
 }
 
 /// 从查询参数或 Header 中提取客户端提供的 token。
-fn extract_client_token(headers: &HeaderMap, query_token: Option<&str>) -> Option<&str> {
+fn extract_client_token(headers: &HeaderMap, query_token: Option<&str>) -> Option<String> {
     if let Some(t) = query_token.filter(|s| !s.is_empty()) {
-        return Some(t);
+        return Some(t.to_string());
     }
     headers
         .get("Authorization")
         .and_then(|v| v.to_str().ok())
         .and_then(|v| v.strip_prefix("Bearer "))
+        .map(|s| s.to_string())
 }
 
 /// 查询参数类型，用于 `axum::extract::Query`。
@@ -93,7 +94,7 @@ async fn oocp_ws_handler(
         client_token.is_some()
     );
 
-    if !verify_token(&server_token, client_token) {
+    if !verify_token(&server_token, client_token.as_deref()) {
         return Err((
             axum::http::StatusCode::UNAUTHORIZED,
             [(axum::http::header::WWW_AUTHENTICATE, "Bearer")],
@@ -114,7 +115,7 @@ async fn handle_oocp_socket(socket: WebSocket, app_state: Arc<AppState>) {
     {
         let caps = crate::domain::core::oocp_handler::get_capabilities();
         let payload = serde_json::to_string(&caps).unwrap_or_else(|_| "{}".to_string());
-        if let Err(e) = writer.send(Message::Text(payload.into())).await {
+        if let Err(e) = writer.send(Message::Text(payload)).await {
             log::warn!(target: "oclive_oocp_ws", "failed to send capabilities: {}", e);
             return;
         }
@@ -135,7 +136,7 @@ async fn handle_oocp_socket(socket: WebSocket, app_state: Arc<AppState>) {
                             let json = serde_json::to_string(&frame).unwrap_or_else(|e| {
                                 format!(r#"{{"type":"error","id":"0","error":{{"code":"INTERNAL","message":"serialize failed: {}"}}}}"#, e)
                             });
-                            if let Err(e) = writer.send(Message::Text(json.into())).await {
+                            if let Err(e) = writer.send(Message::Text(json)).await {
                                 log::warn!(target: "oclive_oocp_ws", "failed to send response: {}", e);
                                 break;
                             }
@@ -145,7 +146,7 @@ async fn handle_oocp_socket(socket: WebSocket, app_state: Arc<AppState>) {
                             let json = serde_json::to_string(&event).unwrap_or_else(|e| {
                                 format!(r#"{{"type":"event","event":"error","payload":{{"msg":"serialize: {}"}}}}"#, e)
                             });
-                            if let Err(e) = writer.send(Message::Text(json.into())).await {
+                            if let Err(e) = writer.send(Message::Text(json)).await {
                                 log::warn!(target: "oclive_oocp_ws", "failed to push event: {}", e);
                                 break;
                             }

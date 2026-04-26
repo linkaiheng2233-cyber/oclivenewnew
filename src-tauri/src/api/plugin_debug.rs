@@ -91,8 +91,7 @@ pub fn test_plugin_method(
     }
     let url = state
         .directory_plugins
-        .ensure_rpc_url_for_debug(pid, None)
-        .map_err(|e| e)?;
+        .ensure_rpc_url_for_debug(pid, None)?;
     invoke_directory_plugin_rpc_blocking(&url, method, req.params, RemoteRpcChannel::Plugin)
         .map_err(|e: AppError| e.to_frontend_error())
 }

@@ -756,7 +756,7 @@ impl DirectoryPluginRuntime {
         let Some(ring) = ring else {
             return vec![];
         };
-        let out = ring.lock().tail(lines.max(1).min(DEBUG_LOG_RING_CAP));
+        let out = ring.lock().tail(lines.clamp(1, DEBUG_LOG_RING_CAP));
         out
     }
 

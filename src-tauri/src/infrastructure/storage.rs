@@ -696,10 +696,14 @@ mod tests {
 
     #[test]
     fn plugin_state_ui_baseline_prefers_author_suggested_ui_when_non_empty() {
-        let mut ui_from_disk = crate::models::UiConfig::default();
-        ui_from_disk.shell = "from_ui_json".into();
-        let mut suggested = crate::models::UiConfig::default();
-        suggested.shell = "from_author".into();
+        let ui_from_disk = crate::models::UiConfig {
+            shell: "from_ui_json".into(),
+            ..Default::default()
+        };
+        let suggested = crate::models::UiConfig {
+            shell: "from_author".into(),
+            ..Default::default()
+        };
         let role = Role {
             ui_config: ui_from_disk,
             author_pack: Some(crate::models::AuthorPackFile {
@@ -713,8 +717,10 @@ mod tests {
 
     #[test]
     fn plugin_state_ui_baseline_falls_back_to_ui_json_when_author_suggested_empty() {
-        let mut ui_from_disk = crate::models::UiConfig::default();
-        ui_from_disk.shell = "from_ui_json".into();
+        let ui_from_disk = crate::models::UiConfig {
+            shell: "from_ui_json".into(),
+            ..Default::default()
+        };
         let role = Role {
             ui_config: ui_from_disk.clone(),
             author_pack: Some(crate::models::AuthorPackFile {
@@ -728,8 +734,10 @@ mod tests {
 
     #[test]
     fn plugin_state_ui_baseline_without_author_uses_ui_json() {
-        let mut ui_from_disk = crate::models::UiConfig::default();
-        ui_from_disk.shell = "only_pack".into();
+        let ui_from_disk = crate::models::UiConfig {
+            shell: "only_pack".into(),
+            ..Default::default()
+        };
         let role = Role {
             ui_config: ui_from_disk.clone(),
             author_pack: None,

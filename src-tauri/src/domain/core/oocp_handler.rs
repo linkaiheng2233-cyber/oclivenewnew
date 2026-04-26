@@ -7,7 +7,7 @@ use crate::models::oocp::{
     OocpCapabilities, OocpError, OocpErrorBody, OocpErrorCode, OocpEvent, OocpLimits, OocpRequest,
     OocpResponse, OOCP_EVENTS, OOCP_METHODS, OOCP_VERSION,
 };
-use serde_json::{json, Value};
+use serde_json::Value;
 
 // ── 错误构造辅助 ──────────────────────────────────────────────────────────
 
@@ -31,6 +31,7 @@ fn make_response(id: Value, result: Value) -> OocpResponse {
     }
 }
 
+#[allow(dead_code)]
 fn make_event(event: impl Into<String>, payload: Value) -> OocpEvent {
     OocpEvent {
         msg_type: "event",
@@ -86,7 +87,7 @@ pub enum OocpHandled {
 /// 所有需要状态的操作均通过 `handler` 闭包参数完成，由 adapter 层注入。
 pub async fn dispatch_oocp_request(
     req: OocpRequest,
-    handler: &mut dyn OocpMethodHandler,
+    handler: &mut impl OocpMethodHandler,
 ) -> OocpHandled {
     // 1) 如果客户端尚未获取 capabilities，要求先协商。
     if req.method.is_empty() {
@@ -132,7 +133,7 @@ impl MethodError {
 
 pub(crate) async fn handle_method(
     req: OocpRequest,
-    handler: &mut dyn OocpMethodHandler,
+    handler: &mut impl OocpMethodHandler,
 ) -> Result<Value, MethodError> {
     match req.method.as_str() {
         // ── 会话生命周期 ──
@@ -140,26 +141,28 @@ pub(crate) async fn handle_method(
             let role_id = get_str(&req.params, "role_id")?;
             let session_id = get_str_opt(&req.params, "session_id");
             let scene_id = get_str_opt(&req.params, "scene_id");
-            handler.session_create(role_id, session_id, scene_id).await
+            handler
+                .session_create(&role_id, session_id.as_deref(), scene_id.as_deref())
+                .await
         }
         "session.destroy" => {
             let session_ns = get_str(&req.params, "session_ns")?;
-            handler.session_destroy(session_ns).await
+            handler.session_destroy(&session_ns).await
         }
         "session.get_state" => {
             let session_ns = get_str(&req.params, "session_ns")?;
-            handler.session_get_state(session_ns).await
+            handler.session_get_state(&session_ns).await
         }
         "session.switch_scene" => {
             let session_ns = get_str(&req.params, "session_ns")?;
             let scene_id = get_str(&req.params, "scene_id")?;
-            handler.session_switch_scene(session_ns, scene_id).await
+            handler.session_switch_scene(&session_ns, &scene_id).await
         }
         "session.switch_interaction_mode" => {
             let session_ns = get_str(&req.params, "session_ns")?;
             let mode = get_str(&req.params, "mode")?;
             handler
-                .session_switch_interaction_mode(session_ns, mode)
+                .session_switch_interaction_mode(&session_ns, &mode)
                 .await
         }
         "session.export_chat_logs" => {
@@ -167,7 +170,7 @@ pub(crate) async fn handle_method(
             let format = get_str(&req.params, "format")?;
             let path = get_str_opt(&req.params, "path");
             handler
-                .session_export_chat_logs(session_ns, format, path)
+                .session_export_chat_logs(&session_ns, &format, path.as_deref())
                 .await
         }
 
@@ -177,25 +180,27 @@ pub(crate) async fn handle_method(
             let user_message = get_str(&req.params, "user_message")?;
             let scene_id = get_str_opt(&req.params, "scene_id");
             handler
-                .chat_send_message(session_ns, user_message, scene_id)
+                .chat_send_message(&session_ns, &user_message, scene_id.as_deref())
                 .await
         }
         "chat.generate_monologue" => {
             let session_ns = get_str(&req.params, "session_ns")?;
             let context = get_str_opt(&req.params, "context");
-            handler.chat_generate_monologue(session_ns, context).await
+            handler
+                .chat_generate_monologue(&session_ns, context.as_deref())
+                .await
         }
 
         // ── 角色 ──
         "role.list" => handler.role_list().await,
         "role.get_info" => {
             let role_id = get_str(&req.params, "role_id")?;
-            handler.role_get_info(role_id).await
+            handler.role_get_info(&role_id).await
         }
         "role.set_remote_life" => {
             let session_ns = get_str(&req.params, "session_ns")?;
             let enabled = get_bool(&req.params, "enabled").unwrap_or(true);
-            handler.role_set_remote_life(session_ns, enabled).await
+            handler.role_set_remote_life(&session_ns, enabled).await
         }
 
         // ── 时间 ──
@@ -207,7 +212,7 @@ pub(crate) async fn handle_method(
                     code: OocpErrorCode::InvalidParams,
                     message: "缺少必填参数 target_time_ms".into(),
                 })?;
-            handler.time_jump(session_ns, target_time_ms).await
+            handler.time_jump(&session_ns, target_time_ms).await
         }
 
         // ── Agent ──
@@ -216,7 +221,7 @@ pub(crate) async fn handle_method(
             let tool_name = get_str(&req.params, "tool_name")?;
             let arguments = req.params.get("arguments").cloned().unwrap_or(Value::Null);
             handler
-                .agent_call_mcp_tool(server_id, tool_name, arguments)
+                .agent_call_mcp_tool(&server_id, &tool_name, arguments)
                 .await
         }
 
@@ -229,18 +234,22 @@ pub(crate) async fn handle_method(
 
 // ── 参数提取辅助 ──────────────────────────────────────────────────────────
 
-fn get_str(params: &Value, key: &str) -> Result<&str, MethodError> {
+fn get_str(params: &Value, key: &str) -> Result<String, MethodError> {
     params
         .get(key)
         .and_then(|v| v.as_str())
+        .map(|s| s.to_string())
         .ok_or_else(|| MethodError {
             code: OocpErrorCode::InvalidParams,
             message: format!("缺少必填参数 {}", key),
         })
 }
 
-fn get_str_opt<'a>(params: &'a Value, key: &str) -> Option<&'a str> {
-    params.get(key).and_then(|v| v.as_str())
+fn get_str_opt(params: &Value, key: &str) -> Option<String> {
+    params
+        .get(key)
+        .and_then(|v| v.as_str())
+        .map(|s| s.to_string())
 }
 
 fn get_bool(params: &Value, key: &str) -> Option<bool> {

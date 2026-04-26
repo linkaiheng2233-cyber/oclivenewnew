@@ -78,7 +78,7 @@ pub fn get_plugin_settings_ui(
                 .collect()
         })
         .unwrap_or_default();
-    let config = read_config_json(&state, plugin_id.trim()).map_err(|e| e)?;
+    let config = read_config_json(&state, plugin_id.trim())?;
     Ok(PluginUiSettingsDto {
         ui_template,
         fields,
@@ -106,7 +106,7 @@ pub fn set_plugin_settings_config(
         }
         .to_string());
     }
-    write_config_json(&state, pid, &config).map_err(|e| e)?;
+    write_config_json(&state, pid, &config)?;
     if let Ok(url) = state.directory_plugins.ensure_rpc_url(pid) {
         let _ = invoke_directory_plugin_rpc_blocking(
             &url,

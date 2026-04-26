@@ -13,7 +13,7 @@ fn resolve_role_with_all_builtin_v2() {
     let llm: Arc<dyn LlmClient> = Arc::new(MockLlmClient {
         reply: String::new(),
     });
-    let host = PluginHost::new(llm, None);
+    let host = PluginHost::new(llm, None, std::env::temp_dir());
     let role = Role {
         plugin_backends: PluginBackends {
             memory: MemoryBackend::BuiltinV2,

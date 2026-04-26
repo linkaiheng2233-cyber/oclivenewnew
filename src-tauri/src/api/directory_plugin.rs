@@ -267,7 +267,7 @@ pub fn directory_plugin_bootstrap_dto(
             let sel = appearance_for
                 .and_then(|m| m.get(&slot_name))
                 .map(|s| s.as_str());
-            let decl_refs: Vec<&UiSlotDecl> = decls.iter().copied().collect();
+            let decl_refs: Vec<&UiSlotDecl> = decls.to_vec();
             let Some(picked) = pick_ui_slot_decl(&decl_refs, sel) else {
                 continue;
             };
