@@ -3,12 +3,12 @@
 // 用法: npx tsx tools/oocp-client/examples/smoke.ts [url]
 //   默认 ws://127.0.0.1:48888/oocp
 //
-// 验收标准:
-//   1. 连接成功 → 打印 capabilities.version
-//   2. role.list 返回成功或明确的错误码（core 未启动/角色目录为空都算可观测）
-//   3. 未连接/超时 → 给出清晰错误提示
+// PASS/FAIL 规则:
+//   连接成功且拿到 capabilities → PASS
+//   连不上 WS / capabilities 超时 → FAIL
+//   后续 role/session/chat 按环境选择性 PASS/INFO
 
-import { connectOocp, OocpCapabilities, OocpResponse } from "../src/index.js";
+import { connectOocp, OocpCapabilities, OocpClient } from "../src/index.js";
 
 const URL = process.argv[2] || "ws://127.0.0.1:48888/oocp";
 
@@ -19,98 +19,137 @@ async function main() {
   );
   console.log("");
 
-  let caps: OocpCapabilities;
+  let client: OocpClient;
 
   try {
-    caps = await connect();
-  } catch (e: any) {
-    console.error(
-      `\n[FAIL] 无法连接到 OOCP 服务端: ${e.message}`,
+    client = connectOocp(
+      { url: URL, timeoutMs: 5000 },
+      {
+        onError: (e) => {
+          console.error(`[smoke] connection error: ${e.message}`);
+        },
+      },
     );
+    const caps = await client.connect();
+    console.log(`[PASS] capabilities.version = ${caps.version}`);
+    console.log(
+      `[PASS] methods (${caps.methods.length}): ${caps.methods.join(", ")}`,
+    );
+    console.log(`[PASS] auth_required = ${caps.auth_required}`);
+    console.log(
+      `[PASS] limits.max_message_chars = ${caps.limits.max_message_chars}`,
+    );
+    console.log("");
+  } catch (e: unknown) {
+    const msg = e instanceof Error ? e.message : String(e);
+    console.error(`\n[FAIL] 无法连接到 OOCP 服务端: ${msg}`);
     console.error("[smoke] 请确认 core 已启动: npm run oocp:serve");
     process.exit(1);
   }
 
-  console.log(`[PASS] capabilities.version = ${caps.version}`);
-  console.log(
-    `[PASS] methods (${caps.methods.length}): ${caps.methods.join(", ")}`,
-  );
-  console.log(`[PASS] auth_required = ${caps.auth_required}`);
-  console.log(
-    `[PASS] limits.max_message_chars = ${caps.limits.max_message_chars}`,
-  );
-  console.log("");
-
-  // 尝试 role.list（可能返回空列表，只要不 panic 就行）
+  // 尝试 role.list → session.create → chat.send_message
   try {
-    const resp = await call("role.list");
-    printResult("role.list", resp);
-  } catch (e: any) {
+    const roleResp = await client.call("role.list", {});
+    const result = roleResp.result;
+
+    // 兼容多种返回结构
+    let roles: unknown[] = [];
+    if (Array.isArray(result)) {
+      roles = result;
+    } else if (
+      result &&
+      typeof result === "object" &&
+      "roles" in result &&
+      Array.isArray((result as Record<string, unknown>).roles)
+    ) {
+      roles = (result as Record<string, unknown>).roles as unknown[];
+    }
+
+    if (roles.length === 0) {
+      console.log(
+        "[INFO] no roles found, skipping chat.send_message (smoke still PASS)",
+      );
+      console.log(`[PASS] role.list → 0 items`);
+    } else {
+      console.log(`[PASS] role.list → ${roles.length} item(s)`);
+
+      // 取第一个角色的 role_id
+      const firstRole = roles[0] as Record<string, unknown>;
+      const roleId: string =
+        (firstRole.role_id as string) ||
+        (firstRole.manifestId as string) ||
+        (firstRole.id as string) ||
+        "";
+
+      if (!roleId) {
+        console.log(
+          "[INFO] role.list returned items but cannot extract role_id, " +
+            "skipping session/chat. First item keys: " +
+            Object.keys(firstRole).join(", "),
+        );
+      } else {
+        console.log(`[PASS] role_id = ${roleId}`);
+
+        // 创建会话
+        const sessionResp = await client.call("session.create", {
+          role_id: roleId,
+        });
+        const sessResult = sessionResp.result;
+        let sessionNs = "";
+
+        if (
+          sessResult &&
+          typeof sessResult === "object" &&
+          "session_ns" in sessResult
+        ) {
+          sessionNs = String(
+            (sessResult as Record<string, unknown>).session_ns,
+          );
+        } else if (
+          sessResult &&
+          typeof sessResult === "object" &&
+          "id" in sessResult
+        ) {
+          sessionNs = String((sessResult as Record<string, unknown>).id);
+        } else {
+          sessionNs = JSON.stringify(sessResult);
+        }
+
+        console.log(`[PASS] session.create → session_ns = ${sessionNs}`);
+
+        // 发送消息
+        const chatResp = await client.call("chat.send_message", {
+          session_ns: sessionNs,
+          user_message: "hello",
+        });
+        const chatResult = chatResp.result;
+        if (
+          chatResult &&
+          typeof chatResult === "object" &&
+          "reply" in chatResult
+        ) {
+          console.log(
+            `[PASS] chat.send_message → reply: "${String((chatResult as Record<string, unknown>).reply)}"`,
+          );
+        } else {
+          console.log(
+            `[PASS] chat.send_message → ${JSON.stringify(chatResult)}`,
+          );
+        }
+      }
+    }
+  } catch (e: unknown) {
+    const msg = e instanceof Error ? e.message : String(e);
     console.log(
-      `[INFO] role.list 出错（可能角色目录为空或 core 不支持）: ${e.message}`,
+      `[INFO] role/session/chat 链出错（可选，核心连通性 PASS）: ${msg}`,
     );
   }
 
-  // 尝试 session.create（需要有效的 role 信息，不要求成功）
-  try {
-    const resp = await call("session.create", {});
-    printResult("session.create", resp);
-  } catch (e: any) {
-    console.log(
-      `[INFO] session.create 出错（预期可能无有效 role）: ${e.message}`,
-    );
-  }
-
-  console.log("");
-  console.log("[smoke] smoke test 完成（以上错误如为预期内则不影响验收）");
-  process.exit(0);
-}
-
-async function connect(): Promise<OocpCapabilities> {
-  const client = connectOocp(
-    { url: URL, timeoutMs: 5000 },
-    {
-      onConnected: () => {
-        console.log("[smoke] WS connected, waiting for capabilities...");
-      },
-      onError: (e) => {
-        console.error(`[smoke] connection error: ${e.message}`);
-      },
-    },
-  );
-
-  const caps = await client.connect();
   client.close();
-  return caps;
-}
 
-async function call(
-  method: string,
-  params: Record<string, unknown>,
-): Promise<OocpResponse> {
-  // 每次调用新建连接，模拟 smoke 场景
-  const client = connectOocp({ url: URL, timeoutMs: 5000 });
-  const caps = await client.connect();
-  console.log(`[smoke] (reconnected, version=${caps.version})`);
-  try {
-    const resp = await client.call(method, params);
-    client.close();
-    return resp;
-  } catch (e) {
-    client.close();
-    throw e;
-  }
-}
-
-function printResult(method: string, resp: OocpResponse) {
-  const result = resp.result;
-  if (result && result.reply) {
-    console.log(`[PASS] ${method} → reply: "${result.reply}"`);
-  } else if (Array.isArray(result)) {
-    console.log(`[PASS] ${method} → ${result.length} item(s)`);
-  } else {
-    console.log(`[PASS] ${method} → ${JSON.stringify(result)}`);
-  }
+  console.log("");
+  console.log("[smoke] smoke test PASS");
+  process.exit(0);
 }
 
 main();
