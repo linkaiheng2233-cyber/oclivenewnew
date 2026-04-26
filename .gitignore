@@ -34,5 +34,8 @@ src-tauri/target
 # Temp/check artifacts (dev)
 cargo-check-log.txt
 
+# VSCode extension build output
+distributions/vscode/out/
+
 # Local directory-plugin runtime state under roles root (dev)
 roles/.oclive_directory_plugin_data/
