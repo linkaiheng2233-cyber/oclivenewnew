@@ -7,7 +7,7 @@ fn main() {
     let mut port: u16 = std::env::var("OCLIVE_API_PORT")
         .ok()
         .and_then(|s| s.parse().ok())
-        .unwrap_or(8420);
+        .unwrap_or(48888);
     let mut api = false;
     let mut i = 1usize;
     while i < args.len() {

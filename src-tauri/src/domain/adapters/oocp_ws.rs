@@ -134,7 +134,7 @@ async fn handle_oocp_socket(socket: WebSocket, app_state: Arc<AppState>) {
                         let resp = handle_text_frame(&text, &mut handler).await;
                         if let Some(frame) = resp {
                             let json = serde_json::to_string(&frame).unwrap_or_else(|e| {
-                                format!(r#"{{"type":"error","id":"0","error":{{"code":"INTERNAL","message":"serialize failed: {}"}}}}"#, e)
+                                format!(r#"{{"type":"error","id":null,"error":{{"code":"INTERNAL","message":"serialize failed: {}"}}}}"#, e)
                             });
                             if let Err(e) = writer.send(Message::Text(json)).await {
                                 log::warn!(target: "oclive_oocp_ws", "failed to send response: {}", e);
@@ -205,6 +205,29 @@ async fn handle_text_frame(
         return Some(serde_json::to_value(&caps).unwrap_or(serde_json::Value::Null));
     }
 
+    // 检查消息大小限制（capabilities.limits.max_message_chars）。
+    {
+        let caps = crate::domain::core::oocp_handler::get_capabilities();
+        if text.len() > caps.limits.max_message_chars {
+            let err = crate::models::oocp::OocpError {
+                msg_type: "error",
+                id: serde_json::Value::Null,
+                error: crate::models::oocp::OocpErrorBody {
+                    code: crate::models::oocp::OocpErrorCode::InvalidParams
+                        .as_str()
+                        .to_string(),
+                    message: format!(
+                        "消息长度超过限制 ({} > {})",
+                        text.len(),
+                        caps.limits.max_message_chars
+                    ),
+                    data: serde_json::Value::Null,
+                },
+            };
+            return Some(serde_json::to_value(&err).unwrap_or(serde_json::Value::Null));
+        }
+    }
+
     match serde_json::from_str::<crate::models::oocp::OocpRequest>(text) {
         Ok(mut req) => {
             // 若 type 字段缺失，补上默认值。
@@ -229,10 +252,10 @@ async fn handle_text_frame(
             }
         }
         Err(e) => {
-            // 无法解析为 OocpRequest，返回错误。
+            // 无法解析为 OocpRequest，返回错误（id 用 null 而非 "0" 字符串）。
             let err = crate::models::oocp::OocpError {
                 msg_type: "error",
-                id: serde_json::Value::String("0".to_string()),
+                id: serde_json::Value::Null,
                 error: crate::models::oocp::OocpErrorBody {
                     code: crate::models::oocp::OocpErrorCode::InvalidParams
                         .as_str()
