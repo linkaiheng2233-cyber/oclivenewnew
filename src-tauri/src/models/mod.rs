@@ -8,6 +8,7 @@ pub mod favorability;
 pub mod interaction_mode;
 pub mod knowledge;
 pub mod memory;
+pub mod oocp;
 pub mod personality;
 pub mod plugin_backends;
 pub mod role;
