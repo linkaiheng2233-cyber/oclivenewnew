@@ -4,9 +4,14 @@
 fn main() {
     let _ = env_logger::try_init();
     let args: Vec<String> = std::env::args().collect();
-    let mut port: u16 = std::env::var("OCLIVE_API_PORT")
+    let mut port: u16 = std::env::var("OOCP_API_PORT")
         .ok()
         .and_then(|s| s.parse().ok())
+        .or_else(|| {
+            std::env::var("OCLIVE_API_PORT")
+                .ok()
+                .and_then(|s| s.parse().ok())
+        })
         .unwrap_or(48888);
     let mut api = false;
     let mut i = 1usize;
