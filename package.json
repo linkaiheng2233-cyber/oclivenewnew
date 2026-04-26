@@ -44,11 +44,13 @@
     "pinia-plugin-persistedstate": "^4.7.1",
     "vue": "^3.5.13",
     "vue-virtual-scroller": "^2.0.0",
-    "vue3-sfc-loader": "^0.9.5"
+    "vue3-sfc-loader": "^0.9.5",
+    "ws": "^8.20.0"
   },
   "devDependencies": {
     "@tauri-apps/cli": "1.5.14",
     "@types/node": "^25.6.0",
+    "@types/ws": "^8.18.1",
     "@vitejs/plugin-vue": "^5.2.1",
     "rollup-plugin-visualizer": "^7.0.1",
     "typescript": "^6.0.3",
