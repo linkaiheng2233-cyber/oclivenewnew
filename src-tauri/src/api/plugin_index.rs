@@ -7,6 +7,7 @@ use crate::infrastructure::plugin_installer::{
     sync_plugin_index_online_for_source, uninstall_plugin, update_plugin, PluginIndexEntry,
     PluginIndexFile, PluginIndexVersionEntry,
 };
+use crate::api::error::ApiError;
 use crate::state::AppState;
 use semver::Version;
 use serde::{Deserialize, Serialize};
@@ -122,6 +123,14 @@ pub struct PendingProtocolInstall {
 #[serde(rename_all = "camelCase")]
 pub struct InstallPluginFromMarketResponse {
     pub installed_plugin_id: String,
+}
+
+#[derive(Debug, Clone, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct InstallMarketConsent {
+    /// 用户在安装弹窗中同意的权限 token 列表（必须是索引声明 permissions 的子集）。
+    #[serde(default)]
+    pub accepted_permissions: Vec<String>,
 }
 
 #[derive(Debug, Clone, Deserialize)]
@@ -282,6 +291,7 @@ pub fn get_cached_plugin_index(state: State<'_, AppState>) -> Result<PluginMarke
 pub fn install_plugin_from_market(
     plugin_id: String,
     git_url: Option<String>,
+    consent: Option<InstallMarketConsent>,
     state: State<'_, AppState>,
 ) -> Result<InstallPluginFromMarketResponse, String> {
     let pid = plugin_id.trim();
@@ -300,6 +310,27 @@ pub fn install_plugin_from_market(
     }
     let from_index = load_cached_index(&state).map_err(|e| e.to_frontend_error())?;
     let index_item = from_index.plugins.iter().find(|p| p.id == pid).cloned();
+    let accepted = consent
+        .as_ref()
+        .map(|c| c.accepted_permissions.clone())
+        .unwrap_or_default();
+    if let Some(ref idx) = index_item {
+        if !accepted.is_empty() {
+            let declared: std::collections::HashSet<String> = idx
+                .permissions
+                .iter()
+                .map(|s| s.trim().to_string())
+                .filter(|s| !s.is_empty())
+                .collect();
+            let ok = accepted.iter().all(|p| declared.contains(p.trim()));
+            if !ok {
+                return Err(ApiError::InvalidParameter {
+                    message: "accepted_permissions must be a subset of index permissions".into(),
+                }
+                .to_string());
+            }
+        }
+    }
     // 默认：git clone + checkout tag（以 versions.latest.git_tag 或 version 作为 tag）
     // 若调用方传了 git_url，则仍按旧逻辑直接 clone（开发者模式可用）
     let installed_id = if let Some(g) = git_url.as_deref().map(str::trim).filter(|s| !s.is_empty())
@@ -336,6 +367,25 @@ pub fn install_plugin_from_market(
             ensure_default_config_for_manifest(&state, &m);
         }
     }
+    // 用户同意的 permissions 覆盖到 grants（并与安装种子并集）
+    if !accepted.is_empty() {
+        let pid2 = installed_id.clone();
+        let mut perms = accepted
+            .iter()
+            .map(|s| s.trim().to_string())
+            .filter(|s| !s.is_empty())
+            .collect::<Vec<_>>();
+        perms.sort();
+        perms.dedup();
+        let _ = tauri::async_runtime::block_on(async {
+            for p in perms {
+                let _ = state
+                    .db_manager
+                    .upsert_plugin_permission_grant(pid2.as_str(), p.as_str(), true)
+                    .await;
+            }
+        });
+    }
     Ok(InstallPluginFromMarketResponse {
         installed_plugin_id: installed_id,
     })
@@ -346,6 +396,8 @@ pub fn install_plugin_from_market(
 pub struct InstallPluginVersionFromMarketRequest {
     pub plugin_id: String,
     pub version: String,
+    #[serde(default)]
+    pub accepted_permissions: Vec<String>,
 }
 
 /// 回滚/指定版本安装：从索引读取 download_url + signature_url → 验签 → 安装
@@ -369,6 +421,24 @@ pub fn install_plugin_version_from_market(
         .find(|p| p.id == pid)
         .cloned()
         .ok_or_else(|| format!("plugin not found in index: {}", pid))?;
+    if !req.accepted_permissions.is_empty() {
+        let declared: std::collections::HashSet<String> = index_item
+            .permissions
+            .iter()
+            .map(|s| s.trim().to_string())
+            .filter(|s| !s.is_empty())
+            .collect();
+        let ok = req
+            .accepted_permissions
+            .iter()
+            .all(|p| declared.contains(p.trim()));
+        if !ok {
+            return Err(ApiError::InvalidParameter {
+                message: "accepted_permissions must be a subset of index permissions".into(),
+            }
+            .to_string());
+        }
+    }
     let picked = index_item
         .versions
         .iter()
@@ -394,6 +464,25 @@ pub fn install_plugin_version_from_market(
         signature_url,
     )
     .map_err(|e| e.to_frontend_error())?;
+    // 写入 grants：把用户同意的 permissions 合并到 grants（不破坏安装种子）
+    if !req.accepted_permissions.is_empty() {
+        let mut perms = req.accepted_permissions.clone();
+        perms = perms
+            .into_iter()
+            .map(|s| s.trim().to_string())
+            .filter(|s| !s.is_empty())
+            .collect();
+        perms.sort();
+        perms.dedup();
+        let _ = tauri::async_runtime::block_on(async {
+            for p in perms {
+                let _ = state
+                    .db_manager
+                    .upsert_plugin_permission_grant(installed_id.as_str(), p.as_str(), true)
+                    .await;
+            }
+        });
+    }
     Ok(InstallPluginFromMarketResponse {
         installed_plugin_id: installed_id,
     })

@@ -1175,20 +1175,26 @@ export async function getCachedPluginIndex(): Promise<PluginMarketSnapshotDto> {
 export async function installPluginFromMarket(
   pluginId: string,
   gitUrl?: string | null,
+  acceptedPermissions?: string[] | null,
 ): Promise<InstallPluginFromMarketResponseDto> {
   return invokeWithFriendlyError<InstallPluginFromMarketResponseDto>(
     "install_plugin_from_market",
-    { pluginId, gitUrl: gitUrl ?? null },
+    {
+      pluginId,
+      gitUrl: gitUrl ?? null,
+      consent: { acceptedPermissions: acceptedPermissions ?? [] },
+    },
   );
 }
 
 export async function installPluginVersionFromMarket(
   pluginId: string,
   version: string,
+  acceptedPermissions?: string[] | null,
 ): Promise<InstallPluginFromMarketResponseDto> {
   return invokeWithFriendlyError<InstallPluginFromMarketResponseDto>(
     "install_plugin_version_from_market",
-    { req: { pluginId, version } },
+    { req: { pluginId, version, acceptedPermissions: acceptedPermissions ?? [] } },
   );
 }
 

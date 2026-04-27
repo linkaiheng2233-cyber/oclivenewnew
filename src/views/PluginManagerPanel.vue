@@ -217,7 +217,7 @@ async function onInstallMarketEntry(row: PluginMarketEntryDto) {
   }
   try {
     // 默认安装走索引内版本解析（git tag clone）；仅开发者模式才应允许自定义 gitUrl 覆盖
-    await pluginStore.installFromPluginMarket(row.id, null);
+    await pluginStore.installFromPluginMarket(row.id, null, perms);
     showToast("success", `已安装 ${row.id}，建议保存配置并视需要重启应用。`);
   } catch (e) {
     showToast("error", e instanceof Error ? e.message : String(e));
@@ -268,7 +268,7 @@ async function onInstallMarketVersion(row: PluginMarketEntryDto) {
     }
   }
   try {
-    await pluginStore.installVersionFromPluginMarket(row.id, v);
+    await pluginStore.installVersionFromPluginMarket(row.id, v, perms);
     showToast(
       "success",
       row.installed ? `已回滚/切换 ${row.id} → v${v}` : `已安装 ${row.id} v${v}`,

@@ -298,13 +298,29 @@ export const usePluginStore = defineStore("plugin", {
         this.pluginMarketSyncing = false;
       }
     },
-    async installFromPluginMarket(pluginId: string, gitUrl?: string | null) {
-      await installPluginFromMarket(pluginId, gitUrl ?? null);
+    async installFromPluginMarket(
+      pluginId: string,
+      gitUrl?: string | null,
+      acceptedPermissions?: string[] | null,
+    ) {
+      await installPluginFromMarket(
+        pluginId,
+        gitUrl ?? null,
+        acceptedPermissions ?? null,
+      );
       await this.refresh();
       this.bootstrapEpoch += 1;
     },
-    async installVersionFromPluginMarket(pluginId: string, version: string) {
-      await installPluginVersionFromMarket(pluginId, version);
+    async installVersionFromPluginMarket(
+      pluginId: string,
+      version: string,
+      acceptedPermissions?: string[] | null,
+    ) {
+      await installPluginVersionFromMarket(
+        pluginId,
+        version,
+        acceptedPermissions ?? null,
+      );
       await this.refresh();
       this.bootstrapEpoch += 1;
     },
