@@ -6,6 +6,7 @@ mod dependency;
 mod manifest;
 mod runtime;
 mod version;
+#[cfg(feature = "tauri-app")]
 mod watcher;
 
 pub use dependency::dependency_report;
@@ -18,4 +19,5 @@ pub use runtime::{
     PluginScanSummary,
 };
 pub use version::parse_manifest_version;
+#[cfg(feature = "tauri-app")]
 pub use watcher::start_plugin_fs_watcher;

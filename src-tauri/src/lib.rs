@@ -1,3 +1,4 @@
+#[cfg(feature = "tauri-app")]
 pub mod api;
 pub mod domain;
 pub mod env_flags;
@@ -8,16 +9,24 @@ pub mod models;
 pub mod state;
 pub mod utils;
 
+#[cfg(feature = "tauri-app")]
 use std::fs;
+#[cfg(feature = "tauri-app")]
 use std::path::{Path, PathBuf};
+#[cfg(feature = "tauri-app")]
 use tauri::http::{Request, Response, ResponseBuilder};
+#[cfg(feature = "tauri-app")]
 use tauri::{AppHandle, Manager};
 
+#[cfg(feature = "tauri-app")]
 use crate::infrastructure::deep_link::seed_pending_install_urls_from_args;
+#[cfg(feature = "tauri-app")]
 use crate::infrastructure::directory_plugins::{start_plugin_fs_watcher, OclivePluginManifest};
+#[cfg(feature = "tauri-app")]
 use crate::state::AppState;
 
 /// 向插件 HTML 注入 `window.OclivePluginBridge`（manifest 中 `bridge` + 白名单）。
+#[cfg(feature = "tauri-app")]
 fn inject_plugin_bridge_script(
     html: &str,
     plugin_id: &str,
@@ -65,6 +74,7 @@ window.OclivePluginBridge={{invoke:invoke,listen:listen,allowedInvoke:INV,allowe
     }
 }
 
+#[cfg(feature = "tauri-app")]
 fn mime_for_plugin_asset(rel: &str) -> &'static str {
     let ext = Path::new(rel)
         .extension()
@@ -88,6 +98,7 @@ fn mime_for_plugin_asset(rel: &str) -> &'static str {
     }
 }
 
+#[cfg(feature = "tauri-app")]
 fn plugin_asset_from_request_uri(uri: &str) -> Option<(String, String)> {
     let lower = uri.to_ascii_lowercase();
     let marker = "ocliveplugin.localhost/";
@@ -107,6 +118,7 @@ fn plugin_asset_from_request_uri(uri: &str) -> Option<(String, String)> {
     Some((plugin_id, rel))
 }
 
+#[cfg(feature = "tauri-app")]
 fn serve_ocliveplugin_asset(
     app: &AppHandle,
     request: &Request,
@@ -176,6 +188,7 @@ fn serve_ocliveplugin_asset(
 /// 避免 `tauri dev` 时误用 `resource_dir/roles`（来自上次打包拷贝到 `target/.../resources` 的**旧快照**）。
 ///
 /// **发布构建**：使用打包资源目录下的 `roles/`（`bundle.resources`），再回退到 [`state::resolve_roles_dir`]。
+#[cfg(feature = "tauri-app")]
 fn resolve_roles_dir_for_app(app: &tauri::App) -> PathBuf {
     if let Ok(custom) = std::env::var("OCLIVE_ROLES_DIR") {
         let p = PathBuf::from(custom);
@@ -255,6 +268,7 @@ pub fn run_api_server(port: u16) {
     }
 }
 
+#[cfg(feature = "tauri-app")]
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
 pub fn run() {
     let _ = env_logger::try_init();

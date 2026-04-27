@@ -32,6 +32,7 @@ pub enum AppError {
 
 pub type Result<T> = std::result::Result<T, AppError>;
 
+#[cfg(feature = "tauri-app")]
 impl From<AppError> for tauri::InvokeError {
     fn from(err: AppError) -> Self {
         tauri::InvokeError::from(err.to_string())

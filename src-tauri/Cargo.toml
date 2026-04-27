@@ -6,13 +6,14 @@ license = "AGPL-3.0"
 description = "oclive desktop companion — Tauri + Vue + Rust dialogue engine"
 
 [features]
-default = ["custom-protocol"]
+default = ["tauri-app", "custom-protocol"]
+tauri-app = ["dep:tauri", "dep:tauri-plugin-deep-link", "dep:tauri-build"]
 custom-protocol = ["tauri/custom-protocol"]
 
 [dependencies]
 oclive_validation = { path = "../crates/oclive_validation" }
 oclive_core = { path = "../crates/oclive_core" }
-tauri = { version = "1.5", features = [ "protocol-asset", "shell-open", "dialog-open", "dialog-save", "fs-write-file", "fs-read-file", "global-shortcut"] }
+tauri = { version = "1.5", optional = true, features = [ "protocol-asset", "shell-open", "dialog-open", "dialog-save", "fs-write-file", "fs-read-file", "global-shortcut"] }
 serde = { version = "1.0", features = ["derive"] }
 serde_json = "1.0"
 serde_yaml = "0.9"
@@ -38,10 +39,10 @@ axum = { version = "0.7", features = ["ws"] }
 tower-http = { version = "0.5", features = ["cors"] }
 futures-util = "0.3"
 sha2 = "0.11.0"
-tauri-plugin-deep-link = "0.1.2"
+tauri-plugin-deep-link = { version = "0.1.2", optional = true }
 
 [dev-dependencies]
 tower = { version = "0.4", features = ["util"] }
 
 [build-dependencies]
-tauri-build = { version = "1.5", features = [] }
+tauri-build = { version = "1.5", features = [], optional = true }
