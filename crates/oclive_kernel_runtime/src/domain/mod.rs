@@ -10,6 +10,7 @@ pub mod emotion_analyzer;
 pub mod event_detector;
 pub mod event_estimator;
 pub mod event_impact_ai;
+pub mod knowledge_loader;
 pub mod life_schedule;
 pub mod local_plugin_bridge;
 pub mod local_plugin_memory_pick;
@@ -19,21 +20,20 @@ pub mod personality_engine;
 pub mod portrait_emotion_engine;
 pub mod plugin_host;
 pub mod policy;
+pub mod profile_personality;
 pub mod prompt_assembler;
 pub mod prompt_builder;
 pub mod relation_engine;
 pub mod remote_life_prompt;
 pub mod repository;
+pub mod role_manager;
 pub mod user_emotion_analyzer;
 pub mod user_identity;
+pub mod mutable_profile_llm;
 
 // Temporary shim: re-export the rest from `oclivenewnew-tauri`.
 //
 // Goal: progressively migrate modules here and remove this dependency.
-pub use oclivenewnew_tauri::domain::knowledge_loader;
 pub use oclivenewnew_tauri::domain::agent;
-pub use oclivenewnew_tauri::domain::mutable_profile_llm;
-pub use oclivenewnew_tauri::domain::profile_personality;
-pub use oclivenewnew_tauri::domain::role_manager;
 
 pub use local_plugin_bridge::LOCAL_PLUGIN_SCHEMA_VERSION;
