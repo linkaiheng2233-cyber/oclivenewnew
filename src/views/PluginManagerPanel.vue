@@ -35,6 +35,60 @@ const { showToast } = useAppToast();
 const marketSourceSelected = ref("official");
 const marketSources = ref<string[]>([]);
 
+const permConsentVisible = ref(false);
+const permConsentTitle = ref("");
+const permConsentPerms = ref<string[]>([]);
+const permConsentSelected = ref<Record<string, boolean>>({});
+let permConsentResolver: ((v: string[] | null) => void) | null = null;
+
+function calcPermRisk(perms: string[]) {
+  const hasNetwork = perms.some((p) => p === "network:*" || p.startsWith("network:"));
+  const hasFs = perms.some((p) => p.startsWith("filesystem:"));
+  const hasShell = perms.some((p) => p.startsWith("shell:") || p === "process:spawn");
+  const hasRpcInvoke = perms.includes("rpc:invoke");
+  return { hasNetwork, hasFs, hasShell, hasRpcInvoke };
+}
+
+async function requestPermissionConsent(
+  title: string,
+  declaredPerms: string[],
+): Promise<string[] | null> {
+  const perms = [...declaredPerms].map((s) => s.trim()).filter(Boolean);
+  if (perms.length === 0) return [];
+  permConsentTitle.value = title;
+  permConsentPerms.value = perms;
+  const next: Record<string, boolean> = {};
+  for (const p of perms) next[p] = true;
+  permConsentSelected.value = next;
+  permConsentVisible.value = true;
+  return await new Promise<string[] | null>((resolve) => {
+    permConsentResolver = resolve;
+  });
+}
+
+function onPermConsentCancel() {
+  permConsentVisible.value = false;
+  const r = permConsentResolver;
+  permConsentResolver = null;
+  r?.(null);
+}
+
+function onPermConsentConfirm() {
+  const selected = Object.entries(permConsentSelected.value)
+    .filter(([, v]) => v)
+    .map(([k]) => k);
+  permConsentVisible.value = false;
+  const r = permConsentResolver;
+  permConsentResolver = null;
+  r?.(selected);
+}
+
+function setPermConsentAll(v: boolean) {
+  const next: Record<string, boolean> = {};
+  for (const p of permConsentPerms.value) next[p] = v;
+  permConsentSelected.value = next;
+}
+
 async function loadMarketSourcesForPanel(): Promise<void> {
   try {
     const cfg = await getPluginMarketSourcesConfig();
@@ -191,33 +245,24 @@ async function onInstallMarketEntry(row: PluginMarketEntryDto) {
     );
     return;
   }
-  const perms = (row.permissions ?? []).map((s) => s.trim()).filter(Boolean);
-  if (perms.length > 0) {
-    const hasNetwork = perms.some((p) => p === "network:*" || p.startsWith("network:"));
-    const hasFs = perms.some((p) => p.startsWith("filesystem:"));
-    const hasShell = perms.some((p) => p.startsWith("shell:") || p === "process:spawn");
-    const hasRpcInvoke = perms.includes("rpc:invoke");
-    const ok = window.confirm(
-      `该插件声明以下权限（安装后可在“已安装插件→权限”中随时调整）：\n\n${perms
-        .map((p) => `- ${p}`)
-        .join("\n")}\n\n是否继续安装？`,
+  const declaredPerms = (row.permissions ?? []).map((s) => s.trim()).filter(Boolean);
+  const accepted = await requestPermissionConsent(`安装 ${row.id}`, declaredPerms);
+  if (accepted == null) return;
+  const { hasNetwork, hasFs, hasShell, hasRpcInvoke } = calcPermRisk(accepted);
+  if ((hasNetwork && hasFs && hasShell) || hasRpcInvoke) {
+    const ok2 = window.confirm(
+      `你已勾选高风险权限（${[
+        hasRpcInvoke ? "rpc:invoke" : "",
+        hasNetwork && hasFs && hasShell ? "network+filesystem+shell" : "",
+      ]
+        .filter(Boolean)
+        .join("，")}）。\n\n建议仅安装你信任的来源。\n\n请再次确认：是否继续安装？`,
     );
-    if (!ok) return;
-    if ((hasNetwork && hasFs && hasShell) || hasRpcInvoke) {
-      const ok2 = window.confirm(
-        `该插件包含高风险权限（${[
-          hasRpcInvoke ? "rpc:invoke" : "",
-          hasNetwork && hasFs && hasShell ? "network+filesystem+shell" : "",
-        ]
-          .filter(Boolean)
-          .join("，")}）。\n\n建议仅安装你信任的来源。\n\n请再次确认：是否继续安装？`,
-      );
-      if (!ok2) return;
-    }
+    if (!ok2) return;
   }
   try {
     // 默认安装走索引内版本解析（git tag clone）；仅开发者模式才应允许自定义 gitUrl 覆盖
-    await pluginStore.installFromPluginMarket(row.id, null, perms);
+    await pluginStore.installFromPluginMarket(row.id, null, accepted);
     showToast("success", `已安装 ${row.id}，建议保存配置并视需要重启应用。`);
   } catch (e) {
     showToast("error", e instanceof Error ? e.message : String(e));
@@ -243,32 +288,23 @@ function marketPickedVersionForRow(row: PluginMarketEntryDto): string {
 async function onInstallMarketVersion(row: PluginMarketEntryDto) {
   const v = marketPickedVersionForRow(row);
   if (!v?.trim()) return;
-  const perms = (row.permissions ?? []).map((s) => s.trim()).filter(Boolean);
-  if (perms.length > 0) {
-    const hasNetwork = perms.some((p) => p === "network:*" || p.startsWith("network:"));
-    const hasFs = perms.some((p) => p.startsWith("filesystem:"));
-    const hasShell = perms.some((p) => p.startsWith("shell:") || p === "process:spawn");
-    const hasRpcInvoke = perms.includes("rpc:invoke");
-    const ok = window.confirm(
-      `该插件声明以下权限（安装后可在“已安装插件→权限”中随时调整）：\n\n${perms
-        .map((p) => `- ${p}`)
-        .join("\n")}\n\n是否继续安装 v${v}？`,
+  const declaredPerms = (row.permissions ?? []).map((s) => s.trim()).filter(Boolean);
+  const accepted = await requestPermissionConsent(`安装 ${row.id} v${v}`, declaredPerms);
+  if (accepted == null) return;
+  const { hasNetwork, hasFs, hasShell, hasRpcInvoke } = calcPermRisk(accepted);
+  if ((hasNetwork && hasFs && hasShell) || hasRpcInvoke) {
+    const ok2 = window.confirm(
+      `你已勾选高风险权限（${[
+        hasRpcInvoke ? "rpc:invoke" : "",
+        hasNetwork && hasFs && hasShell ? "network+filesystem+shell" : "",
+      ]
+        .filter(Boolean)
+        .join("，")}）。\n\n建议仅安装你信任的来源。\n\n请再次确认：是否继续安装 v${v}？`,
     );
-    if (!ok) return;
-    if ((hasNetwork && hasFs && hasShell) || hasRpcInvoke) {
-      const ok2 = window.confirm(
-        `该插件包含高风险权限（${[
-          hasRpcInvoke ? "rpc:invoke" : "",
-          hasNetwork && hasFs && hasShell ? "network+filesystem+shell" : "",
-        ]
-          .filter(Boolean)
-          .join("，")}）。\n\n建议仅安装你信任的来源。\n\n请再次确认：是否继续安装 v${v}？`,
-      );
-      if (!ok2) return;
-    }
+    if (!ok2) return;
   }
   try {
-    await pluginStore.installVersionFromPluginMarket(row.id, v, perms);
+    await pluginStore.installVersionFromPluginMarket(row.id, v, accepted);
     showToast(
       "success",
       row.installed ? `已回滚/切换 ${row.id} → v${v}` : `已安装 ${row.id} v${v}`,
@@ -430,6 +466,60 @@ async function onPackSelectedPlugin(): Promise<void> {
       aria-label="插件工作台（专业模式）"
       @click.self="pluginStore.closePanel()"
     >
+      <div
+        v-if="permConsentVisible"
+        class="pm-modal-backdrop"
+        role="dialog"
+        aria-modal="true"
+        aria-label="插件安装权限确认"
+        @click.self="onPermConsentCancel"
+      >
+        <div class="pm-modal" @click.stop>
+          <div class="pm-modal-h">{{ permConsentTitle }}</div>
+          <p class="pm-hint">
+            请选择你愿意授予的权限（安装后仍可在“已安装插件 → 权限”中随时调整）。
+          </p>
+          <div class="pm-modal-actions">
+            <button
+              type="button"
+              class="pm-btn secondary pm-btn--sm"
+              @click="setPermConsentAll(true)"
+            >
+              全选
+            </button>
+            <button
+              type="button"
+              class="pm-btn secondary pm-btn--sm"
+              @click="setPermConsentAll(false)"
+            >
+              全不选
+            </button>
+          </div>
+          <ul class="pm-perm-list">
+            <li v-for="p in permConsentPerms" :key="p" class="pm-perm-li">
+              <label class="pm-perm-row">
+                <input
+                  type="checkbox"
+                  :checked="permConsentSelected[p] === true"
+                  @change="
+                    permConsentSelected = {
+                      ...permConsentSelected,
+                      [p]: ($event.target as HTMLInputElement).checked,
+                    }
+                  "
+                />
+                <span class="pm-perm-token">{{ p }}</span>
+              </label>
+            </li>
+          </ul>
+          <div class="pm-modal-actions pm-modal-actions--foot">
+            <button type="button" class="pm-btn secondary" @click="onPermConsentCancel">
+              取消
+            </button>
+            <button type="button" class="pm-btn" @click="onPermConsentConfirm">继续安装</button>
+          </div>
+        </div>
+      </div>
       <div class="pm-dialog pm-dialog--studio" @click.stop>
         <header class="pm-head">
           <div class="pm-head-row">
@@ -1095,6 +1185,62 @@ async function onPackSelectedPlugin(): Promise<void> {
   justify-content: center;
   padding: 16px;
   background: var(--dialog-backdrop, color-mix(in srgb, #000 45%, transparent));
+}
+.pm-modal-backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 10080;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 16px;
+  background: var(--dialog-backdrop, color-mix(in srgb, #000 55%, transparent));
+}
+.pm-modal {
+  width: min(520px, 100%);
+  max-height: min(86vh, 720px);
+  overflow: auto;
+  padding: 14px 16px 12px;
+  border-radius: var(--radius-app);
+  border: 1px solid var(--border-light);
+  background: var(--bg-primary);
+  box-shadow: var(--shadow-app);
+}
+.pm-modal-h {
+  font-size: 14px;
+  font-weight: 600;
+  margin: 0 0 8px;
+}
+.pm-modal-actions {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+  margin: 8px 0;
+}
+.pm-modal-actions--foot {
+  justify-content: flex-end;
+  margin-top: 12px;
+}
+.pm-perm-list {
+  list-style: none;
+  padding: 0;
+  margin: 10px 0 0;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+.pm-perm-li {
+  margin: 0;
+}
+.pm-perm-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 12px;
+}
+.pm-perm-token {
+  font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono",
+    "Courier New", monospace;
 }
 .pm-dialog {
   position: relative;

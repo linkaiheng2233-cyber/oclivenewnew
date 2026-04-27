@@ -523,6 +523,9 @@ pub struct DirectoryPluginCatalogEntry {
     pub dependency_status: String,
     #[serde(skip_serializing_if = "Vec::is_empty")]
     pub dependency_issues: Vec<String>,
+    /// 安装元数据（市场安装/侧载等），用于前端展示“声明权限 vs 授予权限”等对照信息
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub install_meta: Option<crate::infrastructure::plugin_installer::PluginInstallMeta>,
 }
 
 struct PluginCatalogCacheValue {
@@ -573,6 +576,7 @@ fn build_directory_plugin_catalog(state: &AppState) -> Vec<DirectoryPluginCatalo
         .iter()
         .filter_map(|(pid, root)| {
             let manifest = OclivePluginManifest::load_from_dir(root).ok()?;
+            let install_meta = crate::infrastructure::plugin_installer::read_install_meta(root);
             let is_shell = manifest.shell.is_some();
             let has_ui_settings = manifest.ui_template.is_some()
                 || manifest
@@ -613,6 +617,7 @@ fn build_directory_plugin_catalog(state: &AppState) -> Vec<DirectoryPluginCatalo
                 provides: manifest.provides.clone(),
                 dependency_status,
                 dependency_issues,
+                install_meta,
             })
         })
         .collect();

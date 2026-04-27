@@ -49,6 +49,14 @@ const permSorted = computed(() =>
   ),
 );
 
+const declaredPermsSorted = computed(() => {
+  const raw = props.entry.installMeta?.declaredPermissions ?? [];
+  return [...raw]
+    .map((s) => (s ?? "").trim())
+    .filter(Boolean)
+    .sort((a, b) => (a === b ? 0 : a < b ? -1 : 1));
+});
+
 async function refreshPerms(): Promise<void> {
   const pid = props.entry.id?.trim();
   if (!pid) return;
@@ -133,6 +141,17 @@ async function onTogglePermission(p: PluginPermissionGrantDto, enabled: boolean)
     </div>
     <div class="ipwd-perms">
       <div class="ipwd-perms-h">权限</div>
+      <div v-if="declaredPermsSorted.length > 0" class="ipwd-perms-declared">
+        <div class="ipwd-perms-subh">声明（来自市场索引）</div>
+        <ul class="ipwd-perms-list">
+          <li v-for="p in declaredPermsSorted" :key="p" class="ipwd-perms-li">
+            <span class="ipwd-perms-token">{{ p }}</span>
+          </li>
+        </ul>
+        <p class="ipwd-perms-muted">
+          这是插件作者在索引中声明的权限范围；真正是否可用以“已授予”为准。
+        </p>
+      </div>
       <p v-if="permError" class="ipwd-perms-err">{{ permError }}</p>
       <p v-else-if="permLoading" class="ipwd-perms-muted">加载中…</p>
       <p v-else-if="permSorted.length === 0" class="ipwd-perms-muted">
@@ -203,6 +222,15 @@ async function onTogglePermission(p: PluginPermissionGrantDto, enabled: boolean)
   font-weight: 600;
   color: var(--text-secondary);
   margin-bottom: 6px;
+}
+.ipwd-perms-subh {
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--text-secondary);
+  margin: 8px 0 6px;
+}
+.ipwd-perms-declared {
+  margin-bottom: 10px;
 }
 .ipwd-perms-list {
   list-style: none;

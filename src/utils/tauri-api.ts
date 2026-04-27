@@ -1001,6 +1001,13 @@ export interface DirectoryPluginCatalogEntry {
   id: string;
   version: string;
   pluginType?: string | null;
+  installMeta?: {
+    installMethod: string;
+    gitUrl?: string | null;
+    pinnedTag?: string | null;
+    declaredPermissions?: string[];
+    grantedPermissions?: string[];
+  } | null;
   /** manifest 含 `uiTemplate` 或 `uiSchema.fields` */
   hasUiSettings?: boolean;
   /** manifest 是否含 `process`（可在此面板启动 JSON-RPC 子进程） */

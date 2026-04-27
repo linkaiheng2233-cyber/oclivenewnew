@@ -21,17 +21,57 @@ const MAX_PLUGIN_ARCHIVE_SINGLE_FILE_BYTES: u64 = 10 * 1024 * 1024;
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
-struct PluginInstallMeta {
+pub struct PluginInstallMeta {
     pub install_method: String, // git|git_tag|archive
     #[serde(default)]
     pub git_url: Option<String>,
     #[serde(default)]
     pub pinned_tag: Option<String>,
+    /// 索引/manifest 声明的权限（用于前端展示“声明 vs 授予”对照）
+    #[serde(default)]
+    pub declared_permissions: Vec<String>,
+    /// 用户在安装时同意并写入 grants 的权限快照（便于可视化对照；真实执行以 DB grants 为准）
+    #[serde(default)]
+    pub granted_permissions: Vec<String>,
 }
 
 // NOTE: 权限 token 映射与种子逻辑已迁移到 API 层：
 // - 市场安装：只写入用户 consent 的权限子集
 // - 开发者模式侧载：由 extract_plugin_zip 等命令按 manifest 种子写入
+
+pub fn update_install_meta_permissions(
+    state: &AppState,
+    plugin_id: &str,
+    declared_permissions: Vec<String>,
+    granted_permissions: Vec<String>,
+) -> Result<(), AppError> {
+    let pid = plugin_id.trim();
+    if pid.is_empty() {
+        return Ok(());
+    }
+    let root = plugins_dir(state).join(pid);
+    let Some(mut meta) = read_install_meta(&root) else {
+        return Ok(());
+    };
+    let mut declared = declared_permissions
+        .into_iter()
+        .map(|s| s.trim().to_string())
+        .filter(|s| !s.is_empty())
+        .collect::<Vec<_>>();
+    declared.sort();
+    declared.dedup();
+    let mut granted = granted_permissions
+        .into_iter()
+        .map(|s| s.trim().to_string())
+        .filter(|s| !s.is_empty())
+        .collect::<Vec<_>>();
+    granted.sort();
+    granted.dedup();
+    meta.declared_permissions = declared;
+    meta.granted_permissions = granted;
+    write_install_meta(&root, &meta)?;
+    Ok(())
+}
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
@@ -397,7 +437,7 @@ fn write_install_meta(root: &Path, meta: &PluginInstallMeta) -> Result<(), AppEr
     Ok(())
 }
 
-fn read_install_meta(root: &Path) -> Option<PluginInstallMeta> {
+pub fn read_install_meta(root: &Path) -> Option<PluginInstallMeta> {
     let p = root.join(".oclive_install.json");
     let raw = fs::read_to_string(p).ok()?;
     serde_json::from_str(&raw).ok()
@@ -427,6 +467,8 @@ pub fn install_plugin_from_archive_bytes(state: &AppState, bytes: &[u8]) -> Resu
             install_method: "archive".to_string(),
             git_url: None,
             pinned_tag: None,
+            declared_permissions: Vec::new(),
+            granted_permissions: Vec::new(),
         },
     );
     // rename 后 tmp 不再拥有目录；阻止 drop 尝试清理不存在路径
@@ -547,6 +589,8 @@ pub fn install_plugin_from_git_tag(
             install_method: "git_tag".to_string(),
             git_url: Some(url.to_string()),
             pinned_tag: Some(tag.to_string()),
+            declared_permissions: Vec::new(),
+            granted_permissions: Vec::new(),
         },
     );
     state
@@ -666,6 +710,8 @@ pub fn install_plugin(
             install_method: "git".to_string(),
             git_url: Some(url.to_string()),
             pinned_tag: None,
+            declared_permissions: Vec::new(),
+            granted_permissions: Vec::new(),
         },
     );
     state
