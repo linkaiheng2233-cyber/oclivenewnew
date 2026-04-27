@@ -1,5 +1,6 @@
 pub mod adapters;
 pub mod affect_policy;
+pub mod agent;
 pub mod chat_engine;
 pub mod chat_llm_fallback;
 pub mod chat_turn;
@@ -34,6 +35,4 @@ pub mod mutable_profile_llm;
 // Temporary shim: re-export the rest from `oclivenewnew-tauri`.
 //
 // Goal: progressively migrate modules here and remove this dependency.
-pub use oclivenewnew_tauri::domain::agent;
-
 pub use local_plugin_bridge::LOCAL_PLUGIN_SCHEMA_VERSION;

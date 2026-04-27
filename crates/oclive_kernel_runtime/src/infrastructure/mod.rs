@@ -3,6 +3,7 @@
 // Goal: progressively migrate code here and remove this dependency.
 
 pub mod db;
+pub mod function_call_parser;
 pub mod repositories_runtime;
 pub mod remote_plugin;
 
