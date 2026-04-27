@@ -6,6 +6,7 @@
 pub mod favor;
 pub mod presence;
 pub mod scene;
+pub mod context;
 
 pub use oclivenewnew_tauri::domain::chat_engine::process_message;
 
