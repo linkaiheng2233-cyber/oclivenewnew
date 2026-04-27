@@ -40,6 +40,7 @@ const permConsentVisible = ref(false);
 const permConsentTitle = ref("");
 const permConsentPerms = ref<string[]>([]);
 const permConsentSelected = ref<Record<string, boolean>>({});
+const permConsentTrustSummary = ref<string>("");
 let permConsentResolver: ((v: string[] | null) => void) | null = null;
 
 function calcPermRisk(perms: string[]) {
@@ -58,6 +59,7 @@ async function requestPermissionConsent(
   if (perms.length === 0) return [];
   permConsentTitle.value = title;
   permConsentPerms.value = perms;
+  permConsentTrustSummary.value = "";
   const next: Record<string, boolean> = {};
   for (const p of perms) next[p] = true;
   permConsentSelected.value = next;
@@ -67,10 +69,21 @@ async function requestPermissionConsent(
   });
 }
 
+async function requestPermissionConsentWithTrust(
+  title: string,
+  declaredPerms: string[],
+  trustSummary: string,
+): Promise<string[] | null> {
+  const res = await requestPermissionConsent(title, declaredPerms);
+  permConsentTrustSummary.value = trustSummary.trim();
+  return res;
+}
+
 function onPermConsentCancel() {
   permConsentVisible.value = false;
   const r = permConsentResolver;
   permConsentResolver = null;
+  permConsentTrustSummary.value = "";
   r?.(null);
 }
 
@@ -81,6 +94,7 @@ function onPermConsentConfirm() {
   permConsentVisible.value = false;
   const r = permConsentResolver;
   permConsentResolver = null;
+  permConsentTrustSummary.value = "";
   r?.(selected);
 }
 
@@ -247,7 +261,22 @@ async function onInstallMarketEntry(row: PluginMarketEntryDto) {
     return;
   }
   const declaredPerms = (row.permissions ?? []).map((s) => s.trim()).filter(Boolean);
-  const accepted = await requestPermissionConsent(`安装 ${row.id}`, declaredPerms);
+  const trust = [
+    row.source ? `来源：${row.source}` : "",
+    row.publisher ? `发布者：${row.publisher}` : "",
+    (row.publicKeys ?? []).length
+      ? `公钥：${(row.publicKeys ?? [])
+          .map((k) => `${k.pubkeyId}${k.status ? `(${k.status})` : ""}`)
+          .join("，")}`
+      : "",
+  ]
+    .filter(Boolean)
+    .join("\n");
+  const accepted = await requestPermissionConsentWithTrust(
+    `安装 ${row.id}`,
+    declaredPerms,
+    trust,
+  );
   if (accepted == null) return;
   const { hasNetwork, hasFs, hasShell, hasRpcInvoke } = calcPermRisk(accepted);
   if ((hasNetwork && hasFs && hasShell) || hasRpcInvoke) {
@@ -290,7 +319,22 @@ async function onInstallMarketVersion(row: PluginMarketEntryDto) {
   const v = marketPickedVersionForRow(row);
   if (!v?.trim()) return;
   const declaredPerms = (row.permissions ?? []).map((s) => s.trim()).filter(Boolean);
-  const accepted = await requestPermissionConsent(`安装 ${row.id} v${v}`, declaredPerms);
+  const trust = [
+    row.source ? `来源：${row.source}` : "",
+    row.publisher ? `发布者：${row.publisher}` : "",
+    (row.publicKeys ?? []).length
+      ? `公钥：${(row.publicKeys ?? [])
+          .map((k) => `${k.pubkeyId}${k.status ? `(${k.status})` : ""}`)
+          .join("，")}`
+      : "",
+  ]
+    .filter(Boolean)
+    .join("\n");
+  const accepted = await requestPermissionConsentWithTrust(
+    `安装 ${row.id} v${v}`,
+    declaredPerms,
+    trust,
+  );
   if (accepted == null) return;
   const { hasNetwork, hasFs, hasShell, hasRpcInvoke } = calcPermRisk(accepted);
   if ((hasNetwork && hasFs && hasShell) || hasRpcInvoke) {
@@ -490,6 +534,13 @@ async function onPackSelectedPlugin(): Promise<void> {
       >
         <div class="pm-modal" @click.stop>
           <div class="pm-modal-h">{{ permConsentTitle }}</div>
+          <p v-if="permConsentTrustSummary" class="pm-trust-summary">
+            <span class="pm-trust-h">信任摘要</span>
+            <br />
+            <span class="pm-trust-mono" style="white-space: pre-wrap">{{
+              permConsentTrustSummary
+            }}</span>
+          </p>
           <p class="pm-hint">
             请选择你愿意授予的权限（安装后仍可在“已安装插件 → 权限”中随时调整）。
           </p>
@@ -697,6 +748,12 @@ async function onPackSelectedPlugin(): Promise<void> {
             </p>
             <p v-if="pluginStore.pluginMarketSnapshot?.offlineMode" class="pm-hint">
               当前为离线模式（使用本地缓存索引）。
+            </p>
+            <p
+              v-if="marketSourceSelected !== 'official'"
+              class="pm-err"
+            >
+              当前为第三方索引源。请仅安装你信任的来源，并谨慎授予权限（开发者模式功能）。
             </p>
             <p
               v-if="
@@ -1239,6 +1296,23 @@ async function onPackSelectedPlugin(): Promise<void> {
   font-size: 14px;
   font-weight: 600;
   margin: 0 0 8px;
+}
+.pm-trust-summary {
+  margin: 0 0 10px;
+  padding: 8px 10px;
+  border-radius: 10px;
+  border: 1px solid var(--border-light);
+  background: var(--bg-secondary);
+  font-size: 12px;
+  color: var(--text-secondary);
+}
+.pm-trust-h {
+  font-weight: 600;
+  color: var(--text-secondary);
+}
+.pm-trust-mono {
+  font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono",
+    "Courier New", monospace;
 }
 .pm-modal-actions {
   display: flex;
