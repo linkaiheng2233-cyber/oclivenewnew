@@ -1,8 +1,17 @@
 # 内核/发行版边界（Kernel / Distribution Boundary）
 
-> 版本：v0.1（草案）  
+> 版本：v0.2（可执行基线）  
 > 生效范围：oclivenewnew 仓库（`src-tauri/`）  
 > 维护者：按 `handoff/WEEKLY_DEV_GUIDE.md` 节奏更新
+
+---
+
+## 0. Kernel Baseline v1（建议冻结对象）
+
+本仓库以 “Linux 设计哲学” 演进：**Kernel 只提供最小可信闭环 + 标准化可替换点**，发行版负责 UI/分发/体验。
+
+- **Kernel Baseline v1 文档（建议作为对外/验收基线）**：
+  - **[KERNEL_BASELINE_V1.md](./KERNEL_BASELINE_V1.md)**
 
 ---
 
