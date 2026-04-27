@@ -3,6 +3,8 @@
 //! 当前阶段先确保 kernel runtime 能复用既有 `process_message`，并逐步将实现从 `src-tauri`
 //! 迁入本 crate。
 
+pub mod presence;
+
 pub use oclivenewnew_tauri::domain::chat_engine::process_message;
 
 /// 会话级 SQLite 命名空间：HTTP 试聊传入 `session_id` 时与无 `session_id` 的默认对话隔离。
