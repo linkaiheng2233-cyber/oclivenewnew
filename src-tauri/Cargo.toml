@@ -39,6 +39,8 @@ axum = { version = "0.7", features = ["ws"] }
 tower-http = { version = "0.5", features = ["cors"] }
 futures-util = "0.3"
 sha2 = "0.11.0"
+base64 = "0.22"
+ed25519-dalek = { version = "2", features = ["std"] }
 tauri-plugin-deep-link = { version = "0.1.2", optional = true }
 
 [dev-dependencies]

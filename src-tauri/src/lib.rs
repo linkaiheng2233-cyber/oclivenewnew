@@ -386,6 +386,7 @@ pub fn run() {
             api::plugin_index::sync_plugin_index_command,
             api::plugin_index::get_cached_plugin_index,
             api::plugin_index::install_plugin_from_market,
+            api::plugin_index::install_plugin_version_from_market,
             api::plugin_index::install_plugin_from_git,
             api::plugin_index::update_plugin_from_market,
             api::plugin_index::uninstall_plugin_from_market,

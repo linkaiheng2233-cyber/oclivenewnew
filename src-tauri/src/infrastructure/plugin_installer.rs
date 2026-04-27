@@ -2,12 +2,43 @@ use crate::error::AppError;
 use crate::infrastructure::directory_plugins::{parse_manifest_version, OclivePluginManifest};
 use crate::infrastructure::plugin_state::PluginStateStore;
 use crate::state::AppState;
+use base64::engine::general_purpose::STANDARD as B64_STANDARD;
+use base64::Engine;
+use ed25519_dalek::{Signature, VerifyingKey};
 use semver::VersionReq;
 use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
 use std::fs;
 use std::path::{Path, PathBuf};
 use std::process::Command;
+use tempfile::TempDir;
+use zip::ZipArchive;
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct PublisherPublicKey {
+    pub pubkey_id: String,
+    /// base64 编码的 Ed25519 public key（32 bytes）
+    pub public_key: String,
+    /// active|revoked|rotated（由索引侧约定）
+    #[serde(default)]
+    pub status: Option<String>,
+    #[serde(default)]
+    pub rotated_to: Option<String>,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct PluginIndexVersionEntry {
+    pub version: String,
+    #[serde(default)]
+    pub download_url: Option<String>,
+    #[serde(default)]
+    pub signature_url: Option<String>,
+    /// git tag；省略时默认使用 `version`
+    #[serde(default)]
+    pub git_tag: Option<String>,
+}
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
@@ -32,6 +63,15 @@ pub struct PluginIndexEntry {
     pub changelog: Option<String>,
     #[serde(default)]
     pub dependencies: HashMap<String, String>,
+    /// 发布者 id（官方索引登记公钥主体）
+    #[serde(default)]
+    pub publisher: Option<String>,
+    /// 发布者公钥环（用于验签）
+    #[serde(default)]
+    pub public_keys: Vec<PublisherPublicKey>,
+    /// 多版本索引（用于回滚/离线包下载）
+    #[serde(default)]
+    pub versions: Vec<PluginIndexVersionEntry>,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -75,6 +115,73 @@ pub fn load_cached_index(state: &AppState) -> Result<PluginIndexFile, AppError> 
     let raw = fs::read_to_string(&p)?;
     serde_json::from_str(&raw)
         .map_err(|e| AppError::Unknown(format!("parse plugin index cache failed: {}", e)))
+}
+
+fn parse_ed25519_pubkey_base64(s: &str) -> Result<VerifyingKey, AppError> {
+    let bytes = B64_STANDARD
+        .decode(s.trim())
+        .map_err(|e| AppError::InvalidParameter(format!("invalid base64 public_key: {}", e)))?;
+    let arr: [u8; 32] = bytes.as_slice().try_into().map_err(|_| {
+        AppError::InvalidParameter("ed25519 public_key must be 32 bytes".into())
+    })?;
+    Ok(VerifyingKey::from_bytes(&arr)
+        .map_err(|e| AppError::InvalidParameter(format!("invalid ed25519 public_key: {}", e)))?)
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+struct PluginPackageSignatureFile {
+    pub plugin_id: String,
+    pub pubkey_id: String,
+    pub algorithm: String, // "ed25519"
+    pub signature: String, // base64
+    #[serde(default)]
+    pub signed_at: Option<String>,
+    #[serde(default)]
+    pub covers: Option<String>,
+}
+
+fn verify_plugin_package_signature(
+    index_entry: &PluginIndexEntry,
+    sig: &PluginPackageSignatureFile,
+    archive_bytes: &[u8],
+) -> Result<(), AppError> {
+    if sig.plugin_id.trim() != index_entry.id.trim() {
+        return Err(AppError::InvalidParameter(format!(
+            "signature plugin_id mismatch: sig={} index={}",
+            sig.plugin_id, index_entry.id
+        )));
+    }
+    if sig.algorithm.trim().to_lowercase() != "ed25519" {
+        return Err(AppError::InvalidParameter(format!(
+            "unsupported signature algorithm: {}",
+            sig.algorithm
+        )));
+    }
+    let pk = index_entry
+        .public_keys
+        .iter()
+        .find(|k| k.pubkey_id.trim() == sig.pubkey_id.trim())
+        .ok_or_else(|| {
+            AppError::InvalidParameter(format!("pubkey_id not found in index: {}", sig.pubkey_id))
+        })?;
+    if matches!(pk.status.as_deref(), Some("revoked")) {
+        return Err(AppError::InvalidParameter(format!(
+            "public key revoked: {}",
+            pk.pubkey_id
+        )));
+    }
+    let vk = parse_ed25519_pubkey_base64(&pk.public_key)?;
+    let sig_bytes = B64_STANDARD.decode(sig.signature.trim()).map_err(|e| {
+        AppError::InvalidParameter(format!("invalid base64 signature: {}", e))
+    })?;
+    let sig_arr: [u8; 64] = sig_bytes.as_slice().try_into().map_err(|_| {
+        AppError::InvalidParameter("ed25519 signature must be 64 bytes".into())
+    })?;
+    let signature = Signature::from_bytes(&sig_arr);
+    vk.verify_strict(archive_bytes, &signature)
+        .map_err(|e| AppError::InvalidParameter(format!("signature verify failed: {}", e)))?;
+    Ok(())
 }
 
 pub fn sync_plugin_index_online(
@@ -137,6 +244,174 @@ fn run_git(args: &[&str], cwd: Option<&Path>) -> Result<(), AppError> {
         )));
     }
     Ok(())
+}
+
+fn plugins_install_temp_dir(state: &AppState) -> Result<TempDir, AppError> {
+    let root = state.directory_plugins.app_data_dir().join("tmp");
+    let _ = fs::create_dir_all(&root);
+    TempDir::new_in(root).map_err(AppError::IoError)
+}
+
+fn extract_oclive_plugin_archive(bytes: &[u8], dst_dir: &Path) -> Result<(), AppError> {
+    let mut zip = ZipArchive::new(std::io::Cursor::new(bytes))
+        .map_err(|e| AppError::Unknown(format!("open plugin archive failed: {}", e)))?;
+    for i in 0..zip.len() {
+        let mut f = zip
+            .by_index(i)
+            .map_err(|e| AppError::Unknown(format!("read zip entry failed: {}", e)))?;
+        let name = f.name().replace('\\', "/");
+        if name.contains("..") {
+            return Err(AppError::InvalidParameter(format!(
+                "zip contains illegal path: {}",
+                name
+            )));
+        }
+        let out_path = dst_dir.join(&name);
+        if f.is_dir() {
+            fs::create_dir_all(&out_path)?;
+            continue;
+        }
+        if let Some(parent) = out_path.parent() {
+            fs::create_dir_all(parent)?;
+        }
+        let mut out = fs::File::create(&out_path)?;
+        std::io::copy(&mut f, &mut out).map_err(AppError::IoError)?;
+    }
+    Ok(())
+}
+
+pub fn install_plugin_from_archive_bytes(state: &AppState, bytes: &[u8]) -> Result<String, AppError> {
+    let tmp = plugins_install_temp_dir(state)?;
+    extract_oclive_plugin_archive(bytes, tmp.path())?;
+    let manifest = OclivePluginManifest::load_from_dir(tmp.path())
+        .map_err(|e| AppError::Unknown(format!("manifest validation failed: {}", e)))?;
+    let pid = manifest.id.trim().to_string();
+    if pid.is_empty() {
+        return Err(AppError::InvalidParameter("manifest.id required".into()));
+    }
+    let final_dir = plugins_dir(state).join(pid.as_str());
+    if final_dir.exists() {
+        return Err(AppError::InvalidParameter(format!(
+            "target plugin id already exists: {}",
+            final_dir.display()
+        )));
+    }
+    fs::create_dir_all(plugins_dir(state))?;
+    fs::rename(tmp.path(), &final_dir)?;
+    // rename 后 tmp 不再拥有目录；阻止 drop 尝试清理不存在路径
+    std::mem::forget(tmp);
+    state
+        .directory_plugins
+        .rescan_plugin_roots(state.storage.roles_dir());
+    Ok(pid)
+}
+
+pub fn install_plugin_from_download_urls(
+    state: &AppState,
+    index_entry: &PluginIndexEntry,
+    download_url: &str,
+    signature_url: &str,
+) -> Result<String, AppError> {
+    let cli = reqwest::blocking::Client::builder()
+        .timeout(std::time::Duration::from_secs(60))
+        .build()
+        .map_err(|e| AppError::Unknown(format!("download http client failed: {}", e)))?;
+    let archive_bytes = cli
+        .get(download_url)
+        .send()
+        .map_err(|e| AppError::Unknown(format!("download plugin failed: {}", e)))?
+        .error_for_status()
+        .map_err(|e| AppError::Unknown(format!("download plugin status failed: {}", e)))?
+        .bytes()
+        .map_err(|e| AppError::Unknown(format!("read plugin bytes failed: {}", e)))?
+        .to_vec();
+    let sig_text = cli
+        .get(signature_url)
+        .send()
+        .map_err(|e| AppError::Unknown(format!("download signature failed: {}", e)))?
+        .error_for_status()
+        .map_err(|e| AppError::Unknown(format!("download signature status failed: {}", e)))?
+        .text()
+        .map_err(|e| AppError::Unknown(format!("read signature text failed: {}", e)))?;
+    let sig: PluginPackageSignatureFile = serde_json::from_str(&sig_text)
+        .map_err(|e| AppError::Unknown(format!("parse signature.json failed: {}", e)))?;
+    verify_plugin_package_signature(index_entry, &sig, &archive_bytes)?;
+    install_plugin_from_archive_bytes(state, &archive_bytes)
+}
+
+pub fn install_plugin_from_git_tag(
+    state: &AppState,
+    git_url: &str,
+    tag: &str,
+    deps: Option<&HashMap<String, String>>,
+) -> Result<String, AppError> {
+    if let Some(deps_map) = deps {
+        let miss = missing_dependencies(state, deps_map)?;
+        if !miss.is_empty() {
+            return Err(AppError::InvalidParameter(format!(
+                "[MISSING_DEPENDENCIES] {}",
+                miss.join(" | ")
+            )));
+        }
+    }
+    let url = git_url.trim();
+    let tag = tag.trim();
+    if url.is_empty() {
+        return Err(AppError::InvalidParameter("git_url required".into()));
+    }
+    if tag.is_empty() {
+        return Err(AppError::InvalidParameter("git tag required".into()));
+    }
+    let mut target = plugins_dir(state);
+    fs::create_dir_all(&target)?;
+    let name = url
+        .split('/')
+        .next_back()
+        .unwrap_or("plugin")
+        .trim_end_matches(".git")
+        .trim();
+    if name.is_empty() {
+        return Err(AppError::InvalidParameter("invalid git_url".into()));
+    }
+    target = target.join(name);
+    if target.exists() {
+        return Err(AppError::InvalidParameter(format!(
+            "plugin dir already exists: {}",
+            target.display()
+        )));
+    }
+    run_git(
+        &[
+            "clone",
+            "--depth",
+            "1",
+            "--branch",
+            tag,
+            url,
+            target.to_string_lossy().as_ref(),
+        ],
+        None,
+    )?;
+    let manifest = OclivePluginManifest::load_from_dir(&target)
+        .map_err(|e| AppError::Unknown(format!("manifest validation failed: {}", e)))?;
+    let pid = manifest.id.trim().to_string();
+    if pid.is_empty() {
+        return Err(AppError::InvalidParameter("manifest.id required".into()));
+    }
+    let final_dir = plugins_dir(state).join(pid.as_str());
+    if final_dir != target {
+        if final_dir.exists() {
+            return Err(AppError::InvalidParameter(format!(
+                "target plugin id already exists: {}",
+                final_dir.display()
+            )));
+        }
+        fs::rename(&target, &final_dir)?;
+    }
+    state
+        .directory_plugins
+        .rescan_plugin_roots(state.storage.roles_dir());
+    Ok(pid)
 }
 
 fn installed_version_map(state: &AppState) -> HashMap<String, semver::Version> {
