@@ -90,7 +90,7 @@ async function main() {
   // We intentionally run cargo directly to avoid npm script indirection.
   const child = spawn(
     "cargo",
-    ["run", "-p", "oclivenewnew-tauri", "--", "--api", "--port", String(port)],
+    ["run", "-p", "oclive_kernel_server", "--quiet"],
     {
       stdio: "inherit",
       env: {
@@ -98,7 +98,6 @@ async function main() {
         // Avoid Windows "exe locked" issues when another instance is running.
         CARGO_TARGET_DIR: cargoTargetDir,
         OOCP_API_PORT: String(port),
-        OCLIVE_API_PORT: String(port), // backward compat
       },
     },
   );
