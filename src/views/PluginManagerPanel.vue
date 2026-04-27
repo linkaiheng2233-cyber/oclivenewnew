@@ -26,16 +26,41 @@ import {
   packPlugin,
   type PluginMarketEntryDto,
 } from "../utils/tauri-api";
+import { getPluginMarketSourcesConfig } from "../utils/tauri-api";
 
 const pluginStore = usePluginStore();
 const roleStore = useRoleStore();
 const { showToast } = useAppToast();
+
+const marketSourceSelected = ref("official");
+const marketSources = ref<string[]>([]);
+
+async function loadMarketSourcesForPanel(): Promise<void> {
+  try {
+    const cfg = await getPluginMarketSourcesConfig();
+    marketSources.value = (cfg.pluginIndexSources ?? []).filter((x) => !!x?.trim());
+    // 非开发者模式时仅允许官方
+    if (cfg.developerMode !== true) {
+      marketSourceSelected.value = "official";
+    } else if (
+      marketSourceSelected.value !== "official" &&
+      !marketSources.value.includes(marketSourceSelected.value)
+    ) {
+      marketSourceSelected.value = marketSources.value[0] ?? "official";
+    }
+  } catch {
+    // ignore; fall back to official
+    marketSources.value = [];
+    marketSourceSelected.value = "official";
+  }
+}
 
 watch(
   () => pluginStore.panelVisible,
   (vis) => {
     if (vis) {
       void pluginStore.loadCachedPluginMarket();
+      void loadMarketSourcesForPanel();
     }
   },
 );
@@ -145,7 +170,9 @@ async function onBatchUpdate() {
 
 async function onSyncMarketIndex() {
   try {
-    await pluginStore.syncPluginMarket();
+    await pluginStore.syncPluginMarket(
+      marketSourceSelected.value === "official" ? null : marketSourceSelected.value,
+    );
     if (pluginStore.pluginMarketSnapshot?.warning) {
       showToast("info", pluginStore.pluginMarketSnapshot.warning);
     } else {
@@ -485,6 +512,20 @@ async function onPackSelectedPlugin(): Promise<void> {
             <div class="pm-section-head">
               <h3 class="pm-h3">社区索引</h3>
               <div class="pm-section-actions">
+                <select
+                  class="pm-select pm-select--sm"
+                  :value="marketSourceSelected"
+                  @change="marketSourceSelected = ($event.target as HTMLSelectElement).value"
+                >
+                  <option value="official">官方默认索引</option>
+                  <option
+                    v-for="s in marketSources"
+                    :key="s"
+                    :value="s"
+                  >
+                    第三方源 · {{ s }}
+                  </option>
+                </select>
                 <button
                   type="button"
                   class="pm-btn secondary pm-btn--sm"

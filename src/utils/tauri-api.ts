@@ -30,6 +30,24 @@ const CommonErrorMessages: Record<string, string> = {
   TXN_ROLLBACK: "操作失败，请稍后再试。",
   SERDE_ERROR: "数据解析失败，请稍后重试。",
   UNKNOWN_ERROR: "发生未知错误，请稍后重试。",
+  PLUGIN_PINNED_VERSION:
+    "该插件已固定到某个版本（tag），不能用“git pull 更新”。请在插件市场选择目标版本进行安装/切换。",
+  PLUGIN_PUBKEY_REVOKED: "该插件签名公钥已被撤销，已阻止安装。请联系插件作者或更换版本/来源。",
+  PLUGIN_PUBKEY_NOT_FOUND:
+    "该版本的签名公钥未在索引中登记，已阻止安装。请确认索引条目与作者公钥登记是否一致。",
+  PLUGIN_SIGNATURE_VERIFY_FAILED:
+    "插件包签名校验失败，已阻止安装。可能是下载文件被篡改或签名不匹配。",
+  PLUGIN_SIGNATURE_BASE64_INVALID: "签名文件格式错误（base64 无效）。",
+  PLUGIN_SIGNATURE_SIZE_INVALID: "签名文件格式错误（签名字节数不正确）。",
+  PLUGIN_SIGNATURE_ALGO_UNSUPPORTED: "签名算法不受支持。",
+  PLUGIN_SIGNATURE_ID_MISMATCH: "签名文件与插件 id 不匹配。",
+  PLUGIN_ARCHIVE_TOO_MANY_FILES: "插件包文件过多，已阻止安装。",
+  PLUGIN_ARCHIVE_SINGLE_FILE_TOO_LARGE: "插件包内单文件过大，已阻止安装。",
+  PLUGIN_ARCHIVE_TOTAL_TOO_LARGE: "插件包总体积过大，已阻止安装。",
+  PLUGIN_ARCHIVE_ILLEGAL_PATH: "插件包内存在非法路径，已阻止安装。",
+  ZIP_TOO_MANY_FILES: "zip 文件过多，已阻止解压安装。",
+  ZIP_SINGLE_FILE_TOO_LARGE: "zip 内单文件过大，已阻止解压安装。",
+  ZIP_TOTAL_TOO_LARGE: "zip 总大小过大，已阻止解压安装。",
 };
 
 function parseBackendError(err: unknown): { code?: string; raw: string } {
