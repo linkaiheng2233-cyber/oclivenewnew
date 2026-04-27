@@ -313,7 +313,7 @@ pub struct SetRemoteLifeEnabledRequest {
 #[derive(Debug, Clone, Deserialize)]
 pub struct SetSessionPluginBackendRequest {
     pub role_id: String,
-    /// `memory` | `emotion` | `event` | `prompt` | `llm`
+    /// `memory` | `emotion` | `event` | `prompt` | `llm` | `agent` | `complex_emotion`
     pub module: String,
     /// 后端值（snake_case）三态：
     /// - 字段缺省：不修改该模块覆盖；

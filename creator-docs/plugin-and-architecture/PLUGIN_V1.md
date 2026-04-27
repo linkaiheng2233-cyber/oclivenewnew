@@ -146,6 +146,32 @@
 
 ---
 
+## 复杂情感 `ComplexEmotionProvider`
+
+复杂情感用于在“每轮对话后”进行轻量复盘并产出 `narrative_hint`（供下一轮 Prompt 可选注入）。该模块遵循 **平等接口原则**：与其它模块共用同一套 `plugin_backends` 路由与目录槽位语义。
+
+### 输出
+
+- `ComplexEmotionOutput.narrative_hint`：`Option<String>`（`null` 表示不注入、不影响 prompt）
+- `degraded_to_builtin`：当 remote / directory 不可用时回退 builtin 并标记为 `true`
+
+### 后端枚举 `complex_emotion`
+
+| 值 | 含义 |
+|----|------|
+| `builtin` | 内置关键词规则（`builtin_keyword_v1`） |
+| `remote` | 独立 HTTP JSON-RPC：`complex_emotion.resolve_turn`（`OCLIVE_COMPLEX_EMOTION_URL`；失败回退 builtin 并标记 `degraded_to_builtin=true`） |
+| `directory` | 目录插件子进程 JSON-RPC（`directory_plugins.complex_emotion` 指定 manifest id；失败回退 builtin 并标记 `degraded_to_builtin=true`） |
+| `none` | 空 Provider：不复盘，`narrative_hint=null`，不向 prompt 注入 |
+
+### 目录槽位 `directory_plugins.complex_emotion`
+
+当 `plugin_backends.complex_emotion = directory` 时，必须提供：
+
+- `plugin_backends.directory_plugins.complex_emotion = "<manifest.id>"`
+
+---
+
 ## `settings.json` 片段示例
 
 ```json
@@ -174,7 +200,7 @@
 | 字段 | 说明 |
 |------|------|
 | `role_id` | 角色 id |
-| `module` | `memory` \| `emotion` \| `event` \| `prompt` \| `llm` |
+| `module` | `memory` \| `emotion` \| `event` \| `prompt` \| `llm` \| `agent` \| `complex_emotion` |
 | `backend` | 见下表 **三态**（与 Serde `Option<Option<String>>` 对齐：缺键 / `null` / 字符串） |
 | `session_id` | 可选；缺省为默认会话 |
 | `local_memory_provider_id` | **仅当 `module = memory` 时允许**：省略表示不修改本会话对该字段的覆盖；**空串**（trim 后为空）表示移除本会话覆盖、回退包内 `local_memory_provider_id`；否则为 trim 后的 `provider_id`。其它 `module` 携带本字段会返回参数错误。 |

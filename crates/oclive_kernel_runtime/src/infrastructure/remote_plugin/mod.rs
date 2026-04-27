@@ -24,6 +24,9 @@ pub use llm_http::RemoteLlmHttp;
 pub use memory_http::RemoteMemoryRetrievalHttp;
 pub use prompt_http::RemotePromptAssemblerHttp;
 
+use crate::domain::complex_emotion::{
+    ComplexEmotionProvider, DegradedToBuiltinComplexEmotionProvider,
+};
 use crate::domain::event_estimator::{EventEstimator, RemoteEventEstimatorPlaceholder};
 use crate::domain::memory_retrieval::{MemoryRetrieval, RemoteMemoryRetrievalPlaceholder};
 use crate::domain::prompt_assembler::{PromptAssembler, RemotePromptAssemblerPlaceholder};
@@ -98,6 +101,21 @@ pub fn agent_remote_backend(
         Arc::new(RemoteAgentHttp::new(cfg))
     } else {
         default_agent
+    }
+}
+
+pub fn complex_emotion_remote_backend() -> Arc<dyn ComplexEmotionProvider> {
+    if let Some(cfg) = RemotePluginHttpConfig::from_env_complex_emotion() {
+        log::info!(
+            target: "oclive_plugin",
+            "remote complex_emotion HTTP active -> {}",
+            cfg.endpoint
+        );
+        Arc::new(RemoteComplexEmotionHttp::new(cfg))
+    } else {
+        Arc::new(DegradedToBuiltinComplexEmotionProvider::new(
+            "complex_emotion backend Remote is not connected; using builtin complex emotion",
+        ))
     }
 }
 

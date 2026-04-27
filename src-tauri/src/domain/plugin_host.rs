@@ -3,6 +3,9 @@
 //! 与仓库 `creator-docs/plugin-and-architecture/PLUGIN_V1.md` 契约一致；`Remote` 在设置 `OCLIVE_REMOTE_*` 时走 HTTP JSON-RPC，否则回退内置。
 
 use crate::domain::agent::{AgentDebugTrace, AgentProvider, BuiltinReActAgent};
+use crate::domain::complex_emotion::{
+    BuiltinKeywordComplexEmotionProvider, ComplexEmotionProvider, NoneComplexEmotionProvider,
+};
 use crate::domain::event_estimator::{
     BuiltinEventEstimator, BuiltinEventEstimatorV2, EventEstimator,
 };
@@ -22,13 +25,14 @@ use crate::domain::user_emotion_analyzer::{
 use crate::infrastructure::directory_plugins::DirectoryPluginRuntime;
 use crate::infrastructure::llm::LlmClient;
 use crate::infrastructure::mcp_client::{McpClient, McpServerManifest, McpToolCallResult};
+use crate::infrastructure::remote_plugin::RemoteComplexEmotionHttp;
 use crate::infrastructure::remote_plugin::{
     self, agent_remote_backend, RemoteEventEstimatorHttp, RemoteLlmHttp, RemoteMemoryRetrievalHttp,
     RemotePluginHttpConfig, RemotePromptAssemblerHttp, RemoteUserEmotionAnalyzerHttp,
 };
 use crate::models::{
-    AgentBackend, DirectoryPluginSlots, EmotionBackend, EventBackend, LlmBackend, MemoryBackend,
-    PluginBackends, PluginBackendsOverride, PromptBackend, Role,
+    AgentBackend, ComplexEmotionBackend, DirectoryPluginSlots, EmotionBackend, EventBackend,
+    LlmBackend, MemoryBackend, PluginBackends, PluginBackendsOverride, PromptBackend, Role,
 };
 use parking_lot::RwLock;
 use serde_json::Value;
@@ -44,6 +48,7 @@ pub struct ResolvedRolePlugins {
     pub prompt: Arc<dyn PromptAssembler>,
     pub llm: Arc<dyn LlmClient>,
     pub agent: Arc<dyn AgentProvider>,
+    pub complex_emotion: Arc<dyn ComplexEmotionProvider>,
 }
 
 /// 后端注册表：管理 builtin / remote 插槽，并预留本地 provider 注册骨架。
@@ -64,6 +69,9 @@ pub struct BackendRegistry {
     llm_remote: Arc<dyn LlmClient>,
     agent_builtin: Arc<BuiltinReActAgent>,
     agent_remote: Arc<dyn AgentProvider>,
+    complex_emotion_builtin: Arc<dyn ComplexEmotionProvider>,
+    complex_emotion_remote: Arc<dyn ComplexEmotionProvider>,
+    complex_emotion_none: Arc<dyn ComplexEmotionProvider>,
     local_plugins: RwLock<LocalPluginRegistry>,
     directory_runtime: Option<Arc<DirectoryPluginRuntime>>,
 }
@@ -79,6 +87,53 @@ fn directory_slot_id(
 }
 
 impl BackendRegistry {
+    fn complex_emotion_for_plugin_backends(
+        &self,
+        backends: &PluginBackends,
+    ) -> Arc<dyn ComplexEmotionProvider> {
+        match backends.complex_emotion {
+            ComplexEmotionBackend::Builtin => self.complex_emotion_builtin.clone(),
+            ComplexEmotionBackend::Remote => self.complex_emotion_remote.clone(),
+            ComplexEmotionBackend::Directory => self.complex_emotion_directory_slot(backends),
+            ComplexEmotionBackend::None => self.complex_emotion_none.clone(),
+        }
+    }
+
+    fn complex_emotion_directory_slot(
+        &self,
+        backends: &PluginBackends,
+    ) -> Arc<dyn ComplexEmotionProvider> {
+        let Some(rt) = self.directory_runtime.as_ref() else {
+            log::warn!(
+                target: "oclive_plugin",
+                "plugin_backends.complex_emotion=directory but directory plugin runtime disabled; using builtin"
+            );
+            return self.complex_emotion_builtin.clone();
+        };
+        let Some(pid) = directory_slot_id(&backends.directory_plugins, |s| &s.complex_emotion)
+        else {
+            log::warn!(
+                target: "oclive_plugin",
+                "plugin_backends.complex_emotion=directory but directory_plugins.complex_emotion missing; using builtin"
+            );
+            return self.complex_emotion_builtin.clone();
+        };
+        match rt.ensure_rpc_url(pid.as_str()) {
+            Ok(url) => Arc::new(RemoteComplexEmotionHttp::new(
+                RemotePluginHttpConfig::for_directory_plugin_rpc(url, false),
+            )),
+            Err(e) => {
+                log::error!(
+                    target: "oclive_plugin",
+                    "directory complex_emotion plugin_id={} spawn failed: {}",
+                    pid,
+                    e
+                );
+                self.complex_emotion_builtin.clone()
+            }
+        }
+    }
+
     fn agent_for_plugin_backends(&self, backends: &PluginBackends) -> Arc<dyn AgentProvider> {
         match backends.agent {
             AgentBackend::Builtin => self.agent_builtin.clone(),
@@ -170,6 +225,12 @@ impl BackendRegistry {
         let agent_remote: Arc<dyn AgentProvider> =
             agent_remote_backend(agent_builtin.clone() as Arc<dyn AgentProvider>);
         let rem = remote_plugin::plugin_remote_group();
+        let complex_emotion_remote: Arc<dyn ComplexEmotionProvider> =
+            remote_plugin::complex_emotion_remote_backend();
+        let complex_emotion_builtin: Arc<dyn ComplexEmotionProvider> =
+            Arc::new(BuiltinKeywordComplexEmotionProvider);
+        let complex_emotion_none: Arc<dyn ComplexEmotionProvider> =
+            Arc::new(NoneComplexEmotionProvider);
         Self {
             memory_builtin: Arc::new(BuiltinMemoryRetrieval),
             memory_builtin_v2: Arc::new(BuiltinMemoryRetrievalV2),
@@ -187,6 +248,9 @@ impl BackendRegistry {
             llm_remote,
             agent_builtin,
             agent_remote,
+            complex_emotion_builtin,
+            complex_emotion_remote,
+            complex_emotion_none,
             local_plugins: RwLock::new(LocalPluginRegistry::default()),
             directory_runtime,
         }
@@ -509,6 +573,7 @@ impl PluginResolver {
             prompt: registry.prompt_assembler_for_backends(&effective),
             llm: registry.llm_for_plugin_backends(&effective),
             agent: registry.agent_for_plugin_backends(&effective),
+            complex_emotion: registry.complex_emotion_for_plugin_backends(&effective),
         }
     }
 }

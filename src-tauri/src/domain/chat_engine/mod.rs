@@ -759,6 +759,7 @@ mod tests {
             prompt: PluginBackendSource::PackDefault,
             llm: PluginBackendSource::EnvOverride,
             agent: PluginBackendSource::PackDefault,
+            complex_emotion: PluginBackendSource::PackDefault,
         };
         let out = backend_resolution_summary(&effective, &sources);
         assert!(out.contains("mem=Remote(SessionOverride)"));

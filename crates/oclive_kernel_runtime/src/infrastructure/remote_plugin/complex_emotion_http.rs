@@ -1,5 +1,6 @@
 //! JSON-RPC：`complex_emotion.resolve_turn`（Remote 专用端点，与通用 `OCLIVE_REMOTE_PLUGIN_URL` 分离）。
 
+use crate::domain::complex_emotion::ComplexEmotionProvider;
 use crate::domain::complex_emotion::{
     BuiltinKeywordComplexEmotionProvider, ComplexEmotionInput, ComplexEmotionOutput,
 };
@@ -29,7 +30,7 @@ impl RemoteComplexEmotionHttp {
         }
     }
 
-    pub fn resolve_turn(&self, input: &ComplexEmotionInput) -> Result<ComplexEmotionOutput> {
+    fn resolve_turn_rpc(&self, input: &ComplexEmotionInput) -> Result<ComplexEmotionOutput> {
         let params = serde_json::to_value(input).map_err(|e| {
             crate::error::AppError::OllamaError(format!("complex_emotion params json: {}", e))
         })?;
@@ -63,6 +64,12 @@ impl RemoteComplexEmotionHttp {
                 Ok(o)
             }
         }
+    }
+}
+
+impl ComplexEmotionProvider for RemoteComplexEmotionHttp {
+    fn resolve_turn(&self, input: &ComplexEmotionInput) -> Result<ComplexEmotionOutput> {
+        self.resolve_turn_rpc(input)
     }
 }
 

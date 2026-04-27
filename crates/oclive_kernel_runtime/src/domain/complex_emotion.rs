@@ -24,7 +24,8 @@ pub struct ComplexEmotionInput {
 #[derive(Debug, Clone, serde::Serialize, serde::Deserialize, PartialEq)]
 pub struct ComplexEmotionOutput {
     pub source: String,
-    pub narrative_hint: String,
+    #[serde(default)]
+    pub narrative_hint: Option<String>,
     pub labels: Vec<String>,
     pub pattern: Option<String>,
     pub confidence: f64,
@@ -35,6 +36,61 @@ pub struct ComplexEmotionOutput {
 
 pub trait ComplexEmotionProvider: Send + Sync {
     fn resolve_turn(&self, input: &ComplexEmotionInput) -> Result<ComplexEmotionOutput>;
+}
+
+/// 空 Provider：不做复盘、不注入 prompt；输出稳定、可预期。
+pub struct NoneComplexEmotionProvider;
+
+impl ComplexEmotionProvider for NoneComplexEmotionProvider {
+    fn resolve_turn(&self, _input: &ComplexEmotionInput) -> Result<ComplexEmotionOutput> {
+        Ok(ComplexEmotionOutput {
+            source: "none".to_string(),
+            narrative_hint: None,
+            labels: vec![],
+            pattern: None,
+            confidence: 0.0,
+            intensity: 0.0,
+            dissonance_score: 0.0,
+            degraded_to_builtin: false,
+        })
+    }
+}
+
+/// 降级 Provider：用 builtin 产出，但强制标记 `degraded_to_builtin=true`（用于 env 缺失/目录插件不可用等场景）。
+pub struct DegradedToBuiltinComplexEmotionProvider {
+    fallback: BuiltinKeywordComplexEmotionProvider,
+    warned: std::sync::atomic::AtomicBool,
+    warn_message: &'static str,
+}
+
+impl DegradedToBuiltinComplexEmotionProvider {
+    pub fn new(warn_message: &'static str) -> Self {
+        Self {
+            fallback: BuiltinKeywordComplexEmotionProvider,
+            warned: std::sync::atomic::AtomicBool::new(false),
+            warn_message,
+        }
+    }
+
+    fn warn_once(&self) {
+        use std::sync::atomic::Ordering;
+        if self
+            .warned
+            .compare_exchange(false, true, Ordering::SeqCst, Ordering::SeqCst)
+            .is_ok()
+        {
+            log::warn!(target: "oclive_plugin", "{}", self.warn_message);
+        }
+    }
+}
+
+impl ComplexEmotionProvider for DegradedToBuiltinComplexEmotionProvider {
+    fn resolve_turn(&self, input: &ComplexEmotionInput) -> Result<ComplexEmotionOutput> {
+        self.warn_once();
+        let mut o = self.fallback.resolve_turn_inner(input);
+        o.degraded_to_builtin = true;
+        Ok(o)
+    }
 }
 
 #[must_use]
@@ -70,7 +126,7 @@ impl BuiltinKeywordComplexEmotionProvider {
     ) -> ComplexEmotionOutput {
         ComplexEmotionOutput {
             source: Self::SOURCE.to_string(),
-            narrative_hint,
+            narrative_hint: Some(narrative_hint),
             labels,
             pattern,
             confidence: Self::CONF,
@@ -83,7 +139,7 @@ impl BuiltinKeywordComplexEmotionProvider {
     fn default_fallback() -> ComplexEmotionOutput {
         ComplexEmotionOutput {
             source: Self::SOURCE.to_string(),
-            narrative_hint: "未命中特定模式；保持自然对话节奏即可。".to_string(),
+            narrative_hint: Some("未命中特定模式；保持自然对话节奏即可。".to_string()),
             labels: vec![],
             pattern: None,
             confidence: 0.35,

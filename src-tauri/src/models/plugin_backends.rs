@@ -52,6 +52,20 @@ pub enum PromptBackend {
     Directory,
 }
 
+/// 复杂情感复盘后端（`complex_emotion.resolve_turn`）
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Default, Serialize, Deserialize)]
+#[serde(rename_all = "snake_case")]
+pub enum ComplexEmotionBackend {
+    #[default]
+    Builtin,
+    /// 独立 Remote 侧车（`OCLIVE_COMPLEX_EMOTION_URL`；兼容旧名 `OCLIVE_REMOTE_COMPLEX_EMOTION_URL`）
+    Remote,
+    /// `plugins/<id>/` 目录插件子进程 JSON-RPC（`plugin_backends.directory_plugins.complex_emotion` 指定 id）。
+    Directory,
+    /// 空 Provider：不做复盘，不向 prompt 注入。
+    None,
+}
+
 /// Agent 任务编排后端（工具调度 / ReAct）
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Default, Serialize, Deserialize)]
 #[serde(rename_all = "snake_case")]
@@ -90,6 +104,8 @@ pub struct DirectoryPluginSlots {
     pub llm: Option<String>,
     #[serde(default)]
     pub agent: Option<String>,
+    #[serde(default)]
+    pub complex_emotion: Option<String>,
 }
 
 impl DirectoryPluginSlots {
@@ -101,6 +117,10 @@ impl DirectoryPluginSlots {
             && self.prompt.as_ref().is_none_or(|s| s.trim().is_empty())
             && self.llm.as_ref().is_none_or(|s| s.trim().is_empty())
             && self.agent.as_ref().is_none_or(|s| s.trim().is_empty())
+            && self
+                .complex_emotion
+                .as_ref()
+                .is_none_or(|s| s.trim().is_empty())
     }
 }
 
@@ -122,6 +142,8 @@ pub struct PluginBackends {
     pub llm: LlmBackend,
     #[serde(default)]
     pub agent: AgentBackend,
+    #[serde(default)]
+    pub complex_emotion: ComplexEmotionBackend,
     /// `memory` / `emotion` / `event` / `prompt` / `llm` 为 `directory` 时在此给出插件 id。
     #[serde(default)]
     pub directory_plugins: DirectoryPluginSlots,
@@ -152,6 +174,8 @@ pub struct PluginBackendsSourceMap {
     pub llm: PluginBackendSource,
     #[serde(default)]
     pub agent: PluginBackendSource,
+    #[serde(default)]
+    pub complex_emotion: PluginBackendSource,
 }
 
 /// 会话级覆盖：仅 `Some` 字段会替换角色包 `plugin_backends` 对应模块。
@@ -172,6 +196,8 @@ pub struct PluginBackendsOverride {
     pub llm: Option<LlmBackend>,
     #[serde(default)]
     pub agent: Option<AgentBackend>,
+    #[serde(default)]
+    pub complex_emotion: Option<ComplexEmotionBackend>,
     /// 会话级覆盖目录插件槽位（`Some` 时与包内字段按槽合并，见 [`Self::apply_to`]）。
     #[serde(default)]
     pub directory_plugins: Option<DirectoryPluginSlots>,
@@ -187,6 +213,7 @@ impl PluginBackendsOverride {
             && self.prompt.is_none()
             && self.llm.is_none()
             && self.agent.is_none()
+            && self.complex_emotion.is_none()
             && self.directory_plugins.is_none()
     }
 
@@ -227,6 +254,10 @@ impl PluginBackendsOverride {
                     ov.agent.as_deref(),
                     base.directory_plugins.agent.as_deref(),
                 ),
+                complex_emotion: trimmed_or_fallback(
+                    ov.complex_emotion.as_deref(),
+                    base.directory_plugins.complex_emotion.as_deref(),
+                ),
             },
         };
         PluginBackends {
@@ -237,6 +268,7 @@ impl PluginBackendsOverride {
             prompt: self.prompt.unwrap_or(base.prompt),
             llm: self.llm.unwrap_or(base.llm),
             agent: self.agent.unwrap_or(base.agent),
+            complex_emotion: self.complex_emotion.unwrap_or(base.complex_emotion),
             directory_plugins,
         }
     }

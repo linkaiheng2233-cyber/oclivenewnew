@@ -99,6 +99,10 @@
 | `OCLIVE_REMOTE_AGENT_TIMEOUT_MS` | 可选；默认 `30000` |
 | `OCLIVE_REMOTE_AGENT_TOKEN` | 可选；Bearer |
 
+| `OCLIVE_COMPLEX_EMOTION_URL` | 非空且角色包 `plugin_backends.complex_emotion = remote` 时，**复杂情感**请求发往该 URL（`complex_emotion.resolve_turn`） |
+| `OCLIVE_COMPLEX_EMOTION_TIMEOUT_MS` | 可选；默认 `8000` |
+| `OCLIVE_COMPLEX_EMOTION_TOKEN` | 可选；Bearer |
+
 未设置对应 URL 时，即使角色包写了 `remote`，宿主也会使用**占位回退**（builtin 或进程内 LLM），并可能打一次警告日志。
 
 ### 2.1 云端直连 LLM（OpenAI-compatible）
@@ -382,6 +386,39 @@
 | `reply` | 字符串 | agent 生成的回复文本 |
 
 宿主会把 `handled=false` 视为“未接管”，继续走默认对话编排；`handled=true` 则直接使用 `reply`。
+
+---
+
+### 4.8 `complex_emotion.resolve_turn`
+
+复杂情感复盘模块（第六模块之一）的 remote 实现入口。该方法使用独立端点 `OCLIVE_COMPLEX_EMOTION_URL`（不与 `OCLIVE_REMOTE_PLUGIN_URL` 混用），以便单独控制负载/超时/鉴权。
+
+**params**：`ComplexEmotionInput`（扁平对象，snake_case）
+
+| 字段 | 类型 | 说明 |
+|------|------|------|
+| `role_id` | string | 角色 id |
+| `scene_id` | string | 场景 id |
+| `user_message` | string | 用户句 |
+| `bot_reply` | string | 角色本轮回复 |
+| `recent_dialogue_summary` | string \| null | 可选：近期摘要 |
+| `previous_narrative_hint` | string | 上轮复盘提示（无则空串） |
+| `user_valence` | number \| null | 可选：效价（[-1,1] 建议） |
+| `user_dominance` | number \| null | 可选：掌控感（[-1,1] 建议） |
+| `previous_user_message` | string \| null | 可选：上一轮用户句 |
+
+**result**：`ComplexEmotionOutput`
+
+| 字段 | 类型 | 说明 |
+|------|------|------|
+| `source` | string | 输出来源（如 `builtin_keyword_v1`、`none`） |
+| `narrative_hint` | string \| null | 复盘提示；`null` 表示不注入 prompt |
+| `labels` | string[] | 标签集合 |
+| `pattern` | string \| null | 命中模式 id |
+| `confidence` | number | 置信度 |
+| `intensity` | number | 强度 |
+| `dissonance_score` | number | 反差/不协调度 |
+| `degraded_to_builtin` | bool | remote 失败时宿主回退 builtin 时为 true |
 
 ---
 
