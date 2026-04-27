@@ -48,6 +48,11 @@ pub fn check_plugin_updates(
 fn unzip_archive(zip_path: &Path, dst: &Path) -> Result<(), String> {
     let file = File::open(zip_path).map_err(|e| format!("打开 zip: {}", e))?;
     let mut archive = ZipArchive::new(file).map_err(|e| format!("解析 zip: {}", e))?;
+    const MAX_FILES: usize = 2000;
+    const MAX_TOTAL_BYTES: u64 = 50 * 1024 * 1024;
+    const MAX_SINGLE_BYTES: u64 = 10 * 1024 * 1024;
+    let mut files = 0usize;
+    let mut total: u64 = 0;
     for i in 0..archive.len() {
         let mut entry = archive
             .by_index(i)
@@ -62,6 +67,25 @@ fn unzip_archive(zip_path: &Path, dst: &Path) -> Result<(), String> {
         if entry.is_dir() || rel.to_string_lossy().ends_with('/') {
             fs::create_dir_all(&outpath).map_err(|e| e.to_string())?;
             continue;
+        }
+        files += 1;
+        if files > MAX_FILES {
+            return Err(format!("[ZIP_TOO_MANY_FILES] zip 文件过多（>{}）", MAX_FILES));
+        }
+        let sz = entry.size();
+        if sz > MAX_SINGLE_BYTES {
+            return Err(format!(
+                "[ZIP_SINGLE_FILE_TOO_LARGE] 单文件过大（{} bytes）: {}",
+                sz,
+                rel.to_string_lossy()
+            ));
+        }
+        total = total.saturating_add(sz);
+        if total > MAX_TOTAL_BYTES {
+            return Err(format!(
+                "[ZIP_TOTAL_TOO_LARGE] 总大小过大（>{} bytes）",
+                MAX_TOTAL_BYTES
+            ));
         }
         if let Some(parent) = outpath.parent() {
             fs::create_dir_all(parent).map_err(|e| e.to_string())?;

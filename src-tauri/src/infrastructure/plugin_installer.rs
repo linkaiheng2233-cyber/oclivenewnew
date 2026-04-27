@@ -15,6 +15,20 @@ use tempfile::TempDir;
 use zip::ZipArchive;
 use sha2::{Digest, Sha256};
 
+const MAX_PLUGIN_ARCHIVE_FILES: usize = 2000;
+const MAX_PLUGIN_ARCHIVE_TOTAL_BYTES: u64 = 50 * 1024 * 1024;
+const MAX_PLUGIN_ARCHIVE_SINGLE_FILE_BYTES: u64 = 10 * 1024 * 1024;
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+struct PluginInstallMeta {
+    pub install_method: String, // git|git_tag|archive
+    #[serde(default)]
+    pub git_url: Option<String>,
+    #[serde(default)]
+    pub pinned_tag: Option<String>,
+}
+
 #[derive(Debug, Clone, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
 pub struct PublisherPublicKey {
@@ -185,13 +199,13 @@ fn verify_plugin_package_signature(
 ) -> Result<(), AppError> {
     if sig.plugin_id.trim() != index_entry.id.trim() {
         return Err(AppError::InvalidParameter(format!(
-            "signature plugin_id mismatch: sig={} index={}",
+            "[PLUGIN_SIGNATURE_ID_MISMATCH] signature plugin_id mismatch: sig={} index={}",
             sig.plugin_id, index_entry.id
         )));
     }
     if sig.algorithm.trim().to_lowercase() != "ed25519" {
         return Err(AppError::InvalidParameter(format!(
-            "unsupported signature algorithm: {}",
+            "[PLUGIN_SIGNATURE_ALGO_UNSUPPORTED] unsupported signature algorithm: {}",
             sig.algorithm
         )));
     }
@@ -200,24 +214,37 @@ fn verify_plugin_package_signature(
         .iter()
         .find(|k| k.pubkey_id.trim() == sig.pubkey_id.trim())
         .ok_or_else(|| {
-            AppError::InvalidParameter(format!("pubkey_id not found in index: {}", sig.pubkey_id))
+            AppError::InvalidParameter(format!(
+                "[PLUGIN_PUBKEY_NOT_FOUND] pubkey_id not found in index: {}",
+                sig.pubkey_id
+            ))
         })?;
     if matches!(pk.status.as_deref(), Some("revoked")) {
         return Err(AppError::InvalidParameter(format!(
-            "public key revoked: {}",
+            "[PLUGIN_PUBKEY_REVOKED] public key revoked: {}",
             pk.pubkey_id
         )));
     }
     let vk = parse_ed25519_pubkey_base64(&pk.public_key)?;
     let sig_bytes = B64_STANDARD.decode(sig.signature.trim()).map_err(|e| {
-        AppError::InvalidParameter(format!("invalid base64 signature: {}", e))
+        AppError::InvalidParameter(format!(
+            "[PLUGIN_SIGNATURE_BASE64_INVALID] invalid base64 signature: {}",
+            e
+        ))
     })?;
     let sig_arr: [u8; 64] = sig_bytes.as_slice().try_into().map_err(|_| {
-        AppError::InvalidParameter("ed25519 signature must be 64 bytes".into())
+        AppError::InvalidParameter(
+            "[PLUGIN_SIGNATURE_SIZE_INVALID] ed25519 signature must be 64 bytes".into(),
+        )
     })?;
     let signature = Signature::from_bytes(&sig_arr);
     vk.verify_strict(archive_bytes, &signature)
-        .map_err(|e| AppError::InvalidParameter(format!("signature verify failed: {}", e)))?;
+        .map_err(|e| {
+            AppError::InvalidParameter(format!(
+                "[PLUGIN_SIGNATURE_VERIFY_FAILED] signature verify failed: {}",
+                e
+            ))
+        })?;
     Ok(())
 }
 
@@ -311,22 +338,45 @@ fn plugins_install_temp_dir(state: &AppState) -> Result<TempDir, AppError> {
 fn extract_oclive_plugin_archive(bytes: &[u8], dst_dir: &Path) -> Result<(), AppError> {
     let mut zip = ZipArchive::new(std::io::Cursor::new(bytes))
         .map_err(|e| AppError::Unknown(format!("open plugin archive failed: {}", e)))?;
+    let mut files = 0usize;
+    let mut total: u64 = 0;
     for i in 0..zip.len() {
         let mut f = zip
             .by_index(i)
             .map_err(|e| AppError::Unknown(format!("read zip entry failed: {}", e)))?;
-        let name = f.name().replace('\\', "/");
-        if name.contains("..") {
-            return Err(AppError::InvalidParameter(format!(
-                "zip contains illegal path: {}",
-                name
-            )));
-        }
-        let out_path = dst_dir.join(&name);
+        let rel = f.enclosed_name().ok_or_else(|| {
+            AppError::InvalidParameter(
+                "[PLUGIN_ARCHIVE_ILLEGAL_PATH] zip entry path is not enclosed".into(),
+            )
+        })?;
+        let name = rel.to_string_lossy().replace('\\', "/");
         if f.is_dir() {
+            let out_path = dst_dir.join(rel);
             fs::create_dir_all(&out_path)?;
             continue;
         }
+        files += 1;
+        if files > MAX_PLUGIN_ARCHIVE_FILES {
+            return Err(AppError::InvalidParameter(format!(
+                "[PLUGIN_ARCHIVE_TOO_MANY_FILES] too many files (>{})",
+                MAX_PLUGIN_ARCHIVE_FILES
+            )));
+        }
+        let sz = f.size();
+        if sz > MAX_PLUGIN_ARCHIVE_SINGLE_FILE_BYTES {
+            return Err(AppError::InvalidParameter(format!(
+                "[PLUGIN_ARCHIVE_SINGLE_FILE_TOO_LARGE] file too large {} bytes: {}",
+                sz, name
+            )));
+        }
+        total = total.saturating_add(sz);
+        if total > MAX_PLUGIN_ARCHIVE_TOTAL_BYTES {
+            return Err(AppError::InvalidParameter(format!(
+                "[PLUGIN_ARCHIVE_TOTAL_TOO_LARGE] total too large (>{} bytes)",
+                MAX_PLUGIN_ARCHIVE_TOTAL_BYTES
+            )));
+        }
+        let out_path = dst_dir.join(rel);
         if let Some(parent) = out_path.parent() {
             fs::create_dir_all(parent)?;
         }
@@ -334,6 +384,19 @@ fn extract_oclive_plugin_archive(bytes: &[u8], dst_dir: &Path) -> Result<(), App
         std::io::copy(&mut f, &mut out).map_err(AppError::IoError)?;
     }
     Ok(())
+}
+
+fn write_install_meta(root: &Path, meta: &PluginInstallMeta) -> Result<(), AppError> {
+    let p = root.join(".oclive_install.json");
+    let raw = serde_json::to_string_pretty(meta).map_err(AppError::from)?;
+    fs::write(p, raw)?;
+    Ok(())
+}
+
+fn read_install_meta(root: &Path) -> Option<PluginInstallMeta> {
+    let p = root.join(".oclive_install.json");
+    let raw = fs::read_to_string(p).ok()?;
+    serde_json::from_str(&raw).ok()
 }
 
 pub fn install_plugin_from_archive_bytes(state: &AppState, bytes: &[u8]) -> Result<String, AppError> {
@@ -354,6 +417,14 @@ pub fn install_plugin_from_archive_bytes(state: &AppState, bytes: &[u8]) -> Resu
     }
     fs::create_dir_all(plugins_dir(state))?;
     fs::rename(tmp.path(), &final_dir)?;
+    let _ = write_install_meta(
+        &final_dir,
+        &PluginInstallMeta {
+            install_method: "archive".to_string(),
+            git_url: None,
+            pinned_tag: None,
+        },
+    );
     // rename 后 tmp 不再拥有目录；阻止 drop 尝试清理不存在路径
     std::mem::forget(tmp);
     state
@@ -464,6 +535,14 @@ pub fn install_plugin_from_git_tag(
         }
         fs::rename(&target, &final_dir)?;
     }
+    let _ = write_install_meta(
+        &final_dir,
+        &PluginInstallMeta {
+            install_method: "git_tag".to_string(),
+            git_url: Some(url.to_string()),
+            pinned_tag: Some(tag.to_string()),
+        },
+    );
     state
         .directory_plugins
         .rescan_plugin_roots(state.storage.roles_dir());
@@ -574,6 +653,14 @@ pub fn install_plugin(
         }
         fs::rename(&target, &final_dir)?;
     }
+    let _ = write_install_meta(
+        &final_dir,
+        &PluginInstallMeta {
+            install_method: "git".to_string(),
+            git_url: Some(url.to_string()),
+            pinned_tag: None,
+        },
+    );
     state
         .directory_plugins
         .rescan_plugin_roots(state.storage.roles_dir());
@@ -592,6 +679,14 @@ pub fn update_plugin(state: &AppState, plugin_id: &str) -> Result<(), AppError> 
             .cloned()
             .ok_or_else(|| AppError::InvalidParameter(format!("plugin not found: {}", pid)))?
     };
+    if let Some(meta) = read_install_meta(&root) {
+        if let Some(tag) = meta.pinned_tag.as_deref().map(str::trim).filter(|s| !s.is_empty()) {
+            return Err(AppError::InvalidParameter(format!(
+                "[PLUGIN_PINNED_VERSION] plugin is pinned to tag {}; update via market version install",
+                tag
+            )));
+        }
+    }
     run_git(&["pull", "--ff-only"], Some(&root))?;
     let _ = OclivePluginManifest::load_from_dir(&root)
         .map_err(|e| AppError::Unknown(format!("manifest validation failed after pull: {}", e)))?;
