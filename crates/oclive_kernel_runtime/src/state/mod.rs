@@ -6,7 +6,13 @@
 use std::fs;
 use std::path::{Path, PathBuf};
 
+// Current compatibility: most of the orchestration layer is still sourced from `src-tauri`,
+// so we keep exporting the Tauri `AppState` for now.
 pub use oclivenewnew_tauri::state::AppState;
+
+// Migration target: kernel-owned state. Not yet wired into OOCP/chat.
+mod app_state;
+pub use app_state::KernelAppState;
 
 /// 自动发现时要求至少有一个「子目录 + manifest.json」，避免误用盘符根上空的 `D:\roles` 等。
 fn roles_dir_has_any_role_pack(roles_root: &Path) -> bool {
