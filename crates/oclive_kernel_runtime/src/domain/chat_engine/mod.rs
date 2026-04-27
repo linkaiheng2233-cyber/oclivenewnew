@@ -4,6 +4,7 @@
 //! 迁入本 crate。
 
 pub mod presence;
+pub mod scene;
 
 pub use oclivenewnew_tauri::domain::chat_engine::process_message;
 
