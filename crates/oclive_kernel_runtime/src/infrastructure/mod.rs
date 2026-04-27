@@ -6,5 +6,5 @@ pub mod db;
 pub mod repositories_runtime;
 
 pub use oclivenewnew_tauri::infrastructure::{
-    directory_plugins, llm, ollama_client, storage,
+    directory_plugins, llm, mcp_client, ollama_client, remote_plugin, storage,
 };
