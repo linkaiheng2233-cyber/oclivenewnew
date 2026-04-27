@@ -775,6 +775,13 @@ async function onPackSelectedPlugin(): Promise<void> {
               >
                 <div class="pm-market-main">
                   <strong>{{ row.id }}</strong>
+                  <span
+                    class="pm-source-badge"
+                    :class="(row.source ?? '') === 'official' ? 'official' : 'third'"
+                    :title="(row.source ?? '') === 'official' ? '官方默认索引' : '第三方索引源'"
+                  >
+                    {{ (row.source ?? "") === "official" ? "官方" : "第三方" }}
+                  </span>
                   <span class="pm-muted"> · {{ row.name }} · v{{ row.version }}</span>
                   <p v-if="row.source || row.publisher" class="pm-market-trust">
                     <span v-if="row.source" class="pm-muted">来源：{{ row.source }}</span>
@@ -1529,6 +1536,26 @@ async function onPackSelectedPlugin(): Promise<void> {
   font-size: 12px;
   color: var(--text-secondary);
   line-height: 1.45;
+}
+.pm-source-badge {
+  display: inline-block;
+  margin-left: 8px;
+  padding: 2px 8px;
+  border-radius: 999px;
+  border: 1px solid var(--border-light);
+  font-size: 11px;
+  font-weight: 600;
+  vertical-align: middle;
+}
+.pm-source-badge.official {
+  color: var(--success-700, #1e7e34);
+  border-color: color-mix(in srgb, var(--success-700, #1e7e34) 40%, var(--border-light));
+  background: color-mix(in srgb, var(--success-700, #1e7e34) 8%, var(--bg-primary));
+}
+.pm-source-badge.third {
+  color: var(--danger-600, #c0392b);
+  border-color: color-mix(in srgb, var(--danger-600, #c0392b) 40%, var(--border-light));
+  background: color-mix(in srgb, var(--danger-600, #c0392b) 8%, var(--bg-primary));
 }
 .pm-market-deps {
   margin: 6px 0 0;
