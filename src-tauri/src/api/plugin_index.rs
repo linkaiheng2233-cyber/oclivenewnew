@@ -3,8 +3,9 @@ use crate::infrastructure::directory_plugins::{parse_manifest_version, OclivePlu
 use crate::infrastructure::plugin_data::ensure_default_config_for_manifest;
 use crate::infrastructure::plugin_installer::{
     install_plugin, install_plugin_from_download_urls, install_plugin_from_git_tag,
-    load_cached_index, missing_dependencies, sync_plugin_index_online, uninstall_plugin,
-    update_plugin, PluginIndexEntry, PluginIndexFile, PluginIndexVersionEntry,
+    load_cached_index, load_cached_index_for_source, missing_dependencies, sync_plugin_index_online,
+    sync_plugin_index_online_for_source, uninstall_plugin, update_plugin, PluginIndexEntry,
+    PluginIndexFile, PluginIndexVersionEntry,
 };
 use crate::state::AppState;
 use semver::Version;
@@ -139,17 +140,58 @@ pub fn sync_plugin_index_command(
     index_url: Option<String>,
     state: State<'_, AppState>,
 ) -> Result<PluginMarketSnapshot, String> {
-    match sync_plugin_index_online(&state, index_url.as_deref()) {
-        Ok(index) => Ok(build_snapshot(&state, index, false, "online", None)),
-        Err(err) => {
-            let cache = load_cached_index(&state).map_err(|e| e.to_frontend_error())?;
-            Ok(build_snapshot(
+    let dev = state.directory_plugins.host().developer_effective();
+    let requested = index_url.as_deref().map(str::trim).unwrap_or("");
+    let wants_custom = !requested.is_empty() && requested != "official";
+    if wants_custom && !dev {
+        // 非开发者模式：禁止自定义源（保持官方默认体验基石）
+        match sync_plugin_index_online(&state, None) {
+            Ok(index) => Ok(build_snapshot(
                 &state,
-                cache,
-                true,
-                "cache",
-                Some(format!("在线索引不可达，已回退本地缓存：{}", err)),
-            ))
+                index,
+                false,
+                "official",
+                Some("已忽略自定义索引源：仅开发者模式可使用第三方源。".to_string()),
+            )),
+            Err(err) => {
+                let cache = load_cached_index(&state).map_err(|e| e.to_frontend_error())?;
+                Ok(build_snapshot(
+                    &state,
+                    cache,
+                    true,
+                    "official-cache",
+                    Some(format!("在线索引不可达，已回退本地缓存：{}", err)),
+                ))
+            }
+        }
+    } else if wants_custom {
+        match sync_plugin_index_online_for_source(&state, requested) {
+            Ok(index) => Ok(build_snapshot(&state, index, false, requested, None)),
+            Err(err) => {
+                let cache =
+                    load_cached_index_for_source(&state, requested).map_err(|e| e.to_frontend_error())?;
+                Ok(build_snapshot(
+                    &state,
+                    cache,
+                    true,
+                    requested,
+                    Some(format!("在线索引不可达，已回退本地缓存：{}", err)),
+                ))
+            }
+        }
+    } else {
+        match sync_plugin_index_online(&state, None) {
+            Ok(index) => Ok(build_snapshot(&state, index, false, "official", None)),
+            Err(err) => {
+                let cache = load_cached_index(&state).map_err(|e| e.to_frontend_error())?;
+                Ok(build_snapshot(
+                    &state,
+                    cache,
+                    true,
+                    "official-cache",
+                    Some(format!("在线索引不可达，已回退本地缓存：{}", err)),
+                ))
+            }
         }
     }
 }
@@ -157,7 +199,7 @@ pub fn sync_plugin_index_command(
 #[tauri::command]
 pub fn get_cached_plugin_index(state: State<'_, AppState>) -> Result<PluginMarketSnapshot, String> {
     let index = load_cached_index(&state).map_err(|e| e.to_frontend_error())?;
-    Ok(build_snapshot(&state, index, true, "cache", None))
+    Ok(build_snapshot(&state, index, true, "official-cache", None))
 }
 
 #[tauri::command]

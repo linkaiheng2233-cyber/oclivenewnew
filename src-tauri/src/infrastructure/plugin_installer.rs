@@ -13,6 +13,7 @@ use std::path::{Path, PathBuf};
 use std::process::Command;
 use tempfile::TempDir;
 use zip::ZipArchive;
+use sha2::{Digest, Sha256};
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
@@ -97,6 +98,22 @@ fn cache_path(state: &AppState) -> PathBuf {
         .join("plugin_index_cache.json")
 }
 
+fn cache_path_for_source(state: &AppState, source_url: &str) -> PathBuf {
+    // 多源缓存：按 URL sha256 分文件，避免非法文件名与过长路径
+    let mut hasher = Sha256::new();
+    hasher.update(source_url.trim().as_bytes());
+    let digest = hasher
+        .finalize()
+        .as_slice()
+        .iter()
+        .map(|b| format!("{:02x}", b))
+        .collect::<String>();
+    state
+        .directory_plugins
+        .app_data_dir()
+        .join(format!("plugin_index_cache_{}.json", digest))
+}
+
 fn plugin_state_store_path(state: &AppState) -> PathBuf {
     state
         .directory_plugins
@@ -106,6 +123,26 @@ fn plugin_state_store_path(state: &AppState) -> PathBuf {
 
 pub fn load_cached_index(state: &AppState) -> Result<PluginIndexFile, AppError> {
     let p = cache_path(state);
+    if !p.exists() {
+        return Ok(PluginIndexFile {
+            generated_at: None,
+            plugins: Vec::new(),
+        });
+    }
+    let raw = fs::read_to_string(&p)?;
+    serde_json::from_str(&raw)
+        .map_err(|e| AppError::Unknown(format!("parse plugin index cache failed: {}", e)))
+}
+
+pub fn load_cached_index_for_source(
+    state: &AppState,
+    source_url: &str,
+) -> Result<PluginIndexFile, AppError> {
+    let url = source_url.trim();
+    if url.is_empty() {
+        return load_cached_index(state);
+    }
+    let p = cache_path_for_source(state, url);
     if !p.exists() {
         return Ok(PluginIndexFile {
             generated_at: None,
@@ -194,6 +231,26 @@ pub fn sync_plugin_index_online(
         .filter(|s| !s.is_empty())
         .or_else(|| env_url.as_deref().map(str::trim).filter(|s| !s.is_empty()))
         .unwrap_or(DEFAULT_PLUGIN_INDEX_URL);
+    sync_plugin_index_online_at(state, url, &cache_path(state))
+}
+
+pub fn sync_plugin_index_online_for_source(
+    state: &AppState,
+    source_url: &str,
+) -> Result<PluginIndexFile, AppError> {
+    let url = source_url.trim();
+    if url.is_empty() {
+        return sync_plugin_index_online(state, None);
+    }
+    let cache = cache_path_for_source(state, url);
+    sync_plugin_index_online_at(state, url, &cache)
+}
+
+fn sync_plugin_index_online_at(
+    _state: &AppState,
+    url: &str,
+    cache: &Path,
+) -> Result<PluginIndexFile, AppError> {
     let cli = reqwest::blocking::Client::builder()
         .timeout(std::time::Duration::from_secs(15))
         .build()
@@ -215,12 +272,11 @@ pub fn sync_plugin_index_online(
     let mut parsed: PluginIndexFile = serde_json::from_str(&text)
         .map_err(|e| AppError::Unknown(format!("parse plugins.json failed: {}", e)))?;
     parsed.plugins.sort_by(|a, b| a.id.cmp(&b.id));
-    let cache = cache_path(state);
     if let Some(parent) = cache.parent() {
         let _ = fs::create_dir_all(parent);
     }
     fs::write(
-        &cache,
+        cache,
         serde_json::to_string_pretty(&parsed)
             .map_err(|e| AppError::Unknown(format!("encode index cache failed: {}", e)))?,
     )?;
