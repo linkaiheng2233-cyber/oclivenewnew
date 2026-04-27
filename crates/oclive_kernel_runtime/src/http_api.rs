@@ -112,7 +112,7 @@ async fn chat(
         }
         storage
             .load_role_from_dir(&path)
-            .map_err(ChatRoleLoadError::Load)
+            .map_err(|e| ChatRoleLoadError::Load(e.into()))
     })
     .await
     .map_err(|e| {
