@@ -9,6 +9,7 @@ import {
   getDirectoryPluginCatalog,
   getPluginState,
   installPluginFromMarket,
+  installPluginVersionFromMarket,
   resetPluginStateToRoleDefault,
   saveGlobalPluginState,
   savePluginState,
@@ -299,6 +300,11 @@ export const usePluginStore = defineStore("plugin", {
     },
     async installFromPluginMarket(pluginId: string, gitUrl?: string | null) {
       await installPluginFromMarket(pluginId, gitUrl ?? null);
+      await this.refresh();
+      this.bootstrapEpoch += 1;
+    },
+    async installVersionFromPluginMarket(pluginId: string, version: string) {
+      await installPluginVersionFromMarket(pluginId, version);
       await this.refresh();
       this.bootstrapEpoch += 1;
     },

@@ -1084,6 +1084,19 @@ export interface PluginIndexEntryDto {
   source?: string | null;
   changelog?: string | null;
   dependencies: Record<string, string>;
+  publisher?: string | null;
+  publicKeys?: {
+    pubkeyId: string;
+    publicKey: string;
+    status?: string | null;
+    rotatedTo?: string | null;
+  }[];
+  versions?: {
+    version: string;
+    downloadUrl?: string | null;
+    signatureUrl?: string | null;
+    gitTag?: string | null;
+  }[];
 }
 
 export interface PluginMarketEntryDto extends PluginIndexEntryDto {
@@ -1131,6 +1144,16 @@ export async function installPluginFromMarket(
   return invokeWithFriendlyError<InstallPluginFromMarketResponseDto>(
     "install_plugin_from_market",
     { pluginId, gitUrl: gitUrl ?? null },
+  );
+}
+
+export async function installPluginVersionFromMarket(
+  pluginId: string,
+  version: string,
+): Promise<InstallPluginFromMarketResponseDto> {
+  return invokeWithFriendlyError<InstallPluginFromMarketResponseDto>(
+    "install_plugin_version_from_market",
+    { req: { pluginId, version } },
   );
 }
 

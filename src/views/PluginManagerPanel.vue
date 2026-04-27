@@ -165,8 +165,39 @@ async function onInstallMarketEntry(row: PluginMarketEntryDto) {
     return;
   }
   try {
-    await pluginStore.installFromPluginMarket(row.id, row.git);
+    // 默认安装走索引内版本解析（git tag clone）；仅开发者模式才应允许自定义 gitUrl 覆盖
+    await pluginStore.installFromPluginMarket(row.id, null);
     showToast("success", `已安装 ${row.id}，建议保存配置并视需要重启应用。`);
+  } catch (e) {
+    showToast("error", e instanceof Error ? e.message : String(e));
+  }
+}
+
+const marketPickedVersion = ref<Record<string, string>>({});
+
+function marketVersionsForRow(row: PluginMarketEntryDto): string[] {
+  const vs = (row.versions ?? []).map((x) => x.version).filter((x) => !!x?.trim());
+  // 降序展示：优先 semver 解析失败时按字符串倒序
+  return [...vs].sort((a, b) => (a === b ? 0 : a < b ? 1 : -1));
+}
+
+function marketPickedVersionForRow(row: PluginMarketEntryDto): string {
+  const pid = row.id;
+  const picked = marketPickedVersion.value[pid]?.trim();
+  if (picked) return picked;
+  const vs = marketVersionsForRow(row);
+  return vs[0] ?? row.version;
+}
+
+async function onInstallMarketVersion(row: PluginMarketEntryDto) {
+  const v = marketPickedVersionForRow(row);
+  if (!v?.trim()) return;
+  try {
+    await pluginStore.installVersionFromPluginMarket(row.id, v);
+    showToast(
+      "success",
+      row.installed ? `已回滚/切换 ${row.id} → v${v}` : `已安装 ${row.id} v${v}`,
+    );
   } catch (e) {
     showToast("error", e instanceof Error ? e.message : String(e));
   }
@@ -504,6 +535,37 @@ async function onPackSelectedPlugin(): Promise<void> {
                   </p>
                 </div>
                 <div class="pm-market-actions">
+                  <div
+                    v-if="(row.versions ?? []).length > 0"
+                    class="pm-market-versions"
+                  >
+                    <select
+                      class="pm-select pm-select--sm"
+                      :value="marketPickedVersionForRow(row)"
+                      @change="
+                        (e) =>
+                          (marketPickedVersion = {
+                            ...marketPickedVersion,
+                            [row.id]: (e.target as HTMLSelectElement).value,
+                          })
+                      "
+                    >
+                      <option
+                        v-for="v in marketVersionsForRow(row)"
+                        :key="`${row.id}-${v}`"
+                        :value="v"
+                      >
+                        v{{ v }}
+                      </option>
+                    </select>
+                    <button
+                      type="button"
+                      class="pm-btn secondary pm-btn--sm"
+                      @click="onInstallMarketVersion(row)"
+                    >
+                      {{ row.installed ? "回滚/切换" : "安装此版本" }}
+                    </button>
+                  </div>
                   <button
                     v-if="!row.installed"
                     type="button"
