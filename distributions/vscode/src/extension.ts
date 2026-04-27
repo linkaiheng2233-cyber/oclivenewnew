@@ -108,6 +108,17 @@ async function connect(): Promise<void> {
           capabilities = null;
           updateStatusBar();
         },
+        onEvent: (evt) => {
+          // Minimal event stream: surface traces to the chat panel when open.
+          if (!chatPanel) return;
+          if (evt.event === "trace.append") {
+            postToChat({
+              type: "system",
+              content:
+                "[trace.append]\n" + JSON.stringify(evt.payload ?? {}, null, 2),
+            });
+          }
+        },
         onError: (err) => {
           vscode.window.showErrorMessage("Oclive OOCP error: " + err.message);
         },

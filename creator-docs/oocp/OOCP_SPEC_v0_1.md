@@ -64,6 +64,24 @@
 }
 ```
 
+#### 3.3.1 `trace.append`（最小调试事件）
+
+用于发行版显示“内核正在做什么”（例如 MCP tool 调用、agent trace、插件调用链）。
+
+```json
+{
+  "type": "event",
+  "event": "trace.append",
+  "payload": {
+    "kind": "mcp_tool_call",
+    "server_id": "weather",
+    "tool_name": "get_weather",
+    "arguments": { "city": "Hangzhou" },
+    "result": { "content": "...", "is_error": false }
+  }
+}
+```
+
 ### 3.4 Error（服务端 → 客户端，替代 response）
 
 ```json

@@ -53,7 +53,7 @@
     "time.get_state", "time.jump",
     "agent.call_mcp_tool"
   ],
-  "events": ["chat.monologue", "session.time_tick", "agent.debug_trace"],
+  "events": ["chat.monologue", "session.time_tick", "agent.debug_trace", "trace.append"],
   "limits": {
     "max_concurrent_requests": 8,
     "max_message_chars": 4096
@@ -158,5 +158,6 @@ INFO  oclive_api > HTTP API listening http://127.0.0.1:48888
 - [x] 鉴权（通过 `auth_required` 判断 + Bearer token / `?token=` 查询参数）
 - [x] 请求-响应匹配（通过 `id` 字段）
 - [x] 事件监听（`type: "event"` 帧）
+- [x] 最小调试事件（`trace.append`）：用于展示 MCP/Agent/插件调用链
 - [x] 错误处理（`type: "error"` 帧，错误码见 spec §6）
 - [x] 心跳响应（Ping → Pong）

@@ -111,9 +111,9 @@ async fn handle_oocp_socket(socket: WebSocket, app_state: Arc<AppState>) {
     let (mut writer, mut reader) = socket.split();
     let mut handler = TauriOocpHandler::new(app_state);
 
-    // 阶段 0：发送 capabilities。
+    // 阶段 0：发送 capabilities（并缓存用于后续空 method 返回）。
+    let caps = crate::domain::core::oocp_handler::get_capabilities();
     {
-        let caps = crate::domain::core::oocp_handler::get_capabilities();
         let payload = serde_json::to_string(&caps).unwrap_or_else(|_| "{}".to_string());
         if let Err(e) = writer.send(Message::Text(payload)).await {
             log::warn!(target: "oclive_oocp_ws", "failed to send capabilities: {}", e);
@@ -131,7 +131,7 @@ async fn handle_oocp_socket(socket: WebSocket, app_state: Arc<AppState>) {
                 match msg {
                     Some(Ok(Message::Text(text))) => {
                         log::trace!(target: "oclive_oocp_ws", "rx text len={}", text.len());
-                        let resp = handle_text_frame(&text, &mut handler).await;
+                        let resp = handle_text_frame(&text, &mut handler, &caps).await;
                         if let Some(frame) = resp {
                             let json = serde_json::to_string(&frame).unwrap_or_else(|e| {
                                 format!(r#"{{"type":"error","id":null,"error":{{"code":"INTERNAL","message":"serialize failed: {}"}}}}"#, e)
@@ -198,11 +198,11 @@ async fn handle_oocp_socket(socket: WebSocket, app_state: Arc<AppState>) {
 async fn handle_text_frame(
     text: &str,
     handler: &mut TauriOocpHandler,
+    caps: &crate::models::oocp::OocpCapabilities,
 ) -> Option<serde_json::Value> {
     // 空帧视为 capabilities 重协商。
     if text.trim().is_empty() {
-        let caps = crate::domain::core::oocp_handler::get_capabilities();
-        return Some(serde_json::to_value(&caps).unwrap_or(serde_json::Value::Null));
+        return Some(serde_json::to_value(caps).unwrap_or(serde_json::Value::Null));
     }
 
     // 检查消息大小限制（capabilities.limits.max_message_chars）。
@@ -238,7 +238,7 @@ async fn handle_text_frame(
             if req.msg_type != "request" && !req.method.is_empty() {
                 req.msg_type = "request".to_string();
             }
-            let result = dispatch_oocp_request(req, handler).await;
+            let result = dispatch_oocp_request(req, handler, caps).await;
             match result {
                 OocpHandled::Response(r) => {
                     Some(serde_json::to_value(&r).unwrap_or(serde_json::Value::Null))

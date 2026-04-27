@@ -24,7 +24,14 @@ pub const OOCP_METHODS: &[&str] = &[
 ];
 
 /// v0.1 capabilities 事件白名单。
-pub const OOCP_EVENTS: &[&str] = &["chat.monologue", "session.time_tick", "agent.debug_trace"];
+///
+/// Note: keep legacy names for compatibility; new clients should prefer `trace.append`.
+pub const OOCP_EVENTS: &[&str] = &[
+    "chat.monologue",
+    "session.time_tick",
+    "agent.debug_trace",
+    "trace.append",
+];
 
 /// 默认服务端限制。
 pub struct DefaultLimits;

@@ -316,14 +316,31 @@ impl OocpMethodHandler for TauriOocpHandler {
         &mut self,
         server_id: &str,
         tool_name: &str,
-        _arguments: Value,
+        arguments: Value,
     ) -> Result<Value, MethodError> {
-        // TODO P0-C: 委托到 MCP client。
-        // 当前为占位实现。
-        Ok(json!({
-            "content": format!("[placeholder] mcp call {}::{}", server_id, tool_name),
-            "is_error": false,
-        }))
+        let res = self
+            .state
+            .plugins
+            .call_mcp_tool(server_id, tool_name, arguments.clone())
+            .map_err(|e| err(OocpErrorCode::Internal, format!("MCP 工具调用失败: {}", e)))?;
+
+        let value =
+            serde_json::to_value(&res).map_err(|e| err(OocpErrorCode::Internal, e.to_string()))?;
+
+        // Minimal event stream: surface tool call traces for distributions.
+        self.push_event(OocpEvent {
+            msg_type: "event",
+            event: "trace.append".to_string(),
+            payload: json!({
+                "kind": "mcp_tool_call",
+                "server_id": server_id,
+                "tool_name": tool_name,
+                "arguments": arguments,
+                "result": value,
+            }),
+        });
+
+        Ok(value)
     }
 
     // ── 事件推送 ──────────────────────────────────────────────────────────
