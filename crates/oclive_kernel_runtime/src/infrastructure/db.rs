@@ -3,6 +3,7 @@ use crate::models::InteractionMode;
 use crate::models::{Event, EventType, Memory, PersonalityVector};
 use chrono::{DateTime, Utc};
 use sqlx::SqlitePool;
+use sqlx::Row;
 use std::time::Instant;
 
 pub struct ChatTurnTxInput<'a> {
@@ -32,6 +33,56 @@ pub struct DbManager {
 impl DbManager {
     pub fn new(pool: SqlitePool) -> Self {
         Self { pool }
+    }
+
+    // ===== Plugin permissions + audit (subset) =====
+    pub async fn is_plugin_permission_granted(&self, plugin_id: &str, permission: &str) -> Result<bool> {
+        let pid = plugin_id.trim();
+        let perm = permission.trim();
+        if pid.is_empty() || perm.is_empty() {
+            return Ok(false);
+        }
+        let row = sqlx::query("SELECT enabled FROM plugin_permission_grants WHERE plugin_id = ? AND permission = ?")
+            .bind(pid)
+            .bind(perm)
+            .fetch_optional(&self.pool)
+            .await
+            .map_err(|e| AppError::DatabaseError(e.to_string()))?;
+        let Some(r) = row else {
+            return Ok(false);
+        };
+        let en: i64 = r.try_get("enabled").unwrap_or(0);
+        Ok(en != 0)
+    }
+
+    pub async fn insert_plugin_audit_log(
+        &self,
+        plugin_id: &str,
+        action: &str,
+        permission: Option<&str>,
+        allowed: bool,
+        meta_json: &str,
+    ) -> Result<()> {
+        let pid = plugin_id.trim();
+        let action = action.trim();
+        if pid.is_empty() || action.is_empty() {
+            return Ok(());
+        }
+        let now = Utc::now().to_rfc3339();
+        sqlx::query(
+            "INSERT INTO plugin_audit_log (plugin_id, action, permission, allowed, meta_json, created_at)
+             VALUES (?, ?, ?, ?, ?, ?)",
+        )
+        .bind(pid)
+        .bind(action)
+        .bind(permission.map(str::trim).filter(|s| !s.is_empty()))
+        .bind(if allowed { 1i64 } else { 0i64 })
+        .bind(meta_json)
+        .bind(&now)
+        .execute(&self.pool)
+        .await
+        .map_err(|e| AppError::DatabaseError(e.to_string()))?;
+        Ok(())
     }
 
     // ===== Long-term memory =====

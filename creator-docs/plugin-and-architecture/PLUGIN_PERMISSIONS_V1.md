@@ -47,7 +47,7 @@
 - `network:*` 或 `network:domain:<example.com>`
 - `filesystem:read:<path>` / `filesystem:write:<path>`
 - `shell:commands:<name>`（或更细的 allowlist）
-- `process:spawn`
+- `process:spawn`：**已在 v1 强制校验**——当插件被配置为任意固定模块的 `directory` 后端时，宿主在启动其 RPC 子进程前会检查该权限；未授权则拒绝并回退到 builtin（同时写入审计）。
 
 ---
 

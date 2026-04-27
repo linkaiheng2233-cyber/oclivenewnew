@@ -10,6 +10,7 @@ use crate::domain::{
     PromptInput,
 };
 use crate::infrastructure::llm::{LlmClient, MockLlmClient};
+use crate::infrastructure::db::DbManager;
 use crate::models::{
     Emotion, Event, EventType, Memory, PersonalitySource, PersonalityVector, Role,
 };
@@ -19,7 +20,38 @@ fn resolved_plugins_dummy(role: &Role) -> ResolvedRolePlugins {
     let dummy_llm: Arc<dyn LlmClient> = Arc::new(MockLlmClient {
         reply: String::new(),
     });
-    PluginHost::new(dummy_llm, None, std::env::temp_dir()).resolve_for_role(role)
+    let rt = tokio::runtime::Runtime::new().unwrap();
+    let pool = rt.block_on(async { sqlx::SqlitePool::connect("sqlite::memory:").await.unwrap() });
+    rt.block_on(async {
+        let _ = sqlx::query(
+            "CREATE TABLE IF NOT EXISTS plugin_permission_grants (
+                plugin_id TEXT NOT NULL,
+                permission TEXT NOT NULL,
+                enabled INTEGER NOT NULL DEFAULT 0,
+                granted_by TEXT NOT NULL DEFAULT 'test',
+                created_at TEXT NOT NULL,
+                updated_at TEXT NOT NULL,
+                PRIMARY KEY (plugin_id, permission)
+            );",
+        )
+        .execute(&pool)
+        .await;
+        let _ = sqlx::query(
+            "CREATE TABLE IF NOT EXISTS plugin_audit_log (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                plugin_id TEXT NOT NULL,
+                action TEXT NOT NULL,
+                permission TEXT,
+                allowed INTEGER NOT NULL,
+                meta_json TEXT NOT NULL,
+                created_at TEXT NOT NULL
+            );",
+        )
+        .execute(&pool)
+        .await;
+    });
+    let db = Arc::new(DbManager::new(pool));
+    PluginHost::new(db, dummy_llm, None, std::env::temp_dir()).resolve_for_role(role)
 }
 
 /// 角色管理器

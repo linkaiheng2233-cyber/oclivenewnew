@@ -22,6 +22,7 @@ use crate::domain::prompt_assembler::{
 use crate::domain::user_emotion_analyzer::{
     BuiltinUserEmotionAnalyzer, BuiltinUserEmotionAnalyzerV2, UserEmotionAnalyzer,
 };
+use crate::infrastructure::db::DbManager;
 use crate::infrastructure::directory_plugins::DirectoryPluginRuntime;
 use crate::infrastructure::llm::LlmClient;
 use crate::infrastructure::mcp_client::{McpClient, McpServerManifest, McpToolCallResult};
@@ -36,6 +37,7 @@ use crate::models::{
 };
 use parking_lot::RwLock;
 use serde_json::Value;
+use std::future::Future;
 use std::path::PathBuf;
 use std::sync::Arc;
 
@@ -53,6 +55,7 @@ pub struct ResolvedRolePlugins {
 
 /// 后端注册表：管理 builtin / remote 插槽，并预留本地 provider 注册骨架。
 pub struct BackendRegistry {
+    db_manager: Arc<DbManager>,
     memory_builtin: Arc<dyn MemoryRetrieval>,
     memory_builtin_v2: Arc<dyn MemoryRetrieval>,
     memory_remote: Arc<dyn MemoryRetrieval>,
@@ -87,6 +90,33 @@ fn directory_slot_id(
 }
 
 impl BackendRegistry {
+    fn block_on<T>(&self, fut: impl Future<Output = T>) -> T {
+        if let Ok(h) = tokio::runtime::Handle::try_current() {
+            h.block_on(fut)
+        } else {
+            tokio::runtime::Builder::new_current_thread()
+                .enable_all()
+                .build()
+                .expect("build tokio runtime")
+                .block_on(fut)
+        }
+    }
+
+    fn check_directory_plugin_permission(&self, plugin_id: &str, permission: &str) -> bool {
+        let ok = self.block_on(async {
+            self.db_manager
+                .is_plugin_permission_granted(plugin_id, permission)
+                .await
+                .unwrap_or(false)
+        });
+        let _ = self.block_on(async {
+            self.db_manager
+                .insert_plugin_audit_log(plugin_id, "process.spawn", Some(permission), ok, "{}")
+                .await
+        });
+        ok
+    }
+
     fn complex_emotion_for_plugin_backends(
         &self,
         backends: &PluginBackends,
@@ -118,6 +148,13 @@ impl BackendRegistry {
             );
             return self.complex_emotion_builtin.clone();
         };
+        if !self.check_directory_plugin_permission(pid.as_str(), "process:spawn") {
+            log::warn!(
+                target: "oclive_plugin",
+                "plugin_backends.complex_emotion=directory but permission process:spawn not granted; using builtin"
+            );
+            return self.complex_emotion_builtin.clone();
+        }
         match rt.ensure_rpc_url(pid.as_str()) {
             Ok(url) => Arc::new(RemoteComplexEmotionHttp::new(
                 RemotePluginHttpConfig::for_directory_plugin_rpc(url, false),
@@ -164,6 +201,13 @@ impl BackendRegistry {
             );
             return self.agent_builtin.clone();
         };
+        if !self.check_directory_plugin_permission(pid.as_str(), "process:spawn") {
+            log::warn!(
+                target: "oclive_plugin",
+                "plugin_backends.agent=directory but permission process:spawn not granted; using builtin"
+            );
+            return self.agent_builtin.clone();
+        }
         match rt.ensure_rpc_url(pid.as_str()) {
             Ok(url) => {
                 let cfg = RemotePluginHttpConfig::for_directory_plugin_rpc(url, false);
@@ -214,6 +258,7 @@ impl BackendRegistry {
     }
 
     fn from_runtime(
+        db_manager: Arc<DbManager>,
         llm: Arc<dyn LlmClient>,
         directory_runtime: Option<Arc<DirectoryPluginRuntime>>,
         app_data_dir: PathBuf,
@@ -232,6 +277,7 @@ impl BackendRegistry {
         let complex_emotion_none: Arc<dyn ComplexEmotionProvider> =
             Arc::new(NoneComplexEmotionProvider);
         Self {
+            db_manager,
             memory_builtin: Arc::new(BuiltinMemoryRetrieval),
             memory_builtin_v2: Arc::new(BuiltinMemoryRetrievalV2),
             memory_remote: rem.memory,
@@ -286,6 +332,13 @@ impl BackendRegistry {
             );
             return self.llm_ollama.clone();
         };
+        if !self.check_directory_plugin_permission(pid.as_str(), "process:spawn") {
+            log::warn!(
+                target: "oclive_plugin",
+                "plugin_backends.llm=directory but permission process:spawn not granted; using ollama"
+            );
+            return self.llm_ollama.clone();
+        }
         match rt.ensure_rpc_url(pid.as_str()) {
             Ok(url) => {
                 let cfg = RemotePluginHttpConfig::for_directory_plugin_rpc(url, true);
@@ -370,6 +423,13 @@ impl BackendRegistry {
             );
             return self.memory_builtin.clone();
         };
+        if !self.check_directory_plugin_permission(pid.as_str(), "process:spawn") {
+            log::warn!(
+                target: "oclive_plugin",
+                "plugin_backends.memory=directory but permission process:spawn not granted; using builtin"
+            );
+            return self.memory_builtin.clone();
+        }
         match rt.ensure_rpc_url(pid.as_str()) {
             Ok(url) => Arc::new(RemoteMemoryRetrievalHttp::new(
                 RemotePluginHttpConfig::for_directory_plugin_rpc(url, false),
@@ -420,6 +480,13 @@ impl BackendRegistry {
             );
             return self.emotion_builtin.clone();
         };
+        if !self.check_directory_plugin_permission(pid.as_str(), "process:spawn") {
+            log::warn!(
+                target: "oclive_plugin",
+                "plugin_backends.emotion=directory but permission process:spawn not granted; using builtin"
+            );
+            return self.emotion_builtin.clone();
+        }
         match rt.ensure_rpc_url(pid.as_str()) {
             Ok(url) => Arc::new(RemoteUserEmotionAnalyzerHttp::new(
                 RemotePluginHttpConfig::for_directory_plugin_rpc(url, false),
@@ -467,6 +534,13 @@ impl BackendRegistry {
             );
             return self.event_builtin.clone();
         };
+        if !self.check_directory_plugin_permission(pid.as_str(), "process:spawn") {
+            log::warn!(
+                target: "oclive_plugin",
+                "plugin_backends.event=directory but permission process:spawn not granted; using builtin"
+            );
+            return self.event_builtin.clone();
+        }
         match rt.ensure_rpc_url(pid.as_str()) {
             Ok(url) => Arc::new(RemoteEventEstimatorHttp::new(
                 RemotePluginHttpConfig::for_directory_plugin_rpc(url, false),
@@ -514,6 +588,13 @@ impl BackendRegistry {
             );
             return self.prompt_builtin.clone();
         };
+        if !self.check_directory_plugin_permission(pid.as_str(), "process:spawn") {
+            log::warn!(
+                target: "oclive_plugin",
+                "plugin_backends.prompt=directory but permission process:spawn not granted; using builtin"
+            );
+            return self.prompt_builtin.clone();
+        }
         match rt.ensure_rpc_url(pid.as_str()) {
             Ok(url) => Arc::new(RemotePromptAssemblerHttp::new(
                 RemotePluginHttpConfig::for_directory_plugin_rpc(url, false),
@@ -585,12 +666,13 @@ pub struct PluginHost {
 
 impl PluginHost {
     pub fn new(
+        db_manager: Arc<DbManager>,
         llm: Arc<dyn LlmClient>,
         directory_runtime: Option<Arc<DirectoryPluginRuntime>>,
         app_data_dir: PathBuf,
     ) -> Self {
         Self {
-            registry: BackendRegistry::from_runtime(llm, directory_runtime, app_data_dir),
+            registry: BackendRegistry::from_runtime(db_manager, llm, directory_runtime, app_data_dir),
         }
     }
 
@@ -730,17 +812,53 @@ impl ResolvedRolePlugins {
 mod tests {
     use super::*;
     use crate::infrastructure::llm::MockLlmClient;
+    use crate::infrastructure::db::DbManager;
     use crate::models::{
         EmotionBackend, EventBackend, LlmBackend, MemoryBackend, PluginBackends,
         PluginBackendsOverride, PromptBackend,
     };
     use std::sync::Arc;
 
+    fn test_db_manager() -> Arc<DbManager> {
+        let rt = tokio::runtime::Runtime::new().unwrap();
+        let pool = rt.block_on(async { sqlx::SqlitePool::connect("sqlite::memory:").await.unwrap() });
+        rt.block_on(async {
+            let _ = sqlx::query(
+                "CREATE TABLE IF NOT EXISTS plugin_permission_grants (
+                    plugin_id TEXT NOT NULL,
+                    permission TEXT NOT NULL,
+                    enabled INTEGER NOT NULL DEFAULT 0,
+                    granted_by TEXT NOT NULL DEFAULT 'test',
+                    created_at TEXT NOT NULL,
+                    updated_at TEXT NOT NULL,
+                    PRIMARY KEY (plugin_id, permission)
+                );",
+            )
+            .execute(&pool)
+            .await;
+            let _ = sqlx::query(
+                "CREATE TABLE IF NOT EXISTS plugin_audit_log (
+                    id INTEGER PRIMARY KEY AUTOINCREMENT,
+                    plugin_id TEXT NOT NULL,
+                    action TEXT NOT NULL,
+                    permission TEXT,
+                    allowed INTEGER NOT NULL,
+                    meta_json TEXT NOT NULL,
+                    created_at TEXT NOT NULL
+                );",
+            )
+            .execute(&pool)
+            .await;
+        });
+        Arc::new(DbManager::new(pool))
+    }
+
     fn host() -> PluginHost {
         let llm: Arc<dyn LlmClient> = Arc::new(MockLlmClient {
             reply: String::new(),
         });
-        PluginHost::new(llm, None, std::env::temp_dir())
+        let db = test_db_manager();
+        PluginHost::new(db, llm, None, std::env::temp_dir())
     }
 
     #[test]

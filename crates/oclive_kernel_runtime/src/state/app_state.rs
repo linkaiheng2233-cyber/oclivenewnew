@@ -317,6 +317,7 @@ impl KernelAppState {
         let directory_plugins =
             DirectoryPluginRuntime::bootstrap(storage.roles_dir(), app_data_dir.as_ref());
         let plugins = PluginHost::new(
+            db_manager.clone(),
             llm.clone(),
             Some(directory_plugins.clone()),
             app_data_dir.as_ref().to_path_buf(),
@@ -393,6 +394,7 @@ impl KernelAppState {
         };
 
         let plugins = PluginHost::new(
+            db_manager.clone(),
             llm.clone(),
             Some(directory_plugins.clone()),
             app_data_dir.clone(),
