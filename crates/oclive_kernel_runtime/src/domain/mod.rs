@@ -1,10 +1,10 @@
 pub mod adapters;
+pub mod chat_engine;
 pub mod core;
 
 // Temporary shim: re-export the rest from `oclivenewnew-tauri`.
 //
 // Goal: progressively migrate modules here and remove this dependency.
-pub use oclivenewnew_tauri::domain::chat_engine;
 pub use oclivenewnew_tauri::domain::chat_llm_fallback;
 pub use oclivenewnew_tauri::domain::chat_turn;
 pub use oclivenewnew_tauri::domain::chat_turn_rules;
