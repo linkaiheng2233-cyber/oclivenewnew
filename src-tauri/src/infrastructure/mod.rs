@@ -6,6 +6,7 @@ pub mod cache;
 pub mod db;
 pub mod deep_link;
 pub mod directory_plugins;
+pub mod cloud_llm;
 pub mod function_call_parser;
 pub mod hotkey_bindings;
 pub mod llm;
@@ -24,7 +25,7 @@ pub mod storage;
 // 重新导出主要类型
 pub use cache::Cache;
 pub use db::DbManager;
-pub use llm::{ollama_llm, LlmClient, MockLlmClient};
+pub use llm::{cloud_llm_from_env, ollama_llm, LlmClient, MockLlmClient};
 pub use repositories::{SqliteFavorabilityRepository, SqliteMemoryRepository};
 pub use role_pack::{export_role_pack, import_role_pack, peek_role_pack_manifest};
 pub use storage::RoleStorage;

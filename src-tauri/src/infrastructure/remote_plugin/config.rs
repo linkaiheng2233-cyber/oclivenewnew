@@ -62,6 +62,28 @@ impl RemotePluginHttpConfig {
         })
     }
 
+    /// `OCLIVE_REMOTE_AGENT_URL`：非空则 `plugin_backends.agent = remote` 时走该端点（JSON-RPC `agent.process`）。
+    pub fn from_env_agent() -> Option<Self> {
+        let endpoint = std::env::var("OCLIVE_REMOTE_AGENT_URL").ok()?;
+        let t = endpoint.trim();
+        if t.is_empty() {
+            return None;
+        }
+        let timeout_ms = std::env::var("OCLIVE_REMOTE_AGENT_TIMEOUT_MS")
+            .ok()
+            .and_then(|s| s.parse::<u64>().ok())
+            .unwrap_or(30_000);
+        let bearer_token = std::env::var("OCLIVE_REMOTE_AGENT_TOKEN")
+            .ok()
+            .map(|s| s.trim().to_string())
+            .filter(|s| !s.is_empty());
+        Some(Self {
+            endpoint: t.to_string(),
+            timeout: Duration::from_millis(timeout_ms.clamp(1_000, 600_000)),
+            bearer_token,
+        })
+    }
+
     /// `OCLIVE_COMPLEX_EMOTION_URL`：复杂情感 Remote 侧车（`complex_emotion.resolve_turn`）。
     /// 兼容旧名 `OCLIVE_REMOTE_COMPLEX_EMOTION_URL`。
     pub fn from_env_complex_emotion() -> Option<Self> {

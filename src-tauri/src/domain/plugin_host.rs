@@ -23,7 +23,7 @@ use crate::infrastructure::directory_plugins::DirectoryPluginRuntime;
 use crate::infrastructure::llm::LlmClient;
 use crate::infrastructure::mcp_client::{McpClient, McpServerManifest, McpToolCallResult};
 use crate::infrastructure::remote_plugin::{
-    self, RemoteEventEstimatorHttp, RemoteLlmHttp, RemoteMemoryRetrievalHttp,
+    self, agent_remote_backend, RemoteEventEstimatorHttp, RemoteLlmHttp, RemoteMemoryRetrievalHttp,
     RemotePluginHttpConfig, RemotePromptAssemblerHttp, RemoteUserEmotionAnalyzerHttp,
 };
 use crate::models::{
@@ -64,7 +64,6 @@ pub struct BackendRegistry {
     llm_remote: Arc<dyn LlmClient>,
     agent_builtin: Arc<BuiltinReActAgent>,
     agent_remote: Arc<dyn AgentProvider>,
-    agent_directory: Arc<dyn AgentProvider>,
     local_plugins: RwLock<LocalPluginRegistry>,
     directory_runtime: Option<Arc<DirectoryPluginRuntime>>,
 }
@@ -84,7 +83,7 @@ impl BackendRegistry {
         match backends.agent {
             AgentBackend::Builtin => self.agent_builtin.clone(),
             AgentBackend::Remote => self.agent_remote.clone(),
-            AgentBackend::Directory => self.agent_directory.clone(),
+            AgentBackend::Directory => self.agent_directory_slot(backends),
         }
     }
 
@@ -93,6 +92,38 @@ impl BackendRegistry {
             agent: b,
             ..Default::default()
         })
+    }
+
+    fn agent_directory_slot(&self, backends: &PluginBackends) -> Arc<dyn AgentProvider> {
+        let Some(rt) = self.directory_runtime.as_ref() else {
+            log::warn!(
+                target: "oclive_plugin",
+                "plugin_backends.agent=directory but directory plugin runtime disabled"
+            );
+            return self.agent_builtin.clone();
+        };
+        let Some(pid) = directory_slot_id(&backends.directory_plugins, |s| &s.agent) else {
+            log::warn!(
+                target: "oclive_plugin",
+                "plugin_backends.agent=directory but directory_plugins.agent missing"
+            );
+            return self.agent_builtin.clone();
+        };
+        match rt.ensure_rpc_url(pid.as_str()) {
+            Ok(url) => {
+                let cfg = RemotePluginHttpConfig::for_directory_plugin_rpc(url, false);
+                Arc::new(remote_plugin::RemoteAgentHttp::new(cfg))
+            }
+            Err(e) => {
+                log::error!(
+                    target: "oclive_plugin",
+                    "directory agent plugin_id={} spawn failed: {}",
+                    pid,
+                    e
+                );
+                self.agent_builtin.clone()
+            }
+        }
     }
 
     fn list_mcp_servers(&self) -> Vec<McpServerManifest> {
@@ -136,8 +167,8 @@ impl BackendRegistry {
         let llm_remote = remote_plugin::llm_remote_backend(llm);
         let mcp = Arc::new(McpClient::new(app_data_dir));
         let agent_builtin = Arc::new(BuiltinReActAgent::new(llm_ollama.clone(), mcp));
-        let agent_remote: Arc<dyn AgentProvider> = agent_builtin.clone();
-        let agent_directory: Arc<dyn AgentProvider> = agent_builtin.clone();
+        let agent_remote: Arc<dyn AgentProvider> =
+            agent_remote_backend(agent_builtin.clone() as Arc<dyn AgentProvider>);
         let rem = remote_plugin::plugin_remote_group();
         Self {
             memory_builtin: Arc::new(BuiltinMemoryRetrieval),
@@ -156,7 +187,6 @@ impl BackendRegistry {
             llm_remote,
             agent_builtin,
             agent_remote,
-            agent_directory,
             local_plugins: RwLock::new(LocalPluginRegistry::default()),
             directory_runtime,
         }

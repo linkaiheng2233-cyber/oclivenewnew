@@ -3,6 +3,7 @@
 //! 主对话与标签任务的温度、top_p 见 [`super::llm_params`]（环境变量 `OCLIVE_LLM_*`）。
 
 use crate::error::Result;
+use crate::infrastructure::cloud_llm::{CloudLlmConfig, OpenAiCompatLlmClient};
 use crate::infrastructure::llm_params;
 use crate::infrastructure::ollama_client::OllamaClient;
 use async_trait::async_trait;
@@ -32,6 +33,17 @@ impl LlmClient for OllamaClient {
 /// 将 `OllamaClient` 包成 `Arc<dyn LlmClient>`
 pub fn ollama_llm(client: OllamaClient) -> Arc<dyn LlmClient> {
     Arc::new(client)
+}
+
+/// 直连云端（OpenAI-compatible）优先；未配置则返回 `None`。
+pub fn cloud_llm_from_env() -> Option<Arc<dyn LlmClient>> {
+    let cfg = CloudLlmConfig::from_env_openai_compat()?;
+    log::info!(
+        target: "oclive_plugin",
+        "cloud LLM HTTP active -> {}",
+        cfg.base_url
+    );
+    Some(Arc::new(OpenAiCompatLlmClient::new(cfg)))
 }
 
 /// 测试或离线场景：固定返回，不访问网络
