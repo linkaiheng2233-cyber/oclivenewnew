@@ -6,12 +6,13 @@ pub mod chat_turn_rules;
 pub mod complex_emotion;
 pub mod core;
 pub mod emotion_analyzer;
+pub mod event_detector;
 pub mod relation_engine;
+pub mod user_emotion_analyzer;
 
 // Temporary shim: re-export the rest from `oclivenewnew-tauri`.
 //
 // Goal: progressively migrate modules here and remove this dependency.
-pub use oclivenewnew_tauri::domain::event_detector;
 pub use oclivenewnew_tauri::domain::event_estimator;
 pub use oclivenewnew_tauri::domain::event_impact_ai;
 pub use oclivenewnew_tauri::domain::knowledge_loader;
@@ -29,5 +30,4 @@ pub use oclivenewnew_tauri::domain::prompt_assembler;
 pub use oclivenewnew_tauri::domain::prompt_builder;
 pub use oclivenewnew_tauri::domain::repository;
 pub use oclivenewnew_tauri::domain::role_manager;
-pub use oclivenewnew_tauri::domain::user_emotion_analyzer;
 pub use oclivenewnew_tauri::domain::user_identity;
