@@ -865,6 +865,58 @@ async function onPackSelectedPlugin(): Promise<void> {
             </div>
           </section>
 
+          <section class="pm-section">
+            <div class="pm-section-head">
+              <h3 class="pm-h3">Profile（特征码/一键部署）</h3>
+              <div class="pm-section-actions">
+                <button
+                  type="button"
+                  class="pm-btn secondary pm-btn--sm"
+                  :disabled="profilePreviewLoading"
+                  @click="onPickProfilePreview"
+                >
+                  {{ profilePreviewLoading ? "读取中…" : "选择 Profile 文件" }}
+                </button>
+                <button
+                  v-if="profilePreview"
+                  type="button"
+                  class="pm-btn primary pm-btn--sm"
+                  :disabled="profileApplyLoading"
+                  @click="onApplyProfile"
+                >
+                  {{ profileApplyLoading ? "应用中…" : "应用 Profile" }}
+                </button>
+              </div>
+            </div>
+            <p class="pm-hint">
+              Profile 会按声明的 source 同步索引并逐个安装插件（每个插件都要确认权限），然后把 backends 写入当前会话的后端覆盖。
+            </p>
+            <div v-if="profilePreview" class="pm-profile-preview">
+              <p class="pm-muted">
+                <strong>{{ profilePreview.name }}</strong>
+                <span class="pm-muted"> · {{ profilePreview.id }} · v{{ profilePreview.version }}</span>
+              </p>
+              <p v-if="(profilePreview.marketSources ?? []).length" class="pm-muted">
+                市场源：{{ profilePreview.marketSources.join("、") }}
+              </p>
+              <p class="pm-muted">
+                开发者模式：{{ profilePreview.developerMode ? "开启" : "关闭" }}
+              </p>
+              <p v-if="(profilePreview.plugins ?? []).length" class="pm-muted">
+                插件：{{ profilePreview.plugins.map((x) => x.id).join("、") }}
+              </p>
+              <p v-if="profilePreview.backends" class="pm-muted">
+                后端覆盖：{{
+                  Object.entries(profilePreview.backends)
+                    .filter(([, v]) => !!(v ?? "").toString().trim())
+                    .map(([k, v]) => `${k}=${v}`)
+                    .join("，")
+                }}
+              </p>
+            </div>
+            <p v-else class="pm-muted">尚未选择 Profile。</p>
+          </section>
+
           <section
             v-if="roleStore.roleInfo.authorPack?.suggested_plugin_backends"
             class="pm-section"
@@ -1856,6 +1908,13 @@ async function onPackSelectedPlugin(): Promise<void> {
 .pm-shell-chip--warn {
   color: var(--danger-600, #c0392b);
   border-color: color-mix(in srgb, var(--danger-600, #c0392b) 40%, var(--border-light));
+}
+
+.pm-profile-preview {
+  padding: 10px 12px;
+  border: 1px solid var(--border-light);
+  border-radius: 12px;
+  background: var(--bg-elevated);
 }
 
 /* 已安装区：侧栏目录 + 右侧单一配置与调试台 */
