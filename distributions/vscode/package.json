@@ -12,7 +12,8 @@
     "onCommand:oclive.connect",
     "onCommand:oclive.disconnect",
     "onCommand:oclive.showChat",
-    "onCommand:oclive.selectRole"
+    "onCommand:oclive.selectRole",
+    "onCommand:oclive.kernelHelp"
   ],
   "main": "./out/extension.js",
   "contributes": {
@@ -32,6 +33,10 @@
       {
         "command": "oclive.selectRole",
         "title": "Oclive: Select Role"
+      },
+      {
+        "command": "oclive.kernelHelp",
+        "title": "Oclive: Kernel Server Help"
       }
     ],
     "configuration": {

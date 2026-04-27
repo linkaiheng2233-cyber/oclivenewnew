@@ -5,6 +5,7 @@
 //   2. Oclive: Disconnect — 断开连接
 //   3. Oclive: Show Chat — 打开 webview 聊天面板（发送消息 → 显示 reply）
 //   4. Oclive: Select Role — 选择 role_id（用于 session.create / chat）
+//   5. Oclive: Kernel Server Help — 显示启动内核服务端的命令与配置
 
 import * as vscode from "vscode";
 import { connectOocp, OocpClient, OocpCapabilities } from "@oclive/oocp-client";
@@ -57,6 +58,9 @@ export function activate(context: vscode.ExtensionContext) {
     vscode.commands.registerCommand("oclive.selectRole", () =>
       selectRole(context),
     ),
+  );
+  context.subscriptions.push(
+    vscode.commands.registerCommand("oclive.kernelHelp", () => kernelHelp()),
   );
 }
 
@@ -168,6 +172,39 @@ function updateStatusBar(): void {
     statusBarItem.command = "oclive.connect";
   }
   statusBarItem.show();
+}
+
+function kernelHelp(): void {
+  const cmd = "npm run oocp:kernel:serve";
+  const env = [
+    "OOCP_API_PORT=48888 (default)",
+    "OOCP_API_TOKEN=<token> (optional auth)",
+    "OCLIVE_ROLES_DIR=<path> (optional roles root)",
+    "OCLIVE_DB_PATH=<path> (optional sqlite db)",
+    "OCLIVE_APP_DATA_DIR=<path> (optional app data dir)",
+  ].join("\n");
+
+  void vscode.window
+    .showInformationMessage(
+      "Oclive Kernel Server (recommended)\n\n" +
+        `Start:\n  ${cmd}\n\n` +
+        "Env (optional):\n" +
+        env +
+        "\n\nTip: set oclive.oocp.url to ws://127.0.0.1:<port>/oocp",
+      "Copy start command",
+      "Open settings",
+    )
+    .then(async (picked) => {
+      if (picked === "Copy start command") {
+        await vscode.env.clipboard.writeText(cmd);
+        vscode.window.showInformationMessage("Copied: " + cmd);
+      } else if (picked === "Open settings") {
+        void vscode.commands.executeCommand(
+          "workbench.action.openSettings",
+          "oclive.oocp.url",
+        );
+      }
+    });
 }
 
 // ── 角色选择 ────────────────────────────────────────────────────────────────
