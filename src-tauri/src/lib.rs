@@ -396,6 +396,8 @@ pub fn run() {
             api::plugin_index::get_plugin_market_sources_config,
             api::plugin_index::set_plugin_market_developer_mode,
             api::plugin_index::set_plugin_index_sources,
+            api::plugin_permissions::get_plugin_permission_grants,
+            api::plugin_permissions::set_plugin_permission_grant,
             api::plugin_config::get_plugin_settings_ui,
             api::plugin_config::set_plugin_settings_config,
         ])

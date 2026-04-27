@@ -203,9 +203,9 @@ fn validate_bridge(
                 )
                 .await
         });
-        return Err(ApiError::PermissionDenied {
+        return Err(ApiError::PluginPermissionNotGranted {
             message: format!(
-                "[PLUGIN_PERMISSION_NOT_GRANTED] permission {:?} not granted for plugin {}",
+                "permission {:?} not granted for plugin {}",
                 needed.as_str(),
                 plugin_id
             ),

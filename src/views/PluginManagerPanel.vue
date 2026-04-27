@@ -191,6 +191,15 @@ async function onInstallMarketEntry(row: PluginMarketEntryDto) {
     );
     return;
   }
+  const perms = (row.permissions ?? []).map((s) => s.trim()).filter(Boolean);
+  if (perms.length > 0) {
+    const ok = window.confirm(
+      `该插件声明以下权限（安装后可在“已安装插件→权限”中随时调整）：\n\n${perms
+        .map((p) => `- ${p}`)
+        .join("\n")}\n\n是否继续安装？`,
+    );
+    if (!ok) return;
+  }
   try {
     // 默认安装走索引内版本解析（git tag clone）；仅开发者模式才应允许自定义 gitUrl 覆盖
     await pluginStore.installFromPluginMarket(row.id, null);
@@ -219,6 +228,15 @@ function marketPickedVersionForRow(row: PluginMarketEntryDto): string {
 async function onInstallMarketVersion(row: PluginMarketEntryDto) {
   const v = marketPickedVersionForRow(row);
   if (!v?.trim()) return;
+  const perms = (row.permissions ?? []).map((s) => s.trim()).filter(Boolean);
+  if (perms.length > 0) {
+    const ok = window.confirm(
+      `该插件声明以下权限（安装后可在“已安装插件→权限”中随时调整）：\n\n${perms
+        .map((p) => `- ${p}`)
+        .join("\n")}\n\n是否继续安装 v${v}？`,
+    );
+    if (!ok) return;
+  }
   try {
     await pluginStore.installVersionFromPluginMarket(row.id, v);
     showToast(

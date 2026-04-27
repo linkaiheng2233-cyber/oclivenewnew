@@ -1142,6 +1142,16 @@ export interface PluginMarketSourcesConfigDto {
   pluginIndexSources: string[];
 }
 
+export interface PluginPermissionGrantDto {
+  permission: string;
+  enabled: boolean;
+}
+
+export interface GetPluginPermissionGrantsResponseDto {
+  pluginId: string;
+  grants: PluginPermissionGrantDto[];
+}
+
 export interface InstallPluginFromMarketResponseDto {
   installedPluginId: string;
 }
@@ -1243,6 +1253,25 @@ export async function setPluginIndexSources(
     "set_plugin_index_sources",
     { req: { sources } },
   );
+}
+
+export async function getPluginPermissionGrants(
+  pluginId: string,
+): Promise<GetPluginPermissionGrantsResponseDto> {
+  return invokeWithFriendlyError<GetPluginPermissionGrantsResponseDto>(
+    "get_plugin_permission_grants",
+    { pluginId },
+  );
+}
+
+export async function setPluginPermissionGrant(
+  pluginId: string,
+  permission: string,
+  enabled: boolean,
+): Promise<void> {
+  return invokeWithFriendlyError<void>("set_plugin_permission_grant", {
+    req: { pluginId, permission, enabled },
+  });
 }
 
 export interface UiSchemaFieldDto {
