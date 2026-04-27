@@ -441,7 +441,7 @@ pub fn install_plugin_from_market(
             .collect::<Vec<_>>();
         perms.sort();
         perms.dedup();
-        let _ = tauri::async_runtime::block_on(async {
+        tauri::async_runtime::block_on(async {
             for p in perms {
                 let _ = state
                     .db_manager
@@ -543,7 +543,7 @@ pub fn install_plugin_version_from_market(
             .collect();
         perms.sort();
         perms.dedup();
-        let _ = tauri::async_runtime::block_on(async {
+        tauri::async_runtime::block_on(async {
             for p in perms {
                 let _ = state
                     .db_manager
@@ -587,7 +587,7 @@ pub fn install_plugin_from_git(
             // 开发者模式侧载：默认把 manifest bridge 权限作为授权种子，便于调试
             let perms = bridge_permissions_from_manifest(&m);
             if !perms.is_empty() {
-                let _ = tauri::async_runtime::block_on(async {
+                tauri::async_runtime::block_on(async {
                     for p in &perms {
                         let _ = state
                             .db_manager

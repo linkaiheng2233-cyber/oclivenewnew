@@ -28,6 +28,7 @@ import {
   type PluginMarketEntryDto,
 } from "../utils/tauri-api";
 import { getPluginMarketSourcesConfig } from "../utils/tauri-api";
+import { OFFICIAL_UI_SLOTS } from "../lib/shellCapabilities";
 
 const pluginStore = usePluginStore();
 const roleStore = useRoleStore();
@@ -144,6 +145,12 @@ const selectedWorkspacePluginId = ref("");
 const selectedWorkspacePlugin = computed(() =>
   pluginStore.catalog.find((c) => c.id === selectedWorkspacePluginId.value) ?? null,
 );
+
+const supportedUiSlotsForShell = computed(() => pluginStore.supportedUiSlots ?? []);
+const unsupportedOfficialUiSlots = computed(() => {
+  const supported = new Set(supportedUiSlotsForShell.value);
+  return OFFICIAL_UI_SLOTS.filter((s) => !supported.has(s));
+});
 
 function selectWorkspacePlugin(id: string): void {
   selectedWorkspacePluginId.value = id;
@@ -670,6 +677,34 @@ async function onPackSelectedPlugin(): Promise<void> {
                 />
                 全局默认
               </label>
+            </div>
+          </section>
+
+          <section class="pm-section">
+            <h3 class="pm-h3">Shell 能力（Module 8）</h3>
+            <p class="pm-hint">
+              插槽属于前端壳能力集；插件可按能力渲染/降级。后端 bootstrap 会返回本发行版支持的插槽名。
+            </p>
+            <p class="pm-muted" v-if="supportedUiSlotsForShell.length === 0">
+              未提供 supportedUiSlots（可能是旧版内核/后端），将按“全支持”兼容处理。
+            </p>
+            <div v-else class="pm-shell-slots">
+              <div class="pm-shell-slots-row">
+                <span class="pm-muted">支持：</span>
+                <span class="pm-shell-chip" v-for="s in supportedUiSlotsForShell" :key="`sup-${s}`">
+                  {{ s }}
+                </span>
+              </div>
+              <div v-if="unsupportedOfficialUiSlots.length > 0" class="pm-shell-slots-row">
+                <span class="pm-muted">不支持（官方插槽）：</span>
+                <span
+                  class="pm-shell-chip pm-shell-chip--warn"
+                  v-for="s in unsupportedOfficialUiSlots"
+                  :key="`unsup-${s}`"
+                >
+                  {{ s }}
+                </span>
+              </div>
             </div>
           </section>
 
@@ -1609,6 +1644,33 @@ async function onPackSelectedPlugin(): Promise<void> {
 .pm-h3 {
   margin: 0;
   font-size: 14px;
+}
+.pm-shell-slots {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin-top: 8px;
+}
+.pm-shell-slots-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  align-items: center;
+  font-size: 12px;
+}
+.pm-shell-chip {
+  font-size: 11px;
+  padding: 2px 8px;
+  border-radius: 999px;
+  border: 1px solid var(--border-light);
+  background: var(--bg-elevated);
+  color: var(--text-secondary);
+  font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono",
+    "Courier New", monospace;
+}
+.pm-shell-chip--warn {
+  color: var(--danger-600, #c0392b);
+  border-color: color-mix(in srgb, var(--danger-600, #c0392b) 40%, var(--border-light));
 }
 
 /* 已安装区：侧栏目录 + 右侧单一配置与调试台 */

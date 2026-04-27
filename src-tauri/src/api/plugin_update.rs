@@ -282,7 +282,7 @@ pub fn extract_plugin_zip(
             );
         }
     }
-    let _ = tauri::async_runtime::block_on(async {
+    tauri::async_runtime::block_on(async {
         for p in perms {
             let _ = state
                 .db_manager

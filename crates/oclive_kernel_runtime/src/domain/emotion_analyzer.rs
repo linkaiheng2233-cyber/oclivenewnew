@@ -319,7 +319,7 @@ impl EmotionAnalyzer {
         let intensity = Self::calculate_intensity(result);
         format!(
             "[emotion dominant=\"{}\" intensity=\"{:.2}\"]",
-            dominant.to_string(),
+            dominant,
             intensity
         )
     }

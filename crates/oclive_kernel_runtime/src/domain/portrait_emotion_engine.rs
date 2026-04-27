@@ -289,7 +289,7 @@ happy, sad, angry, neutral, excited, confused, shy
         core = core_personality.to_json_vec(),
         cur = personality.to_json_vec(),
         uemo = user_emotion_str,
-        bemo = bot_emotion.to_string(),
+        bemo = bot_emotion,
         turns = turns,
         no_history_note = no_history_note,
         um = user_message,

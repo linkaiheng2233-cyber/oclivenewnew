@@ -57,7 +57,10 @@ export const SLOT_LAUNCHER_PALETTE = "launcher.palette";
 /** 调试面板扩展 */
 export const SLOT_DEBUG_DOCK = "debug.dock";
 
-/** 与后端 `EMBEDDED_UI_SLOT_NAMES` 顺序一致（用于遍历）。 */
+/**
+ * 与后端 `EMBEDDED_UI_SLOT_NAMES` 顺序一致（用于遍历）。
+ * 注意：官方插槽名的“单一真相源”在 `src/lib/shellCapabilities.ts`。
+ */
 export const ALL_EMBEDDED_SLOT_NAMES: readonly string[] = [
   SLOT_CHAT_TOOLBAR,
   SLOT_SETTINGS_PANEL,

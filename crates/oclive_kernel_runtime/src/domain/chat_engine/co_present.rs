@@ -55,7 +55,7 @@ pub(crate) async fn process_co_present(
     let mut personality = state.get_current_personality(srid, role).await?;
 
     let analyzed = pl.emotion.analyze(user_message)?;
-    let emotion_result: crate::domain::emotion_analyzer::EmotionResult = analyzed.into();
+    let emotion_result: crate::domain::emotion_analyzer::EmotionResult = analyzed;
     let user_emotion = emotion_result.to_emotion();
     let user_emotion_str = user_emotion.to_string();
     let user_emotion_prompt =
@@ -243,7 +243,7 @@ pub(crate) async fn process_co_present(
         relation_after.as_str(),
     ));
     let bot_analyzed = pl.emotion.analyze(&reply)?;
-    let bot_emotion_result: crate::domain::emotion_analyzer::EmotionResult = bot_analyzed.into();
+    let bot_emotion_result: crate::domain::emotion_analyzer::EmotionResult = bot_analyzed;
     let previous_emotion = state.db_manager.get_current_emotion(srid).await?;
     let bot_emotion = policies
         .emotion

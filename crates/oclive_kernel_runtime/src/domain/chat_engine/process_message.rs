@@ -84,7 +84,7 @@ pub async fn process_message(
             .set_user_presence_scene(srid, scene_id.as_str())
             .await?;
         let analyzed = pl.emotion.analyze(req.user_message.as_str())?;
-        let emotion_result: crate::domain::emotion_analyzer::EmotionResult = analyzed.into();
+        let emotion_result: crate::domain::emotion_analyzer::EmotionResult = analyzed;
         let user_relation_key = resolve_effective_user_relation_key(
             state,
             role.as_ref(),
@@ -203,7 +203,7 @@ async fn process_remote_stub(
     let user_message = req.user_message.as_str();
     let pl = state.resolved_plugins_for_session(role, Some(srid));
     let analyzed = pl.emotion.analyze(user_message)?;
-    let emotion_result: crate::domain::emotion_analyzer::EmotionResult = analyzed.into();
+    let emotion_result: crate::domain::emotion_analyzer::EmotionResult = analyzed;
     let user_relation_key: String =
         resolve_effective_user_relation_key(state, role, srid, Some(scene_id)).await?;
     let relation_before = state
@@ -257,6 +257,7 @@ async fn process_remote_stub(
     })
 }
 
+#[allow(clippy::too_many_arguments)]
 async fn process_remote_life(
     state: &KernelAppState,
     req: &SendMessageRequest,
@@ -283,7 +284,7 @@ async fn process_remote_life(
 
     let pl = state.resolved_plugins_for_session(role, Some(srid));
     let analyzed = pl.emotion.analyze(user_message)?;
-    let emotion_result: crate::domain::emotion_analyzer::EmotionResult = analyzed.into();
+    let emotion_result: crate::domain::emotion_analyzer::EmotionResult = analyzed;
     let user_emotion = emotion_result.to_emotion();
     let user_emotion_str = user_emotion.to_string();
 
@@ -442,7 +443,7 @@ async fn process_remote_life(
         relation_after.as_str(),
     ));
     let bot_analyzed = pl.emotion.analyze(&reply)?;
-    let bot_emotion_result: crate::domain::emotion_analyzer::EmotionResult = bot_analyzed.into();
+    let bot_emotion_result: crate::domain::emotion_analyzer::EmotionResult = bot_analyzed;
     let previous_emotion = state.db_manager.get_current_emotion(srid).await?;
     let policies = state.policies_for_scene(Some(scene_id));
     let bot_emotion = policies

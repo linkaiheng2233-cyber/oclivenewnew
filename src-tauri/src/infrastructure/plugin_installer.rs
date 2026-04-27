@@ -220,8 +220,8 @@ fn parse_ed25519_pubkey_base64(s: &str) -> Result<VerifyingKey, AppError> {
         .as_slice()
         .try_into()
         .map_err(|_| AppError::InvalidParameter("ed25519 public_key must be 32 bytes".into()))?;
-    Ok(VerifyingKey::from_bytes(&arr)
-        .map_err(|e| AppError::InvalidParameter(format!("invalid ed25519 public_key: {}", e)))?)
+    VerifyingKey::from_bytes(&arr)
+        .map_err(|e| AppError::InvalidParameter(format!("invalid ed25519 public_key: {}", e)))
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
