@@ -131,7 +131,11 @@ async function connect(): Promise<void> {
     statusBarItem.text = "$(error) Oclive OOCP (failed)";
     statusBarItem.tooltip = msg;
     statusBarItem.show();
-    vscode.window.showErrorMessage("Oclive 连接失败: " + msg);
+    vscode.window.showErrorMessage(
+      "Oclive 连接失败: " +
+        msg +
+        "\n\n请先启动本地内核服务端（推荐）:\n- npm run oocp:kernel:serve\n或使用旧的桌面端 API 模式:\n- npm run oocp:serve",
+    );
     client = null;
   }
 }

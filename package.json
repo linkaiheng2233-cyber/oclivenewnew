@@ -30,6 +30,7 @@
     "check:release": "npm run build && npm run check:rust:fmt && npm run check:rust:clippy && npm run check:rust:test:all",
     "scaffold:ui-plugin": "node scripts/scaffold-ui-slot-plugin.mjs",
     "oocp:serve": "cargo run -p oclivenewnew-tauri -- --api",
+    "oocp:kernel:serve": "cargo run -p oclive_kernel_server",
     "oocp:smoke": "npx tsx tools/oocp-client/examples/smoke.ts",
     "oocp:smoke:spawn": "node scripts/oocp-smoke-spawn.mjs"
   },

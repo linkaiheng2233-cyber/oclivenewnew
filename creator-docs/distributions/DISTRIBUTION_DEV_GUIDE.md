@@ -20,9 +20,14 @@
 在本仓库根目录：
 
 ```bash
-# 启动 HTTP API + OOCP WebSocket（默认端口 48888）
-npm run oocp:serve
+# 启动「纯内核」服务端（推荐，默认端口 48888）
+npm run oocp:kernel:serve
 ```
+
+说明：
+
+- `oocp:kernel:serve` 启动 `oclive_kernel_server`（不依赖 Tauri）。
+- `oocp:serve` 仍保留：启动桌面端运行时的 `--api` 模式（兼容旧工作流），但平台化方向建议以纯内核为主。
 
 可选环境变量：
 
