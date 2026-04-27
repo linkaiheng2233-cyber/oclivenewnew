@@ -15,7 +15,7 @@ const URL = process.argv[2] || "ws://127.0.0.1:48888/oocp";
 async function main() {
   console.log(`\n[smoke] OOCP smoke test → ${URL}`);
   console.log(
-    "[smoke] 确保先启动 core：在项目根运行 `npm run oocp:serve` (另开终端)",
+    "[smoke] 确保先启动 core：在项目根运行 `npm run oocp:kernel:serve` (另开终端)",
   );
   console.log("");
 
@@ -43,7 +43,7 @@ async function main() {
   } catch (e: unknown) {
     const msg = e instanceof Error ? e.message : String(e);
     console.error(`\n[FAIL] 无法连接到 OOCP 服务端: ${msg}`);
-    console.error("[smoke] 请确认 core 已启动: npm run oocp:serve");
+    console.error("[smoke] 请确认 core 已启动: npm run oocp:kernel:serve");
     process.exit(1);
   }
 

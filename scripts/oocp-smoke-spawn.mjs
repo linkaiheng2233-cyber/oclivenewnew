@@ -102,10 +102,18 @@ async function main() {
     },
   );
 
-  const onExit = (code) => {
-    console.error(`[spawn-smoke] core exited early (code=${code ?? "null"})`);
-  };
-  child.once("exit", onExit);
+  let coreStartedOk = false;
+  let stopping = false;
+  child.once("exit", (code, signal) => {
+    if (stopping) return;
+    const reason =
+      signal ? `signal=${signal}` : `code=${code ?? "null"}`;
+    if (coreStartedOk) {
+      console.error(`[spawn-smoke] core exited unexpectedly (${reason})`);
+    } else {
+      console.error(`[spawn-smoke] core exited early (${reason})`);
+    }
+  });
 
   // First run may compile from scratch; allow generous warmup.
   const ready = await waitForHealth({ port, timeoutMs: 180000 });
@@ -113,9 +121,11 @@ async function main() {
     console.error(
       `[FAIL] core did not become healthy in time (http://127.0.0.1:${port}/health)`,
     );
+    stopping = true;
     killChild(child);
     process.exit(1);
   }
+  coreStartedOk = true;
 
   console.log("");
   console.log("[spawn-smoke] core healthy, running smoke...");
@@ -133,6 +143,7 @@ async function main() {
 
   console.log("");
   console.log("[spawn-smoke] stopping core...");
+  stopping = true;
   killChild(child);
 
   // Give the child a moment to exit cleanly.
