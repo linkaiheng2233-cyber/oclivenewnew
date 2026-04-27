@@ -14,6 +14,7 @@ use crate::api::role::{delete_role_impl, get_role_info_impl, list_roles_impl, sw
 use crate::api::settings::update_settings_impl;
 use crate::api::time::get_time_state_impl;
 use crate::domain::chat_engine::{conversation_state_role_id, process_message};
+use crate::domain::permission_tokens::permission_token_for_bridge_command;
 use crate::infrastructure::directory_plugins::{normalize_plugin_rel, OclivePluginManifest};
 use crate::infrastructure::import_role_pack;
 use crate::models::dto::CreateEventRequest;
@@ -37,21 +38,7 @@ pub struct PluginBridgeInvokeRequest {
 
 /// 桥接命令名 → manifest `bridge.invoke` 中需声明的权限串（与命令名不同则二者任一命中即可）。
 fn required_permission_token(cmd: &str) -> String {
-    match cmd {
-        "get_conversation" => "read:conversation".to_string(),
-        "get_roles" => "read:roles".to_string(),
-        "get_current_role" => "read:current_role".to_string(),
-        "update_memory" | "delete_memory" => "write:memory".to_string(),
-        "update_emotion" => "write:emotion".to_string(),
-        "update_event" => "write:event".to_string(),
-        "update_prompt" => "write:prompt".to_string(),
-        "export_conversation" => "export:conversation".to_string(),
-        "import_role" => "import:role".to_string(),
-        "delete_role" => "delete:role".to_string(),
-        "update_settings" => "write:settings".to_string(),
-        "get_conversation_list" => "read:conversations".to_string(),
-        _ => cmd.to_string(),
-    }
+    permission_token_for_bridge_command(cmd)
 }
 
 #[inline]

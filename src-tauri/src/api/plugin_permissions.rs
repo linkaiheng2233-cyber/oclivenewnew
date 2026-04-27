@@ -1,4 +1,5 @@
 use crate::api::error::ApiError;
+use crate::domain::permission_tokens::{PermissionTokenInfo, PERMISSION_TOKENS_V1};
 use crate::state::AppState;
 use serde::{Deserialize, Serialize};
 use tauri::State;
@@ -73,4 +74,17 @@ pub async fn set_plugin_permission_grant(
         .await
         .map_err(|e| e.to_frontend_error())?;
     Ok(())
+}
+
+#[derive(Debug, Clone, Serialize)]
+#[serde(rename_all = "camelCase")]
+pub struct ListPermissionTokensResponse {
+    pub tokens: Vec<PermissionTokenInfo>,
+}
+
+#[tauri::command]
+pub async fn list_permission_tokens() -> Result<ListPermissionTokensResponse, String> {
+    Ok(ListPermissionTokensResponse {
+        tokens: PERMISSION_TOKENS_V1.to_vec(),
+    })
 }
