@@ -10,6 +10,7 @@
 use crate::domain::core::oocp_handler::{MethodError, OocpMethodHandler};
 use crate::models::oocp::{OocpErrorCode, OocpEvent};
 use crate::state::AppState;
+use chrono::Local;
 use serde_json::{json, Value};
 
 use std::sync::Arc;
@@ -82,6 +83,27 @@ impl OocpMethodHandler for TauriOocpHandler {
             })?
             .map_err(|e| err(OocpErrorCode::RoleNotFound, e.to_string()))?;
 
+        // Ensure minimal runtime rows exist so get_state / switches can query DB.
+        self.state
+            .db_manager
+            .ensure_role_runtime(role_id)
+            .await
+            .map_err(|e| err(OocpErrorCode::Internal, e.to_frontend_error()))?;
+        // Seed neutral emotion if missing (best-effort).
+        let current_emotion = self
+            .state
+            .db_manager
+            .get_current_emotion(role_id)
+            .await
+            .map_err(|e| err(OocpErrorCode::Internal, e.to_frontend_error()))?;
+        if current_emotion.is_none() {
+            let _ = self
+                .state
+                .db_manager
+                .set_current_emotion(role_id, "neutral")
+                .await;
+        }
+
         let session_ns = make_session_ns(role_id, session_id);
 
         Ok(json!({
@@ -107,18 +129,75 @@ impl OocpMethodHandler for TauriOocpHandler {
             )
         })?;
 
-        // TODO P0-C: 委托到 role_manager / DB 查询角色运行时状态。
-        // 当前为占位实现。
+        self.state
+            .db_manager
+            .ensure_role_runtime(role_id)
+            .await
+            .map_err(|e| err(OocpErrorCode::Internal, e.to_frontend_error()))?;
+
+        let current_scene = self
+            .state
+            .db_manager
+            .get_current_scene(role_id)
+            .await
+            .map_err(|e| err(OocpErrorCode::Internal, e.to_frontend_error()))?;
+        let user_presence_scene = self
+            .state
+            .db_manager
+            .get_user_presence_scene(role_id)
+            .await
+            .map_err(|e| err(OocpErrorCode::Internal, e.to_frontend_error()))?;
+        let current_favorability = self
+            .state
+            .db_manager
+            .get_favorability(role_id)
+            .await
+            .map_err(|e| err(OocpErrorCode::Internal, e.to_frontend_error()))?
+            .unwrap_or(0.0);
+        let relation_state = self
+            .state
+            .db_manager
+            .get_relation_state(role_id)
+            .await
+            .map_err(|e| err(OocpErrorCode::Internal, e.to_frontend_error()))?
+            .unwrap_or_else(|| "Stranger".to_string());
+        let current_emotion = self
+            .state
+            .db_manager
+            .get_current_emotion(role_id)
+            .await
+            .map_err(|e| err(OocpErrorCode::Internal, e.to_frontend_error()))?
+            .unwrap_or_else(|| "neutral".to_string());
+        let interaction_mode = self
+            .state
+            .db_manager
+            .get_interaction_mode(role_id)
+            .await
+            .map_err(|e| err(OocpErrorCode::Internal, e.to_frontend_error()))?;
+        let remote_life_enabled = self
+            .state
+            .db_manager
+            .get_remote_life_enabled(role_id)
+            .await
+            .map_err(|e| err(OocpErrorCode::Internal, e.to_frontend_error()))?;
+        let virtual_time_ms = self
+            .state
+            .db_manager
+            .get_virtual_time_ms(role_id)
+            .await
+            .map_err(|e| err(OocpErrorCode::Internal, e.to_frontend_error()))?
+            .unwrap_or(0);
+
         Ok(json!({
             "role_id": role_id,
-            "current_scene": "default",
-            "current_favorability": 50,
-            "relation_state": "neutral",
-            "current_emotion": "neutral",
-            "interaction_mode": "chat",
-            "remote_life_enabled": false,
-            "user_presence_scene": "default",
-            "virtual_time_ms": 0,
+            "current_scene": current_scene,
+            "current_favorability": current_favorability,
+            "relation_state": relation_state,
+            "current_emotion": current_emotion,
+            "interaction_mode": interaction_mode.as_str(),
+            "remote_life_enabled": remote_life_enabled,
+            "user_presence_scene": user_presence_scene,
+            "virtual_time_ms": virtual_time_ms,
         }))
     }
 
@@ -127,15 +206,25 @@ impl OocpMethodHandler for TauriOocpHandler {
         session_ns: &str,
         scene_id: &str,
     ) -> Result<Value, MethodError> {
-        let (_role_id, _session_id) = parse_session_ns(session_ns).ok_or_else(|| {
+        let (role_id, _session_id) = parse_session_ns(session_ns).ok_or_else(|| {
             err(
                 OocpErrorCode::InvalidParams,
                 format!("无效的 session_ns: {}", session_ns),
             )
         })?;
 
-        // TODO P0-C: 委托到 scene_store / role_manager 加载场景配置。
-        // 当前为占位实现。
+        // Validate scene id exists in the role pack.
+        let scenes = self
+            .state
+            .storage
+            .list_scene_ids(role_id)
+            .map_err(|e| err(OocpErrorCode::InvalidParams, e.to_frontend_error()))?;
+        if !scenes.iter().any(|s| s == scene_id) {
+            return Err(err(
+                OocpErrorCode::InvalidParams,
+                format!("scene_id not in role pack: {}", scene_id),
+            ));
+        }
 
         self.push_event(OocpEvent {
             msg_type: "event",
@@ -148,9 +237,26 @@ impl OocpMethodHandler for TauriOocpHandler {
             }),
         });
 
+        // OOCP v0.1: default to "together" semantics.
+        self.state
+            .db_manager
+            .ensure_role_runtime(role_id)
+            .await
+            .map_err(|e| err(OocpErrorCode::Internal, e.to_frontend_error()))?;
+        self.state
+            .db_manager
+            .set_current_scene(role_id, scene_id)
+            .await
+            .map_err(|e| err(OocpErrorCode::Internal, e.to_frontend_error()))?;
+        self.state
+            .db_manager
+            .set_user_presence_scene(role_id, scene_id)
+            .await
+            .map_err(|e| err(OocpErrorCode::Internal, e.to_frontend_error()))?;
+
         Ok(json!({
             "scene_id": scene_id,
-            "scene_name": scene_id,
+            "scene_name": self.state.storage.scene_display_name(role_id, scene_id),
         }))
     }
 
@@ -159,16 +265,25 @@ impl OocpMethodHandler for TauriOocpHandler {
         session_ns: &str,
         mode: &str,
     ) -> Result<Value, MethodError> {
-        let (_role_id, _session_id) = parse_session_ns(session_ns).ok_or_else(|| {
+        let (role_id, _session_id) = parse_session_ns(session_ns).ok_or_else(|| {
             err(
                 OocpErrorCode::InvalidParams,
                 format!("无效的 session_ns: {}", session_ns),
             )
         })?;
 
-        // TODO P0-C: 委托到 role_runtime DB 更新。
-        // 当前为占位实现。
-        Ok(json!({ "mode": mode }))
+        self.state
+            .db_manager
+            .ensure_role_runtime(role_id)
+            .await
+            .map_err(|e| err(OocpErrorCode::Internal, e.to_frontend_error()))?;
+        self.state
+            .db_manager
+            .set_interaction_mode_for_role(role_id, mode.trim())
+            .await
+            .map_err(|e| err(OocpErrorCode::InvalidParams, e.to_frontend_error()))?;
+
+        Ok(json!({ "mode": mode.trim() }))
     }
 
     async fn session_export_chat_logs(
@@ -177,18 +292,77 @@ impl OocpMethodHandler for TauriOocpHandler {
         format: &str,
         _path: Option<&str>,
     ) -> Result<Value, MethodError> {
-        let (_role_id, _) = parse_session_ns(session_ns).ok_or_else(|| {
+        let (role_id, _) = parse_session_ns(session_ns).ok_or_else(|| {
             err(
                 OocpErrorCode::InvalidParams,
                 format!("无效的 session_ns: {}", session_ns),
             )
         })?;
 
-        // TODO P0-C: 委托到 export 模块。
-        // 当前为占位实现。
+        let fmt = format.trim().to_ascii_lowercase();
+        if fmt != "json" && fmt != "txt" {
+            return Err(err(
+                OocpErrorCode::InvalidParams,
+                "format must be json or txt",
+            ));
+        }
+
+        let turns = self
+            .state
+            .db_manager
+            .list_short_term_turns(role_id)
+            .await
+            .map_err(|e| err(OocpErrorCode::Internal, e.to_frontend_error()))?;
+        let date = Local::now().format("%Y-%m-%d").to_string();
+
+        let role = self
+            .state
+            .load_role_cached(role_id)
+            .map_err(|e| err(OocpErrorCode::RoleNotFound, e.to_string()))?;
+
+        let suggested_filename = format!("Oclive_chat_{}_{}.{}", role.name, date, fmt);
+        let content = if fmt == "json" {
+            let items: Vec<Value> = turns
+                .into_iter()
+                .map(|(user, bot, _emotion, scene, at)| {
+                    json!({
+                        "at": at,
+                        "scene": scene,
+                        "user": user,
+                        "bot": bot,
+                    })
+                })
+                .collect();
+            serde_json::to_string_pretty(&json!({
+                "exported_at": Local::now().to_rfc3339(),
+                "app": "oclive",
+                "role_id": role.id,
+                "role_name": role.name,
+                "turns": items,
+            }))
+            .map_err(|e| err(OocpErrorCode::Internal, format!("serialize failed: {}", e)))?
+        } else {
+            let mut s = String::new();
+            s.push_str(&format!(
+                "# Oclive Chat Logs\nrole: {} ({})\nexported_at: {}\n\n",
+                role.name,
+                role.id,
+                Local::now().to_rfc3339()
+            ));
+            for (user, bot, _emotion, scene, at) in turns {
+                let sc = scene.as_deref().unwrap_or("-");
+                s.push_str(&format!(
+                    "[{}] scene: {}\nuser: {}\nbot: {}\n\n",
+                    at, sc, user, bot
+                ));
+            }
+            s
+        };
+
         Ok(json!({
-            "path": format!("export_{}.{}", session_ns, format),
-            "size_bytes": 0,
+            "format": fmt,
+            "suggested_filename": suggested_filename,
+            "content": content,
         }))
     }
 
