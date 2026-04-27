@@ -242,9 +242,8 @@ pub async fn serve_api(port: u16) -> Result<(), String> {
 
 pub async fn serve_api_with_options(opt: ApiServerOptions) -> Result<(), String> {
     let _ = std::fs::create_dir_all(&opt.app_data_dir);
-    let app_state = AppState::new(&opt.db_path, Some(opt.roles_dir), &opt.app_data_dir)
-        .await
-        .map_err(|e| e.to_string())?;
+    let app_state =
+        crate::state::build_app_state(&opt.db_path, Some(opt.roles_dir), &opt.app_data_dir).await?;
     let app_state = Arc::new(app_state);
 
     let app = api_router(app_state);
