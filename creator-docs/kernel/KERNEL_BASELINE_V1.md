@@ -39,6 +39,9 @@ Kernel 必须自带 builtin 路径（否则创作者必然要先搭一堆外部�
 - **LLM**：Ollama（本地）+ remote（HTTP JSON-RPC）两条路径
 - **Agent**：Builtin ReAct Agent（可调用 MCP tools；可查看 traces）
 
+> 提醒：前端 UI 不属于 Kernel（见 §3），但可以作为 **Module 8：Frontend Shell** 与 1–7 模块并列，围绕“可变内核”形成不同发行版体验：
+> - **[MODULE_8_FRONTEND_SHELL.md](./MODULE_8_FRONTEND_SHELL.md)**
+
 ---
 
 ## 2. Kernel 的标准化替换点（可插拔接口）

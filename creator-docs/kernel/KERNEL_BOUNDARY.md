@@ -12,6 +12,8 @@
 
 - **Kernel Baseline v1 文档（建议作为对外/验收基线）**：
   - **[KERNEL_BASELINE_V1.md](./KERNEL_BASELINE_V1.md)**
+- **Module 8：Frontend Shell（发行版 UI 模块）**：
+  - **[MODULE_8_FRONTEND_SHELL.md](./MODULE_8_FRONTEND_SHELL.md)**
 
 ---
 

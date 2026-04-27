@@ -877,6 +877,8 @@ export interface DirectoryPluginBootstrap {
   developerMode: boolean;
   /** 当前角色下已启用插件在 manifest `bridge.events` 中声明的宿主事件名。 */
   subscribedHostEvents: string[];
+  /** 前端壳（Module 8）支持的官方插槽名清单（稳定契约）。 */
+  supportedUiSlots: string[];
   uiSlots: PluginUiSlotInfo[];
 }
 

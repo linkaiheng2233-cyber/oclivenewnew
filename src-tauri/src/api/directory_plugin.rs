@@ -120,6 +120,8 @@ pub struct DirectoryPluginBootstrapDto {
     pub developer_mode: bool,
     /// 当前角色下、已启用插件在 manifest `bridge.events` 中声明的宿主事件名（去重排序）。
     pub subscribed_host_events: Vec<String>,
+    /// 前端壳（Module 8）支持的官方插槽名清单（稳定契约，用于发行版按能力渲染/降级）。
+    pub supported_ui_slots: Vec<String>,
     /// 非整壳插件在 `manifest.ui_slots` 中声明的嵌入 UI（主界面消费）。
     pub ui_slots: Vec<PluginUiSlotDto>,
 }
@@ -304,6 +306,10 @@ pub fn directory_plugin_bootstrap_dto(
         plugin_ids: plugin_ids_sorted,
         developer_mode: host.developer_effective(),
         subscribed_host_events,
+        supported_ui_slots: EMBEDDED_UI_SLOT_NAMES
+            .iter()
+            .map(|s| (*s).to_string())
+            .collect(),
         ui_slots,
     }
 }
