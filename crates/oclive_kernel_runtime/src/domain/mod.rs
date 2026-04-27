@@ -1,5 +1,6 @@
 pub mod adapters;
 pub mod chat_engine;
+pub mod chat_llm_fallback;
 pub mod chat_turn;
 pub mod chat_turn_rules;
 pub mod core;
@@ -8,7 +9,6 @@ pub mod relation_engine;
 // Temporary shim: re-export the rest from `oclivenewnew-tauri`.
 //
 // Goal: progressively migrate modules here and remove this dependency.
-pub use oclivenewnew_tauri::domain::chat_llm_fallback;
 pub use oclivenewnew_tauri::domain::complex_emotion;
 pub use oclivenewnew_tauri::domain::emotion_analyzer;
 pub use oclivenewnew_tauri::domain::event_detector;
