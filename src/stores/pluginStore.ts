@@ -351,11 +351,15 @@ export const usePluginStore = defineStore("plugin", {
         this.pluginUpdatesCheckLoading = false;
       }
     },
-    async installPluginFromLocalZip(pluginId: string, zipPath: string) {
+    async installPluginFromLocalZip(
+      pluginId: string,
+      zipPath: string,
+      acceptedPermissions?: string[] | null,
+    ) {
       this.extractingPluginId = pluginId;
       this.error = null;
       try {
-        await extractPluginZip(zipPath, pluginId);
+        await extractPluginZip(zipPath, pluginId, acceptedPermissions ?? null);
         await this.refresh();
         this.bootstrapEpoch += 1;
       } catch (e) {

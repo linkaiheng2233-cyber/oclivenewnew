@@ -210,6 +210,40 @@ impl DbManager {
         Ok(())
     }
 
+    pub async fn list_plugin_audit_logs(
+        &self,
+        plugin_id: &str,
+        limit: i64,
+    ) -> Result<Vec<(String, String, Option<String>, bool, String)>> {
+        let pid = plugin_id.trim();
+        if pid.is_empty() {
+            return Ok(vec![]);
+        }
+        let lim = limit.clamp(1, 200);
+        let rows = sqlx::query(
+            "SELECT created_at, action, permission, allowed, meta_json
+             FROM plugin_audit_log
+             WHERE plugin_id = ?
+             ORDER BY id DESC
+             LIMIT ?",
+        )
+        .bind(pid)
+        .bind(lim)
+        .fetch_all(&self.pool)
+        .await
+        .map_err(|e| AppError::DatabaseError(e.to_string()))?;
+        let mut out = Vec::with_capacity(rows.len());
+        for r in rows {
+            let created_at: String = r.try_get("created_at").unwrap_or_default();
+            let action: String = r.try_get("action").unwrap_or_default();
+            let permission: Option<String> = r.try_get("permission").ok();
+            let allowed: i64 = r.try_get("allowed").unwrap_or(0);
+            let meta_json: String = r.try_get("meta_json").unwrap_or_else(|_| "{}".to_string());
+            out.push((created_at, action, permission, allowed != 0, meta_json));
+        }
+        Ok(out)
+    }
+
     // ===== 记忆操作 =====
 
     /// 保存长期记忆

@@ -899,11 +899,49 @@ export async function checkPluginUpdates(
 export async function extractPluginZip(
   zipPath: string,
   pluginId: string,
+  acceptedPermissions?: string[] | null,
 ): Promise<void> {
   return invokeWithFriendlyError<void>("extract_plugin_zip", {
     zip_path: zipPath,
     plugin_id: pluginId,
+    accepted_permissions: acceptedPermissions ?? null,
   });
+}
+
+export interface PluginZipPermissionPreviewDto {
+  pluginId: string;
+  permissions: string[];
+}
+
+export async function previewPluginZipPermissions(
+  zipPath: string,
+): Promise<PluginZipPermissionPreviewDto> {
+  return invokeWithFriendlyError<PluginZipPermissionPreviewDto>(
+    "preview_plugin_zip_permissions",
+    { zip_path: zipPath },
+  );
+}
+
+export interface PluginAuditLogRowDto {
+  createdAt: string;
+  action: string;
+  permission?: string | null;
+  allowed: boolean;
+  metaJson: string;
+}
+
+export interface GetPluginAuditLogsResponseDto {
+  logs: PluginAuditLogRowDto[];
+}
+
+export async function getPluginAuditLogs(
+  pluginId: string,
+  limit?: number,
+): Promise<GetPluginAuditLogsResponseDto> {
+  return invokeWithFriendlyError<GetPluginAuditLogsResponseDto>(
+    "get_plugin_audit_logs",
+    { req: { pluginId, limit: limit ?? 50 } },
+  );
 }
 
 /** 同一 `role_id` 上并发的 bootstrap 合并为单次 IPC，避免多插槽同时挂载时重复打后端。 */

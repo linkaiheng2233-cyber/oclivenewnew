@@ -24,6 +24,7 @@ import { useRoleStore } from "../stores/roleStore";
 import {
   applyAuthorSuggestedPluginBackends,
   packPlugin,
+  previewPluginZipPermissions,
   type PluginMarketEntryDto,
 } from "../utils/tauri-api";
 import { getPluginMarketSourcesConfig } from "../utils/tauri-api";
@@ -434,7 +435,20 @@ async function onUpdateFromZip(pluginId: string) {
     return;
   }
   try {
-    await pluginStore.installPluginFromLocalZip(pluginId, path);
+    const preview = await previewPluginZipPermissions(path);
+    if (preview.pluginId.trim() !== pluginId.trim()) {
+      showToast(
+        "error",
+        `zip 内 manifest.id=${preview.pluginId} 与目标插件 ${pluginId} 不一致`,
+      );
+      return;
+    }
+    const accepted = await requestPermissionConsent(
+      `侧载更新 ${pluginId}`,
+      preview.permissions ?? [],
+    );
+    if (accepted == null) return;
+    await pluginStore.installPluginFromLocalZip(pluginId, path, accepted);
     showToast("success", "更新完成，请重启应用生效。");
   } catch (e) {
     showToast("error", e instanceof Error ? e.message : String(e));
@@ -705,6 +719,21 @@ async function onPackSelectedPlugin(): Promise<void> {
                 <div class="pm-market-main">
                   <strong>{{ row.id }}</strong>
                   <span class="pm-muted"> · {{ row.name }} · v{{ row.version }}</span>
+                  <p v-if="row.source || row.publisher" class="pm-market-trust">
+                    <span v-if="row.source" class="pm-muted">来源：{{ row.source }}</span>
+                    <span v-if="row.publisher" class="pm-muted"> · 发布者：{{ row.publisher }}</span>
+                    <span
+                      v-if="(row.publicKeys ?? []).length"
+                      class="pm-muted"
+                      title="索引登记的公钥状态"
+                    >
+                      · 公钥：{{
+                        (row.publicKeys ?? [])
+                          .map((k) => `${k.pubkeyId}${k.status ? `(${k.status})` : ""}`)
+                          .join("，")
+                      }}
+                    </span>
+                  </p>
                   <p v-if="row.description" class="pm-market-desc">{{ row.description }}</p>
                   <p
                     v-if="(row.missingDependencies ?? []).length"
@@ -1416,6 +1445,12 @@ async function onPackSelectedPlugin(): Promise<void> {
   min-width: 0;
 }
 .pm-market-desc {
+  margin: 6px 0 0;
+  font-size: 12px;
+  color: var(--text-secondary);
+  line-height: 1.45;
+}
+.pm-market-trust {
   margin: 6px 0 0;
   font-size: 12px;
   color: var(--text-secondary);

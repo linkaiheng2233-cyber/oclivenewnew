@@ -13,9 +13,11 @@ import {
 } from "../stores/pluginStore";
 import {
   getPluginPermissionGrants,
+  getPluginAuditLogs,
   setPluginPermissionGrant,
   type DirectoryPluginCatalogEntry,
   type PluginPermissionGrantDto,
+  type PluginAuditLogRowDto,
 } from "../utils/tauri-api";
 
 const props = defineProps<{
@@ -43,6 +45,10 @@ const permLoading = ref(false);
 const permError = ref<string | null>(null);
 const permGrants = ref<PluginPermissionGrantDto[]>([]);
 
+const auditLoading = ref(false);
+const auditError = ref<string | null>(null);
+const auditLogs = ref<PluginAuditLogRowDto[]>([]);
+
 const permSorted = computed(() =>
   [...(permGrants.value ?? [])].sort((a, b) =>
     a.permission === b.permission ? 0 : a.permission < b.permission ? -1 : 1,
@@ -55,6 +61,24 @@ const declaredPermsSorted = computed(() => {
     .map((s) => (s ?? "").trim())
     .filter(Boolean)
     .sort((a, b) => (a === b ? 0 : a < b ? -1 : 1));
+});
+
+const permEffective = computed(() => {
+  const declared = declaredPermsSorted.value;
+  const g = permSorted.value ?? [];
+  const enabledMap = new Map<string, boolean>();
+  for (const x of g) {
+    enabledMap.set(x.permission, x.enabled === true);
+  }
+  const tokens = new Set<string>();
+  for (const p of declared) tokens.add(p);
+  for (const x of g) tokens.add(x.permission);
+  const all = [...tokens].sort((a, b) => (a === b ? 0 : a < b ? -1 : 1));
+  return all.map((permission) => ({
+    permission,
+    enabled: enabledMap.get(permission) === true,
+    declared: declared.includes(permission),
+  }));
 });
 
 async function refreshPerms(): Promise<void> {
@@ -72,13 +96,32 @@ async function refreshPerms(): Promise<void> {
   }
 }
 
+async function refreshAudit(): Promise<void> {
+  const pid = props.entry.id?.trim();
+  if (!pid) return;
+  auditLoading.value = true;
+  auditError.value = null;
+  try {
+    const res = await getPluginAuditLogs(pid, 60);
+    auditLogs.value = res.logs ?? [];
+  } catch (e) {
+    auditError.value = e instanceof Error ? e.message : String(e);
+  } finally {
+    auditLoading.value = false;
+  }
+}
+
 onMounted(() => {
   void refreshPerms();
+  void refreshAudit();
 });
 
 watch(
   () => props.entry.id,
-  () => void refreshPerms(),
+  () => {
+    void refreshPerms();
+    void refreshAudit();
+  },
 );
 
 async function onTogglePermission(p: PluginPermissionGrantDto, enabled: boolean) {
@@ -154,19 +197,25 @@ async function onTogglePermission(p: PluginPermissionGrantDto, enabled: boolean)
       </div>
       <p v-if="permError" class="ipwd-perms-err">{{ permError }}</p>
       <p v-else-if="permLoading" class="ipwd-perms-muted">加载中…</p>
-      <p v-else-if="permSorted.length === 0" class="ipwd-perms-muted">
-        暂无权限记录（可能尚未安装/未触发授权种子）。
+      <p v-else-if="permEffective.length === 0" class="ipwd-perms-muted">
+        暂无权限信息（可能为旧版本安装，或该插件未声明任何权限）。
       </p>
       <ul v-else class="ipwd-perms-list">
-        <li v-for="p in permSorted" :key="p.permission" class="ipwd-perms-li">
+        <li v-for="p in permEffective" :key="p.permission" class="ipwd-perms-li">
           <label class="ipwd-perms-row">
             <input
               type="checkbox"
               :disabled="permLoading"
               :checked="p.enabled === true"
-              @change="onTogglePermission(p, ($event.target as HTMLInputElement).checked)"
+              @change="
+                onTogglePermission(
+                  { pluginId: entry.id, permission: p.permission, enabled: p.enabled },
+                  ($event.target as HTMLInputElement).checked,
+                )
+              "
             />
             <span class="ipwd-perms-token">{{ p.permission }}</span>
+            <span v-if="p.declared !== true" class="ipwd-perms-tag">额外</span>
           </label>
         </li>
       </ul>
@@ -182,6 +231,25 @@ async function onTogglePermission(p: PluginPermissionGrantDto, enabled: boolean)
         :expanded="true"
         :spawn-supported="entry.hasRpcProcess"
       />
+    </div>
+    <div class="ipwd-audit">
+      <div class="ipwd-audit-h">审计（最近）</div>
+      <p v-if="auditError" class="ipwd-perms-err">{{ auditError }}</p>
+      <p v-else-if="auditLoading" class="ipwd-perms-muted">加载中…</p>
+      <p v-else-if="(auditLogs ?? []).length === 0" class="ipwd-perms-muted">
+        暂无审计记录（只有在允许/拒绝调用时才会写入元数据）。
+      </p>
+      <ul v-else class="ipwd-audit-list">
+        <li v-for="(x, idx) in auditLogs" :key="`${x.createdAt}-${idx}`" class="ipwd-audit-li">
+          <span class="ipwd-audit-time">{{ x.createdAt }}</span>
+          <span class="ipwd-audit-pill" :class="x.allowed ? 'ok' : 'deny'">
+            {{ x.allowed ? "ALLOW" : "DENY" }}
+          </span>
+          <span class="ipwd-audit-action">{{ x.action }}</span>
+          <span v-if="x.permission" class="ipwd-perms-token">{{ x.permission }}</span>
+        </li>
+      </ul>
+      <p class="ipwd-perms-hint">仅记录元数据（不记录内容）。</p>
     </div>
   </div>
 </template>
@@ -212,6 +280,52 @@ async function onTogglePermission(p: PluginPermissionGrantDto, enabled: boolean)
   font-weight: 600;
   color: var(--text-secondary);
   margin-bottom: 6px;
+}
+.ipwd-audit {
+  border-top: 1px dashed var(--border-light);
+  padding-top: 10px;
+}
+.ipwd-audit-h {
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--text-secondary);
+  margin-bottom: 6px;
+}
+.ipwd-audit-list {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+.ipwd-audit-li {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+  font-size: 12px;
+}
+.ipwd-audit-time {
+  color: var(--text-secondary);
+}
+.ipwd-audit-action {
+  font-weight: 600;
+}
+.ipwd-audit-pill {
+  font-size: 11px;
+  padding: 1px 6px;
+  border-radius: 999px;
+  border: 1px solid var(--border-light);
+  background: var(--bg-elevated);
+}
+.ipwd-audit-pill.ok {
+  color: var(--success-700, #1e7e34);
+  border-color: color-mix(in srgb, var(--success-700, #1e7e34) 40%, var(--border-light));
+}
+.ipwd-audit-pill.deny {
+  color: var(--danger-600, #c0392b);
+  border-color: color-mix(in srgb, var(--danger-600, #c0392b) 40%, var(--border-light));
 }
 .ipwd-perms {
   border-top: 1px dashed var(--border-light);
@@ -249,6 +363,14 @@ async function onTogglePermission(p: PluginPermissionGrantDto, enabled: boolean)
 .ipwd-perms-token {
   font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono",
     "Courier New", monospace;
+}
+.ipwd-perms-tag {
+  font-size: 11px;
+  padding: 1px 6px;
+  border-radius: 999px;
+  border: 1px solid var(--border-light);
+  color: var(--text-secondary);
+  background: color-mix(in srgb, var(--bg-elevated) 55%, transparent);
 }
 .ipwd-perms-muted {
   font-size: 12px;

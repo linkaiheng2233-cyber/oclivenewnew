@@ -11,6 +11,13 @@ use tauri::State;
 use walkdir::WalkDir;
 use zip::ZipArchive;
 
+#[derive(Debug, Clone, Serialize)]
+#[serde(rename_all = "camelCase")]
+pub struct PluginZipPermissionPreview {
+    pub plugin_id: String,
+    pub permissions: Vec<String>,
+}
+
 fn bridge_command_to_permission_token(cmd: &str) -> String {
     match cmd {
         "get_conversation" => "read:conversation".to_string(),
@@ -206,6 +213,7 @@ fn resolve_install_dir(state: &AppState, plugin_id: &str) -> PathBuf {
 pub fn extract_plugin_zip(
     zip_path: String,
     plugin_id: String,
+    accepted_permissions: Option<Vec<String>>,
     state: State<'_, AppState>,
 ) -> Result<(), String> {
     if !state.directory_plugins.host().developer_effective() {
@@ -250,8 +258,25 @@ pub fn extract_plugin_zip(
     state
         .directory_plugins
         .rescan_plugin_roots(state.storage.roles_dir());
-    // 开发者模式侧载：默认把 manifest bridge 权限作为授权种子，便于调试
-    let perms = bridge_permissions_from_manifest(&manifest);
+    // 开发者模式侧载：支持手动勾选授权；未提供时默认按 manifest seed（便于调试）
+    let declared = bridge_permissions_from_manifest(&manifest);
+    let mut perms = accepted_permissions.unwrap_or_else(|| declared.clone());
+    perms = perms
+        .into_iter()
+        .map(|s| s.trim().to_string())
+        .filter(|s| !s.is_empty())
+        .collect();
+    perms.sort();
+    perms.dedup();
+    // 若用户选择的权限不在声明里，则拒绝（防止滥用参数注入授权）
+    if !perms.is_empty() {
+        let declared_set: std::collections::HashSet<String> =
+            declared.iter().map(|s| s.trim().to_string()).collect();
+        let ok = perms.iter().all(|p| declared_set.contains(p.trim()));
+        if !ok {
+            return Err("accepted_permissions must be a subset of declared permissions".to_string());
+        }
+    }
     let _ = tauri::async_runtime::block_on(async {
         for p in perms {
             let _ = state
@@ -261,4 +286,36 @@ pub fn extract_plugin_zip(
         }
     });
     Ok(())
+}
+
+/// 开发者模式：预览 zip 中 manifest 的 bridge 权限（用于“安装/更新前勾选授权”）。
+#[tauri::command]
+pub fn preview_plugin_zip_permissions(
+    zip_path: String,
+    state: State<'_, AppState>,
+) -> Result<PluginZipPermissionPreview, String> {
+    if !state.directory_plugins.host().developer_effective() {
+        return Err("developer mode required for zip preview".to_string());
+    }
+    let zip_path = PathBuf::from(zip_path.trim());
+    if !zip_path.is_file() {
+        return Err(format!("zip 文件不存在: {}", zip_path.display()));
+    }
+    let zip_path = zip_path
+        .canonicalize()
+        .map_err(|e| format!("zip 路径: {}", e))?;
+
+    let tmp = tempfile::tempdir().map_err(|e| e.to_string())?;
+    unzip_archive(&zip_path, tmp.path())?;
+    let staged = find_manifest_root(tmp.path())?;
+    let manifest = OclivePluginManifest::load_from_dir(&staged)?;
+    let pid = manifest.id.trim().to_string();
+    if pid.is_empty() {
+        return Err("manifest.id required".to_string());
+    }
+    let permissions = bridge_permissions_from_manifest(&manifest);
+    Ok(PluginZipPermissionPreview {
+        plugin_id: pid,
+        permissions,
+    })
 }
