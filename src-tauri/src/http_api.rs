@@ -192,23 +192,63 @@ pub fn api_router(app_state: Arc<AppState>) -> Router {
         .with_state(app_state)
 }
 
+#[derive(Debug, Clone)]
+pub struct ApiServerOptions {
+    pub port: u16,
+    pub db_path: PathBuf,
+    pub roles_dir: PathBuf,
+    pub app_data_dir: PathBuf,
+}
+
+impl ApiServerOptions {
+    pub fn from_env_or_defaults(port: u16) -> Self {
+        let db_path = std::env::var("OCLIVE_DB_PATH")
+            .ok()
+            .filter(|s| !s.trim().is_empty())
+            .map(PathBuf::from)
+            .unwrap_or_else(|| std::env::temp_dir().join(format!("oclive_api_{}.db", port)));
+
+        let roles_dir = std::env::var("OCLIVE_ROLES_DIR")
+            .ok()
+            .filter(|s| !s.trim().is_empty())
+            .map(PathBuf::from)
+            .unwrap_or_else(crate::state::resolve_roles_dir);
+
+        let app_data_dir = std::env::var("OCLIVE_APP_DATA_DIR")
+            .ok()
+            .filter(|s| !s.trim().is_empty())
+            .map(PathBuf::from)
+            .unwrap_or_else(|| {
+                db_path
+                    .parent()
+                    .map(|p| p.join("oclive_api_app_data"))
+                    .unwrap_or_else(|| std::env::temp_dir().join("oclive_api_app_data"))
+            });
+
+        Self {
+            port,
+            db_path,
+            roles_dir,
+            app_data_dir,
+        }
+    }
+}
+
 /// 阻塞运行 HTTP 服务，直到进程结束。
 pub async fn serve_api(port: u16) -> Result<(), String> {
-    let db_path = std::env::temp_dir().join(format!("oclive_api_{}.db", port));
-    let roles_dir = crate::state::resolve_roles_dir();
-    let app_data_dir = db_path
-        .parent()
-        .map(|p| p.join("oclive_api_app_data"))
-        .unwrap_or_else(|| std::env::temp_dir().join("oclive_api_app_data"));
-    let _ = std::fs::create_dir_all(&app_data_dir);
-    let app_state = AppState::new(&db_path, Some(roles_dir), &app_data_dir)
+    serve_api_with_options(ApiServerOptions::from_env_or_defaults(port)).await
+}
+
+pub async fn serve_api_with_options(opt: ApiServerOptions) -> Result<(), String> {
+    let _ = std::fs::create_dir_all(&opt.app_data_dir);
+    let app_state = AppState::new(&opt.db_path, Some(opt.roles_dir), &opt.app_data_dir)
         .await
         .map_err(|e| e.to_string())?;
     let app_state = Arc::new(app_state);
 
     let app = api_router(app_state);
 
-    let addr = format!("127.0.0.1:{}", port);
+    let addr = format!("127.0.0.1:{}", opt.port);
     let listener = TcpListener::bind(&addr)
         .await
         .map_err(|e| format!("绑定 {} 失败：{}", addr, e))?;

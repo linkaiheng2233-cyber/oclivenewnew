@@ -13,6 +13,7 @@ use crate::state::AppState;
 use serde_json::{json, Value};
 
 use std::sync::Arc;
+use tokio::task::spawn_blocking;
 
 /// 将 `role_id` 和可选 `session_id` 编码为 `session_ns`。
 fn make_session_ns(role_id: &str, session_id: Option<&str>) -> String {
@@ -68,17 +69,27 @@ impl OocpMethodHandler for TauriOocpHandler {
         session_id: Option<&str>,
         _scene_id: Option<&str>,
     ) -> Result<Value, MethodError> {
-        let session_ns = make_session_ns(role_id, session_id);
+        // Ensure role is loaded/cached (disk -> cache) so chat.send_message can work.
+        let role_id_s = role_id.to_string();
+        let state = Arc::clone(&self.state);
+        let loaded = spawn_blocking(move || state.load_role_cached(role_id_s.as_str()))
+            .await
+            .map_err(|e| {
+                err(
+                    OocpErrorCode::Internal,
+                    format!("load_role task failed: {}", e),
+                )
+            })?
+            .map_err(|e| err(OocpErrorCode::RoleNotFound, e.to_string()))?;
 
-        // TODO P0-C: 委托到 role_manager 加载角色。
-        // 当前作为最小实现，返回 session_ns 与空角色信息。
+        let session_ns = make_session_ns(role_id, session_id);
 
         Ok(json!({
             "session_ns": session_ns,
             "role": {
-                "name": role_id,
-                "scenes": ["default"],
-                "interaction_mode": "chat",
+                "role_id": loaded.id,
+                "name": loaded.name,
+                "interaction_mode": loaded.interaction_mode.clone().unwrap_or_else(|| "immersive".to_string()),
             }
         }))
     }
@@ -246,19 +257,47 @@ impl OocpMethodHandler for TauriOocpHandler {
     // ── 角色 ──────────────────────────────────────────────────────────────
 
     async fn role_list(&mut self) -> Result<Value, MethodError> {
-        // TODO P0-C: 委托到 role_manager 获取已加载角色列表。
-        // 当前为占位实现。
-        Ok(json!([]))
+        let storage = self.state.storage.clone();
+        let roles = spawn_blocking(move || storage.load_all_roles())
+            .await
+            .map_err(|e| {
+                err(
+                    OocpErrorCode::Internal,
+                    format!("load_all_roles task failed: {}", e),
+                )
+            })?
+            .map_err(|e| err(OocpErrorCode::Internal, e.to_string()))?;
+
+        // Keep fields friendly for distributions (VSCode quick pick / id extraction).
+        Ok(json!(roles
+            .into_iter()
+            .map(|r| json!({
+                "role_id": r.id,
+                "manifestId": r.id,
+                "id": r.id,
+                "name": r.name,
+            }))
+            .collect::<Vec<_>>()))
     }
 
     async fn role_get_info(&mut self, role_id: &str) -> Result<Value, MethodError> {
-        // TODO P0-C: 委托到 role_manager。
-        // 当前为占位实现。
+        let role_id_s = role_id.to_string();
+        let state = Arc::clone(&self.state);
+        let role = spawn_blocking(move || state.load_role_cached(role_id_s.as_str()))
+            .await
+            .map_err(|e| {
+                err(
+                    OocpErrorCode::Internal,
+                    format!("load_role task failed: {}", e),
+                )
+            })?
+            .map_err(|e| err(OocpErrorCode::RoleNotFound, e.to_string()))?;
+
         Ok(json!({
-            "role_id": role_id,
-            "role_name": role_id,
-            "scenes": ["default"],
-            "interaction_mode": "chat",
+            "role_id": role.id,
+            "name": role.name,
+            "interaction_mode": role.interaction_mode.clone().unwrap_or_else(|| "immersive".to_string()),
+            "plugin_backends": role.plugin_backends,
         }))
     }
 

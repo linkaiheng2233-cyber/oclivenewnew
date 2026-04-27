@@ -11,7 +11,8 @@ async fn main() {
     let port = read_port();
     // Reuse the full runtime from `oclivenewnew-tauri` but without enabling Tauri features.
     // This provides a "Linux kernel style" standalone core service endpoint.
-    if let Err(e) = oclivenewnew_tauri::http_api::serve_api(port).await {
+    let opt = oclivenewnew_tauri::http_api::ApiServerOptions::from_env_or_defaults(port);
+    if let Err(e) = oclivenewnew_tauri::http_api::serve_api_with_options(opt).await {
         eprintln!("{}", e);
         std::process::exit(1);
     }
