@@ -400,6 +400,7 @@ pub fn run() {
             api::plugin_audit::get_plugin_audit_logs,
             api::plugin_permissions::get_plugin_permission_grants,
             api::plugin_permissions::set_plugin_permission_grant,
+            api::plugin_permissions::list_permission_tokens,
             api::plugin_config::get_plugin_settings_ui,
             api::plugin_config::set_plugin_settings_config,
         ])

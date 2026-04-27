@@ -14,10 +14,12 @@ import {
 import {
   getPluginPermissionGrants,
   getPluginAuditLogs,
+  listPermissionTokens,
   setPluginPermissionGrant,
   type DirectoryPluginCatalogEntry,
   type PluginPermissionGrantDto,
   type PluginAuditLogRowDto,
+  type PermissionTokenInfoDto,
 } from "../utils/tauri-api";
 
 const props = defineProps<{
@@ -44,6 +46,8 @@ function onPluginDisabledRow(id: string, disabled: boolean): void {
 const permLoading = ref(false);
 const permError = ref<string | null>(null);
 const permGrants = ref<PluginPermissionGrantDto[]>([]);
+const tokenInfoLoading = ref(false);
+const tokenInfoMap = ref<Map<string, PermissionTokenInfoDto>>(new Map());
 
 const auditLoading = ref(false);
 const auditError = ref<string | null>(null);
@@ -78,8 +82,38 @@ const permEffective = computed(() => {
     permission,
     enabled: enabledMap.get(permission) === true,
     declared: declared.includes(permission),
+    info: tokenInfoMap.value.get(permission),
   }));
 });
+
+const riskLabel = (risk: string | undefined): string => {
+  if (risk === "high") return "高风险";
+  if (risk === "medium") return "中风险";
+  if (risk === "low") return "低风险";
+  return "未知";
+};
+
+const riskClass = (risk: string | undefined): string => {
+  if (risk === "high") return "risk-high";
+  if (risk === "medium") return "risk-medium";
+  if (risk === "low") return "risk-low";
+  return "risk-unknown";
+};
+
+async function refreshTokenInfos(): Promise<void> {
+  tokenInfoLoading.value = true;
+  try {
+    const res = await listPermissionTokens();
+    const map = new Map<string, PermissionTokenInfoDto>();
+    for (const x of res.tokens ?? []) {
+      if (!x?.token) continue;
+      map.set(x.token, x);
+    }
+    tokenInfoMap.value = map;
+  } finally {
+    tokenInfoLoading.value = false;
+  }
+}
 
 async function refreshPerms(): Promise<void> {
   const pid = props.entry.id?.trim();
@@ -112,6 +146,7 @@ async function refreshAudit(): Promise<void> {
 }
 
 onMounted(() => {
+  void refreshTokenInfos();
   void refreshPerms();
   void refreshAudit();
 });
@@ -184,11 +219,15 @@ async function onTogglePermission(p: PluginPermissionGrantDto, enabled: boolean)
     </div>
     <div class="ipwd-perms">
       <div class="ipwd-perms-h">权限</div>
+      <p v-if="tokenInfoLoading" class="ipwd-perms-muted">加载权限说明中…</p>
       <div v-if="declaredPermsSorted.length > 0" class="ipwd-perms-declared">
         <div class="ipwd-perms-subh">声明（来自市场索引）</div>
         <ul class="ipwd-perms-list">
           <li v-for="p in declaredPermsSorted" :key="p" class="ipwd-perms-li">
             <span class="ipwd-perms-token">{{ p }}</span>
+            <span v-if="tokenInfoMap.get(p)?.title" class="ipwd-perms-title">
+              {{ tokenInfoMap.get(p)?.title }}
+            </span>
           </li>
         </ul>
         <p class="ipwd-perms-muted">
@@ -216,7 +255,20 @@ async function onTogglePermission(p: PluginPermissionGrantDto, enabled: boolean)
             />
             <span class="ipwd-perms-token">{{ p.permission }}</span>
             <span v-if="p.declared !== true" class="ipwd-perms-tag">额外</span>
+            <span
+              v-if="p.info?.risk"
+              class="ipwd-perms-risk"
+              :class="riskClass(p.info?.risk)"
+            >
+              {{ riskLabel(p.info?.risk) }}
+            </span>
           </label>
+          <div v-if="p.info?.title || p.info?.description" class="ipwd-perms-desc">
+            <div v-if="p.info?.title" class="ipwd-perms-title">{{ p.info?.title }}</div>
+            <div v-if="p.info?.description" class="ipwd-perms-muted">
+              {{ p.info?.description }}
+            </div>
+          </div>
         </li>
       </ul>
       <p class="ipwd-perms-hint">
@@ -363,6 +415,34 @@ async function onTogglePermission(p: PluginPermissionGrantDto, enabled: boolean)
 .ipwd-perms-token {
   font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono",
     "Courier New", monospace;
+}
+.ipwd-perms-title {
+  font-size: 12px;
+  color: var(--text-secondary);
+}
+.ipwd-perms-desc {
+  margin-left: 22px;
+  margin-top: 2px;
+}
+.ipwd-perms-risk {
+  font-size: 11px;
+  padding: 1px 6px;
+  border-radius: 999px;
+  border: 1px solid var(--border-light);
+  background: var(--bg-elevated);
+  color: var(--text-secondary);
+}
+.ipwd-perms-risk.risk-high {
+  color: var(--danger-600, #c0392b);
+  border-color: color-mix(in srgb, var(--danger-600, #c0392b) 40%, var(--border-light));
+}
+.ipwd-perms-risk.risk-medium {
+  color: var(--warn-700, #b9770e);
+  border-color: color-mix(in srgb, var(--warn-700, #b9770e) 40%, var(--border-light));
+}
+.ipwd-perms-risk.risk-low {
+  color: var(--success-700, #1e7e34);
+  border-color: color-mix(in srgb, var(--success-700, #1e7e34) 40%, var(--border-light));
 }
 .ipwd-perms-tag {
   font-size: 11px;

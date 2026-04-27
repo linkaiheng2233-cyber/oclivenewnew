@@ -1327,6 +1327,26 @@ export async function setPluginPermissionGrant(
   });
 }
 
+export type PermissionRisk = "low" | "medium" | "high";
+
+export interface PermissionTokenInfoDto {
+  token: string;
+  title: string;
+  description: string;
+  risk: PermissionRisk;
+}
+
+export interface ListPermissionTokensResponseDto {
+  tokens: PermissionTokenInfoDto[];
+}
+
+export async function listPermissionTokens(): Promise<ListPermissionTokensResponseDto> {
+  return invokeWithFriendlyError<ListPermissionTokensResponseDto>(
+    "list_permission_tokens",
+    {},
+  );
+}
+
 export interface UiSchemaFieldDto {
   key: string;
   label: string;
