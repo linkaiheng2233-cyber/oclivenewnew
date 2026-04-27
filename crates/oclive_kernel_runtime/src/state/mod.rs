@@ -6,11 +6,7 @@
 use std::fs;
 use std::path::{Path, PathBuf};
 
-// Current compatibility: most of the orchestration layer is still sourced from `src-tauri`,
-// so we keep exporting the Tauri `AppState` for now.
-pub use oclivenewnew_tauri::state::AppState;
-
-// Migration target: kernel-owned state. Not yet wired into OOCP/chat.
+// Kernel-owned state.
 mod app_state;
 pub use app_state::KernelAppState;
 
@@ -121,16 +117,4 @@ pub fn resolve_roles_dir() -> PathBuf {
     fallback
 }
 
-/// Build kernel `AppState` for the local HTTP/OOCP server.
-///
-/// This indirection allows us to migrate `AppState` into `oclive_kernel_runtime`
-/// incrementally while keeping call sites stable.
-pub async fn build_app_state(
-    db_path: impl AsRef<Path>,
-    roles_dir_override: Option<PathBuf>,
-    app_data_dir: impl AsRef<Path>,
-) -> Result<AppState, String> {
-    AppState::new(db_path, roles_dir_override, app_data_dir)
-        .await
-        .map_err(|e| e.to_string())
-}
+// NOTE: legacy `build_app_state` removed. Kernel server should construct `KernelAppState` directly.
