@@ -193,12 +193,27 @@ async function onInstallMarketEntry(row: PluginMarketEntryDto) {
   }
   const perms = (row.permissions ?? []).map((s) => s.trim()).filter(Boolean);
   if (perms.length > 0) {
+    const hasNetwork = perms.some((p) => p === "network:*" || p.startsWith("network:"));
+    const hasFs = perms.some((p) => p.startsWith("filesystem:"));
+    const hasShell = perms.some((p) => p.startsWith("shell:") || p === "process:spawn");
+    const hasRpcInvoke = perms.includes("rpc:invoke");
     const ok = window.confirm(
       `该插件声明以下权限（安装后可在“已安装插件→权限”中随时调整）：\n\n${perms
         .map((p) => `- ${p}`)
         .join("\n")}\n\n是否继续安装？`,
     );
     if (!ok) return;
+    if ((hasNetwork && hasFs && hasShell) || hasRpcInvoke) {
+      const ok2 = window.confirm(
+        `该插件包含高风险权限（${[
+          hasRpcInvoke ? "rpc:invoke" : "",
+          hasNetwork && hasFs && hasShell ? "network+filesystem+shell" : "",
+        ]
+          .filter(Boolean)
+          .join("，")}）。\n\n建议仅安装你信任的来源。\n\n请再次确认：是否继续安装？`,
+      );
+      if (!ok2) return;
+    }
   }
   try {
     // 默认安装走索引内版本解析（git tag clone）；仅开发者模式才应允许自定义 gitUrl 覆盖
@@ -230,12 +245,27 @@ async function onInstallMarketVersion(row: PluginMarketEntryDto) {
   if (!v?.trim()) return;
   const perms = (row.permissions ?? []).map((s) => s.trim()).filter(Boolean);
   if (perms.length > 0) {
+    const hasNetwork = perms.some((p) => p === "network:*" || p.startsWith("network:"));
+    const hasFs = perms.some((p) => p.startsWith("filesystem:"));
+    const hasShell = perms.some((p) => p.startsWith("shell:") || p === "process:spawn");
+    const hasRpcInvoke = perms.includes("rpc:invoke");
     const ok = window.confirm(
       `该插件声明以下权限（安装后可在“已安装插件→权限”中随时调整）：\n\n${perms
         .map((p) => `- ${p}`)
         .join("\n")}\n\n是否继续安装 v${v}？`,
     );
     if (!ok) return;
+    if ((hasNetwork && hasFs && hasShell) || hasRpcInvoke) {
+      const ok2 = window.confirm(
+        `该插件包含高风险权限（${[
+          hasRpcInvoke ? "rpc:invoke" : "",
+          hasNetwork && hasFs && hasShell ? "network+filesystem+shell" : "",
+        ]
+          .filter(Boolean)
+          .join("，")}）。\n\n建议仅安装你信任的来源。\n\n请再次确认：是否继续安装 v${v}？`,
+      );
+      if (!ok2) return;
+    }
   }
   try {
     await pluginStore.installVersionFromPluginMarket(row.id, v);
