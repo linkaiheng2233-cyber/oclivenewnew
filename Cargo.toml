@@ -2,6 +2,7 @@
 members = [
   "crates/oclive_core",
   "crates/oclive_validation",
+  "crates/oclive_kernel_runtime",
   "crates/oclive_kernel_server",
   "src-tauri",
 ]

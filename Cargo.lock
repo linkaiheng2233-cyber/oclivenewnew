@@ -2693,6 +2693,39 @@ dependencies = [
 ]
 
 [[package]]
+name = "oclive_kernel_runtime"
+version = "0.1.0"
+dependencies = [
+ "anyhow",
+ "async-trait",
+ "axum",
+ "chrono",
+ "env_logger",
+ "futures-util",
+ "log",
+ "notify",
+ "oclive_core",
+ "oclive_validation",
+ "once_cell",
+ "parking_lot",
+ "reqwest",
+ "semver",
+ "serde",
+ "serde_json",
+ "serde_yaml",
+ "sha2 0.11.0",
+ "sqlx",
+ "tempfile",
+ "thiserror",
+ "tokio",
+ "toml 0.8.23",
+ "tower-http",
+ "uuid",
+ "walkdir",
+ "zip",
+]
+
+[[package]]
 name = "oclive_kernel_server"
 version = "0.1.0"
 dependencies = [
