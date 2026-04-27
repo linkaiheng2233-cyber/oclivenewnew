@@ -1,6 +1,7 @@
 use crate::error::{AppError, Result};
 use crate::models::{Event, EventType, Memory, PersonalityVector};
 use chrono::{DateTime, Utc};
+use crate::models::InteractionMode;
 use sqlx::SqlitePool;
 use std::time::Instant;
 
@@ -269,6 +270,171 @@ impl DbManager {
                 .await
                 .map_err(|e| AppError::DatabaseError(e.to_string()))?;
         Ok(row.map(|(f,)| f))
+    }
+
+    pub async fn get_remote_life_enabled(&self, role_id: &str) -> Result<bool> {
+        let row: Option<(i64,)> = sqlx::query_as(
+            "SELECT COALESCE(remote_life_enabled, 0) FROM role_runtime WHERE role_id = ?",
+        )
+        .bind(role_id)
+        .fetch_optional(&self.pool)
+        .await
+        .map_err(|e| AppError::DatabaseError(e.to_string()))?;
+        Ok(row.map(|(v,)| v != 0).unwrap_or(false))
+    }
+
+    pub async fn set_remote_life_enabled(&self, role_id: &str, v: bool) -> Result<()> {
+        let now = Utc::now().to_rfc3339();
+        let n = if v { 1i64 } else { 0i64 };
+        sqlx::query(
+            "UPDATE role_runtime SET remote_life_enabled = ?, updated_at = ? WHERE role_id = ?",
+        )
+        .bind(n)
+        .bind(&now)
+        .bind(role_id)
+        .execute(&self.pool)
+        .await
+        .map_err(|e| AppError::DatabaseError(e.to_string()))?;
+        Ok(())
+    }
+
+    pub async fn get_current_scene(&self, role_id: &str) -> Result<Option<String>> {
+        let row: Option<(Option<String>,)> =
+            sqlx::query_as("SELECT current_scene FROM role_runtime WHERE role_id = ?")
+                .bind(role_id)
+                .fetch_optional(&self.pool)
+                .await
+                .map_err(|e| AppError::DatabaseError(e.to_string()))?;
+        Ok(row.and_then(|(s,)| s))
+    }
+
+    pub async fn set_current_scene(&self, role_id: &str, scene_id: &str) -> Result<()> {
+        let now = Utc::now().to_rfc3339();
+        let n = sqlx::query(
+            "UPDATE role_runtime SET current_scene = ?, updated_at = ? WHERE role_id = ?",
+        )
+        .bind(scene_id)
+        .bind(&now)
+        .bind(role_id)
+        .execute(&self.pool)
+        .await
+        .map_err(|e| AppError::DatabaseError(e.to_string()))?
+        .rows_affected();
+        if n == 0 {
+            return Err(AppError::InvalidParameter(
+                "role_runtime row missing; call load_role first".to_string(),
+            ));
+        }
+        Ok(())
+    }
+
+    pub async fn get_user_presence_scene(&self, role_id: &str) -> Result<Option<String>> {
+        let row: Option<(Option<String>,)> =
+            sqlx::query_as("SELECT user_presence_scene FROM role_runtime WHERE role_id = ?")
+                .bind(role_id)
+                .fetch_optional(&self.pool)
+                .await
+                .map_err(|e| AppError::DatabaseError(e.to_string()))?;
+        Ok(row.and_then(|(s,)| s))
+    }
+
+    pub async fn set_user_presence_scene(&self, role_id: &str, scene_id: &str) -> Result<()> {
+        let now = Utc::now().to_rfc3339();
+        let n = sqlx::query(
+            "UPDATE role_runtime SET user_presence_scene = ?, updated_at = ? WHERE role_id = ?",
+        )
+        .bind(scene_id)
+        .bind(&now)
+        .bind(role_id)
+        .execute(&self.pool)
+        .await
+        .map_err(|e| AppError::DatabaseError(e.to_string()))?
+        .rows_affected();
+        if n == 0 {
+            return Err(AppError::InvalidParameter(
+                "role_runtime row missing; call load_role first".to_string(),
+            ));
+        }
+        Ok(())
+    }
+
+    async fn get_legacy_app_interaction_mode(&self) -> Result<Option<String>> {
+        let row: Option<(String,)> =
+            sqlx::query_as("SELECT value FROM app_settings WHERE key = 'interaction_mode' LIMIT 1")
+                .fetch_optional(&self.pool)
+                .await
+                .map_err(|e| AppError::DatabaseError(e.to_string()))?;
+        Ok(row
+            .map(|(v,)| v)
+            .filter(|s| s == InteractionMode::IMMERSIVE || s == InteractionMode::PURE_CHAT))
+    }
+
+    pub async fn ensure_interaction_mode_seeded(
+        &self,
+        role_id: &str,
+        pack_default: Option<&str>,
+    ) -> Result<()> {
+        let row: Option<(Option<String>,)> =
+            sqlx::query_as("SELECT interaction_mode FROM role_runtime WHERE role_id = ?")
+                .bind(role_id)
+                .fetch_optional(&self.pool)
+                .await
+                .map_err(|e| AppError::DatabaseError(e.to_string()))?;
+        let Some((current,)) = row else {
+            return Ok(());
+        };
+        if current.is_some() {
+            return Ok(());
+        }
+        let legacy = self.get_legacy_app_interaction_mode().await?;
+        let mode = if let Some(l) = legacy {
+            InteractionMode::normalize(Some(l.as_str()))
+        } else {
+            InteractionMode::normalize(pack_default)
+        };
+        let now = Utc::now().to_rfc3339();
+        sqlx::query(
+            "UPDATE role_runtime SET interaction_mode = ?, updated_at = ? WHERE role_id = ?",
+        )
+        .bind(mode.as_str())
+        .bind(&now)
+        .bind(role_id)
+        .execute(&self.pool)
+        .await
+        .map_err(|e| AppError::DatabaseError(e.to_string()))?;
+        Ok(())
+    }
+
+    pub async fn get_interaction_mode(&self, role_id: &str) -> Result<InteractionMode> {
+        let row: Option<(Option<String>,)> =
+            sqlx::query_as("SELECT interaction_mode FROM role_runtime WHERE role_id = ?")
+                .bind(role_id)
+                .fetch_optional(&self.pool)
+                .await
+                .map_err(|e| AppError::DatabaseError(e.to_string()))?;
+        let raw = row.and_then(|(v,)| v);
+        Ok(InteractionMode::normalize(raw.as_deref()))
+    }
+
+    pub async fn set_interaction_mode_for_role(&self, role_id: &str, mode: &str) -> Result<()> {
+        let normalized = InteractionMode::normalize(Some(mode));
+        let now = Utc::now().to_rfc3339();
+        let n = sqlx::query(
+            "UPDATE role_runtime SET interaction_mode = ?, updated_at = ? WHERE role_id = ?",
+        )
+        .bind(normalized.as_str())
+        .bind(&now)
+        .bind(role_id)
+        .execute(&self.pool)
+        .await
+        .map_err(|e| AppError::DatabaseError(e.to_string()))?
+        .rows_affected();
+        if n == 0 {
+            return Err(AppError::InvalidParameter(
+                "role_runtime row missing; call load_role first".to_string(),
+            ));
+        }
+        Ok(())
     }
 
     pub async fn get_favorability_for_identity(
@@ -631,6 +797,23 @@ impl DbManager {
         .await
         .map_err(|e| AppError::DatabaseError(e.to_string()))?;
         Ok(rows.into_iter().rev().collect())
+    }
+
+    /// 导出用：按时间升序返回短期对话
+    pub async fn list_short_term_turns(
+        &self,
+        role_id: &str,
+    ) -> Result<Vec<(String, String, String, Option<String>, String)>> {
+        let rows = sqlx::query_as::<_, (String, String, String, Option<String>, String)>(
+            "SELECT user_input, bot_reply, emotion, scene, created_at
+             FROM short_term_memory WHERE role_id = ?
+             ORDER BY datetime(created_at) ASC",
+        )
+        .bind(role_id)
+        .fetch_all(&self.pool)
+        .await
+        .map_err(|e| AppError::DatabaseError(e.to_string()))?;
+        Ok(rows)
     }
 
     /// 获取角色事件历史

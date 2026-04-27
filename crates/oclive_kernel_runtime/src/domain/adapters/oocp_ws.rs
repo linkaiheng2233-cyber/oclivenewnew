@@ -2,7 +2,7 @@
 
 use crate::domain::adapters::runtime_oocp_handler::RuntimeOocpHandler;
 use crate::domain::core::oocp_handler::{dispatch_oocp_request, OocpHandled};
-use crate::state::AppState;
+use crate::state::KernelAppState;
 use axum::extract::ws::{Message, WebSocket, WebSocketUpgrade};
 use axum::extract::{Query, State};
 use axum::http::HeaderMap;
@@ -67,7 +67,7 @@ struct WsQuery {
 
 async fn oocp_ws_handler(
     ws: WebSocketUpgrade,
-    State(app_state): State<Arc<AppState>>,
+    State(app_state): State<Arc<KernelAppState>>,
     Query(query): Query<WsQuery>,
     headers: HeaderMap,
 ) -> Result<Response, Response> {
@@ -86,7 +86,7 @@ async fn oocp_ws_handler(
     Ok(ws.on_upgrade(move |socket| handle_oocp_socket(socket, app_state)))
 }
 
-async fn handle_oocp_socket(socket: WebSocket, app_state: Arc<AppState>) {
+async fn handle_oocp_socket(socket: WebSocket, app_state: Arc<KernelAppState>) {
     let (mut writer, mut reader) = socket.split();
     let mut handler = RuntimeOocpHandler::new(app_state);
 
@@ -191,6 +191,6 @@ async fn handle_text_frame(
     }
 }
 
-pub fn oocp_ws_router() -> Router<Arc<AppState>> {
-    Router::<Arc<AppState>>::new().route("/oocp", get(oocp_ws_handler))
+pub fn oocp_ws_router() -> Router<Arc<KernelAppState>> {
+    Router::<Arc<KernelAppState>>::new().route("/oocp", get(oocp_ws_handler))
 }

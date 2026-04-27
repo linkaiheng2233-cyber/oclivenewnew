@@ -5,7 +5,7 @@
 
 use crate::domain::core::oocp_handler::{MethodError, OocpMethodHandler};
 use crate::models::oocp::{OocpErrorCode, OocpEvent};
-use crate::state::AppState;
+use crate::state::KernelAppState;
 use chrono::Local;
 use serde_json::{json, Value};
 use std::sync::Arc;
@@ -32,12 +32,12 @@ fn err(code: OocpErrorCode, msg: impl Into<String>) -> MethodError {
 }
 
 pub struct RuntimeOocpHandler {
-    state: Arc<AppState>,
+    state: Arc<KernelAppState>,
     pending_events: Vec<OocpEvent>,
 }
 
 impl RuntimeOocpHandler {
-    pub fn new(state: Arc<AppState>) -> Self {
+    pub fn new(state: Arc<KernelAppState>) -> Self {
         Self {
             state,
             pending_events: Vec::new(),

@@ -7,11 +7,13 @@ pub mod context;
 pub mod co_present;
 pub mod favor;
 pub mod presence;
+pub mod process_message;
 pub mod scene;
 
-pub use oclivenewnew_tauri::domain::chat_engine::process_message;
+pub use process_message::process_message;
 
 use crate::models::dto::EmotionDto;
+use crate::models::{PluginBackends, PluginBackendsSourceMap};
 
 pub(super) fn emotion_to_dto(r: &crate::domain::emotion_analyzer::EmotionResult) -> EmotionDto {
     EmotionDto {
@@ -23,6 +25,27 @@ pub(super) fn emotion_to_dto(r: &crate::domain::emotion_analyzer::EmotionResult)
         disgust: r.disgust as f32,
         neutral: r.neutral as f32,
     }
+}
+
+fn backend_resolution_summary(
+    effective: &PluginBackends,
+    sources: &PluginBackendsSourceMap,
+) -> String {
+    format!(
+        "mem={:?}({:?}) emotion={:?}({:?}) event={:?}({:?}) prompt={:?}({:?}) llm={:?}({:?}) agent={:?}({:?})",
+        effective.memory,
+        sources.memory,
+        effective.emotion,
+        sources.emotion,
+        effective.event,
+        sources.event,
+        effective.prompt,
+        sources.prompt,
+        effective.llm,
+        sources.llm,
+        effective.agent,
+        sources.agent
+    )
 }
 
 /// 会话级 SQLite 命名空间：HTTP 试聊传入 `session_id` 时与无 `session_id` 的默认对话隔离。

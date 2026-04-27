@@ -24,6 +24,7 @@ pub mod user_identity;
 // Goal: progressively migrate modules here and remove this dependency.
 pub use oclivenewnew_tauri::domain::knowledge_loader;
 pub use oclivenewnew_tauri::domain::life_schedule;
+pub use oclivenewnew_tauri::domain::agent;
 pub use oclivenewnew_tauri::domain::local_plugin_bridge;
 pub use oclivenewnew_tauri::domain::mutable_profile_llm;
 pub use oclivenewnew_tauri::domain::plugin_host;
@@ -31,4 +32,5 @@ pub use oclivenewnew_tauri::domain::portrait_emotion_engine;
 pub use oclivenewnew_tauri::domain::profile_personality;
 pub use oclivenewnew_tauri::domain::prompt_assembler;
 pub use oclivenewnew_tauri::domain::prompt_builder;
+pub use oclivenewnew_tauri::domain::remote_life_prompt;
 pub use oclivenewnew_tauri::domain::role_manager;

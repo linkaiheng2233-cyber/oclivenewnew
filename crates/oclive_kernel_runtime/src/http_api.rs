@@ -11,7 +11,7 @@ use crate::domain::chat_engine::process_message;
 use crate::error::AppError;
 use crate::models::dto::{SendMessageRequest, SendMessageResponse};
 use crate::models::role::PersonalitySource;
-use crate::state::AppState;
+use crate::state::KernelAppState;
 use axum::extract::State;
 use axum::http::Method;
 use axum::routing::{get, post};
@@ -91,7 +91,7 @@ async fn health() -> &'static str {
 }
 
 async fn chat(
-    State(state): State<Arc<AppState>>,
+    State(state): State<Arc<KernelAppState>>,
     Json(body): Json<ChatApiRequest>,
 ) -> Result<Json<ChatApiResponse>, ApiError> {
     let session_echo = body.session_id.clone();
@@ -179,13 +179,13 @@ async fn chat(
 
 /// 与 `serve_api` 相同的路由树，供集成测试使用（无需绑端口）。
 /// 已合并 OOCP WebSocket 路由（`/oocp`）。
-pub fn api_router(app_state: Arc<AppState>) -> Router {
+pub fn api_router(app_state: Arc<KernelAppState>) -> Router {
     let cors = CorsLayer::new()
         .allow_origin(Any)
         .allow_methods([Method::GET, Method::POST, Method::OPTIONS])
         .allow_headers(Any);
 
-    Router::<Arc<AppState>>::new()
+    Router::<Arc<KernelAppState>>::new()
         .route("/health", get(health))
         .route("/chat", post(chat))
         .merge(oocp_ws::oocp_ws_router())
@@ -242,8 +242,9 @@ pub async fn serve_api(port: u16) -> Result<(), String> {
 
 pub async fn serve_api_with_options(opt: ApiServerOptions) -> Result<(), String> {
     let _ = std::fs::create_dir_all(&opt.app_data_dir);
-    let app_state =
-        crate::state::build_app_state(&opt.db_path, Some(opt.roles_dir), &opt.app_data_dir).await?;
+    let app_state = KernelAppState::new(&opt.db_path, Some(opt.roles_dir), &opt.app_data_dir)
+        .await
+        .map_err(|e| e.to_frontend_error())?;
     let app_state = Arc::new(app_state);
 
     let app = api_router(app_state);
