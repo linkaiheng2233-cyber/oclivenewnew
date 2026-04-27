@@ -446,17 +446,48 @@ pub fn directory_plugin_invoke(
         }
         .to_string());
     }
+    // 目录插件 JSON-RPC 透传属于高风险能力（可触发网络/进程等）：需要用户显式授予
+    let perm = "rpc:invoke";
+    let ok = tauri::async_runtime::block_on(async {
+        state
+            .db_manager
+            .is_plugin_permission_granted(pid, perm)
+            .await
+            .unwrap_or(false)
+    });
+    if !ok {
+        let _ = tauri::async_runtime::block_on(async {
+            state
+                .db_manager
+                .insert_plugin_audit_log(pid, "rpc.invoke", Some(perm), false, "{}")
+                .await
+        });
+        return Err(ApiError::PermissionDenied {
+            message: format!(
+                "[PLUGIN_PERMISSION_NOT_GRANTED] permission {:?} not granted for plugin {}",
+                perm, pid
+            ),
+        }
+        .to_string());
+    }
     let url = state
         .directory_plugins
         .ensure_rpc_url(pid)
         .map_err(|e| crate::api::error::map_directory_rpc_url_error(pid, e))?;
-    invoke_directory_plugin_rpc_blocking(
+    let out = invoke_directory_plugin_rpc_blocking(
         &url,
         req.method.trim(),
         req.params,
         RemoteRpcChannel::Plugin,
     )
-    .map_err(|e: AppError| e.to_frontend_error())
+    .map_err(|e: AppError| e.to_frontend_error())?;
+    let _ = tauri::async_runtime::block_on(async {
+        state
+            .db_manager
+            .insert_plugin_audit_log(pid, "rpc.invoke", Some(perm), true, "{}")
+            .await
+    });
+    Ok(out)
 }
 
 #[derive(Debug, Clone, Serialize)]

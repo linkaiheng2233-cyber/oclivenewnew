@@ -181,9 +181,46 @@ fn validate_bridge(
         }
         .to_string());
     }
+    // P1：权限授予（安装时一次性授权 + 可撤销）
+    let needed = required_permission_token(command);
+    let ok = tauri::async_runtime::block_on(async {
+        state
+            .db_manager
+            .is_plugin_permission_granted(plugin_id, needed.as_str())
+            .await
+            .unwrap_or(false)
+    });
+    if !ok {
+        let _ = tauri::async_runtime::block_on(async {
+            state
+                .db_manager
+                .insert_plugin_audit_log(
+                    plugin_id,
+                    "bridge.invoke",
+                    Some(needed.as_str()),
+                    false,
+                    "{}",
+                )
+                .await
+        });
+        return Err(ApiError::PermissionDenied {
+            message: format!(
+                "[PLUGIN_PERMISSION_NOT_GRANTED] permission {:?} not granted for plugin {}",
+                needed.as_str(),
+                plugin_id
+            ),
+        }
+        .to_string());
+    }
     if requires_typed_shell(command) {
         validate_shell_ocliveplugin(&manifest, &rel)?;
     }
+    let _ = tauri::async_runtime::block_on(async {
+        state
+            .db_manager
+            .insert_plugin_audit_log(plugin_id, "bridge.invoke", Some(needed.as_str()), true, "{}")
+            .await
+    });
     Ok(())
 }
 

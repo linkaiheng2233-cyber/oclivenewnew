@@ -29,6 +29,64 @@ struct PluginInstallMeta {
     pub pinned_tag: Option<String>,
 }
 
+fn bridge_command_to_permission_token(cmd: &str) -> String {
+    match cmd {
+        "get_conversation" => "read:conversation".to_string(),
+        "get_roles" => "read:roles".to_string(),
+        "get_current_role" => "read:current_role".to_string(),
+        "update_memory" | "delete_memory" => "write:memory".to_string(),
+        "update_emotion" => "write:emotion".to_string(),
+        "update_event" => "write:event".to_string(),
+        "update_prompt" => "write:prompt".to_string(),
+        "export_conversation" => "export:conversation".to_string(),
+        "import_role" => "import:role".to_string(),
+        "delete_role" => "delete:role".to_string(),
+        "update_settings" => "write:settings".to_string(),
+        "get_conversation_list" => "read:conversations".to_string(),
+        _ => cmd.to_string(),
+    }
+}
+
+fn default_bridge_permissions_from_manifest(manifest: &OclivePluginManifest) -> Vec<String> {
+    let mut out: Vec<String> = Vec::new();
+    if let Some(sh) = &manifest.shell {
+        if let Some(b) = &sh.bridge {
+            for x in &b.invoke {
+                let t = x.trim();
+                if t.is_empty() {
+                    continue;
+                }
+                // invoke 列表既允许写命令名，也允许写权限 token（read:* 等）
+                let perm = if t.contains(':') {
+                    t.to_string()
+                } else {
+                    bridge_command_to_permission_token(t)
+                };
+                out.push(perm);
+            }
+        }
+    }
+    for us in &manifest.ui_slots {
+        if let Some(b) = &us.bridge {
+            for x in &b.invoke {
+                let t = x.trim();
+                if t.is_empty() {
+                    continue;
+                }
+                let perm = if t.contains(':') {
+                    t.to_string()
+                } else {
+                    bridge_command_to_permission_token(t)
+                };
+                out.push(perm);
+            }
+        }
+    }
+    out.sort();
+    out.dedup();
+    out
+}
+
 #[derive(Debug, Clone, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
 pub struct PublisherPublicKey {
@@ -430,6 +488,15 @@ pub fn install_plugin_from_archive_bytes(state: &AppState, bytes: &[u8]) -> Resu
     state
         .directory_plugins
         .rescan_plugin_roots(state.storage.roles_dir());
+    // 安装时一次性授权（最小默认）：按 manifest bridge.invoke 自动授予桥接权限
+    let perms = default_bridge_permissions_from_manifest(&manifest);
+    let pid2 = pid.clone();
+    let _ = tauri::async_runtime::block_on(async {
+        state
+            .db_manager
+            .set_plugin_permission_grants(pid2.as_str(), &perms)
+            .await
+    });
     Ok(pid)
 }
 
@@ -546,6 +613,14 @@ pub fn install_plugin_from_git_tag(
     state
         .directory_plugins
         .rescan_plugin_roots(state.storage.roles_dir());
+    let perms = default_bridge_permissions_from_manifest(&manifest);
+    let pid2 = pid.clone();
+    let _ = tauri::async_runtime::block_on(async {
+        state
+            .db_manager
+            .set_plugin_permission_grants(pid2.as_str(), &perms)
+            .await
+    });
     Ok(pid)
 }
 
@@ -664,6 +739,14 @@ pub fn install_plugin(
     state
         .directory_plugins
         .rescan_plugin_roots(state.storage.roles_dir());
+    let perms = default_bridge_permissions_from_manifest(&manifest);
+    let pid2 = pid.clone();
+    let _ = tauri::async_runtime::block_on(async {
+        state
+            .db_manager
+            .set_plugin_permission_grants(pid2.as_str(), &perms)
+            .await
+    });
     Ok(pid)
 }
 

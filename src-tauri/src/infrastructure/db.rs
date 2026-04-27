@@ -76,6 +76,140 @@ impl DbManager {
         Self { pool }
     }
 
+    // ===== 插件权限与审计（市场治理 v1）=====
+
+    pub async fn is_plugin_permission_granted(&self, plugin_id: &str, permission: &str) -> Result<bool> {
+        let pid = plugin_id.trim();
+        let perm = permission.trim();
+        if pid.is_empty() || perm.is_empty() {
+            return Ok(false);
+        }
+        let row = sqlx::query("SELECT enabled FROM plugin_permission_grants WHERE plugin_id = ? AND permission = ?")
+            .bind(pid)
+            .bind(perm)
+            .fetch_optional(&self.pool)
+            .await
+            .map_err(|e| AppError::DatabaseError(e.to_string()))?;
+        Ok(row
+            .and_then(|r| r.try_get::<i64, _>("enabled").ok())
+            .unwrap_or(0)
+            != 0)
+    }
+
+    pub async fn set_plugin_permission_grants(&self, plugin_id: &str, permissions: &[String]) -> Result<()> {
+        let pid = plugin_id.trim();
+        if pid.is_empty() {
+            return Err(AppError::InvalidParameter("plugin_id required".into()));
+        }
+        let now = Utc::now().to_rfc3339();
+        let mut tx = self
+            .pool
+            .begin()
+            .await
+            .map_err(|e| AppError::DatabaseError(e.to_string()))?;
+        sqlx::query("DELETE FROM plugin_permission_grants WHERE plugin_id = ?")
+            .bind(pid)
+            .execute(&mut *tx)
+            .await
+            .map_err(|e| AppError::DatabaseError(e.to_string()))?;
+        for p in permissions {
+            let perm = p.trim();
+            if perm.is_empty() {
+                continue;
+            }
+            sqlx::query(
+                "INSERT INTO plugin_permission_grants (plugin_id, permission, enabled, created_at, updated_at)
+                 VALUES (?, ?, 1, ?, ?)",
+            )
+            .bind(pid)
+            .bind(perm)
+            .bind(&now)
+            .bind(&now)
+            .execute(&mut *tx)
+            .await
+            .map_err(|e| AppError::DatabaseError(e.to_string()))?;
+        }
+        tx.commit()
+            .await
+            .map_err(|e| AppError::DatabaseError(e.to_string()))?;
+        Ok(())
+    }
+
+    pub async fn upsert_plugin_permission_grant(&self, plugin_id: &str, permission: &str, enabled: bool) -> Result<()> {
+        let pid = plugin_id.trim();
+        let perm = permission.trim();
+        if pid.is_empty() || perm.is_empty() {
+            return Err(AppError::InvalidParameter("plugin_id and permission required".into()));
+        }
+        let now = Utc::now().to_rfc3339();
+        let en = if enabled { 1i64 } else { 0i64 };
+        sqlx::query(
+            "INSERT INTO plugin_permission_grants (plugin_id, permission, enabled, created_at, updated_at)
+             VALUES (?, ?, ?, ?, ?)
+             ON CONFLICT(plugin_id, permission) DO UPDATE SET enabled=excluded.enabled, updated_at=excluded.updated_at",
+        )
+        .bind(pid)
+        .bind(perm)
+        .bind(en)
+        .bind(&now)
+        .bind(&now)
+        .execute(&self.pool)
+        .await
+        .map_err(|e| AppError::DatabaseError(e.to_string()))?;
+        Ok(())
+    }
+
+    pub async fn list_plugin_permission_grants(&self, plugin_id: &str) -> Result<Vec<(String, bool)>> {
+        let pid = plugin_id.trim();
+        if pid.is_empty() {
+            return Ok(vec![]);
+        }
+        let rows = sqlx::query(
+            "SELECT permission, enabled FROM plugin_permission_grants WHERE plugin_id = ? ORDER BY permission ASC",
+        )
+        .bind(pid)
+        .fetch_all(&self.pool)
+        .await
+        .map_err(|e| AppError::DatabaseError(e.to_string()))?;
+        let mut out = Vec::with_capacity(rows.len());
+        for r in rows {
+            let perm: String = r.try_get("permission").unwrap_or_default();
+            let en: i64 = r.try_get("enabled").unwrap_or(0);
+            out.push((perm, en != 0));
+        }
+        Ok(out)
+    }
+
+    pub async fn insert_plugin_audit_log(
+        &self,
+        plugin_id: &str,
+        action: &str,
+        permission: Option<&str>,
+        allowed: bool,
+        meta_json: &str,
+    ) -> Result<()> {
+        let pid = plugin_id.trim();
+        let action = action.trim();
+        if pid.is_empty() || action.is_empty() {
+            return Ok(());
+        }
+        let now = Utc::now().to_rfc3339();
+        sqlx::query(
+            "INSERT INTO plugin_audit_log (plugin_id, action, permission, allowed, meta_json, created_at)
+             VALUES (?, ?, ?, ?, ?, ?)",
+        )
+        .bind(pid)
+        .bind(action)
+        .bind(permission.map(str::trim).filter(|s| !s.is_empty()))
+        .bind(if allowed { 1i64 } else { 0i64 })
+        .bind(meta_json)
+        .bind(&now)
+        .execute(&self.pool)
+        .await
+        .map_err(|e| AppError::DatabaseError(e.to_string()))?;
+        Ok(())
+    }
+
     // ===== 记忆操作 =====
 
     /// 保存长期记忆

@@ -48,6 +48,8 @@ const CommonErrorMessages: Record<string, string> = {
   ZIP_TOO_MANY_FILES: "zip 文件过多，已阻止解压安装。",
   ZIP_SINGLE_FILE_TOO_LARGE: "zip 内单文件过大，已阻止解压安装。",
   ZIP_TOTAL_TOO_LARGE: "zip 总大小过大，已阻止解压安装。",
+  PLUGIN_PERMISSION_NOT_GRANTED:
+    "该插件尚未被授予所需权限，已阻止调用。请在插件权限管理中授权后再试。",
 };
 
 function parseBackendError(err: unknown): { code?: string; raw: string } {
