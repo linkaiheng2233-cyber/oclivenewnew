@@ -95,8 +95,22 @@
 | `OCLIVE_REMOTE_LLM_URL` | 非空且角色包 `plugin_backends.llm = remote` 时，**LLM** 请求发往该 URL |
 | `OCLIVE_REMOTE_LLM_TIMEOUT_MS` | 可选；默认 `120000` |
 | `OCLIVE_REMOTE_LLM_TOKEN` | 可选；Bearer |
+| `OCLIVE_REMOTE_AGENT_URL` | 非空且角色包 `plugin_backends.agent = remote` 时，**Agent** 请求发往该 URL（`agent.process`） |
+| `OCLIVE_REMOTE_AGENT_TIMEOUT_MS` | 可选；默认 `30000` |
+| `OCLIVE_REMOTE_AGENT_TOKEN` | 可选；Bearer |
 
 未设置对应 URL 时，即使角色包写了 `remote`，宿主也会使用**占位回退**（builtin 或进程内 LLM），并可能打一次警告日志。
+
+### 2.1 云端直连 LLM（OpenAI-compatible）
+
+宿主支持“直连云端 HTTP API”（无需 JSON-RPC 侧车）。当配置了下列环境变量时，宿主会优先使用云端直连 LLM：
+
+| 变量 | 作用 |
+|------|------|
+| `OCLIVE_CLOUD_LLM_BASE_URL` | OpenAI-compatible base URL（例如 `https://api.openai.com` 或自建兼容网关） |
+| `OCLIVE_CLOUD_LLM_API_KEY` | API Key（Bearer） |
+| `OCLIVE_CLOUD_LLM_MODEL` | 可选；默认模型名（当调用方未传 `model` 时使用） |
+| `OCLIVE_CLOUD_LLM_TIMEOUT_MS` | 可选；默认 `120000` |
 
 ---
 
@@ -344,6 +358,30 @@
 - **或** `result` **本身为字符串**  
 
 `generate_tag` 用于低温度短输出（立绘标签、位移意图等）。
+
+---
+
+### 4.7 `agent.process`
+
+用于将“Agent（第七模块）”实现外置为 **remote / directory** 插件后端（ReAct / Hermes / OpenClaw 等皆可通过该入口接入）。
+
+**params**
+
+| 字段 | 类型 | 说明 |
+|------|------|------|
+| `role_id` | 字符串 | 当前角色 id |
+| `session_namespace` | 字符串 | 会话命名空间 |
+| `message` | 字符串 | 用户请求（或系统转交给 agent 的指令） |
+| `model` | 字符串 | 模型名（侧车可忽略或自用） |
+
+**result**
+
+| 字段 | 类型 | 说明 |
+|------|------|------|
+| `handled` | bool | 是否由 agent 接管并产出回复 |
+| `reply` | 字符串 | agent 生成的回复文本 |
+
+宿主会把 `handled=false` 视为“未接管”，继续走默认对话编排；`handled=true` 则直接使用 `reply`。
 
 ---
 

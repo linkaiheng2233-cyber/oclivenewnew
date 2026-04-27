@@ -5,19 +5,19 @@
 //!
 //! 详见 `docs/REMOTE_PLUGIN_PROTOCOL.md`。
 
+mod agent_http;
 mod complex_emotion_http;
 mod config;
 mod emotion_http;
 mod event_http;
 mod jsonrpc;
-mod agent_http;
 mod llm_http;
 mod memory_http;
 mod prompt_http;
 
+pub use agent_http::RemoteAgentHttp;
 pub use complex_emotion_http::RemoteComplexEmotionHttp;
 pub use config::RemotePluginHttpConfig;
-pub use agent_http::RemoteAgentHttp;
 pub use emotion_http::RemoteUserEmotionAnalyzerHttp;
 pub use event_http::RemoteEventEstimatorHttp;
 pub use llm_http::RemoteLlmHttp;
@@ -86,7 +86,9 @@ pub fn llm_remote_backend(default_llm: Arc<dyn LlmClient>) -> Arc<dyn LlmClient>
     }
 }
 
-pub fn agent_remote_backend(default_agent: Arc<dyn crate::domain::agent::AgentProvider>) -> Arc<dyn crate::domain::agent::AgentProvider> {
+pub fn agent_remote_backend(
+    default_agent: Arc<dyn crate::domain::agent::AgentProvider>,
+) -> Arc<dyn crate::domain::agent::AgentProvider> {
     if let Some(cfg) = RemotePluginHttpConfig::from_env_agent() {
         log::info!(
             target: "oclive_plugin",

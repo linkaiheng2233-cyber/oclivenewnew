@@ -5,6 +5,7 @@
 //!
 //! 详见 `docs/REMOTE_PLUGIN_PROTOCOL.md`。
 
+mod agent_http;
 mod complex_emotion_http;
 mod config;
 mod emotion_http;
@@ -14,6 +15,7 @@ mod llm_http;
 mod memory_http;
 mod prompt_http;
 
+pub use agent_http::RemoteAgentHttp;
 pub use complex_emotion_http::RemoteComplexEmotionHttp;
 pub use config::RemotePluginHttpConfig;
 pub use emotion_http::RemoteUserEmotionAnalyzerHttp;
@@ -28,7 +30,7 @@ use crate::domain::prompt_assembler::{PromptAssembler, RemotePromptAssemblerPlac
 use crate::domain::user_emotion_analyzer::{
     RemoteUserEmotionAnalyzerPlaceholder, UserEmotionAnalyzer,
 };
-use crate::infrastructure::llm::{LlmClient, RemoteLlmPlaceholder};
+use crate::infrastructure::llm::{cloud_llm_from_env, LlmClient, RemoteLlmPlaceholder};
 use serde_json::Value;
 use std::sync::Arc;
 
@@ -69,6 +71,9 @@ pub fn plugin_remote_group() -> PluginRemoteGroup {
 }
 
 pub fn llm_remote_backend(default_llm: Arc<dyn LlmClient>) -> Arc<dyn LlmClient> {
+    if let Some(cloud) = cloud_llm_from_env() {
+        return cloud;
+    }
     if let Some(cfg) = RemotePluginHttpConfig::from_env_llm() {
         log::info!(
             target: "oclive_plugin",
@@ -78,6 +83,21 @@ pub fn llm_remote_backend(default_llm: Arc<dyn LlmClient>) -> Arc<dyn LlmClient>
         Arc::new(RemoteLlmHttp::new(cfg))
     } else {
         Arc::new(RemoteLlmPlaceholder::new(default_llm))
+    }
+}
+
+pub fn agent_remote_backend(
+    default_agent: Arc<dyn crate::domain::agent::AgentProvider>,
+) -> Arc<dyn crate::domain::agent::AgentProvider> {
+    if let Some(cfg) = RemotePluginHttpConfig::from_env_agent() {
+        log::info!(
+            target: "oclive_plugin",
+            "remote Agent HTTP active -> {}",
+            cfg.endpoint
+        );
+        Arc::new(RemoteAgentHttp::new(cfg))
+    } else {
+        default_agent
     }
 }
 

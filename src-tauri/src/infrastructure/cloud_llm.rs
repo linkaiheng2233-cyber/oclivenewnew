@@ -3,8 +3,8 @@
 //! This is intended for "cloud API" usage without requiring a JSON-RPC sidecar.
 
 use crate::error::{AppError, Result};
-use crate::infrastructure::llm_params;
 use crate::infrastructure::llm::LlmClient;
+use crate::infrastructure::llm_params;
 use async_trait::async_trait;
 use serde::{Deserialize, Serialize};
 use std::time::Duration;
@@ -82,7 +82,13 @@ impl OpenAiCompatLlmClient {
             .unwrap_or("gpt-4o-mini")
     }
 
-    async fn call(&self, model: &str, prompt: &str, temperature: Option<f32>, top_p: Option<f32>) -> Result<String> {
+    async fn call(
+        &self,
+        model: &str,
+        prompt: &str,
+        temperature: Option<f32>,
+        top_p: Option<f32>,
+    ) -> Result<String> {
         let req = OpenAiChatCompletionsRequest {
             model: self.pick_model(model).to_string(),
             messages: vec![OpenAiChatMessage {
@@ -112,8 +118,9 @@ impl OpenAiCompatLlmClient {
                 raw
             )));
         }
-        let parsed: OpenAiChatCompletionsResponse = serde_json::from_str(&raw)
-            .map_err(|e| AppError::OllamaError(format!("cloud llm parse failed: {} raw={}", e, raw)))?;
+        let parsed: OpenAiChatCompletionsResponse = serde_json::from_str(&raw).map_err(|e| {
+            AppError::OllamaError(format!("cloud llm parse failed: {} raw={}", e, raw))
+        })?;
         let text = parsed
             .choices
             .first()
@@ -168,4 +175,3 @@ struct OpenAiChoice {
 struct OpenAiChoiceMessage {
     content: Option<String>,
 }
-

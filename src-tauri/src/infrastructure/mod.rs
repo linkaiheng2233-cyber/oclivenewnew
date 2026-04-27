@@ -3,10 +3,10 @@
 //! 提供基础服务和数据访问功能
 
 pub mod cache;
+pub mod cloud_llm;
 pub mod db;
 pub mod deep_link;
 pub mod directory_plugins;
-pub mod cloud_llm;
 pub mod function_call_parser;
 pub mod hotkey_bindings;
 pub mod llm;
