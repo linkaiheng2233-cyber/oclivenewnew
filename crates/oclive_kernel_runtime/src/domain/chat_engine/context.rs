@@ -54,4 +54,3 @@ pub fn validate_scene_id(
     }
     Ok((scene_id, scenes))
 }
-
