@@ -25,7 +25,9 @@ import {
   applyAuthorSuggestedPluginBackends,
   packPlugin,
   previewPluginZipPermissions,
+  listPermissionTokens,
   type PluginMarketEntryDto,
+  type PermissionTokenInfoDto,
 } from "../utils/tauri-api";
 import { getPluginMarketSourcesConfig } from "../utils/tauri-api";
 import { OFFICIAL_UI_SLOTS } from "../lib/shellCapabilities";
@@ -44,12 +46,57 @@ const permConsentSelected = ref<Record<string, boolean>>({});
 const permConsentTrustSummary = ref<string>("");
 let permConsentResolver: ((v: string[] | null) => void) | null = null;
 
+const permTokenInfoLoading = ref(false);
+const permTokenInfoMap = ref<Map<string, PermissionTokenInfoDto>>(new Map());
+
+async function refreshPermissionTokenInfos(): Promise<void> {
+  permTokenInfoLoading.value = true;
+  try {
+    const res = await listPermissionTokens();
+    const map = new Map<string, PermissionTokenInfoDto>();
+    for (const x of res.tokens ?? []) {
+      if (!x?.token) continue;
+      map.set(x.token, x);
+    }
+    permTokenInfoMap.value = map;
+  } finally {
+    permTokenInfoLoading.value = false;
+  }
+}
+
+function permRiskOf(token: string): string | undefined {
+  return permTokenInfoMap.value.get(token)?.risk;
+}
+
+function riskLabel(risk: string | undefined): string {
+  if (risk === "high") return "高风险";
+  if (risk === "medium") return "中风险";
+  if (risk === "low") return "低风险";
+  return "未知";
+}
+
+function riskClass(risk: string | undefined): string {
+  if (risk === "high") return "risk-high";
+  if (risk === "medium") return "risk-medium";
+  if (risk === "low") return "risk-low";
+  return "risk-unknown";
+}
+
 function calcPermRisk(perms: string[]) {
   const hasNetwork = perms.some((p) => p === "network:*" || p.startsWith("network:"));
   const hasFs = perms.some((p) => p.startsWith("filesystem:"));
   const hasShell = perms.some((p) => p.startsWith("shell:") || p === "process:spawn");
   const hasRpcInvoke = perms.includes("rpc:invoke");
   return { hasNetwork, hasFs, hasShell, hasRpcInvoke };
+}
+
+function hasHighRiskPermission(perms: string[]): boolean {
+  // Prefer registry when available; fall back to heuristic for forward-compat tokens.
+  if (permTokenInfoMap.value.size > 0) {
+    return perms.some((p) => permRiskOf(p) === "high");
+  }
+  const { hasNetwork, hasFs, hasShell, hasRpcInvoke } = calcPermRisk(perms);
+  return (hasNetwork && hasFs && hasShell) || hasRpcInvoke;
 }
 
 async function requestPermissionConsent(
@@ -130,6 +177,7 @@ watch(
   (vis) => {
     if (vis) {
       void pluginStore.loadCachedPluginMarket();
+      void refreshPermissionTokenInfos();
       void loadMarketSourcesForPanel();
     }
   },
@@ -285,15 +333,9 @@ async function onInstallMarketEntry(row: PluginMarketEntryDto) {
     trust,
   );
   if (accepted == null) return;
-  const { hasNetwork, hasFs, hasShell, hasRpcInvoke } = calcPermRisk(accepted);
-  if ((hasNetwork && hasFs && hasShell) || hasRpcInvoke) {
+  if (hasHighRiskPermission(accepted)) {
     const ok2 = window.confirm(
-      `你已勾选高风险权限（${[
-        hasRpcInvoke ? "rpc:invoke" : "",
-        hasNetwork && hasFs && hasShell ? "network+filesystem+shell" : "",
-      ]
-        .filter(Boolean)
-        .join("，")}）。\n\n建议仅安装你信任的来源。\n\n请再次确认：是否继续安装？`,
+      `你已勾选高风险权限。\n\n建议仅安装你信任的来源。\n\n请再次确认：是否继续安装？`,
     );
     if (!ok2) return;
   }
@@ -343,15 +385,9 @@ async function onInstallMarketVersion(row: PluginMarketEntryDto) {
     trust,
   );
   if (accepted == null) return;
-  const { hasNetwork, hasFs, hasShell, hasRpcInvoke } = calcPermRisk(accepted);
-  if ((hasNetwork && hasFs && hasShell) || hasRpcInvoke) {
+  if (hasHighRiskPermission(accepted)) {
     const ok2 = window.confirm(
-      `你已勾选高风险权限（${[
-        hasRpcInvoke ? "rpc:invoke" : "",
-        hasNetwork && hasFs && hasShell ? "network+filesystem+shell" : "",
-      ]
-        .filter(Boolean)
-        .join("，")}）。\n\n建议仅安装你信任的来源。\n\n请再次确认：是否继续安装 v${v}？`,
+      `你已勾选高风险权限。\n\n建议仅安装你信任的来源。\n\n请再次确认：是否继续安装 v${v}？`,
     );
     if (!ok2) return;
   }
@@ -551,6 +587,9 @@ async function onPackSelectedPlugin(): Promise<void> {
           <p class="pm-hint">
             请选择你愿意授予的权限（安装后仍可在“已安装插件 → 权限”中随时调整）。
           </p>
+          <p v-if="permTokenInfoLoading" class="pm-muted" style="margin: 6px 0 0">
+            正在加载权限说明…
+          </p>
           <div class="pm-modal-actions">
             <button
               type="button"
@@ -581,7 +620,25 @@ async function onPackSelectedPlugin(): Promise<void> {
                   "
                 />
                 <span class="pm-perm-token">{{ p }}</span>
+                <span
+                  v-if="permTokenInfoMap.get(p)?.risk"
+                  class="pm-perm-risk"
+                  :class="riskClass(permTokenInfoMap.get(p)?.risk)"
+                >
+                  {{ riskLabel(permTokenInfoMap.get(p)?.risk) }}
+                </span>
               </label>
+              <div
+                v-if="permTokenInfoMap.get(p)?.title || permTokenInfoMap.get(p)?.description"
+                class="pm-perm-desc"
+              >
+                <div v-if="permTokenInfoMap.get(p)?.title" class="pm-perm-title">
+                  {{ permTokenInfoMap.get(p)?.title }}
+                </div>
+                <div v-if="permTokenInfoMap.get(p)?.description" class="pm-muted">
+                  {{ permTokenInfoMap.get(p)?.description }}
+                </div>
+              </div>
             </li>
           </ul>
           <div class="pm-modal-actions pm-modal-actions--foot">
@@ -1386,6 +1443,34 @@ async function onPackSelectedPlugin(): Promise<void> {
 .pm-perm-token {
   font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono",
     "Courier New", monospace;
+}
+.pm-perm-title {
+  font-size: 12px;
+  color: var(--text-secondary);
+}
+.pm-perm-desc {
+  margin-left: 22px;
+  margin-top: 2px;
+}
+.pm-perm-risk {
+  font-size: 11px;
+  padding: 1px 6px;
+  border-radius: 999px;
+  border: 1px solid var(--border-light);
+  background: var(--bg-elevated);
+  color: var(--text-secondary);
+}
+.pm-perm-risk.risk-high {
+  color: var(--danger-600, #c0392b);
+  border-color: color-mix(in srgb, var(--danger-600, #c0392b) 40%, var(--border-light));
+}
+.pm-perm-risk.risk-medium {
+  color: var(--warn-700, #b9770e);
+  border-color: color-mix(in srgb, var(--warn-700, #b9770e) 40%, var(--border-light));
+}
+.pm-perm-risk.risk-low {
+  color: var(--success-700, #1e7e34);
+  border-color: color-mix(in srgb, var(--success-700, #1e7e34) 40%, var(--border-light));
 }
 .pm-dialog {
   position: relative;
