@@ -8,13 +8,16 @@ use crate::domain::policy::{
     EmotionPolicyConfig, EventPolicy, MemoryPolicy, MemoryPolicyConfig, PolicyConfig,
 };
 use crate::domain::prompt_assembler::PromptAssembler;
+use crate::domain::repository::{FavorabilityRepository, MemoryRepository};
 use crate::error::Result;
 use crate::infrastructure::db::DbManager;
 use crate::infrastructure::directory_plugins::DirectoryPluginRuntime;
 use crate::infrastructure::llm::ollama_llm;
 use crate::infrastructure::llm::LlmClient;
 use crate::infrastructure::ollama_client::OllamaClient;
-use crate::infrastructure::repositories::{SqliteFavorabilityRepository, SqliteMemoryRepository};
+use crate::infrastructure::repositories_runtime::{
+    SqliteFavorabilityRepository, SqliteMemoryRepository,
+};
 use crate::infrastructure::storage::RoleStorage;
 use crate::models::{
     LlmBackend, PersonalitySource, PersonalityVector, PluginBackendSource, PluginBackends,
@@ -23,7 +26,6 @@ use crate::models::{
 use crate::state::resolve_roles_dir;
 use oclivenewnew_tauri::domain::event_estimator::EventEstimator;
 use oclivenewnew_tauri::domain::memory_retrieval::MemoryRetrieval;
-use oclivenewnew_tauri::domain::repository::{FavorabilityRepository, MemoryRepository};
 use oclivenewnew_tauri::domain::user_emotion_analyzer::UserEmotionAnalyzer;
 use parking_lot::{Mutex, RwLock};
 use serde::Deserialize;
