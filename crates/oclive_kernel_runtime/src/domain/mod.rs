@@ -10,6 +10,7 @@ pub mod emotion_analyzer;
 pub mod event_detector;
 pub mod event_estimator;
 pub mod event_impact_ai;
+pub mod personality_engine;
 pub mod relation_engine;
 pub mod user_emotion_analyzer;
 
@@ -22,7 +23,6 @@ pub use oclivenewnew_tauri::domain::local_plugin_bridge;
 pub use oclivenewnew_tauri::domain::memory_engine;
 pub use oclivenewnew_tauri::domain::memory_retrieval;
 pub use oclivenewnew_tauri::domain::mutable_profile_llm;
-pub use oclivenewnew_tauri::domain::personality_engine;
 pub use oclivenewnew_tauri::domain::plugin_host;
 pub use oclivenewnew_tauri::domain::policy;
 pub use oclivenewnew_tauri::domain::portrait_emotion_engine;
