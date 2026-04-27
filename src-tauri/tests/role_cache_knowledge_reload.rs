@@ -51,7 +51,7 @@ fn write_minimal_role(root: &Path) {
     .unwrap();
 }
 
-#[tokio::test]
+#[tokio::test(flavor = "multi_thread")]
 async fn load_role_updates_role_cache_after_knowledge_file_change() {
     let tmp = tempdir().unwrap();
     let roles = tmp.path().to_path_buf();

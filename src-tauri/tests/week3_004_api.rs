@@ -33,7 +33,7 @@ fn roles_dir() -> PathBuf {
     PathBuf::from(env!("CARGO_MANIFEST_DIR")).join("../roles")
 }
 
-#[tokio::test]
+#[tokio::test(flavor = "multi_thread")]
 async fn week3_004_load_role_and_get_info() {
     let llm = Arc::new(MockLlmClient {
         reply: "ok".to_string(),
@@ -71,7 +71,7 @@ async fn week3_004_load_role_and_get_info() {
     );
 }
 
-#[tokio::test]
+#[tokio::test(flavor = "multi_thread")]
 async fn week3_004_get_role_info_before_runtime_fails() {
     let llm = Arc::new(MockLlmClient {
         reply: "ok".to_string(),
@@ -84,7 +84,7 @@ async fn week3_004_get_role_info_before_runtime_fails() {
     assert!(err.contains("load_role"));
 }
 
-#[tokio::test]
+#[tokio::test(flavor = "multi_thread")]
 async fn week3_004_session_backend_override_uses_session_namespace() {
     let llm = Arc::new(MockLlmClient {
         reply: "ok".to_string(),
@@ -142,7 +142,7 @@ async fn week3_004_session_backend_override_uses_session_namespace() {
     );
 }
 
-#[tokio::test]
+#[tokio::test(flavor = "multi_thread")]
 async fn week3_004_session_memory_local_provider_id_without_touching_memory_enum() {
     let llm = Arc::new(MockLlmClient {
         reply: "ok".to_string(),
@@ -223,7 +223,7 @@ async fn week3_004_session_memory_local_provider_id_without_touching_memory_enum
     );
 }
 
-#[tokio::test]
+#[tokio::test(flavor = "multi_thread")]
 async fn week3_004_session_backend_explicit_null_clears_module_override() {
     let llm = Arc::new(MockLlmClient {
         reply: "ok".to_string(),
@@ -279,7 +279,7 @@ async fn week3_004_session_backend_explicit_null_clears_module_override() {
     );
 }
 
-#[tokio::test]
+#[tokio::test(flavor = "multi_thread")]
 async fn week3_004_local_memory_provider_id_rejects_non_memory_module() {
     let llm = Arc::new(MockLlmClient {
         reply: "ok".to_string(),
@@ -306,7 +306,7 @@ async fn week3_004_local_memory_provider_id_rejects_non_memory_module() {
     assert!(err.contains("module=memory"));
 }
 
-#[tokio::test]
+#[tokio::test(flavor = "multi_thread")]
 async fn week3_004_plugin_resolution_debug_reports_session_override_and_namespace() {
     let llm = Arc::new(MockLlmClient {
         reply: "ok".to_string(),
@@ -357,7 +357,7 @@ async fn week3_004_plugin_resolution_debug_reports_session_override_and_namespac
     );
 }
 
-#[tokio::test]
+#[tokio::test(flavor = "multi_thread")]
 async fn week3_004_export_chat_logs_with_plugin_debug_includes_section() {
     let llm = Arc::new(MockLlmClient {
         reply: "ok".to_string(),
@@ -387,7 +387,7 @@ async fn week3_004_export_chat_logs_with_plugin_debug_includes_section() {
     assert!(out.content.contains("local_providers: count=0 ids=none"));
 }
 
-#[tokio::test]
+#[tokio::test(flavor = "multi_thread")]
 async fn week3_004_query_memories_and_events() {
     let llm = Arc::new(MockLlmClient {
         reply: "模拟".to_string(),
@@ -431,7 +431,7 @@ async fn week3_004_query_memories_and_events() {
     assert!(evs[0].bot_emotion.is_some());
 }
 
-#[tokio::test]
+#[tokio::test(flavor = "multi_thread")]
 async fn week3_004_create_event_and_query() {
     let llm = Arc::new(MockLlmClient {
         reply: "ok".to_string(),
@@ -471,7 +471,7 @@ async fn week3_004_create_event_and_query() {
     }));
 }
 
-#[tokio::test]
+#[tokio::test(flavor = "multi_thread")]
 async fn week3_004_create_event_invalid_type() {
     let llm = Arc::new(MockLlmClient {
         reply: "ok".to_string(),
@@ -498,7 +498,7 @@ async fn week3_004_create_event_invalid_type() {
     assert!(err.contains("Invalid event_type"));
 }
 
-#[tokio::test]
+#[tokio::test(flavor = "multi_thread")]
 async fn week3_004_query_limits_return_invalid_parameter_code() {
     let llm = Arc::new(MockLlmClient {
         reply: "ok".to_string(),
@@ -532,7 +532,7 @@ async fn week3_004_query_limits_return_invalid_parameter_code() {
     assert!(err2.contains("[INVALID_PARAMETER]"));
 }
 
-#[tokio::test]
+#[tokio::test(flavor = "multi_thread")]
 async fn week3_004_list_roles_and_switch_role() {
     let llm = Arc::new(MockLlmClient {
         reply: "ok".to_string(),
@@ -549,7 +549,7 @@ async fn week3_004_list_roles_and_switch_role() {
     assert_eq!(switched.role_id, "mumu");
 }
 
-#[tokio::test]
+#[tokio::test(flavor = "multi_thread")]
 async fn week3_004_set_user_relation_and_evolution_factor() {
     let llm = Arc::new(MockLlmClient {
         reply: "ok".to_string(),
@@ -606,7 +606,7 @@ async fn week3_004_set_user_relation_and_evolution_factor() {
     assert!(err2.contains("unknown relation"));
 }
 
-#[tokio::test]
+#[tokio::test(flavor = "multi_thread")]
 async fn week3_004_set_scene_user_relation_validates_and_persists() {
     let llm = Arc::new(MockLlmClient {
         reply: "ok".to_string(),
@@ -650,7 +650,7 @@ async fn week3_004_set_scene_user_relation_validates_and_persists() {
     assert!(bad_scene.contains("scene_id not in role pack"));
 }
 
-#[tokio::test]
+#[tokio::test(flavor = "multi_thread")]
 async fn week3_004_scene_relation_overrides_global_in_chat() {
     let llm = Arc::new(MockLlmClient {
         reply: "ok".to_string(),
@@ -713,7 +713,7 @@ async fn week3_004_scene_relation_overrides_global_in_chat() {
 
 /// `get_role_info` / `switch_scene` 返回的亲密度应按**当前场景解析出的身份**从 `role_identity_stats` 读取；
 /// 全局 `role_runtime.current_favorability` 可能仍是上一身份镜像，不得单独作为 UI 来源。
-#[tokio::test]
+#[tokio::test(flavor = "multi_thread")]
 async fn week3_004_get_role_info_favor_follows_scene_identity_not_global_column() {
     let llm = Arc::new(MockLlmClient {
         reply: "ok".to_string(),

@@ -772,7 +772,7 @@ mod tests {
     use std::fs;
     use tempfile::TempDir;
 
-    #[tokio::test]
+    #[tokio::test(flavor = "multi_thread")]
     async fn invalidate_personality_cache_for_role_clears_manifest_and_sess_keys() {
         let state = AppState::new_in_memory_with_llm(
             Arc::new(crate::infrastructure::llm::MockLlmClient {
@@ -801,14 +801,14 @@ mod tests {
         assert!(c.contains_key("r2"));
     }
 
-    #[tokio::test]
+    #[tokio::test(flavor = "multi_thread")]
     async fn test_app_state_creation() {
         let tmp = TempDir::new().expect("temp");
         let state = AppState::new(":memory:", None, tmp.path()).await;
         assert!(state.is_ok());
     }
 
-    #[tokio::test]
+    #[tokio::test(flavor = "multi_thread")]
     async fn test_scene_policy_fallback_works() {
         let state = AppState::new_in_memory_with_llm(
             Arc::new(crate::infrastructure::llm::MockLlmClient {
@@ -823,7 +823,7 @@ mod tests {
         assert_eq!(default_ptr, scene_ptr);
     }
 
-    #[tokio::test]
+    #[tokio::test(flavor = "multi_thread")]
     async fn bootstrap_local_plugins_from_manifest_dir() {
         let dir = TempDir::new().expect("temp");
         let local_dir = dir.path().join("_local_plugins");

@@ -19,7 +19,7 @@ async fn response_json(res: axum::response::Response) -> Value {
     serde_json::from_slice(&bytes).expect("json")
 }
 
-#[tokio::test]
+#[tokio::test(flavor = "multi_thread")]
 async fn http_api_health_ok() {
     let llm = Arc::new(MockLlmClient {
         reply: "ok".to_string(),
@@ -44,7 +44,7 @@ async fn http_api_health_ok() {
     assert_eq!(bytes.as_ref(), b"ok");
 }
 
-#[tokio::test]
+#[tokio::test(flavor = "multi_thread")]
 async fn http_api_chat_empty_message_400() {
     let llm = Arc::new(MockLlmClient {
         reply: "ok".to_string(),
@@ -75,7 +75,7 @@ async fn http_api_chat_empty_message_400() {
     assert_eq!(v["error"]["code"], "empty_message");
 }
 
-#[tokio::test]
+#[tokio::test(flavor = "multi_thread")]
 async fn http_api_chat_ok_includes_personality_source_and_reply() {
     let llm = Arc::new(MockLlmClient {
         reply: "模拟回复".to_string(),

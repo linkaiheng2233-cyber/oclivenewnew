@@ -49,6 +49,8 @@
 - `shell:commands:<name>`（或更细的 allowlist）
 - `process:spawn`：**已在 v1 强制校验**——当插件被配置为任意固定模块的 `directory` 后端时，宿主在启动其 RPC 子进程前会检查该权限；未授权则拒绝并回退到 builtin（同时写入审计）。
 
+补充：`network:*` 的强制校验将优先落在 **Remote HTTP 侧车**（`OCLIVE_REMOTE_*`）这种“系统提供者”路径上：当角色包把某模块设置为 `backend="remote"` 时，若未授予 `network:*`，宿主会拒绝选择 Remote Provider 并回退到 builtin/placeholder，同时写入审计。
+
 ---
 
 ## 3. 高风险组合（必须二次确认）

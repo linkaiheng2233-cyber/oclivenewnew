@@ -272,6 +272,7 @@ impl BackendRegistry {
         let rem = remote_plugin::plugin_remote_group();
         let complex_emotion_remote: Arc<dyn ComplexEmotionProvider> =
             remote_plugin::complex_emotion_remote_backend();
+
         let complex_emotion_builtin: Arc<dyn ComplexEmotionProvider> =
             Arc::new(BuiltinKeywordComplexEmotionProvider);
         let complex_emotion_none: Arc<dyn ComplexEmotionProvider> =
