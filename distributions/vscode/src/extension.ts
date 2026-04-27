@@ -192,12 +192,27 @@ function kernelHelp(): void {
         env +
         "\n\nTip: set oclive.oocp.url to ws://127.0.0.1:<port>/oocp",
       "Copy start command",
+      "Open kernel README",
       "Open settings",
     )
     .then(async (picked) => {
       if (picked === "Copy start command") {
         await vscode.env.clipboard.writeText(cmd);
         vscode.window.showInformationMessage("Copied: " + cmd);
+      } else if (picked === "Open kernel README") {
+        // Best-effort: open repo-local README when this repo is the workspace.
+        const matches = await vscode.workspace.findFiles(
+          "**/crates/oclive_kernel_server/README.md",
+          "**/target/**",
+          1,
+        );
+        if (matches.length > 0) {
+          await vscode.commands.executeCommand("vscode.open", matches[0]);
+        } else {
+          vscode.window.showWarningMessage(
+            "Kernel README not found in current workspace. Open the oclivenewnew repo folder in VSCode to view it.",
+          );
+        }
       } else if (picked === "Open settings") {
         void vscode.commands.executeCommand(
           "workbench.action.openSettings",

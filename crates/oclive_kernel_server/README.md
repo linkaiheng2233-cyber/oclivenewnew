@@ -16,10 +16,11 @@ Optional env:
 
 - `OOCP_API_PORT`: listening port (default `48888`)
 - `OOCP_API_TOKEN`: enable Bearer auth (optional)
+- `OCLIVE_DB_PATH`: sqlite db path (optional; default under app data dir)
+- `OCLIVE_ROLES_DIR`: roles root dir (optional)
+- `OCLIVE_APP_DATA_DIR`: app data dir (optional)
 
-## Status (Phase 2)
+## Status
 
-This binary currently wires the **OOCP transport + protocol handler** but does **not** yet
-wire the full runtime (roles, DB, plugins). That wiring is the next step of the “Linux kernel”
-transition.
+This binary runs the **full kernel runtime** (roles, DB, plugin backends) and exposes it via OOCP.
 
