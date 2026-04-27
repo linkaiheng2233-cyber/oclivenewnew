@@ -17,6 +17,7 @@ pub mod memory_engine;
 pub mod memory_retrieval;
 pub mod personality_engine;
 pub mod portrait_emotion_engine;
+pub mod plugin_host;
 pub mod policy;
 pub mod prompt_assembler;
 pub mod prompt_builder;
@@ -32,6 +33,7 @@ pub mod user_identity;
 pub use oclivenewnew_tauri::domain::knowledge_loader;
 pub use oclivenewnew_tauri::domain::agent;
 pub use oclivenewnew_tauri::domain::mutable_profile_llm;
-pub use oclivenewnew_tauri::domain::plugin_host;
 pub use oclivenewnew_tauri::domain::profile_personality;
 pub use oclivenewnew_tauri::domain::role_manager;
+
+pub use local_plugin_bridge::LOCAL_PLUGIN_SCHEMA_VERSION;

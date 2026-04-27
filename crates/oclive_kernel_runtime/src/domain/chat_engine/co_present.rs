@@ -4,7 +4,7 @@ use crate::domain::chat_llm_fallback::{fallback_reply_for_llm_failure, FallbackR
 use crate::domain::chat_turn::{relation_favor_for_key, weight_memories_for_scene};
 use crate::domain::chat_turn_rules::{soft_append_guard, strip_hallucination_tokens};
 use crate::domain::life_schedule::{format_life_prompt_line, resolve_life_state};
-use oclivenewnew_tauri::domain::memory_retrieval::MemoryRetrievalInput;
+use crate::domain::memory_retrieval::MemoryRetrievalInput;
 use crate::domain::personality_engine::PersonalityEngine;
 use crate::domain::policy::PolicyContext;
 use crate::domain::portrait_emotion_engine::resolve_portrait_emotion;
