@@ -1,5 +1,5 @@
 use crate::error::{AppError, Result};
-use crate::models::Memory;
+use crate::models::{Event, EventType, Memory};
 use chrono::{DateTime, Utc};
 use sqlx::SqlitePool;
 
@@ -205,5 +205,64 @@ impl DbManager {
                 .await
                 .map_err(|e| AppError::DatabaseError(e.to_string()))?;
         Ok(row.and_then(|(c,)| c).unwrap_or_default())
+    }
+
+    // ===== Short-term memory / events (needed by chat orchestration) =====
+
+    /// 最近 N 轮对话（旧→新），仅 user/bot 文本，供立绘情绪等上下文
+    pub async fn list_short_term_recent_turns(
+        &self,
+        role_id: &str,
+        limit: i64,
+    ) -> Result<Vec<(String, String)>> {
+        let rows = sqlx::query_as::<_, (String, String)>(
+            "SELECT user_input, bot_reply FROM short_term_memory
+             WHERE role_id = ?
+             ORDER BY datetime(created_at) DESC
+             LIMIT ?",
+        )
+        .bind(role_id)
+        .bind(limit)
+        .fetch_all(&self.pool)
+        .await
+        .map_err(|e| AppError::DatabaseError(e.to_string()))?;
+        Ok(rows.into_iter().rev().collect())
+    }
+
+    /// 获取角色事件历史
+    pub async fn get_events(&self, role_id: &str, limit: i32) -> Result<Vec<Event>> {
+        let rows = sqlx::query_as::<_, (String, String, String, String)>(
+            "SELECT event_type, user_emotion, bot_emotion, resolution
+             FROM events
+             WHERE role_id = ?
+             ORDER BY created_at DESC
+             LIMIT ?",
+        )
+        .bind(role_id)
+        .bind(limit)
+        .fetch_all(&self.pool)
+        .await
+        .map_err(|e| AppError::DatabaseError(e.to_string()))?;
+
+        Ok(rows
+            .into_iter()
+            .map(|(event_type, user_emotion, bot_emotion, _resolution)| {
+                let event_type = match event_type.as_str() {
+                    "Quarrel" => EventType::Quarrel,
+                    "Apology" => EventType::Apology,
+                    "Praise" => EventType::Praise,
+                    "Complaint" => EventType::Complaint,
+                    "Confession" => EventType::Confession,
+                    "Joke" => EventType::Joke,
+                    "Ignore" => EventType::Ignore,
+                    _ => EventType::Ignore,
+                };
+                Event {
+                    event_type,
+                    user_emotion,
+                    bot_emotion,
+                }
+            })
+            .collect())
     }
 }
