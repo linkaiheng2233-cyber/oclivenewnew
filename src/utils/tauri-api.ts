@@ -668,7 +668,14 @@ export async function setRoleInteractionMode(
 
 export async function setSessionPluginBackend(
   roleId: string,
-  module: "memory" | "emotion" | "event" | "prompt" | "llm" | "agent",
+  module:
+    | "memory"
+    | "emotion"
+    | "event"
+    | "prompt"
+    | "llm"
+    | "agent"
+    | "complex_emotion",
   /** 与后端 `parse_backend_wire` 一致，如 `builtin_v2`、`directory`、`remote` */
   backend?: string | null,
   localMemoryProviderId?: string,
@@ -1345,6 +1352,44 @@ export async function listPermissionTokens(): Promise<ListPermissionTokensRespon
     "list_permission_tokens",
     {},
   );
+}
+
+export interface ProfilePluginSpecDto {
+  id: string;
+  version?: string | null;
+  source?: string | null;
+}
+
+export interface ProfilePermissionsDto {
+  predeclared: string[];
+  requireConfirm: string[];
+}
+
+export interface ProfileBackendsDto {
+  memory?: string | null;
+  emotion?: string | null;
+  event?: string | null;
+  prompt?: string | null;
+  llm?: string | null;
+  agent?: string | null;
+  complexEmotion?: string | null;
+}
+
+export interface ProfilePreviewDto {
+  id: string;
+  name: string;
+  version: string;
+  developerMode: boolean;
+  marketSources: string[];
+  plugins: ProfilePluginSpecDto[];
+  permissions?: ProfilePermissionsDto | null;
+  backends?: ProfileBackendsDto | null;
+}
+
+export async function previewProfileFromPath(path: string): Promise<ProfilePreviewDto> {
+  return invokeWithFriendlyError<ProfilePreviewDto>("preview_profile_from_path", {
+    req: { path },
+  });
 }
 
 export interface UiSchemaFieldDto {

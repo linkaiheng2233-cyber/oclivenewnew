@@ -26,8 +26,11 @@ import {
   packPlugin,
   previewPluginZipPermissions,
   listPermissionTokens,
+  previewProfileFromPath,
+  setSessionPluginBackend,
   type PluginMarketEntryDto,
   type PermissionTokenInfoDto,
+  type ProfilePreviewDto,
 } from "../utils/tauri-api";
 import { getPluginMarketSourcesConfig } from "../utils/tauri-api";
 import { OFFICIAL_UI_SLOTS } from "../lib/shellCapabilities";
@@ -48,6 +51,10 @@ let permConsentResolver: ((v: string[] | null) => void) | null = null;
 
 const permTokenInfoLoading = ref(false);
 const permTokenInfoMap = ref<Map<string, PermissionTokenInfoDto>>(new Map());
+
+const profilePreviewLoading = ref(false);
+const profilePreview = ref<ProfilePreviewDto | null>(null);
+const profileApplyLoading = ref(false);
 
 async function refreshPermissionTokenInfos(): Promise<void> {
   permTokenInfoLoading.value = true;
@@ -125,6 +132,99 @@ async function requestPermissionConsentWithTrust(
   const res = await requestPermissionConsent(title, declaredPerms);
   permConsentTrustSummary.value = trustSummary.trim();
   return res;
+}
+
+async function onPickProfilePreview(): Promise<void> {
+  const selected = await open({
+    multiple: false,
+    filters: [{ name: "Profile", extensions: ["json"] }],
+  });
+  if (!selected || typeof selected !== "string") return;
+  profilePreviewLoading.value = true;
+  try {
+    profilePreview.value = await previewProfileFromPath(selected);
+    showToast("success", `已读取 Profile：${profilePreview.value.name}`);
+  } catch (e) {
+    showToast("error", e instanceof Error ? e.message : String(e));
+  } finally {
+    profilePreviewLoading.value = false;
+  }
+}
+
+function normalizeProfileSource(s: string | null | undefined): string {
+  const t = (s ?? "").trim();
+  return t ? t : "official";
+}
+
+async function syncMarketSource(source: string): Promise<void> {
+  marketSourceSelected.value = source;
+  await pluginStore.syncPluginMarket(source === "official" ? null : source);
+  if (pluginStore.pluginMarketSnapshot?.warning) {
+    showToast("info", pluginStore.pluginMarketSnapshot.warning);
+  }
+}
+
+async function applyProfileBackends(p: ProfilePreviewDto): Promise<void> {
+  const roleId = roleStore.currentRoleId;
+  if (!roleId?.trim()) return;
+  const b = p.backends ?? null;
+  if (!b) return;
+  const pairs: Array<[string, string | null | undefined]> = [
+    ["memory", b.memory],
+    ["emotion", b.emotion],
+    ["event", b.event],
+    ["prompt", b.prompt],
+    ["llm", b.llm],
+    ["agent", b.agent],
+    ["complex_emotion", b.complexEmotion],
+  ];
+  for (const [module, backend] of pairs) {
+    if (backend === undefined) continue;
+    await setSessionPluginBackend(roleId, module as any, backend ?? null);
+  }
+}
+
+async function onApplyProfile(): Promise<void> {
+  const p = profilePreview.value;
+  if (!p) return;
+  if (profileApplyLoading.value) return;
+
+  profileApplyLoading.value = true;
+  try {
+    const all = p.plugins ?? [];
+    if (all.length === 0) {
+      showToast("info", "该 Profile 未声明 plugins，已跳过插件安装。");
+    } else {
+      const sources = [...new Set(all.map((x) => normalizeProfileSource(x.source)))];
+      for (const s of sources) {
+        await syncMarketSource(s);
+        for (const spec of all.filter((x) => normalizeProfileSource(x.source) === s)) {
+          const pid = (spec.id ?? "").trim();
+          if (!pid) continue;
+          const row = pluginStore.pluginMarketSnapshot?.plugins?.find((r) => r.id === pid);
+          if (!row) {
+            showToast("error", `索引未找到插件：${pid}（source=${s}）`);
+            continue;
+          }
+          if (spec.version?.trim()) {
+            marketPickedVersion.value = {
+              ...marketPickedVersion.value,
+              [pid]: spec.version.trim(),
+            };
+            await onInstallMarketVersion(row);
+          } else {
+            await onInstallMarketEntry(row);
+          }
+        }
+      }
+    }
+    await applyProfileBackends(p);
+    showToast("success", "Profile 已应用：插件安装/权限确认已执行，后端覆盖已写入当前会话。");
+  } catch (e) {
+    showToast("error", e instanceof Error ? e.message : String(e));
+  } finally {
+    profileApplyLoading.value = false;
+  }
 }
 
 function onPermConsentCancel() {

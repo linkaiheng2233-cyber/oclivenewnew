@@ -403,6 +403,7 @@ pub fn run() {
             api::plugin_permissions::list_permission_tokens,
             api::plugin_config::get_plugin_settings_ui,
             api::plugin_config::set_plugin_settings_config,
+            api::profile::preview_profile_from_path,
         ])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");

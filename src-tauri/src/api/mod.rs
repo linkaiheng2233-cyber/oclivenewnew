@@ -19,6 +19,7 @@ pub mod plugin_permissions;
 pub mod plugin_scaffold;
 pub mod plugin_update;
 pub mod policy;
+pub mod profile;
 pub mod role;
 pub mod role_pack;
 pub mod scene;
