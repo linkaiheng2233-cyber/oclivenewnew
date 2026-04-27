@@ -1,8 +1,8 @@
 //! 场景校验与近期上下文加载（迁移中）。
 
+use crate::error::Result;
 use crate::models::Event;
 use crate::state::KernelAppState;
-use crate::error::Result;
 
 pub async fn load_recent_context(
     state: &KernelAppState,

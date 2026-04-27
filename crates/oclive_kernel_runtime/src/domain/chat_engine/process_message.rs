@@ -1,11 +1,10 @@
 //! `process_message` orchestration (kernel runtime).
 
-use super::context::validate_scene_id;
 use super::co_present;
+use super::context::validate_scene_id;
 use super::emotion_to_dto;
 use super::presence::user_is_remote_from_character;
 use crate::domain::agent::AgentInput;
-use crate::domain::remote_life_prompt::{build_remote_life_prompt, compose_remote_stub_reply};
 use crate::domain::chat_llm_fallback::{fallback_reply_for_llm_failure, FallbackReplyContext};
 use crate::domain::chat_turn::{relation_favor_for_key, weight_memories_for_scene};
 use crate::domain::chat_turn_rules::{soft_append_guard, strip_hallucination_tokens};
@@ -14,17 +13,25 @@ use crate::domain::memory_retrieval::MemoryRetrievalInput;
 use crate::domain::personality_engine::PersonalityEngine;
 use crate::domain::policy::PolicyContext;
 use crate::domain::portrait_emotion_engine::resolve_portrait_emotion;
+use crate::domain::remote_life_prompt::{build_remote_life_prompt, compose_remote_stub_reply};
 use crate::domain::user_identity::resolve_effective_user_relation_key;
 use crate::error::Result;
-use crate::models::dto::{PresenceMode, SendMessageRequest, SendMessageResponse, API_VERSION, SCHEMA_VERSION};
-use crate::models::{Event, EventType, KnowledgeIndex, Memory, PersonalitySource, PersonalityVector, Role};
+use crate::models::dto::{
+    PresenceMode, SendMessageRequest, SendMessageResponse, API_VERSION, SCHEMA_VERSION,
+};
+use crate::models::{
+    Event, EventType, KnowledgeIndex, Memory, PersonalitySource, PersonalityVector, Role,
+};
 use crate::state::KernelAppState;
 use chrono::Utc;
 use std::sync::Arc;
 use std::time::Instant;
 
 /// 处理一条用户消息：分析情绪 → 检测事件 → 演化性格 → 构建 Prompt → 调用 LLM → 持久化
-pub async fn process_message(state: &KernelAppState, req: &SendMessageRequest) -> Result<SendMessageResponse> {
+pub async fn process_message(
+    state: &KernelAppState,
+    req: &SendMessageRequest,
+) -> Result<SendMessageResponse> {
     let mrid = req.role_id.as_str();
     let state_rid = super::conversation_state_role_id(mrid, req.session_id.as_deref());
     let srid = state_rid.as_str();
@@ -355,7 +362,11 @@ async fn process_remote_life(
     let away_material = state
         .storage
         .away_life_material(mrid, char_scene_id, scene_id);
-    let vt_ms = state.db_manager.get_virtual_time_ms(srid).await?.unwrap_or(0);
+    let vt_ms = state
+        .db_manager
+        .get_virtual_time_ms(srid)
+        .await?
+        .unwrap_or(0);
     let vt_label = if vt_ms > 0 {
         chrono::DateTime::from_timestamp_millis(vt_ms)
             .map(|d| d.format("%Y-%m-%d %H:%M").to_string())
@@ -544,17 +555,16 @@ async fn process_remote_life(
                 prev.clone()
             }
         };
-        state.db_manager.set_mutable_personality(srid, &next).await?;
+        state
+            .db_manager
+            .set_mutable_personality(srid, &next)
+            .await?;
         let personality_after =
             crate::domain::profile_personality::effective_vector_from_profile(role, &next);
         let delta_out = PersonalityVector::sub_components(&personality_after, &core_v);
         state
             .db_manager
-            .set_core_delta_personality_json(
-                srid,
-                &core_v.to_json_vec(),
-                &delta_out.to_json_vec(),
-            )
+            .set_core_delta_personality_json(srid, &core_v.to_json_vec(), &delta_out.to_json_vec())
             .await?;
         state
             .personality_cache
@@ -564,11 +574,7 @@ async fn process_remote_life(
         let delta_out = PersonalityVector::sub_components(&personality, &core_v);
         state
             .db_manager
-            .set_core_delta_personality_json(
-                srid,
-                &core_v.to_json_vec(),
-                &delta_out.to_json_vec(),
-            )
+            .set_core_delta_personality_json(srid, &core_v.to_json_vec(), &delta_out.to_json_vec())
             .await?;
         state
             .personality_cache
@@ -633,4 +639,3 @@ async fn process_remote_life(
         timestamp: chrono::Utc::now().timestamp_millis(),
     })
 }
-

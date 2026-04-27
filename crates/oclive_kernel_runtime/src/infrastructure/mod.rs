@@ -4,8 +4,8 @@
 
 pub mod db;
 pub mod function_call_parser;
-pub mod repositories_runtime;
 pub mod remote_plugin;
+pub mod repositories_runtime;
 
 pub use oclivenewnew_tauri::infrastructure::{
     directory_plugins, llm, mcp_client, ollama_client, storage,

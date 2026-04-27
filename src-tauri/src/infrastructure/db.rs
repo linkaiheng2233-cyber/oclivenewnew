@@ -78,25 +78,35 @@ impl DbManager {
 
     // ===== 插件权限与审计（市场治理 v1）=====
 
-    pub async fn is_plugin_permission_granted(&self, plugin_id: &str, permission: &str) -> Result<bool> {
+    pub async fn is_plugin_permission_granted(
+        &self,
+        plugin_id: &str,
+        permission: &str,
+    ) -> Result<bool> {
         let pid = plugin_id.trim();
         let perm = permission.trim();
         if pid.is_empty() || perm.is_empty() {
             return Ok(false);
         }
-        let row = sqlx::query("SELECT enabled FROM plugin_permission_grants WHERE plugin_id = ? AND permission = ?")
-            .bind(pid)
-            .bind(perm)
-            .fetch_optional(&self.pool)
-            .await
-            .map_err(|e| AppError::DatabaseError(e.to_string()))?;
+        let row = sqlx::query(
+            "SELECT enabled FROM plugin_permission_grants WHERE plugin_id = ? AND permission = ?",
+        )
+        .bind(pid)
+        .bind(perm)
+        .fetch_optional(&self.pool)
+        .await
+        .map_err(|e| AppError::DatabaseError(e.to_string()))?;
         Ok(row
             .and_then(|r| r.try_get::<i64, _>("enabled").ok())
             .unwrap_or(0)
             != 0)
     }
 
-    pub async fn set_plugin_permission_grants(&self, plugin_id: &str, permissions: &[String]) -> Result<()> {
+    pub async fn set_plugin_permission_grants(
+        &self,
+        plugin_id: &str,
+        permissions: &[String],
+    ) -> Result<()> {
         let pid = plugin_id.trim();
         if pid.is_empty() {
             return Err(AppError::InvalidParameter("plugin_id required".into()));
@@ -135,11 +145,18 @@ impl DbManager {
         Ok(())
     }
 
-    pub async fn upsert_plugin_permission_grant(&self, plugin_id: &str, permission: &str, enabled: bool) -> Result<()> {
+    pub async fn upsert_plugin_permission_grant(
+        &self,
+        plugin_id: &str,
+        permission: &str,
+        enabled: bool,
+    ) -> Result<()> {
         let pid = plugin_id.trim();
         let perm = permission.trim();
         if pid.is_empty() || perm.is_empty() {
-            return Err(AppError::InvalidParameter("plugin_id and permission required".into()));
+            return Err(AppError::InvalidParameter(
+                "plugin_id and permission required".into(),
+            ));
         }
         let now = Utc::now().to_rfc3339();
         let en = if enabled { 1i64 } else { 0i64 };
@@ -159,7 +176,10 @@ impl DbManager {
         Ok(())
     }
 
-    pub async fn list_plugin_permission_grants(&self, plugin_id: &str) -> Result<Vec<(String, bool)>> {
+    pub async fn list_plugin_permission_grants(
+        &self,
+        plugin_id: &str,
+    ) -> Result<Vec<(String, bool)>> {
         let pid = plugin_id.trim();
         if pid.is_empty() {
             return Ok(vec![]);

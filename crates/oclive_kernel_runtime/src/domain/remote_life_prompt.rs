@@ -252,4 +252,3 @@ mod tests {
         assert_eq!(compose_remote_stub_reply(&r), "（整段旧版占位。）");
     }
 }
-

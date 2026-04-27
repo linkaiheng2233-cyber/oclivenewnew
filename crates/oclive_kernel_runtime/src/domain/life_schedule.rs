@@ -169,4 +169,3 @@ mod tests {
         assert!(resolve_life_state(ms, &s).is_none());
     }
 }
-

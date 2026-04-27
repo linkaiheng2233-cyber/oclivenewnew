@@ -203,4 +203,3 @@ pub fn load_knowledge_index(role_dir: &Path, disk: &DiskRoleManifest) -> Result<
 }
 
 pub use oclive_validation::validate_knowledge_manifest_disk;
-

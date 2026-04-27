@@ -134,7 +134,10 @@ fn unzip_archive(zip_path: &Path, dst: &Path) -> Result<(), String> {
         }
         files += 1;
         if files > MAX_FILES {
-            return Err(format!("[ZIP_TOO_MANY_FILES] zip 文件过多（>{}）", MAX_FILES));
+            return Err(format!(
+                "[ZIP_TOO_MANY_FILES] zip 文件过多（>{}）",
+                MAX_FILES
+            ));
         }
         let sz = entry.size();
         if sz > MAX_SINGLE_BYTES {
@@ -274,7 +277,9 @@ pub fn extract_plugin_zip(
             declared.iter().map(|s| s.trim().to_string()).collect();
         let ok = perms.iter().all(|p| declared_set.contains(p.trim()));
         if !ok {
-            return Err("accepted_permissions must be a subset of declared permissions".to_string());
+            return Err(
+                "accepted_permissions must be a subset of declared permissions".to_string(),
+            );
         }
     }
     let _ = tauri::async_runtime::block_on(async {

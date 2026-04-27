@@ -396,4 +396,3 @@ mod tests {
         assert_eq!(code_name(-32010), "plugin_timeout");
     }
 }
-

@@ -38,7 +38,10 @@ pub async fn get_plugin_permission_grants(
         plugin_id: pid.to_string(),
         grants: rows
             .into_iter()
-            .map(|(permission, enabled)| PluginPermissionGrantDto { permission, enabled })
+            .map(|(permission, enabled)| PluginPermissionGrantDto {
+                permission,
+                enabled,
+            })
             .collect(),
     })
 }
@@ -71,4 +74,3 @@ pub async fn set_plugin_permission_grant(
         .map_err(|e| e.to_frontend_error())?;
     Ok(())
 }
-

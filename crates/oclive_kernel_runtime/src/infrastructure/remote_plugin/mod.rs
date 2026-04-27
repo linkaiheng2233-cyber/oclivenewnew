@@ -111,4 +111,3 @@ pub fn invoke_directory_plugin_rpc_blocking(
         cfg.bearer_token.as_deref(),
     )
 }
-

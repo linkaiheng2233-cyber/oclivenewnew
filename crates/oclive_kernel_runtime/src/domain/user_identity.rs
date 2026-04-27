@@ -35,4 +35,3 @@ pub async fn resolve_effective_user_relation_key(
         .await?
         .unwrap_or_else(|| role.default_relation.clone()))
 }
-

@@ -1,8 +1,8 @@
 //! JSON-RPC：`emotion.analyze`
 
 use crate::domain::emotion_analyzer::EmotionResult;
-use crate::domain::user_emotion_analyzer::UserEmotionAnalyzer;
 use crate::domain::user_emotion_analyzer::BuiltinUserEmotionAnalyzer;
+use crate::domain::user_emotion_analyzer::UserEmotionAnalyzer;
 use crate::error::Result;
 use crate::infrastructure::remote_plugin::config::RemotePluginHttpConfig;
 use crate::infrastructure::remote_plugin::jsonrpc::{self, RemoteRpcChannel};
@@ -69,4 +69,3 @@ mod tests {
         assert_eq!(METHOD_EMOTION_ANALYZE, "emotion.analyze");
     }
 }
-

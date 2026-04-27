@@ -1,13 +1,14 @@
+use crate::api::error::ApiError;
 use crate::infrastructure::deep_link::take_pending_install_git_urls;
 use crate::infrastructure::directory_plugins::{parse_manifest_version, OclivePluginManifest};
 use crate::infrastructure::plugin_data::ensure_default_config_for_manifest;
 use crate::infrastructure::plugin_installer::{
     install_plugin, install_plugin_from_download_urls, install_plugin_from_git_tag,
-    load_cached_index, load_cached_index_for_source, missing_dependencies, sync_plugin_index_online,
-    sync_plugin_index_online_for_source, uninstall_plugin, update_install_meta_permissions,
-    update_plugin, PluginIndexEntry, PluginIndexFile, PluginIndexVersionEntry,
+    load_cached_index, load_cached_index_for_source, missing_dependencies,
+    sync_plugin_index_online, sync_plugin_index_online_for_source, uninstall_plugin,
+    update_install_meta_permissions, update_plugin, PluginIndexEntry, PluginIndexFile,
+    PluginIndexVersionEntry,
 };
-use crate::api::error::ApiError;
 use crate::state::AppState;
 use semver::Version;
 use serde::{Deserialize, Serialize};
@@ -226,7 +227,11 @@ fn build_snapshot(
         let latest = pick_latest_version(&item);
         let mut compat_item = item.clone();
         // 兼容旧前端：把 version 字段对齐到 latest（若存在）
-        if let Some(v) = latest.as_ref().map(|x| x.version.trim()).filter(|s| !s.is_empty()) {
+        if let Some(v) = latest
+            .as_ref()
+            .map(|x| x.version.trim())
+            .filter(|s| !s.is_empty())
+        {
             compat_item.version = v.to_string();
         }
         let installed_version = local_map.get(&item.id).cloned();
@@ -310,8 +315,8 @@ pub fn sync_plugin_index_command(
         match sync_plugin_index_online_for_source(&state, requested) {
             Ok(index) => Ok(build_snapshot(&state, index, false, requested, None)),
             Err(err) => {
-                let cache =
-                    load_cached_index_for_source(&state, requested).map_err(|e| e.to_frontend_error())?;
+                let cache = load_cached_index_for_source(&state, requested)
+                    .map_err(|e| e.to_frontend_error())?;
                 Ok(build_snapshot(
                     &state,
                     cache,
@@ -399,12 +404,14 @@ pub fn install_plugin_from_market(
             .as_ref()
             .ok_or_else(|| format!("plugin not found in index: {}", pid))?;
         let latest = pick_latest_version(idx)
-            .or_else(|| Some(PluginIndexVersionEntry {
-                version: idx.version.clone(),
-                download_url: None,
-                signature_url: None,
-                git_tag: None,
-            }))
+            .or_else(|| {
+                Some(PluginIndexVersionEntry {
+                    version: idx.version.clone(),
+                    download_url: None,
+                    signature_url: None,
+                    git_tag: None,
+                })
+            })
             .ok_or_else(|| format!("plugin version not found in index: {}", pid))?;
         let tag = latest
             .git_tag
@@ -523,13 +530,9 @@ pub fn install_plugin_version_from_market(
         .map(str::trim)
         .filter(|s| !s.is_empty())
         .ok_or_else(|| format!("signature_url missing in index: {} {}", pid, want))?;
-    let installed_id = install_plugin_from_download_urls(
-        &state,
-        &index_item,
-        download_url,
-        signature_url,
-    )
-    .map_err(|e| e.to_frontend_error())?;
+    let installed_id =
+        install_plugin_from_download_urls(&state, &index_item, download_url, signature_url)
+            .map_err(|e| e.to_frontend_error())?;
     // 写入 grants：把用户同意的 permissions 合并到 grants（不破坏安装种子）
     if !req.accepted_permissions.is_empty() {
         let mut perms = req.accepted_permissions.clone();

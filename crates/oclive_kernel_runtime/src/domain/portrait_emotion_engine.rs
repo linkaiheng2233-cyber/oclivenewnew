@@ -340,4 +340,3 @@ pub async fn resolve_portrait_emotion(
         personality,
     ))
 }
-

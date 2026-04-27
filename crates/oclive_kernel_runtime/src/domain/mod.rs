@@ -17,10 +17,11 @@ pub mod local_plugin_bridge;
 pub mod local_plugin_memory_pick;
 pub mod memory_engine;
 pub mod memory_retrieval;
+pub mod mutable_profile_llm;
 pub mod personality_engine;
-pub mod portrait_emotion_engine;
 pub mod plugin_host;
 pub mod policy;
+pub mod portrait_emotion_engine;
 pub mod profile_personality;
 pub mod prompt_assembler;
 pub mod prompt_builder;
@@ -30,7 +31,6 @@ pub mod repository;
 pub mod role_manager;
 pub mod user_emotion_analyzer;
 pub mod user_identity;
-pub mod mutable_profile_llm;
 
 // Temporary shim: re-export the rest from `oclivenewnew-tauri`.
 //

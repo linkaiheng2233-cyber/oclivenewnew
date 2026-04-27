@@ -119,4 +119,3 @@ mod tests {
         assert!(t.chars().count() <= MUTABLE_MAX_CHARS);
     }
 }
-

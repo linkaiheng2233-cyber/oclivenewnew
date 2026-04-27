@@ -1,7 +1,9 @@
+use crate::domain::event_estimator::EventEstimator;
 use crate::domain::local_plugin_bridge::{
     FileManifestLocalPluginBridge, LocalPluginBridge, LocalPluginCapability,
     LocalPluginProviderDescriptor,
 };
+use crate::domain::memory_retrieval::MemoryRetrieval;
 use crate::domain::plugin_host::{PluginHost, ResolvedRolePlugins};
 use crate::domain::policy::{
     DefaultEmotionPolicy, DefaultEventPolicy, DefaultMemoryPolicy, EmotionPolicy,
@@ -9,6 +11,7 @@ use crate::domain::policy::{
 };
 use crate::domain::prompt_assembler::PromptAssembler;
 use crate::domain::repository::{FavorabilityRepository, MemoryRepository};
+use crate::domain::user_emotion_analyzer::UserEmotionAnalyzer;
 use crate::error::Result;
 use crate::infrastructure::db::DbManager;
 use crate::infrastructure::directory_plugins::DirectoryPluginRuntime;
@@ -24,9 +27,6 @@ use crate::models::{
     PluginBackendsOverride, PluginBackendsSourceMap, Role,
 };
 use crate::state::resolve_roles_dir;
-use crate::domain::event_estimator::EventEstimator;
-use crate::domain::memory_retrieval::MemoryRetrieval;
-use crate::domain::user_emotion_analyzer::UserEmotionAnalyzer;
 use parking_lot::{Mutex, RwLock};
 use serde::Deserialize;
 use sqlx::sqlite::{SqliteConnectOptions, SqlitePoolOptions};

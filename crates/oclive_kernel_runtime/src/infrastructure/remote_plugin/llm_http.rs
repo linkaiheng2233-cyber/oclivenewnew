@@ -4,8 +4,8 @@ use crate::infrastructure::llm::LlmClient;
 use crate::infrastructure::remote_plugin::config::RemotePluginHttpConfig;
 use crate::infrastructure::remote_plugin::jsonrpc::{self, RemoteRpcChannel};
 use async_trait::async_trait;
-use serde_json::json;
 use oclivenewnew_tauri::error::{AppError, Result};
+use serde_json::json;
 
 const METHOD_LLM_GENERATE: &str = "llm.generate";
 const METHOD_LLM_GENERATE_TAG: &str = "llm.generate_tag";
@@ -87,4 +87,3 @@ mod tests {
         assert_eq!(METHOD_LLM_GENERATE_TAG, "llm.generate_tag");
     }
 }
-

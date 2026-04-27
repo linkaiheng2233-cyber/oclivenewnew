@@ -3,11 +3,11 @@
 //! **非生产对话编排**：真实请求由 [`crate::domain::chat_engine::process_message`] 串联 Repository / 策略 / LLM。
 //! 本模块仅在**单元测试**与本地算法演示中提供同步、无 DB 的迷你管线，避免与主编排并行演进时产生行为漂移——若需断言线上行为，应测 `chat_engine` / `chat_turn` 或集成测试。
 
-use crate::domain::memory_retrieval::MemoryRetrievalInput;
-use crate::domain::plugin_host::{PluginHost, ResolvedRolePlugins};
 use crate::domain::event_detector::EventDetector;
 use crate::domain::memory_engine::MemoryEngine;
+use crate::domain::memory_retrieval::MemoryRetrievalInput;
 use crate::domain::personality_engine::PersonalityEngine;
+use crate::domain::plugin_host::{PluginHost, ResolvedRolePlugins};
 use crate::domain::prompt_builder::{effective_reply_quality_anchor, PromptInput};
 use crate::infrastructure::llm::{LlmClient, MockLlmClient};
 use crate::models::{
@@ -324,4 +324,3 @@ mod tests {
         assert!(summary.contains("外向性"));
     }
 }
-

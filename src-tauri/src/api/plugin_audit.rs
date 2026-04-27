@@ -43,14 +43,15 @@ pub fn get_plugin_audit_logs(
     .map_err(|e| e.to_frontend_error())?;
     let logs = rows
         .into_iter()
-        .map(|(created_at, action, permission, allowed, meta_json)| PluginAuditLogRowDto {
-            created_at,
-            action,
-            permission,
-            allowed,
-            meta_json,
-        })
+        .map(
+            |(created_at, action, permission, allowed, meta_json)| PluginAuditLogRowDto {
+                created_at,
+                action,
+                permission,
+                allowed,
+                meta_json,
+            },
+        )
         .collect::<Vec<_>>();
     Ok(GetPluginAuditLogsResponse { logs })
 }
-

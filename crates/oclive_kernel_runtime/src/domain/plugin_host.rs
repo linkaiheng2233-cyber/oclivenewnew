@@ -719,8 +719,14 @@ mod tests {
             capabilities: vec![LocalPluginCapability::Prompt],
         })
         .expect("register local provider");
-        assert_eq!(h.local_providers_for(LocalPluginCapability::Prompt).len(), 1);
-        assert_eq!(h.local_providers_for(LocalPluginCapability::Memory).len(), 0);
+        assert_eq!(
+            h.local_providers_for(LocalPluginCapability::Prompt).len(),
+            1
+        );
+        assert_eq!(
+            h.local_providers_for(LocalPluginCapability::Memory).len(),
+            0
+        );
     }
 
     #[test]
@@ -800,4 +806,3 @@ mod tests {
         assert_eq!(pl.memory.diagnostic_local_provider_id(), Some("mem.z"));
     }
 }
-

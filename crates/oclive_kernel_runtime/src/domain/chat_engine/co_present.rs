@@ -80,7 +80,11 @@ pub(crate) async fn process_co_present(
         .unwrap_or_default();
     let knowledge_augment_opt = {
         let aug = KnowledgeIndex::merge_event_augment(knowledge_chunks.as_slice());
-        if aug.is_empty() { None } else { Some(aug) }
+        if aug.is_empty() {
+            None
+        } else {
+            Some(aug)
+        }
     };
 
     let estimate = pl
@@ -164,7 +168,11 @@ pub(crate) async fn process_co_present(
         .map(|t| format!("在「{}」下，你们可能会多聊「{}」相关的事。", scene_label, t))
         .unwrap_or_default();
 
-    let virtual_time_ms = state.db_manager.get_virtual_time_ms(srid).await?.unwrap_or(0);
+    let virtual_time_ms = state
+        .db_manager
+        .get_virtual_time_ms(srid)
+        .await?
+        .unwrap_or(0);
     let life_context_line: String = if immersive {
         role.life_schedule
             .as_ref()
@@ -253,7 +261,11 @@ pub(crate) async fn process_co_present(
         Memory {
             id: "__relation_state__".to_string(),
             role_id: srid.to_string(),
-            content: format!("当前关系阶段: {} -> {}", relation_before, relation_after.as_str()),
+            content: format!(
+                "当前关系阶段: {} -> {}",
+                relation_before,
+                relation_after.as_str()
+            ),
             importance: 0.95,
             weight: 1.0,
             created_at: Utc::now(),
@@ -343,17 +355,16 @@ pub(crate) async fn process_co_present(
                 prev.clone()
             }
         };
-        state.db_manager.set_mutable_personality(srid, &next).await?;
+        state
+            .db_manager
+            .set_mutable_personality(srid, &next)
+            .await?;
         let personality_after =
             crate::domain::profile_personality::effective_vector_from_profile(role, &next);
         let delta_out = PersonalityVector::sub_components(&personality_after, &core_v);
         state
             .db_manager
-            .set_core_delta_personality_json(
-                srid,
-                &core_v.to_json_vec(),
-                &delta_out.to_json_vec(),
-            )
+            .set_core_delta_personality_json(srid, &core_v.to_json_vec(), &delta_out.to_json_vec())
             .await?;
         state
             .personality_cache
@@ -363,11 +374,7 @@ pub(crate) async fn process_co_present(
         let delta_out = PersonalityVector::sub_components(&personality, &core_v);
         state
             .db_manager
-            .set_core_delta_personality_json(
-                srid,
-                &core_v.to_json_vec(),
-                &delta_out.to_json_vec(),
-            )
+            .set_core_delta_personality_json(srid, &core_v.to_json_vec(), &delta_out.to_json_vec())
             .await?;
         state
             .personality_cache
@@ -440,4 +447,3 @@ pub(crate) async fn process_co_present(
         timestamp: chrono::Utc::now().timestamp_millis(),
     })
 }
-

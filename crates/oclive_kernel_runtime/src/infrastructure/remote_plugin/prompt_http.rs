@@ -2,10 +2,10 @@
 
 use crate::domain::prompt_assembler::PromptAssembler;
 use crate::domain::prompt_builder::PromptInput;
-use oclivenewnew_tauri::domain::BuiltinPromptAssembler;
 use crate::infrastructure::remote_plugin::config::RemotePluginHttpConfig;
 use crate::infrastructure::remote_plugin::jsonrpc::{self, RemoteRpcChannel};
 use crate::models::{PersonalitySource, Role};
+use oclivenewnew_tauri::domain::BuiltinPromptAssembler;
 use serde_json::json;
 
 const METHOD_PROMPT_BUILD: &str = "prompt.build_prompt";
@@ -170,4 +170,3 @@ mod tests {
         assert_eq!(METHOD_PROMPT_TOPIC_HINT, "prompt.top_topic_hint");
     }
 }
-

@@ -463,10 +463,7 @@ pub fn directory_plugin_invoke(
                 .await
         });
         return Err(ApiError::PluginPermissionNotGranted {
-            message: format!(
-                "permission {:?} not granted for plugin {}",
-                perm, pid
-            ),
+            message: format!("permission {:?} not granted for plugin {}", perm, pid),
         }
         .to_string());
     }

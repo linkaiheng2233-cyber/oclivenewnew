@@ -7,13 +7,13 @@ use base64::Engine;
 use ed25519_dalek::{Signature, VerifyingKey};
 use semver::VersionReq;
 use serde::{Deserialize, Serialize};
+use sha2::{Digest, Sha256};
 use std::collections::HashMap;
 use std::fs;
 use std::path::{Path, PathBuf};
 use std::process::Command;
 use tempfile::TempDir;
 use zip::ZipArchive;
-use sha2::{Digest, Sha256};
 
 const MAX_PLUGIN_ARCHIVE_FILES: usize = 2000;
 const MAX_PLUGIN_ARCHIVE_TOTAL_BYTES: u64 = 50 * 1024 * 1024;
@@ -216,9 +216,10 @@ fn parse_ed25519_pubkey_base64(s: &str) -> Result<VerifyingKey, AppError> {
     let bytes = B64_STANDARD
         .decode(s.trim())
         .map_err(|e| AppError::InvalidParameter(format!("invalid base64 public_key: {}", e)))?;
-    let arr: [u8; 32] = bytes.as_slice().try_into().map_err(|_| {
-        AppError::InvalidParameter("ed25519 public_key must be 32 bytes".into())
-    })?;
+    let arr: [u8; 32] = bytes
+        .as_slice()
+        .try_into()
+        .map_err(|_| AppError::InvalidParameter("ed25519 public_key must be 32 bytes".into()))?;
     Ok(VerifyingKey::from_bytes(&arr)
         .map_err(|e| AppError::InvalidParameter(format!("invalid ed25519 public_key: {}", e)))?)
 }
@@ -282,13 +283,12 @@ fn verify_plugin_package_signature(
         )
     })?;
     let signature = Signature::from_bytes(&sig_arr);
-    vk.verify_strict(archive_bytes, &signature)
-        .map_err(|e| {
-            AppError::InvalidParameter(format!(
-                "[PLUGIN_SIGNATURE_VERIFY_FAILED] signature verify failed: {}",
-                e
-            ))
-        })?;
+    vk.verify_strict(archive_bytes, &signature).map_err(|e| {
+        AppError::InvalidParameter(format!(
+            "[PLUGIN_SIGNATURE_VERIFY_FAILED] signature verify failed: {}",
+            e
+        ))
+    })?;
     Ok(())
 }
 
@@ -443,7 +443,10 @@ pub fn read_install_meta(root: &Path) -> Option<PluginInstallMeta> {
     serde_json::from_str(&raw).ok()
 }
 
-pub fn install_plugin_from_archive_bytes(state: &AppState, bytes: &[u8]) -> Result<String, AppError> {
+pub fn install_plugin_from_archive_bytes(
+    state: &AppState,
+    bytes: &[u8],
+) -> Result<String, AppError> {
     let tmp = plugins_install_temp_dir(state)?;
     extract_oclive_plugin_archive(bytes, tmp.path())?;
     let manifest = OclivePluginManifest::load_from_dir(tmp.path())
@@ -734,7 +737,12 @@ pub fn update_plugin(state: &AppState, plugin_id: &str) -> Result<(), AppError> 
             .ok_or_else(|| AppError::InvalidParameter(format!("plugin not found: {}", pid)))?
     };
     if let Some(meta) = read_install_meta(&root) {
-        if let Some(tag) = meta.pinned_tag.as_deref().map(str::trim).filter(|s| !s.is_empty()) {
+        if let Some(tag) = meta
+            .pinned_tag
+            .as_deref()
+            .map(str::trim)
+            .filter(|s| !s.is_empty())
+        {
             return Err(AppError::InvalidParameter(format!(
                 "[PLUGIN_PINNED_VERSION] plugin is pinned to tag {}; update via market version install",
                 tag

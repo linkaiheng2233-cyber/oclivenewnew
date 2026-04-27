@@ -1,8 +1,8 @@
 //! `memory.rank` JSON-RPC — 见 REMOTE_PLUGIN_PROTOCOL.md
 
 use crate::domain::memory_engine::MemoryEngine;
-use crate::domain::memory_retrieval::{MemoryRetrieval, MemoryRetrievalInput};
 use crate::domain::memory_retrieval::BuiltinMemoryRetrieval;
+use crate::domain::memory_retrieval::{MemoryRetrieval, MemoryRetrievalInput};
 use crate::infrastructure::remote_plugin::config::RemotePluginHttpConfig;
 use crate::infrastructure::remote_plugin::jsonrpc::{self, RemoteRpcChannel};
 use crate::models::{Memory, MemoryContext};
@@ -139,4 +139,3 @@ mod tests {
         assert_eq!(METHOD_MEMORY_RANK, "memory.rank");
     }
 }
-

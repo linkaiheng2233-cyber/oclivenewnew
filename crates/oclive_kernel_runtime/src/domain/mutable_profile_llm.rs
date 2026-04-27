@@ -175,4 +175,3 @@ mod tests {
         assert!(out.contains("信任") || out.contains("软"));
     }
 }
-

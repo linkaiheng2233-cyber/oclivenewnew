@@ -1,9 +1,9 @@
 //! JSON-RPC：`event.estimate` — 侧车返回 [`EventImpactEstimate`](crate::domain::event_impact_ai::EventImpactEstimate)。
 //! `params` 含 `personality_source`（`vector`|`profile`），与包内 `evolution` 一致；侧车可忽略。
 
+use crate::domain::event_estimator::BuiltinEventEstimator;
 use crate::domain::event_estimator::EventEstimator;
 use crate::domain::event_impact_ai::EventImpactEstimate;
-use crate::domain::event_estimator::BuiltinEventEstimator;
 use crate::error::Result;
 use crate::infrastructure::llm::LlmClient;
 use crate::infrastructure::remote_plugin::config::RemotePluginHttpConfig;
@@ -111,4 +111,3 @@ mod tests {
         assert_eq!(METHOD_EVENT_ESTIMATE, "event.estimate");
     }
 }
-

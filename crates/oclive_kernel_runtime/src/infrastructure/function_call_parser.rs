@@ -134,4 +134,3 @@ mod tests {
         assert_eq!(out[0].function.arguments["city"], "北京");
     }
 }
-

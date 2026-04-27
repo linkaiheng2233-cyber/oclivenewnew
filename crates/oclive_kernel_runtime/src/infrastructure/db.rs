@@ -1,7 +1,7 @@
 use crate::error::{AppError, Result};
+use crate::models::InteractionMode;
 use crate::models::{Event, EventType, Memory, PersonalityVector};
 use chrono::{DateTime, Utc};
-use crate::models::InteractionMode;
 use sqlx::SqlitePool;
 use std::time::Instant;
 

@@ -1,7 +1,7 @@
 //! 好感与关系阶段计算（本回合）——纯逻辑迁移。
 
-use crate::models::{Event, EventType};
 use crate::domain::relation_engine::{RelationEngine, RelationState};
+use crate::models::{Event, EventType};
 
 fn confidence_decay_weight(confidence: f32) -> f64 {
     let c = (confidence as f64).clamp(0.0, 1.0);

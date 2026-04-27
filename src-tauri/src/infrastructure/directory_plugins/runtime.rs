@@ -484,7 +484,11 @@ impl DirectoryPluginRuntime {
         self.host.read().clone()
     }
 
-    pub fn update_host_plugins(&self, next: HostPluginsFile, roles_dir: &Path) -> Result<(), String> {
+    pub fn update_host_plugins(
+        &self,
+        next: HostPluginsFile,
+        roles_dir: &Path,
+    ) -> Result<(), String> {
         next.save(&self.app_data_dir)?;
         let prev = self.host.read().clone();
         *self.host.write() = next;

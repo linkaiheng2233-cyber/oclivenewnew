@@ -218,7 +218,13 @@ fn validate_bridge(
     let _ = tauri::async_runtime::block_on(async {
         state
             .db_manager
-            .insert_plugin_audit_log(plugin_id, "bridge.invoke", Some(needed.as_str()), true, "{}")
+            .insert_plugin_audit_log(
+                plugin_id,
+                "bridge.invoke",
+                Some(needed.as_str()),
+                true,
+                "{}",
+            )
             .await
     });
     Ok(())

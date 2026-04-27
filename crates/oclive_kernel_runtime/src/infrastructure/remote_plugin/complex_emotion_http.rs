@@ -75,4 +75,3 @@ mod tests {
         assert_eq!(METHOD_RESOLVE_TURN, "complex_emotion.resolve_turn");
     }
 }
-
