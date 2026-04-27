@@ -3,6 +3,7 @@
 //! 当前阶段先确保 kernel runtime 能复用既有 `process_message`，并逐步将实现从 `src-tauri`
 //! 迁入本 crate。
 
+pub mod favor;
 pub mod presence;
 pub mod scene;
 
