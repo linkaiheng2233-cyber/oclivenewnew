@@ -4,11 +4,26 @@
 //! 迁入本 crate。
 
 pub mod context;
+pub mod co_present;
 pub mod favor;
 pub mod presence;
 pub mod scene;
 
 pub use oclivenewnew_tauri::domain::chat_engine::process_message;
+
+use crate::models::dto::EmotionDto;
+
+pub(super) fn emotion_to_dto(r: &crate::domain::emotion_analyzer::EmotionResult) -> EmotionDto {
+    EmotionDto {
+        joy: r.joy as f32,
+        sadness: r.sadness as f32,
+        anger: r.anger as f32,
+        fear: r.fear as f32,
+        surprise: r.surprise as f32,
+        disgust: r.disgust as f32,
+        neutral: r.neutral as f32,
+    }
+}
 
 /// 会话级 SQLite 命名空间：HTTP 试聊传入 `session_id` 时与无 `session_id` 的默认对话隔离。
 pub fn conversation_state_role_id(manifest_role_id: &str, session_id: Option<&str>) -> String {

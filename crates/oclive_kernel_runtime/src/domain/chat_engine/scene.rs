@@ -2,6 +2,11 @@
 
 use crate::utils::json_loose::extract_json_object;
 use serde_json::Value;
+use std::sync::Arc;
+
+use crate::infrastructure::llm::LlmClient;
+use crate::state::KernelAppState;
+use chrono::Utc;
 
 const MOVE_VERBS: &[&str] = &[
     "去", "来", "回", "到", "进", "出", "逛", "前往", "回到", "来到",
@@ -97,6 +102,98 @@ pub fn parse_movement_intent_ai_output(raw: &str) -> Option<(bool, f64)> {
         _ => 0.0,
     };
     Some((intent, confidence.clamp(0.0, 1.0)))
+}
+
+/// 是否应向前端提供「选目的地」条：不写入 DB、不解析 `scene_id`。
+#[allow(clippy::too_many_arguments)]
+pub(super) async fn detect_movement_intent(
+    state: &KernelAppState,
+    llm: &Arc<dyn LlmClient>,
+    storage_role_id: &str,
+    db_role_id: &str,
+    scene_id: &str,
+    scenes: &[String],
+    user_message: &str,
+    ollama_model: &str,
+) -> bool {
+    if scenes.len() <= 1 {
+        return false;
+    }
+
+    let virtual_time_ms = state
+        .db_manager
+        .get_virtual_time_ms(db_role_id)
+        .await
+        .ok()
+        .flatten()
+        .unwrap_or_else(|| Utc::now().timestamp_millis());
+
+    let mut candidate_scenes: Vec<(String, String, Vec<String>, Vec<String>)> = Vec::new();
+    for sid in scenes {
+        if sid == scene_id {
+            continue;
+        }
+        if !state
+            .storage
+            .is_scene_time_allowed(storage_role_id, sid.as_str(), virtual_time_ms)
+        {
+            continue;
+        }
+        candidate_scenes.push((
+            sid.clone(),
+            state.storage.scene_display_name(storage_role_id, sid),
+            state.storage.scene_keywords(storage_role_id, sid),
+            state.storage.scene_events(storage_role_id, sid),
+        ));
+    }
+
+    if candidate_scenes.is_empty() {
+        return false;
+    }
+
+    if movement_intent_by_rules(user_message, scene_id, &candidate_scenes) {
+        return true;
+    }
+
+    let candidate_lines = candidate_scenes
+        .iter()
+        .map(|(sid, label, kws, _)| {
+            let hint = state.storage.scene_switch_hint_line(storage_role_id, sid);
+            format!(
+                "- id={} 名称={} keywords={} 摘要={}",
+                sid,
+                label,
+                kws.join("、"),
+                hint
+            )
+        })
+        .collect::<Vec<_>>()
+        .join("\n");
+    let prompt = format!(
+        r#"你是位移意图判定器。判断用户是否表达「要去/来/回/前往某地」等与空间移动相关的意图。
+仅输出 JSON：{{"movement_intent":true或false,"confidence":0~1}}
+
+规则：
+1) 仅当用户明显表达想去另一个地方、出门、前往、回到某处等位移语义时 movement_intent 为 true。
+2) 闲聊、情绪表达、无位移含义时 movement_intent 为 false，confidence 可低于 0.5。
+3) 不要猜测具体目的地；只判断是否有位移意图。
+
+当前场景: {current_scene}
+可前往的其它场景（供理解语义，不要求你输出 id）:
+{candidate_lines}
+用户消息: {msg}"#,
+        current_scene = scene_id,
+        candidate_lines = candidate_lines,
+        msg = user_message
+    );
+    if let Ok(raw) = llm.generate_tag(ollama_model, &prompt).await {
+        if let Some((intent, conf)) = parse_movement_intent_ai_output(&raw) {
+            if intent && conf >= 0.63 {
+                return true;
+            }
+        }
+    }
+    false
 }
 
 #[cfg(test)]

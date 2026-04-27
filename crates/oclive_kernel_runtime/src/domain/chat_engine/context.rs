@@ -1,11 +1,11 @@
 //! 场景校验与近期上下文加载（迁移中）。
 
 use crate::models::Event;
-use crate::state::AppState;
-use oclivenewnew_tauri::error::Result;
+use crate::state::KernelAppState;
+use crate::error::Result;
 
 pub async fn load_recent_context(
-    state: &AppState,
+    state: &KernelAppState,
     role_id: &str,
 ) -> Result<(Vec<(String, String)>, Vec<(String, String)>, Vec<Event>)> {
     let recent_turns = state
@@ -31,7 +31,7 @@ pub async fn load_recent_context(
 }
 
 pub fn validate_scene_id(
-    state: &AppState,
+    state: &KernelAppState,
     role_id: &str,
     requested_scene_id: String,
 ) -> Result<(String, Vec<String>)> {

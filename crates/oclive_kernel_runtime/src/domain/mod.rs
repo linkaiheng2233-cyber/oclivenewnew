@@ -17,6 +17,7 @@ pub mod policy;
 pub mod relation_engine;
 pub mod repository;
 pub mod user_emotion_analyzer;
+pub mod user_identity;
 
 // Temporary shim: re-export the rest from `oclivenewnew-tauri`.
 //
@@ -31,4 +32,3 @@ pub use oclivenewnew_tauri::domain::profile_personality;
 pub use oclivenewnew_tauri::domain::prompt_assembler;
 pub use oclivenewnew_tauri::domain::prompt_builder;
 pub use oclivenewnew_tauri::domain::role_manager;
-pub use oclivenewnew_tauri::domain::user_identity;
