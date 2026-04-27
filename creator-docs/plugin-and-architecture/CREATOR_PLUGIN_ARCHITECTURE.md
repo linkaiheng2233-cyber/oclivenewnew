@@ -14,6 +14,7 @@
 ## 第一部分：架构在解决什么问题
 
 oclive 把对话管线拆成可替换块：**记忆检索、用户句情绪、事件估计、Prompt 组装、LLM 调用**。角色包通过 `settings.json` → `plugin_backends` 声明每块用 **builtin / builtin_v2 / remote / directory / local（memory）/ ollama** 等（见 PLUGIN_V1）。
+此外还有第七模块：**Agent（工具编排 / ReAct / Hermes / OpenClaw 等）**，同样可通过 `plugin_backends.agent = builtin|remote|directory` 插拔接入（见 `REMOTE_PLUGIN_PROTOCOL.md` 的 `agent.process`）。
 
 - **builtin**：逻辑编译在宿主内，稳定、离线友好。  
 - **remote**：逻辑可在**独立 HTTP 服务（侧车）**中实现，宿主只发 JSON-RPC，按约定解析结果（环境变量 `OCLIVE_REMOTE_*` URL）。  
@@ -60,6 +61,20 @@ oclive 把对话管线拆成可替换块：**记忆检索、用户句情绪、�
 | `OCLIVE_REMOTE_LLM_URL` | `plugin_backends.llm = remote` 时 **必填**（否则回退进程内 LLM 并警告） | **LLM** 专用端点 |
 | `OCLIVE_REMOTE_LLM_TIMEOUT_MS` | 否 | 默认 `120000` |
 | `OCLIVE_REMOTE_LLM_TOKEN` | 否 | Bearer |
+| `OCLIVE_REMOTE_AGENT_URL` | `plugin_backends.agent = remote` 时 **必填**（否则回退 builtin agent 并警告） | **Agent** 专用端点（JSON-RPC `agent.process`） |
+| `OCLIVE_REMOTE_AGENT_TIMEOUT_MS` | 否 | 默认 `30000` |
+| `OCLIVE_REMOTE_AGENT_TOKEN` | 否 | Bearer |
+
+#### 云端直连 LLM（OpenAI-compatible，非 JSON-RPC）
+
+当你希望“宿主直接调用云端 API”（不走 JSON-RPC 侧车）时，可配置：
+
+| 变量 | 是否必填 | 含义 |
+|------|----------|------|
+| `OCLIVE_CLOUD_LLM_BASE_URL` | 是 | OpenAI-compatible base URL（例如 `https://api.openai.com` 或自建兼容网关） |
+| `OCLIVE_CLOUD_LLM_API_KEY` | 是 | API Key（Bearer） |
+| `OCLIVE_CLOUD_LLM_MODEL` | 否 | 默认模型名（当调用方未传 `model` 时使用） |
+| `OCLIVE_CLOUD_LLM_TIMEOUT_MS` | 否 | 默认 `120000` |
 
 端点必须是**完整 URL**（含 `http://`/`https://` 与路径），例如：`http://127.0.0.1:8765/rpc`。
 
@@ -101,6 +116,7 @@ oclive 把对话管线拆成可替换块：**记忆检索、用户句情绪、�
 | `prompt.top_topic_hint` | 可选；话题提示 |
 | `llm.generate` | 主生成 |
 | `llm.generate_tag` | 短标签生成 |
+| `agent.process` | **第七模块 Agent**：工具编排/自动任务（remote/directory agent 插件） |
 
 **重要**：`event.estimate` 的 `event_type` 必须使用 Rust **serde 默认枚举编码**（外部标签对象），例如 `Ignore` → `{"Ignore": null}`，**不能**写成裸字符串 `"Ignore"`。详见 [REMOTE_PLUGIN_PROTOCOL.md](REMOTE_PLUGIN_PROTOCOL.md) 第三节。
 
