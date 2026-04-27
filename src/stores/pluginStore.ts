@@ -238,6 +238,8 @@ export const usePluginStore = defineStore("plugin", {
     persistScope: "role" as PluginPersistScope,
     /** 与 `get_directory_plugin_bootstrap.developer_mode` 一致（扫描额外插件根等）。 */
     developerMode: false,
+    /** 前端壳（Module 8）支持的官方插槽名清单（来自 bootstrap）。 */
+    supportedUiSlots: [] as string[],
     /** 最近一次 bootstrap 的嵌入插槽列表（与 `get_directory_plugin_bootstrap.uiSlots` 一致）。 */
     bootstrapUiSlots: [] as PluginUiSlotInfo[],
     /** 变更后嵌入插槽组件会重新拉 bootstrap */
@@ -256,6 +258,7 @@ export const usePluginStore = defineStore("plugin", {
     applyDirectoryBootstrap(boot: DirectoryPluginBootstrap) {
       setHostEventSubscribedEvents(boot.subscribedHostEvents ?? []);
       this.developerMode = boot.developerMode ?? false;
+      this.supportedUiSlots = boot.supportedUiSlots ?? [];
       this.bootstrapUiSlots = boot.uiSlots ?? [];
     },
     /** 角色切换或插件启用状态变更后更新宿主事件订阅与开发者模式（不拉 catalog）。 */

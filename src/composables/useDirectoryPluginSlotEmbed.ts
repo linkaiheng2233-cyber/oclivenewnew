@@ -18,7 +18,22 @@ export function useDirectoryPluginSlotEmbed(options: {
   const roleStore = useRoleStore();
   const { currentRoleId } = storeToRefs(roleStore);
   const pluginStore = usePluginStore();
-  const { error: pluginError, bootstrapUiSlots } = storeToRefs(pluginStore);
+  const { error, bootstrapUiSlots, supportedUiSlots } = storeToRefs(pluginStore);
+
+  const slotSupported = computed(() => {
+    const slot = toValue(options.slot);
+    const supported = supportedUiSlots.value ?? [];
+    // 兼容旧版后端：未提供 supportedUiSlots 时视为全支持
+    if (supported.length === 0) return true;
+    return supported.includes(slot);
+  });
+
+  const pluginError = computed(() => {
+    if (!slotSupported.value) {
+      return `当前发行版不支持该插槽：${toValue(options.slot)}`;
+    }
+    return error.value;
+  });
 
   const {
     messages: frameErrors,
@@ -28,9 +43,10 @@ export function useDirectoryPluginSlotEmbed(options: {
     setKey: setKeyedError,
   } = useKeyedPluginErrors();
 
-  const slots = computed<PluginUiSlotInfo[]>(() =>
-    (bootstrapUiSlots.value ?? []).filter((s) => s.slot === toValue(options.slot)),
-  );
+  const slots = computed<PluginUiSlotInfo[]>(() => {
+    if (!slotSupported.value) return [];
+    return (bootstrapUiSlots.value ?? []).filter((s) => s.slot === toValue(options.slot));
+  });
 
   const vueFallback = ref<Record<string, boolean>>({});
   /** 递增以强制重挂 iframe / Vue */
