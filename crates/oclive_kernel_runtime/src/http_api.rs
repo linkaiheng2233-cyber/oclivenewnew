@@ -185,7 +185,7 @@ pub fn api_router(app_state: Arc<AppState>) -> Router {
         .allow_methods([Method::GET, Method::POST, Method::OPTIONS])
         .allow_headers(Any);
 
-    Router::new()
+    Router::<Arc<AppState>>::new()
         .route("/health", get(health))
         .route("/chat", post(chat))
         .merge(oocp_ws::oocp_ws_router())
