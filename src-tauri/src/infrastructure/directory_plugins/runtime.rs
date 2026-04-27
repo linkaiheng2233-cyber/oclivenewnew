@@ -21,6 +21,9 @@ pub struct HostPluginsFile {
     pub developer_mode: bool,
     #[serde(default)]
     pub extra_plugin_roots: Vec<String>,
+    /// 插件市场第三方索引源（仅开发者模式可用）。
+    #[serde(default)]
+    pub plugin_index_sources: Vec<String>,
     #[serde(default)]
     pub shell_plugin_id: Option<String>,
 }
@@ -33,6 +36,15 @@ impl HostPluginsFile {
         } else {
             Self::default()
         }
+    }
+
+    pub fn save(&self, app_data: &Path) -> Result<(), String> {
+        let p = app_data.join("oclive_host_plugins.json");
+        if let Some(parent) = p.parent() {
+            std::fs::create_dir_all(parent).map_err(|e| e.to_string())?;
+        }
+        let raw = serde_json::to_string_pretty(self).map_err(|e| e.to_string())?;
+        std::fs::write(p, raw).map_err(|e| e.to_string())
     }
 
     pub fn developer_effective(&self) -> bool {
@@ -201,7 +213,7 @@ pub struct DirectoryPluginRuntime {
     debug_log_rings: Mutex<HashMap<String, Arc<Mutex<DebugLogRing>>>>,
     /// 子进程启动时刻（Unix 毫秒）。
     process_started_ms: Mutex<HashMap<String, u64>>,
-    host: HostPluginsFile,
+    host: Arc<RwLock<HostPluginsFile>>,
     app_data_dir: PathBuf,
     /// `app_data_dir/plugin_state.json`（v2：按 `role_id` 隔离）
     plugin_state_store: Arc<RwLock<PluginStateStore>>,
@@ -231,7 +243,7 @@ impl DirectoryPluginRuntime {
             startup_locks: Mutex::new(HashMap::new()),
             debug_log_rings: Mutex::new(HashMap::new()),
             process_started_ms: Mutex::new(HashMap::new()),
-            host,
+            host: Arc::new(RwLock::new(host)),
             app_data_dir,
             plugin_state_store,
             active_role_id: Arc::new(RwLock::new(None)),
@@ -468,8 +480,23 @@ impl DirectoryPluginRuntime {
     }
 
     #[must_use]
-    pub fn host(&self) -> &HostPluginsFile {
-        &self.host
+    pub fn host(&self) -> HostPluginsFile {
+        self.host.read().clone()
+    }
+
+    pub fn update_host_plugins(&self, next: HostPluginsFile, roles_dir: &Path) -> Result<(), String> {
+        next.save(&self.app_data_dir)?;
+        let prev = self.host.read().clone();
+        *self.host.write() = next;
+
+        // 若开发者模式/额外根变化，需重新扫描插件根
+        let prev_dev = prev.developer_effective();
+        let next_dev = self.host.read().developer_effective();
+        let roots_changed = prev.extra_plugin_roots != self.host.read().extra_plugin_roots;
+        if prev_dev != next_dev || roots_changed {
+            self.rescan_plugin_roots(roles_dir);
+        }
+        Ok(())
     }
 
     #[must_use]
@@ -499,7 +526,8 @@ impl DirectoryPluginRuntime {
             self.clear_plugin_process(&id);
         }
         self.catalog_invalidate_gen.fetch_add(1, Ordering::Relaxed);
-        let scan = scan_plugins(roles_dir, &self.app_data_dir, &self.host);
+        let host = self.host.read().clone();
+        let scan = scan_plugins(roles_dir, &self.app_data_dir, &host);
         let n = scan.roots.len();
         *self.plugin_roots.write() = scan.roots;
         log::info!(

@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { ref } from "vue";
+import { onMounted, ref } from "vue";
 import HelpHint from "../components/HelpHint.vue";
 import HotkeySettingsSection from "../components/HotkeySettingsSection.vue";
 import PluginSettingsPanelSlots from "../components/PluginSettingsPanelSlots.vue";
@@ -14,6 +14,11 @@ import {
 } from "../lib/pluginManagerEntryCopy";
 import { SLOT_SETTINGS_ADVANCED, usePluginStore } from "../stores/pluginStore";
 import { useUiStore } from "../stores/uiStore";
+import {
+  getPluginMarketSourcesConfig,
+  setPluginIndexSources,
+  setPluginMarketDeveloperMode,
+} from "../utils/tauri-api";
 
 defineProps<{
   visible: boolean;
@@ -32,6 +37,57 @@ const { showToast } = useAppToast();
 type SettingsTab = "general" | "plugins";
 
 const tab = ref<SettingsTab>("general");
+
+const marketSourcesLoading = ref(false);
+const marketDeveloperModeLocal = ref(false);
+const marketSourcesText = ref("");
+
+async function loadMarketSources(): Promise<void> {
+  marketSourcesLoading.value = true;
+  try {
+    const cfg = await getPluginMarketSourcesConfig();
+    marketDeveloperModeLocal.value = cfg.developerMode === true;
+    marketSourcesText.value = (cfg.pluginIndexSources ?? []).join("\n");
+  } finally {
+    marketSourcesLoading.value = false;
+  }
+}
+
+onMounted(() => {
+  void loadMarketSources();
+});
+
+async function onToggleMarketDeveloperMode(e: Event) {
+  const checked = (e.target as HTMLInputElement).checked;
+  marketSourcesLoading.value = true;
+  try {
+    const cfg = await setPluginMarketDeveloperMode(checked);
+    marketDeveloperModeLocal.value = cfg.developerMode === true;
+    showToast("success", checked ? "已开启开发者模式。" : "已关闭开发者模式。");
+    await pluginStore.syncDirectoryPluginBootstrap();
+  } catch (err) {
+    showToast("error", err instanceof Error ? err.message : String(err));
+  } finally {
+    marketSourcesLoading.value = false;
+  }
+}
+
+async function onSaveMarketSources() {
+  const lines = marketSourcesText.value
+    .split(/\r?\n/g)
+    .map((s) => s.trim())
+    .filter(Boolean);
+  marketSourcesLoading.value = true;
+  try {
+    const cfg = await setPluginIndexSources(lines);
+    marketSourcesText.value = (cfg.pluginIndexSources ?? []).join("\n");
+    showToast("success", "第三方索引源已保存。");
+  } catch (err) {
+    showToast("error", err instanceof Error ? err.message : String(err));
+  } finally {
+    marketSourcesLoading.value = false;
+  }
+}
 
 async function onToggleForceIframe(e: Event) {
   const checked = (e.target as HTMLInputElement).checked;
@@ -148,6 +204,54 @@ async function onToggleForceIframe(e: Event) {
               </span>
             </label>
           </section>
+
+          <section class="sv-section">
+            <div class="sv-row-h">
+              <span class="sv-label">高级（开发者模式）</span>
+              <HelpHint
+                :paragraphs="[
+                  '开发者模式用于启用第三方插件索引源与侧载安装入口。',
+                  '开启后请仅添加你信任的索引源；未签名源安装会强提示。',
+                ]"
+              />
+            </div>
+            <label class="sv-toggle-row">
+              <input
+                type="checkbox"
+                :disabled="marketSourcesLoading"
+                :checked="marketDeveloperModeLocal === true"
+                @change="onToggleMarketDeveloperMode"
+              />
+              <span class="sv-toggle-text">
+                <strong>启用开发者模式</strong>
+                <span class="sv-muted sv-toggle-desc">
+                  开启后可使用第三方索引源与侧载安装。建议仅高级用户开启。
+                </span>
+              </span>
+            </label>
+            <div v-if="marketDeveloperModeLocal" class="sv-dev-box">
+              <p class="sv-muted">
+                第三方索引源（每行一个 URL）。保存后可在插件管理页用“同步在线索引”并传入该 URL（后续会提供源选择 UI）。
+              </p>
+              <textarea
+                v-model="marketSourcesText"
+                class="sv-textarea"
+                rows="4"
+                spellcheck="false"
+                placeholder="https://example.com/plugins.json"
+              />
+              <div class="sv-row-actions">
+                <button
+                  type="button"
+                  class="sv-btn"
+                  :disabled="marketSourcesLoading"
+                  @click="onSaveMarketSources"
+                >
+                  保存第三方源列表
+                </button>
+              </div>
+            </div>
+          </section>
         </div>
 
         <div v-show="tab === 'plugins'" class="sv-body">
@@ -254,6 +358,43 @@ async function onToggleForceIframe(e: Event) {
   display: flex;
   flex-direction: column;
   gap: 8px;
+}
+.sv-dev-box {
+  padding: 10px 10px 12px;
+  border: 1px solid var(--border-light);
+  border-radius: 10px;
+  background: var(--bg-elevated);
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+.sv-textarea {
+  width: 100%;
+  font-size: 12px;
+  line-height: 1.4;
+  padding: 8px 10px;
+  border-radius: 8px;
+  border: 1px solid var(--border-light);
+  background: var(--bg-primary);
+  color: var(--text-primary);
+  resize: vertical;
+}
+.sv-row-actions {
+  display: flex;
+  justify-content: flex-end;
+}
+.sv-btn {
+  padding: 6px 12px;
+  font-size: 13px;
+  border: 1px solid var(--border-light);
+  border-radius: 8px;
+  background: var(--bg-primary);
+  color: var(--text-primary);
+  cursor: pointer;
+}
+.sv-btn:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
 }
 .sv-row-h {
   display: flex;

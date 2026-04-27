@@ -393,6 +393,9 @@ pub fn run() {
             api::plugin_index::batch_update_plugins,
             api::plugin_index::batch_uninstall_plugins,
             api::plugin_index::consume_pending_protocol_installs,
+            api::plugin_index::get_plugin_market_sources_config,
+            api::plugin_index::set_plugin_market_developer_mode,
+            api::plugin_index::set_plugin_index_sources,
             api::plugin_config::get_plugin_settings_ui,
             api::plugin_config::set_plugin_settings_config,
         ])

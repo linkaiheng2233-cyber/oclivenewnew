@@ -1117,6 +1117,11 @@ export interface PendingProtocolInstallDto {
   gitUrl: string;
 }
 
+export interface PluginMarketSourcesConfigDto {
+  developerMode: boolean;
+  pluginIndexSources: string[];
+}
+
 export interface InstallPluginFromMarketResponseDto {
   installedPluginId: string;
 }
@@ -1192,6 +1197,31 @@ export async function consumePendingProtocolInstalls(): Promise<
   return invokeWithFriendlyError<PendingProtocolInstallDto[]>(
     "consume_pending_protocol_installs",
     {},
+  );
+}
+
+export async function getPluginMarketSourcesConfig(): Promise<PluginMarketSourcesConfigDto> {
+  return invokeWithFriendlyError<PluginMarketSourcesConfigDto>(
+    "get_plugin_market_sources_config",
+    {},
+  );
+}
+
+export async function setPluginMarketDeveloperMode(
+  enabled: boolean,
+): Promise<PluginMarketSourcesConfigDto> {
+  return invokeWithFriendlyError<PluginMarketSourcesConfigDto>(
+    "set_plugin_market_developer_mode",
+    { req: { enabled } },
+  );
+}
+
+export async function setPluginIndexSources(
+  sources: string[],
+): Promise<PluginMarketSourcesConfigDto> {
+  return invokeWithFriendlyError<PluginMarketSourcesConfigDto>(
+    "set_plugin_index_sources",
+    { req: { sources } },
   );
 }
 

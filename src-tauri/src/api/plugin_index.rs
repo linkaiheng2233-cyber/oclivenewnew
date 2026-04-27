@@ -15,6 +15,82 @@ use tauri::State;
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
+pub struct PluginMarketSourcesConfigDto {
+    pub developer_mode: bool,
+    pub plugin_index_sources: Vec<String>,
+}
+
+#[tauri::command]
+pub fn get_plugin_market_sources_config(
+    state: State<'_, AppState>,
+) -> Result<PluginMarketSourcesConfigDto, String> {
+    let host = state.directory_plugins.host();
+    Ok(PluginMarketSourcesConfigDto {
+        developer_mode: host.developer_mode,
+        plugin_index_sources: host.plugin_index_sources,
+    })
+}
+
+#[derive(Debug, Clone, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct SetPluginMarketDeveloperModeRequest {
+    pub enabled: bool,
+}
+
+#[tauri::command]
+pub fn set_plugin_market_developer_mode(
+    req: SetPluginMarketDeveloperModeRequest,
+    state: State<'_, AppState>,
+) -> Result<PluginMarketSourcesConfigDto, String> {
+    let mut host = state.directory_plugins.host();
+    host.developer_mode = req.enabled;
+    state
+        .directory_plugins
+        .update_host_plugins(host, state.storage.roles_dir())
+        .map_err(|e| e.to_string())?;
+    let next = state.directory_plugins.host();
+    Ok(PluginMarketSourcesConfigDto {
+        developer_mode: next.developer_mode,
+        plugin_index_sources: next.plugin_index_sources,
+    })
+}
+
+#[derive(Debug, Clone, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct SetPluginIndexSourcesRequest {
+    pub sources: Vec<String>,
+}
+
+#[tauri::command]
+pub fn set_plugin_index_sources(
+    req: SetPluginIndexSourcesRequest,
+    state: State<'_, AppState>,
+) -> Result<PluginMarketSourcesConfigDto, String> {
+    if !state.directory_plugins.host().developer_effective() {
+        return Err("developer mode required for third-party sources".to_string());
+    }
+    let mut host = state.directory_plugins.host();
+    host.plugin_index_sources = req
+        .sources
+        .into_iter()
+        .map(|s| s.trim().to_string())
+        .filter(|s| !s.is_empty())
+        .collect();
+    host.plugin_index_sources.sort();
+    host.plugin_index_sources.dedup();
+    state
+        .directory_plugins
+        .update_host_plugins(host, state.storage.roles_dir())
+        .map_err(|e| e.to_string())?;
+    let next = state.directory_plugins.host();
+    Ok(PluginMarketSourcesConfigDto {
+        developer_mode: next.developer_mode,
+        plugin_index_sources: next.plugin_index_sources,
+    })
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
 pub struct PluginMarketEntry {
     #[serde(flatten)]
     pub index: PluginIndexEntry,

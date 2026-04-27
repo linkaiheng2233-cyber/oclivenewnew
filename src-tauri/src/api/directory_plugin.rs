@@ -216,7 +216,7 @@ pub fn directory_plugin_bootstrap_dto(
     let mut plugin_ids_sorted: Vec<String> = rt.plugin_roots.read().keys().cloned().collect();
     plugin_ids_sorted.retain(|id| !pst.is_plugin_disabled(id));
     plugin_ids_sorted.sort_unstable();
-    let shell_plugin_id_raw = shell_plugin_id_resolved(host, Some(&role_state));
+    let shell_plugin_id_raw = shell_plugin_id_resolved(&host, Some(&role_state));
     let shell_plugin_id = shell_plugin_id_raw.filter(|id| !pst.is_plugin_disabled(id));
     let shell_url = shell_plugin_id.as_ref().and_then(|pid| {
         let roots = rt.plugin_roots.read();
@@ -507,7 +507,7 @@ fn plugin_catalog_fingerprint(state: &AppState) -> std::io::Result<u64> {
     let roles = state.storage.roles_dir();
     let app_data = state.directory_plugins.app_data_dir();
     let host = state.directory_plugins.host();
-    let roots = plugin_scan_container_roots(roles, app_data, host);
+    let roots = plugin_scan_container_roots(roles, app_data, &host);
     let mut h = DefaultHasher::new();
     state
         .directory_plugins

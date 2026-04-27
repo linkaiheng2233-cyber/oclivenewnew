@@ -12,7 +12,7 @@ use tauri::Manager;
 /// 在独立线程中监听 `plugin_scan_container_roots` 返回的目录；失败仅打日志。
 pub fn start_plugin_fs_watcher(app: tauri::AppHandle, state: &AppState, roles_dir: PathBuf) {
     let app_data = state.directory_plugins.app_data_dir().to_path_buf();
-    let host: HostPluginsFile = state.directory_plugins.host().clone();
+    let host: HostPluginsFile = state.directory_plugins.host();
     if !host.developer_effective() {
         return;
     }
