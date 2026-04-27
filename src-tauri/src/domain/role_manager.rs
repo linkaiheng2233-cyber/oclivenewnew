@@ -164,6 +164,7 @@ impl RoleManager {
             worldview_snippet: "",
             mutable_personality: "",
             reply_quality_anchor: effective_reply_quality_anchor(&self.role),
+            complex_emotion_hint: None,
         });
 
         // 7. 更新性格

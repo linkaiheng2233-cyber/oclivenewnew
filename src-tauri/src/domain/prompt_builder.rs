@@ -30,6 +30,8 @@ pub struct PromptInput<'a> {
     pub mutable_personality: &'a str,
     /// 合并后的「回复质量锚点」（引擎默认或 `settings.json` 覆盖）；注入在「用户说」之前。
     pub reply_quality_anchor: &'a str,
+    /// 复杂情感复盘提示（`null` / `None` 表示不注入，不引入额外换行或占位符）。
+    pub complex_emotion_hint: Option<&'a str>,
 }
 
 /// 引擎默认：固定「质量 + 边界」段（角色包 `reply_quality_anchor` 可整段覆盖）；与下文【回复结构】呼应。
@@ -173,6 +175,15 @@ impl PromptBuilder {
             input.user_emotion,
         ));
         prompt.push_str("\n\n");
+        if let Some(h) = input
+            .complex_emotion_hint
+            .map(str::trim)
+            .filter(|s| !s.is_empty())
+        {
+            prompt.push_str("【复杂情感复盘】\n");
+            prompt.push_str(h);
+            prompt.push_str("\n\n");
+        }
         if !input.reply_quality_anchor.trim().is_empty() {
             prompt.push_str(input.reply_quality_anchor.trim());
             prompt.push_str("\n\n");
@@ -562,6 +573,7 @@ mod tests {
             worldview_snippet: "",
             mutable_personality: "",
             reply_quality_anchor: effective_reply_quality_anchor(&role),
+            complex_emotion_hint: None,
         });
 
         assert!(prompt.contains("Test Role"));
@@ -612,6 +624,7 @@ mod tests {
             worldview_snippet: "",
             mutable_personality: "",
             reply_quality_anchor: effective_reply_quality_anchor(&role),
+            complex_emotion_hint: None,
         });
 
         assert!(prompt.contains("家人/长辈场景补充"));
@@ -664,6 +677,7 @@ mod tests {
             worldview_snippet: "",
             mutable_personality: "",
             reply_quality_anchor: effective_reply_quality_anchor(&role),
+            complex_emotion_hint: None,
         });
 
         assert!(prompt.contains("倔强"));
@@ -695,6 +709,7 @@ mod tests {
             worldview_snippet: "",
             mutable_personality: "",
             reply_quality_anchor: effective_reply_quality_anchor(&role),
+            complex_emotion_hint: None,
         });
 
         assert!(prompt.contains("用户说"));
@@ -734,6 +749,7 @@ mod tests {
             worldview_snippet: "",
             mutable_personality: "",
             reply_quality_anchor: effective_reply_quality_anchor(&role),
+            complex_emotion_hint: None,
         });
 
         assert!(prompt.contains("边界语气控制指引"));
@@ -773,6 +789,7 @@ mod tests {
             worldview_snippet: "",
             mutable_personality: "",
             reply_quality_anchor: effective_reply_quality_anchor(&role),
+            complex_emotion_hint: None,
         });
 
         assert!(prompt.contains("边界语气控制指引"));
@@ -805,6 +822,7 @@ mod tests {
             worldview_snippet: "",
             mutable_personality: "",
             reply_quality_anchor: effective_reply_quality_anchor(&role),
+            complex_emotion_hint: None,
         });
 
         assert!(!prompt.contains("边界语气控制指引"));
@@ -836,6 +854,7 @@ mod tests {
             worldview_snippet: "",
             mutable_personality: "最近更黏人了。",
             reply_quality_anchor: effective_reply_quality_anchor(&role),
+            complex_emotion_hint: None,
         });
         assert!(prompt.contains("【可变性格档案】"));
         assert!(prompt.contains("更黏人"));
@@ -869,6 +888,7 @@ mod tests {
             worldview_snippet: "",
             mutable_personality: "",
             reply_quality_anchor: effective_reply_quality_anchor(&role),
+            complex_emotion_hint: None,
         });
         assert!(prompt.contains("【包级质量锚点】仅测试覆盖用。"));
         assert!(!prompt.contains("【回复质量锚点】（每轮须遵守）"));

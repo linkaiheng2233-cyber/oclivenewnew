@@ -3,6 +3,7 @@
 use crate::domain::chat_llm_fallback::{fallback_reply_for_llm_failure, FallbackReplyContext};
 use crate::domain::chat_turn::{relation_favor_for_key, weight_memories_for_scene};
 use crate::domain::chat_turn_rules::{soft_append_guard, strip_hallucination_tokens};
+use crate::domain::complex_emotion::{affect_metrics_from_seven_dim, ComplexEmotionInput};
 use crate::domain::life_schedule::{format_life_prompt_line, resolve_life_state};
 use crate::domain::memory_retrieval::MemoryRetrievalInput;
 use crate::domain::personality_engine::PersonalityEngine;
@@ -188,6 +189,12 @@ pub(crate) async fn process_co_present(
         KnowledgeIndex::format_for_prompt(knowledge_chunks.as_slice(), 6000)
     };
 
+    let prev_complex_hint = state.db_manager.get_complex_emotion_hint(srid).await?;
+    let prev_complex_hint_trimmed = prev_complex_hint
+        .as_deref()
+        .map(str::trim)
+        .filter(|s| !s.is_empty());
+
     let prompt = pl.prompt.build_prompt(&PromptInput {
         role,
         personality: &personality,
@@ -209,6 +216,7 @@ pub(crate) async fn process_co_present(
         worldview_snippet: worldview_snippet.as_str(),
         mutable_personality: mutable_for_prompt.as_str(),
         reply_quality_anchor: effective_reply_quality_anchor(role),
+        complex_emotion_hint: prev_complex_hint_trimmed,
     });
 
     let pre_main_llm_ms = t_cp0.elapsed().as_millis() as u64;
@@ -241,6 +249,27 @@ pub(crate) async fn process_co_present(
         ai_impact_factor_final,
         relation_after.as_str(),
     ));
+    // complex_emotion：每轮对话后复盘一次，供下一轮 prompt 可选注入
+    {
+        let (valence, dominance) = affect_metrics_from_seven_dim(&emotion_result);
+        let ce_in = ComplexEmotionInput {
+            role_id: role.id.to_string(),
+            scene_id: scene_id.to_string(),
+            user_message: user_message.to_string(),
+            bot_reply: reply.to_string(),
+            recent_dialogue_summary: None,
+            previous_narrative_hint: prev_complex_hint.unwrap_or_default(),
+            user_valence: Some(valence),
+            user_dominance: Some(dominance),
+            previous_user_message: None,
+        };
+        if let Ok(out) = pl.complex_emotion.resolve_turn(&ce_in) {
+            let _ = state
+                .db_manager
+                .set_complex_emotion_hint(srid, out.narrative_hint.as_deref())
+                .await;
+        }
+    }
     let bot_emotion_result = pl.emotion.analyze(&reply)?;
     let previous_emotion = state.db_manager.get_current_emotion(srid).await?;
     let bot_emotion = policies

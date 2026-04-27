@@ -34,6 +34,7 @@ use std::collections::HashMap;
 use std::fs;
 use std::path::{Path, PathBuf};
 use std::sync::Arc;
+use tempfile::TempDir;
 
 /// 与 oclive-launcher 注入的取值一致：`ollama` / `remote` / `directory`（大小写不敏感）。
 fn resolve_llm_backend_env_override() -> Option<LlmBackend> {
@@ -224,6 +225,8 @@ pub struct KernelAppState {
     pub plugins: PluginHost,
     pub directory_plugins: Arc<DirectoryPluginRuntime>,
     session_plugin_overrides: Arc<RwLock<HashMap<String, PluginBackendsOverride>>>,
+    // Keep temp dir alive when using ephemeral DBs.
+    _temp_db_dir: Option<TempDir>,
 }
 
 impl KernelAppState {
@@ -255,12 +258,20 @@ impl KernelAppState {
         app_data_dir: impl AsRef<Path>,
     ) -> Result<Self> {
         let path = db_path.as_ref();
-        let db = if path == Path::new(":memory:") {
-            SqlitePoolOptions::new()
+        let (db, temp_db_dir) = if path == Path::new(":memory:") {
+            // Use a per-instance temp file DB to avoid concurrency races on `_sqlx_migrations`
+            // across async tests and pooled connections.
+            let dir = TempDir::new().map_err(|e| crate::error::AppError::DatabaseError(e.to_string()))?;
+            let db_file = dir.path().join("kernel_runtime.sqlite");
+            let opts = SqliteConnectOptions::new()
+                .filename(&db_file)
+                .create_if_missing(true);
+            let pool = SqlitePoolOptions::new()
                 .max_connections(5)
-                .connect("sqlite::memory:")
+                .connect_with(opts)
                 .await
-                .map_err(|e| crate::error::AppError::DatabaseError(e.to_string()))?
+                .map_err(|e| crate::error::AppError::DatabaseError(e.to_string()))?;
+            (pool, Some(dir))
         } else {
             if let Some(parent) = path.parent() {
                 if !parent.as_os_str().is_empty() {
@@ -270,11 +281,12 @@ impl KernelAppState {
             let opts = SqliteConnectOptions::new()
                 .filename(path)
                 .create_if_missing(true);
-            SqlitePoolOptions::new()
+            let pool = SqlitePoolOptions::new()
                 .max_connections(5)
                 .connect_with(opts)
                 .await
-                .map_err(|e| crate::error::AppError::DatabaseError(e.to_string()))?
+                .map_err(|e| crate::error::AppError::DatabaseError(e.to_string()))?;
+            (pool, None)
         };
 
         // NOTE: temporary: reuse existing SQL migrations under `src-tauri/migrations`.
@@ -325,6 +337,7 @@ impl KernelAppState {
             plugins,
             directory_plugins,
             session_plugin_overrides: Arc::new(RwLock::new(HashMap::new())),
+            _temp_db_dir: temp_db_dir,
         })
     }
 
@@ -340,9 +353,14 @@ impl KernelAppState {
         roles_dir: impl AsRef<Path>,
         policy_file: Option<&Path>,
     ) -> Result<Self> {
+        let dir = TempDir::new().map_err(|e| crate::error::AppError::DatabaseError(e.to_string()))?;
+        let db_file = dir.path().join("kernel_runtime.sqlite");
+        let opts = SqliteConnectOptions::new()
+            .filename(&db_file)
+            .create_if_missing(true);
         let db = sqlx::sqlite::SqlitePoolOptions::new()
             .max_connections(5)
-            .connect("sqlite::memory:")
+            .connect_with(opts)
             .await
             .map_err(|e| crate::error::AppError::DatabaseError(e.to_string()))?;
 
@@ -395,6 +413,7 @@ impl KernelAppState {
             plugins,
             directory_plugins,
             session_plugin_overrides: Arc::new(RwLock::new(HashMap::new())),
+            _temp_db_dir: Some(dir),
         })
     }
 

@@ -150,6 +150,42 @@ impl DbManager {
         Ok(())
     }
 
+    // ===== complex_emotion hint (per-session namespace) =====
+
+    pub async fn get_complex_emotion_hint(&self, role_id: &str) -> Result<Option<String>> {
+        let rid = role_id.trim();
+        if rid.is_empty() {
+            return Ok(None);
+        }
+        let row = sqlx::query_as::<_, (Option<String>,)>(
+            "SELECT complex_emotion_hint FROM role_runtime WHERE role_id = ?",
+        )
+        .bind(rid)
+        .fetch_optional(&self.pool)
+        .await
+        .map_err(|e| AppError::DatabaseError(e.to_string()))?;
+        Ok(row.and_then(|x| x.0))
+    }
+
+    pub async fn set_complex_emotion_hint(&self, role_id: &str, hint: Option<&str>) -> Result<()> {
+        let rid = role_id.trim();
+        if rid.is_empty() {
+            return Err(AppError::InvalidParameter("role_id required".into()));
+        }
+        self.ensure_role_runtime(rid).await?;
+        let now = Utc::now().to_rfc3339();
+        sqlx::query(
+            "UPDATE role_runtime SET complex_emotion_hint = ?, updated_at = ? WHERE role_id = ?",
+        )
+        .bind(hint.map(|s| s.to_string()))
+        .bind(now)
+        .bind(rid)
+        .execute(&self.pool)
+        .await
+        .map_err(|e| AppError::DatabaseError(e.to_string()))?;
+        Ok(())
+    }
+
     pub async fn get_favorability(&self, role_id: &str) -> Result<Option<f64>> {
         let row = sqlx::query_as::<_, (f64,)>(
             "SELECT current_favorability FROM role_runtime WHERE role_id = ?",

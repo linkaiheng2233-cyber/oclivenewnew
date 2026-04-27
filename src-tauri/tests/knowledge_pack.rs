@@ -78,6 +78,7 @@ fn load_knowledge_index_parses_front_matter_and_merge_hints() {
         worldview_snippet: snippet.as_str(),
         mutable_personality: "",
         reply_quality_anchor: effective_reply_quality_anchor(&disk_role),
+        complex_emotion_hint: None,
     });
     assert!(prompt.contains("【世界观设定】"));
     assert!(prompt.contains("雾城"));

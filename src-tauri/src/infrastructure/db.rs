@@ -102,6 +102,38 @@ impl DbManager {
             != 0)
     }
 
+    // ===== complex_emotion hint (per-session namespace) =====
+
+    pub async fn get_complex_emotion_hint(&self, role_id: &str) -> Result<Option<String>> {
+        let rid = role_id.trim();
+        if rid.is_empty() {
+            return Ok(None);
+        }
+        let row = sqlx::query("SELECT complex_emotion_hint FROM role_runtime WHERE role_id = ?")
+            .bind(rid)
+            .fetch_optional(&self.pool)
+            .await
+            .map_err(|e| AppError::DatabaseError(e.to_string()))?;
+        Ok(row
+            .and_then(|r| r.try_get::<Option<String>, _>("complex_emotion_hint").ok())
+            .flatten())
+    }
+
+    pub async fn set_complex_emotion_hint(&self, role_id: &str, hint: Option<&str>) -> Result<()> {
+        let rid = role_id.trim();
+        if rid.is_empty() {
+            return Err(AppError::InvalidParameter("role_id required".into()));
+        }
+        self.ensure_role_runtime(rid).await?;
+        sqlx::query("UPDATE role_runtime SET complex_emotion_hint = ?, updated_at = CURRENT_TIMESTAMP WHERE role_id = ?")
+            .bind(hint.map(|s| s.to_string()))
+            .bind(rid)
+            .execute(&self.pool)
+            .await
+            .map_err(|e| AppError::DatabaseError(e.to_string()))?;
+        Ok(())
+    }
+
     pub async fn set_plugin_permission_grants(
         &self,
         plugin_id: &str,
