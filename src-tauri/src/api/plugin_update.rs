@@ -127,6 +127,9 @@ pub fn extract_plugin_zip(
     plugin_id: String,
     state: State<'_, AppState>,
 ) -> Result<(), String> {
+    if !state.directory_plugins.host().developer_effective() {
+        return Err("developer mode required for zip sideload".to_string());
+    }
     let pid = plugin_id.trim();
     if pid.is_empty() {
         return Err("plugin_id required".to_string());

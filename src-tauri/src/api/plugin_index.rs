@@ -212,6 +212,16 @@ pub fn install_plugin_from_market(
     if pid.is_empty() {
         return Err("plugin_id required".to_string());
     }
+    // git_url override 属于侧载行为：仅开发者模式允许
+    if git_url
+        .as_deref()
+        .map(str::trim)
+        .filter(|s| !s.is_empty())
+        .is_some()
+        && !state.directory_plugins.host().developer_effective()
+    {
+        return Err("developer mode required for custom git_url".to_string());
+    }
     let from_index = load_cached_index(&state).map_err(|e| e.to_frontend_error())?;
     let index_item = from_index.plugins.iter().find(|p| p.id == pid).cloned();
     // 默认：git clone + checkout tag（以 versions.latest.git_tag 或 version 作为 tag）
@@ -318,6 +328,9 @@ pub fn install_plugin_from_git(
     req: InstallPluginFromGitRequest,
     state: State<'_, AppState>,
 ) -> Result<InstallPluginFromMarketResponse, String> {
+    if !state.directory_plugins.host().developer_effective() {
+        return Err("developer mode required for install from git".to_string());
+    }
     let git = req.git_url.trim();
     if git.is_empty() {
         return Err("git_url required".to_string());
@@ -384,9 +397,14 @@ pub fn batch_uninstall_plugins(
 }
 
 #[tauri::command]
-pub fn consume_pending_protocol_installs() -> Vec<PendingProtocolInstall> {
-    take_pending_install_git_urls()
+pub fn consume_pending_protocol_installs(
+    state: State<'_, AppState>,
+) -> Result<Vec<PendingProtocolInstall>, String> {
+    if !state.directory_plugins.host().developer_effective() {
+        return Err("developer mode required for protocol installs".to_string());
+    }
+    Ok(take_pending_install_git_urls()
         .into_iter()
         .map(|git_url| PendingProtocolInstall { git_url })
-        .collect()
+        .collect())
 }
