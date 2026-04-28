@@ -51,6 +51,7 @@ const creatorEchoRole = ref<{ id: string; name: string; version: string } | null
   null,
 );
 const creatorEchoLines = ref<string[]>([]);
+const postImportRoleId = ref<string>("");
 
 const marketOpen = ref(false);
 const marketLoading = ref(false);
@@ -112,18 +113,17 @@ async function confirmOverwrite(): Promise<void> {
   if (importProgressOpen.value) return;
   try {
     const roleId = await withImportProgress(() => importRolePack(path, true));
-    emit("imported", roleId);
+    postImportRoleId.value = roleId;
     try {
       const lines = await readRoleCreatorMessageLines(roleId);
       if (lines.length > 0) {
         creatorEchoRole.value = pendingPeek.value;
         creatorEchoLines.value = lines;
-        creatorEchoOpen.value = true;
       }
     } catch {
       // ignore creator message read errors
     }
-    emit("notify", { type: "success", message: `已覆盖并导入角色: ${roleId}` });
+    creatorEchoOpen.value = true;
   } catch (e) {
     emit("notify", {
       type: "error",
@@ -147,18 +147,43 @@ async function runImportFlow(path: string): Promise<void> {
   const roleId = await withImportProgress(() =>
     importRolePack(path, false),
   );
-  emit("imported", roleId);
+  postImportRoleId.value = roleId;
   try {
     const lines = await readRoleCreatorMessageLines(roleId);
     if (lines.length > 0) {
       creatorEchoRole.value = peek;
       creatorEchoLines.value = lines;
-      creatorEchoOpen.value = true;
     }
   } catch {
     // ignore creator message read errors
   }
-  emit("notify", { type: "success", message: `已导入角色: ${peek.name}` });
+  creatorEchoOpen.value = true;
+}
+
+async function switchToImportedRole(): Promise<void> {
+  const roleId = postImportRoleId.value.trim();
+  if (!roleId) {
+    creatorEchoOpen.value = false;
+    return;
+  }
+  creatorEchoOpen.value = false;
+  postImportRoleId.value = "";
+  emit("notify", { type: "success", message: `已导入角色：${roleId}` });
+  emit("imported", roleId);
+}
+
+async function keepCurrentAfterImport(): Promise<void> {
+  const roleId = postImportRoleId.value.trim();
+  creatorEchoOpen.value = false;
+  postImportRoleId.value = "";
+  try {
+    await roleStore.loadRoles();
+  } catch {
+    // ignore
+  }
+  if (roleId) {
+    emit("notify", { type: "success", message: `已导入角色：${roleId}（未切换）` });
+  }
 }
 
 async function pickImportSource(
@@ -275,18 +300,17 @@ async function installPicked(): Promise<void> {
         overwrite,
       }),
     );
-    emit("imported", roleId);
+    postImportRoleId.value = roleId;
     try {
       const lines = await readRoleCreatorMessageLines(roleId);
       if (lines.length > 0) {
         creatorEchoRole.value = { id: roleId, name: roleId, version: "" };
         creatorEchoLines.value = lines;
-        creatorEchoOpen.value = true;
       }
     } catch {
       // ignore
     }
-    emit("notify", { type: "success", message: `已从市场安装角色: ${roleId}` });
+    creatorEchoOpen.value = true;
     closeMarket();
   } catch (e) {
     emit("notify", {
@@ -331,7 +355,7 @@ async function installPicked(): Promise<void> {
 
     <Teleport to="body">
       <div
-        v-if="creatorEchoOpen && (creatorEchoRole || creatorEchoLines.length > 0)"
+        v-if="creatorEchoOpen"
         class="modal-backdrop"
         role="dialog"
         aria-modal="true"
@@ -339,7 +363,9 @@ async function installPicked(): Promise<void> {
         @click.self="creatorEchoOpen = false"
       >
         <div class="modal-card" @click.stop>
-          <h2 id="creator-echo-title" class="modal-title">作者寄语</h2>
+          <h2 id="creator-echo-title" class="modal-title">
+            {{ creatorEchoLines.length > 0 ? "作者寄语" : "导入成功" }}
+          </h2>
           <p v-if="creatorEchoRole" class="modal-body">
             <strong>{{ creatorEchoRole.name }}</strong>
             <span class="pm-muted">({{ creatorEchoRole.id }})</span>
@@ -349,10 +375,20 @@ async function installPicked(): Promise<void> {
             <p v-for="(l, i) in creatorEchoLines" :key="i" class="pm-echo-line">
               {{ l }}
             </p>
+            <p v-if="creatorEchoLines.length === 0" class="pm-echo-line">
+              角色包已导入。是否现在切换到该角色开始使用？
+            </p>
           </div>
           <div class="modal-actions">
-            <button type="button" class="btn btn-danger" @click="creatorEchoOpen = false">
-              开始使用
+            <button
+              type="button"
+              class="btn btn-ghost"
+              @click="keepCurrentAfterImport"
+            >
+              稍后再说
+            </button>
+            <button type="button" class="btn btn-danger" @click="switchToImportedRole">
+              立即切换
             </button>
           </div>
         </div>
