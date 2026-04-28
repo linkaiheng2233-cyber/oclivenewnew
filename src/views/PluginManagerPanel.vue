@@ -76,6 +76,44 @@ const PLUGIN_REVIEWS_REPO_URL =
   "https://github.com/linkaiheng2233-cyber/awesome-oclive-plugin-reviews";
 const PLUGIN_REVIEWS_CONTRIBUTING_URL = `${PLUGIN_REVIEWS_REPO_URL}/blob/main/CONTRIBUTING.md`;
 
+function buildReviewJsonTemplate(params: {
+  pluginId: string;
+  pubkeyId?: string | null;
+  version?: string | null;
+}): string {
+  const now = new Date().toISOString();
+  const pid = params.pluginId.trim();
+  const pk = (params.pubkeyId ?? "").trim();
+  const v = (params.version ?? "").trim();
+  const obj = {
+    id: `r-${now.replace(/[-:]/g, "").slice(0, 15)}-yourid`,
+    pluginId: pid,
+    ...(pk ? { pubkeyId: pk } : {}),
+    ...(v ? { version: v } : {}),
+    rating: 5,
+    title: "一句话短评（可选）",
+    body: "详细说明（可选）",
+    createdAt: now,
+    author: { github: "your-github-id" },
+  };
+  return JSON.stringify(obj, null, 2);
+}
+
+async function copyReviewTemplate(params: {
+  pluginId: string;
+  pubkeyId?: string | null;
+  version?: string | null;
+}): Promise<void> {
+  const text = buildReviewJsonTemplate(params);
+  try {
+    if (!navigator.clipboard?.writeText) throw new Error("clipboard API unavailable");
+    await navigator.clipboard.writeText(text);
+    showToast("success", "已复制评价模板（JSON）。");
+  } catch (e) {
+    showToast("error", e instanceof Error ? e.message : String(e));
+  }
+}
+
 async function refreshPluginReviewsIndex(): Promise<void> {
   pluginReviewsLoading.value = true;
   pluginReviewsErr.value = "";
@@ -103,6 +141,56 @@ async function syncPluginReviewsIndexNow(): Promise<void> {
 }
 
 type RatingAgg = { avg: number; count: number };
+
+type ReviewPreview = {
+  id: string;
+  rating: number;
+  title?: string | null;
+  body?: string | null;
+  created_at: string;
+  pubkey_id?: string | null;
+  version?: string | null;
+  author_github?: string | null;
+};
+
+function normalizeStars(rating: number): number {
+  const x = Number(rating);
+  if (!Number.isFinite(x)) return 0;
+  return Math.max(1, Math.min(5, Math.round(x)));
+}
+
+function getRecentReviews(params: {
+  pluginId: string;
+  pubkeyId?: string | null;
+  version?: string | null;
+  limit?: number;
+}): ReviewPreview[] {
+  const pid = params.pluginId.trim();
+  const pk = (params.pubkeyId ?? "").trim();
+  const v = (params.version ?? "").trim();
+  const limit = Math.max(1, Math.min(20, params.limit ?? 3));
+  const reviews = pluginReviewsIndex.value?.reviews ?? [];
+  return reviews
+    .filter((r) => {
+      if ((r.plugin_id ?? "").trim() !== pid) return false;
+      if (pk && (r.pubkey_id ?? "").trim() !== pk) return false;
+      if (v && (r.version ?? "").trim() !== v) return false;
+      return true;
+    })
+    .slice()
+    .sort((a, b) => String(b.created_at ?? "").localeCompare(String(a.created_at ?? "")))
+    .slice(0, limit)
+    .map((r) => ({
+      id: r.id,
+      rating: normalizeStars(r.rating),
+      title: r.title ?? null,
+      body: r.body ?? null,
+      created_at: r.created_at,
+      pubkey_id: r.pubkey_id ?? null,
+      version: r.version ?? null,
+      author_github: r.author_github ?? null,
+    }));
+}
 
 const ratingAggByPluginId = computed(() => {
   const map = new Map<string, RatingAgg>();
@@ -169,6 +257,15 @@ function ratingTextForPluginPubkey(pluginId: string, pubkeyId: string): string {
 function ratingStars(avg: number): string {
   const n = Math.max(0, Math.min(5, Math.round(avg)));
   return "★★★★★".slice(0, n) + "☆☆☆☆☆".slice(0, 5 - n);
+}
+
+function renderReviewLine(r: ReviewPreview): string {
+  const title = (r.title ?? "").trim();
+  const body = (r.body ?? "").trim();
+  const text = title || body || "（无内容）";
+  const who = (r.author_github ?? "").trim();
+  const whoText = who ? ` @${who}` : "";
+  return `${ratingStars(r.rating)} ${text}${whoText}`;
 }
 
 function ratingStarsForPluginId(pluginId: string): string {
@@ -1478,6 +1575,21 @@ async function onPackSelectedPlugin(): Promise<void> {
                         <span class="pm-muted">({{
                           ratingTextForPluginPubkey(row.id, k.pubkeyId)
                         }})</span>
+                        <button
+                          type="button"
+                          class="pm-link pm-link--tiny"
+                          :disabled="pluginReviewsLoading"
+                          title="复制绑定该 pubkeyId 的评价 JSON 模板"
+                          @click="
+                            copyReviewTemplate({
+                              pluginId: row.id,
+                              pubkeyId: k.pubkeyId,
+                              version: marketPickedVersionForRow(row) ?? null,
+                            })
+                          "
+                        >
+                          复制
+                        </button>
                       </span>
                     </template>
                     <button
@@ -1492,12 +1604,43 @@ async function onPackSelectedPlugin(): Promise<void> {
                       type="button"
                       class="pm-link"
                       :disabled="pluginReviewsLoading"
+                      @click="
+                        copyReviewTemplate({
+                          pluginId: row.id,
+                          pubkeyId: row.publicKeys?.[0]?.pubkeyId ?? null,
+                          version: marketPickedVersionForRow(row) ?? null,
+                        })
+                      "
+                      title="复制一段可直接提交到 reviews.json 的 JSON 模板（建议按 pubkeyId 口径提交）"
+                    >
+                      复制模板
+                    </button>
+                    <button
+                      type="button"
+                      class="pm-link"
+                      :disabled="pluginReviewsLoading"
                       @click="syncPluginReviewsIndexNow"
                     >
                       刷新评价
                     </button>
                     <span v-if="pluginReviewsErr" class="pm-err"> · {{ pluginReviewsErr }}</span>
                   </p>
+                  <div
+                    v-if="getRecentReviews({ pluginId: row.id, limit: 3 }).length"
+                    class="pm-market-reviews"
+                  >
+                    <p class="pm-market-reviews-h">最近短评：</p>
+                    <ul class="pm-market-reviews-list">
+                      <li
+                        v-for="r in getRecentReviews({ pluginId: row.id, limit: 3 })"
+                        :key="`rr-${row.id}-${r.id}`"
+                      >
+                        <span class="pm-market-review-line" :title="r.created_at">{{
+                          renderReviewLine(r)
+                        }}</span>
+                      </li>
+                    </ul>
+                  </div>
                   <p v-if="row.description" class="pm-market-desc">{{ row.description }}</p>
                   <details v-if="marketEntryType(row) === 'module' && (row as any).module" class="pm-market-details">
                     <summary class="pm-market-details-sum">查看模块声明</summary>
@@ -2388,6 +2531,16 @@ async function onPackSelectedPlugin(): Promise<void> {
   cursor: not-allowed;
   text-decoration: none;
 }
+.pm-link--tiny {
+  font-size: 11px;
+  text-decoration: none;
+  border: 1px solid var(--border-light);
+  border-radius: 8px;
+  padding: 1px 6px;
+}
+.pm-link--tiny:disabled {
+  border-color: transparent;
+}
 .pm-pubkey-rating {
   display: inline-flex;
   gap: 4px;
@@ -2416,6 +2569,32 @@ async function onPackSelectedPlugin(): Promise<void> {
   color: var(--danger-600, #c0392b);
   border-color: color-mix(in srgb, var(--danger-600, #c0392b) 40%, var(--border-light));
   background: color-mix(in srgb, var(--danger-600, #c0392b) 8%, var(--bg-primary));
+}
+.pm-market-reviews {
+  margin: 4px 0 0;
+  padding: 6px 8px;
+  border-radius: 10px;
+  border: 1px dashed var(--border-light);
+  background: color-mix(in srgb, var(--bg-primary) 70%, transparent);
+}
+.pm-market-reviews-h {
+  margin: 0 0 4px;
+  font-size: 12px;
+  color: var(--text-secondary);
+}
+.pm-market-reviews-list {
+  margin: 0;
+  padding-left: 16px;
+  font-size: 12px;
+  color: var(--text-secondary);
+}
+.pm-market-review-line {
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  display: inline-block;
+  max-width: 860px;
+  vertical-align: bottom;
 }
 .pm-market-deps {
   margin: 6px 0 0;
