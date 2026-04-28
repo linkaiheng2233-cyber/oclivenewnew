@@ -102,6 +102,9 @@ pub struct PluginIndexVersionEntry {
 #[derive(Debug, Clone, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
 pub struct PluginIndexEntry {
+    /// 条目类型：`plugin`（默认）| `module`（无代码，依赖+配置预设）| `profile`（保留）
+    #[serde(rename = "type", default = "default_index_entry_type")]
+    pub entry_type: String,
     pub id: String,
     pub name: String,
     #[serde(default)]
@@ -109,6 +112,7 @@ pub struct PluginIndexEntry {
     #[serde(default)]
     pub author: String,
     pub version: String,
+    /// 仅 `type=plugin` 必填；`module`/`profile` 可为空字符串。
     pub git: String,
     #[serde(default)]
     pub permissions: Vec<String>,
@@ -131,6 +135,36 @@ pub struct PluginIndexEntry {
     /// 多版本索引（用于回滚/离线包下载）
     #[serde(default)]
     pub versions: Vec<PluginIndexVersionEntry>,
+
+    /// `type=module` 时可选：模块声明（无代码）。
+    #[serde(default)]
+    pub module: Option<PluginIndexModuleSpec>,
+}
+
+fn default_index_entry_type() -> String {
+    "plugin".to_string()
+}
+
+/// `type=module` 的声明体（无代码）；用于“像 meta package 一样”应用一组依赖与配置预设。
+#[derive(Debug, Clone, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct PluginIndexModuleSpec {
+    /// 该模块依赖的插件清单（这些才是有代码的内容）。
+    #[serde(default)]
+    pub plugins: Vec<PluginIndexModulePluginSpec>,
+    /// 可选：后端模块预设（写入会话级后端覆盖）。
+    #[serde(default)]
+    pub backends: Option<crate::models::plugin_backends::PluginBackendsOverride>,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct PluginIndexModulePluginSpec {
+    pub id: String,
+    #[serde(default)]
+    pub version: Option<String>,
+    #[serde(default)]
+    pub source: Option<String>,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]

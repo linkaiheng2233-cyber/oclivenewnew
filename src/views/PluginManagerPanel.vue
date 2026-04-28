@@ -28,6 +28,7 @@ import {
   listPermissionTokens,
   previewProfileFromPath,
   setSessionPluginBackend,
+  setSessionPluginBackendsOverride,
   type PluginMarketEntryDto,
   type PermissionTokenInfoDto,
   type ProfilePreviewDto,
@@ -41,6 +42,8 @@ const { showToast } = useAppToast();
 
 const marketSourceSelected = ref("official");
 const marketSources = ref<string[]>([]);
+type MarketEntryTab = "plugin" | "module" | "profile";
+const marketEntryTab = ref<MarketEntryTab>("plugin");
 
 const permConsentVisible = ref(false);
 const permConsentTitle = ref("");
@@ -225,6 +228,63 @@ async function onApplyProfile(): Promise<void> {
   } finally {
     profileApplyLoading.value = false;
   }
+}
+
+function marketEntryType(row: PluginMarketEntryDto): string {
+  return (row as any).entryType ?? "plugin";
+}
+
+const marketRowsFiltered = computed(() => {
+  const rows = pluginStore.pluginMarketSnapshot?.plugins ?? [];
+  const tab = marketEntryTab.value;
+  return rows.filter((r) => {
+    const t = marketEntryType(r);
+    if (tab === "plugin") return t === "plugin" || !t;
+    if (tab === "module") return t === "module";
+    if (tab === "profile") return t === "profile";
+    return true;
+  });
+});
+
+async function onApplyModuleEntry(row: PluginMarketEntryDto): Promise<void> {
+  const mod = (row as any).module as
+    | { plugins: { id: string; version?: string | null; source?: string | null }[]; backends?: Record<string, unknown> | null }
+    | null
+    | undefined;
+  if (!mod) {
+    showToast("error", "该条目未提供 module 声明体。");
+    return;
+  }
+  const list = mod.plugins ?? [];
+  if (list.length === 0) {
+    showToast("info", "该模块未声明依赖插件。");
+  }
+  for (const spec of list) {
+    const pid = (spec.id ?? "").trim();
+    if (!pid) continue;
+    const src = normalizeProfileSource(spec.source ?? null);
+    await syncMarketSource(src);
+    const prow = pluginStore.pluginMarketSnapshot?.plugins?.find((r) => r.id === pid);
+    if (!prow) {
+      showToast("error", `索引未找到插件：${pid}（source=${src}）`);
+      continue;
+    }
+    if ((spec.version ?? "").trim()) {
+      marketPickedVersion.value = {
+        ...marketPickedVersion.value,
+        [pid]: (spec.version ?? "").trim(),
+      };
+      await onInstallMarketVersion(prow);
+    } else {
+      await onInstallMarketEntry(prow);
+    }
+  }
+  if (mod.backends && Object.keys(mod.backends).length > 0) {
+    const roleId = roleStore.currentRoleId;
+    if (!roleId?.trim()) return;
+    await setSessionPluginBackendsOverride(roleId, mod.backends);
+  }
+  showToast("success", `模块已应用：${row.id}`);
 }
 
 function onPermConsentCancel() {
@@ -959,6 +1019,38 @@ async function onPackSelectedPlugin(): Promise<void> {
             <div class="pm-section-head">
               <h3 class="pm-h3">社区索引</h3>
               <div class="pm-section-actions">
+                <div class="pm-market-tabs" role="tablist" aria-label="市场条目类型">
+                  <button
+                    type="button"
+                    class="pm-tab pm-tab--sm"
+                    :class="{ 'pm-tab--active': marketEntryTab === 'plugin' }"
+                    role="tab"
+                    :aria-selected="marketEntryTab === 'plugin'"
+                    @click="marketEntryTab = 'plugin'"
+                  >
+                    插件
+                  </button>
+                  <button
+                    type="button"
+                    class="pm-tab pm-tab--sm"
+                    :class="{ 'pm-tab--active': marketEntryTab === 'module' }"
+                    role="tab"
+                    :aria-selected="marketEntryTab === 'module'"
+                    @click="marketEntryTab = 'module'"
+                  >
+                    模块
+                  </button>
+                  <button
+                    type="button"
+                    class="pm-tab pm-tab--sm"
+                    :class="{ 'pm-tab--active': marketEntryTab === 'profile' }"
+                    role="tab"
+                    :aria-selected="marketEntryTab === 'profile'"
+                    @click="marketEntryTab = 'profile'"
+                  >
+                    Profile
+                  </button>
+                </div>
                 <select
                   class="pm-select pm-select--sm"
                   :value="marketSourceSelected"
@@ -1008,12 +1100,9 @@ async function onPackSelectedPlugin(): Promise<void> {
             >
               尚无索引数据，请点击「同步在线索引」。
             </p>
-            <ul
-              v-else-if="(pluginStore.pluginMarketSnapshot?.plugins?.length ?? 0) > 0"
-              class="pm-market-list"
-            >
+            <ul v-else-if="marketRowsFiltered.length > 0" class="pm-market-list">
               <li
-                v-for="row in pluginStore.pluginMarketSnapshot!.plugins"
+                v-for="row in marketRowsFiltered"
                 :key="row.id"
                 class="pm-market-li"
               >
@@ -1051,8 +1140,16 @@ async function onPackSelectedPlugin(): Promise<void> {
                   </p>
                 </div>
                 <div class="pm-market-actions">
+                  <button
+                    v-if="marketEntryType(row) === 'module'"
+                    type="button"
+                    class="pm-btn secondary pm-btn--sm"
+                    @click="onApplyModuleEntry(row)"
+                  >
+                    应用模块
+                  </button>
                   <div
-                    v-if="(row.versions ?? []).length > 0"
+                    v-else-if="(row.versions ?? []).length > 0"
                     class="pm-market-versions"
                   >
                     <select
@@ -1083,7 +1180,7 @@ async function onPackSelectedPlugin(): Promise<void> {
                     </button>
                   </div>
                   <button
-                    v-if="!row.installed"
+                    v-else-if="!row.installed"
                     type="button"
                     class="pm-btn secondary pm-btn--sm"
                     @click="onInstallMarketEntry(row)"
@@ -1688,6 +1785,16 @@ async function onPackSelectedPlugin(): Promise<void> {
   border-color: var(--border-light);
   background: var(--bg-elevated);
   font-weight: 600;
+}
+.pm-tab--sm {
+  flex: 0 0 auto;
+  padding: 4px 10px;
+  font-size: 12px;
+}
+.pm-market-tabs {
+  display: flex;
+  gap: 6px;
+  align-items: center;
 }
 .pm-tab-panel {
   min-height: 0;

@@ -27,6 +27,7 @@ use runtime::{
     current_favorability_for_effective_identity, maybe_seed_initial_favorability_with_extras,
     resolve_relation_state_for_ui, role_runtime_extras,
 };
+use serde::Deserialize;
 use serde::de::DeserializeOwned;
 use serde_json::{json, Value};
 
@@ -783,6 +784,43 @@ pub async fn set_session_plugin_backend(
     state: State<'_, AppState>,
 ) -> Result<RoleInfo, String> {
     set_session_plugin_backend_impl(&state, &req).await
+}
+
+#[derive(Debug, Clone, Deserialize)]
+pub struct SetSessionPluginBackendsOverrideRequest {
+    pub role_id: String,
+    /// 可选：HTTP 试聊等多会话场景下指定会话 id；缺省表示角色默认会话。
+    #[serde(default)]
+    pub session_id: Option<String>,
+    /// 会话级覆盖：仅 `Some` 字段会替换角色包 `plugin_backends` 对应模块；`directory_plugins` 亦可在此整体写入。
+    #[serde(default)]
+    pub override_backends: PluginBackendsOverride,
+}
+
+#[tauri::command]
+pub async fn set_session_plugin_backends_override(
+    req: SetSessionPluginBackendsOverrideRequest,
+    state: State<'_, AppState>,
+) -> Result<RoleInfo, String> {
+    let role_id = req.role_id.trim();
+    if role_id.is_empty() {
+        return Err(AppError::InvalidParameter("role_id required".into()).to_frontend_error());
+    }
+    state
+        .load_role_cached(role_id)
+        .map_err(|e| e.to_frontend_error())?;
+    let ns = session_namespace(role_id, req.session_id.as_deref());
+    state
+        .db_manager
+        .ensure_role_runtime(ns.as_str())
+        .await
+        .map_err(|e| e.to_frontend_error())?;
+    if req.override_backends.is_empty() {
+        state.clear_session_backend_override(ns.as_str());
+    } else {
+        state.set_session_backend_override(ns.as_str(), req.override_backends);
+    }
+    get_role_info_impl(&state, role_id, req.session_id.as_deref()).await
 }
 
 #[derive(Debug, serde::Deserialize)]

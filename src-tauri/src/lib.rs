@@ -344,6 +344,7 @@ pub fn run() {
             api::role::set_remote_life_enabled,
             api::role::set_role_interaction_mode,
             api::role::set_session_plugin_backend,
+            api::role::set_session_plugin_backends_override,
             api::role::apply_author_suggested_plugin_backends,
             api::role::get_plugin_resolution_debug,
             api::role::resolve_role_asset_path,

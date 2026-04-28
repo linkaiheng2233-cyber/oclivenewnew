@@ -701,6 +701,20 @@ export async function setSessionPluginBackend(
   });
 }
 
+export async function setSessionPluginBackendsOverride(
+  roleId: string,
+  overrideBackends: Record<string, unknown>,
+  sessionId?: string | null,
+): Promise<RoleInfo> {
+  return invokeWithFriendlyError<RoleInfo>("set_session_plugin_backends_override", {
+    req: {
+      role_id: roleId,
+      session_id: sessionId ?? null,
+      override_backends: overrideBackends,
+    },
+  });
+}
+
 /** 将 `author.json` → `suggested_plugin_backends` 写入当前会话后端覆盖。 */
 export async function applyAuthorSuggestedPluginBackends(
   roleId: string,
@@ -1146,11 +1160,14 @@ export async function resetPluginStateToRoleDefault(
 
 /** 网页索引中的单条插件（与 `plugin_installer::PluginIndexEntry` 一致，camelCase）。 */
 export interface PluginIndexEntryDto {
+  /** `plugin`（默认）| `module`（无代码）| `profile`（保留） */
+  entryType?: "plugin" | "module" | "profile";
   id: string;
   name: string;
   description: string;
   author: string;
   version: string;
+  /** `type=plugin` 必填；`module` 可能为空字符串 */
   git: string;
   permissions: string[];
   tags: string[];
@@ -1171,6 +1188,12 @@ export interface PluginIndexEntryDto {
     signatureUrl?: string | null;
     gitTag?: string | null;
   }[];
+
+  /** `type=module` 时可选：模块声明（无代码） */
+  module?: {
+    plugins: { id: string; version?: string | null; source?: string | null }[];
+    backends?: Record<string, unknown> | null;
+  } | null;
 }
 
 export interface PluginMarketEntryDto extends PluginIndexEntryDto {
