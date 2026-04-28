@@ -21,14 +21,21 @@
 
 ---
 
-## 2. PluginIndexEntry（插件条目）
+## 2. PluginIndexEntry（市场条目）
 
 > JSON 字段为 **camelCase**（与后端 serde 配置一致）。
 
-最小示例（包含 Git 安装 + 多版本回滚 + 公钥登记）：
+条目类型（v1 冻结）：
+
+- **`type: "plugin"`**：有代码的插件条目（默认）。支持 `git` 安装、`versions` 回滚、`publicKeys` 验签。
+- **`type: "module"`**：**无代码**的模块条目（meta package）。只包含“声明 + 依赖列表 + 可选后端预设”，用于一键拉取一组插件并写入配置。
+- **`type: "profile"`**：保留（无代码）。用于一键部署更大粒度环境（可复用 module / plugin 机制实现）。
+
+### 2.1 `type:"plugin"` 最小示例（包含 Git 安装 + 多版本回滚 + 公钥登记）
 
 ```json
 {
+  "type": "plugin",
   "id": "com.example.foo",
   "name": "Foo Plugin",
   "description": "…",
@@ -66,12 +73,12 @@
 }
 ```
 
-### 2.1 兼容字段（旧客户端）
+### 2.2 兼容字段（旧客户端）
 
 - `version`：用于旧 UI 展示/更新提示；建议写入 `versions` 中的最新版本号。
 - `git`：默认安装路径的 Git 仓库 URL。
 
-### 2.2 新字段（治理/安全/回滚）
+### 2.3 新字段（治理/安全/回滚）
 
 - `publisher`：发布者 id（字符串）。用于把“开发者身份/历史”治理与公钥登记绑定到同一主体。
 - `publicKeys[]`：发布者公钥环（可多把钥，支持轮换）。
@@ -83,6 +90,44 @@
   - `version`：版本号（建议 semver）。
   - `gitTag`：可选。Git 安装时使用的 tag；省略时客户端可默认使用 `version` 字符串。
   - `downloadUrl` / `signatureUrl`：回滚安装所需的不可变 URL（建议 GitHub Releases Assets）。
+
+---
+
+## 2.4 `type:"module"`（无代码模块条目）
+
+最小示例：
+
+```json
+{
+  "type": "module",
+  "id": "module.creator-min",
+  "name": "创作者最小闭环（模块）",
+  "description": "拉取一组创作者常用插件，并应用一套后端预设。",
+  "author": "Oclive",
+  "version": "1.0.0",
+  "git": "",
+  "permissions": [],
+  "tags": ["module"],
+  "dependencies": {},
+  "module": {
+    "plugins": [
+      { "id": "com.example.llm.bridge", "version": "1.2.3", "source": "official" }
+    ],
+    "backends": {
+      "llm": "directory",
+      "directory_plugins": { "llm": "com.example.llm.bridge" }
+    }
+  }
+}
+```
+
+硬性规则（安全冻结）：
+
+- `type="module"` 条目 **不包含代码**，因此：
+  - `git` 必须为空字符串（或省略但实现侧应视为空）
+  - 禁止提供 `versions` / `publicKeys`（这些仅属于 `type="plugin"`）
+- `module.plugins[]` 为“依赖插件清单”：安装模块时应逐个拉取这些插件，并对每个插件走安装权限确认。
+- `module.backends` 为“配置预设”：安装后写入会话级后端覆盖（并可包含 `directory_plugins.*` 槽位）。
 
 ---
 
