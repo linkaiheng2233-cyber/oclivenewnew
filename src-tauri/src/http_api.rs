@@ -185,6 +185,14 @@ pub struct RoleFeedbackPostRequest {
     pub session_id: Option<String>,
     #[serde(default)]
     pub mood_tag: Option<String>,
+    #[serde(default)]
+    pub scene_id: Option<String>,
+    #[serde(default)]
+    pub presence_mode: Option<String>,
+    #[serde(default)]
+    pub role_version: Option<String>,
+    #[serde(default)]
+    pub client_version: Option<String>,
     pub message: String,
 }
 
@@ -217,10 +225,22 @@ async fn post_role_feedback(
     }
     let sid = body.session_id.as_deref();
     let mood = body.mood_tag.as_deref();
+    let runtime_version = env!("CARGO_PKG_VERSION");
 
     let id = state
         .db_manager
-        .insert_role_feedback(&rid, sid, mood, &msg)
+        .insert_role_feedback(
+            &rid,
+            sid,
+            mood,
+            &msg,
+            body.scene_id.as_deref(),
+            body.presence_mode.as_deref(),
+            body.role_version.as_deref(),
+            Some(runtime_version),
+            body.client_version.as_deref(),
+            Some("http_api"),
+        )
         .await
         .map_err(|e: AppError| {
             api_error(
@@ -258,6 +278,25 @@ pub struct RoleFeedbackItem {
     pub mood_tag: Option<String>,
     pub message: String,
     pub created_at: String,
+    pub status: String,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub read_at: Option<String>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub handled_at: Option<String>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub handled_note: Option<String>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub scene_id: Option<String>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub presence_mode: Option<String>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub role_version: Option<String>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub runtime_version: Option<String>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub client_version: Option<String>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub source: Option<String>,
 }
 
 impl From<RoleFeedbackRow> for RoleFeedbackItem {
@@ -269,8 +308,94 @@ impl From<RoleFeedbackRow> for RoleFeedbackItem {
             mood_tag: r.mood_tag,
             message: r.message,
             created_at: r.created_at,
+            status: r.status,
+            read_at: r.read_at,
+            handled_at: r.handled_at,
+            handled_note: r.handled_note,
+            scene_id: r.scene_id,
+            presence_mode: r.presence_mode,
+            role_version: r.role_version,
+            runtime_version: r.runtime_version,
+            client_version: r.client_version,
+            source: r.source,
         }
     }
+}
+
+#[derive(Debug, Deserialize)]
+pub struct RoleFeedbackMarkReadRequest {
+    pub role_id: String,
+    pub ids: Vec<i64>,
+}
+
+#[derive(Debug, Serialize)]
+pub struct RoleFeedbackMarkReadResponse {
+    pub updated: i64,
+}
+
+async fn mark_role_feedback_read(
+    State(state): State<Arc<AppState>>,
+    Json(body): Json<RoleFeedbackMarkReadRequest>,
+) -> Result<Json<RoleFeedbackMarkReadResponse>, ApiError> {
+    let rid = body.role_id.trim().to_string();
+    if rid.is_empty() {
+        return Err(api_error(
+            axum::http::StatusCode::BAD_REQUEST,
+            "invalid_role_id",
+            "role_id 不能为空",
+            None,
+        ));
+    }
+    let updated = state
+        .db_manager
+        .mark_role_feedback_read(&rid, &body.ids)
+        .await
+        .map_err(|e: AppError| {
+            api_error(
+                axum::http::StatusCode::INTERNAL_SERVER_ERROR,
+                "role_feedback_failed",
+                e.to_frontend_error(),
+                None,
+            )
+        })?;
+    Ok(Json(RoleFeedbackMarkReadResponse { updated }))
+}
+
+#[derive(Debug, Deserialize)]
+pub struct RoleFeedbackSetHandledRequest {
+    pub role_id: String,
+    pub id: i64,
+    pub handled: bool,
+    #[serde(default)]
+    pub note: Option<String>,
+}
+
+async fn set_role_feedback_handled(
+    State(state): State<Arc<AppState>>,
+    Json(body): Json<RoleFeedbackSetHandledRequest>,
+) -> Result<&'static str, ApiError> {
+    let rid = body.role_id.trim().to_string();
+    if rid.is_empty() || body.id <= 0 {
+        return Err(api_error(
+            axum::http::StatusCode::BAD_REQUEST,
+            "invalid_parameter",
+            "role_id 与 id 必填",
+            None,
+        ));
+    }
+    state
+        .db_manager
+        .set_role_feedback_handled(&rid, body.id, body.handled, body.note.as_deref())
+        .await
+        .map_err(|e: AppError| {
+            api_error(
+                axum::http::StatusCode::INTERNAL_SERVER_ERROR,
+                "role_feedback_failed",
+                e.to_frontend_error(),
+                None,
+            )
+        })?;
+    Ok("ok")
 }
 
 async fn list_role_feedback(
@@ -319,6 +444,11 @@ pub fn api_router(app_state: Arc<AppState>) -> Router {
         .route(
             "/role-feedback",
             post(post_role_feedback).get(list_role_feedback),
+        )
+        .route("/role-feedback/mark-read", post(mark_role_feedback_read))
+        .route(
+            "/role-feedback/set-handled",
+            post(set_role_feedback_handled),
         )
         .merge(oocp_ws::oocp_ws_router())
         .layer(cors)

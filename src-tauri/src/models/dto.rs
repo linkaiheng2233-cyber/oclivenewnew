@@ -529,6 +529,14 @@ pub struct CreateRoleFeedbackRequest {
     pub session_id: Option<String>,
     #[serde(default)]
     pub mood_tag: Option<String>,
+    #[serde(default)]
+    pub scene_id: Option<String>,
+    #[serde(default)]
+    pub presence_mode: Option<String>,
+    #[serde(default)]
+    pub role_version: Option<String>,
+    #[serde(default)]
+    pub client_version: Option<String>,
     pub message: String,
 }
 
@@ -552,4 +560,24 @@ pub struct RoleFeedbackItem {
     pub mood_tag: Option<String>,
     pub message: String,
     pub timestamp: String,
+    #[serde(default)]
+    pub status: Option<String>,
+    #[serde(default)]
+    pub read_at: Option<String>,
+    #[serde(default)]
+    pub handled_at: Option<String>,
+    #[serde(default)]
+    pub handled_note: Option<String>,
+    #[serde(default)]
+    pub scene_id: Option<String>,
+    #[serde(default)]
+    pub presence_mode: Option<String>,
+    #[serde(default)]
+    pub role_version: Option<String>,
+    #[serde(default)]
+    pub runtime_version: Option<String>,
+    #[serde(default)]
+    pub client_version: Option<String>,
+    #[serde(default)]
+    pub source: Option<String>,
 }

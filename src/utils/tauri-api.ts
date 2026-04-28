@@ -569,6 +569,10 @@ export interface CreateRoleFeedbackRequest {
   role_id: string;
   session_id?: string | null;
   mood_tag?: string | null;
+  scene_id?: string | null;
+  presence_mode?: string | null;
+  role_version?: string | null;
+  client_version?: string | null;
   message: string;
 }
 
@@ -589,6 +593,16 @@ export interface RoleFeedbackItem {
   mood_tag?: string | null;
   message: string;
   timestamp: string;
+  status?: string | null;
+  read_at?: string | null;
+  handled_at?: string | null;
+  handled_note?: string | null;
+  scene_id?: string | null;
+  presence_mode?: string | null;
+  role_version?: string | null;
+  runtime_version?: string | null;
+  client_version?: string | null;
+  source?: string | null;
 }
 
 export interface PluginReviewEntryDto {
@@ -685,6 +699,31 @@ export async function queryRoleFeedback(
   req: QueryRoleFeedbackRequest,
 ): Promise<RoleFeedbackItem[]> {
   return invokeWithFriendlyError<RoleFeedbackItem[]>("query_role_feedback", { req });
+}
+
+export async function markRoleFeedbackRead(params: {
+  roleId: string;
+  ids: number[];
+}): Promise<number> {
+  return invokeWithFriendlyError<number>("mark_role_feedback_read", {
+    req: { roleId: params.roleId, ids: params.ids },
+  });
+}
+
+export async function setRoleFeedbackHandled(params: {
+  roleId: string;
+  id: number;
+  handled: boolean;
+  note?: string | null;
+}): Promise<void> {
+  return invokeWithFriendlyError<void>("set_role_feedback_handled", {
+    req: {
+      roleId: params.roleId,
+      id: params.id,
+      handled: params.handled,
+      note: params.note ?? null,
+    },
+  });
 }
 
 export async function reloadPolicyPlugins(): Promise<string> {

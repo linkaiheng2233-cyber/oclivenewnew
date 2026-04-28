@@ -364,6 +364,8 @@ pub fn run() {
             api::event::create_event,
             api::role_feedback::create_role_feedback,
             api::role_feedback::query_role_feedback,
+            api::role_feedback::mark_role_feedback_read,
+            api::role_feedback::set_role_feedback_handled,
             api::policy::reload_policy_plugins,
             api::directory_plugin::get_directory_plugin_bootstrap,
             api::directory_plugin::read_plugin_asset_text,

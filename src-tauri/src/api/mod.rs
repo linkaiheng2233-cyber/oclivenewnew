@@ -40,5 +40,6 @@ pub use plugin_reviews::{get_cached_plugin_reviews_index, sync_plugin_reviews_in
 pub use policy::reload_policy_plugins;
 pub use role::{get_role_info, list_roles, load_role, switch_role};
 pub use role_feedback::{create_role_feedback, query_role_feedback};
+pub use role_feedback::{mark_role_feedback_read, set_role_feedback_handled};
 pub use scene::switch_scene;
 pub use time::{get_time_state, jump_time};

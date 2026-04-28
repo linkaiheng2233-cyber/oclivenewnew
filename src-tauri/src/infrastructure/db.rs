@@ -25,6 +25,16 @@ pub struct RoleFeedbackRow {
     pub mood_tag: Option<String>,
     pub message: String,
     pub created_at: String,
+    pub status: String,
+    pub read_at: Option<String>,
+    pub handled_at: Option<String>,
+    pub handled_note: Option<String>,
+    pub scene_id: Option<String>,
+    pub presence_mode: Option<String>,
+    pub role_version: Option<String>,
+    pub runtime_version: Option<String>,
+    pub client_version: Option<String>,
+    pub source: Option<String>,
 }
 
 /// `events` 表分页行（API `query_events`）
@@ -1269,12 +1279,19 @@ impl DbManager {
 
     // ===== 角色包使用后反馈（半私密）=====
 
+    #[allow(clippy::too_many_arguments)]
     pub async fn insert_role_feedback(
         &self,
         role_id: &str,
         session_id: Option<&str>,
         mood_tag: Option<&str>,
         message: &str,
+        scene_id: Option<&str>,
+        presence_mode: Option<&str>,
+        role_version: Option<&str>,
+        runtime_version: Option<&str>,
+        client_version: Option<&str>,
+        source: Option<&str>,
     ) -> Result<i64> {
         let rid = role_id.trim();
         let msg = message.trim();
@@ -1303,14 +1320,69 @@ impl DbManager {
                 Some(t.to_string())
             }
         });
+        let scene = scene_id.and_then(|s| {
+            let t = s.trim();
+            if t.is_empty() {
+                None
+            } else {
+                Some(t.to_string())
+            }
+        });
+        let presence = presence_mode.and_then(|s| {
+            let t = s.trim();
+            if t.is_empty() {
+                None
+            } else {
+                Some(t.to_string())
+            }
+        });
+        let rv = role_version.and_then(|s| {
+            let t = s.trim();
+            if t.is_empty() {
+                None
+            } else {
+                Some(t.to_string())
+            }
+        });
+        let runv = runtime_version.and_then(|s| {
+            let t = s.trim();
+            if t.is_empty() {
+                None
+            } else {
+                Some(t.to_string())
+            }
+        });
+        let cv = client_version.and_then(|s| {
+            let t = s.trim();
+            if t.is_empty() {
+                None
+            } else {
+                Some(t.to_string())
+            }
+        });
+        let src = source.and_then(|s| {
+            let t = s.trim();
+            if t.is_empty() {
+                None
+            } else {
+                Some(t.to_string())
+            }
+        });
 
         let res = sqlx::query(
-            "INSERT INTO role_feedback (role_id, session_id, mood_tag, message) VALUES (?, ?, ?, ?)",
+            "INSERT INTO role_feedback (role_id, session_id, mood_tag, message, scene_id, presence_mode, role_version, runtime_version, client_version, source)
+             VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
         )
         .bind(rid)
         .bind(sid)
         .bind(mood)
         .bind(msg)
+        .bind(scene)
+        .bind(presence)
+        .bind(rv)
+        .bind(runv)
+        .bind(cv)
+        .bind(src)
         .execute(&self.pool)
         .await
         .map_err(|e| AppError::DatabaseError(e.to_string()))?;
@@ -1332,7 +1404,9 @@ impl DbManager {
         let off = offset.max(0);
 
         let rows = sqlx::query(
-            "SELECT id, role_id, session_id, mood_tag, message, created_at
+            "SELECT id, role_id, session_id, mood_tag, message, created_at,
+                    status, read_at, handled_at, handled_note,
+                    scene_id, presence_mode, role_version, runtime_version, client_version, source
              FROM role_feedback
              WHERE role_id = ?
              ORDER BY id DESC
@@ -1356,9 +1430,98 @@ impl DbManager {
                 mood_tag: r.try_get::<Option<String>, _>("mood_tag").ok().flatten(),
                 message: r.try_get::<String, _>("message").unwrap_or_default(),
                 created_at: r.try_get::<String, _>("created_at").unwrap_or_default(),
+                status: r
+                    .try_get::<String, _>("status")
+                    .unwrap_or_else(|_| "open".to_string()),
+                read_at: r.try_get::<Option<String>, _>("read_at").ok().flatten(),
+                handled_at: r.try_get::<Option<String>, _>("handled_at").ok().flatten(),
+                handled_note: r
+                    .try_get::<Option<String>, _>("handled_note")
+                    .ok()
+                    .flatten(),
+                scene_id: r.try_get::<Option<String>, _>("scene_id").ok().flatten(),
+                presence_mode: r
+                    .try_get::<Option<String>, _>("presence_mode")
+                    .ok()
+                    .flatten(),
+                role_version: r
+                    .try_get::<Option<String>, _>("role_version")
+                    .ok()
+                    .flatten(),
+                runtime_version: r
+                    .try_get::<Option<String>, _>("runtime_version")
+                    .ok()
+                    .flatten(),
+                client_version: r
+                    .try_get::<Option<String>, _>("client_version")
+                    .ok()
+                    .flatten(),
+                source: r.try_get::<Option<String>, _>("source").ok().flatten(),
             });
         }
         Ok(out)
+    }
+
+    pub async fn mark_role_feedback_read(&self, role_id: &str, ids: &[i64]) -> Result<i64> {
+        let rid = role_id.trim();
+        if rid.is_empty() || ids.is_empty() {
+            return Ok(0);
+        }
+        let now = Utc::now().to_rfc3339();
+        let mut changed = 0i64;
+        for id in ids {
+            let n = sqlx::query(
+                "UPDATE role_feedback SET read_at = COALESCE(read_at, ?)
+                 WHERE role_id = ? AND id = ?",
+            )
+            .bind(&now)
+            .bind(rid)
+            .bind(*id)
+            .execute(&self.pool)
+            .await
+            .map_err(|e| AppError::DatabaseError(e.to_string()))?
+            .rows_affected() as i64;
+            changed += n;
+        }
+        Ok(changed)
+    }
+
+    pub async fn set_role_feedback_handled(
+        &self,
+        role_id: &str,
+        id: i64,
+        handled: bool,
+        note: Option<&str>,
+    ) -> Result<()> {
+        let rid = role_id.trim();
+        if rid.is_empty() || id <= 0 {
+            return Err(AppError::InvalidParameter("role_id and id required".into()));
+        }
+        let now = Utc::now().to_rfc3339();
+        let status = if handled { "handled" } else { "open" };
+        let handled_at = if handled { Some(now.clone()) } else { None };
+        let note = note.and_then(|s| {
+            let t = s.trim();
+            if t.is_empty() {
+                None
+            } else {
+                Some(t.to_string())
+            }
+        });
+        sqlx::query(
+            "UPDATE role_feedback
+             SET status = ?, handled_at = ?, handled_note = ?
+             WHERE role_id = ? AND id = ?",
+        )
+        .bind(status)
+        .bind(handled_at)
+        .bind(note)
+        .bind(rid)
+        .bind(id)
+        .execute(&self.pool)
+        .await
+        .map_err(|e| AppError::DatabaseError(e.to_string()))?;
+        Ok(())
     }
 
     /// 保存好感度（仅更新数值列，避免 `INSERT OR REPLACE` 整行覆盖导致 `user_relation` 等丢失）

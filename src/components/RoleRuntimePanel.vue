@@ -112,6 +112,9 @@ async function submitFeedback(): Promise<void> {
     await createRoleFeedback({
       role_id: roleStore.currentRoleId,
       mood_tag: feedbackMood.value.trim() ? feedbackMood.value.trim() : null,
+      scene_id: uiStore.sceneId ?? null,
+      presence_mode: (roleStore.roleInfo as any)?.presenceMode ?? null,
+      role_version: roleStore.roleInfo.version ?? null,
       message: feedbackMessage.value,
     });
     showToast("success", "已提交反馈（仅创作者可见）。");
