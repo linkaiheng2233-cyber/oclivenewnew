@@ -43,7 +43,8 @@ pub fn ensure_import_folders_exist(state: &AppState) -> Result<(), String> {
         root.join("profiles"),
     ];
     for d in dirs {
-        fs::create_dir_all(&d).map_err(|e| format!("create imports folder {}: {}", d.display(), e))?;
+        fs::create_dir_all(&d)
+            .map_err(|e| format!("create imports folder {}: {}", d.display(), e))?;
     }
     Ok(())
 }
@@ -203,4 +204,3 @@ pub fn read_import_text(path: &Path, max_bytes: usize) -> Result<String, String>
     }
     fs::read_to_string(path).map_err(|e| format!("read file failed: {}", e))
 }
-

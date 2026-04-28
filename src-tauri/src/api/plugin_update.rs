@@ -420,7 +420,9 @@ pub fn install_plugin_dir(
             declared.iter().map(|s| s.trim().to_string()).collect();
         let ok = perms.iter().all(|p| declared_set.contains(p.trim()));
         if !ok {
-            return Err("accepted_permissions must be a subset of declared permissions".to_string());
+            return Err(
+                "accepted_permissions must be a subset of declared permissions".to_string(),
+            );
         }
     }
     tauri::async_runtime::block_on(async {

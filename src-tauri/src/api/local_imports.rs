@@ -1,9 +1,9 @@
+use crate::infrastructure::directory_plugins::OclivePluginManifest;
 use crate::infrastructure::local_imports::{list_local_import_candidates, read_import_text};
 use crate::infrastructure::plugin_installer::{
-    install_plugin_from_archive_bytes_overwrite, load_cached_index, peek_plugin_id_from_archive_bytes,
-    verify_plugin_package_signature_text,
+    install_plugin_from_archive_bytes_overwrite, load_cached_index,
+    peek_plugin_id_from_archive_bytes, verify_plugin_package_signature_text,
 };
-use crate::infrastructure::directory_plugins::OclivePluginManifest;
 use crate::state::AppState;
 use serde::{Deserialize, Serialize};
 use std::path::PathBuf;
@@ -51,9 +51,7 @@ pub fn read_local_import_text_command(
     let p = p
         .canonicalize()
         .map_err(|e| format!("path canonicalize: {}", e))?;
-    let root = root
-        .canonicalize()
-        .unwrap_or_else(|_| root.clone());
+    let root = root.canonicalize().unwrap_or_else(|_| root.clone());
     if !p.starts_with(&root) {
         return Err("path must be under app_data/imports".to_string());
     }
@@ -135,7 +133,12 @@ pub fn preview_local_plugin_archive_command(
     // verify signature (optional)
     let mut signature_verified = false;
     let signature_message: Option<String>;
-    if let Some(sigp) = req.signature_path.as_deref().map(str::trim).filter(|s| !s.is_empty()) {
+    if let Some(sigp) = req
+        .signature_path
+        .as_deref()
+        .map(str::trim)
+        .filter(|s| !s.is_empty())
+    {
         let sig_path = PathBuf::from(sigp)
             .canonicalize()
             .map_err(|e| format!("signature canonicalize: {}", e))?;
@@ -146,7 +149,8 @@ pub fn preview_local_plugin_archive_command(
             .map_err(|e| format!("read signature failed: {}", e))?;
         let idx = load_cached_index(&state).map_err(|e| e.to_frontend_error())?;
         let Some(entry) = idx.plugins.iter().find(|x| x.id.trim() == pid.trim()) else {
-            signature_message = Some("未在本地缓存索引中找到该插件条目，无法验签（建议先同步官方索引）".into());
+            signature_message =
+                Some("未在本地缓存索引中找到该插件条目，无法验签（建议先同步官方索引）".into());
             return Ok(PreviewLocalPluginArchiveResponse {
                 plugin_id: pid,
                 declared_permissions,
@@ -205,7 +209,12 @@ pub fn install_local_plugin_archive_command(
         peek_plugin_id_from_archive_bytes(&state, &bytes).map_err(|e| e.to_frontend_error())?;
 
     // if signature provided, enforce verification before install
-    if let Some(sigp) = req.signature_path.as_deref().map(str::trim).filter(|s| !s.is_empty()) {
+    if let Some(sigp) = req
+        .signature_path
+        .as_deref()
+        .map(str::trim)
+        .filter(|s| !s.is_empty())
+    {
         let sig_path = PathBuf::from(sigp)
             .canonicalize()
             .map_err(|e| format!("signature canonicalize: {}", e))?;
@@ -219,7 +228,9 @@ pub fn install_local_plugin_archive_command(
             .plugins
             .iter()
             .find(|x| x.id.trim() == pid.trim())
-            .ok_or_else(|| "未在本地缓存索引中找到该插件条目，无法验签（建议先同步官方索引）".to_string())?;
+            .ok_or_else(|| {
+                "未在本地缓存索引中找到该插件条目，无法验签（建议先同步官方索引）".to_string()
+            })?;
         verify_plugin_package_signature_text(entry, &sig_text, &bytes)
             .map_err(|e| e.to_frontend_error())?;
     }
@@ -248,7 +259,9 @@ pub fn install_local_plugin_archive_command(
             declared.iter().map(|s| s.trim().to_string()).collect();
         let ok = perms.iter().all(|p| declared_set.contains(p.trim()));
         if !ok {
-            return Err("accepted_permissions must be a subset of declared permissions".to_string());
+            return Err(
+                "accepted_permissions must be a subset of declared permissions".to_string(),
+            );
         }
     }
     tauri::async_runtime::block_on(async {
@@ -261,4 +274,3 @@ pub fn install_local_plugin_archive_command(
     });
     Ok(installed_pid)
 }
-

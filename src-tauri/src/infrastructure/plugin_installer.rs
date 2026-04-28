@@ -351,13 +351,15 @@ pub fn verify_plugin_package_signature_text(
     sig_text: &str,
     archive_bytes: &[u8],
 ) -> Result<(), AppError> {
-    let sig: PluginPackageSignatureFile = serde_json::from_str(sig_text).map_err(|e| {
-        AppError::Unknown(format!("parse signature.json failed: {}", e))
-    })?;
+    let sig: PluginPackageSignatureFile = serde_json::from_str(sig_text)
+        .map_err(|e| AppError::Unknown(format!("parse signature.json failed: {}", e)))?;
     verify_plugin_package_signature(index_entry, &sig, archive_bytes)
 }
 
-pub fn peek_plugin_id_from_archive_bytes(state: &AppState, bytes: &[u8]) -> Result<String, AppError> {
+pub fn peek_plugin_id_from_archive_bytes(
+    state: &AppState,
+    bytes: &[u8],
+) -> Result<String, AppError> {
     let tmp = plugins_install_temp_dir(state)?;
     extract_oclive_plugin_archive(bytes, tmp.path())?;
     let manifest = OclivePluginManifest::load_from_dir(tmp.path())
