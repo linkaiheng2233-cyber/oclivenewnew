@@ -203,9 +203,18 @@ function normalizeProfileSource(s: string | null | undefined): string {
 
 async function syncMarketSource(source: string): Promise<void> {
   marketSourceSelected.value = source;
-  await pluginStore.syncPluginMarket(source === "official" ? null : source);
-  if (pluginStore.pluginMarketSnapshot?.warning) {
-    showToast("info", pluginStore.pluginMarketSnapshot.warning);
+  try {
+    await pluginStore.syncPluginMarket(source === "official" ? null : source);
+    if (pluginStore.pluginMarketSnapshot?.warning) {
+      showToast("info", pluginStore.pluginMarketSnapshot.warning);
+    }
+  } catch (e) {
+    const msg = e instanceof Error ? e.message : String(e);
+    showToast(
+      "error",
+      `同步索引失败（source=${source}）：${msg}\n\n建议：检查网络，或稍后重试；第三方源请确认开发者模式已开启。`,
+    );
+    throw e;
   }
 }
 
@@ -325,7 +334,10 @@ async function onApplyModuleEntry(row: PluginMarketEntryDto): Promise<void> {
     await syncMarketSource(src);
     const prow = pluginStore.pluginMarketSnapshot?.plugins?.find((r) => r.id === pid);
     if (!prow) {
-      showToast("error", `索引未找到插件：${pid}（source=${src}）`);
+      showToast(
+        "error",
+        `索引未找到依赖插件：${pid}（source=${src}）\n\n建议：先确认该插件确实存在于该源，或切换到正确的源再同步。`,
+      );
       continue;
     }
     if ((spec.version ?? "").trim()) {
@@ -389,7 +401,10 @@ async function onApplyProfileEntry(row: PluginMarketEntryDto): Promise<void> {
     await syncMarketSource(src);
     const prow = pluginStore.pluginMarketSnapshot?.plugins?.find((r) => r.id === pid);
     if (!prow) {
-      showToast("error", `索引未找到插件：${pid}（source=${src}）`);
+      showToast(
+        "error",
+        `索引未找到依赖插件：${pid}（source=${src}）\n\n建议：先确认该插件确实存在于该源，或切换到正确的源再同步。`,
+      );
       continue;
     }
     if ((spec.version ?? "").trim()) {
@@ -1311,7 +1326,19 @@ async function onPackSelectedPlugin(): Promise<void> {
                           ((row as any).module.plugins ?? []).map((x: any) => x.id).join("、")
                         }}
                       </p>
-                      <pre class="pm-json">{{ JSON.stringify((row as any).module.backends ?? null, null, 2) }}</pre>
+                      <div v-if="summarizeOverrideBackends(((row as any).module.backends ?? null) as any).length">
+                        <p class="pm-muted">后端覆盖（会话级）：</p>
+                        <ul class="pm-kv-list">
+                          <li
+                            v-for="(x, idx) in summarizeOverrideBackends(((row as any).module.backends ?? null) as any)"
+                            :key="`mb-${idx}`"
+                            class="pm-kv-li"
+                          >
+                            {{ x }}
+                          </li>
+                        </ul>
+                      </div>
+                      <p v-else class="pm-muted">未声明 backends 覆盖。</p>
                     </div>
                   </details>
                   <details v-else-if="marketEntryType(row) === 'profile' && (row as any).profile" class="pm-market-details">
@@ -1327,7 +1354,19 @@ async function onPackSelectedPlugin(): Promise<void> {
                           ((row as any).profile.predeclaredPermissions ?? []).join("、")
                         }}
                       </p>
-                      <pre class="pm-json">{{ JSON.stringify((row as any).profile.backends ?? null, null, 2) }}</pre>
+                      <div v-if="summarizeOverrideBackends(((row as any).profile.backends ?? null) as any).length">
+                        <p class="pm-muted">后端覆盖（会话级）：</p>
+                        <ul class="pm-kv-list">
+                          <li
+                            v-for="(x, idx) in summarizeOverrideBackends(((row as any).profile.backends ?? null) as any)"
+                            :key="`pb-${idx}`"
+                            class="pm-kv-li"
+                          >
+                            {{ x }}
+                          </li>
+                        </ul>
+                      </div>
+                      <p v-else class="pm-muted">未声明 backends 覆盖。</p>
                     </div>
                   </details>
                   <p
@@ -2274,6 +2313,24 @@ async function onPackSelectedPlugin(): Promise<void> {
 }
 .pm-market-details-body {
   margin-top: 6px;
+}
+.pm-kv-list {
+  list-style: none;
+  padding: 0;
+  margin: 6px 0 0;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+.pm-kv-li {
+  padding: 6px 10px;
+  border-radius: 10px;
+  border: 1px solid var(--border-light);
+  background: var(--bg-secondary);
+  font-size: 11px;
+  color: var(--text-secondary);
+  font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono",
+    "Courier New", monospace;
 }
 .pm-json {
   margin: 6px 0 0;
