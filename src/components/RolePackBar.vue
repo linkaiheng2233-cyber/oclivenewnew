@@ -2,6 +2,7 @@
 import { ref } from "vue";
 import { listen, type UnlistenFn } from "@tauri-apps/api/event";
 import { open, save } from "@tauri-apps/api/dialog";
+import { open as openExternal } from "@tauri-apps/api/shell";
 import { useRoleStore } from "../stores/roleStore";
 import {
   exportRolePack,
@@ -50,6 +51,7 @@ const marketErr = ref("");
 const marketQuery = ref("");
 const marketIndex = ref<{ roles: RoleMarketEntryDto[] } | null>(null);
 const marketPicked = ref<{ roleId: string; dl: RoleMarketDownloadDto } | null>(null);
+const marketSourceUrl = ref<string>("");
 
 async function withImportProgress<T>(fn: () => Promise<T>): Promise<T> {
   importProgressOpen.value = true;
@@ -182,7 +184,8 @@ async function syncMarket(): Promise<void> {
   marketLoading.value = true;
   marketErr.value = "";
   try {
-    const idx = await syncRoleMarketIndex(null);
+    const url = marketSourceUrl.value.trim();
+    const idx = await syncRoleMarketIndex(url ? url : null);
     marketIndex.value = idx;
   } catch (e) {
     marketErr.value = e instanceof Error ? e.message : String(e);
@@ -218,9 +221,18 @@ async function installPicked(): Promise<void> {
   const picked = marketPicked.value;
   if (!picked) return;
   if (picked.dl.kind !== "direct") {
+    const u = picked.dl.url?.trim();
+    if (u) {
+      try {
+        await openExternal(u);
+      } catch {
+        // ignore
+      }
+    }
     emit("notify", {
       type: "info",
-      message: "该镜像不是直链下载（page/pan）。请在浏览器打开后手动下载，再用「导入压缩包」安装。",
+      message:
+        "该镜像不是直链下载（page/pan）。已尝试为你打开链接；请手动下载后用「导入压缩包」安装。",
     });
     return;
   }
@@ -341,6 +353,15 @@ async function installPicked(): Promise<void> {
             <button type="button" class="btn" :disabled="marketLoading" @click="syncMarket">
               {{ marketLoading ? "同步中…" : "同步" }}
             </button>
+          </div>
+          <div class="pm-row">
+            <input
+              v-model="marketSourceUrl"
+              class="pm-input"
+              type="url"
+              placeholder="可选：自定义 roles.json 源（留空=官方默认）"
+              autocomplete="off"
+            />
           </div>
           <p v-if="marketErr" class="pm-err">{{ marketErr }}</p>
           <div class="pm-list">
