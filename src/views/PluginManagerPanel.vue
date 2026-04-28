@@ -231,7 +231,7 @@ async function onApplyProfile(): Promise<void> {
 }
 
 function marketEntryType(row: PluginMarketEntryDto): string {
-  return (row as any).entryType ?? "plugin";
+  return (row as any).type ?? "plugin";
 }
 
 const marketRowsFiltered = computed(() => {
@@ -285,6 +285,53 @@ async function onApplyModuleEntry(row: PluginMarketEntryDto): Promise<void> {
     await setSessionPluginBackendsOverride(roleId, mod.backends);
   }
   showToast("success", `模块已应用：${row.id}`);
+}
+
+async function onApplyProfileEntry(row: PluginMarketEntryDto): Promise<void> {
+  const prof = (row as any).profile as
+    | {
+        plugins: { id: string; version?: string | null; source?: string | null }[];
+        backends?: Record<string, unknown> | null;
+        predeclaredPermissions?: string[] | null;
+      }
+    | null
+    | undefined;
+  if (!prof) {
+    showToast("error", "该条目未提供 profile 声明体。");
+    return;
+  }
+  // Profile 本身无代码：权限风险来自依赖插件；这里的 predeclaredPermissions 仅做提示。
+  const pre = (prof.predeclaredPermissions ?? []).map((s) => String(s).trim()).filter(Boolean);
+  if (pre.length > 0) {
+    showToast("info", `该 Profile 预声明权限：${pre.join("、")}`);
+  }
+  const list = prof.plugins ?? [];
+  for (const spec of list) {
+    const pid = (spec.id ?? "").trim();
+    if (!pid) continue;
+    const src = normalizeProfileSource(spec.source ?? null);
+    await syncMarketSource(src);
+    const prow = pluginStore.pluginMarketSnapshot?.plugins?.find((r) => r.id === pid);
+    if (!prow) {
+      showToast("error", `索引未找到插件：${pid}（source=${src}）`);
+      continue;
+    }
+    if ((spec.version ?? "").trim()) {
+      marketPickedVersion.value = {
+        ...marketPickedVersion.value,
+        [pid]: (spec.version ?? "").trim(),
+      };
+      await onInstallMarketVersion(prow);
+    } else {
+      await onInstallMarketEntry(prow);
+    }
+  }
+  if (prof.backends && Object.keys(prof.backends).length > 0) {
+    const roleId = roleStore.currentRoleId;
+    if (!roleId?.trim()) return;
+    await setSessionPluginBackendsOverride(roleId, prof.backends);
+  }
+  showToast("success", `Profile 已应用：${row.id}`);
 }
 
 function onPermConsentCancel() {
@@ -1115,6 +1162,14 @@ async function onPackSelectedPlugin(): Promise<void> {
                   >
                     {{ (row.source ?? "") === "official" ? "官方" : "第三方" }}
                   </span>
+                  <span
+                    v-if="marketEntryType(row) !== 'plugin'"
+                    class="pm-entry-type-badge"
+                    :class="marketEntryType(row)"
+                    :title="marketEntryType(row) === 'module' ? '无代码模块条目' : '无代码 Profile 条目'"
+                  >
+                    {{ marketEntryType(row) === "module" ? "模块" : "Profile" }}
+                  </span>
                   <span class="pm-muted"> · {{ row.name }} · v{{ row.version }}</span>
                   <p v-if="row.source || row.publisher" class="pm-market-trust">
                     <span v-if="row.source" class="pm-muted">来源：{{ row.source }}</span>
@@ -1132,6 +1187,33 @@ async function onPackSelectedPlugin(): Promise<void> {
                     </span>
                   </p>
                   <p v-if="row.description" class="pm-market-desc">{{ row.description }}</p>
+                  <details v-if="marketEntryType(row) === 'module' && (row as any).module" class="pm-market-details">
+                    <summary class="pm-market-details-sum">查看模块声明</summary>
+                    <div class="pm-market-details-body">
+                      <p class="pm-muted" v-if="(((row as any).module.plugins ?? []) as any[]).length">
+                        依赖插件：{{
+                          ((row as any).module.plugins ?? []).map((x: any) => x.id).join("、")
+                        }}
+                      </p>
+                      <pre class="pm-json">{{ JSON.stringify((row as any).module.backends ?? null, null, 2) }}</pre>
+                    </div>
+                  </details>
+                  <details v-else-if="marketEntryType(row) === 'profile' && (row as any).profile" class="pm-market-details">
+                    <summary class="pm-market-details-sum">查看 Profile 声明</summary>
+                    <div class="pm-market-details-body">
+                      <p class="pm-muted" v-if="(((row as any).profile.plugins ?? []) as any[]).length">
+                        依赖插件：{{
+                          ((row as any).profile.plugins ?? []).map((x: any) => x.id).join("、")
+                        }}
+                      </p>
+                      <p class="pm-muted" v-if="(((row as any).profile.predeclaredPermissions ?? []) as any[]).length">
+                        预声明权限：{{
+                          ((row as any).profile.predeclaredPermissions ?? []).join("、")
+                        }}
+                      </p>
+                      <pre class="pm-json">{{ JSON.stringify((row as any).profile.backends ?? null, null, 2) }}</pre>
+                    </div>
+                  </details>
                   <p
                     v-if="(row.missingDependencies ?? []).length"
                     class="pm-err pm-market-deps"
@@ -1147,6 +1229,14 @@ async function onPackSelectedPlugin(): Promise<void> {
                     @click="onApplyModuleEntry(row)"
                   >
                     应用模块
+                  </button>
+                  <button
+                    v-else-if="marketEntryType(row) === 'profile'"
+                    type="button"
+                    class="pm-btn secondary pm-btn--sm"
+                    @click="onApplyProfileEntry(row)"
+                  >
+                    应用 Profile
                   </button>
                   <div
                     v-else-if="(row.versions ?? []).length > 0"
@@ -2022,6 +2112,46 @@ async function onPackSelectedPlugin(): Promise<void> {
   border: 1px solid var(--border-light);
   border-radius: 12px;
   background: var(--bg-elevated);
+}
+
+.pm-entry-type-badge {
+  display: inline-block;
+  margin-left: 8px;
+  padding: 2px 6px;
+  font-size: 11px;
+  border-radius: 999px;
+  border: 1px solid var(--border-light);
+  background: var(--bg-elevated);
+  color: var(--text-secondary);
+}
+.pm-entry-type-badge.module {
+  border-color: color-mix(in srgb, var(--border-light) 70%, #4f46e5);
+}
+.pm-entry-type-badge.profile {
+  border-color: color-mix(in srgb, var(--border-light) 70%, #16a34a);
+}
+.pm-market-details {
+  margin-top: 8px;
+}
+.pm-market-details-sum {
+  cursor: pointer;
+  user-select: none;
+  font-size: 12px;
+  color: var(--text-secondary);
+}
+.pm-market-details-body {
+  margin-top: 6px;
+}
+.pm-json {
+  margin: 6px 0 0;
+  padding: 8px 10px;
+  border-radius: 10px;
+  border: 1px solid var(--border-light);
+  background: var(--bg-secondary);
+  font-size: 11px;
+  color: var(--text-secondary);
+  overflow: auto;
+  max-height: 240px;
 }
 
 /* 已安装区：侧栏目录 + 右侧单一配置与调试台 */

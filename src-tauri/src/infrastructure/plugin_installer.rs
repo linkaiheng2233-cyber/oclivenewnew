@@ -139,6 +139,10 @@ pub struct PluginIndexEntry {
     /// `type=module` 时可选：模块声明（无代码）。
     #[serde(default)]
     pub module: Option<PluginIndexModuleSpec>,
+
+    /// `type=profile` 时可选：profile 声明（无代码）。
+    #[serde(default)]
+    pub profile: Option<PluginIndexProfileSpec>,
 }
 
 fn default_index_entry_type() -> String {
@@ -165,6 +169,21 @@ pub struct PluginIndexModulePluginSpec {
     pub version: Option<String>,
     #[serde(default)]
     pub source: Option<String>,
+}
+
+/// `type=profile` 的声明体（无代码）。v1 允许“市场分发 profile”，便于一键部署环境。
+#[derive(Debug, Clone, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct PluginIndexProfileSpec {
+    /// profile 依赖的插件清单（与 module 相同语义：这些才是有代码的内容）。
+    #[serde(default)]
+    pub plugins: Vec<PluginIndexModulePluginSpec>,
+    /// 可选：会话级后端覆盖（同 `module.backends`）。
+    #[serde(default)]
+    pub backends: Option<crate::models::plugin_backends::PluginBackendsOverride>,
+    /// 可选：预声明权限 token（提示用途；真正授权仍以安装时对依赖插件的 consent 为准）。
+    #[serde(default)]
+    pub predeclared_permissions: Vec<String>,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]

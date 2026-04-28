@@ -1160,8 +1160,8 @@ export async function resetPluginStateToRoleDefault(
 
 /** 网页索引中的单条插件（与 `plugin_installer::PluginIndexEntry` 一致，camelCase）。 */
 export interface PluginIndexEntryDto {
-  /** `plugin`（默认）| `module`（无代码）| `profile`（保留） */
-  entryType?: "plugin" | "module" | "profile";
+  /** plugins.json 字段名就是 `type`（与 Rust serde rename 对齐） */
+  type?: "plugin" | "module" | "profile";
   id: string;
   name: string;
   description: string;
@@ -1193,6 +1193,13 @@ export interface PluginIndexEntryDto {
   module?: {
     plugins: { id: string; version?: string | null; source?: string | null }[];
     backends?: Record<string, unknown> | null;
+  } | null;
+
+  /** `type=profile` 时可选：Profile 声明（无代码） */
+  profile?: {
+    plugins: { id: string; version?: string | null; source?: string | null }[];
+    backends?: Record<string, unknown> | null;
+    predeclaredPermissions?: string[] | null;
   } | null;
 }
 
