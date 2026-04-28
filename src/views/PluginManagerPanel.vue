@@ -55,6 +55,11 @@ let permConsentResolver: ((v: string[] | null) => void) | null = null;
 const permTokenInfoLoading = ref(false);
 const permTokenInfoMap = ref<Map<string, PermissionTokenInfoDto>>(new Map());
 
+const preflightVisible = ref(false);
+const preflightTitle = ref("");
+const preflightLines = ref<string[]>([]);
+let preflightResolver: ((v: boolean) => void) | null = null;
+
 const profilePreviewLoading = ref(false);
 const profilePreview = ref<ProfilePreviewDto | null>(null);
 const profileApplyLoading = ref(false);
@@ -135,6 +140,43 @@ async function requestPermissionConsentWithTrust(
   const res = await requestPermissionConsent(title, declaredPerms);
   permConsentTrustSummary.value = trustSummary.trim();
   return res;
+}
+
+async function requestApplyPreflight(
+  title: string,
+  lines: string[],
+): Promise<boolean> {
+  preflightTitle.value = title;
+  preflightLines.value = lines.map((s) => s.trim()).filter(Boolean);
+  preflightVisible.value = true;
+  return await new Promise<boolean>((resolve) => {
+    preflightResolver = resolve;
+  });
+}
+
+function summarizeOverrideBackends(obj: Record<string, unknown> | null | undefined): string[] {
+  const o = obj ?? {};
+  const keys = Object.keys(o);
+  if (keys.length === 0) return [];
+  const out: string[] = [];
+  const topKeys = keys
+    .filter((k) => k !== "directory_plugins")
+    .sort();
+  for (const k of topKeys) {
+    const v = (o as any)[k];
+    if (v === null || v === undefined || String(v).trim() === "") continue;
+    out.push(`${k} = ${String(v)}`);
+  }
+  const dp = (o as any).directory_plugins;
+  if (dp && typeof dp === "object") {
+    const dpk = Object.keys(dp).sort();
+    for (const k of dpk) {
+      const v = (dp as any)[k];
+      if (v === null || v === undefined || String(v).trim() === "") continue;
+      out.push(`directory_plugins.${k} = ${String(v)}`);
+    }
+  }
+  return out;
 }
 
 async function onPickProfilePreview(): Promise<void> {
@@ -255,6 +297,23 @@ async function onApplyModuleEntry(row: PluginMarketEntryDto): Promise<void> {
     showToast("error", "该条目未提供 module 声明体。");
     return;
   }
+  const planLines: string[] = [];
+  const deps = (mod.plugins ?? []).map((x) => x.id).filter(Boolean);
+  const sources = [
+    ...new Set((mod.plugins ?? []).map((x) => normalizeProfileSource(x.source ?? null))),
+  ];
+  planLines.push(`类型：模块（无代码）`);
+  planLines.push(`条目：${row.id}`);
+  if (sources.length) planLines.push(`将同步索引源：${sources.join("、")}`);
+  if (deps.length) planLines.push(`将安装依赖插件：${deps.join("、")}`);
+  const changes = summarizeOverrideBackends(mod.backends ?? null);
+  if (changes.length) {
+    planLines.push(`将写入后端覆盖（会话级）：`);
+    for (const x of changes) planLines.push(`- ${x}`);
+  }
+  const ok = await requestApplyPreflight(`应用模块：${row.id}`, planLines);
+  if (!ok) return;
+
   const list = mod.plugins ?? [];
   if (list.length === 0) {
     showToast("info", "该模块未声明依赖插件。");
@@ -300,6 +359,23 @@ async function onApplyProfileEntry(row: PluginMarketEntryDto): Promise<void> {
     showToast("error", "该条目未提供 profile 声明体。");
     return;
   }
+  const planLines: string[] = [];
+  const deps = (prof.plugins ?? []).map((x) => x.id).filter(Boolean);
+  const sources = [
+    ...new Set((prof.plugins ?? []).map((x) => normalizeProfileSource(x.source ?? null))),
+  ];
+  planLines.push(`类型：Profile（无代码）`);
+  planLines.push(`条目：${row.id}`);
+  if (sources.length) planLines.push(`将同步索引源：${sources.join("、")}`);
+  if (deps.length) planLines.push(`将安装依赖插件：${deps.join("、")}`);
+  const changes = summarizeOverrideBackends(prof.backends ?? null);
+  if (changes.length) {
+    planLines.push(`将写入后端覆盖（会话级）：`);
+    for (const x of changes) planLines.push(`- ${x}`);
+  }
+  const ok = await requestApplyPreflight(`应用 Profile：${row.id}`, planLines);
+  if (!ok) return;
+
   // Profile 本身无代码：权限风险来自依赖插件；这里的 predeclaredPermissions 仅做提示。
   const pre = (prof.predeclaredPermissions ?? []).map((s) => String(s).trim()).filter(Boolean);
   if (pre.length > 0) {
@@ -351,6 +427,20 @@ function onPermConsentConfirm() {
   permConsentResolver = null;
   permConsentTrustSummary.value = "";
   r?.(selected);
+}
+
+function onPreflightCancel() {
+  preflightVisible.value = false;
+  const r = preflightResolver;
+  preflightResolver = null;
+  r?.(false);
+}
+
+function onPreflightConfirm() {
+  preflightVisible.value = false;
+  const r = preflightResolver;
+  preflightResolver = null;
+  r?.(true);
 }
 
 function setPermConsentAll(v: boolean) {
@@ -774,6 +864,32 @@ async function onPackSelectedPlugin(): Promise<void> {
       aria-label="插件工作台（专业模式）"
       @click.self="pluginStore.closePanel()"
     >
+      <div
+        v-if="preflightVisible"
+        class="pm-modal-backdrop"
+        role="dialog"
+        aria-modal="true"
+        aria-label="应用前确认"
+        @click.self="onPreflightCancel"
+      >
+        <div class="pm-modal" @click.stop>
+          <div class="pm-modal-h">{{ preflightTitle }}</div>
+          <p class="pm-hint">确认后将开始同步索引并进入逐插件的权限确认流程。</p>
+          <ul class="pm-preflight-list">
+            <li v-for="(x, idx) in preflightLines" :key="`pl-${idx}`" class="pm-preflight-li">
+              <span style="white-space: pre-wrap">{{ x }}</span>
+            </li>
+          </ul>
+          <div class="pm-modal-actions pm-modal-actions--foot">
+            <button type="button" class="pm-btn secondary" @click="onPreflightCancel">
+              取消
+            </button>
+            <button type="button" class="pm-btn primary" @click="onPreflightConfirm">
+              确认并继续
+            </button>
+          </div>
+        </div>
+      </div>
       <div
         v-if="permConsentVisible"
         class="pm-modal-backdrop"
@@ -1769,6 +1885,23 @@ async function onPackSelectedPlugin(): Promise<void> {
   display: flex;
   flex-direction: column;
   gap: 8px;
+}
+.pm-preflight-list {
+  list-style: none;
+  padding: 0;
+  margin: 10px 0 0;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+.pm-preflight-li {
+  margin: 0;
+  padding: 8px 10px;
+  border: 1px solid var(--border-light);
+  border-radius: 10px;
+  background: var(--bg-secondary);
+  font-size: 12px;
+  color: var(--text-secondary);
 }
 .pm-perm-li {
   margin: 0;
