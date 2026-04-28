@@ -220,7 +220,12 @@ function clonePluginState(s: RolePluginState): RolePluginState {
   };
 }
 
-export type PluginPanelMainTab = "plugins" | "backends" | "slots";
+export type PluginPanelMainTab =
+  | "plugins"
+  | "modules"
+  | "profiles"
+  | "backends"
+  | "slots";
 
 export const usePluginStore = defineStore("plugin", {
   state: () => ({

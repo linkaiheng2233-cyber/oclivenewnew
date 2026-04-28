@@ -1376,6 +1376,16 @@ async function onPackSelectedPlugin(): Promise<void> {
               type="button"
               role="tab"
               class="pm-tab"
+              :class="{ 'pm-tab--active': pluginStore.panelMainTab === 'profiles' }"
+              :aria-selected="pluginStore.panelMainTab === 'profiles'"
+              @click="pluginStore.panelMainTab = 'profiles'"
+            >
+              Profile
+            </button>
+            <button
+              type="button"
+              role="tab"
+              class="pm-tab"
               :class="{ 'pm-tab--active': pluginStore.panelMainTab === 'backends' }"
               :aria-selected="pluginStore.panelMainTab === 'backends'"
               @click="pluginStore.panelMainTab = 'backends'"
@@ -2198,6 +2208,83 @@ async function onPackSelectedPlugin(): Promise<void> {
                     <div class="pm-market-actions">
                       <button type="button" class="pm-btn" @click="onApplyModuleEntry(row)">
                         应用模块
+                      </button>
+                    </div>
+                  </div>
+                </li>
+              </ul>
+            </section>
+          </div>
+
+          <div
+            v-show="pluginStore.panelMainTab === 'profiles'"
+            class="pm-tab-panel"
+            role="tabpanel"
+          >
+            <section class="pm-section">
+              <h3 class="pm-h3">Profile 管理（无代码条目）</h3>
+              <p class="pm-hint">
+                Profile 是更大粒度的“环境配方”：依赖插件 + 可选后端覆盖 +（可选）预声明权限提示。放进导入文件夹后不会自动启用。
+              </p>
+              <div class="pm-row">
+                <button
+                  type="button"
+                  class="pm-btn secondary pm-btn--sm"
+                  :disabled="localImportsLoading"
+                  @click="refreshLocalImports"
+                >
+                  {{ localImportsLoading ? "扫描中…" : "扫描本地 Profile" }}
+                </button>
+                <span v-if="localImportsErr" class="pm-err"> {{ localImportsErr }} </span>
+              </div>
+            </section>
+
+            <section class="pm-section">
+              <h3 class="pm-h3">本地 Profile（imports/profiles）</h3>
+              <p v-if="localImportsByKind('profile_json').length === 0" class="pm-muted">
+                暂无本地 Profile。把同款 profile JSON 放进 <code>{{ localImportsRootDir }}/profiles</code>。
+              </p>
+              <ul v-else class="pm-market-list">
+                <li
+                  v-for="it in localImportsByKind('profile_json')"
+                  :key="`lp-${it.path}`"
+                  class="pm-market-li"
+                >
+                  <div class="pm-market-main">
+                    <strong>{{ it.fileName }}</strong>
+                    <span class="pm-muted"> · {{ localImportKindLabel(it.kind) }}</span>
+                    <div class="pm-market-actions">
+                      <button type="button" class="pm-btn" @click="onApplyLocalModuleOrProfile(it.path)">
+                        应用 Profile
+                      </button>
+                      <button type="button" class="pm-btn secondary" @click="onPreviewLocalJson(it.path)">
+                        复制 JSON
+                      </button>
+                    </div>
+                  </div>
+                </li>
+              </ul>
+            </section>
+
+            <section class="pm-section">
+              <h3 class="pm-h3">市场 Profile（type=profile）</h3>
+              <p v-if="profileRowsAll.length === 0" class="pm-muted">
+                当前索引里暂无 Profile 条目。请先在「插件市场」同步索引。
+              </p>
+              <ul v-else class="pm-market-list">
+                <li
+                  v-for="row in profileRowsAll"
+                  :key="`mp-${row.id}`"
+                  class="pm-market-li"
+                >
+                  <div class="pm-market-main">
+                    <strong>{{ row.id }}</strong>
+                    <span class="pm-entry-type-badge profile">Profile</span>
+                    <span class="pm-muted"> · {{ row.name }} · v{{ row.version }}</span>
+                    <p v-if="row.description" class="pm-market-desc">{{ row.description }}</p>
+                    <div class="pm-market-actions">
+                      <button type="button" class="pm-btn" @click="onApplyProfileEntry(row)">
+                        应用 Profile
                       </button>
                     </div>
                   </div>
