@@ -6,6 +6,7 @@
 pub mod json_keys;
 pub mod manifest;
 pub mod plugin_market_index;
+pub mod plugin_reviews_index;
 pub mod role_market_index;
 pub mod validate;
 
@@ -24,6 +25,8 @@ pub use validate::{
 pub use plugin_market_index::{
     validate_plugin_market_index_v1, PluginMarketIndexEntryDisk, PluginMarketIndexFileDisk,
 };
+
+pub use plugin_reviews_index::{validate_plugin_reviews_index_v1, PluginReviewsIndexFileDisk};
 
 pub use role_market_index::{
     validate_role_market_index_v1, RoleMarketIndexEntryDisk, RoleMarketIndexFileDisk,

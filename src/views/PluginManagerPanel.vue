@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { open } from "@tauri-apps/api/dialog";
+import { open as openExternal } from "@tauri-apps/api/shell";
 import { computed, ref, watch } from "vue";
 import PluginBackendSessionPanel from "../components/PluginBackendSessionPanel.vue";
 import InstalledPluginWorkspaceDetail from "../components/InstalledPluginWorkspaceDetail.vue";
@@ -27,9 +28,12 @@ import {
   previewPluginZipPermissions,
   listPermissionTokens,
   previewProfileFromPath,
+  getCachedPluginReviewsIndex,
+  syncPluginReviewsIndex,
   setSessionPluginBackend,
   setSessionPluginBackendsOverride,
   type PluginMarketEntryDto,
+  type PluginReviewEntryDto,
   type PermissionTokenInfoDto,
   type ProfilePreviewDto,
 } from "../utils/tauri-api";
@@ -63,6 +67,88 @@ let preflightResolver: ((v: boolean) => void) | null = null;
 const profilePreviewLoading = ref(false);
 const profilePreview = ref<ProfilePreviewDto | null>(null);
 const profileApplyLoading = ref(false);
+
+const pluginReviewsLoading = ref(false);
+const pluginReviewsIndex = ref<{ reviews: PluginReviewEntryDto[] } | null>(null);
+const pluginReviewsErr = ref("");
+
+const PLUGIN_REVIEWS_REPO_URL =
+  "https://github.com/linkaiheng2233-cyber/awesome-oclive-plugin-reviews";
+const PLUGIN_REVIEWS_CONTRIBUTING_URL = `${PLUGIN_REVIEWS_REPO_URL}/blob/main/CONTRIBUTING.md`;
+
+async function refreshPluginReviewsIndex(): Promise<void> {
+  pluginReviewsLoading.value = true;
+  pluginReviewsErr.value = "";
+  try {
+    pluginReviewsIndex.value = await getCachedPluginReviewsIndex();
+  } catch (e) {
+    pluginReviewsIndex.value = null;
+    pluginReviewsErr.value = e instanceof Error ? e.message : String(e);
+  } finally {
+    pluginReviewsLoading.value = false;
+  }
+}
+
+async function syncPluginReviewsIndexNow(): Promise<void> {
+  pluginReviewsLoading.value = true;
+  pluginReviewsErr.value = "";
+  try {
+    pluginReviewsIndex.value = await syncPluginReviewsIndex(null);
+  } catch (e) {
+    pluginReviewsIndex.value = null;
+    pluginReviewsErr.value = e instanceof Error ? e.message : String(e);
+  } finally {
+    pluginReviewsLoading.value = false;
+  }
+}
+
+type RatingAgg = { avg: number; count: number };
+
+const ratingAggByPluginId = computed(() => {
+  const map = new Map<string, RatingAgg>();
+  const reviews = pluginReviewsIndex.value?.reviews ?? [];
+  const acc = new Map<string, { sum: number; count: number }>();
+  for (const r of reviews) {
+    const pid = (r.plugin_id ?? "").trim();
+    if (!pid) continue;
+    const rating = Number(r.rating);
+    if (!Number.isFinite(rating)) continue;
+    const rr = Math.max(1, Math.min(5, Math.round(rating)));
+    const cur = acc.get(pid) ?? { sum: 0, count: 0 };
+    cur.sum += rr;
+    cur.count += 1;
+    acc.set(pid, cur);
+  }
+  for (const [pid, x] of acc.entries()) {
+    map.set(pid, { avg: x.sum / Math.max(1, x.count), count: x.count });
+  }
+  return map;
+});
+
+function ratingTextForPluginId(pluginId: string): string {
+  const a = ratingAggByPluginId.value.get(pluginId.trim());
+  if (!a) return "暂无评价";
+  return `${a.avg.toFixed(1)} 分（${a.count}）`;
+}
+
+function ratingStars(avg: number): string {
+  const n = Math.max(0, Math.min(5, Math.round(avg)));
+  return "★★★★★".slice(0, n) + "☆☆☆☆☆".slice(0, 5 - n);
+}
+
+function ratingStarsForPluginId(pluginId: string): string {
+  const a = ratingAggByPluginId.value.get(pluginId.trim());
+  if (!a) return "☆☆☆☆☆";
+  return ratingStars(a.avg);
+}
+
+async function openPluginReviewsContribution(): Promise<void> {
+  try {
+    await openExternal(PLUGIN_REVIEWS_CONTRIBUTING_URL);
+  } catch (e) {
+    showToast("error", e instanceof Error ? e.message : String(e));
+  }
+}
 
 async function refreshPermissionTokenInfos(): Promise<void> {
   permTokenInfoLoading.value = true;
@@ -490,6 +576,7 @@ watch(
     if (vis) {
       void pluginStore.loadCachedPluginMarket();
       void refreshPermissionTokenInfos();
+      void refreshPluginReviewsIndex();
       void loadMarketSourcesForPanel();
     }
   },
@@ -609,6 +696,8 @@ async function onSyncMarketIndex() {
     await pluginStore.syncPluginMarket(
       marketSourceSelected.value === "official" ? null : marketSourceSelected.value,
     );
+    // Sync public reviews index best-effort; do not block plugin index success.
+    void syncPluginReviewsIndexNow();
     if (pluginStore.pluginMarketSnapshot?.warning) {
       showToast("info", pluginStore.pluginMarketSnapshot.warning);
     } else {
@@ -1323,6 +1412,32 @@ async function onPackSelectedPlugin(): Promise<void> {
                           .join("，")
                       }}
                     </span>
+                  </p>
+                  <p class="pm-market-rating">
+                    <span
+                      class="pm-rating-stars"
+                      :title="`公开评价：${ratingTextForPluginId(row.id)}（绑定 pluginId；更细粒度可按 pubkeyId/version 扩展）`"
+                    >
+                      {{ ratingStarsForPluginId(row.id) }}
+                    </span>
+                    <span class="pm-muted"> · {{ ratingTextForPluginId(row.id) }}</span>
+                    <button
+                      type="button"
+                      class="pm-link"
+                      :disabled="pluginReviewsLoading"
+                      @click="openPluginReviewsContribution"
+                    >
+                      去提交评价
+                    </button>
+                    <button
+                      type="button"
+                      class="pm-link"
+                      :disabled="pluginReviewsLoading"
+                      @click="syncPluginReviewsIndexNow"
+                    >
+                      刷新评价
+                    </button>
+                    <span v-if="pluginReviewsErr" class="pm-err"> · {{ pluginReviewsErr }}</span>
                   </p>
                   <p v-if="row.description" class="pm-market-desc">{{ row.description }}</p>
                   <details v-if="marketEntryType(row) === 'module' && (row as any).module" class="pm-market-details">
@@ -2184,6 +2299,35 @@ async function onPackSelectedPlugin(): Promise<void> {
   font-size: 12px;
   color: var(--text-secondary);
   line-height: 1.45;
+}
+.pm-market-rating {
+  margin: 6px 0 0;
+  font-size: 12px;
+  color: var(--text-secondary);
+  line-height: 1.45;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  align-items: center;
+}
+.pm-rating-stars {
+  font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono",
+    "Courier New", monospace;
+  letter-spacing: 0.5px;
+}
+.pm-link {
+  border: none;
+  background: none;
+  padding: 0;
+  font: inherit;
+  color: var(--accent, #6b8cff);
+  text-decoration: underline;
+  cursor: pointer;
+}
+.pm-link:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+  text-decoration: none;
 }
 .pm-source-badge {
   display: inline-block;

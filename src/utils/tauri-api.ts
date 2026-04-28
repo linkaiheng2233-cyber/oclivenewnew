@@ -591,6 +591,40 @@ export interface RoleFeedbackItem {
   timestamp: string;
 }
 
+export interface PluginReviewEntryDto {
+  id: string;
+  plugin_id: string;
+  pubkey_id?: string | null;
+  version?: string | null;
+  rating: number;
+  title?: string | null;
+  body?: string | null;
+  created_at: string;
+  author_github?: string | null;
+}
+
+export interface PluginReviewsIndexDto {
+  schema_version: number;
+  generated_at?: string | null;
+  reviews: PluginReviewEntryDto[];
+}
+
+export async function syncPluginReviewsIndex(
+  sourceUrl?: string | null,
+): Promise<PluginReviewsIndexDto> {
+  return invokeWithFriendlyError<PluginReviewsIndexDto>(
+    "sync_plugin_reviews_index",
+    { req: { sourceUrl: sourceUrl ?? null } },
+  );
+}
+
+export async function getCachedPluginReviewsIndex(): Promise<PluginReviewsIndexDto> {
+  return invokeWithFriendlyError<PluginReviewsIndexDto>(
+    "get_cached_plugin_reviews_index",
+    {},
+  );
+}
+
 export async function sendMessage(
   req: SendMessageRequest,
 ): Promise<SendMessageResponse> {

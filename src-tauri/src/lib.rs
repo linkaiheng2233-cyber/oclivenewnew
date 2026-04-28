@@ -389,6 +389,8 @@ pub fn run() {
             api::plugin_update::check_plugin_updates,
             api::plugin_update::extract_plugin_zip,
             api::plugin_update::preview_plugin_zip_permissions,
+            api::plugin_reviews::sync_plugin_reviews_index,
+            api::plugin_reviews::get_cached_plugin_reviews_index,
             api::plugin_index::sync_plugin_index_command,
             api::plugin_index::get_cached_plugin_index,
             api::plugin_index::install_plugin_from_market,
