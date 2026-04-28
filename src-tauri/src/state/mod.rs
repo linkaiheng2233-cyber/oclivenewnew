@@ -343,7 +343,9 @@ impl AppState {
         let path = db_path.as_ref();
         let db = if path == Path::new(":memory:") {
             SqlitePoolOptions::new()
-                .max_connections(5)
+                // `sqlite::memory:` + pool 多连接时，sqlx migrations 可能在并发测试里触发
+                // `_sqlx_migrations.version` UNIQUE 冲突；内存库仅用于测试，单连接更稳。
+                .max_connections(1)
                 .connect("sqlite::memory:")
                 .await
                 .map_err(|e| crate::error::AppError::DatabaseError(e.to_string()))?
@@ -429,7 +431,8 @@ impl AppState {
         policy_file: Option<&Path>,
     ) -> Result<Self> {
         let db = sqlx::sqlite::SqlitePoolOptions::new()
-            .max_connections(5)
+            // 内存库用于测试；避免 migrations 表并发写入冲突
+            .max_connections(1)
             .connect("sqlite::memory:")
             .await
             .map_err(|e| crate::error::AppError::DatabaseError(e.to_string()))?;

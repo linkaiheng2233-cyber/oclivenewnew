@@ -148,10 +148,7 @@ fn is_sha256_hex(s: &str) -> bool {
     if s.len() != 64 {
         return false;
     }
-    s.as_bytes().iter().all(|b| match b {
-        b'0'..=b'9' | b'a'..=b'f' | b'A'..=b'F' => true,
-        _ => false,
-    })
+    s.as_bytes().iter().all(|b: &u8| b.is_ascii_hexdigit())
 }
 
 #[cfg(test)]

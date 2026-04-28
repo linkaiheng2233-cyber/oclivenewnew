@@ -60,4 +60,3 @@ pub async fn query_role_feedback(
         })
         .collect())
 }
-

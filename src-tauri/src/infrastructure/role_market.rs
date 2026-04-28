@@ -245,7 +245,7 @@ where
     let path = tmp.clone();
     let installed = import_role_pack(storage, &path, overwrite, |p| {
         // Map import progress to 35~100
-        let pct = 35 + ((p.percent.max(0).min(100) as i32 * 65) / 100);
+        let pct = 35 + ((p.percent.clamp(0, 100) * 65) / 100);
         on_progress(ImportProgress {
             percent: pct,
             message: p.message,

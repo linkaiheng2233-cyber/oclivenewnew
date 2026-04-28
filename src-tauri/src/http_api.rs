@@ -12,8 +12,8 @@ use crate::infrastructure::db::RoleFeedbackRow;
 use crate::models::dto::{SendMessageRequest, SendMessageResponse};
 use crate::models::role::PersonalitySource;
 use crate::state::AppState;
-use axum::extract::State;
 use axum::extract::Query;
+use axum::extract::State;
 use axum::http::Method;
 use axum::routing::{get, post};
 use axum::Json;
@@ -316,7 +316,10 @@ pub fn api_router(app_state: Arc<AppState>) -> Router {
     Router::new()
         .route("/health", get(health))
         .route("/chat", post(chat))
-        .route("/role-feedback", post(post_role_feedback).get(list_role_feedback))
+        .route(
+            "/role-feedback",
+            post(post_role_feedback).get(list_role_feedback),
+        )
         .merge(oocp_ws::oocp_ws_router())
         .layer(cors)
         .with_state(app_state)
