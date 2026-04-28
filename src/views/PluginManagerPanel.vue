@@ -133,6 +133,75 @@ function unhideAllLocalImports(): void {
   persistLocalImportsHidden();
 }
 
+const SESSION_OVERRIDE_ROLLBACK_KEY = "oclive.session_override.rollback_v1";
+type SessionOverrideSnapshot = {
+  roleId: string;
+  savedAt: string;
+  source: "module" | "profile" | "manual";
+  label: string;
+  /** null 表示当时无覆盖（回滚会清空 override） */
+  override: Record<string, unknown> | null;
+};
+
+function readRollbackSnapshot(roleId: string): SessionOverrideSnapshot | null {
+  try {
+    const raw = localStorage.getItem(`${SESSION_OVERRIDE_ROLLBACK_KEY}.${roleId}`);
+    if (!raw) return null;
+    const j = JSON.parse(raw) as SessionOverrideSnapshot;
+    if (!j || typeof j !== "object") return null;
+    if ((j.roleId ?? "").trim() !== roleId.trim()) return null;
+    return j;
+  } catch {
+    return null;
+  }
+}
+
+function writeRollbackSnapshot(s: SessionOverrideSnapshot): void {
+  try {
+    localStorage.setItem(`${SESSION_OVERRIDE_ROLLBACK_KEY}.${s.roleId}`, JSON.stringify(s));
+  } catch {
+    /* ignore */
+  }
+}
+
+function saveCurrentSessionOverrideForRollback(source: "module" | "profile", label: string): void {
+  const roleId = (roleStore.currentRoleId ?? "").trim();
+  if (!roleId) return;
+  const cur = roleStore.roleInfo.pluginBackendsSessionOverride as any;
+  const snapshot: SessionOverrideSnapshot = {
+    roleId,
+    savedAt: new Date().toISOString(),
+    source,
+    label: label.trim() || "(unknown)",
+    override: cur && typeof cur === "object" ? (cur as Record<string, unknown>) : null,
+  };
+  writeRollbackSnapshot(snapshot);
+}
+
+const rollbackSnapshotForRole = computed(() => {
+  const roleId = (roleStore.currentRoleId ?? "").trim();
+  if (!roleId) return null;
+  return readRollbackSnapshot(roleId);
+});
+
+async function rollbackLastSessionOverride(): Promise<void> {
+  const roleId = (roleStore.currentRoleId ?? "").trim();
+  const snap = rollbackSnapshotForRole.value;
+  if (!roleId || !snap) return;
+  const ok = window.confirm(
+    `回滚会话级后端覆盖（仅当前会话）\n\n来源：${snap.source}\n条目：${snap.label}\n保存时间：${snap.savedAt}\n\n确定回滚吗？`,
+  );
+  if (!ok) return;
+  try {
+    const next = snap.override ?? {};
+    const info = await setSessionPluginBackendsOverride(roleId, next);
+    roleStore.applyRoleInfo(info);
+    showToast("success", "已回滚会话级后端覆盖。");
+  } catch (e) {
+    showToast("error", e instanceof Error ? e.message : String(e));
+  }
+}
+
 const PLUGIN_REVIEWS_REPO_URL =
   "https://github.com/linkaiheng2233-cyber/awesome-oclive-plugin-reviews";
 const PLUGIN_REVIEWS_CONTRIBUTING_URL = `${PLUGIN_REVIEWS_REPO_URL}/blob/main/CONTRIBUTING.md`;
@@ -536,6 +605,7 @@ async function onApplyModuleEntry(row: PluginMarketEntryDto): Promise<void> {
   }
   const ok = await requestApplyPreflight(`应用模块：${row.id}`, planLines);
   if (!ok) return;
+  saveCurrentSessionOverrideForRollback("module", row.id);
 
   const list = mod.plugins ?? [];
   if (list.length === 0) {
@@ -567,7 +637,11 @@ async function onApplyModuleEntry(row: PluginMarketEntryDto): Promise<void> {
   if (mod.backends && Object.keys(mod.backends).length > 0) {
     const roleId = roleStore.currentRoleId;
     if (!roleId?.trim()) return;
-    await setSessionPluginBackendsOverride(roleId, mod.backends);
+    const info = await setSessionPluginBackendsOverride(roleId, mod.backends);
+    roleStore.applyRoleInfo(info);
+  } else {
+    // ensure UI reflects cleared override if module applies no backends
+    // (no-op here; install flow may still change plugin state)
   }
   showToast("success", `模块已应用：${row.id}（插槽位置可在「插槽顺序」里调整）`);
 }
@@ -601,6 +675,7 @@ async function onApplyProfileEntry(row: PluginMarketEntryDto): Promise<void> {
   }
   const ok = await requestApplyPreflight(`应用 Profile：${row.id}`, planLines);
   if (!ok) return;
+  saveCurrentSessionOverrideForRollback("profile", row.id);
 
   // Profile 本身无代码：权限风险来自依赖插件；这里的 predeclaredPermissions 仅做提示。
   const pre = (prof.predeclaredPermissions ?? []).map((s) => String(s).trim()).filter(Boolean);
@@ -634,7 +709,8 @@ async function onApplyProfileEntry(row: PluginMarketEntryDto): Promise<void> {
   if (prof.backends && Object.keys(prof.backends).length > 0) {
     const roleId = roleStore.currentRoleId;
     if (!roleId?.trim()) return;
-    await setSessionPluginBackendsOverride(roleId, prof.backends);
+    const info = await setSessionPluginBackendsOverride(roleId, prof.backends);
+    roleStore.applyRoleInfo(info);
   }
   showToast("success", `Profile 已应用：${row.id}（插槽位置可在「插槽顺序」里调整）`);
 }
@@ -2277,6 +2353,15 @@ async function onPackSelectedPlugin(): Promise<void> {
                 >
                   {{ localImportsLoading ? "扫描中…" : "扫描本地模块" }}
                 </button>
+                <button
+                  v-if="rollbackSnapshotForRole"
+                  type="button"
+                  class="pm-btn danger pm-btn--sm"
+                  :title="`回滚快照：${rollbackSnapshotForRole.label} @ ${rollbackSnapshotForRole.savedAt}`"
+                  @click="rollbackLastSessionOverride"
+                >
+                  回滚上次覆盖
+                </button>
                 <span v-if="localImportsErr" class="pm-err"> {{ localImportsErr }} </span>
               </div>
             </section>
@@ -2353,6 +2438,15 @@ async function onPackSelectedPlugin(): Promise<void> {
                   @click="refreshLocalImports"
                 >
                   {{ localImportsLoading ? "扫描中…" : "扫描本地 Profile" }}
+                </button>
+                <button
+                  v-if="rollbackSnapshotForRole"
+                  type="button"
+                  class="pm-btn danger pm-btn--sm"
+                  :title="`回滚快照：${rollbackSnapshotForRole.label} @ ${rollbackSnapshotForRole.savedAt}`"
+                  @click="rollbackLastSessionOverride"
+                >
+                  回滚上次覆盖
                 </button>
                 <span v-if="localImportsErr" class="pm-err"> {{ localImportsErr }} </span>
               </div>
