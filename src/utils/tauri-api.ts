@@ -623,6 +623,41 @@ export interface PluginReviewsIndexDto {
   reviews: PluginReviewEntryDto[];
 }
 
+export type LocalImportKind =
+  | "role_pack"
+  | "plugin_archive"
+  | "plugin_dir"
+  | "module_json"
+  | "profile_json";
+
+export interface LocalImportCandidateDto {
+  kind: LocalImportKind;
+  path: string;
+  fileName: string;
+  sizeBytes?: number | null;
+  modifiedMs?: number | null;
+}
+
+export interface ListLocalImportCandidatesResponseDto {
+  items: LocalImportCandidateDto[];
+  rootDir: string;
+}
+
+export async function listLocalImportCandidates(): Promise<ListLocalImportCandidatesResponseDto> {
+  return invokeWithFriendlyError<ListLocalImportCandidatesResponseDto>(
+    "list_local_import_candidates_command",
+    {},
+  );
+}
+
+export async function readLocalImportText(path: string): Promise<string> {
+  const r = await invokeWithFriendlyError<{ content: string }>(
+    "read_local_import_text_command",
+    { req: { path } },
+  );
+  return r.content;
+}
+
 export async function syncPluginReviewsIndex(
   sourceUrl?: string | null,
 ): Promise<PluginReviewsIndexDto> {
@@ -1096,6 +1131,11 @@ export interface PluginZipPermissionPreviewDto {
   permissions: string[];
 }
 
+export interface PluginDirPermissionPreviewDto {
+  pluginId: string;
+  permissions: string[];
+}
+
 export async function previewPluginZipPermissions(
   zipPath: string,
 ): Promise<PluginZipPermissionPreviewDto> {
@@ -1103,6 +1143,27 @@ export async function previewPluginZipPermissions(
     "preview_plugin_zip_permissions",
     { zip_path: zipPath },
   );
+}
+
+export async function previewPluginDirPermissions(
+  dirPath: string,
+): Promise<PluginDirPermissionPreviewDto> {
+  return invokeWithFriendlyError<PluginDirPermissionPreviewDto>(
+    "preview_plugin_dir_permissions",
+    { dir_path: dirPath },
+  );
+}
+
+export async function installPluginDir(
+  dirPath: string,
+  pluginId: string,
+  acceptedPermissions?: string[] | null,
+): Promise<void> {
+  return invokeWithFriendlyError<void>("install_plugin_dir", {
+    dir_path: dirPath,
+    plugin_id: pluginId,
+    accepted_permissions: acceptedPermissions ?? null,
+  });
 }
 
 export interface PluginAuditLogRowDto {

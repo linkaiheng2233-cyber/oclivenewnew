@@ -18,6 +18,13 @@ pub struct PluginZipPermissionPreview {
     pub permissions: Vec<String>,
 }
 
+#[derive(Debug, Clone, Serialize)]
+#[serde(rename_all = "camelCase")]
+pub struct PluginDirPermissionPreview {
+    pub plugin_id: String,
+    pub permissions: Vec<String>,
+}
+
 fn bridge_command_to_permission_token(cmd: &str) -> String {
     match cmd {
         "get_conversation" => "read:conversation".to_string(),
@@ -323,4 +330,106 @@ pub fn preview_plugin_zip_permissions(
         plugin_id: pid,
         permissions,
     })
+}
+
+/// 开发者模式：预览目录插件的 manifest bridge 权限。
+#[tauri::command]
+pub fn preview_plugin_dir_permissions(
+    dir_path: String,
+    state: State<'_, AppState>,
+) -> Result<PluginDirPermissionPreview, String> {
+    if !state.directory_plugins.host().developer_effective() {
+        return Err("developer mode required for dir preview".to_string());
+    }
+    let dir_path = PathBuf::from(dir_path.trim());
+    if !dir_path.is_dir() {
+        return Err(format!("目录不存在: {}", dir_path.display()));
+    }
+    let dir_path = dir_path
+        .canonicalize()
+        .map_err(|e| format!("dir 路径: {}", e))?;
+    let manifest = OclivePluginManifest::load_from_dir(&dir_path)?;
+    let pid = manifest.id.trim().to_string();
+    if pid.is_empty() {
+        return Err("manifest.id required".to_string());
+    }
+    let permissions = bridge_permissions_from_manifest(&manifest);
+    Ok(PluginDirPermissionPreview {
+        plugin_id: pid,
+        permissions,
+    })
+}
+
+/// 开发者模式：安装目录插件（复制目录到 app_data/plugins/{id}），并按用户勾选写入 grants。
+#[tauri::command]
+pub fn install_plugin_dir(
+    dir_path: String,
+    plugin_id: String,
+    accepted_permissions: Option<Vec<String>>,
+    state: State<'_, AppState>,
+) -> Result<(), String> {
+    if !state.directory_plugins.host().developer_effective() {
+        return Err("developer mode required for dir sideload".to_string());
+    }
+    let pid = plugin_id.trim();
+    if pid.is_empty() {
+        return Err("plugin_id required".to_string());
+    }
+    let dir_path = PathBuf::from(dir_path.trim());
+    if !dir_path.is_dir() {
+        return Err(format!("目录不存在: {}", dir_path.display()));
+    }
+    let dir_path = dir_path
+        .canonicalize()
+        .map_err(|e| format!("dir 路径: {}", e))?;
+    let manifest = OclivePluginManifest::load_from_dir(&dir_path)?;
+    if manifest.id.trim() != pid {
+        return Err(format!(
+            "manifest id={} 与目标插件 {} 不一致",
+            manifest.id.trim(),
+            pid
+        ));
+    }
+
+    let target = resolve_install_dir(&state, pid);
+    if let Some(parent) = target.parent() {
+        fs::create_dir_all(parent).map_err(|e| e.to_string())?;
+    }
+
+    state.directory_plugins.clear_plugin_process(pid);
+    if target.exists() {
+        fs::remove_dir_all(&target).map_err(|e| format!("删除旧插件目录: {}", e))?;
+    }
+    fs::create_dir_all(&target).map_err(|e| e.to_string())?;
+    copy_dir_all(&dir_path, &target)?;
+
+    state
+        .directory_plugins
+        .rescan_plugin_roots(state.storage.roles_dir());
+    let declared = bridge_permissions_from_manifest(&manifest);
+    let mut perms = accepted_permissions.unwrap_or_else(|| declared.clone());
+    perms = perms
+        .into_iter()
+        .map(|s| s.trim().to_string())
+        .filter(|s| !s.is_empty())
+        .collect();
+    perms.sort();
+    perms.dedup();
+    if !perms.is_empty() {
+        let declared_set: std::collections::HashSet<String> =
+            declared.iter().map(|s| s.trim().to_string()).collect();
+        let ok = perms.iter().all(|p| declared_set.contains(p.trim()));
+        if !ok {
+            return Err("accepted_permissions must be a subset of declared permissions".to_string());
+        }
+    }
+    tauri::async_runtime::block_on(async {
+        for p in perms {
+            let _ = state
+                .db_manager
+                .upsert_plugin_permission_grant(pid, p.as_str(), true)
+                .await;
+        }
+    });
+    Ok(())
 }

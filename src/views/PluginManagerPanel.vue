@@ -26,10 +26,14 @@ import {
   applyAuthorSuggestedPluginBackends,
   packPlugin,
   previewPluginZipPermissions,
+  previewPluginDirPermissions,
+  installPluginDir,
   listPermissionTokens,
   previewProfileFromPath,
   getCachedPluginReviewsIndex,
   syncPluginReviewsIndex,
+  listLocalImportCandidates,
+  readLocalImportText,
   setSessionPluginBackend,
   setSessionPluginBackendsOverride,
   type PluginMarketEntryDto,
@@ -77,6 +81,19 @@ const profileApplyLoading = ref(false);
 const pluginReviewsLoading = ref(false);
 const pluginReviewsIndex = ref<{ reviews: PluginReviewEntryDto[] } | null>(null);
 const pluginReviewsErr = ref("");
+
+const localImportsLoading = ref(false);
+const localImportsErr = ref("");
+const localImportsRootDir = ref("");
+const localImports = ref<
+  Array<{
+    kind: string;
+    path: string;
+    fileName: string;
+    sizeBytes?: number | null;
+    modifiedMs?: number | null;
+  }>
+>([]);
 
 const PLUGIN_REVIEWS_REPO_URL =
   "https://github.com/linkaiheng2233-cyber/awesome-oclive-plugin-reviews";
@@ -641,9 +658,109 @@ watch(
       void refreshPermissionTokenInfos();
       void refreshPluginReviewsIndex();
       void loadMarketSourcesForPanel();
+      void refreshLocalImports();
     }
   },
 );
+
+async function refreshLocalImports(): Promise<void> {
+  localImportsLoading.value = true;
+  localImportsErr.value = "";
+  try {
+    const r = await listLocalImportCandidates();
+    localImportsRootDir.value = r.rootDir ?? "";
+    localImports.value = r.items ?? [];
+  } catch (e) {
+    localImportsRootDir.value = "";
+    localImports.value = [];
+    localImportsErr.value = e instanceof Error ? e.message : String(e);
+  } finally {
+    localImportsLoading.value = false;
+  }
+}
+
+function localImportKindLabel(k: string): string {
+  if (k === "role_pack") return "角色包";
+  if (k === "plugin_archive") return "插件包";
+  if (k === "plugin_dir") return "插件目录";
+  if (k === "module_json") return "模块条目";
+  if (k === "profile_json") return "Profile";
+  return k;
+}
+
+function localImportsByKind(kind: string) {
+  return localImports.value.filter((x) => x.kind === kind);
+}
+
+async function onImportRolePackFromLocal(path: string): Promise<void> {
+  try {
+    const peek = await peekRolePack(path);
+    const ok = window.confirm(
+      `导入角色包：${peek.name}（id=${peek.id} v${peek.version}）\n\n确定导入到本机 roles/ 吗？`,
+    );
+    if (!ok) return;
+    const roleId = await importRolePack(path, false);
+    showToast("success", `导入成功：${roleId}`);
+  } catch (e) {
+    showToast("error", e instanceof Error ? e.message : String(e));
+  }
+}
+
+async function onInstallPluginArchiveFromLocal(zipPath: string): Promise<void> {
+  try {
+    const prev = await previewPluginZipPermissions(zipPath);
+    const trust = "来源：本地投放目录（开发者模式）";
+    const accepted = await requestPermissionConsentWithTrust(
+      `安装插件（ZIP）：${prev.pluginId}`,
+      prev.permissions,
+      trust,
+    );
+    if (accepted === null) return;
+    if (hasHighRiskPermission(accepted)) {
+      const ok = window.confirm(
+        `该插件包含高风险权限：\n${accepted.join("\n")}\n\n仍要继续安装吗？`,
+      );
+      if (!ok) return;
+    }
+    await extractPluginZip(zipPath, prev.pluginId, accepted);
+    showToast("success", `已安装：${prev.pluginId}`);
+  } catch (e) {
+    showToast("error", e instanceof Error ? e.message : String(e));
+  }
+}
+
+async function onInstallPluginDirFromLocal(dirPath: string): Promise<void> {
+  try {
+    const prev = await previewPluginDirPermissions(dirPath);
+    const trust = "来源：本地投放目录（开发者模式）";
+    const accepted = await requestPermissionConsentWithTrust(
+      `安装插件（目录）：${prev.pluginId}`,
+      prev.permissions,
+      trust,
+    );
+    if (accepted === null) return;
+    if (hasHighRiskPermission(accepted)) {
+      const ok = window.confirm(
+        `该插件包含高风险权限：\n${accepted.join("\n")}\n\n仍要继续安装吗？`,
+      );
+      if (!ok) return;
+    }
+    await installPluginDir(dirPath, prev.pluginId, accepted);
+    showToast("success", `已安装：${prev.pluginId}`);
+  } catch (e) {
+    showToast("error", e instanceof Error ? e.message : String(e));
+  }
+}
+
+async function onPreviewLocalJson(path: string): Promise<void> {
+  try {
+    const text = await readLocalImportText(path);
+    await navigator.clipboard.writeText(text);
+    showToast("success", "已复制 JSON 内容到剪贴板。");
+  } catch (e) {
+    showToast("error", e instanceof Error ? e.message : String(e));
+  }
+}
 
 const batchMode = ref(false);
 const batchSelected = ref<Record<string, boolean>>({});
@@ -1422,6 +1539,85 @@ async function onPackSelectedPlugin(): Promise<void> {
             <p v-if="pluginStore.pluginMarketSnapshot?.offlineMode" class="pm-hint">
               当前为离线模式（使用本地缓存索引）。
             </p>
+            <details class="pm-local-imports">
+              <summary class="pm-local-imports-sum">本地导入（文件夹投放）</summary>
+              <div class="pm-local-imports-body">
+                <p class="pm-muted">
+                  这是<strong>加法入口</strong>：把文件放进指定目录后，Oclive Manager 只负责<strong>发现</strong>，仍需你在此<strong>确认权限/启用</strong>，不会自动运行。
+                </p>
+                <p v-if="localImportsRootDir" class="pm-muted">
+                  根目录：<code>{{ localImportsRootDir }}</code>
+                </p>
+                <ul class="pm-muted">
+                  <li><code>roles/</code>：角色包（.ocpak/.zip）</li>
+                  <li><code>plugins/plugin/</code>：插件包（.zip/.oclive-plugin）或插件目录（含 manifest.json）</li>
+                  <li><code>plugins/module/</code>：插件模块（module 条目 JSON，无代码）</li>
+                  <li><code>profiles/</code>：Profile JSON（.oclive.profile.json 等）</li>
+                </ul>
+                <div class="pm-row">
+                  <button
+                    type="button"
+                    class="pm-btn secondary pm-btn--sm"
+                    :disabled="localImportsLoading"
+                    @click="refreshLocalImports"
+                  >
+                    {{ localImportsLoading ? "扫描中…" : "扫描投放目录" }}
+                  </button>
+                  <span v-if="localImportsErr" class="pm-err"> {{ localImportsErr }} </span>
+                </div>
+
+                <div v-if="localImports.length === 0" class="pm-muted">暂无候选项。</div>
+                <div v-else class="pm-local-imports-grid">
+                  <div class="pm-local-imports-col">
+                    <h4>角色包</h4>
+                    <ul class="pm-local-imports-list">
+                      <li v-for="it in localImportsByKind('role_pack')" :key="it.path">
+                        <code>{{ it.fileName }}</code>
+                        <button type="button" class="pm-link" @click="onImportRolePackFromLocal(it.path)">
+                          导入
+                        </button>
+                      </li>
+                    </ul>
+                  </div>
+
+                  <div class="pm-local-imports-col">
+                    <h4>插件</h4>
+                    <ul class="pm-local-imports-list">
+                      <li v-for="it in localImportsByKind('plugin_archive')" :key="it.path">
+                        <code>{{ it.fileName }}</code>
+                        <button type="button" class="pm-link" @click="onInstallPluginArchiveFromLocal(it.path)">
+                          安装
+                        </button>
+                      </li>
+                      <li v-for="it in localImportsByKind('plugin_dir')" :key="it.path">
+                        <code>{{ it.fileName }}</code>
+                        <button type="button" class="pm-link" @click="onInstallPluginDirFromLocal(it.path)">
+                          安装
+                        </button>
+                      </li>
+                    </ul>
+                  </div>
+
+                  <div class="pm-local-imports-col">
+                    <h4>模块 / Profile</h4>
+                    <ul class="pm-local-imports-list">
+                      <li v-for="it in localImportsByKind('module_json')" :key="it.path">
+                        <code>{{ it.fileName }}</code>
+                        <button type="button" class="pm-link" @click="onPreviewLocalJson(it.path)">
+                          复制 JSON
+                        </button>
+                      </li>
+                      <li v-for="it in localImportsByKind('profile_json')" :key="it.path">
+                        <code>{{ it.fileName }}</code>
+                        <button type="button" class="pm-link" @click="onPreviewLocalJson(it.path)">
+                          复制 JSON
+                        </button>
+                      </li>
+                    </ul>
+                  </div>
+                </div>
+              </div>
+            </details>
             <p
               v-if="marketSourceSelected !== 'official'"
               class="pm-err"
@@ -2427,6 +2623,42 @@ async function onPackSelectedPlugin(): Promise<void> {
   font-size: 12px;
   color: var(--text-secondary);
   line-height: 1.45;
+}
+.pm-local-imports {
+  margin: 8px 0 0;
+  border: 1px solid var(--border-light);
+  border-radius: 12px;
+  background: var(--bg-elevated);
+}
+.pm-local-imports-sum {
+  cursor: pointer;
+  padding: 8px 10px;
+  font-size: 13px;
+}
+.pm-local-imports-body {
+  padding: 0 10px 10px;
+}
+.pm-local-imports-grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 10px;
+  margin-top: 8px;
+}
+.pm-local-imports-col h4 {
+  margin: 0 0 6px;
+  font-size: 12px;
+  color: var(--text-secondary);
+}
+.pm-local-imports-list {
+  margin: 0;
+  padding-left: 16px;
+  font-size: 12px;
+  color: var(--text-secondary);
+}
+@media (max-width: 900px) {
+  .pm-local-imports-grid {
+    grid-template-columns: 1fr;
+  }
 }
 .pm-market-trust {
   margin: 6px 0 0;
