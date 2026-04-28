@@ -22,6 +22,7 @@ export default defineConfig(({ mode }) => ({
   },
 
   build: {
+    chunkSizeWarningLimit: 2000,
     rollupOptions: {
       output: {
         manualChunks(id) {
@@ -30,6 +31,7 @@ export default defineConfig(({ mode }) => ({
           if (id.includes("@tauri-apps")) return "vendor-tauri";
           if (id.includes("vue-virtual-scroller")) return "vendor-scroller";
           if (id.includes("pinia")) return "vendor-pinia";
+          if (id.includes("vue3-sfc-loader")) return "vendor-vue-sfc-loader";
           // vue3-sfc-loader 仅经动态 import 加载，不打入首屏 vendor
           if (id.includes("/vue/") || id.includes("@vue/")) return "vendor-vue";
         },
