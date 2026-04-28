@@ -5,6 +5,7 @@ use crate::state::AppState;
 use base64::engine::general_purpose::STANDARD as B64_STANDARD;
 use base64::Engine;
 use ed25519_dalek::{Signature, VerifyingKey};
+use oclive_validation::validate_plugin_market_index_v1;
 use semver::VersionReq;
 use serde::{Deserialize, Serialize};
 use sha2::{Digest, Sha256};
@@ -393,6 +394,9 @@ fn sync_plugin_index_online_at(
     let text = resp
         .text()
         .map_err(|e| AppError::Unknown(format!("read plugin index response failed: {}", e)))?;
+    // Validate index contract (esp. no-code module/profile constraints) before persisting cache.
+    validate_plugin_market_index_v1(&text)
+        .map_err(|e| AppError::Unknown(format!("plugins.json validate failed: {}", e)))?;
     let mut parsed: PluginIndexFile = serde_json::from_str(&text)
         .map_err(|e| AppError::Unknown(format!("parse plugins.json failed: {}", e)))?;
     parsed.plugins.sort_by(|a, b| a.id.cmp(&b.id));
