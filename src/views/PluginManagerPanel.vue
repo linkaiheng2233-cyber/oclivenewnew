@@ -125,8 +125,43 @@ const ratingAggByPluginId = computed(() => {
   return map;
 });
 
+function reviewsAggKey(pluginId: string, pubkeyId?: string | null): string {
+  const pid = pluginId.trim();
+  const pk = (pubkeyId ?? "").trim();
+  return pk ? `${pid}@@${pk}` : `${pid}@@*`;
+}
+
+const ratingAggByPluginIdPubkey = computed(() => {
+  const map = new Map<string, RatingAgg>();
+  const reviews = pluginReviewsIndex.value?.reviews ?? [];
+  const acc = new Map<string, { sum: number; count: number }>();
+  for (const r of reviews) {
+    const pid = (r.plugin_id ?? "").trim();
+    if (!pid) continue;
+    const key = reviewsAggKey(pid, r.pubkey_id ?? null);
+    const rating = Number(r.rating);
+    if (!Number.isFinite(rating)) continue;
+    const rr = Math.max(1, Math.min(5, Math.round(rating)));
+    const cur = acc.get(key) ?? { sum: 0, count: 0 };
+    cur.sum += rr;
+    cur.count += 1;
+    acc.set(key, cur);
+  }
+  for (const [k, x] of acc.entries()) {
+    map.set(k, { avg: x.sum / Math.max(1, x.count), count: x.count });
+  }
+  return map;
+});
+
 function ratingTextForPluginId(pluginId: string): string {
   const a = ratingAggByPluginId.value.get(pluginId.trim());
+  if (!a) return "暂无评价";
+  return `${a.avg.toFixed(1)} 分（${a.count}）`;
+}
+
+function ratingTextForPluginPubkey(pluginId: string, pubkeyId: string): string {
+  const key = reviewsAggKey(pluginId, pubkeyId);
+  const a = ratingAggByPluginIdPubkey.value.get(key);
   if (!a) return "暂无评价";
   return `${a.avg.toFixed(1)} 分（${a.count}）`;
 }
@@ -138,6 +173,13 @@ function ratingStars(avg: number): string {
 
 function ratingStarsForPluginId(pluginId: string): string {
   const a = ratingAggByPluginId.value.get(pluginId.trim());
+  if (!a) return "☆☆☆☆☆";
+  return ratingStars(a.avg);
+}
+
+function ratingStarsForPluginPubkey(pluginId: string, pubkeyId: string): string {
+  const key = reviewsAggKey(pluginId, pubkeyId);
+  const a = ratingAggByPluginIdPubkey.value.get(key);
   if (!a) return "☆☆☆☆☆";
   return ratingStars(a.avg);
 }
@@ -1416,11 +1458,28 @@ async function onPackSelectedPlugin(): Promise<void> {
                   <p class="pm-market-rating">
                     <span
                       class="pm-rating-stars"
-                      :title="`公开评价：${ratingTextForPluginId(row.id)}（绑定 pluginId；更细粒度可按 pubkeyId/version 扩展）`"
+                      :title="`公开评价（总体）：${ratingTextForPluginId(row.id)}\n\n提示：评价默认应绑定 pluginId+pubkeyId（签名公钥）。`"
                     >
                       {{ ratingStarsForPluginId(row.id) }}
                     </span>
                     <span class="pm-muted"> · {{ ratingTextForPluginId(row.id) }}</span>
+                    <template v-if="(row.publicKeys ?? []).length">
+                      <span class="pm-muted"> · 公钥口径：</span>
+                      <span
+                        v-for="k in row.publicKeys ?? []"
+                        :key="`rv-${row.id}-${k.pubkeyId}`"
+                        class="pm-pubkey-rating"
+                        :title="`pubkeyId=${k.pubkeyId}${k.status ? ` (${k.status})` : ''}`"
+                      >
+                        <span class="pm-muted">{{ k.pubkeyId }}</span>
+                        <span class="pm-rating-stars">{{
+                          ratingStarsForPluginPubkey(row.id, k.pubkeyId)
+                        }}</span>
+                        <span class="pm-muted">({{
+                          ratingTextForPluginPubkey(row.id, k.pubkeyId)
+                        }})</span>
+                      </span>
+                    </template>
                     <button
                       type="button"
                       class="pm-link"
@@ -2328,6 +2387,15 @@ async function onPackSelectedPlugin(): Promise<void> {
   opacity: 0.6;
   cursor: not-allowed;
   text-decoration: none;
+}
+.pm-pubkey-rating {
+  display: inline-flex;
+  gap: 4px;
+  align-items: center;
+  padding: 1px 6px;
+  border-radius: 999px;
+  border: 1px solid var(--border-light);
+  background: color-mix(in srgb, var(--bg-primary) 70%, transparent);
 }
 .pm-source-badge {
   display: inline-block;
