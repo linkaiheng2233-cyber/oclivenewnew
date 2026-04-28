@@ -8,10 +8,12 @@
 use crate::domain::adapters::oocp_ws;
 use crate::domain::chat_engine::process_message;
 use crate::error::AppError;
+use crate::infrastructure::db::RoleFeedbackRow;
 use crate::models::dto::{SendMessageRequest, SendMessageResponse};
 use crate::models::role::PersonalitySource;
 use crate::state::AppState;
 use axum::extract::State;
+use axum::extract::Query;
 use axum::http::Method;
 use axum::routing::{get, post};
 use axum::Json;
@@ -176,6 +178,133 @@ async fn chat(
     }))
 }
 
+#[derive(Debug, Deserialize)]
+pub struct RoleFeedbackPostRequest {
+    pub role_id: String,
+    #[serde(default)]
+    pub session_id: Option<String>,
+    #[serde(default)]
+    pub mood_tag: Option<String>,
+    pub message: String,
+}
+
+#[derive(Debug, Serialize)]
+pub struct RoleFeedbackPostResponse {
+    pub id: i64,
+}
+
+async fn post_role_feedback(
+    State(state): State<Arc<AppState>>,
+    Json(body): Json<RoleFeedbackPostRequest>,
+) -> Result<Json<RoleFeedbackPostResponse>, ApiError> {
+    let rid = body.role_id.trim().to_string();
+    let msg = body.message.trim().to_string();
+    if rid.is_empty() {
+        return Err(api_error(
+            axum::http::StatusCode::BAD_REQUEST,
+            "invalid_role_id",
+            "role_id 不能为空",
+            Some("请传入角色 manifest.id".to_string()),
+        ));
+    }
+    if msg.is_empty() {
+        return Err(api_error(
+            axum::http::StatusCode::BAD_REQUEST,
+            "empty_message",
+            "message 不能为空",
+            Some("请至少输入 1 个可见字符".to_string()),
+        ));
+    }
+    let sid = body.session_id.as_deref();
+    let mood = body.mood_tag.as_deref();
+
+    let id = state
+        .db_manager
+        .insert_role_feedback(&rid, sid, mood, &msg)
+        .await
+        .map_err(|e: AppError| {
+            api_error(
+                axum::http::StatusCode::INTERNAL_SERVER_ERROR,
+                "role_feedback_failed",
+                e.to_frontend_error(),
+                None,
+            )
+        })?;
+
+    Ok(Json(RoleFeedbackPostResponse { id }))
+}
+
+#[derive(Debug, Deserialize)]
+pub struct RoleFeedbackListQuery {
+    pub role_id: String,
+    #[serde(default)]
+    pub limit: Option<i64>,
+    #[serde(default)]
+    pub offset: Option<i64>,
+}
+
+#[derive(Debug, Serialize)]
+pub struct RoleFeedbackListResponse {
+    pub items: Vec<RoleFeedbackItem>,
+}
+
+#[derive(Debug, Serialize)]
+pub struct RoleFeedbackItem {
+    pub id: i64,
+    pub role_id: String,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub session_id: Option<String>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub mood_tag: Option<String>,
+    pub message: String,
+    pub created_at: String,
+}
+
+impl From<RoleFeedbackRow> for RoleFeedbackItem {
+    fn from(r: RoleFeedbackRow) -> Self {
+        Self {
+            id: r.id,
+            role_id: r.role_id,
+            session_id: r.session_id,
+            mood_tag: r.mood_tag,
+            message: r.message,
+            created_at: r.created_at,
+        }
+    }
+}
+
+async fn list_role_feedback(
+    State(state): State<Arc<AppState>>,
+    Query(q): Query<RoleFeedbackListQuery>,
+) -> Result<Json<RoleFeedbackListResponse>, ApiError> {
+    let rid = q.role_id.trim().to_string();
+    if rid.is_empty() {
+        return Err(api_error(
+            axum::http::StatusCode::BAD_REQUEST,
+            "invalid_role_id",
+            "role_id 不能为空",
+            None,
+        ));
+    }
+    let limit = q.limit.unwrap_or(50);
+    let offset = q.offset.unwrap_or(0);
+    let rows = state
+        .db_manager
+        .list_role_feedback(&rid, limit, offset)
+        .await
+        .map_err(|e: AppError| {
+            api_error(
+                axum::http::StatusCode::INTERNAL_SERVER_ERROR,
+                "role_feedback_failed",
+                e.to_frontend_error(),
+                None,
+            )
+        })?;
+    Ok(Json(RoleFeedbackListResponse {
+        items: rows.into_iter().map(RoleFeedbackItem::from).collect(),
+    }))
+}
+
 /// 与 [`serve_api`] 相同的路由树，供集成测试 `tower::ServiceExt::oneshot` 使用（无需绑端口）。
 /// 已合并 OOCP WebSocket 路由（`/oocp`）。
 pub fn api_router(app_state: Arc<AppState>) -> Router {
@@ -187,6 +316,7 @@ pub fn api_router(app_state: Arc<AppState>) -> Router {
     Router::new()
         .route("/health", get(health))
         .route("/chat", post(chat))
+        .route("/role-feedback", post(post_role_feedback).get(list_role_feedback))
         .merge(oocp_ws::oocp_ws_router())
         .layer(cors)
         .with_state(app_state)

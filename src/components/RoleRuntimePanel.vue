@@ -6,16 +6,23 @@ import { useUiStore } from "../stores/uiStore";
 import { buildRelationDropdownOptions } from "../utils/relationOptions";
 import {
   OCLIVE_DEFAULT_RELATION_SENTINEL,
+  createRoleFeedback,
   setEvolutionFactor,
   setUserRelation,
 } from "../utils/tauri-api";
+import { useAppToast } from "../composables/useAppToast";
 import HelpHint from "./HelpHint.vue";
 
 const roleStore = useRoleStore();
 const uiStore = useUiStore();
 const pluginStore = usePluginStore();
+const { showToast } = useAppToast();
 const localFactor = ref(roleStore.roleInfo.eventImpactFactor);
 const busy = ref(false);
+const feedbackOpen = ref(false);
+const feedbackBusy = ref(false);
+const feedbackMood = ref("");
+const feedbackMessage = ref("");
 
 const personalitySourceLabel = computed(() =>
   roleStore.roleInfo.personalitySource === "profile"
@@ -87,6 +94,35 @@ function onFactorEnter(ev: KeyboardEvent) {
 function openBackendsPanel(): void {
   void pluginStore.openPanel("backends");
 }
+
+function openFeedback(): void {
+  feedbackOpen.value = true;
+  feedbackMood.value = "";
+  feedbackMessage.value = "";
+}
+
+function closeFeedback(): void {
+  feedbackOpen.value = false;
+}
+
+async function submitFeedback(): Promise<void> {
+  if (feedbackBusy.value) return;
+  feedbackBusy.value = true;
+  try {
+    await createRoleFeedback({
+      role_id: roleStore.currentRoleId,
+      mood_tag: feedbackMood.value.trim() ? feedbackMood.value.trim() : null,
+      message: feedbackMessage.value,
+    });
+    showToast("success", "已提交反馈（仅创作者可见）。");
+    closeFeedback();
+  } catch (e) {
+    const msg = e instanceof Error ? e.message : String(e);
+    showToast("error", msg || "提交失败");
+  } finally {
+    feedbackBusy.value = false;
+  }
+}
 </script>
 
 <template>
@@ -111,6 +147,12 @@ function openBackendsPanel(): void {
         </button>
         （Ctrl+Shift+F）
       </p>
+    </div>
+    <div class="runtime-feedback">
+      <p class="sub">
+        用完觉得哪里不对？可以提交一条<strong>半私密反馈</strong>给创作者（本地保存，不公开展示）。
+      </p>
+      <button type="button" class="btn-feedback" @click="openFeedback">反馈此角色包</button>
     </div>
     <template v-if="roleStore.roleInfo.userRelations.length > 0">
       <div class="row">
@@ -142,6 +184,56 @@ function openBackendsPanel(): void {
       </div>
     </template>
   </section>
+
+  <Teleport to="body">
+    <div
+      v-if="feedbackOpen"
+      class="modal-backdrop"
+      role="dialog"
+      aria-modal="true"
+      @click="closeFeedback"
+    >
+      <div class="modal-card modal-card--wide" @click.stop>
+        <h2 class="modal-title">反馈此角色包</h2>
+        <p class="modal-sub">
+          这条反馈默认仅创作者可见（半私密），用于迭代角色包。请避免填写个人隐私信息。
+        </p>
+        <div class="modal-row">
+          <label class="modal-label">情绪标签（可选）</label>
+          <input
+            v-model="feedbackMood"
+            class="modal-input"
+            type="text"
+            placeholder="例如：开心 / 难过 / 生气 / 困惑 / 无"
+            :disabled="feedbackBusy"
+          />
+        </div>
+        <div class="modal-row">
+          <label class="modal-label">留言</label>
+          <textarea
+            v-model="feedbackMessage"
+            class="modal-textarea"
+            rows="4"
+            placeholder="写下你遇到的问题/建议（必填）"
+            :disabled="feedbackBusy"
+          />
+        </div>
+        <div class="modal-actions">
+          <button type="button" class="btn-secondary" :disabled="feedbackBusy" @click="closeFeedback">
+            取消
+          </button>
+          <button
+            type="button"
+            class="btn-primary"
+            :disabled="feedbackBusy || !feedbackMessage.trim()"
+            @click="submitFeedback"
+          >
+            {{ feedbackBusy ? "提交中…" : "提交反馈" }}
+          </button>
+        </div>
+      </div>
+    </div>
+  </Teleport>
 </template>
 
 <style scoped>
@@ -182,6 +274,28 @@ function openBackendsPanel(): void {
   padding-bottom: 10px;
   border-bottom: 1px dashed var(--border-light);
 }
+.runtime-feedback {
+  margin-bottom: 12px;
+  padding-bottom: 10px;
+  border-bottom: 1px dashed var(--border-light);
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  justify-content: space-between;
+  flex-wrap: wrap;
+}
+.btn-feedback {
+  padding: 6px 10px;
+  border-radius: 10px;
+  border: 1px solid var(--border-light);
+  background: var(--bg-elevated);
+  color: var(--text-primary);
+  cursor: pointer;
+  font: inherit;
+}
+.btn-feedback:hover {
+  border-color: var(--accent, #6b8cff);
+}
 .link-open-backends {
   margin: 0 2px;
   padding: 0;
@@ -215,5 +329,87 @@ label {
   border-radius: 8px;
   border: 1px solid var(--border-light);
   background: var(--bg-elevated);
+}
+
+.modal-backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 10002;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 20px;
+  background: var(--dialog-backdrop, rgba(0, 0, 0, 0.5));
+}
+.modal-card {
+  width: 100%;
+  max-width: 520px;
+  padding: 18px 18px 14px;
+  border-radius: 12px;
+  background: var(--bg-panel, #1a1a22);
+  border: 1px solid var(--border-light);
+  box-shadow: var(--shadow-md, 0 8px 32px rgba(0, 0, 0, 0.35));
+}
+.modal-title {
+  margin: 0 0 8px;
+  font-size: 16px;
+  font-weight: 650;
+  color: var(--text-primary);
+}
+.modal-sub {
+  margin: 0 0 12px;
+  font-size: 12px;
+  color: var(--text-secondary);
+  line-height: 1.45;
+}
+.modal-row {
+  margin-bottom: 10px;
+}
+.modal-label {
+  display: block;
+  margin-bottom: 6px;
+  font-size: 12px;
+  color: var(--text-secondary);
+}
+.modal-input,
+.modal-textarea {
+  width: 100%;
+  padding: 8px 10px;
+  border-radius: 10px;
+  border: 1px solid var(--border-light);
+  background: var(--bg-elevated);
+  color: var(--text-primary);
+  font: inherit;
+}
+.modal-textarea {
+  resize: vertical;
+}
+.modal-actions {
+  display: flex;
+  gap: 10px;
+  justify-content: flex-end;
+  margin-top: 12px;
+}
+.btn-secondary,
+.btn-primary {
+  padding: 8px 12px;
+  border-radius: 10px;
+  border: 1px solid var(--border-light);
+  cursor: pointer;
+  font: inherit;
+}
+.btn-secondary {
+  background: transparent;
+  color: var(--text-primary);
+}
+.btn-primary {
+  background: var(--accent, #6b8cff);
+  border-color: transparent;
+  color: #fff;
+}
+.btn-primary:disabled,
+.btn-secondary:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
 }
 </style>

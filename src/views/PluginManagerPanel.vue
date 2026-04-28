@@ -842,11 +842,18 @@ async function onUpdateFromZip(pluginId: string) {
       );
       return;
     }
-    const accepted = await requestPermissionConsent(
+    const accepted = await requestPermissionConsentWithTrust(
       `侧载更新 ${pluginId}`,
       preview.permissions ?? [],
+      "来源：本地 zip（侧载）",
     );
     if (accepted == null) return;
+    if (hasHighRiskPermission(accepted)) {
+      const ok2 = window.confirm(
+        `你已勾选高风险权限。\n\n侧载来源无法自动校验发布者身份。\n\n请再次确认：是否继续从本地 zip 更新？`,
+      );
+      if (!ok2) return;
+    }
     await pluginStore.installPluginFromLocalZip(pluginId, path, accepted);
     showToast("success", "更新完成，请重启应用生效。");
   } catch (e) {

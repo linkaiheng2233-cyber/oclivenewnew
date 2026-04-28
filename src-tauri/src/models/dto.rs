@@ -519,3 +519,37 @@ pub struct CreateEventResponse {
     pub timestamp: String,
     pub description: Option<String>,
 }
+
+// ===== 角色包使用后反馈（半私密）=====
+
+#[derive(Debug, Clone, Deserialize)]
+pub struct CreateRoleFeedbackRequest {
+    pub role_id: String,
+    #[serde(default)]
+    pub session_id: Option<String>,
+    #[serde(default)]
+    pub mood_tag: Option<String>,
+    pub message: String,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct CreateRoleFeedbackResponse {
+    pub id: i64,
+}
+
+#[derive(Debug, Clone, Deserialize)]
+pub struct QueryRoleFeedbackRequest {
+    pub role_id: String,
+    pub limit: i32,
+    pub offset: i32,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct RoleFeedbackItem {
+    pub id: i64,
+    pub role_id: String,
+    pub session_id: Option<String>,
+    pub mood_tag: Option<String>,
+    pub message: String,
+    pub timestamp: String,
+}

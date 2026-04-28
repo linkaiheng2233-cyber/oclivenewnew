@@ -16,6 +16,17 @@ pub struct DbManager {
     pool: SqlitePool,
 }
 
+/// `role_feedback` 表行（半私密反馈）
+#[derive(Debug, Clone)]
+pub struct RoleFeedbackRow {
+    pub id: i64,
+    pub role_id: String,
+    pub session_id: Option<String>,
+    pub mood_tag: Option<String>,
+    pub message: String,
+    pub created_at: String,
+}
+
 /// `events` 表分页行（API `query_events`）
 #[derive(Debug, Clone)]
 pub struct EventListRow {
@@ -1254,6 +1265,92 @@ impl DbManager {
         .await
         .map_err(|e| AppError::DatabaseError(e.to_string()))?;
         Ok(())
+    }
+
+    // ===== 角色包使用后反馈（半私密）=====
+
+    pub async fn insert_role_feedback(
+        &self,
+        role_id: &str,
+        session_id: Option<&str>,
+        mood_tag: Option<&str>,
+        message: &str,
+    ) -> Result<i64> {
+        let rid = role_id.trim();
+        let msg = message.trim();
+        if rid.is_empty() {
+            return Err(AppError::InvalidParameter("role_id required".into()));
+        }
+        if msg.is_empty() {
+            return Err(AppError::InvalidParameter("message required".into()));
+        }
+
+        self.ensure_role_runtime(rid).await?;
+
+        let sid = session_id.and_then(|s| {
+            let t = s.trim();
+            if t.is_empty() { None } else { Some(t.to_string()) }
+        });
+        let mood = mood_tag.and_then(|s| {
+            let t = s.trim();
+            if t.is_empty() { None } else { Some(t.to_string()) }
+        });
+
+        let res = sqlx::query(
+            "INSERT INTO role_feedback (role_id, session_id, mood_tag, message) VALUES (?, ?, ?, ?)",
+        )
+        .bind(rid)
+        .bind(sid)
+        .bind(mood)
+        .bind(msg)
+        .execute(&self.pool)
+        .await
+        .map_err(|e| AppError::DatabaseError(e.to_string()))?;
+
+        Ok(res.last_insert_rowid())
+    }
+
+    pub async fn list_role_feedback(
+        &self,
+        role_id: &str,
+        limit: i64,
+        offset: i64,
+    ) -> Result<Vec<RoleFeedbackRow>> {
+        let rid = role_id.trim();
+        if rid.is_empty() {
+            return Ok(vec![]);
+        }
+        let lim = if limit <= 0 { 50 } else { limit.min(200) };
+        let off = offset.max(0);
+
+        let rows = sqlx::query(
+            "SELECT id, role_id, session_id, mood_tag, message, created_at
+             FROM role_feedback
+             WHERE role_id = ?
+             ORDER BY id DESC
+             LIMIT ? OFFSET ?",
+        )
+        .bind(rid)
+        .bind(lim)
+        .bind(off)
+        .fetch_all(&self.pool)
+        .await
+        .map_err(|e| AppError::DatabaseError(e.to_string()))?;
+
+        let mut out = Vec::with_capacity(rows.len());
+        for r in rows {
+            out.push(RoleFeedbackRow {
+                id: r.try_get::<i64, _>("id").unwrap_or_default(),
+                role_id: r
+                    .try_get::<String, _>("role_id")
+                    .unwrap_or_else(|_| rid.to_string()),
+                session_id: r.try_get::<Option<String>, _>("session_id").ok().flatten(),
+                mood_tag: r.try_get::<Option<String>, _>("mood_tag").ok().flatten(),
+                message: r.try_get::<String, _>("message").unwrap_or_default(),
+                created_at: r.try_get::<String, _>("created_at").unwrap_or_default(),
+            });
+        }
+        Ok(out)
     }
 
     /// 保存好感度（仅更新数值列，避免 `INSERT OR REPLACE` 整行覆盖导致 `user_relation` 等丢失）

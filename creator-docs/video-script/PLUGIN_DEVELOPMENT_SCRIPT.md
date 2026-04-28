@@ -14,7 +14,7 @@
 | 1:00–2:00 | 编辑器打开 `ToolbarButton.vue`（或等价 `.vue`） | 「接着写一个简单的 Vue 组件：模板里放一个按钮。脚本里用 **`inject('oclive')`** 拿到宿主注入的 API，不要用 `window.__TAURI__` 裸调。」 | 强调 `inject('oclive')` 与桥接规范。 |
 | 2:00–3:00 | 在 `onClick` 里调用 `oclive.invoke('get_current_role', { … })` 或 `get_role_info` | 「按钮点击时，调用 **`oclive.invoke`**，传入命令名和参数。比如查询当前角色，参数里带上 **`role_id`**。返回值可以 **`console.log`** 出来，方便你在控制台里确认。」 | 参数名与 [BRIDGE_API_REFERENCE.md](../plugin-and-architecture/BRIDGE_API_REFERENCE.md) 一致。 |
 | 3:00–4:00 | 将文件夹放到 `plugins/`，运行 `npm run tauri dev`；点击按钮，控制台打印结果 | 「保存插件文件夹，启动 Oclive。进入聊天页，你会看到工具栏上新按钮。点一下，开发者工具控制台里应该能看到刚才的返回数据。」 | 若加载极快，可切到 Network 或慢速节流展示骨架屏（可选一句带过）。 |
-| 4:00–5:00 | 文档与社区页尾页；`manifest` 里 `bridge` 可选扩展 | 「你可以继续给 **`manifest`** 加 **`bridge`**，声明允许调用的命令白名单；也可以加 **`settings.panel`** 做设置页。打包成 zip 后可以上传到社区站分享。更完整的 API 列表见项目里的 **桥接 API 参考文档**。」 | 展示 `creator-docs/plugin-and-architecture/BRIDGE_API_REFERENCE.md` 标题或仓库路径。 |
+| 4:00–5:00 | 文档页尾与外链；`manifest` 里 `bridge` 可选扩展 | 「你可以继续给 **`manifest`** 加 **`bridge`**，声明允许调用的命令白名单；也可以加 **`settings.panel`** 做设置页。打包成 zip 后，你可以通过 GitHub Release / 私人分享等方式分发；后续若启用社区站也可在那里登记信息。更完整的 API 列表见项目里的 **桥接 API 参考文档**。」 | 展示 `creator-docs/plugin-and-architecture/BRIDGE_API_REFERENCE.md` 标题或仓库路径。 |
 
 ---
 

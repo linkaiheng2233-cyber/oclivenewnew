@@ -565,6 +565,32 @@ export interface CreateEventResponse {
   description?: string | null;
 }
 
+export interface CreateRoleFeedbackRequest {
+  role_id: string;
+  session_id?: string | null;
+  mood_tag?: string | null;
+  message: string;
+}
+
+export interface CreateRoleFeedbackResponse {
+  id: number;
+}
+
+export interface QueryRoleFeedbackRequest {
+  role_id: string;
+  limit: number;
+  offset: number;
+}
+
+export interface RoleFeedbackItem {
+  id: number;
+  role_id: string;
+  session_id?: string | null;
+  mood_tag?: string | null;
+  message: string;
+  timestamp: string;
+}
+
 export async function sendMessage(
   req: SendMessageRequest,
 ): Promise<SendMessageResponse> {
@@ -613,6 +639,18 @@ export async function createEvent(
   req: CreateEventRequest,
 ): Promise<CreateEventResponse> {
   return invokeWithFriendlyError<CreateEventResponse>("create_event", { req });
+}
+
+export async function createRoleFeedback(
+  req: CreateRoleFeedbackRequest,
+): Promise<CreateRoleFeedbackResponse> {
+  return invokeWithFriendlyError<CreateRoleFeedbackResponse>("create_role_feedback", { req });
+}
+
+export async function queryRoleFeedback(
+  req: QueryRoleFeedbackRequest,
+): Promise<RoleFeedbackItem[]> {
+  return invokeWithFriendlyError<RoleFeedbackItem[]>("query_role_feedback", { req });
 }
 
 export async function reloadPolicyPlugins(): Promise<string> {

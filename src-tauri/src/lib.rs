@@ -362,6 +362,8 @@ pub fn run() {
             api::memory::query_memories,
             api::event::query_events,
             api::event::create_event,
+            api::role_feedback::create_role_feedback,
+            api::role_feedback::query_role_feedback,
             api::policy::reload_policy_plugins,
             api::directory_plugin::get_directory_plugin_bootstrap,
             api::directory_plugin::read_plugin_asset_text,
