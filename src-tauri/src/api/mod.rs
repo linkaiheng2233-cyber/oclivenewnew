@@ -21,6 +21,7 @@ pub mod plugin_update;
 pub mod policy;
 pub mod profile;
 pub mod role;
+pub mod role_market;
 pub mod role_pack;
 pub mod scene;
 pub mod settings;

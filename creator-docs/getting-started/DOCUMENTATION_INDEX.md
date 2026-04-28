@@ -22,6 +22,7 @@
 | **目录式进程插件**（`plugins/`、`manifest.json`、整壳、`directory_plugin_invoke`、开发者模式） | **[../plugin-and-architecture/DIRECTORY_PLUGINS.md](../plugin-and-architecture/DIRECTORY_PLUGINS.md)** |
 | **整壳 / 插槽 `invoke` 命令表、权限别名、错误码** | **[../plugin-and-architecture/BRIDGE_API_REFERENCE.md](../plugin-and-architecture/BRIDGE_API_REFERENCE.md)** |
 | **插件市场索引 `plugins.json`（plugin/module/profile 三类条目）** | **[../plugin-and-architecture/PLUGIN_MARKET_INDEX_V1.md](../plugin-and-architecture/PLUGIN_MARKET_INDEX_V1.md)** |
+| **角色包市场索引 `roles.json`（多镜像 + SHA-256 校验）** | **[../role-pack/ROLE_MARKET_INDEX_V1.md](../role-pack/ROLE_MARKET_INDEX_V1.md)** |
 | **配置文件位置**（`plugin_state`、`ui.json`、`oclive_last_role_id`） | **[../guides/CONFIGURATION_FILES.md](../guides/CONFIGURATION_FILES.md)** |
 | **开源协议怎么定（主程序/官方插件/第三方）** | **[../LICENSE_POLICY.md](../LICENSE_POLICY.md)** |
 | **我想管理插件（启用/停用/拖拽排序/本地 zip 更新）** | **[../plugin-and-architecture/DIRECTORY_PLUGINS.md](../plugin-and-architecture/DIRECTORY_PLUGINS.md)**（插件管理面板，快捷键 `Ctrl+Shift+F`） |

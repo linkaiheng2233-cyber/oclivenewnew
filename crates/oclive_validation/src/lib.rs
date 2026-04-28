@@ -6,6 +6,7 @@
 pub mod json_keys;
 pub mod manifest;
 pub mod plugin_market_index;
+pub mod role_market_index;
 pub mod validate;
 
 pub use json_keys::{validate_manifest_top_level_keys, validate_settings_top_level_keys};
@@ -22,6 +23,10 @@ pub use validate::{
 
 pub use plugin_market_index::{
     validate_plugin_market_index_v1, PluginMarketIndexFileDisk, PluginMarketIndexEntryDisk,
+};
+
+pub use role_market_index::{
+    validate_role_market_index_v1, RoleMarketIndexEntryDisk, RoleMarketIndexFileDisk,
 };
 
 #[cfg(all(feature = "wasm", target_arch = "wasm32"))]

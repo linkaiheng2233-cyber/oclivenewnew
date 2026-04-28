@@ -842,6 +842,55 @@ export async function importRolePack(
   });
 }
 
+export interface RoleMarketDownloadDto {
+  label: string;
+  kind: "direct" | "page" | "pan" | string;
+  url: string;
+  sha256: string;
+  note?: string | null;
+  trust?: "official" | "verified" | "community" | "unknown" | string | null;
+}
+
+export interface RoleMarketEntryDto {
+  type: "role" | string;
+  id: string;
+  name: string;
+  description?: string;
+  author?: string;
+  version: string;
+  minRuntimeVersion?: string | null;
+  tags?: string[];
+  downloads: RoleMarketDownloadDto[];
+}
+
+export interface RoleMarketIndexDto {
+  generatedAt?: string | null;
+  roles: RoleMarketEntryDto[];
+  warning?: string | null;
+}
+
+export async function syncRoleMarketIndex(sourceUrl?: string | null): Promise<RoleMarketIndexDto> {
+  return invokeWithFriendlyError<RoleMarketIndexDto>("sync_role_market_index", {
+    req: { sourceUrl: sourceUrl ?? null },
+  });
+}
+
+export async function installRolePackFromMarket(params: {
+  roleId: string;
+  downloadUrl: string;
+  sha256: string;
+  overwrite: boolean;
+}): Promise<string> {
+  return invokeWithFriendlyError<string>("install_role_pack_from_market", {
+    req: {
+      roleId: params.roleId,
+      downloadUrl: params.downloadUrl,
+      sha256: params.sha256,
+      overwrite: params.overwrite,
+    },
+  });
+}
+
 export async function exportChatLogs(params: {
   roleId?: string;
   allRoles?: boolean;
