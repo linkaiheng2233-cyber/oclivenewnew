@@ -21,6 +21,7 @@ import TopBarSceneModeDialog from "./components/TopBarSceneModeDialog.vue";
 import ShortcutHelp from "./components/ShortcutHelp.vue";
 import Toast from "./components/Toast.vue";
 import VirtualTimeBar from "./components/VirtualTimeBar.vue";
+import RolePackBar from "./components/RolePackBar.vue";
 import { useChatStore } from "./stores/chatStore";
 import { useDebugStore } from "./stores/debugStore";
 import { useRoleStore } from "./stores/roleStore";
@@ -818,6 +819,24 @@ onBeforeUnmount(() => {
               >
                 {{ pluginManagerMoreBtnLabel }}
               </button>
+            </div>
+          </div>
+
+          <div class="more-tile more-tile--action">
+            <div class="more-tile-head">
+              <span class="more-label">角色包（朋友分享）</span>
+              <HelpHint
+                :paragraphs="[
+                  '从朋友处收到 .ocpak/.zip 后，点「导入压缩包」即可直接使用。',
+                  'roles.json 索引属于可选能力：不依赖官方，也可使用自建/社区源。',
+                ]"
+              />
+            </div>
+            <div class="more-tile-body">
+              <RolePackBar
+                @notify="(p) => showToast(p.type, p.message)"
+                @imported="onPackImported"
+              />
             </div>
           </div>
 

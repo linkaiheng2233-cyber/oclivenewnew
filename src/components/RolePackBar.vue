@@ -8,6 +8,7 @@ import {
   exportRolePack,
   importRolePack,
   peekRolePack,
+  readRoleCreatorMessageLines,
   syncRoleMarketIndex,
   installRolePackFromMarket,
   type RoleMarketEntryDto,
@@ -44,6 +45,12 @@ const importProgressOpen = ref(false);
 const importPercent = ref(0);
 const importMessage = ref("准备中…");
 let unlistenProgress: UnlistenFn | null = null;
+
+const creatorEchoOpen = ref(false);
+const creatorEchoRole = ref<{ id: string; name: string; version: string } | null>(
+  null,
+);
+const creatorEchoLines = ref<string[]>([]);
 
 const marketOpen = ref(false);
 const marketLoading = ref(false);
@@ -106,6 +113,16 @@ async function confirmOverwrite(): Promise<void> {
   try {
     const roleId = await withImportProgress(() => importRolePack(path, true));
     emit("imported", roleId);
+    try {
+      const lines = await readRoleCreatorMessageLines(roleId);
+      if (lines.length > 0) {
+        creatorEchoRole.value = pendingPeek.value;
+        creatorEchoLines.value = lines;
+        creatorEchoOpen.value = true;
+      }
+    } catch {
+      // ignore creator message read errors
+    }
     emit("notify", { type: "success", message: `已覆盖并导入角色: ${roleId}` });
   } catch (e) {
     emit("notify", {
@@ -131,6 +148,16 @@ async function runImportFlow(path: string): Promise<void> {
     importRolePack(path, false),
   );
   emit("imported", roleId);
+  try {
+    const lines = await readRoleCreatorMessageLines(roleId);
+    if (lines.length > 0) {
+      creatorEchoRole.value = peek;
+      creatorEchoLines.value = lines;
+      creatorEchoOpen.value = true;
+    }
+  } catch {
+    // ignore creator message read errors
+  }
   emit("notify", { type: "success", message: `已导入角色: ${peek.name}` });
 }
 
@@ -249,6 +276,16 @@ async function installPicked(): Promise<void> {
       }),
     );
     emit("imported", roleId);
+    try {
+      const lines = await readRoleCreatorMessageLines(roleId);
+      if (lines.length > 0) {
+        creatorEchoRole.value = { id: roleId, name: roleId, version: "" };
+        creatorEchoLines.value = lines;
+        creatorEchoOpen.value = true;
+      }
+    } catch {
+      // ignore
+    }
     emit("notify", { type: "success", message: `已从市场安装角色: ${roleId}` });
     closeMarket();
   } catch (e) {
@@ -266,9 +303,6 @@ async function installPicked(): Promise<void> {
     title="安装 .ocpak / .zip 压缩包，或已解压的目录（与 roles/{id}/ 一致）"
   >
     <button type="button" class="btn" @click="onExport">导出角色包</button>
-    <button type="button" class="btn" :disabled="importProgressOpen" @click="openMarket">
-      从市场安装
-    </button>
     <button
       type="button"
       class="btn"
@@ -285,12 +319,45 @@ async function installPicked(): Promise<void> {
     >
       从文件夹导入
     </button>
+    <button type="button" class="btn" :disabled="importProgressOpen" @click="openMarket">
+      可选：roles.json 索引
+    </button>
 
     <ImportProgressModal
       :open="importProgressOpen"
       :percent="importPercent"
       :message="importMessage"
     />
+
+    <Teleport to="body">
+      <div
+        v-if="creatorEchoOpen && (creatorEchoRole || creatorEchoLines.length > 0)"
+        class="modal-backdrop"
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby="creator-echo-title"
+        @click.self="creatorEchoOpen = false"
+      >
+        <div class="modal-card" @click.stop>
+          <h2 id="creator-echo-title" class="modal-title">作者寄语</h2>
+          <p v-if="creatorEchoRole" class="modal-body">
+            <strong>{{ creatorEchoRole.name }}</strong>
+            <span class="pm-muted">({{ creatorEchoRole.id }})</span>
+            <span v-if="creatorEchoRole.version" class="pm-muted">· v{{ creatorEchoRole.version }}</span>
+          </p>
+          <div class="modal-body">
+            <p v-for="(l, i) in creatorEchoLines" :key="i" class="pm-echo-line">
+              {{ l }}
+            </p>
+          </div>
+          <div class="modal-actions">
+            <button type="button" class="btn btn-danger" @click="creatorEchoOpen = false">
+              开始使用
+            </button>
+          </div>
+        </div>
+      </div>
+    </Teleport>
 
     <Teleport to="body">
       <div
@@ -509,6 +576,11 @@ async function installPicked(): Promise<void> {
   margin: 6px 0 0;
   color: #c45c5c;
   font-size: 12px;
+}
+.pm-echo-line {
+  margin: 6px 0;
+  white-space: pre-wrap;
+  word-break: break-word;
 }
 .pm-list {
   margin-top: 10px;

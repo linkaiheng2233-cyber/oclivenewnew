@@ -62,3 +62,32 @@ pub async fn import_role_pack_command(
 
     Ok(role_id)
 }
+
+/// 读取 `roles/{role_id}/creator_message.txt`（每个非空行视为一条寄语；一句模式通常只有一行）。
+#[tauri::command]
+pub async fn read_role_creator_message_lines_command(
+    role_id: String,
+    state: State<'_, AppState>,
+) -> Result<Vec<String>, String> {
+    let rid = role_id.trim();
+    if rid.is_empty() {
+        return Err(AppError::InvalidParameter("role_id required".into()).to_frontend_error());
+    }
+    let path = state
+        .storage
+        .roles_dir()
+        .join(rid)
+        .join("creator_message.txt");
+    if !path.is_file() {
+        return Ok(Vec::new());
+    }
+    let s = std::fs::read_to_string(&path).map_err(|e| e.to_string())?;
+    let mut out: Vec<String> = Vec::new();
+    for line in s.lines() {
+        let t = line.trim();
+        if !t.is_empty() {
+            out.push(t.to_string());
+        }
+    }
+    Ok(out)
+}

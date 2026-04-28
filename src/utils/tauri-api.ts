@@ -1027,6 +1027,16 @@ export async function importRolePack(
   });
 }
 
+/** 读取 `roles/{roleId}/creator_message.txt`：每个非空行视为一条寄语。 */
+export async function readRoleCreatorMessageLines(
+  roleId: string,
+): Promise<string[]> {
+  return invokeWithFriendlyError<string[]>(
+    "read_role_creator_message_lines_command",
+    { role_id: roleId },
+  );
+}
+
 export interface RoleMarketDownloadDto {
   label: string;
   kind: "direct" | "page" | "pan" | string;

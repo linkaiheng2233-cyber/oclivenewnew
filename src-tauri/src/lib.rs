@@ -351,6 +351,7 @@ pub fn run() {
             api::role_pack::export_role_pack_command,
             api::role_pack::peek_role_pack_command,
             api::role_pack::import_role_pack_command,
+            api::role_pack::read_role_creator_message_lines_command,
             api::role_market::sync_role_market_index,
             api::role_market::install_role_pack_from_market,
             api::scene::switch_scene,
