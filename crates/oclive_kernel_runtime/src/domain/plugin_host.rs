@@ -673,7 +673,12 @@ impl PluginHost {
         app_data_dir: PathBuf,
     ) -> Self {
         Self {
-            registry: BackendRegistry::from_runtime(db_manager, llm, directory_runtime, app_data_dir),
+            registry: BackendRegistry::from_runtime(
+                db_manager,
+                llm,
+                directory_runtime,
+                app_data_dir,
+            ),
         }
     }
 
@@ -822,7 +827,8 @@ mod tests {
 
     fn test_db_manager() -> Arc<DbManager> {
         let rt = tokio::runtime::Runtime::new().unwrap();
-        let pool = rt.block_on(async { sqlx::SqlitePool::connect("sqlite::memory:").await.unwrap() });
+        let pool =
+            rt.block_on(async { sqlx::SqlitePool::connect("sqlite::memory:").await.unwrap() });
         rt.block_on(async {
             let _ = sqlx::query(
                 "CREATE TABLE IF NOT EXISTS plugin_permission_grants (

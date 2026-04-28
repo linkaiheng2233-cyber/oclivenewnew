@@ -1,5 +1,7 @@
 use crate::error::AppError;
-use crate::infrastructure::{install_role_pack_from_direct_url, sync_role_index_online, RoleIndexFile};
+use crate::infrastructure::{
+    install_role_pack_from_direct_url, sync_role_index_online, RoleIndexFile,
+};
 use crate::models::dto::ImportProgress;
 use crate::state::AppState;
 use serde::{Deserialize, Serialize};
@@ -62,4 +64,3 @@ pub async fn install_role_pack_from_market(
     .map_err(|e| format!("安装任务异常: {}", e))?
     .map_err(|e: AppError| e.to_frontend_error())
 }
-

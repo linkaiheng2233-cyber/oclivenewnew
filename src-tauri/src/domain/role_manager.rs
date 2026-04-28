@@ -9,8 +9,8 @@ use crate::domain::{
     prompt_builder::effective_reply_quality_anchor, EventDetector, MemoryEngine, PersonalityEngine,
     PromptInput,
 };
-use crate::infrastructure::llm::{LlmClient, MockLlmClient};
 use crate::infrastructure::db::DbManager;
+use crate::infrastructure::llm::{LlmClient, MockLlmClient};
 use crate::models::{
     Emotion, Event, EventType, Memory, PersonalitySource, PersonalityVector, Role,
 };

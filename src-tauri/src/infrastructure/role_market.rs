@@ -1,7 +1,7 @@
 use crate::error::{AppError, Result};
 use crate::infrastructure::import_role_pack;
-use crate::models::dto::ImportProgress;
 use crate::infrastructure::storage::RoleStorage;
+use crate::models::dto::ImportProgress;
 use oclive_validation::{
     validate_role_market_index_v1, RoleMarketIndexEntryDisk, RoleMarketIndexFileDisk,
 };
@@ -72,7 +72,10 @@ fn cache_path_for_source(app_data_dir: &Path, url: &str) -> PathBuf {
         .join(format!("roles-{}.json", &hex[..16]))
 }
 
-pub fn sync_role_index_online(app_data_dir: &Path, source_url: Option<&str>) -> Result<RoleIndexFile> {
+pub fn sync_role_index_online(
+    app_data_dir: &Path,
+    source_url: Option<&str>,
+) -> Result<RoleIndexFile> {
     let url = source_url.unwrap_or(DEFAULT_ROLES_INDEX_URL);
     let cache = cache_path_for_source(app_data_dir, url);
     sync_role_index_online_at(url, &cache)
@@ -265,4 +268,3 @@ fn sha256_hex(bytes: &[u8]) -> String {
     }
     s
 }
-

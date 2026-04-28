@@ -147,4 +147,3 @@ pub fn is_known_permission_token(token: &str) -> bool {
     }
     PERMISSION_TOKENS_V1.iter().any(|x| x.token == t)
 }
-

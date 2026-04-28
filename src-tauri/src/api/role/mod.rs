@@ -27,8 +27,8 @@ use runtime::{
     current_favorability_for_effective_identity, maybe_seed_initial_favorability_with_extras,
     resolve_relation_state_for_ui, role_runtime_extras,
 };
-use serde::Deserialize;
 use serde::de::DeserializeOwned;
+use serde::Deserialize;
 use serde_json::{json, Value};
 
 const EVENT_IMPACT_MIN: f64 = 0.05;

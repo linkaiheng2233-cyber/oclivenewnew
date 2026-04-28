@@ -2,8 +2,8 @@ use crate::error::{AppError, Result};
 use crate::models::InteractionMode;
 use crate::models::{Event, EventType, Memory, PersonalityVector};
 use chrono::{DateTime, Utc};
-use sqlx::SqlitePool;
 use sqlx::Row;
+use sqlx::SqlitePool;
 use std::time::Instant;
 
 pub struct ChatTurnTxInput<'a> {
@@ -36,18 +36,24 @@ impl DbManager {
     }
 
     // ===== Plugin permissions + audit (subset) =====
-    pub async fn is_plugin_permission_granted(&self, plugin_id: &str, permission: &str) -> Result<bool> {
+    pub async fn is_plugin_permission_granted(
+        &self,
+        plugin_id: &str,
+        permission: &str,
+    ) -> Result<bool> {
         let pid = plugin_id.trim();
         let perm = permission.trim();
         if pid.is_empty() || perm.is_empty() {
             return Ok(false);
         }
-        let row = sqlx::query("SELECT enabled FROM plugin_permission_grants WHERE plugin_id = ? AND permission = ?")
-            .bind(pid)
-            .bind(perm)
-            .fetch_optional(&self.pool)
-            .await
-            .map_err(|e| AppError::DatabaseError(e.to_string()))?;
+        let row = sqlx::query(
+            "SELECT enabled FROM plugin_permission_grants WHERE plugin_id = ? AND permission = ?",
+        )
+        .bind(pid)
+        .bind(perm)
+        .fetch_optional(&self.pool)
+        .await
+        .map_err(|e| AppError::DatabaseError(e.to_string()))?;
         let Some(r) = row else {
             return Ok(false);
         };

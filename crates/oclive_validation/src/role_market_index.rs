@@ -184,4 +184,3 @@ mod tests {
         assert!(validate_role_market_index_v1(text).is_err());
     }
 }
-

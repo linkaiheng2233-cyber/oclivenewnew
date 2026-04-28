@@ -22,7 +22,7 @@ pub use validate::{
 };
 
 pub use plugin_market_index::{
-    validate_plugin_market_index_v1, PluginMarketIndexFileDisk, PluginMarketIndexEntryDisk,
+    validate_plugin_market_index_v1, PluginMarketIndexEntryDisk, PluginMarketIndexFileDisk,
 };
 
 pub use role_market_index::{

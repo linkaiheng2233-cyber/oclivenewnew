@@ -202,4 +202,3 @@ mod tests {
         assert!(validate_plugin_market_index_v1(text).is_ok());
     }
 }
-

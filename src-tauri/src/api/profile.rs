@@ -146,12 +146,18 @@ pub async fn preview_profile_from_path(
     }
 
     let backends = raw.backends.map(|b| ProfileBackendsDto {
-        memory: b.memory.and_then(|x| x.backend).map(|s| s.trim().to_string()),
+        memory: b
+            .memory
+            .and_then(|x| x.backend)
+            .map(|s| s.trim().to_string()),
         emotion: b
             .emotion
             .and_then(|x| x.backend)
             .map(|s| s.trim().to_string()),
-        event: b.event.and_then(|x| x.backend).map(|s| s.trim().to_string()),
+        event: b
+            .event
+            .and_then(|x| x.backend)
+            .map(|s| s.trim().to_string()),
         prompt: b
             .prompt
             .and_then(|x| x.backend)
@@ -178,4 +184,3 @@ pub async fn preview_profile_from_path(
         backends,
     })
 }
-

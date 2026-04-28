@@ -28,6 +28,8 @@ pub use cache::Cache;
 pub use db::DbManager;
 pub use llm::{cloud_llm_from_env, ollama_llm, LlmClient, MockLlmClient};
 pub use repositories::{SqliteFavorabilityRepository, SqliteMemoryRepository};
-pub use role_market::{install_role_pack_from_direct_url, sync_role_index_online, RoleIndexEntry, RoleIndexFile};
+pub use role_market::{
+    install_role_pack_from_direct_url, sync_role_index_online, RoleIndexEntry, RoleIndexFile,
+};
 pub use role_pack::{export_role_pack, import_role_pack, peek_role_pack_manifest};
 pub use storage::RoleStorage;

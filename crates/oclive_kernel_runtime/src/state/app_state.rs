@@ -261,7 +261,8 @@ impl KernelAppState {
         let (db, temp_db_dir) = if path == Path::new(":memory:") {
             // Use a per-instance temp file DB to avoid concurrency races on `_sqlx_migrations`
             // across async tests and pooled connections.
-            let dir = TempDir::new().map_err(|e| crate::error::AppError::DatabaseError(e.to_string()))?;
+            let dir =
+                TempDir::new().map_err(|e| crate::error::AppError::DatabaseError(e.to_string()))?;
             let db_file = dir.path().join("kernel_runtime.sqlite");
             let opts = SqliteConnectOptions::new()
                 .filename(&db_file)
@@ -354,7 +355,8 @@ impl KernelAppState {
         roles_dir: impl AsRef<Path>,
         policy_file: Option<&Path>,
     ) -> Result<Self> {
-        let dir = TempDir::new().map_err(|e| crate::error::AppError::DatabaseError(e.to_string()))?;
+        let dir =
+            TempDir::new().map_err(|e| crate::error::AppError::DatabaseError(e.to_string()))?;
         let db_file = dir.path().join("kernel_runtime.sqlite");
         let opts = SqliteConnectOptions::new()
             .filename(&db_file)

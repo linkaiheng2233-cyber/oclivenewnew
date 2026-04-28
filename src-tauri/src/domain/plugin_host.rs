@@ -19,7 +19,8 @@ use crate::domain::memory_retrieval::{
     RemoteMemoryRetrievalPlaceholder,
 };
 use crate::domain::prompt_assembler::{
-    BuiltinPromptAssembler, BuiltinPromptAssemblerV2, PromptAssembler, RemotePromptAssemblerPlaceholder,
+    BuiltinPromptAssembler, BuiltinPromptAssemblerV2, PromptAssembler,
+    RemotePromptAssemblerPlaceholder,
 };
 use crate::domain::user_emotion_analyzer::{
     BuiltinUserEmotionAnalyzer, BuiltinUserEmotionAnalyzerV2, RemoteUserEmotionAnalyzerPlaceholder,
@@ -342,7 +343,9 @@ impl BackendRegistry {
             }
         };
 
-        let llm_remote: Arc<dyn LlmClient> = if tmp.check_remote_http_permission(Self::REMOTE_PROVIDER_LLM) {
+        let llm_remote: Arc<dyn LlmClient> = if tmp
+            .check_remote_http_permission(Self::REMOTE_PROVIDER_LLM)
+        {
             remote_plugin::llm_remote_backend(llm)
         } else {
             log::warn!(
@@ -353,7 +356,9 @@ impl BackendRegistry {
             Arc::new(RemoteLlmPlaceholder::new(llm_ollama.clone()))
         };
 
-        let agent_remote: Arc<dyn AgentProvider> = if tmp.check_remote_http_permission(Self::REMOTE_PROVIDER_AGENT) {
+        let agent_remote: Arc<dyn AgentProvider> = if tmp
+            .check_remote_http_permission(Self::REMOTE_PROVIDER_AGENT)
+        {
             agent_remote_backend(agent_builtin.clone() as Arc<dyn AgentProvider>)
         } else {
             log::warn!(
@@ -364,19 +369,20 @@ impl BackendRegistry {
             agent_builtin.clone()
         };
 
-        let complex_emotion_remote: Arc<dyn ComplexEmotionProvider> =
-            if tmp.check_remote_http_permission(Self::REMOTE_PROVIDER_COMPLEX_EMOTION) {
-                remote_plugin::complex_emotion_remote_backend()
-            } else {
-                log::warn!(
-                    target: "oclive_plugin",
-                    "remote complex_emotion configured but permission network:* not granted (provider_id={}); using degraded builtin",
-                    Self::REMOTE_PROVIDER_COMPLEX_EMOTION
-                );
-                Arc::new(DegradedToBuiltinComplexEmotionProvider::new(
-                    "complex_emotion backend Remote is not connected; using builtin complex emotion",
-                ))
-            };
+        let complex_emotion_remote: Arc<dyn ComplexEmotionProvider> = if tmp
+            .check_remote_http_permission(Self::REMOTE_PROVIDER_COMPLEX_EMOTION)
+        {
+            remote_plugin::complex_emotion_remote_backend()
+        } else {
+            log::warn!(
+                target: "oclive_plugin",
+                "remote complex_emotion configured but permission network:* not granted (provider_id={}); using degraded builtin",
+                Self::REMOTE_PROVIDER_COMPLEX_EMOTION
+            );
+            Arc::new(DegradedToBuiltinComplexEmotionProvider::new(
+                "complex_emotion backend Remote is not connected; using builtin complex emotion",
+            ))
+        };
 
         let complex_emotion_builtin: Arc<dyn ComplexEmotionProvider> =
             Arc::new(BuiltinKeywordComplexEmotionProvider);
@@ -778,7 +784,12 @@ impl PluginHost {
         app_data_dir: PathBuf,
     ) -> Self {
         Self {
-            registry: BackendRegistry::from_runtime(db_manager, llm, directory_runtime, app_data_dir),
+            registry: BackendRegistry::from_runtime(
+                db_manager,
+                llm,
+                directory_runtime,
+                app_data_dir,
+            ),
         }
     }
 
@@ -917,8 +928,8 @@ impl ResolvedRolePlugins {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::infrastructure::llm::MockLlmClient;
     use crate::infrastructure::db::DbManager;
+    use crate::infrastructure::llm::MockLlmClient;
     use crate::models::{
         EmotionBackend, EventBackend, LlmBackend, MemoryBackend, PluginBackends,
         PluginBackendsOverride, PromptBackend,
@@ -927,7 +938,8 @@ mod tests {
 
     fn test_db_manager() -> Arc<DbManager> {
         let rt = tokio::runtime::Runtime::new().unwrap();
-        let pool = rt.block_on(async { sqlx::SqlitePool::connect("sqlite::memory:").await.unwrap() });
+        let pool =
+            rt.block_on(async { sqlx::SqlitePool::connect("sqlite::memory:").await.unwrap() });
         rt.block_on(async {
             let _ = sqlx::query(
                 "CREATE TABLE IF NOT EXISTS plugin_permission_grants (
