@@ -5,7 +5,7 @@ use serde::{Deserialize, Serialize};
 
 use crate::state::AppState;
 
-#[derive(Debug, Clone, Serialize, Deserialize)]
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq)]
 #[serde(rename_all = "snake_case")]
 pub enum LocalImportKind {
     RolePack,
@@ -21,6 +21,9 @@ pub struct LocalImportCandidate {
     pub kind: LocalImportKind,
     pub path: String,
     pub file_name: String,
+    /// 可选：同目录下的签名文件（如 `xxx.signature.json`）
+    #[serde(default)]
+    pub related_signature_path: Option<String>,
     #[serde(default)]
     pub size_bytes: Option<u64>,
     #[serde(default)]
@@ -58,7 +61,12 @@ fn meta_for_path(p: &Path) -> (Option<u64>, Option<u64>) {
     (size, modified)
 }
 
-fn push_file(out: &mut Vec<LocalImportCandidate>, kind: LocalImportKind, p: &Path) {
+fn push_file(
+    out: &mut Vec<LocalImportCandidate>,
+    kind: LocalImportKind,
+    p: &Path,
+    related_signature_path: Option<String>,
+) {
     let file_name = p
         .file_name()
         .and_then(|s| s.to_str())
@@ -72,6 +80,7 @@ fn push_file(out: &mut Vec<LocalImportCandidate>, kind: LocalImportKind, p: &Pat
         kind,
         path: p.to_string_lossy().to_string(),
         file_name,
+        related_signature_path,
         size_bytes,
         modified_ms,
     });
@@ -97,7 +106,27 @@ fn scan_dir_files(
             .unwrap_or("")
             .to_ascii_lowercase();
         if exts_lower.iter().any(|x| *x == ext) {
-            push_file(out, kind.clone(), &p);
+            let rel_sig = if kind == LocalImportKind::PluginArchive && ext == "oclive-plugin" {
+                let stem = p
+                    .file_stem()
+                    .and_then(|s| s.to_str())
+                    .unwrap_or("")
+                    .trim()
+                    .to_string();
+                if !stem.is_empty() {
+                    let sig = p.with_file_name(format!("{}.signature.json", stem));
+                    if sig.is_file() {
+                        Some(sig.to_string_lossy().to_string())
+                    } else {
+                        None
+                    }
+                } else {
+                    None
+                }
+            } else {
+                None
+            };
+            push_file(out, kind.clone(), &p, rel_sig);
         }
     }
 }
@@ -112,7 +141,7 @@ fn scan_plugin_dirs(out: &mut Vec<LocalImportCandidate>, dir: &Path) {
             continue;
         }
         if p.join("manifest.json").is_file() {
-            push_file(out, LocalImportKind::PluginDir, &p);
+            push_file(out, LocalImportKind::PluginDir, &p, None);
         }
     }
 }
@@ -156,7 +185,7 @@ pub fn list_local_import_candidates(state: &AppState) -> Result<Vec<LocalImportC
     );
 
     // newest first
-    out.sort_by(|a, b| b.modified_ms.unwrap_or(0).cmp(&a.modified_ms.unwrap_or(0)));
+    out.sort_by_key(|b| std::cmp::Reverse(b.modified_ms.unwrap_or(0)));
     Ok(out)
 }
 

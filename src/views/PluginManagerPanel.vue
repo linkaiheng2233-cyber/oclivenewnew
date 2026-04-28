@@ -34,6 +34,8 @@ import {
   syncPluginReviewsIndex,
   listLocalImportCandidates,
   readLocalImportText,
+  previewLocalPluginArchive,
+  installLocalPluginArchive,
   setSessionPluginBackend,
   setSessionPluginBackendsOverride,
   type PluginMarketEntryDto,
@@ -85,15 +87,51 @@ const pluginReviewsErr = ref("");
 const localImportsLoading = ref(false);
 const localImportsErr = ref("");
 const localImportsRootDir = ref("");
+const LOCAL_IMPORTS_HIDDEN_KEY = "oclive.local_imports.hidden_v1";
+const localImportsHidden = ref<Record<string, boolean>>({});
 const localImports = ref<
   Array<{
     kind: string;
     path: string;
     fileName: string;
+    relatedSignaturePath?: string | null;
     sizeBytes?: number | null;
     modifiedMs?: number | null;
   }>
 >([]);
+
+function loadLocalImportsHidden(): void {
+  try {
+    const raw = localStorage.getItem(LOCAL_IMPORTS_HIDDEN_KEY);
+    const obj = raw ? (JSON.parse(raw) as Record<string, boolean>) : {};
+    localImportsHidden.value = obj && typeof obj === "object" ? obj : {};
+  } catch {
+    localImportsHidden.value = {};
+  }
+}
+
+function persistLocalImportsHidden(): void {
+  try {
+    localStorage.setItem(
+      LOCAL_IMPORTS_HIDDEN_KEY,
+      JSON.stringify(localImportsHidden.value ?? {}),
+    );
+  } catch {
+    /* ignore */
+  }
+}
+
+function hideLocalImport(path: string): void {
+  const p = path.trim();
+  if (!p) return;
+  localImportsHidden.value = { ...(localImportsHidden.value ?? {}), [p]: true };
+  persistLocalImportsHidden();
+}
+
+function unhideAllLocalImports(): void {
+  localImportsHidden.value = {};
+  persistLocalImportsHidden();
+}
 
 const PLUGIN_REVIEWS_REPO_URL =
   "https://github.com/linkaiheng2233-cyber/awesome-oclive-plugin-reviews";
@@ -664,6 +702,7 @@ watch(
   () => pluginStore.panelVisible,
   (vis) => {
     if (vis) {
+      loadLocalImportsHidden();
       void pluginStore.loadCachedPluginMarket();
       void refreshPermissionTokenInfos();
       void refreshPluginReviewsIndex();
@@ -679,7 +718,8 @@ async function refreshLocalImports(): Promise<void> {
   try {
     const r = await listLocalImportCandidates();
     localImportsRootDir.value = r.rootDir ?? "";
-    localImports.value = r.items ?? [];
+    const hidden = localImportsHidden.value ?? {};
+    localImports.value = (r.items ?? []).filter((x) => !hidden[x.path]);
   } catch (e) {
     localImportsRootDir.value = "";
     localImports.value = [];
@@ -706,7 +746,7 @@ async function onImportRolePackFromLocal(path: string): Promise<void> {
   try {
     const peek = await peekRolePack(path);
     const ok = window.confirm(
-      `导入角色包：${peek.name}（id=${peek.id} v${peek.version}）\n\n确定导入到本机 roles/ 吗？`,
+      `导入角色包：${peek.name}（id=${peek.id} v${peek.version}）\n\n确定导入到本机 roles/ 吗？（默认不覆盖同 id）`,
     );
     if (!ok) return;
     const roleId = await importRolePack(path, false);
@@ -716,8 +756,63 @@ async function onImportRolePackFromLocal(path: string): Promise<void> {
   }
 }
 
+async function onImportRolePackFromLocalOverwrite(path: string): Promise<void> {
+  try {
+    const peek = await peekRolePack(path);
+    const ok = window.confirm(
+      `覆盖导入角色包：${peek.name}（id=${peek.id} v${peek.version}）\n\n将替换本机已存在的同 id 角色包内容。确定继续吗？`,
+    );
+    if (!ok) return;
+    const roleId = await importRolePack(path, true);
+    showToast("success", `覆盖导入成功：${roleId}`);
+  } catch (e) {
+    showToast("error", e instanceof Error ? e.message : String(e));
+  }
+}
+
 async function onInstallPluginArchiveFromLocal(zipPath: string): Promise<void> {
   try {
+    const isOclivePlugin = zipPath.toLowerCase().endsWith(".oclive-plugin");
+    if (isOclivePlugin) {
+      const it = localImports.value.find((x) => x.path === zipPath);
+      const prev = await previewLocalPluginArchive({
+        archivePath: zipPath,
+        signaturePath: it?.relatedSignaturePath ?? null,
+      });
+      const trust =
+        `来源：本地投放目录（开发者模式）` +
+        (prev.signatureVerified
+          ? `\n签名：已验证`
+          : prev.signatureMessage
+            ? `\n签名：${prev.signatureMessage}`
+            : "\n签名：未知");
+      const accepted = await requestPermissionConsentWithTrust(
+        `安装插件（离线包）：${prev.pluginId}`,
+        prev.declaredPermissions,
+        trust,
+      );
+      if (accepted === null) return;
+      if (hasHighRiskPermission(accepted)) {
+        const ok = window.confirm(
+          `该插件包含高风险权限：\n${accepted.join("\n")}\n\n仍要继续安装吗？`,
+        );
+        if (!ok) return;
+      }
+      const overwrite = window.confirm(
+        `是否允许覆盖已存在的同 id 插件？\n\n插件：${prev.pluginId}\n\n选择“确定”=覆盖安装；“取消”=若已存在则报错。`,
+      );
+      const pid = await installLocalPluginArchive({
+        archivePath: zipPath,
+        signaturePath: it?.relatedSignaturePath ?? null,
+        overwrite,
+        acceptedPermissions: accepted,
+      });
+      showToast("success", `已安装：${pid}`);
+      await pluginStore.refresh();
+      return;
+    }
+
+    // zip sideload
     const prev = await previewPluginZipPermissions(zipPath);
     const trust = "来源：本地投放目录（开发者模式）";
     const accepted = await requestPermissionConsentWithTrust(
@@ -734,6 +829,7 @@ async function onInstallPluginArchiveFromLocal(zipPath: string): Promise<void> {
     }
     await extractPluginZip(zipPath, prev.pluginId, accepted);
     showToast("success", `已安装：${prev.pluginId}`);
+    await pluginStore.refresh();
   } catch (e) {
     showToast("error", e instanceof Error ? e.message : String(e));
   }
@@ -1649,6 +1745,9 @@ async function onPackSelectedPlugin(): Promise<void> {
                   >
                     {{ localImportsLoading ? "扫描中…" : "扫描投放目录" }}
                   </button>
+                  <button type="button" class="pm-btn secondary pm-btn--sm" @click="unhideAllLocalImports">
+                    显示全部
+                  </button>
                   <span v-if="localImportsErr" class="pm-err"> {{ localImportsErr }} </span>
                 </div>
 
@@ -1662,6 +1761,14 @@ async function onPackSelectedPlugin(): Promise<void> {
                         <button type="button" class="pm-link" @click="onImportRolePackFromLocal(it.path)">
                           导入
                         </button>
+                        <button
+                          type="button"
+                          class="pm-link"
+                          title="覆盖导入：同 role_id 已存在时替换本地版本"
+                          @click="onImportRolePackFromLocalOverwrite(it.path)"
+                        >
+                          覆盖导入
+                        </button>
                       </li>
                     </ul>
                   </div>
@@ -1674,11 +1781,17 @@ async function onPackSelectedPlugin(): Promise<void> {
                         <button type="button" class="pm-link" @click="onInstallPluginArchiveFromLocal(it.path)">
                           安装
                         </button>
+                        <button type="button" class="pm-link" @click="hideLocalImport(it.path)">
+                          隐藏
+                        </button>
                       </li>
                       <li v-for="it in localImportsByKind('plugin_dir')" :key="it.path">
                         <code>{{ it.fileName }}</code>
                         <button type="button" class="pm-link" @click="onInstallPluginDirFromLocal(it.path)">
                           安装
+                        </button>
+                        <button type="button" class="pm-link" @click="hideLocalImport(it.path)">
+                          隐藏
                         </button>
                       </li>
                     </ul>
@@ -1695,6 +1808,9 @@ async function onPackSelectedPlugin(): Promise<void> {
                         <button type="button" class="pm-link" @click="onPreviewLocalJson(it.path)">
                           复制 JSON
                         </button>
+                        <button type="button" class="pm-link" @click="hideLocalImport(it.path)">
+                          隐藏
+                        </button>
                       </li>
                       <li v-for="it in localImportsByKind('profile_json')" :key="it.path">
                         <code>{{ it.fileName }}</code>
@@ -1703,6 +1819,9 @@ async function onPackSelectedPlugin(): Promise<void> {
                         </button>
                         <button type="button" class="pm-link" @click="onPreviewLocalJson(it.path)">
                           复制 JSON
+                        </button>
+                        <button type="button" class="pm-link" @click="hideLocalImport(it.path)">
+                          隐藏
                         </button>
                       </li>
                     </ul>

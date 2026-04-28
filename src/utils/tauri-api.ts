@@ -634,6 +634,7 @@ export interface LocalImportCandidateDto {
   kind: LocalImportKind;
   path: string;
   fileName: string;
+  relatedSignaturePath?: string | null;
   sizeBytes?: number | null;
   modifiedMs?: number | null;
 }
@@ -656,6 +657,44 @@ export async function readLocalImportText(path: string): Promise<string> {
     { req: { path } },
   );
   return r.content;
+}
+
+export interface PreviewLocalPluginArchiveResponseDto {
+  pluginId: string;
+  declaredPermissions: string[];
+  signatureVerified: boolean;
+  signatureMessage?: string | null;
+}
+
+export async function previewLocalPluginArchive(params: {
+  archivePath: string;
+  signaturePath?: string | null;
+}): Promise<PreviewLocalPluginArchiveResponseDto> {
+  return invokeWithFriendlyError<PreviewLocalPluginArchiveResponseDto>(
+    "preview_local_plugin_archive_command",
+    {
+      req: {
+        archivePath: params.archivePath,
+        signaturePath: params.signaturePath ?? null,
+      },
+    },
+  );
+}
+
+export async function installLocalPluginArchive(params: {
+  archivePath: string;
+  signaturePath?: string | null;
+  overwrite: boolean;
+  acceptedPermissions?: string[] | null;
+}): Promise<string> {
+  return invokeWithFriendlyError<string>("install_local_plugin_archive_command", {
+    req: {
+      archivePath: params.archivePath,
+      signaturePath: params.signaturePath ?? null,
+      overwrite: params.overwrite,
+      acceptedPermissions: params.acceptedPermissions ?? null,
+    },
+  });
 }
 
 export async function syncPluginReviewsIndex(

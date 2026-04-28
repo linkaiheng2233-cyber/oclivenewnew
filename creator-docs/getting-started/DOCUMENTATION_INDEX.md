@@ -24,6 +24,7 @@
 | **插件市场索引 `plugins.json`（plugin/module/profile 三类条目）** | **[../plugin-and-architecture/PLUGIN_MARKET_INDEX_V1.md](../plugin-and-architecture/PLUGIN_MARKET_INDEX_V1.md)** |
 | **角色包市场索引 `roles.json`（多镜像 + SHA-256 校验）** | **[../role-pack/ROLE_MARKET_INDEX_V1.md](../role-pack/ROLE_MARKET_INDEX_V1.md)** |
 | **角色包使用后反馈（半私密）**（用户提交 → 编写器收件箱） | **[../role-pack/ROLE_FEEDBACK_V1.md](../role-pack/ROLE_FEEDBACK_V1.md)** |
+| **本地导入（文件夹投放）**（imports/ 目录、Module/Profile 同款格式、安全确认） | **[../LOCAL_IMPORTS_V1.md](../LOCAL_IMPORTS_V1.md)** |
 | **配置文件位置**（`plugin_state`、`ui.json`、`oclive_last_role_id`） | **[../guides/CONFIGURATION_FILES.md](../guides/CONFIGURATION_FILES.md)** |
 | **开源协议怎么定（主程序/官方插件/第三方）** | **[../LICENSE_POLICY.md](../LICENSE_POLICY.md)** |
 | **我想管理插件（启用/停用/拖拽排序/本地 zip 更新）** | **[../plugin-and-architecture/DIRECTORY_PLUGINS.md](../plugin-and-architecture/DIRECTORY_PLUGINS.md)**（插件管理面板，快捷键 `Ctrl+Shift+F`） |

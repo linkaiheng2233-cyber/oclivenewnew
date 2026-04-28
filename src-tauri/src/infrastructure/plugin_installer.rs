@@ -346,6 +346,71 @@ fn verify_plugin_package_signature(
     Ok(())
 }
 
+pub fn verify_plugin_package_signature_text(
+    index_entry: &PluginIndexEntry,
+    sig_text: &str,
+    archive_bytes: &[u8],
+) -> Result<(), AppError> {
+    let sig: PluginPackageSignatureFile = serde_json::from_str(sig_text).map_err(|e| {
+        AppError::Unknown(format!("parse signature.json failed: {}", e))
+    })?;
+    verify_plugin_package_signature(index_entry, &sig, archive_bytes)
+}
+
+pub fn peek_plugin_id_from_archive_bytes(state: &AppState, bytes: &[u8]) -> Result<String, AppError> {
+    let tmp = plugins_install_temp_dir(state)?;
+    extract_oclive_plugin_archive(bytes, tmp.path())?;
+    let manifest = OclivePluginManifest::load_from_dir(tmp.path())
+        .map_err(|e| AppError::Unknown(format!("manifest validation failed: {}", e)))?;
+    let pid = manifest.id.trim().to_string();
+    if pid.is_empty() {
+        return Err(AppError::InvalidParameter("manifest.id required".into()));
+    }
+    Ok(pid)
+}
+
+pub fn install_plugin_from_archive_bytes_overwrite(
+    state: &AppState,
+    bytes: &[u8],
+    overwrite: bool,
+) -> Result<String, AppError> {
+    let tmp = plugins_install_temp_dir(state)?;
+    extract_oclive_plugin_archive(bytes, tmp.path())?;
+    let manifest = OclivePluginManifest::load_from_dir(tmp.path())
+        .map_err(|e| AppError::Unknown(format!("manifest validation failed: {}", e)))?;
+    let pid = manifest.id.trim().to_string();
+    if pid.is_empty() {
+        return Err(AppError::InvalidParameter("manifest.id required".into()));
+    }
+    let final_dir = plugins_dir(state).join(pid.as_str());
+    if final_dir.exists() {
+        if !overwrite {
+            return Err(AppError::InvalidParameter(format!(
+                "target plugin id already exists: {}",
+                final_dir.display()
+            )));
+        }
+        let _ = fs::remove_dir_all(&final_dir);
+    }
+    fs::create_dir_all(plugins_dir(state))?;
+    fs::rename(tmp.path(), &final_dir)?;
+    let _ = write_install_meta(
+        &final_dir,
+        &PluginInstallMeta {
+            install_method: "archive".to_string(),
+            git_url: None,
+            pinned_tag: None,
+            declared_permissions: Vec::new(),
+            granted_permissions: Vec::new(),
+        },
+    );
+    std::mem::forget(tmp);
+    state
+        .directory_plugins
+        .rescan_plugin_roots(state.storage.roles_dir());
+    Ok(pid)
+}
+
 pub fn sync_plugin_index_online(
     state: &AppState,
     index_url: Option<&str>,
@@ -436,7 +501,7 @@ fn plugins_install_temp_dir(state: &AppState) -> Result<TempDir, AppError> {
     TempDir::new_in(root).map_err(AppError::IoError)
 }
 
-fn extract_oclive_plugin_archive(bytes: &[u8], dst_dir: &Path) -> Result<(), AppError> {
+pub fn extract_oclive_plugin_archive(bytes: &[u8], dst_dir: &Path) -> Result<(), AppError> {
     let mut zip = ZipArchive::new(std::io::Cursor::new(bytes))
         .map_err(|e| AppError::Unknown(format!("open plugin archive failed: {}", e)))?;
     let mut files = 0usize;
