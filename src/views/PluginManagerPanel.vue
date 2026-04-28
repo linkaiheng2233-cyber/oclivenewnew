@@ -463,6 +463,16 @@ const marketRowsFiltered = computed(() => {
   });
 });
 
+const moduleRowsAll = computed(() => {
+  const rows = pluginStore.pluginMarketSnapshot?.plugins ?? [];
+  return rows.filter((r) => marketEntryType(r) === "module");
+});
+
+const profileRowsAll = computed(() => {
+  const rows = pluginStore.pluginMarketSnapshot?.plugins ?? [];
+  return rows.filter((r) => marketEntryType(r) === "profile");
+});
+
 async function onApplyModuleEntry(row: PluginMarketEntryDto): Promise<void> {
   const mod = (row as any).module as
     | { plugins: { id: string; version?: string | null; source?: string | null }[]; backends?: Record<string, unknown> | null }
@@ -757,6 +767,62 @@ async function onPreviewLocalJson(path: string): Promise<void> {
     const text = await readLocalImportText(path);
     await navigator.clipboard.writeText(text);
     showToast("success", "已复制 JSON 内容到剪贴板。");
+  } catch (e) {
+    showToast("error", e instanceof Error ? e.message : String(e));
+  }
+}
+
+function parseLocalMarketEntryJson(text: string): PluginMarketEntryDto {
+  let j: unknown;
+  try {
+    j = JSON.parse(text) as unknown;
+  } catch (e) {
+    throw new Error(`JSON 解析失败：${e instanceof Error ? e.message : String(e)}`);
+  }
+  if (!j || typeof j !== "object") {
+    throw new Error("JSON 须为对象。");
+  }
+  const o = j as any;
+  const t = String(o.type ?? "").trim();
+  if (t !== "module" && t !== "profile") {
+    throw new Error('本地条目 type 必须为 "module" 或 "profile"。');
+  }
+  const id = String(o.id ?? "").trim();
+  const name = String(o.name ?? "").trim();
+  const version = String(o.version ?? "").trim();
+  if (!id || !name || !version) {
+    throw new Error("本地条目必须包含 id/name/version。");
+  }
+  if (t === "module") {
+    if (!o.module || typeof o.module !== "object") {
+      throw new Error("type=module 必须包含 module 对象。");
+    }
+    if (!Array.isArray(o.module.plugins)) {
+      throw new Error("module.plugins 必须为数组。");
+    }
+  }
+  if (t === "profile") {
+    if (!o.profile || typeof o.profile !== "object") {
+      throw new Error("type=profile 必须包含 profile 对象。");
+    }
+    if (!Array.isArray(o.profile.plugins)) {
+      throw new Error("profile.plugins 必须为数组。");
+    }
+  }
+  return o as PluginMarketEntryDto;
+}
+
+async function onApplyLocalModuleOrProfile(path: string): Promise<void> {
+  try {
+    const text = await readLocalImportText(path);
+    const row = parseLocalMarketEntryJson(text);
+    if (marketEntryType(row) === "module") {
+      await onApplyModuleEntry(row);
+    } else if (marketEntryType(row) === "profile") {
+      await onApplyProfileEntry(row);
+    } else {
+      showToast("error", "仅支持 module/profile 本地条目。");
+    }
   } catch (e) {
     showToast("error", e instanceof Error ? e.message : String(e));
   }
@@ -1300,6 +1366,16 @@ async function onPackSelectedPlugin(): Promise<void> {
               type="button"
               role="tab"
               class="pm-tab"
+              :class="{ 'pm-tab--active': pluginStore.panelMainTab === 'modules' }"
+              :aria-selected="pluginStore.panelMainTab === 'modules'"
+              @click="pluginStore.panelMainTab = 'modules'"
+            >
+              模块（Module）
+            </button>
+            <button
+              type="button"
+              role="tab"
+              class="pm-tab"
               :class="{ 'pm-tab--active': pluginStore.panelMainTab === 'backends' }"
               :aria-selected="pluginStore.panelMainTab === 'backends'"
               @click="pluginStore.panelMainTab = 'backends'"
@@ -1603,12 +1679,18 @@ async function onPackSelectedPlugin(): Promise<void> {
                     <ul class="pm-local-imports-list">
                       <li v-for="it in localImportsByKind('module_json')" :key="it.path">
                         <code>{{ it.fileName }}</code>
+                        <button type="button" class="pm-link" @click="onApplyLocalModuleOrProfile(it.path)">
+                          应用
+                        </button>
                         <button type="button" class="pm-link" @click="onPreviewLocalJson(it.path)">
                           复制 JSON
                         </button>
                       </li>
                       <li v-for="it in localImportsByKind('profile_json')" :key="it.path">
                         <code>{{ it.fileName }}</code>
+                        <button type="button" class="pm-link" @click="onApplyLocalModuleOrProfile(it.path)">
+                          应用
+                        </button>
                         <button type="button" class="pm-link" @click="onPreviewLocalJson(it.path)">
                           复制 JSON
                         </button>
@@ -2045,6 +2127,83 @@ async function onPackSelectedPlugin(): Promise<void> {
               </main>
             </div>
           </section>
+          </div>
+
+          <div
+            v-show="pluginStore.panelMainTab === 'modules'"
+            class="pm-tab-panel"
+            role="tabpanel"
+          >
+            <section class="pm-section">
+              <h3 class="pm-h3">模块管理（无代码条目）</h3>
+              <p class="pm-hint">
+                模块是“配方”：声明依赖插件 + 可选后端覆盖。放进导入文件夹后不会自动启用，必须在此手动确认。
+              </p>
+              <div class="pm-row">
+                <button
+                  type="button"
+                  class="pm-btn secondary pm-btn--sm"
+                  :disabled="localImportsLoading"
+                  @click="refreshLocalImports"
+                >
+                  {{ localImportsLoading ? "扫描中…" : "扫描本地模块" }}
+                </button>
+                <span v-if="localImportsErr" class="pm-err"> {{ localImportsErr }} </span>
+              </div>
+            </section>
+
+            <section class="pm-section">
+              <h3 class="pm-h3">本地模块（imports/plugins/module）</h3>
+              <p v-if="localImportsByKind('module_json').length === 0" class="pm-muted">
+                暂无本地模块。把同款 module JSON 放进 <code>{{ localImportsRootDir }}/plugins/module</code>。
+              </p>
+              <ul v-else class="pm-market-list">
+                <li
+                  v-for="it in localImportsByKind('module_json')"
+                  :key="`lm-${it.path}`"
+                  class="pm-market-li"
+                >
+                  <div class="pm-market-main">
+                    <strong>{{ it.fileName }}</strong>
+                    <span class="pm-muted"> · {{ localImportKindLabel(it.kind) }}</span>
+                    <div class="pm-market-actions">
+                      <button type="button" class="pm-btn" @click="onApplyLocalModuleOrProfile(it.path)">
+                        应用模块
+                      </button>
+                      <button type="button" class="pm-btn secondary" @click="onPreviewLocalJson(it.path)">
+                        复制 JSON
+                      </button>
+                    </div>
+                  </div>
+                </li>
+              </ul>
+            </section>
+
+            <section class="pm-section">
+              <h3 class="pm-h3">市场模块（type=module）</h3>
+              <p v-if="moduleRowsAll.length === 0" class="pm-muted">
+                当前索引里暂无模块条目。请先在「插件市场」同步索引。
+              </p>
+              <ul v-else class="pm-market-list">
+                <li
+                  v-for="row in moduleRowsAll"
+                  :key="`mm-${row.id}`"
+                  class="pm-market-li"
+                >
+                  <div class="pm-market-main">
+                    <strong>{{ row.id }}</strong>
+                    <span class="pm-entry-type-badge module">模块</span>
+                    <span class="pm-muted"> · {{ row.name }} · v{{ row.version }}</span>
+                    <p v-if="row.description" class="pm-market-desc">{{ row.description }}</p>
+                    <div class="pm-market-actions">
+                      <button type="button" class="pm-btn" @click="onApplyModuleEntry(row)">
+                        应用模块
+                      </button>
+                    </div>
+                  </div>
+                </li>
+              </ul>
+            </section>
           </div>
 
           <div
