@@ -128,6 +128,7 @@
   - 禁止提供 `versions` / `publicKeys`（这些仅属于 `type="plugin"`）
 - `module.plugins[]` 为“依赖插件清单”：安装模块时应逐个拉取这些插件，并对每个插件走安装权限确认。
 - `module.backends` 为“配置预设”：安装后写入会话级后端覆盖（并可包含 `directory_plugins.*` 槽位）。
+- **保守策略（v1）**：`type:"module"` / `type:"profile"` 仅负责“安装依赖插件 + 写入后端覆盖/槽位配置”，**不包含 UI 插槽位置/顺序**，实现侧不得修改用户的 `plugin_state`（如 `slot_order` / `disabled_slot_contributions` / `slot_appearance`）。用户可在应用后自行到「插槽顺序」调整位置。
 
 ---
 

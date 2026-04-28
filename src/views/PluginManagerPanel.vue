@@ -284,7 +284,7 @@ async function onApplyModuleEntry(row: PluginMarketEntryDto): Promise<void> {
     if (!roleId?.trim()) return;
     await setSessionPluginBackendsOverride(roleId, mod.backends);
   }
-  showToast("success", `模块已应用：${row.id}`);
+  showToast("success", `模块已应用：${row.id}（插槽位置可在「插槽顺序」里调整）`);
 }
 
 async function onApplyProfileEntry(row: PluginMarketEntryDto): Promise<void> {
@@ -331,7 +331,7 @@ async function onApplyProfileEntry(row: PluginMarketEntryDto): Promise<void> {
     if (!roleId?.trim()) return;
     await setSessionPluginBackendsOverride(roleId, prof.backends);
   }
-  showToast("success", `Profile 已应用：${row.id}`);
+  showToast("success", `Profile 已应用：${row.id}（插槽位置可在「插槽顺序」里调整）`);
 }
 
 function onPermConsentCancel() {
