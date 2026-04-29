@@ -570,18 +570,19 @@ fn build_directory_plugin_catalog(state: &AppState) -> Vec<DirectoryPluginCatalo
     rt.ensure_scanned();
     let roots = rt.plugin_roots.read();
     let mut version_by_id: HashMap<String, Version> = HashMap::new();
+    let mut manifests: Vec<(String, PathBuf, OclivePluginManifest)> = Vec::new();
     for (pid, root) in roots.iter() {
         if let Ok(m) = OclivePluginManifest::load_from_dir(root) {
             if let Some(v) = parse_manifest_version(&m.version) {
                 version_by_id.insert(pid.clone(), v);
             }
+            manifests.push((pid.clone(), root.clone(), m));
         }
     }
-    let mut out: Vec<DirectoryPluginCatalogEntry> = roots
-        .iter()
-        .filter_map(|(pid, root)| {
-            let manifest = OclivePluginManifest::load_from_dir(root).ok()?;
-            let install_meta = crate::infrastructure::plugin_installer::read_install_meta(root);
+    let mut out: Vec<DirectoryPluginCatalogEntry> = manifests
+        .into_iter()
+        .filter_map(|(pid, root, manifest)| {
+            let install_meta = crate::infrastructure::plugin_installer::read_install_meta(&root);
             let is_shell = manifest.shell.is_some();
             let has_ui_settings = manifest.ui_template.is_some()
                 || manifest
