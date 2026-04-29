@@ -66,6 +66,8 @@ const {
 
 const chatListRef = ref<InstanceType<typeof ChatMessageList> | null>(null);
 const roleSwitching = ref(false);
+const startupStatus = ref("正在加载角色与插件…");
+const startupReady = ref(false);
 
 /** 角色回复结束后，若本句含位移意图且有多场景，显示目的地条 */
 const postReplySceneBarVisible = ref(false);
@@ -322,6 +324,7 @@ async function onPluginResetLayout(): Promise<void> {
 
 async function initialize() {
   try {
+    startupStatus.value = "正在扫描角色包…";
     await roleStore.loadRoles();
     if (!roleStore.currentRoleId.trim()) {
       showToast(
@@ -330,13 +333,15 @@ async function initialize() {
       );
       return;
     }
+    startupStatus.value = "正在加载角色数据…";
     await loadRole(roleStore.currentRoleId);
+    startupStatus.value = "正在初始化插件…";
     await pluginStore.refresh();
-    await roleStore.refreshRoleInfo();
     hostEventBus.emitBuiltin("role:switched", { roleId: roleStore.currentRoleId });
     applyResolvedNarrativeScene();
-    await debugStore.loadDebugData();
+    startupReady.value = true;
   } catch (err) {
+    startupStatus.value = "启动失败，请检查角色与插件配置。";
     showToast("error", err instanceof Error ? err.message : String(err));
   }
 }
@@ -351,7 +356,9 @@ async function onSend(payload: { content: string }) {
     const res = await chatStore.sendMessage(userText, uiStore.sceneId);
     await roleStore.refreshRoleInfo();
     applyResolvedNarrativeScene();
-    await debugStore.loadDebugData();
+    if (debugStore.visible) {
+      await debugStore.loadDebugData();
+    }
     if (res.reply_is_fallback) {
       showToast("info", "本次为备用回复（模型未返回正文时自动生成）");
     }
@@ -430,7 +437,9 @@ async function onSwitchRole(nextRoleId: string) {
     await pluginStore.syncDirectoryPluginBootstrap();
     hostEventBus.emitBuiltin("role:switched", { roleId: nextRoleId });
     applyResolvedNarrativeScene();
-    await debugStore.loadDebugData();
+    if (debugStore.visible) {
+      await debugStore.loadDebugData();
+    }
     showToast("success", `已切换角色: ${nextRoleId}`);
   } catch (err) {
     showToast("error", err instanceof Error ? err.message : String(err));
@@ -473,7 +482,9 @@ async function onPackImported(roleId: string) {
     await roleStore.refreshRoleInfo();
     await roleStore.loadRoles();
     applyResolvedNarrativeScene();
-    await debugStore.loadDebugData();
+    if (debugStore.visible) {
+      await debugStore.loadDebugData();
+    }
   } catch (err) {
     showToast("error", err instanceof Error ? err.message : String(err));
   }
@@ -666,6 +677,9 @@ onBeforeUnmount(() => {
     <div class="app-frame">
     <!-- 对齐 oclive-new：顶栏角色 + 时间/场景 -->
     <header ref="topBarRef" class="top-bar">
+      <div v-if="!startupReady" class="startup-status" role="status" aria-live="polite">
+        {{ startupStatus }}
+      </div>
       <div class="top-bar-row">
         <RoleSelector
           variant="topbar"
@@ -1096,6 +1110,15 @@ onBeforeUnmount(() => {
   align-items: center;
   justify-content: space-between;
   gap: 10px;
+}
+.startup-status {
+  margin-bottom: 8px;
+  padding: 6px 10px;
+  border: 1px solid var(--border-light);
+  border-radius: var(--radius-btn);
+  background: color-mix(in srgb, var(--bg-elevated) 80%, transparent);
+  font-size: 12px;
+  color: var(--text-secondary);
 }
 .settings-entry-tile {
   min-width: min(24rem, 100%);

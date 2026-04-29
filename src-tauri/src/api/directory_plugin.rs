@@ -218,19 +218,24 @@ pub fn directory_plugin_bootstrap_dto(
     let mut plugin_ids_sorted: Vec<String> = rt.plugin_roots.read().keys().cloned().collect();
     plugin_ids_sorted.retain(|id| !pst.is_plugin_disabled(id));
     plugin_ids_sorted.sort_unstable();
+    let roots = rt.plugin_roots.read();
+    let manifests: HashMap<String, OclivePluginManifest> = roots
+        .iter()
+        .filter_map(|(pid, root)| {
+            OclivePluginManifest::load_from_dir(root)
+                .ok()
+                .map(|m| (pid.clone(), m))
+        })
+        .collect();
     let shell_plugin_id_raw = shell_plugin_id_resolved(&host, Some(&role_state));
     let shell_plugin_id = shell_plugin_id_raw.filter(|id| !pst.is_plugin_disabled(id));
     let shell_url = shell_plugin_id.as_ref().and_then(|pid| {
-        let roots = rt.plugin_roots.read();
-        let root = roots.get(pid)?;
-        let manifest = OclivePluginManifest::load_from_dir(root).ok()?;
+        let manifest = manifests.get(pid)?;
         let entry = manifest.shell.as_ref()?.entry.as_str();
         rt.shell_url_for(pid, entry)
     });
     let shell_vue_entry = shell_plugin_id.as_ref().and_then(|pid| {
-        let roots = rt.plugin_roots.read();
-        let root = roots.get(pid)?;
-        let manifest = OclivePluginManifest::load_from_dir(root).ok()?;
+        let manifest = manifests.get(pid)?;
         let sh = manifest.shell.as_ref()?;
         let ve = sh.vue_entry.as_ref()?.trim();
         if ve.is_empty() {
@@ -242,14 +247,10 @@ pub fn directory_plugin_bootstrap_dto(
 
     let mut ui_slots = Vec::new();
     let mut subscribed_set = HashSet::new();
-    let roots = rt.plugin_roots.read();
-    for (pid, root) in roots.iter() {
+    for (pid, manifest) in manifests.iter() {
         if pst.is_plugin_disabled(pid) {
             continue;
         }
-        let Ok(manifest) = OclivePluginManifest::load_from_dir(root) else {
-            continue;
-        };
         merge_manifest_bridge_events(&manifest, &mut subscribed_set);
         if manifest.shell.is_some() {
             continue;

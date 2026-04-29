@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { onMounted, ref } from "vue";
+import { ref, watch } from "vue";
 import HelpHint from "../components/HelpHint.vue";
 import HotkeySettingsSection from "../components/HotkeySettingsSection.vue";
 import PluginSettingsPanelSlots from "../components/PluginSettingsPanelSlots.vue";
@@ -20,7 +20,7 @@ import {
   setPluginMarketDeveloperMode,
 } from "../utils/tauri-api";
 
-defineProps<{
+const props = defineProps<{
   visible: boolean;
 }>();
 
@@ -41,6 +41,7 @@ const tab = ref<SettingsTab>("general");
 const marketSourcesLoading = ref(false);
 const marketDeveloperModeLocal = ref(false);
 const marketSourcesText = ref("");
+const marketSourcesLoaded = ref(false);
 
 async function loadMarketSources(): Promise<void> {
   marketSourcesLoading.value = true;
@@ -53,9 +54,14 @@ async function loadMarketSources(): Promise<void> {
   }
 }
 
-onMounted(() => {
-  void loadMarketSources();
-});
+watch(
+  () => props.visible,
+  (visible) => {
+    if (!visible || marketSourcesLoaded.value) return;
+    marketSourcesLoaded.value = true;
+    void loadMarketSources();
+  },
+);
 
 async function onToggleMarketDeveloperMode(e: Event) {
   const checked = (e.target as HTMLInputElement).checked;

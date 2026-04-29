@@ -29,6 +29,15 @@ pub struct RoleStorage {
     roles_dir: PathBuf,
 }
 
+#[derive(Debug, Clone)]
+pub struct RoleManifestLite {
+    pub id: String,
+    pub name: String,
+    pub version: String,
+    pub author: String,
+    pub dev_only: bool,
+}
+
 impl RoleStorage {
     /// 创建新的角色存储实例
     pub fn new(roles_dir: impl AsRef<Path>) -> Self {
@@ -95,6 +104,57 @@ impl RoleStorage {
             }
         }
 
+        Ok(roles)
+    }
+
+    /// 轻量角色清单：仅解析 `manifest.json` 的摘要字段，避免冷启动时加载完整 role+knowledge。
+    pub fn load_all_role_manifest_lite(&self) -> Result<Vec<RoleManifestLite>> {
+        let mut roles = Vec::new();
+        if !self.roles_dir.exists() {
+            return Ok(roles);
+        }
+        for entry in fs::read_dir(&self.roles_dir).map_err(AppError::IoError)? {
+            let entry = entry.map_err(AppError::IoError)?;
+            let path = entry.path();
+            if !path.is_dir() {
+                continue;
+            }
+            let manifest_path = path.join("manifest.json");
+            if !manifest_path.is_file() {
+                continue;
+            }
+            let manifest_content = match fs::read_to_string(&manifest_path) {
+                Ok(s) => s,
+                Err(e) => {
+                    log::warn!(
+                        target: "oclive_role",
+                        "skip role lite parse {}: {}",
+                        manifest_path.display(),
+                        e
+                    );
+                    continue;
+                }
+            };
+            let disk = match serde_json::from_str::<DiskRoleManifest>(&manifest_content) {
+                Ok(v) => v,
+                Err(e) => {
+                    log::warn!(
+                        target: "oclive_role",
+                        "skip role lite parse {}: {}",
+                        manifest_path.display(),
+                        e
+                    );
+                    continue;
+                }
+            };
+            roles.push(RoleManifestLite {
+                id: disk.id,
+                name: disk.name,
+                version: disk.version,
+                author: disk.author,
+                dev_only: disk.dev_only,
+            });
+        }
         Ok(roles)
     }
 

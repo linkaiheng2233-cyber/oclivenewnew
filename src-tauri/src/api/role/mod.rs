@@ -338,7 +338,7 @@ pub async fn list_roles_impl(state: &AppState) -> Result<Vec<RoleSummary>, Strin
     let list_dev = crate::env_flags::list_dev_roles_enabled();
     let roles = state
         .storage
-        .load_all_roles()
+        .load_all_role_manifest_lite()
         .map_err(|e| e.to_frontend_error())?;
     Ok(roles
         .into_iter()
