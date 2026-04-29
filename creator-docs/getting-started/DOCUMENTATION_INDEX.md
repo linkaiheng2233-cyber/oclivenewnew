@@ -39,7 +39,7 @@
 | **核心 / 可变性格档案、`personality_source`、七维视图** | **[docs/personality-archive-notes.md](../../docs/personality-archive-notes.md)**（与 `roles/README_MANIFEST.md` §5.3 互参） |
 | **设计思路为何从「七维为主」走到「档案轴心」** | **[docs/design-axis-evolution.md](../../docs/design-axis-evolution.md)**（旧文档保留，冲突以契约为准） |
 | 编写器校验路线（与 `load_role` / crate 中期） | **[../role-pack/EDITOR_VALIDATION_ROADMAP.md](../role-pack/EDITOR_VALIDATION_ROADMAP.md)** |
-| 包版本、`schema_version`、世界观知识 `knowledge/` | **[../role-pack/PACK_VERSIONING.md](../role-pack/PACK_VERSIONING.md)** · **[../role-pack/WORLDVIEW_KNOWLEDGE.md](../role-pack/WORLDVIEW_KNOWLEDGE.md) |
+| 包版本、`schema_version`、世界观知识 `knowledge/` | **[../role-pack/PACK_VERSIONING.md](../role-pack/PACK_VERSIONING.md)** · **[../role-pack/WORLDVIEW_KNOWLEDGE.md](../role-pack/WORLDVIEW_KNOWLEDGE.md)** |
 | 扩展点与源码文件 | **[../plugin-and-architecture/EXTENSION_POINTS.md](../plugin-and-architecture/EXTENSION_POINTS.md)** |
 | 愿景与路线图 | **[../roadmap/VISION_ROADMAP_MONTHLY.md](../roadmap/VISION_ROADMAP_MONTHLY.md)** |
 | **开放实验场（愿景摘要）** | **[../roadmap/VISION_OPEN_LAB.md](../roadmap/VISION_OPEN_LAB.md)** |

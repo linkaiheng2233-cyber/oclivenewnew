@@ -1099,7 +1099,7 @@ watch(batchMode, (v) => {
 });
 
 watch(
-  () => pluginStore.catalog.map((c) => c.id).join("\n"),
+  () => pluginStore.catalog.length,
   () => {
     const next: Record<string, boolean> = {};
     for (const p of pluginStore.catalog) {
