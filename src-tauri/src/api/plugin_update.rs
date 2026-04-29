@@ -220,7 +220,7 @@ fn resolve_install_dir(state: &AppState, plugin_id: &str) -> PathBuf {
 
 /// 解压 zip 到临时目录，校验 `manifest.json` 的 `id` 与 `plugin_id` 一致后覆盖安装目录。
 #[tauri::command]
-pub fn extract_plugin_zip(
+pub async fn extract_plugin_zip(
     zip_path: String,
     plugin_id: String,
     accepted_permissions: Option<Vec<String>>,
@@ -289,14 +289,12 @@ pub fn extract_plugin_zip(
             );
         }
     }
-    tauri::async_runtime::block_on(async {
-        for p in perms {
-            let _ = state
-                .db_manager
-                .upsert_plugin_permission_grant(pid, p.as_str(), true)
-                .await;
-        }
-    });
+    for p in perms {
+        let _ = state
+            .db_manager
+            .upsert_plugin_permission_grant(pid, p.as_str(), true)
+            .await;
+    }
     Ok(())
 }
 

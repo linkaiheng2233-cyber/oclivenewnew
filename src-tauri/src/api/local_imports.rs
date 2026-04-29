@@ -189,7 +189,7 @@ pub struct InstallLocalPluginArchiveRequest {
 }
 
 #[tauri::command]
-pub fn install_local_plugin_archive_command(
+pub async fn install_local_plugin_archive_command(
     req: InstallLocalPluginArchiveRequest,
     state: State<'_, AppState>,
 ) -> Result<String, String> {
@@ -264,13 +264,11 @@ pub fn install_local_plugin_archive_command(
             );
         }
     }
-    tauri::async_runtime::block_on(async {
-        for p in perms {
-            let _ = state
-                .db_manager
-                .upsert_plugin_permission_grant(installed_pid.as_str(), p.as_str(), true)
-                .await;
-        }
-    });
+    for p in perms {
+        let _ = state
+            .db_manager
+            .upsert_plugin_permission_grant(installed_pid.as_str(), p.as_str(), true)
+            .await;
+    }
     Ok(installed_pid)
 }

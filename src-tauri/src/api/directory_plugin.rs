@@ -20,6 +20,7 @@ use serde_json::Value;
 use std::collections::hash_map::DefaultHasher;
 use std::collections::{HashMap, HashSet};
 use std::hash::{Hash, Hasher};
+use std::path::PathBuf;
 use std::time::{Duration, Instant};
 use tauri::State;
 
@@ -442,7 +443,7 @@ pub struct DirectoryPluginInvokeDto {
 }
 
 #[tauri::command]
-pub fn directory_plugin_invoke(
+pub async fn directory_plugin_invoke(
     req: DirectoryPluginInvokeDto,
     state: State<'_, AppState>,
 ) -> Result<Value, String> {
@@ -455,42 +456,44 @@ pub fn directory_plugin_invoke(
     }
     // 目录插件 JSON-RPC 透传属于高风险能力（可触发网络/进程等）：需要用户显式授予
     let perm = "rpc:invoke";
-    let ok = tauri::async_runtime::block_on(async {
-        state
-            .db_manager
-            .is_plugin_permission_granted(pid, perm)
-            .await
-            .unwrap_or(false)
-    });
+    let ok = state
+        .db_manager
+        .is_plugin_permission_granted(pid, perm)
+        .await
+        .unwrap_or(false);
     if !ok {
-        let _ = tauri::async_runtime::block_on(async {
-            state
-                .db_manager
-                .insert_plugin_audit_log(pid, "rpc.invoke", Some(perm), false, "{}")
-                .await
-        });
+        let _ = state
+            .db_manager
+            .insert_plugin_audit_log(pid, "rpc.invoke", Some(perm), false, "{}")
+            .await;
         return Err(ApiError::PluginPermissionNotGranted {
             message: format!("permission {:?} not granted for plugin {}", perm, pid),
         }
         .to_string());
     }
-    let url = state
-        .directory_plugins
-        .ensure_rpc_url(pid)
-        .map_err(|e| crate::api::error::map_directory_rpc_url_error(pid, e))?;
-    let out = invoke_directory_plugin_rpc_blocking(
-        &url,
-        req.method.trim(),
-        req.params,
-        RemoteRpcChannel::Plugin,
-    )
-    .map_err(|e: AppError| e.to_frontend_error())?;
-    let _ = tauri::async_runtime::block_on(async {
-        state
-            .db_manager
-            .insert_plugin_audit_log(pid, "rpc.invoke", Some(perm), true, "{}")
-            .await
-    });
+    let pid_s = pid.to_string();
+    let method = req.method.trim().to_string();
+    let params = req.params;
+    let dir = state.directory_plugins.clone();
+    let out = tokio::task::spawn_blocking(move || {
+        let url = dir
+            .ensure_rpc_url(pid_s.as_str())
+            .map_err(|e| crate::api::error::map_directory_rpc_url_error(pid_s.as_str(), e))?;
+        invoke_directory_plugin_rpc_blocking(
+            &url,
+            method.as_str(),
+            params,
+            RemoteRpcChannel::Plugin,
+        )
+        .map_err(|e: AppError| e.to_frontend_error())
+    })
+    .await
+    .map_err(|e| e.to_string())??;
+
+    let _ = state
+        .db_manager
+        .insert_plugin_audit_log(pid, "rpc.invoke", Some(perm), true, "{}")
+        .await;
     Ok(out)
 }
 

@@ -28,7 +28,7 @@ pub struct GetPluginAuditLogsResponse {
 }
 
 #[tauri::command]
-pub fn get_plugin_audit_logs(
+pub async fn get_plugin_audit_logs(
     req: GetPluginAuditLogsRequest,
     state: State<'_, AppState>,
 ) -> Result<GetPluginAuditLogsResponse, String> {
@@ -37,10 +37,11 @@ pub fn get_plugin_audit_logs(
         return Err("plugin_id required".to_string());
     }
     let lim = req.limit.unwrap_or(50);
-    let rows = tauri::async_runtime::block_on(async {
-        state.db_manager.list_plugin_audit_logs(pid, lim).await
-    })
-    .map_err(|e| e.to_frontend_error())?;
+    let rows = state
+        .db_manager
+        .list_plugin_audit_logs(pid, lim)
+        .await
+        .map_err(|e| e.to_frontend_error())?;
     let logs = rows
         .into_iter()
         .map(

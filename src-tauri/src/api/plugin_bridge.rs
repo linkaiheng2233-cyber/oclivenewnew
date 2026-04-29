@@ -135,20 +135,25 @@ fn validate_shell_ocliveplugin(
     Ok(())
 }
 
-fn validate_bridge(
+async fn validate_bridge(
     state: &AppState,
     plugin_id: &str,
     asset_rel: &str,
     command: &str,
 ) -> Result<(), String> {
-    let roots = state.directory_plugins.plugin_roots.read();
-    let root = roots.get(plugin_id).ok_or_else(|| {
-        ApiError::PluginNotFound {
-            plugin_id: plugin_id.to_string(),
-        }
-        .to_string()
-    })?;
-    let manifest = OclivePluginManifest::load_from_dir(root)
+    let root = state
+        .directory_plugins
+        .plugin_roots
+        .read()
+        .get(plugin_id)
+        .cloned()
+        .ok_or_else(|| {
+            ApiError::PluginNotFound {
+                plugin_id: plugin_id.to_string(),
+            }
+            .to_string()
+        })?;
+    let manifest = OclivePluginManifest::load_from_dir(&root)
         .map_err(|e| ApiError::InvalidManifest { message: e }.to_string())?;
     let rel = normalize_plugin_rel(asset_rel);
     let Some(b) = manifest.bridge_for_asset_rel(&rel) else {
@@ -170,26 +175,22 @@ fn validate_bridge(
     }
     // P1：权限授予（安装时一次性授权 + 可撤销）
     let needed = required_permission_token(command);
-    let ok = tauri::async_runtime::block_on(async {
-        state
-            .db_manager
-            .is_plugin_permission_granted(plugin_id, needed.as_str())
-            .await
-            .unwrap_or(false)
-    });
+    let ok = state
+        .db_manager
+        .is_plugin_permission_granted(plugin_id, needed.as_str())
+        .await
+        .unwrap_or(false);
     if !ok {
-        let _ = tauri::async_runtime::block_on(async {
-            state
-                .db_manager
-                .insert_plugin_audit_log(
-                    plugin_id,
-                    "bridge.invoke",
-                    Some(needed.as_str()),
-                    false,
-                    "{}",
-                )
-                .await
-        });
+        let _ = state
+            .db_manager
+            .insert_plugin_audit_log(
+                plugin_id,
+                "bridge.invoke",
+                Some(needed.as_str()),
+                false,
+                "{}",
+            )
+            .await;
         return Err(ApiError::PluginPermissionNotGranted {
             message: format!(
                 "permission {:?} not granted for plugin {}",
@@ -202,18 +203,16 @@ fn validate_bridge(
     if requires_typed_shell(command) {
         validate_shell_ocliveplugin(&manifest, &rel)?;
     }
-    let _ = tauri::async_runtime::block_on(async {
-        state
-            .db_manager
-            .insert_plugin_audit_log(
-                plugin_id,
-                "bridge.invoke",
-                Some(needed.as_str()),
-                true,
-                "{}",
-            )
-            .await
-    });
+    let _ = state
+        .db_manager
+        .insert_plugin_audit_log(
+            plugin_id,
+            "bridge.invoke",
+            Some(needed.as_str()),
+            true,
+            "{}",
+        )
+        .await;
     Ok(())
 }
 
@@ -544,6 +543,6 @@ pub async fn plugin_bridge_invoke(
         }
         .to_string());
     }
-    validate_bridge(&state, pid, &asset, cmd)?;
+    validate_bridge(&state, pid, &asset, cmd).await?;
     dispatch_bridge_command(&state, cmd, req.params).await
 }
