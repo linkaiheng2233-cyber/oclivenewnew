@@ -222,6 +222,8 @@ pub struct DirectoryPluginRuntime {
     active_role_id: Arc<RwLock<Option<String>>>,
     /// 与 `get_directory_plugin_catalog` 短时缓存联动；`rescan_plugin_roots` 时递增使缓存失效。
     catalog_invalidate_gen: AtomicU64,
+    /// `ensure_scanned` 是否已执行过一次（即使结果为空也视为已扫描，避免重复扫描造成启动后抖动）。
+    scanned_once: AtomicBool,
 }
 
 impl DirectoryPluginRuntime {
@@ -246,12 +248,17 @@ impl DirectoryPluginRuntime {
             plugin_state_store,
             active_role_id: Arc::new(RwLock::new(None)),
             catalog_invalidate_gen: AtomicU64::new(0),
+            scanned_once: AtomicBool::new(false),
         })
     }
 
     /// Ensure plugin roots have been scanned at least once.
     pub fn ensure_scanned(&self) {
+        if self.scanned_once.load(Ordering::Relaxed) {
+            return;
+        }
         if !self.plugin_roots.read().is_empty() {
+            self.scanned_once.store(true, Ordering::Relaxed);
             return;
         }
         self.rescan_plugin_roots(&self.roles_dir);
@@ -540,6 +547,7 @@ impl DirectoryPluginRuntime {
         let scan = scan_plugins(roles_dir, &self.app_data_dir, &host);
         let n = scan.roots.len();
         *self.plugin_roots.write() = scan.roots;
+        self.scanned_once.store(true, Ordering::Relaxed);
         log::info!(
             target: "oclive_plugin",
             "plugin roots rescanned count={}",
