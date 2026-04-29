@@ -1504,7 +1504,7 @@ async function onPackSelectedPlugin(): Promise<void> {
       <div class="pm-dialog pm-dialog--studio" @click.stop>
         <header class="pm-head">
           <div class="pm-head-row">
-            <h2 class="pm-title">插件工作台</h2>
+            <h2 class="pm-title">插件与功能设置</h2>
             <span
               class="pm-studio-badge"
               title="面向创作者与排错：目录插件、后端与会话覆盖"
@@ -1523,7 +1523,7 @@ async function onPackSelectedPlugin(): Promise<void> {
         <p v-else-if="pluginStore.error" class="pm-err pm-dialog-pad">{{ pluginStore.error }}</p>
 
         <template v-else>
-          <div class="pm-tabs" role="tablist" aria-label="插件工作台分区">
+          <div class="pm-tabs" role="tablist" aria-label="插件与功能分区">
             <button
               type="button"
               role="tab"
@@ -1532,7 +1532,7 @@ async function onPackSelectedPlugin(): Promise<void> {
               :aria-selected="pluginStore.panelMainTab === 'plugins'"
               @click="pluginStore.panelMainTab = 'plugins'"
             >
-              界面插件
+              插件总览
             </button>
             <button
               type="button"
@@ -1562,7 +1562,7 @@ async function onPackSelectedPlugin(): Promise<void> {
               :aria-selected="pluginStore.panelMainTab === 'backends'"
               @click="pluginStore.panelMainTab = 'backends'"
             >
-              后端模块
+              对话后端
             </button>
             <button
               type="button"
@@ -1572,7 +1572,7 @@ async function onPackSelectedPlugin(): Promise<void> {
               :aria-selected="pluginStore.panelMainTab === 'slots'"
               @click="pluginStore.panelMainTab = 'slots'"
             >
-              插槽顺序
+              界面位置
             </button>
           </div>
 
@@ -2190,7 +2190,16 @@ async function onPackSelectedPlugin(): Promise<void> {
 
           <section class="pm-section pm-section--catalog">
             <div class="pm-section-head">
-              <h3 class="pm-h3">已安装插件</h3>
+              <div class="pm-h3-row">
+                <h3 class="pm-h3">已安装插件（最常用）</h3>
+                <details class="pm-help">
+                  <summary class="pm-help-btn" aria-label="已安装插件说明">?</summary>
+                  <div class="pm-help-pop">
+                    <p>先在这里管理“启用/禁用/更新”，再去「界面位置」调整插件出现在哪。</p>
+                    <p>这一块是日常使用频率最高的区域。</p>
+                  </div>
+                </details>
+              </div>
               <div class="pm-section-actions">
                 <label class="pm-batch-toggle chk">
                   <input v-model="batchMode" type="checkbox" />
@@ -2222,6 +2231,25 @@ async function onPackSelectedPlugin(): Promise<void> {
               </div>
             </div>
             <p v-if="pluginPackStatus" class="pm-hint">{{ pluginPackStatus }}</p>
+            <div class="pm-row pm-primary-actions" role="toolbar" aria-label="已安装插件主要操作">
+              <button type="button" class="pm-btn secondary pm-btn--sm" @click="onBatchEnable">
+                启用所选
+              </button>
+              <button type="button" class="pm-btn secondary pm-btn--sm" @click="onBatchDisable">
+                停用所选
+              </button>
+              <button type="button" class="pm-btn secondary pm-btn--sm" @click="onBatchUpdate">
+                所选从 Git 更新
+              </button>
+              <details class="pm-help pm-help--inline">
+                <summary class="pm-help-btn" aria-label="启停与更新说明">?</summary>
+                <div class="pm-help-pop">
+                  <p>“启用/停用”决定插件是否参与运行与渲染。</p>
+                  <p>“从 Git 更新”只对 git 安装的插件有效；被固定到 tag 的插件不能 pull。</p>
+                  <p>更新后建议重启应用让插槽渲染更稳定。</p>
+                </div>
+              </details>
+            </div>
             <div
               v-if="batchMode && batchSelectedCount > 0"
               class="pm-batch-bar"
@@ -2230,13 +2258,13 @@ async function onPackSelectedPlugin(): Promise<void> {
             >
               <span class="pm-batch-count">已选 {{ batchSelectedCount }} 个</span>
               <button type="button" class="pm-btn secondary pm-btn--sm" @click="onBatchEnable">
-                批量启用
+                启用
               </button>
               <button type="button" class="pm-btn secondary pm-btn--sm" @click="onBatchDisable">
-                批量停用
+                停用
               </button>
               <button type="button" class="pm-btn secondary pm-btn--sm" @click="onBatchUpdate">
-                批量从 Git 更新
+                从 Git 更新
               </button>
             </div>
             <p v-if="!pluginStore.catalog.length" class="pm-muted">
@@ -2924,14 +2952,14 @@ async function onPackSelectedPlugin(): Promise<void> {
   flex: 1;
   min-height: 0;
   overflow: auto;
-  padding: 12px 18px 8px;
+  padding: 18px 22px 14px;
 }
 .pm-tabs {
   display: flex;
   flex-wrap: wrap;
-  gap: 8px;
+  gap: 10px;
   flex-shrink: 0;
-  padding: 0 18px 10px;
+  padding: 0 22px 14px;
   margin: 0;
   border-bottom: 1px solid var(--border-light);
   background: var(--bg-primary);
@@ -2939,11 +2967,11 @@ async function onPackSelectedPlugin(): Promise<void> {
 .pm-tab {
   flex: 1 1 auto;
   min-width: 0;
-  padding: 6px 12px;
+  padding: 10px 14px;
   border: 1px solid transparent;
-  border-radius: 6px;
-  font-size: 13px;
-  font-weight: 500;
+  border-radius: 10px;
+  font-size: 15px;
+  font-weight: 600;
   cursor: pointer;
   color: var(--text-secondary);
   background: transparent;
@@ -2961,8 +2989,8 @@ async function onPackSelectedPlugin(): Promise<void> {
 }
 .pm-tab--sm {
   flex: 0 0 auto;
-  padding: 4px 10px;
-  font-size: 12px;
+  padding: 8px 12px;
+  font-size: 13px;
 }
 .pm-market-tabs {
   display: flex;
@@ -2982,7 +3010,7 @@ async function onPackSelectedPlugin(): Promise<void> {
 }
 .pm-head {
   flex-shrink: 0;
-  padding: 16px 40px 12px 18px;
+  padding: 20px 48px 14px 22px;
   margin: 0;
   border-bottom: 1px solid var(--border-light);
   background: var(--bg-primary);
@@ -2995,8 +3023,8 @@ async function onPackSelectedPlugin(): Promise<void> {
 }
 .pm-title {
   margin: 0;
-  font-size: 18px;
-  font-weight: 600;
+  font-size: 24px;
+  font-weight: 700;
 }
 .pm-studio-badge {
   font-size: 11px;
@@ -3009,9 +3037,9 @@ async function onPackSelectedPlugin(): Promise<void> {
 }
 .pm-sub {
   margin: 8px 0 0;
-  font-size: 12px;
+  font-size: 14px;
   color: var(--text-secondary);
-  line-height: 1.45;
+  line-height: 1.6;
 }
 .pm-kbd {
   display: inline-block;
@@ -3043,6 +3071,10 @@ async function onPackSelectedPlugin(): Promise<void> {
 }
 .pm-section {
   margin-bottom: 18px;
+  padding: 16px 18px;
+  border-radius: 14px;
+  border: 1px solid var(--border-light);
+  background: var(--bg-secondary);
 }
 .pm-section--catalog {
   padding: 12px 14px 14px;
@@ -3231,16 +3263,16 @@ async function onPackSelectedPlugin(): Promise<void> {
 }
 .pm-section-head {
   display: flex;
-  align-items: center;
+  align-items: flex-start;
   justify-content: space-between;
-  gap: 10px;
-  margin-bottom: 8px;
+  gap: 12px;
+  margin-bottom: 10px;
 }
 .pm-section-actions {
   display: flex;
   align-items: center;
   flex-wrap: wrap;
-  gap: 10px;
+  gap: 12px;
 }
 .pm-batch-toggle {
   font-size: 12px;
@@ -3262,6 +3294,17 @@ async function onPackSelectedPlugin(): Promise<void> {
   margin-right: 4px;
   color: var(--text-secondary);
 }
+.pm-primary-actions {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 10px;
+  margin: 10px 0 14px;
+  padding: 10px 12px;
+  border-radius: 12px;
+  border: 1px dashed var(--border-light);
+  background: color-mix(in srgb, var(--bg-primary) 55%, transparent);
+}
 .chk {
   display: flex;
   align-items: center;
@@ -3270,7 +3313,61 @@ async function onPackSelectedPlugin(): Promise<void> {
 }
 .pm-h3 {
   margin: 0;
-  font-size: 14px;
+  font-size: 19px;
+  line-height: 1.35;
+}
+.pm-h3-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+.pm-help {
+  position: relative;
+}
+.pm-help--inline {
+  align-self: center;
+}
+.pm-help-btn {
+  list-style: none;
+  width: 22px;
+  height: 22px;
+  border-radius: 999px;
+  border: 1px solid var(--border-light);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  font-size: 13px;
+  font-weight: 800;
+  color: var(--text-secondary);
+  background: var(--bg-primary);
+  user-select: none;
+}
+.pm-help-btn::-webkit-details-marker {
+  display: none;
+}
+.pm-help-pop {
+  position: absolute;
+  z-index: 4;
+  top: 28px;
+  right: 0;
+  min-width: 280px;
+  max-width: 380px;
+  padding: 10px 12px;
+  border-radius: 12px;
+  border: 1px solid var(--border-light);
+  background: var(--bg-primary);
+  box-shadow: var(--shadow-md);
+  color: var(--text-secondary);
+  font-size: 13px;
+  line-height: 1.55;
+}
+.pm-help-pop p {
+  margin: 0 0 8px;
+}
+.pm-help-pop p:last-child {
+  margin-bottom: 0;
 }
 .pm-shell-slots {
   display: flex;
@@ -3558,12 +3655,13 @@ async function onPackSelectedPlugin(): Promise<void> {
   color: var(--text-primary);
 }
 .pm-btn--sm {
-  padding: 5px 10px;
-  font-size: 12px;
+  padding: 8px 12px;
+  font-size: 13px;
 }
 .pm-hint {
-  margin: 0 0 8px;
-  font-size: 12px;
+  margin: 0 0 12px;
+  font-size: 14px;
+  line-height: 1.7;
   color: var(--text-secondary);
 }
 .pm-order {
@@ -3626,8 +3724,9 @@ async function onPackSelectedPlugin(): Promise<void> {
   line-height: 1.5;
 }
 .pm-muted {
-  font-size: 13px;
+  font-size: 14px;
   color: var(--text-secondary);
+  line-height: 1.6;
 }
 .pm-err {
   color: var(--error);
@@ -3645,10 +3744,11 @@ async function onPackSelectedPlugin(): Promise<void> {
   background: var(--bg-primary);
 }
 .pm-btn {
-  padding: 8px 14px;
+  padding: 10px 16px;
   border-radius: var(--radius-btn);
   border: 1px solid var(--border-light);
-  font-size: 13px;
+  font-size: 15px;
+  font-weight: 600;
   cursor: pointer;
 }
 .pm-btn.secondary {
