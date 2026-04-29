@@ -865,7 +865,7 @@ export async function setSessionPluginBackend(
   backend?: string | null,
   localMemoryProviderId?: string,
   sessionId?: string | null,
-  directoryId?: string | null,
+  directoryPluginId?: string | null,
 ): Promise<RoleInfo> {
   const req: Record<string, unknown> = {
     role_id: roleId,
@@ -878,8 +878,8 @@ export async function setSessionPluginBackend(
   if (localMemoryProviderId !== undefined) {
     req.local_memory_provider_id = localMemoryProviderId;
   }
-  if (directoryId !== undefined) {
-    req.directory_id = directoryId;
+  if (directoryPluginId !== undefined) {
+    req.directory_plugin_id = directoryPluginId;
   }
   return invokeWithFriendlyError<RoleInfo>("set_session_plugin_backend", {
     req,

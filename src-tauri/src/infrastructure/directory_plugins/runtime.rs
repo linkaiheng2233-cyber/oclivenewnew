@@ -654,6 +654,12 @@ impl DirectoryPluginRuntime {
         cmd.stdin(Stdio::null());
         cmd.stdout(Stdio::piped());
         cmd.stderr(Stdio::piped());
+        // Provide app_data dir for directory-plugin sidecars (model caches, config, etc.).
+        // This is a host-owned path and does not grant additional permissions by itself.
+        cmd.env(
+            "OCLIVE_APP_DATA_DIR",
+            self.app_data_dir.to_string_lossy().to_string(),
+        );
         if let Some(cfg) = config_json {
             let t = cfg.trim();
             if !t.is_empty() {

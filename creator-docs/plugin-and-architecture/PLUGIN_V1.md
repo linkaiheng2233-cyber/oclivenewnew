@@ -217,7 +217,9 @@
 
 ### `directory` 与 `directory_plugins`
 
-- **`set_session_plugin_backend`** 只改 **`memory` / `emotion` / `event` / `prompt` / `llm`** 的枚举值（及 **`local_memory_provider_id`**），**不包含** **`directory_plugins` 各槽**。若某模块设为 **`directory`**，槽位 id 仍来自角色包 **`plugin_backends.directory_plugins`**（见 [DIRECTORY_PLUGINS.md](DIRECTORY_PLUGINS.md)）。
+- **`set_session_plugin_backend`** 默认只改 **`memory` / `emotion` / `event` / `prompt` / `llm`** 的枚举值（及 **`local_memory_provider_id`**）。
+- **例外（已实现）**：当 `module="llm"` 且 `backend="directory"` 时，可通过请求字段 **`directory_plugin_id`** 写入会话覆盖的 **`directory_plugins.llm`**（用于切换目录 LLM 插件）。
+- 其余槽位若需要会话级切换，可后续扩展同样的窄字段，或使用 **`set_session_plugin_backends_override`** 一次性写入覆盖对象。
 - 运行时结构体 **`PluginBackendsOverride`** 已预留会话级 **`directory_plugins`** 合并逻辑；待产品化 API 暴露后再与 `set_session_plugin_backend` 或专用命令对齐即可。
 
 ---

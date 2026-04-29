@@ -25,6 +25,8 @@ import { useRoleStore } from "../stores/roleStore";
 import {
   applyAuthorSuggestedPluginBackends,
   packPlugin,
+  getPluginPermissionGrants,
+  setPluginPermissionGrant,
   previewPluginZipPermissions,
   previewPluginDirPermissions,
   installPluginDir,
@@ -164,7 +166,10 @@ function writeRollbackSnapshot(s: SessionOverrideSnapshot): void {
   }
 }
 
-function saveCurrentSessionOverrideForRollback(source: "module" | "profile", label: string): void {
+function saveCurrentSessionOverrideForRollback(
+  source: "module" | "profile" | "manual",
+  label: string,
+): void {
   const roleId = (roleStore.currentRoleId ?? "").trim();
   if (!roleId) return;
   const cur = roleStore.roleInfo.pluginBackendsSessionOverride as any;
@@ -176,6 +181,68 @@ function saveCurrentSessionOverrideForRollback(source: "module" | "profile", lab
     override: cur && typeof cur === "object" ? (cur as Record<string, unknown>) : null,
   };
   writeRollbackSnapshot(snapshot);
+}
+
+const localLlamaPluginIdDraft = ref<string>("com.oclive.llama.local");
+
+const localLlamaPluginInstalled = computed(() => {
+  const pid = localLlamaPluginIdDraft.value.trim();
+  if (!pid) return false;
+  return !!pluginStore.catalog?.some((p) => p.id === pid);
+});
+
+async function onEnableLocalLlamaDirectory(): Promise<void> {
+  const roleId = (roleStore.currentRoleId ?? "").trim();
+  const pid = localLlamaPluginIdDraft.value.trim();
+  if (!roleId || !pid) return;
+  if (!localLlamaPluginInstalled.value) {
+    showToast("error", `未扫描到目录插件：${pid}`);
+    return;
+  }
+  const declaredPerms = ["process:spawn", "network:*"];
+  const accepted = await requestPermissionConsentWithTrust(
+    "启用本地 Llama（目录插件）需要授权哪些能力？",
+    declaredPerms,
+    [
+      "来源：本地目录插件（随发行版附带或由你放入 plugins/）",
+      "说明：启用 LLM 后端至少需要 process:spawn 才能启动本地 sidecar/llama-server。",
+      "如果你要在插件里用 URL 下载模型文件，则还需要 network:*；否则可不勾选，改为手动把 .gguf 放到指定目录。",
+    ].join("\n"),
+  );
+  if (!accepted) return;
+  if (hasHighRiskPermission(accepted)) {
+    const ok = window.confirm(
+      `你选择了高风险权限：\n\n${accepted.map((p) => `- ${p}`).join("\n")}\n\n确定继续吗？`,
+    );
+    if (!ok) return;
+  }
+  const planLines = [
+    `将写入会话级后端覆盖（仅当前会话）`,
+    `- llm = directory`,
+    `- directory_plugins.llm = ${pid}`,
+    `将写入权限授权（可随时撤销）`,
+    ...accepted.map((p) => `- ${p}`),
+  ];
+  const ok2 = await requestApplyPreflight("一键启用本地 Llama（目录插件）", planLines);
+  if (!ok2) return;
+  saveCurrentSessionOverrideForRollback("manual", "local-llama");
+  try {
+    for (const perm of accepted) {
+      await setPluginPermissionGrant(pid, perm, true);
+    }
+    const info = await setSessionPluginBackend(
+      roleId,
+      "llm",
+      "directory",
+      undefined,
+      undefined,
+      pid,
+    );
+    roleStore.applyRoleInfo(info);
+    showToast("success", `已启用 Directory LLM：${pid}`);
+  } catch (e) {
+    showToast("error", e instanceof Error ? e.message : String(e));
+  }
 }
 
 const rollbackSnapshotForRole = computed(() => {
@@ -2539,6 +2606,45 @@ async function onPackSelectedPlugin(): Promise<void> {
             class="pm-tab-panel pm-tab-panel--backends"
             role="tabpanel"
           >
+            <section class="pm-section">
+              <h3 class="pm-h3">一键启用本地 Llama（Directory LLM）</h3>
+              <p class="pm-hint">
+                将当前会话的 LLM 切到「目录插件」，并写入 <code>directory_plugins.llm</code> 槽位。
+              </p>
+              <div class="pm-row">
+                <label class="pm-label">
+                  插件 ID
+                  <input
+                    v-model="localLlamaPluginIdDraft"
+                    class="pm-input"
+                    type="text"
+                    autocomplete="off"
+                    placeholder="com.oclive.llama.local"
+                  />
+                </label>
+                <span class="pm-muted">
+                  状态：{{ localLlamaPluginInstalled ? "已扫描" : "未扫描" }}
+                </span>
+                <button
+                  type="button"
+                  class="pm-btn"
+                  :disabled="!localLlamaPluginInstalled"
+                  @click="onEnableLocalLlamaDirectory"
+                >
+                  一键启用
+                </button>
+                <button
+                  v-if="rollbackSnapshotForRole"
+                  type="button"
+                  class="pm-btn danger pm-btn--sm"
+                  :title="`回滚快照：${rollbackSnapshotForRole.label} @ ${rollbackSnapshotForRole.savedAt}`"
+                  @click="rollbackLastSessionOverride"
+                >
+                  回滚上次覆盖
+                </button>
+              </div>
+            </section>
+
             <PluginBackendSessionPanel />
           </div>
 

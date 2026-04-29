@@ -73,7 +73,7 @@
 }
 ```
 
-**`directory_plugins` 槽位来源**：以角色包 **`settings.json` → `plugin_backends.directory_plugins`** 为准。`PluginBackendsOverride` 在 Rust 中**支持**按槽合并 `directory_plugins`（见 `apply_to`），但当前 Tauri 命令 **`set_session_plugin_backend` 仅覆盖五模块枚举与 `local_memory_provider_id`**，**不**传入 `directory_plugins`；多会话场景下若需不同目录插件 id，请通过角色包或后续扩展的会话 API 提供。
+**`directory_plugins` 槽位来源**：默认以角色包 **`settings.json` → `plugin_backends.directory_plugins`** 为准。会话覆盖层 `PluginBackendsOverride` 在 Rust 中**支持**按槽合并 `directory_plugins`（见 `apply_to`），并且当前 Tauri 命令 **`set_session_plugin_backend` 已支持 `module="llm"` 时通过 `directory_plugin_id` 写入 `directory_plugins.llm`**（其余模块暂未开放该字段；需要时可扩展或改用 `set_session_plugin_backends_override`）。
 
 ---
 

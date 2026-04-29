@@ -325,6 +325,10 @@ pub struct SetSessionPluginBackendRequest {
     /// 空串表示清除该字段的会话覆盖。字段缺省表示不修改该字段。
     #[serde(default)]
     pub local_memory_provider_id: Option<String>,
+    /// 可选：当 `backend="directory"` 时指定该模块对应的目录插件 `manifest.id`（写入会话覆盖的 `directory_plugins.<slot>`）。
+    /// 当前仅对 `module="llm"` 启用（其它模块后续按需开放）。
+    #[serde(default)]
+    pub directory_plugin_id: Option<String>,
     /// 可选：HTTP 试聊等多会话场景下指定会话 id；缺省表示角色默认会话。
     #[serde(default)]
     pub session_id: Option<String>,

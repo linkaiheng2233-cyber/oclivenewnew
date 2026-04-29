@@ -20,6 +20,7 @@
 | 实现侧车：请求/响应 JSON 长什么样 | **[../plugin-and-architecture/REMOTE_PLUGIN_PROTOCOL.md](../plugin-and-architecture/REMOTE_PLUGIN_PROTOCOL.md)**（协议全文，含示例） |
 | `settings.json` 里 `plugin_backends` 每个字段含义 | **[../plugin-and-architecture/PLUGIN_V1.md](../plugin-and-architecture/PLUGIN_V1.md)** |
 | **目录式进程插件**（`plugins/`、`manifest.json`、整壳、`directory_plugin_invoke`、开发者模式） | **[../plugin-and-architecture/DIRECTORY_PLUGINS.md](../plugin-and-architecture/DIRECTORY_PLUGINS.md)** |
+| **本地 Llama 目录插件（官方附带）**：启用、模型目录、验收 | **[../plugin-and-architecture/LLAMA_DIRECTORY_PLUGIN_V1.md](../plugin-and-architecture/LLAMA_DIRECTORY_PLUGIN_V1.md)** |
 | **整壳 / 插槽 `invoke` 命令表、权限别名、错误码** | **[../plugin-and-architecture/BRIDGE_API_REFERENCE.md](../plugin-and-architecture/BRIDGE_API_REFERENCE.md)** |
 | **插件市场索引 `plugins.json`（plugin/module/profile 三类条目）** | **[../plugin-and-architecture/PLUGIN_MARKET_INDEX_V1.md](../plugin-and-architecture/PLUGIN_MARKET_INDEX_V1.md)** |
 | **角色包市场索引 `roles.json`（多镜像 + SHA-256 校验）** | **[../role-pack/ROLE_MARKET_INDEX_V1.md](../role-pack/ROLE_MARKET_INDEX_V1.md)** |

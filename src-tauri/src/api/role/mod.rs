@@ -697,6 +697,12 @@ pub async fn set_session_plugin_backend_impl(
         )
         .to_frontend_error());
     }
+    if req.directory_plugin_id.is_some() && module.as_str() != "llm" {
+        return Err(AppError::InvalidParameter(
+            "directory_plugin_id only supports module=llm (for now)".to_string(),
+        )
+        .to_frontend_error());
+    }
     match module.as_str() {
         "memory" => {
             if let Some(backend) = req.backend.as_ref() {
@@ -744,6 +750,27 @@ pub async fn set_session_plugin_backend_impl(
                     .as_deref()
                     .map(|v| parse_backend_wire::<LlmBackend>("llm", v))
                     .transpose()?;
+            }
+            if let Some(pid) = req.directory_plugin_id.as_ref() {
+                // If backend is explicitly set and not directory, reject to avoid silent mismatch.
+                if let Some(Some(raw)) = req.backend.as_ref() {
+                    if raw.trim().to_ascii_lowercase() != "directory" {
+                        return Err(AppError::InvalidParameter(
+                            "directory_plugin_id requires backend=directory".to_string(),
+                        )
+                        .to_frontend_error());
+                    }
+                }
+                let t = pid.trim();
+                if t.is_empty() {
+                    return Err(AppError::InvalidParameter(
+                        "directory_plugin_id cannot be empty".to_string(),
+                    )
+                    .to_frontend_error());
+                }
+                let mut slots = next.directory_plugins.take().unwrap_or_default();
+                slots.llm = Some(t.to_string());
+                next.directory_plugins = Some(slots);
             }
         }
         "agent" => {
