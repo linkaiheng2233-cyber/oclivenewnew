@@ -14,12 +14,16 @@
 - [ ] Confirm launcher startup loads config/announcements/version checks in parallel.
 - [ ] Confirm pack-editor non-active pages are not mounted at first paint.
 - [ ] Confirm feedback workspace ping/refresh only runs when entering feedback page.
+- [ ] Confirm plugin manager market list stays smooth with large index (pagination works).
+- [ ] Confirm directory plugin scan is lazy (no scan cost if plugin manager unused).
+- [ ] Confirm ocliveplugin HTML bridge injection still works after caching.
 
 ## Core Flow Regression
 - [ ] `oclivenewnew`: role switch, send message, import role pack.
 - [ ] `oclive-launcher`: launch runtime, launch editor, stop processes, view logs.
 - [ ] `oclive-pack-editor`: import pack, edit simple/advanced, export zip/folder, open chat panel.
 - [ ] Directory plugin bootstrap still loads shell + UI slots correctly.
+- [ ] Directory plugin sidecar handshake still works (ready URL detected without polling glitches).
 - [ ] Role list remains correct (including dev-only visibility behavior).
 
 ## Build / Compile Gates

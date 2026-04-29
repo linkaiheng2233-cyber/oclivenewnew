@@ -14,6 +14,8 @@ use std::fs;
 #[cfg(feature = "tauri-app")]
 use std::path::{Path, PathBuf};
 #[cfg(feature = "tauri-app")]
+use std::sync::{Mutex, OnceLock};
+#[cfg(feature = "tauri-app")]
 use tauri::http::{Request, Response, ResponseBuilder};
 #[cfg(feature = "tauri-app")]
 use tauri::{AppHandle, Manager};
@@ -24,6 +26,48 @@ use crate::infrastructure::deep_link::seed_pending_install_urls_from_args;
 use crate::infrastructure::directory_plugins::{start_plugin_fs_watcher, OclivePluginManifest};
 #[cfg(feature = "tauri-app")]
 use crate::state::AppState;
+
+#[cfg(feature = "tauri-app")]
+type ManifestCacheKey = String;
+#[cfg(feature = "tauri-app")]
+type HtmlCacheKey = (String, String); // (plugin_id, rel)
+
+#[cfg(feature = "tauri-app")]
+static PLUGIN_MANIFEST_CACHE: OnceLock<
+    Mutex<std::collections::HashMap<ManifestCacheKey, (u64, OclivePluginManifest)>>,
+> = OnceLock::new();
+
+#[cfg(feature = "tauri-app")]
+static PLUGIN_INJECTED_HTML_CACHE: OnceLock<
+    Mutex<std::collections::HashMap<HtmlCacheKey, (u64, Vec<u8>)>>,
+> = OnceLock::new();
+
+#[cfg(feature = "tauri-app")]
+fn file_mtime_ms(p: &Path) -> u64 {
+    std::fs::metadata(p)
+        .ok()
+        .and_then(|m| m.modified().ok())
+        .and_then(|t| t.duration_since(std::time::UNIX_EPOCH).ok())
+        .map(|d| d.as_millis() as u64)
+        .unwrap_or(0)
+}
+
+#[cfg(feature = "tauri-app")]
+fn load_manifest_cached(root: &Path, plugin_id: &str) -> Option<OclivePluginManifest> {
+    let mf = root.join("manifest.json");
+    let ver = file_mtime_ms(&mf);
+    let cache = PLUGIN_MANIFEST_CACHE.get_or_init(|| Mutex::new(std::collections::HashMap::new()));
+    if let Some((cached_ver, m)) = cache.lock().ok().and_then(|g| g.get(plugin_id).cloned()) {
+        if cached_ver == ver && ver != 0 {
+            return Some(m);
+        }
+    }
+    let m = OclivePluginManifest::load_from_dir(root).ok()?;
+    if let Ok(mut g) = cache.lock() {
+        g.insert(plugin_id.to_string(), (ver, m.clone()));
+    }
+    Some(m)
+}
 
 /// 向插件 HTML 注入 `window.OclivePluginBridge`（manifest 中 `bridge` + 白名单）。
 #[cfg(feature = "tauri-app")]
@@ -143,6 +187,7 @@ fn serve_ocliveplugin_asset(
             .mimetype("text/plain; charset=utf-8")
             .body(b"plugin disabled".to_vec());
     }
+    state.directory_plugins.ensure_scanned();
     let roots = state.directory_plugins.plugin_roots.read();
     let Some(root) = roots.get(&plugin_id) else {
         return ResponseBuilder::new()
@@ -169,10 +214,26 @@ fn serve_ocliveplugin_asset(
             .body(b"forbidden".to_vec());
     }
     if mime_for_plugin_asset(&rel).starts_with("text/html") {
-        if let Ok(manifest) = OclivePluginManifest::load_from_dir(root) {
-            if let Ok(s) = String::from_utf8(data.clone()) {
-                let injected = inject_plugin_bridge_script(&s, &plugin_id, &rel, &manifest);
-                data = injected.into_bytes();
+        let html_ver = file_mtime_ms(&path_norm);
+        let key: HtmlCacheKey = (plugin_id.clone(), rel.clone());
+        let cache =
+            PLUGIN_INJECTED_HTML_CACHE.get_or_init(|| Mutex::new(std::collections::HashMap::new()));
+        if let Ok(g) = cache.lock() {
+            if let Some((cached_ver, bytes)) = g.get(&key) {
+                if *cached_ver == html_ver && html_ver != 0 {
+                    data = bytes.clone();
+                    return ResponseBuilder::new()
+                        .status(200)
+                        .mimetype(mime_for_plugin_asset(&rel))
+                        .body(data);
+                }
+            }
+        }
+        if let (Some(manifest), Ok(s)) = (load_manifest_cached(root, &plugin_id), String::from_utf8(data.clone())) {
+            let injected = inject_plugin_bridge_script(&s, &plugin_id, &rel, &manifest);
+            data = injected.into_bytes();
+            if let Ok(mut g) = cache.lock() {
+                g.insert(key, (html_ver, data.clone()));
             }
         }
     }

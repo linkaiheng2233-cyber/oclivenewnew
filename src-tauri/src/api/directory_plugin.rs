@@ -567,6 +567,7 @@ fn plugin_catalog_fingerprint(state: &AppState) -> std::io::Result<u64> {
 
 fn build_directory_plugin_catalog(state: &AppState) -> Vec<DirectoryPluginCatalogEntry> {
     let rt = &state.directory_plugins;
+    rt.ensure_scanned();
     let roots = rt.plugin_roots.read();
     let mut version_by_id: HashMap<String, Version> = HashMap::new();
     for (pid, root) in roots.iter() {

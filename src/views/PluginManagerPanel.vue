@@ -637,6 +637,27 @@ const marketRowsFiltered = computed(() => {
   });
 });
 
+const marketPageSize = ref<number>(30);
+const marketPage = ref<number>(1);
+
+const marketTotalPages = computed(() => {
+  const total = marketRowsFiltered.value.length;
+  const size = Math.max(1, Math.floor(marketPageSize.value || 30));
+  return Math.max(1, Math.ceil(total / size));
+});
+
+const marketRowsPaged = computed(() => {
+  const size = Math.max(1, Math.floor(marketPageSize.value || 30));
+  const totalPages = marketTotalPages.value;
+  const page = Math.min(Math.max(1, Math.floor(marketPage.value || 1)), totalPages);
+  const start = (page - 1) * size;
+  return marketRowsFiltered.value.slice(start, start + size);
+});
+
+watch([marketEntryTab, marketSourceSelected], () => {
+  marketPage.value = 1;
+});
+
 const moduleRowsAll = computed(() => {
   const rows = pluginStore.pluginMarketSnapshot?.plugins ?? [];
   return rows.filter((r) => marketEntryType(r) === "module");
@@ -1099,7 +1120,7 @@ watch(batchMode, (v) => {
 });
 
 watch(
-  () => pluginStore.catalog.length,
+  () => pluginStore.catalog.map((c) => c.id),
   () => {
     const next: Record<string, boolean> = {};
     for (const p of pluginStore.catalog) {
@@ -1987,9 +2008,43 @@ async function onPackSelectedPlugin(): Promise<void> {
             >
               尚无索引数据，请点击「同步在线索引」。
             </p>
-            <ul v-else-if="marketRowsFiltered.length > 0" class="pm-market-list">
+            <div
+              v-else-if="marketRowsFiltered.length > 0"
+              class="pm-market-pager"
+              role="toolbar"
+              aria-label="市场分页"
+            >
+              <span class="pm-muted">
+                共 {{ marketRowsFiltered.length }} 条 · 第 {{ marketPage }} / {{ marketTotalPages }} 页
+              </span>
+              <label class="pm-muted">
+                每页
+                <select v-model.number="marketPageSize" class="pm-select pm-select--sm" aria-label="每页条数">
+                  <option :value="15">15</option>
+                  <option :value="30">30</option>
+                  <option :value="60">60</option>
+                </select>
+              </label>
+              <button
+                type="button"
+                class="pm-btn secondary pm-btn--sm"
+                :disabled="marketPage <= 1"
+                @click="marketPage = Math.max(1, marketPage - 1)"
+              >
+                上一页
+              </button>
+              <button
+                type="button"
+                class="pm-btn secondary pm-btn--sm"
+                :disabled="marketPage >= marketTotalPages"
+                @click="marketPage = Math.min(marketTotalPages, marketPage + 1)"
+              >
+                下一页
+              </button>
+            </div>
+            <ul v-if="marketRowsPaged.length > 0" class="pm-market-list">
               <li
-                v-for="row in marketRowsFiltered"
+                v-for="row in marketRowsPaged"
                 :key="row.id"
                 class="pm-market-li"
               >

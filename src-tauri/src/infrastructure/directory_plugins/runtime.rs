@@ -215,6 +215,7 @@ pub struct DirectoryPluginRuntime {
     process_started_ms: Mutex<HashMap<String, u64>>,
     host: Arc<RwLock<HostPluginsFile>>,
     app_data_dir: PathBuf,
+    roles_dir: PathBuf,
     /// `app_data_dir/plugin_state.json`（v2：按 `role_id` 隔离）
     plugin_state_store: Arc<RwLock<PluginStateStore>>,
     /// 当前主界面所加载的角色（用于插槽/禁用解析；资产网关与 RPC 共用）。
@@ -226,18 +227,14 @@ pub struct DirectoryPluginRuntime {
 impl DirectoryPluginRuntime {
     pub fn bootstrap(roles_dir: &Path, app_data: &Path) -> Arc<Self> {
         let host = HostPluginsFile::load(app_data);
-        let scan = scan_plugins(roles_dir, app_data, &host);
-        log::info!(
-            target: "oclive_plugin",
-            "directory plugins scanned count={} ids={:?}",
-            scan.roots.len(),
-            scan.plugin_ids
-        );
+        // Lazy scan: avoid paying directory traversal + manifest parse cost at cold start.
+        // We will scan on first use (catalog/ensure_rpc_url/shell_url_for) and can rescan later.
         let app_data_dir = app_data.to_path_buf();
+        let roles_dir = roles_dir.to_path_buf();
         let ps_path = app_data_dir.join("plugin_state.json");
         let plugin_state_store = Arc::new(RwLock::new(PluginStateStore::load(&ps_path)));
         Arc::new(Self {
-            plugin_roots: Arc::new(RwLock::new(scan.roots)),
+            plugin_roots: Arc::new(RwLock::new(HashMap::new())),
             rpc_urls: Mutex::new(HashMap::new()),
             children: Mutex::new(HashMap::new()),
             startup_locks: Mutex::new(HashMap::new()),
@@ -245,10 +242,19 @@ impl DirectoryPluginRuntime {
             process_started_ms: Mutex::new(HashMap::new()),
             host: Arc::new(RwLock::new(host)),
             app_data_dir,
+            roles_dir,
             plugin_state_store,
             active_role_id: Arc::new(RwLock::new(None)),
             catalog_invalidate_gen: AtomicU64::new(0),
         })
+    }
+
+    /// Ensure plugin roots have been scanned at least once.
+    pub fn ensure_scanned(&self) {
+        if !self.plugin_roots.read().is_empty() {
+            return;
+        }
+        self.rescan_plugin_roots(&self.roles_dir);
     }
 
     #[must_use]
@@ -542,6 +548,7 @@ impl DirectoryPluginRuntime {
     }
 
     pub fn shell_url_for(&self, plugin_id: &str, entry: &str) -> Option<String> {
+        self.ensure_scanned();
         let roots = self.plugin_roots.read();
         if !roots.contains_key(plugin_id) {
             return None;
@@ -581,6 +588,7 @@ impl DirectoryPluginRuntime {
         if id.is_empty() {
             return Err("plugin_id required".to_string());
         }
+        self.ensure_scanned();
         if !ignore_disabled && self.effective_slots().is_plugin_disabled(id) {
             return Err(format!("plugin disabled: {}", id));
         }
@@ -691,15 +699,26 @@ impl DirectoryPluginRuntime {
             }
         };
 
-        let handshake = Arc::new(Mutex::new(Vec::<String>::new()));
-        let handshake_out = handshake.clone();
         let ring_out = log_ring.clone();
+        let (ready_tx, ready_rx) = std::sync::mpsc::channel::<String>();
+        let prefix_owned = prefix.to_string();
+        let ready_sent = Arc::new(std::sync::atomic::AtomicBool::new(false));
+        let ready_sent_out = ready_sent.clone();
         thread::spawn(move || {
             let r = BufReader::new(stdout);
             for result in r.lines() {
                 match result {
                     Ok(line) => {
-                        handshake_out.lock().push(line.clone());
+                        if !ready_sent_out.load(Ordering::Relaxed) {
+                            if let Some(u) = parse_ready_line(line.as_str(), prefix_owned.as_str()) {
+                                if ready_sent_out
+                                    .compare_exchange(false, true, Ordering::SeqCst, Ordering::SeqCst)
+                                    .is_ok()
+                                {
+                                    let _ = ready_tx.send(u);
+                                }
+                            }
+                        }
                         ring_out.lock().push_line(format!("[stdout] {}", line));
                     }
                     Err(_) => break,
@@ -718,8 +737,9 @@ impl DirectoryPluginRuntime {
         });
 
         let deadline = Instant::now() + Duration::from_secs(30);
-        let url = 'wait: loop {
-            if Instant::now() > deadline {
+        let url = loop {
+            let now = Instant::now();
+            if now >= deadline {
                 let _ = child.kill();
                 self.debug_log_rings.lock().remove(plugin_id);
                 return Err(format!(
@@ -727,12 +747,16 @@ impl DirectoryPluginRuntime {
                     plugin_id, prefix
                 ));
             }
-            for line in handshake.lock().iter() {
-                if let Some(u) = parse_ready_line(line, prefix) {
-                    break 'wait u;
+            let slice = deadline.saturating_duration_since(now).min(Duration::from_millis(200));
+            match ready_rx.recv_timeout(slice) {
+                Ok(u) => break u,
+                Err(std::sync::mpsc::RecvTimeoutError::Timeout) => continue,
+                Err(std::sync::mpsc::RecvTimeoutError::Disconnected) => {
+                    let _ = child.kill();
+                    self.debug_log_rings.lock().remove(plugin_id);
+                    return Err(format!("plugin {}: stdout closed before ready", plugin_id));
                 }
             }
-            thread::sleep(Duration::from_millis(50));
         };
         let started_ms = SystemTime::now()
             .duration_since(UNIX_EPOCH)
