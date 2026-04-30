@@ -203,6 +203,9 @@ export const zhCN = {
       lifeAria: "日程推断",
       lifeNow: "此刻",
     },
+    floatingSlot: {
+      aria: "浮层插件区",
+    },
   },
   settings: {
     title: "设置",

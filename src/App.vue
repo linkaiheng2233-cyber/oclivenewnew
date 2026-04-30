@@ -1073,7 +1073,7 @@ onBeforeUnmount(() => {
     <div class="app-floating-slot" aria-hidden="true">
       <PluginSlotEmbed
         slot-name="overlay.floating"
-        aria-label="浮层插件区"
+        :aria-label="String(t('app.floatingSlot.aria'))"
         :bootstrap-epoch="pluginStore.bootstrapEpoch"
       />
     </div>

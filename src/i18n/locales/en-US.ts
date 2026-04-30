@@ -208,6 +208,9 @@ export const enUS = {
       lifeAria: "Life schedule inference",
       lifeNow: "Now",
     },
+    floatingSlot: {
+      aria: "Floating plugin slot",
+    },
   },
   settings: {
     title: "Settings",
