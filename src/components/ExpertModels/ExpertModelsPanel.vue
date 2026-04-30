@@ -663,16 +663,16 @@ async function onLoadWorkflow(): Promise<void> {
 async function onDeleteWorkflow(): Promise<void> {
   const wid = store.pickedWorkflowId.trim();
   if (!wid) {
-    showToast("info", "请先选择一个工作流。");
+    showToast("info", String(t("expertModels.workflows.toastPickFirst")));
     return;
   }
   const name = store.workflows.find((w) => w.id === wid)?.name ?? wid;
-  const ok = window.confirm(`将删除工作流：${name}\n\n继续吗？`);
+  const ok = window.confirm(String(t("expertModels.workflows.confirmDelete", { name })));
   if (!ok) return;
   saving.value = true;
   try {
     await store.deleteWorkflow(wid);
-    showToast("success", "已删除工作流。");
+    showToast("success", String(t("expertModels.workflows.toastDeleted")));
   } catch (e) {
     showToast("error", e instanceof Error ? e.message : String(e));
   } finally {
@@ -694,12 +694,12 @@ async function onExportWorkflowJson(): Promise<void> {
   });
   if (!path) return;
   await writeTextFile(path, content);
-  showToast("success", "已导出工作流文件。");
+  showToast("success", String(t("expertModels.workflows.toastExported")));
 }
 
 async function onImportWorkflowJson(): Promise<void> {
   const picked = await open({
-    title: "导入工作流（JSON）",
+    title: String(t("expertModels.workflows.dialogImportTitle")),
     multiple: false,
     directory: false,
     filters: [{ name: "Workflow JSON", extensions: ["json"] }],
@@ -710,13 +710,15 @@ async function onImportWorkflowJson(): Promise<void> {
   try {
     const raw = await readTextFile(p);
     const v = JSON.parse(raw ?? "{}") as any;
-    const name = String(v?.name ?? "导入工作流").trim() || "导入工作流";
+    const name =
+      String(v?.name ?? String(t("expertModels.workflows.importDefaultName"))).trim() ||
+      String(t("expertModels.workflows.importDefaultName"));
     store.draftGraph = (v?.graph ?? { version: 1, nodes: [], edges: [] }) as ExpertGraph;
     store.draftPromptStyle = (v?.promptStyle ?? null) as any;
     // save into library
     const wf = await store.saveWorkflow(name, null);
     workflowNameDraft.value = wf.name;
-    showToast("success", `已导入并保存到工作流库：${wf.name}`);
+    showToast("success", String(t("expertModels.workflows.toastImportedAndSaved", { name: wf.name })));
   } catch (e) {
     showToast("error", e instanceof Error ? e.message : String(e));
   } finally {
@@ -746,16 +748,16 @@ async function onImportWorkflowJson(): Promise<void> {
 
     <div class="em-meta">
       <div class="em-pill">
-        Graph 来源：<b>{{ sourceLabel(store.graphSource) }}</b>
+        {{ t("expertModels.meta.graphSource") }}：<b>{{ sourceLabel(store.graphSource) }}</b>
       </div>
       <div class="em-pill">
-        PromptStyle 来源：<b>{{ sourceLabel(store.promptStyleSource) }}</b>
+        {{ t("expertModels.meta.promptStyleSource") }}：<b>{{ sourceLabel(store.promptStyleSource) }}</b>
       </div>
       <div v-if="store.llamaMissingMechanismPerms.length" class="em-warnbar">
         <div>
-          <b>本地 Llama 尚未授权必要权限</b>
+          <b>{{ t("expertModels.permsMissing.title") }}</b>
           <span class="em-muted2">
-            缺少：{{ store.llamaMissingMechanismPerms.join("、") }}。未授权时会回退其他 LLM 或调用被拦截。
+            {{ t("expertModels.permsMissing.hint", { list: store.llamaMissingMechanismPerms.join('、') }) }}
           </span>
         </div>
         <button
@@ -763,7 +765,7 @@ async function onImportWorkflowJson(): Promise<void> {
           class="em-btn danger"
           @click="emit('open-permissions', { pluginId: 'com.oclive.llama.local' })"
         >
-          去授权
+          {{ t("expertModels.permsMissing.goGrant") }}
         </button>
       </div>
       <div v-if="store.error" class="em-err">{{ store.error }}</div>
@@ -771,44 +773,44 @@ async function onImportWorkflowJson(): Promise<void> {
 
     <div class="em-workflows">
       <div class="em-card">
-        <div class="em-card-h">工作流（第九模块配置包）</div>
+        <div class="em-card-h">{{ t("expertModels.workflows.title") }}</div>
         <div class="em-wf-row">
-          <label class="em-muted" style="min-width: 72px">名称</label>
-          <input v-model="workflowNameDraft" class="em-input" type="text" placeholder="给工作流起个名字…" />
+          <label class="em-muted" style="min-width: 72px">{{ t("expertModels.workflows.nameLabel") }}</label>
+          <input v-model="workflowNameDraft" class="em-input" type="text" :placeholder="t('expertModels.workflows.namePlaceholder')" />
         </div>
         <div class="em-wf-row">
-          <label class="em-muted" style="min-width: 72px">库</label>
+          <label class="em-muted" style="min-width: 72px">{{ t("expertModels.workflows.libraryLabel") }}</label>
           <select v-model="store.pickedWorkflowId" class="em-select" style="flex: 1 1 auto">
-            <option value="">（未选择）</option>
+            <option value="">{{ t("expertModels.workflows.notSelected") }}</option>
             <option v-for="w in store.workflows" :key="w.id" :value="w.id">
               {{ w.name }}
             </option>
           </select>
-          <button class="em-btn secondary" type="button" :disabled="saving" @click="onLoadWorkflow">载入</button>
+          <button class="em-btn secondary" type="button" :disabled="saving" @click="onLoadWorkflow">{{ t("expertModels.workflows.load") }}</button>
         </div>
         <div class="em-wf-actions">
-          <button class="em-btn" type="button" :disabled="saving" @click="onSaveWorkflowAs">保存为新工作流</button>
-          <button class="em-btn secondary" type="button" :disabled="saving" @click="onOverwriteWorkflow">覆盖保存</button>
-          <button class="em-btn secondary" type="button" :disabled="saving" @click="onDeleteWorkflow">删除</button>
-          <button class="em-btn secondary" type="button" :disabled="saving" @click="onExportWorkflowJson">导出文件</button>
-          <button class="em-btn secondary" type="button" :disabled="saving" @click="onImportWorkflowJson">导入文件</button>
+          <button class="em-btn" type="button" :disabled="saving" @click="onSaveWorkflowAs">{{ t("expertModels.workflows.saveAsNew") }}</button>
+          <button class="em-btn secondary" type="button" :disabled="saving" @click="onOverwriteWorkflow">{{ t("expertModels.workflows.overwriteSave") }}</button>
+          <button class="em-btn secondary" type="button" :disabled="saving" @click="onDeleteWorkflow">{{ t("expertModels.workflows.delete") }}</button>
+          <button class="em-btn secondary" type="button" :disabled="saving" @click="onExportWorkflowJson">{{ t("expertModels.workflows.exportFile") }}</button>
+          <button class="em-btn secondary" type="button" :disabled="saving" @click="onImportWorkflowJson">{{ t("expertModels.workflows.importFile") }}</button>
         </div>
         <div class="em-muted">
-          提示：工作流会保存节点排布、连线与参数；可导出分享给其他创作者。\n
+          {{ t("expertModels.workflows.hint") }}
         </div>
       </div>
     </div>
 
     <div class="em-editorbar">
       <div class="em-pill">
-        编辑器：
+        {{ t("expertModels.editor.label") }}：
         <button
           type="button"
           class="em-mini"
           :class="{ on: editorMode === 'canvas' }"
           @click="editorMode = 'canvas'"
         >
-          画布（连线）
+          {{ t("expertModels.editor.canvas") }}
         </button>
         <button
           type="button"
@@ -816,10 +818,10 @@ async function onImportWorkflowJson(): Promise<void> {
           :class="{ on: editorMode === 'form' }"
           @click="editorMode = 'form'"
         >
-          表单
+          {{ t("expertModels.editor.form") }}
         </button>
       </div>
-      <div class="em-muted">提示：画布会把节点位置与连线写入 ExpertGraph（用于 M2 编译）。</div>
+      <div class="em-muted">{{ t("expertModels.editor.canvasHint") }}</div>
     </div>
 
     <div v-if="editorMode === 'canvas'" class="em-canvaswrap">
@@ -828,7 +830,7 @@ async function onImportWorkflowJson(): Promise<void> {
 
     <div v-if="editorMode === 'canvas' && selectedNode" class="em-inspector">
       <div class="em-card">
-        <div class="em-card-h">节点属性：{{ (selectedNode as any).type }} · {{ (selectedNode as any).id }}</div>
+        <div class="em-card-h">{{ t("expertModels.inspector.title") }}：{{ (selectedNode as any).type }} · {{ (selectedNode as any).id }}</div>
 
         <template v-if="(selectedNode as any).type === 'base_model'">
           <select
@@ -836,12 +838,12 @@ async function onImportWorkflowJson(): Promise<void> {
             :value="(selectedNode as any).ggufPath"
             @change="patchSelectedNode({ ggufPath: ($event.target as HTMLSelectElement).value })"
           >
-            <option value="">（不设置 / 保持当前）</option>
+            <option value="">{{ t("expertModels.common.notSet") }}</option>
             <option v-for="m in store.baseModels" :key="m.path" :value="m.path">
               {{ m.name }}
             </option>
           </select>
-          <div class="em-muted">Base 只允许选择 `models/gguf/` 下的 GGUF。</div>
+          <div class="em-muted">{{ t("expertModels.inspector.baseHint") }}</div>
         </template>
 
         <template v-else-if="(selectedNode as any).type === 'lora_adapter'">
@@ -850,14 +852,14 @@ async function onImportWorkflowJson(): Promise<void> {
             :value="(selectedNode as any).ggufPath"
             @change="patchSelectedNode({ ggufPath: ($event.target as HTMLSelectElement).value })"
           >
-            <option value="">（选择一个 LoRA…）</option>
+            <option value="">{{ t("expertModels.inspector.pickLora") }}</option>
             <option v-for="m in store.loras" :key="m.path" :value="m.path">
               {{ m.name }}
             </option>
           </select>
 
           <label class="em-field" style="margin-top: 8px">
-            <div class="em-label">强度（ComfyUI 风格，默认 1.0）</div>
+            <div class="em-label">{{ t("expertModels.inspector.strengthLabel") }}</div>
             <input
               class="em-num"
               type="number"
@@ -876,16 +878,16 @@ async function onImportWorkflowJson(): Promise<void> {
               :checked="(selectedNode as any).enabled"
               @change="patchSelectedNode({ enabled: ($event.target as HTMLInputElement).checked })"
             />
-            <span class="em-muted">启用该 LoRA</span>
+            <span class="em-muted">{{ t("expertModels.inspector.enableLora") }}</span>
           </label>
         </template>
 
         <template v-else-if="(selectedNode as any).type === 'prompt_style'">
           <div class="em-muted" style="margin-top: 0">
-            提示：这里编辑的内容会同步到“PromptStyle（可选覆盖）”的草稿，并在应用时作为覆盖层生效。
+            {{ t("expertModels.inspector.promptStyleHint") }}
           </div>
           <label class="em-field" style="margin-top: 8px">
-            <div class="em-label">回复质量锚点</div>
+            <div class="em-label">{{ t("expertModels.promptStyle.replyQualityAnchor") }}</div>
             <textarea
               class="em-text"
               rows="3"
@@ -894,7 +896,7 @@ async function onImportWorkflowJson(): Promise<void> {
             />
           </label>
           <label class="em-field">
-            <div class="em-label">核心人设</div>
+            <div class="em-label">{{ t("expertModels.promptStyle.corePersonality") }}</div>
             <textarea
               class="em-text"
               rows="3"
@@ -903,7 +905,7 @@ async function onImportWorkflowJson(): Promise<void> {
             />
           </label>
           <label class="em-field">
-            <div class="em-label">描述</div>
+            <div class="em-label">{{ t("expertModels.promptStyle.description") }}</div>
             <textarea
               class="em-text"
               rows="2"
@@ -916,7 +918,7 @@ async function onImportWorkflowJson(): Promise<void> {
     </div>
 
     <details v-if="editorMode === 'canvas'" class="em-advanced" open>
-      <summary class="em-advanced-sum">高级/兼容编辑（表单）</summary>
+      <summary class="em-advanced-sum">{{ t("expertModels.advancedForm.title") }}</summary>
       <div class="em-advanced-body">
         <div class="em-grid">
       <div class="em-card">

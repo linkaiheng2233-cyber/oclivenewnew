@@ -738,6 +738,62 @@ export const enUS = {
       hoursAgo: "{n}h ago",
       daysAgo: "{n}d ago",
     },
+    meta: {
+      graphSource: "Graph source",
+      promptStyleSource: "PromptStyle source",
+    },
+    permsMissing: {
+      title: "Local Llama is missing required permissions",
+      hint:
+        "Missing: {list}. Without permissions, it may fallback to other LLMs or calls will be blocked.",
+      goGrant: "Grant permissions",
+    },
+    workflows: {
+      title: "Workflows (Module 9 packages)",
+      nameLabel: "Name",
+      namePlaceholder: "Name this workflow…",
+      libraryLabel: "Library",
+      notSelected: "(not selected)",
+      load: "Load",
+      saveAsNew: "Save as new workflow",
+      overwriteSave: "Overwrite save",
+      delete: "Delete",
+      exportFile: "Export file",
+      importFile: "Import file",
+      hint:
+        "Tip: workflows save node layout, edges, and parameters; export to share with other creators.",
+      toastPickFirst: "Please select a workflow first.",
+      confirmDelete: "Delete workflow: {name}\n\nContinue?",
+      toastDeleted: "Workflow deleted.",
+      toastExported: "Workflow file exported.",
+      dialogImportTitle: "Import workflow (JSON)",
+      importDefaultName: "Imported workflow",
+      toastImportedAndSaved: "Imported and saved to workflow library: {name}",
+    },
+    editor: {
+      label: "Editor",
+      canvas: "Canvas (edges)",
+      form: "Form",
+      canvasHint:
+        "Tip: canvas writes node positions and edges into ExpertGraph (used for M2 compilation).",
+    },
+    inspector: {
+      title: "Node attributes",
+      baseHint: "Base can only select GGUF under `models/gguf/`.",
+      pickLora: "(pick a LoRA…)",
+      strengthLabel: "Strength (ComfyUI style, default 1.0)",
+      enableLora: "Enable this LoRA",
+      promptStyleHint:
+        "Tip: edits here sync to the PromptStyle draft and take effect as an override layer when applying.",
+    },
+    promptStyle: {
+      replyQualityAnchor: "Reply quality anchor",
+      corePersonality: "Core personality",
+      description: "Description",
+    },
+    advancedForm: {
+      title: "Advanced / compatibility editor (form)",
+    },
   },
 } as const;
 
