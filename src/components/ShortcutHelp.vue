@@ -1,7 +1,10 @@
 <script setup lang="ts">
 import { computed } from "vue";
 import PluginSlotEmbed from "./PluginSlotEmbed.vue";
-import { shortcutHelpCtrlShiftFDescription } from "../lib/pluginManagerEntryCopy";
+import {
+  shortcutHelpCtrlShiftADescription,
+  shortcutHelpCtrlShiftFDescription,
+} from "../lib/pluginManagerEntryCopy";
 import { SLOT_LAUNCHER_PALETTE } from "../stores/pluginStore";
 import { useUiStore } from "../stores/uiStore";
 
@@ -24,9 +27,11 @@ const rows = computed(() => {
   const pluginF = shortcutHelpCtrlShiftFDescription(
     uiStore.experimentalPluginManagerV2,
   );
+  const pluginA = shortcutHelpCtrlShiftADescription();
   return [
     { keys: "Ctrl + Shift + S", desc: "打开设置（扩展区、安全、快捷键与插件配置）" },
     { keys: "Ctrl + Shift + F", desc: pluginF },
+    { keys: "Ctrl + Shift + A", desc: pluginA },
     { keys: "Ctrl（长按约 1 秒）", desc: "打开本快捷键说明" },
   ];
 });

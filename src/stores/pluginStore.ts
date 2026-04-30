@@ -260,6 +260,8 @@ export const usePluginStore = defineStore("plugin", {
     pluginMarketSnapshot: null as PluginMarketSnapshotDto | null,
     pluginMarketSyncing: false,
     pluginMarketError: null as string | null,
+    /** 下一次打开 V1 面板并渲染「插件总览」后，滚动到「社区索引」锚点（供 Ctrl+Shift+A）。 */
+    pendingScrollToCommunityMarket: false,
   }),
   actions: {
     /** 由 bootstrap DTO 更新宿主事件订阅与开发者模式（插槽与 `refresh` / `sync` 共用）。 */
@@ -285,6 +287,24 @@ export const usePluginStore = defineStore("plugin", {
       }
       this.panelVisible = true;
       await this.refresh();
+    },
+    /**
+     * 打开 V1 插件管理并定位到「插件总览 → 社区索引」（内置插件市场列表）。
+     * 与 `Ctrl+Shift+F` 区别：本入口专门跳到市场区块（仍属同一面板）。
+     */
+    async openV1PanelToCommunityMarket() {
+      this.pendingScrollToCommunityMarket = true;
+      this.panelMainTab = "plugins";
+      this.panelVisible = true;
+      try {
+        await this.refresh();
+      } catch {
+        this.pendingScrollToCommunityMarket = false;
+        throw;
+      }
+    },
+    clearPendingScrollCommunityMarket() {
+      this.pendingScrollToCommunityMarket = false;
     },
     async loadCachedPluginMarket() {
       this.pluginMarketError = null;

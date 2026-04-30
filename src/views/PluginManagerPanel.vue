@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { open } from "@tauri-apps/api/dialog";
 import { open as openExternal } from "@tauri-apps/api/shell";
-import { computed, ref, watch } from "vue";
+import { computed, nextTick, ref, watch } from "vue";
 import PluginBackendSessionPanel from "../components/PluginBackendSessionPanel.vue";
 import InstalledPluginWorkspaceDetail from "../components/InstalledPluginWorkspaceDetail.vue";
 import PluginScaffoldWizard from "../components/PluginScaffoldWizard.vue";
@@ -57,6 +57,20 @@ import {
 const pluginStore = usePluginStore();
 const roleStore = useRoleStore();
 const { showToast } = useAppToast();
+
+watch(
+  () =>
+    [pluginStore.panelVisible, pluginStore.pendingScrollToCommunityMarket] as const,
+  async ([vis, pend]) => {
+    if (!vis || !pend) return;
+    await nextTick();
+    document.getElementById("pm-community-index")?.scrollIntoView({
+      behavior: "smooth",
+      block: "start",
+    });
+    pluginStore.clearPendingScrollCommunityMarket();
+  },
+);
 
 const marketSourceSelected = ref("official");
 const marketSources = ref<string[]>([]);
@@ -1600,7 +1614,9 @@ async function onPackSelectedPlugin(): Promise<void> {
           </div>
           <p class="pm-sub">
             <kbd class="pm-kbd">Ctrl</kbd>+<kbd class="pm-kbd">Shift</kbd>+<kbd class="pm-kbd">F</kbd>
-            开关本窗口 · 保存后插槽/启用状态建议重启应用生效
+            开关本窗口 ·
+            <kbd class="pm-kbd">Ctrl</kbd>+<kbd class="pm-kbd">Shift</kbd>+<kbd class="pm-kbd">A</kbd>
+            定位「社区索引」 · 保存后插槽/启用状态建议重启应用生效
           </p>
           <button type="button" class="pm-close" aria-label="关闭" @click="pluginStore.closePanel()">
             ×
@@ -1815,7 +1831,7 @@ async function onPackSelectedPlugin(): Promise<void> {
             <p v-else class="pm-muted">未列出 recommended_plugins。</p>
           </section>
 
-          <section class="pm-section">
+          <section id="pm-community-index" class="pm-section">
             <div class="pm-section-head">
               <h3 class="pm-h3">社区索引</h3>
               <div class="pm-section-actions">

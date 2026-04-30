@@ -192,6 +192,13 @@ const {
   },
 });
 
+/** 插件市场（社区索引）专用入口：强制打开 V1 面板并滚动到该区块（V2 预览不含市场列表）。 */
+async function openPluginMarketFromShortcut(): Promise<void> {
+  pluginManagerV2Open.value = false;
+  topMoreOpen.value = false;
+  await pluginStore.openV1PanelToCommunityMarket();
+}
+
 const topBarRef = ref<HTMLElement | null>(null);
 let morePanelClickListenTimer: ReturnType<typeof setTimeout> | null = null;
 
@@ -549,6 +556,11 @@ function onHotkey(e: KeyboardEvent) {
   if (e.ctrlKey && e.shiftKey && e.key.toLowerCase() === "f") {
     e.preventDefault();
     openPluginManagerPanel();
+    return;
+  }
+  if (e.ctrlKey && e.shiftKey && e.key.toLowerCase() === "a") {
+    e.preventDefault();
+    void openPluginMarketFromShortcut();
     return;
   }
   if (e.ctrlKey && e.shiftKey && e.key.toLowerCase() === "s") {
