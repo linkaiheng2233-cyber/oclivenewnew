@@ -549,6 +549,56 @@ pub struct ExpertModelsApplyResult {
     pub llama_args: Option<String>,
 }
 
+// ===== Module 9: Expert Workflows (preset library) =====
+
+#[derive(Debug, Clone, Serialize)]
+#[serde(rename_all = "camelCase")]
+pub struct ExpertWorkflowSummaryDto {
+    pub id: String,
+    pub name: String,
+    pub updated_at_ms: i64,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct ExpertWorkflowDto {
+    pub id: String,
+    pub name: String,
+    pub updated_at_ms: i64,
+    pub graph: ExpertGraph,
+    #[serde(default)]
+    pub prompt_style: Option<PromptStyleOverride>,
+}
+
+#[derive(Debug, Clone, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct ExpertWorkflowsSaveRequest {
+    #[serde(default)]
+    pub id: Option<String>,
+    pub name: String,
+    pub graph: ExpertGraph,
+    #[serde(default)]
+    pub prompt_style: Option<PromptStyleOverride>,
+}
+
+#[derive(Debug, Clone, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct ExpertWorkflowsDeleteRequest {
+    pub id: String,
+}
+
+#[derive(Debug, Clone, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct ExpertWorkflowsGetRequest {
+    pub id: String,
+}
+
+#[derive(Debug, Clone, Serialize)]
+#[serde(rename_all = "camelCase")]
+pub struct ExpertWorkflowsListResponse {
+    pub items: Vec<ExpertWorkflowSummaryDto>,
+}
+
 #[derive(Debug, Clone, Deserialize)]
 pub struct QueryMemoriesRequest {
     pub role_id: String,

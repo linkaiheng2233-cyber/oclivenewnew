@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { computed, onMounted, ref } from "vue";
-import { open } from "@tauri-apps/api/dialog";
+import { open, save } from "@tauri-apps/api/dialog";
+import { readTextFile, writeTextFile } from "@tauri-apps/api/fs";
 import { useAppToast } from "../../composables/useAppToast";
 import { useExpertModelsStore } from "../../stores/expertModelsStore";
 import ExpertModelsCanvas from "./ExpertModelsCanvas.vue";
@@ -161,6 +162,7 @@ const strengthWarning = (v: number): string | null => {
 
 async function onRefresh(): Promise<void> {
   await store.refresh();
+  await store.refreshWorkflows().catch(() => {});
   if (store.error) showToast("error", store.error);
 }
 
@@ -262,6 +264,125 @@ async function onClearRoleDefault(): Promise<void> {
 onMounted(() => {
   if (!store.baseModels.length && !store.loading) void onRefresh();
 });
+
+const workflowNameDraft = ref<string>("");
+
+async function onSaveWorkflowAs(): Promise<void> {
+  saving.value = true;
+  try {
+    const name = workflowNameDraft.value.trim();
+    const wf = await store.saveWorkflow(name || "未命名工作流", null);
+    workflowNameDraft.value = wf.name;
+    showToast("success", `已保存工作流：${wf.name}`);
+  } catch (e) {
+    showToast("error", e instanceof Error ? e.message : String(e));
+  } finally {
+    saving.value = false;
+  }
+}
+
+async function onOverwriteWorkflow(): Promise<void> {
+  const wid = store.pickedWorkflowId.trim();
+  if (!wid) {
+    showToast("info", "请先选择一个工作流再覆盖保存。");
+    return;
+  }
+  const ok = window.confirm("将覆盖保存当前选中的工作流。继续吗？");
+  if (!ok) return;
+  saving.value = true;
+  try {
+    const name = workflowNameDraft.value.trim() || store.workflows.find((w) => w.id === wid)?.name || "工作流";
+    const wf = await store.saveWorkflow(name, wid);
+    workflowNameDraft.value = wf.name;
+    showToast("success", `已覆盖保存：${wf.name}`);
+  } catch (e) {
+    showToast("error", e instanceof Error ? e.message : String(e));
+  } finally {
+    saving.value = false;
+  }
+}
+
+async function onLoadWorkflow(): Promise<void> {
+  const wid = store.pickedWorkflowId.trim();
+  if (!wid) {
+    showToast("info", "请先选择一个工作流。");
+    return;
+  }
+  saving.value = true;
+  try {
+    const wf = await store.loadWorkflow(wid);
+    workflowNameDraft.value = wf.name;
+    showToast("success", `已载入工作流：${wf.name}`);
+  } catch (e) {
+    showToast("error", e instanceof Error ? e.message : String(e));
+  } finally {
+    saving.value = false;
+  }
+}
+
+async function onDeleteWorkflow(): Promise<void> {
+  const wid = store.pickedWorkflowId.trim();
+  if (!wid) {
+    showToast("info", "请先选择一个工作流。");
+    return;
+  }
+  const name = store.workflows.find((w) => w.id === wid)?.name ?? wid;
+  const ok = window.confirm(`将删除工作流：${name}\n\n继续吗？`);
+  if (!ok) return;
+  saving.value = true;
+  try {
+    await store.deleteWorkflow(wid);
+    showToast("success", "已删除工作流。");
+  } catch (e) {
+    showToast("error", e instanceof Error ? e.message : String(e));
+  } finally {
+    saving.value = false;
+  }
+}
+
+async function onExportWorkflowJson(): Promise<void> {
+  const payload = {
+    version: 1,
+    name: workflowNameDraft.value.trim() || "workflow",
+    graph: store.draftGraph,
+    promptStyle: store.draftPromptStyle ?? null,
+  };
+  const content = JSON.stringify(payload, null, 2);
+  const path = await save({
+    defaultPath: `${payload.name}.oclive-workflow.json`,
+    filters: [{ name: "Workflow JSON", extensions: ["json"] }],
+  });
+  if (!path) return;
+  await writeTextFile(path, content);
+  showToast("success", "已导出工作流文件。");
+}
+
+async function onImportWorkflowJson(): Promise<void> {
+  const picked = await open({
+    title: "导入工作流（JSON）",
+    multiple: false,
+    directory: false,
+    filters: [{ name: "Workflow JSON", extensions: ["json"] }],
+  });
+  const p = typeof picked === "string" ? picked : null;
+  if (!p) return;
+  saving.value = true;
+  try {
+    const raw = await readTextFile(p);
+    const v = JSON.parse(raw ?? "{}") as any;
+    const name = String(v?.name ?? "导入工作流").trim() || "导入工作流";
+    store.draftGraph = (v?.graph ?? { version: 1, nodes: [], edges: [] }) as ExpertGraph;
+    store.draftPromptStyle = (v?.promptStyle ?? null) as any;
+    // save into library
+    const wf = await store.saveWorkflow(name, null);
+    workflowNameDraft.value = wf.name;
+    showToast("success", `已导入并保存到工作流库：${wf.name}`);
+  } catch (e) {
+    showToast("error", e instanceof Error ? e.message : String(e));
+  } finally {
+    saving.value = false;
+  }
+}
 </script>
 
 <template>
@@ -306,6 +427,36 @@ onMounted(() => {
         </button>
       </div>
       <div v-if="store.error" class="em-err">{{ store.error }}</div>
+    </div>
+
+    <div class="em-workflows">
+      <div class="em-card">
+        <div class="em-card-h">工作流（第九模块配置包）</div>
+        <div class="em-wf-row">
+          <label class="em-muted" style="min-width: 72px">名称</label>
+          <input v-model="workflowNameDraft" class="em-input" type="text" placeholder="给工作流起个名字…" />
+        </div>
+        <div class="em-wf-row">
+          <label class="em-muted" style="min-width: 72px">库</label>
+          <select v-model="store.pickedWorkflowId" class="em-select" style="flex: 1 1 auto">
+            <option value="">（未选择）</option>
+            <option v-for="w in store.workflows" :key="w.id" :value="w.id">
+              {{ w.name }}
+            </option>
+          </select>
+          <button class="em-btn secondary" type="button" :disabled="saving" @click="onLoadWorkflow">载入</button>
+        </div>
+        <div class="em-wf-actions">
+          <button class="em-btn" type="button" :disabled="saving" @click="onSaveWorkflowAs">保存为新工作流</button>
+          <button class="em-btn secondary" type="button" :disabled="saving" @click="onOverwriteWorkflow">覆盖保存</button>
+          <button class="em-btn secondary" type="button" :disabled="saving" @click="onDeleteWorkflow">删除</button>
+          <button class="em-btn secondary" type="button" :disabled="saving" @click="onExportWorkflowJson">导出文件</button>
+          <button class="em-btn secondary" type="button" :disabled="saving" @click="onImportWorkflowJson">导入文件</button>
+        </div>
+        <div class="em-muted">
+          提示：工作流会保存节点排布、连线与参数；可导出分享给其他创作者。\n
+        </div>
+      </div>
     </div>
 
     <div class="em-editorbar">
@@ -795,6 +946,29 @@ onMounted(() => {
   display: flex;
   gap: 8px;
   flex-wrap: wrap;
+}
+.em-workflows {
+  margin-top: 10px;
+}
+.em-wf-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-top: 8px;
+}
+.em-wf-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-top: 10px;
+}
+.em-input {
+  flex: 1 1 auto;
+  padding: 7px 10px;
+  border-radius: 8px;
+  border: 1px solid var(--border-light);
+  background: var(--bg-primary);
+  color: var(--text-primary);
 }
 .em-btn {
   padding: 7px 12px;

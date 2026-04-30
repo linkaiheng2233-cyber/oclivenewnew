@@ -10,10 +10,16 @@ import {
   expertModelsListLocalLoras,
   expertModelsSetRoleDefault,
   expertModelsSetSessionOverride,
+  expertWorkflowsDelete,
+  expertWorkflowsGet,
+  expertWorkflowsList,
+  expertWorkflowsSave,
   getPluginPermissionGrants,
   type ExpertConfigSource,
   type ExpertGraph,
   type LocalModelFileDto,
+  type ExpertWorkflowDto,
+  type ExpertWorkflowSummaryDto,
   type PromptStyleOverride,
 } from "../utils/tauri-api";
 import { useRoleStore } from "./roleStore";
@@ -37,6 +43,9 @@ export const useExpertModelsStore = defineStore("expertModels", {
 
     draftGraph: emptyGraph() as ExpertGraph,
     draftPromptStyle: null as PromptStyleOverride | null,
+
+    workflows: [] as ExpertWorkflowSummaryDto[],
+    pickedWorkflowId: "" as string,
   }),
   actions: {
     async refresh(): Promise<void> {
@@ -76,6 +85,46 @@ export const useExpertModelsStore = defineStore("expertModels", {
       } finally {
         this.loading = false;
       }
+    },
+
+    async refreshWorkflows(): Promise<void> {
+      const res = await expertWorkflowsList();
+      this.workflows = res.items ?? [];
+      if (this.pickedWorkflowId && !this.workflows.some((w) => w.id === this.pickedWorkflowId)) {
+        this.pickedWorkflowId = "";
+      }
+    },
+
+    async loadWorkflow(id: string): Promise<ExpertWorkflowDto> {
+      const wid = (id ?? "").trim();
+      if (!wid) throw new Error("请选择一个工作流。");
+      const wf = await expertWorkflowsGet(wid);
+      this.pickedWorkflowId = wf.id;
+      this.draftGraph = JSON.parse(JSON.stringify(wf.graph ?? emptyGraph())) as ExpertGraph;
+      this.draftPromptStyle = wf.promptStyle ? { ...(wf.promptStyle as any) } : null;
+      return wf;
+    },
+
+    async saveWorkflow(name: string, overwriteId?: string | null): Promise<ExpertWorkflowDto> {
+      const n = (name ?? "").trim();
+      if (!n) throw new Error("工作流名称不能为空。");
+      const wf = await expertWorkflowsSave({
+        id: overwriteId ?? null,
+        name: n,
+        graph: this.draftGraph,
+        promptStyle: this.draftPromptStyle,
+      });
+      await this.refreshWorkflows();
+      this.pickedWorkflowId = wf.id;
+      return wf;
+    },
+
+    async deleteWorkflow(id: string): Promise<void> {
+      const wid = (id ?? "").trim();
+      if (!wid) return;
+      await expertWorkflowsDelete(wid);
+      await this.refreshWorkflows();
+      if (this.pickedWorkflowId === wid) this.pickedWorkflowId = "";
     },
 
     setDraftFromEffective() {

@@ -149,6 +149,51 @@ export interface LocalModelFileDto {
   path: string;
 }
 
+export interface ExpertWorkflowSummaryDto {
+  id: string;
+  name: string;
+  updatedAtMs: number;
+}
+
+export interface ExpertWorkflowDto {
+  id: string;
+  name: string;
+  updatedAtMs: number;
+  graph: ExpertGraph;
+  promptStyle?: PromptStyleOverride | null;
+}
+
+export async function expertWorkflowsList(): Promise<{ items: ExpertWorkflowSummaryDto[] }> {
+  return invokeWithFriendlyError<{ items: ExpertWorkflowSummaryDto[] }>(
+    "expert_workflows_list",
+    {},
+  );
+}
+
+export async function expertWorkflowsGet(id: string): Promise<ExpertWorkflowDto> {
+  return invokeWithFriendlyError<ExpertWorkflowDto>("expert_workflows_get", { req: { id } });
+}
+
+export async function expertWorkflowsSave(params: {
+  id?: string | null;
+  name: string;
+  graph: ExpertGraph;
+  promptStyle?: PromptStyleOverride | null;
+}): Promise<ExpertWorkflowDto> {
+  return invokeWithFriendlyError<ExpertWorkflowDto>("expert_workflows_save", {
+    req: {
+      id: params.id ?? null,
+      name: params.name,
+      graph: params.graph,
+      promptStyle: params.promptStyle ?? null,
+    },
+  });
+}
+
+export async function expertWorkflowsDelete(id: string): Promise<void> {
+  return invokeWithFriendlyError<void>("expert_workflows_delete", { req: { id } });
+}
+
 export async function expertModelsGetEffective(params: {
   roleId: string;
   sessionId?: string | null;

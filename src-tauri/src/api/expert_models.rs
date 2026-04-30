@@ -11,6 +11,8 @@ use crate::models::dto::{
     ExpertModelsClearSessionOverrideRequest, ExpertModelsEffectiveResponse,
     ExpertModelsGetEffectiveRequest, ExpertModelsSetRoleDefaultRequest,
     ExpertModelsSetSessionOverrideRequest,
+    ExpertWorkflowDto, ExpertWorkflowSummaryDto, ExpertWorkflowsDeleteRequest,
+    ExpertWorkflowsGetRequest, ExpertWorkflowsListResponse, ExpertWorkflowsSaveRequest,
 };
 use crate::models::{ExpertConfigSource, ExpertGraph, LlamaLocalPluginConfig, PromptStyleOverride};
 use crate::models::dto::SetSessionPluginBackendRequest;
@@ -19,6 +21,7 @@ use serde_json::json;
 use serde::Serialize;
 use tauri::State;
 use uuid::Uuid;
+use chrono::Utc;
 
 fn parse_graph_json(raw: Option<String>) -> Result<Option<ExpertGraph>, String> {
     let Some(s) = raw else {
@@ -506,6 +509,144 @@ pub async fn expert_models_apply_to_session(
         model_path: compiled.model_path.clone(),
         llama_args: compiled.llama_args.clone(),
     })
+}
+
+// ===== Module 9: Expert Workflows (global preset library in app_settings) =====
+
+const EXPERT_WORKFLOWS_APP_SETTING_KEY: &str = "expert_models_workflows_v1";
+
+fn parse_workflow_list(raw: Option<String>) -> Result<Vec<ExpertWorkflowDto>, String> {
+    let Some(s) = raw else {
+        return Ok(vec![]);
+    };
+    let t = s.trim();
+    if t.is_empty() {
+        return Ok(vec![]);
+    }
+    serde_json::from_str::<Vec<ExpertWorkflowDto>>(t).map_err(|e| {
+        ApiError::InvalidParameter {
+            message: format!("invalid workflows json: {}", e),
+        }
+        .to_string()
+    })
+}
+
+async fn load_workflows(state: &AppState) -> Result<Vec<ExpertWorkflowDto>, String> {
+    let raw = state
+        .db_manager
+        .get_app_setting(EXPERT_WORKFLOWS_APP_SETTING_KEY)
+        .await
+        .map_err(|e| e.to_frontend_error())?;
+    parse_workflow_list(raw)
+}
+
+async fn store_workflows(state: &AppState, list: &[ExpertWorkflowDto]) -> Result<(), String> {
+    let raw = serde_json::to_string(list).map_err(|e| e.to_string())?;
+    state
+        .db_manager
+        .upsert_app_setting(EXPERT_WORKFLOWS_APP_SETTING_KEY, raw.as_str())
+        .await
+        .map_err(|e| e.to_frontend_error())?;
+    Ok(())
+}
+
+#[tauri::command]
+pub async fn expert_workflows_list(
+    state: State<'_, AppState>,
+) -> Result<ExpertWorkflowsListResponse, String> {
+    let list = load_workflows(&state).await?;
+    let mut items: Vec<ExpertWorkflowSummaryDto> = list
+        .into_iter()
+        .map(|w| ExpertWorkflowSummaryDto {
+            id: w.id,
+            name: w.name,
+            updated_at_ms: w.updated_at_ms,
+        })
+        .collect();
+    items.sort_by(|a, b| b.updated_at_ms.cmp(&a.updated_at_ms).then(a.name.cmp(&b.name)));
+    Ok(ExpertWorkflowsListResponse { items })
+}
+
+#[tauri::command]
+pub async fn expert_workflows_get(
+    req: ExpertWorkflowsGetRequest,
+    state: State<'_, AppState>,
+) -> Result<ExpertWorkflowDto, String> {
+    let id = req.id.trim();
+    if id.is_empty() {
+        return Err(ApiError::InvalidParameter {
+            message: "id required".into(),
+        }
+        .to_string());
+    }
+    let list = load_workflows(&state).await?;
+    let found = list.into_iter().find(|w| w.id == id);
+    found.ok_or_else(|| {
+        ApiError::InvalidParameter {
+            message: format!("workflow not found: {}", id),
+        }
+        .to_string()
+    })
+}
+
+#[tauri::command]
+pub async fn expert_workflows_save(
+    req: ExpertWorkflowsSaveRequest,
+    state: State<'_, AppState>,
+) -> Result<ExpertWorkflowDto, String> {
+    let name = req.name.trim();
+    if name.is_empty() {
+        return Err(ApiError::InvalidParameter {
+            message: "name required".into(),
+        }
+        .to_string());
+    }
+    let mut list = load_workflows(&state).await?;
+    let now_ms = Utc::now().timestamp_millis();
+    let id = req
+        .id
+        .as_deref()
+        .map(str::trim)
+        .filter(|s| !s.is_empty())
+        .map(|s| s.to_string())
+        .unwrap_or_else(|| Uuid::new_v4().to_string());
+    let dto = ExpertWorkflowDto {
+        id: id.clone(),
+        name: name.to_string(),
+        updated_at_ms: now_ms,
+        graph: req.graph,
+        prompt_style: req.prompt_style,
+    };
+    // upsert by id
+    if let Some(pos) = list.iter().position(|w| w.id == id) {
+        list[pos] = dto.clone();
+    } else {
+        list.push(dto.clone());
+    }
+    store_workflows(&state, list.as_slice()).await?;
+    Ok(dto)
+}
+
+#[tauri::command]
+pub async fn expert_workflows_delete(
+    req: ExpertWorkflowsDeleteRequest,
+    state: State<'_, AppState>,
+) -> Result<(), String> {
+    let id = req.id.trim();
+    if id.is_empty() {
+        return Err(ApiError::InvalidParameter {
+            message: "id required".into(),
+        }
+        .to_string());
+    }
+    let mut list = load_workflows(&state).await?;
+    let before = list.len();
+    list.retain(|w| w.id != id);
+    if list.len() == before {
+        return Ok(());
+    }
+    store_workflows(&state, list.as_slice()).await?;
+    Ok(())
 }
 
 // Re-export config type to avoid unused warnings in some builds.
