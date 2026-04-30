@@ -2283,7 +2283,7 @@ async function onPackSelectedPlugin(): Promise<void> {
                       class="pm-btn secondary pm-btn--sm"
                       @click="onInstallMarketVersion(row)"
                     >
-                      {{ row.installed ? "回滚/切换" : "安装此版本" }}
+                      {{ row.installed ? t("pluginManagerV1.ui.marketVersions.rollbackOrSwitch") : t("pluginManagerV1.ui.marketVersions.installThisVersion") }}
                     </button>
                   </div>
                   <button
@@ -2292,18 +2292,18 @@ async function onPackSelectedPlugin(): Promise<void> {
                     class="pm-btn secondary pm-btn--sm"
                     @click="onInstallMarketEntry(row)"
                   >
-                    安装
+                    {{ t("pluginManagerV1.ui.actions.install") }}
                   </button>
                   <template v-else>
-                    <span v-if="row.hasUpdate" class="pm-badge">可更新</span>
-                    <span v-else class="pm-muted">已安装</span>
+                    <span v-if="row.hasUpdate" class="pm-badge">{{ t("pluginManagerV1.ui.marketVersions.updatable") }}</span>
+                    <span v-else class="pm-muted">{{ t("pluginManagerV1.ui.marketVersions.installed") }}</span>
                     <button
                       v-if="row.hasUpdate"
                       type="button"
                       class="pm-btn secondary pm-btn--sm"
                       @click="onUpdateMarketEntry(row)"
                     >
-                      更新
+                      {{ t("pluginManagerV1.ui.actions.update") }}
                     </button>
                   </template>
                 </div>
@@ -2314,8 +2314,8 @@ async function onPackSelectedPlugin(): Promise<void> {
           <section class="pm-section pm-section--catalog">
             <div class="pm-section-head">
               <div class="pm-h3-row">
-                <h3 class="pm-h3">已安装插件（最常用）</h3>
-                <HelpCircle label="已安装插件说明">
+                <h3 class="pm-h3">{{ t("pluginManagerV1.ui.installed.title") }}</h3>
+                <HelpCircle :label="String(t('pluginManagerV1.ui.installed.helpLabel'))">
                   <p>先在这里管理“启用/停用/更新”，再去「界面位置」调整插件出现在哪。</p>
                   <p>这一块是日常使用频率最高的区域。</p>
                 </HelpCircle>
@@ -2323,14 +2323,14 @@ async function onPackSelectedPlugin(): Promise<void> {
               <div class="pm-section-actions">
                 <label class="pm-batch-toggle chk">
                   <input v-model="batchMode" type="checkbox" />
-                  批量选择
+                  {{ t("pluginManagerV1.ui.installed.batchSelect") }}
                 </label>
                 <button
                   type="button"
                   class="pm-btn secondary pm-btn--sm"
                   @click="scaffoldWizardVisible = true"
                 >
-                  新建插件
+                  {{ t("pluginManagerV1.ui.installed.newPlugin") }}
                 </button>
                 <button
                   type="button"
@@ -2338,7 +2338,7 @@ async function onPackSelectedPlugin(): Promise<void> {
                   :disabled="!selectedWorkspacePlugin"
                   @click="onPackSelectedPlugin"
                 >
-                  打包当前插件
+                  {{ t("pluginManagerV1.ui.installed.packCurrent") }}
                 </button>
                 <button
                   type="button"
@@ -2346,20 +2346,20 @@ async function onPackSelectedPlugin(): Promise<void> {
                   :disabled="pluginStore.pluginUpdatesCheckLoading"
                   @click="onCheckUpdates"
                 >
-                  检查更新
+                  {{ t("pluginManagerV1.ui.installed.checkUpdates") }}
                 </button>
               </div>
             </div>
             <p v-if="pluginPackStatus" class="pm-hint">{{ pluginPackStatus }}</p>
             <div class="pm-row pm-primary-actions" role="toolbar" aria-label="已安装插件主要操作">
               <button type="button" class="pm-btn secondary pm-btn--sm" @click="onBatchEnable">
-                启用所选
+                {{ t("pluginManagerV1.ui.installed.enableSelected") }}
               </button>
               <button type="button" class="pm-btn secondary pm-btn--sm" @click="onBatchDisable">
-                停用所选
+                {{ t("pluginManagerV1.ui.installed.disableSelected") }}
               </button>
               <button type="button" class="pm-btn secondary pm-btn--sm" @click="onBatchUpdate">
-                所选从 Git 更新
+                {{ t("pluginManagerV1.ui.installed.updateSelectedFromGit") }}
               </button>
               <HelpCircle label="启停与更新说明" inline>
                 <p>“启用/停用”决定插件是否参与运行与渲染。</p>
@@ -2373,25 +2373,25 @@ async function onPackSelectedPlugin(): Promise<void> {
               role="toolbar"
               aria-label="批量操作"
             >
-              <span class="pm-batch-count">已选 {{ batchSelectedCount }} 个</span>
+              <span class="pm-batch-count">{{ t("pluginManagerV1.ui.installed.selectedCount", { n: batchSelectedCount }) }}</span>
               <button type="button" class="pm-btn secondary pm-btn--sm" @click="onBatchEnable">
-                启用
+                {{ t("pluginManagerV1.ui.actions.enable") }}
               </button>
               <button type="button" class="pm-btn secondary pm-btn--sm" @click="onBatchDisable">
-                停用
+                {{ t("pluginManagerV1.ui.actions.disable") }}
               </button>
               <button type="button" class="pm-btn secondary pm-btn--sm" @click="onBatchUpdate">
-                从 Git 更新
+                {{ t("pluginManagerV1.ui.actions.updateFromGit") }}
               </button>
             </div>
             <p v-if="!pluginStore.catalog.length" class="pm-muted">
-              未扫描到目录插件（请将插件放入 roles 同级的 plugins/ 等目录）。
+              {{ t("pluginManagerV1.ui.installed.noDirectoryPluginsFound") }}
             </p>
 
             <div v-else class="pm-wb" aria-label="插件工作区">
               <aside class="pm-wb-sidebar">
                 <div class="pm-wb-sidebar-head">
-                  <span class="pm-wb-sidebar-title">目录</span>
+                  <span class="pm-wb-sidebar-title">{{ t("pluginManagerV1.ui.installed.sidebarTitle") }}</span>
                   <span class="pm-wb-sidebar-count">{{ pluginStore.catalog.length }}</span>
                 </div>
                 <ul class="pm-wb-list" role="listbox" aria-label="已安装目录插件">
@@ -2419,11 +2419,11 @@ async function onPackSelectedPlugin(): Promise<void> {
                       <span class="pm-wb-item-id">{{ p.id }}</span>
                       <span class="pm-wb-item-row2">
                         <span class="pm-wb-item-ver">v{{ p.version }}</span>
-                        <span class="pm-wb-chip">{{ p.isShell ? "整壳" : "目录" }}</span>
+                        <span class="pm-wb-chip">{{ p.isShell ? t("pluginManagerV1.ui.installed.chip.shell") : t("pluginManagerV1.ui.installed.chip.directory") }}</span>
                         <span
                           v-if="pluginStore.pluginUpdateById[p.id]?.hasUpdate"
                           class="pm-wb-pill"
-                        >更新</span>
+                        >{{ t("pluginManagerV1.ui.actions.update") }}</span>
                       </span>
                     </button>
                   </li>
@@ -2435,7 +2435,7 @@ async function onPackSelectedPlugin(): Promise<void> {
                   <div class="pm-wb-main-titles">
                     <h4 class="pm-wb-main-h">{{ selectedWorkspacePlugin.id }}</h4>
                     <span class="pm-wb-main-sub">
-                      配置与调试 · 左侧切换插件即可保留本区布局
+                      {{ t("pluginManagerV1.ui.installed.mainSub") }}
                     </span>
                   </div>
                   <div class="pm-wb-main-actions">
@@ -2450,7 +2450,7 @@ async function onPackSelectedPlugin(): Promise<void> {
                       class="pm-btn secondary pm-btn--sm"
                       @click="onGitPullWorkspacePlugin"
                     >
-                      从 Git 拉取更新
+                      {{ t("pluginManagerV1.ui.installed.gitPull") }}
                     </button>
                     <button
                       type="button"
@@ -2460,7 +2460,7 @@ async function onPackSelectedPlugin(): Promise<void> {
                       "
                       @click="onUpdateFromZip(selectedWorkspacePlugin.id)"
                     >
-                      从本地 zip 更新
+                      {{ t("pluginManagerV1.ui.installed.updateFromZip") }}
                     </button>
                   </div>
                 </div>
