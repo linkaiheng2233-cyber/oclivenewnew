@@ -601,6 +601,33 @@ pub struct ExpertWorkflowsListResponse {
     pub items: Vec<ExpertWorkflowSummaryDto>,
 }
 
+// ===== Module 9: Expert Models runs (session history) =====
+
+#[derive(Debug, Clone, Serialize)]
+#[serde(rename_all = "camelCase")]
+pub struct ExpertModelsRunSummaryDto {
+    pub index_from_latest: u32,
+    pub at_ms: i64,
+    pub base_name: String,
+    pub lora_count: u32,
+    pub has_prompt_style: bool,
+}
+
+#[derive(Debug, Clone, Serialize)]
+#[serde(rename_all = "camelCase")]
+pub struct ExpertModelsListRunsResponse {
+    pub items: Vec<ExpertModelsRunSummaryDto>,
+}
+
+#[derive(Debug, Clone, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct ExpertModelsRollbackToRunRequest {
+    pub role_id: String,
+    #[serde(default)]
+    pub session_id: Option<String>,
+    pub index_from_latest: u32,
+}
+
 #[derive(Debug, Clone, Deserialize)]
 pub struct QueryMemoriesRequest {
     pub role_id: String,

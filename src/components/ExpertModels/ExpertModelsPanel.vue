@@ -198,6 +198,44 @@ async function onRollbackLastRun(): Promise<void> {
   }
 }
 
+function formatRunTime(ms: number): string {
+  const d = new Date(ms);
+  if (!Number.isFinite(d.getTime())) return "";
+  const pad = (n: number) => String(n).padStart(2, "0");
+  return `${pad(d.getHours())}:${pad(d.getMinutes())}:${pad(d.getSeconds())}`;
+}
+
+async function onRollbackToRun(indexFromLatest: number): Promise<void> {
+  const ok = window.confirm("将回滚到选中的历史配置，并重新应用到当前会话。继续吗？");
+  if (!ok) return;
+  saving.value = true;
+  try {
+    const r = await store.rollbackToRun(indexFromLatest);
+    showToast(
+      "success",
+      `已回滚并重新应用。\nmodelPath=${r.modelPath ?? "(未设置)"}\nllamaArgs=${r.llamaArgs ?? "(空)"}`,
+    );
+  } catch (e) {
+    showToast("error", e instanceof Error ? e.message : String(e));
+  } finally {
+    saving.value = false;
+  }
+}
+
+async function onClearRuns(): Promise<void> {
+  const ok = window.confirm("将清空当前会话的 Run 历史。继续吗？");
+  if (!ok) return;
+  saving.value = true;
+  try {
+    await store.clearRuns();
+    showToast("success", "已清空 Run 历史。");
+  } catch (e) {
+    showToast("error", e instanceof Error ? e.message : String(e));
+  } finally {
+    saving.value = false;
+  }
+}
+
 async function onImportBase(): Promise<void> {
   const picked = await open({
     title: "选择一个 Base GGUF（将复制到 models/gguf）",
@@ -932,6 +970,50 @@ async function onImportWorkflowJson(): Promise<void> {
       >
         回滚上一次 Run
       </button>
+      <details class="em-runs">
+        <summary class="em-btn secondary" :aria-disabled="saving || store.loading">Run 历史（{{ store.runs.length }}）</summary>
+        <div class="em-runs-body">
+          <div class="em-runs-actions">
+            <button class="em-btn secondary" type="button" :disabled="saving || store.loading" @click="onRefresh">
+              刷新
+            </button>
+            <button
+              class="em-btn secondary"
+              type="button"
+              :disabled="saving || store.loading || !store.runs.length"
+              @click="onClearRuns"
+            >
+              清空历史
+            </button>
+          </div>
+          <div v-if="!store.runs.length" class="em-muted">
+            暂无 Run 历史。每次“应用到当前会话”前都会记录一条快照。
+          </div>
+          <div v-else class="em-run-list">
+            <div v-for="r in store.runs" :key="String(r.indexFromLatest)" class="em-run-item">
+              <div class="em-run-main">
+                <div class="em-run-title">
+                  <b>#{{ r.indexFromLatest + 1 }}</b>
+                  <span class="em-muted2">{{ formatRunTime(r.atMs) }}</span>
+                </div>
+                <div class="em-run-meta">
+                  <span class="em-pill2">Base：{{ r.baseName || "(未设置)" }}</span>
+                  <span class="em-pill2">LoRA：{{ r.loraCount }}</span>
+                  <span v-if="r.hasPromptStyle" class="em-pill2">PromptStyle</span>
+                </div>
+              </div>
+              <button
+                class="em-btn secondary"
+                type="button"
+                :disabled="saving || store.loading"
+                @click="onRollbackToRun(r.indexFromLatest)"
+              >
+                回滚到此处
+              </button>
+            </div>
+          </div>
+        </div>
+      </details>
       <button class="em-btn secondary" type="button" :disabled="saving || store.loading" @click="onSetRoleDefault">
         设为角色默认
       </button>
@@ -1250,6 +1332,66 @@ async function onImportWorkflowJson(): Promise<void> {
   display: flex;
   gap: 8px;
   flex-wrap: wrap;
+}
+.em-runs {
+  display: inline-block;
+}
+.em-runs > summary {
+  list-style: none;
+}
+.em-runs > summary::-webkit-details-marker {
+  display: none;
+}
+.em-runs-body {
+  margin-top: 8px;
+  padding: 10px;
+  border-radius: 10px;
+  border: 1px solid var(--border-light);
+  background: var(--bg-primary);
+  min-width: 520px;
+  max-width: 720px;
+}
+.em-runs-actions {
+  display: flex;
+  gap: 8px;
+  margin-bottom: 8px;
+}
+.em-run-list {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+.em-run-item {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  padding: 8px;
+  border-radius: 10px;
+  border: 1px solid var(--border-light);
+  background: var(--bg-secondary);
+}
+.em-run-title {
+  display: flex;
+  align-items: baseline;
+  gap: 8px;
+}
+.em-run-meta {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin-top: 4px;
+}
+.em-pill2 {
+  display: inline-flex;
+  align-items: center;
+  height: 20px;
+  padding: 0 8px;
+  border-radius: 999px;
+  font-size: 12px;
+  border: 1px solid var(--border-light);
+  background: var(--bg-primary);
+  color: var(--text-secondary);
 }
 @media (max-width: 1080px) {
   .em-grid {

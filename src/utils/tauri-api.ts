@@ -282,6 +282,52 @@ export async function expertModelsRollbackLastRun(params: {
   });
 }
 
+export interface ExpertModelsRunSummaryDto {
+  indexFromLatest: number;
+  atMs: number;
+  baseName: string;
+  loraCount: number;
+  hasPromptStyle: boolean;
+}
+
+export async function expertModelsListRuns(params: {
+  roleId: string;
+  sessionId?: string | null;
+}): Promise<{ items: ExpertModelsRunSummaryDto[] }> {
+  return invokeWithFriendlyError<{ items: ExpertModelsRunSummaryDto[] }>(
+    "expert_models_list_runs",
+    { req: { roleId: params.roleId, sessionId: params.sessionId ?? null } },
+  );
+}
+
+export async function expertModelsClearRuns(params: {
+  roleId: string;
+  sessionId?: string | null;
+}): Promise<void> {
+  return invokeWithFriendlyError<void>("expert_models_clear_runs", {
+    req: { roleId: params.roleId, sessionId: params.sessionId ?? null },
+  });
+}
+
+export async function expertModelsRollbackToRun(params: {
+  roleId: string;
+  sessionId?: string | null;
+  indexFromLatest: number;
+}): Promise<{ ok: boolean; llamaPluginId: string; modelPath?: string; llamaArgs?: string }> {
+  return invokeWithFriendlyError<{
+    ok: boolean;
+    llamaPluginId: string;
+    modelPath?: string;
+    llamaArgs?: string;
+  }>("expert_models_rollback_to_run", {
+    req: {
+      roleId: params.roleId,
+      sessionId: params.sessionId ?? null,
+      indexFromLatest: params.indexFromLatest,
+    },
+  });
+}
+
 export async function expertModelsListLocalBaseModels(): Promise<LocalModelFileDto[]> {
   return invokeWithFriendlyError<LocalModelFileDto[]>(
     "expert_models_list_local_base_models",

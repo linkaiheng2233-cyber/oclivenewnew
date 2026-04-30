@@ -11,6 +11,7 @@ use crate::models::dto::{
     ExpertModelsClearSessionOverrideRequest, ExpertModelsEffectiveResponse,
     ExpertModelsGetEffectiveRequest, ExpertModelsSetRoleDefaultRequest,
     ExpertModelsSetSessionOverrideRequest,
+    ExpertModelsListRunsResponse, ExpertModelsRollbackToRunRequest, ExpertModelsRunSummaryDto,
     ExpertWorkflowDto, ExpertWorkflowSummaryDto, ExpertWorkflowsDeleteRequest,
     ExpertWorkflowsGetRequest, ExpertWorkflowsListResponse, ExpertWorkflowsSaveRequest,
 };
@@ -127,6 +128,49 @@ fn to_run_history_json(items: &[serde_json::Value]) -> Option<String> {
         return None;
     }
     serde_json::to_string(items).ok()
+}
+
+fn summarize_snapshot(
+    v: &serde_json::Value,
+) -> Option<(i64, ExpertGraph, Option<PromptStyleOverride>)> {
+    let at_ms = v.get("atMs").and_then(|x| x.as_i64()).unwrap_or(0);
+    let graph_v = v.get("graph")?.clone();
+    let graph = serde_json::from_value::<ExpertGraph>(graph_v).ok()?;
+    let style = v
+        .get("promptStyle")
+        .cloned()
+        .and_then(|x| serde_json::from_value::<Option<PromptStyleOverride>>(x).ok())
+        .flatten();
+    Some((at_ms, graph, style))
+}
+
+fn base_file_name(p: &str) -> String {
+    let t = p.trim();
+    if t.is_empty() {
+        return "".to_string();
+    }
+    t.rsplit(['\\', '/']).next().unwrap_or(t).to_string()
+}
+
+fn count_enabled_loras(graph: &ExpertGraph) -> u32 {
+    graph
+        .nodes
+        .iter()
+        .filter_map(|n| match n {
+            crate::models::expert_models::ExpertNode::LoraAdapter { enabled, .. } => Some(*enabled),
+            _ => None,
+        })
+        .filter(|x| *x)
+        .count() as u32
+}
+
+fn pick_base_name(graph: &ExpertGraph) -> String {
+    for n in &graph.nodes {
+        if let crate::models::expert_models::ExpertNode::BaseModel { gguf_path, .. } = n {
+            return base_file_name(gguf_path);
+        }
+    }
+    "".to_string()
 }
 
 #[tauri::command]
@@ -632,6 +676,160 @@ pub async fn expert_models_rollback_last_run(
         .map_err(|e| e.to_frontend_error())?;
 
     // Apply (compile → config → restart) using existing path.
+    expert_models_apply_to_session(
+        ExpertModelsApplyToSessionRequest {
+            role_id: role_id.to_string(),
+            session_id: req.session_id.clone(),
+        },
+        state,
+    )
+    .await
+}
+
+#[tauri::command]
+pub async fn expert_models_list_runs(
+    req: ExpertModelsGetEffectiveRequest,
+    state: State<'_, AppState>,
+) -> Result<ExpertModelsListRunsResponse, String> {
+    let role_id = req.role_id.trim();
+    if role_id.is_empty() {
+        return Err(ApiError::InvalidParameter {
+            message: "role_id required".into(),
+        }
+        .to_string());
+    }
+    let session_ns = conversation_state_role_id(role_id, req.session_id.as_deref());
+    state
+        .db_manager
+        .ensure_role_runtime(session_ns.as_str())
+        .await
+        .map_err(|e| e.to_frontend_error())?;
+    let raw = state
+        .expert_models_repo
+        .get_expert_models_run_history_json(session_ns.as_str())
+        .await
+        .map_err(|e| e.to_frontend_error())?;
+    let runs = parse_run_history(raw);
+    // Stored in chronological order; present latest first.
+    let mut items: Vec<ExpertModelsRunSummaryDto> = vec![];
+    for (i, v) in runs.iter().rev().enumerate() {
+        if let Some((at_ms, graph, style)) = summarize_snapshot(v) {
+            items.push(ExpertModelsRunSummaryDto {
+                index_from_latest: i as u32,
+                at_ms,
+                base_name: pick_base_name(&graph),
+                lora_count: count_enabled_loras(&graph),
+                has_prompt_style: style.is_some(),
+            });
+        }
+        if items.len() >= 30 {
+            break;
+        }
+    }
+    Ok(ExpertModelsListRunsResponse { items })
+}
+
+#[tauri::command]
+pub async fn expert_models_clear_runs(
+    req: ExpertModelsRollbackLastRunRequest,
+    state: State<'_, AppState>,
+) -> Result<(), String> {
+    let role_id = req.role_id.trim();
+    if role_id.is_empty() {
+        return Err(ApiError::InvalidParameter {
+            message: "role_id required".into(),
+        }
+        .to_string());
+    }
+    let session_ns = conversation_state_role_id(role_id, req.session_id.as_deref());
+    state
+        .db_manager
+        .ensure_role_runtime(session_ns.as_str())
+        .await
+        .map_err(|e| e.to_frontend_error())?;
+    state
+        .expert_models_repo
+        .set_expert_models_run_history_json(session_ns.as_str(), None)
+        .await
+        .map_err(|e| e.to_frontend_error())?;
+    Ok(())
+}
+
+#[tauri::command]
+pub async fn expert_models_rollback_to_run(
+    req: ExpertModelsRollbackToRunRequest,
+    state: State<'_, AppState>,
+) -> Result<ExpertModelsApplyResult, String> {
+    let role_id = req.role_id.trim();
+    if role_id.is_empty() {
+        return Err(ApiError::InvalidParameter {
+            message: "role_id required".into(),
+        }
+        .to_string());
+    }
+    let session_ns = conversation_state_role_id(role_id, req.session_id.as_deref());
+    state
+        .db_manager
+        .ensure_role_runtime(session_ns.as_str())
+        .await
+        .map_err(|e| e.to_frontend_error())?;
+    let raw = state
+        .expert_models_repo
+        .get_expert_models_run_history_json(session_ns.as_str())
+        .await
+        .map_err(|e| e.to_frontend_error())?;
+    let mut runs = parse_run_history(raw);
+    if runs.is_empty() {
+        return Err(ApiError::InvalidParameter { message: "no runs".into() }.to_string());
+    }
+    let idx_from_latest = req.index_from_latest as usize;
+    let target_pos_from_start = runs
+        .len()
+        .checked_sub(1)
+        .and_then(|last| last.checked_sub(idx_from_latest))
+        .ok_or_else(|| ApiError::InvalidParameter {
+            message: "index out of range".into(),
+        }
+        .to_string())?;
+    let target = runs
+        .get(target_pos_from_start)
+        .cloned()
+        .ok_or_else(|| "target run missing".to_string())?;
+    // Trim newer runs (keep up to the ones older than target).
+    runs.truncate(target_pos_from_start);
+
+    let graph = target
+        .get("graph")
+        .cloned()
+        .ok_or_else(|| "rollback snapshot missing graph".to_string())
+        .and_then(|v| serde_json::from_value::<ExpertGraph>(v).map_err(|e| e.to_string()))?;
+    let style = target
+        .get("promptStyle")
+        .cloned()
+        .map(|v| serde_json::from_value::<Option<PromptStyleOverride>>(v).map_err(|e| e.to_string()))
+        .transpose()?
+        .flatten();
+
+    let graph_json = to_json_string(&graph)?;
+    state
+        .expert_models_repo
+        .set_expert_models_session_override_json(session_ns.as_str(), Some(graph_json.as_str()))
+        .await
+        .map_err(|e| e.to_frontend_error())?;
+    let style_json = style.as_ref().map(to_json_string).transpose()?;
+    state
+        .expert_models_repo
+        .set_expert_prompt_style_session_override_json(session_ns.as_str(), style_json.as_deref())
+        .await
+        .map_err(|e| e.to_frontend_error())?;
+
+    let run_json = to_run_history_json(runs.as_slice());
+    state
+        .expert_models_repo
+        .set_expert_models_run_history_json(session_ns.as_str(), run_json.as_deref())
+        .await
+        .map_err(|e| e.to_frontend_error())?;
+
     expert_models_apply_to_session(
         ExpertModelsApplyToSessionRequest {
             role_id: role_id.to_string(),

@@ -8,7 +8,10 @@ import {
   expertModelsImportLoraGguf,
   expertModelsListLocalBaseModels,
   expertModelsListLocalLoras,
+  expertModelsListRuns,
+  expertModelsClearRuns,
   expertModelsRollbackLastRun,
+  expertModelsRollbackToRun,
   expertModelsSetRoleDefault,
   expertModelsSetSessionOverride,
   expertWorkflowsDelete,
@@ -21,6 +24,7 @@ import {
   type LocalModelFileDto,
   type ExpertWorkflowDto,
   type ExpertWorkflowSummaryDto,
+  type ExpertModelsRunSummaryDto,
   type PromptStyleOverride,
 } from "../utils/tauri-api";
 import { useRoleStore } from "./roleStore";
@@ -42,6 +46,7 @@ export const useExpertModelsStore = defineStore("expertModels", {
     graphSource: "pack_default" as ExpertConfigSource,
     promptStyleSource: "pack_default" as ExpertConfigSource,
     canRollbackLastRun: false,
+    runs: [] as ExpertModelsRunSummaryDto[],
 
     draftGraph: emptyGraph() as ExpertGraph,
     draftPromptStyle: null as PromptStyleOverride | null,
@@ -57,10 +62,11 @@ export const useExpertModelsStore = defineStore("expertModels", {
       this.loading = true;
       this.error = null;
       try {
-        const [eff, bases, loras, grants] = await Promise.all([
+        const [eff, bases, loras, runs, grants] = await Promise.all([
           expertModelsGetEffective({ roleId, sessionId: null }),
           expertModelsListLocalBaseModels(),
           expertModelsListLocalLoras(),
+          expertModelsListRuns({ roleId, sessionId: null }).catch(() => ({ items: [] })),
           getPluginPermissionGrants(LLAMA_LOCAL_PLUGIN_ID).catch(() => ({ grants: [] })),
         ]);
         this.baseModels = bases ?? [];
@@ -70,6 +76,7 @@ export const useExpertModelsStore = defineStore("expertModels", {
         this.graphSource = eff.graphSource;
         this.promptStyleSource = eff.promptStyleSource;
         this.canRollbackLastRun = eff.canRollbackLastRun === true;
+        this.runs = (Array.isArray((runs as any)?.items) ? (runs as any).items : []) as ExpertModelsRunSummaryDto[];
         const enabled = new Set(
           (grants?.grants ?? [])
             .filter((x) => x?.enabled === true)
@@ -159,6 +166,23 @@ export const useExpertModelsStore = defineStore("expertModels", {
       const r = await expertModelsRollbackLastRun({ roleId, sessionId: null });
       await this.refresh();
       return { modelPath: r.modelPath, llamaArgs: r.llamaArgs };
+    },
+
+    async rollbackToRun(indexFromLatest: number): Promise<{ modelPath?: string | null; llamaArgs?: string | null }> {
+      const roleStore = useRoleStore();
+      const roleId = (roleStore.currentRoleId ?? "").trim();
+      if (!roleId) throw new Error("当前未选择角色。");
+      const r = await expertModelsRollbackToRun({ roleId, sessionId: null, indexFromLatest });
+      await this.refresh();
+      return { modelPath: r.modelPath, llamaArgs: r.llamaArgs };
+    },
+
+    async clearRuns(): Promise<void> {
+      const roleStore = useRoleStore();
+      const roleId = (roleStore.currentRoleId ?? "").trim();
+      if (!roleId) throw new Error("当前未选择角色。");
+      await expertModelsClearRuns({ roleId, sessionId: null });
+      await this.refresh();
     },
 
     async clearSessionOverrideAndApply(): Promise<void> {
