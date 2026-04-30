@@ -75,6 +75,8 @@ export const enUS = {
     stop: "Stop",
     restart: "Restart",
     kill: "Kill",
+    expand: "Expand",
+    collapse: "Collapse",
     security: "Security",
     advanced: "Advanced",
   },
@@ -558,6 +560,42 @@ export const enUS = {
     },
     errors: {
       onlyLlmEmotionSupported: "Only LLM / Emotion config writing is supported currently.",
+    },
+    list: {
+      searchPlaceholder: "Search: e.g. remote, emotion, directory plugin",
+      empty: "No matches. Try a shorter keyword.",
+    },
+    card: {
+      status: {
+        enabled: "Enabled",
+        needsConfig: "Needs setup",
+        disabled: "Disabled",
+      },
+      type: {
+        builtin: "Built-in",
+        remote: "Remote",
+        directory: "Directory plugin",
+      },
+      risk: {
+        needsConfig: "Missing config",
+        envFirst: "Env first",
+      },
+    },
+    rightPanel: {
+      placeholder: "Select a card from the middle list first.",
+      changeNotice: {
+        readonly:
+          "Read-only note: nothing is written here. Modify via environment variables or role pack, then reload the app.",
+        preview:
+          "Change preview: click “Apply changes” below to write into current session (does not modify role pack settings.json; if env vars conflict, env takes precedence).",
+      },
+    },
+    filters: {
+      explorerAria: "Filters (workspace style)",
+      explorerTitle: "Explorer",
+      explorerSub: "Filter view",
+      rootTitle: "UI hierarchy only; not a disk path",
+      treeAria: "Filter tree",
     },
     legend: {
       aria: "Status legend",

@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import { useI18n } from "vue-i18n";
 import PluginCard from "./PluginCard.vue";
 import type { PluginV2CardItem } from "../../composables/usePluginManagerV2";
 
@@ -12,6 +13,8 @@ const emit = defineEmits<{
   "update:keyword": [value: string];
   select: [id: string];
 }>();
+
+const { t } = useI18n();
 </script>
 
 <template>
@@ -20,7 +23,7 @@ const emit = defineEmits<{
       class="pm2-search"
       type="search"
       :value="keyword"
-      placeholder="搜索：例如 远程、情绪、目录插件"
+      :placeholder="String(t('pluginManagerV2.list.searchPlaceholder'))"
       @input="emit('update:keyword', ($event.target as HTMLInputElement).value)"
     />
     <div class="pm2-list">
@@ -31,7 +34,7 @@ const emit = defineEmits<{
         :selected="item.id === selectedId"
         @select="emit('select', item.id)"
       />
-      <p v-if="!items.length" class="pm2-empty">没有匹配项，试试更短的关键词。</p>
+      <p v-if="!items.length" class="pm2-empty">{{ t("pluginManagerV2.list.empty") }}</p>
     </div>
   </section>
 </template>

@@ -70,6 +70,8 @@ export const zhCN = {
     stop: "停止",
     restart: "重启",
     kill: "终止",
+    expand: "展开",
+    collapse: "收起",
     security: "安全",
     advanced: "高级",
   },
@@ -542,6 +544,41 @@ export const zhCN = {
     },
     errors: {
       onlyLlmEmotionSupported: "当前仅支持 LLM / Emotion 配置写入。",
+    },
+    list: {
+      searchPlaceholder: "搜索：例如 远程、情绪、目录插件",
+      empty: "没有匹配项，试试更短的关键词。",
+    },
+    card: {
+      status: {
+        enabled: "已启用",
+        needsConfig: "还需配置",
+        disabled: "已关闭",
+      },
+      type: {
+        builtin: "内置",
+        remote: "远程",
+        directory: "目录插件",
+      },
+      risk: {
+        needsConfig: "缺配置",
+        envFirst: "环境优先",
+      },
+    },
+    rightPanel: {
+      placeholder: "先从中间列表选一个卡片。",
+      changeNotice: {
+        readonly: "只读说明：此处不会写入任何配置；请在环境变量或角色包中修改后重载应用。",
+        preview:
+          "变更预览：点击下方「应用改动」后写入当前会话（不修改角色包 settings.json；若与环境变量冲突，以环境解析为准）。",
+      },
+    },
+    filters: {
+      explorerAria: "筛选（工作区风格）",
+      explorerTitle: "资源管理器",
+      explorerSub: "筛选视图",
+      rootTitle: "仅用于 UI 层级展示，不代表磁盘路径",
+      treeAria: "筛选树",
     },
     legend: {
       aria: "状态说明",
