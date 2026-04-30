@@ -22,6 +22,11 @@ import {
   type PluginReviewEntryDto,
 } from "../utils/tauri-api";
 import { getPluginMarketSourcesConfig } from "../utils/tauri-api";
+import { i18n } from "../i18n";
+
+function t(key: string, params?: Record<string, unknown>): string {
+  return String(i18n.global.t(key as any, params as any));
+}
 
 const PLUGIN_REVIEWS_REPO_URL =
   "https://github.com/linkaiheng2233-cyber/awesome-oclive-plugin-reviews";
@@ -153,15 +158,15 @@ export function usePluginCommunityMarketPane(options?: { loadOnMount?: boolean }
 
   function ratingTextForPluginId(pluginId: string): string {
     const a = ratingAggByPluginId.value.get(pluginId.trim());
-    if (!a) return "暂无评价";
-    return `${a.avg.toFixed(1)} 分（${a.count}）`;
+    if (!a) return t("pluginManagerV1.reviews.none");
+    return t("pluginManagerV1.reviews.summary", { avg: a.avg.toFixed(1), count: a.count });
   }
 
   function ratingTextForPluginPubkey(pluginId: string, pubkeyId: string): string {
     const key = reviewsAggKey(pluginId, pubkeyId);
     const a = ratingAggByPluginIdPubkey.value.get(key);
-    if (!a) return "暂无评价";
-    return `${a.avg.toFixed(1)} 分（${a.count}）`;
+    if (!a) return t("pluginManagerV1.reviews.none");
+    return t("pluginManagerV1.reviews.summary", { avg: a.avg.toFixed(1), count: a.count });
   }
 
   function ratingStars(avg: number): string {
@@ -210,10 +215,10 @@ export function usePluginCommunityMarketPane(options?: { loadOnMount?: boolean }
   }
 
   function riskLabel(risk: string | undefined): string {
-    if (risk === "high") return "高风险";
-    if (risk === "medium") return "中风险";
-    if (risk === "low") return "低风险";
-    return "未知";
+    if (risk === "high") return t("pluginManagerV1.ipwd.risk.high");
+    if (risk === "medium") return t("pluginManagerV1.ipwd.risk.medium");
+    if (risk === "low") return t("pluginManagerV1.ipwd.risk.low");
+    return t("pluginManagerV1.ipwd.risk.unknown");
   }
 
   function riskClass(risk: string | undefined): string {

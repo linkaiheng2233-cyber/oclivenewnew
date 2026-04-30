@@ -369,6 +369,49 @@ export const enUS = {
       toastMarketMissingPlugin: "Plugin not found in index: {id} (source={source})",
       toastApplied: "Profile applied: plugin install/permission consent done; backends override written to current session.",
     },
+    marketSync: {
+      toastFailed:
+        "Index sync failed (source={source}): {msg}\n\nTips: check your network and retry later. For third-party sources, make sure Developer mode is enabled.",
+      toastOk: "Index synced.",
+    },
+    modules: {
+      toastMissingBody: "This entry does not provide a module body.",
+      toastNoDeps: "This module declares no dependency plugins.",
+      toastApplied: "Module applied: {id} (slot placement can be adjusted in the Slots tab).",
+    },
+    profiles: {
+      toastMissingBody: "This entry does not provide a profile body.",
+      toastPredeclaredPerms: "This Profile predeclares permissions: {list}",
+      toastApplied: "Profile applied: {id} (slot placement can be adjusted in the Slots tab).",
+    },
+    localImports: {
+      toastJsonCopied: "JSON copied to clipboard.",
+      toastOnlyModuleOrProfile: "Only local module/profile entries are supported.",
+      toastInstalled: "Installed: {id}",
+    },
+    batch: {
+      toastEnabled:
+        "Enabled {n} plugins. Changes take effect after saving; restart is recommended.",
+      toastDisabled:
+        "Disabled {n} plugins. Changes take effect after saving; restart is recommended.",
+      toastGitUpdated: "Pulled updates from Git index (ff-only). If failed, check the error.",
+    },
+    marketInstall: {
+      toastUpdated: "Updated {id} (git pull --ff-only).",
+    },
+    save: {
+      toastSaved:
+        "Plugin configuration saved. After disabling plugins, a restart is recommended to fully take effect.",
+    },
+    author: {
+      toastAppliedSuggestedBackends:
+        "Applied suggested_plugin_backends from author.json (session-level; settings.json unchanged).",
+    },
+    installed: {
+      toastGitPulled: "Pulled updates from remote Git.",
+      toastCheckUpdatesDone: "Check completed (online registry API is reserved).",
+      toastZipUpdated: "Update completed. Please restart the app to take effect.",
+    },
     ui: {
       dialogLabel: "Plugin workbench (Professional mode)",
       title: "Plugins & Features",

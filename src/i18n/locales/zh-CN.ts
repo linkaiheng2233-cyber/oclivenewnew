@@ -363,6 +363,45 @@ export const zhCN = {
       toastMarketMissingPlugin: "索引未找到插件：{id}（source={source}）",
       toastApplied: "Profile 已应用：插件安装/权限确认已执行，后端覆盖已写入当前会话。",
     },
+    marketSync: {
+      toastFailed:
+        "同步索引失败（source={source}）：{msg}\n\n建议：检查网络，或稍后重试；第三方源请确认开发者模式已开启。",
+      toastOk: "索引已同步。",
+    },
+    modules: {
+      toastMissingBody: "该条目未提供 module 声明体。",
+      toastNoDeps: "该模块未声明依赖插件。",
+      toastApplied: "模块已应用：{id}（插槽位置可在「插槽顺序」里调整）",
+    },
+    profiles: {
+      toastMissingBody: "该条目未提供 profile 声明体。",
+      toastPredeclaredPerms: "该 Profile 预声明权限：{list}",
+      toastApplied: "Profile 已应用：{id}（插槽位置可在「插槽顺序」里调整）",
+    },
+    localImports: {
+      toastJsonCopied: "已复制 JSON 内容到剪贴板。",
+      toastOnlyModuleOrProfile: "仅支持 module/profile 本地条目。",
+      toastInstalled: "已安装：{id}",
+    },
+    batch: {
+      toastEnabled: "已启用 {n} 个插件；保存后生效，建议重启应用。",
+      toastDisabled: "已停用 {n} 个插件；保存后生效，建议重启应用。",
+      toastGitUpdated: "已从索引 Git 源拉取更新（ff-only）；若失败请查看错误提示。",
+    },
+    marketInstall: {
+      toastUpdated: "已更新 {id}（git pull --ff-only）。",
+    },
+    save: {
+      toastSaved: "已保存插件配置；停用插件建议重启应用后完全生效。",
+    },
+    author: {
+      toastAppliedSuggestedBackends: "已应用 author.json 中的 suggested_plugin_backends（会话级，未改 settings.json）。",
+    },
+    installed: {
+      toastGitPulled: "已从远程 Git 拉取更新。",
+      toastCheckUpdatesDone: "检查完成（在线版本接口预留中）。",
+      toastZipUpdated: "更新完成，请重启应用生效。",
+    },
     ui: {
       dialogLabel: "插件工作台（专业模式）",
       title: "插件与功能设置",

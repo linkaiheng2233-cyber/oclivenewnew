@@ -554,7 +554,7 @@ async function syncMarketSource(source: string): Promise<void> {
     const msg = e instanceof Error ? e.message : String(e);
     showToast(
       "error",
-      `同步索引失败（source=${source}）：${msg}\n\n建议：检查网络，或稍后重试；第三方源请确认开发者模式已开启。`,
+      String(t("pluginManagerV1.marketSync.toastFailed", { source, msg })),
     );
     throw e;
   }
@@ -676,7 +676,7 @@ async function onApplyModuleEntry(row: PluginMarketEntryDto): Promise<void> {
     | null
     | undefined;
   if (!mod) {
-    showToast("error", "该条目未提供 module 声明体。");
+    showToast("error", String(t("pluginManagerV1.modules.toastMissingBody")));
     return;
   }
   const planLines: string[] = [];
@@ -699,7 +699,7 @@ async function onApplyModuleEntry(row: PluginMarketEntryDto): Promise<void> {
 
   const list = mod.plugins ?? [];
   if (list.length === 0) {
-    showToast("info", "该模块未声明依赖插件。");
+    showToast("info", String(t("pluginManagerV1.modules.toastNoDeps")));
   }
   for (const spec of list) {
     const pid = (spec.id ?? "").trim();
@@ -733,7 +733,7 @@ async function onApplyModuleEntry(row: PluginMarketEntryDto): Promise<void> {
     // ensure UI reflects cleared override if module applies no backends
     // (no-op here; install flow may still change plugin state)
   }
-  showToast("success", `模块已应用：${row.id}（插槽位置可在「插槽顺序」里调整）`);
+  showToast("success", String(t("pluginManagerV1.modules.toastApplied", { id: row.id })));
 }
 
 async function onApplyProfileEntry(row: PluginMarketEntryDto): Promise<void> {
@@ -746,7 +746,7 @@ async function onApplyProfileEntry(row: PluginMarketEntryDto): Promise<void> {
     | null
     | undefined;
   if (!prof) {
-    showToast("error", "该条目未提供 profile 声明体。");
+    showToast("error", String(t("pluginManagerV1.profiles.toastMissingBody")));
     return;
   }
   const planLines: string[] = [];
@@ -770,7 +770,10 @@ async function onApplyProfileEntry(row: PluginMarketEntryDto): Promise<void> {
   // Profile 本身无代码：权限风险来自依赖插件；这里的 predeclaredPermissions 仅做提示。
   const pre = (prof.predeclaredPermissions ?? []).map((s) => String(s).trim()).filter(Boolean);
   if (pre.length > 0) {
-    showToast("info", `该 Profile 预声明权限：${pre.join("、")}`);
+    showToast(
+      "info",
+      String(t("pluginManagerV1.profiles.toastPredeclaredPerms", { list: pre.join("、") })),
+    );
   }
   const list = prof.plugins ?? [];
   for (const spec of list) {
@@ -802,7 +805,7 @@ async function onApplyProfileEntry(row: PluginMarketEntryDto): Promise<void> {
     const info = await setSessionPluginBackendsOverride(roleId, prof.backends);
     roleStore.applyRoleInfo(info);
   }
-  showToast("success", `Profile 已应用：${row.id}（插槽位置可在「插槽顺序」里调整）`);
+  showToast("success", String(t("pluginManagerV1.profiles.toastApplied", { id: row.id })));
 }
 
 function onPermConsentCancel() {
@@ -994,7 +997,7 @@ async function onInstallPluginArchiveFromLocal(zipPath: string): Promise<void> {
       if (!ok) return;
     }
     await extractPluginZip(zipPath, prev.pluginId, accepted);
-    showToast("success", `已安装：${prev.pluginId}`);
+    showToast("success", String(t("pluginManagerV1.localImports.toastInstalled", { id: prev.pluginId })));
     await pluginStore.refresh();
   } catch (e) {
     showToast("error", e instanceof Error ? e.message : String(e));
@@ -1018,7 +1021,7 @@ async function onInstallPluginDirFromLocal(dirPath: string): Promise<void> {
       if (!ok) return;
     }
     await installPluginDir(dirPath, prev.pluginId, accepted);
-    showToast("success", `已安装：${prev.pluginId}`);
+    showToast("success", String(t("pluginManagerV1.localImports.toastInstalled", { id: prev.pluginId })));
   } catch (e) {
     showToast("error", e instanceof Error ? e.message : String(e));
   }
@@ -1028,7 +1031,7 @@ async function onPreviewLocalJson(path: string): Promise<void> {
   try {
     const text = await readLocalImportText(path);
     await navigator.clipboard.writeText(text);
-    showToast("success", "已复制 JSON 内容到剪贴板。");
+    showToast("success", String(t("pluginManagerV1.localImports.toastJsonCopied")));
   } catch (e) {
     showToast("error", e instanceof Error ? e.message : String(e));
   }
@@ -1083,7 +1086,7 @@ async function onApplyLocalModuleOrProfile(path: string): Promise<void> {
     } else if (marketEntryType(row) === "profile") {
       await onApplyProfileEntry(row);
     } else {
-      showToast("error", "仅支持 module/profile 本地条目。");
+      showToast("error", String(t("pluginManagerV1.localImports.toastOnlyModuleOrProfile")));
     }
   } catch (e) {
     showToast("error", e instanceof Error ? e.message : String(e));
@@ -1168,7 +1171,7 @@ async function onBatchEnable() {
   }
   try {
     pluginStore.batchEnablePluginIds(ids);
-    showToast("success", `已启用 ${ids.length} 个插件；保存后生效，建议重启应用。`);
+    showToast("success", String(t("pluginManagerV1.batch.toastEnabled", { n: ids.length })));
     clearBatchSelection();
   } catch (e) {
     showToast("error", e instanceof Error ? e.message : String(e));
@@ -1181,7 +1184,7 @@ async function onBatchDisable() {
     return;
   }
   pluginStore.batchDisablePluginIds(ids);
-  showToast("success", `已停用 ${ids.length} 个插件；保存后生效，建议重启应用。`);
+  showToast("success", String(t("pluginManagerV1.batch.toastDisabled", { n: ids.length })));
   clearBatchSelection();
 }
 
@@ -1192,7 +1195,7 @@ async function onBatchUpdate() {
   }
   try {
     await pluginStore.batchUpdatePluginsFromGitIndex(ids);
-    showToast("success", "已从索引 Git 源拉取更新（ff-only）；若失败请查看错误提示。");
+    showToast("success", String(t("pluginManagerV1.batch.toastGitUpdated")));
     clearBatchSelection();
   } catch (e) {
     showToast("error", e instanceof Error ? e.message : String(e));
@@ -1209,7 +1212,7 @@ async function onSyncMarketIndex() {
     if (pluginStore.pluginMarketSnapshot?.warning) {
       showToast("info", pluginStore.pluginMarketSnapshot.warning);
     } else {
-      showToast("success", "索引已同步。");
+      showToast("success", String(t("pluginManagerV1.marketSync.toastOk")));
     }
   } catch (e) {
     showToast("error", e instanceof Error ? e.message : String(e));
@@ -1314,7 +1317,7 @@ async function onInstallMarketVersion(row: PluginMarketEntryDto) {
 async function onUpdateMarketEntry(row: PluginMarketEntryDto) {
   try {
     await pluginStore.updateInstalledPluginFromGit(row.id);
-    showToast("success", `已更新 ${row.id}（git pull --ff-only）。`);
+    showToast("success", String(t("pluginManagerV1.marketInstall.toastUpdated", { id: row.id })));
   } catch (e) {
     showToast("error", e instanceof Error ? e.message : String(e));
   }
@@ -1325,7 +1328,7 @@ async function onGitPullWorkspacePlugin() {
   if (!pid) return;
   try {
     await pluginStore.updateInstalledPluginFromGit(pid);
-    showToast("success", "已从远程 Git 拉取更新。");
+    showToast("success", String(t("pluginManagerV1.installed.toastGitPulled")));
   } catch (e) {
     showToast("error", e instanceof Error ? e.message : String(e));
   }
@@ -1378,7 +1381,7 @@ function onDropSlot(slot: string, index: number) {
 async function onSave() {
   try {
     await pluginStore.persist();
-    showToast("success", "已保存插件配置；停用插件建议重启应用后完全生效。");
+    showToast("success", String(t("pluginManagerV1.save.toastSaved")));
   } catch (e) {
     showToast("error", e instanceof Error ? e.message : String(e));
   }
@@ -1403,7 +1406,7 @@ async function onApplyAuthorSuggestedBackends() {
   try {
     const info = await applyAuthorSuggestedPluginBackends(roleStore.currentRoleId);
     roleStore.applyRoleInfo(info);
-    showToast("success", "已应用 author.json 中的 suggested_plugin_backends（会话级，未改 settings.json）。");
+    showToast("success", String(t("pluginManagerV1.author.toastAppliedSuggestedBackends")));
   } catch (e) {
     showToast("error", e instanceof Error ? e.message : String(e));
   }
@@ -1415,7 +1418,7 @@ async function onCheckUpdates() {
     if (pluginStore.error) {
       showToast("error", pluginStore.error);
     } else {
-      showToast("success", "检查完成（在线版本接口预留中）。");
+      showToast("success", String(t("pluginManagerV1.installed.toastCheckUpdatesDone")));
     }
   } catch (e) {
     showToast("error", e instanceof Error ? e.message : String(e));
@@ -1452,7 +1455,7 @@ async function onUpdateFromZip(pluginId: string) {
       if (!ok2) return;
     }
     await pluginStore.installPluginFromLocalZip(pluginId, path, accepted);
-    showToast("success", "更新完成，请重启应用生效。");
+    showToast("success", String(t("pluginManagerV1.installed.toastZipUpdated")));
   } catch (e) {
     showToast("error", e instanceof Error ? e.message : String(e));
   }
