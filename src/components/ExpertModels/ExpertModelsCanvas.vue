@@ -27,6 +27,8 @@ const selectedId = computed<string | null>({
   },
 });
 
+const selectedEdgeId = ref<string | null>(null);
+
 const idSet = (nodes: ExpertNode[]): Set<string> =>
   new Set(nodes.map((n) => String((n as any).id ?? "").trim()).filter(Boolean));
 
@@ -109,7 +111,15 @@ function deleteSelectedNode() {
     (e) => String(e.from ?? "").trim() !== id && String(e.to ?? "").trim() !== id,
   );
   selectedId.value = null;
+  selectedEdgeId.value = null;
   emitGraph({ ...g, nodes: nextNodes, edges: nextEdges });
+}
+
+function deleteSelectedEdge() {
+  const eid = (selectedEdgeId.value ?? "").trim();
+  if (!eid) return;
+  internalEdges.value = internalEdges.value.filter((e) => e.id !== eid);
+  selectedEdgeId.value = null;
 }
 
 watch(
@@ -202,6 +212,14 @@ function addNode(kind: "base" | "lora" | "style") {
         >
           删除选中节点
         </button>
+        <button
+          type="button"
+          class="emc-btn danger"
+          :disabled="!selectedEdgeId"
+          @click="deleteSelectedEdge"
+        >
+          删除选中连线
+        </button>
       </div>
       <div v-if="health.length" class="emc-warn">
         <div v-for="w in health" :key="w">{{ w }}</div>
@@ -214,7 +232,11 @@ function addNode(kind: "base" | "lora" | "style") {
       fit-view-on-init
       class="emc-flow"
       @node-click="selectedId = $event.node.id"
-      @pane-click="selectedId = null"
+      @edge-click="selectedEdgeId = $event.edge.id"
+      @pane-click="
+        selectedId = null;
+        selectedEdgeId = null;
+      "
     />
   </div>
 </template>

@@ -424,7 +424,173 @@ onMounted(() => {
       </div>
     </div>
 
-    <div class="em-grid">
+    <details v-if="editorMode === 'canvas'" class="em-advanced" open>
+      <summary class="em-advanced-sum">高级/兼容编辑（表单）</summary>
+      <div class="em-advanced-body">
+        <div class="em-grid">
+      <div class="em-card">
+        <div class="em-card-h">Base 模型（GGUF）</div>
+        <div class="em-row3">
+          <button class="em-btn secondary" type="button" :disabled="saving || store.loading" @click="onImportBase">
+            导入 GGUF…
+          </button>
+        </div>
+        <select v-model="selectedBaseModelPath" class="em-select">
+          <option value="">（不设置 / 保持当前）</option>
+          <option v-for="m in store.baseModels" :key="m.path" :value="m.path">
+            {{ m.name }}
+          </option>
+        </select>
+        <div class="em-muted">目录：`{app_data}/models/gguf/*.gguf`</div>
+      </div>
+
+      <div class="em-card">
+        <div class="em-card-h">LoRA（可多选）</div>
+        <div class="em-row3">
+          <button class="em-btn secondary" type="button" :disabled="saving || store.loading" @click="onImportLora">
+            导入 LoRA…
+          </button>
+        </div>
+        <div class="em-lora-add">
+          <select class="em-select" @change="addLora(($event.target as HTMLSelectElement).value)">
+            <option value="">添加一个 LoRA…</option>
+            <option v-for="m in store.loras" :key="m.path" :value="m.path">
+              {{ m.name }}
+            </option>
+          </select>
+        </div>
+
+        <div v-if="loraNodes.length === 0" class="em-muted">尚未添加 LoRA。</div>
+        <ul v-else class="em-lora-list">
+          <li v-for="n in loraNodes" :key="n.id" class="em-lora">
+            <label class="em-row">
+              <input
+                type="checkbox"
+                :checked="n.enabled"
+                @change="
+                  store.draftGraph = {
+                    ...store.draftGraph,
+                    nodes: store.draftGraph.nodes.map((x) =>
+                      x.type === 'lora_adapter' && x.id === n.id
+                        ? { ...x, enabled: ($event.target as HTMLInputElement).checked }
+                        : x,
+                    ),
+                  }
+                "
+              />
+              <span class="em-mono">{{ n.ggufPath.split(/[\\/]/).slice(-1)[0] }}</span>
+            </label>
+
+            <div class="em-row em-row2">
+              <label class="em-muted">
+                强度
+                <input
+                  class="em-num"
+                  type="number"
+                  step="0.05"
+                  :value="n.strength"
+                  @input="
+                    store.draftGraph = {
+                      ...store.draftGraph,
+                      nodes: store.draftGraph.nodes.map((x) =>
+                        x.type === 'lora_adapter' && x.id === n.id
+                          ? { ...x, strength: Number(($event.target as HTMLInputElement).value) }
+                          : x,
+                      ),
+                    }
+                  "
+                />
+              </label>
+              <span v-if="strengthWarning(n.strength)" class="em-warn">
+                {{ strengthWarning(n.strength) }}
+              </span>
+            </div>
+
+            <div class="em-lora-actions">
+              <button class="em-mini" type="button" @click="moveLora(n.id, -1)">上移</button>
+              <button class="em-mini" type="button" @click="moveLora(n.id, 1)">下移</button>
+              <button class="em-mini danger" type="button" @click="removeLora(n.id)">移除</button>
+            </div>
+          </li>
+        </ul>
+
+        <div class="em-muted">目录：`{app_data}/models/loras/*.gguf`（也兼容放在 gguf 目录）</div>
+      </div>
+
+      <div class="em-card">
+        <div class="em-card-h">当前生效（用于排错）</div>
+        <div class="em-muted" style="margin-top: 0">
+          该块展示的是“当前生效配置”（会话覆盖 / 角色默认 / 角色包默认），不等同于你正在编辑的草稿。
+        </div>
+        <div class="em-kv">
+          <div class="em-k">Base</div>
+          <div class="em-v">
+            <span v-if="effectiveBasePath" class="em-mono">{{
+              effectiveBasePath.split(/[\\/]/).slice(-1)[0]
+            }}</span>
+            <span v-else class="em-muted">（未设置 / 保持当前）</span>
+          </div>
+        </div>
+        <div class="em-kv">
+          <div class="em-k">LoRA</div>
+          <div class="em-v">
+            <div v-if="effectiveLoras.length === 0" class="em-muted">（无 / 未启用）</div>
+            <ul v-else class="em-eff-list">
+              <li v-for="n in effectiveLoras" :key="n.id" class="em-eff-li">
+                <span class="em-mono">{{ n.ggufPath.split(/[\\/]/).slice(-1)[0] }}</span>
+                <span class="em-eff-strength">× {{ n.strength.toFixed(2) }}</span>
+              </li>
+            </ul>
+          </div>
+        </div>
+        <div class="em-kv">
+          <div class="em-k">PromptStyle</div>
+          <div class="em-v">
+            <span v-if="store.effectivePromptStyle" class="em-muted">（已覆盖）</span>
+            <span v-else class="em-muted">（未覆盖）</span>
+          </div>
+        </div>
+      </div>
+
+      <div class="em-card">
+        <div class="em-card-h">PromptStyle（可选覆盖）</div>
+        <label class="em-field">
+          <div class="em-label">回复质量锚点（覆盖角色包/默认）</div>
+          <textarea
+            class="em-text"
+            rows="4"
+            :value="store.draftPromptStyle?.replyQualityAnchor ?? ''"
+            @input="ensurePromptStyle().replyQualityAnchor = ($event.target as HTMLTextAreaElement).value"
+            placeholder="留空表示不覆盖"
+          />
+        </label>
+        <label class="em-field">
+          <div class="em-label">核心人设（覆盖 role.core_personality）</div>
+          <textarea
+            class="em-text"
+            rows="3"
+            :value="store.draftPromptStyle?.corePersonality ?? ''"
+            @input="ensurePromptStyle().corePersonality = ($event.target as HTMLTextAreaElement).value"
+            placeholder="留空表示不覆盖"
+          />
+        </label>
+        <label class="em-field">
+          <div class="em-label">描述（覆盖 role.description）</div>
+          <textarea
+            class="em-text"
+            rows="2"
+            :value="store.draftPromptStyle?.description ?? ''"
+            @input="ensurePromptStyle().description = ($event.target as HTMLTextAreaElement).value"
+            placeholder="留空表示不覆盖"
+          />
+        </label>
+        <div class="em-muted">提示：未设置时，Prompt 行为与当前版本完全一致。</div>
+      </div>
+        </div>
+      </div>
+    </details>
+
+    <div v-else class="em-grid">
       <div class="em-card">
         <div class="em-card-h">Base 模型（GGUF）</div>
         <div class="em-row3">
@@ -661,6 +827,23 @@ onMounted(() => {
 }
 .em-inspector {
   margin-top: 10px;
+}
+.em-advanced {
+  margin-top: 10px;
+  border: 1px solid var(--border-light);
+  border-radius: 12px;
+  background: var(--bg-elevated);
+  overflow: hidden;
+}
+.em-advanced-sum {
+  cursor: pointer;
+  padding: 10px 12px;
+  font-size: 13px;
+  font-weight: 700;
+  list-style: none;
+}
+.em-advanced-body {
+  padding: 0 12px 12px;
 }
 .em-pill {
   padding: 4px 8px;
