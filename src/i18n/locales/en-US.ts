@@ -906,6 +906,45 @@ export const enUS = {
     copyAsCommand: "Copy as terminal command",
     copied: "Copied",
   },
+  pluginScaffoldWizard: {
+    title: "Create plugin scaffold",
+    fields: {
+      id: "Plugin ID",
+      name: "Plugin name",
+      language: "Language",
+      type: "Type",
+      outputDirOptional: "Output directory (optional)",
+      outputDirPlaceholder: "Leave empty to use default plugins/",
+    },
+    types: {
+      moduleExt: "6-module extension",
+    },
+    validation: {
+      title: "Manifest validation (live)",
+      ok: "Manifest validation passed",
+    },
+    actions: {
+      create: "Generate scaffold",
+    },
+    status: {
+      created: "Generated: {dir}",
+    },
+    errors: {
+      missingField: "Missing required field: {field}",
+      missingProcessOrRemoteUrl: "Missing process or remote_url",
+      invalidPermission: "permissions contains invalid value: {p}",
+    },
+  },
+  pluginPrivateSettingsForm: {
+    loading: "Loading settings…",
+    empty: "This plugin did not declare uiSchema.fields.",
+    templateLabel: "Template",
+    saving: "Saving…",
+    save: "Save private settings",
+    toasts: {
+      saved: "Private plugin settings saved.",
+    },
+  },
   pluginMarketV1: {
     panel: {
       dialogLabel: "Plugin Market",

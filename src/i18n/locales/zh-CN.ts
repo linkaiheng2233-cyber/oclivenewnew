@@ -878,6 +878,45 @@ export const zhCN = {
     copyAsCommand: "复制为终端命令",
     copied: "已复制",
   },
+  pluginScaffoldWizard: {
+    title: "新建插件脚手架",
+    fields: {
+      id: "插件 ID",
+      name: "插件名称",
+      language: "语言",
+      type: "类型",
+      outputDirOptional: "输出目录（可选）",
+      outputDirPlaceholder: "留空用默认 plugins/",
+    },
+    types: {
+      moduleExt: "六模块扩展",
+    },
+    validation: {
+      title: "manifest 实时校验",
+      ok: "manifest 校验通过",
+    },
+    actions: {
+      create: "生成脚手架",
+    },
+    status: {
+      created: "已生成：{dir}",
+    },
+    errors: {
+      missingField: "缺少必填字段 {field}",
+      missingProcessOrRemoteUrl: "缺少 process 或 remote_url",
+      invalidPermission: "permissions 含非法值: {p}",
+    },
+  },
+  pluginPrivateSettingsForm: {
+    loading: "加载设置…",
+    empty: "该插件未声明 uiSchema.fields。",
+    templateLabel: "模板",
+    saving: "保存中…",
+    save: "保存私有配置",
+    toasts: {
+      saved: "已保存插件私有配置。",
+    },
+  },
   pluginMarketV1: {
     panel: {
       dialogLabel: "插件市场",
