@@ -67,6 +67,23 @@ export const zhCN = {
     security: "安全",
     advanced: "高级",
   },
+  chat: {
+    list: {
+      roleSwitching: "切换中…",
+      historyCtaTitle: "在此展开此前的对话",
+      historyCtaSub: "每次 {step} 条，可多次展开 · 共 {total} 条",
+      historyExpandedLabel: "已展开",
+      itemsUnit: "条",
+      showEarlierStep: "再显示更早 {step} 条",
+      collapse: "收起",
+      historyInlineAria: "此前的对话",
+      historyInlineTitle: "此前的对话",
+      historyInlineHint: "与下方本次会话同一滚动区域",
+      currentSessionDivider: "以下为本次会话",
+      empty: "暂无消息，开始聊天吧~",
+      thinking: "正在想…",
+    },
+  },
   app: {
     startup: {
       loadingRoleAndPlugins: "正在加载角色与插件…",

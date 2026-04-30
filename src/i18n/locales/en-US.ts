@@ -72,6 +72,23 @@ export const enUS = {
     security: "Security",
     advanced: "Advanced",
   },
+  chat: {
+    list: {
+      roleSwitching: "Switching…",
+      historyCtaTitle: "Expand previous conversations here",
+      historyCtaSub: "{step} per click · Total {total}",
+      historyExpandedLabel: "Expanded",
+      itemsUnit: "items",
+      showEarlierStep: "Show {step} earlier",
+      collapse: "Collapse",
+      historyInlineAria: "Previous conversations",
+      historyInlineTitle: "Previous conversations",
+      historyInlineHint: "Shares the same scroll area as the current session below",
+      currentSessionDivider: "Current session below",
+      empty: "No messages yet. Start chatting.",
+      thinking: "Thinking…",
+    },
+  },
   app: {
     startup: {
       loadingRoleAndPlugins: "Loading roles and plugins…",

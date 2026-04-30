@@ -1,11 +1,14 @@
 <script setup lang="ts">
 // 长列表：当前会话区与「此前的聊天记录」折叠区内均用 DynamicScroller。
 import { computed, nextTick, ref, watch } from "vue";
+import { useI18n } from "vue-i18n";
 import { DynamicScroller, DynamicScrollerItem } from "vue-virtual-scroller";
 import ChatMessage from "./ChatMessage.vue";
 import type { ChatMsg } from "../types/chatMsg";
 
 export type { ChatMsg };
+
+const { t } = useI18n();
 
 /** 每次在主聊天区多展开的历史条数 */
 const PREVIEW_STEP = 20;
@@ -88,7 +91,7 @@ defineExpose({ scrollToBottom });
       'has-messages': messages.length > 0 || roleSwitching,
     }"
   >
-    <div v-if="roleSwitching" class="switching">切换中...</div>
+    <div v-if="roleSwitching" class="switching">{{ t("chat.list.roleSwitching") }}</div>
 
     <div
       v-if="split > 0 && historicalMessages.length > 0"
@@ -108,9 +111,14 @@ defineExpose({ scrollToBottom });
           </svg>
         </span>
         <span class="history-cta-text">
-          <span class="history-cta-title">在此展开此前的对话</span>
+          <span class="history-cta-title">{{ t("chat.list.historyCtaTitle") }}</span>
           <span class="history-cta-sub"
-            >每次 20 条，可多次展开 · 共 {{ historicalMessages.length }} 条</span
+            >{{
+              t("chat.list.historyCtaSub", {
+                step: PREVIEW_STEP,
+                total: historicalMessages.length,
+              })
+            }}</span
           >
         </span>
       </button>
@@ -118,12 +126,12 @@ defineExpose({ scrollToBottom });
         <div class="history-toolbar-active">
           <div class="history-toolbar-row">
             <span class="history-meta">
-              <span class="history-meta-label">已展开</span>
+              <span class="history-meta-label">{{ t("chat.list.historyExpandedLabel") }}</span>
               <span class="history-meta-nums"
                 >{{ visibleHistoryInChat.length }} /
                 {{ historicalMessages.length }}</span
               >
-              条
+              {{ t("chat.list.itemsUnit") }}
             </span>
             <div class="history-toolbar-actions">
               <button
@@ -132,14 +140,14 @@ defineExpose({ scrollToBottom });
                 class="history-pill history-pill--primary"
                 @click="expandHistoryStep"
               >
-                再显示更早 20 条
+                {{ t("chat.list.showEarlierStep", { step: PREVIEW_STEP }) }}
               </button>
               <button
                 type="button"
                 class="history-pill"
                 @click="collapseHistoryPreview"
               >
-                收起
+                {{ t("chat.list.collapse") }}
               </button>
             </div>
           </div>
@@ -150,11 +158,11 @@ defineExpose({ scrollToBottom });
     <div
       v-if="visibleHistoryInChat.length > 0"
       class="history-inline-chat"
-      aria-label="此前的对话"
+      :aria-label="String(t('chat.list.historyInlineAria'))"
     >
       <div class="history-inline-header">
-        <span class="history-inline-title">此前的对话</span>
-        <span class="history-inline-hint">与下方本次会话同一滚动区域</span>
+        <span class="history-inline-title">{{ t("chat.list.historyInlineTitle") }}</span>
+        <span class="history-inline-hint">{{ t("chat.list.historyInlineHint") }}</span>
       </div>
       <ChatMessage
         v-for="m in visibleHistoryInChat"
@@ -172,7 +180,7 @@ defineExpose({ scrollToBottom });
       class="session-split-line"
       role="separator"
     >
-      <span>以下为本次会话</span>
+      <span>{{ t("chat.list.currentSessionDivider") }}</span>
     </div>
 
     <DynamicScroller
@@ -212,7 +220,7 @@ defineExpose({ scrollToBottom });
       v-if="messages.length === 0 && !loading && !roleSwitching"
       class="empty-hint"
     >
-      暂无消息，开始聊天吧~
+      {{ t("chat.list.empty") }}
     </div>
 
     <div v-if="loading" class="thinking">
@@ -221,7 +229,7 @@ defineExpose({ scrollToBottom });
         <span class="dot" />
         <span class="dot" />
       </div>
-      <span>正在想...</span>
+      <span>{{ t("chat.list.thinking") }}</span>
     </div>
   </div>
 </template>
