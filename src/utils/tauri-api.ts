@@ -285,9 +285,11 @@ export async function expertModelsRollbackLastRun(params: {
 export interface ExpertModelsRunSummaryDto {
   indexFromLatest: number;
   atMs: number;
-  baseName: string;
-  loraCount: number;
-  hasPromptStyle: boolean;
+  targetBaseName: string;
+  targetLoraCount: number;
+  targetHasPromptStyle: boolean;
+  applyOk?: boolean | null;
+  applyError?: string | null;
 }
 
 export async function expertModelsListRuns(params: {

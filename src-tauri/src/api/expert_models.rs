@@ -144,6 +144,23 @@ fn summarize_snapshot(
     Some((at_ms, graph, style))
 }
 
+fn read_target_summary(v: &serde_json::Value) -> Option<(String, u32, bool)> {
+    let t = v.get("target")?;
+    let base = t.get("baseName").and_then(|x| x.as_str()).unwrap_or("").to_string();
+    let loras = t.get("loraCount").and_then(|x| x.as_u64()).unwrap_or(0) as u32;
+    let ps = t.get("hasPromptStyle").and_then(|x| x.as_bool()).unwrap_or(false);
+    Some((base, loras, ps))
+}
+
+fn read_apply_outcome(v: &serde_json::Value) -> (Option<bool>, Option<String>) {
+    let Some(a) = v.get("apply") else {
+        return (None, None);
+    };
+    let ok = a.get("ok").and_then(|x| x.as_bool());
+    let err = a.get("error").and_then(|x| x.as_str()).map(|s| s.to_string());
+    (ok, err)
+}
+
 fn base_file_name(p: &str) -> String {
     let t = p.trim();
     if t.is_empty() {
@@ -527,80 +544,105 @@ pub async fn expert_models_apply_to_session(
     }
     let session_ns = conversation_state_role_id(role_id, req.session_id.as_deref());
 
-    // Push current effective config into run history before applying a new one.
-    // This provides a "Module 9 Ctrl+Z" at the session scope.
-    let (prev_graph, _pgs, prev_style, _pss) =
-        effective_for_session(&state, role_id, session_ns.as_str()).await?;
+    // Push a rollback snapshot (previous effective) before applying, and record the apply outcome.
+    // This provides a "Module 9 Ctrl+Z" at the session scope, and keeps a lightweight "queue-like" log.
+    let (prev_graph, _pgs, prev_style, _pss) = effective_for_session(&state, role_id, session_ns.as_str()).await?;
+    // Current effective graph (session override > role default > pack default(empty)) is the target we are applying.
+    let (graph, _graph_src, style, _style_src) = effective_for_session(&state, role_id, session_ns.as_str()).await?;
+
     let run_raw_prev = state
         .expert_models_repo
         .get_expert_models_run_history_json(session_ns.as_str())
         .await
         .map_err(|e| e.to_frontend_error())?;
     let mut runs = parse_run_history(run_raw_prev);
+    let snapshot_idx = runs.len();
     let snapshot = json!({
       "atMs": Utc::now().timestamp_millis(),
       "graph": prev_graph,
       "promptStyle": prev_style,
+      "target": {
+        "baseName": pick_base_name(&graph),
+        "loraCount": count_enabled_loras(&graph),
+        "hasPromptStyle": style.is_some(),
+      }
     });
     runs.push(snapshot);
-    // keep last 20
-    if runs.len() > 20 {
-        runs.drain(0..(runs.len() - 20));
+    // keep last 30
+    if runs.len() > 30 {
+        runs.drain(0..(runs.len() - 30));
     }
-    let run_json = to_run_history_json(runs.as_slice());
-    state
-        .expert_models_repo
-        .set_expert_models_run_history_json(session_ns.as_str(), run_json.as_deref())
-        .await
-        .map_err(|e| e.to_frontend_error())?;
-
-    // Compute current effective graph (session override > role default > pack default(empty)).
-    let (graph, _graph_src, _style, _style_src) =
-        effective_for_session(&state, role_id, session_ns.as_str()).await?;
 
     let gguf_dir = llama_models_gguf_dir(&state);
     let loras_dir = llama_loras_dir(&state);
-    let compiled =
-        compile_graph_to_llama_local_config(&graph, gguf_dir.as_path(), loras_dir.as_path())
-            .map_err(|e| e.to_frontend_error())?;
+    let apply_result: Result<ExpertModelsApplyResult, String> = (async {
+        let compiled =
+            compile_graph_to_llama_local_config(&graph, gguf_dir.as_path(), loras_dir.as_path())
+                .map_err(|e| e.to_frontend_error())?;
 
-    let cfg_val = serde_json::to_value(&compiled).map_err(|e| e.to_string())?;
-    write_config_json(&state, LLAMA_LOCAL_PLUGIN_ID, &cfg_val)?;
+        let cfg_val = serde_json::to_value(&compiled).map_err(|e| e.to_string())?;
+        write_config_json(&state, LLAMA_LOCAL_PLUGIN_ID, &cfg_val)?;
 
-    // Ensure the current session uses the directory LLM backend (mechanism), pointing to llama local plugin.
-    // If the user hasn't granted required permissions (e.g. process:spawn), chat runtime will still fallback;
-    // we keep apply logic non-interactive and surface errors via normal flow.
-    let _ = set_session_plugin_backend_impl(
-        &state,
-        &SetSessionPluginBackendRequest {
-            role_id: role_id.to_string(),
-            session_id: req.session_id.clone(),
-            module: "llm".to_string(),
-            backend: Some(Some("directory".to_string())),
-            local_memory_provider_id: None,
-            directory_plugin_id: Some(LLAMA_LOCAL_PLUGIN_ID.to_string()),
-        },
-    )
+        // Ensure the current session uses the directory LLM backend (mechanism), pointing to llama local plugin.
+        let _ = set_session_plugin_backend_impl(
+            &state,
+            &SetSessionPluginBackendRequest {
+                role_id: role_id.to_string(),
+                session_id: req.session_id.clone(),
+                module: "llm".to_string(),
+                backend: Some(Some("directory".to_string())),
+                local_memory_provider_id: None,
+                directory_plugin_id: Some(LLAMA_LOCAL_PLUGIN_ID.to_string()),
+            },
+        )
+        .await;
+
+        // Restart trigger: dedicated, not generic rpc:invoke.
+        let url = state
+            .directory_plugins
+            .ensure_rpc_url(LLAMA_LOCAL_PLUGIN_ID)
+            .map_err(|e| e.to_string())?;
+        let _ = invoke_directory_plugin_rpc_blocking(
+            &url,
+            "config_updated",
+            json!({ "config": cfg_val }),
+            RemoteRpcChannel::Plugin,
+        );
+
+        Ok(ExpertModelsApplyResult {
+            ok: true,
+            llama_plugin_id: LLAMA_LOCAL_PLUGIN_ID.to_string(),
+            model_path: compiled.model_path.clone(),
+            llama_args: compiled.llama_args.clone(),
+        })
+    })
     .await;
 
-    // Restart trigger: dedicated, not generic rpc:invoke.
-    let url = state
-        .directory_plugins
-        .ensure_rpc_url(LLAMA_LOCAL_PLUGIN_ID)
-        .map_err(|e| e.to_string())?;
-    let _ = invoke_directory_plugin_rpc_blocking(
-        &url,
-        "config_updated",
-        json!({ "config": cfg_val }),
-        RemoteRpcChannel::Plugin,
-    );
+    // Persist apply outcome back onto the snapshot entry (best-effort; also supports older entries without apply field).
+    if let Some(v) = runs.get_mut(snapshot_idx) {
+        match &apply_result {
+            Ok(r) => {
+                v["apply"] = json!({
+                  "ok": true,
+                  "modelPath": r.model_path,
+                  "llamaArgs": r.llama_args,
+                });
+            }
+            Err(e) => {
+                v["apply"] = json!({
+                  "ok": false,
+                  "error": e,
+                });
+            }
+        }
+    }
+    let run_json = to_run_history_json(runs.as_slice());
+    let _ = state
+        .expert_models_repo
+        .set_expert_models_run_history_json(session_ns.as_str(), run_json.as_deref())
+        .await;
 
-    Ok(ExpertModelsApplyResult {
-        ok: true,
-        llama_plugin_id: LLAMA_LOCAL_PLUGIN_ID.to_string(),
-        model_path: compiled.model_path.clone(),
-        llama_args: compiled.llama_args.clone(),
-    })
+    apply_result
 }
 
 #[derive(Debug, Clone, serde::Deserialize)]
@@ -714,12 +756,17 @@ pub async fn expert_models_list_runs(
     let mut items: Vec<ExpertModelsRunSummaryDto> = vec![];
     for (i, v) in runs.iter().rev().enumerate() {
         if let Some((at_ms, graph, style)) = summarize_snapshot(v) {
+            let (apply_ok, apply_error) = read_apply_outcome(v);
+            let (t_base, t_loras, t_ps) = read_target_summary(v)
+                .unwrap_or((pick_base_name(&graph), count_enabled_loras(&graph), style.is_some()));
             items.push(ExpertModelsRunSummaryDto {
                 index_from_latest: i as u32,
                 at_ms,
-                base_name: pick_base_name(&graph),
-                lora_count: count_enabled_loras(&graph),
-                has_prompt_style: style.is_some(),
+                target_base_name: t_base,
+                target_lora_count: t_loras,
+                target_has_prompt_style: t_ps,
+                apply_ok,
+                apply_error,
             });
         }
         if items.len() >= 30 {

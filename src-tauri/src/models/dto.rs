@@ -608,9 +608,15 @@ pub struct ExpertWorkflowsListResponse {
 pub struct ExpertModelsRunSummaryDto {
     pub index_from_latest: u32,
     pub at_ms: i64,
-    pub base_name: String,
-    pub lora_count: u32,
-    pub has_prompt_style: bool,
+    /// The target config summary (what was being applied).
+    pub target_base_name: String,
+    pub target_lora_count: u32,
+    pub target_has_prompt_style: bool,
+    /// Apply outcome (if present). Older history entries may not include this.
+    #[serde(default)]
+    pub apply_ok: Option<bool>,
+    #[serde(default)]
+    pub apply_error: Option<String>,
 }
 
 #[derive(Debug, Clone, Serialize)]

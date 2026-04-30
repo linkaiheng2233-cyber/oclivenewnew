@@ -997,9 +997,11 @@ async function onImportWorkflowJson(): Promise<void> {
                   <span class="em-muted2">{{ formatRunTime(r.atMs) }}</span>
                 </div>
                 <div class="em-run-meta">
-                  <span class="em-pill2">Base：{{ r.baseName || "(未设置)" }}</span>
-                  <span class="em-pill2">LoRA：{{ r.loraCount }}</span>
-                  <span v-if="r.hasPromptStyle" class="em-pill2">PromptStyle</span>
+                  <span class="em-pill2">Base：{{ r.targetBaseName || "(未设置)" }}</span>
+                  <span class="em-pill2">LoRA：{{ r.targetLoraCount }}</span>
+                  <span v-if="r.targetHasPromptStyle" class="em-pill2">PromptStyle</span>
+                  <span v-if="r.applyOk === true" class="em-pill2 em-ok">OK</span>
+                  <span v-else-if="r.applyOk === false" class="em-pill2 em-bad" :title="r.applyError || ''">FAILED</span>
                 </div>
               </div>
               <button
@@ -1392,6 +1394,14 @@ async function onImportWorkflowJson(): Promise<void> {
   border: 1px solid var(--border-light);
   background: var(--bg-primary);
   color: var(--text-secondary);
+}
+.em-pill2.em-ok {
+  border-color: rgba(46, 160, 67, 0.45);
+  color: rgba(46, 160, 67, 0.95);
+}
+.em-pill2.em-bad {
+  border-color: rgba(248, 81, 73, 0.5);
+  color: rgba(248, 81, 73, 0.95);
 }
 @media (max-width: 1080px) {
   .em-grid {
