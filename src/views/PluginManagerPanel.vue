@@ -1927,22 +1927,22 @@ async function onPackSelectedPlugin(): Promise<void> {
               {{ pluginStore.pluginMarketSnapshot.warning }}
             </p>
             <p v-if="pluginStore.pluginMarketSnapshot?.offlineMode" class="pm-hint">
-              当前为离线模式（使用本地缓存索引）。
+              {{ t("pluginManagerV1.communityIndex.offlineHint") }}
             </p>
             <details class="pm-local-imports">
-              <summary class="pm-local-imports-sum">本地导入（文件夹投放）</summary>
+              <summary class="pm-local-imports-sum">{{ t("pluginManagerV1.localImports.sectionTitle") }}</summary>
               <div class="pm-local-imports-body">
                 <p class="pm-muted">
-                  这是<strong>加法入口</strong>：把文件放进指定目录后，Oclive Manager 只负责<strong>发现</strong>，仍需你在此<strong>确认权限/启用</strong>，不会自动运行。
+                  <span v-html="t('pluginManagerV1.localImports.sectionHintHtml')"></span>
                 </p>
                 <p v-if="localImportsRootDir" class="pm-muted">
-                  根目录：<code>{{ localImportsRootDir }}</code>
+                  {{ t("pluginManagerV1.localImports.rootLabel") }}：<code>{{ localImportsRootDir }}</code>
                 </p>
                 <ul class="pm-muted">
-                  <li><code>roles/</code>：角色包（.ocpak/.zip）</li>
-                  <li><code>plugins/plugin/</code>：插件包（.zip/.oclive-plugin）或插件目录（含 manifest.json）</li>
-                  <li><code>plugins/module/</code>：插件模块（module 条目 JSON，无代码）</li>
-                  <li><code>profiles/</code>：Profile JSON（.oclive.profile.json 等）</li>
+                  <li><code>roles/</code>：{{ t("pluginManagerV1.localImports.paths.roles") }}</li>
+                  <li><code>plugins/plugin/</code>：{{ t("pluginManagerV1.localImports.paths.pluginsPlugin") }}</li>
+                  <li><code>plugins/module/</code>：{{ t("pluginManagerV1.localImports.paths.pluginsModule") }}</li>
+                  <li><code>profiles/</code>：{{ t("pluginManagerV1.localImports.paths.profiles") }}</li>
                 </ul>
                 <div class="pm-row">
                   <button
@@ -1951,85 +1951,89 @@ async function onPackSelectedPlugin(): Promise<void> {
                     :disabled="localImportsLoading"
                     @click="refreshLocalImports"
                   >
-                    {{ localImportsLoading ? "扫描中…" : "扫描投放目录" }}
+                    {{
+                      localImportsLoading
+                        ? t("pluginManagerV1.localImports.scanning")
+                        : t("pluginManagerV1.localImports.scan")
+                    }}
                   </button>
                   <button type="button" class="pm-btn secondary pm-btn--sm" @click="unhideAllLocalImports">
-                    显示全部
+                    {{ t("pluginManagerV1.localImports.showAll") }}
                   </button>
                   <span v-if="localImportsErr" class="pm-err"> {{ localImportsErr }} </span>
                 </div>
 
-                <div v-if="localImports.length === 0" class="pm-muted">暂无候选项。</div>
+                <div v-if="localImports.length === 0" class="pm-muted">{{ t("pluginManagerV1.localImports.empty") }}</div>
                 <div v-else class="pm-local-imports-grid">
                   <div class="pm-local-imports-col">
-                    <h4>角色包</h4>
+                    <h4>{{ t("pluginManagerV1.localImports.cols.rolePacks") }}</h4>
                     <ul class="pm-local-imports-list">
                       <li v-for="it in localImportsByKind('role_pack')" :key="it.path">
                         <code>{{ it.fileName }}</code>
                         <button type="button" class="pm-link" @click="onImportRolePackFromLocal(it.path)">
-                          导入
+                          {{ t("pluginManagerV1.localImports.actions.import") }}
                         </button>
                         <button
                           type="button"
                           class="pm-link"
-                          title="覆盖导入：同 role_id 已存在时替换本地版本"
+                          :title="String(t('pluginManagerV1.localImports.actions.overwriteImportTitle'))"
                           @click="onImportRolePackFromLocalOverwrite(it.path)"
                         >
-                          覆盖导入
+                          {{ t("pluginManagerV1.localImports.actions.overwriteImport") }}
                         </button>
                       </li>
                     </ul>
                   </div>
 
                   <div class="pm-local-imports-col">
-                    <h4>插件</h4>
+                    <h4>{{ t("pluginManagerV1.localImports.cols.plugins") }}</h4>
                     <ul class="pm-local-imports-list">
                       <li v-for="it in localImportsByKind('plugin_archive')" :key="it.path">
                         <code>{{ it.fileName }}</code>
                         <button type="button" class="pm-link" @click="onInstallPluginArchiveFromLocal(it.path)">
-                          安装
+                          {{ t("pluginManagerV1.localImports.actions.install") }}
                         </button>
                         <button type="button" class="pm-link" @click="hideLocalImport(it.path)">
-                          隐藏
+                          {{ t("pluginManagerV1.localImports.actions.hide") }}
                         </button>
                       </li>
                       <li v-for="it in localImportsByKind('plugin_dir')" :key="it.path">
                         <code>{{ it.fileName }}</code>
                         <button type="button" class="pm-link" @click="onInstallPluginDirFromLocal(it.path)">
-                          安装
+                          {{ t("pluginManagerV1.localImports.actions.install") }}
                         </button>
                         <button type="button" class="pm-link" @click="hideLocalImport(it.path)">
-                          隐藏
+                          {{ t("pluginManagerV1.localImports.actions.hide") }}
                         </button>
                       </li>
                     </ul>
                   </div>
 
                   <div class="pm-local-imports-col">
-                    <h4>模块 / Profile</h4>
+                    <h4>{{ t("pluginManagerV1.localImports.cols.moduleProfile") }}</h4>
                     <ul class="pm-local-imports-list">
                       <li v-for="it in localImportsByKind('module_json')" :key="it.path">
                         <code>{{ it.fileName }}</code>
                         <button type="button" class="pm-link" @click="onApplyLocalModuleOrProfile(it.path)">
-                          应用
+                          {{ t("pluginManagerV1.localImports.actions.apply") }}
                         </button>
                         <button type="button" class="pm-link" @click="onPreviewLocalJson(it.path)">
-                          复制 JSON
+                          {{ t("pluginManagerV1.localImports.actions.copyJson") }}
                         </button>
                         <button type="button" class="pm-link" @click="hideLocalImport(it.path)">
-                          隐藏
+                          {{ t("pluginManagerV1.localImports.actions.hide") }}
                         </button>
                       </li>
                       <li v-for="it in localImportsByKind('profile_json')" :key="it.path">
                         <code>{{ it.fileName }}</code>
                         <button type="button" class="pm-link" @click="onApplyLocalModuleOrProfile(it.path)">
-                          应用
+                          {{ t("pluginManagerV1.localImports.actions.apply") }}
                         </button>
                         <button type="button" class="pm-link" @click="onPreviewLocalJson(it.path)">
-                          复制 JSON
+                          {{ t("pluginManagerV1.localImports.actions.copyJson") }}
                         </button>
                         <button type="button" class="pm-link" @click="hideLocalImport(it.path)">
-                          隐藏
+                          {{ t("pluginManagerV1.localImports.actions.hide") }}
                         </button>
                       </li>
                     </ul>
@@ -2041,7 +2045,7 @@ async function onPackSelectedPlugin(): Promise<void> {
               v-if="marketSourceSelected !== 'official'"
               class="pm-err"
             >
-              当前为第三方索引源。请仅安装你信任的来源，并谨慎授予权限（开发者模式功能）。
+              {{ t("pluginManagerV1.communityIndex.thirdPartyWarning") }}
             </p>
             <p
               v-if="
@@ -2050,7 +2054,7 @@ async function onPackSelectedPlugin(): Promise<void> {
               "
               class="pm-muted"
             >
-              尚无索引数据，请点击「同步在线索引」。
+              {{ t("pluginManagerV1.communityIndex.emptyHint") }}
             </p>
             <div
               v-else-if="marketRowsFiltered.length > 0"

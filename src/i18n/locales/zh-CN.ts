@@ -689,6 +689,11 @@ export const zhCN = {
       optional: "（可选）",
       empty: "未列出 recommended_plugins。",
     },
+    communityIndex: {
+      offlineHint: "当前为离线模式（使用本地缓存索引）。",
+      thirdPartyWarning: "当前为第三方索引源。请仅安装你信任的来源，并谨慎授予权限（开发者模式功能）。",
+      emptyHint: "尚无索引数据，请点击「同步在线索引」。",
+    },
     applyPlan: {
       type: {
         module: "类型：模块（无代码）",
@@ -710,6 +715,34 @@ export const zhCN = {
         pluginDir: "插件目录",
         moduleEntry: "模块条目",
         profileEntry: "Profile",
+      },
+      sectionTitle: "本地导入（文件夹投放）",
+      sectionHintHtml:
+        "这是<strong>加法入口</strong>：把文件放进指定目录后，Oclive Manager 只负责<strong>发现</strong>，仍需你在此<strong>确认权限/启用</strong>，不会自动运行。",
+      rootLabel: "根目录",
+      paths: {
+        roles: "角色包（.ocpak/.zip）",
+        pluginsPlugin: "插件包（.zip/.oclive-plugin）或插件目录（含 manifest.json）",
+        pluginsModule: "插件模块（module 条目 JSON，无代码）",
+        profiles: "Profile JSON（.oclive.profile.json 等）",
+      },
+      scanning: "扫描中…",
+      scan: "扫描投放目录",
+      showAll: "显示全部",
+      empty: "暂无候选项。",
+      cols: {
+        rolePacks: "角色包",
+        plugins: "插件",
+        moduleProfile: "模块 / Profile",
+      },
+      actions: {
+        import: "导入",
+        overwriteImport: "覆盖导入",
+        overwriteImportTitle: "覆盖导入：同 role_id 已存在时替换本地版本",
+        install: "安装",
+        hide: "隐藏",
+        apply: "应用",
+        copyJson: "复制 JSON",
       },
       toastJsonCopied: "已复制 JSON 内容到剪贴板。",
       toastOnlyModuleOrProfile: "仅支持 module/profile 本地条目。",

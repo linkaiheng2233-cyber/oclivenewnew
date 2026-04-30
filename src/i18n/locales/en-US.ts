@@ -709,6 +709,12 @@ export const enUS = {
       optional: "(optional)",
       empty: "No recommended_plugins listed.",
     },
+    communityIndex: {
+      offlineHint: "Offline mode (using local cached index).",
+      thirdPartyWarning:
+        "You are using a third-party index source. Only install sources you trust and grant permissions carefully (Developer mode feature).",
+      emptyHint: "No index data yet. Click “Sync online index”.",
+    },
     applyPlan: {
       type: {
         module: "Type: Module (no code)",
@@ -730,6 +736,36 @@ export const enUS = {
         pluginDir: "Plugin directory",
         moduleEntry: "Module entry",
         profileEntry: "Profile",
+      },
+      sectionTitle: "Local imports (drop folder)",
+      sectionHintHtml:
+        "This is an <strong>add-only entry</strong>: after you drop files into the directory, Oclive Manager only <strong>discovers</strong> them. You still need to <strong>confirm permissions / enable</strong> here; nothing runs automatically.",
+      rootLabel: "Root",
+      paths: {
+        roles: "Role packs (.ocpak/.zip)",
+        pluginsPlugin:
+          "Plugin archives (.zip/.oclive-plugin) or plugin directories (with manifest.json)",
+        pluginsModule: "Plugin modules (module entry JSON, no code)",
+        profiles: "Profile JSON (.oclive.profile.json etc.)",
+      },
+      scanning: "Scanning…",
+      scan: "Scan drop folder",
+      showAll: "Show all",
+      empty: "No candidates.",
+      cols: {
+        rolePacks: "Role packs",
+        plugins: "Plugins",
+        moduleProfile: "Module / Profile",
+      },
+      actions: {
+        import: "Import",
+        overwriteImport: "Overwrite import",
+        overwriteImportTitle:
+          "Overwrite import: replace local role pack when the same role_id already exists",
+        install: "Install",
+        hide: "Hide",
+        apply: "Apply",
+        copyJson: "Copy JSON",
       },
       toastJsonCopied: "JSON copied to clipboard.",
       toastOnlyModuleOrProfile: "Only local module/profile entries are supported.",
