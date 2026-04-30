@@ -14,6 +14,7 @@ const emit = defineEmits<{
 
 const saving = ref(false);
 const editorMode = ref<"canvas" | "form">("canvas");
+const selectedCanvasNodeId = ref<string | null>(null);
 
 const sourceLabel = (s: string): string => {
   if (s === "session_override") return "会话覆盖";
@@ -74,6 +75,35 @@ const ensurePromptStyle = (): PromptStyleOverride => {
   if (!store.draftPromptStyle) store.draftPromptStyle = {};
   return store.draftPromptStyle;
 };
+
+const selectedNode = computed<ExpertNode | null>(() => {
+  const id = (selectedCanvasNodeId.value ?? "").trim();
+  if (!id) return null;
+  const g = store.draftGraph;
+  return (g.nodes ?? []).find((n) => String((n as any).id ?? "") === id) ?? null;
+});
+
+function patchSelectedNode(patch: Partial<any>): void {
+  const id = (selectedCanvasNodeId.value ?? "").trim();
+  if (!id) return;
+  const g = store.draftGraph;
+  store.draftGraph = {
+    ...g,
+    nodes: (g.nodes ?? []).map((n) =>
+      String((n as any).id ?? "") === id ? ({ ...(n as any), ...patch } as any) : n,
+    ),
+  };
+}
+
+function patchSelectedPromptStyle(patch: Partial<PromptStyleOverride>): void {
+  const id = (selectedCanvasNodeId.value ?? "").trim();
+  if (!id) return;
+  const n = selectedNode.value as any;
+  if (!n || n.type !== "prompt_style") return;
+  const next = { ...(n.style ?? {}), ...patch };
+  patchSelectedNode({ style: next });
+  store.draftPromptStyle = { ...(store.draftPromptStyle ?? {}), ...next };
+}
 
 function addLora(path: string): void {
   const p = (path ?? "").trim();
@@ -302,7 +332,96 @@ onMounted(() => {
     </div>
 
     <div v-if="editorMode === 'canvas'" class="em-canvaswrap">
-      <ExpertModelsCanvas v-model="store.draftGraph" />
+      <ExpertModelsCanvas v-model="store.draftGraph" v-model:selectedNodeId="selectedCanvasNodeId" />
+    </div>
+
+    <div v-if="editorMode === 'canvas' && selectedNode" class="em-inspector">
+      <div class="em-card">
+        <div class="em-card-h">节点属性：{{ (selectedNode as any).type }} · {{ (selectedNode as any).id }}</div>
+
+        <template v-if="(selectedNode as any).type === 'base_model'">
+          <select
+            class="em-select"
+            :value="(selectedNode as any).ggufPath"
+            @change="patchSelectedNode({ ggufPath: ($event.target as HTMLSelectElement).value })"
+          >
+            <option value="">（不设置 / 保持当前）</option>
+            <option v-for="m in store.baseModels" :key="m.path" :value="m.path">
+              {{ m.name }}
+            </option>
+          </select>
+          <div class="em-muted">Base 只允许选择 `models/gguf/` 下的 GGUF。</div>
+        </template>
+
+        <template v-else-if="(selectedNode as any).type === 'lora_adapter'">
+          <select
+            class="em-select"
+            :value="(selectedNode as any).ggufPath"
+            @change="patchSelectedNode({ ggufPath: ($event.target as HTMLSelectElement).value })"
+          >
+            <option value="">（选择一个 LoRA…）</option>
+            <option v-for="m in store.loras" :key="m.path" :value="m.path">
+              {{ m.name }}
+            </option>
+          </select>
+
+          <label class="em-field" style="margin-top: 8px">
+            <div class="em-label">强度（ComfyUI 风格，默认 1.0）</div>
+            <input
+              class="em-num"
+              type="number"
+              step="0.05"
+              :value="(selectedNode as any).strength"
+              @input="patchSelectedNode({ strength: Number(($event.target as HTMLInputElement).value) })"
+            />
+            <div v-if="strengthWarning(Number((selectedNode as any).strength))" class="em-warn">
+              {{ strengthWarning(Number((selectedNode as any).strength)) }}
+            </div>
+          </label>
+
+          <label class="em-row" style="margin-top: 8px">
+            <input
+              type="checkbox"
+              :checked="(selectedNode as any).enabled"
+              @change="patchSelectedNode({ enabled: ($event.target as HTMLInputElement).checked })"
+            />
+            <span class="em-muted">启用该 LoRA</span>
+          </label>
+        </template>
+
+        <template v-else-if="(selectedNode as any).type === 'prompt_style'">
+          <div class="em-muted" style="margin-top: 0">
+            提示：这里编辑的内容会同步到“PromptStyle（可选覆盖）”的草稿，并在应用时作为覆盖层生效。
+          </div>
+          <label class="em-field" style="margin-top: 8px">
+            <div class="em-label">回复质量锚点</div>
+            <textarea
+              class="em-text"
+              rows="3"
+              :value="((selectedNode as any).style?.replyQualityAnchor ?? '')"
+              @input="patchSelectedPromptStyle({ replyQualityAnchor: ($event.target as HTMLTextAreaElement).value })"
+            />
+          </label>
+          <label class="em-field">
+            <div class="em-label">核心人设</div>
+            <textarea
+              class="em-text"
+              rows="3"
+              :value="((selectedNode as any).style?.corePersonality ?? '')"
+              @input="patchSelectedPromptStyle({ corePersonality: ($event.target as HTMLTextAreaElement).value })"
+            />
+          </label>
+          <label class="em-field">
+            <div class="em-label">描述</div>
+            <textarea
+              class="em-text"
+              rows="2"
+              :value="((selectedNode as any).style?.description ?? '')"
+              @input="patchSelectedPromptStyle({ description: ($event.target as HTMLTextAreaElement).value })"
+            />
+          </label>
+        </template>
+      </div>
     </div>
 
     <div class="em-grid">
@@ -538,6 +657,9 @@ onMounted(() => {
   flex-wrap: wrap;
 }
 .em-canvaswrap {
+  margin-top: 10px;
+}
+.em-inspector {
   margin-top: 10px;
 }
 .em-pill {

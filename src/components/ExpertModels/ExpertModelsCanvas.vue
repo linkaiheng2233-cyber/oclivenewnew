@@ -6,15 +6,26 @@ import type { ExpertEdge, ExpertGraph, ExpertNode } from "../../utils/tauri-api"
 
 const props = defineProps<{
   modelValue: ExpertGraph;
+  selectedNodeId?: string | null;
 }>();
 const emit = defineEmits<{
   (e: "update:modelValue", v: ExpertGraph): void;
+  (e: "update:selectedNodeId", v: string | null): void;
 }>();
 
 const { onConnect, onNodesChange, onEdgesChange, addEdges } = useVueFlow();
 
 const internalNodes = ref<Node[]>([]);
 const internalEdges = ref<Edge[]>([]);
+const selectedId = computed<string | null>({
+  get() {
+    const t = String(props.selectedNodeId ?? "").trim();
+    return t ? t : null;
+  },
+  set(v) {
+    emit("update:selectedNodeId", v);
+  },
+});
 
 const idSet = (nodes: ExpertNode[]): Set<string> =>
   new Set(nodes.map((n) => String((n as any).id ?? "").trim()).filter(Boolean));
@@ -87,6 +98,18 @@ function applyPositions(graph: ExpertGraph, nodes: Node[]): ExpertGraph {
 
 function emitGraph(next: ExpertGraph) {
   emit("update:modelValue", next);
+}
+
+function deleteSelectedNode() {
+  const id = (selectedId.value ?? "").trim();
+  if (!id) return;
+  const g = props.modelValue;
+  const nextNodes = (g.nodes ?? []).filter((n) => String((n as any).id ?? "") !== id);
+  const nextEdges = (g.edges ?? []).filter(
+    (e) => String(e.from ?? "").trim() !== id && String(e.to ?? "").trim() !== id,
+  );
+  selectedId.value = null;
+  emitGraph({ ...g, nodes: nextNodes, edges: nextEdges });
 }
 
 watch(
@@ -171,13 +194,28 @@ function addNode(kind: "base" | "lora" | "style") {
         <button type="button" class="emc-btn" @click="addNode('base')">+ BaseModel</button>
         <button type="button" class="emc-btn" @click="addNode('lora')">+ LoRA</button>
         <button type="button" class="emc-btn" @click="addNode('style')">+ PromptStyle</button>
+        <button
+          type="button"
+          class="emc-btn danger"
+          :disabled="!selectedId"
+          @click="deleteSelectedNode"
+        >
+          删除选中节点
+        </button>
       </div>
       <div v-if="health.length" class="emc-warn">
         <div v-for="w in health" :key="w">{{ w }}</div>
       </div>
     </div>
 
-    <VueFlow v-model:nodes="internalNodes" v-model:edges="internalEdges" fit-view-on-init class="emc-flow" />
+    <VueFlow
+      v-model:nodes="internalNodes"
+      v-model:edges="internalEdges"
+      fit-view-on-init
+      class="emc-flow"
+      @node-click="selectedId = $event.node.id"
+      @pane-click="selectedId = null"
+    />
   </div>
 </template>
 
@@ -208,6 +246,10 @@ function addNode(kind: "base" | "lora" | "style") {
   background: var(--bg-primary);
   cursor: pointer;
   font-size: 12px;
+}
+.emc-btn.danger {
+  color: var(--danger-600, #c0392b);
+  border-color: color-mix(in srgb, var(--danger-600, #c0392b) 35%, var(--border-light));
 }
 .emc-warn {
   color: var(--danger-600, #c0392b);
