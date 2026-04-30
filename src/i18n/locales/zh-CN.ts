@@ -276,6 +276,53 @@ export const zhCN = {
         "打开插件市场（V1/V2 一致）：在线索引、安装、模块/Profile、本地投放导入等",
     },
   },
+  rolePackBar: {
+    barTitle: "安装 .ocpak / .zip 压缩包，或已解压的目录（与 roles/{id}/ 一致）",
+    actions: {
+      export: "导出角色包",
+      importArchive: "导入压缩包",
+      importFolder: "从文件夹导入",
+      openMarket: "可选：roles.json 索引",
+    },
+    export: {
+      filterName: "OCPak 角色包",
+    },
+    progress: {
+      preparing: "准备中…",
+    },
+    toasts: {
+      exported: "角色包已导出",
+      imported: "已导入角色：{id}",
+      importedNoSwitch: "已导入角色：{id}（未切换）",
+    },
+    creatorEcho: {
+      titleWithMessage: "作者寄语",
+      titleSuccess: "导入成功",
+      promptSwitchNow: "角色包已导入。是否现在切换到该角色开始使用？",
+      later: "稍后再说",
+      switchNow: "立即切换",
+    },
+    conflict: {
+      title: "角色已存在",
+      bodyHtml:
+        "本地已有角色 ID「<strong>{id}</strong>」（{name} v{version}）。导入将覆盖该角色目录，是否继续？",
+      overwrite: "覆盖导入",
+    },
+    market: {
+      title: "角色包市场（roles.json）",
+      hint: "直链镜像会下载并校验 SHA-256 后导入；网盘/下载页镜像请手动下载后用「导入压缩包」。",
+      searchPlaceholder: "搜索 id / 名称 / 作者 / 标签…",
+      syncing: "同步中…",
+      sync: "同步",
+      sourcePlaceholder: "可选：自定义 roles.json 源（留空=官方默认）",
+      loading: "正在加载…",
+      empty: "索引为空（或未加载）。",
+      installPicked: "安装所选镜像",
+      notDirectHint:
+        "该镜像不是直链下载（page/pan）。已尝试为你打开链接；请手动下载后用「导入压缩包」安装。",
+      confirmOverwrite: "本地已存在角色「{id}」。是否覆盖安装？",
+    },
+  },
   pluginManagerV2: {
     sources: {
       sessionOverride: "会话覆盖",

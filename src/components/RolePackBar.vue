@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { ref } from "vue";
+import { useI18n } from "vue-i18n";
 import { listen, type UnlistenFn } from "@tauri-apps/api/event";
 import { open, save } from "@tauri-apps/api/dialog";
 import { open as openExternal } from "@tauri-apps/api/shell";
@@ -17,6 +18,7 @@ import {
 import ImportProgressModal from "./ImportProgressModal.vue";
 
 const roleStore = useRoleStore();
+const { t } = useI18n();
 
 const emit = defineEmits<{
   notify: [payload: { type: "success" | "error" | "info" | "warning"; message: string }];
@@ -43,7 +45,7 @@ const pendingPeek = ref<{ id: string; name: string; version: string } | null>(
 
 const importProgressOpen = ref(false);
 const importPercent = ref(0);
-const importMessage = ref("准备中…");
+const importMessage = ref(String(t("rolePackBar.progress.preparing")));
 let unlistenProgress: UnlistenFn | null = null;
 
 const creatorEchoOpen = ref(false);
@@ -64,7 +66,7 @@ const marketSourceUrl = ref<string>("");
 async function withImportProgress<T>(fn: () => Promise<T>): Promise<T> {
   importProgressOpen.value = true;
   importPercent.value = 0;
-  importMessage.value = "准备中…";
+  importMessage.value = String(t("rolePackBar.progress.preparing"));
   unlistenProgress = await listen<{ percent: number; message: string }>(
     "import_progress",
     (e) => {
@@ -84,12 +86,12 @@ async function withImportProgress<T>(fn: () => Promise<T>): Promise<T> {
 async function onExport(): Promise<void> {
   try {
     const path = await save({
-      filters: [{ name: "OCPak 角色包", extensions: ["ocpak"] }],
+      filters: [{ name: String(t("rolePackBar.export.filterName")), extensions: ["ocpak"] }],
       defaultPath: defaultExportFilename(),
     });
     if (!path || typeof path !== "string") return;
     await exportRolePack(roleStore.currentRoleId, path);
-    emit("notify", { type: "success", message: "角色包已导出" });
+    emit("notify", { type: "success", message: String(t("rolePackBar.toasts.exported")) });
   } catch (e) {
     emit("notify", {
       type: "error",
@@ -168,7 +170,7 @@ async function switchToImportedRole(): Promise<void> {
   }
   creatorEchoOpen.value = false;
   postImportRoleId.value = "";
-  emit("notify", { type: "success", message: `已导入角色：${roleId}` });
+  emit("notify", { type: "success", message: String(t("rolePackBar.toasts.imported", { id: roleId })) });
   emit("imported", roleId);
 }
 
@@ -182,7 +184,13 @@ async function keepCurrentAfterImport(): Promise<void> {
     // ignore
   }
   if (roleId) {
-    emit("notify", { type: "success", message: `已导入角色：${roleId}（未切换）` });
+    emit(
+      "notify",
+      {
+        type: "success",
+        message: String(t("rolePackBar.toasts.importedNoSwitch", { id: roleId })),
+      },
+    );
   }
 }
 
@@ -284,12 +292,14 @@ async function installPicked(): Promise<void> {
     emit("notify", {
       type: "info",
       message:
-        "该镜像不是直链下载（page/pan）。已尝试为你打开链接；请手动下载后用「导入压缩包」安装。",
+        String(t("rolePackBar.market.notDirectHint")),
     });
     return;
   }
   const exists = roleStore.roles.some((r) => r.id === picked.roleId);
-  const overwrite = exists ? window.confirm(`本地已存在角色「${picked.roleId}」。是否覆盖安装？`) : false;
+  const overwrite = exists
+    ? window.confirm(String(t("rolePackBar.market.confirmOverwrite", { id: picked.roleId })))
+    : false;
   if (exists && !overwrite) return;
   try {
     const roleId = await withImportProgress(() =>
@@ -324,16 +334,16 @@ async function installPicked(): Promise<void> {
 <template>
   <div
     class="pack-bar"
-    title="安装 .ocpak / .zip 压缩包，或已解压的目录（与 roles/{id}/ 一致）"
+    :title="String(t('rolePackBar.barTitle'))"
   >
-    <button type="button" class="btn" @click="onExport">导出角色包</button>
+    <button type="button" class="btn" @click="onExport">{{ t("rolePackBar.actions.export") }}</button>
     <button
       type="button"
       class="btn"
       :disabled="importProgressOpen"
       @click="onImport"
     >
-      导入压缩包
+      {{ t("rolePackBar.actions.importArchive") }}
     </button>
     <button
       type="button"
@@ -341,10 +351,10 @@ async function installPicked(): Promise<void> {
       :disabled="importProgressOpen"
       @click="onImportFolder"
     >
-      从文件夹导入
+      {{ t("rolePackBar.actions.importFolder") }}
     </button>
     <button type="button" class="btn" :disabled="importProgressOpen" @click="openMarket">
-      可选：roles.json 索引
+      {{ t("rolePackBar.actions.openMarket") }}
     </button>
 
     <ImportProgressModal
@@ -364,7 +374,11 @@ async function installPicked(): Promise<void> {
       >
         <div class="modal-card" @click.stop>
           <h2 id="creator-echo-title" class="modal-title">
-            {{ creatorEchoLines.length > 0 ? "作者寄语" : "导入成功" }}
+            {{
+              creatorEchoLines.length > 0
+                ? t("rolePackBar.creatorEcho.titleWithMessage")
+                : t("rolePackBar.creatorEcho.titleSuccess")
+            }}
           </h2>
           <p v-if="creatorEchoRole" class="modal-body">
             <strong>{{ creatorEchoRole.name }}</strong>
@@ -376,7 +390,7 @@ async function installPicked(): Promise<void> {
               {{ l }}
             </p>
             <p v-if="creatorEchoLines.length === 0" class="pm-echo-line">
-              角色包已导入。是否现在切换到该角色开始使用？
+              {{ t("rolePackBar.creatorEcho.promptSwitchNow") }}
             </p>
           </div>
           <div class="modal-actions">
@@ -385,10 +399,10 @@ async function installPicked(): Promise<void> {
               class="btn btn-ghost"
               @click="keepCurrentAfterImport"
             >
-              稍后再说
+              {{ t("rolePackBar.creatorEcho.later") }}
             </button>
             <button type="button" class="btn btn-danger" @click="switchToImportedRole">
-              立即切换
+              {{ t("rolePackBar.creatorEcho.switchNow") }}
             </button>
           </div>
         </div>
@@ -404,11 +418,9 @@ async function installPicked(): Promise<void> {
         aria-labelledby="pack-conflict-title"
       >
         <div class="modal-card" @click.stop>
-          <h2 id="pack-conflict-title" class="modal-title">角色已存在</h2>
+          <h2 id="pack-conflict-title" class="modal-title">{{ t("rolePackBar.conflict.title") }}</h2>
           <p class="modal-body">
-            本地已有角色 ID「<strong>{{ pendingPeek.id }}</strong>」
-            （{{ pendingPeek.name }} v{{ pendingPeek.version }}）。
-            导入将覆盖该角色目录，是否继续？
+            <span v-html="t('rolePackBar.conflict.bodyHtml', { id: pendingPeek.id, name: pendingPeek.name, version: pendingPeek.version })"></span>
           </p>
           <div class="modal-actions">
             <button
@@ -417,7 +429,7 @@ async function installPicked(): Promise<void> {
               :disabled="importProgressOpen"
               @click="closeConflict"
             >
-              取消
+              {{ t("common.cancel") }}
             </button>
             <button
               type="button"
@@ -425,7 +437,7 @@ async function installPicked(): Promise<void> {
               :disabled="importProgressOpen"
               @click="confirmOverwrite"
             >
-              覆盖导入
+              {{ t("rolePackBar.conflict.overwrite") }}
             </button>
           </div>
         </div>
@@ -441,20 +453,20 @@ async function installPicked(): Promise<void> {
         aria-labelledby="pack-market-title"
       >
         <div class="modal-card modal-card--wide" @click.stop>
-          <h2 id="pack-market-title" class="modal-title">角色包市场（roles.json）</h2>
+          <h2 id="pack-market-title" class="modal-title">{{ t("rolePackBar.market.title") }}</h2>
           <p class="modal-body">
-            直链镜像会下载并校验 SHA-256 后导入；网盘/下载页镜像请手动下载后用「导入压缩包」。
+            {{ t("rolePackBar.market.hint") }}
           </p>
           <div class="pm-row">
             <input
               v-model="marketQuery"
               class="pm-input"
               type="search"
-              placeholder="搜索 id / 名称 / 作者 / 标签…"
+              :placeholder="String(t('rolePackBar.market.searchPlaceholder'))"
               autocomplete="off"
             />
             <button type="button" class="btn" :disabled="marketLoading" @click="syncMarket">
-              {{ marketLoading ? "同步中…" : "同步" }}
+              {{ marketLoading ? t("rolePackBar.market.syncing") : t("rolePackBar.market.sync") }}
             </button>
           </div>
           <div class="pm-row">
@@ -462,15 +474,15 @@ async function installPicked(): Promise<void> {
               v-model="marketSourceUrl"
               class="pm-input"
               type="url"
-              placeholder="可选：自定义 roles.json 源（留空=官方默认）"
+              :placeholder="String(t('rolePackBar.market.sourcePlaceholder'))"
               autocomplete="off"
             />
           </div>
           <p v-if="marketErr" class="pm-err">{{ marketErr }}</p>
           <div class="pm-list">
-            <div v-if="marketLoading" class="pm-empty">正在加载…</div>
+            <div v-if="marketLoading" class="pm-empty">{{ t("rolePackBar.market.loading") }}</div>
             <div v-else-if="!(marketIndex?.roles?.length ?? 0)" class="pm-empty">
-              索引为空（或未加载）。
+              {{ t("rolePackBar.market.empty") }}
             </div>
             <div v-else>
               <div
@@ -506,7 +518,7 @@ async function installPicked(): Promise<void> {
           </div>
           <div class="modal-actions">
             <button type="button" class="btn btn-ghost" :disabled="importProgressOpen" @click="closeMarket">
-              关闭
+              {{ t("common.close") }}
             </button>
             <button
               type="button"
@@ -514,7 +526,7 @@ async function installPicked(): Promise<void> {
               :disabled="!marketPicked || importProgressOpen"
               @click="installPicked"
             >
-              安装所选镜像
+              {{ t("rolePackBar.market.installPicked") }}
             </button>
           </div>
         </div>

@@ -283,6 +283,56 @@ export const enUS = {
         "Open Plugin Market (V1/V2): online index, install, modules/profiles, local imports, etc.",
     },
   },
+  rolePackBar: {
+    barTitle:
+      "Install .ocpak/.zip archives or an extracted folder (same structure as roles/{id}/)",
+    actions: {
+      export: "Export role pack",
+      importArchive: "Import archive",
+      importFolder: "Import folder",
+      openMarket: "Optional: roles.json index",
+    },
+    export: {
+      filterName: "OCPak role pack",
+    },
+    progress: {
+      preparing: "Preparing…",
+    },
+    toasts: {
+      exported: "Role pack exported.",
+      imported: "Role imported: {id}",
+      importedNoSwitch: "Role imported: {id} (not switched)",
+    },
+    creatorEcho: {
+      titleWithMessage: "Creator note",
+      titleSuccess: "Import successful",
+      promptSwitchNow: "Role pack imported. Switch to this role now to start using it?",
+      later: "Later",
+      switchNow: "Switch now",
+    },
+    conflict: {
+      title: "Role already exists",
+      bodyHtml:
+        "Local role ID “<strong>{id}</strong>” already exists ({name} v{version}). Import will overwrite the role folder. Continue?",
+      overwrite: "Overwrite import",
+    },
+    market: {
+      title: "Role pack market (roles.json)",
+      hint:
+        "Direct downloads will be imported after downloading and verifying SHA-256. Page/cloud links require manual download, then import via “Import archive”.",
+      searchPlaceholder: "Search id / name / author / tags…",
+      syncing: "Syncing…",
+      sync: "Sync",
+      sourcePlaceholder: "Optional: custom roles.json source (empty = official default)",
+      loading: "Loading…",
+      empty: "Index is empty (or not loaded).",
+      installPicked: "Install selected mirror",
+      notDirectHint:
+        "This mirror is not a direct download (page/pan). We tried to open the link; please download manually and install via “Import archive”.",
+      confirmOverwrite:
+        "Role “{id}” already exists locally. Overwrite install?",
+    },
+  },
   pluginManagerV2: {
     sources: {
       sessionOverride: "Session override",
