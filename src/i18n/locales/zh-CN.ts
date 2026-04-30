@@ -1,4 +1,61 @@
 export const zhCN = {
+  apiErrors: {
+    txn: {
+      TXN_BEGIN_FAILED: "事务启动失败，请稍后重试。",
+      TXN_RUNTIME_ENSURE_FAILED: "角色运行时状态初始化失败。",
+      TXN_PERSONALITY_INSERT_FAILED: "性格数据写入失败。",
+      TXN_FAVORABILITY_UPDATE_FAILED: "好感度更新失败。",
+      TXN_FAVORABILITY_HISTORY_INSERT_FAILED: "好感度历史记录失败。",
+      TXN_MEMORY_INSERT_FAILED: "记忆数据保存失败。",
+      TXN_SHORT_TERM_INSERT_FAILED: "对话记录写入失败。",
+      TXN_SHORT_TERM_TRIM_FAILED: "对话记录整理失败。",
+      TXN_EVENT_INSERT_FAILED: "事件写入失败。",
+      TXN_FAVORABILITY_READ_FAILED: "好感度读取失败。",
+      TXN_COMMIT_FAILED: "事务提交失败，请稍后再试。",
+      TXN_ROLLBACK_FAILED: "事务回滚异常，请联系技术支持。",
+    },
+    common: {
+      DB_ERROR: "数据库操作失败，请稍后重试。",
+      IO_ERROR: "本地文件读写失败，请检查环境权限。",
+      API_PLUGIN_NOT_FOUND: "未找到该目录插件或插件未扫描到，请检查插件 id 与安装路径。",
+      API_PERMISSION_DENIED: "插件权限不足，请在 manifest 中声明所需权限。",
+      API_INVALID_MANIFEST: "插件 manifest 无效，请检查 manifest.json。",
+      LLM_ERROR:
+        "模型调用失败（常见：Ollama 未启动、模型未下载或名称不对）。请执行 ollama list，并设置环境变量 OLLAMA_MODEL 为已有模型名；默认 qwen2.5:7b。",
+      ROLE_NOT_FOUND: "角色不存在，请确认 role_id。",
+      ROLE_PACK_EXISTS: "该角色 ID 已存在。若要替换本地版本，请选择覆盖。",
+      INVALID_PARAMETER: "参数无效，请检查输入内容。",
+      OLLAMA_TIMEOUT: "沐沐走神了，再问一次吧。",
+      TXN_ROLLBACK: "操作失败，请稍后再试。",
+      SERDE_ERROR: "数据解析失败，请稍后重试。",
+      UNKNOWN_ERROR: "发生未知错误，请稍后重试。",
+      PLUGIN_PINNED_VERSION:
+        "该插件已固定到某个版本（tag），不能用“git pull 更新”。请在插件市场选择目标版本进行安装/切换。",
+      PLUGIN_PUBKEY_REVOKED: "该插件签名公钥已被撤销，已阻止安装。请联系插件作者或更换版本/来源。",
+      PLUGIN_PUBKEY_NOT_FOUND:
+        "该版本的签名公钥未在索引中登记，已阻止安装。请确认索引条目与作者公钥登记是否一致。",
+      PLUGIN_SIGNATURE_VERIFY_FAILED:
+        "插件包签名校验失败，已阻止安装。可能是下载文件被篡改或签名不匹配。",
+      PLUGIN_SIGNATURE_BASE64_INVALID: "签名文件格式错误（base64 无效）。",
+      PLUGIN_SIGNATURE_SIZE_INVALID: "签名文件格式错误（签名字节数不正确）。",
+      PLUGIN_SIGNATURE_ALGO_UNSUPPORTED: "签名算法不受支持。",
+      PLUGIN_SIGNATURE_ID_MISMATCH: "签名文件与插件 id 不匹配。",
+      PLUGIN_ARCHIVE_TOO_MANY_FILES: "插件包文件过多，已阻止安装。",
+      PLUGIN_ARCHIVE_SINGLE_FILE_TOO_LARGE: "插件包内单文件过大，已阻止安装。",
+      PLUGIN_ARCHIVE_TOTAL_TOO_LARGE: "插件包总体积过大，已阻止安装。",
+      PLUGIN_ARCHIVE_ILLEGAL_PATH: "插件包内存在非法路径，已阻止安装。",
+      ZIP_TOO_MANY_FILES: "zip 文件过多，已阻止解压安装。",
+      ZIP_SINGLE_FILE_TOO_LARGE: "zip 内单文件过大，已阻止解压安装。",
+      ZIP_TOTAL_TOO_LARGE: "zip 总大小过大，已阻止解压安装。",
+      PLUGIN_PERMISSION_NOT_GRANTED:
+        "该插件尚未被授予所需权限，已阻止调用。请在插件权限管理中授权后再试。",
+    },
+    special: {
+      roleNotFoundWithDetail: "角色不存在或找不到 manifest。{detail}",
+      hostJsonSerdeFailed:
+        "插件桥返回的数据无法序列化为 JSON，可能是宿主与插件接口不兼容，请查看控制台日志。",
+    },
+  },
   common: {
     save: "保存",
     close: "关闭",

@@ -1,4 +1,66 @@
 export const enUS = {
+  apiErrors: {
+    txn: {
+      TXN_BEGIN_FAILED: "Transaction begin failed. Please retry.",
+      TXN_RUNTIME_ENSURE_FAILED: "Failed to initialize role runtime state.",
+      TXN_PERSONALITY_INSERT_FAILED: "Failed to write personality data.",
+      TXN_FAVORABILITY_UPDATE_FAILED: "Failed to update favorability.",
+      TXN_FAVORABILITY_HISTORY_INSERT_FAILED: "Failed to write favorability history.",
+      TXN_MEMORY_INSERT_FAILED: "Failed to save memory data.",
+      TXN_SHORT_TERM_INSERT_FAILED: "Failed to write chat history.",
+      TXN_SHORT_TERM_TRIM_FAILED: "Failed to trim chat history.",
+      TXN_EVENT_INSERT_FAILED: "Failed to write event.",
+      TXN_FAVORABILITY_READ_FAILED: "Failed to read favorability.",
+      TXN_COMMIT_FAILED: "Transaction commit failed. Please retry.",
+      TXN_ROLLBACK_FAILED: "Transaction rollback failed. Please contact support.",
+    },
+    common: {
+      DB_ERROR: "Database operation failed. Please retry.",
+      IO_ERROR: "Local file I/O failed. Please check environment permissions.",
+      API_PLUGIN_NOT_FOUND:
+        "Directory plugin not found or not scanned. Check plugin id and install path.",
+      API_PERMISSION_DENIED: "Permission denied. Declare required permissions in manifest.",
+      API_INVALID_MANIFEST: "Invalid plugin manifest. Check manifest.json.",
+      LLM_ERROR:
+        "Model call failed (common: Ollama not running, model not downloaded, or name mismatch). Run ollama list and set OLLAMA_MODEL to an existing model name (default qwen2.5:7b).",
+      ROLE_NOT_FOUND: "Role not found. Check role_id.",
+      ROLE_PACK_EXISTS:
+        "This role ID already exists. Choose overwrite if you want to replace the local version.",
+      INVALID_PARAMETER: "Invalid parameter. Check your input.",
+      OLLAMA_TIMEOUT: "No response. Please ask again.",
+      TXN_ROLLBACK: "Operation failed. Please retry.",
+      SERDE_ERROR: "Failed to parse data. Please retry.",
+      UNKNOWN_ERROR: "Unknown error. Please retry.",
+      PLUGIN_PINNED_VERSION:
+        "This plugin is pinned to a version tag and cannot be updated via git pull. Use Plugin Market to install/switch to a target version.",
+      PLUGIN_PUBKEY_REVOKED:
+        "Plugin signature public key has been revoked; installation is blocked. Contact the author or change version/source.",
+      PLUGIN_PUBKEY_NOT_FOUND:
+        "Signature public key for this version is not registered in the index; installation is blocked. Check that index entry and author key registration match.",
+      PLUGIN_SIGNATURE_VERIFY_FAILED:
+        "Plugin signature verification failed; installation is blocked. The download may be tampered with or signature mismatched.",
+      PLUGIN_SIGNATURE_BASE64_INVALID: "Invalid signature file format (base64).",
+      PLUGIN_SIGNATURE_SIZE_INVALID: "Invalid signature file format (byte size).",
+      PLUGIN_SIGNATURE_ALGO_UNSUPPORTED: "Unsupported signature algorithm.",
+      PLUGIN_SIGNATURE_ID_MISMATCH: "Signature file does not match plugin id.",
+      PLUGIN_ARCHIVE_TOO_MANY_FILES: "Too many files in plugin archive; installation blocked.",
+      PLUGIN_ARCHIVE_SINGLE_FILE_TOO_LARGE:
+        "A file in plugin archive is too large; installation blocked.",
+      PLUGIN_ARCHIVE_TOTAL_TOO_LARGE:
+        "Total size of plugin archive is too large; installation blocked.",
+      PLUGIN_ARCHIVE_ILLEGAL_PATH: "Illegal path found in plugin archive; installation blocked.",
+      ZIP_TOO_MANY_FILES: "Too many files in zip; extraction blocked.",
+      ZIP_SINGLE_FILE_TOO_LARGE: "A file in zip is too large; extraction blocked.",
+      ZIP_TOTAL_TOO_LARGE: "Zip total size is too large; extraction blocked.",
+      PLUGIN_PERMISSION_NOT_GRANTED:
+        "Required permissions are not granted; call is blocked. Grant permissions in plugin permissions manager and retry.",
+    },
+    special: {
+      roleNotFoundWithDetail: "Role not found or manifest missing. {detail}",
+      hostJsonSerdeFailed:
+        "Plugin bridge returned data that cannot be serialized to JSON. Host and plugin interface may be incompatible; check console logs.",
+    },
+  },
   common: {
     save: "Save",
     close: "Close",
