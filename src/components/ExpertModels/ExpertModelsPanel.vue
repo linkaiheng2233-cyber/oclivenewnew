@@ -356,6 +356,12 @@ async function onExportRunAsWorkflowJson(indexFromLatest: number): Promise<void>
       graph: tg,
       promptStyle: ts ?? null,
     };
+    const ok = window.confirm(
+      `将导出工作流文件（可分享给他人导入复现）：\n` +
+        `Base=${d.targetBaseName || "(未设置)"} / LoRA=${d.targetLoraCount} / PromptStyle=${d.targetHasPromptStyle ? "是" : "否"}\n` +
+        `文件名：${payload.name}.oclive-workflow.json\n继续吗？`,
+    );
+    if (!ok) return;
     const content = JSON.stringify(payload, null, 2);
     const path = await save({
       defaultPath: `${payload.name}.oclive-workflow.json`,
@@ -369,6 +375,15 @@ async function onExportRunAsWorkflowJson(indexFromLatest: number): Promise<void>
   } finally {
     saving.value = false;
   }
+}
+
+async function onExportLatestPinnedRun(): Promise<void> {
+  const pinned = (store.runs ?? []).find((r) => r.pinned === true);
+  if (!pinned) {
+    showToast("info", "暂无星标 Run（★）。请先给某条 Run 点星标。");
+    return;
+  }
+  await onExportRunAsWorkflowJson(pinned.indexFromLatest);
 }
 
 async function onRollbackToRun(indexFromLatest: number): Promise<void> {
@@ -1188,6 +1203,9 @@ async function onImportWorkflowJson(): Promise<void> {
           <div class="em-runs-actions">
             <button class="em-btn secondary" type="button" :disabled="saving || store.loading" @click="onRefresh">
               刷新
+            </button>
+            <button class="em-btn secondary" type="button" :disabled="saving || store.loading" @click="onExportLatestPinnedRun">
+              一键导出★
             </button>
             <select v-model="clearMode" class="em-select" style="min-width: 140px">
               <option value="all">清空全部</option>
