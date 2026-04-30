@@ -355,6 +355,11 @@ export const zhCN = {
       toastInstalled: "已安装：{id}",
     },
   },
+  pluginStore: {
+    errors: {
+      depsNotMet: "插件「{id}」依赖未满足，无法启用。{issues}",
+    },
+  },
   pluginMarketV2: {
     lead: "与专业模式（V1）相同的在线索引与安装流程。本地文件夹投放与「扫描投放目录」仍在 V1 的社区索引区块。",
     preflight: {

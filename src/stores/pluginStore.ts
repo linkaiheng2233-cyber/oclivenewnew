@@ -1,5 +1,6 @@
 import { defineStore } from "pinia";
 import { setHostEventSubscribedEvents } from "../lib/hostEventBus";
+import { i18n } from "../i18n";
 import {
   batchUpdatePlugins,
   checkPluginUpdates,
@@ -25,6 +26,10 @@ import {
   type UiSlotVariantInfo,
 } from "../utils/tauri-api";
 import { useRoleStore } from "./roleStore";
+
+function t(key: string, params?: Record<string, unknown>): string {
+  return String(i18n.global.t(key as any, params as any));
+}
 
 type SlotOrderMemo = {
   signature: string;
@@ -504,7 +509,10 @@ export const usePluginStore = defineStore("plugin", {
         const entry = this.catalog.find((c) => c.id === id);
         if (entry && entry.dependencyStatus !== "ok") {
           throw new Error(
-            `插件「${id}」依赖未满足，无法启用。${(entry.dependencyIssues ?? []).join("；")}`,
+            t("pluginStore.errors.depsNotMet", {
+              id,
+              issues: (entry.dependencyIssues ?? []).join("；"),
+            }),
           );
         }
       }
@@ -534,7 +542,10 @@ export const usePluginStore = defineStore("plugin", {
         const entry = this.catalog.find((c) => c.id === id);
         if (entry && entry.dependencyStatus !== "ok") {
           throw new Error(
-            `插件「${id}」依赖未满足，无法启用。${(entry.dependencyIssues ?? []).join("；")}`,
+            t("pluginStore.errors.depsNotMet", {
+              id,
+              issues: (entry.dependencyIssues ?? []).join("；"),
+            }),
           );
         }
       }

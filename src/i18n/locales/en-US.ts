@@ -365,6 +365,11 @@ export const enUS = {
       toastInstalled: "Installed: {id}",
     },
   },
+  pluginStore: {
+    errors: {
+      depsNotMet: "Plugin “{id}” dependencies are not satisfied and cannot be enabled. {issues}",
+    },
+  },
   pluginMarketV2: {
     lead:
       "Same online index and install flow as Professional Mode (V1). Folder drop and “scan drop directory” are still located in the V1 community index section.",
