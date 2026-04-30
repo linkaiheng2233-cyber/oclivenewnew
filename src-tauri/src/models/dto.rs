@@ -608,6 +608,8 @@ pub struct ExpertWorkflowsListResponse {
 pub struct ExpertModelsRunSummaryDto {
     pub index_from_latest: u32,
     pub at_ms: i64,
+    #[serde(default)]
+    pub pinned: bool,
     /// The target config summary (what was being applied).
     pub target_base_name: String,
     pub target_lora_count: u32,
@@ -632,6 +634,8 @@ pub struct ExpertModelsListRunsResponse {
 pub struct ExpertModelsRunDetailDto {
     pub index_from_latest: u32,
     pub at_ms: i64,
+    #[serde(default)]
+    pub pinned: bool,
 
     // Rollback snapshot (previous effective before apply).
     pub snapshot_graph: ExpertGraph,
@@ -676,6 +680,30 @@ pub struct ExpertModelsGetRunDetailRequest {
     #[serde(default)]
     pub session_id: Option<String>,
     pub index_from_latest: u32,
+}
+
+#[derive(Debug, Clone, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct ExpertModelsSetRunPinnedRequest {
+    pub role_id: String,
+    #[serde(default)]
+    pub session_id: Option<String>,
+    pub index_from_latest: u32,
+    pub pinned: bool,
+}
+
+#[derive(Debug, Clone, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct ExpertModelsClearRunsRequest {
+    pub role_id: String,
+    #[serde(default)]
+    pub session_id: Option<String>,
+    /// all | ok | failed | unpinned
+    #[serde(default)]
+    pub mode: Option<String>,
+    /// Keep pinned entries when clearing (default true except mode=all)
+    #[serde(default)]
+    pub keep_pinned: Option<bool>,
 }
 
 #[derive(Debug, Clone, Deserialize)]

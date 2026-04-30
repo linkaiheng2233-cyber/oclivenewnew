@@ -423,6 +423,7 @@ pub fn run() {
             api::expert_models::expert_models_list_runs,
             api::expert_models::expert_models_get_run_detail,
             api::expert_models::expert_models_clear_runs,
+            api::expert_models::expert_models_set_run_pinned,
             api::expert_models::expert_models_rollback_to_run,
             api::expert_models::expert_workflows_list,
             api::expert_models::expert_workflows_get,

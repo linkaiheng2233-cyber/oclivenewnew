@@ -342,7 +342,7 @@ async function onRollbackToRun(indexFromLatest: number): Promise<void> {
 }
 
 async function onClearRuns(): Promise<void> {
-  const ok = window.confirm("将清空当前会话的 Run 历史。继续吗？");
+  const ok = window.confirm("将清空当前会话的 Run 历史（全部）。继续吗？");
   if (!ok) return;
   saving.value = true;
   try {
@@ -352,6 +352,39 @@ async function onClearRuns(): Promise<void> {
     showToast("error", e instanceof Error ? e.message : String(e));
   } finally {
     saving.value = false;
+  }
+}
+
+const clearMode = ref<"all" | "ok" | "failed" | "unpinned">("all");
+const clearKeepPinned = ref(true);
+
+async function onClearRunsAdvanced(): Promise<void> {
+  const modeLabel =
+    clearMode.value === "ok"
+      ? "仅清空 OK"
+      : clearMode.value === "failed"
+        ? "仅清空 FAILED"
+        : clearMode.value === "unpinned"
+          ? "仅清空未星标"
+          : "清空全部";
+  const ok = window.confirm(`${modeLabel}。${clearKeepPinned.value ? "将保留星标条目。" : ""}\n继续吗？`);
+  if (!ok) return;
+  saving.value = true;
+  try {
+    await store.clearRunsWithMode(clearMode.value, clearKeepPinned.value);
+    showToast("success", "已执行清空操作。");
+  } catch (e) {
+    showToast("error", e instanceof Error ? e.message : String(e));
+  } finally {
+    saving.value = false;
+  }
+}
+
+async function onTogglePinned(indexFromLatest: number, pinned: boolean | null | undefined): Promise<void> {
+  try {
+    await store.setRunPinned(indexFromLatest, !pinned);
+  } catch (e) {
+    showToast("error", e instanceof Error ? e.message : String(e));
   }
 }
 
@@ -1100,13 +1133,23 @@ async function onImportWorkflowJson(): Promise<void> {
             <button class="em-btn secondary" type="button" :disabled="saving || store.loading" @click="onRefresh">
               刷新
             </button>
+            <select v-model="clearMode" class="em-select" style="min-width: 140px">
+              <option value="all">清空全部</option>
+              <option value="failed">仅清空 FAILED</option>
+              <option value="ok">仅清空 OK</option>
+              <option value="unpinned">仅清空未星标</option>
+            </select>
+            <label class="em-muted2" style="display: inline-flex; align-items: center; gap: 6px">
+              <input v-model="clearKeepPinned" type="checkbox" />
+              保留星标
+            </label>
             <button
               class="em-btn secondary"
               type="button"
               :disabled="saving || store.loading || !store.runs.length"
-              @click="onClearRuns"
+              @click="onClearRunsAdvanced"
             >
-              清空历史
+              执行清空
             </button>
             <select v-model="runFilterStatus" class="em-select" style="min-width: 120px">
               <option value="all">全部</option>
@@ -1134,6 +1177,15 @@ async function onImportWorkflowJson(): Promise<void> {
                     <span class="em-muted2" :title="new Date(r.atMs).toLocaleString()">
                       {{ formatRelative(r.atMs) }}（{{ formatRunTime(r.atMs) }}）
                     </span>
+                    <button
+                      class="em-btn secondary em-pin"
+                      type="button"
+                      :disabled="saving || store.loading"
+                      :title="r.pinned ? '取消星标（允许被裁剪/清空）' : '星标（优先保留）'"
+                      @click="onTogglePinned(r.indexFromLatest, r.pinned ?? false)"
+                    >
+                      {{ r.pinned ? "★" : "☆" }}
+                    </button>
                   </div>
                   <div class="em-run-meta">
                     <span class="em-pill2">Base：{{ r.targetBaseName || "(未设置)" }}</span>
@@ -1576,6 +1628,10 @@ async function onImportWorkflowJson(): Promise<void> {
   display: flex;
   align-items: baseline;
   gap: 8px;
+}
+.em-pin {
+  padding: 0 8px;
+  height: 22px;
 }
 .em-run-meta {
   display: flex;

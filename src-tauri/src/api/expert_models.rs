@@ -13,6 +13,7 @@ use crate::models::dto::{
     ExpertModelsSetSessionOverrideRequest,
     ExpertModelsGetRunDetailRequest, ExpertModelsGetRunDetailResponse, ExpertModelsRunDetailDto,
     ExpertModelsListRunsResponse, ExpertModelsRollbackToRunRequest, ExpertModelsRunSummaryDto,
+    ExpertModelsSetRunPinnedRequest, ExpertModelsClearRunsRequest,
     ExpertWorkflowDto, ExpertWorkflowSummaryDto, ExpertWorkflowsDeleteRequest,
     ExpertWorkflowsGetRequest, ExpertWorkflowsListResponse, ExpertWorkflowsSaveRequest,
 };
@@ -56,6 +57,8 @@ struct RunApplyOutcome {
 struct ExpertModelsRunEntry {
     #[serde(default)]
     at_ms: i64,
+    #[serde(default)]
+    pinned: bool,
     /// Rollback snapshot: previous effective before apply.
     graph: ExpertGraph,
     #[serde(default)]
@@ -192,6 +195,28 @@ fn graph_summary(graph: &ExpertGraph, style: &Option<PromptStyleOverride>) -> (S
 fn idx_from_latest_to_pos(len: usize, idx_from_latest: u32) -> Option<usize> {
     let idx = idx_from_latest as usize;
     len.checked_sub(1)?.checked_sub(idx)
+}
+
+fn trim_runs_keep_pinned(mut runs: Vec<ExpertModelsRunEntry>, max_len: usize) -> Vec<ExpertModelsRunEntry> {
+    if runs.len() <= max_len {
+        return runs;
+    }
+    let mut over = runs.len().saturating_sub(max_len);
+    // Drop oldest non-pinned first.
+    while over > 0 {
+        if let Some(idx) = runs.iter().position(|r| !r.pinned) {
+            runs.remove(idx);
+            over -= 1;
+            continue;
+        }
+        break;
+    }
+    // If still over, drop oldest regardless.
+    if runs.len() > max_len {
+        let extra = runs.len() - max_len;
+        runs.drain(0..extra);
+    }
+    runs
 }
 
 fn base_file_name(p: &str) -> String {
@@ -592,6 +617,7 @@ pub async fn expert_models_apply_to_session(
     let snapshot_idx = runs.len();
     runs.push(ExpertModelsRunEntry {
         at_ms: Utc::now().timestamp_millis(),
+        pinned: false,
         graph: prev_graph,
         prompt_style: prev_style,
         target: Some(RunTargetSummary {
@@ -603,10 +629,8 @@ pub async fn expert_models_apply_to_session(
         target_prompt_style: style.clone(),
         apply: None,
     });
-    // keep last 30
-    if runs.len() > 30 {
-        runs.drain(0..(runs.len() - 30));
-    }
+    // keep last 30 (prefer keeping pinned)
+    runs = trim_runs_keep_pinned(runs, 30);
 
     let gguf_dir = llama_models_gguf_dir(&state);
     let loras_dir = llama_loras_dir(&state);
@@ -806,6 +830,7 @@ pub async fn expert_models_list_runs(
         items.push(ExpertModelsRunSummaryDto {
             index_from_latest: i as u32,
             at_ms: e.at_ms,
+            pinned: e.pinned,
             target_base_name: t_base,
             target_lora_count: t_loras,
             target_has_prompt_style: t_ps,
@@ -873,6 +898,7 @@ pub async fn expert_models_get_run_detail(
         item: ExpertModelsRunDetailDto {
             index_from_latest: req.index_from_latest,
             at_ms: e.at_ms,
+            pinned: e.pinned,
             snapshot_graph,
             snapshot_prompt_style: snapshot_style,
             snapshot_base_name: snapshot_base,
@@ -894,7 +920,7 @@ pub async fn expert_models_get_run_detail(
 
 #[tauri::command]
 pub async fn expert_models_clear_runs(
-    req: ExpertModelsRollbackLastRunRequest,
+    req: ExpertModelsClearRunsRequest,
     state: State<'_, AppState>,
 ) -> Result<(), String> {
     let role_id = req.role_id.trim();
@@ -910,9 +936,76 @@ pub async fn expert_models_clear_runs(
         .ensure_role_runtime(session_ns.as_str())
         .await
         .map_err(|e| e.to_frontend_error())?;
+    let raw = state
+        .expert_models_repo
+        .get_expert_models_run_history_json(session_ns.as_str())
+        .await
+        .map_err(|e| e.to_frontend_error())?;
+    let mut runs = parse_run_entries(raw);
+    let mode = req.mode.as_deref().unwrap_or("all");
+    let keep_pinned = req.keep_pinned.unwrap_or(mode != "all");
+    runs = runs
+        .into_iter()
+        .filter(|r| {
+            if keep_pinned && r.pinned {
+                return true;
+            }
+            let ok = r.apply.as_ref().map(|a| a.ok);
+            let should_remove = match mode {
+                "ok" => ok == Some(true),
+                "failed" => ok == Some(false),
+                "unpinned" => !r.pinned,
+                "all" | _ => true,
+            };
+            !should_remove
+        })
+        .collect();
+    let out = to_run_entries_json(runs.as_slice());
     state
         .expert_models_repo
-        .set_expert_models_run_history_json(session_ns.as_str(), None)
+        .set_expert_models_run_history_json(session_ns.as_str(), out.as_deref())
+        .await
+        .map_err(|e| e.to_frontend_error())?;
+    Ok(())
+}
+
+#[tauri::command]
+pub async fn expert_models_set_run_pinned(
+    req: ExpertModelsSetRunPinnedRequest,
+    state: State<'_, AppState>,
+) -> Result<(), String> {
+    let role_id = req.role_id.trim();
+    if role_id.is_empty() {
+        return Err(ApiError::InvalidParameter {
+            message: "role_id required".into(),
+        }
+        .to_string());
+    }
+    let session_ns = conversation_state_role_id(role_id, req.session_id.as_deref());
+    state
+        .db_manager
+        .ensure_role_runtime(session_ns.as_str())
+        .await
+        .map_err(|e| e.to_frontend_error())?;
+    let raw = state
+        .expert_models_repo
+        .get_expert_models_run_history_json(session_ns.as_str())
+        .await
+        .map_err(|e| e.to_frontend_error())?;
+    let mut runs = parse_run_entries(raw);
+    let pos = idx_from_latest_to_pos(runs.len(), req.index_from_latest).ok_or_else(|| {
+        ApiError::InvalidParameter {
+            message: "index out of range".into(),
+        }
+        .to_string()
+    })?;
+    if let Some(e) = runs.get_mut(pos) {
+        e.pinned = req.pinned;
+    }
+    let out = to_run_entries_json(runs.as_slice());
+    state
+        .expert_models_repo
+        .set_expert_models_run_history_json(session_ns.as_str(), out.as_deref())
         .await
         .map_err(|e| e.to_frontend_error())?;
     Ok(())

@@ -285,6 +285,7 @@ export async function expertModelsRollbackLastRun(params: {
 export interface ExpertModelsRunSummaryDto {
   indexFromLatest: number;
   atMs: number;
+  pinned?: boolean | null;
   targetBaseName: string;
   targetLoraCount: number;
   targetHasPromptStyle: boolean;
@@ -306,9 +307,16 @@ export async function expertModelsListRuns(params: {
 export async function expertModelsClearRuns(params: {
   roleId: string;
   sessionId?: string | null;
+  mode?: "all" | "ok" | "failed" | "unpinned";
+  keepPinned?: boolean;
 }): Promise<void> {
   return invokeWithFriendlyError<void>("expert_models_clear_runs", {
-    req: { roleId: params.roleId, sessionId: params.sessionId ?? null },
+    req: {
+      roleId: params.roleId,
+      sessionId: params.sessionId ?? null,
+      mode: params.mode ?? "all",
+      keepPinned: params.keepPinned ?? null,
+    },
   });
 }
 
@@ -334,6 +342,7 @@ export async function expertModelsRollbackToRun(params: {
 export interface ExpertModelsRunDetailDto {
   indexFromLatest: number;
   atMs: number;
+  pinned?: boolean | null;
   snapshotGraph: ExpertGraph;
   snapshotPromptStyle?: PromptStyleOverride | null;
   snapshotBaseName: string;
@@ -349,6 +358,22 @@ export interface ExpertModelsRunDetailDto {
   applyModelPath?: string | null;
   applyLlamaArgs?: string | null;
   applyDurationMs?: number | null;
+}
+
+export async function expertModelsSetRunPinned(params: {
+  roleId: string;
+  sessionId?: string | null;
+  indexFromLatest: number;
+  pinned: boolean;
+}): Promise<void> {
+  return invokeWithFriendlyError<void>("expert_models_set_run_pinned", {
+    req: {
+      roleId: params.roleId,
+      sessionId: params.sessionId ?? null,
+      indexFromLatest: params.indexFromLatest,
+      pinned: params.pinned,
+    },
+  });
 }
 
 export async function expertModelsGetRunDetail(params: {

@@ -45,6 +45,7 @@ pub use expert_models::{
     expert_models_rollback_last_run,
     expert_models_list_runs, expert_models_clear_runs, expert_models_rollback_to_run,
     expert_models_get_run_detail,
+    expert_models_set_run_pinned,
 };
 pub use local_imports::{list_local_import_candidates_command, read_local_import_text_command};
 pub use memory::query_memories;

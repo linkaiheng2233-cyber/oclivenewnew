@@ -13,6 +13,7 @@ import {
   expertModelsGetRunDetail,
   expertModelsRollbackLastRun,
   expertModelsRollbackToRun,
+  expertModelsSetRunPinned,
   expertModelsSetRoleDefault,
   expertModelsSetSessionOverride,
   expertWorkflowsDelete,
@@ -184,6 +185,22 @@ export const useExpertModelsStore = defineStore("expertModels", {
       const roleId = (roleStore.currentRoleId ?? "").trim();
       if (!roleId) throw new Error("当前未选择角色。");
       await expertModelsClearRuns({ roleId, sessionId: null });
+      await this.refresh();
+    },
+
+    async clearRunsWithMode(mode: "all" | "ok" | "failed" | "unpinned", keepPinned: boolean): Promise<void> {
+      const roleStore = useRoleStore();
+      const roleId = (roleStore.currentRoleId ?? "").trim();
+      if (!roleId) throw new Error("当前未选择角色。");
+      await expertModelsClearRuns({ roleId, sessionId: null, mode, keepPinned });
+      await this.refresh();
+    },
+
+    async setRunPinned(indexFromLatest: number, pinned: boolean): Promise<void> {
+      const roleStore = useRoleStore();
+      const roleId = (roleStore.currentRoleId ?? "").trim();
+      if (!roleId) throw new Error("当前未选择角色。");
+      await expertModelsSetRunPinned({ roleId, sessionId: null, indexFromLatest, pinned });
       await this.refresh();
     },
 
