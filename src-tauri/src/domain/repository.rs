@@ -62,4 +62,14 @@ pub trait ExpertModelsRepository: Send + Sync {
         session_namespace: &str,
         json: Option<&str>,
     ) -> Result<()>;
+
+    async fn get_expert_models_run_history_json(
+        &self,
+        session_namespace: &str,
+    ) -> Result<Option<String>>;
+    async fn set_expert_models_run_history_json(
+        &self,
+        session_namespace: &str,
+        json: Option<&str>,
+    ) -> Result<()>;
 }

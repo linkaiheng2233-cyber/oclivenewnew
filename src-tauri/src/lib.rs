@@ -419,6 +419,7 @@ pub fn run() {
             api::expert_models::expert_models_list_local_loras,
             api::expert_models::expert_models_import_base_gguf,
             api::expert_models::expert_models_import_lora_gguf,
+            api::expert_models::expert_models_rollback_last_run,
             api::expert_models::expert_workflows_list,
             api::expert_models::expert_workflows_get,
             api::expert_models::expert_workflows_save,

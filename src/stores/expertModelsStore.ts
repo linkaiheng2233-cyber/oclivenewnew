@@ -8,6 +8,7 @@ import {
   expertModelsImportLoraGguf,
   expertModelsListLocalBaseModels,
   expertModelsListLocalLoras,
+  expertModelsRollbackLastRun,
   expertModelsSetRoleDefault,
   expertModelsSetSessionOverride,
   expertWorkflowsDelete,
@@ -40,6 +41,7 @@ export const useExpertModelsStore = defineStore("expertModels", {
     effectivePromptStyle: null as PromptStyleOverride | null,
     graphSource: "pack_default" as ExpertConfigSource,
     promptStyleSource: "pack_default" as ExpertConfigSource,
+    canRollbackLastRun: false,
 
     draftGraph: emptyGraph() as ExpertGraph,
     draftPromptStyle: null as PromptStyleOverride | null,
@@ -67,6 +69,7 @@ export const useExpertModelsStore = defineStore("expertModels", {
         this.effectivePromptStyle = eff.promptStyle ?? null;
         this.graphSource = eff.graphSource;
         this.promptStyleSource = eff.promptStyleSource;
+        this.canRollbackLastRun = eff.canRollbackLastRun === true;
         const enabled = new Set(
           (grants?.grants ?? [])
             .filter((x) => x?.enabled === true)
@@ -145,6 +148,15 @@ export const useExpertModelsStore = defineStore("expertModels", {
         promptStyle: this.draftPromptStyle,
       });
       const r = await expertModelsApplyToSession({ roleId, sessionId: null });
+      await this.refresh();
+      return { modelPath: r.modelPath, llamaArgs: r.llamaArgs };
+    },
+
+    async rollbackLastRun(): Promise<{ modelPath?: string | null; llamaArgs?: string | null }> {
+      const roleStore = useRoleStore();
+      const roleId = (roleStore.currentRoleId ?? "").trim();
+      if (!roleId) throw new Error("当前未选择角色。");
+      const r = await expertModelsRollbackLastRun({ roleId, sessionId: null });
       await this.refresh();
       return { modelPath: r.modelPath, llamaArgs: r.llamaArgs };
     },

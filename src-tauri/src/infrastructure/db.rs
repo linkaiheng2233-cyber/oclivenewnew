@@ -1367,6 +1367,55 @@ impl DbManager {
         Ok(())
     }
 
+    pub async fn get_expert_models_run_history_json(
+        &self,
+        session_namespace: &str,
+    ) -> Result<Option<String>> {
+        let ns = session_namespace.trim();
+        if ns.is_empty() {
+            return Ok(None);
+        }
+        let row: Option<(Option<String>,)> = sqlx::query_as(
+            "SELECT expert_models_run_history_json FROM role_runtime WHERE role_id = ?",
+        )
+        .bind(ns)
+        .fetch_optional(&self.pool)
+        .await
+        .map_err(|e| AppError::DatabaseError(e.to_string()))?;
+        Ok(row
+            .and_then(|(s,)| s)
+            .map(|s| s.trim().to_string())
+            .filter(|s| !s.is_empty()))
+    }
+
+    pub async fn set_expert_models_run_history_json(
+        &self,
+        session_namespace: &str,
+        json: Option<&str>,
+    ) -> Result<()> {
+        let ns = session_namespace.trim();
+        if ns.is_empty() {
+            return Err(AppError::InvalidParameter(
+                "session_namespace required".to_string(),
+            ));
+        }
+        self.ensure_role_runtime(ns).await?;
+        let now = Utc::now().to_rfc3339();
+        let v = json.map(str::trim).filter(|s| !s.is_empty()).map(|s| s.to_string());
+        sqlx::query(
+            "UPDATE role_runtime
+             SET expert_models_run_history_json = ?, updated_at = ?
+             WHERE role_id = ?",
+        )
+        .bind(v)
+        .bind(&now)
+        .bind(ns)
+        .execute(&self.pool)
+        .await
+        .map_err(|e| AppError::DatabaseError(e.to_string()))?;
+        Ok(())
+    }
+
     pub async fn get_expert_prompt_style_role_default_json(
         &self,
         role_id: &str,

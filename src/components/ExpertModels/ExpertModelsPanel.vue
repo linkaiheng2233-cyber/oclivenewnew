@@ -181,6 +181,23 @@ async function onApplySession(): Promise<void> {
   }
 }
 
+async function onRollbackLastRun(): Promise<void> {
+  const ok = window.confirm("将回滚到上一次已应用的配置（Module 9 Ctrl+Z），并重新应用到当前会话。继续吗？");
+  if (!ok) return;
+  saving.value = true;
+  try {
+    const r = await store.rollbackLastRun();
+    showToast(
+      "success",
+      `已回滚并重新应用。\nmodelPath=${r.modelPath ?? "(未设置)"}\nllamaArgs=${r.llamaArgs ?? "(空)"}`,
+    );
+  } catch (e) {
+    showToast("error", e instanceof Error ? e.message : String(e));
+  } finally {
+    saving.value = false;
+  }
+}
+
 async function onImportBase(): Promise<void> {
   const picked = await open({
     title: "选择一个 Base GGUF（将复制到 models/gguf）",
@@ -905,6 +922,15 @@ async function onImportWorkflowJson(): Promise<void> {
     <div class="em-footer">
       <button class="em-btn" type="button" :disabled="saving || store.loading" @click="onApplySession">
         {{ saving ? "应用中…" : "应用到当前会话（重启本地 llama）" }}
+      </button>
+      <button
+        class="em-btn secondary"
+        type="button"
+        :disabled="saving || store.loading || !store.canRollbackLastRun"
+        @click="onRollbackLastRun"
+        title="回滚到上一次已应用的配置（仅当前会话）"
+      >
+        回滚上一次 Run
       </button>
       <button class="em-btn secondary" type="button" :disabled="saving || store.loading" @click="onSetRoleDefault">
         设为角色默认

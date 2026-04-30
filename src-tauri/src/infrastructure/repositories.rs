@@ -147,4 +147,23 @@ impl ExpertModelsRepository for SqliteExpertModelsRepository {
             .set_expert_prompt_style_session_override_json(session_namespace, json)
             .await
     }
+
+    async fn get_expert_models_run_history_json(
+        &self,
+        session_namespace: &str,
+    ) -> Result<Option<String>> {
+        self.inner
+            .get_expert_models_run_history_json(session_namespace)
+            .await
+    }
+
+    async fn set_expert_models_run_history_json(
+        &self,
+        session_namespace: &str,
+        json: Option<&str>,
+    ) -> Result<()> {
+        self.inner
+            .set_expert_models_run_history_json(session_namespace, json)
+            .await
+    }
 }

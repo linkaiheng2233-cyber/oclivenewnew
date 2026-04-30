@@ -492,6 +492,8 @@ pub struct ExpertModelsEffectiveResponse {
     pub prompt_style: Option<PromptStyleOverride>,
     pub graph_source: ExpertConfigSource,
     pub prompt_style_source: ExpertConfigSource,
+    #[serde(default)]
+    pub can_rollback_last_run: bool,
 }
 
 #[derive(Debug, Clone, Deserialize)]

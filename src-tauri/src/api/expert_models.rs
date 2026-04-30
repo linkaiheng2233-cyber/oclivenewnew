@@ -115,6 +115,20 @@ async fn effective_for_session(
     Ok((graph, graph_source, style, style_source))
 }
 
+fn parse_run_history(raw: Option<String>) -> Vec<serde_json::Value> {
+    let Some(s) = raw else { return vec![] };
+    let t = s.trim();
+    if t.is_empty() { return vec![]; }
+    serde_json::from_str::<Vec<serde_json::Value>>(t).unwrap_or_default()
+}
+
+fn to_run_history_json(items: &[serde_json::Value]) -> Option<String> {
+    if items.is_empty() {
+        return None;
+    }
+    serde_json::to_string(items).ok()
+}
+
 #[tauri::command]
 pub async fn expert_models_get_effective(
     req: ExpertModelsGetEffectiveRequest,
@@ -130,11 +144,18 @@ pub async fn expert_models_get_effective(
     let session_ns = conversation_state_role_id(role_id, req.session_id.as_deref());
     let (graph, graph_source, prompt_style, prompt_style_source) =
         effective_for_session(&state, role_id, session_ns.as_str()).await?;
+    let run_raw = state
+        .expert_models_repo
+        .get_expert_models_run_history_json(session_ns.as_str())
+        .await
+        .map_err(|e| e.to_frontend_error())?;
+    let can_rollback_last_run = !parse_run_history(run_raw).is_empty();
     Ok(ExpertModelsEffectiveResponse {
         graph,
         prompt_style,
         graph_source,
         prompt_style_source,
+        can_rollback_last_run,
     })
 }
 
@@ -462,6 +483,33 @@ pub async fn expert_models_apply_to_session(
     }
     let session_ns = conversation_state_role_id(role_id, req.session_id.as_deref());
 
+    // Push current effective config into run history before applying a new one.
+    // This provides a "Module 9 Ctrl+Z" at the session scope.
+    let (prev_graph, _pgs, prev_style, _pss) =
+        effective_for_session(&state, role_id, session_ns.as_str()).await?;
+    let run_raw_prev = state
+        .expert_models_repo
+        .get_expert_models_run_history_json(session_ns.as_str())
+        .await
+        .map_err(|e| e.to_frontend_error())?;
+    let mut runs = parse_run_history(run_raw_prev);
+    let snapshot = json!({
+      "atMs": Utc::now().timestamp_millis(),
+      "graph": prev_graph,
+      "promptStyle": prev_style,
+    });
+    runs.push(snapshot);
+    // keep last 20
+    if runs.len() > 20 {
+        runs.drain(0..(runs.len() - 20));
+    }
+    let run_json = to_run_history_json(runs.as_slice());
+    state
+        .expert_models_repo
+        .set_expert_models_run_history_json(session_ns.as_str(), run_json.as_deref())
+        .await
+        .map_err(|e| e.to_frontend_error())?;
+
     // Compute current effective graph (session override > role default > pack default(empty)).
     let (graph, _graph_src, _style, _style_src) =
         effective_for_session(&state, role_id, session_ns.as_str()).await?;
@@ -509,6 +557,89 @@ pub async fn expert_models_apply_to_session(
         model_path: compiled.model_path.clone(),
         llama_args: compiled.llama_args.clone(),
     })
+}
+
+#[derive(Debug, Clone, serde::Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct ExpertModelsRollbackLastRunRequest {
+    pub role_id: String,
+    #[serde(default)]
+    pub session_id: Option<String>,
+}
+
+#[tauri::command]
+pub async fn expert_models_rollback_last_run(
+    req: ExpertModelsRollbackLastRunRequest,
+    state: State<'_, AppState>,
+) -> Result<ExpertModelsApplyResult, String> {
+    let role_id = req.role_id.trim();
+    if role_id.is_empty() {
+        return Err(ApiError::InvalidParameter {
+            message: "role_id required".into(),
+        }
+        .to_string());
+    }
+    let session_ns = conversation_state_role_id(role_id, req.session_id.as_deref());
+    state
+        .db_manager
+        .ensure_role_runtime(session_ns.as_str())
+        .await
+        .map_err(|e| e.to_frontend_error())?;
+    let raw = state
+        .expert_models_repo
+        .get_expert_models_run_history_json(session_ns.as_str())
+        .await
+        .map_err(|e| e.to_frontend_error())?;
+    let mut runs = parse_run_history(raw);
+    let last = runs.pop().ok_or_else(|| {
+        ApiError::InvalidParameter {
+            message: "no previous run to rollback".into(),
+        }
+        .to_string()
+    })?;
+    let graph = last
+        .get("graph")
+        .cloned()
+        .ok_or_else(|| "rollback snapshot missing graph".to_string())
+        .and_then(|v| serde_json::from_value::<ExpertGraph>(v).map_err(|e| e.to_string()))?;
+    let style = last
+        .get("promptStyle")
+        .cloned()
+        .map(|v| serde_json::from_value::<Option<PromptStyleOverride>>(v).map_err(|e| e.to_string()))
+        .transpose()?
+        .flatten();
+
+    // Set session override to the snapshot.
+    let graph_json = to_json_string(&graph)?;
+    state
+        .expert_models_repo
+        .set_expert_models_session_override_json(session_ns.as_str(), Some(graph_json.as_str()))
+        .await
+        .map_err(|e| e.to_frontend_error())?;
+    let style_json = style.as_ref().map(to_json_string).transpose()?;
+    state
+        .expert_models_repo
+        .set_expert_prompt_style_session_override_json(session_ns.as_str(), style_json.as_deref())
+        .await
+        .map_err(|e| e.to_frontend_error())?;
+
+    // Persist trimmed history.
+    let run_json = to_run_history_json(runs.as_slice());
+    state
+        .expert_models_repo
+        .set_expert_models_run_history_json(session_ns.as_str(), run_json.as_deref())
+        .await
+        .map_err(|e| e.to_frontend_error())?;
+
+    // Apply (compile → config → restart) using existing path.
+    expert_models_apply_to_session(
+        ExpertModelsApplyToSessionRequest {
+            role_id: role_id.to_string(),
+            session_id: req.session_id.clone(),
+        },
+        state,
+    )
+    .await
 }
 
 // ===== Module 9: Expert Workflows (global preset library in app_settings) =====

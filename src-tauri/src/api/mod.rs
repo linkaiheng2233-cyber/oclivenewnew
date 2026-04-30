@@ -42,6 +42,7 @@ pub use expert_models::{
     expert_models_list_local_loras,
     expert_models_import_base_gguf, expert_models_import_lora_gguf,
     expert_workflows_delete, expert_workflows_get, expert_workflows_list, expert_workflows_save,
+    expert_models_rollback_last_run,
 };
 pub use local_imports::{list_local_import_candidates_command, read_local_import_text_command};
 pub use memory::query_memories;

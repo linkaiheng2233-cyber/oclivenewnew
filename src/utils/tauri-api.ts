@@ -142,6 +142,7 @@ export interface ExpertModelsEffectiveResponse {
   promptStyle?: PromptStyleOverride | null;
   graphSource: ExpertConfigSource;
   promptStyleSource: ExpertConfigSource;
+  canRollbackLastRun?: boolean;
 }
 
 export interface LocalModelFileDto {
@@ -263,6 +264,20 @@ export async function expertModelsApplyToSession(params: {
     modelPath?: string;
     llamaArgs?: string;
   }>("expert_models_apply_to_session", {
+    req: { roleId: params.roleId, sessionId: params.sessionId ?? null },
+  });
+}
+
+export async function expertModelsRollbackLastRun(params: {
+  roleId: string;
+  sessionId?: string | null;
+}): Promise<{ ok: boolean; llamaPluginId: string; modelPath?: string; llamaArgs?: string }> {
+  return invokeWithFriendlyError<{
+    ok: boolean;
+    llamaPluginId: string;
+    modelPath?: string;
+    llamaArgs?: string;
+  }>("expert_models_rollback_last_run", {
     req: { roleId: params.roleId, sessionId: params.sessionId ?? null },
   });
 }
