@@ -382,6 +382,23 @@ export const zhCN = {
       toastJsonCopied: "已复制 JSON 内容到剪贴板。",
       toastOnlyModuleOrProfile: "仅支持 module/profile 本地条目。",
       toastInstalled: "已安装：{id}",
+      toastRolePackImported: "导入成功：{id}",
+      toastRolePackOverwritten: "覆盖导入成功：{id}",
+      confirmImportRolePack:
+        "导入角色包：{name}（id={id} v{version}）\n\n确定导入到本机 roles/ 吗？（默认不覆盖同 id）",
+      confirmOverwriteRolePack:
+        "覆盖导入角色包：{name}（id={id} v{version}）\n\n将替换本机已存在的同 id 角色包内容。确定继续吗？",
+      confirmHighRiskPerms: "该插件包含高风险权限：\n{list}\n\n仍要继续安装吗？",
+      confirmOverwritePlugin:
+        "是否允许覆盖已存在的同 id 插件？\n\n插件：{id}\n\n选择“确定”=覆盖安装；“取消”=若已存在则报错。",
+      jsonParseFailed: "JSON 解析失败：{msg}",
+      jsonMustBeObject: "JSON 须为对象。",
+      entryTypeMustBeModuleOrProfile: "本地条目 type 必须为 \"module\" 或 \"profile\"。",
+      entryMissingIdNameVersion: "本地条目必须包含 id/name/version。",
+      moduleMustHaveModuleObject: "type=module 必须包含 module 对象。",
+      modulePluginsMustBeArray: "module.plugins 必须为数组。",
+      profileMustHaveProfileObject: "type=profile 必须包含 profile 对象。",
+      profilePluginsMustBeArray: "profile.plugins 必须为数组。",
     },
     batch: {
       toastEnabled: "已启用 {n} 个插件；保存后生效，建议重启应用。",
@@ -389,6 +406,14 @@ export const zhCN = {
       toastGitUpdated: "已从索引 Git 源拉取更新（ff-only）；若失败请查看错误提示。",
     },
     marketInstall: {
+      toastMissingDeps: "依赖未满足，无法安装：{list}",
+      permTitleInstall: "安装 {id}",
+      permTitleInstallVersion: "安装 {id} v{version}",
+      confirmHighRisk: "你已勾选高风险权限。\n\n建议仅安装你信任的来源。\n\n请再次确认：是否继续安装？",
+      confirmHighRiskVersion:
+        "你已勾选高风险权限。\n\n建议仅安装你信任的来源。\n\n请再次确认：是否继续安装 v{version}？",
+      toastRolledBackOrSwitched: "已回滚/切换 {id} → v{version}",
+      toastInstalledVersion: "已安装 {id} v{version}",
       toastUpdated: "已更新 {id}（git pull --ff-only）。",
     },
     save: {

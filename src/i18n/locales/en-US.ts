@@ -388,6 +388,24 @@ export const enUS = {
       toastJsonCopied: "JSON copied to clipboard.",
       toastOnlyModuleOrProfile: "Only local module/profile entries are supported.",
       toastInstalled: "Installed: {id}",
+      toastRolePackImported: "Imported: {id}",
+      toastRolePackOverwritten: "Overwrite imported: {id}",
+      confirmImportRolePack:
+        "Import role pack: {name} (id={id} v{version})\n\nImport into local roles/ now? (does not overwrite same id by default)",
+      confirmOverwriteRolePack:
+        "Overwrite import role pack: {name} (id={id} v{version})\n\nThis will replace the existing role pack with the same id. Continue?",
+      confirmHighRiskPerms:
+        "This plugin contains high-risk permissions:\n{list}\n\nDo you still want to continue installation?",
+      confirmOverwritePlugin:
+        "Allow overwriting an existing plugin with the same id?\n\nPlugin: {id}\n\nOK = overwrite install; Cancel = error if already exists.",
+      jsonParseFailed: "JSON parse failed: {msg}",
+      jsonMustBeObject: "JSON must be an object.",
+      entryTypeMustBeModuleOrProfile: "Local entry type must be \"module\" or \"profile\".",
+      entryMissingIdNameVersion: "Local entry must include id/name/version.",
+      moduleMustHaveModuleObject: "type=module must include a module object.",
+      modulePluginsMustBeArray: "module.plugins must be an array.",
+      profileMustHaveProfileObject: "type=profile must include a profile object.",
+      profilePluginsMustBeArray: "profile.plugins must be an array.",
     },
     batch: {
       toastEnabled:
@@ -397,6 +415,15 @@ export const enUS = {
       toastGitUpdated: "Pulled updates from Git index (ff-only). If failed, check the error.",
     },
     marketInstall: {
+      toastMissingDeps: "Missing dependencies, cannot install: {list}",
+      permTitleInstall: "Install {id}",
+      permTitleInstallVersion: "Install {id} v{version}",
+      confirmHighRisk:
+        "You selected high-risk permissions.\n\nOnly install sources you trust.\n\nConfirm: continue installation?",
+      confirmHighRiskVersion:
+        "You selected high-risk permissions.\n\nOnly install sources you trust.\n\nConfirm: continue installing v{version}?",
+      toastRolledBackOrSwitched: "Rolled back / switched {id} → v{version}",
+      toastInstalledVersion: "Installed {id} v{version}",
       toastUpdated: "Updated {id} (git pull --ff-only).",
     },
     save: {

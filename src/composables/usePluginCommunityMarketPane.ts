@@ -373,10 +373,7 @@ export function usePluginCommunityMarketPane(options?: { loadOnMount?: boolean }
       }
     } catch (e) {
       const msg = e instanceof Error ? e.message : String(e);
-      showToast(
-        "error",
-        `同步索引失败（source=${source}）：${msg}\n\n建议：检查网络，或稍后重试；第三方源请确认开发者模式已开启。`,
-      );
+      showToast("error", t("pluginManagerV1.marketSync.toastFailed", { source, msg }));
       throw e;
     }
   }
@@ -459,7 +456,7 @@ export function usePluginCommunityMarketPane(options?: { loadOnMount?: boolean }
       if (pluginStore.pluginMarketSnapshot?.warning) {
         showToast("info", pluginStore.pluginMarketSnapshot.warning);
       } else {
-        showToast("success", "索引已同步。");
+        showToast("success", t("pluginManagerV1.marketSync.toastOk"));
       }
     } catch (e) {
       showToast("error", e instanceof Error ? e.message : String(e));
@@ -468,7 +465,10 @@ export function usePluginCommunityMarketPane(options?: { loadOnMount?: boolean }
 
   async function onInstallMarketEntry(row: PluginMarketEntryDto) {
     if ((row.missingDependencies ?? []).length > 0) {
-      showToast("error", `依赖未满足，无法安装：${row.missingDependencies.join("、")}`);
+      showToast(
+        "error",
+        t("pluginManagerV1.marketInstall.toastMissingDeps", { list: row.missingDependencies.join("、") }),
+      );
       return;
     }
     const declaredPerms = (row.permissions ?? []).map((s) => s.trim()).filter(Boolean);
@@ -484,20 +484,20 @@ export function usePluginCommunityMarketPane(options?: { loadOnMount?: boolean }
       .filter(Boolean)
       .join("\n");
     const accepted = await requestPermissionConsentWithTrust(
-      `安装 ${row.id}`,
+      t("pluginManagerV1.marketInstall.permTitleInstall", { id: row.id }),
       declaredPerms,
       trust,
     );
     if (accepted == null) return;
     if (hasHighRiskPermission(accepted)) {
       const ok2 = window.confirm(
-        `你已勾选高风险权限。\n\n建议仅安装你信任的来源。\n\n请再次确认：是否继续安装？`,
+        t("pluginManagerV1.marketInstall.confirmHighRisk"),
       );
       if (!ok2) return;
     }
     try {
       await pluginStore.installFromPluginMarket(row.id, null, accepted);
-      showToast("success", `已安装 ${row.id}，建议保存配置并视需要重启应用。`);
+      showToast("success", t("pluginManagerV1.marketInstall.toastInstalled", { id: row.id }));
     } catch (e) {
       showToast("error", e instanceof Error ? e.message : String(e));
     }
@@ -519,14 +519,14 @@ export function usePluginCommunityMarketPane(options?: { loadOnMount?: boolean }
       .filter(Boolean)
       .join("\n");
     const accepted = await requestPermissionConsentWithTrust(
-      `安装 ${row.id} v${v}`,
+      t("pluginManagerV1.marketInstall.permTitleInstallVersion", { id: row.id, version: v }),
       declaredPerms,
       trust,
     );
     if (accepted == null) return;
     if (hasHighRiskPermission(accepted)) {
       const ok2 = window.confirm(
-        `你已勾选高风险权限。\n\n建议仅安装你信任的来源。\n\n请再次确认：是否继续安装 v${v}？`,
+        t("pluginManagerV1.marketInstall.confirmHighRiskVersion", { version: v }),
       );
       if (!ok2) return;
     }
@@ -534,7 +534,9 @@ export function usePluginCommunityMarketPane(options?: { loadOnMount?: boolean }
       await pluginStore.installVersionFromPluginMarket(row.id, v, accepted);
       showToast(
         "success",
-        row.installed ? `已回滚/切换 ${row.id} → v${v}` : `已安装 ${row.id} v${v}`,
+        row.installed
+          ? t("pluginManagerV1.marketInstall.toastRolledBackOrSwitched", { id: row.id, version: v })
+          : t("pluginManagerV1.marketInstall.toastInstalledVersion", { id: row.id, version: v }),
       );
     } catch (e) {
       showToast("error", e instanceof Error ? e.message : String(e));
@@ -544,7 +546,7 @@ export function usePluginCommunityMarketPane(options?: { loadOnMount?: boolean }
   async function onUpdateMarketEntry(row: PluginMarketEntryDto) {
     try {
       await pluginStore.updateInstalledPluginFromGit(row.id);
-      showToast("success", `已更新 ${row.id}（git pull --ff-only）。`);
+      showToast("success", t("pluginManagerV1.marketInstall.toastUpdated", { id: row.id }));
     } catch (e) {
       showToast("error", e instanceof Error ? e.message : String(e));
     }

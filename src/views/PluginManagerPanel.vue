@@ -915,11 +915,17 @@ async function onImportRolePackFromLocal(path: string): Promise<void> {
   try {
     const peek = await peekRolePack(path);
     const ok = window.confirm(
-      `导入角色包：${peek.name}（id=${peek.id} v${peek.version}）\n\n确定导入到本机 roles/ 吗？（默认不覆盖同 id）`,
+      String(
+        t("pluginManagerV1.localImports.confirmImportRolePack", {
+          name: peek.name,
+          id: peek.id,
+          version: peek.version,
+        }),
+      ),
     );
     if (!ok) return;
     const roleId = await importRolePack(path, false);
-    showToast("success", `导入成功：${roleId}`);
+    showToast("success", String(t("pluginManagerV1.localImports.toastRolePackImported", { id: roleId })));
   } catch (e) {
     showToast("error", e instanceof Error ? e.message : String(e));
   }
@@ -929,11 +935,17 @@ async function onImportRolePackFromLocalOverwrite(path: string): Promise<void> {
   try {
     const peek = await peekRolePack(path);
     const ok = window.confirm(
-      `覆盖导入角色包：${peek.name}（id=${peek.id} v${peek.version}）\n\n将替换本机已存在的同 id 角色包内容。确定继续吗？`,
+      String(
+        t("pluginManagerV1.localImports.confirmOverwriteRolePack", {
+          name: peek.name,
+          id: peek.id,
+          version: peek.version,
+        }),
+      ),
     );
     if (!ok) return;
     const roleId = await importRolePack(path, true);
-    showToast("success", `覆盖导入成功：${roleId}`);
+    showToast("success", String(t("pluginManagerV1.localImports.toastRolePackOverwritten", { id: roleId })));
   } catch (e) {
     showToast("error", e instanceof Error ? e.message : String(e));
   }
@@ -963,12 +975,16 @@ async function onInstallPluginArchiveFromLocal(zipPath: string): Promise<void> {
       if (accepted === null) return;
       if (hasHighRiskPermission(accepted)) {
         const ok = window.confirm(
-          `该插件包含高风险权限：\n${accepted.join("\n")}\n\n仍要继续安装吗？`,
+          String(
+            t("pluginManagerV1.localImports.confirmHighRiskPerms", {
+              list: accepted.join("\n"),
+            }),
+          ),
         );
         if (!ok) return;
       }
       const overwrite = window.confirm(
-        `是否允许覆盖已存在的同 id 插件？\n\n插件：${prev.pluginId}\n\n选择“确定”=覆盖安装；“取消”=若已存在则报错。`,
+        String(t("pluginManagerV1.localImports.confirmOverwritePlugin", { id: prev.pluginId })),
       );
       const pid = await installLocalPluginArchive({
         archivePath: zipPath,
@@ -976,7 +992,7 @@ async function onInstallPluginArchiveFromLocal(zipPath: string): Promise<void> {
         overwrite,
         acceptedPermissions: accepted,
       });
-      showToast("success", `已安装：${pid}`);
+      showToast("success", String(t("pluginManagerV1.localImports.toastInstalled", { id: pid })));
       await pluginStore.refresh();
       return;
     }
@@ -992,7 +1008,11 @@ async function onInstallPluginArchiveFromLocal(zipPath: string): Promise<void> {
     if (accepted === null) return;
     if (hasHighRiskPermission(accepted)) {
       const ok = window.confirm(
-        `该插件包含高风险权限：\n${accepted.join("\n")}\n\n仍要继续安装吗？`,
+        String(
+          t("pluginManagerV1.localImports.confirmHighRiskPerms", {
+            list: accepted.join("\n"),
+          }),
+        ),
       );
       if (!ok) return;
     }
@@ -1016,7 +1036,11 @@ async function onInstallPluginDirFromLocal(dirPath: string): Promise<void> {
     if (accepted === null) return;
     if (hasHighRiskPermission(accepted)) {
       const ok = window.confirm(
-        `该插件包含高风险权限：\n${accepted.join("\n")}\n\n仍要继续安装吗？`,
+        String(
+          t("pluginManagerV1.localImports.confirmHighRiskPerms", {
+            list: accepted.join("\n"),
+          }),
+        ),
       );
       if (!ok) return;
     }
@@ -1042,36 +1066,38 @@ function parseLocalMarketEntryJson(text: string): PluginMarketEntryDto {
   try {
     j = JSON.parse(text) as unknown;
   } catch (e) {
-    throw new Error(`JSON 解析失败：${e instanceof Error ? e.message : String(e)}`);
+    throw new Error(
+      String(t("pluginManagerV1.localImports.jsonParseFailed", { msg: e instanceof Error ? e.message : String(e) })),
+    );
   }
   if (!j || typeof j !== "object") {
-    throw new Error("JSON 须为对象。");
+    throw new Error(String(t("pluginManagerV1.localImports.jsonMustBeObject")));
   }
   const o = j as any;
   const t = String(o.type ?? "").trim();
   if (t !== "module" && t !== "profile") {
-    throw new Error('本地条目 type 必须为 "module" 或 "profile"。');
+    throw new Error(String(t("pluginManagerV1.localImports.entryTypeMustBeModuleOrProfile")));
   }
   const id = String(o.id ?? "").trim();
   const name = String(o.name ?? "").trim();
   const version = String(o.version ?? "").trim();
   if (!id || !name || !version) {
-    throw new Error("本地条目必须包含 id/name/version。");
+    throw new Error(String(t("pluginManagerV1.localImports.entryMissingIdNameVersion")));
   }
   if (t === "module") {
     if (!o.module || typeof o.module !== "object") {
-      throw new Error("type=module 必须包含 module 对象。");
+      throw new Error(String(t("pluginManagerV1.localImports.moduleMustHaveModuleObject")));
     }
     if (!Array.isArray(o.module.plugins)) {
-      throw new Error("module.plugins 必须为数组。");
+      throw new Error(String(t("pluginManagerV1.localImports.modulePluginsMustBeArray")));
     }
   }
   if (t === "profile") {
     if (!o.profile || typeof o.profile !== "object") {
-      throw new Error("type=profile 必须包含 profile 对象。");
+      throw new Error(String(t("pluginManagerV1.localImports.profileMustHaveProfileObject")));
     }
     if (!Array.isArray(o.profile.plugins)) {
-      throw new Error("profile.plugins 必须为数组。");
+      throw new Error(String(t("pluginManagerV1.localImports.profilePluginsMustBeArray")));
     }
   }
   return o as PluginMarketEntryDto;
