@@ -417,6 +417,8 @@ pub fn run() {
             api::expert_models::expert_models_apply_to_session,
             api::expert_models::expert_models_list_local_base_models,
             api::expert_models::expert_models_list_local_loras,
+            api::expert_models::expert_models_import_base_gguf,
+            api::expert_models::expert_models_import_lora_gguf,
             api::role_pack::export_role_pack_command,
             api::role_pack::peek_role_pack_command,
             api::role_pack::import_role_pack_command,

@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { computed, onMounted, ref } from "vue";
+import { open } from "@tauri-apps/api/dialog";
 import { useAppToast } from "../../composables/useAppToast";
 import { useExpertModelsStore } from "../../stores/expertModelsStore";
 import type { ExpertGraph, ExpertNode, PromptStyleOverride } from "../../utils/tauri-api";
@@ -128,6 +129,46 @@ async function onApplySession(): Promise<void> {
   }
 }
 
+async function onImportBase(): Promise<void> {
+  const picked = await open({
+    title: "选择一个 Base GGUF（将复制到 models/gguf）",
+    multiple: false,
+    directory: false,
+    filters: [{ name: "GGUF", extensions: ["gguf"] }],
+  });
+  const p = typeof picked === "string" ? picked : null;
+  if (!p) return;
+  saving.value = true;
+  try {
+    await store.importBaseGguf(p);
+    showToast("success", "已导入 Base 模型到 models/gguf。");
+  } catch (e) {
+    showToast("error", e instanceof Error ? e.message : String(e));
+  } finally {
+    saving.value = false;
+  }
+}
+
+async function onImportLora(): Promise<void> {
+  const picked = await open({
+    title: "选择一个 LoRA GGUF（将复制到 models/loras）",
+    multiple: false,
+    directory: false,
+    filters: [{ name: "GGUF", extensions: ["gguf"] }],
+  });
+  const p = typeof picked === "string" ? picked : null;
+  if (!p) return;
+  saving.value = true;
+  try {
+    await store.importLoraGguf(p);
+    showToast("success", "已导入 LoRA 到 models/loras。");
+  } catch (e) {
+    showToast("error", e instanceof Error ? e.message : String(e));
+  } finally {
+    saving.value = false;
+  }
+}
+
 async function onSetRoleDefault(): Promise<void> {
   saving.value = true;
   try {
@@ -220,6 +261,11 @@ onMounted(() => {
     <div class="em-grid">
       <div class="em-card">
         <div class="em-card-h">Base 模型（GGUF）</div>
+        <div class="em-row3">
+          <button class="em-btn secondary" type="button" :disabled="saving || store.loading" @click="onImportBase">
+            导入 GGUF…
+          </button>
+        </div>
         <select v-model="selectedBaseModelPath" class="em-select">
           <option value="">（不设置 / 保持当前）</option>
           <option v-for="m in store.baseModels" :key="m.path" :value="m.path">
@@ -231,6 +277,11 @@ onMounted(() => {
 
       <div class="em-card">
         <div class="em-card-h">LoRA（可多选）</div>
+        <div class="em-row3">
+          <button class="em-btn secondary" type="button" :disabled="saving || store.loading" @click="onImportLora">
+            导入 LoRA…
+          </button>
+        </div>
         <div class="em-lora-add">
           <select class="em-select" @change="addLora(($event.target as HTMLSelectElement).value)">
             <option value="">添加一个 LoRA…</option>
@@ -446,6 +497,11 @@ onMounted(() => {
   font-size: 13px;
   font-weight: 700;
   margin-bottom: 8px;
+}
+.em-row3 {
+  display: flex;
+  justify-content: flex-end;
+  margin: -2px 0 8px;
 }
 .em-select {
   width: 100%;

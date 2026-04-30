@@ -4,6 +4,8 @@ import {
   expertModelsClearRoleDefault,
   expertModelsClearSessionOverride,
   expertModelsGetEffective,
+  expertModelsImportBaseGguf,
+  expertModelsImportLoraGguf,
   expertModelsListLocalBaseModels,
   expertModelsListLocalLoras,
   expertModelsSetRoleDefault,
@@ -124,6 +126,20 @@ export const useExpertModelsStore = defineStore("expertModels", {
       const roleId = (roleStore.currentRoleId ?? "").trim();
       if (!roleId) throw new Error("当前未选择角色。");
       await expertModelsClearRoleDefault({ roleId });
+      await this.refresh();
+    },
+
+    async importBaseGguf(sourcePath: string): Promise<void> {
+      const p = (sourcePath ?? "").trim();
+      if (!p) return;
+      await expertModelsImportBaseGguf(p);
+      await this.refresh();
+    },
+
+    async importLoraGguf(sourcePath: string): Promise<void> {
+      const p = (sourcePath ?? "").trim();
+      if (!p) return;
+      await expertModelsImportLoraGguf(p);
       await this.refresh();
     },
   },

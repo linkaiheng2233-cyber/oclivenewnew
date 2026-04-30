@@ -40,6 +40,7 @@ pub use expert_models::{
     expert_models_clear_session_override, expert_models_get_effective, expert_models_set_role_default,
     expert_models_set_session_override, expert_models_list_local_base_models,
     expert_models_list_local_loras,
+    expert_models_import_base_gguf, expert_models_import_lora_gguf,
 };
 pub use local_imports::{list_local_import_candidates_command, read_local_import_text_command};
 pub use memory::query_memories;

@@ -18,6 +18,7 @@ use crate::state::AppState;
 use serde_json::json;
 use serde::Serialize;
 use tauri::State;
+use uuid::Uuid;
 
 fn parse_graph_json(raw: Option<String>) -> Result<Option<ExpertGraph>, String> {
     let Some(s) = raw else {
@@ -344,6 +345,104 @@ pub fn expert_models_list_local_loras(
     out.sort_by(|a, b| a.name.to_ascii_lowercase().cmp(&b.name.to_ascii_lowercase()));
     out.dedup_by(|a, b| a.path == b.path);
     Ok(out)
+}
+
+fn ensure_dir(p: &std::path::Path) -> Result<(), String> {
+    std::fs::create_dir_all(p).map_err(|e| e.to_string())
+}
+
+fn sanitize_file_name(name: &str) -> String {
+    // Keep it simple and safe: no path separators.
+    name.replace(['\\', '/', ':'], "_")
+}
+
+fn unique_dest_path(dir: &std::path::Path, file_name: &str) -> std::path::PathBuf {
+    let base = sanitize_file_name(file_name);
+    let stem = std::path::Path::new(&base)
+        .file_stem()
+        .and_then(|s| s.to_str())
+        .unwrap_or("model")
+        .to_string();
+    let ext = std::path::Path::new(&base)
+        .extension()
+        .and_then(|s| s.to_str())
+        .unwrap_or("gguf")
+        .to_string();
+    let mut cand = dir.join(format!("{}.{}", stem, ext));
+    if !cand.exists() {
+        return cand;
+    }
+    for i in 2..=999 {
+        cand = dir.join(format!("{}_{}.{}", stem, i, ext));
+        if !cand.exists() {
+            return cand;
+        }
+    }
+    dir.join(format!("{}_{}_copy.{}", stem, Uuid::new_v4(), ext))
+}
+
+#[derive(Debug, Clone, serde::Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct ExpertModelsImportGgufRequest {
+    /// Absolute path selected via dialog on the user machine.
+    pub source_path: String,
+}
+
+fn import_gguf_into_dir(
+    dir: &std::path::Path,
+    source_path: &str,
+) -> Result<LocalModelFileDto, String> {
+    let src = std::path::PathBuf::from(source_path.trim());
+    if !src.is_file() {
+        return Err(ApiError::InvalidParameter {
+            message: "source_path must be a file".into(),
+        }
+        .to_string());
+    }
+    let is_gguf = src
+        .extension()
+        .and_then(|s| s.to_str())
+        .map(|s| s.eq_ignore_ascii_case("gguf"))
+        .unwrap_or(false);
+    if !is_gguf {
+        return Err(ApiError::InvalidParameter {
+            message: "only .gguf files are supported".into(),
+        }
+        .to_string());
+    }
+    ensure_dir(dir)?;
+    let file_name = src
+        .file_name()
+        .and_then(|s| s.to_str())
+        .unwrap_or("model.gguf");
+    let dest = unique_dest_path(dir, file_name);
+    std::fs::copy(&src, &dest).map_err(|e| e.to_string())?;
+    Ok(LocalModelFileDto {
+        name: dest
+            .file_name()
+            .and_then(|s| s.to_str())
+            .unwrap_or("")
+            .to_string(),
+        path: dest.to_string_lossy().to_string(),
+    })
+}
+
+#[tauri::command]
+pub fn expert_models_import_base_gguf(
+    req: ExpertModelsImportGgufRequest,
+    state: State<'_, AppState>,
+) -> Result<LocalModelFileDto, String> {
+    let dir = llama_models_gguf_dir(&state);
+    import_gguf_into_dir(dir.as_path(), req.source_path.as_str())
+}
+
+#[tauri::command]
+pub fn expert_models_import_lora_gguf(
+    req: ExpertModelsImportGgufRequest,
+    state: State<'_, AppState>,
+) -> Result<LocalModelFileDto, String> {
+    let dir = llama_loras_dir(&state);
+    import_gguf_into_dir(dir.as_path(), req.source_path.as_str())
 }
 
 #[tauri::command]

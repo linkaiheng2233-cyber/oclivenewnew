@@ -225,6 +225,22 @@ export async function expertModelsListLocalLoras(): Promise<LocalModelFileDto[]>
   );
 }
 
+export async function expertModelsImportBaseGguf(
+  sourcePath: string,
+): Promise<LocalModelFileDto> {
+  return invokeWithFriendlyError<LocalModelFileDto>("expert_models_import_base_gguf", {
+    req: { sourcePath },
+  });
+}
+
+export async function expertModelsImportLoraGguf(
+  sourcePath: string,
+): Promise<LocalModelFileDto> {
+  return invokeWithFriendlyError<LocalModelFileDto>("expert_models_import_lora_gguf", {
+    req: { sourcePath },
+  });
+}
+
 export function toFriendlyErrorMessage(err: unknown): string {
   const { code, raw } = parseBackendError(err);
   if (!code) return raw;
