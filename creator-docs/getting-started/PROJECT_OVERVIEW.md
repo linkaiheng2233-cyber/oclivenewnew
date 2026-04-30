@@ -1,5 +1,22 @@
 # 项目全貌与事项总览（理清条理）
 
+- [中文](#项目全貌与事项总览理清条理)
+- [English](#project-overview--who-does-what)
+
+---
+
+## Project overview & responsibilities
+
+This document is a **single place to regain context**: toolchain responsibilities, what’s already implemented, where to read next, key commands, and what still needs scheduling.
+
+### The three repos (high level)
+
+- **`oclivenewnew` (this repo)**: the **runtime** (chat UI, role pack loading, engine orchestration, persistence) — Rust + Vue + Tauri
+- **`oclive-pack-editor`**: the **role pack editor** (edit/export `roles/{id}/` or zip) — Vue + Tauri
+- **`oclive-launcher`**: the **launcher** (configure paths, start runtime/editor, environment checks & reset) — Vue + Tauri
+
+The **only shared interface** is the **role pack format on disk** (`roles/{roleId}/...`). The runtime and editor interact via import/export and `OCLIVE_ROLES_DIR` (no complex IPC).
+
 本文把 **三件套分工、已落实内容、文档入口、命令、人机分工、待排期** 收拢在一处；细节仍以各专题文档为准。
 
 ---

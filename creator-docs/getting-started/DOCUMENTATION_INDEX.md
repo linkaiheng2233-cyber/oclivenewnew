@@ -1,5 +1,17 @@
 # oclive 文档索引与阅读顺序
 
+- [中文](#oclive-文档索引与阅读顺序)
+- [English](#documentation-index--reading-order)
+
+---
+
+## Documentation index & reading order
+
+Creator and plugin docs live under the repo root `creator-docs/` (grouped by topic).
+
+- If you want a one-pass mental model of the toolchain and responsibilities, start with **[`PROJECT_OVERVIEW.md`](PROJECT_OVERVIEW.md)**.
+- Most readers can then pick a path from the “Quick links” table below.
+
 创作者与插件相关说明位于仓库根目录 **`creator-docs/`**（按主题分子文件夹）。可按角色选择阅读路径。
 
 **若思路较乱、想一次看清三件套与事项分工**：先读 **[PROJECT_OVERVIEW.md](PROJECT_OVERVIEW.md)**（项目全貌与总览）。

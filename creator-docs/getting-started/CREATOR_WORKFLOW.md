@@ -1,5 +1,30 @@
 # 创作者：从角色包到 oclive
 
+- [中文](#创作者从角色包到-oclive)
+- [English](#creator-workflow-from-role-pack-to-oclive)
+
+---
+
+## Creator workflow: from role pack to oclive
+
+Key idea: the **editor and runtime are separate apps**. They integrate through the **role pack directory structure** on disk.
+
+- **Runtime (`oclivenewnew`)**: loads/validates role packs, runs chat & persistence.
+- **Editor (`oclive-pack-editor`)**: edits and exports `roles/{roleId}/` or `.zip`/`.ocpak` (both zip).
+- **Optional launcher (`oclive-launcher`)**: helps install role packs from zip, configure paths, and run environment checks.
+
+If you only need to make role pack content, focus on:
+
+- `roles/{roleId}/manifest.json` (+ optional `settings.json`)
+- `core_personality.txt`
+- optional `knowledge/` markdown
+
+Docs you’ll likely need:
+
+- [`roles/README_MANIFEST.md`](../../roles/README_MANIFEST.md) (contract & import)
+- [`plugin-and-architecture/PLUGIN_V1.md`](../plugin-and-architecture/PLUGIN_V1.md) (plugin_backends)
+- [`plugin-and-architecture/REMOTE_PLUGIN_PROTOCOL.md`](../plugin-and-architecture/REMOTE_PLUGIN_PROTOCOL.md) (JSON-RPC)
+
 **全库文档索引**：[DOCUMENTATION_INDEX.md](DOCUMENTATION_INDEX.md)  
 **插件架构、HTTP 侧车、更新策略（完整版）**：[../plugin-and-architecture/CREATOR_PLUGIN_ARCHITECTURE.md](../plugin-and-architecture/CREATOR_PLUGIN_ARCHITECTURE.md)
 
