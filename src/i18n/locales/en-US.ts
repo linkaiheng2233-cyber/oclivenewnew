@@ -88,6 +88,9 @@ export const enUS = {
       empty: "No messages yet. Start chatting.",
       thinking: "Thinking…",
     },
+    message: {
+      fallbackBadge: "Fallback reply",
+    },
   },
   app: {
     startup: {
@@ -236,16 +239,42 @@ export const enUS = {
       aria: "Settings extension slot",
     },
     security: {
+      label: "Security",
+      forceIframe: {
+        title: "Force iframe mode",
+        hint:
+          "When enabled, all plugin UIs will be loaded via iframe. It is safer but may reduce UX. Restart the app for it to fully take effect.",
+      },
       forceIframeSavedToast:
         "Saved. Restart the app for Force iframe mode to fully take effect.",
     },
     plugins: {
       devMode: {
+        sectionLabel: "Advanced (Developer mode)",
+        help: {
+          p1: "Developer mode enables third-party plugin index sources and sideload install entry points.",
+          p2: "Only add sources you trust; unsigned sources will show strong warnings on install.",
+        },
+        title: "Enable Developer mode",
+        hint:
+          "After enabling, you can use third-party index sources and sideload install. Recommended for advanced users only.",
         enabledToast: "Developer mode enabled.",
         disabledToast: "Developer mode disabled.",
       },
       sources: {
+        hint:
+          "Third-party index sources (one URL per line). After saving, you can sync index in Plugin Manager with this URL (source picker UI will be added later).",
+        saveButton: "Save third-party sources",
         savedToast: "Third-party index sources saved.",
+      },
+      directorySlot: {
+        title: "Directory plugins · Settings slot",
+        help: {
+          p1:
+            'Declare slot "settings.panel" under ui_slots in the plugin manifest to embed a settings page here.',
+          p2:
+            "Same as chat_toolbar: load via https://ocliveplugin.localhost/<id>/<entry>. You can reorder or hide them in Plugin Manager.",
+        },
       },
     },
   },

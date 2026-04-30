@@ -224,7 +224,7 @@ async function onToggleForceIframe(e: Event) {
 
           <section class="sv-section">
             <div class="sv-row-h">
-              <span class="sv-label">安全</span>
+              <span class="sv-label">{{ t("settings.security.label") }}</span>
             </div>
             <label class="sv-toggle-row">
               <input
@@ -233,9 +233,9 @@ async function onToggleForceIframe(e: Event) {
                 @change="onToggleForceIframe"
               />
               <span class="sv-toggle-text">
-                <strong>强制 iframe 模式</strong>
+                <strong>{{ t("settings.security.forceIframe.title") }}</strong>
                 <span class="sv-muted sv-toggle-desc">
-                  开启后，所有插件界面将使用 iframe 加载，更安全但体验可能下降。保存后需重启应用以完全生效。
+                  {{ t("settings.security.forceIframe.hint") }}
                 </span>
               </span>
             </label>
@@ -243,11 +243,11 @@ async function onToggleForceIframe(e: Event) {
 
           <section class="sv-section">
             <div class="sv-row-h">
-              <span class="sv-label">高级（开发者模式）</span>
+              <span class="sv-label">{{ t("settings.plugins.devMode.sectionLabel") }}</span>
               <HelpHint
                 :paragraphs="[
-                  '开发者模式用于启用第三方插件索引源与侧载安装入口。',
-                  '开启后请仅添加你信任的索引源；未签名源安装会强提示。',
+                  t('settings.plugins.devMode.help.p1'),
+                  t('settings.plugins.devMode.help.p2'),
                 ]"
               />
             </div>
@@ -259,15 +259,15 @@ async function onToggleForceIframe(e: Event) {
                 @change="onToggleMarketDeveloperMode"
               />
               <span class="sv-toggle-text">
-                <strong>启用开发者模式</strong>
+                <strong>{{ t("settings.plugins.devMode.title") }}</strong>
                 <span class="sv-muted sv-toggle-desc">
-                  开启后可使用第三方索引源与侧载安装。建议仅高级用户开启。
+                  {{ t("settings.plugins.devMode.hint") }}
                 </span>
               </span>
             </label>
             <div v-if="marketDeveloperModeLocal" class="sv-dev-box">
               <p class="sv-muted">
-                第三方索引源（每行一个 URL）。保存后可在插件管理页用“同步在线索引”并传入该 URL（后续会提供源选择 UI）。
+                {{ t("settings.plugins.sources.hint") }}
               </p>
               <textarea
                 v-model="marketSourcesText"
@@ -283,7 +283,7 @@ async function onToggleForceIframe(e: Event) {
                   :disabled="marketSourcesLoading"
                   @click="onSaveMarketSources"
                 >
-                  保存第三方源列表
+                  {{ t("settings.plugins.sources.saveButton") }}
                 </button>
               </div>
             </div>
@@ -293,11 +293,11 @@ async function onToggleForceIframe(e: Event) {
         <div v-show="tab === 'plugins'" class="sv-body">
           <section class="sv-section">
             <div class="sv-row-h">
-              <h3 class="sv-h3">目录插件 · 设置页插槽</h3>
+              <h3 class="sv-h3">{{ t("settings.plugins.directorySlot.title") }}</h3>
               <HelpHint
                 :paragraphs="[
-                  '在插件 manifest 的 ui_slots 中声明 slot 为 settings.panel，即可在此嵌入配置页。',
-                  '与 chat_toolbar 相同，使用 https://ocliveplugin.localhost/<id>/<entry> 加载；可在插件管理中调整顺序或隐藏。',
+                  t('settings.plugins.directorySlot.help.p1'),
+                  t('settings.plugins.directorySlot.help.p2'),
                 ]"
               />
             </div>

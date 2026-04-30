@@ -83,6 +83,9 @@ export const zhCN = {
       empty: "暂无消息，开始聊天吧~",
       thinking: "正在想…",
     },
+    message: {
+      fallbackBadge: "备用短回复",
+    },
   },
   app: {
     startup: {
@@ -230,15 +233,39 @@ export const zhCN = {
       aria: "设置扩展区",
     },
     security: {
+      label: "安全",
+      forceIframe: {
+        title: "强制 iframe 模式",
+        hint:
+          "开启后，所有插件界面将使用 iframe 加载，更安全但体验可能下降。保存后需重启应用以完全生效。",
+      },
       forceIframeSavedToast: "已保存。重启应用后强制 iframe 模式将完全生效。",
     },
     plugins: {
       devMode: {
+        sectionLabel: "高级（开发者模式）",
+        help: {
+          p1: "开发者模式用于启用第三方插件索引源与侧载安装入口。",
+          p2: "开启后请仅添加你信任的索引源；未签名源安装会强提示。",
+        },
+        title: "启用开发者模式",
+        hint: "开启后可使用第三方索引源与侧载安装。建议仅高级用户开启。",
         enabledToast: "已开启开发者模式。",
         disabledToast: "已关闭开发者模式。",
       },
       sources: {
+        hint:
+          "第三方索引源（每行一个 URL）。保存后可在插件管理页用“同步在线索引”并传入该 URL（后续会提供源选择 UI）。",
+        saveButton: "保存第三方源列表",
         savedToast: "第三方索引源已保存。",
+      },
+      directorySlot: {
+        title: "目录插件 · 设置页插槽",
+        help: {
+          p1: "在插件 manifest 的 ui_slots 中声明 slot 为 settings.panel，即可在此嵌入配置页。",
+          p2:
+            "与 chat_toolbar 相同，使用 https://ocliveplugin.localhost/<id>/<entry> 加载；可在插件管理中调整顺序或隐藏。",
+        },
       },
     },
   },
