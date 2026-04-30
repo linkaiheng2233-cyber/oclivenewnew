@@ -253,6 +253,35 @@ async function onGrantAllDeclared(): Promise<void> {
   }
 }
 
+async function onGrantMissingDeclared(): Promise<void> {
+  const pid = permPluginId.value.trim();
+  if (!pid) return;
+  const missing = missingPermsFor(pid);
+  if (missing.length === 0) {
+    showToast("success", "该插件没有缺失权限。");
+    return;
+  }
+  const ok = window.confirm(
+    `将补齐该插件缺失的声明权限（共 ${missing.length} 条）：\n\n${missing
+      .map((p) => `- ${p}`)
+      .join("\n")}\n\n继续吗？`,
+  );
+  if (!ok) return;
+  permLoading.value = true;
+  try {
+    for (const p of missing) {
+      await setPluginPermissionGrant(pid, p, true);
+    }
+    await refreshPerms(pid);
+    await pluginStore.refresh();
+    showToast("success", "已补齐缺失权限。");
+  } catch (e) {
+    showToast("error", e instanceof Error ? e.message : String(e));
+  } finally {
+    permLoading.value = false;
+  }
+}
+
 function toggleSlotContribution(pluginId: string, enabled: boolean) {
   const slot = pickedSlot.value.trim();
   if (!slot) return;
@@ -417,6 +446,15 @@ async function onApply(payload: Record<string, unknown>) {
               一键授予声明权限
             </button>
             <button
+              v-if="missingPermsFor(permPluginId).length"
+              type="button"
+              class="pm2-btn secondary pm2-btn--sm"
+              @click="onGrantMissingDeclared"
+              :title="`补齐缺失：${missingPermsFor(permPluginId).join('、')}`"
+            >
+              补齐缺失
+            </button>
+            <button
               type="button"
               class="pm2-btn secondary pm2-btn--sm"
               @click="() => refreshPerms(permPluginId)"
@@ -554,16 +592,18 @@ async function onApply(payload: Record<string, unknown>) {
                 />
                 <span class="pm2-slotdash-id">{{ id }}</span>
               </label>
-              <HelpCircle
-                v-if="missingPermsFor(id).length"
-                :label="`该插件缺少权限：${missingPermsFor(id).join('、')}`"
-                inline
-              >
-                <p>该插件声明了权限，但还没全部授权，调用时可能会被拦截。</p>
-                <p>缺少：{{ missingPermsFor(id).join("、") }}</p>
-                <p>处理：点右侧「权限」按钮补授权即可。</p>
-              </HelpCircle>
+              <span v-if="missingPermsFor(id).length" class="pm2-warn-pill" :title="missingPermsFor(id).join('、')">
+                缺权限（{{ missingPermsFor(id).length }}）
+              </span>
               <button type="button" class="pm2-mini" @click="openPermModal(id)">权限</button>
+              <button
+                v-if="missingPermsFor(id).length"
+                type="button"
+                class="pm2-mini warn"
+                @click="openPermModal(id)"
+              >
+                一键修复
+              </button>
               <button
                 type="button"
                 class="pm2-mini"
@@ -887,6 +927,17 @@ async function onApply(payload: Record<string, unknown>) {
 .pm2-mini.warn {
   color: var(--danger-600, #c0392b);
   border-color: color-mix(in srgb, var(--danger-600, #c0392b) 35%, var(--border-light));
+}
+.pm2-warn-pill {
+  display: inline-flex;
+  align-items: center;
+  padding: 3px 8px;
+  border-radius: 999px;
+  border: 1px solid color-mix(in srgb, var(--danger-600, #c0392b) 35%, var(--border-light));
+  background: color-mix(in srgb, var(--danger-600, #c0392b) 10%, var(--bg-primary));
+  color: var(--danger-600, #c0392b);
+  font-size: 12px;
+  font-weight: 700;
 }
 .pm2-slotdash-ordbtns {
   display: flex;
