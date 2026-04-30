@@ -2657,13 +2657,13 @@ async function onPackSelectedPlugin(): Promise<void> {
             role="tabpanel"
           >
             <section class="pm-section">
-              <h3 class="pm-h3">一键启用本地 Llama（Directory LLM）</h3>
+              <h3 class="pm-h3">{{ t("pluginManagerV1.ui.localLlama.title") }}</h3>
               <p class="pm-hint">
-                将当前会话的 LLM 切到「目录插件」，并写入 <code>directory_plugins.llm</code> 槽位。
+                {{ t("pluginManagerV1.ui.localLlama.hint") }}
               </p>
               <div class="pm-row">
                 <label class="pm-label">
-                  插件 ID
+                  {{ t("pluginManagerV1.ui.localLlama.pluginIdLabel") }}
                   <input
                     v-model="localLlamaPluginIdDraft"
                     class="pm-input"
@@ -2673,7 +2673,11 @@ async function onPackSelectedPlugin(): Promise<void> {
                   />
                 </label>
                 <span class="pm-muted">
-                  状态：{{ localLlamaPluginInstalled ? "已扫描" : "未扫描" }}
+                  {{ t("pluginManagerV1.ui.localLlama.statusLabel") }}：{{
+                    localLlamaPluginInstalled
+                      ? t("pluginManagerV1.ui.localLlama.status.scanned")
+                      : t("pluginManagerV1.ui.localLlama.status.notScanned")
+                  }}
                 </span>
                 <button
                   type="button"
@@ -2681,7 +2685,7 @@ async function onPackSelectedPlugin(): Promise<void> {
                   :disabled="!localLlamaPluginInstalled"
                   @click="onEnableLocalLlamaDirectory"
                 >
-                  一键启用
+                  {{ t("pluginManagerV1.ui.localLlama.enableOneClick") }}
                 </button>
                 <button
                   v-if="rollbackSnapshotForRole"
@@ -2690,7 +2694,7 @@ async function onPackSelectedPlugin(): Promise<void> {
                   :title="`回滚快照：${rollbackSnapshotForRole.label} @ ${rollbackSnapshotForRole.savedAt}`"
                   @click="rollbackLastSessionOverride"
                 >
-                  回滚上次覆盖
+                  {{ t("pluginManagerV1.ui.localLlama.rollbackLastOverride") }}
                 </button>
               </div>
             </section>
@@ -2704,9 +2708,9 @@ async function onPackSelectedPlugin(): Promise<void> {
             role="tabpanel"
           >
           <section class="pm-section pm-embed-slot">
-            <h3 class="pm-h3">插件管理页预览（只读）</h3>
+            <h3 class="pm-h3">{{ t("pluginManagerV1.ui.slots.previewTitle") }}</h3>
             <p class="pm-hint">
-              与下方「settings.plugins」为同一插槽；预览不可操作，请在列表中拖拽排序。
+              {{ t("pluginManagerV1.ui.slots.previewHint") }}
             </p>
             <div class="pm-embed-preview" aria-hidden="true">
               <PluginSlotEmbed
@@ -2717,9 +2721,9 @@ async function onPackSelectedPlugin(): Promise<void> {
           </section>
 
           <section class="pm-section">
-            <h3 class="pm-h3">settings.plugins 顺序</h3>
-            <p class="pm-hint">本页内嵌区；拖拽排序，可选外观。</p>
-            <ol class="pm-order" aria-label="插件管理页槽顺序">
+            <h3 class="pm-h3">{{ t("pluginManagerV1.ui.slots.settingsPluginsTitle") }}</h3>
+            <p class="pm-hint">{{ t("pluginManagerV1.ui.slots.settingsPluginsHint") }}</p>
+            <ol class="pm-order" :aria-label="String(t('pluginManagerV1.ui.slots.settingsPluginsAria'))">
               <li
                 v-for="(id, i) in settingsPluginsOrder"
                 :key="`spl-${id}`"
@@ -2734,13 +2738,15 @@ async function onPackSelectedPlugin(): Promise<void> {
                 <PmSlotRow :plugin-id="id" :slot-key="SLOT_SETTINGS_PLUGINS" />
               </li>
             </ol>
-            <p v-if="!settingsPluginsOrder.length" class="pm-muted">当前无 settings.plugins 插槽插件。</p>
+            <p v-if="!settingsPluginsOrder.length" class="pm-muted">
+              {{ t("pluginManagerV1.ui.slots.empty", { slot: "settings.plugins" }) }}
+            </p>
           </section>
 
           <section class="pm-section">
-            <h3 class="pm-h3">chat_toolbar 顺序</h3>
-            <p class="pm-hint">拖拽排序；仅含声明了该插槽的非整壳插件。</p>
-            <ol class="pm-order" aria-label="工具栏插件顺序">
+            <h3 class="pm-h3">{{ t("pluginManagerV1.ui.slots.chatToolbarTitle") }}</h3>
+            <p class="pm-hint">{{ t("pluginManagerV1.ui.slots.chatToolbarHint") }}</p>
+            <ol class="pm-order" :aria-label="String(t('pluginManagerV1.ui.slots.chatToolbarAria'))">
               <li
                 v-for="(id, i) in toolbarOrder"
                 :key="id"
@@ -2755,13 +2761,15 @@ async function onPackSelectedPlugin(): Promise<void> {
                 <PmSlotRow :plugin-id="id" :slot-key="SLOT_CHAT_TOOLBAR" />
               </li>
             </ol>
-            <p v-if="!toolbarOrder.length" class="pm-muted">当前无 chat_toolbar 插槽插件。</p>
+            <p v-if="!toolbarOrder.length" class="pm-muted">
+              {{ t("pluginManagerV1.ui.slots.empty", { slot: "chat_toolbar" }) }}
+            </p>
           </section>
 
           <section class="pm-section">
-            <h3 class="pm-h3">settings.panel 顺序</h3>
-            <p class="pm-hint">设置页「插件扩展」中的嵌入顺序；拖拽排序。</p>
-            <ol class="pm-order" aria-label="设置页插件顺序">
+            <h3 class="pm-h3">{{ t("pluginManagerV1.ui.slots.settingsPanelTitle") }}</h3>
+            <p class="pm-hint">{{ t("pluginManagerV1.ui.slots.settingsPanelHint") }}</p>
+            <ol class="pm-order" :aria-label="String(t('pluginManagerV1.ui.slots.settingsPanelAria'))">
               <li
                 v-for="(id, i) in settingsPanelOrder"
                 :key="`sp-${id}`"
@@ -2776,13 +2784,15 @@ async function onPackSelectedPlugin(): Promise<void> {
                 <PmSlotRow :plugin-id="id" :slot-key="SLOT_SETTINGS_PANEL" />
               </li>
             </ol>
-            <p v-if="!settingsPanelOrder.length" class="pm-muted">当前无 settings.panel 插槽插件。</p>
+            <p v-if="!settingsPanelOrder.length" class="pm-muted">
+              {{ t("pluginManagerV1.ui.slots.empty", { slot: "settings.panel" }) }}
+            </p>
           </section>
 
           <section class="pm-section">
-            <h3 class="pm-h3">role.detail 顺序</h3>
-            <p class="pm-hint">左侧角色详情区（立绘下方）嵌入顺序。</p>
-            <ol class="pm-order" aria-label="角色详情插件顺序">
+            <h3 class="pm-h3">{{ t("pluginManagerV1.ui.slots.roleDetailTitle") }}</h3>
+            <p class="pm-hint">{{ t("pluginManagerV1.ui.slots.roleDetailHint") }}</p>
+            <ol class="pm-order" :aria-label="String(t('pluginManagerV1.ui.slots.roleDetailAria'))">
               <li
                 v-for="(id, i) in roleDetailOrder"
                 :key="`rd-${id}`"
@@ -2797,13 +2807,15 @@ async function onPackSelectedPlugin(): Promise<void> {
                 <PmSlotRow :plugin-id="id" :slot-key="SLOT_ROLE_DETAIL" />
               </li>
             </ol>
-            <p v-if="!roleDetailOrder.length" class="pm-muted">当前无 role.detail 插槽插件。</p>
+            <p v-if="!roleDetailOrder.length" class="pm-muted">
+              {{ t("pluginManagerV1.ui.slots.empty", { slot: "role.detail" }) }}
+            </p>
           </section>
 
           <section class="pm-section">
-            <h3 class="pm-h3">sidebar 顺序</h3>
-            <p class="pm-hint">左侧栏角色块下方扩展区；拖拽排序。</p>
-            <ol class="pm-order" aria-label="侧边栏插件顺序">
+            <h3 class="pm-h3">{{ t("pluginManagerV1.ui.slots.sidebarTitle") }}</h3>
+            <p class="pm-hint">{{ t("pluginManagerV1.ui.slots.sidebarHint") }}</p>
+            <ol class="pm-order" :aria-label="String(t('pluginManagerV1.ui.slots.sidebarAria'))">
               <li
                 v-for="(id, i) in sidebarOrder"
                 :key="`sb-${id}`"
@@ -2818,13 +2830,15 @@ async function onPackSelectedPlugin(): Promise<void> {
                 <PmSlotRow :plugin-id="id" :slot-key="SLOT_SIDEBAR" />
               </li>
             </ol>
-            <p v-if="!sidebarOrder.length" class="pm-muted">当前无 sidebar 插槽插件。</p>
+            <p v-if="!sidebarOrder.length" class="pm-muted">
+              {{ t("pluginManagerV1.ui.slots.empty", { slot: "sidebar" }) }}
+            </p>
           </section>
 
           <section class="pm-section">
-            <h3 class="pm-h3">chat.header 顺序</h3>
-            <p class="pm-hint">聊天列顶部（消息列表上方）；拖拽排序。</p>
-            <ol class="pm-order" aria-label="聊天头部插件顺序">
+            <h3 class="pm-h3">{{ t("pluginManagerV1.ui.slots.chatHeaderTitle") }}</h3>
+            <p class="pm-hint">{{ t("pluginManagerV1.ui.slots.chatHeaderHint") }}</p>
+            <ol class="pm-order" :aria-label="String(t('pluginManagerV1.ui.slots.chatHeaderAria'))">
               <li
                 v-for="(id, i) in chatHeaderOrder"
                 :key="`ch-${id}`"
@@ -2839,13 +2853,15 @@ async function onPackSelectedPlugin(): Promise<void> {
                 <PmSlotRow :plugin-id="id" :slot-key="SLOT_CHAT_HEADER" />
               </li>
             </ol>
-            <p v-if="!chatHeaderOrder.length" class="pm-muted">当前无 chat.header 插槽插件。</p>
+            <p v-if="!chatHeaderOrder.length" class="pm-muted">
+              {{ t("pluginManagerV1.ui.slots.empty", { slot: "chat.header" }) }}
+            </p>
           </section>
 
           <section class="pm-section">
-            <h3 class="pm-h3">settings.advanced 顺序</h3>
-            <p class="pm-hint">设置对话框「常规」扩展区；拖拽排序。</p>
-            <ol class="pm-order" aria-label="settings.advanced 顺序">
+            <h3 class="pm-h3">{{ t("pluginManagerV1.ui.slots.settingsAdvancedTitle") }}</h3>
+            <p class="pm-hint">{{ t("pluginManagerV1.ui.slots.settingsAdvancedHint") }}</p>
+            <ol class="pm-order" :aria-label="String(t('pluginManagerV1.ui.slots.settingsAdvancedAria'))">
               <li
                 v-for="(id, i) in settingsAdvancedOrder"
                 :key="`sa-${id}`"
@@ -2860,13 +2876,15 @@ async function onPackSelectedPlugin(): Promise<void> {
                 <PmSlotRow :plugin-id="id" :slot-key="SLOT_SETTINGS_ADVANCED" />
               </li>
             </ol>
-            <p v-if="!settingsAdvancedOrder.length" class="pm-muted">当前无 settings.advanced 插槽插件。</p>
+            <p v-if="!settingsAdvancedOrder.length" class="pm-muted">
+              {{ t("pluginManagerV1.ui.slots.empty", { slot: "settings.advanced" }) }}
+            </p>
           </section>
 
           <section class="pm-section">
-            <h3 class="pm-h3">overlay.floating 顺序</h3>
-            <p class="pm-hint">主界面右下角浮层模板区；拖拽排序。</p>
-            <ol class="pm-order" aria-label="overlay.floating 顺序">
+            <h3 class="pm-h3">{{ t("pluginManagerV1.ui.slots.overlayFloatingTitle") }}</h3>
+            <p class="pm-hint">{{ t("pluginManagerV1.ui.slots.overlayFloatingHint") }}</p>
+            <ol class="pm-order" :aria-label="String(t('pluginManagerV1.ui.slots.overlayFloatingAria'))">
               <li
                 v-for="(id, i) in overlayFloatingOrder"
                 :key="`of-${id}`"
@@ -2881,13 +2899,15 @@ async function onPackSelectedPlugin(): Promise<void> {
                 <PmSlotRow :plugin-id="id" :slot-key="SLOT_OVERLAY_FLOATING" />
               </li>
             </ol>
-            <p v-if="!overlayFloatingOrder.length" class="pm-muted">当前无 overlay.floating 插槽插件。</p>
+            <p v-if="!overlayFloatingOrder.length" class="pm-muted">
+              {{ t("pluginManagerV1.ui.slots.empty", { slot: "overlay.floating" }) }}
+            </p>
           </section>
 
           <section class="pm-section">
-            <h3 class="pm-h3">launcher.palette 顺序</h3>
-            <p class="pm-hint">快捷键说明浮层内聚合区；拖拽排序。</p>
-            <ol class="pm-order" aria-label="launcher.palette 顺序">
+            <h3 class="pm-h3">{{ t("pluginManagerV1.ui.slots.launcherPaletteTitle") }}</h3>
+            <p class="pm-hint">{{ t("pluginManagerV1.ui.slots.launcherPaletteHint") }}</p>
+            <ol class="pm-order" :aria-label="String(t('pluginManagerV1.ui.slots.launcherPaletteAria'))">
               <li
                 v-for="(id, i) in launcherPaletteOrder"
                 :key="`lp-${id}`"
@@ -2902,13 +2922,15 @@ async function onPackSelectedPlugin(): Promise<void> {
                 <PmSlotRow :plugin-id="id" :slot-key="SLOT_LAUNCHER_PALETTE" />
               </li>
             </ol>
-            <p v-if="!launcherPaletteOrder.length" class="pm-muted">当前无 launcher.palette 插槽插件。</p>
+            <p v-if="!launcherPaletteOrder.length" class="pm-muted">
+              {{ t("pluginManagerV1.ui.slots.empty", { slot: "launcher.palette" }) }}
+            </p>
           </section>
 
           <section class="pm-section">
-            <h3 class="pm-h3">debug.dock 顺序</h3>
-            <p class="pm-hint">调试面板内扩展区；拖拽排序。</p>
-            <ol class="pm-order" aria-label="debug.dock 顺序">
+            <h3 class="pm-h3">{{ t("pluginManagerV1.ui.slots.debugDockTitle") }}</h3>
+            <p class="pm-hint">{{ t("pluginManagerV1.ui.slots.debugDockHint") }}</p>
+            <ol class="pm-order" :aria-label="String(t('pluginManagerV1.ui.slots.debugDockAria'))">
               <li
                 v-for="(id, i) in debugDockOrder"
                 :key="`dd-${id}`"
@@ -2923,17 +2945,21 @@ async function onPackSelectedPlugin(): Promise<void> {
                 <PmSlotRow :plugin-id="id" :slot-key="SLOT_DEBUG_DOCK" />
               </li>
             </ol>
-            <p v-if="!debugDockOrder.length" class="pm-muted">当前无 debug.dock 插槽插件。</p>
+            <p v-if="!debugDockOrder.length" class="pm-muted">
+              {{ t("pluginManagerV1.ui.slots.empty", { slot: "debug.dock" }) }}
+            </p>
           </section>
           </div>
           </div>
 
           <footer class="pm-foot">
-            <button type="button" class="pm-btn secondary" @click="pluginStore.closePanel()">关闭</button>
-            <button type="button" class="pm-btn secondary" @click="onResetToPackDefault">
-              重置为角色包推荐
+            <button type="button" class="pm-btn secondary" @click="pluginStore.closePanel()">
+              {{ t("common.close") }}
             </button>
-            <button type="button" class="pm-btn primary" @click="onSave">保存</button>
+            <button type="button" class="pm-btn secondary" @click="onResetToPackDefault">
+              {{ t("pluginManagerV1.ui.footer.resetToPackDefault") }}
+            </button>
+            <button type="button" class="pm-btn primary" @click="onSave">{{ t("common.save") }}</button>
           </footer>
         </template>
       </div>

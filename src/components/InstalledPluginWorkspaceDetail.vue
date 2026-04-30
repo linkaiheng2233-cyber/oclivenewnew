@@ -4,6 +4,7 @@ import PluginDebugPanel from "./PluginDebugPanel.vue";
 import PluginListItem from "./PluginListItem.vue";
 import { useAppToast } from "../composables/useAppToast";
 import { computed, onMounted, ref, watch } from "vue";
+import { useI18n } from "vue-i18n";
 import {
   SLOT_CHAT_HEADER,
   SLOT_ROLE_DETAIL,
@@ -34,6 +35,7 @@ const emit = defineEmits<{
 
 const pluginStore = usePluginStore();
 const { showToast } = useAppToast();
+const { t } = useI18n();
 
 function onPluginDisabledRow(id: string, disabled: boolean): void {
   try {
@@ -87,10 +89,10 @@ const permEffective = computed(() => {
 });
 
 const riskLabel = (risk: string | undefined): string => {
-  if (risk === "high") return "高风险";
-  if (risk === "medium") return "中风险";
-  if (risk === "low") return "低风险";
-  return "未知";
+  if (risk === "high") return String(t("pluginManagerV1.ipwd.risk.high"));
+  if (risk === "medium") return String(t("pluginManagerV1.ipwd.risk.medium"));
+  if (risk === "low") return String(t("pluginManagerV1.ipwd.risk.low"));
+  return String(t("pluginManagerV1.ipwd.risk.unknown"));
 };
 
 const riskClass = (risk: string | undefined): string => {
@@ -166,7 +168,7 @@ async function onTogglePermission(p: PluginPermissionGrantDto, enabled: boolean)
   try {
     await setPluginPermissionGrant(pid, p.permission, enabled);
     await refreshPerms();
-    showToast("success", "权限已更新。");
+    showToast("success", String(t("pluginManagerV1.ipwd.toastPermUpdated")));
   } catch (e) {
     showToast("error", e instanceof Error ? e.message : String(e));
   } finally {
@@ -214,14 +216,14 @@ async function onTogglePermission(p: PluginPermissionGrantDto, enabled: boolean)
       "
     />
     <div v-if="entry.hasUiSettings" class="ipwd-settings">
-      <div class="ipwd-settings-h">插件私有设置</div>
+      <div class="ipwd-settings-h">{{ t("pluginManagerV1.ipwd.privateSettingsTitle") }}</div>
       <PluginPrivateSettingsForm :plugin-id="entry.id" />
     </div>
     <div class="ipwd-perms">
-      <div class="ipwd-perms-h">权限</div>
-      <p v-if="tokenInfoLoading" class="ipwd-perms-muted">加载权限说明中…</p>
+      <div class="ipwd-perms-h">{{ t("pluginManagerV1.ipwd.permissionsTitle") }}</div>
+      <p v-if="tokenInfoLoading" class="ipwd-perms-muted">{{ t("pluginManagerV1.ipwd.loadingTokenInfo") }}</p>
       <div v-if="declaredPermsSorted.length > 0" class="ipwd-perms-declared">
-        <div class="ipwd-perms-subh">声明（来自市场索引）</div>
+        <div class="ipwd-perms-subh">{{ t("pluginManagerV1.ipwd.declaredFromIndexTitle") }}</div>
         <ul class="ipwd-perms-list">
           <li v-for="p in declaredPermsSorted" :key="p" class="ipwd-perms-li">
             <span class="ipwd-perms-token">{{ p }}</span>
@@ -231,13 +233,13 @@ async function onTogglePermission(p: PluginPermissionGrantDto, enabled: boolean)
           </li>
         </ul>
         <p class="ipwd-perms-muted">
-          这是插件作者在索引中声明的权限范围；真正是否可用以“已授予”为准。
+          {{ t("pluginManagerV1.ipwd.declaredFromIndexHint") }}
         </p>
       </div>
       <p v-if="permError" class="ipwd-perms-err">{{ permError }}</p>
-      <p v-else-if="permLoading" class="ipwd-perms-muted">加载中…</p>
+      <p v-else-if="permLoading" class="ipwd-perms-muted">{{ t("pluginManagerV1.ipwd.loading") }}</p>
       <p v-else-if="permEffective.length === 0" class="ipwd-perms-muted">
-        暂无权限信息（可能为旧版本安装，或该插件未声明任何权限）。
+        {{ t("pluginManagerV1.ipwd.noPermInfo") }}
       </p>
       <ul v-else class="ipwd-perms-list">
         <li v-for="p in permEffective" :key="p.permission" class="ipwd-perms-li">
@@ -254,7 +256,7 @@ async function onTogglePermission(p: PluginPermissionGrantDto, enabled: boolean)
               "
             />
             <span class="ipwd-perms-token">{{ p.permission }}</span>
-            <span v-if="p.declared !== true" class="ipwd-perms-tag">额外</span>
+            <span v-if="p.declared !== true" class="ipwd-perms-tag">{{ t("pluginManagerV1.ipwd.extraTag") }}</span>
             <span
               v-if="p.info?.risk"
               class="ipwd-perms-risk"
@@ -272,11 +274,11 @@ async function onTogglePermission(p: PluginPermissionGrantDto, enabled: boolean)
         </li>
       </ul>
       <p class="ipwd-perms-hint">
-        关闭权限后，对应能力会被宿主拒绝（并记录审计元数据）。部分变更可能需要重启插件进程生效。
+        {{ t("pluginManagerV1.ipwd.permsHint") }}
       </p>
     </div>
     <div class="ipwd-debug">
-      <div class="ipwd-debug-h">调试台</div>
+      <div class="ipwd-debug-h">{{ t("pluginManagerV1.ipwd.debugTitle") }}</div>
       <PluginDebugPanel
         :key="entry.id"
         :plugin-id="entry.id"
@@ -285,11 +287,11 @@ async function onTogglePermission(p: PluginPermissionGrantDto, enabled: boolean)
       />
     </div>
     <div class="ipwd-audit">
-      <div class="ipwd-audit-h">审计（最近）</div>
+      <div class="ipwd-audit-h">{{ t("pluginManagerV1.ipwd.auditTitle") }}</div>
       <p v-if="auditError" class="ipwd-perms-err">{{ auditError }}</p>
-      <p v-else-if="auditLoading" class="ipwd-perms-muted">加载中…</p>
+      <p v-else-if="auditLoading" class="ipwd-perms-muted">{{ t("pluginManagerV1.ipwd.loading") }}</p>
       <p v-else-if="(auditLogs ?? []).length === 0" class="ipwd-perms-muted">
-        暂无审计记录（只有在允许/拒绝调用时才会写入元数据）。
+        {{ t("pluginManagerV1.ipwd.noAuditLogs") }}
       </p>
       <ul v-else class="ipwd-audit-list">
         <li v-for="(x, idx) in auditLogs" :key="`${x.createdAt}-${idx}`" class="ipwd-audit-li">
@@ -301,7 +303,7 @@ async function onTogglePermission(p: PluginPermissionGrantDto, enabled: boolean)
           <span v-if="x.permission" class="ipwd-perms-token">{{ x.permission }}</span>
         </li>
       </ul>
-      <p class="ipwd-perms-hint">仅记录元数据（不记录内容）。</p>
+      <p class="ipwd-perms-hint">{{ t("pluginManagerV1.ipwd.auditHint") }}</p>
     </div>
   </div>
 </template>
