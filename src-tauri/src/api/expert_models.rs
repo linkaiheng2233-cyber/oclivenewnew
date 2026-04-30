@@ -1,6 +1,7 @@
 //! Module 9: Expert Models API (Tauri commands).
 
 use crate::api::error::ApiError;
+use crate::api::role::set_session_plugin_backend_impl;
 use crate::domain::chat_engine::conversation_state_role_id;
 use crate::domain::expert_models::{compile_graph_to_llama_local_config, LLAMA_LOCAL_PLUGIN_ID};
 use crate::infrastructure::plugin_data::write_config_json;
@@ -12,6 +13,7 @@ use crate::models::dto::{
     ExpertModelsSetSessionOverrideRequest,
 };
 use crate::models::{ExpertConfigSource, ExpertGraph, LlamaLocalPluginConfig, PromptStyleOverride};
+use crate::models::dto::SetSessionPluginBackendRequest;
 use crate::state::AppState;
 use serde_json::json;
 use serde::Serialize;
@@ -370,6 +372,22 @@ pub async fn expert_models_apply_to_session(
 
     let cfg_val = serde_json::to_value(&compiled).map_err(|e| e.to_string())?;
     write_config_json(&state, LLAMA_LOCAL_PLUGIN_ID, &cfg_val)?;
+
+    // Ensure the current session uses the directory LLM backend (mechanism), pointing to llama local plugin.
+    // If the user hasn't granted required permissions (e.g. process:spawn), chat runtime will still fallback;
+    // we keep apply logic non-interactive and surface errors via normal flow.
+    let _ = set_session_plugin_backend_impl(
+        &state,
+        &SetSessionPluginBackendRequest {
+            role_id: role_id.to_string(),
+            session_id: req.session_id.clone(),
+            module: "llm".to_string(),
+            backend: Some(Some("directory".to_string())),
+            local_memory_provider_id: None,
+            directory_plugin_id: Some(LLAMA_LOCAL_PLUGIN_ID.to_string()),
+        },
+    )
+    .await;
 
     // Restart trigger: dedicated, not generic rpc:invoke.
     let url = state

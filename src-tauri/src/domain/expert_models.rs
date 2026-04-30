@@ -94,19 +94,16 @@ pub fn compile_graph_to_llama_local_config(
     let llama_args = if loras.is_empty() {
         None
     } else {
-        // llama.cpp server supports comma-separated `--lora-scaled FNAME:SCALE,...`
-        let mut spec = String::new();
-        for (i, (p, s, _, _id)) in loras.iter().enumerate() {
-            if i > 0 {
-                spec.push(',');
-            }
-            // Keep original path string for llama-server; it accepts absolute paths.
-            spec.push_str(p);
-            spec.push(':');
-            // Avoid scientific notation for common ranges; keep reasonably compact.
-            spec.push_str(&format!("{:.6}", *s));
+        // Conservative mapping: repeat `--lora <path> --lora-scale <strength>` pairs.
+        // This keeps compatibility with sidecar's whitespace-splitting arg forwarding.
+        let mut parts: Vec<String> = Vec::new();
+        for (p, s, _, _id) in loras.iter() {
+            parts.push("--lora".to_string());
+            parts.push(p.to_string());
+            parts.push("--lora-scale".to_string());
+            parts.push(format!("{:.6}", *s));
         }
-        Some(format!("--lora-scaled {}", spec))
+        Some(parts.join(" "))
     };
 
     Ok(LlamaLocalPluginConfig {
