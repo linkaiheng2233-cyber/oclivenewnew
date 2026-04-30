@@ -746,7 +746,7 @@ async function onApply(payload: Record<string, unknown>) {
       <p class="pm2-muted" style="margin: 8px 0 0">当前有效 LLM：{{ llmEffectiveLabel }}</p>
     </section>
 
-    <ExpertModelsPanel />
+    <ExpertModelsPanel @open-permissions="openPermModal($event.pluginId)" />
 
     <div class="pm2-grid">
       <LeftCategoryNav v-model="selectedCategory" :categories="categories" />

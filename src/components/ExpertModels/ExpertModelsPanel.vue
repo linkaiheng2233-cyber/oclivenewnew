@@ -6,6 +6,9 @@ import type { ExpertGraph, ExpertNode, PromptStyleOverride } from "../../utils/t
 
 const store = useExpertModelsStore();
 const { showToast } = useAppToast();
+const emit = defineEmits<{
+  (e: "open-permissions", payload: { pluginId: string }): void;
+}>();
 
 const saving = ref(false);
 
@@ -196,6 +199,21 @@ onMounted(() => {
       <div class="em-pill">
         PromptStyle 来源：<b>{{ sourceLabel(store.promptStyleSource) }}</b>
       </div>
+      <div v-if="store.llamaMissingMechanismPerms.length" class="em-warnbar">
+        <div>
+          <b>本地 Llama 尚未授权必要权限</b>
+          <span class="em-muted2">
+            缺少：{{ store.llamaMissingMechanismPerms.join("、") }}。未授权时会回退其他 LLM 或调用被拦截。
+          </span>
+        </div>
+        <button
+          type="button"
+          class="em-btn danger"
+          @click="emit('open-permissions', { pluginId: 'com.oclive.llama.local' })"
+        >
+          去授权
+        </button>
+      </div>
       <div v-if="store.error" class="em-err">{{ store.error }}</div>
     </div>
 
@@ -385,6 +403,27 @@ onMounted(() => {
   background: var(--bg-elevated);
   font-size: 12px;
   color: var(--text-secondary);
+}
+.em-warnbar {
+  flex: 1 1 520px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  padding: 8px 10px;
+  border-radius: 12px;
+  border: 1px solid color-mix(in srgb, var(--danger-600, #c0392b) 30%, var(--border-light));
+  background: color-mix(in srgb, var(--danger-600, #c0392b) 10%, var(--bg-elevated));
+  color: var(--text-primary);
+  font-size: 12px;
+}
+.em-muted2 {
+  margin-left: 6px;
+  color: var(--text-secondary);
+}
+.em-btn.danger {
+  color: var(--danger-600, #c0392b);
+  border-color: color-mix(in srgb, var(--danger-600, #c0392b) 35%, var(--border-light));
 }
 .em-err {
   color: var(--danger-600, #c0392b);

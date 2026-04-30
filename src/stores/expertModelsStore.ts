@@ -8,6 +8,7 @@ import {
   expertModelsListLocalLoras,
   expertModelsSetRoleDefault,
   expertModelsSetSessionOverride,
+  getPluginPermissionGrants,
   type ExpertConfigSource,
   type ExpertGraph,
   type LocalModelFileDto,
@@ -16,6 +17,8 @@ import {
 import { useRoleStore } from "./roleStore";
 
 const emptyGraph = (): ExpertGraph => ({ version: 1, nodes: [], edges: [] });
+const LLAMA_LOCAL_PLUGIN_ID = "com.oclive.llama.local";
+const REQUIRED_MECH_PERMS = ["process:spawn"];
 
 export const useExpertModelsStore = defineStore("expertModels", {
   state: () => ({
@@ -23,6 +26,7 @@ export const useExpertModelsStore = defineStore("expertModels", {
     error: null as string | null,
     baseModels: [] as LocalModelFileDto[],
     loras: [] as LocalModelFileDto[],
+    llamaMissingMechanismPerms: [] as string[],
 
     effectiveGraph: emptyGraph() as ExpertGraph,
     effectivePromptStyle: null as PromptStyleOverride | null,
@@ -40,10 +44,11 @@ export const useExpertModelsStore = defineStore("expertModels", {
       this.loading = true;
       this.error = null;
       try {
-        const [eff, bases, loras] = await Promise.all([
+        const [eff, bases, loras, grants] = await Promise.all([
           expertModelsGetEffective({ roleId, sessionId: null }),
           expertModelsListLocalBaseModels(),
           expertModelsListLocalLoras(),
+          getPluginPermissionGrants(LLAMA_LOCAL_PLUGIN_ID).catch(() => ({ grants: [] })),
         ]);
         this.baseModels = bases ?? [];
         this.loras = loras ?? [];
@@ -51,6 +56,13 @@ export const useExpertModelsStore = defineStore("expertModels", {
         this.effectivePromptStyle = eff.promptStyle ?? null;
         this.graphSource = eff.graphSource;
         this.promptStyleSource = eff.promptStyleSource;
+        const enabled = new Set(
+          (grants?.grants ?? [])
+            .filter((x) => x?.enabled === true)
+            .map((x) => String(x.permission ?? "").trim())
+            .filter(Boolean),
+        );
+        this.llamaMissingMechanismPerms = REQUIRED_MECH_PERMS.filter((p) => !enabled.has(p));
 
         // Start draft from effective for edit UX.
         this.draftGraph = JSON.parse(JSON.stringify(this.effectiveGraph)) as ExpertGraph;
