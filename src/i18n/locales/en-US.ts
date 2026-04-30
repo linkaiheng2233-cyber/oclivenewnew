@@ -363,6 +363,50 @@ export const enUS = {
       summary: "{avg} ({count})",
       toastCopiedTemplate: "Copied review template (JSON).",
     },
+    ui: {
+      dialogLabel: "Plugin workbench (Professional mode)",
+      title: "Plugins & Features",
+      proModeBadge: "Professional mode",
+      proModeBadgeTitle: "For creators and troubleshooting: directory plugins, backends and session overrides",
+      subtitle:
+        "Ctrl+Shift+F toggles this window · Ctrl+Shift+A opens Plugin Market · after saving, restart is recommended for slot/enabled state.",
+      loading: "Loading…",
+      tabsAria: "Plugins and features sections",
+      tabs: {
+        plugins: "Overview",
+        backends: "Chat backends",
+        slots: "UI placement",
+      },
+      preflight: {
+        dialogLabel: "Pre-apply confirmation",
+        hint: "After confirming, we will sync the index and enter per-plugin permission consent flow.",
+        confirmAndContinue: "Confirm and continue",
+      },
+      permConsent: {
+        dialogLabel: "Plugin install permissions",
+        trustSummaryTitle: "Trust summary",
+        hint:
+          "Choose which permissions you want to grant (you can adjust later in “Installed plugins → Permissions”).",
+        loadingTokenInfo: "Loading permission descriptions…",
+        selectAll: "Select all",
+        selectNone: "Select none",
+        continueInstall: "Continue installation",
+      },
+      market: {
+        title: "Plugin Market",
+        openMarket: "Open Plugin Market (Ctrl+Shift+A)",
+        hint:
+          "Market (community index / modules / profiles / local imports) is separated into its own window to avoid mixing with management functions.",
+      },
+      persistScope: {
+        title: "Where are these changes saved?",
+        hint:
+          "“Current role” only affects this role; “Global default” becomes the default for all roles (merged with each role's own settings).",
+        aria: "Plugin config persistence scope",
+        roleOnly: "Current role only",
+        globalDefault: "Global default",
+      },
+    },
   },
   expertModels: {
     title: "Expert Models (Module 9)",

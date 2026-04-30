@@ -1477,7 +1477,7 @@ async function onPackSelectedPlugin(): Promise<void> {
       class="pm-backdrop"
       role="dialog"
       aria-modal="true"
-      aria-label="插件工作台（专业模式）"
+      :aria-label="String(t('pluginManagerV1.ui.dialogLabel'))"
       @click.self="pluginStore.closePanel()"
     >
       <div
@@ -1485,12 +1485,12 @@ async function onPackSelectedPlugin(): Promise<void> {
         class="pm-modal-backdrop"
         role="dialog"
         aria-modal="true"
-        aria-label="应用前确认"
+        :aria-label="String(t('pluginManagerV1.ui.preflight.dialogLabel'))"
         @click.self="onPreflightCancel"
       >
         <div class="pm-modal" @click.stop>
           <div class="pm-modal-h">{{ preflightTitle }}</div>
-          <p class="pm-hint">确认后将开始同步索引并进入逐插件的权限确认流程。</p>
+          <p class="pm-hint">{{ t("pluginManagerV1.ui.preflight.hint") }}</p>
           <ul class="pm-preflight-list">
             <li v-for="(x, idx) in preflightLines" :key="`pl-${idx}`" class="pm-preflight-li">
               <span style="white-space: pre-wrap">{{ x }}</span>
@@ -1498,10 +1498,10 @@ async function onPackSelectedPlugin(): Promise<void> {
           </ul>
           <div class="pm-modal-actions pm-modal-actions--foot">
             <button type="button" class="pm-btn secondary" @click="onPreflightCancel">
-              取消
+              {{ t("common.cancel") }}
             </button>
             <button type="button" class="pm-btn primary" @click="onPreflightConfirm">
-              确认并继续
+              {{ t("pluginManagerV1.ui.preflight.confirmAndContinue") }}
             </button>
           </div>
         </div>
@@ -1511,23 +1511,23 @@ async function onPackSelectedPlugin(): Promise<void> {
         class="pm-modal-backdrop"
         role="dialog"
         aria-modal="true"
-        aria-label="插件安装权限确认"
+        :aria-label="String(t('pluginManagerV1.ui.permConsent.dialogLabel'))"
         @click.self="onPermConsentCancel"
       >
         <div class="pm-modal" @click.stop>
           <div class="pm-modal-h">{{ permConsentTitle }}</div>
           <p v-if="permConsentTrustSummary" class="pm-trust-summary">
-            <span class="pm-trust-h">信任摘要</span>
+            <span class="pm-trust-h">{{ t("pluginManagerV1.ui.permConsent.trustSummaryTitle") }}</span>
             <br />
             <span class="pm-trust-mono" style="white-space: pre-wrap">{{
               permConsentTrustSummary
             }}</span>
           </p>
           <p class="pm-hint">
-            请选择你愿意授予的权限（安装后仍可在“已安装插件 → 权限”中随时调整）。
+            {{ t("pluginManagerV1.ui.permConsent.hint") }}
           </p>
           <p v-if="permTokenInfoLoading" class="pm-muted" style="margin: 6px 0 0">
-            正在加载权限说明…
+            {{ t("pluginManagerV1.ui.permConsent.loadingTokenInfo") }}
           </p>
           <div class="pm-modal-actions">
             <button
@@ -1535,14 +1535,14 @@ async function onPackSelectedPlugin(): Promise<void> {
               class="pm-btn secondary pm-btn--sm"
               @click="setPermConsentAll(true)"
             >
-              全选
+              {{ t("pluginManagerV1.ui.permConsent.selectAll") }}
             </button>
             <button
               type="button"
               class="pm-btn secondary pm-btn--sm"
               @click="setPermConsentAll(false)"
             >
-              全不选
+              {{ t("pluginManagerV1.ui.permConsent.selectNone") }}
             </button>
           </div>
           <ul class="pm-perm-list">
@@ -1582,37 +1582,34 @@ async function onPackSelectedPlugin(): Promise<void> {
           </ul>
           <div class="pm-modal-actions pm-modal-actions--foot">
             <button type="button" class="pm-btn secondary" @click="onPermConsentCancel">
-              取消
+              {{ t("common.cancel") }}
             </button>
-            <button type="button" class="pm-btn" @click="onPermConsentConfirm">继续安装</button>
+            <button type="button" class="pm-btn" @click="onPermConsentConfirm">
+              {{ t("pluginManagerV1.ui.permConsent.continueInstall") }}
+            </button>
           </div>
         </div>
       </div>
       <div class="pm-dialog pm-dialog--studio" @click.stop>
         <header class="pm-head">
           <div class="pm-head-row">
-            <h2 class="pm-title">插件与功能设置</h2>
+            <h2 class="pm-title">{{ t("pluginManagerV1.ui.title") }}</h2>
             <span
               class="pm-studio-badge"
-              title="面向创作者与排错：目录插件、后端与会话覆盖"
-            >专业模式</span>
+              :title="String(t('pluginManagerV1.ui.proModeBadgeTitle'))"
+            >{{ t("pluginManagerV1.ui.proModeBadge") }}</span>
           </div>
-          <p class="pm-sub">
-            <kbd class="pm-kbd">Ctrl</kbd>+<kbd class="pm-kbd">Shift</kbd>+<kbd class="pm-kbd">F</kbd>
-            开关本窗口 ·
-            <kbd class="pm-kbd">Ctrl</kbd>+<kbd class="pm-kbd">Shift</kbd>+<kbd class="pm-kbd">A</kbd>
-            打开插件市场 · 保存后插槽/启用状态建议重启应用生效
-          </p>
-          <button type="button" class="pm-close" aria-label="关闭" @click="pluginStore.closePanel()">
+          <p class="pm-sub">{{ t("pluginManagerV1.ui.subtitle") }}</p>
+          <button type="button" class="pm-close" :aria-label="String(t('common.close'))" @click="pluginStore.closePanel()">
             ×
           </button>
         </header>
 
-        <div v-if="pluginStore.loading" class="pm-muted pm-dialog-pad">加载中…</div>
+        <div v-if="pluginStore.loading" class="pm-muted pm-dialog-pad">{{ t("pluginManagerV1.ui.loading") }}</div>
         <p v-else-if="pluginStore.error" class="pm-err pm-dialog-pad">{{ pluginStore.error }}</p>
 
         <template v-else>
-          <div class="pm-tabs" role="tablist" aria-label="插件与功能分区">
+          <div class="pm-tabs" role="tablist" :aria-label="String(t('pluginManagerV1.ui.tabsAria'))">
             <button
               type="button"
               role="tab"
@@ -1621,7 +1618,7 @@ async function onPackSelectedPlugin(): Promise<void> {
               :aria-selected="pluginStore.panelMainTab === 'plugins'"
               @click="pluginStore.panelMainTab = 'plugins'"
             >
-              插件总览
+              {{ t("pluginManagerV1.ui.tabs.plugins") }}
             </button>
             <button
               type="button"
@@ -1631,7 +1628,7 @@ async function onPackSelectedPlugin(): Promise<void> {
               :aria-selected="pluginStore.panelMainTab === 'backends'"
               @click="pluginStore.panelMainTab = 'backends'"
             >
-              对话后端
+              {{ t("pluginManagerV1.ui.tabs.backends") }}
             </button>
             <button
               type="button"
@@ -1641,7 +1638,7 @@ async function onPackSelectedPlugin(): Promise<void> {
               :aria-selected="pluginStore.panelMainTab === 'slots'"
               @click="pluginStore.panelMainTab = 'slots'"
             >
-              界面位置
+              {{ t("pluginManagerV1.ui.tabs.slots") }}
             </button>
           </div>
 
@@ -1653,7 +1650,7 @@ async function onPackSelectedPlugin(): Promise<void> {
           >
           <section class="pm-section">
             <div class="pm-section-head">
-              <h3 class="pm-h3">插件市场</h3>
+              <h3 class="pm-h3">{{ t("pluginManagerV1.ui.market.title") }}</h3>
               <div class="pm-section-actions">
                 <button
                   type="button"
@@ -1663,20 +1660,20 @@ async function onPackSelectedPlugin(): Promise<void> {
                     void pluginStore.openMarketPanel();
                   "
                 >
-                  打开插件市场（Ctrl+Shift+A）
+                  {{ t("pluginManagerV1.ui.market.openMarket") }}
                 </button>
               </div>
             </div>
             <p class="pm-hint">
-              市场（社区索引 / 模块 / Profile / 本地投放）已拆分为独立弹窗，避免和管理功能混在一起。
+              {{ t("pluginManagerV1.ui.market.hint") }}
             </p>
           </section>
           <section class="pm-section">
-            <h3 class="pm-h3">这些改动保存到哪里？</h3>
+            <h3 class="pm-h3">{{ t("pluginManagerV1.ui.persistScope.title") }}</h3>
             <p class="pm-hint">
-              选「当前角色」只影响现在这个角色；选「全局默认」会变成所有角色的默认值（会和每个角色自己的设置合并）。
+              {{ t("pluginManagerV1.ui.persistScope.hint") }}
             </p>
-            <div class="pm-scope-row" role="group" aria-label="插件配置保存范围">
+            <div class="pm-scope-row" role="group" :aria-label="String(t('pluginManagerV1.ui.persistScope.aria'))">
               <label class="pm-scope-label">
                 <input
                   type="radio"
@@ -1684,7 +1681,7 @@ async function onPackSelectedPlugin(): Promise<void> {
                   :checked="pluginStore.persistScope === 'role'"
                   @change="pluginStore.setPersistScope('role')"
                 />
-                仅当前角色
+                {{ t("pluginManagerV1.ui.persistScope.roleOnly") }}
               </label>
               <label class="pm-scope-label">
                 <input
@@ -1693,7 +1690,7 @@ async function onPackSelectedPlugin(): Promise<void> {
                   :checked="pluginStore.persistScope === 'global'"
                   @change="pluginStore.setPersistScope('global')"
                 />
-                全局默认
+                {{ t("pluginManagerV1.ui.persistScope.globalDefault") }}
               </label>
             </div>
           </section>

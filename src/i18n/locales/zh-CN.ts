@@ -357,6 +357,47 @@ export const zhCN = {
       summary: "{avg} 分（{count}）",
       toastCopiedTemplate: "已复制评价模板（JSON）。",
     },
+    ui: {
+      dialogLabel: "插件工作台（专业模式）",
+      title: "插件与功能设置",
+      proModeBadge: "专业模式",
+      proModeBadgeTitle: "面向创作者与排错：目录插件、后端与会话覆盖",
+      subtitle:
+        "Ctrl+Shift+F 开关本窗口 · Ctrl+Shift+A 打开插件市场 · 保存后插槽/启用状态建议重启应用生效",
+      loading: "加载中…",
+      tabsAria: "插件与功能分区",
+      tabs: {
+        plugins: "插件总览",
+        backends: "对话后端",
+        slots: "界面位置",
+      },
+      preflight: {
+        dialogLabel: "应用前确认",
+        hint: "确认后将开始同步索引并进入逐插件的权限确认流程。",
+        confirmAndContinue: "确认并继续",
+      },
+      permConsent: {
+        dialogLabel: "插件安装权限确认",
+        trustSummaryTitle: "信任摘要",
+        hint: "请选择你愿意授予的权限（安装后仍可在“已安装插件 → 权限”中随时调整）。",
+        loadingTokenInfo: "正在加载权限说明…",
+        selectAll: "全选",
+        selectNone: "全不选",
+        continueInstall: "继续安装",
+      },
+      market: {
+        title: "插件市场",
+        openMarket: "打开插件市场（Ctrl+Shift+A）",
+        hint: "市场（社区索引 / 模块 / Profile / 本地投放）已拆分为独立弹窗，避免和管理功能混在一起。",
+      },
+      persistScope: {
+        title: "这些改动保存到哪里？",
+        hint: "选「当前角色」只影响现在这个角色；选「全局默认」会变成所有角色的默认值（会和每个角色自己的设置合并）。",
+        aria: "插件配置保存范围",
+        roleOnly: "仅当前角色",
+        globalDefault: "全局默认",
+      },
+    },
   },
   expertModels: {
     title: "Expert Models（Module 9）",
