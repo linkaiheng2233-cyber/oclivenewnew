@@ -298,9 +298,9 @@ export const usePluginStore = defineStore("plugin", {
       this.panelVisible = true;
       try {
         await this.refresh();
-      } catch {
+      } catch (e) {
         this.pendingScrollToCommunityMarket = false;
-        throw;
+        throw e;
       }
     },
     clearPendingScrollCommunityMarket() {
