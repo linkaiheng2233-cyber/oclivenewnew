@@ -13,7 +13,7 @@ const emit = defineEmits<{
   (e: "update:selectedNodeId", v: string | null): void;
 }>();
 
-const { onConnect, onNodesChange, onEdgesChange, addEdges } = useVueFlow();
+const { onConnect, onNodesChange, onEdgesChange, addEdges, fitView } = useVueFlow();
 
 const internalNodes = ref<Node[]>([]);
 const internalEdges = ref<Edge[]>([]);
@@ -28,6 +28,13 @@ const selectedId = computed<string | null>({
 });
 
 const selectedEdgeId = ref<string | null>(null);
+const ctxMenu = ref<{
+  open: boolean;
+  x: number;
+  y: number;
+  kind: "node" | "edge" | "pane";
+  id: string | null;
+}>({ open: false, x: 0, y: 0, kind: "pane", id: null });
 
 const idSet = (nodes: ExpertNode[]): Set<string> =>
   new Set(nodes.map((n) => String((n as any).id ?? "").trim()).filter(Boolean));
@@ -137,6 +144,77 @@ function deleteSelectedEdge() {
   selectedEdgeId.value = null;
 }
 
+function closeCtxMenu() {
+  ctxMenu.value = { ...ctxMenu.value, open: false, id: null };
+}
+
+function onOpenCtxMenu(
+  ev: MouseEvent,
+  kind: "node" | "edge" | "pane",
+  id: string | null,
+) {
+  ev.preventDefault();
+  ev.stopPropagation();
+  ctxMenu.value = { open: true, x: ev.clientX, y: ev.clientY, kind, id };
+}
+
+function deleteCtxTarget() {
+  if (!ctxMenu.value.open) return;
+  if (ctxMenu.value.kind === "node" && ctxMenu.value.id) {
+    selectedId.value = ctxMenu.value.id;
+    deleteSelectedNode();
+  } else if (ctxMenu.value.kind === "edge" && ctxMenu.value.id) {
+    selectedEdgeId.value = ctxMenu.value.id;
+    deleteSelectedEdge();
+  }
+  closeCtxMenu();
+}
+
+function clearSelection() {
+  selectedId.value = null;
+  selectedEdgeId.value = null;
+  closeCtxMenu();
+}
+
+function tidyLayout() {
+  const g = props.modelValue;
+  const nodes = g.nodes ?? [];
+  let loraIdx = 0;
+  const nextNodes = nodes.map((n) => {
+    const baseX = 60;
+    const baseY = 60;
+    if (n.type === "base_model") {
+      return { ...(n as any), ui: { x: baseX, y: baseY } } as ExpertNode;
+    }
+    if (n.type === "prompt_style") {
+      return { ...(n as any), ui: { x: baseX + 520, y: baseY } } as ExpertNode;
+    }
+    if (n.type === "lora_adapter") {
+      const y = baseY + 120 + loraIdx * 90;
+      loraIdx += 1;
+      return { ...(n as any), ui: { x: baseX + 260, y } } as ExpertNode;
+    }
+    return n;
+  });
+  emitGraph({ ...g, nodes: nextNodes });
+  // Give Vue Flow a tick to render, then fit.
+  setTimeout(() => {
+    try {
+      fitView?.({ padding: 0.18, includeHiddenNodes: true });
+    } catch {
+      // ignore
+    }
+  }, 0);
+}
+
+function onFitView() {
+  try {
+    fitView?.({ padding: 0.18, includeHiddenNodes: true });
+  } catch {
+    // ignore
+  }
+}
+
 function onKeydown(ev: KeyboardEvent) {
   if (ev.key !== "Delete" && ev.key !== "Backspace") return;
   const tag = (ev.target as HTMLElement | null)?.tagName?.toLowerCase();
@@ -238,6 +316,8 @@ function addNode(kind: "base" | "lora" | "style") {
         <button type="button" class="emc-btn" @click="addNode('base')">+ BaseModel</button>
         <button type="button" class="emc-btn" @click="addNode('lora')">+ LoRA</button>
         <button type="button" class="emc-btn" @click="addNode('style')">+ PromptStyle</button>
+        <button type="button" class="emc-btn" @click="tidyLayout">整理布局</button>
+        <button type="button" class="emc-btn" @click="onFitView">适配视图</button>
         <button
           type="button"
           class="emc-btn danger"
@@ -267,11 +347,28 @@ function addNode(kind: "base" | "lora" | "style") {
       class="emc-flow"
       @node-click="selectedId = $event.node.id"
       @edge-click="selectedEdgeId = $event.edge.id"
+      @node-context-menu="onOpenCtxMenu($event.event, 'node', $event.node.id)"
+      @edge-context-menu="onOpenCtxMenu($event.event, 'edge', $event.edge.id)"
       @pane-click="
         selectedId = null;
         selectedEdgeId = null;
+        closeCtxMenu();
       "
+      @pane-context-menu="onOpenCtxMenu($event.event, 'pane', null)"
     />
+
+    <div v-if="ctxMenu.open" class="emc-ctx" :style="{ left: `${ctxMenu.x}px`, top: `${ctxMenu.y}px` }">
+      <button
+        v-if="ctxMenu.kind !== 'pane'"
+        type="button"
+        class="emc-ctx-item danger"
+        @click="deleteCtxTarget"
+      >
+        删除
+      </button>
+      <button type="button" class="emc-ctx-item" @click="clearSelection">清除选择</button>
+      <button type="button" class="emc-ctx-item" @click="closeCtxMenu">关闭</button>
+    </div>
   </div>
 </template>
 
@@ -324,6 +421,32 @@ function addNode(kind: "base" | "lora" | "style") {
 :deep(.emc-edge--selected path) {
   stroke: var(--danger-600, #c0392b) !important;
   stroke-width: 3 !important;
+}
+.emc-ctx {
+  position: fixed;
+  z-index: 9999;
+  min-width: 140px;
+  padding: 6px;
+  border-radius: 10px;
+  border: 1px solid var(--border-light);
+  background: var(--bg-elevated);
+  box-shadow: 0 12px 30px rgba(0, 0, 0, 0.22);
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+.emc-ctx-item {
+  text-align: left;
+  padding: 7px 10px;
+  border-radius: 8px;
+  border: 1px solid var(--border-light);
+  background: var(--bg-primary);
+  cursor: pointer;
+  font-size: 12px;
+}
+.emc-ctx-item.danger {
+  color: var(--danger-600, #c0392b);
+  border-color: color-mix(in srgb, var(--danger-600, #c0392b) 35%, var(--border-light));
 }
 </style>
 
