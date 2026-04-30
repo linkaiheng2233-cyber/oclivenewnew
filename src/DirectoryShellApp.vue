@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { storeToRefs } from "pinia";
 import { ref, watch } from "vue";
+import { useI18n } from "vue-i18n";
 import AsyncPluginVue from "./components/AsyncPluginVue.vue";
 import PluginErrorPlaceholder from "./components/PluginErrorPlaceholder.vue";
 import { useSinglePluginError } from "./composables/usePluginError";
@@ -18,6 +19,7 @@ const props = defineProps<{
 
 const pluginStore = usePluginStore();
 const { bootstrapEpoch } = storeToRefs(pluginStore);
+const { t } = useI18n();
 
 const reloadNonce = ref(0);
 const {
@@ -28,7 +30,7 @@ const {
 } = useSinglePluginError();
 
 function onFailed() {
-  setError("整壳 Vue 组件加载失败", null);
+  setError(String(t("directoryShellApp.errors.vueShellLoadFailed")), null);
 }
 
 function onCompileError(err: PluginVueCompileError) {
@@ -54,13 +56,13 @@ watch(bootstrapEpoch, () => {
   <div class="oclive-directory-shell-vue">
     <PluginErrorPlaceholder
       v-if="loadError"
-      title="整壳加载失败"
+      :title="String(t('directoryShellApp.errors.shellLoadFailedTitle'))"
       :message="loadError"
       :detail="errorDetail ?? undefined"
       :show-retry="true"
       :show-fallback="true"
-      retry-label="重试"
-      :fallback-label="'使用 HTML 版本'"
+      :retry-label="String(t('common.retry'))"
+      :fallback-label="String(t('pluginErrorPlaceholder.fallback'))"
       @retry="retry"
       @fallback="useHtmlFallback"
     />

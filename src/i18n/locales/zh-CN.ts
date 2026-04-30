@@ -75,6 +75,7 @@ export const zhCN = {
     loading: "加载中…",
     enable: "启用",
     remove: "删除",
+    retry: "重试",
     security: "安全",
     advanced: "高级",
   },
@@ -1046,6 +1047,17 @@ export const zhCN = {
   },
   pluginSlotEmbed: {
     ariaDefault: "插件嵌入区",
+  },
+  pluginErrorPlaceholder: {
+    retry: "加载失败，点击重试",
+    fallback: "使用 HTML 版本",
+    details: "查看详情",
+  },
+  directoryShellApp: {
+    errors: {
+      vueShellLoadFailed: "整壳 Vue 组件加载失败",
+      shellLoadFailedTitle: "整壳加载失败",
+    },
   },
   pluginDebug: {
     target: "目标",

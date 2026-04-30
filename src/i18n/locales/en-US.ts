@@ -80,6 +80,7 @@ export const enUS = {
     loading: "Loading…",
     enable: "Enable",
     remove: "Remove",
+    retry: "Retry",
     security: "Security",
     advanced: "Advanced",
   },
@@ -1062,6 +1063,17 @@ export const enUS = {
   },
   pluginSlotEmbed: {
     ariaDefault: "Plugin embed area",
+  },
+  pluginErrorPlaceholder: {
+    retry: "Load failed, click to retry",
+    fallback: "Use HTML version",
+    details: "View details",
+  },
+  directoryShellApp: {
+    errors: {
+      vueShellLoadFailed: "Shell Vue component failed to load.",
+      shellLoadFailedTitle: "Shell load failed",
+    },
   },
   pluginListItem: {
     aria: "Plugin {id}",
