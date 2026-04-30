@@ -438,6 +438,13 @@ export const enUS = {
       toastGitPulled: "Pulled updates from remote Git.",
       toastCheckUpdatesDone: "Check completed (online registry API is reserved).",
       toastZipUpdated: "Update completed. Please restart the app to take effect.",
+      toastZipIdMismatch: "manifest.id in zip ({zipId}) does not match target plugin ({targetId}).",
+      permTitleSideloadUpdate: "Sideload update {id}",
+      sideloadSourceLocalZip: "Source: local zip (sideload)",
+      confirmSideloadHighRiskUpdate:
+        "You selected high-risk permissions.\n\nSideload sources cannot automatically verify publisher identity.\n\nConfirm: continue updating from local zip?",
+      packStatusPickFirst: "Please select a plugin from the catalog first.",
+      packStatusDone: "Pack completed: {path}",
     },
     ui: {
       dialogLabel: "Plugin workbench (Professional mode)",

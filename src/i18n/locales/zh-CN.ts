@@ -426,6 +426,13 @@ export const zhCN = {
       toastGitPulled: "已从远程 Git 拉取更新。",
       toastCheckUpdatesDone: "检查完成（在线版本接口预留中）。",
       toastZipUpdated: "更新完成，请重启应用生效。",
+      toastZipIdMismatch: "zip 内 manifest.id={zipId} 与目标插件 {targetId} 不一致",
+      permTitleSideloadUpdate: "侧载更新 {id}",
+      sideloadSourceLocalZip: "来源：本地 zip（侧载）",
+      confirmSideloadHighRiskUpdate:
+        "你已勾选高风险权限。\n\n侧载来源无法自动校验发布者身份。\n\n请再次确认：是否继续从本地 zip 更新？",
+      packStatusPickFirst: "请先在目录中选择一个插件。",
+      packStatusDone: "打包完成：{path}",
     },
     ui: {
       dialogLabel: "插件工作台（专业模式）",

@@ -1272,9 +1272,7 @@ async function onInstallMarketEntry(row: PluginMarketEntryDto) {
   );
   if (accepted == null) return;
   if (hasHighRiskPermission(accepted)) {
-    const ok2 = window.confirm(
-      `你已勾选高风险权限。\n\n建议仅安装你信任的来源。\n\n请再次确认：是否继续安装？`,
-    );
+    const ok2 = window.confirm(String(t("pluginManagerV1.marketInstall.confirmHighRisk")));
     if (!ok2) return;
   }
   try {
@@ -1324,9 +1322,7 @@ async function onInstallMarketVersion(row: PluginMarketEntryDto) {
   );
   if (accepted == null) return;
   if (hasHighRiskPermission(accepted)) {
-    const ok2 = window.confirm(
-      `你已勾选高风险权限。\n\n建议仅安装你信任的来源。\n\n请再次确认：是否继续安装 v${v}？`,
-    );
+    const ok2 = window.confirm(String(t("pluginManagerV1.marketInstall.confirmHighRiskVersion", { version: v })));
     if (!ok2) return;
   }
   try {
@@ -1464,19 +1460,19 @@ async function onUpdateFromZip(pluginId: string) {
     if (preview.pluginId.trim() !== pluginId.trim()) {
       showToast(
         "error",
-        `zip 内 manifest.id=${preview.pluginId} 与目标插件 ${pluginId} 不一致`,
+        String(t("pluginManagerV1.installed.toastZipIdMismatch", { zipId: preview.pluginId, targetId: pluginId })),
       );
       return;
     }
     const accepted = await requestPermissionConsentWithTrust(
-      `侧载更新 ${pluginId}`,
+      String(t("pluginManagerV1.installed.permTitleSideloadUpdate", { id: pluginId })),
       preview.permissions ?? [],
-      "来源：本地 zip（侧载）",
+      String(t("pluginManagerV1.installed.sideloadSourceLocalZip")),
     );
     if (accepted == null) return;
     if (hasHighRiskPermission(accepted)) {
       const ok2 = window.confirm(
-        `你已勾选高风险权限。\n\n侧载来源无法自动校验发布者身份。\n\n请再次确认：是否继续从本地 zip 更新？`,
+        String(t("pluginManagerV1.installed.confirmSideloadHighRiskUpdate")),
       );
       if (!ok2) return;
     }
@@ -1490,12 +1486,12 @@ async function onUpdateFromZip(pluginId: string) {
 async function onPackSelectedPlugin(): Promise<void> {
   const pid = selectedWorkspacePlugin.value?.id?.trim() ?? "";
   if (!pid) {
-    pluginPackStatus.value = "请先在目录中选择一个插件。";
+    pluginPackStatus.value = String(t("pluginManagerV1.installed.packStatusPickFirst"));
     return;
   }
   try {
     const r = await packPlugin(pid);
-    pluginPackStatus.value = `打包完成：${r.archive_path}`;
+    pluginPackStatus.value = String(t("pluginManagerV1.installed.packStatusDone", { path: r.archive_path }));
   } catch (e) {
     pluginPackStatus.value = e instanceof Error ? e.message : String(e);
   }
