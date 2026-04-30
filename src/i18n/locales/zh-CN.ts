@@ -566,11 +566,22 @@ export const zhCN = {
     },
     permConsent: {
       dialogLabel: "插件安装权限确认",
+      trustSummaryTitle: "信任摘要",
       hint: "请选择你愿意授予的权限（安装后仍可在「专业模式 → 已安装插件 → 权限」中随时调整）。",
       loadingTokenInfo: "正在加载权限说明…",
       selectAll: "全选",
       selectNone: "全不选",
       continueInstall: "继续安装",
+    },
+    market: {
+      actions: {
+        rollbackOrSwitch: "回滚/切换",
+        installThisVersion: "安装此版本",
+        install: "安装",
+        updatable: "可更新",
+        installed: "已安装",
+        update: "更新",
+      },
     },
     communityIndex: {
       title: "社区索引（插件市场）",

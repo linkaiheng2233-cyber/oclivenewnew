@@ -47,7 +47,7 @@ const { t } = useI18n();
         <div class="pm2-modal" @click.stop>
           <div class="pm2-modal-h">{{ m.permConsentTitle }}</div>
           <p v-if="m.permConsentTrustSummary" class="pm2-trust-summary">
-            <span class="pm2-trust-h">信任摘要</span>
+            <span class="pm2-trust-h">{{ t("pluginMarketV2.permConsent.trustSummaryTitle") }}</span>
             <br />
             <span class="pm2-trust-mono" style="white-space: pre-wrap">{{
               m.permConsentTrustSummary
@@ -230,40 +230,69 @@ const { t } = useI18n();
             <span
               class="pm2-source-badge"
               :class="(row.source ?? '') === 'official' ? 'official' : 'third'"
-              :title="(row.source ?? '') === 'official' ? '官方默认索引' : '第三方索引源'"
+              :title="
+                (row.source ?? '') === 'official'
+                  ? t('pluginManagerV1.communityIndex.sourceBadge.officialTitle')
+                  : t('pluginManagerV1.communityIndex.sourceBadge.thirdTitle')
+              "
             >
-              {{ (row.source ?? "") === "official" ? "官方" : "第三方" }}
+              {{
+                (row.source ?? "") === "official"
+                  ? t("pluginManagerV1.communityIndex.sourceBadge.official")
+                  : t("pluginManagerV1.communityIndex.sourceBadge.third")
+              }}
             </span>
             <span
               v-if="m.marketEntryType(row) !== 'plugin'"
               class="pm2-entry-type-badge"
               :class="m.marketEntryType(row)"
-              :title="m.marketEntryType(row) === 'module' ? '无代码模块条目' : '无代码 Profile 条目'"
+              :title="
+                m.marketEntryType(row) === 'module'
+                  ? t('pluginManagerV1.communityIndex.entryTypeBadge.moduleTitle')
+                  : t('pluginManagerV1.communityIndex.entryTypeBadge.profileTitle')
+              "
             >
-              {{ m.marketEntryType(row) === "module" ? "模块" : "Profile" }}
+              {{
+                m.marketEntryType(row) === "module"
+                  ? t("pluginManagerV1.communityIndex.entryTypeBadge.module")
+                  : t("pluginManagerV1.communityIndex.entryTypeBadge.profile")
+              }}
             </span>
             <span class="pm2-muted"> · {{ row.name }} · v{{ row.version }}</span>
             <p v-if="row.source || row.publisher" class="pm2-market-trust">
-              <span v-if="row.source" class="pm2-muted">来源：{{ row.source }}</span>
-              <span v-if="row.publisher" class="pm2-muted"> · 发布者：{{ row.publisher }}</span>
-              <span v-if="(row.publicKeys ?? []).length" class="pm2-muted" title="索引登记的公钥状态">
-                · 公钥：{{
-                  (row.publicKeys ?? [])
-                    .map((k) => `${k.pubkeyId}${k.status ? `(${k.status})` : ""}`)
-                    .join("，")
+              <span v-if="row.source" class="pm2-muted">{{
+                t("pluginManagerV1.communityIndex.trustLine.source", { v: row.source })
+              }}</span>
+              <span v-if="row.publisher" class="pm2-muted">{{
+                " · " + t("pluginManagerV1.communityIndex.trustLine.publisher", { v: row.publisher })
+              }}</span>
+              <span
+                v-if="(row.publicKeys ?? []).length"
+                class="pm2-muted"
+                :title="t('pluginManagerV1.communityIndex.trust.pubkeysTitle')"
+              >
+                {{
+                  " · " +
+                  t("pluginManagerV1.communityIndex.trustLine.pubkeys", {
+                    v: (row.publicKeys ?? [])
+                      .map((k) => `${k.pubkeyId}${k.status ? `(${k.status})` : ""}`)
+                      .join("，"),
+                  })
                 }}
               </span>
             </p>
             <p class="pm2-market-rating">
               <span
                 class="pm2-rating-stars"
-                :title="`公开评价（总体）：${m.ratingTextForPluginId(row.id)}`"
+                :title="t('pluginManagerV1.communityIndex.reviews.overallTitle', { rating: m.ratingTextForPluginId(row.id) })"
               >
                 {{ m.ratingStarsForPluginId(row.id) }}
               </span>
               <span class="pm2-muted"> · {{ m.ratingTextForPluginId(row.id) }}</span>
               <template v-if="(row.publicKeys ?? []).length">
-                <span class="pm2-muted"> · 公钥口径：</span>
+                <span class="pm2-muted">
+                  · {{ t("pluginManagerV1.communityIndex.reviews.pubkeyDimension") }}
+                </span>
                 <span
                   v-for="k in row.publicKeys ?? []"
                   :key="`rv-${row.id}-${k.pubkeyId}`"
@@ -279,7 +308,7 @@ const { t } = useI18n();
                     type="button"
                     class="pm2-link pm2-link--tiny"
                     :disabled="m.pluginReviewsLoading"
-                    title="复制绑定该 pubkeyId 的评价 JSON 模板"
+                    :title="t('pluginManagerV1.communityIndex.reviews.copyPubkeyTemplateTitle')"
                     @click="
                       m.copyReviewTemplate({
                         pluginId: row.id,
@@ -288,7 +317,7 @@ const { t } = useI18n();
                       })
                     "
                   >
-                    复制
+                    {{ t("common.copy") }}
                   </button>
                 </span>
               </template>
@@ -298,7 +327,7 @@ const { t } = useI18n();
                 :disabled="m.pluginReviewsLoading"
                 @click="m.openPluginReviewsContribution"
               >
-                去提交评价
+                {{ t("pluginManagerV1.communityIndex.reviews.goContribute") }}
               </button>
               <button
                 type="button"
@@ -311,9 +340,9 @@ const { t } = useI18n();
                     version: m.marketPickedVersionForRow(row) ?? null,
                   })
                 "
-                title="复制一段可直接提交到 reviews.json 的 JSON 模板（建议按 pubkeyId 口径提交）"
+                :title="t('pluginManagerV1.communityIndex.reviews.copyOverallTemplateTitle')"
               >
-                复制模板
+                {{ t("pluginManagerV1.communityIndex.reviews.copyTemplate") }}
               </button>
               <button
                 type="button"
@@ -321,7 +350,7 @@ const { t } = useI18n();
                 :disabled="m.pluginReviewsLoading"
                 @click="m.syncPluginReviewsIndexNow"
               >
-                刷新评价
+                {{ t("pluginManagerV1.communityIndex.reviews.refresh") }}
               </button>
               <span v-if="m.pluginReviewsErr" class="pm2-err"> · {{ m.pluginReviewsErr }}</span>
             </p>
@@ -334,7 +363,7 @@ const { t } = useI18n();
               "
               class="pm2-market-reviews"
             >
-              <p class="pm2-market-reviews-h">最近短评：</p>
+              <p class="pm2-market-reviews-h">{{ t("pluginManagerV1.communityIndex.reviews.recent") }}</p>
               <ul class="pm2-market-reviews-list">
                 <li
                   v-for="r in m.getRecentReviews(m.pluginReviewsIndex?.reviews ?? [], {
@@ -354,13 +383,13 @@ const { t } = useI18n();
               v-if="m.marketEntryType(row) === 'module' && (row as any).module"
               class="pm2-market-details"
             >
-              <summary class="pm2-market-details-sum">查看模块声明</summary>
+              <summary class="pm2-market-details-sum">{{ t("pluginManagerV1.communityIndex.details.viewModule") }}</summary>
               <div class="pm2-market-details-body">
                 <p
                   v-if="(((row as any).module.plugins ?? []) as any[]).length"
                   class="pm2-muted"
                 >
-                  依赖插件：{{
+                  {{ t("pluginManagerV1.communityIndex.details.deps") }}：{{
                     ((row as any).module.plugins ?? []).map((x: any) => x.id).join("、")
                   }}
                 </p>
@@ -369,7 +398,7 @@ const { t } = useI18n();
                     m.summarizeOverrideBackends(((row as any).module.backends ?? null) as any).length
                   "
                 >
-                  <p class="pm2-muted">后端覆盖（会话级）：</p>
+                  <p class="pm2-muted">{{ t("pluginManagerV1.communityIndex.details.backends") }}</p>
                   <ul class="pm2-kv-list">
                     <li
                       v-for="(x, idx) in m.summarizeOverrideBackends(
@@ -382,20 +411,20 @@ const { t } = useI18n();
                     </li>
                   </ul>
                 </div>
-                <p v-else class="pm2-muted">未声明 backends 覆盖。</p>
+                <p v-else class="pm2-muted">{{ t("pluginManagerV1.communityIndex.details.noBackends") }}</p>
               </div>
             </details>
             <details
               v-else-if="m.marketEntryType(row) === 'profile' && (row as any).profile"
               class="pm2-market-details"
             >
-              <summary class="pm2-market-details-sum">查看 Profile 声明</summary>
+              <summary class="pm2-market-details-sum">{{ t("pluginManagerV1.communityIndex.details.viewProfile") }}</summary>
               <div class="pm2-market-details-body">
                 <p
                   v-if="(((row as any).profile.plugins ?? []) as any[]).length"
                   class="pm2-muted"
                 >
-                  依赖插件：{{
+                  {{ t("pluginManagerV1.communityIndex.details.deps") }}：{{
                     ((row as any).profile.plugins ?? []).map((x: any) => x.id).join("、")
                   }}
                 </p>
@@ -403,7 +432,7 @@ const { t } = useI18n();
                   v-if="(((row as any).profile.predeclaredPermissions ?? []) as any[]).length"
                   class="pm2-muted"
                 >
-                  预声明权限：{{
+                  {{ t("pluginManagerV1.communityIndex.details.predeclaredPerms") }}：{{
                     ((row as any).profile.predeclaredPermissions ?? []).join("、")
                   }}
                 </p>
@@ -412,7 +441,7 @@ const { t } = useI18n();
                     m.summarizeOverrideBackends(((row as any).profile.backends ?? null) as any).length
                   "
                 >
-                  <p class="pm2-muted">后端覆盖（会话级）：</p>
+                  <p class="pm2-muted">{{ t("pluginManagerV1.communityIndex.details.backends") }}</p>
                   <ul class="pm2-kv-list">
                     <li
                       v-for="(x, idx) in m.summarizeOverrideBackends(
@@ -425,11 +454,11 @@ const { t } = useI18n();
                     </li>
                   </ul>
                 </div>
-                <p v-else class="pm2-muted">未声明 backends 覆盖。</p>
+                <p v-else class="pm2-muted">{{ t("pluginManagerV1.communityIndex.details.noBackends") }}</p>
               </div>
             </details>
             <p v-if="(row.missingDependencies ?? []).length" class="pm2-err pm2-market-deps">
-              依赖缺失：{{ row.missingDependencies.join("、") }}
+              {{ t("pluginManagerV1.communityIndex.missingDeps") }}：{{ row.missingDependencies.join("、") }}
             </p>
           </div>
           <div class="pm2-market-actions">
@@ -439,7 +468,7 @@ const { t } = useI18n();
               class="pm2-btn secondary pm2-btn--sm"
               @click="m.onApplyModuleEntry(row)"
             >
-              应用模块
+              {{ t("pluginManagerV1.communityIndex.applyModule") }}
             </button>
             <button
               v-else-if="m.marketEntryType(row) === 'profile'"
@@ -447,7 +476,7 @@ const { t } = useI18n();
               class="pm2-btn secondary pm2-btn--sm"
               @click="m.onApplyProfileEntry(row)"
             >
-              应用 Profile
+              {{ t("pluginManagerV1.communityIndex.applyProfile") }}
             </button>
             <div v-else-if="(row.versions ?? []).length > 0" class="pm2-market-versions">
               <select
@@ -469,7 +498,11 @@ const { t } = useI18n();
                 class="pm2-btn secondary pm2-btn--sm"
                 @click="m.onInstallMarketVersion(row)"
               >
-                {{ row.installed ? "回滚/切换" : "安装此版本" }}
+                {{
+                  row.installed
+                    ? t("pluginMarketV2.market.actions.rollbackOrSwitch")
+                    : t("pluginMarketV2.market.actions.installThisVersion")
+                }}
               </button>
             </div>
             <button
@@ -478,18 +511,18 @@ const { t } = useI18n();
               class="pm2-btn secondary pm2-btn--sm"
               @click="m.onInstallMarketEntry(row)"
             >
-              安装
+              {{ t("pluginMarketV2.market.actions.install") }}
             </button>
             <template v-else>
-              <span v-if="row.hasUpdate" class="pm2-badge">可更新</span>
-              <span v-else class="pm2-muted">已安装</span>
+              <span v-if="row.hasUpdate" class="pm2-badge">{{ t("pluginMarketV2.market.actions.updatable") }}</span>
+              <span v-else class="pm2-muted">{{ t("pluginMarketV2.market.actions.installed") }}</span>
               <button
                 v-if="row.hasUpdate"
                 type="button"
                 class="pm2-btn secondary pm2-btn--sm"
                 @click="m.onUpdateMarketEntry(row)"
               >
-                更新
+                {{ t("pluginMarketV2.market.actions.update") }}
               </button>
             </template>
           </div>

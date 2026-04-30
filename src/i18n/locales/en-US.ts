@@ -585,12 +585,23 @@ export const enUS = {
     },
     permConsent: {
       dialogLabel: "Plugin install permissions",
+      trustSummaryTitle: "Trust summary",
       hint:
         "Choose which permissions you want to grant (you can adjust them later in Professional Mode → Installed plugins → Permissions).",
       loadingTokenInfo: "Loading permission descriptions…",
       selectAll: "Select all",
       selectNone: "Select none",
       continueInstall: "Continue installation",
+    },
+    market: {
+      actions: {
+        rollbackOrSwitch: "Rollback / switch",
+        installThisVersion: "Install this version",
+        install: "Install",
+        updatable: "Updatable",
+        installed: "Installed",
+        update: "Update",
+      },
     },
     communityIndex: {
       title: "Community Index (Plugin Market)",
