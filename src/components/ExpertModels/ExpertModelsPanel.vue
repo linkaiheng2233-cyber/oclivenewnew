@@ -523,7 +523,7 @@ async function onTogglePinned(indexFromLatest: number, pinned: boolean | null | 
 
 async function onImportBase(): Promise<void> {
   const picked = await open({
-    title: "选择一个 Base GGUF（将复制到 models/gguf）",
+    title: String(t("expertModels.import.baseDialogTitle")),
     multiple: false,
     directory: false,
     filters: [{ name: "GGUF", extensions: ["gguf"] }],
@@ -533,7 +533,7 @@ async function onImportBase(): Promise<void> {
   saving.value = true;
   try {
     await store.importBaseGguf(p);
-    showToast("success", "已导入 Base 模型到 models/gguf。");
+    showToast("success", String(t("expertModels.toasts.importedBase")));
   } catch (e) {
     showToast("error", e instanceof Error ? e.message : String(e));
   } finally {
@@ -543,7 +543,7 @@ async function onImportBase(): Promise<void> {
 
 async function onImportLora(): Promise<void> {
   const picked = await open({
-    title: "选择一个 LoRA GGUF（将复制到 models/loras）",
+    title: String(t("expertModels.import.loraDialogTitle")),
     multiple: false,
     directory: false,
     filters: [{ name: "GGUF", extensions: ["gguf"] }],
@@ -553,7 +553,7 @@ async function onImportLora(): Promise<void> {
   saving.value = true;
   try {
     await store.importLoraGguf(p);
-    showToast("success", "已导入 LoRA 到 models/loras。");
+    showToast("success", String(t("expertModels.toasts.importedLora")));
   } catch (e) {
     showToast("error", e instanceof Error ? e.message : String(e));
   } finally {
@@ -565,7 +565,7 @@ async function onSetRoleDefault(): Promise<void> {
   saving.value = true;
   try {
     await store.setRoleDefault();
-    showToast("success", "已设置为角色默认。");
+    showToast("success", String(t("expertModels.toasts.setAsRoleDefault")));
   } catch (e) {
     showToast("error", e instanceof Error ? e.message : String(e));
   } finally {
@@ -574,12 +574,12 @@ async function onSetRoleDefault(): Promise<void> {
 }
 
 async function onClearSessionOverride(): Promise<void> {
-  const ok = window.confirm("将清除当前会话的 Expert Models 覆盖，并回退到角色默认/角色包默认。继续吗？");
+  const ok = window.confirm(String(t("expertModels.confirm.clearSessionOverrideAndApply")));
   if (!ok) return;
   saving.value = true;
   try {
     await store.clearSessionOverrideAndApply();
-    showToast("success", "已清除会话覆盖并重新应用。");
+    showToast("success", String(t("expertModels.toasts.clearedSessionOverrideAndApplied")));
   } catch (e) {
     showToast("error", e instanceof Error ? e.message : String(e));
   } finally {
@@ -588,12 +588,12 @@ async function onClearSessionOverride(): Promise<void> {
 }
 
 async function onClearRoleDefault(): Promise<void> {
-  const ok = window.confirm("将清除该角色的 Expert Models 默认配置（不会影响角色包原文件）。继续吗？");
+  const ok = window.confirm(String(t("expertModels.confirm.clearRoleDefault")));
   if (!ok) return;
   saving.value = true;
   try {
     await store.clearRoleDefault();
-    showToast("success", "已清除角色默认。");
+    showToast("success", String(t("expertModels.toasts.clearedRoleDefault")));
   } catch (e) {
     showToast("error", e instanceof Error ? e.message : String(e));
   } finally {
@@ -611,9 +611,9 @@ async function onSaveWorkflowAs(): Promise<void> {
   saving.value = true;
   try {
     const name = workflowNameDraft.value.trim();
-    const wf = await store.saveWorkflow(name || "未命名工作流", null);
+    const wf = await store.saveWorkflow(name || String(t("expertModels.workflows.unnamedDefault")), null);
     workflowNameDraft.value = wf.name;
-    showToast("success", `已保存工作流：${wf.name}`);
+    showToast("success", String(t("expertModels.workflows.toastSaved", { name: wf.name })));
   } catch (e) {
     showToast("error", e instanceof Error ? e.message : String(e));
   } finally {
@@ -624,17 +624,20 @@ async function onSaveWorkflowAs(): Promise<void> {
 async function onOverwriteWorkflow(): Promise<void> {
   const wid = store.pickedWorkflowId.trim();
   if (!wid) {
-    showToast("info", "请先选择一个工作流再覆盖保存。");
+    showToast("info", String(t("expertModels.workflows.toastPickFirstForOverwrite")));
     return;
   }
-  const ok = window.confirm("将覆盖保存当前选中的工作流。继续吗？");
+  const ok = window.confirm(String(t("expertModels.workflows.confirmOverwrite")));
   if (!ok) return;
   saving.value = true;
   try {
-    const name = workflowNameDraft.value.trim() || store.workflows.find((w) => w.id === wid)?.name || "工作流";
+    const name =
+      workflowNameDraft.value.trim() ||
+      store.workflows.find((w) => w.id === wid)?.name ||
+      String(t("expertModels.workflows.defaultName"));
     const wf = await store.saveWorkflow(name, wid);
     workflowNameDraft.value = wf.name;
-    showToast("success", `已覆盖保存：${wf.name}`);
+    showToast("success", String(t("expertModels.workflows.toastOverwritten", { name: wf.name })));
   } catch (e) {
     showToast("error", e instanceof Error ? e.message : String(e));
   } finally {
@@ -645,14 +648,14 @@ async function onOverwriteWorkflow(): Promise<void> {
 async function onLoadWorkflow(): Promise<void> {
   const wid = store.pickedWorkflowId.trim();
   if (!wid) {
-    showToast("info", "请先选择一个工作流。");
+    showToast("info", String(t("expertModels.workflows.toastPickFirst")));
     return;
   }
   saving.value = true;
   try {
     const wf = await store.loadWorkflow(wid);
     workflowNameDraft.value = wf.name;
-    showToast("success", `已载入工作流：${wf.name}`);
+    showToast("success", String(t("expertModels.workflows.toastLoaded", { name: wf.name })));
   } catch (e) {
     showToast("error", e instanceof Error ? e.message : String(e));
   } finally {
@@ -922,38 +925,38 @@ async function onImportWorkflowJson(): Promise<void> {
       <div class="em-advanced-body">
         <div class="em-grid">
       <div class="em-card">
-        <div class="em-card-h">Base 模型（GGUF）</div>
+        <div class="em-card-h">{{ t("expertModels.form.baseTitle") }}</div>
         <div class="em-row3">
           <button class="em-btn secondary" type="button" :disabled="saving || store.loading" @click="onImportBase">
-            导入 GGUF…
+            {{ t("expertModels.form.importBase") }}
           </button>
         </div>
         <select v-model="selectedBaseModelPath" class="em-select">
-          <option value="">（不设置 / 保持当前）</option>
+          <option value="">{{ t("expertModels.form.keepCurrent") }}</option>
           <option v-for="m in store.baseModels" :key="m.path" :value="m.path">
             {{ m.name }}
           </option>
         </select>
-        <div class="em-muted">目录：`{app_data}/models/gguf/*.gguf`</div>
+        <div class="em-muted">{{ t("expertModels.form.baseDirHint") }}</div>
       </div>
 
       <div class="em-card">
-        <div class="em-card-h">LoRA（可多选）</div>
+        <div class="em-card-h">{{ t("expertModels.form.loraTitle") }}</div>
         <div class="em-row3">
           <button class="em-btn secondary" type="button" :disabled="saving || store.loading" @click="onImportLora">
-            导入 LoRA…
+            {{ t("expertModels.form.importLora") }}
           </button>
         </div>
         <div class="em-lora-add">
           <select class="em-select" @change="addLora(($event.target as HTMLSelectElement).value)">
-            <option value="">添加一个 LoRA…</option>
+            <option value="">{{ t("expertModels.form.addLoraPlaceholder") }}</option>
             <option v-for="m in store.loras" :key="m.path" :value="m.path">
               {{ m.name }}
             </option>
           </select>
         </div>
 
-        <div v-if="loraNodes.length === 0" class="em-muted">尚未添加 LoRA。</div>
+        <div v-if="loraNodes.length === 0" class="em-muted">{{ t("expertModels.form.noLora") }}</div>
         <ul v-else class="em-lora-list">
           <li v-for="n in loraNodes" :key="n.id" class="em-lora">
             <label class="em-row">
@@ -976,7 +979,7 @@ async function onImportWorkflowJson(): Promise<void> {
 
             <div class="em-row em-row2">
               <label class="em-muted">
-                强度
+                {{ t("expertModels.form.strengthShort") }}
                 <input
                   class="em-num"
                   type="number"
@@ -1000,20 +1003,20 @@ async function onImportWorkflowJson(): Promise<void> {
             </div>
 
             <div class="em-lora-actions">
-              <button class="em-mini" type="button" @click="moveLora(n.id, -1)">上移</button>
-              <button class="em-mini" type="button" @click="moveLora(n.id, 1)">下移</button>
-              <button class="em-mini danger" type="button" @click="removeLora(n.id)">移除</button>
+              <button class="em-mini" type="button" @click="moveLora(n.id, -1)">{{ t("expertModels.form.moveUp") }}</button>
+              <button class="em-mini" type="button" @click="moveLora(n.id, 1)">{{ t("expertModels.form.moveDown") }}</button>
+              <button class="em-mini danger" type="button" @click="removeLora(n.id)">{{ t("expertModels.form.remove") }}</button>
             </div>
           </li>
         </ul>
 
-        <div class="em-muted">目录：`{app_data}/models/loras/*.gguf`（也兼容放在 gguf 目录）</div>
+        <div class="em-muted">{{ t("expertModels.form.loraDirHint") }}</div>
       </div>
 
       <div class="em-card">
-        <div class="em-card-h">当前生效（用于排错）</div>
+        <div class="em-card-h">{{ t("expertModels.effective.title") }}</div>
         <div class="em-muted" style="margin-top: 0">
-          该块展示的是“当前生效配置”（会话覆盖 / 角色默认 / 角色包默认），不等同于你正在编辑的草稿。
+          {{ t("expertModels.effective.hint") }}
         </div>
         <div class="em-kv">
           <div class="em-k">Base</div>
@@ -1021,13 +1024,13 @@ async function onImportWorkflowJson(): Promise<void> {
             <span v-if="effectiveBasePath" class="em-mono">{{
               effectiveBasePath.split(/[\\/]/).slice(-1)[0]
             }}</span>
-            <span v-else class="em-muted">（未设置 / 保持当前）</span>
+            <span v-else class="em-muted">{{ t("expertModels.form.keepCurrent") }}</span>
           </div>
         </div>
         <div class="em-kv">
           <div class="em-k">LoRA</div>
           <div class="em-v">
-            <div v-if="effectiveLoras.length === 0" class="em-muted">（无 / 未启用）</div>
+            <div v-if="effectiveLoras.length === 0" class="em-muted">{{ t("expertModels.effective.noLoras") }}</div>
             <ul v-else class="em-eff-list">
               <li v-for="n in effectiveLoras" :key="n.id" class="em-eff-li">
                 <span class="em-mono">{{ n.ggufPath.split(/[\\/]/).slice(-1)[0] }}</span>
@@ -1039,45 +1042,45 @@ async function onImportWorkflowJson(): Promise<void> {
         <div class="em-kv">
           <div class="em-k">PromptStyle</div>
           <div class="em-v">
-            <span v-if="store.effectivePromptStyle" class="em-muted">（已覆盖）</span>
-            <span v-else class="em-muted">（未覆盖）</span>
+            <span v-if="store.effectivePromptStyle" class="em-muted">{{ t("expertModels.effective.promptStyleOverridden") }}</span>
+            <span v-else class="em-muted">{{ t("expertModels.effective.promptStyleNotOverridden") }}</span>
           </div>
         </div>
       </div>
 
       <div class="em-card">
-        <div class="em-card-h">PromptStyle（可选覆盖）</div>
+        <div class="em-card-h">{{ t("expertModels.form.promptStyleTitle") }}</div>
         <label class="em-field">
-          <div class="em-label">回复质量锚点（覆盖角色包/默认）</div>
+          <div class="em-label">{{ t("expertModels.form.replyQualityAnchorHint") }}</div>
           <textarea
             class="em-text"
             rows="4"
             :value="store.draftPromptStyle?.replyQualityAnchor ?? ''"
             @input="ensurePromptStyle().replyQualityAnchor = ($event.target as HTMLTextAreaElement).value"
-            placeholder="留空表示不覆盖"
+            :placeholder="String(t('expertModels.form.emptyMeansNoOverride'))"
           />
         </label>
         <label class="em-field">
-          <div class="em-label">核心人设（覆盖 role.core_personality）</div>
+          <div class="em-label">{{ t("expertModels.form.corePersonalityHint") }}</div>
           <textarea
             class="em-text"
             rows="3"
             :value="store.draftPromptStyle?.corePersonality ?? ''"
             @input="ensurePromptStyle().corePersonality = ($event.target as HTMLTextAreaElement).value"
-            placeholder="留空表示不覆盖"
+            :placeholder="String(t('expertModels.form.emptyMeansNoOverride'))"
           />
         </label>
         <label class="em-field">
-          <div class="em-label">描述（覆盖 role.description）</div>
+          <div class="em-label">{{ t("expertModels.form.descriptionHint") }}</div>
           <textarea
             class="em-text"
             rows="2"
             :value="store.draftPromptStyle?.description ?? ''"
             @input="ensurePromptStyle().description = ($event.target as HTMLTextAreaElement).value"
-            placeholder="留空表示不覆盖"
+            :placeholder="String(t('expertModels.form.emptyMeansNoOverride'))"
           />
         </label>
-        <div class="em-muted">提示：未设置时，Prompt 行为与当前版本完全一致。</div>
+        <div class="em-muted">{{ t("expertModels.form.promptStyleFooterHint") }}</div>
       </div>
         </div>
       </div>
@@ -1085,38 +1088,38 @@ async function onImportWorkflowJson(): Promise<void> {
 
     <div v-else class="em-grid">
       <div class="em-card">
-        <div class="em-card-h">Base 模型（GGUF）</div>
+        <div class="em-card-h">{{ t("expertModels.form.baseTitle") }}</div>
         <div class="em-row3">
           <button class="em-btn secondary" type="button" :disabled="saving || store.loading" @click="onImportBase">
-            导入 GGUF…
+            {{ t("expertModels.form.importBase") }}
           </button>
         </div>
         <select v-model="selectedBaseModelPath" class="em-select">
-          <option value="">（不设置 / 保持当前）</option>
+          <option value="">{{ t("expertModels.form.keepCurrent") }}</option>
           <option v-for="m in store.baseModels" :key="m.path" :value="m.path">
             {{ m.name }}
           </option>
         </select>
-        <div class="em-muted">目录：`{app_data}/models/gguf/*.gguf`</div>
+        <div class="em-muted">{{ t("expertModels.form.baseDirHint") }}</div>
       </div>
 
       <div class="em-card">
-        <div class="em-card-h">LoRA（可多选）</div>
+        <div class="em-card-h">{{ t("expertModels.form.loraTitle") }}</div>
         <div class="em-row3">
           <button class="em-btn secondary" type="button" :disabled="saving || store.loading" @click="onImportLora">
-            导入 LoRA…
+            {{ t("expertModels.form.importLora") }}
           </button>
         </div>
         <div class="em-lora-add">
           <select class="em-select" @change="addLora(($event.target as HTMLSelectElement).value)">
-            <option value="">添加一个 LoRA…</option>
+            <option value="">{{ t("expertModels.form.addLoraPlaceholder") }}</option>
             <option v-for="m in store.loras" :key="m.path" :value="m.path">
               {{ m.name }}
             </option>
           </select>
         </div>
 
-        <div v-if="loraNodes.length === 0" class="em-muted">尚未添加 LoRA。</div>
+        <div v-if="loraNodes.length === 0" class="em-muted">{{ t("expertModels.form.noLora") }}</div>
         <ul v-else class="em-lora-list">
           <li v-for="n in loraNodes" :key="n.id" class="em-lora">
             <label class="em-row">
@@ -1139,7 +1142,7 @@ async function onImportWorkflowJson(): Promise<void> {
 
             <div class="em-row em-row2">
               <label class="em-muted">
-                强度
+                {{ t("expertModels.form.strengthShort") }}
                 <input
                   class="em-num"
                   type="number"
@@ -1163,20 +1166,20 @@ async function onImportWorkflowJson(): Promise<void> {
             </div>
 
             <div class="em-lora-actions">
-              <button class="em-mini" type="button" @click="moveLora(n.id, -1)">上移</button>
-              <button class="em-mini" type="button" @click="moveLora(n.id, 1)">下移</button>
-              <button class="em-mini danger" type="button" @click="removeLora(n.id)">移除</button>
+              <button class="em-mini" type="button" @click="moveLora(n.id, -1)">{{ t("expertModels.form.moveUp") }}</button>
+              <button class="em-mini" type="button" @click="moveLora(n.id, 1)">{{ t("expertModels.form.moveDown") }}</button>
+              <button class="em-mini danger" type="button" @click="removeLora(n.id)">{{ t("expertModels.form.remove") }}</button>
             </div>
           </li>
         </ul>
 
-        <div class="em-muted">目录：`{app_data}/models/loras/*.gguf`（也兼容放在 gguf 目录）</div>
+        <div class="em-muted">{{ t("expertModels.form.loraDirHint") }}</div>
       </div>
 
       <div class="em-card">
-        <div class="em-card-h">当前生效（用于排错）</div>
+        <div class="em-card-h">{{ t("expertModels.effective.title") }}</div>
         <div class="em-muted" style="margin-top: 0">
-          该块展示的是“当前生效配置”（会话覆盖 / 角色默认 / 角色包默认），不等同于你正在编辑的草稿。
+          {{ t("expertModels.effective.hint") }}
         </div>
         <div class="em-kv">
           <div class="em-k">Base</div>
@@ -1184,13 +1187,13 @@ async function onImportWorkflowJson(): Promise<void> {
             <span v-if="effectiveBasePath" class="em-mono">{{
               effectiveBasePath.split(/[\\/]/).slice(-1)[0]
             }}</span>
-            <span v-else class="em-muted">（未设置 / 保持当前）</span>
+            <span v-else class="em-muted">{{ t("expertModels.form.keepCurrent") }}</span>
           </div>
         </div>
         <div class="em-kv">
           <div class="em-k">LoRA</div>
           <div class="em-v">
-            <div v-if="effectiveLoras.length === 0" class="em-muted">（无 / 未启用）</div>
+            <div v-if="effectiveLoras.length === 0" class="em-muted">{{ t("expertModels.effective.noLoras") }}</div>
             <ul v-else class="em-eff-list">
               <li v-for="n in effectiveLoras" :key="n.id" class="em-eff-li">
                 <span class="em-mono">{{ n.ggufPath.split(/[\\/]/).slice(-1)[0] }}</span>
@@ -1202,84 +1205,84 @@ async function onImportWorkflowJson(): Promise<void> {
         <div class="em-kv">
           <div class="em-k">PromptStyle</div>
           <div class="em-v">
-            <span v-if="store.effectivePromptStyle" class="em-muted">（已覆盖）</span>
-            <span v-else class="em-muted">（未覆盖）</span>
+            <span v-if="store.effectivePromptStyle" class="em-muted">{{ t("expertModels.effective.promptStyleOverridden") }}</span>
+            <span v-else class="em-muted">{{ t("expertModels.effective.promptStyleNotOverridden") }}</span>
           </div>
         </div>
       </div>
 
       <div class="em-card">
-        <div class="em-card-h">PromptStyle（可选覆盖）</div>
+        <div class="em-card-h">{{ t("expertModels.form.promptStyleTitle") }}</div>
         <label class="em-field">
-          <div class="em-label">回复质量锚点（覆盖角色包/默认）</div>
+          <div class="em-label">{{ t("expertModels.form.replyQualityAnchorHint") }}</div>
           <textarea
             class="em-text"
             rows="4"
             :value="store.draftPromptStyle?.replyQualityAnchor ?? ''"
             @input="ensurePromptStyle().replyQualityAnchor = ($event.target as HTMLTextAreaElement).value"
-            placeholder="留空表示不覆盖"
+            :placeholder="String(t('expertModels.form.emptyMeansNoOverride'))"
           />
         </label>
         <label class="em-field">
-          <div class="em-label">核心人设（覆盖 role.core_personality）</div>
+          <div class="em-label">{{ t("expertModels.form.corePersonalityHint") }}</div>
           <textarea
             class="em-text"
             rows="3"
             :value="store.draftPromptStyle?.corePersonality ?? ''"
             @input="ensurePromptStyle().corePersonality = ($event.target as HTMLTextAreaElement).value"
-            placeholder="留空表示不覆盖"
+            :placeholder="String(t('expertModels.form.emptyMeansNoOverride'))"
           />
         </label>
         <label class="em-field">
-          <div class="em-label">描述（覆盖 role.description）</div>
+          <div class="em-label">{{ t("expertModels.form.descriptionHint") }}</div>
           <textarea
             class="em-text"
             rows="2"
             :value="store.draftPromptStyle?.description ?? ''"
             @input="ensurePromptStyle().description = ($event.target as HTMLTextAreaElement).value"
-            placeholder="留空表示不覆盖"
+            :placeholder="String(t('expertModels.form.emptyMeansNoOverride'))"
           />
         </label>
-        <div class="em-muted">提示：未设置时，Prompt 行为与当前版本完全一致。</div>
+        <div class="em-muted">{{ t("expertModels.form.promptStyleFooterHint") }}</div>
       </div>
     </div>
 
     <div class="em-footer">
       <button class="em-btn" type="button" :disabled="saving || store.loading" @click="onApplySession">
-        {{ saving ? "应用中…" : "应用到当前会话（重启本地 llama）" }}
+        {{ saving ? t("expertModels.footer.applying") : t("expertModels.footer.applyToSession") }}
       </button>
       <button
         class="em-btn secondary"
         type="button"
         :disabled="saving || store.loading || !store.canRollbackLastRun"
         @click="onRollbackLastRun"
-        title="回滚到上一次已应用的配置（仅当前会话）"
+        :title="String(t('expertModels.footer.rollbackLastTitle'))"
       >
-        回滚上一次 Run
+        {{ t("expertModels.footer.rollbackLast") }}
       </button>
       <details class="em-runs">
-        <summary class="em-btn secondary" :aria-disabled="saving || store.loading">Run 历史（{{ store.runs.length }}）</summary>
+        <summary class="em-btn secondary" :aria-disabled="saving || store.loading">{{ t("expertModels.runHistory.ui.title", { n: store.runs.length }) }}</summary>
         <div class="em-runs-body">
           <div v-if="applying" class="em-run-applying">
-            <b>正在应用…</b>
-            <span class="em-muted2">将触发本地 llama 重启；请稍等。</span>
+            <b>{{ t("expertModels.runHistory.ui.applyingTitle") }}</b>
+            <span class="em-muted2">{{ t("expertModels.runHistory.ui.applyingHint") }}</span>
           </div>
           <div class="em-runs-actions">
             <button class="em-btn secondary" type="button" :disabled="saving || store.loading" @click="onRefresh">
-              刷新
+              {{ t("expertModels.actions.refresh") }}
             </button>
             <button class="em-btn secondary" type="button" :disabled="saving || store.loading" @click="onExportLatestPinnedRun">
-              一键导出★
+              {{ t("expertModels.runHistory.ui.exportPinned") }}
             </button>
             <select v-model="clearMode" class="em-select" style="min-width: 140px">
-              <option value="all">清空全部</option>
-              <option value="failed">仅清空 FAILED</option>
-              <option value="ok">仅清空 OK</option>
-              <option value="unpinned">仅清空未星标</option>
+              <option value="all">{{ t("expertModels.runHistory.clearMode.all") }}</option>
+              <option value="failed">{{ t("expertModels.runHistory.clearMode.failed") }}</option>
+              <option value="ok">{{ t("expertModels.runHistory.clearMode.ok") }}</option>
+              <option value="unpinned">{{ t("expertModels.runHistory.clearMode.unpinned") }}</option>
             </select>
             <label class="em-muted2" style="display: inline-flex; align-items: center; gap: 6px">
               <input v-model="clearKeepPinned" type="checkbox" />
-              保留星标
+              {{ t("expertModels.runHistory.keepPinned") }}
             </label>
             <button
               class="em-btn secondary"
@@ -1287,24 +1290,24 @@ async function onImportWorkflowJson(): Promise<void> {
               :disabled="saving || store.loading || !store.runs.length"
               @click="onClearRunsAdvanced"
             >
-              执行清空
+              {{ t("expertModels.runHistory.ui.clearExecute") }}
             </button>
             <select v-model="runFilterStatus" class="em-select" style="min-width: 120px">
-              <option value="all">全部</option>
+              <option value="all">{{ t("expertModels.runHistory.ui.filterStatus.all") }}</option>
               <option value="ok">OK</option>
               <option value="failed">FAILED</option>
-              <option value="unknown">未知</option>
+              <option value="unknown">{{ t("expertModels.runHistory.ui.filterStatus.unknown") }}</option>
             </select>
             <input
               v-model="runFilterText"
               class="em-input"
               type="text"
-              placeholder="搜索 Base 文件名…"
+              :placeholder="String(t('expertModels.runHistory.ui.searchBasePlaceholder'))"
               style="min-width: 180px"
             />
           </div>
           <div v-if="!store.runs.length" class="em-muted">
-            暂无 Run 历史。每次“应用到当前会话”前都会记录一条快照。
+            {{ t("expertModels.runHistory.ui.emptyHint") }}
           </div>
           <div v-else class="em-run-list">
             <div v-for="r in filteredRuns" :key="String(r.indexFromLatest)" class="em-run-wrap">
@@ -1319,27 +1322,35 @@ async function onImportWorkflowJson(): Promise<void> {
                       class="em-btn secondary em-pin"
                       type="button"
                       :disabled="saving || store.loading"
-                      :title="r.pinned ? '取消星标（允许被裁剪/清空）' : '星标（优先保留）'"
+                      :title="
+                        r.pinned
+                          ? t('expertModels.runHistory.ui.pinTitle.unpin')
+                          : t('expertModels.runHistory.ui.pinTitle.pin')
+                      "
                       @click="onTogglePinned(r.indexFromLatest, r.pinned ?? false)"
                     >
                       {{ r.pinned ? "★" : "☆" }}
                     </button>
                   </div>
                   <div class="em-run-meta">
-                    <span class="em-pill2">Base：{{ r.targetBaseName || "(未设置)" }}</span>
+                    <span class="em-pill2">{{ t("expertModels.runHistory.ui.basePill", { name: r.targetBaseName || String(t("expertModels.common.notSet")) }) }}</span>
                     <span class="em-pill2">LoRA：{{ r.targetLoraCount }}</span>
                     <span v-if="r.targetHasPromptStyle" class="em-pill2">PromptStyle</span>
                     <span v-if="r.applyOk === true" class="em-pill2 em-ok">OK</span>
                     <span v-else-if="r.applyOk === false" class="em-pill2 em-bad" :title="r.applyError || ''">FAILED</span>
-                    <span v-if="r.applyDurationMs != null" class="em-pill2">耗时：{{ r.applyDurationMs }}ms</span>
+                    <span v-if="r.applyDurationMs != null" class="em-pill2">{{ t("expertModels.runHistory.ui.durationPill", { ms: r.applyDurationMs }) }}</span>
                   </div>
                 </div>
                 <div class="em-run-actions">
                   <button class="em-btn secondary" type="button" :disabled="saving || store.loading" @click="onToggleRunDetail(r.indexFromLatest)">
-                    {{ expandedRunIndex === r.indexFromLatest ? "收起详情" : "详情" }}
+                    {{
+                      expandedRunIndex === r.indexFromLatest
+                        ? t("expertModels.runHistory.ui.collapseDetail")
+                        : t("expertModels.runHistory.ui.expandDetail")
+                    }}
                   </button>
                   <button class="em-btn secondary" type="button" :disabled="saving || store.loading" @click="onRollbackToRun(r.indexFromLatest)">
-                    回滚到此处
+                    {{ t("expertModels.runHistory.ui.rollbackToHere") }}
                   </button>
                   <button
                     v-if="r.applyOk === false"
@@ -1348,44 +1359,44 @@ async function onImportWorkflowJson(): Promise<void> {
                     :disabled="saving || store.loading"
                     @click="onRetryRun(r.indexFromLatest)"
                   >
-                    重试
+                    {{ t("expertModels.runHistory.ui.retry") }}
                   </button>
                   <button class="em-btn secondary" type="button" :disabled="saving || store.loading" @click="onCopyRunDiagnostics(r.indexFromLatest)">
-                    复制诊断
+                    {{ t("expertModels.runHistory.ui.copyDiagnostics") }}
                   </button>
                   <button class="em-btn secondary" type="button" :disabled="saving || store.loading" @click="onSaveRunAsWorkflow(r.indexFromLatest)">
-                    保存为工作流
+                    {{ t("expertModels.runHistory.ui.saveAsWorkflow") }}
                   </button>
                   <button class="em-btn secondary" type="button" :disabled="saving || store.loading" @click="onExportRunAsWorkflowJson(r.indexFromLatest)">
-                    导出工作流
+                    {{ t("expertModels.runHistory.ui.exportWorkflow") }}
                   </button>
                 </div>
               </div>
               <div v-if="expandedRunIndex != null && expandedRunIndex === r.indexFromLatest" class="em-run-detail">
-                <div v-if="!expandedRunDetail" class="em-muted">加载详情中…</div>
+                <div v-if="!expandedRunDetail" class="em-muted">{{ t("expertModels.runHistory.ui.loadingDetail") }}</div>
                 <div v-else class="em-run-detail-grid">
                   <div>
-                    <div class="em-muted">目标（apply）</div>
-                    <div><b>Base</b>：{{ expandedRunDetail.targetBaseName || "(未设置)" }}</div>
+                    <div class="em-muted">{{ t("expertModels.runHistory.ui.targetTitle") }}</div>
+                    <div><b>Base</b>：{{ expandedRunDetail.targetBaseName || String(t("expertModels.common.notSet")) }}</div>
                     <div><b>LoRA</b>：{{ expandedRunDetail.targetLoraCount }}</div>
-                    <div><b>PromptStyle</b>：{{ expandedRunDetail.targetHasPromptStyle ? "是" : "否" }}</div>
+                    <div><b>PromptStyle</b>：{{ expandedRunDetail.targetHasPromptStyle ? t("expertModels.common.yes") : t("expertModels.common.no") }}</div>
                   </div>
                   <div>
-                    <div class="em-muted">回滚快照（apply 前）</div>
-                    <div><b>Base</b>：{{ expandedRunDetail.snapshotBaseName || "(未设置)" }}</div>
+                    <div class="em-muted">{{ t("expertModels.runHistory.ui.snapshotTitle") }}</div>
+                    <div><b>Base</b>：{{ expandedRunDetail.snapshotBaseName || String(t("expertModels.common.notSet")) }}</div>
                     <div><b>LoRA</b>：{{ expandedRunDetail.snapshotLoraCount }}</div>
-                    <div><b>PromptStyle</b>：{{ expandedRunDetail.snapshotHasPromptStyle ? "是" : "否" }}</div>
+                    <div><b>PromptStyle</b>：{{ expandedRunDetail.snapshotHasPromptStyle ? t("expertModels.common.yes") : t("expertModels.common.no") }}</div>
                   </div>
                   <div style="grid-column: 1 / -1" v-if="expandedRunDetail.applyOk === false">
-                    <div class="em-muted">错误信息</div>
-                    <pre class="em-pre">{{ expandedRunDetail.applyError || "(无错误信息)" }}</pre>
+                    <div class="em-muted">{{ t("expertModels.runHistory.ui.errorTitle") }}</div>
+                    <pre class="em-pre">{{ expandedRunDetail.applyError || String(t("expertModels.common.empty")) }}</pre>
                   </div>
                   <div style="grid-column: 1 / -1" v-else-if="expandedRunDetail.applyOk === true">
-                    <div class="em-muted">结果</div>
-                    <div><b>modelPath</b>：{{ expandedRunDetail.applyModelPath || "(未返回)" }}</div>
-                    <div><b>durationMs</b>：{{ expandedRunDetail.applyDurationMs ?? "(未返回)" }}</div>
+                    <div class="em-muted">{{ t("expertModels.runHistory.ui.resultTitle") }}</div>
+                    <div><b>modelPath</b>：{{ expandedRunDetail.applyModelPath || String(t("expertModels.runHistory.ui.notReturned")) }}</div>
+                    <div><b>durationMs</b>：{{ expandedRunDetail.applyDurationMs ?? String(t("expertModels.runHistory.ui.notReturned")) }}</div>
                     <details>
-                      <summary class="em-muted2">llamaArgs（展开）</summary>
+                      <summary class="em-muted2">{{ t("expertModels.runHistory.ui.llamaArgsExpand") }}</summary>
                       <pre class="em-pre">{{ expandedRunDetail.applyLlamaArgs || "" }}</pre>
                     </details>
                   </div>
@@ -1396,13 +1407,13 @@ async function onImportWorkflowJson(): Promise<void> {
         </div>
       </details>
       <button class="em-btn secondary" type="button" :disabled="saving || store.loading" @click="onSetRoleDefault">
-        设为角色默认
+        {{ t("expertModels.footer.setRoleDefault") }}
       </button>
       <button class="em-btn secondary" type="button" :disabled="saving || store.loading" @click="onClearSessionOverride">
-        清除会话覆盖
+        {{ t("expertModels.footer.clearSessionOverride") }}
       </button>
       <button class="em-btn secondary" type="button" :disabled="saving || store.loading" @click="onClearRoleDefault">
-        清除角色默认
+        {{ t("expertModels.footer.clearRoleDefault") }}
       </button>
     </div>
   </section>

@@ -1,8 +1,11 @@
 <script setup lang="ts">
 import { computed, onBeforeUnmount, onMounted, ref, watch } from "vue";
+import { useI18n } from "vue-i18n";
 import { VueFlow, useVueFlow, type Edge, type Node, type Connection } from "@vue-flow/core";
 import "@vue-flow/core/dist/style.css";
 import type { ExpertEdge, ExpertGraph, ExpertNode } from "../../utils/tauri-api";
+
+const { t } = useI18n();
 
 const props = defineProps<{
   modelValue: ExpertGraph;
@@ -281,9 +284,9 @@ const health = computed(() => {
   const bases = nodes.filter((n) => n.type === "base_model").length;
   const ps = nodes.filter((n) => n.type === "prompt_style").length;
   const warnings: string[] = [];
-  if (bases === 0) warnings.push("缺少 BaseModel 节点（将无法选择 base GGUF）。");
-  if (bases > 1) warnings.push("存在多个 BaseModel：编译时会选择一个“主 Base”。");
-  if (ps > 1) warnings.push("存在多个 PromptStyle：编译时会选择一个。");
+  if (bases === 0) warnings.push(String(t("expertModels.canvas.warnings.missingBase")));
+  if (bases > 1) warnings.push(String(t("expertModels.canvas.warnings.multipleBase")));
+  if (ps > 1) warnings.push(String(t("expertModels.canvas.warnings.multiplePromptStyle")));
   return warnings;
 });
 
@@ -313,18 +316,18 @@ function addNode(kind: "base" | "lora" | "style") {
   <div class="emc-root">
     <div class="emc-top">
       <div class="emc-actions">
-        <button type="button" class="emc-btn" @click="addNode('base')">+ BaseModel</button>
-        <button type="button" class="emc-btn" @click="addNode('lora')">+ LoRA</button>
-        <button type="button" class="emc-btn" @click="addNode('style')">+ PromptStyle</button>
-        <button type="button" class="emc-btn" @click="tidyLayout">整理布局</button>
-        <button type="button" class="emc-btn" @click="onFitView">适配视图</button>
+        <button type="button" class="emc-btn" @click="addNode('base')">{{ t("expertModels.canvas.actions.addBase") }}</button>
+        <button type="button" class="emc-btn" @click="addNode('lora')">{{ t("expertModels.canvas.actions.addLora") }}</button>
+        <button type="button" class="emc-btn" @click="addNode('style')">{{ t("expertModels.canvas.actions.addPromptStyle") }}</button>
+        <button type="button" class="emc-btn" @click="tidyLayout">{{ t("expertModels.canvas.actions.tidyLayout") }}</button>
+        <button type="button" class="emc-btn" @click="onFitView">{{ t("expertModels.canvas.actions.fitView") }}</button>
         <button
           type="button"
           class="emc-btn danger"
           :disabled="!selectedId"
           @click="deleteSelectedNode"
         >
-          删除选中节点
+          {{ t("expertModels.canvas.actions.deleteSelectedNode") }}
         </button>
         <button
           type="button"
@@ -332,7 +335,7 @@ function addNode(kind: "base" | "lora" | "style") {
           :disabled="!selectedEdgeId"
           @click="deleteSelectedEdge"
         >
-          删除选中连线
+          {{ t("expertModels.canvas.actions.deleteSelectedEdge") }}
         </button>
       </div>
       <div v-if="health.length" class="emc-warn">
@@ -364,10 +367,10 @@ function addNode(kind: "base" | "lora" | "style") {
         class="emc-ctx-item danger"
         @click="deleteCtxTarget"
       >
-        删除
+        {{ t("expertModels.canvas.actions.delete") }}
       </button>
-      <button type="button" class="emc-ctx-item" @click="clearSelection">清除选择</button>
-      <button type="button" class="emc-ctx-item" @click="closeCtxMenu">关闭</button>
+      <button type="button" class="emc-ctx-item" @click="clearSelection">{{ t("expertModels.canvas.actions.clearSelection") }}</button>
+      <button type="button" class="emc-ctx-item" @click="closeCtxMenu">{{ t("common.close") }}</button>
     </div>
   </div>
 </template>

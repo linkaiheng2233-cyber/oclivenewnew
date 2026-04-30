@@ -910,12 +910,21 @@ export const enUS = {
       gtTwo: "Strength > 2 may degrade or destabilize outputs.",
       highSuggestion: "Strength is high; try 1.0–1.4 first.",
     },
+    import: {
+      baseDialogTitle: "Pick a Base GGUF (will copy into models/gguf)",
+      loraDialogTitle: "Pick a LoRA GGUF (will copy into models/loras)",
+    },
     toasts: {
       appliedToSession:
         "Applied to current session (will restart local llama).\nmodelPath={modelPath}\nllamaArgs={llamaArgs}",
       rolledBackAndApplied:
         "Rolled back and re-applied.\nmodelPath={modelPath}\nllamaArgs={llamaArgs}",
       retriedAndApplied: "Retried and applied.\nmodelPath={modelPath}\nllamaArgs={llamaArgs}",
+      importedBase: "Imported Base model into models/gguf.",
+      importedLora: "Imported LoRA into models/loras.",
+      setAsRoleDefault: "Set as role default.",
+      clearedSessionOverrideAndApplied: "Cleared session override and re-applied.",
+      clearedRoleDefault: "Cleared role default.",
     },
     confirm: {
       rollbackLastRun:
@@ -929,6 +938,10 @@ export const enUS = {
         "Rollback to the selected history config and re-apply to current session.{summary}\nContinue?",
       clearRunsAll: "Clear current session Run History (all). Continue?",
       clearRunsWithMode: "{modeLabel}.{keepPinned}\nContinue?",
+      clearSessionOverrideAndApply:
+        "Clear current session Expert Models override and rollback to role default / role pack default.\nContinue?",
+      clearRoleDefault:
+        "Clear this role's Expert Models default (will not change role pack files).\nContinue?",
     },
     runHistory: {
       errors: {
@@ -948,10 +961,53 @@ export const enUS = {
       toastNoPinnedRuns: "No pinned runs (★). Pin a run first.",
       toastCleared: "Run History cleared.",
       toastClearedWithMode: "Clear operation executed.",
+      ui: {
+        title: "Run History ({n})",
+        applyingTitle: "Applying…",
+        applyingHint: "Local llama will restart; please wait.",
+        exportPinned: "Export latest ★",
+        clearExecute: "Clear",
+        filterStatus: {
+          all: "All",
+          unknown: "Unknown",
+        },
+        searchBasePlaceholder: "Search Base filename…",
+        emptyHint:
+          "No Run History yet. A snapshot is recorded before each “Apply to current session”.",
+        pinTitle: {
+          pin: "Pin (keep preferred)",
+          unpin: "Unpin (allow trimming/clearing)",
+        },
+        basePill: "Base: {name}",
+        durationPill: "Duration: {ms}ms",
+        expandDetail: "Details",
+        collapseDetail: "Hide details",
+        rollbackToHere: "Rollback to here",
+        retry: "Retry",
+        copyDiagnostics: "Copy diagnostics",
+        saveAsWorkflow: "Save as workflow",
+        exportWorkflow: "Export workflow",
+        loadingDetail: "Loading details…",
+        targetTitle: "Target (apply)",
+        snapshotTitle: "Rollback snapshot (before apply)",
+        errorTitle: "Error",
+        resultTitle: "Result",
+        llamaArgsExpand: "llamaArgs (expand)",
+        notReturned: "(not returned)",
+      },
     },
     actions: {
       refresh: "Refresh",
       backfillFromEffective: "Backfill editor from effective config",
+    },
+    footer: {
+      applying: "Applying…",
+      applyToSession: "Apply to current session (restart local llama)",
+      rollbackLastTitle: "Rollback to last applied config (current session only)",
+      rollbackLast: "Rollback last Run",
+      setRoleDefault: "Set as role default",
+      clearSessionOverride: "Clear session override",
+      clearRoleDefault: "Clear role default",
     },
     source: {
       sessionOverride: "Session override",
@@ -990,11 +1046,18 @@ export const enUS = {
       hint:
         "Tip: workflows save node layout, edges, and parameters; export to share with other creators.",
       toastPickFirst: "Please select a workflow first.",
+      toastPickFirstForOverwrite: "Please select a workflow to overwrite.",
+      confirmOverwrite: "Overwrite save the selected workflow. Continue?",
+      toastSaved: "Workflow saved: {name}",
+      toastOverwritten: "Workflow overwritten: {name}",
+      toastLoaded: "Workflow loaded: {name}",
       confirmDelete: "Delete workflow: {name}\n\nContinue?",
       toastDeleted: "Workflow deleted.",
       toastExported: "Workflow file exported.",
       dialogImportTitle: "Import workflow (JSON)",
       importDefaultName: "Imported workflow",
+      unnamedDefault: "Untitled workflow",
+      defaultName: "Workflow",
       toastImportedAndSaved: "Imported and saved to workflow library: {name}",
     },
     editor: {
@@ -1003,6 +1066,24 @@ export const enUS = {
       form: "Form",
       canvasHint:
         "Tip: canvas writes node positions and edges into ExpertGraph (used for M2 compilation).",
+    },
+    canvas: {
+      actions: {
+        addBase: "+ BaseModel",
+        addLora: "+ LoRA",
+        addPromptStyle: "+ PromptStyle",
+        tidyLayout: "Tidy layout",
+        fitView: "Fit view",
+        deleteSelectedNode: "Delete selected node",
+        deleteSelectedEdge: "Delete selected edge",
+        delete: "Delete",
+        clearSelection: "Clear selection",
+      },
+      warnings: {
+        missingBase: "Missing BaseModel node (cannot pick base GGUF).",
+        multipleBase: "Multiple BaseModels found: compiler will pick one “main Base”.",
+        multiplePromptStyle: "Multiple PromptStyles found: compiler will pick one.",
+      },
     },
     inspector: {
       title: "Node attributes",
@@ -1017,6 +1098,37 @@ export const enUS = {
       replyQualityAnchor: "Reply quality anchor",
       corePersonality: "Core personality",
       description: "Description",
+    },
+    form: {
+      baseTitle: "Base model (GGUF)",
+      importBase: "Import GGUF…",
+      keepCurrent: "(not set / keep current)",
+      baseDirHint: "Folder: `{app_data}/models/gguf/*.gguf`",
+      loraTitle: "LoRA (multi-select)",
+      importLora: "Import LoRA…",
+      addLoraPlaceholder: "Add a LoRA…",
+      noLora: "No LoRA added yet.",
+      strengthShort: "Strength",
+      moveUp: "Up",
+      moveDown: "Down",
+      remove: "Remove",
+      loraDirHint:
+        "Folder: `{app_data}/models/loras/*.gguf` (also compatible with placing in the gguf folder)",
+      promptStyleTitle: "PromptStyle (optional override)",
+      replyQualityAnchorHint: "Reply quality anchor (override role pack/default)",
+      corePersonalityHint: "Core personality (override role.core_personality)",
+      descriptionHint: "Description (override role.description)",
+      emptyMeansNoOverride: "Leave empty to keep unchanged",
+      promptStyleFooterHint:
+        "Tip: when not set, prompt behavior remains exactly the same as the current version.",
+    },
+    effective: {
+      title: "Effective config (for debugging)",
+      hint:
+        "This section shows the effective config (session override / role default / role pack default). It is not the same as the draft you're editing.",
+      noLoras: "(none / disabled)",
+      promptStyleOverridden: "(overridden)",
+      promptStyleNotOverridden: "(not overridden)",
     },
     advancedForm: {
       title: "Advanced / compatibility editor (form)",
