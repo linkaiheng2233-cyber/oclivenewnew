@@ -142,7 +142,45 @@ export const zhCN = {
             "可用快捷按钮推进时间；部分角色包会在跳转后触发场景或独白。",
           ],
         },
+        narrativeScene: {
+          title: "叙事场景",
+          help:
+            "你当前叙事的场景；与角色包中的场景配置一致。切换后可能触发历史记录折叠分界。",
+          characterAt: "角色在",
+        },
       },
+    },
+    defaults: {
+      roleName: "沐沐",
+    },
+    interactionMode: {
+      immersive: "沉浸",
+      pureChat: "纯聊",
+    },
+    toasts: {
+      remoteLifeEnabled: "异地心声已开启",
+      remoteLifeDisabled: "异地心声已关闭",
+      interactionModeSwitched: "互动模式已切换为{mode}",
+      layoutResetOk: "已恢复为角色包推荐布局。",
+      layoutResetFailed: "恢复失败：{message}",
+      fallbackReply: "本次为备用回复（模型未返回正文时自动生成）",
+      roleSwitched: "已切换角色: {id}",
+      identityScope: {
+        scene: "当前场景身份",
+        global: "身份",
+      },
+      identitySet: "已设置{scope}：{name}",
+      pluginInstalledFromUrl: "已通过网页链接安装插件：{id}",
+      pluginsAutoRefreshed: "检测到插件变更，已自动刷新",
+    },
+    sceneTravel: {
+      travelingTo: "正在前往「{label}」…",
+    },
+    status: {
+      favorabilityAria: "好感度",
+      favorabilityLabel: "好感度",
+      lifeAria: "日程推断",
+      lifeNow: "此刻",
     },
   },
   settings: {
@@ -167,6 +205,23 @@ export const zhCN = {
     },
     experimental: {
       label: "实验性功能",
+    },
+    advancedSlot: {
+      title: "扩展区（settings.advanced）",
+      hint: "manifest 中声明 settings.advanced 的插件显示于此。",
+      aria: "设置扩展区",
+    },
+    security: {
+      forceIframeSavedToast: "已保存。重启应用后强制 iframe 模式将完全生效。",
+    },
+    plugins: {
+      devMode: {
+        enabledToast: "已开启开发者模式。",
+        disabledToast: "已关闭开发者模式。",
+      },
+      sources: {
+        savedToast: "第三方索引源已保存。",
+      },
     },
   },
   pluginManager: {

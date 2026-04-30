@@ -237,7 +237,7 @@ const packLayoutResolved = computed(() => {
 });
 const sidebarRight = computed(() => packLayoutResolved.value.sidebar === "right");
 const chatInputTop = computed(() => packLayoutResolved.value.chatInput === "top");
-const roleName = computed(() => roleStore.roleInfo.name || "沐沐");
+const roleName = computed(() => roleStore.roleInfo.name || String(t("app.defaults.roleName")));
 const emotion = computed(() => roleStore.roleInfo.currentEmotion || "neutral");
 
 /** 对齐 oclive-new 底部状态栏心形 */
@@ -277,7 +277,10 @@ async function onPluginSetRemoteLife(payload: unknown): Promise<void> {
   try {
     const info = await setRemoteLifeEnabled(roleStore.currentRoleId, enabledRaw);
     roleStore.applyRoleInfo(info);
-    showToast("success", `异地心声已${enabledRaw ? "开启" : "关闭"}`);
+    showToast(
+      "success",
+      String(t(enabledRaw ? "app.toasts.remoteLifeEnabled" : "app.toasts.remoteLifeDisabled")),
+    );
   } catch (err) {
     showToast("error", err instanceof Error ? err.message : String(err));
   }
@@ -302,7 +305,14 @@ async function onPluginSetInteractionMode(payload: unknown): Promise<void> {
         toLabel: "",
       };
     }
-    showToast("success", `互动模式已切换为${mode === "immersive" ? "沉浸" : "纯聊"}`);
+    showToast(
+      "success",
+      String(
+        t("app.toasts.interactionModeSwitched", {
+          mode: mode === "immersive" ? t("app.interactionMode.immersive") : t("app.interactionMode.pureChat"),
+        }),
+      ),
+    );
   } catch (err) {
     showToast("error", err instanceof Error ? err.message : String(err));
   }
@@ -315,14 +325,14 @@ function onPluginCycleTheme(): void {
 async function onPluginResetLayout(): Promise<void> {
   try {
     await pluginStore.resetToRolePackDefault();
-    const message = "已恢复为角色包推荐布局。";
+    const message = String(t("app.toasts.layoutResetOk"));
     hostEventBus.emit(settingsResetLayoutResultEvent, { ok: true, message });
     showToast("success", message);
   } catch (err) {
     const message = err instanceof Error ? err.message : String(err);
     hostEventBus.emit(settingsResetLayoutResultEvent, {
       ok: false,
-      message: `恢复失败：${message}`,
+      message: String(t("app.toasts.layoutResetFailed", { message })),
     });
     showToast("error", message);
   }
@@ -366,7 +376,7 @@ async function onSend(payload: { content: string }) {
       await debugStore.loadDebugData();
     }
     if (res.reply_is_fallback) {
-      showToast("info", "本次为备用回复（模型未返回正文时自动生成）");
+      showToast("info", String(t("app.toasts.fallbackReply")));
     }
     const offerTogether = res.offer_together_travel ?? false;
     const offerPicker = res.offer_destination_picker ?? false;
@@ -446,7 +456,7 @@ async function onSwitchRole(nextRoleId: string) {
     if (debugStore.visible) {
       await debugStore.loadDebugData();
     }
-    showToast("success", `已切换角色: ${nextRoleId}`);
+    showToast("success", String(t("app.toasts.roleSwitched", { id: nextRoleId })));
   } catch (err) {
     showToast("error", err instanceof Error ? err.message : String(err));
   } finally {
@@ -473,8 +483,8 @@ async function onChangeRelation(nextRelation: string) {
     }
     const relationName =
       relationOptions.value.find((r) => r.id === nextRelation)?.name ?? nextRelation;
-    const scopeLabel = perScene ? "当前场景身份" : "身份";
-    showToast("success", `已设置${scopeLabel}：${relationName}`);
+    const scopeLabel = perScene ? t("app.toasts.identityScope.scene") : t("app.toasts.identityScope.global");
+    showToast("success", String(t("app.toasts.identitySet", { scope: scopeLabel, name: relationName })));
   } catch (err) {
     showToast("error", err instanceof Error ? err.message : String(err));
   }
@@ -610,7 +620,7 @@ async function runPendingProtocolInstallsFromQueue(): Promise<void> {
       if (!git) continue;
       try {
         const r = await installPluginFromGit(git);
-        showToast("success", `已通过网页链接安装插件：${r.installedPluginId}`);
+        showToast("success", String(t("app.toasts.pluginInstalledFromUrl", { id: r.installedPluginId })));
         await pluginStore.refresh();
         openPluginManagerPanel();
       } catch (e) {
@@ -639,7 +649,7 @@ onMounted(() => {
   initialize();
   void listen("plugin:changed", () => {
     void pluginStore.onPluginFilesChanged().then(() => {
-      showToast("success", "检测到插件变更，已自动刷新");
+      showToast("success", String(t("app.toasts.pluginsAutoRefreshed")));
     });
   }).then((u) => {
     unlistenPluginFs = u;
@@ -909,9 +919,9 @@ onBeforeUnmount(() => {
 
             <div v-if="allSceneOptions.length > 0" class="more-tile more-tile--third">
               <div class="more-tile-head more-tile-head--tight">
-                <span class="more-label">叙事场景</span>
+                <span class="more-label">{{ t("app.topBar.tiles.narrativeScene.title") }}</span>
                 <HelpHint
-                  text="你当前叙事的场景；与角色包中的场景配置一致。切换后可能触发历史记录折叠分界。"
+                  :text="String(t('app.topBar.tiles.narrativeScene.help'))"
                 />
               </div>
               <div class="more-tile-body more-tile-body--scene more-tile-body--scene-inline">
@@ -925,7 +935,9 @@ onBeforeUnmount(() => {
                     {{ s.label }}
                   </option>
                 </select>
-                <span class="scene-row-hint scene-row-hint--tile">角色在：{{ characterSceneLabel() }}</span>
+                <span class="scene-row-hint scene-row-hint--tile">
+                  {{ t("app.topBar.tiles.narrativeScene.characterAt") }}：{{ characterSceneLabel() }}
+                </span>
               </div>
             </div>
           </template>
@@ -939,7 +951,7 @@ onBeforeUnmount(() => {
       role="status"
       aria-live="polite"
     >
-      正在前往「{{ sceneTransition.label }}」…
+      {{ t("app.sceneTravel.travelingTo", { label: sceneTransition.label }) }}
     </div>
 
     <TopBarSceneModeDialog
@@ -969,15 +981,15 @@ onBeforeUnmount(() => {
           />
           <RoleplayAsidePanel :text="latestRoleplayAside" />
           <PluginSidebarSlots :bootstrap-epoch="pluginStore.bootstrapEpoch" />
-          <div class="left-pane-status" aria-label="好感度">
-            好感度 {{ Math.round(roleStore.roleInfo.favorability) }} {{ statusHeart }}
+          <div class="left-pane-status" :aria-label="String(t('app.status.favorabilityAria'))">
+            {{ t("app.status.favorabilityLabel") }} {{ Math.round(roleStore.roleInfo.favorability) }} {{ statusHeart }}
           </div>
           <div
             v-if="roleStore.interactionImmersive && roleStore.roleInfo.currentLife?.label"
             class="left-pane-life"
-            aria-label="日程推断"
+            :aria-label="String(t('app.status.lifeAria'))"
           >
-            此刻：{{ roleStore.roleInfo.currentLife?.label }}
+            {{ t("app.status.lifeNow") }}：{{ roleStore.roleInfo.currentLife?.label }}
           </div>
           <AutonomousSceneNotice
             v-if="roleStore.interactionImmersive"

@@ -147,7 +147,45 @@ export const enUS = {
             "Use quick buttons to advance time; some role packs can trigger scenes/monologues after jumps.",
           ],
         },
+        narrativeScene: {
+          title: "Narrative scene",
+          help:
+            "Your current narrative scene; matches role pack scene config. Switching may create a history split boundary.",
+          characterAt: "Character at",
+        },
       },
+    },
+    defaults: {
+      roleName: "Mumu",
+    },
+    interactionMode: {
+      immersive: "Immersive",
+      pureChat: "Chat",
+    },
+    toasts: {
+      remoteLifeEnabled: "Remote presence enabled.",
+      remoteLifeDisabled: "Remote presence disabled.",
+      interactionModeSwitched: "Interaction mode switched to {mode}.",
+      layoutResetOk: "Layout reset to role pack recommendations.",
+      layoutResetFailed: "Reset failed: {message}",
+      fallbackReply: "This was a fallback reply (auto-generated when the model returned no content).",
+      roleSwitched: "Role switched: {id}",
+      identityScope: {
+        scene: "Scene identity",
+        global: "Identity",
+      },
+      identitySet: "{scope} set: {name}",
+      pluginInstalledFromUrl: "Plugin installed from web URL: {id}",
+      pluginsAutoRefreshed: "Plugin changes detected; auto-refreshed",
+    },
+    sceneTravel: {
+      travelingTo: "Traveling to “{label}”…",
+    },
+    status: {
+      favorabilityAria: "Favorability",
+      favorabilityLabel: "Favorability",
+      lifeAria: "Life schedule inference",
+      lifeNow: "Now",
     },
   },
   settings: {
@@ -173,6 +211,24 @@ export const enUS = {
     },
     experimental: {
       label: "Experimental",
+    },
+    advancedSlot: {
+      title: "Extension slot (settings.advanced)",
+      hint: "Plugins that declare slot settings.advanced in manifest are embedded here.",
+      aria: "Settings extension slot",
+    },
+    security: {
+      forceIframeSavedToast:
+        "Saved. Restart the app for Force iframe mode to fully take effect.",
+    },
+    plugins: {
+      devMode: {
+        enabledToast: "Developer mode enabled.",
+        disabledToast: "Developer mode disabled.",
+      },
+      sources: {
+        savedToast: "Third-party index sources saved.",
+      },
     },
   },
   pluginManager: {

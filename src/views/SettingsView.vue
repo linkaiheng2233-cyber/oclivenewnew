@@ -72,7 +72,10 @@ async function onToggleMarketDeveloperMode(e: Event) {
   try {
     const cfg = await setPluginMarketDeveloperMode(checked);
     marketDeveloperModeLocal.value = cfg.developerMode === true;
-    showToast("success", checked ? "已开启开发者模式。" : "已关闭开发者模式。");
+    showToast(
+      "success",
+      String(t(checked ? "settings.plugins.devMode.enabledToast" : "settings.plugins.devMode.disabledToast")),
+    );
     await pluginStore.syncDirectoryPluginBootstrap();
   } catch (err) {
     showToast("error", err instanceof Error ? err.message : String(err));
@@ -90,7 +93,7 @@ async function onSaveMarketSources() {
   try {
     const cfg = await setPluginIndexSources(lines);
     marketSourcesText.value = (cfg.pluginIndexSources ?? []).join("\n");
-    showToast("success", "第三方索引源已保存。");
+    showToast("success", String(t("settings.plugins.sources.savedToast")));
   } catch (err) {
     showToast("error", err instanceof Error ? err.message : String(err));
   } finally {
@@ -106,7 +109,7 @@ async function onToggleForceIframe(e: Event) {
   };
   try {
     await pluginStore.persist();
-    showToast("info", "已保存。重启应用后强制 iframe 模式将完全生效。");
+    showToast("info", String(t("settings.security.forceIframeSavedToast")));
   } catch (err) {
     showToast("error", err instanceof Error ? err.message : String(err));
     pluginStore.pluginState = {
@@ -210,11 +213,11 @@ async function onToggleForceIframe(e: Event) {
             </div>
           </section>
           <section class="sv-section">
-            <h3 class="sv-h3">扩展区（settings.advanced）</h3>
-            <p class="sv-muted">manifest 中声明 <code>settings.advanced</code> 的插件显示于此。</p>
+            <h3 class="sv-h3">{{ t("settings.advancedSlot.title") }}</h3>
+            <p class="sv-muted">{{ t("settings.advancedSlot.hint") }}</p>
             <PluginSlotEmbed
               :slot-name="SLOT_SETTINGS_ADVANCED"
-              aria-label="设置扩展区"
+              :aria-label="String(t('settings.advancedSlot.aria'))"
               :bootstrap-epoch="pluginStore.bootstrapEpoch"
             />
           </section>
