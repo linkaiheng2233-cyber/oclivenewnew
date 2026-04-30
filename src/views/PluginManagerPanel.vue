@@ -527,7 +527,10 @@ async function onPickProfilePreview(): Promise<void> {
   profilePreviewLoading.value = true;
   try {
     profilePreview.value = await previewProfileFromPath(selected);
-    showToast("success", `已读取 Profile：${profilePreview.value.name}`);
+    showToast(
+      "success",
+      String(t("pluginManagerV1.profile.toastLoaded", { name: profilePreview.value.name })),
+    );
   } catch (e) {
     showToast("error", e instanceof Error ? e.message : String(e));
   } finally {
@@ -586,7 +589,7 @@ async function onApplyProfile(): Promise<void> {
   try {
     const all = p.plugins ?? [];
     if (all.length === 0) {
-      showToast("info", "该 Profile 未声明 plugins，已跳过插件安装。");
+      showToast("info", String(t("pluginManagerV1.profile.toastNoPlugins")));
     } else {
       const sources = [...new Set(all.map((x) => normalizeProfileSource(x.source)))];
       for (const s of sources) {
@@ -596,7 +599,7 @@ async function onApplyProfile(): Promise<void> {
           if (!pid) continue;
           const row = pluginStore.pluginMarketSnapshot?.plugins?.find((r) => r.id === pid);
           if (!row) {
-            showToast("error", `索引未找到插件：${pid}（source=${s}）`);
+            showToast("error", String(t("pluginManagerV1.profile.toastMarketMissingPlugin", { id: pid, source: s })));
             continue;
           }
           if (spec.version?.trim()) {
@@ -612,7 +615,7 @@ async function onApplyProfile(): Promise<void> {
       }
     }
     await applyProfileBackends(p);
-    showToast("success", "Profile 已应用：插件安装/权限确认已执行，后端覆盖已写入当前会话。");
+    showToast("success", String(t("pluginManagerV1.profile.toastApplied")));
   } catch (e) {
     showToast("error", e instanceof Error ? e.message : String(e));
   } finally {

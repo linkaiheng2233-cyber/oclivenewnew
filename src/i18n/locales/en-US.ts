@@ -363,6 +363,12 @@ export const enUS = {
       summary: "{avg} ({count})",
       toastCopiedTemplate: "Copied review template (JSON).",
     },
+    profile: {
+      toastLoaded: "Profile loaded: {name}",
+      toastNoPlugins: "This Profile declares no plugins; plugin installation is skipped.",
+      toastMarketMissingPlugin: "Plugin not found in index: {id} (source={source})",
+      toastApplied: "Profile applied: plugin install/permission consent done; backends override written to current session.",
+    },
     ui: {
       dialogLabel: "Plugin workbench (Professional mode)",
       title: "Plugins & Features",

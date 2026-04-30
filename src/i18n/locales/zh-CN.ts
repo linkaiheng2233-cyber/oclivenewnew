@@ -357,6 +357,12 @@ export const zhCN = {
       summary: "{avg} 分（{count}）",
       toastCopiedTemplate: "已复制评价模板（JSON）。",
     },
+    profile: {
+      toastLoaded: "已读取 Profile：{name}",
+      toastNoPlugins: "该 Profile 未声明 plugins，已跳过插件安装。",
+      toastMarketMissingPlugin: "索引未找到插件：{id}（source={source}）",
+      toastApplied: "Profile 已应用：插件安装/权限确认已执行，后端覆盖已写入当前会话。",
+    },
     ui: {
       dialogLabel: "插件工作台（专业模式）",
       title: "插件与功能设置",
