@@ -77,6 +77,9 @@ export const enUS = {
     kill: "Kill",
     expand: "Expand",
     collapse: "Collapse",
+    loading: "Loading…",
+    enable: "Enable",
+    remove: "Remove",
     security: "Security",
     advanced: "Advanced",
   },
@@ -987,6 +990,61 @@ export const enUS = {
     save: "Save private settings",
     toasts: {
       saved: "Private plugin settings saved.",
+    },
+  },
+  hotkeySettings: {
+    title: "Global shortcuts",
+    lead:
+      "All disabled by default. When enabled, they are registered as system-wide shortcuts and may conflict with other apps. Save errors will show the reason.",
+    fields: {
+      accelerator: "Shortcut",
+      acceleratorPlaceholder: "e.g. Ctrl+Shift+L",
+      action: "Action",
+      pluginId: "Plugin id",
+      slot: "Slot name",
+      appearanceOptional: "appearance (optional)",
+    },
+    actions: {
+      openLauncherList: "Open plugin catalog list",
+      openPluginSlot: "Open a plugin slot page",
+    },
+    addOne: "Add one",
+    toasts: {
+      saved:
+        "Shortcut config saved (only enabled bindings will be registered as global shortcuts).",
+    },
+  },
+  hotkeyHost: {
+    dialogs: {
+      pluginWindowAria: "Plugin quick window",
+      pluginNotFoundAria: "Plugin not found",
+      launcherAria: "Launchable plugins",
+    },
+    notFound: {
+      title: "Cannot open plugin page",
+      body:
+        "This role bootstrap does not include UI for plugin {pluginId} in slot {slot}. Please ensure the plugin is enabled, its slot contribution is not hidden, and plugin config has been saved.",
+    },
+    launcher: {
+      title: "Plugin catalog",
+      empty: "No plugins were scanned.",
+    },
+  },
+  pluginListItem: {
+    aria: "Plugin {id}",
+    kind: {
+      shell: "Shell",
+      slot: "Slot",
+    },
+    uiSlotsLabel: "UI slots",
+    depsNotMet: "Dependencies not met ({status})",
+    disablePlugin: "Disable plugin",
+    hide: {
+      chatToolbar: "Hide chat toolbar embed",
+      settingsPanel: "Hide settings embed",
+      roleDetail: "Hide role detail embed",
+      sidebar: "Hide sidebar embed",
+      chatHeader: "Hide chat header embed",
     },
   },
   pluginDebug: {

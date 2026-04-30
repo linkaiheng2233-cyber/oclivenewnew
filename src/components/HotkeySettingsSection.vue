@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { onMounted, ref } from "vue";
+import { useI18n } from "vue-i18n";
 import { useAppToast } from "../composables/useAppToast";
 import {
   getHotkeyBindings,
@@ -9,6 +10,7 @@ import {
 } from "../utils/tauri-api";
 
 const { showToast } = useAppToast();
+const { t } = useI18n();
 
 const loading = ref(false);
 const file = ref<HotkeyBindingsFile>({ schemaVersion: 1, bindings: [] });
@@ -68,7 +70,7 @@ async function onSave(): Promise<void> {
   loading.value = true;
   try {
     await saveHotkeyBindings(file.value);
-    showToast("success", "已保存快捷键配置（仅启用的项会注册全局快捷键）。");
+    showToast("success", String(t("hotkeySettings.toasts.saved")));
   } catch (e) {
     showToast("error", e instanceof Error ? e.message : String(e));
   } finally {
@@ -79,52 +81,52 @@ async function onSave(): Promise<void> {
 
 <template>
   <section class="hkset">
-    <h3 class="hkset-h">全局快捷键</h3>
+    <h3 class="hkset-h">{{ t("hotkeySettings.title") }}</h3>
     <p class="hkset-lead">
-      默认全部关闭。启用后由系统全局监听，可能与系统或其它应用冲突；保存失败时会提示原因。
+      {{ t("hotkeySettings.lead") }}
     </p>
-    <p v-if="loading" class="hkset-muted">加载中…</p>
+    <p v-if="loading" class="hkset-muted">{{ t("common.loading") }}</p>
     <template v-else>
       <div v-for="(b, i) in file.bindings" :key="b.id" class="hkset-row">
         <label class="hkset-field">
-          <span>快捷键</span>
-          <input v-model="b.accelerator" type="text" placeholder="如 Ctrl+Shift+L" />
+          <span>{{ t("hotkeySettings.fields.accelerator") }}</span>
+          <input v-model="b.accelerator" type="text" :placeholder="String(t('hotkeySettings.fields.acceleratorPlaceholder'))" />
         </label>
         <label class="hkset-chk">
           <input v-model="b.enabled" type="checkbox" />
-          启用
+          {{ t("common.enable") }}
         </label>
         <label class="hkset-field">
-          <span>动作</span>
+          <span>{{ t("hotkeySettings.fields.action") }}</span>
           <select
             :value="b.action.type"
             @change="
               setActionType(i, ($event.target as HTMLSelectElement).value)
             "
           >
-            <option value="openLauncherList">打开插件目录列表</option>
-            <option value="openPluginSlot">打开某插件插槽页</option>
+            <option value="openLauncherList">{{ t("hotkeySettings.actions.openLauncherList") }}</option>
+            <option value="openPluginSlot">{{ t("hotkeySettings.actions.openPluginSlot") }}</option>
           </select>
         </label>
         <template v-if="b.action.type === 'openPluginSlot'">
           <label class="hkset-field">
-            <span>插件 id</span>
+            <span>{{ t("hotkeySettings.fields.pluginId") }}</span>
             <input v-model="b.action.pluginId" type="text" />
           </label>
           <label class="hkset-field">
-            <span>插槽名</span>
+            <span>{{ t("hotkeySettings.fields.slot") }}</span>
             <input v-model="b.action.slot" type="text" />
           </label>
           <label class="hkset-field">
-            <span>appearance（可选）</span>
+            <span>{{ t("hotkeySettings.fields.appearanceOptional") }}</span>
             <input v-model="b.action.appearanceId" type="text" />
           </label>
         </template>
-        <button type="button" class="hkset-remove" @click="removeAt(i)">删除</button>
+        <button type="button" class="hkset-remove" @click="removeAt(i)">{{ t("common.remove") }}</button>
       </div>
       <div class="hkset-actions">
-        <button type="button" class="hkset-btn" @click="addBinding">添加一条</button>
-        <button type="button" class="hkset-btn hkset-btn--primary" @click="onSave">保存</button>
+        <button type="button" class="hkset-btn" @click="addBinding">{{ t("hotkeySettings.addOne") }}</button>
+        <button type="button" class="hkset-btn hkset-btn--primary" @click="onSave">{{ t("common.save") }}</button>
       </div>
     </template>
   </section>

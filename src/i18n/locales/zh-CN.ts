@@ -72,6 +72,9 @@ export const zhCN = {
     kill: "终止",
     expand: "展开",
     collapse: "收起",
+    loading: "加载中…",
+    enable: "启用",
+    remove: "删除",
     security: "安全",
     advanced: "高级",
   },
@@ -958,6 +961,59 @@ export const zhCN = {
     save: "保存私有配置",
     toasts: {
       saved: "已保存插件私有配置。",
+    },
+  },
+  hotkeySettings: {
+    title: "全局快捷键",
+    lead: "默认全部关闭。启用后由系统全局监听，可能与系统或其它应用冲突；保存失败时会提示原因。",
+    fields: {
+      accelerator: "快捷键",
+      acceleratorPlaceholder: "如 Ctrl+Shift+L",
+      action: "动作",
+      pluginId: "插件 id",
+      slot: "插槽名",
+      appearanceOptional: "appearance（可选）",
+    },
+    actions: {
+      openLauncherList: "打开插件目录列表",
+      openPluginSlot: "打开某插件插槽页",
+    },
+    addOne: "添加一条",
+    toasts: {
+      saved: "已保存快捷键配置（仅启用的项会注册全局快捷键）。",
+    },
+  },
+  hotkeyHost: {
+    dialogs: {
+      pluginWindowAria: "插件快捷窗口",
+      pluginNotFoundAria: "插件未找到",
+      launcherAria: "可启动插件",
+    },
+    notFound: {
+      title: "无法打开插件页",
+      body:
+        "当前角色 bootstrap 中未找到插件 {pluginId} 在槽 {slot} 的界面；请确认插件已启用、未隐藏该槽贡献，并已保存插件配置。",
+    },
+    launcher: {
+      title: "插件目录",
+      empty: "未扫描到插件。",
+    },
+  },
+  pluginListItem: {
+    aria: "插件 {id}",
+    kind: {
+      shell: "整壳",
+      slot: "插槽",
+    },
+    uiSlotsLabel: "UI 插槽",
+    depsNotMet: "依赖未满足（{status}）",
+    disablePlugin: "停用插件",
+    hide: {
+      chatToolbar: "隐藏工具栏嵌入",
+      settingsPanel: "隐藏设置页嵌入",
+      roleDetail: "隐藏角色详情嵌入",
+      sidebar: "隐藏侧边栏嵌入",
+      chatHeader: "隐藏聊天头部嵌入",
     },
   },
   pluginDebug: {
