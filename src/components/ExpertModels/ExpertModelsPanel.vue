@@ -26,6 +26,23 @@ const baseModelNode = computed(() => {
     | undefined;
 });
 
+const effectiveBasePath = computed(() => {
+  const g = store.effectiveGraph;
+  const n = g.nodes.find((x) => x.type === "base_model") as
+    | { type: "base_model"; id: string; ggufPath: string }
+    | undefined;
+  return (n?.ggufPath ?? "").trim();
+});
+
+type EffectiveLoraNode = Extract<ExpertNode, { type: "lora_adapter" }>;
+const effectiveLoras = computed<EffectiveLoraNode[]>(() =>
+  (store.effectiveGraph.nodes ?? [])
+    .filter((n) => n.type === "lora_adapter")
+    .map((n) => n as EffectiveLoraNode)
+    .filter((n) => n.enabled)
+    .sort((a, b) => (a.order ?? 0) - (b.order ?? 0) || a.id.localeCompare(b.id)),
+);
+
 const selectedBaseModelPath = computed({
   get(): string {
     return baseModelNode.value?.ggufPath ?? "";
@@ -349,6 +366,41 @@ onMounted(() => {
       </div>
 
       <div class="em-card">
+        <div class="em-card-h">当前生效（用于排错）</div>
+        <div class="em-muted" style="margin-top: 0">
+          该块展示的是“当前生效配置”（会话覆盖 / 角色默认 / 角色包默认），不等同于你正在编辑的草稿。
+        </div>
+        <div class="em-kv">
+          <div class="em-k">Base</div>
+          <div class="em-v">
+            <span v-if="effectiveBasePath" class="em-mono">{{
+              effectiveBasePath.split(/[\\/]/).slice(-1)[0]
+            }}</span>
+            <span v-else class="em-muted">（未设置 / 保持当前）</span>
+          </div>
+        </div>
+        <div class="em-kv">
+          <div class="em-k">LoRA</div>
+          <div class="em-v">
+            <div v-if="effectiveLoras.length === 0" class="em-muted">（无 / 未启用）</div>
+            <ul v-else class="em-eff-list">
+              <li v-for="n in effectiveLoras" :key="n.id" class="em-eff-li">
+                <span class="em-mono">{{ n.ggufPath.split(/[\\/]/).slice(-1)[0] }}</span>
+                <span class="em-eff-strength">× {{ n.strength.toFixed(2) }}</span>
+              </li>
+            </ul>
+          </div>
+        </div>
+        <div class="em-kv">
+          <div class="em-k">PromptStyle</div>
+          <div class="em-v">
+            <span v-if="store.effectivePromptStyle" class="em-muted">（已覆盖）</span>
+            <span v-else class="em-muted">（未覆盖）</span>
+          </div>
+        </div>
+      </div>
+
+      <div class="em-card">
         <div class="em-card-h">PromptStyle（可选覆盖）</div>
         <label class="em-field">
           <div class="em-label">回复质量锚点（覆盖角色包/默认）</div>
@@ -502,6 +554,38 @@ onMounted(() => {
   display: flex;
   justify-content: flex-end;
   margin: -2px 0 8px;
+}
+.em-kv {
+  display: grid;
+  grid-template-columns: 70px minmax(0, 1fr);
+  gap: 8px;
+  align-items: start;
+  margin-top: 10px;
+}
+.em-k {
+  color: var(--text-secondary);
+  font-size: 12px;
+}
+.em-v {
+  min-width: 0;
+  font-size: 12px;
+}
+.em-eff-list {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+.em-eff-li {
+  display: flex;
+  justify-content: space-between;
+  gap: 10px;
+}
+.em-eff-strength {
+  color: var(--text-secondary);
+  font-variant-numeric: tabular-nums;
 }
 .em-select {
   width: 100%;
