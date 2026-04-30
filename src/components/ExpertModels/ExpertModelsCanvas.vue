@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed, ref, watch } from "vue";
+import { computed, onBeforeUnmount, onMounted, ref, watch } from "vue";
 import { VueFlow, useVueFlow, type Edge, type Node, type Connection } from "@vue-flow/core";
 import "@vue-flow/core/dist/style.css";
 import type { ExpertEdge, ExpertGraph, ExpertNode } from "../../utils/tauri-api";
@@ -31,6 +31,21 @@ const selectedEdgeId = ref<string | null>(null);
 
 const idSet = (nodes: ExpertNode[]): Set<string> =>
   new Set(nodes.map((n) => String((n as any).id ?? "").trim()).filter(Boolean));
+
+function syncSelectionClasses() {
+  const sid = (selectedId.value ?? "").trim();
+  const seid = (selectedEdgeId.value ?? "").trim();
+  internalNodes.value = internalNodes.value.map((n) => ({
+    ...n,
+    class: n.id === sid ? "emc-node--selected" : "",
+  }));
+  internalEdges.value = internalEdges.value.map((e) => ({
+    ...e,
+    class: e.id === seid ? "emc-edge--selected" : "",
+  }));
+}
+
+watch([selectedId, selectedEdgeId], () => syncSelectionClasses());
 
 function nodeLabel(n: ExpertNode): string {
   if (n.type === "base_model") return "BaseModel";
@@ -122,11 +137,30 @@ function deleteSelectedEdge() {
   selectedEdgeId.value = null;
 }
 
+function onKeydown(ev: KeyboardEvent) {
+  if (ev.key !== "Delete" && ev.key !== "Backspace") return;
+  const tag = (ev.target as HTMLElement | null)?.tagName?.toLowerCase();
+  if (tag === "input" || tag === "textarea") return;
+  if (selectedId.value) {
+    ev.preventDefault();
+    deleteSelectedNode();
+    return;
+  }
+  if (selectedEdgeId.value) {
+    ev.preventDefault();
+    deleteSelectedEdge();
+  }
+}
+
+onMounted(() => window.addEventListener("keydown", onKeydown));
+onBeforeUnmount(() => window.removeEventListener("keydown", onKeydown));
+
 watch(
   () => props.modelValue,
   (g) => {
     internalNodes.value = toFlowNodes(g);
     internalEdges.value = toFlowEdges(g);
+    syncSelectionClasses();
   },
   { immediate: true, deep: true },
 );
@@ -281,6 +315,15 @@ function addNode(kind: "base" | "lora" | "style") {
 .emc-flow {
   height: 360px;
   background: var(--bg-primary);
+}
+:deep(.emc-node--selected) {
+  outline: 2px solid color-mix(in srgb, var(--danger-600, #c0392b) 40%, #ffffff);
+  outline-offset: 2px;
+  border-radius: 6px;
+}
+:deep(.emc-edge--selected path) {
+  stroke: var(--danger-600, #c0392b) !important;
+  stroke-width: 3 !important;
 }
 </style>
 
