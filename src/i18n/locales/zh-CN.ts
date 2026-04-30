@@ -769,6 +769,10 @@ export const zhCN = {
     },
   },
   pluginMarketV1: {
+    panel: {
+      dialogLabel: "插件市场",
+      title: "插件市场",
+    },
     localKinds: {
       rolePack: "角色包",
       pluginArchive: "插件包",
@@ -779,10 +783,26 @@ export const zhCN = {
     localJson: {
       toastCopied: "已复制 JSON 内容到剪贴板。",
       errors: {
+        parseFailed: "JSON 解析失败：{msg}",
         mustBeObject: "JSON 须为对象。",
         typeMustBeModuleOrProfile: '本地条目 type 必须为 "module" 或 "profile"。',
         missingRequiredFields: "本地条目必须包含 id/name/version。",
         onlyModuleProfile: "仅支持 module/profile 本地条目。",
+      },
+    },
+    localImports: {
+      title: "本地导入（文件夹投放）",
+      hint: "把文件放进投放目录后，点击“扫描投放目录”让应用发现它们，然后你再手动确认安装/导入。",
+      rootLabel: "根目录",
+      scanning: "扫描中…",
+      scan: "扫描投放目录",
+      empty: "暂无候选项。",
+      actions: {
+        import: "导入",
+        overwriteImport: "覆盖导入",
+        install: "安装",
+        apply: "应用",
+        copyJson: "复制 JSON",
       },
     },
     rolePack: {

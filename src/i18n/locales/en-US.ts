@@ -795,6 +795,10 @@ export const enUS = {
     },
   },
   pluginMarketV1: {
+    panel: {
+      dialogLabel: "Plugin Market",
+      title: "Plugin Market",
+    },
     localKinds: {
       rolePack: "Role pack",
       pluginArchive: "Plugin bundle",
@@ -805,10 +809,27 @@ export const enUS = {
     localJson: {
       toastCopied: "Copied JSON content to clipboard.",
       errors: {
+        parseFailed: "JSON parse failed: {msg}",
         mustBeObject: "JSON must be an object.",
         typeMustBeModuleOrProfile: 'Entry type must be "module" or "profile".',
         missingRequiredFields: "Entry must include id/name/version.",
         onlyModuleProfile: "Only module/profile local entries are supported.",
+      },
+    },
+    localImports: {
+      title: "Local imports (drop folder)",
+      hint:
+        "After placing files into the drop folder, click “Scan drop folder” to discover them, then manually confirm install/import.",
+      rootLabel: "Root dir",
+      scanning: "Scanning…",
+      scan: "Scan drop folder",
+      empty: "No candidates yet.",
+      actions: {
+        import: "Import",
+        overwriteImport: "Overwrite import",
+        install: "Install",
+        apply: "Apply",
+        copyJson: "Copy JSON",
       },
     },
     rolePack: {

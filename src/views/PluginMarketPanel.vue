@@ -80,7 +80,13 @@ function parseLocalMarketEntryJson(text: string): PluginMarketEntryDto {
   try {
     j = JSON.parse(text) as unknown;
   } catch (e) {
-    throw new Error(`JSON 解析失败：${e instanceof Error ? e.message : String(e)}`);
+    throw new Error(
+      String(
+        t("pluginMarketV1.localJson.errors.parseFailed", {
+          msg: e instanceof Error ? e.message : String(e),
+        }),
+      ),
+    );
   }
   if (!j || typeof j !== "object") {
     throw new Error(String(t("pluginMarketV1.localJson.errors.mustBeObject")));
@@ -220,14 +226,14 @@ watch(
       class="pm2-backdrop"
       role="dialog"
       aria-modal="true"
-      aria-label="插件市场"
+      :aria-label="String(t('pluginMarketV1.panel.dialogLabel'))"
       @click.self="pluginStore.closeMarketPanel()"
     >
       <div class="pm2-dialog" @click.stop>
         <div class="pmx-head">
-          <div class="pmx-title">插件市场</div>
+          <div class="pmx-title">{{ t("pluginMarketV1.panel.title") }}</div>
           <button type="button" class="pm2-btn secondary" @click="pluginStore.closeMarketPanel()">
-            关闭
+            {{ t("common.close") }}
           </button>
         </div>
 
@@ -236,12 +242,12 @@ watch(
         </section>
 
         <section class="pmx-section">
-          <h3 class="pmx-h3">本地导入（文件夹投放）</h3>
+          <h3 class="pmx-h3">{{ t("pluginMarketV1.localImports.title") }}</h3>
           <p class="pmx-muted">
-            把文件放进投放目录后，点击“扫描投放目录”让应用发现它们，然后你再手动确认安装/导入。
+            {{ t("pluginMarketV1.localImports.hint") }}
           </p>
           <p v-if="localImportsRootDir" class="pmx-muted">
-            根目录：<code>{{ localImportsRootDir }}</code>
+            {{ t("pluginMarketV1.localImports.rootLabel") }}：<code>{{ localImportsRootDir }}</code>
           </p>
           <div class="pmx-row">
             <button
@@ -250,12 +256,16 @@ watch(
               :disabled="localImportsLoading"
               @click="refreshLocalImports"
             >
-              {{ localImportsLoading ? "扫描中…" : "扫描投放目录" }}
+              {{
+                localImportsLoading
+                  ? t("pluginMarketV1.localImports.scanning")
+                  : t("pluginMarketV1.localImports.scan")
+              }}
             </button>
             <span v-if="localImportsErr" class="pmx-err">{{ localImportsErr }}</span>
           </div>
 
-          <div v-if="localImports.length === 0" class="pmx-muted">暂无候选项。</div>
+          <div v-if="localImports.length === 0" class="pmx-muted">{{ t("pluginMarketV1.localImports.empty") }}</div>
           <div v-else class="pmx-local-grid">
             <div v-for="[kind, items] in localImportsByKind.entries()" :key="kind" class="pmx-local-col">
               <h4 class="pmx-h4">{{ localKindLabel(kind) }}</h4>
@@ -269,7 +279,7 @@ watch(
                       class="pm2-btn secondary pm2-btn--sm"
                       @click="onImportRolePackFromLocal(it.path, false)"
                     >
-                      导入
+                      {{ t("pluginMarketV1.localImports.actions.import") }}
                     </button>
                     <button
                       v-if="kind === 'role_pack'"
@@ -277,7 +287,7 @@ watch(
                       class="pm2-btn secondary pm2-btn--sm"
                       @click="onImportRolePackFromLocal(it.path, true)"
                     >
-                      覆盖导入
+                      {{ t("pluginMarketV1.localImports.actions.overwriteImport") }}
                     </button>
 
                     <button
@@ -286,7 +296,7 @@ watch(
                       class="pm2-btn secondary pm2-btn--sm"
                       @click="onInstallPluginArchiveFromLocal(it.path)"
                     >
-                      安装
+                      {{ t("pluginMarketV1.localImports.actions.install") }}
                     </button>
                     <button
                       v-if="kind === 'plugin_dir'"
@@ -294,7 +304,7 @@ watch(
                       class="pm2-btn secondary pm2-btn--sm"
                       @click="onInstallPluginDirFromLocal(it.path)"
                     >
-                      安装
+                      {{ t("pluginMarketV1.localImports.actions.install") }}
                     </button>
 
                     <button
@@ -303,7 +313,7 @@ watch(
                       class="pm2-btn secondary pm2-btn--sm"
                       @click="onApplyLocalModuleOrProfile(it.path)"
                     >
-                      应用
+                      {{ t("pluginMarketV1.localImports.actions.apply") }}
                     </button>
                     <button
                       v-if="kind === 'module_json' || kind === 'profile_json'"
@@ -311,7 +321,7 @@ watch(
                       class="pm2-btn secondary pm2-btn--sm"
                       @click="onPreviewLocalJson(it.path)"
                     >
-                      复制 JSON
+                      {{ t("pluginMarketV1.localImports.actions.copyJson") }}
                     </button>
                   </div>
                 </li>
