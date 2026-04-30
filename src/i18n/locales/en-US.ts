@@ -366,9 +366,11 @@ export const enUS = {
     },
     permissions: {
       dialogAria: "Plugin permissions",
+      title: "Plugin permissions: {id}",
       loadingTokenInfo: "Loading permission descriptions…",
       grantAllDeclared: "Grant all declared permissions",
       grantMissing: "Grant missing",
+      grantMissingTitle: "Grant missing: {missing}",
       declaredTitle: "Declared (from index / install metadata)",
       loading: "Loading…",
       noPermInfo:
@@ -400,6 +402,53 @@ export const enUS = {
       helpLine2:
         "If a plugin doesn't declare the slot in its manifest, it won't appear here.",
       toastSaved: "Saved: slot order and enabled state written to config.",
+      slotLabel: "Slot",
+      enabledCount: "Enabled {enabled} / {total}",
+      noSlots: "No available slots detected.",
+      pickPluginsTitle: "Select plugins to show",
+      noPluginsForSlot: "No plugins available for this slot (no plugin declares it).",
+      missingPerms: "Missing perms ({n})",
+      permsBtn: "Permissions",
+      fixPermsBtn: "Fix",
+      toggleEnableTitle: {
+        enable: "This plugin is disabled; click to enable",
+        disable: "This plugin is enabled; click to disable",
+      },
+      enabled: "Enabled",
+      disabled: "Disabled",
+      orderTitle: "Display order (top to bottom)",
+      noPickedPlugins: "No plugins selected yet.",
+      moveUp: "Up",
+      moveDown: "Down",
+    },
+    gitSection: {
+      aria: "Install plugin from Git",
+      title: "Install from Git repository",
+      helpLabel: "What is “install from Git”?",
+      helpLine1: "Good for pulling plugins directly from GitHub or self-hosted Git repos.",
+      helpLine2:
+        "For cloud drive / zip packages, put them into the drop directory and install via “Plugin Market → Local imports”.",
+      installing: "Installing…",
+      install: "Install",
+      hint:
+        "Tip: only install sources you trust. If you later see a permission error, grant it in the permissions panel.",
+    },
+    localLlamaSection: {
+      aria: "Local Llama (basic)",
+      title: "Local Llama (basic)",
+      helpLabel: "Why set it here?",
+      helpLine1:
+        "This is the minimal path: grant required permissions and switch current session LLM backend to directory.",
+      helpLine2: "Advanced model/log/tuning workbench stays in V1.",
+      clearOverride: "Clear session override",
+      pluginIdLabel: "Plugin ID",
+      statusLabel: "Status",
+      status: {
+        scanned: "scanned",
+        notScanned: "not scanned",
+      },
+      enableForSession: "Enable (current session)",
+      effectiveLabel: "Effective LLM",
     },
     localLlama: {
       effective: {

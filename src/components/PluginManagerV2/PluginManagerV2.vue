@@ -460,7 +460,7 @@ async function onApply(payload: Record<string, unknown>) {
         @click.self="closePermModal"
       >
         <div class="pm2-modal" @click.stop>
-          <div class="pm2-modal-h">插件权限：{{ permPluginId }}</div>
+          <div class="pm2-modal-h">{{ t("pluginManagerV2.permissions.title", { id: permPluginId }) }}</div>
           <p v-if="tokenInfoLoading" class="pm2-muted">{{ t("pluginManagerV2.permissions.loadingTokenInfo") }}</p>
           <div class="pm2-modal-actions">
             <button
@@ -475,7 +475,11 @@ async function onApply(payload: Record<string, unknown>) {
               type="button"
               class="pm2-btn secondary pm2-btn--sm"
               @click="onGrantMissingDeclared"
-              :title="`补齐缺失：${missingPermsFor(permPluginId).join('、')}`"
+              :title="
+                t('pluginManagerV2.permissions.grantMissingTitle', {
+                  missing: missingPermsFor(permPluginId).join('、'),
+                })
+              "
             >
               {{ t("pluginManagerV2.permissions.grantMissing") }}
             </button>
@@ -579,7 +583,7 @@ async function onApply(payload: Record<string, unknown>) {
 
       <div class="pm2-slotdash-row">
         <label class="pm2-slotdash-label">
-          插槽
+          {{ t("pluginManagerV2.slotDashboard.slotLabel") }}
           <select v-model="pickedSlot" class="pm2-select">
             <option v-for="s in supportedSlots" :key="s" :value="s">
               {{ slotLabel(s) }}
@@ -587,16 +591,16 @@ async function onApply(payload: Record<string, unknown>) {
           </select>
         </label>
         <div class="pm2-slotdash-muted">
-          已启用 {{ enabledInPickedSlot.length }} / {{ candidatesForPickedSlot.length }}
+          {{ t("pluginManagerV2.slotDashboard.enabledCount", { enabled: enabledInPickedSlot.length, total: candidatesForPickedSlot.length }) }}
         </div>
       </div>
 
-      <div v-if="!pickedSlot" class="pm2-muted">未检测到可用插槽。</div>
+      <div v-if="!pickedSlot" class="pm2-muted">{{ t("pluginManagerV2.slotDashboard.noSlots") }}</div>
       <div v-else class="pm2-slotdash-grid">
         <div class="pm2-slotdash-col">
-          <div class="pm2-slotdash-colh">选择要显示的插件</div>
+          <div class="pm2-slotdash-colh">{{ t("pluginManagerV2.slotDashboard.pickPluginsTitle") }}</div>
           <div v-if="candidatesForPickedSlot.length === 0" class="pm2-muted">
-            这个插槽暂无可用插件（没有插件声明该插槽）。
+            {{ t("pluginManagerV2.slotDashboard.noPluginsForSlot") }}
           </div>
           <ul v-else class="pm2-slotdash-list">
             <li
@@ -618,16 +622,16 @@ async function onApply(payload: Record<string, unknown>) {
                 <span class="pm2-slotdash-id">{{ id }}</span>
               </label>
               <span v-if="missingPermsFor(id).length" class="pm2-warn-pill" :title="missingPermsFor(id).join('、')">
-                缺权限（{{ missingPermsFor(id).length }}）
+                {{ t("pluginManagerV2.slotDashboard.missingPerms", { n: missingPermsFor(id).length }) }}
               </span>
-              <button type="button" class="pm2-mini" @click="openPermModal(id)">权限</button>
+              <button type="button" class="pm2-mini" @click="openPermModal(id)">{{ t("pluginManagerV2.slotDashboard.permsBtn") }}</button>
               <button
                 v-if="missingPermsFor(id).length"
                 type="button"
                 class="pm2-mini warn"
                 @click="openPermModal(id)"
               >
-                一键修复
+                {{ t("pluginManagerV2.slotDashboard.fixPermsBtn") }}
               </button>
               <button
                 type="button"
@@ -638,19 +642,19 @@ async function onApply(payload: Record<string, unknown>) {
                 "
                 :title="
                   pluginStore.isPluginDisabled(id)
-                    ? '当前插件已停用，点击启用'
-                    : '当前插件已启用，点击停用'
+                    ? t('pluginManagerV2.slotDashboard.toggleEnableTitle.enable')
+                    : t('pluginManagerV2.slotDashboard.toggleEnableTitle.disable')
                 "
               >
-                {{ pluginStore.isPluginDisabled(id) ? "已停用" : "已启用" }}
+                {{ pluginStore.isPluginDisabled(id) ? t("pluginManagerV2.slotDashboard.disabled") : t("pluginManagerV2.slotDashboard.enabled") }}
               </button>
             </li>
           </ul>
         </div>
         <div class="pm2-slotdash-col">
-          <div class="pm2-slotdash-colh">显示顺序（从上到下）</div>
+          <div class="pm2-slotdash-colh">{{ t("pluginManagerV2.slotDashboard.orderTitle") }}</div>
           <div v-if="enabledInPickedSlot.length === 0" class="pm2-muted">
-            还没选择任何插件。
+            {{ t("pluginManagerV2.slotDashboard.noPickedPlugins") }}
           </div>
           <ul v-else class="pm2-slotdash-order">
             <li
@@ -661,10 +665,10 @@ async function onApply(payload: Record<string, unknown>) {
               <span class="pm2-slotdash-id">{{ id }}</span>
               <div class="pm2-slotdash-ordbtns">
                 <button type="button" class="pm2-mini" @click="moveInPickedSlot(id, 'up')">
-                  上移
+                  {{ t("pluginManagerV2.slotDashboard.moveUp") }}
                 </button>
                 <button type="button" class="pm2-mini" @click="moveInPickedSlot(id, 'down')">
-                  下移
+                  {{ t("pluginManagerV2.slotDashboard.moveDown") }}
                 </button>
               </div>
             </li>
@@ -673,13 +677,13 @@ async function onApply(payload: Record<string, unknown>) {
       </div>
     </section>
 
-    <section class="pm2-slotdash" aria-label="从 Git 安装插件">
+    <section class="pm2-slotdash" :aria-label="String(t('pluginManagerV2.gitSection.aria'))">
       <div class="pm2-slotdash-head">
         <div class="pm2-slotdash-title">
-          <h3 class="pm2-h3">从 Git 仓库安装插件</h3>
-          <HelpCircle label="什么是从 Git 安装？" inline>
-            <p>适合从 GitHub/自建 Git 仓库直接拉取插件。</p>
-            <p>网盘/压缩包请放到投放目录，再去“插件市场 → 本地导入”安装。</p>
+          <h3 class="pm2-h3">{{ t("pluginManagerV2.gitSection.title") }}</h3>
+          <HelpCircle :label="String(t('pluginManagerV2.gitSection.helpLabel'))" inline>
+            <p>{{ t("pluginManagerV2.gitSection.helpLine1") }}</p>
+            <p>{{ t("pluginManagerV2.gitSection.helpLine2") }}</p>
           </HelpCircle>
         </div>
         <button
@@ -688,7 +692,7 @@ async function onApply(payload: Record<string, unknown>) {
           :disabled="gitInstalling || !gitUrlDraft.trim()"
           @click="onInstallFromGit"
         >
-          {{ gitInstalling ? "安装中…" : "安装" }}
+          {{ gitInstalling ? t("pluginManagerV2.gitSection.installing") : t("pluginManagerV2.gitSection.install") }}
         </button>
       </div>
       <div class="pm2-slotdash-row">
@@ -704,26 +708,26 @@ async function onApply(payload: Record<string, unknown>) {
         </label>
       </div>
       <p class="pm2-muted" style="margin: 8px 0 0">
-        提示：请仅安装你信任的来源；安装后如遇“权限不足”，到插件权限里补授权即可。
+        {{ t("pluginManagerV2.gitSection.hint") }}
       </p>
     </section>
 
-    <section class="pm2-slotdash" aria-label="本地 Llama（基础）">
+    <section class="pm2-slotdash" :aria-label="String(t('pluginManagerV2.localLlamaSection.aria'))">
       <div class="pm2-slotdash-head">
         <div class="pm2-slotdash-title">
-          <h3 class="pm2-h3">本地 Llama（基础）</h3>
-          <HelpCircle label="为什么要在这里设置？" inline>
-            <p>这里提供“一键启用”的最小路径：授予必要权限，并把当前会话的 LLM 后端切到 directory。</p>
-            <p>更复杂的模型/日志/调参工作台保留在 V1。</p>
+          <h3 class="pm2-h3">{{ t("pluginManagerV2.localLlamaSection.title") }}</h3>
+          <HelpCircle :label="String(t('pluginManagerV2.localLlamaSection.helpLabel'))" inline>
+            <p>{{ t("pluginManagerV2.localLlamaSection.helpLine1") }}</p>
+            <p>{{ t("pluginManagerV2.localLlamaSection.helpLine2") }}</p>
           </HelpCircle>
         </div>
         <button type="button" class="pm2-btn secondary" @click="onDisableSessionLlmOverride">
-          清除会话覆盖
+          {{ t("pluginManagerV2.localLlamaSection.clearOverride") }}
         </button>
       </div>
       <div class="pm2-slotdash-row">
         <label class="pm2-slotdash-label" style="flex: 1 1 360px">
-          插件 ID
+          {{ t("pluginManagerV2.localLlamaSection.pluginIdLabel") }}
           <input
             v-model="localLlamaPluginIdDraft"
             class="pm2-input"
@@ -742,17 +746,23 @@ async function onApply(payload: Record<string, unknown>) {
             {{ p.id }}{{ p.provides.length ? ` · provides: ${p.provides.join(", ")}` : "" }}
           </option>
         </datalist>
-        <div class="pm2-slotdash-muted">状态：{{ localLlamaPluginInstalled ? "已扫描" : "未扫描" }}</div>
+        <div class="pm2-slotdash-muted">
+          {{ t("pluginManagerV2.localLlamaSection.statusLabel") }}：{{
+            localLlamaPluginInstalled
+              ? t("pluginManagerV2.localLlamaSection.status.scanned")
+              : t("pluginManagerV2.localLlamaSection.status.notScanned")
+          }}
+        </div>
         <button
           type="button"
           class="pm2-btn"
           :disabled="!localLlamaPluginInstalled"
           @click="onEnableLocalLlamaBasic"
         >
-          一键启用（当前会话）
+          {{ t("pluginManagerV2.localLlamaSection.enableForSession") }}
         </button>
       </div>
-      <p class="pm2-muted" style="margin: 8px 0 0">当前有效 LLM：{{ llmEffectiveLabel }}</p>
+      <p class="pm2-muted" style="margin: 8px 0 0">{{ t("pluginManagerV2.localLlamaSection.effectiveLabel") }}：{{ llmEffectiveLabel }}</p>
     </section>
 
     <ExpertModelsPanel @open-permissions="openPermModal($event.pluginId)" />
