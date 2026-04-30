@@ -10,6 +10,7 @@ import {
   expertModelsListLocalLoras,
   expertModelsListRuns,
   expertModelsClearRuns,
+  expertModelsGetRunDetail,
   expertModelsRollbackLastRun,
   expertModelsRollbackToRun,
   expertModelsSetRoleDefault,
@@ -25,6 +26,7 @@ import {
   type ExpertWorkflowDto,
   type ExpertWorkflowSummaryDto,
   type ExpertModelsRunSummaryDto,
+  type ExpertModelsRunDetailDto,
   type PromptStyleOverride,
 } from "../utils/tauri-api";
 import { useRoleStore } from "./roleStore";
@@ -183,6 +185,32 @@ export const useExpertModelsStore = defineStore("expertModels", {
       if (!roleId) throw new Error("当前未选择角色。");
       await expertModelsClearRuns({ roleId, sessionId: null });
       await this.refresh();
+    },
+
+    async getRunDetail(indexFromLatest: number): Promise<ExpertModelsRunDetailDto> {
+      const roleStore = useRoleStore();
+      const roleId = (roleStore.currentRoleId ?? "").trim();
+      if (!roleId) throw new Error("当前未选择角色。");
+      const res = await expertModelsGetRunDetail({ roleId, sessionId: null, indexFromLatest });
+      return res.item;
+    },
+
+    async applySpecificToSession(
+      graph: ExpertGraph,
+      promptStyle: PromptStyleOverride | null,
+    ): Promise<{ modelPath?: string | null; llamaArgs?: string | null }> {
+      const roleStore = useRoleStore();
+      const roleId = (roleStore.currentRoleId ?? "").trim();
+      if (!roleId) throw new Error("当前未选择角色。");
+      await expertModelsSetSessionOverride({
+        roleId,
+        sessionId: null,
+        graph,
+        promptStyle,
+      });
+      const r = await expertModelsApplyToSession({ roleId, sessionId: null });
+      await this.refresh();
+      return { modelPath: r.modelPath, llamaArgs: r.llamaArgs };
     },
 
     async clearSessionOverrideAndApply(): Promise<void> {

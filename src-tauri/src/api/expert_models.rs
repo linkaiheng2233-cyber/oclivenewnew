@@ -11,6 +11,7 @@ use crate::models::dto::{
     ExpertModelsClearSessionOverrideRequest, ExpertModelsEffectiveResponse,
     ExpertModelsGetEffectiveRequest, ExpertModelsSetRoleDefaultRequest,
     ExpertModelsSetSessionOverrideRequest,
+    ExpertModelsGetRunDetailRequest, ExpertModelsGetRunDetailResponse, ExpertModelsRunDetailDto,
     ExpertModelsListRunsResponse, ExpertModelsRollbackToRunRequest, ExpertModelsRunSummaryDto,
     ExpertWorkflowDto, ExpertWorkflowSummaryDto, ExpertWorkflowsDeleteRequest,
     ExpertWorkflowsGetRequest, ExpertWorkflowsListResponse, ExpertWorkflowsSaveRequest,
@@ -152,13 +153,52 @@ fn read_target_summary(v: &serde_json::Value) -> Option<(String, u32, bool)> {
     Some((base, loras, ps))
 }
 
-fn read_apply_outcome(v: &serde_json::Value) -> (Option<bool>, Option<String>) {
+fn read_apply_detail(
+    v: &serde_json::Value,
+) -> (
+    Option<bool>,
+    Option<String>,
+    Option<String>,
+    Option<String>,
+    Option<i64>,
+) {
     let Some(a) = v.get("apply") else {
-        return (None, None);
+        return (None, None, None, None, None);
     };
     let ok = a.get("ok").and_then(|x| x.as_bool());
     let err = a.get("error").and_then(|x| x.as_str()).map(|s| s.to_string());
-    (ok, err)
+    let model_path = a
+        .get("modelPath")
+        .and_then(|x| x.as_str())
+        .map(|s| s.to_string());
+    let llama_args = a
+        .get("llamaArgs")
+        .and_then(|x| x.as_str())
+        .map(|s| s.to_string());
+    let dur = a.get("durationMs").and_then(|x| x.as_i64());
+    (ok, err, model_path, llama_args, dur)
+}
+
+fn read_target_config(v: &serde_json::Value) -> (Option<ExpertGraph>, Option<PromptStyleOverride>) {
+    let g = v
+        .get("targetGraph")
+        .cloned()
+        .and_then(|x| serde_json::from_value::<ExpertGraph>(x).ok());
+    let s = v
+        .get("targetPromptStyle")
+        .cloned()
+        .and_then(|x| serde_json::from_value::<Option<PromptStyleOverride>>(x).ok())
+        .flatten();
+    (g, s)
+}
+
+fn graph_summary(graph: &ExpertGraph, style: &Option<PromptStyleOverride>) -> (String, u32, bool) {
+    (pick_base_name(graph), count_enabled_loras(graph), style.is_some())
+}
+
+fn idx_from_latest_to_pos(len: usize, idx_from_latest: u32) -> Option<usize> {
+    let idx = idx_from_latest as usize;
+    len.checked_sub(1)?.checked_sub(idx)
 }
 
 fn base_file_name(p: &str) -> String {
@@ -567,7 +607,14 @@ pub async fn expert_models_apply_to_session(
         "hasPromptStyle": style.is_some(),
       }
     });
-    runs.push(snapshot);
+    // Also store the target config for retry/detail (backwards compatible: older entries may not have these).
+    // NOTE: This stores the graph as-is, including UI coordinates; it is still a pure JSON blob.
+    runs.push({
+        let mut s = snapshot;
+        s["targetGraph"] = serde_json::to_value(&graph).unwrap_or(json!({"version":1,"nodes":[],"edges":[]}));
+        s["targetPromptStyle"] = serde_json::to_value(&style).unwrap_or(json!(null));
+        s
+    });
     // keep last 30
     if runs.len() > 30 {
         runs.drain(0..(runs.len() - 30));
@@ -575,6 +622,7 @@ pub async fn expert_models_apply_to_session(
 
     let gguf_dir = llama_models_gguf_dir(&state);
     let loras_dir = llama_loras_dir(&state);
+    let started = std::time::Instant::now();
     let apply_result: Result<ExpertModelsApplyResult, String> = (async {
         let compiled =
             compile_graph_to_llama_local_config(&graph, gguf_dir.as_path(), loras_dir.as_path())
@@ -617,6 +665,7 @@ pub async fn expert_models_apply_to_session(
         })
     })
     .await;
+    let duration_ms: i64 = started.elapsed().as_millis() as i64;
 
     // Persist apply outcome back onto the snapshot entry (best-effort; also supports older entries without apply field).
     if let Some(v) = runs.get_mut(snapshot_idx) {
@@ -626,12 +675,14 @@ pub async fn expert_models_apply_to_session(
                   "ok": true,
                   "modelPath": r.model_path,
                   "llamaArgs": r.llama_args,
+                  "durationMs": duration_ms,
                 });
             }
             Err(e) => {
                 v["apply"] = json!({
                   "ok": false,
                   "error": e,
+                  "durationMs": duration_ms,
                 });
             }
         }
@@ -756,7 +807,7 @@ pub async fn expert_models_list_runs(
     let mut items: Vec<ExpertModelsRunSummaryDto> = vec![];
     for (i, v) in runs.iter().rev().enumerate() {
         if let Some((at_ms, graph, style)) = summarize_snapshot(v) {
-            let (apply_ok, apply_error) = read_apply_outcome(v);
+            let (apply_ok, apply_error, _mp, _la, apply_duration_ms) = read_apply_detail(v);
             let (t_base, t_loras, t_ps) = read_target_summary(v)
                 .unwrap_or((pick_base_name(&graph), count_enabled_loras(&graph), style.is_some()));
             items.push(ExpertModelsRunSummaryDto {
@@ -767,6 +818,7 @@ pub async fn expert_models_list_runs(
                 target_has_prompt_style: t_ps,
                 apply_ok,
                 apply_error,
+                apply_duration_ms,
             });
         }
         if items.len() >= 30 {
@@ -774,6 +826,75 @@ pub async fn expert_models_list_runs(
         }
     }
     Ok(ExpertModelsListRunsResponse { items })
+}
+
+#[tauri::command]
+pub async fn expert_models_get_run_detail(
+    req: ExpertModelsGetRunDetailRequest,
+    state: State<'_, AppState>,
+) -> Result<ExpertModelsGetRunDetailResponse, String> {
+    let role_id = req.role_id.trim();
+    if role_id.is_empty() {
+        return Err(ApiError::InvalidParameter {
+            message: "role_id required".into(),
+        }
+        .to_string());
+    }
+    let session_ns = conversation_state_role_id(role_id, req.session_id.as_deref());
+    state
+        .db_manager
+        .ensure_role_runtime(session_ns.as_str())
+        .await
+        .map_err(|e| e.to_frontend_error())?;
+    let raw = state
+        .expert_models_repo
+        .get_expert_models_run_history_json(session_ns.as_str())
+        .await
+        .map_err(|e| e.to_frontend_error())?;
+    let runs = parse_run_history(raw);
+    let pos = idx_from_latest_to_pos(runs.len(), req.index_from_latest).ok_or_else(|| {
+        ApiError::InvalidParameter {
+            message: "index out of range".into(),
+        }
+        .to_string()
+    })?;
+    let v = runs
+        .get(pos)
+        .cloned()
+        .ok_or_else(|| "run missing".to_string())?;
+    let (at_ms, snapshot_graph, snapshot_style) =
+        summarize_snapshot(&v).ok_or_else(|| "invalid run entry".to_string())?;
+    let (snapshot_base, snapshot_loras, snapshot_ps) = graph_summary(&snapshot_graph, &snapshot_style);
+
+    let (target_graph, target_style) = read_target_config(&v);
+    let (t_base, t_loras, t_ps) = read_target_summary(&v).unwrap_or_else(|| {
+        let style_ref = target_style.clone().or(snapshot_style.clone());
+        let g_ref = target_graph.clone().unwrap_or_else(|| snapshot_graph.clone());
+        graph_summary(&g_ref, &style_ref)
+    });
+    let (apply_ok, apply_error, apply_model_path, apply_llama_args, apply_duration_ms) = read_apply_detail(&v);
+
+    Ok(ExpertModelsGetRunDetailResponse {
+        item: ExpertModelsRunDetailDto {
+            index_from_latest: req.index_from_latest,
+            at_ms,
+            snapshot_graph,
+            snapshot_prompt_style: snapshot_style,
+            snapshot_base_name: snapshot_base,
+            snapshot_lora_count: snapshot_loras,
+            snapshot_has_prompt_style: snapshot_ps,
+            target_graph,
+            target_prompt_style: target_style,
+            target_base_name: t_base,
+            target_lora_count: t_loras,
+            target_has_prompt_style: t_ps,
+            apply_ok,
+            apply_error,
+            apply_model_path,
+            apply_llama_args,
+            apply_duration_ms,
+        },
+    })
 }
 
 #[tauri::command]
@@ -829,11 +950,7 @@ pub async fn expert_models_rollback_to_run(
     if runs.is_empty() {
         return Err(ApiError::InvalidParameter { message: "no runs".into() }.to_string());
     }
-    let idx_from_latest = req.index_from_latest as usize;
-    let target_pos_from_start = runs
-        .len()
-        .checked_sub(1)
-        .and_then(|last| last.checked_sub(idx_from_latest))
+    let target_pos_from_start = idx_from_latest_to_pos(runs.len(), req.index_from_latest)
         .ok_or_else(|| ApiError::InvalidParameter {
             message: "index out of range".into(),
         }

@@ -290,6 +290,7 @@ export interface ExpertModelsRunSummaryDto {
   targetHasPromptStyle: boolean;
   applyOk?: boolean | null;
   applyError?: string | null;
+  applyDurationMs?: number | null;
 }
 
 export async function expertModelsListRuns(params: {
@@ -328,6 +329,43 @@ export async function expertModelsRollbackToRun(params: {
       indexFromLatest: params.indexFromLatest,
     },
   });
+}
+
+export interface ExpertModelsRunDetailDto {
+  indexFromLatest: number;
+  atMs: number;
+  snapshotGraph: ExpertGraph;
+  snapshotPromptStyle?: PromptStyleOverride | null;
+  snapshotBaseName: string;
+  snapshotLoraCount: number;
+  snapshotHasPromptStyle: boolean;
+  targetGraph?: ExpertGraph | null;
+  targetPromptStyle?: PromptStyleOverride | null;
+  targetBaseName: string;
+  targetLoraCount: number;
+  targetHasPromptStyle: boolean;
+  applyOk?: boolean | null;
+  applyError?: string | null;
+  applyModelPath?: string | null;
+  applyLlamaArgs?: string | null;
+  applyDurationMs?: number | null;
+}
+
+export async function expertModelsGetRunDetail(params: {
+  roleId: string;
+  sessionId?: string | null;
+  indexFromLatest: number;
+}): Promise<{ item: ExpertModelsRunDetailDto }> {
+  return invokeWithFriendlyError<{ item: ExpertModelsRunDetailDto }>(
+    "expert_models_get_run_detail",
+    {
+      req: {
+        roleId: params.roleId,
+        sessionId: params.sessionId ?? null,
+        indexFromLatest: params.indexFromLatest,
+      },
+    },
+  );
 }
 
 export async function expertModelsListLocalBaseModels(): Promise<LocalModelFileDto[]> {

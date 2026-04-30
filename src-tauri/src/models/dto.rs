@@ -617,12 +617,65 @@ pub struct ExpertModelsRunSummaryDto {
     pub apply_ok: Option<bool>,
     #[serde(default)]
     pub apply_error: Option<String>,
+    #[serde(default)]
+    pub apply_duration_ms: Option<i64>,
 }
 
 #[derive(Debug, Clone, Serialize)]
 #[serde(rename_all = "camelCase")]
 pub struct ExpertModelsListRunsResponse {
     pub items: Vec<ExpertModelsRunSummaryDto>,
+}
+
+#[derive(Debug, Clone, Serialize)]
+#[serde(rename_all = "camelCase")]
+pub struct ExpertModelsRunDetailDto {
+    pub index_from_latest: u32,
+    pub at_ms: i64,
+
+    // Rollback snapshot (previous effective before apply).
+    pub snapshot_graph: ExpertGraph,
+    #[serde(default)]
+    pub snapshot_prompt_style: Option<PromptStyleOverride>,
+    pub snapshot_base_name: String,
+    pub snapshot_lora_count: u32,
+    pub snapshot_has_prompt_style: bool,
+
+    // Target config (what we tried to apply).
+    #[serde(default)]
+    pub target_graph: Option<ExpertGraph>,
+    #[serde(default)]
+    pub target_prompt_style: Option<PromptStyleOverride>,
+    pub target_base_name: String,
+    pub target_lora_count: u32,
+    pub target_has_prompt_style: bool,
+
+    // Apply outcome (may be absent for older entries).
+    #[serde(default)]
+    pub apply_ok: Option<bool>,
+    #[serde(default)]
+    pub apply_error: Option<String>,
+    #[serde(default)]
+    pub apply_model_path: Option<String>,
+    #[serde(default)]
+    pub apply_llama_args: Option<String>,
+    #[serde(default)]
+    pub apply_duration_ms: Option<i64>,
+}
+
+#[derive(Debug, Clone, Serialize)]
+#[serde(rename_all = "camelCase")]
+pub struct ExpertModelsGetRunDetailResponse {
+    pub item: ExpertModelsRunDetailDto,
+}
+
+#[derive(Debug, Clone, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct ExpertModelsGetRunDetailRequest {
+    pub role_id: String,
+    #[serde(default)]
+    pub session_id: Option<String>,
+    pub index_from_latest: u32,
 }
 
 #[derive(Debug, Clone, Deserialize)]

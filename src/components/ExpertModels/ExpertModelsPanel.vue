@@ -14,8 +14,13 @@ const emit = defineEmits<{
 }>();
 
 const saving = ref(false);
+const applying = ref(false);
 const editorMode = ref<"canvas" | "form">("canvas");
 const selectedCanvasNodeId = ref<string | null>(null);
+const runFilterStatus = ref<"all" | "ok" | "failed" | "unknown">("all");
+const runFilterText = ref("");
+const expandedRunIndex = ref<number | null>(null);
+const expandedRunDetail = ref<any | null>(null);
 
 const sourceLabel = (s: string): string => {
   if (s === "session_override") return "会话覆盖";
@@ -168,6 +173,7 @@ async function onRefresh(): Promise<void> {
 
 async function onApplySession(): Promise<void> {
   saving.value = true;
+  applying.value = true;
   try {
     const r = await store.applyToSession();
     showToast(
@@ -178,13 +184,17 @@ async function onApplySession(): Promise<void> {
     showToast("error", e instanceof Error ? e.message : String(e));
   } finally {
     saving.value = false;
+    applying.value = false;
   }
 }
 
 async function onRollbackLastRun(): Promise<void> {
-  const ok = window.confirm("将回滚到上一次已应用的配置（Module 9 Ctrl+Z），并重新应用到当前会话。继续吗？");
+  const ok = window.confirm(
+    "将回滚到上一次已应用的配置（Module 9 Ctrl+Z），并重新应用到当前会话。\n提示：可在「Run 历史」里回滚到任意一次。\n继续吗？",
+  );
   if (!ok) return;
   saving.value = true;
+  applying.value = true;
   try {
     const r = await store.rollbackLastRun();
     showToast(
@@ -195,6 +205,7 @@ async function onRollbackLastRun(): Promise<void> {
     showToast("error", e instanceof Error ? e.message : String(e));
   } finally {
     saving.value = false;
+    applying.value = false;
   }
 }
 
@@ -205,10 +216,117 @@ function formatRunTime(ms: number): string {
   return `${pad(d.getHours())}:${pad(d.getMinutes())}:${pad(d.getSeconds())}`;
 }
 
-async function onRollbackToRun(indexFromLatest: number): Promise<void> {
-  const ok = window.confirm("将回滚到选中的历史配置，并重新应用到当前会话。继续吗？");
+function formatRelative(ms: number): string {
+  const d = Date.now() - ms;
+  if (!Number.isFinite(d)) return "";
+  if (d < 1000) return "刚刚";
+  const s = Math.floor(d / 1000);
+  if (s < 60) return `${s}s 前`;
+  const m = Math.floor(s / 60);
+  if (m < 60) return `${m}m 前`;
+  const h = Math.floor(m / 60);
+  if (h < 48) return `${h}h 前`;
+  const day = Math.floor(h / 24);
+  return `${day}d 前`;
+}
+
+const filteredRuns = computed(() => {
+  const text = runFilterText.value.trim().toLowerCase();
+  return (store.runs ?? []).filter((r) => {
+    const ok = r.applyOk === true;
+    const failed = r.applyOk === false;
+    const unknown = r.applyOk == null;
+    if (runFilterStatus.value === "ok" && !ok) return false;
+    if (runFilterStatus.value === "failed" && !failed) return false;
+    if (runFilterStatus.value === "unknown" && !unknown) return false;
+    if (text) {
+      const hay = `${r.targetBaseName ?? ""}`.toLowerCase();
+      if (!hay.includes(text)) return false;
+    }
+    return true;
+  });
+});
+
+async function onToggleRunDetail(indexFromLatest: number): Promise<void> {
+  if (expandedRunIndex.value === indexFromLatest) {
+    expandedRunIndex.value = null;
+    expandedRunDetail.value = null;
+    return;
+  }
+  expandedRunIndex.value = indexFromLatest;
+  expandedRunDetail.value = null;
+  try {
+    expandedRunDetail.value = await store.getRunDetail(indexFromLatest);
+  } catch (e) {
+    showToast("error", e instanceof Error ? e.message : String(e));
+  }
+}
+
+async function onRetryRun(indexFromLatest: number): Promise<void> {
+  const d = await store.getRunDetail(indexFromLatest);
+  const tg = (d.targetGraph ?? null) as ExpertGraph | null;
+  const ts = (d.targetPromptStyle ?? null) as PromptStyleOverride | null;
+  if (!tg) throw new Error("该 Run 没有保存 targetGraph（可能是旧版本记录），无法重试。");
+  const ok = window.confirm(
+    `将重试此目标配置并重新应用到当前会话：\nBase=${d.targetBaseName || "(未设置)"} / LoRA=${d.targetLoraCount} / PromptStyle=${d.targetHasPromptStyle ? "是" : "否"}\n继续吗？`,
+  );
   if (!ok) return;
   saving.value = true;
+  applying.value = true;
+  try {
+    const r = await store.applySpecificToSession(tg, ts);
+    showToast(
+      "success",
+      `已重试并应用。\nmodelPath=${r.modelPath ?? "(未设置)"}\nllamaArgs=${r.llamaArgs ?? "(空)"}`,
+    );
+  } catch (e) {
+    showToast("error", e instanceof Error ? e.message : String(e));
+  } finally {
+    saving.value = false;
+    applying.value = false;
+  }
+}
+
+async function onCopyRunDiagnostics(indexFromLatest: number): Promise<void> {
+  const d = await store.getRunDetail(indexFromLatest);
+  const payload = {
+    version: 1,
+    atMs: d.atMs,
+    indexFromLatest: d.indexFromLatest,
+    snapshot: {
+      base: d.snapshotBaseName,
+      loras: d.snapshotLoraCount,
+      hasPromptStyle: d.snapshotHasPromptStyle,
+    },
+    target: {
+      base: d.targetBaseName,
+      loras: d.targetLoraCount,
+      hasPromptStyle: d.targetHasPromptStyle,
+    },
+    apply: {
+      ok: d.applyOk,
+      error: d.applyError,
+      modelPath: d.applyModelPath,
+      llamaArgs: d.applyLlamaArgs,
+      durationMs: d.applyDurationMs,
+    },
+  };
+  await navigator.clipboard.writeText(JSON.stringify(payload, null, 2));
+  showToast("success", "已复制 Run 诊断信息。");
+}
+
+async function onRollbackToRun(indexFromLatest: number): Promise<void> {
+  let summary = "";
+  try {
+    const d = await store.getRunDetail(indexFromLatest);
+    summary = `\n将回滚到：Base=${d.snapshotBaseName || "(未设置)"} / LoRA=${d.snapshotLoraCount} / PromptStyle=${d.snapshotHasPromptStyle ? "是" : "否"}`;
+  } catch {
+    // ignore
+  }
+  const ok = window.confirm(`将回滚到选中的历史配置，并重新应用到当前会话。${summary}\n继续吗？`);
+  if (!ok) return;
+  saving.value = true;
+  applying.value = true;
   try {
     const r = await store.rollbackToRun(indexFromLatest);
     showToast(
@@ -219,6 +337,7 @@ async function onRollbackToRun(indexFromLatest: number): Promise<void> {
     showToast("error", e instanceof Error ? e.message : String(e));
   } finally {
     saving.value = false;
+    applying.value = false;
   }
 }
 
@@ -973,6 +1092,10 @@ async function onImportWorkflowJson(): Promise<void> {
       <details class="em-runs">
         <summary class="em-btn secondary" :aria-disabled="saving || store.loading">Run 历史（{{ store.runs.length }}）</summary>
         <div class="em-runs-body">
+          <div v-if="applying" class="em-run-applying">
+            <b>正在应用…</b>
+            <span class="em-muted2">将触发本地 llama 重启；请稍等。</span>
+          </div>
           <div class="em-runs-actions">
             <button class="em-btn secondary" type="button" :disabled="saving || store.loading" @click="onRefresh">
               刷新
@@ -985,33 +1108,93 @@ async function onImportWorkflowJson(): Promise<void> {
             >
               清空历史
             </button>
+            <select v-model="runFilterStatus" class="em-select" style="min-width: 120px">
+              <option value="all">全部</option>
+              <option value="ok">OK</option>
+              <option value="failed">FAILED</option>
+              <option value="unknown">未知</option>
+            </select>
+            <input
+              v-model="runFilterText"
+              class="em-input"
+              type="text"
+              placeholder="搜索 Base 文件名…"
+              style="min-width: 180px"
+            />
           </div>
           <div v-if="!store.runs.length" class="em-muted">
             暂无 Run 历史。每次“应用到当前会话”前都会记录一条快照。
           </div>
           <div v-else class="em-run-list">
-            <div v-for="r in store.runs" :key="String(r.indexFromLatest)" class="em-run-item">
-              <div class="em-run-main">
-                <div class="em-run-title">
-                  <b>#{{ r.indexFromLatest + 1 }}</b>
-                  <span class="em-muted2">{{ formatRunTime(r.atMs) }}</span>
+            <div v-for="r in filteredRuns" :key="String(r.indexFromLatest)" class="em-run-wrap">
+              <div class="em-run-item">
+                <div class="em-run-main">
+                  <div class="em-run-title">
+                    <b>#{{ r.indexFromLatest + 1 }}</b>
+                    <span class="em-muted2" :title="new Date(r.atMs).toLocaleString()">
+                      {{ formatRelative(r.atMs) }}（{{ formatRunTime(r.atMs) }}）
+                    </span>
+                  </div>
+                  <div class="em-run-meta">
+                    <span class="em-pill2">Base：{{ r.targetBaseName || "(未设置)" }}</span>
+                    <span class="em-pill2">LoRA：{{ r.targetLoraCount }}</span>
+                    <span v-if="r.targetHasPromptStyle" class="em-pill2">PromptStyle</span>
+                    <span v-if="r.applyOk === true" class="em-pill2 em-ok">OK</span>
+                    <span v-else-if="r.applyOk === false" class="em-pill2 em-bad" :title="r.applyError || ''">FAILED</span>
+                    <span v-if="r.applyDurationMs != null" class="em-pill2">耗时：{{ r.applyDurationMs }}ms</span>
+                  </div>
                 </div>
-                <div class="em-run-meta">
-                  <span class="em-pill2">Base：{{ r.targetBaseName || "(未设置)" }}</span>
-                  <span class="em-pill2">LoRA：{{ r.targetLoraCount }}</span>
-                  <span v-if="r.targetHasPromptStyle" class="em-pill2">PromptStyle</span>
-                  <span v-if="r.applyOk === true" class="em-pill2 em-ok">OK</span>
-                  <span v-else-if="r.applyOk === false" class="em-pill2 em-bad" :title="r.applyError || ''">FAILED</span>
+                <div class="em-run-actions">
+                  <button class="em-btn secondary" type="button" :disabled="saving || store.loading" @click="onToggleRunDetail(r.indexFromLatest)">
+                    {{ expandedRunIndex === r.indexFromLatest ? "收起详情" : "详情" }}
+                  </button>
+                  <button class="em-btn secondary" type="button" :disabled="saving || store.loading" @click="onRollbackToRun(r.indexFromLatest)">
+                    回滚到此处
+                  </button>
+                  <button
+                    v-if="r.applyOk === false"
+                    class="em-btn secondary"
+                    type="button"
+                    :disabled="saving || store.loading"
+                    @click="onRetryRun(r.indexFromLatest)"
+                  >
+                    重试
+                  </button>
+                  <button class="em-btn secondary" type="button" :disabled="saving || store.loading" @click="onCopyRunDiagnostics(r.indexFromLatest)">
+                    复制诊断
+                  </button>
                 </div>
               </div>
-              <button
-                class="em-btn secondary"
-                type="button"
-                :disabled="saving || store.loading"
-                @click="onRollbackToRun(r.indexFromLatest)"
-              >
-                回滚到此处
-              </button>
+              <div v-if="expandedRunIndex != null && expandedRunIndex === r.indexFromLatest" class="em-run-detail">
+                <div v-if="!expandedRunDetail" class="em-muted">加载详情中…</div>
+                <div v-else class="em-run-detail-grid">
+                  <div>
+                    <div class="em-muted">目标（apply）</div>
+                    <div><b>Base</b>：{{ expandedRunDetail.targetBaseName || "(未设置)" }}</div>
+                    <div><b>LoRA</b>：{{ expandedRunDetail.targetLoraCount }}</div>
+                    <div><b>PromptStyle</b>：{{ expandedRunDetail.targetHasPromptStyle ? "是" : "否" }}</div>
+                  </div>
+                  <div>
+                    <div class="em-muted">回滚快照（apply 前）</div>
+                    <div><b>Base</b>：{{ expandedRunDetail.snapshotBaseName || "(未设置)" }}</div>
+                    <div><b>LoRA</b>：{{ expandedRunDetail.snapshotLoraCount }}</div>
+                    <div><b>PromptStyle</b>：{{ expandedRunDetail.snapshotHasPromptStyle ? "是" : "否" }}</div>
+                  </div>
+                  <div style="grid-column: 1 / -1" v-if="expandedRunDetail.applyOk === false">
+                    <div class="em-muted">错误信息</div>
+                    <pre class="em-pre">{{ expandedRunDetail.applyError || "(无错误信息)" }}</pre>
+                  </div>
+                  <div style="grid-column: 1 / -1" v-else-if="expandedRunDetail.applyOk === true">
+                    <div class="em-muted">结果</div>
+                    <div><b>modelPath</b>：{{ expandedRunDetail.applyModelPath || "(未返回)" }}</div>
+                    <div><b>durationMs</b>：{{ expandedRunDetail.applyDurationMs ?? "(未返回)" }}</div>
+                    <details>
+                      <summary class="em-muted2">llamaArgs（展开）</summary>
+                      <pre class="em-pre">{{ expandedRunDetail.applyLlamaArgs || "" }}</pre>
+                    </details>
+                  </div>
+                </div>
+              </div>
             </div>
           </div>
         </div>
@@ -1357,8 +1540,24 @@ async function onImportWorkflowJson(): Promise<void> {
   display: flex;
   gap: 8px;
   margin-bottom: 8px;
+  flex-wrap: wrap;
+}
+.em-run-applying {
+  display: flex;
+  gap: 8px;
+  align-items: baseline;
+  padding: 8px;
+  border-radius: 10px;
+  border: 1px solid rgba(53, 124, 255, 0.35);
+  background: rgba(53, 124, 255, 0.08);
+  margin-bottom: 8px;
 }
 .em-run-list {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+.em-run-wrap {
   display: flex;
   flex-direction: column;
   gap: 8px;
@@ -1383,6 +1582,34 @@ async function onImportWorkflowJson(): Promise<void> {
   flex-wrap: wrap;
   gap: 6px;
   margin-top: 4px;
+}
+.em-run-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  justify-content: flex-end;
+}
+.em-run-detail {
+  padding: 10px;
+  border-radius: 10px;
+  border: 1px solid var(--border-light);
+  background: var(--bg-primary);
+}
+.em-run-detail-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 10px;
+}
+.em-pre {
+  margin: 6px 0 0;
+  padding: 8px;
+  border-radius: 10px;
+  border: 1px solid var(--border-light);
+  background: var(--bg-secondary);
+  font-size: 12px;
+  line-height: 1.45;
+  overflow: auto;
+  white-space: pre-wrap;
 }
 .em-pill2 {
   display: inline-flex;
