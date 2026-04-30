@@ -21,6 +21,8 @@ import {
   usePluginStore,
 } from "../../stores/pluginStore";
 import { useAppToast } from "../../composables/useAppToast";
+import { useRoleStore } from "../../stores/roleStore";
+import { installPluginFromGit, setPluginPermissionGrant, setSessionPluginBackend } from "../../utils/tauri-api";
 
 const props = defineProps<{
   visible: boolean;
@@ -43,6 +45,7 @@ const {
 const { term } = usePluginTerm();
 const { showToast } = useAppToast();
 const pluginStore = usePluginStore();
+const roleStore = useRoleStore();
 const busy = ref(false);
 const rightCollapsed = ref(false);
 
@@ -90,6 +93,14 @@ const enabledInPickedSlot = computed(() => {
   );
 });
 
+const missingPermsFor = (pluginId: string): string[] => {
+  const entry = pluginStore.catalog.find((c) => c.id === pluginId);
+  const declared = (entry?.installMeta?.declaredPermissions ?? []).map((x) => (x ?? "").trim()).filter(Boolean);
+  const granted = (entry?.installMeta?.grantedPermissions ?? []).map((x) => (x ?? "").trim()).filter(Boolean);
+  const grantedSet = new Set(granted);
+  return declared.filter((p) => !grantedSet.has(p));
+};
+
 function toggleSlotContribution(pluginId: string, enabled: boolean) {
   const slot = pickedSlot.value.trim();
   if (!slot) return;
@@ -110,6 +121,92 @@ async function onSaveSlotDashboard(): Promise<void> {
   try {
     await pluginStore.persist();
     showToast("success", "已保存：插槽位置与启用状态已写入配置。");
+  } catch (e) {
+    showToast("error", e instanceof Error ? e.message : String(e));
+  }
+}
+
+const gitUrlDraft = ref<string>("");
+const gitInstalling = ref(false);
+
+async function onInstallFromGit(): Promise<void> {
+  const gitUrl = gitUrlDraft.value.trim();
+  if (!gitUrl) return;
+  const ok = window.confirm(
+    `将从 Git 仓库安装插件：\n${gitUrl}\n\n提示：请仅安装你信任的来源；安装后如遇“权限不足”报错，请在插件管理里授权。继续吗？`,
+  );
+  if (!ok) return;
+  gitInstalling.value = true;
+  try {
+    const r = await installPluginFromGit(gitUrl);
+    showToast("success", `已安装：${r.installedPluginId}`);
+    gitUrlDraft.value = "";
+    await pluginStore.refresh();
+  } catch (e) {
+    showToast("error", e instanceof Error ? e.message : String(e));
+  } finally {
+    gitInstalling.value = false;
+  }
+}
+
+const localLlamaPluginIdDraft = ref<string>("com.oclive.llama.local");
+const localLlamaPluginInstalled = computed(() => {
+  const pid = localLlamaPluginIdDraft.value.trim();
+  if (!pid) return false;
+  return !!pluginStore.catalog?.some((p) => p.id === pid);
+});
+
+const llmEffectiveLabel = computed(() => {
+  const eff = roleStore.roleInfo.pluginBackendsEffective as any;
+  const llm = String(eff?.llm ?? "").trim();
+  const dp = eff?.directory_plugins as any;
+  const dirId = String(dp?.llm ?? "").trim();
+  if (!llm) return "未设置";
+  if (llm === "directory") return dirId ? `directory · ${dirId}` : "directory · (未指定插件)";
+  return llm;
+});
+
+async function onEnableLocalLlamaBasic(): Promise<void> {
+  const roleId = (roleStore.currentRoleId ?? "").trim();
+  const pid = localLlamaPluginIdDraft.value.trim();
+  if (!roleId || !pid) return;
+  if (!localLlamaPluginInstalled.value) {
+    showToast("error", `未扫描到目录插件：${pid}`);
+    return;
+  }
+  const declaredPerms = ["process:spawn", "network:*"];
+  const ok = window.confirm(
+    `启用本地 Llama（当前会话）将授予插件以下权限：\n${declaredPerms.map((p) => `- ${p}`).join("\n")}\n\n并把 LLM 后端切到 directory：${pid}\n\n继续吗？`,
+  );
+  if (!ok) return;
+  try {
+    for (const perm of declaredPerms) {
+      await setPluginPermissionGrant(pid, perm, true);
+    }
+    const info = await setSessionPluginBackend(
+      roleId,
+      "llm",
+      "directory",
+      undefined,
+      undefined,
+      pid,
+    );
+    roleStore.applyRoleInfo(info);
+    showToast("success", `已启用本地 Llama：${pid}（当前会话）`);
+  } catch (e) {
+    showToast("error", e instanceof Error ? e.message : String(e));
+  }
+}
+
+async function onDisableSessionLlmOverride(): Promise<void> {
+  const roleId = (roleStore.currentRoleId ?? "").trim();
+  if (!roleId) return;
+  const ok = window.confirm("将清除当前会话的 LLM 后端覆盖，恢复角色包/默认设置。继续吗？");
+  if (!ok) return;
+  try {
+    const info = await setSessionPluginBackend(roleId, "llm", null);
+    roleStore.applyRoleInfo(info);
+    showToast("success", "已清除当前会话的 LLM 覆盖。");
   } catch (e) {
     showToast("error", e instanceof Error ? e.message : String(e));
   }
@@ -217,6 +314,15 @@ async function onApply(payload: Record<string, unknown>) {
                 />
                 <span class="pm2-slotdash-id">{{ id }}</span>
               </label>
+              <HelpCircle
+                v-if="missingPermsFor(id).length"
+                :label="`该插件缺少权限：${missingPermsFor(id).join('、')}`"
+                inline
+              >
+                <p>该插件声明了权限，但还没全部授权，调用时可能会被拦截。</p>
+                <p>缺少：{{ missingPermsFor(id).join("、") }}</p>
+                <p>处理：到“插件管理（V1）→ 已安装插件 → 权限”里勾选授权。</p>
+              </HelpCircle>
               <button
                 type="button"
                 class="pm2-mini"
@@ -259,6 +365,78 @@ async function onApply(payload: Record<string, unknown>) {
           </ul>
         </div>
       </div>
+    </section>
+
+    <section class="pm2-slotdash" aria-label="从 Git 安装插件">
+      <div class="pm2-slotdash-head">
+        <div class="pm2-slotdash-title">
+          <h3 class="pm2-h3">从 Git 仓库安装插件</h3>
+          <HelpCircle label="什么是从 Git 安装？" inline>
+            <p>适合从 GitHub/自建 Git 仓库直接拉取插件。</p>
+            <p>网盘/压缩包请放到投放目录，再去“插件市场 → 本地导入”安装。</p>
+          </HelpCircle>
+        </div>
+        <button
+          type="button"
+          class="pm2-btn"
+          :disabled="gitInstalling || !gitUrlDraft.trim()"
+          @click="onInstallFromGit"
+        >
+          {{ gitInstalling ? "安装中…" : "安装" }}
+        </button>
+      </div>
+      <div class="pm2-slotdash-row">
+        <label class="pm2-slotdash-label" style="flex: 1 1 420px">
+          Git URL
+          <input
+            v-model="gitUrlDraft"
+            class="pm2-input"
+            type="text"
+            autocomplete="off"
+            placeholder="https://github.com/owner/repo.git"
+          />
+        </label>
+      </div>
+      <p class="pm2-muted" style="margin: 8px 0 0">
+        提示：请仅安装你信任的来源；安装后如遇“权限不足”，到插件权限里补授权即可。
+      </p>
+    </section>
+
+    <section class="pm2-slotdash" aria-label="本地 Llama（基础）">
+      <div class="pm2-slotdash-head">
+        <div class="pm2-slotdash-title">
+          <h3 class="pm2-h3">本地 Llama（基础）</h3>
+          <HelpCircle label="为什么要在这里设置？" inline>
+            <p>这里提供“一键启用”的最小路径：授予必要权限，并把当前会话的 LLM 后端切到 directory。</p>
+            <p>更复杂的模型/日志/调参工作台保留在 V1。</p>
+          </HelpCircle>
+        </div>
+        <button type="button" class="pm2-btn secondary" @click="onDisableSessionLlmOverride">
+          清除会话覆盖
+        </button>
+      </div>
+      <div class="pm2-slotdash-row">
+        <label class="pm2-slotdash-label" style="flex: 1 1 360px">
+          插件 ID
+          <input
+            v-model="localLlamaPluginIdDraft"
+            class="pm2-input"
+            type="text"
+            autocomplete="off"
+            placeholder="com.oclive.llama.local"
+          />
+        </label>
+        <div class="pm2-slotdash-muted">状态：{{ localLlamaPluginInstalled ? "已扫描" : "未扫描" }}</div>
+        <button
+          type="button"
+          class="pm2-btn"
+          :disabled="!localLlamaPluginInstalled"
+          @click="onEnableLocalLlamaBasic"
+        >
+          一键启用（当前会话）
+        </button>
+      </div>
+      <p class="pm2-muted" style="margin: 8px 0 0">当前有效 LLM：{{ llmEffectiveLabel }}</p>
     </section>
 
     <div class="pm2-grid">
@@ -355,6 +533,15 @@ async function onApply(payload: Record<string, unknown>) {
   border: 1px solid var(--border-light);
   background: var(--bg-primary);
   color: var(--text-primary);
+}
+.pm2-input {
+  width: min(720px, 100%);
+  padding: 7px 10px;
+  border-radius: 8px;
+  border: 1px solid var(--border-light);
+  background: var(--bg-primary);
+  color: var(--text-primary);
+  font-size: 13px;
 }
 .pm2-h3 {
   margin: 0;
