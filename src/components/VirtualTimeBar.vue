@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { computed, onMounted, ref, watch } from "vue";
+import { useI18n } from "vue-i18n";
 import TimeDial from "./TimeDial.vue";
 import { getTimeState, type JumpTimeResponse } from "../utils/tauri-api";
 import { useUiStore } from "../stores/uiStore";
@@ -20,6 +21,7 @@ const dialOpen = ref(false);
 /** 与后端对齐的虚拟时间戳，供拨盘使用 */
 const virtualTimeMs = ref(0);
 const uiStore = useUiStore();
+const { t } = useI18n();
 
 async function loadState() {
   if (!props.roleId) return;
@@ -68,7 +70,7 @@ watch(
 
 <template>
   <div class="vtime" :class="{ 'vtime--compact': compact }">
-    <span v-if="!compact" class="label">虚拟时间</span>
+    <span v-if="!compact" class="label">{{ t("app.topBar.tiles.virtualTime.title") }}</span>
     <span v-else class="label-icon" aria-hidden="true">⏰</span>
     <button
       type="button"

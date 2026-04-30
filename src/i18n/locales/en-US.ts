@@ -770,6 +770,7 @@ export const enUS = {
       notLoaded: "Not loaded",
       totalChunks: "Total {n} chunks",
       lastInjected: "Injected into last prompt:",
+      chunksUnit: "chunks",
       hint:
         "“Last prompt” updates after you send a message. Click “Refresh debug data” to sync pack chunk count (after changing files on disk, run load_role first).",
       presence: {
@@ -792,7 +793,26 @@ export const enUS = {
       title: "Personality vector",
       profileHint:
         "This role uses Profile-based personality source. The 7D vector here is a runtime summarized view for understanding and is not the only source of truth.",
+      traits: {
+        stubbornness: "Stubbornness",
+        clinginess: "Clinginess",
+        sensitivity: "Sensitivity",
+        assertiveness: "Assertiveness",
+        forgiveness: "Forgiveness",
+        talkativeness: "Talkativeness",
+        warmth: "Warmth",
+      },
     },
+    meta: {
+      eventsMemories: "Events: {events} · Memories: {memories}",
+      recentEvents: "Recent events",
+      recentMemories: "Recent memories",
+    },
+    actions: {
+      refreshDebugData: "Refresh debug data",
+      reloadPolicy: "Reload policy",
+    },
+    footer: "💡 Ctrl+Shift+D toggles panel · role pack & monologue live here",
   },
   pluginMarketV1: {
     panel: {

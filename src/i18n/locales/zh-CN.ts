@@ -745,6 +745,7 @@ export const zhCN = {
       notLoaded: "未加载",
       totalChunks: "共 {n} 块",
       lastInjected: "上一句注入 Prompt：",
+      chunksUnit: "块",
       hint: "发话后更新「上一句」；点「刷新调试数据」同步包内块数（改磁盘后请先 load_role）。",
       presence: {
         coPresent: "共景",
@@ -766,7 +767,26 @@ export const zhCN = {
       title: "性格向量",
       profileHint:
         "当前包为「档案」人格来源：此处七维多为运行时从核心与可变性格档案归纳的视图，便于理解，不是唯一数据源。",
+      traits: {
+        stubbornness: "固执",
+        clinginess: "黏人",
+        sensitivity: "敏感",
+        assertiveness: "强势",
+        forgiveness: "宽容",
+        talkativeness: "话痨",
+        warmth: "温暖",
+      },
     },
+    meta: {
+      eventsMemories: "事件数: {events} · 记忆数: {memories}",
+      recentEvents: "最近事件",
+      recentMemories: "最近记忆",
+    },
+    actions: {
+      refreshDebugData: "刷新调试数据",
+      reloadPolicy: "重载策略",
+    },
+    footer: "💡 Ctrl+Shift+D 开关面板 · 角色包与独白已收在此",
   },
   pluginMarketV1: {
     panel: {

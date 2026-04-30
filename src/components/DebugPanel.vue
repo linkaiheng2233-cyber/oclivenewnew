@@ -14,7 +14,6 @@ import { SLOT_DEBUG_DOCK, usePluginStore } from "../stores/pluginStore";
 import { generateMonologue } from "../utils/tauri-api";
 import {
   PERSONALITY_TRAIT_KEYS,
-  PERSONALITY_TRAIT_LABELS_ZH,
   vec7ToRecord,
 } from "../utils/personality-traits";
 
@@ -169,7 +168,8 @@ function presenceLabel(mode: string): string {
         </p>
         <p class="knowledge-line">
           {{ t("debugPanel.knowledge.lastInjected") }}
-          <strong>{{ debugStore.lastKnowledgeChunksInPrompt }}</strong> 块
+          <strong>{{ debugStore.lastKnowledgeChunksInPrompt }}</strong>
+          {{ t("debugPanel.knowledge.chunksUnit") }}
           <span
             v-if="debugStore.lastKnowledgePresenceMode"
             class="knowledge-mode"
@@ -212,17 +212,25 @@ function presenceLabel(mode: string): string {
             class="trait-item"
           >
             <span class="trait-name">
-              {{ PERSONALITY_TRAIT_LABELS_ZH[key] }} {{ traitEmojiForKey(key, traits[key]) }}
+              {{ t(`debugPanel.personalityVector.traits.${key}`) }}
+              {{ traitEmojiForKey(key, traits[key]) }}
             </span>
             <span class="trait-value">{{ traits[key].toFixed(2) }}</span>
           </div>
         </div>
       </div>
 
-      <p class="meta-line">事件数: {{ events.length }} · 记忆数: {{ memories.length }}</p>
+      <p class="meta-line">
+        {{
+          t("debugPanel.meta.eventsMemories", {
+            events: events.length,
+            memories: memories.length,
+          })
+        }}
+      </p>
 
       <details>
-        <summary>最近事件</summary>
+        <summary>{{ t("debugPanel.meta.recentEvents") }}</summary>
         <ul>
           <li v-for="(e, i) in events.slice(0, 5)" :key="`e-${i}`">
             {{ e.event_type ?? "unknown" }} · {{ e.timestamp ?? "-" }}
@@ -230,7 +238,7 @@ function presenceLabel(mode: string): string {
         </ul>
       </details>
       <details>
-        <summary>最近记忆</summary>
+        <summary>{{ t("debugPanel.meta.recentMemories") }}</summary>
         <ul>
           <li v-for="(m, i) in memories.slice(0, 5)" :key="`m-${i}`">
             {{ m.content ?? "-" }} ({{ Number(m.importance ?? 0).toFixed(2) }})
@@ -240,12 +248,14 @@ function presenceLabel(mode: string): string {
 
       <div class="btns">
         <button type="button" :disabled="loading" @click="emit('refresh')">
-          刷新调试数据
+          {{ t("debugPanel.actions.refreshDebugData") }}
         </button>
-        <button type="button" :disabled="loading" @click="emit('reload')">重载策略</button>
+        <button type="button" :disabled="loading" @click="emit('reload')">
+          {{ t("debugPanel.actions.reloadPolicy") }}
+        </button>
       </div>
 
-      <div class="dev-footer">💡 Ctrl+Shift+D 开关面板 · 角色包与独白已收在此</div>
+      <div class="dev-footer">{{ t("debugPanel.footer") }}</div>
     </aside>
   </transition>
 </template>
