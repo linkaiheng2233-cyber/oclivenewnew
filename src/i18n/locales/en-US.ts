@@ -64,6 +64,7 @@ export const enUS = {
   common: {
     save: "Save",
     close: "Close",
+    copy: "Copy",
     cancel: "Cancel",
     confirm: "Confirm",
     continue: "Continue",
@@ -710,10 +711,71 @@ export const enUS = {
       empty: "No recommended_plugins listed.",
     },
     communityIndex: {
+      title: "Community index",
+      tabs: {
+        aria: "Market entry type",
+        plugin: "Plugin",
+        module: "Module",
+      },
+      source: {
+        official: "Official default index",
+        thirdParty: "Third-party · {s}",
+      },
+      syncing: "Syncing…",
+      sync: "Sync online index",
       offlineHint: "Offline mode (using local cached index).",
       thirdPartyWarning:
         "You are using a third-party index source. Only install sources you trust and grant permissions carefully (Developer mode feature).",
       emptyHint: "No index data yet. Click “Sync online index”.",
+      pager: {
+        aria: "Market pagination",
+        summary: "{total} items · Page {page} / {pages}",
+        perPage: "Per page",
+        perPageAria: "Items per page",
+        prev: "Prev",
+        next: "Next",
+      },
+      sourceBadge: {
+        officialTitle: "Official default index",
+        thirdTitle: "Third-party index source",
+        official: "Official",
+        third: "Third-party",
+      },
+      entryTypeBadge: {
+        moduleTitle: "No-code module entry",
+        profileTitle: "No-code Profile entry",
+        module: "Module",
+        profile: "Profile",
+      },
+      trust: {
+        source: "Source",
+        publisher: "Publisher",
+        pubkeysTitle: "Public key status registered in index",
+        pubkeys: "Pubkeys",
+      },
+      reviews: {
+        overallTitle:
+          "Public reviews (overall): {rating}\n\nTip: reviews should be bound to pluginId+pubkeyId (signing public key) by default.",
+        pubkeyDimension: "Pubkey dimension:",
+        copyPubkeyTemplateTitle: "Copy JSON review template bound to this pubkeyId",
+        goContribute: "Contribute review",
+        copyOverallTemplateTitle:
+          "Copy a JSON template that can be directly submitted to reviews.json (recommended: use pubkeyId dimension)",
+        copyTemplate: "Copy template",
+        refresh: "Refresh reviews",
+        recent: "Recent short reviews:",
+      },
+      details: {
+        viewModule: "View module declaration",
+        viewProfile: "View Profile declaration",
+        deps: "Dependencies",
+        predeclaredPerms: "Predeclared permissions",
+        backends: "Backends override (session-level):",
+        noBackends: "No backends override declared.",
+      },
+      missingDeps: "Missing deps",
+      applyModule: "Apply module",
+      applyProfile: "Apply Profile",
     },
     applyPlan: {
       type: {

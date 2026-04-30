@@ -1861,9 +1861,13 @@ async function onPackSelectedPlugin(): Promise<void> {
 
           <section v-if="false" id="pm-community-index" class="pm-section">
             <div class="pm-section-head">
-              <h3 class="pm-h3">社区索引</h3>
+              <h3 class="pm-h3">{{ t("pluginManagerV1.communityIndex.title") }}</h3>
               <div class="pm-section-actions">
-                <div class="pm-market-tabs" role="tablist" aria-label="市场条目类型">
+                <div
+                  class="pm-market-tabs"
+                  role="tablist"
+                  :aria-label="String(t('pluginManagerV1.communityIndex.tabs.aria'))"
+                >
                   <button
                     type="button"
                     class="pm-tab pm-tab--sm"
@@ -1872,7 +1876,7 @@ async function onPackSelectedPlugin(): Promise<void> {
                     :aria-selected="marketEntryTab === 'plugin'"
                     @click="marketEntryTab = 'plugin'"
                   >
-                    插件
+                    {{ t("pluginManagerV1.communityIndex.tabs.plugin") }}
                   </button>
                   <button
                     type="button"
@@ -1882,7 +1886,7 @@ async function onPackSelectedPlugin(): Promise<void> {
                     :aria-selected="marketEntryTab === 'module'"
                     @click="marketEntryTab = 'module'"
                   >
-                    模块
+                    {{ t("pluginManagerV1.communityIndex.tabs.module") }}
                   </button>
                   <button
                     type="button"
@@ -1900,13 +1904,13 @@ async function onPackSelectedPlugin(): Promise<void> {
                   :value="marketSourceSelected"
                   @change="marketSourceSelected = ($event.target as HTMLSelectElement).value"
                 >
-                  <option value="official">官方默认索引</option>
+                  <option value="official">{{ t("pluginManagerV1.communityIndex.source.official") }}</option>
                   <option
                     v-for="s in marketSources"
                     :key="s"
                     :value="s"
                   >
-                    第三方源 · {{ s }}
+                    {{ t("pluginManagerV1.communityIndex.source.thirdParty", { s }) }}
                   </option>
                 </select>
                 <button
@@ -1915,7 +1919,11 @@ async function onPackSelectedPlugin(): Promise<void> {
                   :disabled="pluginStore.pluginMarketSyncing"
                   @click="onSyncMarketIndex"
                 >
-                  {{ pluginStore.pluginMarketSyncing ? "同步中…" : "同步在线索引" }}
+                  {{
+                    pluginStore.pluginMarketSyncing
+                      ? t("pluginManagerV1.communityIndex.syncing")
+                      : t("pluginManagerV1.communityIndex.sync")
+                  }}
                 </button>
               </div>
             </div>
@@ -2060,14 +2068,24 @@ async function onPackSelectedPlugin(): Promise<void> {
               v-else-if="marketRowsFiltered.length > 0"
               class="pm-market-pager"
               role="toolbar"
-              aria-label="市场分页"
+              :aria-label="String(t('pluginManagerV1.communityIndex.pager.aria'))"
             >
               <span class="pm-muted">
-                共 {{ marketRowsFiltered.length }} 条 · 第 {{ marketPage }} / {{ marketTotalPages }} 页
+                {{
+                  t("pluginManagerV1.communityIndex.pager.summary", {
+                    total: marketRowsFiltered.length,
+                    page: marketPage,
+                    pages: marketTotalPages,
+                  })
+                }}
               </span>
               <label class="pm-muted">
-                每页
-                <select v-model.number="marketPageSize" class="pm-select pm-select--sm" aria-label="每页条数">
+                {{ t("pluginManagerV1.communityIndex.pager.perPage") }}
+                <select
+                  v-model.number="marketPageSize"
+                  class="pm-select pm-select--sm"
+                  :aria-label="String(t('pluginManagerV1.communityIndex.pager.perPageAria'))"
+                >
                   <option :value="15">15</option>
                   <option :value="30">30</option>
                   <option :value="60">60</option>
@@ -2079,7 +2097,7 @@ async function onPackSelectedPlugin(): Promise<void> {
                 :disabled="marketPage <= 1"
                 @click="marketPage = Math.max(1, marketPage - 1)"
               >
-                上一页
+                {{ t("pluginManagerV1.communityIndex.pager.prev") }}
               </button>
               <button
                 type="button"
@@ -2087,7 +2105,7 @@ async function onPackSelectedPlugin(): Promise<void> {
                 :disabled="marketPage >= marketTotalPages"
                 @click="marketPage = Math.min(marketTotalPages, marketPage + 1)"
               >
-                下一页
+                {{ t("pluginManagerV1.communityIndex.pager.next") }}
               </button>
             </div>
             <ul v-if="marketRowsPaged.length > 0" class="pm-market-list">
@@ -2101,28 +2119,48 @@ async function onPackSelectedPlugin(): Promise<void> {
                   <span
                     class="pm-source-badge"
                     :class="(row.source ?? '') === 'official' ? 'official' : 'third'"
-                    :title="(row.source ?? '') === 'official' ? '官方默认索引' : '第三方索引源'"
+                    :title="
+                      (row.source ?? '') === 'official'
+                        ? String(t('pluginManagerV1.communityIndex.sourceBadge.officialTitle'))
+                        : String(t('pluginManagerV1.communityIndex.sourceBadge.thirdTitle'))
+                    "
                   >
-                    {{ (row.source ?? "") === "official" ? "官方" : "第三方" }}
+                    {{
+                      (row.source ?? "") === "official"
+                        ? t("pluginManagerV1.communityIndex.sourceBadge.official")
+                        : t("pluginManagerV1.communityIndex.sourceBadge.third")
+                    }}
                   </span>
                   <span
                     v-if="marketEntryType(row) !== 'plugin'"
                     class="pm-entry-type-badge"
                     :class="marketEntryType(row)"
-                    :title="marketEntryType(row) === 'module' ? '无代码模块条目' : '无代码 Profile 条目'"
+                    :title="
+                      marketEntryType(row) === 'module'
+                        ? String(t('pluginManagerV1.communityIndex.entryTypeBadge.moduleTitle'))
+                        : String(t('pluginManagerV1.communityIndex.entryTypeBadge.profileTitle'))
+                    "
                   >
-                    {{ marketEntryType(row) === "module" ? "模块" : "Profile" }}
+                    {{
+                      marketEntryType(row) === "module"
+                        ? t("pluginManagerV1.communityIndex.entryTypeBadge.module")
+                        : t("pluginManagerV1.communityIndex.entryTypeBadge.profile")
+                    }}
                   </span>
                   <span class="pm-muted"> · {{ row.name }} · v{{ row.version }}</span>
                   <p v-if="row.source || row.publisher" class="pm-market-trust">
-                    <span v-if="row.source" class="pm-muted">来源：{{ row.source }}</span>
-                    <span v-if="row.publisher" class="pm-muted"> · 发布者：{{ row.publisher }}</span>
+                    <span v-if="row.source" class="pm-muted"
+                      >{{ t("pluginManagerV1.communityIndex.trust.source") }}：{{ row.source }}</span
+                    >
+                    <span v-if="row.publisher" class="pm-muted"
+                      > · {{ t("pluginManagerV1.communityIndex.trust.publisher") }}：{{ row.publisher }}</span
+                    >
                     <span
                       v-if="(row.publicKeys ?? []).length"
                       class="pm-muted"
-                      title="索引登记的公钥状态"
+                      :title="String(t('pluginManagerV1.communityIndex.trust.pubkeysTitle'))"
                     >
-                      · 公钥：{{
+                      · {{ t("pluginManagerV1.communityIndex.trust.pubkeys") }}：{{
                         (row.publicKeys ?? [])
                           .map((k) => `${k.pubkeyId}${k.status ? `(${k.status})` : ""}`)
                           .join("，")
@@ -2132,13 +2170,19 @@ async function onPackSelectedPlugin(): Promise<void> {
                   <p class="pm-market-rating">
                     <span
                       class="pm-rating-stars"
-                      :title="`公开评价（总体）：${ratingTextForPluginId(row.id)}\n\n提示：评价默认应绑定 pluginId+pubkeyId（签名公钥）。`"
+                      :title="
+                        String(
+                          t('pluginManagerV1.communityIndex.reviews.overallTitle', {
+                            rating: ratingTextForPluginId(row.id),
+                          }),
+                        )
+                      "
                     >
                       {{ ratingStarsForPluginId(row.id) }}
                     </span>
                     <span class="pm-muted"> · {{ ratingTextForPluginId(row.id) }}</span>
                     <template v-if="(row.publicKeys ?? []).length">
-                      <span class="pm-muted"> · 公钥口径：</span>
+                      <span class="pm-muted"> · {{ t("pluginManagerV1.communityIndex.reviews.pubkeyDimension") }}</span>
                       <span
                         v-for="k in row.publicKeys ?? []"
                         :key="`rv-${row.id}-${k.pubkeyId}`"
@@ -2156,7 +2200,7 @@ async function onPackSelectedPlugin(): Promise<void> {
                           type="button"
                           class="pm-link pm-link--tiny"
                           :disabled="pluginReviewsLoading"
-                          title="复制绑定该 pubkeyId 的评价 JSON 模板"
+                          :title="String(t('pluginManagerV1.communityIndex.reviews.copyPubkeyTemplateTitle'))"
                           @click="
                             copyReviewTemplate({
                               pluginId: row.id,
@@ -2165,7 +2209,7 @@ async function onPackSelectedPlugin(): Promise<void> {
                             })
                           "
                         >
-                          复制
+                          {{ t("common.copy") }}
                         </button>
                       </span>
                     </template>
@@ -2175,7 +2219,7 @@ async function onPackSelectedPlugin(): Promise<void> {
                       :disabled="pluginReviewsLoading"
                       @click="openPluginReviewsContribution"
                     >
-                      去提交评价
+                      {{ t("pluginManagerV1.communityIndex.reviews.goContribute") }}
                     </button>
                     <button
                       type="button"
@@ -2188,9 +2232,9 @@ async function onPackSelectedPlugin(): Promise<void> {
                           version: marketPickedVersionForRow(row) ?? null,
                         })
                       "
-                      title="复制一段可直接提交到 reviews.json 的 JSON 模板（建议按 pubkeyId 口径提交）"
+                      :title="String(t('pluginManagerV1.communityIndex.reviews.copyOverallTemplateTitle'))"
                     >
-                      复制模板
+                      {{ t("pluginManagerV1.communityIndex.reviews.copyTemplate") }}
                     </button>
                     <button
                       type="button"
@@ -2198,7 +2242,7 @@ async function onPackSelectedPlugin(): Promise<void> {
                       :disabled="pluginReviewsLoading"
                       @click="syncPluginReviewsIndexNow"
                     >
-                      刷新评价
+                      {{ t("pluginManagerV1.communityIndex.reviews.refresh") }}
                     </button>
                     <span v-if="pluginReviewsErr" class="pm-err"> · {{ pluginReviewsErr }}</span>
                   </p>
@@ -2211,7 +2255,7 @@ async function onPackSelectedPlugin(): Promise<void> {
                     "
                     class="pm-market-reviews"
                   >
-                    <p class="pm-market-reviews-h">最近短评：</p>
+                    <p class="pm-market-reviews-h">{{ t("pluginManagerV1.communityIndex.reviews.recent") }}</p>
                     <ul class="pm-market-reviews-list">
                       <li
                         v-for="r in getRecentReviews(pluginReviewsIndex?.reviews ?? [], {
@@ -2228,15 +2272,15 @@ async function onPackSelectedPlugin(): Promise<void> {
                   </div>
                   <p v-if="row.description" class="pm-market-desc">{{ row.description }}</p>
                   <details v-if="marketEntryType(row) === 'module' && (row as any).module" class="pm-market-details">
-                    <summary class="pm-market-details-sum">查看模块声明</summary>
+                    <summary class="pm-market-details-sum">{{ t("pluginManagerV1.communityIndex.details.viewModule") }}</summary>
                     <div class="pm-market-details-body">
                       <p class="pm-muted" v-if="(((row as any).module.plugins ?? []) as any[]).length">
-                        依赖插件：{{
+                        {{ t("pluginManagerV1.communityIndex.details.deps") }}：{{
                           ((row as any).module.plugins ?? []).map((x: any) => x.id).join("、")
                         }}
                       </p>
                       <div v-if="summarizeOverrideBackends(((row as any).module.backends ?? null) as any).length">
-                        <p class="pm-muted">后端覆盖（会话级）：</p>
+                        <p class="pm-muted">{{ t("pluginManagerV1.communityIndex.details.backends") }}</p>
                         <ul class="pm-kv-list">
                           <li
                             v-for="(x, idx) in summarizeOverrideBackends(((row as any).module.backends ?? null) as any)"
@@ -2247,24 +2291,24 @@ async function onPackSelectedPlugin(): Promise<void> {
                           </li>
                         </ul>
                       </div>
-                      <p v-else class="pm-muted">未声明 backends 覆盖。</p>
+                      <p v-else class="pm-muted">{{ t("pluginManagerV1.communityIndex.details.noBackends") }}</p>
                     </div>
                   </details>
                   <details v-else-if="marketEntryType(row) === 'profile' && (row as any).profile" class="pm-market-details">
-                    <summary class="pm-market-details-sum">查看 Profile 声明</summary>
+                    <summary class="pm-market-details-sum">{{ t("pluginManagerV1.communityIndex.details.viewProfile") }}</summary>
                     <div class="pm-market-details-body">
                       <p class="pm-muted" v-if="(((row as any).profile.plugins ?? []) as any[]).length">
-                        依赖插件：{{
+                        {{ t("pluginManagerV1.communityIndex.details.deps") }}：{{
                           ((row as any).profile.plugins ?? []).map((x: any) => x.id).join("、")
                         }}
                       </p>
                       <p class="pm-muted" v-if="(((row as any).profile.predeclaredPermissions ?? []) as any[]).length">
-                        预声明权限：{{
+                        {{ t("pluginManagerV1.communityIndex.details.predeclaredPerms") }}：{{
                           ((row as any).profile.predeclaredPermissions ?? []).join("、")
                         }}
                       </p>
                       <div v-if="summarizeOverrideBackends(((row as any).profile.backends ?? null) as any).length">
-                        <p class="pm-muted">后端覆盖（会话级）：</p>
+                        <p class="pm-muted">{{ t("pluginManagerV1.communityIndex.details.backends") }}</p>
                         <ul class="pm-kv-list">
                           <li
                             v-for="(x, idx) in summarizeOverrideBackends(((row as any).profile.backends ?? null) as any)"
@@ -2275,14 +2319,14 @@ async function onPackSelectedPlugin(): Promise<void> {
                           </li>
                         </ul>
                       </div>
-                      <p v-else class="pm-muted">未声明 backends 覆盖。</p>
+                      <p v-else class="pm-muted">{{ t("pluginManagerV1.communityIndex.details.noBackends") }}</p>
                     </div>
                   </details>
                   <p
                     v-if="(row.missingDependencies ?? []).length"
                     class="pm-err pm-market-deps"
                   >
-                    依赖缺失：{{ row.missingDependencies.join("、") }}
+                    {{ t("pluginManagerV1.communityIndex.missingDeps") }}：{{ row.missingDependencies.join("、") }}
                   </p>
                 </div>
                 <div class="pm-market-actions">
@@ -2292,7 +2336,7 @@ async function onPackSelectedPlugin(): Promise<void> {
                     class="pm-btn secondary pm-btn--sm"
                     @click="onApplyModuleEntry(row)"
                   >
-                    应用模块
+                    {{ t("pluginManagerV1.communityIndex.applyModule") }}
                   </button>
                   <button
                     v-else-if="marketEntryType(row) === 'profile'"
@@ -2300,7 +2344,7 @@ async function onPackSelectedPlugin(): Promise<void> {
                     class="pm-btn secondary pm-btn--sm"
                     @click="onApplyProfileEntry(row)"
                   >
-                    应用 Profile
+                    {{ t("pluginManagerV1.communityIndex.applyProfile") }}
                   </button>
                   <div
                     v-else-if="(row.versions ?? []).length > 0"

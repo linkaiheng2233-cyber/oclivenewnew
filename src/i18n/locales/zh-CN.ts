@@ -59,6 +59,7 @@ export const zhCN = {
   common: {
     save: "保存",
     close: "关闭",
+    copy: "复制",
     cancel: "取消",
     confirm: "确认",
     continue: "继续",
@@ -690,9 +691,70 @@ export const zhCN = {
       empty: "未列出 recommended_plugins。",
     },
     communityIndex: {
+      title: "社区索引",
+      tabs: {
+        aria: "市场条目类型",
+        plugin: "插件",
+        module: "模块",
+      },
+      source: {
+        official: "官方默认索引",
+        thirdParty: "第三方源 · {s}",
+      },
+      syncing: "同步中…",
+      sync: "同步在线索引",
       offlineHint: "当前为离线模式（使用本地缓存索引）。",
       thirdPartyWarning: "当前为第三方索引源。请仅安装你信任的来源，并谨慎授予权限（开发者模式功能）。",
       emptyHint: "尚无索引数据，请点击「同步在线索引」。",
+      pager: {
+        aria: "市场分页",
+        summary: "共 {total} 条 · 第 {page} / {pages} 页",
+        perPage: "每页",
+        perPageAria: "每页条数",
+        prev: "上一页",
+        next: "下一页",
+      },
+      sourceBadge: {
+        officialTitle: "官方默认索引",
+        thirdTitle: "第三方索引源",
+        official: "官方",
+        third: "第三方",
+      },
+      entryTypeBadge: {
+        moduleTitle: "无代码模块条目",
+        profileTitle: "无代码 Profile 条目",
+        module: "模块",
+        profile: "Profile",
+      },
+      trust: {
+        source: "来源",
+        publisher: "发布者",
+        pubkeysTitle: "索引登记的公钥状态",
+        pubkeys: "公钥",
+      },
+      reviews: {
+        overallTitle:
+          "公开评价（总体）：{rating}\n\n提示：评价默认应绑定 pluginId+pubkeyId（签名公钥）。",
+        pubkeyDimension: "公钥口径：",
+        copyPubkeyTemplateTitle: "复制绑定该 pubkeyId 的评价 JSON 模板",
+        goContribute: "去提交评价",
+        copyOverallTemplateTitle:
+          "复制一段可直接提交到 reviews.json 的 JSON 模板（建议按 pubkeyId 口径提交）",
+        copyTemplate: "复制模板",
+        refresh: "刷新评价",
+        recent: "最近短评：",
+      },
+      details: {
+        viewModule: "查看模块声明",
+        viewProfile: "查看 Profile 声明",
+        deps: "依赖插件",
+        predeclaredPerms: "预声明权限",
+        backends: "后端覆盖（会话级）：",
+        noBackends: "未声明 backends 覆盖。",
+      },
+      missingDeps: "依赖缺失",
+      applyModule: "应用模块",
+      applyProfile: "应用 Profile",
     },
     applyPlan: {
       type: {
