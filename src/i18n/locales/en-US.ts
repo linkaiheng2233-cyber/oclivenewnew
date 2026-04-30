@@ -1030,6 +1030,31 @@ export const enUS = {
       empty: "No plugins were scanned.",
     },
   },
+  helpHint: {
+    ariaLabel: "View help",
+  },
+  asyncPluginVue: {
+    securityWarning: {
+      title: "Plugin security warning",
+      body:
+        "This plugin contains potentially dangerous code:\n{list}\n\nContinue loading?",
+    },
+  },
+  pluginUiTemplates: {
+    slotSelector: {
+      backendLabel: "Backend mode",
+      directoryIdLabel: "Directory plugin ID",
+      directoryIdPlaceholder: "e.g. my-plugin-id",
+      directoryPickPlaceholder: "Type manually or pick a candidate",
+      hint:
+        "Leaving it empty will clear the session override and return to role pack defaults.",
+      apply: "Apply changes",
+    },
+  },
+  pluginSettingsPanelSlots: {
+    tabsAria: "Plugin settings page",
+    empty: "No plugins declare the settings.panel slot.",
+  },
   pluginListItem: {
     aria: "Plugin {id}",
     kind: {

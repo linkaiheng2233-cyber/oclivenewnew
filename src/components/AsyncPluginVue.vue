@@ -10,6 +10,7 @@ import {
   watch,
   withDefaults,
 } from "vue";
+import { useI18n } from "vue-i18n";
 import { confirm } from "@tauri-apps/api/dialog";
 import { storeToRefs } from "pinia";
 import {
@@ -47,6 +48,7 @@ const emit = defineEmits<{
 }>();
 
 const pluginStore = usePluginStore();
+const { t } = useI18n();
 const { developerMode: storeDeveloperMode } = storeToRefs(pluginStore);
 const effectiveDeveloperMode = computed(() =>
   typeof props.developerMode === "boolean"
@@ -94,8 +96,12 @@ watch(
         const { warnings } = scanVueComponentSource(preloadedEntrySource);
         if (warnings.length > 0) {
           const ok = await confirm(
-            `此插件包含潜在危险代码：\n${warnings.map((w) => `- ${w}`).join("\n")}\n\n是否继续加载？`,
-            { title: "插件安全警告", type: "warning" },
+            String(
+              t("asyncPluginVue.securityWarning.body", {
+                list: warnings.map((w) => `- ${w}`).join("\n"),
+              }),
+            ),
+            { title: String(t("asyncPluginVue.securityWarning.title")), type: "warning" },
           );
           if (!ok) {
             emit("failed");

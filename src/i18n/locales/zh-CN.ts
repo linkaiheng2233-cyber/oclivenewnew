@@ -1016,6 +1016,29 @@ export const zhCN = {
       chatHeader: "隐藏聊天头部嵌入",
     },
   },
+  helpHint: {
+    ariaLabel: "查看说明",
+  },
+  asyncPluginVue: {
+    securityWarning: {
+      title: "插件安全警告",
+      body: "此插件包含潜在危险代码：\n{list}\n\n是否继续加载？",
+    },
+  },
+  pluginUiTemplates: {
+    slotSelector: {
+      backendLabel: "运行方式",
+      directoryIdLabel: "目录插件 ID",
+      directoryIdPlaceholder: "例如 my-plugin-id",
+      directoryPickPlaceholder: "手动输入或选择候选",
+      hint: "留空会清空会话覆盖，回到角色包默认。",
+      apply: "应用改动",
+    },
+  },
+  pluginSettingsPanelSlots: {
+    tabsAria: "插件设置页",
+    empty: "暂无声明 settings.panel 插槽的插件。",
+  },
   pluginDebug: {
     target: "目标",
     status: {

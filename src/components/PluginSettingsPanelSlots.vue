@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { ref, watch } from "vue";
+import { useI18n } from "vue-i18n";
 import AsyncPluginVue from "./AsyncPluginVue.vue";
 import PluginErrorPlaceholder from "./PluginErrorPlaceholder.vue";
 import { useDirectoryPluginSlotEmbed } from "../composables/useDirectoryPluginSlotEmbed";
@@ -32,6 +33,7 @@ const {
 });
 
 const activeTab = ref(0);
+const { t } = useI18n();
 
 watch(panelSlots, (list) => {
   if (activeTab.value >= list.length) {
@@ -46,7 +48,7 @@ watch(panelSlots, (list) => {
       {{ pluginError }}
     </div>
     <template v-else-if="panelSlots.length > 0">
-      <div class="psp-tabs" role="tablist" aria-label="插件设置页">
+      <div class="psp-tabs" role="tablist" :aria-label="String(t('pluginSettingsPanelSlots.tabsAria'))">
         <button
           v-for="(s, i) in panelSlots"
           :key="`${s.pluginId}:${s.appearanceId ?? ''}`"
@@ -98,7 +100,7 @@ watch(panelSlots, (list) => {
         />
       </div>
     </template>
-    <p v-else class="psp-msg psp-msg--muted">暂无声明 <code>settings.panel</code> 插槽的插件。</p>
+    <p v-else class="psp-msg psp-msg--muted">{{ t("pluginSettingsPanelSlots.empty") }}</p>
   </div>
 </template>
 
