@@ -25,6 +25,54 @@ use tauri::State;
 use uuid::Uuid;
 use chrono::Utc;
 
+#[derive(Debug, Clone, serde::Serialize, serde::Deserialize)]
+#[serde(rename_all = "camelCase")]
+struct RunTargetSummary {
+    #[serde(default)]
+    base_name: String,
+    #[serde(default)]
+    lora_count: u32,
+    #[serde(default)]
+    has_prompt_style: bool,
+}
+
+#[derive(Debug, Clone, serde::Serialize, serde::Deserialize)]
+#[serde(rename_all = "camelCase")]
+struct RunApplyOutcome {
+    #[serde(default)]
+    ok: bool,
+    #[serde(default)]
+    error: Option<String>,
+    #[serde(default)]
+    model_path: Option<String>,
+    #[serde(default)]
+    llama_args: Option<String>,
+    #[serde(default)]
+    duration_ms: Option<i64>,
+}
+
+#[derive(Debug, Clone, serde::Serialize, serde::Deserialize)]
+#[serde(rename_all = "camelCase")]
+struct ExpertModelsRunEntry {
+    #[serde(default)]
+    at_ms: i64,
+    /// Rollback snapshot: previous effective before apply.
+    graph: ExpertGraph,
+    #[serde(default)]
+    prompt_style: Option<PromptStyleOverride>,
+    /// Target summary (what we tried to apply).
+    #[serde(default)]
+    target: Option<RunTargetSummary>,
+    /// Target config for retry/detail (optional for backward compatibility).
+    #[serde(default)]
+    target_graph: Option<ExpertGraph>,
+    #[serde(default)]
+    target_prompt_style: Option<PromptStyleOverride>,
+    /// Apply outcome (optional for backward compatibility).
+    #[serde(default)]
+    apply: Option<RunApplyOutcome>,
+}
+
 fn parse_graph_json(raw: Option<String>) -> Result<Option<ExpertGraph>, String> {
     let Some(s) = raw else {
         return Ok(None);
@@ -117,79 +165,24 @@ async fn effective_for_session(
     Ok((graph, graph_source, style, style_source))
 }
 
-fn parse_run_history(raw: Option<String>) -> Vec<serde_json::Value> {
+fn parse_run_entries(raw: Option<String>) -> Vec<ExpertModelsRunEntry> {
     let Some(s) = raw else { return vec![] };
     let t = s.trim();
     if t.is_empty() { return vec![]; }
-    serde_json::from_str::<Vec<serde_json::Value>>(t).unwrap_or_default()
-}
-
-fn to_run_history_json(items: &[serde_json::Value]) -> Option<String> {
-    if items.is_empty() {
-        return None;
+    // Prefer typed parse.
+    if let Ok(list) = serde_json::from_str::<Vec<ExpertModelsRunEntry>>(t) {
+        return list;
     }
+    // Backwards compatibility: old history stored as Vec<Value>.
+    let vals = serde_json::from_str::<Vec<serde_json::Value>>(t).unwrap_or_default();
+    vals.into_iter()
+        .filter_map(|v| serde_json::from_value::<ExpertModelsRunEntry>(v).ok())
+        .collect()
+}
+
+fn to_run_entries_json(items: &[ExpertModelsRunEntry]) -> Option<String> {
+    if items.is_empty() { return None; }
     serde_json::to_string(items).ok()
-}
-
-fn summarize_snapshot(
-    v: &serde_json::Value,
-) -> Option<(i64, ExpertGraph, Option<PromptStyleOverride>)> {
-    let at_ms = v.get("atMs").and_then(|x| x.as_i64()).unwrap_or(0);
-    let graph_v = v.get("graph")?.clone();
-    let graph = serde_json::from_value::<ExpertGraph>(graph_v).ok()?;
-    let style = v
-        .get("promptStyle")
-        .cloned()
-        .and_then(|x| serde_json::from_value::<Option<PromptStyleOverride>>(x).ok())
-        .flatten();
-    Some((at_ms, graph, style))
-}
-
-fn read_target_summary(v: &serde_json::Value) -> Option<(String, u32, bool)> {
-    let t = v.get("target")?;
-    let base = t.get("baseName").and_then(|x| x.as_str()).unwrap_or("").to_string();
-    let loras = t.get("loraCount").and_then(|x| x.as_u64()).unwrap_or(0) as u32;
-    let ps = t.get("hasPromptStyle").and_then(|x| x.as_bool()).unwrap_or(false);
-    Some((base, loras, ps))
-}
-
-fn read_apply_detail(
-    v: &serde_json::Value,
-) -> (
-    Option<bool>,
-    Option<String>,
-    Option<String>,
-    Option<String>,
-    Option<i64>,
-) {
-    let Some(a) = v.get("apply") else {
-        return (None, None, None, None, None);
-    };
-    let ok = a.get("ok").and_then(|x| x.as_bool());
-    let err = a.get("error").and_then(|x| x.as_str()).map(|s| s.to_string());
-    let model_path = a
-        .get("modelPath")
-        .and_then(|x| x.as_str())
-        .map(|s| s.to_string());
-    let llama_args = a
-        .get("llamaArgs")
-        .and_then(|x| x.as_str())
-        .map(|s| s.to_string());
-    let dur = a.get("durationMs").and_then(|x| x.as_i64());
-    (ok, err, model_path, llama_args, dur)
-}
-
-fn read_target_config(v: &serde_json::Value) -> (Option<ExpertGraph>, Option<PromptStyleOverride>) {
-    let g = v
-        .get("targetGraph")
-        .cloned()
-        .and_then(|x| serde_json::from_value::<ExpertGraph>(x).ok());
-    let s = v
-        .get("targetPromptStyle")
-        .cloned()
-        .and_then(|x| serde_json::from_value::<Option<PromptStyleOverride>>(x).ok())
-        .flatten();
-    (g, s)
 }
 
 fn graph_summary(graph: &ExpertGraph, style: &Option<PromptStyleOverride>) -> (String, u32, bool) {
@@ -250,7 +243,7 @@ pub async fn expert_models_get_effective(
         .get_expert_models_run_history_json(session_ns.as_str())
         .await
         .map_err(|e| e.to_frontend_error())?;
-    let can_rollback_last_run = !parse_run_history(run_raw).is_empty();
+    let can_rollback_last_run = !parse_run_entries(run_raw).is_empty();
     Ok(ExpertModelsEffectiveResponse {
         graph,
         prompt_style,
@@ -595,25 +588,20 @@ pub async fn expert_models_apply_to_session(
         .get_expert_models_run_history_json(session_ns.as_str())
         .await
         .map_err(|e| e.to_frontend_error())?;
-    let mut runs = parse_run_history(run_raw_prev);
+    let mut runs = parse_run_entries(run_raw_prev);
     let snapshot_idx = runs.len();
-    let snapshot = json!({
-      "atMs": Utc::now().timestamp_millis(),
-      "graph": prev_graph,
-      "promptStyle": prev_style,
-      "target": {
-        "baseName": pick_base_name(&graph),
-        "loraCount": count_enabled_loras(&graph),
-        "hasPromptStyle": style.is_some(),
-      }
-    });
-    // Also store the target config for retry/detail (backwards compatible: older entries may not have these).
-    // NOTE: This stores the graph as-is, including UI coordinates; it is still a pure JSON blob.
-    runs.push({
-        let mut s = snapshot;
-        s["targetGraph"] = serde_json::to_value(&graph).unwrap_or(json!({"version":1,"nodes":[],"edges":[]}));
-        s["targetPromptStyle"] = serde_json::to_value(&style).unwrap_or(json!(null));
-        s
+    runs.push(ExpertModelsRunEntry {
+        at_ms: Utc::now().timestamp_millis(),
+        graph: prev_graph,
+        prompt_style: prev_style,
+        target: Some(RunTargetSummary {
+            base_name: pick_base_name(&graph),
+            lora_count: count_enabled_loras(&graph),
+            has_prompt_style: style.is_some(),
+        }),
+        target_graph: Some(graph.clone()),
+        target_prompt_style: style.clone(),
+        apply: None,
     });
     // keep last 30
     if runs.len() > 30 {
@@ -667,27 +655,26 @@ pub async fn expert_models_apply_to_session(
     .await;
     let duration_ms: i64 = started.elapsed().as_millis() as i64;
 
-    // Persist apply outcome back onto the snapshot entry (best-effort; also supports older entries without apply field).
+    // Persist apply outcome back onto the entry (best-effort).
     if let Some(v) = runs.get_mut(snapshot_idx) {
-        match &apply_result {
-            Ok(r) => {
-                v["apply"] = json!({
-                  "ok": true,
-                  "modelPath": r.model_path,
-                  "llamaArgs": r.llama_args,
-                  "durationMs": duration_ms,
-                });
-            }
-            Err(e) => {
-                v["apply"] = json!({
-                  "ok": false,
-                  "error": e,
-                  "durationMs": duration_ms,
-                });
-            }
-        }
+        v.apply = Some(match &apply_result {
+            Ok(r) => RunApplyOutcome {
+                ok: true,
+                error: None,
+                model_path: r.model_path.clone(),
+                llama_args: r.llama_args.clone(),
+                duration_ms: Some(duration_ms),
+            },
+            Err(e) => RunApplyOutcome {
+                ok: false,
+                error: Some(e.clone()),
+                model_path: None,
+                llama_args: None,
+                duration_ms: Some(duration_ms),
+            },
+        });
     }
-    let run_json = to_run_history_json(runs.as_slice());
+    let run_json = to_run_entries_json(runs.as_slice());
     let _ = state
         .expert_models_repo
         .set_expert_models_run_history_json(session_ns.as_str(), run_json.as_deref())
@@ -727,24 +714,15 @@ pub async fn expert_models_rollback_last_run(
         .get_expert_models_run_history_json(session_ns.as_str())
         .await
         .map_err(|e| e.to_frontend_error())?;
-    let mut runs = parse_run_history(raw);
+    let mut runs = parse_run_entries(raw);
     let last = runs.pop().ok_or_else(|| {
         ApiError::InvalidParameter {
             message: "no previous run to rollback".into(),
         }
         .to_string()
     })?;
-    let graph = last
-        .get("graph")
-        .cloned()
-        .ok_or_else(|| "rollback snapshot missing graph".to_string())
-        .and_then(|v| serde_json::from_value::<ExpertGraph>(v).map_err(|e| e.to_string()))?;
-    let style = last
-        .get("promptStyle")
-        .cloned()
-        .map(|v| serde_json::from_value::<Option<PromptStyleOverride>>(v).map_err(|e| e.to_string()))
-        .transpose()?
-        .flatten();
+    let graph = last.graph;
+    let style = last.prompt_style;
 
     // Set session override to the snapshot.
     let graph_json = to_json_string(&graph)?;
@@ -761,7 +739,7 @@ pub async fn expert_models_rollback_last_run(
         .map_err(|e| e.to_frontend_error())?;
 
     // Persist trimmed history.
-    let run_json = to_run_history_json(runs.as_slice());
+    let run_json = to_run_entries_json(runs.as_slice());
     state
         .expert_models_repo
         .set_expert_models_run_history_json(session_ns.as_str(), run_json.as_deref())
@@ -802,25 +780,39 @@ pub async fn expert_models_list_runs(
         .get_expert_models_run_history_json(session_ns.as_str())
         .await
         .map_err(|e| e.to_frontend_error())?;
-    let runs = parse_run_history(raw);
+    let runs = parse_run_entries(raw);
     // Stored in chronological order; present latest first.
     let mut items: Vec<ExpertModelsRunSummaryDto> = vec![];
-    for (i, v) in runs.iter().rev().enumerate() {
-        if let Some((at_ms, graph, style)) = summarize_snapshot(v) {
-            let (apply_ok, apply_error, _mp, _la, apply_duration_ms) = read_apply_detail(v);
-            let (t_base, t_loras, t_ps) = read_target_summary(v)
-                .unwrap_or((pick_base_name(&graph), count_enabled_loras(&graph), style.is_some()));
-            items.push(ExpertModelsRunSummaryDto {
-                index_from_latest: i as u32,
-                at_ms,
-                target_base_name: t_base,
-                target_lora_count: t_loras,
-                target_has_prompt_style: t_ps,
-                apply_ok,
-                apply_error,
-                apply_duration_ms,
+    for (i, e) in runs.iter().rev().enumerate() {
+        let (t_base, t_loras, t_ps) = e
+            .target
+            .as_ref()
+            .map(|t| (t.base_name.clone(), t.lora_count, t.has_prompt_style))
+            .or_else(|| {
+                e.target_graph.as_ref().map(|g| {
+                    let s = &e.target_prompt_style;
+                    (pick_base_name(g), count_enabled_loras(g), s.is_some())
+                })
+            })
+            .unwrap_or_else(|| {
+                let s = &e.prompt_style;
+                (pick_base_name(&e.graph), count_enabled_loras(&e.graph), s.is_some())
             });
-        }
+        let (apply_ok, apply_error, apply_duration_ms) = e
+            .apply
+            .as_ref()
+            .map(|a| (Some(a.ok), a.error.clone(), a.duration_ms))
+            .unwrap_or((None, None, None));
+        items.push(ExpertModelsRunSummaryDto {
+            index_from_latest: i as u32,
+            at_ms: e.at_ms,
+            target_base_name: t_base,
+            target_lora_count: t_loras,
+            target_has_prompt_style: t_ps,
+            apply_ok,
+            apply_error,
+            apply_duration_ms,
+        });
         if items.len() >= 30 {
             break;
         }
@@ -851,33 +843,36 @@ pub async fn expert_models_get_run_detail(
         .get_expert_models_run_history_json(session_ns.as_str())
         .await
         .map_err(|e| e.to_frontend_error())?;
-    let runs = parse_run_history(raw);
+    let runs = parse_run_entries(raw);
     let pos = idx_from_latest_to_pos(runs.len(), req.index_from_latest).ok_or_else(|| {
         ApiError::InvalidParameter {
             message: "index out of range".into(),
         }
         .to_string()
     })?;
-    let v = runs
-        .get(pos)
-        .cloned()
-        .ok_or_else(|| "run missing".to_string())?;
-    let (at_ms, snapshot_graph, snapshot_style) =
-        summarize_snapshot(&v).ok_or_else(|| "invalid run entry".to_string())?;
+    let e = runs.get(pos).cloned().ok_or_else(|| "run missing".to_string())?;
+    let snapshot_graph = e.graph.clone();
+    let snapshot_style = e.prompt_style.clone();
     let (snapshot_base, snapshot_loras, snapshot_ps) = graph_summary(&snapshot_graph, &snapshot_style);
 
-    let (target_graph, target_style) = read_target_config(&v);
-    let (t_base, t_loras, t_ps) = read_target_summary(&v).unwrap_or_else(|| {
-        let style_ref = target_style.clone().or(snapshot_style.clone());
-        let g_ref = target_graph.clone().unwrap_or_else(|| snapshot_graph.clone());
-        graph_summary(&g_ref, &style_ref)
-    });
-    let (apply_ok, apply_error, apply_model_path, apply_llama_args, apply_duration_ms) = read_apply_detail(&v);
+    let target_graph = e.target_graph.clone();
+    let target_style = e.target_prompt_style.clone();
+    let (t_base, t_loras, t_ps) = e
+        .target
+        .as_ref()
+        .map(|t| (t.base_name.clone(), t.lora_count, t.has_prompt_style))
+        .or_else(|| target_graph.as_ref().map(|g| graph_summary(g, &target_style)))
+        .unwrap_or_else(|| graph_summary(&snapshot_graph, &snapshot_style));
+    let (apply_ok, apply_error, apply_model_path, apply_llama_args, apply_duration_ms) = e
+        .apply
+        .as_ref()
+        .map(|a| (Some(a.ok), a.error.clone(), a.model_path.clone(), a.llama_args.clone(), a.duration_ms))
+        .unwrap_or((None, None, None, None, None));
 
     Ok(ExpertModelsGetRunDetailResponse {
         item: ExpertModelsRunDetailDto {
             index_from_latest: req.index_from_latest,
-            at_ms,
+            at_ms: e.at_ms,
             snapshot_graph,
             snapshot_prompt_style: snapshot_style,
             snapshot_base_name: snapshot_base,
@@ -946,7 +941,7 @@ pub async fn expert_models_rollback_to_run(
         .get_expert_models_run_history_json(session_ns.as_str())
         .await
         .map_err(|e| e.to_frontend_error())?;
-    let mut runs = parse_run_history(raw);
+    let mut runs = parse_run_entries(raw);
     if runs.is_empty() {
         return Err(ApiError::InvalidParameter { message: "no runs".into() }.to_string());
     }
@@ -962,17 +957,8 @@ pub async fn expert_models_rollback_to_run(
     // Trim newer runs (keep up to the ones older than target).
     runs.truncate(target_pos_from_start);
 
-    let graph = target
-        .get("graph")
-        .cloned()
-        .ok_or_else(|| "rollback snapshot missing graph".to_string())
-        .and_then(|v| serde_json::from_value::<ExpertGraph>(v).map_err(|e| e.to_string()))?;
-    let style = target
-        .get("promptStyle")
-        .cloned()
-        .map(|v| serde_json::from_value::<Option<PromptStyleOverride>>(v).map_err(|e| e.to_string()))
-        .transpose()?
-        .flatten();
+    let graph = target.graph;
+    let style = target.prompt_style;
 
     let graph_json = to_json_string(&graph)?;
     state
@@ -987,7 +973,7 @@ pub async fn expert_models_rollback_to_run(
         .await
         .map_err(|e| e.to_frontend_error())?;
 
-    let run_json = to_run_history_json(runs.as_slice());
+    let run_json = to_run_entries_json(runs.as_slice());
     state
         .expert_models_repo
         .set_expert_models_run_history_json(session_ns.as_str(), run_json.as_deref())
