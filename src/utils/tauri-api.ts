@@ -90,6 +90,141 @@ export function isInvalidParameterError(err: unknown): boolean {
   return parseApiErrorCode(err) === "INVALID_PARAMETER";
 }
 
+// ===== Module 9: Expert Models =====
+
+export type ExpertConfigSource =
+  | "pack_default"
+  | "role_default"
+  | "session_override";
+
+export interface PromptStyleOverride {
+  replyQualityAnchor?: string | null;
+  corePersonality?: string | null;
+  description?: string | null;
+}
+
+export type ExpertNode =
+  | { type: "base_model"; id: string; ggufPath: string }
+  | {
+      type: "lora_adapter";
+      id: string;
+      ggufPath: string;
+      strength: number;
+      enabled: boolean;
+      order: number;
+    }
+  | { type: "prompt_style"; id: string; style: PromptStyleOverride };
+
+export interface ExpertEdge {
+  from: string;
+  to: string;
+}
+
+export interface ExpertGraph {
+  version: number;
+  nodes: ExpertNode[];
+  edges: ExpertEdge[];
+}
+
+export interface ExpertModelsEffectiveResponse {
+  graph: ExpertGraph;
+  promptStyle?: PromptStyleOverride | null;
+  graphSource: ExpertConfigSource;
+  promptStyleSource: ExpertConfigSource;
+}
+
+export interface LocalModelFileDto {
+  name: string;
+  path: string;
+}
+
+export async function expertModelsGetEffective(params: {
+  roleId: string;
+  sessionId?: string | null;
+}): Promise<ExpertModelsEffectiveResponse> {
+  return invokeWithFriendlyError<ExpertModelsEffectiveResponse>(
+    "expert_models_get_effective",
+    {
+      req: { roleId: params.roleId, sessionId: params.sessionId ?? null },
+    },
+  );
+}
+
+export async function expertModelsSetSessionOverride(params: {
+  roleId: string;
+  sessionId?: string | null;
+  graph: ExpertGraph;
+  promptStyle?: PromptStyleOverride | null;
+}): Promise<void> {
+  return invokeWithFriendlyError<void>("expert_models_set_session_override", {
+    req: {
+      roleId: params.roleId,
+      sessionId: params.sessionId ?? null,
+      graph: params.graph,
+      promptStyle: params.promptStyle ?? null,
+    },
+  });
+}
+
+export async function expertModelsClearSessionOverride(params: {
+  roleId: string;
+  sessionId?: string | null;
+}): Promise<void> {
+  return invokeWithFriendlyError<void>("expert_models_clear_session_override", {
+    req: { roleId: params.roleId, sessionId: params.sessionId ?? null },
+  });
+}
+
+export async function expertModelsSetRoleDefault(params: {
+  roleId: string;
+  graph: ExpertGraph;
+  promptStyle?: PromptStyleOverride | null;
+}): Promise<void> {
+  return invokeWithFriendlyError<void>("expert_models_set_role_default", {
+    req: {
+      roleId: params.roleId,
+      graph: params.graph,
+      promptStyle: params.promptStyle ?? null,
+    },
+  });
+}
+
+export async function expertModelsClearRoleDefault(params: {
+  roleId: string;
+}): Promise<void> {
+  return invokeWithFriendlyError<void>("expert_models_clear_role_default", {
+    req: { roleId: params.roleId },
+  });
+}
+
+export async function expertModelsApplyToSession(params: {
+  roleId: string;
+  sessionId?: string | null;
+}): Promise<{ ok: boolean; llamaPluginId: string; modelPath?: string; llamaArgs?: string }> {
+  return invokeWithFriendlyError<{
+    ok: boolean;
+    llamaPluginId: string;
+    modelPath?: string;
+    llamaArgs?: string;
+  }>("expert_models_apply_to_session", {
+    req: { roleId: params.roleId, sessionId: params.sessionId ?? null },
+  });
+}
+
+export async function expertModelsListLocalBaseModels(): Promise<LocalModelFileDto[]> {
+  return invokeWithFriendlyError<LocalModelFileDto[]>(
+    "expert_models_list_local_base_models",
+    {},
+  );
+}
+
+export async function expertModelsListLocalLoras(): Promise<LocalModelFileDto[]> {
+  return invokeWithFriendlyError<LocalModelFileDto[]>(
+    "expert_models_list_local_loras",
+    {},
+  );
+}
+
 export function toFriendlyErrorMessage(err: unknown): string {
   const { code, raw } = parseBackendError(err);
   if (!code) return raw;

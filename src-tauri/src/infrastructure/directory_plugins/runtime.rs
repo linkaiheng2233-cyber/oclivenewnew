@@ -718,9 +718,15 @@ impl DirectoryPluginRuntime {
                 match result {
                     Ok(line) => {
                         if !ready_sent_out.load(Ordering::Relaxed) {
-                            if let Some(u) = parse_ready_line(line.as_str(), prefix_owned.as_str()) {
+                            if let Some(u) = parse_ready_line(line.as_str(), prefix_owned.as_str())
+                            {
                                 if ready_sent_out
-                                    .compare_exchange(false, true, Ordering::SeqCst, Ordering::SeqCst)
+                                    .compare_exchange(
+                                        false,
+                                        true,
+                                        Ordering::SeqCst,
+                                        Ordering::SeqCst,
+                                    )
                                     .is_ok()
                                 {
                                     let _ = ready_tx.send(u);
@@ -755,7 +761,9 @@ impl DirectoryPluginRuntime {
                     plugin_id, prefix
                 ));
             }
-            let slice = deadline.saturating_duration_since(now).min(Duration::from_millis(200));
+            let slice = deadline
+                .saturating_duration_since(now)
+                .min(Duration::from_millis(200));
             match ready_rx.recv_timeout(slice) {
                 Ok(u) => break u,
                 Err(std::sync::mpsc::RecvTimeoutError::Timeout) => continue,

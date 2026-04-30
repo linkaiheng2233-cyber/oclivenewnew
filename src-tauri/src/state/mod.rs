@@ -1,5 +1,5 @@
 use crate::domain::plugin_host::{PluginHost, ResolvedRolePlugins};
-use crate::domain::repository::{FavorabilityRepository, MemoryRepository};
+use crate::domain::repository::{ExpertModelsRepository, FavorabilityRepository, MemoryRepository};
 use crate::domain::{
     DefaultEmotionPolicy, DefaultEventPolicy, DefaultMemoryPolicy, EmotionPolicy,
     EmotionPolicyConfig, EventEstimator, EventPolicy, FileManifestLocalPluginBridge,
@@ -12,11 +12,13 @@ use crate::infrastructure::directory_plugins::DirectoryPluginRuntime;
 use crate::infrastructure::llm::ollama_llm;
 use crate::infrastructure::llm::LlmClient;
 use crate::infrastructure::ollama_client::OllamaClient;
-use crate::infrastructure::repositories::{SqliteFavorabilityRepository, SqliteMemoryRepository};
+use crate::infrastructure::repositories::{
+    SqliteExpertModelsRepository, SqliteFavorabilityRepository, SqliteMemoryRepository,
+};
 use crate::infrastructure::storage::{resolve_llm_backend_env_override, RoleStorage};
 use crate::models::{
-    PersonalitySource, PersonalityVector, PluginBackendSource, PluginBackends,
-    PluginBackendsOverride, PluginBackendsSourceMap, Role,
+    PersonalitySource, PersonalityVector, PluginBackendSource, PluginBackends, PluginBackendsOverride,
+    PluginBackendsSourceMap, PromptStyleOverride, Role,
 };
 use parking_lot::{Mutex, RwLock};
 use serde::Deserialize;
@@ -293,6 +295,7 @@ pub struct AppState {
     pub db_manager: Arc<DbManager>,
     pub memory_repo: Arc<dyn MemoryRepository>,
     pub favorability_repo: Arc<dyn FavorabilityRepository>,
+    pub expert_models_repo: Arc<dyn ExpertModelsRepository>,
     pub llm: Arc<dyn LlmClient>,
     pub role_cache: Arc<RwLock<HashMap<String, Arc<Role>>>>,
     /// 同一 `role_id` 冷加载串行化；表项在无人再持有对应 `Arc` 时移除（见 [`AppState::load_role_cached`]）。
@@ -376,6 +379,8 @@ impl AppState {
             Arc::new(SqliteMemoryRepository::new(db_manager.clone()));
         let favorability_repo: Arc<dyn FavorabilityRepository> =
             Arc::new(SqliteFavorabilityRepository::new(db_manager.clone()));
+        let expert_models_repo: Arc<dyn ExpertModelsRepository> =
+            Arc::new(SqliteExpertModelsRepository::new(db_manager.clone()));
 
         let ollama = OllamaClient::new(
             std::env::var("OLLAMA_BASE_URL")
@@ -404,6 +409,7 @@ impl AppState {
             db_manager,
             memory_repo,
             favorability_repo,
+            expert_models_repo,
             llm,
             role_cache: Arc::new(RwLock::new(HashMap::new())),
             role_load_inflight: Mutex::new(HashMap::new()),
@@ -448,6 +454,8 @@ impl AppState {
             Arc::new(SqliteMemoryRepository::new(db_manager.clone()));
         let favorability_repo: Arc<dyn FavorabilityRepository> =
             Arc::new(SqliteFavorabilityRepository::new(db_manager.clone()));
+        let expert_models_repo: Arc<dyn ExpertModelsRepository> =
+            Arc::new(SqliteExpertModelsRepository::new(db_manager.clone()));
 
         let storage = RoleStorage::new(roles_dir);
         let app_data_dir = storage.roles_dir().join(".oclive_directory_plugin_data");
@@ -477,6 +485,7 @@ impl AppState {
             db_manager,
             memory_repo,
             favorability_repo,
+            expert_models_repo,
             llm,
             role_cache: Arc::new(RwLock::new(HashMap::new())),
             role_load_inflight: Mutex::new(HashMap::new()),
@@ -765,6 +774,41 @@ impl AppState {
             bridge.manifest_dir().display(),
             registered
         );
+    }
+
+    /// Module 9: effective PromptStyle override (session override > role default > none).
+    pub async fn effective_prompt_style_override(
+        &self,
+        manifest_role_id: &str,
+        session_namespace: &str,
+    ) -> Result<Option<PromptStyleOverride>> {
+        let sess_raw = self
+            .expert_models_repo
+            .get_expert_prompt_style_session_override_json(session_namespace)
+            .await?;
+        if let Some(s) = sess_raw.as_deref().map(str::trim).filter(|s| !s.is_empty()) {
+            let parsed = serde_json::from_str::<PromptStyleOverride>(s).map_err(|e| {
+                crate::error::AppError::InvalidParameter(format!(
+                    "invalid prompt style session override json: {}",
+                    e
+                ))
+            })?;
+            return Ok(Some(parsed));
+        }
+        let role_raw = self
+            .expert_models_repo
+            .get_expert_prompt_style_role_default_json(manifest_role_id)
+            .await?;
+        if let Some(s) = role_raw.as_deref().map(str::trim).filter(|s| !s.is_empty()) {
+            let parsed = serde_json::from_str::<PromptStyleOverride>(s).map_err(|e| {
+                crate::error::AppError::InvalidParameter(format!(
+                    "invalid prompt style role default json: {}",
+                    e
+                ))
+            })?;
+            return Ok(Some(parsed));
+        }
+        Ok(None)
     }
 }
 

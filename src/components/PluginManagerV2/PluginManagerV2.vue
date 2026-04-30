@@ -4,6 +4,7 @@ import LeftCategoryNav from "./LeftCategoryNav.vue";
 import PluginCardList from "./PluginCardList.vue";
 import RightDetailPanel from "./RightDetailPanel.vue";
 import HelpCircle from "../HelpCircle.vue";
+import ExpertModelsPanel from "../ExpertModels/ExpertModelsPanel.vue";
 import { usePluginManagerV2 } from "../../composables/usePluginManagerV2";
 import { usePluginTerm } from "../../composables/usePluginTerm";
 import {
@@ -744,6 +745,8 @@ async function onApply(payload: Record<string, unknown>) {
       </div>
       <p class="pm2-muted" style="margin: 8px 0 0">当前有效 LLM：{{ llmEffectiveLabel }}</p>
     </section>
+
+    <ExpertModelsPanel />
 
     <div class="pm2-grid">
       <LeftCategoryNav v-model="selectedCategory" :categories="categories" />

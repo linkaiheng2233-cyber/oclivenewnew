@@ -5,6 +5,7 @@ pub mod directory_plugin;
 pub mod error;
 pub mod event;
 pub mod export;
+pub mod expert_models;
 pub mod hotkeys;
 pub mod jump_monologue;
 pub mod local_imports;
@@ -34,6 +35,12 @@ pub use chat::send_message;
 pub use directory_plugin::{directory_plugin_invoke, get_directory_plugin_bootstrap};
 pub use event::{create_event, query_events};
 pub use export::export_chat_logs;
+pub use expert_models::{
+    expert_models_apply_to_session, expert_models_clear_role_default,
+    expert_models_clear_session_override, expert_models_get_effective, expert_models_set_role_default,
+    expert_models_set_session_override, expert_models_list_local_base_models,
+    expert_models_list_local_loras,
+};
 pub use local_imports::{list_local_import_candidates_command, read_local_import_text_command};
 pub use memory::query_memories;
 pub use monologue::generate_monologue;

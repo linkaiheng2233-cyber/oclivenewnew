@@ -8,6 +8,7 @@ use crate::models::role::IdentityBinding;
 use crate::models::role::LifeState;
 use crate::models::role::PersonalitySource;
 use crate::models::ui_config::UiConfig;
+use crate::models::{ExpertConfigSource, ExpertGraph, PromptStyleOverride};
 use serde::{Deserialize, Serialize};
 
 pub const API_VERSION: u32 = 1;
@@ -470,6 +471,82 @@ pub struct ExportChatLogsRequest {
 pub struct ExportChatLogsResponse {
     pub content: String,
     pub suggested_filename: String,
+}
+
+// ===== Module 9: Expert Models (ExpertGraph) + PromptStyle overrides =====
+
+#[derive(Debug, Clone, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct ExpertModelsGetEffectiveRequest {
+    pub role_id: String,
+    #[serde(default)]
+    pub session_id: Option<String>,
+}
+
+#[derive(Debug, Clone, Serialize)]
+#[serde(rename_all = "camelCase")]
+pub struct ExpertModelsEffectiveResponse {
+    #[serde(default)]
+    pub graph: ExpertGraph,
+    #[serde(default)]
+    pub prompt_style: Option<PromptStyleOverride>,
+    pub graph_source: ExpertConfigSource,
+    pub prompt_style_source: ExpertConfigSource,
+}
+
+#[derive(Debug, Clone, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct ExpertModelsSetSessionOverrideRequest {
+    pub role_id: String,
+    #[serde(default)]
+    pub session_id: Option<String>,
+    pub graph: ExpertGraph,
+    #[serde(default)]
+    pub prompt_style: Option<PromptStyleOverride>,
+}
+
+#[derive(Debug, Clone, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct ExpertModelsClearSessionOverrideRequest {
+    pub role_id: String,
+    #[serde(default)]
+    pub session_id: Option<String>,
+}
+
+#[derive(Debug, Clone, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct ExpertModelsSetRoleDefaultRequest {
+    pub role_id: String,
+    pub graph: ExpertGraph,
+    #[serde(default)]
+    pub prompt_style: Option<PromptStyleOverride>,
+}
+
+#[derive(Debug, Clone, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct ExpertModelsClearRoleDefaultRequest {
+    pub role_id: String,
+}
+
+/// Apply (compile → update llama sidecar config → trigger restart) for current session.
+#[derive(Debug, Clone, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct ExpertModelsApplyToSessionRequest {
+    pub role_id: String,
+    #[serde(default)]
+    pub session_id: Option<String>,
+}
+
+#[derive(Debug, Clone, Serialize)]
+#[serde(rename_all = "camelCase")]
+pub struct ExpertModelsApplyResult {
+    pub ok: bool,
+    #[serde(default)]
+    pub llama_plugin_id: String,
+    #[serde(default)]
+    pub model_path: Option<String>,
+    #[serde(default)]
+    pub llama_args: Option<String>,
 }
 
 #[derive(Debug, Clone, Deserialize)]

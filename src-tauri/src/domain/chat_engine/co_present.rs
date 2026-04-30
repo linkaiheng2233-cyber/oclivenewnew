@@ -10,6 +10,7 @@ use crate::domain::personality_engine::PersonalityEngine;
 use crate::domain::policy::PolicyContext;
 use crate::domain::portrait_emotion_engine::resolve_portrait_emotion;
 use crate::domain::prompt_builder::{effective_reply_quality_anchor, PromptInput};
+use crate::domain::prompt_style_override::role_view_with_prompt_style;
 use crate::domain::user_identity::resolve_effective_user_relation_key;
 use crate::error::Result;
 use crate::models::dto::{
@@ -195,8 +196,13 @@ pub(crate) async fn process_co_present(
         .map(str::trim)
         .filter(|s| !s.is_empty());
 
+    // Module 9: optional PromptStyle override layer (session override > role default > pack).
+    // When unset, behavior remains identical (borrowed role view).
+    let prompt_style = state.effective_prompt_style_override(mrid, srid).await?;
+    let role_view = role_view_with_prompt_style(role, prompt_style.as_ref());
+
     let prompt = pl.prompt.build_prompt(&PromptInput {
-        role,
+        role: role_view.as_ref(),
         personality: &personality,
         memories: &relevant,
         user_input: user_message,
@@ -215,7 +221,7 @@ pub(crate) async fn process_co_present(
         life_context_line: life_context_line.as_str(),
         worldview_snippet: worldview_snippet.as_str(),
         mutable_personality: mutable_for_prompt.as_str(),
-        reply_quality_anchor: effective_reply_quality_anchor(role),
+        reply_quality_anchor: effective_reply_quality_anchor(role_view.as_ref()),
         complex_emotion_hint: prev_complex_hint_trimmed,
     });
 
