@@ -1,8 +1,10 @@
 <script setup lang="ts">
 import { Teleport } from "vue";
+import { useI18n } from "vue-i18n";
 import { usePluginCommunityMarketPane } from "../../composables/usePluginCommunityMarketPane";
 
 const m = usePluginCommunityMarketPane();
+const { t } = useI18n();
 </script>
 
 <template>
@@ -13,12 +15,12 @@ const m = usePluginCommunityMarketPane();
         class="pm2-modal-backdrop"
         role="dialog"
         aria-modal="true"
-        aria-label="应用前确认"
+        :aria-label="String(t('pluginMarketV2.preflight.dialogLabel'))"
         @click.self="m.onPreflightCancel"
       >
         <div class="pm2-modal" @click.stop>
           <div class="pm2-modal-h">{{ m.preflightTitle }}</div>
-          <p class="pm2-hint">确认后将开始同步索引并进入逐插件的权限确认流程。</p>
+          <p class="pm2-hint">{{ t("pluginMarketV2.preflight.hint") }}</p>
           <ul class="pm2-preflight-list">
             <li v-for="(x, idx) in m.preflightLines" :key="`pl-${idx}`" class="pm2-preflight-li">
               <span style="white-space: pre-wrap">{{ x }}</span>
@@ -26,10 +28,10 @@ const m = usePluginCommunityMarketPane();
           </ul>
           <div class="pm2-modal-actions pm2-modal-actions--foot">
             <button type="button" class="pm2-btn secondary" @click="m.onPreflightCancel">
-              取消
+              {{ t("common.cancel") }}
             </button>
             <button type="button" class="pm2-btn primary" @click="m.onPreflightConfirm">
-              确认并继续
+              {{ t("pluginMarketV2.preflight.confirmAndContinue") }}
             </button>
           </div>
         </div>
@@ -39,7 +41,7 @@ const m = usePluginCommunityMarketPane();
         class="pm2-modal-backdrop"
         role="dialog"
         aria-modal="true"
-        aria-label="插件安装权限确认"
+        :aria-label="String(t('pluginMarketV2.permConsent.dialogLabel'))"
         @click.self="m.onPermConsentCancel"
       >
         <div class="pm2-modal" @click.stop>
@@ -52,17 +54,17 @@ const m = usePluginCommunityMarketPane();
             }}</span>
           </p>
           <p class="pm2-hint">
-            请选择你愿意授予的权限（安装后仍可在「专业模式 → 已安装插件 → 权限」中随时调整）。
+            {{ t("pluginMarketV2.permConsent.hint") }}
           </p>
           <p v-if="m.permTokenInfoLoading.value" class="pm2-muted" style="margin: 6px 0 0">
-            正在加载权限说明…
+            {{ t("pluginMarketV2.permConsent.loadingTokenInfo") }}
           </p>
           <div class="pm2-modal-actions">
             <button type="button" class="pm2-btn secondary pm2-btn--sm" @click="m.setPermConsentAll(true)">
-              全选
+              {{ t("pluginMarketV2.permConsent.selectAll") }}
             </button>
             <button type="button" class="pm2-btn secondary pm2-btn--sm" @click="m.setPermConsentAll(false)">
-              全不选
+              {{ t("pluginMarketV2.permConsent.selectNone") }}
             </button>
           </div>
           <ul class="pm2-perm-list">
@@ -102,9 +104,9 @@ const m = usePluginCommunityMarketPane();
           </ul>
           <div class="pm2-modal-actions pm2-modal-actions--foot">
             <button type="button" class="pm2-btn secondary" @click="m.onPermConsentCancel">
-              取消
+              {{ t("common.cancel") }}
             </button>
-            <button type="button" class="pm2-btn" @click="m.onPermConsentConfirm">继续安装</button>
+            <button type="button" class="pm2-btn" @click="m.onPermConsentConfirm">{{ t("pluginMarketV2.permConsent.continueInstall") }}</button>
           </div>
         </div>
       </div>
@@ -112,12 +114,12 @@ const m = usePluginCommunityMarketPane();
 
     <section id="pm-v2-community-index" class="pm2-section">
       <p class="pm2-muted pm2-lead">
-        与专业模式（V1）相同的在线索引与安装流程。本地文件夹投放与「扫描投放目录」仍在 V1 的社区索引区块。
+        {{ t("pluginMarketV2.lead") }}
       </p>
       <div class="pm2-section-head">
-        <h3 class="pm2-h3">社区索引（插件市场）</h3>
+        <h3 class="pm2-h3">{{ t("pluginMarketV2.communityIndex.title") }}</h3>
         <div class="pm2-section-actions">
-          <div class="pm2-market-tabs" role="tablist" aria-label="市场条目类型">
+          <div class="pm2-market-tabs" role="tablist" :aria-label="String(t('pluginMarketV2.communityIndex.entryTypeLabel'))">
             <button
               type="button"
               class="pm2-tab pm2-tab--sm"
@@ -126,7 +128,7 @@ const m = usePluginCommunityMarketPane();
               :aria-selected="m.marketEntryTab === 'plugin'"
               @click="m.marketEntryTab = 'plugin'"
             >
-              插件
+              {{ t("pluginMarketV2.tabs.plugin") }}
             </button>
             <button
               type="button"
@@ -136,7 +138,7 @@ const m = usePluginCommunityMarketPane();
               :aria-selected="m.marketEntryTab === 'module'"
               @click="m.marketEntryTab = 'module'"
             >
-              模块
+              {{ t("pluginMarketV2.tabs.module") }}
             </button>
             <button
               type="button"
@@ -146,7 +148,7 @@ const m = usePluginCommunityMarketPane();
               :aria-selected="m.marketEntryTab === 'profile'"
               @click="m.marketEntryTab = 'profile'"
             >
-              Profile
+              {{ t("pluginMarketV2.tabs.profile") }}
             </button>
           </div>
           <select
@@ -154,8 +156,8 @@ const m = usePluginCommunityMarketPane();
             :value="m.marketSourceSelected"
             @change="m.marketSourceSelected = ($event.target as HTMLSelectElement).value"
           >
-            <option value="official">官方默认索引</option>
-            <option v-for="s in m.marketSources" :key="s" :value="s">第三方源 · {{ s }}</option>
+            <option value="official">{{ t("pluginMarketV2.sources.official") }}</option>
+            <option v-for="s in m.marketSources" :key="s" :value="s">{{ t("pluginMarketV2.sources.thirdParty", { s }) }}</option>
           </select>
           <button
             type="button"
@@ -163,7 +165,7 @@ const m = usePluginCommunityMarketPane();
             :disabled="m.pluginStore.pluginMarketSyncing"
             @click="m.onSyncMarketIndex"
           >
-            {{ m.pluginStore.pluginMarketSyncing ? "同步中…" : "同步在线索引" }}
+            {{ m.pluginStore.pluginMarketSyncing ? t("pluginMarketV2.sync.syncing") : t("pluginMarketV2.sync.syncOnlineIndex") }}
           </button>
         </div>
       </div>
@@ -172,32 +174,32 @@ const m = usePluginCommunityMarketPane();
         {{ m.pluginStore.pluginMarketSnapshot.warning }}
       </p>
       <p v-if="m.pluginStore.pluginMarketSnapshot?.offlineMode" class="pm2-hint">
-        当前为离线模式（使用本地缓存索引）。
+        {{ t("pluginMarketV2.offlineMode") }}
       </p>
       <p v-if="m.marketSourceSelected !== 'official'" class="pm2-err">
-        当前为第三方索引源。请仅安装你信任的来源，并谨慎授予权限（开发者模式功能）。
+        {{ t("pluginMarketV2.thirdPartyWarning") }}
       </p>
       <p
         v-if="!m.pluginStore.pluginMarketSnapshot?.plugins?.length && !m.pluginStore.pluginMarketError"
         class="pm2-muted"
       >
-        尚无索引数据，请点击「同步在线索引」。
+        {{ t("pluginMarketV2.emptyHint") }}
       </p>
       <div
         v-else-if="m.marketRowsFiltered.length > 0"
         class="pm2-market-pager"
         role="toolbar"
-        aria-label="市场分页"
+        :aria-label="String(t('pluginMarketV2.pager.toolbarLabel'))"
       >
         <span class="pm2-muted">
-          共 {{ m.marketRowsFiltered.length }} 条 · 第 {{ m.marketPage }} / {{ m.marketTotalPages }} 页
+          {{ t("pluginMarketV2.pager.summary", { total: m.marketRowsFiltered.length, page: m.marketPage, pages: m.marketTotalPages }) }}
         </span>
         <label class="pm2-muted">
-          每页
+          {{ t("pluginMarketV2.pager.pageSize") }}
           <select
             v-model.number="m.marketPageSize"
             class="pm2-select pm2-select--sm"
-            aria-label="每页条数"
+            :aria-label="String(t('pluginMarketV2.pager.pageSizeAria'))"
           >
             <option :value="15">15</option>
             <option :value="30">30</option>
@@ -210,7 +212,7 @@ const m = usePluginCommunityMarketPane();
           :disabled="m.marketPage <= 1"
           @click="m.marketPage = Math.max(1, m.marketPage - 1)"
         >
-          上一页
+          {{ t("pluginMarketV2.pager.prev") }}
         </button>
         <button
           type="button"
@@ -218,7 +220,7 @@ const m = usePluginCommunityMarketPane();
           :disabled="m.marketPage >= m.marketTotalPages"
           @click="m.marketPage = Math.min(m.marketTotalPages, m.marketPage + 1)"
         >
-          下一页
+          {{ t("pluginMarketV2.pager.next") }}
         </button>
       </div>
       <ul v-if="m.marketRowsPaged.length > 0" class="pm2-market-list">

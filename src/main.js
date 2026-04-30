@@ -1,4 +1,4 @@
-import { createApp } from "vue";
+import { createApp, watch } from "vue";
 import { createPinia } from "pinia";
 import piniaPluginPersistedstate from "pinia-plugin-persistedstate";
 import * as Sentry from "@sentry/vue";
@@ -8,6 +8,8 @@ import App from "./App.vue";
 import "./styles/theme.css";
 import "./styles/global.css";
 import { tryReplaceWithDirectoryShell } from "./utils/directoryShellBootstrap";
+import { i18n, setAppLocale } from "./i18n";
+import { useUiStore } from "./stores/uiStore";
 
 void (async () => {
   const tookShell = await tryReplaceWithDirectoryShell();
@@ -33,6 +35,17 @@ void (async () => {
   const pinia = createPinia();
   pinia.use(piniaPluginPersistedstate);
   app.use(pinia);
+  app.use(i18n);
+
+  const uiStore = useUiStore(pinia);
+  watch(
+    () => uiStore.languagePref,
+    () => {
+      setAppLocale(uiStore.effectiveLocale);
+    },
+    { immediate: true },
+  );
+
   app.use(VueVirtualScroller);
   app.mount("#app");
 })();

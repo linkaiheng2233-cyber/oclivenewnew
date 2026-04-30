@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { computed, onMounted, ref } from "vue";
+import { useI18n } from "vue-i18n";
 import { open, save } from "@tauri-apps/api/dialog";
 import { readTextFile, writeTextFile } from "@tauri-apps/api/fs";
 import { useAppToast } from "../../composables/useAppToast";
@@ -9,6 +10,7 @@ import type { ExpertGraph, ExpertNode, PromptStyleOverride } from "../../utils/t
 
 const store = useExpertModelsStore();
 const { showToast } = useAppToast();
+const { t } = useI18n();
 const emit = defineEmits<{
   (e: "open-permissions", payload: { pluginId: string }): void;
 }>();
@@ -23,9 +25,9 @@ const expandedRunIndex = ref<number | null>(null);
 const expandedRunDetail = ref<any | null>(null);
 
 const sourceLabel = (s: string): string => {
-  if (s === "session_override") return "会话覆盖";
-  if (s === "role_default") return "角色默认";
-  return "角色包默认";
+  if (s === "session_override") return String(t("expertModels.source.sessionOverride"));
+  if (s === "role_default") return String(t("expertModels.source.roleDefault"));
+  return String(t("expertModels.source.rolePackDefault"));
 };
 
 const baseModelNode = computed(() => {
@@ -219,15 +221,15 @@ function formatRunTime(ms: number): string {
 function formatRelative(ms: number): string {
   const d = Date.now() - ms;
   if (!Number.isFinite(d)) return "";
-  if (d < 1000) return "刚刚";
+  if (d < 1000) return String(t("expertModels.relative.justNow"));
   const s = Math.floor(d / 1000);
-  if (s < 60) return `${s}s 前`;
+  if (s < 60) return String(t("expertModels.relative.secondsAgo", { n: s }));
   const m = Math.floor(s / 60);
-  if (m < 60) return `${m}m 前`;
+  if (m < 60) return String(t("expertModels.relative.minutesAgo", { n: m }));
   const h = Math.floor(m / 60);
-  if (h < 48) return `${h}h 前`;
+  if (h < 48) return String(t("expertModels.relative.hoursAgo", { n: h }));
   const day = Math.floor(h / 24);
-  return `${day}d 前`;
+  return String(t("expertModels.relative.daysAgo", { n: day }));
 }
 
 const filteredRuns = computed(() => {
@@ -664,20 +666,20 @@ async function onImportWorkflowJson(): Promise<void> {
 </script>
 
 <template>
-  <section class="em-root" aria-label="Expert Models（Module 9）">
+  <section class="em-root" :aria-label="t('expertModels.title')">
     <header class="em-h">
       <div>
-        <h3 class="em-title">Expert Models（Module 9）</h3>
+        <h3 class="em-title">{{ t("expertModels.title") }}</h3>
         <p class="em-sub">
-          选择 Base GGUF + LoRA 强度，并可选覆盖 PromptStyle。会话覆盖优先于角色默认；不设置时不改变现有行为。
+          {{ t("expertModels.subtitle") }}
         </p>
       </div>
       <div class="em-actions">
         <button class="em-btn secondary" type="button" :disabled="store.loading || saving" @click="onRefresh">
-          刷新
+          {{ t("expertModels.actions.refresh") }}
         </button>
         <button class="em-btn" type="button" :disabled="store.loading || saving" @click="store.setDraftFromEffective">
-          从有效配置回填编辑器
+          {{ t("expertModels.actions.backfillFromEffective") }}
         </button>
       </div>
     </header>

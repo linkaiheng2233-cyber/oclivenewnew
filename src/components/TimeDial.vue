@@ -101,7 +101,7 @@ const previewTimestamp = computed(() => {
 });
 
 const previewLabel = computed(() =>
-  new Date(previewTimestamp.value).toLocaleString("zh-CN", {
+  new Date(previewTimestamp.value).toLocaleString(uiStore.effectiveLocale, {
     year: "numeric",
     month: "2-digit",
     day: "2-digit",

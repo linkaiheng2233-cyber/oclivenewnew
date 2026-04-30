@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { computed, onMounted, ref, watch } from "vue";
+import { useI18n } from "vue-i18n";
 import LeftCategoryNav from "./LeftCategoryNav.vue";
 import PluginCardList from "./PluginCardList.vue";
 import RightDetailPanel from "./RightDetailPanel.vue";
@@ -53,22 +54,23 @@ const {
 } = usePluginManagerV2();
 const { term } = usePluginTerm();
 const { showToast } = useAppToast();
+const { t } = useI18n();
 const pluginStore = usePluginStore();
 const roleStore = useRoleStore();
 const busy = ref(false);
 const rightCollapsed = ref(false);
 
 const slotLabel = (slot: string): string => {
-  if (slot === SLOT_SETTINGS_PANEL) return "设置页（插件设置）";
-  if (slot === SLOT_SETTINGS_PLUGINS) return "插件管理页内嵌";
-  if (slot === SLOT_SETTINGS_ADVANCED) return "设置页（高级扩展区）";
-  if (slot === SLOT_SIDEBAR) return "左侧边栏";
-  if (slot === SLOT_ROLE_DETAIL) return "角色详情";
-  if (slot === SLOT_CHAT_HEADER) return "聊天顶部";
-  if (slot === SLOT_CHAT_TOOLBAR) return "聊天工具栏";
-  if (slot === SLOT_OVERLAY_FLOATING) return "悬浮层";
-  if (slot === SLOT_LAUNCHER_PALETTE) return "启动器（快捷入口）";
-  if (slot === SLOT_DEBUG_DOCK) return "调试面板";
+  if (slot === SLOT_SETTINGS_PANEL) return String(t("pluginManagerV2.slots.settingsPanel"));
+  if (slot === SLOT_SETTINGS_PLUGINS) return String(t("pluginManagerV2.slots.settingsPlugins"));
+  if (slot === SLOT_SETTINGS_ADVANCED) return String(t("pluginManagerV2.slots.settingsAdvanced"));
+  if (slot === SLOT_SIDEBAR) return String(t("pluginManagerV2.slots.sidebar"));
+  if (slot === SLOT_ROLE_DETAIL) return String(t("pluginManagerV2.slots.roleDetail"));
+  if (slot === SLOT_CHAT_HEADER) return String(t("pluginManagerV2.slots.chatHeader"));
+  if (slot === SLOT_CHAT_TOOLBAR) return String(t("pluginManagerV2.slots.chatToolbar"));
+  if (slot === SLOT_OVERLAY_FLOATING) return String(t("pluginManagerV2.slots.overlayFloating"));
+  if (slot === SLOT_LAUNCHER_PALETTE) return String(t("pluginManagerV2.slots.launcherPalette"));
+  if (slot === SLOT_DEBUG_DOCK) return String(t("pluginManagerV2.slots.debugDock"));
   return slot;
 };
 
@@ -154,10 +156,10 @@ const permEffective = computed(() => {
 });
 
 const riskLabel = (risk: string | undefined): string => {
-  if (risk === "high") return "高风险";
-  if (risk === "medium") return "中风险";
-  if (risk === "low") return "低风险";
-  return "未知";
+  if (risk === "high") return String(t("pluginManagerV2.permissions.risk.high"));
+  if (risk === "medium") return String(t("pluginManagerV2.permissions.risk.medium"));
+  if (risk === "low") return String(t("pluginManagerV2.permissions.risk.low"));
+  return String(t("pluginManagerV2.permissions.risk.unknown"));
 };
 
 const riskClass = (risk: string | undefined): string => {
@@ -219,7 +221,7 @@ async function onTogglePermission(permission: string, enabled: boolean) {
     await setPluginPermissionGrant(pid, permission, enabled);
     await refreshPerms(pid);
     await pluginStore.refresh();
-    showToast("success", "权限已更新。");
+    showToast("success", String(t("pluginManagerV2.permissions.toastUpdated")));
   } catch (e) {
     showToast("error", e instanceof Error ? e.message : String(e));
   } finally {
@@ -232,12 +234,10 @@ async function onGrantAllDeclared(): Promise<void> {
   if (!pid) return;
   const declared = declaredPermsSorted.value;
   if (declared.length === 0) {
-    showToast("info", "该插件未声明任何权限。");
+    showToast("info", String(t("pluginManagerV2.permissions.toastNoDeclared")));
     return;
   }
-  const ok = window.confirm(
-    `将授予该插件全部声明权限（共 ${declared.length} 条）。\n\n提示：只给你信任的插件授权。\n\n继续吗？`,
-  );
+  const ok = window.confirm(String(t("pluginManagerV2.permissions.confirmGrantAll", { n: declared.length })));
   if (!ok) return;
   permLoading.value = true;
   try {
@@ -246,7 +246,7 @@ async function onGrantAllDeclared(): Promise<void> {
     }
     await refreshPerms(pid);
     await pluginStore.refresh();
-    showToast("success", "已授予全部声明权限。");
+    showToast("success", String(t("pluginManagerV2.permissions.toastGrantedAll")));
   } catch (e) {
     showToast("error", e instanceof Error ? e.message : String(e));
   } finally {
@@ -259,13 +259,16 @@ async function onGrantMissingDeclared(): Promise<void> {
   if (!pid) return;
   const missing = missingPermsFor(pid);
   if (missing.length === 0) {
-    showToast("success", "该插件没有缺失权限。");
+    showToast("success", String(t("pluginManagerV2.permissions.toastNoMissing")));
     return;
   }
   const ok = window.confirm(
-    `将补齐该插件缺失的声明权限（共 ${missing.length} 条）：\n\n${missing
-      .map((p) => `- ${p}`)
-      .join("\n")}\n\n继续吗？`,
+    String(
+      t("pluginManagerV2.permissions.confirmGrantMissing", {
+        n: missing.length,
+        list: missing.map((p) => `- ${p}`).join("\n"),
+      }),
+    ),
   );
   if (!ok) return;
   permLoading.value = true;
@@ -275,7 +278,7 @@ async function onGrantMissingDeclared(): Promise<void> {
     }
     await refreshPerms(pid);
     await pluginStore.refresh();
-    showToast("success", "已补齐缺失权限。");
+    showToast("success", String(t("pluginManagerV2.permissions.toastGrantedMissing")));
   } catch (e) {
     showToast("error", e instanceof Error ? e.message : String(e));
   } finally {
@@ -302,7 +305,7 @@ function moveInPickedSlot(pluginId: string, dir: "up" | "down") {
 async function onSaveSlotDashboard(): Promise<void> {
   try {
     await pluginStore.persist();
-    showToast("success", "已保存：插槽位置与启用状态已写入配置。");
+    showToast("success", String(t("pluginManagerV2.slotDashboard.toastSaved")));
   } catch (e) {
     showToast("error", e instanceof Error ? e.message : String(e));
   }
@@ -314,14 +317,12 @@ const gitInstalling = ref(false);
 async function onInstallFromGit(): Promise<void> {
   const gitUrl = gitUrlDraft.value.trim();
   if (!gitUrl) return;
-  const ok = window.confirm(
-    `将从 Git 仓库安装插件：\n${gitUrl}\n\n提示：请仅安装你信任的来源；安装后如遇“权限不足”报错，请在插件管理里授权。继续吗？`,
-  );
+  const ok = window.confirm(String(t("pluginManagerV2.gitInstall.confirm", { url: gitUrl })));
   if (!ok) return;
   gitInstalling.value = true;
   try {
     const r = await installPluginFromGit(gitUrl);
-    showToast("success", `已安装：${r.installedPluginId}`);
+    showToast("success", String(t("pluginManagerV2.gitInstall.toastInstalled", { id: r.installedPluginId })));
     gitUrlDraft.value = "";
     await pluginStore.refresh();
   } catch (e) {

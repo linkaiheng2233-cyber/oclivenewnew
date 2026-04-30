@@ -1,10 +1,12 @@
 <script setup lang="ts">
 import { ref, watch } from "vue";
+import { useI18n } from "vue-i18n";
 import HelpHint from "../components/HelpHint.vue";
 import HotkeySettingsSection from "../components/HotkeySettingsSection.vue";
 import PluginSettingsPanelSlots from "../components/PluginSettingsPanelSlots.vue";
 import PluginSlotEmbed from "../components/PluginSlotEmbed.vue";
 import { useAppToast } from "../composables/useAppToast";
+import type { LanguagePref } from "../i18n";
 import {
   settingsExperimentalSectionHelpHint,
   settingsExperimentalToggleDescriptionHtml,
@@ -33,6 +35,7 @@ const emit = defineEmits<{
 const pluginStore = usePluginStore();
 const uiStore = useUiStore();
 const { showToast } = useAppToast();
+const { t } = useI18n();
 
 type SettingsTab = "general" | "plugins";
 
@@ -121,23 +124,30 @@ async function onToggleForceIframe(e: Event) {
       class="sv-backdrop"
       role="dialog"
       aria-modal="true"
-      aria-label="设置"
+      :aria-label="t('settings.title')"
       @click.self="emit('close')"
     >
       <div class="sv-dialog" @click.stop>
         <header class="sv-head">
-          <h2 class="sv-title">设置</h2>
-          <button type="button" class="sv-close" aria-label="关闭" @click="emit('close')">×</button>
+          <h2 class="sv-title">{{ t("settings.title") }}</h2>
+          <button
+            type="button"
+            class="sv-close"
+            :aria-label="t('common.close')"
+            @click="emit('close')"
+          >
+            ×
+          </button>
         </header>
 
-        <nav class="sv-nav" aria-label="设置分区">
+        <nav class="sv-nav" :aria-label="t('settings.sectionsNavLabel')">
           <button
             type="button"
             class="sv-nav-btn"
             :aria-current="tab === 'general' ? 'page' : undefined"
             @click="tab = 'general'"
           >
-            常规
+            {{ t("settings.tabs.general") }}
           </button>
           <button
             type="button"
@@ -145,7 +155,7 @@ async function onToggleForceIframe(e: Event) {
             :aria-current="tab === 'plugins' ? 'page' : undefined"
             @click="tab = 'plugins'"
           >
-            插件扩展
+            {{ t("settings.tabs.plugins") }}
           </button>
         </nav>
 
@@ -153,16 +163,33 @@ async function onToggleForceIframe(e: Event) {
           <p class="sv-lead" v-html="settingsGeneralLeadHtml()" />
           <section class="sv-section">
             <div class="sv-row-h">
-              <span class="sv-label">快捷</span>
+              <span class="sv-label">{{ t("settings.shortcuts.label") }}</span>
               <HelpHint :text="settingsShortcutsHelpHint()" />
             </div>
             <p class="sv-muted">
-              虚拟时间、叙事场景等仅在沉浸模式下显示于「更多」。
+              {{ t("settings.shortcuts.immersiveHint") }}
             </p>
           </section>
           <section class="sv-section">
             <div class="sv-row-h">
-              <span class="sv-label">实验性功能</span>
+              <span class="sv-label">{{ t("settings.language.label") }}</span>
+            </div>
+            <div class="sv-row-controls">
+              <select
+                class="sv-select"
+                :value="uiStore.languagePref"
+                @change="uiStore.setLanguagePref(($event.target as HTMLSelectElement).value as LanguagePref)"
+              >
+                <option value="system">{{ t("settings.language.options.system") }}</option>
+                <option value="zh-CN">{{ t("settings.language.options.zhCN") }}</option>
+                <option value="en-US">{{ t("settings.language.options.enUS") }}</option>
+              </select>
+              <p class="sv-muted">{{ t("settings.language.hint") }}</p>
+            </div>
+          </section>
+          <section class="sv-section">
+            <div class="sv-row-h">
+              <span class="sv-label">{{ t("settings.experimental.label") }}</span>
               <HelpHint :text="settingsExperimentalSectionHelpHint()" />
             </div>
             <label class="sv-toggle-row">
@@ -172,7 +199,7 @@ async function onToggleForceIframe(e: Event) {
                 @change="uiStore.setExperimentalPluginManagerV2(($event.target as HTMLInputElement).checked)"
               />
               <span class="sv-toggle-text">
-                <strong>启用新版插件管理界面（V2 预览）</strong>
+                <strong>{{ t("pluginManager.entry.settingsExperimentalToggleTitle") }}</strong>
                 <span class="sv-muted sv-toggle-desc" v-html="settingsExperimentalToggleDescriptionHtml()" />
               </span>
             </label>
@@ -407,6 +434,20 @@ async function onToggleForceIframe(e: Event) {
   align-items: center;
   gap: 8px;
   flex-wrap: wrap;
+}
+.sv-row-controls {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+.sv-select {
+  width: min(320px, 100%);
+  padding: 6px 10px;
+  font-size: 13px;
+  border-radius: 8px;
+  border: 1px solid var(--border-light);
+  background: var(--bg-primary);
+  color: var(--text-primary);
 }
 .sv-label {
   font-weight: 600;
