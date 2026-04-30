@@ -655,7 +655,62 @@ export const zhCN = {
       toastPredeclaredPerms: "该 Profile 预声明权限：{list}",
       toastApplied: "Profile 已应用：{id}（插槽位置可在「插槽顺序」里调整）",
     },
+    shell: {
+      title: "Shell 能力（Module 8）",
+      hint:
+        "插槽属于前端壳能力集；插件可按能力渲染/降级。后端 bootstrap 会返回本发行版支持的插槽名。",
+      noSupportedSlotsHint: "未提供 supportedUiSlots（可能是旧版内核/后端），将按“全支持”兼容处理。",
+      supportedLabel: "支持：",
+      unsupportedOfficialLabel: "不支持（官方插槽）：",
+    },
+    profileSection: {
+      title: "Profile（特征码/一键部署）",
+      loadingPreview: "读取中…",
+      pickFile: "选择 Profile 文件",
+      applying: "应用中…",
+      apply: "应用 Profile",
+      hint:
+        "Profile 会按声明的 source 同步索引并逐个安装插件（每个插件都要确认权限），然后把 backends 写入当前会话的后端覆盖。",
+      marketSourcesLabel: "市场源",
+      developerModeLabel: "开发者模式",
+      devModeOn: "开启",
+      devModeOff: "关闭",
+      pluginsLabel: "插件",
+      backendsLabel: "后端覆盖",
+      empty: "尚未选择 Profile。",
+    },
+    authorSuggestedBackends: {
+      title: "作者建议 · 后端",
+      hint: "将 author.json 中的 suggested_plugin_backends 写入本会话的后端覆盖（与「后端模块」Tab 一致）。",
+      apply: "应用作者建议的后端",
+    },
+    authorPack: {
+      title: "作者与推荐",
+      optional: "（可选）",
+      empty: "未列出 recommended_plugins。",
+    },
+    applyPlan: {
+      type: {
+        module: "类型：模块（无代码）",
+        profile: "类型：Profile（无代码）",
+      },
+      entry: "条目：{id}",
+      willSyncSources: "将同步索引源：{list}",
+      willInstallDeps: "将安装依赖插件：{list}",
+      willWriteSessionOverride: "将写入后端覆盖（会话级）：",
+      titleModule: "应用模块：{id}",
+      titleProfile: "应用 Profile：{id}",
+      depNotFound:
+        "索引未找到依赖插件：{id}（source={source}）\n\n建议：先确认该插件确实存在于该源，或切换到正确的源再同步。",
+    },
     localImports: {
+      kindLabels: {
+        rolePack: "角色包",
+        pluginArchive: "插件包",
+        pluginDir: "插件目录",
+        moduleEntry: "模块条目",
+        profileEntry: "Profile",
+      },
       toastJsonCopied: "已复制 JSON 内容到剪贴板。",
       toastOnlyModuleOrProfile: "仅支持 module/profile 本地条目。",
       toastInstalled: "已安装：{id}",

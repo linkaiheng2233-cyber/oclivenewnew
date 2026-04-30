@@ -673,7 +673,64 @@ export const enUS = {
       toastPredeclaredPerms: "This Profile predeclares permissions: {list}",
       toastApplied: "Profile applied: {id} (slot placement can be adjusted in the Slots tab).",
     },
+    shell: {
+      title: "Shell capabilities (Module 8)",
+      hint:
+        "Slots are part of the frontend shell capability set. Plugins can render or degrade based on capabilities. Backend bootstrap returns supported slot names for this release.",
+      noSupportedSlotsHint:
+        "supportedUiSlots is not provided (may be an older core/backend). Treating as “all supported” for compatibility.",
+      supportedLabel: "Supported:",
+      unsupportedOfficialLabel: "Unsupported (official slots):",
+    },
+    profileSection: {
+      title: "Profile (fingerprint / one-click setup)",
+      loadingPreview: "Loading…",
+      pickFile: "Pick Profile file",
+      applying: "Applying…",
+      apply: "Apply Profile",
+      hint:
+        "Profile syncs index by declared sources and installs plugins one by one (permission consent per plugin), then writes backends into current session override.",
+      marketSourcesLabel: "Market sources",
+      developerModeLabel: "Developer mode",
+      devModeOn: "On",
+      devModeOff: "Off",
+      pluginsLabel: "Plugins",
+      backendsLabel: "Backends override",
+      empty: "No Profile selected.",
+    },
+    authorSuggestedBackends: {
+      title: "Author suggestion · Backends",
+      hint:
+        "Writes suggested_plugin_backends from author.json into current session backends override (same as the Backends tab).",
+      apply: "Apply author-suggested backends",
+    },
+    authorPack: {
+      title: "Author & recommendations",
+      optional: "(optional)",
+      empty: "No recommended_plugins listed.",
+    },
+    applyPlan: {
+      type: {
+        module: "Type: Module (no code)",
+        profile: "Type: Profile (no code)",
+      },
+      entry: "Entry: {id}",
+      willSyncSources: "Will sync index sources: {list}",
+      willInstallDeps: "Will install dependency plugins: {list}",
+      willWriteSessionOverride: "Will write backend override (session-level):",
+      titleModule: "Apply module: {id}",
+      titleProfile: "Apply profile: {id}",
+      depNotFound:
+        "Dependency plugin not found in index: {id} (source={source})\n\nTip: verify it exists in that source, or switch to the correct source and sync again.",
+    },
     localImports: {
+      kindLabels: {
+        rolePack: "Role pack",
+        pluginArchive: "Plugin archive",
+        pluginDir: "Plugin directory",
+        moduleEntry: "Module entry",
+        profileEntry: "Profile",
+      },
       toastJsonCopied: "JSON copied to clipboard.",
       toastOnlyModuleOrProfile: "Only local module/profile entries are supported.",
       toastInstalled: "Installed: {id}",

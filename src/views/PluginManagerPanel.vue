@@ -684,16 +684,19 @@ async function onApplyModuleEntry(row: PluginMarketEntryDto): Promise<void> {
   const sources = [
     ...new Set((mod.plugins ?? []).map((x) => normalizeProfileSource(x.source ?? null))),
   ];
-  planLines.push(`类型：模块（无代码）`);
-  planLines.push(`条目：${row.id}`);
-  if (sources.length) planLines.push(`将同步索引源：${sources.join("、")}`);
-  if (deps.length) planLines.push(`将安装依赖插件：${deps.join("、")}`);
+  planLines.push(String(t("pluginManagerV1.applyPlan.type.module")));
+  planLines.push(String(t("pluginManagerV1.applyPlan.entry", { id: row.id })));
+  if (sources.length) planLines.push(String(t("pluginManagerV1.applyPlan.willSyncSources", { list: sources.join("、") })));
+  if (deps.length) planLines.push(String(t("pluginManagerV1.applyPlan.willInstallDeps", { list: deps.join("、") })));
   const changes = summarizeOverrideBackends(mod.backends ?? null);
   if (changes.length) {
-    planLines.push(`将写入后端覆盖（会话级）：`);
+    planLines.push(String(t("pluginManagerV1.applyPlan.willWriteSessionOverride")));
     for (const x of changes) planLines.push(`- ${x}`);
   }
-  const ok = await requestApplyPreflight(`应用模块：${row.id}`, planLines);
+  const ok = await requestApplyPreflight(
+    String(t("pluginManagerV1.applyPlan.titleModule", { id: row.id })),
+    planLines,
+  );
   if (!ok) return;
   saveCurrentSessionOverrideForRollback("module", row.id);
 
@@ -710,7 +713,7 @@ async function onApplyModuleEntry(row: PluginMarketEntryDto): Promise<void> {
     if (!prow) {
       showToast(
         "error",
-        `索引未找到依赖插件：${pid}（source=${src}）\n\n建议：先确认该插件确实存在于该源，或切换到正确的源再同步。`,
+        String(t("pluginManagerV1.applyPlan.depNotFound", { id: pid, source: src })),
       );
       continue;
     }
@@ -754,16 +757,19 @@ async function onApplyProfileEntry(row: PluginMarketEntryDto): Promise<void> {
   const sources = [
     ...new Set((prof.plugins ?? []).map((x) => normalizeProfileSource(x.source ?? null))),
   ];
-  planLines.push(`类型：Profile（无代码）`);
-  planLines.push(`条目：${row.id}`);
-  if (sources.length) planLines.push(`将同步索引源：${sources.join("、")}`);
-  if (deps.length) planLines.push(`将安装依赖插件：${deps.join("、")}`);
+  planLines.push(String(t("pluginManagerV1.applyPlan.type.profile")));
+  planLines.push(String(t("pluginManagerV1.applyPlan.entry", { id: row.id })));
+  if (sources.length) planLines.push(String(t("pluginManagerV1.applyPlan.willSyncSources", { list: sources.join("、") })));
+  if (deps.length) planLines.push(String(t("pluginManagerV1.applyPlan.willInstallDeps", { list: deps.join("、") })));
   const changes = summarizeOverrideBackends(prof.backends ?? null);
   if (changes.length) {
-    planLines.push(`将写入后端覆盖（会话级）：`);
+    planLines.push(String(t("pluginManagerV1.applyPlan.willWriteSessionOverride")));
     for (const x of changes) planLines.push(`- ${x}`);
   }
-  const ok = await requestApplyPreflight(`应用 Profile：${row.id}`, planLines);
+  const ok = await requestApplyPreflight(
+    String(t("pluginManagerV1.applyPlan.titleProfile", { id: row.id })),
+    planLines,
+  );
   if (!ok) return;
   saveCurrentSessionOverrideForRollback("profile", row.id);
 
@@ -785,7 +791,7 @@ async function onApplyProfileEntry(row: PluginMarketEntryDto): Promise<void> {
     if (!prow) {
       showToast(
         "error",
-        `索引未找到依赖插件：${pid}（source=${src}）\n\n建议：先确认该插件确实存在于该源，或切换到正确的源再同步。`,
+        String(t("pluginManagerV1.applyPlan.depNotFound", { id: pid, source: src })),
       );
       continue;
     }
@@ -899,11 +905,11 @@ async function refreshLocalImports(): Promise<void> {
 }
 
 function localImportKindLabel(k: string): string {
-  if (k === "role_pack") return "角色包";
-  if (k === "plugin_archive") return "插件包";
-  if (k === "plugin_dir") return "插件目录";
-  if (k === "module_json") return "模块条目";
-  if (k === "profile_json") return "Profile";
+  if (k === "role_pack") return String(t("pluginManagerV1.localImports.kindLabels.rolePack"));
+  if (k === "plugin_archive") return String(t("pluginManagerV1.localImports.kindLabels.pluginArchive"));
+  if (k === "plugin_dir") return String(t("pluginManagerV1.localImports.kindLabels.pluginDir"));
+  if (k === "module_json") return String(t("pluginManagerV1.localImports.kindLabels.moduleEntry"));
+  if (k === "profile_json") return String(t("pluginManagerV1.localImports.kindLabels.profileEntry"));
   return k;
 }
 
@@ -1724,22 +1730,22 @@ async function onPackSelectedPlugin(): Promise<void> {
           </section>
 
           <section class="pm-section">
-            <h3 class="pm-h3">Shell 能力（Module 8）</h3>
+            <h3 class="pm-h3">{{ t("pluginManagerV1.shell.title") }}</h3>
             <p class="pm-hint">
-              插槽属于前端壳能力集；插件可按能力渲染/降级。后端 bootstrap 会返回本发行版支持的插槽名。
+              {{ t("pluginManagerV1.shell.hint") }}
             </p>
             <p class="pm-muted" v-if="supportedUiSlotsForShell.length === 0">
-              未提供 supportedUiSlots（可能是旧版内核/后端），将按“全支持”兼容处理。
+              {{ t("pluginManagerV1.shell.noSupportedSlotsHint") }}
             </p>
             <div v-else class="pm-shell-slots">
               <div class="pm-shell-slots-row">
-                <span class="pm-muted">支持：</span>
+                <span class="pm-muted">{{ t("pluginManagerV1.shell.supportedLabel") }}</span>
                 <span class="pm-shell-chip" v-for="s in supportedUiSlotsForShell" :key="`sup-${s}`">
                   {{ s }}
                 </span>
               </div>
               <div v-if="unsupportedOfficialUiSlots.length > 0" class="pm-shell-slots-row">
-                <span class="pm-muted">不支持（官方插槽）：</span>
+                <span class="pm-muted">{{ t("pluginManagerV1.shell.unsupportedOfficialLabel") }}</span>
                 <span
                   class="pm-shell-chip pm-shell-chip--warn"
                   v-for="s in unsupportedOfficialUiSlots"
@@ -1753,7 +1759,7 @@ async function onPackSelectedPlugin(): Promise<void> {
 
           <section class="pm-section">
             <div class="pm-section-head">
-              <h3 class="pm-h3">Profile（特征码/一键部署）</h3>
+              <h3 class="pm-h3">{{ t("pluginManagerV1.profileSection.title") }}</h3>
               <div class="pm-section-actions">
                 <button
                   type="button"
@@ -1761,7 +1767,11 @@ async function onPackSelectedPlugin(): Promise<void> {
                   :disabled="profilePreviewLoading"
                   @click="onPickProfilePreview"
                 >
-                  {{ profilePreviewLoading ? "读取中…" : "选择 Profile 文件" }}
+                  {{
+                    profilePreviewLoading
+                      ? t("pluginManagerV1.profileSection.loadingPreview")
+                      : t("pluginManagerV1.profileSection.pickFile")
+                  }}
                 </button>
                 <button
                   v-if="profilePreview"
@@ -1770,12 +1780,16 @@ async function onPackSelectedPlugin(): Promise<void> {
                   :disabled="profileApplyLoading"
                   @click="onApplyProfile"
                 >
-                  {{ profileApplyLoading ? "应用中…" : "应用 Profile" }}
+                  {{
+                    profileApplyLoading
+                      ? t("pluginManagerV1.profileSection.applying")
+                      : t("pluginManagerV1.profileSection.apply")
+                  }}
                 </button>
               </div>
             </div>
             <p class="pm-hint">
-              Profile 会按声明的 source 同步索引并逐个安装插件（每个插件都要确认权限），然后把 backends 写入当前会话的后端覆盖。
+              {{ t("pluginManagerV1.profileSection.hint") }}
             </p>
             <div v-if="profilePreview" class="pm-profile-preview">
               <p class="pm-muted">
@@ -1783,16 +1797,20 @@ async function onPackSelectedPlugin(): Promise<void> {
                 <span class="pm-muted"> · {{ profilePreview.id }} · v{{ profilePreview.version }}</span>
               </p>
               <p v-if="(profilePreview.marketSources ?? []).length" class="pm-muted">
-                市场源：{{ profilePreview.marketSources.join("、") }}
+                {{ t("pluginManagerV1.profileSection.marketSourcesLabel") }}：{{ profilePreview.marketSources.join("、") }}
               </p>
               <p class="pm-muted">
-                开发者模式：{{ profilePreview.developerMode ? "开启" : "关闭" }}
+                {{ t("pluginManagerV1.profileSection.developerModeLabel") }}：{{
+                  profilePreview.developerMode
+                    ? t("pluginManagerV1.profileSection.devModeOn")
+                    : t("pluginManagerV1.profileSection.devModeOff")
+                }}
               </p>
               <p v-if="(profilePreview.plugins ?? []).length" class="pm-muted">
-                插件：{{ profilePreview.plugins.map((x) => x.id).join("、") }}
+                {{ t("pluginManagerV1.profileSection.pluginsLabel") }}：{{ profilePreview.plugins.map((x) => x.id).join("、") }}
               </p>
               <p v-if="profilePreview.backends" class="pm-muted">
-                后端覆盖：{{
+                {{ t("pluginManagerV1.profileSection.backendsLabel") }}：{{
                   Object.entries(profilePreview.backends)
                     .filter(([, v]) => !!(v ?? "").toString().trim())
                     .map(([k, v]) => `${k}=${v}`)
@@ -1800,28 +1818,28 @@ async function onPackSelectedPlugin(): Promise<void> {
                 }}
               </p>
             </div>
-            <p v-else class="pm-muted">尚未选择 Profile。</p>
+            <p v-else class="pm-muted">{{ t("pluginManagerV1.profileSection.empty") }}</p>
           </section>
 
           <section
             v-if="roleStore.roleInfo.authorPack?.suggested_plugin_backends"
             class="pm-section"
           >
-            <h3 class="pm-h3">作者建议 · 后端</h3>
+            <h3 class="pm-h3">{{ t("pluginManagerV1.authorSuggestedBackends.title") }}</h3>
             <p class="pm-hint">
-              将 author.json 中的 suggested_plugin_backends 写入本会话的后端覆盖（与「后端模块」Tab 一致）。
+              {{ t("pluginManagerV1.authorSuggestedBackends.hint") }}
             </p>
             <button
               type="button"
               class="pm-btn secondary pm-btn--sm"
               @click="onApplyAuthorSuggestedBackends"
             >
-              应用作者建议的后端
+              {{ t("pluginManagerV1.authorSuggestedBackends.apply") }}
             </button>
           </section>
 
           <section v-if="roleStore.roleInfo.authorPack" class="pm-section">
-            <h3 class="pm-h3">作者与推荐</h3>
+            <h3 class="pm-h3">{{ t("pluginManagerV1.authorPack.title") }}</h3>
             <p v-if="roleStore.roleInfo.authorPack.summary" class="pm-author-summary">
               {{ roleStore.roleInfo.authorPack.summary }}
             </p>
@@ -1835,10 +1853,10 @@ async function onPackSelectedPlugin(): Promise<void> {
               >
                 <strong>{{ rp.id }}</strong>
                 <span v-if="rp.version_range" class="pm-muted"> · {{ rp.version_range }}</span>
-                <span v-if="rp.optional" class="pm-muted">（可选）</span>
+                <span v-if="rp.optional" class="pm-muted">{{ t("pluginManagerV1.authorPack.optional") }}</span>
               </li>
             </ul>
-            <p v-else class="pm-muted">未列出 recommended_plugins。</p>
+            <p v-else class="pm-muted">{{ t("pluginManagerV1.authorPack.empty") }}</p>
           </section>
 
           <section v-if="false" id="pm-community-index" class="pm-section">
