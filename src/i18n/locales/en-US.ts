@@ -69,6 +69,12 @@ export const enUS = {
     confirm: "Confirm",
     continue: "Continue",
     refresh: "Refresh",
+    clear: "Clear",
+    export: "Export",
+    start: "Start",
+    stop: "Stop",
+    restart: "Restart",
+    kill: "Kill",
     security: "Security",
     advanced: "Advanced",
   },
@@ -943,6 +949,50 @@ export const enUS = {
     save: "Save private settings",
     toasts: {
       saved: "Private plugin settings saved.",
+    },
+  },
+  pluginDebug: {
+    target: "Target",
+    status: {
+      runningPid: "Running · PID {pid}",
+      notRunning: "Not running",
+    },
+    tabs: {
+      aria: "Debug sections",
+      process: "Process",
+      console: "Console",
+    },
+    console: {
+      hint:
+        'The "Output" below is a ring buffer (~1000 lines) polled by the host, similar to an IDE console.',
+    },
+    inspector: {
+      aria: "Response and log output",
+      response: "Response",
+      output: "Output",
+      noResponse: "(No response yet)",
+    },
+    process: {
+      thisPlugin: "This plugin",
+      runningPid: "Running · PID {pid}",
+      notStarted: "Not started",
+      spawnUnsupportedHint:
+        "This plugin manifest does not declare `process`, so it cannot be started here. If the process is launched by the host or other means, you can still send requests in the RPC tab to a ready endpoint.",
+      refreshList: "Refresh process list",
+      managedByHost: "Host-managed plugin processes",
+    },
+    rpc: {
+      method: "Method",
+      discover: "Discover methods",
+      paramsJson: "Params JSON",
+      send: "Send",
+      format: "Format",
+      historyTitle: "Request history (click to fill)",
+    },
+    logs: {
+      filterPlaceholder: "Filter logs…",
+      empty:
+        "No logs yet (stdout/stderr will appear here after starting the plugin process).",
     },
   },
   pluginMarketV1: {

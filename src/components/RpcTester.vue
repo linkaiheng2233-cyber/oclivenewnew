@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { computed } from "vue";
+import { useI18n } from "vue-i18n";
 import type { RpcHistoryItem } from "../composables/usePluginDebug";
 
 const props = defineProps<{
@@ -19,6 +20,8 @@ const emit = defineEmits<{
   send: [];
   applyHistory: [item: RpcHistoryItem];
 }>();
+
+const { t } = useI18n();
 
 const methodOptions = computed(() => {
   const m = new Set(props.methods);
@@ -41,7 +44,7 @@ function onFormat() {
 <template>
   <div class="pm-dbg-rpc">
     <div class="pm-dbg-rpc-row">
-      <label class="pm-dbg-lab">方法</label>
+      <label class="pm-dbg-lab">{{ t("pluginDebug.rpc.method") }}</label>
       <input
         :value="method"
         class="pm-dbg-input"
@@ -54,10 +57,10 @@ function onFormat() {
         <option v-for="m in methodOptions" :key="m" :value="m" />
       </datalist>
       <button type="button" class="pm-dbg-btn secondary" :disabled="busy" @click="emit('discover')">
-        发现方法
+        {{ t("pluginDebug.rpc.discover") }}
       </button>
     </div>
-    <label class="pm-dbg-lab">参数 JSON</label>
+    <label class="pm-dbg-lab">{{ t("pluginDebug.rpc.paramsJson") }}</label>
     <textarea
       :value="params"
       class="pm-dbg-ta"
@@ -66,11 +69,11 @@ function onFormat() {
       @input="emit('update:params', ($event.target as HTMLTextAreaElement).value)"
     />
     <div class="pm-dbg-actions">
-      <button type="button" class="pm-dbg-btn" :disabled="busy" @click="emit('send')">发送</button>
-      <button type="button" class="pm-dbg-btn secondary" @click="onFormat">格式化</button>
+      <button type="button" class="pm-dbg-btn" :disabled="busy" @click="emit('send')">{{ t("pluginDebug.rpc.send") }}</button>
+      <button type="button" class="pm-dbg-btn secondary" @click="onFormat">{{ t("pluginDebug.rpc.format") }}</button>
     </div>
     <div v-if="history.length" class="pm-dbg-hist">
-      <div class="pm-dbg-sub">请求历史（点击回填）</div>
+      <div class="pm-dbg-sub">{{ t("pluginDebug.rpc.historyTitle") }}</div>
       <ul class="pm-dbg-hlist">
         <li v-for="h in history" :key="h.id">
           <button type="button" class="pm-dbg-link" @click="emit('applyHistory', h)">

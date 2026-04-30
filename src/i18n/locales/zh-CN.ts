@@ -64,6 +64,12 @@ export const zhCN = {
     confirm: "确认",
     continue: "继续",
     refresh: "刷新",
+    clear: "清空",
+    export: "导出",
+    start: "启动",
+    stop: "停止",
+    restart: "重启",
+    kill: "终止",
     security: "安全",
     advanced: "高级",
   },
@@ -915,6 +921,49 @@ export const zhCN = {
     save: "保存私有配置",
     toasts: {
       saved: "已保存插件私有配置。",
+    },
+  },
+  pluginDebug: {
+    target: "目标",
+    status: {
+      runningPid: "运行中 · PID {pid}",
+      notRunning: "未运行",
+    },
+    tabs: {
+      aria: "调试分区",
+      process: "进程",
+      console: "控制台",
+    },
+    console: {
+      hint:
+        "下方 Output 为环形缓冲（约 1000 行），宿主轮询刷新；与主流 IDE 底部控制台类似。",
+    },
+    inspector: {
+      aria: "响应与日志输出",
+      response: "响应",
+      output: "输出",
+      noResponse: "（尚无响应）",
+    },
+    process: {
+      thisPlugin: "本插件",
+      runningPid: "运行中 · PID {pid}",
+      notStarted: "未启动",
+      spawnUnsupportedHint:
+        "此插件 manifest 未声明 `process`，无法在此启动 JSON-RPC 子进程；若插件已由宿主或其它方式拉起，仍可在「RPC」标签对已就绪端点发请求。",
+      refreshList: "刷新进程列表",
+      managedByHost: "宿主管理的插件进程",
+    },
+    rpc: {
+      method: "方法",
+      discover: "发现方法",
+      paramsJson: "参数 JSON",
+      send: "发送",
+      format: "格式化",
+      historyTitle: "请求历史（点击回填）",
+    },
+    logs: {
+      filterPlaceholder: "过滤日志…",
+      empty: "暂无日志（启动插件进程后 stdout/stderr 会显示在此）。",
     },
   },
   pluginMarketV1: {
