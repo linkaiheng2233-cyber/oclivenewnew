@@ -91,6 +91,11 @@ export const enUS = {
     message: {
       fallbackBadge: "Fallback reply",
     },
+    input: {
+      label: "Message input",
+      placeholder: "Say something…",
+      send: "Send",
+    },
   },
   app: {
     startup: {
@@ -813,6 +818,46 @@ export const enUS = {
       reloadPolicy: "Reload policy",
     },
     footer: "💡 Ctrl+Shift+D toggles panel · role pack & monologue live here",
+  },
+  timeDial: {
+    title: "Adjust virtual time",
+    hint:
+      "Scroll to pick date and time (like a system wheel), accurate to minutes.",
+    aria: {
+      dateTimeGroup: "Date and time",
+    },
+    fields: {
+      year: "Year",
+      month: "Month",
+      day: "Day",
+      hour: "Hour",
+      minute: "Minute",
+    },
+    units: {
+      month: "",
+      day: "",
+    },
+    presets: {
+      nextMorning: "Next morning",
+      skipIdleTime: "Skip idle time",
+    },
+    applying: "…",
+    confirm: "Confirm selected time",
+    toasts: {
+      updated: "Virtual time updated.",
+      favorabilityDelta: "Favorability {sign}{delta} (current {current})",
+    },
+  },
+  chatExport: {
+    exportAllRoles: "Export all roles",
+    includePluginDebugSingleRole: "Include plugin diagnostics (single role)",
+    exportJson: "Export JSON",
+    exportTxt: "Export TXT",
+    toasts: {
+      downloaded: "Downloaded {name}",
+      exported: "Exported.",
+      cancelled: "Save cancelled.",
+    },
   },
   pluginMarketV1: {
     panel: {

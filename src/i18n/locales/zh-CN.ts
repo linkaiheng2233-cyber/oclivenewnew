@@ -86,6 +86,11 @@ export const zhCN = {
     message: {
       fallbackBadge: "备用短回复",
     },
+    input: {
+      label: "输入消息",
+      placeholder: "对沐沐说点什么...",
+      send: "发送",
+    },
   },
   app: {
     startup: {
@@ -787,6 +792,45 @@ export const zhCN = {
       reloadPolicy: "重载策略",
     },
     footer: "💡 Ctrl+Shift+D 开关面板 · 角色包与独白已收在此",
+  },
+  timeDial: {
+    title: "调节虚拟时间",
+    hint: "上下拨动选择日期与时刻（类似系统滚轮），精确到分钟。",
+    aria: {
+      dateTimeGroup: "日期与时间",
+    },
+    fields: {
+      year: "年",
+      month: "月",
+      day: "日",
+      hour: "时",
+      minute: "分",
+    },
+    units: {
+      month: "月",
+      day: "日",
+    },
+    presets: {
+      nextMorning: "次日早晨",
+      skipIdleTime: "跳过空窗",
+    },
+    applying: "…",
+    confirm: "确认所选时间",
+    toasts: {
+      updated: "虚拟时间已更新",
+      favorabilityDelta: "好感度变化 {sign}{delta}（当前 {current}）",
+    },
+  },
+  chatExport: {
+    exportAllRoles: "导出全部角色",
+    includePluginDebugSingleRole: "附带插件诊断（单角色）",
+    exportJson: "导出 JSON",
+    exportTxt: "导出 TXT",
+    toasts: {
+      downloaded: "已下载 {name}",
+      exported: "导出成功",
+      cancelled: "已取消保存",
+    },
   },
   pluginMarketV1: {
     panel: {
