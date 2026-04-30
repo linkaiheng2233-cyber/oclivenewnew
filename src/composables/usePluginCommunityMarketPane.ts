@@ -473,12 +473,16 @@ export function usePluginCommunityMarketPane(options?: { loadOnMount?: boolean }
     }
     const declaredPerms = (row.permissions ?? []).map((s) => s.trim()).filter(Boolean);
     const trust = [
-      row.source ? `来源：${row.source}` : "",
-      row.publisher ? `发布者：${row.publisher}` : "",
+      row.source ? t("pluginManagerV1.communityIndex.trustLine.source", { v: row.source }) : "",
+      row.publisher
+        ? t("pluginManagerV1.communityIndex.trustLine.publisher", { v: row.publisher })
+        : "",
       (row.publicKeys ?? []).length
-        ? `公钥：${(row.publicKeys ?? [])
-            .map((k) => `${k.pubkeyId}${k.status ? `(${k.status})` : ""}`)
-            .join("，")}`
+        ? t("pluginManagerV1.communityIndex.trustLine.pubkeys", {
+            v: (row.publicKeys ?? [])
+              .map((k) => `${k.pubkeyId}${k.status ? `(${k.status})` : ""}`)
+              .join("，"),
+          })
         : "",
     ]
       .filter(Boolean)
@@ -508,12 +512,16 @@ export function usePluginCommunityMarketPane(options?: { loadOnMount?: boolean }
     if (!v?.trim()) return;
     const declaredPerms = (row.permissions ?? []).map((s) => s.trim()).filter(Boolean);
     const trust = [
-      row.source ? `来源：${row.source}` : "",
-      row.publisher ? `发布者：${row.publisher}` : "",
+      row.source ? t("pluginManagerV1.communityIndex.trustLine.source", { v: row.source }) : "",
+      row.publisher
+        ? t("pluginManagerV1.communityIndex.trustLine.publisher", { v: row.publisher })
+        : "",
       (row.publicKeys ?? []).length
-        ? `公钥：${(row.publicKeys ?? [])
-            .map((k) => `${k.pubkeyId}${k.status ? `(${k.status})` : ""}`)
-            .join("，")}`
+        ? t("pluginManagerV1.communityIndex.trustLine.pubkeys", {
+            v: (row.publicKeys ?? [])
+              .map((k) => `${k.pubkeyId}${k.status ? `(${k.status})` : ""}`)
+              .join("，"),
+          })
         : "",
     ]
       .filter(Boolean)
@@ -561,7 +569,7 @@ export function usePluginCommunityMarketPane(options?: { loadOnMount?: boolean }
       | null
       | undefined;
     if (!mod) {
-      showToast("error", "该条目未提供 module 声明体。");
+      showToast("error", t("pluginManagerV1.modules.toastMissingBody"));
       return;
     }
     const planLines: string[] = [];
@@ -569,22 +577,25 @@ export function usePluginCommunityMarketPane(options?: { loadOnMount?: boolean }
     const sources = [
       ...new Set((mod.plugins ?? []).map((x) => normalizeProfileSource(x.source ?? null))),
     ];
-    planLines.push(`类型：模块（无代码）`);
-    planLines.push(`条目：${row.id}`);
-    if (sources.length) planLines.push(`将同步索引源：${sources.join("、")}`);
-    if (deps.length) planLines.push(`将安装依赖插件：${deps.join("、")}`);
+    planLines.push(t("pluginManagerV1.applyPlan.type.module"));
+    planLines.push(t("pluginManagerV1.applyPlan.entry", { id: row.id }));
+    if (sources.length) planLines.push(t("pluginManagerV1.applyPlan.willSyncSources", { list: sources.join("、") }));
+    if (deps.length) planLines.push(t("pluginManagerV1.applyPlan.willInstallDeps", { list: deps.join("、") }));
     const changes = summarizeOverrideBackends(mod.backends ?? null);
     if (changes.length) {
-      planLines.push(`将写入后端覆盖（会话级）：`);
+      planLines.push(t("pluginManagerV1.applyPlan.willWriteSessionOverride"));
       for (const x of changes) planLines.push(`- ${x}`);
     }
-    const ok = await requestApplyPreflight(`应用模块：${row.id}`, planLines);
+    const ok = await requestApplyPreflight(
+      t("pluginManagerV1.applyPlan.titleModule", { id: row.id }),
+      planLines,
+    );
     if (!ok) return;
     saveCurrentSessionOverrideForRollback("module", row.id);
 
     const list = mod.plugins ?? [];
     if (list.length === 0) {
-      showToast("info", "该模块未声明依赖插件。");
+      showToast("info", t("pluginManagerV1.modules.toastNoDeps"));
     }
     for (const spec of list) {
       const pid = (spec.id ?? "").trim();
@@ -595,7 +606,7 @@ export function usePluginCommunityMarketPane(options?: { loadOnMount?: boolean }
       if (!prow) {
         showToast(
           "error",
-          `索引未找到依赖插件：${pid}（source=${src}）\n\n建议：先确认该插件确实存在于该源，或切换到正确的源再同步。`,
+          t("pluginManagerV1.applyPlan.depNotFound", { id: pid, source: src }),
         );
         continue;
       }
@@ -615,7 +626,7 @@ export function usePluginCommunityMarketPane(options?: { loadOnMount?: boolean }
       const info = await setSessionPluginBackendsOverride(roleId, mod.backends);
       roleStore.applyRoleInfo(info);
     }
-    showToast("success", `模块已应用：${row.id}（插槽位置可在「插槽顺序」里调整）`);
+    showToast("success", t("pluginManagerV1.modules.toastApplied", { id: row.id }));
   }
 
   async function onApplyProfileEntry(row: PluginMarketEntryDto): Promise<void> {
@@ -628,7 +639,7 @@ export function usePluginCommunityMarketPane(options?: { loadOnMount?: boolean }
       | null
       | undefined;
     if (!prof) {
-      showToast("error", "该条目未提供 profile 声明体。");
+      showToast("error", t("pluginManagerV1.profiles.toastMissingBody"));
       return;
     }
     const planLines: string[] = [];
@@ -636,22 +647,25 @@ export function usePluginCommunityMarketPane(options?: { loadOnMount?: boolean }
     const sources = [
       ...new Set((prof.plugins ?? []).map((x) => normalizeProfileSource(x.source ?? null))),
     ];
-    planLines.push(`类型：Profile（无代码）`);
-    planLines.push(`条目：${row.id}`);
-    if (sources.length) planLines.push(`将同步索引源：${sources.join("、")}`);
-    if (deps.length) planLines.push(`将安装依赖插件：${deps.join("、")}`);
+    planLines.push(t("pluginManagerV1.applyPlan.type.profile"));
+    planLines.push(t("pluginManagerV1.applyPlan.entry", { id: row.id }));
+    if (sources.length) planLines.push(t("pluginManagerV1.applyPlan.willSyncSources", { list: sources.join("、") }));
+    if (deps.length) planLines.push(t("pluginManagerV1.applyPlan.willInstallDeps", { list: deps.join("、") }));
     const changes = summarizeOverrideBackends(prof.backends ?? null);
     if (changes.length) {
-      planLines.push(`将写入后端覆盖（会话级）：`);
+      planLines.push(t("pluginManagerV1.applyPlan.willWriteSessionOverride"));
       for (const x of changes) planLines.push(`- ${x}`);
     }
-    const ok = await requestApplyPreflight(`应用 Profile：${row.id}`, planLines);
+    const ok = await requestApplyPreflight(
+      t("pluginManagerV1.applyPlan.titleProfile", { id: row.id }),
+      planLines,
+    );
     if (!ok) return;
     saveCurrentSessionOverrideForRollback("profile", row.id);
 
     const pre = (prof.predeclaredPermissions ?? []).map((s) => String(s).trim()).filter(Boolean);
     if (pre.length > 0) {
-      showToast("info", `该 Profile 预声明权限：${pre.join("、")}`);
+      showToast("info", t("pluginManagerV1.profiles.toastPredeclaredPerms", { list: pre.join("、") }));
     }
     const list = prof.plugins ?? [];
     for (const spec of list) {
@@ -663,7 +677,7 @@ export function usePluginCommunityMarketPane(options?: { loadOnMount?: boolean }
       if (!prow) {
         showToast(
           "error",
-          `索引未找到依赖插件：${pid}（source=${src}）\n\n建议：先确认该插件确实存在于该源，或切换到正确的源再同步。`,
+          t("pluginManagerV1.applyPlan.depNotFound", { id: pid, source: src }),
         );
         continue;
       }
@@ -683,7 +697,7 @@ export function usePluginCommunityMarketPane(options?: { loadOnMount?: boolean }
       const info = await setSessionPluginBackendsOverride(roleId, prof.backends);
       roleStore.applyRoleInfo(info);
     }
-    showToast("success", `Profile 已应用：${row.id}（插槽位置可在「插槽顺序」里调整）`);
+    showToast("success", t("pluginManagerV1.profiles.toastApplied", { id: row.id }));
   }
 
   async function copyReviewTemplate(params: {
@@ -695,7 +709,7 @@ export function usePluginCommunityMarketPane(options?: { loadOnMount?: boolean }
     try {
       if (!navigator.clipboard?.writeText) throw new Error("clipboard API unavailable");
       await navigator.clipboard.writeText(text);
-      showToast("success", "已复制评价模板（JSON）。");
+      showToast("success", t("pluginManagerV1.reviews.toastCopiedTemplate"));
     } catch (e) {
       showToast("error", e instanceof Error ? e.message : String(e));
     }
