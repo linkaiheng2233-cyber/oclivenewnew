@@ -132,6 +132,25 @@ export const useExpertModelsStore = defineStore("expertModels", {
       return wf;
     },
 
+    async saveWorkflowFromConfig(
+      name: string,
+      graph: ExpertGraph,
+      promptStyle: PromptStyleOverride | null,
+      overwriteId?: string | null,
+    ): Promise<ExpertWorkflowDto> {
+      const n = (name ?? "").trim();
+      if (!n) throw new Error("工作流名称不能为空。");
+      const wf = await expertWorkflowsSave({
+        id: overwriteId ?? null,
+        name: n,
+        graph,
+        promptStyle: promptStyle ?? null,
+      });
+      await this.refreshWorkflows();
+      this.pickedWorkflowId = wf.id;
+      return wf;
+    },
+
     async deleteWorkflow(id: string): Promise<void> {
       const wid = (id ?? "").trim();
       if (!wid) return;

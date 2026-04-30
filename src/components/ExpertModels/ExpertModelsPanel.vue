@@ -315,6 +315,62 @@ async function onCopyRunDiagnostics(indexFromLatest: number): Promise<void> {
   showToast("success", "已复制 Run 诊断信息。");
 }
 
+function suggestWorkflowNameFromRun(d: any): string {
+  const base = String(d?.targetBaseName ?? "").trim() || "workflow";
+  const safe = base.replace(/[\\/:*?"<>|]/g, "_").slice(0, 60);
+  const ts = new Date(d?.atMs ?? Date.now());
+  const pad = (n: number) => String(n).padStart(2, "0");
+  const stamp = `${ts.getFullYear()}${pad(ts.getMonth() + 1)}${pad(ts.getDate())}-${pad(ts.getHours())}${pad(ts.getMinutes())}`;
+  return `${safe}-${stamp}`;
+}
+
+async function onSaveRunAsWorkflow(indexFromLatest: number): Promise<void> {
+  saving.value = true;
+  try {
+    const d = await store.getRunDetail(indexFromLatest);
+    const tg = (d.targetGraph ?? null) as ExpertGraph | null;
+    const ts = (d.targetPromptStyle ?? null) as PromptStyleOverride | null;
+    if (!tg) throw new Error("该 Run 没有保存 targetGraph（可能是旧版本记录），无法保存为工作流。");
+    const name = window.prompt("保存为工作流：请输入名称", suggestWorkflowNameFromRun(d))?.trim() ?? "";
+    if (!name) return;
+    const wf = await store.saveWorkflowFromConfig(name, tg, ts, null);
+    workflowNameDraft.value = wf.name;
+    showToast("success", `已保存到工作流库：${wf.name}`);
+  } catch (e) {
+    showToast("error", e instanceof Error ? e.message : String(e));
+  } finally {
+    saving.value = false;
+  }
+}
+
+async function onExportRunAsWorkflowJson(indexFromLatest: number): Promise<void> {
+  saving.value = true;
+  try {
+    const d = await store.getRunDetail(indexFromLatest);
+    const tg = (d.targetGraph ?? null) as ExpertGraph | null;
+    const ts = (d.targetPromptStyle ?? null) as PromptStyleOverride | null;
+    if (!tg) throw new Error("该 Run 没有保存 targetGraph（可能是旧版本记录），无法导出工作流文件。");
+    const payload = {
+      version: 1,
+      name: suggestWorkflowNameFromRun(d),
+      graph: tg,
+      promptStyle: ts ?? null,
+    };
+    const content = JSON.stringify(payload, null, 2);
+    const path = await save({
+      defaultPath: `${payload.name}.oclive-workflow.json`,
+      filters: [{ name: "Workflow JSON", extensions: ["json"] }],
+    });
+    if (!path) return;
+    await writeTextFile(path, content);
+    showToast("success", "已导出工作流文件，可分享给其他人导入。");
+  } catch (e) {
+    showToast("error", e instanceof Error ? e.message : String(e));
+  } finally {
+    saving.value = false;
+  }
+}
+
 async function onRollbackToRun(indexFromLatest: number): Promise<void> {
   let summary = "";
   try {
@@ -1214,6 +1270,12 @@ async function onImportWorkflowJson(): Promise<void> {
                   </button>
                   <button class="em-btn secondary" type="button" :disabled="saving || store.loading" @click="onCopyRunDiagnostics(r.indexFromLatest)">
                     复制诊断
+                  </button>
+                  <button class="em-btn secondary" type="button" :disabled="saving || store.loading" @click="onSaveRunAsWorkflow(r.indexFromLatest)">
+                    保存为工作流
+                  </button>
+                  <button class="em-btn secondary" type="button" :disabled="saving || store.loading" @click="onExportRunAsWorkflowJson(r.indexFromLatest)">
+                    导出工作流
                   </button>
                 </div>
               </div>
