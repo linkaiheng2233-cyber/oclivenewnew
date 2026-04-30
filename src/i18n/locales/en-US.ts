@@ -753,6 +753,11 @@ export const enUS = {
         pubkeysTitle: "Public key status registered in index",
         pubkeys: "Pubkeys",
       },
+      trustLine: {
+        source: "Source: {v}",
+        publisher: "Publisher: {v}",
+        pubkeys: "Pubkeys: {v}",
+      },
       reviews: {
         overallTitle:
           "Public reviews (overall): {rating}\n\nTip: reviews should be bound to pluginId+pubkeyId (signing public key) by default.",
@@ -829,6 +834,16 @@ export const enUS = {
         apply: "Apply",
         copyJson: "Copy JSON",
       },
+      permTitleOfflinePackage: "Install plugin (offline package): {id}",
+      permTitleZip: "Install plugin (ZIP): {id}",
+      permTitleDir: "Install plugin (directory): {id}",
+      sideloadTrustSummary: "Source: local drop folder (Developer mode)",
+      offlineTrustSummary: "Source: local drop folder (Developer mode)\n{signature}",
+      signature: {
+        verified: "Signature: verified",
+        unknown: "Signature: unknown",
+        message: "Signature: {msg}",
+      },
       toastJsonCopied: "JSON copied to clipboard.",
       toastOnlyModuleOrProfile: "Only local module/profile entries are supported.",
       toastInstalled: "Installed: {id}",
@@ -851,6 +866,38 @@ export const enUS = {
       profileMustHaveProfileObject: "type=profile must include a profile object.",
       profilePluginsMustBeArray: "profile.plugins must be an array.",
     },
+    noCodeModules: {
+      title: "Module management (no-code entries)",
+      hint:
+        "Modules are “recipes”: declare dependency plugins + optional backends override. Dropping into the import folder will not auto-enable; you must confirm manually here.",
+      scanning: "Scanning…",
+      scanLocal: "Scan local modules",
+      rollbackTitle: "Rollback snapshot: {label} @ {savedAt}",
+      rollbackLast: "Rollback last override",
+      localTitle: "Local modules (imports/plugins/module)",
+      localEmptyHtml:
+        "No local modules. Put the module JSON into <code>{dir}</code>.",
+      applyModule: "Apply module",
+      copyJson: "Copy JSON",
+      marketTitle: "Market modules (type=module)",
+      marketEmpty: "No module entries in current index. Sync in “Plugin Market” first.",
+    },
+    noCodeProfiles: {
+      title: "Profile management (no-code entries)",
+      hint:
+        "Profiles are higher-level “environment recipes”: dependency plugins + optional backends override + optional predeclared permission hints. Dropping into the import folder will not auto-enable.",
+      scanning: "Scanning…",
+      scanLocal: "Scan local Profiles",
+      rollbackTitle: "Rollback snapshot: {label} @ {savedAt}",
+      rollbackLast: "Rollback last override",
+      localTitle: "Local Profiles (imports/profiles)",
+      localEmptyHtml:
+        "No local Profiles. Put the profile JSON into <code>{dir}</code>.",
+      applyProfile: "Apply Profile",
+      copyJson: "Copy JSON",
+      marketTitle: "Market Profiles (type=profile)",
+      marketEmpty: "No Profile entries in current index. Sync in “Plugin Market” first.",
+    },
     batch: {
       toastEnabled:
         "Enabled {n} plugins. Changes take effect after saving; restart is recommended.",
@@ -869,6 +916,8 @@ export const enUS = {
       toastRolledBackOrSwitched: "Rolled back / switched {id} → v{version}",
       toastInstalledVersion: "Installed {id} v{version}",
       toastUpdated: "Updated {id} (git pull --ff-only).",
+      toastInstalledRecommendedRestart:
+        "Installed {id}. Tip: save config and restart the app if needed.",
     },
     save: {
       toastSaved:
@@ -949,6 +998,9 @@ export const enUS = {
       installed: {
         title: "Installed plugins (most used)",
         helpLabel: "Installed plugins help",
+        helpLine1:
+          "Manage enable/disable/update here first, then adjust where plugins appear in the Slots tab.",
+        helpLine2: "This is the most frequently used area for daily operations.",
         batchSelect: "Batch select",
         newPlugin: "New plugin",
         packCurrent: "Pack current plugin",
@@ -956,6 +1008,15 @@ export const enUS = {
         enableSelected: "Enable selected",
         disableSelected: "Disable selected",
         updateSelectedFromGit: "Update selected from Git",
+        primaryHelpLabel: "Enable/disable & update notes",
+        primaryHelpLine1: "Enable/disable controls whether a plugin participates in runtime and rendering.",
+        primaryHelpLine2:
+          "Update from Git only works for plugins installed via git; plugins pinned to a tag cannot pull.",
+        primaryHelpLine3: "After updating, restarting the app is recommended for more stable slot rendering.",
+        primaryActionsAria: "Installed plugins primary actions",
+        batchActionsAria: "Batch actions",
+        workspaceAria: "Plugin workspace",
+        catalogAria: "Installed directory plugins",
         selectedCount: "{n} selected",
         noDirectoryPluginsFound:
           "No directory plugins found (place plugins under a plugins/ directory next to roles/).",
@@ -967,6 +1028,11 @@ export const enUS = {
         mainSub: "Config & debug · switching plugins on the left keeps this layout",
         gitPull: "Pull updates from Git",
         updateFromZip: "Update from local zip",
+        hasUpdateBadge: "New version",
+      },
+      toasts: {
+        resetToPackDefaultOk:
+          "Layout reset to current role pack recommendation (author.suggested_ui preferred, otherwise ui.json).",
       },
       localLlama: {
         title: "Enable local Llama (Directory LLM) with one click",
@@ -979,6 +1045,7 @@ export const enUS = {
           notScanned: "Not found",
         },
         enableOneClick: "Enable",
+        rollbackTitle: "Rollback snapshot: {label} @ {savedAt}",
         rollbackLastOverride: "Rollback last override",
       },
       slots: {

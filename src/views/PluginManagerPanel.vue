@@ -967,14 +967,17 @@ async function onInstallPluginArchiveFromLocal(zipPath: string): Promise<void> {
         signaturePath: it?.relatedSignaturePath ?? null,
       });
       const trust =
-        `来源：本地投放目录（开发者模式）` +
-        (prev.signatureVerified
-          ? `\n签名：已验证`
-          : prev.signatureMessage
-            ? `\n签名：${prev.signatureMessage}`
-            : "\n签名：未知");
+        String(
+          t("pluginManagerV1.localImports.offlineTrustSummary", {
+            signature: prev.signatureVerified
+              ? String(t("pluginManagerV1.localImports.signature.verified"))
+              : prev.signatureMessage
+                ? String(t("pluginManagerV1.localImports.signature.message", { msg: prev.signatureMessage }))
+                : String(t("pluginManagerV1.localImports.signature.unknown")),
+          }),
+        );
       const accepted = await requestPermissionConsentWithTrust(
-        `安装插件（离线包）：${prev.pluginId}`,
+        String(t("pluginManagerV1.localImports.permTitleOfflinePackage", { id: prev.pluginId })),
         prev.declaredPermissions,
         trust,
       );
@@ -1005,9 +1008,9 @@ async function onInstallPluginArchiveFromLocal(zipPath: string): Promise<void> {
 
     // zip sideload
     const prev = await previewPluginZipPermissions(zipPath);
-    const trust = "来源：本地投放目录（开发者模式）";
+    const trust = String(t("pluginManagerV1.localImports.sideloadTrustSummary"));
     const accepted = await requestPermissionConsentWithTrust(
-      `安装插件（ZIP）：${prev.pluginId}`,
+      String(t("pluginManagerV1.localImports.permTitleZip", { id: prev.pluginId })),
       prev.permissions,
       trust,
     );
@@ -1033,9 +1036,9 @@ async function onInstallPluginArchiveFromLocal(zipPath: string): Promise<void> {
 async function onInstallPluginDirFromLocal(dirPath: string): Promise<void> {
   try {
     const prev = await previewPluginDirPermissions(dirPath);
-    const trust = "来源：本地投放目录（开发者模式）";
+    const trust = String(t("pluginManagerV1.localImports.sideloadTrustSummary"));
     const accepted = await requestPermissionConsentWithTrust(
-      `安装插件（目录）：${prev.pluginId}`,
+      String(t("pluginManagerV1.localImports.permTitleDir", { id: prev.pluginId })),
       prev.permissions,
       trust,
     );
@@ -1255,24 +1258,36 @@ async function onInstallMarketEntry(row: PluginMarketEntryDto) {
   if ((row.missingDependencies ?? []).length > 0) {
     showToast(
       "error",
-      `依赖未满足，无法安装：${row.missingDependencies.join("、")}`,
+      String(
+        t("pluginManagerV1.marketInstall.toastMissingDeps", {
+          list: row.missingDependencies.join("、"),
+        }),
+      ),
     );
     return;
   }
   const declaredPerms = (row.permissions ?? []).map((s) => s.trim()).filter(Boolean);
   const trust = [
-    row.source ? `来源：${row.source}` : "",
-    row.publisher ? `发布者：${row.publisher}` : "",
+    row.source
+      ? String(t("pluginManagerV1.communityIndex.trustLine.source", { v: row.source }))
+      : "",
+    row.publisher
+      ? String(t("pluginManagerV1.communityIndex.trustLine.publisher", { v: row.publisher }))
+      : "",
     (row.publicKeys ?? []).length
-      ? `公钥：${(row.publicKeys ?? [])
-          .map((k) => `${k.pubkeyId}${k.status ? `(${k.status})` : ""}`)
-          .join("，")}`
+      ? String(
+          t("pluginManagerV1.communityIndex.trustLine.pubkeys", {
+            v: (row.publicKeys ?? [])
+              .map((k) => `${k.pubkeyId}${k.status ? `(${k.status})` : ""}`)
+              .join("，"),
+          }),
+        )
       : "",
   ]
     .filter(Boolean)
     .join("\n");
   const accepted = await requestPermissionConsentWithTrust(
-    `安装 ${row.id}`,
+    String(t("pluginManagerV1.marketInstall.permTitleInstall", { id: row.id })),
     declaredPerms,
     trust,
   );
@@ -1284,7 +1299,7 @@ async function onInstallMarketEntry(row: PluginMarketEntryDto) {
   try {
     // 默认安装走索引内版本解析（git tag clone）；仅开发者模式才应允许自定义 gitUrl 覆盖
     await pluginStore.installFromPluginMarket(row.id, null, accepted);
-    showToast("success", `已安装 ${row.id}，建议保存配置并视需要重启应用。`);
+    showToast("success", String(t("pluginManagerV1.marketInstall.toastInstalledRecommendedRestart", { id: row.id })));
   } catch (e) {
     showToast("error", e instanceof Error ? e.message : String(e));
   }
@@ -1311,18 +1326,26 @@ async function onInstallMarketVersion(row: PluginMarketEntryDto) {
   if (!v?.trim()) return;
   const declaredPerms = (row.permissions ?? []).map((s) => s.trim()).filter(Boolean);
   const trust = [
-    row.source ? `来源：${row.source}` : "",
-    row.publisher ? `发布者：${row.publisher}` : "",
+    row.source
+      ? String(t("pluginManagerV1.communityIndex.trustLine.source", { v: row.source }))
+      : "",
+    row.publisher
+      ? String(t("pluginManagerV1.communityIndex.trustLine.publisher", { v: row.publisher }))
+      : "",
     (row.publicKeys ?? []).length
-      ? `公钥：${(row.publicKeys ?? [])
-          .map((k) => `${k.pubkeyId}${k.status ? `(${k.status})` : ""}`)
-          .join("，")}`
+      ? String(
+          t("pluginManagerV1.communityIndex.trustLine.pubkeys", {
+            v: (row.publicKeys ?? [])
+              .map((k) => `${k.pubkeyId}${k.status ? `(${k.status})` : ""}`)
+              .join("，"),
+          }),
+        )
       : "",
   ]
     .filter(Boolean)
     .join("\n");
   const accepted = await requestPermissionConsentWithTrust(
-    `安装 ${row.id} v${v}`,
+    String(t("pluginManagerV1.marketInstall.permTitleInstallVersion", { id: row.id, version: v })),
     declaredPerms,
     trust,
   );
@@ -1335,7 +1358,17 @@ async function onInstallMarketVersion(row: PluginMarketEntryDto) {
     await pluginStore.installVersionFromPluginMarket(row.id, v, accepted);
     showToast(
       "success",
-      row.installed ? `已回滚/切换 ${row.id} → v${v}` : `已安装 ${row.id} v${v}`,
+      String(
+        row.installed
+          ? t("pluginManagerV1.marketInstall.toastRolledBackOrSwitched", {
+              id: row.id,
+              version: v,
+            })
+          : t("pluginManagerV1.marketInstall.toastInstalledVersion", {
+              id: row.id,
+              version: v,
+            }),
+      ),
     );
   } catch (e) {
     showToast("error", e instanceof Error ? e.message : String(e));
@@ -1423,7 +1456,7 @@ async function onResetToPackDefault() {
     await pluginStore.resetToRolePackDefault();
     showToast(
       "success",
-      "已重置为当前角色包推荐布局（author.suggested_ui 优先，否则 ui.json）。",
+      String(t("pluginManagerV1.ui.toasts.resetToPackDefaultOk")),
     );
   } catch (e) {
     showToast("error", e instanceof Error ? e.message : String(e));
@@ -2407,8 +2440,8 @@ async function onPackSelectedPlugin(): Promise<void> {
               <div class="pm-h3-row">
                 <h3 class="pm-h3">{{ t("pluginManagerV1.ui.installed.title") }}</h3>
                 <HelpCircle :label="String(t('pluginManagerV1.ui.installed.helpLabel'))">
-                  <p>先在这里管理“启用/停用/更新”，再去「界面位置」调整插件出现在哪。</p>
-                  <p>这一块是日常使用频率最高的区域。</p>
+                  <p>{{ t("pluginManagerV1.ui.installed.helpLine1") }}</p>
+                  <p>{{ t("pluginManagerV1.ui.installed.helpLine2") }}</p>
                 </HelpCircle>
               </div>
               <div class="pm-section-actions">
@@ -2442,7 +2475,7 @@ async function onPackSelectedPlugin(): Promise<void> {
               </div>
             </div>
             <p v-if="pluginPackStatus" class="pm-hint">{{ pluginPackStatus }}</p>
-            <div class="pm-row pm-primary-actions" role="toolbar" aria-label="已安装插件主要操作">
+            <div class="pm-row pm-primary-actions" role="toolbar" :aria-label="String(t('pluginManagerV1.ui.installed.primaryActionsAria'))">
               <button type="button" class="pm-btn secondary pm-btn--sm" @click="onBatchEnable">
                 {{ t("pluginManagerV1.ui.installed.enableSelected") }}
               </button>
@@ -2452,17 +2485,17 @@ async function onPackSelectedPlugin(): Promise<void> {
               <button type="button" class="pm-btn secondary pm-btn--sm" @click="onBatchUpdate">
                 {{ t("pluginManagerV1.ui.installed.updateSelectedFromGit") }}
               </button>
-              <HelpCircle label="启停与更新说明" inline>
-                <p>“启用/停用”决定插件是否参与运行与渲染。</p>
-                <p>“从 Git 更新”只对 git 安装的插件有效；被固定到 tag 的插件不能 pull。</p>
-                <p>更新后建议重启应用让插槽渲染更稳定。</p>
+              <HelpCircle :label="String(t('pluginManagerV1.ui.installed.primaryHelpLabel'))" inline>
+                <p>{{ t("pluginManagerV1.ui.installed.primaryHelpLine1") }}</p>
+                <p>{{ t("pluginManagerV1.ui.installed.primaryHelpLine2") }}</p>
+                <p>{{ t("pluginManagerV1.ui.installed.primaryHelpLine3") }}</p>
               </HelpCircle>
             </div>
             <div
               v-if="batchMode && batchSelectedCount > 0"
               class="pm-batch-bar"
               role="toolbar"
-              aria-label="批量操作"
+              :aria-label="String(t('pluginManagerV1.ui.installed.batchActionsAria'))"
             >
               <span class="pm-batch-count">{{ t("pluginManagerV1.ui.installed.selectedCount", { n: batchSelectedCount }) }}</span>
               <button type="button" class="pm-btn secondary pm-btn--sm" @click="onBatchEnable">
@@ -2479,13 +2512,13 @@ async function onPackSelectedPlugin(): Promise<void> {
               {{ t("pluginManagerV1.ui.installed.noDirectoryPluginsFound") }}
             </p>
 
-            <div v-else class="pm-wb" aria-label="插件工作区">
+            <div v-else class="pm-wb" :aria-label="String(t('pluginManagerV1.ui.installed.workspaceAria'))">
               <aside class="pm-wb-sidebar">
                 <div class="pm-wb-sidebar-head">
                   <span class="pm-wb-sidebar-title">{{ t("pluginManagerV1.ui.installed.sidebarTitle") }}</span>
                   <span class="pm-wb-sidebar-count">{{ pluginStore.catalog.length }}</span>
                 </div>
-                <ul class="pm-wb-list" role="listbox" aria-label="已安装目录插件">
+                <ul class="pm-wb-list" role="listbox" :aria-label="String(t('pluginManagerV1.ui.installed.catalogAria'))">
                   <li v-for="p in pluginStore.catalog" :key="p.id" class="pm-wb-li">
                     <label v-if="batchMode" class="pm-wb-batch chk" @click.stop>
                       <input
@@ -2535,7 +2568,7 @@ async function onPackSelectedPlugin(): Promise<void> {
                         pluginStore.pluginUpdateById[selectedWorkspacePlugin.id]?.hasUpdate
                       "
                       class="pm-badge"
-                    >有新版本</span>
+                    >{{ t("pluginManagerV1.ui.installed.hasUpdateBadge") }}</span>
                     <button
                       type="button"
                       class="pm-btn secondary pm-btn--sm"
@@ -2576,9 +2609,9 @@ async function onPackSelectedPlugin(): Promise<void> {
             role="tabpanel"
           >
             <section class="pm-section">
-              <h3 class="pm-h3">模块管理（无代码条目）</h3>
+              <h3 class="pm-h3">{{ t("pluginManagerV1.noCodeModules.title") }}</h3>
               <p class="pm-hint">
-                模块是“配方”：声明依赖插件 + 可选后端覆盖。放进导入文件夹后不会自动启用，必须在此手动确认。
+                {{ t("pluginManagerV1.noCodeModules.hint") }}
               </p>
               <div class="pm-row">
                 <button
@@ -2587,25 +2620,36 @@ async function onPackSelectedPlugin(): Promise<void> {
                   :disabled="localImportsLoading"
                   @click="refreshLocalImports"
                 >
-                  {{ localImportsLoading ? "扫描中…" : "扫描本地模块" }}
+                  {{
+                    localImportsLoading
+                      ? t("pluginManagerV1.noCodeModules.scanning")
+                      : t("pluginManagerV1.noCodeModules.scanLocal")
+                  }}
                 </button>
                 <button
                   v-if="rollbackSnapshotForRole"
                   type="button"
                   class="pm-btn danger pm-btn--sm"
-                  :title="`回滚快照：${rollbackSnapshotForRole.label} @ ${rollbackSnapshotForRole.savedAt}`"
+                  :title="
+                    String(
+                      t('pluginManagerV1.noCodeModules.rollbackTitle', {
+                        label: rollbackSnapshotForRole.label,
+                        savedAt: rollbackSnapshotForRole.savedAt,
+                      }),
+                    )
+                  "
                   @click="rollbackLastSessionOverride"
                 >
-                  回滚上次覆盖
+                  {{ t("pluginManagerV1.noCodeModules.rollbackLast") }}
                 </button>
                 <span v-if="localImportsErr" class="pm-err"> {{ localImportsErr }} </span>
               </div>
             </section>
 
             <section class="pm-section">
-              <h3 class="pm-h3">本地模块（imports/plugins/module）</h3>
+              <h3 class="pm-h3">{{ t("pluginManagerV1.noCodeModules.localTitle") }}</h3>
               <p v-if="localImportsByKind('module_json').length === 0" class="pm-muted">
-                暂无本地模块。把同款 module JSON 放进 <code>{{ localImportsRootDir }}/plugins/module</code>。
+                <span v-html="t('pluginManagerV1.noCodeModules.localEmptyHtml', { dir: `${localImportsRootDir}/plugins/module` })"></span>
               </p>
               <ul v-else class="pm-market-list">
                 <li
@@ -2618,10 +2662,10 @@ async function onPackSelectedPlugin(): Promise<void> {
                     <span class="pm-muted"> · {{ localImportKindLabel(it.kind) }}</span>
                     <div class="pm-market-actions">
                       <button type="button" class="pm-btn" @click="onApplyLocalModuleOrProfile(it.path)">
-                        应用模块
+                        {{ t("pluginManagerV1.noCodeModules.applyModule") }}
                       </button>
                       <button type="button" class="pm-btn secondary" @click="onPreviewLocalJson(it.path)">
-                        复制 JSON
+                        {{ t("pluginManagerV1.noCodeModules.copyJson") }}
                       </button>
                     </div>
                   </div>
@@ -2630,9 +2674,9 @@ async function onPackSelectedPlugin(): Promise<void> {
             </section>
 
             <section class="pm-section">
-              <h3 class="pm-h3">市场模块（type=module）</h3>
+              <h3 class="pm-h3">{{ t("pluginManagerV1.noCodeModules.marketTitle") }}</h3>
               <p v-if="moduleRowsAll.length === 0" class="pm-muted">
-                当前索引里暂无模块条目。请先在「插件市场」同步索引。
+                {{ t("pluginManagerV1.noCodeModules.marketEmpty") }}
               </p>
               <ul v-else class="pm-market-list">
                 <li
@@ -2642,12 +2686,12 @@ async function onPackSelectedPlugin(): Promise<void> {
                 >
                   <div class="pm-market-main">
                     <strong>{{ row.id }}</strong>
-                    <span class="pm-entry-type-badge module">模块</span>
+                    <span class="pm-entry-type-badge module">{{ t("pluginManagerV1.communityIndex.entryTypeBadge.module") }}</span>
                     <span class="pm-muted"> · {{ row.name }} · v{{ row.version }}</span>
                     <p v-if="row.description" class="pm-market-desc">{{ row.description }}</p>
                     <div class="pm-market-actions">
                       <button type="button" class="pm-btn" @click="onApplyModuleEntry(row)">
-                        应用模块
+                        {{ t("pluginManagerV1.noCodeModules.applyModule") }}
                       </button>
                     </div>
                   </div>
@@ -2662,9 +2706,9 @@ async function onPackSelectedPlugin(): Promise<void> {
             role="tabpanel"
           >
             <section class="pm-section">
-              <h3 class="pm-h3">Profile 管理（无代码条目）</h3>
+              <h3 class="pm-h3">{{ t("pluginManagerV1.noCodeProfiles.title") }}</h3>
               <p class="pm-hint">
-                Profile 是更大粒度的“环境配方”：依赖插件 + 可选后端覆盖 +（可选）预声明权限提示。放进导入文件夹后不会自动启用。
+                {{ t("pluginManagerV1.noCodeProfiles.hint") }}
               </p>
               <div class="pm-row">
                 <button
@@ -2673,25 +2717,36 @@ async function onPackSelectedPlugin(): Promise<void> {
                   :disabled="localImportsLoading"
                   @click="refreshLocalImports"
                 >
-                  {{ localImportsLoading ? "扫描中…" : "扫描本地 Profile" }}
+                  {{
+                    localImportsLoading
+                      ? t("pluginManagerV1.noCodeProfiles.scanning")
+                      : t("pluginManagerV1.noCodeProfiles.scanLocal")
+                  }}
                 </button>
                 <button
                   v-if="rollbackSnapshotForRole"
                   type="button"
                   class="pm-btn danger pm-btn--sm"
-                  :title="`回滚快照：${rollbackSnapshotForRole.label} @ ${rollbackSnapshotForRole.savedAt}`"
+                  :title="
+                    String(
+                      t('pluginManagerV1.noCodeProfiles.rollbackTitle', {
+                        label: rollbackSnapshotForRole.label,
+                        savedAt: rollbackSnapshotForRole.savedAt,
+                      }),
+                    )
+                  "
                   @click="rollbackLastSessionOverride"
                 >
-                  回滚上次覆盖
+                  {{ t("pluginManagerV1.noCodeProfiles.rollbackLast") }}
                 </button>
                 <span v-if="localImportsErr" class="pm-err"> {{ localImportsErr }} </span>
               </div>
             </section>
 
             <section class="pm-section">
-              <h3 class="pm-h3">本地 Profile（imports/profiles）</h3>
+              <h3 class="pm-h3">{{ t("pluginManagerV1.noCodeProfiles.localTitle") }}</h3>
               <p v-if="localImportsByKind('profile_json').length === 0" class="pm-muted">
-                暂无本地 Profile。把同款 profile JSON 放进 <code>{{ localImportsRootDir }}/profiles</code>。
+                <span v-html="t('pluginManagerV1.noCodeProfiles.localEmptyHtml', { dir: `${localImportsRootDir}/profiles` })"></span>
               </p>
               <ul v-else class="pm-market-list">
                 <li
@@ -2704,10 +2759,10 @@ async function onPackSelectedPlugin(): Promise<void> {
                     <span class="pm-muted"> · {{ localImportKindLabel(it.kind) }}</span>
                     <div class="pm-market-actions">
                       <button type="button" class="pm-btn" @click="onApplyLocalModuleOrProfile(it.path)">
-                        应用 Profile
+                        {{ t("pluginManagerV1.noCodeProfiles.applyProfile") }}
                       </button>
                       <button type="button" class="pm-btn secondary" @click="onPreviewLocalJson(it.path)">
-                        复制 JSON
+                        {{ t("pluginManagerV1.noCodeProfiles.copyJson") }}
                       </button>
                     </div>
                   </div>
@@ -2716,9 +2771,9 @@ async function onPackSelectedPlugin(): Promise<void> {
             </section>
 
             <section class="pm-section">
-              <h3 class="pm-h3">市场 Profile（type=profile）</h3>
+              <h3 class="pm-h3">{{ t("pluginManagerV1.noCodeProfiles.marketTitle") }}</h3>
               <p v-if="profileRowsAll.length === 0" class="pm-muted">
-                当前索引里暂无 Profile 条目。请先在「插件市场」同步索引。
+                {{ t("pluginManagerV1.noCodeProfiles.marketEmpty") }}
               </p>
               <ul v-else class="pm-market-list">
                 <li
@@ -2733,7 +2788,7 @@ async function onPackSelectedPlugin(): Promise<void> {
                     <p v-if="row.description" class="pm-market-desc">{{ row.description }}</p>
                     <div class="pm-market-actions">
                       <button type="button" class="pm-btn" @click="onApplyProfileEntry(row)">
-                        应用 Profile
+                        {{ t("pluginManagerV1.noCodeProfiles.applyProfile") }}
                       </button>
                     </div>
                   </div>
@@ -2782,7 +2837,14 @@ async function onPackSelectedPlugin(): Promise<void> {
                   v-if="rollbackSnapshotForRole"
                   type="button"
                   class="pm-btn danger pm-btn--sm"
-                  :title="`回滚快照：${rollbackSnapshotForRole.label} @ ${rollbackSnapshotForRole.savedAt}`"
+                  :title="
+                    String(
+                      t('pluginManagerV1.ui.localLlama.rollbackTitle', {
+                        label: rollbackSnapshotForRole.label,
+                        savedAt: rollbackSnapshotForRole.savedAt,
+                      }),
+                    )
+                  "
                   @click="rollbackLastSessionOverride"
                 >
                   {{ t("pluginManagerV1.ui.localLlama.rollbackLastOverride") }}
