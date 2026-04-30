@@ -671,6 +671,57 @@ export const enUS = {
     title: "Expert Models (Module 9)",
     subtitle:
       "Pick a Base GGUF + LoRA strengths, and optionally override PromptStyle. Session override takes priority over role default; leaving empty keeps current behavior.",
+    common: {
+      notSet: "(not set)",
+      empty: "(empty)",
+      yes: "Yes",
+      no: "No",
+    },
+    strengthWarning: {
+      mustBeNumber: "Strength must be a number.",
+      ltZero: "Strength < 0 is usually unreasonable.",
+      gtTwo: "Strength > 2 may degrade or destabilize outputs.",
+      highSuggestion: "Strength is high; try 1.0–1.4 first.",
+    },
+    toasts: {
+      appliedToSession:
+        "Applied to current session (will restart local llama).\nmodelPath={modelPath}\nllamaArgs={llamaArgs}",
+      rolledBackAndApplied:
+        "Rolled back and re-applied.\nmodelPath={modelPath}\nllamaArgs={llamaArgs}",
+      retriedAndApplied: "Retried and applied.\nmodelPath={modelPath}\nllamaArgs={llamaArgs}",
+    },
+    confirm: {
+      rollbackLastRun:
+        "Rollback to last applied config (Module 9 Ctrl+Z) and re-apply to current session.\nTip: you can rollback to any run in Run History.\nContinue?",
+      retryRunApply:
+        "Retry this target config and re-apply to current session:\nBase={base} / LoRA={loras} / PromptStyle={promptStyle}\nContinue?",
+      exportWorkflowFile:
+        "Export workflow file (shareable for others to import and reproduce):\nBase={base} / LoRA={loras} / PromptStyle={promptStyle}\nFilename: {filename}\nContinue?",
+      rollbackSummaryLine: "\nRollback to: Base={base} / LoRA={loras} / PromptStyle={promptStyle}",
+      rollbackToSelectedRun:
+        "Rollback to the selected history config and re-apply to current session.{summary}\nContinue?",
+      clearRunsAll: "Clear current session Run History (all). Continue?",
+      clearRunsWithMode: "{modeLabel}.{keepPinned}\nContinue?",
+    },
+    runHistory: {
+      errors: {
+        noTargetGraphForRetry:
+          "This run has no saved targetGraph (may be from an older version); cannot retry.",
+        noTargetGraphForSaveWorkflow:
+          "This run has no saved targetGraph (may be from an older version); cannot save as workflow.",
+        noTargetGraphForExportWorkflow:
+          "This run has no saved targetGraph (may be from an older version); cannot export workflow file.",
+      },
+      prompts: {
+        saveAsWorkflowName: "Save as workflow: enter a name",
+      },
+      toastCopiedDiagnostics: "Run diagnostics copied.",
+      toastSavedToLibrary: "Saved to workflow library: {name}",
+      toastExportedShareable: "Workflow file exported. You can share it for others to import.",
+      toastNoPinnedRuns: "No pinned runs (★). Pin a run first.",
+      toastCleared: "Run History cleared.",
+      toastClearedWithMode: "Clear operation executed.",
+    },
     actions: {
       refresh: "Refresh",
       backfillFromEffective: "Backfill editor from effective config",

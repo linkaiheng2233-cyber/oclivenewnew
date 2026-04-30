@@ -160,10 +160,10 @@ function moveLora(id: string, dir: -1 | 1): void {
 }
 
 const strengthWarning = (v: number): string | null => {
-  if (!Number.isFinite(v)) return "强度必须是数字。";
-  if (v < 0) return "强度 < 0 通常不合理。";
-  if (v > 2) return "强度 > 2 可能导致输出劣化或不稳定。";
-  if (v > 1.4) return "强度偏高，建议先从 1.0–1.4 试起。";
+  if (!Number.isFinite(v)) return String(t("expertModels.strengthWarning.mustBeNumber"));
+  if (v < 0) return String(t("expertModels.strengthWarning.ltZero"));
+  if (v > 2) return String(t("expertModels.strengthWarning.gtTwo"));
+  if (v > 1.4) return String(t("expertModels.strengthWarning.highSuggestion"));
   return null;
 };
 
@@ -180,7 +180,12 @@ async function onApplySession(): Promise<void> {
     const r = await store.applyToSession();
     showToast(
       "success",
-      `已应用到当前会话（将触发本地 llama 重启）。\nmodelPath=${r.modelPath ?? "(未设置)"}\nllamaArgs=${r.llamaArgs ?? "(空)"}`,
+      String(
+        t("expertModels.toasts.appliedToSession", {
+          modelPath: r.modelPath ?? String(t("expertModels.common.notSet")),
+          llamaArgs: r.llamaArgs ?? String(t("expertModels.common.empty")),
+        }),
+      ),
     );
   } catch (e) {
     showToast("error", e instanceof Error ? e.message : String(e));
@@ -191,9 +196,7 @@ async function onApplySession(): Promise<void> {
 }
 
 async function onRollbackLastRun(): Promise<void> {
-  const ok = window.confirm(
-    "将回滚到上一次已应用的配置（Module 9 Ctrl+Z），并重新应用到当前会话。\n提示：可在「Run 历史」里回滚到任意一次。\n继续吗？",
-  );
+  const ok = window.confirm(String(t("expertModels.confirm.rollbackLastRun")));
   if (!ok) return;
   saving.value = true;
   applying.value = true;
@@ -201,7 +204,12 @@ async function onRollbackLastRun(): Promise<void> {
     const r = await store.rollbackLastRun();
     showToast(
       "success",
-      `已回滚并重新应用。\nmodelPath=${r.modelPath ?? "(未设置)"}\nllamaArgs=${r.llamaArgs ?? "(空)"}`,
+      String(
+        t("expertModels.toasts.rolledBackAndApplied", {
+          modelPath: r.modelPath ?? String(t("expertModels.common.notSet")),
+          llamaArgs: r.llamaArgs ?? String(t("expertModels.common.empty")),
+        }),
+      ),
     );
   } catch (e) {
     showToast("error", e instanceof Error ? e.message : String(e));
@@ -268,9 +276,18 @@ async function onRetryRun(indexFromLatest: number): Promise<void> {
   const d = await store.getRunDetail(indexFromLatest);
   const tg = (d.targetGraph ?? null) as ExpertGraph | null;
   const ts = (d.targetPromptStyle ?? null) as PromptStyleOverride | null;
-  if (!tg) throw new Error("该 Run 没有保存 targetGraph（可能是旧版本记录），无法重试。");
+  if (!tg)
+    throw new Error(String(t("expertModels.runHistory.errors.noTargetGraphForRetry")));
   const ok = window.confirm(
-    `将重试此目标配置并重新应用到当前会话：\nBase=${d.targetBaseName || "(未设置)"} / LoRA=${d.targetLoraCount} / PromptStyle=${d.targetHasPromptStyle ? "是" : "否"}\n继续吗？`,
+    String(
+      t("expertModels.confirm.retryRunApply", {
+        base: d.targetBaseName || String(t("expertModels.common.notSet")),
+        loras: d.targetLoraCount,
+        promptStyle: d.targetHasPromptStyle
+          ? String(t("expertModels.common.yes"))
+          : String(t("expertModels.common.no")),
+      }),
+    ),
   );
   if (!ok) return;
   saving.value = true;
@@ -279,7 +296,12 @@ async function onRetryRun(indexFromLatest: number): Promise<void> {
     const r = await store.applySpecificToSession(tg, ts);
     showToast(
       "success",
-      `已重试并应用。\nmodelPath=${r.modelPath ?? "(未设置)"}\nllamaArgs=${r.llamaArgs ?? "(空)"}`,
+      String(
+        t("expertModels.toasts.retriedAndApplied", {
+          modelPath: r.modelPath ?? String(t("expertModels.common.notSet")),
+          llamaArgs: r.llamaArgs ?? String(t("expertModels.common.empty")),
+        }),
+      ),
     );
   } catch (e) {
     showToast("error", e instanceof Error ? e.message : String(e));
@@ -314,7 +336,7 @@ async function onCopyRunDiagnostics(indexFromLatest: number): Promise<void> {
     },
   };
   await navigator.clipboard.writeText(JSON.stringify(payload, null, 2));
-  showToast("success", "已复制 Run 诊断信息。");
+  showToast("success", String(t("expertModels.runHistory.toastCopiedDiagnostics")));
 }
 
 function suggestWorkflowNameFromRun(d: any): string {
@@ -332,12 +354,19 @@ async function onSaveRunAsWorkflow(indexFromLatest: number): Promise<void> {
     const d = await store.getRunDetail(indexFromLatest);
     const tg = (d.targetGraph ?? null) as ExpertGraph | null;
     const ts = (d.targetPromptStyle ?? null) as PromptStyleOverride | null;
-    if (!tg) throw new Error("该 Run 没有保存 targetGraph（可能是旧版本记录），无法保存为工作流。");
-    const name = window.prompt("保存为工作流：请输入名称", suggestWorkflowNameFromRun(d))?.trim() ?? "";
+    if (!tg)
+      throw new Error(String(t("expertModels.runHistory.errors.noTargetGraphForSaveWorkflow")));
+    const name =
+      window
+        .prompt(
+          String(t("expertModels.runHistory.prompts.saveAsWorkflowName")),
+          suggestWorkflowNameFromRun(d),
+        )
+        ?.trim() ?? "";
     if (!name) return;
     const wf = await store.saveWorkflowFromConfig(name, tg, ts, null);
     workflowNameDraft.value = wf.name;
-    showToast("success", `已保存到工作流库：${wf.name}`);
+    showToast("success", String(t("expertModels.runHistory.toastSavedToLibrary", { name: wf.name })));
   } catch (e) {
     showToast("error", e instanceof Error ? e.message : String(e));
   } finally {
@@ -351,7 +380,8 @@ async function onExportRunAsWorkflowJson(indexFromLatest: number): Promise<void>
     const d = await store.getRunDetail(indexFromLatest);
     const tg = (d.targetGraph ?? null) as ExpertGraph | null;
     const ts = (d.targetPromptStyle ?? null) as PromptStyleOverride | null;
-    if (!tg) throw new Error("该 Run 没有保存 targetGraph（可能是旧版本记录），无法导出工作流文件。");
+    if (!tg)
+      throw new Error(String(t("expertModels.runHistory.errors.noTargetGraphForExportWorkflow")));
     const payload = {
       version: 1,
       name: suggestWorkflowNameFromRun(d),
@@ -359,9 +389,16 @@ async function onExportRunAsWorkflowJson(indexFromLatest: number): Promise<void>
       promptStyle: ts ?? null,
     };
     const ok = window.confirm(
-      `将导出工作流文件（可分享给他人导入复现）：\n` +
-        `Base=${d.targetBaseName || "(未设置)"} / LoRA=${d.targetLoraCount} / PromptStyle=${d.targetHasPromptStyle ? "是" : "否"}\n` +
-        `文件名：${payload.name}.oclive-workflow.json\n继续吗？`,
+      String(
+        t("expertModels.confirm.exportWorkflowFile", {
+          base: d.targetBaseName || String(t("expertModels.common.notSet")),
+          loras: d.targetLoraCount,
+          promptStyle: d.targetHasPromptStyle
+            ? String(t("expertModels.common.yes"))
+            : String(t("expertModels.common.no")),
+          filename: `${payload.name}.oclive-workflow.json`,
+        }),
+      ),
     );
     if (!ok) return;
     const content = JSON.stringify(payload, null, 2);
@@ -371,7 +408,7 @@ async function onExportRunAsWorkflowJson(indexFromLatest: number): Promise<void>
     });
     if (!path) return;
     await writeTextFile(path, content);
-    showToast("success", "已导出工作流文件，可分享给其他人导入。");
+    showToast("success", String(t("expertModels.runHistory.toastExportedShareable")));
   } catch (e) {
     showToast("error", e instanceof Error ? e.message : String(e));
   } finally {
@@ -382,7 +419,7 @@ async function onExportRunAsWorkflowJson(indexFromLatest: number): Promise<void>
 async function onExportLatestPinnedRun(): Promise<void> {
   const pinned = (store.runs ?? []).find((r) => r.pinned === true);
   if (!pinned) {
-    showToast("info", "暂无星标 Run（★）。请先给某条 Run 点星标。");
+    showToast("info", String(t("expertModels.runHistory.toastNoPinnedRuns")));
     return;
   }
   await onExportRunAsWorkflowJson(pinned.indexFromLatest);
@@ -392,11 +429,19 @@ async function onRollbackToRun(indexFromLatest: number): Promise<void> {
   let summary = "";
   try {
     const d = await store.getRunDetail(indexFromLatest);
-    summary = `\n将回滚到：Base=${d.snapshotBaseName || "(未设置)"} / LoRA=${d.snapshotLoraCount} / PromptStyle=${d.snapshotHasPromptStyle ? "是" : "否"}`;
+    summary = String(
+      t("expertModels.confirm.rollbackSummaryLine", {
+        base: d.snapshotBaseName || String(t("expertModels.common.notSet")),
+        loras: d.snapshotLoraCount,
+        promptStyle: d.snapshotHasPromptStyle
+          ? String(t("expertModels.common.yes"))
+          : String(t("expertModels.common.no")),
+      }),
+    );
   } catch {
     // ignore
   }
-  const ok = window.confirm(`将回滚到选中的历史配置，并重新应用到当前会话。${summary}\n继续吗？`);
+  const ok = window.confirm(String(t("expertModels.confirm.rollbackToSelectedRun", { summary })));
   if (!ok) return;
   saving.value = true;
   applying.value = true;
@@ -404,7 +449,12 @@ async function onRollbackToRun(indexFromLatest: number): Promise<void> {
     const r = await store.rollbackToRun(indexFromLatest);
     showToast(
       "success",
-      `已回滚并重新应用。\nmodelPath=${r.modelPath ?? "(未设置)"}\nllamaArgs=${r.llamaArgs ?? "(空)"}`,
+      String(
+        t("expertModels.toasts.rolledBackAndApplied", {
+          modelPath: r.modelPath ?? String(t("expertModels.common.notSet")),
+          llamaArgs: r.llamaArgs ?? String(t("expertModels.common.empty")),
+        }),
+      ),
     );
   } catch (e) {
     showToast("error", e instanceof Error ? e.message : String(e));
@@ -415,12 +465,12 @@ async function onRollbackToRun(indexFromLatest: number): Promise<void> {
 }
 
 async function onClearRuns(): Promise<void> {
-  const ok = window.confirm("将清空当前会话的 Run 历史（全部）。继续吗？");
+  const ok = window.confirm(String(t("expertModels.confirm.clearRunsAll")));
   if (!ok) return;
   saving.value = true;
   try {
     await store.clearRuns();
-    showToast("success", "已清空 Run 历史。");
+    showToast("success", String(t("expertModels.runHistory.toastCleared")));
   } catch (e) {
     showToast("error", e instanceof Error ? e.message : String(e));
   } finally {
@@ -432,20 +482,30 @@ const clearMode = ref<"all" | "ok" | "failed" | "unpinned">("all");
 const clearKeepPinned = ref(true);
 
 async function onClearRunsAdvanced(): Promise<void> {
-  const modeLabel =
-    clearMode.value === "ok"
-      ? "仅清空 OK"
-      : clearMode.value === "failed"
-        ? "仅清空 FAILED"
-        : clearMode.value === "unpinned"
-          ? "仅清空未星标"
-          : "清空全部";
-  const ok = window.confirm(`${modeLabel}。${clearKeepPinned.value ? "将保留星标条目。" : ""}\n继续吗？`);
+  const modeLabel = String(
+    t(
+      clearMode.value === "ok"
+        ? "expertModels.runHistory.clearMode.ok"
+        : clearMode.value === "failed"
+          ? "expertModels.runHistory.clearMode.failed"
+          : clearMode.value === "unpinned"
+            ? "expertModels.runHistory.clearMode.unpinned"
+            : "expertModels.runHistory.clearMode.all",
+    ),
+  );
+  const ok = window.confirm(
+    String(
+      t("expertModels.confirm.clearRunsWithMode", {
+        modeLabel,
+        keepPinned: clearKeepPinned.value ? String(t("expertModels.runHistory.keepPinned")) : "",
+      }),
+    ),
+  );
   if (!ok) return;
   saving.value = true;
   try {
     await store.clearRunsWithMode(clearMode.value, clearKeepPinned.value);
-    showToast("success", "已执行清空操作。");
+    showToast("success", String(t("expertModels.runHistory.toastClearedWithMode")));
   } catch (e) {
     showToast("error", e instanceof Error ? e.message : String(e));
   } finally {

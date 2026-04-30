@@ -643,6 +643,53 @@ export const zhCN = {
     title: "Expert Models（Module 9）",
     subtitle:
       "选择 Base GGUF + LoRA 强度，并可选覆盖 PromptStyle。会话覆盖优先于角色默认；不设置时不改变现有行为。",
+    common: {
+      notSet: "（未设置）",
+      empty: "（空）",
+      yes: "是",
+      no: "否",
+    },
+    strengthWarning: {
+      mustBeNumber: "强度必须是数字。",
+      ltZero: "强度 < 0 通常不合理。",
+      gtTwo: "强度 > 2 可能导致输出劣化或不稳定。",
+      highSuggestion: "强度偏高，建议先从 1.0–1.4 试起。",
+    },
+    toasts: {
+      appliedToSession:
+        "已应用到当前会话（将触发本地 llama 重启）。\nmodelPath={modelPath}\nllamaArgs={llamaArgs}",
+      rolledBackAndApplied: "已回滚并重新应用。\nmodelPath={modelPath}\nllamaArgs={llamaArgs}",
+      retriedAndApplied: "已重试并应用。\nmodelPath={modelPath}\nllamaArgs={llamaArgs}",
+    },
+    confirm: {
+      rollbackLastRun:
+        "将回滚到上一次已应用的配置（Module 9 Ctrl+Z），并重新应用到当前会话。\n提示：可在「Run 历史」里回滚到任意一次。\n继续吗？",
+      retryRunApply:
+        "将重试此目标配置并重新应用到当前会话：\nBase={base} / LoRA={loras} / PromptStyle={promptStyle}\n继续吗？",
+      exportWorkflowFile:
+        "将导出工作流文件（可分享给他人导入复现）：\nBase={base} / LoRA={loras} / PromptStyle={promptStyle}\n文件名：{filename}\n继续吗？",
+      rollbackSummaryLine: "\n将回滚到：Base={base} / LoRA={loras} / PromptStyle={promptStyle}",
+      rollbackToSelectedRun:
+        "将回滚到选中的历史配置，并重新应用到当前会话。{summary}\n继续吗？",
+      clearRunsAll: "将清空当前会话的 Run 历史（全部）。继续吗？",
+      clearRunsWithMode: "{modeLabel}。{keepPinned}\n继续吗？",
+    },
+    runHistory: {
+      errors: {
+        noTargetGraphForRetry: "该 Run 没有保存 targetGraph（可能是旧版本记录），无法重试。",
+        noTargetGraphForSaveWorkflow: "该 Run 没有保存 targetGraph（可能是旧版本记录），无法保存为工作流。",
+        noTargetGraphForExportWorkflow: "该 Run 没有保存 targetGraph（可能是旧版本记录），无法导出工作流文件。",
+      },
+      prompts: {
+        saveAsWorkflowName: "保存为工作流：请输入名称",
+      },
+      toastCopiedDiagnostics: "已复制 Run 诊断信息。",
+      toastSavedToLibrary: "已保存到工作流库：{name}",
+      toastExportedShareable: "已导出工作流文件，可分享给其他人导入。",
+      toastNoPinnedRuns: "暂无星标 Run（★）。请先给某条 Run 点星标。",
+      toastCleared: "已清空 Run 历史。",
+      toastClearedWithMode: "已执行清空操作。",
+    },
     actions: {
       refresh: "刷新",
       backfillFromEffective: "从有效配置回填编辑器",
