@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { computed } from "vue";
+import { useI18n } from "vue-i18n";
 import PluginSlotEmbed from "./PluginSlotEmbed.vue";
 import {
   shortcutHelpCtrlShiftADescription,
@@ -22,6 +23,7 @@ const emit = defineEmits<{
 }>();
 
 const uiStore = useUiStore();
+const { t } = useI18n();
 
 const rows = computed(() => {
   const pluginF = shortcutHelpCtrlShiftFDescription(
@@ -29,10 +31,10 @@ const rows = computed(() => {
   );
   const pluginA = shortcutHelpCtrlShiftADescription();
   return [
-    { keys: "Ctrl + Shift + S", desc: "打开设置（扩展区、安全、快捷键与插件配置）" },
+    { keys: "Ctrl + Shift + S", desc: String(t("shortcutHelp.rows.ctrlShiftS")) },
     { keys: "Ctrl + Shift + F", desc: pluginF },
     { keys: "Ctrl + Shift + A", desc: pluginA },
-    { keys: "Ctrl（长按约 1 秒）", desc: "打开本快捷键说明" },
+    { keys: String(t("shortcutHelp.rows.ctrlHoldKey")), desc: String(t("shortcutHelp.rows.ctrlHoldDesc")) },
   ];
 });
 </script>
@@ -44,16 +46,16 @@ const rows = computed(() => {
       class="sh-backdrop"
       role="dialog"
       aria-modal="true"
-      aria-label="快捷键"
+      :aria-label="String(t('shortcutHelp.dialogLabel'))"
       @click.self="emit('update:modelValue', false)"
     >
       <div class="sh-dialog" @click.stop>
         <header class="sh-head">
-          <h2 class="sh-title">快捷键</h2>
+          <h2 class="sh-title">{{ t("shortcutHelp.title") }}</h2>
           <button
             type="button"
             class="sh-close"
-            aria-label="关闭"
+            :aria-label="String(t('common.close'))"
             @click="emit('update:modelValue', false)"
           >
             ×
@@ -67,12 +69,12 @@ const rows = computed(() => {
             </tr>
           </tbody>
         </table>
-        <p class="sh-foot">更多快捷键将随功能迭代补充。</p>
-        <section class="sh-slot" aria-label="启动器插槽">
-          <h3 class="sh-slot-h">插件槽（launcher.palette）</h3>
+        <p class="sh-foot">{{ t("shortcutHelp.footer") }}</p>
+        <section class="sh-slot" :aria-label="String(t('shortcutHelp.launcherSlot.aria'))">
+          <h3 class="sh-slot-h">{{ t("shortcutHelp.launcherSlot.title") }}</h3>
           <PluginSlotEmbed
             :slot-name="SLOT_LAUNCHER_PALETTE"
-            aria-label="启动器插槽"
+            :aria-label="String(t('shortcutHelp.launcherSlot.embedAria'))"
             :bootstrap-epoch="bootstrapEpoch"
           />
         </section>

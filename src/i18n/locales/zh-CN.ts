@@ -229,6 +229,135 @@ export const zhCN = {
       next: "下一页",
     },
   },
+  shortcutHelp: {
+    dialogLabel: "快捷键",
+    title: "快捷键",
+    rows: {
+      ctrlShiftS: "打开设置（扩展区、安全、快捷键与插件配置）",
+      ctrlHoldKey: "Ctrl（长按约 1 秒）",
+      ctrlHoldDesc: "打开本快捷键说明",
+    },
+    footer: "更多快捷键将随功能迭代补充。",
+    launcherSlot: {
+      aria: "启动器插槽",
+      title: "插件槽（launcher.palette）",
+      embedAria: "启动器插槽",
+    },
+  },
+  debugPanel: {
+    title: "🎛️ 开发面板",
+    hint: [
+      "供开发与排错：查看好感度、性格维度、近期事件与记忆摘要；可重载策略、生成独白、导入或管理角色包等。",
+      "快捷键 Ctrl+Shift+D（同时按住 Ctrl、Shift，再按字母 D）可随时打开或关闭本面板；按 Esc 也可关闭。顶栏「更多」里亦可点「打开调试面板」。",
+    ],
+    debugDockSlotAria: "调试面板扩展槽",
+    monologue: {
+      prefix: "【独白】",
+      inserted: "已插入独白",
+      generating: "生成中…",
+      insert: "插入独白",
+    },
+    knowledge: {
+      title: "世界观知识",
+      packIndex: "包内索引：",
+      loaded: "已加载",
+      notLoaded: "未加载",
+      totalChunks: "共 {n} 块",
+      lastInjected: "上一句注入 Prompt：",
+      hint: "发话后更新「上一句」；点「刷新调试数据」同步包内块数（改磁盘后请先 load_role）。",
+      presence: {
+        coPresent: "共景",
+        remoteStub: "异地占位",
+        remoteLife: "异地心声",
+      },
+    },
+    favorability: {
+      title: "好感度",
+      status: {
+        superClose: "💖 超级亲密！",
+        veryGood: "💕 关系很好~",
+        ok: "👍 还不错",
+        gettingToKnow: "🤝 慢慢熟悉中",
+        strangers: "😶 还有点陌生",
+      },
+    },
+    personalityVector: {
+      title: "性格向量",
+      profileHint:
+        "当前包为「档案」人格来源：此处七维多为运行时从核心与可变性格档案归纳的视图，便于理解，不是唯一数据源。",
+    },
+  },
+  pluginMarketV1: {
+    localKinds: {
+      rolePack: "角色包",
+      pluginArchive: "插件包",
+      pluginDir: "插件目录",
+      moduleJson: "模块条目",
+      profileJson: "Profile",
+    },
+    localJson: {
+      toastCopied: "已复制 JSON 内容到剪贴板。",
+      errors: {
+        mustBeObject: "JSON 须为对象。",
+        typeMustBeModuleOrProfile: '本地条目 type 必须为 "module" 或 "profile"。',
+        missingRequiredFields: "本地条目必须包含 id/name/version。",
+        onlyModuleProfile: "仅支持 module/profile 本地条目。",
+      },
+    },
+    rolePack: {
+      confirmOverwriteImport:
+        "覆盖导入角色包：{name}（id={id} v{version}）\n\n将替换本机已存在的同 id 角色包内容。确定继续吗？",
+      confirmImport:
+        "导入角色包：{name}（id={id} v{version}）\n\n确定导入到本机 roles/ 吗？（默认不覆盖同 id）",
+      toastImported: "导入成功：{id}",
+      toastImportedOverwrite: "覆盖导入成功：{id}",
+    },
+    perms: {
+      confirmGrantAll:
+        "{title}\n\n该插件声明权限：\n{list}\n\n继续则默认授予全部权限（安装后仍可在专业模式里调整）。",
+    },
+    install: {
+      offlineBundleTitle: "安装插件（离线包）：{id}",
+      zipTitle: "安装插件（ZIP）：{id}",
+      dirTitle: "安装插件（目录）：{id}",
+      confirmOverwritePlugin:
+        "是否允许覆盖已存在的同 id 插件？\n\n插件：{id}\n\n“确定”=覆盖安装；“取消”=若已存在则报错。",
+      toastInstalled: "已安装：{id}",
+    },
+  },
+  pluginManagerV1: {
+    llama: {
+      toastNotFound: "未扫描到目录插件：{id}",
+      permConsentTitle: "启用本地 Llama（目录插件）需要授权哪些能力？",
+      permConsentTrustSummary:
+        "来源：本地目录插件（随发行版附带或由你放入 plugins/）\n说明：启用 LLM 后端至少需要 process:spawn 才能启动本地 sidecar/llama-server。\n如果你要在插件里用 URL 下载模型文件，则还需要 network:*；否则可不勾选，改为手动把 .gguf 放到指定目录。",
+      plan: {
+        writeSessionOverride: "将写入会话级后端覆盖（仅当前会话）",
+        writePermGrants: "将写入权限授权（可随时撤销）",
+      },
+      preflightTitle: "一键启用本地 Llama（目录插件）",
+      toastEnabled: "已启用 Directory LLM：{id}",
+    },
+    sessionOverride: {
+      confirmRollback:
+        "回滚会话级后端覆盖（仅当前会话）\n\n来源：{source}\n条目：{label}\n保存时间：{savedAt}\n\n确定回滚吗？",
+      toastRolledBack: "已回滚会话级后端覆盖。",
+    },
+    permissions: {
+      risk: {
+        high: "高风险",
+        medium: "中风险",
+        low: "低风险",
+        unknown: "未知",
+      },
+      confirmHighRisk: "你选择了高风险权限：\n\n{list}\n\n确定继续吗？",
+    },
+    reviews: {
+      none: "暂无评价",
+      summary: "{avg} 分（{count}）",
+      toastCopiedTemplate: "已复制评价模板（JSON）。",
+    },
+  },
   expertModels: {
     title: "Expert Models（Module 9）",
     subtitle:

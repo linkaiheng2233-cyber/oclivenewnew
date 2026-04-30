@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { computed, ref, watch } from "vue";
+import { useI18n } from "vue-i18n";
 import { useAppToast } from "../composables/useAppToast";
 import { usePluginCommunityMarketPane } from "../composables/usePluginCommunityMarketPane";
 import { usePluginStore } from "../stores/pluginStore";
@@ -20,6 +21,7 @@ import PluginMarketV2Pane from "../components/PluginManagerV2/PluginMarketV2Pane
 const pluginStore = usePluginStore();
 const { showToast } = useAppToast();
 const m = usePluginCommunityMarketPane();
+const { t } = useI18n();
 
 const localImportsLoading = ref(false);
 const localImportsErr = ref("");
@@ -44,11 +46,11 @@ const localImportsByKind = computed(() => {
 });
 
 function localKindLabel(k: string): string {
-  if (k === "role_pack") return "角色包";
-  if (k === "plugin_archive") return "插件包";
-  if (k === "plugin_dir") return "插件目录";
-  if (k === "module_json") return "模块条目";
-  if (k === "profile_json") return "Profile";
+  if (k === "role_pack") return String(t("pluginMarketV1.localKinds.rolePack"));
+  if (k === "plugin_archive") return String(t("pluginMarketV1.localKinds.pluginArchive"));
+  if (k === "plugin_dir") return String(t("pluginMarketV1.localKinds.pluginDir"));
+  if (k === "module_json") return String(t("pluginMarketV1.localKinds.moduleJson"));
+  if (k === "profile_json") return String(t("pluginMarketV1.localKinds.profileJson"));
   return k;
 }
 
@@ -81,18 +83,18 @@ function parseLocalMarketEntryJson(text: string): PluginMarketEntryDto {
     throw new Error(`JSON 解析失败：${e instanceof Error ? e.message : String(e)}`);
   }
   if (!j || typeof j !== "object") {
-    throw new Error("JSON 须为对象。");
+    throw new Error(String(t("pluginMarketV1.localJson.errors.mustBeObject")));
   }
   const o = j as any;
   const t = String(o.type ?? "").trim();
   if (t !== "module" && t !== "profile") {
-    throw new Error('本地条目 type 必须为 "module" 或 "profile"。');
+    throw new Error(String(t("pluginMarketV1.localJson.errors.typeMustBeModuleOrProfile")));
   }
   const id = String(o.id ?? "").trim();
   const name = String(o.name ?? "").trim();
   const version = String(o.version ?? "").trim();
   if (!id || !name || !version) {
-    throw new Error("本地条目必须包含 id/name/version。");
+    throw new Error(String(t("pluginMarketV1.localJson.errors.missingRequiredFields")));
   }
   return o as PluginMarketEntryDto;
 }
@@ -101,7 +103,7 @@ async function onPreviewLocalJson(path: string): Promise<void> {
   try {
     const text = await readLocalImportText(path);
     await navigator.clipboard.writeText(text);
-    showToast("success", "已复制 JSON 内容到剪贴板。");
+    showToast("success", String(t("pluginMarketV1.localJson.toastCopied")));
   } catch (e) {
     showToast("error", e instanceof Error ? e.message : String(e));
   }
@@ -117,7 +119,7 @@ async function onApplyLocalModuleOrProfile(path: string): Promise<void> {
     } else if (t === "profile") {
       await m.onApplyProfileEntry(row);
     } else {
-      showToast("error", "仅支持 module/profile 本地条目。");
+      showToast("error", String(t("pluginMarketV1.localJson.errors.onlyModuleProfile")));
     }
   } catch (e) {
     showToast("error", e instanceof Error ? e.message : String(e));
@@ -129,12 +131,12 @@ async function onImportRolePackFromLocal(path: string, overwrite: boolean): Prom
     const peek = await peekRolePack(path);
     const ok = window.confirm(
       overwrite
-        ? `覆盖导入角色包：${peek.name}（id=${peek.id} v${peek.version}）\n\n将替换本机已存在的同 id 角色包内容。确定继续吗？`
-        : `导入角色包：${peek.name}（id=${peek.id} v${peek.version}）\n\n确定导入到本机 roles/ 吗？（默认不覆盖同 id）`,
+        ? String(t("pluginMarketV1.rolePack.confirmOverwriteImport", { name: peek.name, id: peek.id, version: peek.version }))
+        : String(t("pluginMarketV1.rolePack.confirmImport", { name: peek.name, id: peek.id, version: peek.version })),
     );
     if (!ok) return;
     const roleId = await importRolePack(path, overwrite);
-    showToast("success", overwrite ? `覆盖导入成功：${roleId}` : `导入成功：${roleId}`);
+    showToast("success", overwrite ? String(t("pluginMarketV1.rolePack.toastImportedOverwrite", { id: roleId })) : String(t("pluginMarketV1.rolePack.toastImported", { id: roleId })));
   } catch (e) {
     showToast("error", e instanceof Error ? e.message : String(e));
   }
@@ -144,7 +146,7 @@ function acceptAllPermsOrCancel(title: string, perms: string[]): string[] | null
   const list = perms.map((s) => s.trim()).filter(Boolean);
   if (list.length === 0) return [];
   const ok = window.confirm(
-    `${title}\n\n该插件声明权限：\n${list.join("\n")}\n\n继续则默认授予全部权限（安装后仍可在专业模式里调整）。`,
+    String(t("pluginMarketV1.perms.confirmGrantAll", { title, list: list.join("\n") })),
   );
   return ok ? list : null;
 }
@@ -159,12 +161,12 @@ async function onInstallPluginArchiveFromLocal(zipPath: string): Promise<void> {
         signaturePath: it?.relatedSignaturePath ?? null,
       });
       const accepted = acceptAllPermsOrCancel(
-        `安装插件（离线包）：${prev.pluginId}`,
+        String(t("pluginMarketV1.install.offlineBundleTitle", { id: prev.pluginId })),
         prev.declaredPermissions,
       );
       if (accepted == null) return;
       const overwrite = window.confirm(
-        `是否允许覆盖已存在的同 id 插件？\n\n插件：${prev.pluginId}\n\n“确定”=覆盖安装；“取消”=若已存在则报错。`,
+        String(t("pluginMarketV1.install.confirmOverwritePlugin", { id: prev.pluginId })),
       );
       const pid = await installLocalPluginArchive({
         archivePath: zipPath,
@@ -172,16 +174,16 @@ async function onInstallPluginArchiveFromLocal(zipPath: string): Promise<void> {
         overwrite,
         acceptedPermissions: accepted,
       });
-      showToast("success", `已安装：${pid}`);
+      showToast("success", String(t("pluginMarketV1.install.toastInstalled", { id: pid })));
       await pluginStore.refresh();
       return;
     }
 
     const prev = await previewPluginZipPermissions(zipPath);
-    const accepted = acceptAllPermsOrCancel(`安装插件（ZIP）：${prev.pluginId}`, prev.permissions);
+    const accepted = acceptAllPermsOrCancel(String(t("pluginMarketV1.install.zipTitle", { id: prev.pluginId })), prev.permissions);
     if (accepted == null) return;
     await pluginStore.installPluginFromLocalZip(prev.pluginId, zipPath, accepted);
-    showToast("success", `已安装：${prev.pluginId}`);
+    showToast("success", String(t("pluginMarketV1.install.toastInstalled", { id: prev.pluginId })));
     await pluginStore.refresh();
   } catch (e) {
     showToast("error", e instanceof Error ? e.message : String(e));
@@ -191,10 +193,10 @@ async function onInstallPluginArchiveFromLocal(zipPath: string): Promise<void> {
 async function onInstallPluginDirFromLocal(dirPath: string): Promise<void> {
   try {
     const prev = await previewPluginDirPermissions(dirPath);
-    const accepted = acceptAllPermsOrCancel(`安装插件（目录）：${prev.pluginId}`, prev.permissions);
+    const accepted = acceptAllPermsOrCancel(String(t("pluginMarketV1.install.dirTitle", { id: prev.pluginId })), prev.permissions);
     if (accepted == null) return;
     await installPluginDir(dirPath, prev.pluginId, accepted);
-    showToast("success", `已安装：${prev.pluginId}`);
+    showToast("success", String(t("pluginMarketV1.install.toastInstalled", { id: prev.pluginId })));
     await pluginStore.refresh();
   } catch (e) {
     showToast("error", e instanceof Error ? e.message : String(e));

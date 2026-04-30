@@ -2,6 +2,7 @@
 import { open } from "@tauri-apps/api/dialog";
 import { open as openExternal } from "@tauri-apps/api/shell";
 import { computed, ref, watch } from "vue";
+import { useI18n } from "vue-i18n";
 import PluginBackendSessionPanel from "../components/PluginBackendSessionPanel.vue";
 import InstalledPluginWorkspaceDetail from "../components/InstalledPluginWorkspaceDetail.vue";
 import PluginScaffoldWizard from "../components/PluginScaffoldWizard.vue";
@@ -58,6 +59,7 @@ import {
 const pluginStore = usePluginStore();
 const roleStore = useRoleStore();
 const { showToast } = useAppToast();
+const { t } = useI18n();
 
 const marketSourceSelected = ref("official");
 const marketSources = ref<string[]>([]);
@@ -197,34 +199,30 @@ async function onEnableLocalLlamaDirectory(): Promise<void> {
   const pid = localLlamaPluginIdDraft.value.trim();
   if (!roleId || !pid) return;
   if (!localLlamaPluginInstalled.value) {
-    showToast("error", `未扫描到目录插件：${pid}`);
+    showToast("error", String(t("pluginManagerV1.llama.toastNotFound", { id: pid })));
     return;
   }
   const declaredPerms = ["process:spawn", "network:*"];
   const accepted = await requestPermissionConsentWithTrust(
-    "启用本地 Llama（目录插件）需要授权哪些能力？",
+    String(t("pluginManagerV1.llama.permConsentTitle")),
     declaredPerms,
-    [
-      "来源：本地目录插件（随发行版附带或由你放入 plugins/）",
-      "说明：启用 LLM 后端至少需要 process:spawn 才能启动本地 sidecar/llama-server。",
-      "如果你要在插件里用 URL 下载模型文件，则还需要 network:*；否则可不勾选，改为手动把 .gguf 放到指定目录。",
-    ].join("\n"),
+    String(t("pluginManagerV1.llama.permConsentTrustSummary")),
   );
   if (!accepted) return;
   if (hasHighRiskPermission(accepted)) {
     const ok = window.confirm(
-      `你选择了高风险权限：\n\n${accepted.map((p) => `- ${p}`).join("\n")}\n\n确定继续吗？`,
+      String(t("pluginManagerV1.permissions.confirmHighRisk", { list: accepted.map((p) => `- ${p}`).join("\n") })),
     );
     if (!ok) return;
   }
   const planLines = [
-    `将写入会话级后端覆盖（仅当前会话）`,
+    String(t("pluginManagerV1.llama.plan.writeSessionOverride")),
     `- llm = directory`,
     `- directory_plugins.llm = ${pid}`,
-    `将写入权限授权（可随时撤销）`,
+    String(t("pluginManagerV1.llama.plan.writePermGrants")),
     ...accepted.map((p) => `- ${p}`),
   ];
-  const ok2 = await requestApplyPreflight("一键启用本地 Llama（目录插件）", planLines);
+  const ok2 = await requestApplyPreflight(String(t("pluginManagerV1.llama.preflightTitle")), planLines);
   if (!ok2) return;
   saveCurrentSessionOverrideForRollback("manual", "local-llama");
   try {
@@ -240,7 +238,7 @@ async function onEnableLocalLlamaDirectory(): Promise<void> {
       pid,
     );
     roleStore.applyRoleInfo(info);
-    showToast("success", `已启用 Directory LLM：${pid}`);
+    showToast("success", String(t("pluginManagerV1.llama.toastEnabled", { id: pid })));
   } catch (e) {
     showToast("error", e instanceof Error ? e.message : String(e));
   }
@@ -257,14 +255,14 @@ async function rollbackLastSessionOverride(): Promise<void> {
   const snap = rollbackSnapshotForRole.value;
   if (!roleId || !snap) return;
   const ok = window.confirm(
-    `回滚会话级后端覆盖（仅当前会话）\n\n来源：${snap.source}\n条目：${snap.label}\n保存时间：${snap.savedAt}\n\n确定回滚吗？`,
+    String(t("pluginManagerV1.sessionOverride.confirmRollback", { source: snap.source, label: snap.label, savedAt: snap.savedAt })),
   );
   if (!ok) return;
   try {
     const next = snap.override ?? {};
     const info = await setSessionPluginBackendsOverride(roleId, next);
     roleStore.applyRoleInfo(info);
-    showToast("success", "已回滚会话级后端覆盖。");
+    showToast("success", String(t("pluginManagerV1.sessionOverride.toastRolledBack")));
   } catch (e) {
     showToast("error", e instanceof Error ? e.message : String(e));
   }
@@ -283,7 +281,7 @@ async function copyReviewTemplate(params: {
   try {
     if (!navigator.clipboard?.writeText) throw new Error("clipboard API unavailable");
     await navigator.clipboard.writeText(text);
-    showToast("success", "已复制评价模板（JSON）。");
+    showToast("success", String(t("pluginManagerV1.reviews.toastCopiedTemplate")));
   } catch (e) {
     showToast("error", e instanceof Error ? e.message : String(e));
   }
@@ -368,15 +366,15 @@ const ratingAggByPluginIdPubkey = computed(() => {
 
 function ratingTextForPluginId(pluginId: string): string {
   const a = ratingAggByPluginId.value.get(pluginId.trim());
-  if (!a) return "暂无评价";
-  return `${a.avg.toFixed(1)} 分（${a.count}）`;
+  if (!a) return String(t("pluginManagerV1.reviews.none"));
+  return String(t("pluginManagerV1.reviews.summary", { avg: a.avg.toFixed(1), count: a.count }));
 }
 
 function ratingTextForPluginPubkey(pluginId: string, pubkeyId: string): string {
   const key = reviewsAggKey(pluginId, pubkeyId);
   const a = ratingAggByPluginIdPubkey.value.get(key);
-  if (!a) return "暂无评价";
-  return `${a.avg.toFixed(1)} 分（${a.count}）`;
+  if (!a) return String(t("pluginManagerV1.reviews.none"));
+  return String(t("pluginManagerV1.reviews.summary", { avg: a.avg.toFixed(1), count: a.count }));
 }
 
 function ratingStars(avg: number): string {
@@ -425,10 +423,10 @@ function permRiskOf(token: string): string | undefined {
 }
 
 function riskLabel(risk: string | undefined): string {
-  if (risk === "high") return "高风险";
-  if (risk === "medium") return "中风险";
-  if (risk === "low") return "低风险";
-  return "未知";
+  if (risk === "high") return String(t("pluginManagerV1.permissions.risk.high"));
+  if (risk === "medium") return String(t("pluginManagerV1.permissions.risk.medium"));
+  if (risk === "low") return String(t("pluginManagerV1.permissions.risk.low"));
+  return String(t("pluginManagerV1.permissions.risk.unknown"));
 }
 
 function riskClass(risk: string | undefined): string {

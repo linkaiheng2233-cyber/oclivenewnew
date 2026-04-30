@@ -233,6 +233,137 @@ export const enUS = {
       next: "Next",
     },
   },
+  shortcutHelp: {
+    dialogLabel: "Shortcuts",
+    title: "Shortcuts",
+    rows: {
+      ctrlShiftS: "Open Settings (extensions, security, shortcuts, and plugin configuration).",
+      ctrlHoldKey: "Ctrl (hold ~1s)",
+      ctrlHoldDesc: "Open this shortcuts panel",
+    },
+    footer: "More shortcuts will be added as features evolve.",
+    launcherSlot: {
+      aria: "Launcher slot",
+      title: "Plugin slot (launcher.palette)",
+      embedAria: "Launcher slot embed",
+    },
+  },
+  debugPanel: {
+    title: "🎛️ Developer panel",
+    hint: [
+      "For development and troubleshooting: view favorability, personality dimensions, recent events and memory summaries; reload policies, generate monologue, import/manage role packs, etc.",
+      "Shortcut Ctrl+Shift+D toggles this panel; Esc also closes it. You can also click “Open debug panel” under the top bar More menu.",
+    ],
+    debugDockSlotAria: "Debug panel extension slot",
+    monologue: {
+      prefix: "[Monologue]",
+      inserted: "Monologue inserted.",
+      generating: "Generating…",
+      insert: "Insert monologue",
+    },
+    knowledge: {
+      title: "World knowledge",
+      packIndex: "Pack index:",
+      loaded: "Loaded",
+      notLoaded: "Not loaded",
+      totalChunks: "Total {n} chunks",
+      lastInjected: "Injected into last prompt:",
+      hint:
+        "“Last prompt” updates after you send a message. Click “Refresh debug data” to sync pack chunk count (after changing files on disk, run load_role first).",
+      presence: {
+        coPresent: "Co-present",
+        remoteStub: "Remote stub",
+        remoteLife: "Remote life",
+      },
+    },
+    favorability: {
+      title: "Favorability",
+      status: {
+        superClose: "💖 Super close!",
+        veryGood: "💕 Very good relationship",
+        ok: "👍 Not bad",
+        gettingToKnow: "🤝 Still getting to know",
+        strangers: "😶 A bit distant",
+      },
+    },
+    personalityVector: {
+      title: "Personality vector",
+      profileHint:
+        "This role uses Profile-based personality source. The 7D vector here is a runtime summarized view for understanding and is not the only source of truth.",
+    },
+  },
+  pluginMarketV1: {
+    localKinds: {
+      rolePack: "Role pack",
+      pluginArchive: "Plugin bundle",
+      pluginDir: "Plugin directory",
+      moduleJson: "Module entry",
+      profileJson: "Profile",
+    },
+    localJson: {
+      toastCopied: "Copied JSON content to clipboard.",
+      errors: {
+        mustBeObject: "JSON must be an object.",
+        typeMustBeModuleOrProfile: 'Entry type must be "module" or "profile".',
+        missingRequiredFields: "Entry must include id/name/version.",
+        onlyModuleProfile: "Only module/profile local entries are supported.",
+      },
+    },
+    rolePack: {
+      confirmOverwriteImport:
+        "Overwrite import role pack: {name} (id={id} v{version})\n\nThis will replace the existing pack with the same id on this machine. Continue?",
+      confirmImport:
+        "Import role pack: {name} (id={id} v{version})\n\nImport into local roles/ ? (By default it won't overwrite the same id.)",
+      toastImported: "Imported: {id}",
+      toastImportedOverwrite: "Overwritten import: {id}",
+    },
+    perms: {
+      confirmGrantAll:
+        "{title}\n\nDeclared permissions:\n{list}\n\nContinuing will grant all permissions by default (you can adjust later in Professional Mode).",
+    },
+    install: {
+      offlineBundleTitle: "Install plugin (offline bundle): {id}",
+      zipTitle: "Install plugin (ZIP): {id}",
+      dirTitle: "Install plugin (directory): {id}",
+      confirmOverwritePlugin:
+        "Allow overwriting an existing plugin with the same id?\n\nPlugin: {id}\n\nConfirm = overwrite install; Cancel = error if already exists.",
+      toastInstalled: "Installed: {id}",
+    },
+  },
+  pluginManagerV1: {
+    llama: {
+      toastNotFound: "Directory plugin not found: {id}",
+      permConsentTitle: "What permissions are needed to enable Local Llama (directory plugin)?",
+      permConsentTrustSummary:
+        "Source: local directory plugin (bundled with the release or placed by you under plugins/)\nExplanation: enabling an LLM backend needs at least process:spawn to start local sidecar/llama-server.\nIf you want the plugin to download model files via URL, it also needs network:*; otherwise you can leave it unchecked and manually put .gguf files into the model directory.",
+      plan: {
+        writeSessionOverride: "Will write session-level backend override (current session only)",
+        writePermGrants: "Will write permission grants (revocable anytime)",
+      },
+      preflightTitle: "Enable Local Llama (directory plugin) in one click",
+      toastEnabled: "Directory LLM enabled: {id}",
+    },
+    sessionOverride: {
+      confirmRollback:
+        "Rollback session backend override (current session only)\n\nSource: {source}\nEntry: {label}\nSaved at: {savedAt}\n\nRollback now?",
+      toastRolledBack: "Session backend override rolled back.",
+    },
+    permissions: {
+      risk: {
+        high: "High risk",
+        medium: "Medium risk",
+        low: "Low risk",
+        unknown: "Unknown",
+      },
+      confirmHighRisk:
+        "You selected high-risk permissions:\n\n{list}\n\nContinue?",
+    },
+    reviews: {
+      none: "No reviews yet",
+      summary: "{avg} ({count})",
+      toastCopiedTemplate: "Copied review template (JSON).",
+    },
+  },
   expertModels: {
     title: "Expert Models (Module 9)",
     subtitle:

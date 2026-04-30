@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { computed, ref } from "vue";
+import { useI18n } from "vue-i18n";
 import ChatExportBar from "./ChatExportBar.vue";
 import PluginSlotEmbed from "./PluginSlotEmbed.vue";
 import HelpHint from "./HelpHint.vue";
@@ -31,6 +32,7 @@ const debugStore = useDebugStore();
 const chatStore = useChatStore();
 const uiStore = useUiStore();
 const pluginStore = usePluginStore();
+const { t } = useI18n();
 const monoLoading = ref(false);
 
 const emit = defineEmits<{
@@ -47,8 +49,8 @@ async function insertMonologue(): Promise<void> {
   monoLoading.value = true;
   try {
     const text = await generateMonologue(roleId);
-    chatStore.addAssistantMessage(`【独白】${text}`, undefined, uiStore.sceneId);
-    emit("notify", { type: "info", message: "已插入独白" });
+    chatStore.addAssistantMessage(`${String(t("debugPanel.monologue.prefix"))}${text}`, undefined, uiStore.sceneId);
+    emit("notify", { type: "info", message: String(t("debugPanel.monologue.inserted")) });
   } catch (e) {
     emit("notify", {
       type: "error",
@@ -70,11 +72,11 @@ function favEmoji(v: number): string {
 }
 
 function favStatusText(v: number): string {
-  if (v >= 80) return "💖 超级亲密！";
-  if (v >= 60) return "💕 关系很好~";
-  if (v >= 40) return "👍 还不错";
-  if (v >= 20) return "🤝 慢慢熟悉中";
-  return "😶 还有点陌生";
+  if (v >= 80) return String(t("debugPanel.favorability.status.superClose"));
+  if (v >= 60) return String(t("debugPanel.favorability.status.veryGood"));
+  if (v >= 40) return String(t("debugPanel.favorability.status.ok"));
+  if (v >= 20) return String(t("debugPanel.favorability.status.gettingToKnow"));
+  return String(t("debugPanel.favorability.status.strangers"));
 }
 
 function traitEmoji(val: number, hi: string, mid: string, low: string): string {
@@ -105,9 +107,9 @@ function traitEmojiForKey(
 }
 
 function presenceLabel(mode: string): string {
-  if (mode === "co_present") return "共景";
-  if (mode === "remote_stub") return "异地占位";
-  if (mode === "remote_life") return "异地心声";
+  if (mode === "co_present") return String(t("debugPanel.knowledge.presence.coPresent"));
+  if (mode === "remote_stub") return String(t("debugPanel.knowledge.presence.remoteStub"));
+  if (mode === "remote_life") return String(t("debugPanel.knowledge.presence.remoteLife"));
   return mode;
 }
 </script>
@@ -117,21 +119,18 @@ function presenceLabel(mode: string): string {
     <aside v-if="visible" class="debug debug-scroll">
       <div class="title">
         <div class="title-leading">
-          <strong>🎛️ 开发面板</strong>
+          <strong>{{ t("debugPanel.title") }}</strong>
           <HelpHint
-            :paragraphs="[
-              '供开发与排错：查看好感度、性格维度、近期事件与记忆摘要；可重载策略、生成独白、导入或管理角色包等。',
-              '快捷键 Ctrl+Shift+D（同时按住 Ctrl、Shift，再按字母 D）可随时打开或关闭本面板；按 Esc 也可关闭。顶栏「更多」里亦可点「打开调试面板」。',
-            ]"
+            :paragraphs="(t('debugPanel.hint') as any)"
           />
         </div>
-        <button type="button" aria-label="关闭" @click="emit('close')">✕</button>
+        <button type="button" :aria-label="String(t('common.close'))" @click="emit('close')">✕</button>
       </div>
 
       <section class="debug-dock-slot" aria-label="debug.dock">
         <PluginSlotEmbed
           :slot-name="SLOT_DEBUG_DOCK"
-          aria-label="调试面板扩展槽"
+          :aria-label="String(t('debugPanel.debugDockSlotAria'))"
           :bootstrap-epoch="pluginStore.bootstrapEpoch"
         />
       </section>
@@ -147,7 +146,7 @@ function presenceLabel(mode: string): string {
           :disabled="loading || monoLoading"
           @click="insertMonologue"
         >
-          {{ monoLoading ? "生成中…" : "插入独白" }}
+          {{ monoLoading ? t("debugPanel.monologue.generating") : t("debugPanel.monologue.insert") }}
         </button>
       </div>
 
@@ -160,16 +159,16 @@ function presenceLabel(mode: string): string {
       />
 
       <div class="dev-card knowledge-card">
-        <div class="dev-title"><span>📚</span> 世界观知识</div>
+        <div class="dev-title"><span>📚</span> {{ t("debugPanel.knowledge.title") }}</div>
         <p class="knowledge-line">
-          包内索引：
+          {{ t("debugPanel.knowledge.packIndex") }}
           <strong>{{
-            roleStore.roleInfo.knowledgeEnabled ? "已加载" : "未加载"
+            roleStore.roleInfo.knowledgeEnabled ? t("debugPanel.knowledge.loaded") : t("debugPanel.knowledge.notLoaded")
           }}</strong>
-          · 共 {{ roleStore.roleInfo.knowledgeChunkCount }} 块
+          · {{ t("debugPanel.knowledge.totalChunks", { n: roleStore.roleInfo.knowledgeChunkCount }) }}
         </p>
         <p class="knowledge-line">
-          上一句注入 Prompt：
+          {{ t("debugPanel.knowledge.lastInjected") }}
           <strong>{{ debugStore.lastKnowledgeChunksInPrompt }}</strong> 块
           <span
             v-if="debugStore.lastKnowledgePresenceMode"
@@ -179,14 +178,13 @@ function presenceLabel(mode: string): string {
           </span>
         </p>
         <p class="knowledge-hint">
-          发话后更新「上一句」；点「刷新调试数据」同步包内块数（改磁盘后请先
-          load_role）。
+          {{ t("debugPanel.knowledge.hint") }}
         </p>
       </div>
 
       <div class="dev-card">
         <div class="dev-title">
-          <span>❤️</span> 好感度
+          <span>❤️</span> {{ t("debugPanel.favorability.title") }}
           <span class="dev-emoji">{{ favEmoji(favorability) }}</span>
         </div>
         <div class="fav-value">{{ Math.round(favorability) }}</div>
@@ -201,10 +199,10 @@ function presenceLabel(mode: string): string {
 
       <div class="dev-card">
         <div class="dev-title dev-title--row">
-          <span><span>🎭</span> 性格向量</span>
+          <span><span>🎭</span> {{ t("debugPanel.personalityVector.title") }}</span>
           <HelpHint
             v-if="roleStore.roleInfo.personalitySource === 'profile'"
-            text="当前包为「档案」人格来源：此处七维多为运行时从核心与可变性格档案归纳的视图，便于理解，不是唯一数据源。"
+            :text="String(t('debugPanel.personalityVector.profileHint'))"
           />
         </div>
         <div class="trait-grid">
