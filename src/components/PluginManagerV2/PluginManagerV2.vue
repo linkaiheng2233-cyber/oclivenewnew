@@ -331,6 +331,21 @@ async function onInstallFromGit(): Promise<void> {
 }
 
 const localLlamaPluginIdDraft = ref<string>("com.oclive.llama.local");
+const localLlamaSuggestedPlugins = computed(() => {
+  const out = pluginStore.catalog
+    .filter((p) => !p.isShell)
+    .map((p) => {
+      const provides = (p.provides ?? []).map((x) => String(x).toLowerCase());
+      const score =
+        (p.id.toLowerCase().includes("llama") ? 50 : 0) +
+        (p.id.toLowerCase().includes("llm") ? 20 : 0) +
+        (provides.some((x) => x.includes("llm")) ? 30 : 0) +
+        (provides.some((x) => x.includes("directory")) ? 5 : 0);
+      return { id: p.id, provides: p.provides ?? [], score };
+    })
+    .sort((a, b) => b.score - a.score || a.id.localeCompare(b.id));
+  return out.slice(0, 30);
+});
 const localLlamaPluginInstalled = computed(() => {
   const pid = localLlamaPluginIdDraft.value.trim();
   if (!pid) return false;
@@ -704,9 +719,19 @@ async function onApply(payload: Record<string, unknown>) {
             class="pm2-input"
             type="text"
             autocomplete="off"
+            list="pm2-llama-suggestions"
             placeholder="com.oclive.llama.local"
           />
         </label>
+        <datalist id="pm2-llama-suggestions">
+          <option
+            v-for="p in localLlamaSuggestedPlugins"
+            :key="p.id"
+            :value="p.id"
+          >
+            {{ p.id }}{{ p.provides.length ? ` · provides: ${p.provides.join(", ")}` : "" }}
+          </option>
+        </datalist>
         <div class="pm2-slotdash-muted">状态：{{ localLlamaPluginInstalled ? "已扫描" : "未扫描" }}</div>
         <button
           type="button"
