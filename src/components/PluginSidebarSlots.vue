@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import { useI18n } from "vue-i18n";
 import AsyncPluginVue from "./AsyncPluginVue.vue";
 import PluginErrorPlaceholder from "./PluginErrorPlaceholder.vue";
 import { useDirectoryPluginSlotEmbed } from "../composables/useDirectoryPluginSlotEmbed";
@@ -29,11 +30,13 @@ const {
   slot: SLOT_SIDEBAR,
   bootstrapEpoch: () => props.bootstrapEpoch,
 });
+
+const { t } = useI18n();
 </script>
 
 <template>
   <div v-if="pluginError" class="psb-msg psb-msg--err" role="status">{{ pluginError }}</div>
-  <div v-else-if="slots.length > 0" class="psb-list" aria-label="侧边栏插件插槽">
+  <div v-else-if="slots.length > 0" class="psb-list" :aria-label="String(t('pluginSlots.sidebarAria'))">
     <div v-for="s in slots" :key="`${s.pluginId}:${s.appearanceId ?? ''}`" class="psb-item">
       <AsyncPluginVue
         v-if="showVue(s)"

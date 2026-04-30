@@ -1039,6 +1039,14 @@ export const zhCN = {
     tabsAria: "插件设置页",
     empty: "暂无声明 settings.panel 插槽的插件。",
   },
+  pluginSlots: {
+    chatHeaderAria: "聊天页顶部插件插槽",
+    roleDetailAria: "角色详情插件插槽",
+    sidebarAria: "侧边栏插件插槽",
+  },
+  pluginSlotEmbed: {
+    ariaDefault: "插件嵌入区",
+  },
   pluginDebug: {
     target: "目标",
     status: {

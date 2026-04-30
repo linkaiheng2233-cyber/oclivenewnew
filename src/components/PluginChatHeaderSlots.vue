@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import { useI18n } from "vue-i18n";
 import AsyncPluginVue from "./AsyncPluginVue.vue";
 import PluginErrorPlaceholder from "./PluginErrorPlaceholder.vue";
 import { useDirectoryPluginSlotEmbed } from "../composables/useDirectoryPluginSlotEmbed";
@@ -29,6 +30,8 @@ const {
   slot: SLOT_CHAT_HEADER,
   bootstrapEpoch: () => props.bootstrapEpoch,
 });
+
+const { t } = useI18n();
 </script>
 
 <template>
@@ -36,7 +39,7 @@ const {
   <div
     v-else-if="slots.length > 0"
     class="pch-strip"
-    aria-label="聊天页顶部插件插槽"
+    :aria-label="String(t('pluginSlots.chatHeaderAria'))"
   >
     <div
       v-for="s in slots"

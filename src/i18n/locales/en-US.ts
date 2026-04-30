@@ -1055,6 +1055,14 @@ export const enUS = {
     tabsAria: "Plugin settings page",
     empty: "No plugins declare the settings.panel slot.",
   },
+  pluginSlots: {
+    chatHeaderAria: "Chat header plugin slot",
+    roleDetailAria: "Role detail plugin slot",
+    sidebarAria: "Sidebar plugin slot",
+  },
+  pluginSlotEmbed: {
+    ariaDefault: "Plugin embed area",
+  },
   pluginListItem: {
     aria: "Plugin {id}",
     kind: {
