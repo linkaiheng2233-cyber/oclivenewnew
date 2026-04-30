@@ -3,6 +3,7 @@ import { computed, onMounted, ref } from "vue";
 import { open } from "@tauri-apps/api/dialog";
 import { useAppToast } from "../../composables/useAppToast";
 import { useExpertModelsStore } from "../../stores/expertModelsStore";
+import ExpertModelsCanvas from "./ExpertModelsCanvas.vue";
 import type { ExpertGraph, ExpertNode, PromptStyleOverride } from "../../utils/tauri-api";
 
 const store = useExpertModelsStore();
@@ -12,6 +13,7 @@ const emit = defineEmits<{
 }>();
 
 const saving = ref(false);
+const editorMode = ref<"canvas" | "form">("canvas");
 
 const sourceLabel = (s: string): string => {
   if (s === "session_override") return "会话覆盖";
@@ -22,7 +24,7 @@ const sourceLabel = (s: string): string => {
 const baseModelNode = computed(() => {
   const g = store.draftGraph;
   return g.nodes.find((n) => n.type === "base_model") as
-    | { type: "base_model"; id: string; ggufPath: string }
+    | { type: "base_model"; id: string; ggufPath: string; ui?: any }
     | undefined;
 });
 
@@ -54,7 +56,7 @@ const selectedBaseModelPath = computed({
     );
     const t = (v ?? "").trim();
     if (t) {
-      nextNodes.unshift({ type: "base_model", id: "base", ggufPath: t });
+      nextNodes.unshift({ type: "base_model", id: "base", ggufPath: t, ui: baseModelNode.value?.ui ?? null } as any);
     }
     store.draftGraph = { ...g, nodes: nextNodes };
   },
@@ -90,6 +92,7 @@ function addLora(path: string): void {
         strength: 1.0,
         enabled: true,
         order,
+        ui: null,
       },
     ],
   };
@@ -273,6 +276,33 @@ onMounted(() => {
         </button>
       </div>
       <div v-if="store.error" class="em-err">{{ store.error }}</div>
+    </div>
+
+    <div class="em-editorbar">
+      <div class="em-pill">
+        编辑器：
+        <button
+          type="button"
+          class="em-mini"
+          :class="{ on: editorMode === 'canvas' }"
+          @click="editorMode = 'canvas'"
+        >
+          画布（连线）
+        </button>
+        <button
+          type="button"
+          class="em-mini"
+          :class="{ on: editorMode === 'form' }"
+          @click="editorMode = 'form'"
+        >
+          表单
+        </button>
+      </div>
+      <div class="em-muted">提示：画布会把节点位置与连线写入 ExpertGraph（用于 M2 编译）。</div>
+    </div>
+
+    <div v-if="editorMode === 'canvas'" class="em-canvaswrap">
+      <ExpertModelsCanvas v-model="store.draftGraph" />
     </div>
 
     <div class="em-grid">
@@ -499,6 +529,17 @@ onMounted(() => {
   margin-top: 10px;
   align-items: center;
 }
+.em-editorbar {
+  margin-top: 10px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+.em-canvaswrap {
+  margin-top: 10px;
+}
 .em-pill {
   padding: 4px 8px;
   border-radius: 999px;
@@ -586,6 +627,21 @@ onMounted(() => {
 .em-eff-strength {
   color: var(--text-secondary);
   font-variant-numeric: tabular-nums;
+}
+.em-mini {
+  margin-left: 6px;
+  padding: 3px 8px;
+  border-radius: 999px;
+  border: 1px solid var(--border-light);
+  background: transparent;
+  cursor: pointer;
+  font-size: 12px;
+  color: var(--text-secondary);
+}
+.em-mini.on {
+  background: var(--bg-primary);
+  color: var(--text-primary);
+  font-weight: 700;
 }
 .em-select {
   width: 100%;

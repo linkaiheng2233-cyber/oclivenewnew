@@ -2,6 +2,7 @@
 
 use crate::error::{AppError, Result};
 use crate::models::expert_models::{ExpertGraph, ExpertNode, LlamaLocalPluginConfig, PromptStyleOverride};
+use std::collections::{HashMap, HashSet, VecDeque};
 use std::path::{Path, PathBuf};
 
 pub const LLAMA_LOCAL_PLUGIN_ID: &str = "com.oclive.llama.local";
@@ -23,9 +24,103 @@ pub fn compile_graph_to_llama_local_config(
     models_gguf_dir: &Path,
     loras_dir: &Path,
 ) -> Result<LlamaLocalPluginConfig> {
-    // base model: pick the first BaseModel node (M1).
-    let base = graph.nodes.iter().find_map(|n| match n {
-        ExpertNode::BaseModel { gguf_path, .. } => Some(gguf_path.as_str()),
+    let nodes = graph.nodes.as_slice();
+    let edges = graph.edges.as_slice();
+    let has_edges = edges.iter().any(|e| !e.from.trim().is_empty() && !e.to.trim().is_empty());
+
+    let mut by_id: HashMap<&str, &ExpertNode> = HashMap::new();
+    for n in nodes {
+        let id = match n {
+            ExpertNode::BaseModel { id, .. } => id.as_str(),
+            ExpertNode::LoraAdapter { id, .. } => id.as_str(),
+            ExpertNode::PromptStyle { id, .. } => id.as_str(),
+        };
+        if !id.trim().is_empty() {
+            by_id.insert(id, n);
+        }
+    }
+
+    let mut adj: HashMap<&str, Vec<&str>> = HashMap::new();
+    if has_edges {
+        for e in edges {
+            let from = e.from.trim();
+            let to = e.to.trim();
+            if from.is_empty() || to.is_empty() {
+                continue;
+            }
+            if !by_id.contains_key(from) || !by_id.contains_key(to) {
+                continue;
+            }
+            adj.entry(from).or_default().push(to);
+        }
+        for v in adj.values_mut() {
+            v.sort();
+            v.dedup();
+        }
+    }
+
+    let base_ids: Vec<&str> = nodes
+        .iter()
+        .filter_map(|n| match n {
+            ExpertNode::BaseModel { id, .. } => Some(id.as_str()),
+            _ => None,
+        })
+        .filter(|s| !s.trim().is_empty())
+        .collect();
+
+    fn reachable<'a>(
+        start: &'a str,
+        adj: &HashMap<&'a str, Vec<&'a str>>,
+    ) -> HashSet<&'a str> {
+        let mut seen: HashSet<&'a str> = HashSet::new();
+        let mut q: VecDeque<&'a str> = VecDeque::new();
+        seen.insert(start);
+        q.push_back(start);
+        while let Some(cur) = q.pop_front() {
+            if let Some(nexts) = adj.get(cur) {
+                for &n in nexts {
+                    if seen.insert(n) {
+                        q.push_back(n);
+                    }
+                }
+            }
+        }
+        seen
+    }
+
+    let active_base_id: Option<&str> = if base_ids.is_empty() {
+        None
+    } else if base_ids.len() == 1 || !has_edges {
+        base_ids.first().copied()
+    } else {
+        // Choose base with the largest reachable set; tie-break by id.
+        let mut best: Option<(&str, usize)> = None;
+        for &bid in &base_ids {
+            let r = reachable(bid, &adj);
+            let score = r.len();
+            match best {
+                None => best = Some((bid, score)),
+                Some((cur, cur_score)) => {
+                    if score > cur_score || (score == cur_score && bid < cur) {
+                        best = Some((bid, score));
+                    }
+                }
+            }
+        }
+        best.map(|(id, _)| id)
+    };
+
+    let reachable_set: HashSet<&str> = if let (true, Some(bid)) = (has_edges, active_base_id) {
+        reachable(bid, &adj)
+    } else {
+        HashSet::new()
+    };
+
+    let base = nodes.iter().find_map(|n| match (n, active_base_id) {
+        (ExpertNode::BaseModel { id, gguf_path, .. }, Some(bid)) if id == bid => {
+            Some(gguf_path.as_str())
+        }
+        (ExpertNode::BaseModel { gguf_path, .. }, None) => Some(gguf_path.as_str()),
         _ => None,
     });
 
@@ -49,7 +144,7 @@ pub fn compile_graph_to_llama_local_config(
         }
     }
 
-    // loras: all enabled LoraAdapter nodes sorted by (order, id)
+    // loras: enabled LoraAdapter nodes. If graph has edges, require reachability from active base.
     let mut loras: Vec<(String, f32, i32, String)> = vec![];
     for n in &graph.nodes {
         if let ExpertNode::LoraAdapter {
@@ -58,10 +153,17 @@ pub fn compile_graph_to_llama_local_config(
             strength,
             enabled,
             order,
+            ..
         } = n
         {
             if !*enabled {
                 continue;
+            }
+            if has_edges {
+                let nid = id.as_str();
+                if active_base_id.is_some() && !reachable_set.contains(nid) {
+                    continue;
+                }
             }
             let path = gguf_path.trim();
             if path.is_empty() {

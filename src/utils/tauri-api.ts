@@ -104,7 +104,12 @@ export interface PromptStyleOverride {
 }
 
 export type ExpertNode =
-  | { type: "base_model"; id: string; ggufPath: string }
+  | {
+      type: "base_model";
+      id: string;
+      ggufPath: string;
+      ui?: { x: number; y: number } | null;
+    }
   | {
       type: "lora_adapter";
       id: string;
@@ -112,8 +117,14 @@ export type ExpertNode =
       strength: number;
       enabled: boolean;
       order: number;
+      ui?: { x: number; y: number } | null;
     }
-  | { type: "prompt_style"; id: string; style: PromptStyleOverride };
+  | {
+      type: "prompt_style";
+      id: string;
+      style: PromptStyleOverride;
+      ui?: { x: number; y: number } | null;
+    };
 
 export interface ExpertEdge {
   from: string;
