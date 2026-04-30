@@ -859,6 +859,53 @@ export const enUS = {
       cancelled: "Save cancelled.",
     },
   },
+  agentDebugPanel: {
+    title: "Agent debug traces",
+    lead:
+      "Inspect MCP servers, manually call tools, and view recent agent task breakdowns and tool-call traces.",
+    common: {
+      pick: "Please choose",
+    },
+    actions: {
+      refreshServers: "Refresh MCP servers",
+      refreshTraces: "Refresh agent traces",
+      clearTraces: "Clear traces",
+      callTool: "Call tool",
+    },
+    templates: {
+      title: "Template library",
+      pickPlaceholder: "Choose a template",
+      saveAsPlaceholder: "Save current request as a custom template",
+      save: "Save template",
+      weather: "Weather query",
+      fileRead: "Read file",
+      webFetch: "Fetch web page",
+    },
+    tool: {
+      placeholder: "e.g. get_weather",
+      pickFromList: "Pick from server tool list",
+    },
+    diff: {
+      title: "Response diff",
+      left: "Left response",
+      right: "Right response",
+      compare: "Compare",
+      noDiff: "No differences",
+    },
+    traces: {
+      title: "Recent tasks",
+      empty: "No agent traces yet.",
+    },
+  },
+  envVarManager: {
+    title: "Environment variables (session draft)",
+    keyPlaceholder: "OCLIVE_*",
+    valuePlaceholder: "value",
+    upsert: "Add / update",
+    remove: "Remove",
+    copyAsCommand: "Copy as terminal command",
+    copied: "Copied",
+  },
   pluginMarketV1: {
     panel: {
       dialogLabel: "Plugin Market",

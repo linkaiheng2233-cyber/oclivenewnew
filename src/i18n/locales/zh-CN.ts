@@ -832,6 +832,52 @@ export const zhCN = {
       cancelled: "已取消保存",
     },
   },
+  agentDebugPanel: {
+    title: "Agent 调试链路",
+    lead: "可查看 MCP Server、手动调用工具，并查看最近 Agent 任务拆解与工具调用轨迹。",
+    common: {
+      pick: "请选择",
+    },
+    actions: {
+      refreshServers: "刷新 MCP Server",
+      refreshTraces: "刷新 Agent Trace",
+      clearTraces: "清空 Trace",
+      callTool: "调用工具",
+    },
+    templates: {
+      title: "模板库",
+      pickPlaceholder: "选择常用模板",
+      saveAsPlaceholder: "保存当前请求为自定义模板",
+      save: "保存模板",
+      weather: "天气查询",
+      fileRead: "文件读取",
+      webFetch: "网页抓取",
+    },
+    tool: {
+      placeholder: "例如 get_weather",
+      pickFromList: "从 Server 工具列表选择",
+    },
+    diff: {
+      title: "响应 Diff 对比",
+      left: "左侧响应",
+      right: "右侧响应",
+      compare: "对比",
+      noDiff: "无差异",
+    },
+    traces: {
+      title: "最近任务",
+      empty: "暂无 Agent 执行轨迹。",
+    },
+  },
+  envVarManager: {
+    title: "环境变量管理（会话草稿）",
+    keyPlaceholder: "OCLIVE_*",
+    valuePlaceholder: "value",
+    upsert: "添加/更新",
+    remove: "删除",
+    copyAsCommand: "复制为终端命令",
+    copied: "已复制",
+  },
   pluginMarketV1: {
     panel: {
       dialogLabel: "插件市场",
