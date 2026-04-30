@@ -210,6 +210,86 @@ export const enUS = {
     },
   },
   pluginManagerV2: {
+    sources: {
+      sessionOverride: "Session override",
+      envOverride: "Env override",
+      packDefault: "Role pack default",
+      envVar: "Environment variables",
+      sessionEnabled: "Enabled in current session",
+      sessionDisabled: "Disabled in current session",
+    },
+    modules: {
+      llm: "Chat brain (LLM)",
+      emotion: "Emotion engine (Emotion)",
+      complexEmotion: "Complex emotion (Complex Emotion)",
+    },
+    options: {
+      followPackDefault: "Follow role pack default ({v})",
+      ollama: "Ollama (local model)",
+      remote: "Remote service",
+      directory: "Directory plugin",
+      builtin: "Built-in",
+      builtinV2: "Built-in V2",
+    },
+    cards: {
+      llmMain: {
+        title: "Reply engine",
+        description: "Choose reply model source: local model, remote service, or directory plugin.",
+      },
+      llmEndpoint: {
+        title: "LLM remote endpoint notes",
+        description: "When using remote service, prefer the LLM-specific endpoint.",
+        summary: "Tip: set endpoints via system env vars for easier migration and debugging.",
+        fields: {
+          remoteLlmUrl: "LLM-specific remote URL (preferred)",
+          remotePluginUrl: "Generic remote URL (fallback)",
+        },
+      },
+      emotionMain: {
+        title: "Emotion inference engine",
+        description: "Choose emotion handling: built-in logic, remote service, or directory plugin.",
+      },
+      emotionEndpoint: {
+        title: "Emotion remote endpoint notes",
+        description: "Emotion remote reads the generic remote URL by default.",
+        summary: "Tip: set endpoints via system env vars to avoid hardcoding into role packs.",
+        fields: {
+          remotePluginUrl: "Common Emotion remote entry",
+        },
+      },
+      complexSwitch: {
+        title: "Complex emotion toggle",
+        description: "Enables remote presence chain; complex emotion becomes more evident.",
+        label: "Enable complex emotion (remote presence)",
+        hint: "After enabling, configure URL and TOKEN env vars.",
+      },
+      complexEndpoint: {
+        title: "Complex emotion endpoint notes",
+        description: "Complex emotion service is usually deployed separately and supports auth token.",
+        summary: "If auth is required, set both URL and TOKEN.",
+        fields: {
+          url: "Complex emotion service URL",
+          token: "Complex emotion auth token",
+        },
+      },
+    },
+    categories: {
+      all: "All features",
+      builtin: "Built-in",
+      remote: "Remote",
+      directory: "Local directory plugins",
+      statusEnabled: "Enabled",
+      statusDisabled: "Disabled",
+      statusNeedsConfig: "Needs setup",
+    },
+    toasts: {
+      endpointNoSave: "Endpoint notes are not saved. Configure via environment variables.",
+      complexSwitchUpdated: "Complex emotion toggle updated.",
+      writtenToSession: "Config written to current session.",
+    },
+    errors: {
+      onlyLlmEmotionSupported: "Only LLM / Emotion config writing is supported currently.",
+    },
     legend: {
       aria: "Status legend",
       enabled: "Enabled: effective immediately",

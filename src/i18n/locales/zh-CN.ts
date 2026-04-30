@@ -204,6 +204,86 @@ export const zhCN = {
     },
   },
   pluginManagerV2: {
+    sources: {
+      sessionOverride: "会话覆盖",
+      envOverride: "环境覆盖",
+      packDefault: "角色包默认",
+      envVar: "环境变量",
+      sessionEnabled: "当前会话已开启",
+      sessionDisabled: "当前会话已关闭",
+    },
+    modules: {
+      llm: "对话大脑（LLM）",
+      emotion: "情绪引擎（Emotion）",
+      complexEmotion: "复杂情感（Complex Emotion）",
+    },
+    options: {
+      followPackDefault: "跟随角色包默认（{v}）",
+      ollama: "Ollama（本地模型）",
+      remote: "远程服务",
+      directory: "目录插件",
+      builtin: "内置",
+      builtinV2: "内置 V2",
+    },
+    cards: {
+      llmMain: {
+        title: "对话回复引擎",
+        description: "决定回复模型来源：本地模型、远程服务或目录插件。",
+      },
+      llmEndpoint: {
+        title: "LLM 远程地址说明",
+        description: "选择远程服务时，优先读取 LLM 专用地址。",
+        summary: "建议在系统环境变量配置地址，便于迁移与排错。",
+        fields: {
+          remoteLlmUrl: "LLM 专用远程地址（优先）",
+          remotePluginUrl: "通用远程地址（兜底）",
+        },
+      },
+      emotionMain: {
+        title: "情绪推理引擎",
+        description: "控制情绪由内置逻辑、远程服务或目录插件处理。",
+      },
+      emotionEndpoint: {
+        title: "Emotion 远程地址说明",
+        description: "情绪 remote 默认读取通用远程地址。",
+        summary: "建议在系统环境变量配置地址，避免写死到角色包。",
+        fields: {
+          remotePluginUrl: "Emotion 常用远程入口",
+        },
+      },
+      complexSwitch: {
+        title: "复杂情感开关",
+        description: "开启后启用异地心声链路，复杂情感表现更明显。",
+        label: "启用复杂情感（异地心声）",
+        hint: "开启后建议配置 URL 与 TOKEN 环境变量。",
+      },
+      complexEndpoint: {
+        title: "复杂情感地址说明",
+        description: "复杂情感服务通常独立部署，支持鉴权 token。",
+        summary: "若服务要求鉴权，请同时配置 URL 和 TOKEN。",
+        fields: {
+          url: "复杂情感服务地址",
+          token: "复杂情感服务鉴权 Token",
+        },
+      },
+    },
+    categories: {
+      all: "全部功能",
+      builtin: "内置",
+      remote: "远程",
+      directory: "本地目录插件",
+      statusEnabled: "已启用",
+      statusDisabled: "已关闭",
+      statusNeedsConfig: "还需配置",
+    },
+    toasts: {
+      endpointNoSave: "地址说明项无需保存，请在环境变量中配置。",
+      complexSwitchUpdated: "复杂情感开关已更新。",
+      writtenToSession: "配置已写入当前会话。",
+    },
+    errors: {
+      onlyLlmEmotionSupported: "当前仅支持 LLM / Emotion 配置写入。",
+    },
     legend: {
       aria: "状态说明",
       enabled: "已启用：当前配置可直接生效",

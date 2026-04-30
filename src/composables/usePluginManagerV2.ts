@@ -3,6 +3,11 @@ import { usePluginStore } from "../stores/pluginStore";
 import { useRoleStore } from "../stores/roleStore";
 import { setRemoteLifeEnabled, setSessionPluginBackend } from "../utils/tauri-api";
 import type { PluginUiTemplateName } from "../components/PluginUITemplates";
+import { i18n } from "../i18n";
+
+function t(key: string, params?: Record<string, unknown>): string {
+  return String(i18n.global.t(key as any, params as any));
+}
 
 export type V2ModuleKey = "llm" | "emotion" | "complex_emotion";
 export type V2TypeKey = "builtin" | "remote" | "directory";
@@ -34,9 +39,9 @@ function normalizeType(backend: string): V2TypeKey {
 }
 
 function toSourceLabel(source: string): string {
-  if (source === "session_override") return "会话覆盖";
-  if (source === "env_override") return "环境覆盖";
-  return "角色包默认";
+  if (source === "session_override") return t("pluginManagerV2.sources.sessionOverride");
+  if (source === "env_override") return t("pluginManagerV2.sources.envOverride");
+  return t("pluginManagerV2.sources.packDefault");
 }
 
 export function usePluginManagerV2() {
@@ -64,57 +69,66 @@ export function usePluginManagerV2() {
     return [
       {
         id: "llm-main",
-        title: "对话回复引擎",
+        title: t("pluginManagerV2.cards.llmMain.title"),
         module: "llm",
-        moduleLabel: "对话大脑（LLM）",
+        moduleLabel: t("pluginManagerV2.modules.llm"),
         type: normalizeType(effective.llm),
         status: effective.llm === "directory" && !llmDirectoryId ? "needs_config" : "enabled",
         sourceLabel: toSourceLabel(sources.llm),
-        description: "决定回复模型来源：本地模型、远程服务或目录插件。",
+        description: t("pluginManagerV2.cards.llmMain.description"),
         uiTemplate: "slot-selector",
         schema: {
           module: "llm",
           current: roleStore.roleInfo.pluginBackendsSessionOverride?.llm ?? "__pack_default__",
           directoryId: llmDirectoryId,
           options: [
-            { value: "__pack_default__", label: `跟随角色包默认（${defaults.llm}）` },
-            { value: "ollama", label: "Ollama（本地模型）" },
-            { value: "remote", label: "远程服务" },
-            { value: "directory", label: "目录插件" },
+            {
+              value: "__pack_default__",
+              label: t("pluginManagerV2.options.followPackDefault", { v: defaults.llm }),
+            },
+            { value: "ollama", label: t("pluginManagerV2.options.ollama") },
+            { value: "remote", label: t("pluginManagerV2.options.remote") },
+            { value: "directory", label: t("pluginManagerV2.options.directory") },
           ],
           directoryOptions: directoryOptions.value,
         },
       },
       {
         id: "llm-endpoint",
-        title: "LLM 远程地址说明",
+        title: t("pluginManagerV2.cards.llmEndpoint.title"),
         module: "llm",
-        moduleLabel: "对话大脑（LLM）",
+        moduleLabel: t("pluginManagerV2.modules.llm"),
         type: "remote",
         status: effective.llm === "remote" ? "enabled" : "disabled",
-        sourceLabel: "环境变量",
-        description: "选择远程服务时，优先读取 LLM 专用地址。",
+        sourceLabel: t("pluginManagerV2.sources.envVar"),
+        description: t("pluginManagerV2.cards.llmEndpoint.description"),
         uiTemplate: "endpoint-config",
         schema: {
-          summary: "建议在系统环境变量配置地址，便于迁移与排错。",
+          summary: t("pluginManagerV2.cards.llmEndpoint.summary"),
           fields: [
-            { name: "OCLIVE_REMOTE_LLM_URL", description: "LLM 专用远程地址（优先）" },
-            { name: "OCLIVE_REMOTE_PLUGIN_URL", description: "通用远程地址（兜底）" },
+            {
+              name: "OCLIVE_REMOTE_LLM_URL",
+              description: t("pluginManagerV2.cards.llmEndpoint.fields.remoteLlmUrl"),
+            },
+            {
+              name: "OCLIVE_REMOTE_PLUGIN_URL",
+              description: t("pluginManagerV2.cards.llmEndpoint.fields.remotePluginUrl"),
+            },
           ],
         },
       },
       {
         id: "emotion-main",
-        title: "情绪推理引擎",
+        title: t("pluginManagerV2.cards.emotionMain.title"),
         module: "emotion",
-        moduleLabel: "情绪引擎（Emotion）",
+        moduleLabel: t("pluginManagerV2.modules.emotion"),
         type: normalizeType(effective.emotion),
         status:
           effective.emotion === "directory" && !emotionDirectoryId
             ? "needs_config"
             : "enabled",
         sourceLabel: toSourceLabel(sources.emotion),
-        description: "控制情绪由内置逻辑、远程服务或目录插件处理。",
+        description: t("pluginManagerV2.cards.emotionMain.description"),
         uiTemplate: "slot-selector",
         schema: {
           module: "emotion",
@@ -122,65 +136,77 @@ export function usePluginManagerV2() {
             roleStore.roleInfo.pluginBackendsSessionOverride?.emotion ?? "__pack_default__",
           directoryId: emotionDirectoryId,
           options: [
-            { value: "__pack_default__", label: `跟随角色包默认（${defaults.emotion}）` },
-            { value: "builtin", label: "内置" },
-            { value: "builtin_v2", label: "内置 V2" },
-            { value: "remote", label: "远程服务" },
-            { value: "directory", label: "目录插件" },
+            {
+              value: "__pack_default__",
+              label: t("pluginManagerV2.options.followPackDefault", { v: defaults.emotion }),
+            },
+            { value: "builtin", label: t("pluginManagerV2.options.builtin") },
+            { value: "builtin_v2", label: t("pluginManagerV2.options.builtinV2") },
+            { value: "remote", label: t("pluginManagerV2.options.remote") },
+            { value: "directory", label: t("pluginManagerV2.options.directory") },
           ],
           directoryOptions: directoryOptions.value,
         },
       },
       {
         id: "emotion-endpoint",
-        title: "Emotion 远程地址说明",
+        title: t("pluginManagerV2.cards.emotionEndpoint.title"),
         module: "emotion",
-        moduleLabel: "情绪引擎（Emotion）",
+        moduleLabel: t("pluginManagerV2.modules.emotion"),
         type: "remote",
         status: effective.emotion === "remote" ? "enabled" : "disabled",
-        sourceLabel: "环境变量",
-        description: "情绪 remote 默认读取通用远程地址。",
+        sourceLabel: t("pluginManagerV2.sources.envVar"),
+        description: t("pluginManagerV2.cards.emotionEndpoint.description"),
         uiTemplate: "endpoint-config",
         schema: {
-          summary: "建议在系统环境变量配置地址，避免写死到角色包。",
+          summary: t("pluginManagerV2.cards.emotionEndpoint.summary"),
           fields: [
-            { name: "OCLIVE_REMOTE_PLUGIN_URL", description: "Emotion 常用远程入口" },
+            {
+              name: "OCLIVE_REMOTE_PLUGIN_URL",
+              description: t("pluginManagerV2.cards.emotionEndpoint.fields.remotePluginUrl"),
+            },
           ],
         },
       },
       {
         id: "complex-switch",
-        title: "复杂情感开关",
+        title: t("pluginManagerV2.cards.complexSwitch.title"),
         module: "complex_emotion",
-        moduleLabel: "复杂情感（Complex Emotion）",
+        moduleLabel: t("pluginManagerV2.modules.complexEmotion"),
         type: "remote",
         status: roleStore.roleInfo.remoteLifeEnabled ? "enabled" : "disabled",
         sourceLabel: roleStore.roleInfo.remoteLifeEnabled
-          ? "当前会话已开启"
-          : "当前会话已关闭",
-        description: "开启后启用异地心声链路，复杂情感表现更明显。",
+          ? t("pluginManagerV2.sources.sessionEnabled")
+          : t("pluginManagerV2.sources.sessionDisabled"),
+        description: t("pluginManagerV2.cards.complexSwitch.description"),
         uiTemplate: "switch-toggle",
         schema: {
           checked: roleStore.roleInfo.remoteLifeEnabled,
-          label: "启用复杂情感（异地心声）",
-          hint: "开启后建议配置 URL 与 TOKEN 环境变量。",
+          label: t("pluginManagerV2.cards.complexSwitch.label"),
+          hint: t("pluginManagerV2.cards.complexSwitch.hint"),
         },
       },
       {
         id: "complex-endpoint",
-        title: "复杂情感地址说明",
+        title: t("pluginManagerV2.cards.complexEndpoint.title"),
         module: "complex_emotion",
-        moduleLabel: "复杂情感（Complex Emotion）",
+        moduleLabel: t("pluginManagerV2.modules.complexEmotion"),
         type: "remote",
         status: roleStore.roleInfo.remoteLifeEnabled ? "enabled" : "disabled",
-        sourceLabel: "环境变量",
-        description: "复杂情感服务通常独立部署，支持鉴权 token。",
+        sourceLabel: t("pluginManagerV2.sources.envVar"),
+        description: t("pluginManagerV2.cards.complexEndpoint.description"),
         uiTemplate: "endpoint-config",
         schema: {
-          summary: "若服务要求鉴权，请同时配置 URL 和 TOKEN。",
+          summary: t("pluginManagerV2.cards.complexEndpoint.summary"),
           fields: [
-            { name: "OCLIVE_COMPLEX_EMOTION_URL", description: "复杂情感服务地址" },
-            { name: "OCLIVE_COMPLEX_EMOTION_TOKEN", description: "复杂情感服务鉴权 Token" },
+            {
+              name: "OCLIVE_COMPLEX_EMOTION_URL",
+              description: t("pluginManagerV2.cards.complexEndpoint.fields.url"),
+            },
+            {
+              name: "OCLIVE_COMPLEX_EMOTION_TOKEN",
+              description: t("pluginManagerV2.cards.complexEndpoint.fields.token"),
+            },
           ],
         },
       },
@@ -192,42 +218,42 @@ export function usePluginManagerV2() {
     const countBy = (fn: (x: PluginV2CardItem) => boolean) =>
       rows.filter((x) => fn(x)).length;
     return [
-      { id: "all", label: "全部功能", count: rows.length },
+      { id: "all", label: t("pluginManagerV2.categories.all"), count: rows.length },
       {
         id: "module:llm",
-        label: "对话大脑（LLM）",
+        label: t("pluginManagerV2.modules.llm"),
         count: countBy((x) => x.module === "llm"),
       },
       {
         id: "module:emotion",
-        label: "情绪引擎（Emotion）",
+        label: t("pluginManagerV2.modules.emotion"),
         count: countBy((x) => x.module === "emotion"),
       },
       {
         id: "module:complex_emotion",
-        label: "复杂情感（Complex Emotion）",
+        label: t("pluginManagerV2.modules.complexEmotion"),
         count: countBy((x) => x.module === "complex_emotion"),
       },
-      { id: "type:builtin", label: "内置", count: countBy((x) => x.type === "builtin") },
-      { id: "type:remote", label: "远程", count: countBy((x) => x.type === "remote") },
+      { id: "type:builtin", label: t("pluginManagerV2.categories.builtin"), count: countBy((x) => x.type === "builtin") },
+      { id: "type:remote", label: t("pluginManagerV2.categories.remote"), count: countBy((x) => x.type === "remote") },
       {
         id: "type:directory",
-        label: "本地目录插件",
+        label: t("pluginManagerV2.categories.directory"),
         count: countBy((x) => x.type === "directory"),
       },
       {
         id: "status:enabled",
-        label: "已启用",
+        label: t("pluginManagerV2.categories.statusEnabled"),
         count: countBy((x) => x.status === "enabled"),
       },
       {
         id: "status:disabled",
-        label: "已关闭",
+        label: t("pluginManagerV2.categories.statusDisabled"),
         count: countBy((x) => x.status === "disabled"),
       },
       {
         id: "status:needs_config",
-        label: "还需配置",
+        label: t("pluginManagerV2.categories.statusNeedsConfig"),
         count: countBy((x) => x.status === "needs_config"),
       },
     ];
@@ -271,7 +297,7 @@ export function usePluginManagerV2() {
     payload: Record<string, unknown>,
   ): Promise<string> {
     if (item.uiTemplate === "endpoint-config") {
-      return "地址说明项无需保存，请在环境变量中配置。";
+      return t("pluginManagerV2.toasts.endpointNoSave");
     }
     if (item.uiTemplate === "switch-toggle") {
       const info = await setRemoteLifeEnabled(
@@ -279,12 +305,12 @@ export function usePluginManagerV2() {
         Boolean(payload.enabled),
       );
       roleStore.applyRoleInfo(info);
-      return "复杂情感开关已更新。";
+      return t("pluginManagerV2.toasts.complexSwitchUpdated");
     }
 
     const module = String((item.schema as { module?: string }).module ?? "");
     if (module !== "llm" && module !== "emotion") {
-      throw new Error("当前仅支持 LLM / Emotion 配置写入。");
+      throw new Error(t("pluginManagerV2.errors.onlyLlmEmotionSupported"));
     }
     const info = await setSessionPluginBackend(
       roleStore.currentRoleId,
@@ -295,7 +321,7 @@ export function usePluginManagerV2() {
       (payload.directoryId as string | null | undefined) ?? undefined,
     );
     roleStore.applyRoleInfo(info);
-    return "配置已写入当前会话。";
+    return t("pluginManagerV2.toasts.writtenToSession");
   }
 
   return {
