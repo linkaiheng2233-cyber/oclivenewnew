@@ -11,6 +11,8 @@ import RoleplayAsidePanel from "./components/RoleplayAsidePanel.vue";
 import HotkeyHost from "./components/HotkeyHost.vue";
 import PluginManagerPanel from "./views/PluginManagerPanel.vue";
 import PluginManagerV2Panel from "./views/PluginManagerV2Panel.vue";
+import PluginMarketPanel from "./views/PluginMarketPanel.vue";
+import PluginMarketV2Panel from "./views/PluginMarketV2Panel.vue";
 import PluginSlotEmbed from "./components/PluginSlotEmbed.vue";
 import SettingsView from "./views/SettingsView.vue";
 import ChatMessageList from "./components/ChatMessageList.vue";
@@ -179,7 +181,9 @@ const settingsViewOpen = ref(false);
 
 const {
   pluginManagerV2Open,
+  pluginMarketV2Open,
   openPluginManagerPanel,
+  openPluginMarketPanel,
   openPluginManagerV2Preview,
   pluginManagerMoreBtnLabel,
   settingsEntryMoreHelp,
@@ -191,13 +195,6 @@ const {
     settingsViewOpen.value = false;
   },
 });
-
-/** 插件市场（社区索引）专用入口：强制打开 V1 面板并滚动到该区块（V2 预览不含市场列表）。 */
-async function openPluginMarketFromShortcut(): Promise<void> {
-  pluginManagerV2Open.value = false;
-  topMoreOpen.value = false;
-  await pluginStore.openV1PanelToCommunityMarket();
-}
 
 const topBarRef = ref<HTMLElement | null>(null);
 let morePanelClickListenTimer: ReturnType<typeof setTimeout> | null = null;
@@ -522,6 +519,11 @@ async function onReloadPolicy() {
 
 function onHotkey(e: KeyboardEvent) {
   if (e.key === "Escape") {
+    if (pluginMarketV2Open.value) {
+      e.preventDefault();
+      pluginMarketV2Open.value = false;
+      return;
+    }
     if (pluginManagerV2Open.value) {
       e.preventDefault();
       pluginManagerV2Open.value = false;
@@ -530,6 +532,11 @@ function onHotkey(e: KeyboardEvent) {
     if (shortcutHelpOpen.value) {
       e.preventDefault();
       shortcutHelpOpen.value = false;
+      return;
+    }
+    if (pluginStore.marketPanelVisible) {
+      e.preventDefault();
+      pluginStore.closeMarketPanel();
       return;
     }
     if (pluginStore.panelVisible) {
@@ -560,7 +567,7 @@ function onHotkey(e: KeyboardEvent) {
   }
   if (e.ctrlKey && e.shiftKey && e.key.toLowerCase() === "a") {
     e.preventDefault();
-    void openPluginMarketFromShortcut();
+    openPluginMarketPanel();
     return;
   }
   if (e.ctrlKey && e.shiftKey && e.key.toLowerCase() === "s") {
@@ -845,6 +852,13 @@ onBeforeUnmount(() => {
               >
                 {{ pluginManagerMoreBtnLabel }}
               </button>
+              <button
+                type="button"
+                class="more-debug-btn more-debug-btn--fill settings-entry-btn"
+                @click="openPluginMarketPanel"
+              >
+                插件市场（Ctrl+Shift+A）
+              </button>
             </div>
           </div>
 
@@ -1036,6 +1050,7 @@ onBeforeUnmount(() => {
     <Toast :show="toast.show" :type="toast.type" :message="toast.message" />
     <ShortcutHelp v-model="shortcutHelpOpen" :bootstrap-epoch="pluginStore.bootstrapEpoch" />
 
+    <PluginMarketPanel />
     <PluginManagerPanel />
     <PluginManagerV2Panel
       :visible="pluginManagerV2Open"
@@ -1045,6 +1060,7 @@ onBeforeUnmount(() => {
         void pluginStore.openPanel('plugins');
       "
     />
+    <PluginMarketV2Panel :visible="pluginMarketV2Open" @close="pluginMarketV2Open = false" />
 
     <SettingsView
       :visible="settingsViewOpen"

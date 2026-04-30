@@ -1,12 +1,13 @@
 <script setup lang="ts">
 import { open } from "@tauri-apps/api/dialog";
 import { open as openExternal } from "@tauri-apps/api/shell";
-import { computed, nextTick, ref, watch } from "vue";
+import { computed, ref, watch } from "vue";
 import PluginBackendSessionPanel from "../components/PluginBackendSessionPanel.vue";
 import InstalledPluginWorkspaceDetail from "../components/InstalledPluginWorkspaceDetail.vue";
 import PluginScaffoldWizard from "../components/PluginScaffoldWizard.vue";
 import PmSlotRow from "../components/PmSlotRow.vue";
 import PluginSlotEmbed from "../components/PluginSlotEmbed.vue";
+import HelpCircle from "../components/HelpCircle.vue";
 import { useAppToast } from "../composables/useAppToast";
 import {
   SLOT_CHAT_HEADER,
@@ -57,20 +58,6 @@ import {
 const pluginStore = usePluginStore();
 const roleStore = useRoleStore();
 const { showToast } = useAppToast();
-
-watch(
-  () =>
-    [pluginStore.panelVisible, pluginStore.pendingScrollToCommunityMarket] as const,
-  async ([vis, pend]) => {
-    if (!vis || !pend) return;
-    await nextTick();
-    document.getElementById("pm-community-index")?.scrollIntoView({
-      behavior: "smooth",
-      block: "start",
-    });
-    pluginStore.clearPendingScrollCommunityMarket();
-  },
-);
 
 const marketSourceSelected = ref("official");
 const marketSources = ref<string[]>([]);
@@ -1616,7 +1603,7 @@ async function onPackSelectedPlugin(): Promise<void> {
             <kbd class="pm-kbd">Ctrl</kbd>+<kbd class="pm-kbd">Shift</kbd>+<kbd class="pm-kbd">F</kbd>
             开关本窗口 ·
             <kbd class="pm-kbd">Ctrl</kbd>+<kbd class="pm-kbd">Shift</kbd>+<kbd class="pm-kbd">A</kbd>
-            定位「社区索引」 · 保存后插槽/启用状态建议重启应用生效
+            打开插件市场 · 保存后插槽/启用状态建议重启应用生效
           </p>
           <button type="button" class="pm-close" aria-label="关闭" @click="pluginStore.closePanel()">
             ×
@@ -1637,26 +1624,6 @@ async function onPackSelectedPlugin(): Promise<void> {
               @click="pluginStore.panelMainTab = 'plugins'"
             >
               插件总览
-            </button>
-            <button
-              type="button"
-              role="tab"
-              class="pm-tab"
-              :class="{ 'pm-tab--active': pluginStore.panelMainTab === 'modules' }"
-              :aria-selected="pluginStore.panelMainTab === 'modules'"
-              @click="pluginStore.panelMainTab = 'modules'"
-            >
-              模块（Module）
-            </button>
-            <button
-              type="button"
-              role="tab"
-              class="pm-tab"
-              :class="{ 'pm-tab--active': pluginStore.panelMainTab === 'profiles' }"
-              :aria-selected="pluginStore.panelMainTab === 'profiles'"
-              @click="pluginStore.panelMainTab = 'profiles'"
-            >
-              Profile
             </button>
             <button
               type="button"
@@ -1687,9 +1654,29 @@ async function onPackSelectedPlugin(): Promise<void> {
             role="tabpanel"
           >
           <section class="pm-section">
-            <h3 class="pm-h3">保存目标</h3>
+            <div class="pm-section-head">
+              <h3 class="pm-h3">插件市场</h3>
+              <div class="pm-section-actions">
+                <button
+                  type="button"
+                  class="pm-btn secondary pm-btn--sm"
+                  @click="
+                    pluginStore.closePanel();
+                    void pluginStore.openMarketPanel();
+                  "
+                >
+                  打开插件市场（Ctrl+Shift+A）
+                </button>
+              </div>
+            </div>
             <p class="pm-hint">
-              「全局默认」对所有角色生效并与各角色设置合并（整壳与插槽以当前角色为准；全局禁用插件为并集）。
+              市场（社区索引 / 模块 / Profile / 本地投放）已拆分为独立弹窗，避免和管理功能混在一起。
+            </p>
+          </section>
+          <section class="pm-section">
+            <h3 class="pm-h3">这些改动保存到哪里？</h3>
+            <p class="pm-hint">
+              选「当前角色」只影响现在这个角色；选「全局默认」会变成所有角色的默认值（会和每个角色自己的设置合并）。
             </p>
             <div class="pm-scope-row" role="group" aria-label="插件配置保存范围">
               <label class="pm-scope-label">
@@ -1831,7 +1818,7 @@ async function onPackSelectedPlugin(): Promise<void> {
             <p v-else class="pm-muted">未列出 recommended_plugins。</p>
           </section>
 
-          <section id="pm-community-index" class="pm-section">
+          <section v-if="false" id="pm-community-index" class="pm-section">
             <div class="pm-section-head">
               <h3 class="pm-h3">社区索引</h3>
               <div class="pm-section-actions">
@@ -2330,13 +2317,10 @@ async function onPackSelectedPlugin(): Promise<void> {
             <div class="pm-section-head">
               <div class="pm-h3-row">
                 <h3 class="pm-h3">已安装插件（最常用）</h3>
-                <details class="pm-help">
-                  <summary class="pm-help-btn" aria-label="已安装插件说明">?</summary>
-                  <div class="pm-help-pop">
-                    <p>先在这里管理“启用/禁用/更新”，再去「界面位置」调整插件出现在哪。</p>
-                    <p>这一块是日常使用频率最高的区域。</p>
-                  </div>
-                </details>
+                <HelpCircle label="已安装插件说明">
+                  <p>先在这里管理“启用/停用/更新”，再去「界面位置」调整插件出现在哪。</p>
+                  <p>这一块是日常使用频率最高的区域。</p>
+                </HelpCircle>
               </div>
               <div class="pm-section-actions">
                 <label class="pm-batch-toggle chk">
@@ -2379,14 +2363,11 @@ async function onPackSelectedPlugin(): Promise<void> {
               <button type="button" class="pm-btn secondary pm-btn--sm" @click="onBatchUpdate">
                 所选从 Git 更新
               </button>
-              <details class="pm-help pm-help--inline">
-                <summary class="pm-help-btn" aria-label="启停与更新说明">?</summary>
-                <div class="pm-help-pop">
-                  <p>“启用/停用”决定插件是否参与运行与渲染。</p>
-                  <p>“从 Git 更新”只对 git 安装的插件有效；被固定到 tag 的插件不能 pull。</p>
-                  <p>更新后建议重启应用让插槽渲染更稳定。</p>
-                </div>
-              </details>
+              <HelpCircle label="启停与更新说明" inline>
+                <p>“启用/停用”决定插件是否参与运行与渲染。</p>
+                <p>“从 Git 更新”只对 git 安装的插件有效；被固定到 tag 的插件不能 pull。</p>
+                <p>更新后建议重启应用让插槽渲染更稳定。</p>
+              </HelpCircle>
             </div>
             <div
               v-if="batchMode && batchSelectedCount > 0"
@@ -2501,7 +2482,7 @@ async function onPackSelectedPlugin(): Promise<void> {
           </div>
 
           <div
-            v-show="pluginStore.panelMainTab === 'modules'"
+            v-if="false"
             class="pm-tab-panel"
             role="tabpanel"
           >
@@ -2587,7 +2568,7 @@ async function onPackSelectedPlugin(): Promise<void> {
           </div>
 
           <div
-            v-show="pluginStore.panelMainTab === 'profiles'"
+            v-if="false"
             class="pm-tab-panel"
             role="tabpanel"
           >
