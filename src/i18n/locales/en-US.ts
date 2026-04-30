@@ -415,6 +415,58 @@ export const enUS = {
       submitFailed: "Submit failed",
     },
   },
+  pluginBackendSessionPanel: {
+    leadHtml:
+      "Below are the pack default and session-level overrides of <strong>settings.json → plugin_backends</strong>; it does not write to role pack files on disk.",
+    sources: {
+      packDefault: "Pack default",
+      sessionOverride: "Session override",
+      envOverride: "Env override",
+    },
+    modules: {
+      memory: "Memory",
+      emotion: "Emotion",
+      event: "Event",
+      prompt: "Prompt",
+      llm: "LLM",
+      agent: "Agent",
+    },
+    directoryPlugins: {
+      packLine: "Pack · directory_plugins: {v}",
+      effectiveLine: "Effective · directory_plugins: {v}",
+    },
+    meta: {
+      packTitle: "settings.json → plugin_backends",
+      packLabel: "Module backends",
+      sessionEffectiveTitle: "Session effective",
+      sessionEffectiveLabel: "Session effective",
+      hasSessionOverrideHint:
+        "Session override is enabled (current session only; not written to role pack).",
+      sourcesTitle: "Sources",
+      sourcesLabel: "Sources",
+    },
+    remoteLife: {
+      label: "Remote Life",
+      packDefaultHint: "Pack suggests enabled",
+    },
+    followPackDefault: "Follow pack default ({v})",
+    localMemory: {
+      placeholder: "provider_id; empty clears current session override",
+      applyToSession: "Apply to session",
+    },
+    debugSnapshot: {
+      label: "Debug snapshot",
+      copied: "Copied",
+      copyFailed: "Copy failed",
+    },
+    pack: {
+      label: "Pack plugin",
+      oneClick: "One-click pack (agent/llm)",
+      noTargetHint:
+        "Configure a target plugin in directory plugin slots first (agent or llm).",
+      done: "Packed: {path} (sha256={sha})",
+    },
+  },
   pluginManagerV2: {
     sources: {
       sessionOverride: "Session override",

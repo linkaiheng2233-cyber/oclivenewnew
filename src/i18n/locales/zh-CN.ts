@@ -401,6 +401,56 @@ export const zhCN = {
       submitFailed: "提交失败",
     },
   },
+  pluginBackendSessionPanel: {
+    leadHtml:
+      "以下为 <strong>settings.json → plugin_backends</strong> 的包默认与会话级覆盖；不写入磁盘角色包。",
+    sources: {
+      packDefault: "包默认",
+      sessionOverride: "会话覆盖",
+      envOverride: "环境覆盖",
+    },
+    modules: {
+      memory: "Memory",
+      emotion: "Emotion",
+      event: "Event",
+      prompt: "Prompt",
+      llm: "LLM",
+      agent: "Agent",
+    },
+    directoryPlugins: {
+      packLine: "包 · directory_plugins：{v}",
+      effectiveLine: "生效 · directory_plugins：{v}",
+    },
+    meta: {
+      packTitle: "settings.json → plugin_backends",
+      packLabel: "模块后端",
+      sessionEffectiveTitle: "会话生效",
+      sessionEffectiveLabel: "会话生效",
+      hasSessionOverrideHint: "当前会话已启用模块覆盖（仅本会话生效，不写入角色包）。",
+      sourcesTitle: "来源",
+      sourcesLabel: "来源",
+    },
+    remoteLife: {
+      label: "异地心声",
+      packDefaultHint: "包默认建议开",
+    },
+    followPackDefault: "跟随包默认（{v}）",
+    localMemory: {
+      placeholder: "provider_id，空串清除本会话覆盖",
+      applyToSession: "应用到本会话",
+    },
+    debugSnapshot: {
+      label: "调试快照",
+      copied: "已复制",
+      copyFailed: "复制失败",
+    },
+    pack: {
+      label: "打包插件",
+      oneClick: "一键打包（agent/llm）",
+      noTargetHint: "请先在目录插件槽位中配置目标插件（agent 或 llm）。",
+      done: "打包完成：{path}（sha256={sha}）",
+    },
+  },
   pluginManagerV2: {
     sources: {
       sessionOverride: "会话覆盖",
