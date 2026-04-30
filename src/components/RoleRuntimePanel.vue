@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { computed, ref, watch } from "vue";
+import { useI18n } from "vue-i18n";
 import { usePluginStore } from "../stores/pluginStore";
 import { useRoleStore } from "../stores/roleStore";
 import { useUiStore } from "../stores/uiStore";
@@ -17,6 +18,7 @@ const roleStore = useRoleStore();
 const uiStore = useUiStore();
 const pluginStore = usePluginStore();
 const { showToast } = useAppToast();
+const { t } = useI18n();
 const localFactor = ref(roleStore.roleInfo.eventImpactFactor);
 const busy = ref(false);
 const feedbackOpen = ref(false);
@@ -26,17 +28,17 @@ const feedbackMessage = ref("");
 
 const personalitySourceLabel = computed(() =>
   roleStore.roleInfo.personalitySource === "profile"
-    ? "档案（可变正文由对话维护）"
-    : "七维向量",
+    ? t("roleRuntimePanel.personality.sourceLabel.profile")
+    : t("roleRuntimePanel.personality.sourceLabel.vector"),
 );
 const personalitySourceHintParagraphs = computed(() =>
   roleStore.roleInfo.personalitySource === "profile"
     ? [
-        "人格来源为 profile：运行时以核心性格档案与数据库中的「可变性格档案」为准；界面七维多为从正文归纳的视图。",
-        "与 vector 模式（七维直接参与事件演化）不同；设计说明见仓库 docs/personality-archive-notes.md。",
+        t("roleRuntimePanel.personality.hints.profileP1"),
+        t("roleRuntimePanel.personality.hints.profileP2"),
       ]
     : [
-        "人格来源为 vector：事件与情绪按七维精细化调整；与 settings 中 evolution.personality_source 一致。",
+        t("roleRuntimePanel.personality.hints.vectorP1"),
       ],
 );
 const relationRows = computed(() =>
@@ -117,11 +119,11 @@ async function submitFeedback(): Promise<void> {
       role_version: roleStore.roleInfo.version ?? null,
       message: feedbackMessage.value,
     });
-    showToast("success", "已提交反馈（仅创作者可见）。");
+    showToast("success", t("roleRuntimePanel.toasts.submitted"));
     closeFeedback();
   } catch (e) {
     const msg = e instanceof Error ? e.message : String(e);
-    showToast("error", msg || "提交失败");
+    showToast("error", msg || t("roleRuntimePanel.toasts.submitFailed"));
   } finally {
     feedbackBusy.value = false;
   }
@@ -133,33 +135,38 @@ async function submitFeedback(): Promise<void> {
     <div class="meta">
       <p v-if="roleStore.roleInfo.description" class="desc">{{ roleStore.roleInfo.description }}</p>
       <p class="sub">
-        版本 {{ roleStore.roleInfo.version || "—" }} · 作者 {{ roleStore.roleInfo.author || "—" }}
+        {{
+          t("roleRuntimePanel.meta.versionAuthor", {
+            version: roleStore.roleInfo.version || "—",
+            author: roleStore.roleInfo.author || "—",
+          })
+        }}
       </p>
       <p class="sub personality-source-line">
         <span class="ps-inline">
-          人格来源：<strong>{{ personalitySourceLabel }}</strong>
+          {{ t("roleRuntimePanel.personality.sourceLabelTitle") }}：<strong>{{ personalitySourceLabel }}</strong>
           <HelpHint :paragraphs="personalitySourceHintParagraphs" />
         </span>
       </p>
     </div>
     <div class="runtime-backend-hint">
       <p class="sub">
-        模块后端、异地心声、会话覆盖与调试快照已迁至
+        {{ t("roleRuntimePanel.backendHint.prefix") }}
         <button type="button" class="link-open-backends" @click="openBackendsPanel">
-          插件与后端管理 → 后端模块
+          {{ t("roleRuntimePanel.backendHint.linkText") }}
         </button>
-        （Ctrl+Shift+F）
+        {{ t("roleRuntimePanel.backendHint.suffix") }}
       </p>
     </div>
     <div class="runtime-feedback">
-      <p class="sub">
-        用完觉得哪里不对？可以提交一条<strong>半私密反馈</strong>给创作者（本地保存，不公开展示）。
-      </p>
-      <button type="button" class="btn-feedback" @click="openFeedback">反馈此角色包</button>
+      <p class="sub" v-html="t('roleRuntimePanel.feedback.leadHtml')" />
+      <button type="button" class="btn-feedback" @click="openFeedback">
+        {{ t("roleRuntimePanel.feedback.openButton") }}
+      </button>
     </div>
     <template v-if="roleStore.roleInfo.userRelations.length > 0">
       <div class="row">
-        <label for="rel-select">关系</label>
+        <label for="rel-select">{{ t("roleRuntimePanel.fields.relation") }}</label>
         <select
           id="rel-select"
           class="select"
@@ -171,7 +178,7 @@ async function submitFeedback(): Promise<void> {
         </select>
       </div>
       <div class="row">
-        <label for="evolve-factor">事件影响</label>
+        <label for="evolve-factor">{{ t("roleRuntimePanel.fields.eventImpact") }}</label>
         <input
           id="evolve-factor"
           v-model.number="localFactor"
@@ -197,33 +204,31 @@ async function submitFeedback(): Promise<void> {
       @click="closeFeedback"
     >
       <div class="modal-card modal-card--wide" @click.stop>
-        <h2 class="modal-title">反馈此角色包</h2>
-        <p class="modal-sub">
-          这条反馈默认仅创作者可见（半私密），用于迭代角色包。请避免填写个人隐私信息。
-        </p>
+        <h2 class="modal-title">{{ t("roleRuntimePanel.feedbackModal.title") }}</h2>
+        <p class="modal-sub">{{ t("roleRuntimePanel.feedbackModal.sub") }}</p>
         <div class="modal-row">
-          <label class="modal-label">情绪标签（可选）</label>
+          <label class="modal-label">{{ t("roleRuntimePanel.feedbackModal.moodLabel") }}</label>
           <input
             v-model="feedbackMood"
             class="modal-input"
             type="text"
-            placeholder="例如：开心 / 难过 / 生气 / 困惑 / 无"
+            :placeholder="String(t('roleRuntimePanel.feedbackModal.moodPlaceholder'))"
             :disabled="feedbackBusy"
           />
         </div>
         <div class="modal-row">
-          <label class="modal-label">留言</label>
+          <label class="modal-label">{{ t("roleRuntimePanel.feedbackModal.messageLabel") }}</label>
           <textarea
             v-model="feedbackMessage"
             class="modal-textarea"
             rows="4"
-            placeholder="写下你遇到的问题/建议（必填）"
+            :placeholder="String(t('roleRuntimePanel.feedbackModal.messagePlaceholder'))"
             :disabled="feedbackBusy"
           />
         </div>
         <div class="modal-actions">
           <button type="button" class="btn-secondary" :disabled="feedbackBusy" @click="closeFeedback">
-            取消
+            {{ t("common.cancel") }}
           </button>
           <button
             type="button"
@@ -231,7 +236,11 @@ async function submitFeedback(): Promise<void> {
             :disabled="feedbackBusy || !feedbackMessage.trim()"
             @click="submitFeedback"
           >
-            {{ feedbackBusy ? "提交中…" : "提交反馈" }}
+            {{
+              feedbackBusy
+                ? t("roleRuntimePanel.feedbackModal.submitting")
+                : t("roleRuntimePanel.feedbackModal.submit")
+            }}
           </button>
         </div>
       </div>

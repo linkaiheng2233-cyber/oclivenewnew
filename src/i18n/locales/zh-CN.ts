@@ -353,6 +353,54 @@ export const zhCN = {
       confirmOverwrite: "本地已存在角色「{id}」。是否覆盖安装？",
     },
   },
+  roleRuntimePanel: {
+    meta: {
+      versionAuthor: "版本 {version} · 作者 {author}",
+    },
+    personality: {
+      sourceLabel: {
+        profile: "档案（可变正文由对话维护）",
+        vector: "七维向量",
+      },
+      sourceLabelTitle: "人格来源",
+      hints: {
+        profileP1:
+          "人格来源为 profile：运行时以核心性格档案与数据库中的「可变性格档案」为准；界面七维多为从正文归纳的视图。",
+        profileP2:
+          "与 vector 模式（七维直接参与事件演化）不同；设计说明见仓库 docs/personality-archive-notes.md。",
+        vectorP1:
+          "人格来源为 vector：事件与情绪按七维精细化调整；与 settings 中 evolution.personality_source 一致。",
+      },
+    },
+    backendHint: {
+      prefix: "模块后端、异地心声、会话覆盖与调试快照已迁至",
+      linkText: "插件与后端管理 → 后端模块",
+      suffix: "（Ctrl+Shift+F）",
+    },
+    feedback: {
+      leadHtml:
+        "用完觉得哪里不对？可以提交一条<strong>半私密反馈</strong>给创作者（本地保存，不公开展示）。",
+      openButton: "反馈此角色包",
+    },
+    fields: {
+      relation: "关系",
+      eventImpact: "事件影响",
+    },
+    feedbackModal: {
+      title: "反馈此角色包",
+      sub: "这条反馈默认仅创作者可见（半私密），用于迭代角色包。请避免填写个人隐私信息。",
+      moodLabel: "情绪标签（可选）",
+      moodPlaceholder: "例如：开心 / 难过 / 生气 / 困惑 / 无",
+      messageLabel: "留言",
+      messagePlaceholder: "写下你遇到的问题/建议（必填）",
+      submitting: "提交中…",
+      submit: "提交反馈",
+    },
+    toasts: {
+      submitted: "已提交反馈（仅创作者可见）。",
+      submitFailed: "提交失败",
+    },
+  },
   pluginManagerV2: {
     sources: {
       sessionOverride: "会话覆盖",

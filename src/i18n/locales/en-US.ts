@@ -365,6 +365,56 @@ export const enUS = {
         "Role “{id}” already exists locally. Overwrite install?",
     },
   },
+  roleRuntimePanel: {
+    meta: {
+      versionAuthor: "Version {version} · Author {author}",
+    },
+    personality: {
+      sourceLabel: {
+        profile: "Archive (mutable text maintained by chat)",
+        vector: "7D vector",
+      },
+      sourceLabelTitle: "Personality source",
+      hints: {
+        profileP1:
+          'Source=profile: runtime uses core personality + the database "mutable personality archive". The 7D view is summarized from text.',
+        profileP2:
+          "Different from vector mode (7D directly participates in evolution). See docs/personality-archive-notes.md.",
+        vectorP1:
+          "Source=vector: events and emotions are adjusted with fine-grained 7D; matches settings evolution.personality_source.",
+      },
+    },
+    backendHint: {
+      prefix:
+        "Module backends, Remote Life, session overrides and debug snapshots have moved to",
+      linkText: "Plugins & backends → Backends",
+      suffix: "(Ctrl+Shift+F)",
+    },
+    feedback: {
+      leadHtml:
+        'Feel something is off? You can send a <strong>semi-private feedback</strong> to the author (saved locally, not publicly displayed).',
+      openButton: "Feedback this role pack",
+    },
+    fields: {
+      relation: "Relation",
+      eventImpact: "Event impact",
+    },
+    feedbackModal: {
+      title: "Feedback this role pack",
+      sub:
+        "By default, this feedback is only visible to the author (semi-private) to iterate the role pack. Please avoid personal privacy information.",
+      moodLabel: "Mood tag (optional)",
+      moodPlaceholder: "e.g. happy / sad / angry / confused / none",
+      messageLabel: "Message",
+      messagePlaceholder: "Describe the issue/suggestion you encountered (required)",
+      submitting: "Submitting…",
+      submit: "Submit feedback",
+    },
+    toasts: {
+      submitted: "Feedback submitted (only visible to the author).",
+      submitFailed: "Submit failed",
+    },
+  },
   pluginManagerV2: {
     sources: {
       sessionOverride: "Session override",
