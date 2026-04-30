@@ -22,7 +22,15 @@ import {
 } from "../../stores/pluginStore";
 import { useAppToast } from "../../composables/useAppToast";
 import { useRoleStore } from "../../stores/roleStore";
-import { installPluginFromGit, setPluginPermissionGrant, setSessionPluginBackend } from "../../utils/tauri-api";
+import {
+  getPluginPermissionGrants,
+  installPluginFromGit,
+  listPermissionTokens,
+  setPluginPermissionGrant,
+  setSessionPluginBackend,
+  type PermissionTokenInfoDto,
+  type PluginPermissionGrantDto,
+} from "../../utils/tauri-api";
 
 const props = defineProps<{
   visible: boolean;
@@ -100,6 +108,150 @@ const missingPermsFor = (pluginId: string): string[] => {
   const grantedSet = new Set(granted);
   return declared.filter((p) => !grantedSet.has(p));
 };
+
+const permModalOpen = ref(false);
+const permPluginId = ref<string>("");
+const permLoading = ref(false);
+const permError = ref<string | null>(null);
+const permGrants = ref<PluginPermissionGrantDto[]>([]);
+const tokenInfoLoading = ref(false);
+const tokenInfoMap = ref<Map<string, PermissionTokenInfoDto>>(new Map());
+
+const permSorted = computed(() =>
+  [...(permGrants.value ?? [])].sort((a, b) =>
+    a.permission === b.permission ? 0 : a.permission < b.permission ? -1 : 1,
+  ),
+);
+
+const declaredPermsSorted = computed(() => {
+  const pid = permPluginId.value.trim();
+  const entry = pluginStore.catalog.find((c) => c.id === pid);
+  const raw = entry?.installMeta?.declaredPermissions ?? [];
+  return [...raw]
+    .map((s) => (s ?? "").trim())
+    .filter(Boolean)
+    .sort((a, b) => (a === b ? 0 : a < b ? -1 : 1));
+});
+
+const permEffective = computed(() => {
+  const declared = declaredPermsSorted.value;
+  const g = permSorted.value ?? [];
+  const enabledMap = new Map<string, boolean>();
+  for (const x of g) {
+    enabledMap.set(x.permission, x.enabled === true);
+  }
+  const tokens = new Set<string>();
+  for (const p of declared) tokens.add(p);
+  for (const x of g) tokens.add(x.permission);
+  const all = [...tokens].sort((a, b) => (a === b ? 0 : a < b ? -1 : 1));
+  return all.map((permission) => ({
+    permission,
+    enabled: enabledMap.get(permission) === true,
+    declared: declared.includes(permission),
+    info: tokenInfoMap.value.get(permission),
+  }));
+});
+
+const riskLabel = (risk: string | undefined): string => {
+  if (risk === "high") return "高风险";
+  if (risk === "medium") return "中风险";
+  if (risk === "low") return "低风险";
+  return "未知";
+};
+
+const riskClass = (risk: string | undefined): string => {
+  if (risk === "high") return "risk-high";
+  if (risk === "medium") return "risk-medium";
+  if (risk === "low") return "risk-low";
+  return "risk-unknown";
+};
+
+async function refreshTokenInfos(): Promise<void> {
+  tokenInfoLoading.value = true;
+  try {
+    const res = await listPermissionTokens();
+    const map = new Map<string, PermissionTokenInfoDto>();
+    for (const x of res.tokens ?? []) {
+      if (!x?.token) continue;
+      map.set(x.token, x);
+    }
+    tokenInfoMap.value = map;
+  } finally {
+    tokenInfoLoading.value = false;
+  }
+}
+
+async function refreshPerms(pid: string): Promise<void> {
+  const pluginId = pid.trim();
+  if (!pluginId) return;
+  permLoading.value = true;
+  permError.value = null;
+  try {
+    const res = await getPluginPermissionGrants(pluginId);
+    permGrants.value = res.grants ?? [];
+  } catch (e) {
+    permError.value = e instanceof Error ? e.message : String(e);
+  } finally {
+    permLoading.value = false;
+  }
+}
+
+async function openPermModal(pid: string): Promise<void> {
+  permPluginId.value = pid.trim();
+  permModalOpen.value = true;
+  if (tokenInfoMap.value.size === 0) void refreshTokenInfos();
+  void refreshPerms(pid);
+}
+
+function closePermModal(): void {
+  permModalOpen.value = false;
+  permPluginId.value = "";
+  permError.value = null;
+  permGrants.value = [];
+}
+
+async function onTogglePermission(permission: string, enabled: boolean) {
+  const pid = permPluginId.value.trim();
+  if (!pid || !permission.trim()) return;
+  permLoading.value = true;
+  try {
+    await setPluginPermissionGrant(pid, permission, enabled);
+    await refreshPerms(pid);
+    await pluginStore.refresh();
+    showToast("success", "权限已更新。");
+  } catch (e) {
+    showToast("error", e instanceof Error ? e.message : String(e));
+  } finally {
+    permLoading.value = false;
+  }
+}
+
+async function onGrantAllDeclared(): Promise<void> {
+  const pid = permPluginId.value.trim();
+  if (!pid) return;
+  const declared = declaredPermsSorted.value;
+  if (declared.length === 0) {
+    showToast("info", "该插件未声明任何权限。");
+    return;
+  }
+  const ok = window.confirm(
+    `将授予该插件全部声明权限（共 ${declared.length} 条）。\n\n提示：只给你信任的插件授权。\n\n继续吗？`,
+  );
+  if (!ok) return;
+  permLoading.value = true;
+  try {
+    for (const p of declared) {
+      await setPluginPermissionGrant(pid, p, true);
+    }
+    await refreshPerms(pid);
+    await pluginStore.refresh();
+    showToast("success", "已授予全部声明权限。");
+  } catch (e) {
+    showToast("error", e instanceof Error ? e.message : String(e));
+  } finally {
+    permLoading.value = false;
+  }
+}
 
 function toggleSlotContribution(pluginId: string, enabled: boolean) {
   const slot = pickedSlot.value.trim();
@@ -244,6 +396,94 @@ async function onApply(payload: Record<string, unknown>) {
 
 <template>
   <div class="pm2-root">
+    <Teleport to="body">
+      <div
+        v-if="permModalOpen"
+        class="pm2-modal-backdrop"
+        role="dialog"
+        aria-modal="true"
+        aria-label="插件权限"
+        @click.self="closePermModal"
+      >
+        <div class="pm2-modal" @click.stop>
+          <div class="pm2-modal-h">插件权限：{{ permPluginId }}</div>
+          <p v-if="tokenInfoLoading" class="pm2-muted">加载权限说明中…</p>
+          <div class="pm2-modal-actions">
+            <button
+              type="button"
+              class="pm2-btn secondary pm2-btn--sm"
+              @click="onGrantAllDeclared"
+            >
+              一键授予声明权限
+            </button>
+            <button
+              type="button"
+              class="pm2-btn secondary pm2-btn--sm"
+              @click="() => refreshPerms(permPluginId)"
+            >
+              刷新
+            </button>
+            <button type="button" class="pm2-btn pm2-btn--sm" @click="closePermModal">
+              关闭
+            </button>
+          </div>
+
+          <div v-if="declaredPermsSorted.length > 0" class="pm2-perms-declared">
+            <div class="pm2-perms-subh">声明（来自索引/安装元数据）</div>
+            <ul class="pm2-perms-list">
+              <li v-for="p in declaredPermsSorted" :key="p" class="pm2-perms-li">
+                <span class="pm2-perms-token">{{ p }}</span>
+                <span v-if="tokenInfoMap.get(p)?.title" class="pm2-muted">
+                  · {{ tokenInfoMap.get(p)?.title }}
+                </span>
+              </li>
+            </ul>
+          </div>
+
+          <p v-if="permError" class="pm2-err">{{ permError }}</p>
+          <p v-else-if="permLoading" class="pm2-muted">加载中…</p>
+          <p v-else-if="permEffective.length === 0" class="pm2-muted">
+            暂无权限信息（可能为旧版本安装，或该插件未声明任何权限）。
+          </p>
+          <ul v-else class="pm2-perms-list">
+            <li v-for="p in permEffective" :key="p.permission" class="pm2-perms-li">
+              <label class="pm2-perms-row">
+                <input
+                  type="checkbox"
+                  :disabled="permLoading"
+                  :checked="p.enabled === true"
+                  @change="
+                    onTogglePermission(
+                      p.permission,
+                      ($event.target as HTMLInputElement).checked,
+                    )
+                  "
+                />
+                <span class="pm2-perms-token">{{ p.permission }}</span>
+                <span v-if="p.declared !== true" class="pm2-perms-tag">额外</span>
+                <span
+                  v-if="p.info?.risk"
+                  class="pm2-perms-risk"
+                  :class="riskClass(p.info?.risk)"
+                >
+                  {{ riskLabel(p.info?.risk) }}
+                </span>
+              </label>
+              <div v-if="p.info?.title || p.info?.description" class="pm2-perms-desc">
+                <div v-if="p.info?.title" class="pm2-perms-title">{{ p.info?.title }}</div>
+                <div v-if="p.info?.description" class="pm2-muted">
+                  {{ p.info?.description }}
+                </div>
+              </div>
+            </li>
+          </ul>
+          <p class="pm2-muted" style="margin: 8px 0 0">
+            关闭权限后，对应能力会被宿主拒绝。部分变更可能需要重启插件进程生效。
+          </p>
+        </div>
+      </div>
+    </Teleport>
+
     <header class="pm2-head">
       <div>
         <h2 class="pm2-title">{{ term("title.v2") }}</h2>
@@ -321,8 +561,9 @@ async function onApply(payload: Record<string, unknown>) {
               >
                 <p>该插件声明了权限，但还没全部授权，调用时可能会被拦截。</p>
                 <p>缺少：{{ missingPermsFor(id).join("、") }}</p>
-                <p>处理：到“插件管理（V1）→ 已安装插件 → 权限”里勾选授权。</p>
+                <p>处理：点右侧「权限」按钮补授权即可。</p>
               </HelpCircle>
+              <button type="button" class="pm2-mini" @click="openPermModal(id)">权限</button>
               <button
                 type="button"
                 class="pm2-mini"
