@@ -204,6 +204,12 @@ export const zhCN = {
     },
   },
   pluginManagerV2: {
+    legend: {
+      aria: "状态说明",
+      enabled: "已启用：当前配置可直接生效",
+      pending: "还需配置：通常缺少目录插件 ID",
+      disabled: "已关闭：当前链路未启用",
+    },
     slots: {
       settingsPanel: "设置页（插件设置）",
       settingsPlugins: "插件管理页内嵌",
@@ -217,6 +223,15 @@ export const zhCN = {
       debugDock: "调试面板",
     },
     permissions: {
+      dialogAria: "插件权限",
+      loadingTokenInfo: "加载权限说明中…",
+      grantAllDeclared: "一键授予声明权限",
+      grantMissing: "补齐缺失",
+      declaredTitle: "声明（来自索引/安装元数据）",
+      loading: "加载中…",
+      noPermInfo: "暂无权限信息（可能为旧版本安装，或该插件未声明任何权限）。",
+      extraTag: "额外",
+      hint: "关闭权限后，对应能力会被宿主拒绝。部分变更可能需要重启插件进程生效。",
       risk: {
         high: "高风险",
         medium: "中风险",
@@ -234,7 +249,25 @@ export const zhCN = {
       toastGrantedMissing: "已补齐缺失权限。",
     },
     slotDashboard: {
+      aria: "快速插槽配置",
+      title: "把插件放到界面里",
+      helpLabel: "这块是干什么的？",
+      helpLine1: "你只需要两步：先选“插槽”（插件要显示在哪），再勾选要显示的插件。",
+      helpLine2: "如果某插件没有在 manifest 里声明这个插槽，这里不会出现它。",
       toastSaved: "已保存：插槽位置与启用状态已写入配置。",
+    },
+    localLlama: {
+      effective: {
+        notSet: "未设置",
+        directoryWithId: "directory · {id}",
+        directoryNoId: "directory · (未指定插件)",
+      },
+      toastNotScanned: "未扫描到目录插件：{id}",
+      confirmEnable:
+        "启用本地 Llama（当前会话）将授予插件以下权限：\n{list}\n\n并把 LLM 后端切到 directory：{id}\n\n继续吗？",
+      toastEnabled: "已启用本地 Llama：{id}（当前会话）",
+      confirmClearSessionOverride: "将清除当前会话的 LLM 后端覆盖，恢复角色包/默认设置。继续吗？",
+      toastClearedOverride: "已清除当前会话的 LLM 覆盖。",
     },
     gitInstall: {
       confirm:

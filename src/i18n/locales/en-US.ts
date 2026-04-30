@@ -210,6 +210,12 @@ export const enUS = {
     },
   },
   pluginManagerV2: {
+    legend: {
+      aria: "Status legend",
+      enabled: "Enabled: effective immediately",
+      pending: "Needs setup: usually missing directory plugin id",
+      disabled: "Disabled: this chain is not enabled",
+    },
     slots: {
       settingsPanel: "Settings page (plugin settings)",
       settingsPlugins: "Plugin Manager embedded area",
@@ -223,6 +229,17 @@ export const enUS = {
       debugDock: "Debug panel",
     },
     permissions: {
+      dialogAria: "Plugin permissions",
+      loadingTokenInfo: "Loading permission descriptions…",
+      grantAllDeclared: "Grant all declared permissions",
+      grantMissing: "Grant missing",
+      declaredTitle: "Declared (from index / install metadata)",
+      loading: "Loading…",
+      noPermInfo:
+        "No permission info (may be installed by an older version, or the plugin declares no permissions).",
+      extraTag: "Extra",
+      hint:
+        "After disabling a permission, the host will deny the capability. Some changes may require restarting the plugin process.",
       risk: {
         high: "High risk",
         medium: "Medium risk",
@@ -240,7 +257,27 @@ export const enUS = {
       toastGrantedMissing: "Missing permissions granted.",
     },
     slotDashboard: {
+      aria: "Quick slot configuration",
+      title: "Put plugins into the UI",
+      helpLabel: "What is this for?",
+      helpLine1: "Two steps: pick a slot (where the plugin shows), then check plugins to show.",
+      helpLine2:
+        "If a plugin doesn't declare the slot in its manifest, it won't appear here.",
       toastSaved: "Saved: slot order and enabled state written to config.",
+    },
+    localLlama: {
+      effective: {
+        notSet: "not set",
+        directoryWithId: "directory · {id}",
+        directoryNoId: "directory · (plugin id not set)",
+      },
+      toastNotScanned: "Directory plugin not found: {id}",
+      confirmEnable:
+        "Enabling local Llama (current session) will grant these permissions:\n{list}\n\nAnd switch LLM backend to directory: {id}\n\nContinue?",
+      toastEnabled: "Local Llama enabled: {id} (current session)",
+      confirmClearSessionOverride:
+        "Clear current session LLM backend override and restore role pack/default settings. Continue?",
+      toastClearedOverride: "Current session LLM override cleared.",
     },
     gitInstall: {
       confirm:

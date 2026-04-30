@@ -359,8 +359,11 @@ const llmEffectiveLabel = computed(() => {
   const llm = String(eff?.llm ?? "").trim();
   const dp = eff?.directory_plugins as any;
   const dirId = String(dp?.llm ?? "").trim();
-  if (!llm) return "未设置";
-  if (llm === "directory") return dirId ? `directory · ${dirId}` : "directory · (未指定插件)";
+  if (!llm) return String(t("pluginManagerV2.localLlama.effective.notSet"));
+  if (llm === "directory")
+    return dirId
+      ? String(t("pluginManagerV2.localLlama.effective.directoryWithId", { id: dirId }))
+      : String(t("pluginManagerV2.localLlama.effective.directoryNoId"));
   return llm;
 });
 
@@ -369,12 +372,17 @@ async function onEnableLocalLlamaBasic(): Promise<void> {
   const pid = localLlamaPluginIdDraft.value.trim();
   if (!roleId || !pid) return;
   if (!localLlamaPluginInstalled.value) {
-    showToast("error", `未扫描到目录插件：${pid}`);
+    showToast("error", String(t("pluginManagerV2.localLlama.toastNotScanned", { id: pid })));
     return;
   }
   const declaredPerms = ["process:spawn", "network:*"];
   const ok = window.confirm(
-    `启用本地 Llama（当前会话）将授予插件以下权限：\n${declaredPerms.map((p) => `- ${p}`).join("\n")}\n\n并把 LLM 后端切到 directory：${pid}\n\n继续吗？`,
+    String(
+      t("pluginManagerV2.localLlama.confirmEnable", {
+        list: declaredPerms.map((p) => `- ${p}`).join("\n"),
+        id: pid,
+      }),
+    ),
   );
   if (!ok) return;
   try {
@@ -390,7 +398,7 @@ async function onEnableLocalLlamaBasic(): Promise<void> {
       pid,
     );
     roleStore.applyRoleInfo(info);
-    showToast("success", `已启用本地 Llama：${pid}（当前会话）`);
+    showToast("success", String(t("pluginManagerV2.localLlama.toastEnabled", { id: pid })));
   } catch (e) {
     showToast("error", e instanceof Error ? e.message : String(e));
   }
@@ -399,12 +407,12 @@ async function onEnableLocalLlamaBasic(): Promise<void> {
 async function onDisableSessionLlmOverride(): Promise<void> {
   const roleId = (roleStore.currentRoleId ?? "").trim();
   if (!roleId) return;
-  const ok = window.confirm("将清除当前会话的 LLM 后端覆盖，恢复角色包/默认设置。继续吗？");
+  const ok = window.confirm(String(t("pluginManagerV2.localLlama.confirmClearSessionOverride")));
   if (!ok) return;
   try {
     const info = await setSessionPluginBackend(roleId, "llm", null);
     roleStore.applyRoleInfo(info);
-    showToast("success", "已清除当前会话的 LLM 覆盖。");
+    showToast("success", String(t("pluginManagerV2.localLlama.toastClearedOverride")));
   } catch (e) {
     showToast("error", e instanceof Error ? e.message : String(e));
   }
@@ -448,19 +456,19 @@ async function onApply(payload: Record<string, unknown>) {
         class="pm2-modal-backdrop"
         role="dialog"
         aria-modal="true"
-        aria-label="插件权限"
+        :aria-label="String(t('pluginManagerV2.permissions.dialogAria'))"
         @click.self="closePermModal"
       >
         <div class="pm2-modal" @click.stop>
           <div class="pm2-modal-h">插件权限：{{ permPluginId }}</div>
-          <p v-if="tokenInfoLoading" class="pm2-muted">加载权限说明中…</p>
+          <p v-if="tokenInfoLoading" class="pm2-muted">{{ t("pluginManagerV2.permissions.loadingTokenInfo") }}</p>
           <div class="pm2-modal-actions">
             <button
               type="button"
               class="pm2-btn secondary pm2-btn--sm"
               @click="onGrantAllDeclared"
             >
-              一键授予声明权限
+              {{ t("pluginManagerV2.permissions.grantAllDeclared") }}
             </button>
             <button
               v-if="missingPermsFor(permPluginId).length"
@@ -469,22 +477,22 @@ async function onApply(payload: Record<string, unknown>) {
               @click="onGrantMissingDeclared"
               :title="`补齐缺失：${missingPermsFor(permPluginId).join('、')}`"
             >
-              补齐缺失
+              {{ t("pluginManagerV2.permissions.grantMissing") }}
             </button>
             <button
               type="button"
               class="pm2-btn secondary pm2-btn--sm"
               @click="() => refreshPerms(permPluginId)"
             >
-              刷新
+              {{ t("common.refresh") }}
             </button>
             <button type="button" class="pm2-btn pm2-btn--sm" @click="closePermModal">
-              关闭
+              {{ t("common.close") }}
             </button>
           </div>
 
           <div v-if="declaredPermsSorted.length > 0" class="pm2-perms-declared">
-            <div class="pm2-perms-subh">声明（来自索引/安装元数据）</div>
+            <div class="pm2-perms-subh">{{ t("pluginManagerV2.permissions.declaredTitle") }}</div>
             <ul class="pm2-perms-list">
               <li v-for="p in declaredPermsSorted" :key="p" class="pm2-perms-li">
                 <span class="pm2-perms-token">{{ p }}</span>
@@ -496,9 +504,9 @@ async function onApply(payload: Record<string, unknown>) {
           </div>
 
           <p v-if="permError" class="pm2-err">{{ permError }}</p>
-          <p v-else-if="permLoading" class="pm2-muted">加载中…</p>
+          <p v-else-if="permLoading" class="pm2-muted">{{ t("pluginManagerV2.permissions.loading") }}</p>
           <p v-else-if="permEffective.length === 0" class="pm2-muted">
-            暂无权限信息（可能为旧版本安装，或该插件未声明任何权限）。
+            {{ t("pluginManagerV2.permissions.noPermInfo") }}
           </p>
           <ul v-else class="pm2-perms-list">
             <li v-for="p in permEffective" :key="p.permission" class="pm2-perms-li">
@@ -515,7 +523,7 @@ async function onApply(payload: Record<string, unknown>) {
                   "
                 />
                 <span class="pm2-perms-token">{{ p.permission }}</span>
-                <span v-if="p.declared !== true" class="pm2-perms-tag">额外</span>
+                <span v-if="p.declared !== true" class="pm2-perms-tag">{{ t("pluginManagerV2.permissions.extraTag") }}</span>
                 <span
                   v-if="p.info?.risk"
                   class="pm2-perms-risk"
@@ -533,7 +541,7 @@ async function onApply(payload: Record<string, unknown>) {
             </li>
           </ul>
           <p class="pm2-muted" style="margin: 8px 0 0">
-            关闭权限后，对应能力会被宿主拒绝。部分变更可能需要重启插件进程生效。
+            {{ t("pluginManagerV2.permissions.hint") }}
           </p>
         </div>
       </div>
@@ -551,22 +559,22 @@ async function onApply(payload: Record<string, unknown>) {
         <button type="button" class="pm2-btn" @click="emit('close')">{{ term("action.close") }}</button>
       </div>
     </header>
-    <div class="pm2-legend" aria-label="状态说明">
-      <span class="pm2-legend-item is-enabled">已启用：当前配置可直接生效</span>
-      <span class="pm2-legend-item is-pending">还需配置：通常缺少目录插件 ID</span>
-      <span class="pm2-legend-item is-disabled">已关闭：当前链路未启用</span>
+    <div class="pm2-legend" :aria-label="String(t('pluginManagerV2.legend.aria'))">
+      <span class="pm2-legend-item is-enabled">{{ t("pluginManagerV2.legend.enabled") }}</span>
+      <span class="pm2-legend-item is-pending">{{ t("pluginManagerV2.legend.pending") }}</span>
+      <span class="pm2-legend-item is-disabled">{{ t("pluginManagerV2.legend.disabled") }}</span>
     </div>
 
-    <section class="pm2-slotdash" aria-label="快速插槽配置">
+    <section class="pm2-slotdash" :aria-label="String(t('pluginManagerV2.slotDashboard.aria'))">
       <div class="pm2-slotdash-head">
         <div class="pm2-slotdash-title">
-          <h3 class="pm2-h3">把插件放到界面里</h3>
-          <HelpCircle label="这块是干什么的？" inline>
-            <p>你只需要两步：先选“插槽”（插件要显示在哪），再勾选要显示的插件。</p>
-            <p>如果某插件没有在 manifest 里声明这个插槽，这里不会出现它。</p>
+          <h3 class="pm2-h3">{{ t("pluginManagerV2.slotDashboard.title") }}</h3>
+          <HelpCircle :label="String(t('pluginManagerV2.slotDashboard.helpLabel'))" inline>
+            <p>{{ t("pluginManagerV2.slotDashboard.helpLine1") }}</p>
+            <p>{{ t("pluginManagerV2.slotDashboard.helpLine2") }}</p>
           </HelpCircle>
         </div>
-        <button type="button" class="pm2-btn" @click="onSaveSlotDashboard">保存</button>
+        <button type="button" class="pm2-btn" @click="onSaveSlotDashboard">{{ t("common.save") }}</button>
       </div>
 
       <div class="pm2-slotdash-row">
