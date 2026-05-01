@@ -1627,7 +1627,7 @@ export const zhCN = {
     },
   },
   expertModels: {
-    title: "Expert Models（Module 9）",
+    title: "专家模型设施（第九模块）",
     subtitle:
       "选择 Base GGUF + LoRA 强度，并可选覆盖 PromptStyle。会话覆盖优先于角色默认；不设置时不改变现有行为。",
     common: {
@@ -1659,7 +1659,7 @@ export const zhCN = {
     },
     confirm: {
       rollbackLastRun:
-        "将回滚到上一次已应用的配置（Module 9 Ctrl+Z），并重新应用到当前会话。\n提示：可在「Run 历史」里回滚到任意一次。\n继续吗？",
+        "将回滚到上一次已应用的配置（第九模块 Ctrl+Z），并重新应用到当前会话。\n提示：可在「Run 历史」里回滚到任意一次。\n继续吗？",
       retryRunApply:
         "将重试此目标配置并重新应用到当前会话：\nBase={base} / LoRA={loras} / PromptStyle={promptStyle}\n继续吗？",
       exportWorkflowFile:
@@ -1670,8 +1670,8 @@ export const zhCN = {
       clearRunsAll: "将清空当前会话的 Run 历史（全部）。继续吗？",
       clearRunsWithMode: "{modeLabel}。{keepPinned}\n继续吗？",
       clearSessionOverrideAndApply:
-        "将清除当前会话的 Expert Models 覆盖，并回退到角色默认/角色包默认。继续吗？",
-      clearRoleDefault: "将清除该角色的 Expert Models 默认配置（不会影响角色包原文件）。继续吗？",
+        "将清除当前会话的专家模型设施覆盖，并回退到角色默认/角色包默认。继续吗？",
+      clearRoleDefault: "将清除该角色的专家模型设施默认配置（不会影响角色包原文件）。继续吗？",
     },
     runHistory: {
       errors: {
@@ -1732,7 +1732,7 @@ export const zhCN = {
       goGrant: "去授权",
     },
     workflows: {
-      title: "工作流（第九模块配置包）",
+      title: "工作流（专家模型设施配置包）",
       nameLabel: "名称",
       namePlaceholder: "给工作流起个名字…",
       libraryLabel: "库",
@@ -1763,7 +1763,7 @@ export const zhCN = {
       label: "编辑器",
       canvas: "画布（连线）",
       form: "表单",
-      canvasHint: "提示：画布会把节点位置与连线写入 ExpertGraph（用于 M2 编译）。",
+      canvasHint: "提示：画布会把节点位置与连线写入专家图 ExpertGraph（用于 M2 编译）。",
     },
     canvas: {
       actions: {

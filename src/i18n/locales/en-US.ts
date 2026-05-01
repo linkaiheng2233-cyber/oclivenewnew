@@ -1692,7 +1692,7 @@ export const enUS = {
     },
   },
   expertModels: {
-    title: "Expert Models (Module 9)",
+    title: "Expert Models Facility (Module 9)",
     subtitle:
       "Pick a Base GGUF + LoRA strengths, and optionally override PromptStyle. Session override takes priority over role default; leaving empty keeps current behavior.",
     common: {
@@ -1725,7 +1725,7 @@ export const enUS = {
     },
     confirm: {
       rollbackLastRun:
-        "Rollback to last applied config (Module 9 Ctrl+Z) and re-apply to current session.\nTip: you can rollback to any run in Run History.\nContinue?",
+        "Rollback to last applied config (Expert Models Facility: Ctrl+Z) and re-apply to current session.\nTip: you can rollback to any run in Run History.\nContinue?",
       retryRunApply:
         "Retry this target config and re-apply to current session:\nBase={base} / LoRA={loras} / PromptStyle={promptStyle}\nContinue?",
       exportWorkflowFile:
@@ -1736,9 +1736,9 @@ export const enUS = {
       clearRunsAll: "Clear current session Run History (all). Continue?",
       clearRunsWithMode: "{modeLabel}.{keepPinned}\nContinue?",
       clearSessionOverrideAndApply:
-        "Clear current session Expert Models override and rollback to role default / role pack default.\nContinue?",
+        "Clear the Expert Models Facility session override and rollback to role default / role pack default.\nContinue?",
       clearRoleDefault:
-        "Clear this role's Expert Models default (will not change role pack files).\nContinue?",
+        "Clear this role's Expert Models Facility default (will not change role pack files).\nContinue?",
     },
     runHistory: {
       errors: {
@@ -1829,7 +1829,7 @@ export const enUS = {
       goGrant: "Grant permissions",
     },
     workflows: {
-      title: "Workflows (Module 9 packages)",
+      title: "Workflows (Expert Models Facility packages)",
       nameLabel: "Name",
       namePlaceholder: "Name this workflow…",
       libraryLabel: "Library",
