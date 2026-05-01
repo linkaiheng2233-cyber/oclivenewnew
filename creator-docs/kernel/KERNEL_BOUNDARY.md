@@ -14,6 +14,8 @@
   - **[KERNEL_BASELINE_V1.md](./KERNEL_BASELINE_V1.md)**
 - **Module 8：Frontend Shell（发行版 UI 模块�?*�?
   - **[MODULE_8_FRONTEND_SHELL.md](./MODULE_8_FRONTEND_SHELL.md)**
+- **Module 9：专家模型设施（内核托管）**
+  - **[MODULE_9_EXPERT_MODELS_FACILITY.md](./MODULE_9_EXPERT_MODELS_FACILITY.md)**
 
 ---
 
@@ -79,6 +81,12 @@
 - Prompt：`prompt_builder`、`prompt_assembler`
 - 策略：`policy`、`affect_policy`
 - Agent：`agent`
+
+### 2.9 专家模型设施（Module 9）
+
+- **简称**：专家模型设施。**全称**：专家模型设施模块（与 UI 文案 *Expert Models / Module 9* 互参）。
+- **定位**：内核托管的 **配置 / 资产型设施**（`role_runtime` JSON、`ExpertModelsRepository`、图编译、Prompt 风格覆盖等），**不是** `PluginBackends` 中与 memory 平行的路由槽。
+- **详述**：[MODULE_9_EXPERT_MODELS_FACILITY.md](./MODULE_9_EXPERT_MODELS_FACILITY.md)
 
 ---
 

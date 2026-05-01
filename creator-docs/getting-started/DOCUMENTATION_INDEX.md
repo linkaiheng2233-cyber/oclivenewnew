@@ -41,6 +41,7 @@ Creator and plugin docs live under the repo root `creator-docs/` (grouped by top
 | **配置文件位置**（`plugin_state`、`ui.json`、`oclive_last_role_id`） | **[../guides/CONFIGURATION_FILES.md](../guides/CONFIGURATION_FILES.md)** |
 | **开源协议怎么定（主程序/官方插件/第三方）** | **[../LICENSE_POLICY.md](../LICENSE_POLICY.md)** |
 | **我想管理插件（启用/停用/拖拽排序/本地 zip 更新）** | **[../plugin-and-architecture/DIRECTORY_PLUGINS.md](../plugin-and-architecture/DIRECTORY_PLUGINS.md)**（插件管理面板，快捷键 `Ctrl+Shift+F`） |
+| **第九模块：专家模型设施（全称：专家模型设施模块；ExpertGraph / 侧车装配 / Prompt 风格覆盖）** | **[../kernel/MODULE_9_EXPERT_MODELS_FACILITY.md](../kernel/MODULE_9_EXPERT_MODELS_FACILITY.md)** · 边界总览 **[../kernel/KERNEL_BOUNDARY.md](../kernel/KERNEL_BOUNDARY.md)** |
 | **mumu 默认前端模块（chat.header / chat_toolbar / role.detail / sidebar / settings.panel）** | **[../FAQ.md](../FAQ.md)**（用户向 Q&A） |
 | **mumu 模块发版前验收清单** | **[../guides/MUMU_UI_ACCEPTANCE_CHECKLIST.md](../guides/MUMU_UI_ACCEPTANCE_CHECKLIST.md)** |
 | **插件 FAQ（Vue 不显示、iframe 调试、依赖等）** | **[../FAQ.md](../FAQ.md)** |
@@ -82,7 +83,8 @@ Creator and plugin docs live under the repo root `creator-docs/` (grouped by top
 
 1. [../plugin-and-architecture/EXTENSION_POINTS.md](../plugin-and-architecture/EXTENSION_POINTS.md)  
 2. [../plugin-and-architecture/HOW_TO_REPLACE_MODULES.md](../plugin-and-architecture/HOW_TO_REPLACE_MODULES.md)  
-3. 源码：`crates/oclive_kernel_runtime/src/domain/plugin_host.rs`、`src-tauri/src/infrastructure/remote_plugin/`、**`src-tauri/src/infrastructure/directory_plugins/`**（目录插件扫描与懒启动）  
+3. [../kernel/MODULE_9_EXPERT_MODELS_FACILITY.md](../kernel/MODULE_9_EXPERT_MODELS_FACILITY.md) — 第九模块术语与与 `plugin_backends` 的边界  
+4. 源码：`crates/oclive_kernel_runtime/src/domain/plugin_host.rs`、`src-tauri/src/infrastructure/remote_plugin/`、**`src-tauri/src/infrastructure/directory_plugins/`**（目录插件扫描与懒启动）  
 
 ---
 
