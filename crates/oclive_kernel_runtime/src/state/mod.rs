@@ -1,7 +1,4 @@
-// Stage 1 migration: `resolve_roles_dir` lives in this crate.
-//
-// Next step: migrate `AppState` and its dependencies here, then remove the dependency
-// on `oclivenewnew-tauri` entirely.
+// Kernel-side `resolve_roles_dir` 与 `KernelAppState`。
 
 use std::fs;
 use std::path::{Path, PathBuf};

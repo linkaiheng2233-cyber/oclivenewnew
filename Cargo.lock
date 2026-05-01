@@ -2763,7 +2763,6 @@ dependencies = [
  "notify",
  "oclive_core",
  "oclive_validation",
- "oclivenewnew-tauri",
  "once_cell",
  "parking_lot",
  "reqwest",

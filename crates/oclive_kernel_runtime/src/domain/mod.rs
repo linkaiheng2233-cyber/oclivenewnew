@@ -29,10 +29,8 @@ pub mod relation_engine;
 pub mod remote_life_prompt;
 pub mod repository;
 pub mod role_manager;
+pub mod role_manifest_validate;
 pub mod user_emotion_analyzer;
 pub mod user_identity;
 
-// Temporary shim: re-export the rest from `oclivenewnew-tauri`.
-//
-// Goal: progressively migrate modules here and remove this dependency.
 pub use local_plugin_bridge::LOCAL_PLUGIN_SCHEMA_VERSION;

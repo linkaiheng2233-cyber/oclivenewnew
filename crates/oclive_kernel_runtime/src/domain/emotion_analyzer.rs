@@ -17,20 +17,6 @@ pub struct EmotionResult {
     pub neutral: f64,
 }
 
-impl From<oclivenewnew_tauri::domain::emotion_analyzer::EmotionResult> for EmotionResult {
-    fn from(value: oclivenewnew_tauri::domain::emotion_analyzer::EmotionResult) -> Self {
-        Self {
-            joy: value.joy,
-            sadness: value.sadness,
-            anger: value.anger,
-            fear: value.fear,
-            surprise: value.surprise,
-            disgust: value.disgust,
-            neutral: value.neutral,
-        }
-    }
-}
-
 impl EmotionResult {
     /// 转为 `models::Emotion`（与 `EmotionAnalyzer::get_dominant_emotion` 一致）
     pub fn to_emotion(&self) -> Emotion {

@@ -1,10 +1,10 @@
 //! JSON-RPC：`llm.generate` / `llm.generate_tag`
 
+use crate::error::{AppError, Result};
 use crate::infrastructure::llm::LlmClient;
 use crate::infrastructure::remote_plugin::config::RemotePluginHttpConfig;
 use crate::infrastructure::remote_plugin::jsonrpc::{self, RemoteRpcChannel};
 use async_trait::async_trait;
-use oclivenewnew_tauri::error::{AppError, Result};
 use serde_json::json;
 
 const METHOD_LLM_GENERATE: &str = "llm.generate";

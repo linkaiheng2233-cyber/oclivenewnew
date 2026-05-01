@@ -3,12 +3,11 @@ name = "oclive_kernel_runtime"
 version = "0.1.0"
 edition = "2021"
 license = "AGPL-3.0"
-description = "Oclive kernel runtime (no tauri): state, domain, infrastructure and OOCP bindings"
+description = "Oclive kernel runtime (standalone): state, domain, infrastructure and OOCP bindings"
 
 [dependencies]
 oclive_core = { path = "../oclive_core" }
 oclive_validation = { path = "../oclive_validation" }
-oclivenewnew-tauri = { path = "../../src-tauri", default-features = false }
 
 serde = { version = "1.0", features = ["derive"] }
 serde_json = "1.0"

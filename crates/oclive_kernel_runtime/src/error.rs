@@ -52,23 +52,6 @@ impl AppError {
     }
 }
 
-impl From<oclivenewnew_tauri::error::AppError> for AppError {
-    fn from(value: oclivenewnew_tauri::error::AppError) -> Self {
-        use oclivenewnew_tauri::error::AppError as T;
-        match value {
-            T::DatabaseError(s) => Self::DatabaseError(s),
-            T::IoError(e) => Self::IoError(e),
-            T::OllamaError(s) => Self::OllamaError(s),
-            T::RoleNotFound(s) => Self::RoleNotFound(s),
-            T::RolePackExists(s) => Self::RolePackExists(s),
-            T::InvalidParameter(s) => Self::InvalidParameter(s),
-            T::SerializationError(e) => Self::SerializationError(e),
-            T::Unknown(s) => Self::Unknown(s),
-            T::TransactionError { code, message } => Self::TransactionError { code, message },
-        }
-    }
-}
-
 #[cfg(test)]
 mod tests {
     use super::*;
