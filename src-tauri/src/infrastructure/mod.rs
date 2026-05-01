@@ -7,7 +7,7 @@ pub mod cloud_llm;
 pub mod db;
 pub mod deep_link;
 pub mod directory_plugins;
-pub mod function_call_parser;
+pub use oclive_kernel_runtime::infrastructure::function_call_parser;
 pub mod hotkey_bindings;
 pub mod llm;
 pub mod llm_params;
