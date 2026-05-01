@@ -992,22 +992,20 @@ pub async fn expert_models_clear_runs(
     let mut runs = parse_run_entries(raw);
     let mode = req.mode.as_deref().unwrap_or("all");
     let keep_pinned = req.keep_pinned.unwrap_or(mode != "all");
-    runs = runs
-        .into_iter()
-        .filter(|r| {
-            if keep_pinned && r.pinned {
-                return true;
-            }
-            let ok = r.apply.as_ref().map(|a| a.ok);
-            let should_remove = match mode {
-                "ok" => ok == Some(true),
-                "failed" => ok == Some(false),
-                "unpinned" => !r.pinned,
-                "all" | _ => true,
-            };
-            !should_remove
-        })
-        .collect();
+    runs.retain(|r| {
+        if keep_pinned && r.pinned {
+            return true;
+        }
+        let ok = r.apply.as_ref().map(|a| a.ok);
+        let should_remove = match mode {
+            "ok" => ok == Some(true),
+            "failed" => ok == Some(false),
+            "unpinned" => !r.pinned,
+            "all" => true,
+            _ => true,
+        };
+        !should_remove
+    });
     let out = to_run_entries_json(runs.as_slice());
     state
         .expert_models_repo

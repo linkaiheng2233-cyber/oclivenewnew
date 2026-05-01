@@ -1,4 +1,4 @@
-import { computed, ref } from "vue";
+import { ref } from "vue";
 import { useI18n } from "vue-i18n";
 import {
   getPluginPermissionGrants,
@@ -12,7 +12,6 @@ type EnsurePermissionParams = {
   subjectId: string;
   required: string[];
   title: string;
-  /** Optional extra line(s) to show in confirm dialog. */
   detailLines?: string[];
 };
 
@@ -22,15 +21,6 @@ export function usePermissionGate() {
 
   const tokenInfoLoading = ref(false);
   const tokenInfoMap = ref<Map<string, PermissionTokenInfoDto>>(new Map());
-
-  const hasTokenRegistry = computed(() => tokenInfoMap.value.size > 0);
-
-  const riskLabel = (risk: string | undefined): string => {
-    if (risk === "high") return String(t("common.security"));
-    if (risk === "medium") return String(t("common.advanced"));
-    if (risk === "low") return String(t("common.loading")); // fallback, rarely used in confirm
-    return String(t("common.security"));
-  };
 
   async function ensureTokenRegistry(): Promise<void> {
     if (tokenInfoMap.value.size > 0) return;
@@ -66,7 +56,7 @@ export function usePermissionGate() {
     if (!subjectId || required.length === 0) return { ok: true, missing: [] };
 
     await ensureTokenRegistry().catch(() => {
-      // registry is optional for gating; fall back to tokens.
+      // fall back to raw tokens
     });
 
     let grants: { permission: string; enabled: boolean }[] = [];
@@ -115,7 +105,6 @@ export function usePermissionGate() {
 
   return {
     tokenInfoLoading,
-    hasTokenRegistry,
     ensurePermissionsOrCancel,
   };
 }

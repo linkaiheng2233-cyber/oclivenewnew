@@ -103,6 +103,7 @@ async fn week3_004_session_backend_override_uses_session_namespace() {
             module: "memory".to_string(),
             backend: Some(Some("remote".to_string())),
             local_memory_provider_id: None,
+            directory_plugin_id: None,
             session_id: Some("sess-a".to_string()),
         },
     )
@@ -161,6 +162,7 @@ async fn week3_004_session_memory_local_provider_id_without_touching_memory_enum
             module: "memory".to_string(),
             backend: Some(Some("local".to_string())),
             local_memory_provider_id: None,
+            directory_plugin_id: None,
             session_id: Some("sess-local-pick".to_string()),
         },
     )
@@ -174,6 +176,7 @@ async fn week3_004_session_memory_local_provider_id_without_touching_memory_enum
             module: "memory".to_string(),
             backend: None,
             local_memory_provider_id: Some("  my_local_mem  ".to_string()),
+            directory_plugin_id: None,
             session_id: Some("sess-local-pick".to_string()),
         },
     )
@@ -203,6 +206,7 @@ async fn week3_004_session_memory_local_provider_id_without_touching_memory_enum
             module: "memory".to_string(),
             backend: None,
             local_memory_provider_id: Some("   ".to_string()),
+            directory_plugin_id: None,
             session_id: Some("sess-local-pick".to_string()),
         },
     )
@@ -242,6 +246,7 @@ async fn week3_004_session_backend_explicit_null_clears_module_override() {
             module: "memory".to_string(),
             backend: Some(Some("remote".to_string())),
             local_memory_provider_id: None,
+            directory_plugin_id: None,
             session_id: Some("sess-clear-memory".to_string()),
         },
     )
@@ -263,6 +268,7 @@ async fn week3_004_session_backend_explicit_null_clears_module_override() {
             module: "memory".to_string(),
             backend: Some(None),
             local_memory_provider_id: None,
+            directory_plugin_id: None,
             session_id: Some("sess-clear-memory".to_string()),
         },
     )
@@ -298,6 +304,7 @@ async fn week3_004_local_memory_provider_id_rejects_non_memory_module() {
             module: "prompt".to_string(),
             backend: None,
             local_memory_provider_id: Some("provider_a".to_string()),
+            directory_plugin_id: None,
             session_id: Some("sess-invalid-provider-field".to_string()),
         },
     )
@@ -325,6 +332,7 @@ async fn week3_004_plugin_resolution_debug_reports_session_override_and_namespac
             module: "memory".to_string(),
             backend: Some(Some("remote".to_string())),
             local_memory_provider_id: None,
+            directory_plugin_id: None,
             session_id: Some("diag-sess".to_string()),
         },
     )

@@ -252,7 +252,7 @@ pub fn directory_plugin_bootstrap_dto(
         if pst.is_plugin_disabled(pid) {
             continue;
         }
-        merge_manifest_bridge_events(&manifest, &mut subscribed_set);
+        merge_manifest_bridge_events(manifest, &mut subscribed_set);
         if manifest.shell.is_some() {
             continue;
         }
@@ -584,7 +584,7 @@ fn build_directory_plugin_catalog(state: &AppState) -> Vec<DirectoryPluginCatalo
     }
     let mut out: Vec<DirectoryPluginCatalogEntry> = manifests
         .into_iter()
-        .filter_map(|(pid, root, manifest)| {
+        .map(|(pid, root, manifest)| {
             let install_meta = crate::infrastructure::plugin_installer::read_install_meta(&root);
             let is_shell = manifest.shell.is_some();
             let has_ui_settings = manifest.ui_template.is_some()
@@ -613,7 +613,7 @@ fn build_directory_plugin_catalog(state: &AppState) -> Vec<DirectoryPluginCatalo
             }
             let (dependency_status, dependency_issues) =
                 dependency_report(&manifest, &version_by_id);
-            Some(DirectoryPluginCatalogEntry {
+            DirectoryPluginCatalogEntry {
                 id: pid.clone(),
                 version: manifest.version.clone(),
                 plugin_type: manifest.plugin_type.clone(),
@@ -627,7 +627,7 @@ fn build_directory_plugin_catalog(state: &AppState) -> Vec<DirectoryPluginCatalo
                 dependency_status,
                 dependency_issues,
                 install_meta,
-            })
+            }
         })
         .collect();
     out.sort_by(|a, b| a.id.cmp(&b.id));

@@ -31,6 +31,8 @@ use crate::state::AppState;
 type ManifestCacheKey = String;
 #[cfg(feature = "tauri-app")]
 type HtmlCacheKey = (String, String); // (plugin_id, rel)
+#[cfg(feature = "tauri-app")]
+type HtmlCache = OnceLock<Mutex<std::collections::HashMap<HtmlCacheKey, (u64, Vec<u8>)>>>;
 
 #[cfg(feature = "tauri-app")]
 static PLUGIN_MANIFEST_CACHE: OnceLock<
@@ -38,9 +40,7 @@ static PLUGIN_MANIFEST_CACHE: OnceLock<
 > = OnceLock::new();
 
 #[cfg(feature = "tauri-app")]
-static PLUGIN_INJECTED_HTML_CACHE: OnceLock<
-    Mutex<std::collections::HashMap<HtmlCacheKey, (u64, Vec<u8>)>>,
-> = OnceLock::new();
+static PLUGIN_INJECTED_HTML_CACHE: HtmlCache = OnceLock::new();
 
 #[cfg(feature = "tauri-app")]
 fn file_mtime_ms(p: &Path) -> u64 {

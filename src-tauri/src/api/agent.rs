@@ -77,7 +77,9 @@ pub struct McpServerImportPreview {
     pub required_permission: String,
 }
 
-fn read_mcp_manifest_from_path(path: &PathBuf) -> Result<crate::infrastructure::mcp_client::McpServerManifest, String> {
+fn read_mcp_manifest_from_path(
+    path: &PathBuf,
+) -> Result<crate::infrastructure::mcp_client::McpServerManifest, String> {
     let raw = fs::read_to_string(path).map_err(|e| format!("read file failed: {}", e))?;
     let m = serde_json::from_str::<crate::infrastructure::mcp_client::McpServerManifest>(&raw)
         .map_err(|e| format!("invalid mcp server json: {}", e))?;

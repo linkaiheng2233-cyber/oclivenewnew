@@ -754,7 +754,7 @@ pub async fn set_session_plugin_backend_impl(
             if let Some(pid) = req.directory_plugin_id.as_ref() {
                 // If backend is explicitly set and not directory, reject to avoid silent mismatch.
                 if let Some(Some(raw)) = req.backend.as_ref() {
-                    if raw.trim().to_ascii_lowercase() != "directory" {
+                    if !raw.trim().eq_ignore_ascii_case("directory") {
                         return Err(AppError::InvalidParameter(
                             "directory_plugin_id requires backend=directory".to_string(),
                         )

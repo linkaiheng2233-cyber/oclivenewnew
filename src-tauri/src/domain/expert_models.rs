@@ -130,7 +130,7 @@ pub fn compile_graph_to_llama_local_config(
     let model_path = base
         .map(str::trim)
         .filter(|s| !s.is_empty())
-        .map(|s| PathBuf::from(s));
+        .map(PathBuf::from);
 
     if let Some(ref p) = model_path {
         if !p.is_file() {

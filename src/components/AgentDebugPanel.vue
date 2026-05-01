@@ -100,15 +100,15 @@ async function importServer(): Promise<void> {
     subjectId: `system:mcp_server:${preview.serverId}`,
     required: [preview.requiredPermission],
     title: String(t("permissionGate.titles.importMcpServer")),
-    detailLines: [
-      `server=${preview.serverId}`,
-      `transport=${preview.transport}`,
-    ],
+    detailLines: [`server=${preview.serverId}`, `transport=${preview.transport}`],
   });
   if (!permOk.ok) return;
   try {
     await importMcpServerFromPath(path, false);
-    showToast("success", String(t("agentDebugPanel.mcpImport.toastImported", { id: preview.serverId })));
+    showToast(
+      "success",
+      String(t("agentDebugPanel.mcpImport.toastImported", { id: preview.serverId })),
+    );
     await refreshServers();
   } catch (e) {
     showToast("error", e instanceof Error ? e.message : String(e));
