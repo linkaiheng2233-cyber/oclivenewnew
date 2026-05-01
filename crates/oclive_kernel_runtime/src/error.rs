@@ -52,6 +52,13 @@ impl AppError {
     }
 }
 
+#[cfg(feature = "tauri_invoke")]
+impl From<AppError> for tauri::InvokeError {
+    fn from(err: AppError) -> Self {
+        tauri::InvokeError::from(err.to_string())
+    }
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;

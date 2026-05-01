@@ -618,7 +618,7 @@ impl RoleStorage {
 }
 
 /// 与 oclive-launcher 注入的取值一致：`ollama` / `remote`（大小写不敏感）。
-pub(crate) fn resolve_llm_backend_env_override() -> Option<LlmBackend> {
+pub fn resolve_llm_backend_env_override() -> Option<LlmBackend> {
     let Ok(v) = std::env::var("OCLIVE_LLM_BACKEND") else {
         return None;
     };

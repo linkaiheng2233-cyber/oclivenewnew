@@ -3,27 +3,27 @@
 //! 提供基础服务和数据访问功能
 
 pub mod cache;
-pub mod cloud_llm;
+pub use oclive_kernel_runtime::infrastructure::cloud_llm;
 pub mod db;
 pub mod deep_link;
 pub mod directory_plugins;
 pub use oclive_kernel_runtime::infrastructure::function_call_parser;
 pub mod hotkey_bindings;
-pub mod llm;
-pub mod llm_params;
+pub use oclive_kernel_runtime::infrastructure::llm;
+pub use oclive_kernel_runtime::infrastructure::llm_params;
 pub mod local_imports;
-pub mod mcp_client;
-pub mod ollama_client;
-pub mod ollama_timeouts;
+pub use oclive_kernel_runtime::infrastructure::mcp_client;
+pub use oclive_kernel_runtime::infrastructure::ollama_client;
+pub use oclive_kernel_runtime::infrastructure::ollama_timeouts;
 pub mod plugin_data;
 pub mod plugin_installer;
 pub mod plugin_reviews;
-pub mod plugin_state;
+pub use oclive_kernel_runtime::infrastructure::plugin_state;
 pub mod remote_plugin;
 pub mod repositories;
 pub mod role_market;
 pub mod role_pack;
-pub mod storage;
+pub use oclive_kernel_runtime::infrastructure::storage;
 
 // 重新导出主要类型
 pub use cache::Cache;

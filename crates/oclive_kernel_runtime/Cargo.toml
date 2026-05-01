@@ -5,6 +5,11 @@ edition = "2021"
 license = "AGPL-3.0"
 description = "Oclive kernel runtime (standalone): state, domain, infrastructure and OOCP bindings"
 
+[features]
+default = []
+## Desktop 壳启用后，为 `AppError -> tauri::InvokeError` 提供实现（孤儿规则要求与 `AppError` 同 crate）。
+tauri_invoke = ["dep:tauri"]
+
 [dependencies]
 oclive_core = { path = "../oclive_core" }
 oclive_validation = { path = "../oclive_validation" }
@@ -34,4 +39,5 @@ axum = { version = "0.7", features = ["ws"] }
 tower-http = { version = "0.5", features = ["cors"] }
 futures-util = "0.3"
 sha2 = "0.11.0"
+tauri = { version = "1.5", optional = true, default-features = false }
 

@@ -2772,6 +2772,7 @@ dependencies = [
  "serde_yaml",
  "sha2 0.11.0",
  "sqlx",
+ "tauri",
  "tempfile",
  "thiserror",
  "tokio",
