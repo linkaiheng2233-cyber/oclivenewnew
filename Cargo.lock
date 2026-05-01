@@ -2817,6 +2817,7 @@ dependencies = [
  "log",
  "notify",
  "oclive_core",
+ "oclive_kernel_runtime",
  "oclive_validation",
  "once_cell",
  "parking_lot",

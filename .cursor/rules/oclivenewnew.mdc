@@ -12,7 +12,7 @@ alwaysApply: true
 
 3. **Tauri**：命令在 `src-tauri/src/api/*.rs`，仅在 `src-tauri/src/lib.rs` 使用 `tauri::generate_handler!` 注册；保留 `.setup` 与 `AppState::manage`。
 
-4. **DTO**：前后端契约以 `src-tauri/src/models/dto.rs` 为准；回复字段为 **`reply`**，不是 `response`；`Emotion` 枚举见 `models/emotion.rs`（无 Joy/Fearful 等未定义变体）。
+4. **DTO**：前后端契约以 `crates/oclive_kernel_runtime/src/models/dto.rs` 为准（Tauri 仅 re-export）；回复字段为 **`reply`**，不是 `response`；`Emotion` 枚举见同目录 `emotion.rs`（无 Joy/Fearful 等未定义变体）。
 
 5. **Prompt**：`PromptBuilder::build_prompt` 共五个参数，返回 `String`，最后一参为 `&str`，不要用 `?`。
 
