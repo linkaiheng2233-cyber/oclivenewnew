@@ -39,4 +39,4 @@
 ## 注意
 
 - **不要**用 `curl http://localhost:5173/api/send_message` 作为默认联调方式；Tauri 命令应通过 **`invoke`**（或你们自建的 HTTP 层，需单独说明）。
-- **DTO、枚举、表结构** 以 `src-tauri/src/models/`、`src-tauri/migrations/001_init.sql` 为准。
+- **DTO、枚举、表结构** 以 `crates/oclive_kernel_runtime/src/models/`、`crates/oclive_kernel_runtime/migrations/001_init.sql` 为准。

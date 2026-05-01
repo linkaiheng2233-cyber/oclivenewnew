@@ -40,7 +40,7 @@
 ## 与代码必须一致的事实
 
 - **Tauri 版本**：`Cargo.toml` 为 **Tauri 1.5**（不是 2.x，除非你们已升级）。
-- **`send_message` 响应字段**：`reply`（不是 `response`）；`emotion` 为 **`EmotionDto`（用户输入侧七维）**；**`bot_emotion` 为字符串（角色回复情绪标签）**；另有 `api_version`、`schema`、`events`、`favorability_current` 等。见 `src-tauri/src/models/dto.rs` 与 `CHANGELOG.md`。
+- **`send_message` 响应字段**：`reply`（不是 `response`）；`emotion` 为 **`EmotionDto`（用户输入侧七维）**；**`bot_emotion` 为字符串（角色回复情绪标签）**；另有 `api_version`、`schema`、`events`、`favorability_current` 等。见 `crates/oclive_kernel_runtime/src/models/dto.rs` 与 `CHANGELOG.md`。
 - **调用方式**：通过前端 **`invoke('send_message', payload)`**，**没有**默认的 `http://localhost:5173/api/send_message` REST 接口（除非你们单独加 HTTP 服务）。
 - **好感度**：编排层用 **`EventDetector::get_impact_factor`** 缩放增量，**无**独立 `FavorabilityEngine::calculate_delta` 模块。
 - **性格演化**：**`PersonalityEngine::adjust_by_user_emotion` + `evolve_by_event`**，不是名为 `evolve` 的单一入口。

@@ -93,7 +93,7 @@ pub fn compose_remote_stub_reply(role: &Role) -> String {
 
 /// 组装异地心声主 LLM 提示（中文）
 ///
-/// `worldview_snippet` 为 `KnowledgeIndex::format_for_prompt` 的输出；空则跳过【世界观设定】段（与共景主对话语义对齐）。
+/// `worldview_snippet` 为 [`crate::models::knowledge::KnowledgeIndex::format_for_prompt`] 的输出；空则跳过【世界观设定】段（与共景主对话语义对齐）。
 #[allow(clippy::too_many_arguments)]
 /// `mutable_personality`：人设优先模式下由 LLM 维护的「可变性格档案」全文；空则跳过该段。
 pub fn build_remote_life_prompt(

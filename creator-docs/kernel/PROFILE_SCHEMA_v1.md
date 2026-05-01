@@ -67,7 +67,7 @@
 
 ### 4.2 允许的 `backend` 值（与现有代码库对齐）
 
-> 约定：枚举字符串采用 **snake_case**，与仓库中 `PluginBackends` 相关枚举一致（见 `src-tauri/src/models/plugin_backends.rs` 与文档 `creator-docs/plugin-and-architecture/PLUGIN_V1.md`）。
+> 约定：枚举字符串采用 **snake_case**，与仓库中 `PluginBackends` 相关枚举一致（见 `crates/oclive_kernel_runtime/src/models/plugin_backends.rs` 与文档 `creator-docs/plugin-and-architecture/PLUGIN_V1.md`）。
 
 #### `memory.backend`
 
@@ -96,7 +96,7 @@
 
 - 允许：`"builtin" | "remote" | "none"`
 - 说明（与现状映射）：
-  - `builtin`：当前内置为 `builtin_keyword_v1`（见 `src-tauri/src/domain/complex_emotion.rs`）
+  - `builtin`：当前内置为 `builtin_keyword_v1`（见 `crates/oclive_kernel_runtime/src/domain/complex_emotion.rs`）
   - `remote`：当前使用独立端点 `OCLIVE_COMPLEX_EMOTION_URL`（兼容旧名 `OCLIVE_REMOTE_COMPLEX_EMOTION_URL`），JSON-RPC 方法 `complex_emotion.resolve_turn`（见 `src-tauri/src/infrastructure/remote_plugin/complex_emotion_http.rs`）
 
 ### 4.3 可选模块（插件模块）示例：`agent`
@@ -121,7 +121,7 @@
 }
 ```
 
-> 槽位命名与 `PluginBackends.directory_plugins.*` 一致（见 `src-tauri/src/models/plugin_backends.rs`）。
+> 槽位命名与 `PluginBackends.directory_plugins.*` 一致（见 `crates/oclive_kernel_runtime/src/models/plugin_backends.rs`）。
 
 ### 4.5 `local_memory_provider_id`（当 memory=local 时）
 

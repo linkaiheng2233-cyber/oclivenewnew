@@ -9,6 +9,7 @@ use crate::domain::memory_retrieval::MemoryRetrievalInput;
 use crate::domain::personality_engine::PersonalityEngine;
 use crate::domain::plugin_host::{PluginHost, ResolvedRolePlugins};
 use crate::domain::prompt_builder::{effective_reply_quality_anchor, PromptInput};
+use crate::domain::prompt_style_override::role_view_with_prompt_style;
 use crate::infrastructure::db::DbManager;
 use crate::infrastructure::llm::{LlmClient, MockLlmClient};
 use crate::models::{
@@ -169,8 +170,9 @@ impl RoleManager {
         });
 
         // 6. 构建提示词
+        let role_view = role_view_with_prompt_style(&self.role, None);
         let prompt = self.plugins.prompt.build_prompt(&PromptInput {
-            role: &self.role,
+            role: role_view.as_ref(),
             personality: &updated_personality,
             memories: &relevant_memories,
             user_input,
@@ -195,7 +197,7 @@ impl RoleManager {
             life_context_line: "",
             worldview_snippet: "",
             mutable_personality: "",
-            reply_quality_anchor: effective_reply_quality_anchor(&self.role),
+            reply_quality_anchor: effective_reply_quality_anchor(role_view.as_ref()),
             complex_emotion_hint: None,
         });
 

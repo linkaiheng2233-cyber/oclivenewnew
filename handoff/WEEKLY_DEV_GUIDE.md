@@ -433,7 +433,7 @@ npm run lint  # 如果有 ESLint
 
 **持久化**：
 - ❌ 直接操作 SqlitePool → ✅ 通过 Repository 实现
-- ❌ 虚构表名 → ✅ 以 `src-tauri/migrations/001_init.sql` 为准
+- ❌ 虚构表名 → ✅ 以 `crates/oclive_kernel_runtime/migrations/001_init.sql` 为准
 - ❌ 事件不落库 → ✅ API 层调 `EventRepository::save_event()`
 
 **Tauri 命令**：

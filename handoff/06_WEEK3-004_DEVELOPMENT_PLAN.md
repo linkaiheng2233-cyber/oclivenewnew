@@ -14,7 +14,7 @@
 
 - ✅ WEEK3-003 完成（`send_message`、编排内 `save_event`、集成测试、`MockLlmClient`）
 - ✅ `MemoryRepository` / `FavorabilityRepository` 已实现；事件通过 `DbManager`
-- ✅ `src-tauri/migrations/001_init.sql` 表结构已定版
+- ✅ `crates/oclive_kernel_runtime/migrations/001_init.sql` 表结构已定版
 
 ---
 
@@ -25,7 +25,7 @@
 ### 代码位置（已实现）
 
 - `src-tauri/src/api/role.rs` — `load_role`、`load_role_impl`
-- `src-tauri/src/models/dto.rs` — `RoleData`
+- `crates/oclive_kernel_runtime/src/models/dto.rs` — `RoleData`
 - `src-tauri/src/lib.rs` — `generate_handler!` 注册
 
 ### 要点
@@ -49,7 +49,7 @@
 ### 代码位置（已实现）
 
 - `src-tauri/src/api/role.rs` — `get_role_info`、`get_role_info_impl`
-- `src-tauri/src/models/dto.rs` — `RoleInfo`
+- `crates/oclive_kernel_runtime/src/models/dto.rs` — `RoleInfo`
 - `DbManager::role_runtime_exists`、`get_latest_memory_created_at`
 
 ### 验收标准
@@ -180,9 +180,9 @@ cargo build
 | load_role / get_role_info | `src-tauri/src/api/role.rs` |
 | query_memories | `src-tauri/src/api/memory.rs` |
 | query_events / create_event | `src-tauri/src/api/event.rs` |
-| DTO | `src-tauri/src/models/dto.rs` |
+| DTO | `crates/oclive_kernel_runtime/src/models/dto.rs` |
 | 分页 / 计数 / 插入事件 | `src-tauri/src/infrastructure/db.rs` |
-| MemoryRepository 扩展 | `src-tauri/src/domain/repository.rs`、`infrastructure/repositories.rs` |
+| MemoryRepository 扩展 | `crates/oclive_kernel_runtime/src/domain/repository.rs`、`infrastructure/repositories.rs` |
 | 命令注册 | `src-tauri/src/lib.rs` |
 | 集成测试 | `src-tauri/tests/week3_004_api.rs` |
 

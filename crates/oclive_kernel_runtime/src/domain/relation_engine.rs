@@ -181,4 +181,90 @@ mod tests {
         );
         assert_eq!(next, RelationState::Acquaintance);
     }
+
+    #[test]
+    fn weak_positive_signal_does_not_force_promotion() {
+        let next =
+            RelationEngine::next_state(RelationState::Friend, 52.0, &EventType::Praise, 0.12, 0.8);
+        assert_eq!(next, RelationState::Friend);
+    }
+
+    #[test]
+    fn weak_negative_signal_does_not_force_demotion() {
+        let next =
+            RelationEngine::next_state(RelationState::Friend, 52.0, &EventType::Quarrel, -0.1, 0.9);
+        assert_eq!(next, RelationState::Friend);
+    }
+
+    #[test]
+    fn low_confidence_weakens_promotion_trigger() {
+        let next =
+            RelationEngine::next_state(RelationState::Friend, 52.0, &EventType::Praise, 0.5, 0.2);
+        assert_eq!(next, RelationState::Friend);
+    }
+
+    #[test]
+    fn damping_prevents_fast_promotion_on_positive_streak() {
+        let without_damping = RelationEngine::next_state_with_damping(
+            RelationState::Friend,
+            52.0,
+            &EventType::Praise,
+            0.42,
+            1.0,
+            0.0,
+        );
+        let with_damping = RelationEngine::next_state_with_damping(
+            RelationState::Friend,
+            52.0,
+            &EventType::Praise,
+            0.42,
+            1.0,
+            1.0,
+        );
+        assert_eq!(without_damping, RelationState::CloseFriend);
+        assert_eq!(with_damping, RelationState::Friend);
+    }
+
+    #[test]
+    fn weak_or_non_consecutive_positive_is_almost_unchanged() {
+        let without_damping = RelationEngine::next_state_with_damping(
+            RelationState::Friend,
+            52.0,
+            &EventType::Praise,
+            0.6,
+            1.0,
+            0.0,
+        );
+        let with_mild_damping = RelationEngine::next_state_with_damping(
+            RelationState::Friend,
+            52.0,
+            &EventType::Praise,
+            0.6,
+            1.0,
+            0.2,
+        );
+        assert_eq!(without_damping, with_mild_damping);
+    }
+
+    #[test]
+    fn damping_does_not_affect_negative_path() {
+        let without_damping = RelationEngine::next_state_with_damping(
+            RelationState::Friend,
+            52.0,
+            &EventType::Quarrel,
+            -0.6,
+            1.0,
+            0.0,
+        );
+        let with_damping = RelationEngine::next_state_with_damping(
+            RelationState::Friend,
+            52.0,
+            &EventType::Quarrel,
+            -0.6,
+            1.0,
+            1.0,
+        );
+        assert_eq!(without_damping, RelationState::Acquaintance);
+        assert_eq!(without_damping, with_damping);
+    }
 }

@@ -80,12 +80,12 @@
 
 | 主题 | 路径 |
 |------|------|
-| 有效身份键解析 | `src-tauri/src/domain/user_identity.rs` |
+| 有效身份键解析 | `crates/oclive_kernel_runtime/src/domain/user_identity.rs` |
 | UI 用运行时快照 | `src-tauri/src/api/role/runtime.rs` |
 | 全局 / 按场景 写库命令 | `src-tauri/src/api/role/mod.rs` |
-| 对话回合使用身份键 | `src-tauri/src/domain/chat_engine/mod.rs` |
-| 磁盘 manifest 映射 | `src-tauri/src/models/role_manifest_disk.rs` |
-| 枚举定义 | `src-tauri/src/models/role.rs`（`IdentityBinding`） |
+| 对话回合使用身份键 | `crates/oclive_kernel_runtime/src/domain/chat_engine/mod.rs` |
+| 磁盘 manifest 映射 | `crates/oclive_kernel_runtime/src/models/role_manifest_disk.rs` |
+| 枚举定义 | `crates/oclive_kernel_runtime/src/models/role.rs`（`IdentityBinding`） |
 
 ---
 

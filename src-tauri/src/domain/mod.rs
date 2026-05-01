@@ -30,7 +30,7 @@ pub mod portrait_emotion_engine;
 pub mod profile_personality;
 pub use oclive_kernel_runtime::domain::prompt_assembler;
 pub use oclive_kernel_runtime::domain::prompt_builder;
-pub mod prompt_style_override;
+pub use oclive_kernel_runtime::domain::prompt_style_override;
 pub mod relation_engine;
 pub mod remote_life_prompt;
 pub mod repository;

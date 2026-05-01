@@ -21,7 +21,7 @@
 ## 代码风格
 
 - **Rust**：与现有模块一致；公共 API 变更需考虑角色包与前端类型。
-- **Vue / TS**：与现有 composables、stores 风格一致；`SendMessageResponse` 字段名与 [src-tauri/src/models/dto.rs](src-tauri/src/models/dto.rs) 对齐。
+- **Vue / TS**：与现有 composables、stores 风格一致；`SendMessageResponse` 字段名与 [crates/oclive_kernel_runtime/src/models/dto.rs](crates/oclive_kernel_runtime/src/models/dto.rs) 对齐。
 
 ## 不要提交
 

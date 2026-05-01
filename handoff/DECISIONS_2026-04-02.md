@@ -105,7 +105,7 @@ roles/{role_id}/
 
 - 新增命令示例：**`set_user_relation`**、**`set_evolution_factor`**（名称以最终实现为准）。
 - **`get_role_info`** 返回：`user_relations`、`default_relation`、当前 `user_relation`、`event_impact_factor` 等前端面板所需字段。
-- **必须同步**：`src-tauri/src/models/dto.rs` 与 **`src/utils/tauri-api.ts`**，避免面板拿不到数据。
+- **必须同步**：`crates/oclive_kernel_runtime/src/models/dto.rs` 与 **`src/utils/tauri-api.ts`**，避免面板拿不到数据。
 
 ---
 

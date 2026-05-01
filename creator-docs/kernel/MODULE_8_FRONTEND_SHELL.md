@@ -68,7 +68,7 @@
 ### 5. 兼容策略（发行版之间）
 
 - **Shell 只应依赖契约**：
-  - DTO（以 `src-tauri/src/models/dto.rs` 为准）
+  - DTO（以 `crates/oclive_kernel_runtime/src/models/dto.rs` 为准）
   - `get_directory_plugin_bootstrap`（包含 `supportedUiSlots`）
   - OOCP capabilities（若走 OOCP）
 - **新增插槽**：应视为 Shell 的新能力，需同步：

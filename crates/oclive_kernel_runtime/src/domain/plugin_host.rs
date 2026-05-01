@@ -4,10 +4,11 @@
 
 use crate::domain::agent::{AgentDebugTrace, AgentProvider, BuiltinReActAgent};
 use crate::domain::complex_emotion::{
-    BuiltinKeywordComplexEmotionProvider, ComplexEmotionProvider, NoneComplexEmotionProvider,
+    BuiltinKeywordComplexEmotionProvider, ComplexEmotionProvider,
+    DegradedToBuiltinComplexEmotionProvider, NoneComplexEmotionProvider,
 };
 use crate::domain::event_estimator::{
-    BuiltinEventEstimator, BuiltinEventEstimatorV2, EventEstimator,
+    BuiltinEventEstimator, BuiltinEventEstimatorV2, EventEstimator, RemoteEventEstimatorPlaceholder,
 };
 use crate::domain::local_plugin_bridge::{
     LocalPluginCapability, LocalPluginProviderDescriptor, LocalPluginRegistry,
@@ -15,16 +16,19 @@ use crate::domain::local_plugin_bridge::{
 use crate::domain::local_plugin_memory_pick::pick_local_memory_provider;
 use crate::domain::memory_retrieval::{
     BuiltinMemoryRetrieval, BuiltinMemoryRetrievalV2, LocalPluginMemoryRetrieval, MemoryRetrieval,
+    RemoteMemoryRetrievalPlaceholder,
 };
 use crate::domain::prompt_assembler::{
     BuiltinPromptAssembler, BuiltinPromptAssemblerV2, PromptAssembler,
+    RemotePromptAssemblerPlaceholder,
 };
 use crate::domain::user_emotion_analyzer::{
-    BuiltinUserEmotionAnalyzer, BuiltinUserEmotionAnalyzerV2, UserEmotionAnalyzer,
+    BuiltinUserEmotionAnalyzer, BuiltinUserEmotionAnalyzerV2, RemoteUserEmotionAnalyzerPlaceholder,
+    UserEmotionAnalyzer,
 };
 use crate::infrastructure::db::DbManager;
 use crate::infrastructure::directory_plugins::DirectoryPluginRuntime;
-use crate::infrastructure::llm::LlmClient;
+use crate::infrastructure::llm::{LlmClient, RemoteLlmPlaceholder};
 use crate::infrastructure::mcp_client::{McpClient, McpServerManifest, McpToolCallResult};
 use crate::infrastructure::remote_plugin::RemoteComplexEmotionHttp;
 use crate::infrastructure::remote_plugin::{
@@ -90,9 +94,14 @@ fn directory_slot_id(
 }
 
 impl BackendRegistry {
+    const REMOTE_PROVIDER_PLUGIN: &'static str = "system:remote_plugin_http";
+    const REMOTE_PROVIDER_LLM: &'static str = "system:remote_llm_http";
+    const REMOTE_PROVIDER_AGENT: &'static str = "system:remote_agent_http";
+    const REMOTE_PROVIDER_COMPLEX_EMOTION: &'static str = "system:remote_complex_emotion_http";
+
     fn block_on<T>(&self, fut: impl Future<Output = T>) -> T {
         if let Ok(h) = tokio::runtime::Handle::try_current() {
-            h.block_on(fut)
+            tokio::task::block_in_place(|| h.block_on(fut))
         } else {
             tokio::runtime::Builder::new_current_thread()
                 .enable_all()
@@ -111,7 +120,28 @@ impl BackendRegistry {
         });
         let _ = self.block_on(async {
             self.db_manager
-                .insert_plugin_audit_log(plugin_id, "process.spawn", Some(permission), ok, "{}")
+                .insert_plugin_audit_log(plugin_id, "permission.check", Some(permission), ok, "{}")
+                .await
+        });
+        ok
+    }
+
+    fn check_remote_http_permission(&self, system_provider_id: &str) -> bool {
+        let ok = self.block_on(async {
+            self.db_manager
+                .is_plugin_permission_granted(system_provider_id, "network:*")
+                .await
+                .unwrap_or(false)
+        });
+        let _ = self.block_on(async {
+            self.db_manager
+                .insert_plugin_audit_log(
+                    system_provider_id,
+                    "network.http",
+                    Some("network:*"),
+                    ok,
+                    "{}",
+                )
                 .await
         });
         ok
@@ -244,6 +274,26 @@ impl BackendRegistry {
         tool_name: &str,
         params: Value,
     ) -> std::result::Result<McpToolCallResult, String> {
+        let sid = server_id.trim();
+        if sid.is_empty() {
+            return Err("server_id required".to_string());
+        }
+        let mut required_perm = "network:*";
+        for s in self.list_mcp_servers() {
+            if s.id.trim() == sid {
+                if s.transport.trim().eq_ignore_ascii_case("stdio") {
+                    required_perm = "process:spawn";
+                }
+                break;
+            }
+        }
+        let mcp_provider_id = format!("system:mcp_server:{}", sid);
+        if !self.check_directory_plugin_permission(mcp_provider_id.as_str(), required_perm) {
+            return Err(format!(
+                "mcp server {} missing required permission {}",
+                sid, required_perm
+            ));
+        }
         self.agent_builtin
             .call_tool_direct(server_id, tool_name, params)
             .map_err(|e| e.to_frontend_error())
@@ -264,14 +314,95 @@ impl BackendRegistry {
         app_data_dir: PathBuf,
     ) -> Self {
         let llm_ollama = llm.clone();
-        let llm_remote = remote_plugin::llm_remote_backend(llm);
         let mcp = Arc::new(McpClient::new(app_data_dir));
         let agent_builtin = Arc::new(BuiltinReActAgent::new(llm_ollama.clone(), mcp));
-        let agent_remote: Arc<dyn AgentProvider> =
-            agent_remote_backend(agent_builtin.clone() as Arc<dyn AgentProvider>);
-        let rem = remote_plugin::plugin_remote_group();
-        let complex_emotion_remote: Arc<dyn ComplexEmotionProvider> =
-            remote_plugin::complex_emotion_remote_backend();
+
+        // Remote HTTP sidecars are treated as "system providers". They require an explicit
+        // permission grant (`network:*`) before they are even selected as providers.
+        // If not granted, we fall back to builtin/placeholder providers, and keep behavior deterministic.
+        let tmp = Self {
+            db_manager: db_manager.clone(),
+            memory_builtin: Arc::new(BuiltinMemoryRetrieval),
+            memory_builtin_v2: Arc::new(BuiltinMemoryRetrievalV2),
+            memory_remote: Arc::new(RemoteMemoryRetrievalPlaceholder::new()),
+            emotion_builtin: Arc::new(BuiltinUserEmotionAnalyzer),
+            emotion_builtin_v2: Arc::new(BuiltinUserEmotionAnalyzerV2),
+            emotion_remote: Arc::new(RemoteUserEmotionAnalyzerPlaceholder::new()),
+            event_builtin: Arc::new(BuiltinEventEstimator),
+            event_builtin_v2: Arc::new(BuiltinEventEstimatorV2),
+            event_remote: Arc::new(RemoteEventEstimatorPlaceholder::new()),
+            prompt_builtin: Arc::new(BuiltinPromptAssembler),
+            prompt_builtin_v2: Arc::new(BuiltinPromptAssemblerV2),
+            prompt_remote: Arc::new(RemotePromptAssemblerPlaceholder::new()),
+            llm_ollama: llm_ollama.clone(),
+            llm_remote: Arc::new(RemoteLlmPlaceholder::new(llm_ollama.clone())),
+            agent_builtin: agent_builtin.clone(),
+            agent_remote: agent_builtin.clone(),
+            complex_emotion_builtin: Arc::new(BuiltinKeywordComplexEmotionProvider),
+            complex_emotion_remote: Arc::new(DegradedToBuiltinComplexEmotionProvider::new(
+                "complex_emotion backend Remote is not connected; using builtin complex emotion",
+            )),
+            complex_emotion_none: Arc::new(NoneComplexEmotionProvider),
+            local_plugins: RwLock::new(LocalPluginRegistry::default()),
+            directory_runtime,
+        };
+
+        let rem = if tmp.check_remote_http_permission(Self::REMOTE_PROVIDER_PLUGIN) {
+            remote_plugin::plugin_remote_group()
+        } else {
+            log::warn!(
+                target: "oclive_plugin",
+                "remote plugin HTTP configured but permission network:* not granted (provider_id={}); using placeholders",
+                Self::REMOTE_PROVIDER_PLUGIN
+            );
+            remote_plugin::PluginRemoteGroup {
+                memory: Arc::new(RemoteMemoryRetrievalPlaceholder::new()),
+                emotion: Arc::new(RemoteUserEmotionAnalyzerPlaceholder::new()),
+                event: Arc::new(RemoteEventEstimatorPlaceholder::new()),
+                prompt: Arc::new(RemotePromptAssemblerPlaceholder::new()),
+            }
+        };
+
+        let llm_remote: Arc<dyn LlmClient> = if tmp
+            .check_remote_http_permission(Self::REMOTE_PROVIDER_LLM)
+        {
+            remote_plugin::llm_remote_backend(llm)
+        } else {
+            log::warn!(
+                target: "oclive_plugin",
+                "remote LLM configured but permission network:* not granted (provider_id={}); using placeholder",
+                Self::REMOTE_PROVIDER_LLM
+            );
+            Arc::new(RemoteLlmPlaceholder::new(llm_ollama.clone()))
+        };
+
+        let agent_remote: Arc<dyn AgentProvider> = if tmp
+            .check_remote_http_permission(Self::REMOTE_PROVIDER_AGENT)
+        {
+            agent_remote_backend(agent_builtin.clone() as Arc<dyn AgentProvider>)
+        } else {
+            log::warn!(
+                target: "oclive_plugin",
+                "remote Agent configured but permission network:* not granted (provider_id={}); using builtin",
+                Self::REMOTE_PROVIDER_AGENT
+            );
+            agent_builtin.clone()
+        };
+
+        let complex_emotion_remote: Arc<dyn ComplexEmotionProvider> = if tmp
+            .check_remote_http_permission(Self::REMOTE_PROVIDER_COMPLEX_EMOTION)
+        {
+            remote_plugin::complex_emotion_remote_backend()
+        } else {
+            log::warn!(
+                target: "oclive_plugin",
+                "remote complex_emotion configured but permission network:* not granted (provider_id={}); using degraded builtin",
+                Self::REMOTE_PROVIDER_COMPLEX_EMOTION
+            );
+            Arc::new(DegradedToBuiltinComplexEmotionProvider::new(
+                "complex_emotion backend Remote is not connected; using builtin complex emotion",
+            ))
+        };
 
         let complex_emotion_builtin: Arc<dyn ComplexEmotionProvider> =
             Arc::new(BuiltinKeywordComplexEmotionProvider);
@@ -299,7 +430,7 @@ impl BackendRegistry {
             complex_emotion_remote,
             complex_emotion_none,
             local_plugins: RwLock::new(LocalPluginRegistry::default()),
-            directory_runtime,
+            directory_runtime: tmp.directory_runtime,
         }
     }
 

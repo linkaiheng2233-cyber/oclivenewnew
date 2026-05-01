@@ -30,4 +30,4 @@
 | `suggested_ui` | 同 `ui.json` |
 | `suggested_plugin_backends` | 同 `plugin_backends` |
 
-详见实现：`oclivenewnew` 仓库 `src-tauri/src/models/author_pack.rs`。
+详见实现：`oclivenewnew` 仓库 `crates/oclive_kernel_runtime/src/models/author_pack.rs`。

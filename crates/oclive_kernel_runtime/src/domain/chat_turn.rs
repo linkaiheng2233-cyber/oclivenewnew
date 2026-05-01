@@ -1,4 +1,5 @@
-//! 单轮对话中的可复用步骤（纯函数或小结构）。
+//! 单轮对话中的可复用步骤（纯函数或小结构），减轻 `chat_engine::process_message` 体量，
+//! 便于单测与后续扩展（例如替换记忆加权策略）。
 
 use crate::models::{Memory, Role};
 

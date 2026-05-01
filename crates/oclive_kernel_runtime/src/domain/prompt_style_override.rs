@@ -1,17 +1,16 @@
-//! Module 9: PromptStyle override layer.
+//! Module 9: merge [`crate::models::PromptStyleOverride`] into a [`crate::models::Role`] view for prompt building.
 //!
-//! Design goal: when override is unset, behavior must be **identical** to existing role packs.
+//! When override fields are unset or blank, behavior matches packs without overrides.
+
+use std::borrow::Cow;
 
 use crate::models::{PromptStyleOverride, Role};
-use std::borrow::Cow;
 
 fn norm_non_empty(opt: &Option<String>) -> Option<&str> {
     opt.as_deref().map(str::trim).filter(|s| !s.is_empty())
 }
 
-/// Apply prompt style overrides to a `Role` view.
-///
-/// Returns a borrowed `Role` when no effective override is present.
+/// Returns a borrowed `Role` when there is no effective style override; otherwise an owned clone with patched fields.
 pub fn role_view_with_prompt_style<'a>(
     role: &'a Role,
     style: Option<&PromptStyleOverride>,

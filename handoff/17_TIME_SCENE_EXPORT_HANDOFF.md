@@ -27,7 +27,7 @@
 |------|------|
 | 命令注册 | `src-tauri/src/lib.rs` → `switch_scene`、`get_time_state`、`jump_time`、`generate_monologue`、`export_chat_logs` |
 | 分钟取整 | `src-tauri/src/api/time.rs` → `round_to_minute_ms`（含单元测试） |
-| 迁移 | `src-tauri/migrations/005_add_virtual_time.sql` |
+| 迁移 | `crates/oclive_kernel_runtime/migrations/005_add_virtual_time.sql` |
 | 场景列表 | `src-tauri/src/infrastructure/storage.rs` → `list_scene_ids`；`roles/mumu/manifest.json` 顶层 `scenes` |
 | 短期对话 FIFO | `src-tauri/src/infrastructure/db.rs` → `SHORT_TERM_FIFO_LIMIT`，事务内写入 `short_term_memory` |
 | 前端场景解析 | `src/App.vue` → `resolveSceneId` |

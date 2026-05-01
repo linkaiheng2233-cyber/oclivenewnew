@@ -196,15 +196,6 @@ fn favorability_hint(f: f64) -> &'static str {
     }
 }
 
-fn truncate_chars(s: &str, limit: usize) -> String {
-    if s.chars().count() <= limit {
-        return s.to_string();
-    }
-    let mut out: String = s.chars().take(limit).collect();
-    out.push('…');
-    out
-}
-
 #[allow(clippy::too_many_arguments)]
 fn build_portrait_prompt(
     role: &Role,
@@ -266,38 +257,70 @@ happy, sad, angry, neutral, excited, confused, shy
 5) 若近期有争吵/冲突（Quarrel）且尚未出现道歉/和解（Apology），即使用户示弱或难过，也请用**七维综合**推断：例如低宽容、低温暖、高倔强、高强势时更可能继续冷、怒或端着，而非立刻开心安慰脸。
 6) 好感度调节关系松紧：好感低更戒备冷淡；好感高更易柔软、害羞、开心，但仍须服从七维向量与事件逻辑。
 
-角色名：{name}
-好感度：{fav:.1}（{fav_hint}）
-近期事件（最近在前）：{events}
+角色名：{}
+人设摘要：{}
+核心性格（manifest 七维 0~1）倔强{:.2} 黏人{:.2} 敏感{:.2} 强势{:.2} 宽容{:.2} 话多{:.2} 温暖{:.2}
+当前有效性格（核心+演化，AI 可成长）倔强{:.2} 黏人{:.2} 敏感{:.2} 强势{:.2} 宽容{:.2} 话多{:.2} 温暖{:.2}
+当前好感度：{:.1}（{}）
+近期事件（新→旧）：{}
+最近几轮摘要：
+{}{}
+本回合：
+- 用户说：{}
+- 角色回复：{}
+- 用户情绪标签：{}
+- 从回复文本粗读的角色情绪（仅供参考）：{}
 
-核心性格（向量）：{core}
-当前有效性格（向量）：{cur}
-
-用户情绪（分析标签）：{uemo}
-角色回复情绪（本轮 bot_emotion）：{bemo}
-
-最近对话（用于判断张力与连贯）：\n{turns}
-{no_history_note}
-用户刚说：{um}
-角色回复：{reply}
-
-输出一个标签："#,
-        name = role.name,
-        fav = favorability,
-        fav_hint = favorability_hint(favorability),
-        events = ev_line,
-        core = core_personality.to_json_vec(),
-        cur = personality.to_json_vec(),
-        uemo = user_emotion_str,
-        bemo = bot_emotion,
-        turns = turns,
-        no_history_note = no_history_note,
-        um = user_message,
-        reply = reply,
+只输出一个词。"#,
+        role.name,
+        if role.description.trim().is_empty() {
+            role.core_personality.as_str()
+        } else {
+            role.description.as_str()
+        },
+        core_personality.stubbornness,
+        core_personality.clinginess,
+        core_personality.sensitivity,
+        core_personality.assertiveness,
+        core_personality.forgiveness,
+        core_personality.talkativeness,
+        core_personality.warmth,
+        personality.stubbornness,
+        personality.clinginess,
+        personality.sensitivity,
+        personality.assertiveness,
+        personality.forgiveness,
+        personality.talkativeness,
+        personality.warmth,
+        favorability,
+        favorability_hint(favorability),
+        ev_line,
+        turns,
+        no_history_note,
+        user_message,
+        reply,
+        user_emotion_str,
+        bot_emotion
     )
 }
 
-/// 返回 portrait_emotion tag（英文小写）；若关闭 LLM 或解析失败则回退启发式。
+fn truncate_chars(s: &str, max: usize) -> String {
+    let mut t = s.trim().replace('\n', " ");
+    if t.chars().count() > max {
+        t = t.chars().take(max).collect::<String>() + "…";
+    }
+    t
+}
+
+fn fallback_base(bot_emotion: &Emotion, recent_turns: &[(String, String)]) -> String {
+    if recent_turns.is_empty() {
+        "neutral".to_string()
+    } else {
+        heuristic_base(bot_emotion)
+    }
+}
+
+/// 解析立绘情绪标签；失败时回退：无历史时偏 `neutral`，否则 `bot_emotion`。
 #[allow(clippy::too_many_arguments)]
 pub async fn resolve_portrait_emotion(
     llm: &Arc<dyn LlmClient>,
@@ -313,8 +336,7 @@ pub async fn resolve_portrait_emotion(
     recent_events: &[Event],
     recent_turns: &[(String, String)],
 ) -> Result<String> {
-    let mut tag = heuristic_base(bot_emotion);
-    if portrait_llm_enabled() {
+    let mut tag = if portrait_llm_enabled() {
         let prompt = build_portrait_prompt(
             role,
             core_personality,
@@ -327,16 +349,110 @@ pub async fn resolve_portrait_emotion(
             recent_events,
             recent_turns,
         );
-        if let Ok(raw) = llm.generate_tag(ollama_model, &prompt).await {
-            if let Some(tok) = parse_emotion_token(&raw) {
-                tag = tok;
+        match llm.generate_tag(ollama_model, &prompt).await {
+            Ok(raw) => parse_emotion_token(&raw)
+                .unwrap_or_else(|| fallback_base(bot_emotion, recent_turns)),
+            Err(e) => {
+                log::warn!("portrait_emotion LLM failed, fallback: {}", e);
+                fallback_base(bot_emotion, recent_turns)
             }
         }
+    } else {
+        fallback_base(bot_emotion, recent_turns)
+    };
+
+    tag = apply_persona_event_overrides(tag, user_emotion_str, recent_events, personality);
+    Ok(tag)
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn parse_token_trims() {
+        assert_eq!(parse_emotion_token("  Happy \n"), Some("happy".to_string()));
+        assert_eq!(parse_emotion_token("neutral"), Some("neutral".to_string()));
+        assert_eq!(parse_emotion_token("disgust"), None);
     }
-    Ok(apply_persona_event_overrides(
-        tag,
-        user_emotion_str,
-        recent_events,
-        personality,
-    ))
+
+    #[test]
+    fn override_quarrel_user_sad_confused_for_cold_persona() {
+        let recent = vec![Event {
+            event_type: EventType::Quarrel,
+            user_emotion: "angry".to_string(),
+            bot_emotion: "angry".to_string(),
+        }];
+        let p = PersonalityVector {
+            stubbornness: 0.75,
+            clinginess: 0.35,
+            sensitivity: 0.5,
+            assertiveness: 0.7,
+            forgiveness: 0.35,
+            talkativeness: 0.5,
+            warmth: 0.4,
+        };
+        let out = apply_persona_event_overrides("happy".to_string(), "sad", &recent, &p);
+        assert_eq!(out, "confused");
+    }
+
+    #[test]
+    fn expressive_mapping_prefers_sad_shy_for_hurt_state() {
+        let recent = vec![Event {
+            event_type: EventType::Quarrel,
+            user_emotion: "sad".to_string(),
+            bot_emotion: "neutral".to_string(),
+        }];
+        let p = PersonalityVector {
+            stubbornness: 0.35,
+            clinginess: 0.73,
+            sensitivity: 0.86,
+            assertiveness: 0.34,
+            forgiveness: 0.58,
+            talkativeness: 0.45,
+            warmth: 0.72,
+        };
+        let out = apply_persona_event_overrides("neutral".to_string(), "委屈", &recent, &p);
+        assert_eq!(out, "sad");
+    }
+
+    #[test]
+    fn expressive_mapping_prefers_angry_confused_for_guarded_state() {
+        let recent = vec![Event {
+            event_type: EventType::Quarrel,
+            user_emotion: "sad".to_string(),
+            bot_emotion: "neutral".to_string(),
+        }];
+        let p = PersonalityVector {
+            stubbornness: 0.87,
+            clinginess: 0.28,
+            sensitivity: 0.44,
+            assertiveness: 0.82,
+            forgiveness: 0.20,
+            talkativeness: 0.33,
+            warmth: 0.25,
+        };
+        let out = apply_persona_event_overrides("neutral".to_string(), "ok", &recent, &p);
+        assert_eq!(out, "angry");
+    }
+
+    #[test]
+    fn expressive_mapping_uses_shy_confused_for_probing_state() {
+        let recent = vec![Event {
+            event_type: EventType::Joke,
+            user_emotion: "neutral".to_string(),
+            bot_emotion: "neutral".to_string(),
+        }];
+        let p = PersonalityVector {
+            stubbornness: 0.32,
+            clinginess: 0.68,
+            sensitivity: 0.64,
+            assertiveness: 0.36,
+            forgiveness: 0.58,
+            talkativeness: 0.70,
+            warmth: 0.66,
+        };
+        let out = apply_persona_event_overrides("confused".to_string(), "normal", &recent, &p);
+        assert_eq!(out, "shy");
+    }
 }

@@ -24,6 +24,8 @@ dist-ssr
 *.sw?
 
 # Rust / secrets
+src-tauri/tmp_*.exe
+src-tauri/tmp_*.pdb
 src-tauri/.sqlx_prepare.db
 src-tauri/target
 /target

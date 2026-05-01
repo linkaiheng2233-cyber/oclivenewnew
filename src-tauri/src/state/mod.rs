@@ -368,7 +368,7 @@ impl AppState {
                 .map_err(|e| crate::error::AppError::DatabaseError(e.to_string()))?
         };
 
-        sqlx::migrate!("./migrations")
+        sqlx::migrate!("../crates/oclive_kernel_runtime/migrations")
             .run(&db)
             .await
             .map_err(|e| crate::error::AppError::DatabaseError(e.to_string()))?;
@@ -443,7 +443,7 @@ impl AppState {
             .await
             .map_err(|e| crate::error::AppError::DatabaseError(e.to_string()))?;
 
-        sqlx::migrate!("./migrations")
+        sqlx::migrate!("../crates/oclive_kernel_runtime/migrations")
             .run(&db)
             .await
             .map_err(|e| crate::error::AppError::DatabaseError(e.to_string()))?;

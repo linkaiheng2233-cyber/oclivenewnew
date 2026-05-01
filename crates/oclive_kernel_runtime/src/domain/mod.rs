@@ -25,6 +25,7 @@ pub mod portrait_emotion_engine;
 pub mod profile_personality;
 pub mod prompt_assembler;
 pub mod prompt_builder;
+pub mod prompt_style_override;
 pub mod relation_engine;
 pub mod remote_life_prompt;
 pub mod repository;

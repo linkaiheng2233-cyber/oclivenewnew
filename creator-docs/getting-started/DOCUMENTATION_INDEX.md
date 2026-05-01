@@ -82,7 +82,7 @@ Creator and plugin docs live under the repo root `creator-docs/` (grouped by top
 
 1. [../plugin-and-architecture/EXTENSION_POINTS.md](../plugin-and-architecture/EXTENSION_POINTS.md)  
 2. [../plugin-and-architecture/HOW_TO_REPLACE_MODULES.md](../plugin-and-architecture/HOW_TO_REPLACE_MODULES.md)  
-3. 源码：`src-tauri/src/domain/plugin_host.rs`、`src-tauri/src/infrastructure/remote_plugin/`、**`src-tauri/src/infrastructure/directory_plugins/`**（目录插件扫描与懒启动）  
+3. 源码：`crates/oclive_kernel_runtime/src/domain/plugin_host.rs`、`src-tauri/src/infrastructure/remote_plugin/`、**`src-tauri/src/infrastructure/directory_plugins/`**（目录插件扫描与懒启动）  
 
 ---
 

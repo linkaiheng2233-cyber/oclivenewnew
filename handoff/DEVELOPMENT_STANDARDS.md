@@ -10,7 +10,7 @@
 
 ```
 roles/{role_id}/
-  manifest.json          # DiskRoleManifest，见 `src-tauri/src/models/role_manifest_disk.rs`
+  manifest.json          # DiskRoleManifest，见 `crates/oclive_kernel_runtime/src/models/role_manifest_disk.rs`
   core_personality.txt   # 可选
   assets/images/         # 情绪立绘 PNG（见下）
   scenes/{scene_id}/     # 可选：scene.json、description.txt
