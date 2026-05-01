@@ -11,6 +11,7 @@ pub mod emotion_analyzer;
 pub mod event_detector;
 pub mod event_estimator;
 pub mod event_impact_ai;
+pub mod expert_models;
 pub mod knowledge_loader;
 pub mod life_schedule;
 pub mod local_plugin_bridge;

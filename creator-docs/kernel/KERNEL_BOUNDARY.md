@@ -142,7 +142,7 @@
 - **`state`**：`pub type AppState = KernelAppState`；`resolve_roles_dir`、`PolicySet` 与内核一致。
 - **`infrastructure/db.rs`**、**`domain/policy.rs`**、**`domain/repository.rs`**、**`infrastructure/repositories.rs`**：对内核模块 `pub use`。
 
-**`domain` 其余子模块**（如 `chat_engine`、`plugin_host` 等）当前仍可能保留 **`src-tauri/src/domain/*.rs` 实现**；新增与修改业务公式应优先落在 **`oclive_kernel_runtime`**，再视情况将 Tauri 改为 `pub use` 内核同名模块，直至完全单源。
+**`domain`**：`src-tauri/src/domain/mod.rs` 对 **`oclive_kernel_runtime::domain`** 做子模块级 **`pub use`**；本地仅保留 **`adapters/`**（Tauri OOCP 等）与 **`permission_tokens`**。编排入口仍为 **`chat_engine::process_message`**（内核实现）。
 
 ```
 crates/oclive_kernel_runtime/
@@ -154,7 +154,7 @@ crates/oclive_kernel_runtime/
 src-tauri/src/
 ├── api/
 ├── domain/adapters/        # OOCP / Tauri 专用
-├── domain/…                # 部分仍为壳层 re-export，部分仍本地实现（收敛中）
+├── domain/mod.rs           # 对内核 domain 子模块 pub use；仅 permission_tokens 本地
 └── lib.rs
 ```
 
