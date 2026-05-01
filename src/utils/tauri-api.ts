@@ -2248,6 +2248,33 @@ export async function clearAgentDebugTraces(): Promise<void> {
   return invokeWithFriendlyError<void>("clear_agent_debug_traces", {});
 }
 
+export interface McpServerImportPreview {
+  serverId: string;
+  name: string;
+  transport: string;
+  requiredPermission: string;
+}
+
+export async function previewMcpServerImport(
+  path: string,
+): Promise<McpServerImportPreview> {
+  return invokeWithFriendlyError<McpServerImportPreview>("preview_mcp_server_import", {
+    req: { path },
+  });
+}
+
+export async function importMcpServerFromPath(
+  path: string,
+  grantRequiredPermission: boolean,
+): Promise<McpServerImportPreview> {
+  return invokeWithFriendlyError<McpServerImportPreview>(
+    "import_mcp_server_from_path",
+    {
+      req: { path, grantRequiredPermission },
+    },
+  );
+}
+
 export interface CreatePluginScaffoldRequest {
   pluginId: string;
   pluginName: string;

@@ -5,15 +5,21 @@ import {
   callMcpTool,
   clearAgentDebugTraces,
   getAgentDebugTraces,
+  importMcpServerFromPath,
   listMcpTools,
   listMcpServers,
+  previewMcpServerImport,
   type AgentDebugTrace,
+  type McpServerImportPreview,
   type McpToolManifest,
   type McpServerManifest,
 } from "../utils/tauri-api";
 import EnvVarManager from "./EnvVarManager.vue";
+import { open } from "@tauri-apps/api/dialog";
+import { useAppToast } from "../composables/useAppToast";
 
 const { t } = useI18n();
+const { showToast } = useAppToast();
 
 const busy = ref(false);
 const servers = ref<McpServerManifest[]>([]);
@@ -73,6 +79,35 @@ async function refreshServers(): Promise<void> {
 
 async function refreshTraces(): Promise<void> {
   traces.value = await getAgentDebugTraces();
+}
+
+async function importServer(): Promise<void> {
+  const picked = await open({
+    filters: [{ name: "MCP server manifest", extensions: ["json"] }],
+  });
+  if (!picked || Array.isArray(picked)) return;
+  const path = String(picked);
+  let preview: McpServerImportPreview | null = null;
+  try {
+    preview = await previewMcpServerImport(path);
+  } catch (e) {
+    showToast("error", e instanceof Error ? e.message : String(e));
+    return;
+  }
+  const ok = window.confirm(
+    `导入 MCP Server：${preview.serverId}\n` +
+      `transport=${preview.transport}\n` +
+      `需要授权：${preview.requiredPermission}\n\n` +
+      `继续导入并授权吗？`,
+  );
+  if (!ok) return;
+  try {
+    await importMcpServerFromPath(path, true);
+    showToast("success", `已导入：${preview.serverId}`);
+    await refreshServers();
+  } catch (e) {
+    showToast("error", e instanceof Error ? e.message : String(e));
+  }
 }
 
 async function runToolCall(): Promise<void> {
@@ -221,6 +256,9 @@ onMounted(async () => {
     <div class="adp-row">
       <button type="button" class="adp-btn" :disabled="busy" @click="refreshServers">
         {{ t("agentDebugPanel.actions.refreshServers") }}
+      </button>
+      <button type="button" class="adp-btn" :disabled="busy" @click="importServer">
+        导入 MCP
       </button>
       <button type="button" class="adp-btn" :disabled="busy" @click="refreshTraces">
         {{ t("agentDebugPanel.actions.refreshTraces") }}

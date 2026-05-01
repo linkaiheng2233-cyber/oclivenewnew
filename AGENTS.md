@@ -38,6 +38,12 @@
   - `to_function_calling_schema` 将 MCP tool 列表转为函数 schema。
 - **Agent 路由**：`plugin_backends.agent` 为第七模块，与其他模块保持同样的包默认 / 会话覆盖 / 来源快照语义。
 
+## 内核约束 - 权限弹窗
+
+- **Directory 插件**：首次启用高风险能力（如 `process:spawn`、`network:*` 出站）前，必须经过用户确认授予；未授予则必须降级且有可见提示/审计。
+- **MCP servers**：任何 `transport=stdio` 的 server 必须显式授权（等同 `process:spawn`）；`transport=http` 必须显式授权（`network:*`）。未授权不得调用。
+- **Remote env providers**：检测到 env 配置不等于启用；必须先授予 `network:*`，否则 provider 只能降级为 placeholder 并提示。
+
 ### 创作者工具链（v1）
 
 - **脚手架**：`create_plugin_scaffold`（后端）+ `PluginScaffoldWizard.vue`（前端）生成 `manifest.json` + 语言模板 + README，并打开目标目录。

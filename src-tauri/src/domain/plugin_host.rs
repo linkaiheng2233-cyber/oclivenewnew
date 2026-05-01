@@ -120,7 +120,7 @@ impl BackendRegistry {
         });
         let _ = self.block_on(async {
             self.db_manager
-                .insert_plugin_audit_log(plugin_id, "process.spawn", Some(permission), ok, "{}")
+                .insert_plugin_audit_log(plugin_id, "permission.check", Some(permission), ok, "{}")
                 .await
         });
         ok
@@ -274,6 +274,26 @@ impl BackendRegistry {
         tool_name: &str,
         params: Value,
     ) -> std::result::Result<McpToolCallResult, String> {
+        let sid = server_id.trim();
+        if sid.is_empty() {
+            return Err("server_id required".to_string());
+        }
+        let mut required_perm = "network:*";
+        for s in self.list_mcp_servers() {
+            if s.id.trim() == sid {
+                if s.transport.trim().eq_ignore_ascii_case("stdio") {
+                    required_perm = "process:spawn";
+                }
+                break;
+            }
+        }
+        let mcp_provider_id = format!("system:mcp_server:{}", sid);
+        if !self.check_directory_plugin_permission(mcp_provider_id.as_str(), required_perm) {
+            return Err(format!(
+                "mcp server {} missing required permission {}",
+                sid, required_perm
+            ));
+        }
         self.agent_builtin
             .call_tool_direct(server_id, tool_name, params)
             .map_err(|e| e.to_frontend_error())
