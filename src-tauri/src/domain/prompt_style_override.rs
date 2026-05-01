@@ -40,4 +40,3 @@ pub fn role_view_with_prompt_style<'a>(
     }
     Cow::Owned(out)
 }
-

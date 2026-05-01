@@ -4,8 +4,8 @@ pub mod conversation;
 pub mod directory_plugin;
 pub mod error;
 pub mod event;
-pub mod export;
 pub mod expert_models;
+pub mod export;
 pub mod hotkeys;
 pub mod jump_monologue;
 pub mod local_imports;
@@ -34,19 +34,16 @@ pub mod time;
 pub use chat::send_message;
 pub use directory_plugin::{directory_plugin_invoke, get_directory_plugin_bootstrap};
 pub use event::{create_event, query_events};
-pub use export::export_chat_logs;
 pub use expert_models::{
-    expert_models_apply_to_session, expert_models_clear_role_default,
-    expert_models_clear_session_override, expert_models_get_effective, expert_models_set_role_default,
-    expert_models_set_session_override, expert_models_list_local_base_models,
-    expert_models_list_local_loras,
-    expert_models_import_base_gguf, expert_models_import_lora_gguf,
-    expert_workflows_delete, expert_workflows_get, expert_workflows_list, expert_workflows_save,
-    expert_models_rollback_last_run,
-    expert_models_list_runs, expert_models_clear_runs, expert_models_rollback_to_run,
-    expert_models_get_run_detail,
-    expert_models_set_run_pinned,
+    expert_models_apply_to_session, expert_models_clear_role_default, expert_models_clear_runs,
+    expert_models_clear_session_override, expert_models_get_effective,
+    expert_models_get_run_detail, expert_models_import_base_gguf, expert_models_import_lora_gguf,
+    expert_models_list_local_base_models, expert_models_list_local_loras, expert_models_list_runs,
+    expert_models_rollback_last_run, expert_models_rollback_to_run, expert_models_set_role_default,
+    expert_models_set_run_pinned, expert_models_set_session_override, expert_workflows_delete,
+    expert_workflows_get, expert_workflows_list, expert_workflows_save,
 };
+pub use export::export_chat_logs;
 pub use local_imports::{list_local_import_candidates_command, read_local_import_text_command};
 pub use memory::query_memories;
 pub use monologue::generate_monologue;

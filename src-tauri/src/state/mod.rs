@@ -17,8 +17,8 @@ use crate::infrastructure::repositories::{
 };
 use crate::infrastructure::storage::{resolve_llm_backend_env_override, RoleStorage};
 use crate::models::{
-    PersonalitySource, PersonalityVector, PluginBackendSource, PluginBackends, PluginBackendsOverride,
-    PluginBackendsSourceMap, PromptStyleOverride, Role,
+    PersonalitySource, PersonalityVector, PluginBackendSource, PluginBackends,
+    PluginBackendsOverride, PluginBackendsSourceMap, PromptStyleOverride, Role,
 };
 use parking_lot::{Mutex, RwLock};
 use serde::Deserialize;

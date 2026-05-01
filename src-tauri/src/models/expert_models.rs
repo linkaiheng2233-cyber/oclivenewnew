@@ -113,4 +113,3 @@ pub struct LlamaLocalPluginConfig {
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub llama_args: Option<String>,
 }
-

@@ -78,7 +78,9 @@ impl SqliteExpertModelsRepository {
 #[async_trait]
 impl ExpertModelsRepository for SqliteExpertModelsRepository {
     async fn get_expert_models_role_default_json(&self, role_id: &str) -> Result<Option<String>> {
-        self.inner.get_expert_models_role_default_json(role_id).await
+        self.inner
+            .get_expert_models_role_default_json(role_id)
+            .await
     }
 
     async fn set_expert_models_role_default_json(

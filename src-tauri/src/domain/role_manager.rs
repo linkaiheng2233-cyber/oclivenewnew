@@ -5,11 +5,11 @@
 
 use crate::domain::memory_retrieval::MemoryRetrievalInput;
 use crate::domain::plugin_host::{PluginHost, ResolvedRolePlugins};
+use crate::domain::prompt_style_override::role_view_with_prompt_style;
 use crate::domain::{
     prompt_builder::effective_reply_quality_anchor, EventDetector, MemoryEngine, PersonalityEngine,
     PromptInput,
 };
-use crate::domain::prompt_style_override::role_view_with_prompt_style;
 use crate::infrastructure::db::DbManager;
 use crate::infrastructure::llm::{LlmClient, MockLlmClient};
 use crate::models::{

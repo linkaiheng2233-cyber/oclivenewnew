@@ -30,8 +30,11 @@ pub trait FavorabilityRepository: Send + Sync {
 #[async_trait]
 pub trait ExpertModelsRepository: Send + Sync {
     async fn get_expert_models_role_default_json(&self, role_id: &str) -> Result<Option<String>>;
-    async fn set_expert_models_role_default_json(&self, role_id: &str, json: Option<&str>)
-        -> Result<()>;
+    async fn set_expert_models_role_default_json(
+        &self,
+        role_id: &str,
+        json: Option<&str>,
+    ) -> Result<()>;
 
     async fn get_expert_models_session_override_json(
         &self,

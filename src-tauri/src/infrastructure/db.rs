@@ -1294,7 +1294,10 @@ impl DbManager {
         .fetch_optional(&self.pool)
         .await
         .map_err(|e| AppError::DatabaseError(e.to_string()))?;
-        Ok(row.and_then(|(s,)| s).map(|s| s.trim().to_string()).filter(|s| !s.is_empty()))
+        Ok(row
+            .and_then(|(s,)| s)
+            .map(|s| s.trim().to_string())
+            .filter(|s| !s.is_empty()))
     }
 
     pub async fn set_expert_models_role_default_json(
@@ -1308,7 +1311,10 @@ impl DbManager {
         }
         self.ensure_role_runtime(rid).await?;
         let now = Utc::now().to_rfc3339();
-        let v = json.map(str::trim).filter(|s| !s.is_empty()).map(|s| s.to_string());
+        let v = json
+            .map(str::trim)
+            .filter(|s| !s.is_empty())
+            .map(|s| s.to_string());
         sqlx::query(
             "UPDATE role_runtime
              SET expert_models_role_default_json = ?, updated_at = ?
@@ -1338,7 +1344,10 @@ impl DbManager {
         .fetch_optional(&self.pool)
         .await
         .map_err(|e| AppError::DatabaseError(e.to_string()))?;
-        Ok(row.and_then(|(s,)| s).map(|s| s.trim().to_string()).filter(|s| !s.is_empty()))
+        Ok(row
+            .and_then(|(s,)| s)
+            .map(|s| s.trim().to_string())
+            .filter(|s| !s.is_empty()))
     }
 
     pub async fn set_expert_models_session_override_json(
@@ -1348,11 +1357,16 @@ impl DbManager {
     ) -> Result<()> {
         let ns = session_namespace.trim();
         if ns.is_empty() {
-            return Err(AppError::InvalidParameter("session_namespace required".into()));
+            return Err(AppError::InvalidParameter(
+                "session_namespace required".into(),
+            ));
         }
         self.ensure_role_runtime(ns).await?;
         let now = Utc::now().to_rfc3339();
-        let v = json.map(str::trim).filter(|s| !s.is_empty()).map(|s| s.to_string());
+        let v = json
+            .map(str::trim)
+            .filter(|s| !s.is_empty())
+            .map(|s| s.to_string());
         sqlx::query(
             "UPDATE role_runtime
              SET expert_models_session_override_json = ?, updated_at = ?
@@ -1401,7 +1415,10 @@ impl DbManager {
         }
         self.ensure_role_runtime(ns).await?;
         let now = Utc::now().to_rfc3339();
-        let v = json.map(str::trim).filter(|s| !s.is_empty()).map(|s| s.to_string());
+        let v = json
+            .map(str::trim)
+            .filter(|s| !s.is_empty())
+            .map(|s| s.to_string());
         sqlx::query(
             "UPDATE role_runtime
              SET expert_models_run_history_json = ?, updated_at = ?
@@ -1431,7 +1448,10 @@ impl DbManager {
         .fetch_optional(&self.pool)
         .await
         .map_err(|e| AppError::DatabaseError(e.to_string()))?;
-        Ok(row.and_then(|(s,)| s).map(|s| s.trim().to_string()).filter(|s| !s.is_empty()))
+        Ok(row
+            .and_then(|(s,)| s)
+            .map(|s| s.trim().to_string())
+            .filter(|s| !s.is_empty()))
     }
 
     pub async fn set_expert_prompt_style_role_default_json(
@@ -1445,7 +1465,10 @@ impl DbManager {
         }
         self.ensure_role_runtime(rid).await?;
         let now = Utc::now().to_rfc3339();
-        let v = json.map(str::trim).filter(|s| !s.is_empty()).map(|s| s.to_string());
+        let v = json
+            .map(str::trim)
+            .filter(|s| !s.is_empty())
+            .map(|s| s.to_string());
         sqlx::query(
             "UPDATE role_runtime
              SET expert_prompt_style_role_default_json = ?, updated_at = ?
@@ -1475,7 +1498,10 @@ impl DbManager {
         .fetch_optional(&self.pool)
         .await
         .map_err(|e| AppError::DatabaseError(e.to_string()))?;
-        Ok(row.and_then(|(s,)| s).map(|s| s.trim().to_string()).filter(|s| !s.is_empty()))
+        Ok(row
+            .and_then(|(s,)| s)
+            .map(|s| s.trim().to_string())
+            .filter(|s| !s.is_empty()))
     }
 
     pub async fn set_expert_prompt_style_session_override_json(
@@ -1485,11 +1511,16 @@ impl DbManager {
     ) -> Result<()> {
         let ns = session_namespace.trim();
         if ns.is_empty() {
-            return Err(AppError::InvalidParameter("session_namespace required".into()));
+            return Err(AppError::InvalidParameter(
+                "session_namespace required".into(),
+            ));
         }
         self.ensure_role_runtime(ns).await?;
         let now = Utc::now().to_rfc3339();
-        let v = json.map(str::trim).filter(|s| !s.is_empty()).map(|s| s.to_string());
+        let v = json
+            .map(str::trim)
+            .filter(|s| !s.is_empty())
+            .map(|s| s.to_string());
         sqlx::query(
             "UPDATE role_runtime
              SET expert_prompt_style_session_override_json = ?, updated_at = ?

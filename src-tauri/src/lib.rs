@@ -229,7 +229,10 @@ fn serve_ocliveplugin_asset(
                 }
             }
         }
-        if let (Some(manifest), Ok(s)) = (load_manifest_cached(root, &plugin_id), String::from_utf8(data.clone())) {
+        if let (Some(manifest), Ok(s)) = (
+            load_manifest_cached(root, &plugin_id),
+            String::from_utf8(data.clone()),
+        ) {
             let injected = inject_plugin_bridge_script(&s, &plugin_id, &rel, &manifest);
             data = injected.into_bytes();
             if let Ok(mut g) = cache.lock() {

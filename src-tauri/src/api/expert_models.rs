@@ -5,26 +5,29 @@ use crate::api::role::set_session_plugin_backend_impl;
 use crate::domain::chat_engine::conversation_state_role_id;
 use crate::domain::expert_models::{compile_graph_to_llama_local_config, LLAMA_LOCAL_PLUGIN_ID};
 use crate::infrastructure::plugin_data::write_config_json;
-use crate::infrastructure::remote_plugin::{invoke_directory_plugin_rpc_blocking, RemoteRpcChannel};
+use crate::infrastructure::remote_plugin::{
+    invoke_directory_plugin_rpc_blocking, RemoteRpcChannel,
+};
+use crate::models::dto::SetSessionPluginBackendRequest;
 use crate::models::dto::{
-    ExpertModelsApplyResult, ExpertModelsApplyToSessionRequest, ExpertModelsClearRoleDefaultRequest,
+    ExpertModelsApplyResult, ExpertModelsApplyToSessionRequest,
+    ExpertModelsClearRoleDefaultRequest, ExpertModelsClearRunsRequest,
     ExpertModelsClearSessionOverrideRequest, ExpertModelsEffectiveResponse,
-    ExpertModelsGetEffectiveRequest, ExpertModelsSetRoleDefaultRequest,
-    ExpertModelsSetSessionOverrideRequest,
-    ExpertModelsGetRunDetailRequest, ExpertModelsGetRunDetailResponse, ExpertModelsRunDetailDto,
-    ExpertModelsListRunsResponse, ExpertModelsRollbackToRunRequest, ExpertModelsRunSummaryDto,
-    ExpertModelsSetRunPinnedRequest, ExpertModelsClearRunsRequest,
-    ExpertWorkflowDto, ExpertWorkflowSummaryDto, ExpertWorkflowsDeleteRequest,
-    ExpertWorkflowsGetRequest, ExpertWorkflowsListResponse, ExpertWorkflowsSaveRequest,
+    ExpertModelsGetEffectiveRequest, ExpertModelsGetRunDetailRequest,
+    ExpertModelsGetRunDetailResponse, ExpertModelsListRunsResponse,
+    ExpertModelsRollbackToRunRequest, ExpertModelsRunDetailDto, ExpertModelsRunSummaryDto,
+    ExpertModelsSetRoleDefaultRequest, ExpertModelsSetRunPinnedRequest,
+    ExpertModelsSetSessionOverrideRequest, ExpertWorkflowDto, ExpertWorkflowSummaryDto,
+    ExpertWorkflowsDeleteRequest, ExpertWorkflowsGetRequest, ExpertWorkflowsListResponse,
+    ExpertWorkflowsSaveRequest,
 };
 use crate::models::{ExpertConfigSource, ExpertGraph, LlamaLocalPluginConfig, PromptStyleOverride};
-use crate::models::dto::SetSessionPluginBackendRequest;
 use crate::state::AppState;
-use serde_json::json;
+use chrono::Utc;
 use serde::Serialize;
+use serde_json::json;
 use tauri::State;
 use uuid::Uuid;
-use chrono::Utc;
 
 #[derive(Debug, Clone, serde::Serialize, serde::Deserialize)]
 #[serde(rename_all = "camelCase")]
@@ -86,10 +89,12 @@ fn parse_graph_json(raw: Option<String>) -> Result<Option<ExpertGraph>, String> 
     }
     serde_json::from_str::<ExpertGraph>(t)
         .map(Some)
-        .map_err(|e| ApiError::InvalidParameter {
-            message: format!("invalid expert graph json: {}", e),
-        }
-        .to_string())
+        .map_err(|e| {
+            ApiError::InvalidParameter {
+                message: format!("invalid expert graph json: {}", e),
+            }
+            .to_string()
+        })
 }
 
 fn parse_prompt_style_json(raw: Option<String>) -> Result<Option<PromptStyleOverride>, String> {
@@ -102,10 +107,12 @@ fn parse_prompt_style_json(raw: Option<String>) -> Result<Option<PromptStyleOver
     }
     serde_json::from_str::<PromptStyleOverride>(t)
         .map(Some)
-        .map_err(|e| ApiError::InvalidParameter {
-            message: format!("invalid prompt style json: {}", e),
-        }
-        .to_string())
+        .map_err(|e| {
+            ApiError::InvalidParameter {
+                message: format!("invalid prompt style json: {}", e),
+            }
+            .to_string()
+        })
 }
 
 fn to_json_string<T: serde::Serialize>(v: &T) -> Result<String, String> {
@@ -121,8 +128,15 @@ async fn effective_for_session(
     state: &AppState,
     role_id: &str,
     session_ns: &str,
-) -> Result<(ExpertGraph, ExpertConfigSource, Option<PromptStyleOverride>, ExpertConfigSource), String>
-{
+) -> Result<
+    (
+        ExpertGraph,
+        ExpertConfigSource,
+        Option<PromptStyleOverride>,
+        ExpertConfigSource,
+    ),
+    String,
+> {
     let role_default_graph_raw = state
         .expert_models_repo
         .get_expert_models_role_default_json(role_id)
@@ -171,7 +185,9 @@ async fn effective_for_session(
 fn parse_run_entries(raw: Option<String>) -> Vec<ExpertModelsRunEntry> {
     let Some(s) = raw else { return vec![] };
     let t = s.trim();
-    if t.is_empty() { return vec![]; }
+    if t.is_empty() {
+        return vec![];
+    }
     // Prefer typed parse.
     if let Ok(list) = serde_json::from_str::<Vec<ExpertModelsRunEntry>>(t) {
         return list;
@@ -184,12 +200,18 @@ fn parse_run_entries(raw: Option<String>) -> Vec<ExpertModelsRunEntry> {
 }
 
 fn to_run_entries_json(items: &[ExpertModelsRunEntry]) -> Option<String> {
-    if items.is_empty() { return None; }
+    if items.is_empty() {
+        return None;
+    }
     serde_json::to_string(items).ok()
 }
 
 fn graph_summary(graph: &ExpertGraph, style: &Option<PromptStyleOverride>) -> (String, u32, bool) {
-    (pick_base_name(graph), count_enabled_loras(graph), style.is_some())
+    (
+        pick_base_name(graph),
+        count_enabled_loras(graph),
+        style.is_some(),
+    )
 }
 
 fn idx_from_latest_to_pos(len: usize, idx_from_latest: u32) -> Option<usize> {
@@ -197,7 +219,10 @@ fn idx_from_latest_to_pos(len: usize, idx_from_latest: u32) -> Option<usize> {
     len.checked_sub(1)?.checked_sub(idx)
 }
 
-fn trim_runs_keep_pinned(mut runs: Vec<ExpertModelsRunEntry>, max_len: usize) -> Vec<ExpertModelsRunEntry> {
+fn trim_runs_keep_pinned(
+    mut runs: Vec<ExpertModelsRunEntry>,
+    max_len: usize,
+) -> Vec<ExpertModelsRunEntry> {
     if runs.len() <= max_len {
         return runs;
     }
@@ -304,17 +329,10 @@ pub async fn expert_models_set_session_override(
         .await
         .map_err(|e| e.to_frontend_error())?;
 
-    let style_json = req
-        .prompt_style
-        .as_ref()
-        .map(to_json_string)
-        .transpose()?;
+    let style_json = req.prompt_style.as_ref().map(to_json_string).transpose()?;
     state
         .expert_models_repo
-        .set_expert_prompt_style_session_override_json(
-            session_ns.as_str(),
-            style_json.as_deref(),
-        )
+        .set_expert_prompt_style_session_override_json(session_ns.as_str(), style_json.as_deref())
         .await
         .map_err(|e| e.to_frontend_error())?;
     Ok(())
@@ -376,11 +394,7 @@ pub async fn expert_models_set_role_default(
         .await
         .map_err(|e| e.to_frontend_error())?;
 
-    let style_json = req
-        .prompt_style
-        .as_ref()
-        .map(to_json_string)
-        .transpose()?;
+    let style_json = req.prompt_style.as_ref().map(to_json_string).transpose()?;
     state
         .expert_models_repo
         .set_expert_prompt_style_role_default_json(role_id, style_json.as_deref())
@@ -420,7 +434,11 @@ pub async fn expert_models_clear_role_default(
 }
 
 fn llama_models_gguf_dir(state: &AppState) -> std::path::PathBuf {
-    state.directory_plugins.app_data_dir().join("models").join("gguf")
+    state
+        .directory_plugins
+        .app_data_dir()
+        .join("models")
+        .join("gguf")
 }
 
 fn llama_loras_dir(state: &AppState) -> std::path::PathBuf {
@@ -466,7 +484,11 @@ fn list_gguf_files(dir: &std::path::Path) -> Vec<LocalModelFileDto> {
             path: p.to_string_lossy().to_string(),
         });
     }
-    out.sort_by(|a, b| a.name.to_ascii_lowercase().cmp(&b.name.to_ascii_lowercase()));
+    out.sort_by(|a, b| {
+        a.name
+            .to_ascii_lowercase()
+            .cmp(&b.name.to_ascii_lowercase())
+    });
     out
 }
 
@@ -485,7 +507,11 @@ pub fn expert_models_list_local_loras(
     let mut out = list_gguf_files(loras.as_path());
     // For M1 compatibility, allow placing LoRAs under models/gguf as well.
     out.extend(list_gguf_files(llama_models_gguf_dir(&state).as_path()));
-    out.sort_by(|a, b| a.name.to_ascii_lowercase().cmp(&b.name.to_ascii_lowercase()));
+    out.sort_by(|a, b| {
+        a.name
+            .to_ascii_lowercase()
+            .cmp(&b.name.to_ascii_lowercase())
+    });
     out.dedup_by(|a, b| a.path == b.path);
     Ok(out)
 }
@@ -604,9 +630,11 @@ pub async fn expert_models_apply_to_session(
 
     // Push a rollback snapshot (previous effective) before applying, and record the apply outcome.
     // This provides a "Module 9 Ctrl+Z" at the session scope, and keeps a lightweight "queue-like" log.
-    let (prev_graph, _pgs, prev_style, _pss) = effective_for_session(&state, role_id, session_ns.as_str()).await?;
+    let (prev_graph, _pgs, prev_style, _pss) =
+        effective_for_session(&state, role_id, session_ns.as_str()).await?;
     // Current effective graph (session override > role default > pack default(empty)) is the target we are applying.
-    let (graph, _graph_src, style, _style_src) = effective_for_session(&state, role_id, session_ns.as_str()).await?;
+    let (graph, _graph_src, style, _style_src) =
+        effective_for_session(&state, role_id, session_ns.as_str()).await?;
 
     let run_raw_prev = state
         .expert_models_repo
@@ -820,7 +848,11 @@ pub async fn expert_models_list_runs(
             })
             .unwrap_or_else(|| {
                 let s = &e.prompt_style;
-                (pick_base_name(&e.graph), count_enabled_loras(&e.graph), s.is_some())
+                (
+                    pick_base_name(&e.graph),
+                    count_enabled_loras(&e.graph),
+                    s.is_some(),
+                )
             });
         let (apply_ok, apply_error, apply_duration_ms) = e
             .apply
@@ -875,10 +907,14 @@ pub async fn expert_models_get_run_detail(
         }
         .to_string()
     })?;
-    let e = runs.get(pos).cloned().ok_or_else(|| "run missing".to_string())?;
+    let e = runs
+        .get(pos)
+        .cloned()
+        .ok_or_else(|| "run missing".to_string())?;
     let snapshot_graph = e.graph.clone();
     let snapshot_style = e.prompt_style.clone();
-    let (snapshot_base, snapshot_loras, snapshot_ps) = graph_summary(&snapshot_graph, &snapshot_style);
+    let (snapshot_base, snapshot_loras, snapshot_ps) =
+        graph_summary(&snapshot_graph, &snapshot_style);
 
     let target_graph = e.target_graph.clone();
     let target_style = e.target_prompt_style.clone();
@@ -886,12 +922,24 @@ pub async fn expert_models_get_run_detail(
         .target
         .as_ref()
         .map(|t| (t.base_name.clone(), t.lora_count, t.has_prompt_style))
-        .or_else(|| target_graph.as_ref().map(|g| graph_summary(g, &target_style)))
+        .or_else(|| {
+            target_graph
+                .as_ref()
+                .map(|g| graph_summary(g, &target_style))
+        })
         .unwrap_or_else(|| graph_summary(&snapshot_graph, &snapshot_style));
     let (apply_ok, apply_error, apply_model_path, apply_llama_args, apply_duration_ms) = e
         .apply
         .as_ref()
-        .map(|a| (Some(a.ok), a.error.clone(), a.model_path.clone(), a.llama_args.clone(), a.duration_ms))
+        .map(|a| {
+            (
+                Some(a.ok),
+                a.error.clone(),
+                a.model_path.clone(),
+                a.llama_args.clone(),
+                a.duration_ms,
+            )
+        })
         .unwrap_or((None, None, None, None, None));
 
     Ok(ExpertModelsGetRunDetailResponse {
@@ -1036,13 +1084,18 @@ pub async fn expert_models_rollback_to_run(
         .map_err(|e| e.to_frontend_error())?;
     let mut runs = parse_run_entries(raw);
     if runs.is_empty() {
-        return Err(ApiError::InvalidParameter { message: "no runs".into() }.to_string());
+        return Err(ApiError::InvalidParameter {
+            message: "no runs".into(),
+        }
+        .to_string());
     }
     let target_pos_from_start = idx_from_latest_to_pos(runs.len(), req.index_from_latest)
-        .ok_or_else(|| ApiError::InvalidParameter {
-            message: "index out of range".into(),
-        }
-        .to_string())?;
+        .ok_or_else(|| {
+            ApiError::InvalidParameter {
+                message: "index out of range".into(),
+            }
+            .to_string()
+        })?;
     let target = runs
         .get(target_pos_from_start)
         .cloned()
@@ -1135,7 +1188,11 @@ pub async fn expert_workflows_list(
             updated_at_ms: w.updated_at_ms,
         })
         .collect();
-    items.sort_by(|a, b| b.updated_at_ms.cmp(&a.updated_at_ms).then(a.name.cmp(&b.name)));
+    items.sort_by(|a, b| {
+        b.updated_at_ms
+            .cmp(&a.updated_at_ms)
+            .then(a.name.cmp(&b.name))
+    });
     Ok(ExpertWorkflowsListResponse { items })
 }
 
@@ -1226,4 +1283,3 @@ pub async fn expert_workflows_delete(
 fn _ensure_types(cfg: LlamaLocalPluginConfig) -> LlamaLocalPluginConfig {
     cfg
 }
-

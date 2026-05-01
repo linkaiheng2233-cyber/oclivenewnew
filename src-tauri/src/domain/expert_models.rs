@@ -1,7 +1,9 @@
 //! Module 9: Expert Models compiler + safe apply to llama local sidecar config.
 
 use crate::error::{AppError, Result};
-use crate::models::expert_models::{ExpertGraph, ExpertNode, LlamaLocalPluginConfig, PromptStyleOverride};
+use crate::models::expert_models::{
+    ExpertGraph, ExpertNode, LlamaLocalPluginConfig, PromptStyleOverride,
+};
 use std::collections::{HashMap, HashSet, VecDeque};
 use std::path::{Path, PathBuf};
 
@@ -15,7 +17,9 @@ pub struct ExpertEffectiveConfig {
 
 fn is_path_under(child: &Path, parent: &Path) -> bool {
     let cn = child.canonicalize().unwrap_or_else(|_| child.to_path_buf());
-    let pn = parent.canonicalize().unwrap_or_else(|_| parent.to_path_buf());
+    let pn = parent
+        .canonicalize()
+        .unwrap_or_else(|_| parent.to_path_buf());
     cn.starts_with(pn)
 }
 
@@ -26,7 +30,9 @@ pub fn compile_graph_to_llama_local_config(
 ) -> Result<LlamaLocalPluginConfig> {
     let nodes = graph.nodes.as_slice();
     let edges = graph.edges.as_slice();
-    let has_edges = edges.iter().any(|e| !e.from.trim().is_empty() && !e.to.trim().is_empty());
+    let has_edges = edges
+        .iter()
+        .any(|e| !e.from.trim().is_empty() && !e.to.trim().is_empty());
 
     let mut by_id: HashMap<&str, &ExpertNode> = HashMap::new();
     for n in nodes {
@@ -68,10 +74,7 @@ pub fn compile_graph_to_llama_local_config(
         .filter(|s| !s.trim().is_empty())
         .collect();
 
-    fn reachable<'a>(
-        start: &'a str,
-        adj: &HashMap<&'a str, Vec<&'a str>>,
-    ) -> HashSet<&'a str> {
+    fn reachable<'a>(start: &'a str, adj: &HashMap<&'a str, Vec<&'a str>>) -> HashSet<&'a str> {
         let mut seen: HashSet<&'a str> = HashSet::new();
         let mut q: VecDeque<&'a str> = VecDeque::new();
         seen.insert(start);
@@ -213,4 +216,3 @@ pub fn compile_graph_to_llama_local_config(
         llama_args,
     })
 }
-
