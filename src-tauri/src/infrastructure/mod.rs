@@ -19,7 +19,7 @@ pub mod plugin_data;
 pub mod plugin_installer;
 pub mod plugin_reviews;
 pub use oclive_kernel_runtime::infrastructure::plugin_state;
-pub mod remote_plugin;
+pub use oclive_kernel_runtime::infrastructure::remote_plugin;
 pub mod repositories;
 pub mod role_market;
 pub mod role_pack;
