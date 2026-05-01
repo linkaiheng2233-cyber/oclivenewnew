@@ -145,10 +145,15 @@ pub async fn import_mcp_server_from_path(
 
     if req.grant_required_permission {
         let provider_id = format!("system:mcp_server:{}", m.id);
-        let _ = state
+        state
             .db_manager
-            .upsert_plugin_permission_grant(provider_id.as_str(), required_permission.as_str(), true)
-            .await;
+            .upsert_plugin_permission_grant(
+                provider_id.as_str(),
+                required_permission.as_str(),
+                true,
+            )
+            .await
+            .map_err(|e| e.to_frontend_error())?;
     }
 
     Ok(McpServerImportPreview {

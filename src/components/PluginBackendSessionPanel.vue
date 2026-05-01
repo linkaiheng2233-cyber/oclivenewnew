@@ -5,8 +5,6 @@ import { useRoleStore } from "../stores/roleStore";
 import {
   packPlugin,
   getPluginResolutionDebug,
-  getPluginPermissionGrants,
-  setPluginPermissionGrant,
   setRemoteLifeEnabled,
   setSessionPluginBackend,
 } from "../utils/tauri-api";
@@ -17,11 +15,13 @@ import {
 import AgentDebugPanel from "./AgentDebugPanel.vue";
 import { useAppToast } from "../composables/useAppToast";
 import { usePluginStore } from "../stores/pluginStore";
+import { usePermissionGate } from "../composables/usePermissionGate";
 
 const roleStore = useRoleStore();
 const { t } = useI18n();
 const { showToast } = useAppToast();
 const pluginStore = usePluginStore();
+const { ensurePermissionsOrCancel } = usePermissionGate();
 const busy = ref(false);
 const pluginBackends = computed(() => roleStore.roleInfo.pluginBackends);
 const pluginBackendsEffective = computed(() => roleStore.roleInfo.pluginBackendsEffective);
@@ -132,26 +132,12 @@ async function onPluginBackendChange(
         .filter(Boolean);
       const required = declared.filter((p) => p === "process:spawn" || p === "network:*");
       if (required.length > 0) {
-        const grants = await getPluginPermissionGrants(pid).catch(() => ({ pluginId: pid, grants: [] as any[] }));
-        const enabled = new Set(
-          (grants.grants ?? []).filter((g: any) => g.enabled === true).map((g: any) => String(g.permission ?? "").trim()),
-        );
-        const missing = required.filter((p) => !enabled.has(p));
-        if (missing.length > 0) {
-          const ok = window.confirm(
-            `启用目录插件需要授权：\n` +
-              `插件：${pid}\n` +
-              `${missing.map((p) => `- ${p === "process:spawn" ? "启动子进程" : "发起网络连接"}`).join("\n")}\n\n` +
-              `授权并继续启用吗？`,
-          );
-          if (!ok) {
-            showToast("info", "因缺少必要权限，已取消启用。");
-            return;
-          }
-          for (const p of missing) {
-            await setPluginPermissionGrant(pid, p, true);
-          }
-        }
+        const gate = await ensurePermissionsOrCancel({
+          subjectId: pid,
+          required,
+          title: String(t("permissionGate.titles.enableDirectoryBackend")),
+        });
+        if (!gate.ok) return;
       }
     }
   }
@@ -163,26 +149,12 @@ async function onPluginBackendChange(
         : module === "agent"
           ? "system:remote_agent_http"
           : "system:remote_plugin_http";
-    const grants = await getPluginPermissionGrants(systemProviderId).catch(() => ({
-      pluginId: systemProviderId,
-      grants: [] as any[],
-    }));
-    const enabled = new Set(
-      (grants.grants ?? [])
-        .filter((g: any) => g.enabled === true)
-        .map((g: any) => String(g.permission ?? "").trim()),
-    );
-    if (!enabled.has("network:*")) {
-      const ok = window.confirm(
-        `Remote 后端已选择，但尚未授权网络访问。\n\n` +
-          `是否授予权限：网络访问（全部）？`,
-      );
-      if (!ok) {
-        showToast("info", "未授权网络权限，remote 后端未启用。");
-        return;
-      }
-      await setPluginPermissionGrant(systemProviderId, "network:*", true);
-    }
+    const gate = await ensurePermissionsOrCancel({
+      subjectId: systemProviderId,
+      required: ["network:*"],
+      title: String(t("permissionGate.titles.enableRemoteBackend")),
+    });
+    if (!gate.ok) return;
   }
 
   busy.value = true;

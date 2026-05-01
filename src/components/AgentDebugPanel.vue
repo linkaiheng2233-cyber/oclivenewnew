@@ -17,9 +17,11 @@ import {
 import EnvVarManager from "./EnvVarManager.vue";
 import { open } from "@tauri-apps/api/dialog";
 import { useAppToast } from "../composables/useAppToast";
+import { usePermissionGate } from "../composables/usePermissionGate";
 
 const { t } = useI18n();
 const { showToast } = useAppToast();
+const { ensurePermissionsOrCancel } = usePermissionGate();
 
 const busy = ref(false);
 const servers = ref<McpServerManifest[]>([]);
@@ -94,16 +96,19 @@ async function importServer(): Promise<void> {
     showToast("error", e instanceof Error ? e.message : String(e));
     return;
   }
-  const ok = window.confirm(
-    `导入 MCP Server：${preview.serverId}\n` +
-      `transport=${preview.transport}\n` +
-      `需要授权：${preview.requiredPermission}\n\n` +
-      `继续导入并授权吗？`,
-  );
-  if (!ok) return;
+  const permOk = await ensurePermissionsOrCancel({
+    subjectId: `system:mcp_server:${preview.serverId}`,
+    required: [preview.requiredPermission],
+    title: String(t("permissionGate.titles.importMcpServer")),
+    detailLines: [
+      `server=${preview.serverId}`,
+      `transport=${preview.transport}`,
+    ],
+  });
+  if (!permOk.ok) return;
   try {
-    await importMcpServerFromPath(path, true);
-    showToast("success", `已导入：${preview.serverId}`);
+    await importMcpServerFromPath(path, false);
+    showToast("success", String(t("agentDebugPanel.mcpImport.toastImported", { id: preview.serverId })));
     await refreshServers();
   } catch (e) {
     showToast("error", e instanceof Error ? e.message : String(e));
