@@ -5,7 +5,7 @@ use std::path::{Path, PathBuf};
 
 // Kernel-owned state.
 mod app_state;
-pub use app_state::KernelAppState;
+pub use app_state::{KernelAppState, PolicySet};
 
 /// 自动发现时要求至少有一个「子目录 + manifest.json」，避免误用盘符根上空的 `D:\roles` 等。
 fn roles_dir_has_any_role_pack(roles_root: &Path) -> bool {
@@ -40,7 +40,6 @@ pub fn resolve_roles_dir() -> PathBuf {
     #[cfg(debug_assertions)]
     {
         let from_manifest = PathBuf::from(env!("CARGO_MANIFEST_DIR"))
-            .join("..")
             .join("..")
             .join("..")
             .join("roles");

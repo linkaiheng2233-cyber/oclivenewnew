@@ -33,7 +33,9 @@ pub use plugin_reviews::{
     load_cached_plugin_reviews_index, sync_plugin_reviews_index_online, PluginReviewEntry,
     PluginReviewsIndexFile, DEFAULT_PLUGIN_REVIEWS_INDEX_URL,
 };
-pub use repositories::{SqliteFavorabilityRepository, SqliteMemoryRepository};
+pub use repositories::{
+    SqliteExpertModelsRepository, SqliteFavorabilityRepository, SqliteMemoryRepository,
+};
 pub use role_market::{
     install_role_pack_from_direct_url, sync_role_index_online, RoleIndexEntry, RoleIndexFile,
 };

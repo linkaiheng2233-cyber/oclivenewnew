@@ -135,18 +135,26 @@
 
 ## 5. 代码分层（当前落地）
 
-领域编排、引擎、Repository trait、DB 与 SQLx 迁移的**单一真相源**在 **`crates/oclive_kernel_runtime/`**（crate `oclive_kernel_runtime`）。Tauri 壳层 **`src-tauri/`** 保留 **`api/*.rs`**、**`domain/adapters/`**（OOCP 等）、**`lib.rs` 注册**，`domain` / `state` / `infrastructure` 对内核以 **re-export / 类型别名** 方式薄封装（如 `AppState` = `KernelAppState`）。
+领域编排、引擎、Repository trait、DB 与 SQLx 迁移的**单一真相源**在 **`crates/oclive_kernel_runtime/`**（crate `oclive_kernel_runtime`）。Tauri **`src-tauri/`** 保留 **`api/*.rs`**、**`domain/adapters/`**（OOCP 等）、**`lib.rs` 注册**。
+
+**已与内核对齐、Tauri 侧仅为 re-export / 别名（避免 `DbManager` / `PolicyContext` 等类型双轨）：**
+
+- **`state`**：`pub type AppState = KernelAppState`；`resolve_roles_dir`、`PolicySet` 与内核一致。
+- **`infrastructure/db.rs`**、**`domain/policy.rs`**、**`domain/repository.rs`**、**`infrastructure/repositories.rs`**：对内核模块 `pub use`。
+
+**`domain` 其余子模块**（如 `chat_engine`、`plugin_host` 等）当前仍可能保留 **`src-tauri/src/domain/*.rs` 实现**；新增与修改业务公式应优先落在 **`oclive_kernel_runtime`**，再视情况将 Tauri 改为 `pub use` 内核同名模块，直至完全单源。
 
 ```
 crates/oclive_kernel_runtime/
-├── migrations/              # SQLx 迁移（001_init …）
-├── src/domain/             # chat_engine、plugin_host、repository trait …
+├── migrations/
+├── src/domain/             # chat_engine、plugin_host、repository、policy …
 ├── src/infrastructure/     # db、repositories_runtime、llm、remote_plugin …
 └── src/state/              # KernelAppState、resolve_roles_dir
 
 src-tauri/src/
-├── api/                    # invoke 命令
-├── domain/adapters/        # OOCP WebSocket / Tauri handler（平台适配）
+├── api/
+├── domain/adapters/        # OOCP / Tauri 专用
+├── domain/…                # 部分仍为壳层 re-export，部分仍本地实现（收敛中）
 └── lib.rs
 ```
 
