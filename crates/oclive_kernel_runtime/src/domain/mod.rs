@@ -20,6 +20,7 @@ pub mod memory_engine;
 pub mod memory_retrieval;
 pub mod mutable_profile_llm;
 pub mod personality_engine;
+pub mod permission_tokens;
 pub mod plugin_host;
 pub mod policy;
 pub mod portrait_emotion_engine;

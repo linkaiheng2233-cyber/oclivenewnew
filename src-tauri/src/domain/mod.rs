@@ -1,13 +1,12 @@
-//! 领域层：实现以 `oclive_kernel_runtime::domain` 为准；此处仅保留 Tauri 专用 `adapters/`、`permission_tokens`。
+//! 领域层：实现以 `oclive_kernel_runtime::domain` 为准；此处仅保留 Tauri 专用 `adapters/`。
 
 pub mod adapters;
-pub mod permission_tokens;
 
 pub use oclive_kernel_runtime::domain::{
     affect_policy, agent, chat_engine, chat_llm_fallback, chat_turn, chat_turn_rules, complex_emotion,
     core, emotion_analyzer, event_detector, event_estimator, event_impact_ai, expert_models,
     knowledge_loader, life_schedule, local_plugin_bridge, local_plugin_memory_pick, memory_engine,
-    memory_retrieval, mutable_profile_llm, personality_engine, plugin_host, policy,
+    memory_retrieval, mutable_profile_llm, permission_tokens, personality_engine, plugin_host, policy,
     portrait_emotion_engine, profile_personality, prompt_assembler, prompt_builder,
     prompt_style_override, relation_engine, remote_life_prompt, repository, role_manager,
     role_manifest_validate, user_emotion_analyzer, user_identity,
