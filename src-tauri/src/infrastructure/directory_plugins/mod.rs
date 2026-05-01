@@ -1,23 +1,14 @@
-//! 目录式插件：扫描 `plugins/*/manifest.json`、懒启动子进程、缓存 JSON-RPC 根 URL。
-//!
-//! 契约见 `creator-docs/plugin-and-architecture/DIRECTORY_PLUGINS.md`。
+//! 目录式插件：主体在 `oclive_kernel_runtime::infrastructure::directory_plugins`。
+//! 此处仅保留 Tauri 文件系统 watcher（`tauri-app`）。
 
-mod dependency;
-mod manifest;
-mod runtime;
-mod version;
+pub use oclive_kernel_runtime::infrastructure::directory_plugins::{
+    dependency_report, normalize_plugin_rel, normalize_ui_slot_appearance_id,
+    parse_manifest_version, plugin_scan_container_roots, BridgeConfig, DirectoryPluginRuntime,
+    HostPluginsFile, OclivePluginManifest, PluginProcessDebugInfo, PluginScanSummary, ShellSection,
+    UiSchemaField, UiSchemaSection, UiSlotDecl,
+};
+
 #[cfg(feature = "tauri-app")]
 mod watcher;
-
-pub use dependency::dependency_report;
-pub use manifest::{
-    normalize_plugin_rel, normalize_ui_slot_appearance_id, BridgeConfig, OclivePluginManifest,
-    ShellSection, UiSchemaField, UiSchemaSection, UiSlotDecl,
-};
-pub use runtime::{
-    plugin_scan_container_roots, DirectoryPluginRuntime, HostPluginsFile, PluginProcessDebugInfo,
-    PluginScanSummary,
-};
-pub use version::parse_manifest_version;
 #[cfg(feature = "tauri-app")]
 pub use watcher::start_plugin_fs_watcher;
