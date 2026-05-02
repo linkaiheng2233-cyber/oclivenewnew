@@ -9,6 +9,8 @@ import {
 } from "../lib/cloudLlmPresets";
 import { getHostCloudLlmPublic, setHostCloudLlm } from "../utils/tauri-api";
 
+const emit = defineEmits<{ saved: [] }>();
+
 const { t } = useI18n();
 const { showToast } = useAppToast();
 
@@ -146,6 +148,7 @@ async function onSaveToHost(): Promise<void> {
     apiKey.value = "";
     hasSavedKey.value = true;
     showToast("success", String(t("settings.cloudLlmQuick.toastSavedHost")));
+    emit("saved");
   } catch (e) {
     showToast("error", e instanceof Error ? e.message : String(e));
   } finally {
@@ -169,6 +172,7 @@ async function onClearHost(): Promise<void> {
     timeoutMsStr.value = "";
     hasSavedKey.value = false;
     showToast("success", String(t("settings.cloudLlmQuick.toastClearedHost")));
+    emit("saved");
   } catch (e) {
     showToast("error", e instanceof Error ? e.message : String(e));
   } finally {

@@ -104,6 +104,21 @@ export const zhCN = {
       send: "发送",
     },
   },
+  pureChatModelSheet: {
+    title: "模型与云端（纯聊）",
+    lead: "精简版：与沉浸顶栏「本地模型 / 设置」相比仅保留对话必需项。",
+    close: "关闭",
+    sectionChatModel: "当前对话模型",
+    sectionChatModelHint: "与输入区上方选项同步；可在此切换或自定义 id。",
+    openFullSettings: "打开完整设置…",
+    sectionLocal: "本机 · Ollama",
+    sectionLocalHint: "仅列出当前可检测到的模型名；导入/删除 GGUF 等请切换沉浸后使用「本地模型」。",
+    ollamaOnline: "已连接本地 Ollama",
+    ollamaOffline: "未检测到本地 Ollama",
+    noLocalModels: "暂无列表（可检查 Ollama 是否已启动）。",
+    sectionCloud: "云端 · OpenAI 兼容",
+    sectionCloudHint: "保存到本机后优先于环境变量；与设置页同一套表单。",
+  },
   chatComposer: {
     aria: "撰写消息与模型",
     modelLabel: "模型",
@@ -166,6 +181,11 @@ export const zhCN = {
           themeSystem: "跟随系统",
           themeDark: "深色",
           themeLight: "浅色",
+        },
+        pureChatModels: {
+          title: "模型（纯聊精简）",
+          hint: "选择全局对话模型、查看本机 Ollama 列表、保存云端 API；完整插件与 GGUF 管理仍在沉浸模式。",
+          openSheet: "打开模型管理…",
         },
         settingsEntry: {
           title: "设置入口",

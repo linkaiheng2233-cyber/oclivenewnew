@@ -109,6 +109,21 @@ export const enUS = {
       send: "Send",
     },
   },
+  pureChatModelSheet: {
+    title: "Models & cloud (chat-only)",
+    lead: "Lite panel: essentials vs immersive “Local models / Settings”.",
+    close: "Close",
+    sectionChatModel: "Current chat model",
+    sectionChatModelHint: "Synced with the picker above the input; switch or enter a custom id here.",
+    openFullSettings: "Open full settings…",
+    sectionLocal: "Local · Ollama",
+    sectionLocalHint: "Lists names Oclive can see right now; import/delete GGUF in immersive “Local models”.",
+    ollamaOnline: "Local Ollama reachable",
+    ollamaOffline: "Local Ollama not detected",
+    noLocalModels: "No models listed (check whether Ollama is running).",
+    sectionCloud: "Cloud · OpenAI-compatible",
+    sectionCloudHint: "Saved in-app overrides env vars; same form as Settings.",
+  },
   chatComposer: {
     aria: "Compose message and model",
     modelLabel: "Model",
@@ -171,6 +186,11 @@ export const enUS = {
           themeSystem: "System",
           themeDark: "Dark",
           themeLight: "Light",
+        },
+        pureChatModels: {
+          title: "Models (chat-only lite)",
+          hint: "Pick the global chat model, see local Ollama names, save cloud API; full plugin/GGUF tools stay in immersive mode.",
+          openSheet: "Open model manager…",
         },
         settingsEntry: {
           title: "Entries",

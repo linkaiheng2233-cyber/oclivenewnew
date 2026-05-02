@@ -43,6 +43,7 @@ const RoleplayAsidePanel = defineAsyncComponent(() => import("./components/Rolep
 const PluginManagerPanel = defineAsyncComponent(() => import("./views/PluginManagerPanel.vue"));
 const PluginManagerV2Panel = defineAsyncComponent(() => import("./views/PluginManagerV2Panel.vue"));
 const LocalModelManagerPanel = defineAsyncComponent(() => import("./views/LocalModelManagerPanel.vue"));
+const PureChatModelSheet = defineAsyncComponent(() => import("./views/PureChatModelSheet.vue"));
 const PluginMarketPanel = defineAsyncComponent(() => import("./views/PluginMarketPanel.vue"));
 const PluginMarketV2Panel = defineAsyncComponent(() => import("./views/PluginMarketV2Panel.vue"));
 const SettingsView = defineAsyncComponent(() => import("./views/SettingsView.vue"));
@@ -186,6 +187,7 @@ const latestRoleplayAside = computed(() => {
 const topMoreOpen = ref(false);
 const settingsViewOpen = ref(false);
 const localModelManagerOpen = ref(false);
+const pureChatModelSheetOpen = ref(false);
 
 const {
   pluginManagerV2Open,
@@ -228,6 +230,7 @@ function closePanelsForPureChatMode(): void {
   shortcutHelpOpen.value = false;
   settingsViewOpen.value = false;
   localModelManagerOpen.value = false;
+  pureChatModelSheetOpen.value = false;
   pluginManagerV2Open.value = false;
   pluginMarketV2Open.value = false;
   pluginStore.closePanel();
@@ -954,6 +957,25 @@ onBeforeUnmount(() => {
             </div>
           </div>
 
+          <div v-if="roleStore.interactionPureChat" class="more-tile more-tile--action">
+            <div class="more-tile-head">
+              <span class="more-label">{{ t("app.topBar.tiles.pureChatModels.title") }}</span>
+              <HelpHint :text="String(t('app.topBar.tiles.pureChatModels.hint'))" />
+            </div>
+            <div class="more-tile-body">
+              <button
+                type="button"
+                class="more-debug-btn more-debug-btn--fill"
+                @click="
+                  pureChatModelSheetOpen = true;
+                  topMoreOpen = false;
+                "
+              >
+                {{ t("app.topBar.tiles.pureChatModels.openSheet") }}
+              </button>
+            </div>
+          </div>
+
           <div v-if="!roleStore.interactionPureChat" class="more-tile more-tile--action settings-entry-tile">
             <div class="more-tile-head">
               <span class="more-label">{{ t("app.topBar.tiles.settingsEntry.title") }}</span>
@@ -1220,6 +1242,14 @@ onBeforeUnmount(() => {
       v-if="localModelManagerOpen"
       :visible="true"
       @close="localModelManagerOpen = false"
+    />
+    <PureChatModelSheet
+      :visible="pureChatModelSheetOpen"
+      @close="pureChatModelSheetOpen = false"
+      @open-settings="
+        pureChatModelSheetOpen = false;
+        openSettingsView();
+      "
     />
     <ImportProgressModal
       v-if="dropImportOpen"
