@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed, provide } from "vue";
+import { computed, provide, ref } from "vue";
 import { useI18n } from "vue-i18n";
 import { confirm } from "@tauri-apps/api/dialog";
 import BuiltinLlamaModelManager from "../components/BuiltinLlamaModelManager.vue";
@@ -29,8 +29,12 @@ const showVueCloudTrustModal = computed(
   () => !isTauriWebview() || cloudTrust.visible.value,
 );
 
+/** false = Teleport 到 body（native confirm 失败回退时避免仍嵌套在全屏层内点不到）。 */
+const trustReadmeTeleportNested = ref(true);
+
 async function openCloudLlmTrustReadme(): Promise<void> {
   if (!isTauriWebview()) {
+    trustReadmeTeleportNested.value = true;
     cloudTrust.open();
     return;
   }
@@ -43,6 +47,7 @@ async function openCloudLlmTrustReadme(): Promise<void> {
     });
   } catch (e) {
     console.warn("[cloudLlmTrust] native dialog failed, using in-app modal", e);
+    trustReadmeTeleportNested.value = false;
     cloudTrust.open();
   }
 }
@@ -51,6 +56,7 @@ provide(cloudLlmTrustReadmeOpenerKey, openCloudLlmTrustReadme);
 
 function onTrustModalVisible(v: boolean): void {
   cloudTrust.visible.value = v;
+  if (!v) trustReadmeTeleportNested.value = true;
 }
 </script>
 
@@ -86,7 +92,7 @@ function onTrustModalVisible(v: boolean): void {
         :confirm-label="cloudTrust.confirmLabel"
         variant="trust"
         require-explicit-dismiss
-        teleport-disabled
+        :teleport-disabled="trustReadmeTeleportNested"
         @update:model-value="onTrustModalVisible"
       />
     </div>
