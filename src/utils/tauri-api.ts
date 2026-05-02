@@ -485,6 +485,16 @@ export async function expertModelsSetGgufRepoMeta(params: {
   });
 }
 
+/** 本机是否出现 Ollama / llama.cpp 系进程（供前端轮询刷新模型列表）。 */
+export interface LocalLlmRuntimeProbeDto {
+  ollamaProcess: boolean;
+  llamaLikeProcess: boolean;
+}
+
+export async function probeLocalLlmRuntime(): Promise<LocalLlmRuntimeProbeDto> {
+  return invokeWithFriendlyError<LocalLlmRuntimeProbeDto>("probe_local_llm_runtime", {});
+}
+
 export async function ollamaModelsHealth(): Promise<boolean> {
   return invokeWithFriendlyError<boolean>("ollama_models_health", {});
 }

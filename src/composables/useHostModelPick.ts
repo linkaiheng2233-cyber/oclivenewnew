@@ -8,6 +8,7 @@ import {
   getHostCloudLlmPublic,
   ollamaModelsHealth,
   ollamaModelsListNames,
+  probeLocalLlmRuntime,
   setHostChatModel,
 } from "../utils/tauri-api";
 
@@ -26,6 +27,49 @@ type PickSingleton = ReturnType<typeof createPickState>;
 let singleton: PickSingleton | null = null;
 let watchStarted = false;
 let inventoryListenerRegistered = false;
+
+/** Ollama 进程 / HTTP 可用 / 模型名列表 / llama 系进程 任一变化则刷新。 */
+let lastRuntimePollSig = "";
+let runtimePollTimer: ReturnType<typeof setInterval> | null = null;
+
+async function captureLocalLlmRuntimeSnapshot(): Promise<string> {
+  const probe = await probeLocalLlmRuntime();
+  const health = await ollamaModelsHealth().catch(() => false);
+  const tryList = probe.ollamaProcess || health;
+  const names = tryList ? await ollamaModelsListNames().catch(() => []) : [];
+  const fp = [...names].sort().join("\u0001");
+  return `${probe.ollamaProcess}|${probe.llamaLikeProcess}|${health}|${fp}`;
+}
+
+function startLocalLlmRuntimePoll(): void {
+  if (runtimePollTimer != null || typeof window === "undefined") {
+    return;
+  }
+  void captureLocalLlmRuntimeSnapshot()
+    .then((s) => {
+      lastRuntimePollSig = s;
+    })
+    .catch(() => {
+      lastRuntimePollSig = "";
+    });
+  runtimePollTimer = window.setInterval(() => {
+    if (document.visibilityState === "hidden") {
+      return;
+    }
+    void (async () => {
+      try {
+        const sig = await captureLocalLlmRuntimeSnapshot();
+        if (sig === lastRuntimePollSig) {
+          return;
+        }
+        lastRuntimePollSig = sig;
+        notifyHostModelsInventoryChanged();
+      } catch {
+        /* 单次探测失败不打扰 */
+      }
+    })();
+  }, 12_000);
+}
 
 function attachInventoryListenerOnce(): void {
   if (inventoryListenerRegistered || typeof window === "undefined") {
@@ -246,6 +290,7 @@ export function useHostModelPick(): PickSingleton {
     singleton = createPickState();
   }
   attachInventoryListenerOnce();
+  startLocalLlmRuntimePoll();
   singleton.startWatchAndFocus();
   return singleton;
 }

@@ -432,6 +432,7 @@ pub fn run() {
             api::ollama_models::ollama_models_health,
             api::ollama_models::ollama_models_list_names,
             api::ollama_models::ollama_models_delete,
+            api::local_llm_probe::probe_local_llm_runtime,
             api::host_cloud_llm::get_host_cloud_llm_public,
             api::host_cloud_llm::set_host_cloud_llm,
             api::host_cloud_llm::get_host_chat_model,
