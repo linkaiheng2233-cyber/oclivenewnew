@@ -20,6 +20,7 @@
 
 ### Performance
 
+- **v0.2 首包路线（收尾）**：`App.vue` 大块 UI 懒加载 + `v-if`；`vite` `manualChunks`；`i18n` 当前语言按需 `import`、另一语言空闲预取；Rust Release profile / 瘦 tokio 见 `handoff/PERF_PHASES.md`（P1–P3 闭合，P4 `reqwest` async 单列）。
 - 对 `get_directory_plugin_catalog` 的 IPC 合并并发 in-flight 请求（全局单次调用）。
 - 对 `get_directory_plugin_bootstrap` 的 IPC 按 `role_id` 合并并发请求，减少多插槽同时挂载时的重复调用。
 - 对 `get_plugin_state` 的 IPC 按 `role_id` 合并并发请求，并在 `save/reset` 前清理对应 in-flight 键，降低并发下读取陈旧状态的概率。

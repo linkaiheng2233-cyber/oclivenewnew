@@ -7,7 +7,7 @@
 ## 快速导航
 
 - **当前进度**：WEEK3-003 完成（事件落库 + 集成测试 + 前端封装规划）
-- **首包 / chunk（v0.2）**：✅ **P1～P3** 已落地；**P4**（`reqwest` 去 `blocking`）见 **`PERF_PHASES.md`**，与功能迭代解耦、按需排期。
+- **首包 / chunk（v0.2）**：✅ **已收尾**（P1～P3）；总表与维护约定见 **`PERF_PHASES.md`**；**P4**（`reqwest` 去 `blocking`）按需另排，不挡发版。
 - **下一步**：WEEK3-004 ~ WEEK3-007（API 命令 → 前端集成 → 事务 + 情绪持久化 → 可选优化）
 - **详细计划**：见 `02_DEVELOPMENT_PLAN_v3.8.md`
 - **项目认知**：见 `04_4.6_PROJECT_TRUTH_CHECKLIST.md`
