@@ -269,6 +269,10 @@ export const useRoleStore = defineStore(
       interactionImmersive(): boolean {
         return this.roleInfo.interactionMode === "immersive";
       },
+      /** 纯聊模式：简化叙事与顶栏部分能力，用于简单路径 UI */
+      interactionPureChat(): boolean {
+        return this.roleInfo.interactionMode === "pure_chat";
+      },
     },
   },
 );

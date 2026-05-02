@@ -158,6 +158,7 @@ export const zhCN = {
           groupLabel: "设置入口集合",
           shortcutHelp: "快捷键说明",
           settings: "⚙ 设置",
+          localModels: "本地模型…",
           pluginMarket: "插件市场（Ctrl+Shift+A）",
         },
         rolePackShare: {
@@ -220,9 +221,20 @@ export const zhCN = {
       lifeAria: "日程推断",
       lifeNow: "此刻",
     },
+    pureChatAssist: {
+      aria: "纯聊快捷区",
+      lead: "纯聊已简化顶栏与侧栏叙事控件。下载或切换本地 GGUF、一键开聊请用下方按钮；导入/导出角色包仍在顶栏「更多」里。",
+      openModels: "本地模型…",
+      openMore: "打开「更多」",
+    },
     floatingSlot: {
       aria: "浮层插件区",
     },
+  },
+  localModelManagerPanel: {
+    aria: "本地模型管理",
+    title: "本地模型（GGUF）",
+    close: "关闭",
   },
   settings: {
     title: "设置",

@@ -163,6 +163,7 @@ export const enUS = {
           groupLabel: "Entry actions",
           shortcutHelp: "Shortcuts",
           settings: "Settings",
+          localModels: "Local models…",
           pluginMarket: "Plugin Market (Ctrl+Shift+A)",
         },
         rolePackShare: {
@@ -225,9 +226,20 @@ export const enUS = {
       lifeAria: "Life schedule inference",
       lifeNow: "Now",
     },
+    pureChatAssist: {
+      aria: "Chat mode shortcuts",
+      lead: "Chat mode hides virtual time and travel bars. Use the button below for local GGUF / quick start; import or export role packs stays under top bar “More”.",
+      openModels: "Local models…",
+      openMore: "Open “More”",
+    },
     floatingSlot: {
       aria: "Floating plugin slot",
     },
+  },
+  localModelManagerPanel: {
+    aria: "Local model manager",
+    title: "Local models (GGUF)",
+    close: "Close",
   },
   settings: {
     title: "Settings",

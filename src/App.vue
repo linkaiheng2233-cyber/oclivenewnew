@@ -12,6 +12,7 @@ import RoleplayAsidePanel from "./components/RoleplayAsidePanel.vue";
 import HotkeyHost from "./components/HotkeyHost.vue";
 import PluginManagerPanel from "./views/PluginManagerPanel.vue";
 import PluginManagerV2Panel from "./views/PluginManagerV2Panel.vue";
+import LocalModelManagerPanel from "./views/LocalModelManagerPanel.vue";
 import PluginMarketPanel from "./views/PluginMarketPanel.vue";
 import PluginMarketV2Panel from "./views/PluginMarketV2Panel.vue";
 import PluginSlotEmbed from "./components/PluginSlotEmbed.vue";
@@ -180,6 +181,7 @@ const latestRoleplayAside = computed(() => {
 
 const topMoreOpen = ref(false);
 const settingsViewOpen = ref(false);
+const localModelManagerOpen = ref(false);
 
 const {
   pluginManagerV2Open,
@@ -854,6 +856,16 @@ onBeforeUnmount(() => {
               <button
                 type="button"
                 class="more-debug-btn more-debug-btn--fill settings-entry-btn"
+                @click="
+                  localModelManagerOpen = true;
+                  topMoreOpen = false;
+                "
+              >
+                {{ t("app.topBar.tiles.settingsEntry.localModels") }}
+              </button>
+              <button
+                type="button"
+                class="more-debug-btn more-debug-btn--fill settings-entry-btn"
                 @click="openPluginManagerPanel"
               >
                 {{ pluginManagerMoreBtnLabel }}
@@ -1000,6 +1012,30 @@ onBeforeUnmount(() => {
           />
         </aside>
         <div class="right-pane" :class="{ 'right-pane--input-top': chatInputTop }">
+          <div
+            v-if="roleStore.interactionPureChat"
+            class="pure-chat-assist"
+            role="region"
+            :aria-label="String(t('app.pureChatAssist.aria'))"
+          >
+            <p class="pure-chat-assist-lead">{{ t("app.pureChatAssist.lead") }}</p>
+            <div class="pure-chat-assist-actions">
+              <button
+                type="button"
+                class="pure-chat-assist-btn pure-chat-assist-btn--primary"
+                @click="localModelManagerOpen = true"
+              >
+                {{ t("app.pureChatAssist.openModels") }}
+              </button>
+              <button
+                type="button"
+                class="pure-chat-assist-btn"
+                @click="topMoreOpen = true"
+              >
+                {{ t("app.pureChatAssist.openMore") }}
+              </button>
+            </div>
+          </div>
           <PluginChatHeaderSlots :bootstrap-epoch="pluginStore.bootstrapEpoch" />
           <div class="chat-scroll-wrap chat-list">
             <transition name="fade">
@@ -1062,6 +1098,7 @@ onBeforeUnmount(() => {
         void pluginStore.openPanel('plugins');
       "
     />
+    <LocalModelManagerPanel :visible="localModelManagerOpen" @close="localModelManagerOpen = false" />
     <PluginMarketV2Panel :visible="pluginMarketV2Open" @close="pluginMarketV2Open = false" />
 
     <SettingsView
@@ -1611,6 +1648,46 @@ onBeforeUnmount(() => {
 }
 .right-pane--input-top {
   flex-direction: column-reverse;
+}
+.pure-chat-assist {
+  flex-shrink: 0;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px 14px;
+  padding: 10px 14px;
+  border-bottom: 1px solid var(--border-light);
+  background: color-mix(in srgb, var(--bg-secondary) 92%, var(--accent) 8%);
+}
+.pure-chat-assist-lead {
+  margin: 0;
+  flex: 1 1 220px;
+  font-size: 12px;
+  line-height: 1.5;
+  color: var(--text-secondary);
+}
+.pure-chat-assist-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  flex-shrink: 0;
+}
+.pure-chat-assist-btn {
+  border-radius: 8px;
+  padding: 6px 12px;
+  font-size: 12px;
+  border: 1px solid var(--border-light);
+  background: transparent;
+  color: inherit;
+  cursor: pointer;
+}
+.pure-chat-assist-btn:hover {
+  background: var(--bg-hover, rgba(255, 255, 255, 0.06));
+}
+.pure-chat-assist-btn--primary {
+  background: color-mix(in srgb, var(--accent) 22%, transparent);
+  border-color: color-mix(in srgb, var(--accent) 45%, var(--border-light));
 }
 /* 聊天记录仅在右侧栏滚动；底部多留空，避免气泡+阴影被输入区视觉上压住 */
 .chat-scroll-wrap {
