@@ -1,29 +1,12 @@
 <script setup lang="ts">
 import { computed, defineAsyncComponent, nextTick, onBeforeUnmount, onMounted, ref, watch } from "vue";
 import { useI18n } from "vue-i18n";
-import AutonomousSceneNotice from "./components/AutonomousSceneNotice.vue";
 import HelpHint from "./components/HelpHint.vue";
-import RoleDetailView from "./views/RoleDetailView.vue";
 import ChatInput from "./components/ChatInput.vue";
-import PluginSidebarSlots from "./components/PluginSidebarSlots.vue";
-import RoleplayAsidePanel from "./components/RoleplayAsidePanel.vue";
 import HotkeyHost from "./components/HotkeyHost.vue";
-const PluginManagerPanel = defineAsyncComponent(() => import("./views/PluginManagerPanel.vue"));
-const PluginManagerV2Panel = defineAsyncComponent(() => import("./views/PluginManagerV2Panel.vue"));
-const LocalModelManagerPanel = defineAsyncComponent(() => import("./views/LocalModelManagerPanel.vue"));
-const PluginMarketPanel = defineAsyncComponent(() => import("./views/PluginMarketPanel.vue"));
-const PluginMarketV2Panel = defineAsyncComponent(() => import("./views/PluginMarketV2Panel.vue"));
-const SettingsView = defineAsyncComponent(() => import("./views/SettingsView.vue"));
 import ChatMessageList from "./components/ChatMessageList.vue";
-const DebugPanel = defineAsyncComponent(() => import("./components/DebugPanel.vue"));
 import RoleSelector from "./components/RoleSelector.vue";
-import SceneTravelBars from "./components/SceneTravelBars.vue";
-import TopBarSceneModeDialog from "./components/TopBarSceneModeDialog.vue";
-import ShortcutHelp from "./components/ShortcutHelp.vue";
 import Toast from "./components/Toast.vue";
-import VirtualTimeBar from "./components/VirtualTimeBar.vue";
-import RolePackBar from "./components/RolePackBar.vue";
-import ImportProgressModal from "./components/ImportProgressModal.vue";
 import { useChatStore } from "./stores/chatStore";
 import { useDebugStore } from "./stores/debugStore";
 import { useRoleStore } from "./stores/roleStore";
@@ -52,6 +35,24 @@ import {
   toPureChatPlainErrorMessage,
   type JumpTimeResponse,
 } from "./utils/tauri-api";
+
+const AutonomousSceneNotice = defineAsyncComponent(() => import("./components/AutonomousSceneNotice.vue"));
+const RoleDetailView = defineAsyncComponent(() => import("./views/RoleDetailView.vue"));
+const PluginSidebarSlots = defineAsyncComponent(() => import("./components/PluginSidebarSlots.vue"));
+const RoleplayAsidePanel = defineAsyncComponent(() => import("./components/RoleplayAsidePanel.vue"));
+const PluginManagerPanel = defineAsyncComponent(() => import("./views/PluginManagerPanel.vue"));
+const PluginManagerV2Panel = defineAsyncComponent(() => import("./views/PluginManagerV2Panel.vue"));
+const LocalModelManagerPanel = defineAsyncComponent(() => import("./views/LocalModelManagerPanel.vue"));
+const PluginMarketPanel = defineAsyncComponent(() => import("./views/PluginMarketPanel.vue"));
+const PluginMarketV2Panel = defineAsyncComponent(() => import("./views/PluginMarketV2Panel.vue"));
+const SettingsView = defineAsyncComponent(() => import("./views/SettingsView.vue"));
+const DebugPanel = defineAsyncComponent(() => import("./components/DebugPanel.vue"));
+const SceneTravelBars = defineAsyncComponent(() => import("./components/SceneTravelBars.vue"));
+const TopBarSceneModeDialog = defineAsyncComponent(() => import("./components/TopBarSceneModeDialog.vue"));
+const ShortcutHelp = defineAsyncComponent(() => import("./components/ShortcutHelp.vue"));
+const VirtualTimeBar = defineAsyncComponent(() => import("./components/VirtualTimeBar.vue"));
+const RolePackBar = defineAsyncComponent(() => import("./components/RolePackBar.vue"));
+const ImportProgressModal = defineAsyncComponent(() => import("./components/ImportProgressModal.vue"));
 
 const roleStore = useRoleStore();
 usePackUiTheme();
@@ -1221,6 +1222,7 @@ onBeforeUnmount(() => {
       @close="localModelManagerOpen = false"
     />
     <ImportProgressModal
+      v-if="dropImportOpen"
       :open="dropImportOpen"
       :percent="dropImportPercent"
       :message="dropImportMessage"
