@@ -8,14 +8,14 @@ import ChatInput from "./components/ChatInput.vue";
 import PluginSidebarSlots from "./components/PluginSidebarSlots.vue";
 import RoleplayAsidePanel from "./components/RoleplayAsidePanel.vue";
 import HotkeyHost from "./components/HotkeyHost.vue";
-import PluginManagerPanel from "./views/PluginManagerPanel.vue";
+const PluginManagerPanel = defineAsyncComponent(() => import("./views/PluginManagerPanel.vue"));
 const PluginManagerV2Panel = defineAsyncComponent(() => import("./views/PluginManagerV2Panel.vue"));
-import LocalModelManagerPanel from "./views/LocalModelManagerPanel.vue";
-import PluginMarketPanel from "./views/PluginMarketPanel.vue";
-import PluginMarketV2Panel from "./views/PluginMarketV2Panel.vue";
-import SettingsView from "./views/SettingsView.vue";
+const LocalModelManagerPanel = defineAsyncComponent(() => import("./views/LocalModelManagerPanel.vue"));
+const PluginMarketPanel = defineAsyncComponent(() => import("./views/PluginMarketPanel.vue"));
+const PluginMarketV2Panel = defineAsyncComponent(() => import("./views/PluginMarketV2Panel.vue"));
+const SettingsView = defineAsyncComponent(() => import("./views/SettingsView.vue"));
 import ChatMessageList from "./components/ChatMessageList.vue";
-import DebugPanel from "./components/DebugPanel.vue";
+const DebugPanel = defineAsyncComponent(() => import("./components/DebugPanel.vue"));
 import RoleSelector from "./components/RoleSelector.vue";
 import SceneTravelBars from "./components/SceneTravelBars.vue";
 import TopBarSceneModeDialog from "./components/TopBarSceneModeDialog.vue";
@@ -1183,7 +1183,8 @@ onBeforeUnmount(() => {
     </div>
 
     <DebugPanel
-      :visible="debugStore.visible"
+      v-if="debugStore.visible"
+      :visible="true"
       :loading="chatStore.isLoading"
       :favorability="roleStore.roleInfo.favorability"
       :personality="roleStore.roleInfo.personality ?? []"
@@ -1203,8 +1204,8 @@ onBeforeUnmount(() => {
       :bootstrap-epoch="pluginStore.bootstrapEpoch"
     />
 
-    <PluginMarketPanel />
-    <PluginManagerPanel />
+    <PluginMarketPanel v-if="pluginStore.marketPanelVisible" />
+    <PluginManagerPanel v-if="pluginStore.panelVisible" />
     <PluginManagerV2Panel
       v-if="pluginManagerV2Open"
       :visible="true"
@@ -1214,15 +1215,24 @@ onBeforeUnmount(() => {
         void pluginStore.openPanel('plugins');
       "
     />
-    <LocalModelManagerPanel :visible="localModelManagerOpen" @close="localModelManagerOpen = false" />
+    <LocalModelManagerPanel
+      v-if="localModelManagerOpen"
+      :visible="true"
+      @close="localModelManagerOpen = false"
+    />
     <ImportProgressModal
       :open="dropImportOpen"
       :percent="dropImportPercent"
       :message="dropImportMessage"
     />
-    <PluginMarketV2Panel :visible="pluginMarketV2Open" @close="pluginMarketV2Open = false" />
+    <PluginMarketV2Panel
+      v-if="pluginMarketV2Open"
+      :visible="true"
+      @close="pluginMarketV2Open = false"
+    />
 
     <SettingsView
+      v-if="settingsViewOpen"
       :visible="settingsViewOpen"
       @close="settingsViewOpen = false"
       @open-plugin-v2="openPluginManagerV2Preview"

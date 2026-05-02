@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { ref, watch } from "vue";
+import { onBeforeUnmount, ref, watch } from "vue";
 import { useI18n } from "vue-i18n";
 import HelpHint from "../components/HelpHint.vue";
 import TrustConsentModal from "../components/TrustConsentModal.vue";
@@ -72,7 +72,12 @@ watch(
     marketSourcesLoaded.value = true;
     void loadMarketSources();
   },
+  { immediate: true },
 );
+
+onBeforeUnmount(() => {
+  cloudTrust.close();
+});
 
 watch(
   () => roleStore.interactionPureChat,
