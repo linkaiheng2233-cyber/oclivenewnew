@@ -3,9 +3,11 @@ import { listen, type UnlistenFn } from "@tauri-apps/api/event";
 import { computed, onBeforeUnmount, onMounted, ref } from "vue";
 import { useI18n } from "vue-i18n";
 import { usePluginStore } from "../stores/pluginStore";
+import { useRoleStore } from "../stores/roleStore";
 import type { HotkeyAction } from "../utils/tauri-api";
 
 const pluginStore = usePluginStore();
+const roleStore = useRoleStore();
 const { t } = useI18n();
 
 const launcherOpen = ref(false);
@@ -35,6 +37,9 @@ onMounted(async () => {
     "hotkey-action",
     (e) => {
       const a = e.payload.action;
+      if (roleStore.interactionPureChat) {
+        return;
+      }
       if (a.type === "openLauncherList") {
         launcherOpen.value = true;
         return;

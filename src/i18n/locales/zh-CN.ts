@@ -161,11 +161,6 @@ export const zhCN = {
           localModels: "本地模型…",
           pluginMarket: "插件市场（Ctrl+Shift+A）",
         },
-        pureChatSettings: {
-          title: "纯聊常用",
-          groupLabel: "纯聊快捷入口",
-          hint: "纯聊下隐藏插件市场、调试与完整设置入口；需要时再切换到沉浸模式。",
-        },
         rolePackShare: {
           title: "角色包（朋友分享）",
           hint: [
@@ -177,6 +172,8 @@ export const zhCN = {
           title: "调试",
           hint:
             "开发者与排错用：好感、记忆、策略重载等。Ctrl+Shift+D 可开关调试窗；顶栏「更多」展开时按 Esc 先收起本栏。",
+          hintPureChat:
+            "纯聊：仅 Ctrl+Shift+D 可开关本面板；其它全局快捷键与自定义热键已停用。需要插件与完整设置请切到沉浸模式。",
           openPanel: "打开调试面板",
         },
         virtualTime: {
@@ -228,12 +225,11 @@ export const zhCN = {
     },
     pureChatAssist: {
       aria: "纯聊快捷区",
-      lead: "纯聊已简化叙事控件。可将 .ocpak / .zip 角色包拖入窗口直接导入；本地 GGUF 用下方按钮；字号与主题在顶栏「更多」→「界面」。",
-      openModels: "本地模型…",
-      openMore: "打开「更多」",
+      lead: "纯聊只保留对话与外观。角色包可拖入窗口导入；字号与主题在顶栏「更多」→「界面」。排错请用下方调试入口。",
+      openDebug: "打开调试面板",
     },
     pureChatErrors: {
-      llm: "这句没发出去：多半是模型没开或名字不对。请点「本地模型」检查，或确认本机推理服务已启动。",
+      llm: "这句没发出去：多半是模型没开或名字不对。可切到沉浸模式检查本机模型与插件后端，或确认推理服务已启动。",
       invalid: "当前操作参数不对，请稍后再试或切换为沉浸模式查看详情。",
       noRole: "找不到这个角色，请确认角色包是否已导入。",
       packExists: "磁盘里已经有同名角色包，请先决定要不要覆盖再导入。",
@@ -311,7 +307,7 @@ export const zhCN = {
       immersiveHint: "虚拟时间、叙事场景等仅在沉浸模式下显示于「更多」。",
       pureChatLabel: "纯聊",
       pureChatHint:
-        "纯聊以对话为主，不展开叙事与插件编排相关快捷键；需要完整快捷键与专业入口时请切换到沉浸模式。",
+        "纯聊下已关闭设置、插件、市场等全局快捷键（仅保留 Ctrl+Shift+D 调试）。需要完整快捷键与专业入口请切换到沉浸模式。",
     },
     experimental: {
       label: "实验性功能",

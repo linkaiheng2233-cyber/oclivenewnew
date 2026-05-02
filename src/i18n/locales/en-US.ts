@@ -166,11 +166,6 @@ export const enUS = {
           localModels: "Local models…",
           pluginMarket: "Plugin Market (Ctrl+Shift+A)",
         },
-        pureChatSettings: {
-          title: "Chat mode essentials",
-          groupLabel: "Chat mode shortcuts",
-          hint: "In chat-only mode, plugin market, debug and full settings are hidden; switch to immersive when you need them.",
-        },
         rolePackShare: {
           title: "Role packs (share with friends)",
           hint: [
@@ -182,6 +177,8 @@ export const enUS = {
           title: "Debug",
           hint:
             "For developers and troubleshooting. Ctrl+Shift+D toggles the debug window. When “More” is open, pressing Esc will close this panel first.",
+          hintPureChat:
+            "Chat-only: only Ctrl+Shift+D toggles this panel; other global shortcuts and custom hotkeys are disabled. Switch to immersive for plugins and full settings.",
           openPanel: "Open debug panel",
         },
         virtualTime: {
@@ -232,13 +229,12 @@ export const enUS = {
       lifeNow: "Now",
     },
     pureChatAssist: {
-      aria: "Chat mode shortcuts",
-      lead: "Chat mode keeps narrative UI light. Drop a .ocpak / .zip role pack onto the window to import; use the button below for local GGUF; font and theme live under More → Appearance.",
-      openModels: "Local models…",
-      openMore: "Open “More”",
+      aria: "Chat mode assist",
+      lead: "Chat mode keeps only conversation and appearance. Drop a .ocpak / .zip to import a role pack; font and theme are under More → Appearance. Use the button below for troubleshooting.",
+      openDebug: "Open debug panel",
     },
     pureChatErrors: {
-      llm: "Message did not send: the model may be offline or misconfigured. Open “Local models” or make sure your local inference service is running.",
+      llm: "Message did not send: the model may be offline or misconfigured. Switch to immersive to check local models and plugin backends, or ensure your inference service is running.",
       invalid: "Something about that action was not valid. Try again, or switch to immersive mode for more detail.",
       noRole: "That role could not be found. Check that the role pack is imported.",
       packExists: "A role with that id already exists. Choose whether to overwrite before importing.",
@@ -316,7 +312,7 @@ export const enUS = {
         'Virtual time, narrative scenes, etc. are only shown under "More" in immersive mode.',
       pureChatLabel: "Chat-only",
       pureChatHint:
-        "Chat-only focuses on conversation; shortcut and power-user entries tied to narrative/plugins are not listed here—switch to immersive when you need them.",
+        "In chat-only mode, global shortcuts for settings, plugins, and market are disabled (only Ctrl+Shift+D for debug). Switch to immersive for the full shortcut list.",
     },
     experimental: {
       label: "Experimental",

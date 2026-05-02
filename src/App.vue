@@ -115,6 +115,7 @@ function onCtrlHoldHintKeydown(e: KeyboardEvent): void {
   clearCtrlLongPressTimer();
   ctrlLongPressTimer = window.setTimeout(() => {
     ctrlLongPressTimer = null;
+    if (roleStore.interactionPureChat) return;
     shortcutHelpOpen.value = true;
   }, 1000);
 }
@@ -219,6 +220,17 @@ function openSettingsView(): void {
   topMoreOpen.value = false;
 }
 
+/** 切到纯聊时收起依赖沉浸/插件栈的浮层，避免与纯聊路径叠在一起 */
+function closePanelsForPureChatMode(): void {
+  shortcutHelpOpen.value = false;
+  settingsViewOpen.value = false;
+  localModelManagerOpen.value = false;
+  pluginManagerV2Open.value = false;
+  pluginMarketV2Open.value = false;
+  pluginStore.closePanel();
+  pluginStore.closeMarketPanel();
+}
+
 function onDocumentClickCloseMore(e: MouseEvent) {
   if (!topMoreOpen.value) return;
   const el = topBarRef.value;
@@ -268,6 +280,7 @@ async function onInteractionModeChange(ev: Event) {
         fromLabel: "",
         toLabel: "",
       };
+      closePanelsForPureChatMode();
     }
   } catch (err) {
     showToast("error", err instanceof Error ? err.message : String(err));
@@ -307,6 +320,7 @@ async function onPluginSetInteractionMode(payload: unknown): Promise<void> {
         fromLabel: "",
         toLabel: "",
       };
+      closePanelsForPureChatMode();
     }
     showToast(
       "success",
@@ -583,6 +597,18 @@ function onHotkey(e: KeyboardEvent) {
       return;
     }
   }
+  if (e.ctrlKey && e.shiftKey && e.key.toLowerCase() === "d") {
+    e.preventDefault();
+    debugStore.toggle();
+    return;
+  }
+  if (roleStore.interactionPureChat) {
+    if (e.ctrlKey && e.shiftKey) {
+      const k = e.key.toLowerCase();
+      if (k === "f" || k === "a" || k === "s") e.preventDefault();
+    }
+    return;
+  }
   if (e.ctrlKey && e.shiftKey && e.key.toLowerCase() === "f") {
     e.preventDefault();
     openPluginManagerPanel();
@@ -597,10 +623,6 @@ function onHotkey(e: KeyboardEvent) {
     e.preventDefault();
     openSettingsView();
     return;
-  }
-  if (e.ctrlKey && e.shiftKey && e.key.toLowerCase() === "d") {
-    e.preventDefault();
-    debugStore.toggle();
   }
 }
 
@@ -706,7 +728,7 @@ async function runPendingProtocolInstallsFromQueue(): Promise<void> {
         const r = await installPluginFromGit(git);
         showToast("success", String(t("app.toasts.pluginInstalledFromUrl", { id: r.installedPluginId })));
         await pluginStore.refresh();
-        openPluginManagerPanel();
+        if (!roleStore.interactionPureChat) openPluginManagerPanel();
       } catch (e) {
         showToast("error", e instanceof Error ? e.message : String(e));
       }
@@ -972,32 +994,6 @@ onBeforeUnmount(() => {
             </div>
           </div>
 
-          <div v-else class="more-tile more-tile--action settings-entry-tile">
-            <div class="more-tile-head">
-              <span class="more-label">{{ t("app.topBar.tiles.pureChatSettings.title") }}</span>
-              <HelpHint :text="String(t('app.topBar.tiles.pureChatSettings.hint'))" />
-            </div>
-            <div
-              class="more-tile-body settings-entry-actions"
-              role="group"
-              :aria-label="String(t('app.topBar.tiles.pureChatSettings.groupLabel'))"
-            >
-              <button type="button" class="more-debug-btn more-debug-btn--fill settings-entry-btn" @click="openShortcutHelp">
-                {{ t("app.topBar.tiles.settingsEntry.shortcutHelp") }}
-              </button>
-              <button
-                type="button"
-                class="more-debug-btn more-debug-btn--fill settings-entry-btn settings-entry-btn--primary"
-                @click="
-                  localModelManagerOpen = true;
-                  topMoreOpen = false;
-                "
-              >
-                {{ t("app.topBar.tiles.settingsEntry.localModels") }}
-              </button>
-            </div>
-          </div>
-
           <div v-if="!roleStore.interactionPureChat" class="more-tile more-tile--action">
             <div class="more-tile-head">
               <span class="more-label">{{ t("app.topBar.tiles.rolePackShare.title") }}</span>
@@ -1013,11 +1009,17 @@ onBeforeUnmount(() => {
             </div>
           </div>
 
-          <div v-if="!roleStore.interactionPureChat" class="more-tile more-tile--action">
+          <div class="more-tile more-tile--action">
             <div class="more-tile-head">
               <span class="more-label">{{ t("app.topBar.tiles.debug.title") }}</span>
               <HelpHint
-                :text="String(t('app.topBar.tiles.debug.hint'))"
+                :text="
+                  String(
+                    roleStore.interactionPureChat
+                      ? t('app.topBar.tiles.debug.hintPureChat')
+                      : t('app.topBar.tiles.debug.hint'),
+                  )
+                "
               />
             </div>
             <div class="more-tile-body">
@@ -1140,19 +1142,8 @@ onBeforeUnmount(() => {
           >
             <p class="pure-chat-assist-lead">{{ t("app.pureChatAssist.lead") }}</p>
             <div class="pure-chat-assist-actions">
-              <button
-                type="button"
-                class="pure-chat-assist-btn pure-chat-assist-btn--primary"
-                @click="localModelManagerOpen = true"
-              >
-                {{ t("app.pureChatAssist.openModels") }}
-              </button>
-              <button
-                type="button"
-                class="pure-chat-assist-btn"
-                @click="topMoreOpen = true"
-              >
-                {{ t("app.pureChatAssist.openMore") }}
+              <button type="button" class="pure-chat-assist-btn pure-chat-assist-btn--primary" @click="debugStore.toggle">
+                {{ t("app.pureChatAssist.openDebug") }}
               </button>
             </div>
           </div>
