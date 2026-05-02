@@ -203,6 +203,39 @@ impl OllamaClient {
 
         Ok(full_response)
     }
+
+    /// 删除本地 Ollama 模型（`POST /api/delete`）。
+    pub async fn delete_model(&self, name: &str) -> Result<()> {
+        let n = name.trim();
+        if n.is_empty() {
+            return Err(AppError::InvalidParameter("model name is empty".into()));
+        }
+        let url = format!("{}/api/delete", self.base_url);
+        let body = serde_json::json!({ "name": n });
+        let response = self
+            .client
+            .post(&url)
+            .json(&body)
+            .timeout(self.timeout)
+            .send()
+            .await
+            .map_err(|e| AppError::OllamaError(format!("delete request failed: {}", e)))?;
+
+        let status = response.status();
+        let text = response
+            .text()
+            .await
+            .map_err(|e| AppError::OllamaError(format!("delete body read: {}", e)))?;
+
+        if !status.is_success() {
+            return Err(AppError::OllamaError(format!(
+                "delete HTTP {} — {}",
+                status,
+                text.chars().take(800).collect::<String>()
+            )));
+        }
+        Ok(())
+    }
 }
 
 #[cfg(test)]

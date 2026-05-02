@@ -5,6 +5,7 @@ import LeftCategoryNav from "./LeftCategoryNav.vue";
 import PluginCardList from "./PluginCardList.vue";
 import RightDetailPanel from "./RightDetailPanel.vue";
 import HelpCircle from "../HelpCircle.vue";
+import BuiltinLlamaModelManager from "../BuiltinLlamaModelManager.vue";
 import ExpertModelsPanel from "../ExpertModels/ExpertModelsPanel.vue";
 import { usePluginManagerV2 } from "../../composables/usePluginManagerV2";
 import { usePluginTerm } from "../../composables/usePluginTerm";
@@ -764,6 +765,8 @@ async function onApply(payload: Record<string, unknown>) {
       </div>
       <p class="pm2-muted" style="margin: 8px 0 0">{{ t("pluginManagerV2.localLlamaSection.effectiveLabel") }}：{{ llmEffectiveLabel }}</p>
     </section>
+
+    <BuiltinLlamaModelManager @request-close="emit('close')" />
 
     <ExpertModelsPanel @open-permissions="openPermModal($event.pluginId)" />
 

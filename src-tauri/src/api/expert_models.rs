@@ -616,6 +616,154 @@ pub fn expert_models_import_lora_gguf(
     import_gguf_into_dir(dir.as_path(), req.source_path.as_str())
 }
 
+fn resolve_existing_gguf_under_models_gguf_dir(
+    state: &AppState,
+    user_path: &str,
+) -> Result<std::path::PathBuf, String> {
+    use std::path::Path;
+    let t = user_path.trim();
+    if t.is_empty() {
+        return Err(
+            ApiError::InvalidParameter {
+                message: "path required".into(),
+            }
+            .to_string(),
+        );
+    }
+    let gguf_root = llama_models_gguf_dir(state);
+    std::fs::create_dir_all(&gguf_root).map_err(|e| e.to_string())?;
+    let root = gguf_root.canonicalize().map_err(|e| e.to_string())?;
+    let pb = Path::new(t);
+    if !pb.is_absolute() {
+        return Err(
+            ApiError::InvalidParameter {
+                message: "path must be absolute".into(),
+            }
+            .to_string(),
+        );
+    }
+    let cand = pb.canonicalize().map_err(|e| e.to_string())?;
+    if !cand.starts_with(&root) {
+        return Err(
+            ApiError::InvalidParameter {
+                message: "path must stay under app_data/models/gguf".into(),
+            }
+            .to_string(),
+        );
+    }
+    if !cand.is_file() {
+        return Err(
+            ApiError::InvalidParameter {
+                message: "path is not an existing file".into(),
+            }
+            .to_string(),
+        );
+    }
+    let is_gguf = cand
+        .extension()
+        .and_then(|s| s.to_str())
+        .map(|s| s.eq_ignore_ascii_case("gguf"))
+        .unwrap_or(false);
+    if !is_gguf {
+        return Err(
+            ApiError::InvalidParameter {
+                message: "only .gguf files are allowed".into(),
+            }
+            .to_string(),
+        );
+    }
+    Ok(cand)
+}
+
+#[derive(Debug, Clone, serde::Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct ExpertModelsLocalGgufPathRequest {
+    pub path: String,
+}
+
+#[derive(Debug, Clone, serde::Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct ExpertModelsRenameLocalGgufRequest {
+    pub path: String,
+    pub new_file_name: String,
+}
+
+#[tauri::command]
+pub fn expert_models_delete_local_base_model(
+    req: ExpertModelsLocalGgufPathRequest,
+    state: State<'_, AppState>,
+) -> Result<(), String> {
+    let p = resolve_existing_gguf_under_models_gguf_dir(&state, req.path.as_str())?;
+    std::fs::remove_file(&p).map_err(|e| e.to_string())
+}
+
+#[tauri::command]
+pub fn expert_models_rename_local_base_model(
+    req: ExpertModelsRenameLocalGgufRequest,
+    state: State<'_, AppState>,
+) -> Result<LocalModelFileDto, String> {
+    use std::path::Path;
+    let src = resolve_existing_gguf_under_models_gguf_dir(&state, req.path.as_str())?;
+    let raw = req.new_file_name.trim();
+    if raw.is_empty() {
+        return Err(
+            ApiError::InvalidParameter {
+                message: "new_file_name required".into(),
+            }
+            .to_string(),
+        );
+    }
+    let file_only = Path::new(raw)
+        .file_name()
+        .and_then(|s| s.to_str())
+        .ok_or_else(|| {
+            ApiError::InvalidParameter {
+                message: "invalid new_file_name".into(),
+            }
+            .to_string()
+        })?;
+    let sanitized = sanitize_file_name(file_only);
+    let s = sanitized.trim();
+    if s.is_empty() {
+        return Err(
+            ApiError::InvalidParameter {
+                message: "new_file_name empty after sanitize".into(),
+            }
+            .to_string(),
+        );
+    }
+    if !s.to_ascii_lowercase().ends_with(".gguf") {
+        return Err(
+            ApiError::InvalidParameter {
+                message: "new_file_name must end with .gguf".into(),
+            }
+            .to_string(),
+        );
+    }
+    let parent = src
+        .parent()
+        .ok_or_else(|| ApiError::Io { message: "missing parent dir".into() }.to_string())?;
+    let dest = parent.join(s);
+    if dest.exists() {
+        return Err(
+            ApiError::InvalidParameter {
+                message: "target file already exists".into(),
+            }
+            .to_string(),
+        );
+    }
+    std::fs::rename(&src, &dest).map_err(|e| e.to_string())?;
+    let dest = dest.canonicalize().map_err(|e| e.to_string())?;
+    Ok(LocalModelFileDto {
+        name: dest
+            .file_name()
+            .and_then(|x| x.to_str())
+            .unwrap_or("")
+            .to_string(),
+        path: dest.to_string_lossy().to_string(),
+    })
+}
+
 #[tauri::command]
 pub async fn expert_models_apply_to_session(
     req: ExpertModelsApplyToSessionRequest,

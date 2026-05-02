@@ -449,6 +449,35 @@ export async function expertModelsImportLoraGguf(
   });
 }
 
+export async function expertModelsDeleteLocalBaseModel(path: string): Promise<void> {
+  return invokeWithFriendlyError<void>("expert_models_delete_local_base_model", {
+    req: { path },
+  });
+}
+
+export async function expertModelsRenameLocalBaseModel(
+  path: string,
+  newFileName: string,
+): Promise<LocalModelFileDto> {
+  return invokeWithFriendlyError<LocalModelFileDto>("expert_models_rename_local_base_model", {
+    req: { path, newFileName },
+  });
+}
+
+export async function ollamaModelsHealth(): Promise<boolean> {
+  return invokeWithFriendlyError<boolean>("ollama_models_health", {});
+}
+
+export async function ollamaModelsListNames(): Promise<string[]> {
+  return invokeWithFriendlyError<string[]>("ollama_models_list_names", {});
+}
+
+export async function ollamaModelsDelete(name: string): Promise<void> {
+  return invokeWithFriendlyError<void>("ollama_models_delete", {
+    req: { name },
+  });
+}
+
 export function toFriendlyErrorMessage(err: unknown): string {
   const { code, raw } = parseBackendError(err);
   if (!code) return raw;
