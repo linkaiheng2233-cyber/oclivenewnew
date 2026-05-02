@@ -1,10 +1,12 @@
 <script setup lang="ts">
-import { onBeforeUnmount, ref, watch } from "vue";
+import { computed, onBeforeUnmount, ref, watch } from "vue";
 import { useI18n } from "vue-i18n";
+import { confirm } from "@tauri-apps/api/dialog";
 import HelpHint from "../components/HelpHint.vue";
 import TrustConsentModal from "../components/TrustConsentModal.vue";
 import CloudLlmQuickSetup from "../components/CloudLlmQuickSetup.vue";
-import { useCloudLlmTrustModal } from "../composables/useCloudLlmTrustModal";
+import { buildCloudLlmTrustPlainText, useCloudLlmTrustModal } from "../composables/useCloudLlmTrustModal";
+import { isTauriWebview } from "../utils/isTauriWebview";
 import HotkeySettingsSection from "../components/HotkeySettingsSection.vue";
 import PluginSettingsPanelSlots from "../components/PluginSettingsPanelSlots.vue";
 import PluginSlotEmbed from "../components/PluginSlotEmbed.vue";
@@ -42,6 +44,33 @@ const uiStore = useUiStore();
 const { showToast } = useAppToast();
 const { t } = useI18n();
 const cloudTrust = useCloudLlmTrustModal();
+
+/** Tauri 下用系统 confirm，避免全屏设置层上叠 TrustConsentModal 时 WebView2 按钮点不到。 */
+const showVueCloudTrustModal = computed(
+  () => !isTauriWebview() || cloudTrust.visible.value,
+);
+
+async function openCloudLlmTrustReadme(): Promise<void> {
+  if (!isTauriWebview()) {
+    cloudTrust.open();
+    return;
+  }
+  try {
+    await confirm(buildCloudLlmTrustPlainText((k) => String(t(k))), {
+      title: String(t("settings.cloudLlmTrust.modal.title")),
+      type: "info",
+      okLabel: String(t("settings.cloudLlmTrust.modal.allow")),
+      cancelLabel: String(t("common.cancel")),
+    });
+  } catch (e) {
+    console.warn("[cloudLlmTrust] native dialog failed, using in-app modal", e);
+    cloudTrust.open();
+  }
+}
+
+function onTrustModalVisible(v: boolean): void {
+  cloudTrust.visible.value = v;
+}
 
 type SettingsTab = "general" | "plugins";
 
@@ -240,7 +269,7 @@ async function onToggleForceIframe(e: Event) {
               <CloudLlmQuickSetup />
             </div>
             <div class="sv-cloud-actions-row">
-              <button type="button" class="sv-btn sv-btn--accent" @click="cloudTrust.open">
+              <button type="button" class="sv-btn sv-btn--accent" @click="openCloudLlmTrustReadme">
                 {{ t("settings.cloudLlmTrust.reviewCta") }}
               </button>
               <button type="button" class="sv-btn" @click="onOpenPluginBackendsFromCloud">
@@ -371,7 +400,8 @@ async function onToggleForceIframe(e: Event) {
       </div>
     </div>
     <TrustConsentModal
-      v-model="cloudTrust.visible"
+      v-if="showVueCloudTrustModal"
+      :model-value="cloudTrust.visible"
       :title="cloudTrust.modalTitle"
       :subtitle="cloudTrust.modalSubtitle"
       :trust-summary-title="cloudTrust.trustSummaryTitle"
@@ -381,6 +411,7 @@ async function onToggleForceIframe(e: Event) {
       :confirm-label="cloudTrust.confirmLabel"
       variant="trust"
       require-explicit-dismiss
+      @update:model-value="onTrustModalVisible"
     />
     </template>
   </Teleport>
