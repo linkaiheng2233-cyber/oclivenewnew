@@ -1,6 +1,8 @@
 <script setup lang="ts">
 import { computed, onMounted, ref } from "vue";
 import { useI18n } from "vue-i18n";
+import TrustConsentModal from "./TrustConsentModal.vue";
+import { useCloudLlmTrustModal } from "../composables/useCloudLlmTrustModal";
 import { open } from "@tauri-apps/api/dialog";
 import { useAppToast } from "../composables/useAppToast";
 import { useExpertModelsStore } from "../stores/expertModelsStore";
@@ -15,11 +17,9 @@ import {
   expertModelsRenameLocalBaseModel,
   expertModelsSetGgufRepoMeta,
   expertModelsSetSessionOverride,
-  getCloudLlmUiSettings,
   ollamaModelsDelete,
   ollamaModelsHealth,
   ollamaModelsListNames,
-  setCloudLlmUiSettings,
   setPluginPermissionGrant,
 } from "../utils/tauri-api";
 
@@ -32,6 +32,7 @@ const emit = defineEmits<{
 
 const { t } = useI18n();
 const { showToast } = useAppToast();
+const cloudTrust = useCloudLlmTrustModal();
 const roleStore = useRoleStore();
 const pluginStore = usePluginStore();
 const expertStore = useExpertModelsStore();
@@ -48,32 +49,6 @@ const repoNotesByPath = ref<Record<string, string>>({});
 const repoUrlByPath = ref<Record<string, string>>({});
 const repoTagsByPath = ref<Record<string, string>>({});
 const repoSavePath = ref<string | null>(null);
-const cloudGateBusy = ref(false);
-const allowCloudOpenai = ref(false);
-
-async function loadCloudGate(): Promise<void> {
-  try {
-    const r = await getCloudLlmUiSettings();
-    allowCloudOpenai.value = r.openaiBlocked !== true;
-  } catch {
-    /* 列表页不阻断 */
-  }
-}
-
-async function onToggleAllowCloudOpenai(e: Event): Promise<void> {
-  const checked = (e.target as HTMLInputElement).checked;
-  cloudGateBusy.value = true;
-  try {
-    await setCloudLlmUiSettings({ openaiBlocked: !checked });
-    allowCloudOpenai.value = checked;
-    showToast("success", String(t("builtinLlamaModels.cloudGate.toastSaved")));
-  } catch (err) {
-    showToast("error", err instanceof Error ? err.message : String(err));
-    allowCloudOpenai.value = !checked;
-  } finally {
-    cloudGateBusy.value = false;
-  }
-}
 
 const sortedRows = computed(() =>
   [...rows.value].sort((a, b) => a.name.localeCompare(b.name, undefined, { sensitivity: "base" })),
@@ -126,7 +101,6 @@ function graphBaseOnly(ggufPath: string): ExpertGraph {
 async function refresh(): Promise<void> {
   loading.value = true;
   try {
-    void loadCloudGate();
     rows.value = await expertModelsListLocalBaseModels();
     syncRepoDraftsFromRows(rows.value);
   } catch (e) {
@@ -295,13 +269,24 @@ async function onOllamaDelete(): Promise<void> {
 }
 
 onMounted(() => {
-  void loadCloudGate();
   void refresh();
   void pluginStore.refresh().catch(() => {});
 });
 </script>
 
 <template>
+  <TrustConsentModal
+    v-model="cloudTrust.visible"
+    :title="cloudTrust.modalTitle"
+    :subtitle="cloudTrust.modalSubtitle"
+    :trust-summary-title="cloudTrust.trustSummaryTitle"
+    :trust-summary="cloudTrust.trustSummaryBody"
+    :hint="cloudTrust.modalHint"
+    :capabilities="cloudTrust.capabilities"
+    :confirm-label="cloudTrust.confirmLabel"
+    variant="trust"
+    require-explicit-dismiss
+  />
   <section class="blm-root" :aria-label="String(t('builtinLlamaModels.aria'))">
     <div class="blm-top">
       <h3 class="blm-h3">{{ t("builtinLlamaModels.title") }}</h3>
@@ -309,18 +294,12 @@ onMounted(() => {
         {{ t("builtinLlamaModels.refresh") }}
       </button>
     </div>
-    <div class="blm-card blm-card--gate">
-      <h4 class="blm-card-title">{{ t("builtinLlamaModels.cloudGate.title") }}</h4>
-      <p class="blm-card-desc">{{ t("builtinLlamaModels.cloudGate.hint") }}</p>
-      <label class="blm-toggle">
-        <input
-          type="checkbox"
-          :checked="allowCloudOpenai"
-          :disabled="cloudGateBusy"
-          @change="onToggleAllowCloudOpenai"
-        />
-        <span>{{ t("builtinLlamaModels.cloudGate.allow") }}</span>
-      </label>
+    <div class="blm-card blm-card--cloud">
+      <h4 class="blm-card-title">{{ t("builtinLlamaModels.cloudTrust.title") }}</h4>
+      <p class="blm-card-desc">{{ t("builtinLlamaModels.cloudTrust.hint") }}</p>
+      <button type="button" class="blm-btn secondary blm-btn-inline" @click="cloudTrust.open">
+        {{ t("builtinLlamaModels.cloudTrust.reviewCta") }}
+      </button>
     </div>
     <p class="blm-lead">{{ t("builtinLlamaModels.guide.lead") }}</p>
 
@@ -529,21 +508,11 @@ onMounted(() => {
   background: color-mix(in srgb, var(--bg-primary) 88%, var(--text-secondary) 12%);
   border-style: dashed;
 }
-.blm-card--gate {
-  border-color: color-mix(in srgb, var(--accent, #3b82f6) 35%, var(--border-light));
+.blm-card--cloud {
+  border-color: color-mix(in srgb, var(--accent, #3b82f6) 30%, var(--border-light));
 }
-.blm-toggle {
-  display: flex;
-  align-items: flex-start;
-  gap: 10px;
-  font-size: 13px;
-  line-height: 1.45;
-  cursor: pointer;
-  color: var(--text-primary);
-}
-.blm-toggle input {
-  margin-top: 2px;
-  flex-shrink: 0;
+.blm-btn-inline {
+  align-self: flex-start;
 }
 .blm-card-title {
   margin: 0 0 6px;
