@@ -6,10 +6,12 @@ import type { DirectoryPluginBootstrap } from "./tauri-api";
 import { readPluginAssetText } from "./tauri-api";
 import { i18n, setAppLocale } from "../i18n";
 import { useUiStore } from "../stores/uiStore";
-import { isTauriWebview } from "./isTauriWebview";
 
 export function isTauriRuntime(): boolean {
-  return isTauriWebview();
+  return (
+    typeof window !== "undefined" &&
+    Object.prototype.hasOwnProperty.call(window, "__TAURI_INTERNALS__")
+  );
 }
 
 /**

@@ -1,5 +1,11 @@
 import { confirm as tauriConfirm } from "@tauri-apps/api/dialog";
-import { isTauriWebview } from "./isTauriWebview";
+
+function isTauriWebview(): boolean {
+  return (
+    typeof window !== "undefined" &&
+    Object.prototype.hasOwnProperty.call(window, "__TAURI_INTERNALS__")
+  );
+}
 
 /** 在 Tauri 内用系统对话框（置顶）；否则回退 `window.confirm`（浏览器）。 */
 export async function appConfirm(

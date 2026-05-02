@@ -24,8 +24,7 @@
       },
       "dialog": {
         "open": true,
-        "save": true,
-        "confirm": true
+        "save": true
       },
       "fs": {
         "writeFile": true,
