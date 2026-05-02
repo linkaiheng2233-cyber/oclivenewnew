@@ -259,6 +259,11 @@ export const zhCN = {
   },
   settings: {
     title: "设置",
+    /** 纯聊打开设置时：与沉浸功能划界，避免同一页里混叙事/插件话术 */
+    pureChatBoundary:
+      "当前为纯聊：本页只保留语言、云端入网说明等常用项。叙事条、插件实验与市场等仍在沉浸模式，避免与纯聊主路径混在一起。",
+    pureChatMoreInImmersive:
+      "插件实验、第三方索引源、设置页扩展插槽等已收起；需要时请切换到沉浸模式后打开同一设置页。",
     sectionsNavLabel: "设置分区",
     tabs: {
       general: "常规",
@@ -276,7 +281,7 @@ export const zhCN = {
     cloudLlmTrust: {
       sectionTitle: "云端对话模型（OpenAI 兼容）",
       sectionLead:
-        "启用云端后，宿主会向公网发起 HTTPS 请求。当前版本请通过环境变量配置（见下）；应用内表单与持久化将随后续版本接入。",
+        "与「纯聊 / 沉浸」切换无关：属宿主全局入网能力。启用后向公网发起 HTTPS。当前版本请用环境变量配置（见下）；应用内表单将随后续版本接入。",
       envTitle: "环境变量（需重启应用生效）",
       envLineBase: "OCLIVE_CLOUD_LLM_BASE_URL — API 根地址，不要带 /v1 后缀",
       envLineKey: "OCLIVE_CLOUD_LLM_API_KEY — 密钥（勿提交到仓库）",
@@ -286,24 +291,27 @@ export const zhCN = {
       openBackendsCta: "打开插件管理 · 后端模块",
       toastOpenedBackends: "已打开插件管理。请在「后端模块」中检查 LLM 与权限。",
       caps: {
-        net: "向配置的 Base URL 发起 HTTPS 请求（OpenAI 兼容路径，例如 …/v1/chat/completions）。",
-        secret: "请求头携带 API Key；凭据来源为你配置的环境变量或后续应用内设置。",
-        perm: "若走远程 LLM 插件能力，需在插件管理中为 system:remote_llm_http 等授予 network:*（与扩展权限模型一致）。",
-        local: "本地 Ollama / 本机 GGUF 对话不依赖上述云端凭据。",
+        net: "【宿主 · 入网】向配置的 Base URL 发起 HTTPS（OpenAI 兼容，例如 …/v1/chat/completions）。",
+        secret: "【凭据】请求携带 API Key；来源为环境变量 OCLIVE_CLOUD_LLM_* 或后续应用内保存。",
+        perm: "【插件侧 · 授权】远程 LLM 走插件宿主时，需在插件管理中为 system:remote_llm_http 等单独授予 network:*（与常见 IDE 权限分级同类）。",
+        local: "【本机对话】Ollama / 本机 GGUF 与上述云端凭据相互独立，可单独使用。",
       },
       modal: {
         title: "云端 LLM 能力说明",
-        subtitle: "与 VS Code 安装扩展前阅读声明类似：先看清再启用相关能力。",
+        subtitle: "先看清范围再启用：下列为只读说明，不代表已自动授权。",
         trustSummaryTitle: "摘要",
         trustSummaryBody:
           "云端：HTTPS 出站\n凭据：环境变量 OCLIVE_CLOUD_LLM_*\n授权：network:* 在插件管理中单独授予",
-        hint: "下列条目为只读说明。点「我已了解」关闭此说明；若要管理权限请使用下方「打开插件管理」。",
-        allow: "我已了解",
+        hint: "与沉浸叙事、纯聊界面路径无关。关闭本页后仍可在设置里再次打开说明；改权限请用「打开插件管理 · 后端模块」。",
+        allow: "知道了",
       },
     },
     shortcuts: {
       label: "快捷",
       immersiveHint: "虚拟时间、叙事场景等仅在沉浸模式下显示于「更多」。",
+      pureChatLabel: "纯聊",
+      pureChatHint:
+        "纯聊以对话为主，不展开叙事与插件编排相关快捷键；需要完整快捷键与专业入口时请切换到沉浸模式。",
     },
     experimental: {
       label: "实验性功能",
@@ -1692,9 +1700,9 @@ export const zhCN = {
     title: "本地模型（按按钮操作）",
     subtitle: "",
     cloudTrust: {
-      title: "与云端对话的关系",
-      hint: "本页主要管理本机 GGUF / Ollama。若你还使用云端 OpenAI 兼容 API，请先阅读风险说明并在插件管理中授予网络权限。",
-      reviewCta: "查看能力与风险说明",
+      title: "本机模型与云端",
+      hint: "本页只管本机 GGUF / Ollama。云端为宿主全局能力，与沉浸叙事控件无关；若使用云端 API，请先读说明并在沉浸下打开插件管理授予网络权限。",
+      reviewCta: "查看云端说明",
     },
     guide: {
       lead: "分三块：①把 .gguf 放进本应用；②用绿色大按钮让当前角色用这个模型说话；③只有坚持用 Ollama 时才看最下面。",

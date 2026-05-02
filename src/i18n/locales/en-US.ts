@@ -264,6 +264,10 @@ export const enUS = {
   },
   settings: {
     title: "Settings",
+    pureChatBoundary:
+      "Chat-only mode: this page keeps essentials like language and host networking notes. Narrative UI, plugin experiments, and the market stay in immersive mode so they do not mix into the chat-only path.",
+    pureChatMoreInImmersive:
+      "Plugin experiments, third-party index sources, and the settings extension slot are hidden here; switch to immersive and open the same Settings page when you need them.",
     sectionsNavLabel: "Settings sections",
     tabs: {
       general: "General",
@@ -281,7 +285,7 @@ export const enUS = {
     cloudLlmTrust: {
       sectionTitle: "Cloud chat model (OpenAI-compatible)",
       sectionLead:
-        "When cloud is used, the host will make HTTPS requests to the public internet. In this version, configure via environment variables (below); in-app forms and persistence will arrive in a later release.",
+        "Independent of chat-only vs immersive UI: this is host-wide networking. When enabled, the app makes HTTPS calls. In this version use environment variables (below); in-app forms arrive later.",
       envTitle: "Environment variables (restart the app)",
       envLineBase: "OCLIVE_CLOUD_LLM_BASE_URL — API root URL without a /v1 suffix",
       envLineKey: "OCLIVE_CLOUD_LLM_API_KEY — secret (never commit to a repo)",
@@ -291,25 +295,28 @@ export const enUS = {
       openBackendsCta: "Open Plugin Manager → Backends",
       toastOpenedBackends: "Plugin Manager opened. Check LLM backends and permissions there.",
       caps: {
-        net: "HTTPS requests to your configured Base URL (OpenAI-compatible, e.g. …/v1/chat/completions).",
-        secret: "Requests include an API key header; secrets come from env vars or future in-app settings.",
-        perm: "Remote LLM paths may require granting network:* for capabilities like system:remote_llm_http (same mental model as extension permissions).",
-        local: "Local Ollama / on-device GGUF chat does not rely on those cloud secrets.",
+        net: "[Host · network] HTTPS to your configured Base URL (OpenAI-compatible, e.g. …/v1/chat/completions).",
+        secret: "[Secrets] API key on requests; from OCLIVE_CLOUD_LLM_* env vars or future in-app storage.",
+        perm: "[Plugins · grants] Remote LLM via the plugin host may require granting network:* for tokens like system:remote_llm_http (IDE-style permission tiers).",
+        local: "[On-device chat] Ollama / local GGUF is separate from those cloud secrets.",
       },
       modal: {
         title: "Cloud LLM capabilities",
-        subtitle: "Like reading an extension manifest before install: understand first, then enable.",
+        subtitle: "Read the scope first: the list is informational and does not grant anything by itself.",
         trustSummaryTitle: "Summary",
         trustSummaryBody:
           "Cloud: HTTPS outbound\nSecrets: OCLIVE_CLOUD_LLM_* env vars\nGrants: network:* is managed in Plugin Manager",
-        hint: "The list below is read-only. “I understand” closes this dialog; use “Open Plugin Manager” to change grants.",
-        allow: "I understand",
+        hint: "Unrelated to immersive narrative UI vs chat-only chrome. You can reopen this note from Settings; change grants via “Open Plugin Manager → Backends”.",
+        allow: "Got it",
       },
     },
     shortcuts: {
       label: "Shortcuts",
       immersiveHint:
         'Virtual time, narrative scenes, etc. are only shown under "More" in immersive mode.',
+      pureChatLabel: "Chat-only",
+      pureChatHint:
+        "Chat-only focuses on conversation; shortcut and power-user entries tied to narrative/plugins are not listed here—switch to immersive when you need them.",
     },
     experimental: {
       label: "Experimental",
@@ -1757,9 +1764,9 @@ export const enUS = {
     title: "Local models (button-by-button)",
     subtitle: "",
     cloudTrust: {
-      title: "Relationship to cloud chat",
-      hint: "This page focuses on on-device GGUF / Ollama. If you also use a cloud OpenAI-compatible API, review risks and grant network permissions in Plugin Manager.",
-      reviewCta: "Review capabilities & risks",
+      title: "On-device vs cloud",
+      hint: "This page is for local GGUF / Ollama. Cloud is a host-global option, separate from immersive narrative widgets; if you use a cloud API, read the note and grant network in Plugin Manager (open from immersive).",
+      reviewCta: "Cloud host notes",
     },
     guide: {
       lead: "Three blocks: ① add a .gguf into the app; ② pick a model and press the green button to chat; ③ only if you insist on Ollama, use the bottom section.",

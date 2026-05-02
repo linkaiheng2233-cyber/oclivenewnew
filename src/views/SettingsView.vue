@@ -17,6 +17,7 @@ import {
   settingsShortcutsHelpHint,
 } from "../lib/pluginManagerEntryCopy";
 import { SLOT_SETTINGS_ADVANCED, usePluginStore } from "../stores/pluginStore";
+import { useRoleStore } from "../stores/roleStore";
 import { useUiStore } from "../stores/uiStore";
 import {
   getPluginMarketSourcesConfig,
@@ -35,6 +36,7 @@ const emit = defineEmits<{
 }>();
 
 const pluginStore = usePluginStore();
+const roleStore = useRoleStore();
 const uiStore = useUiStore();
 const { showToast } = useAppToast();
 const { t } = useI18n();
@@ -69,6 +71,13 @@ watch(
     if (!visible || marketSourcesLoaded.value) return;
     marketSourcesLoaded.value = true;
     void loadMarketSources();
+  },
+);
+
+watch(
+  () => roleStore.interactionPureChat,
+  (pure) => {
+    if (pure && tab.value === "plugins") tab.value = "general";
   },
 );
 
@@ -169,6 +178,7 @@ async function onToggleForceIframe(e: Event) {
             {{ t("settings.tabs.general") }}
           </button>
           <button
+            v-if="roleStore.interactionImmersive"
             type="button"
             class="sv-nav-btn"
             :aria-current="tab === 'plugins' ? 'page' : undefined"
@@ -180,7 +190,10 @@ async function onToggleForceIframe(e: Event) {
 
         <div v-show="tab === 'general'" class="sv-body">
           <p class="sv-lead" v-html="settingsGeneralLeadHtml()" />
-          <section class="sv-section">
+          <p v-if="roleStore.interactionPureChat" class="sv-boundary sv-muted">
+            {{ t("settings.pureChatBoundary") }}
+          </p>
+          <section v-if="roleStore.interactionImmersive" class="sv-section">
             <div class="sv-row-h">
               <span class="sv-label">{{ t("settings.shortcuts.label") }}</span>
               <HelpHint :text="settingsShortcutsHelpHint()" />
@@ -188,6 +201,12 @@ async function onToggleForceIframe(e: Event) {
             <p class="sv-muted">
               {{ t("settings.shortcuts.immersiveHint") }}
             </p>
+          </section>
+          <section v-else class="sv-section">
+            <div class="sv-row-h">
+              <span class="sv-label">{{ t("settings.shortcuts.pureChatLabel") }}</span>
+            </div>
+            <p class="sv-muted">{{ t("settings.shortcuts.pureChatHint") }}</p>
           </section>
           <section class="sv-section">
             <div class="sv-row-h">
@@ -229,7 +248,7 @@ async function onToggleForceIframe(e: Event) {
             </div>
           </section>
 
-          <section class="sv-section">
+          <section v-if="roleStore.interactionImmersive" class="sv-section">
             <div class="sv-row-h">
               <span class="sv-label">{{ t("settings.experimental.label") }}</span>
               <HelpHint :text="settingsExperimentalSectionHelpHint()" />
@@ -251,7 +270,7 @@ async function onToggleForceIframe(e: Event) {
               </button>
             </div>
           </section>
-          <section class="sv-section">
+          <section v-if="roleStore.interactionImmersive" class="sv-section">
             <h3 class="sv-h3">{{ t("settings.advancedSlot.title") }}</h3>
             <p class="sv-muted">{{ t("settings.advancedSlot.hint") }}</p>
             <PluginSlotEmbed
@@ -280,7 +299,7 @@ async function onToggleForceIframe(e: Event) {
             </label>
           </section>
 
-          <section class="sv-section">
+          <section v-if="roleStore.interactionImmersive" class="sv-section">
             <div class="sv-row-h">
               <span class="sv-label">{{ t("settings.plugins.devMode.sectionLabel") }}</span>
               <HelpHint
@@ -327,6 +346,9 @@ async function onToggleForceIframe(e: Event) {
               </div>
             </div>
           </section>
+          <p v-if="roleStore.interactionPureChat" class="sv-boundary-foot sv-muted">
+            {{ t("settings.pureChatMoreInImmersive") }}
+          </p>
         </div>
 
         <div v-show="tab === 'plugins'" class="sv-body">
@@ -441,6 +463,19 @@ async function onToggleForceIframe(e: Event) {
   font-size: 13px;
   line-height: 1.45;
   color: var(--text-secondary);
+}
+.sv-boundary {
+  margin: -4px 0 12px;
+  padding: 8px 10px;
+  border-radius: 8px;
+  border: 1px dashed color-mix(in srgb, var(--border-light) 85%, var(--text-secondary) 15%);
+  line-height: 1.45;
+}
+.sv-boundary-foot {
+  margin: 12px 0 0;
+  padding-top: 10px;
+  border-top: 1px solid var(--border-light);
+  line-height: 1.45;
 }
 .sv-section {
   display: flex;

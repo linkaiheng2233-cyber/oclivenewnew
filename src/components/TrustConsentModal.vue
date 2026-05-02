@@ -1,7 +1,7 @@
 <script setup lang="ts">
 /**
- * VS Code 扩展安装/权限确认式弹层：顶层遮罩 + 摘要区 + 能力列表 + 底部主次按钮。
- * 与 PluginManagerPanel 中 pm-modal-* 视觉一致，便于在全应用复用。
+ * 安全说明弹层：遮罩 + 摘要 + 分组能力说明 + 主次按钮。
+ * 视觉与 PluginManagerPanel 的 pm-modal 系一致；权限粒度参考常见 IDE，不做界面仿造。
  */
 const props = withDefaults(
   defineProps<{
@@ -11,7 +11,7 @@ const props = withDefaults(
     trustSummary?: string;
     trustSummaryTitle?: string;
     hint: string;
-    /** 只读展示的能力行，类似扩展声明的权限列表 */
+    /** 只读展示的能力行（建议文案自带分组前缀，便于扫读） */
     capabilities?: readonly string[];
     confirmLabel: string;
     cancelLabel?: string;
@@ -70,13 +70,8 @@ function onConfirm(): void {
     >
       <div class="tcm-modal" @click.stop>
         <div class="tcm-head">
-          <div class="tcm-title-row">
-            <span class="tcm-glyph" aria-hidden="true" />
-            <div class="tcm-titles">
-              <h2 class="tcm-title">{{ title }}</h2>
-              <p v-if="subtitle" class="tcm-sub">{{ subtitle }}</p>
-            </div>
-          </div>
+          <h2 class="tcm-title">{{ title }}</h2>
+          <p v-if="subtitle" class="tcm-sub">{{ subtitle }}</p>
         </div>
 
         <div v-if="trustSummary" class="tcm-trust-block">
@@ -135,36 +130,15 @@ function onConfirm(): void {
 .tcm-head {
   margin-bottom: 10px;
 }
-.tcm-title-row {
-  display: flex;
-  align-items: flex-start;
-  gap: 12px;
-}
-.tcm-glyph {
-  width: 40px;
-  height: 40px;
-  flex-shrink: 0;
-  border-radius: 8px;
-  border: 1px solid var(--border-light);
-  background: linear-gradient(
-    145deg,
-    color-mix(in srgb, var(--accent, #3b82f6) 35%, var(--bg-secondary)) 0%,
-    var(--bg-secondary) 100%
-  );
-}
-.tcm-titles {
-  min-width: 0;
-  flex: 1;
-}
 .tcm-title {
-  margin: 0;
+  margin: 0 0 4px;
   font-size: 15px;
   font-weight: 650;
   line-height: 1.35;
   color: var(--text-primary);
 }
 .tcm-sub {
-  margin: 4px 0 0;
+  margin: 0 0 2px;
   font-size: 12px;
   line-height: 1.45;
   color: var(--text-secondary);
