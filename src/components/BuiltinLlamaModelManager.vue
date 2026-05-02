@@ -22,6 +22,7 @@ import {
   ollamaModelsListNames,
   setPluginPermissionGrant,
 } from "../utils/tauri-api";
+import { appConfirm } from "../utils/confirmDialog";
 
 const LLAMA_LOCAL_PLUGIN_ID = "com.oclive.llama.local";
 const QUICK_PERMS = ["process:spawn", "network:*"];
@@ -126,7 +127,7 @@ async function onImport(): Promise<void> {
 }
 
 async function onDelete(row: LocalModelFileDto): Promise<void> {
-  if (!confirm(String(t("builtinLlamaModels.confirmDelete", { name: row.name })))) return;
+  if (!(await appConfirm(String(t("builtinLlamaModels.confirmDelete", { name: row.name }))))) return;
   loading.value = true;
   try {
     await expertModelsDeleteLocalBaseModel(row.path);
@@ -190,7 +191,7 @@ async function onQuickChat(row: LocalModelFileDto): Promise<void> {
     showToast("error", String(t("builtinLlamaModels.pluginMissing", { id: LLAMA_LOCAL_PLUGIN_ID })));
     return;
   }
-  const ok = confirm(
+  const ok = await appConfirm(
     String(
       t("builtinLlamaModels.confirmQuickStart", {
         name: row.name,
@@ -198,6 +199,7 @@ async function onQuickChat(row: LocalModelFileDto): Promise<void> {
         list: QUICK_PERMS.map((p) => `- ${p}`).join("\n"),
       }),
     ),
+    { title: String(t("builtinLlamaModels.title")), type: "warning" },
   );
   if (!ok) return;
 
@@ -254,7 +256,7 @@ async function onOllamaDelete(): Promise<void> {
     showToast("info", String(t("builtinLlamaModels.ollamaNeedName")));
     return;
   }
-  if (!confirm(String(t("builtinLlamaModels.confirmOllamaDelete", { name: n })))) return;
+  if (!(await appConfirm(String(t("builtinLlamaModels.confirmOllamaDelete", { name: n }))))) return;
   ollamaBusy.value = true;
   try {
     await ollamaModelsDelete(n);

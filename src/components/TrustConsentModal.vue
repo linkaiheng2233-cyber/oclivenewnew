@@ -110,7 +110,8 @@ function onConfirm(): void {
 .tcm-backdrop {
   position: fixed;
   inset: 0;
-  z-index: 10090;
+  /* 高于 Toast(12000)、本地模型/设置等 Teleport 遮罩，避免按钮点击被挡 */
+  z-index: 50000;
   display: flex;
   align-items: center;
   justify-content: center;

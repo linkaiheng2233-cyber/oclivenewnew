@@ -6,6 +6,7 @@ import {
   setPluginPermissionGrant,
   type PermissionTokenInfoDto,
 } from "../utils/tauri-api";
+import { appConfirm } from "../utils/confirmDialog";
 import { useAppToast } from "./useAppToast";
 
 type EnsurePermissionParams = {
@@ -86,7 +87,7 @@ export function usePermissionGate() {
       "",
       String(t("permissionGate.confirm.cta")),
     ];
-    const ok = window.confirm(lines.join("\n"));
+    const ok = await appConfirm(lines.join("\n"), { title: p.title, type: "warning" });
     if (!ok) {
       showToast("info", String(t("permissionGate.toast.cancelled")));
       return { ok: false, missing };
