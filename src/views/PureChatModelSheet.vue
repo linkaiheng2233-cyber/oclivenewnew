@@ -1,8 +1,7 @@
 <script setup lang="ts">
-import { computed, watch } from "vue";
+import { computed, ref, watch } from "vue";
 import { useI18n } from "vue-i18n";
 import CloudLlmQuickSetup from "../components/CloudLlmQuickSetup.vue";
-import HostModelPickRow from "../components/HostModelPickRow.vue";
 import { useHostModelPick } from "../composables/useHostModelPick";
 import { ollamaModelsHealth } from "../utils/tauri-api";
 
@@ -18,11 +17,16 @@ const pick = useHostModelPick();
 const ollamaNames = pick.ollamaNames;
 
 const ollamaOnline = computed(() => ollamaNames.value.length > 0);
+const currentModel = computed(() => pick.modelId.value.trim());
+
+const customOllama = ref("");
+const applying = ref(false);
 
 watch(
   () => props.visible,
   (v) => {
     if (v) {
+      customOllama.value = "";
       void pick.bootstrap();
       void ollamaModelsHealth().then(() => {
         void pick.loadOllama();
@@ -35,6 +39,21 @@ function onCloudSaved(): void {
   void pick.loadCloudPublic().then(() => {
     pick.syncSelectFromModel();
   });
+}
+
+async function onPickOllama(name: string): Promise<void> {
+  if (applying.value) return;
+  applying.value = true;
+  try {
+    await pick.applyChatModelId(name);
+  } finally {
+    applying.value = false;
+  }
+}
+
+async function onApplyCustomOllama(): Promise<void> {
+  await onPickOllama(customOllama.value);
+  customOllama.value = "";
 }
 </script>
 
@@ -54,22 +73,9 @@ function onCloudSaved(): void {
           </header>
 
           <div class="pcm-body">
-            <section class="pcm-sec">
-              <h3 class="pcm-h3">{{ t("pureChatModelSheet.sectionChatModel") }}</h3>
-              <p class="pcm-muted">{{ t("pureChatModelSheet.sectionChatModelHint") }}</p>
-              <HostModelPickRow
-                select-id="pure-chat-model-select"
-                :show-gear="false"
-                @open-settings="emit('openSettings')"
-              />
-              <button type="button" class="pcm-linkish" @click="emit('openSettings')">
-                {{ t("pureChatModelSheet.openFullSettings") }}
-              </button>
-            </section>
-
-            <section class="pcm-sec">
-              <h3 class="pcm-h3">{{ t("pureChatModelSheet.sectionLocal") }}</h3>
-              <p class="pcm-muted">{{ t("pureChatModelSheet.sectionLocalHint") }}</p>
+            <section class="pcm-sec pcm-card">
+              <h3 class="pcm-h3">{{ t("pureChatModelSheet.sectionOllama") }}</h3>
+              <p class="pcm-muted">{{ t("pureChatModelSheet.sectionOllamaHint") }}</p>
               <div class="pcm-pill" :class="ollamaOnline ? 'pcm-pill--ok' : 'pcm-pill--off'">
                 {{
                   ollamaOnline
@@ -77,16 +83,55 @@ function onCloudSaved(): void {
                     : t("pureChatModelSheet.ollamaOffline")
                 }}
               </div>
-              <ul v-if="ollamaNames.length" class="pcm-ul">
-                <li v-for="n in ollamaNames" :key="n" class="pcm-li">{{ n }}</li>
-              </ul>
+              <p v-if="currentModel" class="pcm-current">
+                {{ t("pureChatModelSheet.currentModel", { id: currentModel }) }}
+              </p>
+              <div v-if="ollamaNames.length" class="pcm-btn-grid" role="list">
+                <button
+                  v-for="n in ollamaNames"
+                  :key="n"
+                  type="button"
+                  class="pcm-model-btn"
+                  :class="{ 'pcm-model-btn--active': currentModel === n }"
+                  :disabled="applying"
+                  role="listitem"
+                  @click="void onPickOllama(n)"
+                >
+                  {{ n }}
+                </button>
+              </div>
               <p v-else class="pcm-muted pcm-tiny">{{ t("pureChatModelSheet.noLocalModels") }}</p>
+
+              <div class="pcm-custom-row">
+                <input
+                  v-model="customOllama"
+                  type="text"
+                  class="pcm-custom-input"
+                  spellcheck="false"
+                  autocomplete="off"
+                  :disabled="applying"
+                  :placeholder="String(t('pureChatModelSheet.customOllamaPlaceholder'))"
+                  @keydown.enter.prevent="void onApplyCustomOllama()"
+                />
+                <button
+                  type="button"
+                  class="pcm-custom-apply"
+                  :disabled="applying || !customOllama.trim()"
+                  @click="void onApplyCustomOllama()"
+                >
+                  {{ t("pureChatModelSheet.customOllamaApply") }}
+                </button>
+              </div>
+
+              <button type="button" class="pcm-linkish" @click="emit('openSettings')">
+                {{ t("pureChatModelSheet.openFullSettings") }}
+              </button>
             </section>
 
-            <section class="pcm-sec pcm-sec--cloud">
+            <section class="pcm-sec pcm-card pcm-sec--cloud">
               <h3 class="pcm-h3">{{ t("pureChatModelSheet.sectionCloud") }}</h3>
               <p class="pcm-muted">{{ t("pureChatModelSheet.sectionCloudHint") }}</p>
-              <CloudLlmQuickSetup @saved="onCloudSaved" />
+              <CloudLlmQuickSetup variant="pureChat" @saved="onCloudSaved" />
             </section>
           </div>
         </div>
@@ -113,7 +158,7 @@ function onCloudSaved(): void {
   background: color-mix(in srgb, #000 45%, transparent);
 }
 .pcm-dialog {
-  width: min(520px, 100%);
+  width: min(560px, 100%);
   max-height: min(88vh, 720px);
   display: flex;
   flex-direction: column;
@@ -161,10 +206,16 @@ function onCloudSaved(): void {
   min-height: 0;
 }
 .pcm-sec {
-  margin-bottom: 16px;
+  margin-bottom: 12px;
 }
 .pcm-sec:last-child {
   margin-bottom: 0;
+}
+.pcm-card {
+  padding: 12px 14px;
+  border-radius: 10px;
+  border: 1px solid var(--border-light);
+  background: color-mix(in srgb, var(--bg-primary) 55%, var(--bg-elevated));
 }
 .pcm-h3 {
   margin: 0 0 6px;
@@ -180,6 +231,12 @@ function onCloudSaved(): void {
 }
 .pcm-tiny {
   font-size: 11px;
+}
+.pcm-current {
+  margin: 0 0 8px;
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--text-primary);
 }
 .pcm-pill {
   display: inline-block;
@@ -198,19 +255,68 @@ function onCloudSaved(): void {
 .pcm-pill--off {
   color: var(--text-secondary);
 }
-.pcm-ul {
-  margin: 0;
-  padding: 0 0 0 16px;
-  max-height: 140px;
-  overflow-y: auto;
-  font-size: 12px;
-  color: var(--text-primary);
+.pcm-btn-grid {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-bottom: 10px;
 }
-.pcm-li {
-  margin: 2px 0;
+.pcm-model-btn {
+  padding: 8px 12px;
+  font-size: 13px;
+  border-radius: 8px;
+  border: 1px solid var(--border-light);
+  background: var(--bg-primary);
+  color: var(--text-primary);
+  cursor: pointer;
+  text-align: left;
+  max-width: 100%;
+}
+.pcm-model-btn:hover:not(:disabled) {
+  border-color: color-mix(in srgb, var(--accent, #3b82f6) 45%, var(--border-light));
+}
+.pcm-model-btn--active {
+  border-color: color-mix(in srgb, var(--accent, #3b82f6) 55%, var(--border-light));
+  background: color-mix(in srgb, var(--accent, #3b82f6) 14%, var(--bg-primary));
+  font-weight: 650;
+}
+.pcm-model-btn:disabled {
+  opacity: 0.55;
+  cursor: wait;
+}
+.pcm-custom-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  align-items: center;
+  margin-bottom: 10px;
+}
+.pcm-custom-input {
+  flex: 1 1 160px;
+  min-width: 0;
+  padding: 7px 10px;
+  font-size: 13px;
+  border-radius: 8px;
+  border: 1px solid var(--border-light);
+  background: var(--bg-primary);
+  color: var(--text-primary);
+  box-sizing: border-box;
+}
+.pcm-custom-apply {
+  padding: 7px 12px;
+  font-size: 13px;
+  border-radius: 8px;
+  border: 1px solid var(--border-light);
+  background: var(--bg-primary);
+  color: var(--text-primary);
+  cursor: pointer;
+}
+.pcm-custom-apply:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
 }
 .pcm-linkish {
-  margin-top: 8px;
+  margin-top: 4px;
   padding: 0;
   font-size: 12px;
   border: none;

@@ -29,6 +29,7 @@ pub mod role;
 pub mod role_feedback;
 pub mod role_market;
 pub mod role_pack;
+pub mod reveal_path;
 pub mod scene;
 pub mod settings;
 pub mod time;

@@ -9,6 +9,11 @@ import {
 } from "../lib/cloudLlmPresets";
 import { getHostCloudLlmPublic, setHostCloudLlm } from "../utils/tauri-api";
 
+/** `pureChat`：隐藏复制脚本/env，适合纯聊浮层精简流程。 */
+const props = withDefaults(defineProps<{ variant?: "default" | "pureChat" }>(), {
+  variant: "default",
+});
+
 const emit = defineEmits<{ saved: [] }>();
 
 const { t } = useI18n();
@@ -58,6 +63,8 @@ watch(presetId, (id) => {
 
 const baseTrimmed = computed(() => baseUrl.value.trim().replace(/\/+$/, ""));
 const modelTrimmed = computed(() => model.value.trim());
+
+const isPureChat = computed(() => props.variant === "pureChat");
 
 function psSingleQuoted(s: string): string {
   return `'${s.replace(/'/g, "''")}'`;
@@ -182,10 +189,10 @@ async function onClearHost(): Promise<void> {
 </script>
 
 <template>
-  <div class="clqs">
+  <div class="clqs" :class="{ 'clqs--pure-chat': isPureChat }">
     <div class="clqs-h">{{ t("settings.cloudLlmQuick.title") }}</div>
-    <p class="clqs-muted">{{ t("settings.cloudLlmQuick.lead") }}</p>
-    <p class="clqs-muted clqs-priority">{{ t("settings.cloudLlmQuick.priorityHint") }}</p>
+    <p class="clqs-muted">{{ isPureChat ? t("settings.cloudLlmQuick.pureChatLead") : t("settings.cloudLlmQuick.lead") }}</p>
+    <p v-if="!isPureChat" class="clqs-muted clqs-priority">{{ t("settings.cloudLlmQuick.priorityHint") }}</p>
 
     <label class="clqs-label">{{ t("settings.cloudLlmQuick.preset") }}</label>
     <select v-model="presetId" class="clqs-select">
@@ -236,12 +243,14 @@ async function onClearHost(): Promise<void> {
       <button type="button" class="clqs-btn" :disabled="saving" @click="void onClearHost()">
         {{ t("settings.cloudLlmQuick.clearHost") }}
       </button>
-      <button type="button" class="clqs-btn" :disabled="saving" @click="onCopyPowerShell">
-        {{ t("settings.cloudLlmQuick.copyPs") }}
-      </button>
-      <button type="button" class="clqs-btn" :disabled="saving" @click="onCopyDotEnv">
-        {{ t("settings.cloudLlmQuick.copyEnv") }}
-      </button>
+      <template v-if="!isPureChat">
+        <button type="button" class="clqs-btn" :disabled="saving" @click="onCopyPowerShell">
+          {{ t("settings.cloudLlmQuick.copyPs") }}
+        </button>
+        <button type="button" class="clqs-btn" :disabled="saving" @click="onCopyDotEnv">
+          {{ t("settings.cloudLlmQuick.copyEnv") }}
+        </button>
+      </template>
     </div>
   </div>
 </template>
@@ -320,5 +329,8 @@ async function onClearHost(): Promise<void> {
 .clqs-btn:disabled {
   opacity: 0.55;
   cursor: not-allowed;
+}
+.clqs--pure-chat .clqs-actions {
+  margin-top: 6px;
 }
 </style>

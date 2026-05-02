@@ -105,19 +105,20 @@ export const zhCN = {
     },
   },
   pureChatModelSheet: {
-    title: "模型与云端（纯聊）",
-    lead: "精简版：与沉浸顶栏「本地模型 / 设置」相比仅保留对话必需项。",
+    title: "纯聊 · 本机与云端",
+    lead: "本机用 Ollama 点选即可；云端选官方兼容预设并填 API Key。角色包 settings.json 等请在沉浸模式从「更多」打开角色包文件夹编辑。",
     close: "关闭",
-    sectionChatModel: "当前对话模型",
-    sectionChatModelHint: "与输入区上方选项同步；可在此切换或自定义 id。",
-    openFullSettings: "打开完整设置…",
-    sectionLocal: "本机 · Ollama",
-    sectionLocalHint: "仅列出当前可检测到的模型名；导入/删除 GGUF 等请切换沉浸后使用「本地模型」。",
+    sectionOllama: "本机 Ollama（对话模型）",
+    sectionOllamaHint: "点击下方模型名立即切换（与输入栏全局模型一致）；也可输入已 pull 但未列出的名称后点「应用」。",
+    currentModel: "当前：{id}",
+    customOllamaPlaceholder: "其它 Ollama 模型名…",
+    customOllamaApply: "应用",
+    openFullSettings: "打开完整设置（插件与其它选项）…",
     ollamaOnline: "已连接本地 Ollama",
     ollamaOffline: "未检测到本地 Ollama",
-    noLocalModels: "暂无列表（可检查 Ollama 是否已启动）。",
-    sectionCloud: "云端 · OpenAI 兼容",
-    sectionCloudHint: "保存到本机后优先于环境变量；与设置页同一套表单。",
+    noLocalModels: "暂无可用模型名（可检查 Ollama 是否已启动并已 pull）。",
+    sectionCloud: "云端（OpenAI 兼容）",
+    sectionCloudHint: "选官方或常用服务商预设，填 API Key 与默认模型后保存；自定义接口选「自定义」再改根地址即可。",
   },
   chatComposer: {
     aria: "撰写消息与模型",
@@ -183,8 +184,8 @@ export const zhCN = {
           themeLight: "浅色",
         },
         pureChatModels: {
-          title: "模型（纯聊精简）",
-          hint: "选择全局对话模型、查看本机 Ollama 列表、保存云端 API；完整插件与 GGUF 管理仍在沉浸模式。",
+          title: "模型（纯聊）",
+          hint: "本机 Ollama 点选切换；云端用官方兼容预设 + API Key。角色包配置请在沉浸模式打开文件夹编辑。",
           openSheet: "打开模型管理…",
         },
         settingsEntry: {
@@ -193,6 +194,11 @@ export const zhCN = {
           shortcutHelp: "快捷键说明",
           settings: "⚙ 设置",
           localModels: "本地模型…",
+          revealRolePackFolder: "打开角色包文件夹…",
+          revealRolePackHint:
+            "在资源管理器中打开当前角色的包目录，可直接编辑 settings.json、manifest.json 等；保存后请重新加载角色或重启应用使部分改动生效。",
+          revealRolePackOk: "已打开文件夹。",
+          revealRolePackNoRole: "当前未选择角色。",
           pluginMarket: "插件市场（Ctrl+Shift+A）",
         },
         rolePackShare: {
@@ -340,6 +346,8 @@ export const zhCN = {
       title: "云端 OpenAI 兼容（常见服务商）",
       lead:
         "选预设或填写地址与模型后，可直接保存到本机；也可复制 PowerShell / .env 供启动器或终端使用。",
+      pureChatLead:
+        "选官方或常用兼容预设，填写 API Key 与默认模型 id 后点「保存到本机」即可使用；需脚本/环境变量请打开完整设置页。",
       priorityHint: "说明：已在设置中保存的配置会优先于环境变量 OCLIVE_CLOUD_LLM_*；清除本机配置后才会回落到环境变量。",
       preset: "服务商预设",
       presets: {

@@ -163,6 +163,17 @@ function createPickState() {
     void persistModel();
   }
 
+  /** 将全局对话模型设为任意 id（纯聊 Ollama 按钮等）；与撰写区共用持久化。 */
+  async function applyChatModelId(raw: string): Promise<void> {
+    const m = raw.trim();
+    if (!m) {
+      showToast("error", String(t("chatComposer.errEmpty")));
+      return;
+    }
+    modelId.value = m;
+    await persistModel();
+  }
+
   function startWatchAndFocus(): void {
     if (watchStarted) return;
     watchStarted = true;
@@ -192,6 +203,7 @@ function createPickState() {
     onSelectModel,
     onCustomModelInput,
     onCustomModelBlur,
+    applyChatModelId,
     startWatchAndFocus,
   };
 }

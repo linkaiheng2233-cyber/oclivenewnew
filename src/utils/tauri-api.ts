@@ -2617,6 +2617,11 @@ export async function setHostChatModel(model: string): Promise<void> {
   return invokeWithFriendlyError<void>("set_host_chat_model", { model });
 }
 
+/** 在系统文件管理器中打开 `roles/{roleId}/`（编辑 settings.json、manifest 等）。 */
+export async function revealRolePackFolder(roleId: string): Promise<void> {
+  return invokeWithFriendlyError<void>("reveal_role_pack_folder", { roleId });
+}
+
 /** 目录插件页 `OclivePluginBridge.invoke` 对应的后端入口（一般无需在主 UI 调用）。 */
 export async function pluginBridgeInvoke(req: {
   pluginId: string;

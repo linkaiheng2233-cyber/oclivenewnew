@@ -414,6 +414,7 @@ pub fn run() {
             api::role::apply_author_suggested_plugin_backends,
             api::role::get_plugin_resolution_debug,
             api::role::resolve_role_asset_path,
+            api::reveal_path::reveal_role_pack_folder,
             api::expert_models::expert_models_get_effective,
             api::expert_models::expert_models_set_session_override,
             api::expert_models::expert_models_clear_session_override,

@@ -110,19 +110,22 @@ export const enUS = {
     },
   },
   pureChatModelSheet: {
-    title: "Models & cloud (chat-only)",
-    lead: "Lite panel: essentials vs immersive “Local models / Settings”.",
+    title: "Chat-only · local & cloud",
+    lead: "Pick an Ollama model with one tap; use an official-compatible preset + API key for cloud. Edit role-pack files like settings.json in immersive mode via “Open role pack folder”.",
     close: "Close",
-    sectionChatModel: "Current chat model",
-    sectionChatModelHint: "Synced with the picker above the input; switch or enter a custom id here.",
-    openFullSettings: "Open full settings…",
-    sectionLocal: "Local · Ollama",
-    sectionLocalHint: "Lists names Oclive can see right now; import/delete GGUF in immersive “Local models”.",
+    sectionOllama: "Local Ollama (chat model)",
+    sectionOllamaHint:
+      "Tap a model name to switch immediately (same global model as the composer). You can also type a pulled name and click Apply.",
+    currentModel: "Current: {id}",
+    customOllamaPlaceholder: "Another Ollama model id…",
+    customOllamaApply: "Apply",
+    openFullSettings: "Open full settings (plugins & more)…",
     ollamaOnline: "Local Ollama reachable",
     ollamaOffline: "Local Ollama not detected",
-    noLocalModels: "No models listed (check whether Ollama is running).",
-    sectionCloud: "Cloud · OpenAI-compatible",
-    sectionCloudHint: "Saved in-app overrides env vars; same form as Settings.",
+    noLocalModels: "No model names detected (check Ollama is running and models are pulled).",
+    sectionCloud: "Cloud (OpenAI-compatible)",
+    sectionCloudHint:
+      "Pick a common provider preset, enter API key and default model id, then save; choose Custom to edit the base URL.",
   },
   chatComposer: {
     aria: "Compose message and model",
@@ -188,8 +191,8 @@ export const enUS = {
           themeLight: "Light",
         },
         pureChatModels: {
-          title: "Models (chat-only lite)",
-          hint: "Pick the global chat model, see local Ollama names, save cloud API; full plugin/GGUF tools stay in immersive mode.",
+          title: "Models (chat-only)",
+          hint: "Tap Ollama models; cloud uses official-compatible presets + API key. Role-pack config: open the folder in immersive mode.",
           openSheet: "Open model manager…",
         },
         settingsEntry: {
@@ -198,6 +201,11 @@ export const enUS = {
           shortcutHelp: "Shortcuts",
           settings: "Settings",
           localModels: "Local models…",
+          revealRolePackFolder: "Open role pack folder…",
+          revealRolePackHint:
+            "Opens the current role’s pack directory in the file manager so you can edit settings.json, manifest.json, etc.; reload the role after changes where needed.",
+          revealRolePackOk: "Folder opened.",
+          revealRolePackNoRole: "No role selected.",
           pluginMarket: "Plugin Market (Ctrl+Shift+A)",
         },
         rolePackShare: {
@@ -344,6 +352,8 @@ export const enUS = {
       title: "OpenAI-compatible cloud (common providers)",
       lead:
         "Pick a preset or edit base URL/model, then save to this device—or copy PowerShell / .env for a launcher or terminal.",
+      pureChatLead:
+        "Pick a common compatible preset, enter API key and default model id, then Save to device; use full Settings for scripts/env snippets.",
       priorityHint:
         "Note: values saved in Settings override OCLIVE_CLOUD_LLM_*; clearing the in-app config falls back to env vars.",
       preset: "Provider preset",

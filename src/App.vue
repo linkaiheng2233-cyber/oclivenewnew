@@ -28,6 +28,7 @@ import {
   loadRole,
   OCLIVE_DEFAULT_RELATION_SENTINEL,
   peekRolePack,
+  revealRolePackFolder,
   setErrorReporter,
   setRemoteLifeEnabled,
   setRoleInteractionMode,
@@ -223,6 +224,21 @@ function openShortcutHelp(): void {
 function openSettingsView(): void {
   settingsViewOpen.value = true;
   topMoreOpen.value = false;
+}
+
+async function onRevealRolePackFolder(): Promise<void> {
+  const rid = (roleStore.currentRoleId ?? "").trim();
+  if (!rid) {
+    showToast("error", String(t("app.topBar.tiles.settingsEntry.revealRolePackNoRole")));
+    return;
+  }
+  try {
+    await revealRolePackFolder(rid);
+    topMoreOpen.value = false;
+    showToast("success", String(t("app.topBar.tiles.settingsEntry.revealRolePackOk")));
+  } catch (e) {
+    showToast("error", e instanceof Error ? e.message : String(e));
+  }
 }
 
 /** 切到纯聊时收起依赖沉浸/插件栈的浮层，避免与纯聊路径叠在一起 */
@@ -1001,6 +1017,14 @@ onBeforeUnmount(() => {
                 "
               >
                 {{ t("app.topBar.tiles.settingsEntry.localModels") }}
+              </button>
+              <button
+                type="button"
+                class="more-debug-btn more-debug-btn--fill settings-entry-btn"
+                :title="String(t('app.topBar.tiles.settingsEntry.revealRolePackHint'))"
+                @click="void onRevealRolePackFolder()"
+              >
+                {{ t("app.topBar.tiles.settingsEntry.revealRolePackFolder") }}
               </button>
               <button
                 type="button"
