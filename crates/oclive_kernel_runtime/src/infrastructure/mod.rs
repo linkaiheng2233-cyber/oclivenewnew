@@ -14,5 +14,8 @@ pub mod remote_plugin;
 pub mod repositories_runtime;
 pub mod storage;
 
+pub use cloud_llm::{
+    resolve_cloud_llm_config, CloudLlmConfig, CloudLlmRuntime, OpenAiCompatLlmClient,
+};
 pub use llm::{cloud_llm_from_env, ollama_llm, LlmClient, MockLlmClient};
 pub use storage::RoleStorage;

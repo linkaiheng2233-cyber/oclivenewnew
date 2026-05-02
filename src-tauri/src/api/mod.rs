@@ -1,5 +1,6 @@
 pub mod agent;
 pub mod chat;
+pub mod cloud_llm;
 pub mod conversation;
 pub mod directory_plugin;
 pub mod error;

@@ -2317,6 +2317,20 @@ impl DbManager {
         Ok(row.map(|(v,)| v))
     }
 
+    /// 删除 `app_settings` 单行（不存在不报错）。
+    pub async fn delete_app_setting(&self, key: &str) -> Result<()> {
+        let k = key.trim();
+        if k.is_empty() {
+            return Ok(());
+        }
+        sqlx::query("DELETE FROM app_settings WHERE key = ?")
+            .bind(k)
+            .execute(&self.pool)
+            .await
+            .map_err(|e| AppError::DatabaseError(e.to_string()))?;
+        Ok(())
+    }
+
     /// 删除 manifest 角色 id 及其所有会话命名空间（`{id}__sess__*`）在 DB 中的运行时数据；返回已删除的 `role_id` 键列表。
     pub async fn delete_all_data_for_manifest_role(
         &self,

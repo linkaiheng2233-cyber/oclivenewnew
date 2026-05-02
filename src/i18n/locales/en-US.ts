@@ -278,6 +278,31 @@ export const enUS = {
       },
       hint: "Takes effect immediately; “System” follows your OS language.",
     },
+    cloudLlm: {
+      title: "Cloud chat model (OpenAI-compatible)",
+      hint:
+        "Set Base URL, API Key, and model id (e.g. DeepSeek: `https://api.deepseek.com` + `deepseek-chat`). Do not add a `/v1` suffix. `OCLIVE_CLOUD_LLM_*` env vars override saved values. Turning off “Allow cloud API” hard-blocks OpenAI-compatible outbound calls (local Ollama still works). Grant `network:*` for `system:remote_llm_http` in Plugin Manager; acknowledge the security note before first save.",
+      baseUrl: "Base URL",
+      apiKey: "API Key",
+      apiKeyPlaceholder: "Leave blank to keep the saved key",
+      apiKeySavedHint: "A key is already saved; leave blank on Save to keep it.",
+      model: "Model id",
+      modelPlaceholder: "e.g. deepseek-chat",
+      timeoutMs: "Timeout (ms)",
+      save: "Save",
+      verify: "Test connection",
+      clear: "Clear saved",
+      clearConfirm:
+        "Clear saved cloud Base URL / API Key / model from this device? (policy toggles may remain.)",
+      savedToast: "Cloud LLM settings saved.",
+      clearedToast: "Cleared saved cloud credentials.",
+      verifyOkToast: "Connection OK.",
+      autoRemoteLabel: "Auto-use remote LLM when cloud is ready (promote pack Ollama → remote)",
+      ackLabel:
+        "I understand requests go to the public internet and the API key is stored locally; I can disable cloud or clear credentials anytime.",
+      securityBanner: "Acknowledge the security note (checkbox) before saving credentials.",
+      netWarn: "`network:*` for `system:remote_llm_http` is not granted yet; auto-promote will not take effect until you allow it in Plugin Manager.",
+    },
     shortcuts: {
       label: "Shortcuts",
       immersiveHint:
@@ -472,6 +497,7 @@ export const enUS = {
       packDefault: "Pack default",
       sessionOverride: "Session override",
       envOverride: "Env override",
+      appAuto: "App auto (cloud ready)",
     },
     modules: {
       memory: "Memory",
@@ -1728,6 +1754,12 @@ export const enUS = {
     aria: "Built-in Llama models (GGUF)",
     title: "Local models (button-by-button)",
     subtitle: "",
+    cloudGate: {
+      title: "Cloud API gate",
+      hint: "When off, no OpenAI-compatible cloud requests are made. Full settings: Settings → General → Cloud chat model.",
+      allow: "Allow cloud API (OpenAI-compatible)",
+      toastSaved: "Cloud gate updated.",
+    },
     guide: {
       lead: "Three blocks: ① add a .gguf into the app; ② pick a model and press the green button to chat; ③ only if you insist on Ollama, use the bottom section.",
       step1Title: "① Add a model file",

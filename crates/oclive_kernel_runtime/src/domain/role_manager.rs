@@ -52,7 +52,14 @@ fn resolved_plugins_dummy(role: &Role) -> ResolvedRolePlugins {
         .await;
     });
     let db = Arc::new(DbManager::new(pool));
-    PluginHost::new(db, dummy_llm, None, std::env::temp_dir()).resolve_for_role(role)
+    PluginHost::new(
+        db,
+        dummy_llm,
+        None,
+        std::env::temp_dir(),
+        crate::infrastructure::cloud_llm::CloudLlmRuntime::empty(),
+    )
+    .resolve_for_role(role)
 }
 
 /// 角色管理器

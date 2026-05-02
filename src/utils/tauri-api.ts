@@ -692,7 +692,11 @@ export interface PluginBackendsOverride {
   directory_plugins?: DirectoryPluginSlots | null;
 }
 
-export type PluginBackendSource = "pack_default" | "session_override" | "env_override";
+export type PluginBackendSource =
+  | "pack_default"
+  | "session_override"
+  | "env_override"
+  | "app_auto";
 
 export interface PluginBackendsSourceMap {
   memory: PluginBackendSource;
@@ -716,8 +720,37 @@ export interface PluginResolutionDebugInfo {
   llm_env_override?: string | null;
   remote_plugin_url_configured: boolean;
   remote_llm_url_configured: boolean;
+  cloud_llm_env_configured?: boolean;
+  cloud_llm_app_configured?: boolean;
+  cloud_llm_openai_blocked?: boolean;
+  cloud_llm_auto_remote_llm?: boolean;
+  cloud_llm_network_granted?: boolean;
+  cloud_llm_network_acknowledged?: boolean;
   local_provider_ids: string[];
   local_provider_count: number;
+}
+
+/** 与后端 `CloudLlmUiSettingsResponse` 一致（camelCase）。 */
+export interface CloudLlmUiSettingsResponse {
+  baseUrl: string;
+  model: string;
+  timeoutMs: number;
+  apiKeySet: boolean;
+  openaiBlocked: boolean;
+  autoRemoteLlm: boolean;
+  networkAcknowledged: boolean;
+  networkGranted: boolean;
+}
+
+export interface CloudLlmUiSettingsPatch {
+  clear?: boolean;
+  baseUrl?: string;
+  apiKey?: string;
+  model?: string;
+  timeoutMs?: number;
+  openaiBlocked?: boolean;
+  autoRemoteLlm?: boolean;
+  networkAcknowledged?: boolean;
 }
 
 /**
@@ -1371,6 +1404,31 @@ export async function getPluginResolutionDebug(
       },
     },
   );
+}
+
+export async function getCloudLlmUiSettings(): Promise<CloudLlmUiSettingsResponse> {
+  return invokeWithFriendlyError<CloudLlmUiSettingsResponse>("get_cloud_llm_ui_settings");
+}
+
+export async function setCloudLlmUiSettings(
+  patch: CloudLlmUiSettingsPatch,
+): Promise<CloudLlmUiSettingsResponse> {
+  return invokeWithFriendlyError<CloudLlmUiSettingsResponse>("set_cloud_llm_ui_settings", {
+    req: {
+      clear: patch.clear === true,
+      baseUrl: patch.baseUrl ?? null,
+      apiKey: patch.apiKey ?? null,
+      model: patch.model ?? null,
+      timeoutMs: patch.timeoutMs ?? null,
+      openaiBlocked: patch.openaiBlocked ?? null,
+      autoRemoteLlm: patch.autoRemoteLlm ?? null,
+      networkAcknowledged: patch.networkAcknowledged ?? null,
+    },
+  });
+}
+
+export async function verifyCloudLlmUiSettings(): Promise<void> {
+  return invokeWithFriendlyError<void>("verify_cloud_llm_ui_settings");
 }
 
 export async function switchScene(

@@ -35,10 +35,11 @@ const pluginDebugSnapshot = ref("");
 const pluginDebugCopyStatus = ref("");
 const localMemoryProviderDraft = ref("");
 const packStatus = ref("");
-const sourceLabel: Record<"pack_default" | "session_override" | "env_override", string> = {
+const sourceLabel: Record<string, string> = {
   pack_default: String(t("pluginBackendSessionPanel.sources.packDefault")),
   session_override: String(t("pluginBackendSessionPanel.sources.sessionOverride")),
   env_override: String(t("pluginBackendSessionPanel.sources.envOverride")),
+  app_auto: String(t("pluginBackendSessionPanel.sources.appAuto")),
 };
 const pluginBackendRows = [
   {
@@ -197,6 +198,7 @@ async function refreshPluginDebugSnapshot() {
     `env llm_override=${debug.llm_env_override ?? "none"}`,
     `env remote_plugin_url=${debug.remote_plugin_url_configured ? "set" : "unset"}`,
     `env remote_llm_url=${debug.remote_llm_url_configured ? "set" : "unset"}`,
+    `cloud env=${debug.cloud_llm_env_configured ? "set" : "unset"} app=${debug.cloud_llm_app_configured ? "set" : "unset"} block=${debug.cloud_llm_openai_blocked ? "on" : "off"} auto=${debug.cloud_llm_auto_remote_llm ? "on" : "off"} net=${debug.cloud_llm_network_granted ? "yes" : "no"} ack=${debug.cloud_llm_network_acknowledged ? "yes" : "no"}`,
     `local_providers count=${debug.local_provider_count} ids=${debug.local_provider_ids.join(",") || "none"}`,
   ].join("\n");
 }

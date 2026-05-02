@@ -16,10 +16,14 @@ import {
 } from "../lib/pluginManagerEntryCopy";
 import { SLOT_SETTINGS_ADVANCED, usePluginStore } from "../stores/pluginStore";
 import { useUiStore } from "../stores/uiStore";
+import type { CloudLlmUiSettingsPatch, CloudLlmUiSettingsResponse } from "../utils/tauri-api";
 import {
+  getCloudLlmUiSettings,
   getPluginMarketSourcesConfig,
+  setCloudLlmUiSettings,
   setPluginIndexSources,
   setPluginMarketDeveloperMode,
+  verifyCloudLlmUiSettings,
 } from "../utils/tauri-api";
 
 const props = defineProps<{
@@ -46,6 +50,111 @@ const marketDeveloperModeLocal = ref(false);
 const marketSourcesText = ref("");
 const marketSourcesLoaded = ref(false);
 
+const cloudLlmLoading = ref(false);
+const cloudBaseUrl = ref("");
+const cloudModel = ref("");
+const cloudTimeoutMs = ref(120_000);
+const cloudApiKeyDraft = ref("");
+const cloudApiKeySet = ref(false);
+/** 与后端 `openai_blocked` 相反：勾选表示允许 OpenAI 兼容云端 */
+const allowCloudOpenai = ref(false);
+const cloudAutoRemote = ref(false);
+const cloudNetworkAck = ref(false);
+const cloudNetworkGranted = ref(false);
+
+function applyCloudLlmResp(r: CloudLlmUiSettingsResponse): void {
+  cloudBaseUrl.value = r.baseUrl ?? "";
+  cloudModel.value = r.model ?? "";
+  cloudTimeoutMs.value = typeof r.timeoutMs === "number" && r.timeoutMs > 0 ? r.timeoutMs : 120_000;
+  cloudApiKeySet.value = r.apiKeySet === true;
+  allowCloudOpenai.value = r.openaiBlocked !== true;
+  cloudAutoRemote.value = r.autoRemoteLlm === true;
+  cloudNetworkAck.value = r.networkAcknowledged === true;
+  cloudNetworkGranted.value = r.networkGranted === true;
+  cloudApiKeyDraft.value = "";
+}
+
+async function loadCloudLlmSettings(): Promise<void> {
+  cloudLlmLoading.value = true;
+  try {
+    const r = await getCloudLlmUiSettings();
+    applyCloudLlmResp(r);
+  } catch (err) {
+    showToast("error", err instanceof Error ? err.message : String(err));
+  } finally {
+    cloudLlmLoading.value = false;
+  }
+}
+
+function cloudWritesCredentialFields(patch: CloudLlmUiSettingsPatch): boolean {
+  return (
+    (patch.baseUrl != null && patch.baseUrl.trim() !== "") ||
+    (patch.apiKey != null && patch.apiKey.trim() !== "") ||
+    patch.model != null ||
+    patch.timeoutMs != null
+  );
+}
+
+async function onSaveCloudLlm(): Promise<void> {
+  const patch: CloudLlmUiSettingsPatch = {
+    openaiBlocked: !allowCloudOpenai.value,
+    autoRemoteLlm: cloudAutoRemote.value,
+    networkAcknowledged: cloudNetworkAck.value,
+  };
+  const bu = cloudBaseUrl.value.trim();
+  const mo = cloudModel.value.trim();
+  const ak = cloudApiKeyDraft.value.trim();
+  if (bu) patch.baseUrl = bu;
+  if (mo) patch.model = mo;
+  if (ak) patch.apiKey = ak;
+  const hasStoredCloud = cloudApiKeySet.value || bu.length > 0;
+  if (bu || mo || ak || hasStoredCloud) {
+    patch.timeoutMs = Math.min(600_000, Math.max(1_000, Math.floor(Number(cloudTimeoutMs.value)) || 120_000));
+  }
+
+  if (cloudWritesCredentialFields(patch) && !cloudNetworkAck.value) {
+    showToast("error", String(t("settings.cloudLlm.securityBanner")));
+    return;
+  }
+
+  cloudLlmLoading.value = true;
+  try {
+    const r = await setCloudLlmUiSettings(patch);
+    applyCloudLlmResp(r);
+    showToast("success", String(t("settings.cloudLlm.savedToast")));
+  } catch (err) {
+    showToast("error", err instanceof Error ? err.message : String(err));
+  } finally {
+    cloudLlmLoading.value = false;
+  }
+}
+
+async function onVerifyCloudLlm(): Promise<void> {
+  cloudLlmLoading.value = true;
+  try {
+    await verifyCloudLlmUiSettings();
+    showToast("success", String(t("settings.cloudLlm.verifyOkToast")));
+  } catch (err) {
+    showToast("error", err instanceof Error ? err.message : String(err));
+  } finally {
+    cloudLlmLoading.value = false;
+  }
+}
+
+async function onClearCloudLlm(): Promise<void> {
+  if (!confirm(String(t("settings.cloudLlm.clearConfirm")))) return;
+  cloudLlmLoading.value = true;
+  try {
+    const r = await setCloudLlmUiSettings({ clear: true });
+    applyCloudLlmResp(r);
+    showToast("success", String(t("settings.cloudLlm.clearedToast")));
+  } catch (err) {
+    showToast("error", err instanceof Error ? err.message : String(err));
+  } finally {
+    cloudLlmLoading.value = false;
+  }
+}
+
 async function loadMarketSources(): Promise<void> {
   marketSourcesLoading.value = true;
   try {
@@ -60,6 +169,7 @@ async function loadMarketSources(): Promise<void> {
 watch(
   () => props.visible,
   (visible) => {
+    if (visible) void loadCloudLlmSettings();
     if (!visible || marketSourcesLoaded.value) return;
     marketSourcesLoaded.value = true;
     void loadMarketSources();
@@ -190,6 +300,110 @@ async function onToggleForceIframe(e: Event) {
               <p class="sv-muted">{{ t("settings.language.hint") }}</p>
             </div>
           </section>
+
+          <section class="sv-section">
+            <h3 class="sv-h3">{{ t("settings.cloudLlm.title") }}</h3>
+            <p class="sv-muted">{{ t("settings.cloudLlm.hint") }}</p>
+            <p v-if="!cloudNetworkGranted && cloudAutoRemote" class="sv-warn">
+              {{ t("settings.cloudLlm.netWarn") }}
+            </p>
+            <label class="sv-toggle-row">
+              <input
+                type="checkbox"
+                :disabled="cloudLlmLoading"
+                :checked="allowCloudOpenai"
+                @change="allowCloudOpenai = ($event.target as HTMLInputElement).checked"
+              />
+              <span class="sv-toggle-text">
+                <strong>{{ t("builtinLlamaModels.cloudGate.allow") }}</strong>
+              </span>
+            </label>
+            <label class="sv-toggle-row">
+              <input
+                type="checkbox"
+                :disabled="cloudLlmLoading"
+                :checked="cloudAutoRemote"
+                @change="cloudAutoRemote = ($event.target as HTMLInputElement).checked"
+              />
+              <span class="sv-toggle-text">
+                <strong>{{ t("settings.cloudLlm.autoRemoteLabel") }}</strong>
+              </span>
+            </label>
+            <label class="sv-toggle-row">
+              <input
+                type="checkbox"
+                :disabled="cloudLlmLoading"
+                :checked="cloudNetworkAck"
+                @change="cloudNetworkAck = ($event.target as HTMLInputElement).checked"
+              />
+              <span class="sv-toggle-text">
+                <span>{{ t("settings.cloudLlm.ackLabel") }}</span>
+              </span>
+            </label>
+            <div class="sv-cloud-grid">
+              <label class="sv-cloud-field">
+                <span class="sv-cloud-label">{{ t("settings.cloudLlm.baseUrl") }}</span>
+                <input
+                  v-model="cloudBaseUrl"
+                  type="url"
+                  class="sv-input"
+                  autocomplete="off"
+                  spellcheck="false"
+                  :disabled="cloudLlmLoading"
+                  placeholder="https://api.deepseek.com"
+                />
+              </label>
+              <label class="sv-cloud-field">
+                <span class="sv-cloud-label">{{ t("settings.cloudLlm.model") }}</span>
+                <input
+                  v-model="cloudModel"
+                  type="text"
+                  class="sv-input"
+                  autocomplete="off"
+                  spellcheck="false"
+                  :disabled="cloudLlmLoading"
+                  :placeholder="t('settings.cloudLlm.modelPlaceholder')"
+                />
+              </label>
+              <label class="sv-cloud-field">
+                <span class="sv-cloud-label">{{ t("settings.cloudLlm.apiKey") }}</span>
+                <input
+                  v-model="cloudApiKeyDraft"
+                  type="password"
+                  class="sv-input"
+                  autocomplete="new-password"
+                  spellcheck="false"
+                  :disabled="cloudLlmLoading"
+                  :placeholder="t('settings.cloudLlm.apiKeyPlaceholder')"
+                />
+              </label>
+              <p v-if="cloudApiKeySet" class="sv-muted">{{ t("settings.cloudLlm.apiKeySavedHint") }}</p>
+              <label class="sv-cloud-field">
+                <span class="sv-cloud-label">{{ t("settings.cloudLlm.timeoutMs") }}</span>
+                <input
+                  v-model.number="cloudTimeoutMs"
+                  type="number"
+                  min="1000"
+                  max="600000"
+                  step="1000"
+                  class="sv-input sv-input-narrow"
+                  :disabled="cloudLlmLoading"
+                />
+              </label>
+            </div>
+            <div class="sv-row-actions sv-cloud-actions">
+              <button type="button" class="sv-btn" :disabled="cloudLlmLoading" @click="onSaveCloudLlm">
+                {{ t("settings.cloudLlm.save") }}
+              </button>
+              <button type="button" class="sv-btn" :disabled="cloudLlmLoading" @click="onVerifyCloudLlm">
+                {{ t("settings.cloudLlm.verify") }}
+              </button>
+              <button type="button" class="sv-btn" :disabled="cloudLlmLoading" @click="onClearCloudLlm">
+                {{ t("settings.cloudLlm.clear") }}
+              </button>
+            </div>
+          </section>
+
           <section class="sv-section">
             <div class="sv-row-h">
               <span class="sv-label">{{ t("settings.experimental.label") }}</span>
@@ -501,5 +715,48 @@ async function onToggleForceIframe(e: Event) {
 }
 .sv-v2-launch-btn:hover {
   border-color: color-mix(in srgb, var(--accent, #3b82f6) 45%, var(--border-light));
+}
+.sv-warn {
+  margin: 0;
+  font-size: 12px;
+  line-height: 1.4;
+  color: var(--text-warn, #b45309);
+}
+.sv-cloud-grid {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  margin-top: 4px;
+}
+.sv-cloud-field {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  font-size: 13px;
+}
+.sv-cloud-label {
+  font-weight: 600;
+  color: var(--text-secondary);
+  font-size: 12px;
+}
+.sv-input {
+  width: 100%;
+  max-width: 100%;
+  padding: 6px 10px;
+  font-size: 13px;
+  border-radius: 8px;
+  border: 1px solid var(--border-light);
+  background: var(--bg-primary);
+  color: var(--text-primary);
+}
+.sv-input-narrow {
+  max-width: 200px;
+}
+.sv-cloud-actions {
+  margin-top: 8px;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  justify-content: flex-start;
 }
 </style>

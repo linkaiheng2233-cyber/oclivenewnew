@@ -21,7 +21,8 @@ use crate::infrastructure::ollama_client::OllamaClient;
 use crate::infrastructure::repositories_runtime::{
     SqliteExpertModelsRepository, SqliteFavorabilityRepository, SqliteMemoryRepository,
 };
-use crate::infrastructure::storage::RoleStorage;
+use crate::infrastructure::cloud_llm::{resolve_cloud_llm_config, CloudLlmRuntime};
+use crate::infrastructure::storage::{resolve_llm_backend_env_override, RoleStorage};
 use crate::models::{
     LlmBackend, PersonalitySource, PersonalityVector, PluginBackendSource, PluginBackends,
     PluginBackendsOverride, PluginBackendsSourceMap, PromptStyleOverride, Role,
@@ -35,26 +36,6 @@ use std::fs;
 use std::path::{Path, PathBuf};
 use std::sync::Arc;
 use tempfile::TempDir;
-
-/// 与 oclive-launcher 注入的取值一致：`ollama` / `remote` / `directory`（大小写不敏感）。
-fn resolve_llm_backend_env_override() -> Option<LlmBackend> {
-    let Ok(v) = std::env::var("OCLIVE_LLM_BACKEND") else {
-        return None;
-    };
-    let t = v.trim();
-    if t.is_empty() {
-        return None;
-    }
-    if t.eq_ignore_ascii_case("ollama") {
-        Some(LlmBackend::Ollama)
-    } else if t.eq_ignore_ascii_case("remote") {
-        Some(LlmBackend::Remote)
-    } else if t.eq_ignore_ascii_case("directory") {
-        Some(LlmBackend::Directory)
-    } else {
-        None
-    }
-}
 
 pub struct PolicySet {
     pub emotion: Arc<dyn EmotionPolicy>,
@@ -223,6 +204,7 @@ pub struct KernelAppState {
     pub storage: RoleStorage,
     policy_runtime: Arc<RwLock<PolicyRuntime>>,
     pub ollama_model: String,
+    pub cloud_llm_runtime: Arc<CloudLlmRuntime>,
     pub plugins: PluginHost,
     pub directory_plugins: Arc<DirectoryPluginRuntime>,
     session_plugin_overrides: Arc<RwLock<HashMap<String, PluginBackendsOverride>>>,
@@ -319,11 +301,13 @@ impl KernelAppState {
         let storage = RoleStorage::new(roles_dir_override.unwrap_or_else(resolve_roles_dir));
         let directory_plugins =
             DirectoryPluginRuntime::bootstrap(storage.roles_dir(), app_data_dir.as_ref());
+        let cloud_llm_runtime = CloudLlmRuntime::bootstrap_from_db(db_manager.as_ref()).await?;
         let plugins = PluginHost::new(
             db_manager.clone(),
             llm.clone(),
             Some(directory_plugins.clone()),
             app_data_dir.as_ref().to_path_buf(),
+            cloud_llm_runtime.clone(),
         );
         Self::bootstrap_local_plugin_providers(&plugins, storage.roles_dir());
 
@@ -339,6 +323,7 @@ impl KernelAppState {
             storage,
             policy_runtime: Arc::new(RwLock::new(runtime)),
             ollama_model,
+            cloud_llm_runtime,
             plugins,
             directory_plugins,
             session_plugin_overrides: Arc::new(RwLock::new(HashMap::new())),
@@ -400,11 +385,13 @@ impl KernelAppState {
             }
         };
 
+        let cloud_llm_runtime = CloudLlmRuntime::bootstrap_from_db(db_manager.as_ref()).await?;
         let plugins = PluginHost::new(
             db_manager.clone(),
             llm.clone(),
             Some(directory_plugins.clone()),
             app_data_dir.clone(),
+            cloud_llm_runtime.clone(),
         );
         Self::bootstrap_local_plugin_providers(&plugins, storage.roles_dir());
 
@@ -420,6 +407,7 @@ impl KernelAppState {
             storage,
             policy_runtime: Arc::new(RwLock::new(runtime)),
             ollama_model: "test-model".to_string(),
+            cloud_llm_runtime,
             plugins,
             directory_plugins,
             session_plugin_overrides: Arc::new(RwLock::new(HashMap::new())),
@@ -601,23 +589,105 @@ impl KernelAppState {
             .remove(session_namespace);
     }
 
+    fn block_on_permission_granted(db: &DbManager, plugin_id: &str, permission: &str) -> bool {
+        let pid = plugin_id.to_string();
+        let perm = permission.to_string();
+        if let Ok(h) = tokio::runtime::Handle::try_current() {
+            tokio::task::block_in_place(|| {
+                h.block_on(async {
+                    db.is_plugin_permission_granted(&pid, &perm)
+                        .await
+                        .unwrap_or(false)
+                })
+            })
+        } else {
+            tokio::runtime::Builder::new_current_thread()
+                .enable_all()
+                .build()
+                .expect("build tokio runtime")
+                .block_on(async {
+                    db.is_plugin_permission_granted(&pid, &perm)
+                        .await
+                        .unwrap_or(false)
+                })
+        }
+    }
+
+    #[must_use]
+    pub fn is_remote_llm_network_granted(&self) -> bool {
+        Self::block_on_permission_granted(
+            self.db_manager.as_ref(),
+            "system:remote_llm_http",
+            "network:*",
+        )
+    }
+
+    fn sidecar_llm_url_configured() -> bool {
+        std::env::var("OCLIVE_REMOTE_LLM_URL")
+            .ok()
+            .map(|s| !s.trim().is_empty())
+            .unwrap_or(false)
+    }
+
+    fn cloud_or_sidecar_upstream_ready(&self) -> bool {
+        resolve_cloud_llm_config(self.cloud_llm_runtime.as_ref()).is_some()
+            || Self::sidecar_llm_url_configured()
+    }
+
+    fn should_auto_promote_llm_to_remote(
+        &self,
+        session_ov: Option<&PluginBackendsOverride>,
+    ) -> bool {
+        if !self.cloud_llm_runtime.auto_remote_llm_enabled() {
+            return false;
+        }
+        if let Some(o) = session_ov {
+            if o.llm == Some(LlmBackend::Ollama) {
+                return false;
+            }
+        }
+        if !self.is_remote_llm_network_granted() {
+            return false;
+        }
+        self.cloud_or_sidecar_upstream_ready()
+    }
+
     #[must_use]
     pub fn effective_plugin_backends_for_session(
         &self,
         role: &Role,
         session_namespace: &str,
     ) -> PluginBackends {
-        self.session_backend_override(session_namespace)
+        let session_ov = self.session_backend_override(session_namespace);
+        let mut pb = session_ov
+            .as_ref()
             .map(|ov| ov.apply_to(&role.plugin_backends))
-            .unwrap_or_else(|| role.plugin_backends.clone())
+            .unwrap_or_else(|| role.plugin_backends.clone());
+        if resolve_llm_backend_env_override() == Some(LlmBackend::Ollama) {
+            return pb;
+        }
+        if pb.llm == LlmBackend::Ollama && self.should_auto_promote_llm_to_remote(session_ov.as_ref())
+        {
+            pb.llm = LlmBackend::Remote;
+        }
+        pb
     }
 
     #[must_use]
     pub fn effective_plugin_backend_sources_for_session(
         &self,
+        role: &Role,
         session_namespace: &str,
     ) -> PluginBackendsSourceMap {
         let session_ov = self.session_backend_override(session_namespace);
+        let merged_pre_auto = session_ov
+            .as_ref()
+            .map(|ov| ov.apply_to(&role.plugin_backends))
+            .unwrap_or_else(|| role.plugin_backends.clone());
+        let llm_auto_promoted = resolve_llm_backend_env_override() != Some(LlmBackend::Ollama)
+            && merged_pre_auto.llm == LlmBackend::Ollama
+            && self.should_auto_promote_llm_to_remote(session_ov.as_ref());
+
         let mut out = PluginBackendsSourceMap::default();
         if let Some(ov) = session_ov {
             if ov.memory.is_some() || ov.local_memory_provider_id.is_some() {
@@ -639,7 +709,9 @@ impl KernelAppState {
                 out.agent = PluginBackendSource::SessionOverride;
             }
         }
-        if out.llm == PluginBackendSource::PackDefault
+        if llm_auto_promoted {
+            out.llm = PluginBackendSource::AppAuto;
+        } else if out.llm == PluginBackendSource::PackDefault
             && resolve_llm_backend_env_override().is_some()
         {
             out.llm = PluginBackendSource::EnvOverride;

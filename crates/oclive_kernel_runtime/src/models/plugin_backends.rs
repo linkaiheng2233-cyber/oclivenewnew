@@ -157,6 +157,8 @@ pub enum PluginBackendSource {
     PackDefault,
     SessionOverride,
     EnvOverride,
+    /// 云端 / 侧车就绪且策略允许时，将包内 `llm=ollama` 自动提升为 `remote`。
+    AppAuto,
 }
 
 /// 各模块当前有效后端来源快照（与 `PluginBackends` 字段一一对应）。
