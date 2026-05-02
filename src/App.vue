@@ -109,13 +109,14 @@ function clearCtrlLongPressTimer(): void {
 }
 
 function onCtrlHoldHintKeydown(e: KeyboardEvent): void {
+  if (!roleStore.interactionImmersive) return;
   if (e.key !== "Control" || e.repeat) {
     return;
   }
   clearCtrlLongPressTimer();
   ctrlLongPressTimer = window.setTimeout(() => {
     ctrlLongPressTimer = null;
-    if (roleStore.interactionPureChat) return;
+    if (!roleStore.interactionImmersive) return;
     shortcutHelpOpen.value = true;
   }, 1000);
 }
@@ -211,6 +212,7 @@ function toggleTopMore(e: Event) {
 }
 
 function openShortcutHelp(): void {
+  if (!roleStore.interactionImmersive) return;
   shortcutHelpOpen.value = true;
   topMoreOpen.value = false;
 }
@@ -1195,7 +1197,11 @@ onBeforeUnmount(() => {
     />
 
     <Toast :show="toast.show" :type="toast.type" :message="toast.message" />
-    <ShortcutHelp v-model="shortcutHelpOpen" :bootstrap-epoch="pluginStore.bootstrapEpoch" />
+    <ShortcutHelp
+      v-if="roleStore.interactionImmersive"
+      v-model="shortcutHelpOpen"
+      :bootstrap-epoch="pluginStore.bootstrapEpoch"
+    />
 
     <PluginMarketPanel />
     <PluginManagerPanel />

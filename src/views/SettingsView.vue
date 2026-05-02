@@ -202,12 +202,6 @@ async function onToggleForceIframe(e: Event) {
               {{ t("settings.shortcuts.immersiveHint") }}
             </p>
           </section>
-          <section v-else class="sv-section">
-            <div class="sv-row-h">
-              <span class="sv-label">{{ t("settings.shortcuts.pureChatLabel") }}</span>
-            </div>
-            <p class="sv-muted">{{ t("settings.shortcuts.pureChatHint") }}</p>
-          </section>
           <section class="sv-section">
             <div class="sv-row-h">
               <span class="sv-label">{{ t("settings.language.label") }}</span>

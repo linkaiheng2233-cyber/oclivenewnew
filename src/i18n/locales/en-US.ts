@@ -178,7 +178,7 @@ export const enUS = {
           hint:
             "For developers and troubleshooting. Ctrl+Shift+D toggles the debug window. When “More” is open, pressing Esc will close this panel first.",
           hintPureChat:
-            "Chat-only: only Ctrl+Shift+D toggles this panel; other global shortcuts and custom hotkeys are disabled. Switch to immersive for plugins and full settings.",
+            "Chat-only: use the button below for this panel. Combined-key shortcuts and the full shortcut list are available in immersive mode.",
           openPanel: "Open debug panel",
         },
         virtualTime: {
@@ -310,9 +310,6 @@ export const enUS = {
       label: "Shortcuts",
       immersiveHint:
         'Virtual time, narrative scenes, etc. are only shown under "More" in immersive mode.',
-      pureChatLabel: "Chat-only",
-      pureChatHint:
-        "In chat-only mode, global shortcuts for settings, plugins, and market are disabled (only Ctrl+Shift+D for debug). Switch to immersive for the full shortcut list.",
     },
     experimental: {
       label: "Experimental",
@@ -873,6 +870,10 @@ export const enUS = {
       "For development and troubleshooting: view favorability, personality dimensions, recent events and memory summaries; reload policies, generate monologue, import/manage role packs, etc.",
       "Shortcut Ctrl+Shift+D toggles this panel; Esc also closes it. You can also click “Open debug panel” under the top bar More menu.",
     ],
+    hintPureChatP1:
+      "For troubleshooting: favorability, memory, policy tools, role pack and monologue entries live here.",
+    hintPureChatP2:
+      "Press Esc or the corner close button. Combined-key shortcuts and the full list are documented in immersive mode.",
     debugDockSlotAria: "Debug panel extension slot",
     monologue: {
       prefix: "[Monologue]",
@@ -930,6 +931,7 @@ export const enUS = {
       reloadPolicy: "Reload policy",
     },
     footer: "💡 Ctrl+Shift+D toggles panel · role pack & monologue live here",
+    footerPureChat: "💡 Chat-only: use the top bar button · full shortcut table is in immersive Shortcuts help",
   },
   timeDial: {
     title: "Adjust virtual time",

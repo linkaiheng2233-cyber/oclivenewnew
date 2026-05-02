@@ -34,6 +34,23 @@ const pluginStore = usePluginStore();
 const { t } = useI18n();
 const monoLoading = ref(false);
 
+function asParagraphs(key: string): string[] {
+  const raw = t(key as any);
+  return Array.isArray(raw) ? (raw as string[]).map((x) => String(x)) : [String(raw)];
+}
+
+const debugHintParagraphs = computed(() =>
+  roleStore.interactionPureChat
+    ? [String(t("debugPanel.hintPureChatP1")), String(t("debugPanel.hintPureChatP2"))]
+    : asParagraphs("debugPanel.hint"),
+);
+
+const debugFooterText = computed(() =>
+  String(
+    roleStore.interactionPureChat ? t("debugPanel.footerPureChat") : t("debugPanel.footer"),
+  ),
+);
+
 const emit = defineEmits<{
   reload: [];
   refresh: [];
@@ -255,7 +272,7 @@ function presenceLabel(mode: string): string {
         </button>
       </div>
 
-      <div class="dev-footer">{{ t("debugPanel.footer") }}</div>
+      <div class="dev-footer">{{ debugFooterText }}</div>
     </aside>
   </transition>
 </template>

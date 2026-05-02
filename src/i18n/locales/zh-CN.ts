@@ -173,7 +173,7 @@ export const zhCN = {
           hint:
             "开发者与排错用：好感、记忆、策略重载等。Ctrl+Shift+D 可开关调试窗；顶栏「更多」展开时按 Esc 先收起本栏。",
           hintPureChat:
-            "纯聊：仅 Ctrl+Shift+D 可开关本面板；其它全局快捷键与自定义热键已停用。需要插件与完整设置请切到沉浸模式。",
+            "纯聊：请用下方按钮开关本面板。组合键与完整快捷键说明仅在沉浸模式提供。",
           openPanel: "打开调试面板",
         },
         virtualTime: {
@@ -305,9 +305,6 @@ export const zhCN = {
     shortcuts: {
       label: "快捷",
       immersiveHint: "虚拟时间、叙事场景等仅在沉浸模式下显示于「更多」。",
-      pureChatLabel: "纯聊",
-      pureChatHint:
-        "纯聊下已关闭设置、插件、市场等全局快捷键（仅保留 Ctrl+Shift+D 调试）。需要完整快捷键与专业入口请切换到沉浸模式。",
     },
     experimental: {
       label: "实验性功能",
@@ -848,6 +845,8 @@ export const zhCN = {
       "供开发与排错：查看好感度、性格维度、近期事件与记忆摘要；可重载策略、生成独白、导入或管理角色包等。",
       "快捷键 Ctrl+Shift+D（同时按住 Ctrl、Shift，再按字母 D）可随时打开或关闭本面板；按 Esc 也可关闭。顶栏「更多」里亦可点「打开调试面板」。",
     ],
+    hintPureChatP1: "供开发与排错：查看好感、记忆与策略等；角色包与独白入口也在此。",
+    hintPureChatP2: "按 Esc 或右上角关闭本面板。组合键与完整快捷键说明仅在沉浸模式提供。",
     debugDockSlotAria: "调试面板扩展槽",
     monologue: {
       prefix: "【独白】",
@@ -904,6 +903,7 @@ export const zhCN = {
       reloadPolicy: "重载策略",
     },
     footer: "💡 Ctrl+Shift+D 开关面板 · 角色包与独白已收在此",
+    footerPureChat: "💡 纯聊用顶栏按钮开关本面板 · 完整快捷键表在沉浸模式「快捷键说明」",
   },
   timeDial: {
     title: "调节虚拟时间",
