@@ -197,47 +197,6 @@ impl OclivePluginManifest {
         }
         Ok(m)
     }
-
-    /// 将 `shell.bridge` / `ui_slots[].bridge` 的 `invoke` 规范为权限令牌（与 `permission_token_for_bridge_command` 一致）。
-    pub fn bridge_permission_tokens(&self) -> Vec<String> {
-        use crate::domain::permission_tokens::permission_token_for_bridge_command;
-        let mut out: Vec<String> = Vec::new();
-        if let Some(sh) = &self.shell {
-            if let Some(b) = &sh.bridge {
-                for x in &b.invoke {
-                    let t = x.trim();
-                    if t.is_empty() {
-                        continue;
-                    }
-                    let perm = if t.contains(':') {
-                        t.to_string()
-                    } else {
-                        permission_token_for_bridge_command(t)
-                    };
-                    out.push(perm);
-                }
-            }
-        }
-        for us in &self.ui_slots {
-            if let Some(b) = &us.bridge {
-                for x in &b.invoke {
-                    let t = x.trim();
-                    if t.is_empty() {
-                        continue;
-                    }
-                    let perm = if t.contains(':') {
-                        t.to_string()
-                    } else {
-                        permission_token_for_bridge_command(t)
-                    };
-                    out.push(perm);
-                }
-            }
-        }
-        out.sort();
-        out.dedup();
-        out
-    }
 }
 
 /// 与持久化、`plugin_state` 比较时使用的 `appearance_id` 规范化（trim）。

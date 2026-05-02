@@ -6,7 +6,6 @@
 pub mod co_present;
 pub mod context;
 pub mod favor;
-pub mod llm_cancelable;
 pub mod presence;
 pub mod process_message;
 pub mod scene;

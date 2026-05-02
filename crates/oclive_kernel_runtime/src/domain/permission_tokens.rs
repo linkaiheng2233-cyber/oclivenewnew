@@ -52,12 +52,6 @@ pub const PERMISSION_TOKENS_V1: &[PermissionTokenInfo] = &[
         risk: PermissionRisk::Low,
     },
     PermissionTokenInfo {
-        token: "read:role_info",
-        title: "读取角色运行时详情",
-        description: "允许读取指定角色的运行时信息（桥接 get_role_info）。",
-        risk: PermissionRisk::Low,
-    },
-    PermissionTokenInfo {
         token: "write:memory",
         title: "写入记忆",
         description: "允许写入/修改记忆数据。",
@@ -131,9 +125,8 @@ pub const PERMISSION_TOKENS_V1: &[PermissionTokenInfo] = &[
 pub fn permission_token_for_bridge_command(cmd: &str) -> String {
     match cmd {
         "get_conversation" => "read:conversation".to_string(),
-        "get_roles" | "list_roles" => "read:roles".to_string(),
+        "get_roles" => "read:roles".to_string(),
         "get_current_role" => "read:current_role".to_string(),
-        "get_role_info" => "read:role_info".to_string(),
         "update_memory" | "delete_memory" => "write:memory".to_string(),
         "update_emotion" => "write:emotion".to_string(),
         "update_event" => "write:event".to_string(),

@@ -22,7 +22,6 @@ import { usePackUiTheme } from "./composables/useTheme";
 import { usePluginManagerWindow } from "./composables/usePluginManagerWindow";
 import { hostEventBus } from "./lib/hostEventBus";
 import {
-  cancelChatGeneration,
   consumePendingProtocolInstalls,
   importRolePack,
   installPluginFromGit,
@@ -30,7 +29,6 @@ import {
   OCLIVE_DEFAULT_RELATION_SENTINEL,
   peekRolePack,
   revealRolePackFolder,
-  parseApiErrorCode,
   setErrorReporter,
   setRemoteLifeEnabled,
   setRoleInteractionMode,
@@ -411,9 +409,6 @@ async function onSend(payload: { content: string }) {
   const userText = payload.content;
   try {
     const res = await chatStore.sendMessage(userText, uiStore.sceneId);
-    if (!res) {
-      return;
-    }
     await roleStore.refreshRoleInfo();
     applyResolvedNarrativeScene();
     if (debugStore.visible) {
@@ -434,33 +429,12 @@ async function onSend(payload: { content: string }) {
       }
     }
   } catch (err) {
-    if (parseApiErrorCode(err) === "CHAT_GENERATION_CANCELLED") {
-      showToast("info", String(t("app.toasts.chatStopped")));
-      return;
-    }
     if (roleStore.interactionPureChat) {
       showToast("error", toPureChatPlainErrorMessage(err));
     } else {
       showToast("error", err instanceof Error ? err.message : String(err));
     }
   }
-}
-
-async function onClearStuckSending() {
-  const hadLoading = chatStore.isLoading;
-  try {
-    await cancelChatGeneration();
-  } catch {
-    /* 无活动生成或非 Tauri 环境 */
-  }
-  chatStore.invalidateActiveSend();
-  if (hadLoading) {
-    chatStore.removeLastUserBubble(
-      roleStore.currentRoleId,
-      uiStore.sceneId || "default",
-    );
-  }
-  showToast("info", String(t("app.toasts.waitCleared")));
 }
 
 async function confirmPostReplyScene(together: boolean) {
@@ -787,7 +761,6 @@ async function runPendingProtocolInstallsFromQueue(): Promise<void> {
 }
 
 onMounted(() => {
-  chatStore.clearStuckSendingState();
   setErrorReporter((err) => {
     showToast("error", err.message);
   });
@@ -1232,7 +1205,6 @@ onBeforeUnmount(() => {
                 :history-split-index="sceneHistorySplitIndex"
                 :loading="chatStore.isLoading"
                 :role-switching="roleSwitching"
-                @clear-stuck-loading="onClearStuckSending"
               />
             </transition>
           </div>
@@ -1251,12 +1223,7 @@ onBeforeUnmount(() => {
               @confirm-post-reply="confirmPostReplyScene"
               @dismiss-post-reply="dismissPostReplySceneBar"
             />
-            <ChatComposer
-              :loading="chatStore.isLoading"
-              @send="onSend"
-              @open-settings="openSettingsView"
-              @clear-stuck-loading="onClearStuckSending"
-            />
+            <ChatComposer :loading="chatStore.isLoading" @send="onSend" @open-settings="openSettingsView" />
           </section>
         </div>
       </div>

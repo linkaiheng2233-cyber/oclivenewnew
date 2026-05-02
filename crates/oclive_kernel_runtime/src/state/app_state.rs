@@ -37,7 +37,6 @@ use sqlx::sqlite::{SqliteConnectOptions, SqlitePoolOptions};
 use std::collections::HashMap;
 use std::fs;
 use std::path::{Path, PathBuf};
-use std::sync::atomic::AtomicBool;
 use std::sync::Arc;
 use tempfile::TempDir;
 
@@ -232,8 +231,6 @@ pub struct KernelAppState {
     pub plugins: PluginHost,
     pub directory_plugins: Arc<DirectoryPluginRuntime>,
     session_plugin_overrides: Arc<RwLock<HashMap<String, PluginBackendsOverride>>>,
-    /// 由 `cancel_chat_generation` 置位；`process_message` 入口清除；主对话 LLM 任务轮询此标志。
-    pub chat_generation_cancel: Arc<AtomicBool>,
     // Keep temp dir alive when using ephemeral DBs.
     _temp_db_dir: Option<TempDir>,
 }
@@ -363,7 +360,6 @@ impl KernelAppState {
             plugins,
             directory_plugins,
             session_plugin_overrides: Arc::new(RwLock::new(HashMap::new())),
-            chat_generation_cancel: Arc::new(AtomicBool::new(false)),
             _temp_db_dir: temp_db_dir,
         })
     }
@@ -449,7 +445,6 @@ impl KernelAppState {
             plugins,
             directory_plugins,
             session_plugin_overrides: Arc::new(RwLock::new(HashMap::new())),
-            chat_generation_cancel: Arc::new(AtomicBool::new(false)),
             _temp_db_dir: Some(dir),
         })
     }

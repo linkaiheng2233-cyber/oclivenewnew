@@ -9,7 +9,6 @@ const props = defineProps<{ loading: boolean }>();
 const emit = defineEmits<{
   send: [payload: { content: string }];
   openSettings: [];
-  "clear-stuck-loading": [];
 }>();
 
 const { t } = useI18n();
@@ -62,13 +61,6 @@ onBeforeUnmount(() => {
     </div>
     <p class="composer-hint">{{ t("chatComposer.hint") }}</p>
 
-    <div v-if="loading" class="composer-wait-bar" role="status">
-      <span>{{ t("chatComposer.generatingHint") }}</span>
-      <button type="button" class="composer-wait-btn" @click="emit('clear-stuck-loading')">
-        {{ t("chatComposer.endWaiting") }}
-      </button>
-    </div>
-
     <div class="composer-body">
       <div class="composer-input-col">
         <label class="sr-only" for="chat-user-message">{{ t("chat.input.label") }}</label>
@@ -114,30 +106,6 @@ onBeforeUnmount(() => {
   color: var(--text-secondary);
   background: color-mix(in srgb, var(--bg-primary) 40%, var(--bg-elevated));
   border-bottom: 1px solid color-mix(in srgb, var(--border-light) 70%, transparent);
-}
-.composer-wait-bar {
-  display: flex;
-  flex-wrap: wrap;
-  align-items: center;
-  justify-content: space-between;
-  gap: 8px;
-  padding: 8px 12px;
-  font-size: 12px;
-  color: var(--text-secondary);
-  background: color-mix(in srgb, var(--accent) 8%, var(--bg-primary));
-  border-bottom: 1px solid color-mix(in srgb, var(--border-light) 70%, transparent);
-}
-.composer-wait-btn {
-  border-radius: 8px;
-  border: 1px solid var(--border-light);
-  padding: 4px 10px;
-  font-size: 12px;
-  cursor: pointer;
-  background: var(--bg-elevated);
-  color: var(--text-primary);
-}
-.composer-wait-btn:hover {
-  border-color: color-mix(in srgb, var(--accent) 45%, var(--border-light));
 }
 .composer-body {
   display: flex;
