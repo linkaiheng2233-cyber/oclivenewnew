@@ -7,7 +7,7 @@ import App from "./App.vue";
 import "./styles/theme.css";
 import "./styles/global.css";
 import { tryReplaceWithDirectoryShell } from "./utils/directoryShellBootstrap";
-import { i18n, setAppLocale } from "./i18n";
+import { i18n, prepareI18nForLocale, setAppLocale } from "./i18n";
 import { useUiStore } from "./stores/uiStore";
 
 void (async () => {
@@ -21,19 +21,32 @@ void (async () => {
   const pinia = createPinia();
   pinia.use(piniaPluginPersistedstate);
   app.use(pinia);
-  app.use(i18n);
 
   const uiStore = useUiStore(pinia);
+  await setAppLocale(uiStore.effectiveLocale);
+  app.use(i18n);
+
   watch(
     () => uiStore.languagePref,
     () => {
-      setAppLocale(uiStore.effectiveLocale);
+      void setAppLocale(uiStore.effectiveLocale);
     },
-    { immediate: true },
+    { immediate: false },
   );
 
   app.use(VueVirtualScroller);
   app.mount("#app");
+
+  const prefetchSiblingLocale = () => {
+    const cur = uiStore.effectiveLocale;
+    const other = cur === "zh-CN" ? "en-US" : "zh-CN";
+    void prepareI18nForLocale(other);
+  };
+  if (typeof requestIdleCallback === "function") {
+    requestIdleCallback(prefetchSiblingLocale, { timeout: 8000 });
+  } else {
+    setTimeout(prefetchSiblingLocale, 2000);
+  }
 
   const sentryDsn = import.meta.env.VITE_SENTRY_DSN;
   if (typeof sentryDsn === "string" && sentryDsn.length > 0) {

@@ -75,15 +75,17 @@ export async function tryReplaceWithDirectoryShell(): Promise<boolean> {
         developerMode: boot.developerMode === true,
       });
       app.use(pinia);
-      app.use(i18n);
 
       const uiStore = useUiStore(pinia);
+      await setAppLocale(uiStore.effectiveLocale);
+      app.use(i18n);
+
       watch(
         () => uiStore.languagePref,
         () => {
-          setAppLocale(uiStore.effectiveLocale);
+          void setAppLocale(uiStore.effectiveLocale);
         },
-        { immediate: true },
+        { immediate: false },
       );
 
       app.mount("#app");
