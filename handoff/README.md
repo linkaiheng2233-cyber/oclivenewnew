@@ -21,6 +21,10 @@
 | `11_BACKEND_FREEZE_AND_REGRESSION.md` | 后端封板：接口冻结范围与回归门禁清单 |
 | `12_BACKEND_PERF_RUNBOOK.md` | 后端压测运行手册（P50/P95/P99 输出与阈值） |
 | `13_PERF_BASELINE_2026-04-01.md` | 首版压测基线记录（Mock LLM） |
+| `PERFORMANCE_BASELINE_ACCEPTANCE.md` | 端到端性能验收与 Release 对比 |
+| `FRONTEND_CHUNK_OPTIMIZATION.md` | 前端 chunk / 懒加载 / Sentry / Monaco 移除说明 |
+| `RUST_RELEASE_AND_DEPENDENCIES.md` | Release profile；tokio/reqwest workspace |
+| `BUNDLE_RESOURCES_SIZING.md` | `roles`/`plugins` 随包体积度量 |
 | `14_POLICY_PLUGIN_PHASE1.md` | 策略插件化第 1 步对接（接口抽象、参数配置、职责收敛） |
 | `15_POLICY_PLUGIN_GUIDE_AND_ROADMAP.md` | 策略插件化架构/流程图、验收标准、风险与中长期规划 |
 | `16_POLICY_RELEASE_CHECKLIST.md` | 策略插件化发布前检查清单（门禁/快照/处置/交接） |

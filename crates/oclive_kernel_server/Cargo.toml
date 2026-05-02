@@ -7,7 +7,7 @@ description = "Oclive Kernel Server (standalone, no Tauri): OOCP WS/HTTP endpoin
 
 [dependencies]
 oclive_kernel_runtime = { path = "../oclive_kernel_runtime" }
-tokio = { version = "1", features = ["full"] }
+tokio = { workspace = true }
 log = "0.4"
 env_logger = "0.11"
 

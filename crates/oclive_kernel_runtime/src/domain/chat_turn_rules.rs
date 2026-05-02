@@ -1,3 +1,6 @@
+//! 对话轮次策略辅助；部分尚未接入主路径，保留供后续迭代。
+#![allow(dead_code)]
+
 use crate::domain::relation_engine::RelationState;
 use crate::models::{Event, EventType};
 

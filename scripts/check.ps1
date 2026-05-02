@@ -11,13 +11,13 @@ Write-Host "-- npm build"
 npm run -s build
 
 Write-Host "-- cargo fmt"
-cargo fmt --all -- --check
+cargo fmt --manifest-path src-tauri/Cargo.toml --all -- --check
 
 Write-Host "-- cargo clippy"
-cargo clippy --all-targets --all-features -- -D warnings
+cargo clippy --manifest-path src-tauri/Cargo.toml --workspace --all-targets --all-features -- -D warnings
 
 Write-Host "-- cargo test"
-cargo test -q
+cargo test --manifest-path src-tauri/Cargo.toml --workspace -q
 
 Write-Host "OK"
 

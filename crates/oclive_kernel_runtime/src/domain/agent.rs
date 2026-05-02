@@ -93,7 +93,7 @@ impl BuiltinReActAgent {
         &self,
         server_id: &str,
     ) -> Result<Vec<crate::infrastructure::mcp_client::McpToolManifest>> {
-        Ok(self.mcp.list_tools(server_id)?)
+        self.mcp.list_tools(server_id)
     }
 
     pub fn call_tool_direct(
@@ -102,7 +102,7 @@ impl BuiltinReActAgent {
         tool_name: &str,
         params: Value,
     ) -> Result<McpToolCallResult> {
-        Ok(self.mcp.call_tool(server_id, tool_name, params)?)
+        self.mcp.call_tool(server_id, tool_name, params)
     }
 
     fn collect_tool_schema_inputs(&self) -> Vec<ToolSchemaInput> {

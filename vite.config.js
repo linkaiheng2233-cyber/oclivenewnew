@@ -27,7 +27,7 @@ export default defineConfig(({ mode }) => ({
       output: {
         manualChunks(id) {
           if (!id.includes("node_modules")) return;
-          if (id.includes("@sentry")) return "vendor-sentry";
+          if (id.includes("@vue-flow")) return "vendor-vue-flow";
           if (id.includes("@tauri-apps")) return "vendor-tauri";
           if (id.includes("vue-virtual-scroller")) return "vendor-scroller";
           if (id.includes("pinia")) return "vendor-pinia";

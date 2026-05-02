@@ -1,11 +1,11 @@
 <script setup lang="ts">
-import { computed, onMounted, ref } from "vue";
+import { computed, defineAsyncComponent, onMounted, ref } from "vue";
 import { useI18n } from "vue-i18n";
 import { open, save } from "@tauri-apps/api/dialog";
 import { readTextFile, writeTextFile } from "@tauri-apps/api/fs";
 import { useAppToast } from "../../composables/useAppToast";
 import { useExpertModelsStore } from "../../stores/expertModelsStore";
-import ExpertModelsCanvas from "./ExpertModelsCanvas.vue";
+const ExpertModelsCanvas = defineAsyncComponent(() => import("./ExpertModelsCanvas.vue"));
 import type { ExpertGraph, ExpertNode, PromptStyleOverride } from "../../utils/tauri-api";
 
 const store = useExpertModelsStore();

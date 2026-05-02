@@ -1,11 +1,11 @@
 <script setup lang="ts">
-import { computed, onMounted, ref, watch } from "vue";
+import { computed, defineAsyncComponent, onMounted, ref, watch } from "vue";
 import { useI18n } from "vue-i18n";
 import LeftCategoryNav from "./LeftCategoryNav.vue";
 import PluginCardList from "./PluginCardList.vue";
 import RightDetailPanel from "./RightDetailPanel.vue";
 import HelpCircle from "../HelpCircle.vue";
-import ExpertModelsPanel from "../ExpertModels/ExpertModelsPanel.vue";
+const ExpertModelsPanel = defineAsyncComponent(() => import("../ExpertModels/ExpertModelsPanel.vue"));
 import { usePluginManagerV2 } from "../../composables/usePluginManagerV2";
 import { usePluginTerm } from "../../composables/usePluginTerm";
 import {
