@@ -10,7 +10,7 @@ import {
   cloudLlmTrustReadmeOpenerKey,
   useCloudLlmTrustModal,
 } from "../composables/useCloudLlmTrustModal";
-import { isTauriRuntime } from "../utils/directoryShellBootstrap";
+import { isTauriWebview } from "../utils/isTauriWebview";
 
 defineProps<{
   visible: boolean;
@@ -25,7 +25,7 @@ const cloudTrust = useCloudLlmTrustModal();
 provide(cloudLlmTrustModalKey, cloudTrust);
 
 /** Tauri 下用系统对话框展示说明，避免本地模型全屏层内嵌 Vue 模态在 WebView2 中点击不生效。 */
-const preferNativeCloudTrustReadme = isTauriRuntime();
+const preferNativeCloudTrustReadme = isTauriWebview();
 
 async function openCloudLlmTrustReadme(): Promise<void> {
   if (preferNativeCloudTrustReadme) {
