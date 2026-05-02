@@ -3,6 +3,7 @@ import { onBeforeUnmount, ref, watch } from "vue";
 import { useI18n } from "vue-i18n";
 import HelpHint from "../components/HelpHint.vue";
 import TrustConsentModal from "../components/TrustConsentModal.vue";
+import CloudLlmQuickSetup from "../components/CloudLlmQuickSetup.vue";
 import { useCloudLlmTrustModal } from "../composables/useCloudLlmTrustModal";
 import HotkeySettingsSection from "../components/HotkeySettingsSection.vue";
 import PluginSettingsPanelSlots from "../components/PluginSettingsPanelSlots.vue";
@@ -236,6 +237,7 @@ async function onToggleForceIframe(e: Event) {
                 <li>{{ t("settings.cloudLlmTrust.envLineModel") }}</li>
                 <li>{{ t("settings.cloudLlmTrust.envLineTimeout") }}</li>
               </ul>
+              <CloudLlmQuickSetup />
             </div>
             <div class="sv-cloud-actions-row">
               <button type="button" class="sv-btn sv-btn--accent" @click="cloudTrust.open">

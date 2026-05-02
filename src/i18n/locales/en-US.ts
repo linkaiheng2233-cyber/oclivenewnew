@@ -306,6 +306,34 @@ export const enUS = {
         allow: "Got it",
       },
     },
+    cloudLlmQuick: {
+      title: "Quick setup (common providers)",
+      lead:
+        "Pick a preset, adjust base URL/model, then copy commands. The app still reads OCLIVE_CLOUD_LLM_* from the environment—nothing is persisted into the app database. Launch Oclive from the same terminal session after running PowerShell lines, or set user/system env vars and restart.",
+      preset: "Provider preset",
+      presets: {
+        openai: "OpenAI",
+        deepseek: "DeepSeek",
+        siliconflow: "SiliconFlow",
+        openrouter: "OpenRouter",
+        moonshot: "Moonshot",
+        groq: "Groq",
+        together: "Together AI",
+        custom: "Custom (manual only)",
+      },
+      baseUrl: "API base URL (no /v1 suffix)",
+      apiKey: "API key",
+      model: "Default model id (optional)",
+      warnNoPersist: "Keys are only used to build clipboard text—never commit secrets to a repo.",
+      copyPs: "Copy PowerShell session env",
+      copyEnv: "Copy .env snippet",
+      toastCopiedPs: "Copied PowerShell. Run it in that window, then start the app from the same session.",
+      toastCopiedEnv: "Copied .env snippet. Save to a file or load via your launcher.",
+      errClipboard: "Clipboard API is unavailable in this environment.",
+      errNeedUrlKey: "Please enter API base URL and API key.",
+      psDoneHint:
+        "Session env vars set. For persistence, use OS user/system environment variables or a launcher script that sets them before starting the app.",
+    },
     shortcuts: {
       label: "Shortcuts",
       immersiveHint:
