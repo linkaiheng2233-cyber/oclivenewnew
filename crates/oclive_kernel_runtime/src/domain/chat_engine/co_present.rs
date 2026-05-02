@@ -11,7 +11,7 @@ use crate::domain::policy::PolicyContext;
 use crate::domain::portrait_emotion_engine::resolve_portrait_emotion;
 use crate::domain::prompt_builder::{effective_reply_quality_anchor, PromptInput};
 use crate::domain::user_identity::resolve_effective_user_relation_key;
-use crate::error::Result;
+use crate::error::{AppError, Result};
 use crate::models::dto::{
     DetectedEventDto, PresenceMode, SendMessageRequest, SendMessageResponse, API_VERSION,
     SCHEMA_VERSION,
@@ -223,8 +223,18 @@ pub(crate) async fn process_co_present(
     let pre_main_llm_ms = t_cp0.elapsed().as_millis() as u64;
     let t_main_llm = Instant::now();
     let mut main_llm_fallback = false;
-    let reply_raw = match pl.llm.generate(ollama_model.as_str(), &prompt).await {
+    let reply_raw = match super::llm_cancelable::run_llm_generate_cancelable(
+        state,
+        pl.llm.clone(),
+        ollama_model.as_str(),
+        &prompt,
+    )
+    .await
+    {
         Ok(s) => s,
+        Err(AppError::ChatGenerationCancelled) => {
+            return Err(AppError::ChatGenerationCancelled);
+        }
         Err(e) => {
             log::warn!("main LLM generate failed, talkativeness fallback: {}", e);
             main_llm_fallback = true;

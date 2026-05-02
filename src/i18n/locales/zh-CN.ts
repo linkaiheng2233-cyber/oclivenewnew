@@ -49,6 +49,7 @@ export const zhCN = {
       ZIP_TOTAL_TOO_LARGE: "zip 总大小过大，已阻止解压安装。",
       PLUGIN_PERMISSION_NOT_GRANTED:
         "该插件尚未被授予所需权限，已阻止调用。请在插件权限管理中授权后再试。",
+      CHAT_GENERATION_CANCELLED: "已停止生成本轮回复。",
     },
     special: {
       roleNotFoundWithDetail: "角色不存在或找不到 manifest。{detail}",
@@ -94,6 +95,7 @@ export const zhCN = {
       currentSessionDivider: "以下为本次会话",
       empty: "暂无消息，开始聊天吧~",
       thinking: "正在想…",
+      endWaiting: "结束等待",
     },
     message: {
       fallbackBadge: "备用短回复",
@@ -133,6 +135,8 @@ export const zhCN = {
     gear: "云端",
     openSettings: "打开设置（云端 LLM 与密钥）",
     errEmpty: "模型名不能为空。",
+    generatingHint: "生成中…",
+    endWaiting: "结束等待",
   },
   app: {
     startup: {
@@ -253,6 +257,8 @@ export const zhCN = {
       identitySet: "已设置{scope}：{name}",
       pluginInstalledFromUrl: "已通过网页链接安装插件：{id}",
       pluginsAutoRefreshed: "检测到插件变更，已自动刷新",
+      waitCleared: "已结束等待状态",
+      chatStopped: "已停止生成",
     },
     sceneTravel: {
       travelingTo: "正在前往「{label}」…",

@@ -53,6 +53,7 @@ const CommonErrorMessageKeys: Record<string, string> = {
   ZIP_SINGLE_FILE_TOO_LARGE: "apiErrors.common.ZIP_SINGLE_FILE_TOO_LARGE",
   ZIP_TOTAL_TOO_LARGE: "apiErrors.common.ZIP_TOTAL_TOO_LARGE",
   PLUGIN_PERMISSION_NOT_GRANTED: "apiErrors.common.PLUGIN_PERMISSION_NOT_GRANTED",
+  CHAT_GENERATION_CANCELLED: "apiErrors.common.CHAT_GENERATION_CANCELLED",
 };
 
 function parseBackendError(err: unknown): { code?: string; raw: string } {
@@ -501,6 +502,9 @@ export async function ollamaModelsDelete(name: string): Promise<void> {
 /** 纯聊模式：聊天等路径用大白话，避免堆栈与 HTTP 细节。 */
 export function toPureChatPlainErrorMessage(err: unknown): string {
   const { code, raw } = parseBackendError(err);
+  if (code === "CHAT_GENERATION_CANCELLED") {
+    return t("apiErrors.common.CHAT_GENERATION_CANCELLED");
+  }
   if (code === "LLM_ERROR" || code === "OLLAMA_TIMEOUT") {
     return t("app.pureChatErrors.llm");
   }
@@ -1162,6 +1166,10 @@ export async function sendMessage(
   req: SendMessageRequest,
 ): Promise<SendMessageResponse> {
   return invokeWithFriendlyError<SendMessageResponse>("send_message", { req });
+}
+
+export async function cancelChatGeneration(): Promise<void> {
+  await invoke("cancel_chat_generation");
 }
 
 export async function loadRole(roleId: string): Promise<RoleData> {

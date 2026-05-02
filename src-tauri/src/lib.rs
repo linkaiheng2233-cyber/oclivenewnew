@@ -399,6 +399,7 @@ pub fn run() {
             api::agent::preview_mcp_server_import,
             api::agent::import_mcp_server_from_path,
             api::chat::send_message,
+            api::chat::cancel_chat_generation,
             api::role::load_role,
             api::role::get_role_info,
             api::role::list_roles,

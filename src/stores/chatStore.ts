@@ -1,5 +1,6 @@
 import { defineStore } from "pinia";
 import {
+  parseApiErrorCode,
   sendMessage,
   type PresenceMode,
   type SendMessageResponse,
@@ -14,6 +15,9 @@ import { useDebugStore } from "./debugStore";
 import { useRoleStore } from "./roleStore";
 import { useUiStore } from "./uiStore";
 import { hostEventBus } from "../lib/hostEventBus";
+
+/** 与「结束等待 / 取消生成」联动：丢弃迟到回包，避免覆盖新一轮发送。 */
+let chatSendNonce = 0;
 
 export type ChatMessage = {
   id: string;
@@ -203,6 +207,28 @@ export const useChatStore = defineStore(
             ? next.slice(-MAX_MESSAGES_PER_CONVERSATION)
             : next;
       },
+      /** 结束异常卡在「生成中」的 UI（例如崩溃后 isLoading 曾被持久化）。不调用后端。 */
+      clearStuckSendingState() {
+        this.isLoading = false;
+      },
+
+      invalidateActiveSend() {
+        chatSendNonce++;
+        this.isLoading = false;
+      },
+
+      removeLastUserBubble(roleId: string, sceneId: string) {
+        this.ensureLegacyMigrated(roleId);
+        const sid = sceneId || "default";
+        const roleMap = (this.messageMap as RoleSceneMessageMap)[roleId];
+        const arr = roleMap?.[sid];
+        if (!arr?.length) return;
+        if (arr[arr.length - 1].role !== "user") return;
+        const next = arr.slice(0, -1);
+        if (!this.messageMap[roleId]) (this.messageMap as any)[roleId] = {};
+        (this.messageMap as any)[roleId][sid] = next;
+      },
+
       clearMessages(roleId: string, sceneId: string) {
         const sid = sceneId || "default";
         const roleBucket = (this.messageMap as unknown as Record<
@@ -218,10 +244,14 @@ export const useChatStore = defineStore(
         if (!this.messageMap[roleId]) (this.messageMap as any)[roleId] = {};
         (this.messageMap as any)[roleId][sid] = [];
       },
-      async sendMessage(content: string, sceneId: string): Promise<SendMessageResponse> {
+      async sendMessage(
+        content: string,
+        sceneId: string,
+      ): Promise<SendMessageResponse | null> {
         const roleStore = useRoleStore();
         const roleId = roleStore.currentRoleId;
         const sid = sceneId || "default";
+        const myNonce = ++chatSendNonce;
         this.addUserMessage(content, sid);
         this.isLoading = true;
         const relationBefore = roleStore.roleInfo.relationState;
@@ -231,6 +261,9 @@ export const useChatStore = defineStore(
             user_message: content,
             scene_id: sid || null,
           });
+          if (myNonce !== chatSendNonce) {
+            return null;
+          }
           const pres = presentationFromSendResponse(res);
           this.addAssistantMessage(
             pres.replyText,
@@ -261,11 +294,23 @@ export const useChatStore = defineStore(
             reply_aside: split.aside,
           });
           return res;
+        } catch (e) {
+          if (myNonce !== chatSendNonce) {
+            return null;
+          }
+          if (parseApiErrorCode(e) === "CHAT_GENERATION_CANCELLED") {
+            this.removeLastUserBubble(roleId, sid);
+          }
+          throw e;
         } finally {
-          this.isLoading = false;
+          if (myNonce === chatSendNonce) {
+            this.isLoading = false;
+          }
         }
       },
     },
-    persist: true,
+    persist: {
+      pick: ["messageMap", "sceneHistorySplitIndex"],
+    },
   },
 );

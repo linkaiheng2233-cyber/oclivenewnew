@@ -54,6 +54,7 @@ export const enUS = {
       ZIP_TOTAL_TOO_LARGE: "Zip total size is too large; extraction blocked.",
       PLUGIN_PERMISSION_NOT_GRANTED:
         "Required permissions are not granted; call is blocked. Grant permissions in plugin permissions manager and retry.",
+      CHAT_GENERATION_CANCELLED: "Generation was cancelled.",
     },
     special: {
       roleNotFoundWithDetail: "Role not found or manifest missing. {detail}",
@@ -99,6 +100,7 @@ export const enUS = {
       currentSessionDivider: "Current session below",
       empty: "No messages yet. Start chatting.",
       thinking: "Thinking…",
+      endWaiting: "End wait",
     },
     message: {
       fallbackBadge: "Fallback reply",
@@ -140,6 +142,8 @@ export const enUS = {
     gear: "Cloud",
     openSettings: "Open settings (cloud LLM & keys)",
     errEmpty: "Model id cannot be empty.",
+    generatingHint: "Generating…",
+    endWaiting: "End wait",
   },
   app: {
     startup: {
@@ -260,6 +264,9 @@ export const enUS = {
       identitySet: "{scope} set: {name}",
       pluginInstalledFromUrl: "Plugin installed from web URL: {id}",
       pluginsAutoRefreshed: "Plugin changes detected; auto-refreshed",
+      waitCleared:
+        "Wait state cleared. If a stray user bubble remains, delete it or send again.",
+      chatStopped: "Generation stopped.",
     },
     sceneTravel: {
       travelingTo: "Traveling to “{label}”…",

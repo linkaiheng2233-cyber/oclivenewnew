@@ -10,6 +10,10 @@ export type { ChatMsg };
 
 const { t } = useI18n();
 
+const emit = defineEmits<{
+  "clear-stuck-loading": [];
+}>();
+
 /** 每次在主聊天区多展开的历史条数 */
 const PREVIEW_STEP = 20;
 
@@ -229,7 +233,10 @@ defineExpose({ scrollToBottom });
         <span class="dot" />
         <span class="dot" />
       </div>
-      <span>{{ t("chat.list.thinking") }}</span>
+      <span class="thinking-label">{{ t("chat.list.thinking") }}</span>
+      <button type="button" class="thinking-clear" @click="emit('clear-stuck-loading')">
+        {{ t("chat.list.endWaiting") }}
+      </button>
     </div>
   </div>
 </template>
@@ -506,13 +513,31 @@ defineExpose({ scrollToBottom });
 .thinking {
   margin: 10px 0;
   display: inline-flex;
+  flex-wrap: wrap;
   align-items: center;
-  gap: 8px;
+  gap: 8px 10px;
   padding: 8px 12px;
   border-radius: var(--radius-bubble);
   background: var(--bubble-bot-bg);
   box-shadow: var(--shadow-sm);
   color: var(--text-secondary);
+}
+.thinking-label {
+  flex: 1 1 auto;
+  min-width: 0;
+}
+.thinking-clear {
+  flex-shrink: 0;
+  border-radius: 8px;
+  border: 1px solid color-mix(in srgb, var(--border-light) 80%, var(--accent) 20%);
+  padding: 4px 10px;
+  font-size: 12px;
+  cursor: pointer;
+  background: var(--bg-elevated);
+  color: var(--text-primary);
+}
+.thinking-clear:hover {
+  border-color: color-mix(in srgb, var(--accent) 40%, var(--border-light));
 }
 .dot-wrap {
   display: inline-flex;

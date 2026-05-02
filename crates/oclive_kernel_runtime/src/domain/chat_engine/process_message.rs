@@ -15,7 +15,7 @@ use crate::domain::policy::PolicyContext;
 use crate::domain::portrait_emotion_engine::resolve_portrait_emotion;
 use crate::domain::remote_life_prompt::{build_remote_life_prompt, compose_remote_stub_reply};
 use crate::domain::user_identity::resolve_effective_user_relation_key;
-use crate::error::Result;
+use crate::error::{AppError, Result};
 use crate::models::dto::{
     PresenceMode, SendMessageRequest, SendMessageResponse, API_VERSION, SCHEMA_VERSION,
 };
@@ -24,6 +24,7 @@ use crate::models::{
 };
 use crate::state::KernelAppState;
 use chrono::Utc;
+use std::sync::atomic::Ordering;
 use std::sync::Arc;
 use std::time::Instant;
 
@@ -48,6 +49,10 @@ pub async fn process_message(
         scene_id,
         srid
     );
+
+    state
+        .chat_generation_cancel
+        .store(false, Ordering::Release);
 
     state.db_manager.ensure_role_runtime(srid).await?;
 
@@ -415,8 +420,18 @@ async fn process_remote_life(
     let pre_main_llm_ms = t_path.elapsed().as_millis() as u64;
     let t_main_llm = Instant::now();
     let mut main_llm_fallback = false;
-    let reply_raw = match pl.llm.generate(ollama_model.as_str(), &prompt).await {
+    let reply_raw = match super::llm_cancelable::run_llm_generate_cancelable(
+        state,
+        pl.llm.clone(),
+        ollama_model.as_str(),
+        &prompt,
+    )
+    .await
+    {
         Ok(s) => s,
+        Err(AppError::ChatGenerationCancelled) => {
+            return Err(AppError::ChatGenerationCancelled);
+        }
         Err(e) => {
             log::warn!("remote_life LLM generate failed, fallback: {}", e);
             main_llm_fallback = true;
