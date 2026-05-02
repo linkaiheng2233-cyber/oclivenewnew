@@ -129,8 +129,8 @@ export const enUS = {
         interactionMode: {
           title: "Interaction mode",
           hint: [
-            "Immersive: enables virtual time, narrative scenes, schedule inference and travel capabilities.",
-            "Chat-only: keeps conversation only; hides scene/time bars for casual chatting.",
+            "Immersive: virtual time, narrative scenes, travel UI; “More” includes plugins, debug and full settings.",
+            "Chat-only: conversation-first; travel prompts are ignored; “More” keeps appearance, identity and essentials; drop .ocpak/.zip on the window to import.",
           ],
           immersive: "Immersive",
           pureChat: "Chat-only",
@@ -165,6 +165,11 @@ export const enUS = {
           settings: "Settings",
           localModels: "Local models…",
           pluginMarket: "Plugin Market (Ctrl+Shift+A)",
+        },
+        pureChatSettings: {
+          title: "Chat mode essentials",
+          groupLabel: "Chat mode shortcuts",
+          hint: "In chat-only mode, plugin market, debug and full settings are hidden; switch to immersive when you need them.",
         },
         rolePackShare: {
           title: "Role packs (share with friends)",
@@ -228,9 +233,23 @@ export const enUS = {
     },
     pureChatAssist: {
       aria: "Chat mode shortcuts",
-      lead: "Chat mode hides virtual time and travel bars. Use the button below for local GGUF / quick start; import or export role packs stays under top bar “More”.",
+      lead: "Chat mode keeps narrative UI light. Drop a .ocpak / .zip role pack onto the window to import; use the button below for local GGUF; font and theme live under More → Appearance.",
       openModels: "Local models…",
       openMore: "Open “More”",
+    },
+    pureChatErrors: {
+      llm: "Message did not send: the model may be offline or misconfigured. Open “Local models” or make sure your local inference service is running.",
+      invalid: "Something about that action was not valid. Try again, or switch to immersive mode for more detail.",
+      noRole: "That role could not be found. Check that the role pack is imported.",
+      packExists: "A role with that id already exists. Choose whether to overwrite before importing.",
+      db: "Local data had a problem; try restarting the app.",
+      permission: "A permission is missing. Switch to immersive mode, open plugin manager, grant it, then return to chat-only.",
+      generic: "Something went wrong. Try again in a moment; switch to immersive mode if you need technical details.",
+    },
+    fileDrop: {
+      ignoredNonPack: "Dropped file is not a role pack (.ocpak or .zip); ignored.",
+      confirmOverwrite: "Role “{name}” ({id}) v{version} already exists. Replace it with the dropped pack?",
+      imported: "Role pack imported: {id}",
     },
     floatingSlot: {
       aria: "Floating plugin slot",

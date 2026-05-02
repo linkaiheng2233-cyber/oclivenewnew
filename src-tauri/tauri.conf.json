@@ -62,6 +62,7 @@
     "windows": [
       {
         "fullscreen": false,
+        "fileDropEnabled": true,
         "height": 600,
         "resizable": true,
         "title": "oclivenewnew",

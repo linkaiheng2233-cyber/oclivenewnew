@@ -42,15 +42,20 @@ import { usePluginManagerWindow } from "./composables/usePluginManagerWindow";
 import { hostEventBus } from "./lib/hostEventBus";
 import {
   consumePendingProtocolInstalls,
+  importRolePack,
   installPluginFromGit,
   loadRole,
   OCLIVE_DEFAULT_RELATION_SENTINEL,
+  peekRolePack,
   setErrorReporter,
   setRemoteLifeEnabled,
   setRoleInteractionMode,
   setUserRelation,
+  toPureChatPlainErrorMessage,
   type JumpTimeResponse,
 } from "./utils/tauri-api";
+import { listen, type UnlistenFn } from "@tauri-apps/api/event";
+import ImportProgressModal from "./components/ImportProgressModal.vue";
 
 const roleStore = useRoleStore();
 usePackUiTheme();
@@ -382,14 +387,20 @@ async function onSend(payload: { content: string }) {
     }
     const offerTogether = res.offer_together_travel ?? false;
     const offerPicker = res.offer_destination_picker ?? false;
-    // 问卷：邀请同行条优先于「仅选目的地」条（与后端 movement_ui_flags 一致）
-    if (offerTogether && sceneDestinationOptions.value.length > 0) {
-      togetherTravelBarVisible.value = true;
-    } else if (offerPicker && sceneDestinationOptions.value.length > 0) {
-      postReplySceneBarVisible.value = true;
+    // 纯聊不展示叙事位移条；沉浸下才响应后端位移问卷
+    if (!roleStore.interactionPureChat) {
+      if (offerTogether && sceneDestinationOptions.value.length > 0) {
+        togetherTravelBarVisible.value = true;
+      } else if (offerPicker && sceneDestinationOptions.value.length > 0) {
+        postReplySceneBarVisible.value = true;
+      }
     }
   } catch (err) {
-    showToast("error", err instanceof Error ? err.message : String(err));
+    if (roleStore.interactionPureChat) {
+      showToast("error", toPureChatPlainErrorMessage(err));
+    } else {
+      showToast("error", err instanceof Error ? err.message : String(err));
+    }
   }
 }
 
@@ -439,6 +450,7 @@ async function confirmTopBarScene(together: boolean) {
 }
 
 function onPluginQuickActionTravel(payload: unknown): void {
+  if (roleStore.interactionPureChat) return;
   const sceneId = (payload as { sceneId?: string } | null)?.sceneId;
   const togetherRaw = (payload as { together?: boolean } | null)?.together;
   const id = typeof sceneId === "string" ? sceneId.trim() : "";
@@ -613,6 +625,79 @@ watch(
 
 let unlistenPluginFs: (() => void) | undefined;
 let unlistenProtocolInstall: (() => void) | undefined;
+let unlistenFileDrop: UnlistenFn | undefined;
+
+const dropImportOpen = ref(false);
+const dropImportPercent = ref(0);
+const dropImportMessage = ref("");
+
+function pickFirstRolePackArchivePath(paths: string[]): string | null {
+  for (const raw of paths) {
+    const p = (raw ?? "").trim();
+    if (!p) continue;
+    const low = p.toLowerCase();
+    if (low.endsWith(".ocpak") || low.endsWith(".zip")) {
+      return p;
+    }
+  }
+  return null;
+}
+
+async function withDropImportProgress<T>(fn: () => Promise<T>): Promise<T> {
+  dropImportOpen.value = true;
+  dropImportPercent.value = 0;
+  dropImportMessage.value = String(t("rolePackBar.progress.preparing"));
+  let unlistenPr: UnlistenFn | undefined;
+  unlistenPr = await listen<{ percent: number; message: string }>("import_progress", (e) => {
+    dropImportPercent.value = e.payload.percent;
+    dropImportMessage.value = e.payload.message;
+  });
+  try {
+    return await fn();
+  } finally {
+    unlistenPr?.();
+    dropImportOpen.value = false;
+  }
+}
+
+async function handleTauriFileDrop(paths: string[]): Promise<void> {
+  const path = pickFirstRolePackArchivePath(paths);
+  if (!path) {
+    showToast("info", String(t("app.fileDrop.ignoredNonPack")));
+    return;
+  }
+  try {
+    const peek = await peekRolePack(path);
+    const exists = roleStore.roles.some((r) => r.id === peek.id);
+    if (exists) {
+      const ok = window.confirm(
+        String(
+          t("app.fileDrop.confirmOverwrite", {
+            id: peek.id,
+            name: peek.name,
+            version: peek.version,
+          }),
+        ),
+      );
+      if (!ok) return;
+      const roleId = await withDropImportProgress(() => importRolePack(path, true));
+      showToast("success", String(t("app.fileDrop.imported", { id: roleId })));
+      await onPackImported(roleId);
+      return;
+    }
+    const roleId = await withDropImportProgress(() => importRolePack(path, false));
+    showToast("success", String(t("app.fileDrop.imported", { id: roleId })));
+    await onPackImported(roleId);
+  } catch (e) {
+    const msg =
+      roleStore.interactionPureChat && e instanceof Error
+        ? toPureChatPlainErrorMessage(e)
+        : e instanceof Error
+          ? e.message
+          : String(e);
+    showToast("error", msg);
+  }
+}
 
 async function runPendingProtocolInstallsFromQueue(): Promise<void> {
   try {
@@ -664,6 +749,15 @@ onMounted(() => {
   });
 
   void runPendingProtocolInstallsFromQueue();
+
+  void listen<string[]>("tauri://file-drop", (e) => {
+    const payload = e.payload;
+    const paths = Array.isArray(payload) ? payload : payload ? [String(payload)] : [];
+    if (paths.length === 0) return;
+    void handleTauriFileDrop(paths);
+  }).then((u) => {
+    unlistenFileDrop = u;
+  });
 });
 
 watch(topMoreOpen, (open) => {
@@ -702,6 +796,7 @@ onBeforeUnmount(() => {
   clearCtrlLongPressTimer();
   unlistenPluginFs?.();
   unlistenProtocolInstall?.();
+  unlistenFileDrop?.();
 });
 </script>
 
@@ -837,7 +932,7 @@ onBeforeUnmount(() => {
             </div>
           </div>
 
-          <div class="more-tile more-tile--action settings-entry-tile">
+          <div v-if="!roleStore.interactionPureChat" class="more-tile more-tile--action settings-entry-tile">
             <div class="more-tile-head">
               <span class="more-label">{{ t("app.topBar.tiles.settingsEntry.title") }}</span>
               <HelpHint :text="settingsEntryMoreHelp" />
@@ -880,7 +975,29 @@ onBeforeUnmount(() => {
             </div>
           </div>
 
-          <div class="more-tile more-tile--action">
+          <div v-else class="more-tile more-tile--action settings-entry-tile">
+            <div class="more-tile-head">
+              <span class="more-label">{{ t("app.topBar.tiles.pureChatSettings.title") }}</span>
+              <HelpHint :text="String(t('app.topBar.tiles.pureChatSettings.hint'))" />
+            </div>
+            <div class="more-tile-body settings-entry-actions" role="group" :aria-label="String(t('app.topBar.tiles.pureChatSettings.groupLabel'))">
+              <button type="button" class="more-debug-btn more-debug-btn--fill settings-entry-btn" @click="openShortcutHelp">
+                {{ t("app.topBar.tiles.settingsEntry.shortcutHelp") }}
+              </button>
+              <button
+                type="button"
+                class="more-debug-btn more-debug-btn--fill settings-entry-btn settings-entry-btn--primary"
+                @click="
+                  localModelManagerOpen = true;
+                  topMoreOpen = false;
+                "
+              >
+                {{ t("app.topBar.tiles.settingsEntry.localModels") }}
+              </button>
+            </div>
+          </div>
+
+          <div v-if="!roleStore.interactionPureChat" class="more-tile more-tile--action">
             <div class="more-tile-head">
               <span class="more-label">{{ t("app.topBar.tiles.rolePackShare.title") }}</span>
               <HelpHint
@@ -895,7 +1012,7 @@ onBeforeUnmount(() => {
             </div>
           </div>
 
-          <div class="more-tile more-tile--action">
+          <div v-if="!roleStore.interactionPureChat" class="more-tile more-tile--action">
             <div class="more-tile-head">
               <span class="more-label">{{ t("app.topBar.tiles.debug.title") }}</span>
               <HelpHint
@@ -1099,6 +1216,11 @@ onBeforeUnmount(() => {
       "
     />
     <LocalModelManagerPanel :visible="localModelManagerOpen" @close="localModelManagerOpen = false" />
+    <ImportProgressModal
+      :open="dropImportOpen"
+      :percent="dropImportPercent"
+      :message="dropImportMessage"
+    />
     <PluginMarketV2Panel :visible="pluginMarketV2Open" @close="pluginMarketV2Open = false" />
 
     <SettingsView

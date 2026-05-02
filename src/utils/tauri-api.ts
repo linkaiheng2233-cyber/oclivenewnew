@@ -478,6 +478,30 @@ export async function ollamaModelsDelete(name: string): Promise<void> {
   });
 }
 
+/** 纯聊模式：聊天等路径用大白话，避免堆栈与 HTTP 细节。 */
+export function toPureChatPlainErrorMessage(err: unknown): string {
+  const { code } = parseBackendError(err);
+  if (code === "LLM_ERROR" || code === "OLLAMA_TIMEOUT") {
+    return t("app.pureChatErrors.llm");
+  }
+  if (code === "INVALID_PARAMETER") {
+    return t("app.pureChatErrors.invalid");
+  }
+  if (code === "ROLE_NOT_FOUND") {
+    return t("app.pureChatErrors.noRole");
+  }
+  if (code === "ROLE_PACK_EXISTS") {
+    return t("app.pureChatErrors.packExists");
+  }
+  if (code === "DB_ERROR") {
+    return t("app.pureChatErrors.db");
+  }
+  if (code === "API_PERMISSION_DENIED" || code === "PLUGIN_PERMISSION_NOT_GRANTED") {
+    return t("app.pureChatErrors.permission");
+  }
+  return t("app.pureChatErrors.generic");
+}
+
 export function toFriendlyErrorMessage(err: unknown): string {
   const { code, raw } = parseBackendError(err);
   if (!code) return raw;

@@ -124,8 +124,8 @@ export const zhCN = {
         interactionMode: {
           title: "互动模式",
           hint: [
-            "沉浸：启用虚拟时间、叙事场景、日程推断与位移相关能力。",
-            "纯聊：只保留对话，隐藏场景与时间条，适合日常闲聊。",
+            "沉浸：启用虚拟时间、叙事场景、日程推断与位移相关能力；顶栏「更多」含插件、调试与完整设置。",
+            "纯聊：以对话为主，隐藏叙事条与位移问卷；「更多」里只保留界面字号/主题、身份与纯聊常用入口，角色包可拖入窗口导入。",
           ],
           immersive: "沉浸",
           pureChat: "纯聊",
@@ -160,6 +160,11 @@ export const zhCN = {
           settings: "⚙ 设置",
           localModels: "本地模型…",
           pluginMarket: "插件市场（Ctrl+Shift+A）",
+        },
+        pureChatSettings: {
+          title: "纯聊常用",
+          groupLabel: "纯聊快捷入口",
+          hint: "纯聊下隐藏插件市场、调试与完整设置入口；需要时再切换到沉浸模式。",
         },
         rolePackShare: {
           title: "角色包（朋友分享）",
@@ -223,9 +228,23 @@ export const zhCN = {
     },
     pureChatAssist: {
       aria: "纯聊快捷区",
-      lead: "纯聊已简化顶栏与侧栏叙事控件。下载或切换本地 GGUF、一键开聊请用下方按钮；导入/导出角色包仍在顶栏「更多」里。",
+      lead: "纯聊已简化叙事控件。可将 .ocpak / .zip 角色包拖入窗口直接导入；本地 GGUF 用下方按钮；字号与主题在顶栏「更多」→「界面」。",
       openModels: "本地模型…",
       openMore: "打开「更多」",
+    },
+    pureChatErrors: {
+      llm: "这句没发出去：多半是模型没开或名字不对。请点「本地模型」检查，或确认本机推理服务已启动。",
+      invalid: "当前操作参数不对，请稍后再试或切换为沉浸模式查看详情。",
+      noRole: "找不到这个角色，请确认角色包是否已导入。",
+      packExists: "磁盘里已经有同名角色包，请先决定要不要覆盖再导入。",
+      db: "本地记录出了点问题，可重启应用后再试。",
+      permission: "缺少运行权限：请在沉浸模式下打开插件管理，授予相关权限后再回纯聊。",
+      generic: "出了点小问题，请稍后再试。需要看详细原因时，可暂时切换到沉浸模式。",
+    },
+    fileDrop: {
+      ignoredNonPack: "拖入的文件不是角色包（需要 .ocpak 或 .zip），已忽略。",
+      confirmOverwrite: "已存在角色「{name}」（{id}）v{version}。要用拖入的包覆盖安装吗？",
+      imported: "已导入角色包：{id}",
     },
     floatingSlot: {
       aria: "浮层插件区",
