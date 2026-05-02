@@ -2,7 +2,6 @@ import { computed, nextTick, ref, watch } from "vue";
 import { useI18n } from "vue-i18n";
 import { useAppToast } from "./useAppToast";
 import { hostEventBus } from "../lib/hostEventBus";
-import { CLOUD_LLM_PRESET_DEFAULTS, CLOUD_LLM_PRESET_ORDER } from "../lib/cloudLlmPresets";
 import type { HostCloudLlmPublicDto } from "../utils/tauri-api";
 import {
   getHostChatModel,
@@ -33,16 +32,25 @@ function createPickState() {
 
   let saveTimer: ReturnType<typeof setTimeout> | null = null;
 
+  /** 仅在有应用内云端配置时出现；列出已保存的默认 model 与当前全局 id（不写死各厂商预设）。 */
   const cloudSelectOptions = computed(() => {
-    const s = new Set<string>();
-    for (const pid of CLOUD_LLM_PRESET_ORDER) {
-      if (pid === "custom") continue;
-      s.add(CLOUD_LLM_PRESET_DEFAULTS[pid].model);
+    const pub = cloudPub.value;
+    const baseOk = Boolean(pub?.baseUrl?.trim());
+    const keyOk = pub?.hasApiKey === true;
+    if (!baseOk || !keyOk) {
+      return [] as string[];
     }
-    const saved = cloudPub.value?.model?.trim();
-    if (saved) s.add(saved);
     const local = new Set(ollamaNames.value);
-    return [...s].filter((m) => !local.has(m)).sort((a, b) => a.localeCompare(b));
+    const s = new Set<string>();
+    const saved = pub?.model?.trim();
+    if (saved && !local.has(saved)) {
+      s.add(saved);
+    }
+    const cur = modelId.value.trim();
+    if (cur && !local.has(cur)) {
+      s.add(cur);
+    }
+    return [...s].sort((a, b) => a.localeCompare(b));
   });
 
   function syncSelectFromModel(): void {

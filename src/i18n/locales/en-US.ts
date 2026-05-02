@@ -136,7 +136,7 @@ export const enUS = {
     customOption: "Custom model id…",
     customPlaceholder: "Type any model id; blur or wait a moment to save",
     offlineLocal: "(Local Ollama not detected)",
-    hint: "Grouped by source; respects role overrides and global settings. For remote/cloud LLM, pick a cloud id or use custom.",
+    hint: "Grouped by source: local Ollama; cloud appears only after you save OpenAI-compatible cloud settings, listing the saved default model and current global id—use Other → Custom for anything else.",
     gear: "Cloud",
     openSettings: "Open settings (cloud LLM & keys)",
     errEmpty: "Model id cannot be empty.",

@@ -42,7 +42,7 @@ onMounted(() => {
           </option>
           <option v-for="n in ollamaNames" :key="'loc-' + n" :value="n">{{ n }}</option>
         </optgroup>
-        <optgroup :label="String(t('chatComposer.cloudGroup'))">
+        <optgroup v-if="cloudSelectOptions.length" :label="String(t('chatComposer.cloudGroup'))">
           <option v-for="n in cloudSelectOptions" :key="'cld-' + n" :value="n">{{ n }}</option>
         </optgroup>
         <optgroup :label="String(t('chatComposer.customGroup'))">

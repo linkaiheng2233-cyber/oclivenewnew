@@ -129,7 +129,7 @@ export const zhCN = {
     customOption: "自定义模型 id…",
     customPlaceholder: "输入任意模型 id 后失焦或稍候即保存",
     offlineLocal: "（未检测到本地 Ollama）",
-    hint: "上栏按来源分组；与角色包内模型覆盖及全局设置一致。远程 LLM 走云端时请选「云端」中的 id 或自定义。",
+    hint: "按来源分组：本地为 Ollama；云端仅在设置中保存过 OpenAI 兼容配置后出现已保存的默认 model 与当前全局 id，其它请选「自定义」。与角色包与全局设置一致。",
     gear: "云端",
     openSettings: "打开设置（云端 LLM 与密钥）",
     errEmpty: "模型名不能为空。",
