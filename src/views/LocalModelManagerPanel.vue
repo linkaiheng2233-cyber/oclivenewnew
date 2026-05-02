@@ -1,6 +1,9 @@
 <script setup lang="ts">
-import BuiltinLlamaModelManager from "../components/BuiltinLlamaModelManager.vue";
+import { provide } from "vue";
 import { useI18n } from "vue-i18n";
+import BuiltinLlamaModelManager from "../components/BuiltinLlamaModelManager.vue";
+import TrustConsentModal from "../components/TrustConsentModal.vue";
+import { cloudLlmTrustModalKey, useCloudLlmTrustModal } from "../composables/useCloudLlmTrustModal";
 
 defineProps<{
   visible: boolean;
@@ -11,41 +14,63 @@ const emit = defineEmits<{
 }>();
 
 const { t } = useI18n();
+const cloudTrust = useCloudLlmTrustModal();
+provide(cloudLlmTrustModalKey, cloudTrust);
+
+function onTrustModalVisible(v: boolean): void {
+  cloudTrust.visible.value = v;
+}
 </script>
 
 <template>
   <Teleport to="body">
-    <div
-      v-if="visible"
-      class="lmm-backdrop"
-      role="dialog"
-      aria-modal="true"
-      :aria-label="String(t('localModelManagerPanel.aria'))"
-      @click.self="emit('close')"
-    >
-      <div class="lmm-dialog" @click.stop>
-        <header class="lmm-head">
-          <div class="lmm-head-text">
-            <h2 class="lmm-title">{{ t("localModelManagerPanel.title") }}</h2>
-            <p class="lmm-hint">{{ t("localModelManagerPanel.hint") }}</p>
+    <div v-if="visible" class="lmm-stack">
+      <div class="lmm-dim" role="presentation" @click.self="emit('close')">
+        <div class="lmm-dialog" @click.stop>
+          <header class="lmm-head">
+            <div class="lmm-head-text">
+              <h2 class="lmm-title">{{ t("localModelManagerPanel.title") }}</h2>
+              <p class="lmm-hint">{{ t("localModelManagerPanel.hint") }}</p>
+            </div>
+            <button type="button" class="lmm-close" @click="emit('close')">
+              {{ t("localModelManagerPanel.close") }}
+            </button>
+          </header>
+          <div class="lmm-body">
+            <BuiltinLlamaModelManager @request-close="emit('close')" />
           </div>
-          <button type="button" class="lmm-close" @click="emit('close')">
-            {{ t("localModelManagerPanel.close") }}
-          </button>
-        </header>
-        <div class="lmm-body">
-          <BuiltinLlamaModelManager @request-close="emit('close')" />
         </div>
       </div>
+      <!-- 嵌套在同一 fixed 层内，避免与外层 dim 两个 body 级 fixed 在 WebView2 下争用命中 -->
+      <TrustConsentModal
+        :model-value="cloudTrust.visible"
+        :title="cloudTrust.modalTitle"
+        :subtitle="cloudTrust.modalSubtitle"
+        :trust-summary-title="cloudTrust.trustSummaryTitle"
+        :trust-summary="cloudTrust.trustSummaryBody"
+        :hint="cloudTrust.modalHint"
+        :capabilities="cloudTrust.capabilities"
+        :confirm-label="cloudTrust.confirmLabel"
+        variant="trust"
+        require-explicit-dismiss
+        teleport-disabled
+        @update:model-value="onTrustModalVisible"
+      />
     </div>
   </Teleport>
 </template>
 
 <style scoped>
-.lmm-backdrop {
+.lmm-stack {
   position: fixed;
   inset: 0;
   z-index: 10062;
+  isolation: isolate;
+  pointer-events: auto;
+}
+.lmm-dim {
+  position: absolute;
+  inset: 0;
   display: flex;
   align-items: center;
   justify-content: center;

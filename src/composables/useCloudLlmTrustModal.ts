@@ -1,3 +1,4 @@
+import type { InjectionKey } from "vue";
 import { computed, ref } from "vue";
 import { useI18n } from "vue-i18n";
 
@@ -41,3 +42,8 @@ export function useCloudLlmTrustModal() {
     close,
   };
 }
+
+export type CloudLlmTrustModalApi = ReturnType<typeof useCloudLlmTrustModal>;
+
+/** 本地模型面板向子组件注入同一套「云端能力说明」状态（避免 Teleport 与外层遮罩命中错乱）。 */
+export const cloudLlmTrustModalKey: InjectionKey<CloudLlmTrustModalApi> = Symbol("cloudLlmTrustModal");

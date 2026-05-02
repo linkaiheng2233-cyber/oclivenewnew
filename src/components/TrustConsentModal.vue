@@ -1,4 +1,7 @@
 <script setup lang="ts">
+import { computed } from "vue";
+import { useI18n } from "vue-i18n";
+
 /**
  * 安全说明弹层：遮罩 + 摘要 + 分组能力说明 + 主次按钮。
  * 视觉与 PluginManagerPanel 的 pm-modal 系一致；权限粒度参考常见 IDE，不做界面仿造。
@@ -19,6 +22,11 @@ const props = withDefaults(
     variant?: "trust" | "danger";
     /** 禁止点击遮罩关闭（强制显式选择） */
     requireExplicitDismiss?: boolean;
+    /**
+     * 为 true 时不挂到 body，由父级提供 `position: fixed/relative` 容器（如本地模型全屏层），
+     * 避免与另一层 `position:fixed` 遮罩在 WebView2 下争用命中顺序。
+     */
+    teleportDisabled?: boolean;
   }>(),
   {
     subtitle: "",
@@ -28,6 +36,7 @@ const props = withDefaults(
     cancelLabel: "",
     variant: "trust",
     requireExplicitDismiss: false,
+    teleportDisabled: false,
   },
 );
 
@@ -36,6 +45,9 @@ const emit = defineEmits<{
   confirm: [];
   cancel: [];
 }>();
+
+const { t } = useI18n();
+const cancelButtonLabel = computed(() => props.cancelLabel || String(t("common.cancel")));
 
 function close(): void {
   emit("update:modelValue", false);
@@ -59,10 +71,11 @@ function onConfirm(): void {
 </script>
 
 <template>
-  <Teleport to="body">
+  <Teleport to="body" :disabled="teleportDisabled">
     <div
       v-if="modelValue"
       class="tcm-backdrop"
+      :class="{ 'tcm-backdrop--nested': teleportDisabled }"
       role="dialog"
       aria-modal="true"
       :aria-label="title"
@@ -89,14 +102,14 @@ function onConfirm(): void {
         </ul>
 
         <div class="tcm-actions">
-          <button type="button" class="tcm-btn secondary" @click="onCancel">
-            {{ cancelLabel || $t("common.cancel") }}
+          <button type="button" class="tcm-btn secondary" @click.stop="onCancel">
+            {{ cancelButtonLabel }}
           </button>
           <button
             type="button"
             class="tcm-btn"
             :class="{ primary: variant === 'trust', danger: variant === 'danger' }"
-            @click="onConfirm"
+            @click.stop="onConfirm"
           >
             {{ confirmLabel }}
           </button>
@@ -110,15 +123,23 @@ function onConfirm(): void {
 .tcm-backdrop {
   position: fixed;
   inset: 0;
-  /* 高于 Toast(12000)、本地模型/设置等 Teleport 遮罩，避免按钮点击被挡 */
-  z-index: 50000;
+  /* 高于 Toast(12000) 与其它业务遮罩；嵌套模式由父级 isolation 约束 */
+  z-index: 2147482000;
   display: flex;
   align-items: center;
   justify-content: center;
   padding: 20px;
   background: var(--dialog-backdrop, color-mix(in srgb, #000 55%, transparent));
+  pointer-events: auto;
+}
+.tcm-backdrop--nested {
+  position: absolute;
+  inset: 0;
+  z-index: 50;
 }
 .tcm-modal {
+  position: relative;
+  z-index: 1;
   width: min(520px, 100%);
   max-height: min(86vh, 720px);
   overflow: auto;
@@ -127,6 +148,7 @@ function onConfirm(): void {
   border: 1px solid var(--border-light);
   background: var(--bg-primary);
   box-shadow: var(--shadow-app);
+  pointer-events: auto;
 }
 .tcm-head {
   margin-bottom: 10px;
@@ -223,6 +245,7 @@ function onConfirm(): void {
   cursor: pointer;
   background: transparent;
   color: var(--text-primary);
+  pointer-events: auto;
 }
 .tcm-btn.secondary:hover {
   background: color-mix(in srgb, var(--border-light) 55%, transparent);

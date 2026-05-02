@@ -1,8 +1,7 @@
 <script setup lang="ts">
-import { computed, onMounted, ref } from "vue";
+import { computed, inject, onMounted, ref } from "vue";
 import { useI18n } from "vue-i18n";
-import TrustConsentModal from "./TrustConsentModal.vue";
-import { useCloudLlmTrustModal } from "../composables/useCloudLlmTrustModal";
+import { cloudLlmTrustModalKey, useCloudLlmTrustModal } from "../composables/useCloudLlmTrustModal";
 import { open } from "@tauri-apps/api/dialog";
 import { useAppToast } from "../composables/useAppToast";
 import { useExpertModelsStore } from "../stores/expertModelsStore";
@@ -22,7 +21,6 @@ import {
   ollamaModelsListNames,
   setPluginPermissionGrant,
 } from "../utils/tauri-api";
-import { appConfirm } from "../utils/confirmDialog";
 
 const LLAMA_LOCAL_PLUGIN_ID = "com.oclive.llama.local";
 const QUICK_PERMS = ["process:spawn", "network:*"];
@@ -33,7 +31,7 @@ const emit = defineEmits<{
 
 const { t } = useI18n();
 const { showToast } = useAppToast();
-const cloudTrust = useCloudLlmTrustModal();
+const cloudTrust = inject(cloudLlmTrustModalKey) ?? useCloudLlmTrustModal();
 const roleStore = useRoleStore();
 const pluginStore = usePluginStore();
 const expertStore = useExpertModelsStore();
@@ -127,7 +125,7 @@ async function onImport(): Promise<void> {
 }
 
 async function onDelete(row: LocalModelFileDto): Promise<void> {
-  if (!(await appConfirm(String(t("builtinLlamaModels.confirmDelete", { name: row.name }))))) return;
+  if (!confirm(String(t("builtinLlamaModels.confirmDelete", { name: row.name })))) return;
   loading.value = true;
   try {
     await expertModelsDeleteLocalBaseModel(row.path);
@@ -191,7 +189,7 @@ async function onQuickChat(row: LocalModelFileDto): Promise<void> {
     showToast("error", String(t("builtinLlamaModels.pluginMissing", { id: LLAMA_LOCAL_PLUGIN_ID })));
     return;
   }
-  const ok = await appConfirm(
+  const ok = confirm(
     String(
       t("builtinLlamaModels.confirmQuickStart", {
         name: row.name,
@@ -199,7 +197,6 @@ async function onQuickChat(row: LocalModelFileDto): Promise<void> {
         list: QUICK_PERMS.map((p) => `- ${p}`).join("\n"),
       }),
     ),
-    { title: String(t("builtinLlamaModels.title")), type: "warning" },
   );
   if (!ok) return;
 
@@ -256,7 +253,7 @@ async function onOllamaDelete(): Promise<void> {
     showToast("info", String(t("builtinLlamaModels.ollamaNeedName")));
     return;
   }
-  if (!(await appConfirm(String(t("builtinLlamaModels.confirmOllamaDelete", { name: n }))))) return;
+  if (!confirm(String(t("builtinLlamaModels.confirmOllamaDelete", { name: n })))) return;
   ollamaBusy.value = true;
   try {
     await ollamaModelsDelete(n);
@@ -277,18 +274,6 @@ onMounted(() => {
 </script>
 
 <template>
-  <TrustConsentModal
-    v-model="cloudTrust.visible"
-    :title="cloudTrust.modalTitle"
-    :subtitle="cloudTrust.modalSubtitle"
-    :trust-summary-title="cloudTrust.trustSummaryTitle"
-    :trust-summary="cloudTrust.trustSummaryBody"
-    :hint="cloudTrust.modalHint"
-    :capabilities="cloudTrust.capabilities"
-    :confirm-label="cloudTrust.confirmLabel"
-    variant="trust"
-    require-explicit-dismiss
-  />
   <section class="blm-root" :aria-label="String(t('builtinLlamaModels.aria'))">
     <div class="blm-top">
       <h3 class="blm-h3">{{ t("builtinLlamaModels.title") }}</h3>
