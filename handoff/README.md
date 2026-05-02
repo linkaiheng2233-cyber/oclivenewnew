@@ -23,6 +23,7 @@
 | `13_PERF_BASELINE_2026-04-01.md` | 首版压测基线记录（Mock LLM） |
 | `PERFORMANCE_BASELINE_ACCEPTANCE.md` | 端到端性能验收与 Release 对比 |
 | `FRONTEND_CHUNK_OPTIMIZATION.md` | 前端 chunk / 懒加载 / Sentry / Monaco 移除说明 |
+| `PERF_PHASES.md` | **性能阶段定序与状态**（P1～P4；P4 reqwest-async 技术债说明） |
 | `RUST_RELEASE_AND_DEPENDENCIES.md` | Release profile；tokio/reqwest workspace |
 | `BUNDLE_RESOURCES_SIZING.md` | `roles`/`plugins` 随包体积度量 |
 | `14_POLICY_PLUGIN_PHASE1.md` | 策略插件化第 1 步对接（接口抽象、参数配置、职责收敛） |

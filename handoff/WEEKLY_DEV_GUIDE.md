@@ -7,7 +7,7 @@
 ## 快速导航
 
 - **当前进度**：WEEK3-003 完成（事件落库 + 集成测试 + 前端封装规划）
-- **首包 / chunk 基线（v0.2）**：✅ 已落地（`App.vue` 懒加载壳、`vite` `manualChunks`、`main.js` Sentry 延后、`i18n` **locale 按需 `import()`**、根 `Cargo.toml` `profile.release`）；明细见 **`FRONTEND_CHUNK_OPTIMIZATION.md`**、**`RUST_RELEASE_AND_DEPENDENCIES.md`**。`reqwest` 去 `blocking` 等属**可选**后续，勿阻塞功能交付。
+- **首包 / chunk（v0.2）**：✅ **P1～P3** 已落地；**P4**（`reqwest` 去 `blocking`）见 **`PERF_PHASES.md`**，与功能迭代解耦、按需排期。
 - **下一步**：WEEK3-004 ~ WEEK3-007（API 命令 → 前端集成 → 事务 + 情绪持久化 → 可选优化）
 - **详细计划**：见 `02_DEVELOPMENT_PLAN_v3.8.md`
 - **项目认知**：见 `04_4.6_PROJECT_TRUTH_CHECKLIST.md`
