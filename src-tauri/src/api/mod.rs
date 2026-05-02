@@ -1,6 +1,5 @@
 pub mod agent;
 pub mod chat;
-pub mod cloud_llm;
 pub mod conversation;
 pub mod directory_plugin;
 pub mod error;
@@ -42,16 +41,16 @@ pub use expert_models::{
     expert_models_get_effective, expert_models_get_run_detail, expert_models_import_base_gguf,
     expert_models_import_lora_gguf, expert_models_list_local_base_models,
     expert_models_list_local_loras, expert_models_list_runs, expert_models_rename_local_base_model,
-    expert_models_set_gguf_repo_meta,
-    expert_models_rollback_last_run, expert_models_rollback_to_run, expert_models_set_role_default,
-    expert_models_set_run_pinned, expert_models_set_session_override, expert_workflows_delete,
-    expert_workflows_get, expert_workflows_list, expert_workflows_save,
+    expert_models_rollback_last_run, expert_models_rollback_to_run,
+    expert_models_set_gguf_repo_meta, expert_models_set_role_default, expert_models_set_run_pinned,
+    expert_models_set_session_override, expert_workflows_delete, expert_workflows_get,
+    expert_workflows_list, expert_workflows_save,
 };
-pub use ollama_models::{ollama_models_delete, ollama_models_health, ollama_models_list_names};
 pub use export::export_chat_logs;
 pub use local_imports::{list_local_import_candidates_command, read_local_import_text_command};
 pub use memory::query_memories;
 pub use monologue::generate_monologue;
+pub use ollama_models::{ollama_models_delete, ollama_models_health, ollama_models_list_names};
 pub use plugin_bridge::plugin_bridge_invoke;
 pub use plugin_reviews::{get_cached_plugin_reviews_index, sync_plugin_reviews_index};
 pub use policy::reload_policy_plugins;

@@ -367,59 +367,11 @@ pub struct PluginResolutionDebugInfo {
     pub remote_plugin_url_configured: bool,
     pub remote_llm_url_configured: bool,
     #[serde(default)]
-    pub cloud_llm_env_configured: bool,
-    #[serde(default)]
-    pub cloud_llm_app_configured: bool,
-    #[serde(default)]
-    pub cloud_llm_openai_blocked: bool,
-    #[serde(default)]
-    pub cloud_llm_auto_remote_llm: bool,
-    #[serde(default)]
-    pub cloud_llm_network_granted: bool,
-    #[serde(default)]
-    pub cloud_llm_network_acknowledged: bool,
-    #[serde(default)]
     pub local_provider_ids: Vec<String>,
     pub local_provider_count: usize,
 }
 
-/// 设置页：云端 OpenAI 兼容 LLM 与策略开关。
 #[derive(Debug, Clone, Serialize, Deserialize)]
-#[serde(rename_all = "camelCase")]
-pub struct CloudLlmUiSettingsResponse {
-    pub base_url: String,
-    pub model: String,
-    pub timeout_ms: u64,
-    pub api_key_set: bool,
-    pub openai_blocked: bool,
-    pub auto_remote_llm: bool,
-    pub network_acknowledged: bool,
-    pub network_granted: bool,
-}
-
-#[derive(Debug, Clone, Deserialize)]
-#[serde(rename_all = "camelCase")]
-pub struct CloudLlmUiSettingsPatchRequest {
-    #[serde(default)]
-    pub clear: bool,
-    #[serde(default)]
-    pub base_url: Option<String>,
-    #[serde(default)]
-    pub api_key: Option<String>,
-    #[serde(default)]
-    pub model: Option<String>,
-    #[serde(default)]
-    pub timeout_ms: Option<u64>,
-    #[serde(default)]
-    pub openai_blocked: Option<bool>,
-    #[serde(default)]
-    pub auto_remote_llm: Option<bool>,
-    #[serde(default)]
-    pub network_acknowledged: Option<bool>,
-}
-
-#[derive(Debug, Clone, Serialize, Deserialize)]
-#[serde(rename_all = "camelCase")]
 pub struct TimeStateResponse {
     pub virtual_time_ms: i64,
     pub iso_datetime: String,

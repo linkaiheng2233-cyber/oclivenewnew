@@ -3,13 +3,13 @@
 pub mod adapters;
 
 pub use oclive_kernel_runtime::domain::{
-    affect_policy, agent, chat_engine, chat_llm_fallback, chat_turn, chat_turn_rules, complex_emotion,
-    core, emotion_analyzer, event_detector, event_estimator, event_impact_ai, expert_models,
-    knowledge_loader, life_schedule, local_plugin_bridge, local_plugin_memory_pick, memory_engine,
-    memory_retrieval, mutable_profile_llm, permission_tokens, personality_engine, plugin_host, policy,
-    portrait_emotion_engine, profile_personality, prompt_assembler, prompt_builder,
-    prompt_style_override, relation_engine, remote_life_prompt, repository, role_manager,
-    role_manifest_validate, user_emotion_analyzer, user_identity,
+    affect_policy, agent, chat_engine, chat_llm_fallback, chat_turn, chat_turn_rules,
+    complex_emotion, core, emotion_analyzer, event_detector, event_estimator, event_impact_ai,
+    expert_models, knowledge_loader, life_schedule, local_plugin_bridge, local_plugin_memory_pick,
+    memory_engine, memory_retrieval, mutable_profile_llm, permission_tokens, personality_engine,
+    plugin_host, policy, portrait_emotion_engine, profile_personality, prompt_assembler,
+    prompt_builder, prompt_style_override, relation_engine, remote_life_prompt, repository,
+    role_manager, role_manifest_validate, user_emotion_analyzer, user_identity,
 };
 
 pub use agent::{AgentDebugTrace, AgentInput, AgentOutput, AgentProvider, BuiltinReActAgent};
@@ -30,7 +30,8 @@ pub use personality_engine::PersonalityEngine;
 pub use plugin_host::{PluginHost, ResolvedRolePlugins};
 pub use policy::{
     DefaultEmotionPolicy, DefaultEventPolicy, DefaultMemoryPolicy, EmotionPolicy,
-    EmotionPolicyConfig, EventPolicy, MemoryPolicy, MemoryPolicyConfig, PolicyConfig, PolicyContext,
+    EmotionPolicyConfig, EventPolicy, MemoryPolicy, MemoryPolicyConfig, PolicyConfig,
+    PolicyContext,
 };
 pub use prompt_assembler::{
     BuiltinPromptAssembler, PromptAssembler, RemotePromptAssemblerPlaceholder,

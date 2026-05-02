@@ -10,6 +10,7 @@
 
 ### Changed
 
+- **云 LLM**：移除 Tauri 应用内「云 LLM UI 设置」命令与相关持久化/编排旁路（`get_cloud_llm_ui_settings` 等、`llm_remote_stack`）；**环境变量 `OCLIVE_CLOUD_LLM_*`** 仍可通过 `cloud_llm_from_env` 走 `OpenAiCompatLlmClient`。`PluginResolutionDebug` 去掉云 UI 字段；`PluginBackendSource` 去掉 `app_auto`。
 - 调整切换角色后的事件广播时机，确保插件订阅信息已同步再发送 `role:switched`。
 - 插件引导信息（`get_directory_plugin_bootstrap`）返回值增加 `subscribedHostEvents` 字段。
 

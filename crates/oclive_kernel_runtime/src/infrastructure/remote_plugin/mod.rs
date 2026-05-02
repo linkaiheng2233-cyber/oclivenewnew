@@ -12,7 +12,6 @@ mod emotion_http;
 mod event_http;
 mod jsonrpc;
 mod llm_http;
-mod llm_remote_stack;
 mod memory_http;
 mod prompt_http;
 
@@ -22,7 +21,6 @@ pub use config::RemotePluginHttpConfig;
 pub use emotion_http::RemoteUserEmotionAnalyzerHttp;
 pub use event_http::RemoteEventEstimatorHttp;
 pub use llm_http::RemoteLlmHttp;
-pub use llm_remote_stack::LlmRemoteStack;
 pub use memory_http::RemoteMemoryRetrievalHttp;
 pub use prompt_http::RemotePromptAssemblerHttp;
 
@@ -35,12 +33,11 @@ use crate::domain::prompt_assembler::{PromptAssembler, RemotePromptAssemblerPlac
 use crate::domain::user_emotion_analyzer::{
     RemoteUserEmotionAnalyzerPlaceholder, UserEmotionAnalyzer,
 };
-use crate::infrastructure::llm::LlmClient;
+use crate::infrastructure::llm::{cloud_llm_from_env, LlmClient, RemoteLlmPlaceholder};
 use serde_json::Value;
 use std::sync::Arc;
 
 use crate::error::{AppError, Result};
-use crate::infrastructure::cloud_llm::CloudLlmRuntime;
 use jsonrpc::call_blocking;
 pub use jsonrpc::RemoteRpcChannel;
 
@@ -76,11 +73,20 @@ pub fn plugin_remote_group() -> PluginRemoteGroup {
     }
 }
 
-pub fn llm_remote_backend(
-    default_llm: Arc<dyn LlmClient>,
-    cloud_llm_runtime: Arc<CloudLlmRuntime>,
-) -> Arc<dyn LlmClient> {
-    Arc::new(LlmRemoteStack::new(cloud_llm_runtime, default_llm))
+pub fn llm_remote_backend(default_llm: Arc<dyn LlmClient>) -> Arc<dyn LlmClient> {
+    if let Some(cloud) = cloud_llm_from_env() {
+        return cloud;
+    }
+    if let Some(cfg) = RemotePluginHttpConfig::from_env_llm() {
+        log::info!(
+            target: "oclive_plugin",
+            "remote LLM HTTP active -> {}",
+            cfg.endpoint
+        );
+        Arc::new(RemoteLlmHttp::new(cfg))
+    } else {
+        Arc::new(RemoteLlmPlaceholder::new(default_llm))
+    }
 }
 
 pub fn agent_remote_backend(

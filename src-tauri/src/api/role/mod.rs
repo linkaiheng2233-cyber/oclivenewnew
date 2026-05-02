@@ -5,7 +5,6 @@ mod interaction;
 mod runtime;
 
 use crate::error::AppError;
-use crate::infrastructure::cloud_llm::CloudLlmConfig;
 use crate::infrastructure::storage::resolve_llm_backend_env_override;
 use crate::models::dto::{
     ClearSceneUserRelationRequest, GetPluginResolutionDebugRequest, GetRoleInfoRequest,
@@ -150,8 +149,8 @@ pub async fn load_role_impl(
     let plugin_backends_session_override = state.session_backend_override(session_ns.as_str());
     let plugin_backends_effective =
         state.effective_plugin_backends_for_session(role.as_ref(), session_ns.as_str());
-    let plugin_backends_effective_sources = state
-        .effective_plugin_backend_sources_for_session(role.as_ref(), session_ns.as_str());
+    let plugin_backends_effective_sources =
+        state.effective_plugin_backend_sources_for_session(session_ns.as_str());
 
     Ok(RoleData {
         role_id: role_id.to_string(),
@@ -217,8 +216,8 @@ pub async fn get_role_info_impl(
     let plugin_backends_session_override = state.session_backend_override(session_ns.as_str());
     let plugin_backends_effective =
         state.effective_plugin_backends_for_session(role.as_ref(), session_ns.as_str());
-    let plugin_backends_effective_sources = state
-        .effective_plugin_backend_sources_for_session(role.as_ref(), session_ns.as_str());
+    let plugin_backends_effective_sources =
+        state.effective_plugin_backend_sources_for_session(session_ns.as_str());
 
     let current_scene = state
         .db_manager
@@ -935,8 +934,7 @@ pub(crate) async fn build_plugin_resolution_debug_info(
         .map_err(|e| e.to_frontend_error())?;
     let session_override = state.session_backend_override(session_ns.as_str());
     let effective = state.effective_plugin_backends_for_session(role.as_ref(), session_ns.as_str());
-    let effective_sources =
-        state.effective_plugin_backend_sources_for_session(role.as_ref(), session_ns.as_str());
+    let effective_sources = state.effective_plugin_backend_sources_for_session(session_ns.as_str());
     let llm_env_override = resolve_llm_backend_env_override().map(|b| match b {
         LlmBackend::Ollama => "ollama".to_string(),
         LlmBackend::Remote => "remote".to_string(),
@@ -950,15 +948,6 @@ pub(crate) async fn build_plugin_resolution_debug_info(
         .ok()
         .map(|v| !v.trim().is_empty())
         .unwrap_or(false);
-    let cloud_llm_env_configured = CloudLlmConfig::from_env_openai_compat().is_some();
-    let cloud_llm_app_configured = state
-        .cloud_llm_runtime
-        .user_config_snapshot()
-        .is_some();
-    let cloud_llm_openai_blocked = state.cloud_llm_runtime.openai_hard_blocked();
-    let cloud_llm_auto_remote_llm = state.cloud_llm_runtime.auto_remote_llm_enabled();
-    let cloud_llm_network_granted = state.is_remote_llm_network_granted();
-    let cloud_llm_network_acknowledged = state.cloud_llm_runtime.network_acknowledged();
     let mut local_provider_ids: Vec<String> = state
         .local_plugin_all_providers()
         .iter()
@@ -980,12 +969,6 @@ pub(crate) async fn build_plugin_resolution_debug_info(
         llm_env_override,
         remote_plugin_url_configured,
         remote_llm_url_configured,
-        cloud_llm_env_configured,
-        cloud_llm_app_configured,
-        cloud_llm_openai_blocked,
-        cloud_llm_auto_remote_llm,
-        cloud_llm_network_granted,
-        cloud_llm_network_acknowledged,
         local_provider_count: local_provider_ids.len(),
         local_provider_ids,
     })

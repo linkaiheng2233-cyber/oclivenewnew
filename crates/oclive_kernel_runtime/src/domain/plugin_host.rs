@@ -26,7 +26,6 @@ use crate::domain::user_emotion_analyzer::{
     BuiltinUserEmotionAnalyzer, BuiltinUserEmotionAnalyzerV2, RemoteUserEmotionAnalyzerPlaceholder,
     UserEmotionAnalyzer,
 };
-use crate::infrastructure::cloud_llm::CloudLlmRuntime;
 use crate::infrastructure::db::DbManager;
 use crate::infrastructure::directory_plugins::DirectoryPluginRuntime;
 use crate::infrastructure::llm::{LlmClient, RemoteLlmPlaceholder};
@@ -313,7 +312,6 @@ impl BackendRegistry {
         llm: Arc<dyn LlmClient>,
         directory_runtime: Option<Arc<DirectoryPluginRuntime>>,
         app_data_dir: PathBuf,
-        cloud_llm_runtime: Arc<CloudLlmRuntime>,
     ) -> Self {
         let llm_ollama = llm.clone();
         let mcp = Arc::new(McpClient::new(app_data_dir));
@@ -368,7 +366,7 @@ impl BackendRegistry {
         let llm_remote: Arc<dyn LlmClient> = if tmp
             .check_remote_http_permission(Self::REMOTE_PROVIDER_LLM)
         {
-            remote_plugin::llm_remote_backend(llm, cloud_llm_runtime)
+            remote_plugin::llm_remote_backend(llm)
         } else {
             log::warn!(
                 target: "oclive_plugin",
@@ -804,7 +802,6 @@ impl PluginHost {
         llm: Arc<dyn LlmClient>,
         directory_runtime: Option<Arc<DirectoryPluginRuntime>>,
         app_data_dir: PathBuf,
-        cloud_llm_runtime: Arc<CloudLlmRuntime>,
     ) -> Self {
         Self {
             registry: BackendRegistry::from_runtime(
@@ -812,7 +809,6 @@ impl PluginHost {
                 llm,
                 directory_runtime,
                 app_data_dir,
-                cloud_llm_runtime,
             ),
         }
     }
@@ -1000,13 +996,7 @@ mod tests {
             reply: String::new(),
         });
         let db = test_db_manager();
-        PluginHost::new(
-            db,
-            llm,
-            None,
-            std::env::temp_dir(),
-            CloudLlmRuntime::empty(),
-        )
+        PluginHost::new(db, llm, None, std::env::temp_dir())
     }
 
     #[test]

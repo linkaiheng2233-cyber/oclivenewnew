@@ -737,41 +737,33 @@ fn resolve_existing_gguf_under_models_gguf_dir(
     use std::path::Path;
     let t = user_path.trim();
     if t.is_empty() {
-        return Err(
-            ApiError::InvalidParameter {
-                message: "path required".into(),
-            }
-            .to_string(),
-        );
+        return Err(ApiError::InvalidParameter {
+            message: "path required".into(),
+        }
+        .to_string());
     }
     let gguf_root = llama_models_gguf_dir(state);
     std::fs::create_dir_all(&gguf_root).map_err(|e| e.to_string())?;
     let root = gguf_root.canonicalize().map_err(|e| e.to_string())?;
     let pb = Path::new(t);
     if !pb.is_absolute() {
-        return Err(
-            ApiError::InvalidParameter {
-                message: "path must be absolute".into(),
-            }
-            .to_string(),
-        );
+        return Err(ApiError::InvalidParameter {
+            message: "path must be absolute".into(),
+        }
+        .to_string());
     }
     let cand = pb.canonicalize().map_err(|e| e.to_string())?;
     if !cand.starts_with(&root) {
-        return Err(
-            ApiError::InvalidParameter {
-                message: "path must stay under app_data/models/gguf".into(),
-            }
-            .to_string(),
-        );
+        return Err(ApiError::InvalidParameter {
+            message: "path must stay under app_data/models/gguf".into(),
+        }
+        .to_string());
     }
     if !cand.is_file() {
-        return Err(
-            ApiError::InvalidParameter {
-                message: "path is not an existing file".into(),
-            }
-            .to_string(),
-        );
+        return Err(ApiError::InvalidParameter {
+            message: "path is not an existing file".into(),
+        }
+        .to_string());
     }
     let is_gguf = cand
         .extension()
@@ -779,12 +771,10 @@ fn resolve_existing_gguf_under_models_gguf_dir(
         .map(|s| s.eq_ignore_ascii_case("gguf"))
         .unwrap_or(false);
     if !is_gguf {
-        return Err(
-            ApiError::InvalidParameter {
-                message: "only .gguf files are allowed".into(),
-            }
-            .to_string(),
-        );
+        return Err(ApiError::InvalidParameter {
+            message: "only .gguf files are allowed".into(),
+        }
+        .to_string());
     }
     Ok(cand)
 }
@@ -831,12 +821,10 @@ pub fn expert_models_rename_local_base_model(
     let src = resolve_existing_gguf_under_models_gguf_dir(&state, req.path.as_str())?;
     let raw = req.new_file_name.trim();
     if raw.is_empty() {
-        return Err(
-            ApiError::InvalidParameter {
-                message: "new_file_name required".into(),
-            }
-            .to_string(),
-        );
+        return Err(ApiError::InvalidParameter {
+            message: "new_file_name required".into(),
+        }
+        .to_string());
     }
     let file_only = Path::new(raw)
         .file_name()
@@ -850,32 +838,29 @@ pub fn expert_models_rename_local_base_model(
     let sanitized = sanitize_file_name(file_only);
     let s = sanitized.trim();
     if s.is_empty() {
-        return Err(
-            ApiError::InvalidParameter {
-                message: "new_file_name empty after sanitize".into(),
-            }
-            .to_string(),
-        );
+        return Err(ApiError::InvalidParameter {
+            message: "new_file_name empty after sanitize".into(),
+        }
+        .to_string());
     }
     if !s.to_ascii_lowercase().ends_with(".gguf") {
-        return Err(
-            ApiError::InvalidParameter {
-                message: "new_file_name must end with .gguf".into(),
-            }
-            .to_string(),
-        );
+        return Err(ApiError::InvalidParameter {
+            message: "new_file_name must end with .gguf".into(),
+        }
+        .to_string());
     }
-    let parent = src
-        .parent()
-        .ok_or_else(|| ApiError::Io { message: "missing parent dir".into() }.to_string())?;
+    let parent = src.parent().ok_or_else(|| {
+        ApiError::Io {
+            message: "missing parent dir".into(),
+        }
+        .to_string()
+    })?;
     let dest = parent.join(s);
     if dest.exists() {
-        return Err(
-            ApiError::InvalidParameter {
-                message: "target file already exists".into(),
-            }
-            .to_string(),
-        );
+        return Err(ApiError::InvalidParameter {
+            message: "target file already exists".into(),
+        }
+        .to_string());
     }
     let old_name = src
         .file_name()
@@ -929,12 +914,10 @@ pub fn expert_models_set_gguf_repo_meta(
         .unwrap_or("")
         .to_string();
     if name.is_empty() {
-        return Err(
-            ApiError::InvalidParameter {
-                message: "invalid gguf path".into(),
-            }
-            .to_string(),
-        );
+        return Err(ApiError::InvalidParameter {
+            message: "invalid gguf path".into(),
+        }
+        .to_string());
     }
     let entry = sanitize_gguf_repo_entry(&req.notes, &req.source_url, &req.tags);
     let mut repo = read_gguf_repo(&state);
@@ -1284,20 +1267,27 @@ pub async fn expert_models_get_run_detail(
                 .map(|g| graph_summary(g, &target_style))
         })
         .unwrap_or_else(|| graph_summary(&snapshot_graph, &snapshot_style));
-    let (apply_ok, apply_error, apply_model_path, apply_llama_args, apply_duration_ms, apply_sidecar_notice) =
-        e.apply
-            .as_ref()
-            .map(|a| {
-                (
-                    Some(a.ok),
-                    a.error.clone(),
-                    a.model_path.clone(),
-                    a.llama_args.clone(),
-                    a.duration_ms,
-                    a.sidecar_notice.clone(),
-                )
-            })
-            .unwrap_or((None, None, None, None, None, None));
+    let (
+        apply_ok,
+        apply_error,
+        apply_model_path,
+        apply_llama_args,
+        apply_duration_ms,
+        apply_sidecar_notice,
+    ) = e
+        .apply
+        .as_ref()
+        .map(|a| {
+            (
+                Some(a.ok),
+                a.error.clone(),
+                a.model_path.clone(),
+                a.llama_args.clone(),
+                a.duration_ms,
+                a.sidecar_notice.clone(),
+            )
+        })
+        .unwrap_or((None, None, None, None, None, None));
 
     Ok(ExpertModelsGetRunDetailResponse {
         item: ExpertModelsRunDetailDto {

@@ -1,7 +1,6 @@
 //! 集成级烟测：`plugin_backends` 全部为 `builtin_v2` 时 `PluginHost` 能解析五条线（不跑完整对话）。
 
 use oclivenewnew_tauri::domain::plugin_host::PluginHost;
-use oclivenewnew_tauri::infrastructure::cloud_llm::CloudLlmRuntime;
 use oclivenewnew_tauri::infrastructure::db::DbManager;
 use oclivenewnew_tauri::infrastructure::llm::LlmClient;
 use oclivenewnew_tauri::infrastructure::MockLlmClient;
@@ -46,7 +45,7 @@ fn resolve_role_with_all_builtin_v2() {
         .await;
     });
     let db = Arc::new(DbManager::new(pool));
-    let host = PluginHost::new(db, llm, None, std::env::temp_dir(), CloudLlmRuntime::empty());
+    let host = PluginHost::new(db, llm, None, std::env::temp_dir());
     let role = Role {
         plugin_backends: PluginBackends {
             memory: MemoryBackend::BuiltinV2,

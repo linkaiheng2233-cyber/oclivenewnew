@@ -3,9 +3,7 @@
 //! Note: we still delegate to the existing `DbManager` while the full DB layer
 //! migration is in progress.
 
-use crate::domain::repository::{
-    ExpertModelsRepository, FavorabilityRepository, MemoryRepository,
-};
+use crate::domain::repository::{ExpertModelsRepository, FavorabilityRepository, MemoryRepository};
 use crate::error::Result;
 use crate::infrastructure::db::DbManager;
 use crate::models::Memory;

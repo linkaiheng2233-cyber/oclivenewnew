@@ -5,25 +5,20 @@ use serde::Deserialize;
 
 fn client_from_env() -> OllamaClient {
     OllamaClient::new(
-        std::env::var("OLLAMA_BASE_URL")
-            .unwrap_or_else(|_| "http://localhost:11434".to_string()),
+        std::env::var("OLLAMA_BASE_URL").unwrap_or_else(|_| "http://localhost:11434".to_string()),
     )
 }
 
 #[tauri::command]
 pub async fn ollama_models_health() -> Result<bool, String> {
     let c = client_from_env();
-    c.health_check()
-        .await
-        .map_err(|e| e.to_frontend_error())
+    c.health_check().await.map_err(|e| e.to_frontend_error())
 }
 
 #[tauri::command]
 pub async fn ollama_models_list_names() -> Result<Vec<String>, String> {
     let c = client_from_env();
-    c.list_models()
-        .await
-        .map_err(|e| e.to_frontend_error())
+    c.list_models().await.map_err(|e| e.to_frontend_error())
 }
 
 #[derive(Debug, Deserialize)]

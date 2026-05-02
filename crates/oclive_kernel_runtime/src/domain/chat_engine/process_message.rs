@@ -58,8 +58,7 @@ pub async fn process_message(
         .await?;
 
     let effective_backends = state.effective_plugin_backends_for_session(role.as_ref(), srid);
-    let effective_sources =
-        state.effective_plugin_backend_sources_for_session(role.as_ref(), srid);
+    let effective_sources = state.effective_plugin_backend_sources_for_session(srid);
     log::debug!(
         target: "oclive_chat",
         "send_message backends role_id={} scene_id={} session_ns={} {}",

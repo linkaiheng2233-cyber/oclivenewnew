@@ -100,7 +100,7 @@ fn build_txt(
             d.plugin_backends_effective_sources.agent
         ));
         s.push_str(&format!(
-            "env: llm_override={} remote_plugin_url={} remote_llm_url={} cloud_env={} cloud_app={} openai_block={} auto_remote={} net_grant={} net_ack={}\n\n",
+            "env: llm_override={} remote_plugin_url={} remote_llm_url={}\n\n",
             d.llm_env_override.as_deref().unwrap_or("none"),
             if d.remote_plugin_url_configured {
                 "set"
@@ -111,13 +111,7 @@ fn build_txt(
                 "set"
             } else {
                 "unset"
-            },
-            if d.cloud_llm_env_configured { "set" } else { "unset" },
-            if d.cloud_llm_app_configured { "set" } else { "unset" },
-            if d.cloud_llm_openai_blocked { "on" } else { "off" },
-            if d.cloud_llm_auto_remote_llm { "on" } else { "off" },
-            if d.cloud_llm_network_granted { "yes" } else { "no" },
-            if d.cloud_llm_network_acknowledged { "yes" } else { "no" },
+            }
         ));
         s.push_str(&format!(
             "local_providers: count={} ids={}\n\n",
