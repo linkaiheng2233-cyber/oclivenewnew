@@ -2,8 +2,7 @@
 import { computed, defineAsyncComponent, nextTick, onBeforeUnmount, onMounted, ref, watch } from "vue";
 import { useI18n } from "vue-i18n";
 import HelpHint from "./components/HelpHint.vue";
-import ChatInput from "./components/ChatInput.vue";
-import ChatModelBar from "./components/ChatModelBar.vue";
+import ChatComposer from "./components/ChatComposer.vue";
 import HotkeyHost from "./components/HotkeyHost.vue";
 import ChatMessageList from "./components/ChatMessageList.vue";
 import RoleSelector from "./components/RoleSelector.vue";
@@ -1178,8 +1177,7 @@ onBeforeUnmount(() => {
               @confirm-post-reply="confirmPostReplyScene"
               @dismiss-post-reply="dismissPostReplySceneBar"
             />
-            <ChatModelBar @open-settings="openSettingsView" />
-            <ChatInput :loading="chatStore.isLoading" @send="onSend" />
+            <ChatComposer :loading="chatStore.isLoading" @send="onSend" @open-settings="openSettingsView" />
           </section>
         </div>
       </div>
