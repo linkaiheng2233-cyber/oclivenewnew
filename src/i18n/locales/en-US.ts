@@ -243,7 +243,8 @@ export const enUS = {
       noRole: "That role could not be found. Check that the role pack is imported.",
       packExists: "A role with that id already exists. Choose whether to overwrite before importing.",
       db: "Local data had a problem; try restarting the app.",
-      permission: "A permission is missing. Switch to immersive mode, open plugin manager, grant it, then return to chat-only.",
+      permission:
+        "This plugin has not been granted the permissions it needs, so the call was blocked. Grant them in the plugin permissions manager and try again.",
       generic: "Something went wrong. Try again in a moment; switch to immersive mode if you need technical details.",
     },
     fileDrop: {

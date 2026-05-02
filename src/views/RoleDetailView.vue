@@ -1,17 +1,12 @@
 <script setup lang="ts">
 import CharacterInfo from "../components/CharacterInfo.vue";
-import PluginRoleDetailSlots from "../components/PluginRoleDetailSlots.vue";
-import { usePluginStore } from "../stores/pluginStore";
 
 defineProps<{
   roleId: string;
   name: string;
   emotion: string;
   layout: "stack" | "sidebar";
-  bootstrapEpoch: number;
 }>();
-
-const pluginStore = usePluginStore();
 </script>
 
 <template>
@@ -22,10 +17,6 @@ const pluginStore = usePluginStore();
       :role-id="roleId"
       :name="name"
       :emotion="emotion"
-    />
-    <PluginRoleDetailSlots
-      v-if="pluginStore.hasRoleDetailEmbeds"
-      :bootstrap-epoch="bootstrapEpoch"
     />
   </div>
 </template>

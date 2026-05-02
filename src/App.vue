@@ -5,8 +5,6 @@ import AutonomousSceneNotice from "./components/AutonomousSceneNotice.vue";
 import HelpHint from "./components/HelpHint.vue";
 import RoleDetailView from "./views/RoleDetailView.vue";
 import ChatInput from "./components/ChatInput.vue";
-import ChatPluginToolbarSlots from "./components/ChatPluginToolbarSlots.vue";
-import PluginChatHeaderSlots from "./components/PluginChatHeaderSlots.vue";
 import PluginSidebarSlots from "./components/PluginSidebarSlots.vue";
 import RoleplayAsidePanel from "./components/RoleplayAsidePanel.vue";
 import HotkeyHost from "./components/HotkeyHost.vue";
@@ -15,7 +13,6 @@ import PluginManagerV2Panel from "./views/PluginManagerV2Panel.vue";
 import LocalModelManagerPanel from "./views/LocalModelManagerPanel.vue";
 import PluginMarketPanel from "./views/PluginMarketPanel.vue";
 import PluginMarketV2Panel from "./views/PluginMarketV2Panel.vue";
-import PluginSlotEmbed from "./components/PluginSlotEmbed.vue";
 import SettingsView from "./views/SettingsView.vue";
 import ChatMessageList from "./components/ChatMessageList.vue";
 import DebugPanel from "./components/DebugPanel.vue";
@@ -1110,7 +1107,6 @@ onBeforeUnmount(() => {
             :role-id="roleStore.currentRoleId"
             :name="roleName"
             :emotion="emotion"
-            :bootstrap-epoch="pluginStore.bootstrapEpoch"
           />
           <RoleplayAsidePanel :text="latestRoleplayAside" />
           <PluginSidebarSlots
@@ -1160,10 +1156,6 @@ onBeforeUnmount(() => {
               </button>
             </div>
           </div>
-          <PluginChatHeaderSlots
-            v-if="pluginStore.hasChatHeaderEmbeds"
-            :bootstrap-epoch="pluginStore.bootstrapEpoch"
-          />
           <div class="chat-scroll-wrap chat-list">
             <transition name="fade">
               <ChatMessageList
@@ -1177,10 +1169,6 @@ onBeforeUnmount(() => {
             </transition>
           </div>
           <section class="input-area">
-            <ChatPluginToolbarSlots
-              v-if="pluginStore.hasChatToolbarEmbeds"
-              :bootstrap-epoch="pluginStore.bootstrapEpoch"
-            />
             <SceneTravelBars
               v-if="roleStore.interactionImmersive"
               :together-visible="togetherTravelBarVisible"
@@ -1242,17 +1230,6 @@ onBeforeUnmount(() => {
       @open-plugin-v2="openPluginManagerV2Preview"
     />
 
-    <div
-      v-if="pluginStore.hasOverlayFloatingEmbeds"
-      class="app-floating-slot"
-      aria-hidden="true"
-    >
-      <PluginSlotEmbed
-        slot-name="overlay.floating"
-        :aria-label="String(t('app.floatingSlot.aria'))"
-        :bootstrap-epoch="pluginStore.bootstrapEpoch"
-      />
-    </div>
     <HotkeyHost />
     </div>
   </main>
@@ -1286,17 +1263,6 @@ onBeforeUnmount(() => {
   border: 1px solid var(--border-light);
   box-shadow: var(--shadow-app), var(--frame-inset-highlight);
   overflow: hidden;
-}
-.app-floating-slot {
-  position: fixed;
-  right: 12px;
-  bottom: 12px;
-  z-index: 10020;
-  max-width: min(400px, calc(100vw - 24px));
-  pointer-events: none;
-}
-.app-floating-slot :deep(.pse) {
-  pointer-events: auto;
 }
 .top-bar {
   flex-shrink: 0;

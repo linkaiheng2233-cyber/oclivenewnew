@@ -273,22 +273,6 @@ export const usePluginStore = defineStore("plugin", {
     hasSidebarEmbeds(state): boolean {
       return (state.bootstrapUiSlots ?? []).some((s) => s.slot === SLOT_SIDEBAR);
     },
-    /** 聊天列顶部 chat.header 是否有嵌入 */
-    hasChatHeaderEmbeds(state): boolean {
-      return (state.bootstrapUiSlots ?? []).some((s) => s.slot === SLOT_CHAT_HEADER);
-    },
-    /** 输入框上方 chat_toolbar 是否有嵌入 */
-    hasChatToolbarEmbeds(state): boolean {
-      return (state.bootstrapUiSlots ?? []).some((s) => s.slot === SLOT_CHAT_TOOLBAR);
-    },
-    /** 角色卡立绘下方 role.detail 是否有嵌入 */
-    hasRoleDetailEmbeds(state): boolean {
-      return (state.bootstrapUiSlots ?? []).some((s) => s.slot === SLOT_ROLE_DETAIL);
-    },
-    /** 右下角浮层 overlay.floating 是否有嵌入 */
-    hasOverlayFloatingEmbeds(state): boolean {
-      return (state.bootstrapUiSlots ?? []).some((s) => s.slot === SLOT_OVERLAY_FLOATING);
-    },
   },
   actions: {
     /** 由 bootstrap DTO 更新宿主事件订阅与开发者模式（插槽与 `refresh` / `sync` 共用）。 */

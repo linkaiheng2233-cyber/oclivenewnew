@@ -480,7 +480,7 @@ export async function ollamaModelsDelete(name: string): Promise<void> {
 
 /** 纯聊模式：聊天等路径用大白话，避免堆栈与 HTTP 细节。 */
 export function toPureChatPlainErrorMessage(err: unknown): string {
-  const { code } = parseBackendError(err);
+  const { code, raw } = parseBackendError(err);
   if (code === "LLM_ERROR" || code === "OLLAMA_TIMEOUT") {
     return t("app.pureChatErrors.llm");
   }
@@ -496,7 +496,14 @@ export function toPureChatPlainErrorMessage(err: unknown): string {
   if (code === "DB_ERROR") {
     return t("app.pureChatErrors.db");
   }
-  if (code === "API_PERMISSION_DENIED" || code === "PLUGIN_PERMISSION_NOT_GRANTED") {
+  const message = err instanceof Error ? err.message : raw;
+  if (
+    code === "API_PERMISSION_DENIED" ||
+    code === "PLUGIN_PERMISSION_NOT_GRANTED" ||
+    message === t("apiErrors.common.PLUGIN_PERMISSION_NOT_GRANTED") ||
+    message === t("apiErrors.common.API_PERMISSION_DENIED") ||
+    message.includes("尚未被授予所需权限")
+  ) {
     return t("app.pureChatErrors.permission");
   }
   return t("app.pureChatErrors.generic");
