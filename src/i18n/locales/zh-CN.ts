@@ -1656,6 +1656,8 @@ export const zhCN = {
       setAsRoleDefault: "已设置为角色默认。",
       clearedSessionOverrideAndApplied: "已清除会话覆盖并重新应用。",
       clearedRoleDefault: "已清除角色默认。",
+      sidecarNotice:
+        "配置已写入，但本地 Llama 侧车未确认 config_updated（可检查插件是否已启动与权限）。详情：{message}",
     },
     confirm: {
       rollbackLastRun:
@@ -1720,6 +1722,8 @@ export const zhCN = {
         resultTitle: "结果",
         llamaArgsExpand: "llamaArgs（展开）",
         notReturned: "（未返回）",
+        sidecarWarnPill: "侧车",
+        sidecarNoticeLabel: "侧车提示（config_updated）",
       },
     },
     meta: {

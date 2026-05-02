@@ -15,6 +15,12 @@ const emit = defineEmits<{
   (e: "open-permissions", payload: { pluginId: string }): void;
 }>();
 
+function toastSidecarNoticeIfAny(sidecarNotice?: string | null): void {
+  const msg = sidecarNotice?.trim();
+  if (!msg) return;
+  showToast("info", String(t("expertModels.toasts.sidecarNotice", { message: msg })));
+}
+
 const saving = ref(false);
 const applying = ref(false);
 const editorMode = ref<"canvas" | "form">("canvas");
@@ -187,6 +193,7 @@ async function onApplySession(): Promise<void> {
         }),
       ),
     );
+    toastSidecarNoticeIfAny(r.sidecarNotice);
   } catch (e) {
     showToast("error", e instanceof Error ? e.message : String(e));
   } finally {
@@ -211,6 +218,7 @@ async function onRollbackLastRun(): Promise<void> {
         }),
       ),
     );
+    toastSidecarNoticeIfAny(r.sidecarNotice);
   } catch (e) {
     showToast("error", e instanceof Error ? e.message : String(e));
   } finally {
@@ -303,6 +311,7 @@ async function onRetryRun(indexFromLatest: number): Promise<void> {
         }),
       ),
     );
+    toastSidecarNoticeIfAny(r.sidecarNotice);
   } catch (e) {
     showToast("error", e instanceof Error ? e.message : String(e));
   } finally {
@@ -333,6 +342,7 @@ async function onCopyRunDiagnostics(indexFromLatest: number): Promise<void> {
       modelPath: d.applyModelPath,
       llamaArgs: d.applyLlamaArgs,
       durationMs: d.applyDurationMs,
+      sidecarNotice: d.applySidecarNotice,
     },
   };
   await navigator.clipboard.writeText(JSON.stringify(payload, null, 2));
@@ -456,6 +466,7 @@ async function onRollbackToRun(indexFromLatest: number): Promise<void> {
         }),
       ),
     );
+    toastSidecarNoticeIfAny(r.sidecarNotice);
   } catch (e) {
     showToast("error", e instanceof Error ? e.message : String(e));
   } finally {
@@ -578,8 +589,9 @@ async function onClearSessionOverride(): Promise<void> {
   if (!ok) return;
   saving.value = true;
   try {
-    await store.clearSessionOverrideAndApply();
+    const r = await store.clearSessionOverrideAndApply();
     showToast("success", String(t("expertModels.toasts.clearedSessionOverrideAndApplied")));
+    toastSidecarNoticeIfAny(r.sidecarNotice);
   } catch (e) {
     showToast("error", e instanceof Error ? e.message : String(e));
   } finally {
@@ -1337,7 +1349,14 @@ async function onImportWorkflowJson(): Promise<void> {
                     <span class="em-pill2">LoRA：{{ r.targetLoraCount }}</span>
                     <span v-if="r.targetHasPromptStyle" class="em-pill2">PromptStyle</span>
                     <span v-if="r.applyOk === true" class="em-pill2 em-ok">OK</span>
-                    <span v-else-if="r.applyOk === false" class="em-pill2 em-bad" :title="r.applyError || ''">FAILED</span>
+                    <span
+                      v-if="r.applyOk === true && r.applySidecarNotice"
+                      class="em-pill2 em-warn"
+                      :title="r.applySidecarNotice"
+                    >
+                      {{ t("expertModels.runHistory.ui.sidecarWarnPill") }}
+                    </span>
+                    <span v-if="r.applyOk === false" class="em-pill2 em-bad" :title="r.applyError || ''">FAILED</span>
                     <span v-if="r.applyDurationMs != null" class="em-pill2">{{ t("expertModels.runHistory.ui.durationPill", { ms: r.applyDurationMs }) }}</span>
                   </div>
                 </div>
@@ -1395,6 +1414,10 @@ async function onImportWorkflowJson(): Promise<void> {
                     <div class="em-muted">{{ t("expertModels.runHistory.ui.resultTitle") }}</div>
                     <div><b>modelPath</b>：{{ expandedRunDetail.applyModelPath || String(t("expertModels.runHistory.ui.notReturned")) }}</div>
                     <div><b>durationMs</b>：{{ expandedRunDetail.applyDurationMs ?? String(t("expertModels.runHistory.ui.notReturned")) }}</div>
+                    <div v-if="expandedRunDetail.applySidecarNotice" class="em-muted" style="margin-top: 8px">
+                      {{ t("expertModels.runHistory.ui.sidecarNoticeLabel") }}
+                    </div>
+                    <pre v-if="expandedRunDetail.applySidecarNotice" class="em-pre">{{ expandedRunDetail.applySidecarNotice }}</pre>
                     <details>
                       <summary class="em-muted2">{{ t("expertModels.runHistory.ui.llamaArgsExpand") }}</summary>
                       <pre class="em-pre">{{ expandedRunDetail.applyLlamaArgs || "" }}</pre>
@@ -1840,6 +1863,10 @@ async function onImportWorkflowJson(): Promise<void> {
 .em-pill2.em-bad {
   border-color: rgba(248, 81, 73, 0.5);
   color: rgba(248, 81, 73, 0.95);
+}
+.em-pill2.em-warn {
+  border-color: rgba(210, 153, 34, 0.55);
+  color: rgba(210, 153, 34, 0.98);
 }
 @media (max-width: 1080px) {
   .em-grid {

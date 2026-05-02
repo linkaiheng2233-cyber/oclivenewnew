@@ -65,6 +65,8 @@ plugins/
 
 保存后宿主会向侧车发送 `config_updated({ config })`，侧车将停止当前 `llama-server`，下次推理时按新配置重启。
 
+**产品化提示（专家模型设施「应用到会话」）**：宿主会先写入 `plugin-data` 并切换会话 LLM 到本目录插件，再对侧车发起 `config_updated`。若侧车进程未启动、RPC 不可达或权限不足，**磁盘配置仍可能已更新**，但侧车不会立即重载；桌面端 Run 历史与 Toast 会给出 **侧车提示（sidecar notice）**，便于排错。
+
 ---
 
 ## 4. 可选：URL + sha256 下载（官方不内置链接）

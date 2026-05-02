@@ -1722,6 +1722,8 @@ export const enUS = {
       setAsRoleDefault: "Set as role default.",
       clearedSessionOverrideAndApplied: "Cleared session override and re-applied.",
       clearedRoleDefault: "Cleared role default.",
+      sidecarNotice:
+        "Config was written, but the local Llama sidecar did not acknowledge config_updated (check the plugin is running and permissions). Details: {message}",
     },
     confirm: {
       rollbackLastRun:
@@ -1791,6 +1793,8 @@ export const enUS = {
         resultTitle: "Result",
         llamaArgsExpand: "llamaArgs (expand)",
         notReturned: "(not returned)",
+        sidecarWarnPill: "Sidecar",
+        sidecarNoticeLabel: "Sidecar notice (config_updated)",
       },
     },
     actions: {

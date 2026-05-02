@@ -260,12 +260,19 @@ export async function expertModelsClearRoleDefault(params: {
 export async function expertModelsApplyToSession(params: {
   roleId: string;
   sessionId?: string | null;
-}): Promise<{ ok: boolean; llamaPluginId: string; modelPath?: string; llamaArgs?: string }> {
+}): Promise<{
+  ok: boolean;
+  llamaPluginId: string;
+  modelPath?: string;
+  llamaArgs?: string;
+  sidecarNotice?: string | null;
+}> {
   return invokeWithFriendlyError<{
     ok: boolean;
     llamaPluginId: string;
     modelPath?: string;
     llamaArgs?: string;
+    sidecarNotice?: string | null;
   }>("expert_models_apply_to_session", {
     req: { roleId: params.roleId, sessionId: params.sessionId ?? null },
   });
@@ -274,12 +281,19 @@ export async function expertModelsApplyToSession(params: {
 export async function expertModelsRollbackLastRun(params: {
   roleId: string;
   sessionId?: string | null;
-}): Promise<{ ok: boolean; llamaPluginId: string; modelPath?: string; llamaArgs?: string }> {
+}): Promise<{
+  ok: boolean;
+  llamaPluginId: string;
+  modelPath?: string;
+  llamaArgs?: string;
+  sidecarNotice?: string | null;
+}> {
   return invokeWithFriendlyError<{
     ok: boolean;
     llamaPluginId: string;
     modelPath?: string;
     llamaArgs?: string;
+    sidecarNotice?: string | null;
   }>("expert_models_rollback_last_run", {
     req: { roleId: params.roleId, sessionId: params.sessionId ?? null },
   });
@@ -295,6 +309,7 @@ export interface ExpertModelsRunSummaryDto {
   applyOk?: boolean | null;
   applyError?: string | null;
   applyDurationMs?: number | null;
+  applySidecarNotice?: string | null;
 }
 
 export async function expertModelsListRuns(params: {
@@ -327,12 +342,19 @@ export async function expertModelsRollbackToRun(params: {
   roleId: string;
   sessionId?: string | null;
   indexFromLatest: number;
-}): Promise<{ ok: boolean; llamaPluginId: string; modelPath?: string; llamaArgs?: string }> {
+}): Promise<{
+  ok: boolean;
+  llamaPluginId: string;
+  modelPath?: string;
+  llamaArgs?: string;
+  sidecarNotice?: string | null;
+}> {
   return invokeWithFriendlyError<{
     ok: boolean;
     llamaPluginId: string;
     modelPath?: string;
     llamaArgs?: string;
+    sidecarNotice?: string | null;
   }>("expert_models_rollback_to_run", {
     req: {
       roleId: params.roleId,
@@ -361,6 +383,7 @@ export interface ExpertModelsRunDetailDto {
   applyModelPath?: string | null;
   applyLlamaArgs?: string | null;
   applyDurationMs?: number | null;
+  applySidecarNotice?: string | null;
 }
 
 export async function expertModelsSetRunPinned(params: {

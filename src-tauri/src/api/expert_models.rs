@@ -53,6 +53,8 @@ struct RunApplyOutcome {
     llama_args: Option<String>,
     #[serde(default)]
     duration_ms: Option<i64>,
+    #[serde(default)]
+    sidecar_notice: Option<String>,
 }
 
 #[derive(Debug, Clone, serde::Serialize, serde::Deserialize)]
@@ -690,18 +692,22 @@ pub async fn expert_models_apply_to_session(
             .directory_plugins
             .ensure_rpc_url(LLAMA_LOCAL_PLUGIN_ID)
             .map_err(|e| e.to_string())?;
-        let _ = invoke_directory_plugin_rpc_blocking(
+        let sidecar_notice = match invoke_directory_plugin_rpc_blocking(
             &url,
             "config_updated",
             json!({ "config": cfg_val }),
             RemoteRpcChannel::Plugin,
-        );
+        ) {
+            Ok(_) => None,
+            Err(e) => Some(e.to_frontend_error()),
+        };
 
         Ok(ExpertModelsApplyResult {
             ok: true,
             llama_plugin_id: LLAMA_LOCAL_PLUGIN_ID.to_string(),
             model_path: compiled.model_path.clone(),
             llama_args: compiled.llama_args.clone(),
+            sidecar_notice,
         })
     })
     .await;
@@ -716,6 +722,7 @@ pub async fn expert_models_apply_to_session(
                 model_path: r.model_path.clone(),
                 llama_args: r.llama_args.clone(),
                 duration_ms: Some(duration_ms),
+                sidecar_notice: r.sidecar_notice.clone(),
             },
             Err(e) => RunApplyOutcome {
                 ok: false,
@@ -723,6 +730,7 @@ pub async fn expert_models_apply_to_session(
                 model_path: None,
                 llama_args: None,
                 duration_ms: Some(duration_ms),
+                sidecar_notice: None,
             },
         });
     }
@@ -854,11 +862,18 @@ pub async fn expert_models_list_runs(
                     s.is_some(),
                 )
             });
-        let (apply_ok, apply_error, apply_duration_ms) = e
+        let (apply_ok, apply_error, apply_duration_ms, apply_sidecar_notice) = e
             .apply
             .as_ref()
-            .map(|a| (Some(a.ok), a.error.clone(), a.duration_ms))
-            .unwrap_or((None, None, None));
+            .map(|a| {
+                (
+                    Some(a.ok),
+                    a.error.clone(),
+                    a.duration_ms,
+                    a.sidecar_notice.clone(),
+                )
+            })
+            .unwrap_or((None, None, None, None));
         items.push(ExpertModelsRunSummaryDto {
             index_from_latest: i as u32,
             at_ms: e.at_ms,
@@ -869,6 +884,7 @@ pub async fn expert_models_list_runs(
             apply_ok,
             apply_error,
             apply_duration_ms,
+            apply_sidecar_notice,
         });
         if items.len() >= 30 {
             break;
@@ -928,19 +944,20 @@ pub async fn expert_models_get_run_detail(
                 .map(|g| graph_summary(g, &target_style))
         })
         .unwrap_or_else(|| graph_summary(&snapshot_graph, &snapshot_style));
-    let (apply_ok, apply_error, apply_model_path, apply_llama_args, apply_duration_ms) = e
-        .apply
-        .as_ref()
-        .map(|a| {
-            (
-                Some(a.ok),
-                a.error.clone(),
-                a.model_path.clone(),
-                a.llama_args.clone(),
-                a.duration_ms,
-            )
-        })
-        .unwrap_or((None, None, None, None, None));
+    let (apply_ok, apply_error, apply_model_path, apply_llama_args, apply_duration_ms, apply_sidecar_notice) =
+        e.apply
+            .as_ref()
+            .map(|a| {
+                (
+                    Some(a.ok),
+                    a.error.clone(),
+                    a.model_path.clone(),
+                    a.llama_args.clone(),
+                    a.duration_ms,
+                    a.sidecar_notice.clone(),
+                )
+            })
+            .unwrap_or((None, None, None, None, None, None));
 
     Ok(ExpertModelsGetRunDetailResponse {
         item: ExpertModelsRunDetailDto {
@@ -962,6 +979,7 @@ pub async fn expert_models_get_run_detail(
             apply_model_path,
             apply_llama_args,
             apply_duration_ms,
+            apply_sidecar_notice,
         },
     })
 }

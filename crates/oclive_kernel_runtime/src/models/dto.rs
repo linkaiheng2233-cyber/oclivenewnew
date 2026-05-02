@@ -549,6 +549,10 @@ pub struct ExpertModelsApplyResult {
     pub model_path: Option<String>,
     #[serde(default)]
     pub llama_args: Option<String>,
+    /// Host wrote `plugin-data` and switched session LLM, but JSON-RPC to the directory
+    /// sidecar failed (e.g. plugin not running / transport). User should retry or check permissions.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub sidecar_notice: Option<String>,
 }
 
 // ===== Module 9: Expert Workflows (preset library) =====
@@ -621,6 +625,8 @@ pub struct ExpertModelsRunSummaryDto {
     pub apply_error: Option<String>,
     #[serde(default)]
     pub apply_duration_ms: Option<i64>,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub apply_sidecar_notice: Option<String>,
 }
 
 #[derive(Debug, Clone, Serialize)]
@@ -665,6 +671,8 @@ pub struct ExpertModelsRunDetailDto {
     pub apply_llama_args: Option<String>,
     #[serde(default)]
     pub apply_duration_ms: Option<i64>,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub apply_sidecar_notice: Option<String>,
 }
 
 #[derive(Debug, Clone, Serialize)]
