@@ -87,7 +87,9 @@ pub fn cloud_config_from_persist_json(s: &str) -> Option<CloudLlmConfig> {
 }
 
 /// 应用内覆盖优先于环境变量（与 [`CloudLlmConfig::from_env_openai_compat`] 合并）。
-pub fn effective_cloud_llm_config(store: &RwLock<Option<CloudLlmConfig>>) -> Option<CloudLlmConfig> {
+pub fn effective_cloud_llm_config(
+    store: &RwLock<Option<CloudLlmConfig>>,
+) -> Option<CloudLlmConfig> {
     let g = store.read();
     if let Some(c) = g.as_ref() {
         if !c.base_url.trim().is_empty() && !c.api_key.trim().is_empty() {

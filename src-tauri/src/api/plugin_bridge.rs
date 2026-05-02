@@ -175,11 +175,45 @@ async fn validate_bridge(
     }
     // P1：权限授予（安装时一次性授权 + 可撤销）
     let needed = required_permission_token(command);
-    let ok = state
+    let mut ok = state
         .db_manager
         .is_plugin_permission_granted(plugin_id, needed.as_str())
         .await
         .unwrap_or(false);
+    if !ok && needed.as_str() != command {
+        ok = state
+            .db_manager
+            .is_plugin_permission_granted(plugin_id, command)
+            .await
+            .unwrap_or(false);
+    }
+    if !ok && plugin_id.starts_with("com.oclive.mumu.") {
+        let existing = state
+            .db_manager
+            .list_plugin_permission_grants(plugin_id)
+            .await
+            .unwrap_or_default();
+        if existing.is_empty() {
+            for p in manifest.bridge_permission_tokens() {
+                let _ = state
+                    .db_manager
+                    .upsert_plugin_permission_grant(plugin_id, p.as_str(), true)
+                    .await;
+            }
+            ok = state
+                .db_manager
+                .is_plugin_permission_granted(plugin_id, needed.as_str())
+                .await
+                .unwrap_or(false);
+            if !ok && needed.as_str() != command {
+                ok = state
+                    .db_manager
+                    .is_plugin_permission_granted(plugin_id, command)
+                    .await
+                    .unwrap_or(false);
+            }
+        }
+    }
     if !ok {
         let _ = state
             .db_manager

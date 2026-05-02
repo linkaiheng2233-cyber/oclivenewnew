@@ -92,7 +92,10 @@ struct LlmRemoteCloudAware {
 }
 
 impl LlmRemoteCloudAware {
-    fn new(default_llm: Arc<dyn LlmClient>, cloud_store: Arc<RwLock<Option<CloudLlmConfig>>>) -> Self {
+    fn new(
+        default_llm: Arc<dyn LlmClient>,
+        cloud_store: Arc<RwLock<Option<CloudLlmConfig>>>,
+    ) -> Self {
         let chain: Arc<dyn LlmClient> = if let Some(cfg) = RemotePluginHttpConfig::from_env_llm() {
             log::info!(
                 target: "oclive_plugin",
@@ -111,7 +114,9 @@ impl LlmRemoteCloudAware {
 impl LlmClient for LlmRemoteCloudAware {
     async fn generate(&self, model: &str, prompt: &str) -> Result<String> {
         if let Some(cfg) = effective_cloud_llm_config(&self.cloud_store) {
-            return OpenAiCompatLlmClient::new(cfg).generate(model, prompt).await;
+            return OpenAiCompatLlmClient::new(cfg)
+                .generate(model, prompt)
+                .await;
         }
         self.chain.generate(model, prompt).await
     }

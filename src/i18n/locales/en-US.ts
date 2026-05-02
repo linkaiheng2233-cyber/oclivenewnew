@@ -54,6 +54,7 @@ export const enUS = {
       ZIP_TOTAL_TOO_LARGE: "Zip total size is too large; extraction blocked.",
       PLUGIN_PERMISSION_NOT_GRANTED:
         "Required permissions are not granted; call is blocked. Grant permissions in plugin permissions manager and retry.",
+      CHAT_GENERATION_CANCELLED: "Generation was cancelled.",
     },
     special: {
       roleNotFoundWithDetail: "Role not found or manifest missing. {detail}",
@@ -140,6 +141,9 @@ export const enUS = {
     gear: "Cloud",
     openSettings: "Open settings (cloud LLM & keys)",
     errEmpty: "Model id cannot be empty.",
+    stopGeneration: "Stop generating",
+    editPendingSend: "Edit & resend",
+    generatingHint: "Generating…",
   },
   app: {
     startup: {
@@ -260,6 +264,8 @@ export const enUS = {
       identitySet: "{scope} set: {name}",
       pluginInstalledFromUrl: "Plugin installed from web URL: {id}",
       pluginsAutoRefreshed: "Plugin changes detected; auto-refreshed",
+      chatStopped: "Generation stopped",
+      editRedraftReady: "Message pulled back—edit in the box and send again",
     },
     sceneTravel: {
       travelingTo: "Traveling to “{label}”…",

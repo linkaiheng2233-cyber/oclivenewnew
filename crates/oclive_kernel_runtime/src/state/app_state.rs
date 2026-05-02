@@ -37,6 +37,7 @@ use sqlx::sqlite::{SqliteConnectOptions, SqlitePoolOptions};
 use std::collections::HashMap;
 use std::fs;
 use std::path::{Path, PathBuf};
+use std::sync::atomic::AtomicBool;
 use std::sync::Arc;
 use tempfile::TempDir;
 
@@ -231,6 +232,8 @@ pub struct KernelAppState {
     pub plugins: PluginHost,
     pub directory_plugins: Arc<DirectoryPluginRuntime>,
     session_plugin_overrides: Arc<RwLock<HashMap<String, PluginBackendsOverride>>>,
+    /// 由前端 `cancel_chat_generation` 置位；`process_message` 入口清除；主对话 LLM 任务轮询此标志。
+    pub chat_generation_cancel: Arc<AtomicBool>,
     // Keep temp dir alive when using ephemeral DBs.
     _temp_db_dir: Option<TempDir>,
 }
@@ -327,7 +330,9 @@ impl KernelAppState {
             .get_app_setting(HOST_CHAT_MODEL_KEY)
             .await?
             .filter(|s| !s.trim().is_empty())
-            .unwrap_or_else(|| std::env::var("OLLAMA_MODEL").unwrap_or_else(|_| "qwen2.5:7b".to_string()));
+            .unwrap_or_else(|| {
+                std::env::var("OLLAMA_MODEL").unwrap_or_else(|_| "qwen2.5:7b".to_string())
+            });
         let chat_model = Arc::new(RwLock::new(chat_model_init));
         let registry = load_policy_registry();
         let runtime = Self::build_policy_sets_from_registry(registry);
@@ -360,6 +365,7 @@ impl KernelAppState {
             plugins,
             directory_plugins,
             session_plugin_overrides: Arc::new(RwLock::new(HashMap::new())),
+            chat_generation_cancel: Arc::new(AtomicBool::new(false)),
             _temp_db_dir: temp_db_dir,
         })
     }
@@ -445,6 +451,7 @@ impl KernelAppState {
             plugins,
             directory_plugins,
             session_plugin_overrides: Arc::new(RwLock::new(HashMap::new())),
+            chat_generation_cancel: Arc::new(AtomicBool::new(false)),
             _temp_db_dir: Some(dir),
         })
     }

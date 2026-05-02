@@ -15,7 +15,10 @@ pub async fn get_host_cloud_llm_public(
 }
 
 #[tauri::command]
-pub async fn set_host_cloud_llm(state: State<'_, AppState>, dto: HostCloudLlmSaveDto) -> Result<(), String> {
+pub async fn set_host_cloud_llm(
+    state: State<'_, AppState>,
+    dto: HostCloudLlmSaveDto,
+) -> Result<(), String> {
     state
         .set_host_cloud_llm(&dto)
         .await

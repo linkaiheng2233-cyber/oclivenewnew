@@ -26,6 +26,9 @@ pub enum AppError {
     #[error("Unknown error: {0}")]
     Unknown(String),
 
+    #[error("chat generation cancelled by user")]
+    ChatGenerationCancelled,
+
     #[error("Transaction failed ({code}): {message}")]
     TransactionError { code: &'static str, message: String },
 }
@@ -43,6 +46,7 @@ impl AppError {
             AppError::InvalidParameter(_) => "INVALID_PARAMETER",
             AppError::SerializationError(_) => "SERDE_ERROR",
             AppError::Unknown(_) => "UNKNOWN_ERROR",
+            AppError::ChatGenerationCancelled => "CHAT_GENERATION_CANCELLED",
             AppError::TransactionError { code, .. } => code,
         }
     }

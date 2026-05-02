@@ -1,5 +1,6 @@
 import { defineStore } from "pinia";
 import {
+  parseApiErrorCode,
   sendMessage,
   type PresenceMode,
   type SendMessageResponse,
@@ -14,6 +15,11 @@ import { useDebugStore } from "./debugStore";
 import { useRoleStore } from "./roleStore";
 import { useUiStore } from "./uiStore";
 import { hostEventBus } from "../lib/hostEventBus";
+
+/** 与进行中发主编排对抗：中止或「改写」时递增，丢弃过期的 `send_message` 回包。 */
+let chatSendNonce = 0;
+/** 最近一发用户原文（供「改写重新编辑」回填输入框）。 */
+let pendingSendDraft = "";
 
 export type ChatMessage = {
   id: string;
@@ -203,6 +209,36 @@ export const useChatStore = defineStore(
             ? next.slice(-MAX_MESSAGES_PER_CONVERSATION)
             : next;
       },
+      /** 中止或改写时丢弃过期回包，并结束 loading（可选保留 `pendingSendDraft`）。 */
+      invalidateActiveSend(options?: { keepDraft?: boolean }) {
+        chatSendNonce++;
+        this.isLoading = false;
+        if (!options?.keepDraft) {
+          pendingSendDraft = "";
+        }
+      },
+
+      /** 取出并清空最近一发用户草稿（在 `invalidateActiveSend({ keepDraft: true })` 之后调用）。 */
+      consumePendingSendDraft(): string {
+        const s = pendingSendDraft;
+        pendingSendDraft = "";
+        return s;
+      },
+
+      /** 移除当前场景最后一条用户消息（用于取消生成 / 改写）。 */
+      removeLastUserBubble(roleId: string, sceneId: string) {
+        this.ensureLegacyMigrated(roleId);
+        const sid = sceneId || "default";
+        const roleMap = (this.messageMap as RoleSceneMessageMap)[roleId];
+        const arr = roleMap?.[sid];
+        if (!arr?.length) return;
+        const last = arr[arr.length - 1];
+        if (last.role !== "user") return;
+        const next = arr.slice(0, -1);
+        if (!this.messageMap[roleId]) (this.messageMap as any)[roleId] = {};
+        (this.messageMap as any)[roleId][sid] = next;
+      },
+
       clearMessages(roleId: string, sceneId: string) {
         const sid = sceneId || "default";
         const roleBucket = (this.messageMap as unknown as Record<
@@ -218,10 +254,15 @@ export const useChatStore = defineStore(
         if (!this.messageMap[roleId]) (this.messageMap as any)[roleId] = {};
         (this.messageMap as any)[roleId][sid] = [];
       },
-      async sendMessage(content: string, sceneId: string): Promise<SendMessageResponse> {
+      async sendMessage(
+        content: string,
+        sceneId: string,
+      ): Promise<SendMessageResponse | null> {
         const roleStore = useRoleStore();
         const roleId = roleStore.currentRoleId;
         const sid = sceneId || "default";
+        pendingSendDraft = content;
+        const myNonce = ++chatSendNonce;
         this.addUserMessage(content, sid);
         this.isLoading = true;
         const relationBefore = roleStore.roleInfo.relationState;
@@ -231,6 +272,9 @@ export const useChatStore = defineStore(
             user_message: content,
             scene_id: sid || null,
           });
+          if (myNonce !== chatSendNonce) {
+            return null;
+          }
           const pres = presentationFromSendResponse(res);
           this.addAssistantMessage(
             pres.replyText,
@@ -261,8 +305,19 @@ export const useChatStore = defineStore(
             reply_aside: split.aside,
           });
           return res;
+        } catch (e) {
+          if (myNonce !== chatSendNonce) {
+            return null;
+          }
+          if (parseApiErrorCode(e) === "CHAT_GENERATION_CANCELLED") {
+            this.removeLastUserBubble(roleId, sid);
+          }
+          throw e;
         } finally {
-          this.isLoading = false;
+          if (myNonce === chatSendNonce) {
+            this.isLoading = false;
+            pendingSendDraft = "";
+          }
         }
       },
     },

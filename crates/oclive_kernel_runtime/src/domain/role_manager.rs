@@ -12,10 +12,10 @@ use crate::domain::prompt_builder::{effective_reply_quality_anchor, PromptInput}
 use crate::domain::prompt_style_override::role_view_with_prompt_style;
 use crate::infrastructure::db::DbManager;
 use crate::infrastructure::llm::{LlmClient, MockLlmClient};
-use parking_lot::RwLock;
 use crate::models::{
     Emotion, Event, EventType, Memory, PersonalitySource, PersonalityVector, Role,
 };
+use parking_lot::RwLock;
 use std::sync::Arc;
 
 fn resolved_plugins_dummy(role: &Role) -> ResolvedRolePlugins {

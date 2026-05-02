@@ -4,7 +4,11 @@ use crate::state::AppState;
 use tauri::{AppHandle, Manager, State};
 
 #[tauri::command]
-pub fn reveal_role_pack_folder(app: AppHandle, state: State<AppState>, role_id: String) -> Result<(), String> {
+pub fn reveal_role_pack_folder(
+    app: AppHandle,
+    state: State<AppState>,
+    role_id: String,
+) -> Result<(), String> {
     let rid = role_id.trim();
     if rid.is_empty() {
         return Err("role_id is empty".to_string());
@@ -13,10 +17,6 @@ pub fn reveal_role_pack_folder(app: AppHandle, state: State<AppState>, role_id: 
     if !dir.is_dir() {
         return Err(format!("role pack folder not found: {}", dir.display()));
     }
-    tauri::api::shell::open(
-        &app.shell_scope(),
-        dir.to_string_lossy().to_string(),
-        None,
-    )
-    .map_err(|e| e.to_string())
+    tauri::api::shell::open(&app.shell_scope(), dir.to_string_lossy().to_string(), None)
+        .map_err(|e| e.to_string())
 }

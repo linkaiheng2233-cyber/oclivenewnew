@@ -22,11 +22,13 @@ import { usePackUiTheme } from "./composables/useTheme";
 import { usePluginManagerWindow } from "./composables/usePluginManagerWindow";
 import { hostEventBus } from "./lib/hostEventBus";
 import {
+  cancelChatGeneration,
   consumePendingProtocolInstalls,
   importRolePack,
   installPluginFromGit,
   loadRole,
   OCLIVE_DEFAULT_RELATION_SENTINEL,
+  parseApiErrorCode,
   peekRolePack,
   revealRolePackFolder,
   setErrorReporter,
@@ -409,6 +411,9 @@ async function onSend(payload: { content: string }) {
   const userText = payload.content;
   try {
     const res = await chatStore.sendMessage(userText, uiStore.sceneId);
+    if (!res) {
+      return;
+    }
     await roleStore.refreshRoleInfo();
     applyResolvedNarrativeScene();
     if (debugStore.visible) {
@@ -429,12 +434,41 @@ async function onSend(payload: { content: string }) {
       }
     }
   } catch (err) {
+    if (parseApiErrorCode(err) === "CHAT_GENERATION_CANCELLED") {
+      showToast("info", String(t("app.toasts.chatStopped")));
+      return;
+    }
     if (roleStore.interactionPureChat) {
       showToast("error", toPureChatPlainErrorMessage(err));
     } else {
       showToast("error", err instanceof Error ? err.message : String(err));
     }
   }
+}
+
+async function onStopChatGeneration() {
+  try {
+    await cancelChatGeneration();
+  } catch (e) {
+    showToast("error", e instanceof Error ? e.message : String(e));
+  }
+}
+
+async function onEditPendingSend() {
+  const rid = roleStore.currentRoleId;
+  const sid = uiStore.sceneId || "default";
+  try {
+    await cancelChatGeneration();
+  } catch {
+    /* 仍尝试撤回 UI，避免卡在 loading */
+  }
+  chatStore.invalidateActiveSend({ keepDraft: true });
+  chatStore.removeLastUserBubble(rid, sid);
+  const draft = chatStore.consumePendingSendDraft();
+  if (draft.trim()) {
+    hostEventBus.emit("chat:set_input_draft", { text: draft });
+  }
+  showToast("info", String(t("app.toasts.editRedraftReady")));
 }
 
 async function confirmPostReplyScene(together: boolean) {
@@ -1223,7 +1257,13 @@ onBeforeUnmount(() => {
               @confirm-post-reply="confirmPostReplyScene"
               @dismiss-post-reply="dismissPostReplySceneBar"
             />
-            <ChatComposer :loading="chatStore.isLoading" @send="onSend" @open-settings="openSettingsView" />
+            <ChatComposer
+              :loading="chatStore.isLoading"
+              @send="onSend"
+              @open-settings="openSettingsView"
+              @stop-generation="onStopChatGeneration"
+              @edit-pending-send="onEditPendingSend"
+            />
           </section>
         </div>
       </div>
