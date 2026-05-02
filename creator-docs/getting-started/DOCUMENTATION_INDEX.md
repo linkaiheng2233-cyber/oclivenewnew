@@ -22,6 +22,7 @@ Creator and plugin docs live under the repo root `creator-docs/` (grouped by top
 
 | 我想… | 阅读 |
 |------|------|
+| **在本机做跨平台开发 / Linux 依赖 / macOS 手测** | **[`docs/DEV_CROSS_PLATFORM.md`](../../docs/DEV_CROSS_PLATFORM.md)** · 性能与包体交接 **[`handoff/FRONTEND_CHUNK_OPTIMIZATION.md`](../../handoff/FRONTEND_CHUNK_OPTIMIZATION.md)**、**[`handoff/PERFORMANCE_BASELINE_ACCEPTANCE.md`](../../handoff/PERFORMANCE_BASELINE_ACCEPTANCE.md)** |
 | **用启动器安装 zip 角色包、选本机 Ollama 模型、一键 pull** | **[oclive-launcher README](https://github.com/oclive-app/oclive-launcher/blob/main/README.md)**（独立仓库） |
 | **理清项目全貌 / 人机分工 / 命令与发版清单** | **[PROJECT_OVERVIEW.md](PROJECT_OVERVIEW.md)** |
 | 报错后如何快速定位与提 issue | **[ERROR_CODES.md](ERROR_CODES.md)** |

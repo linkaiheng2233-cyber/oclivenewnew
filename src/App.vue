@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed, nextTick, onBeforeUnmount, onMounted, ref, watch } from "vue";
+import { computed, defineAsyncComponent, nextTick, onBeforeUnmount, onMounted, ref, watch } from "vue";
 import { useI18n } from "vue-i18n";
 import AutonomousSceneNotice from "./components/AutonomousSceneNotice.vue";
 import HelpHint from "./components/HelpHint.vue";
@@ -9,7 +9,7 @@ import PluginSidebarSlots from "./components/PluginSidebarSlots.vue";
 import RoleplayAsidePanel from "./components/RoleplayAsidePanel.vue";
 import HotkeyHost from "./components/HotkeyHost.vue";
 import PluginManagerPanel from "./views/PluginManagerPanel.vue";
-import PluginManagerV2Panel from "./views/PluginManagerV2Panel.vue";
+const PluginManagerV2Panel = defineAsyncComponent(() => import("./views/PluginManagerV2Panel.vue"));
 import LocalModelManagerPanel from "./views/LocalModelManagerPanel.vue";
 import PluginMarketPanel from "./views/PluginMarketPanel.vue";
 import PluginMarketV2Panel from "./views/PluginMarketV2Panel.vue";
@@ -1206,7 +1206,8 @@ onBeforeUnmount(() => {
     <PluginMarketPanel />
     <PluginManagerPanel />
     <PluginManagerV2Panel
-      :visible="pluginManagerV2Open"
+      v-if="pluginManagerV2Open"
+      :visible="true"
       @close="pluginManagerV2Open = false"
       @open-v1="
         pluginManagerV2Open = false;
