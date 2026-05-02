@@ -45,7 +45,13 @@ fn resolve_role_with_all_builtin_v2() {
         .await;
     });
     let db = Arc::new(DbManager::new(pool));
-    let host = PluginHost::new(db, llm, None, std::env::temp_dir());
+    let host = PluginHost::new(
+        db,
+        llm,
+        None,
+        std::env::temp_dir(),
+        std::sync::Arc::new(parking_lot::RwLock::new(None)),
+    );
     let role = Role {
         plugin_backends: PluginBackends {
             memory: MemoryBackend::BuiltinV2,

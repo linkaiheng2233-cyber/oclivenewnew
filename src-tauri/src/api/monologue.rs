@@ -48,7 +48,7 @@ pub async fn generate_monologue_impl(
     );
 
     let pl = state.resolved_plugins_for_session(&role, Some(role_id));
-    let ollama_model = role.resolve_ollama_model(state.ollama_model.as_str());
+    let ollama_model = role.resolve_ollama_model(state.global_chat_model().as_str());
     let text = match pl.llm.generate(ollama_model.as_str(), &prompt).await {
         Ok(s) => s,
         Err(e) => {

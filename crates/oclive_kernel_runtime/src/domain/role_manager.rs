@@ -12,6 +12,7 @@ use crate::domain::prompt_builder::{effective_reply_quality_anchor, PromptInput}
 use crate::domain::prompt_style_override::role_view_with_prompt_style;
 use crate::infrastructure::db::DbManager;
 use crate::infrastructure::llm::{LlmClient, MockLlmClient};
+use parking_lot::RwLock;
 use crate::models::{
     Emotion, Event, EventType, Memory, PersonalitySource, PersonalityVector, Role,
 };
@@ -52,7 +53,14 @@ fn resolved_plugins_dummy(role: &Role) -> ResolvedRolePlugins {
         .await;
     });
     let db = Arc::new(DbManager::new(pool));
-    PluginHost::new(db, dummy_llm, None, std::env::temp_dir()).resolve_for_role(role)
+    PluginHost::new(
+        db,
+        dummy_llm,
+        None,
+        std::env::temp_dir(),
+        Arc::new(RwLock::new(None)),
+    )
+    .resolve_for_role(role)
 }
 
 /// 角色管理器

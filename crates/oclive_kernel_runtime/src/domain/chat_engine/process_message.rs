@@ -75,7 +75,7 @@ pub async fn process_message(
             role_id: mrid.to_string(),
             session_namespace: srid.to_string(),
             message: req.user_message.clone(),
-            model: role.resolve_ollama_model(state.ollama_model.as_str()),
+            model: role.resolve_ollama_model(state.global_chat_model().as_str()),
         })
         .await?;
     if agent_out.handled {
@@ -288,7 +288,7 @@ async fn process_remote_life(
     let user_emotion = emotion_result.to_emotion();
     let user_emotion_str = user_emotion.to_string();
 
-    let ollama_model = role.resolve_ollama_model(state.ollama_model.as_str());
+    let ollama_model = role.resolve_ollama_model(state.global_chat_model().as_str());
     let (recent_turns, _recent_turns_for_event, recent_events_for_event) =
         super::context::load_recent_context(state, srid).await?;
 

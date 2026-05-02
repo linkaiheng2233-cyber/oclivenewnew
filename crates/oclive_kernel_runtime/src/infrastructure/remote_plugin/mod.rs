@@ -33,7 +33,12 @@ use crate::domain::prompt_assembler::{PromptAssembler, RemotePromptAssemblerPlac
 use crate::domain::user_emotion_analyzer::{
     RemoteUserEmotionAnalyzerPlaceholder, UserEmotionAnalyzer,
 };
-use crate::infrastructure::llm::{cloud_llm_from_env, LlmClient, RemoteLlmPlaceholder};
+use crate::infrastructure::cloud_llm::{
+    effective_cloud_llm_config, CloudLlmConfig, OpenAiCompatLlmClient,
+};
+use crate::infrastructure::llm::{LlmClient, RemoteLlmPlaceholder};
+use async_trait::async_trait;
+use parking_lot::RwLock;
 use serde_json::Value;
 use std::sync::Arc;
 
@@ -73,19 +78,51 @@ pub fn plugin_remote_group() -> PluginRemoteGroup {
     }
 }
 
-pub fn llm_remote_backend(default_llm: Arc<dyn LlmClient>) -> Arc<dyn LlmClient> {
-    if let Some(cloud) = cloud_llm_from_env() {
-        return cloud;
+pub fn llm_remote_backend(
+    default_llm: Arc<dyn LlmClient>,
+    cloud_store: Arc<RwLock<Option<CloudLlmConfig>>>,
+) -> Arc<dyn LlmClient> {
+    Arc::new(LlmRemoteCloudAware::new(default_llm, cloud_store))
+}
+
+/// 远程 LLM 槽：应用内/环境变量 OpenAI 兼容云端优先，其次 JSON-RPC 侧车，否则占位回退。
+struct LlmRemoteCloudAware {
+    cloud_store: Arc<RwLock<Option<CloudLlmConfig>>>,
+    chain: Arc<dyn LlmClient>,
+}
+
+impl LlmRemoteCloudAware {
+    fn new(default_llm: Arc<dyn LlmClient>, cloud_store: Arc<RwLock<Option<CloudLlmConfig>>>) -> Self {
+        let chain: Arc<dyn LlmClient> = if let Some(cfg) = RemotePluginHttpConfig::from_env_llm() {
+            log::info!(
+                target: "oclive_plugin",
+                "remote LLM HTTP active -> {}",
+                cfg.endpoint
+            );
+            Arc::new(RemoteLlmHttp::new(cfg))
+        } else {
+            Arc::new(RemoteLlmPlaceholder::new(default_llm))
+        };
+        Self { cloud_store, chain }
     }
-    if let Some(cfg) = RemotePluginHttpConfig::from_env_llm() {
-        log::info!(
-            target: "oclive_plugin",
-            "remote LLM HTTP active -> {}",
-            cfg.endpoint
-        );
-        Arc::new(RemoteLlmHttp::new(cfg))
-    } else {
-        Arc::new(RemoteLlmPlaceholder::new(default_llm))
+}
+
+#[async_trait]
+impl LlmClient for LlmRemoteCloudAware {
+    async fn generate(&self, model: &str, prompt: &str) -> Result<String> {
+        if let Some(cfg) = effective_cloud_llm_config(&self.cloud_store) {
+            return OpenAiCompatLlmClient::new(cfg).generate(model, prompt).await;
+        }
+        self.chain.generate(model, prompt).await
+    }
+
+    async fn generate_tag(&self, model: &str, prompt: &str) -> Result<String> {
+        if let Some(cfg) = effective_cloud_llm_config(&self.cloud_store) {
+            return OpenAiCompatLlmClient::new(cfg)
+                .generate_tag(model, prompt)
+                .await;
+        }
+        self.chain.generate_tag(model, prompt).await
     }
 }
 

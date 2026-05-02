@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed, ref, watch } from "vue";
+import { computed, onMounted, ref, watch } from "vue";
 import { useI18n } from "vue-i18n";
 import { useAppToast } from "../composables/useAppToast";
 import {
@@ -7,6 +7,7 @@ import {
   CLOUD_LLM_PRESET_ORDER,
   type CloudLlmPresetId,
 } from "../lib/cloudLlmPresets";
+import { getHostCloudLlmPublic, setHostCloudLlm } from "../utils/tauri-api";
 
 const { t } = useI18n();
 const { showToast } = useAppToast();
@@ -15,6 +16,36 @@ const presetId = ref<CloudLlmPresetId>("openai");
 const baseUrl = ref(CLOUD_LLM_PRESET_DEFAULTS.openai.baseUrl);
 const apiKey = ref("");
 const model = ref(CLOUD_LLM_PRESET_DEFAULTS.openai.model);
+const timeoutMsStr = ref("");
+const saving = ref(false);
+const hasSavedKey = ref(false);
+
+function matchPresetFromBaseUrl(url: string): CloudLlmPresetId {
+  const u = url.trim().replace(/\/+$/, "");
+  for (const pid of CLOUD_LLM_PRESET_ORDER) {
+    if (pid === "custom") continue;
+    const d = CLOUD_LLM_PRESET_DEFAULTS[pid];
+    if (u === d.baseUrl.trim().replace(/\/+$/, "")) return pid;
+  }
+  return "custom";
+}
+
+onMounted(async () => {
+  try {
+    const pub = await getHostCloudLlmPublic();
+    hasSavedKey.value = pub.hasApiKey === true;
+    if (pub.baseUrl?.trim()) {
+      baseUrl.value = pub.baseUrl.trim();
+      model.value = (pub.model ?? "").trim() || CLOUD_LLM_PRESET_DEFAULTS.openai.model;
+      presetId.value = matchPresetFromBaseUrl(pub.baseUrl);
+      if (pub.timeoutMs != null && pub.timeoutMs > 0) {
+        timeoutMsStr.value = String(pub.timeoutMs);
+      }
+    }
+  } catch {
+    /* 忽略首次读取失败 */
+  }
+});
 
 watch(presetId, (id) => {
   if (id === "custom") return;
@@ -86,12 +117,71 @@ async function onCopyDotEnv(): Promise<void> {
     showToast("error", e instanceof Error ? e.message : String(e));
   }
 }
+
+function parseTimeoutMs(): number | undefined {
+  const s = timeoutMsStr.value.trim();
+  if (!s) return undefined;
+  const n = Number(s);
+  if (!Number.isFinite(n) || n < 1000) {
+    throw new Error(String(t("settings.cloudLlmQuick.errTimeout")));
+  }
+  return Math.min(600_000, Math.floor(n));
+}
+
+async function onSaveToHost(): Promise<void> {
+  const b = baseTrimmed.value;
+  if (!b) {
+    showToast("error", String(t("settings.cloudLlmQuick.errNeedUrl")));
+    return;
+  }
+  saving.value = true;
+  try {
+    const timeoutMs = parseTimeoutMs();
+    await setHostCloudLlm({
+      baseUrl: b,
+      apiKey: apiKey.value.trim(),
+      model: modelTrimmed.value ? modelTrimmed.value : null,
+      timeoutMs: timeoutMs ?? null,
+    });
+    apiKey.value = "";
+    hasSavedKey.value = true;
+    showToast("success", String(t("settings.cloudLlmQuick.toastSavedHost")));
+  } catch (e) {
+    showToast("error", e instanceof Error ? e.message : String(e));
+  } finally {
+    saving.value = false;
+  }
+}
+
+async function onClearHost(): Promise<void> {
+  saving.value = true;
+  try {
+    await setHostCloudLlm({
+      baseUrl: "",
+      apiKey: "",
+      model: null,
+      timeoutMs: null,
+    });
+    presetId.value = "openai";
+    baseUrl.value = CLOUD_LLM_PRESET_DEFAULTS.openai.baseUrl;
+    model.value = CLOUD_LLM_PRESET_DEFAULTS.openai.model;
+    apiKey.value = "";
+    timeoutMsStr.value = "";
+    hasSavedKey.value = false;
+    showToast("success", String(t("settings.cloudLlmQuick.toastClearedHost")));
+  } catch (e) {
+    showToast("error", e instanceof Error ? e.message : String(e));
+  } finally {
+    saving.value = false;
+  }
+}
 </script>
 
 <template>
   <div class="clqs">
     <div class="clqs-h">{{ t("settings.cloudLlmQuick.title") }}</div>
     <p class="clqs-muted">{{ t("settings.cloudLlmQuick.lead") }}</p>
+    <p class="clqs-muted clqs-priority">{{ t("settings.cloudLlmQuick.priorityHint") }}</p>
 
     <label class="clqs-label">{{ t("settings.cloudLlmQuick.preset") }}</label>
     <select v-model="presetId" class="clqs-select">
@@ -103,19 +193,49 @@ async function onCopyDotEnv(): Promise<void> {
     <label class="clqs-label">{{ t("settings.cloudLlmQuick.baseUrl") }}</label>
     <input v-model="baseUrl" type="url" autocomplete="off" class="clqs-input" spellcheck="false" />
 
-    <label class="clqs-label">{{ t("settings.cloudLlmQuick.apiKey") }}</label>
-    <input v-model="apiKey" type="password" autocomplete="off" class="clqs-input" />
-
     <label class="clqs-label">{{ t("settings.cloudLlmQuick.model") }}</label>
     <input v-model="model" type="text" autocomplete="off" class="clqs-input" spellcheck="false" />
 
-    <p class="clqs-muted clqs-warn">{{ t("settings.cloudLlmQuick.warnNoPersist") }}</p>
+    <label class="clqs-label">{{ t("settings.cloudLlmQuick.timeoutMs") }}</label>
+    <input
+      v-model="timeoutMsStr"
+      type="text"
+      inputmode="numeric"
+      autocomplete="off"
+      class="clqs-input"
+      :placeholder="String(t('settings.cloudLlmQuick.timeoutPlaceholder'))"
+    />
+
+    <label class="clqs-label">{{ t("settings.cloudLlmQuick.apiKey") }}</label>
+    <input
+      v-model="apiKey"
+      type="password"
+      autocomplete="off"
+      class="clqs-input"
+      :placeholder="
+        hasSavedKey ? String(t('settings.cloudLlmQuick.apiKeyPlaceholderKeep')) : ''
+      "
+    />
+    <p class="clqs-muted clqs-key-hint">{{ t("settings.cloudLlmQuick.apiKeyHint") }}</p>
+
+    <p class="clqs-muted clqs-warn">{{ t("settings.cloudLlmQuick.warnPersist") }}</p>
 
     <div class="clqs-actions">
-      <button type="button" class="clqs-btn clqs-btn--primary" @click="onCopyPowerShell">
+      <button
+        type="button"
+        class="clqs-btn clqs-btn--primary"
+        :disabled="saving"
+        @click="void onSaveToHost()"
+      >
+        {{ t("settings.cloudLlmQuick.saveHost") }}
+      </button>
+      <button type="button" class="clqs-btn" :disabled="saving" @click="void onClearHost()">
+        {{ t("settings.cloudLlmQuick.clearHost") }}
+      </button>
+      <button type="button" class="clqs-btn" :disabled="saving" @click="onCopyPowerShell">
         {{ t("settings.cloudLlmQuick.copyPs") }}
       </button>
-      <button type="button" class="clqs-btn" @click="onCopyDotEnv">
+      <button type="button" class="clqs-btn" :disabled="saving" @click="onCopyDotEnv">
         {{ t("settings.cloudLlmQuick.copyEnv") }}
       </button>
     </div>
@@ -143,6 +263,13 @@ async function onCopyDotEnv(): Promise<void> {
   font-size: 12px;
   line-height: 1.45;
   color: var(--text-secondary);
+}
+.clqs-priority {
+  margin-top: 2px;
+}
+.clqs-key-hint {
+  margin: 0;
+  font-size: 11px;
 }
 .clqs-warn {
   margin-top: 4px;
@@ -183,7 +310,11 @@ async function onCopyDotEnv(): Promise<void> {
   border-color: color-mix(in srgb, var(--accent, #3b82f6) 55%, var(--border-light));
   background: color-mix(in srgb, var(--accent, #3b82f6) 18%, var(--bg-primary));
 }
-.clqs-btn:hover {
+.clqs-btn:hover:not(:disabled) {
   filter: brightness(1.04);
+}
+.clqs-btn:disabled {
+  opacity: 0.55;
+  cursor: not-allowed;
 }
 </style>

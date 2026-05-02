@@ -119,7 +119,7 @@ pub async fn load_role_impl(
         .count_events(role_id)
         .await
         .map_err(|e| e.to_frontend_error())?;
-    let effective_ollama_model = role.resolve_ollama_model(state.ollama_model.as_str());
+    let effective_ollama_model = role.resolve_ollama_model(state.global_chat_model().as_str());
     let relation_state =
         resolve_relation_state_for_ui(state, role_id, rt.current_user_relation.as_str()).await?;
     let remote_life_enabled = state
@@ -267,7 +267,7 @@ pub async fn get_role_info_impl(
         rt.current_user_relation.as_str(),
     )
     .await?;
-    let effective_ollama_model = role.resolve_ollama_model(state.ollama_model.as_str());
+    let effective_ollama_model = role.resolve_ollama_model(state.global_chat_model().as_str());
     let relation_state =
         resolve_relation_state_for_ui(state, role_id, rt.current_user_relation.as_str()).await?;
     let remote_life_enabled = state

@@ -62,7 +62,7 @@ pub(crate) async fn process_co_present(
     let user_emotion_prompt =
         crate::domain::emotion_analyzer::EmotionAnalyzer::format_for_prompt(&emotion_result);
 
-    let ollama_model = role.resolve_ollama_model(state.ollama_model.as_str());
+    let ollama_model = role.resolve_ollama_model(state.global_chat_model().as_str());
     let (recent_turns, recent_turns_for_event, recent_events_for_event) =
         load_recent_context(state, srid).await?;
 

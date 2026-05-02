@@ -2584,6 +2584,39 @@ export interface PluginBridgeGetConversationListResult {
   items: PluginBridgeConversationListItem[];
 }
 
+/** 设置页 / 云端：不含密钥的公开字段（`get_host_cloud_llm_public`）。 */
+export interface HostCloudLlmPublicDto {
+  baseUrl: string;
+  model?: string | null;
+  timeoutMs?: number | null;
+  hasApiKey: boolean;
+}
+
+/** 保存应用内云端 OpenAI 兼容配置（`set_host_cloud_llm`）。 */
+export interface HostCloudLlmSaveDto {
+  baseUrl: string;
+  apiKey: string;
+  model?: string | null;
+  timeoutMs?: number | null;
+}
+
+export async function getHostCloudLlmPublic(): Promise<HostCloudLlmPublicDto> {
+  return invokeWithFriendlyError<HostCloudLlmPublicDto>("get_host_cloud_llm_public", {});
+}
+
+export async function setHostCloudLlm(dto: HostCloudLlmSaveDto): Promise<void> {
+  return invokeWithFriendlyError<void>("set_host_cloud_llm", { dto });
+}
+
+/** 全局对话模型 id（Ollama 与云端路径共用）。 */
+export async function getHostChatModel(): Promise<string> {
+  return invokeWithFriendlyError<string>("get_host_chat_model", {});
+}
+
+export async function setHostChatModel(model: string): Promise<void> {
+  return invokeWithFriendlyError<void>("set_host_chat_model", { model });
+}
+
 /** 目录插件页 `OclivePluginBridge.invoke` 对应的后端入口（一般无需在主 UI 调用）。 */
 export async function pluginBridgeInvoke(req: {
   pluginId: string;

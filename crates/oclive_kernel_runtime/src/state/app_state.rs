@@ -13,6 +13,9 @@ use crate::domain::prompt_assembler::PromptAssembler;
 use crate::domain::repository::{ExpertModelsRepository, FavorabilityRepository, MemoryRepository};
 use crate::domain::user_emotion_analyzer::UserEmotionAnalyzer;
 use crate::error::Result;
+use crate::infrastructure::cloud_llm::{
+    cloud_config_from_persist_json, CloudLlmConfig, HOST_CHAT_MODEL_KEY, HOST_CLOUD_LLM_JSON_KEY,
+};
 use crate::infrastructure::db::DbManager;
 use crate::infrastructure::directory_plugins::DirectoryPluginRuntime;
 use crate::infrastructure::llm::ollama_llm;
@@ -23,8 +26,9 @@ use crate::infrastructure::repositories_runtime::{
 };
 use crate::infrastructure::storage::RoleStorage;
 use crate::models::{
-    LlmBackend, PersonalitySource, PersonalityVector, PluginBackendSource, PluginBackends,
-    PluginBackendsOverride, PluginBackendsSourceMap, PromptStyleOverride, Role,
+    HostCloudLlmPublicDto, HostCloudLlmSaveDto, LlmBackend, PersonalitySource, PersonalityVector,
+    PluginBackendSource, PluginBackends, PluginBackendsOverride, PluginBackendsSourceMap,
+    PromptStyleOverride, Role,
 };
 use crate::state::resolve_roles_dir;
 use parking_lot::{Mutex, RwLock};
@@ -222,7 +226,8 @@ pub struct KernelAppState {
     pub personality_cache: Arc<RwLock<HashMap<String, PersonalityVector>>>,
     pub storage: RoleStorage,
     policy_runtime: Arc<RwLock<PolicyRuntime>>,
-    pub ollama_model: String,
+    pub chat_model: Arc<RwLock<String>>,
+    pub cloud_llm_user: Arc<RwLock<Option<CloudLlmConfig>>>,
     pub plugins: PluginHost,
     pub directory_plugins: Arc<DirectoryPluginRuntime>,
     session_plugin_overrides: Arc<RwLock<HashMap<String, PluginBackendsOverride>>>,
@@ -311,8 +316,19 @@ impl KernelAppState {
         );
         let llm = ollama_llm(ollama);
 
-        let ollama_model =
-            std::env::var("OLLAMA_MODEL").unwrap_or_else(|_| "qwen2.5:7b".to_string());
+        let cloud_cfg_initial = db_manager
+            .get_app_setting(HOST_CLOUD_LLM_JSON_KEY)
+            .await?
+            .as_deref()
+            .and_then(cloud_config_from_persist_json);
+        let cloud_llm_user = Arc::new(RwLock::new(cloud_cfg_initial));
+
+        let chat_model_init = db_manager
+            .get_app_setting(HOST_CHAT_MODEL_KEY)
+            .await?
+            .filter(|s| !s.trim().is_empty())
+            .unwrap_or_else(|| std::env::var("OLLAMA_MODEL").unwrap_or_else(|_| "qwen2.5:7b".to_string()));
+        let chat_model = Arc::new(RwLock::new(chat_model_init));
         let registry = load_policy_registry();
         let runtime = Self::build_policy_sets_from_registry(registry);
 
@@ -324,6 +340,7 @@ impl KernelAppState {
             llm.clone(),
             Some(directory_plugins.clone()),
             app_data_dir.as_ref().to_path_buf(),
+            cloud_llm_user.clone(),
         );
         Self::bootstrap_local_plugin_providers(&plugins, storage.roles_dir());
 
@@ -338,7 +355,8 @@ impl KernelAppState {
             personality_cache: Arc::new(RwLock::new(HashMap::new())),
             storage,
             policy_runtime: Arc::new(RwLock::new(runtime)),
-            ollama_model,
+            chat_model,
+            cloud_llm_user,
             plugins,
             directory_plugins,
             session_plugin_overrides: Arc::new(RwLock::new(HashMap::new())),
@@ -400,11 +418,14 @@ impl KernelAppState {
             }
         };
 
+        let cloud_llm_user = Arc::new(RwLock::new(None));
+        let chat_model = Arc::new(RwLock::new("test-model".to_string()));
         let plugins = PluginHost::new(
             db_manager.clone(),
             llm.clone(),
             Some(directory_plugins.clone()),
             app_data_dir.clone(),
+            cloud_llm_user.clone(),
         );
         Self::bootstrap_local_plugin_providers(&plugins, storage.roles_dir());
 
@@ -419,7 +440,8 @@ impl KernelAppState {
             personality_cache: Arc::new(RwLock::new(HashMap::new())),
             storage,
             policy_runtime: Arc::new(RwLock::new(runtime)),
-            ollama_model: "test-model".to_string(),
+            chat_model,
+            cloud_llm_user,
             plugins,
             directory_plugins,
             session_plugin_overrides: Arc::new(RwLock::new(HashMap::new())),
@@ -729,6 +751,91 @@ impl KernelAppState {
             return Ok(Some(parsed));
         }
         Ok(None)
+    }
+
+    pub fn global_chat_model(&self) -> String {
+        self.chat_model.read().clone()
+    }
+
+    pub async fn set_global_chat_model(&self, model: String) -> Result<()> {
+        let m = model.trim().to_string();
+        if m.is_empty() {
+            return Err(crate::error::AppError::InvalidParameter(
+                "chat model empty".to_string(),
+            ));
+        }
+        self.db_manager
+            .upsert_app_setting(HOST_CHAT_MODEL_KEY, &m)
+            .await?;
+        *self.chat_model.write() = m;
+        Ok(())
+    }
+
+    pub async fn get_host_cloud_llm_public(&self) -> Result<HostCloudLlmPublicDto> {
+        let raw = self
+            .db_manager
+            .get_app_setting(HOST_CLOUD_LLM_JSON_KEY)
+            .await?;
+        let Some(s) = raw.filter(|t| !t.trim().is_empty()) else {
+            return Ok(HostCloudLlmPublicDto {
+                base_url: String::new(),
+                model: None,
+                timeout_ms: None,
+                has_api_key: false,
+            });
+        };
+        let Some(cfg) = cloud_config_from_persist_json(&s) else {
+            return Ok(HostCloudLlmPublicDto {
+                base_url: String::new(),
+                model: None,
+                timeout_ms: None,
+                has_api_key: false,
+            });
+        };
+        Ok(HostCloudLlmPublicDto {
+            base_url: cfg.base_url,
+            model: cfg.default_model.clone(),
+            timeout_ms: Some(cfg.timeout.as_millis() as u64),
+            has_api_key: !cfg.api_key.is_empty(),
+        })
+    }
+
+    pub async fn set_host_cloud_llm(&self, dto: &HostCloudLlmSaveDto) -> Result<()> {
+        let mut save = dto.clone();
+        if save.base_url.trim().is_empty() {
+            self.db_manager
+                .upsert_app_setting(HOST_CLOUD_LLM_JSON_KEY, "{}")
+                .await?;
+            *self.cloud_llm_user.write() = None;
+            return Ok(());
+        }
+        if save.api_key.trim().is_empty() {
+            if let Some(raw) = self
+                .db_manager
+                .get_app_setting(HOST_CLOUD_LLM_JSON_KEY)
+                .await?
+            {
+                if let Some(prev) = cloud_config_from_persist_json(&raw) {
+                    if !prev.api_key.is_empty() {
+                        save.api_key = prev.api_key;
+                    }
+                }
+            }
+        }
+        if save.api_key.trim().is_empty() {
+            return Err(crate::error::AppError::InvalidParameter(
+                "cloud llm: api key required (leave blank to keep saved key)".to_string(),
+            ));
+        }
+        let json = serde_json::to_string(&save).map_err(|e| {
+            crate::error::AppError::InvalidParameter(format!("cloud llm json: {}", e))
+        })?;
+        self.db_manager
+            .upsert_app_setting(HOST_CLOUD_LLM_JSON_KEY, &json)
+            .await?;
+        let parsed = cloud_config_from_persist_json(&json);
+        *self.cloud_llm_user.write() = parsed;
+        Ok(())
     }
 }
 

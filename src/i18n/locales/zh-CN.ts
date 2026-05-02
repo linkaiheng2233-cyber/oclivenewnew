@@ -104,6 +104,15 @@ export const zhCN = {
       send: "发送",
     },
   },
+  chatModelBar: {
+    aria: "全局对话模型",
+    label: "模型",
+    placeholder: "例如 qwen2.5:7b 或 gpt-4o-mini",
+    hint: "与 Ollama 模型名或云端默认模型 id 一致；本地 Ollama 在线时会列出建议。",
+    gear: "云端",
+    openCloudSettings: "打开设置中的云端 LLM 与密钥",
+    errEmpty: "模型名不能为空。",
+  },
   app: {
     startup: {
       loadingRoleAndPlugins: "正在加载角色与插件…",
@@ -277,8 +286,8 @@ export const zhCN = {
     cloudLlmTrust: {
       sectionTitle: "云端对话模型（OpenAI 兼容）",
       sectionLead:
-        "与「纯聊 / 沉浸」切换无关：属宿主全局入网能力。启用后向公网发起 HTTPS。当前版本请用环境变量配置（见下）；应用内表单将随后续版本接入。",
-      envTitle: "环境变量（需重启应用生效）",
+        "与「纯聊 / 沉浸」切换无关：属宿主全局入网能力。启用后向公网发起 HTTPS。可在下方保存到本机，或使用环境变量（见下）。",
+      envTitle: "环境变量（与下方「保存到本机」二选一；本机保存优先）",
       envLineBase: "OCLIVE_CLOUD_LLM_BASE_URL — API 根地址，不要带 /v1 后缀",
       envLineKey: "OCLIVE_CLOUD_LLM_API_KEY — 密钥（勿提交到仓库）",
       envLineModel: "OCLIVE_CLOUD_LLM_MODEL — 可选，默认模型 id",
@@ -288,7 +297,7 @@ export const zhCN = {
       toastOpenedBackends: "已打开插件管理。请在「后端模块」中检查 LLM 与权限。",
       caps: {
         net: "【宿主 · 入网】向配置的 Base URL 发起 HTTPS（OpenAI 兼容，例如 …/v1/chat/completions）。",
-        secret: "【凭据】请求携带 API Key；来源为环境变量 OCLIVE_CLOUD_LLM_* 或后续应用内保存。",
+        secret: "【凭据】请求携带 API Key；来源为设置内保存（优先）或环境变量 OCLIVE_CLOUD_LLM_*。",
         perm: "【插件侧 · 授权】远程 LLM 走插件宿主时，需在插件管理中为 system:remote_llm_http 等单独授予 network:*（与常见 IDE 权限分级同类）。",
         local: "【本机对话】Ollama / 本机 GGUF 与上述云端凭据相互独立，可单独使用。",
       },
@@ -297,15 +306,16 @@ export const zhCN = {
         subtitle: "先看清范围再启用：下列为只读说明，不代表已自动授权。",
         trustSummaryTitle: "摘要",
         trustSummaryBody:
-          "云端：HTTPS 出站\n凭据：环境变量 OCLIVE_CLOUD_LLM_*\n授权：network:* 在插件管理中单独授予",
+          "云端：HTTPS 出站\n凭据：可在设置中保存到本机数据库（优先）；否则读取环境变量 OCLIVE_CLOUD_LLM_*\n授权：network:* 在插件管理中单独授予",
         hint: "与沉浸叙事、纯聊界面路径无关。关闭本页后仍可在设置里再次打开说明；改权限请用「打开插件管理 · 后端模块」。",
         allow: "知道了",
       },
     },
     cloudLlmQuick: {
-      title: "快速生成配置（常见服务商）",
+      title: "云端 OpenAI 兼容（常见服务商）",
       lead:
-        "选预设或改地址与模型，一键复制命令；应用仍从环境变量读取，不会把密钥写入本应用数据库。改完请在同一终端会话启动 Oclive，或写入系统/用户环境变量后重启。",
+        "选预设或填写地址与模型后，可直接保存到本机；也可复制 PowerShell / .env 供启动器或终端使用。",
+      priorityHint: "说明：已在设置中保存的配置会优先于环境变量 OCLIVE_CLOUD_LLM_*；清除本机配置后才会回落到环境变量。",
       preset: "服务商预设",
       presets: {
         openai: "OpenAI",
@@ -320,7 +330,17 @@ export const zhCN = {
       baseUrl: "API 根地址（不要带 /v1）",
       apiKey: "API Key",
       model: "默认模型 id（可空）",
-      warnNoPersist: "密钥仅用于生成剪贴板内容；请勿把含密钥的脚本提交到仓库。",
+      timeoutMs: "请求超时（毫秒，可空）",
+      timeoutPlaceholder: "默认 120000，范围 1000–600000",
+      apiKeyHint: "若本机已保存过密钥，留空再点保存表示不修改密钥。",
+      apiKeyPlaceholderKeep: "留空则保留已保存的密钥",
+      warnPersist: "密钥写入本机数据库；请勿共享数据库文件或提交到仓库。复制到剪贴板的内容同理。",
+      saveHost: "保存到本机",
+      clearHost: "清除本机云端配置",
+      toastSavedHost: "已保存云端配置。",
+      toastClearedHost: "已清除本机云端配置。",
+      errNeedUrl: "请填写 API 根地址。",
+      errTimeout: "超时请填写 ≥1000 的数字（毫秒），或留空使用默认。",
       copyPs: "复制 PowerShell 会话变量",
       copyEnv: "复制 .env 片段",
       toastCopiedPs: "已复制 PowerShell。在该窗口执行后启动本应用。",

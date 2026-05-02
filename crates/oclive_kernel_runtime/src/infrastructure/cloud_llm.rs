@@ -6,6 +6,7 @@ use crate::error::{AppError, Result};
 use crate::infrastructure::llm::LlmClient;
 use crate::infrastructure::llm_params;
 use async_trait::async_trait;
+use parking_lot::RwLock;
 use serde::{Deserialize, Serialize};
 use std::time::Duration;
 
@@ -49,6 +50,56 @@ impl CloudLlmConfig {
         })
     }
 }
+
+/// 与 `app_settings.host_cloud_llm_json` 及保存 DTO 一致（camelCase JSON）。
+#[derive(Debug, Deserialize, Serialize)]
+#[serde(rename_all = "camelCase")]
+pub struct HostCloudLlmJson {
+    pub base_url: String,
+    pub api_key: String,
+    #[serde(default)]
+    pub model: Option<String>,
+    #[serde(default)]
+    pub timeout_ms: Option<u64>,
+}
+
+pub fn cloud_config_from_persist_json(s: &str) -> Option<CloudLlmConfig> {
+    let j: HostCloudLlmJson = serde_json::from_str(s.trim()).ok()?;
+    let base_url = j.base_url.trim().trim_end_matches('/').to_string();
+    if base_url.is_empty() {
+        return None;
+    }
+    let api_key = j.api_key.trim().to_string();
+    if api_key.is_empty() {
+        return None;
+    }
+    let timeout_ms = j.timeout_ms.unwrap_or(120_000).clamp(1_000, 600_000);
+    let default_model = j
+        .model
+        .map(|m| m.trim().to_string())
+        .filter(|m| !m.is_empty());
+    Some(CloudLlmConfig {
+        base_url,
+        api_key,
+        timeout: Duration::from_millis(timeout_ms),
+        default_model,
+    })
+}
+
+/// 应用内覆盖优先于环境变量（与 [`CloudLlmConfig::from_env_openai_compat`] 合并）。
+pub fn effective_cloud_llm_config(store: &RwLock<Option<CloudLlmConfig>>) -> Option<CloudLlmConfig> {
+    let g = store.read();
+    if let Some(c) = g.as_ref() {
+        if !c.base_url.trim().is_empty() && !c.api_key.trim().is_empty() {
+            return Some(c.clone());
+        }
+    }
+    drop(g);
+    CloudLlmConfig::from_env_openai_compat()
+}
+
+pub const HOST_CLOUD_LLM_JSON_KEY: &str = "host_cloud_llm_json";
+pub const HOST_CHAT_MODEL_KEY: &str = "host_chat_model";
 
 #[derive(Debug, Clone)]
 pub struct OpenAiCompatLlmClient {

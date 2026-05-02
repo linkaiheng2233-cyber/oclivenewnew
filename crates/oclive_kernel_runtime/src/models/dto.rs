@@ -12,7 +12,29 @@ use crate::models::{ExpertConfigSource, ExpertGraph, PromptStyleOverride};
 use serde::{Deserialize, Serialize};
 
 pub const API_VERSION: u32 = 1;
-pub const SCHEMA_VERSION: u32 = 12;
+pub const SCHEMA_VERSION: u32 = 13;
+
+/// 设置页读取：云端 OpenAI 兼容配置（不含密钥明文）。
+#[derive(Debug, Clone, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct HostCloudLlmPublicDto {
+    pub base_url: String,
+    pub model: Option<String>,
+    pub timeout_ms: Option<u64>,
+    pub has_api_key: bool,
+}
+
+/// 应用内保存云端 LLM（写入 `app_settings.host_cloud_llm_json`）。
+#[derive(Debug, Clone, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct HostCloudLlmSaveDto {
+    pub base_url: String,
+    pub api_key: String,
+    #[serde(default)]
+    pub model: Option<String>,
+    #[serde(default)]
+    pub timeout_ms: Option<u64>,
+}
 
 #[derive(Debug, Deserialize)]
 pub struct SendMessageRequest {

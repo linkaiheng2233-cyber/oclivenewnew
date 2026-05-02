@@ -109,6 +109,15 @@ export const enUS = {
       send: "Send",
     },
   },
+  chatModelBar: {
+    aria: "Global chat model",
+    label: "Model",
+    placeholder: "e.g. qwen2.5:7b or gpt-4o-mini",
+    hint: "Same id as your Ollama model or cloud default model; suggestions appear when local Ollama is reachable.",
+    gear: "Cloud",
+    openCloudSettings: "Open Settings → cloud LLM & keys",
+    errEmpty: "Model id cannot be empty.",
+  },
   app: {
     startup: {
       loadingRoleAndPlugins: "Loading roles and plugins…",
@@ -281,8 +290,8 @@ export const enUS = {
     cloudLlmTrust: {
       sectionTitle: "Cloud chat model (OpenAI-compatible)",
       sectionLead:
-        "Independent of chat-only vs immersive UI: this is host-wide networking. When enabled, the app makes HTTPS calls. In this version use environment variables (below); in-app forms arrive later.",
-      envTitle: "Environment variables (restart the app)",
+        "Independent of chat-only vs immersive UI: this is host-wide networking. When enabled, the app makes HTTPS calls. Save below to this device, or use environment variables.",
+      envTitle: "Environment variables (alternative to “Save to device”; in-app save wins)",
       envLineBase: "OCLIVE_CLOUD_LLM_BASE_URL — API root URL without a /v1 suffix",
       envLineKey: "OCLIVE_CLOUD_LLM_API_KEY — secret (never commit to a repo)",
       envLineModel: "OCLIVE_CLOUD_LLM_MODEL — optional default model id",
@@ -292,7 +301,7 @@ export const enUS = {
       toastOpenedBackends: "Plugin Manager opened. Check LLM backends and permissions there.",
       caps: {
         net: "[Host · network] HTTPS to your configured Base URL (OpenAI-compatible, e.g. …/v1/chat/completions).",
-        secret: "[Secrets] API key on requests; from OCLIVE_CLOUD_LLM_* env vars or future in-app storage.",
+        secret: "[Secrets] API key on requests; from Settings (preferred) or OCLIVE_CLOUD_LLM_* env vars.",
         perm: "[Plugins · grants] Remote LLM via the plugin host may require granting network:* for tokens like system:remote_llm_http (IDE-style permission tiers).",
         local: "[On-device chat] Ollama / local GGUF is separate from those cloud secrets.",
       },
@@ -301,15 +310,17 @@ export const enUS = {
         subtitle: "Read the scope first: the list is informational and does not grant anything by itself.",
         trustSummaryTitle: "Summary",
         trustSummaryBody:
-          "Cloud: HTTPS outbound\nSecrets: OCLIVE_CLOUD_LLM_* env vars\nGrants: network:* is managed in Plugin Manager",
+          "Cloud: HTTPS outbound\nSecrets: can be saved in Settings (preferred), else OCLIVE_CLOUD_LLM_* env vars\nGrants: network:* is managed in Plugin Manager",
         hint: "Unrelated to immersive narrative UI vs chat-only chrome. You can reopen this note from Settings; change grants via “Open Plugin Manager → Backends”.",
         allow: "Got it",
       },
     },
     cloudLlmQuick: {
-      title: "Quick setup (common providers)",
+      title: "OpenAI-compatible cloud (common providers)",
       lead:
-        "Pick a preset, adjust base URL/model, then copy commands. The app still reads OCLIVE_CLOUD_LLM_* from the environment—nothing is persisted into the app database. Launch Oclive from the same terminal session after running PowerShell lines, or set user/system env vars and restart.",
+        "Pick a preset or edit base URL/model, then save to this device—or copy PowerShell / .env for a launcher or terminal.",
+      priorityHint:
+        "Note: values saved in Settings override OCLIVE_CLOUD_LLM_*; clearing the in-app config falls back to env vars.",
       preset: "Provider preset",
       presets: {
         openai: "OpenAI",
@@ -324,7 +335,17 @@ export const enUS = {
       baseUrl: "API base URL (no /v1 suffix)",
       apiKey: "API key",
       model: "Default model id (optional)",
-      warnNoPersist: "Keys are only used to build clipboard text—never commit secrets to a repo.",
+      timeoutMs: "Request timeout (ms, optional)",
+      timeoutPlaceholder: "Default 120000, range 1000–600000",
+      apiKeyHint: "If a key was already saved, leave blank and click Save to keep it unchanged.",
+      apiKeyPlaceholderKeep: "Leave blank to keep the saved key",
+      warnPersist: "Keys are stored in the local app database—do not share the DB file or commit secrets.",
+      saveHost: "Save to device",
+      clearHost: "Clear in-app cloud config",
+      toastSavedHost: "Cloud config saved.",
+      toastClearedHost: "In-app cloud config cleared.",
+      errNeedUrl: "Please enter the API base URL.",
+      errTimeout: "Timeout must be a number ≥1000 (ms), or leave empty for default.",
       copyPs: "Copy PowerShell session env",
       copyEnv: "Copy .env snippet",
       toastCopiedPs: "Copied PowerShell. Run it in that window, then start the app from the same session.",
