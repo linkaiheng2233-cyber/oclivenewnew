@@ -34,6 +34,7 @@
 | 事件写入 `events` 表 | ✅（经 `apply_chat_turn_atomic` 等路径，见 `db.rs`） |
 | 其他 Tauri 命令 | ✅（多命令；真源 **`src-tauri/src/lib.rs`** `generate_handler`） |
 | 前端 `tauri-api` 封装 | ✅（持续演进；与 invoke 名逐项对齐） |
+| 前端首包 / chunk（`App.vue` 懒加载、`manualChunks`、Sentry 延后） | ✅ 基线见 **`FRONTEND_CHUNK_OPTIMIZATION.md`**（`npm run build` 对照 gzip） |
 
 ---
 
