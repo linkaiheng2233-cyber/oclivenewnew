@@ -151,6 +151,10 @@ export interface ExpertModelsEffectiveResponse {
 export interface LocalModelFileDto {
   name: string;
   path: string;
+  /** 本地仓库备注（`models/gguf/.oclive_gguf_repo.json`） */
+  repoNotes?: string;
+  repoSourceUrl?: string;
+  repoTags?: string[];
 }
 
 export interface ExpertWorkflowSummaryDto {
@@ -461,6 +465,22 @@ export async function expertModelsRenameLocalBaseModel(
 ): Promise<LocalModelFileDto> {
   return invokeWithFriendlyError<LocalModelFileDto>("expert_models_rename_local_base_model", {
     req: { path, newFileName },
+  });
+}
+
+export async function expertModelsSetGgufRepoMeta(params: {
+  path: string;
+  notes: string;
+  sourceUrl: string;
+  tags: string[];
+}): Promise<LocalModelFileDto> {
+  return invokeWithFriendlyError<LocalModelFileDto>("expert_models_set_gguf_repo_meta", {
+    req: {
+      path: params.path,
+      notes: params.notes,
+      sourceUrl: params.sourceUrl,
+      tags: params.tags,
+    },
   });
 }
 

@@ -26,6 +26,7 @@ use crate::state::AppState;
 use chrono::Utc;
 use serde::Serialize;
 use serde_json::json;
+use std::collections::HashMap;
 use tauri::State;
 use uuid::Uuid;
 
@@ -451,11 +452,111 @@ fn llama_loras_dir(state: &AppState) -> std::path::PathBuf {
         .join("loras")
 }
 
+/// 本地 GGUF「仓库」元数据：单文件 `models/gguf/.oclive_gguf_repo.json`，按文件名键控，可随目录拷走。
+const GGUF_REPO_FILE: &str = ".oclive_gguf_repo.json";
+const GGUF_REPO_VERSION: u32 = 1;
+const GGUF_NOTES_MAX: usize = 4000;
+const GGUF_URL_MAX: usize = 800;
+const GGUF_TAG_MAX: usize = 48;
+const GGUF_TAGS_MAX: usize = 24;
+
+#[derive(Debug, Clone, Default, serde::Serialize, serde::Deserialize)]
+struct GgufRepoEntry {
+    #[serde(default)]
+    notes: String,
+    #[serde(default)]
+    source_url: String,
+    #[serde(default)]
+    tags: Vec<String>,
+}
+
+#[derive(Debug, Clone, Default, serde::Serialize, serde::Deserialize)]
+struct GgufRepoFile {
+    #[serde(default)]
+    version: u32,
+    #[serde(default)]
+    entries: HashMap<String, GgufRepoEntry>,
+}
+
+fn gguf_repo_disk_path(state: &AppState) -> std::path::PathBuf {
+    llama_models_gguf_dir(state).join(GGUF_REPO_FILE)
+}
+
+fn read_gguf_repo(state: &AppState) -> GgufRepoFile {
+    let p = gguf_repo_disk_path(state);
+    if !p.is_file() {
+        return GgufRepoFile {
+            version: GGUF_REPO_VERSION,
+            entries: HashMap::new(),
+        };
+    }
+    let Ok(bytes) = std::fs::read(&p) else {
+        return GgufRepoFile {
+            version: GGUF_REPO_VERSION,
+            entries: HashMap::new(),
+        };
+    };
+    serde_json::from_slice::<GgufRepoFile>(&bytes).unwrap_or_else(|_| GgufRepoFile {
+        version: GGUF_REPO_VERSION,
+        entries: HashMap::new(),
+    })
+}
+
+fn write_gguf_repo(state: &AppState, mut repo: GgufRepoFile) -> Result<(), String> {
+    repo.version = GGUF_REPO_VERSION;
+    let dir = llama_models_gguf_dir(state);
+    ensure_dir(dir.as_path())?;
+    let dest = gguf_repo_disk_path(state);
+    let tmp = dest.with_extension("json.tmp");
+    let json = serde_json::to_vec_pretty(&repo).map_err(|e| e.to_string())?;
+    std::fs::write(&tmp, json).map_err(|e| e.to_string())?;
+    if dest.exists() {
+        std::fs::remove_file(&dest).map_err(|e| e.to_string())?;
+    }
+    std::fs::rename(&tmp, &dest).map_err(|e| e.to_string())?;
+    Ok(())
+}
+
+fn sanitize_gguf_repo_entry(notes: &str, source_url: &str, tags: &[String]) -> GgufRepoEntry {
+    let notes = notes.chars().take(GGUF_NOTES_MAX).collect::<String>();
+    let source_url = source_url.chars().take(GGUF_URL_MAX).collect::<String>();
+    let mut tags_out: Vec<String> = Vec::new();
+    for t in tags.iter().take(GGUF_TAGS_MAX) {
+        let x = t.trim();
+        if x.is_empty() {
+            continue;
+        }
+        tags_out.push(x.chars().take(GGUF_TAG_MAX).collect());
+    }
+    GgufRepoEntry {
+        notes,
+        source_url,
+        tags: tags_out,
+    }
+}
+
+fn apply_repo_to_base_models(state: &AppState, files: &mut [LocalModelFileDto]) {
+    let repo = read_gguf_repo(state);
+    for f in files.iter_mut() {
+        if let Some(e) = repo.entries.get(&f.name) {
+            f.repo_notes = e.notes.clone();
+            f.repo_source_url = e.source_url.clone();
+            f.repo_tags = e.tags.clone();
+        }
+    }
+}
+
 #[derive(Debug, Clone, Serialize)]
 #[serde(rename_all = "camelCase")]
 pub struct LocalModelFileDto {
     pub name: String,
     pub path: String,
+    #[serde(default)]
+    pub repo_notes: String,
+    #[serde(default)]
+    pub repo_source_url: String,
+    #[serde(default)]
+    pub repo_tags: Vec<String>,
 }
 
 fn list_gguf_files(dir: &std::path::Path) -> Vec<LocalModelFileDto> {
@@ -484,6 +585,9 @@ fn list_gguf_files(dir: &std::path::Path) -> Vec<LocalModelFileDto> {
         out.push(LocalModelFileDto {
             name,
             path: p.to_string_lossy().to_string(),
+            repo_notes: String::new(),
+            repo_source_url: String::new(),
+            repo_tags: vec![],
         });
     }
     out.sort_by(|a, b| {
@@ -498,7 +602,9 @@ fn list_gguf_files(dir: &std::path::Path) -> Vec<LocalModelFileDto> {
 pub fn expert_models_list_local_base_models(
     state: State<'_, AppState>,
 ) -> Result<Vec<LocalModelFileDto>, String> {
-    Ok(list_gguf_files(llama_models_gguf_dir(&state).as_path()))
+    let mut files = list_gguf_files(llama_models_gguf_dir(&state).as_path());
+    apply_repo_to_base_models(&state, &mut files);
+    Ok(files)
 }
 
 #[tauri::command]
@@ -588,13 +694,18 @@ fn import_gguf_into_dir(
         .unwrap_or("model.gguf");
     let dest = unique_dest_path(dir, file_name);
     std::fs::copy(&src, &dest).map_err(|e| e.to_string())?;
+    let name = dest
+        .file_name()
+        .and_then(|s| s.to_str())
+        .unwrap_or("")
+        .to_string();
+    let path = dest.to_string_lossy().to_string();
     Ok(LocalModelFileDto {
-        name: dest
-            .file_name()
-            .and_then(|s| s.to_str())
-            .unwrap_or("")
-            .to_string(),
-        path: dest.to_string_lossy().to_string(),
+        name,
+        path,
+        repo_notes: String::new(),
+        repo_source_url: String::new(),
+        repo_tags: vec![],
     })
 }
 
@@ -604,7 +715,10 @@ pub fn expert_models_import_base_gguf(
     state: State<'_, AppState>,
 ) -> Result<LocalModelFileDto, String> {
     let dir = llama_models_gguf_dir(&state);
-    import_gguf_into_dir(dir.as_path(), req.source_path.as_str())
+    let dto = import_gguf_into_dir(dir.as_path(), req.source_path.as_str())?;
+    let mut one = vec![dto];
+    apply_repo_to_base_models(&state, &mut one);
+    Ok(one.pop().expect("one row"))
 }
 
 #[tauri::command]
@@ -694,7 +808,18 @@ pub fn expert_models_delete_local_base_model(
     state: State<'_, AppState>,
 ) -> Result<(), String> {
     let p = resolve_existing_gguf_under_models_gguf_dir(&state, req.path.as_str())?;
-    std::fs::remove_file(&p).map_err(|e| e.to_string())
+    let fname = p
+        .file_name()
+        .and_then(|x| x.to_str())
+        .unwrap_or("")
+        .to_string();
+    std::fs::remove_file(&p).map_err(|e| e.to_string())?;
+    if !fname.is_empty() {
+        let mut repo = read_gguf_repo(&state);
+        repo.entries.remove(&fname);
+        let _ = write_gguf_repo(&state, repo);
+    }
+    Ok(())
 }
 
 #[tauri::command]
@@ -752,16 +877,83 @@ pub fn expert_models_rename_local_base_model(
             .to_string(),
         );
     }
+    let old_name = src
+        .file_name()
+        .and_then(|x| x.to_str())
+        .unwrap_or("")
+        .to_string();
     std::fs::rename(&src, &dest).map_err(|e| e.to_string())?;
     let dest = dest.canonicalize().map_err(|e| e.to_string())?;
-    Ok(LocalModelFileDto {
-        name: dest
-            .file_name()
-            .and_then(|x| x.to_str())
-            .unwrap_or("")
-            .to_string(),
+    let new_name = dest
+        .file_name()
+        .and_then(|x| x.to_str())
+        .unwrap_or("")
+        .to_string();
+    if !old_name.is_empty() && old_name != new_name {
+        let mut repo = read_gguf_repo(&state);
+        if let Some(ent) = repo.entries.remove(&old_name) {
+            repo.entries.insert(new_name.clone(), ent);
+            let _ = write_gguf_repo(&state, repo);
+        }
+    }
+    let dto = LocalModelFileDto {
+        name: new_name,
         path: dest.to_string_lossy().to_string(),
-    })
+        repo_notes: String::new(),
+        repo_source_url: String::new(),
+        repo_tags: vec![],
+    };
+    let mut one = vec![dto];
+    apply_repo_to_base_models(&state, &mut one);
+    Ok(one.pop().expect("one row"))
+}
+
+#[derive(Debug, Clone, serde::Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct ExpertModelsSetGgufRepoMetaRequest {
+    pub path: String,
+    pub notes: String,
+    pub source_url: String,
+    pub tags: Vec<String>,
+}
+
+#[tauri::command]
+pub fn expert_models_set_gguf_repo_meta(
+    req: ExpertModelsSetGgufRepoMetaRequest,
+    state: State<'_, AppState>,
+) -> Result<LocalModelFileDto, String> {
+    let p = resolve_existing_gguf_under_models_gguf_dir(&state, req.path.as_str())?;
+    let name = p
+        .file_name()
+        .and_then(|x| x.to_str())
+        .unwrap_or("")
+        .to_string();
+    if name.is_empty() {
+        return Err(
+            ApiError::InvalidParameter {
+                message: "invalid gguf path".into(),
+            }
+            .to_string(),
+        );
+    }
+    let entry = sanitize_gguf_repo_entry(&req.notes, &req.source_url, &req.tags);
+    let mut repo = read_gguf_repo(&state);
+    if entry.notes.is_empty() && entry.source_url.is_empty() && entry.tags.is_empty() {
+        repo.entries.remove(&name);
+    } else {
+        repo.entries.insert(name.clone(), entry);
+    }
+    write_gguf_repo(&state, repo)?;
+    let dto = LocalModelFileDto {
+        name,
+        path: p.to_string_lossy().to_string(),
+        repo_notes: String::new(),
+        repo_source_url: String::new(),
+        repo_tags: vec![],
+    };
+    let mut one = vec![dto];
+    apply_repo_to_base_models(&state, &mut one);
+    Ok(one.pop().expect("one row"))
 }
 
 #[tauri::command]

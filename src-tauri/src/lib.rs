@@ -426,6 +426,7 @@ pub fn run() {
             api::expert_models::expert_models_import_lora_gguf,
             api::expert_models::expert_models_delete_local_base_model,
             api::expert_models::expert_models_rename_local_base_model,
+            api::expert_models::expert_models_set_gguf_repo_meta,
             api::ollama_models::ollama_models_health,
             api::ollama_models::ollama_models_list_names,
             api::ollama_models::ollama_models_delete,

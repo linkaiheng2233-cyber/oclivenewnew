@@ -41,6 +41,7 @@ pub use expert_models::{
     expert_models_get_effective, expert_models_get_run_detail, expert_models_import_base_gguf,
     expert_models_import_lora_gguf, expert_models_list_local_base_models,
     expert_models_list_local_loras, expert_models_list_runs, expert_models_rename_local_base_model,
+    expert_models_set_gguf_repo_meta,
     expert_models_rollback_last_run, expert_models_rollback_to_run, expert_models_set_role_default,
     expert_models_set_run_pinned, expert_models_set_session_override, expert_workflows_delete,
     expert_workflows_get, expert_workflows_list, expert_workflows_save,

@@ -13,6 +13,7 @@ import {
   expertModelsImportBaseGguf,
   expertModelsListLocalBaseModels,
   expertModelsRenameLocalBaseModel,
+  expertModelsSetGgufRepoMeta,
   expertModelsSetSessionOverride,
   ollamaModelsDelete,
   ollamaModelsHealth,
@@ -41,6 +42,10 @@ const ollamaNames = ref<string[]>([]);
 const ollamaBusy = ref(false);
 const ollamaDeleteName = ref("");
 const renameDraft = ref<Record<string, string>>({});
+const repoNotesByPath = ref<Record<string, string>>({});
+const repoUrlByPath = ref<Record<string, string>>({});
+const repoTagsByPath = ref<Record<string, string>>({});
+const repoSavePath = ref<string | null>(null);
 
 const sortedRows = computed(() =>
   [...rows.value].sort((a, b) => a.name.localeCompare(b.name, undefined, { sensitivity: "base" })),
@@ -58,6 +63,30 @@ function setRenameDraft(row: LocalModelFileDto, v: string): void {
   renameDraft.value = { ...renameDraft.value, [row.path]: v };
 }
 
+function syncRepoDraftsFromRows(list: LocalModelFileDto[]): void {
+  const n: Record<string, string> = {};
+  const u: Record<string, string> = {};
+  const tg: Record<string, string> = {};
+  for (const r of list) {
+    n[r.path] = r.repoNotes ?? "";
+    u[r.path] = r.repoSourceUrl ?? "";
+    tg[r.path] = (r.repoTags ?? []).join(", ");
+  }
+  repoNotesByPath.value = n;
+  repoUrlByPath.value = u;
+  repoTagsByPath.value = tg;
+}
+
+function setRepoNotes(path: string, v: string): void {
+  repoNotesByPath.value = { ...repoNotesByPath.value, [path]: v };
+}
+function setRepoUrl(path: string, v: string): void {
+  repoUrlByPath.value = { ...repoUrlByPath.value, [path]: v };
+}
+function setRepoTags(path: string, v: string): void {
+  repoTagsByPath.value = { ...repoTagsByPath.value, [path]: v };
+}
+
 function graphBaseOnly(ggufPath: string): ExpertGraph {
   return {
     version: 1,
@@ -70,6 +99,7 @@ async function refresh(): Promise<void> {
   loading.value = true;
   try {
     rows.value = await expertModelsListLocalBaseModels();
+    syncRepoDraftsFromRows(rows.value);
   } catch (e) {
     showToast("error", e instanceof Error ? e.message : String(e));
   } finally {
@@ -124,6 +154,26 @@ async function onRename(row: LocalModelFileDto): Promise<void> {
     showToast("error", e instanceof Error ? e.message : String(e));
   } finally {
     loading.value = false;
+  }
+}
+
+async function onSaveRepo(row: LocalModelFileDto): Promise<void> {
+  repoSavePath.value = row.path;
+  try {
+    const notes = (repoNotesByPath.value[row.path] ?? "").trim();
+    const sourceUrl = (repoUrlByPath.value[row.path] ?? "").trim();
+    const rawTags = repoTagsByPath.value[row.path] ?? "";
+    const tags = rawTags
+      .split(/[,，]/)
+      .map((x) => x.trim())
+      .filter(Boolean);
+    await expertModelsSetGgufRepoMeta({ path: row.path, notes, sourceUrl, tags });
+    showToast("success", String(t("builtinLlamaModels.repo.toastSaved")));
+    await refresh();
+  } catch (e) {
+    showToast("error", e instanceof Error ? e.message : String(e));
+  } finally {
+    repoSavePath.value = null;
   }
 }
 
@@ -239,6 +289,29 @@ onMounted(() => {
       </button>
     </div>
 
+    <div class="blm-card blm-card--soft">
+      <h4 class="blm-card-title">{{ t("builtinLlamaModels.guide.findModelsTitle") }}</h4>
+      <p class="blm-card-desc">{{ t("builtinLlamaModels.guide.findModelsBody") }}</p>
+      <ul class="blm-ext-links">
+        <li>
+          <a
+            class="blm-ext-link"
+            href="https://huggingface.co/models?library=gguf"
+            target="_blank"
+            rel="noopener noreferrer"
+          >{{ t("builtinLlamaModels.guide.linkHf") }}</a>
+        </li>
+        <li>
+          <a
+            class="blm-ext-link"
+            href="https://modelscope.cn/models"
+            target="_blank"
+            rel="noopener noreferrer"
+          >{{ t("builtinLlamaModels.guide.linkMs") }}</a>
+        </li>
+      </ul>
+    </div>
+
     <div class="blm-card">
       <h4 class="blm-card-title">{{ t("builtinLlamaModels.guide.step2Title") }}</h4>
       <p class="blm-card-desc">{{ t("builtinLlamaModels.guide.step2Body") }}</p>
@@ -258,6 +331,51 @@ onMounted(() => {
             />
           </div>
           <p class="blm-path-line" :title="row.path">{{ row.path }}</p>
+          <div v-if="row.repoTags?.length" class="blm-tag-row">
+            <span v-for="tg in row.repoTags" :key="tg" class="blm-chip">{{ tg }}</span>
+          </div>
+          <div class="blm-repo">
+            <p class="blm-repo-title">{{ t("builtinLlamaModels.repo.title") }}</p>
+            <p class="blm-repo-hint">{{ t("builtinLlamaModels.repo.hint") }}</p>
+            <label class="blm-lbl" :for="`blm-notes-${rowIdx}`">{{ t("builtinLlamaModels.repo.notesLabel") }}</label>
+            <textarea
+              :id="`blm-notes-${rowIdx}`"
+              class="blm-textarea"
+              rows="2"
+              :value="repoNotesByPath[row.path] ?? ''"
+              :placeholder="String(t('builtinLlamaModels.repo.notesPlaceholder'))"
+              :disabled="loading || quickBusy || repoSavePath === row.path"
+              @input="setRepoNotes(row.path, ($event.target as HTMLTextAreaElement).value)"
+            />
+            <label class="blm-lbl" :for="`blm-url-${rowIdx}`">{{ t("builtinLlamaModels.repo.urlLabel") }}</label>
+            <input
+              :id="`blm-url-${rowIdx}`"
+              class="blm-input blm-input-wide"
+              type="url"
+              :value="repoUrlByPath[row.path] ?? ''"
+              :placeholder="String(t('builtinLlamaModels.repo.urlPlaceholder'))"
+              :disabled="loading || quickBusy || repoSavePath === row.path"
+              @input="setRepoUrl(row.path, ($event.target as HTMLInputElement).value)"
+            />
+            <label class="blm-lbl" :for="`blm-tags-${rowIdx}`">{{ t("builtinLlamaModels.repo.tagsLabel") }}</label>
+            <input
+              :id="`blm-tags-${rowIdx}`"
+              class="blm-input blm-input-wide"
+              type="text"
+              :value="repoTagsByPath[row.path] ?? ''"
+              :placeholder="String(t('builtinLlamaModels.repo.tagsPlaceholder'))"
+              :disabled="loading || quickBusy || repoSavePath === row.path"
+              @input="setRepoTags(row.path, ($event.target as HTMLInputElement).value)"
+            />
+            <button
+              type="button"
+              class="blm-btn secondary blm-btn-block blm-repo-save"
+              :disabled="loading || quickBusy || repoSavePath === row.path"
+              @click="onSaveRepo(row)"
+            >
+              {{ t("builtinLlamaModels.repo.saveButton") }}
+            </button>
+          </div>
           <div class="blm-model-actions">
             <button
               type="button"
@@ -528,5 +646,72 @@ onMounted(() => {
 .blm-ollama-del .blm-input {
   flex: 1 1 200px;
   min-width: 0;
+}
+.blm-ext-links {
+  margin: 0;
+  padding-left: 18px;
+  font-size: 13px;
+  line-height: 1.65;
+}
+.blm-ext-link {
+  color: var(--text-accent, #60a5fa);
+  text-decoration: underline;
+  text-underline-offset: 2px;
+}
+.blm-ext-link:hover {
+  color: color-mix(in srgb, var(--text-accent, #60a5fa) 88%, #fff 12%);
+}
+.blm-tag-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin: 0 0 10px;
+}
+.blm-chip {
+  font-size: 11px;
+  padding: 2px 8px;
+  border-radius: 999px;
+  border: 1px solid var(--border-subtle, rgba(255, 255, 255, 0.12));
+  color: var(--text-secondary);
+  background: color-mix(in srgb, var(--bg-elevated) 85%, var(--accent) 15%);
+}
+.blm-repo {
+  margin-bottom: 12px;
+  padding: 10px 10px 12px;
+  border-radius: 8px;
+  border: 1px dashed var(--border-subtle, rgba(255, 255, 255, 0.12));
+  background: color-mix(in srgb, var(--bg-primary) 92%, transparent);
+}
+.blm-repo-title {
+  margin: 0 0 4px;
+  font-size: 12px;
+  font-weight: 700;
+  color: var(--text-primary);
+}
+.blm-repo-hint {
+  margin: 0 0 10px;
+  font-size: 11px;
+  line-height: 1.45;
+  color: var(--text-secondary);
+}
+.blm-textarea {
+  width: 100%;
+  box-sizing: border-box;
+  min-height: 52px;
+  margin-bottom: 8px;
+  padding: 8px 10px;
+  border-radius: 6px;
+  border: 1px solid var(--border-subtle, rgba(255, 255, 255, 0.12));
+  background: var(--bg-input, rgba(0, 0, 0, 0.25));
+  color: inherit;
+  font-size: 12px;
+  font-family: inherit;
+  resize: vertical;
+}
+.blm-repo .blm-lbl {
+  margin-top: 4px;
+}
+.blm-repo-save {
+  margin-top: 10px;
 }
 </style>
