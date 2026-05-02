@@ -16,10 +16,8 @@ import { useRoleStore } from "./roleStore";
 import { useUiStore } from "./uiStore";
 import { hostEventBus } from "../lib/hostEventBus";
 
-/** 与进行中发主编排对抗：中止或「改写」时递增，丢弃过期的 `send_message` 回包。 */
+/** 与「结束等待 / 取消生成」联动：丢弃迟到回包，避免覆盖新一轮发送。 */
 let chatSendNonce = 0;
-/** 最近一发用户原文（供「改写重新编辑」回填输入框）。 */
-let pendingSendDraft = "";
 
 export type ChatMessage = {
   id: string;
@@ -209,31 +207,23 @@ export const useChatStore = defineStore(
             ? next.slice(-MAX_MESSAGES_PER_CONVERSATION)
             : next;
       },
-      /** 中止或改写时丢弃过期回包，并结束 loading（可选保留 `pendingSendDraft`）。 */
-      invalidateActiveSend(options?: { keepDraft?: boolean }) {
+      /** 结束异常卡在「生成中」的 UI（例如崩溃后 isLoading 曾被持久化）。不调用后端。 */
+      clearStuckSendingState() {
+        this.isLoading = false;
+      },
+
+      invalidateActiveSend() {
         chatSendNonce++;
         this.isLoading = false;
-        if (!options?.keepDraft) {
-          pendingSendDraft = "";
-        }
       },
 
-      /** 取出并清空最近一发用户草稿（在 `invalidateActiveSend({ keepDraft: true })` 之后调用）。 */
-      consumePendingSendDraft(): string {
-        const s = pendingSendDraft;
-        pendingSendDraft = "";
-        return s;
-      },
-
-      /** 移除当前场景最后一条用户消息（用于取消生成 / 改写）。 */
       removeLastUserBubble(roleId: string, sceneId: string) {
         this.ensureLegacyMigrated(roleId);
         const sid = sceneId || "default";
         const roleMap = (this.messageMap as RoleSceneMessageMap)[roleId];
         const arr = roleMap?.[sid];
         if (!arr?.length) return;
-        const last = arr[arr.length - 1];
-        if (last.role !== "user") return;
+        if (arr[arr.length - 1].role !== "user") return;
         const next = arr.slice(0, -1);
         if (!this.messageMap[roleId]) (this.messageMap as any)[roleId] = {};
         (this.messageMap as any)[roleId][sid] = next;
@@ -261,7 +251,6 @@ export const useChatStore = defineStore(
         const roleStore = useRoleStore();
         const roleId = roleStore.currentRoleId;
         const sid = sceneId || "default";
-        pendingSendDraft = content;
         const myNonce = ++chatSendNonce;
         this.addUserMessage(content, sid);
         this.isLoading = true;
@@ -316,11 +305,12 @@ export const useChatStore = defineStore(
         } finally {
           if (myNonce === chatSendNonce) {
             this.isLoading = false;
-            pendingSendDraft = "";
           }
         }
       },
     },
-    persist: true,
+    persist: {
+      pick: ["messageMap", "sceneHistorySplitIndex"],
+    },
   },
 );

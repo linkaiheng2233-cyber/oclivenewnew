@@ -95,6 +95,7 @@ export const zhCN = {
       currentSessionDivider: "以下为本次会话",
       empty: "暂无消息，开始聊天吧~",
       thinking: "正在想…",
+      endWaiting: "结束等待",
     },
     message: {
       fallbackBadge: "备用短回复",
@@ -134,9 +135,8 @@ export const zhCN = {
     gear: "云端",
     openSettings: "打开设置（云端 LLM 与密钥）",
     errEmpty: "模型名不能为空。",
-    stopGeneration: "停止生成",
-    editPendingSend: "改写重新编辑",
     generatingHint: "生成中…",
+    endWaiting: "结束等待",
   },
   app: {
     startup: {
@@ -257,8 +257,8 @@ export const zhCN = {
       identitySet: "已设置{scope}：{name}",
       pluginInstalledFromUrl: "已通过网页链接安装插件：{id}",
       pluginsAutoRefreshed: "检测到插件变更，已自动刷新",
+      waitCleared: "已结束等待状态",
       chatStopped: "已停止生成",
-      editRedraftReady: "已撤回该句，可在输入框中修改后重新发送",
     },
     sceneTravel: {
       travelingTo: "正在前往「{label}」…",

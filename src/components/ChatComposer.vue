@@ -9,8 +9,7 @@ const props = defineProps<{ loading: boolean }>();
 const emit = defineEmits<{
   send: [payload: { content: string }];
   openSettings: [];
-  "stop-generation": [];
-  "edit-pending-send": [];
+  "clear-stuck-loading": [];
 }>();
 
 const { t } = useI18n();
@@ -63,20 +62,11 @@ onBeforeUnmount(() => {
     </div>
     <p class="composer-hint">{{ t("chatComposer.hint") }}</p>
 
-    <div v-if="loading" class="composer-gen-bar" role="status">
-      <span class="composer-gen-label">{{ t("chatComposer.generatingHint") }}</span>
-      <div class="composer-gen-actions">
-        <button
-          type="button"
-          class="composer-gen-btn composer-gen-btn--danger"
-          @click="emit('stop-generation')"
-        >
-          {{ t("chatComposer.stopGeneration") }}
-        </button>
-        <button type="button" class="composer-gen-btn" @click="emit('edit-pending-send')">
-          {{ t("chatComposer.editPendingSend") }}
-        </button>
-      </div>
+    <div v-if="loading" class="composer-wait-bar" role="status">
+      <span>{{ t("chatComposer.generatingHint") }}</span>
+      <button type="button" class="composer-wait-btn" @click="emit('clear-stuck-loading')">
+        {{ t("chatComposer.endWaiting") }}
+      </button>
     </div>
 
     <div class="composer-body">
@@ -125,7 +115,7 @@ onBeforeUnmount(() => {
   background: color-mix(in srgb, var(--bg-primary) 40%, var(--bg-elevated));
   border-bottom: 1px solid color-mix(in srgb, var(--border-light) 70%, transparent);
 }
-.composer-gen-bar {
+.composer-wait-bar {
   display: flex;
   flex-wrap: wrap;
   align-items: center;
@@ -137,16 +127,7 @@ onBeforeUnmount(() => {
   background: color-mix(in srgb, var(--accent) 8%, var(--bg-primary));
   border-bottom: 1px solid color-mix(in srgb, var(--border-light) 70%, transparent);
 }
-.composer-gen-label {
-  font-weight: 500;
-  color: var(--text-primary);
-}
-.composer-gen-actions {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 8px;
-}
-.composer-gen-btn {
+.composer-wait-btn {
   border-radius: 8px;
   border: 1px solid var(--border-light);
   padding: 4px 10px;
@@ -155,12 +136,8 @@ onBeforeUnmount(() => {
   background: var(--bg-elevated);
   color: var(--text-primary);
 }
-.composer-gen-btn:hover {
+.composer-wait-btn:hover {
   border-color: color-mix(in srgb, var(--accent) 45%, var(--border-light));
-}
-.composer-gen-btn--danger {
-  border-color: color-mix(in srgb, #c62828 35%, var(--border-light));
-  color: color-mix(in srgb, #c62828 92%, var(--text-primary));
 }
 .composer-body {
   display: flex;

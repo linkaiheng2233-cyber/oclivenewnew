@@ -1,4 +1,4 @@
-//! 主对话 LLM 调用与用户「停止生成」协同（`KernelAppState::chat_generation_cancel`）。
+//! 主对话 LLM 与用户「取消生成」协同（`KernelAppState::chat_generation_cancel`）。
 
 use crate::error::{AppError, Result};
 use crate::infrastructure::llm::LlmClient;

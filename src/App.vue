@@ -28,9 +28,9 @@ import {
   installPluginFromGit,
   loadRole,
   OCLIVE_DEFAULT_RELATION_SENTINEL,
-  parseApiErrorCode,
   peekRolePack,
   revealRolePackFolder,
+  parseApiErrorCode,
   setErrorReporter,
   setRemoteLifeEnabled,
   setRoleInteractionMode,
@@ -446,29 +446,21 @@ async function onSend(payload: { content: string }) {
   }
 }
 
-async function onStopChatGeneration() {
-  try {
-    await cancelChatGeneration();
-  } catch (e) {
-    showToast("error", e instanceof Error ? e.message : String(e));
-  }
-}
-
-async function onEditPendingSend() {
-  const rid = roleStore.currentRoleId;
-  const sid = uiStore.sceneId || "default";
+async function onClearStuckSending() {
+  const hadLoading = chatStore.isLoading;
   try {
     await cancelChatGeneration();
   } catch {
-    /* 仍尝试撤回 UI，避免卡在 loading */
+    /* 无活动生成或非 Tauri 环境 */
   }
-  chatStore.invalidateActiveSend({ keepDraft: true });
-  chatStore.removeLastUserBubble(rid, sid);
-  const draft = chatStore.consumePendingSendDraft();
-  if (draft.trim()) {
-    hostEventBus.emit("chat:set_input_draft", { text: draft });
+  chatStore.invalidateActiveSend();
+  if (hadLoading) {
+    chatStore.removeLastUserBubble(
+      roleStore.currentRoleId,
+      uiStore.sceneId || "default",
+    );
   }
-  showToast("info", String(t("app.toasts.editRedraftReady")));
+  showToast("info", String(t("app.toasts.waitCleared")));
 }
 
 async function confirmPostReplyScene(together: boolean) {
@@ -795,6 +787,7 @@ async function runPendingProtocolInstallsFromQueue(): Promise<void> {
 }
 
 onMounted(() => {
+  chatStore.clearStuckSendingState();
   setErrorReporter((err) => {
     showToast("error", err.message);
   });
@@ -1239,6 +1232,7 @@ onBeforeUnmount(() => {
                 :history-split-index="sceneHistorySplitIndex"
                 :loading="chatStore.isLoading"
                 :role-switching="roleSwitching"
+                @clear-stuck-loading="onClearStuckSending"
               />
             </transition>
           </div>
@@ -1261,8 +1255,7 @@ onBeforeUnmount(() => {
               :loading="chatStore.isLoading"
               @send="onSend"
               @open-settings="openSettingsView"
-              @stop-generation="onStopChatGeneration"
-              @edit-pending-send="onEditPendingSend"
+              @clear-stuck-loading="onClearStuckSending"
             />
           </section>
         </div>

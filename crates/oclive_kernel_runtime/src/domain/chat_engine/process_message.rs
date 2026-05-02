@@ -50,7 +50,9 @@ pub async fn process_message(
         srid
     );
 
-    state.chat_generation_cancel.store(false, Ordering::Release);
+    state
+        .chat_generation_cancel
+        .store(false, Ordering::Release);
 
     state.db_manager.ensure_role_runtime(srid).await?;
 
