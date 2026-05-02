@@ -1,7 +1,11 @@
 <script setup lang="ts">
 import { computed, inject, onMounted, ref } from "vue";
 import { useI18n } from "vue-i18n";
-import { cloudLlmTrustModalKey, useCloudLlmTrustModal } from "../composables/useCloudLlmTrustModal";
+import {
+  cloudLlmTrustModalKey,
+  cloudLlmTrustReadmeOpenerKey,
+  useCloudLlmTrustModal,
+} from "../composables/useCloudLlmTrustModal";
 import { open } from "@tauri-apps/api/dialog";
 import { useAppToast } from "../composables/useAppToast";
 import { useExpertModelsStore } from "../stores/expertModelsStore";
@@ -32,6 +36,16 @@ const emit = defineEmits<{
 const { t } = useI18n();
 const { showToast } = useAppToast();
 const cloudTrust = inject(cloudLlmTrustModalKey) ?? useCloudLlmTrustModal();
+const openCloudLlmTrustReadme = inject(cloudLlmTrustReadmeOpenerKey, null);
+
+function onOpenCloudLlmTrustReadme(): void {
+  if (openCloudLlmTrustReadme) {
+    void openCloudLlmTrustReadme();
+    return;
+  }
+  cloudTrust.open();
+}
+
 const roleStore = useRoleStore();
 const pluginStore = usePluginStore();
 const expertStore = useExpertModelsStore();
@@ -284,7 +298,7 @@ onMounted(() => {
     <div class="blm-card blm-card--cloud">
       <h4 class="blm-card-title">{{ t("builtinLlamaModels.cloudTrust.title") }}</h4>
       <p class="blm-card-desc">{{ t("builtinLlamaModels.cloudTrust.hint") }}</p>
-      <button type="button" class="blm-btn secondary blm-btn-inline" @click="cloudTrust.open">
+      <button type="button" class="blm-btn secondary blm-btn-inline" @click="onOpenCloudLlmTrustReadme">
         {{ t("builtinLlamaModels.cloudTrust.reviewCta") }}
       </button>
     </div>

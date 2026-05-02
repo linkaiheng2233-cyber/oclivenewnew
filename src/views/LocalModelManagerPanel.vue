@@ -1,9 +1,16 @@
 <script setup lang="ts">
 import { provide } from "vue";
 import { useI18n } from "vue-i18n";
+import { confirm } from "@tauri-apps/api/dialog";
 import BuiltinLlamaModelManager from "../components/BuiltinLlamaModelManager.vue";
 import TrustConsentModal from "../components/TrustConsentModal.vue";
-import { cloudLlmTrustModalKey, useCloudLlmTrustModal } from "../composables/useCloudLlmTrustModal";
+import {
+  buildCloudLlmTrustPlainText,
+  cloudLlmTrustModalKey,
+  cloudLlmTrustReadmeOpenerKey,
+  useCloudLlmTrustModal,
+} from "../composables/useCloudLlmTrustModal";
+import { isTauriRuntime } from "../utils/directoryShellBootstrap";
 
 defineProps<{
   visible: boolean;
@@ -16,6 +23,24 @@ const emit = defineEmits<{
 const { t } = useI18n();
 const cloudTrust = useCloudLlmTrustModal();
 provide(cloudLlmTrustModalKey, cloudTrust);
+
+/** Tauri 下用系统对话框展示说明，避免本地模型全屏层内嵌 Vue 模态在 WebView2 中点击不生效。 */
+const preferNativeCloudTrustReadme = isTauriRuntime();
+
+async function openCloudLlmTrustReadme(): Promise<void> {
+  if (preferNativeCloudTrustReadme) {
+    await confirm(buildCloudLlmTrustPlainText((k) => String(t(k))), {
+      title: String(t("settings.cloudLlmTrust.modal.title")),
+      type: "info",
+      okLabel: String(t("settings.cloudLlmTrust.modal.allow")),
+      cancelLabel: String(t("common.cancel")),
+    });
+    return;
+  }
+  cloudTrust.open();
+}
+
+provide(cloudLlmTrustReadmeOpenerKey, openCloudLlmTrustReadme);
 
 function onTrustModalVisible(v: boolean): void {
   cloudTrust.visible.value = v;
@@ -41,8 +66,9 @@ function onTrustModalVisible(v: boolean): void {
           </div>
         </div>
       </div>
-      <!-- 嵌套在同一 fixed 层内，避免与外层 dim 两个 body 级 fixed 在 WebView2 下争用命中 -->
+      <!-- 仅浏览器 dev：Tauri 下改由系统 confirm，见 openCloudLlmTrustReadme -->
       <TrustConsentModal
+        v-if="!preferNativeCloudTrustReadme"
         :model-value="cloudTrust.visible"
         :title="cloudTrust.modalTitle"
         :subtitle="cloudTrust.modalSubtitle"
