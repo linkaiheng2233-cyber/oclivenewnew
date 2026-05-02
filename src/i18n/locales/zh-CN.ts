@@ -253,7 +253,8 @@ export const zhCN = {
   },
   localModelManagerPanel: {
     aria: "本地模型管理",
-    title: "本地模型（GGUF）",
+    title: "本地模型",
+    hint: "按①②③从上到下点即可；不懂术语也没关系。",
     close: "关闭",
   },
   settings: {
@@ -1660,9 +1661,28 @@ export const zhCN = {
   },
   builtinLlamaModels: {
     aria: "内置 Llama 模型（GGUF）",
-    title: "内置模型（主路径 · 快速开聊）",
-    subtitle:
-      "与 com.oclive.llama.local 共用应用数据下的 models/gguf。选好权重后点「一键开聊」：授予侧车权限、写入会话专家图并切到 directory 后端，然后关闭本窗口即可回主界面发消息。",
+    title: "本地模型（按按钮操作）",
+    subtitle: "",
+    guide: {
+      lead: "分三块：①把 .gguf 放进本应用；②用绿色大按钮让当前角色用这个模型说话；③只有坚持用 Ollama 时才看最下面。",
+      step1Title: "① 先把模型文件加进来",
+      step1Body:
+        "不用像 Ollama 那样先「创建模型」：只要你电脑里已经有 .gguf 权重文件，点下面大按钮选中它，会自动复制到本应用的 models/gguf。",
+      step1Button: "点我选择电脑里的 .gguf 文件",
+      step2Title: "② 用哪个模型聊天，就点哪个",
+      step2Body:
+        "显示名可以改，改完点「保存显示名」。要让当前角色立刻用这个模型回你，点绿色「用此模型对话」（会询问权限并切到本机 Llama）。",
+      nameLabel: "显示名（好记即可）",
+      useForChat: "用此模型对话",
+      saveName: "保存显示名",
+      removeFile: "从本应用删除此文件",
+      step3Title: "③ 可选：你用的是 Ollama",
+      step3Body:
+        "Ollama 那边需要你自己先 ollama pull 拉好模型，这里不负责下载。下面只做「检测在不在线」和「按名字删除」。一般和上面的 GGUF 二选一即可。",
+      checkOllama: "检测本机 Ollama 在不在线",
+      installedModels: "Ollama 里已有的名字：",
+      deleteLineHint: "要删哪个：把完整名字填下面（例如 llama3.2:latest），再点红钮。",
+    },
     refresh: "刷新列表",
     importGguf: "导入 GGUF…",
     loading: "加载中…",

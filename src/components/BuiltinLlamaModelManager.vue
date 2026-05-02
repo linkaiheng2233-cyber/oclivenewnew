@@ -36,7 +36,6 @@ const expertStore = useExpertModelsStore();
 const rows = ref<LocalModelFileDto[]>([]);
 const loading = ref(false);
 const quickBusy = ref(false);
-const ollamaOpen = ref(false);
 const ollamaOk = ref<boolean | null>(null);
 const ollamaNames = ref<string[]>([]);
 const ollamaBusy = ref(false);
@@ -177,11 +176,6 @@ async function onQuickChat(row: LocalModelFileDto): Promise<void> {
   }
 }
 
-function onOllamaDetailsToggle(ev: Event): void {
-  const el = ev.target as HTMLDetailsElement | null;
-  if (el?.open) void refreshOllama();
-}
-
 async function refreshOllama(): Promise<void> {
   ollamaBusy.value = true;
   ollamaOk.value = null;
@@ -229,79 +223,76 @@ onMounted(() => {
 
 <template>
   <section class="blm-root" :aria-label="String(t('builtinLlamaModels.aria'))">
-    <div class="blm-head">
-      <div>
-        <h3 class="blm-h3">{{ t("builtinLlamaModels.title") }}</h3>
-        <p class="blm-sub">{{ t("builtinLlamaModels.subtitle") }}</p>
-      </div>
-      <div class="blm-actions">
-        <button type="button" class="blm-btn secondary" :disabled="loading" @click="refresh">
-          {{ t("builtinLlamaModels.refresh") }}
-        </button>
-        <button type="button" class="blm-btn" :disabled="loading" @click="onImport">
-          {{ t("builtinLlamaModels.importGguf") }}
-        </button>
-      </div>
+    <div class="blm-top">
+      <h3 class="blm-h3">{{ t("builtinLlamaModels.title") }}</h3>
+      <button type="button" class="blm-btn secondary" :disabled="loading" @click="refresh">
+        {{ t("builtinLlamaModels.refresh") }}
+      </button>
+    </div>
+    <p class="blm-lead">{{ t("builtinLlamaModels.guide.lead") }}</p>
+
+    <div class="blm-card">
+      <h4 class="blm-card-title">{{ t("builtinLlamaModels.guide.step1Title") }}</h4>
+      <p class="blm-card-desc">{{ t("builtinLlamaModels.guide.step1Body") }}</p>
+      <button type="button" class="blm-btn blm-btn-block" :disabled="loading" @click="onImport">
+        {{ t("builtinLlamaModels.guide.step1Button") }}
+      </button>
     </div>
 
-    <div v-if="loading && !rows.length" class="blm-muted">{{ t("builtinLlamaModels.loading") }}</div>
-    <div v-else-if="!sortedRows.length" class="blm-muted">{{ t("builtinLlamaModels.empty") }}</div>
-    <table v-else class="blm-table" :aria-label="String(t('builtinLlamaModels.tableAria'))">
-      <thead>
-        <tr>
-          <th>{{ t("builtinLlamaModels.colName") }}</th>
-          <th>{{ t("builtinLlamaModels.colPath") }}</th>
-          <th class="blm-col-quick">{{ t("builtinLlamaModels.colQuick") }}</th>
-          <th class="blm-col-actions">{{ t("builtinLlamaModels.colActions") }}</th>
-        </tr>
-      </thead>
-      <tbody>
-        <tr v-for="row in sortedRows" :key="row.path">
-          <td>
+    <div class="blm-card">
+      <h4 class="blm-card-title">{{ t("builtinLlamaModels.guide.step2Title") }}</h4>
+      <p class="blm-card-desc">{{ t("builtinLlamaModels.guide.step2Body") }}</p>
+      <div v-if="loading && !rows.length" class="blm-muted">{{ t("builtinLlamaModels.loading") }}</div>
+      <p v-else-if="!sortedRows.length" class="blm-muted">{{ t("builtinLlamaModels.empty") }}</p>
+      <ul v-else class="blm-model-list" :aria-label="String(t('builtinLlamaModels.tableAria'))">
+        <li v-for="(row, rowIdx) in sortedRows" :key="row.path" class="blm-model-card">
+          <div class="blm-field">
+            <label class="blm-lbl" :for="`blm-name-${rowIdx}`">{{ t("builtinLlamaModels.guide.nameLabel") }}</label>
             <input
-              class="blm-input"
+              :id="`blm-name-${rowIdx}`"
+              class="blm-input blm-input-wide"
               type="text"
               :aria-label="String(t('builtinLlamaModels.renameAria', { name: row.name }))"
               :value="renameValue(row)"
               @input="setRenameDraft(row, ($event.target as HTMLInputElement).value)"
             />
-          </td>
-          <td class="blm-path" :title="row.path">{{ row.path }}</td>
-          <td class="blm-quick-cell">
+          </div>
+          <p class="blm-path-line" :title="row.path">{{ row.path }}</p>
+          <div class="blm-model-actions">
             <button
               type="button"
-              class="blm-btn accent sm"
+              class="blm-btn accent blm-btn-block"
               :disabled="loading || quickBusy"
               @click="onQuickChat(row)"
             >
-              {{ t("builtinLlamaModels.quickChat") }}
+              {{ t("builtinLlamaModels.guide.useForChat") }}
             </button>
-          </td>
-          <td class="blm-actions-cell">
-            <button
-              type="button"
-              class="blm-btn secondary sm"
-              :disabled="loading || quickBusy"
-              @click="onRename(row)"
-            >
-              {{ t("builtinLlamaModels.applyRename") }}
-            </button>
-            <button
-              type="button"
-              class="blm-btn danger sm"
-              :disabled="loading || quickBusy"
-              @click="onDelete(row)"
-            >
-              {{ t("builtinLlamaModels.delete") }}
-            </button>
-          </td>
-        </tr>
-      </tbody>
-    </table>
+            <div class="blm-pair">
+              <button
+                type="button"
+                class="blm-btn secondary blm-btn-half"
+                :disabled="loading || quickBusy"
+                @click="onRename(row)"
+              >
+                {{ t("builtinLlamaModels.guide.saveName") }}
+              </button>
+              <button
+                type="button"
+                class="blm-btn danger blm-btn-half"
+                :disabled="loading || quickBusy"
+                @click="onDelete(row)"
+              >
+                {{ t("builtinLlamaModels.guide.removeFile") }}
+              </button>
+            </div>
+          </div>
+        </li>
+      </ul>
+    </div>
 
-    <details class="blm-fallback" @toggle="onOllamaDetailsToggle">
-      <summary>{{ t("builtinLlamaModels.ollamaSummary") }}</summary>
-      <p class="blm-muted">{{ t("builtinLlamaModels.ollamaHint") }}</p>
+    <div class="blm-card blm-card--soft">
+      <h4 class="blm-card-title">{{ t("builtinLlamaModels.guide.step3Title") }}</h4>
+      <p class="blm-card-desc">{{ t("builtinLlamaModels.guide.step3Body") }}</p>
       <div class="blm-ollama-row">
         <span class="blm-tag" :data-ok="ollamaOk === true ? '1' : '0'">
           {{
@@ -314,27 +305,29 @@ onMounted(() => {
                   : t("builtinLlamaModels.ollamaDown")
           }}
         </span>
-        <button type="button" class="blm-btn secondary sm" :disabled="ollamaBusy" @click="refreshOllama">
-          {{ t("builtinLlamaModels.refreshOllama") }}
+        <button type="button" class="blm-btn secondary" :disabled="ollamaBusy" @click="refreshOllama">
+          {{ t("builtinLlamaModels.guide.checkOllama") }}
         </button>
       </div>
+      <p v-if="ollamaNames.length" class="blm-ollama-caption">{{ t("builtinLlamaModels.guide.installedModels") }}</p>
       <ul v-if="ollamaNames.length" class="blm-ollama-list">
         <li v-for="n in ollamaNames" :key="n">{{ n }}</li>
       </ul>
       <div v-else-if="ollamaOk && !ollamaBusy" class="blm-muted">{{ t("builtinLlamaModels.ollamaEmpty") }}</div>
+      <p class="blm-muted blm-ollama-del-hint">{{ t("builtinLlamaModels.guide.deleteLineHint") }}</p>
       <div class="blm-ollama-del">
         <input
           v-model="ollamaDeleteName"
-          class="blm-input"
+          class="blm-input blm-input-wide"
           type="text"
           :placeholder="String(t('builtinLlamaModels.ollamaDeletePlaceholder'))"
           :disabled="ollamaBusy || !ollamaOk"
         />
-        <button type="button" class="blm-btn danger sm" :disabled="ollamaBusy || !ollamaOk" @click="onOllamaDelete">
+        <button type="button" class="blm-btn danger" :disabled="ollamaBusy || !ollamaOk" @click="onOllamaDelete">
           {{ t("builtinLlamaModels.ollamaDelete") }}
         </button>
       </div>
-    </details>
+    </div>
   </section>
 </template>
 
@@ -345,43 +338,53 @@ onMounted(() => {
   padding: 12px 14px;
   background: var(--bg-elevated, rgba(0, 0, 0, 0.2));
 }
-.blm-head {
+.blm-top {
   display: flex;
   flex-wrap: wrap;
-  gap: 10px;
+  align-items: center;
   justify-content: space-between;
-  align-items: flex-start;
-  margin-bottom: 10px;
+  gap: 10px;
+  margin-bottom: 8px;
 }
 .blm-h3 {
-  margin: 0 0 4px;
-  font-size: 15px;
-}
-.blm-sub {
   margin: 0;
-  font-size: 12px;
+  font-size: 15px;
+  font-weight: 700;
+}
+.blm-lead {
+  margin: 0 0 14px;
+  font-size: 13px;
+  line-height: 1.5;
   color: var(--text-secondary);
-  line-height: 1.45;
-  max-width: 820px;
 }
-.blm-actions {
-  display: flex;
-  gap: 8px;
-  flex-wrap: wrap;
+.blm-card {
+  margin-bottom: 14px;
+  padding: 12px 14px;
+  border-radius: 10px;
+  border: 1px solid var(--border-light, rgba(255, 255, 255, 0.1));
+  background: var(--bg-primary, rgba(0, 0, 0, 0.15));
 }
-.blm-actions-cell {
-  display: flex;
-  gap: 6px;
-  flex-wrap: wrap;
-  justify-content: flex-end;
+.blm-card--soft {
+  background: color-mix(in srgb, var(--bg-primary) 88%, var(--text-secondary) 12%);
+  border-style: dashed;
 }
-.blm-quick-cell {
-  white-space: nowrap;
+.blm-card-title {
+  margin: 0 0 6px;
+  font-size: 14px;
+  font-weight: 700;
+  color: var(--text-primary);
+}
+.blm-card-desc {
+  margin: 0 0 12px;
+  font-size: 12px;
+  line-height: 1.55;
+  color: var(--text-secondary);
 }
 .blm-btn {
   border-radius: 8px;
-  padding: 6px 12px;
-  font-size: 12px;
+  padding: 8px 14px;
+  font-size: 13px;
+  font-weight: 600;
   border: 1px solid var(--border-subtle, rgba(255, 255, 255, 0.12));
   background: var(--accent, #3b82f6);
   color: #fff;
@@ -403,76 +406,94 @@ onMounted(() => {
   background: #b91c1c;
   border-color: #7f1d1d;
 }
-.blm-btn.sm {
-  padding: 4px 8px;
-  font-size: 11px;
+.blm-btn-block {
+  display: block;
+  width: 100%;
+  box-sizing: border-box;
+  text-align: center;
+  padding: 11px 14px;
+  font-size: 14px;
 }
 .blm-muted {
   font-size: 12px;
   color: var(--text-secondary);
   margin: 6px 0;
 }
-.blm-table {
-  width: 100%;
-  border-collapse: collapse;
-  font-size: 12px;
+.blm-model-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
 }
-.blm-table th,
-.blm-table td {
-  border-bottom: 1px solid var(--border-subtle, rgba(255, 255, 255, 0.06));
-  padding: 8px 6px;
-  text-align: left;
-  vertical-align: middle;
+.blm-model-card {
+  padding: 12px;
+  border-radius: 8px;
+  border: 1px solid var(--border-subtle, rgba(255, 255, 255, 0.08));
+  background: var(--bg-elevated, rgba(0, 0, 0, 0.2));
 }
-.blm-table th {
-  color: var(--text-secondary);
+.blm-field {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  margin-bottom: 8px;
+}
+.blm-lbl {
+  font-size: 11px;
   font-weight: 600;
-}
-.blm-col-actions {
-  width: 200px;
-  text-align: right;
-}
-.blm-col-quick {
-  width: 120px;
-}
-.blm-path {
-  max-width: 220px;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
   color: var(--text-secondary);
-  font-family: ui-monospace, monospace;
+  letter-spacing: 0.02em;
 }
 .blm-input {
   width: 100%;
-  max-width: 220px;
-  padding: 4px 8px;
+  max-width: 100%;
+  box-sizing: border-box;
+  padding: 8px 10px;
   border-radius: 6px;
   border: 1px solid var(--border-subtle, rgba(255, 255, 255, 0.12));
   background: var(--bg-input, rgba(0, 0, 0, 0.25));
   color: inherit;
-  font-size: 12px;
-}
-.blm-fallback {
-  margin-top: 14px;
-  padding-top: 10px;
-  border-top: 1px dashed var(--border-subtle, rgba(255, 255, 255, 0.1));
-}
-.blm-fallback summary {
-  cursor: pointer;
   font-size: 13px;
-  font-weight: 600;
+}
+.blm-input-wide {
+  max-width: none;
+}
+.blm-path-line {
+  margin: 0 0 10px;
+  font-size: 11px;
+  line-height: 1.4;
   color: var(--text-secondary);
+  font-family: ui-monospace, monospace;
+  word-break: break-all;
+}
+.blm-model-actions {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+.blm-pair {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 8px;
+}
+.blm-btn-half {
+  width: 100%;
+  box-sizing: border-box;
+  text-align: center;
+  padding: 8px 10px;
+  font-size: 12px;
 }
 .blm-ollama-row {
   display: flex;
+  flex-wrap: wrap;
   align-items: center;
   gap: 10px;
-  margin: 8px 0;
+  margin: 8px 0 4px;
 }
 .blm-tag {
   font-size: 11px;
-  padding: 2px 8px;
+  padding: 4px 10px;
   border-radius: 999px;
   background: rgba(148, 163, 184, 0.2);
 }
@@ -480,13 +501,22 @@ onMounted(() => {
   background: rgba(34, 197, 94, 0.2);
   color: #86efac;
 }
+.blm-ollama-caption {
+  margin: 10px 0 4px;
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--text-secondary);
+}
 .blm-ollama-list {
-  margin: 6px 0 8px;
+  margin: 0 0 8px;
   padding-left: 18px;
   font-size: 12px;
   color: var(--text-secondary);
   max-height: 160px;
   overflow: auto;
+}
+.blm-ollama-del-hint {
+  margin-top: 10px;
 }
 .blm-ollama-del {
   display: flex;
@@ -496,6 +526,7 @@ onMounted(() => {
   margin-top: 6px;
 }
 .blm-ollama-del .blm-input {
-  max-width: 320px;
+  flex: 1 1 200px;
+  min-width: 0;
 }
 </style>

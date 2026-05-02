@@ -258,7 +258,8 @@ export const enUS = {
   },
   localModelManagerPanel: {
     aria: "Local model manager",
-    title: "Local models (GGUF)",
+    title: "Local models",
+    hint: "Follow blocks ①②③ from top to bottom; no jargon required.",
     close: "Close",
   },
   settings: {
@@ -1725,9 +1726,28 @@ export const enUS = {
   },
   builtinLlamaModels: {
     aria: "Built-in Llama models (GGUF)",
-    title: "Built-in models (primary · quick start)",
-    subtitle:
-      "Shares app_data/models/gguf with com.oclive.llama.local. Use “Quick chat”: grant sidecar permissions, apply a session-only base graph, switch LLM to directory, then close this window and type in the main chat.",
+    title: "Local models (button-by-button)",
+    subtitle: "",
+    guide: {
+      lead: "Three blocks: ① add a .gguf into the app; ② pick a model and press the green button to chat; ③ only if you insist on Ollama, use the bottom section.",
+      step1Title: "① Add a model file",
+      step1Body:
+        "Unlike Ollama, you do not “create a model” first: if you already have a .gguf file on disk, press the big button below to pick it. It will be copied into the app’s models/gguf folder.",
+      step1Button: "Choose a .gguf file on this PC",
+      step2Title: "② Pick which model you want to chat with",
+      step2Body:
+        "You can edit the display name, then press “Save display name”. To make the current role reply with that model, press the green “Chat with this model” (you will be asked for permissions and the app switches to local Llama).",
+      nameLabel: "Display name (any label you like)",
+      useForChat: "Chat with this model",
+      saveName: "Save display name",
+      removeFile: "Remove this file from the app",
+      step3Title: "③ Optional: if you use Ollama",
+      step3Body:
+        "Ollama still needs you to pull models yourself (e.g. ollama pull …). Here we only probe whether Ollama is running and delete a model by name. Usually pick either GGUF above or Ollama, not both.",
+      checkOllama: "Check if Ollama is running on this PC",
+      installedModels: "Names Ollama already has:",
+      deleteLineHint: "To delete: type the full name below (including :tag), then press the red button.",
+    },
     refresh: "Refresh list",
     importGguf: "Import GGUF…",
     loading: "Loading…",

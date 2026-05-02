@@ -25,7 +25,10 @@ const { t } = useI18n();
     >
       <div class="lmm-dialog" @click.stop>
         <header class="lmm-head">
-          <h2 class="lmm-title">{{ t("localModelManagerPanel.title") }}</h2>
+          <div class="lmm-head-text">
+            <h2 class="lmm-title">{{ t("localModelManagerPanel.title") }}</h2>
+            <p class="lmm-hint">{{ t("localModelManagerPanel.hint") }}</p>
+          </div>
           <button type="button" class="lmm-close" @click="emit('close')">
             {{ t("localModelManagerPanel.close") }}
           </button>
@@ -63,16 +66,25 @@ const { t } = useI18n();
 }
 .lmm-head {
   display: flex;
-  align-items: center;
+  align-items: flex-start;
   justify-content: space-between;
   gap: 12px;
   margin-bottom: 10px;
   flex-shrink: 0;
 }
+.lmm-head-text {
+  min-width: 0;
+}
 .lmm-title {
   margin: 0;
   font-size: 16px;
   font-weight: 600;
+}
+.lmm-hint {
+  margin: 6px 0 0;
+  font-size: 12px;
+  line-height: 1.45;
+  color: var(--text-secondary);
 }
 .lmm-close {
   border-radius: 8px;
