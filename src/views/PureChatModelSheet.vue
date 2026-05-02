@@ -35,12 +35,6 @@ watch(
   },
 );
 
-function onCloudSaved(): void {
-  void pick.loadCloudPublic().then(() => {
-    pick.syncSelectFromModel();
-  });
-}
-
 async function onPickOllama(name: string): Promise<void> {
   if (applying.value) return;
   applying.value = true;
@@ -131,7 +125,7 @@ async function onApplyCustomOllama(): Promise<void> {
             <section class="pcm-sec pcm-card pcm-sec--cloud">
               <h3 class="pcm-h3">{{ t("pureChatModelSheet.sectionCloud") }}</h3>
               <p class="pcm-muted">{{ t("pureChatModelSheet.sectionCloudHint") }}</p>
-              <CloudLlmQuickSetup variant="pureChat" @saved="onCloudSaved" />
+              <CloudLlmQuickSetup variant="pureChat" />
             </section>
           </div>
         </div>

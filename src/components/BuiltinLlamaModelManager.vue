@@ -8,6 +8,7 @@ import {
 } from "../composables/useCloudLlmTrustModal";
 import { open } from "@tauri-apps/api/dialog";
 import { useAppToast } from "../composables/useAppToast";
+import { notifyHostModelsInventoryChanged } from "../composables/useHostModelPick";
 import { useExpertModelsStore } from "../stores/expertModelsStore";
 import { usePluginStore } from "../stores/pluginStore";
 import { useRoleStore } from "../stores/roleStore";
@@ -258,6 +259,7 @@ async function refreshOllama(): Promise<void> {
     showToast("error", e instanceof Error ? e.message : String(e));
   } finally {
     ollamaBusy.value = false;
+    notifyHostModelsInventoryChanged();
   }
 }
 

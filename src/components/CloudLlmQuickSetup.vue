@@ -7,6 +7,7 @@ import {
   CLOUD_LLM_PRESET_ORDER,
   type CloudLlmPresetId,
 } from "../lib/cloudLlmPresets";
+import { notifyHostModelsInventoryChanged } from "../composables/useHostModelPick";
 import { getHostCloudLlmPublic, setHostCloudLlm } from "../utils/tauri-api";
 
 /** `pureChat`：隐藏复制脚本/env，适合纯聊浮层精简流程。 */
@@ -155,6 +156,7 @@ async function onSaveToHost(): Promise<void> {
     apiKey.value = "";
     hasSavedKey.value = true;
     showToast("success", String(t("settings.cloudLlmQuick.toastSavedHost")));
+    notifyHostModelsInventoryChanged();
     emit("saved");
   } catch (e) {
     showToast("error", e instanceof Error ? e.message : String(e));
@@ -179,6 +181,7 @@ async function onClearHost(): Promise<void> {
     timeoutMsStr.value = "";
     hasSavedKey.value = false;
     showToast("success", String(t("settings.cloudLlmQuick.toastClearedHost")));
+    notifyHostModelsInventoryChanged();
     emit("saved");
   } catch (e) {
     showToast("error", e instanceof Error ? e.message : String(e));

@@ -13,10 +13,34 @@ import {
 
 export const HOST_CHAT_MODEL_CUSTOM_SENTINEL = "__oclive_custom_model__";
 
+/** 宿主内协调用：云端 LLM 保存、Ollama 列表变化等（不经 `emitBuiltin` 过滤）。 */
+export const HOST_MODELS_INVENTORY_CHANGED = "host:host_models_inventory_changed";
+
+export function notifyHostModelsInventoryChanged(): void {
+  attachInventoryListenerOnce();
+  hostEventBus.emit(HOST_MODELS_INVENTORY_CHANGED);
+}
+
 type PickSingleton = ReturnType<typeof createPickState>;
 
 let singleton: PickSingleton | null = null;
 let watchStarted = false;
+let inventoryListenerRegistered = false;
+
+function attachInventoryListenerOnce(): void {
+  if (inventoryListenerRegistered || typeof window === "undefined") {
+    return;
+  }
+  inventoryListenerRegistered = true;
+  hostEventBus.on(HOST_MODELS_INVENTORY_CHANGED, () => {
+    if (!singleton) {
+      singleton = createPickState();
+    }
+    void Promise.all([singleton.loadOllama(), singleton.loadCloudPublic()]).then(() => {
+      singleton.syncSelectFromModel();
+    });
+  });
+}
 
 function createPickState() {
   const { t } = useI18n();
@@ -221,6 +245,7 @@ export function useHostModelPick(): PickSingleton {
   if (!singleton) {
     singleton = createPickState();
   }
+  attachInventoryListenerOnce();
   singleton.startWatchAndFocus();
   return singleton;
 }
