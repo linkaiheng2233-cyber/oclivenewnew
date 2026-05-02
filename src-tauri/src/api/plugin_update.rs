@@ -11,6 +11,8 @@ use tauri::State;
 use walkdir::WalkDir;
 use zip::ZipArchive;
 
+use super::bridge_manifest_permissions::bridge_permission_tokens_from_manifest;
+
 #[derive(Debug, Clone, Serialize)]
 #[serde(rename_all = "camelCase")]
 pub struct PluginZipPermissionPreview {
@@ -23,63 +25,6 @@ pub struct PluginZipPermissionPreview {
 pub struct PluginDirPermissionPreview {
     pub plugin_id: String,
     pub permissions: Vec<String>,
-}
-
-fn bridge_command_to_permission_token(cmd: &str) -> String {
-    match cmd {
-        "get_conversation" => "read:conversation".to_string(),
-        "get_roles" => "read:roles".to_string(),
-        "get_current_role" => "read:current_role".to_string(),
-        "update_memory" | "delete_memory" => "write:memory".to_string(),
-        "update_emotion" => "write:emotion".to_string(),
-        "update_event" => "write:event".to_string(),
-        "update_prompt" => "write:prompt".to_string(),
-        "export_conversation" => "export:conversation".to_string(),
-        "import_role" => "import:role".to_string(),
-        "delete_role" => "delete:role".to_string(),
-        "update_settings" => "write:settings".to_string(),
-        "get_conversation_list" => "read:conversations".to_string(),
-        _ => cmd.to_string(),
-    }
-}
-
-fn bridge_permissions_from_manifest(manifest: &OclivePluginManifest) -> Vec<String> {
-    let mut out: Vec<String> = Vec::new();
-    if let Some(sh) = &manifest.shell {
-        if let Some(b) = &sh.bridge {
-            for x in &b.invoke {
-                let t = x.trim();
-                if t.is_empty() {
-                    continue;
-                }
-                let perm = if t.contains(':') {
-                    t.to_string()
-                } else {
-                    bridge_command_to_permission_token(t)
-                };
-                out.push(perm);
-            }
-        }
-    }
-    for us in &manifest.ui_slots {
-        if let Some(b) = &us.bridge {
-            for x in &b.invoke {
-                let t = x.trim();
-                if t.is_empty() {
-                    continue;
-                }
-                let perm = if t.contains(':') {
-                    t.to_string()
-                } else {
-                    bridge_command_to_permission_token(t)
-                };
-                out.push(perm);
-            }
-        }
-    }
-    out.sort();
-    out.dedup();
-    out
 }
 
 #[derive(Debug, Clone, Serialize)]
@@ -269,7 +214,7 @@ pub async fn extract_plugin_zip(
         .directory_plugins
         .rescan_plugin_roots(state.storage.roles_dir());
     // 开发者模式侧载：支持手动勾选授权；未提供时默认按 manifest seed（便于调试）
-    let declared = bridge_permissions_from_manifest(&manifest);
+    let declared = bridge_permission_tokens_from_manifest(&manifest);
     let mut perms = accepted_permissions.unwrap_or_else(|| declared.clone());
     perms = perms
         .into_iter()
@@ -323,7 +268,7 @@ pub fn preview_plugin_zip_permissions(
     if pid.is_empty() {
         return Err("manifest.id required".to_string());
     }
-    let permissions = bridge_permissions_from_manifest(&manifest);
+    let permissions = bridge_permission_tokens_from_manifest(&manifest);
     Ok(PluginZipPermissionPreview {
         plugin_id: pid,
         permissions,
@@ -351,7 +296,7 @@ pub fn preview_plugin_dir_permissions(
     if pid.is_empty() {
         return Err("manifest.id required".to_string());
     }
-    let permissions = bridge_permissions_from_manifest(&manifest);
+    let permissions = bridge_permission_tokens_from_manifest(&manifest);
     Ok(PluginDirPermissionPreview {
         plugin_id: pid,
         permissions,
@@ -404,7 +349,7 @@ pub fn install_plugin_dir(
     state
         .directory_plugins
         .rescan_plugin_roots(state.storage.roles_dir());
-    let declared = bridge_permissions_from_manifest(&manifest);
+    let declared = bridge_permission_tokens_from_manifest(&manifest);
     let mut perms = accepted_permissions.unwrap_or_else(|| declared.clone());
     perms = perms
         .into_iter()

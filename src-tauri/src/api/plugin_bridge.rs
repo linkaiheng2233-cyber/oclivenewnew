@@ -14,6 +14,7 @@ use crate::api::role::{delete_role_impl, get_role_info_impl, list_roles_impl, sw
 use crate::api::settings::update_settings_impl;
 use crate::api::time::get_time_state_impl;
 use crate::domain::chat_engine::{conversation_state_role_id, process_message};
+use super::bridge_manifest_permissions::bridge_permission_tokens_from_manifest;
 use crate::domain::permission_tokens::permission_token_for_bridge_command;
 use crate::infrastructure::directory_plugins::{normalize_plugin_rel, OclivePluginManifest};
 use crate::infrastructure::import_role_pack;
@@ -175,11 +176,47 @@ async fn validate_bridge(
     }
     // P1：权限授予（安装时一次性授权 + 可撤销）
     let needed = required_permission_token(command);
-    let ok = state
+    let mut ok = state
         .db_manager
         .is_plugin_permission_granted(plugin_id, needed.as_str())
         .await
         .unwrap_or(false);
+    // 兼容：历史上曾按「命令名」写入 grant，或与 canonical 令牌并存
+    if !ok && needed.as_str() != command {
+        ok = state
+            .db_manager
+            .is_plugin_permission_granted(plugin_id, command)
+            .await
+            .unwrap_or(false);
+    }
+    // 内置侧栏/顶栏等：首次无任何 grant 时，按 manifest 桥接列表写入默认授权（仍可在插件权限管理中撤销）
+    if !ok && plugin_id.starts_with("com.oclive.mumu.") {
+        let existing = state
+            .db_manager
+            .list_plugin_permission_grants(plugin_id)
+            .await
+            .unwrap_or_default();
+        if existing.is_empty() {
+            for p in bridge_permission_tokens_from_manifest(&manifest) {
+                let _ = state
+                    .db_manager
+                    .upsert_plugin_permission_grant(plugin_id, p.as_str(), true)
+                    .await;
+            }
+            ok = state
+                .db_manager
+                .is_plugin_permission_granted(plugin_id, needed.as_str())
+                .await
+                .unwrap_or(false);
+            if !ok && needed.as_str() != command {
+                ok = state
+                    .db_manager
+                    .is_plugin_permission_granted(plugin_id, command)
+                    .await
+                    .unwrap_or(false);
+            }
+        }
+    }
     if !ok {
         let _ = state
             .db_manager

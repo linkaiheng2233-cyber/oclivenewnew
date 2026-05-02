@@ -1,4 +1,5 @@
 pub mod agent;
+pub mod bridge_manifest_permissions;
 pub mod chat;
 pub mod conversation;
 pub mod directory_plugin;

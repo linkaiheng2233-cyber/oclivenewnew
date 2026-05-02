@@ -5,6 +5,8 @@ use crate::infrastructure::plugin_installer::{
     peek_plugin_id_from_archive_bytes, verify_plugin_package_signature_text,
 };
 use crate::state::AppState;
+
+use super::bridge_manifest_permissions::bridge_permission_tokens_from_manifest;
 use serde::{Deserialize, Serialize};
 use std::path::PathBuf;
 use tauri::State;
@@ -78,34 +80,6 @@ pub struct PreviewLocalPluginArchiveResponse {
     pub signature_message: Option<String>,
 }
 
-fn bridge_permissions_from_manifest(manifest: &OclivePluginManifest) -> Vec<String> {
-    // keep consistent with plugin_update.rs logic (invoke mapping)
-    let mut out: Vec<String> = Vec::new();
-    if let Some(sh) = &manifest.shell {
-        if let Some(b) = &sh.bridge {
-            for x in &b.invoke {
-                let t = x.trim();
-                if !t.is_empty() {
-                    out.push(t.to_string());
-                }
-            }
-        }
-    }
-    for us in &manifest.ui_slots {
-        if let Some(b) = &us.bridge {
-            for x in &b.invoke {
-                let t = x.trim();
-                if !t.is_empty() {
-                    out.push(t.to_string());
-                }
-            }
-        }
-    }
-    out.sort();
-    out.dedup();
-    out
-}
-
 #[tauri::command]
 pub fn preview_local_plugin_archive_command(
     req: PreviewLocalPluginArchiveRequest,
@@ -128,7 +102,7 @@ pub fn preview_local_plugin_archive_command(
     crate::infrastructure::plugin_installer::extract_oclive_plugin_archive(&bytes, tmp.path())
         .map_err(|e| e.to_frontend_error())?;
     let manifest = OclivePluginManifest::load_from_dir(tmp.path()).map_err(|e| e.to_string())?;
-    let declared_permissions = bridge_permissions_from_manifest(&manifest);
+    let declared_permissions = bridge_permission_tokens_from_manifest(&manifest);
 
     // verify signature (optional)
     let mut signature_verified = false;
@@ -245,7 +219,7 @@ pub async fn install_local_plugin_archive_command(
         .join("plugins")
         .join(installed_pid.as_str());
     let manifest = OclivePluginManifest::load_from_dir(&root_dir).map_err(|e| e.to_string())?;
-    let declared = bridge_permissions_from_manifest(&manifest);
+    let declared = bridge_permission_tokens_from_manifest(&manifest);
     let mut perms = req.accepted_permissions.unwrap_or_else(|| declared.clone());
     perms = perms
         .into_iter()
