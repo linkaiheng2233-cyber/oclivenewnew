@@ -291,6 +291,7 @@ pub async fn get_role_info_snapshot(
         pack_ui_config: role.ui_config.clone(),
         pack_ui_baseline: role.plugin_state_ui_baseline().clone(),
         author_pack: role.author_pack.clone(),
+        creator_message_to_downloader: role.creator_message_to_downloader.clone(),
     })
 }
 
@@ -374,6 +375,7 @@ pub async fn build_role_data(
         pack_ui_config: role.ui_config.clone(),
         pack_ui_baseline: role.plugin_state_ui_baseline().clone(),
         author_pack: role.author_pack.clone(),
+        creator_message_to_downloader: role.creator_message_to_downloader.clone(),
     })
 }
 

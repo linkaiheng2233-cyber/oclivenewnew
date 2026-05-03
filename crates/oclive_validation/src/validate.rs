@@ -374,6 +374,7 @@ mod tests {
             dev_only: false,
             knowledge: None,
             min_runtime_version: None,
+            creator_message_to_downloader: None,
         }
     }
 

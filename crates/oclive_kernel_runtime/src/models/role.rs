@@ -220,6 +220,9 @@ pub struct Role {
     /// `settings.json` 可选：主对话「质量锚点」全文；非空则替换引擎默认（见 `prompt_builder::DEFAULT_REPLY_QUALITY_ANCHOR`）。
     #[serde(default)]
     pub reply_quality_anchor: Option<String>,
+    /// `manifest.json` 可选：创作者留给导入者的一句话。
+    #[serde(default)]
+    pub creator_message_to_downloader: Option<String>,
 }
 
 impl Default for Role {
@@ -259,6 +262,7 @@ impl Default for Role {
             ui_config: UiConfig::default(),
             author_pack: None,
             reply_quality_anchor: None,
+            creator_message_to_downloader: None,
         }
     }
 }

@@ -519,6 +519,7 @@ mod tests {
             knowledge_index: None,
             author_pack: None,
             reply_quality_anchor: None,
+            creator_message_to_downloader: None,
         }
     }
 

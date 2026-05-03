@@ -14,6 +14,7 @@ import {
   installRolePackFromMarket,
   type RoleMarketEntryDto,
   type RoleMarketDownloadDto,
+  type RolePackPeek,
 } from "../utils/tauri-api";
 import ImportProgressModal from "./ImportProgressModal.vue";
 
@@ -39,9 +40,7 @@ function defaultExportFilename(): string {
 
 const conflictOpen = ref(false);
 const pendingPath = ref<string | null>(null);
-const pendingPeek = ref<{ id: string; name: string; version: string } | null>(
-  null,
-);
+const pendingPeek = ref<RolePackPeek | null>(null);
 
 const importProgressOpen = ref(false);
 const importPercent = ref(0);
@@ -49,9 +48,7 @@ const importMessage = ref(String(t("rolePackBar.progress.preparing")));
 let unlistenProgress: UnlistenFn | null = null;
 
 const creatorEchoOpen = ref(false);
-const creatorEchoRole = ref<{ id: string; name: string; version: string } | null>(
-  null,
-);
+const creatorEchoRole = ref<RolePackPeek | null>(null);
 const creatorEchoLines = ref<string[]>([]);
 const postImportRoleId = ref<string>("");
 
@@ -62,6 +59,26 @@ const marketQuery = ref("");
 const marketIndex = ref<{ roles: RoleMarketEntryDto[] } | null>(null);
 const marketPicked = ref<{ roleId: string; dl: RoleMarketDownloadDto } | null>(null);
 const marketSourceUrl = ref<string>("");
+
+/** manifest `creator_message_to_downloader` 与 `creator_message.txt` 合并为展示行（去重）。 */
+async function mergeCreatorEchoLines(
+  peek: RolePackPeek,
+  roleId: string,
+): Promise<string[]> {
+  const out: string[] = [];
+  const m = peek.creatorMessageToDownloader?.trim();
+  if (m) out.push(m);
+  try {
+    const fileLines = await readRoleCreatorMessageLines(roleId);
+    for (const line of fileLines) {
+      const t = line.trim();
+      if (t && !out.includes(t)) out.push(t);
+    }
+  } catch {
+    // ignore file read errors
+  }
+  return out;
+}
 
 async function withImportProgress<T>(fn: () => Promise<T>): Promise<T> {
   importProgressOpen.value = true;
@@ -116,14 +133,10 @@ async function confirmOverwrite(): Promise<void> {
   try {
     const roleId = await withImportProgress(() => importRolePack(path, true));
     postImportRoleId.value = roleId;
-    try {
-      const lines = await readRoleCreatorMessageLines(roleId);
-      if (lines.length > 0) {
-        creatorEchoRole.value = pendingPeek.value;
-        creatorEchoLines.value = lines;
-      }
-    } catch {
-      // ignore creator message read errors
+    const peek = pendingPeek.value;
+    if (peek) {
+      creatorEchoRole.value = peek;
+      creatorEchoLines.value = await mergeCreatorEchoLines(peek, roleId);
     }
     creatorEchoOpen.value = true;
   } catch (e) {
@@ -150,15 +163,8 @@ async function runImportFlow(path: string): Promise<void> {
     importRolePack(path, false),
   );
   postImportRoleId.value = roleId;
-  try {
-    const lines = await readRoleCreatorMessageLines(roleId);
-    if (lines.length > 0) {
-      creatorEchoRole.value = peek;
-      creatorEchoLines.value = lines;
-    }
-  } catch {
-    // ignore creator message read errors
-  }
+  creatorEchoRole.value = peek;
+  creatorEchoLines.value = await mergeCreatorEchoLines(peek, roleId);
   creatorEchoOpen.value = true;
 }
 

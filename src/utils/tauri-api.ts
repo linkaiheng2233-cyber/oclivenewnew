@@ -910,6 +910,8 @@ export interface RoleData {
   pack_ui_baseline?: PackUiConfig;
   /** 可选 `author.json` */
   author_pack?: AuthorPackFile | null;
+  /** manifest `creator_message_to_downloader` */
+  creator_message_to_downloader?: string | null;
 }
 
 export interface SceneLabelEntry {
@@ -971,6 +973,8 @@ export interface RoleInfo {
   pack_ui_config: PackUiConfig;
   pack_ui_baseline?: PackUiConfig;
   author_pack?: AuthorPackFile | null;
+  /** manifest `creator_message_to_downloader` */
+  creator_message_to_downloader?: string | null;
 }
 
 /** `switch_scene` 扁平化返回：RoleInfo 字段 + 可选场景欢迎语 */
@@ -1490,6 +1494,7 @@ export interface RolePackPeek {
   id: string;
   name: string;
   version: string;
+  creator_message_to_downloader?: string | null;
 }
 
 /** 预览角色包：`srcPath` 可为 `.ocpak` / `.zip` 或已解压目录（与 `roles/{id}/` 一致）。 */

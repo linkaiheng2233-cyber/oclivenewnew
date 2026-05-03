@@ -25,10 +25,9 @@ pub async fn peek_role_pack_command(
     _state: State<'_, AppState>,
 ) -> Result<RolePackPeekResponse, String> {
     let p = PathBuf::from(src_path);
-    let (id, name, version) = peek_role_pack_manifest(p)
+    peek_role_pack_manifest(p)
         .await
-        .map_err(|e: AppError| e.to_frontend_error())?;
-    Ok(RolePackPeekResponse { id, name, version })
+        .map_err(|e: AppError| e.to_frontend_error())
 }
 
 #[tauri::command]

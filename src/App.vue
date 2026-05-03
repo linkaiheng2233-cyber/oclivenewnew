@@ -749,11 +749,15 @@ async function handleTauriFileDrop(paths: string[]): Promise<void> {
       if (!ok) return;
       const roleId = await withDropImportProgress(() => importRolePack(path, true));
       showToast("success", String(t("app.fileDrop.imported", { id: roleId })));
+      const dlMsg = peek.creator_message_to_downloader?.trim();
+      if (dlMsg) showToast("info", dlMsg);
       await onPackImported(roleId);
       return;
     }
     const roleId = await withDropImportProgress(() => importRolePack(path, false));
     showToast("success", String(t("app.fileDrop.imported", { id: roleId })));
+    const dlMsgNew = peek.creator_message_to_downloader?.trim();
+    if (dlMsgNew) showToast("info", dlMsgNew);
     await onPackImported(roleId);
   } catch (e) {
     const msg =

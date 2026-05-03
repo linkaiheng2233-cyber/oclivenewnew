@@ -70,6 +70,7 @@ pub fn disk_manifest_from_role(role: &Role) -> DiskRoleManifest {
         dev_only: role.dev_only,
         knowledge: None,
         min_runtime_version: role.min_runtime_version.clone(),
+        creator_message_to_downloader: role.creator_message_to_downloader.clone(),
     }
 }
 
@@ -139,6 +140,7 @@ pub fn disk_manifest_to_role(d: &DiskRoleManifest) -> Role {
         ui_config: super::UiConfig::default(),
         author_pack: None,
         reply_quality_anchor: None,
+        creator_message_to_downloader: d.creator_message_to_downloader.clone(),
     }
 }
 

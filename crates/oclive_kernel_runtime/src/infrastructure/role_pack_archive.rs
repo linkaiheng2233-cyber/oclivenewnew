@@ -2,7 +2,7 @@
 
 use crate::error::{AppError, Result};
 use crate::infrastructure::storage::RoleStorage;
-use crate::models::dto::ImportProgress;
+use crate::models::dto::{ImportProgress, RolePackPeekResponse};
 use crate::models::DiskRoleManifest;
 use crate::models::Role;
 use crate::utils::digest::sha256_hex;
@@ -89,7 +89,7 @@ pub async fn export_role_pack(storage: &RoleStorage, role_id: &str, dest: &Path)
         })?
 }
 
-fn peek_role_folder_manifest(dir: &Path) -> Result<(String, String, String)> {
+fn peek_role_folder_manifest(dir: &Path) -> Result<RolePackPeekResponse> {
     let root = resolve_extracted_role_root(dir)?;
     let manifest_path = root.join("manifest.json");
     if !manifest_path.is_file() {
@@ -100,10 +100,15 @@ fn peek_role_folder_manifest(dir: &Path) -> Result<(String, String, String)> {
     let s = fs::read_to_string(&manifest_path).map_err(AppError::IoError)?;
     let disk: DiskRoleManifest = serde_json::from_str(&s)
         .map_err(|_| AppError::InvalidParameter("角色包格式错误：manifest.json 无法解析".into()))?;
-    Ok((disk.id, disk.name, disk.version))
+    Ok(RolePackPeekResponse {
+        id: disk.id,
+        name: disk.name,
+        version: disk.version,
+        creator_message_to_downloader: disk.creator_message_to_downloader.clone(),
+    })
 }
 
-fn peek_role_pack_manifest_disk(src: &Path) -> Result<(String, String, String)> {
+fn peek_role_pack_manifest_disk(src: &Path) -> Result<RolePackPeekResponse> {
     if src.is_dir() {
         return peek_role_folder_manifest(src);
     }
@@ -136,7 +141,12 @@ fn peek_role_pack_manifest_disk(src: &Path) -> Result<(String, String, String)> 
             Ok(d) => d,
             Err(_) => continue,
         };
-        return Ok((disk.id, disk.name, disk.version));
+        return Ok(RolePackPeekResponse {
+            id: disk.id,
+            name: disk.name,
+            version: disk.version,
+            creator_message_to_downloader: disk.creator_message_to_downloader.clone(),
+        });
     }
     Err(AppError::InvalidParameter(
         "角色包格式错误：未找到 manifest.json".into(),
@@ -144,7 +154,7 @@ fn peek_role_pack_manifest_disk(src: &Path) -> Result<(String, String, String)> 
 }
 
 /// 预览 ZIP 或已解压目录中的 `manifest.json`（在阻塞线程池读盘）。
-pub async fn peek_role_pack_manifest(src: PathBuf) -> Result<(String, String, String)> {
+pub async fn peek_role_pack_manifest(src: PathBuf) -> Result<RolePackPeekResponse> {
     tokio::task::spawn_blocking(move || peek_role_pack_manifest_disk(&src))
         .await
         .map_err(|e| {
@@ -506,9 +516,9 @@ mod tests {
         zip.write_all(root.as_bytes()).unwrap();
         zip.finish().unwrap();
 
-        let (id, name, ver) = peek_role_pack_manifest(pak.clone()).await.unwrap();
-        assert_eq!(id, "right");
-        assert_eq!(name, "R");
-        assert_eq!(ver, "2");
+        let peek = peek_role_pack_manifest(pak.clone()).await.unwrap();
+        assert_eq!(peek.id, "right");
+        assert_eq!(peek.name, "R");
+        assert_eq!(peek.version, "2");
     }
 }

@@ -1,6 +1,6 @@
 # 角色包 `manifest.json` 与 `settings.json`（创作者）
 
-- **`manifest.json`** 路径：**`roles/{角色id}/manifest.json`**，与角色文件夹同名。门面与主要契约：**id、展示信息、性格七维 `default_personality`、`scenes`、`user_relations`、`default_relation`** 等（七维与 **`evolution.personality_source`** 的关系见下文 §二、§5.3）。完整示例见 **`manifest.template.json`**。
+- **`manifest.json`** 路径：**`roles/{角色id}/manifest.json`**，与角色文件夹同名。门面与主要契约：**id、展示信息、性格七维 `default_personality`、`scenes`、`user_relations`、`default_relation`** 等（七维与 **`evolution.personality_source`** 的关系见下文 §二、§5.3）。完整示例见 **`manifest.template.json`**。可选 **`creator_message_to_downloader`**（字符串）：创作者留给导入者的一句话；应用预览/导入成功后会与 `creator_message.txt`（若存在）一并提示。
 - **`settings.json`**（**可选**）路径：**`roles/{角色id}/settings.json`**。进阶引擎向配置：**`model`、`evolution`、`identity_binding`、`memory_config`**。完整示例见 **`settings.template.json`**。  
 **推荐**创作者新包采用「manifest 门面 + settings 引擎」；应用内保存角色时也会写出这两份文件（manifest 存根 + settings 完整引擎段）。
 

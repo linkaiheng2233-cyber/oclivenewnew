@@ -184,6 +184,9 @@ pub struct RoleData {
     /// 可选 `author.json` 全文（推荐插件、建议后端等）。
     #[serde(default)]
     pub author_pack: Option<AuthorPackFile>,
+    /// `manifest.json` 中 `creator_message_to_downloader`（导入者可见；可与 `creator_message.txt` 并存）。
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub creator_message_to_downloader: Option<String>,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -293,6 +296,8 @@ pub struct RoleInfo {
     /// 可选 `author.json`。
     #[serde(default)]
     pub author_pack: Option<AuthorPackFile>,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub creator_message_to_downloader: Option<String>,
 }
 
 #[derive(Debug, Clone, Serialize)]
@@ -454,6 +459,8 @@ pub struct RolePackPeekResponse {
     pub id: String,
     pub name: String,
     pub version: String,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub creator_message_to_downloader: Option<String>,
 }
 
 /// `switch_scene` 返回：角色信息与场景欢迎语（供前端插入聊天）。
