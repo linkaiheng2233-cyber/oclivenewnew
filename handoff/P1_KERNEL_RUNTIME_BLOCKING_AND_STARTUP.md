@@ -15,7 +15,7 @@
 ## 2. 同步 HTTP 边界（`blocking_http::block_on`）
 
 **角色/插件/评价市场索引** HTTP 已改为 **`async` + `.await`**（见 `*_index_sync.rs`），**不再**使用 `block_on`。  
-插件包下载、角色包直链、MCP、JSON-RPC `call_blocking` 等仍通过 **`reqwest::Client` + 专用 runtime `block_on`** 或同步封装；详见 `PERF_PHASES.md` P4 与 `infrastructure/blocking_http.rs`。
+**插件包市场 ZIP 下载**（`plugin_install::install_plugin_from_download_urls_at`）已改为 **async + `.await`**，不再经 `blocking_http::block_on`。角色包直链、MCP、JSON-RPC `call_blocking` 等仍可能经 `block_on` 或同步封装；详见 `PERF_PHASES.md` P4 与 `infrastructure/blocking_http.rs`。
 
 ## 2b. `tokio::fs`（热键与插件状态）
 

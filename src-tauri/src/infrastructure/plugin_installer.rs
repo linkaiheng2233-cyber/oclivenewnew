@@ -126,7 +126,7 @@ pub fn install_plugin_from_archive_bytes(
     Ok(pid)
 }
 
-pub fn install_plugin_from_download_urls(
+pub async fn install_plugin_from_download_urls(
     state: &AppState,
     index_entry: &PluginIndexEntry,
     download_url: &str,
@@ -138,7 +138,8 @@ pub fn install_plugin_from_download_urls(
         index_entry,
         download_url,
         signature_url,
-    )?;
+    )
+    .await?;
     state
         .directory_plugins
         .rescan_plugin_roots(state.storage.roles_dir());

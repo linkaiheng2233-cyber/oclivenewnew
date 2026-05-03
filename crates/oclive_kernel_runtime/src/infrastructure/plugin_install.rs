@@ -1,8 +1,6 @@
 //! 目录插件安装：归档解压、市场下载签名校验、Git clone；路径由宿主传入。
 
 use crate::error::{AppError, Result};
-#[cfg(feature = "role-pack-zip")]
-use crate::infrastructure::blocking_http::block_on;
 use crate::infrastructure::directory_plugins::{
     parse_manifest_version, read_plugin_install_meta, write_plugin_install_meta,
     OclivePluginManifest,
@@ -241,7 +239,7 @@ pub fn install_plugin_from_archive_bytes_at(
 }
 
 #[cfg(feature = "role-pack-zip")]
-pub fn install_plugin_from_download_urls_at(
+pub async fn install_plugin_from_download_urls_at(
     plugins_root: &Path,
     app_data_dir: &Path,
     index_entry: &PluginIndexEntry,
@@ -256,51 +254,48 @@ pub fn install_plugin_from_download_urls_at(
         .map_err(|e| {
             AppError::InvalidParameter(format!("[PLUGIN_INSTALL_DOWNLOAD] http client: {}", e))
         })?;
-    let (archive_bytes, sig_text) = block_on(async move {
-        let archive_bytes = cli
-            .get(&download_url)
-            .send()
-            .await
-            .map_err(|e| {
-                AppError::InvalidParameter(format!("[PLUGIN_INSTALL_DOWNLOAD] get: {}", e))
-            })?
-            .error_for_status()
-            .map_err(|e| {
-                AppError::InvalidParameter(format!(
-                    "[PLUGIN_INSTALL_DOWNLOAD] archive status: {}",
-                    e
-                ))
-            })?
-            .bytes()
-            .await
-            .map_err(|e| {
-                AppError::InvalidParameter(format!("[PLUGIN_INSTALL_DOWNLOAD] read archive: {}", e))
-            })?
-            .to_vec();
-        let sig_text = cli
-            .get(&signature_url)
-            .send()
-            .await
-            .map_err(|e| {
-                AppError::InvalidParameter(format!("[PLUGIN_INSTALL_DOWNLOAD] sig get: {}", e))
-            })?
-            .error_for_status()
-            .map_err(|e| {
-                AppError::InvalidParameter(format!("[PLUGIN_INSTALL_DOWNLOAD] sig status: {}", e))
-            })?
-            .text()
-            .await
-            .map_err(|e| {
-                AppError::InvalidParameter(format!("[PLUGIN_INSTALL_DOWNLOAD] read sig: {}", e))
-            })?;
-        Ok::<_, AppError>((archive_bytes, sig_text))
-    })?;
+    let archive_bytes = cli
+        .get(&download_url)
+        .send()
+        .await
+        .map_err(|e| {
+            AppError::InvalidParameter(format!("[PLUGIN_INSTALL_DOWNLOAD] get: {}", e))
+        })?
+        .error_for_status()
+        .map_err(|e| {
+            AppError::InvalidParameter(format!(
+                "[PLUGIN_INSTALL_DOWNLOAD] archive status: {}",
+                e
+            ))
+        })?
+        .bytes()
+        .await
+        .map_err(|e| {
+            AppError::InvalidParameter(format!("[PLUGIN_INSTALL_DOWNLOAD] read archive: {}", e))
+        })?
+        .to_vec();
+    let sig_text = cli
+        .get(&signature_url)
+        .send()
+        .await
+        .map_err(|e| {
+            AppError::InvalidParameter(format!("[PLUGIN_INSTALL_DOWNLOAD] sig get: {}", e))
+        })?
+        .error_for_status()
+        .map_err(|e| {
+            AppError::InvalidParameter(format!("[PLUGIN_INSTALL_DOWNLOAD] sig status: {}", e))
+        })?
+        .text()
+        .await
+        .map_err(|e| {
+            AppError::InvalidParameter(format!("[PLUGIN_INSTALL_DOWNLOAD] read sig: {}", e))
+        })?;
     verify_plugin_package_signature_text(index_entry, &sig_text, &archive_bytes)?;
     install_plugin_from_archive_bytes_at(plugins_root, app_data_dir, &archive_bytes)
 }
 
 #[cfg(not(feature = "role-pack-zip"))]
-pub fn install_plugin_from_download_urls_at(
+pub async fn install_plugin_from_download_urls_at(
     _plugins_root: &Path,
     _app_data_dir: &Path,
     _index_entry: &PluginIndexEntry,

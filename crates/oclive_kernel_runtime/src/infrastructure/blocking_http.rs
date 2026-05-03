@@ -5,7 +5,7 @@
 //! 下列模块在迁到「顶层 async + `.await`」之前会经过此处；**市场三索引**已改为原生 async，不再使用本模块：
 //!
 //! - `infrastructure::role_pack_archive`（feature `role-pack-zip`）— 角色包直链下载
-//! - `infrastructure::plugin_install` — 插件包下载
+//! - `infrastructure::plugin_install` — 插件包 **ZIP 市场下载** 已改为 `install_plugin_from_download_urls_at` 原生 async；解压落盘仍为同步 `std::fs`（宜后续 `spawn_blocking`）
 //! - `infrastructure::mcp_client` — MCP HTTP
 //! - `infrastructure::remote_plugin::jsonrpc::call_blocking` — Remote JSON-RPC 同步封装（内部仍调 `call_async`）
 //!

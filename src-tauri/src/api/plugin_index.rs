@@ -422,7 +422,7 @@ pub struct InstallPluginVersionFromMarketRequest {
 
 /// 回滚/指定版本安装：从索引读取 download_url + signature_url → 验签 → 安装
 #[tauri::command]
-pub fn install_plugin_version_from_market(
+pub async fn install_plugin_version_from_market(
     req: InstallPluginVersionFromMarketRequest,
     state: State<'_, AppState>,
 ) -> Result<InstallPluginFromMarketResponse, String> {
@@ -477,9 +477,14 @@ pub fn install_plugin_version_from_market(
         .map(str::trim)
         .filter(|s| !s.is_empty())
         .ok_or_else(|| format!("signature_url missing in index: {} {}", pid, want))?;
-    let installed_id =
-        install_plugin_from_download_urls(&state, &index_item, download_url, signature_url)
-            .map_err(|e| e.to_frontend_error())?;
+    let installed_id = install_plugin_from_download_urls(
+        &state,
+        &index_item,
+        download_url,
+        signature_url,
+    )
+    .await
+    .map_err(|e| e.to_frontend_error())?;
     // 写入 grants：把用户同意的 permissions 合并到 grants（不破坏安装种子）
     if !req.accepted_permissions.is_empty() {
         let mut perms = req.accepted_permissions.clone();
@@ -490,14 +495,12 @@ pub fn install_plugin_version_from_market(
             .collect();
         perms.sort();
         perms.dedup();
-        tauri::async_runtime::block_on(async {
-            for p in perms {
-                let _ = state
-                    .db_manager
-                    .upsert_plugin_permission_grant(installed_id.as_str(), p.as_str(), true)
-                    .await;
-            }
-        });
+        for p in perms {
+            let _ = state
+                .db_manager
+                .upsert_plugin_permission_grant(installed_id.as_str(), p.as_str(), true)
+                .await;
+        }
     }
     // 写入安装元数据：声明权限（来自索引） vs 授予权限（用户同意）
     let _ = update_install_meta_permissions(
