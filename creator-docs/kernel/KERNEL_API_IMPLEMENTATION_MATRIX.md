@@ -85,7 +85,7 @@
 |------|------|
 | `preview_local_plugin_archive_command` / `install_local_plugin_archive_command` 曾未注册 | 已在 `lib.rs` 注册；若前端仍有死链需再扫一遍 |
 | `notify` 曾列入 `oclive_kernel_runtime` 但未使用 | 已从依赖移除 |
-| 远程插件 `reqwest::blocking` 与 Tauri 异步命令混用 | **路线图**：统一异步或统一 `spawn_blocking`，见 runtime `README.md` |
+| 远程插件 HTTP 与 Tauri 异步命令混用 | **现状**：workspace 已无 `reqwest/blocking`；同步边界见 `blocking_http::block_on` 与 runtime `README.md` I/O 段 |
 
 ---
 

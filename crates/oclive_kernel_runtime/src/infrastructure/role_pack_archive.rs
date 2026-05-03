@@ -1,6 +1,7 @@
 //! `.ocpak` / `.zip` 角色包；含市场直链下载安装。
 
 use crate::error::{AppError, Result};
+use crate::infrastructure::blocking_http::block_on;
 use crate::infrastructure::storage::RoleStorage;
 use crate::models::dto::ImportProgress;
 use crate::models::DiskRoleManifest;
@@ -322,41 +323,36 @@ where
         message: "正在下载角色包…".into(),
     });
 
-    let cli = reqwest::blocking::Client::builder()
+    let u = u.to_string();
+    let cli = reqwest::Client::builder()
         .timeout(std::time::Duration::from_secs(30))
         .build()
         .map_err(|e| AppError::Unknown(format!("download http client failed: {}", e)))?;
-    let mut resp = cli
-        .get(u)
-        .send()
-        .map_err(|e| AppError::Unknown(format!("download role pack failed: {}", e)))?;
-    if !resp.status().is_success() {
-        return Err(AppError::Unknown(format!(
-            "download role pack status={} url={}",
-            resp.status(),
-            u
-        )));
-    }
-
-    let mut bytes: Vec<u8> = Vec::new();
-    let mut buf = [0u8; 32 * 1024];
-    let mut total: u64 = 0;
-    loop {
-        let n = resp
-            .read(&mut buf)
-            .map_err(|e| AppError::Unknown(format!("read role pack response failed: {}", e)))?;
-        if n == 0 {
-            break;
+    let bytes = block_on(async move {
+        let resp = cli
+            .get(&u)
+            .send()
+            .await
+            .map_err(|e| AppError::Unknown(format!("download role pack failed: {}", e)))?;
+        if !resp.status().is_success() {
+            return Err(AppError::Unknown(format!(
+                "download role pack status={} url={}",
+                resp.status(),
+                u
+            )));
         }
-        total = total.saturating_add(n as u64);
-        if total > MAX_ROLE_PACK_DOWNLOAD_BYTES {
+        let body = resp
+            .bytes()
+            .await
+            .map_err(|e| AppError::Unknown(format!("read role pack response failed: {}", e)))?;
+        if body.len() as u64 > MAX_ROLE_PACK_DOWNLOAD_BYTES {
             return Err(AppError::InvalidParameter(format!(
                 "[ROLE_PACK_TOO_LARGE] role pack too large (>{} bytes)",
                 MAX_ROLE_PACK_DOWNLOAD_BYTES
             )));
         }
-        bytes.extend_from_slice(&buf[..n]);
-    }
+        Ok::<_, AppError>(body.to_vec())
+    })?;
 
     on_progress(ImportProgress {
         percent: 20,

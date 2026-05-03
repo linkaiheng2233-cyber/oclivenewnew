@@ -1,6 +1,7 @@
 //! 插件市场索引 HTTP 拉取、校验与磁盘缓存（宿主无关路径参数）。
 
 use crate::error::{AppError, Result};
+use crate::infrastructure::blocking_http::block_on;
 use crate::models::plugin_market_index::PluginIndexFile;
 use oclive_validation::validate_plugin_market_index_v1;
 use sha2::{Digest, Sha256};
@@ -57,24 +58,28 @@ pub fn load_plugin_index_cache(cache_path: &Path) -> Result<PluginIndexFile> {
 }
 
 pub fn sync_plugin_index_from_url(url: &str, cache_path: &Path) -> Result<PluginIndexFile> {
-    let cli = reqwest::blocking::Client::builder()
+    let url = url.to_string();
+    let cli = reqwest::Client::builder()
         .timeout(std::time::Duration::from_secs(15))
         .build()
         .map_err(|e| AppError::Unknown(format!("index http client failed: {}", e)))?;
-    let resp = cli
-        .get(url)
-        .send()
-        .map_err(|e| AppError::Unknown(format!("sync plugin index failed: {}", e)))?;
-    if !resp.status().is_success() {
-        return Err(AppError::Unknown(format!(
-            "sync plugin index status={} url={}",
-            resp.status(),
-            url
-        )));
-    }
-    let text = resp
-        .text()
-        .map_err(|e| AppError::Unknown(format!("read plugin index response failed: {}", e)))?;
+    let text = block_on(async move {
+        let resp = cli
+            .get(&url)
+            .send()
+            .await
+            .map_err(|e| AppError::Unknown(format!("sync plugin index failed: {}", e)))?;
+        if !resp.status().is_success() {
+            return Err(AppError::Unknown(format!(
+                "sync plugin index status={} url={}",
+                resp.status(),
+                url
+            )));
+        }
+        resp.text()
+            .await
+            .map_err(|e| AppError::Unknown(format!("read plugin index response failed: {}", e)))
+    })?;
     validate_plugin_market_index_v1(&text)
         .map_err(|e| AppError::Unknown(format!("plugins.json validate failed: {}", e)))?;
     let mut parsed: PluginIndexFile = serde_json::from_str(&text)

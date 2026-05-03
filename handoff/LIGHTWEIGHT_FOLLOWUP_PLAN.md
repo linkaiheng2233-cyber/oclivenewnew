@@ -42,7 +42,7 @@
 ## 阶段 4：`reqwest::blocking` 收敛（P4）
 
 - **依据**：runtime `README.md`、`KERNEL_API_IMPLEMENTATION_MATRIX` 模糊地带、`handoff/PERF_PHASES.md` P4。
-- **范围**：远程插件、市场同步、MCP HTTP 等；与 Tauri 异步命令的 `spawn_blocking` 策略统一后再改代码。
+- **现状**：workspace **`reqwest` 已无 `blocking`**；runtime 内 HTTP 已改为 **`reqwest::Client` + async**，同步入口经 **`blocking_http::block_on`**；与 Tauri 长耗时路径仍建议 **`spawn_blocking`**（见 `PERF_PHASES.md`）。
 
 ---
 

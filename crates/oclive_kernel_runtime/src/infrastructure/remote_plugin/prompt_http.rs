@@ -12,18 +12,18 @@ const METHOD_PROMPT_BUILD: &str = "prompt.build_prompt";
 const METHOD_PROMPT_TOPIC_HINT: &str = "prompt.top_topic_hint";
 
 pub struct RemotePromptAssemblerHttp {
-    client: reqwest::blocking::Client,
+    client: reqwest::Client,
     cfg: RemotePluginHttpConfig,
     fallback: BuiltinPromptAssembler,
 }
 
 impl RemotePromptAssemblerHttp {
     pub fn new(cfg: RemotePluginHttpConfig) -> Self {
-        let client = reqwest::blocking::Client::builder()
+        let client = reqwest::Client::builder()
             .connect_timeout(cfg.connect_timeout())
             .timeout(cfg.timeout)
             .build()
-            .expect("reqwest blocking client");
+            .expect("reqwest client");
         Self {
             client,
             cfg,

@@ -5,8 +5,13 @@
 
 ## 现状
 
-- `src-tauri/src/domain/adapters/oocp_ws.rs` 使用 **`axum`** WebSocket 类型与中间件，与桌面进程内 OOCP 客户端路径耦合。
-- Runtime（`kernel-http-api`）侧已在 `crates/oclive_kernel_runtime/src/http_api.rs` 等模块承载 Axum HTTP + OOCP WS 的**无头宿主**形态。
+- ~~`src-tauri/src/domain/adapters/oocp_ws.rs`~~ **已移除**：该路径从未并入壳层 HTTP 路由树，与 runtime `http_api` 中的 OOCP WS 重复；删除后壳层 **`Cargo.toml` 不再声明 `axum`**（测试仍可通过 `dev-dependencies` 使用 Axum 类型）。
+- Runtime（`kernel-http-api`）侧在 `crates/oclive_kernel_runtime/src/http_api.rs` 等模块承载 Axum HTTP + OOCP WS 的**无头宿主**形态（`domain/adapters/oocp_ws.rs` + `RuntimeOocpHandler`）。
+
+## 决策（壳层直连 axum）
+
+- **结论**：桌面 OOCP WS 以 **runtime `http_api` 单实现** 为准；壳层不保留第二套 Axum WS 适配器。
+- **验收**：`cargo check -p oclivenewnew-tauri` 下壳层依赖表无 `axum` 直连条目；`--api` 仍经 `oclivenewnew_tauri::http_api` → `oclive_kernel_runtime::http_api`。
 
 ## 目标（评估用，非承诺排期）
 

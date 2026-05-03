@@ -76,7 +76,7 @@ capabilities 中的方法列表见 `OOCP_METHODS`。以下能力与 runtime 特�
 
 ### 5.1 重复的直接依赖
 
-`src-tauri/Cargo.toml` 与 `oclive_kernel_runtime` 历史上均声明（或间接固定）例如：`sqlx`、`zip`、`axum`、`reqwest`、`ed25519-dalek` 等。**`http_api` 与 CORS 已迁入 runtime 后，`tower-http` 已从壳层移除**（壳层不再直接依赖）。长期方向：
+`src-tauri/Cargo.toml` 与 `oclive_kernel_runtime` 历史上均声明（或间接固定）例如：`sqlx`、`zip`、`axum`、`reqwest`、`ed25519-dalek` 等（workspace `reqwest` 已不再启用 **`blocking`**，见 `PERF_PHASES.md` P4）。**`http_api` 与 CORS 已迁入 runtime 后，`tower-http` 已从壳层移除**（壳层不再直接依赖）。长期方向：
 
 - 桌面逻辑优先通过 **`oclive_kernel_runtime::...` 公开 API** 访问存储与市场 / 归档能力，避免在 `src-tauri` 再挂一层同类 crate。
 - 壳层独有 vs 可删（当前快照，删前仍以 `cargo check -p oclivenewnew-tauri` 为准）：
@@ -86,11 +86,11 @@ capabilities 中的方法列表见 `OOCP_METHODS`。以下能力与 runtime 特�
 | **`tauri` / `tauri-build` / `tauri-plugin-deep-link`** | ✅ 桌面 only | — |
 | **`notify`** | ✅ 目录插件 watcher | — |
 | **`sysinfo`** | ✅ 系统信息 | — |
-| **`axum`** | OOCP WS 适配器 `domain/adapters/oocp_ws.rs` 仍直接依赖 | 中长期子计划：`handoff/LIGHTWEIGHT_OOCP_WS_AXUM_FOLLOWUP.md` |
+| **`axum`** | — | ✅ 已删直连；OOCP WS 仅 **`oclive_kernel_runtime::http_api`**；壳层集成测试保留 **`dev-dependencies`** 中的 `axum`（`tests/http_api_chat.rs`）；子计划见 `handoff/LIGHTWEIGHT_OOCP_WS_AXUM_FOLLOWUP.md` |
 | **`sqlx`** | — | ✅ 壳层 lib 不再直连；集成测试经 **`dev-dependencies`** 使用（与 kernel 仍可能传递重复链接，见后续是否收紧） |
 | **`zip` / `sha2` / `walkdir`（打包路径）** | — | ✅ `pack_plugin` 已改为 `plugin_archive::pack_plugin_directory_to_zip_deflated` |
 | **`reqwest` / `ed25519-dalek` / `base64`** | — | ✅ 壳层未引用条目已移除（HTTP/验签在 kernel） |
-| **`chrono` / `uuid` / …** | `chrono` 等仍被壳层模块使用 | 随命令迁移优先走 runtime |
+| **`chrono` / `uuid`** | — | ✅ 壳层已移除直连（内存 TTL 缓存改用 `std::time`；`uuid` 无引用） |
 | **`tower-http`** | — | ✅ 已删（仅 `http_api` CORS 用过；现由 runtime 承担） |
 
 ### 5.2 `http_api` 双轨

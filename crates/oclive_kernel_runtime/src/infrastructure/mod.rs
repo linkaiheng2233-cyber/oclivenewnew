@@ -1,5 +1,6 @@
 //! Infrastructure：存储、LLM、目录插件、远程插件 JSON-RPC 等。
 
+pub mod blocking_http;
 pub mod cloud_llm;
 pub mod db;
 pub mod directory_plugins;

@@ -12,18 +12,18 @@ use std::collections::{HashMap, HashSet};
 const METHOD_MEMORY_RANK: &str = "memory.rank";
 
 pub struct RemoteMemoryRetrievalHttp {
-    client: reqwest::blocking::Client,
+    client: reqwest::Client,
     cfg: RemotePluginHttpConfig,
     fallback: BuiltinMemoryRetrieval,
 }
 
 impl RemoteMemoryRetrievalHttp {
     pub fn new(cfg: RemotePluginHttpConfig) -> Self {
-        let client = reqwest::blocking::Client::builder()
+        let client = reqwest::Client::builder()
             .connect_timeout(cfg.connect_timeout())
             .timeout(cfg.timeout)
             .build()
-            .expect("reqwest blocking client");
+            .expect("reqwest client");
         Self {
             client,
             cfg,

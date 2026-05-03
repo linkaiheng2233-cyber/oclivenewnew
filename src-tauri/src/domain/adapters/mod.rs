@@ -1,13 +1,5 @@
 //! 发行版适配：连接内核能力与各平台传输/UI 的薄层。
 //!
-//! 每个适配器为一个文件或子模块，负责：
-//! - 将平台特定请求（Tauri invoke / OOCP WS / CLI）转为内核调用
-//! - 将内核响应/事件转为平台特定格式
-//!
-//! 当前阶段：模块骨架；实现逐步迁入。
-
-pub mod oocp_ws;
-pub mod tauri_oocp_handler;
-
-// TODO P0-A：实现 Tauri invoke → core 映射
-// pub mod tauri_invoke;
+//! OOCP WebSocket（`/oocp`）与无头 HTTP API 的完整路由在 **`oclive_kernel_runtime::http_api`**
+//!（`kernel-http-api`）；桌面 `--api` 通过根 `crate::http_api` 对 runtime 的 **re-export** 暴露。
+//! 壳层不再保留重复的 Axum OOCP 适配器，亦不再直接依赖 `axum`（集成测试见 `dev-dependencies`）。

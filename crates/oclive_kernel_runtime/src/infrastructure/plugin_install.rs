@@ -6,6 +6,8 @@ use crate::infrastructure::directory_plugins::{
     OclivePluginManifest,
 };
 #[cfg(feature = "role-pack-zip")]
+use crate::infrastructure::blocking_http::block_on;
+#[cfg(feature = "role-pack-zip")]
 use crate::infrastructure::plugin_archive::extract_oclive_plugin_archive;
 #[cfg(feature = "role-pack-zip")]
 use crate::infrastructure::plugin_package_verify::verify_plugin_package_signature_text;
@@ -244,27 +246,36 @@ pub fn install_plugin_from_download_urls_at(
     download_url: &str,
     signature_url: &str,
 ) -> Result<String> {
-    let cli = reqwest::blocking::Client::builder()
+    let download_url = download_url.to_string();
+    let signature_url = signature_url.to_string();
+    let cli = reqwest::Client::builder()
         .timeout(std::time::Duration::from_secs(60))
         .build()
         .map_err(|e| AppError::Unknown(format!("download http client failed: {}", e)))?;
-    let archive_bytes = cli
-        .get(download_url)
-        .send()
-        .map_err(|e| AppError::Unknown(format!("download plugin failed: {}", e)))?
-        .error_for_status()
-        .map_err(|e| AppError::Unknown(format!("download plugin status failed: {}", e)))?
-        .bytes()
-        .map_err(|e| AppError::Unknown(format!("read plugin bytes failed: {}", e)))?
-        .to_vec();
-    let sig_text = cli
-        .get(signature_url)
-        .send()
-        .map_err(|e| AppError::Unknown(format!("download signature failed: {}", e)))?
-        .error_for_status()
-        .map_err(|e| AppError::Unknown(format!("download signature status failed: {}", e)))?
-        .text()
-        .map_err(|e| AppError::Unknown(format!("read signature text failed: {}", e)))?;
+    let (archive_bytes, sig_text) = block_on(async move {
+        let archive_bytes = cli
+            .get(&download_url)
+            .send()
+            .await
+            .map_err(|e| AppError::Unknown(format!("download plugin failed: {}", e)))?
+            .error_for_status()
+            .map_err(|e| AppError::Unknown(format!("download plugin status failed: {}", e)))?
+            .bytes()
+            .await
+            .map_err(|e| AppError::Unknown(format!("read plugin bytes failed: {}", e)))?
+            .to_vec();
+        let sig_text = cli
+            .get(&signature_url)
+            .send()
+            .await
+            .map_err(|e| AppError::Unknown(format!("download signature failed: {}", e)))?
+            .error_for_status()
+            .map_err(|e| AppError::Unknown(format!("download signature status failed: {}", e)))?
+            .text()
+            .await
+            .map_err(|e| AppError::Unknown(format!("read signature text failed: {}", e)))?;
+        Ok::<_, AppError>((archive_bytes, sig_text))
+    })?;
     verify_plugin_package_signature_text(index_entry, &sig_text, &archive_bytes)?;
     install_plugin_from_archive_bytes_at(plugins_root, app_data_dir, &archive_bytes)
 }

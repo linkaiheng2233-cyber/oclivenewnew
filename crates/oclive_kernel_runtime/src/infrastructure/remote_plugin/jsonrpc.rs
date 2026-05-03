@@ -1,5 +1,6 @@
 //! 最小 JSON-RPC 2.0 over HTTP POST（与 `creator-docs/plugin-and-architecture/REMOTE_PLUGIN_PROTOCOL.md` 一致）。
 
+use crate::infrastructure::blocking_http::block_on;
 use crate::error::{AppError, Result};
 use serde_json::{json, Value};
 use std::sync::atomic::{AtomicU64, Ordering};
@@ -80,91 +81,15 @@ fn body_preview(text: &str) -> String {
 
 pub fn call_blocking(
     channel: RemoteRpcChannel,
-    client: &reqwest::blocking::Client,
+    client: &reqwest::Client,
     url: &str,
     method: &str,
     params: Value,
     bearer_token: Option<&str>,
 ) -> Result<Value> {
-    let id = next_id();
-    let t0 = Instant::now();
-    let ch = channel.label();
-    let body = json!({
-        "jsonrpc": "2.0",
-        "id": id,
-        "method": method,
-        "params": params,
-    });
-    let mut req = client
-        .post(url)
-        .header(PROTOCOL_HEADER_NAME, PROTOCOL_HEADER_VALUE)
-        .header(CLIENT_VERSION_HEADER_NAME, env!("CARGO_PKG_VERSION"))
-        .json(&body);
-    if let Some(t) = bearer_token {
-        req = req.bearer_auth(t);
-    }
-    let resp = req.send().map_err(|e| {
-        let kind = classify_reqwest_error(&e);
-        let ms = t0.elapsed().as_millis();
-        log::warn!(
-            target: "oclive_plugin",
-            "{} rpc_fail kind={} phase=send method={} url={} duration_ms={} err={}",
-            ch,
-            kind,
-            method,
-            url,
-            ms,
-            e
-        );
-        AppError::OllamaError(format!(
-            "{} transport kind={} method={} url={} err={}",
-            ch, kind, method, url, e
-        ))
-    })?;
-    let status = resp.status();
-    let text = resp.text().map_err(|e| {
-        let ms = t0.elapsed().as_millis();
-        log::warn!(
-            target: "oclive_plugin",
-            "{} rpc_fail kind=read_body method={} url={} duration_ms={} err={}",
-            ch,
-            method,
-            url,
-            ms,
-            e
-        );
-        AppError::OllamaError(format!("{} body read: {}", ch, e))
-    })?;
-    if !status.is_success() {
-        let ms = t0.elapsed().as_millis();
-        log::warn!(
-            target: "oclive_plugin",
-            "{} rpc_fail kind=http_status method={} url={} status={} duration_ms={} body={}",
-            ch,
-            method,
-            url,
-            status,
-            ms,
-            body_preview(&text)
-        );
-        return Err(AppError::OllamaError(format!(
-            "{} http_status method={} url={} status={} body={}",
-            ch,
-            method,
-            url,
-            status,
-            body_preview(&text)
-        )));
-    }
-    log::debug!(
-        target: "oclive_plugin",
-        "{} rpc_ok method={} url={} duration_ms={}",
-        ch,
-        method,
-        url,
-        t0.elapsed().as_millis()
-    );
-    parse_jsonrpc_result(&text, method, id)
+    block_on(call_async(
+        channel, client, url, method, params, bearer_token,
+    ))
 }
 
 pub async fn call_async(

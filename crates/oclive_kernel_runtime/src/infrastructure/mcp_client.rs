@@ -3,6 +3,7 @@
 //! 完整实现依赖 `feature = "kernel-agent"`；关闭时仅为占位类型，避免拉入进程 / HTTP 调用路径。
 
 use crate::error::{AppError, Result};
+use crate::infrastructure::blocking_http::block_on;
 use serde::{Deserialize, Serialize};
 use serde_json::Value;
 use std::path::Path;
@@ -227,27 +228,36 @@ impl McpClient {
                 server.id
             )));
         };
-        let cli = reqwest::blocking::Client::builder()
+        let cli = reqwest::Client::builder()
             .timeout(self.timeout_for(server))
             .build()
             .map_err(|e| AppError::Unknown(format!("mcp http client error: {}", e)))?;
-        let resp = cli.post(url).json(&payload).send().map_err(|e| {
-            AppError::Unknown(format!("mcp http call failed ({}): {}", server.id, e))
-        })?;
-        let status = resp.status();
-        let body: Value = resp.json().map_err(|e| {
-            AppError::Unknown(format!(
-                "mcp http json decode failed ({}): {}",
-                server.id, e
-            ))
-        })?;
-        if !status.is_success() {
-            return Err(AppError::Unknown(format!(
-                "mcp http protocol error server={} status={} body={}",
-                server.id, status, body
-            )));
-        }
-        Ok(body)
+        let server_id = server.id.clone();
+        let url = url.clone();
+        block_on(async move {
+            let resp = cli
+                .post(&url)
+                .json(&payload)
+                .send()
+                .await
+                .map_err(|e| {
+                    AppError::Unknown(format!("mcp http call failed ({}): {}", server_id, e))
+                })?;
+            let status = resp.status();
+            let body: Value = resp.json().await.map_err(|e| {
+                AppError::Unknown(format!(
+                    "mcp http json decode failed ({}): {}",
+                    server_id, e
+                ))
+            })?;
+            if !status.is_success() {
+                return Err(AppError::Unknown(format!(
+                    "mcp http protocol error server={} status={} body={}",
+                    server_id, status, body
+                )));
+            }
+            Ok(body)
+        })
     }
 
     fn call_tool_stdio(&self, server: &McpServerManifest, payload: Value) -> Result<Value> {

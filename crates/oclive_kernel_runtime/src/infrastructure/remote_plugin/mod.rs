@@ -183,7 +183,7 @@ pub fn invoke_directory_plugin_rpc_blocking(
         url,
         matches!(channel, RemoteRpcChannel::Llm),
     );
-    let client = reqwest::blocking::Client::builder()
+    let client = reqwest::Client::builder()
         .connect_timeout(cfg.connect_timeout())
         .timeout(cfg.timeout)
         .build()

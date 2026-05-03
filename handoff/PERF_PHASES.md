@@ -5,7 +5,7 @@
 ## 收尾说明（v0.2）
 
 - **纳入收尾**：首包 chunk 策略、locale 按需、Release/tokio 依赖策略、门禁（`npm run check` / `npm run check:release`）与 handoff 互链。
-- **不纳入 v0.2 必达**：P4（workspace 去掉 `reqwest` `blocking`）；动刀前须单独设计 async 边界（见下「P4 未动原因」）。
+- **不纳入 v0.2 必达**：P4 曾列为可选；现已落地 workspace 去 `reqwest/blocking` 与 runtime 迁移（见下「P4 实施说明」）。
 - **维护约定**：新增大体积前端模块时，优先 **`defineAsyncComponent` + `v-if`**；新增文案键时维持 locale 文件结构，无需把两套语言重新打回主包。
 
 | 阶段 | 内容 | 状态 |
@@ -13,30 +13,28 @@
 | **P1** | 前端首包：`App.vue` 大块 `defineAsyncComponent` + `v-if`；`vite` `manualChunks`（vue-flow / i18n / pinia / tauri / scroller / sfc-loader）；`main.js` Sentry 延后 | ✅ |
 | **P2** | 文案包：`i18n` 仅 `mergeLocaleMessage` 当前 `effectiveLocale`，另一语言 `import()` 预取 | ✅ |
 | **P3** | Rust 发行：`[profile.release]`（`opt-level=z`、`lto=thin`、`codegen-units=1`）；workspace `tokio` 瘦 feature | ✅ |
-| **P4** | 去掉 workspace `reqwest` 的 **`blocking`** feature，全链路改 **`reqwest::Client` + async** | ⏸ 未做（见下） |
+| **P4** | 去掉 workspace `reqwest` 的 **`blocking`** feature；runtime 内 HTTP 走 **`reqwest::Client` + async**，同步边界经 `blocking_http::block_on` 小运行时桥接 | ✅ workspace 已关 `blocking`；runtime 已迁移（见下） |
 
-## P4 未动原因（避免 silent 回归）
+## P4 实施说明（避免 silent 回归）
 
-- **`McpClient`**、`invoke_directory_plugin_rpc_blocking`、若干 `remote_plugin/*_http` 与 **`PluginHost::call_mcp_tool`** 等为 **同步 API**，由 Tauri **`invoke`** 与 OOCp 路径直接调用；改为 async 需 **trait / `PluginHost` / 相关 `invoke` 命令** 一并改为 async 或 `spawn_blocking` 策略，并核对 **不在 async 上下文中 `block_on`**。
+- **同步 API 保留**：`McpClient`、`invoke_directory_plugin_rpc_blocking`、若干 `remote_plugin` 同步 trait 与 **`PluginHost::call_mcp_tool`** 等签名未改；HTTP 在实现内改为 **`reqwest::Client` + `.await`**，由 **`infrastructure::blocking_http::block_on`**（独立多线程 runtime）桥接。**注意**：从 **Tokio 异步任务** 调用这些同步 API 仍会阻塞当前 worker（与原先 `reqwest::blocking` 同类风险）；长路径应继续优先 **`tokio::task::spawn_blocking`** 或在 async 边界直接 **`call_async`**。
 - 侧车 `oclive-llama-sidecar` 使用 **独立** `Cargo.toml` 的 reqwest，与 workspace 解耦。
 - 门禁保持：`npm run check` / `npm run check:release`；Windows 全量测试可用 `scripts/check.ps1`（`CARGO_BUILD_JOBS=1` 缓解 LNK1104）。
 
 ### P4 迁移批次（按模块拆分 PR）
 
-在从 workspace `reqwest` 去掉 **`blocking`** 之前，建议按目录分批改为 **`reqwest::Client` + async**（或在 Tauri 边界统一 **`tokio::task::spawn_blocking`** 调用现有同步实现），每批独立 `cargo test` / `cargo clippy`。实现均位于 **`crates/oclive_kernel_runtime/src/infrastructure/`**（与 `LIGHTWEIGHT_PROFILE.md` 阶段 4 一致；**勿与** `handoff/LIGHTWEIGHT_FOLLOWUP_PLAN.md` 阶段 2 大批量删依赖混在同一 PR）。
+已在 **`crates/oclive_kernel_runtime/src/infrastructure/`** 收敛：**workspace `reqwest` 不再启用 `blocking`**；各模块使用 **`reqwest::Client` + `.await`**，仍对外暴露同步签名的入口（市场同步、`invoke_directory_plugin_rpc_blocking`、同步 `MemoryRetrieval` 等）在内部经 **`blocking_http::block_on`**（专用 Tokio 多线程 runtime）驱动 async 客户端，避免在异步任务中嵌套 `Handle::block_on`。
 
-1. **`mcp_client.rs`** — MCP HTTP transport（`reqwest::blocking` 集中点之一）
+1. **`mcp_client.rs`** — MCP HTTP：`call_raw_http` 已 async 化 + `block_on`
 2. **`plugin_index_sync.rs`**、**`plugin_reviews_index_sync.rs`**、**`role_market_index_sync.rs`** — 市场索引 HTTP
 3. **`plugin_install.rs`**、**`role_pack_archive.rs`** — 安装与归档下载
-4. **`remote_plugin/`** — `mod.rs`、`jsonrpc.rs`、`*_http.rs`（远程插件 JSON-RPC HTTP）
-
-每批合并后可在根 `Cargo.toml` / `crates/oclive_kernel_runtime/Cargo.toml` 核对是否仍启用 workspace `reqwest` 的 **`blocking`** feature，直至可关闭。
+4. **`remote_plugin/`** — `jsonrpc::call_blocking` 委托 `call_async`；`memory` / `emotion` / `prompt` / `complex_emotion` HTTP 与 `invoke_directory_plugin_rpc_blocking` 使用 **`reqwest::Client`**
 
 ### `spawn_blocking` 与 async 边界（过渡约定）
 
-- **Tauri `invoke` 命令体**：在 Tokio runtime 上执行；若仍须调用 **同步** `reqwest::blocking` 或阻塞式插件 RPC，应 **`tokio::task::spawn_blocking`** 包裹，且 **避免** 在 async 函数内直接 `block_on` 嵌套 runtime。
-- **内核侧**：`http_api` 等对磁盘与 `RoleStorage` 的阻塞访问已用 `spawn_blocking`（见 `oclive_kernel_runtime::http_api`）；市场同步等路径迁移到 async client 后，尽量在 **async 上下文** 直接使用 `.await`，减少线程池跳转。
-- **目标态**：workspace `reqwest` 仅保留 **`json` + `default-tls`（+ `gzip` 等）**，不再启用 **`blocking`**；届时上述同步 API 要么改为 async，要么明确为「仅允许从 `spawn_blocking` 调用」并在类型或文档中标注。
+- **Tauri `invoke` 命令体**：在 Tokio runtime 上执行；若仍须调用 **长时间** 同步内核 API（含经 `blocking_http` 的 HTTP），宜 **`tokio::task::spawn_blocking`** 包裹；**避免** 在 async 任务内对 **同一** Tokio runtime 再 `Handle::block_on`。
+- **内核侧**：`http_api` 等对磁盘与 `RoleStorage` 的阻塞访问已用 `spawn_blocking`（见 `oclive_kernel_runtime::http_api`）；新建纯 async 路径可优先 **`reqwest::Client` + `.await`**（如 `jsonrpc::call_async`），不必再经 `blocking_http`。
+- **目标态（已达成）**：workspace `reqwest` 为 **`json` + `default-tls`（+ `gzip` 等）**，**无 `blocking`**；对外同步 API 与 `blocking_http` 的边界见 `crates/oclive_kernel_runtime/src/infrastructure/blocking_http.rs`。
 
 ## 验收与对照
 

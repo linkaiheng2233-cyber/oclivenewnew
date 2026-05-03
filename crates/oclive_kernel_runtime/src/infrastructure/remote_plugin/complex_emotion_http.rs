@@ -11,18 +11,18 @@ use crate::infrastructure::remote_plugin::jsonrpc::{self, RemoteRpcChannel};
 const METHOD_RESOLVE_TURN: &str = "complex_emotion.resolve_turn";
 
 pub struct RemoteComplexEmotionHttp {
-    client: reqwest::blocking::Client,
+    client: reqwest::Client,
     cfg: RemotePluginHttpConfig,
     fallback: BuiltinKeywordComplexEmotionProvider,
 }
 
 impl RemoteComplexEmotionHttp {
     pub fn new(cfg: RemotePluginHttpConfig) -> Self {
-        let client = reqwest::blocking::Client::builder()
+        let client = reqwest::Client::builder()
             .timeout(cfg.timeout)
             .connect_timeout(cfg.connect_timeout())
             .build()
-            .expect("reqwest blocking client for complex_emotion");
+            .expect("reqwest client for complex_emotion");
         Self {
             client,
             cfg,

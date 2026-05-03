@@ -1,6 +1,7 @@
 //! 插件评价索引 HTTP 拉取、校验与磁盘缓存。
 
 use crate::error::{AppError, Result};
+use crate::infrastructure::blocking_http::block_on;
 use crate::models::plugin_reviews_index::PluginReviewsIndexFile;
 use oclive_validation::validate_plugin_reviews_index_v1;
 use std::fs;
@@ -48,24 +49,28 @@ pub fn sync_plugin_reviews_index_from_url(
     url: &str,
     cache_path: &Path,
 ) -> Result<PluginReviewsIndexFile> {
-    let cli = reqwest::blocking::Client::builder()
+    let url = url.to_string();
+    let cli = reqwest::Client::builder()
         .timeout(std::time::Duration::from_secs(15))
         .build()
         .map_err(|e| AppError::Unknown(format!("reviews http client failed: {}", e)))?;
-    let resp = cli
-        .get(url)
-        .send()
-        .map_err(|e| AppError::Unknown(format!("sync reviews index failed: {}", e)))?;
-    if !resp.status().is_success() {
-        return Err(AppError::Unknown(format!(
-            "sync reviews index status={} url={}",
-            resp.status(),
-            url
-        )));
-    }
-    let text = resp
-        .text()
-        .map_err(|e| AppError::Unknown(format!("read reviews index response failed: {}", e)))?;
+    let text = block_on(async move {
+        let resp = cli
+            .get(&url)
+            .send()
+            .await
+            .map_err(|e| AppError::Unknown(format!("sync reviews index failed: {}", e)))?;
+        if !resp.status().is_success() {
+            return Err(AppError::Unknown(format!(
+                "sync reviews index status={} url={}",
+                resp.status(),
+                url
+            )));
+        }
+        resp.text()
+            .await
+            .map_err(|e| AppError::Unknown(format!("read reviews index response failed: {}", e)))
+    })?;
 
     validate_plugin_reviews_index_v1(&text)
         .map_err(|e| AppError::Unknown(format!("reviews.json validate failed: {}", e)))?;

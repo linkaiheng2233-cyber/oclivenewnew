@@ -11,17 +11,17 @@ use serde_json::json;
 const METHOD_EMOTION_ANALYZE: &str = "emotion.analyze";
 
 pub struct RemoteUserEmotionAnalyzerHttp {
-    client: reqwest::blocking::Client,
+    client: reqwest::Client,
     cfg: RemotePluginHttpConfig,
     fallback: BuiltinUserEmotionAnalyzer,
 }
 
 impl RemoteUserEmotionAnalyzerHttp {
     pub fn new(cfg: RemotePluginHttpConfig) -> Self {
-        let client = reqwest::blocking::Client::builder()
+        let client = reqwest::Client::builder()
             .timeout(cfg.timeout)
             .build()
-            .expect("reqwest blocking client");
+            .expect("reqwest client");
         Self {
             client,
             cfg,
