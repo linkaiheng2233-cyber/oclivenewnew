@@ -3,11 +3,18 @@ name = "oclive_kernel_runtime"
 version = "0.1.0"
 edition = "2021"
 license = "AGPL-3.0"
-description = "Oclive kernel runtime (standalone): state, domain, infrastructure and OOCP bindings"
+description = "Oclive kernel runtime: portable domain, SQLite persistence, plugins, and optional Axum HTTP/OOCP WS."
+readme = "README.md"
+keywords = ["oclive", "kernel", "chat", "roleplay", "plugin"]
+categories = ["api-bindings", "web-programming::http-server"]
 
 [features]
-default = []
-## Desktop 壳启用后，为 `AppError -> tauri::InvokeError` 提供实现（孤儿规则要求与 `AppError` 同 crate）。
+## 默认与官方桌面 / kernel_server 一致；嵌入式宿主可用 `default-features = false` 并按需开启子特性。
+default = ["full"]
+full = ["kernel-http-api"]
+## 本地 HTTP 试聊 + OOCP WebSocket（Axum）；关闭后可省去 axum/tower-http 编译。
+kernel-http-api = ["dep:axum", "dep:tower-http"]
+## Desktop 壳：`AppError -> tauri::InvokeError`（孤儿规则）。
 tauri_invoke = ["dep:tauri"]
 
 [dependencies]
@@ -33,10 +40,9 @@ tempfile = "3.8"
 toml = "0.8"
 walkdir = "2.5"
 semver = "1.0"
-notify = "6"
 zip = { version = "0.6", default-features = false, features = ["deflate"] }
-axum = { version = "0.7", features = ["ws"] }
-tower-http = { version = "0.5", features = ["cors"] }
+axum = { version = "0.7", optional = true, features = ["ws"] }
+tower-http = { version = "0.5", optional = true, features = ["cors"] }
 futures-util = "0.3"
 sha2 = "0.11.0"
 base64 = "0.22"

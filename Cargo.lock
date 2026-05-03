@@ -2800,7 +2800,6 @@ dependencies = [
  "env_logger",
  "futures-util",
  "log",
- "notify",
  "oclive_core",
  "oclive_validation",
  "once_cell",

@@ -1,7 +1,8 @@
 # 内核入口清单（Kernel Entry Checklist）
 
 > 从 `src-tauri/src/lib.rs` 的 `tauri::generate_handler!` 提取的当前对外能力清单  
-> 所有 OOCP 方法映射见 `creator-docs/oocp/OOCP_SPEC_v0_1.md`
+> 所有 OOCP 方法映射见 `creator-docs/oocp/OOCP_SPEC_v0_1.md`  
+> **命令 ↔ `api/` / 内核模块对照表**：[KERNEL_API_IMPLEMENTATION_MATRIX.md](./KERNEL_API_IMPLEMENTATION_MATRIX.md)
 
 ---
 
