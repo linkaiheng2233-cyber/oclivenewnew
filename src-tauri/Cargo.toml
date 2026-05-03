@@ -6,9 +6,26 @@ license = "AGPL-3.0"
 description = "oclive desktop companion — Tauri + Vue + Rust dialogue engine"
 
 [features]
-default = ["tauri-app", "custom-protocol"]
+default = [
+  "tauri-app",
+  "custom-protocol",
+  "invoke-full",
+]
 tauri-app = ["dep:tauri", "dep:tauri-plugin-deep-link", "dep:tauri-build"]
 custom-protocol = ["tauri/custom-protocol"]
+# Optional Tauri `invoke` command groups (see `src/invoke_registry.rs` + `src/gen/tauri-invoke-capabilities.ts`).
+invoke-full = [
+  "invoke-agent",
+  "invoke-expert-models",
+  "invoke-role-market",
+  "invoke-plugin-market",
+  "invoke-plugin-creator",
+]
+invoke-agent = []
+invoke-expert-models = []
+invoke-role-market = []
+invoke-plugin-market = []
+invoke-plugin-creator = []
 
 [dependencies]
 oclive_validation = { path = "../crates/oclive_validation" }

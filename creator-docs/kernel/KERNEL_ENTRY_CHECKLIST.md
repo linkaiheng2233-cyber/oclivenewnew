@@ -1,6 +1,6 @@
 # 内核入口清单（Kernel Entry Checklist）
 
-> 从 `src-tauri/src/lib.rs` 的 `tauri::generate_handler!` 提取的当前对外能力清单  
+> 从 `src-tauri/src/lib.rs` 的 `oclive_invoke_handler!()`（定义于 `src-tauri/src/invoke_registry.rs`）提取的当前对外能力清单；可选 `invoke-*` 特性见 [`LIGHTWEIGHT_PROFILE.md`](./LIGHTWEIGHT_PROFILE.md) §4.2。  
 > 所有 OOCP 方法映射见 `creator-docs/oocp/OOCP_SPEC_v0_1.md`  
 > **命令 ↔ `api/` / 内核模块对照表**：[KERNEL_API_IMPLEMENTATION_MATRIX.md](./KERNEL_API_IMPLEMENTATION_MATRIX.md)  
 > **轻量场景与 `Cargo` 特性 / `invoke` 分组**：[LIGHTWEIGHT_PROFILE.md](./LIGHTWEIGHT_PROFILE.md)

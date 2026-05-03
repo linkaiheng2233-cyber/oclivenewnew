@@ -38,6 +38,8 @@ jobs:
         run: cargo test --workspace
       - name: kernel_runtime without default features (minimal closure)
         run: cargo check -p oclive_kernel_runtime --no-default-features
+      - name: Tauri desktop minimal invoke surface (core invoke only)
+        run: cargo check -p oclivenewnew-tauri --no-default-features --features tauri-app,custom-protocol
 
   frontend:
     strategy:

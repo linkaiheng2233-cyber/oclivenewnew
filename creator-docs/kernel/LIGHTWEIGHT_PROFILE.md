@@ -52,7 +52,7 @@ capabilities 中的方法列表见 `OOCP_METHODS`。以下能力与 runtime 特�
 
 ### 4.1 按主题的 invoke 分组（便于 SKU / 前端对齐）
 
-下列分组 **仅作文档与裁剪清单**，便于将来按 SKU 删命令或做条件前端构建；**当前仓库仍为单次全量注册**。
+下列分组与 `src-tauri/invoke_lists/*.txt` 及 Cargo `invoke-*` 特性一致；**默认 `invoke-full` 仍为全量注册**。若本地执行了 `cargo check -p oclivenewnew-tauri --no-default-features --features tauri-app,custom-protocol`，`build.rs` 会把 `src/gen/tauri-invoke-capabilities.ts` 写成全 `false`；恢复官方前端契约可再跑一次默认的 `cargo check -p oclivenewnew-tauri`（或从版本库还原该文件）。
 
 | 分组 | 命令示例（Rust 路径 → 前端 camelCase 参数） |
 |------|---------------------------------------------|
@@ -61,9 +61,12 @@ capabilities 中的方法列表见 `OOCP_METHODS`。以下能力与 runtime 特�
 | **角色 / 插件市场** | `api::role_market::*`、`api::plugin_index::*`、`api::plugin_reviews::*`、`api::plugin_update::*` |
 | **创作者工具链** | `api::plugin_scaffold::*`、`api::plugin_pack::*`、`api::plugin_debug::*` |
 
-### 4.2 为何暂不在 Rust 侧对 `generate_handler!` 做 `cfg` 裁剪
+### 4.2 桌面 `invoke-*` 特性与 `generate_handler!` 裁剪（已实现）
 
-`tauri::generate_handler!` 为过程宏，其输入中的 **`#[cfg(...)]` 修饰单项命令路径** 或 **嵌套的 `macro_rules!` 片段** 往往无法按预期展开；可靠做法包括：**维护多套 handler 列表（不同模块或 `build.rs` 生成）**、或 **前端 / 打包层** 不发起未编译命令。若引入极简 SKU，建议在 PR 中任选其一并更新本文与 MATRIX。
+`tauri::generate_handler!` 过程宏**不能**在参数里嵌套展开子 `macro_rules!()` 片段；做法是在 `src-tauri/src/invoke_registry.rs` 的 **`oclive_invoke_handler!` 单条列表** 上，对可选命令逐条写 `#[cfg(feature = "invoke-…")]`（cfg 在过程宏之前剥离）。
+
+- **Cargo**：`oclivenewnew-tauri` 的 `default` 包含 `invoke-full`；后者聚合 `invoke-agent`、`invoke-expert-models`、`invoke-role-market`、`invoke-plugin-market`、`invoke-plugin-creator`。极简 SKU 示例：`cargo build -p oclivenewnew-tauri --no-default-features --features tauri-app,custom-protocol`（仅核心 invoke；需同步前端能力文件，见下）。
+- **前端契约**：`src-tauri/build.rs` 在带 `tauri-app` 的 `cargo build`/`check` 时重写 `src/gen/tauri-invoke-capabilities.ts`；`src/lib/tauriInvokeCapabilities.ts` 维护命令名到分组的映射；`src/utils/tauri-api.ts` 在 `invoke` 前对缺省分组给出友好错误。新增可选分组命令时须同时改 **Rust 宏列表** 与 **`COMMAND_CAPABILITY` 映射**。
 
 ---
 

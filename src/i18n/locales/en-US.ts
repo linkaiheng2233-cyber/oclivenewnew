@@ -61,6 +61,10 @@ export const enUS = {
       hostJsonSerdeFailed:
         "Plugin bridge returned data that cannot be serialized to JSON. Host and plugin interface may be incompatible; check console logs.",
     },
+    invoke: {
+      notCompiled:
+        'The "{command}" command is not included in this desktop build (invoke group "{group}"). Rebuild with the matching Cargo feature (see `src-tauri/Cargo.toml` invoke-*).',
+    },
   },
   common: {
     save: "Save",

@@ -56,6 +56,10 @@ export const zhCN = {
       hostJsonSerdeFailed:
         "插件桥返回的数据无法序列化为 JSON，可能是宿主与插件接口不兼容，请查看控制台日志。",
     },
+    invoke: {
+      notCompiled:
+        "当前桌面构建未包含「{command}」命令（invoke 分组「{group}」）。请使用对应的 Cargo 特性重新编译（见 `src-tauri/Cargo.toml` 的 invoke-*）。",
+    },
   },
   common: {
     save: "保存",

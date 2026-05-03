@@ -1,5 +1,9 @@
 import { invoke } from "@tauri-apps/api/tauri";
 import { i18n } from "../i18n";
+import {
+  TAURI_INVOKE_CAPABILITIES,
+  capabilityKeyForCommand,
+} from "../lib/tauriInvokeCapabilities";
 
 function t(key: string, params?: Record<string, unknown>): string {
   return String(i18n.global.t(key as any, params as any));
@@ -584,6 +588,22 @@ async function invokeWithFriendlyError<T>(
   command: string,
   payload: Record<string, unknown>,
 ): Promise<T> {
+  const cap = capabilityKeyForCommand(command);
+  if (cap && !TAURI_INVOKE_CAPABILITIES[cap]) {
+    const friendly: FriendlyError = {
+      code: "INVOKE_NOT_COMPILED",
+      message: t("apiErrors.invoke.notCompiled", {
+        command,
+        group: cap,
+      }),
+      raw: `invoke ${command} (${cap} disabled)`,
+    };
+    console.error(`[tauri:${command}]`, friendly.code ?? "?", friendly.raw);
+    if (errorReporter) {
+      errorReporter(friendly);
+    }
+    throw new Error(friendly.message);
+  }
   try {
     return await invoke<T>(command, payload);
   } catch (err) {
