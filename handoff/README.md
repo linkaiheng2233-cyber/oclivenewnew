@@ -36,6 +36,7 @@
 | `WEEKLY_DEV_GUIDE.md` | **周节奏 + 任务 + 门禁**（WEEK3 起） |
 | `KERNEL_MIGRATION_COMPLETE.md` | **内核迁入收尾**：模块归属与自检命令 |
 | `../creator-docs/kernel/LIGHTWEIGHT_PROFILE.md` | **runtime 轻量 profile**：`Cargo` 特性组合、场景矩阵、CI / `scripts/check_kernel_runtime_minimal.*`、`invoke` 与依赖/`http_api` 拟定说明 |
+| `LIGHTWEIGHT_FOLLOWUP_PLAN.md` | **轻量化后续阶段**：`http_api` 单源、Tauri 依赖去重、`tauri-invoke-capabilities` 防呆、P4 reqwest 与执行顺序 |
 
 **Cursor 规则**：项目根 `.cursor/rules/oclivenewnew.mdc`（指向 `handoff` 文档）。
 
