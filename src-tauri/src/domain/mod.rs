@@ -4,7 +4,8 @@ pub mod adapters;
 
 pub use oclive_kernel_runtime::domain::{
     affect_policy, agent, app_settings_commands, chat_engine, chat_llm_fallback, chat_turn,
-    chat_turn_rules, complex_emotion, conversation_query, core, emotion_analyzer, event_commands,
+    chat_turn_rules, complex_emotion, conversation_query, core, directory_plugin_commands,
+    emotion_analyzer, event_commands,
     event_detector, event_estimator, event_impact_ai,
     expert_models, expert_models_admin, export_chat_logs, knowledge_loader, life_schedule,
     local_plugin_bridge,

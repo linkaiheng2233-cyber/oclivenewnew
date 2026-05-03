@@ -20,21 +20,7 @@ const MAX_PLUGIN_ARCHIVE_FILES: usize = 2000;
 const MAX_PLUGIN_ARCHIVE_TOTAL_BYTES: u64 = 50 * 1024 * 1024;
 const MAX_PLUGIN_ARCHIVE_SINGLE_FILE_BYTES: u64 = 10 * 1024 * 1024;
 
-#[derive(Debug, Clone, Serialize, Deserialize)]
-#[serde(rename_all = "camelCase")]
-pub struct PluginInstallMeta {
-    pub install_method: String, // git|git_tag|archive
-    #[serde(default)]
-    pub git_url: Option<String>,
-    #[serde(default)]
-    pub pinned_tag: Option<String>,
-    /// 索引/manifest 声明的权限（用于前端展示“声明 vs 授予”对照）
-    #[serde(default)]
-    pub declared_permissions: Vec<String>,
-    /// 用户在安装时同意并写入 grants 的权限快照（便于可视化对照；真实执行以 DB grants 为准）
-    #[serde(default)]
-    pub granted_permissions: Vec<String>,
-}
+pub type PluginInstallMeta = crate::models::dto::PluginInstallMetaDto;
 
 // NOTE: 权限 token 映射与种子逻辑已迁移到 API 层：
 // - 市场安装：只写入用户 consent 的权限子集
@@ -562,9 +548,7 @@ fn write_install_meta(root: &Path, meta: &PluginInstallMeta) -> Result<(), AppEr
 }
 
 pub fn read_install_meta(root: &Path) -> Option<PluginInstallMeta> {
-    let p = root.join(".oclive_install.json");
-    let raw = fs::read_to_string(p).ok()?;
-    serde_json::from_str(&raw).ok()
+    oclive_kernel_runtime::infrastructure::directory_plugins::read_plugin_install_meta(root)
 }
 
 pub fn install_plugin_from_archive_bytes(

@@ -1,6 +1,8 @@
 //! 全局快捷键：注册/注销与事件派发（`hotkey-action`）。
 
-use crate::infrastructure::hotkey_bindings::{HotkeyAction, HotkeyBindingsFile};
+use crate::infrastructure::hotkey_bindings::{
+    validate_hotkey_bindings, HotkeyAction, HotkeyBindingsFile,
+};
 use crate::state::AppState;
 use serde::Serialize;
 use tauri::{AppHandle, GlobalShortcutManager, Manager, State};
@@ -10,23 +12,6 @@ use tauri::{AppHandle, GlobalShortcutManager, Manager, State};
 struct HotkeyActionEvent {
     binding_id: String,
     action: HotkeyAction,
-}
-
-fn validate_hotkey_bindings(file: &HotkeyBindingsFile) -> Result<(), String> {
-    let mut seen = std::collections::HashSet::new();
-    for b in &file.bindings {
-        if !b.enabled {
-            continue;
-        }
-        let acc = b.accelerator.trim();
-        if acc.is_empty() {
-            continue;
-        }
-        if !seen.insert(acc.to_string()) {
-            return Err(format!("重复的已启用快捷键：{}", acc));
-        }
-    }
-    Ok(())
 }
 
 /// 注销全部后按配置注册；仅 `enabled` 为真且 `accelerator` 非空的条目会注册。

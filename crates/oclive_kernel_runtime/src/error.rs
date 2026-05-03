@@ -20,6 +20,14 @@ pub enum AppError {
     #[error("Invalid parameter: {0}")]
     InvalidParameter(String),
 
+    /// 目录插件资产路径越权等（与桌面 `ApiError::PermissionDenied` 码对齐）。
+    #[error("{0}")]
+    PermissionDenied(String),
+
+    /// 扫描表中不存在该 `manifest.id`（与桌面 `ApiError::PluginNotFound` 展示语义对齐）。
+    #[error("unknown plugin_id={0}")]
+    DirectoryPluginNotFound(String),
+
     #[error("Serialization error: {0}")]
     SerializationError(#[from] serde_json::Error),
 
@@ -44,6 +52,8 @@ impl AppError {
             AppError::RoleNotFound(_) => "ROLE_NOT_FOUND",
             AppError::RolePackExists(_) => "ROLE_PACK_EXISTS",
             AppError::InvalidParameter(_) => "INVALID_PARAMETER",
+            AppError::PermissionDenied(_) => "API_PERMISSION_DENIED",
+            AppError::DirectoryPluginNotFound(_) => "API_PLUGIN_NOT_FOUND",
             AppError::SerializationError(_) => "SERDE_ERROR",
             AppError::Unknown(_) => "UNKNOWN_ERROR",
             AppError::ChatGenerationCancelled => "CHAT_GENERATION_CANCELLED",

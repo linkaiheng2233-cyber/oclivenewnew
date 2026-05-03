@@ -881,3 +881,80 @@ pub struct SetRoleFeedbackHandledRequest {
     #[serde(default)]
     pub note: Option<String>,
 }
+
+// ----- 目录插件：bootstrap / catalog（与 `get_directory_plugin_bootstrap`、`get_directory_plugin_catalog` 契约一致）-----
+
+/// 插件安装侧载元数据（`.oclive_install.json`）。
+#[derive(Debug, Clone, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct PluginInstallMetaDto {
+    pub install_method: String,
+    #[serde(default)]
+    pub git_url: Option<String>,
+    #[serde(default)]
+    pub pinned_tag: Option<String>,
+    #[serde(default)]
+    pub declared_permissions: Vec<String>,
+    #[serde(default)]
+    pub granted_permissions: Vec<String>,
+}
+
+#[derive(Debug, Clone, Serialize)]
+#[serde(rename_all = "camelCase")]
+pub struct PluginUiSlotDto {
+    pub plugin_id: String,
+    pub slot: String,
+    pub appearance_id: String,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub label: Option<String>,
+    pub entry: String,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub vue_component: Option<String>,
+    pub url: String,
+}
+
+#[derive(Debug, Serialize)]
+#[serde(rename_all = "camelCase")]
+pub struct DirectoryPluginBootstrapDto {
+    pub shell_url: Option<String>,
+    pub shell_plugin_id: Option<String>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub shell_vue_entry: Option<String>,
+    pub force_iframe_mode: bool,
+    pub plugin_ids: Vec<String>,
+    pub developer_mode: bool,
+    pub subscribed_host_events: Vec<String>,
+    pub supported_ui_slots: Vec<String>,
+    pub ui_slots: Vec<PluginUiSlotDto>,
+}
+
+#[derive(Debug, Clone, Serialize)]
+#[serde(rename_all = "camelCase")]
+pub struct UiSlotVariantDto {
+    pub slot: String,
+    pub appearance_id: String,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub label: Option<String>,
+}
+
+#[derive(Debug, Clone, Serialize)]
+#[serde(rename_all = "camelCase")]
+pub struct DirectoryPluginCatalogEntry {
+    pub id: String,
+    pub version: String,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub plugin_type: Option<String>,
+    pub has_ui_settings: bool,
+    pub has_rpc_process: bool,
+    pub declares_rpc_methods: bool,
+    pub is_shell: bool,
+    pub ui_slot_names: Vec<String>,
+    #[serde(default, skip_serializing_if = "Vec::is_empty")]
+    pub ui_slot_variants: Vec<UiSlotVariantDto>,
+    pub provides: Vec<String>,
+    pub dependency_status: String,
+    #[serde(skip_serializing_if = "Vec::is_empty")]
+    pub dependency_issues: Vec<String>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub install_meta: Option<PluginInstallMetaDto>,
+}

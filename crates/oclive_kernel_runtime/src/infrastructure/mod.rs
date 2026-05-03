@@ -4,6 +4,7 @@ pub mod cloud_llm;
 pub mod db;
 pub mod directory_plugins;
 pub mod function_call_parser;
+pub mod hotkey_bindings;
 pub mod llm;
 pub mod llm_params;
 pub mod mcp_client;
