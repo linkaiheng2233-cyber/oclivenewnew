@@ -4,13 +4,12 @@ use crate::error::AppError;
 use crate::infrastructure::directory_plugins::OclivePluginManifest;
 use crate::state::AppState;
 use oclive_kernel_runtime::infrastructure::plugin_archive::extract_oclive_plugin_archive_file;
+use oclive_kernel_runtime::infrastructure::plugin_layout::{copy_plugin_tree, find_plugin_manifest_root};
 use serde::Serialize;
 use std::collections::HashMap;
 use std::fs;
-use std::path::{Path, PathBuf};
+use std::path::PathBuf;
 use tauri::State;
-use walkdir::WalkDir;
-
 use super::bridge_manifest_permissions::bridge_permission_tokens_from_manifest;
 
 #[derive(Debug, Clone, Serialize)]
@@ -61,41 +60,6 @@ pub fn check_plugin_updates(
     Ok(out)
 }
 
-fn find_manifest_root(dir: &Path) -> Result<PathBuf, String> {
-    let direct = dir.join("manifest.json");
-    if direct.is_file() {
-        return Ok(dir.to_path_buf());
-    }
-    let subs: Vec<_> = fs::read_dir(dir)
-        .map_err(|e| e.to_string())?
-        .filter_map(|e| e.ok())
-        .filter(|e| e.path().is_dir())
-        .collect();
-    if subs.len() == 1 {
-        let p = subs[0].path();
-        if p.join("manifest.json").is_file() {
-            return Ok(p);
-        }
-    }
-    Err("zip 中未找到有效的 manifest.json（根目录或单一顶层目录内）".to_string())
-}
-
-fn copy_dir_all(src: &Path, dst: &Path) -> Result<(), String> {
-    for entry in WalkDir::new(src).into_iter().filter_map(|e| e.ok()) {
-        let rel = entry.path().strip_prefix(src).map_err(|e| e.to_string())?;
-        let out = dst.join(rel);
-        if entry.file_type().is_dir() {
-            fs::create_dir_all(&out).map_err(|e| e.to_string())?;
-        } else {
-            if let Some(parent) = out.parent() {
-                fs::create_dir_all(parent).map_err(|e| e.to_string())?;
-            }
-            fs::copy(entry.path(), &out).map_err(|e| e.to_string())?;
-        }
-    }
-    Ok(())
-}
-
 fn resolve_install_dir(state: &AppState, plugin_id: &str) -> PathBuf {
     let roots = state.directory_plugins.plugin_roots.read();
     if let Some(p) = roots.get(plugin_id) {
@@ -135,7 +99,7 @@ pub async fn extract_plugin_zip(
     let tmp = tempfile::tempdir().map_err(|e| e.to_string())?;
     extract_oclive_plugin_archive_file(&zip_path, tmp.path())
         .map_err(|e: AppError| e.to_frontend_error())?;
-    let staged = find_manifest_root(tmp.path())?;
+    let staged = find_plugin_manifest_root(tmp.path()).map_err(|e: AppError| e.to_frontend_error())?;
     let manifest = OclivePluginManifest::load_from_dir(&staged)?;
     if manifest.id.trim() != pid {
         return Err(format!(
@@ -155,7 +119,7 @@ pub async fn extract_plugin_zip(
         fs::remove_dir_all(&target).map_err(|e| format!("删除旧插件目录: {}", e))?;
     }
     fs::create_dir_all(&target).map_err(|e| e.to_string())?;
-    copy_dir_all(&staged, &target)?;
+    copy_plugin_tree(&staged, &target).map_err(|e: AppError| e.to_frontend_error())?;
 
     state
         .directory_plugins
@@ -210,7 +174,7 @@ pub fn preview_plugin_zip_permissions(
     let tmp = tempfile::tempdir().map_err(|e| e.to_string())?;
     extract_oclive_plugin_archive_file(&zip_path, tmp.path())
         .map_err(|e: AppError| e.to_frontend_error())?;
-    let staged = find_manifest_root(tmp.path())?;
+    let staged = find_plugin_manifest_root(tmp.path()).map_err(|e: AppError| e.to_frontend_error())?;
     let manifest = OclivePluginManifest::load_from_dir(&staged)?;
     let pid = manifest.id.trim().to_string();
     if pid.is_empty() {
@@ -292,7 +256,7 @@ pub fn install_plugin_dir(
         fs::remove_dir_all(&target).map_err(|e| format!("删除旧插件目录: {}", e))?;
     }
     fs::create_dir_all(&target).map_err(|e| e.to_string())?;
-    copy_dir_all(&dir_path, &target)?;
+    copy_plugin_tree(&dir_path, &target).map_err(|e: AppError| e.to_frontend_error())?;
 
     state
         .directory_plugins
