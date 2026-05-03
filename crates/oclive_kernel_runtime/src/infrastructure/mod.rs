@@ -13,11 +13,15 @@ pub mod ollama_timeouts;
 pub mod plugin_archive;
 pub mod plugin_config_disk;
 pub mod plugin_index_sync;
+pub mod plugin_install;
 pub mod plugin_layout;
 pub mod plugin_package_verify;
+pub mod plugin_reviews_index_sync;
 pub mod plugin_state;
 pub mod remote_plugin;
 pub mod repositories_runtime;
+pub mod role_market_index_sync;
+pub mod role_pack_archive;
 pub mod storage;
 
 pub use llm::{cloud_llm_from_env, ollama_llm, LlmClient, MockLlmClient};

@@ -13,8 +13,10 @@ pub mod oocp;
 pub mod personality;
 pub mod plugin_backends;
 pub mod plugin_market_index;
+pub mod plugin_reviews_index;
 pub mod role;
 pub mod role_manifest_disk;
+pub mod role_market_index;
 pub mod role_settings_disk;
 pub mod scene_disk;
 pub mod ui_config;
@@ -36,8 +38,10 @@ pub use plugin_market_index::{
     PluginIndexEntry, PluginIndexFile, PluginIndexModulePluginSpec, PluginIndexModuleSpec,
     PluginIndexProfileSpec, PluginIndexVersionEntry, PublisherPublicKey,
 };
+pub use plugin_reviews_index::{PluginReviewEntry, PluginReviewsIndexFile};
 pub use role::*;
 pub use role_manifest_disk::DiskRoleManifest;
+pub use role_market_index::{RoleIndexDownload, RoleIndexEntry, RoleIndexFile};
 pub use role_settings_disk::DiskRoleSettings;
 pub use scene_disk::{DiskSceneConfig, DiskSceneTimeWindow};
 pub use ui_config::{LayoutConfig, SlotConfig, ThemeConfig, UiConfig, UiSlots};

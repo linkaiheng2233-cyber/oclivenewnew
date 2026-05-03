@@ -97,7 +97,7 @@
 
 - 创作者文档迁至根目录 **`creator-docs/`**（分 `getting-started`、`plugin-and-architecture`、`role-pack`、`roadmap`）；旧 `docs/*.md` 迁移说明见 `docs/README.md`。开发日志归档见 **`ARCHIVE_PROJECT_HISTORY.md`**。
 - **`roles/README_MANIFEST.md`**：新增「在 oclive 中导入角色包」；**`CREATOR_WORKFLOW.md`**、**`DOCUMENTATION_INDEX.md`**、根 **`README.md`** 同步应用内导入说明。
-- **`roles/TESTING_ROLE_PACK_IMPORT.md`**：角色包导入手工测试清单；压缩包预览优先根目录 `manifest.json` 等行为见 **`role_pack.rs`**。
+- **`roles/TESTING_ROLE_PACK_IMPORT.md`**：角色包导入手工测试清单；压缩包预览优先根目录 `manifest.json` 等行为见内核 **`crates/oclive_kernel_runtime/src/infrastructure/role_pack_archive.rs`**（桌面 `role_pack.rs` 为 re-export）。
 - 详见 `handoff/20_SESSION_OPTIMIZATION_REPORT.md`。
 
 ---

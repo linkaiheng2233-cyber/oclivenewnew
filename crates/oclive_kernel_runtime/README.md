@@ -1,6 +1,6 @@
 # oclive_kernel_runtime
 
-可嵌入的 Oclive **内核运行时**：会话编排、`KernelAppState`、SQLite 持久化、目录插件/远程插件协议面、市场索引与插件归档处理等。官方桌面（`src-tauri`）与无头 [`oclive_kernel_server`](../oclive_kernel_server/) 均依赖本 crate。
+可嵌入的 Oclive **内核运行时**：会话编排、`KernelAppState`、SQLite 持久化、目录插件/远程插件协议面、**角色包（`role_pack_archive`）**、**角色/插件市场索引与评价索引同步**、**插件安装（`plugin_install`）**、插件归档与验签等。官方桌面（`src-tauri`）与无头 [`oclive_kernel_server`](../oclive_kernel_server/) 均依赖本 crate。
 
 ## Features
 
@@ -23,6 +23,7 @@ oclive_kernel_runtime = { path = "../crates/oclive_kernel_runtime", default-feat
 - 内核边界：[creator-docs/kernel/KERNEL_BOUNDARY.md](../../creator-docs/kernel/KERNEL_BOUNDARY.md)
 - Baseline：[creator-docs/kernel/KERNEL_BASELINE_V1.md](../../creator-docs/kernel/KERNEL_BASELINE_V1.md)
 - Tauri 命令清单 ↔ 实现对照：[creator-docs/kernel/KERNEL_API_IMPLEMENTATION_MATRIX.md](../../creator-docs/kernel/KERNEL_API_IMPLEMENTATION_MATRIX.md)
+- 迁入收尾：[handoff/KERNEL_MIGRATION_COMPLETE.md](../../handoff/KERNEL_MIGRATION_COMPLETE.md)
 - OOCP：`creator-docs/oocp/OOCP_SPEC_v0_1.md`
 
 ## 开发
@@ -41,4 +42,4 @@ cargo check -p oclive_kernel_runtime --no-default-features   # 无 Axum 栈
 
 ## I/O 与异步（路线图）
 
-内核内仍存在若干 `reqwest::blocking` 路径（远程插件 JSON-RPC、市场索引同步、MCP HTTP 等）。在保持 Tauri 同步命令语义的前提下，将逐步改为 `reqwest::Client` + `tokio`，或在宿主侧用 `spawn_blocking` 隔离；不属于单次 PR 的破坏性变更。
+内核内仍存在若干 `reqwest::blocking` 路径（远程插件 JSON-RPC、市场/角色/评价索引同步、角色包市场直链下载、插件市场安装下载、MCP HTTP 等）。在保持 Tauri 同步命令语义的前提下，将逐步改为 `reqwest::Client` + `tokio`，或在宿主侧用 `spawn_blocking` 隔离；不属于单次 PR 的破坏性变更。

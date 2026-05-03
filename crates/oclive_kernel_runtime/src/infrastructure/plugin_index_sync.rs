@@ -11,6 +11,23 @@ pub const DEFAULT_PLUGIN_INDEX_URL: &str =
     "https://raw.githubusercontent.com/linkaiheng2233-cyber/awesome-oclive-plugins/main/plugins.json";
 
 #[must_use]
+pub fn resolve_plugin_index_url(index_url: Option<&str>) -> String {
+    let env_url = std::env::var("OCLIVE_PLUGIN_INDEX_URL").ok();
+    index_url
+        .map(str::trim)
+        .filter(|s| !s.is_empty())
+        .map(str::to_string)
+        .or_else(|| {
+            env_url
+                .as_deref()
+                .map(str::trim)
+                .filter(|s| !s.is_empty())
+                .map(str::to_string)
+        })
+        .unwrap_or_else(|| DEFAULT_PLUGIN_INDEX_URL.to_string())
+}
+
+#[must_use]
 pub fn plugin_index_default_cache_path(app_data_dir: &Path) -> PathBuf {
     app_data_dir.join("plugin_index_cache.json")
 }

@@ -33,8 +33,9 @@
 
 | 命令 | API 模块 | 内核归属 |
 |------|----------|----------|
-| `export_role_pack_command`, `peek_role_pack_command`, `import_role_pack_command` | `api/role_pack.rs` | 内核 role pack 路径与校验（见 `domain::role_paths` / validation crate） |
-| `sync_role_market_index`, `install_role_pack_from_market` | `api/role_market.rs` | 索引 JSON + 安装编排（部分仍在 `infrastructure/role_market`） |
+| `export_role_pack_command`, `peek_role_pack_command`, `import_role_pack_command` | `api/role_pack.rs` | `infrastructure::role_pack_archive`；展示目录见 `domain::role_paths` |
+| `sync_role_market_index`, `install_role_pack_from_market` | `api/role_market.rs` | `infrastructure::role_market_index_sync` + `models::role_market_index`；直链安装见 `role_pack_archive::install_role_pack_from_direct_url`；桌面 `infrastructure/role_market.rs` 薄封装 |
+| `get_cached_plugin_reviews_index`, `sync_plugin_reviews_index` | `api/plugin_reviews.rs` | `infrastructure::plugin_reviews_index_sync` + `models::plugin_reviews_index` |
 
 ## 记忆 / 事件 / 策略 / 反馈
 
@@ -58,14 +59,14 @@
 |------|----------|----------|
 | `create_plugin_scaffold`, `pack_plugin`, `spawn_plugin_for_test`, … | `api/plugin_scaffold.rs`, `plugin_pack.rs`, `plugin_debug.rs` | 校验 crate + 本地工具链 |
 | `plugin_bridge_invoke` | `api/plugin_bridge.rs` | `domain::local_plugin_bridge` |
-| `check_plugin_updates`, `extract_plugin_zip`, `sync_plugin_index_command`, … | `api/plugin_update.rs`, `plugin_index.rs`, … | `models::plugin_market_index`, `infrastructure::plugin_index_sync`, `plugin_archive`, `plugin_package_verify`, `plugin_layout`；安装写盘仍在 `infrastructure/plugin_installer` |
+| `check_plugin_updates`, `extract_plugin_zip`, `sync_plugin_index_command`, … | `api/plugin_update.rs`, `plugin_index.rs`, … | `models::plugin_market_index`, `plugin_index_sync`（含 `resolve_plugin_index_url`）、`plugin_archive`, `plugin_package_verify`, `plugin_layout`, **`infrastructure::plugin_install`**；桌面 `plugin_installer.rs` 仅路径与 `rescan` / `reload_plugin_state` / `clear_plugin_process` |
 | `get_plugin_settings_ui`, `set_plugin_settings_config` | `api/plugin_config.rs` | `infrastructure::plugin_config_disk` |
 
 ## 本地导入 / 快捷键 / Agent
 
 | 命令 | API 模块 | 内核归属 |
 |------|----------|----------|
-| `list_local_import_candidates_command`, `read_local_import_text_command`, … | `api/local_imports.rs` | `domain::local_imports`；归档安装与 DB 仍在壳层 |
+| `list_local_import_candidates_command`, `read_local_import_text_command`, … | `api/local_imports.rs` | 扫描与路径：`domain::local_imports`；确认安装走 **`plugin_install`**（内核）；invoke 与同意流仍在 `api/local_imports.rs` |
 | `get_hotkey_bindings`, `save_hotkey_bindings` | `api/hotkeys.rs` | `infrastructure::hotkey_bindings`（校验）；全局注册在壳层 |
 | `list_mcp_servers`, `call_mcp_tool`, … | `api/agent.rs` | `domain::agent`, `infrastructure::mcp_client` |
 
@@ -87,4 +88,5 @@
 
 ---
 
-维护节奏：新增 `generate_handler!` 命令时，请同步更新 **KERNEL_ENTRY_CHECKLIST** 与本表一行。
+维护节奏：新增 `generate_handler!` 命令时，请同步更新 **KERNEL_ENTRY_CHECKLIST** 与本表一行。  
+迁入收尾与自检命令：[**`../../handoff/KERNEL_MIGRATION_COMPLETE.md`**](../../handoff/KERNEL_MIGRATION_COMPLETE.md)。

@@ -162,6 +162,43 @@ impl PluginStateStore {
         let raw = serde_json::to_string_pretty(self).map_err(|e| e.to_string())?;
         std::fs::write(path, raw).map_err(|e| e.to_string())
     }
+
+    pub fn remove_plugin_references(&mut self, plugin_id: &str) {
+        let pid = plugin_id.trim();
+        if pid.is_empty() {
+            return;
+        }
+        if let Some(g) = self.global.as_mut() {
+            g.slots.disabled_plugins.retain(|x| x.trim() != pid);
+            g.slots
+                .slot_order
+                .values_mut()
+                .for_each(|v| v.retain(|x| x.trim() != pid));
+            g.slots
+                .disabled_slot_contributions
+                .values_mut()
+                .for_each(|v| v.retain(|x| x.trim() != pid));
+            g.slots.slot_appearance.remove(pid);
+            if g.shell_plugin_id.trim() == pid {
+                g.shell_plugin_id.clear();
+            }
+        }
+        for role in self.roles.values_mut() {
+            role.slots.disabled_plugins.retain(|x| x.trim() != pid);
+            role.slots
+                .slot_order
+                .values_mut()
+                .for_each(|v| v.retain(|x| x.trim() != pid));
+            role.slots
+                .disabled_slot_contributions
+                .values_mut()
+                .for_each(|v| v.retain(|x| x.trim() != pid));
+            role.slots.slot_appearance.remove(pid);
+            if role.shell_plugin_id.trim() == pid {
+                role.shell_plugin_id.clear();
+            }
+        }
+    }
 }
 
 impl PluginStateFile {

@@ -54,6 +54,17 @@
 
 ---
 
+## 角色包市场 / 插件评价索引
+
+| 命令名 | 输入 DTO | 输出 DTO |
+|--------|----------|----------|
+| `sync_role_market_index` | — | `RoleIndexFile` |
+| `install_role_pack_from_market` | — | `String`（角色 id）；进度事件 `import_progress` |
+| `sync_plugin_reviews_index` | — | `PluginReviewsIndexFile` |
+| `get_cached_plugin_reviews_index` | — | `PluginReviewsIndexFile` |
+
+---
+
 ## 时间（Time）
 
 | 命令名 | 输入 DTO | 输出 DTO |

@@ -22,12 +22,12 @@ mod version;
 pub use assets::read_plugin_asset_text_under_root;
 pub use bootstrap::{
     collect_subscribed_host_events, directory_plugin_bootstrap_dto, is_host_event_subscribed,
-    merge_manifest_bridge_events, order_plugin_slots, pick_ui_slot_decl,
-    shell_plugin_id_resolved, DEFAULT_DIRECTORY_PLUGIN_ASSET_BASE_URL, EMBEDDED_UI_SLOT_NAMES,
+    merge_manifest_bridge_events, order_plugin_slots, pick_ui_slot_decl, shell_plugin_id_resolved,
+    DEFAULT_DIRECTORY_PLUGIN_ASSET_BASE_URL, EMBEDDED_UI_SLOT_NAMES,
 };
 pub use catalog::build_directory_plugin_catalog;
 pub use dependency::dependency_report;
-pub use install_meta::read_plugin_install_meta;
+pub use install_meta::{read_plugin_install_meta, write_plugin_install_meta};
 pub use manifest::{
     normalize_plugin_rel, normalize_ui_slot_appearance_id, BridgeConfig, OclivePluginManifest,
     ShellSection, UiSchemaField, UiSchemaSection, UiSlotDecl,
