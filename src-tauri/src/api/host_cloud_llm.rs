@@ -11,7 +11,7 @@ pub async fn get_host_cloud_llm_public(
     state
         .get_host_cloud_llm_public()
         .await
-        .map_err(|e| e.to_string())
+        .map_err(|e| e.to_frontend_error())
 }
 
 #[tauri::command]
@@ -22,7 +22,7 @@ pub async fn set_host_cloud_llm(
     state
         .set_host_cloud_llm(&dto)
         .await
-        .map_err(|e| e.to_string())
+        .map_err(|e| e.to_frontend_error())
 }
 
 #[tauri::command]
@@ -35,5 +35,5 @@ pub async fn set_host_chat_model(state: State<'_, AppState>, model: String) -> R
     state
         .set_global_chat_model(model)
         .await
-        .map_err(|e| e.to_string())
+        .map_err(|e| e.to_frontend_error())
 }

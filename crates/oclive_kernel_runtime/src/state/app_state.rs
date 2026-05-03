@@ -842,6 +842,12 @@ impl KernelAppState {
         *self.cloud_llm_user.write() = parsed;
         Ok(())
     }
+
+    /// 与桌面 `cancel_chat_generation` 一致：置位后由 `process_message` / LLM 路径轮询清除。
+    pub fn cancel_chat_generation(&self) {
+        self.chat_generation_cancel
+            .store(true, std::sync::atomic::Ordering::Release);
+    }
 }
 
 #[cfg(test)]

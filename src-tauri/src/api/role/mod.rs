@@ -265,17 +265,6 @@ pub async fn delete_role_impl(state: &AppState, role_id: String) -> Result<Value
         .map_err(|e| e.to_frontend_error())
 }
 
-/// 去掉 Windows 冗长路径前缀 `\\?\`，避免前端路径异常。
-fn path_string_for_frontend(p: &std::path::Path) -> String {
-    let s = p.to_string_lossy();
-    const VERBATIM: &str = "\\\\?\\";
-    if let Some(stripped) = s.strip_prefix(VERBATIM) {
-        stripped.to_string()
-    } else {
-        s.into_owned()
-    }
-}
-
 /// 解析 `roles/{role_id}/{relative}` 的绝对路径；文件存在时供前端 `convertFileSrc` / `readBinaryFile` 加载。
 #[tauri::command]
 pub fn resolve_role_asset_path(
@@ -283,9 +272,5 @@ pub fn resolve_role_asset_path(
     relative: String,
     state: State<'_, AppState>,
 ) -> Option<String> {
-    let p = state.storage.role_asset_path(&role_id, &relative);
-    if p.is_file() {
-        return Some(path_string_for_frontend(&p));
-    }
-    None
+    oclive_kernel_runtime::domain::role_paths::resolve_role_asset_path(&state, &role_id, &relative)
 }

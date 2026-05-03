@@ -6,8 +6,9 @@
 //! - 其它 AI 应用或设备侧服务（自建 HTTP / gRPC / 本地进程，持有 `KernelAppState` 即可）
 //!
 //! 入口形态：`state::KernelAppState`、`domain::chat_engine::process_message`、
-//! `domain::role_info_snapshot`、`domain::role_lifecycle`、`domain::role_runtime_commands`、`domain::expert_models_admin`、
-//! `domain::session_plugin_override`、`http_api` 等。
+//! `domain::role_info_snapshot`、`domain::role_lifecycle`、`domain::role_paths`、`domain::role_runtime_commands`、
+//! `domain::expert_models_admin`、`domain::profile_preview`、`domain::plugin_permission_commands`、`domain::session_plugin_override`、
+//! `http_api` 等。
 
 pub mod api;
 pub mod domain;
