@@ -8,11 +8,10 @@ use crate::models::dto::{
 };
 use crate::models::plugin_backends::PluginBackendsOverride;
 use crate::state::AppState;
-use std::sync::Arc;
 use tauri::State;
 
 use serde::Deserialize;
-use serde_json::{json, Value};
+use serde_json::Value;
 
 /// `reset_portrait_emotion`：为 `true` 时（应用启动 `load_role`）立绘重置为 `neutral`；切换角色时为 `false` 以保留各角色上次立绘状态。
 pub async fn load_role_impl(
@@ -20,47 +19,9 @@ pub async fn load_role_impl(
     role_id: &str,
     reset_portrait_emotion: bool,
 ) -> Result<RoleData, String> {
-    let role = state
-        .storage
-        .load_role(role_id)
-        .map_err(|e| e.to_frontend_error())?;
-    let role = Arc::new(role);
-
-    state.directory_plugins.set_active_role_id(role_id);
-    state
-        .directory_plugins
-        .ensure_role_plugin_state(role_id, role.plugin_state_ui_baseline());
-
-    state.invalidate_personality_cache_for_role(role_id);
-
-    state
-        .db_manager
-        .ensure_role_runtime(role_id)
+    oclive_kernel_runtime::domain::role_lifecycle::load_role(state, role_id, reset_portrait_emotion)
         .await
-        .map_err(|e| e.to_frontend_error())?;
-
-    if reset_portrait_emotion {
-        state
-            .db_manager
-            .set_current_emotion(role_id, "neutral")
-            .await
-            .map_err(|e| e.to_frontend_error())?;
-    }
-
-    let role_data = oclive_kernel_runtime::domain::role_info_snapshot::build_role_data(
-        state,
-        role_id,
-        role.as_ref(),
-    )
-    .await
-    .map_err(|e| e.to_frontend_error())?;
-
-    state
-        .role_cache
-        .write()
-        .insert(role_id.to_string(), Arc::clone(&role));
-
-    Ok(role_data)
+        .map_err(|e| e.to_frontend_error())
 }
 
 pub async fn get_role_info_impl(
@@ -263,7 +224,14 @@ pub async fn get_plugin_resolution_debug_impl(
     state: &AppState,
     req: &GetPluginResolutionDebugRequest,
 ) -> Result<PluginResolutionDebugInfo, String> {
-    build_plugin_resolution_debug_info(state, &req.role_id, req.session_id.as_deref()).await
+    oclive_kernel_runtime::domain::plugin_resolution_debug::build_plugin_resolution_debug_info(
+        state,
+        &req.role_id,
+        req.session_id.as_deref(),
+        env!("CARGO_PKG_VERSION"),
+    )
+    .await
+    .map_err(|e| e.to_frontend_error())
 }
 
 #[tauri::command]
@@ -272,21 +240,6 @@ pub async fn get_plugin_resolution_debug(
     state: State<'_, AppState>,
 ) -> Result<PluginResolutionDebugInfo, String> {
     get_plugin_resolution_debug_impl(&state, &req).await
-}
-
-pub(crate) async fn build_plugin_resolution_debug_info(
-    state: &AppState,
-    role_id: &str,
-    session_id: Option<&str>,
-) -> Result<PluginResolutionDebugInfo, String> {
-    oclive_kernel_runtime::domain::plugin_resolution_debug::build_plugin_resolution_debug_info(
-        state,
-        role_id,
-        session_id,
-        env!("CARGO_PKG_VERSION"),
-    )
-    .await
-    .map_err(|e| e.to_frontend_error())
 }
 
 #[tauri::command]
@@ -307,30 +260,9 @@ pub async fn clear_scene_user_relation(
 
 /// 删除本地角色目录及该 manifest 角色（含 `__sess__` 会话命名空间）的 DB 状态。
 pub async fn delete_role_impl(state: &AppState, role_id: String) -> Result<Value, String> {
-    let rid = role_id.trim();
-    if rid.is_empty() {
-        return Err("delete_role: role_id required".to_string());
-    }
-    let removed_ns = state
-        .db_manager
-        .delete_all_data_for_manifest_role(rid)
+    oclive_kernel_runtime::domain::role_lifecycle::delete_role(state, role_id)
         .await
-        .map_err(|e| e.to_frontend_error())?;
-    for ns in &removed_ns {
-        state.clear_session_backend_override(ns);
-    }
-    let dir = state.storage.roles_dir().join(rid);
-    if dir.exists() {
-        let dir_owned = dir.clone();
-        tokio::task::spawn_blocking(move || std::fs::remove_dir_all(&dir_owned))
-            .await
-            .map_err(|e| format!("delete_role: join {e}"))?
-            .map_err(|e: std::io::Error| e.to_string())?;
-    }
-    state.directory_plugins.remove_role_plugin_state(rid)?;
-    state.role_cache.write().remove(rid);
-    state.invalidate_personality_cache_for_role(rid);
-    Ok(json!({ "ok": true, "role_id": rid }))
+        .map_err(|e| e.to_frontend_error())
 }
 
 /// 去掉 Windows 冗长路径前缀 `\\?\`，避免前端路径异常。

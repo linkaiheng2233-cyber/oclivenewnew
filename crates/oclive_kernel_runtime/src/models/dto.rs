@@ -738,6 +738,14 @@ pub struct ExpertModelsClearRunsRequest {
 
 #[derive(Debug, Clone, Deserialize)]
 #[serde(rename_all = "camelCase")]
+pub struct ExpertModelsRollbackLastRunRequest {
+    pub role_id: String,
+    #[serde(default)]
+    pub session_id: Option<String>,
+}
+
+#[derive(Debug, Clone, Deserialize)]
+#[serde(rename_all = "camelCase")]
 pub struct ExpertModelsRollbackToRunRequest {
     pub role_id: String,
     #[serde(default)]
