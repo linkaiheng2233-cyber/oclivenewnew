@@ -28,9 +28,13 @@
 | `IO_ERROR` | 文件/磁盘 IO 错误 |
 | `LLM_ERROR` | LLM 调用错误 |
 | `ROLE_NOT_FOUND` | 角色不存在 |
+| `ROLE_PACK_EXISTS` | 角色包已存在（覆盖需确认） |
 | `INVALID_PARAMETER` | 参数无效 |
+| `API_PERMISSION_DENIED` | 目录插件等权限拒绝（与宿主展示对齐） |
+| `API_PLUGIN_NOT_FOUND` | 目录插件 id 不存在于扫描表 |
 | `SERDE_ERROR` | 序列化/反序列化错误 |
 | `UNKNOWN_ERROR` | 未分类错误 |
+| `CHAT_GENERATION_CANCELLED` | 用户取消本轮生成 |
 
 ## Alerting Baseline
 

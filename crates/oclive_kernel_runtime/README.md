@@ -29,6 +29,7 @@ oclive_kernel_runtime = { path = "../crates/oclive_kernel_runtime", default-feat
 - Baseline：[creator-docs/kernel/KERNEL_BASELINE_V1.md](../../creator-docs/kernel/KERNEL_BASELINE_V1.md)
 - Tauri 命令清单 ↔ 实现对照：[creator-docs/kernel/KERNEL_API_IMPLEMENTATION_MATRIX.md](../../creator-docs/kernel/KERNEL_API_IMPLEMENTATION_MATRIX.md)
 - 迁入收尾：[handoff/KERNEL_MIGRATION_COMPLETE.md](../../handoff/KERNEL_MIGRATION_COMPLETE.md)
+- **工程质量 / 测试 / 生态路线（P0–P2）**：[handoff/ENGINEERING_ROADMAP_KERNEL_DEEPSEEK.md](../../handoff/ENGINEERING_ROADMAP_KERNEL_DEEPSEEK.md)
 - OOCP：`creator-docs/oocp/OOCP_SPEC_v0_1.md`
 
 ## 开发
@@ -38,6 +39,7 @@ oclive_kernel_runtime = { path = "../crates/oclive_kernel_runtime", default-feat
 cargo fmt --all --check
 cargo clippy --workspace --all-targets --all-features -- -D warnings
 cargo test -p oclive_kernel_runtime
+# 含 crate 级集成测试：`tests/public_api_error_contract.rs`
 cargo check -p oclive_kernel_runtime --no-default-features   # 无 Axum / zip / 市场同步 / Agent 栈（按需再开子 feature）
 ```
 

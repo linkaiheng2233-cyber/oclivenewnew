@@ -4,6 +4,7 @@
 
 ### Added
 
+- **`oclive_kernel_runtime` 集成测试**：`tests/public_api_error_contract.rs` 校验 `AppError::to_frontend_error()` 的 `[CODE]` 前缀与 `code()` 及错误码字典一致（纳入 `cargo test --workspace`）。
 - 插件清单支持声明订阅的宿主事件（`shell.bridge.events` 或 `ui_slots[].bridge.events`），避免不必要的事件广播。
 - 设置页「常规」区域增加「强制 iframe 模式」开关，开启后所有插件界面统一使用 iframe 渲染，获得最高级别沙箱隔离。
 - 开发者模式下加载 Vue 插槽组件时，对源码进行静态安全扫描（基于 acorn），检测到危险 API 时弹出警告对话框，由用户决定是否继续。
@@ -53,6 +54,7 @@
 
 ### Documentation
 
+- **内核工程路线（DeepSeek 对齐）**：新增 **[handoff/ENGINEERING_ROADMAP_KERNEL_DEEPSEEK.md](handoff/ENGINEERING_ROADMAP_KERNEL_DEEPSEEK.md)**（P0 API/测试/错误、P1 异步与启动与内存、P2 SDK/crates.io/kernel_server）；`DOCUMENTATION_INDEX`、`handoff/README`、`oclive_kernel_runtime/README` 已链入；**[handoff/10_ERROR_CODE_DICTIONARY.md](handoff/10_ERROR_CODE_DICTIONARY.md)** 补充与 `AppError::code()` 一致的 Common 码。
 - **轻量化交接收尾**：**[handoff/LIGHTWEIGHT_FOLLOWUP_PLAN.md](handoff/LIGHTWEIGHT_FOLLOWUP_PLAN.md)** 与实现对齐（阶段 2/4 完成态、维护期执行顺序与防回归清单）；**[handoff/LIGHTWEIGHT_OOCP_WS_AXUM_FOLLOWUP.md](handoff/LIGHTWEIGHT_OOCP_WS_AXUM_FOLLOWUP.md)** 标明决策已收敛并保留回归说明。
 - **内核轻量化**：新增并索引 **[creator-docs/kernel/LIGHTWEIGHT_PROFILE.md](creator-docs/kernel/LIGHTWEIGHT_PROFILE.md)**（`oclive_kernel_runtime` 可选 `Cargo` 特性、场景 × OOCP × `invoke`、Tauri 依赖与 `http_api` 双轨拟定）；`DOCUMENTATION_INDEX`、`KERNEL_ENTRY_CHECKLIST`、`KERNEL_API_IMPLEMENTATION_MATRIX`、`KERNEL_MIGRATION_COMPLETE` 与 `handoff/README` 互链。
 - **PLUGIN_V1 / Remote 协议**：[PLUGIN_V1.md](creator-docs/plugin-and-architecture/PLUGIN_V1.md) 补充 `RoleInfo` / `RoleData`、HTTP `/chat` 与 `prompt.build_prompt` 的 **`personality_source`**；[REMOTE_PLUGIN_PROTOCOL.md](creator-docs/plugin-and-architecture/REMOTE_PLUGIN_PROTOCOL.md) 新增 §3.4 与 `event.estimate` 参数表行。
