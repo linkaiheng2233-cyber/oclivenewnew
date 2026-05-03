@@ -94,7 +94,7 @@
 
 - **脚本**：[`scripts/run_kernel_server.sh`](../scripts/run_kernel_server.sh)、[`scripts/run_kernel_server.ps1`](../scripts/run_kernel_server.ps1)（仓库根执行；可选端口）。  
 - **容器**：根 **`Dockerfile.kernel-server`**、**`docker-compose.kernel-server.yml`**、**`.dockerignore`**（见 **KERNEL_SDK** §5）。  
-- **待做**：与 **`OOCP_SPEC`** 对齐的部署专页（可选）。
+- **已补**：[`creator-docs/oocp/OOCP_SPEC_COMPLETE_REFERENCE.md`](../creator-docs/oocp/OOCP_SPEC_COMPLETE_REFERENCE.md)（与实现对齐）；[`creator-docs/distributions/KERNEL_AND_OOCP_RELEASE_PATH.md`](../creator-docs/distributions/KERNEL_AND_OOCP_RELEASE_PATH.md)（monorepo → crates.io → 镜像 → 桌面）。
 
 ---
 

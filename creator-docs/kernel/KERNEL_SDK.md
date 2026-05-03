@@ -1,6 +1,6 @@
 # oclive_kernel_runtime 开发者 SDK（v0.1）
 
-面向 **库模式**（嵌入 `KernelAppState`）与 **服务模式**（`oclive_kernel_server`）的快速索引。契约以 **`models/dto.rs`**、**`KERNEL_ENTRY_CHECKLIST`**、**OOCP_SPEC** 为准。
+面向 **库模式**（嵌入 `KernelAppState`）与 **服务模式**（`oclive_kernel_server`）的快速索引。契约以 **`models/dto.rs`**、**`KERNEL_ENTRY_CHECKLIST`**、**[OOCP_SPEC_COMPLETE_REFERENCE.md](../oocp/OOCP_SPEC_COMPLETE_REFERENCE.md)** 为准（叙述性草案见 [OOCP_SPEC_v0_1.md](../oocp/OOCP_SPEC_v0_1.md)）。
 
 ---
 
@@ -36,6 +36,7 @@
 |------|------|
 | 边界与模块 | [KERNEL_BOUNDARY.md](./KERNEL_BOUNDARY.md) |
 | Tauri 命令 ↔ 实现 | [KERNEL_API_IMPLEMENTATION_MATRIX.md](./KERNEL_API_IMPLEMENTATION_MATRIX.md) |
+| crates.io / 发布顺序 / 镜像 / 桌面 | [KERNEL_AND_OOCP_RELEASE_PATH.md](../distributions/KERNEL_AND_OOCP_RELEASE_PATH.md) |
 | crates.io / 发布准备 | `oclive_kernel_runtime/README.md` §crates.io |
 
 ---

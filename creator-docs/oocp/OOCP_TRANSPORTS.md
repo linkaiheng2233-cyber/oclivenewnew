@@ -1,7 +1,7 @@
 # OOCP v0.1 — 传输层与入口约定
 
 > **版本**：v0.1（草案）  
-> **关联规范**：[OOCP_SPEC_v0_1.md](./OOCP_SPEC_v0_1.md)  
+> **关联规范**：[OOCP_SPEC_v0_1.md](./OOCP_SPEC_v0_1.md) · **[OOCP_SPEC_COMPLETE_REFERENCE.md](./OOCP_SPEC_COMPLETE_REFERENCE.md)**（实现级单一编排）  
 > **生效范围**：OOCP 服务端 + 所有客户端（VSCode / CLI / 编写器试聊）
 
 ---

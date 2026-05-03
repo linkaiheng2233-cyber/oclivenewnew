@@ -13,6 +13,8 @@
 
 内核与发行版唯一通信语言：**OOCP**。
 
+**实现级契约（单一编排）**：[OOCP_SPEC_COMPLETE_REFERENCE.md](../oocp/OOCP_SPEC_COMPLETE_REFERENCE.md)（方法 `params` / `result`、WS 行为、与 `dto.rs` 的 **`reply`** 字段）。**发版与 crates 顺序**：[KERNEL_AND_OOCP_RELEASE_PATH.md](./KERNEL_AND_OOCP_RELEASE_PATH.md)。
+
 ---
 
 ## 2) 启动本地内核（OOCP 服务端）
