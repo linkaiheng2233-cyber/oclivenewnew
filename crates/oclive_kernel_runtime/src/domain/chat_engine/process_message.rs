@@ -5,6 +5,7 @@ use super::context::validate_scene_id;
 use super::emotion_to_dto;
 use super::presence::user_is_remote_from_character;
 use crate::domain::agent::AgentInput;
+use crate::domain::complex_emotion::{affect_metrics_from_seven_dim, ComplexEmotionInput};
 use crate::domain::chat_llm_fallback::{fallback_reply_for_llm_failure, FallbackReplyContext};
 use crate::domain::chat_turn::{relation_favor_for_key, weight_memories_for_scene};
 use crate::domain::chat_turn_rules::{soft_append_guard, strip_hallucination_tokens};
@@ -110,6 +111,29 @@ pub async fn process_message(
             .get_current_emotion(srid)
             .await?
             .unwrap_or_else(|| "neutral".to_string());
+
+        let prev_complex_hint = state.db_manager.get_complex_emotion_hint(srid).await?;
+        {
+            let (valence, dominance) = affect_metrics_from_seven_dim(&emotion_result);
+            let ce_in = ComplexEmotionInput {
+                role_id: mrid.to_string(),
+                scene_id: scene_id.clone(),
+                user_message: req.user_message.clone(),
+                bot_reply: agent_out.reply.clone(),
+                recent_dialogue_summary: None,
+                previous_narrative_hint: prev_complex_hint.clone().unwrap_or_default(),
+                user_valence: Some(valence),
+                user_dominance: Some(dominance),
+                previous_user_message: None,
+            };
+            if let Ok(out) = pl.complex_emotion.resolve_turn(&ce_in) {
+                let _ = state
+                    .db_manager
+                    .set_complex_emotion_hint(srid, out.narrative_hint.as_deref())
+                    .await;
+            }
+        }
+
         return Ok(SendMessageResponse {
             api_version: API_VERSION,
             schema: SCHEMA_VERSION,
@@ -401,6 +425,11 @@ async fn process_remote_life(
     } else {
         ""
     };
+    let prev_complex_hint = state.db_manager.get_complex_emotion_hint(srid).await?;
+    let prev_complex_hint_trimmed = prev_complex_hint
+        .as_deref()
+        .map(str::trim)
+        .filter(|s| !s.is_empty());
     let prompt = build_remote_life_prompt(
         role,
         away_material.as_str(),
@@ -413,6 +442,7 @@ async fn process_remote_life(
         life_schedule_line.as_str(),
         worldview_snippet.as_str(),
         remote_mutable,
+        prev_complex_hint_trimmed,
     );
 
     let pre_main_llm_ms = t_path.elapsed().as_millis() as u64;
@@ -455,6 +485,26 @@ async fn process_remote_life(
         ai_impact_factor_final,
         relation_after.as_str(),
     ));
+    {
+        let (valence, dominance) = affect_metrics_from_seven_dim(&emotion_result);
+        let ce_in = ComplexEmotionInput {
+            role_id: role.id.to_string(),
+            scene_id: scene_id.to_string(),
+            user_message: user_message.to_string(),
+            bot_reply: reply.to_string(),
+            recent_dialogue_summary: None,
+            previous_narrative_hint: prev_complex_hint.unwrap_or_default(),
+            user_valence: Some(valence),
+            user_dominance: Some(dominance),
+            previous_user_message: None,
+        };
+        if let Ok(out) = pl.complex_emotion.resolve_turn(&ce_in) {
+            let _ = state
+                .db_manager
+                .set_complex_emotion_hint(srid, out.narrative_hint.as_deref())
+                .await;
+        }
+    }
     let bot_analyzed = pl.emotion.analyze(&reply)?;
     let bot_emotion_result: crate::domain::emotion_analyzer::EmotionResult = bot_analyzed;
     let previous_emotion = state.db_manager.get_current_emotion(srid).await?;

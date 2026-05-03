@@ -230,7 +230,7 @@ fn pick_latest_version(item: &PluginIndexEntry) -> Option<PluginIndexVersionEntr
 }
 
 #[tauri::command]
-pub fn sync_plugin_index_command(
+pub async fn sync_plugin_index_command(
     index_url: Option<String>,
     state: State<'_, AppState>,
 ) -> Result<PluginMarketSnapshot, String> {
@@ -239,7 +239,7 @@ pub fn sync_plugin_index_command(
     let wants_custom = !requested.is_empty() && requested != "official";
     if wants_custom && !dev {
         // 非开发者模式：禁止自定义源（保持官方默认体验基石）
-        match sync_plugin_index_online(&state, None) {
+        match sync_plugin_index_online(&state, None).await {
             Ok(index) => Ok(build_snapshot(
                 &state,
                 index,
@@ -259,7 +259,7 @@ pub fn sync_plugin_index_command(
             }
         }
     } else if wants_custom {
-        match sync_plugin_index_online_for_source(&state, requested) {
+        match sync_plugin_index_online_for_source(&state, requested).await {
             Ok(index) => Ok(build_snapshot(&state, index, false, requested, None)),
             Err(err) => {
                 let cache = load_cached_index_for_source(&state, requested)
@@ -274,7 +274,7 @@ pub fn sync_plugin_index_command(
             }
         }
     } else {
-        match sync_plugin_index_online(&state, None) {
+        match sync_plugin_index_online(&state, None).await {
             Ok(index) => Ok(build_snapshot(&state, index, false, "official", None)),
             Err(err) => {
                 let cache = load_cached_index(&state).map_err(|e| e.to_frontend_error())?;

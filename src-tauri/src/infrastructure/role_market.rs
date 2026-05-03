@@ -6,11 +6,11 @@ pub use oclive_kernel_runtime::infrastructure::role_pack_archive::install_role_p
 pub use oclive_kernel_runtime::models::role_market_index::{RoleIndexEntry, RoleIndexFile};
 use std::path::Path;
 
-pub fn sync_role_index_online(
+pub async fn sync_role_index_online(
     app_data_dir: &Path,
     source_url: Option<&str>,
 ) -> Result<RoleIndexFile> {
     let url = source_url.unwrap_or(DEFAULT_ROLES_INDEX_URL);
     let cache = role_market_index_cache_path(app_data_dir, url);
-    sync_role_market_index_from_url(url, &cache)
+    sync_role_market_index_from_url(url, &cache).await
 }

@@ -1,7 +1,8 @@
 //! 插件市场索引 HTTP 拉取、校验与磁盘缓存（宿主无关路径参数）。
+//!
+//! HTTP 为原生 `async`；本地缓存写入为 `std::fs`（见模块顶注释）。
 
 use crate::error::{AppError, Result};
-use crate::infrastructure::blocking_http::block_on;
 use crate::models::plugin_market_index::PluginIndexFile;
 use oclive_validation::validate_plugin_market_index_v1;
 use sha2::{Digest, Sha256};
@@ -56,7 +57,7 @@ pub fn load_plugin_index_cache(cache_path: &Path) -> Result<PluginIndexFile> {
     serde_json::from_str(&raw).map_err(AppError::from)
 }
 
-pub fn sync_plugin_index_from_url(url: &str, cache_path: &Path) -> Result<PluginIndexFile> {
+pub async fn sync_plugin_index_from_url(url: &str, cache_path: &Path) -> Result<PluginIndexFile> {
     let url = url.to_string();
     let cli = reqwest::Client::builder()
         .timeout(std::time::Duration::from_secs(15))
@@ -64,21 +65,20 @@ pub fn sync_plugin_index_from_url(url: &str, cache_path: &Path) -> Result<Plugin
         .map_err(|e| {
             AppError::InvalidParameter(format!("[PLUGIN_INDEX_HTTP] client build: {}", e))
         })?;
-    let text = block_on(async move {
-        let resp =
-            cli.get(&url).send().await.map_err(|e| {
-                AppError::InvalidParameter(format!("[PLUGIN_INDEX_HTTP] get: {}", e))
-            })?;
-        if !resp.status().is_success() {
-            return Err(AppError::InvalidParameter(format!(
-                "[PLUGIN_INDEX_HTTP] status={} url={}",
-                resp.status(),
-                url
-            )));
-        }
-        resp.text().await.map_err(|e| {
-            AppError::InvalidParameter(format!("[PLUGIN_INDEX_HTTP] read body: {}", e))
-        })
+    let resp = cli
+        .get(&url)
+        .send()
+        .await
+        .map_err(|e| AppError::InvalidParameter(format!("[PLUGIN_INDEX_HTTP] get: {}", e)))?;
+    if !resp.status().is_success() {
+        return Err(AppError::InvalidParameter(format!(
+            "[PLUGIN_INDEX_HTTP] status={} url={}",
+            resp.status(),
+            url
+        )));
+    }
+    let text = resp.text().await.map_err(|e| {
+        AppError::InvalidParameter(format!("[PLUGIN_INDEX_HTTP] read body: {}", e))
     })?;
     validate_plugin_market_index_v1(&text)
         .map_err(|e| AppError::InvalidParameter(format!("[PLUGIN_INDEX_VALIDATE] {}", e)))?;

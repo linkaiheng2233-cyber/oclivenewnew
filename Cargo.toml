@@ -4,6 +4,7 @@ members = [
   "crates/oclive_validation",
   "crates/oclive_kernel_runtime",
   "crates/oclive_kernel_server",
+  "examples/kernel_embed_minimal",
   "src-tauri",
 ]
 resolver = "2"

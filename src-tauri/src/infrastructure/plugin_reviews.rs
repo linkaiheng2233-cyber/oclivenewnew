@@ -14,11 +14,11 @@ pub fn load_cached_plugin_reviews_index(app_data_dir: &Path) -> Result<PluginRev
     load_plugin_reviews_index_cache(&p)
 }
 
-pub fn sync_plugin_reviews_index_online(
+pub async fn sync_plugin_reviews_index_online(
     app_data_dir: &Path,
     url: Option<&str>,
 ) -> Result<PluginReviewsIndexFile> {
     let u = resolve_plugin_reviews_index_url(url);
     let p = plugin_reviews_index_default_cache_path(app_data_dir);
-    sync_plugin_reviews_index_from_url(&u, &p)
+    sync_plugin_reviews_index_from_url(&u, &p).await
 }

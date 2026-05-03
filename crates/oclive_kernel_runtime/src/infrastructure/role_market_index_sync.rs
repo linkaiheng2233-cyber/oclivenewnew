@@ -1,7 +1,9 @@
 //! 角色市场索引 HTTP 拉取、校验与磁盘缓存。
+//!
+//! HTTP 使用 [`sync_role_market_index_from_url`] 的原生 `async`（不再经 `blocking_http::block_on`）。
+//! 磁盘读写仍为同步 `std::fs`；宿主侧宜在 `spawn_blocking` 中调用本模块，或仅在网络层用 `async`。
 
 use crate::error::{AppError, Result};
-use crate::infrastructure::blocking_http::block_on;
 use crate::models::role_market_index::{RoleIndexDownload, RoleIndexEntry, RoleIndexFile};
 use crate::utils::digest::sha256_hex;
 use oclive_validation::{
@@ -59,7 +61,7 @@ pub fn load_role_market_index_cache(cache_path: &Path) -> Result<RoleIndexFile> 
     serde_json::from_str(&raw).map_err(AppError::from)
 }
 
-pub fn sync_role_market_index_from_url(url: &str, cache_path: &Path) -> Result<RoleIndexFile> {
+pub async fn sync_role_market_index_from_url(url: &str, cache_path: &Path) -> Result<RoleIndexFile> {
     let url = url.to_string();
     let cli = reqwest::Client::builder()
         .timeout(std::time::Duration::from_secs(15))
@@ -67,23 +69,22 @@ pub fn sync_role_market_index_from_url(url: &str, cache_path: &Path) -> Result<R
         .map_err(|e| {
             AppError::InvalidParameter(format!("[ROLE_INDEX_HTTP] client build: {}", e))
         })?;
-    let text = block_on(async move {
-        let resp = cli
-            .get(&url)
-            .send()
-            .await
-            .map_err(|e| AppError::InvalidParameter(format!("[ROLE_INDEX_HTTP] get: {}", e)))?;
-        if !resp.status().is_success() {
-            return Err(AppError::InvalidParameter(format!(
-                "[ROLE_INDEX_HTTP] status={} url={}",
-                resp.status(),
-                url
-            )));
-        }
-        resp.text()
-            .await
-            .map_err(|e| AppError::InvalidParameter(format!("[ROLE_INDEX_HTTP] read body: {}", e)))
-    })?;
+    let resp = cli
+        .get(&url)
+        .send()
+        .await
+        .map_err(|e| AppError::InvalidParameter(format!("[ROLE_INDEX_HTTP] get: {}", e)))?;
+    if !resp.status().is_success() {
+        return Err(AppError::InvalidParameter(format!(
+            "[ROLE_INDEX_HTTP] status={} url={}",
+            resp.status(),
+            url
+        )));
+    }
+    let text = resp
+        .text()
+        .await
+        .map_err(|e| AppError::InvalidParameter(format!("[ROLE_INDEX_HTTP] read body: {}", e)))?;
     validate_role_market_index_v1(&text)
         .map_err(|e| AppError::InvalidParameter(format!("[ROLE_INDEX_VALIDATE] {}", e)))?;
     let parsed_disk: RoleMarketIndexFileDisk =

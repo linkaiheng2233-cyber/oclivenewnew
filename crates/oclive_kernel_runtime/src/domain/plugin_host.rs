@@ -108,6 +108,10 @@ impl BackendRegistry {
     const REMOTE_PROVIDER_AGENT: &'static str = "system:remote_agent_http";
     const REMOTE_PROVIDER_COMPLEX_EMOTION: &'static str = "system:remote_complex_emotion_http";
 
+    /// 将异步 DB 调用桥接到**同步**权限钩子（目录插件 manifest / Tauri 侧同步路径）。
+    ///
+    /// 使用 `block_in_place` 避免在异步 worker 上饿死同线程其它任务；**不宜**用于可改为 async API 的新代码。
+    /// HTTP 出站见 `infrastructure::blocking_http`；市场索引 HTTP 已迁至原生 async。
     fn block_on<T>(&self, fut: impl Future<Output = T>) -> T {
         if let Ok(h) = tokio::runtime::Handle::try_current() {
             tokio::task::block_in_place(|| h.block_on(fut))

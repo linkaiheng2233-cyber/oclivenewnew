@@ -1,0 +1,10 @@
+[package]
+name = "kernel_embed_minimal"
+version = "0.1.0"
+edition = "2021"
+publish = false
+description = "Minimal embed example: KernelAppState + process_message (see KERNEL_SDK.md §7)."
+
+[dependencies]
+tokio = { workspace = true }
+oclive_kernel_runtime = { path = "../../crates/oclive_kernel_runtime" }

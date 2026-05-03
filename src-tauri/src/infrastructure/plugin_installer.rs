@@ -85,25 +85,25 @@ pub fn install_plugin_from_archive_bytes_overwrite(
     Ok(pid)
 }
 
-pub fn sync_plugin_index_online(
+pub async fn sync_plugin_index_online(
     state: &AppState,
     index_url: Option<&str>,
 ) -> Result<PluginIndexFile, AppError> {
     let url = resolve_plugin_index_url(index_url);
     let cache = plugin_index_default_cache_path(state.directory_plugins.app_data_dir());
-    sync_plugin_index_from_url(&url, &cache)
+    sync_plugin_index_from_url(&url, &cache).await
 }
 
-pub fn sync_plugin_index_online_for_source(
+pub async fn sync_plugin_index_online_for_source(
     state: &AppState,
     source_url: &str,
 ) -> Result<PluginIndexFile, AppError> {
     let url = source_url.trim();
     if url.is_empty() {
-        return sync_plugin_index_online(state, None);
+        return sync_plugin_index_online(state, None).await;
     }
     let cache = plugin_index_cache_path_for_source(state.directory_plugins.app_data_dir(), url);
-    sync_plugin_index_from_url(url, &cache)
+    sync_plugin_index_from_url(url, &cache).await
 }
 
 pub fn read_install_meta(root: &std::path::Path) -> Option<PluginInstallMeta> {

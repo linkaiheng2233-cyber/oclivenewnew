@@ -108,6 +108,7 @@ pub fn build_remote_life_prompt(
     life_schedule_line: &str,
     worldview_snippet: &str,
     mutable_personality: &str,
+    complex_emotion_hint: Option<&str>,
 ) -> String {
     let core = role.core_personality.trim();
     let core_hint = if core.len() > 2800 {
@@ -163,6 +164,12 @@ pub fn build_remote_life_prompt(
         )
     };
 
+    let complex_block = complex_emotion_hint
+        .map(str::trim)
+        .filter(|s| !s.is_empty())
+        .map(|h| format!("\n【复杂情感复盘】\n{h}\n"))
+        .unwrap_or_default();
+
     format!(
         r#"你是角色「{name}」。
 
@@ -175,7 +182,7 @@ pub fn build_remote_life_prompt(
 {core}{mutable}{summary}{worldview}
 【创作者提供的「你当前场景」异地素材】
 {material}
-
+{complex}
 【用户刚发的话】
 {um}
 
@@ -192,6 +199,7 @@ pub fn build_remote_life_prompt(
         summary = summary_block,
         worldview = worldview_block,
         material = material_block,
+        complex = complex_block,
         um = user_message,
     )
 }
@@ -237,9 +245,31 @@ mod tests {
             "",
             "雾城设定：永不天亮。",
             "",
+            None,
         );
         assert!(p.contains("【世界观设定】"));
         assert!(p.contains("永不天亮"));
+    }
+
+    #[test]
+    fn build_remote_includes_complex_emotion_hint_when_set() {
+        let r = Role::default();
+        let p = build_remote_life_prompt(
+            &r,
+            "",
+            "A",
+            "B",
+            "hi",
+            50.0,
+            "Stranger",
+            "day",
+            "",
+            "",
+            "",
+            Some("  上一轮情绪余韵  "),
+        );
+        assert!(p.contains("【复杂情感复盘】"));
+        assert!(p.contains("上一轮情绪余韵"));
     }
 
     #[test]

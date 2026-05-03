@@ -22,9 +22,8 @@ pub async fn sync_role_market_index(
 ) -> Result<RoleIndexFile, String> {
     let app_data_dir = state.directory_plugins.app_data_dir().to_path_buf();
     let url = req.source_url.clone();
-    tokio::task::spawn_blocking(move || sync_role_index_online(&app_data_dir, url.as_deref()))
+    sync_role_index_online(&app_data_dir, url.as_deref())
         .await
-        .map_err(|e| format!("sync 任务异常: {}", e))?
         .map_err(|e: AppError| e.to_frontend_error())
 }
 

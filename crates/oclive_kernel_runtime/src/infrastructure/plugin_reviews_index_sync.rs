@@ -1,7 +1,8 @@
 //! 插件评价索引 HTTP 拉取、校验与磁盘缓存。
+//!
+//! HTTP 为原生 `async`。
 
 use crate::error::{AppError, Result};
-use crate::infrastructure::blocking_http::block_on;
 use crate::models::plugin_reviews_index::PluginReviewsIndexFile;
 use oclive_validation::validate_plugin_reviews_index_v1;
 use std::fs;
@@ -44,7 +45,7 @@ pub fn load_plugin_reviews_index_cache(cache_path: &Path) -> Result<PluginReview
     serde_json::from_str(&raw).map_err(AppError::from)
 }
 
-pub fn sync_plugin_reviews_index_from_url(
+pub async fn sync_plugin_reviews_index_from_url(
     url: &str,
     cache_path: &Path,
 ) -> Result<PluginReviewsIndexFile> {
@@ -55,21 +56,20 @@ pub fn sync_plugin_reviews_index_from_url(
         .map_err(|e| {
             AppError::InvalidParameter(format!("[PLUGIN_REVIEWS_HTTP] client build: {}", e))
         })?;
-    let text = block_on(async move {
-        let resp =
-            cli.get(&url).send().await.map_err(|e| {
-                AppError::InvalidParameter(format!("[PLUGIN_REVIEWS_HTTP] get: {}", e))
-            })?;
-        if !resp.status().is_success() {
-            return Err(AppError::InvalidParameter(format!(
-                "[PLUGIN_REVIEWS_HTTP] status={} url={}",
-                resp.status(),
-                url
-            )));
-        }
-        resp.text().await.map_err(|e| {
-            AppError::InvalidParameter(format!("[PLUGIN_REVIEWS_HTTP] read body: {}", e))
-        })
+    let resp = cli
+        .get(&url)
+        .send()
+        .await
+        .map_err(|e| AppError::InvalidParameter(format!("[PLUGIN_REVIEWS_HTTP] get: {}", e)))?;
+    if !resp.status().is_success() {
+        return Err(AppError::InvalidParameter(format!(
+            "[PLUGIN_REVIEWS_HTTP] status={} url={}",
+            resp.status(),
+            url
+        )));
+    }
+    let text = resp.text().await.map_err(|e| {
+        AppError::InvalidParameter(format!("[PLUGIN_REVIEWS_HTTP] read body: {}", e))
     })?;
 
     validate_plugin_reviews_index_v1(&text)
