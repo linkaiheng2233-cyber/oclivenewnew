@@ -40,7 +40,7 @@ oclive_kernel_runtime = { path = "../crates/oclive_kernel_runtime", default-feat
 cargo fmt --all --check
 cargo clippy --workspace --all-targets --all-features -- -D warnings
 cargo test -p oclive_kernel_runtime
-# 含 crate 级集成测试：`tests/public_api_error_contract.rs`、`session_process_message_smoke.rs`、`p0_support_modules_smoke.rs`
+# 含 crate 级集成测试：`tests/public_api_error_contract.rs`、`session_process_message_smoke.rs`、`p0_support_modules_smoke.rs`、`p0_kernel_lifecycle_smoke.rs`
 cargo check -p oclive_kernel_runtime --no-default-features   # 无 Axum / zip / 市场同步 / Agent 栈（按需再开子 feature）
 ```
 

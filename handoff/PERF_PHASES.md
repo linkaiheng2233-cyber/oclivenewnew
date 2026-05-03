@@ -35,6 +35,7 @@
 - **Tauri `invoke` 命令体**：在 Tokio runtime 上执行；若仍须调用 **长时间** 同步内核 API（含经 `blocking_http` 的 HTTP），宜 **`tokio::task::spawn_blocking`** 包裹；**避免** 在 async 任务内对 **同一** Tokio runtime 再 `Handle::block_on`。
 - **内核侧**：`http_api` 等对磁盘与 `RoleStorage` 的阻塞访问已用 `spawn_blocking`（见 `oclive_kernel_runtime::http_api`）；新建纯 async 路径可优先 **`reqwest::Client` + `.await`**（如 `jsonrpc::call_async`），不必再经 `blocking_http`。
 - **目标态（已达成）**：workspace `reqwest` 为 **`json` + `default-tls`（+ `gzip` 等）**，**无 `blocking`**；对外同步 API 与 `blocking_http` 的边界见 `crates/oclive_kernel_runtime/src/infrastructure/blocking_http.rs`。
+- **runtime 内锚点清单**（`spawn_blocking` 文件表、`KernelAppState` 冷启动分段建议）：[`P1_KERNEL_RUNTIME_BLOCKING_AND_STARTUP.md`](./P1_KERNEL_RUNTIME_BLOCKING_AND_STARTUP.md)。
 
 ## 验收与对照
 

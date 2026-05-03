@@ -55,3 +55,6 @@ base64 = "0.22"
 ed25519-dalek = { version = "2", features = ["std"] }
 tauri = { version = "1.5", optional = true, default-features = false }
 
+[dev-dependencies]
+serde_json = "1.0"
+

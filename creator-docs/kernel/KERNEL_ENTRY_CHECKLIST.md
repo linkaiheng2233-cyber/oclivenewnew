@@ -207,4 +207,15 @@
 
 ---
 
+## `oclive_kernel_runtime` 集成测试对照（P0.T / P0.A 自检）
+
+以下 **crate 级 `tests/*.rs`** 与上表能力簇对应，CI 中 `cargo test -p oclive_kernel_runtime` 会执行（默认 `--features full` 时含 `market-sync` / `role-pack-zip` 等）：
+
+| 测试文件 | 覆盖簇 |
+|----------|--------|
+| `tests/public_api_error_contract.rs` | `AppError::code()` / `to_frontend_error()` 与 [`handoff/10_ERROR_CODE_DICTIONARY.md`](../../handoff/10_ERROR_CODE_DICTIONARY.md) §Common |
+| `tests/session_process_message_smoke.rs` | **`send_message`** → `domain::chat_engine::process_message` |
+| `tests/p0_support_modules_smoke.rs` | 插件 semver、市场索引缓存、`expert_models` 编译器、`local_imports` |
+| `tests/p0_kernel_lifecycle_smoke.rs` | **`load_role` / `delete_role`**、`expert_models_*` 会话覆盖、**`role-pack-zip`** 下插件归档安装 |
+
 > **OOCP 映射**：上表为 Tauri invoke 视角；所有方法在 OOCP 中的对应见 `creator-docs/oocp/OOCP_SPEC_v0_1.md`。

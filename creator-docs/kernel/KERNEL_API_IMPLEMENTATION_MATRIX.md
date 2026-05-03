@@ -93,4 +93,5 @@
 迁入收尾与自检命令：[**`../../handoff/KERNEL_MIGRATION_COMPLETE.md`**](../../handoff/KERNEL_MIGRATION_COMPLETE.md)。  
 轻量 profile 与特性矩阵：[**`LIGHTWEIGHT_PROFILE.md`**](./LIGHTWEIGHT_PROFILE.md)。  
 内核 SDK（库 / `kernel_server`）：[**`KERNEL_SDK.md`**](./KERNEL_SDK.md)。  
-工程质量路线：[**`../../handoff/ENGINEERING_ROADMAP_KERNEL_DEEPSEEK.md`**](../../handoff/ENGINEERING_ROADMAP_KERNEL_DEEPSEEK.md)。
+工程质量路线：[**`../../handoff/ENGINEERING_ROADMAP_KERNEL_DEEPSEEK.md`**](../../handoff/ENGINEERING_ROADMAP_KERNEL_DEEPSEEK.md)。  
+**P0.A**：invoke 清单与 **`crates/oclive_kernel_runtime/tests/*.rs`** 对照见 **KERNEL_ENTRY_CHECKLIST** 文末「集成测试对照」表。

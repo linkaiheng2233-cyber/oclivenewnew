@@ -45,6 +45,7 @@
 
 - [`tests/session_process_message_smoke.rs`](../crates/oclive_kernel_runtime/tests/session_process_message_smoke.rs) — `process_message` + `shimeng` + Mock LLM 最小闭环。  
 - [`tests/p0_support_modules_smoke.rs`](../crates/oclive_kernel_runtime/tests/p0_support_modules_smoke.rs) — **P0.T 子集**：`plugin_install` 依赖 semver、**`feature = market-sync`** 下索引磁盘缓存读写契约、`expert_models` 单基座编译、`local_imports` 扫描（无网络）。  
+- [`tests/p0_kernel_lifecycle_smoke.rs`](../crates/oclive_kernel_runtime/tests/p0_kernel_lifecycle_smoke.rs) — **`delete_role`**（磁盘 + `RoleNotFound`）、**`expert_models_set/get`** 会话覆盖、**`role-pack-zip`** 下 `pack`→`install_plugin_from_archive_bytes_at`（依赖仓库 `roles/shimeng` 拷贝改 id）。  
 - 错误收紧（P0.E）：`plugin_archive`、`directory_plugin_commands`、`plugin_package_verify`、`llm_cancelable`；续：`plugin_install`、`plugin_index_sync`、`role_market_index_sync`、`plugin_reviews_index_sync`、`role_pack_archive`、`mcp_client`、`role_lifecycle` — **`oclive_kernel_runtime` 业务 `src` 不再使用 `AppError::Unknown`**（变体与契约测试除外）。  
 - [`creator-docs/kernel/KERNEL_SDK.md`](../creator-docs/kernel/KERNEL_SDK.md) + [`scripts/run_kernel_server.sh`](../scripts/run_kernel_server.sh) / [`.ps1`](../scripts/run_kernel_server.ps1)（P2 体验子集）。
 
@@ -67,7 +68,7 @@
 
 ### 2. 启动性能优化
 
-- 对 **`KernelAppState::new`** 做分段计时（日志或 `tracing`）；将非首屏路径（市场索引、MCP 扫描等）改为 **首次调用时初始化**（需行为评审，避免改变首次错误时机）。
+- 对 **`KernelAppState::new`** 做分段计时（日志或 `tracing`）；将非首屏路径（市场索引、MCP 扫描等）改为 **首次调用时初始化**（需行为评审，避免改变首次错误时机）。**阻塞 I/O 与 `spawn_blocking` 清单**见 [`P1_KERNEL_RUNTIME_BLOCKING_AND_STARTUP.md`](./P1_KERNEL_RUNTIME_BLOCKING_AND_STARTUP.md)。
 - 嵌入式：**`default-features = false`** + 按需 feature（见 **`LIGHTWEIGHT_PROFILE.md`**）。
 
 ### 3. 内存占用分析
@@ -100,7 +101,7 @@
 | 阶段 | 门槛 |
 |------|------|
 | **P0 里程碑** | `cargo test --workspace`；runtime `tests/` 覆盖核心契约（错误码、关键状态）；MATRIX/CHECKLIST 与实现无矛盾。 |
-| **P1 里程碑** | 启动分段数据写入 handoff；异步边界无新增 `block_on` 违规；可选内存基线一页。 |
+| **P1 里程碑** | 启动分段数据写入 handoff（**[`P1_KERNEL_RUNTIME_BLOCKING_AND_STARTUP.md`](./P1_KERNEL_RUNTIME_BLOCKING_AND_STARTUP.md)** 为 runtime 锚点首版）；异步边界无新增 `block_on` 违规；可选内存基线一页。 |
 | **P2 里程碑** | `KERNEL_SDK.md` + `cargo doc` 无报错；`cargo publish --dry-run`；kernel_server 一键脚本或 Docker 文档化。 |
 
 ---
@@ -108,9 +109,9 @@
 ## 建议执行顺序（给 Cursor / 子 Agent）
 
 1. **P0.E** 错误码与 `Unknown` 收敛（小步、可测）。  
-2. **P0.T** 继续扩展 **`crates/oclive_kernel_runtime/tests/`**（`expert_models_admin` / `role_lifecycle::delete_role` / 归档安装等重路径）。  
-3. **P0.A** API 清单与死代码删除（按 CHECKLIST 分行 PR）。  
-4. **P1** 启动与阻塞 I/O 清单。  
+2. **P0.T** 继续按需扩展 **`crates/oclive_kernel_runtime/tests/`**（例如 `expert_models` 回滚/工作流、市场 HTTP 契约 mock 等）。  
+3. **P0.A** 死代码删除与 invoke 漂移扫描（仍以 **KERNEL_ENTRY_CHECKLIST + MATRIX** 为基准；集成测试表已入 CHECKLIST）。  
+4. **P1** 在 runtime 内落地 **分段计时**（见 [`P1_KERNEL_RUNTIME_BLOCKING_AND_STARTUP.md`](./P1_KERNEL_RUNTIME_BLOCKING_AND_STARTUP.md) 锚点）。  
 5. **P2** 文档与发布干跑。
 
 本文档随里程碑更新「仓库事实快照」表，避免与代码漂移。
