@@ -16,8 +16,7 @@ use crate::models::dto::{
     ExpertModelsGetEffectiveRequest, ExpertModelsGetRunDetailRequest,
     ExpertModelsGetRunDetailResponse, ExpertModelsListRunsResponse,
     ExpertModelsRollbackLastRunRequest, ExpertModelsRollbackToRunRequest, ExpertModelsRunDetailDto,
-    ExpertModelsRunSummaryDto,
-    ExpertModelsSetRoleDefaultRequest, ExpertModelsSetRunPinnedRequest,
+    ExpertModelsRunSummaryDto, ExpertModelsSetRoleDefaultRequest, ExpertModelsSetRunPinnedRequest,
     ExpertModelsSetSessionOverrideRequest, ExpertWorkflowDto, ExpertWorkflowSummaryDto,
     ExpertWorkflowsDeleteRequest, ExpertWorkflowsGetRequest, ExpertWorkflowsListResponse,
     ExpertWorkflowsSaveRequest,
@@ -981,10 +980,15 @@ pub async fn expert_models_apply_to_session(
                 .map_err(|e| e.to_frontend_error())?;
 
         let cfg_val = serde_json::to_value(&compiled).map_err(|e| e.to_string())?;
-        write_plugin_config_json(state.directory_plugins.app_data_dir(), LLAMA_LOCAL_PLUGIN_ID, &cfg_val)?;
+        write_plugin_config_json(
+            state.directory_plugins.app_data_dir(),
+            LLAMA_LOCAL_PLUGIN_ID,
+            &cfg_val,
+        )?;
 
         // Ensure the current session uses the directory LLM backend (mechanism), pointing to llama local plugin.
-        let _ = session_plugin_override::set_session_plugin_backend(state,
+        let _ = session_plugin_override::set_session_plugin_backend(
+            state,
             &SetSessionPluginBackendRequest {
                 role_id: role_id.to_string(),
                 session_id: req.session_id.clone(),

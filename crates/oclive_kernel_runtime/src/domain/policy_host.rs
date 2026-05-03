@@ -5,8 +5,5 @@ use crate::state::KernelAppState;
 
 pub fn reload_policy_plugins_message(state: &KernelAppState) -> Result<String> {
     let count = state.reload_policy_plugins()?;
-    Ok(format!(
-        "policy plugins reloaded: {} scene bindings",
-        count
-    ))
+    Ok(format!("policy plugins reloaded: {} scene bindings", count))
 }

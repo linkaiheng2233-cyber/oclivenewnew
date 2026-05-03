@@ -27,11 +27,7 @@ fn classify_process_name(raw: &str) -> (bool, bool) {
 
 fn probe_inner() -> LocalLlmRuntimeProbeDto {
     let mut sys = System::new();
-    sys.refresh_processes_specifics(
-        ProcessesToUpdate::All,
-        true,
-        ProcessRefreshKind::new(),
-    );
+    sys.refresh_processes_specifics(ProcessesToUpdate::All, true, ProcessRefreshKind::new());
     let mut ollama_process = false;
     let mut llama_like_process = false;
     for (_pid, proc_) in sys.processes() {

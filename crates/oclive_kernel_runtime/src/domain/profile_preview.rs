@@ -111,15 +111,15 @@ struct RawProfileFile {
     backends: Option<RawBackends>,
 }
 
-pub fn preview_profile_from_path(req: &PreviewProfileFromPathRequest) -> Result<ProfilePreviewDto, String> {
+pub fn preview_profile_from_path(
+    req: &PreviewProfileFromPathRequest,
+) -> Result<ProfilePreviewDto, String> {
     let path = req.path.trim();
     if path.is_empty() {
-        return Err(
-            BridgeApiError::InvalidParameter {
-                message: "path required".into(),
-            }
-            .to_string(),
-        );
+        return Err(BridgeApiError::InvalidParameter {
+            message: "path required".into(),
+        }
+        .to_string());
     }
     let text = fs::read_to_string(path).map_err(|e| {
         BridgeApiError::Io {
@@ -134,20 +134,16 @@ pub fn preview_profile_from_path(req: &PreviewProfileFromPathRequest) -> Result<
         .to_string()
     })?;
     if raw.r#type.trim() != "profile" {
-        return Err(
-            BridgeApiError::InvalidParameter {
-                message: "profile.type must be \"profile\"".into(),
-            }
-            .to_string(),
-        );
+        return Err(BridgeApiError::InvalidParameter {
+            message: "profile.type must be \"profile\"".into(),
+        }
+        .to_string());
     }
     if raw.schema_version.trim() != "1.0" {
-        return Err(
-            BridgeApiError::InvalidParameter {
-                message: "profile.schema_version must be \"1.0\"".into(),
-            }
-            .to_string(),
-        );
+        return Err(BridgeApiError::InvalidParameter {
+            message: "profile.schema_version must be \"1.0\"".into(),
+        }
+        .to_string());
     }
 
     let backends = raw.backends.map(|b| ProfileBackendsDto {

@@ -5,6 +5,7 @@
 //!   `export_conversation` / `import_role` 以及写入类命令还要求
 //!   `manifest.type == "ocliveplugin"` 且请求来自 **`shell.entry`** 对应 HTML 或 **`shell.vueEntry`** 宿主 Vue 入口（非 `ui_slots` 页）。
 
+use super::bridge_manifest_permissions::bridge_permission_tokens_from_manifest;
 use crate::api::conversation::get_conversation_list_impl;
 use crate::api::directory_plugin::directory_plugin_bootstrap_dto;
 use crate::api::error::ApiError;
@@ -14,7 +15,6 @@ use crate::api::role::{delete_role_impl, get_role_info_impl, list_roles_impl, sw
 use crate::api::settings::update_settings_impl;
 use crate::api::time::get_time_state_impl;
 use crate::domain::chat_engine::{conversation_state_role_id, process_message};
-use super::bridge_manifest_permissions::bridge_permission_tokens_from_manifest;
 use crate::domain::permission_tokens::permission_token_for_bridge_command;
 use crate::infrastructure::directory_plugins::{normalize_plugin_rel, OclivePluginManifest};
 use crate::infrastructure::import_role_pack;

@@ -6,9 +6,9 @@ use crate::domain::role_info_snapshot::get_role_info_snapshot;
 use crate::env_flags;
 use crate::error::{AppError, Result};
 use crate::models::dto::{
-    ClearSceneUserRelationRequest, OCLIVE_DEFAULT_RELATION_SENTINEL, RoleInfo, RoleSummary,
-    SetEvolutionFactorRequest, SetRemoteLifeEnabledRequest, SetRoleInteractionModeRequest,
-    SetSceneUserRelationRequest, SetUserRelationRequest,
+    ClearSceneUserRelationRequest, RoleInfo, RoleSummary, SetEvolutionFactorRequest,
+    SetRemoteLifeEnabledRequest, SetRoleInteractionModeRequest, SetSceneUserRelationRequest,
+    SetUserRelationRequest, OCLIVE_DEFAULT_RELATION_SENTINEL,
 };
 use crate::models::role::IdentityBinding;
 use crate::state::KernelAppState;

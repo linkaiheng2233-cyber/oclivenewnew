@@ -53,11 +53,7 @@ pub(crate) struct RoleRuntimeExtras {
     pub event_impact_factor: f64,
 }
 
-async fn effective_event_impact(
-    state: &KernelAppState,
-    role_id: &str,
-    role: &Role,
-) -> Result<f64> {
+async fn effective_event_impact(state: &KernelAppState, role_id: &str, role: &Role) -> Result<f64> {
     Ok(state
         .db_manager
         .get_event_impact_factor(role_id)
@@ -80,10 +76,7 @@ pub(crate) async fn role_runtime_extras(
     scene_id: Option<&str>,
     role: &Role,
 ) -> Result<RoleRuntimeExtras> {
-    let use_manifest_default = state
-        .db_manager
-        .get_use_manifest_default(role_id)
-        .await?;
+    let use_manifest_default = state.db_manager.get_use_manifest_default(role_id).await?;
     Ok(RoleRuntimeExtras {
         user_relations: user_relations_to_dto(role),
         default_relation: role.default_relation.clone(),
@@ -188,7 +181,11 @@ pub async fn get_role_info_snapshot(
     session_id: Option<&str>,
 ) -> Result<RoleInfo> {
     let session_ns = conversation_state_role_id(role_id, session_id);
-    if !state.db_manager.role_runtime_exists(session_ns.as_str()).await? {
+    if !state
+        .db_manager
+        .role_runtime_exists(session_ns.as_str())
+        .await?
+    {
         return Err(AppError::InvalidParameter(
             "Role runtime not initialized; call load_role first".to_string(),
         ));
@@ -202,17 +199,8 @@ pub async fn get_role_info_snapshot(
         state.effective_plugin_backend_sources_for_session(session_ns.as_str());
 
     let current_scene = state.db_manager.get_current_scene(role_id).await?;
-    let user_presence_scene = state
-        .db_manager
-        .get_user_presence_scene(role_id)
-        .await?;
-    let rt = role_runtime_extras(
-        state,
-        role_id,
-        current_scene.as_deref(),
-        role.as_ref(),
-    )
-    .await?;
+    let user_presence_scene = state.db_manager.get_user_presence_scene(role_id).await?;
+    let rt = role_runtime_extras(state, role_id, current_scene.as_deref(), role.as_ref()).await?;
     maybe_seed_initial_favorability_with_extras(state, role_id, role.as_ref(), &rt).await?;
 
     let personality = state
@@ -247,10 +235,7 @@ pub async fn get_role_info_snapshot(
     let effective_ollama_model = role.resolve_ollama_model(state.global_chat_model().as_str());
     let relation_state =
         resolve_relation_state_for_ui(state, role_id, rt.current_user_relation.as_str()).await?;
-    let remote_life_enabled = state
-        .db_manager
-        .get_remote_life_enabled(role_id)
-        .await?;
+    let remote_life_enabled = state.db_manager.get_remote_life_enabled(role_id).await?;
     let remote_life_pack_default = role
         .remote_presence
         .as_ref()
@@ -315,18 +300,10 @@ pub async fn build_role_data(
     role_id: &str,
     role: &Role,
 ) -> Result<RoleData> {
-    let personality = state
-        .get_current_personality(role_id, role)
-        .await?;
+    let personality = state.get_current_personality(role_id, role).await?;
 
     let current_scene = state.db_manager.get_current_scene(role_id).await?;
-    let rt = role_runtime_extras(
-        state,
-        role_id,
-        current_scene.as_deref(),
-        role,
-    )
-    .await?;
+    let rt = role_runtime_extras(state, role_id, current_scene.as_deref(), role).await?;
     maybe_seed_initial_favorability_with_extras(state, role_id, role, &rt).await?;
     let current_favorability = current_favorability_for_effective_identity(
         state,
@@ -340,10 +317,7 @@ pub async fn build_role_data(
     let effective_ollama_model = role.resolve_ollama_model(state.global_chat_model().as_str());
     let relation_state =
         resolve_relation_state_for_ui(state, role_id, rt.current_user_relation.as_str()).await?;
-    let remote_life_enabled = state
-        .db_manager
-        .get_remote_life_enabled(role_id)
-        .await?;
+    let remote_life_enabled = state.db_manager.get_remote_life_enabled(role_id).await?;
     let remote_life_pack_default = role
         .remote_presence
         .as_ref()

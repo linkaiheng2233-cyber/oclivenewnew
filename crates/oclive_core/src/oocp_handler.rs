@@ -185,7 +185,10 @@ pub(crate) async fn handle_method(
         "role.get_info" => {
             let role_id = get_str(&req.params, "role_id")?;
             let session_id = get_str_opt(&req.params, "session_id");
-            let session_id = session_id.as_deref().map(str::trim).filter(|s| !s.is_empty());
+            let session_id = session_id
+                .as_deref()
+                .map(str::trim)
+                .filter(|s| !s.is_empty());
             handler.role_get_info(&role_id, session_id).await
         }
         "role.set_remote_life" => {
@@ -204,10 +207,7 @@ pub(crate) async fn handle_method(
             let target_time_ms = get_i64_opt(&req.params, "target_time_ms");
             let preset = get_str_opt(&req.params, "preset");
             if target_time_ms.is_none()
-                && preset
-                    .as_ref()
-                    .map(|s| s.trim().is_empty())
-                    .unwrap_or(true)
+                && preset.as_ref().map(|s| s.trim().is_empty()).unwrap_or(true)
             {
                 return Err(MethodError {
                     code: OocpErrorCode::InvalidParams,

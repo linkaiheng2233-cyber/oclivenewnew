@@ -6,10 +6,8 @@ use crate::error::AppError;
 use crate::infrastructure::directory_plugins::{
     build_directory_plugin_catalog as kernel_build_directory_plugin_catalog,
     directory_plugin_bootstrap_dto as kernel_directory_plugin_bootstrap_dto,
-    is_host_event_subscribed as kernel_is_host_event_subscribed,
-    plugin_scan_container_roots,
-    read_plugin_asset_text_under_root,
-    DEFAULT_DIRECTORY_PLUGIN_ASSET_BASE_URL,
+    is_host_event_subscribed as kernel_is_host_event_subscribed, plugin_scan_container_roots,
+    read_plugin_asset_text_under_root, DEFAULT_DIRECTORY_PLUGIN_ASSET_BASE_URL,
 };
 use crate::infrastructure::plugin_state::{PluginStateFile, RolePluginState};
 use crate::infrastructure::remote_plugin::{

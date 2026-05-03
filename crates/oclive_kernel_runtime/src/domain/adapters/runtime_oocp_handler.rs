@@ -290,9 +290,7 @@ impl OocpMethodHandler for RuntimeOocpHandler {
         export_chat_logs::export_session_chat_logs_oocp_value(&self.state, role_id, format)
             .await
             .map_err(|e| match e {
-                crate::error::AppError::InvalidParameter(m) => {
-                    err(OocpErrorCode::InvalidParams, m)
-                }
+                crate::error::AppError::InvalidParameter(m) => err(OocpErrorCode::InvalidParams, m),
                 crate::error::AppError::RoleNotFound(m) => err(OocpErrorCode::RoleNotFound, m),
                 other => err(OocpErrorCode::Internal, other.to_frontend_error()),
             })
@@ -343,19 +341,13 @@ impl OocpMethodHandler for RuntimeOocpHandler {
             .map_err(|e| err(OocpErrorCode::Internal, e.to_frontend_error()))?
             .unwrap_or_else(|| "default".to_string());
 
-        let resp = crate::domain::virtual_time::generate_monologue(
-            &self.state,
-            role_id,
-            context,
-        )
-        .await
-        .map_err(|e| match e {
-            crate::error::AppError::InvalidParameter(m) => {
-                err(OocpErrorCode::InvalidParams, m)
-            }
-            crate::error::AppError::OllamaError(m) => err(OocpErrorCode::LlmFailure, m),
-            other => err(OocpErrorCode::Internal, other.to_frontend_error()),
-        })?;
+        let resp = crate::domain::virtual_time::generate_monologue(&self.state, role_id, context)
+            .await
+            .map_err(|e| match e {
+                crate::error::AppError::InvalidParameter(m) => err(OocpErrorCode::InvalidParams, m),
+                crate::error::AppError::OllamaError(m) => err(OocpErrorCode::LlmFailure, m),
+                other => err(OocpErrorCode::Internal, other.to_frontend_error()),
+            })?;
 
         let trigger = context.unwrap_or("user_afk");
         self.push_event(OocpEvent {
@@ -414,8 +406,12 @@ impl OocpMethodHandler for RuntimeOocpHandler {
             crate::error::AppError::RoleNotFound(m) => err(OocpErrorCode::RoleNotFound, m),
             other => err(OocpErrorCode::Internal, other.to_frontend_error()),
         })?;
-        serde_json::to_value(&info)
-            .map_err(|e| err(OocpErrorCode::Internal, format!("serialize RoleInfo: {}", e)))
+        serde_json::to_value(&info).map_err(|e| {
+            err(
+                OocpErrorCode::Internal,
+                format!("serialize RoleInfo: {}", e),
+            )
+        })
     }
 
     async fn role_set_remote_life(

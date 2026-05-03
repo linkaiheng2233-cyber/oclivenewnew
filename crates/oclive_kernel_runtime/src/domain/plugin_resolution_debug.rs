@@ -3,9 +3,7 @@
 use crate::domain::chat_engine::conversation_state_role_id;
 use crate::error::Result;
 use crate::infrastructure::storage::resolve_llm_backend_env_override;
-use crate::models::dto::{
-    PluginResolutionDebugInfo, API_VERSION, SCHEMA_VERSION,
-};
+use crate::models::dto::{PluginResolutionDebugInfo, API_VERSION, SCHEMA_VERSION};
 use crate::models::LlmBackend;
 use crate::state::KernelAppState;
 
@@ -24,8 +22,7 @@ pub async fn build_plugin_resolution_debug_info(
         .await?;
     let session_override = state.session_backend_override(session_ns.as_str());
     let effective = state.effective_plugin_backends_for_session(role.as_ref(), session_ns.as_str());
-    let effective_sources =
-        state.effective_plugin_backend_sources_for_session(session_ns.as_str());
+    let effective_sources = state.effective_plugin_backend_sources_for_session(session_ns.as_str());
     let llm_env_override = resolve_llm_backend_env_override().map(|b| match b {
         LlmBackend::Ollama => "ollama".to_string(),
         LlmBackend::Remote => "remote".to_string(),

@@ -14,8 +14,7 @@ pub async fn get_plugin_permission_grants(
     state: State<'_, AppState>,
 ) -> Result<GetPluginPermissionGrantsResponse, String> {
     oclive_kernel_runtime::domain::plugin_permission_commands::get_plugin_permission_grants(
-        &state,
-        &plugin_id,
+        &state, &plugin_id,
     )
     .await
     .map_err(|e| e.to_frontend_error())
@@ -35,7 +34,5 @@ pub async fn set_plugin_permission_grant(
 
 #[tauri::command]
 pub async fn list_permission_tokens() -> Result<ListPermissionTokensResponse, String> {
-    Ok(
-        oclive_kernel_runtime::domain::plugin_permission_commands::list_permission_tokens(),
-    )
+    Ok(oclive_kernel_runtime::domain::plugin_permission_commands::list_permission_tokens())
 }

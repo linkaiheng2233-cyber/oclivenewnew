@@ -1,9 +1,7 @@
 //! 事件列表与手动创建（无 Tauri 依赖）。
 
 use crate::error::{AppError, Result};
-use crate::models::dto::{
-    CreateEventRequest, CreateEventResponse, EventItem, QueryEventsRequest,
-};
+use crate::models::dto::{CreateEventRequest, CreateEventResponse, EventItem, QueryEventsRequest};
 use crate::models::EventType;
 use crate::state::KernelAppState;
 

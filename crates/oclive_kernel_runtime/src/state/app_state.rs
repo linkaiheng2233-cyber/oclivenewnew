@@ -330,7 +330,9 @@ impl KernelAppState {
             .get_app_setting(HOST_CHAT_MODEL_KEY)
             .await?
             .filter(|s| !s.trim().is_empty())
-            .unwrap_or_else(|| std::env::var("OLLAMA_MODEL").unwrap_or_else(|_| "qwen2.5:7b".to_string()));
+            .unwrap_or_else(|| {
+                std::env::var("OLLAMA_MODEL").unwrap_or_else(|_| "qwen2.5:7b".to_string())
+            });
         let chat_model = Arc::new(RwLock::new(chat_model_init));
         let registry = load_policy_registry();
         let runtime = Self::build_policy_sets_from_registry(registry);

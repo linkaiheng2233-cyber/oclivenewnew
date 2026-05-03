@@ -46,9 +46,7 @@ pub async fn set_role_feedback_handled(
     req: SetRoleFeedbackHandledRequest,
     state: State<'_, AppState>,
 ) -> Result<(), String> {
-    oclive_kernel_runtime::domain::role_feedback_commands::set_role_feedback_handled(
-        &state, &req,
-    )
-    .await
-    .map_err(|e| e.to_frontend_error())
+    oclive_kernel_runtime::domain::role_feedback_commands::set_role_feedback_handled(&state, &req)
+        .await
+        .map_err(|e| e.to_frontend_error())
 }

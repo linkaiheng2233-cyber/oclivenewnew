@@ -18,7 +18,9 @@ pub fn round_to_minute_ms(ts_ms: i64) -> i64 {
 
 fn virtual_time_label_from_ms(ms: i64) -> String {
     let dt = DateTime::from_timestamp_millis(ms).unwrap_or_else(Utc::now);
-    dt.with_timezone(&Local).format("%Y-%m-%d %H:%M").to_string()
+    dt.with_timezone(&Local)
+        .format("%Y-%m-%d %H:%M")
+        .to_string()
 }
 
 /// 角色包 `settings.json` → `autonomous_scene`：虚拟时间变化后尝试匹配首条规则并更新 `current_scene`。
@@ -99,7 +101,12 @@ pub async fn get_time_state(state: &KernelAppState, role_id: &str) -> Result<Tim
         ));
     }
 
-    if !state.db_manager.get_interaction_mode(role_id).await?.is_immersive() {
+    if !state
+        .db_manager
+        .get_interaction_mode(role_id)
+        .await?
+        .is_immersive()
+    {
         let ms = round_to_minute_ms(Utc::now().timestamp_millis());
         let dt = DateTime::from_timestamp_millis(ms).unwrap_or_else(Utc::now);
         return Ok(TimeStateResponse {
@@ -210,10 +217,7 @@ pub async fn jump_time(state: &KernelAppState, req: &JumpTimeRequest) -> Result<
     }
 
     let role = state.load_role_cached(&req.role_id)?;
-    let current_scene = state
-        .db_manager
-        .get_current_scene(&req.role_id)
-        .await?;
+    let current_scene = state.db_manager.get_current_scene(&req.role_id).await?;
     let eff_key = resolve_effective_user_relation_key(
         state,
         role.as_ref(),

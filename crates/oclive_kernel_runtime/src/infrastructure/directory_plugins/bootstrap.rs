@@ -142,7 +142,10 @@ pub fn is_host_event_subscribed(
 }
 
 /// 对**同一插槽**的条目按 `plugin_state.slot_order[slot]` 排序。
-pub fn order_plugin_slots(mut slots: Vec<PluginUiSlotDto>, order: &[String]) -> Vec<PluginUiSlotDto> {
+pub fn order_plugin_slots(
+    mut slots: Vec<PluginUiSlotDto>,
+    order: &[String],
+) -> Vec<PluginUiSlotDto> {
     let mut by_id: HashMap<String, PluginUiSlotDto> =
         slots.drain(..).map(|s| (s.plugin_id.clone(), s)).collect();
     let mut out = Vec::new();

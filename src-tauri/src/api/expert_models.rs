@@ -1,16 +1,18 @@
 //! Module 9：Expert Models — 实现于 `oclive_kernel_runtime::domain::expert_models_admin`。
 
 pub use oclive_kernel_runtime::domain::expert_models_admin::{
-    ExpertModelsImportGgufRequest, ExpertModelsLocalGgufPathRequest, ExpertModelsRenameLocalGgufRequest,
-    ExpertModelsSetGgufRepoMetaRequest, LocalModelFileDto,
+    ExpertModelsImportGgufRequest, ExpertModelsLocalGgufPathRequest,
+    ExpertModelsRenameLocalGgufRequest, ExpertModelsSetGgufRepoMetaRequest, LocalModelFileDto,
 };
 
 use crate::models::dto::{
-    ExpertModelsApplyResult, ExpertModelsApplyToSessionRequest, ExpertModelsClearRoleDefaultRequest,
-    ExpertModelsClearRunsRequest, ExpertModelsClearSessionOverrideRequest,
-    ExpertModelsEffectiveResponse, ExpertModelsGetEffectiveRequest, ExpertModelsGetRunDetailRequest,
-    ExpertModelsGetRunDetailResponse, ExpertModelsListRunsResponse, ExpertModelsRollbackLastRunRequest,
-    ExpertModelsRollbackToRunRequest, ExpertModelsSetRoleDefaultRequest, ExpertModelsSetRunPinnedRequest,
+    ExpertModelsApplyResult, ExpertModelsApplyToSessionRequest,
+    ExpertModelsClearRoleDefaultRequest, ExpertModelsClearRunsRequest,
+    ExpertModelsClearSessionOverrideRequest, ExpertModelsEffectiveResponse,
+    ExpertModelsGetEffectiveRequest, ExpertModelsGetRunDetailRequest,
+    ExpertModelsGetRunDetailResponse, ExpertModelsListRunsResponse,
+    ExpertModelsRollbackLastRunRequest, ExpertModelsRollbackToRunRequest,
+    ExpertModelsSetRoleDefaultRequest, ExpertModelsSetRunPinnedRequest,
     ExpertModelsSetSessionOverrideRequest, ExpertWorkflowDto, ExpertWorkflowsDeleteRequest,
     ExpertWorkflowsGetRequest, ExpertWorkflowsListResponse, ExpertWorkflowsSaveRequest,
 };
@@ -22,7 +24,8 @@ pub async fn expert_models_get_effective(
     req: ExpertModelsGetEffectiveRequest,
     state: State<'_, AppState>,
 ) -> Result<ExpertModelsEffectiveResponse, String> {
-    oclive_kernel_runtime::domain::expert_models_admin::expert_models_get_effective(&state, &req).await
+    oclive_kernel_runtime::domain::expert_models_admin::expert_models_get_effective(&state, &req)
+        .await
 }
 
 #[tauri::command]
@@ -30,8 +33,10 @@ pub async fn expert_models_set_session_override(
     req: ExpertModelsSetSessionOverrideRequest,
     state: State<'_, AppState>,
 ) -> Result<(), String> {
-    oclive_kernel_runtime::domain::expert_models_admin::expert_models_set_session_override(&state, &req)
-        .await
+    oclive_kernel_runtime::domain::expert_models_admin::expert_models_set_session_override(
+        &state, &req,
+    )
+    .await
 }
 
 #[tauri::command]
@@ -59,8 +64,10 @@ pub async fn expert_models_clear_role_default(
     req: ExpertModelsClearRoleDefaultRequest,
     state: State<'_, AppState>,
 ) -> Result<(), String> {
-    oclive_kernel_runtime::domain::expert_models_admin::expert_models_clear_role_default(&state, &req)
-        .await
+    oclive_kernel_runtime::domain::expert_models_admin::expert_models_clear_role_default(
+        &state, &req,
+    )
+    .await
 }
 
 #[tauri::command]
@@ -127,7 +134,9 @@ pub fn expert_models_set_gguf_repo_meta(
     req: ExpertModelsSetGgufRepoMetaRequest,
     state: State<'_, AppState>,
 ) -> Result<LocalModelFileDto, String> {
-    oclive_kernel_runtime::domain::expert_models_admin::expert_models_set_gguf_repo_meta(&state, &req)
+    oclive_kernel_runtime::domain::expert_models_admin::expert_models_set_gguf_repo_meta(
+        &state, &req,
+    )
 }
 
 #[tauri::command]
@@ -135,8 +144,10 @@ pub async fn expert_models_rollback_last_run(
     req: ExpertModelsRollbackLastRunRequest,
     state: State<'_, AppState>,
 ) -> Result<ExpertModelsApplyResult, String> {
-    oclive_kernel_runtime::domain::expert_models_admin::expert_models_rollback_last_run(&state, &req)
-        .await
+    oclive_kernel_runtime::domain::expert_models_admin::expert_models_rollback_last_run(
+        &state, &req,
+    )
+    .await
 }
 
 #[tauri::command]

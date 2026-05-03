@@ -302,9 +302,7 @@ impl OocpMethodHandler for TauriOocpHandler {
         export_chat_logs::export_session_chat_logs_oocp_value(self.state.as_ref(), role_id, format)
             .await
             .map_err(|e| match e {
-                crate::error::AppError::InvalidParameter(m) => {
-                    err(OocpErrorCode::InvalidParams, m)
-                }
+                crate::error::AppError::InvalidParameter(m) => err(OocpErrorCode::InvalidParams, m),
                 crate::error::AppError::RoleNotFound(m) => err(OocpErrorCode::RoleNotFound, m),
                 other => err(OocpErrorCode::Internal, other.to_frontend_error()),
             })
@@ -364,9 +362,7 @@ impl OocpMethodHandler for TauriOocpHandler {
         let resp = virtual_time::generate_monologue(self.state.as_ref(), role_id, context)
             .await
             .map_err(|e| match e {
-                crate::error::AppError::InvalidParameter(m) => {
-                    err(OocpErrorCode::InvalidParams, m)
-                }
+                crate::error::AppError::InvalidParameter(m) => err(OocpErrorCode::InvalidParams, m),
                 crate::error::AppError::OllamaError(m) => err(OocpErrorCode::LlmFailure, m),
                 other => err(OocpErrorCode::Internal, other.to_frontend_error()),
             })?;
@@ -417,17 +413,16 @@ impl OocpMethodHandler for TauriOocpHandler {
         role_id: &str,
         session_id: Option<&str>,
     ) -> Result<Value, MethodError> {
-        let info = role_info_snapshot::get_role_info_snapshot(
-            self.state.as_ref(),
-            role_id,
-            session_id,
-        )
-        .await
-        .map_err(|e| match e {
-            crate::error::AppError::InvalidParameter(m) => err(OocpErrorCode::InvalidParams, m),
-            crate::error::AppError::RoleNotFound(m) => err(OocpErrorCode::RoleNotFound, m),
-            other => err(OocpErrorCode::Internal, other.to_frontend_error()),
-        })?;
+        let info =
+            role_info_snapshot::get_role_info_snapshot(self.state.as_ref(), role_id, session_id)
+                .await
+                .map_err(|e| match e {
+                    crate::error::AppError::InvalidParameter(m) => {
+                        err(OocpErrorCode::InvalidParams, m)
+                    }
+                    crate::error::AppError::RoleNotFound(m) => err(OocpErrorCode::RoleNotFound, m),
+                    other => err(OocpErrorCode::Internal, other.to_frontend_error()),
+                })?;
         serde_json::to_value(&info).map_err(|e| {
             err(
                 OocpErrorCode::Internal,
