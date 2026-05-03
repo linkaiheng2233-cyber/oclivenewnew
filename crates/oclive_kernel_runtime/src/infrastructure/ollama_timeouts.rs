@@ -1,6 +1,6 @@
 //! Ollama HTTP 单次请求超时（秒），与可选「直连辅助」路径共用同一套可配置默认值。
 //!
-//! - 主路径 [`super::OllamaClient`] 使用 [`http_client_timeout`].
+//! - 主路径 [`crate::infrastructure::ollama_client::OllamaClient`] 使用 [`http_client_timeout`].
 //! - `utils::ollama::ollama_generate` 使用 [`legacy_utils_call_timeout`]（默认更短，避免辅助脚本拖死）。
 
 use std::time::Duration;

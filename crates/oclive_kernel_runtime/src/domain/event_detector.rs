@@ -15,7 +15,7 @@ impl EventDetector {
         Self::detect_with_augment(text, user_emotion, bot_emotion, None)
     }
 
-    /// 与 [`detect`] 相同，但合并世界观知识块提供的额外关键词（B1）。
+    /// 与 [`EventDetector::detect`] 相同，但合并世界观知识块提供的额外关键词（B1）。
     pub fn detect_with_augment(
         text: &str,
         user_emotion: &Emotion,

@@ -34,6 +34,13 @@ jobs:
         run: cargo fmt --all --check
       - name: clippy (workspace root)
         run: cargo clippy --workspace --all-targets --all-features -- -D warnings
+      - name: rustdoc (oclive_kernel_runtime, deny broken intra-doc links)
+        env:
+          RUSTDOCFLAGS: -D rustdoc::broken_intra_doc_links
+        run: cargo doc -p oclive_kernel_runtime --all-features --no-deps
+      - name: CHECKLIST command rows vs invoke_lists
+        shell: bash
+        run: bash scripts/check_kernel_entry_vs_invoke_lists.sh
       - name: tests (workspace root)
         run: cargo test --workspace
       - name: kernel_runtime without default features (minimal closure)

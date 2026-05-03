@@ -209,7 +209,8 @@
 
 ## `oclive_kernel_runtime` 集成测试对照（P0.T / P0.A 自检）
 
-以下 **crate 级 `tests/*.rs`** 与上表能力簇对应，CI 中 `cargo test -p oclive_kernel_runtime` 会执行（默认 `--features full` 时含 `market-sync` / `role-pack-zip` 等）：
+以下 **crate 级 `tests/*.rs`** 与上表能力簇对应，CI 中 `cargo test -p oclive_kernel_runtime` 会执行（默认 `--features full` 时含 `market-sync` / `role-pack-zip` 等）。  
+**Invoke 漂移**：根 CI 运行 **`scripts/check_kernel_entry_vs_invoke_lists.sh`**，保证上表「命令名」行（**`## 事件/Stream` 之前**）所列举名称均为 **`src-tauri/invoke_lists/*.txt`** 并集子集。
 
 | 测试文件 | 覆盖簇 |
 |----------|--------|

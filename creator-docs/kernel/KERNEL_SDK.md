@@ -37,3 +37,15 @@
 | 边界与模块 | [KERNEL_BOUNDARY.md](./KERNEL_BOUNDARY.md) |
 | Tauri 命令 ↔ 实现 | [KERNEL_API_IMPLEMENTATION_MATRIX.md](./KERNEL_API_IMPLEMENTATION_MATRIX.md) |
 | crates.io / 发布准备 | `oclive_kernel_runtime/README.md` §crates.io |
+
+---
+
+## 5. 容器（无头 `kernel_server`）
+
+- **镜像**：仓库根 **`Dockerfile.kernel-server`**（多阶段构建 `oclive_kernel_server`）。  
+- **Compose**：**`docker-compose.kernel-server.yml`**（默认映射 **`48888`**，环境变量 **`OOCP_API_PORT`**）。  
+- **忽略上下文**：根目录 **`.dockerignore`** 减小构建上传体积（不含前端 `src/`、随包 `roles/` 等）。
+
+## 6. crates.io 与 `cargo publish --dry-run`
+
+当前 **`oclive_kernel_runtime`** 依赖 **`oclive_core` / `oclive_validation` 的 path 版本**，在未为它们声明 **crates.io 版本** 并发布前，**`cargo publish -p oclive_kernel_runtime --dry-run` 会失败**（Cargo 要求发布包的所有依赖带版本约束）。CI 以 **`cargo doc`** 与 **`invoke_lists` 对齐脚本** 作为 P2 子集门禁；全量 dry-run 留在依赖链发布就绪后执行。

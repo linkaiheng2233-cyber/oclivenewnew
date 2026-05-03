@@ -1,0 +1,22 @@
+# 无头 `oclive_kernel_server`（OOCP HTTP/WS）。构建上下文为仓库根目录。
+# 构建：docker build -f Dockerfile.kernel-server -t oclive-kernel-server .
+# 运行：docker run --rm -p 48888:48888 -e OOCP_API_PORT=48888 oclive-kernel-server
+
+FROM rust:1-bookworm AS builder
+WORKDIR /app
+RUN apt-get update \
+    && apt-get install -y --no-install-recommends pkg-config libssl-dev \
+    && rm -rf /var/lib/apt/lists/*
+COPY Cargo.toml Cargo.lock ./
+COPY crates ./crates
+COPY src-tauri ./src-tauri
+RUN cargo build -p oclive_kernel_server --release
+
+FROM debian:bookworm-slim
+RUN apt-get update \
+    && apt-get install -y --no-install-recommends ca-certificates \
+    && rm -rf /var/lib/apt/lists/*
+COPY --from=builder /app/target/release/oclive_kernel_server /usr/local/bin/
+EXPOSE 48888
+ENV OOCP_API_PORT=48888
+ENTRYPOINT ["/usr/local/bin/oclive_kernel_server"]

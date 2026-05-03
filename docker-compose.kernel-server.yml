@@ -1,0 +1,12 @@
+# 本地试跑无头内核 HTTP/WS（与 `Dockerfile.kernel-server` 配套）。
+# 用法：docker compose -f docker-compose.kernel-server.yml up --build
+
+services:
+  kernel-server:
+    build:
+      context: .
+      dockerfile: Dockerfile.kernel-server
+    ports:
+      - "48888:48888"
+    environment:
+      OOCP_API_PORT: "48888"

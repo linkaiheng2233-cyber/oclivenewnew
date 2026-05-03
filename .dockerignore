@@ -1,0 +1,10 @@
+.git
+.github
+node_modules
+dist
+oclive-dev-artifacts
+target
+roles
+handoff
+creator-docs
+src

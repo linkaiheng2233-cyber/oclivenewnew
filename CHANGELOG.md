@@ -6,6 +6,7 @@
 
 - **`oclive_kernel_runtime` 集成测试**：`tests/session_process_message_smoke.rs` 对 `roles/shimeng` 走 **`process_message`** + Mock LLM 最小闭环；`tests/public_api_error_contract.rs` 校验 `AppError` 与字典一致；`tests/p0_support_modules_smoke.rs` 覆盖 **`missing_plugin_dependencies`**、**`market-sync` 索引缓存读**、**`compile_graph_to_llama_local_config`**、**`list_local_import_candidates`**（无网络）；`tests/p0_kernel_lifecycle_smoke.rs` 覆盖 **`delete_role`**、**`expert_models_*` 会话覆盖**、**`role-pack-zip`** 下插件 zip 安装。  
 - **P1 清单**：[`handoff/P1_KERNEL_RUNTIME_BLOCKING_AND_STARTUP.md`](handoff/P1_KERNEL_RUNTIME_BLOCKING_AND_STARTUP.md)（runtime 内 `spawn_blocking` / 同步 HTTP / 冷启动分段锚点）。  
+- **P2 / CI**：根 **`.github/workflows/ci.yml`** 增加 **`cargo doc -p oclive_kernel_runtime --all-features --no-deps`**（`RUSTDOCFLAGS=-D rustdoc::broken_intra_doc_links`）与 **`scripts/check_kernel_entry_vs_invoke_lists.sh`**（CHECKLIST 命令名 ⊆ `invoke_lists`）；**`Dockerfile.kernel-server`**、**`docker-compose.kernel-server.yml`**、**`.dockerignore`**；**KERNEL_SDK** §5–6 说明 **Docker** 与 **`cargo publish --dry-run`** 的 path 依赖限制。  
 - **内核 SDK 与启动脚本**：[creator-docs/kernel/KERNEL_SDK.md](creator-docs/kernel/KERNEL_SDK.md)；根目录 **`scripts/run_kernel_server.sh`** / **`scripts/run_kernel_server.ps1`**（可选端口参数）。
 - 插件清单支持声明订阅的宿主事件（`shell.bridge.events` 或 `ui_slots[].bridge.events`），避免不必要的事件广播。
 - 设置页「常规」区域增加「强制 iframe 模式」开关，开启后所有插件界面统一使用 iframe 渲染，获得最高级别沙箱隔离。
@@ -13,6 +14,7 @@
 
 ### Changed
 
+- **rustdoc**：`event_detector`、`ollama_timeouts`、`role_manager` 模块注释中的断链/歧义链指向修正，便于 CI **`rustdoc::broken_intra_doc_links`** 门禁。  
 - **`oclive_kernel_runtime` 错误分类（P0.E 续）**：插件安装 / 市场索引同步 / 角色包下载与 ZIP 导出 / MCP 客户端 / `delete_role` 等路径中，将原先 `AppError::Unknown` 收敛为 `InvalidParameter`、`IoError`、`SerializationError`、`DatabaseError` 等，并在消息中使用 `[PLUGIN_*]`、`[ROLE_*]`、`[MCP_*]` 等括号前缀便于检索；`handoff/10_ERROR_CODE_DICTIONARY.md` 补充说明。
 - **云 LLM**：移除 Tauri 应用内「云 LLM UI 设置」命令与相关持久化/编排旁路（`get_cloud_llm_ui_settings` 等、`llm_remote_stack`）；**环境变量 `OCLIVE_CLOUD_LLM_*`** 仍可通过 `cloud_llm_from_env` 走 `OpenAiCompatLlmClient`。`PluginResolutionDebug` 去掉云 UI 字段；`PluginBackendSource` 去掉 `app_auto`。
 - 调整切换角色后的事件广播时机，确保插件订阅信息已同步再发送 `role:switched`。

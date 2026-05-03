@@ -82,17 +82,19 @@
 ### 1. 官方 SDK 文档
 
 - **首版已建**：[`creator-docs/kernel/KERNEL_SDK.md`](../creator-docs/kernel/KERNEL_SDK.md)（库模式、`process_message`、`kernel_server`、错误与互链）。  
-- **待扩**：rustdoc 全量、`cargo doc --no-deps` 进 CI、更多集成示例。
+- **CI**：根 **`.github/workflows/ci.yml`** 对 **`oclive_kernel_runtime`** 执行 **`cargo doc --all-features --no-deps`**，且 **`RUSTDOCFLAGS=-D rustdoc::broken_intra_doc_links`**。  
+- **待扩**：收敛 rustdoc 冗余链接告警、更多集成示例。
 
 ### 2. crates.io 发布
 
 - 补齐根 **`Cargo.toml` / crate `Cargo.toml`** 的 `repository`、`documentation`、`license` 与 **README 链接**；评估 **`oclive_core` / `oclive_validation`** 是否同步发布或保持 path。
-- 发布前 **`cargo publish --dry-run -p oclive_kernel_runtime`**。
+- **`cargo publish --dry-run -p oclive_kernel_runtime`**：在 path 依赖未声明 crates.io 版本前**仍会失败**；见 **KERNEL_SDK** §6；全量 dry-run 留在依赖链就绪后。
 
 ### 3. kernel_server 集成体验
 
 - **脚本**：[`scripts/run_kernel_server.sh`](../scripts/run_kernel_server.sh)、[`scripts/run_kernel_server.ps1`](../scripts/run_kernel_server.ps1)（仓库根执行；可选端口）。  
-- **待做**：最小 **Dockerfile**、Compose、与 **`OOCP_SPEC`** 的部署专页。
+- **容器**：根 **`Dockerfile.kernel-server`**、**`docker-compose.kernel-server.yml`**、**`.dockerignore`**（见 **KERNEL_SDK** §5）。  
+- **待做**：与 **`OOCP_SPEC`** 对齐的部署专页（可选）。
 
 ---
 
@@ -102,7 +104,7 @@
 |------|------|
 | **P0 里程碑** | `cargo test --workspace`；runtime `tests/` 覆盖核心契约（错误码、关键状态）；MATRIX/CHECKLIST 与实现无矛盾。 |
 | **P1 里程碑** | 启动分段数据写入 handoff（**[`P1_KERNEL_RUNTIME_BLOCKING_AND_STARTUP.md`](./P1_KERNEL_RUNTIME_BLOCKING_AND_STARTUP.md)** 为 runtime 锚点首版）；异步边界无新增 `block_on` 违规；可选内存基线一页。 |
-| **P2 里程碑** | `KERNEL_SDK.md` + `cargo doc` 无报错；`cargo publish --dry-run`；kernel_server 一键脚本或 Docker 文档化。 |
+| **P2 里程碑** | `KERNEL_SDK.md` + CI **`cargo doc`**（禁断链）；**`invoke_lists` ↔ CHECKLIST** 脚本门禁；kernel_server **脚本 + Docker**；`cargo publish --dry-run` 在 path 依赖链发布后补。 |
 
 ---
 

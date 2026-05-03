@@ -40,6 +40,7 @@
 | `LIGHTWEIGHT_OOCP_WS_AXUM_FOLLOWUP.md` | **子计划**：壳层 OOCP WebSocket 与 `axum` 去直连评估（中长期，与阶段 2 批量去重解耦） |
 | `ENGINEERING_ROADMAP_KERNEL_DEEPSEEK.md` | **工程质量 P0 / 内核 P1 / 生态 P2**：与 DeepSeek 指令对齐的分阶段清单、验收门槛与仓库事实快照 |
 | `P1_KERNEL_RUNTIME_BLOCKING_AND_STARTUP.md` | **P1**：`oclive_kernel_runtime` 内 `spawn_blocking` / 同步 HTTP 边界与 `KernelAppState` 冷启动分段计时锚点 |
+| `../scripts/check_kernel_entry_vs_invoke_lists.sh` | **P0.A / P2**：校验 **KERNEL_ENTRY_CHECKLIST** 命令名 ⊆ **`invoke_lists/*.txt`**（根 CI 调用） |
 | `../creator-docs/kernel/KERNEL_SDK.md` | **内核 SDK**：库模式、`process_message`、`kernel_server` 与脚本入口 |
 
 **Cursor 规则**：项目根 `.cursor/rules/oclivenewnew.mdc`（指向 `handoff` 文档）。
