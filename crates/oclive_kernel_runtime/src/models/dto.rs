@@ -858,3 +858,18 @@ pub struct RoleFeedbackItem {
     #[serde(default)]
     pub source: Option<String>,
 }
+
+#[derive(Debug, Clone, Deserialize)]
+pub struct MarkRoleFeedbackReadRequest {
+    pub role_id: String,
+    pub ids: Vec<i64>,
+}
+
+#[derive(Debug, Clone, Deserialize)]
+pub struct SetRoleFeedbackHandledRequest {
+    pub role_id: String,
+    pub id: i64,
+    pub handled: bool,
+    #[serde(default)]
+    pub note: Option<String>,
+}

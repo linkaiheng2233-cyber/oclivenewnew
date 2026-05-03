@@ -3,16 +3,16 @@
 pub mod adapters;
 
 pub use oclive_kernel_runtime::domain::{
-    affect_policy, agent, chat_engine, chat_llm_fallback, chat_turn, chat_turn_rules,
-    complex_emotion, core, emotion_analyzer, event_commands, event_detector, event_estimator,
-    event_impact_ai,
+    affect_policy, agent, app_settings_commands, chat_engine, chat_llm_fallback, chat_turn,
+    chat_turn_rules, complex_emotion, conversation_query, core, emotion_analyzer, event_commands,
+    event_detector, event_estimator, event_impact_ai,
     expert_models, export_chat_logs, knowledge_loader, life_schedule, local_plugin_bridge,
     local_plugin_memory_pick, memory_engine, memory_query, memory_retrieval, mutable_profile_llm,
     permission_tokens, personality_engine, plugin_host, plugin_resolution_debug, policy,
     portrait_emotion_engine, profile_personality, prompt_assembler, prompt_builder,
     prompt_style_override,     relation_engine, remote_life_prompt, repository, role_info_snapshot,
-    role_manager, role_manifest_validate, role_runtime_commands, scene_commands,
-    session_plugin_override,
+    role_feedback_commands, role_manager, role_manifest_validate, role_runtime_commands,
+    scene_commands, session_plugin_override,
     user_emotion_analyzer,
     user_identity, virtual_time,
 };
