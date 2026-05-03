@@ -85,10 +85,12 @@
 |------|------|
 | `preview_local_plugin_archive_command` / `install_local_plugin_archive_command` 曾未注册 | 已在 `lib.rs` 注册；若前端仍有死链需再扫一遍 |
 | `notify` 曾列入 `oclive_kernel_runtime` 但未使用 | 已从依赖移除 |
-| 远程插件 HTTP 与 Tauri 异步命令混用 | **现状**：workspace 已无 `reqwest/blocking`；同步边界见 `blocking_http::block_on` 与 runtime `README.md` I/O 段 |
+| 远程插件 HTTP 与 Tauri 异步命令混用 | **已收敛**：workspace 无 `reqwest/blocking`；runtime 用 `Client` + `blocking_http::block_on`；详见 `handoff/PERF_PHASES.md` |
 
 ---
 
 维护节奏：新增 `generate_handler!` 命令时，请同步更新 **KERNEL_ENTRY_CHECKLIST** 与本表一行。  
 迁入收尾与自检命令：[**`../../handoff/KERNEL_MIGRATION_COMPLETE.md`**](../../handoff/KERNEL_MIGRATION_COMPLETE.md)。  
-轻量 profile 与特性矩阵：[**`LIGHTWEIGHT_PROFILE.md`**](./LIGHTWEIGHT_PROFILE.md)。
+轻量 profile 与特性矩阵：[**`LIGHTWEIGHT_PROFILE.md`**](./LIGHTWEIGHT_PROFILE.md)。  
+内核 SDK（库 / `kernel_server`）：[**`KERNEL_SDK.md`**](./KERNEL_SDK.md)。  
+工程质量路线：[**`../../handoff/ENGINEERING_ROADMAP_KERNEL_DEEPSEEK.md`**](../../handoff/ENGINEERING_ROADMAP_KERNEL_DEEPSEEK.md)。

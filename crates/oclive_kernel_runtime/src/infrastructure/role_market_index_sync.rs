@@ -56,8 +56,7 @@ pub fn load_role_market_index_cache(cache_path: &Path) -> Result<RoleIndexFile> 
         });
     }
     let raw = fs::read_to_string(cache_path).map_err(AppError::IoError)?;
-    serde_json::from_str(&raw)
-        .map_err(|e| AppError::Unknown(format!("parse role market index cache failed: {}", e)))
+    serde_json::from_str(&raw).map_err(AppError::from)
 }
 
 pub fn sync_role_market_index_from_url(url: &str, cache_path: &Path) -> Result<RoleIndexFile> {
@@ -65,28 +64,30 @@ pub fn sync_role_market_index_from_url(url: &str, cache_path: &Path) -> Result<R
     let cli = reqwest::Client::builder()
         .timeout(std::time::Duration::from_secs(15))
         .build()
-        .map_err(|e| AppError::Unknown(format!("index http client failed: {}", e)))?;
+        .map_err(|e| {
+            AppError::InvalidParameter(format!("[ROLE_INDEX_HTTP] client build: {}", e))
+        })?;
     let text = block_on(async move {
         let resp = cli
             .get(&url)
             .send()
             .await
-            .map_err(|e| AppError::Unknown(format!("sync role index failed: {}", e)))?;
+            .map_err(|e| AppError::InvalidParameter(format!("[ROLE_INDEX_HTTP] get: {}", e)))?;
         if !resp.status().is_success() {
-            return Err(AppError::Unknown(format!(
-                "sync role index status={} url={}",
+            return Err(AppError::InvalidParameter(format!(
+                "[ROLE_INDEX_HTTP] status={} url={}",
                 resp.status(),
                 url
             )));
         }
         resp.text()
             .await
-            .map_err(|e| AppError::Unknown(format!("read role index response failed: {}", e)))
+            .map_err(|e| AppError::InvalidParameter(format!("[ROLE_INDEX_HTTP] read body: {}", e)))
     })?;
     validate_role_market_index_v1(&text)
-        .map_err(|e| AppError::Unknown(format!("roles.json validate failed: {}", e)))?;
-    let parsed_disk: RoleMarketIndexFileDisk = serde_json::from_str(&text)
-        .map_err(|e| AppError::Unknown(format!("parse roles.json failed: {}", e)))?;
+        .map_err(|e| AppError::InvalidParameter(format!("[ROLE_INDEX_VALIDATE] {}", e)))?;
+    let parsed_disk: RoleMarketIndexFileDisk =
+        serde_json::from_str(&text).map_err(AppError::from)?;
     let mut roles = parsed_disk
         .roles
         .into_iter()

@@ -19,5 +19,5 @@ pub fn reset_role_plugin_state_to_pack_default(
     state
         .directory_plugins
         .reset_role_plugin_state_from_ui(rid, ui)
-        .map_err(AppError::Unknown)
+        .map_err(|e| AppError::DatabaseError(format!("[PLUGIN_STATE_PERSIST] {}", e)))
 }

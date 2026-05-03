@@ -11,7 +11,7 @@
 | DeepSeek 项 | 当前仓库结论 |
 |-------------|----------------|
 | `reqwest::blocking` 全量替代 | **已完成**：workspace `reqwest` 无 `blocking`；runtime 使用 `Client` + async，同步边界见 **`blocking_http::block_on`**；详见 [`PERF_PHASES.md`](./PERF_PHASES.md)。 |
-| `AppError` + 可诊断码 | **部分完成**：[`crates/oclive_kernel_runtime/src/error.rs`](../crates/oclive_kernel_runtime/src/error.rs) 提供 **`code()`** 与 **`to_frontend_error()`**（`[CODE]` 前缀）；与字典 **`10_ERROR_CODE_DICTIONARY.md`** 需持续对齐；仍有 **`Unknown`** 等宽口径，P0 需逐模块收紧。 |
+| `AppError` + 可诊断码 | **runtime 业务路径已收敛**：[`crates/oclive_kernel_runtime/src/error.rs`](../crates/oclive_kernel_runtime/src/error.rs) 提供 **`code()`** 与 **`to_frontend_error()`**（`[CODE]` 前缀）；`src/**/*.rs` 中 **`AppError::Unknown`** 已基本清除（保留枚举变体作兜底）；与字典 **`10_ERROR_CODE_DICTIONARY.md`** 持续对齐；其它 workspace crate 仍可按需收紧。 |
 | 集成测试目录 | 大量逻辑在 **`#[cfg(test)]` 模块内**（如 `state/app_state.rs`）；**crate 级 `tests/*.rs`** 已起步（见 `tests/public_api_error_contract.rs`），可逐步扩展 session / plugin 等。 |
 | crates.io / Docker | **未做**；见本文 P2 与验收门槛。 |
 
@@ -40,6 +40,12 @@
 **CI**：根工作区已 **`cargo test --workspace`**；新增 `crates/oclive_kernel_runtime/tests/*.rs` 会自动纳入，无需单独 job（除非要拆分 `--package` 加速）。
 
 **已落地（首步）**：[`crates/oclive_kernel_runtime/tests/public_api_error_contract.rs`](../crates/oclive_kernel_runtime/tests/public_api_error_contract.rs) — `AppError` 与 **`10_ERROR_CODE_DICTIONARY`** Common 码、`[CODE]` 前缀契约。
+
+**已落地（第二步）**：
+
+- [`tests/session_process_message_smoke.rs`](../crates/oclive_kernel_runtime/tests/session_process_message_smoke.rs) — `process_message` + `shimeng` + Mock LLM 最小闭环。  
+- 错误收紧（P0.E）：`plugin_archive`、`directory_plugin_commands`、`plugin_package_verify`、`llm_cancelable`；续：`plugin_install`、`plugin_index_sync`、`role_market_index_sync`、`plugin_reviews_index_sync`、`role_pack_archive`、`mcp_client`、`role_lifecycle` — **`oclive_kernel_runtime` 业务 `src` 不再使用 `AppError::Unknown`**（变体与契约测试除外）。  
+- [`creator-docs/kernel/KERNEL_SDK.md`](../creator-docs/kernel/KERNEL_SDK.md) + [`scripts/run_kernel_server.sh`](../scripts/run_kernel_server.sh) / [`.ps1`](../scripts/run_kernel_server.ps1)（P2 体验子集）。
 
 ### 3. 错误处理系统化
 
@@ -73,8 +79,8 @@
 
 ### 1. 官方 SDK 文档
 
-- 在 **`creator-docs/kernel/`** 增加 **`KERNEL_SDK.md`**：`KernelAppState` 生命周期、`serve_api_with_options`、`kernel_server` 启动环境变量、与 OOCP 关系。
-- **rustdoc**：`cargo doc -p oclive_kernel_runtime --no-deps --open` 作为 CI 可选 **`cargo doc --no-deps` 检查**（防 broken link）。
+- **首版已建**：[`creator-docs/kernel/KERNEL_SDK.md`](../creator-docs/kernel/KERNEL_SDK.md)（库模式、`process_message`、`kernel_server`、错误与互链）。  
+- **待扩**：rustdoc 全量、`cargo doc --no-deps` 进 CI、更多集成示例。
 
 ### 2. crates.io 发布
 
@@ -83,7 +89,8 @@
 
 ### 3. kernel_server 集成体验
 
-- 提供 **`scripts/run_kernel_server.sh` / `.ps1`** 或 **最小 Dockerfile**（非 Alpine glibc 陷阱需注明）；文档链到 **`crates/oclive_kernel_server`** 与 **`OOCP_SPEC`**。
+- **脚本**：[`scripts/run_kernel_server.sh`](../scripts/run_kernel_server.sh)、[`scripts/run_kernel_server.ps1`](../scripts/run_kernel_server.ps1)（仓库根执行；可选端口）。  
+- **待做**：最小 **Dockerfile**、Compose、与 **`OOCP_SPEC`** 的部署专页。
 
 ---
 

@@ -21,7 +21,7 @@ pub fn extract_oclive_plugin_archive_reader<R: Read + Seek>(
     for i in 0..zip.len() {
         let mut f = zip
             .by_index(i)
-            .map_err(|e| AppError::Unknown(format!("read zip entry failed: {}", e)))?;
+            .map_err(|e| AppError::InvalidParameter(format!("[PLUGIN_ZIP_READ_ENTRY] {}", e)))?;
         let rel = f.enclosed_name().ok_or_else(|| {
             AppError::InvalidParameter(
                 "[PLUGIN_ARCHIVE_ILLEGAL_PATH] zip entry path is not enclosed".into(),
@@ -66,14 +66,14 @@ pub fn extract_oclive_plugin_archive_reader<R: Read + Seek>(
 
 pub fn extract_oclive_plugin_archive(bytes: &[u8], dst_dir: &Path) -> Result<()> {
     let zip = ZipArchive::new(std::io::Cursor::new(bytes))
-        .map_err(|e| AppError::Unknown(format!("open plugin archive failed: {}", e)))?;
+        .map_err(|e| AppError::InvalidParameter(format!("[PLUGIN_BAD_ARCHIVE] {}", e)))?;
     extract_oclive_plugin_archive_reader(zip, dst_dir)
 }
 
 pub fn extract_oclive_plugin_archive_file(zip_path: &Path, dst_dir: &Path) -> Result<()> {
     let file = fs::File::open(zip_path).map_err(AppError::IoError)?;
     let zip = ZipArchive::new(file)
-        .map_err(|e| AppError::Unknown(format!("open plugin archive failed: {}", e)))?;
+        .map_err(|e| AppError::InvalidParameter(format!("[PLUGIN_BAD_ARCHIVE] {}", e)))?;
     extract_oclive_plugin_archive_reader(zip, dst_dir)
 }
 
@@ -82,7 +82,7 @@ pub fn peek_plugin_id_from_archive_bytes(bytes: &[u8]) -> Result<String> {
     let tmp = tempfile::tempdir().map_err(AppError::IoError)?;
     extract_oclive_plugin_archive(bytes, tmp.path())?;
     let manifest = OclivePluginManifest::load_from_dir(tmp.path())
-        .map_err(|e| AppError::Unknown(format!("manifest validation failed: {}", e)))?;
+        .map_err(|e| AppError::InvalidParameter(format!("[PLUGIN_MANIFEST] {}", e)))?;
     let pid = manifest.id.trim().to_string();
     if pid.is_empty() {
         return Err(AppError::InvalidParameter("manifest.id required".into()));
@@ -118,13 +118,13 @@ pub fn pack_plugin_directory_to_zip_deflated(
         };
         let name = rel.to_string_lossy().replace('\\', "/");
         zip.start_file(name, opt)
-            .map_err(|e| AppError::Unknown(format!("zip start file failed: {}", e)))?;
+            .map_err(|e| AppError::InvalidParameter(format!("[PLUGIN_ZIP_START_FILE] {}", e)))?;
         let bytes = fs::read(p).map_err(AppError::IoError)?;
         zip.write_all(&bytes)
-            .map_err(|e| AppError::Unknown(format!("zip write failed: {}", e)))?;
+            .map_err(|e| AppError::InvalidParameter(format!("[PLUGIN_ZIP_WRITE] {}", e)))?;
     }
     zip.finish()
-        .map_err(|e| AppError::Unknown(format!("zip finalize failed: {}", e)))?;
+        .map_err(|e| AppError::InvalidParameter(format!("[PLUGIN_ZIP_FINISH] {}", e)))?;
 
     let blob = fs::read(archive_path).map_err(AppError::IoError)?;
     let mut hasher = Sha256::new();

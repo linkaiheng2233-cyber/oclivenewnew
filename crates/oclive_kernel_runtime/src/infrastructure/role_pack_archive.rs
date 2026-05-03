@@ -54,7 +54,9 @@ pub fn export_role_pack(storage: &RoleStorage, role_id: &str, dest: &Path) -> Re
     let mut zip = ZipWriter::new(file);
     let options = FileOptions::default().compression_method(CompressionMethod::Deflated);
     for entry in WalkDir::new(&src).min_depth(1) {
-        let entry = entry.map_err(|e| AppError::Unknown(e.to_string()))?;
+        let entry = entry.map_err(|e| {
+            AppError::InvalidParameter(format!("[ROLE_PACK_ZIP_EXPORT] walkdir: {}", e))
+        })?;
         let path = entry.path();
         if path.is_file() {
             let rel = path
@@ -64,13 +66,15 @@ pub fn export_role_pack(storage: &RoleStorage, role_id: &str, dest: &Path) -> Re
             if !safe_zip_path(&name) {
                 continue;
             }
-            zip.start_file(name, options)
-                .map_err(|e| AppError::Unknown(e.to_string()))?;
+            zip.start_file(name, options).map_err(|e| {
+                AppError::InvalidParameter(format!("[ROLE_PACK_ZIP_EXPORT] start_file: {}", e))
+            })?;
             let mut f = File::open(path)?;
-            std::io::copy(&mut f, &mut zip).map_err(|e| AppError::Unknown(e.to_string()))?;
+            std::io::copy(&mut f, &mut zip).map_err(AppError::IoError)?;
         }
     }
-    zip.finish().map_err(|e| AppError::Unknown(e.to_string()))?;
+    zip.finish()
+        .map_err(|e| AppError::InvalidParameter(format!("[ROLE_PACK_ZIP_EXPORT] finish: {}", e)))?;
     Ok(())
 }
 
@@ -135,9 +139,9 @@ fn unzip_to(src: &Path, dest: &Path, mut on_entry: impl FnMut(usize, usize)) -> 
         .map_err(|_| AppError::InvalidParameter("角色包格式错误：不是有效的 ZIP/ocpak".into()))?;
     let total = archive.len().max(1);
     for i in 0..archive.len() {
-        let mut file = archive
-            .by_index(i)
-            .map_err(|e| AppError::Unknown(e.to_string()))?;
+        let mut file = archive.by_index(i).map_err(|_| {
+            AppError::InvalidParameter("[ROLE_PACK_ZIP] archive entry read failed".into())
+        })?;
         let name = file.name().to_string();
         if !safe_zip_path(&name) {
             on_entry(i + 1, total);
@@ -327,24 +331,24 @@ where
     let cli = reqwest::Client::builder()
         .timeout(std::time::Duration::from_secs(30))
         .build()
-        .map_err(|e| AppError::Unknown(format!("download http client failed: {}", e)))?;
+        .map_err(|e| {
+            AppError::InvalidParameter(format!("[ROLE_PACK_DOWNLOAD] http client: {}", e))
+        })?;
     let bytes = block_on(async move {
-        let resp = cli
-            .get(&u)
-            .send()
-            .await
-            .map_err(|e| AppError::Unknown(format!("download role pack failed: {}", e)))?;
+        let resp =
+            cli.get(&u).send().await.map_err(|e| {
+                AppError::InvalidParameter(format!("[ROLE_PACK_DOWNLOAD] get: {}", e))
+            })?;
         if !resp.status().is_success() {
-            return Err(AppError::Unknown(format!(
-                "download role pack status={} url={}",
+            return Err(AppError::InvalidParameter(format!(
+                "[ROLE_PACK_DOWNLOAD] status={} url={}",
                 resp.status(),
                 u
             )));
         }
-        let body = resp
-            .bytes()
-            .await
-            .map_err(|e| AppError::Unknown(format!("read role pack response failed: {}", e)))?;
+        let body = resp.bytes().await.map_err(|e| {
+            AppError::InvalidParameter(format!("[ROLE_PACK_DOWNLOAD] read body: {}", e))
+        })?;
         if body.len() as u64 > MAX_ROLE_PACK_DOWNLOAD_BYTES {
             return Err(AppError::InvalidParameter(format!(
                 "[ROLE_PACK_TOO_LARGE] role pack too large (>{} bytes)",

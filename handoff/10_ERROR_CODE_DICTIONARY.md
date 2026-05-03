@@ -36,6 +36,10 @@
 | `UNKNOWN_ERROR` | 未分类错误 |
 | `CHAT_GENERATION_CANCELLED` | 用户取消本轮生成 |
 
+## `oclive_kernel_runtime` 消息体括号前缀（便于 grep）
+
+部分 `INVALID_PARAMETER` / `DatabaseError` 文案内嵌 `[PREFIX]`，与上表 **code 字段** 无关，仅用于日志与排障。常见前缀包括：`[PLUGIN_INSTALL_*]`、`[PLUGIN_MANIFEST]`、`[PLUGIN_INDEX_*]`、`[PLUGIN_REVIEWS_*]`、`[ROLE_INDEX_*]`、`[ROLE_PACK_*]`、`[MCP_*]`、`[PLUGIN_STATE_PERSIST]`、`[ROLE_DELETE_JOIN]` 等；完整列表以源码为准。
+
 ## Alerting Baseline
 
 - `TXN_COMMIT_FAILED` / `TXN_ROLLBACK_FAILED`: 立即告警

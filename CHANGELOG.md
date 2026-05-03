@@ -4,13 +4,15 @@
 
 ### Added
 
-- **`oclive_kernel_runtime` 集成测试**：`tests/public_api_error_contract.rs` 校验 `AppError::to_frontend_error()` 的 `[CODE]` 前缀与 `code()` 及错误码字典一致（纳入 `cargo test --workspace`）。
+- **`oclive_kernel_runtime` 集成测试**：`tests/session_process_message_smoke.rs` 对 `roles/shimeng` 走 **`process_message`** + Mock LLM 最小闭环；`tests/public_api_error_contract.rs` 校验 `AppError` 与字典一致。  
+- **内核 SDK 与启动脚本**：[creator-docs/kernel/KERNEL_SDK.md](creator-docs/kernel/KERNEL_SDK.md)；根目录 **`scripts/run_kernel_server.sh`** / **`scripts/run_kernel_server.ps1`**（可选端口参数）。
 - 插件清单支持声明订阅的宿主事件（`shell.bridge.events` 或 `ui_slots[].bridge.events`），避免不必要的事件广播。
 - 设置页「常规」区域增加「强制 iframe 模式」开关，开启后所有插件界面统一使用 iframe 渲染，获得最高级别沙箱隔离。
 - 开发者模式下加载 Vue 插槽组件时，对源码进行静态安全扫描（基于 acorn），检测到危险 API 时弹出警告对话框，由用户决定是否继续。
 
 ### Changed
 
+- **`oclive_kernel_runtime` 错误分类（P0.E 续）**：插件安装 / 市场索引同步 / 角色包下载与 ZIP 导出 / MCP 客户端 / `delete_role` 等路径中，将原先 `AppError::Unknown` 收敛为 `InvalidParameter`、`IoError`、`SerializationError`、`DatabaseError` 等，并在消息中使用 `[PLUGIN_*]`、`[ROLE_*]`、`[MCP_*]` 等括号前缀便于检索；`handoff/10_ERROR_CODE_DICTIONARY.md` 补充说明。
 - **云 LLM**：移除 Tauri 应用内「云 LLM UI 设置」命令与相关持久化/编排旁路（`get_cloud_llm_ui_settings` 等、`llm_remote_stack`）；**环境变量 `OCLIVE_CLOUD_LLM_*`** 仍可通过 `cloud_llm_from_env` 走 `OpenAiCompatLlmClient`。`PluginResolutionDebug` 去掉云 UI 字段；`PluginBackendSource` 去掉 `app_auto`。
 - 调整切换角色后的事件广播时机，确保插件订阅信息已同步再发送 `role:switched`。
 - 插件引导信息（`get_directory_plugin_bootstrap`）返回值增加 `subscribedHostEvents` 字段。
@@ -52,9 +54,14 @@
 - **Remote 插件**：`EventEstimator::estimate` 与 `event.estimate` 的 `params` 增加 **`personality_source`**；`prompt.build_prompt` 的 `params` 在完整 `role` 之外另含顶层 **`personality_source`**（与 `role.evolution_config` 一致）。
 - **主界面**：`RoleRuntimePanel` 展示当前 **人格来源**（vector / 档案）与 HelpHint，与调试面板文案对齐。
 
+### Changed
+
+- **错误分类**：`plugin_archive`、`directory_plugin_commands`（插件状态持久化）、`plugin_package_verify`（签名 JSON）、`llm_cancelable`（任务 join）减少对 **`AppError::Unknown`** 的依赖，便于调用方诊断。
+
 ### Documentation
 
-- **内核工程路线（DeepSeek 对齐）**：新增 **[handoff/ENGINEERING_ROADMAP_KERNEL_DEEPSEEK.md](handoff/ENGINEERING_ROADMAP_KERNEL_DEEPSEEK.md)**（P0 API/测试/错误、P1 异步与启动与内存、P2 SDK/crates.io/kernel_server）；`DOCUMENTATION_INDEX`、`handoff/README`、`oclive_kernel_runtime/README` 已链入；**[handoff/10_ERROR_CODE_DICTIONARY.md](handoff/10_ERROR_CODE_DICTIONARY.md)** 补充与 `AppError::code()` 一致的 Common 码。
+- **内核工程路线（DeepSeek 对齐）**：新增 **[handoff/ENGINEERING_ROADMAP_KERNEL_DEEPSEEK.md](handoff/ENGINEERING_ROADMAP_KERNEL_DEEPSEEK.md)**（P0 API/测试/错误、P1 异步与启动与内存、P2 SDK/crates.io/kernel_server）；`DOCUMENTATION_INDEX`、`handoff/README`、`oclive_kernel_runtime/README` 已链入；**[handoff/10_ERROR_CODE_DICTIONARY.md](handoff/10_ERROR_CODE_DICTIONARY.md)** 补充与 `AppError::code()` 一致的 Common 码。  
+- **MATRIX**：模糊地带「远程插件 HTTP」行更新为已收敛；文末增加 **KERNEL_SDK** 与工程路线图链接。
 - **轻量化交接收尾**：**[handoff/LIGHTWEIGHT_FOLLOWUP_PLAN.md](handoff/LIGHTWEIGHT_FOLLOWUP_PLAN.md)** 与实现对齐（阶段 2/4 完成态、维护期执行顺序与防回归清单）；**[handoff/LIGHTWEIGHT_OOCP_WS_AXUM_FOLLOWUP.md](handoff/LIGHTWEIGHT_OOCP_WS_AXUM_FOLLOWUP.md)** 标明决策已收敛并保留回归说明。
 - **内核轻量化**：新增并索引 **[creator-docs/kernel/LIGHTWEIGHT_PROFILE.md](creator-docs/kernel/LIGHTWEIGHT_PROFILE.md)**（`oclive_kernel_runtime` 可选 `Cargo` 特性、场景 × OOCP × `invoke`、Tauri 依赖与 `http_api` 双轨拟定）；`DOCUMENTATION_INDEX`、`KERNEL_ENTRY_CHECKLIST`、`KERNEL_API_IMPLEMENTATION_MATRIX`、`KERNEL_MIGRATION_COMPLETE` 与 `handoff/README` 互链。
 - **PLUGIN_V1 / Remote 协议**：[PLUGIN_V1.md](creator-docs/plugin-and-architecture/PLUGIN_V1.md) 补充 `RoleInfo` / `RoleData`、HTTP `/chat` 与 `prompt.build_prompt` 的 **`personality_source`**；[REMOTE_PLUGIN_PROTOCOL.md](creator-docs/plugin-and-architecture/REMOTE_PLUGIN_PROTOCOL.md) 新增 §3.4 与 `event.estimate` 参数表行。

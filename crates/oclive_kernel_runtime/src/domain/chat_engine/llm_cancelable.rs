@@ -30,7 +30,10 @@ pub async fn run_llm_generate_cancelable(
                 Ok(Ok(s)) => Ok(s),
                 Ok(Err(e)) => Err(e),
                 Err(j) if j.is_cancelled() => Err(AppError::ChatGenerationCancelled),
-                Err(j) => Err(AppError::Unknown(format!("llm task: {}", j))),
+                Err(j) => Err(AppError::InvalidParameter(format!(
+                    "[LLM_TASK_JOIN] {}",
+                    j
+                ))),
             };
         }
         _ = async {

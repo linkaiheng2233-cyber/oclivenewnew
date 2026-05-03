@@ -53,8 +53,7 @@ pub fn load_plugin_index_cache(cache_path: &Path) -> Result<PluginIndexFile> {
         });
     }
     let raw = fs::read_to_string(cache_path).map_err(AppError::IoError)?;
-    serde_json::from_str(&raw)
-        .map_err(|e| AppError::Unknown(format!("parse plugin index cache failed: {}", e)))
+    serde_json::from_str(&raw).map_err(AppError::from)
 }
 
 pub fn sync_plugin_index_from_url(url: &str, cache_path: &Path) -> Result<PluginIndexFile> {
@@ -62,36 +61,35 @@ pub fn sync_plugin_index_from_url(url: &str, cache_path: &Path) -> Result<Plugin
     let cli = reqwest::Client::builder()
         .timeout(std::time::Duration::from_secs(15))
         .build()
-        .map_err(|e| AppError::Unknown(format!("index http client failed: {}", e)))?;
+        .map_err(|e| {
+            AppError::InvalidParameter(format!("[PLUGIN_INDEX_HTTP] client build: {}", e))
+        })?;
     let text = block_on(async move {
-        let resp = cli
-            .get(&url)
-            .send()
-            .await
-            .map_err(|e| AppError::Unknown(format!("sync plugin index failed: {}", e)))?;
+        let resp =
+            cli.get(&url).send().await.map_err(|e| {
+                AppError::InvalidParameter(format!("[PLUGIN_INDEX_HTTP] get: {}", e))
+            })?;
         if !resp.status().is_success() {
-            return Err(AppError::Unknown(format!(
-                "sync plugin index status={} url={}",
+            return Err(AppError::InvalidParameter(format!(
+                "[PLUGIN_INDEX_HTTP] status={} url={}",
                 resp.status(),
                 url
             )));
         }
-        resp.text()
-            .await
-            .map_err(|e| AppError::Unknown(format!("read plugin index response failed: {}", e)))
+        resp.text().await.map_err(|e| {
+            AppError::InvalidParameter(format!("[PLUGIN_INDEX_HTTP] read body: {}", e))
+        })
     })?;
     validate_plugin_market_index_v1(&text)
-        .map_err(|e| AppError::Unknown(format!("plugins.json validate failed: {}", e)))?;
-    let mut parsed: PluginIndexFile = serde_json::from_str(&text)
-        .map_err(|e| AppError::Unknown(format!("parse plugins.json failed: {}", e)))?;
+        .map_err(|e| AppError::InvalidParameter(format!("[PLUGIN_INDEX_VALIDATE] {}", e)))?;
+    let mut parsed: PluginIndexFile = serde_json::from_str(&text).map_err(AppError::from)?;
     parsed.plugins.sort_by(|a, b| a.id.cmp(&b.id));
     if let Some(parent) = cache_path.parent() {
         let _ = fs::create_dir_all(parent);
     }
     fs::write(
         cache_path,
-        serde_json::to_string_pretty(&parsed)
-            .map_err(|e| AppError::Unknown(format!("encode index cache failed: {}", e)))?,
+        serde_json::to_string_pretty(&parsed).map_err(AppError::from)?,
     )
     .map_err(AppError::IoError)?;
     Ok(parsed)

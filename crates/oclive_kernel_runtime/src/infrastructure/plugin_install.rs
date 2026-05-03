@@ -80,12 +80,12 @@ pub fn run_git(args: &[&str], cwd: Option<&Path>) -> Result<()> {
     if let Some(dir) = cwd {
         cmd.current_dir(dir);
     }
-    let out = cmd
-        .output()
-        .map_err(|e| AppError::Unknown(format!("git command failed: {}", e)))?;
+    let out = cmd.output().map_err(|e| {
+        AppError::InvalidParameter(format!("[PLUGIN_INSTALL_GIT] command failed: {}", e))
+    })?;
     if !out.status.success() {
-        return Err(AppError::Unknown(format!(
-            "git {:?} failed: {}",
+        return Err(AppError::InvalidParameter(format!(
+            "[PLUGIN_INSTALL_GIT] git {:?} failed: {}",
             args,
             String::from_utf8_lossy(&out.stderr)
         )));
@@ -142,7 +142,7 @@ fn finalize_archive_install(
     meta: &PluginInstallMetaDto,
 ) -> Result<String> {
     let manifest = OclivePluginManifest::load_from_dir(tmp.path())
-        .map_err(|e| AppError::Unknown(format!("manifest validation failed: {}", e)))?;
+        .map_err(|e| AppError::InvalidParameter(format!("[PLUGIN_MANIFEST] {}", e)))?;
     let pid = manifest.id.trim().to_string();
     if pid.is_empty() {
         return Err(AppError::InvalidParameter("manifest.id required".into()));
@@ -185,8 +185,9 @@ pub fn install_plugin_from_archive_bytes_overwrite_at(
     _overwrite: bool,
     _meta: &PluginInstallMetaDto,
 ) -> Result<String> {
-    Err(AppError::Unknown(
-        "compiled without role-pack-zip; plugin archive install unavailable".into(),
+    Err(AppError::InvalidParameter(
+        "[PLUGIN_INSTALL_BUILD] compiled without role-pack-zip; plugin archive install unavailable"
+            .into(),
     ))
 }
 
@@ -199,7 +200,7 @@ pub fn install_plugin_from_archive_bytes_at(
     let tmp = plugins_install_temp_dir(app_data_dir)?;
     extract_oclive_plugin_archive(bytes, tmp.path())?;
     let manifest = OclivePluginManifest::load_from_dir(tmp.path())
-        .map_err(|e| AppError::Unknown(format!("manifest validation failed: {}", e)))?;
+        .map_err(|e| AppError::InvalidParameter(format!("[PLUGIN_MANIFEST] {}", e)))?;
     let pid = manifest.id.trim().to_string();
     if pid.is_empty() {
         return Err(AppError::InvalidParameter("manifest.id required".into()));
@@ -233,8 +234,9 @@ pub fn install_plugin_from_archive_bytes_at(
     _app_data_dir: &Path,
     _bytes: &[u8],
 ) -> Result<String> {
-    Err(AppError::Unknown(
-        "compiled without role-pack-zip; plugin archive install unavailable".into(),
+    Err(AppError::InvalidParameter(
+        "[PLUGIN_INSTALL_BUILD] compiled without role-pack-zip; plugin archive install unavailable"
+            .into(),
     ))
 }
 
@@ -251,29 +253,46 @@ pub fn install_plugin_from_download_urls_at(
     let cli = reqwest::Client::builder()
         .timeout(std::time::Duration::from_secs(60))
         .build()
-        .map_err(|e| AppError::Unknown(format!("download http client failed: {}", e)))?;
+        .map_err(|e| {
+            AppError::InvalidParameter(format!("[PLUGIN_INSTALL_DOWNLOAD] http client: {}", e))
+        })?;
     let (archive_bytes, sig_text) = block_on(async move {
         let archive_bytes = cli
             .get(&download_url)
             .send()
             .await
-            .map_err(|e| AppError::Unknown(format!("download plugin failed: {}", e)))?
+            .map_err(|e| {
+                AppError::InvalidParameter(format!("[PLUGIN_INSTALL_DOWNLOAD] get: {}", e))
+            })?
             .error_for_status()
-            .map_err(|e| AppError::Unknown(format!("download plugin status failed: {}", e)))?
+            .map_err(|e| {
+                AppError::InvalidParameter(format!(
+                    "[PLUGIN_INSTALL_DOWNLOAD] archive status: {}",
+                    e
+                ))
+            })?
             .bytes()
             .await
-            .map_err(|e| AppError::Unknown(format!("read plugin bytes failed: {}", e)))?
+            .map_err(|e| {
+                AppError::InvalidParameter(format!("[PLUGIN_INSTALL_DOWNLOAD] read archive: {}", e))
+            })?
             .to_vec();
         let sig_text = cli
             .get(&signature_url)
             .send()
             .await
-            .map_err(|e| AppError::Unknown(format!("download signature failed: {}", e)))?
+            .map_err(|e| {
+                AppError::InvalidParameter(format!("[PLUGIN_INSTALL_DOWNLOAD] sig get: {}", e))
+            })?
             .error_for_status()
-            .map_err(|e| AppError::Unknown(format!("download signature status failed: {}", e)))?
+            .map_err(|e| {
+                AppError::InvalidParameter(format!("[PLUGIN_INSTALL_DOWNLOAD] sig status: {}", e))
+            })?
             .text()
             .await
-            .map_err(|e| AppError::Unknown(format!("read signature text failed: {}", e)))?;
+            .map_err(|e| {
+                AppError::InvalidParameter(format!("[PLUGIN_INSTALL_DOWNLOAD] read sig: {}", e))
+            })?;
         Ok::<_, AppError>((archive_bytes, sig_text))
     })?;
     verify_plugin_package_signature_text(index_entry, &sig_text, &archive_bytes)?;
@@ -288,8 +307,9 @@ pub fn install_plugin_from_download_urls_at(
     _download_url: &str,
     _signature_url: &str,
 ) -> Result<String> {
-    Err(AppError::Unknown(
-        "compiled without role-pack-zip; market archive install unavailable".into(),
+    Err(AppError::InvalidParameter(
+        "[PLUGIN_INSTALL_BUILD] compiled without role-pack-zip; market archive install unavailable"
+            .into(),
     ))
 }
 
@@ -340,7 +360,7 @@ pub fn install_plugin_from_git_tag_at(
         None,
     )?;
     let manifest = OclivePluginManifest::load_from_dir(&target)
-        .map_err(|e| AppError::Unknown(format!("manifest validation failed: {}", e)))?;
+        .map_err(|e| AppError::InvalidParameter(format!("[PLUGIN_MANIFEST] {}", e)))?;
     let pid = manifest.id.trim().to_string();
     if pid.is_empty() {
         return Err(AppError::InvalidParameter("manifest.id required".into()));
@@ -408,7 +428,7 @@ pub fn install_plugin_from_git_head_at(
         None,
     )?;
     let manifest = OclivePluginManifest::load_from_dir(&target)
-        .map_err(|e| AppError::Unknown(format!("manifest validation failed: {}", e)))?;
+        .map_err(|e| AppError::InvalidParameter(format!("[PLUGIN_MANIFEST] {}", e)))?;
     let pid = manifest.id.trim().to_string();
     if pid.is_empty() {
         return Err(AppError::InvalidParameter("manifest.id required".into()));
@@ -452,7 +472,7 @@ pub fn update_git_plugin_at(plugin_root: &Path) -> Result<()> {
     }
     run_git(&["pull", "--ff-only"], Some(plugin_root))?;
     let _ = OclivePluginManifest::load_from_dir(plugin_root)
-        .map_err(|e| AppError::Unknown(format!("manifest validation failed after pull: {}", e)))?;
+        .map_err(|e| AppError::InvalidParameter(format!("[PLUGIN_MANIFEST] after pull: {}", e)))?;
     Ok(())
 }
 
@@ -465,6 +485,6 @@ pub fn remove_plugin_from_plugin_state_file(store_path: &Path, plugin_id: &str) 
     store.remove_plugin_references(pid);
     store
         .save(store_path)
-        .map_err(|e| AppError::Unknown(format!("save plugin_state failed: {}", e)))?;
+        .map_err(|e| AppError::DatabaseError(format!("[PLUGIN_STATE_PERSIST] {}", e)))?;
     Ok(())
 }

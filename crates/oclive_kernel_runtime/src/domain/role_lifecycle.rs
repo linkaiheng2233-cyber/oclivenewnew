@@ -61,13 +61,13 @@ pub async fn delete_role(state: &KernelAppState, role_id: String) -> Result<Valu
         let dir_owned = dir.clone();
         tokio::task::spawn_blocking(move || std::fs::remove_dir_all(&dir_owned))
             .await
-            .map_err(|e| AppError::Unknown(format!("delete_role: join {}", e)))?
+            .map_err(|e| AppError::InvalidParameter(format!("[ROLE_DELETE_JOIN] {}", e)))?
             .map_err(AppError::from)?;
     }
     state
         .directory_plugins
         .remove_role_plugin_state(rid)
-        .map_err(AppError::Unknown)?;
+        .map_err(|e| AppError::DatabaseError(format!("[PLUGIN_STATE_PERSIST] {}", e)))?;
     state.role_cache.write().remove(rid);
     state.invalidate_personality_cache_for_role(rid);
     Ok(json!({ "ok": true, "role_id": rid }))

@@ -91,7 +91,7 @@ pub fn verify_plugin_package_signature_text(
     sig_text: &str,
     archive_bytes: &[u8],
 ) -> Result<()> {
-    let sig: PluginPackageSignatureFile = serde_json::from_str(sig_text)
-        .map_err(|e| AppError::Unknown(format!("parse signature.json failed: {}", e)))?;
+    let sig: PluginPackageSignatureFile =
+        serde_json::from_str(sig_text).map_err(AppError::SerializationError)?;
     verify_plugin_package_signature(index_entry, &sig, archive_bytes)
 }

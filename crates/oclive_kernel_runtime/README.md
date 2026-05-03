@@ -30,6 +30,7 @@ oclive_kernel_runtime = { path = "../crates/oclive_kernel_runtime", default-feat
 - Tauri 命令清单 ↔ 实现对照：[creator-docs/kernel/KERNEL_API_IMPLEMENTATION_MATRIX.md](../../creator-docs/kernel/KERNEL_API_IMPLEMENTATION_MATRIX.md)
 - 迁入收尾：[handoff/KERNEL_MIGRATION_COMPLETE.md](../../handoff/KERNEL_MIGRATION_COMPLETE.md)
 - **工程质量 / 测试 / 生态路线（P0–P2）**：[handoff/ENGINEERING_ROADMAP_KERNEL_DEEPSEEK.md](../../handoff/ENGINEERING_ROADMAP_KERNEL_DEEPSEEK.md)
+- **SDK（库模式 + kernel_server）**：[creator-docs/kernel/KERNEL_SDK.md](../../creator-docs/kernel/KERNEL_SDK.md)
 - OOCP：`creator-docs/oocp/OOCP_SPEC_v0_1.md`
 
 ## 开发
