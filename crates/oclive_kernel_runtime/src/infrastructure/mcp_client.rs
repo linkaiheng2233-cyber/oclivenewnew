@@ -3,6 +3,7 @@
 //! 完整实现依赖 `feature = "kernel-agent"`；关闭时仅为占位类型，避免拉入进程 / HTTP 调用路径。
 
 use crate::error::{AppError, Result};
+#[cfg(feature = "kernel-agent")]
 use crate::infrastructure::blocking_http::block_on;
 use serde::{Deserialize, Serialize};
 use serde_json::Value;

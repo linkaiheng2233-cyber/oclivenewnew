@@ -1,7 +1,7 @@
 # 轻量化与发行版瘦身 — 后续计划
 
-> **状态**：承接 `LIGHTWEIGHT_PROFILE.md`、runtime 可选特性、文档互链、`invoke-*` 分组与 CI（含 Tauri 极简 `check`）已落地后的下一阶段。  
-> **最后核对**：分支 `feat/oocp-v0-1`；提交链含 `feat(tauri): optional invoke-*`、文档互链、`docs(ci): lightweight profile matrix` 等。
+> **状态**：轻量化主里程碑（runtime 可选特性、`http_api` 单源、壳层依赖收敛、invoke SKU、P4 `reqwest`）**已落地**；本文档转为 **防回归与维护清单**。  
+> **最后核对**：以仓库 `feat/oocp-v0-1` 与 `creator-docs/kernel/LIGHTWEIGHT_PROFILE.md` §5.1、`handoff/PERF_PHASES.md` 为准。
 
 ---
 
@@ -23,11 +23,11 @@
 
 ---
 
-## 阶段 2：`src-tauri` 依赖去重（渐进）
+## 阶段 2：`src-tauri` 依赖去重 — ✅ 核心已完成（维护余量）
 
 - **依据**：`LIGHTWEIGHT_PROFILE` §5.1。
-- **做法**：逐项核对与 kernel 重复的 `sqlx` / `zip` / `axum` / `tower-http` / `reqwest` / `ed25519-dalek` 等；壳层独有（`notify`、`sysinfo`、Tauri 插件）单独列表保留。多小 PR，每步 `cargo check -p oclivenewnew-tauri` + 工作区 clippy。
-- **进展（首批）**：`pack_plugin` 已委托 `oclive_kernel_runtime::infrastructure::plugin_archive::pack_plugin_directory_to_zip_deflated`；壳层移除未用 `reqwest` / `ed25519-dalek` / `base64` 及直连 `zip` / `sha2` / `walkdir`；`sqlx` 仅保留为集成测试 **`dev-dependencies`**。余量见 §5.1 表（`axum`、可选 `chrono`/`uuid` 收紧等）。
+- **做法**（历史）：逐项核对与 kernel 重叠的直连依赖；壳层独有（`notify`、`sysinfo`、Tauri 插件）保留。
+- **结果摘要**：`pack_plugin` 走 `plugin_archive::pack_plugin_directory_to_zip_deflated`；壳层已移除直连 `zip` / `reqwest` / `ed25519-dalek` / `base64` / `sha2` / `walkdir` / **`chrono` / `uuid`** / 生产路径 **`axum`**（`tower-http` 已随 `http_api` 迁出）；**`sqlx`** 与 **`axum`** 仅保留在 **`dev-dependencies`**（集成测试）。OOCP WS 仅 **`oclive_kernel_runtime::http_api`**（壳层 `domain/adapters/oocp_ws` 已移除）。**可选低优先级余量**：`sqlx` 与 kernel 的链接重复是否进一步收紧。
 
 ---
 
@@ -35,14 +35,14 @@
 
 - **风险**：极简 `invoke` 组合下 `build.rs` 会重写 `src/gen/tauri-invoke-capabilities.ts`；误提交「全 `false`」会破坏默认前端契约。
 - **CI 现状**（`.github/workflows/ci.yml`）：在极简 Tauri `check` 后执行 `git checkout -- src/gen/tauri-invoke-capabilities.ts`，再于默认 **`invoke-full`** 下 `cargo check -p oclivenewnew-tauri`，最后 `git diff --exit-code src/gen/tauri-invoke-capabilities.ts`，防止漂移入库。
-- **维护**：新增强可选分组命令时同步 **Rust 宏列表** + **`COMMAND_CAPABILITY`**（见 `LIGHTWEIGHT_PROFILE` §4.2）；阶段 3 以后以 **CI 与文档** 为主，不挡阶段 2 / 4 排期。
+- **维护**：新增强可选分组命令时同步 **Rust 宏列表** + **`COMMAND_CAPABILITY`**（见 `LIGHTWEIGHT_PROFILE` §4.2）；与 **阶段 2 / 4** 无阻塞关系。
 
 ---
 
-## 阶段 4：`reqwest::blocking` 收敛（P4）
+## 阶段 4：`reqwest::blocking` 收敛（P4）— ✅ 已落地（持续遵守边界）
 
 - **依据**：runtime `README.md`、`KERNEL_API_IMPLEMENTATION_MATRIX` 模糊地带、`handoff/PERF_PHASES.md` P4。
-- **现状**：workspace **`reqwest` 已无 `blocking`**；runtime 内 HTTP 已改为 **`reqwest::Client` + async**，同步入口经 **`blocking_http::block_on`**；与 Tauri 长耗时路径仍建议 **`spawn_blocking`**（见 `PERF_PHASES.md`）。
+- **现状**：workspace **`reqwest` 已无 `blocking`**；runtime 内 HTTP 为 **`reqwest::Client` + async**，对外同步 API 经 **`blocking_http::block_on`**。Tauri 侧长耗时路径仍须遵守 **`spawn_blocking`**、避免在 async worker 内嵌套 **`Handle::block_on`**（全文见 `PERF_PHASES.md`）。
 
 ---
 
@@ -53,20 +53,21 @@
 
 ---
 
-## 建议执行顺序
+## 建议执行顺序（维护期）
 
-1. **阶段 1、阶段 3**：已完成（`http_api` 单源；生成物防呆已在 CI 落地）。  
-2. **主路径**：**阶段 2**（`src-tauri` 依赖去重 / 走 `oclive_kernel_runtime` 公开 API）→ **阶段 4**（`reqwest::blocking` 收敛，见 `PERF_PHASES.md` P4）。  
-3. **阶段 3**：仅随 `invoke-*` / `build.rs` 变更维护 CI 与文档。  
-4. **壳层 `axum` / OOCP WS**：中长期单独子计划，见 `handoff/LIGHTWEIGHT_OOCP_WS_AXUM_FOLLOWUP.md`（不与阶段 2 批量删依赖绑在同一 PR）。
+1. **阶段 1～4**：主交付已完成；日常以 **防回归** 为主。  
+2. **阶段 3**：随 `invoke-*` / `build.rs` 变更维护 CI 与 **`src/gen/tauri-invoke-capabilities.ts`** 一致性。  
+3. **阶段 2 余量**：仅低优先级（如 `sqlx` 链接收紧）；改前改后更新 **`LIGHTWEIGHT_PROFILE` §5.1**。  
+4. **`LIGHTWEIGHT_OOCP_WS_AXUM_FOLLOWUP.md`**：保留为决策与回归说明；壳层生产依赖已不再直连 `axum`。
 
-相关展开：`handoff/PERF_PHASES.md`（P4 按模块 PR）、`creator-docs/kernel/LIGHTWEIGHT_PROFILE.md` §5.1（壳层依赖快照表）。
+相关展开：`handoff/PERF_PHASES.md`、`creator-docs/kernel/LIGHTWEIGHT_PROFILE.md` §5.1。
 
 ---
 
-## 下一阶段速览（供 Cursor / 子 Agent 接单）
+## 下一阶段速览（防回归清单）
 
-1. **阶段 2 余量**：收紧壳层 `chrono` / `uuid`（若可）；每次变更后更新 `LIGHTWEIGHT_PROFILE` §5.1 表。  
-2. **`axum` / OOCP WS**：只走 `LIGHTWEIGHT_OOCP_WS_AXUM_FOLLOWUP.md`，不与大批量删依赖混 PR。  
-3. **阶段 4（P4）**：`kernel_runtime` 内按模块处理 `reqwest::blocking`，对齐 `PERF_PHASES.md`。  
-4. **索引**：`handoff/README.md` 已链 `LIGHTWEIGHT_OOCP_WS_AXUM_FOLLOWUP.md`。
+1. **新增 Tauri 命令**：同步 **`invoke_registry`**、**`tauriInvokeCapabilities` / `COMMAND_CAPABILITY`**、**`KERNEL_ENTRY_CHECKLIST` / MATRIX`**；默认 feature 下 `cargo check -p oclivenewnew-tauri` 保证 **`src/gen/tauri-invoke-capabilities.ts`** 与仓库一致（CI 已 `git diff --exit-code`）。  
+2. **新增壳层 `Cargo` 依赖**：先对照 **`LIGHTWEIGHT_PROFILE` §5.1**，避免重新堆叠与 kernel 重叠的无谓直连。  
+3. **长耗时同步 HTTP / 磁盘**：遵守 **`PERF_PHASES.md`**（`spawn_blocking`、`blocking_http`、勿在 Tokio async 内嵌套 `block_on`）。  
+4. **远端**：择机 **`git push`**，减少与 `origin` 分叉。  
+5. **索引**：`handoff/README.md` 已链 **`LIGHTWEIGHT_OOCP_WS_AXUM_FOLLOWUP.md`**。

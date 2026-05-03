@@ -26,6 +26,8 @@ cargo check -p oclivenewnew-tauri
 cargo check -p oclive_kernel_runtime --no-default-features
 ```
 
+轻量维护清单（invoke / 壳层依赖 / P4 边界）：见 **`handoff/LIGHTWEIGHT_FOLLOWUP_PLAN.md`**。
+
 ## 保留在发行版
 
 `deep_link`、`hotkey` 全局注册、`directory_plugins/watcher`、`directory_plugin_invoke` 进程侧等。

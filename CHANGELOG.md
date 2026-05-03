@@ -53,6 +53,7 @@
 
 ### Documentation
 
+- **轻量化交接收尾**：**[handoff/LIGHTWEIGHT_FOLLOWUP_PLAN.md](handoff/LIGHTWEIGHT_FOLLOWUP_PLAN.md)** 与实现对齐（阶段 2/4 完成态、维护期执行顺序与防回归清单）；**[handoff/LIGHTWEIGHT_OOCP_WS_AXUM_FOLLOWUP.md](handoff/LIGHTWEIGHT_OOCP_WS_AXUM_FOLLOWUP.md)** 标明决策已收敛并保留回归说明。
 - **内核轻量化**：新增并索引 **[creator-docs/kernel/LIGHTWEIGHT_PROFILE.md](creator-docs/kernel/LIGHTWEIGHT_PROFILE.md)**（`oclive_kernel_runtime` 可选 `Cargo` 特性、场景 × OOCP × `invoke`、Tauri 依赖与 `http_api` 双轨拟定）；`DOCUMENTATION_INDEX`、`KERNEL_ENTRY_CHECKLIST`、`KERNEL_API_IMPLEMENTATION_MATRIX`、`KERNEL_MIGRATION_COMPLETE` 与 `handoff/README` 互链。
 - **PLUGIN_V1 / Remote 协议**：[PLUGIN_V1.md](creator-docs/plugin-and-architecture/PLUGIN_V1.md) 补充 `RoleInfo` / `RoleData`、HTTP `/chat` 与 `prompt.build_prompt` 的 **`personality_source`**；[REMOTE_PLUGIN_PROTOCOL.md](creator-docs/plugin-and-architecture/REMOTE_PLUGIN_PROTOCOL.md) 新增 §3.4 与 `event.estimate` 参数表行。
 - **性格档案设计轴心**：重写 **[docs/personality-archive-notes.md](docs/personality-archive-notes.md)**（核心/可变档案、`personality_source`、七维视图、三应用分工）；新增 **[docs/design-axis-evolution.md](docs/design-axis-evolution.md)** 记录思路变化（旧 handoff 不删）；根 README、`creator-docs` 索引与入门文档、`roles/README_MANIFEST.md` §二 §5.3、`PACK_VERSIONING.md`、`CREATOR_ROLE_PACK_CUSTOMIZATION.md`、`CREATOR_SCENE_GUIDE.md`、`CREATOR_PLUGIN_ARCHITECTURE.md` 等与之一致并互链；**`roles/settings.template.json`** 的 `evolution` 显式包含 **`personality_source`**。

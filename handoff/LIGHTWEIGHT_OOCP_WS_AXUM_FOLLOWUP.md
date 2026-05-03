@@ -1,7 +1,7 @@
 # 子计划：OOCP WebSocket（壳层）与 `axum` 去依赖评估
 
-> **定位**：中长期项；与 `LIGHTWEIGHT_PROFILE.md` §5.1 中「壳层仍直连 `axum`」一行对应。  
-> **主计划**：`handoff/LIGHTWEIGHT_FOLLOWUP_PLAN.md` 阶段 2（依赖去重）**不**与本子计划绑在同一 PR。
+> **定位**：**决策已收敛**（壳层生产依赖不再直连 `axum`；OOCP WS 仅 runtime `http_api`）。本文档保留为 **回归锚点与设计说明**，与 `LIGHTWEIGHT_PROFILE.md` §5.1 **`axum`** 行互参。  
+> **主计划**：`handoff/LIGHTWEIGHT_FOLLOWUP_PLAN.md`（维护期防回归清单）。
 
 ## 现状
 
