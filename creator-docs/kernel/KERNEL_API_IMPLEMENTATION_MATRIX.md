@@ -1,7 +1,8 @@
 # KERNEL API 实现对照表（Tauri invoke ↔ 代码归属）
 
 > **基准**：[`KERNEL_ENTRY_CHECKLIST.md`](./KERNEL_ENTRY_CHECKLIST.md) 中的命令名与 DTO。  
-> **原则**：下列路径为 **主实现入口**；内核逻辑在 `crates/oclive_kernel_runtime`，桌面适配在 `src-tauri/src/api/*.rs`。
+> **原则**：下列路径为 **主实现入口**；内核逻辑在 `crates/oclive_kernel_runtime`，桌面适配在 `src-tauri/src/api/*.rs`。  
+> **轻量编译 / SKU**：[`LIGHTWEIGHT_PROFILE.md`](./LIGHTWEIGHT_PROFILE.md)（`Cargo` 特性组合、OOCP、`invoke` 分组与去重拟定）。
 
 ## 列说明
 
@@ -89,4 +90,5 @@
 ---
 
 维护节奏：新增 `generate_handler!` 命令时，请同步更新 **KERNEL_ENTRY_CHECKLIST** 与本表一行。  
-迁入收尾与自检命令：[**`../../handoff/KERNEL_MIGRATION_COMPLETE.md`**](../../handoff/KERNEL_MIGRATION_COMPLETE.md)。
+迁入收尾与自检命令：[**`../../handoff/KERNEL_MIGRATION_COMPLETE.md`**](../../handoff/KERNEL_MIGRATION_COMPLETE.md)。  
+轻量 profile 与特性矩阵：[**`LIGHTWEIGHT_PROFILE.md`**](./LIGHTWEIGHT_PROFILE.md)。

@@ -2,6 +2,7 @@
 
 > **状态**：共享机制在 `crates/oclive_kernel_runtime`；桌面仅 invoke、路径、`AppState`、`rescan` / 进程生命周期等。  
 > **对照表**：[creator-docs/kernel/KERNEL_API_IMPLEMENTATION_MATRIX.md](../creator-docs/kernel/KERNEL_API_IMPLEMENTATION_MATRIX.md)  
+> **轻量 profile（可选特性、OOCP/`invoke`、依赖与 `http_api` 拟定）**：[creator-docs/kernel/LIGHTWEIGHT_PROFILE.md](../creator-docs/kernel/LIGHTWEIGHT_PROFILE.md)；本地自检亦可运行根目录 `scripts/check_kernel_runtime_minimal.sh` 或 `scripts/check_kernel_runtime_minimal.ps1`。  
 > **说明**：角色市场索引缓存写入为 **`fs::write` 且错误上抛**（非静默忽略）。
 
 ## 内核模块一览

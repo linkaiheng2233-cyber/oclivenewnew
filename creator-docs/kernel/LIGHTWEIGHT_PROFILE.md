@@ -1,6 +1,6 @@
 # 轻量场景 × Cargo features × OOCP / invoke 对照
 
-> 维护：与 `KERNEL_BOUNDARY.md`、`KERNEL_API_IMPLEMENTATION_MATRIX.md` 交叉引用。  
+> 维护：与 `KERNEL_BOUNDARY.md`、`KERNEL_API_IMPLEMENTATION_MATRIX.md` 交叉引用；文档总索引见 [`creator-docs/getting-started/DOCUMENTATION_INDEX.md`](../getting-started/DOCUMENTATION_INDEX.md)。  
 > 目的：嵌入式宿主、侧车 / pack-editor、官方桌面三种形态下，明确 **runtime 特性**、**OOCP 方法**与 **Tauri invoke** 的可用边界。
 
 ---
