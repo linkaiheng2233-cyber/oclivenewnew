@@ -1,4 +1,4 @@
-//! 场景位移意图：纯规则与输出解析（迁移中）。
+//! 场景位移意图：纯规则与输出解析（内核内聚实现；桌面层经 `process_message` / 场景命令调用）。
 
 use crate::utils::json_loose::extract_json_object;
 use serde_json::Value;

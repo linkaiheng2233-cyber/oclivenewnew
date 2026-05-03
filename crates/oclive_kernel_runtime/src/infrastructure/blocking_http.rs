@@ -10,10 +10,10 @@
 //! - `infrastructure::remote_plugin::jsonrpc::call_blocking` — 在 Tokio worker 上优先 **`block_in_place` + `Handle::block_on(call_async)`**；无 runtime 时仍用本模块 `block_on`
 //! - `infrastructure::remote_plugin::invoke_directory_plugin_rpc` — **仅 `call_async` + `.await`**
 //!
-//! ## `std::fs` 同步磁盘 I/O
+//! ## 磁盘 I/O（`tokio::fs` / `spawn_blocking`）
 //!
-//! **`hotkey_bindings` / `plugin_state`** 已提供 **`load_async` / `save_async`**（`tokio::fs`）；Tauri 热键与异步卸载路径应优先使用。
-//! 目录插件 manifest、安装解压等仍多为同步读盘；宜在宿主侧 `spawn_blocking` 包裹，或后续分批改为 `tokio::fs`（与 HTTP 解耦）。
+//! **`hotkey_bindings` / `plugin_state`**：`load_async` / `save_async`（`tokio::fs`）。**`http_api::serve_api_with_options`**：`app_data_dir` 使用 **`tokio::fs::create_dir_all`**，避免在 async 入口阻塞 worker。
+//! 目录插件 manifest、角色包解压等仍多在 `spawn_blocking` 内用 `std::fs`；新增路径优先 **async 读盘** 或 **阻塞线程池**，勿在长 `async fn` 中直接 `std::fs`。
 //!
 //! ## `plugin_host::BackendRegistry::block_on`
 //!

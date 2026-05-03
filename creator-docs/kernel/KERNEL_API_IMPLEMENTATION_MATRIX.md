@@ -14,6 +14,17 @@
 
 ---
 
+## Tauri `api/` 分层（P1-1：纯转发 vs 壳层增强）
+
+| 模式 | 判定 | 典型入口 |
+|------|------|----------|
+| **纯转发** | 命令体主要为 `state` 解包 → `map_err(to_frontend_error)` → 调用 `oclive_kernel_runtime` 公开函数；无第二套领域逻辑 | `send_message`、`load_role` / `get_role_info`、`query_memories`、`query_events`、`expert_models_*`、`export_chat_logs`、`switch_scene`（等同 OOCP 内核路径） |
+| **壳层增强** | 需 `AppHandle` / `emit_all`、系统路径选择、WebView 资源注入、或组合多子系统且语义不属于单一内核模块 | `import_role_pack_command`（进度事件）、`plugin_bridge_invoke`、`directory_plugin_invoke`（RPC + 进程表）、部分插件市场安装命令 |
+
+`src-tauri/src/domain/mod.rs` 已对领域符号 **`pub use oclive_kernel_runtime::domain::*`** 再导出，**禁止**在壳层复制 `chat_engine` 等编排双轨。
+
+---
+
 ## 会话
 
 | 命令 | API 模块 | 内核归属 |
@@ -79,13 +90,13 @@
 
 ---
 
-## 废弃 / 模糊地带（清理标记）
+## 历史锚点（曾模糊；现已对齐）
 
-| 现象 | 建议 |
+| 现象 | 现状 |
 |------|------|
 | `preview_local_plugin_archive_command` / `install_local_plugin_archive_command` 曾未注册 | 已在 `lib.rs` 注册；若前端仍有死链需再扫一遍 |
 | `notify` 曾列入 `oclive_kernel_runtime` 但未使用 | 已从依赖移除 |
-| 远程插件 HTTP 与 Tauri 异步命令混用 | **已收敛**：workspace 无 `reqwest/blocking`；runtime 用 `Client` + `blocking_http::block_on`；详见 `handoff/PERF_PHASES.md` |
+| 远程插件 HTTP / JSON-RPC | 宿主侧 **`async` + `.await`**；`call_blocking` 回退见 `infrastructure/blocking_http.rs` 与 `handoff/P1_KERNEL_RUNTIME_BLOCKING_AND_STARTUP.md` |
 
 ---
 

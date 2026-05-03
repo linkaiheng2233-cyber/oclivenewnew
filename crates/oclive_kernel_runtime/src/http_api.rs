@@ -505,7 +505,14 @@ pub async fn serve_api(port: u16) -> Result<(), String> {
 }
 
 pub async fn serve_api_with_options(opt: ApiServerOptions) -> Result<(), String> {
-    let _ = std::fs::create_dir_all(&opt.app_data_dir);
+    if let Err(e) = tokio::fs::create_dir_all(&opt.app_data_dir).await {
+        log::warn!(
+            target: "oclive_api",
+            "create_dir_all app_data_dir={} err={}",
+            opt.app_data_dir.display(),
+            e
+        );
+    }
     let app_state = KernelAppState::new(&opt.db_path, Some(opt.roles_dir), &opt.app_data_dir)
         .await
         .map_err(|e| e.to_frontend_error())?;

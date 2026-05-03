@@ -19,11 +19,12 @@
 **角色/插件/评价市场索引** HTTP 已改为 **`async` + `.await`**（见 `*_index_sync.rs`），**不再**使用 `block_on`。  
 **插件包市场 ZIP**：下载 async；解压经 **`spawn_blocking`**。**角色包归档**（`role_pack_archive`）对外均为 **`async fn`**；HTTP 下载 async，解压/导入在 **`spawn_blocking`**。**MCP**、**目录插件 JSON-RPC**（`invoke_directory_plugin_rpc`）已 **async + `.await`**。同步 trait 内的 `jsonrpc::call_blocking` 在 runtime 内走 **`block_in_place`**，无 runtime 时仍可能用 `blocking_http::block_on`。详见 `PERF_PHASES.md` P4 与 `infrastructure/blocking_http.rs`。
 
-## 2b. `tokio::fs`（热键与插件状态）
+## 2b. `tokio::fs`（热键、插件状态、HTTP API 启动）
 
 - `infrastructure/hotkey_bindings.rs`：`load_async` / `save_async`  
 - `infrastructure/plugin_state.rs`：`load_async` / `save_async`；`plugin_install::remove_plugin_from_plugin_state_file_async`；`DirectoryPluginRuntime::reload_plugin_state_async`  
 - `DirectoryPluginRuntime::set_active_role_id_async`：`oclive_last_role_id.txt` 使用 **`tokio::fs::write`**（`load_role` 路径）
+- `http_api.rs`：`serve_api_with_options` 对 **`app_data_dir`** 使用 **`tokio::fs::create_dir_all`**（P1 第四批遗留锚点收口）
 - Tauri：`get_hotkey_bindings` / `save_hotkey_bindings`、`uninstall_plugin` / 市场卸载命令已走上述异步路径；**目录卸载**中 `remove_dir_all` 使用 **`spawn_blocking`**。
 
 ## 3. `KernelAppState::new_in_memory_with_llm` 启动链（分段计时建议）

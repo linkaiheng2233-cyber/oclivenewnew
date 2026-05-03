@@ -1,4 +1,4 @@
-//! 好感与关系阶段计算（本回合）——纯逻辑迁移。
+//! 好感与关系阶段计算（本回合；纯逻辑，无 Tauri 依赖）。
 
 use crate::domain::relation_engine::{RelationEngine, RelationState};
 use crate::models::{Event, EventType};
