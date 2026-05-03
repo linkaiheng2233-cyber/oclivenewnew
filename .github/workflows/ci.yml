@@ -36,8 +36,7 @@ jobs:
         run: cargo clippy --workspace --all-targets --all-features -- -D warnings
       - name: tests (workspace root)
         run: cargo test --workspace
-      - name: kernel_runtime without HTTP stack (Linux only)
-        if: runner.os == 'Linux'
+      - name: kernel_runtime without default features (minimal closure)
         run: cargo check -p oclive_kernel_runtime --no-default-features
 
   frontend:

@@ -30,7 +30,7 @@ fn probe_inner() -> LocalLlmRuntimeProbeDto {
     sys.refresh_processes_specifics(ProcessesToUpdate::All, true, ProcessRefreshKind::new());
     let mut ollama_process = false;
     let mut llama_like_process = false;
-    for (_pid, proc_) in sys.processes() {
+    for proc_ in sys.processes().values() {
         let name = proc_.name().to_string_lossy();
         let (o, l) = classify_process_name(name.as_ref());
         if o {

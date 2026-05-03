@@ -168,6 +168,10 @@ src-tauri/src/
 
 后续新增业务逻辑应落在 **`oclive_kernel_runtime`**，避免在 **`src-tauri/src/api`** 堆叠公式。
 
+### 5.1 轻量编译配置（可选特性 / OOCP / invoke）
+
+嵌入式宿主与 SKU 裁剪时的 **`Cargo` 特性组合**、OOCP 行为说明、Tauri `invoke` 分组及 **`http_api` / 依赖去重** 拟定说明见 **[LIGHTWEIGHT_PROFILE.md](./LIGHTWEIGHT_PROFILE.md)**。
+
 ---
 
 ## 6. 内核入口清单（当前对外能力）

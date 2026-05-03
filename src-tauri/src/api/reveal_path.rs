@@ -11,6 +11,6 @@ pub fn reveal_role_pack_folder(
 ) -> Result<(), String> {
     let dir = oclive_kernel_runtime::domain::role_paths::role_pack_root_dir(&state, &role_id)
         .map_err(|e| e.to_frontend_error())?;
-    tauri::api::shell::open(&app.shell_scope(), dir.to_string_lossy().to_string(), None)
+    tauri::api::shell::open(&app.shell_scope(), dir.to_string_lossy(), None)
         .map_err(|e| e.to_string())
 }
