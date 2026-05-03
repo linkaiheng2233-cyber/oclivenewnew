@@ -1,4 +1,4 @@
-//! Module 9：Expert Models 管理命令（无 Tauri；由桌面 api/expert_models 薄封装）。
+//! Module 9：Expert Models 管理命令（**实现权威**；桌面 `api/expert_models` 仅 `invoke` 转发与序列化）。
 
 use crate::api::BridgeApiError;
 use crate::domain::chat_engine::conversation_state_role_id;

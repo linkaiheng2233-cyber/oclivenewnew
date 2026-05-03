@@ -1,4 +1,4 @@
-//! `process_message` orchestration (kernel runtime).
+//! 用户消息主编排：`process_message`（内核权威；与仓库 `creator-docs/kernel/KERNEL_ENTRY_CHECKLIST.md` 中 `send_message` 对齐）。
 
 use super::co_present;
 use super::context::validate_scene_id;

@@ -1,7 +1,6 @@
-//! 对话编排入口（迁移中）。
+//! 对话编排入口（**权威实现位于本 crate**）。
 //!
-//! 当前阶段先确保 kernel runtime 能复用既有 `process_message`，并逐步将实现从 `src-tauri`
-//! 迁入本 crate。
+//! `process_message` 与分支（共景 / 异地占位 / 异地心声 / Agent 早退）为桌面与 OOCP 的共享编排；Tauri `api` 层仅做 `invoke` 与 DTO 映射，不再维护第二套对话逻辑。
 
 pub mod co_present;
 pub mod context;
