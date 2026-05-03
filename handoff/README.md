@@ -37,6 +37,7 @@
 | `KERNEL_MIGRATION_COMPLETE.md` | **内核迁入收尾**：模块归属与自检命令 |
 | `../creator-docs/kernel/LIGHTWEIGHT_PROFILE.md` | **runtime 轻量 profile**：`Cargo` 特性组合、场景矩阵、CI / `scripts/check_kernel_runtime_minimal.*`、`invoke` 与依赖/`http_api` 拟定说明 |
 | `LIGHTWEIGHT_FOLLOWUP_PLAN.md` | **轻量化后续阶段**：`http_api` 单源、Tauri 依赖去重、`tauri-invoke-capabilities` 防呆、P4 reqwest 与执行顺序 |
+| `LIGHTWEIGHT_OOCP_WS_AXUM_FOLLOWUP.md` | **子计划**：壳层 OOCP WebSocket 与 `axum` 去直连评估（中长期，与阶段 2 批量去重解耦） |
 
 **Cursor 规则**：项目根 `.cursor/rules/oclivenewnew.mdc`（指向 `handoff` 文档）。
 

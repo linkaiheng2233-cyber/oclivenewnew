@@ -61,3 +61,12 @@
 4. **壳层 `axum` / OOCP WS**：中长期单独子计划，见 `handoff/LIGHTWEIGHT_OOCP_WS_AXUM_FOLLOWUP.md`（不与阶段 2 批量删依赖绑在同一 PR）。
 
 相关展开：`handoff/PERF_PHASES.md`（P4 按模块 PR）、`creator-docs/kernel/LIGHTWEIGHT_PROFILE.md` §5.1（壳层依赖快照表）。
+
+---
+
+## 下一阶段速览（供 Cursor / 子 Agent 接单）
+
+1. **阶段 2 余量**：收紧壳层 `chrono` / `uuid`（若可）；每次变更后更新 `LIGHTWEIGHT_PROFILE` §5.1 表。  
+2. **`axum` / OOCP WS**：只走 `LIGHTWEIGHT_OOCP_WS_AXUM_FOLLOWUP.md`，不与大批量删依赖混 PR。  
+3. **阶段 4（P4）**：`kernel_runtime` 内按模块处理 `reqwest::blocking`，对齐 `PERF_PHASES.md`。  
+4. **索引**：`handoff/README.md` 已链 `LIGHTWEIGHT_OOCP_WS_AXUM_FOLLOWUP.md`。
