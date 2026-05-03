@@ -8,10 +8,9 @@
 //! - 后续请求通过 `session_ns` 反查 `role_id` + 可选 `session_id`。
 
 use crate::domain::core::oocp_handler::{MethodError, OocpMethodHandler};
-use crate::domain::{role_info_snapshot, virtual_time};
+use crate::domain::{export_chat_logs, role_info_snapshot, virtual_time};
 use crate::models::oocp::{OocpErrorCode, OocpEvent};
 use crate::state::AppState;
-use chrono::Local;
 use serde_json::{json, Value};
 
 use std::sync::Arc;
@@ -300,71 +299,15 @@ impl OocpMethodHandler for TauriOocpHandler {
             )
         })?;
 
-        let fmt = format.trim().to_ascii_lowercase();
-        if fmt != "json" && fmt != "txt" {
-            return Err(err(
-                OocpErrorCode::InvalidParams,
-                "format must be json or txt",
-            ));
-        }
-
-        let turns = self
-            .state
-            .db_manager
-            .list_short_term_turns(role_id)
+        export_chat_logs::export_session_chat_logs_oocp_value(self.state.as_ref(), role_id, format)
             .await
-            .map_err(|e| err(OocpErrorCode::Internal, e.to_frontend_error()))?;
-        let date = Local::now().format("%Y-%m-%d").to_string();
-
-        let role = self
-            .state
-            .load_role_cached(role_id)
-            .map_err(|e| err(OocpErrorCode::RoleNotFound, e.to_string()))?;
-
-        let suggested_filename = format!("Oclive_chat_{}_{}.{}", role.name, date, fmt);
-        let content = if fmt == "json" {
-            let items: Vec<Value> = turns
-                .into_iter()
-                .map(|(user, bot, _emotion, scene, at)| {
-                    json!({
-                        "at": at,
-                        "scene": scene,
-                        "user": user,
-                        "bot": bot,
-                    })
-                })
-                .collect();
-            serde_json::to_string_pretty(&json!({
-                "exported_at": Local::now().to_rfc3339(),
-                "app": "oclive",
-                "role_id": role.id,
-                "role_name": role.name,
-                "turns": items,
-            }))
-            .map_err(|e| err(OocpErrorCode::Internal, format!("serialize failed: {}", e)))?
-        } else {
-            let mut s = String::new();
-            s.push_str(&format!(
-                "# Oclive Chat Logs\nrole: {} ({})\nexported_at: {}\n\n",
-                role.name,
-                role.id,
-                Local::now().to_rfc3339()
-            ));
-            for (user, bot, _emotion, scene, at) in turns {
-                let sc = scene.as_deref().unwrap_or("-");
-                s.push_str(&format!(
-                    "[{}] scene: {}\nuser: {}\nbot: {}\n\n",
-                    at, sc, user, bot
-                ));
-            }
-            s
-        };
-
-        Ok(json!({
-            "format": fmt,
-            "suggested_filename": suggested_filename,
-            "content": content,
-        }))
+            .map_err(|e| match e {
+                crate::error::AppError::InvalidParameter(m) => {
+                    err(OocpErrorCode::InvalidParams, m)
+                }
+                crate::error::AppError::RoleNotFound(m) => err(OocpErrorCode::RoleNotFound, m),
+                other => err(OocpErrorCode::Internal, other.to_frontend_error()),
+            })
     }
 
     // ── 对话 ──────────────────────────────────────────────────────────────

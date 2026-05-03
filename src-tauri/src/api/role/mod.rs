@@ -5,13 +5,12 @@ mod interaction;
 mod runtime;
 
 use crate::error::AppError;
-use crate::infrastructure::storage::resolve_llm_backend_env_override;
 use crate::models::dto::{
     ClearSceneUserRelationRequest, GetPluginResolutionDebugRequest, GetRoleInfoRequest,
     PluginResolutionDebugInfo, RoleData, RoleInfo, RoleSummary,
     SetEvolutionFactorRequest, SetRemoteLifeEnabledRequest, SetRoleInteractionModeRequest,
     SetSceneUserRelationRequest, SetSessionPluginBackendRequest, SetUserRelationRequest,
-    API_VERSION, OCLIVE_DEFAULT_RELATION_SENTINEL, SCHEMA_VERSION,
+    OCLIVE_DEFAULT_RELATION_SENTINEL,
 };
 use crate::models::plugin_backends::{
     AgentBackend, ComplexEmotionBackend, EmotionBackend, EventBackend, LlmBackend, MemoryBackend,
@@ -793,55 +792,14 @@ pub(crate) async fn build_plugin_resolution_debug_info(
     role_id: &str,
     session_id: Option<&str>,
 ) -> Result<PluginResolutionDebugInfo, String> {
-    let role = state
-        .load_role_cached(role_id)
-        .map_err(|e| e.to_frontend_error())?;
-    let session_ns = session_namespace(role_id, session_id);
-    state
-        .db_manager
-        .ensure_role_runtime(session_ns.as_str())
-        .await
-        .map_err(|e| e.to_frontend_error())?;
-    let session_override = state.session_backend_override(session_ns.as_str());
-    let effective = state.effective_plugin_backends_for_session(role.as_ref(), session_ns.as_str());
-    let effective_sources = state.effective_plugin_backend_sources_for_session(session_ns.as_str());
-    let llm_env_override = resolve_llm_backend_env_override().map(|b| match b {
-        LlmBackend::Ollama => "ollama".to_string(),
-        LlmBackend::Remote => "remote".to_string(),
-        LlmBackend::Directory => "directory".to_string(),
-    });
-    let remote_plugin_url_configured = std::env::var("OCLIVE_REMOTE_PLUGIN_URL")
-        .ok()
-        .map(|v| !v.trim().is_empty())
-        .unwrap_or(false);
-    let remote_llm_url_configured = std::env::var("OCLIVE_REMOTE_LLM_URL")
-        .ok()
-        .map(|v| !v.trim().is_empty())
-        .unwrap_or(false);
-    let mut local_provider_ids: Vec<String> = state
-        .local_plugin_all_providers()
-        .iter()
-        .map(|d| d.provider_id.clone())
-        .collect();
-    local_provider_ids.sort();
-    local_provider_ids.dedup();
-
-    Ok(PluginResolutionDebugInfo {
-        app_version: env!("CARGO_PKG_VERSION").to_string(),
-        api_version: API_VERSION,
-        schema_version: SCHEMA_VERSION,
-        role_id: role_id.to_string(),
-        session_namespace: session_ns,
-        plugin_backends_pack_default: role.plugin_backends.clone(),
-        plugin_backends_session_override: session_override,
-        plugin_backends_effective: effective,
-        plugin_backends_effective_sources: effective_sources,
-        llm_env_override,
-        remote_plugin_url_configured,
-        remote_llm_url_configured,
-        local_provider_count: local_provider_ids.len(),
-        local_provider_ids,
-    })
+    oclive_kernel_runtime::domain::plugin_resolution_debug::build_plugin_resolution_debug_info(
+        state,
+        role_id,
+        session_id,
+        env!("CARGO_PKG_VERSION"),
+    )
+    .await
+    .map_err(|e| e.to_frontend_error())
 }
 
 #[tauri::command]
