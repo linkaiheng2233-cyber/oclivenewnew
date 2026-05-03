@@ -2,27 +2,15 @@
 
 use crate::error::{AppError, Result};
 use crate::models::role_market_index::{RoleIndexDownload, RoleIndexEntry, RoleIndexFile};
+use crate::utils::digest::sha256_hex;
 use oclive_validation::{
     validate_role_market_index_v1, RoleMarketIndexEntryDisk, RoleMarketIndexFileDisk,
 };
-use sha2::{Digest, Sha256};
 use std::fs;
 use std::path::{Path, PathBuf};
 
 pub const DEFAULT_ROLES_INDEX_URL: &str =
     "https://raw.githubusercontent.com/linkaiheng2233-cyber/awesome-oclive-roles/main/roles.json";
-
-#[must_use]
-pub fn sha256_hex(bytes: &[u8]) -> String {
-    let mut h = Sha256::new();
-    h.update(bytes);
-    let out = h.finalize();
-    let mut s = String::with_capacity(out.len() * 2);
-    for b in out {
-        s.push_str(&format!("{:02x}", b));
-    }
-    s
-}
 
 #[must_use]
 pub fn role_market_index_cache_path(app_data_dir: &Path, url: &str) -> PathBuf {

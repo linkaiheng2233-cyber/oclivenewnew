@@ -6,8 +6,11 @@
 
 | Feature | 默认 | 说明 |
 |--------|------|------|
-| `full` | ✅ | 聚合当前发行版所需能力（含 `kernel-http-api`）。 |
-| `kernel-http-api` | ✅（经 `full`） | Axum 本地 HTTP（`/health`、`/chat`）与 OOCP WebSocket；关闭后不编译 `http_api` 与内核 `adapters::oocp_ws`，可减小依赖树。 |
+| `full` | ✅ | `kernel-http-api` + `role-pack-zip` + `market-sync` + `kernel-agent`（与官方桌面 / kernel_server 一致）。 |
+| `kernel-http-api` | ✅（经 `full`） | Axum 本地 HTTP 与 OOCP WebSocket；关闭后不编译 `http_api`。 |
+| `role-pack-zip` | ✅（经 `full`） | `zip` 与角色包 / 插件归档路径（`plugin_archive`、`role_pack_archive`）。 |
+| `market-sync` | ✅（经 `full`） | 角色 / 插件市场与评价索引同步模块。 |
+| `kernel-agent` | ✅（经 `full`） | MCP、Builtin ReAct Agent、远程 / 目录 Agent HTTP。 |
 | `tauri_invoke` | ❌ | 由桌面 crate 启用：`AppError` → `tauri::InvokeError`。 |
 
 **极简嵌入示例**（不需要内置 HTTP 服务器时）：
@@ -15,6 +18,8 @@
 ```toml
 oclive_kernel_runtime = { path = "../crates/oclive_kernel_runtime", default-features = false }
 ```
+
+详细矩阵见 [creator-docs/kernel/LIGHTWEIGHT_PROFILE.md](../../creator-docs/kernel/LIGHTWEIGHT_PROFILE.md)。
 
 `oclive_kernel_server` 需要 HTTP/WS，请保持默认 `full` 或显式 `features = ["kernel-http-api"]`。
 
@@ -33,7 +38,7 @@ oclive_kernel_runtime = { path = "../crates/oclive_kernel_runtime", default-feat
 cargo fmt --all --check
 cargo clippy --workspace --all-targets --all-features -- -D warnings
 cargo test -p oclive_kernel_runtime
-cargo check -p oclive_kernel_runtime --no-default-features   # 无 Axum 栈
+cargo check -p oclive_kernel_runtime --no-default-features   # 无 Axum / zip / 市场同步 / Agent 栈（按需再开子 feature）
 ```
 
 ## crates.io / SDK 路线

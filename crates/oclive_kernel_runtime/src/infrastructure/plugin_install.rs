@@ -5,7 +5,9 @@ use crate::infrastructure::directory_plugins::{
     parse_manifest_version, read_plugin_install_meta, write_plugin_install_meta,
     OclivePluginManifest,
 };
+#[cfg(feature = "role-pack-zip")]
 use crate::infrastructure::plugin_archive::extract_oclive_plugin_archive;
+#[cfg(feature = "role-pack-zip")]
 use crate::infrastructure::plugin_package_verify::verify_plugin_package_signature_text;
 use crate::infrastructure::plugin_state::PluginStateStore;
 use crate::models::dto::PluginInstallMetaDto;
@@ -130,6 +132,7 @@ pub fn update_install_meta_permissions_at(
     Ok(())
 }
 
+#[cfg(feature = "role-pack-zip")]
 fn finalize_archive_install(
     plugins_root: &Path,
     tmp: TempDir,
@@ -159,6 +162,7 @@ fn finalize_archive_install(
     Ok(pid)
 }
 
+#[cfg(feature = "role-pack-zip")]
 pub fn install_plugin_from_archive_bytes_overwrite_at(
     plugins_root: &Path,
     app_data_dir: &Path,
@@ -171,6 +175,20 @@ pub fn install_plugin_from_archive_bytes_overwrite_at(
     finalize_archive_install(plugins_root, tmp, overwrite, meta)
 }
 
+#[cfg(not(feature = "role-pack-zip"))]
+pub fn install_plugin_from_archive_bytes_overwrite_at(
+    _plugins_root: &Path,
+    _app_data_dir: &Path,
+    _bytes: &[u8],
+    _overwrite: bool,
+    _meta: &PluginInstallMetaDto,
+) -> Result<String> {
+    Err(AppError::Unknown(
+        "compiled without role-pack-zip; plugin archive install unavailable".into(),
+    ))
+}
+
+#[cfg(feature = "role-pack-zip")]
 pub fn install_plugin_from_archive_bytes_at(
     plugins_root: &Path,
     app_data_dir: &Path,
@@ -207,6 +225,18 @@ pub fn install_plugin_from_archive_bytes_at(
     Ok(pid)
 }
 
+#[cfg(not(feature = "role-pack-zip"))]
+pub fn install_plugin_from_archive_bytes_at(
+    _plugins_root: &Path,
+    _app_data_dir: &Path,
+    _bytes: &[u8],
+) -> Result<String> {
+    Err(AppError::Unknown(
+        "compiled without role-pack-zip; plugin archive install unavailable".into(),
+    ))
+}
+
+#[cfg(feature = "role-pack-zip")]
 pub fn install_plugin_from_download_urls_at(
     plugins_root: &Path,
     app_data_dir: &Path,
@@ -237,6 +267,19 @@ pub fn install_plugin_from_download_urls_at(
         .map_err(|e| AppError::Unknown(format!("read signature text failed: {}", e)))?;
     verify_plugin_package_signature_text(index_entry, &sig_text, &archive_bytes)?;
     install_plugin_from_archive_bytes_at(plugins_root, app_data_dir, &archive_bytes)
+}
+
+#[cfg(not(feature = "role-pack-zip"))]
+pub fn install_plugin_from_download_urls_at(
+    _plugins_root: &Path,
+    _app_data_dir: &Path,
+    _index_entry: &PluginIndexEntry,
+    _download_url: &str,
+    _signature_url: &str,
+) -> Result<String> {
+    Err(AppError::Unknown(
+        "compiled without role-pack-zip; market archive install unavailable".into(),
+    ))
 }
 
 pub fn install_plugin_from_git_tag_at(

@@ -1,19 +1,11 @@
 //! MCP 客户端（最小闭环）：发现本地 server manifest，并支持工具调用。
 //!
-//! 当前支持：
-//! - transport=`http`：POST JSON 到 `url`
-//! - transport=`stdio`：启动命令，向 stdin 写入请求 JSON，读取 stdout JSON
+//! 完整实现依赖 `feature = "kernel-agent"`；关闭时仅为占位类型，避免拉入进程 / HTTP 调用路径。
 
 use crate::error::{AppError, Result};
-use parking_lot::RwLock;
 use serde::{Deserialize, Serialize};
-use serde_json::{json, Value};
-use std::fs;
-use std::io::Write;
-use std::path::{Path, PathBuf};
-use std::process::{Command, Stdio};
-use std::thread;
-use std::time::{Duration, Instant};
+use serde_json::Value;
+use std::path::Path;
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct McpToolManifest {
@@ -47,23 +39,58 @@ pub struct McpToolCallResult {
     pub result: Value,
 }
 
+#[cfg(feature = "kernel-agent")]
 pub struct McpClient {
-    root_dir: PathBuf,
-    servers_cache: RwLock<Vec<McpServerManifest>>,
+    root_dir: std::path::PathBuf,
+    servers_cache: parking_lot::RwLock<Vec<McpServerManifest>>,
 }
 
+#[cfg(not(feature = "kernel-agent"))]
+pub struct McpClient;
+
+#[cfg(not(feature = "kernel-agent"))]
+impl McpClient {
+    #[must_use]
+    pub fn new(_app_data_dir: impl AsRef<Path>) -> Self {
+        Self
+    }
+
+    #[must_use]
+    pub fn list_servers(&self) -> Vec<McpServerManifest> {
+        Vec::new()
+    }
+
+    pub fn list_tools(&self, _server_id: &str) -> Result<Vec<McpToolManifest>> {
+        Ok(Vec::new())
+    }
+
+    pub fn call_tool(
+        &self,
+        _server_id: &str,
+        _tool_name: &str,
+        _params: Value,
+    ) -> Result<McpToolCallResult> {
+        Err(AppError::Unknown(
+            "kernel-agent feature disabled; MCP unavailable".into(),
+        ))
+    }
+}
+
+#[cfg(feature = "kernel-agent")]
 impl McpClient {
     #[must_use]
     pub fn new(app_data_dir: impl AsRef<Path>) -> Self {
+        use std::fs;
         let root = app_data_dir.as_ref().join("mcp-servers");
         let _ = fs::create_dir_all(&root);
         Self {
             root_dir: root,
-            servers_cache: RwLock::new(Vec::new()),
+            servers_cache: parking_lot::RwLock::new(Vec::new()),
         }
     }
 
     fn read_manifests_from_disk(&self) -> Vec<McpServerManifest> {
+        use std::fs;
         let mut out: Vec<McpServerManifest> = Vec::new();
         let Ok(rd) = fs::read_dir(&self.root_dir) else {
             return out;
@@ -118,11 +145,12 @@ impl McpClient {
             .ok_or_else(|| AppError::InvalidParameter(format!("mcp server not found: {}", sid)))
     }
 
-    fn timeout_for(&self, server: &McpServerManifest) -> Duration {
-        Duration::from_millis(server.timeout_ms.unwrap_or(12_000).max(500))
+    fn timeout_for(&self, server: &McpServerManifest) -> std::time::Duration {
+        std::time::Duration::from_millis(server.timeout_ms.unwrap_or(12_000).max(500))
     }
 
     pub fn list_tools(&self, server_id: &str) -> Result<Vec<McpToolManifest>> {
+        use serde_json::json;
         let server = self.find_server(server_id)?;
         let payload = json!({
             "method": "list_tools",
@@ -166,6 +194,7 @@ impl McpClient {
         tool_name: &str,
         params: Value,
     ) -> Result<McpToolCallResult> {
+        use serde_json::json;
         let server = self.find_server(server_id)?;
         let tool = tool_name.trim();
         if tool.is_empty() {
@@ -227,6 +256,11 @@ impl McpClient {
     }
 
     fn call_raw_stdio(&self, server: &McpServerManifest, payload: Value) -> Result<Value> {
+        use serde_json::json;
+        use std::io::Write;
+        use std::process::{Command, Stdio};
+        use std::thread;
+        use std::time::{Duration, Instant};
         let Some(cmd) = server.command.as_ref() else {
             return Err(AppError::InvalidParameter(format!(
                 "mcp server {} missing command",

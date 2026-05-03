@@ -10,17 +10,22 @@ pub mod llm_params;
 pub mod mcp_client;
 pub mod ollama_client;
 pub mod ollama_timeouts;
+#[cfg(feature = "role-pack-zip")]
 pub mod plugin_archive;
 pub mod plugin_config_disk;
+#[cfg(feature = "market-sync")]
 pub mod plugin_index_sync;
 pub mod plugin_install;
 pub mod plugin_layout;
 pub mod plugin_package_verify;
+#[cfg(feature = "market-sync")]
 pub mod plugin_reviews_index_sync;
 pub mod plugin_state;
 pub mod remote_plugin;
 pub mod repositories_runtime;
+#[cfg(feature = "market-sync")]
 pub mod role_market_index_sync;
+#[cfg(feature = "role-pack-zip")]
 pub mod role_pack_archive;
 pub mod storage;
 

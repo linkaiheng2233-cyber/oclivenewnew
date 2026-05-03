@@ -5,6 +5,7 @@
 //!
 //! 详见 `docs/REMOTE_PLUGIN_PROTOCOL.md`。
 
+#[cfg(feature = "kernel-agent")]
 mod agent_http;
 mod complex_emotion_http;
 mod config;
@@ -15,6 +16,7 @@ mod llm_http;
 mod memory_http;
 mod prompt_http;
 
+#[cfg(feature = "kernel-agent")]
 pub use agent_http::RemoteAgentHttp;
 pub use complex_emotion_http::RemoteComplexEmotionHttp;
 pub use config::RemotePluginHttpConfig;
@@ -134,16 +136,25 @@ impl LlmClient for LlmRemoteCloudAware {
 pub fn agent_remote_backend(
     default_agent: Arc<dyn crate::domain::agent::AgentProvider>,
 ) -> Arc<dyn crate::domain::agent::AgentProvider> {
-    if let Some(cfg) = RemotePluginHttpConfig::from_env_agent() {
-        log::info!(
-            target: "oclive_plugin",
-            "remote Agent HTTP active -> {}",
-            cfg.endpoint
-        );
-        Arc::new(RemoteAgentHttp::new(cfg))
-    } else {
-        default_agent
+    #[cfg(feature = "kernel-agent")]
+    {
+        if let Some(cfg) = RemotePluginHttpConfig::from_env_agent() {
+            log::info!(
+                target: "oclive_plugin",
+                "remote Agent HTTP active -> {}",
+                cfg.endpoint
+            );
+            return Arc::new(RemoteAgentHttp::new(cfg));
+        }
     }
+    #[cfg(not(feature = "kernel-agent"))]
+    if RemotePluginHttpConfig::from_env_agent().is_some() {
+        log::warn!(
+            target: "oclive_plugin",
+            "OCLIVE_REMOTE_AGENT_URL is set but kernel-agent feature is disabled; ignoring"
+        );
+    }
+    default_agent
 }
 
 pub fn complex_emotion_remote_backend() -> Arc<dyn ComplexEmotionProvider> {

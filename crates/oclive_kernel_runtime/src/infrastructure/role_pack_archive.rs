@@ -1,11 +1,11 @@
 //! `.ocpak` / `.zip` 角色包；含市场直链下载安装。
 
 use crate::error::{AppError, Result};
-use crate::infrastructure::role_market_index_sync::sha256_hex;
 use crate::infrastructure::storage::RoleStorage;
 use crate::models::dto::ImportProgress;
 use crate::models::DiskRoleManifest;
 use crate::models::Role;
+use crate::utils::digest::sha256_hex;
 use std::fs::{self, File};
 use std::io::{Read, Write};
 use std::path::{Path, PathBuf};

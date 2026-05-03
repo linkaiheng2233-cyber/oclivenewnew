@@ -53,6 +53,6 @@ mod tests {
     #[test]
     fn empty_accepted_always_ok() {
         ensure_accepted_permissions_subset_declared(&[], &[]).unwrap();
-        ensure_accepted_permissions_subset_declared(&vec!["x".into()], &[]).unwrap();
+        ensure_accepted_permissions_subset_declared(&["x".into()], &[]).unwrap();
     }
 }

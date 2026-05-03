@@ -11,9 +11,15 @@ categories = ["api-bindings", "web-programming::http-server"]
 [features]
 ## 默认与官方桌面 / kernel_server 一致；嵌入式宿主可用 `default-features = false` 并按需开启子特性。
 default = ["full"]
-full = ["kernel-http-api"]
+full = ["kernel-http-api", "role-pack-zip", "market-sync", "kernel-agent"]
 ## 本地 HTTP 试聊 + OOCP WebSocket（Axum）；关闭后可省去 axum/tower-http 编译。
 kernel-http-api = ["dep:axum", "dep:tower-http"]
+## `.oclive-plugin` / 角色包 ZIP（`zip` crate）；关闭后省略 ZIP 编解码栈。
+role-pack-zip = ["dep:zip"]
+## 角色 / 插件市场索引与评价索引 HTTP 同步模块。
+market-sync = []
+## MCP + Builtin ReAct Agent + 目录 Agent HTTP 侧车等路径。
+kernel-agent = []
 ## Desktop 壳：`AppError -> tauri::InvokeError`（孤儿规则）。
 tauri_invoke = ["dep:tauri"]
 
@@ -40,7 +46,7 @@ tempfile = "3.8"
 toml = "0.8"
 walkdir = "2.5"
 semver = "1.0"
-zip = { version = "0.6", default-features = false, features = ["deflate"] }
+zip = { version = "0.6", optional = true, default-features = false, features = ["deflate"] }
 axum = { version = "0.7", optional = true, features = ["ws"] }
 tower-http = { version = "0.5", optional = true, features = ["cors"] }
 futures-util = "0.3"

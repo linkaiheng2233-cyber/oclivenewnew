@@ -67,7 +67,7 @@ pub async fn delete_role(state: &KernelAppState, role_id: String) -> Result<Valu
     state
         .directory_plugins
         .remove_role_plugin_state(rid)
-        .map_err(|s| AppError::Unknown(s))?;
+        .map_err(AppError::Unknown)?;
     state.role_cache.write().remove(rid);
     state.invalidate_personality_cache_for_role(rid);
     Ok(json!({ "ok": true, "role_id": rid }))

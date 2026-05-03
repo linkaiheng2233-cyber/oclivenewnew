@@ -6,6 +6,7 @@
 //! - `directory_plugin_invoke`：`DbManager` 权限/审计 + 阻塞 HTTP JSON-RPC。
 //! - `spawn_blocking` / `remote_plugin` HTTP 客户端。
 //! - `start_plugin_fs_watcher`（依赖 `tauri-app`）。
+//!
 //! 若未来无头 `kernel_server` 也需目录插件 RPC，再引入由宿主实现的 **`RpcInvoker` trait**，而非把 `reqwest` 拉进 domain。
 //!
 //! 文件系统热重载 watcher 仅在桌面壳（Tauri）中提供，内核 crate 不包含。

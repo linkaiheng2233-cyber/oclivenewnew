@@ -2,7 +2,11 @@
 //!
 //! 与仓库 `creator-docs/plugin-and-architecture/PLUGIN_V1.md` 契约一致；`Remote` 在设置 `OCLIVE_REMOTE_*` 时走 HTTP JSON-RPC，否则回退内置。
 
-use crate::domain::agent::{AgentDebugTrace, AgentProvider, BuiltinReActAgent};
+#[cfg(feature = "kernel-agent")]
+use crate::domain::agent::BuiltinReActAgent;
+#[cfg(not(feature = "kernel-agent"))]
+use crate::domain::agent::NoopAgent;
+use crate::domain::agent::{AgentDebugTrace, AgentProvider};
 use crate::domain::complex_emotion::{
     BuiltinKeywordComplexEmotionProvider, ComplexEmotionProvider,
     DegradedToBuiltinComplexEmotionProvider, NoneComplexEmotionProvider,
@@ -30,7 +34,9 @@ use crate::infrastructure::cloud_llm::CloudLlmConfig;
 use crate::infrastructure::db::DbManager;
 use crate::infrastructure::directory_plugins::DirectoryPluginRuntime;
 use crate::infrastructure::llm::{LlmClient, RemoteLlmPlaceholder};
-use crate::infrastructure::mcp_client::{McpClient, McpServerManifest, McpToolCallResult};
+#[cfg(feature = "kernel-agent")]
+use crate::infrastructure::mcp_client::McpClient;
+use crate::infrastructure::mcp_client::{McpServerManifest, McpToolCallResult};
 use crate::infrastructure::remote_plugin::RemoteComplexEmotionHttp;
 use crate::infrastructure::remote_plugin::{
     self, agent_remote_backend, RemoteEventEstimatorHttp, RemoteLlmHttp, RemoteMemoryRetrievalHttp,
@@ -75,7 +81,9 @@ pub struct BackendRegistry {
     prompt_remote: Arc<dyn PromptAssembler>,
     llm_ollama: Arc<dyn LlmClient>,
     llm_remote: Arc<dyn LlmClient>,
-    agent_builtin: Arc<BuiltinReActAgent>,
+    agent_builtin: Arc<dyn AgentProvider>,
+    #[cfg(feature = "kernel-agent")]
+    agent_react: Arc<BuiltinReActAgent>,
     agent_remote: Arc<dyn AgentProvider>,
     complex_emotion_builtin: Arc<dyn ComplexEmotionProvider>,
     complex_emotion_remote: Arc<dyn ComplexEmotionProvider>,
@@ -242,7 +250,15 @@ impl BackendRegistry {
         match rt.ensure_rpc_url(pid.as_str()) {
             Ok(url) => {
                 let cfg = RemotePluginHttpConfig::for_directory_plugin_rpc(url, false);
-                Arc::new(remote_plugin::RemoteAgentHttp::new(cfg))
+                #[cfg(feature = "kernel-agent")]
+                {
+                    Arc::new(remote_plugin::RemoteAgentHttp::new(cfg))
+                }
+                #[cfg(not(feature = "kernel-agent"))]
+                {
+                    let _ = cfg;
+                    self.agent_builtin.clone()
+                }
             }
             Err(e) => {
                 log::error!(
@@ -257,16 +273,31 @@ impl BackendRegistry {
     }
 
     fn list_mcp_servers(&self) -> Vec<McpServerManifest> {
-        self.agent_builtin.list_mcp_servers()
+        #[cfg(feature = "kernel-agent")]
+        {
+            self.agent_react.list_mcp_servers()
+        }
+        #[cfg(not(feature = "kernel-agent"))]
+        {
+            Vec::new()
+        }
     }
 
     fn list_mcp_tools(
         &self,
         server_id: &str,
     ) -> std::result::Result<Vec<crate::infrastructure::mcp_client::McpToolManifest>, String> {
-        self.agent_builtin
-            .list_mcp_tools(server_id)
-            .map_err(|e| e.to_frontend_error())
+        #[cfg(feature = "kernel-agent")]
+        {
+            self.agent_react
+                .list_mcp_tools(server_id)
+                .map_err(|e| e.to_frontend_error())
+        }
+        #[cfg(not(feature = "kernel-agent"))]
+        {
+            let _ = server_id;
+            Err("kernel-agent feature disabled".to_string())
+        }
     }
 
     fn call_mcp_tool(
@@ -275,37 +306,55 @@ impl BackendRegistry {
         tool_name: &str,
         params: Value,
     ) -> std::result::Result<McpToolCallResult, String> {
-        let sid = server_id.trim();
-        if sid.is_empty() {
-            return Err("server_id required".to_string());
-        }
-        let mut required_perm = "network:*";
-        for s in self.list_mcp_servers() {
-            if s.id.trim() == sid {
-                if s.transport.trim().eq_ignore_ascii_case("stdio") {
-                    required_perm = "process:spawn";
-                }
-                break;
+        #[cfg(feature = "kernel-agent")]
+        {
+            let sid = server_id.trim();
+            if sid.is_empty() {
+                return Err("server_id required".to_string());
             }
+            let mut required_perm = "network:*";
+            for s in self.list_mcp_servers() {
+                if s.id.trim() == sid {
+                    if s.transport.trim().eq_ignore_ascii_case("stdio") {
+                        required_perm = "process:spawn";
+                    }
+                    break;
+                }
+            }
+            let mcp_provider_id = format!("system:mcp_server:{}", sid);
+            if !self.check_directory_plugin_permission(mcp_provider_id.as_str(), required_perm) {
+                return Err(format!(
+                    "mcp server {} missing required permission {}",
+                    sid, required_perm
+                ));
+            }
+            self.agent_react
+                .call_tool_direct(server_id, tool_name, params)
+                .map_err(|e| e.to_frontend_error())
         }
-        let mcp_provider_id = format!("system:mcp_server:{}", sid);
-        if !self.check_directory_plugin_permission(mcp_provider_id.as_str(), required_perm) {
-            return Err(format!(
-                "mcp server {} missing required permission {}",
-                sid, required_perm
-            ));
+        #[cfg(not(feature = "kernel-agent"))]
+        {
+            let _ = (server_id, tool_name, params);
+            Err("kernel-agent feature disabled".to_string())
         }
-        self.agent_builtin
-            .call_tool_direct(server_id, tool_name, params)
-            .map_err(|e| e.to_frontend_error())
     }
 
     fn recent_agent_traces(&self) -> Vec<AgentDebugTrace> {
-        self.agent_builtin.recent_traces()
+        #[cfg(feature = "kernel-agent")]
+        {
+            self.agent_react.recent_traces()
+        }
+        #[cfg(not(feature = "kernel-agent"))]
+        {
+            Vec::new()
+        }
     }
 
     fn clear_agent_traces(&self) {
-        self.agent_builtin.clear_traces();
+        #[cfg(feature = "kernel-agent")]
+        {
+            self.agent_react.clear_traces();
+        }
     }
 
     fn from_runtime(
@@ -316,8 +365,16 @@ impl BackendRegistry {
         cloud_llm_user: Arc<RwLock<Option<CloudLlmConfig>>>,
     ) -> Self {
         let llm_ollama = llm.clone();
+        #[cfg(not(feature = "kernel-agent"))]
+        let _ = &app_data_dir;
+        #[cfg(feature = "kernel-agent")]
         let mcp = Arc::new(McpClient::new(app_data_dir));
-        let agent_builtin = Arc::new(BuiltinReActAgent::new(llm_ollama.clone(), mcp));
+        #[cfg(feature = "kernel-agent")]
+        let agent_react = Arc::new(BuiltinReActAgent::new(llm_ollama.clone(), mcp));
+        #[cfg(feature = "kernel-agent")]
+        let agent_builtin: Arc<dyn AgentProvider> = agent_react.clone();
+        #[cfg(not(feature = "kernel-agent"))]
+        let agent_builtin: Arc<dyn AgentProvider> = Arc::new(NoopAgent);
 
         // Remote HTTP sidecars are treated as "system providers". They require an explicit
         // permission grant (`network:*`) before they are even selected as providers.
@@ -339,6 +396,8 @@ impl BackendRegistry {
             llm_ollama: llm_ollama.clone(),
             llm_remote: Arc::new(RemoteLlmPlaceholder::new(llm_ollama.clone())),
             agent_builtin: agent_builtin.clone(),
+            #[cfg(feature = "kernel-agent")]
+            agent_react: agent_react.clone(),
             agent_remote: agent_builtin.clone(),
             complex_emotion_builtin: Arc::new(BuiltinKeywordComplexEmotionProvider),
             complex_emotion_remote: Arc::new(DegradedToBuiltinComplexEmotionProvider::new(
@@ -381,7 +440,14 @@ impl BackendRegistry {
         let agent_remote: Arc<dyn AgentProvider> = if tmp
             .check_remote_http_permission(Self::REMOTE_PROVIDER_AGENT)
         {
-            agent_remote_backend(agent_builtin.clone() as Arc<dyn AgentProvider>)
+            #[cfg(feature = "kernel-agent")]
+            {
+                agent_remote_backend(agent_react.clone() as Arc<dyn AgentProvider>)
+            }
+            #[cfg(not(feature = "kernel-agent"))]
+            {
+                agent_remote_backend(agent_builtin.clone())
+            }
         } else {
             log::warn!(
                 target: "oclive_plugin",
@@ -427,6 +493,8 @@ impl BackendRegistry {
             llm_ollama,
             llm_remote,
             agent_builtin,
+            #[cfg(feature = "kernel-agent")]
+            agent_react,
             agent_remote,
             complex_emotion_builtin,
             complex_emotion_remote,
