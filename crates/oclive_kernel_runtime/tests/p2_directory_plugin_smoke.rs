@@ -4,6 +4,7 @@ use oclive_kernel_runtime::domain::role_lifecycle::load_role;
 use oclive_kernel_runtime::infrastructure::directory_plugins::{
     directory_plugin_bootstrap_dto, DEFAULT_DIRECTORY_PLUGIN_ASSET_BASE_URL,
 };
+use oclive_kernel_runtime::infrastructure::plugin_state::{PluginStateStore, RolePluginState};
 use oclive_kernel_runtime::infrastructure::remote_plugin::{invoke_directory_plugin_rpc, RemoteRpcChannel};
 use oclive_kernel_runtime::infrastructure::llm::MockLlmClient;
 use oclive_kernel_runtime::state::KernelAppState;
@@ -175,5 +176,145 @@ async fn directory_plugin_discover_bootstrap_rpc_and_teardown() {
             .read()
             .contains_key(&plugin_id),
         "after removal + rescan, plugin id should be gone"
+    );
+}
+
+/// 目录插件：发现 → 启用（RPC）→ 模拟更新（清进程 + 换 manifest 版本）→ 禁用 → 再启用 → 卸载后扫描干净。
+#[tokio::test(flavor = "multi_thread", worker_threads = 2)]
+async fn directory_plugin_lifecycle_disable_rescan_and_version_bump() {
+    let plugin_id = format!(
+        "p2lc_{}",
+        uuid::Uuid::new_v4()
+            .to_string()
+            .chars()
+            .filter(|c| *c != '-')
+            .take(8)
+            .collect::<String>()
+    );
+    let tmp = roles_dir_with_clone("p2_role_lc");
+    let roles_root = tmp.path().to_path_buf();
+    write_stub_plugin(&roles_root, &plugin_id);
+
+    let state = KernelAppState::new_in_memory_with_llm(mock_llm(), roles_root.clone())
+        .await
+        .expect("state");
+
+    load_role(&state, "p2_role_lc", false)
+        .await
+        .expect("load_role");
+
+    state
+        .directory_plugins
+        .rescan_plugin_roots(state.storage.roles_dir());
+    assert!(
+        state
+            .directory_plugins
+            .plugin_roots
+            .read()
+            .contains_key(&plugin_id),
+        "installed under app_data/plugins"
+    );
+
+    let url1 = state
+        .directory_plugins
+        .ensure_rpc_url(&plugin_id)
+        .expect("first ensure_rpc_url");
+    invoke_directory_plugin_rpc(
+        url1.as_str(),
+        "ping",
+        json!({ "x": 1 }),
+        RemoteRpcChannel::Plugin,
+    )
+    .await
+    .expect("rpc v1");
+
+    // 模拟「更新」：停进程后改写 manifest 版本（仍指向同一测试可执行文件）
+    state.directory_plugins.clear_plugin_process(&plugin_id);
+    let plugin_fs = roles_root
+        .join(".oclive_directory_plugin_data")
+        .join("plugins")
+        .join(&plugin_id);
+    let exe = stub_plugin_exe();
+    let exe_s = exe.to_string_lossy().replace('\\', "\\\\");
+    let manifest_v2 = format!(
+        r#"{{
+  "schema_version": 1,
+  "id": "{id}",
+  "version": "2.0.0",
+  "process": {{
+    "command": "{cmd}",
+    "args": []
+  }}
+}}"#,
+        id = plugin_id,
+        cmd = exe_s
+    );
+    fs::write(plugin_fs.join("manifest.json"), manifest_v2).expect("write v2 manifest");
+
+    state
+        .directory_plugins
+        .rescan_plugin_roots(state.storage.roles_dir());
+
+    let ps_path = state.directory_plugins.app_data_dir().join("plugin_state.json");
+    let mut store = PluginStateStore::load(&ps_path);
+    store
+        .global
+        .get_or_insert_with(RolePluginState::default)
+        .slots
+        .disabled_plugins
+        .push(plugin_id.clone());
+    store.save(&ps_path).expect("persist disabled");
+    state
+        .directory_plugins
+        .reload_plugin_state()
+        .expect("reload after disable");
+
+    let err = state
+        .directory_plugins
+        .ensure_rpc_url(&plugin_id)
+        .expect_err("disabled plugin should not spawn");
+    assert!(
+        err.contains("disabled") || err.contains("plugin"),
+        "unexpected err: {}",
+        err
+    );
+
+    let mut store = PluginStateStore::load(&ps_path);
+    if let Some(g) = store.global.as_mut() {
+        g.slots.disabled_plugins.retain(|x| x.trim() != plugin_id);
+    }
+    store.save(&ps_path).expect("persist re-enabled");
+    state
+        .directory_plugins
+        .reload_plugin_state()
+        .expect("reload after re-enable");
+
+    let url2 = state
+        .directory_plugins
+        .ensure_rpc_url(&plugin_id)
+        .expect("ensure after re-enable");
+    invoke_directory_plugin_rpc(
+        url2.as_str(),
+        "ping",
+        json!({}),
+        RemoteRpcChannel::Plugin,
+    )
+    .await
+    .expect("rpc after re-enable");
+
+    state.directory_plugins.clear_plugin_process(&plugin_id);
+    if plugin_fs.exists() {
+        fs::remove_dir_all(&plugin_fs).expect("remove plugin tree");
+    }
+    state
+        .directory_plugins
+        .rescan_plugin_roots(state.storage.roles_dir());
+    assert!(
+        !state
+            .directory_plugins
+            .plugin_roots
+            .read()
+            .contains_key(&plugin_id),
+        "uninstall + rescan should drop plugin id"
     );
 }
