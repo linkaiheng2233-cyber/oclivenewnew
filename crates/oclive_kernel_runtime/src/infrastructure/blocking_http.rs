@@ -2,12 +2,13 @@
 //!
 //! ## 仍调用 [`block_on`] 的代码路径（排查清单）
 //!
-//! 下列模块在迁到「顶层 async + `.await`」之前会经过此处；**市场三索引**已改为原生 async，不再使用本模块：
+//! 下列路径在 **无 Tokio runtime**（如部分单测）时仍可能回退到本模块；**市场三索引**、角色包直链、MCP、目录 RPC 等已在宿主侧改为 **`async` + `.await`**：
 //!
-//! - `infrastructure::role_pack_archive`（feature `role-pack-zip`）— 角色包直链下载
-//! - `infrastructure::plugin_install` — 插件包 **ZIP 市场下载** 已改为 `install_plugin_from_download_urls_at` 原生 async；解压落盘仍为同步 `std::fs`（宜后续 `spawn_blocking`）
-//! - `infrastructure::mcp_client` — MCP HTTP
-//! - `infrastructure::remote_plugin::jsonrpc::call_blocking` — Remote JSON-RPC 同步封装（内部仍调 `call_async`）
+//! - `infrastructure::role_pack_archive` — 直链下载已 async；解压/导入在 **`spawn_blocking`**
+//! - `infrastructure::plugin_install` — 市场 ZIP 下载 async；**`install_plugin_from_archive_bytes_impl`** 在 **`spawn_blocking`**（`install_plugin_from_download_urls_at`）
+//! - `infrastructure::mcp_client` — **`async`** + `reqwest` / `tokio::process`（无 `block_on`）
+//! - `infrastructure::remote_plugin::jsonrpc::call_blocking` — 在 Tokio worker 上优先 **`block_in_place` + `Handle::block_on(call_async)`**；无 runtime 时仍用本模块 `block_on`
+//! - `infrastructure::remote_plugin::invoke_directory_plugin_rpc` — **仅 `call_async` + `.await`**
 //!
 //! ## `std::fs` 同步磁盘 I/O
 //!

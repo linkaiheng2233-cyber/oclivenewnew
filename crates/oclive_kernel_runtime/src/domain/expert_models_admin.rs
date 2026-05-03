@@ -5,9 +5,7 @@ use crate::domain::chat_engine::conversation_state_role_id;
 use crate::domain::expert_models::{compile_graph_to_llama_local_config, LLAMA_LOCAL_PLUGIN_ID};
 use crate::domain::session_plugin_override;
 use crate::infrastructure::plugin_config_disk::write_plugin_config_json;
-use crate::infrastructure::remote_plugin::{
-    invoke_directory_plugin_rpc_blocking, RemoteRpcChannel,
-};
+use crate::infrastructure::remote_plugin::{invoke_directory_plugin_rpc, RemoteRpcChannel};
 use crate::models::dto::SetSessionPluginBackendRequest;
 use crate::models::dto::{
     ExpertModelsApplyResult, ExpertModelsApplyToSessionRequest,
@@ -1005,12 +1003,14 @@ pub async fn expert_models_apply_to_session(
             .directory_plugins
             .ensure_rpc_url(LLAMA_LOCAL_PLUGIN_ID)
             .map_err(|e| e.to_string())?;
-        let sidecar_notice = match invoke_directory_plugin_rpc_blocking(
+        let sidecar_notice = match invoke_directory_plugin_rpc(
             &url,
             "config_updated",
             json!({ "config": cfg_val }),
             RemoteRpcChannel::Plugin,
-        ) {
+        )
+        .await
+        {
             Ok(_) => None,
             Err(e) => Some(e.to_frontend_error()),
         };

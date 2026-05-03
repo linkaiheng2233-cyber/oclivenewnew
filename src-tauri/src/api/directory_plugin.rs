@@ -10,9 +10,7 @@ use crate::infrastructure::directory_plugins::{
     read_plugin_asset_text_under_root, DEFAULT_DIRECTORY_PLUGIN_ASSET_BASE_URL,
 };
 use crate::infrastructure::plugin_state::{PluginStateFile, RolePluginState};
-use crate::infrastructure::remote_plugin::{
-    invoke_directory_plugin_rpc_blocking, RemoteRpcChannel,
-};
+use crate::infrastructure::remote_plugin::{invoke_directory_plugin_rpc, RemoteRpcChannel};
 use crate::models::dto::{DirectoryPluginBootstrapDto, DirectoryPluginCatalogEntry};
 use crate::state::AppState;
 use once_cell::sync::Lazy;
@@ -146,24 +144,18 @@ pub async fn directory_plugin_invoke(
         }
         .to_string());
     }
-    let pid_s = pid.to_string();
-    let method = req.method.trim().to_string();
-    let params = req.params;
-    let dir = state.directory_plugins.clone();
-    let out = tokio::task::spawn_blocking(move || {
-        let url = dir
-            .ensure_rpc_url(pid_s.as_str())
-            .map_err(|e| crate::api::error::map_directory_rpc_url_error(pid_s.as_str(), e))?;
-        invoke_directory_plugin_rpc_blocking(
-            &url,
-            method.as_str(),
-            params,
-            RemoteRpcChannel::Plugin,
-        )
-        .map_err(|e: AppError| e.to_frontend_error())
-    })
+    let url = state
+        .directory_plugins
+        .ensure_rpc_url(pid)
+        .map_err(|e| crate::api::error::map_directory_rpc_url_error(pid, e))?;
+    let out = invoke_directory_plugin_rpc(
+        &url,
+        req.method.trim(),
+        req.params,
+        RemoteRpcChannel::Plugin,
+    )
     .await
-    .map_err(|e| e.to_string())??;
+    .map_err(|e: AppError| e.to_frontend_error())?;
 
     let _ = state
         .db_manager

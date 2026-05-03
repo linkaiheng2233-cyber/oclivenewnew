@@ -45,7 +45,6 @@ use serde_json::Value;
 use std::sync::Arc;
 
 use crate::error::{AppError, Result};
-use jsonrpc::call_blocking;
 pub use jsonrpc::RemoteRpcChannel;
 
 /// 四类 `plugin_backends.* = remote` 共用一套配置，只读一次环境变量并打一条日志。
@@ -172,8 +171,8 @@ pub fn complex_emotion_remote_backend() -> Arc<dyn ComplexEmotionProvider> {
     }
 }
 
-/// 对目录插件（或任意已解析 RPC 根 URL）发起单次 JSON-RPC `call`（阻塞）；供 `directory_plugin_invoke` 等使用。
-pub fn invoke_directory_plugin_rpc_blocking(
+/// 对目录插件（或任意已解析 RPC 根 URL）发起单次 JSON-RPC `call`（原生 async）。
+pub async fn invoke_directory_plugin_rpc(
     url: &str,
     method: &str,
     params: Value,
@@ -193,7 +192,7 @@ pub fn invoke_directory_plugin_rpc_blocking(
                 e
             ))
         })?;
-    call_blocking(
+    jsonrpc::call_async(
         channel,
         &client,
         &cfg.endpoint,
@@ -201,4 +200,5 @@ pub fn invoke_directory_plugin_rpc_blocking(
         params,
         cfg.bearer_token.as_deref(),
     )
+    .await
 }

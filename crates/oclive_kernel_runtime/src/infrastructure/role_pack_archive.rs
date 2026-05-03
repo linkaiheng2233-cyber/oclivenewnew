@@ -1,7 +1,6 @@
 //! `.ocpak` / `.zip` 角色包；含市场直链下载安装。
 
 use crate::error::{AppError, Result};
-use crate::infrastructure::blocking_http::block_on;
 use crate::infrastructure::storage::RoleStorage;
 use crate::models::dto::ImportProgress;
 use crate::models::DiskRoleManifest;
@@ -45,7 +44,7 @@ fn zip_manifest_path_priority(name: &str) -> Option<u8> {
     }
 }
 
-pub fn export_role_pack(storage: &RoleStorage, role_id: &str, dest: &Path) -> Result<()> {
+fn export_role_pack_disk(storage: &RoleStorage, role_id: &str, dest: &Path) -> Result<()> {
     let src = storage.roles_dir().join(role_id);
     if !src.is_dir() {
         return Err(AppError::RoleNotFound(role_id.to_string()));
@@ -78,6 +77,18 @@ pub fn export_role_pack(storage: &RoleStorage, role_id: &str, dest: &Path) -> Re
     Ok(())
 }
 
+/// 导出角色包为 ZIP/ocpak（磁盘密集逻辑在 `spawn_blocking` 中执行）。
+pub async fn export_role_pack(storage: &RoleStorage, role_id: &str, dest: &Path) -> Result<()> {
+    let storage = storage.clone();
+    let role_id = role_id.to_string();
+    let dest = dest.to_path_buf();
+    tokio::task::spawn_blocking(move || export_role_pack_disk(&storage, &role_id, &dest))
+        .await
+        .map_err(|e| {
+            AppError::InvalidParameter(format!("[ROLE_PACK_EXPORT_JOIN] {}", e))
+        })?
+}
+
 fn peek_role_folder_manifest(dir: &Path) -> Result<(String, String, String)> {
     let root = resolve_extracted_role_root(dir)?;
     let manifest_path = root.join("manifest.json");
@@ -92,7 +103,7 @@ fn peek_role_folder_manifest(dir: &Path) -> Result<(String, String, String)> {
     Ok((disk.id, disk.name, disk.version))
 }
 
-pub fn peek_role_pack_manifest(src: &Path) -> Result<(String, String, String)> {
+fn peek_role_pack_manifest_disk(src: &Path) -> Result<(String, String, String)> {
     if src.is_dir() {
         return peek_role_folder_manifest(src);
     }
@@ -130,6 +141,15 @@ pub fn peek_role_pack_manifest(src: &Path) -> Result<(String, String, String)> {
     Err(AppError::InvalidParameter(
         "角色包格式错误：未找到 manifest.json".into(),
     ))
+}
+
+/// 预览 ZIP 或已解压目录中的 `manifest.json`（在阻塞线程池读盘）。
+pub async fn peek_role_pack_manifest(src: PathBuf) -> Result<(String, String, String)> {
+    tokio::task::spawn_blocking(move || peek_role_pack_manifest_disk(&src))
+        .await
+        .map_err(|e| {
+            AppError::InvalidParameter(format!("[ROLE_PACK_PEEK_JOIN] {}", e))
+        })?
 }
 
 fn unzip_to(src: &Path, dest: &Path, mut on_entry: impl FnMut(usize, usize)) -> Result<()> {
@@ -264,7 +284,7 @@ fn import_role_from_directory<F: FnMut(ImportProgress)>(
     })
 }
 
-pub fn import_role_pack<F: FnMut(ImportProgress)>(
+fn import_role_pack_disk<F: FnMut(ImportProgress)>(
     storage: &RoleStorage,
     src: &Path,
     overwrite: bool,
@@ -291,11 +311,30 @@ pub fn import_role_pack<F: FnMut(ImportProgress)>(
     })
 }
 
+/// 从 ZIP/ocpak 或已解压目录导入角色（解压与复制在阻塞线程池执行）。
+pub async fn import_role_pack<F>(
+    storage: &RoleStorage,
+    src: &Path,
+    overwrite: bool,
+    on_progress: F,
+) -> Result<String>
+where
+    F: FnMut(ImportProgress) + Send + 'static,
+{
+    let storage = storage.clone();
+    let src = src.to_path_buf();
+    tokio::task::spawn_blocking(move || {
+        import_role_pack_disk(&storage, &src, overwrite, on_progress)
+    })
+    .await
+    .map_err(|e| AppError::InvalidParameter(format!("[ROLE_PACK_IMPORT_JOIN] {}", e)))?
+}
+
 fn eq_hex_sha256(got: &str, expected: &str) -> bool {
     got.trim().eq_ignore_ascii_case(expected.trim())
 }
 
-pub fn install_role_pack_from_direct_url<F>(
+pub async fn install_role_pack_from_direct_url<F>(
     storage: &RoleStorage,
     app_data_dir: &Path,
     role_id: &str,
@@ -305,7 +344,7 @@ pub fn install_role_pack_from_direct_url<F>(
     mut on_progress: F,
 ) -> Result<String>
 where
-    F: FnMut(ImportProgress),
+    F: FnMut(ImportProgress) + Send + 'static,
 {
     let rid = role_id.trim();
     if rid.is_empty() {
@@ -334,29 +373,29 @@ where
         .map_err(|e| {
             AppError::InvalidParameter(format!("[ROLE_PACK_DOWNLOAD] http client: {}", e))
         })?;
-    let bytes = block_on(async move {
-        let resp =
-            cli.get(&u).send().await.map_err(|e| {
-                AppError::InvalidParameter(format!("[ROLE_PACK_DOWNLOAD] get: {}", e))
-            })?;
-        if !resp.status().is_success() {
-            return Err(AppError::InvalidParameter(format!(
-                "[ROLE_PACK_DOWNLOAD] status={} url={}",
-                resp.status(),
-                u
-            )));
-        }
-        let body = resp.bytes().await.map_err(|e| {
-            AppError::InvalidParameter(format!("[ROLE_PACK_DOWNLOAD] read body: {}", e))
-        })?;
-        if body.len() as u64 > MAX_ROLE_PACK_DOWNLOAD_BYTES {
-            return Err(AppError::InvalidParameter(format!(
-                "[ROLE_PACK_TOO_LARGE] role pack too large (>{} bytes)",
-                MAX_ROLE_PACK_DOWNLOAD_BYTES
-            )));
-        }
-        Ok::<_, AppError>(body.to_vec())
-    })?;
+    let resp = cli
+        .get(&u)
+        .send()
+        .await
+        .map_err(|e| AppError::InvalidParameter(format!("[ROLE_PACK_DOWNLOAD] get: {}", e)))?;
+    if !resp.status().is_success() {
+        return Err(AppError::InvalidParameter(format!(
+            "[ROLE_PACK_DOWNLOAD] status={} url={}",
+            resp.status(),
+            u
+        )));
+    }
+    let body = resp
+        .bytes()
+        .await
+        .map_err(|e| AppError::InvalidParameter(format!("[ROLE_PACK_DOWNLOAD] read body: {}", e)))?;
+    if body.len() as u64 > MAX_ROLE_PACK_DOWNLOAD_BYTES {
+        return Err(AppError::InvalidParameter(format!(
+            "[ROLE_PACK_TOO_LARGE] role pack too large (>{} bytes)",
+            MAX_ROLE_PACK_DOWNLOAD_BYTES
+        )));
+    }
+    let bytes = body.to_vec();
 
     on_progress(ImportProgress {
         percent: 20,
@@ -372,29 +411,32 @@ where
 
     on_progress(ImportProgress {
         percent: 30,
-        message: "正在写入临时文件…".into(),
+        message: "正在写入临时文件并解压导入…".into(),
     });
-    let tmp_root = app_data_dir.join("tmp");
-    let _ = fs::create_dir_all(&tmp_root);
-    let td = TempDir::new_in(&tmp_root).map_err(AppError::IoError)?;
-    let tmp = td.path().join(format!("{}.ocpak", rid));
-    let mut f = File::create(&tmp).map_err(AppError::IoError)?;
-    f.write_all(&bytes).map_err(AppError::IoError)?;
-    f.flush().ok();
 
-    on_progress(ImportProgress {
-        percent: 35,
-        message: "正在解压与导入…".into(),
-    });
-    let path = tmp.clone();
-    let installed = import_role_pack(storage, &path, overwrite, |p| {
-        let pct = 35 + ((p.percent.clamp(0, 100) * 65) / 100);
-        on_progress(ImportProgress {
-            percent: pct,
-            message: p.message,
-        });
-    })?;
-    Ok(installed)
+    let storage = storage.clone();
+    let app_data_dir = app_data_dir.to_path_buf();
+    let rid = rid.to_string();
+    tokio::task::spawn_blocking(move || {
+        let tmp_root = app_data_dir.join("tmp");
+        let _ = fs::create_dir_all(&tmp_root);
+        let td = TempDir::new_in(&tmp_root).map_err(AppError::IoError)?;
+        let tmp = td.path().join(format!("{}.ocpak", rid.as_str()));
+        let mut f = File::create(&tmp).map_err(AppError::IoError)?;
+        f.write_all(&bytes).map_err(AppError::IoError)?;
+        f.flush().ok();
+
+        let path = tmp.clone();
+        import_role_pack_disk(&storage, &path, overwrite, |p| {
+            let pct = 35 + ((p.percent.clamp(0, 100) * 65) / 100);
+            on_progress(ImportProgress {
+                percent: pct,
+                message: p.message,
+            });
+        })
+    })
+    .await
+    .map_err(|e| AppError::InvalidParameter(format!("[ROLE_PACK_INSTALL_JOIN] {}", e)))?
 }
 
 #[cfg(test)]
@@ -402,8 +444,8 @@ mod tests {
     use super::*;
     use std::io::Write;
 
-    #[test]
-    fn export_import_roundtrip() {
+    #[tokio::test]
+    async fn export_import_roundtrip() {
         let roles_src = tempfile::tempdir().unwrap();
         let roles_dst = tempfile::tempdir().unwrap();
         fs::create_dir_all(roles_src.path().join("mumu").join("scenes").join("default")).unwrap();
@@ -416,17 +458,17 @@ mod tests {
         let st = RoleStorage::new(roles_src.path());
         let out_tmp = tempfile::tempdir().unwrap();
         let pak = out_tmp.path().join("x.ocpak");
-        export_role_pack(&st, "mumu", &pak).unwrap();
+        export_role_pack(&st, "mumu", &pak).await.unwrap();
 
         let st2 = RoleStorage::new(roles_dst.path());
-        let id = import_role_pack(&st2, &pak, true, |_| {}).unwrap();
+        let id = import_role_pack(&st2, &pak, true, |_| {}).await.unwrap();
         assert_eq!(id, "mumu");
         let role = st2.load_role("mumu").unwrap();
         assert_eq!(role.id, "mumu");
     }
 
-    #[test]
-    fn import_from_unpacked_folder_matches_zip() {
+    #[tokio::test]
+    async fn import_from_unpacked_folder_matches_zip() {
         let roles_src = tempfile::tempdir().unwrap();
         let roles_dst = tempfile::tempdir().unwrap();
         fs::create_dir_all(roles_src.path().join("mumu").join("scenes").join("default")).unwrap();
@@ -437,14 +479,20 @@ mod tests {
         .unwrap();
 
         let st = RoleStorage::new(roles_dst.path());
-        let id =
-            import_role_pack(&st, roles_src.path().join("mumu").as_path(), true, |_| {}).unwrap();
+        let id = import_role_pack(
+            &st,
+            roles_src.path().join("mumu").as_path(),
+            true,
+            |_| {},
+        )
+        .await
+        .unwrap();
         assert_eq!(id, "mumu");
         assert!(st.load_role("mumu").is_ok());
     }
 
-    #[test]
-    fn peek_zip_prefers_root_manifest_over_deeper_path() {
+    #[tokio::test]
+    async fn peek_zip_prefers_root_manifest_over_deeper_path() {
         let dir = tempfile::tempdir().unwrap();
         let pak = dir.path().join("peek.zip");
         let file = File::create(&pak).unwrap();
@@ -458,7 +506,7 @@ mod tests {
         zip.write_all(root.as_bytes()).unwrap();
         zip.finish().unwrap();
 
-        let (id, name, ver) = peek_role_pack_manifest(&pak).unwrap();
+        let (id, name, ver) = peek_role_pack_manifest(pak.clone()).await.unwrap();
         assert_eq!(id, "right");
         assert_eq!(name, "R");
         assert_eq!(ver, "2");

@@ -16,7 +16,10 @@ pub async fn load_role(
     let role = state.storage.load_role(role_id)?;
     let role = Arc::new(role);
 
-    state.directory_plugins.set_active_role_id(role_id);
+    state
+        .directory_plugins
+        .set_active_role_id_async(role_id)
+        .await;
     state
         .directory_plugins
         .ensure_role_plugin_state(role_id, role.plugin_state_ui_baseline());

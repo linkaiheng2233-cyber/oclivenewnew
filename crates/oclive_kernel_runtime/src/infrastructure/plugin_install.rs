@@ -190,7 +190,7 @@ pub fn install_plugin_from_archive_bytes_overwrite_at(
 }
 
 #[cfg(feature = "role-pack-zip")]
-pub fn install_plugin_from_archive_bytes_at(
+fn install_plugin_from_archive_bytes_impl(
     plugins_root: &Path,
     app_data_dir: &Path,
     bytes: &[u8],
@@ -224,6 +224,15 @@ pub fn install_plugin_from_archive_bytes_at(
     );
     std::mem::forget(tmp);
     Ok(pid)
+}
+
+#[cfg(feature = "role-pack-zip")]
+pub fn install_plugin_from_archive_bytes_at(
+    plugins_root: &Path,
+    app_data_dir: &Path,
+    bytes: &[u8],
+) -> Result<String> {
+    install_plugin_from_archive_bytes_impl(plugins_root, app_data_dir, bytes)
 }
 
 #[cfg(not(feature = "role-pack-zip"))]
@@ -291,7 +300,15 @@ pub async fn install_plugin_from_download_urls_at(
             AppError::InvalidParameter(format!("[PLUGIN_INSTALL_DOWNLOAD] read sig: {}", e))
         })?;
     verify_plugin_package_signature_text(index_entry, &sig_text, &archive_bytes)?;
-    install_plugin_from_archive_bytes_at(plugins_root, app_data_dir, &archive_bytes)
+    let plugins_root = plugins_root.to_path_buf();
+    let app_data_dir = app_data_dir.to_path_buf();
+    tokio::task::spawn_blocking(move || {
+        install_plugin_from_archive_bytes_impl(&plugins_root, &app_data_dir, &archive_bytes)
+    })
+    .await
+    .map_err(|e| {
+        AppError::InvalidParameter(format!("[PLUGIN_INSTALL_ARCHIVE_JOIN] {}", e))
+    })?
 }
 
 #[cfg(not(feature = "role-pack-zip"))]

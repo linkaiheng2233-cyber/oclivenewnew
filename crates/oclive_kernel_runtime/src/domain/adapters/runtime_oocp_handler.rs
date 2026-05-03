@@ -480,6 +480,7 @@ impl OocpMethodHandler for RuntimeOocpHandler {
             .state
             .plugins
             .call_mcp_tool(server_id, tool_name, arguments.clone())
+            .await
             .map_err(|e| err(OocpErrorCode::Internal, format!("MCP 工具调用失败: {}", e)))?;
 
         let value =

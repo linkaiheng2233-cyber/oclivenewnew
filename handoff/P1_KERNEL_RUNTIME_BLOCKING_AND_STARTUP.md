@@ -9,18 +9,21 @@
 | `src/http_api.rs` | HTTP 试聊路径：角色目录阻塞读 / 探测 |
 | `src/domain/adapters/runtime_oocp_handler.rs` | OOCP：`load_role_cached`、`load_all_roles` |
 | `src/domain/role_lifecycle.rs` | `delete_role`：`remove_dir_all` |
+| `infrastructure/role_pack_archive.rs` | `export` / `import` / `install_role_pack_from_direct_url`：磁盘段 `spawn_blocking` |
+| `infrastructure/plugin_install.rs` | `install_plugin_from_download_urls_at`：解压落盘 `spawn_blocking` |
 
 原则：**async 任务内**不直接跑长阻塞磁盘逻辑；新增路径先对照上表再决定进 `spawn_blocking` 还是独立线程。
 
 ## 2. 同步 HTTP 边界（`blocking_http::block_on`）
 
 **角色/插件/评价市场索引** HTTP 已改为 **`async` + `.await`**（见 `*_index_sync.rs`），**不再**使用 `block_on`。  
-**插件包市场 ZIP 下载**（`plugin_install::install_plugin_from_download_urls_at`）已改为 **async + `.await`**，不再经 `blocking_http::block_on`。角色包直链、MCP、JSON-RPC `call_blocking` 等仍可能经 `block_on` 或同步封装；详见 `PERF_PHASES.md` P4 与 `infrastructure/blocking_http.rs`。
+**插件包市场 ZIP**：下载 async；解压经 **`spawn_blocking`**。**角色包归档**（`role_pack_archive`）对外均为 **`async fn`**；HTTP 下载 async，解压/导入在 **`spawn_blocking`**。**MCP**、**目录插件 JSON-RPC**（`invoke_directory_plugin_rpc`）已 **async + `.await`**。同步 trait 内的 `jsonrpc::call_blocking` 在 runtime 内走 **`block_in_place`**，无 runtime 时仍可能用 `blocking_http::block_on`。详见 `PERF_PHASES.md` P4 与 `infrastructure/blocking_http.rs`。
 
 ## 2b. `tokio::fs`（热键与插件状态）
 
 - `infrastructure/hotkey_bindings.rs`：`load_async` / `save_async`  
 - `infrastructure/plugin_state.rs`：`load_async` / `save_async`；`plugin_install::remove_plugin_from_plugin_state_file_async`；`DirectoryPluginRuntime::reload_plugin_state_async`  
+- `DirectoryPluginRuntime::set_active_role_id_async`：`oclive_last_role_id.txt` 使用 **`tokio::fs::write`**（`load_role` 路径）
 - Tauri：`get_hotkey_bindings` / `save_hotkey_bindings`、`uninstall_plugin` / 市场卸载命令已走上述异步路径；**目录卸载**中 `remove_dir_all` 使用 **`spawn_blocking`**。
 
 ## 3. `KernelAppState::new_in_memory_with_llm` 启动链（分段计时建议）

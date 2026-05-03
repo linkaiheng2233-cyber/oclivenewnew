@@ -276,10 +276,10 @@ impl BackendRegistry {
         }
     }
 
-    fn list_mcp_servers(&self) -> Vec<McpServerManifest> {
+    async fn list_mcp_servers(&self) -> Vec<McpServerManifest> {
         #[cfg(feature = "kernel-agent")]
         {
-            self.agent_react.list_mcp_servers()
+            self.agent_react.list_mcp_servers().await
         }
         #[cfg(not(feature = "kernel-agent"))]
         {
@@ -287,7 +287,7 @@ impl BackendRegistry {
         }
     }
 
-    fn list_mcp_tools(
+    async fn list_mcp_tools(
         &self,
         server_id: &str,
     ) -> std::result::Result<Vec<crate::infrastructure::mcp_client::McpToolManifest>, String> {
@@ -295,6 +295,7 @@ impl BackendRegistry {
         {
             self.agent_react
                 .list_mcp_tools(server_id)
+                .await
                 .map_err(|e| e.to_frontend_error())
         }
         #[cfg(not(feature = "kernel-agent"))]
@@ -304,7 +305,7 @@ impl BackendRegistry {
         }
     }
 
-    fn call_mcp_tool(
+    async fn call_mcp_tool(
         &self,
         server_id: &str,
         tool_name: &str,
@@ -317,7 +318,7 @@ impl BackendRegistry {
                 return Err("server_id required".to_string());
             }
             let mut required_perm = "network:*";
-            for s in self.list_mcp_servers() {
+            for s in self.list_mcp_servers().await {
                 if s.id.trim() == sid {
                     if s.transport.trim().eq_ignore_ascii_case("stdio") {
                         required_perm = "process:spawn";
@@ -334,6 +335,7 @@ impl BackendRegistry {
             }
             self.agent_react
                 .call_tool_direct(server_id, tool_name, params)
+                .await
                 .map_err(|e| e.to_frontend_error())
         }
         #[cfg(not(feature = "kernel-agent"))]
@@ -970,24 +972,26 @@ impl PluginHost {
     }
 
     #[must_use]
-    pub fn list_mcp_servers(&self) -> Vec<McpServerManifest> {
-        self.registry.list_mcp_servers()
+    pub async fn list_mcp_servers(&self) -> Vec<McpServerManifest> {
+        self.registry.list_mcp_servers().await
     }
 
-    pub fn list_mcp_tools(
+    pub async fn list_mcp_tools(
         &self,
         server_id: &str,
     ) -> std::result::Result<Vec<crate::infrastructure::mcp_client::McpToolManifest>, String> {
-        self.registry.list_mcp_tools(server_id)
+        self.registry.list_mcp_tools(server_id).await
     }
 
-    pub fn call_mcp_tool(
+    pub async fn call_mcp_tool(
         &self,
         server_id: &str,
         tool_name: &str,
         params: Value,
     ) -> std::result::Result<McpToolCallResult, String> {
-        self.registry.call_mcp_tool(server_id, tool_name, params)
+        self.registry
+            .call_mcp_tool(server_id, tool_name, params)
+            .await
     }
 
     #[must_use]

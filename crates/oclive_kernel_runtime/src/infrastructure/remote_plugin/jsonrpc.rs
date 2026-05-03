@@ -1,7 +1,6 @@
 //! 最小 JSON-RPC 2.0 over HTTP POST（与 `creator-docs/plugin-and-architecture/REMOTE_PLUGIN_PROTOCOL.md` 一致）。
 
 use crate::error::{AppError, Result};
-use crate::infrastructure::blocking_http::block_on;
 use serde_json::{json, Value};
 use std::sync::atomic::{AtomicU64, Ordering};
 use std::time::Instant;
@@ -79,6 +78,10 @@ fn body_preview(text: &str) -> String {
     format!("{}… (truncated bytes={})", &t[..end], t.len())
 }
 
+/// 从同步上下文（如 `MemoryRetrieval::rank_memories`）调用 JSON-RPC。
+///
+/// 若在 Tokio worker 上：使用 `block_in_place` + 当前 runtime 的 `.await`，避免经 `blocking_http` 线程池。
+/// 若无 runtime（单测等）：回退到 `blocking_http::block_on`。
 pub fn call_blocking(
     channel: RemoteRpcChannel,
     client: &reqwest::Client,
@@ -87,14 +90,26 @@ pub fn call_blocking(
     params: Value,
     bearer_token: Option<&str>,
 ) -> Result<Value> {
-    block_on(call_async(
-        channel,
-        client,
-        url,
-        method,
-        params,
-        bearer_token,
-    ))
+    match tokio::runtime::Handle::try_current() {
+        Ok(h) => tokio::task::block_in_place(|| {
+            h.block_on(call_async(
+                channel,
+                client,
+                url,
+                method,
+                params,
+                bearer_token,
+            ))
+        }),
+        Err(_) => crate::infrastructure::blocking_http::block_on(call_async(
+            channel,
+            client,
+            url,
+            method,
+            params,
+            bearer_token,
+        )),
+    }
 }
 
 pub async fn call_async(

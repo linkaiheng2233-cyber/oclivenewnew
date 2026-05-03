@@ -5,9 +5,7 @@ use crate::infrastructure::directory_plugins::OclivePluginManifest;
 use crate::infrastructure::plugin_data::{
     ensure_default_config_for_manifest, read_config_json, write_config_json,
 };
-use crate::infrastructure::remote_plugin::{
-    invoke_directory_plugin_rpc_blocking, RemoteRpcChannel,
-};
+use crate::infrastructure::remote_plugin::{invoke_directory_plugin_rpc, RemoteRpcChannel};
 use crate::state::AppState;
 use serde::Serialize;
 use serde_json::{json, Value};
@@ -87,7 +85,7 @@ pub fn get_plugin_settings_ui(
 }
 
 #[tauri::command]
-pub fn set_plugin_settings_config(
+pub async fn set_plugin_settings_config(
     plugin_id: String,
     config: Value,
     state: State<'_, AppState>,
@@ -108,12 +106,13 @@ pub fn set_plugin_settings_config(
     }
     write_config_json(&state, pid, &config)?;
     if let Ok(url) = state.directory_plugins.ensure_rpc_url(pid) {
-        let _ = invoke_directory_plugin_rpc_blocking(
+        let _ = invoke_directory_plugin_rpc(
             &url,
             "config_updated",
             json!({ "config": config }),
             RemoteRpcChannel::Plugin,
-        );
+        )
+        .await;
     }
     Ok(())
 }

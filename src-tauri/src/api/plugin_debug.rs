@@ -3,9 +3,7 @@
 use crate::api::error::ApiError;
 use crate::error::AppError;
 use crate::infrastructure::directory_plugins::{OclivePluginManifest, PluginProcessDebugInfo};
-use crate::infrastructure::remote_plugin::{
-    invoke_directory_plugin_rpc_blocking, RemoteRpcChannel,
-};
+use crate::infrastructure::remote_plugin::{invoke_directory_plugin_rpc, RemoteRpcChannel};
 use crate::state::AppState;
 use serde::Deserialize;
 use serde_json::{json, Value};
@@ -71,7 +69,7 @@ pub struct TestPluginMethodDto {
 }
 
 #[tauri::command]
-pub fn test_plugin_method(
+pub async fn test_plugin_method(
     req: TestPluginMethodDto,
     state: State<'_, AppState>,
 ) -> Result<Value, String> {
@@ -92,12 +90,13 @@ pub fn test_plugin_method(
     let url = state
         .directory_plugins
         .ensure_rpc_url_for_debug(pid, None)?;
-    invoke_directory_plugin_rpc_blocking(&url, method, req.params, RemoteRpcChannel::Plugin)
+    invoke_directory_plugin_rpc(&url, method, req.params, RemoteRpcChannel::Plugin)
+        .await
         .map_err(|e: AppError| e.to_frontend_error())
 }
 
 #[tauri::command]
-pub fn discover_plugin_methods(
+pub async fn discover_plugin_methods(
     plugin_id: String,
     state: State<'_, AppState>,
 ) -> Result<Vec<String>, String> {
@@ -134,12 +133,14 @@ pub fn discover_plugin_methods(
         }
     };
 
-    if let Ok(v) = invoke_directory_plugin_rpc_blocking(
+    if let Ok(v) = invoke_directory_plugin_rpc(
         &url,
         "rpc.discover",
         json!({}),
         RemoteRpcChannel::Plugin,
-    ) {
+    )
+    .await
+    {
         merge_discovered_methods(&mut out, &v);
     }
 

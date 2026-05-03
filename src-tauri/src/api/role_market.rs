@@ -46,20 +46,17 @@ pub async fn install_role_pack_from_market(
     let app = app.clone();
     let app_data_dir = state.directory_plugins.app_data_dir().to_path_buf();
     let storage = state.storage.clone();
-    tokio::task::spawn_blocking(move || {
-        install_role_pack_from_direct_url(
-            &storage,
-            &app_data_dir,
-            &req.role_id,
-            &req.download_url,
-            &req.sha256,
-            req.overwrite,
-            |prog: ImportProgress| {
-                let _ = app.emit_all("import_progress", prog);
-            },
-        )
-    })
+    install_role_pack_from_direct_url(
+        &storage,
+        &app_data_dir,
+        &req.role_id,
+        &req.download_url,
+        &req.sha256,
+        req.overwrite,
+        move |prog: ImportProgress| {
+            let _ = app.emit_all("import_progress", prog);
+        },
+    )
     .await
-    .map_err(|e| format!("安装任务异常: {}", e))?
     .map_err(|e: AppError| e.to_frontend_error())
 }

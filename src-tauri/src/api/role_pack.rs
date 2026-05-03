@@ -14,7 +14,9 @@ pub async fn export_role_pack_command(
     state: State<'_, AppState>,
 ) -> Result<(), String> {
     let p = PathBuf::from(dest_path);
-    export_role_pack(&state.storage, &role_id, &p).map_err(|e: AppError| e.to_frontend_error())
+    export_role_pack(&state.storage, &role_id, &p)
+        .await
+        .map_err(|e: AppError| e.to_frontend_error())
 }
 
 #[tauri::command]
@@ -23,9 +25,8 @@ pub async fn peek_role_pack_command(
     _state: State<'_, AppState>,
 ) -> Result<RolePackPeekResponse, String> {
     let p = PathBuf::from(src_path);
-    let (id, name, version) = tokio::task::spawn_blocking(move || peek_role_pack_manifest(&p))
+    let (id, name, version) = peek_role_pack_manifest(p)
         .await
-        .map_err(|e| format!("预览任务异常: {}", e))?
         .map_err(|e: AppError| e.to_frontend_error())?;
     Ok(RolePackPeekResponse { id, name, version })
 }
@@ -40,13 +41,10 @@ pub async fn import_role_pack_command(
     let storage = state.storage.clone();
     let path = PathBuf::from(src_path);
     let app = app.clone();
-    let role_id = tokio::task::spawn_blocking(move || {
-        import_role_pack(&storage, &path, overwrite, |prog| {
-            let _ = app.emit_all("import_progress", prog);
-        })
+    let role_id = import_role_pack(&storage, &path, overwrite, move |prog| {
+        let _ = app.emit_all("import_progress", prog);
     })
     .await
-    .map_err(|e| format!("导入任务异常: {}", e))?
     .map_err(|e: AppError| e.to_frontend_error())?;
 
     let role = state

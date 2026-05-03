@@ -521,17 +521,9 @@ async fn dispatch_bridge_command(
                 .unwrap_or(false);
             let storage = state.storage.clone();
             let path_buf = PathBuf::from(path);
-            let role_id = tokio::task::spawn_blocking(move || {
-                import_role_pack(&storage, &path_buf, overwrite, |_| {})
-            })
-            .await
-            .map_err(|e| {
-                ApiError::Io {
-                    message: format!("import_role join: {}", e),
-                }
-                .to_string()
-            })?
-            .map_err(|e: crate::error::AppError| e.to_frontend_error())?;
+            let role_id = import_role_pack(&storage, &path_buf, overwrite, |_| {})
+                .await
+                .map_err(|e: crate::error::AppError| e.to_frontend_error())?;
             state.invalidate_personality_cache_for_role(&role_id);
             let role = state
                 .storage

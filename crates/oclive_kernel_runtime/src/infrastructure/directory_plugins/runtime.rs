@@ -404,6 +404,20 @@ impl DirectoryPluginRuntime {
         let _ = std::fs::write(&p, role_id.trim());
     }
 
+    /// 与 [`Self::set_active_role_id`] 相同语义；磁盘写入走 `tokio::fs`，供异步编排路径调用。
+    pub async fn set_active_role_id_async(&self, role_id: &str) {
+        *self.active_role_id.write() = Some(role_id.trim().to_string());
+        let p = self.app_data_dir.join("oclive_last_role_id.txt");
+        let rid = role_id.trim().as_bytes().to_vec();
+        if let Err(e) = tokio::fs::write(&p, rid).await {
+            log::warn!(
+                target: "oclive_plugin",
+                "oclive_last_role_id.txt write failed: {}",
+                e
+            );
+        }
+    }
+
     /// 删除某角色的插件 UI 状态；若当前活跃角色相同则清空活跃标记。
     pub fn remove_role_plugin_state(&self, role_id: &str) -> Result<(), String> {
         let rid = role_id.trim();
