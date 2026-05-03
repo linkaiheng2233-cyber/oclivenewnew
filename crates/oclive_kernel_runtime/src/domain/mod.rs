@@ -35,6 +35,7 @@ pub mod remote_life_prompt;
 pub mod repository;
 pub mod role_manager;
 pub mod role_info_snapshot;
+pub mod role_runtime_commands;
 pub mod role_manifest_validate;
 pub mod user_emotion_analyzer;
 pub mod user_identity;

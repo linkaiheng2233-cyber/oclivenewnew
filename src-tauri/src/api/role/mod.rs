@@ -6,13 +6,11 @@ use crate::models::dto::{
     PluginResolutionDebugInfo, RoleData, RoleInfo, RoleSummary,
     SetEvolutionFactorRequest, SetRemoteLifeEnabledRequest, SetRoleInteractionModeRequest,
     SetSceneUserRelationRequest, SetSessionPluginBackendRequest, SetUserRelationRequest,
-    OCLIVE_DEFAULT_RELATION_SENTINEL,
 };
 use crate::models::plugin_backends::{
     AgentBackend, ComplexEmotionBackend, EmotionBackend, EventBackend, LlmBackend, MemoryBackend,
     PluginBackendsOverride, PromptBackend,
 };
-use crate::models::role::IdentityBinding;
 use crate::state::AppState;
 use std::sync::Arc;
 use tauri::State;
@@ -20,9 +18,6 @@ use tauri::State;
 use serde::de::DeserializeOwned;
 use serde::Deserialize;
 use serde_json::{json, Value};
-
-const EVENT_IMPACT_MIN: f64 = 0.05;
-const EVENT_IMPACT_MAX: f64 = 5.0;
 
 pub(crate) fn session_namespace(role_id: &str, session_id: Option<&str>) -> String {
     crate::domain::chat_engine::conversation_state_role_id(role_id, session_id)
@@ -157,210 +152,36 @@ pub async fn set_user_relation_impl(
     state: &AppState,
     req: &SetUserRelationRequest,
 ) -> Result<RoleInfo, String> {
-    if !state
-        .db_manager
-        .role_runtime_exists(&req.role_id)
+    oclive_kernel_runtime::domain::role_runtime_commands::set_user_relation(state, req)
         .await
-        .map_err(|e| e.to_frontend_error())?
-    {
-        return Err(AppError::InvalidParameter(
-            "Role runtime not initialized; call load_role first".to_string(),
-        )
-        .to_frontend_error());
-    }
-    let role = state
-        .load_role_cached(&req.role_id)
-        .map_err(|e| e.to_frontend_error())?;
-
-    if matches!(role.identity_binding, IdentityBinding::Global) {
-        state
-            .db_manager
-            .clear_all_scene_identities_for_role(&req.role_id)
-            .await
-            .map_err(|e| e.to_frontend_error())?;
-    }
-
-    if req.relation == OCLIVE_DEFAULT_RELATION_SENTINEL {
-        state
-            .db_manager
-            .set_use_manifest_default(&req.role_id, true)
-            .await
-            .map_err(|e| e.to_frontend_error())?;
-        let eff = role.default_relation.clone();
-        let seed = role.initial_favorability_for_relation(eff.as_str());
-        state
-            .db_manager
-            .ensure_identity_stats_row(&req.role_id, &eff, seed)
-            .await
-            .map_err(|e| e.to_frontend_error())?;
-        state
-            .db_manager
-            .mirror_runtime_from_identity(&req.role_id, &eff)
-            .await
-            .map_err(|e| e.to_frontend_error())?;
-        return get_role_info_impl(state, &req.role_id, None).await;
-    }
-
-    if !role.user_relations.iter().any(|r| r.id == req.relation) {
-        return Err(
-            AppError::InvalidParameter(format!("unknown relation: {}", req.relation))
-                .to_frontend_error(),
-        );
-    }
-    state
-        .db_manager
-        .set_use_manifest_default(&req.role_id, false)
-        .await
-        .map_err(|e| e.to_frontend_error())?;
-    state
-        .db_manager
-        .set_user_relation(&req.role_id, &req.relation)
-        .await
-        .map_err(|e| e.to_frontend_error())?;
-    let seed = role.initial_favorability_for_relation(&req.relation);
-    state
-        .db_manager
-        .ensure_identity_stats_row(&req.role_id, &req.relation, seed)
-        .await
-        .map_err(|e| e.to_frontend_error())?;
-    state
-        .db_manager
-        .mirror_runtime_from_identity(&req.role_id, &req.relation)
-        .await
-        .map_err(|e| e.to_frontend_error())?;
-    get_role_info_impl(state, &req.role_id, None).await
+        .map_err(|e| e.to_frontend_error())
 }
 
 pub async fn set_evolution_factor_impl(
     state: &AppState,
     req: &SetEvolutionFactorRequest,
 ) -> Result<RoleInfo, String> {
-    let f = req.event_impact_factor;
-    if !f.is_finite() || !(EVENT_IMPACT_MIN..=EVENT_IMPACT_MAX).contains(&f) {
-        return Err(AppError::InvalidParameter(format!(
-            "event_impact_factor must be between {} and {}",
-            EVENT_IMPACT_MIN, EVENT_IMPACT_MAX
-        ))
-        .to_frontend_error());
-    }
-    state
-        .load_role_cached(&req.role_id)
-        .map_err(|e| e.to_frontend_error())?;
-    if !state
-        .db_manager
-        .role_runtime_exists(&req.role_id)
+    oclive_kernel_runtime::domain::role_runtime_commands::set_evolution_factor(state, req)
         .await
-        .map_err(|e| e.to_frontend_error())?
-    {
-        return Err(AppError::InvalidParameter(
-            "Role runtime not initialized; call load_role first".to_string(),
-        )
-        .to_frontend_error());
-    }
-    state
-        .db_manager
-        .set_event_impact_factor(&req.role_id, f)
-        .await
-        .map_err(|e| e.to_frontend_error())?;
-    get_role_info_impl(state, &req.role_id, None).await
+        .map_err(|e| e.to_frontend_error())
 }
 
 pub async fn clear_scene_user_relation_impl(
     state: &AppState,
     req: &ClearSceneUserRelationRequest,
 ) -> Result<RoleInfo, String> {
-    if !state
-        .db_manager
-        .role_runtime_exists(&req.role_id)
+    oclive_kernel_runtime::domain::role_runtime_commands::clear_scene_user_relation(state, req)
         .await
-        .map_err(|e| e.to_frontend_error())?
-    {
-        return Err(AppError::InvalidParameter(
-            "Role runtime not initialized; call load_role first".to_string(),
-        )
-        .to_frontend_error());
-    }
-    let role = state
-        .load_role_cached(&req.role_id)
-        .map_err(|e| e.to_frontend_error())?;
-    if matches!(role.identity_binding, IdentityBinding::Global) {
-        return Err(AppError::InvalidParameter(
-            "当前角色包为全局身份模式（identity_binding: global），无需按场景清除身份覆盖"
-                .to_string(),
-        )
-        .to_frontend_error());
-    }
-    let scenes = state
-        .storage
-        .list_scene_ids(&req.role_id)
-        .map_err(|e| e.to_frontend_error())?;
-    if !scenes.iter().any(|s| s == &req.scene_id) {
-        return Err(AppError::InvalidParameter(format!(
-            "scene_id not in role pack: {}",
-            req.scene_id
-        ))
-        .to_frontend_error());
-    }
-    state
-        .db_manager
-        .clear_user_relation_for_scene(&req.role_id, &req.scene_id)
-        .await
-        .map_err(|e| e.to_frontend_error())?;
-    get_role_info_impl(state, &req.role_id, None).await
+        .map_err(|e| e.to_frontend_error())
 }
 
 pub async fn set_scene_user_relation_impl(
     state: &AppState,
     req: &SetSceneUserRelationRequest,
 ) -> Result<RoleInfo, String> {
-    if !state
-        .db_manager
-        .role_runtime_exists(&req.role_id)
+    oclive_kernel_runtime::domain::role_runtime_commands::set_scene_user_relation(state, req)
         .await
-        .map_err(|e| e.to_frontend_error())?
-    {
-        return Err(AppError::InvalidParameter(
-            "Role runtime not initialized; call load_role first".to_string(),
-        )
-        .to_frontend_error());
-    }
-    let role = state
-        .load_role_cached(&req.role_id)
-        .map_err(|e| e.to_frontend_error())?;
-    if matches!(role.identity_binding, IdentityBinding::Global) {
-        return Err(AppError::InvalidParameter(
-            "当前角色包为全局身份模式（identity_binding: global），请使用全局身份设置，勿按场景绑定".to_string(),
-        )
-        .to_frontend_error());
-    }
-    if !role.user_relations.iter().any(|r| r.id == req.relation) {
-        return Err(
-            AppError::InvalidParameter(format!("unknown relation: {}", req.relation))
-                .to_frontend_error(),
-        );
-    }
-    let scenes = state
-        .storage
-        .list_scene_ids(&req.role_id)
-        .map_err(|e| e.to_frontend_error())?;
-    if !scenes.iter().any(|s| s == &req.scene_id) {
-        return Err(AppError::InvalidParameter(format!(
-            "scene_id not in role pack: {}",
-            req.scene_id
-        ))
-        .to_frontend_error());
-    }
-    state
-        .db_manager
-        .set_use_manifest_default(&req.role_id, false)
-        .await
-        .map_err(|e| e.to_frontend_error())?;
-    state
-        .db_manager
-        .set_user_relation_for_scene(&req.role_id, &req.scene_id, &req.relation)
-        .await
-        .map_err(|e| e.to_frontend_error())?;
-    get_role_info_impl(state, &req.role_id, None).await
+        .map_err(|e| e.to_frontend_error())
 }
 
 #[tauri::command]
@@ -383,26 +204,9 @@ pub async fn set_remote_life_enabled_impl(
     state: &AppState,
     req: &SetRemoteLifeEnabledRequest,
 ) -> Result<RoleInfo, String> {
-    state
-        .load_role_cached(&req.role_id)
-        .map_err(|e| e.to_frontend_error())?;
-    if !state
-        .db_manager
-        .role_runtime_exists(&req.role_id)
+    oclive_kernel_runtime::domain::role_runtime_commands::set_remote_life_enabled(state, req)
         .await
-        .map_err(|e| e.to_frontend_error())?
-    {
-        return Err(AppError::InvalidParameter(
-            "Role runtime not initialized; call load_role first".to_string(),
-        )
-        .to_frontend_error());
-    }
-    state
-        .db_manager
-        .set_remote_life_enabled(&req.role_id, req.enabled)
-        .await
-        .map_err(|e| e.to_frontend_error())?;
-    get_role_info_impl(state, &req.role_id, None).await
+        .map_err(|e| e.to_frontend_error())
 }
 
 #[tauri::command]
@@ -417,26 +221,9 @@ pub async fn set_role_interaction_mode_impl(
     state: &AppState,
     req: &SetRoleInteractionModeRequest,
 ) -> Result<RoleInfo, String> {
-    state
-        .load_role_cached(&req.role_id)
-        .map_err(|e| e.to_frontend_error())?;
-    if !state
-        .db_manager
-        .role_runtime_exists(&req.role_id)
+    oclive_kernel_runtime::domain::role_runtime_commands::set_role_interaction_mode(state, req)
         .await
-        .map_err(|e| e.to_frontend_error())?
-    {
-        return Err(AppError::InvalidParameter(
-            "Role runtime not initialized; call load_role first".to_string(),
-        )
-        .to_frontend_error());
-    }
-    state
-        .db_manager
-        .set_interaction_mode_for_role(&req.role_id, req.mode.trim())
-        .await
-        .map_err(|e| e.to_frontend_error())?;
-    get_role_info_impl(state, &req.role_id, None).await
+        .map_err(|e| e.to_frontend_error())
 }
 
 #[tauri::command]

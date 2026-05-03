@@ -1,11 +1,12 @@
-//! Oclive kernel runtime crate (no tauri).
+//! Oclive kernel runtime crate（无 Tauri 依赖）。
 //!
-//! This crate will progressively absorb the runtime currently hosted in `src-tauri/src/*`
-//! so that both:
-//! - `crates/oclive_kernel_server` (headless kernel)
-//! - `src-tauri` (official desktop distribution)
+//! 将原 `src-tauri` 中的编排与持久化逐步迁入本 crate，使以下宿主共用同一套实现：
+//! - `crates/oclive_kernel_server`（无头 OOCP / HTTP）
+//! - `src-tauri`（官方桌面发行版）
+//! - 其它 AI 应用或设备侧服务（自建 HTTP / gRPC / 本地进程，持有 `KernelAppState` 即可）
 //!
-//! can depend on the same kernel runtime implementation.
+//! 入口形态：`state::KernelAppState`、`domain::chat_engine::process_message`、
+//! `domain::role_info_snapshot`、`domain::role_runtime_commands`、`http_api` 等。
 
 pub mod api;
 pub mod domain;

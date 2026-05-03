@@ -10,7 +10,8 @@ pub use oclive_kernel_runtime::domain::{
     permission_tokens, personality_engine, plugin_host, plugin_resolution_debug, policy,
     portrait_emotion_engine, profile_personality, prompt_assembler, prompt_builder,
     prompt_style_override, relation_engine, remote_life_prompt, repository, role_info_snapshot,
-    role_manager, role_manifest_validate, user_emotion_analyzer, user_identity, virtual_time,
+    role_manager, role_manifest_validate, role_runtime_commands, user_emotion_analyzer,
+    user_identity, virtual_time,
 };
 
 pub use agent::{AgentDebugTrace, AgentInput, AgentOutput, AgentProvider, BuiltinReActAgent};
