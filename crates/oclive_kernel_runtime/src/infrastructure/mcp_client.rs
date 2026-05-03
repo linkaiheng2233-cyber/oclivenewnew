@@ -289,7 +289,7 @@ impl McpClient {
             })?;
         if let Some(stdin) = child.stdin.as_mut() {
             let body = serde_json::to_vec(&payload)?;
-            stdin.write_all(&body).map_err(|e| AppError::IoError(e))?;
+            stdin.write_all(&body).map_err(AppError::IoError)?;
         }
         let timeout = self.timeout_for(server);
         let start = Instant::now();

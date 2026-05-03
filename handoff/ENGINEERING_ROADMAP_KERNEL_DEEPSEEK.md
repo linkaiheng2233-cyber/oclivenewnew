@@ -12,7 +12,7 @@
 |-------------|----------------|
 | `reqwest::blocking` 全量替代 | **已完成**：workspace `reqwest` 无 `blocking`；runtime 使用 `Client` + async，同步边界见 **`blocking_http::block_on`**；详见 [`PERF_PHASES.md`](./PERF_PHASES.md)。 |
 | `AppError` + 可诊断码 | **runtime 业务路径已收敛**：[`crates/oclive_kernel_runtime/src/error.rs`](../crates/oclive_kernel_runtime/src/error.rs) 提供 **`code()`** 与 **`to_frontend_error()`**（`[CODE]` 前缀）；`src/**/*.rs` 中 **`AppError::Unknown`** 已基本清除（保留枚举变体作兜底）；与字典 **`10_ERROR_CODE_DICTIONARY.md`** 持续对齐；其它 workspace crate 仍可按需收紧。 |
-| 集成测试目录 | 大量逻辑在 **`#[cfg(test)]` 模块内**（如 `state/app_state.rs`）；**crate 级 `tests/*.rs`** 已起步（见 `tests/public_api_error_contract.rs`），可逐步扩展 session / plugin 等。 |
+| 集成测试目录 | 大量逻辑在 **`#[cfg(test)]` 模块内**；**crate 级 `tests/*.rs`** 已含契约、会话烟测、**[`p0_support_modules_smoke.rs`](../crates/oclive_kernel_runtime/tests/p0_support_modules_smoke.rs)**（插件 semver / 市场缓存 / Expert 编译 / 本地导入）；仍可扩展 `expert_models_admin` 全链、`role_lifecycle` 删除等。 |
 | crates.io / Docker | **未做**；见本文 P2 与验收门槛。 |
 
 ---
@@ -35,7 +35,7 @@
 | P0 | **plugin** | `PluginHost` 解析、`directory_plugins` bootstrap（已有部分单元测试，可抽 crate 级集成）。 |
 | P0 | **expert-models** | `domain::expert_models_admin` 与 `role_runtime` JSON 读写边界。 |
 | P0 | **role_lifecycle** | `domain::role_runtime_commands` / `role_info_snapshot` 与迁移表一致。 |
-| P0 | **local_imports** | `domain::local_imports` 扫描与拒绝路径。 |
+| P0 | **local_imports** | `domain::local_imports` 扫描与拒绝路径；crate 级烟测见 **`p0_support_modules_smoke`**。 |
 
 **CI**：根工作区已 **`cargo test --workspace`**；新增 `crates/oclive_kernel_runtime/tests/*.rs` 会自动纳入，无需单独 job（除非要拆分 `--package` 加速）。
 
@@ -44,6 +44,7 @@
 **已落地（第二步）**：
 
 - [`tests/session_process_message_smoke.rs`](../crates/oclive_kernel_runtime/tests/session_process_message_smoke.rs) — `process_message` + `shimeng` + Mock LLM 最小闭环。  
+- [`tests/p0_support_modules_smoke.rs`](../crates/oclive_kernel_runtime/tests/p0_support_modules_smoke.rs) — **P0.T 子集**：`plugin_install` 依赖 semver、**`feature = market-sync`** 下索引磁盘缓存读写契约、`expert_models` 单基座编译、`local_imports` 扫描（无网络）。  
 - 错误收紧（P0.E）：`plugin_archive`、`directory_plugin_commands`、`plugin_package_verify`、`llm_cancelable`；续：`plugin_install`、`plugin_index_sync`、`role_market_index_sync`、`plugin_reviews_index_sync`、`role_pack_archive`、`mcp_client`、`role_lifecycle` — **`oclive_kernel_runtime` 业务 `src` 不再使用 `AppError::Unknown`**（变体与契约测试除外）。  
 - [`creator-docs/kernel/KERNEL_SDK.md`](../creator-docs/kernel/KERNEL_SDK.md) + [`scripts/run_kernel_server.sh`](../scripts/run_kernel_server.sh) / [`.ps1`](../scripts/run_kernel_server.ps1)（P2 体验子集）。
 
@@ -107,7 +108,7 @@
 ## 建议执行顺序（给 Cursor / 子 Agent）
 
 1. **P0.E** 错误码与 `Unknown` 收敛（小步、可测）。  
-2. **P0.T** 扩展 **`crates/oclive_kernel_runtime/tests/`**（session → plugin → expert-models…）。  
+2. **P0.T** 继续扩展 **`crates/oclive_kernel_runtime/tests/`**（`expert_models_admin` / `role_lifecycle::delete_role` / 归档安装等重路径）。  
 3. **P0.A** API 清单与死代码删除（按 CHECKLIST 分行 PR）。  
 4. **P1** 启动与阻塞 I/O 清单。  
 5. **P2** 文档与发布干跑。

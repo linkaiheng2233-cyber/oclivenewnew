@@ -4,7 +4,7 @@
 
 ### Added
 
-- **`oclive_kernel_runtime` 集成测试**：`tests/session_process_message_smoke.rs` 对 `roles/shimeng` 走 **`process_message`** + Mock LLM 最小闭环；`tests/public_api_error_contract.rs` 校验 `AppError` 与字典一致。  
+- **`oclive_kernel_runtime` 集成测试**：`tests/session_process_message_smoke.rs` 对 `roles/shimeng` 走 **`process_message`** + Mock LLM 最小闭环；`tests/public_api_error_contract.rs` 校验 `AppError` 与字典一致；`tests/p0_support_modules_smoke.rs` 覆盖 **`missing_plugin_dependencies`**、**`market-sync` 索引缓存读**、**`compile_graph_to_llama_local_config`**、**`list_local_import_candidates`**（无网络）。  
 - **内核 SDK 与启动脚本**：[creator-docs/kernel/KERNEL_SDK.md](creator-docs/kernel/KERNEL_SDK.md)；根目录 **`scripts/run_kernel_server.sh`** / **`scripts/run_kernel_server.ps1`**（可选端口参数）。
 - 插件清单支持声明订阅的宿主事件（`shell.bridge.events` 或 `ui_slots[].bridge.events`），避免不必要的事件广播。
 - 设置页「常规」区域增加「强制 iframe 模式」开关，开启后所有插件界面统一使用 iframe 渲染，获得最高级别沙箱隔离。
