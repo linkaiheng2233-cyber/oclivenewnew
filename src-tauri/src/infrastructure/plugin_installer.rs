@@ -14,11 +14,10 @@ use std::fs;
 use std::path::{Path, PathBuf};
 use std::process::Command;
 use tempfile::TempDir;
-use zip::ZipArchive;
 
-const MAX_PLUGIN_ARCHIVE_FILES: usize = 2000;
-const MAX_PLUGIN_ARCHIVE_TOTAL_BYTES: u64 = 50 * 1024 * 1024;
-const MAX_PLUGIN_ARCHIVE_SINGLE_FILE_BYTES: u64 = 10 * 1024 * 1024;
+pub use oclive_kernel_runtime::infrastructure::plugin_archive::{
+    extract_oclive_plugin_archive, peek_plugin_id_from_archive_bytes,
+};
 
 pub type PluginInstallMeta = crate::models::dto::PluginInstallMetaDto;
 
@@ -342,21 +341,6 @@ pub fn verify_plugin_package_signature_text(
     verify_plugin_package_signature(index_entry, &sig, archive_bytes)
 }
 
-pub fn peek_plugin_id_from_archive_bytes(
-    state: &AppState,
-    bytes: &[u8],
-) -> Result<String, AppError> {
-    let tmp = plugins_install_temp_dir(state)?;
-    extract_oclive_plugin_archive(bytes, tmp.path())?;
-    let manifest = OclivePluginManifest::load_from_dir(tmp.path())
-        .map_err(|e| AppError::Unknown(format!("manifest validation failed: {}", e)))?;
-    let pid = manifest.id.trim().to_string();
-    if pid.is_empty() {
-        return Err(AppError::InvalidParameter("manifest.id required".into()));
-    }
-    Ok(pid)
-}
-
 pub fn install_plugin_from_archive_bytes_overwrite(
     state: &AppState,
     bytes: &[u8],
@@ -487,57 +471,6 @@ fn plugins_install_temp_dir(state: &AppState) -> Result<TempDir, AppError> {
     let root = state.directory_plugins.app_data_dir().join("tmp");
     let _ = fs::create_dir_all(&root);
     TempDir::new_in(root).map_err(AppError::IoError)
-}
-
-pub fn extract_oclive_plugin_archive(bytes: &[u8], dst_dir: &Path) -> Result<(), AppError> {
-    let mut zip = ZipArchive::new(std::io::Cursor::new(bytes))
-        .map_err(|e| AppError::Unknown(format!("open plugin archive failed: {}", e)))?;
-    let mut files = 0usize;
-    let mut total: u64 = 0;
-    for i in 0..zip.len() {
-        let mut f = zip
-            .by_index(i)
-            .map_err(|e| AppError::Unknown(format!("read zip entry failed: {}", e)))?;
-        let rel = f.enclosed_name().ok_or_else(|| {
-            AppError::InvalidParameter(
-                "[PLUGIN_ARCHIVE_ILLEGAL_PATH] zip entry path is not enclosed".into(),
-            )
-        })?;
-        let name = rel.to_string_lossy().replace('\\', "/");
-        if f.is_dir() {
-            let out_path = dst_dir.join(rel);
-            fs::create_dir_all(&out_path)?;
-            continue;
-        }
-        files += 1;
-        if files > MAX_PLUGIN_ARCHIVE_FILES {
-            return Err(AppError::InvalidParameter(format!(
-                "[PLUGIN_ARCHIVE_TOO_MANY_FILES] too many files (>{})",
-                MAX_PLUGIN_ARCHIVE_FILES
-            )));
-        }
-        let sz = f.size();
-        if sz > MAX_PLUGIN_ARCHIVE_SINGLE_FILE_BYTES {
-            return Err(AppError::InvalidParameter(format!(
-                "[PLUGIN_ARCHIVE_SINGLE_FILE_TOO_LARGE] file too large {} bytes: {}",
-                sz, name
-            )));
-        }
-        total = total.saturating_add(sz);
-        if total > MAX_PLUGIN_ARCHIVE_TOTAL_BYTES {
-            return Err(AppError::InvalidParameter(format!(
-                "[PLUGIN_ARCHIVE_TOTAL_TOO_LARGE] total too large (>{} bytes)",
-                MAX_PLUGIN_ARCHIVE_TOTAL_BYTES
-            )));
-        }
-        let out_path = dst_dir.join(rel);
-        if let Some(parent) = out_path.parent() {
-            fs::create_dir_all(parent)?;
-        }
-        let mut out = fs::File::create(&out_path)?;
-        std::io::copy(&mut f, &mut out).map_err(AppError::IoError)?;
-    }
-    Ok(())
 }
 
 fn write_install_meta(root: &Path, meta: &PluginInstallMeta) -> Result<(), AppError> {

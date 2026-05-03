@@ -79,8 +79,7 @@ pub fn preview_local_plugin_archive_command(
 ) -> Result<PreviewLocalPluginArchiveResponse, String> {
     let archive = resolve_path_under_imports_root(&req.archive_path, &state)?;
     let bytes = std::fs::read(&archive).map_err(|e| format!("read archive failed: {}", e))?;
-    let pid =
-        peek_plugin_id_from_archive_bytes(&state, &bytes).map_err(|e| e.to_frontend_error())?;
+    let pid = peek_plugin_id_from_archive_bytes(&bytes).map_err(|e| e.to_frontend_error())?;
 
     // declared perms (from manifest inside archive)
     let tmp = tempfile::tempdir().map_err(|e| e.to_string())?;
@@ -152,8 +151,7 @@ pub async fn install_local_plugin_archive_command(
     }
     let archive = resolve_path_under_imports_root(&req.archive_path, &state)?;
     let bytes = std::fs::read(&archive).map_err(|e| format!("read archive failed: {}", e))?;
-    let pid =
-        peek_plugin_id_from_archive_bytes(&state, &bytes).map_err(|e| e.to_frontend_error())?;
+    let pid = peek_plugin_id_from_archive_bytes(&bytes).map_err(|e| e.to_frontend_error())?;
 
     // if signature provided, enforce verification before install
     if let Some(sigp) = req

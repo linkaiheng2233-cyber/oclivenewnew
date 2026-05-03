@@ -10,6 +10,7 @@ pub mod llm_params;
 pub mod mcp_client;
 pub mod ollama_client;
 pub mod ollama_timeouts;
+pub mod plugin_archive;
 pub mod plugin_config_disk;
 pub mod plugin_state;
 pub mod remote_plugin;

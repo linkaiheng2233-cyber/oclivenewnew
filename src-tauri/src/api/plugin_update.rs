@@ -1,15 +1,15 @@
 //! 目录插件本地更新（zip 覆盖）；在线版本检查预留。
 
+use crate::error::AppError;
 use crate::infrastructure::directory_plugins::OclivePluginManifest;
 use crate::state::AppState;
+use oclive_kernel_runtime::infrastructure::plugin_archive::extract_oclive_plugin_archive_file;
 use serde::Serialize;
 use std::collections::HashMap;
-use std::fs::{self, File};
-use std::io;
+use std::fs;
 use std::path::{Path, PathBuf};
 use tauri::State;
 use walkdir::WalkDir;
-use zip::ZipArchive;
 
 use super::bridge_manifest_permissions::bridge_permission_tokens_from_manifest;
 
@@ -59,60 +59,6 @@ pub fn check_plugin_updates(
         );
     }
     Ok(out)
-}
-
-fn unzip_archive(zip_path: &Path, dst: &Path) -> Result<(), String> {
-    let file = File::open(zip_path).map_err(|e| format!("打开 zip: {}", e))?;
-    let mut archive = ZipArchive::new(file).map_err(|e| format!("解析 zip: {}", e))?;
-    const MAX_FILES: usize = 2000;
-    const MAX_TOTAL_BYTES: u64 = 50 * 1024 * 1024;
-    const MAX_SINGLE_BYTES: u64 = 10 * 1024 * 1024;
-    let mut files = 0usize;
-    let mut total: u64 = 0;
-    for i in 0..archive.len() {
-        let mut entry = archive
-            .by_index(i)
-            .map_err(|e| format!("zip 条目 {}: {}", i, e))?;
-        let rel = match entry.enclosed_name() {
-            Some(p) => p.to_path_buf(),
-            None => {
-                return Err(format!("zip 条目 {}: 非法路径", i));
-            }
-        };
-        let outpath = dst.join(&rel);
-        if entry.is_dir() || rel.to_string_lossy().ends_with('/') {
-            fs::create_dir_all(&outpath).map_err(|e| e.to_string())?;
-            continue;
-        }
-        files += 1;
-        if files > MAX_FILES {
-            return Err(format!(
-                "[ZIP_TOO_MANY_FILES] zip 文件过多（>{}）",
-                MAX_FILES
-            ));
-        }
-        let sz = entry.size();
-        if sz > MAX_SINGLE_BYTES {
-            return Err(format!(
-                "[ZIP_SINGLE_FILE_TOO_LARGE] 单文件过大（{} bytes）: {}",
-                sz,
-                rel.to_string_lossy()
-            ));
-        }
-        total = total.saturating_add(sz);
-        if total > MAX_TOTAL_BYTES {
-            return Err(format!(
-                "[ZIP_TOTAL_TOO_LARGE] 总大小过大（>{} bytes）",
-                MAX_TOTAL_BYTES
-            ));
-        }
-        if let Some(parent) = outpath.parent() {
-            fs::create_dir_all(parent).map_err(|e| e.to_string())?;
-        }
-        let mut outf = File::create(&outpath).map_err(|e| e.to_string())?;
-        io::copy(&mut entry, &mut outf).map_err(|e| e.to_string())?;
-    }
-    Ok(())
 }
 
 fn find_manifest_root(dir: &Path) -> Result<PathBuf, String> {
@@ -187,7 +133,8 @@ pub async fn extract_plugin_zip(
         .map_err(|e| format!("zip 路径: {}", e))?;
 
     let tmp = tempfile::tempdir().map_err(|e| e.to_string())?;
-    unzip_archive(&zip_path, tmp.path())?;
+    extract_oclive_plugin_archive_file(&zip_path, tmp.path())
+        .map_err(|e: AppError| e.to_frontend_error())?;
     let staged = find_manifest_root(tmp.path())?;
     let manifest = OclivePluginManifest::load_from_dir(&staged)?;
     if manifest.id.trim() != pid {
@@ -261,7 +208,8 @@ pub fn preview_plugin_zip_permissions(
         .map_err(|e| format!("zip 路径: {}", e))?;
 
     let tmp = tempfile::tempdir().map_err(|e| e.to_string())?;
-    unzip_archive(&zip_path, tmp.path())?;
+    extract_oclive_plugin_archive_file(&zip_path, tmp.path())
+        .map_err(|e: AppError| e.to_frontend_error())?;
     let staged = find_manifest_root(tmp.path())?;
     let manifest = OclivePluginManifest::load_from_dir(&staged)?;
     let pid = manifest.id.trim().to_string();
