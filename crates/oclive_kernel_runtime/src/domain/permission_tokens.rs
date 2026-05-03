@@ -6,6 +6,7 @@
 //!
 //! Naming: keep tokens stable once shipped.
 
+use crate::infrastructure::directory_plugins::OclivePluginManifest;
 use serde::{Deserialize, Serialize};
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
@@ -153,4 +154,45 @@ pub fn is_known_permission_token(token: &str) -> bool {
         return false;
     }
     PERMISSION_TOKENS_V1.iter().any(|x| x.token == t)
+}
+
+/// 从目录插件 manifest 收集桥接 `invoke` 项对应的权限令牌（与 `permission_token_for_bridge_command` 一致）。
+#[must_use]
+pub fn bridge_permission_tokens_from_manifest(manifest: &OclivePluginManifest) -> Vec<String> {
+    let mut out: Vec<String> = Vec::new();
+    if let Some(sh) = &manifest.shell {
+        if let Some(b) = &sh.bridge {
+            for x in &b.invoke {
+                let t = x.trim();
+                if t.is_empty() {
+                    continue;
+                }
+                let perm = if t.contains(':') {
+                    t.to_string()
+                } else {
+                    permission_token_for_bridge_command(t)
+                };
+                out.push(perm);
+            }
+        }
+    }
+    for us in &manifest.ui_slots {
+        if let Some(b) = &us.bridge {
+            for x in &b.invoke {
+                let t = x.trim();
+                if t.is_empty() {
+                    continue;
+                }
+                let perm = if t.contains(':') {
+                    t.to_string()
+                } else {
+                    permission_token_for_bridge_command(t)
+                };
+                out.push(perm);
+            }
+        }
+    }
+    out.sort();
+    out.dedup();
+    out
 }

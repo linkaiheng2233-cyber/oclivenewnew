@@ -7,8 +7,8 @@
 //!
 //! 入口形态：`state::KernelAppState`、`domain::chat_engine::process_message`、
 //! `domain::role_info_snapshot`、`domain::role_lifecycle`、`domain::role_paths`、`domain::role_runtime_commands`、
-//! `domain::expert_models_admin`、`domain::profile_preview`、`domain::plugin_permission_commands`、`domain::session_plugin_override`、
-//! `http_api` 等。
+//! `domain::expert_models_admin`、`domain::ollama_host_commands`、`domain::policy_host`、`domain::profile_preview`、
+//! `domain::plugin_permission_commands`、`domain::session_plugin_override`、`http_api` 等。
 
 pub mod api;
 pub mod domain;

@@ -9,14 +9,8 @@ pub fn reveal_role_pack_folder(
     state: State<AppState>,
     role_id: String,
 ) -> Result<(), String> {
-    let rid = role_id.trim();
-    if rid.is_empty() {
-        return Err("role_id is empty".to_string());
-    }
-    let dir = state.storage.roles_dir().join(rid);
-    if !dir.is_dir() {
-        return Err(format!("role pack folder not found: {}", dir.display()));
-    }
+    let dir = oclive_kernel_runtime::domain::role_paths::role_pack_root_dir(&state, &role_id)
+        .map_err(|e| e.to_frontend_error())?;
     tauri::api::shell::open(&app.shell_scope(), dir.to_string_lossy().to_string(), None)
         .map_err(|e| e.to_string())
 }
