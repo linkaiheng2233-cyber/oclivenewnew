@@ -1,5 +1,7 @@
 use crate::infrastructure::directory_plugins::OclivePluginManifest;
-use crate::infrastructure::local_imports::{list_local_import_candidates, read_import_text};
+use crate::infrastructure::local_imports::{
+    imports_root, list_local_import_candidates, read_import_text, resolve_path_under_imports_root,
+};
 use crate::infrastructure::plugin_installer::{
     install_plugin_from_archive_bytes_overwrite, load_cached_index,
     peek_plugin_id_from_archive_bytes, verify_plugin_package_signature_text,
@@ -8,7 +10,6 @@ use crate::state::AppState;
 
 use super::bridge_manifest_permissions::bridge_permission_tokens_from_manifest;
 use serde::{Deserialize, Serialize};
-use std::path::PathBuf;
 use tauri::State;
 
 #[derive(Debug, Clone, Serialize)]
@@ -23,7 +24,7 @@ pub fn list_local_import_candidates_command(
     state: State<'_, AppState>,
 ) -> Result<ListLocalImportCandidatesResponse, String> {
     let items = list_local_import_candidates(&state)?;
-    let root = crate::infrastructure::local_imports::imports_root(&state);
+    let root = imports_root(&state);
     Ok(ListLocalImportCandidatesResponse {
         items,
         root_dir: root.to_string_lossy().to_string(),
@@ -47,16 +48,7 @@ pub fn read_local_import_text_command(
     req: ReadLocalImportTextRequest,
     state: State<'_, AppState>,
 ) -> Result<ReadLocalImportTextResponse, String> {
-    // enforce path under app_data/imports
-    let root = crate::infrastructure::local_imports::imports_root(&state);
-    let p = PathBuf::from(req.path.trim());
-    let p = p
-        .canonicalize()
-        .map_err(|e| format!("path canonicalize: {}", e))?;
-    let root = root.canonicalize().unwrap_or_else(|_| root.clone());
-    if !p.starts_with(&root) {
-        return Err("path must be under app_data/imports".to_string());
-    }
+    let p = resolve_path_under_imports_root(&req.path, &state)?;
     const MAX_BYTES: usize = 1024 * 1024;
     let content = read_import_text(&p, MAX_BYTES)?;
     Ok(ReadLocalImportTextResponse { content })
@@ -85,14 +77,7 @@ pub fn preview_local_plugin_archive_command(
     req: PreviewLocalPluginArchiveRequest,
     state: State<'_, AppState>,
 ) -> Result<PreviewLocalPluginArchiveResponse, String> {
-    let root = crate::infrastructure::local_imports::imports_root(&state);
-    let archive = PathBuf::from(req.archive_path.trim())
-        .canonicalize()
-        .map_err(|e| format!("archive canonicalize: {}", e))?;
-    let root = root.canonicalize().unwrap_or(root);
-    if !archive.starts_with(&root) {
-        return Err("archive path must be under app_data/imports".to_string());
-    }
+    let archive = resolve_path_under_imports_root(&req.archive_path, &state)?;
     let bytes = std::fs::read(&archive).map_err(|e| format!("read archive failed: {}", e))?;
     let pid =
         peek_plugin_id_from_archive_bytes(&state, &bytes).map_err(|e| e.to_frontend_error())?;
@@ -113,12 +98,7 @@ pub fn preview_local_plugin_archive_command(
         .map(str::trim)
         .filter(|s| !s.is_empty())
     {
-        let sig_path = PathBuf::from(sigp)
-            .canonicalize()
-            .map_err(|e| format!("signature canonicalize: {}", e))?;
-        if !sig_path.starts_with(&root) {
-            return Err("signature path must be under app_data/imports".to_string());
-        }
+        let sig_path = resolve_path_under_imports_root(sigp, &state)?;
         let sig_text = std::fs::read_to_string(&sig_path)
             .map_err(|e| format!("read signature failed: {}", e))?;
         let idx = load_cached_index(&state).map_err(|e| e.to_frontend_error())?;
@@ -170,14 +150,7 @@ pub async fn install_local_plugin_archive_command(
     if !state.directory_plugins.host().developer_effective() {
         return Err("developer mode required for local archive install".to_string());
     }
-    let root = crate::infrastructure::local_imports::imports_root(&state);
-    let archive = PathBuf::from(req.archive_path.trim())
-        .canonicalize()
-        .map_err(|e| format!("archive canonicalize: {}", e))?;
-    let root = root.canonicalize().unwrap_or(root);
-    if !archive.starts_with(&root) {
-        return Err("archive path must be under app_data/imports".to_string());
-    }
+    let archive = resolve_path_under_imports_root(&req.archive_path, &state)?;
     let bytes = std::fs::read(&archive).map_err(|e| format!("read archive failed: {}", e))?;
     let pid =
         peek_plugin_id_from_archive_bytes(&state, &bytes).map_err(|e| e.to_frontend_error())?;
@@ -189,12 +162,7 @@ pub async fn install_local_plugin_archive_command(
         .map(str::trim)
         .filter(|s| !s.is_empty())
     {
-        let sig_path = PathBuf::from(sigp)
-            .canonicalize()
-            .map_err(|e| format!("signature canonicalize: {}", e))?;
-        if !sig_path.starts_with(&root) {
-            return Err("signature path must be under app_data/imports".to_string());
-        }
+        let sig_path = resolve_path_under_imports_root(sigp, &state)?;
         let sig_text = std::fs::read_to_string(&sig_path)
             .map_err(|e| format!("read signature failed: {}", e))?;
         let idx = load_cached_index(&state).map_err(|e| e.to_frontend_error())?;

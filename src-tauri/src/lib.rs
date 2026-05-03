@@ -461,6 +461,8 @@ pub fn run() {
             api::export::export_chat_logs,
             api::local_imports::list_local_import_candidates_command,
             api::local_imports::read_local_import_text_command,
+            api::local_imports::preview_local_plugin_archive_command,
+            api::local_imports::install_local_plugin_archive_command,
             api::memory::query_memories,
             api::event::query_events,
             api::event::create_event,
