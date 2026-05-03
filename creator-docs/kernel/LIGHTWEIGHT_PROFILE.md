@@ -76,17 +76,23 @@ capabilities 中的方法列表见 `OOCP_METHODS`。以下能力与 runtime 特�
 
 ### 5.1 重复的直接依赖
 
-`src-tauri/Cargo.toml` 与 `oclive_kernel_runtime` 均声明（或间接固定）例如：`sqlx`、`zip`、`axum`、`tower-http`、`reqwest`、`ed25519-dalek` 等。长期方向：
+`src-tauri/Cargo.toml` 与 `oclive_kernel_runtime` 历史上均声明（或间接固定）例如：`sqlx`、`zip`、`axum`、`reqwest`、`ed25519-dalek` 等。**`http_api` 与 CORS 已迁入 runtime 后，`tower-http` 已从壳层移除**（壳层不再直接依赖）。长期方向：
 
 - 桌面逻辑优先通过 **`oclive_kernel_runtime::...` 公开 API** 访问存储与市场 / 归档能力，避免在 `src-tauri` 再挂一层同类 crate。
-- 若仍须在壳层保留 **notify / sysinfo / tauri 插件** 等内核没有的依赖，单独列出「壳层独有」清单，其余逐项核对是否可删除。
+- 壳层独有 vs 可删（当前快照，删前仍以 `cargo check -p oclivenewnew-tauri` 为准）：
+
+| 依赖 / 类别 | 壳层独有（保留） | 与 kernel 重叠（逐项评估删除） |
+|---------------|------------------|--------------------------------|
+| **`tauri` / `tauri-build` / `tauri-plugin-deep-link`** | ✅ 桌面 only | — |
+| **`notify`** | ✅ 目录插件 watcher | — |
+| **`sysinfo`** | ✅ 系统信息 | — |
+| **`axum`** | OOCP WS 适配器 `domain/adapters/oocp_ws.rs` 仍直接依赖 | 待 OOCP 路由与内核侧完全对齐后再评估 |
+| **`sqlx` / `chrono` / `uuid` / …** | 部分 API 模块仍直连 | 随命令迁移优先走 runtime |
+| **`tower-http`** | — | ✅ 已删（仅 `http_api` CORS 用过；现由 runtime 承担） |
 
 ### 5.2 `http_api` 双轨
 
-- **Runtime**：`crates/oclive_kernel_runtime/src/http_api`（由 `kernel-http-api` 控制）。
-- **桌面**：`src-tauri/src/http_api`（`run_api_server` 等）。
-
-拟定合并方向：**单一实现源在 runtime**；桌面仅保留入口函数（端口解析、`KernelAppState` 构造委托），删除或变薄重复路由层；变更需单独评审并与 pack-editor 试聊路径回归。
+**已合并（单源）**：路由与 `serve_api` / `serve_api_with_options` / `api_router` 的完整实现仅在 **`crates/oclive_kernel_runtime/src/http_api.rs`**（`kernel-http-api`）。**`src-tauri/src/http_api.rs`** 仅为 **`pub use oclive_kernel_runtime::http_api::*`**，保留 `oclivenewnew_tauri::http_api` 路径兼容。集成测试可 `use oclive_kernel_runtime::http_api::api_router`（见 `src-tauri/tests/http_api_chat.rs`）。
 
 ---
 

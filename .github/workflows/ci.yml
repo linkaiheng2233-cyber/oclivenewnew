@@ -40,6 +40,13 @@ jobs:
         run: cargo check -p oclive_kernel_runtime --no-default-features
       - name: Tauri desktop minimal invoke surface (core invoke only)
         run: cargo check -p oclivenewnew-tauri --no-default-features --features tauri-app,custom-protocol
+      - name: Restore generated invoke capabilities after minimal Tauri check
+        run: git checkout -- src/gen/tauri-invoke-capabilities.ts
+      - name: Tauri default invoke-full must match committed tauri-invoke-capabilities.ts
+        shell: bash
+        run: |
+          cargo check -p oclivenewnew-tauri
+          git diff --exit-code src/gen/tauri-invoke-capabilities.ts
 
   frontend:
     strategy:

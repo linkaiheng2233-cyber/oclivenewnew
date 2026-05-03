@@ -15,10 +15,11 @@
 
 ---
 
-## 阶段 1：`http_api` 单源（高价值，单独 PR）
+## 阶段 1：`http_api` 单源（高价值，单独 PR）— ✅ 已完成
 
 - **目标**：以 `crates/oclive_kernel_runtime/src/http_api` 为唯一路由实现；`src-tauri/src/http_api` 缩为端口解析、`KernelAppState` 构造与委托（或薄 re-export）。
-- **验收**：pack-editor 试聊、`--api` / `OCLIVE_API_PORT`、现有 HTTP 相关测试无回归；更新 `LIGHTWEIGHT_PROFILE` §5.2 为「已合并」。
+- **结果**：实现已迁入 runtime（含 `/role-feedback` 与 `Query` 列表）；`src-tauri/src/http_api.rs` 为对 `oclive_kernel_runtime::http_api` 的 **re-export**；`http_api_chat` 测试改为引用 **`oclive_kernel_runtime`**；壳层 **`tower-http`** 已移除。
+- **验收**：`cargo test -p oclive_kernel_runtime`（`http_api` 单测）、`cargo test -p oclivenewnew-tauri --test http_api_chat`、`cargo check -p oclive_kernel_server`；`LIGHTWEIGHT_PROFILE` §5.2 已更新为「已合并」。
 
 ---
 

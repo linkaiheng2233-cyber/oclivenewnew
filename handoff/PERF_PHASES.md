@@ -21,6 +21,21 @@
 - 侧车 `oclive-llama-sidecar` 使用 **独立** `Cargo.toml` 的 reqwest，与 workspace 解耦。
 - 门禁保持：`npm run check` / `npm run check:release`；Windows 全量测试可用 `scripts/check.ps1`（`CARGO_BUILD_JOBS=1` 缓解 LNK1104）。
 
+### P4 迁移批次（按模块拆分 PR）
+
+在从 workspace `reqwest` 去掉 **`blocking`** 之前，建议按目录分批改为 **`reqwest::Client` + async**，每批独立 `cargo test` / `cargo clippy`：
+
+1. **`infrastructure/mcp_client.rs`**（MCP HTTP transport）
+2. **`infrastructure/plugin_*_index_sync.rs`**、`role_market_index_sync.rs`、`plugin_reviews_index_sync.rs`（市场索引 HTTP）
+3. **`infrastructure/plugin_install.rs`**、**`role_pack_archive.rs`**
+4. **`infrastructure/remote_plugin/`**（`mod.rs`、`jsonrpc.rs`、`*_http.rs`）
+
+### `spawn_blocking` 与 async 边界（过渡约定）
+
+- **Tauri `invoke` 命令体**：在 Tokio runtime 上执行；若仍须调用 **同步** `reqwest::blocking` 或阻塞式插件 RPC，应 **`tokio::task::spawn_blocking`** 包裹，且 **避免** 在 async 函数内直接 `block_on` 嵌套 runtime。
+- **内核侧**：`http_api` 等对磁盘与 `RoleStorage` 的阻塞访问已用 `spawn_blocking`（见 `oclive_kernel_runtime::http_api`）；市场同步等路径迁移到 async client 后，尽量在 **async 上下文** 直接使用 `.await`，减少线程池跳转。
+- **目标态**：workspace `reqwest` 仅保留 **`json` + `default-tls`（+ `gzip` 等）**，不再启用 **`blocking`**；届时上述同步 API 要么改为 async，要么明确为「仅允许从 `spawn_blocking` 调用」并在类型或文档中标注。
+
 ## 验收与对照
 
 - 前端：`npm run build`、`npm run build:analyze`（`dist/stats.html`）；基线数字见 **`FRONTEND_CHUNK_OPTIMIZATION.md`**、**`PERFORMANCE_BASELINE_ACCEPTANCE.md`**。
