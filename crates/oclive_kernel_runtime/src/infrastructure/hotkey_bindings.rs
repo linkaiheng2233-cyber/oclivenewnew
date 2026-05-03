@@ -1,4 +1,6 @@
 //! 用户自定义全局快捷键：`app_data/hotkey_bindings.json`（序列化/校验；系统注册由宿主完成）。
+//!
+//! 提供 [`HotkeyBindingsFile::load_async`] / [`HotkeyBindingsFile::save_async`]（`tokio::fs`），供 async 宿主路径使用。
 
 use serde::{Deserialize, Serialize};
 use std::collections::HashSet;
@@ -65,6 +67,27 @@ impl HotkeyBindingsFile {
         }
         let raw = serde_json::to_string_pretty(self).map_err(|e| e.to_string())?;
         std::fs::write(&p, raw).map_err(|e| e.to_string())
+    }
+
+    pub async fn load_async(app_data: &Path) -> Self {
+        let p = Self::path(app_data);
+        match tokio::fs::read_to_string(&p).await {
+            Ok(s) => serde_json::from_str(&s).unwrap_or_default(),
+            Err(_) => Self::default(),
+        }
+    }
+
+    pub async fn save_async(&self, app_data: &Path) -> Result<(), String> {
+        let p = Self::path(app_data);
+        if let Some(parent) = p.parent() {
+            tokio::fs::create_dir_all(parent)
+                .await
+                .map_err(|e| e.to_string())?;
+        }
+        let raw = serde_json::to_string_pretty(self).map_err(|e| e.to_string())?;
+        tokio::fs::write(&p, raw)
+            .await
+            .map_err(|e| e.to_string())
     }
 }
 

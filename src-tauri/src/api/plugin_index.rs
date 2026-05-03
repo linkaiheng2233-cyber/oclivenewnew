@@ -565,11 +565,13 @@ pub fn update_plugin_from_market(
 }
 
 #[tauri::command]
-pub fn uninstall_plugin_from_market(
+pub async fn uninstall_plugin_from_market(
     plugin_id: String,
     state: State<'_, AppState>,
 ) -> Result<(), String> {
-    uninstall_plugin(&state, &plugin_id).map_err(|e| e.to_frontend_error())
+    uninstall_plugin(&state, &plugin_id)
+        .await
+        .map_err(|e| e.to_frontend_error())
 }
 
 #[tauri::command]
@@ -588,7 +590,7 @@ pub fn batch_update_plugins(
 }
 
 #[tauri::command]
-pub fn batch_uninstall_plugins(
+pub async fn batch_uninstall_plugins(
     plugin_ids: Vec<String>,
     state: State<'_, AppState>,
 ) -> Result<(), String> {
@@ -597,7 +599,9 @@ pub fn batch_uninstall_plugins(
         if t.is_empty() {
             continue;
         }
-        uninstall_plugin(&state, t).map_err(|e| e.to_frontend_error())?;
+        uninstall_plugin(&state, t)
+            .await
+            .map_err(|e| e.to_frontend_error())?;
     }
     Ok(())
 }

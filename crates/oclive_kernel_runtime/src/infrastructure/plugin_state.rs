@@ -1,4 +1,6 @@
 //! 持久化：`app_data/plugin_state.json`（按角色隔离：整壳、禁用插件、插槽顺序、按插槽隐藏某插件贡献）。
+//!
+//! 异步读写见 [`PluginStateStore::load_async`] / [`PluginStateStore::save_async`]（`tokio::fs`）。
 
 use crate::models::ui_config::{SlotConfig, UiConfig};
 use serde::{Deserialize, Serialize};
@@ -131,11 +133,8 @@ impl Default for PluginStateStore {
 }
 
 impl PluginStateStore {
-    pub fn load(path: &Path) -> Self {
-        let Ok(s) = std::fs::read_to_string(path) else {
-            return Self::default();
-        };
-        let Ok(val) = serde_json::from_str::<serde_json::Value>(&s) else {
+    fn from_persisted_json_str(s: &str) -> Self {
+        let Ok(val) = serde_json::from_str::<serde_json::Value>(s) else {
             return Self::default();
         };
         if matches!(
@@ -155,12 +154,40 @@ impl PluginStateStore {
         Self::default()
     }
 
+    pub fn load(path: &Path) -> Self {
+        let Ok(s) = std::fs::read_to_string(path) else {
+            return Self::default();
+        };
+        Self::from_persisted_json_str(&s)
+    }
+
+    /// 异步读盘（`tokio::fs`），供宿主 async 路径使用，避免在 Tokio worker 上阻塞。
+    pub async fn load_async(path: &Path) -> Self {
+        match tokio::fs::read_to_string(path).await {
+            Ok(s) => Self::from_persisted_json_str(&s),
+            Err(_) => Self::default(),
+        }
+    }
+
     pub fn save(&self, path: &Path) -> Result<(), String> {
         if let Some(parent) = path.parent() {
             std::fs::create_dir_all(parent).map_err(|e| e.to_string())?;
         }
         let raw = serde_json::to_string_pretty(self).map_err(|e| e.to_string())?;
         std::fs::write(path, raw).map_err(|e| e.to_string())
+    }
+
+    /// 异步写盘（`tokio::fs`）。
+    pub async fn save_async(&self, path: &Path) -> Result<(), String> {
+        if let Some(parent) = path.parent() {
+            tokio::fs::create_dir_all(parent)
+                .await
+                .map_err(|e| e.to_string())?;
+        }
+        let raw = serde_json::to_string_pretty(self).map_err(|e| e.to_string())?;
+        tokio::fs::write(path, raw)
+            .await
+            .map_err(|e| e.to_string())
     }
 
     pub fn remove_plugin_references(&mut self, plugin_id: &str) {

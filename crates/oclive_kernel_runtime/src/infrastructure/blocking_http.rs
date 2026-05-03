@@ -11,7 +11,8 @@
 //!
 //! ## `std::fs` 同步磁盘 I/O
 //!
-//! 热键、插件状态、目录插件 manifest 等仍多为同步读盘；宜在宿主侧 `spawn_blocking` 包裹，或后续按路径分批改为 `tokio::fs`（与 HTTP 解耦）。
+//! **`hotkey_bindings` / `plugin_state`** 已提供 **`load_async` / `save_async`**（`tokio::fs`）；Tauri 热键与异步卸载路径应优先使用。
+//! 目录插件 manifest、安装解压等仍多为同步读盘；宜在宿主侧 `spawn_blocking` 包裹，或后续分批改为 `tokio::fs`（与 HTTP 解耦）。
 //!
 //! ## `plugin_host::BackendRegistry::block_on`
 //!

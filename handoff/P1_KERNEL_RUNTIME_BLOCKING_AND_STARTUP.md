@@ -14,7 +14,14 @@
 
 ## 2. 同步 HTTP 边界（`blocking_http::block_on`）
 
-市场索引、部分插件/MCP 下载与 JSON-RPC 等仍通过 **`reqwest::Client` + 专用 runtime `block_on`** 暴露同步 API；详见 `PERF_PHASES.md` P4 与 `infrastructure/blocking_http.rs`。
+**角色/插件/评价市场索引** HTTP 已改为 **`async` + `.await`**（见 `*_index_sync.rs`），**不再**使用 `block_on`。  
+插件包下载、角色包直链、MCP、JSON-RPC `call_blocking` 等仍通过 **`reqwest::Client` + 专用 runtime `block_on`** 或同步封装；详见 `PERF_PHASES.md` P4 与 `infrastructure/blocking_http.rs`。
+
+## 2b. `tokio::fs`（热键与插件状态）
+
+- `infrastructure/hotkey_bindings.rs`：`load_async` / `save_async`  
+- `infrastructure/plugin_state.rs`：`load_async` / `save_async`；`plugin_install::remove_plugin_from_plugin_state_file_async`；`DirectoryPluginRuntime::reload_plugin_state_async`  
+- Tauri：`get_hotkey_bindings` / `save_hotkey_bindings`、`uninstall_plugin` / 市场卸载命令已走上述异步路径；**目录卸载**中 `remove_dir_all` 使用 **`spawn_blocking`**。
 
 ## 3. `KernelAppState::new_in_memory_with_llm` 启动链（分段计时建议）
 

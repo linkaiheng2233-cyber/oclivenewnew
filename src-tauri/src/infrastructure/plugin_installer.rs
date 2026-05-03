@@ -11,7 +11,8 @@ use oclive_kernel_runtime::infrastructure::plugin_install::{
     install_plugin_from_archive_bytes_at, install_plugin_from_archive_bytes_overwrite_at,
     install_plugin_from_download_urls_at, install_plugin_from_git_head_at,
     install_plugin_from_git_tag_at, installed_plugin_version_map, missing_plugin_dependencies,
-    plugin_state_store_default_path, remove_plugin_from_plugin_state_file, update_git_plugin_at,
+    plugin_state_store_default_path, remove_plugin_from_plugin_state_file_async,
+    update_git_plugin_at,
     update_install_meta_permissions_at,
 };
 pub use oclive_kernel_runtime::infrastructure::plugin_package_verify::verify_plugin_package_signature_text;
@@ -205,7 +206,7 @@ pub fn update_plugin(state: &AppState, plugin_id: &str) -> Result<(), AppError> 
     Ok(())
 }
 
-pub fn uninstall_plugin(state: &AppState, plugin_id: &str) -> Result<(), AppError> {
+pub async fn uninstall_plugin(state: &AppState, plugin_id: &str) -> Result<(), AppError> {
     let pid = plugin_id.trim();
     if pid.is_empty() {
         return Err(AppError::InvalidParameter("plugin_id required".into()));
@@ -218,11 +219,24 @@ pub fn uninstall_plugin(state: &AppState, plugin_id: &str) -> Result<(), AppErro
             .ok_or_else(|| AppError::InvalidParameter(format!("plugin not found: {}", pid)))?
     };
     state.directory_plugins.clear_plugin_process(pid);
-    if root.exists() {
-        std::fs::remove_dir_all(&root)?;
-    }
-    remove_plugin_from_plugin_state_file(&plugin_state_store_path(state), pid)?;
-    let _ = state.directory_plugins.reload_plugin_state();
+    let root_for_rm = root.clone();
+    tokio::task::spawn_blocking(move || -> std::io::Result<()> {
+        if root_for_rm.exists() {
+            std::fs::remove_dir_all(&root_for_rm)?;
+        }
+        Ok(())
+    })
+    .await
+    .map_err(|e| {
+        AppError::InvalidParameter(format!("[PLUGIN_UNINSTALL] remove_dir join: {}", e))
+    })??;
+
+    remove_plugin_from_plugin_state_file_async(&plugin_state_store_path(state), pid).await?;
+    state
+        .directory_plugins
+        .reload_plugin_state_async()
+        .await
+        .map_err(|e| AppError::InvalidParameter(format!("[PLUGIN_STATE_RELOAD] {}", e)))?;
     state
         .directory_plugins
         .rescan_plugin_roots(state.storage.roles_dir());

@@ -488,3 +488,21 @@ pub fn remove_plugin_from_plugin_state_file(store_path: &Path, plugin_id: &str) 
         .map_err(|e| AppError::DatabaseError(format!("[PLUGIN_STATE_PERSIST] {}", e)))?;
     Ok(())
 }
+
+/// 异步更新 `plugin_state.json`（`tokio::fs`），供宿主 async 卸载路径使用。
+pub async fn remove_plugin_from_plugin_state_file_async(
+    store_path: &Path,
+    plugin_id: &str,
+) -> Result<()> {
+    let pid = plugin_id.trim();
+    if pid.is_empty() {
+        return Ok(());
+    }
+    let mut store = PluginStateStore::load_async(store_path).await;
+    store.remove_plugin_references(pid);
+    store
+        .save_async(store_path)
+        .await
+        .map_err(|e| AppError::DatabaseError(format!("[PLUGIN_STATE_PERSIST] {}", e)))?;
+    Ok(())
+}

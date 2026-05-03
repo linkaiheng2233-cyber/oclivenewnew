@@ -492,6 +492,13 @@ impl DirectoryPluginRuntime {
         Ok(())
     }
 
+    pub async fn reload_plugin_state_async(&self) -> Result<(), String> {
+        let p = self.plugin_state_path();
+        let next = PluginStateStore::load_async(&p).await;
+        *self.plugin_state_store.write() = next;
+        Ok(())
+    }
+
     #[must_use]
     pub fn host(&self) -> HostPluginsFile {
         self.host.read().clone()

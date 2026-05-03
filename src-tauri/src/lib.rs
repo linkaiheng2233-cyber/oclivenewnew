@@ -380,9 +380,12 @@ pub fn run() {
             .expect("Failed to initialize app state");
 
             app.manage(app_state);
-            let hk = crate::infrastructure::hotkey_bindings::HotkeyBindingsFile::load(
-                app.state::<AppState>().directory_plugins.app_data_dir(),
-            );
+            let hk = tauri::async_runtime::block_on(async {
+                crate::infrastructure::hotkey_bindings::HotkeyBindingsFile::load_async(
+                    app.state::<AppState>().directory_plugins.app_data_dir(),
+                )
+                .await
+            });
             if let Err(e) = crate::api::hotkeys::apply_global_hotkeys(&app.handle(), &hk) {
                 log::warn!(target: "oclive_hotkey", "initial global shortcuts: {}", e);
             }
