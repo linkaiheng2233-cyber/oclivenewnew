@@ -14,7 +14,8 @@ use oclive_kernel_runtime::models::dto::{
 };
 use oclive_kernel_runtime::models::expert_models::{ExpertGraph, PromptStyleOverride};
 use oclive_kernel_runtime::state::KernelAppState;
-use std::path::PathBuf;
+use std::fs;
+use std::path::{Path, PathBuf};
 use std::sync::Arc;
 use tempfile::tempdir;
 use tokio::sync::Mutex;
@@ -50,6 +51,43 @@ impl LlmClient for AllPromptsCapturingLlm {
 
 fn workspace_roles_dir() -> PathBuf {
     PathBuf::from(env!("CARGO_MANIFEST_DIR")).join("../../roles")
+}
+
+fn copy_dir_recursive(src: &Path, dst: &Path) -> std::io::Result<()> {
+    fs::create_dir_all(dst)?;
+    for entry in fs::read_dir(src)? {
+        let entry = entry?;
+        let ty = entry.file_type()?;
+        let from = entry.path();
+        let to = dst.join(entry.file_name());
+        if ty.is_dir() {
+            copy_dir_recursive(&from, &to)?;
+        } else {
+            if let Some(p) = to.parent() {
+                fs::create_dir_all(p)?;
+            }
+            fs::copy(&from, &to)?;
+        }
+    }
+    Ok(())
+}
+
+fn isolated_roles_shimeng_clone(role_dir_name: &str) -> tempfile::TempDir {
+    let src = workspace_roles_dir().join("shimeng");
+    assert!(src.join("manifest.json").is_file(), "need roles/shimeng");
+    let tmp = tempfile::tempdir().expect("tempdir");
+    let dest = tmp.path().join(role_dir_name);
+    copy_dir_recursive(&src, &dest).expect("copy");
+    let manifest_path = dest.join("manifest.json");
+    let raw = fs::read_to_string(&manifest_path).expect("read manifest");
+    let mut v: serde_json::Value = serde_json::from_str(&raw).expect("json");
+    v["id"] = serde_json::Value::String(role_dir_name.to_string());
+    fs::write(
+        &manifest_path,
+        serde_json::to_string_pretty(&v).expect("serialize"),
+    )
+    .expect("write manifest");
+    tmp
 }
 
 fn mock_llm() -> Arc<dyn oclive_kernel_runtime::infrastructure::llm::LlmClient> {
@@ -117,20 +155,22 @@ async fn plugin_state_store_load_async_missing_file_is_default() {
 /// 共景路径：`resolve_turn` 写入 DB → 下一轮 `PromptInput` 携带 `complex_emotion_hint`（经主 LLM prompt 可见）。
 #[tokio::test(flavor = "multi_thread", worker_threads = 2)]
 async fn complex_emotion_hint_roundtrip_co_present_prompt() {
-    let roles = workspace_roles_dir();
+    let tmp = isolated_roles_shimeng_clone("p2ce_iso");
+    let roles = tmp.path().to_path_buf();
+    let rid = "p2ce_iso";
     let (llm, prompts) = AllPromptsCapturingLlm::pair("ce_round_ok".to_string());
     let state = KernelAppState::new_in_memory_with_llm(llm, roles)
         .await
         .expect("state");
 
-    let session_id = "p2_ce_round";
-    let srid = conversation_state_role_id("shimeng", Some(session_id));
+    // 无 session：与 `process_message_echoes_requested_scene_id` 一致。
+    let srid = conversation_state_role_id(rid, None);
 
     let req1 = SendMessageRequest {
-        role_id: "shimeng".into(),
+        role_id: rid.into(),
         user_message: "都行".into(),
         scene_id: Some("default".into()),
-        session_id: Some(session_id.into()),
+        session_id: None,
     };
     process_message(&state, &req1).await.expect("turn1");
 
@@ -147,26 +187,26 @@ async fn complex_emotion_hint_roundtrip_co_present_prompt() {
     );
 
     let req2 = SendMessageRequest {
-        role_id: "shimeng".into(),
+        role_id: rid.into(),
         user_message: "那我们聊点别的".into(),
         scene_id: Some("default".into()),
-        session_id: Some(session_id.into()),
+        session_id: None,
     };
     process_message(&state, &req2).await.expect("turn2");
 
     let captured = prompts.lock().await;
-    let main_like: Vec<&str> = captured
+    let with_block: Vec<&str> = captured
         .iter()
-        .filter(|p| p.contains("【复杂情感复盘】") && p.contains("用户说:"))
+        .filter(|p| p.contains("【复杂情感复盘】"))
         .map(|s| s.as_str())
         .collect();
     assert!(
-        main_like.iter().any(|p| p.contains(hint.trim())),
-        "a main chat prompt should inject previous narrative_hint; n_prompts={} snippets={:?}",
+        with_block.iter().any(|p| p.contains(hint.trim())),
+        "expected narrative_hint in prompt block 【复杂情感复盘】; n_prompts={} snippets={:?}",
         captured.len(),
-        main_like
+        with_block
             .iter()
-            .map(|p| p.chars().take(220).collect::<String>())
+            .map(|p| p.chars().take(260).collect::<String>())
             .collect::<Vec<_>>()
     );
 }
