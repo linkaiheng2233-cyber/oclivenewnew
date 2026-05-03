@@ -8,6 +8,7 @@
 //! - 后续请求通过 `session_ns` 反查 `role_id` + 可选 `session_id`。
 
 use crate::domain::core::oocp_handler::{MethodError, OocpMethodHandler};
+use crate::domain::{role_info_snapshot, virtual_time};
 use crate::models::oocp::{OocpErrorCode, OocpEvent};
 use crate::state::AppState;
 use chrono::Local;
@@ -402,30 +403,44 @@ impl OocpMethodHandler for TauriOocpHandler {
         session_ns: &str,
         context: Option<&str>,
     ) -> Result<Value, MethodError> {
-        let (_role_id, _session_id) = parse_session_ns(session_ns).ok_or_else(|| {
+        let (role_id, _) = parse_session_ns(session_ns).ok_or_else(|| {
             err(
                 OocpErrorCode::InvalidParams,
                 format!("无效的 session_ns: {}", session_ns),
             )
         })?;
 
-        // TODO P0-C: 委托到 monologue engine。
-        // 当前为占位实现。
-        let trigger = context.unwrap_or("user_afk");
-        let monologue_text = format!("（独白 - {} - {}）", session_ns, trigger);
+        let scene_id = self
+            .state
+            .db_manager
+            .get_current_scene(role_id)
+            .await
+            .map_err(|e| err(OocpErrorCode::Internal, e.to_frontend_error()))?
+            .unwrap_or_else(|| "default".to_string());
 
+        let resp = virtual_time::generate_monologue(self.state.as_ref(), role_id, context)
+            .await
+            .map_err(|e| match e {
+                crate::error::AppError::InvalidParameter(m) => {
+                    err(OocpErrorCode::InvalidParams, m)
+                }
+                crate::error::AppError::OllamaError(m) => err(OocpErrorCode::LlmFailure, m),
+                other => err(OocpErrorCode::Internal, other.to_frontend_error()),
+            })?;
+
+        let trigger = context.unwrap_or("user_afk");
         self.push_event(OocpEvent {
             msg_type: "event",
             event: "chat.monologue".to_string(),
             payload: json!({
                 "session_ns": session_ns,
-                "monologue": monologue_text,
-                "scene_id": "default",
+                "monologue": resp.text,
+                "scene_id": scene_id,
                 "trigger": trigger,
             }),
         });
 
-        Ok(json!({ "monologue": monologue_text }))
+        Ok(json!({ "monologue": resp.text }))
     }
 
     // ── 角色 ──────────────────────────────────────────────────────────────
@@ -454,25 +469,28 @@ impl OocpMethodHandler for TauriOocpHandler {
             .collect::<Vec<_>>()))
     }
 
-    async fn role_get_info(&mut self, role_id: &str) -> Result<Value, MethodError> {
-        let role_id_s = role_id.to_string();
-        let state = Arc::clone(&self.state);
-        let role = spawn_blocking(move || state.load_role_cached(role_id_s.as_str()))
-            .await
-            .map_err(|e| {
-                err(
-                    OocpErrorCode::Internal,
-                    format!("load_role task failed: {}", e),
-                )
-            })?
-            .map_err(|e| err(OocpErrorCode::RoleNotFound, e.to_string()))?;
-
-        Ok(json!({
-            "role_id": role.id,
-            "name": role.name,
-            "interaction_mode": role.interaction_mode.clone().unwrap_or_else(|| "immersive".to_string()),
-            "plugin_backends": role.plugin_backends,
-        }))
+    async fn role_get_info(
+        &mut self,
+        role_id: &str,
+        session_id: Option<&str>,
+    ) -> Result<Value, MethodError> {
+        let info = role_info_snapshot::get_role_info_snapshot(
+            self.state.as_ref(),
+            role_id,
+            session_id,
+        )
+        .await
+        .map_err(|e| match e {
+            crate::error::AppError::InvalidParameter(m) => err(OocpErrorCode::InvalidParams, m),
+            crate::error::AppError::RoleNotFound(m) => err(OocpErrorCode::RoleNotFound, m),
+            other => err(OocpErrorCode::Internal, other.to_frontend_error()),
+        })?;
+        serde_json::to_value(&info).map_err(|e| {
+            err(
+                OocpErrorCode::Internal,
+                format!("serialize RoleInfo: {}", e),
+            )
+        })
     }
 
     async fn role_set_remote_life(
@@ -480,47 +498,57 @@ impl OocpMethodHandler for TauriOocpHandler {
         session_ns: &str,
         enabled: bool,
     ) -> Result<Value, MethodError> {
-        let (_role_id, _session_id) = parse_session_ns(session_ns).ok_or_else(|| {
+        let (role_id, _) = parse_session_ns(session_ns).ok_or_else(|| {
             err(
                 OocpErrorCode::InvalidParams,
                 format!("无效的 session_ns: {}", session_ns),
             )
         })?;
-
-        // TODO P0-C: 委托到 role_manager。
-        // 当前为占位实现。
+        self.state
+            .db_manager
+            .set_remote_life_enabled(role_id, enabled)
+            .await
+            .map_err(|e| err(OocpErrorCode::Internal, e.to_frontend_error()))?;
         Ok(json!({ "enabled": enabled }))
     }
 
     // ── 时间 ──────────────────────────────────────────────────────────────
 
-    async fn time_get_state(&mut self) -> Result<Value, MethodError> {
-        // TODO P0-C: 委托到 time engine。
-        // 当前为占位实现。
-        Ok(json!({
-            "virtual_time_ms": 0,
-            "virtual_time_label": "2024-01-01 00:00:00",
-            "time_speed_multiplier": 1.0,
-        }))
-    }
-
-    async fn time_jump(
-        &mut self,
-        session_ns: &str,
-        target_time_ms: i64,
-    ) -> Result<Value, MethodError> {
-        let (_role_id, _session_id) = parse_session_ns(session_ns).ok_or_else(|| {
+    async fn time_get_state(&mut self, session_ns: &str) -> Result<Value, MethodError> {
+        let (role_id, _) = parse_session_ns(session_ns).ok_or_else(|| {
             err(
                 OocpErrorCode::InvalidParams,
                 format!("无效的 session_ns: {}", session_ns),
             )
         })?;
+        virtual_time::get_time_state_oocp_value(self.state.as_ref(), role_id)
+            .await
+            .map_err(|e| err(OocpErrorCode::Internal, e.to_frontend_error()))
+    }
 
-        // TODO P0-C: 委托到 time engine。
-        // 当前为占位实现。
-        Ok(json!({
-            "virtual_time_ms": target_time_ms,
-        }))
+    async fn time_jump(
+        &mut self,
+        session_ns: &str,
+        target_time_ms: Option<i64>,
+        preset: Option<&str>,
+    ) -> Result<Value, MethodError> {
+        let (role_id, _) = parse_session_ns(session_ns).ok_or_else(|| {
+            err(
+                OocpErrorCode::InvalidParams,
+                format!("无效的 session_ns: {}", session_ns),
+            )
+        })?;
+        virtual_time::jump_time_oocp_from_params(
+            self.state.as_ref(),
+            role_id,
+            target_time_ms,
+            preset,
+        )
+        .await
+        .map_err(|e| match e {
+            crate::error::AppError::InvalidParameter(m) => err(OocpErrorCode::InvalidParams, m),
+            other => err(OocpErrorCode::Internal, other.to_frontend_error()),
+        })
     }
 
     // ── Agent / MCP ───────────────────────────────────────────────────────

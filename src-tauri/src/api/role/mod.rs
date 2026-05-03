@@ -8,7 +8,7 @@ use crate::error::AppError;
 use crate::infrastructure::storage::resolve_llm_backend_env_override;
 use crate::models::dto::{
     ClearSceneUserRelationRequest, GetPluginResolutionDebugRequest, GetRoleInfoRequest,
-    PluginResolutionDebugInfo, RoleData, RoleInfo, RoleSummary, SceneLabelEntry,
+    PluginResolutionDebugInfo, RoleData, RoleInfo, RoleSummary,
     SetEvolutionFactorRequest, SetRemoteLifeEnabledRequest, SetRoleInteractionModeRequest,
     SetSceneUserRelationRequest, SetSessionPluginBackendRequest, SetUserRelationRequest,
     API_VERSION, OCLIVE_DEFAULT_RELATION_SENTINEL, SCHEMA_VERSION,
@@ -197,141 +197,11 @@ pub async fn get_role_info_impl(
     role_id: &str,
     session_id: Option<&str>,
 ) -> Result<RoleInfo, String> {
-    let session_ns = session_namespace(role_id, session_id);
-    if !state
-        .db_manager
-        .role_runtime_exists(session_ns.as_str())
-        .await
-        .map_err(|e| e.to_frontend_error())?
-    {
-        return Err(AppError::InvalidParameter(
-            "Role runtime not initialized; call load_role first".to_string(),
-        )
-        .to_frontend_error());
-    }
-
-    let role = state
-        .load_role_cached(role_id)
-        .map_err(|e| e.to_frontend_error())?;
-    let plugin_backends_session_override = state.session_backend_override(session_ns.as_str());
-    let plugin_backends_effective =
-        state.effective_plugin_backends_for_session(role.as_ref(), session_ns.as_str());
-    let plugin_backends_effective_sources =
-        state.effective_plugin_backend_sources_for_session(session_ns.as_str());
-
-    let current_scene = state
-        .db_manager
-        .get_current_scene(role_id)
-        .await
-        .map_err(|e| e.to_frontend_error())?;
-    let user_presence_scene = state
-        .db_manager
-        .get_user_presence_scene(role_id)
-        .await
-        .map_err(|e| e.to_frontend_error())?;
-    let rt = role_runtime_extras(state, role_id, current_scene.as_deref(), role.as_ref()).await?;
-    maybe_seed_initial_favorability_with_extras(state, role_id, role.as_ref(), &rt).await?;
-
-    let personality = state
-        .get_current_personality(role_id, role.as_ref())
-        .await
-        .map_err(|e| e.to_frontend_error())?;
-
-    let last_interaction = state
-        .db_manager
-        .get_latest_memory_created_at(role_id)
-        .await
-        .map_err(|e| e.to_frontend_error())?
-        .map(|t| t.to_rfc3339());
-
-    let scenes = state
-        .storage
-        .list_scene_ids(role_id)
-        .map_err(|e| e.to_frontend_error())?;
-    let scene_labels: Vec<SceneLabelEntry> = scenes
-        .iter()
-        .map(|id| SceneLabelEntry {
-            id: id.clone(),
-            label: state.storage.scene_display_name(role_id, id),
-        })
-        .collect();
-    let virtual_time_ms = state
-        .db_manager
-        .get_virtual_time_ms(role_id)
-        .await
-        .map_err(|e| e.to_frontend_error())?
-        .unwrap_or(0);
-    let current_favorability = current_favorability_for_effective_identity(
-        state,
-        role_id,
-        rt.current_user_relation.as_str(),
+    oclive_kernel_runtime::domain::role_info_snapshot::get_role_info_snapshot(
+        state, role_id, session_id,
     )
-    .await?;
-    let effective_ollama_model = role.resolve_ollama_model(state.global_chat_model().as_str());
-    let relation_state =
-        resolve_relation_state_for_ui(state, role_id, rt.current_user_relation.as_str()).await?;
-    let remote_life_enabled = state
-        .db_manager
-        .get_remote_life_enabled(role_id)
-        .await
-        .map_err(|e| e.to_frontend_error())?;
-    let remote_life_pack_default = role
-        .remote_presence
-        .as_ref()
-        .and_then(|r| r.default_enabled);
-
-    let interaction =
-        resolve_interaction_ui_snapshot(state, role_id, role.as_ref(), virtual_time_ms).await?;
-
-    let (knowledge_enabled, knowledge_chunk_count) = match &role.knowledge_index {
-        Some(idx) => (true, idx.chunks.len() as i32),
-        None => (false, 0),
-    };
-
-    Ok(RoleInfo {
-        role_id: role_id.to_string(),
-        role_name: role.name.clone(),
-        version: role.version.clone(),
-        author: role.author.clone(),
-        description: role.description.clone(),
-        current_favorability,
-        current_emotion: state
-            .db_manager
-            .get_current_emotion(role_id)
-            .await
-            .map_err(|e| e.to_frontend_error())?
-            .unwrap_or_else(|| "Neutral".to_string()),
-        personality_vector: personality.to_vec7(),
-        personality_source: role.evolution_config.personality_source,
-        last_interaction,
-        scenes,
-        scene_labels,
-        current_scene,
-        user_presence_scene,
-        virtual_time_ms,
-        user_relations: rt.user_relations,
-        default_relation: rt.default_relation,
-        current_user_relation: rt.current_user_relation.clone(),
-        use_manifest_default: rt.use_manifest_default,
-        relation_state,
-        remote_life_enabled,
-        remote_life_pack_default,
-        event_impact_factor: rt.event_impact_factor,
-        effective_ollama_model,
-        identity_binding: role.identity_binding,
-        interaction_mode: interaction.mode_str,
-        interaction_mode_pack_default: interaction.pack_default,
-        current_life: interaction.current_life,
-        plugin_backends: role.plugin_backends.clone(),
-        plugin_backends_session_override,
-        plugin_backends_effective,
-        plugin_backends_effective_sources,
-        knowledge_enabled,
-        knowledge_chunk_count,
-        pack_ui_config: role.ui_config.clone(),
-        pack_ui_baseline: role.plugin_state_ui_baseline().clone(),
-        author_pack: role.author_pack.clone(),
-    })
+    .await
+    .map_err(|e| e.to_frontend_error())
 }
 
 pub async fn list_roles_impl(state: &AppState) -> Result<Vec<RoleSummary>, String> {

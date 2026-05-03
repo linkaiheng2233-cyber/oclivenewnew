@@ -1,7 +1,7 @@
 //! 身份选项的展示文案（与前端下拉 `UserRelationDto.name` 对齐）。
 
 use crate::models::dto::UserRelationDto;
-use crate::models::role::Role;
+use crate::models::Role;
 
 /// manifest 里 `display_name` 已映射到 `UserRelation.name`，若与 `id` 相同则视为未自定义，对常见英文键给中文 fallback。
 pub(crate) fn user_relation_display_label(id: &str, name: &str) -> String {

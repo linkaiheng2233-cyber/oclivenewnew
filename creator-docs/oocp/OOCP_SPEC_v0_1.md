@@ -236,7 +236,7 @@
 
 **Params**: `{ "session_ns": "...", "format": "txt | json", "path": "可选导出路径" }`
 
-**Result**: `{ "path": "/path/to/export.txt", "size_bytes": 12345 }`
+**Result**（当前实现）：`{ "format": "json", "suggested_filename": "...", "content": "..." }`。`content` 为导出正文（JSON 时为格式化后的字符串）。`path` 为预留字段：**当前实现不写入磁盘**，忽略 `path`；亦无 `size_bytes`（若未来支持落盘再扩展）。
 
 ---
 
@@ -250,9 +250,9 @@
 
 ### 4.10 `role.get_info` — 获取角色详情
 
-**Params**: `{ "role_id": "..." }`
+**Params**: `{ "role_id": "..." }`，可选 `"session_id": "..."`（与 Tauri `get_role_info` 一致；用于 HTTP 试聊等会话隔离，见 `conversation_state_role_id`）。
 
-**Result**: `{ "name": "...", "description": "...", "interaction_mode": "...", "scenes": [...], "default_personality": {...}, "life_schedule": {...} }`
+**Result**：与 Tauri `RoleInfo` DTO 一致（`crates/oclive_kernel_runtime/src/models/dto.rs`），含 `scenes`、`plugin_backends_effective`、`virtual_time_ms` 等完整运行时快照字段。
 
 ---
 
@@ -266,7 +266,7 @@
 
 ### 4.12 `time.get_state` — 获取时间状态
 
-**Params**: `{}`
+**Params**: `{ "session_ns": "role_a__sess__default" }`（必填；命名规则同 `session.create` 返回值。）
 
 **Result**:
 ```json
@@ -284,9 +284,9 @@
 
 ### 4.13 `time.jump` — 时间跳跃
 
-**Params**: `{ "session_ns": "...", "target_time_ms": 1717000000000 }`
+**Params**：`{ "session_ns": "...", "target_time_ms": 1717000000000 }` **或** `{ "session_ns": "...", "preset": "+2h" }`（与 Tauri `jump_time` 一致：`target_time_ms` 与 `preset` 至少提供一个；两者皆有时以 `target_time_ms` 为准）。支持的 `preset` 示例：`+2h`、`+6h` / `skip_idle_time`、`next_morning`。
 
-**Result**: `{ "virtual_time_ms": 1717000000000, "virtual_time_label": "2024-05-29 20:00" }`
+**Result**：`{ "virtual_time_ms": 1717000000000, "virtual_time_label": "2024-05-29 20:00" }`（OOCP 为最小字段；完整 `monologues` 等见 Tauri `JumpTimeResponse`。）
 
 ---
 

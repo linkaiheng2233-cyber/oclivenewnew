@@ -9,7 +9,6 @@ pub mod expert_models;
 pub mod export;
 pub mod host_cloud_llm;
 pub mod hotkeys;
-pub mod jump_monologue;
 pub mod local_llm_probe;
 pub mod local_imports;
 pub mod memory;

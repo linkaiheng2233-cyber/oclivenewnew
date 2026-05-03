@@ -184,7 +184,9 @@ pub(crate) async fn handle_method(
         "role.list" => handler.role_list().await,
         "role.get_info" => {
             let role_id = get_str(&req.params, "role_id")?;
-            handler.role_get_info(&role_id).await
+            let session_id = get_str_opt(&req.params, "session_id");
+            let session_id = session_id.as_deref().map(str::trim).filter(|s| !s.is_empty());
+            handler.role_get_info(&role_id, session_id).await
         }
         "role.set_remote_life" => {
             let session_ns = get_str(&req.params, "session_ns")?;
@@ -193,15 +195,32 @@ pub(crate) async fn handle_method(
         }
 
         // time
-        "time.get_state" => handler.time_get_state().await,
+        "time.get_state" => {
+            let session_ns = get_str(&req.params, "session_ns")?;
+            handler.time_get_state(&session_ns).await
+        }
         "time.jump" => {
             let session_ns = get_str(&req.params, "session_ns")?;
-            let target_time_ms =
-                get_i64_opt(&req.params, "target_time_ms").ok_or_else(|| MethodError {
+            let target_time_ms = get_i64_opt(&req.params, "target_time_ms");
+            let preset = get_str_opt(&req.params, "preset");
+            if target_time_ms.is_none()
+                && preset
+                    .as_ref()
+                    .map(|s| s.trim().is_empty())
+                    .unwrap_or(true)
+            {
+                return Err(MethodError {
                     code: OocpErrorCode::InvalidParams,
-                    message: "缺少必填参数 target_time_ms".into(),
-                })?;
-            handler.time_jump(&session_ns, target_time_ms).await
+                    message: "需要 target_time_ms 或 preset（与 Tauri jump_time 一致）".into(),
+                });
+            }
+            handler
+                .time_jump(
+                    &session_ns,
+                    target_time_ms,
+                    preset.as_deref().map(str::trim).filter(|s| !s.is_empty()),
+                )
+                .await
         }
 
         // agent
@@ -294,7 +313,11 @@ pub trait OocpMethodHandler {
 
     // role
     async fn role_list(&mut self) -> Result<Value, MethodError>;
-    async fn role_get_info(&mut self, role_id: &str) -> Result<Value, MethodError>;
+    async fn role_get_info(
+        &mut self,
+        role_id: &str,
+        session_id: Option<&str>,
+    ) -> Result<Value, MethodError>;
     async fn role_set_remote_life(
         &mut self,
         session_ns: &str,
@@ -302,11 +325,12 @@ pub trait OocpMethodHandler {
     ) -> Result<Value, MethodError>;
 
     // time
-    async fn time_get_state(&mut self) -> Result<Value, MethodError>;
+    async fn time_get_state(&mut self, session_ns: &str) -> Result<Value, MethodError>;
     async fn time_jump(
         &mut self,
         session_ns: &str,
-        target_time_ms: i64,
+        target_time_ms: Option<i64>,
+        preset: Option<&str>,
     ) -> Result<Value, MethodError>;
 
     // agent

@@ -384,25 +384,47 @@ impl OocpMethodHandler for RuntimeOocpHandler {
         session_ns: &str,
         context: Option<&str>,
     ) -> Result<Value, MethodError> {
-        let (_role_id, _session_id) = parse_session_ns(session_ns).ok_or_else(|| {
+        let (role_id, _) = parse_session_ns(session_ns).ok_or_else(|| {
             err(
                 OocpErrorCode::InvalidParams,
                 format!("无效的 session_ns: {}", session_ns),
             )
         })?;
+
+        let scene_id = self
+            .state
+            .db_manager
+            .get_current_scene(role_id)
+            .await
+            .map_err(|e| err(OocpErrorCode::Internal, e.to_frontend_error()))?
+            .unwrap_or_else(|| "default".to_string());
+
+        let resp = crate::domain::virtual_time::generate_monologue(
+            &self.state,
+            role_id,
+            context,
+        )
+        .await
+        .map_err(|e| match e {
+            crate::error::AppError::InvalidParameter(m) => {
+                err(OocpErrorCode::InvalidParams, m)
+            }
+            crate::error::AppError::OllamaError(m) => err(OocpErrorCode::LlmFailure, m),
+            other => err(OocpErrorCode::Internal, other.to_frontend_error()),
+        })?;
+
         let trigger = context.unwrap_or("user_afk");
-        let monologue_text = format!("（独白 - {} - {}）", session_ns, trigger);
         self.push_event(OocpEvent {
             msg_type: "event",
             event: "chat.monologue".to_string(),
             payload: json!({
                 "session_ns": session_ns,
-                "monologue": monologue_text,
-                "scene_id": "default",
+                "monologue": resp.text,
+                "scene_id": scene_id,
                 "trigger": trigger,
             }),
         });
-        Ok(json!({ "monologue": monologue_text }))
+        Ok(json!({ "monologue": resp.text }))
     }
 
     async fn role_list(&mut self) -> Result<Value, MethodError> {
@@ -432,26 +454,24 @@ impl OocpMethodHandler for RuntimeOocpHandler {
         Ok(json!(list))
     }
 
-    async fn role_get_info(&mut self, role_id: &str) -> Result<Value, MethodError> {
-        let role_id_s = role_id.to_string();
-        let state = Arc::clone(&self.state);
-        let loaded = spawn_blocking(move || state.load_role_cached(role_id_s.as_str()))
-            .await
-            .map_err(|e| {
-                err(
-                    OocpErrorCode::Internal,
-                    format!("load_role task failed: {}", e),
-                )
-            })?
-            .map_err(|e| err(OocpErrorCode::RoleNotFound, e.to_string()))?;
-
-        Ok(json!({
-            "role_id": loaded.id,
-            "name": loaded.name,
-            "version": loaded.version,
-            "author": loaded.author,
-            "description": loaded.description,
-        }))
+    async fn role_get_info(
+        &mut self,
+        role_id: &str,
+        session_id: Option<&str>,
+    ) -> Result<Value, MethodError> {
+        let info = crate::domain::role_info_snapshot::get_role_info_snapshot(
+            &self.state,
+            role_id,
+            session_id,
+        )
+        .await
+        .map_err(|e| match e {
+            crate::error::AppError::InvalidParameter(m) => err(OocpErrorCode::InvalidParams, m),
+            crate::error::AppError::RoleNotFound(m) => err(OocpErrorCode::RoleNotFound, m),
+            other => err(OocpErrorCode::Internal, other.to_frontend_error()),
+        })?;
+        serde_json::to_value(&info)
+            .map_err(|e| err(OocpErrorCode::Internal, format!("serialize RoleInfo: {}", e)))
     }
 
     async fn role_set_remote_life(
@@ -473,16 +493,41 @@ impl OocpMethodHandler for RuntimeOocpHandler {
         Ok(json!({ "enabled": enabled }))
     }
 
-    async fn time_get_state(&mut self) -> Result<Value, MethodError> {
-        Ok(json!({ "ok": true }))
+    async fn time_get_state(&mut self, session_ns: &str) -> Result<Value, MethodError> {
+        let (role_id, _) = parse_session_ns(session_ns).ok_or_else(|| {
+            err(
+                OocpErrorCode::InvalidParams,
+                format!("无效的 session_ns: {}", session_ns),
+            )
+        })?;
+        crate::domain::virtual_time::get_time_state_oocp_value(&self.state, role_id)
+            .await
+            .map_err(|e| err(OocpErrorCode::Internal, e.to_frontend_error()))
     }
 
     async fn time_jump(
         &mut self,
-        _session_ns: &str,
-        _target_time_ms: i64,
+        session_ns: &str,
+        target_time_ms: Option<i64>,
+        preset: Option<&str>,
     ) -> Result<Value, MethodError> {
-        Ok(json!({}))
+        let (role_id, _) = parse_session_ns(session_ns).ok_or_else(|| {
+            err(
+                OocpErrorCode::InvalidParams,
+                format!("无效的 session_ns: {}", session_ns),
+            )
+        })?;
+        crate::domain::virtual_time::jump_time_oocp_from_params(
+            &self.state,
+            role_id,
+            target_time_ms,
+            preset,
+        )
+        .await
+        .map_err(|e| match e {
+            crate::error::AppError::InvalidParameter(m) => err(OocpErrorCode::InvalidParams, m),
+            other => err(OocpErrorCode::Internal, other.to_frontend_error()),
+        })
     }
 
     async fn agent_call_mcp_tool(
@@ -491,25 +536,27 @@ impl OocpMethodHandler for RuntimeOocpHandler {
         tool_name: &str,
         arguments: Value,
     ) -> Result<Value, MethodError> {
-        // Delegate to runtime MCP client through plugin system if available.
         let res = self
             .state
             .plugins
             .call_mcp_tool(server_id, tool_name, arguments.clone())
-            .map_err(|e| err(OocpErrorCode::Internal, e))?;
+            .map_err(|e| err(OocpErrorCode::Internal, format!("MCP 工具调用失败: {}", e)))?;
+
+        let value =
+            serde_json::to_value(&res).map_err(|e| err(OocpErrorCode::Internal, e.to_string()))?;
 
         self.push_event(OocpEvent {
             msg_type: "event",
             event: "trace.append".to_string(),
             payload: json!({
-                "type": "mcp.tool_call",
+                "kind": "mcp_tool_call",
                 "server_id": server_id,
                 "tool_name": tool_name,
                 "arguments": arguments,
-                "result": res,
+                "result": value,
             }),
         });
 
-        Ok(json!({ "ok": true }))
+        Ok(value)
     }
 }

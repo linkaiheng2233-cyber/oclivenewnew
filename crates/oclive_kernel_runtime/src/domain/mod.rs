@@ -32,8 +32,10 @@ pub mod relation_engine;
 pub mod remote_life_prompt;
 pub mod repository;
 pub mod role_manager;
+pub mod role_info_snapshot;
 pub mod role_manifest_validate;
 pub mod user_emotion_analyzer;
 pub mod user_identity;
+pub mod virtual_time;
 
 pub use local_plugin_bridge::LOCAL_PLUGIN_SCHEMA_VERSION;
