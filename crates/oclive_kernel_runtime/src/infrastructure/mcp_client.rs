@@ -236,14 +236,9 @@ impl McpClient {
         let server_id = server.id.clone();
         let url = url.clone();
         block_on(async move {
-            let resp = cli
-                .post(&url)
-                .json(&payload)
-                .send()
-                .await
-                .map_err(|e| {
-                    AppError::Unknown(format!("mcp http call failed ({}): {}", server_id, e))
-                })?;
+            let resp = cli.post(&url).json(&payload).send().await.map_err(|e| {
+                AppError::Unknown(format!("mcp http call failed ({}): {}", server_id, e))
+            })?;
             let status = resp.status();
             let body: Value = resp.json().await.map_err(|e| {
                 AppError::Unknown(format!(

@@ -1,12 +1,12 @@
 //! 目录插件安装：归档解压、市场下载签名校验、Git clone；路径由宿主传入。
 
 use crate::error::{AppError, Result};
+#[cfg(feature = "role-pack-zip")]
+use crate::infrastructure::blocking_http::block_on;
 use crate::infrastructure::directory_plugins::{
     parse_manifest_version, read_plugin_install_meta, write_plugin_install_meta,
     OclivePluginManifest,
 };
-#[cfg(feature = "role-pack-zip")]
-use crate::infrastructure::blocking_http::block_on;
 #[cfg(feature = "role-pack-zip")]
 use crate::infrastructure::plugin_archive::extract_oclive_plugin_archive;
 #[cfg(feature = "role-pack-zip")]

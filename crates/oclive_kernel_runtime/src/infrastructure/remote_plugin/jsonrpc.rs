@@ -1,7 +1,7 @@
 //! 最小 JSON-RPC 2.0 over HTTP POST（与 `creator-docs/plugin-and-architecture/REMOTE_PLUGIN_PROTOCOL.md` 一致）。
 
-use crate::infrastructure::blocking_http::block_on;
 use crate::error::{AppError, Result};
+use crate::infrastructure::blocking_http::block_on;
 use serde_json::{json, Value};
 use std::sync::atomic::{AtomicU64, Ordering};
 use std::time::Instant;
@@ -88,7 +88,12 @@ pub fn call_blocking(
     bearer_token: Option<&str>,
 ) -> Result<Value> {
     block_on(call_async(
-        channel, client, url, method, params, bearer_token,
+        channel,
+        client,
+        url,
+        method,
+        params,
+        bearer_token,
     ))
 }
 
