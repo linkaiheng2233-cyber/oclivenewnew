@@ -4,7 +4,7 @@ use crate::domain::chat_engine::conversation_state_role_id;
 use crate::domain::life_schedule::resolve_life_state;
 use crate::domain::user_identity::resolve_effective_user_relation_key;
 use crate::error::{AppError, Result};
-use crate::models::dto::{LifeStateDto, RoleInfo, SceneLabelEntry, UserRelationDto};
+use crate::models::dto::{LifeStateDto, RoleData, RoleInfo, SceneLabelEntry, UserRelationDto};
 use crate::models::{InteractionMode, Role};
 use crate::state::KernelAppState;
 
@@ -307,4 +307,121 @@ pub async fn get_role_info_snapshot(
         pack_ui_baseline: role.plugin_state_ui_baseline().clone(),
         author_pack: role.author_pack.clone(),
     })
+}
+
+/// `load_role` 在磁盘加载与 Tauri 侧副作用（目录插件、`ensure_role_runtime`、可选立绘重置）完成之后的数据装配。
+pub async fn build_role_data(
+    state: &KernelAppState,
+    role_id: &str,
+    role: &Role,
+) -> Result<RoleData> {
+    let personality = state
+        .get_current_personality(role_id, role)
+        .await?;
+
+    let current_scene = state.db_manager.get_current_scene(role_id).await?;
+    let rt = role_runtime_extras(
+        state,
+        role_id,
+        current_scene.as_deref(),
+        role,
+    )
+    .await?;
+    maybe_seed_initial_favorability_with_extras(state, role_id, role, &rt).await?;
+    let current_favorability = current_favorability_for_effective_identity(
+        state,
+        role_id,
+        rt.current_user_relation.as_str(),
+    )
+    .await?;
+
+    let memory_count = state.memory_repo.count_memories(role_id).await?;
+    let event_count = state.db_manager.count_events(role_id).await?;
+    let effective_ollama_model = role.resolve_ollama_model(state.global_chat_model().as_str());
+    let relation_state =
+        resolve_relation_state_for_ui(state, role_id, rt.current_user_relation.as_str()).await?;
+    let remote_life_enabled = state
+        .db_manager
+        .get_remote_life_enabled(role_id)
+        .await?;
+    let remote_life_pack_default = role
+        .remote_presence
+        .as_ref()
+        .and_then(|r| r.default_enabled);
+
+    let virtual_time_ms = state
+        .db_manager
+        .get_virtual_time_ms(role_id)
+        .await?
+        .unwrap_or(0);
+    let interaction =
+        resolve_interaction_ui_snapshot(state, role_id, role, virtual_time_ms).await?;
+
+    let session_ns = conversation_state_role_id(role_id, None);
+    let plugin_backends_session_override = state.session_backend_override(session_ns.as_str());
+    let plugin_backends_effective =
+        state.effective_plugin_backends_for_session(role, session_ns.as_str());
+    let plugin_backends_effective_sources =
+        state.effective_plugin_backend_sources_for_session(session_ns.as_str());
+
+    Ok(RoleData {
+        role_id: role_id.to_string(),
+        name: role.name.clone(),
+        version: role.version.clone(),
+        author: role.author.clone(),
+        description: role.description.clone(),
+        personality_vector: personality.to_vec7(),
+        current_favorability,
+        current_emotion: state
+            .db_manager
+            .get_current_emotion(role_id)
+            .await?
+            .unwrap_or_else(|| "Neutral".to_string()),
+        memory_count: memory_count as i32,
+        event_count: event_count as i32,
+        user_relations: rt.user_relations,
+        default_relation: rt.default_relation,
+        relation_state,
+        current_user_relation: rt.current_user_relation.clone(),
+        use_manifest_default: rt.use_manifest_default,
+        remote_life_enabled,
+        remote_life_pack_default,
+        event_impact_factor: rt.event_impact_factor,
+        personality_source: role.evolution_config.personality_source,
+        effective_ollama_model,
+        identity_binding: role.identity_binding,
+        interaction_mode: interaction.mode_str,
+        interaction_mode_pack_default: interaction.pack_default,
+        current_life: interaction.current_life,
+        plugin_backends: role.plugin_backends.clone(),
+        plugin_backends_session_override,
+        plugin_backends_effective,
+        plugin_backends_effective_sources,
+        pack_ui_config: role.ui_config.clone(),
+        pack_ui_baseline: role.plugin_state_ui_baseline().clone(),
+        author_pack: role.author_pack.clone(),
+    })
+}
+
+#[cfg(test)]
+mod display_label_tests {
+    use super::user_relation_display_label;
+
+    #[test]
+    fn prefers_custom_name_when_differs_from_id() {
+        assert_eq!(user_relation_display_label("friend", "死党"), "死党");
+    }
+
+    #[test]
+    fn fallback_when_name_equals_id() {
+        assert_eq!(
+            user_relation_display_label("classmate", "classmate"),
+            "同学"
+        );
+        assert_eq!(
+            user_relation_display_label("sibling", "sibling"),
+            "兄弟姐妹"
+        );
+        assert_eq!(user_relation_display_label("parent", "parent"), "父母");
+    }
 }

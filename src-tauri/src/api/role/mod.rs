@@ -1,9 +1,5 @@
 //! 角色 API：清单加载、运行时快照、身份与进化系数等 Tauri 命令。
 
-mod display;
-mod interaction;
-mod runtime;
-
 use crate::error::AppError;
 use crate::models::dto::{
     ClearSceneUserRelationRequest, GetPluginResolutionDebugRequest, GetRoleInfoRequest,
@@ -21,11 +17,6 @@ use crate::state::AppState;
 use std::sync::Arc;
 use tauri::State;
 
-use interaction::resolve_interaction_ui_snapshot;
-use runtime::{
-    current_favorability_for_effective_identity, maybe_seed_initial_favorability_with_extras,
-    resolve_relation_state_for_ui, role_runtime_extras,
-};
 use serde::de::DeserializeOwned;
 use serde::Deserialize;
 use serde_json::{json, Value};
@@ -88,107 +79,20 @@ pub async fn load_role_impl(
             .map_err(|e| e.to_frontend_error())?;
     }
 
-    let personality = state
-        .get_current_personality(role_id, role.as_ref())
-        .await
-        .map_err(|e| e.to_frontend_error())?;
-
-    let current_scene = state
-        .db_manager
-        .get_current_scene(role_id)
-        .await
-        .map_err(|e| e.to_frontend_error())?;
-    let rt = role_runtime_extras(state, role_id, current_scene.as_deref(), role.as_ref()).await?;
-    maybe_seed_initial_favorability_with_extras(state, role_id, role.as_ref(), &rt).await?;
-    let current_favorability = current_favorability_for_effective_identity(
+    let role_data = oclive_kernel_runtime::domain::role_info_snapshot::build_role_data(
         state,
         role_id,
-        rt.current_user_relation.as_str(),
+        role.as_ref(),
     )
-    .await?;
-
-    let memory_count = state
-        .memory_repo
-        .count_memories(role_id)
-        .await
-        .map_err(|e| e.to_frontend_error())?;
-
-    let event_count = state
-        .db_manager
-        .count_events(role_id)
-        .await
-        .map_err(|e| e.to_frontend_error())?;
-    let effective_ollama_model = role.resolve_ollama_model(state.global_chat_model().as_str());
-    let relation_state =
-        resolve_relation_state_for_ui(state, role_id, rt.current_user_relation.as_str()).await?;
-    let remote_life_enabled = state
-        .db_manager
-        .get_remote_life_enabled(role_id)
-        .await
-        .map_err(|e| e.to_frontend_error())?;
-    let remote_life_pack_default = role
-        .remote_presence
-        .as_ref()
-        .and_then(|r| r.default_enabled);
-
-    let virtual_time_ms = state
-        .db_manager
-        .get_virtual_time_ms(role_id)
-        .await
-        .map_err(|e| e.to_frontend_error())?
-        .unwrap_or(0);
-    let interaction =
-        resolve_interaction_ui_snapshot(state, role_id, role.as_ref(), virtual_time_ms).await?;
+    .await
+    .map_err(|e| e.to_frontend_error())?;
 
     state
         .role_cache
         .write()
         .insert(role_id.to_string(), Arc::clone(&role));
-    let session_ns = session_namespace(role_id, None);
-    let plugin_backends_session_override = state.session_backend_override(session_ns.as_str());
-    let plugin_backends_effective =
-        state.effective_plugin_backends_for_session(role.as_ref(), session_ns.as_str());
-    let plugin_backends_effective_sources =
-        state.effective_plugin_backend_sources_for_session(session_ns.as_str());
 
-    Ok(RoleData {
-        role_id: role_id.to_string(),
-        name: role.name.clone(),
-        version: role.version.clone(),
-        author: role.author.clone(),
-        description: role.description.clone(),
-        personality_vector: personality.to_vec7(),
-        current_favorability,
-        current_emotion: state
-            .db_manager
-            .get_current_emotion(role_id)
-            .await
-            .map_err(|e| e.to_frontend_error())?
-            .unwrap_or_else(|| "Neutral".to_string()),
-        memory_count: memory_count as i32,
-        event_count: event_count as i32,
-        user_relations: rt.user_relations,
-        default_relation: rt.default_relation,
-        relation_state,
-        current_user_relation: rt.current_user_relation.clone(),
-        use_manifest_default: rt.use_manifest_default,
-        remote_life_enabled,
-        remote_life_pack_default,
-        event_impact_factor: rt.event_impact_factor,
-        personality_source: role.evolution_config.personality_source,
-        effective_ollama_model,
-        identity_binding: role.identity_binding,
-        interaction_mode: interaction.mode_str,
-        interaction_mode_pack_default: interaction.pack_default,
-        current_life: interaction.current_life,
-        plugin_backends: role.plugin_backends.clone(),
-        plugin_backends_session_override,
-        plugin_backends_effective,
-        plugin_backends_effective_sources,
-        pack_ui_config: role.ui_config.clone(),
-        pack_ui_baseline: role.plugin_state_ui_baseline().clone(),
-        author_pack: role.author_pack.clone(),
-    })
+    Ok(role_data)
 }
 
 pub async fn get_role_info_impl(
