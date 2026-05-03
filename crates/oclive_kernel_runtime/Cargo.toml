@@ -6,7 +6,12 @@ license = "AGPL-3.0"
 description = "Oclive kernel runtime: portable domain, SQLite persistence, plugins, and optional Axum HTTP/OOCP WS."
 readme = "README.md"
 keywords = ["oclive", "kernel", "chat", "roleplay", "plugin"]
-categories = ["api-bindings", "web-programming::http-server"]
+
+[[bin]]
+name = "oclive_test_dir_plugin"
+path = "src/bin/oclive_test_dir_plugin.rs"
+test = false
+bench = false
 
 [features]
 ## 默认与官方桌面 / kernel_server 一致；嵌入式宿主可用 `default-features = false` 并按需开启子特性。
@@ -57,4 +62,5 @@ tauri = { version = "1.5", optional = true, default-features = false }
 
 [dev-dependencies]
 serde_json = "1.0"
+async-trait = "0.1"
 
