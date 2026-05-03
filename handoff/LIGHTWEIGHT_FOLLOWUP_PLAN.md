@@ -27,14 +27,15 @@
 
 - **依据**：`LIGHTWEIGHT_PROFILE` §5.1。
 - **做法**：逐项核对与 kernel 重复的 `sqlx` / `zip` / `axum` / `tower-http` / `reqwest` / `ed25519-dalek` 等；壳层独有（`notify`、`sysinfo`、Tauri 插件）单独列表保留。多小 PR，每步 `cargo check -p oclivenewnew-tauri` + 工作区 clippy。
+- **进展（首批）**：`pack_plugin` 已委托 `oclive_kernel_runtime::infrastructure::plugin_archive::pack_plugin_directory_to_zip_deflated`；壳层移除未用 `reqwest` / `ed25519-dalek` / `base64` 及直连 `zip` / `sha2` / `walkdir`；`sqlx` 仅保留为集成测试 **`dev-dependencies`**。余量见 §5.1 表（`axum`、可选 `chrono`/`uuid` 收紧等）。
 
 ---
 
-## 阶段 3：生成物与 SKU 防呆
+## 阶段 3：生成物与 SKU 防呆 — ✅ CI 已实施（持续维护）
 
 - **风险**：极简 `invoke` 组合下 `build.rs` 会重写 `src/gen/tauri-invoke-capabilities.ts`；误提交「全 `false`」会破坏默认前端契约。
-- **建议**：CI 增加一步（或在 `WEEKLY_DEV_GUIDE` 写清单）：在默认 **`invoke-full`** 下 `cargo check -p oclivenewnew-tauri` 后 `git diff --exit-code src/gen/tauri-invoke-capabilities.ts`。
-- **维护**：新增强可选分组命令时同步 **Rust 宏列表** + **`COMMAND_CAPABILITY`**（见 `LIGHTWEIGHT_PROFILE` §4.2）。
+- **CI 现状**（`.github/workflows/ci.yml`）：在极简 Tauri `check` 后执行 `git checkout -- src/gen/tauri-invoke-capabilities.ts`，再于默认 **`invoke-full`** 下 `cargo check -p oclivenewnew-tauri`，最后 `git diff --exit-code src/gen/tauri-invoke-capabilities.ts`，防止漂移入库。
+- **维护**：新增强可选分组命令时同步 **Rust 宏列表** + **`COMMAND_CAPABILITY`**（见 `LIGHTWEIGHT_PROFILE` §4.2）；阶段 3 以后以 **CI 与文档** 为主，不挡阶段 2 / 4 排期。
 
 ---
 
@@ -54,6 +55,9 @@
 
 ## 建议执行顺序
 
-1. 阶段 3（低成本防呆）可与任意阶段并行。  
-2. 阶段 1 独立评审合并后再做阶段 2（减少链接与路由同时大改的风险）。  
-3. 阶段 4 独立里程碑，不与 1/2 混在同一 PR。
+1. **阶段 1、阶段 3**：已完成（`http_api` 单源；生成物防呆已在 CI 落地）。  
+2. **主路径**：**阶段 2**（`src-tauri` 依赖去重 / 走 `oclive_kernel_runtime` 公开 API）→ **阶段 4**（`reqwest::blocking` 收敛，见 `PERF_PHASES.md` P4）。  
+3. **阶段 3**：仅随 `invoke-*` / `build.rs` 变更维护 CI 与文档。  
+4. **壳层 `axum` / OOCP WS**：中长期单独子计划，见 `handoff/LIGHTWEIGHT_OOCP_WS_AXUM_FOLLOWUP.md`（不与阶段 2 批量删依赖绑在同一 PR）。
+
+相关展开：`handoff/PERF_PHASES.md`（P4 按模块 PR）、`creator-docs/kernel/LIGHTWEIGHT_PROFILE.md` §5.1（壳层依赖快照表）。

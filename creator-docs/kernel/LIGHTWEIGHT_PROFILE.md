@@ -86,8 +86,11 @@ capabilities 中的方法列表见 `OOCP_METHODS`。以下能力与 runtime 特�
 | **`tauri` / `tauri-build` / `tauri-plugin-deep-link`** | ✅ 桌面 only | — |
 | **`notify`** | ✅ 目录插件 watcher | — |
 | **`sysinfo`** | ✅ 系统信息 | — |
-| **`axum`** | OOCP WS 适配器 `domain/adapters/oocp_ws.rs` 仍直接依赖 | 待 OOCP 路由与内核侧完全对齐后再评估 |
-| **`sqlx` / `chrono` / `uuid` / …** | 部分 API 模块仍直连 | 随命令迁移优先走 runtime |
+| **`axum`** | OOCP WS 适配器 `domain/adapters/oocp_ws.rs` 仍直接依赖 | 中长期子计划：`handoff/LIGHTWEIGHT_OOCP_WS_AXUM_FOLLOWUP.md` |
+| **`sqlx`** | — | ✅ 壳层 lib 不再直连；集成测试经 **`dev-dependencies`** 使用（与 kernel 仍可能传递重复链接，见后续是否收紧） |
+| **`zip` / `sha2` / `walkdir`（打包路径）** | — | ✅ `pack_plugin` 已改为 `plugin_archive::pack_plugin_directory_to_zip_deflated` |
+| **`reqwest` / `ed25519-dalek` / `base64`** | — | ✅ 壳层未引用条目已移除（HTTP/验签在 kernel） |
+| **`chrono` / `uuid` / …** | `chrono` 等仍被壳层模块使用 | 随命令迁移优先走 runtime |
 | **`tower-http`** | — | ✅ 已删（仅 `http_api` CORS 用过；现由 runtime 承担） |
 
 ### 5.2 `http_api` 双轨

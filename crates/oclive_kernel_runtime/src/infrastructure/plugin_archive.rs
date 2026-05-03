@@ -3,7 +3,7 @@
 use crate::error::{AppError, Result};
 use crate::infrastructure::directory_plugins::OclivePluginManifest;
 use std::fs;
-use std::io::{Read, Seek};
+use std::io::{Read, Seek, Write};
 use std::path::Path;
 use zip::ZipArchive;
 
@@ -90,6 +90,53 @@ pub fn peek_plugin_id_from_archive_bytes(bytes: &[u8]) -> Result<String> {
     Ok(pid)
 }
 
+/// Pack a plugin root directory into a `.oclive-plugin` zip at `archive_path` (deflate, unix 0644).
+/// Returns the SHA-256 hex digest of the written archive (same contract as desktop `pack_plugin`).
+#[cfg(feature = "role-pack-zip")]
+pub fn pack_plugin_directory_to_zip_deflated(
+    plugin_root: &Path,
+    archive_path: &Path,
+) -> Result<String> {
+    use sha2::{Digest, Sha256};
+    use walkdir::WalkDir;
+    use zip::write::FileOptions;
+    use zip::{CompressionMethod, ZipWriter};
+
+    let f = fs::File::create(archive_path).map_err(AppError::IoError)?;
+    let mut zip = ZipWriter::new(f);
+    let opt = FileOptions::default()
+        .compression_method(CompressionMethod::Deflated)
+        .unix_permissions(0o644);
+    for entry in WalkDir::new(plugin_root).into_iter().flatten() {
+        let p = entry.path();
+        if p.is_dir() {
+            continue;
+        }
+        let rel = match p.strip_prefix(plugin_root) {
+            Ok(r) => r,
+            Err(_) => continue,
+        };
+        let name = rel.to_string_lossy().replace('\\', "/");
+        zip.start_file(name, opt)
+            .map_err(|e| AppError::Unknown(format!("zip start file failed: {}", e)))?;
+        let bytes = fs::read(p).map_err(AppError::IoError)?;
+        zip.write_all(&bytes)
+            .map_err(|e| AppError::Unknown(format!("zip write failed: {}", e)))?;
+    }
+    zip.finish()
+        .map_err(|e| AppError::Unknown(format!("zip finalize failed: {}", e)))?;
+
+    let blob = fs::read(archive_path).map_err(AppError::IoError)?;
+    let mut hasher = Sha256::new();
+    hasher.update(&blob);
+    let digest = hasher
+        .finalize()
+        .iter()
+        .map(|b| format!("{:02x}", b))
+        .collect::<String>();
+    Ok(digest)
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -115,5 +162,23 @@ mod tests {
         }
         let id = peek_plugin_id_from_archive_bytes(&buf).unwrap();
         assert_eq!(id, "com.test.plugin");
+    }
+
+    #[test]
+    fn pack_dir_round_trip_peek_id() {
+        let tmp = tempfile::tempdir().unwrap();
+        let root = tmp.path().join("plugin");
+        fs::create_dir_all(&root).unwrap();
+        fs::write(
+            root.join("manifest.json"),
+            r#"{"schema_version":1,"id":"com.pack.rt","version":"1.0.0","process":{"command":"x"}}"#,
+        )
+        .unwrap();
+        let out_zip = tmp.path().join("out.oclive-plugin");
+        let hex = pack_plugin_directory_to_zip_deflated(&root, &out_zip).unwrap();
+        assert_eq!(hex.len(), 64);
+        let bytes = fs::read(&out_zip).unwrap();
+        let id = peek_plugin_id_from_archive_bytes(&bytes).unwrap();
+        assert_eq!(id, "com.pack.rt");
     }
 }

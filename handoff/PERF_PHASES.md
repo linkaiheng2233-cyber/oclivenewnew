@@ -23,12 +23,14 @@
 
 ### P4 迁移批次（按模块拆分 PR）
 
-在从 workspace `reqwest` 去掉 **`blocking`** 之前，建议按目录分批改为 **`reqwest::Client` + async**，每批独立 `cargo test` / `cargo clippy`：
+在从 workspace `reqwest` 去掉 **`blocking`** 之前，建议按目录分批改为 **`reqwest::Client` + async**（或在 Tauri 边界统一 **`tokio::task::spawn_blocking`** 调用现有同步实现），每批独立 `cargo test` / `cargo clippy`。实现均位于 **`crates/oclive_kernel_runtime/src/infrastructure/`**（与 `LIGHTWEIGHT_PROFILE.md` 阶段 4 一致；**勿与** `handoff/LIGHTWEIGHT_FOLLOWUP_PLAN.md` 阶段 2 大批量删依赖混在同一 PR）。
 
-1. **`infrastructure/mcp_client.rs`**（MCP HTTP transport）
-2. **`infrastructure/plugin_*_index_sync.rs`**、`role_market_index_sync.rs`、`plugin_reviews_index_sync.rs`（市场索引 HTTP）
-3. **`infrastructure/plugin_install.rs`**、**`role_pack_archive.rs`**
-4. **`infrastructure/remote_plugin/`**（`mod.rs`、`jsonrpc.rs`、`*_http.rs`）
+1. **`mcp_client.rs`** — MCP HTTP transport（`reqwest::blocking` 集中点之一）
+2. **`plugin_index_sync.rs`**、**`plugin_reviews_index_sync.rs`**、**`role_market_index_sync.rs`** — 市场索引 HTTP
+3. **`plugin_install.rs`**、**`role_pack_archive.rs`** — 安装与归档下载
+4. **`remote_plugin/`** — `mod.rs`、`jsonrpc.rs`、`*_http.rs`（远程插件 JSON-RPC HTTP）
+
+每批合并后可在根 `Cargo.toml` / `crates/oclive_kernel_runtime/Cargo.toml` 核对是否仍启用 workspace `reqwest` 的 **`blocking`** feature，直至可关闭。
 
 ### `spawn_blocking` 与 async 边界（过渡约定）
 

@@ -1,12 +1,10 @@
 use crate::error::AppError;
 use crate::state::AppState;
+use oclive_kernel_runtime::infrastructure::plugin_archive::pack_plugin_directory_to_zip_deflated;
 use serde::{Deserialize, Serialize};
-use sha2::{Digest, Sha256};
 use std::fs;
-use std::io::Write;
 use std::path::{Path, PathBuf};
 use tauri::State;
-use walkdir::WalkDir;
 
 #[derive(Debug, Clone, Deserialize)]
 #[serde(rename_all = "camelCase")]
@@ -78,42 +76,8 @@ pub fn pack_plugin(
         });
     fs::create_dir_all(&out_dir).map_err(|e| AppError::IoError(e).to_frontend_error())?;
     let archive_path = out_dir.join(format!("{}.oclive-plugin", pid));
-    let f =
-        fs::File::create(&archive_path).map_err(|e| AppError::IoError(e).to_frontend_error())?;
-    let mut zip = zip::ZipWriter::new(f);
-    let opt = zip::write::FileOptions::default()
-        .compression_method(zip::CompressionMethod::Deflated)
-        .unix_permissions(0o644);
-    for entry in WalkDir::new(&root).into_iter().flatten() {
-        let p = entry.path();
-        if p.is_dir() {
-            continue;
-        }
-        let rel = match p.strip_prefix(&root) {
-            Ok(r) => r,
-            Err(_) => continue,
-        };
-        let name = rel.to_string_lossy().replace('\\', "/");
-        zip.start_file(name, opt).map_err(|e| {
-            AppError::Unknown(format!("zip start file failed: {}", e)).to_frontend_error()
-        })?;
-        let bytes = fs::read(p).map_err(|e| AppError::IoError(e).to_frontend_error())?;
-        zip.write_all(&bytes).map_err(|e| {
-            AppError::Unknown(format!("zip write failed: {}", e)).to_frontend_error()
-        })?;
-    }
-    zip.finish().map_err(|e| {
-        AppError::Unknown(format!("zip finalize failed: {}", e)).to_frontend_error()
-    })?;
-    let blob = fs::read(&archive_path).map_err(|e| AppError::IoError(e).to_frontend_error())?;
-    let mut hasher = Sha256::new();
-    hasher.update(&blob);
-    let digest_bytes = hasher.finalize();
-    let digest = digest_bytes
-        .as_slice()
-        .iter()
-        .map(|b| format!("{:02x}", b))
-        .collect::<String>();
+    let digest = pack_plugin_directory_to_zip_deflated(&root, &archive_path)
+        .map_err(|e| e.to_frontend_error())?;
     let sig = serde_json::json!({
         "plugin_id": pid,
         "sha256": digest,

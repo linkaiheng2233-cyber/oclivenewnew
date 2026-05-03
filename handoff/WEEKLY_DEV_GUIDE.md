@@ -8,7 +8,7 @@
 
 - **当前进度**：WEEK3-003 完成（事件落库 + 集成测试 + 前端封装规划）
 - **首包 / chunk（v0.2）**：✅ **已收尾**（P1～P3）；总表与维护约定见 **`PERF_PHASES.md`**；**P4**（`reqwest` 去 `blocking`）按需另排，不挡发版。
-- **PR / CI**：默认 `invoke-full` 下 `cargo check -p oclivenewnew-tauri` 生成的 `src/gen/tauri-invoke-capabilities.ts` 须与仓库一致（CI 对该文件执行 `git diff --exit-code`）；若本地用 `--no-default-features` 极简特性编译过桌面 crate，提交前请还原该文件或再跑一次默认 `check`。
+- **PR / CI**：默认 `invoke-full` 下 `cargo check -p oclivenewnew-tauri` 生成的 `src/gen/tauri-invoke-capabilities.ts` 须与仓库一致（CI 对该文件执行 `git diff --exit-code`）。若本地跑过极简 Tauri `check` 改写了该文件，与 CI 一致的做法是：先 `git checkout -- src/gen/tauri-invoke-capabilities.ts`，再跑一次默认 `cargo check -p oclivenewnew-tauri`（或等价地仅还原后依赖 CI 校验）。
 - **下一步**：WEEK3-004 ~ WEEK3-007（API 命令 → 前端集成 → 事务 + 情绪持久化 → 可选优化）
 - **详细计划**：见 `02_DEVELOPMENT_PLAN_v3.8.md`
 - **项目认知**：见 `04_4.6_PROJECT_TRUTH_CHECKLIST.md`
