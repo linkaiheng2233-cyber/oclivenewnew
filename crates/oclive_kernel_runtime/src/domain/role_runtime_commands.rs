@@ -3,9 +3,10 @@
 //! 无 Tauri / 桌面依赖，供 `invoke`、OOCP、HTTP 或其它宿主复用。
 
 use crate::domain::role_info_snapshot::get_role_info_snapshot;
+use crate::env_flags;
 use crate::error::{AppError, Result};
 use crate::models::dto::{
-    ClearSceneUserRelationRequest, OCLIVE_DEFAULT_RELATION_SENTINEL, RoleInfo,
+    ClearSceneUserRelationRequest, OCLIVE_DEFAULT_RELATION_SENTINEL, RoleInfo, RoleSummary,
     SetEvolutionFactorRequest, SetRemoteLifeEnabledRequest, SetRoleInteractionModeRequest,
     SetSceneUserRelationRequest, SetUserRelationRequest,
 };
@@ -204,4 +205,20 @@ pub async fn set_role_interaction_mode(
         .set_interaction_mode_for_role(&req.role_id, req.mode.trim())
         .await?;
     get_role_info_snapshot(state, &req.role_id, None).await
+}
+
+/// 角色清单（manifest 简表）；`OCLIVE_LIST_DEV_ROLES` 控制是否包含 `dev_only` 包。
+pub fn list_role_summaries(state: &KernelAppState) -> Result<Vec<RoleSummary>> {
+    let list_dev = env_flags::list_dev_roles_enabled();
+    let roles = state.storage.load_all_role_manifest_lite()?;
+    Ok(roles
+        .into_iter()
+        .filter(|r| list_dev || !r.dev_only)
+        .map(|r| RoleSummary {
+            id: r.id,
+            name: r.name,
+            version: r.version,
+            author: r.author,
+        })
+        .collect())
 }

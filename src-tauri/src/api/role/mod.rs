@@ -76,21 +76,8 @@ pub async fn get_role_info_impl(
 }
 
 pub async fn list_roles_impl(state: &AppState) -> Result<Vec<RoleSummary>, String> {
-    let list_dev = crate::env_flags::list_dev_roles_enabled();
-    let roles = state
-        .storage
-        .load_all_role_manifest_lite()
-        .map_err(|e| e.to_frontend_error())?;
-    Ok(roles
-        .into_iter()
-        .filter(|r| list_dev || !r.dev_only)
-        .map(|r| RoleSummary {
-            id: r.id,
-            name: r.name,
-            version: r.version,
-            author: r.author,
-        })
-        .collect())
+    oclive_kernel_runtime::domain::role_runtime_commands::list_role_summaries(state)
+        .map_err(|e| e.to_frontend_error())
 }
 
 pub async fn switch_role_impl(state: &AppState, role_id: &str) -> Result<RoleInfo, String> {
