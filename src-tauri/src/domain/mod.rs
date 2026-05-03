@@ -9,8 +9,9 @@ pub use oclive_kernel_runtime::domain::{
     local_plugin_memory_pick, memory_engine, memory_retrieval, mutable_profile_llm,
     permission_tokens, personality_engine, plugin_host, plugin_resolution_debug, policy,
     portrait_emotion_engine, profile_personality, prompt_assembler, prompt_builder,
-    prompt_style_override, relation_engine, remote_life_prompt, repository, role_info_snapshot,
-    role_manager, role_manifest_validate, role_runtime_commands, user_emotion_analyzer,
+    prompt_style_override,     relation_engine, remote_life_prompt, repository, role_info_snapshot,
+    role_manager, role_manifest_validate, role_runtime_commands, session_plugin_override,
+    user_emotion_analyzer,
     user_identity, virtual_time,
 };
 

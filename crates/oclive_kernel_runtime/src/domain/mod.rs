@@ -37,6 +37,7 @@ pub mod role_manager;
 pub mod role_info_snapshot;
 pub mod role_runtime_commands;
 pub mod role_manifest_validate;
+pub mod session_plugin_override;
 pub mod user_emotion_analyzer;
 pub mod user_identity;
 pub mod virtual_time;
