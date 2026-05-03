@@ -1,16 +1,21 @@
 //! 目录插件本地更新（zip 覆盖）；在线版本检查预留。
 
+use super::bridge_manifest_permissions::bridge_permission_tokens_from_manifest;
+use crate::domain::plugin_install_consent::{
+    ensure_accepted_permissions_subset_declared, normalize_install_permission_tokens,
+};
 use crate::error::AppError;
 use crate::infrastructure::directory_plugins::OclivePluginManifest;
 use crate::state::AppState;
 use oclive_kernel_runtime::infrastructure::plugin_archive::extract_oclive_plugin_archive_file;
-use oclive_kernel_runtime::infrastructure::plugin_layout::{copy_plugin_tree, find_plugin_manifest_root};
+use oclive_kernel_runtime::infrastructure::plugin_layout::{
+    copy_plugin_tree, find_plugin_manifest_root,
+};
 use serde::Serialize;
 use std::collections::HashMap;
 use std::fs;
 use std::path::PathBuf;
 use tauri::State;
-use super::bridge_manifest_permissions::bridge_permission_tokens_from_manifest;
 
 #[derive(Debug, Clone, Serialize)]
 #[serde(rename_all = "camelCase")]
@@ -99,7 +104,8 @@ pub async fn extract_plugin_zip(
     let tmp = tempfile::tempdir().map_err(|e| e.to_string())?;
     extract_oclive_plugin_archive_file(&zip_path, tmp.path())
         .map_err(|e: AppError| e.to_frontend_error())?;
-    let staged = find_plugin_manifest_root(tmp.path()).map_err(|e: AppError| e.to_frontend_error())?;
+    let staged =
+        find_plugin_manifest_root(tmp.path()).map_err(|e: AppError| e.to_frontend_error())?;
     let manifest = OclivePluginManifest::load_from_dir(&staged)?;
     if manifest.id.trim() != pid {
         return Err(format!(
@@ -127,24 +133,9 @@ pub async fn extract_plugin_zip(
     // 开发者模式侧载：支持手动勾选授权；未提供时默认按 manifest seed（便于调试）
     let declared = bridge_permission_tokens_from_manifest(&manifest);
     let mut perms = accepted_permissions.unwrap_or_else(|| declared.clone());
-    perms = perms
-        .into_iter()
-        .map(|s| s.trim().to_string())
-        .filter(|s| !s.is_empty())
-        .collect();
-    perms.sort();
-    perms.dedup();
-    // 若用户选择的权限不在声明里，则拒绝（防止滥用参数注入授权）
-    if !perms.is_empty() {
-        let declared_set: std::collections::HashSet<String> =
-            declared.iter().map(|s| s.trim().to_string()).collect();
-        let ok = perms.iter().all(|p| declared_set.contains(p.trim()));
-        if !ok {
-            return Err(
-                "accepted_permissions must be a subset of declared permissions".to_string(),
-            );
-        }
-    }
+    perms = normalize_install_permission_tokens(perms);
+    ensure_accepted_permissions_subset_declared(&declared, &perms)
+        .map_err(|e| e.to_frontend_error())?;
     for p in perms {
         let _ = state
             .db_manager
@@ -174,7 +165,8 @@ pub fn preview_plugin_zip_permissions(
     let tmp = tempfile::tempdir().map_err(|e| e.to_string())?;
     extract_oclive_plugin_archive_file(&zip_path, tmp.path())
         .map_err(|e: AppError| e.to_frontend_error())?;
-    let staged = find_plugin_manifest_root(tmp.path()).map_err(|e: AppError| e.to_frontend_error())?;
+    let staged =
+        find_plugin_manifest_root(tmp.path()).map_err(|e: AppError| e.to_frontend_error())?;
     let manifest = OclivePluginManifest::load_from_dir(&staged)?;
     let pid = manifest.id.trim().to_string();
     if pid.is_empty() {
@@ -263,23 +255,9 @@ pub fn install_plugin_dir(
         .rescan_plugin_roots(state.storage.roles_dir());
     let declared = bridge_permission_tokens_from_manifest(&manifest);
     let mut perms = accepted_permissions.unwrap_or_else(|| declared.clone());
-    perms = perms
-        .into_iter()
-        .map(|s| s.trim().to_string())
-        .filter(|s| !s.is_empty())
-        .collect();
-    perms.sort();
-    perms.dedup();
-    if !perms.is_empty() {
-        let declared_set: std::collections::HashSet<String> =
-            declared.iter().map(|s| s.trim().to_string()).collect();
-        let ok = perms.iter().all(|p| declared_set.contains(p.trim()));
-        if !ok {
-            return Err(
-                "accepted_permissions must be a subset of declared permissions".to_string(),
-            );
-        }
-    }
+    perms = normalize_install_permission_tokens(perms);
+    ensure_accepted_permissions_subset_declared(&declared, &perms)
+        .map_err(|e| e.to_frontend_error())?;
     tauri::async_runtime::block_on(async {
         for p in perms {
             let _ = state

@@ -9,11 +9,11 @@ pub use oclive_kernel_runtime::domain::{
     expert_models, expert_models_admin, export_chat_logs, knowledge_loader, life_schedule,
     local_imports, local_plugin_bridge, local_plugin_memory_pick, memory_engine, memory_query,
     memory_retrieval, mutable_profile_llm, ollama_host_commands, permission_tokens,
-    personality_engine, plugin_host, plugin_permission_commands, plugin_resolution_debug, policy,
-    policy_host, portrait_emotion_engine, profile_personality, profile_preview, prompt_assembler,
-    prompt_builder, prompt_style_override, relation_engine, remote_life_prompt, repository,
-    role_feedback_commands, role_info_snapshot, role_lifecycle, role_manager,
-    role_manifest_validate, role_paths, role_runtime_commands, scene_commands,
+    personality_engine, plugin_host, plugin_install_consent, plugin_permission_commands,
+    plugin_resolution_debug, policy, policy_host, portrait_emotion_engine, profile_personality,
+    profile_preview, prompt_assembler, prompt_builder, prompt_style_override, relation_engine,
+    remote_life_prompt, repository, role_feedback_commands, role_info_snapshot, role_lifecycle,
+    role_manager, role_manifest_validate, role_paths, role_runtime_commands, scene_commands,
     session_plugin_override, user_emotion_analyzer, user_identity, virtual_time,
 };
 

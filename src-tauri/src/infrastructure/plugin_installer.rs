@@ -2,13 +2,7 @@ use crate::error::AppError;
 use crate::infrastructure::directory_plugins::{parse_manifest_version, OclivePluginManifest};
 use crate::infrastructure::plugin_state::PluginStateStore;
 use crate::state::AppState;
-use base64::engine::general_purpose::STANDARD as B64_STANDARD;
-use base64::Engine;
-use ed25519_dalek::{Signature, VerifyingKey};
-use oclive_validation::validate_plugin_market_index_v1;
 use semver::VersionReq;
-use serde::{Deserialize, Serialize};
-use sha2::{Digest, Sha256};
 use std::collections::HashMap;
 use std::fs;
 use std::path::{Path, PathBuf};
@@ -17,6 +11,15 @@ use tempfile::TempDir;
 
 pub use oclive_kernel_runtime::infrastructure::plugin_archive::{
     extract_oclive_plugin_archive, peek_plugin_id_from_archive_bytes,
+};
+pub use oclive_kernel_runtime::infrastructure::plugin_index_sync::{
+    load_plugin_index_cache, plugin_index_cache_path_for_source, plugin_index_default_cache_path,
+    sync_plugin_index_from_url, DEFAULT_PLUGIN_INDEX_URL,
+};
+pub use oclive_kernel_runtime::infrastructure::plugin_package_verify::verify_plugin_package_signature_text;
+pub use oclive_kernel_runtime::models::plugin_market_index::{
+    PluginIndexEntry, PluginIndexFile, PluginIndexModulePluginSpec, PluginIndexModuleSpec,
+    PluginIndexProfileSpec, PluginIndexVersionEntry, PublisherPublicKey,
 };
 
 pub type PluginInstallMeta = crate::models::dto::PluginInstallMetaDto;
@@ -59,156 +62,8 @@ pub fn update_install_meta_permissions(
     Ok(())
 }
 
-#[derive(Debug, Clone, Serialize, Deserialize)]
-#[serde(rename_all = "camelCase")]
-pub struct PublisherPublicKey {
-    pub pubkey_id: String,
-    /// base64 编码的 Ed25519 public key（32 bytes）
-    pub public_key: String,
-    /// active|revoked|rotated（由索引侧约定）
-    #[serde(default)]
-    pub status: Option<String>,
-    #[serde(default)]
-    pub rotated_to: Option<String>,
-}
-
-#[derive(Debug, Clone, Serialize, Deserialize)]
-#[serde(rename_all = "camelCase")]
-pub struct PluginIndexVersionEntry {
-    pub version: String,
-    #[serde(default)]
-    pub download_url: Option<String>,
-    #[serde(default)]
-    pub signature_url: Option<String>,
-    /// git tag；省略时默认使用 `version`
-    #[serde(default)]
-    pub git_tag: Option<String>,
-}
-
-#[derive(Debug, Clone, Serialize, Deserialize)]
-#[serde(rename_all = "camelCase")]
-pub struct PluginIndexEntry {
-    /// 条目类型：`plugin`（默认）| `module`（无代码，依赖+配置预设）| `profile`（保留）
-    #[serde(rename = "type", default = "default_index_entry_type")]
-    pub entry_type: String,
-    pub id: String,
-    pub name: String,
-    #[serde(default)]
-    pub description: String,
-    #[serde(default)]
-    pub author: String,
-    pub version: String,
-    /// 仅 `type=plugin` 必填；`module`/`profile` 可为空字符串。
-    pub git: String,
-    #[serde(default)]
-    pub permissions: Vec<String>,
-    #[serde(default)]
-    pub tags: Vec<String>,
-    #[serde(default)]
-    pub category: Option<String>,
-    #[serde(default)]
-    pub source: Option<String>,
-    #[serde(default)]
-    pub changelog: Option<String>,
-    #[serde(default)]
-    pub dependencies: HashMap<String, String>,
-    /// 发布者 id（官方索引登记公钥主体）
-    #[serde(default)]
-    pub publisher: Option<String>,
-    /// 发布者公钥环（用于验签）
-    #[serde(default)]
-    pub public_keys: Vec<PublisherPublicKey>,
-    /// 多版本索引（用于回滚/离线包下载）
-    #[serde(default)]
-    pub versions: Vec<PluginIndexVersionEntry>,
-
-    /// `type=module` 时可选：模块声明（无代码）。
-    #[serde(default)]
-    pub module: Option<PluginIndexModuleSpec>,
-
-    /// `type=profile` 时可选：profile 声明（无代码）。
-    #[serde(default)]
-    pub profile: Option<PluginIndexProfileSpec>,
-}
-
-fn default_index_entry_type() -> String {
-    "plugin".to_string()
-}
-
-/// `type=module` 的声明体（无代码）；用于“像 meta package 一样”应用一组依赖与配置预设。
-#[derive(Debug, Clone, Serialize, Deserialize)]
-#[serde(rename_all = "camelCase")]
-pub struct PluginIndexModuleSpec {
-    /// 该模块依赖的插件清单（这些才是有代码的内容）。
-    #[serde(default)]
-    pub plugins: Vec<PluginIndexModulePluginSpec>,
-    /// 可选：后端模块预设（写入会话级后端覆盖）。
-    #[serde(default)]
-    pub backends: Option<crate::models::plugin_backends::PluginBackendsOverride>,
-}
-
-#[derive(Debug, Clone, Serialize, Deserialize)]
-#[serde(rename_all = "camelCase")]
-pub struct PluginIndexModulePluginSpec {
-    pub id: String,
-    #[serde(default)]
-    pub version: Option<String>,
-    #[serde(default)]
-    pub source: Option<String>,
-}
-
-/// `type=profile` 的声明体（无代码）。v1 允许“市场分发 profile”，便于一键部署环境。
-#[derive(Debug, Clone, Serialize, Deserialize)]
-#[serde(rename_all = "camelCase")]
-pub struct PluginIndexProfileSpec {
-    /// profile 依赖的插件清单（与 module 相同语义：这些才是有代码的内容）。
-    #[serde(default)]
-    pub plugins: Vec<PluginIndexModulePluginSpec>,
-    /// 可选：会话级后端覆盖（同 `module.backends`）。
-    #[serde(default)]
-    pub backends: Option<crate::models::plugin_backends::PluginBackendsOverride>,
-    /// 可选：预声明权限 token（提示用途；真正授权仍以安装时对依赖插件的 consent 为准）。
-    #[serde(default)]
-    pub predeclared_permissions: Vec<String>,
-}
-
-#[derive(Debug, Clone, Serialize, Deserialize)]
-#[serde(rename_all = "camelCase")]
-pub struct PluginIndexFile {
-    #[serde(default, alias = "generated_at")]
-    pub generated_at: Option<String>,
-    #[serde(default)]
-    pub plugins: Vec<PluginIndexEntry>,
-}
-
-pub const DEFAULT_PLUGIN_INDEX_URL: &str =
-    "https://raw.githubusercontent.com/linkaiheng2233-cyber/awesome-oclive-plugins/main/plugins.json";
-
 fn plugins_dir(state: &AppState) -> PathBuf {
     state.directory_plugins.app_data_dir().join("plugins")
-}
-
-fn cache_path(state: &AppState) -> PathBuf {
-    state
-        .directory_plugins
-        .app_data_dir()
-        .join("plugin_index_cache.json")
-}
-
-fn cache_path_for_source(state: &AppState, source_url: &str) -> PathBuf {
-    // 多源缓存：按 URL sha256 分文件，避免非法文件名与过长路径
-    let mut hasher = Sha256::new();
-    hasher.update(source_url.trim().as_bytes());
-    let digest = hasher
-        .finalize()
-        .as_slice()
-        .iter()
-        .map(|b| format!("{:02x}", b))
-        .collect::<String>();
-    state
-        .directory_plugins
-        .app_data_dir()
-        .join(format!("plugin_index_cache_{}.json", digest))
 }
 
 fn plugin_state_store_path(state: &AppState) -> PathBuf {
@@ -219,16 +74,8 @@ fn plugin_state_store_path(state: &AppState) -> PathBuf {
 }
 
 pub fn load_cached_index(state: &AppState) -> Result<PluginIndexFile, AppError> {
-    let p = cache_path(state);
-    if !p.exists() {
-        return Ok(PluginIndexFile {
-            generated_at: None,
-            plugins: Vec::new(),
-        });
-    }
-    let raw = fs::read_to_string(&p)?;
-    serde_json::from_str(&raw)
-        .map_err(|e| AppError::Unknown(format!("parse plugin index cache failed: {}", e)))
+    let p = plugin_index_default_cache_path(state.directory_plugins.app_data_dir());
+    load_plugin_index_cache(&p)
 }
 
 pub fn load_cached_index_for_source(
@@ -239,106 +86,8 @@ pub fn load_cached_index_for_source(
     if url.is_empty() {
         return load_cached_index(state);
     }
-    let p = cache_path_for_source(state, url);
-    if !p.exists() {
-        return Ok(PluginIndexFile {
-            generated_at: None,
-            plugins: Vec::new(),
-        });
-    }
-    let raw = fs::read_to_string(&p)?;
-    serde_json::from_str(&raw)
-        .map_err(|e| AppError::Unknown(format!("parse plugin index cache failed: {}", e)))
-}
-
-fn parse_ed25519_pubkey_base64(s: &str) -> Result<VerifyingKey, AppError> {
-    let bytes = B64_STANDARD
-        .decode(s.trim())
-        .map_err(|e| AppError::InvalidParameter(format!("invalid base64 public_key: {}", e)))?;
-    let arr: [u8; 32] = bytes
-        .as_slice()
-        .try_into()
-        .map_err(|_| AppError::InvalidParameter("ed25519 public_key must be 32 bytes".into()))?;
-    VerifyingKey::from_bytes(&arr)
-        .map_err(|e| AppError::InvalidParameter(format!("invalid ed25519 public_key: {}", e)))
-}
-
-#[derive(Debug, Clone, Serialize, Deserialize)]
-#[serde(rename_all = "camelCase")]
-struct PluginPackageSignatureFile {
-    pub plugin_id: String,
-    pub pubkey_id: String,
-    pub algorithm: String, // "ed25519"
-    pub signature: String, // base64
-    #[serde(default)]
-    pub signed_at: Option<String>,
-    #[serde(default)]
-    pub covers: Option<String>,
-}
-
-fn verify_plugin_package_signature(
-    index_entry: &PluginIndexEntry,
-    sig: &PluginPackageSignatureFile,
-    archive_bytes: &[u8],
-) -> Result<(), AppError> {
-    if sig.plugin_id.trim() != index_entry.id.trim() {
-        return Err(AppError::InvalidParameter(format!(
-            "[PLUGIN_SIGNATURE_ID_MISMATCH] signature plugin_id mismatch: sig={} index={}",
-            sig.plugin_id, index_entry.id
-        )));
-    }
-    if sig.algorithm.trim().to_lowercase() != "ed25519" {
-        return Err(AppError::InvalidParameter(format!(
-            "[PLUGIN_SIGNATURE_ALGO_UNSUPPORTED] unsupported signature algorithm: {}",
-            sig.algorithm
-        )));
-    }
-    let pk = index_entry
-        .public_keys
-        .iter()
-        .find(|k| k.pubkey_id.trim() == sig.pubkey_id.trim())
-        .ok_or_else(|| {
-            AppError::InvalidParameter(format!(
-                "[PLUGIN_PUBKEY_NOT_FOUND] pubkey_id not found in index: {}",
-                sig.pubkey_id
-            ))
-        })?;
-    if matches!(pk.status.as_deref(), Some("revoked")) {
-        return Err(AppError::InvalidParameter(format!(
-            "[PLUGIN_PUBKEY_REVOKED] public key revoked: {}",
-            pk.pubkey_id
-        )));
-    }
-    let vk = parse_ed25519_pubkey_base64(&pk.public_key)?;
-    let sig_bytes = B64_STANDARD.decode(sig.signature.trim()).map_err(|e| {
-        AppError::InvalidParameter(format!(
-            "[PLUGIN_SIGNATURE_BASE64_INVALID] invalid base64 signature: {}",
-            e
-        ))
-    })?;
-    let sig_arr: [u8; 64] = sig_bytes.as_slice().try_into().map_err(|_| {
-        AppError::InvalidParameter(
-            "[PLUGIN_SIGNATURE_SIZE_INVALID] ed25519 signature must be 64 bytes".into(),
-        )
-    })?;
-    let signature = Signature::from_bytes(&sig_arr);
-    vk.verify_strict(archive_bytes, &signature).map_err(|e| {
-        AppError::InvalidParameter(format!(
-            "[PLUGIN_SIGNATURE_VERIFY_FAILED] signature verify failed: {}",
-            e
-        ))
-    })?;
-    Ok(())
-}
-
-pub fn verify_plugin_package_signature_text(
-    index_entry: &PluginIndexEntry,
-    sig_text: &str,
-    archive_bytes: &[u8],
-) -> Result<(), AppError> {
-    let sig: PluginPackageSignatureFile = serde_json::from_str(sig_text)
-        .map_err(|e| AppError::Unknown(format!("parse signature.json failed: {}", e)))?;
-    verify_plugin_package_signature(index_entry, &sig, archive_bytes)
+    let p = plugin_index_cache_path_for_source(state.directory_plugins.app_data_dir(), url);
+    load_plugin_index_cache(&p)
 }
 
 pub fn install_plugin_from_archive_bytes_overwrite(
@@ -393,7 +142,8 @@ pub fn sync_plugin_index_online(
         .filter(|s| !s.is_empty())
         .or_else(|| env_url.as_deref().map(str::trim).filter(|s| !s.is_empty()))
         .unwrap_or(DEFAULT_PLUGIN_INDEX_URL);
-    sync_plugin_index_online_at(state, url, &cache_path(state))
+    let cache = plugin_index_default_cache_path(state.directory_plugins.app_data_dir());
+    sync_plugin_index_from_url(url, &cache)
 }
 
 pub fn sync_plugin_index_online_for_source(
@@ -404,48 +154,8 @@ pub fn sync_plugin_index_online_for_source(
     if url.is_empty() {
         return sync_plugin_index_online(state, None);
     }
-    let cache = cache_path_for_source(state, url);
-    sync_plugin_index_online_at(state, url, &cache)
-}
-
-fn sync_plugin_index_online_at(
-    _state: &AppState,
-    url: &str,
-    cache: &Path,
-) -> Result<PluginIndexFile, AppError> {
-    let cli = reqwest::blocking::Client::builder()
-        .timeout(std::time::Duration::from_secs(15))
-        .build()
-        .map_err(|e| AppError::Unknown(format!("index http client failed: {}", e)))?;
-    let resp = cli
-        .get(url)
-        .send()
-        .map_err(|e| AppError::Unknown(format!("sync plugin index failed: {}", e)))?;
-    if !resp.status().is_success() {
-        return Err(AppError::Unknown(format!(
-            "sync plugin index status={} url={}",
-            resp.status(),
-            url
-        )));
-    }
-    let text = resp
-        .text()
-        .map_err(|e| AppError::Unknown(format!("read plugin index response failed: {}", e)))?;
-    // Validate index contract (esp. no-code module/profile constraints) before persisting cache.
-    validate_plugin_market_index_v1(&text)
-        .map_err(|e| AppError::Unknown(format!("plugins.json validate failed: {}", e)))?;
-    let mut parsed: PluginIndexFile = serde_json::from_str(&text)
-        .map_err(|e| AppError::Unknown(format!("parse plugins.json failed: {}", e)))?;
-    parsed.plugins.sort_by(|a, b| a.id.cmp(&b.id));
-    if let Some(parent) = cache.parent() {
-        let _ = fs::create_dir_all(parent);
-    }
-    fs::write(
-        cache,
-        serde_json::to_string_pretty(&parsed)
-            .map_err(|e| AppError::Unknown(format!("encode index cache failed: {}", e)))?,
-    )?;
-    Ok(parsed)
+    let cache = plugin_index_cache_path_for_source(state.directory_plugins.app_data_dir(), url);
+    sync_plugin_index_from_url(url, &cache)
 }
 
 fn run_git(args: &[&str], cwd: Option<&Path>) -> Result<(), AppError> {
@@ -552,9 +262,7 @@ pub fn install_plugin_from_download_urls(
         .map_err(|e| AppError::Unknown(format!("download signature status failed: {}", e)))?
         .text()
         .map_err(|e| AppError::Unknown(format!("read signature text failed: {}", e)))?;
-    let sig: PluginPackageSignatureFile = serde_json::from_str(&sig_text)
-        .map_err(|e| AppError::Unknown(format!("parse signature.json failed: {}", e)))?;
-    verify_plugin_package_signature(index_entry, &sig, &archive_bytes)?;
+    verify_plugin_package_signature_text(index_entry, &sig_text, &archive_bytes)?;
     install_plugin_from_archive_bytes(state, &archive_bytes)
 }
 

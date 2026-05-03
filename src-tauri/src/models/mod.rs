@@ -3,8 +3,8 @@
 
 pub use oclive_kernel_runtime::models::{
     author_pack, chat, dto, emotion, event, expert_models, favorability, interaction_mode,
-    knowledge, memory, oocp, personality, plugin_backends, role, role_manifest_disk,
-    role_settings_disk, scene_disk, ui_config,
+    knowledge, memory, oocp, personality, plugin_backends, plugin_market_index, role,
+    role_manifest_disk, role_settings_disk, scene_disk, ui_config,
 };
 
 pub use crate::error::*;
@@ -22,6 +22,10 @@ pub use oclive_kernel_runtime::models::knowledge::{
 pub use oclive_kernel_runtime::models::memory::*;
 pub use oclive_kernel_runtime::models::personality::*;
 pub use oclive_kernel_runtime::models::plugin_backends::*;
+pub use oclive_kernel_runtime::models::plugin_market_index::{
+    PluginIndexEntry, PluginIndexFile, PluginIndexModulePluginSpec, PluginIndexModuleSpec,
+    PluginIndexProfileSpec, PluginIndexVersionEntry, PublisherPublicKey,
+};
 pub use oclive_kernel_runtime::models::role::*;
 pub use oclive_kernel_runtime::models::role_manifest_disk::DiskRoleManifest;
 pub use oclive_kernel_runtime::models::role_settings_disk::DiskRoleSettings;

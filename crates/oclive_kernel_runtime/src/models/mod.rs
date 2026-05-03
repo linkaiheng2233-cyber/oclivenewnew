@@ -12,6 +12,7 @@ pub mod memory;
 pub mod oocp;
 pub mod personality;
 pub mod plugin_backends;
+pub mod plugin_market_index;
 pub mod role;
 pub mod role_manifest_disk;
 pub mod role_settings_disk;
@@ -31,6 +32,10 @@ pub use knowledge::{KnowledgeEventAugment, KnowledgeIndex, KnowledgePackConfigDi
 pub use memory::*;
 pub use personality::*;
 pub use plugin_backends::*;
+pub use plugin_market_index::{
+    PluginIndexEntry, PluginIndexFile, PluginIndexModulePluginSpec, PluginIndexModuleSpec,
+    PluginIndexProfileSpec, PluginIndexVersionEntry, PublisherPublicKey,
+};
 pub use role::*;
 pub use role_manifest_disk::DiskRoleManifest;
 pub use role_settings_disk::DiskRoleSettings;

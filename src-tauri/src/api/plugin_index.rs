@@ -6,8 +6,10 @@ use crate::infrastructure::plugin_installer::{
     install_plugin, install_plugin_from_download_urls, install_plugin_from_git_tag,
     load_cached_index, load_cached_index_for_source, missing_dependencies,
     sync_plugin_index_online, sync_plugin_index_online_for_source, uninstall_plugin,
-    update_install_meta_permissions, update_plugin, PluginIndexEntry, PluginIndexFile,
-    PluginIndexVersionEntry,
+    update_install_meta_permissions, update_plugin,
+};
+use crate::models::plugin_market_index::{
+    PluginIndexEntry, PluginIndexFile, PluginIndexVersionEntry,
 };
 use crate::state::AppState;
 use semver::Version;

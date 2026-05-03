@@ -31,6 +31,7 @@ pub mod ollama_host_commands;
 pub mod permission_tokens;
 pub mod personality_engine;
 pub mod plugin_host;
+pub mod plugin_install_consent;
 pub mod plugin_permission_commands;
 pub mod plugin_resolution_debug;
 pub mod policy;

@@ -1,3 +1,6 @@
+use crate::domain::plugin_install_consent::{
+    ensure_accepted_permissions_subset_declared, normalize_install_permission_tokens,
+};
 use crate::infrastructure::directory_plugins::OclivePluginManifest;
 use crate::infrastructure::local_imports::{
     imports_root, list_local_import_candidates, read_import_text, resolve_path_under_imports_root,
@@ -187,23 +190,9 @@ pub async fn install_local_plugin_archive_command(
     let manifest = OclivePluginManifest::load_from_dir(&root_dir).map_err(|e| e.to_string())?;
     let declared = bridge_permission_tokens_from_manifest(&manifest);
     let mut perms = req.accepted_permissions.unwrap_or_else(|| declared.clone());
-    perms = perms
-        .into_iter()
-        .map(|s| s.trim().to_string())
-        .filter(|s| !s.is_empty())
-        .collect();
-    perms.sort();
-    perms.dedup();
-    if !perms.is_empty() {
-        let declared_set: std::collections::HashSet<String> =
-            declared.iter().map(|s| s.trim().to_string()).collect();
-        let ok = perms.iter().all(|p| declared_set.contains(p.trim()));
-        if !ok {
-            return Err(
-                "accepted_permissions must be a subset of declared permissions".to_string(),
-            );
-        }
-    }
+    perms = normalize_install_permission_tokens(perms);
+    ensure_accepted_permissions_subset_declared(&declared, &perms)
+        .map_err(|e| e.to_frontend_error())?;
     for p in perms {
         let _ = state
             .db_manager
