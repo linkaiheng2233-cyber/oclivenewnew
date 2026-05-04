@@ -25,6 +25,7 @@ use chrono::Utc;
 use serde::Serialize;
 use serde_json::json;
 use std::collections::HashMap;
+use std::path::{Path, PathBuf};
 use uuid::Uuid;
 
 #[derive(Debug, Clone, serde::Serialize, serde::Deserialize)]
@@ -474,38 +475,41 @@ fn gguf_repo_disk_path(state: &KernelAppState) -> std::path::PathBuf {
     llama_models_gguf_dir(state).join(GGUF_REPO_FILE)
 }
 
-fn read_gguf_repo(state: &KernelAppState) -> GgufRepoFile {
+async fn read_gguf_repo_async(state: &KernelAppState) -> GgufRepoFile {
     let p = gguf_repo_disk_path(state);
-    if !p.is_file() {
+    if tokio::fs::metadata(&p).await.is_err() {
         return GgufRepoFile {
             version: GGUF_REPO_VERSION,
             entries: HashMap::new(),
         };
     }
-    let Ok(bytes) = std::fs::read(&p) else {
-        return GgufRepoFile {
+    match tokio::fs::read(&p).await {
+        Ok(bytes) => serde_json::from_slice::<GgufRepoFile>(&bytes).unwrap_or_else(|_| GgufRepoFile {
             version: GGUF_REPO_VERSION,
             entries: HashMap::new(),
-        };
-    };
-    serde_json::from_slice::<GgufRepoFile>(&bytes).unwrap_or_else(|_| GgufRepoFile {
-        version: GGUF_REPO_VERSION,
-        entries: HashMap::new(),
-    })
+        }),
+        Err(_) => GgufRepoFile {
+            version: GGUF_REPO_VERSION,
+            entries: HashMap::new(),
+        },
+    }
 }
 
-fn write_gguf_repo(state: &KernelAppState, mut repo: GgufRepoFile) -> Result<(), String> {
+async fn write_gguf_repo_async(
+    state: &KernelAppState,
+    mut repo: GgufRepoFile,
+) -> Result<(), String> {
     repo.version = GGUF_REPO_VERSION;
     let dir = llama_models_gguf_dir(state);
-    ensure_dir(dir.as_path())?;
+    ensure_dir_async(dir.as_path()).await?;
     let dest = gguf_repo_disk_path(state);
     let tmp = dest.with_extension("json.tmp");
     let json = serde_json::to_vec_pretty(&repo).map_err(|e| e.to_string())?;
-    std::fs::write(&tmp, json).map_err(|e| e.to_string())?;
-    if dest.exists() {
-        std::fs::remove_file(&dest).map_err(|e| e.to_string())?;
+    tokio::fs::write(&tmp, json).await.map_err(|e| e.to_string())?;
+    if tokio::fs::metadata(&dest).await.is_ok() {
+        tokio::fs::remove_file(&dest).await.map_err(|e| e.to_string())?;
     }
-    std::fs::rename(&tmp, &dest).map_err(|e| e.to_string())?;
+    tokio::fs::rename(&tmp, &dest).await.map_err(|e| e.to_string())?;
     Ok(())
 }
 
@@ -527,8 +531,8 @@ fn sanitize_gguf_repo_entry(notes: &str, source_url: &str, tags: &[String]) -> G
     }
 }
 
-fn apply_repo_to_base_models(state: &KernelAppState, files: &mut [LocalModelFileDto]) {
-    let repo = read_gguf_repo(state);
+async fn apply_repo_to_base_models_async(state: &KernelAppState, files: &mut [LocalModelFileDto]) {
+    let repo = read_gguf_repo_async(state).await;
     for f in files.iter_mut() {
         if let Some(e) = repo.entries.get(&f.name) {
             f.repo_notes = e.notes.clone();
@@ -551,14 +555,19 @@ pub struct LocalModelFileDto {
     pub repo_tags: Vec<String>,
 }
 
-fn list_gguf_files(dir: &std::path::Path) -> Vec<LocalModelFileDto> {
+async fn list_gguf_files_async(dir: &Path) -> Result<Vec<LocalModelFileDto>, String> {
     let mut out: Vec<LocalModelFileDto> = vec![];
-    let Ok(rd) = std::fs::read_dir(dir) else {
-        return out;
+    let mut rd = match tokio::fs::read_dir(dir).await {
+        Ok(r) => r,
+        Err(_) => return Ok(out),
     };
-    for ent in rd.flatten() {
+    while let Ok(Some(ent)) = rd.next_entry().await {
         let p = ent.path();
-        if !p.is_file() {
+        let is_file = match tokio::fs::metadata(&p).await {
+            Ok(m) => m.is_file(),
+            Err(_) => continue,
+        };
+        if !is_file {
             continue;
         }
         let is_gguf = p
@@ -587,24 +596,26 @@ fn list_gguf_files(dir: &std::path::Path) -> Vec<LocalModelFileDto> {
             .to_ascii_lowercase()
             .cmp(&b.name.to_ascii_lowercase())
     });
-    out
+    Ok(out)
 }
 
-pub fn expert_models_list_local_base_models(
+pub async fn expert_models_list_local_base_models(
     state: &KernelAppState,
 ) -> Result<Vec<LocalModelFileDto>, String> {
-    let mut files = list_gguf_files(llama_models_gguf_dir(state).as_path());
-    apply_repo_to_base_models(state, &mut files);
+    let mut files = list_gguf_files_async(llama_models_gguf_dir(state).as_path()).await?;
+    apply_repo_to_base_models_async(state, &mut files).await;
     Ok(files)
 }
 
-pub fn expert_models_list_local_loras(
+pub async fn expert_models_list_local_loras(
     state: &KernelAppState,
 ) -> Result<Vec<LocalModelFileDto>, String> {
     let loras = llama_loras_dir(state);
-    let mut out = list_gguf_files(loras.as_path());
+    let mut out = list_gguf_files_async(loras.as_path()).await?;
     // For M1 compatibility, allow placing LoRAs under models/gguf as well.
-    out.extend(list_gguf_files(llama_models_gguf_dir(state).as_path()));
+    out.extend(
+        list_gguf_files_async(llama_models_gguf_dir(state).as_path()).await?,
+    );
     out.sort_by(|a, b| {
         a.name
             .to_ascii_lowercase()
@@ -614,8 +625,8 @@ pub fn expert_models_list_local_loras(
     Ok(out)
 }
 
-fn ensure_dir(p: &std::path::Path) -> Result<(), String> {
-    std::fs::create_dir_all(p).map_err(|e| e.to_string())
+async fn ensure_dir_async(p: &Path) -> Result<(), String> {
+    tokio::fs::create_dir_all(p).await.map_err(|e| e.to_string())
 }
 
 fn sanitize_file_name(name: &str) -> String {
@@ -623,25 +634,25 @@ fn sanitize_file_name(name: &str) -> String {
     name.replace(['\\', '/', ':'], "_")
 }
 
-fn unique_dest_path(dir: &std::path::Path, file_name: &str) -> std::path::PathBuf {
+async fn unique_dest_path_async(dir: &Path, file_name: &str) -> PathBuf {
     let base = sanitize_file_name(file_name);
-    let stem = std::path::Path::new(&base)
+    let stem = Path::new(&base)
         .file_stem()
         .and_then(|s| s.to_str())
         .unwrap_or("model")
         .to_string();
-    let ext = std::path::Path::new(&base)
+    let ext = Path::new(&base)
         .extension()
         .and_then(|s| s.to_str())
         .unwrap_or("gguf")
         .to_string();
     let mut cand = dir.join(format!("{}.{}", stem, ext));
-    if !cand.exists() {
+    if tokio::fs::metadata(&cand).await.is_err() {
         return cand;
     }
     for i in 2..=999 {
         cand = dir.join(format!("{}_{}.{}", stem, i, ext));
-        if !cand.exists() {
+        if tokio::fs::metadata(&cand).await.is_err() {
             return cand;
         }
     }
@@ -655,12 +666,13 @@ pub struct ExpertModelsImportGgufRequest {
     pub source_path: String,
 }
 
-fn import_gguf_into_dir(
-    dir: &std::path::Path,
+async fn import_gguf_into_dir_async(
+    dir: &Path,
     source_path: &str,
 ) -> Result<LocalModelFileDto, String> {
     let src = std::path::PathBuf::from(source_path.trim());
-    if !src.is_file() {
+    let meta = tokio::fs::metadata(&src).await.map_err(|e| e.to_string())?;
+    if !meta.is_file() {
         return Err(BridgeApiError::InvalidParameter {
             message: "source_path must be a file".into(),
         }
@@ -677,13 +689,13 @@ fn import_gguf_into_dir(
         }
         .to_string());
     }
-    ensure_dir(dir)?;
+    ensure_dir_async(dir).await?;
     let file_name = src
         .file_name()
         .and_then(|s| s.to_str())
         .unwrap_or("model.gguf");
-    let dest = unique_dest_path(dir, file_name);
-    std::fs::copy(&src, &dest).map_err(|e| e.to_string())?;
+    let dest = unique_dest_path_async(dir, file_name).await;
+    tokio::fs::copy(&src, &dest).await.map_err(|e| e.to_string())?;
     let name = dest
         .file_name()
         .and_then(|s| s.to_str())
@@ -699,30 +711,29 @@ fn import_gguf_into_dir(
     })
 }
 
-pub fn expert_models_import_base_gguf(
+pub async fn expert_models_import_base_gguf(
     state: &KernelAppState,
     req: &ExpertModelsImportGgufRequest,
 ) -> Result<LocalModelFileDto, String> {
     let dir = llama_models_gguf_dir(state);
-    let dto = import_gguf_into_dir(dir.as_path(), req.source_path.as_str())?;
+    let dto = import_gguf_into_dir_async(dir.as_path(), req.source_path.as_str()).await?;
     let mut one = vec![dto];
-    apply_repo_to_base_models(state, &mut one);
+    apply_repo_to_base_models_async(state, &mut one).await;
     Ok(one.pop().expect("one row"))
 }
 
-pub fn expert_models_import_lora_gguf(
+pub async fn expert_models_import_lora_gguf(
     state: &KernelAppState,
     req: &ExpertModelsImportGgufRequest,
 ) -> Result<LocalModelFileDto, String> {
     let dir = llama_loras_dir(state);
-    import_gguf_into_dir(dir.as_path(), req.source_path.as_str())
+    import_gguf_into_dir_async(dir.as_path(), req.source_path.as_str()).await
 }
 
-fn resolve_existing_gguf_under_models_gguf_dir(
+async fn resolve_existing_gguf_under_models_gguf_dir_async(
     state: &KernelAppState,
     user_path: &str,
 ) -> Result<std::path::PathBuf, String> {
-    use std::path::Path;
     let t = user_path.trim();
     if t.is_empty() {
         return Err(BridgeApiError::InvalidParameter {
@@ -731,8 +742,12 @@ fn resolve_existing_gguf_under_models_gguf_dir(
         .to_string());
     }
     let gguf_root = llama_models_gguf_dir(state);
-    std::fs::create_dir_all(&gguf_root).map_err(|e| e.to_string())?;
-    let root = gguf_root.canonicalize().map_err(|e| e.to_string())?;
+    tokio::fs::create_dir_all(&gguf_root)
+        .await
+        .map_err(|e| e.to_string())?;
+    let root = tokio::fs::canonicalize(&gguf_root)
+        .await
+        .map_err(|e| e.to_string())?;
     let pb = Path::new(t);
     if !pb.is_absolute() {
         return Err(BridgeApiError::InvalidParameter {
@@ -740,14 +755,17 @@ fn resolve_existing_gguf_under_models_gguf_dir(
         }
         .to_string());
     }
-    let cand = pb.canonicalize().map_err(|e| e.to_string())?;
+    let cand = tokio::fs::canonicalize(pb)
+        .await
+        .map_err(|e| e.to_string())?;
     if !cand.starts_with(&root) {
         return Err(BridgeApiError::InvalidParameter {
             message: "path must stay under app_data/models/gguf".into(),
         }
         .to_string());
     }
-    if !cand.is_file() {
+    let file_meta = tokio::fs::metadata(&cand).await.map_err(|e| e.to_string())?;
+    if !file_meta.is_file() {
         return Err(BridgeApiError::InvalidParameter {
             message: "path is not an existing file".into(),
         }
@@ -780,31 +798,30 @@ pub struct ExpertModelsRenameLocalGgufRequest {
     pub new_file_name: String,
 }
 
-pub fn expert_models_delete_local_base_model(
+pub async fn expert_models_delete_local_base_model(
     state: &KernelAppState,
     req: &ExpertModelsLocalGgufPathRequest,
 ) -> Result<(), String> {
-    let p = resolve_existing_gguf_under_models_gguf_dir(state, req.path.as_str())?;
+    let p = resolve_existing_gguf_under_models_gguf_dir_async(state, req.path.as_str()).await?;
     let fname = p
         .file_name()
         .and_then(|x| x.to_str())
         .unwrap_or("")
         .to_string();
-    std::fs::remove_file(&p).map_err(|e| e.to_string())?;
+    tokio::fs::remove_file(&p).await.map_err(|e| e.to_string())?;
     if !fname.is_empty() {
-        let mut repo = read_gguf_repo(state);
+        let mut repo = read_gguf_repo_async(state).await;
         repo.entries.remove(&fname);
-        let _ = write_gguf_repo(state, repo);
+        let _ = write_gguf_repo_async(state, repo).await;
     }
     Ok(())
 }
 
-pub fn expert_models_rename_local_base_model(
+pub async fn expert_models_rename_local_base_model(
     state: &KernelAppState,
     req: &ExpertModelsRenameLocalGgufRequest,
 ) -> Result<LocalModelFileDto, String> {
-    use std::path::Path;
-    let src = resolve_existing_gguf_under_models_gguf_dir(state, req.path.as_str())?;
+    let src = resolve_existing_gguf_under_models_gguf_dir_async(state, req.path.as_str()).await?;
     let raw = req.new_file_name.trim();
     if raw.is_empty() {
         return Err(BridgeApiError::InvalidParameter {
@@ -842,7 +859,7 @@ pub fn expert_models_rename_local_base_model(
         .to_string()
     })?;
     let dest = parent.join(s);
-    if dest.exists() {
+    if tokio::fs::metadata(&dest).await.is_ok() {
         return Err(BridgeApiError::InvalidParameter {
             message: "target file already exists".into(),
         }
@@ -853,18 +870,20 @@ pub fn expert_models_rename_local_base_model(
         .and_then(|x| x.to_str())
         .unwrap_or("")
         .to_string();
-    std::fs::rename(&src, &dest).map_err(|e| e.to_string())?;
-    let dest = dest.canonicalize().map_err(|e| e.to_string())?;
+    tokio::fs::rename(&src, &dest).await.map_err(|e| e.to_string())?;
+    let dest = tokio::fs::canonicalize(&dest)
+        .await
+        .map_err(|e| e.to_string())?;
     let new_name = dest
         .file_name()
         .and_then(|x| x.to_str())
         .unwrap_or("")
         .to_string();
     if !old_name.is_empty() && old_name != new_name {
-        let mut repo = read_gguf_repo(state);
+        let mut repo = read_gguf_repo_async(state).await;
         if let Some(ent) = repo.entries.remove(&old_name) {
             repo.entries.insert(new_name.clone(), ent);
-            let _ = write_gguf_repo(state, repo);
+            let _ = write_gguf_repo_async(state, repo).await;
         }
     }
     let dto = LocalModelFileDto {
@@ -875,7 +894,7 @@ pub fn expert_models_rename_local_base_model(
         repo_tags: vec![],
     };
     let mut one = vec![dto];
-    apply_repo_to_base_models(state, &mut one);
+    apply_repo_to_base_models_async(state, &mut one).await;
     Ok(one.pop().expect("one row"))
 }
 
@@ -888,11 +907,11 @@ pub struct ExpertModelsSetGgufRepoMetaRequest {
     pub tags: Vec<String>,
 }
 
-pub fn expert_models_set_gguf_repo_meta(
+pub async fn expert_models_set_gguf_repo_meta(
     state: &KernelAppState,
     req: &ExpertModelsSetGgufRepoMetaRequest,
 ) -> Result<LocalModelFileDto, String> {
-    let p = resolve_existing_gguf_under_models_gguf_dir(state, req.path.as_str())?;
+    let p = resolve_existing_gguf_under_models_gguf_dir_async(state, req.path.as_str()).await?;
     let name = p
         .file_name()
         .and_then(|x| x.to_str())
@@ -905,13 +924,13 @@ pub fn expert_models_set_gguf_repo_meta(
         .to_string());
     }
     let entry = sanitize_gguf_repo_entry(&req.notes, &req.source_url, &req.tags);
-    let mut repo = read_gguf_repo(state);
+    let mut repo = read_gguf_repo_async(state).await;
     if entry.notes.is_empty() && entry.source_url.is_empty() && entry.tags.is_empty() {
         repo.entries.remove(&name);
     } else {
         repo.entries.insert(name.clone(), entry);
     }
-    write_gguf_repo(state, repo)?;
+    write_gguf_repo_async(state, repo).await?;
     let dto = LocalModelFileDto {
         name,
         path: p.to_string_lossy().to_string(),
@@ -920,7 +939,7 @@ pub fn expert_models_set_gguf_repo_meta(
         repo_tags: vec![],
     };
     let mut one = vec![dto];
-    apply_repo_to_base_models(state, &mut one);
+    apply_repo_to_base_models_async(state, &mut one).await;
     Ok(one.pop().expect("one row"))
 }
 

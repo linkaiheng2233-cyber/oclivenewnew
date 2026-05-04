@@ -24,7 +24,8 @@
 - `infrastructure/hotkey_bindings.rs`：`load_async` / `save_async`  
 - `infrastructure/plugin_state.rs`：`load_async` / `save_async`；`plugin_install::remove_plugin_from_plugin_state_file_async`；`DirectoryPluginRuntime::reload_plugin_state_async`  
 - `DirectoryPluginRuntime::set_active_role_id_async`：`oclive_last_role_id.txt` 使用 **`tokio::fs::write`**（`load_role` 路径）
-- `http_api.rs`：`serve_api_with_options` 对 **`app_data_dir`** 使用 **`tokio::fs::create_dir_all`**（P1 第四批遗留锚点收口）
+- `http_api.rs`：`serve_api_with_options` 对 **`app_data_dir`** 使用 **`tokio::fs::create_dir_all`**；`POST /chat` 角色目录加载在 **`spawn_blocking`**（与 `SYNC_IO_ANCHORS.md` 一致）。
+- `domain/expert_models_admin.rs`：本地 GGUF 与 repo 元数据 I/O 已 **`tokio::fs`**（第四批）；Tauri 侧对应 invoke 为 **`async`**。
 - Tauri：`get_hotkey_bindings` / `save_hotkey_bindings`、`uninstall_plugin` / 市场卸载命令已走上述异步路径；**目录卸载**中 `remove_dir_all` 使用 **`spawn_blocking`**。
 
 ## 3. `KernelAppState::new_in_memory_with_llm` 启动链（分段计时建议）

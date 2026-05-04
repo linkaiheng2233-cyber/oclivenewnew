@@ -80,63 +80,69 @@ pub async fn expert_models_apply_to_session(
 }
 
 #[tauri::command]
-pub fn expert_models_list_local_base_models(
+pub async fn expert_models_list_local_base_models(
     state: State<'_, AppState>,
 ) -> Result<Vec<LocalModelFileDto>, String> {
     oclive_kernel_runtime::domain::expert_models_admin::expert_models_list_local_base_models(&state)
+        .await
 }
 
 #[tauri::command]
-pub fn expert_models_list_local_loras(
+pub async fn expert_models_list_local_loras(
     state: State<'_, AppState>,
 ) -> Result<Vec<LocalModelFileDto>, String> {
-    oclive_kernel_runtime::domain::expert_models_admin::expert_models_list_local_loras(&state)
+    oclive_kernel_runtime::domain::expert_models_admin::expert_models_list_local_loras(&state).await
 }
 
 #[tauri::command]
-pub fn expert_models_import_base_gguf(
+pub async fn expert_models_import_base_gguf(
     req: ExpertModelsImportGgufRequest,
     state: State<'_, AppState>,
 ) -> Result<LocalModelFileDto, String> {
     oclive_kernel_runtime::domain::expert_models_admin::expert_models_import_base_gguf(&state, &req)
+        .await
 }
 
 #[tauri::command]
-pub fn expert_models_import_lora_gguf(
+pub async fn expert_models_import_lora_gguf(
     req: ExpertModelsImportGgufRequest,
     state: State<'_, AppState>,
 ) -> Result<LocalModelFileDto, String> {
     oclive_kernel_runtime::domain::expert_models_admin::expert_models_import_lora_gguf(&state, &req)
+        .await
 }
 
 #[tauri::command]
-pub fn expert_models_delete_local_base_model(
+pub async fn expert_models_delete_local_base_model(
     req: ExpertModelsLocalGgufPathRequest,
     state: State<'_, AppState>,
 ) -> Result<(), String> {
     oclive_kernel_runtime::domain::expert_models_admin::expert_models_delete_local_base_model(
         &state, &req,
     )
+    .await
 }
 
 #[tauri::command]
-pub fn expert_models_rename_local_base_model(
+pub async fn expert_models_rename_local_base_model(
     req: ExpertModelsRenameLocalGgufRequest,
     state: State<'_, AppState>,
 ) -> Result<LocalModelFileDto, String> {
     oclive_kernel_runtime::domain::expert_models_admin::expert_models_rename_local_base_model(
         &state, &req,
     )
+    .await
 }
 
 #[tauri::command]
-pub fn expert_models_set_gguf_repo_meta(
+pub async fn expert_models_set_gguf_repo_meta(
     req: ExpertModelsSetGgufRepoMetaRequest,
     state: State<'_, AppState>,
 ) -> Result<LocalModelFileDto, String> {
     oclive_kernel_runtime::domain::expert_models_admin::expert_models_set_gguf_repo_meta(
         &state, &req,
     )
+    .await
 }
 
 #[tauri::command]

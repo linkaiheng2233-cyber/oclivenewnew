@@ -13,7 +13,7 @@
 | `infrastructure/storage.rs` | `RoleStorage` 同步读角色包；宿主加载阶段。 |
 | `infrastructure/role_pack_archive.rs` | ZIP/目录导入导出主体在 **`spawn_blocking`** 内使用 `std::fs`。 |
 | `infrastructure/mcp_client.rs`（`kernel-agent`） | manifest 发现等；与进程/HTTP 调用分离，体量小。 |
-| `domain/expert_models_admin.rs` | 管理侧模型路径探测；非对话热路径。 |
+| `domain/expert_models_admin.rs` | **P1 第四批**：本地 GGUF 列表/导入/删改与 `.oclive_gguf_repo.json` 已改为 **`tokio::fs`**；由 Tauri **`async` command** 调用，不占用 worker 同步阻塞读盘。 |
 | `domain/role_lifecycle.rs` | 与包加载相关的同步读。 |
 | `models/ui_config.rs` | UI 配置读盘。 |
 | `domain/local_plugin_bridge.rs` | 测试/桥接中的同步 I/O（见该文件 `cfg(test)`）。 |
@@ -41,7 +41,8 @@
 
 性能基线见 `benches/kernel_hot_paths.rs` 与 `benches/kernel_plugins_persistence.rs`（Criterion）。
 
-## P1-1 分批迁移备注（2026-05）
+## P1-1 分批迁移备注（第四批收口）
 
-- **`expert_models_admin`** 中 `list_gguf_files` / `ensure_dir` 等仍为 **同步 `std::fs`**，由 Tauri **`pub fn` 同步命令** 调用，不占用 async 对话热路径。
-- **下一轮优先**：在 **`async` 命令**或 **`http_api`** 路径上若新增同步读盘，须 **`tokio::fs` 或 `spawn_blocking`**；见 `infrastructure/blocking_http.rs` 注释。
+- **`expert_models_admin`**：已迁移至 **`tokio::fs`**（含 `read_dir` / `metadata` / `canonicalize` / 原子写 repo JSON）；对应 **`src-tauri/src/api/expert_models.rs`** 七条命令改为 **`async`**。
+- **`http_api`**：`POST /chat` 角色加载已在 **`spawn_blocking`**；`serve_api_with_options` 对 **`app_data_dir`** 使用 **`tokio::fs::create_dir_all`**；无额外同步 `std::fs` 热路径。
+- **新增读盘**：须在 **`async` 上下文**使用 **`tokio::fs` 或 `spawn_blocking`**；见 `infrastructure/blocking_http.rs`。
