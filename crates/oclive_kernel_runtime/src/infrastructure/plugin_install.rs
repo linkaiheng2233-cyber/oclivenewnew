@@ -267,15 +267,10 @@ pub async fn install_plugin_from_download_urls_at(
         .get(&download_url)
         .send()
         .await
-        .map_err(|e| {
-            AppError::InvalidParameter(format!("[PLUGIN_INSTALL_DOWNLOAD] get: {}", e))
-        })?
+        .map_err(|e| AppError::InvalidParameter(format!("[PLUGIN_INSTALL_DOWNLOAD] get: {}", e)))?
         .error_for_status()
         .map_err(|e| {
-            AppError::InvalidParameter(format!(
-                "[PLUGIN_INSTALL_DOWNLOAD] archive status: {}",
-                e
-            ))
+            AppError::InvalidParameter(format!("[PLUGIN_INSTALL_DOWNLOAD] archive status: {}", e))
         })?
         .bytes()
         .await
@@ -306,9 +301,7 @@ pub async fn install_plugin_from_download_urls_at(
         install_plugin_from_archive_bytes_impl(&plugins_root, &app_data_dir, &archive_bytes)
     })
     .await
-    .map_err(|e| {
-        AppError::InvalidParameter(format!("[PLUGIN_INSTALL_ARCHIVE_JOIN] {}", e))
-    })?
+    .map_err(|e| AppError::InvalidParameter(format!("[PLUGIN_INSTALL_ARCHIVE_JOIN] {}", e)))?
 }
 
 #[cfg(not(feature = "role-pack-zip"))]

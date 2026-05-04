@@ -3,9 +3,9 @@
 
 pub use oclive_kernel_core::prompt::PromptAssembler;
 
-use crate::domain::prompt_builder::PromptInput;
 #[cfg(not(feature = "default-prompt-providers"))]
 use crate::domain::disabled_default_providers::DisabledPromptAssembler;
+use crate::domain::prompt_builder::PromptInput;
 use oclive_kernel_core::prompt::TopicHintContext;
 #[cfg(feature = "default-prompt-providers")]
 pub use oclive_prompt_builtin::{

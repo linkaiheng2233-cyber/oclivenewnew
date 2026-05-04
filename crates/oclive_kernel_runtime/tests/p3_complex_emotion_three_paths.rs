@@ -114,7 +114,9 @@ async fn complex_emotion_hint_in_remote_life_main_prompt() {
         scene_id: Some("default".into()),
         session_id: None,
     };
-    process_message(&state, &req1).await.expect("turn1 co_present");
+    process_message(&state, &req1)
+        .await
+        .expect("turn1 co_present");
 
     let hint = state
         .db_manager
@@ -136,7 +138,9 @@ async fn complex_emotion_hint_in_remote_life_main_prompt() {
         scene_id: Some("default".into()),
         session_id: None,
     };
-    process_message(&state, &req2).await.expect("turn2 remote_life");
+    process_message(&state, &req2)
+        .await
+        .expect("turn2 remote_life");
 
     let captured = prompts.lock().await;
     let with_block: Vec<&str> = captured
@@ -198,5 +202,8 @@ async fn complex_emotion_hint_persisted_on_agent_handled_early_exit() {
         .await
         .expect("read hint");
     let hint = hint.expect("hint after agent handled + builtin_keyword");
-    assert!(!hint.trim().is_empty(), "unexpected empty hint after agent branch");
+    assert!(
+        !hint.trim().is_empty(),
+        "unexpected empty hint after agent branch"
+    );
 }

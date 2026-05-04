@@ -18,13 +18,13 @@ use crate::infrastructure::cloud_llm::{
 };
 use crate::infrastructure::db::DbManager;
 use crate::infrastructure::directory_plugins::DirectoryPluginRuntime;
-use crate::infrastructure::llm::LlmClient;
-#[cfg(feature = "default-llm-providers")]
-use crate::infrastructure::llm::ollama_llm;
-#[cfg(feature = "default-llm-providers")]
-use crate::infrastructure::ollama_client::OllamaClient;
 #[cfg(not(feature = "default-llm-providers"))]
 use crate::infrastructure::llm::default_runtime_llm_arc;
+#[cfg(feature = "default-llm-providers")]
+use crate::infrastructure::llm::ollama_llm;
+use crate::infrastructure::llm::LlmClient;
+#[cfg(feature = "default-llm-providers")]
+use crate::infrastructure::ollama_client::OllamaClient;
 use crate::infrastructure::repositories_runtime::{
     SqliteExpertModelsRepository, SqliteFavorabilityRepository, SqliteMemoryRepository,
 };

@@ -208,14 +208,9 @@ impl McpClient {
             })?;
         let server_id = server.id.clone();
         let url = url.clone();
-        let resp = cli
-            .post(&url)
-            .json(&payload)
-            .send()
-            .await
-            .map_err(|e| {
-                AppError::InvalidParameter(format!("[MCP_HTTP] call failed ({}): {}", server_id, e))
-            })?;
+        let resp = cli.post(&url).json(&payload).send().await.map_err(|e| {
+            AppError::InvalidParameter(format!("[MCP_HTTP] call failed ({}): {}", server_id, e))
+        })?;
         let status = resp.status();
         let body: Value = resp.json().await.map_err(|e| {
             AppError::InvalidParameter(format!("[MCP_HTTP] json decode ({}): {}", server_id, e))

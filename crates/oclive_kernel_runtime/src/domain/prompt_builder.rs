@@ -1,7 +1,8 @@
 //! 提示词构建：[`PromptInput`] 等契约在 [`oclive_kernel_core::prompt`]；**开启** **`default-prompt-providers`** 时正文实现来自 **`oclive_prompt_builtin`**。
 
 pub use oclive_kernel_core::prompt::{
-    PromptInput, PromptRolePromptSlice, DEFAULT_REPLY_QUALITY_ANCHOR, effective_reply_quality_anchor,
+    effective_reply_quality_anchor, PromptInput, PromptRolePromptSlice,
+    DEFAULT_REPLY_QUALITY_ANCHOR,
 };
 
 #[cfg(feature = "default-prompt-providers")]

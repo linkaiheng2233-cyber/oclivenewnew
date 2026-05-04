@@ -23,11 +23,7 @@ fn handle_connection(mut stream: TcpStream) {
         Ok(n) => n,
     };
     let raw = String::from_utf8_lossy(&buf[..n]);
-    let body = raw
-        .split("\r\n\r\n")
-        .nth(1)
-        .map(str::trim)
-        .unwrap_or("{}");
+    let body = raw.split("\r\n\r\n").nth(1).map(str::trim).unwrap_or("{}");
     let id = serde_json::from_str::<serde_json::Value>(body)
         .ok()
         .and_then(|v| v.get("id").cloned())

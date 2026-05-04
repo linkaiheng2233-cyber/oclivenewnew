@@ -2,8 +2,6 @@
 //! `params` 含 `personality_source`（`vector`|`profile`），与包内 `evolution` 一致；侧车可忽略。
 
 use crate::domain::event_estimator::default_event_slot_v1;
-use oclive_kernel_core::event_estimator::EventEstimator;
-use oclive_kernel_models::EventImpactEstimate;
 use crate::error::Result;
 use crate::infrastructure::llm::LlmClient;
 use crate::infrastructure::remote_plugin::config::RemotePluginHttpConfig;
@@ -11,6 +9,8 @@ use crate::infrastructure::remote_plugin::jsonrpc::{self, RemoteRpcChannel};
 use crate::models::knowledge::KnowledgeEventAugment;
 use crate::models::{Emotion, Event, PersonalitySource, PersonalityVector};
 use async_trait::async_trait;
+use oclive_kernel_core::event_estimator::EventEstimator;
+use oclive_kernel_models::EventImpactEstimate;
 use serde_json::json;
 use std::sync::Arc;
 

@@ -61,7 +61,10 @@ pub fn load_role_market_index_cache(cache_path: &Path) -> Result<RoleIndexFile> 
     serde_json::from_str(&raw).map_err(AppError::from)
 }
 
-pub async fn sync_role_market_index_from_url(url: &str, cache_path: &Path) -> Result<RoleIndexFile> {
+pub async fn sync_role_market_index_from_url(
+    url: &str,
+    cache_path: &Path,
+) -> Result<RoleIndexFile> {
     let url = url.to_string();
     let cli = reqwest::Client::builder()
         .timeout(std::time::Duration::from_secs(15))

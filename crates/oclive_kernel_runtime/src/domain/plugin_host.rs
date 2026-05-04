@@ -9,12 +9,12 @@ use crate::domain::agent::McpShellAgent;
 #[cfg(not(feature = "kernel-agent"))]
 use crate::domain::agent::NoopAgent;
 use crate::domain::agent::{AgentDebugTrace, AgentProvider, DisabledAgentProvider};
-use crate::domain::disabled_default_providers::{
-    DisabledEventEstimator, DisabledUserEmotionAnalyzer, NoneMemoryRetrieval, NonePromptAssembler,
-};
 use crate::domain::complex_emotion::{
     default_complex_emotion_keyword_arc, ComplexEmotionProvider,
     DegradedToBuiltinComplexEmotionProvider, NoneComplexEmotionProvider,
+};
+use crate::domain::disabled_default_providers::{
+    DisabledEventEstimator, DisabledUserEmotionAnalyzer, NoneMemoryRetrieval, NonePromptAssembler,
 };
 use crate::domain::event_estimator::{
     default_event_slot_v1, default_event_slot_v2, EventEstimator, RemoteEventEstimatorPlaceholder,
@@ -41,8 +41,6 @@ use crate::infrastructure::directory_plugins::DirectoryPluginRuntime;
 use crate::infrastructure::llm::{none_llm_client_arc, LlmClient, RemoteLlmPlaceholder};
 #[cfg(feature = "kernel-agent")]
 use crate::infrastructure::mcp_client::McpClient;
-#[cfg(all(feature = "kernel-agent", feature = "default-agent-providers"))]
-use oclive_kernel_core::mcp::McpInvoke;
 use crate::infrastructure::mcp_client::{McpServerManifest, McpToolCallResult};
 use crate::infrastructure::remote_plugin::RemoteComplexEmotionHttp;
 use crate::infrastructure::remote_plugin::{
@@ -54,6 +52,8 @@ use crate::models::{
     AgentBackend, ComplexEmotionBackend, DirectoryPluginSlots, EmotionBackend, EventBackend,
     LlmBackend, MemoryBackend, PluginBackends, PluginBackendsOverride, PromptBackend, Role,
 };
+#[cfg(all(feature = "kernel-agent", feature = "default-agent-providers"))]
+use oclive_kernel_core::mcp::McpInvoke;
 use parking_lot::RwLock;
 use serde_json::Value;
 use std::future::Future;

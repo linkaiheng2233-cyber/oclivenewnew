@@ -139,7 +139,9 @@ async fn process_message_echoes_requested_scene_id() {
         scene_id: Some("default".into()),
         session_id: Some("p2_scene_sess".into()),
     };
-    let res = process_message(&state, &req).await.expect("process_message");
+    let res = process_message(&state, &req)
+        .await
+        .expect("process_message");
     assert_eq!(res.scene_id, "default");
 }
 

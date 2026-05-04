@@ -169,9 +169,7 @@ async fn switch_scene_together_updates_character_scene_presence_only_does_not() 
         .await
         .expect("state");
 
-    load_role(&state, "p0_scene_sw", false)
-        .await
-        .expect("load");
+    load_role(&state, "p0_scene_sw", false).await.expect("load");
 
     switch_scene(
         &state,

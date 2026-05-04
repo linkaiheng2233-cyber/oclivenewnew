@@ -84,9 +84,7 @@ pub async fn export_role_pack(storage: &RoleStorage, role_id: &str, dest: &Path)
     let dest = dest.to_path_buf();
     tokio::task::spawn_blocking(move || export_role_pack_disk(&storage, &role_id, &dest))
         .await
-        .map_err(|e| {
-            AppError::InvalidParameter(format!("[ROLE_PACK_EXPORT_JOIN] {}", e))
-        })?
+        .map_err(|e| AppError::InvalidParameter(format!("[ROLE_PACK_EXPORT_JOIN] {}", e)))?
 }
 
 fn peek_role_folder_manifest(dir: &Path) -> Result<RolePackPeekResponse> {
@@ -157,9 +155,7 @@ fn peek_role_pack_manifest_disk(src: &Path) -> Result<RolePackPeekResponse> {
 pub async fn peek_role_pack_manifest(src: PathBuf) -> Result<RolePackPeekResponse> {
     tokio::task::spawn_blocking(move || peek_role_pack_manifest_disk(&src))
         .await
-        .map_err(|e| {
-            AppError::InvalidParameter(format!("[ROLE_PACK_PEEK_JOIN] {}", e))
-        })?
+        .map_err(|e| AppError::InvalidParameter(format!("[ROLE_PACK_PEEK_JOIN] {}", e)))?
 }
 
 fn unzip_to(src: &Path, dest: &Path, mut on_entry: impl FnMut(usize, usize)) -> Result<()> {
@@ -395,10 +391,9 @@ where
             u
         )));
     }
-    let body = resp
-        .bytes()
-        .await
-        .map_err(|e| AppError::InvalidParameter(format!("[ROLE_PACK_DOWNLOAD] read body: {}", e)))?;
+    let body = resp.bytes().await.map_err(|e| {
+        AppError::InvalidParameter(format!("[ROLE_PACK_DOWNLOAD] read body: {}", e))
+    })?;
     if body.len() as u64 > MAX_ROLE_PACK_DOWNLOAD_BYTES {
         return Err(AppError::InvalidParameter(format!(
             "[ROLE_PACK_TOO_LARGE] role pack too large (>{} bytes)",
@@ -489,14 +484,9 @@ mod tests {
         .unwrap();
 
         let st = RoleStorage::new(roles_dst.path());
-        let id = import_role_pack(
-            &st,
-            roles_src.path().join("mumu").as_path(),
-            true,
-            |_| {},
-        )
-        .await
-        .unwrap();
+        let id = import_role_pack(&st, roles_src.path().join("mumu").as_path(), true, |_| {})
+            .await
+            .unwrap();
         assert_eq!(id, "mumu");
         assert!(st.load_role("mumu").is_ok());
     }

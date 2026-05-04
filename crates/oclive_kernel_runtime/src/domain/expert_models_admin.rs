@@ -484,10 +484,12 @@ async fn read_gguf_repo_async(state: &KernelAppState) -> GgufRepoFile {
         };
     }
     match tokio::fs::read(&p).await {
-        Ok(bytes) => serde_json::from_slice::<GgufRepoFile>(&bytes).unwrap_or_else(|_| GgufRepoFile {
-            version: GGUF_REPO_VERSION,
-            entries: HashMap::new(),
-        }),
+        Ok(bytes) => {
+            serde_json::from_slice::<GgufRepoFile>(&bytes).unwrap_or_else(|_| GgufRepoFile {
+                version: GGUF_REPO_VERSION,
+                entries: HashMap::new(),
+            })
+        }
         Err(_) => GgufRepoFile {
             version: GGUF_REPO_VERSION,
             entries: HashMap::new(),
@@ -505,11 +507,17 @@ async fn write_gguf_repo_async(
     let dest = gguf_repo_disk_path(state);
     let tmp = dest.with_extension("json.tmp");
     let json = serde_json::to_vec_pretty(&repo).map_err(|e| e.to_string())?;
-    tokio::fs::write(&tmp, json).await.map_err(|e| e.to_string())?;
+    tokio::fs::write(&tmp, json)
+        .await
+        .map_err(|e| e.to_string())?;
     if tokio::fs::metadata(&dest).await.is_ok() {
-        tokio::fs::remove_file(&dest).await.map_err(|e| e.to_string())?;
+        tokio::fs::remove_file(&dest)
+            .await
+            .map_err(|e| e.to_string())?;
     }
-    tokio::fs::rename(&tmp, &dest).await.map_err(|e| e.to_string())?;
+    tokio::fs::rename(&tmp, &dest)
+        .await
+        .map_err(|e| e.to_string())?;
     Ok(())
 }
 
@@ -613,9 +621,7 @@ pub async fn expert_models_list_local_loras(
     let loras = llama_loras_dir(state);
     let mut out = list_gguf_files_async(loras.as_path()).await?;
     // For M1 compatibility, allow placing LoRAs under models/gguf as well.
-    out.extend(
-        list_gguf_files_async(llama_models_gguf_dir(state).as_path()).await?,
-    );
+    out.extend(list_gguf_files_async(llama_models_gguf_dir(state).as_path()).await?);
     out.sort_by(|a, b| {
         a.name
             .to_ascii_lowercase()
@@ -626,7 +632,9 @@ pub async fn expert_models_list_local_loras(
 }
 
 async fn ensure_dir_async(p: &Path) -> Result<(), String> {
-    tokio::fs::create_dir_all(p).await.map_err(|e| e.to_string())
+    tokio::fs::create_dir_all(p)
+        .await
+        .map_err(|e| e.to_string())
 }
 
 fn sanitize_file_name(name: &str) -> String {
@@ -695,7 +703,9 @@ async fn import_gguf_into_dir_async(
         .and_then(|s| s.to_str())
         .unwrap_or("model.gguf");
     let dest = unique_dest_path_async(dir, file_name).await;
-    tokio::fs::copy(&src, &dest).await.map_err(|e| e.to_string())?;
+    tokio::fs::copy(&src, &dest)
+        .await
+        .map_err(|e| e.to_string())?;
     let name = dest
         .file_name()
         .and_then(|s| s.to_str())
@@ -764,7 +774,9 @@ async fn resolve_existing_gguf_under_models_gguf_dir_async(
         }
         .to_string());
     }
-    let file_meta = tokio::fs::metadata(&cand).await.map_err(|e| e.to_string())?;
+    let file_meta = tokio::fs::metadata(&cand)
+        .await
+        .map_err(|e| e.to_string())?;
     if !file_meta.is_file() {
         return Err(BridgeApiError::InvalidParameter {
             message: "path is not an existing file".into(),
@@ -808,7 +820,9 @@ pub async fn expert_models_delete_local_base_model(
         .and_then(|x| x.to_str())
         .unwrap_or("")
         .to_string();
-    tokio::fs::remove_file(&p).await.map_err(|e| e.to_string())?;
+    tokio::fs::remove_file(&p)
+        .await
+        .map_err(|e| e.to_string())?;
     if !fname.is_empty() {
         let mut repo = read_gguf_repo_async(state).await;
         repo.entries.remove(&fname);
@@ -870,7 +884,9 @@ pub async fn expert_models_rename_local_base_model(
         .and_then(|x| x.to_str())
         .unwrap_or("")
         .to_string();
-    tokio::fs::rename(&src, &dest).await.map_err(|e| e.to_string())?;
+    tokio::fs::rename(&src, &dest)
+        .await
+        .map_err(|e| e.to_string())?;
     let dest = tokio::fs::canonicalize(&dest)
         .await
         .map_err(|e| e.to_string())?;

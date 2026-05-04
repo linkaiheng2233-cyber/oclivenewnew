@@ -1,10 +1,12 @@
 //! `memory.rank` JSON-RPC — 见 REMOTE_PLUGIN_PROTOCOL.md
 
-use crate::domain::memory_retrieval::{default_memory_slot_v1, MemoryRetrieval, MemoryRetrievalInput};
-use oclive_memory_builtin::classic;
+use crate::domain::memory_retrieval::{
+    default_memory_slot_v1, MemoryRetrieval, MemoryRetrievalInput,
+};
 use crate::infrastructure::remote_plugin::config::RemotePluginHttpConfig;
 use crate::infrastructure::remote_plugin::jsonrpc::{self, RemoteRpcChannel};
 use crate::models::{Memory, MemoryContext};
+use oclive_memory_builtin::classic;
 use serde_json::{json, Value};
 use std::collections::{HashMap, HashSet};
 use std::sync::Arc;

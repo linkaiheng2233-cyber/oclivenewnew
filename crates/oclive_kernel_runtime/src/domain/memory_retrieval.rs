@@ -1,11 +1,11 @@
 //! 记忆检索可替换门面；默认实现见设施 crate [`oclive_memory_builtin`](oclive_memory_builtin)。
 
-#[cfg(feature = "default-memory-providers")]
-pub use oclive_memory_builtin::{BuiltinMemoryRetrieval, BuiltinMemoryRetrievalV2};
 #[cfg(not(feature = "default-memory-providers"))]
 use crate::domain::disabled_default_providers::DisabledMemoryRetrieval;
 use crate::models::{Memory, MemoryContext};
 pub use oclive_kernel_core::memory_retrieval::{MemoryRetrieval, MemoryRetrievalInput};
+#[cfg(feature = "default-memory-providers")]
+pub use oclive_memory_builtin::{BuiltinMemoryRetrieval, BuiltinMemoryRetrievalV2};
 use std::sync::atomic::{AtomicBool, Ordering};
 use std::sync::Arc;
 

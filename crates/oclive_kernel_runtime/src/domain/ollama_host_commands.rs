@@ -2,9 +2,9 @@
 //!
 //! `default-llm-providers` 关闭时本模块 API 仍保留，但返回明确错误（未编译内置 Ollama 客户端）。
 
-use crate::error::Result;
 #[cfg(not(feature = "default-llm-providers"))]
 use crate::error::AppError;
+use crate::error::Result;
 use serde::Deserialize;
 
 #[cfg(feature = "default-llm-providers")]

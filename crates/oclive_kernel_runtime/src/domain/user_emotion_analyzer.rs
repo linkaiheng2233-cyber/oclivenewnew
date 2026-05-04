@@ -1,11 +1,11 @@
 //! 用户/文本情绪分析可替换门面；默认委托 [`EmotionAnalyzer`](super::emotion_analyzer::EmotionAnalyzer)。
 
-use crate::domain::emotion_analyzer::EmotionResult;
-#[cfg(feature = "default-emotion-providers")]
-pub use oclive_emotion_builtin::{BuiltinUserEmotionAnalyzer, BuiltinUserEmotionAnalyzerV2};
 #[cfg(not(feature = "default-emotion-providers"))]
 use crate::domain::disabled_default_providers::DisabledUserEmotionAnalyzer;
+use crate::domain::emotion_analyzer::EmotionResult;
 use crate::error::Result;
+#[cfg(feature = "default-emotion-providers")]
+pub use oclive_emotion_builtin::{BuiltinUserEmotionAnalyzer, BuiltinUserEmotionAnalyzerV2};
 pub use oclive_kernel_core::user_emotion_analyzer::UserEmotionAnalyzer;
 use std::sync::atomic::{AtomicBool, Ordering};
 use std::sync::Arc;

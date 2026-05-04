@@ -8,8 +8,8 @@ use crate::error::Result;
 use crate::infrastructure::llm::LlmClient;
 use crate::models::knowledge::KnowledgeEventAugment;
 use crate::models::{Emotion, Event, EventType, PersonalityVector};
-use oclive_kernel_models::EventImpactEstimate;
 use crate::utils::json_loose::extract_json_object;
+use oclive_kernel_models::EventImpactEstimate;
 use serde_json::Value;
 use std::sync::Arc;
 

@@ -4,15 +4,13 @@ use oclive_kernel_runtime::domain::chat_engine::process_message;
 use oclive_kernel_runtime::domain::expert_models::compile_graph_to_llama_local_config;
 use oclive_kernel_runtime::domain::role_lifecycle::load_role;
 use oclive_kernel_runtime::domain::scene_commands::switch_scene;
-use std::path::Path;
 use oclive_kernel_runtime::infrastructure::llm::MockLlmClient;
-use oclive_kernel_runtime::models::dto::{
-    SendMessageRequest, SwitchSceneRequest,
-};
+use oclive_kernel_runtime::models::dto::{SendMessageRequest, SwitchSceneRequest};
 use oclive_kernel_runtime::models::expert_models::{ExpertGraph, ExpertNode};
 use oclive_kernel_runtime::state::KernelAppState;
 use serde_json::json;
 use std::fs;
+use std::path::Path;
 use std::path::PathBuf;
 use std::sync::Arc;
 
@@ -83,7 +81,10 @@ async fn mcp_stdio_tool_call_denied_without_process_spawn_grant() {
         .expect("state");
 
     // app_data = roles_dir.join(".oclive_directory_plugin_data") — 与 KernelAppState::new_in_memory 一致
-    let app_data = state.storage.roles_dir().join(".oclive_directory_plugin_data");
+    let app_data = state
+        .storage
+        .roles_dir()
+        .join(".oclive_directory_plugin_data");
     let mcp_root = app_data.join("mcp-servers");
     fs::create_dir_all(&mcp_root).expect("mcp dir");
     let mf = mcp_root.join("p2_stdio_test.json");

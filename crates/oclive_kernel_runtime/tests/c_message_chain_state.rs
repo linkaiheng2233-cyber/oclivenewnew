@@ -113,7 +113,10 @@ async fn scene_switch_preserves_emotion_dto_non_empty() {
     .await
     .expect("co");
     let s1 = r1.emotion.joy + r1.emotion.neutral + r1.emotion.sadness;
-    assert!(s1.is_finite() && s1 > 0.0, "emotion vector should be populated");
+    assert!(
+        s1.is_finite() && s1 > 0.0,
+        "emotion vector should be populated"
+    );
 
     state
         .db_manager
@@ -131,7 +134,7 @@ async fn scene_switch_preserves_emotion_dto_non_empty() {
         },
     )
     .await
-        .expect("remote");
+    .expect("remote");
     assert!(
         !r2.portrait_emotion.is_empty(),
         "portrait emotion should remain populated after scene switch path"

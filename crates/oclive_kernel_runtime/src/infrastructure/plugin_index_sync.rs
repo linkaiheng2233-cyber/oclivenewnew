@@ -77,9 +77,10 @@ pub async fn sync_plugin_index_from_url(url: &str, cache_path: &Path) -> Result<
             url
         )));
     }
-    let text = resp.text().await.map_err(|e| {
-        AppError::InvalidParameter(format!("[PLUGIN_INDEX_HTTP] read body: {}", e))
-    })?;
+    let text = resp
+        .text()
+        .await
+        .map_err(|e| AppError::InvalidParameter(format!("[PLUGIN_INDEX_HTTP] read body: {}", e)))?;
     validate_plugin_market_index_v1(&text)
         .map_err(|e| AppError::InvalidParameter(format!("[PLUGIN_INDEX_VALIDATE] {}", e)))?;
     let mut parsed: PluginIndexFile = serde_json::from_str(&text).map_err(AppError::from)?;

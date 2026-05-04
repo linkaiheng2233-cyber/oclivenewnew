@@ -18,7 +18,11 @@ use std::net::TcpListener;
 use std::thread;
 use std::time::Duration;
 
-fn spawn_one_shot_http(status_line: &str, content_type: &str, body: &str) -> (String, thread::JoinHandle<()>) {
+fn spawn_one_shot_http(
+    status_line: &str,
+    content_type: &str,
+    body: &str,
+) -> (String, thread::JoinHandle<()>) {
     let listener = TcpListener::bind("127.0.0.1:0").expect("bind");
     let port = listener.local_addr().expect("addr").port();
     let status = status_line.to_string();

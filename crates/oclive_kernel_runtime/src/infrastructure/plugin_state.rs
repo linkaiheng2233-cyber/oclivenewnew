@@ -185,9 +185,7 @@ impl PluginStateStore {
                 .map_err(|e| e.to_string())?;
         }
         let raw = serde_json::to_string_pretty(self).map_err(|e| e.to_string())?;
-        tokio::fs::write(path, raw)
-            .await
-            .map_err(|e| e.to_string())
+        tokio::fs::write(path, raw).await.map_err(|e| e.to_string())
     }
 
     pub fn remove_plugin_references(&mut self, plugin_id: &str) {

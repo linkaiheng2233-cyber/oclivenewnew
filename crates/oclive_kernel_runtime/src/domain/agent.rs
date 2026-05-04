@@ -1,8 +1,8 @@
 use crate::error::Result;
+use async_trait::async_trait;
 pub use oclive_kernel_core::agent::{
     AgentDebugTrace, AgentInput, AgentOutput, AgentProvider, AgentToolCallTrace,
 };
-use async_trait::async_trait;
 
 #[cfg(all(feature = "kernel-agent", feature = "default-agent-providers"))]
 pub use oclive_agent_builtin::BuiltinReActAgent;

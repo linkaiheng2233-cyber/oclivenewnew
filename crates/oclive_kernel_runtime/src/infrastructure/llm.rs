@@ -64,8 +64,7 @@ impl LlmClient for BuiltinLlmDisabledClient {
 
     async fn generate_tag(&self, _model: &str, _prompt: &str) -> Result<String> {
         Err(AppError::InvalidParameter(
-            "default-llm-providers feature disabled: no built-in LLM for tag tasks"
-                .into(),
+            "default-llm-providers feature disabled: no built-in LLM for tag tasks".into(),
         ))
     }
 }

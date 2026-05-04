@@ -3,10 +3,6 @@
 // 各 `Disabled*` 仅在对应 `default-*-providers` 关闭时实例化；默认 `full` 下会未被引用。
 
 use crate::domain::emotion_analyzer::EmotionResult;
-use oclive_kernel_core::event_estimator::EventEstimator;
-use oclive_kernel_models::EventImpactEstimate;
-use oclive_memory_builtin::classic;
-use oclive_kernel_core::prompt::{PromptAssembler, PromptInput, TopicHintContext};
 use crate::error::Result;
 use crate::infrastructure::llm::LlmClient;
 use crate::models::knowledge::KnowledgeEventAugment;
@@ -17,8 +13,12 @@ use async_trait::async_trait;
 use oclive_kernel_core::complex_emotion::{
     ComplexEmotionInput, ComplexEmotionOutput, ComplexEmotionProvider,
 };
+use oclive_kernel_core::event_estimator::EventEstimator;
 use oclive_kernel_core::memory_retrieval::{MemoryRetrieval, MemoryRetrievalInput};
+use oclive_kernel_core::prompt::{PromptAssembler, PromptInput, TopicHintContext};
 use oclive_kernel_core::user_emotion_analyzer::UserEmotionAnalyzer;
+use oclive_kernel_models::EventImpactEstimate;
+use oclive_memory_builtin::classic;
 use std::sync::Arc;
 
 pub struct DisabledMemoryRetrieval;

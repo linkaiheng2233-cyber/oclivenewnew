@@ -52,22 +52,33 @@ fn error_codes_match_dictionary_common() {
 fn all_app_error_variants_expose_stable_bracket_envelope() {
     let cases: Vec<(AppError, &str)> = vec![
         (AppError::DatabaseError("e".into()), "DB_ERROR"),
+        (AppError::IoError(std::io::Error::other("io")), "IO_ERROR"),
         (
-            AppError::IoError(std::io::Error::other("io")),
-            "IO_ERROR",
+            AppError::OllamaError("remote_plugin transport".into()),
+            "LLM_ERROR",
         ),
-        (AppError::OllamaError("remote_plugin transport".into()), "LLM_ERROR"),
         (AppError::RoleNotFound("x".into()), "ROLE_NOT_FOUND"),
         (AppError::RolePackExists("dup".into()), "ROLE_PACK_EXISTS"),
         (AppError::InvalidParameter("p".into()), "INVALID_PARAMETER"),
-        (AppError::PermissionDenied("n".into()), "API_PERMISSION_DENIED"),
-        (AppError::DirectoryPluginNotFound("p".into()), "API_PLUGIN_NOT_FOUND"),
         (
-            AppError::SerializationError(serde_json::from_str::<serde_json::Value>("{").unwrap_err()),
+            AppError::PermissionDenied("n".into()),
+            "API_PERMISSION_DENIED",
+        ),
+        (
+            AppError::DirectoryPluginNotFound("p".into()),
+            "API_PLUGIN_NOT_FOUND",
+        ),
+        (
+            AppError::SerializationError(
+                serde_json::from_str::<serde_json::Value>("{").unwrap_err(),
+            ),
             "SERDE_ERROR",
         ),
         (AppError::Unknown("u".into()), "UNKNOWN_ERROR"),
-        (AppError::ChatGenerationCancelled, "CHAT_GENERATION_CANCELLED"),
+        (
+            AppError::ChatGenerationCancelled,
+            "CHAT_GENERATION_CANCELLED",
+        ),
     ];
     let mut seen = std::collections::HashSet::new();
     for (err, code) in cases {

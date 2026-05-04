@@ -4,9 +4,11 @@ use oclive_kernel_runtime::domain::role_lifecycle::load_role;
 use oclive_kernel_runtime::infrastructure::directory_plugins::{
     directory_plugin_bootstrap_dto, DEFAULT_DIRECTORY_PLUGIN_ASSET_BASE_URL,
 };
-use oclive_kernel_runtime::infrastructure::plugin_state::{PluginStateStore, RolePluginState};
-use oclive_kernel_runtime::infrastructure::remote_plugin::{invoke_directory_plugin_rpc, RemoteRpcChannel};
 use oclive_kernel_runtime::infrastructure::llm::MockLlmClient;
+use oclive_kernel_runtime::infrastructure::plugin_state::{PluginStateStore, RolePluginState};
+use oclive_kernel_runtime::infrastructure::remote_plugin::{
+    invoke_directory_plugin_rpc, RemoteRpcChannel,
+};
 use oclive_kernel_runtime::state::KernelAppState;
 use serde_json::json;
 use std::fs;
@@ -61,9 +63,7 @@ fn roles_dir_with_clone(role_dir_name: &str) -> tempfile::TempDir {
 fn stub_plugin_exe() -> PathBuf {
     std::env::var("CARGO_BIN_EXE_oclive_test_dir_plugin")
         .map(PathBuf::from)
-        .or_else(|_| {
-            std::env::var("CARGO_BIN_EXE_oclive_test_dir_plugin.exe").map(PathBuf::from)
-        })
+        .or_else(|_| std::env::var("CARGO_BIN_EXE_oclive_test_dir_plugin.exe").map(PathBuf::from))
         .expect("cargo test should set CARGO_BIN_EXE_oclive_test_dir_plugin")
 }
 
@@ -255,7 +255,10 @@ async fn directory_plugin_lifecycle_disable_rescan_and_version_bump() {
         .directory_plugins
         .rescan_plugin_roots(state.storage.roles_dir());
 
-    let ps_path = state.directory_plugins.app_data_dir().join("plugin_state.json");
+    let ps_path = state
+        .directory_plugins
+        .app_data_dir()
+        .join("plugin_state.json");
     let mut store = PluginStateStore::load(&ps_path);
     store
         .global
@@ -293,14 +296,9 @@ async fn directory_plugin_lifecycle_disable_rescan_and_version_bump() {
         .directory_plugins
         .ensure_rpc_url(&plugin_id)
         .expect("ensure after re-enable");
-    invoke_directory_plugin_rpc(
-        url2.as_str(),
-        "ping",
-        json!({}),
-        RemoteRpcChannel::Plugin,
-    )
-    .await
-    .expect("rpc after re-enable");
+    invoke_directory_plugin_rpc(url2.as_str(), "ping", json!({}), RemoteRpcChannel::Plugin)
+        .await
+        .expect("rpc after re-enable");
 
     state.directory_plugins.clear_plugin_process(&plugin_id);
     if plugin_fs.exists() {

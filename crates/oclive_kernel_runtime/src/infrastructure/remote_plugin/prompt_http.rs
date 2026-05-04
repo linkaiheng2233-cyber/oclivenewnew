@@ -2,11 +2,11 @@
 
 use crate::domain::prompt_assembler::default_prompt_slot_v1;
 use crate::domain::prompt_builder::PromptInput;
-use crate::models::{Role, TopicHintContextSnapshot};
-use oclive_kernel_core::prompt::{PromptAssembler, TopicHintContext};
 use crate::infrastructure::remote_plugin::config::RemotePluginHttpConfig;
 use crate::infrastructure::remote_plugin::jsonrpc::{self, RemoteRpcChannel};
 use crate::models::PersonalitySource;
+use crate::models::{Role, TopicHintContextSnapshot};
+use oclive_kernel_core::prompt::{PromptAssembler, TopicHintContext};
 use serde_json::json;
 use std::sync::Arc;
 

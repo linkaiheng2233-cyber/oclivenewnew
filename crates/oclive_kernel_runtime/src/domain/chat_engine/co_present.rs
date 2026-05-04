@@ -1,10 +1,10 @@
 //! 共景（非异地）路径：情绪 → 事件估计 → prompt → 主 LLM → 持久化 → movement 检测 → 响应
 
-use crate::domain::emotion_analyzer::EmotionResultExt;
 use crate::domain::chat_llm_fallback::{fallback_reply_for_llm_failure, FallbackReplyContext};
 use crate::domain::chat_turn::{relation_favor_for_key, weight_memories_for_scene};
 use crate::domain::chat_turn_rules::{soft_append_guard, strip_hallucination_tokens};
 use crate::domain::complex_emotion::{affect_metrics_from_seven_dim, ComplexEmotionInput};
+use crate::domain::emotion_analyzer::EmotionResultExt;
 use crate::domain::life_schedule::{format_life_prompt_line, resolve_life_state};
 use crate::domain::memory_retrieval::MemoryRetrievalInput;
 use crate::domain::personality_engine::PersonalityEngine;

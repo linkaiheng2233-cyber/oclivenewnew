@@ -31,9 +31,9 @@ pub mod role_market_index_sync;
 pub mod role_pack_archive;
 pub mod storage;
 
-pub use llm::{LlmClient, MockLlmClient, RemoteLlmPlaceholder};
-#[cfg(feature = "default-llm-providers")]
-pub use llm::{cloud_llm_from_env, ollama_llm};
 #[cfg(not(feature = "default-llm-providers"))]
 pub use llm::default_runtime_llm_arc;
+#[cfg(feature = "default-llm-providers")]
+pub use llm::{cloud_llm_from_env, ollama_llm};
+pub use llm::{LlmClient, MockLlmClient, RemoteLlmPlaceholder};
 pub use storage::RoleStorage;

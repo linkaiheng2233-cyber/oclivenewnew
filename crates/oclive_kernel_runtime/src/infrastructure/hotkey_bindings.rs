@@ -85,9 +85,7 @@ impl HotkeyBindingsFile {
                 .map_err(|e| e.to_string())?;
         }
         let raw = serde_json::to_string_pretty(self).map_err(|e| e.to_string())?;
-        tokio::fs::write(&p, raw)
-            .await
-            .map_err(|e| e.to_string())
+        tokio::fs::write(&p, raw).await.map_err(|e| e.to_string())
     }
 }
 

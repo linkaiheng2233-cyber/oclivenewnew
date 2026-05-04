@@ -11,8 +11,12 @@ use oclive_kernel_runtime::infrastructure::directory_plugins::{
     directory_plugin_bootstrap_dto, DEFAULT_DIRECTORY_PLUGIN_ASSET_BASE_URL,
 };
 use oclive_kernel_runtime::infrastructure::llm::MockLlmClient;
-use oclive_kernel_runtime::infrastructure::remote_plugin::{invoke_directory_plugin_rpc, RemoteRpcChannel};
-use oclive_kernel_runtime::infrastructure::role_pack_archive::{export_role_pack, import_role_pack};
+use oclive_kernel_runtime::infrastructure::remote_plugin::{
+    invoke_directory_plugin_rpc, RemoteRpcChannel,
+};
+use oclive_kernel_runtime::infrastructure::role_pack_archive::{
+    export_role_pack, import_role_pack,
+};
 use oclive_kernel_runtime::infrastructure::RoleStorage;
 use oclive_kernel_runtime::state::KernelAppState;
 use serde_json::json;
@@ -46,10 +50,7 @@ fn copy_dir_recursive(src: &Path, dst: &Path) -> std::io::Result<()> {
 
 fn roles_dir_with_clone(role_dir_name: &str) -> tempfile::TempDir {
     let src = workspace_shimeng_dir();
-    assert!(
-        src.join("manifest.json").is_file(),
-        "需要 roles/shimeng"
-    );
+    assert!(src.join("manifest.json").is_file(), "需要 roles/shimeng");
     let tmp = tempfile::tempdir().expect("tempdir");
     let dest = tmp.path().join(role_dir_name);
     copy_dir_recursive(&src, &dest).expect("copy shimeng tree");
@@ -116,7 +117,10 @@ fn bench_directory_plugin_bootstrap_dto(c: &mut Criterion) {
 
     let rt = Runtime::new().expect("runtime");
     let state = rt
-        .block_on(KernelAppState::new_in_memory_with_llm(mock_llm(), roles_root.clone()))
+        .block_on(KernelAppState::new_in_memory_with_llm(
+            mock_llm(),
+            roles_root.clone(),
+        ))
         .expect("state");
     rt.block_on(load_role(&state, "bench_role_dp", false))
         .expect("load_role");
@@ -155,7 +159,10 @@ fn bench_directory_plugin_rpc_ping(c: &mut Criterion) {
 
     let rt = Runtime::new().expect("runtime");
     let state = rt
-        .block_on(KernelAppState::new_in_memory_with_llm(mock_llm(), roles_root))
+        .block_on(KernelAppState::new_in_memory_with_llm(
+            mock_llm(),
+            roles_root,
+        ))
         .expect("state");
     rt.block_on(load_role(&state, "bench_role_rpc", false))
         .expect("load_role");
@@ -187,9 +194,15 @@ fn bench_mcp_tool_call_denied_fast_path(c: &mut Criterion) {
     let roles_root = tmp.path().to_path_buf();
     let rt = Runtime::new().expect("runtime");
     let state = rt
-        .block_on(KernelAppState::new_in_memory_with_llm(mock_llm(), roles_root))
+        .block_on(KernelAppState::new_in_memory_with_llm(
+            mock_llm(),
+            roles_root,
+        ))
         .expect("state");
-    let app_data = state.storage.roles_dir().join(".oclive_directory_plugin_data");
+    let app_data = state
+        .storage
+        .roles_dir()
+        .join(".oclive_directory_plugin_data");
     let mcp_root = app_data.join("mcp-servers");
     fs::create_dir_all(&mcp_root).expect("mcp dir");
     let mf = mcp_root.join("bench_stdio.json");
@@ -212,7 +225,10 @@ fn bench_mcp_tool_call_denied_fast_path(c: &mut Criterion) {
 
 fn bench_memory_save_and_load(c: &mut Criterion) {
     let roles = PathBuf::from(env!("CARGO_MANIFEST_DIR")).join("../../roles");
-    assert!(roles.join("shimeng/manifest.json").is_file(), "需要 roles/shimeng");
+    assert!(
+        roles.join("shimeng/manifest.json").is_file(),
+        "需要 roles/shimeng"
+    );
     let rt = Runtime::new().expect("runtime");
     let state = rt
         .block_on(KernelAppState::new_in_memory_with_llm(mock_llm(), roles))
@@ -259,7 +275,9 @@ fn bench_role_pack_export_import(c: &mut Criterion) {
     group.bench_function("export_import_roundtrip", |b| {
         b.to_async(&rt).iter(|| async {
             export_role_pack(&st, "mumu", &pak).await.expect("export");
-            let id = import_role_pack(&st2, &pak, true, |_| {}).await.expect("import");
+            let id = import_role_pack(&st2, &pak, true, |_| {})
+                .await
+                .expect("import");
             black_box(id);
         });
     });
