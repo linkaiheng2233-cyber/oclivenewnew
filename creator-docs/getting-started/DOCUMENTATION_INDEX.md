@@ -22,6 +22,7 @@ Creator and plugin docs live under the repo root `creator-docs/` (grouped by top
 
 | 我想… | 阅读 |
 |------|------|
+| **第一次克隆仓库、搭环境、跑通桌面首次对话（开发者最短路径）** | **[DEVELOPER_QUICKSTART.md](DEVELOPER_QUICKSTART.md)** |
 | **用启动器安装 zip 角色包、选本机 Ollama 模型、一键 pull** | **[oclive-launcher README](https://github.com/oclive-app/oclive-launcher/blob/main/README.md)**（独立仓库） |
 | **理清项目全貌 / 人机分工 / 命令与发版清单** | **[PROJECT_OVERVIEW.md](PROJECT_OVERVIEW.md)** |
 | 报错后如何快速定位与提 issue | **[ERROR_CODES.md](ERROR_CODES.md)** |
