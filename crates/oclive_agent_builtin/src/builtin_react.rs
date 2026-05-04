@@ -1,5 +1,6 @@
 //! Builtin ReAct Agent + MCP（进程内默认推理链）。
 
+use async_trait::async_trait;
 use oclive_kernel_core::agent::{
     AgentDebugTrace, AgentInput, AgentOutput, AgentProvider, AgentToolCallTrace,
 };
@@ -9,7 +10,6 @@ use oclive_kernel_core::function_call::{
 };
 use oclive_kernel_core::llm::LlmClient;
 use oclive_kernel_core::mcp::{McpInvoke, McpServerManifest, McpToolCallResult};
-use async_trait::async_trait;
 use parking_lot::RwLock;
 use serde_json::Value;
 use std::sync::Arc;
