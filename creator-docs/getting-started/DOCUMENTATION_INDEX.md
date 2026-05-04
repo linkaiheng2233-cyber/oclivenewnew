@@ -43,7 +43,7 @@ Creator and plugin docs live under the repo root `creator-docs/` (grouped by top
 | **我想管理插件（启用/停用/拖拽排序/本地 zip 更新）** | **[../plugin-and-architecture/DIRECTORY_PLUGINS.md](../plugin-and-architecture/DIRECTORY_PLUGINS.md)**（插件管理面板，快捷键 `Ctrl+Shift+F`） |
 | **第九模块：专家模型设施（全称：专家模型设施模块；ExpertGraph / 侧车装配 / Prompt 风格覆盖）** | **[../kernel/MODULE_9_EXPERT_MODELS_FACILITY.md](../kernel/MODULE_9_EXPERT_MODELS_FACILITY.md)** · 边界总览 **[../kernel/KERNEL_BOUNDARY.md](../kernel/KERNEL_BOUNDARY.md)** · Tauri 命令归属 **[../kernel/KERNEL_API_IMPLEMENTATION_MATRIX.md](../kernel/KERNEL_API_IMPLEMENTATION_MATRIX.md)** |
 | **内核迁入收尾** | **[../../../handoff/KERNEL_MIGRATION_COMPLETE.md](../../../handoff/KERNEL_MIGRATION_COMPLETE.md)** |
-| **极致轻量化（runtime `Cargo` 特性、OOCP、`invoke` 分组、依赖/`http_api` 拟定）** | **[../kernel/LIGHTWEIGHT_PROFILE.md](../kernel/LIGHTWEIGHT_PROFILE.md)**（与 [KERNEL_BOUNDARY.md](../kernel/KERNEL_BOUNDARY.md) §5.1 互参） |
+| **极致轻量化（runtime `Cargo` 特性、OOCP、`invoke` 分组、依赖/`http_api` 拟定）** | **[../kernel/LIGHTWEIGHT_PROFILE.md](../kernel/LIGHTWEIGHT_PROFILE.md)**（与 [KERNEL_BOUNDARY.md](../kernel/KERNEL_BOUNDARY.md) §5.1 互参）；设施 `classic` 门控审计 **[../kernel/FACILITY_CLASSIC_ALGORITHMS_AUDIT.md](../kernel/FACILITY_CLASSIC_ALGORITHMS_AUDIT.md)** |
 | **内核工程质量与生态路线（P0–P2，测试/SDK/crates.io）** | **[../../../handoff/ENGINEERING_ROADMAP_KERNEL_DEEPSEEK.md](../../../handoff/ENGINEERING_ROADMAP_KERNEL_DEEPSEEK.md)** |
 | **内核 SDK（KernelAppState、process_message、kernel_server）** | **[../kernel/KERNEL_SDK.md](../kernel/KERNEL_SDK.md)** |
 | **PluginHost 调度、降级链、接新后端 / 设施 crate** | **[../kernel/PLUGIN_HOST_DEVELOPER_GUIDE.md](../kernel/PLUGIN_HOST_DEVELOPER_GUIDE.md)** |

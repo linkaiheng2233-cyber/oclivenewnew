@@ -1,4 +1,4 @@
-//! 内置七维情绪分析（关键词）与可选 `UserEmotionAnalyzer` 实现。
+//! 内置七维情绪分析（关键词，`classic` feature 默认开）与可选 `UserEmotionAnalyzer` 实现（`providers`）。
 
 pub mod classic;
 

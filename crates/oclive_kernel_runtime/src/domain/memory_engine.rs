@@ -159,6 +159,7 @@ mod tests {
         assert_eq!(engine.get_short_term().len(), SHORT_TERM_CAPACITY);
     }
 
+    #[cfg(feature = "facility-classic-algorithms")]
     #[test]
     fn test_search_memories() {
         let memories = vec![
@@ -174,6 +175,16 @@ mod tests {
         assert_eq!(results.len(), 1);
     }
 
+    /// `classic` 关闭时搜索子串逻辑仍与完整版一致；本测校验桩路径不退化为「恒空」。
+    #[cfg(not(feature = "facility-classic-algorithms"))]
+    #[test]
+    fn test_search_memories_stub_substring() {
+        let memories = vec![create_test_memory("1", "Hello Tea", 0.5)];
+        let results = MemoryEngine::search_memories("tea", &memories);
+        assert_eq!(results.len(), 1);
+    }
+
+    #[cfg(feature = "facility-classic-algorithms")]
     #[test]
     fn test_get_relevant_memories() {
         let memories = vec![
@@ -186,6 +197,18 @@ mod tests {
         assert_eq!(relevant.len(), 2);
         assert_eq!(relevant[0].importance, 0.9);
         assert_eq!(relevant[1].importance, 0.7);
+    }
+
+    #[cfg(not(feature = "facility-classic-algorithms"))]
+    #[test]
+    fn test_get_relevant_memories_fifo_stub() {
+        let memories = vec![
+            create_test_memory("1", "content1", 0.5),
+            create_test_memory("2", "content2", 0.9),
+        ];
+        let relevant = MemoryEngine::get_relevant_memories(&memories, 1);
+        assert_eq!(relevant.len(), 1);
+        assert_eq!(relevant[0].id, "1");
     }
 
     #[test]

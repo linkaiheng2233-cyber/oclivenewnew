@@ -21,6 +21,7 @@ full = [
   "role-pack-zip",
   "market-sync",
   "kernel-agent",
+  "facility-classic-algorithms",
   "default-llm-providers",
   "default-memory-providers",
   "default-emotion-providers",
@@ -29,17 +30,23 @@ full = [
   "default-complex-emotion-providers",
   "default-agent-providers",
 ]
+## 设施 crate 的 `classic` 算法（记忆排序 / 情绪关键词 / 七维→效价）。`full` 默认开启；`--no-default-features` 时关闭以使用桩实现。
+facility-classic-algorithms = [
+  "oclive_memory_builtin/classic",
+  "oclive_emotion_builtin/classic",
+  "oclive_complex_emotion_builtin/classic",
+]
 ## 内置 Ollama、OpenAI-compatible 云 LLM，以及 OCLIVE_REMOTE_LLM_URL JSON-RPC 侧车；关闭后须用 directory 目录插件等提供 LLM（侧车与内置客户端均不装配）。
 default-llm-providers = []
-## 进程内 Builtin/BuiltinV2 记忆提供者（`oclive_memory_builtin` 的 `providers`）；关闭后 trait 仍可用，builtin 槽与 Remote 占位回退为轻量桩。算法库 `classic` 仍由本 crate 依赖以供 `MemoryEngine` 与目录侧车对齐。
+## 进程内 Builtin/BuiltinV2 记忆提供者（`oclive_memory_builtin` 的 `providers`）；关闭后 trait 仍可用，builtin 槽与 Remote 占位回退为轻量桩。`providers` 隐含设施 crate 的 `classic`；亦可单独开 **`facility-classic-algorithms`** 以在无 Builtin 记忆时保留排序语义。
 default-memory-providers = ["oclive_memory_builtin/providers"]
-## 进程内 Builtin/BuiltinV2 用户句情绪分析（`oclive_emotion_builtin` 的 `providers`）；关闭后回退中性分布桩。`classic::EmotionAnalyzer` 仍由本 crate 依赖以供 `EmotionResultExt` 与目录侧车对齐。
+## 进程内 Builtin/BuiltinV2 用户句情绪分析（`oclive_emotion_builtin` 的 `providers`）；关闭后回退中性分布桩。`providers` 隐含 `classic`；关 **`facility-classic-algorithms`** 且未开 `providers` 时用关键词桩的「关」态（强中性，见设施 crate `classic/stub`）。
 default-emotion-providers = ["oclive_emotion_builtin/providers"]
 ## 内置事件影响估计（event_impact_ai）；关闭后 builtin 槽与 Remote 占位回退为 Ignore 桩。
 default-event-providers = []
 ## 内置 PromptBuilder 组装；关闭后 builtin 槽与 Remote 占位回退为空串桩。
 default-prompt-providers = []
-## 内置复杂情感关键词模式（`oclive_complex_emotion_builtin` 的 `providers`）；关闭后 builtin 槽与 Remote 降级回退为轻量桩。`classic::affect_metrics_from_seven_dim` 仍由本 crate 依赖。
+## 内置复杂情感关键词模式（`oclive_complex_emotion_builtin` 的 `providers`）；关闭后 builtin 槽与 Remote 降级回退为轻量桩。`providers` 隐含 `classic`；关 **`facility-classic-algorithms`** 时七维→效价函数为 `(0,0)` 桩。
 default-complex-emotion-providers = ["oclive_complex_emotion_builtin/providers"]
 ## 进程内 `BuiltinReActAgent`（设施 crate `oclive_agent_builtin` 的 `providers`）；关闭后若仍开启 `kernel-agent`，仅装配 **McpShellAgent**（`process` 不执行 ReAct）。须与 **`kernel-agent`** 同开方可使用进程内 ReAct（MCP + LLM）。
 default-agent-providers = ["dep:oclive_agent_builtin", "oclive_agent_builtin/providers"]

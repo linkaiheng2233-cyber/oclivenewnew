@@ -7,9 +7,11 @@ description = "Oclive built-in keyword 7D emotion analysis (Kernel V2 phase 5 fa
 readme = "README.md"
 
 [features]
-default = []
-## `UserEmotionAnalyzer` Builtin / BuiltinV2；由 `oclive_kernel_runtime` 的 `default-emotion-providers` 开启。
-providers = []
+default = ["classic"]
+## 关键词七维算法；关闭时用强中性桩（显著减小二进制）。
+classic = []
+## `UserEmotionAnalyzer` Builtin / BuiltinV2；由 `oclive_kernel_runtime` 的 `default-emotion-providers` 开启。依赖 `classic`。
+providers = ["classic"]
 
 [dependencies]
 oclive_kernel_core = { path = "../oclive_kernel_core" }
