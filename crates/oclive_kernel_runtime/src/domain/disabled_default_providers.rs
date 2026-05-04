@@ -6,8 +6,7 @@ use crate::domain::emotion_analyzer::EmotionResult;
 use oclive_kernel_core::event_estimator::EventEstimator;
 use oclive_kernel_models::EventImpactEstimate;
 use oclive_memory_builtin::classic;
-use oclive_kernel_core::prompt::PromptAssembler;
-use oclive_kernel_core::prompt::PromptInput;
+use oclive_kernel_core::prompt::{PromptAssembler, PromptInput, TopicHintContext};
 use crate::error::Result;
 use crate::infrastructure::llm::LlmClient;
 use crate::models::knowledge::KnowledgeEventAugment;
@@ -15,7 +14,6 @@ use crate::models::{
     Emotion, Event, EventType, Memory, MemoryContext, PersonalitySource, PersonalityVector,
 };
 use async_trait::async_trait;
-use std::any::Any;
 use oclive_kernel_core::complex_emotion::{
     ComplexEmotionInput, ComplexEmotionOutput, ComplexEmotionProvider,
 };
@@ -107,7 +105,7 @@ impl PromptAssembler for DisabledPromptAssembler {
         String::new()
     }
 
-    fn top_topic_hint(&self, _role_any: &dyn Any, _scene_id: &str) -> Option<String> {
+    fn top_topic_hint(&self, _ctx: &TopicHintContext<'_>, _scene_id: &str) -> Option<String> {
         None
     }
 }
@@ -123,7 +121,7 @@ impl PromptAssembler for NonePromptAssembler {
         )
     }
 
-    fn top_topic_hint(&self, _role_any: &dyn Any, _scene_id: &str) -> Option<String> {
+    fn top_topic_hint(&self, _ctx: &TopicHintContext<'_>, _scene_id: &str) -> Option<String> {
         None
     }
 }

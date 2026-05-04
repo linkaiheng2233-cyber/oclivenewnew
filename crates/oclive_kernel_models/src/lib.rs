@@ -8,6 +8,7 @@ pub mod knowledge_augment;
 pub mod personality;
 pub mod prompt_role;
 pub mod role_config;
+pub mod topic_hint_context;
 
 pub use event::{Event, EventType};
 pub use event_impact::EventImpactEstimate;
@@ -17,3 +18,4 @@ pub use prompt_role::PromptRolePromptSlice;
 pub use role_config::{
     EvolutionBounds, EvolutionConfig, MemoryConfig, PersonalityDefaults, UserRelation,
 };
+pub use topic_hint_context::{TopicHintContext, TopicHintContextSnapshot};

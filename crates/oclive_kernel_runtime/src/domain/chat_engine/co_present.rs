@@ -165,9 +165,8 @@ pub(crate) async fn process_co_present(
     let scene_detail_buf = state
         .storage
         .scene_prompt_enrichment(mrid, scene_id.as_str());
-    let top_topic = pl
-        .prompt
-        .top_topic_hint(role as &dyn std::any::Any, scene_id.as_str());
+    let topic_ctx = role.topic_hint_context();
+    let top_topic = pl.prompt.top_topic_hint(&topic_ctx, scene_id.as_str());
     let topic_line = top_topic
         .map(|t| format!("在「{}」下，你们可能会多聊「{}」相关的事。", scene_label, t))
         .unwrap_or_default();

@@ -12,7 +12,7 @@ use std::sync::Arc;
 
 pub use oclive_kernel_models::{
     EvolutionBounds, EvolutionConfig, MemoryConfig, PersonalityDefaults, PromptRolePromptSlice,
-    UserRelation,
+    TopicHintContext, TopicHintContextSnapshot, UserRelation,
 };
 
 /// 由虚拟时间解析得到的当前生活态（引擎内部）
@@ -163,6 +163,12 @@ impl Default for Role {
 }
 
 impl Role {
+    /// 供 [`PromptAssembler::top_topic_hint`](oclive_kernel_core::prompt::PromptAssembler::top_topic_hint) 使用的轻量上下文（不暴露完整 `Role` 给设施实现）。
+    #[must_use]
+    pub fn topic_hint_context(&self) -> TopicHintContext<'_> {
+        TopicHintContext::from_memory_config(self.memory_config.as_ref())
+    }
+
     /// 供 Prompt 组装使用的只读切片（与 [`PromptInput`](oclive_kernel_core::prompt::PromptInput) 对齐）。
     #[must_use]
     pub fn prompt_slice(&self) -> PromptRolePromptSlice<'_> {

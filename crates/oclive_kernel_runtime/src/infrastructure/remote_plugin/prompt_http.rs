@@ -2,8 +2,8 @@
 
 use crate::domain::prompt_assembler::default_prompt_slot_v1;
 use crate::domain::prompt_builder::PromptInput;
-use crate::models::Role;
-use oclive_kernel_core::prompt::PromptAssembler;
+use crate::models::{Role, TopicHintContextSnapshot};
+use oclive_kernel_core::prompt::{PromptAssembler, TopicHintContext};
 use crate::infrastructure::remote_plugin::config::RemotePluginHttpConfig;
 use crate::infrastructure::remote_plugin::jsonrpc::{self, RemoteRpcChannel};
 use crate::models::PersonalitySource;
@@ -77,12 +77,10 @@ impl PromptAssembler for RemotePromptAssemblerHttp {
         }
     }
 
-    fn top_topic_hint(&self, role_any: &dyn std::any::Any, scene_id: &str) -> Option<String> {
-        let role = role_any
-            .downcast_ref::<Role>()
-            .expect("RemotePromptAssemblerHttp top_topic_hint: expected Role");
+    fn top_topic_hint(&self, ctx: &TopicHintContext<'_>, scene_id: &str) -> Option<String> {
+        let snapshot = TopicHintContextSnapshot::from_borrowed(ctx);
         let params = json!({
-            "role": role,
+            "topic_hint_context": snapshot,
             "scene_id": scene_id,
         });
         match jsonrpc::call_blocking(
@@ -98,7 +96,7 @@ impl PromptAssembler for RemotePromptAssemblerHttp {
                 .and_then(|x| x.as_str())
                 .map(String::from)
                 .or_else(|| v.as_str().map(String::from)),
-            Err(_) => self.fallback.top_topic_hint(role_any, scene_id),
+            Err(_) => self.fallback.top_topic_hint(ctx, scene_id),
         }
     }
 }

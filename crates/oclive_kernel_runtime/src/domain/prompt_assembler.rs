@@ -8,9 +8,7 @@ use crate::domain::prompt_builder::PromptInput;
 use crate::domain::prompt_builder::PromptBuilder;
 #[cfg(not(feature = "default-prompt-providers"))]
 use crate::domain::disabled_default_providers::DisabledPromptAssembler;
-#[cfg(feature = "default-prompt-providers")]
-use crate::models::Role;
-use std::any::Any;
+use oclive_kernel_core::prompt::TopicHintContext;
 use std::sync::atomic::{AtomicBool, Ordering};
 use std::sync::Arc;
 
@@ -23,11 +21,8 @@ impl PromptAssembler for BuiltinPromptAssembler {
         PromptBuilder::build_prompt(input)
     }
 
-    fn top_topic_hint(&self, role_any: &dyn Any, scene_id: &str) -> Option<String> {
-        let role = role_any
-            .downcast_ref::<Role>()
-            .expect("PromptAssembler top_topic_hint: expected Role");
-        PromptBuilder::top_topic_hint(role, scene_id)
+    fn top_topic_hint(&self, ctx: &TopicHintContext<'_>, scene_id: &str) -> Option<String> {
+        PromptBuilder::top_topic_hint(ctx, scene_id)
     }
 }
 
@@ -48,11 +43,8 @@ impl PromptAssembler for BuiltinPromptAssemblerV2 {
         )
     }
 
-    fn top_topic_hint(&self, role_any: &dyn Any, scene_id: &str) -> Option<String> {
-        let role = role_any
-            .downcast_ref::<Role>()
-            .expect("PromptAssembler top_topic_hint: expected Role");
-        PromptBuilder::top_topic_hint(role, scene_id)
+    fn top_topic_hint(&self, ctx: &TopicHintContext<'_>, scene_id: &str) -> Option<String> {
+        PromptBuilder::top_topic_hint(ctx, scene_id)
     }
 }
 
@@ -113,9 +105,9 @@ impl PromptAssembler for RemotePromptAssemblerPlaceholder {
         self.inner.build_prompt(input)
     }
 
-    fn top_topic_hint(&self, role_any: &dyn Any, scene_id: &str) -> Option<String> {
+    fn top_topic_hint(&self, ctx: &TopicHintContext<'_>, scene_id: &str) -> Option<String> {
         self.warn_once();
-        self.inner.top_topic_hint(role_any, scene_id)
+        self.inner.top_topic_hint(ctx, scene_id)
     }
 }
 

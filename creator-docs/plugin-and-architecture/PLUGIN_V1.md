@@ -116,7 +116,7 @@
 - 输入：`PromptInput`（与 `PromptBuilder` 一致，**五个参数级字段**在 `PromptInput` 结构体上；`build_prompt` 最后一参在实现内部为 `&PromptInput`）。
 - 输出：`String`（主对话 system/user 拼装结果）。
 
-附加：`top_topic_hint(role, scene_id) -> Option<String>` 与现 `PromptBuilder::top_topic_hint` 对齐。
+附加：`top_topic_hint(topic_hint_context, scene_id) -> Option<String>` 与 `TopicHintContext` + `PromptBuilder::top_topic_hint` 对齐（Remote JSON-RPC 见 `REMOTE_PLUGIN_PROTOCOL.md` §4.5）。
 
 ### 后端枚举 `prompt`
 

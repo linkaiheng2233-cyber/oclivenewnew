@@ -18,4 +18,4 @@ pub mod user_emotion_analyzer;
 
 pub use event_estimator::EventEstimator;
 pub use llm::LlmClient;
-pub use prompt::{PromptAssembler, PromptInput, PromptRolePromptSlice};
+pub use prompt::{PromptAssembler, PromptInput, PromptRolePromptSlice, TopicHintContext};

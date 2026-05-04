@@ -1,7 +1,8 @@
-//! Prompt 组装门面与输入 DTO（具体拼装实现在 `oclive_kernel_runtime::PromptBuilder`）。
+//! Prompt 组装门面与输入 DTO（具体拼装实现在 `oclive_kernel_runtime::PromptBuilder`）。话题提示使用 [`TopicHintContext`]，由编排层从角色配置提取。
 
 use crate::models::Memory;
 pub use oclive_kernel_models::PromptRolePromptSlice;
+pub use oclive_kernel_models::TopicHintContext;
 use oclive_kernel_models::{EventType, PersonalityVector};
 use std::any::Any;
 
@@ -56,6 +57,6 @@ pub struct PromptInput<'a> {
 
 pub trait PromptAssembler: Send + Sync {
     fn build_prompt(&self, input: &PromptInput<'_>) -> String;
-    /// `role_any` 在桌面内核中为 `Role`；侧车 / 桩实现可忽略。
-    fn top_topic_hint(&self, role_any: &dyn Any, scene_id: &str) -> Option<String>;
+    /// 话题提示仅依赖 [`TopicHintContext`]（由编排层从 `Role` 等来源提取），不再向下转型完整 `Role`。
+    fn top_topic_hint(&self, ctx: &TopicHintContext<'_>, scene_id: &str) -> Option<String>;
 }

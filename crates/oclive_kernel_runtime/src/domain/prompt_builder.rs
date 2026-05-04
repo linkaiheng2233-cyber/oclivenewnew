@@ -5,7 +5,7 @@ pub use oclive_kernel_core::prompt::{
 };
 
 #[cfg(feature = "default-prompt-providers")]
-use crate::models::{EventType, Memory, PersonalitySource, PersonalityVector, Role};
+use crate::models::{EventType, Memory, PersonalitySource, PersonalityVector, TopicHintContext};
 #[cfg(feature = "default-prompt-providers")]
 pub struct PromptBuilder;
 
@@ -416,13 +416,9 @@ impl PromptBuilder {
         )
     }
 
-    /// 从 `memory_config.topic_weights` 取当前场景下权重最高的话题，用于 prompt 一句提示
-    pub fn top_topic_hint(role: &Role, scene_id: &str) -> Option<String> {
-        let mc = role.memory_config.as_ref()?;
-        let tw = mc.topic_weights.get(scene_id)?;
-        tw.iter()
-            .max_by(|(_, a), (_, b)| a.partial_cmp(b).unwrap_or(std::cmp::Ordering::Equal))
-            .map(|(name, _)| name.clone())
+    /// 从 [`TopicHintContext`] 的 `topic_weights` 取当前场景下权重最高的话题，用于 prompt 一句提示。
+    pub fn top_topic_hint(ctx: &TopicHintContext<'_>, scene_id: &str) -> Option<String> {
+        ctx.top_topic_name_for_scene(scene_id)
     }
 }
 
@@ -432,6 +428,7 @@ mod tests {
     use crate::models::EventType;
     use crate::models::EvolutionBounds;
     use crate::models::PersonalitySource;
+    use crate::models::Role;
     use chrono::Utc;
 
     fn create_test_role() -> Role {

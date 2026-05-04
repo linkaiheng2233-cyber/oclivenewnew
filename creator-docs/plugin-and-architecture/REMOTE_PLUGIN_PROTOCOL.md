@@ -335,10 +335,20 @@
 
 **params**
 
-| 字段 | 类型 |
-|------|------|
-| `role` | `Role` |
-| `scene_id` | 字符串 |
+| 字段 | 类型 | 说明 |
+|------|------|------|
+| `topic_hint_context` | 对象 | 与 `oclive_kernel_models::TopicHintContextSnapshot` 一致（可序列化快照），见下 |
+| `scene_id` | 字符串 | 当前场景 id |
+
+**`topic_hint_context` 字段**（均为可选；与宿主 `TopicHintContext` 对齐）
+
+| 字段 | 类型 | 说明 |
+|------|------|------|
+| `topic_weights` | `Record<scene_id, Record<topic_name, number>>` | 与 `MemoryConfig.topic_weights` 同形 |
+| `dialogue_summary` | 字符串 | 预留；当前宿主多为省略 |
+| `recent_dialog` | 字符串 | 预留；当前宿主多为省略 |
+
+> **兼容说明**：历史侧车若仍发送 `role` + `scene_id`，宿主 **不再** 解析；请改为 `topic_hint_context` + `scene_id`。
 
 **result**
 

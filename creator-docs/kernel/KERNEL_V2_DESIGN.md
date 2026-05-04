@@ -113,7 +113,7 @@
 
 ### 6.5 阶段 6-3：Prompt 门面最小切线（已实现）
 
-- **`PromptAssembler`**：`oclive_kernel_core::prompt`（**`build_prompt` + `top_topic_hint(role_any: &dyn Any, …)`**；内置侧将 **`role_any` 断言为 `Role`**）。
+- **`PromptAssembler`**：`oclive_kernel_core::prompt`（**`build_prompt` + `top_topic_hint(&TopicHintContext, …)`**；编排层从 `Role` 提取 **`TopicHintContext`**，见 **`oclive_kernel_models::TopicHintContext`**）。
 - **`PromptInput`**： **`role_any`**（侧车 **`downcast_ref::<Role>`** 序列化）+ **`role_prompt: PromptRolePromptSlice`**（**Copy**，供 **`PromptBuilder`** 读本段人设字段）。
 - **`PromptRolePromptSlice`**：`kernel_models::prompt_role`；**`Role::prompt_slice()`**（runtime）填充。
 - **`PromptBuilder`**：**仅**在 **`default-prompt-providers`** 开启时编译；单测 **`prompt_builder` / `prompt_assembler`** 亦受同一 feature 约束。
@@ -149,7 +149,7 @@
 | **事件 · 稳定性指数** | `personality_engine.rs`（部分 API） | **`PersonalityEngine::calculate_stability_index`** | 被 `event_impact_ai` 调用 |
 | **事件 · 工具** | `utils/json_loose.rs` | `extract_json_object` | 被 `event_impact_ai` 调用 |
 | **Prompt · 门面与 Builtin 槽** | `prompt_assembler.rs` | **`BuiltinPromptAssembler` / `BuiltinPromptAssemblerV2`**；`default_prompt_slot_*`；**`RemotePromptAssemblerPlaceholder`** | `build_prompt` / `top_topic_hint` → `PromptBuilder` |
-| **Prompt · 拼装主体** | `prompt_builder.rs`（**`#[cfg(feature = "default-prompt-providers")]`**） | **`PromptBuilder::build_prompt`**、段落装配、**`top_topic_hint(role, scene_id)`** | 依赖完整 **`Role`**（仅 `top_topic_hint` 读 `memory_config.topic_weights`）；其余字段来自 **`PromptInput` / `PromptRolePromptSlice`** |
+| **Prompt · 拼装主体** | `prompt_builder.rs`（**`#[cfg(feature = "default-prompt-providers")]`**） | **`PromptBuilder::build_prompt`**、段落装配、**`top_topic_hint(&TopicHintContext, scene_id)`** | **`TopicHintContext`** 由 `Role::topic_hint_context()` 等在编排层填充；`PromptBuilder` **不再** 接收完整 `Role` 做话题提示 |
 
 **其它引用（非算法主体，但构成集成面）**：
 
@@ -171,8 +171,8 @@
 | 检查项 | 结论 |
 |--------|------|
 | **`PromptInput` / `PromptRolePromptSlice`** | 契约在 **`oclive_kernel_core::prompt`** + **`kernel_models::prompt_role`**（§6.5）；字段已稳定，**`build_prompt` 主路径仅依赖 DTO + `Memory`（core）+ models 枚举**。 |
-| **`Role` 耦合点** | **`PromptBuilder::top_topic_hint(&Role, scene_id)`** 仍读 **`Role.memory_config.topic_weights`**；完整 **`Role`** 依设计留在 **runtime**（§6.0「刻意未迁入 models」）。**`BuiltinPromptAssembler::top_topic_hint`** 对 `role_any` **向下转型为 `Role`**。 |
-| **可行性含义** | 若设施 crate 仅接收 **`PromptInput`**：主拼装可迁出；**除非**将「场景话题权重」提升为 **`PromptInput` 可选字段**或独立快照类型，否则 **`top_topic_hint` 仍须依赖 `Role` 或 runtime 适配层**。 |
+| **`Role` 耦合点（已缓解）** | 话题提示已改为 **`TopicHintContext`**（**`kernel_models`**），由 **`Role::topic_hint_context()`** 在 **runtime 编排层** 提取 **`memory_config.topic_weights`**（及预留的 `dialogue_summary` / `recent_dialog`）。**`PromptBuilder::top_topic_hint` 不再接受 `&Role`**。 |
+| **可行性含义** | 设施 crate 可实现与 **`TopicHintContext` + `PromptInput`** 对齐的 `top_topic_hint` / `build_prompt`，**无需**引用完整 **`Role`**；**`PromptBuilder` 主文** 仍通过 `PromptInput.role_any` 使用 `Role`（侧车向下转型），完整迁出仍为后续步骤。 |
 
 #### 6.7.4 综合评估表（是否进入阶段 7 实作）
 
@@ -181,7 +181,7 @@
 | **事件：`BuiltinEventEstimator*` 壳层** | **阶段 7 可执行（低价值）** | 壳层仅委托 `estimate_event_impact`；单独迁壳**无独立意义**，通常与算法同迁。 |
 | **事件：`estimate_event_impact` + `EventDetector` + 人格轴辅助 + json 工具** | **阶段 7 待定** | **强耦合链**：`event_impact_ai` → `EventDetector` + `affect_policy::softness_coldness_volatility` + **`PersonalityEngine::calculate_stability_index`** + `utils/json_loose`。迁出需 **一并搬迁或抽象** 上述模块，或引入 **`oclive_event_builtin` 对 `oclive_kernel_runtime` 的依赖**（**禁止**：循环依赖风险）。更现实路径：先抽 **无状态纯函数 / 小 crate**（如 `json_loose`、detector 规则子集），再迁 LLM 编排。 |
 | **Prompt：`BuiltinPromptAssembler*` 壳层** | **阶段 7 可执行（低价值）** | 同事件，壳层薄；单独迁出意义有限。 |
-| **Prompt：`PromptBuilder` 全文（~800+ 行）** | **阶段 7 待定** | **主路径**已 **`PromptInput`** 化，迁出 **技术可行**；**`top_topic_hint` 仍绑定 `Role`**，设施 crate **不能**在「零依赖 runtime」前提下实现该方法。可选前置：**扩展 `PromptInput` 或新增 `TopicWeightsSnapshot`**，由编排层从 `Role` 填充，再迁 `PromptBuilder`。 |
+| **Prompt：`PromptBuilder` 全文（~800+ 行）** | **阶段 7 待定** | **`top_topic_hint` 已解耦 `Role`**（**`TopicHintContext`**）。**`build_prompt` 主路径**仍依赖 `PromptInput.role_any` → `Role`；完整迁出需继续收窄 `role_any` 或拆分 `PromptBuilder`。 |
 | **PluginHost / trait / DTO** | **已就绪（非阻碍）** | 注册与类型边界已满足独立 Builtin crate 接入形态。 |
 
 **小结**：**接口与模型层已可支撑**未来 `oclive_event_builtin` / `oclive_prompt_builtin`，但 **算法主体仍与 runtime 域模块交织（事件）或与完整 `Role` 交织（Prompt 话题提示）**，故 **整段 Builtin 实现「完整剥离」标记为阶段 7 待定**；若接受 **编排层传入额外 DTO** 或 **分步下沉工具模块**，可再开独立设计 PR 将子表中的「待定」逐项改为「可执行」。
