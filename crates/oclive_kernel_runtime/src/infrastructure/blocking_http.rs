@@ -2,9 +2,9 @@
 //!
 //! 全 crate 的 **`std::fs` / `block_on` 锚点表**见本 crate 根目录 `SYNC_IO_ANCHORS.md`（与本文互补）。
 //!
-//! ## 仍调用 [`block_on`] 的代码路径（排查清单）
+//! ## 仍可能进入本模块 [`block_on`] 的路径（2026-05 审计）
 //!
-//! 下列路径在 **无 Tokio runtime**（如部分单测）时仍可能回退到本模块；**市场三索引**、角色包直链、MCP、目录 RPC 等已在宿主侧改为 **`async` + `.await`**：
+//! 下列路径在 **当前线程无 Tokio runtime**（如部分单测、极少数同步边界）时仍可能回落到本模块的独立 runtime；**市场索引 / 角色 HTTP / MCP / 目录 RPC** 主路径已在宿主侧 **`async` + `.await`**，与本模块 **互补而非重复**：
 //!
 //! - `infrastructure::role_pack_archive` — 直链下载已 async；解压/导入在 **`spawn_blocking`**
 //! - `infrastructure::plugin_install` — 市场 ZIP 下载 async；**`install_plugin_from_archive_bytes_impl`** 在 **`spawn_blocking`**（`install_plugin_from_download_urls_at`）
