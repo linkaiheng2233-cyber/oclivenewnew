@@ -187,6 +187,12 @@
 
 **小结**：**`oclive_prompt_builtin` 已落地**。**事件**算法主体仍与 runtime 域模块强交织，**`oclive_event_builtin` 整仓搬迁仍为阶段 7 待定**；可行路径仍为 **无状态纯函数 / 小 crate 分步下沉** 或后续统一抽象，避免 **`runtime ↔ event_builtin` 循环依赖**。
 
+#### 6.7.5 事件：`EventEstimator` / `EventImpactEstimate` 边界（阶段 7-2 固化）
+
+- **Trait / DTO**：**`EventEstimator`** 在 **`oclive_kernel_core::event_estimator`**；**`EventImpactEstimate`** 在 **`oclive_kernel_models::event_impact`**；签名与 serde 已稳定，trait **不**依赖完整 runtime。
+- **`DisabledEventEstimator`**（**`default-event-providers` 关闭**）：返回 **`EventType::Ignore`**、`impact_factor = 0`、`confidence = 0`，与 **`MODULE_NONE_SEMANTICS.md` §3**（「无事件、无影响」）及好感/演化链路的「按无事件继续」预期一致；见 **`disabled_default_providers`** 单测 **`disabled_event_estimator_returns_ignore_zero_impact`**。
+- **算法主体**：`event_impact_ai`、`EventDetector`、人格轴辅助等仍在 **runtime**（§6.7.1）；**当前阶段不强制**迁入 **`oclive_event_builtin`**。
+
 ## 7. 参考
 
 - [KERNEL_BOUNDARY.md](./KERNEL_BOUNDARY.md)

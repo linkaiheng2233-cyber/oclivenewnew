@@ -142,3 +142,36 @@ impl ComplexEmotionProvider for DisabledComplexEmotionProvider {
         })
     }
 }
+
+#[cfg(test)]
+mod disabled_semantics_tests {
+    use super::*;
+    use crate::infrastructure::llm::NoneLlmClient;
+    use crate::models::Emotion;
+
+    /// 与 `MODULE_NONE_SEMANTICS.md` §3（`event_type = Ignore`、零影响/零置信度）及
+    /// `default-event-providers` 关闭时的降级链一致。
+    #[tokio::test]
+    async fn disabled_event_estimator_returns_ignore_zero_impact() {
+        let est = DisabledEventEstimator;
+        let llm: Arc<dyn LlmClient> = Arc::new(NoneLlmClient);
+        let personality = PersonalityVector::zero();
+        let out = est
+            .estimate(
+                &llm,
+                "",
+                "hi",
+                &Emotion::Neutral,
+                &personality,
+                PersonalitySource::default(),
+                &[],
+                &[],
+                None,
+            )
+            .await
+            .expect("disabled estimator must not error");
+        assert_eq!(out.event_type, EventType::Ignore);
+        assert_eq!(out.impact_factor, 0.0);
+        assert_eq!(out.confidence, 0.0);
+    }
+}

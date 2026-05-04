@@ -1,4 +1,4 @@
-//! 事件影响估计可替换门面（实现留在 `oclive_kernel_runtime` 或 Remote / 目录插件）。
+//! 事件影响估计可替换门面（**Builtin 算法主体**在 `oclive_kernel_runtime`；Remote / 目录插件可替换；**`EventImpactEstimate`** DTO 在 **`oclive_kernel_models`**）。
 
 #![allow(clippy::too_many_arguments)] // 与编排层 `process_message` 参数一致
 
