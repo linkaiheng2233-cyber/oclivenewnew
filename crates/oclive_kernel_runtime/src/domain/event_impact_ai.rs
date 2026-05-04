@@ -8,6 +8,7 @@ use crate::error::Result;
 use crate::infrastructure::llm::LlmClient;
 use crate::models::knowledge::KnowledgeEventAugment;
 use crate::models::{Emotion, Event, EventType, PersonalityVector};
+use oclive_kernel_models::EventImpactEstimate;
 use crate::utils::json_loose::extract_json_object;
 use serde_json::Value;
 use std::sync::Arc;
@@ -264,13 +265,6 @@ fn derive_confidence(
     let rule_base = EventDetector::get_confidence(event_type);
     let impact_hint = (0.55 + impact_factor.abs() * 0.35).clamp(0.0, 1.0) as f32;
     ((rule_base + impact_hint) / 2.0).clamp(0.0, 1.0)
-}
-
-#[derive(Clone, Debug, serde::Serialize, serde::Deserialize)]
-pub struct EventImpactEstimate {
-    pub event_type: EventType,
-    pub impact_factor: f64,
-    pub confidence: f32,
 }
 
 fn build_event_impact_prompt(

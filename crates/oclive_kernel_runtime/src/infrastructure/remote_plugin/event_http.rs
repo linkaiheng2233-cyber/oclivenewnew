@@ -1,8 +1,9 @@
-//! JSON-RPC：`event.estimate` — 侧车返回 [`EventImpactEstimate`](crate::domain::event_impact_ai::EventImpactEstimate)。
+//! JSON-RPC：`event.estimate` — 侧车返回 [`EventImpactEstimate`](oclive_kernel_models::EventImpactEstimate)。
 //! `params` 含 `personality_source`（`vector`|`profile`），与包内 `evolution` 一致；侧车可忽略。
 
-use crate::domain::event_estimator::{default_event_slot_v1, EventEstimator};
-use crate::domain::event_impact_ai::EventImpactEstimate;
+use crate::domain::event_estimator::default_event_slot_v1;
+use oclive_kernel_core::event_estimator::EventEstimator;
+use oclive_kernel_models::EventImpactEstimate;
 use crate::error::Result;
 use crate::infrastructure::llm::LlmClient;
 use crate::infrastructure::remote_plugin::config::RemotePluginHttpConfig;

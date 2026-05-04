@@ -15,6 +15,7 @@ pub mod emotion_analyzer;
 pub mod event_commands;
 pub mod event_detector;
 pub mod event_estimator;
+#[cfg(feature = "default-event-providers")]
 pub mod event_impact_ai;
 pub mod expert_models;
 pub mod expert_models_admin;

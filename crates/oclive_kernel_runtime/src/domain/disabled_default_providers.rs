@@ -3,8 +3,8 @@
 // 各 `Disabled*` 仅在对应 `default-*-providers` 关闭时实例化；默认 `full` 下会未被引用。
 
 use crate::domain::emotion_analyzer::EmotionResult;
-use crate::domain::event_estimator::EventEstimator;
-use crate::domain::event_impact_ai::EventImpactEstimate;
+use oclive_kernel_core::event_estimator::EventEstimator;
+use oclive_kernel_models::EventImpactEstimate;
 use oclive_memory_builtin::classic;
 use crate::domain::prompt_assembler::PromptAssembler;
 use crate::domain::prompt_builder::PromptInput;

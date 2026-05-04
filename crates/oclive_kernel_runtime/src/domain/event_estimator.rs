@@ -1,7 +1,10 @@
-//! 事件影响估计可替换门面；默认委托 [`estimate_event_impact`](super::event_impact_ai::estimate_event_impact)。
+//! 事件影响估计：`EventEstimator` trait 定义于 [`oclive_kernel_core::event_estimator`]；
+//! 开启 **`default-event-providers`** 时内置实现委托 [`estimate_event_impact`](super::event_impact_ai::estimate_event_impact)。
 #![allow(clippy::too_many_arguments)] // `EventEstimator::estimate` 与编排层参数一致，不宜为 clippy 拆结构体
 
-use crate::domain::event_impact_ai::EventImpactEstimate;
+pub use oclive_kernel_core::event_estimator::EventEstimator;
+
+use oclive_kernel_models::EventImpactEstimate;
 #[cfg(not(feature = "default-event-providers"))]
 use crate::domain::disabled_default_providers::DisabledEventEstimator;
 use crate::error::Result;
@@ -11,22 +14,6 @@ use crate::models::{Emotion, Event, PersonalitySource, PersonalityVector};
 use async_trait::async_trait;
 use std::sync::atomic::{AtomicBool, Ordering};
 use std::sync::Arc;
-
-#[async_trait]
-pub trait EventEstimator: Send + Sync {
-    async fn estimate(
-        &self,
-        llm: &Arc<dyn LlmClient>,
-        ollama_model: &str,
-        user_message: &str,
-        user_emotion: &Emotion,
-        personality: &PersonalityVector,
-        personality_source: PersonalitySource,
-        recent_turns: &[(String, String)],
-        recent_events: &[Event],
-        knowledge_augment: Option<&KnowledgeEventAugment>,
-    ) -> Result<EventImpactEstimate>;
-}
 
 #[cfg(feature = "default-event-providers")]
 pub struct BuiltinEventEstimator;
