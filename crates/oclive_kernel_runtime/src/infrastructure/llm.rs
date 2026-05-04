@@ -4,9 +4,7 @@
 
 pub use oclive_kernel_core::llm::LlmClient;
 
-use crate::error::Result;
-#[cfg(not(feature = "default-llm-providers"))]
-use crate::error::AppError;
+use crate::error::{AppError, Result};
 #[cfg(feature = "default-llm-providers")]
 use crate::infrastructure::cloud_llm::{CloudLlmConfig, OpenAiCompatLlmClient};
 #[cfg(feature = "default-llm-providers")]
@@ -76,6 +74,31 @@ impl LlmClient for BuiltinLlmDisabledClient {
 #[cfg(not(feature = "default-llm-providers"))]
 pub fn default_runtime_llm_arc() -> Arc<dyn LlmClient> {
     Arc::new(BuiltinLlmDisabledClient)
+}
+
+/// `LlmBackend::None`：拒绝主对话与标签生成（`MODULE_NONE_SEMANTICS.md` §5）。
+#[derive(Debug, Default, Clone, Copy)]
+pub struct NoneLlmClient;
+
+#[async_trait]
+impl LlmClient for NoneLlmClient {
+    async fn generate(&self, _model: &str, _prompt: &str) -> Result<String> {
+        Err(AppError::InvalidParameter(
+            "当前对话引擎不可用（LLM 未启用，backend=none）。请在 Profile 或会话后端中选择可用 LLM。"
+                .into(),
+        ))
+    }
+
+    async fn generate_tag(&self, _model: &str, _prompt: &str) -> Result<String> {
+        Err(AppError::InvalidParameter(
+            "LLM 未启用（backend=none），无法执行标签/分类任务。".into(),
+        ))
+    }
+}
+
+#[must_use]
+pub fn none_llm_client_arc() -> Arc<dyn LlmClient> {
+    Arc::new(NoneLlmClient)
 }
 
 /// 测试或离线场景：固定返回，不访问网络

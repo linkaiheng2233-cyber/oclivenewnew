@@ -19,6 +19,20 @@ import { usePermissionGate } from "../composables/usePermissionGate";
 
 const roleStore = useRoleStore();
 const { t } = useI18n();
+
+type PbModuleKey =
+  | "memory"
+  | "emotion"
+  | "event"
+  | "prompt"
+  | "llm"
+  | "complex_emotion"
+  | "agent";
+
+function backendOptionLabel(v: string): string {
+  if (v === "none") return String(t("pluginBackendSessionPanel.backendLabels.none"));
+  return v;
+}
 const { showToast } = useAppToast();
 const pluginStore = usePluginStore();
 const { ensurePermissionsOrCancel } = usePermissionGate();
@@ -40,34 +54,39 @@ const sourceLabel: Record<"pack_default" | "session_override" | "env_override", 
   session_override: String(t("pluginBackendSessionPanel.sources.sessionOverride")),
   env_override: String(t("pluginBackendSessionPanel.sources.envOverride")),
 };
-const pluginBackendRows = [
+const pluginBackendRows: { key: PbModuleKey; label: string; options: string[] }[] = [
   {
-    key: "memory" as const,
+    key: "memory",
     label: String(t("pluginBackendSessionPanel.modules.memory")),
-    options: ["builtin", "builtin_v2", "remote", "local", "directory"],
+    options: ["builtin", "builtin_v2", "remote", "local", "directory", "none"],
   },
   {
-    key: "emotion" as const,
+    key: "emotion",
     label: String(t("pluginBackendSessionPanel.modules.emotion")),
-    options: ["builtin", "builtin_v2", "remote", "directory"],
+    options: ["builtin", "builtin_v2", "remote", "directory", "none"],
   },
   {
-    key: "event" as const,
+    key: "event",
     label: String(t("pluginBackendSessionPanel.modules.event")),
-    options: ["builtin", "builtin_v2", "remote", "directory"],
+    options: ["builtin", "builtin_v2", "remote", "directory", "none"],
   },
   {
-    key: "prompt" as const,
+    key: "prompt",
     label: String(t("pluginBackendSessionPanel.modules.prompt")),
-    options: ["builtin", "builtin_v2", "remote", "directory"],
+    options: ["builtin", "builtin_v2", "remote", "directory", "none"],
   },
   {
-    key: "llm" as const,
+    key: "llm",
     label: String(t("pluginBackendSessionPanel.modules.llm")),
-    options: ["ollama", "remote", "directory"],
+    options: ["ollama", "remote", "directory", "none"],
   },
   {
-    key: "agent" as const,
+    key: "complex_emotion",
+    label: String(t("pluginBackendSessionPanel.modules.complexEmotion")),
+    options: ["builtin", "remote", "directory", "none"],
+  },
+  {
+    key: "agent",
     label: String(t("pluginBackendSessionPanel.modules.agent")),
     options: ["builtin", "remote", "directory", "none"],
   },
@@ -112,10 +131,7 @@ async function onRemoteLifeChange(ev: Event) {
     busy.value = false;
   }
 }
-async function onPluginBackendChange(
-  module: "memory" | "emotion" | "event" | "prompt" | "llm" | "agent",
-  ev: Event,
-) {
+async function onPluginBackendChange(module: PbModuleKey, ev: Event) {
   const selected = (ev.target as HTMLSelectElement).value;
   const backend = selected === "__pack_default__" ? null : selected;
 
@@ -191,6 +207,7 @@ async function refreshPluginDebugSnapshot() {
     `effective event=${debug.plugin_backends_effective.event}(${debug.plugin_backends_effective_sources.event})`,
     `effective prompt=${debug.plugin_backends_effective.prompt}(${debug.plugin_backends_effective_sources.prompt})`,
     `effective llm=${debug.plugin_backends_effective.llm}(${debug.plugin_backends_effective_sources.llm})`,
+    `effective complex_emotion=${debug.plugin_backends_effective.complex_emotion}(${debug.plugin_backends_effective_sources.complex_emotion})`,
     `effective agent=${debug.plugin_backends_effective.agent}(${debug.plugin_backends_effective_sources.agent})`,
     `pack directory_plugins=${formatDirectoryPluginSlots(debug.plugin_backends_pack_default.directory_plugins)}`,
     `effective directory_plugins=${formatDirectoryPluginSlots(debug.plugin_backends_effective.directory_plugins)}`,
@@ -251,11 +268,13 @@ async function onPackCurrentPlugin(): Promise<void> {
     <div class="pb-meta">
       <p class="sub plugin-backends" :title="String(t('pluginBackendSessionPanel.meta.packTitle'))">
         {{ t("pluginBackendSessionPanel.meta.packLabel") }}：mem {{ pluginBackends.memory }} · emotion {{ pluginBackends.emotion }} · event
-        {{ pluginBackends.event }} · prompt {{ pluginBackends.prompt }} · llm {{ pluginBackends.llm }} · agent {{ pluginBackends.agent }}
+        {{ pluginBackends.event }} · prompt {{ pluginBackends.prompt }} · llm {{ pluginBackends.llm }} · complex_emotion
+        {{ pluginBackends.complex_emotion }} · agent {{ pluginBackends.agent }}
       </p>
       <p class="sub plugin-backends" :title="String(t('pluginBackendSessionPanel.meta.sessionEffectiveTitle'))">
         {{ t("pluginBackendSessionPanel.meta.sessionEffectiveLabel") }}：mem {{ pluginBackendsEffective.memory }} · emotion {{ pluginBackendsEffective.emotion }} · event
-        {{ pluginBackendsEffective.event }} · prompt {{ pluginBackendsEffective.prompt }} · llm {{ pluginBackendsEffective.llm }} · agent {{ pluginBackendsEffective.agent }}
+        {{ pluginBackendsEffective.event }} · prompt {{ pluginBackendsEffective.prompt }} · llm {{ pluginBackendsEffective.llm }} · complex_emotion
+        {{ pluginBackendsEffective.complex_emotion }} · agent {{ pluginBackendsEffective.agent }}
       </p>
       <p v-if="directoryPluginsPackLine" class="sub plugin-backends">{{ directoryPluginsPackLine }}</p>
       <p v-if="directoryPluginsEffectiveLine" class="sub plugin-backends">{{ directoryPluginsEffectiveLine }}</p>
@@ -266,7 +285,8 @@ async function onPackCurrentPlugin(): Promise<void> {
         {{ t("pluginBackendSessionPanel.meta.sourcesLabel") }}：mem {{ sourceLabel[pluginBackendsEffectiveSources.memory] }} · emotion
         {{ sourceLabel[pluginBackendsEffectiveSources.emotion] }} · event
         {{ sourceLabel[pluginBackendsEffectiveSources.event] }} · prompt
-        {{ sourceLabel[pluginBackendsEffectiveSources.prompt] }} · llm {{ sourceLabel[pluginBackendsEffectiveSources.llm] }} · agent {{ sourceLabel[pluginBackendsEffectiveSources.agent] }}
+        {{ sourceLabel[pluginBackendsEffectiveSources.prompt] }} · llm {{ sourceLabel[pluginBackendsEffectiveSources.llm] }} · complex_emotion
+        {{ sourceLabel[pluginBackendsEffectiveSources.complex_emotion] }} · agent {{ sourceLabel[pluginBackendsEffectiveSources.agent] }}
       </p>
     </div>
     <div v-if="roleStore.interactionImmersive" class="row row-check">
@@ -293,7 +313,7 @@ async function onPackCurrentPlugin(): Promise<void> {
           <option value="__pack_default__">
             {{ t("pluginBackendSessionPanel.followPackDefault", { v: pluginBackends[item.key] }) }}
           </option>
-          <option v-for="v in item.options" :key="v" :value="v">{{ v }}</option>
+          <option v-for="v in item.options" :key="v" :value="v">{{ backendOptionLabel(v) }}</option>
         </select>
       </div>
       <div

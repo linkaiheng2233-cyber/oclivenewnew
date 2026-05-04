@@ -65,6 +65,18 @@
 
 > 具体 `none` 的输入/输出降级语义见 **[MODULE_NONE_SEMANTICS.md](./MODULE_NONE_SEMANTICS.md)**。
 
+#### 4.1.1 `none` 与 MODULE_NONE_SEMANTICS 对照（快查）
+
+| Profile 模块键 | `backend: "none"` 行为摘要 | 规范章节 |
+|----------------|---------------------------|----------|
+| `memory` | 检索无结果、不写记忆副作用 | §1 |
+| `emotion` | 强中性七维 | §2 |
+| `event` | `Ignore` / 零影响 | §3 |
+| `prompt` | 最小非空占位 prompt（仍含用户句） | §4 |
+| `llm` | 主生成拒绝并返回可读错误 | §5 |
+| `complex_emotion` | 无复盘 / 空标签 | §6 |
+| `agent` | `handled=false` + 固定 `AGENT_BACKEND_NONE_REPLY` | §7 |
+
 ### 4.2 允许的 `backend` 值（与现有代码库对齐）
 
 > 约定：枚举字符串采用 **snake_case**，与仓库中 `PluginBackends` 相关枚举一致（见 `crates/oclive_kernel_runtime/src/models/plugin_backends.rs` 与文档 `creator-docs/plugin-and-architecture/PLUGIN_V1.md`）。
@@ -91,6 +103,7 @@
 - 说明：
   - `remote` 对应 HTTP JSON-RPC（`OCLIVE_REMOTE_LLM_URL`）
   - 云端直连 OpenAI-compatible（`OCLIVE_CLOUD_LLM_*`）属于 **实现侧优先级**，仍归于“LLM 路由层”；Profile 只描述“期望路由”，不承诺环境一定可用（不可用时应有安全降级/提示）
+  - 环境变量 `OCLIVE_LLM_BACKEND`（宿主若实现，大小写不敏感）可取 `none`，与 `llm.backend: "none"` 同义；详见 `KERNEL_BOUNDARY` 与 `RoleStorage` / `AppState` 解析逻辑
 
 #### `complex_emotion.backend`
 

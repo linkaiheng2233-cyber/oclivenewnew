@@ -10,7 +10,7 @@ function t(key: string, params?: Record<string, unknown>): string {
 }
 
 export type V2ModuleKey = "llm" | "emotion" | "complex_emotion";
-export type V2TypeKey = "builtin" | "remote" | "directory";
+export type V2TypeKey = "builtin" | "remote" | "directory" | "none";
 export type V2StatusKey = "enabled" | "disabled" | "needs_config";
 
 export interface PluginV2CardItem {
@@ -35,6 +35,7 @@ export interface PluginV2CategoryItem {
 function normalizeType(backend: string): V2TypeKey {
   if (backend === "remote") return "remote";
   if (backend === "directory") return "directory";
+  if (backend === "none") return "none";
   return "builtin";
 }
 
@@ -89,6 +90,7 @@ export function usePluginManagerV2() {
             { value: "ollama", label: t("pluginManagerV2.options.ollama") },
             { value: "remote", label: t("pluginManagerV2.options.remote") },
             { value: "directory", label: t("pluginManagerV2.options.directory") },
+            { value: "none", label: t("pluginManagerV2.options.none") },
           ],
           directoryOptions: directoryOptions.value,
         },
@@ -144,6 +146,7 @@ export function usePluginManagerV2() {
             { value: "builtin_v2", label: t("pluginManagerV2.options.builtinV2") },
             { value: "remote", label: t("pluginManagerV2.options.remote") },
             { value: "directory", label: t("pluginManagerV2.options.directory") },
+            { value: "none", label: t("pluginManagerV2.options.none") },
           ],
           directoryOptions: directoryOptions.value,
         },
@@ -240,6 +243,11 @@ export function usePluginManagerV2() {
         id: "type:directory",
         label: t("pluginManagerV2.categories.directory"),
         count: countBy((x) => x.type === "directory"),
+      },
+      {
+        id: "type:none",
+        label: t("pluginManagerV2.categories.none"),
+        count: countBy((x) => x.type === "none"),
       },
       {
         id: "status:enabled",

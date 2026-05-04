@@ -9,6 +9,9 @@ use crate::domain::agent::McpShellAgent;
 #[cfg(not(feature = "kernel-agent"))]
 use crate::domain::agent::NoopAgent;
 use crate::domain::agent::{AgentDebugTrace, AgentProvider, DisabledAgentProvider};
+use crate::domain::disabled_default_providers::{
+    DisabledEventEstimator, DisabledUserEmotionAnalyzer, NoneMemoryRetrieval, NonePromptAssembler,
+};
 use crate::domain::complex_emotion::{
     default_complex_emotion_keyword_arc, ComplexEmotionProvider,
     DegradedToBuiltinComplexEmotionProvider, NoneComplexEmotionProvider,
@@ -35,7 +38,7 @@ use crate::domain::user_emotion_analyzer::{
 use crate::infrastructure::cloud_llm::CloudLlmConfig;
 use crate::infrastructure::db::DbManager;
 use crate::infrastructure::directory_plugins::DirectoryPluginRuntime;
-use crate::infrastructure::llm::{LlmClient, RemoteLlmPlaceholder};
+use crate::infrastructure::llm::{none_llm_client_arc, LlmClient, RemoteLlmPlaceholder};
 #[cfg(feature = "kernel-agent")]
 use crate::infrastructure::mcp_client::McpClient;
 #[cfg(all(feature = "kernel-agent", feature = "default-agent-providers"))]
@@ -86,6 +89,11 @@ pub struct BackendRegistry {
     prompt_remote: Arc<dyn PromptAssembler>,
     llm_ollama: Arc<dyn LlmClient>,
     llm_remote: Arc<dyn LlmClient>,
+    llm_none: Arc<dyn LlmClient>,
+    memory_none: Arc<dyn MemoryRetrieval>,
+    emotion_none: Arc<dyn UserEmotionAnalyzer>,
+    event_none: Arc<dyn EventEstimator>,
+    prompt_none: Arc<dyn PromptAssembler>,
     agent_builtin: Arc<dyn AgentProvider>,
     #[cfg(all(feature = "kernel-agent", feature = "default-agent-providers"))]
     agent_react: Arc<BuiltinReActAgent>,
@@ -443,6 +451,12 @@ impl BackendRegistry {
         #[cfg(not(feature = "kernel-agent"))]
         let agent_builtin: Arc<dyn AgentProvider> = Arc::new(NoopAgent);
 
+        let memory_none: Arc<dyn MemoryRetrieval> = Arc::new(NoneMemoryRetrieval);
+        let emotion_none: Arc<dyn UserEmotionAnalyzer> = Arc::new(DisabledUserEmotionAnalyzer);
+        let event_none: Arc<dyn EventEstimator> = Arc::new(DisabledEventEstimator);
+        let prompt_none: Arc<dyn PromptAssembler> = Arc::new(NonePromptAssembler);
+        let llm_none: Arc<dyn LlmClient> = none_llm_client_arc();
+
         // Remote HTTP sidecars are treated as "system providers". They require an explicit
         // permission grant (`network:*`) before they are even selected as providers.
         // If not granted, we fall back to builtin/placeholder providers, and keep behavior deterministic.
@@ -462,6 +476,11 @@ impl BackendRegistry {
             prompt_remote: Arc::new(RemotePromptAssemblerPlaceholder::new()),
             llm_ollama: llm_ollama.clone(),
             llm_remote: Arc::new(RemoteLlmPlaceholder::new(llm_ollama.clone())),
+            llm_none: llm_none.clone(),
+            memory_none: memory_none.clone(),
+            emotion_none: emotion_none.clone(),
+            event_none: event_none.clone(),
+            prompt_none: prompt_none.clone(),
             agent_builtin: agent_builtin.clone(),
             #[cfg(all(feature = "kernel-agent", feature = "default-agent-providers"))]
             agent_react: agent_react.clone(),
@@ -566,6 +585,11 @@ impl BackendRegistry {
             prompt_remote: rem.prompt,
             llm_ollama,
             llm_remote,
+            llm_none,
+            memory_none,
+            emotion_none,
+            event_none,
+            prompt_none,
             agent_builtin,
             #[cfg(all(feature = "kernel-agent", feature = "default-agent-providers"))]
             agent_react,
@@ -586,6 +610,7 @@ impl BackendRegistry {
             LlmBackend::Ollama => self.llm_ollama.clone(),
             LlmBackend::Remote => self.llm_remote.clone(),
             LlmBackend::Directory => self.llm_directory_slot(backends),
+            LlmBackend::None => self.llm_none.clone(),
         }
     }
 
@@ -645,6 +670,7 @@ impl BackendRegistry {
             MemoryBackend::Remote => self.memory_remote.clone(),
             MemoryBackend::Local => self.memory_local_slot_for(backends),
             MemoryBackend::Directory => self.memory_directory_slot(backends),
+            MemoryBackend::None => self.memory_none.clone(),
         }
     }
 
@@ -734,6 +760,7 @@ impl BackendRegistry {
             EmotionBackend::BuiltinV2 => self.emotion_builtin_v2.clone(),
             EmotionBackend::Remote => self.emotion_remote.clone(),
             EmotionBackend::Directory => self.emotion_directory_slot(backends),
+            EmotionBackend::None => self.emotion_none.clone(),
         }
     }
 
@@ -788,6 +815,7 @@ impl BackendRegistry {
             EventBackend::BuiltinV2 => self.event_builtin_v2.clone(),
             EventBackend::Remote => self.event_remote.clone(),
             EventBackend::Directory => self.event_directory_slot(backends),
+            EventBackend::None => self.event_none.clone(),
         }
     }
 
@@ -842,6 +870,7 @@ impl BackendRegistry {
             PromptBackend::BuiltinV2 => self.prompt_builtin_v2.clone(),
             PromptBackend::Remote => self.prompt_remote.clone(),
             PromptBackend::Directory => self.prompt_directory_slot(backends),
+            PromptBackend::None => self.prompt_none.clone(),
         }
     }
 

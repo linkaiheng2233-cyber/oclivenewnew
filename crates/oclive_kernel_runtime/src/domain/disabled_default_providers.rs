@@ -40,6 +40,26 @@ impl MemoryRetrieval for DisabledMemoryRetrieval {
     }
 }
 
+/// `MemoryBackend::None`：无检索结果、空上下文（`MODULE_NONE_SEMANTICS.md` §1）。
+pub struct NoneMemoryRetrieval;
+
+impl MemoryRetrieval for NoneMemoryRetrieval {
+    fn rank_memories(&self, _input: MemoryRetrievalInput<'_>) -> Vec<Memory> {
+        Vec::new()
+    }
+
+    fn build_context(&self, _memories: &[Memory], _max_tokens: usize) -> MemoryContext {
+        MemoryContext {
+            memories: Vec::new(),
+            total_tokens: 0,
+        }
+    }
+
+    fn search_memories(&self, _keyword: &str, _memories: &[Memory]) -> Vec<Memory> {
+        Vec::new()
+    }
+}
+
 pub struct DisabledUserEmotionAnalyzer;
 
 impl UserEmotionAnalyzer for DisabledUserEmotionAnalyzer {
@@ -85,6 +105,22 @@ pub struct DisabledPromptAssembler;
 impl PromptAssembler for DisabledPromptAssembler {
     fn build_prompt(&self, _input: &PromptInput<'_>) -> String {
         String::new()
+    }
+
+    fn top_topic_hint(&self, _role_any: &dyn Any, _scene_id: &str) -> Option<String> {
+        None
+    }
+}
+
+/// `PromptBackend::None`：最小非空 prompt（`MODULE_NONE_SEMANTICS.md` §4）。
+pub struct NonePromptAssembler;
+
+impl PromptAssembler for NonePromptAssembler {
+    fn build_prompt(&self, input: &PromptInput<'_>) -> String {
+        format!(
+            "[oclive] Prompt 模块未启用（backend=none）。以下为最小占位上下文。\n\n用户：\n{}",
+            input.user_input
+        )
     }
 
     fn top_topic_hint(&self, _role_any: &dyn Any, _scene_id: &str) -> Option<String> {

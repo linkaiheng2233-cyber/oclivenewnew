@@ -632,6 +632,8 @@ pub fn resolve_llm_backend_env_override() -> Option<LlmBackend> {
         Some(LlmBackend::Remote)
     } else if t.eq_ignore_ascii_case("directory") {
         Some(LlmBackend::Directory)
+    } else if t.eq_ignore_ascii_case("none") {
+        Some(LlmBackend::None)
     } else {
         None
     }

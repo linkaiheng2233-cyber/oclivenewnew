@@ -578,12 +578,16 @@ export const zhCN = {
       sessionOverride: "会话覆盖",
       envOverride: "环境覆盖",
     },
+    backendLabels: {
+      none: "静音（none）",
+    },
     modules: {
       memory: "Memory",
       emotion: "Emotion",
       event: "Event",
       prompt: "Prompt",
       llm: "LLM",
+      complexEmotion: "Complex emotion",
       agent: "Agent",
     },
     directoryPlugins: {
@@ -641,6 +645,7 @@ export const zhCN = {
       directory: "目录插件",
       builtin: "内置",
       builtinV2: "内置 V2",
+      none: "静音（none）",
     },
     cards: {
       llmMain: {
@@ -689,6 +694,7 @@ export const zhCN = {
       builtin: "内置",
       remote: "远程",
       directory: "本地目录插件",
+      none: "静音（none）",
       statusEnabled: "已启用",
       statusDisabled: "已关闭",
       statusNeedsConfig: "还需配置",
@@ -715,6 +721,7 @@ export const zhCN = {
         builtin: "内置",
         remote: "远程",
         directory: "目录插件",
+        none: "静音（none）",
       },
       risk: {
         needsConfig: "缺配置",

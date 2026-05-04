@@ -702,14 +702,15 @@ export interface DirectoryPluginSlots {
 
 /** 与 `settings.json` → `plugin_backends` 一致（snake_case，与后端 serde 对齐） */
 export interface PluginBackends {
-  memory: "builtin" | "builtin_v2" | "remote" | "local" | "directory";
+  memory: "builtin" | "builtin_v2" | "remote" | "local" | "directory" | "none";
   /** `memory === "local"` 时可选：与 `_local_plugins` 中 descriptor 的 `provider_id` 一致 */
   local_memory_provider_id?: string | null;
-  emotion: "builtin" | "builtin_v2" | "remote" | "directory";
-  event: "builtin" | "builtin_v2" | "remote" | "directory";
-  prompt: "builtin" | "builtin_v2" | "remote" | "directory";
-  llm: "ollama" | "remote" | "directory";
+  emotion: "builtin" | "builtin_v2" | "remote" | "directory" | "none";
+  event: "builtin" | "builtin_v2" | "remote" | "directory" | "none";
+  prompt: "builtin" | "builtin_v2" | "remote" | "directory" | "none";
+  llm: "ollama" | "remote" | "directory" | "none";
   agent: "builtin" | "remote" | "directory" | "none";
+  complex_emotion: "builtin" | "remote" | "directory" | "none";
   /** 各模块为 `directory` 时对应的 manifest `id`（见 DIRECTORY_PLUGINS.md） */
   directory_plugins?: DirectoryPluginSlots;
 }
@@ -722,6 +723,7 @@ export interface PluginBackendsOverride {
   prompt?: PluginBackends["prompt"] | null;
   llm?: PluginBackends["llm"] | null;
   agent?: PluginBackends["agent"] | null;
+  complex_emotion?: PluginBackends["complex_emotion"] | null;
   /** 会话级与包内按槽合并（当前 UI 未编辑；仅展示与调试） */
   directory_plugins?: DirectoryPluginSlots | null;
 }
@@ -735,6 +737,7 @@ export interface PluginBackendsSourceMap {
   prompt: PluginBackendSource;
   llm: PluginBackendSource;
   agent: PluginBackendSource;
+  complex_emotion: PluginBackendSource;
 }
 
 export interface PluginResolutionDebugInfo {

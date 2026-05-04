@@ -596,12 +596,16 @@ export const enUS = {
       sessionOverride: "Session override",
       envOverride: "Env override",
     },
+    backendLabels: {
+      none: "Muted (none)",
+    },
     modules: {
       memory: "Memory",
       emotion: "Emotion",
       event: "Event",
       prompt: "Prompt",
       llm: "LLM",
+      complexEmotion: "Complex emotion",
       agent: "Agent",
     },
     directoryPlugins: {
@@ -661,6 +665,7 @@ export const enUS = {
       directory: "Directory plugin",
       builtin: "Built-in",
       builtinV2: "Built-in V2",
+      none: "Muted (none)",
     },
     cards: {
       llmMain: {
@@ -709,6 +714,7 @@ export const enUS = {
       builtin: "Built-in",
       remote: "Remote",
       directory: "Local directory plugins",
+      none: "Muted (none)",
       statusEnabled: "Enabled",
       statusDisabled: "Disabled",
       statusNeedsConfig: "Needs setup",
@@ -735,6 +741,7 @@ export const enUS = {
         builtin: "Built-in",
         remote: "Remote",
         directory: "Directory plugin",
+        none: "Muted (none)",
       },
       risk: {
         needsConfig: "Missing config",

@@ -18,7 +18,8 @@ const typeLabel = computed(() => {
   const kind = props.item.type;
   if (kind === "builtin") return String(t("pluginManagerV2.card.type.builtin"));
   if (kind === "remote") return String(t("pluginManagerV2.card.type.remote"));
-  return String(t("pluginManagerV2.card.type.directory"));
+  if (kind === "directory") return String(t("pluginManagerV2.card.type.directory"));
+  return String(t("pluginManagerV2.card.type.none"));
 });
 
 const sourceKind = computed(() => {

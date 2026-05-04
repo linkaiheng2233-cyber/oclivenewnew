@@ -14,6 +14,8 @@ pub enum MemoryBackend {
     Local,
     /// `plugins/<id>/` 目录插件子进程 JSON-RPC（`plugin_backends.directory_plugins.memory` 指定 id）。
     Directory,
+    /// 静音 Provider：检索无结果、不注入上下文（见 `MODULE_NONE_SEMANTICS.md` §1）。
+    None,
 }
 
 /// 用户情绪分析后端
@@ -26,6 +28,8 @@ pub enum EmotionBackend {
     BuiltinV2,
     Remote,
     Directory,
+    /// 静音 Provider：强中性分布（见 `MODULE_NONE_SEMANTICS.md` §2）。
+    None,
 }
 
 /// 事件影响估计后端
@@ -38,6 +42,8 @@ pub enum EventBackend {
     BuiltinV2,
     Remote,
     Directory,
+    /// 静音 Provider：`Ignore` / 零影响（见 `MODULE_NONE_SEMANTICS.md` §3）。
+    None,
 }
 
 /// Prompt 组装后端
@@ -50,6 +56,8 @@ pub enum PromptBackend {
     BuiltinV2,
     Remote,
     Directory,
+    /// 静音 Provider：最小占位 prompt（见 `MODULE_NONE_SEMANTICS.md` §4）。
+    None,
 }
 
 /// 复杂情感复盘后端（`complex_emotion.resolve_turn`）
@@ -89,6 +97,8 @@ pub enum LlmBackend {
     Remote,
     /// 目录插件子进程 JSON-RPC（`plugin_backends.directory_plugins.llm` 指定 manifest `id`）。
     Directory,
+    /// 静音 Provider：拒绝生成（见 `MODULE_NONE_SEMANTICS.md` §5）。
+    None,
 }
 
 /// 各模块使用 `*_backend = directory` 时对应的插件 manifest `id`。
