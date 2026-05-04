@@ -21,9 +21,7 @@ impl PromptBuilder {
     }
 
     pub fn build_guidance_prompt(core_personality: &str) -> String {
-        format!(
-            "你的核心性格是: {core_personality}\n请根据这个性格特征来指导你的回复。"
-        )
+        format!("你的核心性格是: {core_personality}\n请根据这个性格特征来指导你的回复。")
     }
 
     pub fn top_topic_hint(_ctx: &TopicHintContext<'_>, _scene_id: &str) -> Option<String> {

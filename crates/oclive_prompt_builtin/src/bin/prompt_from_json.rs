@@ -109,13 +109,19 @@ fn build(params: &PromptBuildRpcParams) -> String {
 fn main() {
     let mut buf = String::new();
     if let Err(e) = std::io::stdin().read_to_string(&mut buf) {
-        let _ = writeln!(std::io::stderr(), "oclive_prompt_from_json: read stdin: {e}");
+        let _ = writeln!(
+            std::io::stderr(),
+            "oclive_prompt_from_json: read stdin: {e}"
+        );
         std::process::exit(1);
     }
     let params: PromptBuildRpcParams = match serde_json::from_str(buf.trim()) {
         Ok(p) => p,
         Err(e) => {
-            let _ = writeln!(std::io::stderr(), "oclive_prompt_from_json: parse json: {e}");
+            let _ = writeln!(
+                std::io::stderr(),
+                "oclive_prompt_from_json: parse json: {e}"
+            );
             std::process::exit(1);
         }
     };
