@@ -80,7 +80,7 @@
 - 记忆引擎：`memory_engine`、`memory_retrieval`
 - Prompt：`prompt_builder`、`prompt_assembler`
 - 策略：`policy`、`affect_policy`
-- Agent：`agent`
+- Agent：`agent`（`AgentProvider`；进程内 **ReAct** 默认实现在 **`oclive_agent_builtin`**；**`McpShellAgent`** 仍驻 `kernel_runtime`，见 `LIGHTWEIGHT_PROFILE.md`）
 
 ### 2.9 专家模型设施（Module 9）
 
