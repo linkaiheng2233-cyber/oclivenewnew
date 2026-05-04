@@ -1,6 +1,6 @@
 # Kernel V2：极薄内核与默认实现分层
 
-> 状态：**阶段 5 主体已落地**；**6-1** models、**6-2** 事件与 **6-3** Prompt 门面已最小稳定（**§6.0 / §6.4–6.5**）。整仓 `EventDetector` / 完整 `PromptBuilder` 搬迁仍为后续课题。  
+> 状态：**阶段 5 主体已落地**；**6-1** models、**6-2** 事件与 **6-3** Prompt 门面已最小稳定（**§6.0 / §6.4–6.5**）。**§6.7** 为阶段 6 后续——事件 / Prompt **完整剥离**可行性结论（是否进入阶段 7 实作）。  
 > Baseline v1 契约与测试须保持向后兼容；物理拆分以独立提交推进。
 
 ## 1. 目标
@@ -133,6 +133,58 @@
 **`full`**（默认）仍为官方一体化能力组合；嵌入式 / SKU 使用 **`default-features = false`** 并按 **[LIGHTWEIGHT_PROFILE.md](./LIGHTWEIGHT_PROFILE.md)** 开启子特性。
 
 **后续（非承诺）**：按需增设 **官方默认事件 / Prompt 模块**（如 **`oclive_event_builtin`** / **`oclive_prompt_builtin`**），或继续下沉 **`Role` / `PromptInput` 字段**——须在 **`oclive_validation`** 与 OOCP 契约侧同步版本策略。
+
+### 6.7 阶段 6 后续 / 阶段 7：事件与 Prompt **完整剥离**可行性评估（2026-05）
+
+> 目的：在 trait / DTO 已稳定（§6.4–6.5）的前提下，判断 **`BuiltinEventEstimator*` + `event_impact_ai` 全链路** 与 **`BuiltinPromptAssembler*` + `PromptBuilder` 全链路** 是否可迁入独立设施 crate（`oclive_event_builtin` / `oclive_prompt_builtin`），**不**在本节执行代码搬迁。
+
+#### 6.7.1 Runtime 中仍未剥离的实现清单
+
+| 领域 | 文件（`oclive_kernel_runtime/src/domain/` 为主） | 职责摘要 | 关键符号 |
+|------|---------------------------------------------------|----------|----------|
+| **事件 · 门面与 Builtin 槽** | `event_estimator.rs` | 再导出 `EventEstimator`；**`BuiltinEventEstimator` / `BuiltinEventEstimatorV2`**；`default_event_slot_*`；**`RemoteEventEstimatorPlaceholder`** | `BuiltinEventEstimator::estimate` → `estimate_event_impact` |
+| **事件 · LLM + 规则主体** | `event_impact_ai.rs`（**`#[cfg(feature = "default-event-providers")]`**） | `estimate_event_impact`、JSON 解析、LLM 失败回退 | `estimate_event_impact`、`parse_event_impact_ai_output`、`event_impact_ai_enabled` |
+| **事件 · 规则检测** | `event_detector.rs` | 关键词 / 情绪组合分类；**`KnowledgeEventAugment`** 合并 | `EventDetector::detect_with_augment`、`get_impact_factor`、`get_confidence` |
+| **事件 · 人格轴辅助** | `affect_policy.rs` | `softness_coldness_volatility`（供 impact 软化） | 被 `event_impact_ai` 调用 |
+| **事件 · 稳定性指数** | `personality_engine.rs`（部分 API） | **`PersonalityEngine::calculate_stability_index`** | 被 `event_impact_ai` 调用 |
+| **事件 · 工具** | `utils/json_loose.rs` | `extract_json_object` | 被 `event_impact_ai` 调用 |
+| **Prompt · 门面与 Builtin 槽** | `prompt_assembler.rs` | **`BuiltinPromptAssembler` / `BuiltinPromptAssemblerV2`**；`default_prompt_slot_*`；**`RemotePromptAssemblerPlaceholder`** | `build_prompt` / `top_topic_hint` → `PromptBuilder` |
+| **Prompt · 拼装主体** | `prompt_builder.rs`（**`#[cfg(feature = "default-prompt-providers")]`**） | **`PromptBuilder::build_prompt`**、段落装配、**`top_topic_hint(role, scene_id)`** | 依赖完整 **`Role`**（仅 `top_topic_hint` 读 `memory_config.topic_weights`）；其余字段来自 **`PromptInput` / `PromptRolePromptSlice`** |
+
+**其它引用（非算法主体，但构成集成面）**：
+
+- **`PluginHost`**（`domain/plugin_host.rs`）：仅持有 **`Arc<dyn EventEstimator>`**、**`Arc<dyn PromptAssembler>`**，按 `PluginBackends` 分发；**不**直接引用 `EventImpactEstimate` 类型名，返回值由 trait（定义于 **`oclive_kernel_core`**）约束。
+- **Remote HTTP**：`infrastructure/remote_plugin/event_http.rs`、`prompt_http.rs` 实现侧车 JSON-RPC，失败时回退 **`default_*_slot_v1`**。
+- **编排**：`chat_engine::process_message` 等通过 **`ResolvedRolePlugins`** 调用 `pl.event` / `pl.prompt`，与剥离目标解耦。
+
+#### 6.7.2 `EventImpactEstimate` 与 PluginHost — 依赖结论
+
+| 检查项 | 结论 |
+|--------|------|
+| **DTO 位置** | **`EventImpactEstimate`** 已在 **`oclive_kernel_models::event_impact`**（§6.0）；Remote / Builtin 共用。 |
+| **`EventEstimator` trait** | 在 **`oclive_kernel_core::event_estimator`**，签名已使用 **`kernel_models`** 中的 `Event`、`KnowledgeEventAugment`、`PersonalityVector` 等；**不**依赖 runtime。 |
+| **PluginHost** | 仅按枚举绑定 **`Arc<dyn EventEstimator>`**；**无**对 `EventImpactEstimate` 的额外硬编码路径。 |
+| **可行性含义** | **共享类型与宿主注册方式已解耦**，不构成「迁入设施 crate」的阻碍；阻碍在 **算法模块之间的 runtime 内聚**（见下表）。 |
+
+#### 6.7.3 `PromptInput` / `Role` — 依赖结论
+
+| 检查项 | 结论 |
+|--------|------|
+| **`PromptInput` / `PromptRolePromptSlice`** | 契约在 **`oclive_kernel_core::prompt`** + **`kernel_models::prompt_role`**（§6.5）；字段已稳定，**`build_prompt` 主路径仅依赖 DTO + `Memory`（core）+ models 枚举**。 |
+| **`Role` 耦合点** | **`PromptBuilder::top_topic_hint(&Role, scene_id)`** 仍读 **`Role.memory_config.topic_weights`**；完整 **`Role`** 依设计留在 **runtime**（§6.0「刻意未迁入 models」）。**`BuiltinPromptAssembler::top_topic_hint`** 对 `role_any` **向下转型为 `Role`**。 |
+| **可行性含义** | 若设施 crate 仅接收 **`PromptInput`**：主拼装可迁出；**除非**将「场景话题权重」提升为 **`PromptInput` 可选字段**或独立快照类型，否则 **`top_topic_hint` 仍须依赖 `Role` 或 runtime 适配层**。 |
+
+#### 6.7.4 综合评估表（是否进入阶段 7 实作）
+
+| 剥离目标 | 阶段 7 结论 | 可行性分析摘要 |
+|----------|-------------|----------------|
+| **事件：`BuiltinEventEstimator*` 壳层** | **阶段 7 可执行（低价值）** | 壳层仅委托 `estimate_event_impact`；单独迁壳**无独立意义**，通常与算法同迁。 |
+| **事件：`estimate_event_impact` + `EventDetector` + 人格轴辅助 + json 工具** | **阶段 7 待定** | **强耦合链**：`event_impact_ai` → `EventDetector` + `affect_policy::softness_coldness_volatility` + **`PersonalityEngine::calculate_stability_index`** + `utils/json_loose`。迁出需 **一并搬迁或抽象** 上述模块，或引入 **`oclive_event_builtin` 对 `oclive_kernel_runtime` 的依赖**（**禁止**：循环依赖风险）。更现实路径：先抽 **无状态纯函数 / 小 crate**（如 `json_loose`、detector 规则子集），再迁 LLM 编排。 |
+| **Prompt：`BuiltinPromptAssembler*` 壳层** | **阶段 7 可执行（低价值）** | 同事件，壳层薄；单独迁出意义有限。 |
+| **Prompt：`PromptBuilder` 全文（~800+ 行）** | **阶段 7 待定** | **主路径**已 **`PromptInput`** 化，迁出 **技术可行**；**`top_topic_hint` 仍绑定 `Role`**，设施 crate **不能**在「零依赖 runtime」前提下实现该方法。可选前置：**扩展 `PromptInput` 或新增 `TopicWeightsSnapshot`**，由编排层从 `Role` 填充，再迁 `PromptBuilder`。 |
+| **PluginHost / trait / DTO** | **已就绪（非阻碍）** | 注册与类型边界已满足独立 Builtin crate 接入形态。 |
+
+**小结**：**接口与模型层已可支撑**未来 `oclive_event_builtin` / `oclive_prompt_builtin`，但 **算法主体仍与 runtime 域模块交织（事件）或与完整 `Role` 交织（Prompt 话题提示）**，故 **整段 Builtin 实现「完整剥离」标记为阶段 7 待定**；若接受 **编排层传入额外 DTO** 或 **分步下沉工具模块**，可再开独立设计 PR 将子表中的「待定」逐项改为「可执行」。
 
 ## 7. 参考
 
