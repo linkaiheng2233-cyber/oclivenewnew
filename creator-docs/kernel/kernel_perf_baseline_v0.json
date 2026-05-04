@@ -1,0 +1,14 @@
+{
+  "comment": "与 KERNEL_PERFORMANCE_BASELINE.md Baseline v0 对齐；median_ns 取 Criterion 终端输出的 95% CI 中间估计值。",
+  "threshold_warn_ratio": 1.15,
+  "benchmarks": {
+    "process_message_once_mock_llm": { "median_ns": 13474000 },
+    "process_message_10_rounds/sequential_10": { "median_ns": 131610000 },
+    "load_role_toggle_two_roles": { "median_ns": 3718400 },
+    "directory_rescan_and_bootstrap_dto": { "median_ns": 126660 },
+    "directory_plugin_rpc_ping": { "median_ns": 385720 },
+    "mcp_call_tool_denied_stdio_no_grant": { "median_ns": 1981400 },
+    "memory_save_and_load_32": { "median_ns": 2032800 },
+    "role_pack_zip/export_import_roundtrip": { "median_ns": 1797900 }
+  }
+}

@@ -24,6 +24,8 @@ cargo bench -p oclive_kernel_runtime --bench kernel_hot_paths -- --verbose
 cargo bench -p oclive_kernel_runtime --bench kernel_plugins_persistence -- --verbose
 ```
 
+**CI 基线对比**：机器可读数值见同目录 [`kernel_perf_baseline_v0.json`](./kernel_perf_baseline_v0.json)；GitHub Actions 工作流在 **手动触发** 且勾选 **`bench_full`** 时运行上述 benches，并由 `scripts/criterion_compare_baseline.py` 与 JSON 对比，超约 **15%** 退化输出 `::warning::`（不阻塞主 CI 矩阵）。
+
 ## 热点路径（`kernel_hot_paths`）
 
 | 基准 ID | 含义 | 耗时（95% CI） | 备注 |
