@@ -1,6 +1,6 @@
 # Kernel V2：极薄内核与默认实现分层
 
-> 状态：**阶段 5 主体已落地**；事件 / Prompt 默认实现 **仍驻 runtime**，剥离评估见 **§6（阶段 6 待定）**。  
+> 状态：**阶段 5 主体已落地**；**阶段 6-1** `oclive_kernel_models` 已落地（见 **§6.0**）。事件 / Prompt 剥离评估见 **§6**。  
 > Baseline v1 契约与测试须保持向后兼容；物理拆分以独立提交推进。
 
 ## 1. 目标
@@ -46,6 +46,27 @@
 ## 6. 阶段 6 待定 — 事件与 Prompt 剥离评估（阶段 5-6 / 5-7 结论）
 
 以下为 **2026-05** 依赖扫描结论：**不在当前阶段强制**创建 `oclive_event_builtin` / `oclive_prompt_builtin`**，**避免「为剥离而剥离」**导致超大搬迁或 `runtime ↔ facility` 循环依赖。先行记录迁移前置条件，待 **`oclive_kernel_models`** 或等价共享模型层就绪后再做。
+
+### 6.0 阶段 6-1 固化：`oclive_kernel_models` 迁入清单
+
+以下类型已迁至 **`crates/oclive_kernel_models`**（纯数据：无 `*Engine` / `*Repository` / `PluginHost` / I/O）。`oclive_kernel_runtime` 通过 `pub use oclive_kernel_models::...` 薄再导出，既有 `crate::models::*` 路径可保持不变。
+
+| 类型 | 原 `kernel_runtime` 位置 | 现定义位置 |
+|------|--------------------------|------------|
+| `EventType`、`Event` | `src/models/event.rs`（曾本地定义） | `kernel_models::event` |
+| `PersonalityVector`（含 `clamp` / `effective_from_core_delta` / `to_json_vec` 等） | `src/models/personality.rs` | `kernel_models::personality` |
+| `PersonalityDefaults`、`EvolutionBounds`、`EvolutionConfig`、`MemoryConfig`、`UserRelation` | `src/models/role.rs`（与 `Role` 混排） | `kernel_models::role_config` |
+| `KnowledgeEventAugment` | `src/models/knowledge.rs`（曾与 `KnowledgeIndex` / merge 逻辑混写） | `kernel_models::knowledge_augment` |
+
+**刻意未迁入**：完整 `Role`、`PromptInput`、编排绑定的大型结构仍驻 runtime（远程 `prompt.build_prompt` 等需完整角色契约）。
+
+#### `kernel_core` 与 `oclive_kernel_models`（阶段 6-1）
+
+| Crate | 职责 | 依赖关系（6-1） |
+|-------|------|----------------|
+| `oclive_kernel_models` | 共享 **纯数据**（事件 / 性格向量 / 进化与用户关系片段 / 知识增强片段） | **不**依赖 `kernel_core` |
+| `oclive_kernel_core` | `AppError`、`Emotion`、`Memory`、`LlmClient`、各类 **trait**、仓库端口 | **截至 6-1** **不**依赖 `kernel_models`，可与 models **并行**演进 |
+| `oclive_kernel_runtime` | 内置引擎、存储、HTTP、插件宿主 | 依赖 **core + models** |
 
 ### 6.1 事件（`EventEstimator` / `event_impact_ai`）
 
