@@ -1,5 +1,7 @@
 //! 在**无法持有 async 上下文**时，用独立 Tokio runtime 驱动 `reqwest`（工作区未启用 `reqwest/blocking`）。
 //!
+//! 全 crate 的 **`std::fs` / `block_on` 锚点表**见本 crate 根目录 `SYNC_IO_ANCHORS.md`（与本文互补）。
+//!
 //! ## 仍调用 [`block_on`] 的代码路径（排查清单）
 //!
 //! 下列路径在 **无 Tokio runtime**（如部分单测）时仍可能回退到本模块；**市场三索引**、角色包直链、MCP、目录 RPC 等已在宿主侧改为 **`async` + `.await`**：
