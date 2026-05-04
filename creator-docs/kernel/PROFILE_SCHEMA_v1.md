@@ -104,7 +104,7 @@
 虽然本规范聚焦“六模块固定存在”，但 Profile 允许对 **额外模块**给出路由建议（例如 Module 7: Agent）：
 
 - `agent.backend` 允许：`"builtin" | "remote" | "directory" | "none"`
-  - 说明：当前 `AgentBackend` 枚举不含 `none`，但 Profile 允许使用 `none` 作为“禁用/静音”语义；实现侧需用“空 Provider”落地并保证安全返回（同 §4.1 的原则）。
+  - 说明：与 `crates/oclive_kernel_runtime` 中 **`AgentBackend::None`** 一致；`none` 时见 **[MODULE_NONE_SEMANTICS.md](./MODULE_NONE_SEMANTICS.md) §7**（`DisabledAgentProvider` / `AGENT_BACKEND_NONE_REPLY`）。
 
 ### 4.4 `directory_plugins` 槽位（当 backend=directory 时）
 

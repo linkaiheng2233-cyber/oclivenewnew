@@ -8,7 +8,7 @@ use crate::domain::agent::BuiltinReActAgent;
 use crate::domain::agent::McpShellAgent;
 #[cfg(not(feature = "kernel-agent"))]
 use crate::domain::agent::NoopAgent;
-use crate::domain::agent::{AgentDebugTrace, AgentProvider};
+use crate::domain::agent::{AgentDebugTrace, AgentProvider, DisabledAgentProvider};
 use crate::domain::complex_emotion::{
     default_complex_emotion_keyword_arc, ComplexEmotionProvider,
     DegradedToBuiltinComplexEmotionProvider, NoneComplexEmotionProvider,
@@ -92,6 +92,7 @@ pub struct BackendRegistry {
     #[cfg(all(feature = "kernel-agent", not(feature = "default-agent-providers")))]
     agent_mcp: Arc<McpShellAgent>,
     agent_remote: Arc<dyn AgentProvider>,
+    agent_none: Arc<dyn AgentProvider>,
     complex_emotion_builtin: Arc<dyn ComplexEmotionProvider>,
     complex_emotion_remote: Arc<dyn ComplexEmotionProvider>,
     complex_emotion_none: Arc<dyn ComplexEmotionProvider>,
@@ -226,6 +227,7 @@ impl BackendRegistry {
             AgentBackend::Builtin => self.agent_builtin.clone(),
             AgentBackend::Remote => self.agent_remote.clone(),
             AgentBackend::Directory => self.agent_directory_slot(backends),
+            AgentBackend::None => self.agent_none.clone(),
         }
     }
 
@@ -466,6 +468,7 @@ impl BackendRegistry {
             #[cfg(all(feature = "kernel-agent", not(feature = "default-agent-providers")))]
             agent_mcp: agent_shell.clone(),
             agent_remote: agent_builtin.clone(),
+            agent_none: Arc::new(DisabledAgentProvider),
             complex_emotion_builtin: default_complex_emotion_keyword_arc(),
             complex_emotion_remote: Arc::new(DegradedToBuiltinComplexEmotionProvider::new(
                 "complex_emotion backend Remote is not connected; using builtin complex emotion",
@@ -569,6 +572,7 @@ impl BackendRegistry {
             #[cfg(all(feature = "kernel-agent", not(feature = "default-agent-providers")))]
             agent_mcp: agent_shell,
             agent_remote,
+            agent_none: Arc::new(DisabledAgentProvider),
             complex_emotion_builtin,
             complex_emotion_remote,
             complex_emotion_none,

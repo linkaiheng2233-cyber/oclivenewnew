@@ -69,7 +69,7 @@ const pluginBackendRows = [
   {
     key: "agent" as const,
     label: String(t("pluginBackendSessionPanel.modules.agent")),
-    options: ["builtin", "remote", "directory"],
+    options: ["builtin", "remote", "directory", "none"],
   },
 ];
 const directoryPluginsPackLine = computed(() => {

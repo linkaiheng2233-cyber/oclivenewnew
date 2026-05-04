@@ -58,7 +58,7 @@
 
 ### 4. 与第七模块（Agent/Skill）的关系
 
-- **Module 7（Agent）** 是后端可插拔模块：`plugin_backends.agent = builtin|remote|directory`
+- **Module 7（Agent）** 是后端可插拔模块：`plugin_backends.agent = builtin|remote|directory|none`（`none` 见 [MODULE_NONE_SEMANTICS.md](./MODULE_NONE_SEMANTICS.md) §7）
 - Skill 可以是：
   - MCP tools（工具服务器），由 Agent 调用
   - 或 Agent 插件内部能力，对外仅暴露 `agent.process`

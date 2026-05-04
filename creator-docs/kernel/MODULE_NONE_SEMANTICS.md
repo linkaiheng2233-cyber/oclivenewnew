@@ -23,7 +23,7 @@
 - LLM
 - Complex Emotion
 
-> 注：Agent（Module 7）不在本规范的“六模块”之内，但建议复用相同 `none` 语义：返回 `handled=false` 且给出可读提示（见附录）。
+> 注：Agent（第七模块）的 `none` 语义见 **§7**（与六模块并列说明，仍属同一 `backend: "none"` 家族）。
 
 ---
 
@@ -139,7 +139,24 @@ LLM 为 `none` 时，主对话不应继续生成。
 
 ---
 
-## 7. 安全原则（禁止行为清单）
+## 7) Agent（第七模块）为 `none`
+
+### 行为
+
+当 `plugin_backends.agent = none`（或 Profile / 会话覆盖等价配置）时，由进程内 **`DisabledAgentProvider`**（`crates/oclive_kernel_runtime/src/domain/agent.rs`）接管 **`AgentProvider::process`**：
+
+- **`handled`**：必须为 **`false`**，以便主对话管线**不短路**：后续仍按 **`co_present` / LLM** 等路径处理用户消息（与「整轮对话失败」的 LLM `none` 不同）。
+- **`reply`**：必须为**固定中文提示**（实现常量 **`AGENT_BACKEND_NONE_REPLY`**），用于观测、调试与任何直接读取 `AgentOutput` 的调用方。
+- **禁止**：`reply` 为空字符串、为原始用户输入、或任何易与角色回复混淆的占位文本。
+- **副作用**：不得发起 MCP 工具调用、不得访问 remote/directory Agent HTTP、不得执行 ReAct 循环。
+
+### 与 `NoopAgent` 的区别
+
+在 **`kernel-agent` 特性关闭**等场景下，builtin 槽可能仍装配 **`NoopAgent`**（历史行为：`reply` 为空且 `handled = false`）。**`AgentBackend::None`** 是**显式路由枚举**，须返回**非空**的 `AGENT_BACKEND_NONE_REPLY`，以满足本节的可预期性与审计需求。
+
+---
+
+## 8. 安全原则（禁止行为清单）
 
 `none` Provider **禁止**：
 
@@ -149,13 +166,3 @@ LLM 为 `none` 时，主对话不应继续生成。
 - **暗中执行副作用**：联网、执行 shell、写文件、写 DB（除非规范明确允许的安全元数据）。
 
 ---
-
-## 附录 A：Agent（Module 7）建议的 `none` 语义（非六模块，但推荐统一）
-
-当 Agent 为 `none` 时，建议返回：
-
-- `handled = false`
-- `reply = ""`（或固定短提示，但必须确保上游不会把它当作最终 reply 覆盖主流程）
-
-并且不得触发任何工具调用链路（MCP/HTTP 等）。
-

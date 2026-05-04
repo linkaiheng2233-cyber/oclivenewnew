@@ -14,7 +14,7 @@
 ## 第一部分：架构在解决什么问题
 
 oclive 把对话管线拆成可替换块：**记忆检索、用户句情绪、事件估计、Prompt 组装、LLM 调用**。角色包通过 `settings.json` → `plugin_backends` 声明每块用 **builtin / builtin_v2 / remote / directory / local（memory）/ ollama** 等（见 PLUGIN_V1）。
-此外还有第七模块：**Agent（工具编排 / ReAct / Hermes / OpenClaw 等）**，同样可通过 `plugin_backends.agent = builtin|remote|directory` 插拔接入（见 `REMOTE_PLUGIN_PROTOCOL.md` 的 `agent.process`）。
+此外还有第七模块：**Agent（工具编排 / ReAct / Hermes / OpenClaw 等）**，同样可通过 `plugin_backends.agent = builtin|remote|directory|none` 插拔接入（`none` 见 `../kernel/MODULE_NONE_SEMANTICS.md` §7；协议见 `REMOTE_PLUGIN_PROTOCOL.md` 的 `agent.process`）。
 
 **第九模块（专家模型设施）** 与上述 **`plugin_backends` 路由槽** 不同：它是 **内核托管的专家模型设施**（简称 *专家模型设施*，全称 *专家模型设施模块*）——在 `role_runtime` 上持久化 ExpertGraph / Prompt 风格覆盖，编译为本地 llama 侧车配置；**不是** memory、agent 那种枚举槽位的并列项。详见 **[../kernel/MODULE_9_EXPERT_MODELS_FACILITY.md](../kernel/MODULE_9_EXPERT_MODELS_FACILITY.md)**。
 

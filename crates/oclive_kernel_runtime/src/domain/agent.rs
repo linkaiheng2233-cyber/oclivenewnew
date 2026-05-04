@@ -26,3 +26,19 @@ impl AgentProvider for NoopAgent {
         })
     }
 }
+
+/// `plugin_backends.agent = none` 时的固定提示（中文产品文案；与 `MODULE_NONE_SEMANTICS.md` §7 对齐）。
+pub const AGENT_BACKEND_NONE_REPLY: &str = "Agent 模块未启用（backend=none）。如需工具编排，请将 plugin_backends.agent 设为 builtin、remote 或 directory。";
+
+/// `AgentBackend::None` 的进程内实现：不触发 MCP / HTTP，返回确定文案（非空、非用户输入回显）。
+pub struct DisabledAgentProvider;
+
+#[async_trait]
+impl AgentProvider for DisabledAgentProvider {
+    async fn process(&self, _: AgentInput) -> Result<AgentOutput> {
+        Ok(AgentOutput {
+            handled: false,
+            reply: AGENT_BACKEND_NONE_REPLY.to_string(),
+        })
+    }
+}

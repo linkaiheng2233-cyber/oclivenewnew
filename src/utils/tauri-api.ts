@@ -709,7 +709,7 @@ export interface PluginBackends {
   event: "builtin" | "builtin_v2" | "remote" | "directory";
   prompt: "builtin" | "builtin_v2" | "remote" | "directory";
   llm: "ollama" | "remote" | "directory";
-  agent: "builtin" | "remote" | "directory";
+  agent: "builtin" | "remote" | "directory" | "none";
   /** 各模块为 `directory` 时对应的 manifest `id`（见 DIRECTORY_PLUGINS.md） */
   directory_plugins?: DirectoryPluginSlots;
 }

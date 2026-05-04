@@ -74,6 +74,8 @@ pub enum AgentBackend {
     Builtin,
     Remote,
     Directory,
+    /// 静音 Provider：不执行 ReAct / 工具链；`AgentProvider::process` 返回固定提示（见 `MODULE_NONE_SEMANTICS.md` §7）。
+    None,
 }
 
 /// 主对话 LLM 调用后端（[`LlmClient`](crate::infrastructure::llm::LlmClient)）
