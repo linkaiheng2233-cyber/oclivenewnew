@@ -1,6 +1,6 @@
 # Kernel V2：极薄内核与默认实现分层
 
-> 状态：**阶段 5 主体已落地**；**6-1** models、**6-2** 事件与 **6-3** Prompt 门面已最小稳定（**§6.0 / §6.4–6.5**）。**§6.7** 为阶段 6 后续——事件 / Prompt **完整剥离**可行性结论（是否进入阶段 7 实作）。  
+> 状态：**阶段 5 主体已落地**；**6-1** models、**6-2** 事件与 **6-3** Prompt 门面已最小稳定（**§6.0 / §6.4–6.5**）。**阶段 7-1**：Prompt 正文已迁入 **`oclive_prompt_builtin`**（见 §4 / §6.2 / §6.6）。**§6.7** 保留事件 / Prompt 历史评估与**事件**模块现状结论。  
 > Baseline v1 契约与测试须保持向后兼容；物理拆分以独立提交推进。
 
 ## 1. 目标
@@ -36,8 +36,11 @@
 | 官方默认情绪模块 | `oclive_emotion_builtin` | `default-emotion-providers` | `EmotionAnalyzer` / `EmotionResultExt`；`emotion.analyze` 示例 |
 | 官方默认复杂情感模块 | `oclive_complex_emotion_builtin` | `default-complex-emotion-providers` | `affect_metrics_from_seven_dim`；`complex_emotion.resolve_turn` 示例 |
 | 官方默认 Agent 模块 | `oclive_agent_builtin` | `default-agent-providers` | **`McpShellAgent`** 仍在 runtime；ReAct 在本 crate；`agent.process` 示例（契约演示） |
+| 官方默认 Prompt 模块 | `oclive_prompt_builtin` | `default-prompt-providers` | `PromptBuilder`（`classic`）；`BuiltinPromptAssembler*`（`providers`）；runtime 保留槽位 / Remote 占位 / HTTP；directory 示例 `prompt.build_prompt` |
 
 **Agent**：`kernel-agent` 控制 MCP 栈与轻量 **`McpShellAgent`**；**`default-agent-providers`** 单独控制是否链接 **`BuiltinReActAgent`**（`oclive_agent_builtin/providers`）。
+
+**Prompt**：**`default-prompt-providers`** 链入 **`oclive_prompt_builtin/providers`**（隐含 **`classic`**）；关闭时 **`DisabledPromptAssembler`**。目录形态见 **`examples/oclive-prompt-builtin-directory/`** 与 **`LIGHTWEIGHT_PROFILE.md`**。
 
 ## 5. 已实现（阶段 2 首包）
 
@@ -47,7 +50,7 @@
 
 ## 6. 阶段 6 待定 — 事件与 Prompt 剥离评估（阶段 5-6 / 5-7 结论）
 
-以下为 **2026-05** 依赖扫描结论：**不在当前阶段强制**创建 **官方默认事件 / Prompt 模块**（`oclive_event_builtin` / `oclive_prompt_builtin`），避免「为剥离而剥离」导致超大搬迁或 `runtime ↔ *_builtin` 循环依赖。先行记录迁移前置条件，待 **`oclive_kernel_models`** 或等价共享模型层就绪后再做。
+以下为 **2026-05** 起依赖扫描结论：**官方默认 Prompt 模块**（**`oclive_prompt_builtin`**）已在 **阶段 7-1** 落地（见 §4、§6.2）。**官方默认事件模块**（`oclive_event_builtin`）仍**未**强制创建，算法主体仍在 runtime（见 §6.7）。
 
 ### 6.0 阶段 6-1 固化：`oclive_kernel_models` 迁入清单
 
@@ -86,21 +89,21 @@
 
 **评估**：从 **官方默认事件能力**（当前仍在 runtime，尚无独立 `oclive_event_builtin`）视角，至少牵连 **规则检测、人格轴公式、JSON 工具、多种模型类型** 与 **一长串 `estimate` 参数**，独立 trait/DTO 边界 **明显超过 5**；且 **`KnowledgeEventAugment` 与知识索引管线耦合**。与 Agent/MCP **无硬耦合**（仅需 `LlmClient`）。**阶段 6-2（最小切线）**：已稳定 **trait + `EventImpactEstimate`**，并用 **`default-event-providers`** 控制 **`event_impact_ai` 模块与 `BuiltinEventEstimator*`**（关则桩 `DisabledEventEstimator`，见 **§6.4**）。整仓搬迁 `EventDetector` + `event_impact_ai` 算法主体仍为后续工作。
 
-### 6.2 Prompt（`PromptAssembler` / `PromptBuilder`）
+### 6.2 Prompt（`PromptAssembler` / `PromptBuilder`）— **阶段 7-1 已完整剥离设施 crate**
 
 | 类别 | 依赖项 |
 |------|--------|
-| **门面** | **`PromptAssembler` trait**（**`oclive_kernel_core::prompt`**，**阶段 6-3**）；runtime **`domain/prompt_assembler.rs`** 保留 **`BuiltinPromptAssembler*`**、`default_prompt_slot_*`、`RemotePromptAssemblerPlaceholder` |
+| **门面** | **`PromptAssembler` trait**（**`oclive_kernel_core::prompt`**，**阶段 6-3**）；runtime **`domain/prompt_assembler.rs`** 保留 **`default_prompt_slot_*`**、**`RemotePromptAssemblerPlaceholder`**；进程内 **`BuiltinPromptAssembler*`** 由 **`oclive_prompt_builtin`**（`providers`）提供 |
 | **输入 DTO** | **`PromptInput<'a>`**（**core**：`role_any` + **`PromptRolePromptSlice`** + 记忆 / 场景 / 事件等字段）；**`DEFAULT_REPLY_QUALITY_ANCHOR`**、**`effective_reply_quality_anchor`**（core） |
-| **实现** | **`PromptBuilder`**（**`domain/prompt_builder.rs`**，**`#[cfg(feature = "default-prompt-providers")]`**）；体量仍大，未搬迁 |
-| **模型** | `Memory`（core）；`PersonalityVector`、`EventType`、`PromptRolePromptSlice`（models）；完整 **`Role`**（runtime，`prompt_slice()` 填充切片）；侧车 JSON 仍序列化完整 **`Role`** |
+| **实现** | **`PromptBuilder`**（**`oclive_prompt_builtin`**，`classic` / `classic/stub`）；**`#[cfg(feature = "default-prompt-providers")]`** 链入 **`oclive_prompt_builtin/providers`** |
+| **模型** | `Memory`（core）；`PersonalityVector`、`EventType`、`TopicHintContext`、`PromptRolePromptSlice`（models）；完整 **`Role`**（runtime，`prompt_slice()` / `topic_hint_context()`）；侧车 JSON 仍序列化完整 **`Role`** |
 
-**评估**：整段 **`build_prompt`** 与 **`Role` 全字段** 仍深度耦合。**阶段 6-3（最小切线）**：已稳定 **trait + `PromptInput` + 角色 Prompt 切片**；**`default-prompt-providers`** 控制 **`PromptBuilder` 编译**，关闭时 **`DisabledPromptAssembler`**（空串 / 无 topic hint）。完整拆分为 **官方默认 Prompt 模块**（独立 `oclive_prompt_builtin` 等）仍为后续选项。
+**结论（阶段 7-1）**：**`top_topic_hint`** 仅依赖 **`TopicHintContext`**（models）；**`build_prompt`** 主路径仅依赖 **`PromptInput` + models/core 类型**，已无对完整 **`Role`** 类型的直接引用。关闭 **`default-prompt-providers`** 时 **`DisabledPromptAssembler`**；可通过 **directory** + **`examples/oclive-prompt-builtin-directory/`** + **`oclive_prompt_from_json`** 恢复与内置一致的侧车正文。
 
 ### 6.3 验收（当前阶段）
 
-- 无新增 **官方默认模块**（独立 `*_builtin` crate）；**`cargo check --workspace`** / **`cargo test --workspace`** 通过。
-- **`default-prompt-providers`**：空数组；**开启**（`full`）时编译 **`PromptBuilder`**；**关闭**时不编译 **`PromptBuilder`**，builtin 槽与 Remote 占位回退 **`DisabledPromptAssembler`**。极薄检出：**`cargo check -p oclive_kernel_runtime --no-default-features`**。
+- **`cargo check --workspace`** / **`cargo test --workspace`** 通过；极薄检出：**`cargo check -p oclive_kernel_runtime --no-default-features`**。
+- **`default-prompt-providers`**：**`full`** 下为 **`["oclive_prompt_builtin/providers"]`**；**开启**时链入设施 crate **`providers`**（含 **`PromptBuilder` 全文**）；**关闭**时 runtime **不**链入 **`providers`**，builtin 槽与 Remote 占位回退 **`DisabledPromptAssembler`**。
 - **`default-event-providers`**：行为同 **§6.4**（关闭时不编译 **`event_impact_ai`**，**`DisabledEventEstimator`**）。
 
 ### 6.4 阶段 6-2：事件门面最小切线（已实现）
@@ -111,13 +114,13 @@
 - **`domain::event_impact_ai`**：仅在该 feature **开启**时编译（`domain/mod.rs` 条件模块），减轻 `--no-default-features` 依赖面。
 - **桩**：**`DisabledEventEstimator`**（`disabled_default_providers.rs`），feature 关闭时由 **`default_event_slot_v1/v2`** 选用。
 
-### 6.5 阶段 6-3：Prompt 门面最小切线（已实现）
+### 6.5 阶段 6-3：Prompt 门面最小切线（已实现）→ **阶段 7-1：正文迁入 `oclive_prompt_builtin`**
 
 - **`PromptAssembler`**：`oclive_kernel_core::prompt`（**`build_prompt` + `top_topic_hint(&TopicHintContext, …)`**；编排层从 `Role` 提取 **`TopicHintContext`**，见 **`oclive_kernel_models::TopicHintContext`**）。
-- **`PromptInput`**： **`role_any`**（侧车 **`downcast_ref::<Role>`** 序列化）+ **`role_prompt: PromptRolePromptSlice`**（**Copy**，供 **`PromptBuilder`** 读本段人设字段）。
+- **`PromptInput`**： **`role_any`**（侧车 **`downcast_ref::<Role>`** 序列化）+ **`role_prompt: PromptRolePromptSlice`**。
 - **`PromptRolePromptSlice`**：`kernel_models::prompt_role`；**`Role::prompt_slice()`**（runtime）填充。
-- **`PromptBuilder`**：**仅**在 **`default-prompt-providers`** 开启时编译；单测 **`prompt_builder` / `prompt_assembler`** 亦受同一 feature 约束。
-- **桩**：**`DisabledPromptAssembler`**。
+- **`PromptBuilder` / `BuiltinPromptAssembler*`**：在 **`oclive_prompt_builtin`**（**`default-prompt-providers`** → **`providers`**）；runtime **`domain/prompt_builder.rs`** 仅再导出 **`PromptInput`** 等与 **`PromptBuilder`**（feature gate）；单测仍在 runtime，受 **`default-prompt-providers`** 约束。
+- **桩**：**`DisabledPromptAssembler`**（**`MODULE_NONE_SEMANTICS.md`** 与 **`NonePromptAssembler`** 仍由 runtime 提供）。
 
 ### 6.6 阶段 6 总览（定型）
 
@@ -127,18 +130,18 @@
 | User 情绪 | `UserEmotionAnalyzer`（core） | `DisabledUserEmotionAnalyzer` | **官方默认情绪模块** `oclive_emotion_builtin` |
 | 复杂情感 | `ComplexEmotionProvider`（core） | `DisabledComplexEmotionProvider` | **官方默认复杂情感模块** `oclive_complex_emotion_builtin` |
 | 事件 | **`EventEstimator`**（core）+ **`EventImpactEstimate`**（models） | **`DisabledEventEstimator`**；**不编译 `event_impact_ai`** | **`event_impact_ai`** + **`EventDetector`**（runtime；尚未拆独立 crate） |
-| Prompt | **`PromptAssembler`**（core）+ **`PromptInput`** / **`PromptRolePromptSlice`** | **`DisabledPromptAssembler`**；**不编译 `PromptBuilder`** | **`PromptBuilder`**（runtime；尚未拆独立 crate） |
+| Prompt | **`PromptAssembler`**（core）+ **`PromptInput`** / **`PromptRolePromptSlice`** | **`DisabledPromptAssembler`**；**不链入 `oclive_prompt_builtin/providers`** | **官方默认 Prompt 模块** **`oclive_prompt_builtin`**（`PromptBuilder` + `BuiltinPromptAssembler*`） |
 | Agent | **`AgentProvider`**（core） | **`NoopAgent`** / **`McpShellAgent`**（视 **`kernel-agent`**） | **官方默认 Agent 模块** `oclive_agent_builtin`（`BuiltinReActAgent`） |
 
 **`full`**（默认）仍为官方一体化能力组合；嵌入式 / SKU 使用 **`default-features = false`** 并按 **[LIGHTWEIGHT_PROFILE.md](./LIGHTWEIGHT_PROFILE.md)** 开启子特性。
 
-**后续（非承诺）**：按需增设 **官方默认事件 / Prompt 模块**（如 **`oclive_event_builtin`** / **`oclive_prompt_builtin`**），或继续下沉 **`Role` / `PromptInput` 字段**——须在 **`oclive_validation`** 与 OOCP 契约侧同步版本策略。
+**后续（非承诺）**：按需增设 **官方默认事件模块**（如 **`oclive_event_builtin`**），或继续下沉 **`Role` / `PromptInput` 字段**——须在 **`oclive_validation`** 与 OOCP 契约侧同步版本策略。
 
-### 6.7 阶段 6 后续 / 阶段 7：事件与 Prompt **完整剥离**可行性评估（2026-05）
+### 6.7 阶段 6 后续 / 阶段 7：事件 **完整剥离**可行性评估 + Prompt **现状**（2026-05）
 
-> 目的：在 trait / DTO 已稳定（§6.4–6.5）的前提下，判断 **`BuiltinEventEstimator*` + `event_impact_ai` 全链路** 与 **`BuiltinPromptAssembler*` + `PromptBuilder` 全链路** 是否可迁入独立设施 crate（`oclive_event_builtin` / `oclive_prompt_builtin`），**不**在本节执行代码搬迁。
+> 历史目的：在 trait / DTO 已稳定（§6.4–6.5）的前提下，评估 **`BuiltinEventEstimator*` + `event_impact_ai` 全链路** 与 **`BuiltinPromptAssembler*` + `PromptBuilder` 全链路** 是否迁入独立设施 crate。**Prompt** 已在 **阶段 7-1** 迁入 **`oclive_prompt_builtin`**（见 §6.2）；本节 **6.7.1 / 6.7.4** 以 **事件** 为主，并保留 Prompt 行的**归档式**结论。
 
-#### 6.7.1 Runtime 中仍未剥离的实现清单
+#### 6.7.1 Runtime 中**仍未剥离**的实现清单（事件为主）
 
 | 领域 | 文件（`oclive_kernel_runtime/src/domain/` 为主） | 职责摘要 | 关键符号 |
 |------|---------------------------------------------------|----------|----------|
@@ -148,8 +151,7 @@
 | **事件 · 人格轴辅助** | `affect_policy.rs` | `softness_coldness_volatility`（供 impact 软化） | 被 `event_impact_ai` 调用 |
 | **事件 · 稳定性指数** | `personality_engine.rs`（部分 API） | **`PersonalityEngine::calculate_stability_index`** | 被 `event_impact_ai` 调用 |
 | **事件 · 工具** | `utils/json_loose.rs` | `extract_json_object` | 被 `event_impact_ai` 调用 |
-| **Prompt · 门面与 Builtin 槽** | `prompt_assembler.rs` | **`BuiltinPromptAssembler` / `BuiltinPromptAssemblerV2`**；`default_prompt_slot_*`；**`RemotePromptAssemblerPlaceholder`** | `build_prompt` / `top_topic_hint` → `PromptBuilder` |
-| **Prompt · 拼装主体** | `prompt_builder.rs`（**`#[cfg(feature = "default-prompt-providers")]`**） | **`PromptBuilder::build_prompt`**、段落装配、**`top_topic_hint(&TopicHintContext, scene_id)`** | **`TopicHintContext`** 由 `Role::topic_hint_context()` 等在编排层填充；`PromptBuilder` **不再** 接收完整 `Role` 做话题提示 |
+| **Prompt · 集成薄层（已迁出正文）** | `prompt_assembler.rs`、`prompt_builder.rs` | **`BuiltinPromptAssembler*`** / **`PromptBuilder`** 由 **`oclive_prompt_builtin`** 提供；runtime 保留 **`default_prompt_slot_*`**、**`RemotePromptAssemblerPlaceholder`**、**`PromptInput` 再导出** | 侧车 **`prompt_http.rs`** 仍序列化完整 **`Role`**；**`oclive_prompt_from_json`** 仅需 JSON 字段子集即可拼装（见示例目录 README） |
 
 **其它引用（非算法主体，但构成集成面）**：
 
@@ -166,13 +168,13 @@
 | **PluginHost** | 仅按枚举绑定 **`Arc<dyn EventEstimator>`**；**无**对 `EventImpactEstimate` 的额外硬编码路径。 |
 | **可行性含义** | **共享类型与宿主注册方式已解耦**，不构成「迁入设施 crate」的阻碍；阻碍在 **算法模块之间的 runtime 内聚**（见下表）。 |
 
-#### 6.7.3 `PromptInput` / `Role` — 依赖结论
+#### 6.7.3 `PromptInput` / `Role` — 依赖结论（**阶段 7-1 已落实设施 crate**）
 
 | 检查项 | 结论 |
 |--------|------|
-| **`PromptInput` / `PromptRolePromptSlice`** | 契约在 **`oclive_kernel_core::prompt`** + **`kernel_models::prompt_role`**（§6.5）；字段已稳定，**`build_prompt` 主路径仅依赖 DTO + `Memory`（core）+ models 枚举**。 |
-| **`Role` 耦合点（已缓解）** | 话题提示已改为 **`TopicHintContext`**（**`kernel_models`**），由 **`Role::topic_hint_context()`** 在 **runtime 编排层** 提取 **`memory_config.topic_weights`**（及预留的 `dialogue_summary` / `recent_dialog`）。**`PromptBuilder::top_topic_hint` 不再接受 `&Role`**。 |
-| **可行性含义** | 设施 crate 可实现与 **`TopicHintContext` + `PromptInput`** 对齐的 `top_topic_hint` / `build_prompt`，**无需**引用完整 **`Role`**；**`PromptBuilder` 主文** 仍通过 `PromptInput.role_any` 使用 `Role`（侧车向下转型），完整迁出仍为后续步骤。 |
+| **`PromptInput` / `PromptRolePromptSlice`** | 契约在 **`oclive_kernel_core::prompt`** + **`kernel_models::prompt_role`**（§6.5）；**`build_prompt` 主路径仅依赖 DTO + `Memory`（core）+ models 枚举**。 |
+| **`Role` 耦合点** | 话题提示仅 **`TopicHintContext`**（编排层由 **`Role::topic_hint_context()`** 填充）。**`role_any`** 仍为侧车 **`downcast_ref::<Role>`** 序列化保留；**非 `build_prompt` 算法主路径依赖**。 |
+| **阶段 7-1 结果** | **`oclive_prompt_builtin`** 实现 **`PromptBuilder` + `BuiltinPromptAssembler*`**；关闭 **`default-prompt-providers`** 时 **`DisabledPromptAssembler`**；directory 示例 + **`oclive_prompt_from_json`** 可恢复正文。 |
 
 #### 6.7.4 综合评估表（是否进入阶段 7 实作）
 
@@ -180,11 +182,10 @@
 |----------|-------------|----------------|
 | **事件：`BuiltinEventEstimator*` 壳层** | **阶段 7 可执行（低价值）** | 壳层仅委托 `estimate_event_impact`；单独迁壳**无独立意义**，通常与算法同迁。 |
 | **事件：`estimate_event_impact` + `EventDetector` + 人格轴辅助 + json 工具** | **阶段 7 待定** | **强耦合链**：`event_impact_ai` → `EventDetector` + `affect_policy::softness_coldness_volatility` + **`PersonalityEngine::calculate_stability_index`** + `utils/json_loose`。迁出需 **一并搬迁或抽象** 上述模块，或引入 **`oclive_event_builtin` 对 `oclive_kernel_runtime` 的依赖**（**禁止**：循环依赖风险）。更现实路径：先抽 **无状态纯函数 / 小 crate**（如 `json_loose`、detector 规则子集），再迁 LLM 编排。 |
-| **Prompt：`BuiltinPromptAssembler*` 壳层** | **阶段 7 可执行（低价值）** | 同事件，壳层薄；单独迁出意义有限。 |
-| **Prompt：`PromptBuilder` 全文（~800+ 行）** | **阶段 7 待定** | **`top_topic_hint` 已解耦 `Role`**（**`TopicHintContext`**）。**`build_prompt` 主路径**仍依赖 `PromptInput.role_any` → `Role`；完整迁出需继续收窄 `role_any` 或拆分 `PromptBuilder`。 |
+| **Prompt：`BuiltinPromptAssembler*` + `PromptBuilder` 全文** | **阶段 7-1 已完成** | 已迁入 **`oclive_prompt_builtin`**（`providers` + `classic`）；runtime 薄层 + **`DisabledPromptAssembler`** 门控不变。 |
 | **PluginHost / trait / DTO** | **已就绪（非阻碍）** | 注册与类型边界已满足独立 Builtin crate 接入形态。 |
 
-**小结**：**接口与模型层已可支撑**未来 `oclive_event_builtin` / `oclive_prompt_builtin`，但 **算法主体仍与 runtime 域模块交织（事件）或与完整 `Role` 交织（Prompt 话题提示）**，故 **整段 Builtin 实现「完整剥离」标记为阶段 7 待定**；若接受 **编排层传入额外 DTO** 或 **分步下沉工具模块**，可再开独立设计 PR 将子表中的「待定」逐项改为「可执行」。
+**小结**：**`oclive_prompt_builtin` 已落地**。**事件**算法主体仍与 runtime 域模块强交织，**`oclive_event_builtin` 整仓搬迁仍为阶段 7 待定**；可行路径仍为 **无状态纯函数 / 小 crate 分步下沉** 或后续统一抽象，避免 **`runtime ↔ event_builtin` 循环依赖**。
 
 ## 7. 参考
 

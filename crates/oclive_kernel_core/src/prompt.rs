@@ -1,4 +1,4 @@
-//! Prompt 组装门面与输入 DTO（具体拼装实现在 `oclive_kernel_runtime::PromptBuilder`）。话题提示使用 [`TopicHintContext`]，由编排层从角色配置提取。
+//! Prompt 组装门面与输入 DTO（完整拼装算法在设施 crate **`oclive_prompt_builtin`**，由 `default-prompt-providers` 门控）。话题提示使用 [`TopicHintContext`]，由编排层从角色配置提取。
 
 use crate::models::Memory;
 pub use oclive_kernel_models::PromptRolePromptSlice;

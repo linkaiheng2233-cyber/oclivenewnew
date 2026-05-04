@@ -3022,6 +3022,7 @@ dependencies = [
  "oclive_kernel_core",
  "oclive_kernel_models",
  "oclive_memory_builtin",
+ "oclive_prompt_builtin",
  "oclive_validation",
  "once_cell",
  "parking_lot",
@@ -3058,6 +3059,17 @@ version = "0.1.0"
 dependencies = [
  "chrono",
  "oclive_kernel_core",
+]
+
+[[package]]
+name = "oclive_prompt_builtin"
+version = "0.1.0"
+dependencies = [
+ "oclive_kernel_core",
+ "oclive_kernel_models",
+ "oclive_validation",
+ "serde",
+ "serde_json",
 ]
 
 [[package]]

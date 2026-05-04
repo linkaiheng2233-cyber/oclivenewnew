@@ -1,0 +1,29 @@
+[package]
+name = "oclive_prompt_builtin"
+version = "0.1.0"
+edition = "2021"
+license = "AGPL-3.0"
+description = "Oclive built-in prompt assembly (Kernel V2 phase 7-1 facility crate)."
+readme = "README.md"
+
+[features]
+## 默认开启完整组装算法；极简宿主可 `default-features = false` 并仅按需开 `providers`（仍会要求 `classic`，见下）。
+default = ["classic"]
+## 完整 `PromptBuilder` 正文逻辑。关闭时用 `classic/stub`（空串等轻量语义）。
+classic = []
+## `PromptAssembler` 的 Builtin / BuiltinV2 实现；由 `oclive_kernel_runtime` 的 `default-prompt-providers` 开启。依赖 `classic`。
+providers = ["classic"]
+## 构建 `oclive_prompt_from_json` 辅助二进制（stdin JSON → stdout `{"prompt":...}`），供目录插件示例通过子进程调用。
+prompt-from-json-bin = ["classic", "dep:serde_json", "dep:serde"]
+
+[dependencies]
+oclive_kernel_core = { path = "../oclive_kernel_core" }
+oclive_kernel_models = { path = "../oclive_kernel_models" }
+oclive_validation = { path = "../oclive_validation" }
+serde = { version = "1.0", features = ["derive"], optional = true }
+serde_json = { version = "1.0", optional = true }
+
+[[bin]]
+name = "oclive_prompt_from_json"
+path = "src/bin/prompt_from_json.rs"
+required-features = ["prompt-from-json-bin"]

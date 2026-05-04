@@ -18,7 +18,7 @@
 | 记忆排序 / 上下�?| `MemoryRetrieval` | `BuiltinMemoryRetrieval`、`BuiltinMemoryRetrievalV2` | `crates/oclive_kernel_runtime/src/domain/memory_retrieval.rs` |
 | 用户句情�?| `UserEmotionAnalyzer` | `BuiltinUserEmotionAnalyzer`、`BuiltinUserEmotionAnalyzerV2` | `crates/oclive_kernel_runtime/src/domain/user_emotion_analyzer.rs` |
 | 事件影响估计 | `EventEstimator` | `BuiltinEventEstimator`、`BuiltinEventEstimatorV2` | `crates/oclive_kernel_runtime/src/domain/event_estimator.rs` |
-| Prompt 组装 | `PromptAssembler` | `BuiltinPromptAssembler`、`BuiltinPromptAssemblerV2` | `crates/oclive_kernel_runtime/src/domain/prompt_assembler.rs` |
+| Prompt 组装 | `PromptAssembler` | `BuiltinPromptAssembler`、`BuiltinPromptAssemblerV2`（**`oclive_prompt_builtin`**） | `crates/oclive_kernel_runtime/src/domain/prompt_assembler.rs`（槽位与 Remote 占位）；算法见 **`crates/oclive_prompt_builtin`** |
 | LLM 调用 | `LlmClient`（`plugin_backends.llm`：`ollama` / `remote` / `directory`�?| 进程注入�?`OllamaClient`；`remote` 在配�?`OCLIVE_REMOTE_LLM_URL` 时走 HTTP JSON-RPC�?*`directory`** 使用 **`directory_plugins.llm`** 指向的插�?URL（见 [DIRECTORY_PLUGINS.md](DIRECTORY_PLUGINS.md)）；否则回退进程内默�?LLM | `src-tauri/src/infrastructure/llm.rs`、`infrastructure/remote_plugin/` |
 | 长期记忆持久�?| `MemoryRepository` | SQLite | `crates/oclive_kernel_runtime/src/domain/repository.rs`、`infrastructure/repositories` |
 | 策略（情�?/ 事件 / 记忆�?| `EmotionPolicy` �?| `Default*` | `crates/oclive_kernel_runtime/src/domain/policy.rs`、`state` 加载 |

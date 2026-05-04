@@ -1,52 +1,18 @@
 //! Prompt 组装可替换门面；**`PromptAssembler`** 定义于 [`oclive_kernel_core::prompt`]；
-//! 开启 **`default-prompt-providers`** 时内置实现委托 [`PromptBuilder`](super::prompt_builder::PromptBuilder)。
+//! 开启 **`default-prompt-providers`** 时内置实现来自 **`oclive_prompt_builtin`**。
 
 pub use oclive_kernel_core::prompt::PromptAssembler;
 
 use crate::domain::prompt_builder::PromptInput;
-#[cfg(feature = "default-prompt-providers")]
-use crate::domain::prompt_builder::PromptBuilder;
 #[cfg(not(feature = "default-prompt-providers"))]
 use crate::domain::disabled_default_providers::DisabledPromptAssembler;
 use oclive_kernel_core::prompt::TopicHintContext;
+#[cfg(feature = "default-prompt-providers")]
+pub use oclive_prompt_builtin::{
+    BuiltinPromptAssembler, BuiltinPromptAssemblerV2, PROMPT_BACKEND_V2_PREFIX,
+};
 use std::sync::atomic::{AtomicBool, Ordering};
 use std::sync::Arc;
-
-#[cfg(feature = "default-prompt-providers")]
-pub struct BuiltinPromptAssembler;
-
-#[cfg(feature = "default-prompt-providers")]
-impl PromptAssembler for BuiltinPromptAssembler {
-    fn build_prompt(&self, input: &PromptInput<'_>) -> String {
-        PromptBuilder::build_prompt(input)
-    }
-
-    fn top_topic_hint(&self, ctx: &TopicHintContext<'_>, scene_id: &str) -> Option<String> {
-        PromptBuilder::top_topic_hint(ctx, scene_id)
-    }
-}
-
-/// 第二套内置：与 [`BuiltinPromptAssembler`] 相同逻辑，但在正文前追加固定前缀（可测差异）。
-#[cfg(feature = "default-prompt-providers")]
-pub struct BuiltinPromptAssemblerV2;
-
-#[cfg(feature = "default-prompt-providers")]
-const PROMPT_BACKEND_V2_PREFIX: &str = "[oclive:prompt:builtin_v2]\n";
-
-#[cfg(feature = "default-prompt-providers")]
-impl PromptAssembler for BuiltinPromptAssemblerV2 {
-    fn build_prompt(&self, input: &PromptInput<'_>) -> String {
-        format!(
-            "{}{}",
-            PROMPT_BACKEND_V2_PREFIX,
-            PromptBuilder::build_prompt(input)
-        )
-    }
-
-    fn top_topic_hint(&self, ctx: &TopicHintContext<'_>, scene_id: &str) -> Option<String> {
-        PromptBuilder::top_topic_hint(ctx, scene_id)
-    }
-}
 
 #[must_use]
 pub fn default_prompt_slot_v1() -> Arc<dyn PromptAssembler> {
@@ -195,7 +161,7 @@ mod tests {
         };
         let a = BuiltinPromptAssembler.build_prompt(&input);
         let b = BuiltinPromptAssemblerV2.build_prompt(&input);
-        assert!(b.starts_with(super::PROMPT_BACKEND_V2_PREFIX));
-        assert_eq!(b.len(), a.len() + super::PROMPT_BACKEND_V2_PREFIX.len());
+        assert!(b.starts_with(PROMPT_BACKEND_V2_PREFIX));
+        assert_eq!(b.len(), a.len() + PROMPT_BACKEND_V2_PREFIX.len());
     }
 }
