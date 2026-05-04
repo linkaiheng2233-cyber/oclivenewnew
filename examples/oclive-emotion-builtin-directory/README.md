@@ -4,7 +4,7 @@
 
 ## 与进程内 `default-emotion-providers` 的关系
 
-- 官方 **`full`** profile 通过 **`default-emotion-providers`** 链接设施 crate **`oclive_emotion_builtin`**（进程内 Builtin）。
+- 官方 **`full`** profile 通过 **`default-emotion-providers`** 链接 **官方默认情绪模块** **`oclive_emotion_builtin`**（进程内 Builtin）。
 - 若构建时 **关闭** `default-emotion-providers`，可将角色包 `emotion` 设为 **`directory`**，并把本插件 id 填入 `directory_plugins.emotion`，以 **子进程 RPC** 恢复分析能力（需授予 **`process:spawn`**）。
 
 ## 安装

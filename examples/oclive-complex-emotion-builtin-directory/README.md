@@ -4,7 +4,7 @@
 
 ## 与进程内 `default-complex-emotion-providers` 的关系
 
-- 官方 **`full`** profile 通过 **`default-complex-emotion-providers`** 链接设施 crate **`oclive_complex_emotion_builtin`**。
+- 官方 **`full`** profile 通过 **`default-complex-emotion-providers`** 链接 **官方默认复杂情感模块** **`oclive_complex_emotion_builtin`**。
 - 关闭该 feature 后，可将 `complex_emotion` 设为 **`directory`** 并指向本插件 id（需 **`process:spawn`**）。
 
 ## 协议

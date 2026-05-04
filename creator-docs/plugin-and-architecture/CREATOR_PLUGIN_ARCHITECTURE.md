@@ -18,6 +18,8 @@ oclive 把对话管线拆成可替换块：**记忆检索、用户句情绪、�
 
 **第九模块（专家模型设施）** 与上述 **`plugin_backends` 路由槽** 不同：它是 **内核托管的专家模型设施**（简称 *专家模型设施*，全称 *专家模型设施模块*）——在 `role_runtime` 上持久化 ExpertGraph / Prompt 风格覆盖，编译为本地 llama 侧车配置；**不是** memory、agent 那种枚举槽位的并列项。详见 **[../kernel/MODULE_9_EXPERT_MODELS_FACILITY.md](../kernel/MODULE_9_EXPERT_MODELS_FACILITY.md)**。
 
+进程内 **`builtin`** 路径对应的 **官方默认记忆 / 情绪 / 复杂情感 / Agent 模块**（`oclive_*_builtin`）之产品命名，见 **[../kernel/KERNEL_BOUNDARY.md](../kernel/KERNEL_BOUNDARY.md) §1.1**（与第九模块区分）。
+
 - **builtin**：逻辑编译在宿主内，稳定、离线友好。  
 - **remote**：逻辑可在**独立 HTTP 服务（侧车）**中实现，宿主只发 JSON-RPC，按约定解析结果（环境变量 `OCLIVE_REMOTE_*` URL）。  
 - **directory**：逻辑在 **`plugins/<id>/` 子进程**中实现，wire 与 **remote 相同**，槽位 id 写在 **`plugin_backends.directory_plugins`**（见 [DIRECTORY_PLUGINS.md](DIRECTORY_PLUGINS.md)）。  

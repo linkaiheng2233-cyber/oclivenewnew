@@ -4,7 +4,7 @@
 
 ## 与进程内 `default-agent-providers` 的关系
 
-- 官方 **`full`** profile 通过 **`default-agent-providers`** 链接设施 crate **`oclive_agent_builtin`**（进程内 **Builtin ReAct**）。
+- 官方 **`full`** profile 通过 **`default-agent-providers`** 链接 **官方默认 Agent 模块** **`oclive_agent_builtin`**（进程内 **Builtin ReAct**）。
 - **`kernel-agent`**：MCP 客户端、`McpShellAgent`、调试面板等基础能力；关闭则无 MCP。
 - 关闭 **`default-agent-providers`** 且开启 **`kernel-agent`** 时，宿主使用 **`McpShellAgent`**（`process` 恒为未接管）。
 - 关闭两者中的内置 ReAct 后，可将 `agent` 设为 **`directory`** 并指向本插件 id（需 **`process:spawn`**）。侧车须自行实现 ReAct 或等价逻辑；本目录仅为协议演示。

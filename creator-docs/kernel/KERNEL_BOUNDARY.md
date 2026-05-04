@@ -30,6 +30,23 @@
 
 ---
 
+## 1.1 官方默认模块（Kernel V2 产品术语）
+
+以下名称指 **随官方发行版提供、经 Cargo feature 可选链接的进程内 Builtin 实现**；工程上对应 **`oclive_*_builtin`** crate，历史文档亦常称 **设施 crate**。
+
+| 产品术语 | Crate | 典型 feature |
+|----------|--------|----------------|
+| 官方默认记忆模块 | `oclive_memory_builtin` | `default-memory-providers` |
+| 官方默认情绪模块 | `oclive_emotion_builtin` | `default-emotion-providers` |
+| 官方默认复杂情感模块 | `oclive_complex_emotion_builtin` | `default-complex-emotion-providers` |
+| 官方默认 Agent 模块 | `oclive_agent_builtin` | `default-agent-providers` |
+
+**与编号模块的区分**：**第九模块（专家模型设施）** 为内核托管的 ExpertGraph / Prompt 风格 / 侧车编译等，**不是** 上表中的「官方默认××模块」，也 **不是** `plugin_backends` 中与 `memory` 同形的枚举槽位。详见 [MODULE_9_EXPERT_MODELS_FACILITY.md](./MODULE_9_EXPERT_MODELS_FACILITY.md) §2、§5。
+
+角色包 **`plugin_backends.* = builtin`** 时，由 **`PluginHost`** 装配的进程内路径才可落到上表实现（对应 feature 关闭时见桩/降级，[LIGHTWEIGHT_PROFILE.md](./LIGHTWEIGHT_PROFILE.md)）。
+
+---
+
 ## 2. 内核包含（永久保留于 `oclive_core`�?
 
 以下领域逻辑属于内核�?*不依�?* Tauri / 操作系统 / 窗口�?
@@ -195,7 +212,7 @@ src-tauri/src/
 
 ## 8. Kernel V2：trait / 共享类型 / feature（阶段 6 定型）
 
-本节与 **[KERNEL_V2_DESIGN.md](./KERNEL_V2_DESIGN.md) §6** 对齐，便于宿主与设施 crate 选型依赖；**源码为最终权威**。
+本节与 **[KERNEL_V2_DESIGN.md](./KERNEL_V2_DESIGN.md) §6** 对齐，便于宿主与 **官方默认模块（`oclive_*_builtin`）** 选型依赖；**源码为最终权威**。（历史用语「设施 crate」与此同指；产品命名见 **§1.1**。）
 
 ### 8.1 `oclive_kernel_core`（协议与门面 trait）
 

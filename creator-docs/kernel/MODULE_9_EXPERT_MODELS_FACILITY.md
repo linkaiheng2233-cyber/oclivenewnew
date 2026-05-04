@@ -49,3 +49,4 @@
 - 对外/对内短称：**专家模型设施**。
 - 需与「后端路由模块」「插件槽」对举时：**专家模型设施模块**。
 - 与 i18n / 历史文案中的 **Expert Models（Module 9）** 可互换理解，不必强行改 UI 字符串；新文档优先使用本页中文术语。
+- **勿与 Kernel V2「官方默认××模块」混称**：后者指对话管线槽位上、随发行版提供的进程内默认实现（`oclive_memory_builtin` 等），见 [KERNEL_BOUNDARY.md](./KERNEL_BOUNDARY.md) §1.1、[KERNEL_V2_DESIGN.md](./KERNEL_V2_DESIGN.md) §4。第九模块解决的是 **ExpertGraph / 本地推理装配**，与 `plugin_backends` 枚举槽 **不同构**。

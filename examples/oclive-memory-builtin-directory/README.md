@@ -4,7 +4,7 @@
 
 ## 与进程内 `default-memory-providers` 的关系
 
-- 官方 **`full`** profile 仍通过 **`default-memory-providers`** 链接设施 crate **`oclive_memory_builtin`**（进程内 Builtin），无需安装本插件即可使用 `memory = builtin` / `builtin_v2`。
+- 官方 **`full`** profile 仍通过 **`default-memory-providers`** 链接 **官方默认记忆模块** **`oclive_memory_builtin`**（进程内 Builtin），无需安装本插件即可使用 `memory = builtin` / `builtin_v2`。
 - 若构建时 **关闭** `default-memory-providers`，宿主 **无** 进程内 Builtin；此时可将角色包 `memory` 设为 **`directory`**，并把本插件 id 填入 `directory_plugins.memory`，以 **子进程 RPC** 恢复排序能力（需授予 **`process:spawn`**）。
 
 ## 安装

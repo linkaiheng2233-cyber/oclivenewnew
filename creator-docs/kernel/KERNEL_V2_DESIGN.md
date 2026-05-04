@@ -24,16 +24,18 @@
 | 2 | 新建 `oclive_kernel_core`，迁入 `AppError`、`Memory` / `MemoryContext`、`repository` traits；`runtime` 再导出 |
 | 3 | 以 **LLM** 为试点：`default-llm-providers`（默认开），关则仅保留 trait/远程或目录后端 |
 | 4 | Memory / Emotion / Event / Prompt 等 **default-\*-providers** |
-| 5 | `default-*-providers` 细化：设施 crate（memory / emotion / complex_emotion / **agent ReAct**）+ directory 示例；`kernel-agent` 与 **`default-agent-providers`** 分离（MCP 基础 vs 进程内 Builtin ReAct）；极薄 `cargo check -p oclive_kernel_runtime --no-default-features` |
+| 5 | `default-*-providers` 细化：**官方默认模块**（memory / emotion / complex_emotion / **agent ReAct**；工程名 **设施 crate** / `oclive_*_builtin`）+ directory 示例；`kernel-agent` 与 **`default-agent-providers`** 分离（MCP 基础 vs 进程内 Builtin ReAct）；极薄 `cargo check -p oclive_kernel_runtime --no-default-features` |
 
-## 4. 设施 crate 与默认提供者（阶段 5 快照）
+## 4. 官方默认模块与 default-*-providers（阶段 5 快照）
 
-| 设施 crate | `default-*-providers` | runtime 中保留的薄层 / 基础能力 |
-|------------|----------------------|----------------------------------|
-| `oclive_memory_builtin` | `default-memory-providers` | `classic` 再导出；directory 示例 `memory.rank` |
-| `oclive_emotion_builtin` | `default-emotion-providers` | `EmotionAnalyzer` / `EmotionResultExt`；`emotion.analyze` 示例 |
-| `oclive_complex_emotion_builtin` | `default-complex-emotion-providers` | `affect_metrics_from_seven_dim`；`complex_emotion.resolve_turn` 示例 |
-| `oclive_agent_builtin` | `default-agent-providers` | **`McpShellAgent`** 仍在 runtime；ReAct 在设施 crate；`agent.process` 示例（契约演示） |
+**产品术语**：随官方发行版提供、经 Cargo feature 可选链接的 **进程内 Builtin 实现**，统称为 **「官方默认〈领域〉模块」**（例：**官方默认记忆模块** ↔ `oclive_memory_builtin`）。README、PR 与 Cargo 讨论中仍可简称 **设施 crate** 或 **`*_builtin` crate**。**第九模块（专家模型设施）** 是内核托管的 ExpertGraph / 侧车装配等，**不是**本节的「官方默认××模块」，见 [MODULE_9_EXPERT_MODELS_FACILITY.md](./MODULE_9_EXPERT_MODELS_FACILITY.md)。
+
+| 官方默认模块 | Crate | `default-*-providers` | runtime 中保留的薄层 / 基础能力 |
+|--------------|-------|----------------------|----------------------------------|
+| 官方默认记忆模块 | `oclive_memory_builtin` | `default-memory-providers` | `classic` 再导出；directory 示例 `memory.rank` |
+| 官方默认情绪模块 | `oclive_emotion_builtin` | `default-emotion-providers` | `EmotionAnalyzer` / `EmotionResultExt`；`emotion.analyze` 示例 |
+| 官方默认复杂情感模块 | `oclive_complex_emotion_builtin` | `default-complex-emotion-providers` | `affect_metrics_from_seven_dim`；`complex_emotion.resolve_turn` 示例 |
+| 官方默认 Agent 模块 | `oclive_agent_builtin` | `default-agent-providers` | **`McpShellAgent`** 仍在 runtime；ReAct 在本 crate；`agent.process` 示例（契约演示） |
 
 **Agent**：`kernel-agent` 控制 MCP 栈与轻量 **`McpShellAgent`**；**`default-agent-providers`** 单独控制是否链接 **`BuiltinReActAgent`**（`oclive_agent_builtin/providers`）。
 
@@ -45,7 +47,7 @@
 
 ## 6. 阶段 6 待定 — 事件与 Prompt 剥离评估（阶段 5-6 / 5-7 结论）
 
-以下为 **2026-05** 依赖扫描结论：**不在当前阶段强制**创建 `oclive_event_builtin` / `oclive_prompt_builtin`**，**避免「为剥离而剥离」**导致超大搬迁或 `runtime ↔ facility` 循环依赖。先行记录迁移前置条件，待 **`oclive_kernel_models`** 或等价共享模型层就绪后再做。
+以下为 **2026-05** 依赖扫描结论：**不在当前阶段强制**创建 **官方默认事件 / Prompt 模块**（`oclive_event_builtin` / `oclive_prompt_builtin`），避免「为剥离而剥离」导致超大搬迁或 `runtime ↔ *_builtin` 循环依赖。先行记录迁移前置条件，待 **`oclive_kernel_models`** 或等价共享模型层就绪后再做。
 
 ### 6.0 阶段 6-1 固化：`oclive_kernel_models` 迁入清单
 
@@ -82,7 +84,7 @@
 | **外部抽象** | `LlmClient`（已在 core） |
 | **模型 / DTO** | `Emotion`（core）；`Event` / `EventType`、`PersonalityVector`、`KnowledgeEventAugment`、`EventImpactEstimate`（**models**，runtime 再导出）；`PersonalitySource`（**`oclive_validation`**） |
 
-**评估**：从设施 crate 视角，至少牵连 **规则检测、人格轴公式、JSON 工具、多种模型类型** 与 **一长串 `estimate` 参数**，独立 trait/DTO 边界 **明显超过 5**；且 **`KnowledgeEventAugment` 与知识索引管线耦合**。与 Agent/MCP **无硬耦合**（仅需 `LlmClient`）。**阶段 6-2（最小切线）**：已稳定 **trait + `EventImpactEstimate`**，并用 **`default-event-providers`** 控制 **`event_impact_ai` 模块与 `BuiltinEventEstimator*`**（关则桩 `DisabledEventEstimator`，见 **§6.4**）。整仓搬迁 `EventDetector` + `event_impact_ai` 算法主体仍为后续工作。
+**评估**：从 **官方默认事件能力**（当前仍在 runtime，尚无独立 `oclive_event_builtin`）视角，至少牵连 **规则检测、人格轴公式、JSON 工具、多种模型类型** 与 **一长串 `estimate` 参数**，独立 trait/DTO 边界 **明显超过 5**；且 **`KnowledgeEventAugment` 与知识索引管线耦合**。与 Agent/MCP **无硬耦合**（仅需 `LlmClient`）。**阶段 6-2（最小切线）**：已稳定 **trait + `EventImpactEstimate`**，并用 **`default-event-providers`** 控制 **`event_impact_ai` 模块与 `BuiltinEventEstimator*`**（关则桩 `DisabledEventEstimator`，见 **§6.4**）。整仓搬迁 `EventDetector` + `event_impact_ai` 算法主体仍为后续工作。
 
 ### 6.2 Prompt（`PromptAssembler` / `PromptBuilder`）
 
@@ -93,11 +95,11 @@
 | **实现** | **`PromptBuilder`**（**`domain/prompt_builder.rs`**，**`#[cfg(feature = "default-prompt-providers")]`**）；体量仍大，未搬迁 |
 | **模型** | `Memory`（core）；`PersonalityVector`、`EventType`、`PromptRolePromptSlice`（models）；完整 **`Role`**（runtime，`prompt_slice()` 填充切片）；侧车 JSON 仍序列化完整 **`Role`** |
 
-**评估**：整段 **`build_prompt`** 与 **`Role` 全字段** 仍深度耦合。**阶段 6-3（最小切线）**：已稳定 **trait + `PromptInput` + 角色 Prompt 切片**；**`default-prompt-providers`** 控制 **`PromptBuilder` 编译**，关闭时 **`DisabledPromptAssembler`**（空串 / 无 topic hint）。完整设施 crate 仍为后续选项。
+**评估**：整段 **`build_prompt`** 与 **`Role` 全字段** 仍深度耦合。**阶段 6-3（最小切线）**：已稳定 **trait + `PromptInput` + 角色 Prompt 切片**；**`default-prompt-providers`** 控制 **`PromptBuilder` 编译**，关闭时 **`DisabledPromptAssembler`**（空串 / 无 topic hint）。完整拆分为 **官方默认 Prompt 模块**（独立 `oclive_prompt_builtin` 等）仍为后续选项。
 
 ### 6.3 验收（当前阶段）
 
-- 无新增设施 crate；**`cargo check --workspace`** / **`cargo test --workspace`** 通过。
+- 无新增 **官方默认模块**（独立 `*_builtin` crate）；**`cargo check --workspace`** / **`cargo test --workspace`** 通过。
 - **`default-prompt-providers`**：空数组；**开启**（`full`）时编译 **`PromptBuilder`**；**关闭**时不编译 **`PromptBuilder`**，builtin 槽与 Remote 占位回退 **`DisabledPromptAssembler`**。极薄检出：**`cargo check -p oclive_kernel_runtime --no-default-features`**。
 - **`default-event-providers`**：行为同 **§6.4**（关闭时不编译 **`event_impact_ai`**，**`DisabledEventEstimator`**）。
 
@@ -121,16 +123,16 @@
 
 | 模块 | Trait / 核心 DTO 基座 | `default-*-providers` 关闭时的行为 | 算法 / builtin 主体位置 |
 |------|----------------------|-----------------------------------|-------------------------|
-| Memory | `MemoryRetrieval`（core） | `DisabledMemoryRetrieval` | **`oclive_memory_builtin`** |
-| User 情绪 | `UserEmotionAnalyzer`（core） | `DisabledUserEmotionAnalyzer` | **`oclive_emotion_builtin`** |
-| 复杂情感 | `ComplexEmotionProvider`（core） | `DisabledComplexEmotionProvider` | **`oclive_complex_emotion_builtin`** |
-| 事件 | **`EventEstimator`**（core）+ **`EventImpactEstimate`**（models） | **`DisabledEventEstimator`**；**不编译 `event_impact_ai`** | **`event_impact_ai`** + **`EventDetector`**（runtime） |
-| Prompt | **`PromptAssembler`**（core）+ **`PromptInput`** / **`PromptRolePromptSlice`** | **`DisabledPromptAssembler`**；**不编译 `PromptBuilder`** | **`PromptBuilder`**（runtime） |
-| Agent | **`AgentProvider`**（core） | **`NoopAgent`** / **`McpShellAgent`**（视 **`kernel-agent`**） | **`BuiltinReActAgent`**（**`oclive_agent_builtin`**） |
+| Memory | `MemoryRetrieval`（core） | `DisabledMemoryRetrieval` | **官方默认记忆模块** `oclive_memory_builtin` |
+| User 情绪 | `UserEmotionAnalyzer`（core） | `DisabledUserEmotionAnalyzer` | **官方默认情绪模块** `oclive_emotion_builtin` |
+| 复杂情感 | `ComplexEmotionProvider`（core） | `DisabledComplexEmotionProvider` | **官方默认复杂情感模块** `oclive_complex_emotion_builtin` |
+| 事件 | **`EventEstimator`**（core）+ **`EventImpactEstimate`**（models） | **`DisabledEventEstimator`**；**不编译 `event_impact_ai`** | **`event_impact_ai`** + **`EventDetector`**（runtime；尚未拆独立 crate） |
+| Prompt | **`PromptAssembler`**（core）+ **`PromptInput`** / **`PromptRolePromptSlice`** | **`DisabledPromptAssembler`**；**不编译 `PromptBuilder`** | **`PromptBuilder`**（runtime；尚未拆独立 crate） |
+| Agent | **`AgentProvider`**（core） | **`NoopAgent`** / **`McpShellAgent`**（视 **`kernel-agent`**） | **官方默认 Agent 模块** `oclive_agent_builtin`（`BuiltinReActAgent`） |
 
 **`full`**（默认）仍为官方一体化能力组合；嵌入式 / SKU 使用 **`default-features = false`** 并按 **[LIGHTWEIGHT_PROFILE.md](./LIGHTWEIGHT_PROFILE.md)** 开启子特性。
 
-**后续（非承诺）**：按需增设 **`oclive_event_builtin`** / **`oclive_prompt_builtin`** 等设施 crate，或继续下沉 **`Role` / `PromptInput` 字段**——须在 **`oclive_validation`** 与 OOCP 契约侧同步版本策略。
+**后续（非承诺）**：按需增设 **官方默认事件 / Prompt 模块**（如 **`oclive_event_builtin`** / **`oclive_prompt_builtin`**），或继续下沉 **`Role` / `PromptInput` 字段**——须在 **`oclive_validation`** 与 OOCP 契约侧同步版本策略。
 
 ## 7. 参考
 
