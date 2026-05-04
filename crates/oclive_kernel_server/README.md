@@ -21,6 +21,10 @@ Optional env:
 - `OCLIVE_ROLES_DIR`: roles root dir (optional)
 - `OCLIVE_APP_DATA_DIR`: app data dir (optional)
 
+## HTTP 试聊脚本示例
+
+仓库 **[`examples/kernel_remote_simple/`](../../examples/kernel_remote_simple/)** 提供 Python / Node 客户端，演示 **`GET /health`** 与 **`POST /chat`**（需本机 Ollama 与合法 `role_path`）。
+
 ## Status
 
 This binary runs the **full kernel runtime** (roles, DB, plugin backends) and exposes it via OOCP. 方法参数与结果以仓库内 [`creator-docs/oocp/OOCP_SPEC_v0_1.md`](../../creator-docs/oocp/OOCP_SPEC_v0_1.md) 为准（例如 `time.get_state` 需带 `session_ns`）。

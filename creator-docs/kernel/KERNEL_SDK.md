@@ -67,3 +67,23 @@ cargo run -p kernel_embed_minimal
 ```
 
 依赖与契约：本包 `Cargo.toml` 以 **path** 引用 `oclive_kernel_runtime`；对外 DTO 与错误码仍以 **`models/dto.rs`**、[`handoff/10_ERROR_CODE_DICTIONARY.md`](../../handoff/10_ERROR_CODE_DICTIONARY.md) 为准；OOCP 见 [OOCP_SPEC_COMPLETE_REFERENCE.md](../oocp/OOCP_SPEC_COMPLETE_REFERENCE.md)。
+
+---
+
+## 8. HTTP 远程试聊示例（`kernel_remote_simple`）
+
+独立脚本通过 **`GET /health`**、**`POST /chat`** 调用 **`oclive_kernel_server`**（默认端口由 **`OOCP_API_PORT`** 决定，常为 **`48888`**），无需嵌入 Rust。
+
+- 路径：[examples/kernel_remote_simple/](../../examples/kernel_remote_simple/)  
+- 说明：先 **`cargo run -p oclive_kernel_server`**，再运行 **`client.py`** 或 **`client.mjs`**（需本机 **Ollama** 与合法 **`role_path`**）。
+
+契约与 `http_api` 一致，见 [`crates/oclive_kernel_server/README.md`](../../crates/oclive_kernel_server/README.md)。
+
+---
+
+## 9. 目录插件 SDK 极简示例（`kernel_directory_plugin_simple`）
+
+最小 **manifest + Node JSON-RPC 侧车**：实现 **`echo.ping`**（手工 curl）与 **`memory.rank`**（将角色 **memory** 设为 **`directory`** 时由内核调用）。
+
+- 路径：[examples/kernel_directory_plugin_simple/](../../examples/kernel_directory_plugin_simple/)  
+- 与 [DIRECTORY_PLUGINS.md](../plugin-and-architecture/DIRECTORY_PLUGINS.md)、[REMOTE_PLUGIN_PROTOCOL.md](../plugin-and-architecture/REMOTE_PLUGIN_PROTOCOL.md) 联调。

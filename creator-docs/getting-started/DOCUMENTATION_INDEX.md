@@ -47,6 +47,8 @@ Creator and plugin docs live under the repo root `creator-docs/` (grouped by top
 | **极致轻量化（runtime `Cargo` 特性、OOCP、`invoke` 分组、依赖/`http_api` 拟定）** | **[../kernel/LIGHTWEIGHT_PROFILE.md](../kernel/LIGHTWEIGHT_PROFILE.md)**（与 [KERNEL_BOUNDARY.md](../kernel/KERNEL_BOUNDARY.md) §5.1 互参）；设施 `classic` 门控审计 **[../kernel/FACILITY_CLASSIC_ALGORITHMS_AUDIT.md](../kernel/FACILITY_CLASSIC_ALGORITHMS_AUDIT.md)** |
 | **内核工程质量与生态路线（P0–P2，测试/SDK/crates.io）** | **[../../../handoff/ENGINEERING_ROADMAP_KERNEL_DEEPSEEK.md](../../../handoff/ENGINEERING_ROADMAP_KERNEL_DEEPSEEK.md)** |
 | **内核 SDK（KernelAppState、process_message、kernel_server）** | **[../kernel/KERNEL_SDK.md](../kernel/KERNEL_SDK.md)** |
+| **HTTP 调用内核试聊（`/health`、`/chat`）** | **[../../examples/kernel_remote_simple/README.md](../../examples/kernel_remote_simple/README.md)** |
+| **目录插件极简侧车（manifest + JSON-RPC）** | **[../../examples/kernel_directory_plugin_simple/README.md](../../examples/kernel_directory_plugin_simple/README.md)** |
 | **PluginHost 调度、降级链、接新后端 / 设施 crate** | **[../kernel/PLUGIN_HOST_DEVELOPER_GUIDE.md](../kernel/PLUGIN_HOST_DEVELOPER_GUIDE.md)** |
 | **Kernel Baseline v1.0（已冻结语义基线）** | **[../kernel/KERNEL_BASELINE_V1.md](../kernel/KERNEL_BASELINE_V1.md)** · 发版前检查 **[../kernel/KERNEL_RELEASE_CHECKLIST_V1.md](../kernel/KERNEL_RELEASE_CHECKLIST_V1.md)** |
 | **mumu 默认前端模块（chat.header / chat_toolbar / role.detail / sidebar / settings.panel）** | **[../FAQ.md](../FAQ.md)**（用户向 Q&A） |
