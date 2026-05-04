@@ -167,6 +167,72 @@ fn compile_graph_rejects_missing_lora_file() {
     assert!(e.to_string().contains("LoRA"), "{}", e);
 }
 
+/// 无边时取 `nodes` 中**第一个**底座；第二个文件存在不能救第一个缺失路径。
+#[test]
+fn compile_graph_rejects_first_base_when_two_bases_without_edges() {
+    let tmp = tempfile::tempdir().unwrap();
+    let gguf = tmp.path().join("models").join("gguf");
+    fs::create_dir_all(&gguf).unwrap();
+    let loras = tmp.path().join("models").join("loras");
+    fs::create_dir_all(&loras).unwrap();
+    let good = gguf.join("good.gguf");
+    fs::write(&good, b"x").unwrap();
+
+    let graph = ExpertGraph {
+        version: 1,
+        nodes: vec![
+            ExpertNode::BaseModel {
+                id: "missing_first".into(),
+                gguf_path: gguf.join("absent.gguf").to_string_lossy().into_owned(),
+                ui: None,
+            },
+            ExpertNode::BaseModel {
+                id: "ok_second".into(),
+                gguf_path: good.to_string_lossy().into_owned(),
+                ui: None,
+            },
+        ],
+        edges: vec![],
+    };
+    let e = compile_graph_to_llama_local_config(&graph, gguf.as_path(), loras.as_path())
+        .expect_err("first base missing");
+    let msg = e.to_string();
+    assert!(
+        msg.contains("not found") || msg.contains("base model"),
+        "{}",
+        msg
+    );
+}
+
+/// 底座文件存在但不在 `models/gguf` 目录树下 → 拒绝（防路径逃逸）。
+#[test]
+fn compile_graph_rejects_base_model_not_under_gguf_dir() {
+    let tmp = tempfile::tempdir().unwrap();
+    let gguf = tmp.path().join("models").join("gguf");
+    fs::create_dir_all(&gguf).unwrap();
+    let loras = tmp.path().join("models").join("loras");
+    fs::create_dir_all(&loras).unwrap();
+    let outside = tmp.path().join("outside.gguf");
+    fs::write(&outside, b"x").unwrap();
+
+    let graph = ExpertGraph {
+        version: 1,
+        nodes: vec![ExpertNode::BaseModel {
+            id: "b1".into(),
+            gguf_path: outside.to_string_lossy().into_owned(),
+            ui: None,
+        }],
+        edges: vec![],
+    };
+    let e = compile_graph_to_llama_local_config(&graph, gguf.as_path(), loras.as_path())
+        .expect_err("path outside gguf");
+    assert!(
+        e.to_string().contains("under models/gguf") || e.to_string().contains("gguf"),
+        "{}",
+        e
+    );
+}
+
 #[tokio::test(flavor = "multi_thread", worker_threads = 2)]
 async fn switch_scene_then_message_reports_new_scene_id() {
     let roles = workspace_roles_dir();

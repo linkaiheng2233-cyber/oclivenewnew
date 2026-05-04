@@ -450,6 +450,56 @@ mod tests {
     use std::io::Write;
 
     #[tokio::test]
+    async fn export_import_preserves_settings_plugin_backends_and_core_personality() {
+        use crate::models::plugin_backends::{AgentBackend, EmotionBackend, MemoryBackend};
+
+        let roles_src = tempfile::tempdir().unwrap();
+        let roles_dst = tempfile::tempdir().unwrap();
+        let role_dir = roles_src.path().join("rt_pack");
+        fs::create_dir_all(role_dir.join("scenes").join("default")).unwrap();
+        fs::write(
+            role_dir.join("manifest.json"),
+            r#"{"id":"rt_pack","name":"RT","version":"1","author":"t","description":"d","default_personality":[0.5,0.5,0.5,0.5,0.5,0.5,0.5],"evolution":{},"user_relations":{"friend":{"prompt_hint":"x"}},"default_relation":"friend","memory_config":{"scene_weight_multiplier":1.0,"topic_weights":{}}}"#,
+        )
+        .unwrap();
+        fs::write(
+            role_dir.join("settings.json"),
+            r#"{"schema_version":1,"model":"pack-rt-model-9","memory_config":{"scene_weight_multiplier":2.25,"topic_weights":{"default":{"日常":0.99}}},"plugin_backends":{"memory":"builtin","emotion":"builtin_v2","event":"builtin","prompt":"builtin","llm":"ollama","agent":"remote","complex_emotion":"builtin"}}"#,
+        )
+        .unwrap();
+        fs::write(
+            role_dir.join("core_personality.txt"),
+            "CP_ROUNDTRIP_MARKER_LINE\n",
+        )
+        .unwrap();
+
+        let st = RoleStorage::new(roles_src.path());
+        let out_tmp = tempfile::tempdir().unwrap();
+        let pak = out_tmp.path().join("rt.ocpak");
+        export_role_pack(&st, "rt_pack", &pak).await.unwrap();
+
+        let st2 = RoleStorage::new(roles_dst.path());
+        let id = import_role_pack(&st2, &pak, true, |_| {}).await.unwrap();
+        assert_eq!(id, "rt_pack");
+        let role = st2.load_role("rt_pack").unwrap();
+        assert_eq!(role.id, "rt_pack");
+        assert_eq!(role.ollama_model.as_deref(), Some("pack-rt-model-9"));
+        assert_eq!(role.plugin_backends.memory, MemoryBackend::Builtin);
+        assert_eq!(role.plugin_backends.emotion, EmotionBackend::BuiltinV2);
+        assert_eq!(role.plugin_backends.agent, AgentBackend::Remote);
+        let mem = role.memory_config.expect("memory_config");
+        assert!((mem.scene_weight_multiplier - 2.25).abs() < 1e-9);
+        assert_eq!(
+            mem.topic_weights.get("default").and_then(|m| m.get("日常")),
+            Some(&0.99f64)
+        );
+        assert!(
+            role.core_personality.contains("CP_ROUNDTRIP_MARKER_LINE"),
+            "core_personality lost after import"
+        );
+    }
+
+    #[tokio::test]
     async fn export_import_roundtrip() {
         let roles_src = tempfile::tempdir().unwrap();
         let roles_dst = tempfile::tempdir().unwrap();

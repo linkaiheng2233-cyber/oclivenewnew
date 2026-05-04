@@ -420,10 +420,37 @@ impl KernelAppState {
         Self::new_in_memory_with_llm_and_policy_file(llm, roles_dir, None).await
     }
 
+    /// 与 [`Self::new_in_memory_with_llm_and_policy_file`] 相同，但在构造 [`PluginHost`](crate::domain::plugin_host::PluginHost) **之前**写入插件权限。
+    ///
+    /// 远程 HTTP 侧车（如 `OCLIVE_REMOTE_AGENT_URL`）在 `PluginHost::new` 时读取 `network:*` 授予；集成测试须用本入口预置 `system:remote_agent_http` 等待。
+    pub async fn new_in_memory_with_llm_plugin_grants_and_policy_file(
+        llm: Arc<dyn LlmClient>,
+        roles_dir: impl AsRef<Path>,
+        policy_file: Option<&Path>,
+        plugin_grants: &[(&str, &str)],
+    ) -> Result<Self> {
+        Self::new_in_memory_with_llm_policy_grants_and_file(
+            llm,
+            roles_dir,
+            policy_file,
+            plugin_grants,
+        )
+        .await
+    }
+
     pub async fn new_in_memory_with_llm_and_policy_file(
         llm: Arc<dyn LlmClient>,
         roles_dir: impl AsRef<Path>,
         policy_file: Option<&Path>,
+    ) -> Result<Self> {
+        Self::new_in_memory_with_llm_policy_grants_and_file(llm, roles_dir, policy_file, &[]).await
+    }
+
+    async fn new_in_memory_with_llm_policy_grants_and_file(
+        llm: Arc<dyn LlmClient>,
+        roles_dir: impl AsRef<Path>,
+        policy_file: Option<&Path>,
+        plugin_grants: &[(&str, &str)],
     ) -> Result<Self> {
         let startup_total = Instant::now();
         let phase = Instant::now();
@@ -451,6 +478,11 @@ impl KernelAppState {
 
         let phase = Instant::now();
         let db_manager = Arc::new(DbManager::new(db));
+        for &(plugin_id, permission) in plugin_grants {
+            db_manager
+                .upsert_plugin_permission_grant(plugin_id, permission, true)
+                .await?;
+        }
 
         let memory_repo: Arc<dyn MemoryRepository> =
             Arc::new(SqliteMemoryRepository::new(db_manager.clone()));
