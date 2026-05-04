@@ -6,7 +6,7 @@ use serde::Deserialize;
 use std::collections::HashMap;
 use std::path::PathBuf;
 
-use super::EventType;
+use oclive_kernel_models::EventType;
 
 pub use oclive_validation::KnowledgePackConfigDisk;
 
@@ -148,15 +148,4 @@ impl KnowledgeIndex {
     }
 }
 
-/// 知识驱动的额外事件关键词（B1：作为 `EventDetector` 的补充输入）。
-#[derive(Debug, Clone, Default)]
-pub struct KnowledgeEventAugment {
-    pub by_event: HashMap<EventType, Vec<String>>,
-}
-
-impl KnowledgeEventAugment {
-    #[must_use]
-    pub fn is_empty(&self) -> bool {
-        self.by_event.values().all(|v| v.is_empty())
-    }
-}
+pub use oclive_kernel_models::KnowledgeEventAugment;

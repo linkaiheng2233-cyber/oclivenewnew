@@ -58,6 +58,7 @@ oclive_memory_builtin = { path = "../oclive_memory_builtin", default-features = 
 oclive_emotion_builtin = { path = "../oclive_emotion_builtin", default-features = false }
 oclive_complex_emotion_builtin = { path = "../oclive_complex_emotion_builtin", default-features = false }
 oclive_kernel_core = { path = "../oclive_kernel_core" }
+oclive_kernel_models = { path = "../oclive_kernel_models" }
 oclive_core = { path = "../oclive_core" }
 oclive_validation = { path = "../oclive_validation" }
 

@@ -2991,6 +2991,15 @@ dependencies = [
 ]
 
 [[package]]
+name = "oclive_kernel_models"
+version = "0.1.0"
+dependencies = [
+ "oclive_validation",
+ "serde",
+ "serde_json",
+]
+
+[[package]]
 name = "oclive_kernel_runtime"
 version = "0.1.0"
 dependencies = [
@@ -3009,6 +3018,7 @@ dependencies = [
  "oclive_core",
  "oclive_emotion_builtin",
  "oclive_kernel_core",
+ "oclive_kernel_models",
  "oclive_memory_builtin",
  "oclive_validation",
  "once_cell",

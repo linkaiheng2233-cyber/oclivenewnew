@@ -3,6 +3,7 @@ members = [
   "crates/oclive_core",
   "crates/oclive_validation",
   "crates/oclive_kernel_core",
+  "crates/oclive_kernel_models",
   "crates/oclive_memory_builtin",
   "crates/oclive_emotion_builtin",
   "crates/oclive_complex_emotion_builtin",
