@@ -45,6 +45,8 @@ use serde_json::Value;
 use std::sync::Arc;
 
 use crate::error::{AppError, Result};
+/// 对 `OCLIVE_REMOTE_PLUGIN_URL` 同源端点发起异步 JSON-RPC（供宿主/集成测试使用）。
+pub use jsonrpc::call_async as remote_plugin_call_async;
 pub use jsonrpc::RemoteRpcChannel;
 
 /// 四类 `plugin_backends.* = remote` 共用一套配置，只读一次环境变量并打一条日志。
