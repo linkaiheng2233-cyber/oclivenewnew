@@ -39,6 +39,7 @@
 | 官方默认记忆模块 | `oclive_memory_builtin` | `default-memory-providers` |
 | 官方默认情绪模块 | `oclive_emotion_builtin` | `default-emotion-providers` |
 | 官方默认复杂情感模块 | `oclive_complex_emotion_builtin` | `default-complex-emotion-providers` |
+| 官方默认 Prompt 模块 | `oclive_prompt_builtin` | `default-prompt-providers` |
 | 官方默认 Agent 模块 | `oclive_agent_builtin` | `default-agent-providers` |
 
 **与编号模块的区分**：**第九模块（专家模型设施）** 为内核托管的 ExpertGraph / Prompt 风格 / 侧车编译等，**不是** 上表中的「官方默认××模块」，也 **不是** `plugin_backends` 中与 `memory` 同形的枚举槽位。详见 [MODULE_9_EXPERT_MODELS_FACILITY.md](./MODULE_9_EXPERT_MODELS_FACILITY.md) §2、§5。
@@ -261,6 +262,16 @@ src-tauri/src/
 
 **依赖方向**：`kernel_models` 不依赖 `kernel_core`；`kernel_core` 依赖 `kernel_models`（trait 签名与 Prompt/Event DTO）。
 
+### 8.2.1 设施 crate（`oclive_*_builtin`）与目录示例索引
+
+| Crate | 路径 | 示例插件（`examples/`） |
+|-------|------|-------------------------|
+| `oclive_memory_builtin` | `crates/oclive_memory_builtin` | `oclive-memory-builtin-directory` |
+| `oclive_emotion_builtin` | `crates/oclive_emotion_builtin` | `oclive-emotion-builtin-directory` |
+| `oclive_complex_emotion_builtin` | `crates/oclive_complex_emotion_builtin` | `oclive-complex-emotion-builtin-directory` |
+| `oclive_prompt_builtin` | `crates/oclive_prompt_builtin` | `oclive-prompt-builtin-directory`（需构建 **`oclive_prompt_from_json`**，见示例 README） |
+| `oclive_agent_builtin` | `crates/oclive_agent_builtin` | `oclive-agent-builtin-directory` |
+
 ### 8.3 `oclive_kernel_runtime` 默认能力与 Cargo feature
 
 | Feature | 含义 |
@@ -270,7 +281,7 @@ src-tauri/src/
 | `default-emotion-providers` | 进程内用户句情绪 builtin |
 | `default-complex-emotion-providers` | 进程内复杂情感 builtin |
 | `default-event-providers` | 编译 `event_impact_ai` + `BuiltinEventEstimator*` |
-| `default-prompt-providers` | 编译 `PromptBuilder` + `BuiltinPromptAssembler*` |
+| `default-prompt-providers` | 链入 **`oclive_prompt_builtin/providers`**（`PromptBuilder` + `BuiltinPromptAssembler*`；正文在设施 crate） |
 | `default-agent-providers` | 进程内 `BuiltinReActAgent`（`oclive_agent_builtin`） |
 | `kernel-agent` | MCP 栈、`McpShellAgent`、Remote Agent HTTP 等 |
 

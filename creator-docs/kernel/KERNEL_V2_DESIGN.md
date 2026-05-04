@@ -193,6 +193,19 @@
 - **`DisabledEventEstimator`**（**`default-event-providers` 关闭**）：返回 **`EventType::Ignore`**、`impact_factor = 0`、`confidence = 0`，与 **`MODULE_NONE_SEMANTICS.md` §3**（「无事件、无影响」）及好感/演化链路的「按无事件继续」预期一致；见 **`disabled_default_providers`** 单测 **`disabled_event_estimator_returns_ignore_zero_impact`**。
 - **算法主体**：`event_impact_ai`、`EventDetector`、人格轴辅助等仍在 **runtime**（§6.7.1）；**当前阶段不强制**迁入 **`oclive_event_builtin`**。
 
+### 6.8 阶段 7 剥离状态快照（维护）
+
+| 领域 | 设施 crate | runtime 残留 | 目录示例 |
+|------|------------|--------------|----------|
+| Memory | `oclive_memory_builtin` | 槽位 / HTTP / 引擎接线 | `examples/oclive-memory-builtin-directory` |
+| User 情绪 | `oclive_emotion_builtin` | 同上 | `examples/oclive-emotion-builtin-directory` |
+| 复杂情感 | `oclive_complex_emotion_builtin` | 同上 | `examples/oclive-complex-emotion-builtin-directory` |
+| **Prompt** | **`oclive_prompt_builtin`** | **`prompt_assembler` 槽位**、`RemotePromptAssemblerPlaceholder`、`prompt_http`；**`prompt_builder` 再导出** | **`examples/oclive-prompt-builtin-directory`**（依赖 **`oclive_prompt_from_json`**） |
+| Agent ReAct | `oclive_agent_builtin` | `McpShellAgent`、MCP 栈 | `examples/oclive-agent-builtin-directory` |
+| **事件** | **（尚无 `oclive_event_builtin`）** | **`event_impact_ai`、`EventDetector`、估计器槽位** | Remote / 规则链仍在 runtime |
+
+**验证**：**`cargo check --workspace`**、**`cargo test --workspace`**、**`cargo check -p oclive_kernel_runtime --no-default-features`**；可选组合见 **`LIGHTWEIGHT_PROFILE.md`** §6。
+
 ## 7. 参考
 
 - [KERNEL_BOUNDARY.md](./KERNEL_BOUNDARY.md)
