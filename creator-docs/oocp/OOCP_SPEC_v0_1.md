@@ -5,8 +5,6 @@
 > **语义版本**：协议自身版本由 `capabilities.version` 携带；方法/事件增删视为 MINOR；兼容破坏视为 MAJOR。  
 > **硬约束**：回复字段为 **`reply`**，不是 `response`。
 
-> **完整参考（与实现对齐）**：方法参数键、`result` 轮廓、WebSocket 首帧与 Ping 间隔、与 `dto.rs` 的 **`reply`** 字段等见 **[OOCP_SPEC_COMPLETE_REFERENCE.md](./OOCP_SPEC_COMPLETE_REFERENCE.md)**。本文保留设计叙述与示例；若与完整参考冲突，以 **`crates/oclive_core/src/capabilities/mod.rs`** 白名单与 **`crates/oclive_kernel_runtime/src/domain/adapters/runtime_oocp_handler.rs`** 为准。
-
 ---
 
 ## 1. 设计原则

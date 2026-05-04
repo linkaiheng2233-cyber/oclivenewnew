@@ -1,7 +1,7 @@
 # OOCP 冻结策略（v0.x → v1.0）
 
 > 生效范围：OOCP 协议自身（方法名 / 参数 key / 事件名 / 错误码 / capabilities schema）  
-> 关联文档：[`OOCP_SPEC_v0_1.md`](./OOCP_SPEC_v0_1.md)、[`OOCP_TRANSPORTS.md`](./OOCP_TRANSPORTS.md)、[`OOCP_SPEC_COMPLETE_REFERENCE.md`](./OOCP_SPEC_COMPLETE_REFERENCE.md)（实现级编排）
+> 关联文档：[`OOCP_SPEC_v0_1.md`](./OOCP_SPEC_v0_1.md)、[`OOCP_TRANSPORTS.md`](./OOCP_TRANSPORTS.md)
 
 ---
 
