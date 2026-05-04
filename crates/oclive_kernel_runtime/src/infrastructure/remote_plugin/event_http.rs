@@ -1,8 +1,7 @@
 //! JSON-RPC：`event.estimate` — 侧车返回 [`EventImpactEstimate`](crate::domain::event_impact_ai::EventImpactEstimate)。
 //! `params` 含 `personality_source`（`vector`|`profile`），与包内 `evolution` 一致；侧车可忽略。
 
-use crate::domain::event_estimator::BuiltinEventEstimator;
-use crate::domain::event_estimator::EventEstimator;
+use crate::domain::event_estimator::{default_event_slot_v1, EventEstimator};
 use crate::domain::event_impact_ai::EventImpactEstimate;
 use crate::error::Result;
 use crate::infrastructure::llm::LlmClient;
@@ -19,7 +18,7 @@ const METHOD_EVENT_ESTIMATE: &str = "event.estimate";
 pub struct RemoteEventEstimatorHttp {
     client: reqwest::Client,
     cfg: RemotePluginHttpConfig,
-    fallback: BuiltinEventEstimator,
+    fallback: Arc<dyn EventEstimator>,
 }
 
 impl RemoteEventEstimatorHttp {
@@ -32,7 +31,7 @@ impl RemoteEventEstimatorHttp {
         Self {
             client,
             cfg,
-            fallback: BuiltinEventEstimator,
+            fallback: default_event_slot_v1(),
         }
     }
 }

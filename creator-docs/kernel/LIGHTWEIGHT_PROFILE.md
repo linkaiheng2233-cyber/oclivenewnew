@@ -9,7 +9,7 @@
 
 | 场景 | 典型宿主 | `oclive_kernel_runtime` | HTTP / Axum | ZIP 角色包与插件归档 | 市场索引同步 | Agent / MCP |
 |------|-----------|-------------------------|-------------|----------------------|--------------|-------------|
-| **官方桌面** | `src-tauri`（默认依赖） | `full`（默认） | 开（`kernel-http-api`） | 开（`role-pack-zip`） | 开（`market-sync`） | 开（`kernel-agent`） |
+| **官方桌面** | `src-tauri`（默认依赖） | `full`（默认） | 开（`kernel-http-api`） | 开（`role-pack-zip`） | 开（`market-sync`） | 开（`kernel-agent` + `default-agent-providers`） |
 | **kernel_server / pack-editor 试聊** | `oclive_kernel_server` | `full`（默认） | 开 | 开 | 开 | 开 |
 | **嵌入式 lib / 玩偶侧车** | 自建进程，仅需 OOCP+编排 | `default-features = false` + 按需子特性 | 常关 | 常关 | 常关 | 常关 |
 
@@ -23,12 +23,18 @@
 
 | Feature | 作用 |
 |---------|------|
-| **`full`**（默认） | `kernel-http-api` + `role-pack-zip` + `market-sync` + `kernel-agent` + **`default-llm-providers`** |
+| **`full`**（默认） | `kernel-http-api` + `role-pack-zip` + `market-sync` + `kernel-agent` + **`default-llm-providers`** + **`default-memory-providers`** + **`default-emotion-providers`** + **`default-event-providers`** + **`default-prompt-providers`** + **`default-complex-emotion-providers`** + **`default-agent-providers`** |
 | **`default-llm-providers`** | 内置 **Ollama**、**OpenAI-compatible 云 HTTP**，以及 **`OCLIVE_REMOTE_LLM_URL` JSON-RPC 侧车**（`RemoteLlmHttp` / `llm_remote_backend` 中的侧车分支）。**关闭**时 crate 仍可编译，`LlmClient` trait 可用，但内核**不**包含上述任一内置 LLM 网络路径；角色 **`plugin_backends.llm = remote`**（依赖侧车）亦无法生效。**须通过 `plugin_backends.llm = directory` 目录插件**（`PluginJsonRpcLlm` RPC）等方式接入 LLM，否则默认占位会得到明确的 `InvalidParameter` 错误。Ollama 模型列表/健康检查等 API 在关闭本特性时同样返回说明性错误。 |
+| **`default-memory-providers`** | 内置记忆排序 / `MemoryEngine` 检索路径；关闭后 builtin / Remote 占位回退为轻量桩（`DisabledMemoryRetrieval`），仍可通过 directory / remote HTTP 侧车接入。 |
+| **`default-emotion-providers`** | 内置七维情绪分析；关闭后回退中性分布桩。 |
+| **`default-event-providers`** | 内置事件影响估计（`event_impact_ai`）；关闭后回退 `Ignore` 桩。 |
+| **`default-prompt-providers`** | 内置 `PromptBuilder` 组装；关闭后回退空串桩。 |
+| **`default-complex-emotion-providers`** | 内置复杂情感关键词模式；关闭后回退轻量桩。 |
+| **`default-agent-providers`** | 依赖 **`kernel-agent`**：完整 **Builtin ReAct Agent**。关闭后若仍开启 `kernel-agent`，仅保留 **MCP 调试壳**（`McpShellAgent`，`process` 不执行 ReAct）。 |
 | **`kernel-http-api`** | Axum HTTP + OOCP WebSocket（`http_api` 模块） |
 | **`role-pack-zip`** | `zip` 依赖；`plugin_archive`、`role_pack_archive`；插件 / 角色包归档安装路径 |
 | **`market-sync`** | `plugin_index_sync`、`plugin_reviews_index_sync`、`role_market_index_sync` |
-| **`kernel-agent`** | ReAct Agent、MCP 客户端实现、`RemoteAgentHttp`、目录 Agent HTTP 槽 |
+| **`kernel-agent`** | MCP 客户端、`RemoteAgentHttp`、目录 Agent HTTP 槽；与 **`default-agent-providers`** 组合时才链接完整 ReAct 实现。 |
 
 **注意**：关闭 `role-pack-zip` 时，`plugin_install` 中带解压的实现会返回明确错误；关闭 `market-sync` 时，同步函数所在模块不参与编译，由宿主（如 `src-tauri` 的 `plugin_installer` / `role_market`）保证不与该组合链接。
 
@@ -110,6 +116,8 @@ cargo check -p oclive_kernel_runtime --no-default-features
 ```bash
 cargo check -p oclive_kernel_runtime --no-default-features --features kernel-http-api
 cargo check -p oclive_kernel_runtime --no-default-features --features kernel-http-api,kernel-agent
+cargo check -p oclive_kernel_runtime --no-default-features --features kernel-http-api,kernel-agent,default-llm-providers
+cargo check -p oclive_kernel_runtime --no-default-features --features kernel-http-api,kernel-agent,default-memory-providers,default-emotion-providers,default-event-providers,default-prompt-providers,default-complex-emotion-providers,default-agent-providers
 ```
 
 仓库脚本：`scripts/check_kernel_runtime_minimal.sh`、Windows：`scripts/check_kernel_runtime_minimal.ps1`。

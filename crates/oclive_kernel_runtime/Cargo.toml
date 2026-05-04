@@ -22,16 +22,34 @@ full = [
   "market-sync",
   "kernel-agent",
   "default-llm-providers",
+  "default-memory-providers",
+  "default-emotion-providers",
+  "default-event-providers",
+  "default-prompt-providers",
+  "default-complex-emotion-providers",
+  "default-agent-providers",
 ]
 ## 内置 Ollama、OpenAI-compatible 云 LLM，以及 OCLIVE_REMOTE_LLM_URL JSON-RPC 侧车；关闭后须用 directory 目录插件等提供 LLM（侧车与内置客户端均不装配）。
 default-llm-providers = []
+## 内置记忆排序 / 上下文装配（MemoryEngine 路径）；关闭后 trait 仍可用，builtin 槽与 Remote 占位回退为轻量桩。
+default-memory-providers = []
+## 内置七维情绪分析；关闭后 builtin 槽与 Remote 占位回退为中性分布桩。
+default-emotion-providers = []
+## 内置事件影响估计（event_impact_ai）；关闭后 builtin 槽与 Remote 占位回退为 Ignore 桩。
+default-event-providers = []
+## 内置 PromptBuilder 组装；关闭后 builtin 槽与 Remote 占位回退为空串桩。
+default-prompt-providers = []
+## 内置复杂情感关键词模式；关闭后 builtin 槽与 Remote 降级回退为轻量桩。
+default-complex-emotion-providers = []
+## Builtin ReAct Agent（依赖 kernel-agent + MCP）；关闭后仍可编译 MCP 调试壳（`McpShellAgent`），`AgentProvider::process` 不执行 ReAct。
+default-agent-providers = ["kernel-agent"]
 ## 本地 HTTP 试聊 + OOCP WebSocket（Axum）；关闭后可省去 axum/tower-http 编译。
 kernel-http-api = ["dep:axum", "dep:tower-http"]
 ## `.oclive-plugin` / 角色包 ZIP（`zip` crate）；关闭后省略 ZIP 编解码栈。
 role-pack-zip = ["dep:zip"]
 ## 角色 / 插件市场索引与评价索引 HTTP 同步模块。
 market-sync = []
-## MCP + Builtin ReAct Agent + 目录 Agent HTTP 侧车等路径。
+## MCP 客户端 + 目录 Agent HTTP 侧车等；`default-agent-providers` 开启时再链接完整 Builtin ReAct。
 kernel-agent = []
 
 [dependencies]

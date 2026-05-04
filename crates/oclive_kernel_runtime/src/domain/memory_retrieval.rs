@@ -1,14 +1,19 @@
 //! 记忆检索可替换门面；默认实现委托 [`MemoryEngine`](super::memory_engine::MemoryEngine)。
 
+#[cfg(feature = "default-memory-providers")]
 use crate::domain::memory_engine::MemoryEngine;
+#[cfg(not(feature = "default-memory-providers"))]
+use crate::domain::disabled_default_providers::DisabledMemoryRetrieval;
 use crate::models::{Memory, MemoryContext};
 pub use oclive_kernel_core::memory_retrieval::{MemoryRetrieval, MemoryRetrievalInput};
 use std::sync::atomic::{AtomicBool, Ordering};
 use std::sync::Arc;
 
+#[cfg(feature = "default-memory-providers")]
 /// 内置：按重要性 × 权重排序（与历史行为一致）
 pub struct BuiltinMemoryRetrieval;
 
+#[cfg(feature = "default-memory-providers")]
 impl MemoryRetrieval for BuiltinMemoryRetrieval {
     fn rank_memories(&self, input: MemoryRetrievalInput<'_>) -> Vec<Memory> {
         MemoryEngine::get_relevant_memories(input.memories, input.limit)
@@ -23,9 +28,11 @@ impl MemoryRetrieval for BuiltinMemoryRetrieval {
     }
 }
 
+#[cfg(feature = "default-memory-providers")]
 /// 第二套内置：在 builtin 分数上叠加与用户查询的正文重合度
 pub struct BuiltinMemoryRetrievalV2;
 
+#[cfg(feature = "default-memory-providers")]
 fn query_overlap_boost(query: &str, content: &str) -> f64 {
     let q = query.trim();
     if q.is_empty() {
@@ -50,6 +57,7 @@ fn query_overlap_boost(query: &str, content: &str) -> f64 {
     (hits as f64 * 0.15).min(0.6)
 }
 
+#[cfg(feature = "default-memory-providers")]
 impl MemoryRetrieval for BuiltinMemoryRetrievalV2 {
     fn rank_memories(&self, input: MemoryRetrievalInput<'_>) -> Vec<Memory> {
         let limit = input.limit.max(1);
@@ -76,16 +84,40 @@ impl MemoryRetrieval for BuiltinMemoryRetrievalV2 {
     }
 }
 
+#[must_use]
+pub fn default_memory_slot_v1() -> Arc<dyn MemoryRetrieval> {
+    #[cfg(feature = "default-memory-providers")]
+    {
+        Arc::new(BuiltinMemoryRetrieval)
+    }
+    #[cfg(not(feature = "default-memory-providers"))]
+    {
+        Arc::new(DisabledMemoryRetrieval)
+    }
+}
+
+#[must_use]
+pub fn default_memory_slot_v2() -> Arc<dyn MemoryRetrieval> {
+    #[cfg(feature = "default-memory-providers")]
+    {
+        Arc::new(BuiltinMemoryRetrievalV2)
+    }
+    #[cfg(not(feature = "default-memory-providers"))]
+    {
+        Arc::new(DisabledMemoryRetrieval)
+    }
+}
+
 /// Remote 占位：回退 builtin 并记一次警告
 pub struct RemoteMemoryRetrievalPlaceholder {
-    inner: BuiltinMemoryRetrieval,
+    inner: Arc<dyn MemoryRetrieval>,
     warned: AtomicBool,
 }
 
 impl RemoteMemoryRetrievalPlaceholder {
     pub fn new() -> Self {
         Self {
-            inner: BuiltinMemoryRetrieval,
+            inner: default_memory_slot_v1(),
             warned: AtomicBool::new(false),
         }
     }
@@ -167,7 +199,7 @@ impl MemoryRetrieval for LocalPluginMemoryRetrieval {
     }
 }
 
-#[cfg(test)]
+#[cfg(all(test, feature = "default-memory-providers"))]
 mod tests {
     use super::*;
     use crate::models::Memory;

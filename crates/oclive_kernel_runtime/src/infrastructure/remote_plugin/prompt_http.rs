@@ -1,12 +1,12 @@
 //! JSON-RPC：`prompt.build_prompt` — 参数为可序列化的上下文快照（含完整 `Role`）。
 
-use crate::domain::prompt_assembler::BuiltinPromptAssembler;
-use crate::domain::prompt_assembler::PromptAssembler;
+use crate::domain::prompt_assembler::{default_prompt_slot_v1, PromptAssembler};
 use crate::domain::prompt_builder::PromptInput;
 use crate::infrastructure::remote_plugin::config::RemotePluginHttpConfig;
 use crate::infrastructure::remote_plugin::jsonrpc::{self, RemoteRpcChannel};
 use crate::models::{PersonalitySource, Role};
 use serde_json::json;
+use std::sync::Arc;
 
 const METHOD_PROMPT_BUILD: &str = "prompt.build_prompt";
 const METHOD_PROMPT_TOPIC_HINT: &str = "prompt.top_topic_hint";
@@ -14,7 +14,7 @@ const METHOD_PROMPT_TOPIC_HINT: &str = "prompt.top_topic_hint";
 pub struct RemotePromptAssemblerHttp {
     client: reqwest::Client,
     cfg: RemotePluginHttpConfig,
-    fallback: BuiltinPromptAssembler,
+    fallback: Arc<dyn PromptAssembler>,
 }
 
 impl RemotePromptAssemblerHttp {
@@ -27,7 +27,7 @@ impl RemotePromptAssemblerHttp {
         Self {
             client,
             cfg,
-            fallback: BuiltinPromptAssembler,
+            fallback: default_prompt_slot_v1(),
         }
     }
 }

@@ -1,20 +1,20 @@
 //! `memory.rank` JSON-RPC — 见 REMOTE_PLUGIN_PROTOCOL.md
 
 use crate::domain::memory_engine::MemoryEngine;
-use crate::domain::memory_retrieval::BuiltinMemoryRetrieval;
-use crate::domain::memory_retrieval::{MemoryRetrieval, MemoryRetrievalInput};
+use crate::domain::memory_retrieval::{default_memory_slot_v1, MemoryRetrieval, MemoryRetrievalInput};
 use crate::infrastructure::remote_plugin::config::RemotePluginHttpConfig;
 use crate::infrastructure::remote_plugin::jsonrpc::{self, RemoteRpcChannel};
 use crate::models::{Memory, MemoryContext};
 use serde_json::{json, Value};
 use std::collections::{HashMap, HashSet};
+use std::sync::Arc;
 
 const METHOD_MEMORY_RANK: &str = "memory.rank";
 
 pub struct RemoteMemoryRetrievalHttp {
     client: reqwest::Client,
     cfg: RemotePluginHttpConfig,
-    fallback: BuiltinMemoryRetrieval,
+    fallback: Arc<dyn MemoryRetrieval>,
 }
 
 impl RemoteMemoryRetrievalHttp {
@@ -27,7 +27,7 @@ impl RemoteMemoryRetrievalHttp {
         Self {
             client,
             cfg,
-            fallback: BuiltinMemoryRetrieval,
+            fallback: default_memory_slot_v1(),
         }
     }
 

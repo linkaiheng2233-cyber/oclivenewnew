@@ -1,10 +1,13 @@
 //! 复杂情感：内置关键词模式 + 可选 Remote/Directory 侧车。
 
 use crate::domain::emotion_analyzer::EmotionResult;
+#[cfg(not(feature = "default-complex-emotion-providers"))]
+use crate::domain::disabled_default_providers::DisabledComplexEmotionProvider;
 use crate::error::Result;
 pub use oclive_kernel_core::complex_emotion::{
     ComplexEmotionInput, ComplexEmotionOutput, ComplexEmotionProvider,
 };
+use std::sync::Arc;
 
 /// 空 Provider：不做复盘、不注入 prompt；输出稳定、可预期。
 pub struct NoneComplexEmotionProvider;
@@ -26,7 +29,7 @@ impl ComplexEmotionProvider for NoneComplexEmotionProvider {
 
 /// 降级 Provider：用 builtin 产出，但强制标记 `degraded_to_builtin=true`（用于 env 缺失/目录插件不可用等场景）。
 pub struct DegradedToBuiltinComplexEmotionProvider {
-    fallback: BuiltinKeywordComplexEmotionProvider,
+    fallback: Arc<dyn ComplexEmotionProvider>,
     warned: std::sync::atomic::AtomicBool,
     warn_message: &'static str,
 }
@@ -34,7 +37,7 @@ pub struct DegradedToBuiltinComplexEmotionProvider {
 impl DegradedToBuiltinComplexEmotionProvider {
     pub fn new(warn_message: &'static str) -> Self {
         Self {
-            fallback: BuiltinKeywordComplexEmotionProvider,
+            fallback: default_complex_emotion_keyword_arc(),
             warned: std::sync::atomic::AtomicBool::new(false),
             warn_message,
         }
@@ -55,9 +58,21 @@ impl DegradedToBuiltinComplexEmotionProvider {
 impl ComplexEmotionProvider for DegradedToBuiltinComplexEmotionProvider {
     fn resolve_turn(&self, input: &ComplexEmotionInput) -> Result<ComplexEmotionOutput> {
         self.warn_once();
-        let mut o = self.fallback.resolve_turn_inner(input);
+        let mut o = self.fallback.resolve_turn(input)?;
         o.degraded_to_builtin = true;
         Ok(o)
+    }
+}
+
+#[must_use]
+pub fn default_complex_emotion_keyword_arc() -> Arc<dyn ComplexEmotionProvider> {
+    #[cfg(feature = "default-complex-emotion-providers")]
+    {
+        Arc::new(BuiltinKeywordComplexEmotionProvider)
+    }
+    #[cfg(not(feature = "default-complex-emotion-providers"))]
+    {
+        Arc::new(DisabledComplexEmotionProvider)
     }
 }
 
@@ -72,16 +87,20 @@ pub fn affect_metrics_from_seven_dim(er: &EmotionResult) -> (f64, f64) {
     (v.clamp(-1.0, 1.0), d.clamp(-1.0, 1.0))
 }
 
+#[cfg(feature = "default-complex-emotion-providers")]
 fn user_text_len_chars(s: &str) -> usize {
     s.trim().chars().count()
 }
 
+#[cfg(feature = "default-complex-emotion-providers")]
 fn contains_any(hay: &str, needles: &[&str]) -> bool {
     needles.iter().any(|n| hay.contains(n))
 }
 
+#[cfg(feature = "default-complex-emotion-providers")]
 pub struct BuiltinKeywordComplexEmotionProvider;
 
+#[cfg(feature = "default-complex-emotion-providers")]
 impl BuiltinKeywordComplexEmotionProvider {
     const CONF: f64 = 0.7;
     const INT: f64 = 0.5;
@@ -161,14 +180,15 @@ impl BuiltinKeywordComplexEmotionProvider {
     }
 }
 
+#[cfg(feature = "default-complex-emotion-providers")]
 impl ComplexEmotionProvider for BuiltinKeywordComplexEmotionProvider {
     fn resolve_turn(&self, input: &ComplexEmotionInput) -> Result<ComplexEmotionOutput> {
         Ok(self.resolve_turn_inner(input))
     }
 }
 
-#[cfg(test)]
-mod tests {
+#[cfg(all(test, feature = "default-complex-emotion-providers"))]
+mod keyword_tests {
     use super::*;
 
     fn inp(
@@ -220,6 +240,11 @@ mod tests {
         let o = p.resolve_turn_inner(&inp("嗯", Some("好"), Some(0.0), Some(0.0)));
         assert_eq!(o.pattern.as_deref(), Some("waning_engagement"));
     }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
 
     #[test]
     fn affect_metrics_range() {

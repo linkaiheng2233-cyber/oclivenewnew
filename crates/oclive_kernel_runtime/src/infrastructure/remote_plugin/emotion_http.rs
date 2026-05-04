@@ -1,19 +1,19 @@
 //! JSON-RPC：`emotion.analyze`
 
 use crate::domain::emotion_analyzer::EmotionResult;
-use crate::domain::user_emotion_analyzer::BuiltinUserEmotionAnalyzer;
-use crate::domain::user_emotion_analyzer::UserEmotionAnalyzer;
+use crate::domain::user_emotion_analyzer::{default_user_emotion_slot_v1, UserEmotionAnalyzer};
 use crate::error::Result;
 use crate::infrastructure::remote_plugin::config::RemotePluginHttpConfig;
 use crate::infrastructure::remote_plugin::jsonrpc::{self, RemoteRpcChannel};
 use serde_json::json;
+use std::sync::Arc;
 
 const METHOD_EMOTION_ANALYZE: &str = "emotion.analyze";
 
 pub struct RemoteUserEmotionAnalyzerHttp {
     client: reqwest::Client,
     cfg: RemotePluginHttpConfig,
-    fallback: BuiltinUserEmotionAnalyzer,
+    fallback: Arc<dyn UserEmotionAnalyzer>,
 }
 
 impl RemoteUserEmotionAnalyzerHttp {
@@ -25,7 +25,7 @@ impl RemoteUserEmotionAnalyzerHttp {
         Self {
             client,
             cfg,
-            fallback: BuiltinUserEmotionAnalyzer,
+            fallback: default_user_emotion_slot_v1(),
         }
     }
 }

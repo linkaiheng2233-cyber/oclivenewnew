@@ -17,19 +17,19 @@ pub use oclive_kernel_runtime::domain::{
     session_plugin_override, user_emotion_analyzer, user_identity, virtual_time,
 };
 
-pub use agent::{AgentDebugTrace, AgentInput, AgentOutput, AgentProvider, BuiltinReActAgent};
+pub use agent::{AgentDebugTrace, AgentInput, AgentOutput, AgentProvider};
 pub use chat_engine::process_message;
 pub use emotion_analyzer::EmotionAnalyzer;
 pub use event_detector::EventDetector;
-pub use event_estimator::{BuiltinEventEstimator, EventEstimator, RemoteEventEstimatorPlaceholder};
+pub use event_estimator::{EventEstimator, RemoteEventEstimatorPlaceholder};
 pub use local_plugin_bridge::{
     FileManifestLocalPluginBridge, LocalPluginBridge, LocalPluginCapability,
     LocalPluginProviderDescriptor, LocalPluginRegistry, LOCAL_PLUGIN_SCHEMA_VERSION,
 };
 pub use memory_engine::MemoryEngine;
 pub use memory_retrieval::{
-    BuiltinMemoryRetrieval, BuiltinMemoryRetrievalV2, LocalPluginMemoryRetrieval, MemoryRetrieval,
-    MemoryRetrievalInput, RemoteMemoryRetrievalPlaceholder,
+    LocalPluginMemoryRetrieval, MemoryRetrieval, MemoryRetrievalInput,
+    RemoteMemoryRetrievalPlaceholder,
 };
 pub use personality_engine::PersonalityEngine;
 pub use plugin_host::{PluginHost, ResolvedRolePlugins};
@@ -38,15 +38,11 @@ pub use policy::{
     EmotionPolicyConfig, EventPolicy, MemoryPolicy, MemoryPolicyConfig, PolicyConfig,
     PolicyContext,
 };
-pub use prompt_assembler::{
-    BuiltinPromptAssembler, PromptAssembler, RemotePromptAssemblerPlaceholder,
-};
+pub use prompt_assembler::{PromptAssembler, RemotePromptAssemblerPlaceholder};
 pub use prompt_builder::{
     effective_reply_quality_anchor, PromptBuilder, PromptInput, DEFAULT_REPLY_QUALITY_ANCHOR,
 };
 pub use relation_engine::{RelationEngine, RelationState};
 pub use repository::{ExpertModelsRepository, FavorabilityRepository, MemoryRepository};
 pub use role_manager::RoleManager;
-pub use user_emotion_analyzer::{
-    BuiltinUserEmotionAnalyzer, RemoteUserEmotionAnalyzerPlaceholder, UserEmotionAnalyzer,
-};
+pub use user_emotion_analyzer::{RemoteUserEmotionAnalyzerPlaceholder, UserEmotionAnalyzer};

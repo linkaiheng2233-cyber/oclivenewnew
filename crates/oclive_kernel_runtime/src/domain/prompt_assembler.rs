@@ -1,16 +1,23 @@
 //! Prompt 组装可替换门面；默认委托 [`PromptBuilder`](super::prompt_builder::PromptBuilder)。
 
-use crate::domain::prompt_builder::{PromptBuilder, PromptInput};
+use crate::domain::prompt_builder::PromptInput;
+#[cfg(feature = "default-prompt-providers")]
+use crate::domain::prompt_builder::PromptBuilder;
+#[cfg(not(feature = "default-prompt-providers"))]
+use crate::domain::disabled_default_providers::DisabledPromptAssembler;
 use crate::models::Role;
 use std::sync::atomic::{AtomicBool, Ordering};
+use std::sync::Arc;
 
 pub trait PromptAssembler: Send + Sync {
     fn build_prompt(&self, input: &PromptInput<'_>) -> String;
     fn top_topic_hint(&self, role: &Role, scene_id: &str) -> Option<String>;
 }
 
+#[cfg(feature = "default-prompt-providers")]
 pub struct BuiltinPromptAssembler;
 
+#[cfg(feature = "default-prompt-providers")]
 impl PromptAssembler for BuiltinPromptAssembler {
     fn build_prompt(&self, input: &PromptInput<'_>) -> String {
         PromptBuilder::build_prompt(input)
@@ -22,10 +29,13 @@ impl PromptAssembler for BuiltinPromptAssembler {
 }
 
 /// 第二套内置：与 [`BuiltinPromptAssembler`] 相同逻辑，但在正文前追加固定前缀（可测差异）。
+#[cfg(feature = "default-prompt-providers")]
 pub struct BuiltinPromptAssemblerV2;
 
+#[cfg(feature = "default-prompt-providers")]
 const PROMPT_BACKEND_V2_PREFIX: &str = "[oclive:prompt:builtin_v2]\n";
 
+#[cfg(feature = "default-prompt-providers")]
 impl PromptAssembler for BuiltinPromptAssemblerV2 {
     fn build_prompt(&self, input: &PromptInput<'_>) -> String {
         format!(
@@ -40,15 +50,39 @@ impl PromptAssembler for BuiltinPromptAssemblerV2 {
     }
 }
 
+#[must_use]
+pub fn default_prompt_slot_v1() -> Arc<dyn PromptAssembler> {
+    #[cfg(feature = "default-prompt-providers")]
+    {
+        Arc::new(BuiltinPromptAssembler)
+    }
+    #[cfg(not(feature = "default-prompt-providers"))]
+    {
+        Arc::new(DisabledPromptAssembler)
+    }
+}
+
+#[must_use]
+pub fn default_prompt_slot_v2() -> Arc<dyn PromptAssembler> {
+    #[cfg(feature = "default-prompt-providers")]
+    {
+        Arc::new(BuiltinPromptAssemblerV2)
+    }
+    #[cfg(not(feature = "default-prompt-providers"))]
+    {
+        Arc::new(DisabledPromptAssembler)
+    }
+}
+
 pub struct RemotePromptAssemblerPlaceholder {
-    inner: BuiltinPromptAssembler,
+    inner: Arc<dyn PromptAssembler>,
     warned: AtomicBool,
 }
 
 impl RemotePromptAssemblerPlaceholder {
     pub fn new() -> Self {
         Self {
-            inner: BuiltinPromptAssembler,
+            inner: default_prompt_slot_v1(),
             warned: AtomicBool::new(false),
         }
     }
@@ -85,7 +119,7 @@ impl Default for RemotePromptAssemblerPlaceholder {
     }
 }
 
-#[cfg(test)]
+#[cfg(all(test, feature = "default-prompt-providers"))]
 mod tests {
     use super::*;
     use crate::domain::prompt_builder::{effective_reply_quality_anchor, PromptInput};

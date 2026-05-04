@@ -9,6 +9,7 @@ pub mod chat_turn_rules;
 pub mod complex_emotion;
 pub mod conversation_query;
 pub mod core;
+mod disabled_default_providers;
 pub mod directory_plugin_commands;
 pub mod emotion_analyzer;
 pub mod event_commands;

@@ -4,12 +4,19 @@ pub use oclive_kernel_core::agent::{
 };
 use async_trait::async_trait;
 
-#[cfg(feature = "kernel-agent")]
+#[cfg(all(feature = "kernel-agent", feature = "default-agent-providers"))]
 #[path = "agent_builtin.rs"]
 mod agent_builtin;
 
-#[cfg(feature = "kernel-agent")]
+#[cfg(all(feature = "kernel-agent", feature = "default-agent-providers"))]
 pub use agent_builtin::BuiltinReActAgent;
+
+#[cfg(all(feature = "kernel-agent", not(feature = "default-agent-providers")))]
+#[path = "agent_mcp_shell.rs"]
+mod agent_mcp_shell;
+
+#[cfg(all(feature = "kernel-agent", not(feature = "default-agent-providers")))]
+pub use agent_mcp_shell::McpShellAgent;
 
 /// Agent 能力关闭时的占位实现（不走 MCP / ReAct）。
 pub struct NoopAgent;

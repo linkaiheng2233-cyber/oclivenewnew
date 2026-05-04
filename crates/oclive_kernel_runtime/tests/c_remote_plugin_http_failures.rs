@@ -2,9 +2,9 @@
 
 use chrono::Utc;
 use oclive_kernel_runtime::domain::complex_emotion::{
-    BuiltinKeywordComplexEmotionProvider, ComplexEmotionInput, ComplexEmotionProvider,
+    default_complex_emotion_keyword_arc, ComplexEmotionInput, ComplexEmotionProvider,
 };
-use oclive_kernel_runtime::domain::memory_retrieval::{BuiltinMemoryRetrieval, MemoryRetrieval};
+use oclive_kernel_runtime::domain::memory_retrieval::{default_memory_slot_v1, MemoryRetrieval};
 use oclive_kernel_runtime::domain::user_emotion_analyzer::UserEmotionAnalyzer;
 use oclive_kernel_runtime::error::AppError;
 use oclive_kernel_runtime::infrastructure::remote_plugin::{
@@ -202,7 +202,7 @@ fn remote_memory_rank_falls_back_to_builtin_on_http_error() {
         bearer_token: None,
     };
     let remote = RemoteMemoryRetrievalHttp::new(cfg);
-    let builtin = BuiltinMemoryRetrieval;
+    let builtin = default_memory_slot_v1();
     let memories = sample_memories();
     let input_a = oclive_kernel_runtime::domain::memory_retrieval::MemoryRetrievalInput {
         memories: &memories,
@@ -217,7 +217,7 @@ fn remote_memory_rank_falls_back_to_builtin_on_http_error() {
         limit: 4,
     };
     let a = remote.rank_memories(input_a);
-    let b = builtin.rank_memories(input_b);
+    let b = MemoryRetrieval::rank_memories(builtin.as_ref(), input_b);
     assert_eq!(a.len(), b.len());
     assert_eq!(a[0].id, b[0].id);
     let _ = h.join();
@@ -262,7 +262,7 @@ fn remote_complex_emotion_marks_degraded_on_rpc_failure() {
         out.degraded_to_builtin,
         "expected degraded_to_builtin when remote body invalid"
     );
-    let builtin = BuiltinKeywordComplexEmotionProvider;
+    let builtin = default_complex_emotion_keyword_arc();
     let base = builtin.resolve_turn(&input).expect("builtin");
     assert_eq!(out.source, base.source);
     let _ = h.join();

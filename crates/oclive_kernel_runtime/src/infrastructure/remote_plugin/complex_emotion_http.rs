@@ -1,19 +1,20 @@
 //! JSON-RPC：`complex_emotion.resolve_turn`（Remote 专用端点，与通用 `OCLIVE_REMOTE_PLUGIN_URL` 分离）。
 
-use crate::domain::complex_emotion::ComplexEmotionProvider;
 use crate::domain::complex_emotion::{
-    BuiltinKeywordComplexEmotionProvider, ComplexEmotionInput, ComplexEmotionOutput,
+    default_complex_emotion_keyword_arc, ComplexEmotionInput, ComplexEmotionOutput,
+    ComplexEmotionProvider,
 };
 use crate::error::Result;
 use crate::infrastructure::remote_plugin::config::RemotePluginHttpConfig;
 use crate::infrastructure::remote_plugin::jsonrpc::{self, RemoteRpcChannel};
+use std::sync::Arc;
 
 const METHOD_RESOLVE_TURN: &str = "complex_emotion.resolve_turn";
 
 pub struct RemoteComplexEmotionHttp {
     client: reqwest::Client,
     cfg: RemotePluginHttpConfig,
-    fallback: BuiltinKeywordComplexEmotionProvider,
+    fallback: Arc<dyn ComplexEmotionProvider>,
 }
 
 impl RemoteComplexEmotionHttp {
@@ -26,7 +27,7 @@ impl RemoteComplexEmotionHttp {
         Self {
             client,
             cfg,
-            fallback: BuiltinKeywordComplexEmotionProvider,
+            fallback: default_complex_emotion_keyword_arc(),
         }
     }
 
@@ -59,7 +60,7 @@ impl RemoteComplexEmotionHttp {
                     self.cfg.endpoint,
                     e
                 );
-                let mut o = self.fallback.resolve_turn_inner(input);
+                let mut o = self.fallback.resolve_turn(input)?;
                 o.degraded_to_builtin = true;
                 Ok(o)
             }

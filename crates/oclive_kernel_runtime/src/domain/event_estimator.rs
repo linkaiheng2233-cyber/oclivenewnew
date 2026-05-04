@@ -2,6 +2,8 @@
 #![allow(clippy::too_many_arguments)] // `EventEstimator::estimate` 与编排层参数一致，不宜为 clippy 拆结构体
 
 use crate::domain::event_impact_ai::EventImpactEstimate;
+#[cfg(not(feature = "default-event-providers"))]
+use crate::domain::disabled_default_providers::DisabledEventEstimator;
 use crate::error::Result;
 use crate::infrastructure::llm::LlmClient;
 use crate::models::knowledge::KnowledgeEventAugment;
@@ -26,8 +28,10 @@ pub trait EventEstimator: Send + Sync {
     ) -> Result<EventImpactEstimate>;
 }
 
+#[cfg(feature = "default-event-providers")]
 pub struct BuiltinEventEstimator;
 
+#[cfg(feature = "default-event-providers")]
 #[async_trait]
 impl EventEstimator for BuiltinEventEstimator {
     async fn estimate(
@@ -57,8 +61,10 @@ impl EventEstimator for BuiltinEventEstimator {
 }
 
 /// 第二套内置：在 [`BuiltinEventEstimator`] 的结果上将 `impact_factor` 乘以 **0.5**（更保守，用于验证 `event` 枚举可切换）。
+#[cfg(feature = "default-event-providers")]
 pub struct BuiltinEventEstimatorV2;
 
+#[cfg(feature = "default-event-providers")]
 #[async_trait]
 impl EventEstimator for BuiltinEventEstimatorV2 {
     async fn estimate(
@@ -91,15 +97,39 @@ impl EventEstimator for BuiltinEventEstimatorV2 {
     }
 }
 
+#[must_use]
+pub fn default_event_slot_v1() -> Arc<dyn EventEstimator> {
+    #[cfg(feature = "default-event-providers")]
+    {
+        Arc::new(BuiltinEventEstimator)
+    }
+    #[cfg(not(feature = "default-event-providers"))]
+    {
+        Arc::new(DisabledEventEstimator)
+    }
+}
+
+#[must_use]
+pub fn default_event_slot_v2() -> Arc<dyn EventEstimator> {
+    #[cfg(feature = "default-event-providers")]
+    {
+        Arc::new(BuiltinEventEstimatorV2)
+    }
+    #[cfg(not(feature = "default-event-providers"))]
+    {
+        Arc::new(DisabledEventEstimator)
+    }
+}
+
 pub struct RemoteEventEstimatorPlaceholder {
-    inner: BuiltinEventEstimator,
+    inner: Arc<dyn EventEstimator>,
     warned: AtomicBool,
 }
 
 impl RemoteEventEstimatorPlaceholder {
     pub fn new() -> Self {
         Self {
-            inner: BuiltinEventEstimator,
+            inner: default_event_slot_v1(),
             warned: AtomicBool::new(false),
         }
     }
@@ -155,7 +185,7 @@ impl Default for RemoteEventEstimatorPlaceholder {
     }
 }
 
-#[cfg(test)]
+#[cfg(all(test, feature = "default-event-providers"))]
 mod tests {
     use super::*;
     use crate::infrastructure::llm::MockLlmClient;

@@ -2,33 +2,35 @@
 //!
 //! 与仓库 `creator-docs/plugin-and-architecture/PLUGIN_V1.md` 契约一致；`Remote` 在设置 `OCLIVE_REMOTE_*` 时走 HTTP JSON-RPC，否则回退内置。
 
-#[cfg(feature = "kernel-agent")]
+#[cfg(all(feature = "kernel-agent", feature = "default-agent-providers"))]
 use crate::domain::agent::BuiltinReActAgent;
+#[cfg(all(feature = "kernel-agent", not(feature = "default-agent-providers")))]
+use crate::domain::agent::McpShellAgent;
 #[cfg(not(feature = "kernel-agent"))]
 use crate::domain::agent::NoopAgent;
 use crate::domain::agent::{AgentDebugTrace, AgentProvider};
 use crate::domain::complex_emotion::{
-    BuiltinKeywordComplexEmotionProvider, ComplexEmotionProvider,
+    default_complex_emotion_keyword_arc, ComplexEmotionProvider,
     DegradedToBuiltinComplexEmotionProvider, NoneComplexEmotionProvider,
 };
 use crate::domain::event_estimator::{
-    BuiltinEventEstimator, BuiltinEventEstimatorV2, EventEstimator, RemoteEventEstimatorPlaceholder,
+    default_event_slot_v1, default_event_slot_v2, EventEstimator, RemoteEventEstimatorPlaceholder,
 };
 use crate::domain::local_plugin_bridge::{
     LocalPluginCapability, LocalPluginProviderDescriptor, LocalPluginRegistry,
 };
 use crate::domain::local_plugin_memory_pick::pick_local_memory_provider;
 use crate::domain::memory_retrieval::{
-    BuiltinMemoryRetrieval, BuiltinMemoryRetrievalV2, LocalPluginMemoryRetrieval, MemoryRetrieval,
+    default_memory_slot_v1, default_memory_slot_v2, LocalPluginMemoryRetrieval, MemoryRetrieval,
     RemoteMemoryRetrievalPlaceholder,
 };
 use crate::domain::prompt_assembler::{
-    BuiltinPromptAssembler, BuiltinPromptAssemblerV2, PromptAssembler,
+    default_prompt_slot_v1, default_prompt_slot_v2, PromptAssembler,
     RemotePromptAssemblerPlaceholder,
 };
 use crate::domain::user_emotion_analyzer::{
-    BuiltinUserEmotionAnalyzer, BuiltinUserEmotionAnalyzerV2, RemoteUserEmotionAnalyzerPlaceholder,
-    UserEmotionAnalyzer,
+    default_user_emotion_slot_v1, default_user_emotion_slot_v2,
+    RemoteUserEmotionAnalyzerPlaceholder, UserEmotionAnalyzer,
 };
 use crate::infrastructure::cloud_llm::CloudLlmConfig;
 use crate::infrastructure::db::DbManager;
@@ -83,8 +85,10 @@ pub struct BackendRegistry {
     llm_ollama: Arc<dyn LlmClient>,
     llm_remote: Arc<dyn LlmClient>,
     agent_builtin: Arc<dyn AgentProvider>,
-    #[cfg(feature = "kernel-agent")]
+    #[cfg(all(feature = "kernel-agent", feature = "default-agent-providers"))]
     agent_react: Arc<BuiltinReActAgent>,
+    #[cfg(all(feature = "kernel-agent", not(feature = "default-agent-providers")))]
+    agent_mcp: Arc<McpShellAgent>,
     agent_remote: Arc<dyn AgentProvider>,
     complex_emotion_builtin: Arc<dyn ComplexEmotionProvider>,
     complex_emotion_remote: Arc<dyn ComplexEmotionProvider>,
@@ -278,9 +282,13 @@ impl BackendRegistry {
     }
 
     async fn list_mcp_servers(&self) -> Vec<McpServerManifest> {
-        #[cfg(feature = "kernel-agent")]
+        #[cfg(all(feature = "kernel-agent", feature = "default-agent-providers"))]
         {
             self.agent_react.list_mcp_servers().await
+        }
+        #[cfg(all(feature = "kernel-agent", not(feature = "default-agent-providers")))]
+        {
+            self.agent_mcp.list_mcp_servers().await
         }
         #[cfg(not(feature = "kernel-agent"))]
         {
@@ -292,9 +300,16 @@ impl BackendRegistry {
         &self,
         server_id: &str,
     ) -> std::result::Result<Vec<crate::infrastructure::mcp_client::McpToolManifest>, String> {
-        #[cfg(feature = "kernel-agent")]
+        #[cfg(all(feature = "kernel-agent", feature = "default-agent-providers"))]
         {
             self.agent_react
+                .list_mcp_tools(server_id)
+                .await
+                .map_err(|e| e.to_frontend_error())
+        }
+        #[cfg(all(feature = "kernel-agent", not(feature = "default-agent-providers")))]
+        {
+            self.agent_mcp
                 .list_mcp_tools(server_id)
                 .await
                 .map_err(|e| e.to_frontend_error())
@@ -312,7 +327,7 @@ impl BackendRegistry {
         tool_name: &str,
         params: Value,
     ) -> std::result::Result<McpToolCallResult, String> {
-        #[cfg(feature = "kernel-agent")]
+        #[cfg(all(feature = "kernel-agent", feature = "default-agent-providers"))]
         {
             let sid = server_id.trim();
             if sid.is_empty() {
@@ -339,6 +354,33 @@ impl BackendRegistry {
                 .await
                 .map_err(|e| e.to_frontend_error())
         }
+        #[cfg(all(feature = "kernel-agent", not(feature = "default-agent-providers")))]
+        {
+            let sid = server_id.trim();
+            if sid.is_empty() {
+                return Err("server_id required".to_string());
+            }
+            let mut required_perm = "network:*";
+            for s in self.list_mcp_servers().await {
+                if s.id.trim() == sid {
+                    if s.transport.trim().eq_ignore_ascii_case("stdio") {
+                        required_perm = "process:spawn";
+                    }
+                    break;
+                }
+            }
+            let mcp_provider_id = format!("system:mcp_server:{}", sid);
+            if !self.check_directory_plugin_permission(mcp_provider_id.as_str(), required_perm) {
+                return Err(format!(
+                    "mcp server {} missing required permission {}",
+                    sid, required_perm
+                ));
+            }
+            self.agent_mcp
+                .call_tool_direct(server_id, tool_name, params)
+                .await
+                .map_err(|e| e.to_frontend_error())
+        }
         #[cfg(not(feature = "kernel-agent"))]
         {
             let _ = (server_id, tool_name, params);
@@ -347,9 +389,13 @@ impl BackendRegistry {
     }
 
     fn recent_agent_traces(&self) -> Vec<AgentDebugTrace> {
-        #[cfg(feature = "kernel-agent")]
+        #[cfg(all(feature = "kernel-agent", feature = "default-agent-providers"))]
         {
             self.agent_react.recent_traces()
+        }
+        #[cfg(all(feature = "kernel-agent", not(feature = "default-agent-providers")))]
+        {
+            self.agent_mcp.recent_traces()
         }
         #[cfg(not(feature = "kernel-agent"))]
         {
@@ -358,9 +404,13 @@ impl BackendRegistry {
     }
 
     fn clear_agent_traces(&self) {
-        #[cfg(feature = "kernel-agent")]
+        #[cfg(all(feature = "kernel-agent", feature = "default-agent-providers"))]
         {
             self.agent_react.clear_traces();
+        }
+        #[cfg(all(feature = "kernel-agent", not(feature = "default-agent-providers")))]
+        {
+            self.agent_mcp.clear_traces();
         }
     }
 
@@ -376,10 +426,14 @@ impl BackendRegistry {
         let _ = &app_data_dir;
         #[cfg(feature = "kernel-agent")]
         let mcp = Arc::new(McpClient::new(app_data_dir));
-        #[cfg(feature = "kernel-agent")]
-        let agent_react = Arc::new(BuiltinReActAgent::new(llm_ollama.clone(), mcp));
-        #[cfg(feature = "kernel-agent")]
+        #[cfg(all(feature = "kernel-agent", feature = "default-agent-providers"))]
+        let agent_react = Arc::new(BuiltinReActAgent::new(llm_ollama.clone(), mcp.clone()));
+        #[cfg(all(feature = "kernel-agent", not(feature = "default-agent-providers")))]
+        let agent_shell = Arc::new(McpShellAgent::new(mcp.clone()));
+        #[cfg(all(feature = "kernel-agent", feature = "default-agent-providers"))]
         let agent_builtin: Arc<dyn AgentProvider> = agent_react.clone();
+        #[cfg(all(feature = "kernel-agent", not(feature = "default-agent-providers")))]
+        let agent_builtin: Arc<dyn AgentProvider> = agent_shell.clone();
         #[cfg(not(feature = "kernel-agent"))]
         let agent_builtin: Arc<dyn AgentProvider> = Arc::new(NoopAgent);
 
@@ -388,25 +442,27 @@ impl BackendRegistry {
         // If not granted, we fall back to builtin/placeholder providers, and keep behavior deterministic.
         let tmp = Self {
             db_manager: db_manager.clone(),
-            memory_builtin: Arc::new(BuiltinMemoryRetrieval),
-            memory_builtin_v2: Arc::new(BuiltinMemoryRetrievalV2),
+            memory_builtin: default_memory_slot_v1(),
+            memory_builtin_v2: default_memory_slot_v2(),
             memory_remote: Arc::new(RemoteMemoryRetrievalPlaceholder::new()),
-            emotion_builtin: Arc::new(BuiltinUserEmotionAnalyzer),
-            emotion_builtin_v2: Arc::new(BuiltinUserEmotionAnalyzerV2),
+            emotion_builtin: default_user_emotion_slot_v1(),
+            emotion_builtin_v2: default_user_emotion_slot_v2(),
             emotion_remote: Arc::new(RemoteUserEmotionAnalyzerPlaceholder::new()),
-            event_builtin: Arc::new(BuiltinEventEstimator),
-            event_builtin_v2: Arc::new(BuiltinEventEstimatorV2),
+            event_builtin: default_event_slot_v1(),
+            event_builtin_v2: default_event_slot_v2(),
             event_remote: Arc::new(RemoteEventEstimatorPlaceholder::new()),
-            prompt_builtin: Arc::new(BuiltinPromptAssembler),
-            prompt_builtin_v2: Arc::new(BuiltinPromptAssemblerV2),
+            prompt_builtin: default_prompt_slot_v1(),
+            prompt_builtin_v2: default_prompt_slot_v2(),
             prompt_remote: Arc::new(RemotePromptAssemblerPlaceholder::new()),
             llm_ollama: llm_ollama.clone(),
             llm_remote: Arc::new(RemoteLlmPlaceholder::new(llm_ollama.clone())),
             agent_builtin: agent_builtin.clone(),
-            #[cfg(feature = "kernel-agent")]
+            #[cfg(all(feature = "kernel-agent", feature = "default-agent-providers"))]
             agent_react: agent_react.clone(),
+            #[cfg(all(feature = "kernel-agent", not(feature = "default-agent-providers")))]
+            agent_mcp: agent_shell.clone(),
             agent_remote: agent_builtin.clone(),
-            complex_emotion_builtin: Arc::new(BuiltinKeywordComplexEmotionProvider),
+            complex_emotion_builtin: default_complex_emotion_keyword_arc(),
             complex_emotion_remote: Arc::new(DegradedToBuiltinComplexEmotionProvider::new(
                 "complex_emotion backend Remote is not connected; using builtin complex emotion",
             )),
@@ -447,9 +503,13 @@ impl BackendRegistry {
         let agent_remote: Arc<dyn AgentProvider> = if tmp
             .check_remote_http_permission(Self::REMOTE_PROVIDER_AGENT)
         {
-            #[cfg(feature = "kernel-agent")]
+            #[cfg(all(feature = "kernel-agent", feature = "default-agent-providers"))]
             {
                 agent_remote_backend(agent_react.clone() as Arc<dyn AgentProvider>)
+            }
+            #[cfg(all(feature = "kernel-agent", not(feature = "default-agent-providers")))]
+            {
+                agent_remote_backend(agent_shell.clone())
             }
             #[cfg(not(feature = "kernel-agent"))]
             {
@@ -480,28 +540,30 @@ impl BackendRegistry {
         };
 
         let complex_emotion_builtin: Arc<dyn ComplexEmotionProvider> =
-            Arc::new(BuiltinKeywordComplexEmotionProvider);
+            default_complex_emotion_keyword_arc();
         let complex_emotion_none: Arc<dyn ComplexEmotionProvider> =
             Arc::new(NoneComplexEmotionProvider);
         Self {
             db_manager,
-            memory_builtin: Arc::new(BuiltinMemoryRetrieval),
-            memory_builtin_v2: Arc::new(BuiltinMemoryRetrievalV2),
+            memory_builtin: default_memory_slot_v1(),
+            memory_builtin_v2: default_memory_slot_v2(),
             memory_remote: rem.memory,
-            emotion_builtin: Arc::new(BuiltinUserEmotionAnalyzer),
-            emotion_builtin_v2: Arc::new(BuiltinUserEmotionAnalyzerV2),
+            emotion_builtin: default_user_emotion_slot_v1(),
+            emotion_builtin_v2: default_user_emotion_slot_v2(),
             emotion_remote: rem.emotion,
-            event_builtin: Arc::new(BuiltinEventEstimator),
-            event_builtin_v2: Arc::new(BuiltinEventEstimatorV2),
+            event_builtin: default_event_slot_v1(),
+            event_builtin_v2: default_event_slot_v2(),
             event_remote: rem.event,
-            prompt_builtin: Arc::new(BuiltinPromptAssembler),
-            prompt_builtin_v2: Arc::new(BuiltinPromptAssemblerV2),
+            prompt_builtin: default_prompt_slot_v1(),
+            prompt_builtin_v2: default_prompt_slot_v2(),
             prompt_remote: rem.prompt,
             llm_ollama,
             llm_remote,
             agent_builtin,
-            #[cfg(feature = "kernel-agent")]
+            #[cfg(all(feature = "kernel-agent", feature = "default-agent-providers"))]
             agent_react,
+            #[cfg(all(feature = "kernel-agent", not(feature = "default-agent-providers")))]
+            agent_mcp: agent_shell,
             agent_remote,
             complex_emotion_builtin,
             complex_emotion_remote,
