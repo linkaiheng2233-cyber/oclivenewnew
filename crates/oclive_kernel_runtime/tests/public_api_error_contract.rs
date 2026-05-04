@@ -53,7 +53,7 @@ fn all_app_error_variants_expose_stable_bracket_envelope() {
     let cases: Vec<(AppError, &str)> = vec![
         (AppError::DatabaseError("e".into()), "DB_ERROR"),
         (
-            AppError::IoError(std::io::Error::new(std::io::ErrorKind::Other, "io")),
+            AppError::IoError(std::io::Error::other("io")),
             "IO_ERROR",
         ),
         (AppError::OllamaError("remote_plugin transport".into()), "LLM_ERROR"),

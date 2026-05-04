@@ -25,10 +25,9 @@ role-pack-zip = ["dep:zip"]
 market-sync = []
 ## MCP + Builtin ReAct Agent + 目录 Agent HTTP 侧车等路径。
 kernel-agent = []
-## Desktop 壳：`AppError -> tauri::InvokeError`（孤儿规则）。
-tauri_invoke = ["dep:tauri"]
 
 [dependencies]
+oclive_kernel_core = { path = "../oclive_kernel_core" }
 oclive_core = { path = "../oclive_core" }
 oclive_validation = { path = "../oclive_validation" }
 
@@ -58,7 +57,6 @@ futures-util = "0.3"
 sha2 = "0.11.0"
 base64 = "0.22"
 ed25519-dalek = { version = "2", features = ["std"] }
-tauri = { version = "1.5", optional = true, default-features = false }
 
 [dev-dependencies]
 serde_json = "1.0"

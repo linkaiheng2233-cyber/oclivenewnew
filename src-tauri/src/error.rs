@@ -1,5 +1,5 @@
-//! 与 `oclive_kernel_runtime::error` 共用同一 `AppError` / `Result`。
-//! `AppError -> InvokeError` 在启用 `oclive_kernel_runtime/tauri_invoke` 时由内核 crate 实现。
+//! 与 `oclive_kernel_core::error`（经 `oclive_kernel_runtime::error` 再导出）共用同一 `AppError` / `Result`。
+//! Tauri 命令请使用 `map_err(|e: AppError| e.to_frontend_error())` 等到 `String`。
 
 pub use oclive_kernel_runtime::error::{AppError, Result};
 

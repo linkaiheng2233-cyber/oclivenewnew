@@ -150,8 +150,10 @@ async fn session_plugin_backend_override_is_namespaced() {
     let ns_a = conversation_state_role_id(rid, Some("sess_a"));
     let ns_b = conversation_state_role_id(rid, Some("sess_b"));
 
-    let mut ov = PluginBackendsOverride::default();
-    ov.memory = Some(MemoryBackend::BuiltinV2);
+    let ov = PluginBackendsOverride {
+        memory: Some(MemoryBackend::BuiltinV2),
+        ..Default::default()
+    };
     state.set_session_backend_override(ns_a.as_str(), ov);
 
     assert!(

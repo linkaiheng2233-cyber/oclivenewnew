@@ -11,10 +11,8 @@ fn main() {
     println!("OCLIVE_READY http://127.0.0.1:{}/rpc", port);
     std::io::stdout().flush().ok();
 
-    for incoming in listener.incoming() {
-        if let Ok(stream) = incoming {
-            thread::spawn(move || handle_connection(stream));
-        }
+    for stream in listener.incoming().flatten() {
+        thread::spawn(move || handle_connection(stream));
     }
 }
 

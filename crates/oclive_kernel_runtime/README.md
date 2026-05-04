@@ -11,7 +11,8 @@
 | `role-pack-zip` | ✅（经 `full`） | `zip` 与角色包 / 插件归档路径（`plugin_archive`、`role_pack_archive`）。 |
 | `market-sync` | ✅（经 `full`） | 角色 / 插件市场与评价索引同步模块。 |
 | `kernel-agent` | ✅（经 `full`） | MCP、Builtin ReAct Agent、远程 / 目录 Agent HTTP。 |
-| `tauri_invoke` | ❌ | 由桌面 crate 启用：`AppError` → `tauri::InvokeError`。 |
+
+共享 **错误类型与 Repository trait** 见同级 [`oclive_kernel_core`](../oclive_kernel_core/)（V2 极薄层，逐步扩展）。
 
 **极简嵌入示例**（不需要内置 HTTP 服务器时）：
 

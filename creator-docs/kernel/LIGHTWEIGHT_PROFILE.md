@@ -13,7 +13,7 @@
 | **kernel_server / pack-editor 试聊** | `oclive_kernel_server` | `full`（默认） | 开 | 开 | 开 | 开 |
 | **嵌入式 lib / 玩偶侧车** | 自建进程，仅需 OOCP+编排 | `default-features = false` + 按需子特性 | 常关 | 常关 | 常关 | 常关 |
 
-启用 **`tauri_invoke`** 仅在使用 `oclive_kernel_runtime::error::tauri_invoke` 将 `AppError` 映射到 `tauri::InvokeError` 的 **桌面 crate** 上需要；纯 lib / server **不要** 开启。
+**`AppError` → Tauri**：类型定义在 `oclive_kernel_core`；桌面命令请使用 `map_err(|e: AppError| e.to_frontend_error())` 等到 `String`（不再通过 `oclive_kernel_runtime` 的 `tauri` 可选依赖做 `InvokeError` 转换）。
 
 ---
 
@@ -28,7 +28,6 @@
 | **`role-pack-zip`** | `zip` 依赖；`plugin_archive`、`role_pack_archive`；插件 / 角色包归档安装路径 |
 | **`market-sync`** | `plugin_index_sync`、`plugin_reviews_index_sync`、`role_market_index_sync` |
 | **`kernel-agent`** | ReAct Agent、MCP 客户端实现、`RemoteAgentHttp`、目录 Agent HTTP 槽 |
-| **`tauri_invoke`** | 可选 `tauri` 依赖，用于桌面错误映射 |
 
 **注意**：关闭 `role-pack-zip` 时，`plugin_install` 中带解压的实现会返回明确错误；关闭 `market-sync` 时，同步函数所在模块不参与编译，由宿主（如 `src-tauri` 的 `plugin_installer` / `role_market`）保证不与该组合链接。
 
