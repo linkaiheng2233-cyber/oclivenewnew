@@ -46,8 +46,7 @@ Creator and plugin docs live under the repo root `creator-docs/` (grouped by top
 | **极致轻量化（runtime `Cargo` 特性、OOCP、`invoke` 分组、依赖/`http_api` 拟定）** | **[../kernel/LIGHTWEIGHT_PROFILE.md](../kernel/LIGHTWEIGHT_PROFILE.md)**（与 [KERNEL_BOUNDARY.md](../kernel/KERNEL_BOUNDARY.md) §5.1 互参） |
 | **内核工程质量与生态路线（P0–P2，测试/SDK/crates.io）** | **[../../../handoff/ENGINEERING_ROADMAP_KERNEL_DEEPSEEK.md](../../../handoff/ENGINEERING_ROADMAP_KERNEL_DEEPSEEK.md)** |
 | **内核 SDK（KernelAppState、process_message、kernel_server）** | **[../kernel/KERNEL_SDK.md](../kernel/KERNEL_SDK.md)** |
-| **OOCP 完整参考（方法/事件白名单、WS、`reply` 与实现对齐）** | **[../oocp/OOCP_SPEC_COMPLETE_REFERENCE.md](../oocp/OOCP_SPEC_COMPLETE_REFERENCE.md)**（叙述草案：[OOCP_SPEC_v0_1.md](../oocp/OOCP_SPEC_v0_1.md)、传输：[OOCP_TRANSPORTS.md](../oocp/OOCP_TRANSPORTS.md)） |
-| **内核 / OOCP 发版路径（crates.io、Docker、桌面对齐）** | **[../distributions/KERNEL_AND_OOCP_RELEASE_PATH.md](../distributions/KERNEL_AND_OOCP_RELEASE_PATH.md)** |
+| **Kernel Baseline v1.0（已冻结语义基线）** | **[../kernel/KERNEL_BASELINE_V1.md](../kernel/KERNEL_BASELINE_V1.md)** · 发版前检查 **[../kernel/KERNEL_RELEASE_CHECKLIST_V1.md](../kernel/KERNEL_RELEASE_CHECKLIST_V1.md)** |
 | **mumu 默认前端模块（chat.header / chat_toolbar / role.detail / sidebar / settings.panel）** | **[../FAQ.md](../FAQ.md)**（用户向 Q&A） |
 | **mumu 模块发版前验收清单** | **[../guides/MUMU_UI_ACCEPTANCE_CHECKLIST.md](../guides/MUMU_UI_ACCEPTANCE_CHECKLIST.md)** |
 | **插件 FAQ（Vue 不显示、iframe 调试、依赖等）** | **[../FAQ.md](../FAQ.md)** |
