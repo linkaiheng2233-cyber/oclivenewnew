@@ -1,94 +1,31 @@
 //! 事件影响估计：`EventEstimator` trait 定义于 [`oclive_kernel_core::event_estimator`]；
-//! 开启 **`default-event-providers`** 时内置实现委托 [`estimate_event_impact`](super::event_impact_ai::estimate_event_impact)。
+//! 开启 **`default-event-providers`** 时 Builtin 薄壳在 **`oclive_event_builtin`**，经 [`KernelEventImpactEngine`](super::event_impact_bridge::KernelEventImpactEngine) 委托 [`estimate_event_impact`](super::event_impact_ai::estimate_event_impact)。
 #![allow(clippy::too_many_arguments)] // `EventEstimator::estimate` 与编排层参数一致，不宜为 clippy 拆结构体
 
 pub use oclive_kernel_core::event_estimator::EventEstimator;
 
-use oclive_kernel_models::EventImpactEstimate;
 #[cfg(not(feature = "default-event-providers"))]
 use crate::domain::disabled_default_providers::DisabledEventEstimator;
+#[cfg(feature = "default-event-providers")]
+use crate::domain::event_impact_bridge::KernelEventImpactEngine;
 use crate::error::Result;
 use crate::infrastructure::llm::LlmClient;
 use crate::models::knowledge::KnowledgeEventAugment;
 use crate::models::{Emotion, Event, PersonalitySource, PersonalityVector};
 use async_trait::async_trait;
+#[cfg(feature = "default-event-providers")]
+pub use oclive_event_builtin::{BuiltinEventEstimator, BuiltinEventEstimatorV2};
+use oclive_kernel_models::EventImpactEstimate;
 use std::sync::atomic::{AtomicBool, Ordering};
 use std::sync::Arc;
-
-#[cfg(feature = "default-event-providers")]
-pub struct BuiltinEventEstimator;
-
-#[cfg(feature = "default-event-providers")]
-#[async_trait]
-impl EventEstimator for BuiltinEventEstimator {
-    async fn estimate(
-        &self,
-        llm: &Arc<dyn LlmClient>,
-        ollama_model: &str,
-        user_message: &str,
-        user_emotion: &Emotion,
-        personality: &PersonalityVector,
-        _personality_source: PersonalitySource,
-        recent_turns: &[(String, String)],
-        recent_events: &[Event],
-        knowledge_augment: Option<&KnowledgeEventAugment>,
-    ) -> Result<EventImpactEstimate> {
-        super::event_impact_ai::estimate_event_impact(
-            llm,
-            ollama_model,
-            user_message,
-            user_emotion,
-            personality,
-            recent_turns,
-            recent_events,
-            knowledge_augment,
-        )
-        .await
-    }
-}
-
-/// 第二套内置：在 [`BuiltinEventEstimator`] 的结果上将 `impact_factor` 乘以 **0.5**（更保守，用于验证 `event` 枚举可切换）。
-#[cfg(feature = "default-event-providers")]
-pub struct BuiltinEventEstimatorV2;
-
-#[cfg(feature = "default-event-providers")]
-#[async_trait]
-impl EventEstimator for BuiltinEventEstimatorV2 {
-    async fn estimate(
-        &self,
-        llm: &Arc<dyn LlmClient>,
-        ollama_model: &str,
-        user_message: &str,
-        user_emotion: &Emotion,
-        personality: &PersonalityVector,
-        personality_source: PersonalitySource,
-        recent_turns: &[(String, String)],
-        recent_events: &[Event],
-        knowledge_augment: Option<&KnowledgeEventAugment>,
-    ) -> Result<EventImpactEstimate> {
-        let mut est = BuiltinEventEstimator
-            .estimate(
-                llm,
-                ollama_model,
-                user_message,
-                user_emotion,
-                personality,
-                personality_source,
-                recent_turns,
-                recent_events,
-                knowledge_augment,
-            )
-            .await?;
-        est.impact_factor *= 0.5;
-        Ok(est)
-    }
-}
 
 #[must_use]
 pub fn default_event_slot_v1() -> Arc<dyn EventEstimator> {
     #[cfg(feature = "default-event-providers")]
     {
-        Arc::new(BuiltinEventEstimator)
+        Arc::new(BuiltinEventEstimator::new(Arc::new(
+            KernelEventImpactEngine,
+        )))
     }
     #[cfg(not(feature = "default-event-providers"))]
     {
@@ -100,7 +37,9 @@ pub fn default_event_slot_v1() -> Arc<dyn EventEstimator> {
 pub fn default_event_slot_v2() -> Arc<dyn EventEstimator> {
     #[cfg(feature = "default-event-providers")]
     {
-        Arc::new(BuiltinEventEstimatorV2)
+        Arc::new(BuiltinEventEstimatorV2::new(Arc::new(
+            KernelEventImpactEngine,
+        )))
     }
     #[cfg(not(feature = "default-event-providers"))]
     {
@@ -210,7 +149,8 @@ mod tests {
         let p = PersonalityVector::zero();
         let msg = "我很抱怨这个";
         let user_emotion = Emotion::Sad;
-        let b = BuiltinEventEstimator
+        use crate::domain::event_impact_bridge::KernelEventImpactEngine;
+        let b = BuiltinEventEstimator::new(Arc::new(KernelEventImpactEngine))
             .estimate(
                 &llm,
                 "m",
@@ -224,7 +164,7 @@ mod tests {
             )
             .await
             .unwrap();
-        let v2 = BuiltinEventEstimatorV2
+        let v2 = BuiltinEventEstimatorV2::new(Arc::new(KernelEventImpactEngine))
             .estimate(
                 &llm,
                 "m",

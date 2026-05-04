@@ -25,3 +25,20 @@ pub trait EventEstimator: Send + Sync {
         knowledge_augment: Option<&KnowledgeEventAugment>,
     ) -> Result<EventImpactEstimate>;
 }
+
+/// 进程内事件影响 **算法** 委托：实现留在 `oclive_kernel_runtime::domain::event_impact_ai`，
+/// 薄壳 `BuiltinEventEstimator` 在 **`oclive_event_builtin`**。
+#[async_trait]
+pub trait EventImpactEngine: Send + Sync {
+    async fn estimate_event_impact(
+        &self,
+        llm: &Arc<dyn LlmClient>,
+        ollama_model: &str,
+        user_message: &str,
+        user_emotion: &Emotion,
+        personality: &PersonalityVector,
+        recent_turns: &[(String, String)],
+        recent_events: &[Event],
+        knowledge_augment: Option<&KnowledgeEventAugment>,
+    ) -> Result<EventImpactEstimate>;
+}

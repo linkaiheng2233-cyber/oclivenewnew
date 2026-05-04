@@ -1,24 +1,28 @@
 //! 集成补强：远程 `event.estimate` 回退、记忆侧车畸形 JSON-RPC 结果、专家图来源优先级、多会话并发读隔离。
 
 use chrono::Utc;
+#[cfg(feature = "default-event-providers")]
+use oclive_kernel_core::event_estimator::EventEstimator;
+use oclive_kernel_runtime::domain::chat_engine::process_message;
+#[cfg(feature = "default-event-providers")]
+use oclive_kernel_runtime::domain::event_estimator::BuiltinEventEstimator;
+#[cfg(feature = "default-event-providers")]
+use oclive_kernel_runtime::domain::event_impact_bridge::KernelEventImpactEngine;
 use oclive_kernel_runtime::domain::expert_models_admin::{
     expert_models_get_effective, expert_models_set_role_default, expert_models_set_session_override,
 };
 use oclive_kernel_runtime::domain::memory_retrieval::{default_memory_slot_v1, MemoryRetrieval};
-use oclive_kernel_runtime::domain::user_emotion_analyzer::UserEmotionAnalyzer;
 use oclive_kernel_runtime::domain::role_lifecycle::load_role;
 use oclive_kernel_runtime::domain::scene_commands::switch_scene;
-use oclive_kernel_runtime::domain::chat_engine::process_message;
-#[cfg(feature = "default-event-providers")]
-use oclive_kernel_runtime::domain::event_estimator::BuiltinEventEstimator;
+use oclive_kernel_runtime::domain::user_emotion_analyzer::UserEmotionAnalyzer;
 use oclive_kernel_runtime::infrastructure::llm::MockLlmClient;
-#[cfg(feature = "default-event-providers")]
-use oclive_kernel_runtime::infrastructure::remote_plugin::{
-    RemoteEventEstimatorHttp, RemotePluginHttpConfig,
-};
 use oclive_kernel_runtime::infrastructure::remote_plugin::{
     remote_plugin_call_async, RemoteMemoryRetrievalHttp, RemotePluginHttpConfig as MemCfg,
     RemoteRpcChannel, RemoteUserEmotionAnalyzerHttp,
+};
+#[cfg(feature = "default-event-providers")]
+use oclive_kernel_runtime::infrastructure::remote_plugin::{
+    RemoteEventEstimatorHttp, RemotePluginHttpConfig,
 };
 use oclive_kernel_runtime::models::dto::{
     ExpertModelsGetEffectiveRequest, ExpertModelsSetRoleDefaultRequest,
@@ -26,11 +30,9 @@ use oclive_kernel_runtime::models::dto::{
 };
 use oclive_kernel_runtime::models::expert_models::{ExpertConfigSource, ExpertGraph, ExpertNode};
 use oclive_kernel_runtime::models::Memory;
-use oclive_kernel_runtime::state::KernelAppState;
-#[cfg(feature = "default-event-providers")]
-use oclive_kernel_core::event_estimator::EventEstimator;
 #[cfg(feature = "default-event-providers")]
 use oclive_kernel_runtime::models::{Emotion, PersonalitySource, PersonalityVector};
+use oclive_kernel_runtime::state::KernelAppState;
 use serde_json::json;
 use std::io::{Read, Write};
 use std::net::TcpListener;
@@ -39,7 +41,11 @@ use std::sync::Arc;
 use std::thread;
 use std::time::Duration;
 
-fn spawn_one_shot_http(status_line: &str, content_type: &str, body: &str) -> (String, thread::JoinHandle<()>) {
+fn spawn_one_shot_http(
+    status_line: &str,
+    content_type: &str,
+    body: &str,
+) -> (String, thread::JoinHandle<()>) {
     let listener = TcpListener::bind("127.0.0.1:0").expect("bind");
     let port = listener.local_addr().expect("addr").port();
     let status = status_line.to_string();
@@ -193,7 +199,7 @@ async fn remote_event_estimate_falls_back_to_builtin_on_http_502() {
         )
         .await
         .expect("remote fallback ok");
-    let b = BuiltinEventEstimator
+    let b = BuiltinEventEstimator::new(Arc::new(KernelEventImpactEngine))
         .estimate(
             &llm,
             "m",
@@ -391,9 +397,7 @@ async fn expert_effective_concurrent_reads_keep_session_isolation() {
     let state = KernelAppState::new_in_memory_with_llm(mock_llm(), roles_root)
         .await
         .expect("state");
-    load_role(&state, "c_int_conc", false)
-        .await
-        .expect("load");
+    load_role(&state, "c_int_conc", false).await.expect("load");
 
     expert_models_set_session_override(
         &state,

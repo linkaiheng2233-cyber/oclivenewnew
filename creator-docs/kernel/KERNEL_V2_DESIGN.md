@@ -50,7 +50,7 @@
 
 ## 6. 阶段 6 待定 — 事件与 Prompt 剥离评估（阶段 5-6 / 5-7 结论）
 
-以下为 **2026-05** 起依赖扫描结论：**官方默认 Prompt 模块**（**`oclive_prompt_builtin`**）已在 **阶段 7-1** 落地（见 §4、§6.2）。**官方默认事件模块**（`oclive_event_builtin`）仍**未**强制创建，算法主体仍在 runtime（见 §6.7）。
+以下为 **2026-05** 起依赖扫描结论：**官方默认 Prompt 模块**（**`oclive_prompt_builtin`**）已在 **阶段 7-1** 落地（见 §4、§6.2）。**官方默认事件模块**（**`oclive_event_builtin`**）已落地 **阶段 7-2 薄壳**：`BuiltinEventEstimator*` 在设施 crate，**`event_impact_ai` / `EventDetector` 等算法主体仍在 runtime**（见 §6.7、**`examples/oclive-event-builtin-directory/`**）。
 
 ### 6.0 阶段 6-1 固化：`oclive_kernel_models` 迁入清单
 

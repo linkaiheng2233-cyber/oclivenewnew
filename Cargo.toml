@@ -9,6 +9,7 @@ members = [
   "crates/oclive_complex_emotion_builtin",
   "crates/oclive_agent_builtin",
   "crates/oclive_prompt_builtin",
+  "crates/oclive_event_builtin",
   "crates/oclive_kernel_runtime",
   "crates/oclive_kernel_server",
   "examples/kernel_embed_minimal",

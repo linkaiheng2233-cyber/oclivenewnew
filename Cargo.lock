@@ -2980,6 +2980,16 @@ dependencies = [
 ]
 
 [[package]]
+name = "oclive_event_builtin"
+version = "0.1.0"
+dependencies = [
+ "async-trait",
+ "oclive_kernel_core",
+ "oclive_kernel_models",
+ "oclive_validation",
+]
+
+[[package]]
 name = "oclive_kernel_core"
 version = "0.1.0"
 dependencies = [
@@ -3019,6 +3029,7 @@ dependencies = [
  "oclive_complex_emotion_builtin",
  "oclive_core",
  "oclive_emotion_builtin",
+ "oclive_event_builtin",
  "oclive_kernel_core",
  "oclive_kernel_models",
  "oclive_memory_builtin",

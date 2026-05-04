@@ -16,6 +16,6 @@ pub mod prompt;
 pub mod repository;
 pub mod user_emotion_analyzer;
 
-pub use event_estimator::EventEstimator;
+pub use event_estimator::{EventEstimator, EventImpactEngine};
 pub use llm::LlmClient;
 pub use prompt::{PromptAssembler, PromptInput, PromptRolePromptSlice, TopicHintContext};

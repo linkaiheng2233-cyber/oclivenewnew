@@ -9,14 +9,16 @@ pub mod chat_turn_rules;
 pub mod complex_emotion;
 pub mod conversation_query;
 pub mod core;
-mod disabled_default_providers;
 pub mod directory_plugin_commands;
+mod disabled_default_providers;
 pub mod emotion_analyzer;
 pub mod event_commands;
 pub mod event_detector;
 pub mod event_estimator;
 #[cfg(feature = "default-event-providers")]
 pub mod event_impact_ai;
+#[cfg(feature = "default-event-providers")]
+pub mod event_impact_bridge;
 pub mod expert_models;
 pub mod expert_models_admin;
 pub mod export_chat_logs;

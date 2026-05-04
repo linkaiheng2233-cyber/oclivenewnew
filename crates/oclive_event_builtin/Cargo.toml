@@ -1,0 +1,19 @@
+[package]
+name = "oclive_event_builtin"
+version = "0.1.0"
+edition = "2021"
+license = "AGPL-3.0"
+description = "Oclive built-in EventEstimator shell (Kernel V2 phase 7-2); delegates to EventImpactEngine in runtime."
+readme = "README.md"
+keywords = ["oclive", "kernel", "event"]
+
+[features]
+default = ["providers"]
+## `EventEstimator` Builtin / BuiltinV2；依赖 `oclive_kernel_core::EventImpactEngine` 的运行时实现。
+providers = []
+
+[dependencies]
+oclive_kernel_core = { path = "../oclive_kernel_core" }
+oclive_kernel_models = { path = "../oclive_kernel_models" }
+oclive_validation = { path = "../oclive_validation" }
+async-trait = "0.1"
