@@ -45,9 +45,7 @@ pub fn apply_global_hotkeys(app: &AppHandle, file: &HotkeyBindingsFile) -> Resul
 
 #[tauri::command]
 pub async fn get_hotkey_bindings(state: State<'_, AppState>) -> Result<HotkeyBindingsFile, String> {
-    Ok(
-        HotkeyBindingsFile::load_async(state.directory_plugins.app_data_dir()).await,
-    )
+    Ok(HotkeyBindingsFile::load_async(state.directory_plugins.app_data_dir()).await)
 }
 
 #[tauri::command]

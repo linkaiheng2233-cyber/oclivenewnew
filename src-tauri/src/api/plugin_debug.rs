@@ -133,13 +133,8 @@ pub async fn discover_plugin_methods(
         }
     };
 
-    if let Ok(v) = invoke_directory_plugin_rpc(
-        &url,
-        "rpc.discover",
-        json!({}),
-        RemoteRpcChannel::Plugin,
-    )
-    .await
+    if let Ok(v) =
+        invoke_directory_plugin_rpc(&url, "rpc.discover", json!({}), RemoteRpcChannel::Plugin).await
     {
         merge_discovered_methods(&mut out, &v);
     }

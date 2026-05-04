@@ -12,8 +12,7 @@ use oclive_kernel_runtime::infrastructure::plugin_install::{
     install_plugin_from_download_urls_at, install_plugin_from_git_head_at,
     install_plugin_from_git_tag_at, installed_plugin_version_map, missing_plugin_dependencies,
     plugin_state_store_default_path, remove_plugin_from_plugin_state_file_async,
-    update_git_plugin_at,
-    update_install_meta_permissions_at,
+    update_git_plugin_at, update_install_meta_permissions_at,
 };
 pub use oclive_kernel_runtime::infrastructure::plugin_package_verify::verify_plugin_package_signature_text;
 pub use oclive_kernel_runtime::models::plugin_market_index::{

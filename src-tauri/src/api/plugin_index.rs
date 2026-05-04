@@ -477,14 +477,10 @@ pub async fn install_plugin_version_from_market(
         .map(str::trim)
         .filter(|s| !s.is_empty())
         .ok_or_else(|| format!("signature_url missing in index: {} {}", pid, want))?;
-    let installed_id = install_plugin_from_download_urls(
-        &state,
-        &index_item,
-        download_url,
-        signature_url,
-    )
-    .await
-    .map_err(|e| e.to_frontend_error())?;
+    let installed_id =
+        install_plugin_from_download_urls(&state, &index_item, download_url, signature_url)
+            .await
+            .map_err(|e| e.to_frontend_error())?;
     // 写入 grants：把用户同意的 permissions 合并到 grants（不破坏安装种子）
     if !req.accepted_permissions.is_empty() {
         let mut perms = req.accepted_permissions.clone();
