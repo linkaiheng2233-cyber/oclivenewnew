@@ -6,6 +6,12 @@ on:
   pull_request:
     branches: [main, master]
   workflow_dispatch:
+    inputs:
+      bench_compile:
+        description: "Run optional Criterion bench compile job (ubuntu, cargo bench --no-run)"
+        required: false
+        default: false
+        type: boolean
 
 concurrency:
   group: ci-${{ github.workflow }}-${{ github.ref }}
@@ -43,9 +49,6 @@ jobs:
         run: bash scripts/check_kernel_entry_vs_invoke_lists.sh
       - name: tests (workspace root)
         run: cargo test --workspace
-      # 全工作区 `cargo bench --workspace --no-run` 亦可；此处仅编有 Criterion 目标的包以控制 CI 时长。
-      - name: Compile Criterion benches (no run)
-        run: cargo bench -p oclive_kernel_runtime --no-run
       - name: kernel_runtime without default features (minimal closure)
         run: cargo check -p oclive_kernel_runtime --no-default-features
       - name: Tauri desktop minimal invoke surface (core invoke only)
@@ -124,3 +127,25 @@ jobs:
           if [ -f /tmp/remote_plugin_demo.pid ]; then
             kill "$(cat /tmp/remote_plugin_demo.pid)" || true
           fi
+
+  # SQ-3: 仅编译 Criterion 基准（--no-run），不跑完整 benchmark；与主 rust 矩阵解耦，减轻并行链接压力。
+  bench-compile:
+    if: |
+      (github.event_name == 'push' && (github.ref == 'refs/heads/main' || github.ref == 'refs/heads/master')) ||
+      (github.event_name == 'workflow_dispatch' && github.event.inputs.bench_compile == 'true')
+    runs-on: ubuntu-latest
+    env:
+      CARGO_BUILD_JOBS: "1"
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dtolnay/rust-toolchain@stable
+      - uses: Swatinem/rust-cache@v2
+        with:
+          shared-key: bench-compile
+      - name: Install Linux dependencies (Tauri / webkit)
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y libwebkit2gtk-4.0-dev build-essential curl wget \
+            libssl-dev libgtk-3-dev libayatana-appindicator3-dev librsvg2-dev patchelf
+      - name: Compile Criterion benches (no run)
+        run: cargo bench -p oclive_kernel_runtime --no-run
