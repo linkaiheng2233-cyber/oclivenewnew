@@ -41,18 +41,19 @@ default-event-providers = []
 default-prompt-providers = []
 ## 内置复杂情感关键词模式（`oclive_complex_emotion_builtin` 的 `providers`）；关闭后 builtin 槽与 Remote 降级回退为轻量桩。`classic::affect_metrics_from_seven_dim` 仍由本 crate 依赖。
 default-complex-emotion-providers = ["oclive_complex_emotion_builtin/providers"]
-## Builtin ReAct Agent（依赖 kernel-agent + MCP）；关闭后仍可编译 MCP 调试壳（`McpShellAgent`），`AgentProvider::process` 不执行 ReAct。
-default-agent-providers = ["kernel-agent"]
+## 进程内 `BuiltinReActAgent`（设施 crate `oclive_agent_builtin` 的 `providers`）；关闭后若仍开启 `kernel-agent`，仅装配 **McpShellAgent**（`process` 不执行 ReAct）。须与 **`kernel-agent`** 同开方可使用进程内 ReAct（MCP + LLM）。
+default-agent-providers = ["dep:oclive_agent_builtin", "oclive_agent_builtin/providers"]
 ## 本地 HTTP 试聊 + OOCP WebSocket（Axum）；关闭后可省去 axum/tower-http 编译。
 kernel-http-api = ["dep:axum", "dep:tower-http"]
 ## `.oclive-plugin` / 角色包 ZIP（`zip` crate）；关闭后省略 ZIP 编解码栈。
 role-pack-zip = ["dep:zip"]
 ## 角色 / 插件市场索引与评价索引 HTTP 同步模块。
 market-sync = []
-## MCP 客户端 + 目录 Agent HTTP 侧车等；`default-agent-providers` 开启时再链接完整 Builtin ReAct。
+## MCP 客户端 + 目录 Agent HTTP 侧车等；与 **`default-agent-providers`** 组合时装配进程内 **Builtin ReAct**。
 kernel-agent = []
 
 [dependencies]
+oclive_agent_builtin = { path = "../oclive_agent_builtin", optional = true, default-features = false }
 oclive_memory_builtin = { path = "../oclive_memory_builtin", default-features = false }
 oclive_emotion_builtin = { path = "../oclive_emotion_builtin", default-features = false }
 oclive_complex_emotion_builtin = { path = "../oclive_complex_emotion_builtin", default-features = false }

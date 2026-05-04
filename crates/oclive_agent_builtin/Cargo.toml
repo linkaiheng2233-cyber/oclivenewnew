@@ -1,0 +1,19 @@
+[package]
+name = "oclive_agent_builtin"
+version = "0.1.0"
+edition = "2021"
+license = "AGPL-3.0"
+description = "Oclive built-in ReAct Agent over LlmClient + McpInvoke (Kernel V2 phase 5 facility crate)."
+readme = "README.md"
+
+[features]
+default = []
+## 进程内 `BuiltinReActAgent`；由 `oclive_kernel_runtime` 的 `default-agent-providers` 开启（通常与 `kernel-agent` 同开）。
+providers = []
+
+[dependencies]
+oclive_kernel_core = { path = "../oclive_kernel_core" }
+async-trait = "0.1"
+parking_lot = "0.12"
+serde_json = "1.0"
+chrono = { version = "0.4", features = ["serde"] }

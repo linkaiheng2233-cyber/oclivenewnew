@@ -30,11 +30,11 @@
 | **`default-event-providers`** | 内置事件影响估计（`event_impact_ai`）；关闭后回退 `Ignore` 桩。 |
 | **`default-prompt-providers`** | 内置 `PromptBuilder` 组装；关闭后回退空串桩。 |
 | **`default-complex-emotion-providers`** | 进程内 **`ComplexEmotionProvider` 关键词实现**（设施 crate **`oclive_complex_emotion_builtin`** 的 `providers`）；关闭后回退轻量桩。**辅助函数** `classic::affect_metrics_from_seven_dim` 仍由编排路径依赖。恢复 **directory** 形态：示例 **`examples/oclive-complex-emotion-builtin-directory/`**（`com.oclive.builtin.complex_emotion`，`complex_emotion.resolve_turn`），需 **`process:spawn`**。 |
-| **`default-agent-providers`** | 依赖 **`kernel-agent`**：完整 **Builtin ReAct Agent**。关闭后若仍开启 `kernel-agent`，仅保留 **MCP 调试壳**（`McpShellAgent`，`process` 不执行 ReAct）。 |
+| **`default-agent-providers`** | 进程内 **`BuiltinReActAgent`**（设施 crate **`oclive_agent_builtin`** 的 `providers`，基于 **`LlmClient` + `McpInvoke`**）。关闭后若仍开启 **`kernel-agent`**，仅装配 **`McpShellAgent`**（`AgentProvider::process` 恒返回未接管）。须 **`kernel-agent` + `default-agent-providers`** 同开才有进程内 ReAct。恢复 **directory**：示例 **`examples/oclive-agent-builtin-directory/`**（`com.oclive.builtin.agent`，`agent.process`），需 **`process:spawn`**。 |
 | **`kernel-http-api`** | Axum HTTP + OOCP WebSocket（`http_api` 模块） |
 | **`role-pack-zip`** | `zip` 依赖；`plugin_archive`、`role_pack_archive`；插件 / 角色包归档安装路径 |
 | **`market-sync`** | `plugin_index_sync`、`plugin_reviews_index_sync`、`role_market_index_sync` |
-| **`kernel-agent`** | MCP 客户端、`RemoteAgentHttp`、目录 Agent HTTP 槽；与 **`default-agent-providers`** 组合时才链接完整 ReAct 实现。 |
+| **`kernel-agent`** | MCP 客户端（`McpClient` / `McpInvoke`）、`RemoteAgentHttp`、目录 Agent HTTP 槽、**`McpShellAgent`**；与 **`default-agent-providers`** 组合时装配 **`BuiltinReActAgent`**。 |
 
 **注意**：关闭 `role-pack-zip` 时，`plugin_install` 中带解压的实现会返回明确错误；关闭 `market-sync` 时，同步函数所在模块不参与编译，由宿主（如 `src-tauri` 的 `plugin_installer` / `role_market`）保证不与该组合链接。
 

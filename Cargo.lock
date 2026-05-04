@@ -2947,6 +2947,17 @@ dependencies = [
 ]
 
 [[package]]
+name = "oclive_agent_builtin"
+version = "0.1.0"
+dependencies = [
+ "async-trait",
+ "chrono",
+ "oclive_kernel_core",
+ "parking_lot",
+ "serde_json",
+]
+
+[[package]]
 name = "oclive_complex_emotion_builtin"
 version = "0.1.0"
 dependencies = [
@@ -2993,6 +3004,7 @@ dependencies = [
  "env_logger",
  "futures-util",
  "log",
+ "oclive_agent_builtin",
  "oclive_complex_emotion_builtin",
  "oclive_core",
  "oclive_emotion_builtin",

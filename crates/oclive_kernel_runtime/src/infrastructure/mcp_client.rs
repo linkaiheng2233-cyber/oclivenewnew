@@ -2,42 +2,14 @@
 //!
 //! 完整实现依赖 `feature = "kernel-agent"`；关闭时仅为占位类型，避免拉入进程 / HTTP 调用路径。
 
+pub use oclive_kernel_core::mcp::{
+    McpInvoke, McpServerManifest, McpToolCallResult, McpToolManifest,
+};
+
 use crate::error::{AppError, Result};
-use serde::{Deserialize, Serialize};
+use async_trait::async_trait;
 use serde_json::Value;
 use std::path::Path;
-
-#[derive(Debug, Clone, Serialize, Deserialize)]
-pub struct McpToolManifest {
-    pub name: String,
-    #[serde(default)]
-    pub description: Option<String>,
-}
-
-#[derive(Debug, Clone, Serialize, Deserialize)]
-pub struct McpServerManifest {
-    pub id: String,
-    pub name: String,
-    #[serde(default)]
-    pub transport: String,
-    #[serde(default)]
-    pub url: Option<String>,
-    #[serde(default)]
-    pub command: Option<String>,
-    #[serde(default)]
-    pub args: Vec<String>,
-    #[serde(default)]
-    pub tools: Vec<McpToolManifest>,
-    #[serde(default)]
-    pub timeout_ms: Option<u64>,
-}
-
-#[derive(Debug, Clone, Serialize, Deserialize)]
-pub struct McpToolCallResult {
-    pub server_id: String,
-    pub tool_name: String,
-    pub result: Value,
-}
 
 #[cfg(feature = "kernel-agent")]
 pub struct McpClient {
@@ -315,5 +287,25 @@ impl McpClient {
         }
         let v: Value = serde_json::from_str(&text).map_err(AppError::from)?;
         Ok(v)
+    }
+}
+
+#[async_trait]
+impl McpInvoke for McpClient {
+    async fn list_servers(&self) -> Vec<McpServerManifest> {
+        McpClient::list_servers(self).await
+    }
+
+    async fn list_tools(&self, server_id: &str) -> Result<Vec<McpToolManifest>> {
+        McpClient::list_tools(self, server_id).await
+    }
+
+    async fn call_tool(
+        &self,
+        server_id: &str,
+        tool_name: &str,
+        params: Value,
+    ) -> Result<McpToolCallResult> {
+        McpClient::call_tool(self, server_id, tool_name, params).await
     }
 }

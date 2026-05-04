@@ -38,6 +38,8 @@ use crate::infrastructure::directory_plugins::DirectoryPluginRuntime;
 use crate::infrastructure::llm::{LlmClient, RemoteLlmPlaceholder};
 #[cfg(feature = "kernel-agent")]
 use crate::infrastructure::mcp_client::McpClient;
+#[cfg(all(feature = "kernel-agent", feature = "default-agent-providers"))]
+use oclive_kernel_core::mcp::McpInvoke;
 use crate::infrastructure::mcp_client::{McpServerManifest, McpToolCallResult};
 use crate::infrastructure::remote_plugin::RemoteComplexEmotionHttp;
 use crate::infrastructure::remote_plugin::{
@@ -427,7 +429,9 @@ impl BackendRegistry {
         #[cfg(feature = "kernel-agent")]
         let mcp = Arc::new(McpClient::new(app_data_dir));
         #[cfg(all(feature = "kernel-agent", feature = "default-agent-providers"))]
-        let agent_react = Arc::new(BuiltinReActAgent::new(llm_ollama.clone(), mcp.clone()));
+        let mcp_port: Arc<dyn McpInvoke> = mcp.clone();
+        #[cfg(all(feature = "kernel-agent", feature = "default-agent-providers"))]
+        let agent_react = Arc::new(BuiltinReActAgent::new(llm_ollama.clone(), mcp_port));
         #[cfg(all(feature = "kernel-agent", not(feature = "default-agent-providers")))]
         let agent_shell = Arc::new(McpShellAgent::new(mcp.clone()));
         #[cfg(all(feature = "kernel-agent", feature = "default-agent-providers"))]

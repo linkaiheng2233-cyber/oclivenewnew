@@ -1,12 +1,14 @@
-//! Builtin ReAct Agent + MCP（`feature = "kernel-agent"`）。
+//! Builtin ReAct Agent + MCP（进程内默认推理链）。
 
-use super::{AgentDebugTrace, AgentInput, AgentOutput, AgentProvider, AgentToolCallTrace};
-use crate::error::Result;
-use crate::infrastructure::function_call_parser::{
+use oclive_kernel_core::agent::{
+    AgentDebugTrace, AgentInput, AgentOutput, AgentProvider, AgentToolCallTrace,
+};
+use oclive_kernel_core::error::Result;
+use oclive_kernel_core::function_call::{
     parse_from_llm_response, to_function_calling_schema, ToolSchemaInput,
 };
-use crate::infrastructure::llm::LlmClient;
-use crate::infrastructure::mcp_client::{McpClient, McpServerManifest, McpToolCallResult};
+use oclive_kernel_core::llm::LlmClient;
+use oclive_kernel_core::mcp::{McpInvoke, McpServerManifest, McpToolCallResult};
 use async_trait::async_trait;
 use parking_lot::RwLock;
 use serde_json::Value;
@@ -14,13 +16,13 @@ use std::sync::Arc;
 
 pub struct BuiltinReActAgent {
     llm: Arc<dyn LlmClient>,
-    mcp: Arc<McpClient>,
+    mcp: Arc<dyn McpInvoke>,
     traces: RwLock<Vec<AgentDebugTrace>>,
 }
 
 impl BuiltinReActAgent {
     #[must_use]
-    pub fn new(llm: Arc<dyn LlmClient>, mcp: Arc<McpClient>) -> Self {
+    pub fn new(llm: Arc<dyn LlmClient>, mcp: Arc<dyn McpInvoke>) -> Self {
         Self {
             llm,
             mcp,
@@ -55,7 +57,7 @@ impl BuiltinReActAgent {
     pub async fn list_mcp_tools(
         &self,
         server_id: &str,
-    ) -> Result<Vec<crate::infrastructure::mcp_client::McpToolManifest>> {
+    ) -> Result<Vec<oclive_kernel_core::mcp::McpToolManifest>> {
         self.mcp.list_tools(server_id).await
     }
 

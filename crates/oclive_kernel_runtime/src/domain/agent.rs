@@ -5,11 +5,7 @@ pub use oclive_kernel_core::agent::{
 use async_trait::async_trait;
 
 #[cfg(all(feature = "kernel-agent", feature = "default-agent-providers"))]
-#[path = "agent_builtin.rs"]
-mod agent_builtin;
-
-#[cfg(all(feature = "kernel-agent", feature = "default-agent-providers"))]
-pub use agent_builtin::BuiltinReActAgent;
+pub use oclive_agent_builtin::BuiltinReActAgent;
 
 #[cfg(all(feature = "kernel-agent", not(feature = "default-agent-providers")))]
 #[path = "agent_mcp_shell.rs"]

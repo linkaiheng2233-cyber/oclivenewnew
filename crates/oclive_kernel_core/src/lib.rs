@@ -6,7 +6,9 @@
 pub mod agent;
 pub mod complex_emotion;
 pub mod error;
+pub mod function_call;
 pub mod llm;
+pub mod mcp;
 pub mod memory_retrieval;
 pub mod models;
 pub mod repository;

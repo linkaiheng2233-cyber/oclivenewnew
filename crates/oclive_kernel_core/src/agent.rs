@@ -1,4 +1,4 @@
-//! Agent 任务门面（Builtin ReAct 等实现留在 runtime）。
+//! Agent 任务门面（Builtin ReAct 实现见设施 crate `oclive_agent_builtin`）。
 
 use crate::error::Result;
 use async_trait::async_trait;
