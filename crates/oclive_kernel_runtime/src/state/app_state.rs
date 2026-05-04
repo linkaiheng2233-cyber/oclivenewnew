@@ -43,6 +43,7 @@ use std::fs;
 use std::path::{Path, PathBuf};
 use std::sync::atomic::AtomicBool;
 use std::sync::Arc;
+use std::time::Instant;
 use tempfile::TempDir;
 
 /// 与 oclive-launcher 注入的取值一致：`ollama` / `remote` / `directory`（大小写不敏感）。
@@ -272,7 +273,9 @@ impl KernelAppState {
         roles_dir_override: Option<PathBuf>,
         app_data_dir: impl AsRef<Path>,
     ) -> Result<Self> {
+        let startup_total = Instant::now();
         let path = db_path.as_ref();
+        let phase = Instant::now();
         let (db, temp_db_dir) = if path == Path::new(":memory:") {
             // Use a per-instance temp file DB to avoid concurrency races on `_sqlx_migrations`
             // across async tests and pooled connections.
@@ -309,7 +312,13 @@ impl KernelAppState {
             .run(&db)
             .await
             .map_err(|e| crate::error::AppError::DatabaseError(e.to_string()))?;
+        log::info!(
+            target: "oclive_startup",
+            "phase=db_open_and_migrate_ms={}",
+            phase.elapsed().as_millis()
+        );
 
+        let phase = Instant::now();
         let db_manager = Arc::new(DbManager::new(db.clone()));
 
         let memory_repo: Arc<dyn MemoryRepository> =
@@ -345,9 +354,22 @@ impl KernelAppState {
                 std::env::var("OLLAMA_MODEL").unwrap_or_else(|_| "qwen2.5:7b".to_string())
             });
         let chat_model = Arc::new(RwLock::new(chat_model_init));
+        log::info!(
+            target: "oclive_startup",
+            "phase=repos_llm_cloud_chat_model_ms={}",
+            phase.elapsed().as_millis()
+        );
+
+        let phase = Instant::now();
         let registry = load_policy_registry();
         let runtime = Self::build_policy_sets_from_registry(registry);
+        log::info!(
+            target: "oclive_startup",
+            "phase=policy_registry_ms={}",
+            phase.elapsed().as_millis()
+        );
 
+        let phase = Instant::now();
         let storage = RoleStorage::new(roles_dir_override.unwrap_or_else(resolve_roles_dir));
         let directory_plugins =
             DirectoryPluginRuntime::bootstrap(storage.roles_dir(), app_data_dir.as_ref());
@@ -359,6 +381,16 @@ impl KernelAppState {
             cloud_llm_user.clone(),
         );
         Self::bootstrap_local_plugin_providers(&plugins, storage.roles_dir());
+        log::info!(
+            target: "oclive_startup",
+            "phase=storage_directory_plugins_plugin_host_ms={}",
+            phase.elapsed().as_millis()
+        );
+        log::info!(
+            target: "oclive_startup",
+            "phase=kernel_app_state_total_ms={}",
+            startup_total.elapsed().as_millis()
+        );
 
         Ok(Self {
             db_manager,
@@ -393,6 +425,8 @@ impl KernelAppState {
         roles_dir: impl AsRef<Path>,
         policy_file: Option<&Path>,
     ) -> Result<Self> {
+        let startup_total = Instant::now();
+        let phase = Instant::now();
         let dir =
             TempDir::new().map_err(|e| crate::error::AppError::DatabaseError(e.to_string()))?;
         let db_file = dir.path().join("kernel_runtime.sqlite");
@@ -409,7 +443,13 @@ impl KernelAppState {
             .run(&db)
             .await
             .map_err(|e| crate::error::AppError::DatabaseError(e.to_string()))?;
+        log::info!(
+            target: "oclive_startup",
+            "phase=test_db_open_migrate_ms={}",
+            phase.elapsed().as_millis()
+        );
 
+        let phase = Instant::now();
         let db_manager = Arc::new(DbManager::new(db));
 
         let memory_repo: Arc<dyn MemoryRepository> =
@@ -445,6 +485,16 @@ impl KernelAppState {
             cloud_llm_user.clone(),
         );
         Self::bootstrap_local_plugin_providers(&plugins, storage.roles_dir());
+        log::info!(
+            target: "oclive_startup",
+            "phase=test_storage_plugin_host_ms={}",
+            phase.elapsed().as_millis()
+        );
+        log::info!(
+            target: "oclive_startup",
+            "phase=new_in_memory_total_ms={}",
+            startup_total.elapsed().as_millis()
+        );
 
         Ok(Self {
             db_manager,

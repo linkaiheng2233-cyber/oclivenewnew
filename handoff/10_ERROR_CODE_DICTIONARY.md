@@ -33,8 +33,18 @@
 | `API_PERMISSION_DENIED` | 目录插件等权限拒绝（与宿主展示对齐） |
 | `API_PLUGIN_NOT_FOUND` | 目录插件 id 不存在于扫描表 |
 | `SERDE_ERROR` | 序列化/反序列化错误 |
-| `UNKNOWN_ERROR` | 未分类错误 |
+| `UNKNOWN_ERROR` | 未分类错误（见下节 **P0-3**） |
 | `CHAT_GENERATION_CANCELLED` | 用户取消本轮生成 |
+
+## `AppError::Unknown`（P0-3 审计结论）
+
+- **`oclive_kernel_runtime/src`**：业务路径 **不构造** `AppError::Unknown`；热路径错误已收敛为 `InvalidParameter` / `DatabaseError` / `TransactionError` 等可分类变体。
+- **`oclive_kernel_core::error::AppError::Unknown`**：枚举变体 **保留**，用于极少数兜底与 **`crates/oclive_kernel_runtime/tests/public_api_error_contract.rs`** 对 `UNKNOWN_ERROR` / `[CODE]` 前缀的契约测试。
+- **`src-tauri/src/error.rs`**：仅测试代码引用 `Unknown`，非产品路径。
+
+新增 `AppError` 变体或前端码时，请同步本表 **Common** 段与 `to_frontend_error()` 映射。
+
+---
 
 ## `oclive_kernel_runtime` 消息体括号前缀（便于 grep）
 

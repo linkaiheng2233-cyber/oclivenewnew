@@ -125,6 +125,25 @@ cargo check -p oclive_kernel_runtime --no-default-features --features kernel-htt
 
 仓库脚本：`scripts/check_kernel_runtime_minimal.sh`、Windows：`scripts/check_kernel_runtime_minimal.ps1`。
 
+### 6.1 启动分段日志（`KernelAppState`）
+
+`KernelAppState::new` 与 `new_in_memory_with_llm_and_policy_file` 使用日志 **`target = oclive_startup`** 输出各阶段耗时（毫秒），便于 P1 对比与排障：
+
+- 磁盘/默认路径：`phase=db_open_and_migrate_ms`、`repos_llm_cloud_chat_model_ms`、`policy_registry_ms`、`storage_directory_plugins_plugin_host_ms`、`phase=kernel_app_state_total_ms`
+- 内存测试构造：`phase=test_db_open_migrate_ms`、`phase=test_storage_plugin_host_ms`、`phase=new_in_memory_total_ms`
+
+示例：`RUST_LOG=oclive_startup=info`（若宿主已初始化 `env_logger`/`tracing`）。
+
+### 6.2 嵌入式裁剪验证（手工基线）
+
+除上表 `cargo check` 组合外，可补充确认无头 crate 可链接：
+
+```bash
+cargo check -p oclive_kernel_server
+```
+
+**说明**：`oclive_kernel_server` 当前默认依赖 **`oclive_kernel_runtime` 的 `full`**；若产品要「极简内核 + OOCP」，应在 **自建宿主 crate** 中声明 `oclive_kernel_runtime` 的 `default-features = false` + 子特性。Release 二进制体积与冷启动需在本机对目标三重统计（未设 CI 阈值）。
+
 ---
 
 ## 7. 与 `KERNEL_BOUNDARY.md` 的关系

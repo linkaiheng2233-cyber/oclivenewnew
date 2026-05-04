@@ -11,7 +11,7 @@
 | DeepSeek 项 | 当前仓库结论 |
 |-------------|----------------|
 | `reqwest::blocking` 全量替代 | **已完成**：workspace `reqwest` 无 `blocking`；runtime 使用 `Client` + async，同步边界见 **`blocking_http::block_on`**；详见 [`PERF_PHASES.md`](./PERF_PHASES.md)。 |
-| `AppError` + 可诊断码 | **runtime 业务路径已收敛**：[`crates/oclive_kernel_runtime/src/error.rs`](../crates/oclive_kernel_runtime/src/error.rs) 提供 **`code()`** 与 **`to_frontend_error()`**（`[CODE]` 前缀）；`src/**/*.rs` 中 **`AppError::Unknown`** 已基本清除（保留枚举变体作兜底）；与字典 **`10_ERROR_CODE_DICTIONARY.md`** 持续对齐；其它 workspace crate 仍可按需收紧。 |
+| `AppError` + 可诊断码 | **runtime `src` 业务路径不构造 `Unknown`**（P0-3）；[`crates/oclive_kernel_runtime/src/error.rs`](../crates/oclive_kernel_runtime/src/error.rs) 再导出 core 的 **`code()`** / **`to_frontend_error()`**；枚举变体 **`Unknown`** 仅保留在 **`oclive_kernel_core`** 供兜底与契约测试；字典见 **`10_ERROR_CODE_DICTIONARY.md`** §P0-3。 |
 | 集成测试目录 | 大量逻辑在 **`#[cfg(test)]` 模块内**；**crate 级 `tests/*.rs`** 已含契约、会话烟测、**[`p0_support_modules_smoke.rs`](../crates/oclive_kernel_runtime/tests/p0_support_modules_smoke.rs)**（插件 semver / 市场缓存 / Expert 编译 / 本地导入）；仍可扩展 `expert_models_admin` 全链、`role_lifecycle` 删除等。 |
 | crates.io / Docker | **未做**；见本文 P2 与验收门槛。 |
 

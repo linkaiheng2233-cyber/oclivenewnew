@@ -100,6 +100,24 @@
 
 ---
 
+## P0-A：`src-tauri/src/api/` 扫描结论（壳层分类，维护用）
+
+下列按 **文件模块** 归类；细粒度到「单条命令」时仍以各文件内 `#[tauri::command]` 为准。**未发现**标记为废弃/临时且仍注册的重复入口；专家模型等模块为 **直连内核 `Result<_, String>`**，与 `chat.rs` 使用 `AppError::to_frontend_error()` 的路径并存（内核侧已统一为可诊断字符串）。
+
+| 模块文件 | 模式 | 说明 |
+|----------|------|------|
+| `chat.rs` | 纯转发 | `process_message` → `map_err(to_frontend_error)` |
+| `scene.rs` / `time.rs` / `memory.rs` / `event.rs` / `monologue.rs` / `export.rs` / `policy.rs` | 纯转发 | 内核 `domain::*` |
+| `expert_models.rs` | 纯转发 | 内核 `expert_models_admin::*`，错误已为 `String` |
+| `role/mod.rs`（及子模块） | 以纯转发为主 | `load_role` / `get_role_info` 等；若含路径解析见该文件 |
+| `conversation.rs`（impl 供命令包装） | 纯转发 | `conversation_query` + `to_frontend_error` |
+| `settings.rs` / `profile.rs` / `host_cloud_llm.rs` / `ollama_models.rs` / `local_llm_probe.rs` | 壳层增强 | 宿主设置、探测、与 UI/环境组合 |
+| `role_pack.rs` / `role_market.rs` / `plugin_*.rs` / `local_imports.rs` / `directory_plugin.rs` / `plugin_bridge.rs` / `hotkeys.rs` / `agent.rs` | 壳层增强 | 事件、进程、桥接、权限、MCP 等 |
+
+**结论**：当前无需删除「仅转发」的 Tauri 层——`#[tauri::command]` 与参数反序列化即壳层职责；业务公式不在此重复实现即符合项目规则。
+
+---
+
 维护节奏：新增 `generate_handler!` 命令时，请同步更新 **KERNEL_ENTRY_CHECKLIST** 与本表一行。  
 迁入收尾与自检命令：[**`../../handoff/KERNEL_MIGRATION_COMPLETE.md`**](../../handoff/KERNEL_MIGRATION_COMPLETE.md)。  
 轻量 profile 与特性矩阵：[**`LIGHTWEIGHT_PROFILE.md`**](./LIGHTWEIGHT_PROFILE.md)。  

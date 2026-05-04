@@ -40,3 +40,8 @@
 ## 基准
 
 性能基线见 `benches/kernel_hot_paths.rs` 与 `benches/kernel_plugins_persistence.rs`（Criterion）。
+
+## P1-1 分批迁移备注（2026-05）
+
+- **`expert_models_admin`** 中 `list_gguf_files` / `ensure_dir` 等仍为 **同步 `std::fs`**，由 Tauri **`pub fn` 同步命令** 调用，不占用 async 对话热路径。
+- **下一轮优先**：在 **`async` 命令**或 **`http_api`** 路径上若新增同步读盘，须 **`tokio::fs` 或 `spawn_blocking`**；见 `infrastructure/blocking_http.rs` 注释。
