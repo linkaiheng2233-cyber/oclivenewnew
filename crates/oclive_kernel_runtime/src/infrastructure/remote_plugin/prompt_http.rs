@@ -1,10 +1,12 @@
 //! JSON-RPC：`prompt.build_prompt` — 参数为可序列化的上下文快照（含完整 `Role`）。
 
-use crate::domain::prompt_assembler::{default_prompt_slot_v1, PromptAssembler};
+use crate::domain::prompt_assembler::default_prompt_slot_v1;
 use crate::domain::prompt_builder::PromptInput;
+use crate::models::Role;
+use oclive_kernel_core::prompt::PromptAssembler;
 use crate::infrastructure::remote_plugin::config::RemotePluginHttpConfig;
 use crate::infrastructure::remote_plugin::jsonrpc::{self, RemoteRpcChannel};
-use crate::models::{PersonalitySource, Role};
+use crate::models::PersonalitySource;
 use serde_json::json;
 use std::sync::Arc;
 
@@ -75,7 +77,10 @@ impl PromptAssembler for RemotePromptAssemblerHttp {
         }
     }
 
-    fn top_topic_hint(&self, role: &Role, scene_id: &str) -> Option<String> {
+    fn top_topic_hint(&self, role_any: &dyn std::any::Any, scene_id: &str) -> Option<String> {
+        let role = role_any
+            .downcast_ref::<Role>()
+            .expect("RemotePromptAssemblerHttp top_topic_hint: expected Role");
         let params = json!({
             "role": role,
             "scene_id": scene_id,
@@ -93,7 +98,7 @@ impl PromptAssembler for RemotePromptAssemblerHttp {
                 .and_then(|x| x.as_str())
                 .map(String::from)
                 .or_else(|| v.as_str().map(String::from)),
-            Err(_) => self.fallback.top_topic_hint(role, scene_id),
+            Err(_) => self.fallback.top_topic_hint(role_any, scene_id),
         }
     }
 }
@@ -132,10 +137,14 @@ struct PromptInputFlat<'a> {
 
 impl<'a> PromptInputSnapshot<'a> {
     fn from_input(input: &'a PromptInput<'_>) -> Self {
+        let role = input
+            .role_any
+            .downcast_ref::<Role>()
+            .expect("prompt RPC snapshot: role_any must be Role");
         Self {
             flat: PromptInputFlat {
-                role: input.role,
-                personality_source: input.role.evolution_config.personality_source,
+                role,
+                personality_source: input.role_prompt.evolution_config.personality_source,
                 personality: input.personality,
                 memories: input.memories,
                 user_input: input.user_input,

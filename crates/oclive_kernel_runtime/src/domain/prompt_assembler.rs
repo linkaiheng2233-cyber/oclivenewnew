@@ -1,18 +1,18 @@
-//! Prompt 组装可替换门面；默认委托 [`PromptBuilder`](super::prompt_builder::PromptBuilder)。
+//! Prompt 组装可替换门面；**`PromptAssembler`** 定义于 [`oclive_kernel_core::prompt`]；
+//! 开启 **`default-prompt-providers`** 时内置实现委托 [`PromptBuilder`](super::prompt_builder::PromptBuilder)。
+
+pub use oclive_kernel_core::prompt::PromptAssembler;
 
 use crate::domain::prompt_builder::PromptInput;
 #[cfg(feature = "default-prompt-providers")]
 use crate::domain::prompt_builder::PromptBuilder;
 #[cfg(not(feature = "default-prompt-providers"))]
 use crate::domain::disabled_default_providers::DisabledPromptAssembler;
+#[cfg(feature = "default-prompt-providers")]
 use crate::models::Role;
+use std::any::Any;
 use std::sync::atomic::{AtomicBool, Ordering};
 use std::sync::Arc;
-
-pub trait PromptAssembler: Send + Sync {
-    fn build_prompt(&self, input: &PromptInput<'_>) -> String;
-    fn top_topic_hint(&self, role: &Role, scene_id: &str) -> Option<String>;
-}
 
 #[cfg(feature = "default-prompt-providers")]
 pub struct BuiltinPromptAssembler;
@@ -23,7 +23,10 @@ impl PromptAssembler for BuiltinPromptAssembler {
         PromptBuilder::build_prompt(input)
     }
 
-    fn top_topic_hint(&self, role: &Role, scene_id: &str) -> Option<String> {
+    fn top_topic_hint(&self, role_any: &dyn Any, scene_id: &str) -> Option<String> {
+        let role = role_any
+            .downcast_ref::<Role>()
+            .expect("PromptAssembler top_topic_hint: expected Role");
         PromptBuilder::top_topic_hint(role, scene_id)
     }
 }
@@ -45,7 +48,10 @@ impl PromptAssembler for BuiltinPromptAssemblerV2 {
         )
     }
 
-    fn top_topic_hint(&self, role: &Role, scene_id: &str) -> Option<String> {
+    fn top_topic_hint(&self, role_any: &dyn Any, scene_id: &str) -> Option<String> {
+        let role = role_any
+            .downcast_ref::<Role>()
+            .expect("PromptAssembler top_topic_hint: expected Role");
         PromptBuilder::top_topic_hint(role, scene_id)
     }
 }
@@ -107,9 +113,9 @@ impl PromptAssembler for RemotePromptAssemblerPlaceholder {
         self.inner.build_prompt(input)
     }
 
-    fn top_topic_hint(&self, role: &Role, scene_id: &str) -> Option<String> {
+    fn top_topic_hint(&self, role_any: &dyn Any, scene_id: &str) -> Option<String> {
         self.warn_once();
-        self.inner.top_topic_hint(role, scene_id)
+        self.inner.top_topic_hint(role_any, scene_id)
     }
 }
 
@@ -124,6 +130,7 @@ mod tests {
     use super::*;
     use crate::domain::prompt_builder::{effective_reply_quality_anchor, PromptInput};
     use crate::models::{EventType, EvolutionBounds, Memory, PersonalityVector, Role};
+    use std::any::Any;
 
     fn minimal_role() -> Role {
         Role {
@@ -171,7 +178,8 @@ mod tests {
         let personality = PersonalityVector::zero();
         let memories: Vec<Memory> = vec![];
         let input = PromptInput {
-            role: &role,
+            role_any: &role as &dyn Any,
+            role_prompt: role.prompt_slice(),
             personality: &personality,
             memories: &memories,
             user_input: "hi",
@@ -190,7 +198,7 @@ mod tests {
             life_context_line: "",
             worldview_snippet: "",
             mutable_personality: "",
-            reply_quality_anchor: effective_reply_quality_anchor(&role),
+            reply_quality_anchor: effective_reply_quality_anchor(role.prompt_slice()),
             complex_emotion_hint: None,
         };
         let a = BuiltinPromptAssembler.build_prompt(&input);

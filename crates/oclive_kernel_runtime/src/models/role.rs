@@ -11,7 +11,8 @@ pub use oclive_validation::{
 use std::sync::Arc;
 
 pub use oclive_kernel_models::{
-    EvolutionBounds, EvolutionConfig, MemoryConfig, PersonalityDefaults, UserRelation,
+    EvolutionBounds, EvolutionConfig, MemoryConfig, PersonalityDefaults, PromptRolePromptSlice,
+    UserRelation,
 };
 
 /// 由虚拟时间解析得到的当前生活态（引擎内部）
@@ -162,6 +163,20 @@ impl Default for Role {
 }
 
 impl Role {
+    /// 供 Prompt 组装使用的只读切片（与 [`PromptInput`](oclive_kernel_core::prompt::PromptInput) 对齐）。
+    #[must_use]
+    pub fn prompt_slice(&self) -> PromptRolePromptSlice<'_> {
+        PromptRolePromptSlice {
+            name: self.name.as_str(),
+            description: self.description.as_str(),
+            core_personality: self.core_personality.as_str(),
+            evolution_config: &self.evolution_config,
+            user_relations: self.user_relations.as_slice(),
+            memory_config: self.memory_config.as_ref(),
+            reply_quality_anchor: self.reply_quality_anchor.as_deref(),
+        }
+    }
+
     /// 插件 `plugin_state` 种子/重置时使用的 UI 基线：`author.suggested_ui`（非空）优先，否则 `ui.json`。
     #[must_use]
     pub fn plugin_state_ui_baseline(&self) -> &UiConfig {

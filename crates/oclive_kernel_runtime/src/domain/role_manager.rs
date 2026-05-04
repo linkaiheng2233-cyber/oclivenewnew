@@ -180,8 +180,10 @@ impl RoleManager {
 
         // 6. 构建提示词
         let role_view = role_view_with_prompt_style(&self.role, None);
+        let rv = role_view.as_ref();
         let prompt = self.plugins.prompt.build_prompt(&PromptInput {
-            role: role_view.as_ref(),
+            role_any: rv as &dyn std::any::Any,
+            role_prompt: rv.prompt_slice(),
             personality: &updated_personality,
             memories: &relevant_memories,
             user_input,
@@ -206,7 +208,7 @@ impl RoleManager {
             life_context_line: "",
             worldview_snippet: "",
             mutable_personality: "",
-            reply_quality_anchor: effective_reply_quality_anchor(role_view.as_ref()),
+            reply_quality_anchor: effective_reply_quality_anchor(rv.prompt_slice()),
             complex_emotion_hint: None,
         });
 

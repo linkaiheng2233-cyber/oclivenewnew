@@ -165,7 +165,9 @@ pub(crate) async fn process_co_present(
     let scene_detail_buf = state
         .storage
         .scene_prompt_enrichment(mrid, scene_id.as_str());
-    let top_topic = pl.prompt.top_topic_hint(role, scene_id.as_str());
+    let top_topic = pl
+        .prompt
+        .top_topic_hint(role as &dyn std::any::Any, scene_id.as_str());
     let topic_line = top_topic
         .map(|t| format!("在「{}」下，你们可能会多聊「{}」相关的事。", scene_label, t))
         .unwrap_or_default();
@@ -198,7 +200,8 @@ pub(crate) async fn process_co_present(
         .filter(|s| !s.is_empty());
 
     let prompt = pl.prompt.build_prompt(&PromptInput {
-        role,
+        role_any: role as &dyn std::any::Any,
+        role_prompt: role.prompt_slice(),
         personality: &personality,
         memories: &relevant,
         user_input: user_message,
@@ -217,7 +220,7 @@ pub(crate) async fn process_co_present(
         life_context_line: life_context_line.as_str(),
         worldview_snippet: worldview_snippet.as_str(),
         mutable_personality: mutable_for_prompt.as_str(),
-        reply_quality_anchor: effective_reply_quality_anchor(role),
+        reply_quality_anchor: effective_reply_quality_anchor(role.prompt_slice()),
         complex_emotion_hint: prev_complex_hint_trimmed,
     });
 

@@ -12,8 +12,10 @@ pub mod llm;
 pub mod mcp;
 pub mod memory_retrieval;
 pub mod models;
+pub mod prompt;
 pub mod repository;
 pub mod user_emotion_analyzer;
 
 pub use event_estimator::EventEstimator;
 pub use llm::LlmClient;
+pub use prompt::{PromptAssembler, PromptInput, PromptRolePromptSlice};
