@@ -53,7 +53,6 @@ impl McpClient {
     #[must_use]
     pub fn new(app_data_dir: impl AsRef<Path>) -> Self {
         let root = app_data_dir.as_ref().join("mcp-servers");
-        let _ = std::fs::create_dir_all(&root);
         Self {
             root_dir: root,
             servers_cache: parking_lot::RwLock::new(Vec::new()),
@@ -98,6 +97,7 @@ impl McpClient {
     }
 
     pub async fn list_servers(&self) -> Vec<McpServerManifest> {
+        let _ = tokio::fs::create_dir_all(&self.root_dir).await;
         let next = Self::read_manifests_from_disk(self.root_dir.as_path()).await;
         *self.servers_cache.write() = next.clone();
         next

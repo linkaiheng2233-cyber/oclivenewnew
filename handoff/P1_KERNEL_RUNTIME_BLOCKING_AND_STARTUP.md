@@ -17,7 +17,7 @@
 ## 2. 同步 HTTP 边界（`blocking_http::block_on`）
 
 **角色/插件/评价市场索引** HTTP 已改为 **`async` + `.await`**（见 `*_index_sync.rs`），**不再**使用 `block_on`。  
-**插件包市场 ZIP**：下载 async；解压经 **`spawn_blocking`**。**角色包归档**（`role_pack_archive`）对外均为 **`async fn`**；HTTP 下载 async，解压/导入在 **`spawn_blocking`**。**MCP**、**目录插件 JSON-RPC**（`invoke_directory_plugin_rpc`）已 **async + `.await`**。同步 trait 内的 `jsonrpc::call_blocking` 在 runtime 内走 **`block_in_place`**，无 runtime 时仍可能用 `blocking_http::block_on`。详见 `PERF_PHASES.md` P4 与 `infrastructure/blocking_http.rs`。
+**插件包市场 ZIP**：下载 async；解压经 **`spawn_blocking`**。**角色包归档**（`role_pack_archive`）对外均为 **`async fn`**；HTTP 下载 async，解压/导入在 **`spawn_blocking`**。**MCP**（`mcp_client`）：manifest 扫描与 `{app_data}/mcp-servers` 目录创建在 **`list_servers` / `find_server` 异步路径**上，使用 **`tokio::fs`**（`new` 不落盘）。**目录插件 JSON-RPC**（`invoke_directory_plugin_rpc`）已 **async + `.await`**。同步 trait 内的 `jsonrpc::call_blocking` 在 runtime 内走 **`block_in_place`**，无 runtime 时仍可能用 `blocking_http::block_on`。详见 `PERF_PHASES.md` P4 与 `infrastructure/blocking_http.rs`。
 
 ## 2b. `tokio::fs`（热键、插件状态、HTTP API 启动）
 
@@ -43,4 +43,4 @@
 ## 4. 后续工作（未在本文件实现）
 
 - 在 `state/app_state.rs` 内落地 **可选** `tracing` feature 或 `log::info!` 分段（默认保持安静，由 env 打开）。  
-- 将「非首屏」初始化（市场索引预拉、MCP 全量扫描等）与 **首屏对话** 解耦时，单独开 ADR / PR 说明 UX 与错误面变化。
+- 将「非首屏」初始化（市场索引预拉、MCP 全量扫描等）与 **首屏对话** 解耦时，单独开 ADR / PR 说明 UX 与错误面变化。（MCP 磁盘侧已在异步路径完成，首屏解耦主要剩「何时首次 `list_servers`」的产品决策。）

@@ -1,5 +1,7 @@
 # 同步磁盘 I/O 与 `block_on` 锚点（质量加固扫描）
 
+> **异步化扫尾已完成**（2026-05）：`kernel-agent` 下 `mcp_client` 的 MCP 根目录创建与 manifest 枚举已走 **`tokio::fs`**；其余表中条目为**有意保留**的同步边界（目录插件生命周期、角色包加载、同步 API 兼容层等），见各表「说明」列。
+
 本文档与 `infrastructure/blocking_http.rs` 模块注释互为索引：列出 **`std::fs` 同步调用**与 **`block_on` 桥接**的用途，便于审计「应保留 / 应在 `spawn_blocking` / 应 async」。
 
 ## `oclive_kernel_runtime`：`std::fs`（生产代码）
@@ -12,7 +14,7 @@
 | `infrastructure/hotkey_bindings.rs` | 提供 `load_async` / `save_async`；遗留同步入口仅兼容。 |
 | `infrastructure/storage.rs` | `RoleStorage` 同步读角色包；宿主加载阶段。 |
 | `infrastructure/role_pack_archive.rs` | ZIP/目录导入导出主体在 **`spawn_blocking`** 内使用 `std::fs`。 |
-| `infrastructure/mcp_client.rs`（`kernel-agent`） | manifest 发现等；与进程/HTTP 调用分离，体量小。 |
+| `infrastructure/mcp_client.rs`（`kernel-agent`） | **已 async**：`list_servers` 内 **`tokio::fs::create_dir_all`** + **`read_dir` / `read_to_string`**；构造 `new` 无磁盘 I/O。 |
 | `domain/expert_models_admin.rs` | **P1 第四批**：本地 GGUF 列表/导入/删改与 `.oclive_gguf_repo.json` 已改为 **`tokio::fs`**；由 Tauri **`async` command** 调用，不占用 worker 同步阻塞读盘。 |
 | `domain/role_lifecycle.rs` | 与包加载相关的同步读。 |
 | `models/ui_config.rs` | UI 配置读盘。 |
