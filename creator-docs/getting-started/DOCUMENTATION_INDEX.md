@@ -48,6 +48,7 @@ Creator and plugin docs live under the repo root `creator-docs/` (grouped by top
 | **内核工程质量与生态路线（P0–P2，测试/SDK/crates.io）** | **[../../../handoff/ENGINEERING_ROADMAP_KERNEL_DEEPSEEK.md](../../../handoff/ENGINEERING_ROADMAP_KERNEL_DEEPSEEK.md)** |
 | **内核 SDK（KernelAppState、process_message、kernel_server）** | **[../kernel/KERNEL_SDK.md](../kernel/KERNEL_SDK.md)** |
 | **HTTP 调用内核试聊（`/health`、`/chat`）** | **[../../examples/kernel_remote_simple/README.md](../../examples/kernel_remote_simple/README.md)** |
+| **场景化建设：AI 情感陪伴玩偶（硬件 + 角色包 + 侧车 + systemd）** | **[../scenarios/DOLL_GUIDE.md](../scenarios/DOLL_GUIDE.md)** |
 | **目录插件极简侧车（manifest + JSON-RPC）** | **[../../examples/kernel_directory_plugin_simple/README.md](../../examples/kernel_directory_plugin_simple/README.md)** |
 | **PluginHost 调度、降级链、接新后端 / 设施 crate** | **[../kernel/PLUGIN_HOST_DEVELOPER_GUIDE.md](../kernel/PLUGIN_HOST_DEVELOPER_GUIDE.md)** |
 | **Kernel Baseline v1.0（已冻结语义基线）** | **[../kernel/KERNEL_BASELINE_V1.md](../kernel/KERNEL_BASELINE_V1.md)** · 发版前检查 **[../kernel/KERNEL_RELEASE_CHECKLIST_V1.md](../kernel/KERNEL_RELEASE_CHECKLIST_V1.md)** |
