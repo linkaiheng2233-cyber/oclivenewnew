@@ -190,3 +190,56 @@ src-tauri/src/
 - �?DTO 字段 `reply` 不得改名
 - 数据库表不得虚构（以 `crates/oclive_kernel_runtime/migrations/001_init.sql` 为准）
 - �?不得�?API 层（`src-tauri/src/api/*.rs`）编写业务逻辑
+
+---
+
+## 8. Kernel V2：trait / 共享类型 / feature（阶段 6 定型）
+
+本节与 **[KERNEL_V2_DESIGN.md](./KERNEL_V2_DESIGN.md) §6** 对齐，便于宿主与设施 crate 选型依赖；**源码为最终权威**。
+
+### 8.1 `oclive_kernel_core`（协议与门面 trait）
+
+| 项 | 源码路径 |
+|----|----------|
+| `AppError` / `Result` | `crates/oclive_kernel_core/src/error.rs` |
+| `Memory` / `MemoryContext` | `crates/oclive_kernel_core/src/models/memory.rs` |
+| `Emotion` | `crates/oclive_kernel_core/src/models/emotion.rs` |
+| `LlmClient` | `crates/oclive_kernel_core/src/llm.rs` |
+| `MemoryRetrieval` | `crates/oclive_kernel_core/src/memory_retrieval.rs` |
+| `UserEmotionAnalyzer` | `crates/oclive_kernel_core/src/user_emotion_analyzer.rs` |
+| `ComplexEmotionProvider` | `crates/oclive_kernel_core/src/complex_emotion.rs` |
+| `AgentProvider` | `crates/oclive_kernel_core/src/agent.rs` |
+| `EventEstimator` | `crates/oclive_kernel_core/src/event_estimator.rs` |
+| `PromptAssembler` / `PromptInput` / `PromptRolePromptSlice`（再导出） | `crates/oclive_kernel_core/src/prompt.rs` |
+| `DEFAULT_REPLY_QUALITY_ANCHOR` / `effective_reply_quality_anchor` | `crates/oclive_kernel_core/src/prompt.rs` |
+| Repository traits | `crates/oclive_kernel_core/src/repository.rs` |
+
+### 8.2 `oclive_kernel_models`（纯数据，无 I/O）
+
+| 项 | 模块路径 |
+|----|----------|
+| `EventType` / `Event` | `crates/oclive_kernel_models/src/event.rs` |
+| `KnowledgeEventAugment` | `crates/oclive_kernel_models/src/knowledge_augment.rs` |
+| `PersonalityVector` | `crates/oclive_kernel_models/src/personality.rs` |
+| `EvolutionConfig` / `MemoryConfig` / `UserRelation` / … | `crates/oclive_kernel_models/src/role_config.rs` |
+| `EventImpactEstimate` | `crates/oclive_kernel_models/src/event_impact.rs` |
+| `PromptRolePromptSlice` | `crates/oclive_kernel_models/src/prompt_role.rs` |
+
+**依赖方向**：`kernel_models` 不依赖 `kernel_core`；`kernel_core` 依赖 `kernel_models`（trait 签名与 Prompt/Event DTO）。
+
+### 8.3 `oclive_kernel_runtime` 默认能力与 Cargo feature
+
+| Feature | 含义 |
+|---------|------|
+| `full` | 官方默认组合（含各 `default-*-providers` 等与 HTTP/ZIP/市场等，见 crate `Cargo.toml`） |
+| `default-memory-providers` | 进程内记忆 builtin（`oclive_memory_builtin`） |
+| `default-emotion-providers` | 进程内用户句情绪 builtin |
+| `default-complex-emotion-providers` | 进程内复杂情感 builtin |
+| `default-event-providers` | 编译 `event_impact_ai` + `BuiltinEventEstimator*` |
+| `default-prompt-providers` | 编译 `PromptBuilder` + `BuiltinPromptAssembler*` |
+| `default-agent-providers` | 进程内 `BuiltinReActAgent`（`oclive_agent_builtin`） |
+| `kernel-agent` | MCP 栈、`McpShellAgent`、Remote Agent HTTP 等 |
+
+各模块关闭默认实现时的桩：**`crates/oclive_kernel_runtime/src/domain/disabled_default_providers.rs`**。
+
+详裁说明：**[LIGHTWEIGHT_PROFILE.md](./LIGHTWEIGHT_PROFILE.md)**。

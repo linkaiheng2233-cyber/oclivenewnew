@@ -117,6 +117,21 @@
 - **`PromptBuilder`**：**仅**在 **`default-prompt-providers`** 开启时编译；单测 **`prompt_builder` / `prompt_assembler`** 亦受同一 feature 约束。
 - **桩**：**`DisabledPromptAssembler`**。
 
+### 6.6 阶段 6 总览（定型）
+
+| 模块 | Trait / 核心 DTO 基座 | `default-*-providers` 关闭时的行为 | 算法 / builtin 主体位置 |
+|------|----------------------|-----------------------------------|-------------------------|
+| Memory | `MemoryRetrieval`（core） | `DisabledMemoryRetrieval` | **`oclive_memory_builtin`** |
+| User 情绪 | `UserEmotionAnalyzer`（core） | `DisabledUserEmotionAnalyzer` | **`oclive_emotion_builtin`** |
+| 复杂情感 | `ComplexEmotionProvider`（core） | `DisabledComplexEmotionProvider` | **`oclive_complex_emotion_builtin`** |
+| 事件 | **`EventEstimator`**（core）+ **`EventImpactEstimate`**（models） | **`DisabledEventEstimator`**；**不编译 `event_impact_ai`** | **`event_impact_ai`** + **`EventDetector`**（runtime） |
+| Prompt | **`PromptAssembler`**（core）+ **`PromptInput`** / **`PromptRolePromptSlice`** | **`DisabledPromptAssembler`**；**不编译 `PromptBuilder`** | **`PromptBuilder`**（runtime） |
+| Agent | **`AgentProvider`**（core） | **`NoopAgent`** / **`McpShellAgent`**（视 **`kernel-agent`**） | **`BuiltinReActAgent`**（**`oclive_agent_builtin`**） |
+
+**`full`**（默认）仍为官方一体化能力组合；嵌入式 / SKU 使用 **`default-features = false`** 并按 **[LIGHTWEIGHT_PROFILE.md](./LIGHTWEIGHT_PROFILE.md)** 开启子特性。
+
+**后续（非承诺）**：按需增设 **`oclive_event_builtin`** / **`oclive_prompt_builtin`** 等设施 crate，或继续下沉 **`Role` / `PromptInput` 字段**——须在 **`oclive_validation`** 与 OOCP 契约侧同步版本策略。
+
 ## 7. 参考
 
 - [KERNEL_BOUNDARY.md](./KERNEL_BOUNDARY.md)
