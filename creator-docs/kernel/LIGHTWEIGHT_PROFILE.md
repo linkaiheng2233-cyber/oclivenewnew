@@ -25,7 +25,7 @@
 |---------|------|
 | **`full`**（默认） | `kernel-http-api` + `role-pack-zip` + `market-sync` + `kernel-agent` + **`default-llm-providers`** + **`default-memory-providers`** + **`default-emotion-providers`** + **`default-event-providers`** + **`default-prompt-providers`** + **`default-complex-emotion-providers`** + **`default-agent-providers`** |
 | **`default-llm-providers`** | 内置 **Ollama**、**OpenAI-compatible 云 HTTP**，以及 **`OCLIVE_REMOTE_LLM_URL` JSON-RPC 侧车**（`RemoteLlmHttp` / `llm_remote_backend` 中的侧车分支）。**关闭**时 crate 仍可编译，`LlmClient` trait 可用，但内核**不**包含上述任一内置 LLM 网络路径；角色 **`plugin_backends.llm = remote`**（依赖侧车）亦无法生效。**须通过 `plugin_backends.llm = directory` 目录插件**（`PluginJsonRpcLlm` RPC）等方式接入 LLM，否则默认占位会得到明确的 `InvalidParameter` 错误。Ollama 模型列表/健康检查等 API 在关闭本特性时同样返回说明性错误。 |
-| **`default-memory-providers`** | 内置记忆排序 / `MemoryEngine` 检索路径；关闭后 builtin / Remote 占位回退为轻量桩（`DisabledMemoryRetrieval`），仍可通过 directory / remote HTTP 侧车接入。 |
+| **`default-memory-providers`** | 进程内 **`MemoryRetrieval` Builtin / BuiltinV2**（设施 crate **`oclive_memory_builtin`** 的 `providers` feature）；关闭后 builtin / Remote 占位回退为轻量桩（`DisabledMemoryRetrieval`）。**算法库** `oclive_memory_builtin::classic` 仍被 `MemoryEngine` 与 Remote HTTP 的 `build_context` / `search` 路径依赖，与 SQLite 持久化解耦。恢复 **directory** 形态：安装示例插件 **`examples/oclive-memory-builtin-directory/`**（`com.oclive.builtin.memory`），在角色包设 `plugin_backends.memory = directory` 且 `directory_plugins.memory` 指向该 id，并授予 **`process:spawn`**。 |
 | **`default-emotion-providers`** | 内置七维情绪分析；关闭后回退中性分布桩。 |
 | **`default-event-providers`** | 内置事件影响估计（`event_impact_ai`）；关闭后回退 `Ignore` 桩。 |
 | **`default-prompt-providers`** | 内置 `PromptBuilder` 组装；关闭后回退空串桩。 |

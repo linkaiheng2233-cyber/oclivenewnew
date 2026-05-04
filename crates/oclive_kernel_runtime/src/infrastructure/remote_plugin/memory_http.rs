@@ -1,7 +1,7 @@
 //! `memory.rank` JSON-RPC — 见 REMOTE_PLUGIN_PROTOCOL.md
 
-use crate::domain::memory_engine::MemoryEngine;
 use crate::domain::memory_retrieval::{default_memory_slot_v1, MemoryRetrieval, MemoryRetrievalInput};
+use oclive_memory_builtin::classic;
 use crate::infrastructure::remote_plugin::config::RemotePluginHttpConfig;
 use crate::infrastructure::remote_plugin::jsonrpc::{self, RemoteRpcChannel};
 use crate::models::{Memory, MemoryContext};
@@ -103,11 +103,11 @@ impl MemoryRetrieval for RemoteMemoryRetrievalHttp {
     }
 
     fn build_context(&self, memories: &[Memory], max_tokens: usize) -> MemoryContext {
-        MemoryEngine::build_context(memories, max_tokens)
+        classic::build_context(memories, max_tokens)
     }
 
     fn search_memories(&self, keyword: &str, memories: &[Memory]) -> Vec<Memory> {
-        MemoryEngine::search_memories(keyword, memories)
+        classic::search_memories(keyword, memories)
     }
 }
 

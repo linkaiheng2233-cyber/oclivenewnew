@@ -5,7 +5,7 @@
 use crate::domain::emotion_analyzer::EmotionResult;
 use crate::domain::event_estimator::EventEstimator;
 use crate::domain::event_impact_ai::EventImpactEstimate;
-use crate::domain::memory_engine::MemoryEngine;
+use oclive_memory_builtin::classic;
 use crate::domain::prompt_assembler::PromptAssembler;
 use crate::domain::prompt_builder::PromptInput;
 use crate::error::Result;
@@ -31,11 +31,11 @@ impl MemoryRetrieval for DisabledMemoryRetrieval {
     }
 
     fn build_context(&self, memories: &[Memory], max_tokens: usize) -> MemoryContext {
-        MemoryEngine::build_context(memories, max_tokens)
+        classic::build_context(memories, max_tokens)
     }
 
     fn search_memories(&self, keyword: &str, memories: &[Memory]) -> Vec<Memory> {
-        MemoryEngine::search_memories(keyword, memories)
+        classic::search_memories(keyword, memories)
     }
 }
 

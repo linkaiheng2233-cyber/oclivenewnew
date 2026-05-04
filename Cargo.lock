@@ -2981,6 +2981,7 @@ dependencies = [
  "log",
  "oclive_core",
  "oclive_kernel_core",
+ "oclive_memory_builtin",
  "oclive_validation",
  "once_cell",
  "parking_lot",
@@ -3009,6 +3010,14 @@ dependencies = [
  "log",
  "oclive_kernel_runtime",
  "tokio",
+]
+
+[[package]]
+name = "oclive_memory_builtin"
+version = "0.1.0"
+dependencies = [
+ "chrono",
+ "oclive_kernel_core",
 ]
 
 [[package]]

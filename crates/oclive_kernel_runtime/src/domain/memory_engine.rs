@@ -2,6 +2,7 @@
 //! 管理短期和长期记忆，支持记忆检索和更新
 
 use crate::models::{Memory, MemoryContext};
+use oclive_memory_builtin::classic;
 use std::collections::VecDeque;
 
 /// 短期记忆缓冲区（最多保留最近N条对话）
@@ -40,46 +41,17 @@ impl MemoryEngine {
 
     /// 根据关键词检索记忆
     pub fn search_memories(keyword: &str, memories: &[Memory]) -> Vec<Memory> {
-        let keyword_lower = keyword.to_lowercase();
-        memories
-            .iter()
-            .filter(|m| m.content.to_lowercase().contains(&keyword_lower))
-            .cloned()
-            .collect()
+        classic::search_memories(keyword, memories)
     }
 
     /// 获取最相关的记忆（按重要性和权重排序）
     pub fn get_relevant_memories(memories: &[Memory], limit: usize) -> Vec<Memory> {
-        let mut sorted = memories.to_vec();
-        sorted.sort_by(|a, b| {
-            let score_a = a.importance * a.weight;
-            let score_b = b.importance * b.weight;
-            score_b
-                .partial_cmp(&score_a)
-                .unwrap_or(std::cmp::Ordering::Equal)
-        });
-        sorted.into_iter().take(limit).collect()
+        classic::get_relevant_memories(memories, limit)
     }
 
     /// 构建记忆上下文（用于提示词）
     pub fn build_context(memories: &[Memory], max_tokens: usize) -> MemoryContext {
-        let mut context_memories = Vec::new();
-        let mut total_tokens = 0;
-
-        for memory in memories {
-            let tokens = memory.content.len() / 4; // 粗略估计
-            if total_tokens + tokens <= max_tokens {
-                context_memories.push(memory.clone());
-                total_tokens += tokens;
-            } else {
-                break;
-            }
-        }
-
-        MemoryContext {
-            memories: context_memories,
-            total_tokens,
-        }
+        classic::build_context(memories, max_tokens)
     }
 
     /// 更新记忆的重要性

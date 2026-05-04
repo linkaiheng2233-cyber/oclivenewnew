@@ -31,8 +31,8 @@ full = [
 ]
 ## 内置 Ollama、OpenAI-compatible 云 LLM，以及 OCLIVE_REMOTE_LLM_URL JSON-RPC 侧车；关闭后须用 directory 目录插件等提供 LLM（侧车与内置客户端均不装配）。
 default-llm-providers = []
-## 内置记忆排序 / 上下文装配（MemoryEngine 路径）；关闭后 trait 仍可用，builtin 槽与 Remote 占位回退为轻量桩。
-default-memory-providers = []
+## 进程内 Builtin/BuiltinV2 记忆提供者（`oclive_memory_builtin` 的 `providers`）；关闭后 trait 仍可用，builtin 槽与 Remote 占位回退为轻量桩。算法库 `classic` 仍由本 crate 依赖以供 `MemoryEngine` 与目录侧车对齐。
+default-memory-providers = ["oclive_memory_builtin/providers"]
 ## 内置七维情绪分析；关闭后 builtin 槽与 Remote 占位回退为中性分布桩。
 default-emotion-providers = []
 ## 内置事件影响估计（event_impact_ai）；关闭后 builtin 槽与 Remote 占位回退为 Ignore 桩。
@@ -53,6 +53,7 @@ market-sync = []
 kernel-agent = []
 
 [dependencies]
+oclive_memory_builtin = { path = "../oclive_memory_builtin", default-features = false }
 oclive_kernel_core = { path = "../oclive_kernel_core" }
 oclive_core = { path = "../oclive_core" }
 oclive_validation = { path = "../oclive_validation" }

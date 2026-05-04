@@ -1,0 +1,18 @@
+[package]
+name = "oclive_memory_builtin"
+version = "0.1.0"
+edition = "2021"
+license = "AGPL-3.0"
+description = "Oclive built-in memory ranking/context helpers (Kernel V2 phase 5 facility crate)."
+readme = "README.md"
+
+[features]
+default = []
+## `MemoryRetrieval` 的 Builtin / BuiltinV2 实现；由 `oclive_kernel_runtime` 的 `default-memory-providers` 开启。
+providers = []
+
+[dependencies]
+oclive_kernel_core = { path = "../oclive_kernel_core" }
+
+[dev-dependencies]
+chrono = { version = "0.4", features = ["serde"] }
