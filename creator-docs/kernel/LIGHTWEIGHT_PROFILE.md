@@ -41,6 +41,13 @@
 
 **注意**：关闭 `role-pack-zip` 时，`plugin_install` 中带解压的实现会返回明确错误；关闭 `market-sync` 时，同步函数所在模块不参与编译，由宿主（如 `src-tauri` 的 `plugin_installer` / `role_market`）保证不与该组合链接。
 
+### 2.1 事件模块：薄壳与算法边界（阶段 7 收尾）
+
+- **Trait 所在**：**`EventEstimator`** 在 **`oclive_kernel_core::event_estimator`**，与 **`PromptAssembler`** 等门面同级；**不**依赖完整 runtime。
+- **`default-event-providers` 开**：链接 **`oclive_event_builtin`**（**`BuiltinEventEstimator*`** + **`EventImpactEngine`**），实现上 **委托** **`oclive_kernel_runtime`** 的 **`estimate_event_impact`**（含 LLM 编排、JSON 解析、**`EventDetector`** 与知识增强等）。即：**可见「官方默认事件模块」已剥离为独立 crate，算法主体仍留在 runtime**。
+- **`default-event-providers` 关**：builtin 槽为 **`DisabledEventEstimator`**（`Ignore` / 零影响），与 **`MODULE_NONE_SEMANTICS.md` §3** 一致。
+- **裁剪含义**：若宿主希望 **减小二进制且可接受无事件估计**，关 **`default-event-providers`** 即可；若需 **与发行版一致的事件语义**，保持开启并承担 runtime 内算法链路的依赖面。设计结论与阶段表见 [`KERNEL_V2_DESIGN.md`](./KERNEL_V2_DESIGN.md) §6.8。
+
 ---
 
 ## 3. OOCP（`oclive_core::oocp_handler`）

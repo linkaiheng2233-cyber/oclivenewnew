@@ -1,6 +1,6 @@
 # Kernel V2：极薄内核与默认实现分层
 
-> 状态：**阶段 5 主体已落地**；**6-1** models、**6-2** 事件与 **6-3** Prompt 门面已最小稳定（**§6.0 / §6.4–6.5**）。**阶段 7-1**：Prompt 正文已迁入 **`oclive_prompt_builtin`**（见 §4 / §6.2 / §6.6）。**§6.7** 保留事件 / Prompt 历史评估与**事件**模块现状结论。  
+> 状态：**阶段 5 主体已落地**；**6-1** models、**6-2** 事件与 **6-3** Prompt 门面已最小稳定（**§6.0 / §6.4–6.5**）。**阶段 7-1**：Prompt 正文已迁入 **`oclive_prompt_builtin`**（见 §4 / §6.2 / §6.6）。**阶段 7-2 / 7 收尾**：**`EventEstimator` trait** 稳定在 **`oclive_kernel_core`**；**`oclive_event_builtin` 薄壳**已接 **`PluginHost`**；**`event_impact_ai` / `EventDetector` 等算法主体仍驻 runtime、暂缓整仓迁出**（见 §6.8）。**§6.7** 保留历史依赖评估结论。  
 > Baseline v1 契约与测试须保持向后兼容；物理拆分以独立提交推进。
 
 ## 1. 目标
@@ -25,6 +25,7 @@
 | 3 | 以 **LLM** 为试点：`default-llm-providers`（默认开），关则仅保留 trait/远程或目录后端 |
 | 4 | Memory / Emotion / Event / Prompt 等 **default-\*-providers** |
 | 5 | `default-*-providers` 细化：**官方默认模块**（memory / emotion / complex_emotion / **agent ReAct**；工程名 **设施 crate** / `oclive_*_builtin`）+ directory 示例；`kernel-agent` 与 **`default-agent-providers`** 分离（MCP 基础 vs 进程内 Builtin ReAct）；极薄 `cargo check -p oclive_kernel_runtime --no-default-features` |
+| 7（收尾） | **事件**：**`oclive_event_builtin` 薄壳已剥离**（`BuiltinEventEstimator*` + **`EventImpactEngine`** 委托）；**算法链路暂缓**（`event_impact_ai`、`EventDetector` 等仍在 **`oclive_kernel_runtime`**，见 §6.8） |
 
 ## 4. 官方默认模块与 default-*-providers（阶段 5 快照）
 
@@ -37,6 +38,7 @@
 | 官方默认复杂情感模块 | `oclive_complex_emotion_builtin` | `default-complex-emotion-providers` | `affect_metrics_from_seven_dim`；`complex_emotion.resolve_turn` 示例 |
 | 官方默认 Agent 模块 | `oclive_agent_builtin` | `default-agent-providers` | **`McpShellAgent`** 仍在 runtime；ReAct 在本 crate；`agent.process` 示例（契约演示） |
 | 官方默认 Prompt 模块 | `oclive_prompt_builtin` | `default-prompt-providers` | `PromptBuilder`（`classic`）；`BuiltinPromptAssembler*`（`providers`）；runtime 保留槽位 / Remote 占位 / HTTP；directory 示例 `prompt.build_prompt` |
+| 官方默认事件模块 | `oclive_event_builtin` | `default-event-providers` | **`EventEstimator` trait** 在 **`oclive_kernel_core`**；runtime 保留 **`event_impact_ai` / `EventDetector`** 与槽位接线；设施 crate 为 **薄壳 + 委托**（算法未迁） |
 
 **Agent**：`kernel-agent` 控制 MCP 栈与轻量 **`McpShellAgent`**；**`default-agent-providers`** 单独控制是否链接 **`BuiltinReActAgent`**（`oclive_agent_builtin/providers`）。
 
@@ -87,7 +89,7 @@
 | **外部抽象** | `LlmClient`（已在 core） |
 | **模型 / DTO** | `Emotion`（core）；`Event` / `EventType`、`PersonalityVector`、`KnowledgeEventAugment`、`EventImpactEstimate`（**models**，runtime 再导出）；`PersonalitySource`（**`oclive_validation`**） |
 
-**评估**：从 **官方默认事件能力**（当前仍在 runtime，尚无独立 `oclive_event_builtin`）视角，至少牵连 **规则检测、人格轴公式、JSON 工具、多种模型类型** 与 **一长串 `estimate` 参数**，独立 trait/DTO 边界 **明显超过 5**；且 **`KnowledgeEventAugment` 与知识索引管线耦合**。与 Agent/MCP **无硬耦合**（仅需 `LlmClient`）。**阶段 6-2（最小切线）**：已稳定 **trait + `EventImpactEstimate`**，并用 **`default-event-providers`** 控制 **`event_impact_ai` 模块与 `BuiltinEventEstimator*`**（关则桩 `DisabledEventEstimator`，见 **§6.4**）。整仓搬迁 `EventDetector` + `event_impact_ai` 算法主体仍为后续工作。
+**评估**：**`oclive_event_builtin`** 已提供 **进程内薄壳**（`BuiltinEventEstimator*` → **`EventImpactEngine`** → runtime **`estimate_event_impact`**）。从 **算法主体** 视角，**规则检测、人格轴公式、JSON 工具、多种模型类型** 与 **一长串 `estimate` 参数** 仍主要落在 **runtime**；**`KnowledgeEventAugment` 与知识索引管线耦合**。与 Agent/MCP **无硬耦合**（仅需 `LlmClient`）。**阶段 6-2（最小切线）**：已稳定 **trait + `EventImpactEstimate`**；**`default-event-providers`** 控制是否链接薄壳（关则 **`DisabledEventEstimator`**，见 **§6.4**）。**整仓**搬迁 `EventDetector` + `event_impact_ai` **出 runtime** 仍为后续工作（**阶段 7 收尾：算法暂缓**，见 §6.8）。
 
 ### 6.2 Prompt（`PromptAssembler` / `PromptBuilder`）— **阶段 7-1 已完整剥离设施 crate**
 
@@ -185,7 +187,7 @@
 | **Prompt：`BuiltinPromptAssembler*` + `PromptBuilder` 全文** | **阶段 7-1 已完成** | 已迁入 **`oclive_prompt_builtin`**（`providers` + `classic`）；runtime 薄层 + **`DisabledPromptAssembler`** 门控不变。 |
 | **PluginHost / trait / DTO** | **已就绪（非阻碍）** | 注册与类型边界已满足独立 Builtin crate 接入形态。 |
 
-**小结**：**`oclive_prompt_builtin` 已落地**。**事件**算法主体仍与 runtime 域模块强交织，**`oclive_event_builtin` 整仓搬迁仍为阶段 7 待定**；可行路径仍为 **无状态纯函数 / 小 crate 分步下沉** 或后续统一抽象，避免 **`runtime ↔ event_builtin` 循环依赖**。
+**小结**：**`oclive_prompt_builtin` 已落地**。**事件**：**`oclive_event_builtin` 薄壳已接入**；**算法主体**仍与 runtime 强交织，**整仓迁出仍为后续工作**；可行路径仍为 **无状态纯函数 / 小 crate 分步下沉** 或后续统一抽象，避免 **`runtime ↔ event_builtin` 循环依赖**（当前通过 **单向委托**：builtin → runtime `estimate_event_impact`，无循环）。
 
 #### 6.7.5 事件：`EventEstimator` / `EventImpactEstimate` 边界（阶段 7-2 固化）
 
@@ -202,7 +204,7 @@
 | 复杂情感 | `oclive_complex_emotion_builtin` | 同上 | `examples/oclive-complex-emotion-builtin-directory` |
 | **Prompt** | **`oclive_prompt_builtin`** | **`prompt_assembler` 槽位**、`RemotePromptAssemblerPlaceholder`、`prompt_http`；**`prompt_builder` 再导出** | **`examples/oclive-prompt-builtin-directory`**（依赖 **`oclive_prompt_from_json`**） |
 | Agent ReAct | `oclive_agent_builtin` | `McpShellAgent`、MCP 栈 | `examples/oclive-agent-builtin-directory` |
-| **事件** | **（尚无 `oclive_event_builtin`）** | **`event_impact_ai`、`EventDetector`、估计器槽位** | Remote / 规则链仍在 runtime |
+| **事件** | **`oclive_event_builtin`（薄壳；`EventImpactEngine` 委托 runtime）** | **`event_impact_ai`、`EventDetector`、估计器槽位 / Remote 占位** | **`examples/oclive-event-builtin-directory/`**；**算法主体仍在 runtime** |
 
 **验证**：**`cargo check --workspace`**、**`cargo test --workspace`**、**`cargo check -p oclive_kernel_runtime --no-default-features`**；可选组合见 **`LIGHTWEIGHT_PROFILE.md`** §6。
 
