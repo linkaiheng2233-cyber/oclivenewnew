@@ -87,10 +87,7 @@ mod tests {
             dialogue_summary: None,
             recent_dialog: None,
         };
-        assert_eq!(
-            ctx.top_topic_name_for_scene("家").as_deref(),
-            Some("学习")
-        );
+        assert_eq!(ctx.top_topic_name_for_scene("家").as_deref(), Some("学习"));
     }
 
     #[test]
@@ -111,7 +108,10 @@ mod tests {
             recent_dialog: None,
         };
         let snap = TopicHintContextSnapshot::from_borrowed(&ctx);
-        assert_eq!(snap.as_borrowed().top_topic_name_for_scene("s").as_deref(), Some("a"));
+        assert_eq!(
+            snap.as_borrowed().top_topic_name_for_scene("s").as_deref(),
+            Some("a")
+        );
         assert_eq!(snap.as_borrowed().dialogue_summary, Some("sum"));
     }
 }
