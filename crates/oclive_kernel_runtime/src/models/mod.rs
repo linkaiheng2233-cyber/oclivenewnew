@@ -32,6 +32,7 @@ pub use favorability::*;
 pub use interaction_mode::InteractionMode;
 pub use knowledge::{KnowledgeEventAugment, KnowledgeIndex, KnowledgePackConfigDisk};
 pub use memory::*;
+pub use oclive_kernel_core::models::EmotionResult;
 pub use personality::*;
 pub use plugin_backends::*;
 pub use plugin_market_index::{

@@ -5,6 +5,7 @@ use super::context::validate_scene_id;
 use super::emotion_to_dto;
 use super::presence::user_is_remote_from_character;
 use crate::domain::agent::AgentInput;
+use crate::domain::emotion_analyzer::EmotionResultExt;
 use crate::domain::complex_emotion::{affect_metrics_from_seven_dim, ComplexEmotionInput};
 use crate::domain::chat_llm_fallback::{fallback_reply_for_llm_failure, FallbackReplyContext};
 use crate::domain::chat_turn::{relation_favor_for_key, weight_memories_for_scene};

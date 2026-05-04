@@ -9,6 +9,7 @@ pub mod hotkey_bindings;
 pub mod llm;
 pub mod llm_params;
 pub mod mcp_client;
+#[cfg(feature = "default-llm-providers")]
 pub mod ollama_client;
 pub mod ollama_timeouts;
 #[cfg(feature = "role-pack-zip")]
@@ -30,5 +31,9 @@ pub mod role_market_index_sync;
 pub mod role_pack_archive;
 pub mod storage;
 
-pub use llm::{cloud_llm_from_env, ollama_llm, LlmClient, MockLlmClient};
+pub use llm::{LlmClient, MockLlmClient, RemoteLlmPlaceholder};
+#[cfg(feature = "default-llm-providers")]
+pub use llm::{cloud_llm_from_env, ollama_llm};
+#[cfg(not(feature = "default-llm-providers"))]
+pub use llm::default_runtime_llm_arc;
 pub use storage::RoleStorage;

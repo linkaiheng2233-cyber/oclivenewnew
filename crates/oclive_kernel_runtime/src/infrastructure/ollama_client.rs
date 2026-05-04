@@ -238,7 +238,7 @@ impl OllamaClient {
     }
 }
 
-#[cfg(test)]
+#[cfg(all(test, feature = "default-llm-providers"))]
 mod tests {
     use super::*;
 

@@ -4,22 +4,15 @@
 
 use crate::error::Result;
 use crate::models::Emotion;
+pub use crate::models::EmotionResult;
 
-/// 情绪分析结果
-#[derive(Debug, Clone, serde::Serialize, serde::Deserialize)]
-pub struct EmotionResult {
-    pub joy: f64,
-    pub sadness: f64,
-    pub anger: f64,
-    pub fear: f64,
-    pub surprise: f64,
-    pub disgust: f64,
-    pub neutral: f64,
+/// 将七维结果映射为离散 `Emotion`（扩展 trait，避免在 `oclive_kernel_core` 依赖本模块）。
+pub trait EmotionResultExt {
+    fn to_emotion(&self) -> Emotion;
 }
 
-impl EmotionResult {
-    /// 转为 `models::Emotion`（与 `EmotionAnalyzer::get_dominant_emotion` 一致）
-    pub fn to_emotion(&self) -> Emotion {
+impl EmotionResultExt for EmotionResult {
+    fn to_emotion(&self) -> Emotion {
         EmotionAnalyzer::get_dominant_emotion(self)
     }
 }

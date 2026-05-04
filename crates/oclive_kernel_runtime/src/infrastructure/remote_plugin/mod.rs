@@ -35,9 +35,11 @@ use crate::domain::prompt_assembler::{PromptAssembler, RemotePromptAssemblerPlac
 use crate::domain::user_emotion_analyzer::{
     RemoteUserEmotionAnalyzerPlaceholder, UserEmotionAnalyzer,
 };
-use crate::infrastructure::cloud_llm::{
-    effective_cloud_llm_config, CloudLlmConfig, OpenAiCompatLlmClient,
-};
+#[cfg(feature = "default-llm-providers")]
+use crate::infrastructure::cloud_llm::effective_cloud_llm_config;
+use crate::infrastructure::cloud_llm::CloudLlmConfig;
+#[cfg(feature = "default-llm-providers")]
+use crate::infrastructure::cloud_llm::OpenAiCompatLlmClient;
 use crate::infrastructure::llm::{LlmClient, RemoteLlmPlaceholder};
 use async_trait::async_trait;
 use parking_lot::RwLock;
@@ -90,6 +92,7 @@ pub fn llm_remote_backend(
 
 /// 远程 LLM 槽：应用内/环境变量 OpenAI 兼容云端优先，其次 JSON-RPC 侧车，否则占位回退。
 struct LlmRemoteCloudAware {
+    #[cfg_attr(not(feature = "default-llm-providers"), allow(dead_code))]
     cloud_store: Arc<RwLock<Option<CloudLlmConfig>>>,
     chain: Arc<dyn LlmClient>,
 }
@@ -116,6 +119,7 @@ impl LlmRemoteCloudAware {
 #[async_trait]
 impl LlmClient for LlmRemoteCloudAware {
     async fn generate(&self, model: &str, prompt: &str) -> Result<String> {
+        #[cfg(feature = "default-llm-providers")]
         if let Some(cfg) = effective_cloud_llm_config(&self.cloud_store) {
             return OpenAiCompatLlmClient::new(cfg)
                 .generate(model, prompt)
@@ -125,6 +129,7 @@ impl LlmClient for LlmRemoteCloudAware {
     }
 
     async fn generate_tag(&self, model: &str, prompt: &str) -> Result<String> {
+        #[cfg(feature = "default-llm-providers")]
         if let Some(cfg) = effective_cloud_llm_config(&self.cloud_store) {
             return OpenAiCompatLlmClient::new(cfg)
                 .generate_tag(model, prompt)

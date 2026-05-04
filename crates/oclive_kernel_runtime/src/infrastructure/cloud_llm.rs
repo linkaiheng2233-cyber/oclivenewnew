@@ -2,10 +2,12 @@
 //!
 //! This is intended for "cloud API" usage without requiring a JSON-RPC sidecar.
 
+#[cfg(feature = "default-llm-providers")]
 use crate::error::{AppError, Result};
+#[cfg(feature = "default-llm-providers")]
 use crate::infrastructure::llm::LlmClient;
+#[cfg(feature = "default-llm-providers")]
 use crate::infrastructure::llm_params;
-use async_trait::async_trait;
 use parking_lot::RwLock;
 use serde::{Deserialize, Serialize};
 use std::time::Duration;
@@ -22,6 +24,9 @@ impl CloudLlmConfig {
     /// `OCLIVE_CLOUD_LLM_BASE_URL` + `OCLIVE_CLOUD_LLM_API_KEY`
     /// Optional: `OCLIVE_CLOUD_LLM_MODEL`, `OCLIVE_CLOUD_LLM_TIMEOUT_MS`
     pub fn from_env_openai_compat() -> Option<Self> {
+        if cfg!(not(feature = "default-llm-providers")) {
+            return None;
+        }
         let base_url = std::env::var("OCLIVE_CLOUD_LLM_BASE_URL").ok()?;
         let base_url = base_url.trim().trim_end_matches('/').to_string();
         if base_url.is_empty() {
@@ -103,12 +108,17 @@ pub fn effective_cloud_llm_config(
 pub const HOST_CLOUD_LLM_JSON_KEY: &str = "host_cloud_llm_json";
 pub const HOST_CHAT_MODEL_KEY: &str = "host_chat_model";
 
+#[cfg(feature = "default-llm-providers")]
+use async_trait::async_trait;
+
+#[cfg(feature = "default-llm-providers")]
 #[derive(Debug, Clone)]
 pub struct OpenAiCompatLlmClient {
     client: reqwest::Client,
     cfg: CloudLlmConfig,
 }
 
+#[cfg(feature = "default-llm-providers")]
 impl OpenAiCompatLlmClient {
     pub fn new(cfg: CloudLlmConfig) -> Self {
         let client = reqwest::Client::builder()
@@ -185,6 +195,7 @@ impl OpenAiCompatLlmClient {
     }
 }
 
+#[cfg(feature = "default-llm-providers")]
 #[async_trait]
 impl LlmClient for OpenAiCompatLlmClient {
     async fn generate(&self, model: &str, prompt: &str) -> Result<String> {
@@ -198,6 +209,7 @@ impl LlmClient for OpenAiCompatLlmClient {
     }
 }
 
+#[cfg(feature = "default-llm-providers")]
 #[derive(Debug, Clone, Serialize)]
 struct OpenAiChatCompletionsRequest {
     model: String,
@@ -208,22 +220,26 @@ struct OpenAiChatCompletionsRequest {
     top_p: Option<f32>,
 }
 
+#[cfg(feature = "default-llm-providers")]
 #[derive(Debug, Clone, Serialize)]
 struct OpenAiChatMessage {
     role: String,
     content: String,
 }
 
+#[cfg(feature = "default-llm-providers")]
 #[derive(Debug, Clone, Deserialize)]
 struct OpenAiChatCompletionsResponse {
     choices: Vec<OpenAiChoice>,
 }
 
+#[cfg(feature = "default-llm-providers")]
 #[derive(Debug, Clone, Deserialize)]
 struct OpenAiChoice {
     message: OpenAiChoiceMessage,
 }
 
+#[cfg(feature = "default-llm-providers")]
 #[derive(Debug, Clone, Deserialize)]
 struct OpenAiChoiceMessage {
     content: Option<String>,

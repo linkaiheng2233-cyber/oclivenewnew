@@ -18,9 +18,13 @@ use crate::infrastructure::cloud_llm::{
 };
 use crate::infrastructure::db::DbManager;
 use crate::infrastructure::directory_plugins::DirectoryPluginRuntime;
-use crate::infrastructure::llm::ollama_llm;
 use crate::infrastructure::llm::LlmClient;
+#[cfg(feature = "default-llm-providers")]
+use crate::infrastructure::llm::ollama_llm;
+#[cfg(feature = "default-llm-providers")]
 use crate::infrastructure::ollama_client::OllamaClient;
+#[cfg(not(feature = "default-llm-providers"))]
+use crate::infrastructure::llm::default_runtime_llm_arc;
 use crate::infrastructure::repositories_runtime::{
     SqliteExpertModelsRepository, SqliteFavorabilityRepository, SqliteMemoryRepository,
 };
@@ -313,11 +317,16 @@ impl KernelAppState {
         let expert_models_repo: Arc<dyn ExpertModelsRepository> =
             Arc::new(SqliteExpertModelsRepository::new(db_manager.clone()));
 
-        let ollama = OllamaClient::new(
-            std::env::var("OLLAMA_BASE_URL")
-                .unwrap_or_else(|_| "http://localhost:11434".to_string()),
-        );
-        let llm = ollama_llm(ollama);
+        #[cfg(feature = "default-llm-providers")]
+        let llm = {
+            let ollama = OllamaClient::new(
+                std::env::var("OLLAMA_BASE_URL")
+                    .unwrap_or_else(|_| "http://localhost:11434".to_string()),
+            );
+            ollama_llm(ollama)
+        };
+        #[cfg(not(feature = "default-llm-providers"))]
+        let llm = default_runtime_llm_arc();
 
         let cloud_cfg_initial = db_manager
             .get_app_setting(HOST_CLOUD_LLM_JSON_KEY)

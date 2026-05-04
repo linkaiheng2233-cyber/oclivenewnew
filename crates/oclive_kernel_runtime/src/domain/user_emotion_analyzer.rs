@@ -2,11 +2,8 @@
 
 use crate::domain::emotion_analyzer::{EmotionAnalyzer, EmotionResult};
 use crate::error::Result;
+pub use oclive_kernel_core::user_emotion_analyzer::UserEmotionAnalyzer;
 use std::sync::atomic::{AtomicBool, Ordering};
-
-pub trait UserEmotionAnalyzer: Send + Sync {
-    fn analyze(&self, text: &str) -> Result<EmotionResult>;
-}
 
 pub struct BuiltinUserEmotionAnalyzer;
 

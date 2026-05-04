@@ -1,4 +1,4 @@
-use crate::domain::emotion_analyzer::EmotionResult;
+use crate::domain::emotion_analyzer::{EmotionResult, EmotionResultExt};
 use crate::domain::event_detector::EventDetector;
 use crate::error::Result;
 use crate::models::{Emotion, Event, EventType};

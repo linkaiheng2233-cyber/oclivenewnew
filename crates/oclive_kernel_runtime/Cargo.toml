@@ -16,7 +16,15 @@ bench = false
 [features]
 ## 默认与官方桌面 / kernel_server 一致；嵌入式宿主可用 `default-features = false` 并按需开启子特性。
 default = ["full"]
-full = ["kernel-http-api", "role-pack-zip", "market-sync", "kernel-agent"]
+full = [
+  "kernel-http-api",
+  "role-pack-zip",
+  "market-sync",
+  "kernel-agent",
+  "default-llm-providers",
+]
+## 内置 Ollama + OpenAI-compatible 云 LLM 客户端；关闭后须用 remote JSON-RPC 或 directory 插件提供 LLM。
+default-llm-providers = []
 ## 本地 HTTP 试聊 + OOCP WebSocket（Axum）；关闭后可省去 axum/tower-http 编译。
 kernel-http-api = ["dep:axum", "dep:tower-http"]
 ## `.oclive-plugin` / 角色包 ZIP（`zip` crate）；关闭后省略 ZIP 编解码栈。

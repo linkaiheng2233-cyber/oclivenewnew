@@ -23,7 +23,8 @@
 
 | Feature | 作用 |
 |---------|------|
-| **`full`**（默认） | `kernel-http-api` + `role-pack-zip` + `market-sync` + `kernel-agent` |
+| **`full`**（默认） | `kernel-http-api` + `role-pack-zip` + `market-sync` + `kernel-agent` + **`default-llm-providers`** |
+| **`default-llm-providers`** | 内置 **Ollama** 与 **OpenAI-compatible 云 HTTP** LLM 客户端；**关闭**时 crate 仍可编译，`LlmClient` trait 可用，但无上述内置实现——宿主须通过 **`plugin_backends.llm` 的 `remote`（JSON-RPC）或 `directory` 插件** 提供实际生成能力，否则主对话会得到明确的 `InvalidParameter` 占位错误。Ollama 模型列表/健康检查等 API 在关闭本特性时同样返回该说明性错误。 |
 | **`kernel-http-api`** | Axum HTTP + OOCP WebSocket（`http_api` 模块） |
 | **`role-pack-zip`** | `zip` 依赖；`plugin_archive`、`role_pack_archive`；插件 / 角色包归档安装路径 |
 | **`market-sync`** | `plugin_index_sync`、`plugin_reviews_index_sync`、`role_market_index_sync` |

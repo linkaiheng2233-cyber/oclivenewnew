@@ -1,22 +1,23 @@
-//! LLM 调用抽象，便于测试与替换实现。
+//! LLM 调用抽象与占位实现；**trait 定义**在 `oclive_kernel_core`。
 //!
 //! 主对话与标签任务的温度、top_p 见 [`super::llm_params`]（环境变量 `OCLIVE_LLM_*`）。
 
+pub use oclive_kernel_core::llm::LlmClient;
+
 use crate::error::Result;
+#[cfg(not(feature = "default-llm-providers"))]
+use crate::error::AppError;
+#[cfg(feature = "default-llm-providers")]
 use crate::infrastructure::cloud_llm::{CloudLlmConfig, OpenAiCompatLlmClient};
+#[cfg(feature = "default-llm-providers")]
 use crate::infrastructure::llm_params;
+#[cfg(feature = "default-llm-providers")]
 use crate::infrastructure::ollama_client::OllamaClient;
 use async_trait::async_trait;
 use std::sync::atomic::{AtomicBool, Ordering};
 use std::sync::Arc;
 
-#[async_trait]
-pub trait LlmClient: Send + Sync {
-    async fn generate(&self, model: &str, prompt: &str) -> Result<String>;
-    /// 低温度短输出（立绘标签等分类任务）
-    async fn generate_tag(&self, model: &str, prompt: &str) -> Result<String>;
-}
-
+#[cfg(feature = "default-llm-providers")]
 #[async_trait]
 impl LlmClient for OllamaClient {
     async fn generate(&self, model: &str, prompt: &str) -> Result<String> {
@@ -31,11 +32,13 @@ impl LlmClient for OllamaClient {
 }
 
 /// 将 `OllamaClient` 包成 `Arc<dyn LlmClient>`
+#[cfg(feature = "default-llm-providers")]
 pub fn ollama_llm(client: OllamaClient) -> Arc<dyn LlmClient> {
     Arc::new(client)
 }
 
 /// 直连云端（OpenAI-compatible）优先；未配置则返回 `None`。
+#[cfg(feature = "default-llm-providers")]
 pub fn cloud_llm_from_env() -> Option<Arc<dyn LlmClient>> {
     let cfg = CloudLlmConfig::from_env_openai_compat()?;
     log::info!(
@@ -44,6 +47,35 @@ pub fn cloud_llm_from_env() -> Option<Arc<dyn LlmClient>> {
         cfg.base_url
     );
     Some(Arc::new(OpenAiCompatLlmClient::new(cfg)))
+}
+
+/// 内置 Ollama/云兼容客户端关闭时：占位实现（须改用 remote/directory LLM）。
+#[cfg(not(feature = "default-llm-providers"))]
+#[derive(Debug, Default, Clone, Copy)]
+pub struct BuiltinLlmDisabledClient;
+
+#[cfg(not(feature = "default-llm-providers"))]
+#[async_trait]
+impl LlmClient for BuiltinLlmDisabledClient {
+    async fn generate(&self, _model: &str, _prompt: &str) -> Result<String> {
+        Err(AppError::InvalidParameter(
+            "default-llm-providers feature disabled: no built-in Ollama/cloud LLM; set plugin_backends.llm to remote or directory"
+                .into(),
+        ))
+    }
+
+    async fn generate_tag(&self, _model: &str, _prompt: &str) -> Result<String> {
+        Err(AppError::InvalidParameter(
+            "default-llm-providers feature disabled: no built-in LLM for tag tasks"
+                .into(),
+        ))
+    }
+}
+
+/// 供 `KernelAppState::new` 在关闭内置 LLM 时使用。
+#[cfg(not(feature = "default-llm-providers"))]
+pub fn default_runtime_llm_arc() -> Arc<dyn LlmClient> {
+    Arc::new(BuiltinLlmDisabledClient)
 }
 
 /// 测试或离线场景：固定返回，不访问网络

@@ -2,28 +2,9 @@
 
 use crate::domain::memory_engine::MemoryEngine;
 use crate::models::{Memory, MemoryContext};
+pub use oclive_kernel_core::memory_retrieval::{MemoryRetrieval, MemoryRetrievalInput};
 use std::sync::atomic::{AtomicBool, Ordering};
 use std::sync::Arc;
-
-/// 与 `creator-docs/plugin-and-architecture/PLUGIN_V1.md` 对齐的检索输入
-pub struct MemoryRetrievalInput<'a> {
-    pub memories: &'a [Memory],
-    pub user_query: &'a str,
-    pub scene_id: Option<&'a str>,
-    pub limit: usize,
-}
-
-pub trait MemoryRetrieval: Send + Sync {
-    fn rank_memories(&self, input: MemoryRetrievalInput<'_>) -> Vec<Memory>;
-    fn build_context(&self, memories: &[Memory], max_tokens: usize) -> MemoryContext;
-    fn search_memories(&self, keyword: &str, memories: &[Memory]) -> Vec<Memory>;
-
-    /// 遥测 / 单测：仅 `LocalPluginMemoryRetrieval` 返回选中的本地 `provider_id`。
-    #[must_use]
-    fn diagnostic_local_provider_id(&self) -> Option<&str> {
-        None
-    }
-}
 
 /// 内置：按重要性 × 权重排序（与历史行为一致）
 pub struct BuiltinMemoryRetrieval;
