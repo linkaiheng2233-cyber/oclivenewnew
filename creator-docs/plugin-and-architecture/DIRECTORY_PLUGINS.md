@@ -252,7 +252,7 @@
 | 变量 | 说明 |
 |------|------|
 | `OCLIVE_DIRECTORY_PLUGIN_TIMEOUT_MS` | 非 LLM 类目录 RPC 调用超时（毫秒），默认 `8000` |
-| `OCLIVE_DIRECTORY_LLM_TIMEOUT_MS` | `RemoteLlmHttp` 使用目录 URL 时的超时，默认 `120000` |
+| `OCLIVE_DIRECTORY_LLM_TIMEOUT_MS` | `PluginJsonRpcLlm`（目录 LLM RPC）使用目录 URL 时的超时，默认 `120000` |
 | `OCLIVE_DIRECTORY_PLUGIN_TOKEN` | 可选 Bearer，写入 `Authorization` |
 
 ---

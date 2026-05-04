@@ -39,8 +39,9 @@ use crate::infrastructure::mcp_client::McpClient;
 use crate::infrastructure::mcp_client::{McpServerManifest, McpToolCallResult};
 use crate::infrastructure::remote_plugin::RemoteComplexEmotionHttp;
 use crate::infrastructure::remote_plugin::{
-    self, agent_remote_backend, RemoteEventEstimatorHttp, RemoteLlmHttp, RemoteMemoryRetrievalHttp,
-    RemotePluginHttpConfig, RemotePromptAssemblerHttp, RemoteUserEmotionAnalyzerHttp,
+    self, agent_remote_backend, PluginJsonRpcLlm, RemoteEventEstimatorHttp,
+    RemoteMemoryRetrievalHttp, RemotePluginHttpConfig, RemotePromptAssemblerHttp,
+    RemoteUserEmotionAnalyzerHttp,
 };
 use crate::models::{
     AgentBackend, ComplexEmotionBackend, DirectoryPluginSlots, EmotionBackend, EventBackend,
@@ -550,7 +551,7 @@ impl BackendRegistry {
         match rt.ensure_rpc_url(pid.as_str()) {
             Ok(url) => {
                 let cfg = RemotePluginHttpConfig::for_directory_plugin_rpc(url, true);
-                Arc::new(RemoteLlmHttp::new(cfg))
+                Arc::new(PluginJsonRpcLlm::new(cfg))
             }
             Err(e) => {
                 log::error!(

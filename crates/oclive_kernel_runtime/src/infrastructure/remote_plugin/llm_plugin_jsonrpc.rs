@@ -1,4 +1,6 @@
-//! JSON-RPC：`llm.generate` / `llm.generate_tag`
+//! JSON-RPC：`llm.generate` / `llm.generate_tag`（目录插件 LLM 槽等共享实现）。
+//!
+//! `OCLIVE_REMOTE_LLM_URL` 侧车路径仅在启用 **`default-llm-providers`** 时由 `llm_remote_backend` 装配；本类型本身可被目录插件在无该 feature 时使用。
 
 use crate::error::{AppError, Result};
 use crate::infrastructure::llm::LlmClient;
@@ -10,12 +12,12 @@ use serde_json::json;
 const METHOD_LLM_GENERATE: &str = "llm.generate";
 const METHOD_LLM_GENERATE_TAG: &str = "llm.generate_tag";
 
-pub struct RemoteLlmHttp {
+pub struct PluginJsonRpcLlm {
     client: reqwest::Client,
     cfg: RemotePluginHttpConfig,
 }
 
-impl RemoteLlmHttp {
+impl PluginJsonRpcLlm {
     pub fn new(cfg: RemotePluginHttpConfig) -> Self {
         let client = reqwest::Client::builder()
             .connect_timeout(cfg.connect_timeout())
@@ -27,7 +29,7 @@ impl RemoteLlmHttp {
 }
 
 #[async_trait]
-impl LlmClient for RemoteLlmHttp {
+impl LlmClient for PluginJsonRpcLlm {
     async fn generate(&self, model: &str, prompt: &str) -> Result<String> {
         let params = json!({
             "model": model,

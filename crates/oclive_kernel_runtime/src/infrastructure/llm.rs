@@ -49,7 +49,7 @@ pub fn cloud_llm_from_env() -> Option<Arc<dyn LlmClient>> {
     Some(Arc::new(OpenAiCompatLlmClient::new(cfg)))
 }
 
-/// 内置 Ollama/云兼容客户端关闭时：占位实现（须改用 remote/directory LLM）。
+/// 内置 Ollama/云兼容与 `OCLIVE_REMOTE_LLM_URL` 侧车关闭时：占位实现（须用 **directory** 目录插件等提供 LLM）。
 #[cfg(not(feature = "default-llm-providers"))]
 #[derive(Debug, Default, Clone, Copy)]
 pub struct BuiltinLlmDisabledClient;
@@ -59,7 +59,7 @@ pub struct BuiltinLlmDisabledClient;
 impl LlmClient for BuiltinLlmDisabledClient {
     async fn generate(&self, _model: &str, _prompt: &str) -> Result<String> {
         Err(AppError::InvalidParameter(
-            "default-llm-providers feature disabled: no built-in Ollama/cloud LLM; set plugin_backends.llm to remote or directory"
+            "default-llm-providers feature disabled: no Ollama/cloud LLM or OCLIVE_REMOTE_LLM_URL sidecar; use plugin_backends.llm=directory (directory LLM plugin)"
                 .into(),
         ))
     }

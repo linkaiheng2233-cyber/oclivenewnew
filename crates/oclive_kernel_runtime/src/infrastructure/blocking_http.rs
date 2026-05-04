@@ -11,6 +11,7 @@
 //! - `infrastructure::mcp_client` — **`async`** + `reqwest` / `tokio::process`（无 `block_on`）
 //! - `infrastructure::remote_plugin::jsonrpc::call_blocking` — 在 Tokio worker 上优先 **`block_in_place` + `Handle::block_on(call_async)`**；无 runtime 时仍用本模块 `block_on`
 //! - `infrastructure::remote_plugin::invoke_directory_plugin_rpc` — **仅 `call_async` + `.await`**
+//! - **`OCLIVE_REMOTE_LLM_URL` / `RemoteLlmHttp`（环境变量侧车 LLM）** — 受 **`default-llm-providers`** 控制；关闭该 feature 时不装配侧车，相关路径从内核移除（目录插件 LLM 仍走 `PluginJsonRpcLlm` / `invoke_directory_plugin_rpc`）
 //!
 //! ## 磁盘 I/O（`tokio::fs` / `spawn_blocking`）
 //!

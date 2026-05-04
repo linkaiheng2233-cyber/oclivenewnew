@@ -23,7 +23,7 @@ full = [
   "kernel-agent",
   "default-llm-providers",
 ]
-## 内置 Ollama + OpenAI-compatible 云 LLM 客户端；关闭后须用 remote JSON-RPC 或 directory 插件提供 LLM。
+## 内置 Ollama、OpenAI-compatible 云 LLM，以及 OCLIVE_REMOTE_LLM_URL JSON-RPC 侧车；关闭后须用 directory 目录插件等提供 LLM（侧车与内置客户端均不装配）。
 default-llm-providers = []
 ## 本地 HTTP 试聊 + OOCP WebSocket（Axum）；关闭后可省去 axum/tower-http 编译。
 kernel-http-api = ["dep:axum", "dep:tower-http"]

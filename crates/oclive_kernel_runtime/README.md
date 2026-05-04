@@ -51,4 +51,4 @@ cargo check -p oclive_kernel_runtime --no-default-features   # 无 Axum / zip / 
 
 ## I/O 与异步（路线图）
 
-Workspace **`reqwest` 已不启用 `blocking`**。仍对外暴露同步签名的 HTTP 入口（市场索引同步、目录插件 JSON-RPC、MCP HTTP、部分 `remote_plugin` trait 等）在实现内使用 **`reqwest::Client` + `.await`**，并由 **`infrastructure::blocking_http`**（专用 Tokio runtime 上的 `block_on`）桥接，以保持 Tauri 同步 `invoke` 等契约；纯 async 路径（如 `jsonrpc::call_async`、`RemoteLlmHttp`）直接 `.await` 即可。
+Workspace **`reqwest` 已不启用 `blocking`**。仍对外暴露同步签名的 HTTP 入口（市场索引同步、目录插件 JSON-RPC、MCP HTTP、部分 `remote_plugin` trait 等）在实现内使用 **`reqwest::Client` + `.await`**，并由 **`infrastructure::blocking_http`**（专用 Tokio runtime 上的 `block_on`）桥接，以保持 Tauri 同步 `invoke` 等契约；纯 async 路径（如 `jsonrpc::call_async`、目录 LLM 的 `PluginJsonRpcLlm`；环境侧车在启用 `default-llm-providers` 时与 `RemoteLlmHttp` 同名导出）直接 `.await` 即可。

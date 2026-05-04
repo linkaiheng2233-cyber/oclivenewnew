@@ -1,7 +1,7 @@
 //! HTTP JSON-RPC 侧车：环境变量启用后与 `plugin_backends.* = remote` 对接。
 //!
 //! - `OCLIVE_REMOTE_PLUGIN_URL`：记忆 / 情绪 / 事件 / Prompt（共用一端点，方法名区分）
-//! - `OCLIVE_REMOTE_LLM_URL`：主对话 LLM（`llm.generate` / `llm.generate_tag`）
+//! - `OCLIVE_REMOTE_LLM_URL`：主对话 LLM 侧车（`llm.generate` / `llm.generate_tag`；**仅 `default-llm-providers` 开启时**由 `llm_remote_backend` 装配）
 //!
 //! 详见 `docs/REMOTE_PLUGIN_PROTOCOL.md`。
 
@@ -12,7 +12,7 @@ mod config;
 mod emotion_http;
 mod event_http;
 mod jsonrpc;
-mod llm_http;
+mod llm_plugin_jsonrpc;
 mod memory_http;
 mod prompt_http;
 
@@ -22,7 +22,9 @@ pub use complex_emotion_http::RemoteComplexEmotionHttp;
 pub use config::RemotePluginHttpConfig;
 pub use emotion_http::RemoteUserEmotionAnalyzerHttp;
 pub use event_http::RemoteEventEstimatorHttp;
-pub use llm_http::RemoteLlmHttp;
+pub use llm_plugin_jsonrpc::PluginJsonRpcLlm;
+#[cfg(feature = "default-llm-providers")]
+pub use llm_plugin_jsonrpc::PluginJsonRpcLlm as RemoteLlmHttp;
 pub use memory_http::RemoteMemoryRetrievalHttp;
 pub use prompt_http::RemotePromptAssemblerHttp;
 
@@ -90,7 +92,8 @@ pub fn llm_remote_backend(
     Arc::new(LlmRemoteCloudAware::new(default_llm, cloud_store))
 }
 
-/// 远程 LLM 槽：应用内/环境变量 OpenAI 兼容云端优先，其次 JSON-RPC 侧车，否则占位回退。
+/// 远程 LLM 槽：`default-llm-providers` 开启时——应用内/环境变量 OpenAI 兼容云端优先，其次 `OCLIVE_REMOTE_LLM_URL` JSON-RPC 侧车，否则占位回退。
+/// 关闭 `default-llm-providers` 时：不连接云端与侧车，链上仅为 [`RemoteLlmPlaceholder`]。
 struct LlmRemoteCloudAware {
     #[cfg_attr(not(feature = "default-llm-providers"), allow(dead_code))]
     cloud_store: Arc<RwLock<Option<CloudLlmConfig>>>,
@@ -102,15 +105,24 @@ impl LlmRemoteCloudAware {
         default_llm: Arc<dyn LlmClient>,
         cloud_store: Arc<RwLock<Option<CloudLlmConfig>>>,
     ) -> Self {
-        let chain: Arc<dyn LlmClient> = if let Some(cfg) = RemotePluginHttpConfig::from_env_llm() {
-            log::info!(
-                target: "oclive_plugin",
-                "remote LLM HTTP active -> {}",
-                cfg.endpoint
-            );
-            Arc::new(RemoteLlmHttp::new(cfg))
-        } else {
-            Arc::new(RemoteLlmPlaceholder::new(default_llm))
+        let chain: Arc<dyn LlmClient> = {
+            #[cfg(feature = "default-llm-providers")]
+            {
+                if let Some(cfg) = RemotePluginHttpConfig::from_env_llm() {
+                    log::info!(
+                        target: "oclive_plugin",
+                        "remote LLM HTTP active -> {}",
+                        cfg.endpoint
+                    );
+                    Arc::new(PluginJsonRpcLlm::new(cfg))
+                } else {
+                    Arc::new(RemoteLlmPlaceholder::new(default_llm))
+                }
+            }
+            #[cfg(not(feature = "default-llm-providers"))]
+            {
+                Arc::new(RemoteLlmPlaceholder::new(default_llm))
+            }
         };
         Self { cloud_store, chain }
     }
