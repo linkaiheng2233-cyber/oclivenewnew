@@ -2947,11 +2947,25 @@ dependencies = [
 ]
 
 [[package]]
+name = "oclive_complex_emotion_builtin"
+version = "0.1.0"
+dependencies = [
+ "oclive_kernel_core",
+]
+
+[[package]]
 name = "oclive_core"
 version = "0.1.0"
 dependencies = [
  "serde",
  "serde_json",
+]
+
+[[package]]
+name = "oclive_emotion_builtin"
+version = "0.1.0"
+dependencies = [
+ "oclive_kernel_core",
 ]
 
 [[package]]
@@ -2979,7 +2993,9 @@ dependencies = [
  "env_logger",
  "futures-util",
  "log",
+ "oclive_complex_emotion_builtin",
  "oclive_core",
+ "oclive_emotion_builtin",
  "oclive_kernel_core",
  "oclive_memory_builtin",
  "oclive_validation",

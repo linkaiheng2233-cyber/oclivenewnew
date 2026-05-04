@@ -1,0 +1,15 @@
+[package]
+name = "oclive_emotion_builtin"
+version = "0.1.0"
+edition = "2021"
+license = "AGPL-3.0"
+description = "Oclive built-in keyword 7D emotion analysis (Kernel V2 phase 5 facility crate)."
+readme = "README.md"
+
+[features]
+default = []
+## `UserEmotionAnalyzer` Builtin / BuiltinV2；由 `oclive_kernel_runtime` 的 `default-emotion-providers` 开启。
+providers = []
+
+[dependencies]
+oclive_kernel_core = { path = "../oclive_kernel_core" }

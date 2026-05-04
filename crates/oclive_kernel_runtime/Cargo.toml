@@ -33,14 +33,14 @@ full = [
 default-llm-providers = []
 ## 进程内 Builtin/BuiltinV2 记忆提供者（`oclive_memory_builtin` 的 `providers`）；关闭后 trait 仍可用，builtin 槽与 Remote 占位回退为轻量桩。算法库 `classic` 仍由本 crate 依赖以供 `MemoryEngine` 与目录侧车对齐。
 default-memory-providers = ["oclive_memory_builtin/providers"]
-## 内置七维情绪分析；关闭后 builtin 槽与 Remote 占位回退为中性分布桩。
-default-emotion-providers = []
+## 进程内 Builtin/BuiltinV2 用户句情绪分析（`oclive_emotion_builtin` 的 `providers`）；关闭后回退中性分布桩。`classic::EmotionAnalyzer` 仍由本 crate 依赖以供 `EmotionResultExt` 与目录侧车对齐。
+default-emotion-providers = ["oclive_emotion_builtin/providers"]
 ## 内置事件影响估计（event_impact_ai）；关闭后 builtin 槽与 Remote 占位回退为 Ignore 桩。
 default-event-providers = []
 ## 内置 PromptBuilder 组装；关闭后 builtin 槽与 Remote 占位回退为空串桩。
 default-prompt-providers = []
-## 内置复杂情感关键词模式；关闭后 builtin 槽与 Remote 降级回退为轻量桩。
-default-complex-emotion-providers = []
+## 内置复杂情感关键词模式（`oclive_complex_emotion_builtin` 的 `providers`）；关闭后 builtin 槽与 Remote 降级回退为轻量桩。`classic::affect_metrics_from_seven_dim` 仍由本 crate 依赖。
+default-complex-emotion-providers = ["oclive_complex_emotion_builtin/providers"]
 ## Builtin ReAct Agent（依赖 kernel-agent + MCP）；关闭后仍可编译 MCP 调试壳（`McpShellAgent`），`AgentProvider::process` 不执行 ReAct。
 default-agent-providers = ["kernel-agent"]
 ## 本地 HTTP 试聊 + OOCP WebSocket（Axum）；关闭后可省去 axum/tower-http 编译。
@@ -54,6 +54,8 @@ kernel-agent = []
 
 [dependencies]
 oclive_memory_builtin = { path = "../oclive_memory_builtin", default-features = false }
+oclive_emotion_builtin = { path = "../oclive_emotion_builtin", default-features = false }
+oclive_complex_emotion_builtin = { path = "../oclive_complex_emotion_builtin", default-features = false }
 oclive_kernel_core = { path = "../oclive_kernel_core" }
 oclive_core = { path = "../oclive_core" }
 oclive_validation = { path = "../oclive_validation" }
