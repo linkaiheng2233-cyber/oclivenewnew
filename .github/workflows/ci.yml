@@ -43,6 +43,9 @@ jobs:
         run: bash scripts/check_kernel_entry_vs_invoke_lists.sh
       - name: tests (workspace root)
         run: cargo test --workspace
+      # 全工作区 `cargo bench --workspace --no-run` 亦可；此处仅编有 Criterion 目标的包以控制 CI 时长。
+      - name: Compile Criterion benches (no run)
+        run: cargo bench -p oclive_kernel_runtime --no-run
       - name: kernel_runtime without default features (minimal closure)
         run: cargo check -p oclive_kernel_runtime --no-default-features
       - name: Tauri desktop minimal invoke surface (core invoke only)

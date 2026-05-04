@@ -63,4 +63,14 @@ tauri = { version = "1.5", optional = true, default-features = false }
 [dev-dependencies]
 serde_json = "1.0"
 async-trait = "0.1"
+criterion = { version = "0.5", features = ["async_tokio"] }
+
+[[bench]]
+name = "kernel_hot_paths"
+harness = false
+
+[[bench]]
+name = "kernel_plugins_persistence"
+harness = false
+required-features = ["full"]
 
