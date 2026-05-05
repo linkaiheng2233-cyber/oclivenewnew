@@ -286,10 +286,7 @@ async fn complex_emotion_hint_in_co_present_prompt_after_remote_agent_early_exit
             for line in headers.split("\r\n") {
                 let l = line.to_ascii_lowercase();
                 if l.starts_with("content-length:") {
-                    clen = line
-                        .split(':')
-                        .nth(1)
-                        .and_then(|s| s.trim().parse().ok());
+                    clen = line.split(':').nth(1).and_then(|s| s.trim().parse().ok());
                 }
             }
             let mut body = buf[hdr_end..].to_vec();
@@ -320,7 +317,7 @@ async fn complex_emotion_hint_in_co_present_prompt_after_remote_agent_early_exit
                 serde_json::json!({"jsonrpc": "2.0", "id": id, "result": result}).to_string();
             let res = format!(
                 "HTTP/1.1 200 OK\r\nContent-Type: application/json\r\nContent-Length: {}\r\nConnection: close\r\n\r\n{}",
-                resp_body.as_bytes().len(),
+                resp_body.len(),
                 resp_body
             );
             let _ = stream.write_all(res.as_bytes());
