@@ -7,6 +7,8 @@
 //!（与包内 `settings.json` → `evolution.personality_source` 一致：`vector` | `profile`），便于试聊工具区分人格模式。
 //!
 //! 另含角色反馈 REST：`/role-feedback` 等（与桌面版一致）。
+//!
+//! **健康检查**：`GET /health` 默认返回纯文本 `ok`；`GET /health?verbose=true` 返回 JSON（`db` / `roles` / `disk_space` 子检查，各 2s 超时）；`GET /health/db` 仅 `SELECT 1` 验库，供监控专用。
 
 use crate::domain::adapters::oocp_ws;
 use crate::domain::chat_engine::process_message;
@@ -22,15 +24,18 @@ use axum::extract::State;
 use axum::http::header;
 use axum::http::Method;
 use axum::middleware::{self, Next};
-use axum::response::IntoResponse;
+use axum::http::StatusCode;
+use axum::response::{IntoResponse, Response};
 use axum::routing::{get, post};
 use axum::Json;
 use axum::Router;
 use serde::{Deserialize, Serialize};
 use std::path::PathBuf;
 use std::sync::Arc;
+use std::time::Duration;
 use tokio::net::TcpListener;
 use tokio::task::spawn_blocking;
+use tokio::time::timeout;
 use tower_http::cors::{Any, CorsLayer};
 
 /// `spawn_blocking` 内：`load_role_from_dir` 与目录探测均为阻塞 I/O，勿在异步线程直接调用。
@@ -95,8 +100,189 @@ fn api_error(
     )
 }
 
-async fn health() -> &'static str {
-    "ok"
+/// `GET /health?verbose=true`：接受 `1` / `true` / `yes` / `on`（不区分大小写）。
+#[derive(Debug, Deserialize, Default)]
+pub struct HealthQuery {
+    #[serde(default)]
+    verbose: Option<String>,
+}
+
+fn verbose_query_truthy(q: &HealthQuery) -> bool {
+    q.verbose
+        .as_deref()
+        .map(|v| matches!(v.trim().to_ascii_lowercase().as_str(), "1" | "true" | "yes" | "on"))
+        .unwrap_or(false)
+}
+
+const HEALTH_SUBCHECK_TIMEOUT: Duration = Duration::from_secs(2);
+
+#[derive(Debug, Clone, Serialize)]
+pub struct HealthChecksJson {
+    pub db: String,
+    pub roles: String,
+    pub disk_space: String,
+}
+
+#[derive(Debug, Serialize)]
+pub struct HealthVerboseJson {
+    pub status: String,
+    pub checks: HealthChecksJson,
+}
+
+#[cfg(unix)]
+fn unix_fs_available_bytes(path: &std::path::Path) -> std::io::Result<u64> {
+    use std::ffi::CString;
+    use std::os::unix::ffi::OsStrExt;
+    let c = CString::new(path.as_os_str().as_bytes())
+        .map_err(|e| std::io::Error::new(std::io::ErrorKind::InvalidInput, e))?;
+    let mut v: libc::statvfs = unsafe { std::mem::zeroed() };
+    let rc = unsafe { libc::statvfs(c.as_ptr(), &mut v) };
+    if rc != 0 {
+        return Err(std::io::Error::last_os_error());
+    }
+    Ok(u64::from(v.f_bavail).saturating_mul(u64::from(v.f_frsize)))
+}
+
+async fn check_db_ping(state: &KernelAppState) -> String {
+    match timeout(HEALTH_SUBCHECK_TIMEOUT, state.db_manager.ping_sqlite()).await {
+        Ok(Ok(())) => "ok".to_string(),
+        Ok(Err(e)) => format!("error: {}", e),
+        Err(_) => "timeout".to_string(),
+    }
+}
+
+async fn check_roles_readable(roles_root: PathBuf) -> String {
+    match timeout(
+        HEALTH_SUBCHECK_TIMEOUT,
+        spawn_blocking(move || {
+            if !roles_root.is_dir() {
+                return "error: roles root is not a directory".to_string();
+            }
+            let rd = std::fs::read_dir(&roles_root);
+            match rd {
+                Ok(mut it) => {
+                    if it.next().is_none() {
+                        "error: roles directory is empty".to_string()
+                    } else {
+                        "ok".to_string()
+                    }
+                }
+                Err(e) => format!("error: {}", e),
+            }
+        }),
+    )
+    .await
+    {
+        Ok(Ok(s)) => s,
+        Ok(Err(e)) => format!("error: join {}", e),
+        Err(_) => "timeout".to_string(),
+    }
+}
+
+async fn check_disk_and_app_data_writable(app_data: PathBuf) -> String {
+    match timeout(
+        HEALTH_SUBCHECK_TIMEOUT,
+        spawn_blocking(move || {
+            if let Err(e) = std::fs::create_dir_all(&app_data) {
+                return format!("error: create_dir_all {}", e);
+            }
+            #[cfg(unix)]
+            {
+                const MIN_FREE: u64 = 100 * 1024 * 1024;
+                match unix_fs_available_bytes(&app_data) {
+                    Ok(free) => {
+                        if free < MIN_FREE {
+                            return format!(
+                                "error: free space {} bytes below {} bytes threshold",
+                                free, MIN_FREE
+                            );
+                        }
+                    }
+                    Err(e) => return format!("error: statvfs {}", e),
+                }
+            }
+            let probe = app_data.join(".oclive_health_probe");
+            if let Err(e) = std::fs::write(&probe, b"ok") {
+                return format!("error: probe write {}", e);
+            }
+            let _ = std::fs::remove_file(&probe);
+            "ok".to_string()
+        }),
+    )
+    .await
+    {
+        Ok(Ok(s)) => s,
+        Ok(Err(e)) => format!("error: join {}", e),
+        Err(_) => "timeout".to_string(),
+    }
+}
+
+async fn run_dependency_checks(state: &KernelAppState) -> HealthChecksJson {
+    let roles_root = state.storage.roles_dir().to_path_buf();
+    let app_data = state.directory_plugins.app_data_dir().to_path_buf();
+    let (db, roles, disk_space) = tokio::join!(
+        check_db_ping(state),
+        check_roles_readable(roles_root),
+        check_disk_and_app_data_writable(app_data),
+    );
+    HealthChecksJson {
+        db,
+        roles,
+        disk_space,
+    }
+}
+
+fn aggregate_health_status(checks: &HealthChecksJson) -> &'static str {
+    let ok = |s: &str| s == "ok";
+    if ok(&checks.db) && ok(&checks.roles) && ok(&checks.disk_space) {
+        "ok"
+    } else {
+        "degraded"
+    }
+}
+
+/// `GET /health`：无 `verbose` 时仍为纯文本 **`ok`**（向后兼容）；`?verbose=true` 时返回 JSON 依赖状态。
+async fn health(
+    State(state): State<Arc<KernelAppState>>,
+    Query(q): Query<HealthQuery>,
+) -> Response {
+    if !verbose_query_truthy(&q) {
+        return (
+            StatusCode::OK,
+            [(header::CONTENT_TYPE, "text/plain; charset=utf-8")],
+            "ok",
+        )
+            .into_response();
+    }
+    let checks = run_dependency_checks(state.as_ref()).await;
+    let status = aggregate_health_status(&checks).to_string();
+    let body = HealthVerboseJson { status, checks };
+    (StatusCode::OK, [(header::CONTENT_TYPE, "application/json; charset=utf-8")], Json(body))
+        .into_response()
+}
+
+/// `GET /health/db`：仅验证 SQLite（`SELECT 1`），供监控与 `/health?verbose` 解耦。
+async fn health_db(State(state): State<Arc<KernelAppState>>) -> Response {
+    match timeout(HEALTH_SUBCHECK_TIMEOUT, state.db_manager.ping_sqlite()).await {
+        Ok(Ok(())) => (
+            StatusCode::OK,
+            [(header::CONTENT_TYPE, "text/plain; charset=utf-8")],
+            "ok",
+        )
+            .into_response(),
+        Ok(Err(e)) => (
+            StatusCode::SERVICE_UNAVAILABLE,
+            [(header::CONTENT_TYPE, "text/plain; charset=utf-8")],
+            format!("error: {}", e),
+        )
+            .into_response(),
+        Err(_) => (
+            StatusCode::SERVICE_UNAVAILABLE,
+            [(header::CONTENT_TYPE, "text/plain; charset=utf-8")],
+            "timeout",
+        )
+            .into_response(),
+    }
 }
 
 fn http_api_bearer_token_from_env() -> Option<String> {
@@ -507,6 +693,7 @@ pub fn api_router(app_state: Arc<KernelAppState>) -> Router {
         .with_state(app_state.clone());
 
     Router::new()
+        .route("/health/db", get(health_db))
         .route("/health", get(health))
         .merge(rest)
         .merge(oocp_ws::oocp_ws_router())

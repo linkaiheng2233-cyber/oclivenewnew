@@ -97,6 +97,14 @@ impl DbManager {
         Self { pool }
     }
 
+    /// 健康检查 / 探活：验证 SQLite 连接可用（`SELECT 1`）。
+    pub async fn ping_sqlite(&self) -> std::result::Result<(), sqlx::Error> {
+        sqlx::query_scalar::<_, i32>("SELECT 1")
+            .fetch_one(&self.pool)
+            .await?;
+        Ok(())
+    }
+
     // ===== 插件权限与审计（市场治理 v1）=====
 
     pub async fn is_plugin_permission_granted(
