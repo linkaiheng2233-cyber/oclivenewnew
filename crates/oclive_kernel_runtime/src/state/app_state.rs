@@ -388,6 +388,14 @@ impl KernelAppState {
             cloud_llm_user.clone(),
         );
         Self::bootstrap_local_plugin_providers(&plugins, storage.roles_dir());
+        #[cfg(not(feature = "lazy-init"))]
+        {
+            directory_plugins.rescan_plugin_roots(storage.roles_dir());
+            #[cfg(feature = "kernel-agent")]
+            {
+                let _ = plugins.list_mcp_servers().await;
+            }
+        }
         log::info!(
             target: "oclive_startup",
             "phase=storage_directory_plugins_plugin_host_ms={}",
@@ -530,6 +538,14 @@ impl KernelAppState {
             cloud_llm_user.clone(),
         );
         Self::bootstrap_local_plugin_providers(&plugins, storage.roles_dir());
+        #[cfg(not(feature = "lazy-init"))]
+        {
+            directory_plugins.rescan_plugin_roots(storage.roles_dir());
+            #[cfg(feature = "kernel-agent")]
+            {
+                let _ = plugins.list_mcp_servers().await;
+            }
+        }
         log::info!(
             target: "oclive_startup",
             "phase=test_storage_plugin_host_ms={}",

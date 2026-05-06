@@ -20,6 +20,7 @@
 - **目录插件**：`DirectoryPluginRuntime::bootstrap` 不遍历磁盘；首次 `ensure_scanned` / `rescan_plugin_roots` 才扫描。`rescan_plugin_roots` 在 **`OCLIVE_APP_DATA_DIR/.oclive_plugin_scan_cache_v1.json`** 与扫描根 **mtime 指纹**一致时可跳过 manifest 解析（日志 `disk_cache_hit=true`）；**`OCLIVE_BUST_PLUGIN_SCAN_CACHE=1`** 删除缓存并强制全量扫描。
 - **市场索引**：`market-sync` 能力由 Tauri / 宿主在 **用户触发同步** 时拉网；**`oclive_kernel_server`** 冷启动不主动跑 HTTP 索引同步。
 - **MCP**：`McpClient::list_servers` 在 **`mcp-servers/`** 目录 `modified` 未变时复用内存列表，避免每次重读 JSON。
+- **`lazy-init`**：见下表；嵌入式希望 **更快冷启动** 时保持 **`full`**（含 `lazy-init`）；希望 **首包前就绪** 时用 **`--no-default-features`** 再按需开特性并 **关闭 `lazy-init`**。
 
 **`AppError` → Tauri**：类型定义在 `oclive_kernel_core`；桌面命令请使用 `map_err(|e: AppError| e.to_frontend_error())` 等到 `String`（不再通过 `oclive_kernel_runtime` 的 `tauri` 可选依赖做 `InvokeError` 转换）。
 
@@ -31,7 +32,7 @@
 
 | Feature | 作用 |
 |---------|------|
-| **`full`**（默认） | `kernel-http-api` + `role-pack-zip` + `market-sync` + `kernel-agent` + **`facility-classic-algorithms`** + **`default-llm-providers`** + **`default-memory-providers`** + **`default-emotion-providers`** + **`default-event-providers`** + **`default-prompt-providers`** + **`default-complex-emotion-providers`** + **`default-agent-providers`** |
+| **`full`**（默认） | `kernel-http-api` + `role-pack-zip` + `market-sync` + `kernel-agent` + **`lazy-init`** + **`facility-classic-algorithms`** + **`default-llm-providers`** + **`default-memory-providers`** + **`default-emotion-providers`** + **`default-event-providers`** + **`default-prompt-providers`** + **`default-complex-emotion-providers`** + **`default-agent-providers`** |
 | **`facility-classic-algorithms`** | 为三个设施 crate **显式**打开 **`classic`**（完整记忆 importance 排序、情绪关键词七维、`affect_metrics_from_seven_dim`）。**`full`** 包含此项。典型 **`cargo check -p oclive_kernel_runtime --no-default-features`** 下三项均关 → 对应 **stub**（FIFO 记忆取样、强中性情绪、效价恒 0）。**注意**：若单独启用 **`default-*-providers`**，各 crate 的 `providers` feature 会 **隐含 `classic`**，该模块仍走完整算法，即使未列 `facility-classic-algorithms`。详见 [`FACILITY_CLASSIC_ALGORITHMS_AUDIT.md`](./FACILITY_CLASSIC_ALGORITHMS_AUDIT.md)。 |
 | **`default-llm-providers`** | 内置 **Ollama**、**OpenAI-compatible 云 HTTP**，以及 **`OCLIVE_REMOTE_LLM_URL` JSON-RPC 侧车**（`RemoteLlmHttp` / `llm_remote_backend` 中的侧车分支）。**关闭**时 crate 仍可编译，`LlmClient` trait 可用，但内核**不**包含上述任一内置 LLM 网络路径；角色 **`plugin_backends.llm = remote`**（依赖侧车）亦无法生效。**须通过 `plugin_backends.llm = directory` 目录插件**（`PluginJsonRpcLlm` RPC）等方式接入 LLM，否则默认占位会得到明确的 `InvalidParameter` 错误。Ollama 模型列表/健康检查等 API 在关闭本特性时同样返回说明性错误。 |
 | **`default-memory-providers`** | **官方默认记忆模块**（**`oclive_memory_builtin`** 的 `providers` feature）：进程内 **`MemoryRetrieval` Builtin / BuiltinV2**；关闭后 builtin / Remote 占位回退为轻量桩（`DisabledMemoryRetrieval`）。`providers` **隐含**设施 crate 的 **`classic`**（与 Builtin 实现一致）。`MemoryEngine` 与 Remote HTTP 仍通过 **`oclive_memory_builtin::classic`** 做上下文/搜索。恢复 **directory** 形态：安装示例插件 **`examples/oclive-memory-builtin-directory/`**（`com.oclive.builtin.memory`），在角色包设 `plugin_backends.memory = directory` 且 `directory_plugins.memory` 指向该 id，并授予 **`process:spawn`**。 |
@@ -44,6 +45,7 @@
 | **`role-pack-zip`** | `zip` 依赖；`plugin_archive`、`role_pack_archive`；插件 / 角色包归档安装路径 |
 | **`market-sync`** | `plugin_index_sync`、`plugin_reviews_index_sync`、`role_market_index_sync` |
 | **`kernel-agent`** | MCP 客户端（`McpClient` / `McpInvoke`）、`RemoteAgentHttp`、目录 Agent HTTP 槽、**`McpShellAgent`**；与 **`default-agent-providers`** 组合时装配 **`BuiltinReActAgent`**。 |
+| **`lazy-init`**（默认随 **`full`**） | **开启**：`KernelAppState::new` / 内存测试构造后不主动扫插件目录、不预取 MCP 清单（与目录 **`ensure_scanned`**、`McpClient::list_servers` 按需一致）。**关闭**：构造末尾执行 **`rescan_plugin_roots`**，并在 **`kernel-agent`** 编译进时 **`list_mcp_servers`** 预热 MCP 缓存。市场索引 HTTP 同步仍由桌面 **`invoke`** / 编写器触发，不在本 crate 冷启动路径。 |
 
 **注意**：关闭 `role-pack-zip` 时，`plugin_install` 中带解压的实现会返回明确错误；关闭 `market-sync` 时，同步函数所在模块不参与编译，由宿主（如 `src-tauri` 的 `plugin_installer` / `role_market`）保证不与该组合链接。
 

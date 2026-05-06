@@ -21,6 +21,7 @@ full = [
   "role-pack-zip",
   "market-sync",
   "kernel-agent",
+  "lazy-init",
   "facility-classic-algorithms",
   "default-llm-providers",
   "default-memory-providers",
@@ -58,6 +59,8 @@ role-pack-zip = ["dep:zip"]
 market-sync = []
 ## MCP 客户端 + 目录 Agent HTTP 侧车等；与 **`default-agent-providers`** 组合时装配进程内 **Builtin ReAct**。
 kernel-agent = []
+## 关闭时：`KernelAppState` 构造末尾 **主动** 预热目录插件扫描与（若编译 `kernel-agent`）MCP 清单；开启时保持按需延迟（默认在 **`full`** 中开启）。
+lazy-init = []
 ## 长时集成测试（`tests/long_running/*`）；默认关闭以减轻 `cargo test --workspace` 链接负担。
 slow-long-tests = []
 
