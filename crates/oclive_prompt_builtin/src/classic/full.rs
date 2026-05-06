@@ -5,6 +5,14 @@ use oclive_kernel_core::prompt::{PromptInput, PromptRolePromptSlice, TopicHintCo
 use oclive_kernel_models::{EventType, PersonalityVector};
 use oclive_validation::PersonalitySource;
 
+/// 每轮对话末尾固定注入的「回复结构」约束（静态片段，避免重复分配小字符串）。
+const PROMPT_REPLY_STRUCTURE_BLOCK: &str = concat!(
+    "【回复结构】\n",
+    "- 须与上文【回复质量锚点】一致：先接住用户本句；出现倾诉信号时先回应遭遇与情绪，再视需要延伸或反问；勿与用户本句基本同义的复述式开场。\n",
+    "- 展开程度与篇幅须遵守锚点中的「篇幅与节奏」与「状态延续」：用户极短时勿强行写成长段或重复上文已交代内容。\n",
+    "\n请以角色身份自然地回复，保持一致的性格和语气。",
+);
+
 pub struct PromptBuilder;
 
 impl PromptBuilder {
@@ -138,14 +146,7 @@ impl PromptBuilder {
         }
         prompt.push_str(&format!("用户说: {}", input.user_input));
         prompt.push_str("\n\n");
-        prompt.push_str("【回复结构】\n");
-        prompt.push_str(
-            "- 须与上文【回复质量锚点】一致：先接住用户本句；出现倾诉信号时先回应遭遇与情绪，再视需要延伸或反问；勿与用户本句基本同义的复述式开场。\n",
-        );
-        prompt.push_str(
-            "- 展开程度与篇幅须遵守锚点中的「篇幅与节奏」与「状态延续」：用户极短时勿强行写成长段或重复上文已交代内容。\n",
-        );
-        prompt.push_str("\n请以角色身份自然地回复，保持一致的性格和语气。");
+        prompt.push_str(PROMPT_REPLY_STRUCTURE_BLOCK);
         prompt
     }
 

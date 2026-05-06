@@ -1,4 +1,6 @@
 //! 用户消息主编排：`process_message`（内核权威；与仓库 `creator-docs/kernel/KERNEL_ENTRY_CHECKLIST.md` 中 `send_message` 对齐）。
+//!
+//! **性能备忘**：本路径不经过 `serde_json::Value` 热克隆；`scene_id` / `user_message` 等 `String` 克隆用于跨 `await` 与多消费者（DB、策略、Tracing），拆成 `&str` 会牵动大量签名，暂维持分配。
 
 use super::co_present;
 use super::context::validate_scene_id;

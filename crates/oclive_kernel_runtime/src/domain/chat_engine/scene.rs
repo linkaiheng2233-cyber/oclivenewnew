@@ -79,6 +79,7 @@ pub fn movement_intent_by_rules(
 }
 
 pub fn parse_movement_intent_ai_output(raw: &str) -> Option<(bool, f64)> {
+    // 各分支独立 `Value` 所有权，避免共享借用与 LLM 原始串生命期纠缠；仅解析一次短 JSON。
     let direct = serde_json::from_str::<Value>(raw.trim());
     let val = direct
         .ok()
