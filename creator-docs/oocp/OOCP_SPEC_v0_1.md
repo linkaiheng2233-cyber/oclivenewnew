@@ -5,6 +5,8 @@
 > **语义版本**：协议自身版本由 `capabilities.version` 携带；方法/事件增删视为 MINOR；兼容破坏视为 MAJOR。  
 > **硬约束**：回复字段为 **`reply`**，不是 `response`。
 
+> **示例 JSON 的效力**：下文中的请求/响应示例 **仅用于示意字段结构与典型形态**，可能与当前仓库中序列化实现的 **默认值、可选字段、枚举字符串** 有细微差别。实现与契约以 **`crates/oclive_kernel_runtime/src/models/dto.rs`**（及其中引用的类型）为权威；离散 **`Emotion`** 标签见 **`crates/oclive_kernel_core/src/models/emotion.rs`**，与响应体中的 **七维 `EmotionDto`** 是不同层次，勿混读。
+
 ---
 
 ## 1. 设计原则
@@ -153,7 +155,10 @@
 }
 ```
 
-**Result** (对应 `SendMessageResponse` DTO):
+**Result** (对应 `SendMessageResponse` DTO；**示意**，权威定义见 `dto.rs`)：
+
+<!-- 示例：`emotion` 为七维 EmotionDto；`bot_emotion` / `portrait_emotion` 为离散标签字符串，与 `oclive_kernel_core::models::emotion::Emotion` 对应，勿与左侧七维对象混淆。 -->
+
 ```json
 {
   "api_version": 1,
