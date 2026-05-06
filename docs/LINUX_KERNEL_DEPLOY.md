@@ -139,10 +139,18 @@ journalctl -u oclive-kernel -f
 
 | 脚本 | 用途 |
 |------|------|
+| [`../scripts/verify_deploy.sh`](../scripts/verify_deploy.sh) | **一键验收**：环境变量、角色目录与 DB 权限、端口监听、`GET /health` 与 **`GET /health?verbose=true`**（需 `python3`）；`OCLIVE_HEALTH_URL` / `OOCP_API_PORT` / **`OOCP_API_TOKEN`**（若启用鉴权） |
 | [`../scripts/health_check.sh`](../scripts/health_check.sh) | `curl` 检查 **`/health`** 是否为 `ok`；`OCLIVE_HEALTH_URL` 可改基址 |
 | [`../scripts/backup_kernel_db.sh`](../scripts/backup_kernel_db.sh) | 备份 **`OCLIVE_DB_PATH`**；优先 **`sqlite3 .backup`**；`OCLIVE_BACKUP_KEEP_DAYS` 清理旧文件 |
 
-cron 示例见脚本头部注释。
+裸机示例（内核已启动且变量已导出）：
+
+```bash
+chmod +x scripts/verify_deploy.sh
+./scripts/verify_deploy.sh
+```
+
+cron 示例见各脚本头部注释。
 
 ---
 
