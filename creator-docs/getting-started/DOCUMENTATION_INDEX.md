@@ -47,7 +47,7 @@ Creator and plugin docs live under the repo root `creator-docs/` (grouped by top
 | **极致轻量化（runtime `Cargo` 特性、OOCP、`invoke` 分组、依赖/`http_api` 拟定）** | **[../kernel/LIGHTWEIGHT_PROFILE.md](../kernel/LIGHTWEIGHT_PROFILE.md)**（与 [KERNEL_BOUNDARY.md](../kernel/KERNEL_BOUNDARY.md) §5.1 互参）；设施 `classic` 门控审计 **[../kernel/FACILITY_CLASSIC_ALGORITHMS_AUDIT.md](../kernel/FACILITY_CLASSIC_ALGORITHMS_AUDIT.md)** |
 | **内核工程质量与生态路线（P0–P2，测试/SDK/crates.io）** | **[../../../handoff/ENGINEERING_ROADMAP_KERNEL_DEEPSEEK.md](../../../handoff/ENGINEERING_ROADMAP_KERNEL_DEEPSEEK.md)** |
 | **内核 SDK（KernelAppState、process_message、kernel_server）** | **[../kernel/KERNEL_SDK.md](../kernel/KERNEL_SDK.md)** |
-| **Linux 无头内核引擎（部署、Docker、systemd、多模态外挂）** | **权威部署** **[../../docs/LINUX_KERNEL_DEPLOY.md](../../docs/LINUX_KERNEL_DEPLOY.md)** · 路线说明 **[../../docs/LINUX_KERNEL_ENGINE.md](../../docs/LINUX_KERNEL_ENGINE.md)** · 合成模板 **[../../delivery/README.md](../../delivery/README.md)** |
+| **Linux 无头内核引擎（部署、Docker、systemd、多模态外挂）** | **权威部署** **[../../docs/LINUX_KERNEL_DEPLOY.md](../../docs/LINUX_KERNEL_DEPLOY.md)** · 日志 **[../../docs/LOGGING_GUIDE.md](../../docs/LOGGING_GUIDE.md)** · 路线 **[../../docs/LINUX_KERNEL_ENGINE.md](../../docs/LINUX_KERNEL_ENGINE.md)** · 合成模板 **[../../delivery/README.md](../../delivery/README.md)** |
 | **HTTP 调用内核试聊（`/health`、`/chat`）** | **[../../examples/kernel_remote_simple/README.md](../../examples/kernel_remote_simple/README.md)** |
 | **场景化建设：AI 情感陪伴玩偶（硬件 + 角色包 + 侧车 + systemd）** | **[../scenarios/DOLL_GUIDE.md](../scenarios/DOLL_GUIDE.md)** |
 | **目录插件极简侧车（manifest + JSON-RPC）** | **[../../examples/kernel_directory_plugin_simple/README.md](../../examples/kernel_directory_plugin_simple/README.md)** |
