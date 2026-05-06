@@ -15,6 +15,12 @@
 | **kernel_server / pack-editor 试聊** | `oclive_kernel_server` | `full`（默认） | 开 | 开 | 开 | 开 |
 | **嵌入式 lib / 玩偶侧车** | 自建进程，仅需 OOCP+编排 | `default-features = false` + 按需子特性 | 常关 | 常关 | 常关 | 常关 |
 
+### 1.1 冷启动与延迟 I/O（runtime 行为摘要）
+
+- **目录插件**：`DirectoryPluginRuntime::bootstrap` 不遍历磁盘；首次 `ensure_scanned` / `rescan_plugin_roots` 才扫描。`rescan_plugin_roots` 在 **`OCLIVE_APP_DATA_DIR/.oclive_plugin_scan_cache_v1.json`** 与扫描根 **mtime 指纹**一致时可跳过 manifest 解析（日志 `disk_cache_hit=true`）；**`OCLIVE_BUST_PLUGIN_SCAN_CACHE=1`** 删除缓存并强制全量扫描。
+- **市场索引**：`market-sync` 能力由 Tauri / 宿主在 **用户触发同步** 时拉网；**`oclive_kernel_server`** 冷启动不主动跑 HTTP 索引同步。
+- **MCP**：`McpClient::list_servers` 在 **`mcp-servers/`** 目录 `modified` 未变时复用内存列表，避免每次重读 JSON。
+
 **`AppError` → Tauri**：类型定义在 `oclive_kernel_core`；桌面命令请使用 `map_err(|e: AppError| e.to_frontend_error())` 等到 `String`（不再通过 `oclive_kernel_runtime` 的 `tauri` 可选依赖做 `InvokeError` 转换）。
 
 ---

@@ -171,7 +171,21 @@ cargo build -p oclive_kernel_server --release
 
 ---
 
-## 8. 相关文档与示例
+## 8. 静态存储加密（v1 路线）
+
+**应用层 SQLCipher**：当前 **`oclive_kernel_runtime` / `sqlx` 栈未集成 SQLCipher**；在嵌入式玩偶等场景若需「设备丢失后难以直接 strings 出对话」，优先在 **块设备或文件系统层** 做整卷加密，而非在应用内二次封装 SQLite。
+
+| 方案 | 说明 |
+|------|------|
+| **LUKS**（磁盘 / 镜像） | 整机或独立数据分区加密，适合固定设备镜像交付。 |
+| **fscrypt**（目录级） | 将 **`OCLIVE_DB_PATH`** / **`OCLIVE_APP_DATA_DIR`** 所在目录置于加密目录树（内核密钥与用户登录绑定）。 |
+| **容器 / 宿主卷** | Docker / k8s 将数据卷挂到宿主已加密路径。 |
+
+后续若在 Cargo 增加可选 **`db-encryption`** 并接 SQLCipher，须单独评估 `sqlx` 迁移、跨平台链接与密钥托管；在此之前以本表为集成方默认指引。**Python OOCP 客户端**见仓库 [`sdk/python/README.md`](../sdk/python/README.md)。
+
+---
+
+## 9. 相关文档与示例
 
 - 特性裁剪（嵌入式体积）：[`../creator-docs/kernel/LIGHTWEIGHT_PROFILE.md`](../creator-docs/kernel/LIGHTWEIGHT_PROFILE.md)  
 - 远程 HTTP 试聊示例（Linux 步骤）：[`../examples/kernel_remote_simple/README.md`](../examples/kernel_remote_simple/README.md)  
@@ -179,7 +193,7 @@ cargo build -p oclive_kernel_server --release
 
 ---
 
-## 9. 故障排查简表
+## 10. 故障排查简表
 
 | 现象 | 检查 |
 |------|------|

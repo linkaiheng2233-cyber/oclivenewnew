@@ -50,7 +50,25 @@ cargo bench -p oclive_kernel_runtime --bench kernel_plugins_persistence -- --ver
 
 | 日期 | PR / 提交 | 变更摘要 | 受影响基准 | 变更前（估计值） | 变更后（估计值） | 结论 |
 |------|-----------|----------|------------|------------------|------------------|------|
-| — | — | （占位） | — | — | — | — |
+| 2026-05-06 | perf(kernel) IO 缓存 | **`McpClient`**：`mcp-servers/` 目录 mtime 未变则跳过重读 JSON；**目录插件**：`rescan_plugin_roots` 命中 **mtime 指纹磁盘缓存**（`OCLIVE_BUST_PLUGIN_SCAN_CACHE` 可 bust） | `directory_rescan_and_bootstrap_dto`、MCP 列表路径 | 以本机 `cargo bench -p oclive_kernel_runtime --bench kernel_hot_paths --bench kernel_plugins_persistence -- --quick` 复测为准 | 同上 | 二次 rescan / 高频 `list_mcp_servers` 预期改善；全量 Criterion 以 CI `bench_full` 或本地 verbose 为准 |
+
+## 冷启动与缓存（手测记录位）
+
+在 **`RUST_LOG=oclive_startup=info`** 下关注 `phase=kernel_app_state_total_ms`；二次启动若数据目录未变，目录插件 rescan 日志中应出现 **`disk_cache_hit=true`**（指纹与 `.oclive_plugin_scan_cache_v1.json` 一致）。
+
+| 日期 | 环境 | kernel_app_state_total_ms（首次 / 二次） | 备注 |
+|------|------|-------------------------------------------|------|
+| 2026-05-06 | （请本机填写） | / | 二次启动关注 `oclive_plugin` 的 `disk_cache_hit` |
+
+## 长时内存冒烟（可选，非 RSS）
+
+Mock LLM 下连续 **100** 轮 `process_message` 后断言 `count_memories` 上限（防明显逻辑泄漏）。集成测试 target 默认不编译（feature **`slow-long-tests`**），且测试体为 **`#[ignore]`**：
+
+```bash
+cargo test -p oclive_kernel_runtime --features "full,slow-long-tests" --test p_long_chat_memory_bounds -- --ignored --nocapture
+```
+
+GitHub Actions：手动触发 CI 并勾选 **`memory_smoke`**（见 `.github/workflows/ci.yml`）。
 
 ---
 

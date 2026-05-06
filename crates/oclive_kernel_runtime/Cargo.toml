@@ -58,6 +58,8 @@ role-pack-zip = ["dep:zip"]
 market-sync = []
 ## MCP 客户端 + 目录 Agent HTTP 侧车等；与 **`default-agent-providers`** 组合时装配进程内 **Builtin ReAct**。
 kernel-agent = []
+## 长时集成测试（`tests/long_running/*`）；默认关闭以减轻 `cargo test --workspace` 链接负担。
+slow-long-tests = []
 
 [dependencies]
 oclive_agent_builtin = { path = "../oclive_agent_builtin", optional = true, default-features = false }
@@ -117,4 +119,9 @@ harness = false
 name = "kernel_plugins_persistence"
 harness = false
 required-features = ["full"]
+
+[[test]]
+name = "p_long_chat_memory_bounds"
+path = "tests/long_running/p_long_chat_memory_bounds.rs"
+required-features = ["slow-long-tests"]
 

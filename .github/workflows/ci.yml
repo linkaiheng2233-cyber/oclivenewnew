@@ -17,6 +17,11 @@ on:
         required: false
         default: false
         type: boolean
+      memory_smoke:
+        description: "Run oclive_kernel_runtime long chat memory bound test (ubuntu, slow)"
+        required: false
+        default: false
+        type: boolean
 
 concurrency:
   group: ci-${{ github.workflow }}-${{ github.ref }}
@@ -197,3 +202,20 @@ jobs:
       - name: Compare to KERNEL perf baseline (warn on >15% slower)
         continue-on-error: true
         run: python3 scripts/criterion_compare_baseline.py --log bench_full.log
+
+  kernel-long-memory-smoke:
+    if: github.event_name == 'workflow_dispatch' && github.event.inputs.memory_smoke == 'true'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dtolnay/rust-toolchain@stable
+      - uses: Swatinem/rust-cache@v2
+        with:
+          shared-key: kernel-long-memory-smoke
+      - name: Install OpenSSL (sqlx / TLS)
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y pkg-config libssl-dev
+      - name: Long chat memory bounds (ignored test, explicit --ignored)
+        run: |
+          cargo test -p oclive_kernel_runtime --features "full,slow-long-tests" --test p_long_chat_memory_bounds -- --ignored --nocapture

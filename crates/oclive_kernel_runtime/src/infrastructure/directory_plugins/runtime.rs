@@ -3,9 +3,11 @@
 use super::manifest::{normalize_ui_slot_appearance_id, OclivePluginManifest};
 use crate::infrastructure::plugin_state::{PluginStateFile, PluginStateStore, RolePluginState};
 use crate::models::ui_config::UiConfig;
+use crate::utils::digest::sha256_hex;
 use parking_lot::{Mutex, RwLock};
 use serde::{Deserialize, Serialize};
-use std::collections::{HashMap, VecDeque};
+use std::collections::{BTreeMap, HashMap, VecDeque};
+use std::fs;
 use std::io::{BufRead, BufReader};
 use std::path::{Path, PathBuf};
 use std::process::{Command, Stdio};
@@ -59,10 +61,49 @@ fn env_developer() -> bool {
         .unwrap_or(false)
 }
 
-#[derive(Debug, Clone, Default)]
+#[derive(Debug, Clone, Default, Serialize, Deserialize)]
 pub struct PluginScanSummary {
     pub plugin_ids: Vec<String>,
     pub roots: HashMap<String, PathBuf>,
+}
+
+#[derive(Debug, Serialize, Deserialize)]
+struct PluginScanDiskCacheV1 {
+    fp: String,
+    scan: PluginScanSummary,
+}
+
+fn plugin_scan_fingerprint(roles_dir: &Path, app_data: &Path, host: &HostPluginsFile) -> String {
+    let mut parts: BTreeMap<String, String> = BTreeMap::new();
+    parts.insert("roles_dir".into(), roles_dir.display().to_string());
+    if let Ok(m) = fs::metadata(roles_dir) {
+        if let Ok(t) = m.modified() {
+            if let Ok(d) = t.duration_since(UNIX_EPOCH) {
+                parts.insert("roles_dir_mtime_ns".into(), d.as_nanos().to_string());
+            }
+        }
+    }
+    let host_path = app_data.join("oclive_host_plugins.json");
+    parts.insert("host_json".into(), host_path.display().to_string());
+    if let Ok(m) = fs::metadata(&host_path) {
+        if let Ok(t) = m.modified() {
+            if let Ok(d) = t.duration_since(UNIX_EPOCH) {
+                parts.insert("host_json_mtime_ns".into(), d.as_nanos().to_string());
+            }
+        }
+    }
+    for r in plugin_scan_container_roots(roles_dir, app_data, host) {
+        let label = format!("root:{}", r.display());
+        if let Ok(m) = fs::metadata(&r) {
+            if let Ok(t) = m.modified() {
+                if let Ok(d) = t.duration_since(UNIX_EPOCH) {
+                    parts.insert(label, d.as_nanos().to_string());
+                }
+            }
+        }
+    }
+    let blob = serde_json::to_string(&parts).unwrap_or_default();
+    sha256_hex(blob.as_bytes())
 }
 
 fn collect_plugin_dirs(root: &Path, out: &mut HashMap<String, PathBuf>) {
@@ -559,20 +600,65 @@ impl DirectoryPluginRuntime {
     }
 
     /// 重新扫描 `plugins/` 等根目录并替换内存中的 `plugin_roots`。
+    ///
+    /// 当扫描根目录与 `oclive_host_plugins.json` 的 **mtime 指纹**与磁盘缓存一致时，跳过目录遍历与 manifest 解析（仍清理已缓存 RPC 子进程，与历史行为一致）。
+    /// 设置 **`OCLIVE_BUST_PLUGIN_SCAN_CACHE=1`** 可删除缓存文件并强制全量扫描。
     pub fn rescan_plugin_roots(&self, roles_dir: &Path) {
         for id in self.rpc_urls.lock().keys().cloned().collect::<Vec<_>>() {
             self.clear_plugin_process(&id);
         }
         self.catalog_invalidate_gen.fetch_add(1, Ordering::Relaxed);
         let host = self.host.read().clone();
-        let scan = scan_plugins(roles_dir, &self.app_data_dir, &host);
+        let cache_path = self.app_data_dir.join(".oclive_plugin_scan_cache_v1.json");
+        let bust = std::env::var("OCLIVE_BUST_PLUGIN_SCAN_CACHE")
+            .ok()
+            .map(|v| {
+                matches!(
+                    v.trim().to_ascii_lowercase().as_str(),
+                    "1" | "true" | "yes" | "on"
+                )
+            })
+            .unwrap_or(false);
+        if bust {
+            let _ = fs::remove_file(&cache_path);
+        }
+        let fp = plugin_scan_fingerprint(roles_dir, &self.app_data_dir, &host);
+        let (scan, disk_hit) = if !bust {
+            if let Ok(raw) = fs::read_to_string(&cache_path) {
+                if let Ok(c) = serde_json::from_str::<PluginScanDiskCacheV1>(&raw) {
+                    if c.fp == fp {
+                        (c.scan, true)
+                    } else {
+                        (scan_plugins(roles_dir, &self.app_data_dir, &host), false)
+                    }
+                } else {
+                    (scan_plugins(roles_dir, &self.app_data_dir, &host), false)
+                }
+            } else {
+                (scan_plugins(roles_dir, &self.app_data_dir, &host), false)
+            }
+        } else {
+            (scan_plugins(roles_dir, &self.app_data_dir, &host), false)
+        };
+        if !disk_hit {
+            if let Ok(raw) = serde_json::to_string_pretty(&PluginScanDiskCacheV1 {
+                fp: fp.clone(),
+                scan: scan.clone(),
+            }) {
+                if let Some(parent) = cache_path.parent() {
+                    let _ = fs::create_dir_all(parent);
+                }
+                let _ = fs::write(&cache_path, raw);
+            }
+        }
         let n = scan.roots.len();
         *self.plugin_roots.write() = scan.roots;
         self.scanned_once.store(true, Ordering::Relaxed);
         log::info!(
             target: "oclive_plugin",
-            "plugin roots rescanned count={}",
-            n
+            "plugin roots rescanned count={} disk_cache_hit={}",
+            n,
+            disk_hit
         );
     }
 

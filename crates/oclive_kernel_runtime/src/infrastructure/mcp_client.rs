@@ -15,6 +15,8 @@ use std::path::Path;
 pub struct McpClient {
     root_dir: std::path::PathBuf,
     servers_cache: parking_lot::RwLock<Vec<McpServerManifest>>,
+    /// `mcp-servers/` 目录 `modified`（纳秒 UNIX epoch）；与上次一致时 [`list_servers`](Self::list_servers) 不重读 JSON。
+    root_dir_mtime_ns: parking_lot::Mutex<Option<u128>>,
 }
 
 #[cfg(not(feature = "kernel-agent"))]
@@ -56,6 +58,7 @@ impl McpClient {
         Self {
             root_dir: root,
             servers_cache: parking_lot::RwLock::new(Vec::new()),
+            root_dir_mtime_ns: parking_lot::Mutex::new(None),
         }
     }
 
@@ -98,8 +101,30 @@ impl McpClient {
 
     pub async fn list_servers(&self) -> Vec<McpServerManifest> {
         let _ = tokio::fs::create_dir_all(&self.root_dir).await;
+        let stamp = tokio::fs::metadata(&self.root_dir)
+            .await
+            .ok()
+            .and_then(|m| m.modified().ok())
+            .and_then(|t| {
+                t.duration_since(std::time::UNIX_EPOCH)
+                    .ok()
+                    .map(|d| d.as_nanos())
+            });
+        {
+            let cached = self.servers_cache.read();
+            let prev = *self.root_dir_mtime_ns.lock();
+            let allow_hit = stamp.is_some() || !cached.is_empty();
+            if prev == stamp && allow_hit {
+                log::trace!(
+                    target: "oclive_mcp",
+                    "list_servers cache hit (mcp-servers dir mtime unchanged)"
+                );
+                return cached.clone();
+            }
+        }
         let next = Self::read_manifests_from_disk(self.root_dir.as_path()).await;
         *self.servers_cache.write() = next.clone();
+        *self.root_dir_mtime_ns.lock() = stamp;
         next
     }
 
