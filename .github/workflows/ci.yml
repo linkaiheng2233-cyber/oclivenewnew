@@ -26,6 +26,20 @@ permissions:
   contents: read
 
 jobs:
+  # Linux 专用：无头内核 runtime（含 HTTP/OOCP 路由）回归，与桌面矩阵解耦以便快速定位内核问题。
+  kernel-runtime-http-linux:
+    name: kernel_runtime (Linux, kernel-http-api)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dtolnay/rust-toolchain@stable
+      - name: Install OpenSSL (sqlx / TLS)
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y pkg-config libssl-dev
+      - name: cargo test (oclive_kernel_runtime + kernel-http-api)
+        run: cargo test -p oclive_kernel_runtime --features kernel-http-api
+
   rust:
     strategy:
       fail-fast: false

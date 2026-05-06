@@ -1,5 +1,7 @@
 # Oclive Linux 内核引擎 — 迁移与机器人向适配说明
 
+**运维与安装步骤以** **[LINUX_KERNEL_DEPLOY.md](./LINUX_KERNEL_DEPLOY.md)** **为准**；本文侧重目标、阶段路线与安全原则。
+
 本文描述 **无桌面 UI** 的 Linux 部署路径：`oclive_kernel_server` + `oclive_kernel_runtime`（及依赖链），目标为 **x86_64（优先）**，并预留 **aarch64** 与契约一致性。
 
 ---
@@ -26,6 +28,7 @@
 | `OCLIVE_ROLES_DIR` | 启发式解析 | **生产必须显式设置** 为角色根目录（含子角色目录与 `manifest.json`） |
 | `OCLIVE_DB_PATH` | 临时目录下 sqlite | 建议固定路径以便持久化 |
 | `OCLIVE_APP_DATA_DIR` | 派生自 db 父目录 | 插件/MCP 等目录数据 |
+| `OCLIVE_REQUIRE_EXPLICIT_PATHS` | 关 | 为真时三路径未齐则退出码 **2**（生产推荐；Docker 镜像默认开） |
 | `RUST_LOG` | — | `error` / `warn` / `info` / `debug` / `trace`（`env_logger`） |
 
 **XDG 建议（最佳实践，非代码强制）**：裸机可将数据放在  

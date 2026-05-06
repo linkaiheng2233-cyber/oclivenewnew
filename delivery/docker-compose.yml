@@ -17,6 +17,7 @@ services:
       OCLIVE_ROLES_DIR: /roles
       OCLIVE_DB_PATH: /data/oclive.db
       OCLIVE_APP_DATA_DIR: /data/app
+      OCLIVE_REQUIRE_EXPLICIT_PATHS: "${OCLIVE_REQUIRE_EXPLICIT_PATHS:-1}"
       RUST_LOG: "${RUST_LOG:-info}"
     volumes:
       # 挂载宿主角色目录（可读写以便插件数据；只读可加 :ro）

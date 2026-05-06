@@ -8,6 +8,23 @@
 2. **Ollama**：本机已运行 Ollama，并已 `ollama pull` 与角色 `settings.json` 中 **`model`** 一致的模型（示例角色 `roles/mumu` 默认为 `qwen2.5:7b`）。
 3. **Python 3.8+** 和/或 **Node.js 18+**（二选一运行客户端脚本即可）。
 
+### Linux 生产式启动（推荐与文档对齐）
+
+与 **[`docs/LINUX_KERNEL_DEPLOY.md`](../../docs/LINUX_KERNEL_DEPLOY.md)** 一致，显式设置路径并打开严格模式，避免数据库落到临时目录：
+
+```bash
+export OCLIVE_ROLES_DIR=/绝对路径/oclivenewnew/roles
+export OCLIVE_DB_PATH=/tmp/oclive-kernel-remote-demo.db
+export OCLIVE_APP_DATA_DIR=/tmp/oclive-kernel-remote-demo-app
+export OCLIVE_REQUIRE_EXPLICIT_PATHS=1
+export OOCP_API_BIND=127.0.0.1
+# 若已设置 OOCP_API_TOKEN，客户端需加 --header 或 CURL_OPTS；/health 仍无需鉴权
+
+cargo run -p oclive_kernel_server
+```
+
+预期：终端出现 `HTTP API listening http://127.0.0.1:48888`（端口以 `OOCP_API_PORT` 为准）。另开终端执行下文第 2 节客户端；**`--role-path`** 须与 **`OCLIVE_ROLES_DIR`** 下某一角色目录一致（例如 `.../roles/mumu`）。
+
 ## 1. 启动内核服务
 
 在**仓库根目录**执行：
@@ -16,7 +33,7 @@
 cargo run -p oclive_kernel_server
 ```
 
-默认监听 **`127.0.0.1:48888`**。改端口：
+默认监听 **`127.0.0.1:48888`**。若未设三路径，内核会用开发向默认（临时 DB 等）；**Linux 长期运行请务必按上一节设置**。改端口：
 
 ```bash
 # Linux / macOS

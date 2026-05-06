@@ -10,7 +10,8 @@
 | `config.example.env` | 环境变量示例；复制为 `.env` 后由 compose 读取 |
 | `systemd/oclive-kernel.service.example` | systemd 单元模板（裸机安装） |
 
-完整阶段说明、安全与 ARM：**[`docs/LINUX_KERNEL_ENGINE.md`](../docs/LINUX_KERNEL_ENGINE.md)**。
+**权威部署（环境变量、Docker、systemd、脚本）：[`docs/LINUX_KERNEL_DEPLOY.md`](../docs/LINUX_KERNEL_DEPLOY.md)**  
+阶段路线、安全与 ARM：**[`docs/LINUX_KERNEL_ENGINE.md`](../docs/LINUX_KERNEL_ENGINE.md)**。
 
 ## 快速启动（Docker）
 

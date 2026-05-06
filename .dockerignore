@@ -1,7 +1,13 @@
-# 缩小 `docker build -f Dockerfile.kernel-server` 上下文；构建仍依赖 Cargo.toml / crates / src-tauri / roles。
+# 缩小 `docker build -f Dockerfile.kernel-server` 上下文。
+# 须保留：Cargo.toml、Cargo.lock、crates/、src-tauri/、examples/kernel_embed_minimal/、roles/
 node_modules
 dist
+ui
+src
+handoff
+.github
 **/target
 .oclive-dev-artifacts
 .git
 **/.vs
+**/*.rs.bk

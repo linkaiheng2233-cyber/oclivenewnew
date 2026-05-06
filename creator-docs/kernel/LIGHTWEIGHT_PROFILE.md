@@ -151,6 +151,26 @@ cargo check -p oclive_kernel_server
 
 **说明**：`oclive_kernel_server` 当前默认依赖 **`oclive_kernel_runtime` 的 `full`**；若产品要「极简内核 + OOCP」，应在 **自建宿主 crate** 中声明 `oclive_kernel_runtime` 的 `default-features = false` + 子特性。Release 二进制体积与冷启动需在本机对目标三重统计（未设 CI 阈值）。
 
+### 6.3 Linux 无头交付：全功能 vs 裁剪（按需）
+
+| 目标 | Cargo 命令 / 依赖声明 | 说明 |
+|------|----------------------|------|
+| **发行版无头服务（默认）** | `cargo build -p oclive_kernel_server --release` | 等同 `oclive_kernel_runtime` 默认 **`full`**：HTTP/OOCP、ZIP 角色包、市场同步、Agent/MCP、各 `default-*-providers` |
+| **仅验证 runtime 最小编译闭包** | `cargo check -p oclive_kernel_runtime --no-default-features` | 无 HTTP、无 ZIP、无 Agent；用于依赖/链接冒烟 |
+| **无头 + HTTP、关市场/Agent（示例组合）** | `cargo check -p oclive_kernel_runtime --no-default-features --features kernel-http-api,role-pack-zip` | 按产品删减 `market-sync` / `kernel-agent` 等；须自行承担契约与角色包能力差异 |
+| **自建二进制链接裁剪 runtime** | 在自有 bin crate 的 `Cargo.toml` 中为 `oclive_kernel_runtime` 设 `default-features = false` 与 §2 所列子 `features` | 与 `oclive_kernel_server` 并行存在；适合玩偶侧车只带 OOCP + 编排 |
+
+**体积与启动**：受目标平台、LTO、`strip`、所链设施 crate 影响极大；请在 **目标 Linux** 上对本机构建结果执行：
+
+```bash
+# 示例：比较全功能 server 二进制大小（字节数因平台而异）
+ls -lh target/release/oclive_kernel_server
+/usr/bin/time -f 'elapsed_sec %e' target/release/oclive_kernel_server
+# 探活后 Ctrl+C；生产请配合 systemd / Docker
+```
+
+Docker 多阶段镜像中对 `oclive_kernel_server` 执行 **`strip`** 以缩小磁盘占用（见根目录 **`Dockerfile.kernel-server`**）。**不在此文档承诺固定 MB 数**，以免与发版工具链漂移；发版 gate 以 **`cargo test -p oclive_kernel_runtime --features kernel-http-api`** 与 **`cargo build -p oclive_kernel_server --release`** 为准（见 **`.github/workflows/ci.yml`** 与 **`docs/LINUX_KERNEL_DEPLOY.md`**）。
+
 ---
 
 ## 7. 与 `KERNEL_BOUNDARY.md` 的关系
