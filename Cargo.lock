@@ -3024,6 +3024,8 @@ dependencies = [
  "ed25519-dalek",
  "env_logger",
  "futures-util",
+ "http-body-util",
+ "libc",
  "log",
  "oclive_agent_builtin",
  "oclive_complex_emotion_builtin",
@@ -3048,7 +3050,9 @@ dependencies = [
  "thiserror",
  "tokio",
  "toml 0.8.23",
+ "tower 0.4.13",
  "tower-http",
+ "tracing",
  "uuid",
  "walkdir",
  "zip",
@@ -3058,10 +3062,12 @@ dependencies = [
 name = "oclive_kernel_server"
 version = "0.1.0"
 dependencies = [
- "env_logger",
  "log",
  "oclive_kernel_runtime",
  "tokio",
+ "tracing",
+ "tracing-log",
+ "tracing-subscriber",
 ]
 
 [[package]]
