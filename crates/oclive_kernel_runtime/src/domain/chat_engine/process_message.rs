@@ -30,6 +30,32 @@ use std::sync::atomic::Ordering;
 use std::sync::Arc;
 use std::time::Instant;
 
+/// `process_message` 退出时写入 **INFO** 总耗时（与 `tracing` span 对齐）。
+struct ProcessMessageTraceFinish {
+    span: tracing::Span,
+    start: Instant,
+    role_id: String,
+    scene_id: String,
+    session_ns: String,
+    user_len: usize,
+}
+
+impl Drop for ProcessMessageTraceFinish {
+    fn drop(&mut self) {
+        let elapsed_ms = self.start.elapsed().as_millis() as u64;
+        tracing::info!(
+            target: "oclive_process_message",
+            parent: &self.span,
+            elapsed_ms,
+            role_id = %self.role_id,
+            scene_id = %self.scene_id,
+            session_ns = %self.session_ns,
+            user_len = self.user_len,
+            "process_message finished"
+        );
+    }
+}
+
 /// 处理一条用户消息：分析情绪 → 检测事件 → 演化性格 → 构建 Prompt → 调用 LLM → 持久化
 pub async fn process_message(
     state: &KernelAppState,
@@ -43,7 +69,23 @@ pub async fn process_message(
         .clone()
         .unwrap_or_else(|| "default".to_string());
     let (scene_id, scenes) = validate_scene_id(state, mrid, requested_scene_id)?;
+    let trace_span = tracing::info_span!(
+        "process_message",
+        role_id = mrid,
+        scene_id = %scene_id,
+        session_ns = srid,
+        user_len = req.user_message.len(),
+    );
+    let _trace_enter = trace_span.enter();
     let t0 = Instant::now();
+    let _trace_finish = ProcessMessageTraceFinish {
+        span: trace_span.clone(),
+        start: t0,
+        role_id: mrid.to_string(),
+        scene_id: scene_id.clone(),
+        session_ns: srid.to_string(),
+        user_len: req.user_message.len(),
+    };
     log::debug!(
         target: "oclive_chat",
         "send_message start role_id={} scene_id={} session_ns={}",
@@ -54,9 +96,24 @@ pub async fn process_message(
 
     state.chat_generation_cancel.store(false, Ordering::Release);
 
+    let io = Instant::now();
     state.db_manager.ensure_role_runtime(srid).await?;
+    tracing::debug!(
+        target: "oclive_chat_io",
+        role_id = %mrid,
+        session_ns = %srid,
+        op = "ensure_role_runtime",
+        elapsed_ms = io.elapsed().as_millis() as u64
+    );
 
+    let io = Instant::now();
     let role = ensure_role_loaded(state, mrid).await?;
+    tracing::debug!(
+        target: "oclive_chat_io",
+        role_id = %mrid,
+        op = "ensure_role_loaded",
+        elapsed_ms = io.elapsed().as_millis() as u64
+    );
     state
         .db_manager
         .ensure_interaction_mode_seeded(srid, role.interaction_mode.as_deref())
@@ -570,6 +627,7 @@ async fn process_remote_life(
     )
     .await?;
 
+    let io = Instant::now();
     let favor_current = state
         .db_manager
         .apply_chat_turn_atomic(crate::infrastructure::db::ChatTurnTxInput {
@@ -588,6 +646,13 @@ async fn process_remote_life(
             scene_id,
         })
         .await?;
+    tracing::debug!(
+        target: "oclive_chat_io",
+        role_id = %mrid,
+        session_ns = %srid,
+        op = "apply_chat_turn_atomic",
+        elapsed_ms = io.elapsed().as_millis() as u64
+    );
 
     if role.evolution_config.personality_source == PersonalitySource::Profile {
         let prev = state.db_manager.get_mutable_personality(srid).await?;

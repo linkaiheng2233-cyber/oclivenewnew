@@ -31,9 +31,20 @@ fn require_explicit_paths_or_exit() {
     std::process::exit(2);
 }
 
+fn init_tracing() {
+    let _ = tracing_subscriber::fmt()
+        .with_env_filter(
+            tracing_subscriber::EnvFilter::try_from_default_env()
+                .unwrap_or_else(|_| tracing_subscriber::EnvFilter::new("info")),
+        )
+        .with_target(true)
+        .try_init();
+    let _ = tracing_log::LogTracer::init();
+}
+
 #[tokio::main]
 async fn main() {
-    let _ = env_logger::try_init();
+    init_tracing();
     require_explicit_paths_or_exit();
     let port = read_port();
     // Headless OOCP API from `oclive_kernel_runtime` (no Tauri / desktop shell).

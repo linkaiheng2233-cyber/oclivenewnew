@@ -25,7 +25,7 @@ cargo run -p oclive_kernel_server
 | `OCLIVE_DB_PATH` | 临时目录 sqlite | 建议固定路径 |
 | `OCLIVE_APP_DATA_DIR` | 派生 | 插件/MCP 等数据根 |
 | `OCLIVE_REQUIRE_EXPLICIT_PATHS` | 关 | 为 `1`/`true`/`on`/`yes` 时：三路径未齐则退出码 **2**（生产推荐） |
-| `RUST_LOG` | — | 如 `info`、`debug` |
+| `RUST_LOG` | — | 如 `info`、`debug`；与 **`tracing`** 订阅器及 **`oclive_process_message`** / **`oclive_chat_io`** target 配合，见 **[`docs/LOGGING_GUIDE.md`](../../docs/LOGGING_GUIDE.md)** |
 
 **Linux 权威部署**（路径、Docker、systemd、备份/探活脚本）：[`docs/LINUX_KERNEL_DEPLOY.md`](../../docs/LINUX_KERNEL_DEPLOY.md)  
 路线与多模态外挂原则：**[`docs/LINUX_KERNEL_ENGINE.md`](../../docs/LINUX_KERNEL_ENGINE.md)** · 合成模板：**[`delivery/`](../../delivery/)**

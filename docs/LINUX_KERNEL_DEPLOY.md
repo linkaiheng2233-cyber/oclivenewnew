@@ -46,7 +46,7 @@ Docker 镜像 `Dockerfile.kernel-server` 已默认 `OCLIVE_REQUIRE_EXPLICIT_PATH
 
 | 变量 | 说明 |
 |------|------|
-| **`RUST_LOG`** | `error` / `warn` / `info` / `debug` / `trace`（`env_logger`） |
+| **`RUST_LOG`** | `error` / `warn` / `info` / `debug` / `trace` | 无头进程由 **`tracing-subscriber`** 解析（与 `log` 桥接）；级别与 target 建议见 **[LOGGING_GUIDE.md](./LOGGING_GUIDE.md)**。 |
 
 ### 2.4 XDG 路径建议（非代码强制）
 
