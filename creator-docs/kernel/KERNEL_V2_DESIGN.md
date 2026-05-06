@@ -52,7 +52,7 @@
 
 ## 6. 阶段 6 待定 — 事件与 Prompt 剥离评估（阶段 5-6 / 5-7 结论）
 
-以下为 **2026-05** 起依赖扫描结论：**官方默认 Prompt 模块**（**`oclive_prompt_builtin`**）已在 **阶段 7-1** 落地（见 §4、§6.2）。**官方默认事件模块**（**`oclive_event_builtin`**）已落地 **阶段 7-2 薄壳**：`BuiltinEventEstimator*` 在设施 crate，**`event_impact_ai` / `EventDetector` 等算法主体仍在 runtime**（见 §6.7、**`examples/oclive-event-builtin-directory/`**）。
+以下为 **2026-05** 起依赖扫描结论：**官方默认 Prompt 模块**（**`oclive_prompt_builtin`**）已在 **阶段 7-1** 落地（见 §4、§6.2）。**官方默认事件模块**（**`oclive_event_builtin`**）在 **阶段 7-2 收尾** 已迁入 **`EventDetector` / `event_impact_ai`（`estimate_event_impact` 等）**；**`oclive_kernel_runtime`** 保留 **`KernelEventImpactEngine`**、`domain::event_detector` **re-export** 与 **`#[cfg(feature = "default-event-providers")]`** 下的薄 **`event_impact_*` 模块**（见 §6.8、**`examples/oclive-event-builtin-directory/`**）。§6.7 表格保留当时 **runtime 内聚**评估的**归档**表述，**现行路径以源码与 §6.8 为准**。
 
 ### 6.0 阶段 6-1 固化：`oclive_kernel_models` 迁入清单
 
@@ -82,14 +82,14 @@
 | 类别 | 依赖项 |
 |------|--------|
 | **门面** | **`EventEstimator` trait**（**`oclive_kernel_core::event_estimator`**，**阶段 6-2**）；**`EventImpactEstimate`**（**`oclive_kernel_models::event_impact`**）；runtime **`domain/event_estimator.rs`** 仅保留内置类型、`default_event_slot_*`、`RemoteEventEstimatorPlaceholder` 并再导出 trait |
-| **算法主体** | `estimate_event_impact` → LLM `generate_tag` + JSON 解析 |
-| **规则回退与检测** | `EventDetector`（`domain/event_detector.rs`，关键词 + `KnowledgeEventAugment`） |
-| **人格公式** | `affect_policy::softness_coldness_volatility`、`PersonalityEngine::calculate_stability_index` |
-| **工具** | `utils/json_loose::extract_json_object` |
+| **算法主体** | **`oclive_event_builtin::estimate_event_impact`** 等 → LLM `generate_tag` + JSON 解析（runtime **`KernelEventImpactEngine`** 委托） |
+| **规则回退与检测** | **`EventDetector`**（**`oclive_event_builtin`**；runtime **`domain/event_detector.rs`** 仅 **re-export**） |
+| **人格公式** | 影响链内公式已随 **`event_impact_ai`** 迁入 **`oclive_event_builtin`**（如 **`affect_axis`**）；runtime **`affect_policy`** 等仍服务其它编排路径 |
+| **工具** | **`oclive_event_builtin::json_loose`**（`extract_json_object`） |
 | **外部抽象** | `LlmClient`（已在 core） |
 | **模型 / DTO** | `Emotion`（core）；`Event` / `EventType`、`PersonalityVector`、`KnowledgeEventAugment`、`EventImpactEstimate`（**models**，runtime 再导出）；`PersonalitySource`（**`oclive_validation`**） |
 
-**评估**：**`oclive_event_builtin`** 已提供 **进程内薄壳**（`BuiltinEventEstimator*` → **`EventImpactEngine`** → runtime **`estimate_event_impact`**）。从 **算法主体** 视角，**规则检测、人格轴公式、JSON 工具、多种模型类型** 与 **一长串 `estimate` 参数** 仍主要落在 **runtime**；**`KnowledgeEventAugment` 与知识索引管线耦合**。与 Agent/MCP **无硬耦合**（仅需 `LlmClient`）。**阶段 6-2（最小切线）**：已稳定 **trait + `EventImpactEstimate`**；**`default-event-providers`** 控制是否链接薄壳（关则 **`DisabledEventEstimator`**，见 **§6.4**）。**整仓**搬迁 `EventDetector` + `event_impact_ai` **出 runtime** 仍为后续工作（**阶段 7 收尾：算法暂缓**，见 §6.8）。
+**结论（阶段 7-2 收尾后）**：**`BuiltinEventEstimator*`** → **`EventImpactEngine`** → **`KernelEventImpactEngine`** → **`oclive_event_builtin::estimate_event_impact`**。**`KnowledgeEventAugment` 等 DTO** 在 **models**；与知识索引管线的耦合留在 **编排 / 调用方**，与 Agent/MCP **无硬耦合**（仅需 `LlmClient`）。**`default-event-providers`** 控制 **Builtin 槽与 bridge 模块**（关则 **`DisabledEventEstimator`**，runtime **`event_impact_ai` / `event_impact_bridge` 不编译**；**`EventDetector` re-export** 仍可用，见 **`domain/mod.rs`**）。
 
 ### 6.2 Prompt（`PromptAssembler` / `PromptBuilder`）— **阶段 7-1 已完整剥离设施 crate**
 
@@ -106,14 +106,14 @@
 
 - **`cargo check --workspace`** / **`cargo test --workspace`** 通过；极薄检出：**`cargo check -p oclive_kernel_runtime --no-default-features`**。
 - **`default-prompt-providers`**：**`full`** 下为 **`["oclive_prompt_builtin/providers"]`**；**开启**时链入设施 crate **`providers`**（含 **`PromptBuilder` 全文**）；**关闭**时 runtime **不**链入 **`providers`**，builtin 槽与 Remote 占位回退 **`DisabledPromptAssembler`**。
-- **`default-event-providers`**：行为同 **§6.4**（关闭时不编译 **`event_impact_ai`**，**`DisabledEventEstimator`**）。
+- **`default-event-providers`**：行为同 **§6.4**（关闭时 **不编译** runtime **`domain::event_impact_ai` / `event_impact_bridge`**，**`DisabledEventEstimator`**；**`oclive_event_builtin`** 仍为直接依赖，供 **`EventDetector` re-export** 等路径）。
 
 ### 6.4 阶段 6-2：事件门面最小切线（已实现）
 
 - **`EventEstimator`**：`oclive_kernel_core::event_estimator`（`async_trait` + `LlmClient` + models DTO + `PersonalitySource`）。
 - **`EventImpactEstimate`**：`oclive_kernel_models::event_impact`（serde，Remote JSON-RPC 与内置共用）。
-- **`BuiltinEventEstimator` / `BuiltinEventEstimatorV2`**：仍在 **`oclive_kernel_runtime::domain::event_estimator`**，整段置于 **`#[cfg(feature = "default-event-providers")]`**；算法委托 **`estimate_event_impact`**。
-- **`domain::event_impact_ai`**：仅在该 feature **开启**时编译（`domain/mod.rs` 条件模块），减轻 `--no-default-features` 依赖面。
+- **`BuiltinEventEstimator` / `BuiltinEventEstimatorV2`**：仍在 **`oclive_kernel_runtime::domain::event_estimator`**，整段置于 **`#[cfg(feature = "default-event-providers")]`**；算法委托 **`oclive_event_builtin::estimate_event_impact`**（经 **`KernelEventImpactEngine`**）。
+- **`domain::event_impact_ai` / `event_impact_bridge`**：仅在该 feature **开启**时编译（`domain/mod.rs` 条件模块）；与 **`estimate_event_impact`** 实现本体（**`oclive_event_builtin`**）分离。
 - **桩**：**`DisabledEventEstimator`**（`disabled_default_providers.rs`），feature 关闭时由 **`default_event_slot_v1/v2`** 选用。
 
 ### 6.5 阶段 6-3：Prompt 门面最小切线（已实现）→ **阶段 7-1：正文迁入 `oclive_prompt_builtin`**
@@ -131,28 +131,28 @@
 | Memory | `MemoryRetrieval`（core） | `DisabledMemoryRetrieval` | **官方默认记忆模块** `oclive_memory_builtin` |
 | User 情绪 | `UserEmotionAnalyzer`（core） | `DisabledUserEmotionAnalyzer` | **官方默认情绪模块** `oclive_emotion_builtin` |
 | 复杂情感 | `ComplexEmotionProvider`（core） | `DisabledComplexEmotionProvider` | **官方默认复杂情感模块** `oclive_complex_emotion_builtin` |
-| 事件 | **`EventEstimator`**（core）+ **`EventImpactEstimate`**（models） | **`DisabledEventEstimator`**；**不编译 `event_impact_ai`** | **`event_impact_ai`** + **`EventDetector`**（runtime；尚未拆独立 crate） |
+| 事件 | **`EventEstimator`**（core）+ **`EventImpactEstimate`**（models） | **`DisabledEventEstimator`**；**不编译** runtime **`event_impact_ai` / `event_impact_bridge`** | **`EventDetector` / `event_impact_ai`**（**`oclive_event_builtin`**）；runtime **桥 + re-export** |
 | Prompt | **`PromptAssembler`**（core）+ **`PromptInput`** / **`PromptRolePromptSlice`** | **`DisabledPromptAssembler`**；**不链入 `oclive_prompt_builtin/providers`** | **官方默认 Prompt 模块** **`oclive_prompt_builtin`**（`PromptBuilder` + `BuiltinPromptAssembler*`） |
 | Agent | **`AgentProvider`**（core） | **`NoopAgent`** / **`McpShellAgent`**（视 **`kernel-agent`**） | **官方默认 Agent 模块** `oclive_agent_builtin`（`BuiltinReActAgent`） |
 
 **`full`**（默认）仍为官方一体化能力组合；嵌入式 / SKU 使用 **`default-features = false`** 并按 **[LIGHTWEIGHT_PROFILE.md](./LIGHTWEIGHT_PROFILE.md)** 开启子特性。
 
-**后续（非承诺）**：按需增设 **官方默认事件模块**（如 **`oclive_event_builtin`**），或继续下沉 **`Role` / `PromptInput` 字段**——须在 **`oclive_validation`** 与 OOCP 契约侧同步版本策略。
+**后续（非承诺）**：继续下沉 **`Role` / `PromptInput` 字段** 等——须在 **`oclive_validation`** 与 OOCP 契约侧同步版本策略。
 
-### 6.7 阶段 6 后续 / 阶段 7：事件 **完整剥离**可行性评估 + Prompt **现状**（2026-05）
+### 6.7 阶段 6 后续 / 阶段 7：事件 **完整剥离**可行性评估 + Prompt **现状**（2026-05，**事件算法已下沉；本节为归档**）
 
-> 历史目的：在 trait / DTO 已稳定（§6.4–6.5）的前提下，评估 **`BuiltinEventEstimator*` + `event_impact_ai` 全链路** 与 **`BuiltinPromptAssembler*` + `PromptBuilder` 全链路** 是否迁入独立设施 crate。**Prompt** 已在 **阶段 7-1** 迁入 **`oclive_prompt_builtin`**（见 §6.2）；本节 **6.7.1 / 6.7.4** 以 **事件** 为主，并保留 Prompt 行的**归档式**结论。
+> **现行实现**：**`EventDetector` + `event_impact_ai`** 已在 **`oclive_event_builtin`**（见 §6.8）。  
+> **历史目的**：在 trait / DTO 已稳定（§6.4–6.5）的前提下，评估 **`BuiltinEventEstimator*` + `event_impact_ai` 全链路** 与 **`BuiltinPromptAssembler*` + `PromptBuilder` 全链路** 是否迁入独立设施 crate。**Prompt** 已在 **阶段 7-1** 迁入 **`oclive_prompt_builtin`**（见 §6.2）；以下 **6.7.1 / 6.7.4** 表格以 **当时「仍在 runtime」的文件划分** 为主，**便于对照迁移工作量**；**路径与模块边界以当前源码为准**。
 
-#### 6.7.1 Runtime 中**仍未剥离**的实现清单（事件为主）
+#### 6.7.1 归档：迁移前 **Runtime 内**事件相关实现清单（**多数已迁至 `oclive_event_builtin`**）
 
-| 领域 | 文件（`oclive_kernel_runtime/src/domain/` 为主） | 职责摘要 | 关键符号 |
+| 领域 | 原文件 / 现况（`oclive_kernel_runtime/src/domain/` 为主） | 职责摘要 | 关键符号 |
 |------|---------------------------------------------------|----------|----------|
-| **事件 · 门面与 Builtin 槽** | `event_estimator.rs` | 再导出 `EventEstimator`；**`BuiltinEventEstimator` / `BuiltinEventEstimatorV2`**；`default_event_slot_*`；**`RemoteEventEstimatorPlaceholder`** | `BuiltinEventEstimator::estimate` → `estimate_event_impact` |
-| **事件 · LLM + 规则主体** | `event_impact_ai.rs`（**`#[cfg(feature = "default-event-providers")]`**） | `estimate_event_impact`、JSON 解析、LLM 失败回退 | `estimate_event_impact`、`parse_event_impact_ai_output`、`event_impact_ai_enabled` |
-| **事件 · 规则检测** | `event_detector.rs` | 关键词 / 情绪组合分类；**`KnowledgeEventAugment`** 合并 | `EventDetector::detect_with_augment`、`get_impact_factor`、`get_confidence` |
-| **事件 · 人格轴辅助** | `affect_policy.rs` | `softness_coldness_volatility`（供 impact 软化） | 被 `event_impact_ai` 调用 |
-| **事件 · 稳定性指数** | `personality_engine.rs`（部分 API） | **`PersonalityEngine::calculate_stability_index`** | 被 `event_impact_ai` 调用 |
-| **事件 · 工具** | `utils/json_loose.rs` | `extract_json_object` | 被 `event_impact_ai` 调用 |
+| **事件 · 门面与 Builtin 槽** | `event_estimator.rs`（**仍在 runtime**） | 再导出 `EventEstimator`；**`BuiltinEventEstimator` / `BuiltinEventEstimatorV2`**；`default_event_slot_*`；**`RemoteEventEstimatorPlaceholder`** | `BuiltinEventEstimator::estimate` → **`oclive_event_builtin::estimate_event_impact`** |
+| **事件 · LLM + 规则主体** | **`oclive_event_builtin/src/event_impact_ai.rs`**（runtime **`event_impact_ai.rs`** 为 **re-export / 条件模块**） | `estimate_event_impact`、JSON 解析、LLM 失败回退 | `estimate_event_impact`、`parse_event_impact_ai_output`、`event_impact_ai_enabled` |
+| **事件 · 规则检测** | **`oclive_event_builtin/src/event_detector.rs`**（runtime **`event_detector.rs`** **re-export**） | 关键词 / 情绪组合分类；**`KnowledgeEventAugment`** 合并 | `EventDetector::detect_with_augment` 等 |
+| **事件 · 人格轴辅助** | **`oclive_event_builtin`**（如 **`affect_axis`**）；runtime **`affect_policy`** 仍服务其它路径 | impact 链内公式已随设施 crate 下沉 | （归档）曾列 `affect_policy` / `personality_engine` |
+| **事件 · 工具** | **`oclive_event_builtin/src/json_loose.rs`** | `extract_json_object` | 被 **`event_impact_ai`** 使用 |
 | **Prompt · 集成薄层（已迁出正文）** | `prompt_assembler.rs`、`prompt_builder.rs` | **`BuiltinPromptAssembler*`** / **`PromptBuilder`** 由 **`oclive_prompt_builtin`** 提供；runtime 保留 **`default_prompt_slot_*`**、**`RemotePromptAssemblerPlaceholder`**、**`PromptInput` 再导出** | 侧车 **`prompt_http.rs`** 仍序列化完整 **`Role`**；**`oclive_prompt_from_json`** 仅需 JSON 字段子集即可拼装（见示例目录 README） |
 
 **其它引用（非算法主体，但构成集成面）**：
@@ -168,7 +168,7 @@
 | **DTO 位置** | **`EventImpactEstimate`** 已在 **`oclive_kernel_models::event_impact`**（§6.0）；Remote / Builtin 共用。 |
 | **`EventEstimator` trait** | 在 **`oclive_kernel_core::event_estimator`**，签名已使用 **`kernel_models`** 中的 `Event`、`KnowledgeEventAugment`、`PersonalityVector` 等；**不**依赖 runtime。 |
 | **PluginHost** | 仅按枚举绑定 **`Arc<dyn EventEstimator>`**；**无**对 `EventImpactEstimate` 的额外硬编码路径。 |
-| **可行性含义** | **共享类型与宿主注册方式已解耦**，不构成「迁入设施 crate」的阻碍；阻碍在 **算法模块之间的 runtime 内聚**（见下表）。 |
+| **可行性含义** | **共享类型与宿主注册方式已解耦**。（归档）当时阻碍在 **算法模块之间的 runtime 内聚**；**事件链已迁入 `oclive_event_builtin`**（见 §6.8）。 |
 
 #### 6.7.3 `PromptInput` / `Role` — 依赖结论（**阶段 7-1 已落实设施 crate**）
 
@@ -183,17 +183,17 @@
 | 剥离目标 | 阶段 7 结论 | 可行性分析摘要 |
 |----------|-------------|----------------|
 | **事件：`BuiltinEventEstimator*` 壳层** | **阶段 7 可执行（低价值）** | 壳层仅委托 `estimate_event_impact`；单独迁壳**无独立意义**，通常与算法同迁。 |
-| **事件：`estimate_event_impact` + `EventDetector` + 人格轴辅助 + json 工具** | **阶段 7 待定** | **强耦合链**：`event_impact_ai` → `EventDetector` + `affect_policy::softness_coldness_volatility` + **`PersonalityEngine::calculate_stability_index`** + `utils/json_loose`。迁出需 **一并搬迁或抽象** 上述模块，或引入 **`oclive_event_builtin` 对 `oclive_kernel_runtime` 的依赖**（**禁止**：循环依赖风险）。更现实路径：先抽 **无状态纯函数 / 小 crate**（如 `json_loose`、detector 规则子集），再迁 LLM 编排。 |
+| **事件：`estimate_event_impact` + `EventDetector` + 人格轴辅助 + json 工具** | **阶段 7 已完成** | 已整体迁入 **`oclive_event_builtin`**；runtime **`KernelEventImpactEngine`** 单向委托，**无** `runtime ↔ event_builtin` 循环依赖。 |
 | **Prompt：`BuiltinPromptAssembler*` + `PromptBuilder` 全文** | **阶段 7-1 已完成** | 已迁入 **`oclive_prompt_builtin`**（`providers` + `classic`）；runtime 薄层 + **`DisabledPromptAssembler`** 门控不变。 |
 | **PluginHost / trait / DTO** | **已就绪（非阻碍）** | 注册与类型边界已满足独立 Builtin crate 接入形态。 |
 
-**小结**：**`oclive_prompt_builtin` 已落地**。**事件**：**`oclive_event_builtin` 薄壳已接入**；**算法主体**仍与 runtime 强交织，**整仓迁出仍为后续工作**；可行路径仍为 **无状态纯函数 / 小 crate 分步下沉** 或后续统一抽象，避免 **`runtime ↔ event_builtin` 循环依赖**（当前通过 **单向委托**：builtin → runtime `estimate_event_impact`，无循环）。
+**小结**：**`oclive_prompt_builtin` 已落地**。**事件**：**`oclive_event_builtin` 已承载算法主体**；runtime 保留 **槽位、`KernelEventImpactEngine`、条件编译的薄模块与 `EventDetector` re-export**（见 §6.8）。
 
 #### 6.7.5 事件：`EventEstimator` / `EventImpactEstimate` 边界（阶段 7-2 固化）
 
 - **Trait / DTO**：**`EventEstimator`** 在 **`oclive_kernel_core::event_estimator`**；**`EventImpactEstimate`** 在 **`oclive_kernel_models::event_impact`**；签名与 serde 已稳定，trait **不**依赖完整 runtime。
 - **`DisabledEventEstimator`**（**`default-event-providers` 关闭**）：返回 **`EventType::Ignore`**、`impact_factor = 0`、`confidence = 0`，与 **`MODULE_NONE_SEMANTICS.md` §3**（「无事件、无影响」）及好感/演化链路的「按无事件继续」预期一致；见 **`disabled_default_providers`** 单测 **`disabled_event_estimator_returns_ignore_zero_impact`**。
-- **算法主体**：`event_impact_ai`、`EventDetector`、人格轴辅助等仍在 **runtime**（§6.7.1）；**当前阶段不强制**迁入 **`oclive_event_builtin`**。
+- **算法主体**：**`event_impact_ai` / `EventDetector`** 与相关工具在 **`oclive_event_builtin`**；runtime **§6.7.1** 表格为**归档**对照。
 
 ### 6.8 阶段 7 剥离状态快照（维护）
 
@@ -204,7 +204,7 @@
 | 复杂情感 | `oclive_complex_emotion_builtin` | 同上 | `examples/oclive-complex-emotion-builtin-directory` |
 | **Prompt** | **`oclive_prompt_builtin`** | **`prompt_assembler` 槽位**、`RemotePromptAssemblerPlaceholder`、`prompt_http`；**`prompt_builder` 再导出** | **`examples/oclive-prompt-builtin-directory`**（依赖 **`oclive_prompt_from_json`**） |
 | Agent ReAct | `oclive_agent_builtin` | `McpShellAgent`、MCP 栈 | `examples/oclive-agent-builtin-directory` |
-| **事件** | **`oclive_event_builtin`（薄壳；`EventImpactEngine` 委托 runtime）** | **`event_impact_ai`、`EventDetector`、估计器槽位 / Remote 占位** | **`examples/oclive-event-builtin-directory/`**；**算法主体仍在 runtime** |
+| **事件** | **`oclive_event_builtin`（`EventDetector` / `event_impact_ai` / `BuiltinEventEstimator*`）** | **`KernelEventImpactEngine`**、**`event_estimator` 槽位**、**`event_impact_*` 条件模块**、**`EventDetector` re-export**、Remote 占位 | **`examples/oclive-event-builtin-directory/`**（directory **`event.estimate`**） |
 
 **验证**：**`cargo check --workspace`**、**`cargo test --workspace`**、**`cargo check -p oclive_kernel_runtime --no-default-features`**；可选组合见 **`LIGHTWEIGHT_PROFILE.md`** §6。
 
