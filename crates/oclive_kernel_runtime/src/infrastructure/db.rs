@@ -1,4 +1,5 @@
 use crate::error::{AppError, Result};
+use crate::infrastructure::sqlite_busy;
 use crate::models::*;
 use chrono::{DateTime, Utc};
 #[allow(unused_imports)]
@@ -99,9 +100,10 @@ impl DbManager {
 
     /// 健康检查 / 探活：验证 SQLite 连接可用（`SELECT 1`）。
     pub async fn ping_sqlite(&self) -> std::result::Result<(), sqlx::Error> {
-        sqlx::query_scalar::<_, i32>("SELECT 1")
-            .fetch_one(&self.pool)
-            .await?;
+        sqlite_busy::with_sqlite_busy_retry(|| {
+            sqlx::query_scalar::<_, i32>("SELECT 1").fetch_one(&self.pool)
+        })
+        .await?;
         Ok(())
     }
 
@@ -173,9 +175,7 @@ impl DbManager {
             return Err(AppError::InvalidParameter("plugin_id required".into()));
         }
         let now = Utc::now().to_rfc3339();
-        let mut tx = self
-            .pool
-            .begin()
+        let mut tx = sqlite_busy::with_sqlite_busy_retry(|| self.pool.begin())
             .await
             .map_err(|e| AppError::DatabaseError(e.to_string()))?;
         sqlx::query("DELETE FROM plugin_permission_grants WHERE plugin_id = ?")
@@ -363,9 +363,7 @@ impl DbManager {
     ) -> Result<(String, String)> {
         let started = Instant::now();
         log::info!("tx save_memory_and_event_atomic start role_id={}", role_id);
-        let mut tx = self
-            .pool
-            .begin()
+        let mut tx = sqlite_busy::with_sqlite_busy_retry(|| self.pool.begin())
             .await
             .map_err(|e| AppError::TransactionError {
                 code: "TXN_BEGIN_FAILED",
@@ -457,9 +455,7 @@ impl DbManager {
         let scene_id = input.scene_id;
         let started = Instant::now();
         log::info!("tx apply_chat_turn_atomic start role_id={}", role_id);
-        let mut tx = self
-            .pool
-            .begin()
+        let mut tx = sqlite_busy::with_sqlite_busy_retry(|| self.pool.begin())
             .await
             .map_err(|e| AppError::TransactionError {
                 code: "TXN_BEGIN_FAILED",
@@ -2346,9 +2342,7 @@ impl DbManager {
         .await
         .map_err(|e| AppError::DatabaseError(e.to_string()))?;
 
-        let mut tx = self
-            .pool
-            .begin()
+        let mut tx = sqlite_busy::with_sqlite_busy_retry(|| self.pool.begin())
             .await
             .map_err(|e| AppError::DatabaseError(e.to_string()))?;
 

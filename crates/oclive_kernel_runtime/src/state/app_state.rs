@@ -37,7 +37,7 @@ use crate::models::{
 use crate::state::resolve_roles_dir;
 use parking_lot::{Mutex, RwLock};
 use serde::Deserialize;
-use sqlx::sqlite::{SqliteConnectOptions, SqlitePoolOptions};
+use sqlx::sqlite::{SqliteConnectOptions, SqliteJournalMode, SqlitePoolOptions};
 use std::collections::HashMap;
 use std::fs;
 use std::path::{Path, PathBuf};
@@ -284,13 +284,14 @@ impl KernelAppState {
             let db_file = dir.path().join("kernel_runtime.sqlite");
             let opts = SqliteConnectOptions::new()
                 .filename(&db_file)
-                .create_if_missing(true);
-            let pool = SqlitePoolOptions::new()
+                .create_if_missing(true)
+                .journal_mode(SqliteJournalMode::Wal);
+            let db = SqlitePoolOptions::new()
                 .max_connections(5)
                 .connect_with(opts)
                 .await
                 .map_err(|e| crate::error::AppError::DatabaseError(e.to_string()))?;
-            (pool, Some(dir))
+            (db, Some(dir))
         } else {
             if let Some(parent) = path.parent() {
                 if !parent.as_os_str().is_empty() {
@@ -299,14 +300,20 @@ impl KernelAppState {
             }
             let opts = SqliteConnectOptions::new()
                 .filename(path)
-                .create_if_missing(true);
-            let pool = SqlitePoolOptions::new()
+                .create_if_missing(true)
+                .journal_mode(SqliteJournalMode::Wal);
+            let db = SqlitePoolOptions::new()
                 .max_connections(5)
                 .connect_with(opts)
                 .await
                 .map_err(|e| crate::error::AppError::DatabaseError(e.to_string()))?;
-            (pool, None)
+            (db, None)
         };
+
+        sqlx::query("PRAGMA journal_mode=WAL;")
+            .execute(&db)
+            .await
+            .map_err(|e| crate::error::AppError::DatabaseError(e.to_string()))?;
 
         sqlx::migrate!("./migrations")
             .run(&db)
@@ -459,10 +466,16 @@ impl KernelAppState {
         let db_file = dir.path().join("kernel_runtime.sqlite");
         let opts = SqliteConnectOptions::new()
             .filename(&db_file)
-            .create_if_missing(true);
+            .create_if_missing(true)
+            .journal_mode(SqliteJournalMode::Wal);
         let db = sqlx::sqlite::SqlitePoolOptions::new()
             .max_connections(5)
             .connect_with(opts)
+            .await
+            .map_err(|e| crate::error::AppError::DatabaseError(e.to_string()))?;
+
+        sqlx::query("PRAGMA journal_mode=WAL;")
+            .execute(&db)
             .await
             .map_err(|e| crate::error::AppError::DatabaseError(e.to_string()))?;
 
