@@ -1,6 +1,6 @@
 # oclive_kernel_runtime 开发者 SDK（v0.1）
 
-面向 **库模式**（嵌入 `KernelAppState`）与 **服务模式**（`oclive_kernel_server`）的快速索引。契约以 **`models/dto.rs`**、**`KERNEL_ENTRY_CHECKLIST`**、**OOCP_SPEC** 为准。
+面向 **库模式**（嵌入 `KernelAppState`）与 **服务模式**（`oclive_kernel_server`）的快速索引。契约以 **`crates/oclive_kernel_runtime/src/models/dto.rs`**、**`KERNEL_ENTRY_CHECKLIST`**、**[`OOCP_SPEC_v0_1.md`](../oocp/OOCP_SPEC_v0_1.md)** 为准。接入方式总览见 **[`INTEGRATION_GUIDE.md`](../getting-started/INTEGRATION_GUIDE.md)**。
 
 ---
 
@@ -66,7 +66,7 @@
 cargo run -p kernel_embed_minimal
 ```
 
-依赖与契约：本包 `Cargo.toml` 以 **path** 引用 `oclive_kernel_runtime`；对外 DTO 与错误码仍以 **`models/dto.rs`**、[`handoff/10_ERROR_CODE_DICTIONARY.md`](../../handoff/10_ERROR_CODE_DICTIONARY.md) 为准；OOCP 见 [OOCP_SPEC_COMPLETE_REFERENCE.md](../oocp/OOCP_SPEC_COMPLETE_REFERENCE.md)。
+依赖与契约：本包 `Cargo.toml` 以 **path** 引用 `oclive_kernel_runtime`；对外 DTO 与错误码仍以 **`crates/oclive_kernel_runtime/src/models/dto.rs`**、[`handoff/10_ERROR_CODE_DICTIONARY.md`](../../handoff/10_ERROR_CODE_DICTIONARY.md) 为准；OOCP 见 [`OOCP_SPEC_v0_1.md`](../oocp/OOCP_SPEC_v0_1.md)。
 
 ---
 

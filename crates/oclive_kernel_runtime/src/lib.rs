@@ -9,6 +9,8 @@
 //! `domain::role_info_snapshot`、`domain::role_lifecycle`、`domain::role_paths`、`domain::role_runtime_commands`、
 //! `domain::expert_models_admin`、`domain::ollama_host_commands`、`domain::policy_host`、`domain::profile_preview`、
 //! `domain::plugin_permission_commands`、`domain::session_plugin_override`、`http_api`（feature `kernel-http-api`）等。
+//!
+//! **对外可见性**：`domain` 下各模块为 **`pub mod`**，便于 **Tauri / `kernel_server` / 第三方嵌入** 与历史 `use` 路径兼容；稳定契约以 **`models::dto`**、**`error::AppError`** 与 OOCP 规范为准，而非「每个子模块均为稳定公有 API」。收窄导出需在主版本迭代中单独设计。
 
 pub mod api;
 pub mod domain;

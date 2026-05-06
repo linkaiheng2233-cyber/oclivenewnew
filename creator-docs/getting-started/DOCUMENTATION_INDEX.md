@@ -47,6 +47,7 @@ Creator and plugin docs live under the repo root `creator-docs/` (grouped by top
 | **极致轻量化（runtime `Cargo` 特性、OOCP、`invoke` 分组、依赖/`http_api` 拟定）** | **[../kernel/LIGHTWEIGHT_PROFILE.md](../kernel/LIGHTWEIGHT_PROFILE.md)**（与 [KERNEL_BOUNDARY.md](../kernel/KERNEL_BOUNDARY.md) §5.1 互参）；设施 `classic` 门控审计 **[../kernel/FACILITY_CLASSIC_ALGORITHMS_AUDIT.md](../kernel/FACILITY_CLASSIC_ALGORITHMS_AUDIT.md)** |
 | **内核工程质量与生态路线（P0–P2，测试/SDK/crates.io）** | **[../../../handoff/ENGINEERING_ROADMAP_KERNEL_DEEPSEEK.md](../../../handoff/ENGINEERING_ROADMAP_KERNEL_DEEPSEEK.md)** |
 | **内核 SDK（KernelAppState、process_message、kernel_server）** | **[../kernel/KERNEL_SDK.md](../kernel/KERNEL_SDK.md)** |
+| **如何接入内核（内嵌 / HTTP / OOCP 三模式、环境变量、排障）** | **[INTEGRATION_GUIDE.md](INTEGRATION_GUIDE.md)** |
 | **Python OOCP 客户端 SDK（`/health`、`/chat`、Bearer）** | **[../../sdk/python/README.md](../../sdk/python/README.md)** |
 | **事件引擎剥离状态（builtin / directory 示例）** | **[../kernel/EVENT_ENGINE_EXTRACTION_STATUS.md](../kernel/EVENT_ENGINE_EXTRACTION_STATUS.md)** |
 | **Linux 无头内核引擎（部署、Docker、systemd、多模态外挂）** | **权威部署** **[../../docs/LINUX_KERNEL_DEPLOY.md](../../docs/LINUX_KERNEL_DEPLOY.md)** · 日志 **[../../docs/LOGGING_GUIDE.md](../../docs/LOGGING_GUIDE.md)** · 路线说明 **[../../docs/LINUX_KERNEL_ENGINE.md](../../docs/LINUX_KERNEL_ENGINE.md)** · 合成模板 **[../../delivery/README.md](../../delivery/README.md)** |
@@ -94,11 +95,12 @@ Creator and plugin docs live under the repo root `creator-docs/` (grouped by top
 
 ## 推荐阅读顺序（宿主 / Rust 贡献者）
 
-1. [../plugin-and-architecture/EXTENSION_POINTS.md](../plugin-and-architecture/EXTENSION_POINTS.md)  
-2. [../plugin-and-architecture/HOW_TO_REPLACE_MODULES.md](../plugin-and-architecture/HOW_TO_REPLACE_MODULES.md)  
-3. [../kernel/PLUGIN_HOST_DEVELOPER_GUIDE.md](../kernel/PLUGIN_HOST_DEVELOPER_GUIDE.md) — `PluginHost` / `BackendRegistry`、会话覆盖与降级链  
-4. [../kernel/MODULE_9_EXPERT_MODELS_FACILITY.md](../kernel/MODULE_9_EXPERT_MODELS_FACILITY.md) — 第九模块术语与与 `plugin_backends` 的边界  
-5. 源码：`crates/oclive_kernel_runtime` 下 `domain/plugin_host`、`infrastructure/remote_plugin`、`infrastructure/directory_plugins`；桌面另见 `src-tauri/.../directory_plugins/watcher.rs` 与 `plugin_installer.rs`（路径 + `rescan`）  
+1. [INTEGRATION_GUIDE.md](INTEGRATION_GUIDE.md) — 内嵌 / HTTP / OOCP 三模式与排障入口  
+2. [../plugin-and-architecture/EXTENSION_POINTS.md](../plugin-and-architecture/EXTENSION_POINTS.md)  
+3. [../plugin-and-architecture/HOW_TO_REPLACE_MODULES.md](../plugin-and-architecture/HOW_TO_REPLACE_MODULES.md)  
+4. [../kernel/PLUGIN_HOST_DEVELOPER_GUIDE.md](../kernel/PLUGIN_HOST_DEVELOPER_GUIDE.md) — `PluginHost` / `BackendRegistry`、会话覆盖与降级链  
+5. [../kernel/MODULE_9_EXPERT_MODELS_FACILITY.md](../kernel/MODULE_9_EXPERT_MODELS_FACILITY.md) — 第九模块术语与与 `plugin_backends` 的边界  
+6. 源码：`crates/oclive_kernel_runtime` 下 `domain/plugin_host`、`infrastructure/remote_plugin`、`infrastructure/directory_plugins`；桌面另见 `src-tauri/.../directory_plugins/watcher.rs` 与 `plugin_installer.rs`（路径 + `rescan`）  
 
 ---
 

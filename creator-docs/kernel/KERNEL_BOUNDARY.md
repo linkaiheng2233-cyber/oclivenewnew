@@ -39,6 +39,7 @@
 | 官方默认记忆模块 | `oclive_memory_builtin` | `default-memory-providers` |
 | 官方默认情绪模块 | `oclive_emotion_builtin` | `default-emotion-providers` |
 | 官方默认复杂情感模块 | `oclive_complex_emotion_builtin` | `default-complex-emotion-providers` |
+| 官方默认事件模块 | `oclive_event_builtin` | `default-event-providers` |
 | 官方默认 Prompt 模块 | `oclive_prompt_builtin` | `default-prompt-providers` |
 | 官方默认 Agent 模块 | `oclive_agent_builtin` | `default-agent-providers` |
 
