@@ -23,8 +23,8 @@ use axum::extract::Request;
 use axum::extract::State;
 use axum::http::header;
 use axum::http::Method;
-use axum::middleware::{self, Next};
 use axum::http::StatusCode;
+use axum::middleware::{self, Next};
 use axum::response::{IntoResponse, Response};
 use axum::routing::{get, post};
 use axum::Json;
@@ -110,7 +110,12 @@ pub struct HealthQuery {
 fn verbose_query_truthy(q: &HealthQuery) -> bool {
     q.verbose
         .as_deref()
-        .map(|v| matches!(v.trim().to_ascii_lowercase().as_str(), "1" | "true" | "yes" | "on"))
+        .map(|v| {
+            matches!(
+                v.trim().to_ascii_lowercase().as_str(),
+                "1" | "true" | "yes" | "on"
+            )
+        })
         .unwrap_or(false)
 }
 
@@ -257,7 +262,11 @@ async fn health(
     let checks = run_dependency_checks(state.as_ref()).await;
     let status = aggregate_health_status(&checks).to_string();
     let body = HealthVerboseJson { status, checks };
-    (StatusCode::OK, [(header::CONTENT_TYPE, "application/json; charset=utf-8")], Json(body))
+    (
+        StatusCode::OK,
+        [(header::CONTENT_TYPE, "application/json; charset=utf-8")],
+        Json(body),
+    )
         .into_response()
 }
 

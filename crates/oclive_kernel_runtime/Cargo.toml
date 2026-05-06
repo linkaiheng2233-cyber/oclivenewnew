@@ -43,7 +43,7 @@ default-memory-providers = ["oclive_memory_builtin/providers"]
 ## 进程内 Builtin/BuiltinV2 用户句情绪分析（`oclive_emotion_builtin` 的 `providers`）；关闭后回退中性分布桩。`providers` 隐含 `classic`；关 **`facility-classic-algorithms`** 且未开 `providers` 时用关键词桩的「关」态（强中性，见设施 crate `classic/stub`）。
 default-emotion-providers = ["oclive_emotion_builtin/providers"]
 ## 内置事件影响估计（event_impact_ai）；关闭后 builtin 槽与 Remote 占位回退为 Ignore 桩。
-default-event-providers = ["dep:oclive_event_builtin", "oclive_event_builtin/providers"]
+default-event-providers = ["oclive_event_builtin/providers"]
 ## 进程内 Builtin/BuiltinV2 Prompt 组装（`oclive_prompt_builtin` 的 `providers`）；关闭后 builtin 槽与 Remote 占位回退为空串桩。`providers` 隐含设施 crate 的 `classic`。
 default-prompt-providers = ["oclive_prompt_builtin/providers"]
 ## 内置复杂情感关键词模式（`oclive_complex_emotion_builtin` 的 `providers`）；关闭后 builtin 槽与 Remote 降级回退为轻量桩。`providers` 隐含 `classic`；关 **`facility-classic-algorithms`** 时七维→效价函数为 `(0,0)` 桩。
@@ -64,7 +64,7 @@ slow-long-tests = []
 [dependencies]
 oclive_agent_builtin = { path = "../oclive_agent_builtin", optional = true, default-features = false }
 oclive_prompt_builtin = { path = "../oclive_prompt_builtin", default-features = false }
-oclive_event_builtin = { path = "../oclive_event_builtin", optional = true, default-features = false }
+oclive_event_builtin = { path = "../oclive_event_builtin", default-features = false }
 oclive_memory_builtin = { path = "../oclive_memory_builtin", default-features = false }
 oclive_emotion_builtin = { path = "../oclive_emotion_builtin", default-features = false }
 oclive_complex_emotion_builtin = { path = "../oclive_complex_emotion_builtin", default-features = false }

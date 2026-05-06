@@ -1,4 +1,4 @@
-//! 事件影响估计可替换门面（**Builtin 算法主体**在 `oclive_kernel_runtime`；Remote / 目录插件可替换；**`EventImpactEstimate`** DTO 在 **`oclive_kernel_models`**）。
+//! 事件影响估计可替换门面（**Builtin 算法主体**在 **`oclive_event_builtin`**；Remote / 目录插件可替换；**`EventImpactEstimate`** DTO 在 **`oclive_kernel_models`**）。
 
 #![allow(clippy::too_many_arguments)] // 与编排层 `process_message` 参数一致
 
@@ -26,8 +26,8 @@ pub trait EventEstimator: Send + Sync {
     ) -> Result<EventImpactEstimate>;
 }
 
-/// 进程内事件影响 **算法** 委托：实现留在 `oclive_kernel_runtime::domain::event_impact_ai`，
-/// 薄壳 `BuiltinEventEstimator` 在 **`oclive_event_builtin`**。
+/// 进程内事件影响 **算法**：`estimate_event_impact` 由 **`oclive_event_builtin::event_impact_ai`** 提供；
+/// `BuiltinEventEstimator` 薄壳在同 crate，经 runtime **`KernelEventImpactEngine`** 注册到 **`PluginHost`**。
 #[async_trait]
 pub trait EventImpactEngine: Send + Sync {
     async fn estimate_event_impact(

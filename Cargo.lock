@@ -2984,9 +2984,12 @@ name = "oclive_event_builtin"
 version = "0.1.0"
 dependencies = [
  "async-trait",
+ "log",
  "oclive_kernel_core",
  "oclive_kernel_models",
  "oclive_validation",
+ "serde_json",
+ "tokio",
 ]
 
 [[package]]
