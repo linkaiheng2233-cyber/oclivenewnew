@@ -38,6 +38,7 @@ impl RelationEngine {
     const PROMOTION_TRIGGER_THRESHOLD: f64 = 0.35;
     const MAX_PROMOTION_DAMPING_EXTRA: f64 = 0.12;
 
+    #[allow(dead_code)] // 供单测与 API 对称保留；主编排使用 `next_state_with_damping`
     pub fn next_state(
         current: RelationState,
         favorability: f64,

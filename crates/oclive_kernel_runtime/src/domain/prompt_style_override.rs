@@ -1,6 +1,7 @@
 //! Module 9: merge [`crate::models::PromptStyleOverride`] into a [`crate::models::Role`] view for prompt building.
 //!
 //! When override fields are unset or blank, behavior matches packs without overrides.
+#![allow(dead_code)] // pub(crate)：主路径经 `role_manager` 等子模块；收窄可见性后易触发未接线 dead_code
 
 use std::borrow::Cow;
 

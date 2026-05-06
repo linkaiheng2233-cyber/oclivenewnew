@@ -2,6 +2,7 @@
 //!
 //! **非生产对话编排**：真实请求由 [`crate::domain::chat_engine::process_message()`] 串联 Repository / 策略 / LLM。
 //! 本模块仅在**单元测试**与本地算法演示中提供同步、无 DB 的迷你管线，避免与主编排并行演进时产生行为漂移——若需断言线上行为，应测 `chat_engine` / `chat_turn` 或集成测试。
+#![allow(dead_code)] // 非生产迷你管线；`pub(crate)` 后主路径未构造 `RoleManager`
 
 use crate::domain::emotion_analyzer::EmotionResultExt;
 use crate::domain::event_detector::EventDetector;

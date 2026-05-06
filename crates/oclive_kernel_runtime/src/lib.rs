@@ -10,7 +10,7 @@
 //! `domain::expert_models_admin`、`domain::ollama_host_commands`、`domain::policy_host`、`domain::profile_preview`、
 //! `domain::plugin_permission_commands`、`domain::session_plugin_override`、`http_api`（feature `kernel-http-api`）等。
 //!
-//! **对外可见性**：`domain` 下各模块为 **`pub mod`**，便于 **Tauri / `kernel_server` / 第三方嵌入** 与历史 `use` 路径兼容；稳定契约以 **`models::dto`**、**`error::AppError`** 与 OOCP 规范为准，而非「每个子模块均为稳定公有 API」。收窄导出需在主版本迭代中单独设计。
+//! **稳定契约**以 **`models::dto`**、**`error::AppError`**、**OOCP 协议**及 **`domain::chat_engine::process_message`** 入口为准。`domain` 下 **无外部宿主引用的编排细节子模块** 已收窄为 **`pub(crate)`**；其余子模块仍为 **`pub`**，以便 **`src-tauri`、集成测试与示例** 继续通过 `oclive_kernel_runtime::domain::…` 访问——**上述均不作为对外稳定 API 承诺**，后续可继续将调用方迁移到显式 `pub use` 门面后再收紧模块可见性。
 
 pub mod api;
 pub mod domain;
