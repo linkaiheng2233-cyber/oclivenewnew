@@ -1,10 +1,7 @@
-.git
-.github
+# 缩小 `docker build -f Dockerfile.kernel-server` 上下文；构建仍依赖 Cargo.toml / crates / src-tauri / roles。
 node_modules
 dist
-oclive-dev-artifacts
-target
-roles
-handoff
-creator-docs
-src
+**/target
+.oclive-dev-artifacts
+.git
+**/.vs

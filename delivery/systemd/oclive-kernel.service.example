@@ -1,0 +1,38 @@
+# 安装示例（需 root）：
+#   sudo cp delivery/systemd/oclive-kernel.service.example /etc/systemd/system/oclive-kernel.service
+#   sudo mkdir -p /opt/oclive/{bin,data,roles}
+#   sudo cp /path/to/oclive_kernel_server /opt/oclive/bin/
+#   sudo rsync -a /path/to/oclivenewnew/roles/ /opt/oclive/roles/
+#   sudo chown -R oclive:oclive /opt/oclive
+#   sudo systemctl daemon-reload && sudo systemctl enable --now oclive-kernel
+#
+# 日志：journalctl -u oclive-kernel -f
+# 环境变量可写入 /etc/oclive/kernel.env 并用 EnvironmentFile= 引用（勿提交密钥仓库）。
+
+[Unit]
+Description=Oclive kernel server (HTTP + OOCP, headless)
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+Type=simple
+User=oclive
+Group=oclive
+WorkingDirectory=/opt/oclive/data
+Environment=RUST_LOG=info
+Environment=OOCP_API_PORT=48888
+Environment=OOCP_API_BIND=127.0.0.1
+Environment=OCLIVE_ROLES_DIR=/opt/oclive/roles
+Environment=OCLIVE_DB_PATH=/opt/oclive/data/oclive.db
+Environment=OCLIVE_APP_DATA_DIR=/opt/oclive/data/app
+# 生产建议取消注释并写入强随机 token：
+# Environment=OOCP_API_TOKEN=...
+ExecStart=/opt/oclive/bin/oclive_kernel_server
+Restart=always
+RestartSec=3
+# 嵌入式预演：可按板子内存调整
+MemoryMax=512M
+CPUQuota=80%
+
+[Install]
+WantedBy=multi-user.target

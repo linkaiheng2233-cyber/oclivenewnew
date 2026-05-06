@@ -1,6 +1,7 @@
 //! 本地 HTTP API（`--api`）：供编写器试聊等工具调用，不经 Tauri IPC。
 //!
-//! 仅绑定 `127.0.0.1`；生产环境请自行评估暴露面。
+//! **监听地址**：环境变量 **`OOCP_API_BIND`**（默认 `127.0.0.1`）。容器或局域网暴露可设为 `0.0.0.0`，
+//! 并建议同时设置 **`OOCP_API_TOKEN`**，要求 REST 与 OOCP WS 使用 `Authorization: Bearer <token>`。
 //!
 //! `POST /chat` 成功响应在扁平化的 `SendMessageResponse` 字段之外另含 **`personality_source`**
 //!（与包内 `settings.json` → `evolution.personality_source` 一致：`vector` | `profile`），便于试聊工具区分人格模式。
@@ -14,9 +15,14 @@ use crate::infrastructure::db::RoleFeedbackRow;
 use crate::models::dto::{SendMessageRequest, SendMessageResponse};
 use crate::models::role::PersonalitySource;
 use crate::state::KernelAppState;
+use axum::body::Body;
 use axum::extract::Query;
+use axum::extract::Request;
 use axum::extract::State;
+use axum::http::header;
 use axum::http::Method;
+use axum::middleware::{self, Next};
+use axum::response::IntoResponse;
 use axum::routing::{get, post};
 use axum::Json;
 use axum::Router;
@@ -91,6 +97,52 @@ fn api_error(
 
 async fn health() -> &'static str {
     "ok"
+}
+
+fn http_api_bearer_token_from_env() -> Option<String> {
+    std::env::var("OOCP_API_TOKEN")
+        .ok()
+        .map(|s| s.trim().to_string())
+        .filter(|s| !s.is_empty())
+}
+
+fn subtle_constant_time_eq(a: &str, b: &str) -> bool {
+    let a = a.as_bytes();
+    let b = b.as_bytes();
+    if a.len() != b.len() {
+        return false;
+    }
+    let mut diff = 0u8;
+    for (x, y) in a.iter().zip(b.iter()) {
+        diff |= x ^ y;
+    }
+    diff == 0
+}
+
+/// 当设置了 `OOCP_API_TOKEN` 时，要求 REST 路由携带 `Authorization: Bearer <token>`（与 OOCP WS 一致）。
+async fn optional_rest_bearer_middleware(req: Request<Body>, next: Next) -> impl IntoResponse {
+    let Some(server_token) = http_api_bearer_token_from_env() else {
+        return next.run(req).await;
+    };
+    let client_token = req
+        .headers()
+        .get(header::AUTHORIZATION)
+        .and_then(|v| v.to_str().ok())
+        .and_then(|v| v.strip_prefix("Bearer "))
+        .map(str::trim);
+    let ok = match client_token {
+        Some(ct) => subtle_constant_time_eq(server_token.as_str(), ct),
+        None => false,
+    };
+    if !ok {
+        return (
+            axum::http::StatusCode::UNAUTHORIZED,
+            [(header::WWW_AUTHENTICATE, "Bearer")],
+            "HTTP API 鉴权失败：请提供 Authorization: Bearer <OOCP_API_TOKEN>",
+        )
+            .into_response();
+    }
+    next.run(req).await
 }
 
 async fn chat(
@@ -440,8 +492,7 @@ pub fn api_router(app_state: Arc<KernelAppState>) -> Router {
         .allow_methods([Method::GET, Method::POST, Method::OPTIONS])
         .allow_headers(Any);
 
-    Router::<Arc<KernelAppState>>::new()
-        .route("/health", get(health))
+    let rest = Router::new()
         .route("/chat", post(chat))
         .route(
             "/role-feedback",
@@ -452,6 +503,12 @@ pub fn api_router(app_state: Arc<KernelAppState>) -> Router {
             "/role-feedback/set-handled",
             post(set_role_feedback_handled),
         )
+        .layer(middleware::from_fn(optional_rest_bearer_middleware))
+        .with_state(app_state.clone());
+
+    Router::new()
+        .route("/health", get(health))
+        .merge(rest)
         .merge(oocp_ws::oocp_ws_router())
         .layer(cors)
         .with_state(app_state)
@@ -459,6 +516,9 @@ pub fn api_router(app_state: Arc<KernelAppState>) -> Router {
 
 #[derive(Debug, Clone)]
 pub struct ApiServerOptions {
+    /// 监听 IP（或可被 [`std::net::ToSocketAddrs`] 解析的主机名），默认 `127.0.0.1`。
+    /// 环境变量：`OOCP_API_BIND`。
+    pub bind: String,
     pub port: u16,
     pub db_path: PathBuf,
     pub roles_dir: PathBuf,
@@ -467,6 +527,12 @@ pub struct ApiServerOptions {
 
 impl ApiServerOptions {
     pub fn from_env_or_defaults(port: u16) -> Self {
+        let bind = std::env::var("OOCP_API_BIND")
+            .ok()
+            .map(|s| s.trim().to_string())
+            .filter(|s| !s.is_empty())
+            .unwrap_or_else(|| "127.0.0.1".to_string());
+
         let db_path = std::env::var("OCLIVE_DB_PATH")
             .ok()
             .filter(|s| !s.trim().is_empty())
@@ -491,6 +557,7 @@ impl ApiServerOptions {
             });
 
         Self {
+            bind,
             port,
             db_path,
             roles_dir,
@@ -520,8 +587,8 @@ pub async fn serve_api_with_options(opt: ApiServerOptions) -> Result<(), String>
 
     let app = api_router(app_state);
 
-    let addr = format!("127.0.0.1:{}", opt.port);
-    let listener = TcpListener::bind(&addr)
+    let addr = format!("{}:{}", opt.bind, opt.port);
+    let listener = TcpListener::bind(addr.as_str())
         .await
         .map_err(|e| format!("绑定 {} 失败：{}", addr, e))?;
     log::info!(target: "oclive_api", "HTTP API listening http://{}", addr);

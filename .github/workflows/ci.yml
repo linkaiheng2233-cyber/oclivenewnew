@@ -54,6 +54,9 @@ jobs:
         run: bash scripts/check_kernel_entry_vs_invoke_lists.sh
       - name: tests (workspace root)
         run: cargo test --workspace
+      - name: oclive_kernel_server release (Linux headless deliverable)
+        if: runner.os == 'Linux'
+        run: cargo build -p oclive_kernel_server --release
       - name: kernel_runtime without default features (minimal closure)
         run: cargo check -p oclive_kernel_runtime --no-default-features
       - name: Tauri desktop minimal invoke surface (core invoke only)
