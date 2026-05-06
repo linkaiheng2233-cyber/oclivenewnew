@@ -131,11 +131,11 @@ oclive 把对话管线拆成可替换块：**记忆检索、用户句情绪、�
 ## 第四部分：联调步骤（从 0 到通）
 
 1. **启动参考侧车**（仓库内仅用于开发演示）：  
-   - 目录：[examples/remote_plugin_minimal/README.md](../examples/remote_plugin_minimal/README.md)  
+   - 目录：[examples/remote_plugin_minimal/README.md](../../examples/remote_plugin_minimal/README.md)  
    - 默认监听示例 URL（以该 README 为准）。  
 
 1b. **目录插件最小示例**（无需 `OCLIVE_REMOTE_*`，改用 `plugins/` + manifest）：  
-   - [examples/directory-plugin-minimal/README.md](../examples/directory-plugin-minimal/README.md)  
+   - [examples/directory-plugin-minimal/README.md](../../examples/directory-plugin-minimal/README.md)  
 
 2. **设置环境变量**后再启动 oclive（**侧车 B** 路径；**目录 D** 路径可跳过本步，仅配置 `plugin_backends` 与磁盘目录）：
 
