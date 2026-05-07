@@ -12,7 +12,7 @@
 
 ## macOS
 
-Xcode Command Line Tools；整包验证见 `.github/workflows/tauri-build-optional.yml`。
+Xcode Command Line Tools；整包验证见 `.github/workflows/tauri-build-optional.yml`。详细清单、签名与权限说明见 **[DEV_MACOS.md](./DEV_MACOS.md)**。
 
 ## 调试
 
