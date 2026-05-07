@@ -956,200 +956,195 @@ onBeforeUnmount(() => {
         @click.stop
       >
         <div class="top-more-panel-inner">
-          <div
-            class="more-panel-split"
-            :class="{ 'more-panel-split--pair': roleStore.interactionPureChat }"
-          >
-            <div class="more-panel-col more-panel-col--stack">
-              <div class="more-grid more-grid--uniform more-grid--in-split">
-          <div class="more-tile more-tile--cell more-tile--u1">
-            <div class="more-tile-head">
-              <span class="more-label">{{ t("app.topBar.tiles.interactionMode.title") }}</span>
-              <HelpHint
-                :paragraphs="(t('app.topBar.tiles.interactionMode.hint') as any)"
-              />
+          <div class="more-panel-rows">
+            <div class="more-row more-row--r1-strip">
+              <div class="more-tile more-tile--cell more-tile--top-strip">
+                <div class="more-tile-head">
+                  <span class="more-label">{{ t("app.topBar.tiles.interactionMode.title") }}</span>
+                  <HelpHint
+                    :paragraphs="(t('app.topBar.tiles.interactionMode.hint') as any)"
+                  />
+                </div>
+                <div class="more-tile-body">
+                  <select
+                    id="interaction-mode"
+                    class="interaction-mode-select more-select more-select--fill"
+                    :value="roleStore.roleInfo.interactionMode"
+                    @change="onInteractionModeChange"
+                  >
+                    <option value="immersive">{{ t("app.topBar.tiles.interactionMode.immersive") }}</option>
+                    <option value="pure_chat">{{ t("app.topBar.tiles.interactionMode.pureChat") }}</option>
+                  </select>
+                </div>
+              </div>
+
+              <div class="more-tile more-tile--cell more-tile--top-strip">
+                <div class="more-tile-head">
+                  <span class="more-label">{{ t("app.topBar.tiles.identity.title") }}</span>
+                  <HelpHint :text="String(t('app.topBar.tiles.identity.hint'))" />
+                </div>
+                <div class="more-tile-body more-tile-body--selector">
+                  <RoleSelector
+                    variant="topbar"
+                    :sections="['relation']"
+                    :current-role-id="roleStore.currentRoleId"
+                    :current-relation="roleStore.relationSelectValue"
+                    :roles="roleStore.roles"
+                    :relations="relationOptions"
+                    :loading="chatStore.isLoading"
+                    @change-role="onSwitchRole"
+                    @change-relation="onChangeRelation"
+                  />
+                </div>
+              </div>
+
+              <div class="more-tile more-tile--cell more-tile--top-strip">
+                <div class="more-tile-head">
+                  <span class="more-label">{{ t("app.topBar.tiles.appearance.title") }}</span>
+                  <HelpHint
+                    :paragraphs="(t('app.topBar.tiles.appearance.hint') as any)"
+                  />
+                </div>
+                <div class="more-tile-body">
+                  <div class="top-bar-appearance" role="toolbar" :aria-label="String(t('app.topBar.tiles.appearance.toolbarLabel'))">
+                    <div class="appearance-scale" :aria-label="String(t('app.topBar.tiles.appearance.scaleLabel'))">
+                      <button
+                        type="button"
+                        class="appearance-icon-btn"
+                        :title="String(t('app.topBar.tiles.appearance.shrink'))"
+                        :aria-label="String(t('app.topBar.tiles.appearance.shrinkAria'))"
+                        @click="bumpScale(-1)"
+                      >
+                        A−
+                      </button>
+                      <span
+                        class="appearance-scale-value"
+                        :title="String(t('app.topBar.tiles.appearance.relativeScaleTitle', { label: scaleLabel }))"
+                      >{{ scaleLabel }}</span>
+                      <button
+                        type="button"
+                        class="appearance-icon-btn"
+                        :title="String(t('app.topBar.tiles.appearance.enlarge'))"
+                        :aria-label="String(t('app.topBar.tiles.appearance.enlargeAria'))"
+                        @click="bumpScale(1)"
+                      >
+                        A+
+                      </button>
+                    </div>
+                    <button
+                      type="button"
+                      class="appearance-theme-btn"
+                      :title="String(t('app.topBar.tiles.appearance.themeTitle', { label: themeCycleLabel }))"
+                      @click="cycleTheme"
+                    >
+                      {{
+                        themeCycleLabel === String(t("app.topBar.tiles.appearance.themeSystem"))
+                          ? "◐"
+                          : themeCycleLabel === String(t("app.topBar.tiles.appearance.themeDark"))
+                            ? "🌙"
+                            : "☀️"
+                      }}
+                      {{ themeCycleLabel }}
+                    </button>
+                  </div>
+                </div>
+              </div>
             </div>
-            <div class="more-tile-body">
-              <select
-                id="interaction-mode"
-                class="interaction-mode-select more-select more-select--fill"
-                :value="roleStore.roleInfo.interactionMode"
-                @change="onInteractionModeChange"
+
+            <div class="more-row more-row--r2-wide">
+              <div
+                v-if="roleStore.interactionPureChat"
+                class="more-tile more-tile--cell more-tile--row-wide"
               >
-                <option value="immersive">{{ t("app.topBar.tiles.interactionMode.immersive") }}</option>
-                <option value="pure_chat">{{ t("app.topBar.tiles.interactionMode.pureChat") }}</option>
-              </select>
-            </div>
-          </div>
-
-          <div class="more-tile more-tile--cell more-tile--u1">
-            <div class="more-tile-head">
-              <span class="more-label">{{ t("app.topBar.tiles.identity.title") }}</span>
-              <HelpHint :text="String(t('app.topBar.tiles.identity.hint'))" />
-            </div>
-            <div class="more-tile-body more-tile-body--selector">
-              <RoleSelector
-                variant="topbar"
-                :sections="['relation']"
-                :current-role-id="roleStore.currentRoleId"
-                :current-relation="roleStore.relationSelectValue"
-                :roles="roleStore.roles"
-                :relations="relationOptions"
-                :loading="chatStore.isLoading"
-                @change-role="onSwitchRole"
-                @change-relation="onChangeRelation"
-              />
-            </div>
-          </div>
-
-          <div class="more-tile more-tile--cell more-tile--u2">
-            <div class="more-tile-head">
-              <span class="more-label">{{ t("app.topBar.tiles.appearance.title") }}</span>
-              <HelpHint
-                :paragraphs="(t('app.topBar.tiles.appearance.hint') as any)"
-              />
-            </div>
-            <div class="more-tile-body">
-              <div class="top-bar-appearance" role="toolbar" :aria-label="String(t('app.topBar.tiles.appearance.toolbarLabel'))">
-                <div class="appearance-scale" :aria-label="String(t('app.topBar.tiles.appearance.scaleLabel'))">
+                <div class="more-tile-head">
+                  <span class="more-label">{{ t("app.topBar.tiles.pureChatModels.title") }}</span>
+                  <HelpHint :text="String(t('app.topBar.tiles.pureChatModels.hint'))" />
+                </div>
+                <div class="more-tile-body">
                   <button
                     type="button"
-                    class="appearance-icon-btn"
-                    :title="String(t('app.topBar.tiles.appearance.shrink'))"
-                    :aria-label="String(t('app.topBar.tiles.appearance.shrinkAria'))"
-                    @click="bumpScale(-1)"
+                    class="more-debug-btn more-debug-btn--fill"
+                    @click="
+                      pureChatModelSheetOpen = true;
+                      topMoreOpen = false;
+                    "
                   >
-                    A−
-                  </button>
-                  <span
-                    class="appearance-scale-value"
-                    :title="String(t('app.topBar.tiles.appearance.relativeScaleTitle', { label: scaleLabel }))"
-                  >{{ scaleLabel }}</span>
-                  <button
-                    type="button"
-                    class="appearance-icon-btn"
-                    :title="String(t('app.topBar.tiles.appearance.enlarge'))"
-                    :aria-label="String(t('app.topBar.tiles.appearance.enlargeAria'))"
-                    @click="bumpScale(1)"
-                  >
-                    A+
+                    {{ t("app.topBar.tiles.pureChatModels.openSheet") }}
                   </button>
                 </div>
-                <button
-                  type="button"
-                  class="appearance-theme-btn"
-                  :title="String(t('app.topBar.tiles.appearance.themeTitle', { label: themeCycleLabel }))"
-                  @click="cycleTheme"
-                >
-                  {{
-                    themeCycleLabel === String(t("app.topBar.tiles.appearance.themeSystem"))
-                      ? "◐"
-                      : themeCycleLabel === String(t("app.topBar.tiles.appearance.themeDark"))
-                        ? "🌙"
-                        : "☀️"
-                  }}
-                  {{ themeCycleLabel }}
-                </button>
               </div>
-            </div>
-          </div>
-              </div>
-            </div>
 
-            <div class="more-panel-col more-panel-col--stack">
-              <div class="more-grid more-grid--uniform more-grid--in-split">
-          <div v-if="roleStore.interactionPureChat" class="more-tile more-tile--cell more-tile--u1">
-            <div class="more-tile-head">
-              <span class="more-label">{{ t("app.topBar.tiles.pureChatModels.title") }}</span>
-              <HelpHint :text="String(t('app.topBar.tiles.pureChatModels.hint'))" />
-            </div>
-            <div class="more-tile-body">
-              <button
-                type="button"
-                class="more-debug-btn more-debug-btn--fill"
-                @click="
-                  pureChatModelSheetOpen = true;
-                  topMoreOpen = false;
-                "
+              <div
+                v-else-if="roleStore.interactionImmersive"
+                class="more-tile more-tile--cell more-tile--row-wide more-tile--duo"
               >
-                {{ t("app.topBar.tiles.pureChatModels.openSheet") }}
-              </button>
+                <div class="more-duo-seg">
+                  <div class="more-tile-head more-tile-head--tight more-duo-seg-head">
+                    <span class="more-label">{{ t("app.topBar.tiles.virtualTime.title") }}</span>
+                    <HelpHint
+                      :paragraphs="(t('app.topBar.tiles.virtualTime.hint') as any)"
+                    />
+                  </div>
+                  <div class="more-tile-body more-tile-body--row more-duo-seg-body">
+                    <VirtualTimeBar
+                      compact
+                      class="more-vtime"
+                      :role-id="roleStore.currentRoleId"
+                      @notify="(p) => showToast(p.type, p.message)"
+                      @refreshed="roleStore.refreshRoleInfo"
+                      @jump-complete="onVirtualTimeJumpComplete"
+                    />
+                  </div>
+                </div>
+                <div v-if="allSceneOptions.length > 0" class="more-duo-seg more-duo-seg--split">
+                  <div class="more-tile-head more-tile-head--tight more-duo-seg-head">
+                    <span class="more-label">{{ t("app.topBar.tiles.narrativeScene.title") }}</span>
+                    <HelpHint
+                      :text="String(t('app.topBar.tiles.narrativeScene.help'))"
+                    />
+                  </div>
+                  <div class="more-tile-body more-tile-body--scene more-tile-body--scene-inline more-duo-seg-body">
+                    <select
+                      id="top-scene-select"
+                      class="scene-select more-select more-select--fill"
+                      :value="uiStore.sceneId"
+                      @change="onTopBarSceneChange($event)"
+                    >
+                      <option v-for="s in allSceneOptions" :key="s.id" :value="s.id">
+                        {{ s.label }}
+                      </option>
+                    </select>
+                    <span class="scene-row-hint scene-row-hint--tile">
+                      {{ t("app.topBar.tiles.narrativeScene.characterAt") }}：{{ characterSceneLabel() }}
+                    </span>
+                  </div>
+                </div>
+              </div>
             </div>
-          </div>
 
-          <div
-            v-if="roleStore.interactionImmersive"
-            class="more-tile more-tile--cell more-tile--u2 more-tile--duo"
-          >
-            <div class="more-duo-seg">
-              <div class="more-tile-head more-tile-head--tight more-duo-seg-head">
-                <span class="more-label">{{ t("app.topBar.tiles.virtualTime.title") }}</span>
-                <HelpHint
-                  :paragraphs="(t('app.topBar.tiles.virtualTime.hint') as any)"
-                />
-              </div>
-              <div class="more-tile-body more-tile-body--row more-duo-seg-body">
-                <VirtualTimeBar
-                  compact
-                  class="more-vtime"
-                  :role-id="roleStore.currentRoleId"
-                  @notify="(p) => showToast(p.type, p.message)"
-                  @refreshed="roleStore.refreshRoleInfo"
-                  @jump-complete="onVirtualTimeJumpComplete"
-                />
-              </div>
-            </div>
-            <div v-if="allSceneOptions.length > 0" class="more-duo-seg more-duo-seg--split">
-              <div class="more-tile-head more-tile-head--tight more-duo-seg-head">
-                <span class="more-label">{{ t("app.topBar.tiles.narrativeScene.title") }}</span>
-                <HelpHint
-                  :text="String(t('app.topBar.tiles.narrativeScene.help'))"
-                />
-              </div>
-              <div class="more-tile-body more-tile-body--scene more-tile-body--scene-inline more-duo-seg-body">
-                <select
-                  id="top-scene-select"
-                  class="scene-select more-select more-select--fill"
-                  :value="uiStore.sceneId"
-                  @change="onTopBarSceneChange($event)"
-                >
-                  <option v-for="s in allSceneOptions" :key="s.id" :value="s.id">
-                    {{ s.label }}
-                  </option>
-                </select>
-                <span class="scene-row-hint scene-row-hint--tile">
-                  {{ t("app.topBar.tiles.narrativeScene.characterAt") }}：{{ characterSceneLabel() }}
-                </span>
+            <div class="more-row more-row--r3-debug">
+              <div class="more-tile more-tile--cell more-tile--row-wide">
+                <div class="more-tile-head">
+                  <span class="more-label">{{ t("app.topBar.tiles.debug.title") }}</span>
+                  <HelpHint
+                    :text="
+                      String(
+                        roleStore.interactionPureChat
+                          ? t('app.topBar.tiles.debug.hintPureChat')
+                          : t('app.topBar.tiles.debug.hint'),
+                      )
+                    "
+                  />
+                </div>
+                <div class="more-tile-body">
+                  <button type="button" class="more-debug-btn more-debug-btn--fill" @click="debugStore.toggle">
+                    {{ t("app.topBar.tiles.debug.openPanel") }}
+                  </button>
+                </div>
               </div>
             </div>
-          </div>
 
-          <div
-            class="more-tile more-tile--cell"
-            :class="roleStore.interactionPureChat ? 'more-tile--u1' : 'more-tile--u2'"
-          >
-            <div class="more-tile-head">
-              <span class="more-label">{{ t("app.topBar.tiles.debug.title") }}</span>
-              <HelpHint
-                :text="
-                  String(
-                    roleStore.interactionPureChat
-                      ? t('app.topBar.tiles.debug.hintPureChat')
-                      : t('app.topBar.tiles.debug.hint'),
-                  )
-                "
-              />
-            </div>
-            <div class="more-tile-body">
-              <button type="button" class="more-debug-btn more-debug-btn--fill" @click="debugStore.toggle">
-                {{ t("app.topBar.tiles.debug.openPanel") }}
-              </button>
-            </div>
-          </div>
-            </div>
-          </div>
-
-            <div v-if="!roleStore.interactionPureChat" class="more-panel-col more-panel-col--stack more-panel-col--tools">
+            <div v-if="!roleStore.interactionPureChat" class="more-row more-row--r4-tools">
               <div class="more-tile more-tile--cell more-tile--side-tile settings-entry-tile">
                 <div class="more-tile-head">
                   <span class="more-label">{{ t("app.topBar.tiles.settingsEntry.title") }}</span>
@@ -1515,54 +1510,64 @@ onBeforeUnmount(() => {
   margin-top: 10px;
   padding-top: 12px;
   border-top: 1px solid var(--border-light);
-  width: min(36%, 26rem);
-  max-width: calc(36vw - 16px);
+  width: fit-content;
+  max-width: min(94vw, 44rem);
   align-self: flex-start;
   margin-left: 0;
   margin-right: auto;
   box-sizing: border-box;
 }
 .top-more-panel-inner {
-  max-height: min(72vh, 620px);
+  max-height: min(46vh, 400px);
   overflow-y: auto;
   overflow-x: hidden;
   padding-bottom: 4px;
 }
-.more-panel-split {
-  display: grid;
-  grid-template-columns: repeat(3, minmax(0, 1fr));
-  gap: 12px 14px;
-  align-items: start;
-}
-.more-panel-split--pair {
-  grid-template-columns: repeat(2, minmax(0, 1fr));
-}
-.more-panel-col--stack {
-  min-width: 0;
-}
-.more-panel-col--tools {
+.more-panel-rows {
   display: flex;
   flex-direction: column;
-  gap: 12px;
+  gap: 8px;
+  width: 100%;
+  min-width: min(22rem, 100%);
+}
+.more-row--r1-strip {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 8px 10px;
+  align-items: stretch;
+}
+.more-row--r2-wide,
+.more-row--r3-debug {
+  display: grid;
+  grid-template-columns: 1fr;
+  min-width: 0;
+}
+.more-row--r4-tools {
+  display: grid;
+  grid-template-columns: minmax(0, 1.12fr) minmax(0, 0.88fr);
+  gap: 8px 10px;
+  align-items: stretch;
 }
 .more-tile--side-tile {
   width: 100%;
 }
-.more-panel-col--tools .settings-entry-actions {
+.more-row--r4-tools .settings-entry-actions {
   grid-template-columns: repeat(2, minmax(0, 1fr));
 }
-.more-panel-col--tools .settings-entry-tile,
-.more-panel-col--tools .more-tile--rolepack {
+.more-row--r4-tools .settings-entry-tile,
+.more-row--r4-tools .more-tile--rolepack {
   min-height: auto;
 }
-@media (max-width: 840px) {
-  .more-panel-split,
-  .more-panel-split--pair {
+@media (max-width: 760px) {
+  .more-row--r1-strip {
+    grid-template-columns: 1fr;
+  }
+  .more-row--r4-tools {
     grid-template-columns: 1fr;
   }
 }
 @media (max-width: 680px) {
-  .more-panel-col--tools .settings-entry-actions {
+  .more-row--r4-tools .settings-entry-actions {
     grid-template-columns: 1fr;
   }
 }
@@ -1671,6 +1676,17 @@ onBeforeUnmount(() => {
   flex-direction: column;
   gap: 10px;
   box-shadow: var(--shadow-sm);
+}
+.top-more-panel .more-tile.more-tile--top-strip,
+.top-more-panel .more-tile.more-tile--row-wide:not(.more-tile--duo) {
+  min-height: 0;
+  gap: 8px;
+  padding: 10px 12px;
+}
+.top-more-panel .more-tile.more-tile--row-wide.more-tile--duo {
+  min-height: calc(5.25rem + 2.25rem);
+  padding: 0;
+  gap: 0;
 }
 /* 按功能自然占地：不强行 flex-grow 拉满整行，宽裕时右侧留白 */
 .more-tile--xs {
