@@ -267,6 +267,8 @@ export const usePluginStore = defineStore("plugin", {
     pluginMarketSnapshot: null as PluginMarketSnapshotDto | null,
     pluginMarketSyncing: false,
     pluginMarketError: null as string | null,
+    /** 递增以触发 App 层打开专家模型工作台（V2 浮窗）。 */
+    expertModelsWorkbenchRequestEpoch: 0,
   }),
   getters: {
     /** 主界面左侧栏（立绘列）是否有已启用的目录插件嵌入 */
@@ -405,6 +407,10 @@ export const usePluginStore = defineStore("plugin", {
     },
     closeMarketPanel() {
       this.marketPanelVisible = false;
+    },
+    /** 请求打开专家模型工作台：由 App 根据是否启用插件管理 V2 决定打开浮窗或提示。 */
+    requestOpenExpertModelsWorkbench(): void {
+      this.expertModelsWorkbenchRequestEpoch += 1;
     },
     setPersistScope(scope: PluginPersistScope) {
       if (this.persistScope === scope) {

@@ -212,6 +212,18 @@ const {
   },
 });
 
+watch(
+  () => pluginStore.expertModelsWorkbenchRequestEpoch,
+  (n, prev) => {
+    if (n <= 0 || n === prev) return;
+    if (uiStore.experimentalPluginManagerV2) {
+      openPluginManagerV2Preview();
+    } else {
+      showToast("info", String(t("expertWorkbench.openRequiresV2")));
+    }
+  },
+);
+
 const topBarRef = ref<HTMLElement | null>(null);
 let morePanelClickListenTimer: ReturnType<typeof setTimeout> | null = null;
 

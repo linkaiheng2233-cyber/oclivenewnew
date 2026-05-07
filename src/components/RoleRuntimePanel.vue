@@ -13,6 +13,7 @@ import {
 } from "../utils/tauri-api";
 import { useAppToast } from "../composables/useAppToast";
 import HelpHint from "./HelpHint.vue";
+import ExpertModelsRuntimeCard from "./ExpertModelsRuntimeCard.vue";
 
 const roleStore = useRoleStore();
 const uiStore = useUiStore();
@@ -149,6 +150,7 @@ async function submitFeedback(): Promise<void> {
         </span>
       </p>
     </div>
+    <ExpertModelsRuntimeCard layout="embedded" />
     <div class="runtime-backend-hint">
       <p class="sub">
         {{ t("roleRuntimePanel.backendHint.prefix") }}

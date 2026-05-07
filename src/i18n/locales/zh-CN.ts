@@ -61,6 +61,45 @@ export const zhCN = {
         "当前桌面构建未包含「{command}」命令（invoke 分组「{group}」）。请使用对应的 Cargo 特性重新编译（见 `src-tauri/Cargo.toml` 的 invoke-*）。",
     },
   },
+  expertWorkbench: {
+    openRequiresV2:
+      "专家模型工作台在「插件与后端管理」实验版（V2）中。请先到设置 → 插件与扩展 → 开启「实验性插件管理 V2」，再从本卡片打开。",
+  },
+  expertRuntimeCard: {
+    aria: "当前人格配方（专家模型）",
+    title: "当前人格配方",
+    loading: "正在读取专家模型状态…",
+    pill: {
+      pure: "未启用",
+      roleDefault: "角色默认",
+      session: "会话覆盖",
+    },
+    status: {
+      pureTitle: "未启用，跟随角色包默认",
+      pureBody: "尚未使用第九模块的会话覆盖；专家图与引擎默认一致（纯净模式）。",
+      roleDefaultTitle: "当前使用角色包默认人格",
+      roleDefaultBody: "该角色已保存默认专家图，且本会话未覆盖。{detail}",
+      sessionTitle: "本会话已应用专家模型",
+      sessionBody: "当前生效的关键配置如下。{detail}",
+    },
+    summary: {
+      cloud: "云端模型：{text}",
+      lora: "LoRA：{text}",
+      base: "本地基底：{text}",
+      events: "事件触发×{n}",
+      sep: " ",
+      empty: "（图中无已启用的专家节点）",
+    },
+    btnDetail: "查看详情",
+    btnEdit: "编辑",
+    btnReset: "重置为角色包默认",
+    resetting: "重置中…",
+    detailTitle: "当前生效的专家配置（JSON）",
+    confirmResetSession:
+      "将清除本会话的专家模型覆盖并重新应用引擎配置。角色级「设为角色默认」不会被删除。继续吗？",
+    toastResetOk: "已清除会话专家覆盖。",
+    toastResetApplyWarn: "已清除覆盖，但重新应用时出现提示，请到专家工作台查看运行记录。",
+  },
   common: {
     save: "保存",
     close: "关闭",
@@ -1712,6 +1751,10 @@ export const zhCN = {
       },
       toasts: {
         resetToPackDefaultOk: "已重置为当前角色包推荐布局（author.suggested_ui 优先，否则 ui.json）。",
+      },
+      expertModels: {
+        title: "专家模型（Module 9）",
+        hint: "与会话级专家图覆盖一致；在此可快速查看状态、打开工作台或清除本会话覆盖。",
       },
       localLlama: {
         title: "一键启用本地 Llama（Directory LLM）",

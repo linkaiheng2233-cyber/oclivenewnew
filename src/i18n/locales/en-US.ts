@@ -66,6 +66,47 @@ export const enUS = {
         'The "{command}" command is not included in this desktop build (invoke group "{group}"). Rebuild with the matching Cargo feature (see `src-tauri/Cargo.toml` invoke-*).',
     },
   },
+  expertWorkbench: {
+    openRequiresV2:
+      "The expert models workbench lives in the experimental Plugin Manager (V2). Enable it in Settings → Plugins & extensions, then open again from this card.",
+  },
+  expertRuntimeCard: {
+    aria: "Current personality recipe (expert models)",
+    title: "Current personality recipe",
+    loading: "Loading expert model state…",
+    pill: {
+      pure: "Off",
+      roleDefault: "Role default",
+      session: "Session override",
+    },
+    status: {
+      pureTitle: "Not enabled — following pack defaults",
+      pureBody:
+        "No Module 9 session override is active; the expert graph matches the engine default (clean mode).",
+      roleDefaultTitle: "Using the role’s saved default recipe",
+      roleDefaultBody: "This role has a persisted default expert graph and this session is not overriding it.{detail}",
+      sessionTitle: "Session expert override is active",
+      sessionBody: "Key settings currently in effect:{detail}",
+    },
+    summary: {
+      cloud: "Cloud model: {text}",
+      lora: "LoRA: {text}",
+      base: "Local base: {text}",
+      events: "Event triggers ×{n}",
+      sep: " ",
+      empty: "(No enabled expert nodes in the graph)",
+    },
+    btnDetail: "View details",
+    btnEdit: "Edit",
+    btnReset: "Reset to pack default",
+    resetting: "Resetting…",
+    detailTitle: "Effective expert configuration (JSON)",
+    confirmResetSession:
+      "Clear this session’s expert model override and re-apply the engine configuration. The role-level “set as role default” entry is not deleted. Continue?",
+    toastResetOk: "Session expert override cleared.",
+    toastResetApplyWarn:
+      "Override cleared, but re-apply reported a notice—check the expert workbench run history.",
+  },
   common: {
     save: "Save",
     close: "Close",
@@ -1776,6 +1817,10 @@ export const enUS = {
       toasts: {
         resetToPackDefaultOk:
           "Layout reset to current role pack recommendation (author.suggested_ui preferred, otherwise ui.json).",
+      },
+      expertModels: {
+        title: "Expert models (Module 9)",
+        hint: "Same session expert graph as the workbench—quick status, open editor, or clear this session’s override.",
       },
       localLlama: {
         title: "Enable local Llama (Directory LLM) with one click",
