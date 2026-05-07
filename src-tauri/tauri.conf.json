@@ -64,6 +64,12 @@
           "x": 480,
           "y": 170
         }
+      },
+      "appimage": {
+        "bundleMediaFramework": false
+      },
+      "deb": {
+        "section": "utils"
       }
     },
     "security": {
