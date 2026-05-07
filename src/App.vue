@@ -955,7 +955,13 @@ onBeforeUnmount(() => {
         :aria-label="String(t('app.topBar.more.regionLabel'))"
         @click.stop
       >
-        <div class="more-grid more-grid--uniform">
+        <div class="top-more-panel-inner">
+          <div
+            class="more-panel-split"
+            :class="{ 'more-panel-split--solo': roleStore.interactionPureChat }"
+          >
+            <div class="more-panel-col more-panel-col--main">
+              <div class="more-grid more-grid--uniform more-grid--in-split">
           <div class="more-tile more-tile--cell more-tile--u1">
             <div class="more-tile-head">
               <span class="more-label">{{ t("app.topBar.tiles.interactionMode.title") }}</span>
@@ -1136,72 +1142,81 @@ onBeforeUnmount(() => {
               </button>
             </div>
           </div>
-
-          <div v-if="!roleStore.interactionPureChat" class="more-tile more-tile--cell more-tile--u2 settings-entry-tile">
-              <div class="more-tile-head">
-                <span class="more-label">{{ t("app.topBar.tiles.settingsEntry.title") }}</span>
-                <HelpHint :text="settingsEntryMoreHelp" />
-              </div>
-              <div class="more-tile-body settings-entry-actions" role="group" :aria-label="String(t('app.topBar.tiles.settingsEntry.groupLabel'))">
-                <button type="button" class="more-debug-btn more-debug-btn--fill settings-entry-btn" @click="openShortcutHelp">
-                  {{ t("app.topBar.tiles.settingsEntry.shortcutHelp") }}
-                </button>
-                <button
-                  type="button"
-                  class="more-debug-btn more-debug-btn--fill settings-entry-btn settings-entry-btn--primary settings-gear-btn"
-                  @click="openSettingsView"
-                >
-                  {{ t("app.topBar.tiles.settingsEntry.settings") }}
-                </button>
-                <button
-                  type="button"
-                  class="more-debug-btn more-debug-btn--fill settings-entry-btn"
-                  @click="
-                    localModelManagerOpen = true;
-                    topMoreOpen = false;
-                  "
-                >
-                  {{ t("app.topBar.tiles.settingsEntry.localModels") }}
-                </button>
-                <button
-                  type="button"
-                  class="more-debug-btn more-debug-btn--fill settings-entry-btn"
-                  :title="String(t('app.topBar.tiles.settingsEntry.revealRolePackHint'))"
-                  @click="void onRevealRolePackFolder()"
-                >
-                  {{ t("app.topBar.tiles.settingsEntry.revealRolePackFolder") }}
-                </button>
-                <button
-                  type="button"
-                  class="more-debug-btn more-debug-btn--fill settings-entry-btn"
-                  @click="openPluginManagerPanel"
-                >
-                  {{ pluginManagerMoreBtnLabel }}
-                </button>
-                <button
-                  type="button"
-                  class="more-debug-btn more-debug-btn--fill settings-entry-btn"
-                  @click="openPluginMarketPanel"
-                >
-                  {{ t("app.topBar.tiles.settingsEntry.pluginMarket") }}
-                </button>
               </div>
             </div>
 
-          <div v-if="!roleStore.interactionPureChat" class="more-tile more-tile--cell more-tile--u2 more-tile--rolepack">
-              <div class="more-tile-head">
-                <span class="more-label">{{ t("app.topBar.tiles.rolePackShare.title") }}</span>
-                <HelpHint
-                  :paragraphs="(t('app.topBar.tiles.rolePackShare.hint') as any)"
-                />
+            <div v-if="!roleStore.interactionPureChat" class="more-panel-col more-panel-col--side">
+              <div class="more-tile more-tile--cell more-tile--side-tile settings-entry-tile">
+                <div class="more-tile-head">
+                  <span class="more-label">{{ t("app.topBar.tiles.settingsEntry.title") }}</span>
+                  <HelpHint :text="settingsEntryMoreHelp" />
+                </div>
+                <div
+                  class="more-tile-body settings-entry-actions"
+                  role="group"
+                  :aria-label="String(t('app.topBar.tiles.settingsEntry.groupLabel'))"
+                >
+                  <button type="button" class="more-debug-btn more-debug-btn--fill settings-entry-btn" @click="openShortcutHelp">
+                    {{ t("app.topBar.tiles.settingsEntry.shortcutHelp") }}
+                  </button>
+                  <button
+                    type="button"
+                    class="more-debug-btn more-debug-btn--fill settings-entry-btn settings-entry-btn--primary settings-gear-btn"
+                    @click="openSettingsView"
+                  >
+                    {{ t("app.topBar.tiles.settingsEntry.settings") }}
+                  </button>
+                  <button
+                    type="button"
+                    class="more-debug-btn more-debug-btn--fill settings-entry-btn"
+                    @click="
+                      localModelManagerOpen = true;
+                      topMoreOpen = false;
+                    "
+                  >
+                    {{ t("app.topBar.tiles.settingsEntry.localModels") }}
+                  </button>
+                  <button
+                    type="button"
+                    class="more-debug-btn more-debug-btn--fill settings-entry-btn"
+                    :title="String(t('app.topBar.tiles.settingsEntry.revealRolePackHint'))"
+                    @click="void onRevealRolePackFolder()"
+                  >
+                    {{ t("app.topBar.tiles.settingsEntry.revealRolePackFolder") }}
+                  </button>
+                  <button
+                    type="button"
+                    class="more-debug-btn more-debug-btn--fill settings-entry-btn"
+                    @click="openPluginManagerPanel"
+                  >
+                    {{ pluginManagerMoreBtnLabel }}
+                  </button>
+                  <button
+                    type="button"
+                    class="more-debug-btn more-debug-btn--fill settings-entry-btn"
+                    @click="openPluginMarketPanel"
+                  >
+                    {{ t("app.topBar.tiles.settingsEntry.pluginMarket") }}
+                  </button>
+                </div>
               </div>
-              <div class="more-tile-body">
-                <RolePackBar
-                  @notify="(p) => showToast(p.type, p.message)"
-                  @imported="onPackImported"
-                />
+
+              <div class="more-tile more-tile--cell more-tile--side-tile more-tile--rolepack">
+                <div class="more-tile-head">
+                  <span class="more-label">{{ t("app.topBar.tiles.rolePackShare.title") }}</span>
+                  <HelpHint
+                    :paragraphs="(t('app.topBar.tiles.rolePackShare.hint') as any)"
+                  />
+                </div>
+                <div class="more-tile-body">
+                  <RolePackBar
+                    @notify="(p) => showToast(p.type, p.message)"
+                    @imported="onPackImported"
+                  />
+                </div>
               </div>
             </div>
+          </div>
         </div>
       </div>
     </header>
@@ -1496,6 +1511,60 @@ onBeforeUnmount(() => {
   margin-top: 10px;
   padding-top: 12px;
   border-top: 1px solid var(--border-light);
+  width: min(50%, 40rem);
+  max-width: calc(50vw - 16px);
+  align-self: flex-end;
+  margin-left: auto;
+  margin-right: 0;
+  box-sizing: border-box;
+}
+.top-more-panel-inner {
+  max-height: min(72vh, 620px);
+  overflow-y: auto;
+  overflow-x: hidden;
+  padding-bottom: 4px;
+}
+.more-panel-split {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 12px 14px;
+  align-items: start;
+}
+.more-panel-split--solo {
+  grid-template-columns: 1fr;
+}
+.more-panel-col--main,
+.more-panel-col--side {
+  min-width: 0;
+}
+.more-panel-col--side {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+.more-tile--side-tile {
+  width: 100%;
+}
+.more-panel-col--side .settings-entry-actions {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+.more-panel-col--side .settings-entry-tile,
+.more-panel-col--side .more-tile--rolepack {
+  min-height: auto;
+}
+@media (max-width: 680px) {
+  .more-panel-col--side .settings-entry-actions {
+    grid-template-columns: 1fr;
+  }
+}
+@media (max-width: 560px) {
+  .top-more-panel {
+    width: 100%;
+    max-width: none;
+    align-self: stretch;
+    margin-left: 0;
+    margin-right: 0;
+  }
 }
 .top-more-panel .interaction-mode-select,
 .top-more-panel .scene-select {
@@ -1512,7 +1581,7 @@ onBeforeUnmount(() => {
   font-size: 13px;
   padding: 8px 12px;
 }
-/* 顶栏「更多」：两列流水；u1=等宽半格，u2=整行（跟在单格后面）；序：模式|身份 → 界面 → … → 时间+场景 → 调试 → 设置 → 角色包 */
+/* 顶栏「更多」左栏：两列流水；嵌入 split 时改为单列占满左栏 */
 .more-grid--uniform {
   --more-u1-h: 5.125rem;
   --more-u2-min-h: 5.25rem;
@@ -1520,6 +1589,13 @@ onBeforeUnmount(() => {
   grid-template-columns: repeat(2, minmax(0, 1fr));
   gap: 10px 12px;
   align-items: stretch;
+}
+.more-grid--uniform.more-grid--in-split {
+  grid-template-columns: 1fr;
+}
+.more-grid--uniform.more-grid--in-split > .more-tile--u1,
+.more-grid--uniform.more-grid--in-split > .more-tile--u2 {
+  grid-column: span 1;
 }
 .more-grid--uniform > .more-tile--cell {
   min-width: 0;
