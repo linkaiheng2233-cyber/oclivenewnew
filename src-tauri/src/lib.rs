@@ -372,6 +372,12 @@ pub fn run() {
                 .app_data_dir()
                 .expect("resolve app_data_dir");
             fs::create_dir_all(&app_dir).expect("create app_data_dir");
+            #[cfg(target_os = "linux")]
+            log::info!(
+                target: "oclive_paths",
+                "app_data_dir (XDG-style): {}",
+                app_dir.display()
+            );
             let db_path = app_dir.join("app.db");
             let roles_dir = resolve_roles_dir_for_app(app);
             let roles_for_watcher = roles_dir.clone();
