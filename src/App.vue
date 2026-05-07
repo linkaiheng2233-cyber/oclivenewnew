@@ -958,9 +958,9 @@ onBeforeUnmount(() => {
         <div class="top-more-panel-inner">
           <div
             class="more-panel-split"
-            :class="{ 'more-panel-split--solo': roleStore.interactionPureChat }"
+            :class="{ 'more-panel-split--pair': roleStore.interactionPureChat }"
           >
-            <div class="more-panel-col more-panel-col--main">
+            <div class="more-panel-col more-panel-col--stack">
               <div class="more-grid more-grid--uniform more-grid--in-split">
           <div class="more-tile more-tile--cell more-tile--u1">
             <div class="more-tile-head">
@@ -1053,7 +1053,11 @@ onBeforeUnmount(() => {
               </div>
             </div>
           </div>
+              </div>
+            </div>
 
+            <div class="more-panel-col more-panel-col--stack">
+              <div class="more-grid more-grid--uniform more-grid--in-split">
           <div v-if="roleStore.interactionPureChat" class="more-tile more-tile--cell more-tile--u1">
             <div class="more-tile-head">
               <span class="more-label">{{ t("app.topBar.tiles.pureChatModels.title") }}</span>
@@ -1142,10 +1146,10 @@ onBeforeUnmount(() => {
               </button>
             </div>
           </div>
-              </div>
             </div>
+          </div>
 
-            <div v-if="!roleStore.interactionPureChat" class="more-panel-col more-panel-col--side">
+            <div v-if="!roleStore.interactionPureChat" class="more-panel-col more-panel-col--stack more-panel-col--tools">
               <div class="more-tile more-tile--cell more-tile--side-tile settings-entry-tile">
                 <div class="more-tile-head">
                   <span class="more-label">{{ t("app.topBar.tiles.settingsEntry.title") }}</span>
@@ -1511,11 +1515,11 @@ onBeforeUnmount(() => {
   margin-top: 10px;
   padding-top: 12px;
   border-top: 1px solid var(--border-light);
-  width: min(50%, 40rem);
-  max-width: calc(50vw - 16px);
-  align-self: flex-end;
-  margin-left: auto;
-  margin-right: 0;
+  width: min(36%, 26rem);
+  max-width: calc(36vw - 16px);
+  align-self: flex-start;
+  margin-left: 0;
+  margin-right: auto;
   box-sizing: border-box;
 }
 .top-more-panel-inner {
@@ -1526,18 +1530,17 @@ onBeforeUnmount(() => {
 }
 .more-panel-split {
   display: grid;
-  grid-template-columns: 1fr 1fr;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
   gap: 12px 14px;
   align-items: start;
 }
-.more-panel-split--solo {
-  grid-template-columns: 1fr;
+.more-panel-split--pair {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
 }
-.more-panel-col--main,
-.more-panel-col--side {
+.more-panel-col--stack {
   min-width: 0;
 }
-.more-panel-col--side {
+.more-panel-col--tools {
   display: flex;
   flex-direction: column;
   gap: 12px;
@@ -1545,15 +1548,21 @@ onBeforeUnmount(() => {
 .more-tile--side-tile {
   width: 100%;
 }
-.more-panel-col--side .settings-entry-actions {
+.more-panel-col--tools .settings-entry-actions {
   grid-template-columns: repeat(2, minmax(0, 1fr));
 }
-.more-panel-col--side .settings-entry-tile,
-.more-panel-col--side .more-tile--rolepack {
+.more-panel-col--tools .settings-entry-tile,
+.more-panel-col--tools .more-tile--rolepack {
   min-height: auto;
 }
+@media (max-width: 840px) {
+  .more-panel-split,
+  .more-panel-split--pair {
+    grid-template-columns: 1fr;
+  }
+}
 @media (max-width: 680px) {
-  .more-panel-col--side .settings-entry-actions {
+  .more-panel-col--tools .settings-entry-actions {
     grid-template-columns: 1fr;
   }
 }
