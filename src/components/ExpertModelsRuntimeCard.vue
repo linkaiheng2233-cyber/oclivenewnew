@@ -3,7 +3,7 @@ import { computed, ref, watch } from "vue";
 import { useI18n } from "vue-i18n";
 import { useAppToast } from "../composables/useAppToast";
 import { useExpertModelsStore } from "../stores/expertModelsStore";
-import { usePluginStore } from "../stores/pluginStore";
+import { openExpertWorkbenchEdit } from "../lib/expertWorkbenchOpen";
 import { useRoleStore } from "../stores/roleStore";
 import {
   collectExpertRecipeParts,
@@ -23,7 +23,6 @@ const { t } = useI18n();
 const { showToast } = useAppToast();
 const roleStore = useRoleStore();
 const expertStore = useExpertModelsStore();
-const pluginStore = usePluginStore();
 
 const detailOpen = ref(false);
 const resetBusy = ref(false);
@@ -86,7 +85,9 @@ const detailJson = computed(() =>
 );
 
 function openWorkbench(): void {
-  pluginStore.requestOpenExpertModelsWorkbench();
+  openExpertWorkbenchEdit({
+    draftMode: recipeMode.value === "role_default" ? "role_default" : "effective",
+  });
 }
 
 async function onResetSession(): Promise<void> {
@@ -144,8 +145,13 @@ const rootClass = computed(() =>
         <button type="button" class="expert-runtime__btn" @click="detailOpen = true">
           {{ t("expertRuntimeCard.btnDetail") }}
         </button>
-        <button type="button" class="expert-runtime__btn expert-runtime__btn--primary" @click="openWorkbench">
-          {{ t("expertRuntimeCard.btnEdit") }}
+        <button
+          type="button"
+          class="expert-runtime__btn expert-runtime__btn--primary"
+          :title="String(t('expertWorkbench.editButtonTitle'))"
+          @click="openWorkbench"
+        >
+          {{ t("expertWorkbench.editButton") }}
         </button>
         <button
           v-if="recipeMode === 'session_override'"

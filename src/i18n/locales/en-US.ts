@@ -67,6 +67,8 @@ export const enUS = {
     },
   },
   expertWorkbench: {
+    editButton: "Edit",
+    editButtonTitle: "Open the Expert Models workbench (same entry as in Plugin Manager)",
     openRequiresV2:
       "The expert models workbench lives in the experimental Plugin Manager (V2). Enable it in Settings → Plugins & extensions, then open again from this card.",
   },
@@ -2022,6 +2024,8 @@ export const enUS = {
       setAsRoleDefault: "Set as role default.",
       clearedSessionOverrideAndApplied: "Cleared session override and re-applied.",
       clearedRoleDefault: "Cleared role default.",
+      applyFailedHint:
+        "Could not apply to the current session. Check Llama plugin permissions, model paths, and errors in Run History; try “Backfill from effective” and apply again.",
       sidecarNotice:
         "Config was written, but the local Llama sidecar did not acknowledge config_updated (check the plugin is running and permissions). Details: {message}",
       sidecarStructured:
@@ -2054,8 +2058,33 @@ export const enUS = {
       toastExported: "Exported .oclexpert share bundle.",
       toastImported: "Imported and saved to workflow library: {name}",
       importDefaultName: "Imported expert graph",
+      metaDescriptionLabel: "Recipe description (written into file)",
+      metaDescriptionPlaceholder: "One or two sentences on what this recipe does",
+      metaAuthorLabel: "Author attribution (written into file)",
+      metaAuthorPlaceholder: "Nickname or homepage",
+      previewTitle: "Confirm import",
+      previewName: "Name",
+      previewDescription: "Description",
+      previewAuthor: "Author",
+      previewConfirm: "Import and save to workflow library",
+      previewCancel: "Cancel",
+      offerResetEffective:
+        "This file could not be parsed. Reset the draft to the current effective expert graph so you can keep editing?",
+    },
+    emptyState: {
+      lead: "This expert graph is empty. Load what is effective today, the role-level default if available, or start from a blank canvas.",
+      loadEffective: "Load current effective config",
+      loadRoleDefault: "Load role-level default",
+      newBlank: "New blank recipe",
+    },
+    graphIntegrity: {
+      title: "Expert graph structure issue",
+      resetEffective: "Reset to current effective",
+      openForm: "Switch to form view to fix",
     },
     confirm: {
+      unsavedWorkbenchClose:
+        "You have unsaved or un-applied changes in the Expert Models draft. Close the Plugin Manager window anyway?",
       rollbackLastRun:
         "Rollback to last applied config (Expert Models Facility: {m}+Z) and re-apply to current session.\nTip: you can rollback to any run in Run History.\nContinue?",
       retryRunApply:

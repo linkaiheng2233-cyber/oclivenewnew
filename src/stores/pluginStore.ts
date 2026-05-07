@@ -269,6 +269,11 @@ export const usePluginStore = defineStore("plugin", {
     pluginMarketError: null as string | null,
     /** 递增以触发 App 层打开专家模型工作台（V2 浮窗）。 */
     expertModelsWorkbenchRequestEpoch: 0,
+    /**
+     * 与 `expertModelsWorkbenchRequestEpoch` 同步消费：打开后 `expertModels` 店按此选择草稿来源。
+     * `effective`：当前生效图；`role_default`：角色级默认（若有）。
+     */
+    expertWorkbenchDraftMode: "effective" as "effective" | "role_default",
   }),
   getters: {
     /** 主界面左侧栏（立绘列）是否有已启用的目录插件嵌入 */
@@ -409,7 +414,8 @@ export const usePluginStore = defineStore("plugin", {
       this.marketPanelVisible = false;
     },
     /** 请求打开专家模型工作台：由 App 根据是否启用插件管理 V2 决定打开浮窗或提示。 */
-    requestOpenExpertModelsWorkbench(): void {
+    requestOpenExpertModelsWorkbench(opts?: { draftMode?: "effective" | "role_default" }): void {
+      this.expertWorkbenchDraftMode = opts?.draftMode ?? "effective";
       this.expertModelsWorkbenchRequestEpoch += 1;
     },
     setPersistScope(scope: PluginPersistScope) {

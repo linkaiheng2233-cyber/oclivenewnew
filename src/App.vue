@@ -12,6 +12,7 @@ import { useDebugStore } from "./stores/debugStore";
 import { useRoleStore } from "./stores/roleStore";
 import { useUiStore } from "./stores/uiStore";
 import { usePluginStore } from "./stores/pluginStore";
+import { useExpertModelsStore } from "./stores/expertModelsStore";
 import { listen, type UnlistenFn } from "@tauri-apps/api/event";
 import { buildRelationDropdownOptions } from "./utils/relationOptions";
 import { useAppToast } from "./composables/useAppToast";
@@ -65,6 +66,7 @@ const chatStore = useChatStore();
 const debugStore = useDebugStore();
 const uiStore = useUiStore();
 const pluginStore = usePluginStore();
+const expertModelsStore = useExpertModelsStore();
 const { toast, showToast } = useAppToast();
 const { t } = useI18n();
 const { themeCycleLabel, cycleTheme, bumpScale, scaleLabel } = useOcliveAppearance();
@@ -214,10 +216,18 @@ const {
 
 watch(
   () => pluginStore.expertModelsWorkbenchRequestEpoch,
-  (n, prev) => {
+  async (n, prev) => {
     if (n <= 0 || n === prev) return;
+    const draftMode = pluginStore.expertWorkbenchDraftMode;
     if (uiStore.experimentalPluginManagerV2) {
       openPluginManagerV2Preview();
+      await nextTick();
+      try {
+        await expertModelsStore.refresh();
+        expertModelsStore.applyWorkbenchNavigationDraft(draftMode);
+      } catch {
+        /* store.error 已设置 */
+      }
     } else {
       showToast("info", String(t("expertWorkbench.openRequiresV2")));
     }
@@ -256,6 +266,21 @@ async function onRevealRolePackFolder(): Promise<void> {
   } catch (e) {
     showToast("error", e instanceof Error ? e.message : String(e));
   }
+}
+
+function requestClosePluginManagerV2(): void {
+  if (expertModelsStore.workbenchDraftDirty) {
+    if (!window.confirm(String(t("expertModels.confirm.unsavedWorkbenchClose")))) return;
+  }
+  pluginManagerV2Open.value = false;
+}
+
+function onOpenPluginV1FromV2(): void {
+  if (expertModelsStore.workbenchDraftDirty) {
+    if (!window.confirm(String(t("expertModels.confirm.unsavedWorkbenchClose")))) return;
+  }
+  pluginManagerV2Open.value = false;
+  void pluginStore.openPanel("plugins");
 }
 
 /** 切到纯聊时收起依赖沉浸/插件栈的浮层，避免与纯聊路径叠在一起 */
@@ -626,7 +651,7 @@ function onHotkey(e: KeyboardEvent) {
     }
     if (pluginManagerV2Open.value) {
       e.preventDefault();
-      pluginManagerV2Open.value = false;
+      requestClosePluginManagerV2();
       return;
     }
     if (shortcutHelpOpen.value) {
@@ -1308,11 +1333,8 @@ onBeforeUnmount(() => {
     <PluginManagerV2Panel
       v-if="pluginManagerV2Open"
       :visible="true"
-      @close="pluginManagerV2Open = false"
-      @open-v1="
-        pluginManagerV2Open = false;
-        void pluginStore.openPanel('plugins');
-      "
+      @close="requestClosePluginManagerV2"
+      @open-v1="onOpenPluginV1FromV2"
     />
     <LocalModelManagerPanel
       v-if="localModelManagerOpen"

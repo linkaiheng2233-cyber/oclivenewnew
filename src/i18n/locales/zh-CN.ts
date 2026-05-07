@@ -62,6 +62,8 @@ export const zhCN = {
     },
   },
   expertWorkbench: {
+    editButton: "编辑",
+    editButtonTitle: "打开专家模型工作台（与插件管理中的入口一致）",
     openRequiresV2:
       "专家模型工作台在「插件与后端管理」实验版（V2）中。请先到设置 → 插件与扩展 → 开启「实验性插件管理 V2」，再从本卡片打开。",
   },
@@ -1948,6 +1950,8 @@ export const zhCN = {
       setAsRoleDefault: "已设置为角色默认。",
       clearedSessionOverrideAndApplied: "已清除会话覆盖并重新应用。",
       clearedRoleDefault: "已清除角色默认。",
+      applyFailedHint:
+        "未能应用到当前会话。请检查本地 Llama 插件权限、模型路径与 Run 历史中的错误信息；必要时先「从当前生效回填」再重试。",
       sidecarNotice:
         "配置已写入，但本地 Llama 侧车未确认 config_updated（可检查插件是否已启动与权限）。详情：{message}",
       sidecarStructured:
@@ -1979,8 +1983,31 @@ export const zhCN = {
       toastExported: "已导出 .oclexpert 分享包。",
       toastImported: "已导入并保存到工作流库：{name}",
       importDefaultName: "导入的专家图",
+      metaDescriptionLabel: "配方描述（导出到文件）",
+      metaDescriptionPlaceholder: "一两句话说明这套配方的特点与效果",
+      metaAuthorLabel: "作者署名（导出到文件）",
+      metaAuthorPlaceholder: "例如昵称或主页",
+      previewTitle: "确认导入",
+      previewName: "名称",
+      previewDescription: "描述",
+      previewAuthor: "作者",
+      previewConfirm: "导入并保存到工作流库",
+      previewCancel: "取消",
+      offerResetEffective: "当前文件无法解析。是否将草稿重置为「当前生效」专家图以便继续编辑？",
+    },
+    emptyState: {
+      lead: "当前专家图为空。可从生效配置或角色默认快速开始，或新建空白画布。",
+      loadEffective: "加载当前生效配置",
+      loadRoleDefault: "加载角色级默认",
+      newBlank: "新建空白配方",
+    },
+    graphIntegrity: {
+      title: "专家图结构异常",
+      resetEffective: "重置为当前生效",
+      openForm: "切换表单视图排查",
     },
     confirm: {
+      unsavedWorkbenchClose: "专家模型草稿有未保存或未应用的更改。确定关闭插件管理窗口吗？",
       rollbackLastRun:
         "将回滚到上一次已应用的配置（第九模块 {m}+Z），并重新应用到当前会话。\n提示：可在「Run 历史」里回滚到任意一次。\n继续吗？",
       retryRunApply:
