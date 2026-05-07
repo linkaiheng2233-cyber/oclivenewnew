@@ -69,6 +69,18 @@
 - **Rust** stable、**Ollama**（本地 LLM，默认 `OLLAMA_MODEL` 可配）
 - Windows 开发需已安装 **Visual Studio Build Tools**（链接器）
 
+## 跨平台支持
+
+oclive **官方支持** **Windows、macOS、Linux** 三大桌面平台：开发与 CI 在三端验证 Rust 与前端构建，安装包由各平台 `tauri build` 产出（详见下表与平台专档）。
+
+| 平台 | 安装与构建说明 |
+|------|----------------|
+| **Windows** | 环境要求见上文；路径、链接器与打包见 [docs/DEV_CROSS_PLATFORM.md](docs/DEV_CROSS_PLATFORM.md)。 |
+| **macOS** | DMG、代码签名、验收清单：[docs/DEV_MACOS.md](docs/DEV_MACOS.md)。 |
+| **Linux** | WebKitGTK 等依赖、AppImage / deb、Wayland 与权限：[docs/DEV_LINUX.md](docs/DEV_LINUX.md)。 |
+
+**CI 矩阵**（`ubuntu-latest` / `windows-latest` / `macos-latest`）与可选整包构建说明：[docs/DEV_CROSS_PLATFORM.md](docs/DEV_CROSS_PLATFORM.md)；非阻塞 **`tauri build`**：`.github/workflows/tauri-build-optional.yml`。
+
 ## 开发
 
 本机调试外部角色目录时，可设置环境变量 **`OCLIVE_ROLES_DIR`** 指向 **roles 根**（其下为各 `角色id/` 子目录，内含 `manifest.json`）。详见 [roles/README_MANIFEST.md](roles/README_MANIFEST.md) 与 [creator-docs/getting-started/CREATOR_WORKFLOW.md](creator-docs/getting-started/CREATOR_WORKFLOW.md)。
@@ -104,7 +116,7 @@ npm run build
 
 ## 测试与检查
 
-**CI（`.github/workflows/ci.yml`）**：在 **Ubuntu** 与 **Windows** 上均执行 Rust **`rustfmt` + `clippy`（`-D warnings`）+ 完整 `cargo test`**（含 `tests/` 集成测试），以及 **`npm ci` + `npm run build`**。用于尽早发现路径、换行符与 Windows 专用链接问题。
+**CI（`.github/workflows/ci.yml`）**：在 **Ubuntu、Windows、macOS**（`ubuntu-latest` / `windows-latest` / `macos-latest`）三端矩阵上执行 Rust **`rustfmt` + `clippy`（`-D warnings`）+ 完整 `cargo test`**（含 `tests/` 集成测试），以及 **`npm ci` + `npm run build`**。用于尽早发现路径、换行符与各 OS 差异问题。详见 [docs/DEV_CROSS_PLATFORM.md](docs/DEV_CROSS_PLATFORM.md)。
 
 | 命令 | 用途 |
 |------|------|
@@ -144,7 +156,8 @@ npm run build
 cd src-tauri && npx tauri build
 ```
 
-发版前建议先 **`npm run check:release`**。详见历史说明：`handoff/18_DEVELOPMENT_REPORT_USER_ACTIONS.md`（若仍存在）。
+发版前建议先 **`npm run check:release`**。  
+**按平台的产物与依赖**（Linux AppImage/deb、macOS DMG、Windows NSIS/MSI 等）：[docs/DEV_LINUX.md](docs/DEV_LINUX.md)、[docs/DEV_MACOS.md](docs/DEV_MACOS.md)、[docs/DEV_CROSS_PLATFORM.md](docs/DEV_CROSS_PLATFORM.md)。历史备忘：`handoff/18_DEVELOPMENT_REPORT_USER_ACTIONS.md`（若仍存在）。
 
 ## 聊天记录导出
 
