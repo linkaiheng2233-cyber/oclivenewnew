@@ -8,7 +8,7 @@
 
 ## Linux
 
-与 `.github/workflows/ci.yml` 中 `apt-get install` 一致（WebKitGTK 等）。
+与 `.github/workflows/ci.yml` 中 `apt-get install` 一致（WebKitGTK 等）。验收清单、打包与权限说明见 **[DEV_LINUX.md](./DEV_LINUX.md)**。
 
 ## macOS
 
