@@ -136,6 +136,8 @@ async fn effective_for_session(
         ExpertConfigSource,
         Option<PromptStyleOverride>,
         ExpertConfigSource,
+        Option<ExpertGraph>,
+        Option<PromptStyleOverride>,
     ),
     String,
 > {
@@ -162,26 +164,33 @@ async fn effective_for_session(
         .map_err(|e| e.to_frontend_error())?;
 
     let sess_graph = parse_graph_json(sess_graph_raw)?;
-    let role_graph = parse_graph_json(role_default_graph_raw)?;
+    let role_graph_opt = parse_graph_json(role_default_graph_raw)?;
     let (graph, graph_source) = if let Some(g) = sess_graph {
         (g, ExpertConfigSource::SessionOverride)
-    } else if let Some(g) = role_graph {
+    } else if let Some(g) = role_graph_opt.clone() {
         (g, ExpertConfigSource::RoleDefault)
     } else {
         (ExpertGraph::default(), ExpertConfigSource::PackDefault)
     };
 
     let sess_style = parse_prompt_style_json(sess_style_raw)?;
-    let role_style = parse_prompt_style_json(role_default_style_raw)?;
+    let role_style_opt = parse_prompt_style_json(role_default_style_raw)?;
     let (style, style_source) = if sess_style.is_some() {
         (sess_style, ExpertConfigSource::SessionOverride)
-    } else if role_style.is_some() {
-        (role_style, ExpertConfigSource::RoleDefault)
+    } else if role_style_opt.is_some() {
+        (role_style_opt.clone(), ExpertConfigSource::RoleDefault)
     } else {
         (None, ExpertConfigSource::PackDefault)
     };
 
-    Ok((graph, graph_source, style, style_source))
+    Ok((
+        graph,
+        graph_source,
+        style,
+        style_source,
+        role_graph_opt,
+        role_style_opt,
+    ))
 }
 
 fn parse_run_entries(raw: Option<String>) -> Vec<ExpertModelsRunEntry> {
@@ -287,7 +296,7 @@ pub async fn expert_models_get_effective(
         .to_string());
     }
     let session_ns = conversation_state_role_id(role_id, req.session_id.as_deref());
-    let (graph, graph_source, prompt_style, prompt_style_source) =
+    let (graph, graph_source, prompt_style, prompt_style_source, role_default_graph, role_default_prompt_style) =
         effective_for_session(state, role_id, session_ns.as_str()).await?;
     let run_raw = state
         .expert_models_repo
@@ -301,6 +310,8 @@ pub async fn expert_models_get_effective(
         graph_source,
         prompt_style_source,
         can_rollback_last_run,
+        role_default_graph,
+        role_default_prompt_style,
     })
 }
 
@@ -980,10 +991,10 @@ pub async fn expert_models_apply_to_session(
 
     // Push a rollback snapshot (previous effective) before applying, and record the apply outcome.
     // This provides a "Module 9 Ctrl+Z" at the session scope, and keeps a lightweight "queue-like" log.
-    let (prev_graph, _pgs, prev_style, _pss) =
+    let (prev_graph, _pgs, prev_style, _pss, _, _) =
         effective_for_session(state, role_id, session_ns.as_str()).await?;
     // Current effective graph (session override > role default > pack default(empty)) is the target we are applying.
-    let (graph, _graph_src, style, _style_src) =
+    let (graph, _graph_src, style, _style_src, _, _) =
         effective_for_session(state, role_id, session_ns.as_str()).await?;
 
     let run_raw_prev = state

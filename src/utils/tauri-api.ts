@@ -182,6 +182,9 @@ export interface ExpertModelsEffectiveResponse {
   graphSource: ExpertConfigSource;
   promptStyleSource: ExpertConfigSource;
   canRollbackLastRun?: boolean;
+  /** DB 中的角色级默认图（会话覆盖生效时仍返回，便于「加载角色默认」）。 */
+  roleDefaultGraph?: ExpertGraph | null;
+  roleDefaultPromptStyle?: PromptStyleOverride | null;
 }
 
 export interface LocalModelFileDto {

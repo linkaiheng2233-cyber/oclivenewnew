@@ -523,6 +523,11 @@ pub struct ExpertModelsEffectiveResponse {
     pub prompt_style_source: ExpertConfigSource,
     #[serde(default)]
     pub can_rollback_last_run: bool,
+    /// Role-level default graph from DB (even when session override wins for `graph`).
+    #[serde(default)]
+    pub role_default_graph: Option<ExpertGraph>,
+    #[serde(default)]
+    pub role_default_prompt_style: Option<PromptStyleOverride>,
 }
 
 #[derive(Debug, Clone, Deserialize)]
