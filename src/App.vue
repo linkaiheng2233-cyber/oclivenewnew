@@ -955,9 +955,8 @@ onBeforeUnmount(() => {
         :aria-label="String(t('app.topBar.more.regionLabel'))"
         @click.stop
       >
-        <div class="more-grid">
-          <div class="more-grid-main">
-          <div class="more-tile more-tile--xs">
+        <div class="more-grid more-grid--uniform">
+          <div class="more-tile more-tile--cell">
             <div class="more-tile-head">
               <span class="more-label">{{ t("app.topBar.tiles.interactionMode.title") }}</span>
               <HelpHint
@@ -977,7 +976,7 @@ onBeforeUnmount(() => {
             </div>
           </div>
 
-          <div class="more-tile more-tile--sm">
+          <div class="more-tile more-tile--cell">
             <div class="more-tile-head">
               <span class="more-label">{{ t("app.topBar.tiles.identity.title") }}</span>
               <HelpHint :text="String(t('app.topBar.tiles.identity.hint'))" />
@@ -997,7 +996,7 @@ onBeforeUnmount(() => {
             </div>
           </div>
 
-          <div class="more-tile more-tile--lg">
+          <div class="more-tile more-tile--cell more-tile--span-2">
             <div class="more-tile-head">
               <span class="more-label">{{ t("app.topBar.tiles.appearance.title") }}</span>
               <HelpHint
@@ -1049,7 +1048,7 @@ onBeforeUnmount(() => {
             </div>
           </div>
 
-          <div v-if="roleStore.interactionPureChat" class="more-tile more-tile--action">
+          <div v-if="roleStore.interactionPureChat" class="more-tile more-tile--cell more-tile--span-2">
             <div class="more-tile-head">
               <span class="more-label">{{ t("app.topBar.tiles.pureChatModels.title") }}</span>
               <HelpHint :text="String(t('app.topBar.tiles.pureChatModels.hint'))" />
@@ -1068,15 +1067,18 @@ onBeforeUnmount(() => {
             </div>
           </div>
 
-          <template v-if="roleStore.interactionImmersive">
-            <div class="more-tile more-tile--sm more-tile--time">
-              <div class="more-tile-head more-tile-head--tight">
+          <div
+            v-if="roleStore.interactionImmersive"
+            class="more-tile more-tile--cell more-tile--span-2 more-tile--duo"
+          >
+            <div class="more-duo-seg">
+              <div class="more-tile-head more-tile-head--tight more-duo-seg-head">
                 <span class="more-label">{{ t("app.topBar.tiles.virtualTime.title") }}</span>
                 <HelpHint
                   :paragraphs="(t('app.topBar.tiles.virtualTime.hint') as any)"
                 />
               </div>
-              <div class="more-tile-body more-tile-body--row">
+              <div class="more-tile-body more-tile-body--row more-duo-seg-body">
                 <VirtualTimeBar
                   compact
                   class="more-vtime"
@@ -1087,15 +1089,14 @@ onBeforeUnmount(() => {
                 />
               </div>
             </div>
-
-            <div v-if="allSceneOptions.length > 0" class="more-tile more-tile--sm more-tile--scene">
-              <div class="more-tile-head more-tile-head--tight">
+            <div v-if="allSceneOptions.length > 0" class="more-duo-seg more-duo-seg--split">
+              <div class="more-tile-head more-tile-head--tight more-duo-seg-head">
                 <span class="more-label">{{ t("app.topBar.tiles.narrativeScene.title") }}</span>
                 <HelpHint
                   :text="String(t('app.topBar.tiles.narrativeScene.help'))"
                 />
               </div>
-              <div class="more-tile-body more-tile-body--scene more-tile-body--scene-inline">
+              <div class="more-tile-body more-tile-body--scene more-tile-body--scene-inline more-duo-seg-body">
                 <select
                   id="top-scene-select"
                   class="scene-select more-select more-select--fill"
@@ -1111,9 +1112,18 @@ onBeforeUnmount(() => {
                 </span>
               </div>
             </div>
-          </template>
+          </div>
 
-          <div class="more-tile more-tile--action">
+          <div
+            class="more-tile more-tile--cell"
+            :class="
+              roleStore.interactionPureChat
+                ? 'more-tile--span-2'
+                : roleStore.interactionImmersive
+                  ? 'more-tile--span-2'
+                  : 'more-tile--full'
+            "
+          >
             <div class="more-tile-head">
               <span class="more-label">{{ t("app.topBar.tiles.debug.title") }}</span>
               <HelpHint
@@ -1132,10 +1142,8 @@ onBeforeUnmount(() => {
               </button>
             </div>
           </div>
-          </div>
 
-          <div v-if="!roleStore.interactionPureChat" class="more-grid-aside">
-            <div class="more-tile more-tile--action settings-entry-tile">
+          <div v-if="!roleStore.interactionPureChat" class="more-tile more-tile--cell more-tile--full settings-entry-tile">
               <div class="more-tile-head">
                 <span class="more-label">{{ t("app.topBar.tiles.settingsEntry.title") }}</span>
                 <HelpHint :text="settingsEntryMoreHelp" />
@@ -1186,7 +1194,7 @@ onBeforeUnmount(() => {
               </div>
             </div>
 
-            <div class="more-tile more-tile--action more-tile--rolepack">
+          <div v-if="!roleStore.interactionPureChat" class="more-tile more-tile--cell more-tile--full more-tile--rolepack">
               <div class="more-tile-head">
                 <span class="more-label">{{ t("app.topBar.tiles.rolePackShare.title") }}</span>
                 <HelpHint
@@ -1200,7 +1208,6 @@ onBeforeUnmount(() => {
                 />
               </div>
             </div>
-          </div>
         </div>
       </div>
     </header>
@@ -1511,49 +1518,74 @@ onBeforeUnmount(() => {
   font-size: 13px;
   padding: 8px 12px;
 }
-.more-grid {
-  display: flex;
-  flex-direction: row;
-  flex-wrap: wrap;
-  align-items: flex-start;
-  justify-content: space-between;
-  gap: 14px 20px;
+/* 顶栏「更多」：4 列均匀栅格；序：模式 → 身份 → 界面(占2) → 时间+场景(占2)与调试(占2) → 设置/角色包满行 */
+.more-grid--uniform {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 10px 12px;
+  align-items: stretch;
 }
-.more-grid-main {
-  flex: 1 1 240px;
+.more-grid--uniform > .more-tile--cell {
   min-width: 0;
-  display: flex;
-  flex-wrap: wrap;
-  justify-content: flex-start;
-  align-items: flex-start;
-  align-content: flex-start;
-  gap: 12px 16px;
+  min-height: 5.75rem;
+  width: auto;
+  max-width: none;
+  flex: unset;
 }
-.more-grid-aside {
-  flex: 0 0 min(22rem, 100%);
-  max-width: min(26rem, 100%);
+.more-grid--uniform > .more-tile--span-2 {
+  grid-column: span 2;
+}
+.more-grid--uniform > .more-tile--full {
+  grid-column: 1 / -1;
+}
+.more-tile--duo {
   display: flex;
   flex-direction: column;
-  align-items: stretch;
-  gap: 12px;
-  margin-left: auto;
+  padding: 0;
+  gap: 0;
+  min-height: 6.5rem;
+  overflow: hidden;
 }
-.more-grid-aside .more-tile {
-  width: 100%;
-  max-width: none;
+.more-grid--uniform > .more-tile--full.settings-entry-tile,
+.more-grid--uniform > .more-tile--full.more-tile--rolepack {
+  min-height: auto;
 }
-.more-grid-aside .settings-entry-tile {
-  min-width: 0;
+.more-duo-seg {
+  padding: 10px 12px;
+  flex: 1 1 auto;
+  min-height: 0;
 }
-@media (max-width: 720px) {
-  .more-grid {
-    flex-direction: column;
+.more-duo-seg--split {
+  border-top: 1px solid var(--border-light);
+}
+.more-duo-seg-head {
+  margin-bottom: 0;
+}
+.more-duo-seg-body {
+  padding-top: 4px;
+}
+.more-tile--duo .scene-row-hint--tile {
+  max-width: 100%;
+  white-space: normal;
+}
+@media (max-width: 640px) {
+  .more-grid--uniform {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
   }
-  .more-grid-aside {
-    flex: 1 1 auto;
-    max-width: none;
-    width: 100%;
-    margin-left: 0;
+  .more-grid--uniform > .more-tile--span-2 {
+    grid-column: span 2;
+  }
+  .more-grid--uniform > .more-tile--full {
+    grid-column: span 2;
+  }
+}
+@media (max-width: 420px) {
+  .more-grid--uniform {
+    grid-template-columns: 1fr;
+  }
+  .more-grid--uniform > .more-tile--span-2,
+  .more-grid--uniform > .more-tile--full {
+    grid-column: span 1;
   }
 }
 .more-tile {
