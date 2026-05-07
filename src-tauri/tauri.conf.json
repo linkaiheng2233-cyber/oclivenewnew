@@ -81,6 +81,9 @@
       {
         "fullscreen": false,
         "center": true,
+        "decorations": true,
+        "alwaysOnTop": false,
+        "transparent": false,
         "fileDropEnabled": true,
         "height": 600,
         "resizable": true,
