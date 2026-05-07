@@ -4,9 +4,20 @@ import { useI18n } from "vue-i18n";
 import { open, save } from "@tauri-apps/api/dialog";
 import { readTextFile, writeTextFile } from "@tauri-apps/api/fs";
 import { useAppToast } from "../../composables/useAppToast";
+import {
+  buildOclexpertPayload,
+  OclexpertImportError,
+  parseOclexpertJson,
+} from "../../lib/oclexpert";
 import { useExpertModelsStore } from "../../stores/expertModelsStore";
 const ExpertModelsCanvas = defineAsyncComponent(() => import("./ExpertModelsCanvas.vue"));
-import type { ExpertGraph, ExpertNode, PromptStyleOverride } from "../../utils/tauri-api";
+import ExpertCloudEventSection from "./ExpertCloudEventSection.vue";
+import type {
+  ExpertGraph,
+  ExpertModelsApplyResult,
+  ExpertNode,
+  PromptStyleOverride,
+} from "../../utils/tauri-api";
 
 const store = useExpertModelsStore();
 const { showToast } = useAppToast();
@@ -15,10 +26,37 @@ const emit = defineEmits<{
   (e: "open-permissions", payload: { pluginId: string }): void;
 }>();
 
-function toastSidecarNoticeIfAny(sidecarNotice?: string | null): void {
-  const msg = sidecarNotice?.trim();
+function notifyPrimaryApplyToast(r: ExpertModelsApplyResult): void {
+  if (r.useRemoteLlm) {
+    const mo = (r.remoteModelOverride ?? "").trim();
+    showToast(
+      "success",
+      String(
+        t("expertModels.toasts.appliedRemote", {
+          model: mo || String(t("expertModels.cloudEvent.hostDefaultModel")),
+        }),
+      ),
+    );
+  } else {
+    showToast(
+      "success",
+      String(
+        t("expertModels.toasts.appliedToSession", {
+          modelPath: r.modelPath ?? String(t("expertModels.common.notSet")),
+          llamaArgs: r.llamaArgs ?? String(t("expertModels.common.empty")),
+        }),
+      ),
+    );
+  }
+}
+
+function toastSidecarStructuredIfAny(r: ExpertModelsApplyResult): void {
+  const msg = r.sidecarNotice?.trim();
   if (!msg) return;
-  showToast("info", String(t("expertModels.toasts.sidecarNotice", { message: msg })));
+  showToast(
+    "warning",
+    String(t("expertModels.toasts.sidecarStructured", { code: "SIDECAR_NOTICE", message: msg })),
+  );
 }
 
 const saving = ref(false);
@@ -184,16 +222,8 @@ async function onApplySession(): Promise<void> {
   applying.value = true;
   try {
     const r = await store.applyToSession();
-    showToast(
-      "success",
-      String(
-        t("expertModels.toasts.appliedToSession", {
-          modelPath: r.modelPath ?? String(t("expertModels.common.notSet")),
-          llamaArgs: r.llamaArgs ?? String(t("expertModels.common.empty")),
-        }),
-      ),
-    );
-    toastSidecarNoticeIfAny(r.sidecarNotice);
+    notifyPrimaryApplyToast(r);
+    toastSidecarStructuredIfAny(r);
   } catch (e) {
     showToast("error", e instanceof Error ? e.message : String(e));
   } finally {
@@ -209,16 +239,8 @@ async function onRollbackLastRun(): Promise<void> {
   applying.value = true;
   try {
     const r = await store.rollbackLastRun();
-    showToast(
-      "success",
-      String(
-        t("expertModels.toasts.rolledBackAndApplied", {
-          modelPath: r.modelPath ?? String(t("expertModels.common.notSet")),
-          llamaArgs: r.llamaArgs ?? String(t("expertModels.common.empty")),
-        }),
-      ),
-    );
-    toastSidecarNoticeIfAny(r.sidecarNotice);
+    notifyPrimaryApplyToast(r);
+    toastSidecarStructuredIfAny(r);
   } catch (e) {
     showToast("error", e instanceof Error ? e.message : String(e));
   } finally {
@@ -302,16 +324,8 @@ async function onRetryRun(indexFromLatest: number): Promise<void> {
   applying.value = true;
   try {
     const r = await store.applySpecificToSession(tg, ts);
-    showToast(
-      "success",
-      String(
-        t("expertModels.toasts.retriedAndApplied", {
-          modelPath: r.modelPath ?? String(t("expertModels.common.notSet")),
-          llamaArgs: r.llamaArgs ?? String(t("expertModels.common.empty")),
-        }),
-      ),
-    );
-    toastSidecarNoticeIfAny(r.sidecarNotice);
+    notifyPrimaryApplyToast(r);
+    toastSidecarStructuredIfAny(r);
   } catch (e) {
     showToast("error", e instanceof Error ? e.message : String(e));
   } finally {
@@ -457,16 +471,8 @@ async function onRollbackToRun(indexFromLatest: number): Promise<void> {
   applying.value = true;
   try {
     const r = await store.rollbackToRun(indexFromLatest);
-    showToast(
-      "success",
-      String(
-        t("expertModels.toasts.rolledBackAndApplied", {
-          modelPath: r.modelPath ?? String(t("expertModels.common.notSet")),
-          llamaArgs: r.llamaArgs ?? String(t("expertModels.common.empty")),
-        }),
-      ),
-    );
-    toastSidecarNoticeIfAny(r.sidecarNotice);
+    notifyPrimaryApplyToast(r);
+    toastSidecarStructuredIfAny(r);
   } catch (e) {
     showToast("error", e instanceof Error ? e.message : String(e));
   } finally {
@@ -591,7 +597,7 @@ async function onClearSessionOverride(): Promise<void> {
   try {
     const r = await store.clearSessionOverrideAndApply();
     showToast("success", String(t("expertModels.toasts.clearedSessionOverrideAndApplied")));
-    toastSidecarNoticeIfAny(r.sidecarNotice);
+    toastSidecarStructuredIfAny(r);
   } catch (e) {
     showToast("error", e instanceof Error ? e.message : String(e));
   } finally {
@@ -740,6 +746,57 @@ async function onImportWorkflowJson(): Promise<void> {
     saving.value = false;
   }
 }
+
+async function onExportOclexpert(): Promise<void> {
+  const base = workflowNameDraft.value.trim() || "expert-graph";
+  const payload = buildOclexpertPayload(store.draftGraph, store.draftPromptStyle, base);
+  const path = await save({
+    defaultPath: `${base}.oclexpert`,
+    filters: [
+      { name: String(t("expertModels.oclexpert.filterName")), extensions: ["oclexpert"] },
+      { name: "JSON", extensions: ["json"] },
+    ],
+  });
+  if (!path) return;
+  await writeTextFile(path, JSON.stringify(payload, null, 2));
+  showToast("success", String(t("expertModels.oclexpert.toastExported")));
+}
+
+async function onImportOclexpert(): Promise<void> {
+  const picked = await open({
+    title: String(t("expertModels.oclexpert.dialogTitle")),
+    multiple: false,
+    filters: [
+      { name: String(t("expertModels.oclexpert.filterName")), extensions: ["oclexpert", "json"] },
+    ],
+  });
+  const p = typeof picked === "string" ? picked : null;
+  if (!p) return;
+  saving.value = true;
+  try {
+    const raw = await readTextFile(p);
+    const { graph, promptStyle, suggestedName } = parseOclexpertJson(raw);
+    store.draftGraph = graph;
+    store.draftPromptStyle = promptStyle;
+    const name =
+      suggestedName?.trim() ||
+      workflowNameDraft.value.trim() ||
+      String(t("expertModels.oclexpert.importDefaultName"));
+    const wf = await store.saveWorkflow(name, null);
+    workflowNameDraft.value = wf.name;
+    showToast("success", String(t("expertModels.oclexpert.toastImported", { name: wf.name })));
+  } catch (e) {
+    const msg =
+      e instanceof OclexpertImportError
+        ? e.message
+        : e instanceof Error
+          ? e.message
+          : String(e);
+    showToast("error", msg);
+  } finally {
+    saving.value = false;
+  }
+}
 </script>
 
 <template>
@@ -809,6 +866,8 @@ async function onImportWorkflowJson(): Promise<void> {
           <button class="em-btn secondary" type="button" :disabled="saving" @click="onDeleteWorkflow">{{ t("expertModels.workflows.delete") }}</button>
           <button class="em-btn secondary" type="button" :disabled="saving" @click="onExportWorkflowJson">{{ t("expertModels.workflows.exportFile") }}</button>
           <button class="em-btn secondary" type="button" :disabled="saving" @click="onImportWorkflowJson">{{ t("expertModels.workflows.importFile") }}</button>
+          <button class="em-btn secondary" type="button" :disabled="saving" @click="onExportOclexpert">{{ t("expertModels.oclexpert.export") }}</button>
+          <button class="em-btn secondary" type="button" :disabled="saving" @click="onImportOclexpert">{{ t("expertModels.oclexpert.import") }}</button>
         </div>
         <div class="em-muted">
           {{ t("expertModels.workflows.hint") }}
@@ -837,6 +896,10 @@ async function onImportWorkflowJson(): Promise<void> {
         </button>
       </div>
       <div class="em-muted">{{ t("expertModels.editor.canvasHint") }}</div>
+    </div>
+
+    <div class="em-cloud-event-wrap">
+      <ExpertCloudEventSection />
     </div>
 
     <div v-if="editorMode === 'canvas'" class="em-canvaswrap">
@@ -894,6 +957,74 @@ async function onImportWorkflowJson(): Promise<void> {
               @change="patchSelectedNode({ enabled: ($event.target as HTMLInputElement).checked })"
             />
             <span class="em-muted">{{ t("expertModels.inspector.enableLora") }}</span>
+          </label>
+        </template>
+
+        <template v-else-if="(selectedNode as any).type === 'cloud_model'">
+          <div class="em-muted">{{ t("expertModels.inspector.cloudHint") }}</div>
+          <label class="em-field" style="margin-top: 8px">
+            <div class="em-label">{{ t("expertModels.cloudEvent.modelIdLabel") }}</div>
+            <input
+              class="em-input"
+              type="text"
+              :value="(selectedNode as any).model ?? ''"
+              :placeholder="String(t('expertModels.cloudEvent.modelIdPlaceholder'))"
+              @input="
+                patchSelectedNode({
+                  model: ($event.target as HTMLInputElement).value.trim() || null,
+                })
+              "
+            />
+          </label>
+          <label class="em-row" style="margin-top: 8px">
+            <input
+              type="checkbox"
+              :checked="(selectedNode as any).enabled !== false"
+              @change="patchSelectedNode({ enabled: ($event.target as HTMLInputElement).checked })"
+            />
+            <span class="em-muted">{{ t("expertModels.cloudEvent.enabled") }}</span>
+          </label>
+        </template>
+
+        <template v-else-if="(selectedNode as any).type === 'event_trigger'">
+          <div class="em-muted">{{ t("expertModels.inspector.eventHint") }}</div>
+          <label class="em-field" style="margin-top: 8px">
+            <div class="em-label">{{ t("expertModels.cloudEvent.matchLabel") }}</div>
+            <input
+              class="em-input"
+              type="text"
+              :value="(selectedNode as any).matchSubstring"
+              @input="patchSelectedNode({ matchSubstring: ($event.target as HTMLInputElement).value })"
+            />
+          </label>
+          <label class="em-field">
+            <div class="em-label">{{ t("expertModels.cloudEvent.memoryLabel") }}</div>
+            <textarea
+              class="em-text"
+              rows="3"
+              :value="(selectedNode as any).memoryContent"
+              @input="patchSelectedNode({ memoryContent: ($event.target as HTMLTextAreaElement).value })"
+            />
+          </label>
+          <label class="em-field">
+            <div class="em-label">{{ t("expertModels.cloudEvent.importanceLabel") }}</div>
+            <input
+              class="em-num"
+              type="number"
+              step="0.05"
+              min="0"
+              max="1"
+              :value="(selectedNode as any).importance"
+              @input="patchSelectedNode({ importance: Number(($event.target as HTMLInputElement).value) })"
+            />
+          </label>
+          <label class="em-row" style="margin-top: 8px">
+            <input
+              type="checkbox"
+              :checked="(selectedNode as any).enabled !== false"
+              @change="patchSelectedNode({ enabled: ($event.target as HTMLInputElement).checked })"
+            />
+            <span class="em-muted">{{ t("expertModels.cloudEvent.enabled") }}</span>
           </label>
         </template>
 
@@ -1518,6 +1649,9 @@ async function onImportWorkflowJson(): Promise<void> {
   justify-content: space-between;
   gap: 10px;
   flex-wrap: wrap;
+}
+.em-cloud-event-wrap {
+  margin-top: 10px;
 }
 .em-canvaswrap {
   margin-top: 10px;

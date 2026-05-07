@@ -1947,7 +1947,7 @@ export const enUS = {
   expertModels: {
     title: "Expert Models Facility (Module 9)",
     subtitle:
-      "Pick a Base GGUF + LoRA strengths, and optionally override PromptStyle. Session override takes priority over role default; leaving empty keeps current behavior.",
+      "Form + canvas editing: local Base GGUF, personality LoRAs, host cloud LLM, post-turn event memories, and optional PromptStyle. Session override wins over role default; Apply persists first, then sidecar restart or cloud LLM switch runs asynchronously.",
     common: {
       notSet: "(not set)",
       empty: "(empty)",
@@ -1965,6 +1965,8 @@ export const enUS = {
       loraDialogTitle: "Pick a LoRA GGUF (will copy into models/loras)",
     },
     toasts: {
+      appliedRemote:
+        "Saved. This session now uses the host cloud LLM (OpenAI-compatible).\nRequest model={model}",
       appliedToSession:
         "Applied to current session (will restart local llama).\nmodelPath={modelPath}\nllamaArgs={llamaArgs}",
       rolledBackAndApplied:
@@ -1977,6 +1979,36 @@ export const enUS = {
       clearedRoleDefault: "Cleared role default.",
       sidecarNotice:
         "Config was written, but the local Llama sidecar did not acknowledge config_updated (check the plugin is running and permissions). Details: {message}",
+      sidecarStructured:
+        "[{code}] Sidecar did not confirm restart; your saved config stays. Check the Llama plugin and permissions, then retry.\n{message}",
+    },
+    cloudEvent: {
+      cloudTitle: "Cloud model (host OpenAI-compatible)",
+      cloudHint:
+        "When enabled and reachable from Base in the graph, the compiler prefers cloud LLM. Optional model overrides the request model id. Configure the host under Settings → Cloud LLM.",
+      addCloud: "+ Cloud node",
+      noCloud: "No cloud model node yet.",
+      modelIdLabel: "Model id (optional; empty uses host default)",
+      modelIdPlaceholder: "e.g. gpt-4o-mini",
+      enabled: "Enabled",
+      hostDefaultModel: "(host default model)",
+      eventTitle: "Event triggers (post-turn long-term memory)",
+      eventHint:
+        "After each turn, if the user message or model reply contains the keyword substring, persist one memory row via the standard memory path.",
+      addEvent: "+ Event node",
+      noEvents: "No event triggers yet.",
+      matchLabel: "Keyword (substring match)",
+      memoryLabel: "Memory text to store",
+      importanceLabel: "Importance (0–1)",
+    },
+    oclexpert: {
+      export: "Export .oclexpert",
+      import: "Import .oclexpert",
+      filterName: "OClive expert graph",
+      dialogTitle: "Import .oclexpert (or compatible ExpertGraph JSON)",
+      toastExported: "Exported .oclexpert share bundle.",
+      toastImported: "Imported and saved to workflow library: {name}",
+      importDefaultName: "Imported expert graph",
     },
     confirm: {
       rollbackLastRun:
@@ -2016,7 +2048,7 @@ export const enUS = {
       ui: {
         title: "Run History ({n})",
         applyingTitle: "Applying…",
-        applyingHint: "Local llama will restart; please wait.",
+        applyingHint: "Local Llama sidecar may restart, or the session may switch to cloud LLM; please wait.",
         exportPinned: "Export latest ★",
         clearExecute: "Clear",
         filterStatus: {
@@ -2056,7 +2088,7 @@ export const enUS = {
     },
     footer: {
       applying: "Applying…",
-      applyToSession: "Apply to current session (restart local llama)",
+      applyToSession: "Apply to current session (persist + sidecar / cloud)",
       rollbackLastTitle: "Rollback to last applied config (current session only)",
       rollbackLast: "Rollback last Run",
       setRoleDefault: "Set as role default",
@@ -2125,6 +2157,8 @@ export const enUS = {
       actions: {
         addBase: "+ BaseModel",
         addLora: "+ LoRA",
+        addCloud: "+ CloudModel",
+        addEvent: "+ EventTrigger",
         addPromptStyle: "+ PromptStyle",
         tidyLayout: "Tidy layout",
         fitView: "Fit view",
@@ -2135,12 +2169,19 @@ export const enUS = {
       },
       warnings: {
         missingBase: "Missing BaseModel node (cannot pick base GGUF).",
+        missingBaseOrCloud:
+          "No BaseModel and no enabled cloud model: compiler cannot pick a main model path.",
         multipleBase: "Multiple BaseModels found: compiler will pick one “main Base”.",
+        multipleCloud:
+          "Multiple enabled cloud models: compiler activates the first; consider keeping one.",
         multiplePromptStyle: "Multiple PromptStyles found: compiler will pick one.",
       },
     },
     inspector: {
       title: "Node attributes",
+      cloudHint: "Uses the host “Settings → Cloud LLM”. Connect to Base with an edge for reachability.",
+      eventHint:
+        "Evaluated after each turn on user text and model reply; on match, writes one long-term memory row.",
       baseHint: "Base can only select GGUF under `models/gguf/`.",
       pickLora: "(pick a LoRA…)",
       strengthLabel: "Strength (ComfyUI style, default 1.0)",

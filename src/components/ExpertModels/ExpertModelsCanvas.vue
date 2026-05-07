@@ -60,6 +60,8 @@ watch([selectedId, selectedEdgeId], () => syncSelectionClasses());
 function nodeLabel(n: ExpertNode): string {
   if (n.type === "base_model") return "BaseModel";
   if (n.type === "lora_adapter") return "LoRA";
+  if (n.type === "cloud_model") return "Cloud";
+  if (n.type === "event_trigger") return "Event";
   return "PromptStyle";
 }
 
@@ -183,6 +185,7 @@ function tidyLayout() {
   const g = props.modelValue;
   const nodes = g.nodes ?? [];
   let loraIdx = 0;
+  let evtIdx = 0;
   const nextNodes = nodes.map((n) => {
     const baseX = 60;
     const baseY = 60;
@@ -191,6 +194,14 @@ function tidyLayout() {
     }
     if (n.type === "prompt_style") {
       return { ...(n as any), ui: { x: baseX + 520, y: baseY } } as ExpertNode;
+    }
+    if (n.type === "cloud_model") {
+      return { ...(n as any), ui: { x: baseX + 520, y: baseY + 80 } } as ExpertNode;
+    }
+    if (n.type === "event_trigger") {
+      const y = baseY + 360 + evtIdx * 100;
+      evtIdx += 1;
+      return { ...(n as any), ui: { x: baseX, y } } as ExpertNode;
     }
     if (n.type === "lora_adapter") {
       const y = baseY + 120 + loraIdx * 90;
@@ -283,14 +294,18 @@ const health = computed(() => {
   const nodes = g.nodes ?? [];
   const bases = nodes.filter((n) => n.type === "base_model").length;
   const ps = nodes.filter((n) => n.type === "prompt_style").length;
+  const clouds = nodes.filter((n) => n.type === "cloud_model" && n.enabled).length;
   const warnings: string[] = [];
-  if (bases === 0) warnings.push(String(t("expertModels.canvas.warnings.missingBase")));
+  if (bases === 0 && clouds === 0) {
+    warnings.push(String(t("expertModels.canvas.warnings.missingBaseOrCloud")));
+  }
   if (bases > 1) warnings.push(String(t("expertModels.canvas.warnings.multipleBase")));
+  if (clouds > 1) warnings.push(String(t("expertModels.canvas.warnings.multipleCloud")));
   if (ps > 1) warnings.push(String(t("expertModels.canvas.warnings.multiplePromptStyle")));
   return warnings;
 });
 
-function addNode(kind: "base" | "lora" | "style") {
+function addNode(kind: "base" | "lora" | "style" | "cloud" | "event") {
   const g = props.modelValue;
   const existing = idSet(g.nodes ?? []);
   const mkId = (prefix: string) => {
@@ -301,12 +316,39 @@ function addNode(kind: "base" | "lora" | "style") {
     return `${prefix}_${Math.random().toString(36).slice(2, 8)}`;
   };
   const id =
-    kind === "base" ? mkId("base") : kind === "lora" ? mkId("lora") : mkId("style");
+    kind === "base"
+      ? mkId("base")
+      : kind === "lora"
+        ? mkId("lora")
+        : kind === "cloud"
+          ? mkId("cloud")
+          : kind === "event"
+            ? mkId("evt")
+            : mkId("style");
   const ui = { x: 60 + (g.nodes?.length ?? 0) * 30, y: 60 + (g.nodes?.length ?? 0) * 20 };
   let node: ExpertNode;
   if (kind === "base") node = { type: "base_model", id, ggufPath: "", ui };
   else if (kind === "lora")
     node = { type: "lora_adapter", id, ggufPath: "", strength: 1, enabled: true, order: 0, ui };
+  else if (kind === "cloud")
+    node = {
+      type: "cloud_model",
+      id,
+      hostSource: "host",
+      model: "",
+      enabled: true,
+      ui,
+    };
+  else if (kind === "event")
+    node = {
+      type: "event_trigger",
+      id,
+      matchSubstring: "",
+      memoryContent: "",
+      importance: 0.75,
+      enabled: true,
+      ui,
+    };
   else node = { type: "prompt_style", id, style: {}, ui };
   emitGraph({ ...g, nodes: [...(g.nodes ?? []), node] });
 }
@@ -318,6 +360,8 @@ function addNode(kind: "base" | "lora" | "style") {
       <div class="emc-actions">
         <button type="button" class="emc-btn" @click="addNode('base')">{{ t("expertModels.canvas.actions.addBase") }}</button>
         <button type="button" class="emc-btn" @click="addNode('lora')">{{ t("expertModels.canvas.actions.addLora") }}</button>
+        <button type="button" class="emc-btn" @click="addNode('cloud')">{{ t("expertModels.canvas.actions.addCloud") }}</button>
+        <button type="button" class="emc-btn" @click="addNode('event')">{{ t("expertModels.canvas.actions.addEvent") }}</button>
         <button type="button" class="emc-btn" @click="addNode('style')">{{ t("expertModels.canvas.actions.addPromptStyle") }}</button>
         <button type="button" class="emc-btn" @click="tidyLayout">{{ t("expertModels.canvas.actions.tidyLayout") }}</button>
         <button type="button" class="emc-btn" @click="onFitView">{{ t("expertModels.canvas.actions.fitView") }}</button>

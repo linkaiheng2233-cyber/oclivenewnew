@@ -1876,7 +1876,7 @@ export const zhCN = {
   expertModels: {
     title: "专家模型设施（第九模块）",
     subtitle:
-      "选择 Base GGUF + LoRA 强度，并可选覆盖 PromptStyle。会话覆盖优先于角色默认；不设置时不改变现有行为。",
+      "表单与画布双轨编辑：本地 Base GGUF、性格 LoRA、宿主云端模型、回合后事件写记忆，以及可选 PromptStyle。会话覆盖优先于角色默认；「应用」会先落盘再异步切换侧车或云端 LLM。",
     common: {
       notSet: "（未设置）",
       empty: "（空）",
@@ -1894,6 +1894,8 @@ export const zhCN = {
       loraDialogTitle: "选择一个 LoRA GGUF（将复制到 models/loras）",
     },
     toasts: {
+      appliedRemote:
+        "配置已落盘。当前会话已切换为宿主云端 LLM（OpenAI 兼容）。\n请求 model={model}",
       appliedToSession:
         "已应用到当前会话（将触发本地 llama 重启）。\nmodelPath={modelPath}\nllamaArgs={llamaArgs}",
       rolledBackAndApplied: "已回滚并重新应用。\nmodelPath={modelPath}\nllamaArgs={llamaArgs}",
@@ -1905,6 +1907,35 @@ export const zhCN = {
       clearedRoleDefault: "已清除角色默认。",
       sidecarNotice:
         "配置已写入，但本地 Llama 侧车未确认 config_updated（可检查插件是否已启动与权限）。详情：{message}",
+      sidecarStructured:
+        "[{code}] 侧车未确认重启：配置已保留，请检查 Llama 插件与权限后重试。\n{message}",
+    },
+    cloudEvent: {
+      cloudTitle: "云端模型（宿主 OpenAI 兼容）",
+      cloudHint:
+        "启用且与 Base 在同一连通子图内时，优先走云端 LLM；可选 model 覆盖会话请求体中的模型 id。请在「设置 → 云端 LLM」配置 host。",
+      addCloud: "+ 云端节点",
+      noCloud: "尚未添加云端模型节点。",
+      modelIdLabel: "模型 id（可选，留空用宿主默认）",
+      modelIdPlaceholder: "例如 gpt-4o-mini",
+      enabled: "启用",
+      hostDefaultModel: "（宿主默认模型）",
+      eventTitle: "事件触发器（回合后写长期记忆）",
+      eventHint: "当本轮用户句或模型回复包含下方关键词时，写入一条结构化记忆（经标准 memory 接口）。",
+      addEvent: "+ 事件节点",
+      noEvents: "尚未添加事件触发器。",
+      matchLabel: "关键词（子串匹配）",
+      memoryLabel: "写入的记忆正文",
+      importanceLabel: "重要性（0–1）",
+    },
+    oclexpert: {
+      export: "导出 .oclexpert",
+      import: "导入 .oclexpert",
+      filterName: "OClive 专家图",
+      dialogTitle: "导入 .oclexpert（或兼容的 ExpertGraph JSON）",
+      toastExported: "已导出 .oclexpert 分享包。",
+      toastImported: "已导入并保存到工作流库：{name}",
+      importDefaultName: "导入的专家图",
     },
     confirm: {
       rollbackLastRun:
@@ -1940,7 +1971,7 @@ export const zhCN = {
       ui: {
         title: "Run 历史（{n}）",
         applyingTitle: "正在应用…",
-        applyingHint: "将触发本地 llama 重启；请稍等。",
+        applyingHint: "将触发本地 Llama 侧车重启，或切换为云端 LLM；请稍等。",
         exportPinned: "一键导出★",
         clearExecute: "执行清空",
         filterStatus: {
@@ -2020,6 +2051,8 @@ export const zhCN = {
       actions: {
         addBase: "+ BaseModel",
         addLora: "+ LoRA",
+        addCloud: "+ CloudModel",
+        addEvent: "+ EventTrigger",
         addPromptStyle: "+ PromptStyle",
         tidyLayout: "整理布局",
         fitView: "适配视图",
@@ -2030,12 +2063,16 @@ export const zhCN = {
       },
       warnings: {
         missingBase: "缺少 BaseModel 节点（将无法选择 base GGUF）。",
+        missingBaseOrCloud: "缺少 BaseModel 且没有启用的云端模型节点：将无法编译出有效主模型。",
         multipleBase: "存在多个 BaseModel：编译时会选择一个“主 Base”。",
+        multipleCloud: "存在多个已启用的云端模型：编译将启用第一个；建议只保留一个。",
         multiplePromptStyle: "存在多个 PromptStyle：编译时会选择一个。",
       },
     },
     inspector: {
       title: "节点属性",
+      cloudHint: "引用宿主「设置 → 云端 LLM」；与 Base 用边连接后参与编译优先级。",
+      eventHint: "回合结束后匹配用户句或模型回复；命中则写入长期记忆。",
       baseHint: "Base 只允许选择 `models/gguf/` 下的 GGUF。",
       pickLora: "（选择一个 LoRA…）",
       strengthLabel: "强度（ComfyUI 风格，默认 1.0）",
@@ -2086,7 +2123,7 @@ export const zhCN = {
     },
     footer: {
       applying: "应用中…",
-      applyToSession: "应用到当前会话（重启本地 llama）",
+      applyToSession: "应用到当前会话（先落盘，再侧车/云端）",
       rollbackLastTitle: "回滚到上一次已应用的配置（仅当前会话）",
       rollbackLast: "回滚上一次 Run",
       setRoleDefault: "设为角色默认",

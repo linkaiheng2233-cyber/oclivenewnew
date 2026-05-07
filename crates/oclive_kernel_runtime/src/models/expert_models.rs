@@ -67,16 +67,18 @@ pub struct ExpertNodeUi {
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
-#[serde(tag = "type", rename_all = "snake_case")]
+#[serde(tag = "type", rename_all = "snake_case", rename_all_fields = "camelCase")]
 pub enum ExpertNode {
     BaseModel {
         id: String,
+        #[serde(alias = "gguf_path")]
         gguf_path: String,
         #[serde(default, skip_serializing_if = "Option::is_none")]
         ui: Option<ExpertNodeUi>,
     },
     LoraAdapter {
         id: String,
+        #[serde(alias = "gguf_path")]
         gguf_path: String,
         #[serde(default = "default_lora_strength")]
         strength: f32,
@@ -97,7 +99,7 @@ pub enum ExpertNode {
     CloudModel {
         id: String,
         /// 仅支持 `"host"`：与宿主全局 cloud 配置一致。
-        #[serde(default = "default_cloud_host_source")]
+        #[serde(default = "default_cloud_host_source", alias = "host_source")]
         host_source: String,
         #[serde(default, skip_serializing_if = "Option::is_none")]
         model: Option<String>,
@@ -109,7 +111,9 @@ pub enum ExpertNode {
     /// 回合结束后：若用户句或模型回复包含 `match_substring`，写入一条长期记忆。
     EventTrigger {
         id: String,
+        #[serde(alias = "match_substring")]
         match_substring: String,
+        #[serde(alias = "memory_content")]
         memory_content: String,
         #[serde(default = "default_event_importance")]
         importance: f32,

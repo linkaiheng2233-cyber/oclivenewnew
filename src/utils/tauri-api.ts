@@ -132,6 +132,25 @@ export type ExpertNode =
       id: string;
       style: PromptStyleOverride;
       ui?: { x: number; y: number } | null;
+    }
+  | {
+      type: "cloud_model";
+      id: string;
+      /** Only `"host"` is supported (global host cloud LLM). */
+      hostSource?: string;
+      /** Overrides OpenAI-compatible `model` id for this session when set. */
+      model?: string | null;
+      enabled: boolean;
+      ui?: { x: number; y: number } | null;
+    }
+  | {
+      type: "event_trigger";
+      id: string;
+      matchSubstring: string;
+      memoryContent: string;
+      importance: number;
+      enabled: boolean;
+      ui?: { x: number; y: number } | null;
     };
 
 export interface ExpertEdge {
@@ -140,9 +159,21 @@ export interface ExpertEdge {
 }
 
 export interface ExpertGraph {
+  /** Graph schema revision (backend accepts 1+; v2 reserved for future). */
   version: number;
   nodes: ExpertNode[];
   edges: ExpertEdge[];
+}
+
+/** Result of `expert_models_apply_to_session` (camelCase from Tauri). */
+export interface ExpertModelsApplyResult {
+  ok: boolean;
+  llamaPluginId: string;
+  modelPath?: string | null;
+  llamaArgs?: string | null;
+  sidecarNotice?: string | null;
+  useRemoteLlm?: boolean;
+  remoteModelOverride?: string | null;
 }
 
 export interface ExpertModelsEffectiveResponse {
@@ -269,20 +300,8 @@ export async function expertModelsClearRoleDefault(params: {
 export async function expertModelsApplyToSession(params: {
   roleId: string;
   sessionId?: string | null;
-}): Promise<{
-  ok: boolean;
-  llamaPluginId: string;
-  modelPath?: string;
-  llamaArgs?: string;
-  sidecarNotice?: string | null;
-}> {
-  return invokeWithFriendlyError<{
-    ok: boolean;
-    llamaPluginId: string;
-    modelPath?: string;
-    llamaArgs?: string;
-    sidecarNotice?: string | null;
-  }>("expert_models_apply_to_session", {
+}): Promise<ExpertModelsApplyResult> {
+  return invokeWithFriendlyError<ExpertModelsApplyResult>("expert_models_apply_to_session", {
     req: { roleId: params.roleId, sessionId: params.sessionId ?? null },
   });
 }
@@ -290,20 +309,8 @@ export async function expertModelsApplyToSession(params: {
 export async function expertModelsRollbackLastRun(params: {
   roleId: string;
   sessionId?: string | null;
-}): Promise<{
-  ok: boolean;
-  llamaPluginId: string;
-  modelPath?: string;
-  llamaArgs?: string;
-  sidecarNotice?: string | null;
-}> {
-  return invokeWithFriendlyError<{
-    ok: boolean;
-    llamaPluginId: string;
-    modelPath?: string;
-    llamaArgs?: string;
-    sidecarNotice?: string | null;
-  }>("expert_models_rollback_last_run", {
+}): Promise<ExpertModelsApplyResult> {
+  return invokeWithFriendlyError<ExpertModelsApplyResult>("expert_models_rollback_last_run", {
     req: { roleId: params.roleId, sessionId: params.sessionId ?? null },
   });
 }
@@ -351,20 +358,8 @@ export async function expertModelsRollbackToRun(params: {
   roleId: string;
   sessionId?: string | null;
   indexFromLatest: number;
-}): Promise<{
-  ok: boolean;
-  llamaPluginId: string;
-  modelPath?: string;
-  llamaArgs?: string;
-  sidecarNotice?: string | null;
-}> {
-  return invokeWithFriendlyError<{
-    ok: boolean;
-    llamaPluginId: string;
-    modelPath?: string;
-    llamaArgs?: string;
-    sidecarNotice?: string | null;
-  }>("expert_models_rollback_to_run", {
+}): Promise<ExpertModelsApplyResult> {
+  return invokeWithFriendlyError<ExpertModelsApplyResult>("expert_models_rollback_to_run", {
     req: {
       roleId: params.roleId,
       sessionId: params.sessionId ?? null,

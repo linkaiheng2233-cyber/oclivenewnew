@@ -23,6 +23,7 @@ import {
   getPluginPermissionGrants,
   type ExpertConfigSource,
   type ExpertGraph,
+  type ExpertModelsApplyResult,
   type LocalModelFileDto,
   type ExpertWorkflowDto,
   type ExpertWorkflowSummaryDto,
@@ -166,11 +167,7 @@ export const useExpertModelsStore = defineStore("expertModels", {
         : null;
     },
 
-    async applyToSession(): Promise<{
-      modelPath?: string | null;
-      llamaArgs?: string | null;
-      sidecarNotice?: string | null;
-    }> {
+    async applyToSession(): Promise<ExpertModelsApplyResult> {
       const roleStore = useRoleStore();
       const roleId = (roleStore.currentRoleId ?? "").trim();
       if (!roleId) throw new Error("当前未选择角色。");
@@ -182,45 +179,25 @@ export const useExpertModelsStore = defineStore("expertModels", {
       });
       const r = await expertModelsApplyToSession({ roleId, sessionId: null });
       await this.refresh();
-      return {
-        modelPath: r.modelPath,
-        llamaArgs: r.llamaArgs,
-        sidecarNotice: r.sidecarNotice ?? null,
-      };
+      return r;
     },
 
-    async rollbackLastRun(): Promise<{
-      modelPath?: string | null;
-      llamaArgs?: string | null;
-      sidecarNotice?: string | null;
-    }> {
+    async rollbackLastRun(): Promise<ExpertModelsApplyResult> {
       const roleStore = useRoleStore();
       const roleId = (roleStore.currentRoleId ?? "").trim();
       if (!roleId) throw new Error("当前未选择角色。");
       const r = await expertModelsRollbackLastRun({ roleId, sessionId: null });
       await this.refresh();
-      return {
-        modelPath: r.modelPath,
-        llamaArgs: r.llamaArgs,
-        sidecarNotice: r.sidecarNotice ?? null,
-      };
+      return r;
     },
 
-    async rollbackToRun(indexFromLatest: number): Promise<{
-      modelPath?: string | null;
-      llamaArgs?: string | null;
-      sidecarNotice?: string | null;
-    }> {
+    async rollbackToRun(indexFromLatest: number): Promise<ExpertModelsApplyResult> {
       const roleStore = useRoleStore();
       const roleId = (roleStore.currentRoleId ?? "").trim();
       if (!roleId) throw new Error("当前未选择角色。");
       const r = await expertModelsRollbackToRun({ roleId, sessionId: null, indexFromLatest });
       await this.refresh();
-      return {
-        modelPath: r.modelPath,
-        llamaArgs: r.llamaArgs,
-        sidecarNotice: r.sidecarNotice ?? null,
-      };
+      return r;
     },
 
     async clearRuns(): Promise<void> {
@@ -258,11 +235,7 @@ export const useExpertModelsStore = defineStore("expertModels", {
     async applySpecificToSession(
       graph: ExpertGraph,
       promptStyle: PromptStyleOverride | null,
-    ): Promise<{
-      modelPath?: string | null;
-      llamaArgs?: string | null;
-      sidecarNotice?: string | null;
-    }> {
+    ): Promise<ExpertModelsApplyResult> {
       const roleStore = useRoleStore();
       const roleId = (roleStore.currentRoleId ?? "").trim();
       if (!roleId) throw new Error("当前未选择角色。");
@@ -274,29 +247,17 @@ export const useExpertModelsStore = defineStore("expertModels", {
       });
       const r = await expertModelsApplyToSession({ roleId, sessionId: null });
       await this.refresh();
-      return {
-        modelPath: r.modelPath,
-        llamaArgs: r.llamaArgs,
-        sidecarNotice: r.sidecarNotice ?? null,
-      };
+      return r;
     },
 
-    async clearSessionOverrideAndApply(): Promise<{
-      modelPath?: string | null;
-      llamaArgs?: string | null;
-      sidecarNotice?: string | null;
-    }> {
+    async clearSessionOverrideAndApply(): Promise<ExpertModelsApplyResult> {
       const roleStore = useRoleStore();
       const roleId = (roleStore.currentRoleId ?? "").trim();
       if (!roleId) throw new Error("当前未选择角色。");
       await expertModelsClearSessionOverride({ roleId, sessionId: null });
       const r = await expertModelsApplyToSession({ roleId, sessionId: null });
       await this.refresh();
-      return {
-        modelPath: r.modelPath,
-        llamaArgs: r.llamaArgs,
-        sidecarNotice: r.sidecarNotice ?? null,
-      };
+      return r;
     },
 
     async setRoleDefault(): Promise<void> {

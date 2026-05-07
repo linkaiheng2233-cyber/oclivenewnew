@@ -8,7 +8,7 @@
 
 ## 1. 它是什么
 
-**专家模型设施**是 **内核侧** 的一套 **运行时设施**：在 **`role_runtime`** 上托管 **专家图（ExpertGraph）** 与 **Prompt 风格覆盖** 的 JSON，按 **角色默认 / 会话覆盖** 解析生效；将图 **安全编译** 为本地 **llama 侧车** 可用的配置（`LlamaLocalPluginConfig`）；并与主对话管线中的 Prompt 构建衔接（如 `PromptStyleOverride` 合并进角色视图）。
+**专家模型设施**是 **内核侧** 的一套 **运行时设施**：在 **`role_runtime`** 上托管 **专家图（ExpertGraph）** 与 **Prompt 风格覆盖** 的 JSON，按 **角色默认 / 会话覆盖** 解析生效；将图 **安全编译** 为本地 **llama 侧车** 配置（`LlamaLocalPluginConfig`）和/或 **本会话云端 LLM**（`plugin_backends.llm = remote` + 可选 `expert_cloud_model_session_override`）；支持 **EventTrigger** 在回合后经标准 **memory** 写入长期记忆；并与主对话管线中的 Prompt 构建衔接（如 `PromptStyleOverride` 合并进角色视图）。
 
 **可替换部分**主要是 **策略资产**：磁盘上的 **GGUF / LoRA**、图里 **节点与边** 的配置；**稳定部分**是 **存储、合并规则、编译与安全边界**（路径校验等），实现集中在 **`crates/oclive_kernel_runtime`**。
 
@@ -41,6 +41,7 @@
 - Profile 中 **六模块固定存在**、**Agent 为可选扩展** 的划分见 **[PROFILE_SCHEMA_v1.md](./PROFILE_SCHEMA_v1.md)**、**[MODULE_NONE_SEMANTICS.md](./MODULE_NONE_SEMANTICS.md)**。
 - **专家模型设施** 的契约与 DTO 以 **`crates/oclive_kernel_runtime/src/models/dto.rs`** 中 Module 9 段落为准。
 - 全库导航：**[../getting-started/DOCUMENTATION_INDEX.md](../getting-started/DOCUMENTATION_INDEX.md)**。
+- **`.oclexpert` 分享 JSON 格式**（创作者导出/导入）：**[OCLEXPERT_FORMAT.md](./OCLEXPERT_FORMAT.md)**。
 
 ---
 
