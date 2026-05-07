@@ -1,6 +1,14 @@
 /**
- * 平台相关快捷键展示与键盘事件判断（macOS 用 ⌘/Meta，其它平台用 Ctrl）。
+ * 平台相关快捷键展示与键盘事件判断。
+ * - **macOS**（Apple 桌面惯例）：⌘ / `metaKey`。
+ * - **Linux** 与 **Windows**：**Ctrl** / `ctrlKey`（Linux 与 Windows 习惯一致，不使用 ⌘）。
  */
+
+/** 典型 Linux 桌面 WebView（GTK/WPE）；用于显式固定 Ctrl 文案，避免与 macOS 混淆。 */
+export function isLinuxLikeDesktop(): boolean {
+  if (typeof navigator === "undefined") return false;
+  return /\bLinux\b/i.test(navigator.userAgent);
+}
 
 export function isMacLikePlatform(): boolean {
   if (typeof navigator === "undefined") return false;
@@ -9,7 +17,13 @@ export function isMacLikePlatform(): boolean {
 
 /** 界面文案中的主修饰键（表格、说明文字） */
 export function shortcutPrimarySymbolForDisplay(): string {
-  return isMacLikePlatform() ? "⌘" : "Ctrl";
+  if (isLinuxLikeDesktop()) {
+    return "Ctrl";
+  }
+  if (isMacLikePlatform()) {
+    return "⌘";
+  }
+  return "Ctrl";
 }
 
 /** 与 `shortcutPrimarySymbolForDisplay` 对应的键盘事件主修饰键是否按下 */

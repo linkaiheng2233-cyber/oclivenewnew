@@ -1,4 +1,6 @@
 //! 全局快捷键：注册/注销与事件派发（`hotkey-action`）。
+//! **Linux**：配置中的 `Ctrl+…` 原样注册；Wayland 下是否生效取决于合成器与权限。
+//! **macOS**：`Ctrl+…` 在注册前会规范为 `Command+…`（与前端 `Meta` 一致）。
 
 use crate::infrastructure::hotkey_bindings::{
     validate_hotkey_bindings, HotkeyAction, HotkeyBindingsFile,
