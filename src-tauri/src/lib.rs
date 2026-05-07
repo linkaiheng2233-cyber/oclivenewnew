@@ -343,6 +343,7 @@ pub fn run() {
     #[cfg(desktop)]
     tauri_plugin_deep_link::prepare("com.oclivenewnew.app");
     tauri::Builder::default()
+        .enable_macos_default_menu(true)
         .register_uri_scheme_protocol("ocliveplugin", |app, request| {
             serve_ocliveplugin_asset(app, request)
         })
