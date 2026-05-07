@@ -50,15 +50,38 @@
 ## L5 打包产物（AppImage / deb）
 
 - `tauri.conf.json` → **`bundle.appimage`**、**`bundle.deb`** 已配置；`targets` 保持 **`all`**，以便在 **Windows / macOS / Linux** 各自的 CI 或本机 `tauri build` 上仍生成对应平台安装包（避免仅写 `["deb","appimage"]` 导致在非 Linux 上构建失败）。
-- **构建**（在已安装 WebKitGTK 等依赖的 Linux 上）：
+
+### 在 Debian / Ubuntu 系上生成 AppImage 与 `.deb`（完整命令示例）
+
+在**仓库根目录**执行；需已安装 **Rust stable** 与 **Node.js**（建议 20+，与 CI 一致）。
 
 ```bash
+# 1) 系统依赖（与 .github/workflows/ci.yml 中 Linux 步骤一致）
+sudo apt-get update
+sudo apt-get install -y \
+  libwebkit2gtk-4.0-dev build-essential curl wget \
+  libssl-dev libgtk-3-dev libayatana-appindicator3-dev librsvg2-dev patchelf
+
+# 2) 安装前端依赖并构建静态资源
 npm ci
 npm run build
+
+# 3)（可选）与 CI 对齐的 Rust 快速检查
+cargo check --workspace
+
+# 4) 生成 Linux 安装包（AppImage + deb，及当前 targets 下其它平台在对应 OS 上的产物）
 npm run tauri build
 ```
 
-- 产物通常在 `src-tauri/target/release/bundle/` 下：`*.AppImage`、`*.deb`。
-- **AppImage**：可在无网络环境下试跑；若需音视频且包体可接受，可将 `bundleMediaFramework` 设为 `true`（当前为 `false` 以控制体积）。
-- **deb**：已设置 `section`；`depends` 请按目标发行版 WebKitGTK 包名维护（22.04 与 24.04 包名可能不同）。
-- **rpm / AUR**：未在默认配置中启用；需要时在 `bundle` 增加 `rpm` 并补充 CI 与安装说明。
+- **产物路径**：`src-tauri/target/release/bundle/`（其下按 `appimage`、`deb` 等子目录或文件名组织；具体文件名随 `package.json` 的 `productName` 与版本号变化）。
+- **Fedora / 其它发行版**：请用发行版包管理器安装与 **WebKitGTK 4.0**、**GTK3** 等价的 `-devel` / 运行时包后再执行步骤 2–4；包名与 CI 的 `apt` 列表不完全相同属预期。
+- **AppImage**：可在无额外网络的情况下试跑；若需音视频且可接受体积增大，可将 `bundle.appimage.bundleMediaFramework` 设为 `true`（当前为 `false`）。
+- **deb**：已配置 `section` 等字段；`deb.depends` 请按目标发行版维护（例如 Ubuntu 22.04 与 24.04 的 WebKitGTK 包名可能不同）。
+
+### rpm、AUR 及商店形态（长期可选项 · 非当前发布主线）
+
+以下内容**不影响**当前以 **AppImage、deb、GitHub Releases 资产** 为主的发布与 PR 门禁；按需排期即可。
+
+- **RPM**：可在 `tauri.conf.json` → `bundle` 增加 **`rpm`** 及依赖列表，在 **Fedora / openSUSE** 等环境执行 `npm run tauri build` 验证；默认不纳入阻塞式 CI，以免拉长三端矩阵时间。
+- **AUR（Arch User Repository）**：通常由社区维护独立 `PKGBUILD` 仓库（从源码构建或引用上游二进制）；**非**本仓库发版必选项，可在有维护者时再链入文档索引。
+- **Snap / Flathub**：属商店与运行时封装层扩展，与内核无关；若产品化上架，需单独工作项（签名、沙箱接口、更新通道等）。可与路线图中的商店类 backlog 对齐。
