@@ -43,7 +43,6 @@ import {
 
 const AutonomousSceneNotice = defineAsyncComponent(() => import("./components/AutonomousSceneNotice.vue"));
 const RoleDetailView = defineAsyncComponent(() => import("./views/RoleDetailView.vue"));
-const PluginSidebarSlots = defineAsyncComponent(() => import("./components/PluginSidebarSlots.vue"));
 const RoleplayAsidePanel = defineAsyncComponent(() => import("./components/RoleplayAsidePanel.vue"));
 const PluginManagerPanel = defineAsyncComponent(() => import("./views/PluginManagerPanel.vue"));
 const PluginManagerV2Panel = defineAsyncComponent(() => import("./views/PluginManagerV2Panel.vue"));
@@ -957,6 +956,7 @@ onBeforeUnmount(() => {
         @click.stop
       >
         <div class="more-grid">
+          <div class="more-grid-main">
           <div class="more-tile more-tile--xs">
             <div class="more-tile-head">
               <span class="more-label">{{ t("app.topBar.tiles.interactionMode.title") }}</span>
@@ -1068,94 +1068,8 @@ onBeforeUnmount(() => {
             </div>
           </div>
 
-          <div v-if="!roleStore.interactionPureChat" class="more-tile more-tile--action settings-entry-tile">
-            <div class="more-tile-head">
-              <span class="more-label">{{ t("app.topBar.tiles.settingsEntry.title") }}</span>
-              <HelpHint :text="settingsEntryMoreHelp" />
-            </div>
-            <div class="more-tile-body settings-entry-actions" role="group" :aria-label="String(t('app.topBar.tiles.settingsEntry.groupLabel'))">
-              <button type="button" class="more-debug-btn more-debug-btn--fill settings-entry-btn" @click="openShortcutHelp">
-                {{ t("app.topBar.tiles.settingsEntry.shortcutHelp") }}
-              </button>
-              <button
-                type="button"
-                class="more-debug-btn more-debug-btn--fill settings-entry-btn settings-entry-btn--primary settings-gear-btn"
-                @click="openSettingsView"
-              >
-                {{ t("app.topBar.tiles.settingsEntry.settings") }}
-              </button>
-              <button
-                type="button"
-                class="more-debug-btn more-debug-btn--fill settings-entry-btn"
-                @click="
-                  localModelManagerOpen = true;
-                  topMoreOpen = false;
-                "
-              >
-                {{ t("app.topBar.tiles.settingsEntry.localModels") }}
-              </button>
-              <button
-                type="button"
-                class="more-debug-btn more-debug-btn--fill settings-entry-btn"
-                :title="String(t('app.topBar.tiles.settingsEntry.revealRolePackHint'))"
-                @click="void onRevealRolePackFolder()"
-              >
-                {{ t("app.topBar.tiles.settingsEntry.revealRolePackFolder") }}
-              </button>
-              <button
-                type="button"
-                class="more-debug-btn more-debug-btn--fill settings-entry-btn"
-                @click="openPluginManagerPanel"
-              >
-                {{ pluginManagerMoreBtnLabel }}
-              </button>
-              <button
-                type="button"
-                class="more-debug-btn more-debug-btn--fill settings-entry-btn"
-                @click="openPluginMarketPanel"
-              >
-                {{ t("app.topBar.tiles.settingsEntry.pluginMarket") }}
-              </button>
-            </div>
-          </div>
-
-          <div v-if="!roleStore.interactionPureChat" class="more-tile more-tile--action">
-            <div class="more-tile-head">
-              <span class="more-label">{{ t("app.topBar.tiles.rolePackShare.title") }}</span>
-              <HelpHint
-                :paragraphs="(t('app.topBar.tiles.rolePackShare.hint') as any)"
-              />
-            </div>
-            <div class="more-tile-body">
-              <RolePackBar
-                @notify="(p) => showToast(p.type, p.message)"
-                @imported="onPackImported"
-              />
-            </div>
-          </div>
-
-          <div class="more-tile more-tile--action">
-            <div class="more-tile-head">
-              <span class="more-label">{{ t("app.topBar.tiles.debug.title") }}</span>
-              <HelpHint
-                :text="
-                  String(
-                    roleStore.interactionPureChat
-                      ? t('app.topBar.tiles.debug.hintPureChat')
-                      : t('app.topBar.tiles.debug.hint'),
-                  )
-                "
-              />
-            </div>
-            <div class="more-tile-body">
-              <button type="button" class="more-debug-btn more-debug-btn--fill" @click="debugStore.toggle">
-                {{ t("app.topBar.tiles.debug.openPanel") }}
-              </button>
-            </div>
-          </div>
-
           <template v-if="roleStore.interactionImmersive">
-            <div class="more-tile more-tile--third">
+            <div class="more-tile more-tile--sm more-tile--time">
               <div class="more-tile-head more-tile-head--tight">
                 <span class="more-label">{{ t("app.topBar.tiles.virtualTime.title") }}</span>
                 <HelpHint
@@ -1174,7 +1088,7 @@ onBeforeUnmount(() => {
               </div>
             </div>
 
-            <div v-if="allSceneOptions.length > 0" class="more-tile more-tile--third">
+            <div v-if="allSceneOptions.length > 0" class="more-tile more-tile--sm more-tile--scene">
               <div class="more-tile-head more-tile-head--tight">
                 <span class="more-label">{{ t("app.topBar.tiles.narrativeScene.title") }}</span>
                 <HelpHint
@@ -1198,6 +1112,95 @@ onBeforeUnmount(() => {
               </div>
             </div>
           </template>
+
+          <div class="more-tile more-tile--action">
+            <div class="more-tile-head">
+              <span class="more-label">{{ t("app.topBar.tiles.debug.title") }}</span>
+              <HelpHint
+                :text="
+                  String(
+                    roleStore.interactionPureChat
+                      ? t('app.topBar.tiles.debug.hintPureChat')
+                      : t('app.topBar.tiles.debug.hint'),
+                  )
+                "
+              />
+            </div>
+            <div class="more-tile-body">
+              <button type="button" class="more-debug-btn more-debug-btn--fill" @click="debugStore.toggle">
+                {{ t("app.topBar.tiles.debug.openPanel") }}
+              </button>
+            </div>
+          </div>
+          </div>
+
+          <div v-if="!roleStore.interactionPureChat" class="more-grid-aside">
+            <div class="more-tile more-tile--action settings-entry-tile">
+              <div class="more-tile-head">
+                <span class="more-label">{{ t("app.topBar.tiles.settingsEntry.title") }}</span>
+                <HelpHint :text="settingsEntryMoreHelp" />
+              </div>
+              <div class="more-tile-body settings-entry-actions" role="group" :aria-label="String(t('app.topBar.tiles.settingsEntry.groupLabel'))">
+                <button type="button" class="more-debug-btn more-debug-btn--fill settings-entry-btn" @click="openShortcutHelp">
+                  {{ t("app.topBar.tiles.settingsEntry.shortcutHelp") }}
+                </button>
+                <button
+                  type="button"
+                  class="more-debug-btn more-debug-btn--fill settings-entry-btn settings-entry-btn--primary settings-gear-btn"
+                  @click="openSettingsView"
+                >
+                  {{ t("app.topBar.tiles.settingsEntry.settings") }}
+                </button>
+                <button
+                  type="button"
+                  class="more-debug-btn more-debug-btn--fill settings-entry-btn"
+                  @click="
+                    localModelManagerOpen = true;
+                    topMoreOpen = false;
+                  "
+                >
+                  {{ t("app.topBar.tiles.settingsEntry.localModels") }}
+                </button>
+                <button
+                  type="button"
+                  class="more-debug-btn more-debug-btn--fill settings-entry-btn"
+                  :title="String(t('app.topBar.tiles.settingsEntry.revealRolePackHint'))"
+                  @click="void onRevealRolePackFolder()"
+                >
+                  {{ t("app.topBar.tiles.settingsEntry.revealRolePackFolder") }}
+                </button>
+                <button
+                  type="button"
+                  class="more-debug-btn more-debug-btn--fill settings-entry-btn"
+                  @click="openPluginManagerPanel"
+                >
+                  {{ pluginManagerMoreBtnLabel }}
+                </button>
+                <button
+                  type="button"
+                  class="more-debug-btn more-debug-btn--fill settings-entry-btn"
+                  @click="openPluginMarketPanel"
+                >
+                  {{ t("app.topBar.tiles.settingsEntry.pluginMarket") }}
+                </button>
+              </div>
+            </div>
+
+            <div class="more-tile more-tile--action more-tile--rolepack">
+              <div class="more-tile-head">
+                <span class="more-label">{{ t("app.topBar.tiles.rolePackShare.title") }}</span>
+                <HelpHint
+                  :paragraphs="(t('app.topBar.tiles.rolePackShare.hint') as any)"
+                />
+              </div>
+              <div class="more-tile-body">
+                <RolePackBar
+                  @notify="(p) => showToast(p.type, p.message)"
+                  @imported="onPackImported"
+                />
+              </div>
+            </div>
+          </div>
         </div>
       </div>
     </header>
@@ -1236,10 +1239,6 @@ onBeforeUnmount(() => {
             :emotion="emotion"
           />
           <RoleplayAsidePanel :text="latestRoleplayAside" />
-          <PluginSidebarSlots
-            v-if="pluginStore.hasSidebarEmbeds"
-            :bootstrap-epoch="pluginStore.bootstrapEpoch"
-          />
           <div class="left-pane-status" :aria-label="String(t('app.status.favorabilityAria'))">
             {{ t("app.status.favorabilityLabel") }} {{ Math.round(roleStore.roleInfo.favorability) }} {{ statusHeart }}
           </div>
@@ -1425,7 +1424,14 @@ onBeforeUnmount(() => {
   flex-wrap: wrap;
   align-items: center;
   justify-content: space-between;
-  gap: 10px;
+  gap: 10px 14px;
+}
+.top-bar-row :deep(.selector-row) {
+  flex: 1 1 auto;
+  min-width: 0;
+}
+.top-bar-row .more-toggle {
+  flex-shrink: 0;
 }
 .startup-status {
   margin-bottom: 8px;
@@ -1507,11 +1513,48 @@ onBeforeUnmount(() => {
 }
 .more-grid {
   display: flex;
+  flex-direction: row;
+  flex-wrap: wrap;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 14px 20px;
+}
+.more-grid-main {
+  flex: 1 1 240px;
+  min-width: 0;
+  display: flex;
   flex-wrap: wrap;
   justify-content: flex-start;
   align-items: flex-start;
   align-content: flex-start;
   gap: 12px 16px;
+}
+.more-grid-aside {
+  flex: 0 0 min(22rem, 100%);
+  max-width: min(26rem, 100%);
+  display: flex;
+  flex-direction: column;
+  align-items: stretch;
+  gap: 12px;
+  margin-left: auto;
+}
+.more-grid-aside .more-tile {
+  width: 100%;
+  max-width: none;
+}
+.more-grid-aside .settings-entry-tile {
+  min-width: 0;
+}
+@media (max-width: 720px) {
+  .more-grid {
+    flex-direction: column;
+  }
+  .more-grid-aside {
+    flex: 1 1 auto;
+    max-width: none;
+    width: 100%;
+    margin-left: 0;
+  }
 }
 .more-tile {
   box-sizing: border-box;
