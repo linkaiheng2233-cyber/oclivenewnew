@@ -4,6 +4,7 @@ import { open as openExternal } from "@tauri-apps/api/shell";
 import { computed, ref, watch } from "vue";
 import { useI18n } from "vue-i18n";
 import PluginBackendSessionPanel from "../components/PluginBackendSessionPanel.vue";
+import ExpertModelsRuntimeCard from "../components/ExpertModelsRuntimeCard.vue";
 import InstalledPluginWorkspaceDetail from "../components/InstalledPluginWorkspaceDetail.vue";
 import PluginScaffoldWizard from "../components/PluginScaffoldWizard.vue";
 import PmSlotRow from "../components/PmSlotRow.vue";
@@ -2850,6 +2851,12 @@ async function onPackSelectedPlugin(): Promise<void> {
                   {{ t("pluginManagerV1.ui.localLlama.rollbackLastOverride") }}
                 </button>
               </div>
+            </section>
+
+            <section class="pm-section">
+              <h3 class="pm-h3">{{ t("pluginManagerV1.ui.expertModels.title") }}</h3>
+              <p class="pm-hint">{{ t("pluginManagerV1.ui.expertModels.hint") }}</p>
+              <ExpertModelsRuntimeCard layout="pmSection" />
             </section>
 
             <PluginBackendSessionPanel />
