@@ -17,6 +17,7 @@
 
 ### Changed
 
+- **专家模型工作台 UI**：工作流区改为标签 + 控件的 **两列网格** 对齐；导入/导出与库操作按钮 **等宽栅格** 排列；Run 历史工具条与弹窗 **响应式宽度**；窄屏下单列堆叠；运行时人格配方卡片按钮 **网格对齐**。
 - **rustdoc**：`event_detector`、`ollama_timeouts`、`role_manager` 模块注释中的断链/歧义链指向修正，便于 CI **`rustdoc::broken_intra_doc_links`** 门禁。  
 - **`oclive_kernel_runtime` 错误分类（P0.E 续）**：插件安装 / 市场索引同步 / 角色包下载与 ZIP 导出 / MCP 客户端 / `delete_role` 等路径中，将原先 `AppError::Unknown` 收敛为 `InvalidParameter`、`IoError`、`SerializationError`、`DatabaseError` 等，并在消息中使用 `[PLUGIN_*]`、`[ROLE_*]`、`[MCP_*]` 等括号前缀便于检索；`handoff/10_ERROR_CODE_DICTIONARY.md` 补充说明。
 - **云 LLM**：移除 Tauri 应用内「云 LLM UI 设置」命令与相关持久化/编排旁路（`get_cloud_llm_ui_settings` 等、`llm_remote_stack`）；**环境变量 `OCLIVE_CLOUD_LLM_*`** 仍可通过 `cloud_llm_from_env` 走 `OpenAiCompatLlmClient`。`PluginResolutionDebug` 去掉云 UI 字段；`PluginBackendSource` 去掉 `app_auto`。

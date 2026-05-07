@@ -254,11 +254,13 @@ const rootClass = computed(() =>
   word-break: break-word;
 }
 .expert-runtime__actions {
-  display: flex;
-  flex-wrap: wrap;
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(104px, 1fr));
   gap: 8px;
 }
 .expert-runtime__btn {
+  width: 100%;
+  text-align: center;
   padding: 6px 10px;
   border-radius: 8px;
   border: 1px solid var(--border-light);

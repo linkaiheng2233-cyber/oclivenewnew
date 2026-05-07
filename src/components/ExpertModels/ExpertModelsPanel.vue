@@ -947,37 +947,43 @@ async function onImportOclexpert(): Promise<void> {
     <div class="em-workflows">
       <div class="em-card">
         <div class="em-card-h">{{ t("expertModels.workflows.title") }}</div>
-        <div class="em-wf-row">
-          <label class="em-muted" style="min-width: 72px">{{ t("expertModels.workflows.nameLabel") }}</label>
-          <input v-model="workflowNameDraft" class="em-input" type="text" :placeholder="t('expertModels.workflows.namePlaceholder')" />
-        </div>
-        <div class="em-wf-row">
-          <label class="em-muted" style="min-width: 72px">{{ t("expertModels.oclexpert.metaDescriptionLabel") }}</label>
+        <div class="em-wf-form">
+          <label class="em-wf-label" for="em-workflow-name">{{ t("expertModels.workflows.nameLabel") }}</label>
+          <input
+            id="em-workflow-name"
+            v-model="workflowNameDraft"
+            class="em-input"
+            type="text"
+            :placeholder="t('expertModels.workflows.namePlaceholder')"
+          />
+          <label class="em-wf-label" for="em-oclexpert-desc">{{ t("expertModels.oclexpert.metaDescriptionLabel") }}</label>
           <textarea
+            id="em-oclexpert-desc"
             v-model="oclexpertDescriptionDraft"
             class="em-text"
             rows="2"
             :placeholder="String(t('expertModels.oclexpert.metaDescriptionPlaceholder'))"
           />
-        </div>
-        <div class="em-wf-row">
-          <label class="em-muted" style="min-width: 72px">{{ t("expertModels.oclexpert.metaAuthorLabel") }}</label>
+          <label class="em-wf-label" for="em-oclexpert-author">{{ t("expertModels.oclexpert.metaAuthorLabel") }}</label>
           <input
+            id="em-oclexpert-author"
             v-model="oclexpertAuthorDraft"
             class="em-input"
             type="text"
             :placeholder="String(t('expertModels.oclexpert.metaAuthorPlaceholder'))"
           />
-        </div>
-        <div class="em-wf-row">
-          <label class="em-muted" style="min-width: 72px">{{ t("expertModels.workflows.libraryLabel") }}</label>
-          <select v-model="store.pickedWorkflowId" class="em-select" style="flex: 1 1 auto">
-            <option value="">{{ t("expertModels.workflows.notSelected") }}</option>
-            <option v-for="w in store.workflows" :key="w.id" :value="w.id">
-              {{ w.name }}
-            </option>
-          </select>
-          <button class="em-btn secondary" type="button" :disabled="saving" @click="onLoadWorkflow">{{ t("expertModels.workflows.load") }}</button>
+          <label class="em-wf-label" for="em-workflow-lib">{{ t("expertModels.workflows.libraryLabel") }}</label>
+          <div class="em-wf-inline">
+            <select id="em-workflow-lib" v-model="store.pickedWorkflowId" class="em-select em-wf-inline-grow">
+              <option value="">{{ t("expertModels.workflows.notSelected") }}</option>
+              <option v-for="w in store.workflows" :key="w.id" :value="w.id">
+                {{ w.name }}
+              </option>
+            </select>
+            <button class="em-btn secondary em-wf-inline-btn" type="button" :disabled="saving" @click="onLoadWorkflow">
+              {{ t("expertModels.workflows.load") }}
+            </button>
+          </div>
         </div>
         <div class="em-wf-actions">
           <button class="em-btn" type="button" :disabled="saving" @click="onSaveWorkflowAs">{{ t("expertModels.workflows.saveAsNew") }}</button>
@@ -988,9 +994,9 @@ async function onImportOclexpert(): Promise<void> {
           <button class="em-btn secondary" type="button" :disabled="saving" @click="onExportOclexpert">{{ t("expertModels.oclexpert.export") }}</button>
           <button class="em-btn secondary" type="button" :disabled="saving" @click="onImportOclexpert">{{ t("expertModels.oclexpert.import") }}</button>
         </div>
-        <div class="em-muted">
+        <p class="em-muted em-wf-hint">
           {{ t("expertModels.workflows.hint") }}
-        </div>
+        </p>
       </div>
     </div>
 
@@ -1019,8 +1025,8 @@ async function onImportOclexpert(): Promise<void> {
 
     <div v-if="draftGraphValidationMessage" class="em-card em-integrity">
       <div class="em-card-h">{{ t("expertModels.graphIntegrity.title") }}</div>
-      <p class="em-muted">{{ draftGraphValidationMessage }}</p>
-      <div class="em-wf-actions">
+      <p class="em-muted em-block-spaced">{{ draftGraphValidationMessage }}</p>
+      <div class="em-wf-actions em-wf-actions--compact">
         <button type="button" class="em-btn secondary" @click="store.setDraftFromEffective">
           {{ t("expertModels.graphIntegrity.resetEffective") }}
         </button>
@@ -1031,8 +1037,8 @@ async function onImportOclexpert(): Promise<void> {
     </div>
 
     <div v-else-if="isDraftGraphEmpty" class="em-card em-empty-graph">
-      <p class="em-muted">{{ t("expertModels.emptyState.lead") }}</p>
-      <div class="em-wf-actions">
+      <p class="em-muted em-block-spaced">{{ t("expertModels.emptyState.lead") }}</p>
+      <div class="em-wf-actions em-wf-actions--compact">
         <button type="button" class="em-btn" @click="store.setDraftFromEffective">
           {{ t("expertModels.emptyState.loadEffective") }}
         </button>
@@ -1569,13 +1575,13 @@ async function onImportOclexpert(): Promise<void> {
             <button class="em-btn secondary" type="button" :disabled="saving || store.loading" @click="onExportLatestPinnedRun">
               {{ t("expertModels.runHistory.ui.exportPinned") }}
             </button>
-            <select v-model="clearMode" class="em-select" style="min-width: 140px">
+            <select v-model="clearMode" class="em-select em-select--runs-wide">
               <option value="all">{{ t("expertModels.runHistory.clearMode.all") }}</option>
               <option value="failed">{{ t("expertModels.runHistory.clearMode.failed") }}</option>
               <option value="ok">{{ t("expertModels.runHistory.clearMode.ok") }}</option>
               <option value="unpinned">{{ t("expertModels.runHistory.clearMode.unpinned") }}</option>
             </select>
-            <label class="em-muted2" style="display: inline-flex; align-items: center; gap: 6px">
+            <label class="em-muted2 em-runs-check-row">
               <input v-model="clearKeepPinned" type="checkbox" />
               {{ t("expertModels.runHistory.keepPinned") }}
             </label>
@@ -1587,7 +1593,7 @@ async function onImportOclexpert(): Promise<void> {
             >
               {{ t("expertModels.runHistory.ui.clearExecute") }}
             </button>
-            <select v-model="runFilterStatus" class="em-select" style="min-width: 120px">
+            <select v-model="runFilterStatus" class="em-select em-select--runs">
               <option value="all">{{ t("expertModels.runHistory.ui.filterStatus.all") }}</option>
               <option value="ok">OK</option>
               <option value="failed">FAILED</option>
@@ -1595,10 +1601,9 @@ async function onImportOclexpert(): Promise<void> {
             </select>
             <input
               v-model="runFilterText"
-              class="em-input"
+              class="em-input em-input--runs-search"
               type="text"
               :placeholder="String(t('expertModels.runHistory.ui.searchBasePlaceholder'))"
-              style="min-width: 180px"
             />
           </div>
           <div v-if="!store.runs.length" class="em-muted">
@@ -1741,12 +1746,12 @@ async function onImportOclexpert(): Promise<void> {
             <dt>{{ t("expertModels.oclexpert.previewAuthor") }}</dt>
             <dd>{{ oclexpertImportPreview.suggestedAuthor || "—" }}</dd>
           </dl>
-          <div class="em-wf-actions">
-            <button class="em-btn" type="button" :disabled="saving" @click="confirmOclexpertImportPreview">
-              {{ t("expertModels.oclexpert.previewConfirm") }}
-            </button>
+          <div class="em-oclexpert-actions">
             <button class="em-btn secondary" type="button" :disabled="saving" @click="cancelOclexpertImportPreview">
               {{ t("expertModels.oclexpert.previewCancel") }}
+            </button>
+            <button class="em-btn" type="button" :disabled="saving" @click="confirmOclexpertImportPreview">
+              {{ t("expertModels.oclexpert.previewConfirm") }}
             </button>
           </div>
         </div>
@@ -1766,7 +1771,12 @@ async function onImportOclexpert(): Promise<void> {
   display: flex;
   align-items: flex-start;
   justify-content: space-between;
-  gap: 10px;
+  gap: 12px 16px;
+  flex-wrap: wrap;
+}
+.em-h > div:first-child {
+  flex: 1 1 220px;
+  min-width: 0;
 }
 .em-title {
   margin: 0 0 6px;
@@ -1782,21 +1792,67 @@ async function onImportOclexpert(): Promise<void> {
   display: flex;
   gap: 8px;
   flex-wrap: wrap;
+  align-items: center;
+  justify-content: flex-end;
+  flex: 0 1 auto;
 }
 .em-workflows {
   margin-top: 10px;
 }
-.em-wf-row {
+.em-wf-form {
+  display: grid;
+  grid-template-columns: minmax(100px, 32%) minmax(0, 1fr);
+  gap: 10px 14px;
+  align-items: start;
+  margin-top: 4px;
+}
+.em-wf-label {
+  margin: 0;
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--text-secondary);
+  line-height: 1.35;
+  padding-top: 8px;
+}
+.em-wf-inline {
   display: flex;
-  align-items: center;
+  align-items: stretch;
   gap: 8px;
-  margin-top: 8px;
+  min-width: 0;
+}
+.em-wf-inline-grow {
+  flex: 1 1 auto;
+  min-width: 0;
+}
+.em-wf-inline-btn {
+  flex: 0 0 auto;
+  white-space: nowrap;
+}
+.em-wf-hint {
+  margin: 10px 0 0;
+  line-height: 1.45;
+}
+.em-block-spaced {
+  margin: 0 0 10px;
+  line-height: 1.45;
 }
 .em-wf-actions {
-  display: flex;
-  flex-wrap: wrap;
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(136px, 1fr));
   gap: 8px;
-  margin-top: 10px;
+  margin-top: 12px;
+}
+.em-wf-actions.em-wf-actions--compact {
+  grid-template-columns: repeat(auto-fill, minmax(160px, 1fr));
+}
+.em-wf-actions .em-btn {
+  width: 100%;
+  text-align: center;
+}
+.em-wf-form .em-input,
+.em-wf-form .em-text {
+  width: 100%;
+  box-sizing: border-box;
 }
 .em-input {
   flex: 1 1 auto;
@@ -1825,12 +1881,16 @@ async function onImportOclexpert(): Promise<void> {
   align-items: center;
 }
 .em-editorbar {
-  margin-top: 10px;
-  display: flex;
+  margin-top: 12px;
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr);
+  gap: 10px 14px;
   align-items: center;
-  justify-content: space-between;
-  gap: 10px;
-  flex-wrap: wrap;
+}
+.em-editorbar .em-muted {
+  margin: 0;
+  line-height: 1.45;
+  min-width: 0;
 }
 .em-cloud-event-wrap {
   margin-top: 10px;
@@ -2059,10 +2119,11 @@ async function onImportOclexpert(): Promise<void> {
   resize: vertical;
 }
 .em-footer {
-  margin-top: 12px;
+  margin-top: 14px;
   display: flex;
-  gap: 8px;
   flex-wrap: wrap;
+  gap: 10px 12px;
+  align-items: center;
 }
 .em-runs {
   display: inline-block;
@@ -2079,14 +2140,31 @@ async function onImportOclexpert(): Promise<void> {
   border-radius: 10px;
   border: 1px solid var(--border-light);
   background: var(--bg-primary);
-  min-width: 520px;
-  max-width: 720px;
+  width: 100%;
+  max-width: min(720px, 100%);
+  min-width: 0;
+  box-sizing: border-box;
 }
 .em-runs-actions {
-  display: flex;
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
   gap: 8px;
-  margin-bottom: 8px;
+  margin-bottom: 10px;
+  align-items: center;
+}
+.em-runs-actions .em-select {
+  min-width: 0;
+}
+.em-runs-check-row {
+  grid-column: 1 / -1;
+  display: flex;
+  align-items: center;
+  gap: 8px;
   flex-wrap: wrap;
+}
+.em-input--runs-search {
+  min-width: 0;
+  width: 100%;
 }
 .em-run-applying {
   display: flex;
@@ -2190,11 +2268,11 @@ async function onImportOclexpert(): Promise<void> {
   }
 }
 .em-integrity {
-  margin-top: 10px;
+  margin-top: 12px;
   border-color: color-mix(in srgb, #f59e0b 35%, var(--border-light));
 }
 .em-empty-graph {
-  margin-top: 10px;
+  margin-top: 12px;
 }
 .em-oclexpert-backdrop {
   position: fixed;
@@ -2208,11 +2286,21 @@ async function onImportOclexpert(): Promise<void> {
 }
 .em-oclexpert-modal {
   width: min(440px, 100%);
-  padding: 14px 16px;
+  padding: 16px 18px;
   border-radius: 12px;
   border: 1px solid var(--border-light);
   background: var(--bg-primary);
   box-shadow: var(--shadow-app);
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+.em-oclexpert-actions {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+  gap: 8px;
+  margin-top: 4px;
 }
 .em-oclexpert-dl {
   margin: 10px 0 0;
@@ -2229,6 +2317,17 @@ async function onImportOclexpert(): Promise<void> {
 .em-oclexpert-dl dd {
   margin: 0;
   word-break: break-word;
+}
+@media (max-width: 560px) {
+  .em-wf-form {
+    grid-template-columns: 1fr;
+  }
+  .em-wf-label {
+    padding-top: 0;
+  }
+  .em-editorbar {
+    grid-template-columns: 1fr;
+  }
 }
 </style>
 
