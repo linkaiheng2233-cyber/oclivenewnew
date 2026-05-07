@@ -1,4 +1,5 @@
 import { createI18n } from "vue-i18n";
+import { applyShortcutModTokens } from "../lib/shortcutDisplay";
 
 export type AppLocale = "zh-CN" | "en-US";
 export type LanguagePref = "system" | AppLocale;
@@ -38,10 +39,10 @@ export async function prepareI18nForLocale(locale: AppLocale): Promise<void> {
   if (loadedLocales.has(locale)) return;
   if (locale === "zh-CN") {
     const m = await import("./locales/zh-CN");
-    i18n.global.mergeLocaleMessage("zh-CN", m.zhCN);
+    i18n.global.mergeLocaleMessage("zh-CN", applyShortcutModTokens(m.zhCN));
   } else {
     const m = await import("./locales/en-US");
-    i18n.global.mergeLocaleMessage("en-US", m.enUS);
+    i18n.global.mergeLocaleMessage("en-US", applyShortcutModTokens(m.enUS));
   }
   loadedLocales.add(locale);
 }

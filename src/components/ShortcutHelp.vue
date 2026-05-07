@@ -6,6 +6,7 @@ import {
   shortcutHelpCtrlShiftADescription,
   shortcutHelpCtrlShiftFDescription,
 } from "../lib/pluginManagerEntryCopy";
+import { formatChordModShift } from "../lib/shortcutDisplay";
 import { SLOT_LAUNCHER_PALETTE } from "../stores/pluginStore";
 import { useUiStore } from "../stores/uiStore";
 
@@ -31,9 +32,9 @@ const rows = computed(() => {
   );
   const pluginA = shortcutHelpCtrlShiftADescription();
   return [
-    { keys: "Ctrl + Shift + S", desc: String(t("shortcutHelp.rows.ctrlShiftS")) },
-    { keys: "Ctrl + Shift + F", desc: pluginF },
-    { keys: "Ctrl + Shift + A", desc: pluginA },
+    { keys: formatChordModShift("S"), desc: String(t("shortcutHelp.rows.ctrlShiftS")) },
+    { keys: formatChordModShift("F"), desc: pluginF },
+    { keys: formatChordModShift("A"), desc: pluginA },
     { keys: String(t("shortcutHelp.rows.ctrlHoldKey")), desc: String(t("shortcutHelp.rows.ctrlHoldDesc")) },
   ];
 });

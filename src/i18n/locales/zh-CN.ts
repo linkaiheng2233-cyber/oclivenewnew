@@ -207,7 +207,7 @@ export const zhCN = {
             "在资源管理器中打开当前角色的包目录，可直接编辑 settings.json、manifest.json 等；保存后请重新加载角色或重启应用使部分改动生效。",
           revealRolePackOk: "已打开文件夹。",
           revealRolePackNoRole: "当前未选择角色。",
-          pluginMarket: "插件市场（Ctrl+Shift+A）",
+          pluginMarket: "插件市场（{m}+Shift+A）",
         },
         rolePackShare: {
           title: "角色包（朋友分享）",
@@ -219,7 +219,7 @@ export const zhCN = {
         debug: {
           title: "调试",
           hint:
-            "开发者与排错用：好感、记忆、策略重载等。Ctrl+Shift+D 可开关调试窗；顶栏「更多」展开时按 Esc 先收起本栏。",
+            "开发者与排错用：好感、记忆、策略重载等。{m}+Shift+D 可开关调试窗；顶栏「更多」展开时按 Esc 先收起本栏。",
           hintPureChat:
             "纯聊：请用下方按钮开关本面板。组合键与完整快捷键说明仅在沉浸模式提供。",
           openPanel: "打开调试面板",
@@ -446,7 +446,7 @@ export const zhCN = {
       settingsGeneralLeadHtml:
         "插件管理正在迭代中。为减少干扰，部分入口默认收起或隐藏。",
       settingsShortcutsHelpHint:
-        "可通过顶栏「更多」或 Ctrl+Shift+F 快速打开插件管理。",
+        "可通过顶栏「更多」或 {m}+Shift+F 快速打开插件管理。",
       settingsExperimentalSectionHelpHint:
         "实验性功能可能频繁变更，并可能造成兼容性问题。",
       settingsExperimentalToggleTitle: "启用新版插件管理界面（V2 预览）",
@@ -461,9 +461,9 @@ export const zhCN = {
       },
       tileHelpText: {
         v1:
-          "将快捷键说明、设置页与 Oclive Manager（插件与后端管理）集中到同一处。快捷键：Ctrl+Shift+S 打开设置；Ctrl+Shift+F 打开专业模式（V1）Oclive Manager（含开发者调试）；Ctrl+Shift+A 打开插件市场。 Ctrl+Shift+D 开关调试面板。",
+          "将快捷键说明、设置页与 Oclive Manager（插件与后端管理）集中到同一处。快捷键：{m}+Shift+S 打开设置；{m}+Shift+F 打开专业模式（V1）Oclive Manager（含开发者调试）；{m}+Shift+A 打开插件市场。 {m}+Shift+D 开关调试面板。",
         v2:
-          "将快捷键说明、设置页与 Oclive Manager 集中到同一处。快捷键：Ctrl+Shift+S 打开设置；Ctrl+Shift+F 与下方按钮打开 Oclive Manager（V2 预览）；Ctrl+Shift+A 打开插件市场；在设置中关闭「V2 预览」可恢复专业模式（V1）。 Ctrl+Shift+D 开关调试面板。",
+          "将快捷键说明、设置页与 Oclive Manager 集中到同一处。快捷键：{m}+Shift+S 打开设置；{m}+Shift+F 与下方按钮打开 Oclive Manager（V2 预览）；{m}+Shift+A 打开插件市场；在设置中关闭「V2 预览」可恢复专业模式（V1）。 {m}+Shift+D 开关调试面板。",
       },
     },
     shortcuts: {
@@ -544,7 +544,7 @@ export const zhCN = {
     backendHint: {
       prefix: "模块后端、异地心声、会话覆盖与调试快照已迁至",
       linkText: "插件与后端管理 → 后端模块",
-      suffix: "（Ctrl+Shift+F）",
+      suffix: "（{m}+Shift+F）",
     },
     feedback: {
       leadHtml:
@@ -926,7 +926,7 @@ export const zhCN = {
     title: "快捷键",
     rows: {
       ctrlShiftS: "打开设置（扩展区、安全、快捷键与插件配置）",
-      ctrlHoldKey: "Ctrl（长按约 1 秒）",
+      ctrlHoldKey: "{m}（长按约 1 秒）",
       ctrlHoldDesc: "打开本快捷键说明",
     },
     footer: "更多快捷键将随功能迭代补充。",
@@ -940,7 +940,7 @@ export const zhCN = {
     title: "🎛️ 开发面板",
     hint: [
       "供开发与排错：查看好感度、性格维度、近期事件与记忆摘要；可重载策略、生成独白、导入或管理角色包等。",
-      "快捷键 Ctrl+Shift+D（同时按住 Ctrl、Shift，再按字母 D）可随时打开或关闭本面板；按 Esc 也可关闭。顶栏「更多」里亦可点「打开调试面板」。",
+      "快捷键 {m}+Shift+D（同时按住 {m}、Shift，再按字母 D）可随时打开或关闭本面板；按 Esc 也可关闭。顶栏「更多」里亦可点「打开调试面板」。",
     ],
     hintPureChatP1: "供开发与排错：查看好感、记忆与策略等；角色包与独白入口也在此。",
     hintPureChatP2: "按 Esc 或右上角关闭本面板。组合键与完整快捷键说明仅在沉浸模式提供。",
@@ -999,7 +999,7 @@ export const zhCN = {
       refreshDebugData: "刷新调试数据",
       reloadPolicy: "重载策略",
     },
-    footer: "💡 Ctrl+Shift+D 开关面板 · 角色包与独白已收在此",
+    footer: "💡 {m}+Shift+D 开关面板 · 角色包与独白已收在此",
     footerPureChat: "💡 纯聊用顶栏按钮开关本面板 · 完整快捷键表在沉浸模式「快捷键说明」",
   },
   timeDial: {
@@ -1131,7 +1131,7 @@ export const zhCN = {
     lead: "默认全部关闭。启用后由系统全局监听，可能与系统或其它应用冲突；保存失败时会提示原因。",
     fields: {
       accelerator: "快捷键",
-      acceleratorPlaceholder: "如 Ctrl+Shift+L",
+      acceleratorPlaceholder: "如 {m}+Shift+L",
       action: "动作",
       pluginId: "插件 id",
       slot: "插槽名",
@@ -1631,7 +1631,7 @@ export const zhCN = {
       proModeBadge: "专业模式",
       proModeBadgeTitle: "面向创作者与排错：目录插件、后端与会话覆盖",
       subtitle:
-        "Ctrl+Shift+F 开关本窗口 · Ctrl+Shift+A 打开插件市场 · 保存后插槽/启用状态建议重启应用生效",
+        "{m}+Shift+F 开关本窗口 · {m}+Shift+A 打开插件市场 · 保存后插槽/启用状态建议重启应用生效",
       loading: "加载中…",
       tabsAria: "插件与功能分区",
       tabs: {
@@ -1655,7 +1655,7 @@ export const zhCN = {
       },
       market: {
         title: "插件市场",
-        openMarket: "打开插件市场（Ctrl+Shift+A）",
+        openMarket: "打开插件市场（{m}+Shift+A）",
         hint: "市场（社区索引 / 模块 / Profile / 本地投放）已拆分为独立弹窗，避免和管理功能混在一起。",
       },
       persistScope: {
@@ -1908,7 +1908,7 @@ export const zhCN = {
     },
     confirm: {
       rollbackLastRun:
-        "将回滚到上一次已应用的配置（第九模块 Ctrl+Z），并重新应用到当前会话。\n提示：可在「Run 历史」里回滚到任意一次。\n继续吗？",
+        "将回滚到上一次已应用的配置（第九模块 {m}+Z），并重新应用到当前会话。\n提示：可在「Run 历史」里回滚到任意一次。\n继续吗？",
       retryRunApply:
         "将重试此目标配置并重新应用到当前会话：\nBase={base} / LoRA={loras} / PromptStyle={promptStyle}\n继续吗？",
       exportWorkflowFile:

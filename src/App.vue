@@ -21,6 +21,7 @@ import { useSceneDestination } from "./composables/useSceneDestination";
 import { usePackUiTheme } from "./composables/useTheme";
 import { usePluginManagerWindow } from "./composables/usePluginManagerWindow";
 import { hostEventBus } from "./lib/hostEventBus";
+import { chordModifierKeyDown, isMacLikePlatform } from "./lib/shortcutDisplay";
 import {
   cancelChatGeneration,
   consumePendingProtocolInstalls,
@@ -115,7 +116,8 @@ function clearCtrlLongPressTimer(): void {
 
 function onCtrlHoldHintKeydown(e: KeyboardEvent): void {
   if (!roleStore.interactionImmersive) return;
-  if (e.key !== "Control" || e.repeat) {
+  const modKey = isMacLikePlatform() ? "Meta" : "Control";
+  if (e.key !== modKey || e.repeat) {
     return;
   }
   clearCtrlLongPressTimer();
@@ -127,7 +129,8 @@ function onCtrlHoldHintKeydown(e: KeyboardEvent): void {
 }
 
 function onCtrlHoldHintKeyup(e: KeyboardEvent): void {
-  if (e.key === "Control") {
+  const modKey = isMacLikePlatform() ? "Meta" : "Control";
+  if (e.key === modKey) {
     clearCtrlLongPressTimer();
   }
 }
@@ -645,29 +648,29 @@ function onHotkey(e: KeyboardEvent) {
       return;
     }
   }
-  if (e.ctrlKey && e.shiftKey && e.key.toLowerCase() === "d") {
+  if (chordModifierKeyDown(e) && e.shiftKey && e.key.toLowerCase() === "d") {
     e.preventDefault();
     debugStore.toggle();
     return;
   }
   if (roleStore.interactionPureChat) {
-    if (e.ctrlKey && e.shiftKey) {
+    if (chordModifierKeyDown(e) && e.shiftKey) {
       const k = e.key.toLowerCase();
       if (k === "f" || k === "a" || k === "s") e.preventDefault();
     }
     return;
   }
-  if (e.ctrlKey && e.shiftKey && e.key.toLowerCase() === "f") {
+  if (chordModifierKeyDown(e) && e.shiftKey && e.key.toLowerCase() === "f") {
     e.preventDefault();
     openPluginManagerPanel();
     return;
   }
-  if (e.ctrlKey && e.shiftKey && e.key.toLowerCase() === "a") {
+  if (chordModifierKeyDown(e) && e.shiftKey && e.key.toLowerCase() === "a") {
     e.preventDefault();
     openPluginMarketPanel();
     return;
   }
-  if (e.ctrlKey && e.shiftKey && e.key.toLowerCase() === "s") {
+  if (chordModifierKeyDown(e) && e.shiftKey && e.key.toLowerCase() === "s") {
     e.preventDefault();
     openSettingsView();
     return;

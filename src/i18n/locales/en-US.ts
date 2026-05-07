@@ -214,7 +214,7 @@ export const enUS = {
             "Opens the current role’s pack directory in the file manager so you can edit settings.json, manifest.json, etc.; reload the role after changes where needed.",
           revealRolePackOk: "Folder opened.",
           revealRolePackNoRole: "No role selected.",
-          pluginMarket: "Plugin Market (Ctrl+Shift+A)",
+          pluginMarket: "Plugin Market ({m}+Shift+A)",
         },
         rolePackShare: {
           title: "Role packs (share with friends)",
@@ -226,7 +226,7 @@ export const enUS = {
         debug: {
           title: "Debug",
           hint:
-            "For developers and troubleshooting. Ctrl+Shift+D toggles the debug window. When “More” is open, pressing Esc will close this panel first.",
+            "For developers and troubleshooting. {m}+Shift+D toggles the debug window. When “More” is open, pressing Esc will close this panel first.",
           hintPureChat:
             "Chat-only: use the button below for this panel. Combined-key shortcuts and the full shortcut list are available in immersive mode.",
           openPanel: "Open debug panel",
@@ -459,7 +459,7 @@ export const enUS = {
       settingsGeneralLeadHtml:
         "Plugin Manager is being iterated. Some entries are hidden by default to reduce distractions.",
       settingsShortcutsHelpHint:
-        "You can open Plugin Manager quickly via the top bar “More” menu or Ctrl+Shift+F.",
+        "You can open Plugin Manager quickly via the top bar “More” menu or {m}+Shift+F.",
       settingsExperimentalSectionHelpHint:
         "Experimental features may change frequently and can break compatibility.",
       settingsExperimentalToggleTitle: "Enable new Plugin Manager UI (V2 preview)",
@@ -474,9 +474,9 @@ export const enUS = {
       },
       tileHelpText: {
         v1:
-          "Centralizes shortcuts, Settings, and Oclive Manager (plugins & backends). Shortcuts: Ctrl+Shift+S opens Settings; Ctrl+Shift+F opens Oclive Manager (V1, with dev debug); Ctrl+Shift+A opens Plugin Market. Ctrl+Shift+D toggles Debug panel.",
+          "Centralizes shortcuts, Settings, and Oclive Manager (plugins & backends). Shortcuts: {m}+Shift+S opens Settings; {m}+Shift+F opens Oclive Manager (V1, with dev debug); {m}+Shift+A opens Plugin Market. {m}+Shift+D toggles Debug panel.",
         v2:
-          "Centralizes shortcuts, Settings, and Oclive Manager. Shortcuts: Ctrl+Shift+S opens Settings; Ctrl+Shift+F and the button below open Oclive Manager (V2 preview); Ctrl+Shift+A opens Plugin Market; disable “V2 preview” in Settings to return to V1. Ctrl+Shift+D toggles Debug panel.",
+          "Centralizes shortcuts, Settings, and Oclive Manager. Shortcuts: {m}+Shift+S opens Settings; {m}+Shift+F and the button below open Oclive Manager (V2 preview); {m}+Shift+A opens Plugin Market; disable “V2 preview” in Settings to return to V1. {m}+Shift+D toggles Debug panel.",
       },
     },
     shortcuts: {
@@ -561,7 +561,7 @@ export const enUS = {
       prefix:
         "Module backends, Remote Life, session overrides and debug snapshots have moved to",
       linkText: "Plugins & backends → Backends",
-      suffix: "(Ctrl+Shift+F)",
+      suffix: "({m}+Shift+F)",
     },
     feedback: {
       leadHtml:
@@ -956,7 +956,7 @@ export const enUS = {
     title: "Shortcuts",
     rows: {
       ctrlShiftS: "Open Settings (extensions, security, shortcuts, and plugin configuration).",
-      ctrlHoldKey: "Ctrl (hold ~1s)",
+      ctrlHoldKey: "{m} (hold ~1s)",
       ctrlHoldDesc: "Open this shortcuts panel",
     },
     footer: "More shortcuts will be added as features evolve.",
@@ -970,7 +970,7 @@ export const enUS = {
     title: "🎛️ Developer panel",
     hint: [
       "For development and troubleshooting: view favorability, personality dimensions, recent events and memory summaries; reload policies, generate monologue, import/manage role packs, etc.",
-      "Shortcut Ctrl+Shift+D toggles this panel; Esc also closes it. You can also click “Open debug panel” under the top bar More menu.",
+      "Shortcut {m}+Shift+D toggles this panel; Esc also closes it. You can also click “Open debug panel” under the top bar More menu.",
     ],
     hintPureChatP1:
       "For troubleshooting: favorability, memory, policy tools, role pack and monologue entries live here.",
@@ -1032,7 +1032,7 @@ export const enUS = {
       refreshDebugData: "Refresh debug data",
       reloadPolicy: "Reload policy",
     },
-    footer: "💡 Ctrl+Shift+D toggles panel · role pack & monologue live here",
+    footer: "💡 {m}+Shift+D toggles panel · role pack & monologue live here",
     footerPureChat: "💡 Chat-only: use the top bar button · full shortcut table is in immersive Shortcuts help",
   },
   timeDial: {
@@ -1167,7 +1167,7 @@ export const enUS = {
       "All disabled by default. When enabled, they are registered as system-wide shortcuts and may conflict with other apps. Save errors will show the reason.",
     fields: {
       accelerator: "Shortcut",
-      acceleratorPlaceholder: "e.g. Ctrl+Shift+L",
+      acceleratorPlaceholder: "e.g. {m}+Shift+L",
       action: "Action",
       pluginId: "Plugin id",
       slot: "Slot name",
@@ -1688,7 +1688,7 @@ export const enUS = {
       proModeBadge: "Professional mode",
       proModeBadgeTitle: "For creators and troubleshooting: directory plugins, backends and session overrides",
       subtitle:
-        "Ctrl+Shift+F toggles this window · Ctrl+Shift+A opens Plugin Market · after saving, restart is recommended for slot/enabled state.",
+        "{m}+Shift+F toggles this window · {m}+Shift+A opens Plugin Market · after saving, restart is recommended for slot/enabled state.",
       loading: "Loading…",
       tabsAria: "Plugins and features sections",
       tabs: {
@@ -1713,7 +1713,7 @@ export const enUS = {
       },
       market: {
         title: "Plugin Market",
-        openMarket: "Open Plugin Market (Ctrl+Shift+A)",
+        openMarket: "Open Plugin Market ({m}+Shift+A)",
         hint:
           "Market (community index / modules / profiles / local imports) is separated into its own window to avoid mixing with management functions.",
       },
@@ -1980,7 +1980,7 @@ export const enUS = {
     },
     confirm: {
       rollbackLastRun:
-        "Rollback to last applied config (Expert Models Facility: Ctrl+Z) and re-apply to current session.\nTip: you can rollback to any run in Run History.\nContinue?",
+        "Rollback to last applied config (Expert Models Facility: {m}+Z) and re-apply to current session.\nTip: you can rollback to any run in Run History.\nContinue?",
       retryRunApply:
         "Retry this target config and re-apply to current session:\nBase={base} / LoRA={loras} / PromptStyle={promptStyle}\nContinue?",
       exportWorkflowFile:

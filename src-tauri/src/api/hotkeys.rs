@@ -7,6 +7,28 @@ use crate::state::AppState;
 use serde::Serialize;
 use tauri::{AppHandle, GlobalShortcutManager, Manager, State};
 
+/// 将用户配置里常见的 `Ctrl+…` 在 macOS 上注册为 `Command+…`（与前端 `Meta` 一致）。
+fn normalize_accelerator_for_os(accelerator: &str) -> String {
+    #[cfg(target_os = "macos")]
+    {
+        let mut s = accelerator.to_string();
+        for (from, to) in [
+            ("Ctrl+", "Command+"),
+            ("CTRL+", "Command+"),
+            ("ctrl+", "Command+"),
+        ] {
+            if s.contains(from) {
+                s = s.replace(from, to);
+            }
+        }
+        s
+    }
+    #[cfg(not(target_os = "macos"))]
+    {
+        accelerator.to_string()
+    }
+}
+
 #[derive(Clone, Serialize)]
 #[serde(rename_all = "camelCase")]
 struct HotkeyActionEvent {
@@ -30,7 +52,7 @@ pub fn apply_global_hotkeys(app: &AppHandle, file: &HotkeyBindingsFile) -> Resul
         let app_clone = app.clone();
         let id = b.id.clone();
         let action = b.action.clone();
-        let acc_owned = acc.to_string();
+        let acc_owned = normalize_accelerator_for_os(acc);
         mgr.register(&acc_owned, move || {
             let payload = HotkeyActionEvent {
                 binding_id: id.clone(),
