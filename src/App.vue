@@ -956,7 +956,11 @@ onBeforeUnmount(() => {
         @click.stop
       >
         <div class="top-more-panel-inner">
-          <div class="more-panel-rows">
+          <div
+            class="more-panel-body"
+            :class="{ 'more-panel-body--with-rail': !roleStore.interactionPureChat }"
+          >
+            <div class="more-panel-rows more-panel-rows--main">
             <div class="more-row more-row--r1-strip">
               <div class="more-tile more-tile--cell more-tile--top-strip">
                 <div class="more-tile-head">
@@ -1143,9 +1147,10 @@ onBeforeUnmount(() => {
                 </div>
               </div>
             </div>
+            </div>
 
-            <div v-if="!roleStore.interactionPureChat" class="more-row more-row--r4-tools">
-              <div class="more-tile more-tile--cell more-tile--side-tile settings-entry-tile">
+            <div v-if="!roleStore.interactionPureChat" class="more-panel-rail">
+              <div class="more-tile more-tile--cell more-tile--side-tile more-tile--rail settings-entry-tile">
                 <div class="more-tile-head">
                   <span class="more-label">{{ t("app.topBar.tiles.settingsEntry.title") }}</span>
                   <HelpHint :text="settingsEntryMoreHelp" />
@@ -1200,7 +1205,7 @@ onBeforeUnmount(() => {
                 </div>
               </div>
 
-              <div class="more-tile more-tile--cell more-tile--side-tile more-tile--rolepack">
+              <div class="more-tile more-tile--cell more-tile--side-tile more-tile--rail more-tile--rolepack">
                 <div class="more-tile-head">
                   <span class="more-label">{{ t("app.topBar.tiles.rolePackShare.title") }}</span>
                   <HelpHint
@@ -1511,17 +1516,45 @@ onBeforeUnmount(() => {
   padding-top: 12px;
   border-top: 1px solid var(--border-light);
   width: fit-content;
-  max-width: min(94vw, 44rem);
+  max-width: min(96vw, 50rem);
   align-self: flex-start;
   margin-left: 0;
   margin-right: auto;
   box-sizing: border-box;
 }
 .top-more-panel-inner {
-  max-height: min(46vh, 400px);
-  overflow-y: auto;
+  overflow: visible;
   overflow-x: hidden;
   padding-bottom: 4px;
+}
+.more-panel-body {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 10px 12px;
+  align-items: start;
+  min-width: 0;
+}
+.more-panel-body--with-rail {
+  grid-template-columns: minmax(0, 1fr) minmax(17.5rem, 24rem);
+}
+.more-panel-rail {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 8px 10px;
+  align-items: stretch;
+  min-width: 0;
+}
+.more-panel-rail .settings-entry-actions {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+.more-panel-rail .settings-entry-tile,
+.more-panel-rail .more-tile--rolepack {
+  min-height: auto;
+  min-width: 0;
+}
+.top-more-panel .more-tile--rail {
+  gap: 8px;
+  padding: 10px 12px;
 }
 .more-panel-rows {
   display: flex;
@@ -1529,6 +1562,9 @@ onBeforeUnmount(() => {
   gap: 8px;
   width: 100%;
   min-width: min(22rem, 100%);
+}
+.more-panel-rows--main {
+  min-width: 0;
 }
 .more-row--r1-strip {
   display: grid;
@@ -1542,32 +1578,32 @@ onBeforeUnmount(() => {
   grid-template-columns: 1fr;
   min-width: 0;
 }
-.more-row--r4-tools {
-  display: grid;
-  grid-template-columns: minmax(0, 1.12fr) minmax(0, 0.88fr);
-  gap: 8px 10px;
-  align-items: stretch;
-}
 .more-tile--side-tile {
   width: 100%;
 }
-.more-row--r4-tools .settings-entry-actions {
-  grid-template-columns: repeat(2, minmax(0, 1fr));
-}
-.more-row--r4-tools .settings-entry-tile,
-.more-row--r4-tools .more-tile--rolepack {
-  min-height: auto;
+@media (max-width: 900px) {
+  .more-panel-body--with-rail {
+    grid-template-columns: 1fr;
+  }
+  .more-panel-rail {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
 }
 @media (max-width: 760px) {
   .more-row--r1-strip {
     grid-template-columns: 1fr;
   }
-  .more-row--r4-tools {
-    grid-template-columns: 1fr;
-  }
 }
 @media (max-width: 680px) {
-  .more-row--r4-tools .settings-entry-actions {
+  .more-panel-rail {
+    grid-template-columns: 1fr;
+  }
+  .more-panel-rail .settings-entry-actions {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+@media (max-width: 480px) {
+  .more-panel-rail .settings-entry-actions {
     grid-template-columns: 1fr;
   }
 }
