@@ -15,6 +15,15 @@ pub struct ExpertEffectiveConfig {
     pub prompt_style: Option<PromptStyleOverride>,
 }
 
+/// 双轨编译产物：本地侧车配置，和/或「本会话走宿主 OpenAI 兼容云端 LLM」标志。
+#[derive(Debug, Clone)]
+pub struct ExpertCompilePlan {
+    pub use_remote_llm: bool,
+    /// 非空时覆盖云端请求体 `model`；空串表示仅用宿主 `host_cloud_llm_json` 默认模型。
+    pub remote_model_override: Option<String>,
+    pub llama: LlamaLocalPluginConfig,
+}
+
 fn is_path_under(child: &Path, parent: &Path) -> bool {
     let cn = child.canonicalize().unwrap_or_else(|_| child.to_path_buf());
     let pn = parent
@@ -23,11 +32,29 @@ fn is_path_under(child: &Path, parent: &Path) -> bool {
     cn.starts_with(pn)
 }
 
-pub fn compile_graph_to_llama_local_config(
+fn reachable_from_base<'a>(start: &'a str, adj: &HashMap<&'a str, Vec<&'a str>>) -> HashSet<&'a str> {
+    let mut seen: HashSet<&'a str> = HashSet::new();
+    let mut q: VecDeque<&'a str> = VecDeque::new();
+    seen.insert(start);
+    q.push_back(start);
+    while let Some(cur) = q.pop_front() {
+        if let Some(nexts) = adj.get(cur) {
+            for &n in nexts {
+                if seen.insert(n) {
+                    q.push_back(n);
+                }
+            }
+        }
+    }
+    seen
+}
+
+/// 编译专家图：若存在可达且启用的 `CloudModel`（`host`），则 `use_remote_llm` 为真且不再要求本地 GGUF。
+pub fn compile_expert_graph_plan(
     graph: &ExpertGraph,
     models_gguf_dir: &Path,
     loras_dir: &Path,
-) -> Result<LlamaLocalPluginConfig> {
+) -> Result<ExpertCompilePlan> {
     let nodes = graph.nodes.as_slice();
     let edges = graph.edges.as_slice();
     let has_edges = edges
@@ -40,6 +67,8 @@ pub fn compile_graph_to_llama_local_config(
             ExpertNode::BaseModel { id, .. } => id.as_str(),
             ExpertNode::LoraAdapter { id, .. } => id.as_str(),
             ExpertNode::PromptStyle { id, .. } => id.as_str(),
+            ExpertNode::CloudModel { id, .. } => id.as_str(),
+            ExpertNode::EventTrigger { id, .. } => id.as_str(),
         };
         if !id.trim().is_empty() {
             by_id.insert(id, n);
@@ -74,32 +103,14 @@ pub fn compile_graph_to_llama_local_config(
         .filter(|s| !s.trim().is_empty())
         .collect();
 
-    fn reachable<'a>(start: &'a str, adj: &HashMap<&'a str, Vec<&'a str>>) -> HashSet<&'a str> {
-        let mut seen: HashSet<&'a str> = HashSet::new();
-        let mut q: VecDeque<&'a str> = VecDeque::new();
-        seen.insert(start);
-        q.push_back(start);
-        while let Some(cur) = q.pop_front() {
-            if let Some(nexts) = adj.get(cur) {
-                for &n in nexts {
-                    if seen.insert(n) {
-                        q.push_back(n);
-                    }
-                }
-            }
-        }
-        seen
-    }
-
     let active_base_id: Option<&str> = if base_ids.is_empty() {
         None
     } else if base_ids.len() == 1 || !has_edges {
         base_ids.first().copied()
     } else {
-        // Choose base with the largest reachable set; tie-break by id.
         let mut best: Option<(&str, usize)> = None;
         for &bid in &base_ids {
-            let r = reachable(bid, &adj);
+            let r = reachable_from_base(bid, &adj);
             let score = r.len();
             match best {
                 None => best = Some((bid, score)),
@@ -114,12 +125,85 @@ pub fn compile_graph_to_llama_local_config(
     };
 
     let reachable_set: HashSet<&str> = if let (true, Some(bid)) = (has_edges, active_base_id) {
-        reachable(bid, &adj)
+        reachable_from_base(bid, &adj)
     } else {
         HashSet::new()
     };
 
-    let base = nodes.iter().find_map(|n| match (n, active_base_id) {
+    let mut remote_model_override: Option<String> = None;
+    let mut use_remote_llm = false;
+    for n in nodes {
+        let ExpertNode::CloudModel {
+            id,
+            host_source,
+            model,
+            enabled,
+            ..
+        } = n
+        else {
+            continue;
+        };
+        if !*enabled {
+            continue;
+        }
+        let nid = id.as_str().trim();
+        if nid.is_empty() {
+            continue;
+        }
+        let src = host_source.trim();
+        if !src.is_empty() && !src.eq_ignore_ascii_case("host") {
+            return Err(AppError::InvalidParameter(format!(
+                "CloudModel {id}: unsupported host_source={host_source} (only \"host\")"
+            )));
+        }
+        if has_edges && active_base_id.is_some() && !reachable_set.contains(nid) {
+            continue;
+        }
+        if !use_remote_llm {
+            use_remote_llm = true;
+            remote_model_override = model
+                .as_deref()
+                .map(str::trim)
+                .filter(|s| !s.is_empty())
+                .map(|s| s.to_string());
+        }
+    }
+
+    if use_remote_llm {
+        return Ok(ExpertCompilePlan {
+            use_remote_llm: true,
+            remote_model_override,
+            llama: LlamaLocalPluginConfig::default(),
+        });
+    }
+
+    let llama = compile_llama_local_only(
+        graph,
+        models_gguf_dir,
+        loras_dir,
+        has_edges,
+        &adj,
+        active_base_id,
+        &reachable_set,
+    )?;
+
+    Ok(ExpertCompilePlan {
+        use_remote_llm: false,
+        remote_model_override: None,
+        llama,
+    })
+}
+
+fn compile_llama_local_only(
+    graph: &ExpertGraph,
+    models_gguf_dir: &Path,
+    loras_dir: &Path,
+    has_edges: bool,
+    _adj: &HashMap<&str, Vec<&str>>,
+    active_base_id: Option<&str>,
+    reachable_set: &HashSet<&str>,
+) -> Result<LlamaLocalPluginConfig> {
+    let base = graph.nodes.iter().find_map(|n| match (n, active_base_id) {
         (ExpertNode::BaseModel { id, gguf_path, .. }, Some(bid)) if id == bid => {
             Some(gguf_path.as_str())
         }
@@ -147,7 +231,6 @@ pub fn compile_graph_to_llama_local_config(
         }
     }
 
-    // loras: enabled LoraAdapter nodes. If graph has edges, require reachability from active base.
     let mut loras: Vec<(String, f32, i32, String)> = vec![];
     for n in &graph.nodes {
         if let ExpertNode::LoraAdapter {
@@ -199,8 +282,6 @@ pub fn compile_graph_to_llama_local_config(
     let llama_args = if loras.is_empty() {
         None
     } else {
-        // Conservative mapping: repeat `--lora <path> --lora-scale <strength>` pairs.
-        // This keeps compatibility with sidecar's whitespace-splitting arg forwarding.
         let mut parts: Vec<String> = Vec::new();
         for (p, s, _, _id) in loras.iter() {
             parts.push("--lora".to_string());
@@ -215,4 +296,18 @@ pub fn compile_graph_to_llama_local_config(
         model_path: model_path.map(|p| p.to_string_lossy().to_string()),
         llama_args,
     })
+}
+
+pub fn compile_graph_to_llama_local_config(
+    graph: &ExpertGraph,
+    models_gguf_dir: &Path,
+    loras_dir: &Path,
+) -> Result<LlamaLocalPluginConfig> {
+    let plan = compile_expert_graph_plan(graph, models_gguf_dir, loras_dir)?;
+    if plan.use_remote_llm {
+        return Err(AppError::InvalidParameter(
+            "expert graph activates a cloud model; local llama compile is not applicable".into(),
+        ));
+    }
+    Ok(plan.llama)
 }

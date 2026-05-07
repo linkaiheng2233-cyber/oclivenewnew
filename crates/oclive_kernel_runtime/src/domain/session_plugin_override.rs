@@ -200,6 +200,7 @@ pub async fn apply_author_suggested_plugin_backends(
         complex_emotion: None,
         local_memory_provider_id: sugg.local_memory_provider_id.clone(),
         directory_plugins: Some(sugg.directory_plugins.clone()),
+        force_clear_directory_llm_slot: false,
     };
     state.set_session_backend_override(ns.as_str(), ov);
     get_role_info_snapshot(state, role_id, session_id).await

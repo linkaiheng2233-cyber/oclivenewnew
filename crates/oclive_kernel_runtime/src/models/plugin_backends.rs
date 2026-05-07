@@ -213,6 +213,9 @@ pub struct PluginBackendsOverride {
     /// 会话级覆盖目录插件槽位（`Some` 时与包内字段按槽合并，见 [`Self::apply_to`]）。
     #[serde(default)]
     pub directory_plugins: Option<DirectoryPluginSlots>,
+    /// 合并目录槽后，强制清空 `directory_plugins.llm`（专家图切到云端 `Remote` 时需要卸下本地 llama 槽位）。
+    #[serde(default)]
+    pub force_clear_directory_llm_slot: bool,
 }
 
 impl PluginBackendsOverride {
@@ -227,6 +230,7 @@ impl PluginBackendsOverride {
             && self.agent.is_none()
             && self.complex_emotion.is_none()
             && self.directory_plugins.is_none()
+            && !self.force_clear_directory_llm_slot
     }
 
     #[must_use]
@@ -242,7 +246,7 @@ impl PluginBackendsOverride {
                 }
             }
         };
-        let directory_plugins = match &self.directory_plugins {
+        let mut directory_plugins = match &self.directory_plugins {
             None => base.directory_plugins.clone(),
             Some(ov) => DirectoryPluginSlots {
                 memory: trimmed_or_fallback(
@@ -272,6 +276,9 @@ impl PluginBackendsOverride {
                 ),
             },
         };
+        if self.force_clear_directory_llm_slot {
+            directory_plugins.llm = None;
+        }
         PluginBackends {
             memory: self.memory.unwrap_or(base.memory),
             local_memory_provider_id,

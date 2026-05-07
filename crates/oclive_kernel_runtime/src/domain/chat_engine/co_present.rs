@@ -63,7 +63,7 @@ pub(crate) async fn process_co_present(
     let user_emotion_prompt =
         crate::domain::emotion_analyzer::EmotionAnalyzer::format_for_prompt(&emotion_result);
 
-    let ollama_model = role.resolve_ollama_model(state.global_chat_model().as_str());
+    let main_llm_model = super::resolve_main_llm_model_for_generate(state, role, srid).await?;
     let (recent_turns, recent_turns_for_event, recent_events_for_event) =
         load_recent_context(state, srid).await?;
 
@@ -93,7 +93,7 @@ pub(crate) async fn process_co_present(
         .event
         .estimate(
             &pl.llm,
-            ollama_model.as_str(),
+            main_llm_model.as_str(),
             user_message,
             &user_emotion,
             &personality,
@@ -229,7 +229,7 @@ pub(crate) async fn process_co_present(
     let reply_raw = match super::llm_cancelable::run_llm_generate_cancelable(
         state,
         pl.llm.clone(),
-        ollama_model.as_str(),
+        main_llm_model.as_str(),
         &prompt,
     )
     .await
@@ -333,7 +333,7 @@ pub(crate) async fn process_co_present(
     let core_v = PersonalityVector::from(&role.default_personality);
     let portrait_emotion_str = resolve_portrait_emotion(
         &pl.llm,
-        ollama_model.as_str(),
+        main_llm_model.as_str(),
         role,
         &core_v,
         &personality,
@@ -366,12 +366,31 @@ pub(crate) async fn process_co_present(
         })
         .await?;
 
+    if let Err(e) =
+        crate::domain::expert_graph_events::apply_expert_graph_event_triggers_after_turn(
+            state,
+            mrid,
+            srid,
+            user_message,
+            reply.as_str(),
+        )
+        .await
+    {
+        log::warn!(
+            target: "oclive_chat",
+            "expert_graph event triggers failed role_id={} session_ns={} err={}",
+            mrid,
+            srid,
+            e
+        );
+    }
+
     if role.evolution_config.personality_source == PersonalitySource::Profile {
         let prev = state.db_manager.get_mutable_personality(srid).await?;
         let impact_scaled = (ai_impact_factor_final * event_runtime).clamp(-1.0, 1.0);
         let next = match crate::domain::mutable_profile_llm::evolve_mutable_personality_with_llm(
             &pl.llm,
-            ollama_model.as_str(),
+            main_llm_model.as_str(),
             crate::domain::mutable_profile_llm::MutableEvolutionInput {
                 role_name: role.name.as_str(),
                 core_personality: role.core_personality.as_str(),
@@ -437,7 +456,7 @@ pub(crate) async fn process_co_present(
         scene_id.as_str(),
         &scenes,
         user_message,
-        ollama_model.as_str(),
+        main_llm_model.as_str(),
     )
     .await;
     let (mut offer_destination_picker, mut offer_together_travel) =

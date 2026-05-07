@@ -582,6 +582,11 @@ pub struct ExpertModelsApplyResult {
     /// sidecar failed (e.g. plugin not running / transport). User should retry or check permissions.
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub sidecar_notice: Option<String>,
+    /// Expert graph selected host cloud LLM (`plugin_backends.llm = remote` for this session).
+    #[serde(default)]
+    pub use_remote_llm: bool,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub remote_model_override: Option<String>,
 }
 
 // ===== Module 9: Expert Workflows (preset library) =====

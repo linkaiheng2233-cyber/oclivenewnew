@@ -93,6 +93,39 @@ pub enum ExpertNode {
         #[serde(default, skip_serializing_if = "Option::is_none")]
         ui: Option<ExpertNodeUi>,
     },
+    /// 引用宿主已配置的 OpenAI 兼容云端 LLM（`host_cloud_llm_json` / 环境变量）；可选 `model` 覆盖请求体中的模型 id。
+    CloudModel {
+        id: String,
+        /// 仅支持 `"host"`：与宿主全局 cloud 配置一致。
+        #[serde(default = "default_cloud_host_source")]
+        host_source: String,
+        #[serde(default, skip_serializing_if = "Option::is_none")]
+        model: Option<String>,
+        #[serde(default = "default_true")]
+        enabled: bool,
+        #[serde(default, skip_serializing_if = "Option::is_none")]
+        ui: Option<ExpertNodeUi>,
+    },
+    /// 回合结束后：若用户句或模型回复包含 `match_substring`，写入一条长期记忆。
+    EventTrigger {
+        id: String,
+        match_substring: String,
+        memory_content: String,
+        #[serde(default = "default_event_importance")]
+        importance: f32,
+        #[serde(default = "default_true")]
+        enabled: bool,
+        #[serde(default, skip_serializing_if = "Option::is_none")]
+        ui: Option<ExpertNodeUi>,
+    },
+}
+
+fn default_cloud_host_source() -> String {
+    "host".to_string()
+}
+
+fn default_event_importance() -> f32 {
+    0.75
 }
 
 fn default_lora_strength() -> f32 {

@@ -1354,6 +1354,58 @@ impl DbManager {
             .filter(|s| !s.is_empty()))
     }
 
+    pub async fn get_expert_cloud_model_session_override(
+        &self,
+        session_namespace: &str,
+    ) -> Result<Option<String>> {
+        let ns = session_namespace.trim();
+        if ns.is_empty() {
+            return Ok(None);
+        }
+        let row: Option<(Option<String>,)> = sqlx::query_as(
+            "SELECT expert_cloud_model_session_override FROM role_runtime WHERE role_id = ?",
+        )
+        .bind(ns)
+        .fetch_optional(&self.pool)
+        .await
+        .map_err(|e| AppError::DatabaseError(e.to_string()))?;
+        Ok(row
+            .and_then(|(s,)| s)
+            .map(|s| s.trim().to_string())
+            .filter(|s| !s.is_empty()))
+    }
+
+    pub async fn set_expert_cloud_model_session_override(
+        &self,
+        session_namespace: &str,
+        model: Option<&str>,
+    ) -> Result<()> {
+        let ns = session_namespace.trim();
+        if ns.is_empty() {
+            return Err(AppError::InvalidParameter(
+                "session_namespace required".into(),
+            ));
+        }
+        self.ensure_role_runtime(ns).await?;
+        let now = Utc::now().to_rfc3339();
+        let v = model
+            .map(str::trim)
+            .filter(|s| !s.is_empty())
+            .map(|s| s.to_string());
+        sqlx::query(
+            "UPDATE role_runtime
+             SET expert_cloud_model_session_override = ?, updated_at = ?
+             WHERE role_id = ?",
+        )
+        .bind(v)
+        .bind(&now)
+        .bind(ns)
+        .execute(&self.pool)
+        .await
+        .map_err(|e| AppError::DatabaseError(e.to_string()))?;
+        Ok(())
+    }
+
     pub async fn set_expert_models_session_override_json(
         &self,
         session_namespace: &str,
@@ -2439,6 +2491,20 @@ mod tests {
             .execute(&pool)
             .await
             .map_err(|e| AppError::DatabaseError(e.to_string()))?;
+        sqlx::query(include_str!("../../migrations/018_expert_models.sql"))
+            .execute(&pool)
+            .await
+            .map_err(|e| AppError::DatabaseError(e.to_string()))?;
+        sqlx::query(include_str!("../../migrations/019_expert_models_runs.sql"))
+            .execute(&pool)
+            .await
+            .map_err(|e| AppError::DatabaseError(e.to_string()))?;
+        sqlx::query(include_str!(
+            "../../migrations/020_expert_cloud_model_session_override.sql"
+        ))
+        .execute(&pool)
+        .await
+        .map_err(|e| AppError::DatabaseError(e.to_string()))?;
 
         // 为测试创建角色运行时记录
         sqlx::query("INSERT INTO role_runtime (role_id, current_favorability) VALUES (?, ?)")

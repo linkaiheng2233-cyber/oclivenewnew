@@ -726,6 +726,8 @@ export interface PluginBackendsOverride {
   complex_emotion?: PluginBackends["complex_emotion"] | null;
   /** 会话级与包内按槽合并（当前 UI 未编辑；仅展示与调试） */
   directory_plugins?: DirectoryPluginSlots | null;
+  /** 合并后强制清空 `directory_plugins.llm`（专家图云端路径） */
+  forceClearDirectoryLlmSlot?: boolean;
 }
 
 export type PluginBackendSource = "pack_default" | "session_override" | "env_override";

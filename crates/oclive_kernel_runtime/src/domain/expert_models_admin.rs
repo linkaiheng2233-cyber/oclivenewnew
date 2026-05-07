@@ -2,7 +2,7 @@
 
 use crate::api::BridgeApiError;
 use crate::domain::chat_engine::conversation_state_role_id;
-use crate::domain::expert_models::{compile_graph_to_llama_local_config, LLAMA_LOCAL_PLUGIN_ID};
+use crate::domain::expert_models::{compile_expert_graph_plan, LLAMA_LOCAL_PLUGIN_ID};
 use crate::domain::session_plugin_override;
 use crate::infrastructure::plugin_config_disk::write_plugin_config_json;
 use crate::infrastructure::remote_plugin::{invoke_directory_plugin_rpc, RemoteRpcChannel};
@@ -19,6 +19,7 @@ use crate::models::dto::{
     ExpertWorkflowsDeleteRequest, ExpertWorkflowsGetRequest, ExpertWorkflowsListResponse,
     ExpertWorkflowsSaveRequest,
 };
+use crate::models::plugin_backends::LlmBackend;
 use crate::models::{ExpertConfigSource, ExpertGraph, LlamaLocalPluginConfig, PromptStyleOverride};
 use crate::state::KernelAppState;
 use chrono::Utc;
@@ -362,6 +363,11 @@ pub async fn expert_models_clear_session_override(
     state
         .expert_models_repo
         .set_expert_prompt_style_session_override_json(session_ns.as_str(), None)
+        .await
+        .map_err(|e| e.to_frontend_error())?;
+    state
+        .db_manager
+        .set_expert_cloud_model_session_override(session_ns.as_str(), None)
         .await
         .map_err(|e| e.to_frontend_error())?;
     Ok(())
@@ -1008,9 +1014,50 @@ pub async fn expert_models_apply_to_session(
     let loras_dir = llama_loras_dir(state);
     let started = std::time::Instant::now();
     let apply_result: Result<ExpertModelsApplyResult, String> = (async {
-        let compiled =
-            compile_graph_to_llama_local_config(&graph, gguf_dir.as_path(), loras_dir.as_path())
+        state
+            .db_manager
+            .ensure_role_runtime(session_ns.as_str())
+            .await
+            .map_err(|e| e.to_frontend_error())?;
+
+        let plan = compile_expert_graph_plan(&graph, gguf_dir.as_path(), loras_dir.as_path())
+            .map_err(|e| e.to_frontend_error())?;
+
+        if plan.use_remote_llm {
+            state
+                .db_manager
+                .set_expert_cloud_model_session_override(
+                    session_ns.as_str(),
+                    plan.remote_model_override.as_deref(),
+                )
+                .await
                 .map_err(|e| e.to_frontend_error())?;
+
+            let mut next = state
+                .session_backend_override(session_ns.as_str())
+                .unwrap_or_default();
+            next.llm = Some(LlmBackend::Remote);
+            next.force_clear_directory_llm_slot = true;
+            state.set_session_backend_override(session_ns.as_str(), next);
+
+            return Ok(ExpertModelsApplyResult {
+                ok: true,
+                llama_plugin_id: String::new(),
+                model_path: None,
+                llama_args: None,
+                sidecar_notice: None,
+                use_remote_llm: true,
+                remote_model_override: plan.remote_model_override.clone(),
+            });
+        }
+
+        state
+            .db_manager
+            .set_expert_cloud_model_session_override(session_ns.as_str(), None)
+            .await
+            .map_err(|e| e.to_frontend_error())?;
+
+        let compiled = plan.llama;
 
         let cfg_val = serde_json::to_value(&compiled).map_err(|e| e.to_string())?;
         write_plugin_config_json(
@@ -1032,6 +1079,15 @@ pub async fn expert_models_apply_to_session(
             },
         )
         .await;
+
+        if let Some(mut ov) = state.session_backend_override(session_ns.as_str()) {
+            ov.force_clear_directory_llm_slot = false;
+            if ov.is_empty() {
+                state.clear_session_backend_override(session_ns.as_str());
+            } else {
+                state.set_session_backend_override(session_ns.as_str(), ov);
+            }
+        }
 
         // Restart trigger: dedicated, not generic rpc:invoke.
         let url = state
@@ -1056,6 +1112,8 @@ pub async fn expert_models_apply_to_session(
             model_path: compiled.model_path.clone(),
             llama_args: compiled.llama_args.clone(),
             sidecar_notice,
+            use_remote_llm: false,
+            remote_model_override: None,
         })
     })
     .await;

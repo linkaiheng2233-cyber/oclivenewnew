@@ -12,8 +12,33 @@ pub mod scene;
 
 pub use process_message::process_message;
 
+use crate::error::Result;
 use crate::models::dto::EmotionDto;
-use crate::models::{PluginBackends, PluginBackendsSourceMap};
+use crate::models::plugin_backends::LlmBackend;
+use crate::models::{PluginBackends, PluginBackendsSourceMap, Role};
+use crate::state::KernelAppState;
+
+/// 主对话 `generate` 的 `model` 参数：目录/Ollama 用解析后的 Ollama 名；云端用专家图会话覆盖，否则空串走宿主默认。
+pub(crate) async fn resolve_main_llm_model_for_generate(
+    state: &KernelAppState,
+    role: &Role,
+    session_ns: &str,
+) -> Result<String> {
+    let backends = state.effective_plugin_backends_for_session(role, session_ns);
+    if backends.llm != LlmBackend::Remote {
+        return Ok(role.resolve_ollama_model(state.global_chat_model().as_str()));
+    }
+    let row = state
+        .db_manager
+        .get_expert_cloud_model_session_override(session_ns)
+        .await?;
+    Ok(row
+        .as_deref()
+        .map(str::trim)
+        .filter(|s| !s.is_empty())
+        .map(|s| s.to_string())
+        .unwrap_or_default())
+}
 
 pub(super) fn emotion_to_dto(r: &crate::domain::emotion_analyzer::EmotionResult) -> EmotionDto {
     EmotionDto {
