@@ -184,6 +184,26 @@ export async function loadPluginVueComponent(
       if (res.code?.trim()) addStyle(res.code);
     }
 
+    // Blob-module `import()` cannot resolve bare specifiers like `from "vue"`.
+    // Resolve the app bundle's Vue ESM URL (Vite `?url`) and rewrite imports.
+    const needsVueRewrite = /\bfrom\s*["']vue["']/.test(moduleJs);
+    let vueModuleUrl = "";
+    if (needsVueRewrite) {
+      try {
+        const mod = (await import("vue?url")) as { default?: string };
+        const raw = mod.default ?? "";
+        vueModuleUrl = raw ? new URL(raw, window.location.href).href : "";
+      } catch {
+        vueModuleUrl = "";
+      }
+      if (!vueModuleUrl) {
+        throw new Error(
+          "无法解析 Vue 模块地址（vue?url）。请确认以 Vite 构建/开发环境运行；否则目录插件 .vue 无法在浏览器中动态加载。",
+        );
+      }
+      moduleJs = moduleJs.replace(/\bfrom\s*["']vue["']/g, `from ${JSON.stringify(vueModuleUrl)}`);
+    }
+
     const blob = new Blob([moduleJs], { type: "text/javascript" });
     const url = URL.createObjectURL(blob);
     try {
