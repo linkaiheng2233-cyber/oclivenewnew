@@ -16,6 +16,8 @@ export interface OclexpertFileV1 {
   fileVersion: typeof OCLEXPERT_FILE_VERSION;
   /** Optional human label for save dialogs */
   name?: string;
+  description?: string;
+  author?: string;
   graph: ExpertGraph;
   promptStyle?: PromptStyleOverride | null;
 }
@@ -23,12 +25,17 @@ export interface OclexpertFileV1 {
 export function buildOclexpertPayload(
   graph: ExpertGraph,
   promptStyle: PromptStyleOverride | null | undefined,
-  name?: string,
+  meta?: { name?: string; description?: string; author?: string },
 ): OclexpertFileV1 {
+  const name = meta?.name?.trim();
+  const description = meta?.description?.trim();
+  const author = meta?.author?.trim();
   return {
     format: OCLEXPERT_FORMAT,
     fileVersion: OCLEXPERT_FILE_VERSION,
-    name: name?.trim() || undefined,
+    ...(name ? { name } : {}),
+    ...(description ? { description } : {}),
+    ...(author ? { author } : {}),
     graph: JSON.parse(JSON.stringify(graph)) as ExpertGraph,
     promptStyle: promptStyle ? { ...promptStyle } : null,
   };
@@ -66,6 +73,8 @@ export function parseOclexpertJson(raw: string): {
   graph: ExpertGraph;
   promptStyle: PromptStyleOverride | null;
   suggestedName?: string;
+  suggestedDescription?: string;
+  suggestedAuthor?: string;
 } {
   let data: unknown;
   try {
@@ -90,6 +99,8 @@ export function parseOclexpertJson(raw: string): {
     }
     validateExpertGraphNodes(graph);
     const name = typeof data.name === "string" ? data.name.trim() : "";
+    const desc = typeof data.description === "string" ? data.description.trim() : "";
+    const author = typeof data.author === "string" ? data.author.trim() : "";
     const ps = data.promptStyle;
     const promptStyle =
       ps && typeof ps === "object" ? (ps as PromptStyleOverride) : null;
@@ -97,6 +108,8 @@ export function parseOclexpertJson(raw: string): {
       graph: JSON.parse(JSON.stringify(graph)) as ExpertGraph,
       promptStyle,
       suggestedName: name || undefined,
+      suggestedDescription: desc || undefined,
+      suggestedAuthor: author || undefined,
     };
   }
 

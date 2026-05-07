@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed, defineAsyncComponent, onMounted, ref } from "vue";
+import { computed, defineAsyncComponent, onMounted, ref, watch } from "vue";
 import { useI18n } from "vue-i18n";
 import { open, save } from "@tauri-apps/api/dialog";
 import { readTextFile, writeTextFile } from "@tauri-apps/api/fs";
@@ -8,8 +8,10 @@ import {
   buildOclexpertPayload,
   OclexpertImportError,
   parseOclexpertJson,
+  validateExpertGraphNodes,
 } from "../../lib/oclexpert";
 import { useExpertModelsStore } from "../../stores/expertModelsStore";
+import { useRoleStore } from "../../stores/roleStore";
 const ExpertModelsCanvas = defineAsyncComponent(() => import("./ExpertModelsCanvas.vue"));
 import ExpertCloudEventSection from "./ExpertCloudEventSection.vue";
 import type {
@@ -20,6 +22,7 @@ import type {
 } from "../../utils/tauri-api";
 
 const store = useExpertModelsStore();
+const roleStore = useRoleStore();
 const { showToast } = useAppToast();
 const { t } = useI18n();
 const emit = defineEmits<{
@@ -211,6 +214,75 @@ const strengthWarning = (v: number): string | null => {
   return null;
 };
 
+const isDraftGraphEmpty = computed(() => (store.draftGraph.nodes?.length ?? 0) === 0);
+
+const canLoadRoleDefaultEmpty = computed(
+  () => !!store.roleDefaultGraph && (store.roleDefaultGraph.nodes?.length ?? 0) > 0,
+);
+
+const draftGraphValidationMessage = computed((): string | null => {
+  try {
+    validateExpertGraphNodes(store.draftGraph);
+    return null;
+  } catch (e) {
+    return e instanceof Error ? e.message : String(e);
+  }
+});
+
+type OclexpertImportPreview = {
+  graph: ExpertGraph;
+  promptStyle: PromptStyleOverride | null;
+  suggestedName?: string;
+  suggestedDescription?: string;
+  suggestedAuthor?: string;
+};
+
+const oclexpertDescriptionDraft = ref("");
+const oclexpertAuthorDraft = ref("");
+const oclexpertImportPreview = ref<OclexpertImportPreview | null>(null);
+
+watch(
+  () => roleStore.roleInfo?.author,
+  (a) => {
+    const s = (a ?? "").trim();
+    if (s && !oclexpertAuthorDraft.value.trim()) oclexpertAuthorDraft.value = s;
+  },
+  { immediate: true },
+);
+
+function onNewBlankExpertRecipe(): void {
+  store.draftGraph = { version: 1, nodes: [], edges: [] };
+  store.draftPromptStyle = null;
+}
+
+function cancelOclexpertImportPreview(): void {
+  oclexpertImportPreview.value = null;
+}
+
+async function confirmOclexpertImportPreview(): Promise<void> {
+  const p = oclexpertImportPreview.value;
+  if (!p) return;
+  saving.value = true;
+  try {
+    store.draftGraph = p.graph;
+    store.draftPromptStyle = p.promptStyle;
+    const name =
+      p.suggestedName?.trim() ||
+      workflowNameDraft.value.trim() ||
+      String(t("expertModels.oclexpert.importDefaultName"));
+    const wf = await store.saveWorkflow(name, null);
+    workflowNameDraft.value = wf.name;
+    if (p.suggestedDescription?.trim()) oclexpertDescriptionDraft.value = p.suggestedDescription.trim();
+    if (p.suggestedAuthor?.trim()) oclexpertAuthorDraft.value = p.suggestedAuthor.trim();
+    oclexpertImportPreview.value = null;
+    showToast("success", String(t("expertModels.oclexpert.toastImported", { name: wf.name })));
+  } catch (e) {
+    showToast("error", e instanceof Error ? e.message : String(e));
+  } finally {
+    saving.value = false;
+  }
+}
+
 async function onRefresh(): Promise<void> {
   await store.refresh();
   await store.refreshWorkflows().catch(() => {});
@@ -218,16 +290,19 @@ async function onRefresh(): Promise<void> {
 }
 
 async function onApplySession(): Promise<void> {
-  saving.value = true;
+  if (applying.value) return;
   applying.value = true;
   try {
     const r = await store.applyToSession();
+    if (!r.ok) {
+      showToast("error", String(t("expertModels.toasts.applyFailedHint")));
+      return;
+    }
     notifyPrimaryApplyToast(r);
     toastSidecarStructuredIfAny(r);
   } catch (e) {
     showToast("error", e instanceof Error ? e.message : String(e));
   } finally {
-    saving.value = false;
     applying.value = false;
   }
 }
@@ -672,6 +747,17 @@ async function onLoadWorkflow(): Promise<void> {
   saving.value = true;
   try {
     const wf = await store.loadWorkflow(wid);
+    try {
+      validateExpertGraphNodes(store.draftGraph);
+    } catch (ve) {
+      showToast("error", ve instanceof Error ? ve.message : String(ve));
+      if (window.confirm(String(t("expertModels.oclexpert.offerResetEffective")))) {
+        store.setDraftFromEffective();
+      } else {
+        await store.refresh();
+      }
+      return;
+    }
     workflowNameDraft.value = wf.name;
     showToast("success", String(t("expertModels.workflows.toastLoaded", { name: wf.name })));
   } catch (e) {
@@ -734,7 +820,17 @@ async function onImportWorkflowJson(): Promise<void> {
     const name =
       String(v?.name ?? String(t("expertModels.workflows.importDefaultName"))).trim() ||
       String(t("expertModels.workflows.importDefaultName"));
-    store.draftGraph = (v?.graph ?? { version: 1, nodes: [], edges: [] }) as ExpertGraph;
+    const g = (v?.graph ?? { version: 1, nodes: [], edges: [] }) as ExpertGraph;
+    try {
+      validateExpertGraphNodes(g);
+    } catch (ve) {
+      showToast("error", ve instanceof Error ? ve.message : String(ve));
+      if (window.confirm(String(t("expertModels.oclexpert.offerResetEffective")))) {
+        store.setDraftFromEffective();
+      }
+      return;
+    }
+    store.draftGraph = g;
     store.draftPromptStyle = (v?.promptStyle ?? null) as any;
     // save into library
     const wf = await store.saveWorkflow(name, null);
@@ -749,7 +845,11 @@ async function onImportWorkflowJson(): Promise<void> {
 
 async function onExportOclexpert(): Promise<void> {
   const base = workflowNameDraft.value.trim() || "expert-graph";
-  const payload = buildOclexpertPayload(store.draftGraph, store.draftPromptStyle, base);
+  const payload = buildOclexpertPayload(store.draftGraph, store.draftPromptStyle, {
+    name: workflowNameDraft.value.trim() || undefined,
+    description: oclexpertDescriptionDraft.value.trim() || undefined,
+    author: oclexpertAuthorDraft.value.trim() || undefined,
+  });
   const path = await save({
     defaultPath: `${base}.oclexpert`,
     filters: [
@@ -775,16 +875,14 @@ async function onImportOclexpert(): Promise<void> {
   saving.value = true;
   try {
     const raw = await readTextFile(p);
-    const { graph, promptStyle, suggestedName } = parseOclexpertJson(raw);
-    store.draftGraph = graph;
-    store.draftPromptStyle = promptStyle;
-    const name =
-      suggestedName?.trim() ||
-      workflowNameDraft.value.trim() ||
-      String(t("expertModels.oclexpert.importDefaultName"));
-    const wf = await store.saveWorkflow(name, null);
-    workflowNameDraft.value = wf.name;
-    showToast("success", String(t("expertModels.oclexpert.toastImported", { name: wf.name })));
+    const parsed = parseOclexpertJson(raw);
+    oclexpertImportPreview.value = {
+      graph: parsed.graph,
+      promptStyle: parsed.promptStyle,
+      suggestedName: parsed.suggestedName,
+      suggestedDescription: parsed.suggestedDescription,
+      suggestedAuthor: parsed.suggestedAuthor,
+    };
   } catch (e) {
     const msg =
       e instanceof OclexpertImportError
@@ -793,6 +891,9 @@ async function onImportOclexpert(): Promise<void> {
           ? e.message
           : String(e);
     showToast("error", msg);
+    if (window.confirm(String(t("expertModels.oclexpert.offerResetEffective")))) {
+      store.setDraftFromEffective();
+    }
   } finally {
     saving.value = false;
   }
@@ -851,6 +952,24 @@ async function onImportOclexpert(): Promise<void> {
           <input v-model="workflowNameDraft" class="em-input" type="text" :placeholder="t('expertModels.workflows.namePlaceholder')" />
         </div>
         <div class="em-wf-row">
+          <label class="em-muted" style="min-width: 72px">{{ t("expertModels.oclexpert.metaDescriptionLabel") }}</label>
+          <textarea
+            v-model="oclexpertDescriptionDraft"
+            class="em-text"
+            rows="2"
+            :placeholder="String(t('expertModels.oclexpert.metaDescriptionPlaceholder'))"
+          />
+        </div>
+        <div class="em-wf-row">
+          <label class="em-muted" style="min-width: 72px">{{ t("expertModels.oclexpert.metaAuthorLabel") }}</label>
+          <input
+            v-model="oclexpertAuthorDraft"
+            class="em-input"
+            type="text"
+            :placeholder="String(t('expertModels.oclexpert.metaAuthorPlaceholder'))"
+          />
+        </div>
+        <div class="em-wf-row">
           <label class="em-muted" style="min-width: 72px">{{ t("expertModels.workflows.libraryLabel") }}</label>
           <select v-model="store.pickedWorkflowId" class="em-select" style="flex: 1 1 auto">
             <option value="">{{ t("expertModels.workflows.notSelected") }}</option>
@@ -896,6 +1015,39 @@ async function onImportOclexpert(): Promise<void> {
         </button>
       </div>
       <div class="em-muted">{{ t("expertModels.editor.canvasHint") }}</div>
+    </div>
+
+    <div v-if="draftGraphValidationMessage" class="em-card em-integrity">
+      <div class="em-card-h">{{ t("expertModels.graphIntegrity.title") }}</div>
+      <p class="em-muted">{{ draftGraphValidationMessage }}</p>
+      <div class="em-wf-actions">
+        <button type="button" class="em-btn secondary" @click="store.setDraftFromEffective">
+          {{ t("expertModels.graphIntegrity.resetEffective") }}
+        </button>
+        <button type="button" class="em-btn secondary" @click="editorMode = 'form'">
+          {{ t("expertModels.graphIntegrity.openForm") }}
+        </button>
+      </div>
+    </div>
+
+    <div v-else-if="isDraftGraphEmpty" class="em-card em-empty-graph">
+      <p class="em-muted">{{ t("expertModels.emptyState.lead") }}</p>
+      <div class="em-wf-actions">
+        <button type="button" class="em-btn" @click="store.setDraftFromEffective">
+          {{ t("expertModels.emptyState.loadEffective") }}
+        </button>
+        <button
+          v-if="canLoadRoleDefaultEmpty"
+          type="button"
+          class="em-btn secondary"
+          @click="store.loadRoleDefaultIntoDraft"
+        >
+          {{ t("expertModels.emptyState.loadRoleDefault") }}
+        </button>
+        <button type="button" class="em-btn secondary" @click="onNewBlankExpertRecipe">
+          {{ t("expertModels.emptyState.newBlank") }}
+        </button>
+      </div>
     </div>
 
     <div class="em-cloud-event-wrap">
@@ -1391,8 +1543,8 @@ async function onImportOclexpert(): Promise<void> {
     </div>
 
     <div class="em-footer">
-      <button class="em-btn" type="button" :disabled="saving || store.loading" @click="onApplySession">
-        {{ saving ? t("expertModels.footer.applying") : t("expertModels.footer.applyToSession") }}
+      <button class="em-btn" type="button" :disabled="applying || store.loading" @click="onApplySession">
+        {{ applying ? t("expertModels.footer.applying") : t("expertModels.footer.applyToSession") }}
       </button>
       <button
         class="em-btn secondary"
@@ -1570,6 +1722,36 @@ async function onImportOclexpert(): Promise<void> {
         {{ t("expertModels.footer.clearRoleDefault") }}
       </button>
     </div>
+
+    <Teleport to="body">
+      <div
+        v-if="oclexpertImportPreview"
+        class="em-oclexpert-backdrop"
+        role="dialog"
+        aria-modal="true"
+        @click.self="cancelOclexpertImportPreview"
+      >
+        <div class="em-oclexpert-modal" @click.stop>
+          <div class="em-card-h">{{ t("expertModels.oclexpert.previewTitle") }}</div>
+          <dl class="em-oclexpert-dl">
+            <dt>{{ t("expertModels.oclexpert.previewName") }}</dt>
+            <dd>{{ oclexpertImportPreview.suggestedName || "—" }}</dd>
+            <dt>{{ t("expertModels.oclexpert.previewDescription") }}</dt>
+            <dd>{{ oclexpertImportPreview.suggestedDescription || "—" }}</dd>
+            <dt>{{ t("expertModels.oclexpert.previewAuthor") }}</dt>
+            <dd>{{ oclexpertImportPreview.suggestedAuthor || "—" }}</dd>
+          </dl>
+          <div class="em-wf-actions">
+            <button class="em-btn" type="button" :disabled="saving" @click="confirmOclexpertImportPreview">
+              {{ t("expertModels.oclexpert.previewConfirm") }}
+            </button>
+            <button class="em-btn secondary" type="button" :disabled="saving" @click="cancelOclexpertImportPreview">
+              {{ t("expertModels.oclexpert.previewCancel") }}
+            </button>
+          </div>
+        </div>
+      </div>
+    </Teleport>
   </section>
 </template>
 
@@ -2006,6 +2188,47 @@ async function onImportOclexpert(): Promise<void> {
   .em-grid {
     grid-template-columns: 1fr;
   }
+}
+.em-integrity {
+  margin-top: 10px;
+  border-color: color-mix(in srgb, #f59e0b 35%, var(--border-light));
+}
+.em-empty-graph {
+  margin-top: 10px;
+}
+.em-oclexpert-backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 10080;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 20px;
+  background: color-mix(in srgb, #000 48%, transparent);
+}
+.em-oclexpert-modal {
+  width: min(440px, 100%);
+  padding: 14px 16px;
+  border-radius: 12px;
+  border: 1px solid var(--border-light);
+  background: var(--bg-primary);
+  box-shadow: var(--shadow-app);
+}
+.em-oclexpert-dl {
+  margin: 10px 0 0;
+  display: grid;
+  grid-template-columns: 88px 1fr;
+  gap: 6px 10px;
+  font-size: 13px;
+}
+.em-oclexpert-dl dt {
+  margin: 0;
+  color: var(--text-secondary);
+  font-weight: 600;
+}
+.em-oclexpert-dl dd {
+  margin: 0;
+  word-break: break-word;
 }
 </style>
 
