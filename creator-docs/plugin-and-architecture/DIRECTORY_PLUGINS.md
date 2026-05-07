@@ -191,7 +191,7 @@
 
 当 **`get_directory_plugin_bootstrap.developerMode`** 为真时，宿主在编译 `.vue` 前会对脚本做静态 AST 扫描；若匹配危险模式（如 `fetch`、`eval`、`document.cookie`、`localStorage`、`window.__TAURI__` 等），会弹出确认框，用户取消则该插槽回退行为与编译失败一致（可再走 iframe）。
 
-**编译失败提示**：`vue3-sfc-loader` 报错时，插槽 UI 展示 **插件 id、组件路径、可读摘要**；可通过 **「查看详情」** 展开原始堆栈。
+**编译失败提示**：运行时以 **`@vue/compiler-sfc` + `sucrase`** 编译 `.vue`（无 `vue-template-compiler` 链）；报错时插槽 UI 展示 **插件 id、组件路径、可读摘要**；可通过 **「查看详情」** 展开原始堆栈。
 
 ### 4.3.2 强制 iframe 模式
 

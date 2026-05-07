@@ -25,6 +25,7 @@
 
 ### Fixed
 
+- **前端依赖安全**：移除 `vue3-sfc-loader`（`vue-template-compiler` / 旧 `postcss` 链），目录插件 `.vue` 改为 **`@vue/compiler-sfc` + `sucrase`** 在运行时编译；`npm audit` 清零。
 - 修复多个插槽组件并发拉取引导信息时事件订阅集合可能不一致的问题。
 - 修复插件自定义事件也被 `bridge.events` 过滤误拦截的问题：仅宿主内置事件走订阅过滤，自定义事件保持可广播。
 
@@ -34,7 +35,7 @@
 - 对 `get_directory_plugin_catalog` 的 IPC 合并并发 in-flight 请求（全局单次调用）。
 - 对 `get_directory_plugin_bootstrap` 的 IPC 按 `role_id` 合并并发请求，减少多插槽同时挂载时的重复调用。
 - 对 `get_plugin_state` 的 IPC 按 `role_id` 合并并发请求，并在 `save/reset` 前清理对应 in-flight 键，降低并发下读取陈旧状态的概率。
-- 开发者模式下 Vue 插槽：安全扫描读入的源码复用于 `vue3-sfc-loader`，避免对同一 `.vue` 二次 `read_plugin_asset_text`。
+- 开发者模式下 Vue 插槽：安全扫描读入的源码复用于 **`@vue/compiler-sfc` + `sucrase`** 编译路径，避免对同一 `.vue` 二次 `read_plugin_asset_text`。
 - Rust：`directory_plugin_bootstrap_dto` 在构建 `ui_slots` 的同一趟扫描中合并 `subscribed_host_events`，每个已启用插件目录只解析一次 `manifest.json`（整壳 URL 仍单独解析一次）。
 - `pluginStore.refresh()` 仅在目录插件 `catalog` / `pluginState` 实际变化时才替换状态对象，减少无效重渲染。
 - `setHostEventSubscribedEvents` 增加签名短路，相同订阅集合不重复重建 `Set`。

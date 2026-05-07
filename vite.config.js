@@ -18,7 +18,7 @@ export default defineConfig(({ mode }) => ({
   ].filter(Boolean),
 
   optimizeDeps: {
-    include: ["vue3-sfc-loader", "mitt"],
+    include: ["sucrase", "@vue/compiler-sfc", "mitt"],
   },
 
   build: {
@@ -32,8 +32,7 @@ export default defineConfig(({ mode }) => ({
           if (id.includes("@tauri-apps")) return "vendor-tauri";
           if (id.includes("vue-virtual-scroller")) return "vendor-scroller";
           if (id.includes("pinia")) return "vendor-pinia";
-          if (id.includes("vue3-sfc-loader")) return "vendor-vue-sfc-loader";
-          // vue3-sfc-loader 仅经动态 import 加载，不打入首屏 vendor
+          if (id.includes("sucrase")) return "vendor-sucrase";
           if (id.includes("/vue/") || id.includes("@vue/")) return "vendor-vue";
         },
       },

@@ -1,6 +1,6 @@
 # 示例：chat_toolbar 原生 Vue 插槽
 
-与 `directory-plugin-ui-slot` 相同，但额外声明 **`vueComponent`**，由主界面用 `vue3-sfc-loader` 编译 `.vue` 并注入 `inject('oclive')`。
+与 `directory-plugin-ui-slot` 相同，但额外声明 **`vueComponent`**，由主界面用 **`@vue/compiler-sfc`**（与 `sucrase` 去 TS）编译 `.vue` 并注入 `inject('oclive')`。
 
 若 `.vue` 加载失败，自动回退到 **`entry`** 的 iframe（`slots/toolbar.html`）。
 
