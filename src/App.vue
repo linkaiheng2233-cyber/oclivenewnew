@@ -219,17 +219,14 @@ watch(
   async (n, prev) => {
     if (n <= 0 || n === prev) return;
     const draftMode = pluginStore.expertWorkbenchDraftMode;
-    if (uiStore.experimentalPluginManagerV2) {
-      openPluginManagerV2Preview();
-      await nextTick();
-      try {
-        await expertModelsStore.refresh();
-        expertModelsStore.applyWorkbenchNavigationDraft(draftMode);
-      } catch {
-        /* store.error 已设置 */
-      }
-    } else {
-      showToast("info", String(t("expertWorkbench.openRequiresV2")));
+    pluginManagerV2Open.value = false;
+    await pluginStore.openPanel("backends");
+    await nextTick();
+    try {
+      await expertModelsStore.refresh();
+      expertModelsStore.applyWorkbenchNavigationDraft(draftMode);
+    } catch {
+      /* store.error 已设置 */
     }
   },
 );
@@ -281,6 +278,14 @@ function onOpenPluginV1FromV2(): void {
   }
   pluginManagerV2Open.value = false;
   void pluginStore.openPanel("plugins");
+}
+
+function onOpenPluginV1Backends(): void {
+  if (expertModelsStore.workbenchDraftDirty) {
+    if (!window.confirm(String(t("expertModels.confirm.unsavedWorkbenchClose")))) return;
+  }
+  pluginManagerV2Open.value = false;
+  void pluginStore.openPanel("backends");
 }
 
 /** 切到纯聊时收起依赖沉浸/插件栈的浮层，避免与纯聊路径叠在一起 */
@@ -1335,6 +1340,7 @@ onBeforeUnmount(() => {
       :visible="true"
       @close="requestClosePluginManagerV2"
       @open-v1="onOpenPluginV1FromV2"
+      @open-v1-backends="onOpenPluginV1Backends"
     />
     <LocalModelManagerPanel
       v-if="localModelManagerOpen"

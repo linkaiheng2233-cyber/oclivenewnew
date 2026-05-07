@@ -68,9 +68,8 @@ export const enUS = {
   },
   expertWorkbench: {
     editButton: "Edit",
-    editButtonTitle: "Open the Expert Models workbench (same entry as in Plugin Manager)",
-    openRequiresV2:
-      "The expert models workbench lives in the experimental Plugin Manager (V2). Enable it in Settings → Plugins & extensions, then open again from this card.",
+    editButtonTitle:
+      "Open the Expert Models workbench (Classic Plugin Manager → Backends tab; same entry as the sidebar card)",
   },
   expertRuntimeCard: {
     aria: "Current personality recipe (expert models)",
@@ -924,6 +923,17 @@ export const enUS = {
       confirmClearSessionOverride:
         "Clear current session LLM backend override and restore role pack/default settings. Continue?",
       toastClearedOverride: "Current session LLM override cleared.",
+    },
+    expertModelsClassic: {
+      aria: "Expert models editor (classic view)",
+      title: "Expert models editor",
+      helpLabel: "Why isn’t it expanded here?",
+      helpLine1:
+        "The expert-models facility includes canvas, run history, and long flows; mixing it with the slot dashboard and plugin cards is easy to overwhelm.",
+      helpLine2:
+        "Classic Plugin Manager’s Backends tab separates local Llama, session backends, status summary, and the full editor—with its own scroll region.",
+      hint: "Closes this window, opens Classic Plugin Manager, and switches to the Backends tab.",
+      openClassic: "Open classic view · Backends",
     },
     gitInstall: {
       confirm:
@@ -1821,8 +1831,14 @@ export const enUS = {
           "Layout reset to current role pack recommendation (author.suggested_ui preferred, otherwise ui.json).",
       },
       expertModels: {
-        title: "Expert models (Module 9)",
-        hint: "Same session expert graph as the workbench—quick status, open editor, or clear this session’s override.",
+        runtimeTitle: "Expert models · Current status",
+        runtimeHint:
+          "See where this session’s expert graph comes from; clear session overrides here. Use Edit below or the editor section at the bottom for the full facility.",
+        facilityTitle: "Expert models · Editor & run history",
+        facilityHint:
+          "Canvas / form editing, apply to session, import/export, and run history. Scroll inside the area below when content is long.",
+        permNavToast:
+          "Switched to the Plugins tab and selected this plugin; expand Permissions on the right to grant capabilities.",
       },
       localLlama: {
         title: "Enable local Llama (Directory LLM) with one click",

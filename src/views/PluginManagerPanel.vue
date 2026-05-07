@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { open } from "@tauri-apps/api/dialog";
 import { open as openExternal } from "@tauri-apps/api/shell";
-import { computed, ref, watch } from "vue";
+import { computed, defineAsyncComponent, nextTick, ref, watch } from "vue";
 import { useI18n } from "vue-i18n";
 import PluginBackendSessionPanel from "../components/PluginBackendSessionPanel.vue";
 import ExpertModelsRuntimeCard from "../components/ExpertModelsRuntimeCard.vue";
@@ -56,9 +56,13 @@ import {
   renderReviewLine,
   type ReviewPreview,
 } from "../lib/pluginReviewsUi";
+import { useExpertModelsStore } from "../stores/expertModelsStore";
+
+const ExpertModelsPanel = defineAsyncComponent(() => import("../components/ExpertModels/ExpertModelsPanel.vue"));
 
 const pluginStore = usePluginStore();
 const roleStore = useRoleStore();
+const expertModelsStore = useExpertModelsStore();
 const { showToast } = useAppToast();
 const { t } = useI18n();
 
@@ -1135,6 +1139,7 @@ const scaffoldWizardVisible = ref(false);
 const pluginPackStatus = ref("");
 /** 已安装区：侧栏当前选中（右侧单一配置 + 调试台） */
 const selectedWorkspacePluginId = ref("");
+const expertFacilitySectionRef = ref<HTMLElement | null>(null);
 
 const selectedWorkspacePlugin = computed(() =>
   pluginStore.catalog.find((c) => c.id === selectedWorkspacePluginId.value) ?? null,
@@ -1536,6 +1541,39 @@ async function onPackSelectedPlugin(): Promise<void> {
     pluginPackStatus.value = e instanceof Error ? e.message : String(e);
   }
 }
+
+function requestClosePmPanel(): void {
+  if (expertModelsStore.workbenchDraftDirty) {
+    if (!window.confirm(String(t("expertModels.confirm.unsavedWorkbenchClose")))) return;
+  }
+  pluginStore.closePanel();
+}
+
+function closePmAndOpenMarket(): void {
+  if (expertModelsStore.workbenchDraftDirty) {
+    if (!window.confirm(String(t("expertModels.confirm.unsavedWorkbenchClose")))) return;
+  }
+  pluginStore.closePanel();
+  void pluginStore.openMarketPanel();
+}
+
+function onExpertModelsOpenPermissions(payload: { pluginId: string }): void {
+  const pid = payload.pluginId.trim();
+  if (!pid) return;
+  pluginStore.panelMainTab = "plugins";
+  selectWorkspacePlugin(pid);
+  showToast("info", String(t("pluginManagerV1.ui.expertModels.permNavToast")));
+}
+
+watch(
+  () => pluginStore.expertModelsWorkbenchRequestEpoch,
+  async (n, prev) => {
+    if (n <= 0 || n === prev) return;
+    await nextTick();
+    if (pluginStore.panelMainTab !== "backends") return;
+    expertFacilitySectionRef.value?.scrollIntoView({ behavior: "smooth", block: "nearest" });
+  },
+);
 </script>
 
 <template>
@@ -1546,7 +1584,7 @@ async function onPackSelectedPlugin(): Promise<void> {
       role="dialog"
       aria-modal="true"
       :aria-label="String(t('pluginManagerV1.ui.dialogLabel'))"
-      @click.self="pluginStore.closePanel()"
+      @click.self="requestClosePmPanel()"
     >
       <div
         v-if="preflightVisible"
@@ -1668,7 +1706,7 @@ async function onPackSelectedPlugin(): Promise<void> {
             >{{ t("pluginManagerV1.ui.proModeBadge") }}</span>
           </div>
           <p class="pm-sub">{{ t("pluginManagerV1.ui.subtitle") }}</p>
-          <button type="button" class="pm-close" :aria-label="String(t('common.close'))" @click="pluginStore.closePanel()">
+          <button type="button" class="pm-close" :aria-label="String(t('common.close'))" @click="requestClosePmPanel()">
             ×
           </button>
         </header>
@@ -1720,14 +1758,7 @@ async function onPackSelectedPlugin(): Promise<void> {
             <div class="pm-section-head">
               <h3 class="pm-h3">{{ t("pluginManagerV1.ui.market.title") }}</h3>
               <div class="pm-section-actions">
-                <button
-                  type="button"
-                  class="pm-btn secondary pm-btn--sm"
-                  @click="
-                    pluginStore.closePanel();
-                    void pluginStore.openMarketPanel();
-                  "
-                >
+                <button type="button" class="pm-btn secondary pm-btn--sm" @click="closePmAndOpenMarket()">
                   {{ t("pluginManagerV1.ui.market.openMarket") }}
                 </button>
               </div>
@@ -2803,7 +2834,7 @@ async function onPackSelectedPlugin(): Promise<void> {
             class="pm-tab-panel pm-tab-panel--backends"
             role="tabpanel"
           >
-            <section class="pm-section">
+            <section class="pm-section pm-backends-block">
               <h3 class="pm-h3">{{ t("pluginManagerV1.ui.localLlama.title") }}</h3>
               <p class="pm-hint">
                 {{ t("pluginManagerV1.ui.localLlama.hint") }}
@@ -2853,13 +2884,32 @@ async function onPackSelectedPlugin(): Promise<void> {
               </div>
             </section>
 
-            <section class="pm-section">
-              <h3 class="pm-h3">{{ t("pluginManagerV1.ui.expertModels.title") }}</h3>
-              <p class="pm-hint">{{ t("pluginManagerV1.ui.expertModels.hint") }}</p>
+            <section class="pm-section pm-backends-block pm-backends-block--session">
+              <PluginBackendSessionPanel />
+            </section>
+
+            <section class="pm-section pm-backends-block pm-backends-block--bridge">
+              <h3 class="pm-h3">{{ t("pluginManagerV1.ui.expertModels.runtimeTitle") }}</h3>
+              <p class="pm-hint">{{ t("pluginManagerV1.ui.expertModels.runtimeHint") }}</p>
               <ExpertModelsRuntimeCard layout="pmSection" />
             </section>
 
-            <PluginBackendSessionPanel />
+            <section
+              ref="expertFacilitySectionRef"
+              class="pm-section pm-backends-block pm-backends-block--facility"
+              data-pm-expert-facility
+            >
+              <h3 class="pm-h3">{{ t("pluginManagerV1.ui.expertModels.facilityTitle") }}</h3>
+              <p class="pm-hint">{{ t("pluginManagerV1.ui.expertModels.facilityHint") }}</p>
+              <div class="pm-expert-facility-scroll">
+                <Suspense>
+                  <ExpertModelsPanel @open-permissions="onExpertModelsOpenPermissions" />
+                  <template #fallback>
+                    <p class="pm-muted">{{ t("common.loading") }}</p>
+                  </template>
+                </Suspense>
+              </div>
+            </section>
           </div>
 
           <div
@@ -3113,7 +3163,7 @@ async function onPackSelectedPlugin(): Promise<void> {
           </div>
 
           <footer class="pm-foot">
-            <button type="button" class="pm-btn secondary" @click="pluginStore.closePanel()">
+            <button type="button" class="pm-btn secondary" @click="requestClosePmPanel()">
               {{ t("common.close") }}
             </button>
             <button type="button" class="pm-btn secondary" @click="onResetToPackDefault">
@@ -3341,6 +3391,37 @@ async function onPackSelectedPlugin(): Promise<void> {
 }
 .pm-tab-panel {
   min-height: 0;
+}
+.pm-tab-panel--backends {
+  display: flex;
+  flex-direction: column;
+  gap: 0;
+}
+.pm-backends-block {
+  margin-bottom: 18px;
+  padding-bottom: 18px;
+  border-bottom: 1px solid var(--border-light);
+}
+.pm-backends-block:last-child {
+  margin-bottom: 0;
+  padding-bottom: 0;
+  border-bottom: none;
+}
+.pm-backends-block--facility {
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+}
+.pm-expert-facility-scroll {
+  flex: 1;
+  min-height: 260px;
+  max-height: min(62vh, 720px);
+  overflow: auto;
+  margin-top: 8px;
+  padding: 10px 12px;
+  border-radius: var(--radius-card, 10px);
+  border: 1px solid var(--border-light);
+  background: var(--bg-secondary, var(--bg-elevated));
 }
 .pm-embed-preview {
   pointer-events: none;

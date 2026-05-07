@@ -267,7 +267,7 @@ export const usePluginStore = defineStore("plugin", {
     pluginMarketSnapshot: null as PluginMarketSnapshotDto | null,
     pluginMarketSyncing: false,
     pluginMarketError: null as string | null,
-    /** 递增以触发 App 层打开专家模型工作台（V2 浮窗）。 */
+    /** 递增以触发 App 层打开专家模型工作台（经典视图「后端」页）。 */
     expertModelsWorkbenchRequestEpoch: 0,
     /**
      * 与 `expertModelsWorkbenchRequestEpoch` 同步消费：打开后 `expertModels` 店按此选择草稿来源。
@@ -413,7 +413,7 @@ export const usePluginStore = defineStore("plugin", {
     closeMarketPanel() {
       this.marketPanelVisible = false;
     },
-    /** 请求打开专家模型工作台：由 App 根据是否启用插件管理 V2 决定打开浮窗或提示。 */
+    /** 请求打开专家模型工作台：由 App 打开经典插件管理并切到「后端」页。 */
     requestOpenExpertModelsWorkbench(opts?: { draftMode?: "effective" | "role_default" }): void {
       this.expertWorkbenchDraftMode = opts?.draftMode ?? "effective";
       this.expertModelsWorkbenchRequestEpoch += 1;

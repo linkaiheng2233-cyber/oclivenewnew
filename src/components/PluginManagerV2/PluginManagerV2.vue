@@ -1,11 +1,10 @@
 <script setup lang="ts">
-import { computed, defineAsyncComponent, onMounted, ref, watch } from "vue";
+import { computed, onMounted, ref, watch } from "vue";
 import { useI18n } from "vue-i18n";
 import LeftCategoryNav from "./LeftCategoryNav.vue";
 import PluginCardList from "./PluginCardList.vue";
 import RightDetailPanel from "./RightDetailPanel.vue";
 import HelpCircle from "../HelpCircle.vue";
-const ExpertModelsPanel = defineAsyncComponent(() => import("../ExpertModels/ExpertModelsPanel.vue"));
 import { usePluginManagerV2 } from "../../composables/usePluginManagerV2";
 import { usePluginTerm } from "../../composables/usePluginTerm";
 import {
@@ -41,6 +40,7 @@ const props = defineProps<{
 const emit = defineEmits<{
   close: [];
   openV1: [];
+  openV1Backends: [];
 }>();
 
 const {
@@ -765,7 +765,21 @@ async function onApply(payload: Record<string, unknown>) {
       <p class="pm2-muted" style="margin: 8px 0 0">{{ t("pluginManagerV2.localLlamaSection.effectiveLabel") }}：{{ llmEffectiveLabel }}</p>
     </section>
 
-    <ExpertModelsPanel @open-permissions="openPermModal($event.pluginId)" />
+    <section class="pm2-slotdash pm2-expert-classic" :aria-label="String(t('pluginManagerV2.expertModelsClassic.aria'))">
+      <div class="pm2-slotdash-head">
+        <div class="pm2-slotdash-title">
+          <h3 class="pm2-h3">{{ t("pluginManagerV2.expertModelsClassic.title") }}</h3>
+          <HelpCircle :label="String(t('pluginManagerV2.expertModelsClassic.helpLabel'))" inline>
+            <p>{{ t("pluginManagerV2.expertModelsClassic.helpLine1") }}</p>
+            <p>{{ t("pluginManagerV2.expertModelsClassic.helpLine2") }}</p>
+          </HelpCircle>
+        </div>
+        <button type="button" class="pm2-btn" @click="emit('openV1Backends')">
+          {{ t("pluginManagerV2.expertModelsClassic.openClassic") }}
+        </button>
+      </div>
+      <p class="pm2-muted" style="margin: 0">{{ t("pluginManagerV2.expertModelsClassic.hint") }}</p>
+    </section>
 
     <div class="pm2-grid">
       <LeftCategoryNav v-model="selectedCategory" :categories="categories" />

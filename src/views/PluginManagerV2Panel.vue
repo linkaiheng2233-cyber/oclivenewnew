@@ -8,6 +8,7 @@ defineProps<{
 const emit = defineEmits<{
   close: [];
   openV1: [];
+  openV1Backends: [];
 }>();
 </script>
 
@@ -22,7 +23,12 @@ const emit = defineEmits<{
       @click.self="emit('close')"
     >
       <div class="pm2-dialog" @click.stop>
-        <PluginManagerV2 :visible="visible" @close="emit('close')" @open-v1="emit('openV1')" />
+        <PluginManagerV2
+          :visible="visible"
+          @close="emit('close')"
+          @open-v1="emit('openV1')"
+          @open-v1-backends="emit('openV1Backends')"
+        />
       </div>
     </div>
   </Teleport>

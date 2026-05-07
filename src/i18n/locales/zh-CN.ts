@@ -63,9 +63,7 @@ export const zhCN = {
   },
   expertWorkbench: {
     editButton: "编辑",
-    editButtonTitle: "打开专家模型工作台（与插件管理中的入口一致）",
-    openRequiresV2:
-      "专家模型工作台在「插件与后端管理」实验版（V2）中。请先到设置 → 插件与扩展 → 开启「实验性插件管理 V2」，再从本卡片打开。",
+    editButtonTitle: "打开专家模型工作台（经典插件管理 →「后端」页，与侧栏入口一致）",
   },
   expertRuntimeCard: {
     aria: "当前人格配方（专家模型）",
@@ -895,6 +893,17 @@ export const zhCN = {
       toastEnabled: "已启用本地 Llama：{id}（当前会话）",
       confirmClearSessionOverride: "将清除当前会话的 LLM 后端覆盖，恢复角色包/默认设置。继续吗？",
       toastClearedOverride: "已清除当前会话的 LLM 覆盖。",
+    },
+    expertModelsClassic: {
+      aria: "专家模型编排（经典视图）",
+      title: "专家模型编排",
+      helpLabel: "为什么不在本窗口里展开？",
+      helpLine1:
+        "专家模型设施包含画布、运行历史等较长流程；与「插槽看板 / 插件卡片」叠在同一屏容易信息过载。",
+      helpLine2:
+        "在经典视图的「后端」页中，本地 Llama、会话后端、状态摘要与完整编排分区展示，并为编排区提供独立滚屏。",
+      hint: "将关闭本窗口并打开经典插件管理，且直接切到「后端与会话」标签。",
+      openClassic: "打开经典视图 · 后端页",
     },
     gitInstall: {
       confirm:
@@ -1755,8 +1764,11 @@ export const zhCN = {
         resetToPackDefaultOk: "已重置为当前角色包推荐布局（author.suggested_ui 优先，否则 ui.json）。",
       },
       expertModels: {
-        title: "专家模型（Module 9）",
-        hint: "与会话级专家图覆盖一致；在此可快速查看状态、打开工作台或清除本会话覆盖。",
+        runtimeTitle: "专家模型 · 当前状态",
+        runtimeHint: "查看本会话生效的专家图来源；可清除会话覆盖。点击下方「编辑」或页面底部的编排区进入完整设施。",
+        facilityTitle: "专家模型 · 编排与运行历史",
+        facilityHint: "画布 / 表单、应用至会话、导入导出与运行记录。内容较多时可在下方区域内滚动浏览。",
+        permNavToast: "已切换到「插件」页并选中该插件；请在右侧展开「权限」列表完成授权。",
       },
       localLlama: {
         title: "一键启用本地 Llama（Directory LLM）",
