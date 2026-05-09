@@ -18,6 +18,8 @@ import {
   settingsGeneralLeadHtml,
   settingsOpenV2PreviewButtonLabel,
   settingsShortcutsHelpHint,
+  unifiedOpenDebugCta,
+  unifiedOpenPluginMarketCta,
 } from "../lib/pluginManagerEntryCopy";
 import type { SettingsDeepLink } from "../lib/settingsDeepLink";
 import {
@@ -63,6 +65,9 @@ const cloudTrust = useCloudLlmTrustModal();
 const showVueCloudTrustModal = computed(
   () => !isTauriWebview() || cloudTrust.visible.value,
 );
+
+const unifiedMarketCtaText = computed(() => unifiedOpenPluginMarketCta(uiStore.experimentalPluginManagerV2));
+const unifiedDebugCtaText = computed(() => unifiedOpenDebugCta());
 
 const selectedNavId = ref<SettingsNavId>(SETTINGS_NAV.generalOverview);
 
@@ -239,7 +244,8 @@ async function onToggleForceIframe(e: Event) {
         @click.self="emit('close')"
       >
         <div class="sv-dialog" @click.stop>
-          <header class="sv-head">
+          <div class="sv-dialog-scroll">
+          <header class="sv-head sv-head--sticky">
             <h2 class="sv-title">{{ t("settings.title") }}</h2>
             <button
               type="button"
@@ -424,8 +430,11 @@ async function onToggleForceIframe(e: Event) {
 
               <div v-show="selectedNavId === SETTINGS_NAV.marketBrowse" class="sv-pane-section">
                 <p class="sv-muted">{{ t("settings.nav.lead.marketBrowse") }}</p>
+                <p v-if="uiStore.experimentalPluginManagerV2" class="sv-callout sv-muted">
+                  {{ t("settings.nav.lead.marketBrowseV2Hint") }}
+                </p>
                 <button type="button" class="sv-btn sv-btn--accent" @click="emitDeepLink({ kind: 'plugin_market' })">
-                  {{ t("settings.nav.cta.openMarket") }}
+                  {{ unifiedMarketCtaText }}
                 </button>
                 <p class="sv-muted sv-foot">{{ settingsDeepLinkFooterNote() }}</p>
               </div>
@@ -541,11 +550,12 @@ async function onToggleForceIframe(e: Event) {
               <div v-show="selectedNavId === SETTINGS_NAV.diagnosticsDebug" class="sv-pane-section">
                 <p class="sv-muted">{{ t("settings.nav.lead.diagnosticsDebug") }}</p>
                 <button type="button" class="sv-btn sv-btn--accent" @click="emitDeepLink({ kind: 'debug_panel' })">
-                  {{ t("settings.nav.cta.openDebug") }}
+                  {{ unifiedDebugCtaText }}
                 </button>
                 <p class="sv-muted sv-foot">{{ settingsDeepLinkFooterNote() }}</p>
               </div>
             </div>
+          </div>
           </div>
         </div>
       </div>
@@ -583,14 +593,23 @@ async function onToggleForceIframe(e: Event) {
   width: min(920px, 100%);
   max-height: min(90vh, 820px);
   overflow: hidden;
-  padding: 16px 18px 18px;
+  padding: 0;
   border-radius: var(--radius-app);
   border: 1px solid var(--border-light);
   background: var(--bg-primary);
   box-shadow: var(--shadow-app);
   display: flex;
   flex-direction: column;
+}
+.sv-dialog-scroll {
+  flex: 1;
+  min-height: 0;
+  overflow-x: hidden;
+  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
   gap: 12px;
+  padding: 16px 18px 18px;
 }
 .sv-head {
   display: flex;
@@ -598,6 +617,15 @@ async function onToggleForceIframe(e: Event) {
   justify-content: space-between;
   padding-right: 8px;
   flex-shrink: 0;
+}
+.sv-head--sticky {
+  position: sticky;
+  top: 0;
+  z-index: 3;
+  margin: -4px -6px 0 -4px;
+  padding: 6px 6px 10px 10px;
+  background: var(--bg-primary);
+  box-shadow: 0 10px 14px -12px color-mix(in srgb, var(--bg-primary) 55%, #000);
 }
 .sv-title {
   margin: 0;
@@ -621,8 +649,8 @@ async function onToggleForceIframe(e: Event) {
   display: flex;
   gap: 14px;
   min-height: 0;
-  flex: 1;
-  align-items: stretch;
+  flex: 0 0 auto;
+  align-items: flex-start;
 }
 .sv-tree {
   width: 220px;
@@ -630,10 +658,9 @@ async function onToggleForceIframe(e: Event) {
   display: flex;
   flex-direction: column;
   gap: 2px;
-  overflow: auto;
+  overflow: visible;
   padding-right: 10px;
   border-right: 1px solid var(--border-light);
-  max-height: min(78vh, 720px);
 }
 .sv-tree-group {
   font-size: 11px;
@@ -698,9 +725,17 @@ async function onToggleForceIframe(e: Event) {
 .sv-pane {
   flex: 1;
   min-width: 0;
-  overflow: auto;
-  max-height: min(78vh, 720px);
+  overflow: visible;
   padding-right: 4px;
+}
+.sv-callout {
+  margin: 0;
+  padding: 8px 10px;
+  border-radius: 8px;
+  border: 1px solid color-mix(in srgb, var(--accent) 28%, var(--border-light));
+  background: color-mix(in srgb, var(--accent) 8%, var(--bg-secondary));
+  font-size: 12px;
+  line-height: 1.5;
 }
 .sv-pane-section {
   display: flex;

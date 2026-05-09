@@ -46,6 +46,18 @@ export function settingsOpenV2PreviewButtonLabel(): string {
   return t("pluginManager.entry.settingsOpenV2PreviewButtonLabel");
 }
 
+/** 顶栏「更多」·插件市场、设置侧栏「打开市场」共用（含 {m}+Shift+A，经 i18n 修饰键替换）。 */
+export function unifiedOpenPluginMarketCta(experimentalV2: boolean): string {
+  return experimentalV2
+    ? t("pluginManager.entry.unifiedOpenPluginMarketCtaV2")
+    : t("pluginManager.entry.unifiedOpenPluginMarketCtaV1");
+}
+
+/** 顶栏「更多」·调试、设置侧栏「打开调试」共用。 */
+export function unifiedOpenDebugCta(): string {
+  return t("pluginManager.entry.unifiedOpenDebugCta");
+}
+
 /** 顶栏「更多」里插件入口按钮文案 */
 export function moreMenuPluginButtonLabel(experimentalV2: boolean): string {
   return experimentalV2

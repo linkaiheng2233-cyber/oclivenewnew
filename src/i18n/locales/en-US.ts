@@ -538,6 +538,8 @@ export const enUS = {
         pluginsSlots: "Use the Plugin Manager “Slots” tab to reorder UI slot embeds and previews.",
         pluginsBackends: "Inspect and adjust plugin_backends modules and session overrides (cloud / local inference entry points).",
         marketBrowse: "Browse the community index, install or update plugins, and handle permission prompts (network & trust).",
+        marketBrowseV2Hint:
+          "V2 Plugin Manager preview is enabled: the button below opens the V2 Plugin Market—the same destination as the Plugin Market button in the top bar “More” menu (not the classic V1 market window).",
         diagnosticsDebug: "Inspect runtime events, role pack info, and debug slot embeds—best for troubleshooting.",
       },
     },
@@ -572,6 +574,9 @@ export const enUS = {
       settingsExperimentalToggleDescriptionHtml:
         "This is a preview. Some features may be incomplete; feedback is welcome.",
       settingsOpenV2PreviewButtonLabel: "Open V2 preview window",
+      unifiedOpenPluginMarketCtaV1: "Plugin Market ({m}+Shift+A)",
+      unifiedOpenPluginMarketCtaV2: "Plugin Market V2 ({m}+Shift+A)",
+      unifiedOpenDebugCta: "Open Debug panel",
     },
     moreMenu: {
       pluginButtonLabel: {

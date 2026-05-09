@@ -39,3 +39,4 @@
 
 - 侧栏标题：`settings.nav.items.<camelFromId>`（见 `settingsNavKeys.ts` 中 `settingsNavLabelKey`）。
 - L 级徽章与说明：`settings.tiers.L1` … `settings.tiers.L4`（见 `settingsNavCopy.ts`）。
+- 与顶栏「更多」对齐的按钮文案：`pluginManager.entry.unifiedOpenPluginMarketCtaV1/V2`、`unifiedOpenDebugCta`（经 `pluginManagerEntryCopy.ts` 导出，供 `App.vue` 与 `SettingsView.vue` 共用）。

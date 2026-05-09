@@ -22,6 +22,7 @@ import { useSceneDestination } from "./composables/useSceneDestination";
 import { usePackUiTheme } from "./composables/useTheme";
 import { usePluginManagerWindow } from "./composables/usePluginManagerWindow";
 import type { SettingsDeepLink } from "./lib/settingsDeepLink";
+import { unifiedOpenDebugCta, unifiedOpenPluginMarketCta } from "./lib/pluginManagerEntryCopy";
 import { hostEventBus } from "./lib/hostEventBus";
 import { chordModifierKeyDown, isMacLikePlatform } from "./lib/shortcutDisplay";
 import {
@@ -69,6 +70,9 @@ const pluginStore = usePluginStore();
 const expertModelsStore = useExpertModelsStore();
 const { toast, showToast } = useAppToast();
 const { t } = useI18n();
+
+const unifiedPluginMarketCtaLabel = computed(() => unifiedOpenPluginMarketCta(uiStore.experimentalPluginManagerV2));
+const unifiedDebugCtaLabel = computed(() => unifiedOpenDebugCta());
 const { themeCycleLabel, cycleTheme, bumpScale, scaleLabel } = useOcliveAppearance();
 const { applyResolvedNarrativeScene } = useNarrativeScene();
 const {
@@ -1169,7 +1173,7 @@ onBeforeUnmount(() => {
                 </div>
                 <div class="more-tile-body">
                   <button type="button" class="more-debug-btn more-debug-btn--fill" @click="debugStore.toggle">
-                    {{ t("app.topBar.tiles.debug.openPanel") }}
+                    {{ unifiedDebugCtaLabel }}
                   </button>
                 </div>
               </div>
@@ -1227,7 +1231,7 @@ onBeforeUnmount(() => {
                     class="more-debug-btn more-debug-btn--fill settings-entry-btn"
                     @click="openPluginMarketPanel"
                   >
-                    {{ t("app.topBar.tiles.settingsEntry.pluginMarket") }}
+                    {{ unifiedPluginMarketCtaLabel }}
                   </button>
                 </div>
               </div>
