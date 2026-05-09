@@ -511,6 +511,7 @@ export const enUS = {
         pluginsLinkInstalled: "Installed & market",
         pluginsLinkSlots: "UI slot order",
         pluginsLinkBackends: "Backends (plugin_backends)",
+        pluginsV2Hub: "V2 hub (slots · Git · local Llama)",
         marketBrowse: "Plugin market",
         securityHost: "Security & privacy",
         catAdvanced: "Advanced & experimental",
@@ -518,12 +519,10 @@ export const enUS = {
         advancedEmbed: "Extension slot (settings.advanced)",
         advancedMarketSources: "Market developer mode & index sources",
         diagnosticsDebug: "Diagnostics & debug",
+        diagnosticsAgent: "Agent / MCP debug",
       },
       cta: {
         openLocalModels: "Open local model manager",
-        openPluginManagerPlugins: "Open Plugin Manager (Installed)",
-        openPluginManagerSlots: "Open Plugin Manager (Slots tab)",
-        openPluginManagerBackends: "Open Plugin Manager (Backends)",
         openMarket: "Open Plugin Market",
         openExpertWorkbench: "Open Expert Models workbench",
         openDebug: "Open Debug panel",
@@ -537,10 +536,14 @@ export const enUS = {
           "Use the Plugin Manager “Plugins” tab for installed directory plugins, persist scope, and market shortcuts.",
         pluginsSlots: "Use the Plugin Manager “Slots” tab to reorder UI slot embeds and previews.",
         pluginsBackends: "Inspect and adjust plugin_backends modules and session overrides (cloud / local inference entry points).",
+        pluginsV2Hub:
+          "Slot dashboard, install-from-Git, and session local-Llama binding live in the V2 window—same entry as Oclive Manager (V2) under the top bar “More” menu.",
         marketBrowse: "Browse the community index, install or update plugins, and handle permission prompts (network & trust).",
         marketBrowseV2Hint:
           "V2 Plugin Manager preview is enabled: the button below opens the V2 Plugin Market—the same destination as the Plugin Market button in the top bar “More” menu (not the classic V1 market window).",
         diagnosticsDebug: "Inspect runtime events, role pack info, and debug slot embeds—best for troubleshooting.",
+        diagnosticsAgent:
+          "Agent traces and MCP tool calls are available in the classic Plugin Manager “Backends” page (embedded debug dock). The button below closes Settings and opens that tab.",
       },
     },
     tiers: {
@@ -577,6 +580,11 @@ export const enUS = {
       unifiedOpenPluginMarketCtaV1: "Plugin Market ({m}+Shift+A)",
       unifiedOpenPluginMarketCtaV2: "Plugin Market V2 ({m}+Shift+A)",
       unifiedOpenDebugCta: "Open Debug panel",
+      unifiedOpenPluginManagerInstalledCta: "Open Plugin Manager (Installed)",
+      unifiedOpenPluginManagerSlotsCta: "Open Plugin Manager (Slots tab)",
+      unifiedOpenPluginManagerBackendsCta: "Open Plugin Manager (Backends)",
+      unifiedOpenPluginManagerV2HubCta: "Open Plugin Manager V2",
+      unifiedOpenAgentDebugFromBackendsCta: "Open Plugin Manager (Backends · Agent debug)",
     },
     moreMenu: {
       pluginButtonLabel: {

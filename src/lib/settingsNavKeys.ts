@@ -22,12 +22,14 @@ export const SETTINGS_NAV = {
   pluginsLinkInstalled: "settings.plugins.linkInstalled",
   pluginsLinkSlots: "settings.plugins.linkSlots",
   pluginsLinkBackends: "settings.plugins.linkBackends",
+  pluginsV2Hub: "settings.plugins.v2Hub",
   marketBrowse: "settings.market.browse",
   securityHost: "settings.security.host",
   advancedExperimental: "settings.advanced.experimental",
   advancedEmbed: "settings.advanced.embed",
   advancedMarketSources: "settings.advanced.marketSources",
   diagnosticsDebug: "settings.diagnostics.debug",
+  diagnosticsAgent: "settings.diagnostics.agent",
 } as const;
 
 export type SettingsNavId = (typeof SETTINGS_NAV)[keyof typeof SETTINGS_NAV];
@@ -104,6 +106,7 @@ export const SETTINGS_NAV_ROWS: readonly SettingsNavRow[] = [
   { id: SETTINGS_NAV.pluginsLinkInstalled, depth: 1, tier: "L3", visibility: "immersive" },
   { id: SETTINGS_NAV.pluginsLinkSlots, depth: 1, tier: "L3", visibility: "immersive" },
   { id: SETTINGS_NAV.pluginsLinkBackends, depth: 1, tier: "L4", visibility: "immersive" },
+  { id: SETTINGS_NAV.pluginsV2Hub, depth: 1, tier: "L4", visibility: "immersive" },
   { id: SETTINGS_NAV.marketBrowse, depth: 0, tier: "L3", visibility: "immersive" },
   { id: SETTINGS_NAV.securityHost, depth: 0, tier: "L4", visibility: "always" },
   { id: SETTINGS_NAV_CAT.advanced, depth: 0, isGroupLabel: true, visibility: "immersive" },
@@ -111,6 +114,7 @@ export const SETTINGS_NAV_ROWS: readonly SettingsNavRow[] = [
   { id: SETTINGS_NAV.advancedEmbed, depth: 1, tier: "L3", visibility: "immersive" },
   { id: SETTINGS_NAV.advancedMarketSources, depth: 1, tier: "L3", visibility: "immersive" },
   { id: SETTINGS_NAV.diagnosticsDebug, depth: 0, tier: "L2", visibility: "immersive" },
+  { id: SETTINGS_NAV.diagnosticsAgent, depth: 0, tier: "L4", visibility: "immersive" },
 ];
 
 export function firstSelectableSettingsNavId(

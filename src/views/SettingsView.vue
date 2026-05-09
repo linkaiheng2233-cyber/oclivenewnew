@@ -18,7 +18,12 @@ import {
   settingsGeneralLeadHtml,
   settingsOpenV2PreviewButtonLabel,
   settingsShortcutsHelpHint,
+  unifiedOpenAgentDebugFromBackendsCta,
   unifiedOpenDebugCta,
+  unifiedOpenPluginManagerBackendsCta,
+  unifiedOpenPluginManagerInstalledCta,
+  unifiedOpenPluginManagerSlotsCta,
+  unifiedOpenPluginManagerV2HubCta,
   unifiedOpenPluginMarketCta,
 } from "../lib/pluginManagerEntryCopy";
 import type { SettingsDeepLink } from "../lib/settingsDeepLink";
@@ -399,7 +404,7 @@ async function onToggleForceIframe(e: Event) {
                   class="sv-btn sv-btn--accent"
                   @click="emitDeepLink({ kind: 'plugin_manager', tab: 'plugins' })"
                 >
-                  {{ t("settings.nav.cta.openPluginManagerPlugins") }}
+                  {{ unifiedOpenPluginManagerInstalledCta() }}
                 </button>
                 <p class="sv-muted sv-foot">{{ settingsDeepLinkFooterNote() }}</p>
               </div>
@@ -411,7 +416,7 @@ async function onToggleForceIframe(e: Event) {
                   class="sv-btn sv-btn--accent"
                   @click="emitDeepLink({ kind: 'plugin_manager', tab: 'slots' })"
                 >
-                  {{ t("settings.nav.cta.openPluginManagerSlots") }}
+                  {{ unifiedOpenPluginManagerSlotsCta() }}
                 </button>
                 <p class="sv-muted sv-foot">{{ settingsDeepLinkFooterNote() }}</p>
               </div>
@@ -423,7 +428,15 @@ async function onToggleForceIframe(e: Event) {
                   class="sv-btn sv-btn--accent"
                   @click="emitDeepLink({ kind: 'plugin_manager', tab: 'backends' })"
                 >
-                  {{ t("settings.nav.cta.openPluginManagerBackends") }}
+                  {{ unifiedOpenPluginManagerBackendsCta() }}
+                </button>
+                <p class="sv-muted sv-foot">{{ settingsDeepLinkFooterNote() }}</p>
+              </div>
+
+              <div v-show="selectedNavId === SETTINGS_NAV.pluginsV2Hub" class="sv-pane-section">
+                <p class="sv-muted">{{ t("settings.nav.lead.pluginsV2Hub") }}</p>
+                <button type="button" class="sv-btn sv-btn--accent" @click="emit('openPluginV2')">
+                  {{ unifiedOpenPluginManagerV2HubCta() }}
                 </button>
                 <p class="sv-muted sv-foot">{{ settingsDeepLinkFooterNote() }}</p>
               </div>
@@ -551,6 +564,18 @@ async function onToggleForceIframe(e: Event) {
                 <p class="sv-muted">{{ t("settings.nav.lead.diagnosticsDebug") }}</p>
                 <button type="button" class="sv-btn sv-btn--accent" @click="emitDeepLink({ kind: 'debug_panel' })">
                   {{ unifiedDebugCtaText }}
+                </button>
+                <p class="sv-muted sv-foot">{{ settingsDeepLinkFooterNote() }}</p>
+              </div>
+
+              <div v-show="selectedNavId === SETTINGS_NAV.diagnosticsAgent" class="sv-pane-section">
+                <p class="sv-muted">{{ t("settings.nav.lead.diagnosticsAgent") }}</p>
+                <button
+                  type="button"
+                  class="sv-btn sv-btn--accent"
+                  @click="emitDeepLink({ kind: 'plugin_manager', tab: 'backends' })"
+                >
+                  {{ unifiedOpenAgentDebugFromBackendsCta() }}
                 </button>
                 <p class="sv-muted sv-foot">{{ settingsDeepLinkFooterNote() }}</p>
               </div>

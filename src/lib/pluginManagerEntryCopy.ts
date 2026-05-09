@@ -58,6 +58,29 @@ export function unifiedOpenDebugCta(): string {
   return t("pluginManager.entry.unifiedOpenDebugCta");
 }
 
+/** 设置侧栏深链：打开 V1 插件管理「插件」Tab（与 `settings.nav` 历史文案对齐的单源）。 */
+export function unifiedOpenPluginManagerInstalledCta(): string {
+  return t("pluginManager.entry.unifiedOpenPluginManagerInstalledCta");
+}
+
+export function unifiedOpenPluginManagerSlotsCta(): string {
+  return t("pluginManager.entry.unifiedOpenPluginManagerSlotsCta");
+}
+
+export function unifiedOpenPluginManagerBackendsCta(): string {
+  return t("pluginManager.entry.unifiedOpenPluginManagerBackendsCta");
+}
+
+/** 打开 V2 管理窗（槽位看板、Git 安装、会话本地 Llama 等）。 */
+export function unifiedOpenPluginManagerV2HubCta(): string {
+  return t("pluginManager.entry.unifiedOpenPluginManagerV2HubCta");
+}
+
+/** 打开经典后端页以使用内嵌 Agent / MCP 调试台。 */
+export function unifiedOpenAgentDebugFromBackendsCta(): string {
+  return t("pluginManager.entry.unifiedOpenAgentDebugFromBackendsCta");
+}
+
 /** 顶栏「更多」里插件入口按钮文案 */
 export function moreMenuPluginButtonLabel(experimentalV2: boolean): string {
   return experimentalV2

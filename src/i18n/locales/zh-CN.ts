@@ -495,6 +495,7 @@ export const zhCN = {
         pluginsLinkInstalled: "已安装与市场",
         pluginsLinkSlots: "界面插槽顺序",
         pluginsLinkBackends: "后端模块（plugin_backends）",
+        pluginsV2Hub: "V2 管理（槽位 · Git · 本地 Llama）",
         marketBrowse: "插件市场",
         securityHost: "安全与隐私",
         catAdvanced: "高级与实验",
@@ -502,12 +503,10 @@ export const zhCN = {
         advancedEmbed: "扩展区（settings.advanced）",
         advancedMarketSources: "市场开发者与索引源",
         diagnosticsDebug: "诊断与调试",
+        diagnosticsAgent: "Agent / MCP 调试",
       },
       cta: {
         openLocalModels: "打开本机模型管理",
-        openPluginManagerPlugins: "打开插件管理（已安装）",
-        openPluginManagerSlots: "打开插件管理（插槽页）",
-        openPluginManagerBackends: "打开插件管理（后端模块）",
         openMarket: "打开插件市场",
         openExpertWorkbench: "打开专家模型工作台",
         openDebug: "打开调试面板",
@@ -518,10 +517,14 @@ export const zhCN = {
         pluginsInstalled: "在插件管理「插件」页调整已安装目录插件、持久化范围与市场入口等。",
         pluginsSlots: "在插件管理「插槽」页调整各 UI 槽的嵌入顺序与预览。",
         pluginsBackends: "查看并调整各 plugin_backends 模块与会话覆盖（与云端 / 本地推理入口相关）。",
+        pluginsV2Hub:
+          "槽位看板、从 Git 安装插件、会话级本地 Llama 绑定等在 V2 窗内完成；与顶栏「更多」中 Oclive Manager（V2）入口一致。",
         marketBrowse: "浏览社区索引、安装或更新插件，并处理权限同意（与网络与信任模型相关）。",
         marketBrowseV2Hint:
           "已启用新版插件管理（V2）实验：点击下方按钮将打开 V2 插件市场界面，与顶栏「更多」中的插件市场按钮一致（非经典 V1 全屏市场弹窗）。",
         diagnosticsDebug: "查看运行时事件、角色包与调试槽嵌入；适合排障，日常可少触。",
+        diagnosticsAgent:
+          "Agent 任务拆解与 MCP 工具调用可在经典「插件与后端管理」的「后端」页底部调试台查看；以下按钮将关闭设置并打开该页。",
       },
     },
     tiers: {
@@ -558,6 +561,11 @@ export const zhCN = {
       unifiedOpenPluginMarketCtaV1: "插件市场（{m}+Shift+A）",
       unifiedOpenPluginMarketCtaV2: "插件市场 V2（{m}+Shift+A）",
       unifiedOpenDebugCta: "打开调试面板",
+      unifiedOpenPluginManagerInstalledCta: "打开插件管理（已安装）",
+      unifiedOpenPluginManagerSlotsCta: "打开插件管理（插槽页）",
+      unifiedOpenPluginManagerBackendsCta: "打开插件管理（后端模块）",
+      unifiedOpenPluginManagerV2HubCta: "打开插件管理 V2",
+      unifiedOpenAgentDebugFromBackendsCta: "打开插件管理（后端 · Agent 调试）",
     },
     moreMenu: {
       pluginButtonLabel: {
