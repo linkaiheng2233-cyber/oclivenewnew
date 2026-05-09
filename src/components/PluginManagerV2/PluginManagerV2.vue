@@ -803,7 +803,8 @@ async function onApply(payload: Record<string, unknown>) {
 
 <style scoped>
 .pm2-root {
-  flex: 1;
+  flex: 0 0 auto;
+  width: 100%;
   min-height: 0;
   display: flex;
   flex-direction: column;
@@ -1005,13 +1006,14 @@ async function onApply(payload: Record<string, unknown>) {
   gap: 6px;
 }
 .pm2-grid {
-  flex: 1;
+  flex: 0 0 auto;
+  width: 100%;
   min-height: 0;
   display: grid;
-  grid-template-columns: 248px minmax(0, 1fr) 300px;
-  grid-template-rows: minmax(0, 1fr);
+  grid-template-columns: 248px minmax(0, 1fr) minmax(220px, 300px);
+  grid-template-rows: none;
   gap: 12px;
-  align-items: stretch;
+  align-items: start;
 }
 .pm2-grid > * {
   min-height: 0;
@@ -1019,11 +1021,7 @@ async function onApply(payload: Record<string, unknown>) {
 @media (max-width: 1080px) {
   .pm2-grid {
     grid-template-columns: 1fr;
-    grid-template-rows: none;
     grid-auto-rows: auto;
-    flex: 1 1 auto;
-    min-height: 0;
-    overflow: auto;
   }
   .pm2-slotdash-grid {
     grid-template-columns: 1fr;

@@ -62,9 +62,9 @@ const changeNotice = computed(() => {
   width: 100%;
   min-width: 0;
   min-height: 0;
-  height: 100%;
+  height: auto;
   overflow-x: hidden;
-  overflow-y: auto;
+  overflow-y: visible;
   flex-shrink: 0;
 }
 .pm2-right.collapsed {

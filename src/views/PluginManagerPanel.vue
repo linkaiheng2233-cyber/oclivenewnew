@@ -3330,7 +3330,8 @@ watch(
   max-height: min(92vh, 900px);
   display: flex;
   flex-direction: column;
-  overflow: hidden;
+  overflow-x: hidden;
+  overflow-y: auto;
   padding: 0;
   border-radius: var(--radius-app);
   border: 1px solid var(--border-light);
@@ -3341,9 +3342,9 @@ watch(
   padding: 12px 18px;
 }
 .pm-scroll {
-  flex: 1;
+  flex: 0 0 auto;
   min-height: 0;
-  overflow: auto;
+  overflow: visible;
   padding: 18px 22px 14px;
 }
 .pm-tabs {
@@ -3413,10 +3414,9 @@ watch(
   min-height: 0;
 }
 .pm-expert-facility-scroll {
-  flex: 1;
-  min-height: 260px;
-  max-height: min(62vh, 720px);
-  overflow: auto;
+  flex: 0 0 auto;
+  min-height: 0;
+  overflow: visible;
   margin-top: 8px;
   padding: 10px 12px;
   border-radius: var(--radius-card, 10px);
@@ -3513,8 +3513,7 @@ watch(
   display: flex;
   flex-direction: column;
   gap: 10px;
-  max-height: 240px;
-  overflow: auto;
+  overflow: visible;
 }
 .pm-market-li {
   display: flex;
@@ -3881,8 +3880,10 @@ watch(
   background: var(--bg-secondary);
   font-size: 11px;
   color: var(--text-secondary);
-  overflow: auto;
-  max-height: 240px;
+  overflow-x: auto;
+  overflow-y: visible;
+  white-space: pre-wrap;
+  word-break: break-word;
 }
 
 /* 已安装区：侧栏目录 + 右侧单一配置与调试台 */
@@ -3890,13 +3891,13 @@ watch(
   display: grid;
   grid-template-columns: minmax(200px, 260px) minmax(0, 1fr);
   gap: 0;
-  min-height: min(520px, 58vh);
-  max-height: min(62vh, 640px);
+  min-height: 0;
   margin-top: 4px;
   border: 1px solid var(--border-light);
   border-radius: var(--radius-card);
-  overflow: hidden;
+  overflow: visible;
   background: var(--bg-primary);
+  align-items: start;
 }
 .pm-wb-sidebar {
   border-right: 1px solid var(--border-light);
@@ -3904,6 +3905,7 @@ watch(
   display: flex;
   flex-direction: column;
   min-height: 0;
+  overflow: visible;
 }
 .pm-wb-sidebar-head {
   display: flex;
@@ -3931,8 +3933,8 @@ watch(
   list-style: none;
   margin: 0;
   padding: 4px 0;
-  overflow: auto;
-  flex: 1;
+  overflow: visible;
+  flex: 0 0 auto;
   min-height: 0;
 }
 .pm-wb-li {
@@ -4006,7 +4008,7 @@ watch(
   flex-direction: column;
   min-width: 0;
   min-height: 0;
-  overflow: hidden;
+  overflow: visible;
 }
 .pm-wb-main-head {
   display: flex;
@@ -4040,9 +4042,9 @@ watch(
   gap: 8px;
 }
 .pm-wb-main-body {
-  flex: 1;
+  flex: 0 0 auto;
   min-height: 0;
-  overflow: auto;
+  overflow: visible;
   padding: 10px 12px 12px;
   display: flex;
   flex-direction: column;
@@ -4061,12 +4063,10 @@ watch(
 @media (max-width: 720px) {
   .pm-wb {
     grid-template-columns: 1fr;
-    max-height: none;
   }
   .pm-wb-sidebar {
     border-right: none;
     border-bottom: 1px solid var(--border-light);
-    max-height: 200px;
   }
 }
 

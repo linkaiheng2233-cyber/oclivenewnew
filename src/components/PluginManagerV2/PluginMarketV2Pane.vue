@@ -534,12 +534,13 @@ const { t } = useI18n();
 
 <style scoped>
 .pm2-market-wrap {
-  flex: 1;
+  flex: 0 0 auto;
+  width: 100%;
   min-height: 0;
   display: flex;
   flex-direction: column;
-  overflow: auto;
-  padding-right: 4px;
+  overflow: visible;
+  padding-right: 0;
 }
 .pm2-modal-backdrop {
   position: fixed;
@@ -774,8 +775,7 @@ const { t } = useI18n();
   display: flex;
   flex-direction: column;
   gap: 10px;
-  max-height: min(440px, 52vh);
-  overflow: auto;
+  overflow: visible;
 }
 .pm2-market-li {
   display: flex;

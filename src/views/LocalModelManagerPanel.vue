@@ -121,7 +121,8 @@ function onTrustModalVisible(v: boolean): void {
   max-height: min(88vh, 860px);
   display: flex;
   flex-direction: column;
-  overflow: hidden;
+  overflow-x: hidden;
+  overflow-y: auto;
   padding: 12px 14px 14px;
   border-radius: var(--radius-app);
   border: 1px solid var(--border-light);
@@ -163,8 +164,8 @@ function onTrustModalVisible(v: boolean): void {
   background: var(--bg-hover, rgba(255, 255, 255, 0.06));
 }
 .lmm-body {
-  flex: 1;
+  flex: 0 0 auto;
   min-height: 0;
-  overflow: auto;
+  overflow: visible;
 }
 </style>

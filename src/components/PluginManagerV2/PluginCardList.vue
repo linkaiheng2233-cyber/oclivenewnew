@@ -46,8 +46,8 @@ const { t } = useI18n();
   gap: 10px;
   min-width: 0;
   min-height: 0;
-  height: 100%;
-  overflow: hidden;
+  height: auto;
+  overflow: visible;
 }
 .pm2-search {
   padding: 8px 10px;
@@ -56,13 +56,13 @@ const { t } = useI18n();
   background: var(--bg-elevated);
 }
 .pm2-list {
-  flex: 1;
+  flex: 0 0 auto;
   min-height: 0;
   display: flex;
   flex-direction: column;
   gap: 8px;
-  overflow: auto;
-  padding-right: 4px;
+  overflow: visible;
+  padding-right: 0;
 }
 .pm2-empty {
   font-size: 12px;

@@ -51,16 +51,12 @@ const emit = defineEmits<{
   max-height: min(92vh, 920px);
   display: flex;
   flex-direction: column;
-  overflow: hidden;
+  overflow-x: hidden;
+  overflow-y: auto;
   padding: 14px 16px;
   border-radius: var(--radius-app);
   border: 1px solid var(--border-light);
   background: var(--bg-primary);
   box-shadow: var(--shadow-app);
-}
-@media (max-width: 1080px) {
-  .pm2-dialog {
-    overflow: auto;
-  }
 }
 </style>

@@ -661,8 +661,7 @@ onMounted(() => {
   padding-left: 18px;
   font-size: 12px;
   color: var(--text-secondary);
-  max-height: 160px;
-  overflow: auto;
+  overflow: visible;
 }
 .blm-ollama-del-hint {
   margin-top: 10px;
