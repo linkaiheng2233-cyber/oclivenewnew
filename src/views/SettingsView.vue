@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed, onBeforeUnmount, ref, watch } from "vue";
+import { computed, defineAsyncComponent, onBeforeUnmount, ref, watch } from "vue";
 import { useI18n } from "vue-i18n";
 import { confirm } from "@tauri-apps/api/dialog";
 import HelpHint from "../components/HelpHint.vue";
@@ -39,6 +39,7 @@ import {
   type SettingsNavRow,
 } from "../lib/settingsNavKeys";
 import { settingsDeepLinkFooterNote, settingsTierBadge, settingsTierDescription } from "../lib/settingsNavCopy";
+import type { PluginPanelMainTab } from "../stores/pluginStore";
 import { SLOT_SETTINGS_ADVANCED, usePluginStore } from "../stores/pluginStore";
 import { useRoleStore } from "../stores/roleStore";
 import { useUiStore } from "../stores/uiStore";
@@ -73,6 +74,19 @@ const showVueCloudTrustModal = computed(
 
 const unifiedMarketCtaText = computed(() => unifiedOpenPluginMarketCta(uiStore.experimentalPluginManagerV2));
 const unifiedDebugCtaText = computed(() => unifiedOpenDebugCta());
+
+const PluginManagerPanel = defineAsyncComponent(() => import("./PluginManagerPanel.vue"));
+
+function settingsNavToPluginTab(nav: SettingsNavId): PluginPanelMainTab | null {
+  if (nav === SETTINGS_NAV.pluginsLinkInstalled) return "plugins";
+  if (nav === SETTINGS_NAV.pluginsLinkSlots) return "slots";
+  if (nav === SETTINGS_NAV.pluginsLinkBackends) return "backends";
+  return null;
+}
+
+async function openPluginManagerEmbed(tab: PluginPanelMainTab): Promise<void> {
+  await pluginStore.openPanelInSettingsEmbed(tab);
+}
 
 const selectedNavId = ref<SettingsNavId>(SETTINGS_NAV.generalOverview);
 
@@ -171,6 +185,28 @@ watch(
     );
     if (!allowed.has(selectedNavId.value)) {
       selectedNavId.value = firstSelectableSettingsNavId(immersive);
+    }
+  },
+);
+
+watch(
+  () =>
+    [props.visible, selectedNavId.value, pluginStore.panelEmbedHost] as [
+      boolean,
+      SettingsNavId,
+      typeof pluginStore.panelEmbedHost,
+    ],
+  ([visible, nav, host]) => {
+    if (!visible) {
+      if (host === "settings") pluginStore.closePanel();
+      return;
+    }
+    if (host !== "settings") return;
+    const tab = settingsNavToPluginTab(nav);
+    if (tab) {
+      if (pluginStore.panelMainTab !== tab) pluginStore.panelMainTab = tab;
+    } else {
+      pluginStore.closePanel();
     }
   },
 );
@@ -399,37 +435,52 @@ async function onToggleForceIframe(e: Event) {
 
               <div v-show="selectedNavId === SETTINGS_NAV.pluginsLinkInstalled" class="sv-pane-section">
                 <p class="sv-muted">{{ t("settings.nav.lead.pluginsInstalled") }}</p>
-                <button
-                  type="button"
-                  class="sv-btn sv-btn--accent"
-                  @click="emitDeepLink({ kind: 'plugin_manager', tab: 'plugins' })"
-                >
-                  {{ unifiedOpenPluginManagerInstalledCta() }}
-                </button>
+                <div class="sv-btn-row">
+                  <button type="button" class="sv-btn secondary" @click="openPluginManagerEmbed('plugins')">
+                    {{ t("settings.nav.cta.openPluginManagerInPage") }}
+                  </button>
+                  <button
+                    type="button"
+                    class="sv-btn sv-btn--accent"
+                    @click="emitDeepLink({ kind: 'plugin_manager', tab: 'plugins' })"
+                  >
+                    {{ unifiedOpenPluginManagerInstalledCta() }}
+                  </button>
+                </div>
                 <p class="sv-muted sv-foot">{{ settingsDeepLinkFooterNote() }}</p>
               </div>
 
               <div v-show="selectedNavId === SETTINGS_NAV.pluginsLinkSlots" class="sv-pane-section">
                 <p class="sv-muted">{{ t("settings.nav.lead.pluginsSlots") }}</p>
-                <button
-                  type="button"
-                  class="sv-btn sv-btn--accent"
-                  @click="emitDeepLink({ kind: 'plugin_manager', tab: 'slots' })"
-                >
-                  {{ unifiedOpenPluginManagerSlotsCta() }}
-                </button>
+                <div class="sv-btn-row">
+                  <button type="button" class="sv-btn secondary" @click="openPluginManagerEmbed('slots')">
+                    {{ t("settings.nav.cta.openPluginManagerInPage") }}
+                  </button>
+                  <button
+                    type="button"
+                    class="sv-btn sv-btn--accent"
+                    @click="emitDeepLink({ kind: 'plugin_manager', tab: 'slots' })"
+                  >
+                    {{ unifiedOpenPluginManagerSlotsCta() }}
+                  </button>
+                </div>
                 <p class="sv-muted sv-foot">{{ settingsDeepLinkFooterNote() }}</p>
               </div>
 
               <div v-show="selectedNavId === SETTINGS_NAV.pluginsLinkBackends" class="sv-pane-section">
                 <p class="sv-muted">{{ t("settings.nav.lead.pluginsBackends") }}</p>
-                <button
-                  type="button"
-                  class="sv-btn sv-btn--accent"
-                  @click="emitDeepLink({ kind: 'plugin_manager', tab: 'backends' })"
-                >
-                  {{ unifiedOpenPluginManagerBackendsCta() }}
-                </button>
+                <div class="sv-btn-row">
+                  <button type="button" class="sv-btn secondary" @click="openPluginManagerEmbed('backends')">
+                    {{ t("settings.nav.cta.openPluginManagerInPage") }}
+                  </button>
+                  <button
+                    type="button"
+                    class="sv-btn sv-btn--accent"
+                    @click="emitDeepLink({ kind: 'plugin_manager', tab: 'backends' })"
+                  >
+                    {{ unifiedOpenPluginManagerBackendsCta() }}
+                  </button>
+                </div>
                 <p class="sv-muted sv-foot">{{ settingsDeepLinkFooterNote() }}</p>
               </div>
 
@@ -580,6 +631,13 @@ async function onToggleForceIframe(e: Event) {
                 <p class="sv-muted sv-foot">{{ settingsDeepLinkFooterNote() }}</p>
               </div>
             </div>
+          </div>
+
+          <div
+            v-if="pluginStore.panelVisible && pluginStore.panelEmbedHost === 'settings'"
+            class="sv-pm-embed"
+          >
+            <PluginManagerPanel embedded />
           </div>
           </div>
         </div>
@@ -761,6 +819,17 @@ async function onToggleForceIframe(e: Event) {
   background: color-mix(in srgb, var(--accent) 8%, var(--bg-secondary));
   font-size: 12px;
   line-height: 1.5;
+}
+.sv-btn-row {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 10px;
+}
+.sv-pm-embed {
+  margin-top: 8px;
+  padding-top: 14px;
+  border-top: 1px solid var(--border-light);
 }
 .sv-pane-section {
   display: flex;

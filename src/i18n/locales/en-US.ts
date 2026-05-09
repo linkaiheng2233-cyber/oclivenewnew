@@ -523,6 +523,7 @@ export const enUS = {
       },
       cta: {
         openLocalModels: "Open local model manager",
+        openPluginManagerInPage: "Open in this page",
         openMarket: "Open Plugin Market",
         openExpertWorkbench: "Open Expert Models workbench",
         openDebug: "Open Debug panel",
@@ -533,9 +534,10 @@ export const enUS = {
         modelsExpert:
           "Edit expert graphs and apply to sessions inside the classic Plugin Manager “Backends” page—high-impact orchestration.",
         pluginsInstalled:
-          "Use the Plugin Manager “Plugins” tab for installed directory plugins, persist scope, and market shortcuts.",
-        pluginsSlots: "Use the Plugin Manager “Slots” tab to reorder UI slot embeds and previews.",
-        pluginsBackends: "Inspect and adjust plugin_backends modules and session overrides (cloud / local inference entry points).",
+          "Use the Plugin Manager “Plugins” tab for installed directory plugins, persist scope, and market shortcuts. Use “Open in this page” to embed it below Settings, or the primary button for a detached window.",
+        pluginsSlots: "Reorder UI slot embeds on the “Slots” tab—embed below Settings or use a detached window.",
+        pluginsBackends:
+          "Adjust plugin_backends and session overrides on the “Backends” tab (includes the Agent debug dock). Embed in-page or detached.",
         pluginsV2Hub:
           "Slot dashboard, install-from-Git, and session local-Llama binding live in the V2 window—same entry as Oclive Manager (V2) under the top bar “More” menu.",
         marketBrowse: "Browse the community index, install or update plugins, and handle permission prompts (network & trust).",

@@ -507,6 +507,7 @@ export const zhCN = {
       },
       cta: {
         openLocalModels: "打开本机模型管理",
+        openPluginManagerInPage: "在本页打开",
         openMarket: "打开插件市场",
         openExpertWorkbench: "打开专家模型工作台",
         openDebug: "打开调试面板",
@@ -514,9 +515,10 @@ export const zhCN = {
       lead: {
         modelsOllama: "管理本机 GGUF 路径、Ollama 列表与相关说明；与进程和磁盘路径强相关。",
         modelsExpert: "在经典插件管理的「后端」页中编辑专家模型图并应用到会话；属编排与后端高影响能力。",
-        pluginsInstalled: "在插件管理「插件」页调整已安装目录插件、持久化范围与市场入口等。",
-        pluginsSlots: "在插件管理「插槽」页调整各 UI 槽的嵌入顺序与预览。",
-        pluginsBackends: "查看并调整各 plugin_backends 模块与会话覆盖（与云端 / 本地推理入口相关）。",
+        pluginsInstalled:
+          "在插件管理「插件」页调整已安装目录插件、持久化范围与市场入口等。可「在本页打开」嵌于设置下方，或使用右侧按钮在独立窗口操作。",
+        pluginsSlots: "在「插槽」页调整各 UI 槽的嵌入顺序与预览；支持本页嵌套或独立窗口。",
+        pluginsBackends: "在「后端」页调整 plugin_backends 与会话覆盖；Agent 调试台亦在此页。支持本页嵌套或独立窗口。",
         pluginsV2Hub:
           "槽位看板、从 Git 安装插件、会话级本地 Llama 绑定等在 V2 窗内完成；与顶栏「更多」中 Oclive Manager（V2）入口一致。",
         marketBrowse: "浏览社区索引、安装或更新插件，并处理权限同意（与网络与信任模型相关）。",

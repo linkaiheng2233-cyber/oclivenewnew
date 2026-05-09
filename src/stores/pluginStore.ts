@@ -232,9 +232,14 @@ export type PluginPanelMainTab =
   | "backends"
   | "slots";
 
+/** `settings`：插件管理 UI 嵌在设置窗内；`null`：独立全屏层（Teleport 到 body）。 */
+export type PluginPanelEmbedHost = "settings" | null;
+
 export const usePluginStore = defineStore("plugin", {
   state: () => ({
     panelVisible: false,
+    /** 与 `panelVisible` 配合：嵌在 `SettingsView` 内时为 `settings`。 */
+    panelEmbedHost: null as PluginPanelEmbedHost,
     /** V1 插件市场独立弹窗（社区索引/本地导入/安装） */
     marketPanelVisible: false,
     panelMainTab: "plugins" as PluginPanelMainTab,
@@ -300,6 +305,7 @@ export const usePluginStore = defineStore("plugin", {
       }
     },
     async openPanel(tab?: PluginPanelMainTab) {
+      this.panelEmbedHost = null;
       if (tab) {
         this.panelMainTab = tab;
       }
@@ -307,8 +313,17 @@ export const usePluginStore = defineStore("plugin", {
       this.panelVisible = true;
       await this.refresh();
     },
+    /** 设置侧栏「本页打开」：经典插件管理嵌在设置窗底部，不占用独立全屏层。 */
+    async openPanelInSettingsEmbed(tab: PluginPanelMainTab) {
+      this.panelEmbedHost = "settings";
+      this.panelMainTab = tab;
+      this.marketPanelVisible = false;
+      this.panelVisible = true;
+      await this.refresh();
+    },
     async openMarketPanel(): Promise<void> {
       this.panelVisible = false;
+      this.panelEmbedHost = null;
       this.marketPanelVisible = true;
       await this.refresh();
       await this.loadCachedPluginMarket();
@@ -409,6 +424,7 @@ export const usePluginStore = defineStore("plugin", {
     },
     closePanel() {
       this.panelVisible = false;
+      this.panelEmbedHost = null;
     },
     closeMarketPanel() {
       this.marketPanelVisible = false;

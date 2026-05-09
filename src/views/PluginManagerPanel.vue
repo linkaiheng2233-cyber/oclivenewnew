@@ -60,6 +60,14 @@ import { useExpertModelsStore } from "../stores/expertModelsStore";
 
 const ExpertModelsPanel = defineAsyncComponent(() => import("../components/ExpertModels/ExpertModelsPanel.vue"));
 
+const props = withDefaults(
+  defineProps<{
+    /** 为 true 时嵌在设置窗内：不 Teleport 全屏遮罩，不响应背景点击关闭。 */
+    embedded?: boolean;
+  }>(),
+  { embedded: false },
+);
+
 const pluginStore = usePluginStore();
 const roleStore = useRoleStore();
 const expertModelsStore = useExpertModelsStore();
@@ -1549,6 +1557,11 @@ function requestClosePmPanel(): void {
   pluginStore.closePanel();
 }
 
+function onPmBackdropClick(): void {
+  if (props.embedded) return;
+  requestClosePmPanel();
+}
+
 function closePmAndOpenMarket(): void {
   if (expertModelsStore.workbenchDraftDirty) {
     if (!window.confirm(String(t("expertModels.confirm.unsavedWorkbenchClose")))) return;
@@ -1577,14 +1590,14 @@ watch(
 </script>
 
 <template>
-  <Teleport to="body">
+  <Teleport to="body" :disabled="props.embedded">
     <div
       v-if="pluginStore.panelVisible"
-      class="pm-backdrop"
+      :class="props.embedded ? 'pm-embed-outer' : 'pm-backdrop'"
       role="dialog"
       aria-modal="true"
       :aria-label="String(t('pluginManagerV1.ui.dialogLabel'))"
-      @click.self="requestClosePmPanel()"
+      @click.self="onPmBackdropClick"
     >
       <div
         v-if="preflightVisible"
@@ -3195,6 +3208,22 @@ watch(
   justify-content: center;
   padding: 16px;
   background: var(--dialog-backdrop, color-mix(in srgb, #000 45%, transparent));
+}
+.pm-embed-outer {
+  position: relative;
+  z-index: 1;
+  width: 100%;
+  display: flex;
+  flex-direction: column;
+  align-items: stretch;
+  margin-top: 4px;
+  padding: 0;
+  background: transparent;
+}
+.pm-embed-outer .pm-dialog--studio {
+  width: 100%;
+  max-width: 100%;
+  max-height: none;
 }
 .pm-modal-backdrop {
   position: fixed;

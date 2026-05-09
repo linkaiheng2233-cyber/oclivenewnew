@@ -37,6 +37,15 @@
 
 从设置发起深链（本机模型、插件管理、市场、专家工作台、调试）时 **先关闭设置浮层**，再打开目标面板；与既有「从云端区块打开后端」行为一致。侧栏 **V2 管理** 使用 `openPluginV2` 事件，宿主侧 `openPluginManagerV2Preview` 同样会先关设置再打开 V2 窗。
 
+## 第三阶段：经典插件管理「本页嵌套」
+
+| 机制 | 说明 |
+|------|------|
+| `pluginStore.panelEmbedHost` | `null`：由 `App.vue` 挂载 `PluginManagerPanel`（Teleport 全屏层）；`"settings"`：由 `SettingsView` 在设置窗底部挂载 `<PluginManagerPanel embedded />`，`App` 侧不挂载。 |
+| `openPanelInSettingsEmbed(tab)` | 设置「已安装 / 插槽 / 后端」三页中「在本页打开」调用；`openPanel()` 与深链会先 `panelEmbedHost = null` 回到独立窗。 |
+| `PluginManagerPanel` `embedded` | `Teleport` 禁用、根容器为 `pm-embed-outer`，不响应背景点击关闭。 |
+| 关闭 | 设置窗关闭、`openPanel`、深链、或离开三 Tab 侧栏项时 `closePanel()` 会清空 `panelEmbedHost`。 |
+
 ## i18n 前缀
 
 - 侧栏标题：`settings.nav.items.<camelFromId>`（见 `settingsNavKeys.ts` 中 `settingsNavLabelKey`）。

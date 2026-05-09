@@ -1384,7 +1384,7 @@ onBeforeUnmount(() => {
     />
 
     <PluginMarketPanel v-if="pluginStore.marketPanelVisible" />
-    <PluginManagerPanel v-if="pluginStore.panelVisible" />
+    <PluginManagerPanel v-if="pluginStore.panelVisible && pluginStore.panelEmbedHost !== 'settings'" />
     <PluginManagerV2Panel
       v-if="pluginManagerV2Open"
       :visible="true"
