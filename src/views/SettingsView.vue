@@ -19,6 +19,19 @@ import {
   settingsOpenV2PreviewButtonLabel,
   settingsShortcutsHelpHint,
 } from "../lib/pluginManagerEntryCopy";
+import type { SettingsDeepLink } from "../lib/settingsDeepLink";
+import {
+  ALL_SETTINGS_NAV_IDS,
+  SETTINGS_NAV,
+  SETTINGS_NAV_ROWS,
+  filterSettingsNavRows,
+  firstSelectableSettingsNavId,
+  settingsNavLabelKey,
+  type SettingsNavAnyId,
+  type SettingsNavId,
+  type SettingsNavRow,
+} from "../lib/settingsNavKeys";
+import { settingsDeepLinkFooterNote, settingsTierBadge, settingsTierDescription } from "../lib/settingsNavCopy";
 import { SLOT_SETTINGS_ADVANCED, usePluginStore } from "../stores/pluginStore";
 import { useRoleStore } from "../stores/roleStore";
 import { useUiStore } from "../stores/uiStore";
@@ -36,6 +49,8 @@ const emit = defineEmits<{
   close: [];
   /** 在开启 V2 实验开关时，由设置页打开 V2 预览窗 */
   openPluginV2: [];
+  /** 关闭设置并由宿主打开既有面板（插件管理 / 市场 / 本机模型 / 专家工作台 / 调试） */
+  deepLink: [SettingsDeepLink];
 }>();
 
 const pluginStore = usePluginStore();
@@ -45,10 +60,38 @@ const { showToast } = useAppToast();
 const { t } = useI18n();
 const cloudTrust = useCloudLlmTrustModal();
 
-/** Tauri 下用系统 confirm，避免全屏设置层上叠 TrustConsentModal 时 WebView2 按钮点不到。 */
 const showVueCloudTrustModal = computed(
   () => !isTauriWebview() || cloudTrust.visible.value,
 );
+
+const selectedNavId = ref<SettingsNavId>(SETTINGS_NAV.generalOverview);
+
+const visibleNavRows = computed(() =>
+  filterSettingsNavRows(roleStore.interactionImmersive, SETTINGS_NAV_ROWS),
+);
+
+function navLabel(id: SettingsNavAnyId): string {
+  return String(t(`settings.nav.items.${settingsNavLabelKey(id)}`));
+}
+
+function selectNav(id: SettingsNavAnyId): void {
+  if (!ALL_SETTINGS_NAV_IDS.includes(id as SettingsNavId)) return;
+  selectedNavId.value = id as SettingsNavId;
+}
+
+function tierAbbr(row: SettingsNavRow): string {
+  if (!row.tier || row.isGroupLabel) return "";
+  return settingsTierBadge(row.tier);
+}
+
+function tierTitle(row: SettingsNavRow): string {
+  if (!row.tier || row.isGroupLabel) return "";
+  return settingsTierDescription(row.tier);
+}
+
+function emitDeepLink(link: SettingsDeepLink): void {
+  emit("deepLink", link);
+}
 
 async function openCloudLlmTrustReadme(): Promise<void> {
   if (!isTauriWebview()) {
@@ -72,10 +115,6 @@ function onTrustModalVisible(v: boolean): void {
   cloudTrust.visible.value = v;
 }
 
-type SettingsTab = "general" | "plugins";
-
-const tab = ref<SettingsTab>("general");
-
 const marketSourcesLoading = ref(false);
 const marketDeveloperModeLocal = ref(false);
 const marketSourcesText = ref("");
@@ -97,6 +136,8 @@ watch(
   (visible) => {
     if (!visible) {
       cloudTrust.close();
+    } else {
+      selectedNavId.value = firstSelectableSettingsNavId(roleStore.interactionImmersive);
     }
     if (!visible || marketSourcesLoaded.value) return;
     marketSourcesLoaded.value = true;
@@ -110,17 +151,24 @@ onBeforeUnmount(() => {
 });
 
 watch(
-  () => roleStore.interactionPureChat,
-  (pure) => {
-    if (pure && tab.value === "plugins") tab.value = "general";
+  () => [roleStore.interactionImmersive, roleStore.interactionPureChat] as const,
+  () => {
+    const immersive = roleStore.interactionImmersive;
+    const allowed = new Set(
+      filterSettingsNavRows(immersive, SETTINGS_NAV_ROWS)
+        .filter((r) => !r.isGroupLabel)
+        .map((r) => r.id as SettingsNavId),
+    );
+    if (!allowed.has(selectedNavId.value)) {
+      selectedNavId.value = firstSelectableSettingsNavId(immersive);
+    }
   },
 );
 
 async function onOpenPluginBackendsFromCloud(): Promise<void> {
   try {
-    await pluginStore.openPanel("backends");
+    emitDeepLink({ kind: "plugin_manager", tab: "backends" });
     showToast("info", String(t("settings.cloudLlmTrust.toastOpenedBackends")));
-    emit("close");
   } catch (err) {
     showToast("error", err instanceof Error ? err.message : String(err));
   }
@@ -183,236 +231,338 @@ async function onToggleForceIframe(e: Event) {
 <template>
   <Teleport to="body">
     <template v-if="visible">
-    <div
-      class="sv-backdrop"
-      role="dialog"
-      aria-modal="true"
-      :aria-label="t('settings.title')"
-      @click.self="emit('close')"
-    >
-      <div class="sv-dialog" @click.stop>
-        <header class="sv-head">
-          <h2 class="sv-title">{{ t("settings.title") }}</h2>
-          <button
-            type="button"
-            class="sv-close"
-            :aria-label="t('common.close')"
-            @click="emit('close')"
-          >
-            ×
-          </button>
-        </header>
+      <div
+        class="sv-backdrop"
+        role="dialog"
+        aria-modal="true"
+        :aria-label="t('settings.title')"
+        @click.self="emit('close')"
+      >
+        <div class="sv-dialog" @click.stop>
+          <header class="sv-head">
+            <h2 class="sv-title">{{ t("settings.title") }}</h2>
+            <button
+              type="button"
+              class="sv-close"
+              :aria-label="t('common.close')"
+              @click="emit('close')"
+            >
+              ×
+            </button>
+          </header>
 
-        <nav class="sv-nav" :aria-label="t('settings.sectionsNavLabel')">
-          <button
-            type="button"
-            class="sv-nav-btn"
-            :aria-current="tab === 'general' ? 'page' : undefined"
-            @click="tab = 'general'"
-          >
-            {{ t("settings.tabs.general") }}
-          </button>
-          <button
-            v-if="roleStore.interactionImmersive"
-            type="button"
-            class="sv-nav-btn"
-            :aria-current="tab === 'plugins' ? 'page' : undefined"
-            @click="tab = 'plugins'"
-          >
-            {{ t("settings.tabs.plugins") }}
-          </button>
-        </nav>
+          <div class="sv-shell">
+            <nav class="sv-tree" :aria-label="t('settings.sectionsNavLabel')">
+              <template v-for="(row, idx) in visibleNavRows" :key="`${row.id}-${idx}`">
+                <div
+                  v-if="row.isGroupLabel"
+                  class="sv-tree-group"
+                  :class="{ 'sv-tree-group--indented': row.depth === 1 }"
+                >
+                  {{ navLabel(row.id) }}
+                </div>
+                <button
+                  v-else
+                  type="button"
+                  class="sv-tree-btn"
+                  :class="{ 'sv-tree-btn--depth1': row.depth === 1 }"
+                  :aria-current="selectedNavId === row.id ? 'page' : undefined"
+                  @click="selectNav(row.id)"
+                >
+                  <span class="sv-tree-btn-label">{{ navLabel(row.id) }}</span>
+                  <abbr
+                    v-if="row.tier"
+                    class="sv-tier"
+                    :title="tierTitle(row)"
+                  >{{ tierAbbr(row) }}</abbr>
+                </button>
+              </template>
+            </nav>
 
-        <div v-show="tab === 'general'" class="sv-body">
-          <p class="sv-lead" v-html="settingsGeneralLeadHtml()" />
-          <p v-if="roleStore.interactionPureChat" class="sv-boundary sv-muted">
-            {{ t("settings.pureChatBoundary") }}
-          </p>
-          <section v-if="roleStore.interactionImmersive" class="sv-section">
-            <div class="sv-row-h">
-              <span class="sv-label">{{ t("settings.shortcuts.label") }}</span>
-              <HelpHint :text="settingsShortcutsHelpHint()" />
-            </div>
-            <p class="sv-muted">
-              {{ t("settings.shortcuts.immersiveHint") }}
-            </p>
-          </section>
-          <section class="sv-section">
-            <div class="sv-row-h">
-              <span class="sv-label">{{ t("settings.language.label") }}</span>
-            </div>
-            <div class="sv-row-controls">
-              <select
-                class="sv-select"
-                :value="uiStore.languagePref"
-                @change="uiStore.setLanguagePref(($event.target as HTMLSelectElement).value as LanguagePref)"
-              >
-                <option value="system">{{ t("settings.language.options.system") }}</option>
-                <option value="zh-CN">{{ t("settings.language.options.zhCN") }}</option>
-                <option value="en-US">{{ t("settings.language.options.enUS") }}</option>
-              </select>
-              <p class="sv-muted">{{ t("settings.language.hint") }}</p>
-            </div>
-          </section>
+            <div class="sv-pane">
+              <div v-show="selectedNavId === SETTINGS_NAV.generalOverview" class="sv-pane-section">
+                <p class="sv-lead" v-html="settingsGeneralLeadHtml()" />
+                <p v-if="roleStore.interactionPureChat" class="sv-boundary sv-muted">
+                  {{ t("settings.pureChatBoundary") }}
+                </p>
+                <p v-if="roleStore.interactionPureChat" class="sv-boundary-foot sv-muted">
+                  {{ t("settings.pureChatMoreInImmersive") }}
+                </p>
+              </div>
 
-          <section class="sv-section sv-cloud-section">
-            <h3 class="sv-h3">{{ t("settings.cloudLlmTrust.sectionTitle") }}</h3>
-            <p class="sv-muted">{{ t("settings.cloudLlmTrust.sectionLead") }}</p>
-            <div class="sv-cloud-card">
-              <div class="sv-cloud-card-h">{{ t("settings.cloudLlmTrust.envTitle") }}</div>
-              <ul class="sv-cloud-env-list">
-                <li>{{ t("settings.cloudLlmTrust.envLineBase") }}</li>
-                <li>{{ t("settings.cloudLlmTrust.envLineKey") }}</li>
-                <li>{{ t("settings.cloudLlmTrust.envLineModel") }}</li>
-                <li>{{ t("settings.cloudLlmTrust.envLineTimeout") }}</li>
-              </ul>
-              <CloudLlmQuickSetup />
-            </div>
-            <div class="sv-cloud-actions-row">
-              <button type="button" class="sv-btn sv-btn--accent" @click="openCloudLlmTrustReadme">
-                {{ t("settings.cloudLlmTrust.reviewCta") }}
-              </button>
-              <button type="button" class="sv-btn" @click="onOpenPluginBackendsFromCloud">
-                {{ t("settings.cloudLlmTrust.openBackendsCta") }}
-              </button>
-            </div>
-          </section>
+              <div v-show="selectedNavId === SETTINGS_NAV.generalLanguage" class="sv-pane-section">
+                <section class="sv-section">
+                  <div class="sv-row-h">
+                    <span class="sv-label">{{ t("settings.language.label") }}</span>
+                  </div>
+                  <div class="sv-row-controls">
+                    <select
+                      class="sv-select"
+                      :value="uiStore.languagePref"
+                      @change="uiStore.setLanguagePref(($event.target as HTMLSelectElement).value as LanguagePref)"
+                    >
+                      <option value="system">{{ t("settings.language.options.system") }}</option>
+                      <option value="zh-CN">{{ t("settings.language.options.zhCN") }}</option>
+                      <option value="en-US">{{ t("settings.language.options.enUS") }}</option>
+                    </select>
+                    <p class="sv-muted">{{ t("settings.language.hint") }}</p>
+                  </div>
+                </section>
+              </div>
 
-          <section v-if="roleStore.interactionImmersive" class="sv-section">
-            <div class="sv-row-h">
-              <span class="sv-label">{{ t("settings.experimental.label") }}</span>
-              <HelpHint :text="settingsExperimentalSectionHelpHint()" />
-            </div>
-            <label class="sv-toggle-row">
-              <input
-                type="checkbox"
-                :checked="uiStore.experimentalPluginManagerV2 === true"
-                @change="uiStore.setExperimentalPluginManagerV2(($event.target as HTMLInputElement).checked)"
-              />
-              <span class="sv-toggle-text">
-                <strong>{{ t("pluginManager.entry.settingsExperimentalToggleTitle") }}</strong>
-                <span class="sv-muted sv-toggle-desc" v-html="settingsExperimentalToggleDescriptionHtml()" />
-              </span>
-            </label>
-            <div v-if="uiStore.experimentalPluginManagerV2" class="sv-v2-launch">
-              <button type="button" class="sv-v2-launch-btn" @click="emit('openPluginV2')">
-                {{ settingsOpenV2PreviewButtonLabel() }}
-              </button>
-            </div>
-          </section>
-          <section v-if="roleStore.interactionImmersive" class="sv-section">
-            <h3 class="sv-h3">{{ t("settings.advancedSlot.title") }}</h3>
-            <p class="sv-muted">{{ t("settings.advancedSlot.hint") }}</p>
-            <PluginSlotEmbed
-              :slot-name="SLOT_SETTINGS_ADVANCED"
-              :aria-label="String(t('settings.advancedSlot.aria'))"
-              :bootstrap-epoch="pluginStore.bootstrapEpoch"
-            />
-          </section>
+              <div v-show="selectedNavId === SETTINGS_NAV.shortcutsMain" class="sv-pane-section">
+                <section class="sv-section">
+                  <div class="sv-row-h">
+                    <span class="sv-label">{{ t("settings.shortcuts.label") }}</span>
+                    <HelpHint :text="settingsShortcutsHelpHint()" />
+                  </div>
+                  <p class="sv-muted">
+                    {{ t("settings.shortcuts.immersiveHint") }}
+                  </p>
+                </section>
+              </div>
 
-          <section class="sv-section">
-            <div class="sv-row-h">
-              <span class="sv-label">{{ t("settings.security.label") }}</span>
-            </div>
-            <label class="sv-toggle-row">
-              <input
-                type="checkbox"
-                :checked="pluginStore.pluginState.force_iframe_mode === true"
-                @change="onToggleForceIframe"
-              />
-              <span class="sv-toggle-text">
-                <strong>{{ t("settings.security.forceIframe.title") }}</strong>
-                <span class="sv-muted sv-toggle-desc">
-                  {{ t("settings.security.forceIframe.hint") }}
-                </span>
-              </span>
-            </label>
-          </section>
+              <div v-show="selectedNavId === SETTINGS_NAV.modelsCloud" class="sv-pane-section">
+                <section class="sv-section sv-cloud-section">
+                  <h3 class="sv-h3">{{ t("settings.cloudLlmTrust.sectionTitle") }}</h3>
+                  <p class="sv-muted">{{ t("settings.cloudLlmTrust.sectionLead") }}</p>
+                  <div class="sv-cloud-card">
+                    <div class="sv-cloud-card-h">{{ t("settings.cloudLlmTrust.envTitle") }}</div>
+                    <ul class="sv-cloud-env-list">
+                      <li>{{ t("settings.cloudLlmTrust.envLineBase") }}</li>
+                      <li>{{ t("settings.cloudLlmTrust.envLineKey") }}</li>
+                      <li>{{ t("settings.cloudLlmTrust.envLineModel") }}</li>
+                      <li>{{ t("settings.cloudLlmTrust.envLineTimeout") }}</li>
+                    </ul>
+                    <CloudLlmQuickSetup />
+                  </div>
+                  <div class="sv-cloud-actions-row">
+                    <button type="button" class="sv-btn sv-btn--accent" @click="openCloudLlmTrustReadme">
+                      {{ t("settings.cloudLlmTrust.reviewCta") }}
+                    </button>
+                    <button type="button" class="sv-btn" @click="onOpenPluginBackendsFromCloud">
+                      {{ t("settings.cloudLlmTrust.openBackendsCta") }}
+                    </button>
+                  </div>
+                </section>
+              </div>
 
-          <section v-if="roleStore.interactionImmersive" class="sv-section">
-            <div class="sv-row-h">
-              <span class="sv-label">{{ t("settings.plugins.devMode.sectionLabel") }}</span>
-              <HelpHint
-                :paragraphs="[
-                  t('settings.plugins.devMode.help.p1'),
-                  t('settings.plugins.devMode.help.p2'),
-                ]"
-              />
-            </div>
-            <label class="sv-toggle-row">
-              <input
-                type="checkbox"
-                :disabled="marketSourcesLoading"
-                :checked="marketDeveloperModeLocal === true"
-                @change="onToggleMarketDeveloperMode"
-              />
-              <span class="sv-toggle-text">
-                <strong>{{ t("settings.plugins.devMode.title") }}</strong>
-                <span class="sv-muted sv-toggle-desc">
-                  {{ t("settings.plugins.devMode.hint") }}
-                </span>
-              </span>
-            </label>
-            <div v-if="marketDeveloperModeLocal" class="sv-dev-box">
-              <p class="sv-muted">
-                {{ t("settings.plugins.sources.hint") }}
-              </p>
-              <textarea
-                v-model="marketSourcesText"
-                class="sv-textarea"
-                rows="4"
-                spellcheck="false"
-                placeholder="https://example.com/plugins.json"
-              />
-              <div class="sv-row-actions">
+              <div v-show="selectedNavId === SETTINGS_NAV.modelsOllama" class="sv-pane-section">
+                <p class="sv-muted">{{ t("settings.nav.lead.modelsOllama") }}</p>
+                <button type="button" class="sv-btn sv-btn--accent" @click="emitDeepLink({ kind: 'local_models' })">
+                  {{ t("settings.nav.cta.openLocalModels") }}
+                </button>
+                <p class="sv-muted sv-foot">{{ settingsDeepLinkFooterNote() }}</p>
+              </div>
+
+              <div v-show="selectedNavId === SETTINGS_NAV.modelsExpert" class="sv-pane-section">
+                <p class="sv-muted">{{ t("settings.nav.lead.modelsExpert") }}</p>
                 <button
                   type="button"
-                  class="sv-btn"
-                  :disabled="marketSourcesLoading"
-                  @click="onSaveMarketSources"
+                  class="sv-btn sv-btn--accent"
+                  @click="emitDeepLink({ kind: 'expert_workbench', draftMode: 'effective' })"
                 >
-                  {{ t("settings.plugins.sources.saveButton") }}
+                  {{ t("settings.nav.cta.openExpertWorkbench") }}
                 </button>
+                <p class="sv-muted sv-foot">{{ settingsDeepLinkFooterNote() }}</p>
+              </div>
+
+              <div v-show="selectedNavId === SETTINGS_NAV.pluginsDirectory" class="sv-pane-section">
+                <section class="sv-section">
+                  <div class="sv-row-h">
+                    <h3 class="sv-h3">{{ t("settings.plugins.directorySlot.title") }}</h3>
+                    <HelpHint
+                      :paragraphs="[
+                        t('settings.plugins.directorySlot.help.p1'),
+                        t('settings.plugins.directorySlot.help.p2'),
+                      ]"
+                    />
+                  </div>
+                  <PluginSettingsPanelSlots :bootstrap-epoch="pluginStore.bootstrapEpoch" />
+                </section>
+              </div>
+
+              <div v-show="selectedNavId === SETTINGS_NAV.pluginsHotkeys" class="sv-pane-section">
+                <HotkeySettingsSection />
+              </div>
+
+              <div v-show="selectedNavId === SETTINGS_NAV.pluginsLinkInstalled" class="sv-pane-section">
+                <p class="sv-muted">{{ t("settings.nav.lead.pluginsInstalled") }}</p>
+                <button
+                  type="button"
+                  class="sv-btn sv-btn--accent"
+                  @click="emitDeepLink({ kind: 'plugin_manager', tab: 'plugins' })"
+                >
+                  {{ t("settings.nav.cta.openPluginManagerPlugins") }}
+                </button>
+                <p class="sv-muted sv-foot">{{ settingsDeepLinkFooterNote() }}</p>
+              </div>
+
+              <div v-show="selectedNavId === SETTINGS_NAV.pluginsLinkSlots" class="sv-pane-section">
+                <p class="sv-muted">{{ t("settings.nav.lead.pluginsSlots") }}</p>
+                <button
+                  type="button"
+                  class="sv-btn sv-btn--accent"
+                  @click="emitDeepLink({ kind: 'plugin_manager', tab: 'slots' })"
+                >
+                  {{ t("settings.nav.cta.openPluginManagerSlots") }}
+                </button>
+                <p class="sv-muted sv-foot">{{ settingsDeepLinkFooterNote() }}</p>
+              </div>
+
+              <div v-show="selectedNavId === SETTINGS_NAV.pluginsLinkBackends" class="sv-pane-section">
+                <p class="sv-muted">{{ t("settings.nav.lead.pluginsBackends") }}</p>
+                <button
+                  type="button"
+                  class="sv-btn sv-btn--accent"
+                  @click="emitDeepLink({ kind: 'plugin_manager', tab: 'backends' })"
+                >
+                  {{ t("settings.nav.cta.openPluginManagerBackends") }}
+                </button>
+                <p class="sv-muted sv-foot">{{ settingsDeepLinkFooterNote() }}</p>
+              </div>
+
+              <div v-show="selectedNavId === SETTINGS_NAV.marketBrowse" class="sv-pane-section">
+                <p class="sv-muted">{{ t("settings.nav.lead.marketBrowse") }}</p>
+                <button type="button" class="sv-btn sv-btn--accent" @click="emitDeepLink({ kind: 'plugin_market' })">
+                  {{ t("settings.nav.cta.openMarket") }}
+                </button>
+                <p class="sv-muted sv-foot">{{ settingsDeepLinkFooterNote() }}</p>
+              </div>
+
+              <div v-show="selectedNavId === SETTINGS_NAV.securityHost" class="sv-pane-section">
+                <section class="sv-section">
+                  <div class="sv-row-h">
+                    <span class="sv-label">{{ t("settings.security.label") }}</span>
+                  </div>
+                  <label class="sv-toggle-row">
+                    <input
+                      type="checkbox"
+                      :checked="pluginStore.pluginState.force_iframe_mode === true"
+                      @change="onToggleForceIframe"
+                    />
+                    <span class="sv-toggle-text">
+                      <strong>{{ t("settings.security.forceIframe.title") }}</strong>
+                      <span class="sv-muted sv-toggle-desc">
+                        {{ t("settings.security.forceIframe.hint") }}
+                      </span>
+                    </span>
+                  </label>
+                </section>
+              </div>
+
+              <div v-show="selectedNavId === SETTINGS_NAV.advancedExperimental" class="sv-pane-section">
+                <section class="sv-section">
+                  <div class="sv-row-h">
+                    <span class="sv-label">{{ t("settings.experimental.label") }}</span>
+                    <HelpHint :text="settingsExperimentalSectionHelpHint()" />
+                  </div>
+                  <label class="sv-toggle-row">
+                    <input
+                      type="checkbox"
+                      :checked="uiStore.experimentalPluginManagerV2 === true"
+                      @change="uiStore.setExperimentalPluginManagerV2(($event.target as HTMLInputElement).checked)"
+                    />
+                    <span class="sv-toggle-text">
+                      <strong>{{ t("pluginManager.entry.settingsExperimentalToggleTitle") }}</strong>
+                      <span class="sv-muted sv-toggle-desc" v-html="settingsExperimentalToggleDescriptionHtml()" />
+                    </span>
+                  </label>
+                  <div v-if="uiStore.experimentalPluginManagerV2" class="sv-v2-launch">
+                    <button type="button" class="sv-v2-launch-btn" @click="emit('openPluginV2')">
+                      {{ settingsOpenV2PreviewButtonLabel() }}
+                    </button>
+                  </div>
+                </section>
+              </div>
+
+              <div v-show="selectedNavId === SETTINGS_NAV.advancedEmbed" class="sv-pane-section">
+                <section class="sv-section">
+                  <h3 class="sv-h3">{{ t("settings.advancedSlot.title") }}</h3>
+                  <p class="sv-muted">{{ t("settings.advancedSlot.hint") }}</p>
+                  <PluginSlotEmbed
+                    :slot-name="SLOT_SETTINGS_ADVANCED"
+                    :aria-label="String(t('settings.advancedSlot.aria'))"
+                    :bootstrap-epoch="pluginStore.bootstrapEpoch"
+                  />
+                </section>
+              </div>
+
+              <div v-show="selectedNavId === SETTINGS_NAV.advancedMarketSources" class="sv-pane-section">
+                <section class="sv-section">
+                  <div class="sv-row-h">
+                    <span class="sv-label">{{ t("settings.plugins.devMode.sectionLabel") }}</span>
+                    <HelpHint
+                      :paragraphs="[
+                        t('settings.plugins.devMode.help.p1'),
+                        t('settings.plugins.devMode.help.p2'),
+                      ]"
+                    />
+                  </div>
+                  <label class="sv-toggle-row">
+                    <input
+                      type="checkbox"
+                      :disabled="marketSourcesLoading"
+                      :checked="marketDeveloperModeLocal === true"
+                      @change="onToggleMarketDeveloperMode"
+                    />
+                    <span class="sv-toggle-text">
+                      <strong>{{ t("settings.plugins.devMode.title") }}</strong>
+                      <span class="sv-muted sv-toggle-desc">
+                        {{ t("settings.plugins.devMode.hint") }}
+                      </span>
+                    </span>
+                  </label>
+                  <div v-if="marketDeveloperModeLocal" class="sv-dev-box">
+                    <p class="sv-muted">
+                      {{ t("settings.plugins.sources.hint") }}
+                    </p>
+                    <textarea
+                      v-model="marketSourcesText"
+                      class="sv-textarea"
+                      rows="4"
+                      spellcheck="false"
+                      placeholder="https://example.com/plugins.json"
+                    />
+                    <div class="sv-row-actions">
+                      <button
+                        type="button"
+                        class="sv-btn"
+                        :disabled="marketSourcesLoading"
+                        @click="onSaveMarketSources"
+                      >
+                        {{ t("settings.plugins.sources.saveButton") }}
+                      </button>
+                    </div>
+                  </div>
+                </section>
+              </div>
+
+              <div v-show="selectedNavId === SETTINGS_NAV.diagnosticsDebug" class="sv-pane-section">
+                <p class="sv-muted">{{ t("settings.nav.lead.diagnosticsDebug") }}</p>
+                <button type="button" class="sv-btn sv-btn--accent" @click="emitDeepLink({ kind: 'debug_panel' })">
+                  {{ t("settings.nav.cta.openDebug") }}
+                </button>
+                <p class="sv-muted sv-foot">{{ settingsDeepLinkFooterNote() }}</p>
               </div>
             </div>
-          </section>
-          <p v-if="roleStore.interactionPureChat" class="sv-boundary-foot sv-muted">
-            {{ t("settings.pureChatMoreInImmersive") }}
-          </p>
-        </div>
-
-        <div v-show="tab === 'plugins'" class="sv-body">
-          <section class="sv-section">
-            <div class="sv-row-h">
-              <h3 class="sv-h3">{{ t("settings.plugins.directorySlot.title") }}</h3>
-              <HelpHint
-                :paragraphs="[
-                  t('settings.plugins.directorySlot.help.p1'),
-                  t('settings.plugins.directorySlot.help.p2'),
-                ]"
-              />
-            </div>
-            <PluginSettingsPanelSlots :bootstrap-epoch="pluginStore.bootstrapEpoch" />
-          </section>
-
-          <HotkeySettingsSection />
+          </div>
         </div>
       </div>
-    </div>
-    <TrustConsentModal
-      v-if="showVueCloudTrustModal"
-      :model-value="cloudTrust.visible"
-      :title="cloudTrust.modalTitle"
-      :subtitle="cloudTrust.modalSubtitle"
-      :trust-summary-title="cloudTrust.trustSummaryTitle"
-      :trust-summary="cloudTrust.trustSummaryBody"
-      :hint="cloudTrust.modalHint"
-      :capabilities="cloudTrust.capabilities"
-      :confirm-label="cloudTrust.confirmLabel"
-      variant="trust"
-      require-explicit-dismiss
-      @update:model-value="onTrustModalVisible"
-    />
+      <TrustConsentModal
+        v-if="showVueCloudTrustModal"
+        :model-value="cloudTrust.visible"
+        :title="cloudTrust.modalTitle"
+        :subtitle="cloudTrust.modalSubtitle"
+        :trust-summary-title="cloudTrust.trustSummaryTitle"
+        :trust-summary="cloudTrust.trustSummaryBody"
+        :hint="cloudTrust.modalHint"
+        :capabilities="cloudTrust.capabilities"
+        :confirm-label="cloudTrust.confirmLabel"
+        variant="trust"
+        require-explicit-dismiss
+        @update:model-value="onTrustModalVisible"
+      />
     </template>
   </Teleport>
 </template>
@@ -430,9 +580,9 @@ async function onToggleForceIframe(e: Event) {
 }
 .sv-dialog {
   position: relative;
-  width: min(640px, 100%);
-  max-height: min(90vh, 800px);
-  overflow: auto;
+  width: min(920px, 100%);
+  max-height: min(90vh, 820px);
+  overflow: hidden;
   padding: 16px 18px 18px;
   border-radius: var(--radius-app);
   border: 1px solid var(--border-light);
@@ -447,6 +597,7 @@ async function onToggleForceIframe(e: Event) {
   align-items: center;
   justify-content: space-between;
   padding-right: 8px;
+  flex-shrink: 0;
 }
 .sv-title {
   margin: 0;
@@ -466,29 +617,100 @@ async function onToggleForceIframe(e: Event) {
 .sv-close:hover {
   background: color-mix(in srgb, var(--border-light) 60%, transparent);
 }
-.sv-nav {
+.sv-shell {
   display: flex;
-  gap: 8px;
-  border-bottom: 1px solid var(--border-light);
-  padding-bottom: 8px;
+  gap: 14px;
+  min-height: 0;
+  flex: 1;
+  align-items: stretch;
 }
-.sv-nav-btn {
-  padding: 6px 12px;
+.sv-tree {
+  width: 220px;
+  flex-shrink: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  overflow: auto;
+  padding-right: 10px;
+  border-right: 1px solid var(--border-light);
+  max-height: min(78vh, 720px);
+}
+.sv-tree-group {
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: var(--text-secondary);
+  margin-top: 10px;
+  margin-bottom: 2px;
+  padding: 4px 8px 2px;
+}
+.sv-tree-group:first-child {
+  margin-top: 0;
+}
+.sv-tree-group--indented {
+  padding-left: 12px;
+}
+.sv-tree-btn {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  width: 100%;
+  text-align: left;
+  padding: 7px 10px;
   font-size: 13px;
+  line-height: 1.35;
   border: 1px solid transparent;
-  border-radius: 6px;
+  border-radius: 8px;
   background: transparent;
   cursor: pointer;
   color: var(--text-secondary);
 }
-.sv-nav-btn[aria-current="page"] {
+.sv-tree-btn--depth1 {
+  padding-left: 16px;
+  font-size: 12px;
+}
+.sv-tree-btn:hover {
+  background: color-mix(in srgb, var(--border-light) 45%, transparent);
+  color: var(--text-primary);
+}
+.sv-tree-btn[aria-current="page"] {
   border-color: var(--border-light);
   background: var(--bg-elevated);
   color: var(--text-primary);
 }
-.sv-body {
+.sv-tree-btn-label {
   flex: 1;
-  min-height: 0;
+  min-width: 0;
+}
+.sv-tier {
+  flex-shrink: 0;
+  font-size: 10px;
+  font-weight: 700;
+  text-decoration: none;
+  padding: 2px 5px;
+  border-radius: 4px;
+  border: 1px solid var(--border-light);
+  color: var(--text-secondary);
+  cursor: help;
+}
+.sv-pane {
+  flex: 1;
+  min-width: 0;
+  overflow: auto;
+  max-height: min(78vh, 720px);
+  padding-right: 4px;
+}
+.sv-pane-section {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  padding-bottom: 8px;
+}
+.sv-foot {
+  margin-top: 4px;
+  font-size: 11px;
 }
 .sv-lead {
   margin: 0 0 12px;

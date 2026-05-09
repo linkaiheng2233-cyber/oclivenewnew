@@ -495,6 +495,70 @@ export const enUS = {
         },
       },
     },
+    nav: {
+      deepLinkFooterNote: "This closes Settings and opens the destination panel.",
+      items: {
+        generalOverview: "Overview",
+        generalLanguage: "Language & region",
+        shortcutsMain: "Shortcuts (notes)",
+        catModels: "Models",
+        modelsCloud: "Cloud model & secrets",
+        modelsOllama: "Local models & Ollama",
+        modelsExpert: "Expert models workbench",
+        catPlugins: "Plugins & extensions",
+        pluginsDirectory: "Directory plugins · settings.panel slot",
+        pluginsHotkeys: "Custom shortcuts",
+        pluginsLinkInstalled: "Installed & market",
+        pluginsLinkSlots: "UI slot order",
+        pluginsLinkBackends: "Backends (plugin_backends)",
+        marketBrowse: "Plugin market",
+        securityHost: "Security & privacy",
+        catAdvanced: "Advanced & experimental",
+        advancedExperimental: "Plugin Manager V2 & experiments",
+        advancedEmbed: "Extension slot (settings.advanced)",
+        advancedMarketSources: "Market developer mode & index sources",
+        diagnosticsDebug: "Diagnostics & debug",
+      },
+      cta: {
+        openLocalModels: "Open local model manager",
+        openPluginManagerPlugins: "Open Plugin Manager (Installed)",
+        openPluginManagerSlots: "Open Plugin Manager (Slots tab)",
+        openPluginManagerBackends: "Open Plugin Manager (Backends)",
+        openMarket: "Open Plugin Market",
+        openExpertWorkbench: "Open Expert Models workbench",
+        openDebug: "Open Debug panel",
+      },
+      lead: {
+        modelsOllama:
+          "Manage local GGUF paths, Ollama listings, and related notes—tied to processes and disk paths.",
+        modelsExpert:
+          "Edit expert graphs and apply to sessions inside the classic Plugin Manager “Backends” page—high-impact orchestration.",
+        pluginsInstalled:
+          "Use the Plugin Manager “Plugins” tab for installed directory plugins, persist scope, and market shortcuts.",
+        pluginsSlots: "Use the Plugin Manager “Slots” tab to reorder UI slot embeds and previews.",
+        pluginsBackends: "Inspect and adjust plugin_backends modules and session overrides (cloud / local inference entry points).",
+        marketBrowse: "Browse the community index, install or update plugins, and handle permission prompts (network & trust).",
+        diagnosticsDebug: "Inspect runtime events, role pack info, and debug slot embeds—best for troubleshooting.",
+      },
+    },
+    tiers: {
+      L1: {
+        badge: "L1",
+        description: "Appearance & routine preferences—low risk, easy to understand.",
+      },
+      L2: {
+        badge: "L2",
+        description: "Interaction & host behavior—mostly reversible, but can change daily habits.",
+      },
+      L3: {
+        badge: "L3",
+        description: "Role data, directory plugins, and market configuration—high impact, steeper learning curve.",
+      },
+      L4: {
+        badge: "L4",
+        description: "Kernel & runtime contracts—model backends, networking, subprocesses, and strongest security.",
+      },
+    },
   },
   pluginManager: {
     entry: {
