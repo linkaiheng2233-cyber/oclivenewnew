@@ -3,7 +3,7 @@ import {
   moreMenuPluginButtonLabel,
   moreMenuTileHelpText,
 } from "../lib/pluginManagerEntryCopy";
-import { usePluginStore } from "../stores/pluginStore";
+import { usePluginStore, type PluginPanelMainTab } from "../stores/pluginStore";
 import { useUiStore } from "../stores/uiStore";
 
 export interface UsePluginManagerWindowOptions {
@@ -84,6 +84,45 @@ export function usePluginManagerWindow(opts: UsePluginManagerWindowOptions) {
     opts.closeSettingsView?.();
   }
 
+  /**
+   * 从设置等入口「确保打开」管理面板：不 toggle 关闭已打开的 V1 目标 Tab。
+   * V2 实验开启且无具体 Tab 时打开 V2；若指定 Tab（含 backends）则关闭 V2 并打开 V1 对应页。
+   */
+  function ensureOpenPluginManagerPanel(tab?: PluginPanelMainTab): void {
+    pluginMarketV2Open.value = false;
+    if (uiStore.experimentalPluginManagerV2) {
+      if (tab === undefined) {
+        pluginStore.closePanel();
+        pluginStore.closeMarketPanel();
+        pluginManagerV2Open.value = true;
+        opts.closeMoreMenu();
+        return;
+      }
+      pluginManagerV2Open.value = false;
+      void pluginStore.openPanel(tab);
+      opts.closeMoreMenu();
+      return;
+    }
+    pluginManagerV2Open.value = false;
+    void pluginStore.openPanel(tab);
+    opts.closeMoreMenu();
+  }
+
+  /** 从设置等入口确保打开市场面板（不依赖 toggle 语义）。 */
+  function ensureOpenPluginMarketPanel(): void {
+    pluginManagerV2Open.value = false;
+    if (uiStore.experimentalPluginManagerV2) {
+      pluginStore.closePanel();
+      pluginStore.closeMarketPanel();
+      pluginMarketV2Open.value = true;
+      opts.closeMoreMenu();
+      return;
+    }
+    pluginStore.closePanel();
+    void pluginStore.openMarketPanel();
+    opts.closeMoreMenu();
+  }
+
   watch(
     () => uiStore.experimentalPluginManagerV2,
     (v) => {
@@ -100,6 +139,8 @@ export function usePluginManagerWindow(opts: UsePluginManagerWindowOptions) {
     openPluginManagerPanel,
     openPluginMarketPanel,
     openPluginManagerV2Preview,
+    ensureOpenPluginManagerPanel,
+    ensureOpenPluginMarketPanel,
     pluginManagerMoreBtnLabel,
     settingsEntryMoreHelp,
   };

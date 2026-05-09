@@ -21,6 +21,7 @@ import { useNarrativeScene } from "./composables/useNarrativeScene";
 import { useSceneDestination } from "./composables/useSceneDestination";
 import { usePackUiTheme } from "./composables/useTheme";
 import { usePluginManagerWindow } from "./composables/usePluginManagerWindow";
+import type { SettingsDeepLink } from "./lib/settingsDeepLink";
 import { hostEventBus } from "./lib/hostEventBus";
 import { chordModifierKeyDown, isMacLikePlatform } from "./lib/shortcutDisplay";
 import {
@@ -202,6 +203,8 @@ const {
   openPluginManagerPanel,
   openPluginMarketPanel,
   openPluginManagerV2Preview,
+  ensureOpenPluginManagerPanel,
+  ensureOpenPluginMarketPanel,
   pluginManagerMoreBtnLabel,
   settingsEntryMoreHelp,
 } = usePluginManagerWindow({
@@ -247,6 +250,30 @@ function openShortcutHelp(): void {
 function openSettingsView(): void {
   settingsViewOpen.value = true;
   topMoreOpen.value = false;
+}
+
+function onSettingsDeepLink(link: SettingsDeepLink): void {
+  settingsViewOpen.value = false;
+  topMoreOpen.value = false;
+  switch (link.kind) {
+    case "local_models":
+      localModelManagerOpen.value = true;
+      break;
+    case "plugin_manager":
+      ensureOpenPluginManagerPanel(link.tab);
+      break;
+    case "plugin_market":
+      ensureOpenPluginMarketPanel();
+      break;
+    case "expert_workbench":
+      pluginStore.requestOpenExpertModelsWorkbench({
+        draftMode: link.draftMode ?? "effective",
+      });
+      break;
+    case "debug_panel":
+      if (!debugStore.visible) debugStore.toggle();
+      break;
+  }
 }
 
 async function onRevealRolePackFolder(): Promise<void> {
@@ -1391,6 +1418,7 @@ onBeforeUnmount(() => {
       :visible="settingsViewOpen"
       @close="settingsViewOpen = false"
       @open-plugin-v2="openPluginManagerV2Preview"
+      @deep-link="onSettingsDeepLink"
     />
 
     <HotkeyHost />

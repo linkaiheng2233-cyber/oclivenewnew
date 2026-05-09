@@ -1,5 +1,8 @@
 import { i18n } from "../i18n";
 
+/** 设置 L1–L4 分级文案真源在 `settingsNavCopy`；此处再导出便于与插件入口同仓检索。 */
+export { settingsTierBadge, settingsTierDescription } from "./settingsNavCopy";
+
 /**
  * 插件管理入口（V1 专业面板 / V2 预览）与设置里实验开关相关的**用户可见文案**单源。
  * 避免 App / 设置 / 快捷键说明三处漂移。
