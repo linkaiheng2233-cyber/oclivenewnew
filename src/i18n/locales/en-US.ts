@@ -542,9 +542,9 @@ export const enUS = {
         catModels: "Models",
         modelsCloud: "Cloud model & secrets",
         modelsOllama: "Local models & Ollama",
-        modelsExpert: "Expert models workbench",
         catData: "Roles & data",
         dataRoles: "Role management",
+        dataExpertModels: "Expert model settings",
         catPlugins: "Plugins & extensions",
         pluginsDirectory: "Directory plugins · settings.panel slot",
         pluginsLinkInstalled: "Installed & market",
@@ -571,8 +571,8 @@ export const enUS = {
       lead: {
         modelsOllama:
           "Manage local GGUF paths, Ollama listings, and related notes—tied to processes and disk paths.",
-        modelsExpert:
-          "Edit expert graphs and apply to sessions inside the classic Plugin Manager “Backends” page—high-impact orchestration.",
+        dataExpertModels:
+          "See which expert graph is active for this session (pack default, role default, or session override), open the Expert Models workbench for deep edits, or reset to the pack’s built-in default.",
         pluginsInstalled:
           "Use the Plugin Manager “Plugins” tab for installed directory plugins, persist scope, and market shortcuts. Use “Open in this page” to embed it below Settings, or the primary button for a detached window.",
         pluginsSlots: "Reorder UI slot embeds on the “Slots” tab—embed below Settings or use a detached window.",
@@ -588,6 +588,24 @@ export const enUS = {
         diagnosticsAgent:
           "Agent traces and MCP tool calls are available in the classic Plugin Manager “Backends” page (embedded debug dock). The button below closes Settings and opens that tab.",
       },
+    },
+    expertHub: {
+      deepLinkFoot:
+        "For a detached workbench or to edit alongside other backends, use the button below (this closes Settings).",
+      noRole: "Select or import a role in the main UI first so this page can load that role’s effective expert configuration.",
+      graphSource: {
+        packDefault: "Source: pack default",
+        roleDefault: "Source: role default",
+        sessionOverride: "Source: session override",
+      },
+      nodeCount: "{n} node(s) in graph",
+      openWorkbench: "Open Expert Models workbench",
+      resetToPack: "Reset to pack default",
+      resetDisabledHint: "Already on the pack’s built-in default—nothing to reset.",
+      confirmResetPackDefault:
+        "This clears session overrides and the role-level expert default (it does not modify the pack files on disk), then reapplies the session from the pack. Continue?",
+      toastResetOk: "Reset to pack default and applied to the session.",
+      toastResetApplyWarn: "Overrides were cleared, but applying the session reported a warning—check the workbench for details.",
     },
     roleSettings: {
       lead: "Manage local role packs here: search, switch session, import/export, reveal folder, or delete. Richer narrative controls stay in the main sidebar.",

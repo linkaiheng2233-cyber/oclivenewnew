@@ -20,8 +20,8 @@ export const SETTINGS_NAV = {
   generalDefaultModel: "settings.general.defaultModel",
   modelsCloud: "settings.models.cloud",
   modelsOllama: "settings.models.ollama",
-  modelsExpert: "settings.models.expert",
   dataRoles: "settings.data.roles",
+  dataExpertModels: "settings.data.expertModels",
   pluginsDirectory: "settings.plugins.directory",
   pluginsLinkInstalled: "settings.plugins.linkInstalled",
   pluginsLinkSlots: "settings.plugins.linkSlots",
@@ -44,7 +44,7 @@ export const ALL_SETTINGS_NAV_IDS: readonly SettingsNavId[] = Object.values(SETT
 export const SETTINGS_DEVELOPER_GATED_NAV_IDS: readonly SettingsNavId[] = [
   SETTINGS_NAV.modelsCloud,
   SETTINGS_NAV.modelsOllama,
-  SETTINGS_NAV.modelsExpert,
+  SETTINGS_NAV.dataExpertModels,
   SETTINGS_NAV.pluginsDirectory,
   SETTINGS_NAV.pluginsLinkInstalled,
   SETTINGS_NAV.pluginsLinkSlots,
@@ -128,9 +128,9 @@ export const SETTINGS_NAV_ROWS: readonly SettingsNavRow[] = [
   { id: SETTINGS_NAV_CAT.models, depth: 0, isGroupLabel: true, visibility: "always" },
   { id: SETTINGS_NAV.modelsCloud, depth: 1, tier: "L4", visibility: "always" },
   { id: SETTINGS_NAV.modelsOllama, depth: 1, tier: "L4", visibility: "immersive" },
-  { id: SETTINGS_NAV.modelsExpert, depth: 1, tier: "L4", visibility: "immersive" },
   { id: SETTINGS_NAV_CAT.data, depth: 0, isGroupLabel: true, visibility: "immersive" },
   { id: SETTINGS_NAV.dataRoles, depth: 1, tier: "L3", visibility: "immersive" },
+  { id: SETTINGS_NAV.dataExpertModels, depth: 1, tier: "L3", visibility: "immersive" },
   { id: SETTINGS_NAV_CAT.plugins, depth: 0, isGroupLabel: true, visibility: "immersive" },
   { id: SETTINGS_NAV.pluginsDirectory, depth: 1, tier: "L3", visibility: "immersive" },
   { id: SETTINGS_NAV.pluginsLinkInstalled, depth: 1, tier: "L3", visibility: "immersive" },
@@ -172,7 +172,7 @@ export function firstSelectableSettingsNavId(
  * | generalDefaultModel | L2 默认对话模型（与撰写区同步） |
  * | modelsCloud | L4 云端信任 / QuickSetup / 打开后端 |
  * | modelsOllama | L3 说明 → L4 打开本机模型 |
- * | modelsExpert | L3 说明 → L4 专家工作台 |
+ * | dataExpertModels | L3 专家模型设置（生效图、工作台、恢复包默认） |
  * | dataRoles | L3 角色与数据（切换 / 包目录 / 编写器说明） |
  * | pluginsDirectory | L3 目录插件设置插槽 |
  * | pluginsLink* / pluginsV2Hub / marketBrowse | L3 说明或本页打开 → L4 独立窗深链 |

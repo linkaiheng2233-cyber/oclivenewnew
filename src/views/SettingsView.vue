@@ -10,6 +10,7 @@ import { notifyHostModelsInventoryChanged } from "../composables/useHostModelPic
 import { isTauriWebview } from "../utils/isTauriWebview";
 import ShortcutsManagerPanel from "../components/settings/ShortcutsManagerPanel.vue";
 import ModelSelectorSettings from "../components/settings/ModelSelectorSettings.vue";
+import ExpertModelsSettingsHub from "../components/settings/ExpertModelsSettingsHub.vue";
 import RoleManagerSettings from "../components/settings/RoleManagerSettings.vue";
 import SettingsDebugEmbed from "../components/settings/SettingsDebugEmbed.vue";
 import SettingsTierSection from "../components/SettingsTierSection.vue";
@@ -612,11 +613,18 @@ async function onToggleForceIframe(e: Event) {
                 </SettingsTierSection>
               </div>
 
-              <div v-show="selectedNavId === SETTINGS_NAV.modelsExpert" class="sv-pane-section">
+              <div v-show="selectedNavId === SETTINGS_NAV.dataExpertModels" class="sv-pane-section">
                 <SettingsTierSection tier="L3" :reset-key="tierResetKey">
-                  <p class="sv-muted">{{ t("settings.nav.lead.modelsExpert") }}</p>
+                  <p class="sv-muted">{{ t("settings.nav.lead.dataExpertModels") }}</p>
+                  <ExpertModelsSettingsHub
+                    :active="selectedNavId === SETTINGS_NAV.dataExpertModels && visible"
+                    @open-expert-workbench="
+                      (o) => emitDeepLink({ kind: 'expert_workbench', draftMode: o.draftMode })
+                    "
+                  />
                 </SettingsTierSection>
                 <SettingsTierSection tier="L4" :reset-key="tierResetKey">
+                  <p class="sv-muted">{{ t("settings.expertHub.deepLinkFoot") }}</p>
                   <button
                     type="button"
                     class="sv-btn sv-btn--accent"

@@ -523,9 +523,9 @@ export const zhCN = {
         catModels: "模型",
         modelsCloud: "云端模型与密钥",
         modelsOllama: "本机模型与 Ollama",
-        modelsExpert: "专家模型工作台",
         catData: "角色与数据",
         dataRoles: "角色管理",
+        dataExpertModels: "专家模型设置",
         catPlugins: "插件与扩展",
         pluginsDirectory: "目录插件 · 设置页插槽",
         pluginsLinkInstalled: "已安装与市场",
@@ -551,7 +551,8 @@ export const zhCN = {
       },
       lead: {
         modelsOllama: "管理本机 GGUF 路径、Ollama 列表与相关说明；与进程和磁盘路径强相关。",
-        modelsExpert: "在经典插件管理的「后端」页中编辑专家模型图并应用到会话；属编排与后端高影响能力。",
+        dataExpertModels:
+          "查看当前会话生效的专家图来源（角色包默认 / 角色级默认 / 会话覆盖），在专家模型工作台深度编辑，或一键恢复为角色包内置默认。",
         pluginsInstalled:
           "在插件管理「插件」页调整已安装目录插件、持久化范围与市场入口等。可「在本页打开」嵌于设置下方，或使用右侧按钮在独立窗口操作。",
         pluginsSlots: "在「插槽」页调整各 UI 槽的嵌入顺序与预览；支持本页嵌套或独立窗口。",
@@ -566,6 +567,23 @@ export const zhCN = {
         diagnosticsAgent:
           "Agent 任务拆解与 MCP 工具调用可在经典「插件与后端管理」的「后端」页底部调试台查看；以下按钮将关闭设置并打开该页。",
       },
+    },
+    expertHub: {
+      deepLinkFoot: "若需全屏工作台或与其他后端模块并排调整，可使用下方按钮（将关闭本设置窗口）。",
+      noRole: "请先在主界面选择或导入一个角色，以便加载该角色的专家模型生效状态。",
+      graphSource: {
+        packDefault: "生效来源：角色包默认",
+        roleDefault: "生效来源：角色级默认",
+        sessionOverride: "生效来源：会话覆盖",
+      },
+      nodeCount: "图中节点 {n} 个",
+      openWorkbench: "打开专家模型工作台",
+      resetToPack: "恢复为角色包默认",
+      resetDisabledHint: "当前已处于角色包内置默认，无需重置。",
+      confirmResetPackDefault:
+        "将清除本会话的覆盖与角色级专家模型默认（不修改角色包原文件），并把运行时会话应用回包内配置。继续吗？",
+      toastResetOk: "已恢复为角色包默认并应用到会话。",
+      toastResetApplyWarn: "已清除覆盖，但应用会话时存在告警，请到专家工作台查看详情。",
     },
     roleSettings: {
       lead: "在此管理本地角色包：搜索、切换会话、导入/导出、打开文件夹或删除；详细叙事与关系仍可在主界面侧栏使用。",

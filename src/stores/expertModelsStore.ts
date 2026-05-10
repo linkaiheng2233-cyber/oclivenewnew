@@ -323,6 +323,18 @@ export const useExpertModelsStore = defineStore("expertModels", {
       return r;
     },
 
+    /** 清除会话覆盖与角色级专家默认，并重新应用，使生效图回到角色包内置。 */
+    async resetExpertGraphToPackDefaultFully(): Promise<ExpertModelsApplyResult> {
+      const roleStore = useRoleStore();
+      const roleId = (roleStore.currentRoleId ?? "").trim();
+      if (!roleId) throw new Error("当前未选择角色。");
+      await expertModelsClearSessionOverride({ roleId, sessionId: null });
+      await expertModelsClearRoleDefault({ roleId });
+      const r = await expertModelsApplyToSession({ roleId, sessionId: null });
+      await this.refresh();
+      return r;
+    },
+
     async setRoleDefault(): Promise<void> {
       const roleStore = useRoleStore();
       const roleId = (roleStore.currentRoleId ?? "").trim();
