@@ -587,7 +587,9 @@ export const zhCN = {
     },
     roleSettings: {
       lead: "在此管理本地角色包：搜索、切换会话、导入/导出、打开文件夹或删除；详细叙事与关系仍可在主界面侧栏使用。",
-      emptyLead: "本地还没有可用角色包。可从插件市场安装带角色的内容包，或使用上方「导入」选择 .ocpak / .zip 或已解压目录。",
+      emptyTitle: "你还没有创建或导入角色",
+      emptyImportPack: "导入角色包…",
+      emptyLead: "可从插件市场安装带角色的内容包，或使用下方按钮导入 .ocpak / .zip 或已解压目录。",
       emptyOpenMarket: "打开插件市场",
       searchPlaceholder: "按名称或 id 搜索…",
       importArchive: "导入压缩包…",
@@ -611,6 +613,9 @@ export const zhCN = {
       revealOk: "已在资源管理器中打开角色包目录。",
       packEditorHint:
         "姊妹应用 oclive-pack-editor 用于编辑 manifest、settings 等；请先打开上方面板中的文件夹，再用编写器指向该目录。",
+    },
+    modelsOllama: {
+      downloadHint: "若本机尚未安装任何 Ollama 模型，可在下方打开「本机模型管理」以下载或挂载 GGUF。",
     },
     modelHub: {
       defaultTitle: "当前默认对话模型",
@@ -642,6 +647,9 @@ export const zhCN = {
       cloudTeaserLink: "点击这里配置云端 API",
       l4CloudAdvancedHintBefore: "高级用法？",
       l4CloudAdvancedHintLink: "前往「云端模型与密钥」配置端点、超时与密钥",
+      localEmptyTitle: "尚未检测到本机 Ollama 模型",
+      localEmptyBody: "可打开本机模型管理以下载模型或配置 GGUF 路径；完成后返回本页刷新列表。",
+      localEmptyCta: "下载与管理本机模型",
     },
     tiers: {
       L1: {

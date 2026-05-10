@@ -609,8 +609,10 @@ export const enUS = {
     },
     roleSettings: {
       lead: "Manage local role packs here: search, switch session, import/export, reveal folder, or delete. Richer narrative controls stay in the main sidebar.",
+      emptyTitle: "You have not created or imported a role yet",
+      emptyImportPack: "Import role pack…",
       emptyLead:
-        "No role packs yet. Use Import above (.ocpak / .zip or an extracted folder), or open the Plugin Market.",
+        "Install a pack from the Plugin Market, or use the buttons below to import a .ocpak / .zip or an extracted folder.",
       emptyOpenMarket: "Open Plugin Market",
       searchPlaceholder: "Search by name or id…",
       importArchive: "Import archive…",
@@ -635,6 +637,10 @@ export const enUS = {
       revealOk: "Opened the role pack folder in Explorer.",
       packEditorHint:
         "The sibling app oclive-pack-editor edits manifest and settings files—open the folder above, then point the editor at that directory.",
+    },
+    modelsOllama: {
+      downloadHint:
+        "If no Ollama models are installed yet, open the local model manager below to download models or attach GGUF paths.",
     },
     modelHub: {
       defaultTitle: "Default chat model",
@@ -668,6 +674,10 @@ export const enUS = {
       cloudTeaserLink: "Configure a cloud API here",
       l4CloudAdvancedHintBefore: "Power user?",
       l4CloudAdvancedHintLink: "Open “Cloud model & secrets” for endpoints, timeouts, and keys",
+      localEmptyTitle: "No local Ollama models detected",
+      localEmptyBody:
+        "Open the local model manager to download models or configure GGUF paths, then return here to refresh the list.",
+      localEmptyCta: "Download & manage local models",
     },
     tiers: {
       L1: {

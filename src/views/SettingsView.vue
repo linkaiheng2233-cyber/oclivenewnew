@@ -602,6 +602,7 @@ async function onToggleForceIframe(e: Event) {
               <div v-show="selectedNavId === SETTINGS_NAV.modelsOllama" class="sv-pane-section">
                 <SettingsTierSection tier="L3" :reset-key="tierResetKey">
                   <p class="sv-muted">{{ t("settings.nav.lead.modelsOllama") }}</p>
+                  <p class="sv-muted">{{ t("settings.modelsOllama.downloadHint") }}</p>
                   <button type="button" class="sv-btn sv-btn--ghost sv-cross-link-top" @click="selectNav(SETTINGS_NAV.generalDefaultModel)">
                     {{ t("settings.nav.jumpDefaultModel") }}
                   </button>

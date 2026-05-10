@@ -29,6 +29,8 @@ const { t } = useI18n();
 const { showToast } = useAppToast();
 
 const revealBusy = ref(false);
+const rolesBooting = ref(true);
+const rolesLoadError = ref<string | null>(null);
 const search = ref("");
 const focusedRoleId = ref("");
 const previewInfo = ref<RoleInfo | null>(null);
@@ -41,8 +43,20 @@ const importPercent = ref(0);
 const importMessage = ref("");
 let unlistenProgress: UnlistenFn | null = null;
 
+async function loadRolesList(): Promise<void> {
+  rolesLoadError.value = null;
+  rolesBooting.value = true;
+  try {
+    await roleStore.loadRoles();
+  } catch (e) {
+    rolesLoadError.value = e instanceof Error ? e.message : String(e);
+  } finally {
+    rolesBooting.value = false;
+  }
+}
+
 onMounted(() => {
-  void roleStore.loadRoles();
+  void loadRolesList();
 });
 
 watch(
@@ -308,6 +322,16 @@ async function onDelete(): Promise<void> {
 
 <template>
   <div class="rms">
+    <div v-if="rolesBooting" class="rms-skel" role="status" :aria-label="String(t('common.loading'))">
+      <div class="rms-skel-bar rms-skel-bar--lg" />
+      <div class="rms-skel-bar" />
+      <div class="rms-skel-bar rms-skel-bar--sm" />
+    </div>
+    <div v-else-if="rolesLoadError" class="rms-err-box">
+      <p class="rms-err">{{ rolesLoadError }}</p>
+      <button type="button" class="rms-btn" @click="loadRolesList">{{ t("common.retry") }}</button>
+    </div>
+    <template v-else>
     <p class="rms-lead">{{ t("settings.roleSettings.lead") }}</p>
 
     <div class="rms-toolbar">
@@ -333,7 +357,16 @@ async function onDelete(): Promise<void> {
     </div>
 
     <div v-if="!roleStore.roles.length" class="rms-empty">
+      <h3 class="rms-empty-title">{{ t("settings.roleSettings.emptyTitle") }}</h3>
       <p class="rms-muted">{{ t("settings.roleSettings.emptyLead") }}</p>
+      <div class="rms-empty-actions">
+        <button type="button" class="rms-btn rms-btn--accent" :disabled="importBusy" @click="onImportArchive">
+          {{ t("settings.roleSettings.emptyImportPack") }}
+        </button>
+        <button type="button" class="rms-btn" :disabled="importBusy" @click="onImportFolder">
+          {{ t("settings.roleSettings.importFolder") }}
+        </button>
+      </div>
     </div>
 
     <div v-else class="rms-split">
@@ -391,6 +424,7 @@ async function onDelete(): Promise<void> {
     </div>
 
     <ImportProgressModal :open="importProgressOpen" :percent="importPercent" :message="importMessage" />
+    </template>
   </div>
 </template>
 
@@ -400,6 +434,53 @@ async function onDelete(): Promise<void> {
   flex-direction: column;
   gap: 12px;
   max-width: 920px;
+}
+.rms-skel {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  max-width: 420px;
+  padding: 6px 0 10px;
+}
+.rms-skel-bar {
+  height: 10px;
+  border-radius: 6px;
+  background: linear-gradient(
+    90deg,
+    color-mix(in srgb, var(--text-secondary) 12%, transparent) 0%,
+    color-mix(in srgb, var(--text-secondary) 22%, transparent) 50%,
+    color-mix(in srgb, var(--text-secondary) 12%, transparent) 100%
+  );
+  background-size: 200% 100%;
+  animation: rms-skel-shimmer 1.1s ease-in-out infinite;
+}
+.rms-skel-bar--lg {
+  width: 70%;
+}
+.rms-skel-bar--sm {
+  width: 42%;
+}
+@keyframes rms-skel-shimmer {
+  0% {
+    background-position: 0% 0;
+  }
+  100% {
+    background-position: -200% 0;
+  }
+}
+.rms-err-box {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 10px;
+  padding: 12px;
+  border-radius: 10px;
+  border: 1px solid color-mix(in srgb, var(--text-accent, #b45309) 35%, var(--border-light));
+}
+.rms-err {
+  margin: 0;
+  font-size: 13px;
+  color: var(--text-accent, #b45309);
 }
 .rms-lead {
   margin: 0;
@@ -553,6 +634,17 @@ async function onDelete(): Promise<void> {
   padding: 12px;
   border-radius: 10px;
   border: 1px dashed var(--border-light);
+}
+.rms-empty-title {
+  margin: 0;
+  font-size: 15px;
+  font-weight: 650;
+  color: var(--text-primary);
+}
+.rms-empty-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
 }
 .rms-pack-editor {
   font-size: 11px;

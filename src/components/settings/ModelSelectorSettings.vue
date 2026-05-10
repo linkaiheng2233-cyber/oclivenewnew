@@ -66,6 +66,11 @@ const defaultModelSourceLine = computed(() =>
   String(t(`settings.modelSelector.source.${defaultModelRouteHint.value}`)),
 );
 
+const showLocalModelsEmpty = computed(() => {
+  if (booting.value || loadError.value) return false;
+  return unref(pick.ollamaNames).length === 0;
+});
+
 async function runBootstrap(): Promise<void> {
   loadError.value = null;
   booting.value = true;
@@ -144,6 +149,14 @@ function isCurrent(id: string): boolean {
             {{ t("settings.modelSelector.l4CloudAdvancedHintLink") }}
           </button>
         </p>
+      </section>
+
+      <section v-if="showLocalModelsEmpty" class="mss-block mss-block--soft" aria-labelledby="mss-local-empty-h">
+        <h3 id="mss-local-empty-h" class="mss-h">{{ t("settings.modelSelector.localEmptyTitle") }}</h3>
+        <p class="mss-muted">{{ t("settings.modelSelector.localEmptyBody") }}</p>
+        <button type="button" class="mss-btn" :disabled="applying" @click="emit('openLocalModels')">
+          {{ t("settings.modelSelector.localEmptyCta") }}
+        </button>
       </section>
 
       <section v-if="pick.ollamaNames.length" class="mss-block" aria-labelledby="mss-local-h">
@@ -357,5 +370,11 @@ function isCurrent(id: string): boolean {
 .mss-linkish--inline {
   display: inline;
   margin-left: 2px;
+}
+.mss-block--soft {
+  padding: 12px 14px;
+  border-radius: 10px;
+  border: 1px dashed color-mix(in srgb, var(--border-light) 85%, transparent);
+  background: color-mix(in srgb, var(--bg-elevated) 65%, transparent);
 }
 </style>
