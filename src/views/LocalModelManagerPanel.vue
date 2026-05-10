@@ -12,9 +12,14 @@ import {
 } from "../composables/useCloudLlmTrustModal";
 import { isTauriWebview } from "../utils/isTauriWebview";
 
-defineProps<{
-  visible: boolean;
-}>();
+const props = withDefaults(
+  defineProps<{
+    visible: boolean;
+    /** 嵌在设置页内：无 Teleport 全屏遮罩 */
+    embedded?: boolean;
+  }>(),
+  { embedded: false },
+);
 
 const emit = defineEmits<{
   close: [];
@@ -61,9 +66,14 @@ function onTrustModalVisible(v: boolean): void {
 </script>
 
 <template>
-  <Teleport to="body">
-    <div v-if="visible" class="lmm-stack">
-      <div class="lmm-dim" role="presentation" @click.self="emit('close')">
+  <Teleport to="body" :disabled="props.embedded">
+    <div v-if="visible" :class="props.embedded ? 'lmm-embed-root' : 'lmm-stack'">
+      <div
+        v-if="!props.embedded"
+        class="lmm-dim"
+        role="presentation"
+        @click.self="emit('close')"
+      >
         <div class="lmm-dialog" @click.stop>
           <header class="lmm-head">
             <div class="lmm-head-text">
@@ -79,6 +89,17 @@ function onTrustModalVisible(v: boolean): void {
           </div>
         </div>
       </div>
+      <div v-else class="lmm-dialog lmm-dialog--embedded" @click.stop>
+        <header class="lmm-head">
+          <div class="lmm-head-text">
+            <h2 class="lmm-title">{{ t("localModelManagerPanel.title") }}</h2>
+            <p class="lmm-hint">{{ t("localModelManagerPanel.hint") }}</p>
+          </div>
+        </header>
+        <div class="lmm-body">
+          <BuiltinLlamaModelManager @request-close="emit('close')" />
+        </div>
+      </div>
       <!-- 浏览器始终用 Vue；Tauri 以系统 confirm 为主，失败时 cloudTrust.open 需本层可挂载 -->
       <TrustConsentModal
         v-if="showVueCloudTrustModal"
@@ -92,7 +113,7 @@ function onTrustModalVisible(v: boolean): void {
         :confirm-label="cloudTrust.confirmLabel"
         variant="trust"
         require-explicit-dismiss
-        :teleport-disabled="trustReadmeTeleportNested"
+        :teleport-disabled="trustReadmeTeleportNested || props.embedded"
         @update:model-value="onTrustModalVisible"
       />
     </div>
@@ -167,5 +188,13 @@ function onTrustModalVisible(v: boolean): void {
   flex: 0 0 auto;
   min-height: 0;
   overflow: visible;
+}
+.lmm-embed-root {
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+}
+.lmm-dialog--embedded {
+  max-height: min(70vh, 720px);
 }
 </style>

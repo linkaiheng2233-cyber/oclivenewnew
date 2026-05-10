@@ -240,8 +240,10 @@ export const usePluginStore = defineStore("plugin", {
     panelVisible: false,
     /** 与 `panelVisible` 配合：嵌在 `SettingsView` 内时为 `settings`。 */
     panelEmbedHost: null as PluginPanelEmbedHost,
-    /** V1 插件市场独立弹窗（社区索引/本地导入/安装） */
+    /** V1 插件市场；与 `marketPanelEmbedHost` 配合可嵌在设置窗内 */
     marketPanelVisible: false,
+    /** `settings`：市场 UI 嵌在 `SettingsView` 底部；`null`：独立全屏层 */
+    marketPanelEmbedHost: null as PluginPanelEmbedHost,
     panelMainTab: "plugins" as PluginPanelMainTab,
     loading: false,
     error: null as string | null,
@@ -305,11 +307,13 @@ export const usePluginStore = defineStore("plugin", {
       }
     },
     async openPanel(tab?: PluginPanelMainTab) {
-      this.panelEmbedHost = null;
+      /** 经典插件管理仅嵌于设置中心，不再使用独立 Teleport 层 */
+      this.panelEmbedHost = "settings";
       if (tab) {
         this.panelMainTab = tab;
       }
       this.marketPanelVisible = false;
+      this.marketPanelEmbedHost = null;
       this.panelVisible = true;
       await this.refresh();
     },
@@ -318,12 +322,18 @@ export const usePluginStore = defineStore("plugin", {
       this.panelEmbedHost = "settings";
       this.panelMainTab = tab;
       this.marketPanelVisible = false;
+      this.marketPanelEmbedHost = null;
       this.panelVisible = true;
       await this.refresh();
     },
     async openMarketPanel(): Promise<void> {
+      return this.openMarketPanelInSettingsEmbed();
+    },
+    /** 设置侧栏「市场」：V1 市场嵌在设置窗底部 */
+    async openMarketPanelInSettingsEmbed(): Promise<void> {
       this.panelVisible = false;
       this.panelEmbedHost = null;
+      this.marketPanelEmbedHost = "settings";
       this.marketPanelVisible = true;
       await this.refresh();
       await this.loadCachedPluginMarket();
@@ -428,6 +438,7 @@ export const usePluginStore = defineStore("plugin", {
     },
     closeMarketPanel() {
       this.marketPanelVisible = false;
+      this.marketPanelEmbedHost = null;
     },
     /** 请求打开专家模型工作台：由 App 打开经典插件管理并切到「后端」页。 */
     requestOpenExpertModelsWorkbench(opts?: { draftMode?: "effective" | "role_default" }): void {

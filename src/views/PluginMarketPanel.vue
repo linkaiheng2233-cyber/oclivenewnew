@@ -18,8 +18,21 @@ import {
 } from "../utils/tauri-api";
 import PluginMarketV2Pane from "../components/PluginManagerV2/PluginMarketV2Pane.vue";
 
+const props = withDefaults(
+  defineProps<{
+    /** 嵌在设置页内：无全屏遮罩、不 Teleport */
+    embedded?: boolean;
+  }>(),
+  { embedded: false },
+);
+
 const pluginStore = usePluginStore();
 const { showToast } = useAppToast();
+
+function onMarketBackdropClick(): void {
+  if (props.embedded) return;
+  pluginStore.closeMarketPanel();
+}
 const m = usePluginCommunityMarketPane();
 const { t } = useI18n();
 
@@ -220,19 +233,24 @@ watch(
 </script>
 
 <template>
-  <Teleport to="body">
+  <Teleport to="body" :disabled="props.embedded">
     <div
       v-if="pluginStore.marketPanelVisible"
-      class="pm2-backdrop"
+      :class="props.embedded ? 'pm2-embed-root' : 'pm2-backdrop'"
       role="dialog"
       aria-modal="true"
       :aria-label="String(t('pluginMarketV1.panel.dialogLabel'))"
-      @click.self="pluginStore.closeMarketPanel()"
+      @click.self="onMarketBackdropClick"
     >
-      <div class="pm2-dialog" @click.stop>
+      <div class="pm2-dialog" :class="{ 'pm2-dialog--embedded': props.embedded }" @click.stop>
         <div class="pmx-head">
           <div class="pmx-title">{{ t("pluginMarketV1.panel.title") }}</div>
-          <button type="button" class="pm2-btn secondary" @click="pluginStore.closeMarketPanel()">
+          <button
+            v-if="!props.embedded"
+            type="button"
+            class="pm2-btn secondary"
+            @click="pluginStore.closeMarketPanel()"
+          >
             {{ t("common.close") }}
           </button>
         </div>
@@ -335,6 +353,16 @@ watch(
 </template>
 
 <style scoped>
+.pm2-embed-root {
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+  width: 100%;
+}
+.pm2-dialog--embedded {
+  max-height: min(72vh, 820px);
+  overflow: auto;
+}
 .pm2-backdrop {
   position: fixed;
   inset: 0;
