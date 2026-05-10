@@ -547,6 +547,22 @@ export const zhCN = {
         description: "内核与运行时契约：模型后端、网络、子进程与最强安全相关项。",
       },
     },
+    tiersUi: {
+      blockHeading: {
+        L1: "外观与交互",
+        L2: "行为与偏好",
+        L3: "角色与数据",
+        L4: "系统与内核",
+      },
+      l4CollapsedHint:
+        "此类设置可能影响 API、引擎、插件网络与子进程；默认收起以免误触。展开前会再次确认。",
+      expandButton: "展开（需确认）",
+      collapseButton: "收起",
+      confirmExpandTitle: "展开系统与内核设置？",
+      confirmExpandMessage:
+        "你将看到可能影响运行时契约、网络访问与安全策略的选项。请确认你了解相关风险后再继续。",
+      confirmExpandOk: "确认展开",
+    },
   },
   pluginManager: {
     entry: {
@@ -1254,6 +1270,10 @@ export const zhCN = {
   },
   hotkeySettings: {
     title: "全局快捷键",
+    tierL1Intro:
+      "此处说明与「快捷」页一致：顶栏「更多」与常用快捷键入口属于外观与交互层。下方「编辑绑定」属于系统与内核层，因全局快捷键会唤起插件界面并涉及宿主监听。",
+    editorLead:
+      "编辑全局快捷键绑定：启用后由系统全局监听，可能与系统或其它应用冲突；含「打开插件插槽」的动作时与插件运行时强相关。",
     lead: "默认全部关闭。启用后由系统全局监听，可能与系统或其它应用冲突；保存失败时会提示原因。",
     fields: {
       accelerator: "快捷键",

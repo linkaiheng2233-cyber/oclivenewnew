@@ -566,6 +566,22 @@ export const enUS = {
         description: "Kernel & runtime contracts—model backends, networking, subprocesses, and strongest security.",
       },
     },
+    tiersUi: {
+      blockHeading: {
+        L1: "Appearance & interaction",
+        L2: "Behavior & preferences",
+        L3: "Roles & data",
+        L4: "System & kernel",
+      },
+      l4CollapsedHint:
+        "These settings may affect APIs, engines, plugin networking, and subprocesses. They stay collapsed by default. Expanding requires confirmation.",
+      expandButton: "Expand (confirm)",
+      collapseButton: "Collapse",
+      confirmExpandTitle: "Expand system & kernel settings?",
+      confirmExpandMessage:
+        "You will see options that can change runtime contracts, network access, and security posture. Continue only if you understand the impact.",
+      confirmExpandOk: "Expand",
+    },
   },
   pluginManager: {
     entry: {
@@ -1295,6 +1311,10 @@ export const enUS = {
   },
   hotkeySettings: {
     title: "Global shortcuts",
+    tierL1Intro:
+      "This matches the “Shortcuts” page: top-bar “More” and documented shortcuts are appearance & interaction. The editor below is system & kernel because global shortcuts can invoke plugin UIs and register host listeners.",
+    editorLead:
+      "Edit global shortcut bindings: when enabled, they are registered system-wide and may conflict with other apps. Actions that open plugin slots are tightly coupled to plugin runtime.",
     lead:
       "All disabled by default. When enabled, they are registered as system-wide shortcuts and may conflict with other apps. Save errors will show the reason.",
     fields: {

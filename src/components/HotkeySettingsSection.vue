@@ -9,6 +9,14 @@ import {
   type HotkeyBindingsFile,
 } from "../utils/tauri-api";
 
+const props = withDefaults(
+  defineProps<{
+    /** 为 true 时省略大标题与通用说明，用于设置页「系统与内核」分层内嵌 */
+    headless?: boolean;
+  }>(),
+  { headless: false },
+);
+
 const { showToast } = useAppToast();
 const { t } = useI18n();
 
@@ -81,9 +89,14 @@ async function onSave(): Promise<void> {
 
 <template>
   <section class="hkset">
-    <h3 class="hkset-h">{{ t("hotkeySettings.title") }}</h3>
-    <p class="hkset-lead">
-      {{ t("hotkeySettings.lead") }}
+    <template v-if="!props.headless">
+      <h3 class="hkset-h">{{ t("hotkeySettings.title") }}</h3>
+      <p class="hkset-lead">
+        {{ t("hotkeySettings.lead") }}
+      </p>
+    </template>
+    <p v-else class="hkset-lead hkset-lead--compact">
+      {{ t("hotkeySettings.editorLead") }}
     </p>
     <p v-if="loading" class="hkset-muted">{{ t("common.loading") }}</p>
     <template v-else>
@@ -147,6 +160,9 @@ async function onSave(): Promise<void> {
   font-size: 12px;
   color: var(--text-secondary);
   line-height: 1.45;
+}
+.hkset-lead--compact {
+  margin-bottom: 2px;
 }
 .hkset-muted {
   font-size: 13px;

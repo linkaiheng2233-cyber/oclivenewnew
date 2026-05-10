@@ -129,3 +129,24 @@ export function firstSelectableSettingsNavId(
   }
   return SETTINGS_NAV.generalOverview;
 }
+
+/**
+ * 设置右栏「内容分级」与 `SettingsView` + `SettingsTierSection` 一致（L4 默认折叠，展开需确认）。
+ *
+ * | 侧栏 id | 右栏分区（自上而下） |
+ * |---------|----------------------|
+ * | generalOverview | L1 概览与纯聊边界 |
+ * | generalLanguage | L1 语言 |
+ * | shortcutsMain | L1 快捷键说明 |
+ * | modelsCloud | L4 云端信任 / QuickSetup / 打开后端 |
+ * | modelsOllama | L3 说明 → L4 打开本机模型 |
+ * | modelsExpert | L3 说明 → L4 专家工作台 |
+ * | pluginsDirectory | L3 目录插件设置插槽 |
+ * | pluginsHotkeys | L1 说明 → L4 快捷键绑定编辑 |
+ * | pluginsLink* / pluginsV2Hub / marketBrowse | L3 说明或本页打开 → L4 独立窗深链 |
+ * | securityHost / advancedExperimental | L4 安全与实验 |
+ * | advancedEmbed | L3 settings.advanced 扩展区 |
+ * | advancedMarketSources | L3 开发者说明 → L4 开发者模式与索引源 |
+ * | diagnosticsDebug | L2 说明 → L4 调试面板 |
+ * | diagnosticsAgent | L3 说明 → L4 打开后端 Agent 调试 |
+ */

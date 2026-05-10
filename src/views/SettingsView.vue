@@ -8,6 +8,7 @@ import CloudLlmQuickSetup from "../components/CloudLlmQuickSetup.vue";
 import { buildCloudLlmTrustPlainText, useCloudLlmTrustModal } from "../composables/useCloudLlmTrustModal";
 import { isTauriWebview } from "../utils/isTauriWebview";
 import HotkeySettingsSection from "../components/HotkeySettingsSection.vue";
+import SettingsTierSection from "../components/SettingsTierSection.vue";
 import PluginSettingsPanelSlots from "../components/PluginSettingsPanelSlots.vue";
 import PluginSlotEmbed from "../components/PluginSlotEmbed.vue";
 import { useAppToast } from "../composables/useAppToast";
@@ -139,6 +140,8 @@ function onTrustModalVisible(v: boolean): void {
   cloudTrust.visible.value = v;
 }
 
+/** 设置窗关闭时递增，用于将各页内 L4 分区恢复默认折叠 */
+const tierResetKey = ref(0);
 const marketSourcesLoading = ref(false);
 const marketDeveloperModeLocal = ref(false);
 const marketSourcesText = ref("");
@@ -160,6 +163,7 @@ watch(
   (visible) => {
     if (!visible) {
       cloudTrust.close();
+      tierResetKey.value += 1;
     } else {
       selectedNavId.value = firstSelectableSettingsNavId(roleStore.interactionImmersive);
     }
@@ -328,307 +332,376 @@ async function onToggleForceIframe(e: Event) {
 
             <div class="sv-pane">
               <div v-show="selectedNavId === SETTINGS_NAV.generalOverview" class="sv-pane-section">
-                <p class="sv-lead" v-html="settingsGeneralLeadHtml()" />
-                <p v-if="roleStore.interactionPureChat" class="sv-boundary sv-muted">
-                  {{ t("settings.pureChatBoundary") }}
-                </p>
-                <p v-if="roleStore.interactionPureChat" class="sv-boundary-foot sv-muted">
-                  {{ t("settings.pureChatMoreInImmersive") }}
-                </p>
+                <SettingsTierSection tier="L1" :reset-key="tierResetKey">
+                  <p class="sv-lead" v-html="settingsGeneralLeadHtml()" />
+                  <p v-if="roleStore.interactionPureChat" class="sv-boundary sv-muted">
+                    {{ t("settings.pureChatBoundary") }}
+                  </p>
+                  <p v-if="roleStore.interactionPureChat" class="sv-boundary-foot sv-muted">
+                    {{ t("settings.pureChatMoreInImmersive") }}
+                  </p>
+                </SettingsTierSection>
               </div>
 
               <div v-show="selectedNavId === SETTINGS_NAV.generalLanguage" class="sv-pane-section">
-                <section class="sv-section">
-                  <div class="sv-row-h">
-                    <span class="sv-label">{{ t("settings.language.label") }}</span>
-                  </div>
-                  <div class="sv-row-controls">
-                    <select
-                      class="sv-select"
-                      :value="uiStore.languagePref"
-                      @change="uiStore.setLanguagePref(($event.target as HTMLSelectElement).value as LanguagePref)"
-                    >
-                      <option value="system">{{ t("settings.language.options.system") }}</option>
-                      <option value="zh-CN">{{ t("settings.language.options.zhCN") }}</option>
-                      <option value="en-US">{{ t("settings.language.options.enUS") }}</option>
-                    </select>
-                    <p class="sv-muted">{{ t("settings.language.hint") }}</p>
-                  </div>
-                </section>
+                <SettingsTierSection tier="L1" :reset-key="tierResetKey">
+                  <section class="sv-section">
+                    <div class="sv-row-h">
+                      <span class="sv-label">{{ t("settings.language.label") }}</span>
+                    </div>
+                    <div class="sv-row-controls">
+                      <select
+                        class="sv-select"
+                        :value="uiStore.languagePref"
+                        @change="uiStore.setLanguagePref(($event.target as HTMLSelectElement).value as LanguagePref)"
+                      >
+                        <option value="system">{{ t("settings.language.options.system") }}</option>
+                        <option value="zh-CN">{{ t("settings.language.options.zhCN") }}</option>
+                        <option value="en-US">{{ t("settings.language.options.enUS") }}</option>
+                      </select>
+                      <p class="sv-muted">{{ t("settings.language.hint") }}</p>
+                    </div>
+                  </section>
+                </SettingsTierSection>
               </div>
 
               <div v-show="selectedNavId === SETTINGS_NAV.shortcutsMain" class="sv-pane-section">
-                <section class="sv-section">
-                  <div class="sv-row-h">
-                    <span class="sv-label">{{ t("settings.shortcuts.label") }}</span>
-                    <HelpHint :text="settingsShortcutsHelpHint()" />
-                  </div>
-                  <p class="sv-muted">
-                    {{ t("settings.shortcuts.immersiveHint") }}
-                  </p>
-                </section>
+                <SettingsTierSection tier="L1" :reset-key="tierResetKey">
+                  <section class="sv-section">
+                    <div class="sv-row-h">
+                      <span class="sv-label">{{ t("settings.shortcuts.label") }}</span>
+                      <HelpHint :text="settingsShortcutsHelpHint()" />
+                    </div>
+                    <p class="sv-muted">
+                      {{ t("settings.shortcuts.immersiveHint") }}
+                    </p>
+                  </section>
+                </SettingsTierSection>
               </div>
 
               <div v-show="selectedNavId === SETTINGS_NAV.modelsCloud" class="sv-pane-section">
-                <section class="sv-section sv-cloud-section">
-                  <h3 class="sv-h3">{{ t("settings.cloudLlmTrust.sectionTitle") }}</h3>
-                  <p class="sv-muted">{{ t("settings.cloudLlmTrust.sectionLead") }}</p>
-                  <div class="sv-cloud-card">
-                    <div class="sv-cloud-card-h">{{ t("settings.cloudLlmTrust.envTitle") }}</div>
-                    <ul class="sv-cloud-env-list">
-                      <li>{{ t("settings.cloudLlmTrust.envLineBase") }}</li>
-                      <li>{{ t("settings.cloudLlmTrust.envLineKey") }}</li>
-                      <li>{{ t("settings.cloudLlmTrust.envLineModel") }}</li>
-                      <li>{{ t("settings.cloudLlmTrust.envLineTimeout") }}</li>
-                    </ul>
-                    <CloudLlmQuickSetup />
-                  </div>
-                  <div class="sv-cloud-actions-row">
-                    <button type="button" class="sv-btn sv-btn--accent" @click="openCloudLlmTrustReadme">
-                      {{ t("settings.cloudLlmTrust.reviewCta") }}
-                    </button>
-                    <button type="button" class="sv-btn" @click="onOpenPluginBackendsFromCloud">
-                      {{ t("settings.cloudLlmTrust.openBackendsCta") }}
-                    </button>
-                  </div>
-                </section>
+                <SettingsTierSection tier="L4" :reset-key="tierResetKey">
+                  <section class="sv-section sv-cloud-section">
+                    <h3 class="sv-h3">{{ t("settings.cloudLlmTrust.sectionTitle") }}</h3>
+                    <p class="sv-muted">{{ t("settings.cloudLlmTrust.sectionLead") }}</p>
+                    <div class="sv-cloud-card">
+                      <div class="sv-cloud-card-h">{{ t("settings.cloudLlmTrust.envTitle") }}</div>
+                      <ul class="sv-cloud-env-list">
+                        <li>{{ t("settings.cloudLlmTrust.envLineBase") }}</li>
+                        <li>{{ t("settings.cloudLlmTrust.envLineKey") }}</li>
+                        <li>{{ t("settings.cloudLlmTrust.envLineModel") }}</li>
+                        <li>{{ t("settings.cloudLlmTrust.envLineTimeout") }}</li>
+                      </ul>
+                      <CloudLlmQuickSetup />
+                    </div>
+                    <div class="sv-cloud-actions-row">
+                      <button type="button" class="sv-btn sv-btn--accent" @click="openCloudLlmTrustReadme">
+                        {{ t("settings.cloudLlmTrust.reviewCta") }}
+                      </button>
+                      <button type="button" class="sv-btn" @click="onOpenPluginBackendsFromCloud">
+                        {{ t("settings.cloudLlmTrust.openBackendsCta") }}
+                      </button>
+                    </div>
+                  </section>
+                </SettingsTierSection>
               </div>
 
               <div v-show="selectedNavId === SETTINGS_NAV.modelsOllama" class="sv-pane-section">
-                <p class="sv-muted">{{ t("settings.nav.lead.modelsOllama") }}</p>
-                <button type="button" class="sv-btn sv-btn--accent" @click="emitDeepLink({ kind: 'local_models' })">
-                  {{ t("settings.nav.cta.openLocalModels") }}
-                </button>
-                <p class="sv-muted sv-foot">{{ settingsDeepLinkFooterNote() }}</p>
+                <SettingsTierSection tier="L3" :reset-key="tierResetKey">
+                  <p class="sv-muted">{{ t("settings.nav.lead.modelsOllama") }}</p>
+                </SettingsTierSection>
+                <SettingsTierSection tier="L4" :reset-key="tierResetKey">
+                  <button type="button" class="sv-btn sv-btn--accent" @click="emitDeepLink({ kind: 'local_models' })">
+                    {{ t("settings.nav.cta.openLocalModels") }}
+                  </button>
+                  <p class="sv-muted sv-foot">{{ settingsDeepLinkFooterNote() }}</p>
+                </SettingsTierSection>
               </div>
 
               <div v-show="selectedNavId === SETTINGS_NAV.modelsExpert" class="sv-pane-section">
-                <p class="sv-muted">{{ t("settings.nav.lead.modelsExpert") }}</p>
-                <button
-                  type="button"
-                  class="sv-btn sv-btn--accent"
-                  @click="emitDeepLink({ kind: 'expert_workbench', draftMode: 'effective' })"
-                >
-                  {{ t("settings.nav.cta.openExpertWorkbench") }}
-                </button>
-                <p class="sv-muted sv-foot">{{ settingsDeepLinkFooterNote() }}</p>
+                <SettingsTierSection tier="L3" :reset-key="tierResetKey">
+                  <p class="sv-muted">{{ t("settings.nav.lead.modelsExpert") }}</p>
+                </SettingsTierSection>
+                <SettingsTierSection tier="L4" :reset-key="tierResetKey">
+                  <button
+                    type="button"
+                    class="sv-btn sv-btn--accent"
+                    @click="emitDeepLink({ kind: 'expert_workbench', draftMode: 'effective' })"
+                  >
+                    {{ t("settings.nav.cta.openExpertWorkbench") }}
+                  </button>
+                  <p class="sv-muted sv-foot">{{ settingsDeepLinkFooterNote() }}</p>
+                </SettingsTierSection>
               </div>
 
               <div v-show="selectedNavId === SETTINGS_NAV.pluginsDirectory" class="sv-pane-section">
-                <section class="sv-section">
-                  <div class="sv-row-h">
-                    <h3 class="sv-h3">{{ t("settings.plugins.directorySlot.title") }}</h3>
-                    <HelpHint
-                      :paragraphs="[
-                        t('settings.plugins.directorySlot.help.p1'),
-                        t('settings.plugins.directorySlot.help.p2'),
-                      ]"
-                    />
-                  </div>
-                  <PluginSettingsPanelSlots :bootstrap-epoch="pluginStore.bootstrapEpoch" />
-                </section>
+                <SettingsTierSection tier="L3" :reset-key="tierResetKey">
+                  <section class="sv-section">
+                    <div class="sv-row-h">
+                      <h3 class="sv-h3">{{ t("settings.plugins.directorySlot.title") }}</h3>
+                      <HelpHint
+                        :paragraphs="[
+                          t('settings.plugins.directorySlot.help.p1'),
+                          t('settings.plugins.directorySlot.help.p2'),
+                        ]"
+                      />
+                    </div>
+                    <PluginSettingsPanelSlots :bootstrap-epoch="pluginStore.bootstrapEpoch" />
+                  </section>
+                </SettingsTierSection>
               </div>
 
               <div v-show="selectedNavId === SETTINGS_NAV.pluginsHotkeys" class="sv-pane-section">
-                <HotkeySettingsSection />
+                <SettingsTierSection tier="L1" :reset-key="tierResetKey">
+                  <p class="sv-muted">{{ t("hotkeySettings.tierL1Intro") }}</p>
+                </SettingsTierSection>
+                <SettingsTierSection tier="L4" :reset-key="tierResetKey">
+                  <HotkeySettingsSection headless />
+                </SettingsTierSection>
               </div>
 
               <div v-show="selectedNavId === SETTINGS_NAV.pluginsLinkInstalled" class="sv-pane-section">
-                <p class="sv-muted">{{ t("settings.nav.lead.pluginsInstalled") }}</p>
-                <div class="sv-btn-row">
-                  <button type="button" class="sv-btn secondary" @click="openPluginManagerEmbed('plugins')">
-                    {{ t("settings.nav.cta.openPluginManagerInPage") }}
-                  </button>
-                  <button
-                    type="button"
-                    class="sv-btn sv-btn--accent"
-                    @click="emitDeepLink({ kind: 'plugin_manager', tab: 'plugins' })"
-                  >
-                    {{ unifiedOpenPluginManagerInstalledCta() }}
-                  </button>
-                </div>
-                <p class="sv-muted sv-foot">{{ settingsDeepLinkFooterNote() }}</p>
+                <SettingsTierSection tier="L3" :reset-key="tierResetKey">
+                  <p class="sv-muted">{{ t("settings.nav.lead.pluginsInstalled") }}</p>
+                  <div class="sv-btn-row">
+                    <button type="button" class="sv-btn secondary" @click="openPluginManagerEmbed('plugins')">
+                      {{ t("settings.nav.cta.openPluginManagerInPage") }}
+                    </button>
+                  </div>
+                </SettingsTierSection>
+                <SettingsTierSection tier="L4" :reset-key="tierResetKey">
+                  <div class="sv-btn-row">
+                    <button
+                      type="button"
+                      class="sv-btn sv-btn--accent"
+                      @click="emitDeepLink({ kind: 'plugin_manager', tab: 'plugins' })"
+                    >
+                      {{ unifiedOpenPluginManagerInstalledCta() }}
+                    </button>
+                  </div>
+                  <p class="sv-muted sv-foot">{{ settingsDeepLinkFooterNote() }}</p>
+                </SettingsTierSection>
               </div>
 
               <div v-show="selectedNavId === SETTINGS_NAV.pluginsLinkSlots" class="sv-pane-section">
-                <p class="sv-muted">{{ t("settings.nav.lead.pluginsSlots") }}</p>
-                <div class="sv-btn-row">
-                  <button type="button" class="sv-btn secondary" @click="openPluginManagerEmbed('slots')">
-                    {{ t("settings.nav.cta.openPluginManagerInPage") }}
-                  </button>
-                  <button
-                    type="button"
-                    class="sv-btn sv-btn--accent"
-                    @click="emitDeepLink({ kind: 'plugin_manager', tab: 'slots' })"
-                  >
-                    {{ unifiedOpenPluginManagerSlotsCta() }}
-                  </button>
-                </div>
-                <p class="sv-muted sv-foot">{{ settingsDeepLinkFooterNote() }}</p>
+                <SettingsTierSection tier="L3" :reset-key="tierResetKey">
+                  <p class="sv-muted">{{ t("settings.nav.lead.pluginsSlots") }}</p>
+                  <div class="sv-btn-row">
+                    <button type="button" class="sv-btn secondary" @click="openPluginManagerEmbed('slots')">
+                      {{ t("settings.nav.cta.openPluginManagerInPage") }}
+                    </button>
+                  </div>
+                </SettingsTierSection>
+                <SettingsTierSection tier="L4" :reset-key="tierResetKey">
+                  <div class="sv-btn-row">
+                    <button
+                      type="button"
+                      class="sv-btn sv-btn--accent"
+                      @click="emitDeepLink({ kind: 'plugin_manager', tab: 'slots' })"
+                    >
+                      {{ unifiedOpenPluginManagerSlotsCta() }}
+                    </button>
+                  </div>
+                  <p class="sv-muted sv-foot">{{ settingsDeepLinkFooterNote() }}</p>
+                </SettingsTierSection>
               </div>
 
               <div v-show="selectedNavId === SETTINGS_NAV.pluginsLinkBackends" class="sv-pane-section">
-                <p class="sv-muted">{{ t("settings.nav.lead.pluginsBackends") }}</p>
-                <div class="sv-btn-row">
-                  <button type="button" class="sv-btn secondary" @click="openPluginManagerEmbed('backends')">
-                    {{ t("settings.nav.cta.openPluginManagerInPage") }}
+                <SettingsTierSection tier="L3" :reset-key="tierResetKey">
+                  <p class="sv-muted">{{ t("settings.nav.lead.pluginsBackends") }}</p>
+                  <div class="sv-btn-row">
+                    <button type="button" class="sv-btn secondary" @click="openPluginManagerEmbed('backends')">
+                      {{ t("settings.nav.cta.openPluginManagerInPage") }}
+                    </button>
+                  </div>
+                </SettingsTierSection>
+                <SettingsTierSection tier="L4" :reset-key="tierResetKey">
+                  <div class="sv-btn-row">
+                    <button
+                      type="button"
+                      class="sv-btn sv-btn--accent"
+                      @click="emitDeepLink({ kind: 'plugin_manager', tab: 'backends' })"
+                    >
+                      {{ unifiedOpenPluginManagerBackendsCta() }}
+                    </button>
+                  </div>
+                  <p class="sv-muted sv-foot">{{ settingsDeepLinkFooterNote() }}</p>
+                </SettingsTierSection>
+              </div>
+
+              <div v-show="selectedNavId === SETTINGS_NAV.pluginsV2Hub" class="sv-pane-section">
+                <SettingsTierSection tier="L3" :reset-key="tierResetKey">
+                  <p class="sv-muted">{{ t("settings.nav.lead.pluginsV2Hub") }}</p>
+                </SettingsTierSection>
+                <SettingsTierSection tier="L4" :reset-key="tierResetKey">
+                  <button type="button" class="sv-btn sv-btn--accent" @click="emit('openPluginV2')">
+                    {{ unifiedOpenPluginManagerV2HubCta() }}
                   </button>
+                  <p class="sv-muted sv-foot">{{ settingsDeepLinkFooterNote() }}</p>
+                </SettingsTierSection>
+              </div>
+
+              <div v-show="selectedNavId === SETTINGS_NAV.marketBrowse" class="sv-pane-section">
+                <SettingsTierSection tier="L3" :reset-key="tierResetKey">
+                  <p class="sv-muted">{{ t("settings.nav.lead.marketBrowse") }}</p>
+                  <p v-if="uiStore.experimentalPluginManagerV2" class="sv-callout sv-muted">
+                    {{ t("settings.nav.lead.marketBrowseV2Hint") }}
+                  </p>
+                </SettingsTierSection>
+                <SettingsTierSection tier="L4" :reset-key="tierResetKey">
+                  <button type="button" class="sv-btn sv-btn--accent" @click="emitDeepLink({ kind: 'plugin_market' })">
+                    {{ unifiedMarketCtaText }}
+                  </button>
+                  <p class="sv-muted sv-foot">{{ settingsDeepLinkFooterNote() }}</p>
+                </SettingsTierSection>
+              </div>
+
+              <div v-show="selectedNavId === SETTINGS_NAV.securityHost" class="sv-pane-section">
+                <SettingsTierSection tier="L4" :reset-key="tierResetKey">
+                  <section class="sv-section">
+                    <div class="sv-row-h">
+                      <span class="sv-label">{{ t("settings.security.label") }}</span>
+                    </div>
+                    <label class="sv-toggle-row">
+                      <input
+                        type="checkbox"
+                        :checked="pluginStore.pluginState.force_iframe_mode === true"
+                        @change="onToggleForceIframe"
+                      />
+                      <span class="sv-toggle-text">
+                        <strong>{{ t("settings.security.forceIframe.title") }}</strong>
+                        <span class="sv-muted sv-toggle-desc">
+                          {{ t("settings.security.forceIframe.hint") }}
+                        </span>
+                      </span>
+                    </label>
+                  </section>
+                </SettingsTierSection>
+              </div>
+
+              <div v-show="selectedNavId === SETTINGS_NAV.advancedExperimental" class="sv-pane-section">
+                <SettingsTierSection tier="L4" :reset-key="tierResetKey">
+                  <section class="sv-section">
+                    <div class="sv-row-h">
+                      <span class="sv-label">{{ t("settings.experimental.label") }}</span>
+                      <HelpHint :text="settingsExperimentalSectionHelpHint()" />
+                    </div>
+                    <label class="sv-toggle-row">
+                      <input
+                        type="checkbox"
+                        :checked="uiStore.experimentalPluginManagerV2 === true"
+                        @change="uiStore.setExperimentalPluginManagerV2(($event.target as HTMLInputElement).checked)"
+                      />
+                      <span class="sv-toggle-text">
+                        <strong>{{ t("pluginManager.entry.settingsExperimentalToggleTitle") }}</strong>
+                        <span class="sv-muted sv-toggle-desc" v-html="settingsExperimentalToggleDescriptionHtml()" />
+                      </span>
+                    </label>
+                    <div v-if="uiStore.experimentalPluginManagerV2" class="sv-v2-launch">
+                      <button type="button" class="sv-v2-launch-btn" @click="emit('openPluginV2')">
+                        {{ settingsOpenV2PreviewButtonLabel() }}
+                      </button>
+                    </div>
+                  </section>
+                </SettingsTierSection>
+              </div>
+
+              <div v-show="selectedNavId === SETTINGS_NAV.advancedEmbed" class="sv-pane-section">
+                <SettingsTierSection tier="L3" :reset-key="tierResetKey">
+                  <section class="sv-section">
+                    <h3 class="sv-h3">{{ t("settings.advancedSlot.title") }}</h3>
+                    <p class="sv-muted">{{ t("settings.advancedSlot.hint") }}</p>
+                    <PluginSlotEmbed
+                      :slot-name="SLOT_SETTINGS_ADVANCED"
+                      :aria-label="String(t('settings.advancedSlot.aria'))"
+                      :bootstrap-epoch="pluginStore.bootstrapEpoch"
+                    />
+                  </section>
+                </SettingsTierSection>
+              </div>
+
+              <div v-show="selectedNavId === SETTINGS_NAV.advancedMarketSources" class="sv-pane-section">
+                <SettingsTierSection tier="L3" :reset-key="tierResetKey">
+                  <section class="sv-section">
+                    <div class="sv-row-h">
+                      <span class="sv-label">{{ t("settings.plugins.devMode.sectionLabel") }}</span>
+                      <HelpHint
+                        :paragraphs="[
+                          t('settings.plugins.devMode.help.p1'),
+                          t('settings.plugins.devMode.help.p2'),
+                        ]"
+                      />
+                    </div>
+                  </section>
+                </SettingsTierSection>
+                <SettingsTierSection tier="L4" :reset-key="tierResetKey">
+                  <section class="sv-section">
+                    <label class="sv-toggle-row">
+                      <input
+                        type="checkbox"
+                        :disabled="marketSourcesLoading"
+                        :checked="marketDeveloperModeLocal === true"
+                        @change="onToggleMarketDeveloperMode"
+                      />
+                      <span class="sv-toggle-text">
+                        <strong>{{ t("settings.plugins.devMode.title") }}</strong>
+                        <span class="sv-muted sv-toggle-desc">
+                          {{ t("settings.plugins.devMode.hint") }}
+                        </span>
+                      </span>
+                    </label>
+                    <div v-if="marketDeveloperModeLocal" class="sv-dev-box">
+                      <p class="sv-muted">
+                        {{ t("settings.plugins.sources.hint") }}
+                      </p>
+                      <textarea
+                        v-model="marketSourcesText"
+                        class="sv-textarea"
+                        rows="4"
+                        spellcheck="false"
+                        placeholder="https://example.com/plugins.json"
+                      />
+                      <div class="sv-row-actions">
+                        <button
+                          type="button"
+                          class="sv-btn"
+                          :disabled="marketSourcesLoading"
+                          @click="onSaveMarketSources"
+                        >
+                          {{ t("settings.plugins.sources.saveButton") }}
+                        </button>
+                      </div>
+                    </div>
+                  </section>
+                </SettingsTierSection>
+              </div>
+
+              <div v-show="selectedNavId === SETTINGS_NAV.diagnosticsDebug" class="sv-pane-section">
+                <SettingsTierSection tier="L2" :reset-key="tierResetKey">
+                  <p class="sv-muted">{{ t("settings.nav.lead.diagnosticsDebug") }}</p>
+                </SettingsTierSection>
+                <SettingsTierSection tier="L4" :reset-key="tierResetKey">
+                  <button type="button" class="sv-btn sv-btn--accent" @click="emitDeepLink({ kind: 'debug_panel' })">
+                    {{ unifiedDebugCtaText }}
+                  </button>
+                  <p class="sv-muted sv-foot">{{ settingsDeepLinkFooterNote() }}</p>
+                </SettingsTierSection>
+              </div>
+
+              <div v-show="selectedNavId === SETTINGS_NAV.diagnosticsAgent" class="sv-pane-section">
+                <SettingsTierSection tier="L3" :reset-key="tierResetKey">
+                  <p class="sv-muted">{{ t("settings.nav.lead.diagnosticsAgent") }}</p>
+                </SettingsTierSection>
+                <SettingsTierSection tier="L4" :reset-key="tierResetKey">
                   <button
                     type="button"
                     class="sv-btn sv-btn--accent"
                     @click="emitDeepLink({ kind: 'plugin_manager', tab: 'backends' })"
                   >
-                    {{ unifiedOpenPluginManagerBackendsCta() }}
+                    {{ unifiedOpenAgentDebugFromBackendsCta() }}
                   </button>
-                </div>
-                <p class="sv-muted sv-foot">{{ settingsDeepLinkFooterNote() }}</p>
-              </div>
-
-              <div v-show="selectedNavId === SETTINGS_NAV.pluginsV2Hub" class="sv-pane-section">
-                <p class="sv-muted">{{ t("settings.nav.lead.pluginsV2Hub") }}</p>
-                <button type="button" class="sv-btn sv-btn--accent" @click="emit('openPluginV2')">
-                  {{ unifiedOpenPluginManagerV2HubCta() }}
-                </button>
-                <p class="sv-muted sv-foot">{{ settingsDeepLinkFooterNote() }}</p>
-              </div>
-
-              <div v-show="selectedNavId === SETTINGS_NAV.marketBrowse" class="sv-pane-section">
-                <p class="sv-muted">{{ t("settings.nav.lead.marketBrowse") }}</p>
-                <p v-if="uiStore.experimentalPluginManagerV2" class="sv-callout sv-muted">
-                  {{ t("settings.nav.lead.marketBrowseV2Hint") }}
-                </p>
-                <button type="button" class="sv-btn sv-btn--accent" @click="emitDeepLink({ kind: 'plugin_market' })">
-                  {{ unifiedMarketCtaText }}
-                </button>
-                <p class="sv-muted sv-foot">{{ settingsDeepLinkFooterNote() }}</p>
-              </div>
-
-              <div v-show="selectedNavId === SETTINGS_NAV.securityHost" class="sv-pane-section">
-                <section class="sv-section">
-                  <div class="sv-row-h">
-                    <span class="sv-label">{{ t("settings.security.label") }}</span>
-                  </div>
-                  <label class="sv-toggle-row">
-                    <input
-                      type="checkbox"
-                      :checked="pluginStore.pluginState.force_iframe_mode === true"
-                      @change="onToggleForceIframe"
-                    />
-                    <span class="sv-toggle-text">
-                      <strong>{{ t("settings.security.forceIframe.title") }}</strong>
-                      <span class="sv-muted sv-toggle-desc">
-                        {{ t("settings.security.forceIframe.hint") }}
-                      </span>
-                    </span>
-                  </label>
-                </section>
-              </div>
-
-              <div v-show="selectedNavId === SETTINGS_NAV.advancedExperimental" class="sv-pane-section">
-                <section class="sv-section">
-                  <div class="sv-row-h">
-                    <span class="sv-label">{{ t("settings.experimental.label") }}</span>
-                    <HelpHint :text="settingsExperimentalSectionHelpHint()" />
-                  </div>
-                  <label class="sv-toggle-row">
-                    <input
-                      type="checkbox"
-                      :checked="uiStore.experimentalPluginManagerV2 === true"
-                      @change="uiStore.setExperimentalPluginManagerV2(($event.target as HTMLInputElement).checked)"
-                    />
-                    <span class="sv-toggle-text">
-                      <strong>{{ t("pluginManager.entry.settingsExperimentalToggleTitle") }}</strong>
-                      <span class="sv-muted sv-toggle-desc" v-html="settingsExperimentalToggleDescriptionHtml()" />
-                    </span>
-                  </label>
-                  <div v-if="uiStore.experimentalPluginManagerV2" class="sv-v2-launch">
-                    <button type="button" class="sv-v2-launch-btn" @click="emit('openPluginV2')">
-                      {{ settingsOpenV2PreviewButtonLabel() }}
-                    </button>
-                  </div>
-                </section>
-              </div>
-
-              <div v-show="selectedNavId === SETTINGS_NAV.advancedEmbed" class="sv-pane-section">
-                <section class="sv-section">
-                  <h3 class="sv-h3">{{ t("settings.advancedSlot.title") }}</h3>
-                  <p class="sv-muted">{{ t("settings.advancedSlot.hint") }}</p>
-                  <PluginSlotEmbed
-                    :slot-name="SLOT_SETTINGS_ADVANCED"
-                    :aria-label="String(t('settings.advancedSlot.aria'))"
-                    :bootstrap-epoch="pluginStore.bootstrapEpoch"
-                  />
-                </section>
-              </div>
-
-              <div v-show="selectedNavId === SETTINGS_NAV.advancedMarketSources" class="sv-pane-section">
-                <section class="sv-section">
-                  <div class="sv-row-h">
-                    <span class="sv-label">{{ t("settings.plugins.devMode.sectionLabel") }}</span>
-                    <HelpHint
-                      :paragraphs="[
-                        t('settings.plugins.devMode.help.p1'),
-                        t('settings.plugins.devMode.help.p2'),
-                      ]"
-                    />
-                  </div>
-                  <label class="sv-toggle-row">
-                    <input
-                      type="checkbox"
-                      :disabled="marketSourcesLoading"
-                      :checked="marketDeveloperModeLocal === true"
-                      @change="onToggleMarketDeveloperMode"
-                    />
-                    <span class="sv-toggle-text">
-                      <strong>{{ t("settings.plugins.devMode.title") }}</strong>
-                      <span class="sv-muted sv-toggle-desc">
-                        {{ t("settings.plugins.devMode.hint") }}
-                      </span>
-                    </span>
-                  </label>
-                  <div v-if="marketDeveloperModeLocal" class="sv-dev-box">
-                    <p class="sv-muted">
-                      {{ t("settings.plugins.sources.hint") }}
-                    </p>
-                    <textarea
-                      v-model="marketSourcesText"
-                      class="sv-textarea"
-                      rows="4"
-                      spellcheck="false"
-                      placeholder="https://example.com/plugins.json"
-                    />
-                    <div class="sv-row-actions">
-                      <button
-                        type="button"
-                        class="sv-btn"
-                        :disabled="marketSourcesLoading"
-                        @click="onSaveMarketSources"
-                      >
-                        {{ t("settings.plugins.sources.saveButton") }}
-                      </button>
-                    </div>
-                  </div>
-                </section>
-              </div>
-
-              <div v-show="selectedNavId === SETTINGS_NAV.diagnosticsDebug" class="sv-pane-section">
-                <p class="sv-muted">{{ t("settings.nav.lead.diagnosticsDebug") }}</p>
-                <button type="button" class="sv-btn sv-btn--accent" @click="emitDeepLink({ kind: 'debug_panel' })">
-                  {{ unifiedDebugCtaText }}
-                </button>
-                <p class="sv-muted sv-foot">{{ settingsDeepLinkFooterNote() }}</p>
-              </div>
-
-              <div v-show="selectedNavId === SETTINGS_NAV.diagnosticsAgent" class="sv-pane-section">
-                <p class="sv-muted">{{ t("settings.nav.lead.diagnosticsAgent") }}</p>
-                <button
-                  type="button"
-                  class="sv-btn sv-btn--accent"
-                  @click="emitDeepLink({ kind: 'plugin_manager', tab: 'backends' })"
-                >
-                  {{ unifiedOpenAgentDebugFromBackendsCta() }}
-                </button>
-                <p class="sv-muted sv-foot">{{ settingsDeepLinkFooterNote() }}</p>
+                  <p class="sv-muted sv-foot">{{ settingsDeepLinkFooterNote() }}</p>
+                </SettingsTierSection>
               </div>
             </div>
           </div>
@@ -834,7 +907,7 @@ async function onToggleForceIframe(e: Event) {
 .sv-pane-section {
   display: flex;
   flex-direction: column;
-  gap: 12px;
+  gap: 14px;
   padding-bottom: 8px;
 }
 .sv-foot {
