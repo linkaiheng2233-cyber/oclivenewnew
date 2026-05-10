@@ -158,7 +158,7 @@ export const zhCN = {
     currentModel: "当前：{id}",
     customOllamaPlaceholder: "其它 Ollama 模型名…",
     customOllamaApply: "应用",
-    openFullSettings: "打开完整设置（插件与其它选项）…",
+    openFullSettings: "打开完整设置（含语言、云端与「系统与内核」分区）…",
     ollamaOnline: "已连接本地 Ollama",
     ollamaOffline: "未检测到本地 Ollama",
     noLocalModels: "暂无可用模型名（可检查 Ollama 是否已启动并已 pull）。",
@@ -176,7 +176,7 @@ export const zhCN = {
     offlineLocal: "（未检测到本地 Ollama）",
     hint: "按来源分组：本地为 Ollama；云端仅在设置中保存过 OpenAI 兼容配置后出现已保存的默认 model 与当前全局 id，其它请选「自定义」。与角色包与全局设置一致。",
     gear: "云端",
-    openSettings: "打开设置（云端 LLM 与密钥）",
+    openSettings: "打开设置（云端 LLM 与系统与内核选项）",
     errEmpty: "模型名不能为空。",
     generatingHint: "生成中…",
     endWaiting: "结束等待",
@@ -346,9 +346,9 @@ export const zhCN = {
     title: "设置",
     /** 纯聊打开设置时：与沉浸功能划界，避免同一页里混叙事/插件话术 */
     pureChatBoundary:
-      "当前为纯聊：本页只保留语言、云端入网说明等常用项。叙事条、插件实验与市场等仍在沉浸模式，避免与纯聊主路径混在一起。",
+      "当前为纯聊：本页只保留语言、云端入网说明等常用项。叙事条、市场与「系统与内核」相关选项（含插件 V2 实验等）仍在沉浸模式，避免与纯聊主路径混在一起。",
     pureChatMoreInImmersive:
-      "插件实验、第三方索引源、设置页扩展插槽等已收起；需要时请切换到沉浸模式后打开同一设置页。",
+      "市场第三方索引源、设置页扩展插槽及「系统与内核」分区等已收起；需要时请切换到沉浸模式后打开同一设置页。",
     sectionsNavLabel: "设置分区",
     tabs: {
       general: "常规",
@@ -436,7 +436,7 @@ export const zhCN = {
       immersiveHint: "虚拟时间、叙事场景等仅在沉浸模式下显示于「更多」。",
     },
     experimental: {
-      label: "实验性功能",
+      label: "系统与内核 · 实验性功能",
     },
     advancedSlot: {
       title: "扩展区（settings.advanced）",
@@ -454,7 +454,7 @@ export const zhCN = {
     },
     plugins: {
       devMode: {
-        sectionLabel: "高级（开发者模式）",
+        sectionLabel: "系统与内核 · 市场开发者模式",
         help: {
           p1: "开发者模式用于启用第三方插件索引源与侧载安装入口。",
           p2: "开启后请仅添加你信任的索引源；未签名源安装会强提示。",
@@ -498,10 +498,10 @@ export const zhCN = {
         pluginsV2Hub: "V2 管理（槽位 · Git · 本地 Llama）",
         marketBrowse: "插件市场",
         securityHost: "安全与隐私",
-        catAdvanced: "高级与实验",
-        advancedExperimental: "插件管理 V2 与实验",
+        catAdvanced: "内核与实验",
+        advancedExperimental: "插件管理 V2（系统与内核 · 实验）",
         advancedEmbed: "扩展区（settings.advanced）",
-        advancedMarketSources: "市场开发者与索引源",
+        advancedMarketSources: "市场 · 索引源（系统与内核）",
         diagnosticsDebug: "诊断与调试",
         diagnosticsAgent: "Agent / MCP 调试",
       },
@@ -571,7 +571,7 @@ export const zhCN = {
       settingsShortcutsHelpHint:
         "可通过顶栏「更多」或 {m}+Shift+F 快速打开插件管理。",
       settingsExperimentalSectionHelpHint:
-        "实验性功能可能频繁变更，并可能造成兼容性问题。",
+        "「系统与内核」层实验可能频繁变更，并可能造成兼容性问题。",
       settingsExperimentalToggleTitle: "启用新版插件管理界面（V2 预览）",
       settingsExperimentalToggleDescriptionHtml:
         "这是预览版本，部分功能可能不完整；欢迎反馈。",
@@ -592,14 +592,14 @@ export const zhCN = {
       },
       tileHelpText: {
         v1:
-          "将快捷键说明、设置页与 Oclive Manager（插件与后端管理）集中到同一处。快捷键：{m}+Shift+S 打开设置；{m}+Shift+F 打开专业模式（V1）Oclive Manager（含开发者调试）；{m}+Shift+A 打开插件市场。 {m}+Shift+D 开关调试面板。",
+          "将快捷键说明、设置页与 Oclive Manager（插件与后端管理）集中到同一处。快捷键：{m}+Shift+S 打开设置；{m}+Shift+F 打开专业模式（V1）Oclive Manager（含系统与内核向排障）；{m}+Shift+A 打开插件市场。 {m}+Shift+D 开关调试面板。",
         v2:
-          "将快捷键说明、设置页与 Oclive Manager 集中到同一处。快捷键：{m}+Shift+S 打开设置；{m}+Shift+F 与下方按钮打开 Oclive Manager（V2 预览）；{m}+Shift+A 打开插件市场；在设置中关闭「V2 预览」可恢复专业模式（V1）。 {m}+Shift+D 开关调试面板。",
+          "将快捷键说明、设置页与 Oclive Manager 集中到同一处。快捷键：{m}+Shift+S 打开设置；{m}+Shift+F 与下方按钮打开 Oclive Manager（V2 预览）；{m}+Shift+A 打开插件市场；在设置「系统与内核 · 实验」中关闭「V2 预览」可恢复专业模式（V1）。 {m}+Shift+D 开关调试面板。",
       },
     },
     shortcuts: {
       ctrlShiftFDescription: {
-        v1: "打开专业模式（V1）Oclive Manager（含界面插件 · 开发者调试）",
+        v1: "打开专业模式（V1）Oclive Manager（含界面插件 · 系统与内核向调试）",
         v2: "打开 Oclive Manager（V2 预览）；关闭设置中的「V2 预览」后恢复为专业模式（V1）",
       },
       ctrlShiftADescription:

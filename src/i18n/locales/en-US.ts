@@ -167,7 +167,7 @@ export const enUS = {
     currentModel: "Current: {id}",
     customOllamaPlaceholder: "Another Ollama model id…",
     customOllamaApply: "Apply",
-    openFullSettings: "Open full settings (plugins & more)…",
+    openFullSettings: "Open full settings (language, cloud, and System & kernel sections)…",
     ollamaOnline: "Local Ollama reachable",
     ollamaOffline: "Local Ollama not detected",
     noLocalModels: "No model names detected (check Ollama is running and models are pulled).",
@@ -186,7 +186,7 @@ export const enUS = {
     offlineLocal: "(Local Ollama not detected)",
     hint: "Grouped by source: local Ollama; cloud appears only after you save OpenAI-compatible cloud settings, listing the saved default model and current global id—use Other → Custom for anything else.",
     gear: "Cloud",
-    openSettings: "Open settings (cloud LLM & keys)",
+    openSettings: "Open settings (cloud LLM & System & kernel options)",
     errEmpty: "Model id cannot be empty.",
     generatingHint: "Generating…",
     endWaiting: "End wait",
@@ -356,9 +356,9 @@ export const enUS = {
   settings: {
     title: "Settings",
     pureChatBoundary:
-      "Chat-only mode: this page keeps essentials like language and host networking notes. Narrative UI, plugin experiments, and the market stay in immersive mode so they do not mix into the chat-only path.",
+      "Chat-only mode: this page keeps essentials like language and host networking notes. Narrative UI, the market, and System & kernel options (including Plugin Manager V2 preview) stay in immersive mode so they do not mix into the chat-only path.",
     pureChatMoreInImmersive:
-      "Plugin experiments, third-party index sources, and the settings extension slot are hidden here; switch to immersive and open the same Settings page when you need them.",
+      "Third-party market index sources, the settings extension slot, and the System & kernel section are hidden here; switch to immersive and open the same Settings page when you need them.",
     sectionsNavLabel: "Settings sections",
     tabs: {
       general: "General",
@@ -449,7 +449,7 @@ export const enUS = {
         'Virtual time, narrative scenes, etc. are only shown under "More" in immersive mode.',
     },
     experimental: {
-      label: "Experimental",
+      label: "System & kernel · Experimental",
     },
     advancedSlot: {
       title: "Extension slot (settings.advanced)",
@@ -468,7 +468,7 @@ export const enUS = {
     },
     plugins: {
       devMode: {
-        sectionLabel: "Advanced (Developer mode)",
+        sectionLabel: "System & kernel · Market developer mode",
         help: {
           p1: "Developer mode enables third-party plugin index sources and sideload install entry points.",
           p2: "Only add sources you trust; unsigned sources will show strong warnings on install.",
@@ -514,10 +514,10 @@ export const enUS = {
         pluginsV2Hub: "V2 hub (slots · Git · local Llama)",
         marketBrowse: "Plugin market",
         securityHost: "Security & privacy",
-        catAdvanced: "Advanced & experimental",
-        advancedExperimental: "Plugin Manager V2 & experiments",
+        catAdvanced: "Kernel & experiments",
+        advancedExperimental: "Plugin Manager V2 (System & kernel · experimental)",
         advancedEmbed: "Extension slot (settings.advanced)",
-        advancedMarketSources: "Market developer mode & index sources",
+        advancedMarketSources: "Market · index sources (System & kernel)",
         diagnosticsDebug: "Diagnostics & debug",
         diagnosticsAgent: "Agent / MCP debug",
       },
@@ -590,7 +590,7 @@ export const enUS = {
       settingsShortcutsHelpHint:
         "You can open Plugin Manager quickly via the top bar “More” menu or {m}+Shift+F.",
       settingsExperimentalSectionHelpHint:
-        "Experimental features may change frequently and can break compatibility.",
+        "System & kernel experiments may change frequently and can break compatibility.",
       settingsExperimentalToggleTitle: "Enable new Plugin Manager UI (V2 preview)",
       settingsExperimentalToggleDescriptionHtml:
         "This is a preview. Some features may be incomplete; feedback is welcome.",
@@ -611,14 +611,14 @@ export const enUS = {
       },
       tileHelpText: {
         v1:
-          "Centralizes shortcuts, Settings, and Oclive Manager (plugins & backends). Shortcuts: {m}+Shift+S opens Settings; {m}+Shift+F opens Oclive Manager (V1, with dev debug); {m}+Shift+A opens Plugin Market. {m}+Shift+D toggles Debug panel.",
+          "Centralizes shortcuts, Settings, and Oclive Manager (plugins & backends). Shortcuts: {m}+Shift+S opens Settings; {m}+Shift+F opens Oclive Manager (V1, with System & kernel–oriented troubleshooting); {m}+Shift+A opens Plugin Market. {m}+Shift+D toggles Debug panel.",
         v2:
-          "Centralizes shortcuts, Settings, and Oclive Manager. Shortcuts: {m}+Shift+S opens Settings; {m}+Shift+F and the button below open Oclive Manager (V2 preview); {m}+Shift+A opens Plugin Market; disable “V2 preview” in Settings to return to V1. {m}+Shift+D toggles Debug panel.",
+          "Centralizes shortcuts, Settings, and Oclive Manager. Shortcuts: {m}+Shift+S opens Settings; {m}+Shift+F and the button below open Oclive Manager (V2 preview); {m}+Shift+A opens Plugin Market; disable “V2 preview” under Settings → System & kernel · Experimental to return to V1. {m}+Shift+D toggles Debug panel.",
       },
     },
     shortcuts: {
       ctrlShiftFDescription: {
-        v1: "Open Oclive Manager (V1, includes UI plugins · dev debugging).",
+        v1: "Open Oclive Manager (V1, includes UI plugins · System & kernel–oriented debugging).",
         v2: "Open Oclive Manager (V2 preview). Disable “V2 preview” in Settings to return to V1.",
       },
       ctrlShiftADescription:
