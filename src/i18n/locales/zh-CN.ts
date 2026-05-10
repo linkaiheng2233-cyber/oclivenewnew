@@ -238,19 +238,12 @@ export const zhCN = {
         settingsEntry: {
           title: "设置入口",
           groupLabel: "设置入口集合",
-          shortcutHelp: "快捷键说明",
-          settings: "⚙ 设置",
+          shortcutHelp: "快捷键参考",
+          settings: "设置",
           hubHint:
-            "插件管理、市场、本机模型、调试与角色包文件夹等均已收拢到「设置」侧栏与分区；此处仅保留快捷键说明与设置入口。",
+            "插件管理、市场、本机模型、调试与角色包文件夹等均已收拢到「设置」侧栏与分区；此处仅保留快捷键参考与设置入口。",
           pureChatHubHint:
             "纯聊下同样从「设置」统一管理模型、云端、快捷键与诊断；沉浸专有项会在设置页内标注。",
-          localModels: "本地模型…",
-          revealRolePackFolder: "打开角色包文件夹…",
-          revealRolePackHint:
-            "在资源管理器中打开当前角色的包目录，可直接编辑 settings.json、manifest.json 等；保存后请重新加载角色或重启应用使部分改动生效。",
-          revealRolePackOk: "已打开文件夹。",
-          revealRolePackNoRole: "当前未选择角色。",
-          pluginMarket: "插件市场（{m}+Shift+A）",
         },
         rolePackShare: {
           title: "角色包（朋友分享）",

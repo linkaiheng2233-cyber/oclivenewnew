@@ -32,7 +32,6 @@ import {
   loadRole,
   OCLIVE_DEFAULT_RELATION_SENTINEL,
   peekRolePack,
-  revealRolePackFolder,
   parseApiErrorCode,
   setErrorReporter,
   setRemoteLifeEnabled,
@@ -271,21 +270,6 @@ function onSettingsDeepLink(link: SettingsDeepLink): void {
     case "debug_panel":
       if (!debugStore.visible) debugStore.toggle();
       break;
-  }
-}
-
-async function onRevealRolePackFolder(): Promise<void> {
-  const rid = (roleStore.currentRoleId ?? "").trim();
-  if (!rid) {
-    showToast("error", String(t("app.topBar.tiles.settingsEntry.revealRolePackNoRole")));
-    return;
-  }
-  try {
-    await revealRolePackFolder(rid);
-    topMoreOpen.value = false;
-    showToast("success", String(t("app.topBar.tiles.settingsEntry.revealRolePackOk")));
-  } catch (e) {
-    showToast("error", e instanceof Error ? e.message : String(e));
   }
 }
 

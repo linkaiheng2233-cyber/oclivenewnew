@@ -248,19 +248,12 @@ export const enUS = {
         settingsEntry: {
           title: "Entries",
           groupLabel: "Entry actions",
-          shortcutHelp: "Shortcuts",
+          shortcutHelp: "Shortcut reference",
           settings: "Settings",
           hubHint:
-            "Plugin Manager, Market, local models, Debug, and role pack folders now live under Settings; this rail keeps shortcuts help and Settings only.",
+            "Plugin Manager, Market, local models, Debug, and role pack folders now live under Settings; this rail keeps shortcut reference and Settings only.",
           pureChatHubHint:
             "In chat-only mode, Settings still covers models, cloud, shortcuts, and diagnostics; immersive-only items are labeled inside Settings.",
-          localModels: "Local models…",
-          revealRolePackFolder: "Open role pack folder…",
-          revealRolePackHint:
-            "Opens the current role’s pack directory in the file manager so you can edit settings.json, manifest.json, etc.; reload the role after changes where needed.",
-          revealRolePackOk: "Folder opened.",
-          revealRolePackNoRole: "No role selected.",
-          pluginMarket: "Plugin Market ({m}+Shift+A)",
         },
         rolePackShare: {
           title: "Role packs (share with friends)",
