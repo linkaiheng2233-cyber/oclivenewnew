@@ -510,7 +510,8 @@ export const zhCN = {
     },
     nav: {
       deepLinkFooterNote: "将关闭本设置窗口并在独立面板中打开。",
-      embedV2HubFoot: "将打开叠在设置窗之上的 V2 预览（仅当上方开发者模式开启时显示本侧栏项）。",
+      needV2Experimental: "请先在「内核与实验」中开启「插件管理 V2（实验）」。",
+      gotoV2HubButton: "打开 V2 插件管理（设置内嵌）",
       embedMarketFoot: "在设置窗下方嵌入经典插件市场。",
       embedAgentDebugFoot: "在设置窗下方嵌入经典插件管理「后端」页（含 Agent 调试台）。",
       filterLabel: "筛选设置项",
@@ -528,6 +529,7 @@ export const zhCN = {
         catData: "角色与数据",
         dataRoles: "角色管理",
         dataExpertModels: "专家模型设置",
+        dataExpertWorkbench: "专家模型工作台",
         catPlugins: "插件与扩展",
         pluginsDirectory: "目录插件 · 设置页插槽",
         pluginsLinkInstalled: "已安装与市场",
@@ -535,6 +537,7 @@ export const zhCN = {
         pluginsLinkBackends: "后端模块（plugin_backends）",
         pluginsV2Hub: "V2 管理（槽位 · Git · 本地 Llama）",
         marketBrowse: "插件市场",
+        marketBrowseV2: "插件市场（V2）",
         securityHost: "安全与隐私",
         catAdvanced: "内核与实验",
         advancedExperimental: "插件管理 V2（系统与内核 · 实验）",
@@ -560,10 +563,14 @@ export const zhCN = {
         pluginsSlots: "在「插槽」页调整各 UI 槽的嵌入顺序与预览；从本页在设置下方嵌入。",
         pluginsBackends: "在「后端」页调整 plugin_backends 与会话覆盖；Agent 调试台亦在此页，可从本页嵌入。",
         pluginsV2Hub:
-          "槽位看板、从 Git 安装插件、会话级本地 Llama 绑定等在 V2 预览窗内完成；需开启顶部开发者模式后从本页进入。",
+          "槽位看板、从 Git 安装、会话级本地 Llama 等：开启 V2 实验后，本页下方直接嵌入 V2 管理界面。",
         marketBrowse: "浏览社区索引、安装或更新插件，并处理权限同意（与网络与信任模型相关）。",
-        marketBrowseV2Hint:
-          "已启用新版插件管理（V2）实验：可在 V2 预览内打开 V2 市场，或使用下方按钮嵌入经典市场。",
+        marketBrowseV2NavHint:
+          "开启 V2 实验后，请使用侧栏「插件市场（V2）」进入嵌入版 V2 市场。",
+        marketBrowseV2:
+          "以 V2 市场界面浏览社区索引（开启 V2 实验后嵌入在下方）。",
+        dataExpertWorkbench:
+          "编辑专家图与工作流、应用会话默认等；完整工作台嵌入在下方。",
         diagnosticsDebug:
           "下方可在此页直接查看调试内容；也可用全局快捷键直接打开本设置页。",
         diagnosticsAgent:

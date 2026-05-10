@@ -22,12 +22,14 @@ export const SETTINGS_NAV = {
   modelsOllama: "settings.models.ollama",
   dataRoles: "settings.data.roles",
   dataExpertModels: "settings.data.expertModels",
+  dataExpertWorkbench: "settings.data.expertWorkbench",
   pluginsDirectory: "settings.plugins.directory",
   pluginsLinkInstalled: "settings.plugins.linkInstalled",
   pluginsLinkSlots: "settings.plugins.linkSlots",
   pluginsLinkBackends: "settings.plugins.linkBackends",
   pluginsV2Hub: "settings.plugins.v2Hub",
   marketBrowse: "settings.market.browse",
+  marketBrowseV2: "settings.market.browseV2",
   securityHost: "settings.security.host",
   advancedExperimental: "settings.advanced.experimental",
   advancedEmbed: "settings.advanced.embed",
@@ -46,10 +48,12 @@ export const ALL_SETTINGS_NAV_IDS: readonly SettingsNavId[] = Object.values(SETT
  */
 export const SETTINGS_DEVELOPER_GATED_NAV_IDS: readonly SettingsNavId[] = [
   SETTINGS_NAV.dataExpertModels,
+  SETTINGS_NAV.dataExpertWorkbench,
   SETTINGS_NAV.pluginsV2Hub,
   SETTINGS_NAV.advancedExperimental,
   SETTINGS_NAV.systemDeveloper,
   SETTINGS_NAV.diagnosticsAgent,
+  SETTINGS_NAV.marketBrowseV2,
 ];
 
 /** 别名：与 `SETTINGS_DEVELOPER_GATED_NAV_IDS` 相同，语义更直白。 */
@@ -127,6 +131,7 @@ export const SETTINGS_NAV_ROWS: readonly SettingsNavRow[] = [
   { id: SETTINGS_NAV_CAT.data, depth: 0, isGroupLabel: true, visibility: "immersive" },
   { id: SETTINGS_NAV.dataRoles, depth: 1, tier: "L3", visibility: "immersive" },
   { id: SETTINGS_NAV.dataExpertModels, depth: 1, tier: "L3", visibility: "immersive" },
+  { id: SETTINGS_NAV.dataExpertWorkbench, depth: 1, tier: "L4", visibility: "immersive" },
   { id: SETTINGS_NAV_CAT.plugins, depth: 0, isGroupLabel: true, visibility: "immersive" },
   { id: SETTINGS_NAV.pluginsDirectory, depth: 1, tier: "L3", visibility: "immersive" },
   { id: SETTINGS_NAV.pluginsLinkInstalled, depth: 1, tier: "L3", visibility: "immersive" },
@@ -134,6 +139,7 @@ export const SETTINGS_NAV_ROWS: readonly SettingsNavRow[] = [
   { id: SETTINGS_NAV.pluginsLinkBackends, depth: 1, tier: "L4", visibility: "immersive" },
   { id: SETTINGS_NAV.pluginsV2Hub, depth: 1, tier: "L4", visibility: "immersive" },
   { id: SETTINGS_NAV.marketBrowse, depth: 0, tier: "L3", visibility: "immersive" },
+  { id: SETTINGS_NAV.marketBrowseV2, depth: 0, tier: "L4", visibility: "immersive" },
   { id: SETTINGS_NAV.securityHost, depth: 0, tier: "L4", visibility: "always" },
   { id: SETTINGS_NAV_CAT.advanced, depth: 0, isGroupLabel: true, visibility: "immersive" },
   { id: SETTINGS_NAV.advancedExperimental, depth: 1, tier: "L4", visibility: "immersive" },

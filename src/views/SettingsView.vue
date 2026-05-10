@@ -22,10 +22,8 @@ import {
   settingsExperimentalSectionHelpHint,
   settingsExperimentalToggleDescriptionHtml,
   settingsGeneralLeadHtml,
-  settingsOpenV2PreviewButtonLabel,
   settingsShortcutsHelpHint,
   unifiedOpenAgentDebugFromBackendsCta,
-  unifiedOpenPluginManagerV2HubCta,
   unifiedOpenPluginMarketCta,
 } from "../lib/pluginManagerEntryCopy";
 import {
@@ -59,8 +57,6 @@ const props = defineProps<{
 
 const emit = defineEmits<{
   close: [];
-  /** 在开启 V2 实验开关时，由设置页打开 V2 预览窗 */
-  openPluginV2: [];
   /** 与顶栏切换角色相同的宿主流程（插件 bootstrap、叙事场景等） */
   switchRole: [roleId: string];
   /** 调试嵌入区内导入角色包 */
@@ -84,6 +80,9 @@ const showVueCloudTrustModal = computed(
 const unifiedMarketCtaText = computed(() => unifiedOpenPluginMarketCta(uiStore.experimentalPluginManagerV2));
 
 const PluginManagerPanel = defineAsyncComponent(() => import("./PluginManagerPanel.vue"));
+const PluginManagerV2Panel = defineAsyncComponent(() => import("./PluginManagerV2Panel.vue"));
+const PluginMarketV2Panel = defineAsyncComponent(() => import("./PluginMarketV2Panel.vue"));
+const ExpertModelsPanel = defineAsyncComponent(() => import("../components/ExpertModels/ExpertModelsPanel.vue"));
 const LocalModelManagerPanel = defineAsyncComponent(() => import("./LocalModelManagerPanel.vue"));
 const PluginMarketPanel = defineAsyncComponent(() => import("./PluginMarketPanel.vue"));
 
@@ -289,6 +288,14 @@ watch(
 );
 
 watch(
+  () => [props.visible, selectedNavId.value] as const,
+  ([vis, nav]) => {
+    if (!vis || nav !== SETTINGS_NAV.dataExpertWorkbench) return;
+    void expertModelsStore.refresh().catch(() => {});
+  },
+);
+
+watch(
   () =>
     [props.visible, selectedNavId.value, pluginStore.panelEmbedHost] as [
       boolean,
@@ -326,13 +333,34 @@ async function onOpenPluginBackendsFromCloud(): Promise<void> {
 async function onOpenExpertWorkbenchFromHub(o: { draftMode: ExpertWorkbenchDraftMode }): Promise<void> {
   try {
     pluginStore.expertWorkbenchDraftMode = o.draftMode;
-    selectNav(SETTINGS_NAV.pluginsLinkBackends);
-    await openPluginManagerEmbed("backends");
+    selectNav(SETTINGS_NAV.dataExpertWorkbench);
     await expertModelsStore.refresh();
     expertModelsStore.applyWorkbenchNavigationDraft(o.draftMode);
   } catch (err) {
     showToast("error", err instanceof Error ? err.message : String(err));
   }
+}
+
+function onEmbeddedV2Close(): void {
+  selectNav(SETTINGS_NAV.generalOverview);
+}
+
+async function onEmbeddedV2OpenV1(): Promise<void> {
+  selectNav(SETTINGS_NAV.pluginsLinkInstalled);
+  await openPluginManagerEmbed("plugins");
+}
+
+async function onEmbeddedV2OpenV1Backends(): Promise<void> {
+  selectNav(SETTINGS_NAV.pluginsLinkBackends);
+  await openPluginManagerEmbed("backends");
+}
+
+function onExpertModelsOpenPermissions(payload: { pluginId: string }): void {
+  const pid = payload.pluginId.trim();
+  if (!pid) return;
+  selectNav(SETTINGS_NAV.pluginsLinkInstalled);
+  void openPluginManagerEmbed("plugins");
+  showToast("info", String(t("pluginManagerV1.ui.expertModels.permNavToast")));
 }
 
 async function onOpenMarketFromRoles(): Promise<void> {
@@ -648,6 +676,15 @@ async function onToggleForceIframe(e: Event) {
                 </SettingsTierSection>
               </div>
 
+              <div v-show="selectedNavId === SETTINGS_NAV.dataExpertWorkbench" class="sv-pane-section">
+                <SettingsTierSection tier="L3" :reset-key="tierResetKey">
+                  <p class="sv-muted">{{ t("settings.nav.lead.dataExpertWorkbench") }}</p>
+                </SettingsTierSection>
+                <SettingsTierSection tier="L4" :reset-key="tierResetKey">
+                  <ExpertModelsPanel embedded @open-permissions="onExpertModelsOpenPermissions" />
+                </SettingsTierSection>
+              </div>
+
               <div v-show="selectedNavId === SETTINGS_NAV.dataRoles" class="sv-pane-section">
                 <SettingsTierSection tier="L3" :reset-key="tierResetKey">
                   <RoleManagerSettings
@@ -711,12 +748,22 @@ async function onToggleForceIframe(e: Event) {
               <div v-show="selectedNavId === SETTINGS_NAV.pluginsV2Hub" class="sv-pane-section">
                 <SettingsTierSection tier="L3" :reset-key="tierResetKey">
                   <p class="sv-muted">{{ t("settings.nav.lead.pluginsV2Hub") }}</p>
+                  <p v-if="!uiStore.experimentalPluginManagerV2" class="sv-muted">
+                    {{ t("settings.nav.needV2Experimental") }}
+                  </p>
                 </SettingsTierSection>
-                <SettingsTierSection tier="L4" :reset-key="tierResetKey">
-                  <button type="button" class="sv-btn sv-btn--accent" @click="emit('openPluginV2')">
-                    {{ unifiedOpenPluginManagerV2HubCta() }}
-                  </button>
-                  <p class="sv-muted sv-foot">{{ t("settings.nav.embedV2HubFoot") }}</p>
+                <SettingsTierSection
+                  v-if="uiStore.experimentalPluginManagerV2"
+                  tier="L4"
+                  :reset-key="tierResetKey"
+                >
+                  <PluginManagerV2Panel
+                    :visible="selectedNavId === SETTINGS_NAV.pluginsV2Hub && visible"
+                    embedded
+                    @close="onEmbeddedV2Close"
+                    @open-v1="onEmbeddedV2OpenV1"
+                    @open-v1-backends="onEmbeddedV2OpenV1Backends"
+                  />
                 </SettingsTierSection>
               </div>
 
@@ -724,7 +771,7 @@ async function onToggleForceIframe(e: Event) {
                 <SettingsTierSection tier="L3" :reset-key="tierResetKey">
                   <p class="sv-muted">{{ t("settings.nav.lead.marketBrowse") }}</p>
                   <p v-if="uiStore.experimentalPluginManagerV2" class="sv-callout sv-muted">
-                    {{ t("settings.nav.lead.marketBrowseV2Hint") }}
+                    {{ t("settings.nav.lead.marketBrowseV2NavHint") }}
                   </p>
                 </SettingsTierSection>
                 <SettingsTierSection tier="L4" :reset-key="tierResetKey">
@@ -732,6 +779,26 @@ async function onToggleForceIframe(e: Event) {
                     {{ unifiedMarketCtaText }}
                   </button>
                   <p class="sv-muted sv-foot">{{ t("settings.nav.embedMarketFoot") }}</p>
+                </SettingsTierSection>
+              </div>
+
+              <div v-show="selectedNavId === SETTINGS_NAV.marketBrowseV2" class="sv-pane-section">
+                <SettingsTierSection tier="L3" :reset-key="tierResetKey">
+                  <p class="sv-muted">{{ t("settings.nav.lead.marketBrowseV2") }}</p>
+                  <p v-if="!uiStore.experimentalPluginManagerV2" class="sv-muted">
+                    {{ t("settings.nav.needV2Experimental") }}
+                  </p>
+                </SettingsTierSection>
+                <SettingsTierSection
+                  v-if="uiStore.experimentalPluginManagerV2"
+                  tier="L4"
+                  :reset-key="tierResetKey"
+                >
+                  <PluginMarketV2Panel
+                    :visible="selectedNavId === SETTINGS_NAV.marketBrowseV2 && visible"
+                    embedded
+                    @close="onEmbeddedV2Close"
+                  />
                 </SettingsTierSection>
               </div>
 
@@ -777,8 +844,8 @@ async function onToggleForceIframe(e: Event) {
                       </span>
                     </label>
                     <div v-if="uiStore.experimentalPluginManagerV2" class="sv-v2-launch">
-                      <button type="button" class="sv-v2-launch-btn" @click="emit('openPluginV2')">
-                        {{ settingsOpenV2PreviewButtonLabel() }}
+                      <button type="button" class="sv-v2-launch-btn" @click="selectNav(SETTINGS_NAV.pluginsV2Hub)">
+                        {{ t("settings.nav.gotoV2HubButton") }}
                       </button>
                     </div>
                   </section>

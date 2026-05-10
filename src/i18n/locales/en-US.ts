@@ -529,7 +529,8 @@ export const enUS = {
     },
     nav: {
       deepLinkFooterNote: "This closes Settings and opens the destination panel.",
-      embedV2HubFoot: "Opens the V2 preview window on top of Settings (entry is only listed when developer mode above is on).",
+      needV2Experimental: "Turn on “Plugin Manager V2 (experimental)” under Kernel & experiments first.",
+      gotoV2HubButton: "Open V2 plugin manager (in Settings)",
       embedMarketFoot: "Embeds the classic Plugin Market below this settings window.",
       embedAgentDebugFoot: "Embeds the classic Plugin Manager (Backends tab) below Settings, including the Agent debug dock.",
       filterLabel: "Filter settings",
@@ -547,6 +548,7 @@ export const enUS = {
         catData: "Roles & data",
         dataRoles: "Role management",
         dataExpertModels: "Expert model settings",
+        dataExpertWorkbench: "Expert model workbench",
         catPlugins: "Plugins & extensions",
         pluginsDirectory: "Directory plugins · settings.panel slot",
         pluginsLinkInstalled: "Installed & market",
@@ -554,6 +556,7 @@ export const enUS = {
         pluginsLinkBackends: "Backends (plugin_backends)",
         pluginsV2Hub: "V2 hub (slots · Git · local Llama)",
         marketBrowse: "Plugin market",
+        marketBrowseV2: "Plugin market (V2)",
         securityHost: "Security & privacy",
         catAdvanced: "Kernel & experiments",
         advancedExperimental: "Plugin Manager V2 (System & kernel · experimental)",
@@ -581,10 +584,14 @@ export const enUS = {
         pluginsBackends:
           "Adjust plugin_backends and session overrides on the “Backends” tab (includes the Agent debug dock). Embed in-page from this page.",
         pluginsV2Hub:
-          "Slot dashboard, install-from-Git, and session local-Llama binding live in the V2 preview window—open from here when developer mode is on.",
+          "Slot dashboard, Git installs, and session local-Llama binding: the V2 manager is embedded below when the V2 experiment is enabled.",
         marketBrowse: "Browse the community index, install or update plugins, and handle permission prompts (network & trust).",
-        marketBrowseV2Hint:
-          "V2 Plugin Manager preview is enabled: use the V2 market from the V2 preview, or the classic market embedded below.",
+        marketBrowseV2NavHint:
+          "With the V2 experiment on, use the separate sidebar entry “Plugin market (V2)” for the embedded V2 market.",
+        marketBrowseV2:
+          "Community index in the V2 market UI (embedded below when the V2 experiment is enabled).",
+        dataExpertWorkbench:
+          "Edit expert graphs, workflows, and apply session defaults—the full workbench is embedded below.",
         diagnosticsDebug:
           "Use the embedded panel below. You can also jump here with the global shortcut (opens Settings to this page).",
         diagnosticsAgent:
