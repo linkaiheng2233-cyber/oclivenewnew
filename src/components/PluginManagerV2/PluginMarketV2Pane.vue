@@ -3,16 +3,25 @@ import { Teleport } from "vue";
 import { useI18n } from "vue-i18n";
 import { usePluginCommunityMarketPane } from "../../composables/usePluginCommunityMarketPane";
 
+withDefaults(
+  defineProps<{
+    /** 嵌入设置页时：预检/权限弹层不 Teleport 到 body，遮罩限制在市场区域内 */
+    embedded?: boolean;
+  }>(),
+  { embedded: false },
+);
+
 const m = usePluginCommunityMarketPane();
 const { t } = useI18n();
 </script>
 
 <template>
-  <div class="pm2-market-wrap">
-    <Teleport to="body">
+  <div class="pm2-market-wrap" :class="{ 'pm2-market-wrap--embedded': embedded }">
+    <Teleport to="body" :disabled="embedded">
       <div
         v-if="m.preflightVisible.value"
         class="pm2-modal-backdrop"
+        :class="{ 'pm2-modal-backdrop--inplace': embedded }"
         role="dialog"
         aria-modal="true"
         :aria-label="String(t('pluginMarketV2.preflight.dialogLabel'))"
@@ -39,6 +48,7 @@ const { t } = useI18n();
       <div
         v-if="m.permConsentVisible.value"
         class="pm2-modal-backdrop"
+        :class="{ 'pm2-modal-backdrop--inplace': embedded }"
         role="dialog"
         aria-modal="true"
         :aria-label="String(t('pluginMarketV2.permConsent.dialogLabel'))"
@@ -542,6 +552,17 @@ const { t } = useI18n();
   overflow: visible;
   padding-right: 0;
 }
+.pm2-market-wrap--embedded {
+  position: relative;
+  isolation: isolate;
+  max-height: min(78vh, 860px);
+  overflow-x: hidden;
+  overflow-y: auto;
+  border-radius: var(--radius-app);
+  border: 1px solid var(--border-light);
+  background: var(--bg-primary);
+  box-sizing: border-box;
+}
 .pm2-modal-backdrop {
   position: fixed;
   inset: 0;
@@ -551,6 +572,10 @@ const { t } = useI18n();
   justify-content: center;
   padding: 16px;
   background: var(--dialog-backdrop, color-mix(in srgb, #000 55%, transparent));
+}
+.pm2-modal-backdrop--inplace {
+  position: absolute;
+  border-radius: inherit;
 }
 .pm2-modal {
   width: min(520px, 100%);

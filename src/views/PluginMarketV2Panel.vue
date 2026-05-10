@@ -1,9 +1,13 @@
 <script setup lang="ts">
 import PluginMarketV2Pane from "../components/PluginManagerV2/PluginMarketV2Pane.vue";
 
-defineProps<{
-  visible: boolean;
-}>();
+withDefaults(
+  defineProps<{
+    visible: boolean;
+    embedded?: boolean;
+  }>(),
+  { embedded: false },
+);
 
 const emit = defineEmits<{
   close: [];
@@ -11,9 +15,11 @@ const emit = defineEmits<{
 </script>
 
 <template>
-  <Teleport to="body">
+  <div v-if="embedded && visible" class="pm2-market-embed-host">
+    <PluginMarketV2Pane embedded />
+  </div>
+  <Teleport v-else-if="visible" to="body">
     <div
-      v-if="visible"
       class="pm2-backdrop"
       role="dialog"
       aria-modal="true"
@@ -28,6 +34,11 @@ const emit = defineEmits<{
 </template>
 
 <style scoped>
+.pm2-market-embed-host {
+  width: 100%;
+  min-width: 0;
+  min-height: 220px;
+}
 .pm2-backdrop {
   position: fixed;
   inset: 0;
@@ -53,4 +64,3 @@ const emit = defineEmits<{
   box-shadow: var(--shadow-app);
 }
 </style>
-

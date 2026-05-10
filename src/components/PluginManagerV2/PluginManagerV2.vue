@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed, onMounted, ref, watch } from "vue";
+import { computed, onMounted, ref, watch, withDefaults } from "vue";
 import { useI18n } from "vue-i18n";
 import LeftCategoryNav from "./LeftCategoryNav.vue";
 import PluginCardList from "./PluginCardList.vue";
@@ -33,9 +33,14 @@ import {
   type PluginPermissionGrantDto,
 } from "../../utils/tauri-api";
 
-const props = defineProps<{
-  visible: boolean;
-}>();
+const props = withDefaults(
+  defineProps<{
+    visible: boolean;
+    /** 为 true 时权限弹层 Teleport 禁用，遮罩限制在本根节点内（供设置页嵌入）。 */
+    embedded?: boolean;
+  }>(),
+  { embedded: false },
+);
 
 const emit = defineEmits<{
   close: [];
@@ -449,11 +454,12 @@ async function onApply(payload: Record<string, unknown>) {
 </script>
 
 <template>
-  <div class="pm2-root">
-    <Teleport to="body">
+  <div class="pm2-root" :class="{ 'pm2-root--embedded': props.embedded }">
+    <Teleport to="body" :disabled="props.embedded">
       <div
         v-if="permModalOpen"
         class="pm2-modal-backdrop"
+        :class="{ 'pm2-modal-backdrop--inplace': props.embedded }"
         role="dialog"
         aria-modal="true"
         :aria-label="String(t('pluginManagerV2.permissions.dialogAria'))"
@@ -560,7 +566,9 @@ async function onApply(payload: Record<string, unknown>) {
         <button type="button" class="pm2-btn secondary" @click="emit('openV1')">
           {{ term("action.open_v1") }}
         </button>
-        <button type="button" class="pm2-btn" @click="emit('close')">{{ term("action.close") }}</button>
+        <button v-if="!props.embedded" type="button" class="pm2-btn" @click="emit('close')">
+          {{ term("action.close") }}
+        </button>
       </div>
     </header>
     <div class="pm2-legend" :aria-label="String(t('pluginManagerV2.legend.aria'))">
@@ -809,6 +817,53 @@ async function onApply(payload: Record<string, unknown>) {
   display: flex;
   flex-direction: column;
   gap: 12px;
+}
+.pm2-root--embedded {
+  position: relative;
+  isolation: isolate;
+  max-height: min(78vh, 860px);
+  overflow-x: hidden;
+  overflow-y: auto;
+  padding: 10px 12px 12px;
+  border-radius: var(--radius-app);
+  border: 1px solid var(--border-light);
+  background: var(--bg-primary);
+  box-sizing: border-box;
+}
+.pm2-modal-backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 10090;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 16px;
+  background: var(--dialog-backdrop, color-mix(in srgb, #000 55%, transparent));
+}
+.pm2-modal-backdrop--inplace {
+  position: absolute;
+  border-radius: inherit;
+}
+.pm2-modal {
+  width: min(520px, 100%);
+  max-height: min(86vh, 720px);
+  overflow: auto;
+  padding: 14px 16px 12px;
+  border-radius: var(--radius-app);
+  border: 1px solid var(--border-light);
+  background: var(--bg-primary);
+  box-shadow: var(--shadow-app);
+}
+.pm2-modal-h {
+  font-size: 14px;
+  font-weight: 600;
+  margin: 0 0 8px;
+}
+.pm2-modal-actions {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+  margin: 8px 0;
 }
 .pm2-head {
   display: flex;

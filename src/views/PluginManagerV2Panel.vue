@@ -1,9 +1,14 @@
 <script setup lang="ts">
 import { PluginManagerV2 } from "../components/PluginManagerV2";
 
-defineProps<{
-  visible: boolean;
-}>();
+withDefaults(
+  defineProps<{
+    visible: boolean;
+    /** 嵌入设置右栏：无 Teleport、无全屏遮罩 */
+    embedded?: boolean;
+  }>(),
+  { embedded: false },
+);
 
 const emit = defineEmits<{
   close: [];
@@ -13,9 +18,17 @@ const emit = defineEmits<{
 </script>
 
 <template>
-  <Teleport to="body">
+  <div v-if="embedded && visible" class="pm2-embed-host">
+    <PluginManagerV2
+      :visible="visible"
+      embedded
+      @close="emit('close')"
+      @open-v1="emit('openV1')"
+      @open-v1-backends="emit('openV1Backends')"
+    />
+  </div>
+  <Teleport v-else-if="visible" to="body">
     <div
-      v-if="visible"
       class="pm2-backdrop"
       role="dialog"
       aria-modal="true"
@@ -35,6 +48,11 @@ const emit = defineEmits<{
 </template>
 
 <style scoped>
+.pm2-embed-host {
+  width: 100%;
+  min-width: 0;
+  min-height: 200px;
+}
 .pm2-backdrop {
   position: fixed;
   inset: 0;

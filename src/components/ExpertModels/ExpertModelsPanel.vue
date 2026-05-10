@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed, defineAsyncComponent, onMounted, ref, watch } from "vue";
+import { computed, defineAsyncComponent, onMounted, ref, watch, withDefaults } from "vue";
 import { useI18n } from "vue-i18n";
 import { open, save } from "@tauri-apps/api/dialog";
 import { readTextFile, writeTextFile } from "@tauri-apps/api/fs";
@@ -20,6 +20,14 @@ import type {
   ExpertNode,
   PromptStyleOverride,
 } from "../../utils/tauri-api";
+
+const props = withDefaults(
+  defineProps<{
+    /** 嵌入设置页：导入预览不 Teleport，根区域可滚动 */
+    embedded?: boolean;
+  }>(),
+  { embedded: false },
+);
 
 const store = useExpertModelsStore();
 const roleStore = useRoleStore();
@@ -901,7 +909,11 @@ async function onImportOclexpert(): Promise<void> {
 </script>
 
 <template>
-  <section class="em-root" :aria-label="t('expertModels.title')">
+  <section
+    class="em-root"
+    :class="{ 'em-root--embedded': props.embedded }"
+    :aria-label="t('expertModels.title')"
+  >
     <header class="em-h">
       <div>
         <h3 class="em-title">{{ t("expertModels.title") }}</h3>
@@ -1728,10 +1740,11 @@ async function onImportOclexpert(): Promise<void> {
       </button>
     </div>
 
-    <Teleport to="body">
+    <Teleport to="body" :disabled="props.embedded">
       <div
         v-if="oclexpertImportPreview"
         class="em-oclexpert-backdrop"
+        :class="{ 'em-oclexpert-backdrop--inplace': props.embedded }"
         role="dialog"
         aria-modal="true"
         @click.self="cancelOclexpertImportPreview"
@@ -1766,6 +1779,14 @@ async function onImportOclexpert(): Promise<void> {
   border-radius: 12px;
   border: 1px solid var(--border-light);
   background: var(--bg-secondary);
+}
+.em-root--embedded {
+  position: relative;
+  isolation: isolate;
+  max-height: min(78vh, 900px);
+  overflow-x: hidden;
+  overflow-y: auto;
+  box-sizing: border-box;
 }
 .em-h {
   display: flex;
@@ -2283,6 +2304,10 @@ async function onImportOclexpert(): Promise<void> {
   justify-content: center;
   padding: 20px;
   background: color-mix(in srgb, #000 48%, transparent);
+}
+.em-oclexpert-backdrop--inplace {
+  position: absolute;
+  border-radius: inherit;
 }
 .em-oclexpert-modal {
   width: min(440px, 100%);
