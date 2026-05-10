@@ -40,6 +40,29 @@ export type SettingsNavId = (typeof SETTINGS_NAV)[keyof typeof SETTINGS_NAV];
 
 export const ALL_SETTINGS_NAV_IDS: readonly SettingsNavId[] = Object.values(SETTINGS_NAV);
 
+/** 沉浸模式下关闭「开发者模式」时从侧栏隐藏的高级项（与宿主 `developer_mode` 一致）。 */
+export const SETTINGS_DEVELOPER_GATED_NAV_IDS: readonly SettingsNavId[] = [
+  SETTINGS_NAV.modelsCloud,
+  SETTINGS_NAV.modelsOllama,
+  SETTINGS_NAV.modelsExpert,
+  SETTINGS_NAV.pluginsDirectory,
+  SETTINGS_NAV.pluginsLinkInstalled,
+  SETTINGS_NAV.pluginsLinkSlots,
+  SETTINGS_NAV.pluginsLinkBackends,
+  SETTINGS_NAV.pluginsV2Hub,
+  SETTINGS_NAV.marketBrowse,
+  SETTINGS_NAV.securityHost,
+  SETTINGS_NAV.advancedExperimental,
+  SETTINGS_NAV.advancedEmbed,
+  SETTINGS_NAV.systemDeveloper,
+  SETTINGS_NAV.diagnosticsDebug,
+  SETTINGS_NAV.diagnosticsAgent,
+];
+
+export function isDeveloperGatedNavId(id: SettingsNavId): boolean {
+  return (SETTINGS_DEVELOPER_GATED_NAV_IDS as readonly string[]).includes(id);
+}
+
 export type SettingsNavAnyId = SettingsNavId | SettingsNavCatId;
 
 /** 供 vue-i18n：`t('settings.nav.items.' + settingsNavLabelKey(id))` */

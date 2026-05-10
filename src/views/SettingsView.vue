@@ -34,10 +34,10 @@ import {
 import type { SettingsDeepLink } from "../lib/settingsDeepLink";
 import {
   ALL_SETTINGS_NAV_IDS,
+  SETTINGS_DEVELOPER_GATED_NAV_IDS,
   SETTINGS_NAV,
   SETTINGS_NAV_ROWS,
   filterSettingsNavRows,
-  firstSelectableSettingsNavId,
   settingsNavLabelKey,
   type SettingsNavAnyId,
   type SettingsNavId,
@@ -102,10 +102,6 @@ async function openPluginManagerEmbed(tab: PluginPanelMainTab): Promise<void> {
 
 const selectedNavId = ref<SettingsNavId>(SETTINGS_NAV.generalOverview);
 
-const visibleNavRows = computed(() =>
-  filterSettingsNavRows(roleStore.interactionImmersive, SETTINGS_NAV_ROWS),
-);
-
 const navFilterText = ref("");
 
 function navLabel(id: SettingsNavAnyId): string {
@@ -137,8 +133,6 @@ function filterSidebarByQuery(rows: SettingsNavRow[], q: string): SettingsNavRow
   }
   return out;
 }
-
-const sidebarNavRows = computed(() => filterSidebarByQuery(visibleNavRows.value, navFilterText.value));
 
 function selectNav(id: SettingsNavAnyId): void {
   if (!ALL_SETTINGS_NAV_IDS.includes(id as SettingsNavId)) return;
@@ -191,6 +185,54 @@ const marketDeveloperModeLocal = ref(false);
 const marketSourcesText = ref("");
 const marketSourcesLoaded = ref(false);
 
+function stripEmptyNavGroups(rows: SettingsNavRow[]): SettingsNavRow[] {
+  const out: SettingsNavRow[] = [];
+  for (let i = 0; i < rows.length; i++) {
+    const row = rows[i]!;
+    if (!row.isGroupLabel) {
+      out.push(row);
+      continue;
+    }
+    let any = false;
+    for (let j = i + 1; j < rows.length; j++) {
+      const n = rows[j]!;
+      if (n.depth <= row.depth) break;
+      if (!n.isGroupLabel) {
+        any = true;
+        break;
+      }
+    }
+    if (any) out.push(row);
+  }
+  return out;
+}
+
+const visibleNavRows = computed(() => {
+  const base = filterSettingsNavRows(roleStore.interactionImmersive, SETTINGS_NAV_ROWS);
+  if (!roleStore.interactionImmersive || marketDeveloperModeLocal.value) {
+    return base;
+  }
+  const gated = new Set(SETTINGS_DEVELOPER_GATED_NAV_IDS);
+  const filtered = base.filter((row) => {
+    if (row.isGroupLabel) return true;
+    const id = row.id as SettingsNavId;
+    if (!ALL_SETTINGS_NAV_IDS.includes(id)) return true;
+    return !gated.has(id);
+  });
+  return stripEmptyNavGroups(filtered);
+});
+
+function firstSelectableFromRows(rows: SettingsNavRow[]): SettingsNavId {
+  for (const r of rows) {
+    if (!r.isGroupLabel && ALL_SETTINGS_NAV_IDS.includes(r.id as SettingsNavId)) {
+      return r.id as SettingsNavId;
+    }
+  }
+  return SETTINGS_NAV.generalOverview;
+}
+
+const sidebarNavRows = computed(() => filterSidebarByQuery(visibleNavRows.value, navFilterText.value));
+
 async function loadMarketSources(): Promise<void> {
   marketSourcesLoading.value = true;
   try {
@@ -210,7 +252,7 @@ watch(
       tierResetKey.value += 1;
       navFilterText.value = "";
     } else {
-      selectedNavId.value = firstSelectableSettingsNavId(roleStore.interactionImmersive);
+      selectedNavId.value = firstSelectableFromRows(visibleNavRows.value);
     }
     if (!visible || marketSourcesLoaded.value) return;
     marketSourcesLoaded.value = true;
@@ -224,19 +266,24 @@ onBeforeUnmount(() => {
 });
 
 watch(
-  () => [roleStore.interactionImmersive, roleStore.interactionPureChat] as const,
+  () => [roleStore.interactionImmersive, roleStore.interactionPureChat, visibleNavRows] as const,
   () => {
-    const immersive = roleStore.interactionImmersive;
     const allowed = new Set(
-      filterSettingsNavRows(immersive, SETTINGS_NAV_ROWS)
-        .filter((r) => !r.isGroupLabel)
-        .map((r) => r.id as SettingsNavId),
+      visibleNavRows.value.filter((r) => !r.isGroupLabel).map((r) => r.id as SettingsNavId),
     );
     if (!allowed.has(selectedNavId.value)) {
-      selectedNavId.value = firstSelectableSettingsNavId(immersive);
+      selectedNavId.value = firstSelectableFromRows(visibleNavRows.value);
     }
   },
 );
+
+watch(marketDeveloperModeLocal, () => {
+  if (!roleStore.interactionImmersive || marketDeveloperModeLocal.value) return;
+  const gated = new Set(SETTINGS_DEVELOPER_GATED_NAV_IDS);
+  if (gated.has(selectedNavId.value)) {
+    selectedNavId.value = firstSelectableFromRows(visibleNavRows.value);
+  }
+});
 
 watch(
   () =>
@@ -427,6 +474,21 @@ async function onToggleForceIframe(e: Event) {
             </nav>
 
             <div class="sv-pane">
+              <div v-if="roleStore.interactionImmersive" class="sv-dev-top">
+                <label class="sv-dev-toggle">
+                  <input
+                    type="checkbox"
+                    :disabled="marketSourcesLoading"
+                    :checked="marketDeveloperModeLocal === true"
+                    @change="onToggleMarketDeveloperMode"
+                  />
+                  <span>{{ t("settings.developerGate.label") }}</span>
+                </label>
+                <p v-if="!marketDeveloperModeLocal" class="sv-muted sv-dev-hint">
+                  {{ t("settings.developerGate.offHint") }}
+                </p>
+              </div>
+
               <div v-show="selectedNavId === SETTINGS_NAV.generalOverview" class="sv-pane-section">
                 <SettingsTierSection tier="L1" :reset-key="tierResetKey">
                   <p class="sv-lead" v-html="settingsGeneralLeadHtml()" />
@@ -765,25 +827,12 @@ async function onToggleForceIframe(e: Event) {
                         ]"
                       />
                     </div>
+                    <p class="sv-muted">{{ t("settings.plugins.devMode.pageLead") }}</p>
                   </section>
                 </SettingsTierSection>
                 <SettingsTierSection tier="L4" :reset-key="tierResetKey">
-                  <section class="sv-section">
-                    <label class="sv-toggle-row">
-                      <input
-                        type="checkbox"
-                        :disabled="marketSourcesLoading"
-                        :checked="marketDeveloperModeLocal === true"
-                        @change="onToggleMarketDeveloperMode"
-                      />
-                      <span class="sv-toggle-text">
-                        <strong>{{ t("settings.plugins.devMode.title") }}</strong>
-                        <span class="sv-muted sv-toggle-desc">
-                          {{ t("settings.plugins.devMode.hint") }}
-                        </span>
-                      </span>
-                    </label>
-                    <div v-if="marketDeveloperModeLocal" class="sv-dev-box">
+                  <section v-if="marketDeveloperModeLocal" class="sv-section">
+                    <div class="sv-dev-box">
                       <p class="sv-muted">
                         {{ t("settings.plugins.sources.hint") }}
                       </p>
@@ -806,6 +855,7 @@ async function onToggleForceIframe(e: Event) {
                       </div>
                     </div>
                   </section>
+                  <p v-else class="sv-muted">{{ t("settings.developerGate.offSources") }}</p>
                 </SettingsTierSection>
               </div>
 
@@ -1017,6 +1067,26 @@ async function onToggleForceIframe(e: Event) {
   border: 1px solid var(--border-light);
   color: var(--text-secondary);
   cursor: help;
+}
+.sv-dev-top {
+  margin-bottom: 14px;
+  padding: 10px 12px;
+  border-radius: 10px;
+  border: 1px solid var(--border-light);
+  background: var(--bg-elevated);
+}
+.sv-dev-toggle {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 13px;
+  font-weight: 650;
+  cursor: pointer;
+  user-select: none;
+}
+.sv-dev-hint {
+  margin: 8px 0 0;
+  font-size: 12px;
 }
 .sv-pane {
   flex: 1;

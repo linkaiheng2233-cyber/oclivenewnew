@@ -447,6 +447,11 @@ export const zhCN = {
       errNeedUrlKey: "请填写 API 根地址与 API Key。",
       psDoneHint: "已设置当前会话环境变量。持久化请用「系统环境变量」或快捷方式里先设再启动应用。",
     },
+    developerGate: {
+      label: "开发者模式（高级功能总闸）",
+      offHint: "关闭时，侧栏中的模型高级项、插件管理深链、市场、诊断与实验等入口将隐藏。",
+      offSources: "开启顶部「开发者模式」后可编辑第三方插件索引源。",
+    },
     shortcutsManager: {
       builtinTitle: "内置快捷键",
       builtinLead: "以下为应用内固定快捷键（与聊天、插件管理入口一致）。",
@@ -487,6 +492,7 @@ export const zhCN = {
         hint: "开启后可使用第三方索引源与侧载安装。建议仅高级用户开启。",
         enabledToast: "已开启开发者模式。",
         disabledToast: "已关闭开发者模式。",
+        pageLead: "总开关位于设置窗右栏顶部；此处仅维护第三方插件索引源列表。",
       },
       sources: {
         hint:

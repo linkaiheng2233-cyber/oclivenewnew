@@ -459,6 +459,12 @@ export const enUS = {
       psDoneHint:
         "Session env vars set. For persistence, use OS user/system environment variables or a launcher script that sets them before starting the app.",
     },
+    developerGate: {
+      label: "Developer mode (advanced features)",
+      offHint:
+        "When off, advanced sidebar entries (models, plugin deep-links, market, diagnostics, experiments) stay hidden.",
+      offSources: "Turn on Developer mode at the top of the settings pane to edit third-party plugin index sources.",
+    },
     shortcutsManager: {
       builtinTitle: "Built-in shortcuts",
       builtinLead: "Fixed shortcuts used across the app (same as chat and plugin entries).",
@@ -502,6 +508,7 @@ export const enUS = {
         title: "Enable Developer mode",
         hint:
           "After enabling, you can use third-party index sources and sideload install. Recommended for advanced users only.",
+        pageLead: "The master switch lives at the top of the settings pane; this page only edits third-party plugin index sources.",
         enabledToast: "Developer mode enabled.",
         disabledToast: "Developer mode disabled.",
       },
