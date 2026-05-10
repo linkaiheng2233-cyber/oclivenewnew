@@ -250,6 +250,10 @@ export const enUS = {
           groupLabel: "Entry actions",
           shortcutHelp: "Shortcuts",
           settings: "Settings",
+          hubHint:
+            "Plugin Manager, Market, local models, Debug, and role pack folders now live under Settings; this rail keeps shortcuts help and Settings only.",
+          pureChatHubHint:
+            "In chat-only mode, Settings still covers models, cloud, shortcuts, and diagnostics; immersive-only items are labeled inside Settings.",
           localModels: "Local models…",
           revealRolePackFolder: "Open role pack folder…",
           revealRolePackHint:
@@ -325,8 +329,9 @@ export const enUS = {
     },
     pureChatAssist: {
       aria: "Chat mode assist",
-      lead: "Chat mode keeps only conversation and appearance. Drop a .ocpak / .zip to import a role pack; font and theme are under More → Appearance. Use the button below for troubleshooting.",
+      lead: "Chat mode keeps only conversation and appearance. Drop a .ocpak / .zip to import a role pack; font and theme are under More → Appearance. Plugins, models, and troubleshooting: use Open Settings below.",
       openDebug: "Open debug panel",
+      openSettings: "Open Settings",
     },
     pureChatErrors: {
       llm: "Message did not send: the model may be offline or misconfigured. Switch to immersive to check local models and plugin backends, or ensure your inference service is running.",
@@ -511,6 +516,9 @@ export const enUS = {
     },
     nav: {
       deepLinkFooterNote: "This closes Settings and opens the destination panel.",
+      filterLabel: "Filter settings",
+      filterPlaceholder: "Search sidebar…",
+      jumpDefaultModel: "Sidebar: Default chat model…",
       items: {
         generalOverview: "Overview",
         generalLanguage: "Language & region",
@@ -558,18 +566,21 @@ export const enUS = {
         pluginsBackends:
           "Adjust plugin_backends and session overrides on the “Backends” tab (includes the Agent debug dock). Embed in-page or detached.",
         pluginsV2Hub:
-          "Slot dashboard, install-from-Git, and session local-Llama binding live in the V2 window—same entry as Oclive Manager (V2) under the top bar “More” menu.",
+          "Slot dashboard, install-from-Git, and session local-Llama binding live in the V2 window—open from Settings → Plugins & extensions.",
         marketBrowse: "Browse the community index, install or update plugins, and handle permission prompts (network & trust).",
         marketBrowseV2Hint:
-          "V2 Plugin Manager preview is enabled: the button below opens the V2 Plugin Market—the same destination as the Plugin Market button in the top bar “More” menu (not the classic V1 market window).",
+          "V2 Plugin Manager preview is enabled: the button below opens the V2 Plugin Market (same destination as Settings → Plugin market).",
         diagnosticsDebug:
-          "Use the embedded panel below for most checks; the detached Debug window (same as top bar “More” or the legacy shortcut) is still available for a larger workspace.",
+          "Use the embedded panel below for most checks; the detached Debug window is still available for a larger workspace (Settings → Diagnostics & debug, or the global shortcut).",
         diagnosticsAgent:
           "Agent traces and MCP tool calls are available in the classic Plugin Manager “Backends” page (embedded debug dock). The button below closes Settings and opens that tab.",
       },
     },
     roleSettings: {
       lead: "Switch the active role, read a short summary, and open the role pack folder on disk; richer narrative controls stay in the main sidebar.",
+      emptyLead:
+        "No role packs are available yet. Install content from the Plugin Market, or drop a .ocpak / .zip into the window to import.",
+      emptyOpenMarket: "Open Plugin Market",
       currentRole: "Current role",
       summaryTitle: "About this role",
       noDescription: "(No description)",
@@ -580,8 +591,15 @@ export const enUS = {
         "The sibling app oclive-pack-editor edits manifest and settings files—open the folder above, then point the editor at that directory.",
     },
     modelSelector: {
+      loading: "Loading model list…",
+      retry: "Retry",
+      emptyHint:
+        "No local Ollama models were detected and no usable cloud default is configured. Use the sidebar entries “Cloud model & secrets” or “Local models & Ollama” to continue.",
       syncHint:
         "Uses the same saved host chat model as the composer row above the chat input; changes sync to pure-chat overlays too.",
+      advancedLinksLead: "Related (jump inside the sidebar, no need to close Settings):",
+      linkCloud: "Cloud model & secrets",
+      linkLocal: "Local models & Ollama",
     },
     tiers: {
       L1: {
@@ -623,7 +641,7 @@ export const enUS = {
       settingsGeneralLeadHtml:
         "Plugin Manager is being iterated. Some entries are hidden by default to reduce distractions.",
       settingsShortcutsHelpHint:
-        "You can open Plugin Manager quickly via the top bar “More” menu or {m}+Shift+F.",
+        "Open Plugin Manager from Settings → Plugins & extensions (including in-page embed), or press {m}+Shift+F.",
       settingsExperimentalSectionHelpHint:
         "System & kernel experiments may change frequently and can break compatibility.",
       settingsExperimentalToggleTitle: "Enable new Plugin Manager UI (V2 preview)",
@@ -646,9 +664,9 @@ export const enUS = {
       },
       tileHelpText: {
         v1:
-          "Centralizes shortcuts, Settings, and Oclive Manager (plugins & backends). Shortcuts: {m}+Shift+S opens Settings; {m}+Shift+F opens Oclive Manager (V1, with System & kernel–oriented troubleshooting); {m}+Shift+A opens Plugin Market. {m}+Shift+D toggles Debug panel.",
+          "The top bar “More” rail keeps Shortcuts help and Settings only. Plugin Manager, Market, local models, and Debug are organized under Settings; {m}+Shift+S / F / A / D remain accelerators.",
         v2:
-          "Centralizes shortcuts, Settings, and Oclive Manager. Shortcuts: {m}+Shift+S opens Settings; {m}+Shift+F and the button below open Oclive Manager (V2 preview); {m}+Shift+A opens Plugin Market; disable “V2 preview” under Settings → System & kernel · Experimental to return to V1. {m}+Shift+D toggles Debug panel.",
+          "The top bar “More” rail keeps Shortcuts help and Settings only. Plugin Manager V2, Market, local models, and Debug are organized under Settings; {m}+Shift+S / F / A / D remain accelerators.",
       },
     },
     shortcuts: {
@@ -1138,6 +1156,7 @@ export const enUS = {
     dialogLabel: "Shortcuts",
     title: "Shortcuts",
     rows: {
+      ctrlShiftD: "Toggle Debug panel (same destination as Settings → Diagnostics & debug).",
       ctrlShiftS: "Open Settings (extensions, security, shortcuts, and plugin configuration).",
       ctrlHoldKey: "{m} (hold ~1s)",
       ctrlHoldDesc: "Open this shortcuts panel",
@@ -1153,12 +1172,12 @@ export const enUS = {
     title: "🎛️ Developer panel",
     hint: [
       "For development and troubleshooting: view favorability, personality dimensions, recent events and memory summaries; reload policies, generate monologue, import/manage role packs, etc.",
-      "Shortcut {m}+Shift+D toggles this panel; Esc also closes it. You can also click “Open debug panel” under the top bar More menu.",
+      "Shortcut {m}+Shift+D toggles this panel; Esc also closes it. Full entry: Settings → Diagnostics & debug.",
     ],
     hintPureChatP1:
       "For troubleshooting: favorability, memory, policy tools, role pack and monologue entries live here.",
     hintPureChatP2:
-      "Press Esc or the corner close button. Combined-key shortcuts and the full list are documented in immersive mode.",
+      "Press Esc or the corner close button. {m}+Shift+D still toggles this panel; Shortcuts help is under More, and Settings is the main hub.",
     debugDockSlotAria: "Debug panel extension slot",
     monologue: {
       prefix: "[Monologue]",
@@ -1347,7 +1366,7 @@ export const enUS = {
   hotkeySettings: {
     title: "Global shortcuts",
     tierL1Intro:
-      "This matches the “Shortcuts” page: top-bar “More” and documented shortcuts are appearance & interaction. The editor below is system & kernel because global shortcuts can invoke plugin UIs and register host listeners.",
+      "This matches the “Shortcuts” page: documented shortcuts are appearance & interaction. The editor below is system & kernel because global shortcuts can invoke plugin UIs and register host listeners.",
     editorLead:
       "Edit global shortcut bindings: when enabled, they are registered system-wide and may conflict with other apps. Actions that open plugin slots are tightly coupled to plugin runtime.",
     lead:
@@ -1365,6 +1384,7 @@ export const enUS = {
       openPluginSlot: "Open a plugin slot page",
     },
     addOne: "Add one",
+    retryLoad: "Reload",
     toasts: {
       saved:
         "Shortcut config saved (only enabled bindings will be registered as global shortcuts).",

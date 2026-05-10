@@ -21,17 +21,26 @@ const { showToast } = useAppToast();
 const { t } = useI18n();
 
 const loading = ref(false);
+const saving = ref(false);
+const loadError = ref<string | null>(null);
 const file = ref<HotkeyBindingsFile>({ schemaVersion: 1, bindings: [] });
 
-onMounted(async () => {
+async function loadBindings(): Promise<void> {
+  loadError.value = null;
   loading.value = true;
   try {
     file.value = await getHotkeyBindings();
   } catch (e) {
-    showToast("error", e instanceof Error ? e.message : String(e));
+    const msg = e instanceof Error ? e.message : String(e);
+    loadError.value = msg;
+    showToast("error", msg);
   } finally {
     loading.value = false;
   }
+}
+
+onMounted(() => {
+  void loadBindings();
 });
 
 function addBinding(): void {
@@ -75,14 +84,14 @@ function setActionType(i: number, t: string): void {
 }
 
 async function onSave(): Promise<void> {
-  loading.value = true;
+  saving.value = true;
   try {
     await saveHotkeyBindings(file.value);
     showToast("success", String(t("hotkeySettings.toasts.saved")));
   } catch (e) {
     showToast("error", e instanceof Error ? e.message : String(e));
   } finally {
-    loading.value = false;
+    saving.value = false;
   }
 }
 </script>
@@ -99,6 +108,10 @@ async function onSave(): Promise<void> {
       {{ t("hotkeySettings.editorLead") }}
     </p>
     <p v-if="loading" class="hkset-muted">{{ t("common.loading") }}</p>
+    <div v-else-if="loadError" class="hkset-err">
+      <p class="hkset-muted">{{ loadError }}</p>
+      <button type="button" class="hkset-btn" @click="loadBindings">{{ t("hotkeySettings.retryLoad") }}</button>
+    </div>
     <template v-else>
       <div v-for="(b, i) in file.bindings" :key="b.id" class="hkset-row">
         <label class="hkset-field">
@@ -138,8 +151,10 @@ async function onSave(): Promise<void> {
         <button type="button" class="hkset-remove" @click="removeAt(i)">{{ t("common.remove") }}</button>
       </div>
       <div class="hkset-actions">
-        <button type="button" class="hkset-btn" @click="addBinding">{{ t("hotkeySettings.addOne") }}</button>
-        <button type="button" class="hkset-btn hkset-btn--primary" @click="onSave">{{ t("common.save") }}</button>
+        <button type="button" class="hkset-btn" :disabled="saving" @click="addBinding">{{ t("hotkeySettings.addOne") }}</button>
+        <button type="button" class="hkset-btn hkset-btn--primary" :disabled="saving" @click="onSave">
+          {{ saving ? t("common.loading") : t("common.save") }}
+        </button>
       </div>
     </template>
   </section>
@@ -167,6 +182,12 @@ async function onSave(): Promise<void> {
 .hkset-muted {
   font-size: 13px;
   color: var(--text-secondary);
+}
+.hkset-err {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 8px;
 }
 .hkset-row {
   display: flex;

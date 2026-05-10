@@ -32,6 +32,7 @@ const rows = computed(() => {
   );
   const pluginA = shortcutHelpCtrlShiftADescription();
   return [
+    { keys: formatChordModShift("D"), desc: String(t("shortcutHelp.rows.ctrlShiftD")) },
     { keys: formatChordModShift("S"), desc: String(t("shortcutHelp.rows.ctrlShiftS")) },
     { keys: formatChordModShift("F"), desc: pluginF },
     { keys: formatChordModShift("A"), desc: pluginA },

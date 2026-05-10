@@ -106,9 +106,39 @@ const visibleNavRows = computed(() =>
   filterSettingsNavRows(roleStore.interactionImmersive, SETTINGS_NAV_ROWS),
 );
 
+const navFilterText = ref("");
+
 function navLabel(id: SettingsNavAnyId): string {
   return String(t(`settings.nav.items.${settingsNavLabelKey(id)}`));
 }
+
+function filterSidebarByQuery(rows: SettingsNavRow[], q: string): SettingsNavRow[] {
+  const needle = q.trim().toLowerCase();
+  if (!needle) return rows;
+  const hitIndex = new Set<number>();
+  rows.forEach((row, i) => {
+    if (row.isGroupLabel) return;
+    if (navLabel(row.id).toLowerCase().includes(needle)) hitIndex.add(i);
+  });
+  const out: SettingsNavRow[] = [];
+  for (let i = 0; i < rows.length; i++) {
+    const row = rows[i]!;
+    if (row.isGroupLabel) {
+      let any = false;
+      for (let j = i + 1; j < rows.length; j++) {
+        const n = rows[j]!;
+        if (n.depth <= row.depth) break;
+        if (hitIndex.has(j)) any = true;
+      }
+      if (any) out.push(row);
+    } else if (hitIndex.has(i)) {
+      out.push(row);
+    }
+  }
+  return out;
+}
+
+const sidebarNavRows = computed(() => filterSidebarByQuery(visibleNavRows.value, navFilterText.value));
 
 function selectNav(id: SettingsNavAnyId): void {
   if (!ALL_SETTINGS_NAV_IDS.includes(id as SettingsNavId)) return;
@@ -178,6 +208,7 @@ watch(
     if (!visible) {
       cloudTrust.close();
       tierResetKey.value += 1;
+      navFilterText.value = "";
     } else {
       selectedNavId.value = firstSelectableSettingsNavId(roleStore.interactionImmersive);
     }
@@ -358,7 +389,18 @@ async function onToggleForceIframe(e: Event) {
 
           <div class="sv-shell">
             <nav class="sv-tree" :aria-label="t('settings.sectionsNavLabel')">
-              <template v-for="(row, idx) in visibleNavRows" :key="`${row.id}-${idx}`">
+              <label class="sv-nav-filter-wrap">
+                <span class="sr-only">{{ t("settings.nav.filterLabel") }}</span>
+                <input
+                  v-model="navFilterText"
+                  type="search"
+                  class="sv-nav-filter"
+                  :placeholder="String(t('settings.nav.filterPlaceholder'))"
+                  autocomplete="off"
+                  spellcheck="false"
+                />
+              </label>
+              <template v-for="(row, idx) in sidebarNavRows" :key="`${row.id}-${idx}`">
                 <div
                   v-if="row.isGroupLabel"
                   class="sv-tree-group"
@@ -452,6 +494,15 @@ async function onToggleForceIframe(e: Event) {
               <div v-show="selectedNavId === SETTINGS_NAV.generalDefaultModel" class="sv-pane-section">
                 <SettingsTierSection tier="L2" :reset-key="tierResetKey">
                   <ModelSelectorSettings :active="selectedNavId === SETTINGS_NAV.generalDefaultModel && visible" />
+                  <p class="sv-muted sv-cross-links">{{ t("settings.modelSelector.advancedLinksLead") }}</p>
+                  <div class="sv-cross-link-row">
+                    <button type="button" class="sv-btn sv-btn--ghost" @click="selectNav(SETTINGS_NAV.modelsCloud)">
+                      {{ t("settings.modelSelector.linkCloud") }}
+                    </button>
+                    <button type="button" class="sv-btn sv-btn--ghost" @click="selectNav(SETTINGS_NAV.modelsOllama)">
+                      {{ t("settings.modelSelector.linkLocal") }}
+                    </button>
+                  </div>
                 </SettingsTierSection>
               </div>
 
@@ -477,6 +528,9 @@ async function onToggleForceIframe(e: Event) {
                       <button type="button" class="sv-btn" @click="onOpenPluginBackendsFromCloud">
                         {{ t("settings.cloudLlmTrust.openBackendsCta") }}
                       </button>
+                      <button type="button" class="sv-btn sv-btn--ghost" @click="selectNav(SETTINGS_NAV.generalDefaultModel)">
+                        {{ t("settings.nav.jumpDefaultModel") }}
+                      </button>
                     </div>
                   </section>
                 </SettingsTierSection>
@@ -485,6 +539,9 @@ async function onToggleForceIframe(e: Event) {
               <div v-show="selectedNavId === SETTINGS_NAV.modelsOllama" class="sv-pane-section">
                 <SettingsTierSection tier="L3" :reset-key="tierResetKey">
                   <p class="sv-muted">{{ t("settings.nav.lead.modelsOllama") }}</p>
+                  <button type="button" class="sv-btn sv-btn--ghost sv-cross-link-top" @click="selectNav(SETTINGS_NAV.generalDefaultModel)">
+                    {{ t("settings.nav.jumpDefaultModel") }}
+                  </button>
                 </SettingsTierSection>
                 <SettingsTierSection tier="L4" :reset-key="tierResetKey">
                   <button type="button" class="sv-btn sv-btn--accent" @click="emitDeepLink({ kind: 'local_models' })">
@@ -512,7 +569,10 @@ async function onToggleForceIframe(e: Event) {
 
               <div v-show="selectedNavId === SETTINGS_NAV.dataRoles" class="sv-pane-section">
                 <SettingsTierSection tier="L3" :reset-key="tierResetKey">
-                  <RoleManagerSettings @switch-role="(id) => emit('switchRole', id)" />
+                  <RoleManagerSettings
+                    @switch-role="(id) => emit('switchRole', id)"
+                    @open-market="emitDeepLink({ kind: 'plugin_market' })"
+                  />
                 </SettingsTierSection>
               </div>
 
@@ -1180,6 +1240,27 @@ async function onToggleForceIframe(e: Event) {
 }
 .sv-btn--danger:hover:not(:disabled) {
   border-color: color-mix(in srgb, var(--text-danger, #c33) 58%, var(--border-light));
+}
+.sv-btn--ghost {
+  font-size: 12px;
+  padding: 5px 10px;
+  background: transparent;
+}
+.sv-btn--ghost:hover {
+  background: var(--bg-hover, rgba(255, 255, 255, 0.06));
+}
+.sv-cross-links {
+  margin-top: 8px;
+}
+.sv-cross-link-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-top: 2px;
+}
+.sv-cross-link-top {
+  margin-top: 8px;
+  align-self: flex-start;
 }
 .sv-reset-scope {
   white-space: pre-wrap;

@@ -240,6 +240,10 @@ export const zhCN = {
           groupLabel: "设置入口集合",
           shortcutHelp: "快捷键说明",
           settings: "⚙ 设置",
+          hubHint:
+            "插件管理、市场、本机模型、调试与角色包文件夹等均已收拢到「设置」侧栏与分区；此处仅保留快捷键说明与设置入口。",
+          pureChatHubHint:
+            "纯聊下同样从「设置」统一管理模型、云端、快捷键与诊断；沉浸专有项会在设置页内标注。",
           localModels: "本地模型…",
           revealRolePackFolder: "打开角色包文件夹…",
           revealRolePackHint:
@@ -314,8 +318,9 @@ export const zhCN = {
     },
     pureChatAssist: {
       aria: "纯聊快捷区",
-      lead: "纯聊只保留对话与外观。角色包可拖入窗口导入；字号与主题在顶栏「更多」→「界面」。排错请用下方调试入口。",
+      lead: "纯聊只保留对话与外观。角色包可拖入窗口导入；字号与主题在顶栏「更多」→「界面」。插件、模型与排错请用下方「打开设置」。",
       openDebug: "打开调试面板",
+      openSettings: "打开设置",
     },
     pureChatErrors: {
       llm: "这句没发出去：多半是模型没开或名字不对。可切到沉浸模式检查本机模型与插件后端，或确认推理服务已启动。",
@@ -494,6 +499,9 @@ export const zhCN = {
     },
     nav: {
       deepLinkFooterNote: "将关闭本设置窗口并在独立面板中打开。",
+      filterLabel: "筛选设置项",
+      filterPlaceholder: "搜索侧栏…",
+      jumpDefaultModel: "侧栏：默认对话模型…",
       items: {
         generalOverview: "概览",
         generalLanguage: "语言与区域",
@@ -538,18 +546,20 @@ export const zhCN = {
         pluginsSlots: "在「插槽」页调整各 UI 槽的嵌入顺序与预览；支持本页嵌套或独立窗口。",
         pluginsBackends: "在「后端」页调整 plugin_backends 与会话覆盖；Agent 调试台亦在此页。支持本页嵌套或独立窗口。",
         pluginsV2Hub:
-          "槽位看板、从 Git 安装插件、会话级本地 Llama 绑定等在 V2 窗内完成；与顶栏「更多」中 Oclive Manager（V2）入口一致。",
+          "槽位看板、从 Git 安装插件、会话级本地 Llama 绑定等在 V2 窗内完成；从「设置」→「插件与扩展」进入。",
         marketBrowse: "浏览社区索引、安装或更新插件，并处理权限同意（与网络与信任模型相关）。",
         marketBrowseV2Hint:
-          "已启用新版插件管理（V2）实验：点击下方按钮将打开 V2 插件市场界面，与顶栏「更多」中的插件市场按钮一致（非经典 V1 全屏市场弹窗）。",
+          "已启用新版插件管理（V2）实验：点击下方按钮将打开 V2 插件市场界面，与「设置」→「插件市场」一致。",
         diagnosticsDebug:
-          "下方可在此页直接查看调试内容；仍可用独立调试窗（与顶栏「更多」或快捷键一致）作大块排障。",
+          "下方可在此页直接查看调试内容；仍可用独立调试窗作大块排障（「设置」→「诊断与调试」，或全局快捷键）。",
         diagnosticsAgent:
           "Agent 任务拆解与 MCP 工具调用可在经典「插件与后端管理」的「后端」页底部调试台查看；以下按钮将关闭设置并打开该页。",
       },
     },
     roleSettings: {
       lead: "切换当前会话角色、查看简介，并打开磁盘上的角色包目录；详细叙事与关系仍可在主界面侧栏使用。",
+      emptyLead: "本地还没有可用角色包。可从插件市场安装带角色的内容包，或将 .ocpak / .zip 拖入窗口导入。",
+      emptyOpenMarket: "打开插件市场",
       currentRole: "当前角色",
       summaryTitle: "当前角色简介",
       noDescription: "（无简介）",
@@ -560,7 +570,13 @@ export const zhCN = {
         "姊妹应用 oclive-pack-editor 用于编辑 manifest、settings 等；请先打开上方面板中的文件夹，再用编写器指向该目录。",
     },
     modelSelector: {
+      loading: "正在加载模型列表…",
+      retry: "重试",
+      emptyHint: "当前未检测到本机 Ollama 模型，也未配置可用的云端默认模型。可在侧栏打开「云端模型与密钥」或「本机模型与 Ollama」继续配置。",
       syncHint: "与聊天输入区上方的模型选择器使用同一套保存逻辑，修改会立即同步到撰写区与纯聊浮层。",
+      advancedLinksLead: "更多相关设置（侧栏内跳转，无需关窗）：",
+      linkCloud: "云端模型与密钥",
+      linkLocal: "本机模型与 Ollama",
     },
     tiers: {
       L1: {
@@ -602,7 +618,7 @@ export const zhCN = {
       settingsGeneralLeadHtml:
         "插件管理正在迭代中。为减少干扰，部分入口默认收起或隐藏。",
       settingsShortcutsHelpHint:
-        "可通过顶栏「更多」或 {m}+Shift+F 快速打开插件管理。",
+        "在「设置」→「插件与扩展」中可打开插件管理（含本页嵌套）；亦可用快捷键 {m}+Shift+F。",
       settingsExperimentalSectionHelpHint:
         "「系统与内核」层实验可能频繁变更，并可能造成兼容性问题。",
       settingsExperimentalToggleTitle: "启用新版插件管理界面（V2 预览）",
@@ -625,9 +641,9 @@ export const zhCN = {
       },
       tileHelpText: {
         v1:
-          "将快捷键说明、设置页与 Oclive Manager（插件与后端管理）集中到同一处。快捷键：{m}+Shift+S 打开设置；{m}+Shift+F 打开专业模式（V1）Oclive Manager（含系统与内核向排障）；{m}+Shift+A 打开插件市场。 {m}+Shift+D 开关调试面板。",
+          "顶栏「更多」仅保留快捷键说明与「设置」入口。插件管理、市场、本机模型与调试等均在设置侧栏分区中；快捷键 {m}+Shift+S / F / A / D 仍可作为加速器。",
         v2:
-          "将快捷键说明、设置页与 Oclive Manager 集中到同一处。快捷键：{m}+Shift+S 打开设置；{m}+Shift+F 与下方按钮打开 Oclive Manager（V2 预览）；{m}+Shift+A 打开插件市场；在设置「系统与内核 · 实验」中关闭「V2 预览」可恢复专业模式（V1）。 {m}+Shift+D 开关调试面板。",
+          "顶栏「更多」仅保留快捷键说明与「设置」入口。插件管理 V2、市场、本机模型与调试等均在设置侧栏分区中；快捷键 {m}+Shift+S / F / A / D 仍可作为加速器。",
       },
     },
     shortcuts: {
@@ -1100,6 +1116,7 @@ export const zhCN = {
     dialogLabel: "快捷键",
     title: "快捷键",
     rows: {
+      ctrlShiftD: "打开或关闭调试面板（设置中「诊断与调试」有同等入口）",
       ctrlShiftS: "打开设置（扩展区、安全、快捷键与插件配置）",
       ctrlHoldKey: "{m}（长按约 1 秒）",
       ctrlHoldDesc: "打开本快捷键说明",
@@ -1115,10 +1132,11 @@ export const zhCN = {
     title: "🎛️ 开发面板",
     hint: [
       "供开发与排错：查看好感度、性格维度、近期事件与记忆摘要；可重载策略、生成独白、导入或管理角色包等。",
-      "快捷键 {m}+Shift+D（同时按住 {m}、Shift，再按字母 D）可随时打开或关闭本面板；按 Esc 也可关闭。顶栏「更多」里亦可点「打开调试面板」。",
+      "快捷键 {m}+Shift+D（同时按住 {m}、Shift，再按字母 D）可随时打开或关闭本面板；按 Esc 也可关闭。完整入口见「设置」→「诊断与调试」。",
     ],
     hintPureChatP1: "供开发与排错：查看好感、记忆与策略等；角色包与独白入口也在此。",
-    hintPureChatP2: "按 Esc 或右上角关闭本面板。组合键与完整快捷键说明仅在沉浸模式提供。",
+    hintPureChatP2:
+      "按 Esc 或右上角关闭。{m}+Shift+D 仍开关本面板；快捷键说明在顶栏「更多」，主要管理入口在「设置」。",
     debugDockSlotAria: "调试面板扩展槽",
     monologue: {
       prefix: "【独白】",
@@ -1304,7 +1322,7 @@ export const zhCN = {
   hotkeySettings: {
     title: "全局快捷键",
     tierL1Intro:
-      "此处说明与「快捷」页一致：顶栏「更多」与常用快捷键入口属于外观与交互层。下方「编辑绑定」属于系统与内核层，因全局快捷键会唤起插件界面并涉及宿主监听。",
+      "此处说明与「快捷」页一致：常用快捷键说明属于外观与交互层。下方「编辑绑定」属于系统与内核层，因全局快捷键会唤起插件界面并涉及宿主监听。",
     editorLead:
       "编辑全局快捷键绑定：启用后由系统全局监听，可能与系统或其它应用冲突；含「打开插件插槽」的动作时与插件运行时强相关。",
     lead: "默认全部关闭。启用后由系统全局监听，可能与系统或其它应用冲突；保存失败时会提示原因。",
@@ -1321,6 +1339,7 @@ export const zhCN = {
       openPluginSlot: "打开某插件插槽页",
     },
     addOne: "添加一条",
+    retryLoad: "重新加载",
     toasts: {
       saved: "已保存快捷键配置（仅启用的项会注册全局快捷键）。",
     },

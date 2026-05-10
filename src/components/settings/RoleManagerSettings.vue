@@ -7,6 +7,7 @@ import { revealRolePackFolder } from "../../utils/tauri-api";
 
 const emit = defineEmits<{
   switchRole: [roleId: string];
+  openMarket: [];
 }>();
 
 const roleStore = useRoleStore();
@@ -45,7 +46,13 @@ function onSelectRole(ev: Event): void {
 <template>
   <div class="rms">
     <p class="rms-lead">{{ t("settings.roleSettings.lead") }}</p>
-    <section class="rms-section">
+    <div v-if="!roleStore.roles.length" class="rms-empty">
+      <p class="rms-muted">{{ t("settings.roleSettings.emptyLead") }}</p>
+      <button type="button" class="rms-btn rms-btn--accent" @click="emit('openMarket')">
+        {{ t("settings.roleSettings.emptyOpenMarket") }}
+      </button>
+    </div>
+    <section v-else class="rms-section">
       <label class="rms-label" for="rms-role-select">{{ t("settings.roleSettings.currentRole") }}</label>
       <select
         id="rms-role-select"
@@ -57,18 +64,18 @@ function onSelectRole(ev: Event): void {
         <option v-for="r in roleStore.roles" :key="r.id" :value="r.id">{{ r.name }}</option>
       </select>
     </section>
-    <section class="rms-card" aria-labelledby="rms-summary-h">
+    <section v-if="roleStore.roles.length" class="rms-card" aria-labelledby="rms-summary-h">
       <h3 id="rms-summary-h" class="rms-h">{{ t("settings.roleSettings.summaryTitle") }}</h3>
       <p class="rms-meta"><strong>{{ roleStore.roleInfo.name }}</strong> · v{{ roleStore.roleInfo.version }}</p>
       <p v-if="roleStore.roleInfo.description" class="rms-desc">{{ roleStore.roleInfo.description }}</p>
       <p v-else class="rms-muted">{{ t("settings.roleSettings.noDescription") }}</p>
     </section>
-    <div class="rms-actions">
+    <div v-if="roleStore.roles.length" class="rms-actions">
       <button type="button" class="rms-btn" :disabled="revealBusy" @click="onRevealPack">
         {{ t("settings.roleSettings.revealPack") }}
       </button>
     </div>
-    <p class="rms-muted rms-pack-editor">{{ t("settings.roleSettings.packEditorHint") }}</p>
+    <p v-if="roleStore.roles.length" class="rms-muted rms-pack-editor">{{ t("settings.roleSettings.packEditorHint") }}</p>
   </div>
 </template>
 
@@ -147,6 +154,18 @@ function onSelectRole(ev: Event): void {
 .rms-btn:disabled {
   opacity: 0.55;
   cursor: not-allowed;
+}
+.rms-btn--accent {
+  border-color: color-mix(in srgb, var(--accent, #3b82f6) 38%, var(--border-light));
+  background: color-mix(in srgb, var(--accent, #3b82f6) 12%, var(--bg-primary));
+}
+.rms-empty {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  padding: 12px;
+  border-radius: 10px;
+  border: 1px dashed var(--border-light);
 }
 .rms-pack-editor {
   font-size: 11px;
