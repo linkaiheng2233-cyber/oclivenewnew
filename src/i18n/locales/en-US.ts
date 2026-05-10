@@ -605,6 +605,16 @@ export const enUS = {
       packEditorHint:
         "The sibling app oclive-pack-editor edits manifest and settings files—open the folder above, then point the editor at that directory.",
     },
+    modelHub: {
+      defaultTitle: "Default chat model",
+      localTitle: "Ollama models detected locally",
+      cloudTitle: "Cloud-configured model picks",
+      cloudSummary: "Saved cloud base URL: {url} ({key})",
+      cloudKeyPresent: "API key saved",
+      cloudKeyMissing: "No saved API key detected",
+      appliedToast: "Default model set to: {id}",
+      openLocalManager: "Download & manage local models (sidebar: Local models & Ollama)",
+    },
     modelSelector: {
       loading: "Loading model list…",
       retry: "Retry",

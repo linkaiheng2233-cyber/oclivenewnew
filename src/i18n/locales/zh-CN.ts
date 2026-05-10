@@ -583,6 +583,16 @@ export const zhCN = {
       packEditorHint:
         "姊妹应用 oclive-pack-editor 用于编辑 manifest、settings 等；请先打开上方面板中的文件夹，再用编写器指向该目录。",
     },
+    modelHub: {
+      defaultTitle: "当前默认对话模型",
+      localTitle: "本机已检测到的 Ollama 模型",
+      cloudTitle: "云端已配置的候选模型",
+      cloudSummary: "已保存云端根地址：{url}（{key}）",
+      cloudKeyPresent: "已保存 API Key",
+      cloudKeyMissing: "未检测到已保存的 Key",
+      appliedToast: "已切换默认模型为：{id}",
+      openLocalManager: "下载与管理本机模型（侧栏：本机模型与 Ollama）",
+    },
     modelSelector: {
       loading: "正在加载模型列表…",
       retry: "重试",

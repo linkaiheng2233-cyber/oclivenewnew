@@ -493,7 +493,10 @@ async function onToggleForceIframe(e: Event) {
 
               <div v-show="selectedNavId === SETTINGS_NAV.generalDefaultModel" class="sv-pane-section">
                 <SettingsTierSection tier="L2" :reset-key="tierResetKey">
-                  <ModelSelectorSettings :active="selectedNavId === SETTINGS_NAV.generalDefaultModel && visible" />
+                  <ModelSelectorSettings
+                    :active="selectedNavId === SETTINGS_NAV.generalDefaultModel && visible"
+                    @open-local-models="selectNav(SETTINGS_NAV.modelsOllama)"
+                  />
                   <p class="sv-muted sv-cross-links">{{ t("settings.modelSelector.advancedLinksLead") }}</p>
                   <div class="sv-cross-link-row">
                     <button type="button" class="sv-btn sv-btn--ghost" @click="selectNav(SETTINGS_NAV.modelsCloud)">
