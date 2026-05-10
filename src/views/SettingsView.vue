@@ -39,6 +39,7 @@ import {
 } from "../lib/settingsNavKeys";
 import { resetHostPreferencesToDefaults } from "../lib/resetHostPreferencesToDefaults";
 import { settingsTierBadge, settingsTierDescription } from "../lib/settingsNavCopy";
+import { formatChordModShift } from "../lib/shortcutDisplay";
 import type { PluginPanelMainTab } from "../stores/pluginStore";
 import { SLOT_SETTINGS_ADVANCED, usePluginStore } from "../stores/pluginStore";
 import { useExpertModelsStore } from "../stores/expertModelsStore";
@@ -77,7 +78,11 @@ const showVueCloudTrustModal = computed(
   () => !isTauriWebview() || cloudTrust.visible.value,
 );
 
-const unifiedMarketCtaText = computed(() => unifiedOpenPluginMarketCta(uiStore.experimentalPluginManagerV2));
+const unifiedMarketCtaText = computed(() =>
+  unifiedOpenPluginMarketCta(
+    uiStore.experimentalPluginManagerV2 && uiStore.settingsDeveloperMaster,
+  ),
+);
 
 const PluginManagerPanel = defineAsyncComponent(() => import("./PluginManagerPanel.vue"));
 const PluginManagerV2Panel = defineAsyncComponent(() => import("./PluginManagerV2Panel.vue"));
@@ -104,6 +109,26 @@ const navFilterText = ref("");
 function navLabel(id: SettingsNavAnyId): string {
   return String(t(`settings.nav.items.${settingsNavLabelKey(id)}`));
 }
+
+function navGroupHintText(id: SettingsNavAnyId): string {
+  if (!id || typeof id !== "string" || !id.startsWith("settings.cat.")) return "";
+  return String(t(`settings.nav.groupHints.${settingsNavLabelKey(id)}`));
+}
+
+const shortcutAccel = computed(() => ({
+  s: formatChordModShift("S"),
+  f: formatChordModShift("F"),
+  a: formatChordModShift("A"),
+  d: formatChordModShift("D"),
+}));
+
+function goToRoutineSettings(): void {
+  selectNav(SETTINGS_NAV.generalOverview);
+}
+
+const showAdvancedSurfaceBanner = computed(
+  () => roleStore.interactionImmersive && uiStore.settingsDeveloperMaster,
+);
 
 function filterSidebarByQuery(rows: SettingsNavRow[], q: string): SettingsNavRow[] {
   const needle = q.trim().toLowerCase();
@@ -505,7 +530,12 @@ async function onToggleForceIframe(e: Event) {
                   class="sv-tree-group"
                   :class="{ 'sv-tree-group--indented': row.depth === 1 }"
                 >
-                  {{ navLabel(row.id) }}
+                  <span class="sv-tree-group-label">{{ navLabel(row.id) }}</span>
+                  <HelpHint
+                    v-if="navGroupHintText(row.id)"
+                    class="sv-tree-group-hint"
+                    :text="navGroupHintText(row.id)"
+                  />
                 </div>
                 <button
                   v-else
@@ -538,6 +568,13 @@ async function onToggleForceIframe(e: Event) {
                 <p v-if="!uiStore.settingsDeveloperMaster" class="sv-muted sv-dev-hint">
                   {{ t("settings.centerDeveloperMaster.offHint") }}
                 </p>
+              </div>
+
+              <div v-if="showAdvancedSurfaceBanner" class="sv-advanced-surface-banner">
+                <p class="sv-advanced-surface-banner__text">{{ t("settings.advancedSurface.bannerLead") }}</p>
+                <button type="button" class="sv-btn sv-btn--ghost sv-advanced-surface-banner__btn" @click="goToRoutineSettings">
+                  {{ t("settings.advancedSurface.backToRoutine") }}
+                </button>
               </div>
 
               <div v-show="selectedNavId === SETTINGS_NAV.generalOverview" class="sv-pane-section">
@@ -593,6 +630,7 @@ async function onToggleForceIframe(e: Event) {
                     <HelpHint :text="settingsShortcutsHelpHint()" />
                   </div>
                   <p class="sv-muted">{{ t("settings.shortcuts.immersiveHint") }}</p>
+                  <p class="sv-muted sv-accel-hint">{{ t("settings.shortcuts.acceleratorOpenSettings", { keys: shortcutAccel.s }) }}</p>
                   <ShortcutsManagerPanel
                     :key="`hk-${hostPrefsReloadNonce}`"
                     :bootstrap-epoch="pluginStore.bootstrapEpoch"
@@ -715,6 +753,7 @@ async function onToggleForceIframe(e: Event) {
               <div v-show="selectedNavId === SETTINGS_NAV.pluginsLinkInstalled" class="sv-pane-section">
                 <SettingsTierSection tier="L3" :reset-key="tierResetKey">
                   <p class="sv-muted">{{ t("settings.nav.lead.pluginsInstalled") }}</p>
+                  <p class="sv-muted sv-accel-hint">{{ t("settings.shortcuts.acceleratorPluginManager", { keys: shortcutAccel.f }) }}</p>
                   <div class="sv-btn-row">
                     <button type="button" class="sv-btn secondary" @click="openPluginManagerEmbed('plugins')">
                       {{ t("settings.nav.cta.openPluginManagerInPage") }}
@@ -726,6 +765,7 @@ async function onToggleForceIframe(e: Event) {
               <div v-show="selectedNavId === SETTINGS_NAV.pluginsLinkSlots" class="sv-pane-section">
                 <SettingsTierSection tier="L3" :reset-key="tierResetKey">
                   <p class="sv-muted">{{ t("settings.nav.lead.pluginsSlots") }}</p>
+                  <p class="sv-muted sv-accel-hint">{{ t("settings.shortcuts.acceleratorPluginManager", { keys: shortcutAccel.f }) }}</p>
                   <div class="sv-btn-row">
                     <button type="button" class="sv-btn secondary" @click="openPluginManagerEmbed('slots')">
                       {{ t("settings.nav.cta.openPluginManagerInPage") }}
@@ -737,6 +777,7 @@ async function onToggleForceIframe(e: Event) {
               <div v-show="selectedNavId === SETTINGS_NAV.pluginsLinkBackends" class="sv-pane-section">
                 <SettingsTierSection tier="L3" :reset-key="tierResetKey">
                   <p class="sv-muted">{{ t("settings.nav.lead.pluginsBackends") }}</p>
+                  <p class="sv-muted sv-accel-hint">{{ t("settings.shortcuts.acceleratorPluginManager", { keys: shortcutAccel.f }) }}</p>
                   <div class="sv-btn-row">
                     <button type="button" class="sv-btn secondary" @click="openPluginManagerEmbed('backends')">
                       {{ t("settings.nav.cta.openPluginManagerInPage") }}
@@ -770,7 +811,11 @@ async function onToggleForceIframe(e: Event) {
               <div v-show="selectedNavId === SETTINGS_NAV.marketBrowse" class="sv-pane-section">
                 <SettingsTierSection tier="L3" :reset-key="tierResetKey">
                   <p class="sv-muted">{{ t("settings.nav.lead.marketBrowse") }}</p>
-                  <p v-if="uiStore.experimentalPluginManagerV2" class="sv-callout sv-muted">
+                  <p class="sv-muted sv-accel-hint">{{ t("settings.shortcuts.acceleratorPluginMarket", { keys: shortcutAccel.a }) }}</p>
+                  <p
+                    v-if="uiStore.experimentalPluginManagerV2 && uiStore.settingsDeveloperMaster"
+                    class="sv-callout sv-muted"
+                  >
                     {{ t("settings.nav.lead.marketBrowseV2NavHint") }}
                   </p>
                 </SettingsTierSection>
@@ -925,6 +970,7 @@ async function onToggleForceIframe(e: Event) {
               <div v-show="selectedNavId === SETTINGS_NAV.diagnosticsDebug" class="sv-pane-section">
                 <SettingsTierSection tier="L2" :reset-key="tierResetKey">
                   <p class="sv-muted">{{ t("settings.nav.lead.diagnosticsDebug") }}</p>
+                  <p class="sv-muted sv-accel-hint">{{ t("settings.shortcuts.acceleratorDiagnostics", { keys: shortcutAccel.d }) }}</p>
                 </SettingsTierSection>
                 <SettingsTierSection tier="L4" :reset-key="tierResetKey">
                   <SettingsDebugEmbed
@@ -938,6 +984,7 @@ async function onToggleForceIframe(e: Event) {
               <div v-show="selectedNavId === SETTINGS_NAV.diagnosticsAgent" class="sv-pane-section">
                 <SettingsTierSection tier="L3" :reset-key="tierResetKey">
                   <p class="sv-muted">{{ t("settings.nav.lead.diagnosticsAgent") }}</p>
+                  <p class="sv-muted sv-accel-hint">{{ t("settings.shortcuts.acceleratorDiagnostics", { keys: shortcutAccel.d }) }}</p>
                 </SettingsTierSection>
                 <SettingsTierSection tier="L4" :reset-key="tierResetKey">
                   <div class="sv-btn-row">
@@ -1070,6 +1117,10 @@ async function onToggleForceIframe(e: Event) {
   border-right: 1px solid var(--border-light);
 }
 .sv-tree-group {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 4px 8px;
   font-size: 11px;
   font-weight: 700;
   letter-spacing: 0.04em;
@@ -1078,6 +1129,16 @@ async function onToggleForceIframe(e: Event) {
   margin-top: 10px;
   margin-bottom: 2px;
   padding: 4px 8px 2px;
+}
+.sv-tree-group-label {
+  flex: 1 1 auto;
+  min-width: 0;
+}
+.sv-tree-group-hint {
+  flex: 0 0 auto;
+  text-transform: none;
+  letter-spacing: normal;
+  font-weight: 500;
 }
 .sv-tree-group:first-child {
   margin-top: 0;
@@ -1148,6 +1209,34 @@ async function onToggleForceIframe(e: Event) {
 .sv-dev-hint {
   margin: 8px 0 0;
   font-size: 12px;
+}
+.sv-advanced-surface-banner {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 10px 14px;
+  margin-bottom: 14px;
+  padding: 10px 12px;
+  border-radius: 10px;
+  border: 1px solid color-mix(in srgb, var(--accent) 32%, var(--border-light));
+  background: color-mix(in srgb, var(--accent) 7%, var(--bg-elevated));
+}
+.sv-advanced-surface-banner__text {
+  margin: 0;
+  flex: 1 1 200px;
+  font-size: 12px;
+  line-height: 1.45;
+  color: var(--text-secondary);
+}
+.sv-advanced-surface-banner__btn {
+  flex-shrink: 0;
+  align-self: center;
+}
+.sv-accel-hint {
+  margin: 6px 0 0;
+  font-size: 12px;
+  line-height: 1.45;
 }
 .sv-pane {
   flex: 1;

@@ -450,6 +450,11 @@ export const zhCN = {
       offHint:
         "关闭时侧栏保持经典 V1 风格。开启后额外显示专家模型、插件管理 V2 入口、内核实验、系统开发者工具与 Agent 调试等项。",
     },
+    advancedSurface: {
+      bannerLead:
+        "以下为高级功能入口，可能影响网络、插件与模型行为，请谨慎操作。",
+      backToRoutine: "返回常规设置",
+    },
     shortcutsManager: {
       builtinTitle: "内置快捷键",
       builtinLead: "以下为应用内固定快捷键（与聊天、插件管理入口一致）。",
@@ -461,6 +466,12 @@ export const zhCN = {
       immersiveHint: "虚拟时间、叙事场景等仅在沉浸模式下显示于「更多」。",
       editBindingsButton: "编辑快捷键绑定…",
       editBindingsHint: "无需记忆快捷键：点此进入「自定义快捷键」页，在表格中直接改键。",
+      acceleratorOpenSettings: "快捷键：{keys} 可从任意界面打开设置（沉浸模式）。",
+      acceleratorPluginManager:
+        "快捷键：{keys} 可从聊天跳转至此，并内嵌经典插件管理（具体路径随开发者模式与 V2 实验开关变化）。",
+      acceleratorPluginMarket:
+        "快捷键：{keys} 可从聊天跳转至此（经典市场；开发者模式且开启 V2 实验时为 V2 标签页）。",
+      acceleratorDiagnostics: "快捷键：{keys} 可从任意界面跳转到本诊断页。",
     },
     experimental: {
       label: "系统与内核 · 实验性功能",
@@ -510,6 +521,14 @@ export const zhCN = {
     },
     nav: {
       deepLinkFooterNote: "将关闭本设置窗口并在独立面板中打开。",
+      groupHints: {
+        catBehavior: "语言、快捷键与默认对话模型。",
+        catModels: "云端密钥与本机 / Ollama 模型。",
+        catData: "角色、专家摘要与完整专家工作台。",
+        catPlugins: "目录插件、经典管理、V2 管理与市场。",
+        catAdvanced: "实验开关与 settings.advanced 插件扩展区。",
+        catSystem: "市场索引开发者工具、安全与诊断。",
+      },
       needV2Experimental: "请先在「内核与实验」中开启「插件管理 V2（实验）」。",
       gotoV2HubButton: "打开 V2 插件管理（设置内嵌）",
       embedMarketFoot: "在设置窗下方嵌入经典插件市场。",

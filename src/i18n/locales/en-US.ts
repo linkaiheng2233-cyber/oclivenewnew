@@ -463,6 +463,11 @@ export const enUS = {
       offHint:
         "When off, the sidebar keeps the classic V1-style list. Turn on to show expert models, the Plugin Manager V2 hub, kernel experiments, system developer tools, and Agent debug.",
     },
+    advancedSurface: {
+      bannerLead:
+        "Advanced entries are visible. These tools can change networking, plugins, and model behavior—use with care.",
+      backToRoutine: "Back to routine settings",
+    },
     shortcutsManager: {
       builtinTitle: "Built-in shortcuts",
       builtinLead: "Fixed shortcuts used across the app (same as chat and plugin entries).",
@@ -477,6 +482,12 @@ export const enUS = {
       editBindingsButton: "Edit shortcut bindings…",
       editBindingsHint:
         "You do not need to memorize shortcuts: open the Custom shortcuts page and edit bindings in the table.",
+      acceleratorOpenSettings: "Accelerator: {keys} opens Settings from anywhere (immersive).",
+      acceleratorPluginManager:
+        "Accelerator: {keys} jumps here from chat and embeds the classic manager (path depends on developer mode + V2 experiment).",
+      acceleratorPluginMarket:
+        "Accelerator: {keys} jumps here from chat (classic market, or V2 tab when developer mode + V2 experiment are on).",
+      acceleratorDiagnostics: "Accelerator: {keys} jumps to this Diagnostics page from anywhere.",
     },
     experimental: {
       label: "System & kernel · Experimental",
@@ -529,6 +540,14 @@ export const enUS = {
     },
     nav: {
       deepLinkFooterNote: "This closes Settings and opens the destination panel.",
+      groupHints: {
+        catBehavior: "Language, shortcuts, and your default chat model.",
+        catModels: "Cloud API keys and on-device / Ollama models.",
+        catData: "Roles, expert summaries, and the full expert workbench.",
+        catPlugins: "Directory plugins, classic manager, V2 hub, and markets.",
+        catAdvanced: "Experimental toggles and the settings.advanced plugin slot.",
+        catSystem: "Market index developer tools, security, and diagnostics.",
+      },
       needV2Experimental: "Turn on “Plugin Manager V2 (experimental)” under Kernel & experiments first.",
       gotoV2HubButton: "Open V2 plugin manager (in Settings)",
       embedMarketFoot: "Embeds the classic Plugin Market below this settings window.",

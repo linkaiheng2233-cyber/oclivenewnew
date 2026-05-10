@@ -63,3 +63,12 @@
 | `{Mod}+Shift+A` | 总闸开且启用 V2 预览 → 设置 → `marketBrowseV2`；否则 → `marketBrowse` 并嵌入经典市场 |
 
 纯聊模式下 `F` / `A` / `S` 仍不触发插件类快捷键（与原先一致）；`D` 仍可打开设置调试页。
+
+---
+
+## 收尾打磨（导航、总闸态、快捷键对齐）— 已完成
+
+- **侧栏分组**：每个 `settings.cat.*` 分组标题旁增加 `HelpHint`，文案键 `settings.nav.groupHints.*`（中英），概括该组下常见能力，降低新用户扫侧栏时的认知成本。
+- **高级区顶栏**：沉浸且 **`settingsDeveloperMaster === true`** 时，右栏顶部展示 `settings.advancedSurface.bannerLead`，并提供 **「返回常规设置」**（`goToRoutineSettings` → 概览 `generalOverview`）。
+- **总闸关闭时的误导消除**：经典「插件市场」页内 **打开市场** 按钮文案（`unifiedOpenPluginMarketCta`）在设置内按 **`experimentalPluginManagerV2 && settingsDeveloperMaster`** 判定是否显示「V2」字样，避免总闸关仍显示 V2 市场 CTA。`marketBrowseV2` 侧栏引导句仍要求总闸 + V2 实验同时成立。
+- **快捷键与设置页对齐**：在 **快捷键管理、已安装与市场、插槽、后端、插件市场、诊断与调试、Agent/MCP 调试** 等页增加 `settings.shortcuts.accelerator*` 灰字提示，与 `App.vue` 内置热键一致；详细对照见 `handoff/TOP_BAR_AND_SHORTCUTS_CONSOLIDATION.md`。
