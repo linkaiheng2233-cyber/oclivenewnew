@@ -13,6 +13,8 @@ const props = defineProps<{
 const emit = defineEmits<{
   /** 侧栏跳转到本机模型 / L4 管理入口 */
   openLocalModels: [];
+  /** 侧栏跳转到 L4「云端模型与密钥」 */
+  configureCloud: [];
 }>();
 
 const { t } = useI18n();
@@ -40,6 +42,29 @@ const cloudSummary = computed(() => {
     }),
   );
 });
+
+/** 已保存根地址且检测到 Key，才视为「云端已配置」可用（与 cloudSelectOptions 逻辑一致）。 */
+const cloudInventoryReady = computed(() => {
+  const pub = unref(pick.cloudPub);
+  return Boolean(pub?.baseUrl?.trim()) && pub?.hasApiKey === true;
+});
+
+type ModelRouteHint = "none" | "local" | "cloud" | "custom" | "unknown";
+
+const defaultModelRouteHint = computed((): ModelRouteHint => {
+  const mid = unref(pick.modelId).trim();
+  if (!mid) return "none";
+  if (unref(pick.useCustomModel)) return "custom";
+  const locals = unref(pick.ollamaNames);
+  if (locals.includes(mid)) return "local";
+  if (unref(pick.cloudSelectOptions).includes(mid)) return "cloud";
+  if (cloudInventoryReady.value && !locals.includes(mid)) return "cloud";
+  return "unknown";
+});
+
+const defaultModelSourceLine = computed(() =>
+  String(t(`settings.modelSelector.source.${defaultModelRouteHint.value}`)),
+);
 
 async function runBootstrap(): Promise<void> {
   loadError.value = null;
@@ -83,7 +108,11 @@ function isCurrent(id: string): boolean {
 
 <template>
   <div class="mss">
-    <p v-if="booting" class="mss-status">{{ t("settings.modelSelector.loading") }}</p>
+    <div v-if="booting" class="mss-skel" role="status" :aria-label="String(t('settings.modelSelector.loading'))">
+      <div class="mss-skel-bar mss-skel-bar--lg" />
+      <div class="mss-skel-bar" />
+      <div class="mss-skel-bar mss-skel-bar--sm" />
+    </div>
     <p v-else-if="loadError" class="mss-err">
       {{ loadError }}
       <button type="button" class="mss-retry" @click="runBootstrap">
@@ -93,10 +122,28 @@ function isCurrent(id: string): boolean {
     <template v-else>
       <section class="mss-block" aria-labelledby="mss-default-h">
         <h3 id="mss-default-h" class="mss-h">{{ t("settings.modelHub.defaultTitle") }}</h3>
+        <p class="mss-source">{{ defaultModelSourceLine }}</p>
+        <p class="mss-cloud-row">
+          <button type="button" class="mss-linkish" @click="emit('configureCloud')">
+            {{ t("settings.modelSelector.configureCloudCta") }}
+          </button>
+        </p>
+        <p v-if="!cloudInventoryReady" class="mss-muted mss-teaser">
+          {{ t("settings.modelSelector.cloudTeaserBefore") }}
+          <button type="button" class="mss-linkish mss-linkish--inline" @click="emit('configureCloud')">
+            {{ t("settings.modelSelector.cloudTeaserLink") }}
+          </button>
+        </p>
         <p class="mss-current">
           <code class="mss-code">{{ pick.modelId || "—" }}</code>
         </p>
         <HostModelPickRow select-id="oclive-settings-default-model" :show-gear="false" :disabled="applying" />
+        <p class="mss-muted mss-l4-hint">
+          {{ t("settings.modelSelector.l4CloudAdvancedHintBefore") }}
+          <button type="button" class="mss-linkish mss-linkish--inline" @click="emit('configureCloud')">
+            {{ t("settings.modelSelector.l4CloudAdvancedHintLink") }}
+          </button>
+        </p>
       </section>
 
       <section v-if="pick.ollamaNames.length" class="mss-block" aria-labelledby="mss-local-h">
@@ -250,5 +297,65 @@ function isCurrent(id: string): boolean {
   font-size: 11px;
   line-height: 1.45;
   color: var(--text-secondary);
+}
+.mss-skel {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  max-width: 420px;
+  padding: 4px 0 8px;
+}
+.mss-skel-bar {
+  height: 10px;
+  border-radius: 6px;
+  background: linear-gradient(
+    90deg,
+    color-mix(in srgb, var(--text-secondary) 12%, transparent) 0%,
+    color-mix(in srgb, var(--text-secondary) 22%, transparent) 50%,
+    color-mix(in srgb, var(--text-secondary) 12%, transparent) 100%
+  );
+  background-size: 200% 100%;
+  animation: mss-skel-shimmer 1.1s ease-in-out infinite;
+}
+.mss-skel-bar--lg {
+  width: 72%;
+}
+.mss-skel-bar--sm {
+  width: 44%;
+}
+@keyframes mss-skel-shimmer {
+  0% {
+    background-position: 0% 0;
+  }
+  100% {
+    background-position: -200% 0;
+  }
+}
+.mss-source,
+.mss-cloud-row,
+.mss-teaser,
+.mss-l4-hint {
+  margin: 0;
+  font-size: 12px;
+  line-height: 1.45;
+  color: var(--text-secondary);
+}
+.mss-linkish {
+  padding: 0;
+  border: none;
+  background: none;
+  color: color-mix(in srgb, var(--accent, #6366f1) 92%, var(--text-primary));
+  font: inherit;
+  font-weight: 600;
+  cursor: pointer;
+  text-decoration: underline;
+  text-underline-offset: 2px;
+}
+.mss-linkish:hover {
+  color: var(--accent, #6366f1);
+}
+.mss-linkish--inline {
+  display: inline;
+  margin-left: 2px;
 }
 </style>

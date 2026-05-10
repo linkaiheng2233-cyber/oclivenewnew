@@ -630,6 +630,18 @@ export const zhCN = {
       advancedLinksLead: "更多相关设置（侧栏内跳转，无需关窗）：",
       linkCloud: "云端模型与密钥",
       linkLocal: "本机模型与 Ollama",
+      source: {
+        none: "当前未设置默认对话模型。",
+        local: "当前默认模型由本机 Ollama 提供。",
+        cloud: "当前默认模型由云端 API 提供。",
+        custom: "当前默认模型为自定义 id（可能对应云端或未列出的本机条目）。",
+        unknown: "无法自动判断当前默认模型的来源；可在下方列表中点选切换。",
+      },
+      configureCloudCta: "配置云端模型（侧栏：云端模型与密钥）",
+      cloudTeaserBefore: "想使用更强的大模型？",
+      cloudTeaserLink: "点击这里配置云端 API",
+      l4CloudAdvancedHintBefore: "高级用法？",
+      l4CloudAdvancedHintLink: "前往「云端模型与密钥」配置端点、超时与密钥",
     },
     tiers: {
       L1: {

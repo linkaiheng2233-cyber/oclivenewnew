@@ -656,6 +656,18 @@ export const enUS = {
       advancedLinksLead: "Related (jump inside the sidebar, no need to close Settings):",
       linkCloud: "Cloud model & secrets",
       linkLocal: "Local models & Ollama",
+      source: {
+        none: "No default chat model is set yet.",
+        local: "The default model is served by local Ollama.",
+        cloud: "The default model is served by a cloud API.",
+        custom: "The default model is a custom id (it may map to cloud or a local entry not listed here).",
+        unknown: "We couldn’t infer the default model’s source automatically—pick one from the lists below.",
+      },
+      configureCloudCta: "Configure cloud model (sidebar: Cloud model & secrets)",
+      cloudTeaserBefore: "Want a stronger model?",
+      cloudTeaserLink: "Configure a cloud API here",
+      l4CloudAdvancedHintBefore: "Power user?",
+      l4CloudAdvancedHintLink: "Open “Cloud model & secrets” for endpoints, timeouts, and keys",
     },
     tiers: {
       L1: {

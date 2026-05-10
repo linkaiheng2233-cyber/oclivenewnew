@@ -555,6 +555,7 @@ async function onToggleForceIframe(e: Event) {
                   <ModelSelectorSettings
                     :active="selectedNavId === SETTINGS_NAV.generalDefaultModel && visible"
                     @open-local-models="selectNav(SETTINGS_NAV.modelsOllama)"
+                    @configure-cloud="selectNav(SETTINGS_NAV.modelsCloud)"
                   />
                   <p class="sv-muted sv-cross-links">{{ t("settings.modelSelector.advancedLinksLead") }}</p>
                   <div class="sv-cross-link-row">
