@@ -25,14 +25,9 @@ import {
   settingsOpenV2PreviewButtonLabel,
   settingsShortcutsHelpHint,
   unifiedOpenAgentDebugFromBackendsCta,
-  unifiedOpenDebugCta,
-  unifiedOpenPluginManagerBackendsCta,
-  unifiedOpenPluginManagerInstalledCta,
-  unifiedOpenPluginManagerSlotsCta,
   unifiedOpenPluginManagerV2HubCta,
   unifiedOpenPluginMarketCta,
 } from "../lib/pluginManagerEntryCopy";
-import type { SettingsDeepLink } from "../lib/settingsDeepLink";
 import {
   ALL_SETTINGS_NAV_IDS,
   SETTINGS_DEVELOPER_GATED_NAV_IDS,
@@ -45,11 +40,13 @@ import {
   type SettingsNavRow,
 } from "../lib/settingsNavKeys";
 import { resetHostPreferencesToDefaults } from "../lib/resetHostPreferencesToDefaults";
-import { settingsDeepLinkFooterNote, settingsTierBadge, settingsTierDescription } from "../lib/settingsNavCopy";
+import { settingsTierBadge, settingsTierDescription } from "../lib/settingsNavCopy";
 import type { PluginPanelMainTab } from "../stores/pluginStore";
 import { SLOT_SETTINGS_ADVANCED, usePluginStore } from "../stores/pluginStore";
+import { useExpertModelsStore } from "../stores/expertModelsStore";
 import { useRoleStore } from "../stores/roleStore";
 import { useUiStore } from "../stores/uiStore";
+import type { ExpertWorkbenchDraftMode } from "../lib/expertWorkbenchOpen";
 import {
   getPluginMarketSourcesConfig,
   setPluginIndexSources,
@@ -64,8 +61,6 @@ const emit = defineEmits<{
   close: [];
   /** 在开启 V2 实验开关时，由设置页打开 V2 预览窗 */
   openPluginV2: [];
-  /** 关闭设置并由宿主打开既有面板（插件管理 / 市场 / 本机模型 / 专家工作台 / 调试） */
-  deepLink: [SettingsDeepLink];
   /** 与顶栏切换角色相同的宿主流程（插件 bootstrap、叙事场景等） */
   switchRole: [roleId: string];
   /** 调试嵌入区内导入角色包 */
@@ -77,6 +72,7 @@ const emit = defineEmits<{
 const pluginStore = usePluginStore();
 const roleStore = useRoleStore();
 const uiStore = useUiStore();
+const expertModelsStore = useExpertModelsStore();
 const { showToast } = useAppToast();
 const { t } = useI18n();
 const cloudTrust = useCloudLlmTrustModal();
@@ -86,9 +82,10 @@ const showVueCloudTrustModal = computed(
 );
 
 const unifiedMarketCtaText = computed(() => unifiedOpenPluginMarketCta(uiStore.experimentalPluginManagerV2));
-const unifiedDebugCtaText = computed(() => unifiedOpenDebugCta());
 
 const PluginManagerPanel = defineAsyncComponent(() => import("./PluginManagerPanel.vue"));
+const LocalModelManagerPanel = defineAsyncComponent(() => import("./LocalModelManagerPanel.vue"));
+const PluginMarketPanel = defineAsyncComponent(() => import("./PluginMarketPanel.vue"));
 
 function settingsNavToPluginTab(nav: SettingsNavId): PluginPanelMainTab | null {
   if (nav === SETTINGS_NAV.pluginsLinkInstalled) return "plugins";
@@ -150,10 +147,6 @@ function tierTitle(row: SettingsNavRow): string {
   return settingsTierDescription(row.tier);
 }
 
-function emitDeepLink(link: SettingsDeepLink): void {
-  emit("deepLink", link);
-}
-
 async function openCloudLlmTrustReadme(): Promise<void> {
   if (!isTauriWebview()) {
     cloudTrust.open();
@@ -210,8 +203,8 @@ function stripEmptyNavGroups(rows: SettingsNavRow[]): SettingsNavRow[] {
 
 const visibleNavRows = computed(() => {
   const base = filterSettingsNavRows(roleStore.interactionImmersive, SETTINGS_NAV_ROWS);
-  if (!roleStore.interactionImmersive || marketDeveloperModeLocal.value) {
-    return base;
+  if (!roleStore.interactionImmersive || uiStore.settingsDeveloperMaster) {
+    return stripEmptyNavGroups(base);
   }
   const gated = new Set(SETTINGS_DEVELOPER_GATED_NAV_IDS);
   const filtered = base.filter((row) => {
@@ -252,8 +245,14 @@ watch(
       cloudTrust.close();
       tierResetKey.value += 1;
       navFilterText.value = "";
+      pluginStore.closeMarketPanel();
     } else {
-      selectedNavId.value = firstSelectableFromRows(visibleNavRows.value);
+      const pending = uiStore.consumeSettingsPendingNavId();
+      if (pending && ALL_SETTINGS_NAV_IDS.includes(pending as SettingsNavId)) {
+        selectedNavId.value = pending as SettingsNavId;
+      } else {
+        selectedNavId.value = firstSelectableFromRows(visibleNavRows.value);
+      }
     }
     if (!visible || marketSourcesLoaded.value) return;
     marketSourcesLoaded.value = true;
@@ -278,13 +277,16 @@ watch(
   },
 );
 
-watch(marketDeveloperModeLocal, () => {
-  if (!roleStore.interactionImmersive || marketDeveloperModeLocal.value) return;
-  const gated = new Set(SETTINGS_DEVELOPER_GATED_NAV_IDS);
-  if (gated.has(selectedNavId.value)) {
-    selectedNavId.value = firstSelectableFromRows(visibleNavRows.value);
-  }
-});
+watch(
+  () => uiStore.settingsDeveloperMaster,
+  () => {
+    if (!roleStore.interactionImmersive || uiStore.settingsDeveloperMaster) return;
+    const gated = new Set(SETTINGS_DEVELOPER_GATED_NAV_IDS);
+    if (gated.has(selectedNavId.value)) {
+      selectedNavId.value = firstSelectableFromRows(visibleNavRows.value);
+    }
+  },
+);
 
 watch(
   () =>
@@ -298,6 +300,9 @@ watch(
       if (host === "settings") pluginStore.closePanel();
       return;
     }
+    if (nav !== SETTINGS_NAV.marketBrowse && pluginStore.marketPanelEmbedHost === "settings") {
+      pluginStore.closeMarketPanel();
+    }
     if (host !== "settings") return;
     const tab = settingsNavToPluginTab(nav);
     if (tab) {
@@ -310,11 +315,29 @@ watch(
 
 async function onOpenPluginBackendsFromCloud(): Promise<void> {
   try {
-    emitDeepLink({ kind: "plugin_manager", tab: "backends" });
+    selectNav(SETTINGS_NAV.pluginsLinkBackends);
+    await openPluginManagerEmbed("backends");
     showToast("info", String(t("settings.cloudLlmTrust.toastOpenedBackends")));
   } catch (err) {
     showToast("error", err instanceof Error ? err.message : String(err));
   }
+}
+
+async function onOpenExpertWorkbenchFromHub(o: { draftMode: ExpertWorkbenchDraftMode }): Promise<void> {
+  try {
+    pluginStore.expertWorkbenchDraftMode = o.draftMode;
+    selectNav(SETTINGS_NAV.pluginsLinkBackends);
+    await openPluginManagerEmbed("backends");
+    await expertModelsStore.refresh();
+    expertModelsStore.applyWorkbenchNavigationDraft(o.draftMode);
+  } catch (err) {
+    showToast("error", err instanceof Error ? err.message : String(err));
+  }
+}
+
+async function onOpenMarketFromRoles(): Promise<void> {
+  selectNav(SETTINGS_NAV.marketBrowse);
+  await pluginStore.openMarketPanelInSettingsEmbed();
 }
 
 async function onToggleMarketDeveloperMode(e: Event) {
@@ -479,14 +502,13 @@ async function onToggleForceIframe(e: Event) {
                 <label class="sv-dev-toggle">
                   <input
                     type="checkbox"
-                    :disabled="marketSourcesLoading"
-                    :checked="marketDeveloperModeLocal === true"
-                    @change="onToggleMarketDeveloperMode"
+                    :checked="uiStore.settingsDeveloperMaster === true"
+                    @change="uiStore.setSettingsDeveloperMaster(($event.target as HTMLInputElement).checked)"
                   />
-                  <span>{{ t("settings.developerGate.label") }}</span>
+                  <span>{{ t("settings.centerDeveloperMaster.label") }}</span>
                 </label>
-                <p v-if="!marketDeveloperModeLocal" class="sv-muted sv-dev-hint">
-                  {{ t("settings.developerGate.offHint") }}
+                <p v-if="!uiStore.settingsDeveloperMaster" class="sv-muted sv-dev-hint">
+                  {{ t("settings.centerDeveloperMaster.offHint") }}
                 </p>
               </div>
 
@@ -608,10 +630,11 @@ async function onToggleForceIframe(e: Event) {
                   </button>
                 </SettingsTierSection>
                 <SettingsTierSection tier="L4" :reset-key="tierResetKey">
-                  <button type="button" class="sv-btn sv-btn--accent" @click="emitDeepLink({ kind: 'local_models' })">
-                    {{ t("settings.nav.cta.openLocalModels") }}
-                  </button>
-                  <p class="sv-muted sv-foot">{{ settingsDeepLinkFooterNote() }}</p>
+                  <LocalModelManagerPanel
+                    :visible="selectedNavId === SETTINGS_NAV.modelsOllama && visible"
+                    embedded
+                    @close="() => {}"
+                  />
                 </SettingsTierSection>
               </div>
 
@@ -620,21 +643,8 @@ async function onToggleForceIframe(e: Event) {
                   <p class="sv-muted">{{ t("settings.nav.lead.dataExpertModels") }}</p>
                   <ExpertModelsSettingsHub
                     :active="selectedNavId === SETTINGS_NAV.dataExpertModels && visible"
-                    @open-expert-workbench="
-                      (o) => emitDeepLink({ kind: 'expert_workbench', draftMode: o.draftMode })
-                    "
+                    @open-expert-workbench="onOpenExpertWorkbenchFromHub"
                   />
-                </SettingsTierSection>
-                <SettingsTierSection tier="L4" :reset-key="tierResetKey">
-                  <p class="sv-muted">{{ t("settings.expertHub.deepLinkFoot") }}</p>
-                  <button
-                    type="button"
-                    class="sv-btn sv-btn--accent"
-                    @click="emitDeepLink({ kind: 'expert_workbench', draftMode: 'effective' })"
-                  >
-                    {{ t("settings.nav.cta.openExpertWorkbench") }}
-                  </button>
-                  <p class="sv-muted sv-foot">{{ settingsDeepLinkFooterNote() }}</p>
                 </SettingsTierSection>
               </div>
 
@@ -642,7 +652,7 @@ async function onToggleForceIframe(e: Event) {
                 <SettingsTierSection tier="L3" :reset-key="tierResetKey">
                   <RoleManagerSettings
                     @switch-role="(id) => emit('switchRole', id)"
-                    @open-market="emitDeepLink({ kind: 'plugin_market' })"
+                    @open-market="onOpenMarketFromRoles"
                     @pack-imported="(id) => emit('packImported', id)"
                   />
                 </SettingsTierSection>
@@ -674,18 +684,6 @@ async function onToggleForceIframe(e: Event) {
                     </button>
                   </div>
                 </SettingsTierSection>
-                <SettingsTierSection tier="L4" :reset-key="tierResetKey">
-                  <div class="sv-btn-row">
-                    <button
-                      type="button"
-                      class="sv-btn sv-btn--accent"
-                      @click="emitDeepLink({ kind: 'plugin_manager', tab: 'plugins' })"
-                    >
-                      {{ unifiedOpenPluginManagerInstalledCta() }}
-                    </button>
-                  </div>
-                  <p class="sv-muted sv-foot">{{ settingsDeepLinkFooterNote() }}</p>
-                </SettingsTierSection>
               </div>
 
               <div v-show="selectedNavId === SETTINGS_NAV.pluginsLinkSlots" class="sv-pane-section">
@@ -696,18 +694,6 @@ async function onToggleForceIframe(e: Event) {
                       {{ t("settings.nav.cta.openPluginManagerInPage") }}
                     </button>
                   </div>
-                </SettingsTierSection>
-                <SettingsTierSection tier="L4" :reset-key="tierResetKey">
-                  <div class="sv-btn-row">
-                    <button
-                      type="button"
-                      class="sv-btn sv-btn--accent"
-                      @click="emitDeepLink({ kind: 'plugin_manager', tab: 'slots' })"
-                    >
-                      {{ unifiedOpenPluginManagerSlotsCta() }}
-                    </button>
-                  </div>
-                  <p class="sv-muted sv-foot">{{ settingsDeepLinkFooterNote() }}</p>
                 </SettingsTierSection>
               </div>
 
@@ -720,18 +706,6 @@ async function onToggleForceIframe(e: Event) {
                     </button>
                   </div>
                 </SettingsTierSection>
-                <SettingsTierSection tier="L4" :reset-key="tierResetKey">
-                  <div class="sv-btn-row">
-                    <button
-                      type="button"
-                      class="sv-btn sv-btn--accent"
-                      @click="emitDeepLink({ kind: 'plugin_manager', tab: 'backends' })"
-                    >
-                      {{ unifiedOpenPluginManagerBackendsCta() }}
-                    </button>
-                  </div>
-                  <p class="sv-muted sv-foot">{{ settingsDeepLinkFooterNote() }}</p>
-                </SettingsTierSection>
               </div>
 
               <div v-show="selectedNavId === SETTINGS_NAV.pluginsV2Hub" class="sv-pane-section">
@@ -742,7 +716,7 @@ async function onToggleForceIframe(e: Event) {
                   <button type="button" class="sv-btn sv-btn--accent" @click="emit('openPluginV2')">
                     {{ unifiedOpenPluginManagerV2HubCta() }}
                   </button>
-                  <p class="sv-muted sv-foot">{{ settingsDeepLinkFooterNote() }}</p>
+                  <p class="sv-muted sv-foot">{{ t("settings.nav.embedV2HubFoot") }}</p>
                 </SettingsTierSection>
               </div>
 
@@ -754,10 +728,10 @@ async function onToggleForceIframe(e: Event) {
                   </p>
                 </SettingsTierSection>
                 <SettingsTierSection tier="L4" :reset-key="tierResetKey">
-                  <button type="button" class="sv-btn sv-btn--accent" @click="emitDeepLink({ kind: 'plugin_market' })">
+                  <button type="button" class="sv-btn sv-btn--accent" @click="pluginStore.openMarketPanelInSettingsEmbed()">
                     {{ unifiedMarketCtaText }}
                   </button>
-                  <p class="sv-muted sv-foot">{{ settingsDeepLinkFooterNote() }}</p>
+                  <p class="sv-muted sv-foot">{{ t("settings.nav.embedMarketFoot") }}</p>
                 </SettingsTierSection>
               </div>
 
@@ -838,6 +812,18 @@ async function onToggleForceIframe(e: Event) {
                       />
                     </div>
                     <p class="sv-muted">{{ t("settings.plugins.devMode.pageLead") }}</p>
+                    <label class="sv-toggle-row">
+                      <input
+                        type="checkbox"
+                        :disabled="marketSourcesLoading"
+                        :checked="marketDeveloperModeLocal === true"
+                        @change="onToggleMarketDeveloperMode"
+                      />
+                      <span class="sv-toggle-text">
+                        <strong>{{ t("settings.plugins.devMode.title") }}</strong>
+                        <span class="sv-muted sv-toggle-desc">{{ t("settings.plugins.devMode.hint") }}</span>
+                      </span>
+                    </label>
                   </section>
                 </SettingsTierSection>
                 <SettingsTierSection tier="L4" :reset-key="tierResetKey">
@@ -874,12 +860,6 @@ async function onToggleForceIframe(e: Event) {
                   <p class="sv-muted">{{ t("settings.nav.lead.diagnosticsDebug") }}</p>
                 </SettingsTierSection>
                 <SettingsTierSection tier="L4" :reset-key="tierResetKey">
-                  <div class="sv-btn-row">
-                    <button type="button" class="sv-btn sv-btn--accent" @click="emitDeepLink({ kind: 'debug_panel' })">
-                      {{ unifiedDebugCtaText }}
-                    </button>
-                  </div>
-                  <p class="sv-muted sv-foot">{{ settingsDeepLinkFooterNote() }}</p>
                   <SettingsDebugEmbed
                     :active="selectedNavId === SETTINGS_NAV.diagnosticsDebug && visible"
                     @imported="(id) => emit('packImported', id)"
@@ -893,14 +873,12 @@ async function onToggleForceIframe(e: Event) {
                   <p class="sv-muted">{{ t("settings.nav.lead.diagnosticsAgent") }}</p>
                 </SettingsTierSection>
                 <SettingsTierSection tier="L4" :reset-key="tierResetKey">
-                  <button
-                    type="button"
-                    class="sv-btn sv-btn--accent"
-                    @click="emitDeepLink({ kind: 'plugin_manager', tab: 'backends' })"
-                  >
-                    {{ unifiedOpenAgentDebugFromBackendsCta() }}
-                  </button>
-                  <p class="sv-muted sv-foot">{{ settingsDeepLinkFooterNote() }}</p>
+                  <div class="sv-btn-row">
+                    <button type="button" class="sv-btn sv-btn--accent" @click="openPluginManagerEmbed('backends')">
+                      {{ unifiedOpenAgentDebugFromBackendsCta() }}
+                    </button>
+                  </div>
+                  <p class="sv-muted sv-foot">{{ t("settings.nav.embedAgentDebugFoot") }}</p>
                 </SettingsTierSection>
               </div>
             </div>
@@ -911,6 +889,12 @@ async function onToggleForceIframe(e: Event) {
             class="sv-pm-embed"
           >
             <PluginManagerPanel embedded />
+          </div>
+          <div
+            v-if="pluginStore.marketPanelVisible && pluginStore.marketPanelEmbedHost === 'settings'"
+            class="sv-pm-embed sv-market-embed"
+          >
+            <PluginMarketPanel embedded />
           </div>
           </div>
         </div>

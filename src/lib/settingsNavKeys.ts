@@ -40,24 +40,20 @@ export type SettingsNavId = (typeof SETTINGS_NAV)[keyof typeof SETTINGS_NAV];
 
 export const ALL_SETTINGS_NAV_IDS: readonly SettingsNavId[] = Object.values(SETTINGS_NAV);
 
-/** 沉浸模式下关闭「开发者模式」时从侧栏隐藏的高级项（与宿主 `developer_mode` 一致）。 */
+/**
+ * 沉浸模式下「设置中心开发者总闸」关闭时从侧栏隐藏的项（V2 / 高阶；V1 仍保留在设置中）。
+ * 与 `uiStore.settingsDeveloperMaster` 一致，不再与插件市场索引的 `developerMode` 混用。
+ */
 export const SETTINGS_DEVELOPER_GATED_NAV_IDS: readonly SettingsNavId[] = [
-  SETTINGS_NAV.modelsCloud,
-  SETTINGS_NAV.modelsOllama,
   SETTINGS_NAV.dataExpertModels,
-  SETTINGS_NAV.pluginsDirectory,
-  SETTINGS_NAV.pluginsLinkInstalled,
-  SETTINGS_NAV.pluginsLinkSlots,
-  SETTINGS_NAV.pluginsLinkBackends,
   SETTINGS_NAV.pluginsV2Hub,
-  SETTINGS_NAV.marketBrowse,
-  SETTINGS_NAV.securityHost,
   SETTINGS_NAV.advancedExperimental,
-  SETTINGS_NAV.advancedEmbed,
   SETTINGS_NAV.systemDeveloper,
-  SETTINGS_NAV.diagnosticsDebug,
   SETTINGS_NAV.diagnosticsAgent,
 ];
+
+/** 别名：与 `SETTINGS_DEVELOPER_GATED_NAV_IDS` 相同，语义更直白。 */
+export const SETTINGS_CENTER_V2_ONLY_NAV_IDS = SETTINGS_DEVELOPER_GATED_NAV_IDS;
 
 export function isDeveloperGatedNavId(id: SettingsNavId): boolean {
   return (SETTINGS_DEVELOPER_GATED_NAV_IDS as readonly string[]).includes(id);
@@ -175,10 +171,10 @@ export function firstSelectableSettingsNavId(
  * | dataExpertModels | L3 专家模型设置（生效图、工作台、恢复包默认） |
  * | dataRoles | L3 角色与数据（切换 / 包目录 / 编写器说明） |
  * | pluginsDirectory | L3 目录插件设置插槽 |
- * | pluginsLink* / pluginsV2Hub / marketBrowse | L3 说明或本页打开 → L4 独立窗深链 |
+ * | pluginsLink* / pluginsV2Hub / marketBrowse | L3 说明 → L4 本页嵌入插件管理 / 市场 |
  * | securityHost / advancedExperimental | L4 安全与实验 |
  * | advancedEmbed | L3 settings.advanced 扩展区 |
- * | systemDeveloper | L4 开发者模式总闸与第三方索引源 |
- * | diagnosticsDebug | L2 说明 → L4 本页嵌入调试 + 独立窗入口 |
- * | diagnosticsAgent | L3 说明 → L4 打开后端 Agent 调试 |
+ * | systemDeveloper | L4 市场开发者模式与第三方索引源（侧栏项受设置中心开发者总闸） |
+ * | diagnosticsDebug | L2 说明 → L4 本页嵌入调试 |
+ * | diagnosticsAgent | L3 说明 → L4 嵌入后端 Agent 调试 |
  */
