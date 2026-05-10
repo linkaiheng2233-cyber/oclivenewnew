@@ -135,7 +135,7 @@ export function firstSelectableSettingsNavId(
  *
  * | 侧栏 id | 右栏分区（自上而下） |
  * |---------|----------------------|
- * | generalOverview | L1 概览与纯聊边界 |
+ * | generalOverview | L1 概览与纯聊边界 → L4 全局「恢复默认宿主偏好」 |
  * | generalLanguage | L1 语言 |
  * | shortcutsMain | L1 快捷键说明 |
  * | modelsCloud | L4 云端信任 / QuickSetup / 打开后端 |

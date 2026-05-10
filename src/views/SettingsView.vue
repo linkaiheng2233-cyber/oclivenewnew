@@ -6,6 +6,7 @@ import HelpHint from "../components/HelpHint.vue";
 import TrustConsentModal from "../components/TrustConsentModal.vue";
 import CloudLlmQuickSetup from "../components/CloudLlmQuickSetup.vue";
 import { buildCloudLlmTrustPlainText, useCloudLlmTrustModal } from "../composables/useCloudLlmTrustModal";
+import { notifyHostModelsInventoryChanged } from "../composables/useHostModelPick";
 import { isTauriWebview } from "../utils/isTauriWebview";
 import HotkeySettingsSection from "../components/HotkeySettingsSection.vue";
 import SettingsTierSection from "../components/SettingsTierSection.vue";
@@ -39,6 +40,7 @@ import {
   type SettingsNavId,
   type SettingsNavRow,
 } from "../lib/settingsNavKeys";
+import { resetHostPreferencesToDefaults } from "../lib/resetHostPreferencesToDefaults";
 import { settingsDeepLinkFooterNote, settingsTierBadge, settingsTierDescription } from "../lib/settingsNavCopy";
 import type { PluginPanelMainTab } from "../stores/pluginStore";
 import { SLOT_SETTINGS_ADVANCED, usePluginStore } from "../stores/pluginStore";
@@ -142,6 +144,9 @@ function onTrustModalVisible(v: boolean): void {
 
 /** 设置窗关闭时递增，用于将各页内 L4 分区恢复默认折叠 */
 const tierResetKey = ref(0);
+/** 全局「恢复默认」后递增，用于强制重挂载依赖 onMounted 的子组件（云端表单、快捷键等） */
+const hostPrefsReloadNonce = ref(0);
+const globalResetBusy = ref(false);
 const marketSourcesLoading = ref(false);
 const marketDeveloperModeLocal = ref(false);
 const marketSourcesText = ref("");
@@ -259,6 +264,46 @@ async function onSaveMarketSources() {
   }
 }
 
+async function onGlobalResetDefaults(): Promise<void> {
+  const title = String(t("settings.globalReset.confirmTitle"));
+  const message = String(t("settings.globalReset.confirmMessage"));
+  let ok = true;
+  if (isTauriWebview()) {
+    try {
+      ok = await confirm(message, {
+        title,
+        type: "warning",
+        okLabel: String(t("settings.globalReset.confirmOk")),
+        cancelLabel: String(t("common.cancel")),
+      });
+    } catch {
+      ok = window.confirm(`${title}\n\n${message}`);
+    }
+  } else {
+    ok = window.confirm(`${title}\n\n${message}`);
+  }
+  if (!ok) return;
+  globalResetBusy.value = true;
+  try {
+    await resetHostPreferencesToDefaults(roleStore.currentRoleId);
+    uiStore.$patch({
+      experimentalPluginManagerV2: false,
+      languagePref: "system",
+    });
+    pluginStore.closePanel();
+    await pluginStore.refresh();
+    notifyHostModelsInventoryChanged();
+    hostPrefsReloadNonce.value += 1;
+    if (marketSourcesLoaded.value) await loadMarketSources();
+    tierResetKey.value += 1;
+    showToast("success", String(t("settings.globalReset.successToast")));
+  } catch (err) {
+    showToast("error", err instanceof Error ? err.message : String(err));
+  } finally {
+    globalResetBusy.value = false;
+  }
+}
+
 async function onToggleForceIframe(e: Event) {
   const checked = (e.target as HTMLInputElement).checked;
   pluginStore.pluginState = {
@@ -341,6 +386,18 @@ async function onToggleForceIframe(e: Event) {
                     {{ t("settings.pureChatMoreInImmersive") }}
                   </p>
                 </SettingsTierSection>
+                <SettingsTierSection tier="L4" :reset-key="tierResetKey">
+                  <p class="sv-muted">{{ t("settings.globalReset.lead") }}</p>
+                  <p class="sv-muted sv-reset-scope">{{ t("settings.globalReset.scope") }}</p>
+                  <button
+                    type="button"
+                    class="sv-btn sv-btn--danger"
+                    :disabled="globalResetBusy"
+                    @click="onGlobalResetDefaults"
+                  >
+                    {{ t("settings.globalReset.button") }}
+                  </button>
+                </SettingsTierSection>
               </div>
 
               <div v-show="selectedNavId === SETTINGS_NAV.generalLanguage" class="sv-pane-section">
@@ -392,7 +449,7 @@ async function onToggleForceIframe(e: Event) {
                         <li>{{ t("settings.cloudLlmTrust.envLineModel") }}</li>
                         <li>{{ t("settings.cloudLlmTrust.envLineTimeout") }}</li>
                       </ul>
-                      <CloudLlmQuickSetup />
+                      <CloudLlmQuickSetup :key="`cloud-${hostPrefsReloadNonce}`" />
                     </div>
                     <div class="sv-cloud-actions-row">
                       <button type="button" class="sv-btn sv-btn--accent" @click="openCloudLlmTrustReadme">
@@ -456,7 +513,7 @@ async function onToggleForceIframe(e: Event) {
                   <p class="sv-muted">{{ t("hotkeySettings.tierL1Intro") }}</p>
                 </SettingsTierSection>
                 <SettingsTierSection tier="L4" :reset-key="tierResetKey">
-                  <HotkeySettingsSection headless />
+                  <HotkeySettingsSection :key="`hk-${hostPrefsReloadNonce}`" headless />
                 </SettingsTierSection>
               </div>
 
@@ -1083,5 +1140,17 @@ async function onToggleForceIframe(e: Event) {
 }
 .sv-btn--accent:hover {
   border-color: color-mix(in srgb, var(--accent, #3b82f6) 55%, var(--border-light));
+}
+.sv-btn--danger {
+  border-color: color-mix(in srgb, var(--text-danger, #c33) 42%, var(--border-light));
+  color: var(--text-danger, #c33);
+  background: color-mix(in srgb, var(--text-danger, #c33) 7%, var(--bg-primary));
+}
+.sv-btn--danger:hover:not(:disabled) {
+  border-color: color-mix(in srgb, var(--text-danger, #c33) 58%, var(--border-light));
+}
+.sv-reset-scope {
+  white-space: pre-wrap;
+  line-height: 1.45;
 }
 </style>

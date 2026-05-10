@@ -360,6 +360,17 @@ export const enUS = {
     pureChatMoreInImmersive:
       "Third-party market index sources, the settings extension slot, and the System & kernel section are hidden here; switch to immersive and open the same Settings page when you need them.",
     sectionsNavLabel: "Settings sections",
+    globalReset: {
+      lead: "High-impact: reset host preferences stored in the local app database to install defaults.",
+      scope:
+        "Clears in-app cloud LLM settings; sets the global chat model id to qwen2.5:7b (same fallback as an empty DB in the kernel); clears global hotkey bindings; disables Force iframe mode, Plugin Market developer mode, and clears custom index URLs; sets language to System; disables Plugin Manager V2 preview. Does not uninstall plugins or modify role pack files on disk.",
+      button: "Reset all resettable preferences",
+      confirmTitle: "Reset to defaults?",
+      confirmMessage:
+        "This cannot be undone: the listed preferences will be written immediately. Installed plugins and role packs are not removed. Continue?",
+      confirmOk: "Reset",
+      successToast: "Host preferences reset. If a section still looks stale, switch away in the sidebar and open it again.",
+    },
     tabs: {
       general: "General",
       plugins: "Plugins",
