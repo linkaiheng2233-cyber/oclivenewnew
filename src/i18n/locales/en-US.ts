@@ -456,7 +456,12 @@ export const enUS = {
       label: "Developer mode (advanced features)",
       offHint:
         "When off, advanced sidebar entries (models, plugin deep-links, market, diagnostics, experiments) stay hidden.",
-      offSources: "Turn on Developer mode at the top of the settings pane to edit third-party plugin index sources.",
+      offSources: "Enable Market developer mode on this page to edit third-party plugin index sources.",
+    },
+    centerDeveloperMaster: {
+      label: "Settings developer mode (V2 & advanced sidebar)",
+      offHint:
+        "When off, the sidebar keeps the classic V1-style list. Turn on to show expert models, the Plugin Manager V2 hub, kernel experiments, system developer tools, and Agent debug.",
     },
     shortcutsManager: {
       builtinTitle: "Built-in shortcuts",
@@ -501,7 +506,8 @@ export const enUS = {
         title: "Enable Developer mode",
         hint:
           "After enabling, you can use third-party index sources and sideload install. Recommended for advanced users only.",
-        pageLead: "The master switch lives at the top of the settings pane; this page only edits third-party plugin index sources.",
+        pageLead:
+          "Use the sticky switch at the top of Settings for the V2 sidebar bundle. On this page, enable Market developer mode to edit third-party plugin index sources.",
         enabledToast: "Developer mode enabled.",
         disabledToast: "Developer mode disabled.",
       },
@@ -523,6 +529,9 @@ export const enUS = {
     },
     nav: {
       deepLinkFooterNote: "This closes Settings and opens the destination panel.",
+      embedV2HubFoot: "Opens the V2 preview window on top of Settings (entry is only listed when developer mode above is on).",
+      embedMarketFoot: "Embeds the classic Plugin Market below this settings window.",
+      embedAgentDebugFoot: "Embeds the classic Plugin Manager (Backends tab) below Settings, including the Agent debug dock.",
       filterLabel: "Filter settings",
       filterPlaceholder: "Search sidebar…",
       jumpDefaultModel: "Sidebar: Default chat model…",
@@ -567,24 +576,23 @@ export const enUS = {
         dataExpertModels:
           "See which expert graph is active for this session (pack default, role default, or session override), open the Expert Models workbench for deep edits, or reset to the pack’s built-in default.",
         pluginsInstalled:
-          "Use the Plugin Manager “Plugins” tab for installed directory plugins, persist scope, and market shortcuts. Use “Open in this page” to embed it below Settings, or the primary button for a detached window.",
-        pluginsSlots: "Reorder UI slot embeds on the “Slots” tab—embed below Settings or use a detached window.",
+          "Use the Plugin Manager “Plugins” tab for installed directory plugins, persist scope, and market shortcuts. Use “Open in this page” to embed it below Settings.",
+        pluginsSlots: "Reorder UI slot embeds on the “Slots” tab—embed below Settings from this page.",
         pluginsBackends:
-          "Adjust plugin_backends and session overrides on the “Backends” tab (includes the Agent debug dock). Embed in-page or detached.",
+          "Adjust plugin_backends and session overrides on the “Backends” tab (includes the Agent debug dock). Embed in-page from this page.",
         pluginsV2Hub:
-          "Slot dashboard, install-from-Git, and session local-Llama binding live in the V2 window—open from Settings → Plugins & extensions.",
+          "Slot dashboard, install-from-Git, and session local-Llama binding live in the V2 preview window—open from here when developer mode is on.",
         marketBrowse: "Browse the community index, install or update plugins, and handle permission prompts (network & trust).",
         marketBrowseV2Hint:
-          "V2 Plugin Manager preview is enabled: the button below opens the V2 Plugin Market (same destination as Settings → Plugin market).",
+          "V2 Plugin Manager preview is enabled: use the V2 market from the V2 preview, or the classic market embedded below.",
         diagnosticsDebug:
-          "Use the embedded panel below for most checks; the detached Debug window is still available for a larger workspace (Settings → Diagnostics & debug, or the global shortcut).",
+          "Use the embedded panel below. You can also jump here with the global shortcut (opens Settings to this page).",
         diagnosticsAgent:
-          "Agent traces and MCP tool calls are available in the classic Plugin Manager “Backends” page (embedded debug dock). The button below closes Settings and opens that tab.",
+          "Agent traces and MCP tool calls are available in the classic Plugin Manager “Backends” page (embedded debug dock). Use the button below to embed it under Settings.",
       },
     },
     expertHub: {
-      deepLinkFoot:
-        "For a detached workbench or to edit alongside other backends, use the button below (this closes Settings).",
+      deepLinkFoot: "Use the button below to open the workbench inside Settings (Backends tab, embedded manager).",
       noRole: "Select or import a role in the main UI first so this page can load that role’s effective expert configuration.",
       graphSource: {
         packDefault: "Source: pack default",
@@ -742,11 +750,12 @@ export const enUS = {
     },
     shortcuts: {
       ctrlShiftFDescription: {
-        v1: "Open Oclive Manager (V1, includes UI plugins · System & kernel–oriented debugging).",
-        v2: "Open Oclive Manager (V2 preview). Disable “V2 preview” in Settings to return to V1.",
+        v1: "Open Settings to Installed & market, then embed classic Plugin Manager (Plugins tab).",
+        v2:
+          "Open Settings to the V2 hub when developer mode + V2 preview are on; otherwise same as V1 (classic manager embedded from Settings).",
       },
       ctrlShiftADescription:
-        "Open Plugin Market (V1/V2): online index, install, modules/profiles, local imports, etc.",
+        "Open Settings to Plugin market and embed the classic market (or use the V2 market from the V2 preview when enabled).",
     },
   },
   rolePackBar: {
@@ -1227,7 +1236,7 @@ export const enUS = {
     dialogLabel: "Shortcuts",
     title: "Shortcuts",
     rows: {
-      ctrlShiftD: "Toggle Debug panel (same destination as Settings → Diagnostics & debug).",
+      ctrlShiftD: "Open Settings → Diagnostics & debug (embedded developer panel).",
       ctrlShiftS: "Open Settings (extensions, security, shortcuts, and plugin configuration).",
       ctrlHoldKey: "{m} (hold ~1s)",
       ctrlHoldDesc: "Open this shortcuts panel",
@@ -1243,12 +1252,12 @@ export const enUS = {
     title: "🎛️ Developer panel",
     hint: [
       "For development and troubleshooting: view favorability, personality dimensions, recent events and memory summaries; reload policies, generate monologue, import/manage role packs, etc.",
-      "Shortcut {m}+Shift+D toggles this panel; Esc also closes it. Full entry: Settings → Diagnostics & debug.",
+      "Shortcut {m}+Shift+D opens Settings on this page. Esc closes the settings window when it is focused.",
     ],
     hintPureChatP1:
       "For troubleshooting: favorability, memory, policy tools, role pack and monologue entries live here.",
     hintPureChatP2:
-      "Press Esc or the corner close button. {m}+Shift+D still toggles this panel; Shortcuts help is under More, and Settings is the main hub.",
+      "Press Esc or the corner close button. {m}+Shift+D opens Settings on this page; Shortcuts help is under More.",
     debugDockSlotAria: "Debug panel extension slot",
     monologue: {
       prefix: "[Monologue]",

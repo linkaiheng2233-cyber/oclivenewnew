@@ -443,7 +443,12 @@ export const zhCN = {
     developerGate: {
       label: "开发者模式（高级功能总闸）",
       offHint: "关闭时，侧栏中的模型高级项、插件管理深链、市场、诊断与实验等入口将隐藏。",
-      offSources: "开启顶部「开发者模式」后可编辑第三方插件索引源。",
+      offSources: "在本页开启「市场开发者模式」后可编辑第三方插件索引源。",
+    },
+    centerDeveloperMaster: {
+      label: "设置中心开发者模式（显示 V2 侧栏）",
+      offHint:
+        "关闭时侧栏保持经典 V1 风格。开启后额外显示专家模型、插件管理 V2 入口、内核实验、系统开发者工具与 Agent 调试等项。",
     },
     shortcutsManager: {
       builtinTitle: "内置快捷键",
@@ -485,7 +490,8 @@ export const zhCN = {
         hint: "开启后可使用第三方索引源与侧载安装。建议仅高级用户开启。",
         enabledToast: "已开启开发者模式。",
         disabledToast: "已关闭开发者模式。",
-        pageLead: "总开关位于设置窗右栏顶部；此处仅维护第三方插件索引源列表。",
+        pageLead:
+          "设置窗顶部的粘性开关用于展开 V2 侧栏；本页的「市场开发者模式」用于启用第三方插件索引源编辑。",
       },
       sources: {
         hint:
@@ -504,6 +510,9 @@ export const zhCN = {
     },
     nav: {
       deepLinkFooterNote: "将关闭本设置窗口并在独立面板中打开。",
+      embedV2HubFoot: "将打开叠在设置窗之上的 V2 预览（仅当上方开发者模式开启时显示本侧栏项）。",
+      embedMarketFoot: "在设置窗下方嵌入经典插件市场。",
+      embedAgentDebugFoot: "在设置窗下方嵌入经典插件管理「后端」页（含 Agent 调试台）。",
       filterLabel: "筛选设置项",
       filterPlaceholder: "搜索侧栏…",
       jumpDefaultModel: "侧栏：默认对话模型…",
@@ -547,22 +556,22 @@ export const zhCN = {
         dataExpertModels:
           "查看当前会话生效的专家图来源（角色包默认 / 角色级默认 / 会话覆盖），在专家模型工作台深度编辑，或一键恢复为角色包内置默认。",
         pluginsInstalled:
-          "在插件管理「插件」页调整已安装目录插件、持久化范围与市场入口等。可「在本页打开」嵌于设置下方，或使用右侧按钮在独立窗口操作。",
-        pluginsSlots: "在「插槽」页调整各 UI 槽的嵌入顺序与预览；支持本页嵌套或独立窗口。",
-        pluginsBackends: "在「后端」页调整 plugin_backends 与会话覆盖；Agent 调试台亦在此页。支持本页嵌套或独立窗口。",
+          "在插件管理「插件」页调整已安装目录插件、持久化范围与市场入口等；使用「在本页打开」即可嵌于设置下方。",
+        pluginsSlots: "在「插槽」页调整各 UI 槽的嵌入顺序与预览；从本页在设置下方嵌入。",
+        pluginsBackends: "在「后端」页调整 plugin_backends 与会话覆盖；Agent 调试台亦在此页，可从本页嵌入。",
         pluginsV2Hub:
-          "槽位看板、从 Git 安装插件、会话级本地 Llama 绑定等在 V2 窗内完成；从「设置」→「插件与扩展」进入。",
+          "槽位看板、从 Git 安装插件、会话级本地 Llama 绑定等在 V2 预览窗内完成；需开启顶部开发者模式后从本页进入。",
         marketBrowse: "浏览社区索引、安装或更新插件，并处理权限同意（与网络与信任模型相关）。",
         marketBrowseV2Hint:
-          "已启用新版插件管理（V2）实验：点击下方按钮将打开 V2 插件市场界面，与「设置」→「插件市场」一致。",
+          "已启用新版插件管理（V2）实验：可在 V2 预览内打开 V2 市场，或使用下方按钮嵌入经典市场。",
         diagnosticsDebug:
-          "下方可在此页直接查看调试内容；仍可用独立调试窗作大块排障（「设置」→「诊断与调试」，或全局快捷键）。",
+          "下方可在此页直接查看调试内容；也可用全局快捷键直接打开本设置页。",
         diagnosticsAgent:
-          "Agent 任务拆解与 MCP 工具调用可在经典「插件与后端管理」的「后端」页底部调试台查看；以下按钮将关闭设置并打开该页。",
+          "Agent 任务拆解与 MCP 工具调用可在经典「插件与后端管理」的「后端」页底部调试台查看；以下按钮在设置下方嵌入该页。",
       },
     },
     expertHub: {
-      deepLinkFoot: "若需全屏工作台或与其他后端模块并排调整，可使用下方按钮（将关闭本设置窗口）。",
+      deepLinkFoot: "点击下方按钮将在设置内打开「后端」页并嵌入经典管理器，以使用专家模型工作台。",
       noRole: "请先在主界面选择或导入一个角色，以便加载该角色的专家模型生效状态。",
       graphSource: {
         packDefault: "生效来源：角色包默认",
@@ -714,11 +723,12 @@ export const zhCN = {
     },
     shortcuts: {
       ctrlShiftFDescription: {
-        v1: "打开专业模式（V1）Oclive Manager（含界面插件 · 系统与内核向调试）",
-        v2: "打开 Oclive Manager（V2 预览）；关闭设置中的「V2 预览」后恢复为专业模式（V1）",
+        v1: "打开设置「已安装与市场」并嵌入经典插件管理（插件页）。",
+        v2:
+          "在已开启设置中心开发者模式且启用 V2 预览时，打开设置中的 V2 入口；否则与 V1 相同（在设置内嵌入经典管理器）。",
       },
       ctrlShiftADescription:
-        "打开插件市场（V1/V2 一致）：在线索引、安装、模块/Profile、本地投放导入等",
+        "打开设置「插件市场」并嵌入经典市场（若启用 V2 预览，可在 V2 预览内使用 V2 市场）。",
     },
   },
   rolePackBar: {
@@ -1182,7 +1192,7 @@ export const zhCN = {
     dialogLabel: "快捷键",
     title: "快捷键",
     rows: {
-      ctrlShiftD: "打开或关闭调试面板（设置中「诊断与调试」有同等入口）",
+      ctrlShiftD: "打开设置并定位到「诊断与调试」（嵌入开发面板）。",
       ctrlShiftS: "打开设置（扩展区、安全、快捷键与插件配置）",
       ctrlHoldKey: "{m}（长按约 1 秒）",
       ctrlHoldDesc: "打开本快捷键说明",
@@ -1198,11 +1208,11 @@ export const zhCN = {
     title: "🎛️ 开发面板",
     hint: [
       "供开发与排错：查看好感度、性格维度、近期事件与记忆摘要；可重载策略、生成独白、导入或管理角色包等。",
-      "快捷键 {m}+Shift+D（同时按住 {m}、Shift，再按字母 D）可随时打开或关闭本面板；按 Esc 也可关闭。完整入口见「设置」→「诊断与调试」。",
+      "快捷键 {m}+Shift+D 会打开设置并定位到本页；焦点在设置窗时可用 Esc 关闭设置。",
     ],
     hintPureChatP1: "供开发与排错：查看好感、记忆与策略等；角色包与独白入口也在此。",
     hintPureChatP2:
-      "按 Esc 或右上角关闭。{m}+Shift+D 仍开关本面板；快捷键说明在顶栏「更多」，主要管理入口在「设置」。",
+      "按 Esc 或右上角关闭。{m}+Shift+D 会打开设置并定位到本页；快捷键说明在顶栏「更多」。",
     debugDockSlotAria: "调试面板扩展槽",
     monologue: {
       prefix: "【独白】",

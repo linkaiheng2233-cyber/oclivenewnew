@@ -9,8 +9,6 @@ import { useUiStore } from "../stores/uiStore";
 export interface UsePluginManagerWindowOptions {
   /** 每次打开/切换插件管理入口后收起顶栏「更多」 */
   closeMoreMenu: () => void;
-  /** 从设置页打开 V2 预览时额外关闭设置窗 */
-  closeSettingsView?: () => void;
 }
 
 /**
@@ -81,7 +79,6 @@ export function usePluginManagerWindow(opts: UsePluginManagerWindowOptions) {
     pluginManagerV2Open.value = true;
     pluginMarketV2Open.value = false;
     opts.closeMoreMenu();
-    opts.closeSettingsView?.();
   }
 
   /**

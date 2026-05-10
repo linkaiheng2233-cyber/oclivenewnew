@@ -21,7 +21,7 @@ import { useNarrativeScene } from "./composables/useNarrativeScene";
 import { useSceneDestination } from "./composables/useSceneDestination";
 import { usePackUiTheme } from "./composables/useTheme";
 import { usePluginManagerWindow } from "./composables/usePluginManagerWindow";
-import type { SettingsDeepLink } from "./lib/settingsDeepLink";
+import { SETTINGS_NAV } from "./lib/settingsNavKeys";
 import { hostEventBus } from "./lib/hostEventBus";
 import { chordModifierKeyDown, isMacLikePlatform } from "./lib/shortcutDisplay";
 import {
@@ -44,14 +44,10 @@ import {
 const AutonomousSceneNotice = defineAsyncComponent(() => import("./components/AutonomousSceneNotice.vue"));
 const RoleDetailView = defineAsyncComponent(() => import("./views/RoleDetailView.vue"));
 const RoleplayAsidePanel = defineAsyncComponent(() => import("./components/RoleplayAsidePanel.vue"));
-const PluginManagerPanel = defineAsyncComponent(() => import("./views/PluginManagerPanel.vue"));
 const PluginManagerV2Panel = defineAsyncComponent(() => import("./views/PluginManagerV2Panel.vue"));
-const LocalModelManagerPanel = defineAsyncComponent(() => import("./views/LocalModelManagerPanel.vue"));
 const PureChatModelSheet = defineAsyncComponent(() => import("./views/PureChatModelSheet.vue"));
-const PluginMarketPanel = defineAsyncComponent(() => import("./views/PluginMarketPanel.vue"));
 const PluginMarketV2Panel = defineAsyncComponent(() => import("./views/PluginMarketV2Panel.vue"));
 const SettingsView = defineAsyncComponent(() => import("./views/SettingsView.vue"));
-const DebugPanel = defineAsyncComponent(() => import("./components/DebugPanel.vue"));
 const SceneTravelBars = defineAsyncComponent(() => import("./components/SceneTravelBars.vue"));
 const TopBarSceneModeDialog = defineAsyncComponent(() => import("./components/TopBarSceneModeDialog.vue"));
 const ShortcutHelp = defineAsyncComponent(() => import("./components/ShortcutHelp.vue"));
@@ -193,24 +189,12 @@ const latestRoleplayAside = computed(() => {
 
 const topMoreOpen = ref(false);
 const settingsViewOpen = ref(false);
-const localModelManagerOpen = ref(false);
 const pureChatModelSheetOpen = ref(false);
 
-const {
-  pluginManagerV2Open,
-  pluginMarketV2Open,
-  openPluginManagerPanel,
-  openPluginMarketPanel,
-  openPluginManagerV2Preview,
-  ensureOpenPluginManagerPanel,
-  ensureOpenPluginMarketPanel,
-  settingsEntryMoreHelp,
-} = usePluginManagerWindow({
+const { pluginManagerV2Open, pluginMarketV2Open, openPluginManagerV2Preview, settingsEntryMoreHelp } =
+  usePluginManagerWindow({
   closeMoreMenu: () => {
     topMoreOpen.value = false;
-  },
-  closeSettingsView: () => {
-    settingsViewOpen.value = false;
   },
 });
 
@@ -220,6 +204,9 @@ watch(
     if (n <= 0 || n === prev) return;
     const draftMode = pluginStore.expertWorkbenchDraftMode;
     pluginManagerV2Open.value = false;
+    settingsViewOpen.value = true;
+    uiStore.requestSettingsNav(SETTINGS_NAV.pluginsLinkBackends);
+    await nextTick();
     await pluginStore.openPanel("backends");
     await nextTick();
     try {
@@ -249,28 +236,10 @@ function openSettingsView(): void {
   topMoreOpen.value = false;
 }
 
-function onSettingsDeepLink(link: SettingsDeepLink): void {
-  settingsViewOpen.value = false;
+function openSettingsToNav(navId: string): void {
+  uiStore.requestSettingsNav(navId);
+  settingsViewOpen.value = true;
   topMoreOpen.value = false;
-  switch (link.kind) {
-    case "local_models":
-      localModelManagerOpen.value = true;
-      break;
-    case "plugin_manager":
-      ensureOpenPluginManagerPanel(link.tab);
-      break;
-    case "plugin_market":
-      ensureOpenPluginMarketPanel();
-      break;
-    case "expert_workbench":
-      pluginStore.requestOpenExpertModelsWorkbench({
-        draftMode: link.draftMode ?? "effective",
-      });
-      break;
-    case "debug_panel":
-      if (!debugStore.visible) debugStore.toggle();
-      break;
-  }
 }
 
 function requestClosePluginManagerV2(): void {
@@ -285,7 +254,11 @@ function onOpenPluginV1FromV2(): void {
     if (!window.confirm(String(t("expertModels.confirm.unsavedWorkbenchClose")))) return;
   }
   pluginManagerV2Open.value = false;
-  void pluginStore.openPanel("plugins");
+  settingsViewOpen.value = true;
+  uiStore.requestSettingsNav(SETTINGS_NAV.pluginsLinkInstalled);
+  void nextTick(() => {
+    void pluginStore.openPanelInSettingsEmbed("plugins");
+  });
 }
 
 function onOpenPluginV1Backends(): void {
@@ -293,14 +266,17 @@ function onOpenPluginV1Backends(): void {
     if (!window.confirm(String(t("expertModels.confirm.unsavedWorkbenchClose")))) return;
   }
   pluginManagerV2Open.value = false;
-  void pluginStore.openPanel("backends");
+  settingsViewOpen.value = true;
+  uiStore.requestSettingsNav(SETTINGS_NAV.pluginsLinkBackends);
+  void nextTick(() => {
+    void pluginStore.openPanelInSettingsEmbed("backends");
+  });
 }
 
 /** 切到纯聊时收起依赖沉浸/插件栈的浮层，避免与纯聊路径叠在一起 */
 function closePanelsForPureChatMode(): void {
   shortcutHelpOpen.value = false;
   settingsViewOpen.value = false;
-  localModelManagerOpen.value = false;
   pureChatModelSheetOpen.value = false;
   pluginManagerV2Open.value = false;
   pluginMarketV2Open.value = false;
@@ -469,7 +445,7 @@ async function onSend(payload: { content: string }) {
     }
     await roleStore.refreshRoleInfo();
     applyResolvedNarrativeScene();
-    if (debugStore.visible) {
+    if (settingsViewOpen.value) {
       await debugStore.loadDebugData();
     }
     if (res.reply_is_fallback) {
@@ -579,7 +555,7 @@ async function onSwitchRole(nextRoleId: string) {
     await pluginStore.syncDirectoryPluginBootstrap();
     hostEventBus.emitBuiltin("role:switched", { roleId: nextRoleId });
     applyResolvedNarrativeScene();
-    if (debugStore.visible) {
+    if (settingsViewOpen.value) {
       await debugStore.loadDebugData();
     }
     showToast("success", String(t("app.toasts.roleSwitched", { id: nextRoleId })));
@@ -624,7 +600,7 @@ async function onPackImported(roleId: string) {
     await roleStore.refreshRoleInfo();
     await roleStore.loadRoles();
     applyResolvedNarrativeScene();
-    if (debugStore.visible) {
+    if (settingsViewOpen.value) {
       await debugStore.loadDebugData();
     }
   } catch (err) {
@@ -692,15 +668,13 @@ function onHotkey(e: KeyboardEvent) {
       topMoreOpen.value = false;
       return;
     }
-    if (debugStore.visible) {
-      e.preventDefault();
-      debugStore.toggle();
-      return;
-    }
   }
   if (chordModifierKeyDown(e) && e.shiftKey && e.key.toLowerCase() === "d") {
     e.preventDefault();
-    debugStore.toggle();
+    openSettingsToNav(SETTINGS_NAV.diagnosticsDebug);
+    void nextTick(() => {
+      void debugStore.loadDebugData();
+    });
     return;
   }
   if (roleStore.interactionPureChat) {
@@ -712,12 +686,22 @@ function onHotkey(e: KeyboardEvent) {
   }
   if (chordModifierKeyDown(e) && e.shiftKey && e.key.toLowerCase() === "f") {
     e.preventDefault();
-    openPluginManagerPanel();
+    if (uiStore.settingsDeveloperMaster && uiStore.experimentalPluginManagerV2) {
+      openSettingsToNav(SETTINGS_NAV.pluginsV2Hub);
+    } else {
+      openSettingsToNav(SETTINGS_NAV.pluginsLinkInstalled);
+      void nextTick(() => {
+        void pluginStore.openPanelInSettingsEmbed("plugins");
+      });
+    }
     return;
   }
   if (chordModifierKeyDown(e) && e.shiftKey && e.key.toLowerCase() === "a") {
     e.preventDefault();
-    openPluginMarketPanel();
+    openSettingsToNav(SETTINGS_NAV.marketBrowse);
+    void nextTick(() => {
+      void pluginStore.openMarketPanelInSettingsEmbed();
+    });
     return;
   }
   if (chordModifierKeyDown(e) && e.shiftKey && e.key.toLowerCase() === "s") {
@@ -734,13 +718,6 @@ watch(
     chatListRef.value?.scrollToBottom?.();
   },
   { flush: "post" },
-);
-
-watch(
-  () => debugStore.visible,
-  (v) => {
-    if (v) void debugStore.loadDebugData();
-  },
 );
 
 let unlistenPluginFs: (() => void) | undefined;
@@ -833,7 +810,12 @@ async function runPendingProtocolInstallsFromQueue(): Promise<void> {
         const r = await installPluginFromGit(git);
         showToast("success", String(t("app.toasts.pluginInstalledFromUrl", { id: r.installedPluginId })));
         await pluginStore.refresh();
-        if (!roleStore.interactionPureChat) openPluginManagerPanel();
+        if (!roleStore.interactionPureChat) {
+          openSettingsToNav(SETTINGS_NAV.pluginsLinkInstalled);
+          void nextTick(() => {
+            void pluginStore.openPanelInSettingsEmbed("plugins");
+          });
+        }
       } catch (e) {
         showToast("error", e instanceof Error ? e.message : String(e));
       }
@@ -1276,37 +1258,15 @@ onBeforeUnmount(() => {
       </div>
     </div>
 
-    <DebugPanel
-      v-if="debugStore.visible"
-      :visible="true"
-      :loading="chatStore.isLoading"
-      :favorability="roleStore.roleInfo.favorability"
-      :personality="roleStore.roleInfo.personality ?? []"
-      :events="debugStore.events"
-      :memories="debugStore.memories"
-      @reload="onReloadPolicy"
-      @refresh="debugStore.loadDebugData"
-      @close="debugStore.toggle"
-      @notify="(p) => showToast(p.type, p.message)"
-      @imported="onPackImported"
-    />
-
     <Toast :show="toast.show" :type="toast.type" :message="toast.message" />
     <ShortcutHelp v-model="shortcutHelpOpen" :bootstrap-epoch="pluginStore.bootstrapEpoch" />
 
-    <PluginMarketPanel v-if="pluginStore.marketPanelVisible" />
-    <PluginManagerPanel v-if="pluginStore.panelVisible && pluginStore.panelEmbedHost !== 'settings'" />
     <PluginManagerV2Panel
       v-if="pluginManagerV2Open"
       :visible="true"
       @close="requestClosePluginManagerV2"
       @open-v1="onOpenPluginV1FromV2"
       @open-v1-backends="onOpenPluginV1Backends"
-    />
-    <LocalModelManagerPanel
-      v-if="localModelManagerOpen"
-      :visible="true"
-      @close="localModelManagerOpen = false"
     />
     <PureChatModelSheet
       :visible="pureChatModelSheetOpen"
@@ -1333,7 +1293,6 @@ onBeforeUnmount(() => {
       :visible="settingsViewOpen"
       @close="settingsViewOpen = false"
       @open-plugin-v2="openPluginManagerV2Preview"
-      @deep-link="onSettingsDeepLink"
       @switch-role="onSwitchRole"
       @pack-imported="onPackImported"
       @reload-policy="onReloadPolicy"
