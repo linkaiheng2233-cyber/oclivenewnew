@@ -572,6 +572,7 @@ async function onToggleForceIframe(e: Event) {
                   <RoleManagerSettings
                     @switch-role="(id) => emit('switchRole', id)"
                     @open-market="emitDeepLink({ kind: 'plugin_market' })"
+                    @pack-imported="(id) => emit('packImported', id)"
                   />
                 </SettingsTierSection>
               </div>

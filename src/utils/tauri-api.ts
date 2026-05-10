@@ -1305,6 +1305,11 @@ export async function switchRole(roleId: string): Promise<RoleInfo> {
   return invokeWithFriendlyError<RoleInfo>("switch_role", { roleId });
 }
 
+/** 删除本地角色包目录及该角色的会话 DB 状态（不可恢复）。 */
+export async function deleteRole(roleId: string): Promise<unknown> {
+  return invokeWithFriendlyError<unknown>("delete_role", { roleId });
+}
+
 export async function setUserRelation(
   roleId: string,
   relation: string,

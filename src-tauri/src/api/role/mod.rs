@@ -265,6 +265,11 @@ pub async fn delete_role_impl(state: &AppState, role_id: String) -> Result<Value
         .map_err(|e| e.to_frontend_error())
 }
 
+#[tauri::command]
+pub async fn delete_role(role_id: String, state: State<'_, AppState>) -> Result<Value, String> {
+    delete_role_impl(&state, role_id).await
+}
+
 /// 解析 `roles/{role_id}/{relative}` 的绝对路径；文件存在时供前端 `convertFileSrc` / `readBinaryFile` 加载。
 #[tauri::command]
 pub fn resolve_role_asset_path(

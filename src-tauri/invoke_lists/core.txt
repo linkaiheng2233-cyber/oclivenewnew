@@ -4,6 +4,7 @@ crate::api::role::load_role
 crate::api::role::get_role_info
 crate::api::role::list_roles
 crate::api::role::switch_role
+crate::api::role::delete_role
 crate::api::role::set_user_relation
 crate::api::role::set_scene_user_relation
 crate::api::role::clear_scene_user_relation

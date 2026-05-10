@@ -58,7 +58,7 @@ pub use ollama_models::{ollama_models_delete, ollama_models_health, ollama_model
 pub use plugin_bridge::plugin_bridge_invoke;
 pub use plugin_reviews::{get_cached_plugin_reviews_index, sync_plugin_reviews_index};
 pub use policy::reload_policy_plugins;
-pub use role::{get_role_info, list_roles, load_role, switch_role};
+pub use role::{delete_role, get_role_info, list_roles, load_role, switch_role};
 pub use role_feedback::{create_role_feedback, query_role_feedback};
 pub use role_feedback::{mark_role_feedback_read, set_role_feedback_handled};
 pub use scene::switch_scene;

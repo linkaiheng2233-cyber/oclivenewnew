@@ -577,10 +577,25 @@ export const enUS = {
       },
     },
     roleSettings: {
-      lead: "Switch the active role, read a short summary, and open the role pack folder on disk; richer narrative controls stay in the main sidebar.",
+      lead: "Manage local role packs here: search, switch session, import/export, reveal folder, or delete. Richer narrative controls stay in the main sidebar.",
       emptyLead:
-        "No role packs are available yet. Install content from the Plugin Market, or drop a .ocpak / .zip into the window to import.",
+        "No role packs yet. Use Import above (.ocpak / .zip or an extracted folder), or open the Plugin Market.",
       emptyOpenMarket: "Open Plugin Market",
+      searchPlaceholder: "Search by name or id…",
+      importArchive: "Import archive…",
+      importFolder: "Import from folder…",
+      importOverwriteConfirm:
+        "A role “{id}” ({name} v{version}) already exists locally. Overwrite it with the imported pack?",
+      currentBadge: "Current session",
+      useAsCurrent: "Use as current session",
+      exportPack: "Export selected pack…",
+      deleteRole: "Delete selected role…",
+      deleteTitle: "Delete role",
+      deleteConfirm:
+        "This permanently deletes the “{id}” pack folder and local session data. This cannot be undone. Continue?",
+      deleteOk: "Delete",
+      deleteOkToast: "Deleted role: {id}",
+      noSearchHits: "No matching roles.",
       currentRole: "Current role",
       summaryTitle: "About this role",
       noDescription: "(No description)",
