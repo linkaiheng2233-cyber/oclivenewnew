@@ -102,7 +102,7 @@ export const SETTINGS_NAV_ROWS: readonly SettingsNavRow[] = [
   { id: SETTINGS_NAV.modelsExpert, depth: 1, tier: "L4", visibility: "immersive" },
   { id: SETTINGS_NAV_CAT.plugins, depth: 0, isGroupLabel: true, visibility: "immersive" },
   { id: SETTINGS_NAV.pluginsDirectory, depth: 1, tier: "L3", visibility: "immersive" },
-  { id: SETTINGS_NAV.pluginsHotkeys, depth: 1, tier: "L2", visibility: "immersive" },
+  { id: SETTINGS_NAV.pluginsHotkeys, depth: 1, tier: "L4", visibility: "immersive" },
   { id: SETTINGS_NAV.pluginsLinkInstalled, depth: 1, tier: "L3", visibility: "immersive" },
   { id: SETTINGS_NAV.pluginsLinkSlots, depth: 1, tier: "L3", visibility: "immersive" },
   { id: SETTINGS_NAV.pluginsLinkBackends, depth: 1, tier: "L4", visibility: "immersive" },
@@ -142,7 +142,7 @@ export function firstSelectableSettingsNavId(
  * | modelsOllama | L3 说明 → L4 打开本机模型 |
  * | modelsExpert | L3 说明 → L4 专家工作台 |
  * | pluginsDirectory | L3 目录插件设置插槽 |
- * | pluginsHotkeys | L1 说明 → L4 快捷键绑定编辑 |
+ * | pluginsHotkeys | L1 说明 → L4 快捷键绑定编辑（侧栏徽章 L4） |
  * | pluginsLink* / pluginsV2Hub / marketBrowse | L3 说明或本页打开 → L4 独立窗深链 |
  * | securityHost / advancedExperimental | L4 安全与实验 |
  * | advancedEmbed | L3 settings.advanced 扩展区 |

@@ -40,6 +40,7 @@ Creator and plugin docs live under the repo root `creator-docs/` (grouped by top
 | **角色包使用后反馈（半私密）**（用户提交 → 编写器收件箱） | **[../role-pack/ROLE_FEEDBACK_V1.md](../role-pack/ROLE_FEEDBACK_V1.md)** |
 | **本地导入（文件夹投放）**（imports/ 目录、Module/Profile 同款格式、安全确认） | **[../LOCAL_IMPORTS_V1.md](../LOCAL_IMPORTS_V1.md)** |
 | **配置文件位置**（`plugin_state`、`ui.json`、`oclive_last_role_id`） | **[../guides/CONFIGURATION_FILES.md](../guides/CONFIGURATION_FILES.md)** |
+| **设置页 L1–L4 分级、右栏分区与全局恢复默认** | **[../kernel/SETTINGS_TIERING.md](../kernel/SETTINGS_TIERING.md)** |
 | **开源协议怎么定（主程序/官方插件/第三方）** | **[../LICENSE_POLICY.md](../LICENSE_POLICY.md)** |
 | **我想管理插件（启用/停用/拖拽排序/本地 zip 更新）** | **[../plugin-and-architecture/DIRECTORY_PLUGINS.md](../plugin-and-architecture/DIRECTORY_PLUGINS.md)**（插件管理面板，快捷键 `Ctrl+Shift+F`） |
 | **第九模块：专家模型设施（ExpertGraph / 本地侧车 + 云端 + 事件记忆 / Prompt 风格覆盖）** | **[../kernel/MODULE_9_EXPERT_MODELS_FACILITY.md](../kernel/MODULE_9_EXPERT_MODELS_FACILITY.md)** · **`.oclexpert` 格式** **[../kernel/OCLEXPERT_FORMAT.md](../kernel/OCLEXPERT_FORMAT.md)** · 边界总览 **[../kernel/KERNEL_BOUNDARY.md](../kernel/KERNEL_BOUNDARY.md)** · Tauri 命令归属 **[../kernel/KERNEL_API_IMPLEMENTATION_MATRIX.md](../kernel/KERNEL_API_IMPLEMENTATION_MATRIX.md)** |
