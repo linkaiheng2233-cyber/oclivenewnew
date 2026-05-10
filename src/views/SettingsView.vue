@@ -8,7 +8,7 @@ import CloudLlmQuickSetup from "../components/CloudLlmQuickSetup.vue";
 import { buildCloudLlmTrustPlainText, useCloudLlmTrustModal } from "../composables/useCloudLlmTrustModal";
 import { notifyHostModelsInventoryChanged } from "../composables/useHostModelPick";
 import { isTauriWebview } from "../utils/isTauriWebview";
-import HotkeySettingsSection from "../components/HotkeySettingsSection.vue";
+import ShortcutsManagerPanel from "../components/settings/ShortcutsManagerPanel.vue";
 import ModelSelectorSettings from "../components/settings/ModelSelectorSettings.vue";
 import RoleManagerSettings from "../components/settings/RoleManagerSettings.vue";
 import SettingsDebugEmbed from "../components/settings/SettingsDebugEmbed.vue";
@@ -473,21 +473,17 @@ async function onToggleForceIframe(e: Event) {
                 </SettingsTierSection>
               </div>
 
-              <div v-show="selectedNavId === SETTINGS_NAV.shortcutsMain" class="sv-pane-section">
-                <SettingsTierSection tier="L1" :reset-key="tierResetKey">
-                  <section class="sv-section">
-                    <div class="sv-row-h">
-                      <span class="sv-label">{{ t("settings.shortcuts.label") }}</span>
-                      <HelpHint :text="settingsShortcutsHelpHint()" />
-                    </div>
-                    <p class="sv-muted">
-                      {{ t("settings.shortcuts.immersiveHint") }}
-                    </p>
-                    <p class="sv-muted">{{ t("settings.shortcuts.editBindingsHint") }}</p>
-                    <button type="button" class="sv-btn sv-btn--accent" @click="selectNav(SETTINGS_NAV.pluginsHotkeys)">
-                      {{ t("settings.shortcuts.editBindingsButton") }}
-                    </button>
-                  </section>
+              <div v-show="selectedNavId === SETTINGS_NAV.shortcutsManage" class="sv-pane-section">
+                <SettingsTierSection tier="L2" :reset-key="tierResetKey">
+                  <div class="sv-row-h">
+                    <span class="sv-label">{{ t("settings.nav.items.shortcutsManage") }}</span>
+                    <HelpHint :text="settingsShortcutsHelpHint()" />
+                  </div>
+                  <p class="sv-muted">{{ t("settings.shortcuts.immersiveHint") }}</p>
+                  <ShortcutsManagerPanel
+                    :key="`hk-${hostPrefsReloadNonce}`"
+                    :bootstrap-epoch="pluginStore.bootstrapEpoch"
+                  />
                 </SettingsTierSection>
               </div>
 
@@ -594,15 +590,6 @@ async function onToggleForceIframe(e: Event) {
                     </div>
                     <PluginSettingsPanelSlots :bootstrap-epoch="pluginStore.bootstrapEpoch" />
                   </section>
-                </SettingsTierSection>
-              </div>
-
-              <div v-show="selectedNavId === SETTINGS_NAV.pluginsHotkeys" class="sv-pane-section">
-                <SettingsTierSection tier="L1" :reset-key="tierResetKey">
-                  <p class="sv-muted">{{ t("hotkeySettings.tierL1Intro") }}</p>
-                </SettingsTierSection>
-                <SettingsTierSection tier="L4" :reset-key="tierResetKey">
-                  <HotkeySettingsSection :key="`hk-${hostPrefsReloadNonce}`" headless />
                 </SettingsTierSection>
               </div>
 

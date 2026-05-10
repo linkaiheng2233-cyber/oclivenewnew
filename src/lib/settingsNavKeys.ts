@@ -16,14 +16,13 @@ export type SettingsNavCatId = (typeof SETTINGS_NAV_CAT)[keyof typeof SETTINGS_N
 export const SETTINGS_NAV = {
   generalOverview: "settings.general.overview",
   generalLanguage: "settings.general.language",
-  shortcutsMain: "settings.shortcuts.main",
+  shortcutsManage: "settings.shortcuts.manage",
   generalDefaultModel: "settings.general.defaultModel",
   modelsCloud: "settings.models.cloud",
   modelsOllama: "settings.models.ollama",
   modelsExpert: "settings.models.expert",
   dataRoles: "settings.data.roles",
   pluginsDirectory: "settings.plugins.directory",
-  pluginsHotkeys: "settings.plugins.hotkeys",
   pluginsLinkInstalled: "settings.plugins.linkInstalled",
   pluginsLinkSlots: "settings.plugins.linkSlots",
   pluginsLinkBackends: "settings.plugins.linkBackends",
@@ -100,7 +99,7 @@ export function filterSettingsNavRows(
 export const SETTINGS_NAV_ROWS: readonly SettingsNavRow[] = [
   { id: SETTINGS_NAV.generalOverview, depth: 0, tier: "L1", visibility: "always" },
   { id: SETTINGS_NAV.generalLanguage, depth: 1, tier: "L1", visibility: "always" },
-  { id: SETTINGS_NAV.shortcutsMain, depth: 1, tier: "L1", visibility: "immersive" },
+  { id: SETTINGS_NAV.shortcutsManage, depth: 1, tier: "L2", visibility: "immersive" },
   { id: SETTINGS_NAV_CAT.behavior, depth: 0, isGroupLabel: true, visibility: "always" },
   { id: SETTINGS_NAV.generalDefaultModel, depth: 1, tier: "L2", visibility: "always" },
   { id: SETTINGS_NAV_CAT.models, depth: 0, isGroupLabel: true, visibility: "always" },
@@ -111,7 +110,6 @@ export const SETTINGS_NAV_ROWS: readonly SettingsNavRow[] = [
   { id: SETTINGS_NAV.dataRoles, depth: 1, tier: "L3", visibility: "immersive" },
   { id: SETTINGS_NAV_CAT.plugins, depth: 0, isGroupLabel: true, visibility: "immersive" },
   { id: SETTINGS_NAV.pluginsDirectory, depth: 1, tier: "L3", visibility: "immersive" },
-  { id: SETTINGS_NAV.pluginsHotkeys, depth: 1, tier: "L4", visibility: "immersive" },
   { id: SETTINGS_NAV.pluginsLinkInstalled, depth: 1, tier: "L3", visibility: "immersive" },
   { id: SETTINGS_NAV.pluginsLinkSlots, depth: 1, tier: "L3", visibility: "immersive" },
   { id: SETTINGS_NAV.pluginsLinkBackends, depth: 1, tier: "L4", visibility: "immersive" },
@@ -147,14 +145,13 @@ export function firstSelectableSettingsNavId(
  * |---------|----------------------|
  * | generalOverview | L1 概览与纯聊边界 → L4 全局「恢复默认宿主偏好」 |
  * | generalLanguage | L1 语言 |
- * | shortcutsMain | L1 快捷键说明 |
+ * | shortcutsManage | 快捷键管理（说明 + 全局绑定编辑） |
  * | generalDefaultModel | L2 默认对话模型（与撰写区同步） |
  * | modelsCloud | L4 云端信任 / QuickSetup / 打开后端 |
  * | modelsOllama | L3 说明 → L4 打开本机模型 |
  * | modelsExpert | L3 说明 → L4 专家工作台 |
  * | dataRoles | L3 角色与数据（切换 / 包目录 / 编写器说明） |
  * | pluginsDirectory | L3 目录插件设置插槽 |
- * | pluginsHotkeys | L1 说明 → L4 快捷键绑定编辑（侧栏徽章 L4） |
  * | pluginsLink* / pluginsV2Hub / marketBrowse | L3 说明或本页打开 → L4 独立窗深链 |
  * | securityHost / advancedExperimental | L4 安全与实验 |
  * | advancedEmbed | L3 settings.advanced 扩展区 |

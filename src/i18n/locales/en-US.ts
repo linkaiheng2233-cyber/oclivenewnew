@@ -459,6 +459,13 @@ export const enUS = {
       psDoneHint:
         "Session env vars set. For persistence, use OS user/system environment variables or a launcher script that sets them before starting the app.",
     },
+    shortcutsManager: {
+      builtinTitle: "Built-in shortcuts",
+      builtinLead: "Fixed shortcuts used across the app (same as chat and plugin entries).",
+      globalTitle: "Global shortcut bindings",
+      globalLead:
+        "When enabled, shortcuts are registered system-wide. Fix duplicates below and watch for conflicts with other apps before saving.",
+    },
     shortcuts: {
       label: "Shortcuts",
       immersiveHint:
@@ -522,7 +529,7 @@ export const enUS = {
       items: {
         generalOverview: "Overview",
         generalLanguage: "Language & region",
-        shortcutsMain: "Shortcuts (notes)",
+        shortcutsManage: "Shortcuts",
         catBehavior: "Behavior & preferences",
         generalDefaultModel: "Default chat model",
         catModels: "Models",
@@ -533,7 +540,6 @@ export const enUS = {
         dataRoles: "Role management",
         catPlugins: "Plugins & extensions",
         pluginsDirectory: "Directory plugins · settings.panel slot",
-        pluginsHotkeys: "Custom shortcuts",
         pluginsLinkInstalled: "Installed & market",
         pluginsLinkSlots: "UI slot order",
         pluginsLinkBackends: "Backends (plugin_backends)",
@@ -1409,6 +1415,8 @@ export const enUS = {
       openPluginSlot: "Open a plugin slot page",
     },
     addOne: "Add one",
+    duplicateWarn:
+      "These accelerators appear on more than one enabled binding; saving may not behave as expected: {list}",
     retryLoad: "Reload",
     toasts: {
       saved:

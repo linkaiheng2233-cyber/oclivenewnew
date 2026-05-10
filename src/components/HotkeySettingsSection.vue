@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { onMounted, ref } from "vue";
+import { computed, onMounted, ref } from "vue";
 import { useI18n } from "vue-i18n";
 import { useAppToast } from "../composables/useAppToast";
 import {
@@ -24,6 +24,21 @@ const loading = ref(false);
 const saving = ref(false);
 const loadError = ref<string | null>(null);
 const file = ref<HotkeyBindingsFile>({ schemaVersion: 1, bindings: [] });
+
+const duplicateAccelerators = computed(() => {
+  const counts = new Map<string, number>();
+  for (const b of file.value.bindings) {
+    if (!b.enabled) continue;
+    const a = b.accelerator.trim().toLowerCase();
+    if (!a) continue;
+    counts.set(a, (counts.get(a) ?? 0) + 1);
+  }
+  const dups: string[] = [];
+  counts.forEach((n, k) => {
+    if (n > 1) dups.push(k);
+  });
+  return dups.sort((x, y) => x.localeCompare(y));
+});
 
 async function loadBindings(): Promise<void> {
   loadError.value = null;
@@ -113,6 +128,9 @@ async function onSave(): Promise<void> {
       <button type="button" class="hkset-btn" @click="loadBindings">{{ t("hotkeySettings.retryLoad") }}</button>
     </div>
     <template v-else>
+      <p v-if="duplicateAccelerators.length" class="hkset-warn" role="alert">
+        {{ t("hotkeySettings.duplicateWarn", { list: duplicateAccelerators.join(", ") }) }}
+      </p>
       <div v-for="(b, i) in file.bindings" :key="b.id" class="hkset-row">
         <label class="hkset-field">
           <span>{{ t("hotkeySettings.fields.accelerator") }}</span>
@@ -188,6 +206,16 @@ async function onSave(): Promise<void> {
   flex-direction: column;
   align-items: flex-start;
   gap: 8px;
+}
+.hkset-warn {
+  margin: 0;
+  padding: 8px 10px;
+  font-size: 12px;
+  line-height: 1.45;
+  border-radius: 8px;
+  border: 1px solid color-mix(in srgb, var(--text-danger, #c33) 35%, var(--border-light));
+  color: var(--text-danger, #b45309);
+  background: color-mix(in srgb, var(--text-danger, #c33) 8%, var(--bg-primary));
 }
 .hkset-row {
   display: flex;

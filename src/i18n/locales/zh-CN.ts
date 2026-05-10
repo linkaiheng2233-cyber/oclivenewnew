@@ -447,6 +447,12 @@ export const zhCN = {
       errNeedUrlKey: "请填写 API 根地址与 API Key。",
       psDoneHint: "已设置当前会话环境变量。持久化请用「系统环境变量」或快捷方式里先设再启动应用。",
     },
+    shortcutsManager: {
+      builtinTitle: "内置快捷键",
+      builtinLead: "以下为应用内固定快捷键（与聊天、插件管理入口一致）。",
+      globalTitle: "全局快捷键绑定",
+      globalLead: "启用后由系统全局监听；保存前请检查是否与下方重复或其他应用冲突。",
+    },
     shortcuts: {
       label: "快捷",
       immersiveHint: "虚拟时间、叙事场景等仅在沉浸模式下显示于「更多」。",
@@ -505,7 +511,7 @@ export const zhCN = {
       items: {
         generalOverview: "概览",
         generalLanguage: "语言与区域",
-        shortcutsMain: "快捷键说明",
+        shortcutsManage: "快捷键管理",
         catBehavior: "行为与偏好",
         generalDefaultModel: "默认对话模型",
         catModels: "模型",
@@ -516,7 +522,6 @@ export const zhCN = {
         dataRoles: "角色管理",
         catPlugins: "插件与扩展",
         pluginsDirectory: "目录插件 · 设置页插槽",
-        pluginsHotkeys: "自定义快捷键",
         pluginsLinkInstalled: "已安装与市场",
         pluginsLinkSlots: "界面插槽顺序",
         pluginsLinkBackends: "后端模块（plugin_backends）",
@@ -1363,6 +1368,7 @@ export const zhCN = {
       openPluginSlot: "打开某插件插槽页",
     },
     addOne: "添加一条",
+    duplicateWarn: "以下快捷键在多条已启用绑定中重复出现，保存后可能无法按预期工作：{list}",
     retryLoad: "重新加载",
     toasts: {
       saved: "已保存快捷键配置（仅启用的项会注册全局快捷键）。",
