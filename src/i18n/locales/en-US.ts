@@ -458,6 +458,9 @@ export const enUS = {
       label: "Shortcuts",
       immersiveHint:
         'Virtual time, narrative scenes, etc. are only shown under "More" in immersive mode.',
+      editBindingsButton: "Edit shortcut bindings…",
+      editBindingsHint:
+        "You do not need to memorize shortcuts: open the Custom shortcuts page and edit bindings in the table.",
     },
     experimental: {
       label: "System & kernel · Experimental",
@@ -512,10 +515,14 @@ export const enUS = {
         generalOverview: "Overview",
         generalLanguage: "Language & region",
         shortcutsMain: "Shortcuts (notes)",
+        catBehavior: "Behavior & preferences",
+        generalDefaultModel: "Default chat model",
         catModels: "Models",
         modelsCloud: "Cloud model & secrets",
         modelsOllama: "Local models & Ollama",
         modelsExpert: "Expert models workbench",
+        catData: "Roles & data",
+        dataRoles: "Role management",
         catPlugins: "Plugins & extensions",
         pluginsDirectory: "Directory plugins · settings.panel slot",
         pluginsHotkeys: "Custom shortcuts",
@@ -528,7 +535,8 @@ export const enUS = {
         catAdvanced: "Kernel & experiments",
         advancedExperimental: "Plugin Manager V2 (System & kernel · experimental)",
         advancedEmbed: "Extension slot (settings.advanced)",
-        advancedMarketSources: "Market · index sources (System & kernel)",
+        catSystem: "System & kernel",
+        systemDeveloper: "Developer mode & index sources",
         diagnosticsDebug: "Diagnostics & debug",
         diagnosticsAgent: "Agent / MCP debug",
       },
@@ -554,10 +562,26 @@ export const enUS = {
         marketBrowse: "Browse the community index, install or update plugins, and handle permission prompts (network & trust).",
         marketBrowseV2Hint:
           "V2 Plugin Manager preview is enabled: the button below opens the V2 Plugin Market—the same destination as the Plugin Market button in the top bar “More” menu (not the classic V1 market window).",
-        diagnosticsDebug: "Inspect runtime events, role pack info, and debug slot embeds—best for troubleshooting.",
+        diagnosticsDebug:
+          "Use the embedded panel below for most checks; the detached Debug window (same as top bar “More” or the legacy shortcut) is still available for a larger workspace.",
         diagnosticsAgent:
           "Agent traces and MCP tool calls are available in the classic Plugin Manager “Backends” page (embedded debug dock). The button below closes Settings and opens that tab.",
       },
+    },
+    roleSettings: {
+      lead: "Switch the active role, read a short summary, and open the role pack folder on disk; richer narrative controls stay in the main sidebar.",
+      currentRole: "Current role",
+      summaryTitle: "About this role",
+      noDescription: "(No description)",
+      revealPack: "Reveal role pack folder in Explorer",
+      revealNoRole: "Select or import a role first.",
+      revealOk: "Opened the role pack folder in Explorer.",
+      packEditorHint:
+        "The sibling app oclive-pack-editor edits manifest and settings files—open the folder above, then point the editor at that directory.",
+    },
+    modelSelector: {
+      syncHint:
+        "Uses the same saved host chat model as the composer row above the chat input; changes sync to pure-chat overlays too.",
     },
     tiers: {
       L1: {

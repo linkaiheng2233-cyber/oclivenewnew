@@ -17,14 +17,19 @@ import {
   vec7ToRecord,
 } from "../utils/personality-traits";
 
-const props = defineProps<{
-  visible: boolean;
-  loading: boolean;
-  favorability: number;
-  personality: number[];
-  events: Array<{ event_type?: string; timestamp?: string; description?: string | null }>;
-  memories: Array<{ content?: string; timestamp?: string; importance?: number }>;
-}>();
+const props = withDefaults(
+  defineProps<{
+    visible: boolean;
+    loading: boolean;
+    favorability: number;
+    personality: number[];
+    events: Array<{ event_type?: string; timestamp?: string; description?: string | null }>;
+    memories: Array<{ content?: string; timestamp?: string; importance?: number }>;
+    /** 嵌入设置右栏：取消居中浮层样式与关闭按钮，由宿主控制显隐 */
+    embedded?: boolean;
+  }>(),
+  { embedded: false },
+);
 
 const roleStore = useRoleStore();
 const debugStore = useDebugStore();
@@ -131,8 +136,11 @@ function presenceLabel(mode: string): string {
 </script>
 
 <template>
-  <transition name="slide">
-    <aside v-if="visible" class="debug debug-scroll">
+  <transition :name="props.embedded ? 'debug-none' : 'slide'">
+    <aside
+      v-if="visible"
+      :class="['debug', props.embedded ? 'debug--embedded' : 'debug-scroll']"
+    >
       <div class="title">
         <div class="title-leading">
           <strong>{{ t("debugPanel.title") }}</strong>
@@ -140,7 +148,14 @@ function presenceLabel(mode: string): string {
             :paragraphs="(t('debugPanel.hint') as any)"
           />
         </div>
-        <button type="button" :aria-label="String(t('common.close'))" @click="emit('close')">✕</button>
+        <button
+          v-if="!props.embedded"
+          type="button"
+          :aria-label="String(t('common.close'))"
+          @click="emit('close')"
+        >
+          ✕
+        </button>
       </div>
 
       <section class="debug-dock-slot" aria-label="debug.dock">
@@ -535,5 +550,26 @@ summary {
 .slide-enter-from,
 .slide-leave-to {
   opacity: 0;
+}
+.debug-none-enter-active,
+.debug-none-leave-active {
+  transition: none;
+}
+.debug--embedded {
+  position: relative;
+  inset: auto;
+  top: auto;
+  left: auto;
+  transform: none;
+  width: 100%;
+  max-width: none;
+  max-height: min(520px, 62vh);
+  z-index: 1;
+  margin: 0;
+  padding: 14px 12px 16px;
+  box-shadow: none;
+  border: 1px solid var(--border-light);
+  border-radius: var(--radius-app);
+  overflow-y: auto;
 }
 </style>

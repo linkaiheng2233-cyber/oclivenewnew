@@ -6,10 +6,12 @@
 |-------------------|------|---------------------|---------------|---------------|
 | 设置总览与纯聊边界说明；全局「恢复默认宿主偏好」 | L1+L4 | `SettingsView` 首段 + `resetHostPreferencesToDefaults.ts` | — | `settings.general.overview` |
 | 语言与区域 | L1 | `SettingsView` + `uiStore.languagePref` | — | `settings.general.language` |
-| 快捷键说明（沉浸） | L1 | `SettingsView` + `pluginManagerEntryCopy` | — | `settings.shortcuts.main` |
+| 快捷键说明 + 跳转编辑绑定（沉浸） | L1 | `SettingsView` + `pluginManagerEntryCopy` | — | `settings.shortcuts.main` |
+| 默认对话模型（与撰写区同步） | L2 | `ModelSelectorSettings.vue` → `HostModelPickRow` + `useHostModelPick` | `settings.cat.behavior` | `settings.general.defaultModel` |
 | 云端 LLM 说明 / 信任 / QuickSetup | L4 | `SettingsView`、`CloudLlmQuickSetup.vue`、`useCloudLlmTrustModal` | `settings.cat.models`（分组标题） | `settings.models.cloud` |
 | 本机模型 / Ollama / 路径 | L4 | `LocalModelManagerPanel.vue`、`BuiltinLlamaModelManager.vue`；顶栏「更多」 | `settings.cat.models` | `settings.models.ollama`（深链打开本机模型管理） |
 | 专家模型工作台 | L4 | `ExpertModelsPanel.vue`（`PluginManagerPanel` 内嵌）、`pluginStore.requestOpenExpertModelsWorkbench` | `settings.cat.models` | `settings.models.expert`（深链） |
+| 角色切换 / 简介 / 打开包目录 | L3 | `RoleManagerSettings.vue`；顶栏 `RoleSelector` 仍保留快速切换 | `settings.cat.data` | `settings.data.roles` |
 | 目录插件 settings.panel 槽顺序 | L3 | `PluginSettingsPanelSlots.vue` | `settings.cat.plugins`（分组标题） | `settings.plugins.directory` |
 | 自定义快捷键（L1 说明 + L4 编辑） | L1+L4 | `SettingsView` 分区 + `HotkeySettingsSection.vue`（`headless`） | `settings.cat.plugins` | `settings.plugins.hotkeys` |
 | 已安装插件 / 持久化 / 市场入口（V1「插件」Tab） | L3 | `PluginManagerPanel.vue` → `plugins` | `settings.cat.plugins` | `settings.plugins.linkInstalled`（深链 `openPanel('plugins')`） |
@@ -18,10 +20,10 @@
 | V2 管理（槽位 · Git · 本地 Llama） | L4 | `PluginManagerV2Panel.vue`、`PluginManagerV2.vue` | `settings.cat.plugins` | `settings.plugins.v2Hub`（`emit('openPluginV2')`，关闭设置后打开） |
 | 插件管理 V2 预览 | L4 | `PluginManagerV2Panel.vue`、`usePluginManagerWindow.openPluginManagerV2Preview` | `settings.cat.advanced`（分组标题） | `settings.advanced.experimental`（开关 + 打开预览） |
 | 插件市场浏览 / 安装 | L3 | `PluginMarketPanel` / `PluginMarketV2Panel`、`pluginStore.openMarketPanel` | `settings.cat.market` | `settings.market.browse`（深链） |
-| 市场开发者模式与索引源（L3 说明 + L4 控件） | L3+L4 | `SettingsView` + `getPluginMarketSourcesConfig` / `setPluginIndexSources` | `settings.cat.advanced` | `settings.advanced.marketSources` |
+| 市场开发者模式与索引源（L3 说明 + L4 控件） | L3+L4 | `SettingsView` + `getPluginMarketSourcesConfig` / `setPluginIndexSources` | `settings.cat.system` | `settings.system.developer` |
 | 强制 iframe | L4 | `SettingsView` → `pluginStore.pluginState.force_iframe_mode` | `settings.cat.security` | `settings.security.host` |
 | settings.advanced 嵌入 | L3+ | `PluginSlotEmbed` `SLOT_SETTINGS_ADVANCED` | `settings.cat.advanced` | `settings.advanced.embed` |
-| 诊断 / 调试面板（L2 说明 + L4 深链） | L2+L4 | `SettingsView` + `DebugPanel.vue`、`debugStore` | `settings.cat.diagnostics` | `settings.diagnostics.debug`（深链） |
+| 诊断 / 调试（L2 说明 + L4 本页嵌入 + 独立窗） | L2+L4 | `SettingsDebugEmbed.vue` → `DebugPanel.vue`（`embedded`）；`debugStore`；独立窗仍 `deepLink` | — | `settings.diagnostics.debug` |
 | Agent / MCP 调试台 | L4 | `AgentDebugPanel.vue`（嵌于 `PluginBackendSessionPanel` → 经典「后端」页） | `settings.cat.diagnostics` | `settings.diagnostics.agent`（深链 `openPanel('backends')`） |
 
 ## 纯聊 / 沉浸裁剪（与 `SettingsView` 一致）

@@ -445,6 +445,8 @@ export const zhCN = {
     shortcuts: {
       label: "快捷",
       immersiveHint: "虚拟时间、叙事场景等仅在沉浸模式下显示于「更多」。",
+      editBindingsButton: "编辑快捷键绑定…",
+      editBindingsHint: "无需记忆快捷键：点此进入「自定义快捷键」页，在表格中直接改键。",
     },
     experimental: {
       label: "系统与内核 · 实验性功能",
@@ -496,10 +498,14 @@ export const zhCN = {
         generalOverview: "概览",
         generalLanguage: "语言与区域",
         shortcutsMain: "快捷键说明",
+        catBehavior: "行为与偏好",
+        generalDefaultModel: "默认对话模型",
         catModels: "模型",
         modelsCloud: "云端模型与密钥",
         modelsOllama: "本机模型与 Ollama",
         modelsExpert: "专家模型工作台",
+        catData: "角色与数据",
+        dataRoles: "角色管理",
         catPlugins: "插件与扩展",
         pluginsDirectory: "目录插件 · 设置页插槽",
         pluginsHotkeys: "自定义快捷键",
@@ -512,7 +518,8 @@ export const zhCN = {
         catAdvanced: "内核与实验",
         advancedExperimental: "插件管理 V2（系统与内核 · 实验）",
         advancedEmbed: "扩展区（settings.advanced）",
-        advancedMarketSources: "市场 · 索引源（系统与内核）",
+        catSystem: "系统与内核",
+        systemDeveloper: "开发者模式与索引源",
         diagnosticsDebug: "诊断与调试",
         diagnosticsAgent: "Agent / MCP 调试",
       },
@@ -535,10 +542,25 @@ export const zhCN = {
         marketBrowse: "浏览社区索引、安装或更新插件，并处理权限同意（与网络与信任模型相关）。",
         marketBrowseV2Hint:
           "已启用新版插件管理（V2）实验：点击下方按钮将打开 V2 插件市场界面，与顶栏「更多」中的插件市场按钮一致（非经典 V1 全屏市场弹窗）。",
-        diagnosticsDebug: "查看运行时事件、角色包与调试槽嵌入；适合排障，日常可少触。",
+        diagnosticsDebug:
+          "下方可在此页直接查看调试内容；仍可用独立调试窗（与顶栏「更多」或快捷键一致）作大块排障。",
         diagnosticsAgent:
           "Agent 任务拆解与 MCP 工具调用可在经典「插件与后端管理」的「后端」页底部调试台查看；以下按钮将关闭设置并打开该页。",
       },
+    },
+    roleSettings: {
+      lead: "切换当前会话角色、查看简介，并打开磁盘上的角色包目录；详细叙事与关系仍可在主界面侧栏使用。",
+      currentRole: "当前角色",
+      summaryTitle: "当前角色简介",
+      noDescription: "（无简介）",
+      revealPack: "在资源管理器中打开角色包文件夹",
+      revealNoRole: "请先选择或导入一个角色。",
+      revealOk: "已在资源管理器中打开角色包目录。",
+      packEditorHint:
+        "姊妹应用 oclive-pack-editor 用于编辑 manifest、settings 等；请先打开上方面板中的文件夹，再用编写器指向该目录。",
+    },
+    modelSelector: {
+      syncHint: "与聊天输入区上方的模型选择器使用同一套保存逻辑，修改会立即同步到撰写区与纯聊浮层。",
     },
     tiers: {
       L1: {

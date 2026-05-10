@@ -6,6 +6,7 @@
 
 ## 快速导航
 
+- **设置收束（前端）**：多数配置入口已收拢到 **设置**；用户路径摘要见 [`SETTINGS_UI_CONSOLIDATION.md`](./SETTINGS_UI_CONSOLIDATION.md)，IA 真值表见 [`SETTINGS_IA_TRUTH_TABLE.md`](./SETTINGS_IA_TRUTH_TABLE.md)。
 - **当前进度**：WEEK3-003 完成（事件落库 + 集成测试 + 前端封装规划）
 - **首包 / chunk（v0.2）**：✅ **已收尾**（P1～P3）；总表与维护约定见 **`PERF_PHASES.md`**；**P4**（`reqwest` 去 `blocking`）按需另排，不挡发版。
 - **PR / CI**：默认 `invoke-full` 下 `cargo check -p oclivenewnew-tauri` 生成的 `src/gen/tauri-invoke-capabilities.ts` 须与仓库一致（CI 对该文件执行 `git diff --exit-code`）。若本地跑过极简 Tauri `check` 改写了该文件，与 CI 一致的做法是：先 `git checkout -- src/gen/tauri-invoke-capabilities.ts`，再跑一次默认 `cargo check -p oclivenewnew-tauri`（或等价地仅还原后依赖 CI 校验）。

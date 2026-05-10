@@ -1423,6 +1423,9 @@ onBeforeUnmount(() => {
       @close="settingsViewOpen = false"
       @open-plugin-v2="openPluginManagerV2Preview"
       @deep-link="onSettingsDeepLink"
+      @switch-role="onSwitchRole"
+      @pack-imported="onPackImported"
+      @reload-policy="onReloadPolicy"
     />
 
     <HotkeyHost />

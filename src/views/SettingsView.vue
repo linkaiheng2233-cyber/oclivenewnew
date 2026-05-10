@@ -9,6 +9,9 @@ import { buildCloudLlmTrustPlainText, useCloudLlmTrustModal } from "../composabl
 import { notifyHostModelsInventoryChanged } from "../composables/useHostModelPick";
 import { isTauriWebview } from "../utils/isTauriWebview";
 import HotkeySettingsSection from "../components/HotkeySettingsSection.vue";
+import ModelSelectorSettings from "../components/settings/ModelSelectorSettings.vue";
+import RoleManagerSettings from "../components/settings/RoleManagerSettings.vue";
+import SettingsDebugEmbed from "../components/settings/SettingsDebugEmbed.vue";
 import SettingsTierSection from "../components/SettingsTierSection.vue";
 import PluginSettingsPanelSlots from "../components/PluginSettingsPanelSlots.vue";
 import PluginSlotEmbed from "../components/PluginSlotEmbed.vue";
@@ -62,6 +65,12 @@ const emit = defineEmits<{
   openPluginV2: [];
   /** 关闭设置并由宿主打开既有面板（插件管理 / 市场 / 本机模型 / 专家工作台 / 调试） */
   deepLink: [SettingsDeepLink];
+  /** 与顶栏切换角色相同的宿主流程（插件 bootstrap、叙事场景等） */
+  switchRole: [roleId: string];
+  /** 调试嵌入区内导入角色包 */
+  packImported: [roleId: string];
+  /** 调试嵌入区内「重载策略插件」 */
+  reloadPolicy: [];
 }>();
 
 const pluginStore = usePluginStore();
@@ -432,7 +441,17 @@ async function onToggleForceIframe(e: Event) {
                     <p class="sv-muted">
                       {{ t("settings.shortcuts.immersiveHint") }}
                     </p>
+                    <p class="sv-muted">{{ t("settings.shortcuts.editBindingsHint") }}</p>
+                    <button type="button" class="sv-btn sv-btn--accent" @click="selectNav(SETTINGS_NAV.pluginsHotkeys)">
+                      {{ t("settings.shortcuts.editBindingsButton") }}
+                    </button>
                   </section>
+                </SettingsTierSection>
+              </div>
+
+              <div v-show="selectedNavId === SETTINGS_NAV.generalDefaultModel" class="sv-pane-section">
+                <SettingsTierSection tier="L2" :reset-key="tierResetKey">
+                  <ModelSelectorSettings :active="selectedNavId === SETTINGS_NAV.generalDefaultModel && visible" />
                 </SettingsTierSection>
               </div>
 
@@ -488,6 +507,12 @@ async function onToggleForceIframe(e: Event) {
                     {{ t("settings.nav.cta.openExpertWorkbench") }}
                   </button>
                   <p class="sv-muted sv-foot">{{ settingsDeepLinkFooterNote() }}</p>
+                </SettingsTierSection>
+              </div>
+
+              <div v-show="selectedNavId === SETTINGS_NAV.dataRoles" class="sv-pane-section">
+                <SettingsTierSection tier="L3" :reset-key="tierResetKey">
+                  <RoleManagerSettings @switch-role="(id) => emit('switchRole', id)" />
                 </SettingsTierSection>
               </div>
 
@@ -677,7 +702,7 @@ async function onToggleForceIframe(e: Event) {
                 </SettingsTierSection>
               </div>
 
-              <div v-show="selectedNavId === SETTINGS_NAV.advancedMarketSources" class="sv-pane-section">
+              <div v-show="selectedNavId === SETTINGS_NAV.systemDeveloper" class="sv-pane-section">
                 <SettingsTierSection tier="L3" :reset-key="tierResetKey">
                   <section class="sv-section">
                     <div class="sv-row-h">
@@ -738,10 +763,17 @@ async function onToggleForceIframe(e: Event) {
                   <p class="sv-muted">{{ t("settings.nav.lead.diagnosticsDebug") }}</p>
                 </SettingsTierSection>
                 <SettingsTierSection tier="L4" :reset-key="tierResetKey">
-                  <button type="button" class="sv-btn sv-btn--accent" @click="emitDeepLink({ kind: 'debug_panel' })">
-                    {{ unifiedDebugCtaText }}
-                  </button>
+                  <div class="sv-btn-row">
+                    <button type="button" class="sv-btn sv-btn--accent" @click="emitDeepLink({ kind: 'debug_panel' })">
+                      {{ unifiedDebugCtaText }}
+                    </button>
+                  </div>
                   <p class="sv-muted sv-foot">{{ settingsDeepLinkFooterNote() }}</p>
+                  <SettingsDebugEmbed
+                    :active="selectedNavId === SETTINGS_NAV.diagnosticsDebug && visible"
+                    @imported="(id) => emit('packImported', id)"
+                    @reload-policy="emit('reloadPolicy')"
+                  />
                 </SettingsTierSection>
               </div>
 
