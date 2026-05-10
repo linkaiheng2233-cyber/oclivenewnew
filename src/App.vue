@@ -44,9 +44,7 @@ import {
 const AutonomousSceneNotice = defineAsyncComponent(() => import("./components/AutonomousSceneNotice.vue"));
 const RoleDetailView = defineAsyncComponent(() => import("./views/RoleDetailView.vue"));
 const RoleplayAsidePanel = defineAsyncComponent(() => import("./components/RoleplayAsidePanel.vue"));
-const PluginManagerV2Panel = defineAsyncComponent(() => import("./views/PluginManagerV2Panel.vue"));
 const PureChatModelSheet = defineAsyncComponent(() => import("./views/PureChatModelSheet.vue"));
-const PluginMarketV2Panel = defineAsyncComponent(() => import("./views/PluginMarketV2Panel.vue"));
 const SettingsView = defineAsyncComponent(() => import("./views/SettingsView.vue"));
 const SceneTravelBars = defineAsyncComponent(() => import("./components/SceneTravelBars.vue"));
 const TopBarSceneModeDialog = defineAsyncComponent(() => import("./components/TopBarSceneModeDialog.vue"));
@@ -191,8 +189,7 @@ const topMoreOpen = ref(false);
 const settingsViewOpen = ref(false);
 const pureChatModelSheetOpen = ref(false);
 
-const { pluginManagerV2Open, pluginMarketV2Open, openPluginManagerV2Preview, settingsEntryMoreHelp } =
-  usePluginManagerWindow({
+const { settingsEntryMoreHelp } = usePluginManagerWindow({
   closeMoreMenu: () => {
     topMoreOpen.value = false;
   },
@@ -203,7 +200,6 @@ watch(
   async (n, prev) => {
     if (n <= 0 || n === prev) return;
     const draftMode = pluginStore.expertWorkbenchDraftMode;
-    pluginManagerV2Open.value = false;
     settingsViewOpen.value = true;
     uiStore.requestSettingsNav(SETTINGS_NAV.pluginsLinkBackends);
     await nextTick();
@@ -242,44 +238,11 @@ function openSettingsToNav(navId: string): void {
   topMoreOpen.value = false;
 }
 
-function requestClosePluginManagerV2(): void {
-  if (expertModelsStore.workbenchDraftDirty) {
-    if (!window.confirm(String(t("expertModels.confirm.unsavedWorkbenchClose")))) return;
-  }
-  pluginManagerV2Open.value = false;
-}
-
-function onOpenPluginV1FromV2(): void {
-  if (expertModelsStore.workbenchDraftDirty) {
-    if (!window.confirm(String(t("expertModels.confirm.unsavedWorkbenchClose")))) return;
-  }
-  pluginManagerV2Open.value = false;
-  settingsViewOpen.value = true;
-  uiStore.requestSettingsNav(SETTINGS_NAV.pluginsLinkInstalled);
-  void nextTick(() => {
-    void pluginStore.openPanelInSettingsEmbed("plugins");
-  });
-}
-
-function onOpenPluginV1Backends(): void {
-  if (expertModelsStore.workbenchDraftDirty) {
-    if (!window.confirm(String(t("expertModels.confirm.unsavedWorkbenchClose")))) return;
-  }
-  pluginManagerV2Open.value = false;
-  settingsViewOpen.value = true;
-  uiStore.requestSettingsNav(SETTINGS_NAV.pluginsLinkBackends);
-  void nextTick(() => {
-    void pluginStore.openPanelInSettingsEmbed("backends");
-  });
-}
-
 /** 切到纯聊时收起依赖沉浸/插件栈的浮层，避免与纯聊路径叠在一起 */
 function closePanelsForPureChatMode(): void {
   shortcutHelpOpen.value = false;
   settingsViewOpen.value = false;
   pureChatModelSheetOpen.value = false;
-  pluginManagerV2Open.value = false;
-  pluginMarketV2Open.value = false;
   pluginStore.closePanel();
   pluginStore.closeMarketPanel();
 }
@@ -633,16 +596,6 @@ async function onReloadPolicy() {
 
 function onHotkey(e: KeyboardEvent) {
   if (e.key === "Escape") {
-    if (pluginMarketV2Open.value) {
-      e.preventDefault();
-      pluginMarketV2Open.value = false;
-      return;
-    }
-    if (pluginManagerV2Open.value) {
-      e.preventDefault();
-      requestClosePluginManagerV2();
-      return;
-    }
     if (shortcutHelpOpen.value) {
       e.preventDefault();
       shortcutHelpOpen.value = false;
@@ -698,10 +651,14 @@ function onHotkey(e: KeyboardEvent) {
   }
   if (chordModifierKeyDown(e) && e.shiftKey && e.key.toLowerCase() === "a") {
     e.preventDefault();
-    openSettingsToNav(SETTINGS_NAV.marketBrowse);
-    void nextTick(() => {
-      void pluginStore.openMarketPanelInSettingsEmbed();
-    });
+    if (uiStore.settingsDeveloperMaster && uiStore.experimentalPluginManagerV2) {
+      openSettingsToNav(SETTINGS_NAV.marketBrowseV2);
+    } else {
+      openSettingsToNav(SETTINGS_NAV.marketBrowse);
+      void nextTick(() => {
+        void pluginStore.openMarketPanelInSettingsEmbed();
+      });
+    }
     return;
   }
   if (chordModifierKeyDown(e) && e.shiftKey && e.key.toLowerCase() === "s") {
@@ -1261,13 +1218,6 @@ onBeforeUnmount(() => {
     <Toast :show="toast.show" :type="toast.type" :message="toast.message" />
     <ShortcutHelp v-model="shortcutHelpOpen" :bootstrap-epoch="pluginStore.bootstrapEpoch" />
 
-    <PluginManagerV2Panel
-      v-if="pluginManagerV2Open"
-      :visible="true"
-      @close="requestClosePluginManagerV2"
-      @open-v1="onOpenPluginV1FromV2"
-      @open-v1-backends="onOpenPluginV1Backends"
-    />
     <PureChatModelSheet
       :visible="pureChatModelSheetOpen"
       @close="pureChatModelSheetOpen = false"
@@ -1282,17 +1232,10 @@ onBeforeUnmount(() => {
       :percent="dropImportPercent"
       :message="dropImportMessage"
     />
-    <PluginMarketV2Panel
-      v-if="pluginMarketV2Open"
-      :visible="true"
-      @close="pluginMarketV2Open = false"
-    />
-
     <SettingsView
       v-if="settingsViewOpen"
       :visible="settingsViewOpen"
       @close="settingsViewOpen = false"
-      @open-plugin-v2="openPluginManagerV2Preview"
       @switch-role="onSwitchRole"
       @pack-imported="onPackImported"
       @reload-policy="onReloadPolicy"

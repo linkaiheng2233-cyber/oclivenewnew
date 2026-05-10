@@ -174,10 +174,11 @@ export function firstSelectableSettingsNavId(
  * | generalDefaultModel | L2 默认对话模型（与撰写区同步） |
  * | modelsCloud | L4 云端信任 / QuickSetup / 打开后端 |
  * | modelsOllama | L3 说明 → L4 打开本机模型 |
- * | dataExpertModels | L3 专家模型设置（生效图、工作台、恢复包默认） |
+ * | dataExpertModels | L3 专家模型设置 Hub |
+ * | dataExpertWorkbench | L3/L4 专家模型工作台（嵌入 ExpertModelsPanel） |
  * | dataRoles | L3 角色与数据（切换 / 包目录 / 编写器说明） |
  * | pluginsDirectory | L3 目录插件设置插槽 |
- * | pluginsLink* / pluginsV2Hub / marketBrowse | L3 说明 → L4 本页嵌入插件管理 / 市场 |
+ * | pluginsLink* / pluginsV2Hub / marketBrowse / marketBrowseV2 | L3 说明 → L4 本页嵌入经典或 V2 管理 / 市场 |
  * | securityHost / advancedExperimental | L4 安全与实验 |
  * | advancedEmbed | L3 settings.advanced 扩展区 |
  * | systemDeveloper | L4 市场开发者模式与第三方索引源（侧栏项受设置中心开发者总闸） |

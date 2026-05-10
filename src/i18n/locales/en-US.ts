@@ -599,7 +599,7 @@ export const enUS = {
       },
     },
     expertHub: {
-      deepLinkFoot: "Use the button below to open the workbench inside Settings (Backends tab, embedded manager).",
+      deepLinkFoot: "Use the button below to open the full workbench in Settings (sidebar: Expert model workbench).",
       noRole: "Select or import a role in the main UI first so this page can load that role’s effective expert configuration.",
       graphSource: {
         packDefault: "Source: pack default",
@@ -752,7 +752,7 @@ export const enUS = {
         v1:
           "The top bar “More” rail keeps Shortcuts help and Settings only. Plugin Manager, Market, local models, and Debug are organized under Settings; {m}+Shift+S / F / A / D remain accelerators.",
         v2:
-          "The top bar “More” rail keeps Shortcuts help and Settings only. Plugin Manager V2, Market, local models, and Debug are organized under Settings; {m}+Shift+S / F / A / D remain accelerators.",
+          "The top bar “More” rail keeps Shortcuts help and Settings only. Plugin Manager V2 and V2 Market are embedded under Settings (developer mode + V2 experiment); {m}+Shift+S / F / A / D jump to the matching settings pages.",
       },
     },
     shortcuts: {
@@ -762,7 +762,7 @@ export const enUS = {
           "Open Settings to the V2 hub when developer mode + V2 preview are on; otherwise same as V1 (classic manager embedded from Settings).",
       },
       ctrlShiftADescription:
-        "Open Settings to Plugin market and embed the classic market (or use the V2 market from the V2 preview when enabled).",
+        "Open Settings to Plugin market: with developer mode + V2 experiment on, opens the embedded V2 market tab; otherwise opens the classic market embed.",
     },
   },
   rolePackBar: {
