@@ -15,9 +15,9 @@ export type SettingsNavCatId = (typeof SETTINGS_NAV_CAT)[keyof typeof SETTINGS_N
 
 export const SETTINGS_NAV = {
   generalOverview: "settings.general.overview",
-  generalLanguage: "settings.general.language",
+  /** 行为与偏好：默认模型 + 语言/区域 + 通知说明（单页多卡片） */
+  generalBehavior: "settings.general.behavior",
   shortcutsManage: "settings.shortcuts.manage",
-  generalDefaultModel: "settings.general.defaultModel",
   modelsCloud: "settings.models.cloud",
   modelsOllama: "settings.models.ollama",
   dataRoles: "settings.data.roles",
@@ -121,10 +121,9 @@ export function filterSettingsNavRows(
 /** 侧栏行顺序即 IA 顺序 */
 export const SETTINGS_NAV_ROWS: readonly SettingsNavRow[] = [
   { id: SETTINGS_NAV.generalOverview, depth: 0, tier: "L1", visibility: "always" },
-  { id: SETTINGS_NAV.generalLanguage, depth: 1, tier: "L1", visibility: "always" },
-  { id: SETTINGS_NAV.shortcutsManage, depth: 1, tier: "L2", visibility: "immersive" },
   { id: SETTINGS_NAV_CAT.behavior, depth: 0, isGroupLabel: true, visibility: "always" },
-  { id: SETTINGS_NAV.generalDefaultModel, depth: 1, tier: "L2", visibility: "always" },
+  { id: SETTINGS_NAV.generalBehavior, depth: 1, tier: "L2", visibility: "always" },
+  { id: SETTINGS_NAV.shortcutsManage, depth: 1, tier: "L2", visibility: "immersive" },
   { id: SETTINGS_NAV_CAT.models, depth: 0, isGroupLabel: true, visibility: "always" },
   { id: SETTINGS_NAV.modelsCloud, depth: 1, tier: "L4", visibility: "always" },
   { id: SETTINGS_NAV.modelsOllama, depth: 1, tier: "L4", visibility: "immersive" },
@@ -169,9 +168,8 @@ export function firstSelectableSettingsNavId(
  * | 侧栏 id | 右栏分区（自上而下） |
  * |---------|----------------------|
  * | generalOverview | L1 概览与纯聊边界 → L4 全局「恢复默认宿主偏好」 |
- * | generalLanguage | L1 语言 |
+ * | generalBehavior | L2 行为与偏好（默认模型 / 语言区域 / 通知说明，分卡片） |
  * | shortcutsManage | 快捷键管理（说明 + 全局绑定编辑） |
- * | generalDefaultModel | L2 默认对话模型（与撰写区同步） |
  * | modelsCloud | L4 云端信任 / QuickSetup / 打开后端 |
  * | modelsOllama | L3 说明 → L4 打开本机模型 |
  * | dataExpertModels | L3 专家模型设置 Hub |

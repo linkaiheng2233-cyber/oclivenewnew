@@ -8,11 +8,10 @@
 flowchart TB
   subgraph L1["L1 常规"]
     OV[概览]
-    LANG[语言与区域]
   end
-  subgraph L2b["L2 行为"]
+  subgraph L2b["L2 行为与偏好"]
+    BH[模型·语言·通知]
     SH[快捷键管理]
-    DM[默认对话模型]
   end
   subgraph Data["角色与数据"]
     ROLES[角色管理]
@@ -34,10 +33,9 @@ flowchart TB
     DD[诊断与调试]
     DA[Agent / MCP 调试]
   end
-  OV --> LANG
-  LANG --> SH
-  SH --> DM
-  DM --> ROLES
+  OV --> BH
+  BH --> SH
+  SH --> ROLES
   ROLES --> MC
 ```
 
@@ -48,9 +46,8 @@ flowchart TB
 | 侧栏 id | 主组件 / 说明 |
 |---------|----------------|
 | `generalOverview` | 概览 + 全局恢复默认 |
-| `generalLanguage` | 语言选择 |
+| `generalBehavior` | 行为与偏好（默认模型 + 语言区域 + 通知说明，分卡片） |
 | `shortcutsManage` | `ShortcutsManagerPanel`（内置表 + launcher 槽 + `HotkeySettingsSection`） |
-| `generalDefaultModel` | `ModelSelectorSettings`（模型中心 + 跳转本机页） |
 | `dataRoles` | `RoleManagerSettings`（列表/搜索/导入导出/删除） |
 | 门控项 | 各 `SettingsTierSection` + 插件嵌入 / 深链按钮（见 `SETTINGS_DEVELOPER_GATED_NAV_IDS`） |
 

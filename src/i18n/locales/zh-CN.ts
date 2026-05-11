@@ -455,6 +455,16 @@ export const zhCN = {
         "以下为高级功能入口，可能影响网络、插件与模型行为，请谨慎操作。",
       backToRoutine: "返回常规设置",
     },
+    behaviorHub: {
+      pageLead: "按主题分卡片展示日常偏好；全局快捷键绑定请使用侧栏「快捷键管理」。",
+      cardModelTitle: "默认对话模型",
+      cardModelHint: "撰写区当前使用的模型；仅在需要云端密钥或本机模型管理时再跳转。",
+      cardLanguageTitle: "语言与区域",
+      cardLanguageHint: "界面显示语言；「跟随系统」在可用时与操作系统区域一致。",
+      cardNotificationsTitle: "通知偏好",
+      cardNotificationsHint:
+        "当前以应用内轻提示（Toast）为主；系统级桌面通知开关将在后续版本按需补充。",
+    },
     shortcutsManager: {
       builtinTitle: "内置快捷键",
       builtinLead: "以下为应用内固定快捷键（与聊天、插件管理入口一致）。",
@@ -522,7 +532,7 @@ export const zhCN = {
     nav: {
       deepLinkFooterNote: "将关闭本设置窗口并在独立面板中打开。",
       groupHints: {
-        catBehavior: "语言、快捷键与默认对话模型。",
+        catBehavior: "默认模型、语言与区域；快捷键绑定见侧栏「快捷键管理」。",
         catModels: "云端密钥与本机 / Ollama 模型。",
         catData: "角色、专家摘要与完整专家工作台。",
         catPlugins: "目录插件、经典管理、V2 管理与市场。",
@@ -535,13 +545,12 @@ export const zhCN = {
       embedAgentDebugFoot: "在设置窗下方嵌入经典插件管理「后端」页（含 Agent 调试台）。",
       filterLabel: "筛选设置项",
       filterPlaceholder: "搜索侧栏…",
-      jumpDefaultModel: "侧栏：默认对话模型…",
+      jumpDefaultModel: "侧栏：行为与偏好（模型）…",
       items: {
         generalOverview: "概览",
-        generalLanguage: "语言与区域",
+        generalBehavior: "模型 · 语言 · 通知",
         shortcutsManage: "快捷键管理",
         catBehavior: "行为与偏好",
-        generalDefaultModel: "默认对话模型",
         catModels: "模型",
         modelsCloud: "云端模型与密钥",
         modelsOllama: "本机模型与 Ollama",

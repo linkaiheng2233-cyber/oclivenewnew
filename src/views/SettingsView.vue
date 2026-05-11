@@ -251,6 +251,18 @@ function firstSelectableFromRows(rows: SettingsNavRow[]): SettingsNavId {
 
 const sidebarNavRows = computed(() => filterSidebarByQuery(visibleNavRows.value, navFilterText.value));
 
+/** 旧版深链 id（仍可能出现在外部脚本或历史会话中）→ 合并后的行为与偏好页 */
+const LEGACY_SETTINGS_PENDING_NAV: Record<string, SettingsNavId> = {
+  "settings.general.language": SETTINGS_NAV.generalBehavior,
+  "settings.general.defaultModel": SETTINGS_NAV.generalBehavior,
+};
+
+function normalizePendingSettingsNavId(raw: string): SettingsNavId | null {
+  const mapped = LEGACY_SETTINGS_PENDING_NAV[raw] ?? (raw as SettingsNavId);
+  if (!ALL_SETTINGS_NAV_IDS.includes(mapped as SettingsNavId)) return null;
+  return mapped as SettingsNavId;
+}
+
 async function loadMarketSources(): Promise<void> {
   marketSourcesLoading.value = true;
   try {
@@ -272,8 +284,9 @@ watch(
       pluginStore.closeMarketPanel();
     } else {
       const pending = uiStore.consumeSettingsPendingNavId();
-      if (pending && ALL_SETTINGS_NAV_IDS.includes(pending as SettingsNavId)) {
-        selectedNavId.value = pending as SettingsNavId;
+      const normalized = pending ? normalizePendingSettingsNavId(pending) : null;
+      if (normalized) {
+        selectedNavId.value = normalized;
       } else {
         selectedNavId.value = firstSelectableFromRows(visibleNavRows.value);
       }
@@ -601,28 +614,6 @@ async function onToggleForceIframe(e: Event) {
                 </SettingsTierSection>
               </div>
 
-              <div v-show="selectedNavId === SETTINGS_NAV.generalLanguage" class="sv-pane-section">
-                <SettingsTierSection tier="L1" :reset-key="tierResetKey">
-                  <section class="sv-section">
-                    <div class="sv-row-h">
-                      <span class="sv-label">{{ t("settings.language.label") }}</span>
-                    </div>
-                    <div class="sv-row-controls">
-                      <select
-                        class="sv-select"
-                        :value="uiStore.languagePref"
-                        @change="uiStore.setLanguagePref(($event.target as HTMLSelectElement).value as LanguagePref)"
-                      >
-                        <option value="system">{{ t("settings.language.options.system") }}</option>
-                        <option value="zh-CN">{{ t("settings.language.options.zhCN") }}</option>
-                        <option value="en-US">{{ t("settings.language.options.enUS") }}</option>
-                      </select>
-                      <p class="sv-muted">{{ t("settings.language.hint") }}</p>
-                    </div>
-                  </section>
-                </SettingsTierSection>
-              </div>
-
               <div v-show="selectedNavId === SETTINGS_NAV.shortcutsManage" class="sv-pane-section">
                 <SettingsTierSection tier="L2" :reset-key="tierResetKey">
                   <div class="sv-row-h">
@@ -638,21 +629,60 @@ async function onToggleForceIframe(e: Event) {
                 </SettingsTierSection>
               </div>
 
-              <div v-show="selectedNavId === SETTINGS_NAV.generalDefaultModel" class="sv-pane-section">
+              <div v-show="selectedNavId === SETTINGS_NAV.generalBehavior" class="sv-pane-section sv-behavior-hub">
                 <SettingsTierSection tier="L2" :reset-key="tierResetKey">
-                  <ModelSelectorSettings
-                    :active="selectedNavId === SETTINGS_NAV.generalDefaultModel && visible"
-                    @open-local-models="selectNav(SETTINGS_NAV.modelsOllama)"
-                    @configure-cloud="selectNav(SETTINGS_NAV.modelsCloud)"
-                  />
-                  <p class="sv-muted sv-cross-links">{{ t("settings.modelSelector.advancedLinksLead") }}</p>
-                  <div class="sv-cross-link-row">
-                    <button type="button" class="sv-btn sv-btn--ghost" @click="selectNav(SETTINGS_NAV.modelsCloud)">
-                      {{ t("settings.modelSelector.linkCloud") }}
-                    </button>
-                    <button type="button" class="sv-btn sv-btn--ghost" @click="selectNav(SETTINGS_NAV.modelsOllama)">
-                      {{ t("settings.modelSelector.linkLocal") }}
-                    </button>
+                  <p class="sv-muted sv-behavior-hub-lead">{{ t("settings.behaviorHub.pageLead") }}</p>
+                  <div class="sv-settings-stack">
+                    <section class="sv-settings-card" aria-labelledby="sv-bh-model-h">
+                      <div class="sv-settings-card__head">
+                        <h3 id="sv-bh-model-h" class="sv-settings-card__title">{{ t("settings.behaviorHub.cardModelTitle") }}</h3>
+                        <p class="sv-settings-card__hint">{{ t("settings.behaviorHub.cardModelHint") }}</p>
+                      </div>
+                      <div class="sv-settings-card__body">
+                        <ModelSelectorSettings
+                          :active="selectedNavId === SETTINGS_NAV.generalBehavior && visible"
+                          @open-local-models="selectNav(SETTINGS_NAV.modelsOllama)"
+                          @configure-cloud="selectNav(SETTINGS_NAV.modelsCloud)"
+                        />
+                        <p class="sv-muted sv-cross-links">{{ t("settings.modelSelector.advancedLinksLead") }}</p>
+                        <div class="sv-cross-link-row">
+                          <button type="button" class="sv-btn sv-btn--ghost" @click="selectNav(SETTINGS_NAV.modelsCloud)">
+                            {{ t("settings.modelSelector.linkCloud") }}
+                          </button>
+                          <button type="button" class="sv-btn sv-btn--ghost" @click="selectNav(SETTINGS_NAV.modelsOllama)">
+                            {{ t("settings.modelSelector.linkLocal") }}
+                          </button>
+                        </div>
+                      </div>
+                    </section>
+
+                    <section class="sv-settings-card" aria-labelledby="sv-bh-lang-h">
+                      <div class="sv-settings-card__head">
+                        <h3 id="sv-bh-lang-h" class="sv-settings-card__title">{{ t("settings.behaviorHub.cardLanguageTitle") }}</h3>
+                        <p class="sv-settings-card__hint">{{ t("settings.behaviorHub.cardLanguageHint") }}</p>
+                      </div>
+                      <div class="sv-settings-card__body">
+                        <div class="sv-row-controls">
+                          <select
+                            class="sv-select"
+                            :value="uiStore.languagePref"
+                            @change="uiStore.setLanguagePref(($event.target as HTMLSelectElement).value as LanguagePref)"
+                          >
+                            <option value="system">{{ t("settings.language.options.system") }}</option>
+                            <option value="zh-CN">{{ t("settings.language.options.zhCN") }}</option>
+                            <option value="en-US">{{ t("settings.language.options.enUS") }}</option>
+                          </select>
+                          <p class="sv-muted">{{ t("settings.language.hint") }}</p>
+                        </div>
+                      </div>
+                    </section>
+
+                    <section class="sv-settings-card" aria-labelledby="sv-bh-notify-h">
+                      <div class="sv-settings-card__head">
+                        <h3 id="sv-bh-notify-h" class="sv-settings-card__title">{{ t("settings.behaviorHub.cardNotificationsTitle") }}</h3>
+                        <p class="sv-settings-card__hint">{{ t("settings.behaviorHub.cardNotificationsHint") }}</p>
+                      </div>
+                    </section>
                   </div>
                 </SettingsTierSection>
               </div>
@@ -679,7 +709,7 @@ async function onToggleForceIframe(e: Event) {
                       <button type="button" class="sv-btn" @click="onOpenPluginBackendsFromCloud">
                         {{ t("settings.cloudLlmTrust.openBackendsCta") }}
                       </button>
-                      <button type="button" class="sv-btn sv-btn--ghost" @click="selectNav(SETTINGS_NAV.generalDefaultModel)">
+                      <button type="button" class="sv-btn sv-btn--ghost" @click="selectNav(SETTINGS_NAV.generalBehavior)">
                         {{ t("settings.nav.jumpDefaultModel") }}
                       </button>
                     </div>
@@ -691,7 +721,7 @@ async function onToggleForceIframe(e: Event) {
                 <SettingsTierSection tier="L3" :reset-key="tierResetKey">
                   <p class="sv-muted">{{ t("settings.nav.lead.modelsOllama") }}</p>
                   <p class="sv-muted">{{ t("settings.modelsOllama.downloadHint") }}</p>
-                  <button type="button" class="sv-btn sv-btn--ghost sv-cross-link-top" @click="selectNav(SETTINGS_NAV.generalDefaultModel)">
+                  <button type="button" class="sv-btn sv-btn--ghost sv-cross-link-top" @click="selectNav(SETTINGS_NAV.generalBehavior)">
                     {{ t("settings.nav.jumpDefaultModel") }}
                   </button>
                 </SettingsTierSection>
@@ -1476,5 +1506,42 @@ async function onToggleForceIframe(e: Event) {
 .sv-reset-scope {
   white-space: pre-wrap;
   line-height: 1.45;
+}
+.sv-behavior-hub-lead {
+  margin: 0 0 12px;
+  line-height: 1.45;
+}
+.sv-settings-stack {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+.sv-settings-card {
+  padding: 12px 14px 14px;
+  border-radius: 12px;
+  border: 1px solid var(--border-light);
+  background: var(--bg-elevated);
+}
+.sv-settings-card__head {
+  margin-bottom: 10px;
+  padding-bottom: 8px;
+  border-bottom: 1px solid color-mix(in srgb, var(--border-light) 85%, transparent);
+}
+.sv-settings-card__title {
+  margin: 0 0 4px;
+  font-size: 14px;
+  font-weight: 650;
+  color: var(--text-primary);
+}
+.sv-settings-card__hint {
+  margin: 0;
+  font-size: 12px;
+  line-height: 1.45;
+  color: var(--text-secondary);
+}
+.sv-settings-card__body {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
 }
 </style>

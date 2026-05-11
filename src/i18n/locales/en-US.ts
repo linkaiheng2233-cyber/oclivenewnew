@@ -468,6 +468,16 @@ export const enUS = {
         "Advanced entries are visible. These tools can change networking, plugins, and model behavior—use with care.",
       backToRoutine: "Back to routine settings",
     },
+    behaviorHub: {
+      pageLead: "Daily preferences grouped by topic. Use the sidebar entry “Shortcuts” for global hotkey bindings.",
+      cardModelTitle: "Default chat model",
+      cardModelHint: "What the composer uses now; jump out only when you need cloud secrets or the local model manager.",
+      cardLanguageTitle: "Language & region",
+      cardLanguageHint: "UI language. “Follow system” keeps the app aligned with the OS locale when available.",
+      cardNotificationsTitle: "Notifications",
+      cardNotificationsHint:
+        "Status is shown with in-app toasts. A dedicated desktop-notification toggle may arrive in a later release.",
+    },
     shortcutsManager: {
       builtinTitle: "Built-in shortcuts",
       builtinLead: "Fixed shortcuts used across the app (same as chat and plugin entries).",
@@ -541,7 +551,7 @@ export const enUS = {
     nav: {
       deepLinkFooterNote: "This closes Settings and opens the destination panel.",
       groupHints: {
-        catBehavior: "Language, shortcuts, and your default chat model.",
+        catBehavior: "Default model, language & region, and shortcuts (separate sidebar entry).",
         catModels: "Cloud API keys and on-device / Ollama models.",
         catData: "Roles, expert summaries, and the full expert workbench.",
         catPlugins: "Directory plugins, classic manager, V2 hub, and markets.",
@@ -554,13 +564,12 @@ export const enUS = {
       embedAgentDebugFoot: "Embeds the classic Plugin Manager (Backends tab) below Settings, including the Agent debug dock.",
       filterLabel: "Filter settings",
       filterPlaceholder: "Search sidebar…",
-      jumpDefaultModel: "Sidebar: Default chat model…",
+      jumpDefaultModel: "Sidebar: Behavior & preferences (model)…",
       items: {
         generalOverview: "Overview",
-        generalLanguage: "Language & region",
+        generalBehavior: "Model, language & notifications",
         shortcutsManage: "Shortcuts",
         catBehavior: "Behavior & preferences",
-        generalDefaultModel: "Default chat model",
         catModels: "Models",
         modelsCloud: "Cloud model & secrets",
         modelsOllama: "Local models & Ollama",
