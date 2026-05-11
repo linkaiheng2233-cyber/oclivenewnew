@@ -593,6 +593,7 @@ async function onToggleForceIframe(e: Event) {
               </template>
             </nav>
 
+            <div class="sv-pane-column">
             <div class="sv-pane">
               <div v-if="roleStore.interactionImmersive" class="sv-dev-top">
                 <label class="sv-dev-toggle">
@@ -1170,7 +1171,6 @@ async function onToggleForceIframe(e: Event) {
                 </SettingsTierSection>
               </div>
             </div>
-          </div>
 
           <div
             v-if="pluginStore.panelVisible && pluginStore.panelEmbedHost === 'settings'"
@@ -1184,9 +1184,11 @@ async function onToggleForceIframe(e: Event) {
           >
             <PluginMarketPanel embedded />
           </div>
+            </div>
           </div>
         </div>
       </div>
+    </div>
       <TrustConsentModal
         v-if="showVueCloudTrustModal"
         :model-value="cloudTrust.visible"
@@ -1279,6 +1281,13 @@ async function onToggleForceIframe(e: Event) {
   min-height: 0;
   flex: 0 0 auto;
   align-items: flex-start;
+}
+.sv-pane-column {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
 }
 .sv-tree {
   width: 220px;
@@ -1415,6 +1424,7 @@ async function onToggleForceIframe(e: Event) {
 .sv-pane {
   flex: 1;
   min-width: 0;
+  min-height: 0;
   overflow: visible;
   padding-right: 4px;
 }
@@ -1434,6 +1444,8 @@ async function onToggleForceIframe(e: Event) {
   gap: 10px;
 }
 .sv-pm-embed {
+  position: relative;
+  z-index: 1;
   margin-top: 8px;
   padding-top: 14px;
   border-top: 1px solid var(--border-light);

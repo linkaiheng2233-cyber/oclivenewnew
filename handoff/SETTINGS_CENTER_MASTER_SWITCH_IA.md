@@ -19,8 +19,8 @@
 
 ### 右栏
 
-仍可与侧栏一一对应展示：**概览、语言、快捷键、默认模型、云端 / 本机模型、角色管理、目录插件、已安装·插槽·后端、插件市场（经典）、安全、扩展区、诊断与调试** 等。  
-本页嵌入区：**本机模型管理**、**经典插件管理**、**经典市场**、**调试嵌入** 行为不变，仅通过上述可见侧栏进入。
+仍可与侧栏一一对应展示：**概览、行为与偏好（模型·语言·通知）、快捷键、云端 / 本机模型、角色管理（含专家摘要卡）、目录插件、已安装·插槽·后端、插件市场（经典）、安全、扩展区、诊断与调试** 等。  
+本页嵌入区：**本机模型管理**、**经典插件管理**、**经典市场**、**调试嵌入** 现与主右栏同列于 `sv-pane-column` 内，避免与粘性顶栏错位遮挡；仅通过上述可见侧栏进入。
 
 ---
 
@@ -72,3 +72,11 @@
 - **高级区顶栏**：沉浸且 **`settingsDeveloperMaster === true`** 时，右栏顶部展示 `settings.advancedSurface.bannerLead`，并提供 **「返回常规设置」**（`goToRoutineSettings` → 概览 `generalOverview`）。
 - **总闸关闭时的误导消除**：经典「插件市场」页内 **打开市场** 按钮文案（`unifiedOpenPluginMarketCta`）在设置内按 **`experimentalPluginManagerV2 && settingsDeveloperMaster`** 判定是否显示「V2」字样，避免总闸关仍显示 V2 市场 CTA。`marketBrowseV2` 侧栏引导句仍要求总闸 + V2 实验同时成立。
 - **快捷键与设置页对齐**：在 **快捷键管理、已安装与市场、插槽、后端、插件市场、诊断与调试、Agent/MCP 调试** 等页增加 `settings.shortcuts.accelerator*` 灰字提示，与 `App.vue` 内置热键一致；详细对照见 `handoff/TOP_BAR_AND_SHORTCUTS_CONSOLIDATION.md`。
+
+---
+
+## 功能排布优化（驾驶舱 IA）
+
+- **L2 行为与偏好**：侧栏单项 `settings.general.behavior` 右栏为三张卡片（默认对话模型、语言与区域、通知偏好说明）；`settings.shortcuts.manage` 仍为独立侧栏项。
+- **L3 角色与数据**：`settings.data.roles` 右栏双卡片——角色管理（原 `RoleManagerSettings`）与专家模型摘要（`ExpertModelsSettingsHub` `compact`）；跳转到门控页时若总闸关闭，toast `settings.layout.crossTier.needDeveloperMaster`。
+- **系统与内核地图**：沉浸下 `settings.system.kernelHub` 将插件 / 模型 / 网络 / 诊断 / 实验等入口按子域分组，按钮统一经 `requireSettingsDeveloperMasterForGated` 再 `selectNav`，避免总闸关时静默失败。

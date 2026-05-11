@@ -6,11 +6,11 @@
 
 | 侧栏文案（中文） | 菜单 id | 说明 |
 |------------------|---------|------|
-| 行为与偏好 → 默认对话模型 | `settings.general.defaultModel` | 与聊天输入区上方模型下拉同一数据源（`useHostModelPick`）。 |
-| 角色与数据 → 角色管理 | `settings.data.roles` | 切换角色、查看简介、在资源管理器中打开角色包目录；顶栏角色下拉仍保留快速切换。 |
+| 行为与偏好 → 模型·语言·通知 | `settings.general.behavior` | 单页分卡片：`ModelSelectorSettings` + 语言 `select`；与撰写区模型同源（`useHostModelPick`）。 |
+| 角色与数据 → 角色管理 | `settings.data.roles` | 角色列表 + **专家模型摘要卡**（`ExpertModelsSettingsHub` compact）；顶栏角色下拉仍保留快速切换。 |
 | 系统与内核 → 开发者模式与索引源 | `settings.system.developer` | 插件市场开发者总闸 + 第三方索引 URL 列表（仅此一处配置）。 |
 | 诊断与调试 | `settings.diagnostics.debug` | **本页嵌入**完整调试面板内容；仍可用按钮打开**独立调试窗**（与顶栏「更多」及既有快捷键行为一致）。 |
-| 快捷键说明 | `settings.shortcuts.main` | 含「编辑快捷键绑定」按钮，跳转到「自定义快捷键」页（`settings.plugins.hotkeys`），无需记忆组合键。 |
+| 快捷键管理 | `settings.shortcuts.manage` | `ShortcutsManagerPanel`；与行为与偏好页文案互链。 |
 
 ## 未改动的原则
 

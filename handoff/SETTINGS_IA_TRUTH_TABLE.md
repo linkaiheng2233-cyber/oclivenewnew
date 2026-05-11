@@ -9,9 +9,8 @@
 | 侧栏 id（`SETTINGS_NAV` 值） | tier | depth | visibility | 说明 |
 |-----------------------------|------|-------|--------------|------|
 | `settings.general.overview` | L1 | 0 | always | 概览与纯聊边界 |
-| `settings.general.language` | L1 | 1 | always | 语言与区域 |
+| `settings.general.behavior` | L2 | 1 | always | 行为与偏好（默认模型 + 语言区域 + 通知说明，分卡片） |
 | `settings.shortcuts.manage` | L2 | 1 | immersive | 快捷键管理（`ShortcutsManagerPanel` → `HotkeySettingsSection`） |
-| `settings.general.defaultModel` | L2 | 1 | always | 默认对话模型 |
 | `settings.models.cloud` | L4 | 1 | always | 云端模型与密钥 |
 | `settings.models.ollama` | L4 | 1 | immersive | 本机模型与 Ollama（深链） |
 | `settings.data.roles` | L3 | 1 | immersive | 角色管理 |
@@ -25,6 +24,7 @@
 | `settings.security.host` | L4 | 0 | always | 安全与隐私 |
 | `settings.advanced.experimental` | L4 | 1 | immersive | 插件管理 V2 实验 |
 | `settings.advanced.embed` | L3 | 1 | immersive | 扩展区 `settings.advanced` |
+| `settings.system.kernelHub` | L2 | 1 | immersive | 系统与内核总览（分组跳转卡片） |
 | `settings.system.developer` | L4 | 1 | immersive | 开发者模式与索引源 |
 | `settings.diagnostics.debug` | L2 | 0 | immersive | 诊断与调试 |
 | `settings.diagnostics.agent` | L4 | 0 | immersive | Agent / MCP 调试（深链） |
@@ -36,13 +36,13 @@
 | 功能域（用户感知） | L 级 | 现有入口 / 实现文件 | 目标父菜单 id | 目标子菜单 id |
 |-------------------|------|---------------------|---------------|---------------|
 | 设置总览与纯聊边界说明；全局「恢复默认宿主偏好」 | L1+L4 | `SettingsView` 首段 + `resetHostPreferencesToDefaults.ts` | — | `settings.general.overview` |
-| 语言与区域 | L1 | `SettingsView` + `uiStore.languagePref` | — | `settings.general.language` |
+| 行为与偏好（模型 / 语言 / 通知） | L2 | `SettingsView`：`ModelSelectorSettings` + 语言 `select` + 通知说明卡片 | `settings.cat.behavior` | `settings.general.behavior` |
 | 快捷键管理（内置表 + 全局绑定编辑） | L2 | `SettingsView` + `ShortcutsManagerPanel.vue` → `HotkeySettingsSection.vue` | `settings.cat.behavior` | `settings.shortcuts.manage` |
-| 默认对话模型（与撰写区同步） | L2 | `ModelSelectorSettings.vue` → `HostModelPickRow` + `useHostModelPick` | `settings.cat.behavior` | `settings.general.defaultModel` |
 | 云端 LLM 说明 / 信任 / QuickSetup | L4 | `SettingsView`、`CloudLlmQuickSetup.vue`、`useCloudLlmTrustModal` | `settings.cat.models` | `settings.models.cloud` |
 | 本机模型 / Ollama / 路径 | L4 | `LocalModelManagerPanel.vue` 等；**设置**侧栏深链 | `settings.cat.models` | `settings.models.ollama` |
 | 专家模型（生效图、工作台、恢复包默认） | L3+L4 | `ExpertModelsSettingsHub.vue`；工作台 `ExpertModelsPanel`（`PluginManagerPanel` 内嵌）、`pluginStore.requestOpenExpertModelsWorkbench` | `settings.cat.data` | `settings.data.expertModels`（侧栏）+ 深链 |
 | 角色切换 / 简介 / 打开包目录 | L3 | `RoleManagerSettings.vue`；顶栏 `RoleSelector` 仍保留快速切换 | `settings.cat.data` | `settings.data.roles` |
+| 专家模型摘要卡（并列角色管理） | L3 | `ExpertModelsSettingsHub.vue` `variant="compact"` | `settings.cat.data` | 同页 `settings.data.roles` 右栏第二卡片 |
 | 目录插件 settings.panel 槽顺序 | L3 | `PluginSettingsPanelSlots.vue` | `settings.cat.plugins` | `settings.plugins.directory` |
 | 已安装插件 / 持久化 / 市场入口（V1「插件」Tab） | L3 | `PluginManagerPanel.vue` → `plugins` | `settings.cat.plugins` | `settings.plugins.linkInstalled` |
 | 界面插槽顺序（V1「插槽」Tab） | L3 | `PluginManagerPanel.vue` → `slots` | `settings.cat.plugins` | `settings.plugins.linkSlots` |
@@ -50,6 +50,7 @@
 | V2 管理（槽位 · Git · 本地 Llama） | L4 | `PluginManagerV2Panel.vue`、`PluginManagerV2.vue` | `settings.cat.plugins` | `settings.plugins.v2Hub` |
 | 插件管理 V2 预览 | L4 | `PluginManagerV2Panel.vue`、`usePluginManagerWindow.openPluginManagerV2Preview` | `settings.cat.advanced` | `settings.advanced.experimental` |
 | 插件市场浏览 / 安装 | L3 | `PluginMarketPanel` / `PluginMarketV2Panel`、`pluginStore.openMarketPanel` | —（侧栏顶层项） | `settings.market.browse` |
+| 系统与内核分组总览（跳转地图） | L2 | `SettingsView` `systemKernelHub` 分组按钮 | `settings.cat.system` | `settings.system.kernelHub` |
 | 市场开发者模式与索引源（L3 说明 + L4 控件） | L3+L4 | `SettingsView` + `getPluginMarketSourcesConfig` / `setPluginIndexSources` | `settings.cat.system` | `settings.system.developer` |
 | 强制 iframe | L4 | `SettingsView` → `pluginStore.pluginState.force_iframe_mode` | —（侧栏顶层项） | `settings.security.host` |
 | settings.advanced 嵌入 | L3+ | `PluginSlotEmbed` `SLOT_SETTINGS_ADVANCED` | `settings.cat.advanced` | `settings.advanced.embed` |
@@ -59,9 +60,9 @@
 ## 纯聊 / 沉浸裁剪（与 `SettingsView.visibleNavRows` 一致）
 
 1. **`filterSettingsNavRows(immersive, rows)`**：仅 `visibility === "always"`，或 `visibility === "immersive"` 且当前为沉浸模式时，可选行可见。
-2. **开发者总闸**：沉浸模式且插件市场「开发者模式」**关闭**时，从侧栏移除 `SETTINGS_DEVELOPER_GATED_NAV_IDS` 中的项（与 `SettingsView` 一致）；**不修改** `SETTINGS_NAV_ROWS` 源数据。
+2. **开发者总闸**：沉浸模式且 **`settingsDeveloperMaster` 关闭**时，从侧栏移除 `SETTINGS_DEVELOPER_GATED_NAV_IDS` 中的项（与 `SettingsView` 一致）；**不修改** `SETTINGS_NAV_ROWS` 源数据。
 
-纯聊下（非沉浸）通常可见的 **子菜单 id** 包括：`settings.general.overview`、`settings.general.language`、`settings.general.defaultModel`、`settings.models.cloud`、`settings.security.host`。`settings.shortcuts.manage` 及插件/数据/诊断等 `immersive` 项在纯聊下隐藏。
+纯聊下（非沉浸）通常可见的 **子菜单 id** 包括：`settings.general.overview`、`settings.general.behavior`、`settings.models.cloud`、`settings.security.host`。`settings.shortcuts.manage` 及插件/数据/诊断等 `immersive` 项在纯聊下隐藏。历史深链 `settings.general.language` / `settings.general.defaultModel` 在打开设置时规范化为 `settings.general.behavior`。
 
 ## 深链关闭约定
 
