@@ -34,6 +34,8 @@ export const SETTINGS_NAV = {
   advancedExperimental: "settings.advanced.experimental",
   advancedEmbed: "settings.advanced.embed",
   systemDeveloper: "settings.system.developer",
+  /** 系统与内核分组内的总览页（子域导航卡片） */
+  systemKernelHub: "settings.system.kernelHub",
   diagnosticsDebug: "settings.diagnostics.debug",
   diagnosticsAgent: "settings.diagnostics.agent",
 } as const;
@@ -144,6 +146,7 @@ export const SETTINGS_NAV_ROWS: readonly SettingsNavRow[] = [
   { id: SETTINGS_NAV.advancedExperimental, depth: 1, tier: "L4", visibility: "immersive" },
   { id: SETTINGS_NAV.advancedEmbed, depth: 1, tier: "L3", visibility: "immersive" },
   { id: SETTINGS_NAV_CAT.system, depth: 0, isGroupLabel: true, visibility: "immersive" },
+  { id: SETTINGS_NAV.systemKernelHub, depth: 1, tier: "L2", visibility: "immersive" },
   { id: SETTINGS_NAV.systemDeveloper, depth: 1, tier: "L4", visibility: "immersive" },
   { id: SETTINGS_NAV.diagnosticsDebug, depth: 0, tier: "L2", visibility: "immersive" },
   { id: SETTINGS_NAV.diagnosticsAgent, depth: 0, tier: "L4", visibility: "immersive" },
@@ -179,6 +182,7 @@ export function firstSelectableSettingsNavId(
  * | pluginsLink* / pluginsV2Hub / marketBrowse / marketBrowseV2 | L3 说明 → L4 本页嵌入经典或 V2 管理 / 市场 |
  * | securityHost / advancedExperimental | L4 安全与实验 |
  * | advancedEmbed | L3 settings.advanced 扩展区 |
+ * | systemKernelHub | L2 系统与内核总览（分组跳转卡片） |
  * | systemDeveloper | L4 市场开发者模式与第三方索引源（侧栏项受设置中心开发者总闸） |
  * | diagnosticsDebug | L2 说明 → L4 本页嵌入调试 |
  * | diagnosticsAgent | L3 说明 → L4 嵌入后端 Agent 调试 |

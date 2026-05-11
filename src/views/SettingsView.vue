@@ -393,6 +393,17 @@ function onOpenExpertModelsSettingsFromRolesCard(): void {
   selectNav(SETTINGS_NAV.dataExpertModels);
 }
 
+function systemHubNavTo(target: SettingsNavId): void {
+  if (!requireSettingsDeveloperMasterForGated(target)) return;
+  selectNav(target);
+}
+
+async function systemHubOpenPlugins(tab: PluginPanelMainTab): Promise<void> {
+  if (!requireSettingsDeveloperMasterForGated(SETTINGS_NAV.pluginsLinkInstalled)) return;
+  selectNav(SETTINGS_NAV.pluginsLinkInstalled);
+  await openPluginManagerEmbed(tab);
+}
+
 function onEmbeddedV2Close(): void {
   selectNav(SETTINGS_NAV.generalOverview);
 }
@@ -977,6 +988,101 @@ async function onToggleForceIframe(e: Event) {
                     />
                   </section>
                 </SettingsTierSection>
+              </div>
+
+              <div v-show="selectedNavId === SETTINGS_NAV.systemKernelHub" class="sv-pane-section sv-system-hub">
+                <SettingsTierSection tier="L2" :reset-key="tierResetKey">
+                  <p class="sv-muted">{{ t("settings.systemHub.pageLead") }}</p>
+                  <p v-if="!uiStore.settingsDeveloperMaster" class="sv-muted sv-system-hub-note">
+                    {{ t("settings.systemHub.masterOffNote") }}
+                  </p>
+                </SettingsTierSection>
+
+                <section class="sv-system-hub-subgroup" aria-labelledby="sv-sh-dev-h">
+                  <h3 id="sv-sh-dev-h" class="sv-system-hub-h">{{ t("settings.systemHub.devToolsTitle") }}</h3>
+                  <p class="sv-muted sv-system-hub-subhint">{{ t("settings.systemHub.devToolsHint") }}</p>
+                  <div class="sv-hub-btn-grid">
+                    <button type="button" class="sv-btn secondary" @click="systemHubNavTo(SETTINGS_NAV.shortcutsManage)">
+                      {{ t("settings.systemHub.linkShortcuts") }}
+                    </button>
+                    <button type="button" class="sv-btn secondary" @click="systemHubOpenPlugins('plugins')">
+                      {{ t("settings.systemHub.linkPluginsInstalled") }}
+                    </button>
+                    <button type="button" class="sv-btn secondary" @click="systemHubOpenPlugins('slots')">
+                      {{ t("settings.systemHub.linkPluginsSlots") }}
+                    </button>
+                    <button type="button" class="sv-btn secondary" @click="systemHubOpenPlugins('backends')">
+                      {{ t("settings.nav.items.pluginsLinkBackends") }}
+                    </button>
+                    <button type="button" class="sv-btn secondary" @click="systemHubNavTo(SETTINGS_NAV.pluginsV2Hub)">
+                      {{ t("settings.systemHub.linkPluginsV2") }}
+                    </button>
+                    <button type="button" class="sv-btn secondary" @click="systemHubNavTo(SETTINGS_NAV.marketBrowse)">
+                      {{ t("settings.systemHub.linkMarket") }}
+                    </button>
+                    <button type="button" class="sv-btn secondary" @click="systemHubNavTo(SETTINGS_NAV.marketBrowseV2)">
+                      {{ t("settings.systemHub.linkMarketV2") }}
+                    </button>
+                  </div>
+                </section>
+
+                <section class="sv-system-hub-subgroup" aria-labelledby="sv-sh-ai-h">
+                  <h3 id="sv-sh-ai-h" class="sv-system-hub-h">{{ t("settings.systemHub.aiTitle") }}</h3>
+                  <p class="sv-muted sv-system-hub-subhint">{{ t("settings.systemHub.aiHint") }}</p>
+                  <div class="sv-hub-btn-grid">
+                    <button type="button" class="sv-btn secondary" @click="systemHubNavTo(SETTINGS_NAV.dataExpertModels)">
+                      {{ t("settings.systemHub.linkExpertHub") }}
+                    </button>
+                    <button type="button" class="sv-btn secondary" @click="systemHubNavTo(SETTINGS_NAV.dataExpertWorkbench)">
+                      {{ t("settings.systemHub.linkExpertWorkbench") }}
+                    </button>
+                    <button type="button" class="sv-btn secondary" @click="systemHubNavTo(SETTINGS_NAV.modelsCloud)">
+                      {{ t("settings.systemHub.linkModelsCloud") }}
+                    </button>
+                    <button type="button" class="sv-btn secondary" @click="systemHubNavTo(SETTINGS_NAV.modelsOllama)">
+                      {{ t("settings.systemHub.linkModelsOllama") }}
+                    </button>
+                  </div>
+                </section>
+
+                <section class="sv-system-hub-subgroup" aria-labelledby="sv-sh-net-h">
+                  <h3 id="sv-sh-net-h" class="sv-system-hub-h">{{ t("settings.systemHub.netTitle") }}</h3>
+                  <p class="sv-muted sv-system-hub-subhint">{{ t("settings.systemHub.netHint") }}</p>
+                  <div class="sv-hub-btn-grid">
+                    <button type="button" class="sv-btn secondary" @click="systemHubNavTo(SETTINGS_NAV.securityHost)">
+                      {{ t("settings.systemHub.linkSecurity") }}
+                    </button>
+                    <button type="button" class="sv-btn secondary" @click="systemHubNavTo(SETTINGS_NAV.systemDeveloper)">
+                      {{ t("settings.systemHub.linkMarketDev") }}
+                    </button>
+                  </div>
+                </section>
+
+                <section class="sv-system-hub-subgroup" aria-labelledby="sv-sh-diag-h">
+                  <h3 id="sv-sh-diag-h" class="sv-system-hub-h">{{ t("settings.systemHub.diagTitle") }}</h3>
+                  <p class="sv-muted sv-system-hub-subhint">{{ t("settings.systemHub.diagHint") }}</p>
+                  <div class="sv-hub-btn-grid">
+                    <button type="button" class="sv-btn secondary" @click="systemHubNavTo(SETTINGS_NAV.diagnosticsDebug)">
+                      {{ t("settings.systemHub.linkDiag") }}
+                    </button>
+                    <button type="button" class="sv-btn secondary" @click="systemHubNavTo(SETTINGS_NAV.diagnosticsAgent)">
+                      {{ t("settings.systemHub.linkAgent") }}
+                    </button>
+                  </div>
+                </section>
+
+                <section class="sv-system-hub-subgroup" aria-labelledby="sv-sh-exp-h">
+                  <h3 id="sv-sh-exp-h" class="sv-system-hub-h">{{ t("settings.systemHub.expTitle") }}</h3>
+                  <p class="sv-muted sv-system-hub-subhint">{{ t("settings.systemHub.expHint") }}</p>
+                  <div class="sv-hub-btn-grid">
+                    <button type="button" class="sv-btn secondary" @click="systemHubNavTo(SETTINGS_NAV.advancedExperimental)">
+                      {{ t("settings.systemHub.linkExperimental") }}
+                    </button>
+                    <button type="button" class="sv-btn secondary" @click="systemHubNavTo(SETTINGS_NAV.generalOverview)">
+                      {{ t("settings.systemHub.linkOverviewReset") }}
+                    </button>
+                  </div>
+                </section>
               </div>
 
               <div v-show="selectedNavId === SETTINGS_NAV.systemDeveloper" class="sv-pane-section">
@@ -1580,6 +1686,39 @@ async function onToggleForceIframe(e: Event) {
 .sv-settings-card__body {
   display: flex;
   flex-direction: column;
+  gap: 8px;
+}
+.sv-system-hub {
+  display: flex;
+  flex-direction: column;
+  gap: 18px;
+}
+.sv-system-hub-note {
+  margin: 0;
+  padding: 8px 10px;
+  border-radius: 8px;
+  border: 1px dashed color-mix(in srgb, var(--border-light) 80%, var(--text-secondary) 20%);
+}
+.sv-system-hub-subgroup {
+  padding: 12px 14px 14px;
+  border-radius: 12px;
+  border: 1px solid var(--border-light);
+  background: color-mix(in srgb, var(--bg-elevated) 92%, transparent);
+}
+.sv-system-hub-h {
+  margin: 0 0 6px;
+  font-size: 13px;
+  font-weight: 650;
+  color: var(--text-primary);
+}
+.sv-system-hub-subhint {
+  margin: 0 0 10px;
+  font-size: 12px;
+  line-height: 1.45;
+}
+.sv-hub-btn-grid {
+  display: flex;
+  flex-wrap: wrap;
   gap: 8px;
 }
 </style>
