@@ -636,12 +636,23 @@ export const enUS = {
       },
       nodeCount: "{n} node(s) in graph",
       openWorkbench: "Open Expert Models workbench",
+      openExpertModelsNav: "Expert model settings (sidebar page)",
       resetToPack: "Reset to pack default",
       resetDisabledHint: "Already on the pack’s built-in default—nothing to reset.",
       confirmResetPackDefault:
         "This clears session overrides and the role-level expert default (it does not modify the pack files on disk), then reapplies the session from the pack. Continue?",
       toastResetOk: "Reset to pack default and applied to the session.",
       toastResetApplyWarn: "Overrides were cleared, but applying the session reported a warning—check the workbench for details.",
+    },
+    layout: {
+      crossTier: {
+        needDeveloperMaster:
+          "Turn on “Settings developer mode” (sticky switch at the top of Settings) to open this destination.",
+      },
+    },
+    dataRoles: {
+      expertCardTitle: "Expert models",
+      expertCardHint: "Shows the effective graph source and a short summary. Use the workbench for deep edits.",
     },
     roleSettings: {
       lead: "Manage local role packs here: search, switch session, import/export, reveal folder, or delete. Richer narrative controls stay in the main sidebar.",

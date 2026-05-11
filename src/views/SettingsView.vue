@@ -29,6 +29,7 @@ import {
 import {
   ALL_SETTINGS_NAV_IDS,
   SETTINGS_DEVELOPER_GATED_NAV_IDS,
+  isDeveloperGatedNavId,
   SETTINGS_NAV,
   SETTINGS_NAV_ROWS,
   filterSettingsNavRows,
@@ -368,7 +369,15 @@ async function onOpenPluginBackendsFromCloud(): Promise<void> {
   }
 }
 
+function requireSettingsDeveloperMasterForGated(target: SettingsNavId): boolean {
+  if (!roleStore.interactionImmersive || uiStore.settingsDeveloperMaster) return true;
+  if (!isDeveloperGatedNavId(target)) return true;
+  showToast("info", String(t("settings.layout.crossTier.needDeveloperMaster")));
+  return false;
+}
+
 async function onOpenExpertWorkbenchFromHub(o: { draftMode: ExpertWorkbenchDraftMode }): Promise<void> {
+  if (!requireSettingsDeveloperMasterForGated(SETTINGS_NAV.dataExpertWorkbench)) return;
   try {
     pluginStore.expertWorkbenchDraftMode = o.draftMode;
     selectNav(SETTINGS_NAV.dataExpertWorkbench);
@@ -377,6 +386,11 @@ async function onOpenExpertWorkbenchFromHub(o: { draftMode: ExpertWorkbenchDraft
   } catch (err) {
     showToast("error", err instanceof Error ? err.message : String(err));
   }
+}
+
+function onOpenExpertModelsSettingsFromRolesCard(): void {
+  if (!requireSettingsDeveloperMasterForGated(SETTINGS_NAV.dataExpertModels)) return;
+  selectNav(SETTINGS_NAV.dataExpertModels);
 }
 
 function onEmbeddedV2Close(): void {
@@ -755,11 +769,35 @@ async function onToggleForceIframe(e: Event) {
 
               <div v-show="selectedNavId === SETTINGS_NAV.dataRoles" class="sv-pane-section">
                 <SettingsTierSection tier="L3" :reset-key="tierResetKey">
-                  <RoleManagerSettings
-                    @switch-role="(id) => emit('switchRole', id)"
-                    @open-market="onOpenMarketFromRoles"
-                    @pack-imported="(id) => emit('packImported', id)"
-                  />
+                  <div class="sv-settings-stack">
+                    <section class="sv-settings-card" aria-labelledby="sv-data-roles-h">
+                      <div class="sv-settings-card__head">
+                        <h3 id="sv-data-roles-h" class="sv-settings-card__title">{{ t("settings.nav.items.dataRoles") }}</h3>
+                        <p class="sv-settings-card__hint">{{ t("settings.roleSettings.lead") }}</p>
+                      </div>
+                      <div class="sv-settings-card__body">
+                        <RoleManagerSettings
+                          @switch-role="(id) => emit('switchRole', id)"
+                          @open-market="onOpenMarketFromRoles"
+                          @pack-imported="(id) => emit('packImported', id)"
+                        />
+                      </div>
+                    </section>
+                    <section class="sv-settings-card" aria-labelledby="sv-data-expert-h">
+                      <div class="sv-settings-card__head">
+                        <h3 id="sv-data-expert-h" class="sv-settings-card__title">{{ t("settings.dataRoles.expertCardTitle") }}</h3>
+                        <p class="sv-settings-card__hint">{{ t("settings.dataRoles.expertCardHint") }}</p>
+                      </div>
+                      <div class="sv-settings-card__body">
+                        <ExpertModelsSettingsHub
+                          variant="compact"
+                          :active="selectedNavId === SETTINGS_NAV.dataRoles && visible"
+                          @open-expert-workbench="onOpenExpertWorkbenchFromHub"
+                          @open-expert-models-settings="onOpenExpertModelsSettingsFromRolesCard"
+                        />
+                      </div>
+                    </section>
+                  </div>
                 </SettingsTierSection>
               </div>
 

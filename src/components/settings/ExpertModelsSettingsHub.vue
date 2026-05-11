@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed, ref, watch } from "vue";
+import { computed, ref, watch, withDefaults } from "vue";
 import { useI18n } from "vue-i18n";
 import { useAppToast } from "../../composables/useAppToast";
 import {
@@ -11,12 +11,18 @@ import { useExpertModelsStore } from "../../stores/expertModelsStore";
 import { useRoleStore } from "../../stores/roleStore";
 import type { ExpertWorkbenchDraftMode } from "../../lib/expertWorkbenchOpen";
 
-const props = defineProps<{
-  active: boolean;
-}>();
+const props = withDefaults(
+  defineProps<{
+    active: boolean;
+    /** compact：角色页旁卡，仅摘要 + 工作台 / 专家设置入口 */
+    variant?: "full" | "compact";
+  }>(),
+  { variant: "full" },
+);
 
 const emit = defineEmits<{
   openExpertWorkbench: [opts: { draftMode: ExpertWorkbenchDraftMode }];
+  openExpertModelsSettings: [];
 }>();
 
 const { t } = useI18n();
@@ -172,7 +178,7 @@ async function onResetToPackDefault(): Promise<void> {
         <p class="emh-status-title">{{ statusTitle }}</p>
         <p class="emh-status-body">{{ statusBody }}</p>
 
-        <div class="emh-actions">
+        <div v-if="variant === 'full'" class="emh-actions">
           <button type="button" class="emh-btn emh-btn--ghost" @click="detailOpen = true">
             {{ t("expertRuntimeCard.btnDetail") }}
           </button>
@@ -189,10 +195,18 @@ async function onResetToPackDefault(): Promise<void> {
             {{ resetBusy ? t("expertRuntimeCard.resetting") : t("settings.expertHub.resetToPack") }}
           </button>
         </div>
+        <div v-else class="emh-actions emh-actions--compact">
+          <button type="button" class="emh-btn emh-btn--primary" @click="openWorkbench">
+            {{ t("settings.expertHub.openWorkbench") }}
+          </button>
+          <button type="button" class="emh-btn emh-btn--ghost" @click="emit('openExpertModelsSettings')">
+            {{ t("settings.expertHub.openExpertModelsNav") }}
+          </button>
+        </div>
       </template>
     </template>
 
-    <Teleport to="body">
+    <Teleport v-if="variant === 'full'" to="body">
       <div
         v-if="detailOpen"
         class="emh-backdrop"
@@ -296,6 +310,11 @@ async function onResetToPackDefault(): Promise<void> {
   display: flex;
   flex-wrap: wrap;
   gap: 8px;
+}
+.emh-actions--compact {
+  flex-direction: column;
+  align-items: stretch;
+  max-width: 360px;
 }
 .emh-btn {
   padding: 8px 14px;

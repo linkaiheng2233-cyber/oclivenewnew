@@ -615,12 +615,22 @@ export const zhCN = {
       },
       nodeCount: "图中节点 {n} 个",
       openWorkbench: "打开专家模型工作台",
+      openExpertModelsNav: "专家模型设置（侧栏专页）",
       resetToPack: "恢复为角色包默认",
       resetDisabledHint: "当前已处于角色包内置默认，无需重置。",
       confirmResetPackDefault:
         "将清除本会话的覆盖与角色级专家模型默认（不修改角色包原文件），并把运行时会话应用回包内配置。继续吗？",
       toastResetOk: "已恢复为角色包默认并应用到会话。",
       toastResetApplyWarn: "已清除覆盖，但应用会话时存在告警，请到专家工作台查看详情。",
+    },
+    layout: {
+      crossTier: {
+        needDeveloperMaster: "请先在设置窗口顶部开启「设置中心开发者模式」后再打开该页面。",
+      },
+    },
+    dataRoles: {
+      expertCardTitle: "专家模型",
+      expertCardHint: "展示当前生效图来源与简要摘要；深度编辑请进入工作台。",
     },
     roleSettings: {
       lead: "在此管理本地角色包：搜索、切换会话、导入/导出、打开文件夹或删除；详细叙事与关系仍可在主界面侧栏使用。",
