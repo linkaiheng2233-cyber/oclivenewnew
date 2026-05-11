@@ -37,4 +37,14 @@ cargo run -p oclive_kernel_server
 
 ## Status
 
-This binary runs the **full kernel runtime** (roles, DB, plugin backends) and exposes it via HTTP + OOCP. 方法参数与结果以 [`creator-docs/oocp/OOCP_SPEC_v0_1.md`](../../creator-docs/oocp/OOCP_SPEC_v0_1.md) 为准。
+默认（`cargo run -p oclive_kernel_server`）通过 Cargo feature **`runtime-full`** 链接 **`oclive_kernel_runtime/full`**：与桌面 / 既有 Docker 一致。
+
+**校企玩偶 · 轻量 Linux**（关内置 Ollama/Agent/市场等，保留 HTTP + 核心 builtin 管线）：
+
+```bash
+cargo build --release -p oclive_kernel_server --no-default-features --features doll-linux-embedded
+```
+
+说明与角色模板见 **[`delivery/doll-kernel/README.md`](../../delivery/doll-kernel/README.md)**。
+
+方法参数与结果以 [`creator-docs/oocp/OOCP_SPEC_v0_1.md`](../../creator-docs/oocp/OOCP_SPEC_v0_1.md) 为准。

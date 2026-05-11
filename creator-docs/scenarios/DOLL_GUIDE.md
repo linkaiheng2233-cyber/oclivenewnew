@@ -12,6 +12,15 @@
 - 第九模块（专家模型设施）：`creator-docs/kernel/MODULE_9_EXPERT_MODELS_FACILITY.md`
 - LLM 采样环境变量：见下文「进阶调参」与源码 `crates/oclive_kernel_runtime/src/infrastructure/llm_params.rs`
 
+### 0.1 轻量 Linux 内核（本地 llama.cpp 为主、可选云端）
+
+校企 / 小芯片交付若明确 **「关 Ollama 内置客户端、以目录插件 `com.oclive.llama.local` + llama-server 为主」**，请直接使用仓库内 **`delivery/doll-kernel/`**：
+
+- **`settings.doll-linux.template.json`**：`plugin_backends` 已设为 **`llm: "directory"`** 且 **`directory_plugins.llm": "com.oclive.llama.local"`**，`event` / `agent` 为 **`none`**；含 `_` 前缀说明键。
+- **`README.md`**：`oclive_kernel_runtime` / `oclive_kernel_server` 的 **裁剪特性**、**`doll-linux-embedded`** 聚合 feature、**`llama-server` / GGUF** 放置路径、**`OCLIVE_*`** 启动方式，以及 **`llm = remote` 与 `default-llm-providers` 的契约关系**（轻量构建默认 **不含** 内置 Remote LLM HTTP 客户端时的限制）。
+
+无头二进制的默认构建行为未改：仍通过 **`oclive_kernel_server`** 的 **`runtime-full`** 拉齐 **`oclive_kernel_runtime/full`**；仅在使用 **`--no-default-features --features doll-linux-embedded`** 时启用玩偶裁剪栈。
+
 ---
 
 ## 1. 场景定位与硬件要求
