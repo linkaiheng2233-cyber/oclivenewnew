@@ -3,10 +3,9 @@
 //! **性能备忘**：本路径不经过 `serde_json::Value` 热克隆；`scene_id` / `user_message` 等 `String` 克隆用于跨 `await` 与多消费者（DB、策略、Tracing），拆成 `&str` 会牵动大量签名，暂维持分配。
 
 use super::co_present;
-use super::context::validate_scene_id;
 use super::emotion_to_dto;
-use super::presence::user_is_remote_from_character;
-use crate::domain::agent::AgentInput;
+use super::pipeline_actions;
+use super::turn_context::TurnContext;
 use crate::domain::chat_llm_fallback::{fallback_reply_for_llm_failure, FallbackReplyContext};
 use crate::domain::chat_turn::{relation_favor_for_key, weight_memories_for_scene};
 use crate::domain::chat_turn_rules::{soft_append_guard, strip_hallucination_tokens};
@@ -28,8 +27,6 @@ use crate::models::{
 };
 use crate::state::KernelAppState;
 use chrono::Utc;
-use std::sync::atomic::Ordering;
-use std::sync::Arc;
 use std::time::Instant;
 
 /// `process_message` 退出时写入 **INFO** 总耗时（与 `tracing` span 对齐）。
@@ -63,30 +60,56 @@ pub async fn process_message(
     state: &KernelAppState,
     req: &SendMessageRequest,
 ) -> Result<SendMessageResponse> {
-    let mrid = req.role_id.as_str();
-    let state_rid = super::conversation_state_role_id(mrid, req.session_id.as_deref());
-    let srid = state_rid.as_str();
-    let requested_scene_id = req
-        .scene_id
+    let mut ctx = TurnContext::new();
+    ctx.bootstrap_from_request(req);
+    pipeline_actions::validate_scene(state, &mut ctx, req).await?;
+    let mrid = ctx
+        .ids
+        .manifest_role_id
         .clone()
-        .unwrap_or_else(|| "default".to_string());
-    let (scene_id, scenes) = validate_scene_id(state, mrid, requested_scene_id)?;
+        .expect("bootstrap sets manifest_role_id");
+    let srid = ctx
+        .ids
+        .session_namespace
+        .clone()
+        .expect("bootstrap sets session_namespace");
+    let scene_id = ctx
+        .scene
+        .effective_scene_id
+        .clone()
+        .expect("validate_scene sets effective_scene_id");
+    let scenes = ctx
+        .scene
+        .scene_id_list
+        .clone()
+        .expect("validate_scene sets scene_id_list");
     let trace_span = tracing::info_span!(
         "process_message",
-        role_id = mrid,
+        role_id = %mrid.as_str(),
         scene_id = %scene_id,
-        session_ns = srid,
-        user_len = req.user_message.len(),
+        session_ns = srid.as_str(),
+        user_len = ctx
+            .request
+            .user_message
+            .as_ref()
+            .expect("bootstrap sets user_message")
+            .len(),
     );
     let _trace_enter = trace_span.enter();
     let t0 = Instant::now();
+    ctx.trace.started_at = Some(t0);
     let _trace_finish = ProcessMessageTraceFinish {
         span: trace_span.clone(),
         start: t0,
-        role_id: mrid.to_string(),
+        role_id: mrid.clone(),
         scene_id: scene_id.clone(),
-        session_ns: srid.to_string(),
-        user_len: req.user_message.len(),
+        session_ns: srid.clone(),
+        user_len: ctx
+            .request
+            .user_message
+            .as_ref()
+            .expect("bootstrap sets user_message")
+            .len(),
     };
     log::debug!(
         target: "oclive_chat",
@@ -96,89 +119,61 @@ pub async fn process_message(
         srid
     );
 
-    state.chat_generation_cancel.store(false, Ordering::Release);
+    pipeline_actions::init_turn(state, &mut ctx, req).await?;
+    pipeline_actions::ensure_role_runtime(state, &mut ctx, req).await?;
+    pipeline_actions::load_role(state, &mut ctx, req).await?;
+    pipeline_actions::seed_interaction_mode(state, &mut ctx, req).await?;
+    pipeline_actions::log_effective_plugin_backends(state, &mut ctx, req).await?;
+    pipeline_actions::resolve_plugins(state, &mut ctx, req).await?;
+    pipeline_actions::resolve_main_llm_model(state, &mut ctx, req).await?;
+    pipeline_actions::run_agent(state, &mut ctx, req).await?;
 
-    let io = Instant::now();
-    state.db_manager.ensure_role_runtime(srid).await?;
-    tracing::debug!(
-        target: "oclive_chat_io",
-        role_id = %mrid,
-        session_ns = %srid,
-        op = "ensure_role_runtime",
-        elapsed_ms = io.elapsed().as_millis() as u64
-    );
-
-    let io = Instant::now();
-    let role = ensure_role_loaded(state, mrid).await?;
-    tracing::debug!(
-        target: "oclive_chat_io",
-        role_id = %mrid,
-        op = "ensure_role_loaded",
-        elapsed_ms = io.elapsed().as_millis() as u64
-    );
-    state
-        .db_manager
-        .ensure_interaction_mode_seeded(srid, role.interaction_mode.as_deref())
-        .await?;
-
-    let effective_backends = state.effective_plugin_backends_for_session(role.as_ref(), srid);
-    let effective_sources = state.effective_plugin_backend_sources_for_session(srid);
-    log::debug!(
-        target: "oclive_chat",
-        "send_message backends role_id={} scene_id={} session_ns={} {}",
-        mrid,
-        scene_id,
-        srid,
-        super::backend_resolution_summary(&effective_backends, &effective_sources)
-    );
-
-    let pl = state.resolved_plugins_for_session(role.as_ref(), Some(srid));
-    let agent_llm_model =
-        super::resolve_main_llm_model_for_generate(state, role.as_ref(), srid).await?;
-    let agent_out = pl
+    let agent_out = ctx
         .agent
-        .process(AgentInput {
-            role_id: mrid.to_string(),
-            session_namespace: srid.to_string(),
-            message: req.user_message.clone(),
-            model: agent_llm_model,
-        })
-        .await?;
+        .output
+        .clone()
+        .expect("run_agent sets agent output");
     if agent_out.handled {
-        state
-            .db_manager
-            .set_user_presence_scene(srid, scene_id.as_str())
-            .await?;
-        let analyzed = pl.emotion.analyze(req.user_message.as_str())?;
-        let emotion_result: crate::domain::emotion_analyzer::EmotionResult = analyzed;
+        pipeline_actions::set_user_presence_scene(state, &mut ctx, req).await?;
+        pipeline_actions::analyze_emotion_user(state, &mut ctx, req).await?;
+        let pl = ctx
+            .plugins
+            .resolved
+            .as_ref()
+            .expect("resolve_plugins sets resolved");
+        let emotion_result = ctx
+            .emotion
+            .user_emotion
+            .as_ref()
+            .expect("analyze_emotion_user sets user_emotion");
         let user_relation_key = resolve_effective_user_relation_key(
             state,
-            role.as_ref(),
-            srid,
+            ctx.role.role.as_ref().expect("load_role").as_ref(),
+            srid.as_str(),
             Some(scene_id.as_str()),
         )
         .await?;
         let relation_state = state
             .db_manager
-            .get_relation_state_for_identity(srid, user_relation_key.as_str())
+            .get_relation_state_for_identity(srid.as_str(), user_relation_key.as_str())
             .await?
-            .or(state.db_manager.get_relation_state(srid).await?)
+            .or(state.db_manager.get_relation_state(srid.as_str()).await?)
             .unwrap_or_else(|| "Stranger".to_string());
         let favor_current = state
             .db_manager
-            .favorability_for_identity_with_runtime_fallback(srid, user_relation_key.as_str())
+            .favorability_for_identity_with_runtime_fallback(srid.as_str(), user_relation_key.as_str())
             .await?;
         let portrait_emotion = state
             .db_manager
-            .get_current_emotion(srid)
+            .get_current_emotion(srid.as_str())
             .await?
             .unwrap_or_else(|| "neutral".to_string());
 
-        let prev_complex_hint = state.db_manager.get_complex_emotion_hint(srid).await?;
+        let prev_complex_hint = state.db_manager.get_complex_emotion_hint(srid.as_str()).await?;
         {
-            let (valence, dominance) = affect_metrics_from_seven_dim(&emotion_result);
+            let (valence, dominance) = affect_metrics_from_seven_dim(emotion_result);
             let ce_in = ComplexEmotionInput {
-                role_id: mrid.to_string(),
+                role_id: mrid.clone(),
                 scene_id: scene_id.clone(),
                 user_message: req.user_message.clone(),
                 bot_reply: agent_out.reply.clone(),
@@ -191,7 +186,7 @@ pub async fn process_message(
             if let Ok(out) = pl.complex_emotion.resolve_turn(&ce_in) {
                 let _ = state
                     .db_manager
-                    .set_complex_emotion_hint(srid, out.narrative_hint.as_deref())
+                    .set_complex_emotion_hint(srid.as_str(), out.narrative_hint.as_deref())
                     .await;
             }
         }
@@ -201,8 +196,8 @@ pub async fn process_message(
             schema: SCHEMA_VERSION,
             presence_mode: PresenceMode::CoPresent,
             relation_state,
-            reply: agent_out.reply,
-            emotion: emotion_to_dto(&emotion_result),
+            reply: agent_out.reply.clone(),
+            emotion: emotion_to_dto(emotion_result),
             bot_emotion: portrait_emotion.clone(),
             portrait_emotion,
             favorability_delta: 0.0,
@@ -217,44 +212,48 @@ pub async fn process_message(
         });
     }
 
-    state
-        .db_manager
-        .set_user_presence_scene(srid, scene_id.as_str())
-        .await?;
+    pipeline_actions::set_user_presence_scene(state, &mut ctx, req).await?;
+    pipeline_actions::load_presence_routing(state, &mut ctx, req).await?;
 
-    let current_scene = state.db_manager.get_current_scene(srid).await?;
-    let immersive = state
-        .db_manager
-        .get_interaction_mode(srid)
-        .await?
-        .is_immersive();
-    let remote_life_enabled = state.db_manager.get_remote_life_enabled(srid).await?;
-    let is_remote =
-        immersive && user_is_remote_from_character(scene_id.as_str(), current_scene.as_deref());
-    let preflight_ms = t0.elapsed().as_millis() as u64;
+    let preflight_ms = ctx
+        .trace
+        .preflight_ms
+        .expect("load_presence_routing sets preflight_ms when trace.started_at is set");
+    let is_remote = ctx
+        .presence
+        .is_remote
+        .expect("load_presence_routing sets is_remote");
     if is_remote {
+        let remote_life_enabled = ctx
+            .presence
+            .remote_life_enabled
+            .expect("load_presence_routing sets remote_life_enabled");
         if !remote_life_enabled {
             return process_remote_stub(
                 state,
                 req,
-                role.as_ref(),
+                ctx.role.role.as_ref().expect("load_role").as_ref(),
                 scene_id.as_str(),
                 t0,
-                srid,
+                srid.as_str(),
                 preflight_ms,
             )
             .await;
         }
-        let char_scene = current_scene.as_deref().unwrap_or("default");
+        let char_scene = ctx
+            .presence
+            .current_scene
+            .as_deref()
+            .unwrap_or("default");
         return process_remote_life(
             state,
             req,
-            role.as_ref(),
+            ctx.role.role.as_ref().expect("load_role").as_ref(),
             scene_id.as_str(),
             char_scene,
             t0,
-            mrid,
-            srid,
+            mrid.as_str(),
+            srid.as_str(),
             preflight_ms,
         )
         .await;
@@ -263,20 +262,18 @@ pub async fn process_message(
     co_present::process_co_present(
         state,
         req,
-        role.as_ref(),
+        ctx.role.role.as_ref().expect("load_role").as_ref(),
         scene_id,
         scenes,
-        immersive,
+        ctx.presence
+            .immersive
+            .expect("load_presence_routing sets immersive"),
         t0,
-        mrid,
-        srid,
+        mrid.as_str(),
+        srid.as_str(),
         preflight_ms,
     )
     .await
-}
-
-async fn ensure_role_loaded(state: &KernelAppState, role_id: &str) -> Result<Arc<Role>> {
-    state.load_role_cached(role_id)
 }
 
 async fn process_remote_stub(
