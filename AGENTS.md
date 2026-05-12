@@ -17,6 +17,13 @@
 
 **开发机磁盘**：本仓库根目录 [`.cargo/config.toml`](.cargo/config.toml) 将 **Cargo `target-dir`** 指到仓库外的 `../oclive-dev-artifacts/oclivenewnew-cargo-target/`，与源码分离；发版安装包体积与此无关。姊妹仓 **oclive-pack-editor**、**oclive-launcher** 使用同级目录下的 `oclive-pack-editor-cargo-target/`、`oclive-launcher-cargo-target/`（各仓自有 `.cargo/config.toml`）。旧版留在仓库内的 `target/`、`src-tauri/target/` 可整夹删除。
 
+### 可编程调度引擎（`pipeline.ocblueprint`）
+
+- **Schema 与错误前缀**：[`creator-docs/kernel/PIPELINE_SCHEMA.md`](creator-docs/kernel/PIPELINE_SCHEMA.md)；加载错误码登记于 [`handoff/10_ERROR_CODE_DICTIONARY.md`](handoff/10_ERROR_CODE_DICTIONARY.md)（Pipeline 蓝图段）。
+- **Rust 模块**：`crates/oclive_kernel_runtime/src/domain/chat_engine/` 下的 `pipeline_loader.rs`（解析校验）、`pipeline_interpreter.rs`（顺序 / `branch` / `parallel`）、`pipeline_actions.rs`（原子与 `ACTION_IO_TYPES`）、`pipeline_predicates.rs`、`turn_context.rs`；入口编排见同目录 `process_message.rs`（蓝图在 `validate_scene` 之后加载）。
+- **测试**：crate 内 `pipeline_loader` 单测；集成测试 `tests/pipeline_*_smoke.rs`、`tests/pipeline_validator_edges.rs`。
+- **Criterion**：`cargo bench -p oclive_kernel_runtime --bench kernel_pipeline_blueprint`；基线记录 [`creator-docs/kernel/KERNEL_PERFORMANCE_BASELINE.md`](creator-docs/kernel/KERNEL_PERFORMANCE_BASELINE.md)。
+
 ### 前端：插件管理入口与 Tauri `invoke`
 
 - **V1 / V2 路由**：`uiStore.experimentalPluginManagerV2`（Pinia 持久化）为唯一开关；顶栏「更多」与 **Ctrl+Shift+F** 的打开逻辑集中在 [`src/composables/usePluginManagerWindow.ts`](src/composables/usePluginManagerWindow.ts)。设置页与快捷键说明中的**用户可见文案**集中在 [`src/lib/pluginManagerEntryCopy.ts`](src/lib/pluginManagerEntryCopy.ts)，避免多处硬编码漂移（设置里需 `v-html` 的段落仅输出静态 HTML，勿拼接用户输入）。

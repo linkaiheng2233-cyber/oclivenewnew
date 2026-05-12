@@ -50,7 +50,7 @@
 | `onTrue` | `array` | 否 | 谓词为真时递归执行的子步骤列表（默认可空数组）。 |
 | `onFalse` | `array` | 否 | 谓词为假时递归执行的子步骤列表。 |
 
-子步骤的结构与根 `steps` 元素相同，可继续嵌套 `branch`（嵌套深度上限见实现常量 `MAX_PIPELINE_BRANCH_DEPTH`）。整棵树节点总数上限见 `MAX_PIPELINE_TREE_NODES`。
+子步骤的结构与根 `steps` 元素相同，可继续嵌套 `branch` 与 `parallel`（**同一控制流栈**上的嵌套深度上限为常量 **`MAX_PIPELINE_CONTROL_FLOW_NEST_DEPTH`（当前 3）**：根线性步骤为第 0 层，每进入一层子 `branch` 或子 `parallel` 深度 +1）。整棵树节点总数上限见 `MAX_PIPELINE_TREE_NODES`（当前 **200**）。
 
 ### 谓词 `predicate`（`type` + 字段）
 
@@ -70,8 +70,8 @@ JSON 使用 **`type` 判别字段**（camelCase），与 `PipelinePredicate` 一
 **硬限制（加载期拒绝）：**
 
 - 任一 arm 的子树中 **不得** 出现 `branch`（避免在并行臂内做条件分裂；后续版本可放宽）。
-- 任一 arm 的每个**线性叶子** `action` 必须为 **`READ_ONLY`**（见 `pipeline_actions::ACTION_IO_TYPES`）。出现 **`WRITE`** 原子时返回 `ParallelContainsWrite`。
-- 允许 **嵌套** `parallel`（嵌套 arm 仍须满足上述只读约束）。
+- 任一 arm 的每个**线性叶子** `action` 必须为 **`READ_ONLY`**（见 `pipeline_actions::ACTION_IO_TYPES`）。出现 **`WRITE`** 原子时返回 **`[PIPELINE_PARALLEL_INVALID]`**（变体 `ParallelContainsWrite`）。
+- 允许 **嵌套** `parallel`（嵌套 arm 仍须满足上述只读约束；嵌套深度计入与 `branch` 相同的 **`MAX_PIPELINE_CONTROL_FLOW_NEST_DEPTH`**）。
 
 **失败语义**：`try_join_all` 中任一 arm 返回 `Err` 时，整段 `parallel` 视为失败，并遵循蓝图根级 `onFailure`（`HALT` / `DEGRADE`）。
 
@@ -117,7 +117,25 @@ JSON 使用 **`type` 判别字段**（camelCase），与 `PipelinePredicate` 一
 | `memory_retrieve_long_term` | READ_ONLY | 占位：长期记忆检索。 |
 | `assemble_prompt` | READ_ONLY | 占位：Prompt 组装（真实组装仍在共景路径）。 |
 | `generate_response` | WRITE | 与 `run_agent` 等价，便于蓝图命名。 |
-| `expert_empathy_touch` | WRITE | 占位：高共情专家触发器（审计日志，可接专家图）。 |
+| `expert_empathy_touch` | WRITE | 占位：高共情专家触发器（`trace` 级日志，可接专家图）。 |
+
+## 校验与 `[PIPELINE_*]` 错误前缀
+
+加载失败时 `BlueprintError::to_string()` 均带以下前缀之一（便于日志 grep）；完整语义见 `pipeline_loader::BlueprintError`。
+
+| 前缀 | 含义（概要） |
+|------|----------------|
+| `[PIPELINE_LOAD_IO]` | 读蓝图文件失败 |
+| `[PIPELINE_PARSE_ERROR]` | JSON 反序列化失败 |
+| `[PIPELINE_SCHEMA_VERSION]` | 不支持的 `schemaVersion` |
+| `[PIPELINE_VALIDATION_ERROR]` | 空名、空根步骤、根步数过多、`onFailure` 非法、线性缺 `action`、`branch`/`parallel` 互斥等 |
+| `[PIPELINE_ACTION_NOT_ALLOWED]` | 原子不在白名单 |
+| `[PIPELINE_MAX_NESTING_DEPTH]` | `branch` / `parallel` 嵌套超过 `MAX_PIPELINE_CONTROL_FLOW_NEST_DEPTH` |
+| `[PIPELINE_TOO_MANY_NODES]` | 树节点数超过 `MAX_PIPELINE_TREE_NODES` |
+| `[PIPELINE_PARALLEL_INVALID]` | 并行臂内含 `branch` 或 `WRITE` 原子 |
+| `[PIPELINE_DUPLICATE_STEP_ID]` | 非空 `id` 在整棵树中重复 |
+
+v0 蓝图为树形 JSON，无跨步 `goto`；无限展开由嵌套深度、节点总数与唯一 `id` 约束共同防止。
 
 ## 官方蓝图示例（`examples/blueprints/`）
 

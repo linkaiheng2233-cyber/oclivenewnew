@@ -48,7 +48,41 @@
 
 ## `oclive_kernel_runtime` 消息体括号前缀（便于 grep）
 
-部分 `INVALID_PARAMETER` / `DatabaseError` 文案内嵌 `[PREFIX]`，与上表 **code 字段** 无关，仅用于日志与排障。常见前缀包括：`[PLUGIN_INSTALL_*]`、`[PLUGIN_MANIFEST]`、`[PLUGIN_INDEX_*]`、`[PLUGIN_REVIEWS_*]`、`[ROLE_INDEX_*]`、`[ROLE_PACK_*]`、`[MCP_*]`、`[PLUGIN_STATE_PERSIST]`、`[ROLE_DELETE_JOIN]` 等；完整列表以源码为准。
+部分 `INVALID_PARAMETER` / `DatabaseError` 文案内嵌 `[PREFIX]`，与上表 **code 字段** 无关，仅用于日志与排障。常见前缀包括：`[PLUGIN_INSTALL_*]`、`[PLUGIN_MANIFEST]`、`[PLUGIN_INDEX_*]`、`[PLUGIN_REVIEWS_*]`、`[ROLE_INDEX_*]`、`[ROLE_PACK_*]`、`[MCP_*]`、`[PLUGIN_STATE_PERSIST]`、`[ROLE_DELETE_JOIN]`、`[PIPELINE_*]`（角色 `pipeline.ocblueprint` 加载，见下节）等；完整列表以源码为准。
+
+## Pipeline 蓝图（`pipeline.ocblueprint` / `BlueprintError`）
+
+内核加载 `{roles_dir}/{role_id}/pipeline.ocblueprint` 失败时，`TurnPipeline.load_error` 与日志使用 **`BlueprintError::to_string()`**，前缀与 `creator-docs/kernel/PIPELINE_SCHEMA.md` 一致：
+
+| 前缀 | 含义（概要） |
+|------|----------------|
+| `[PIPELINE_LOAD_IO]` | 读蓝图文件失败 |
+| `[PIPELINE_PARSE_ERROR]` | JSON 反序列化失败 |
+| `[PIPELINE_SCHEMA_VERSION]` | 不支持的 `schemaVersion` |
+| `[PIPELINE_VALIDATION_ERROR]` | 空名、空根步骤、根步数过多、`onFailure` 非法、线性缺 `action`、`branch`/`parallel` 互斥等 |
+| `[PIPELINE_ACTION_NOT_ALLOWED]` | 原子不在白名单 |
+| `[PIPELINE_MAX_NESTING_DEPTH]` | `branch` / `parallel` 嵌套过深 |
+| `[PIPELINE_TOO_MANY_NODES]` | 树节点数超限 |
+| `[PIPELINE_PARALLEL_INVALID]` | 并行臂内含 `branch` 或 `WRITE` 原子 |
+| `[PIPELINE_DUPLICATE_STEP_ID]` | 非空 `id` 在整棵树中重复 |
+
+实现与枚举定义：`crates/oclive_kernel_runtime/src/domain/chat_engine/pipeline_loader.rs`。
+
+## Pipeline 蓝图（`pipeline.ocblueprint` / `BlueprintError`）
+
+以下前缀出现在 **`oclive_kernel_runtime::domain::chat_engine::pipeline_loader::BlueprintError`** 的 `Display` 输出中（`TurnContext.pipeline.load_error` 等）；**不属于** `AppError::code()` 的 Common 码，但契约上统一为 **`[CODE]`** 便于检索。
+
+| Code | Meaning |
+|------|---------|
+| `PIPELINE_LOAD_IO` | 读取 `pipeline.ocblueprint` 失败 |
+| `PIPELINE_PARSE_ERROR` | JSON 解析失败 |
+| `PIPELINE_SCHEMA_VERSION` | 不支持的 `schemaVersion` |
+| `PIPELINE_VALIDATION_ERROR` | 名称 / 根步数 / 结构互斥 / 线性缺 `action` / `onFailure` 非法等 |
+| `PIPELINE_ACTION_NOT_ALLOWED` | 原子不在白名单 |
+| `PIPELINE_MAX_NESTING_DEPTH` | `branch` / `parallel` 嵌套过深 |
+| `PIPELINE_TOO_MANY_NODES` | 蓝图树节点数超限 |
+| `PIPELINE_PARALLEL_INVALID` | 并行臂含 `branch` 或 `WRITE` 原子 |
+| `PIPELINE_DUPLICATE_STEP_ID` | 非空 `id` 在整棵树中重复 |
 
 ## Alerting Baseline
 
