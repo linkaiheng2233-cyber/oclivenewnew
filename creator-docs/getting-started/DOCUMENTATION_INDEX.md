@@ -48,6 +48,7 @@ Creator and plugin docs live under the repo root `creator-docs/` (grouped by top
 | **极致轻量化（runtime `Cargo` 特性、OOCP、`invoke` 分组、依赖/`http_api` 拟定）** | **[../kernel/LIGHTWEIGHT_PROFILE.md](../kernel/LIGHTWEIGHT_PROFILE.md)**（与 [KERNEL_BOUNDARY.md](../kernel/KERNEL_BOUNDARY.md) §5.1 互参）；设施 `classic` 门控审计 **[../kernel/FACILITY_CLASSIC_ALGORITHMS_AUDIT.md](../kernel/FACILITY_CLASSIC_ALGORITHMS_AUDIT.md)** |
 | **内核工程质量与生态路线（P0–P2，测试/SDK/crates.io）** | **[../../handoff/ENGINEERING_ROADMAP_KERNEL_DEEPSEEK.md](../../handoff/ENGINEERING_ROADMAP_KERNEL_DEEPSEEK.md)** |
 | **内核 SDK（KernelAppState、process_message、kernel_server）** | **[../kernel/KERNEL_SDK.md](../kernel/KERNEL_SDK.md)** |
+| **可编程对话流水线 · 蓝图 `pipeline.ocblueprint`（JSON Schema、白名单原子、`onFailure`）** | **[../kernel/PIPELINE_SCHEMA.md](../kernel/PIPELINE_SCHEMA.md)** · 官方示例 **[../../examples/blueprints/simple_companion.ocblueprint](../../examples/blueprints/simple_companion.ocblueprint)** |
 | **如何接入内核（内嵌 / HTTP / OOCP 三模式、环境变量、排障）** | **[INTEGRATION_GUIDE.md](INTEGRATION_GUIDE.md)** |
 | **Python OOCP 客户端 SDK（`/health`、`/chat`、Bearer）** | **[../../sdk/python/README.md](../../sdk/python/README.md)** |
 | **事件引擎剥离状态（builtin / directory 示例）** | **[../kernel/EVENT_ENGINE_EXTRACTION_STATUS.md](../kernel/EVENT_ENGINE_EXTRACTION_STATUS.md)** |

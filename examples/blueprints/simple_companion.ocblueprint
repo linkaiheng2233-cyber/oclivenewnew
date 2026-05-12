@@ -1,0 +1,16 @@
+{
+  "schemaVersion": "1.0",
+  "name": "simple_companion",
+  "description": "与 process_message 默认入口序列一致：init_turn → … → run_agent。概念上对应「准备上下文 → 生成回复」；用户情绪分析等在 Agent 早退分支内继续执行。",
+  "onFailure": "HALT",
+  "steps": [
+    { "action": "init_turn", "id": "gate", "description": "清除本轮取消标志" },
+    { "action": "ensure_role_runtime", "id": "db_ns", "description": "确保会话命名空间运行时表" },
+    { "action": "load_role", "id": "role", "description": "加载角色 Arc" },
+    { "action": "seed_interaction_mode", "id": "mode", "description": "播种交互模式" },
+    { "action": "log_effective_plugin_backends", "id": "log_backends", "description": "记录有效 plugin_backends" },
+    { "action": "resolve_plugins", "id": "plugins", "description": "解析插件宿主" },
+    { "action": "resolve_main_llm_model", "id": "llm_model", "description": "主对话模型名" },
+    { "action": "run_agent", "id": "generate", "description": "调用 Agent / LLM 生成" }
+  ]
+}
