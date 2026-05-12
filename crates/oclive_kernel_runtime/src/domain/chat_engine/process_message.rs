@@ -5,6 +5,7 @@
 use super::co_present;
 use super::emotion_to_dto;
 use super::pipeline_actions;
+use super::pipeline_interpreter;
 use super::pipeline_loader;
 use super::turn_context::TurnContext;
 use crate::domain::chat_llm_fallback::{fallback_reply_for_llm_failure, FallbackReplyContext};
@@ -146,14 +147,20 @@ pub async fn process_message(
         }
     }
 
-    pipeline_actions::init_turn(state, &mut ctx, req).await?;
-    pipeline_actions::ensure_role_runtime(state, &mut ctx, req).await?;
-    pipeline_actions::load_role(state, &mut ctx, req).await?;
-    pipeline_actions::seed_interaction_mode(state, &mut ctx, req).await?;
-    pipeline_actions::log_effective_plugin_backends(state, &mut ctx, req).await?;
-    pipeline_actions::resolve_plugins(state, &mut ctx, req).await?;
-    pipeline_actions::resolve_main_llm_model(state, &mut ctx, req).await?;
-    pipeline_actions::run_agent(state, &mut ctx, req).await?;
+    if let Some(bp) = ctx.pipeline.blueprint.clone() {
+        if let Err(e) =
+            pipeline_interpreter::execute_pipeline(state, &mut ctx, req, &bp).await
+        {
+            tracing::warn!(
+                target: "oclive_pipeline",
+                error = %e,
+                "entry pipeline execution failed; falling back to default entry sequence"
+            );
+            pipeline_interpreter::run_default_entry_pipeline(state, &mut ctx, req).await?;
+        }
+    } else {
+        pipeline_interpreter::run_default_entry_pipeline(state, &mut ctx, req).await?;
+    }
 
     let agent_out = ctx
         .agent
