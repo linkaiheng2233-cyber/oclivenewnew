@@ -1,0 +1,27 @@
+{
+  "schemaVersion": "1.0",
+  "name": "deep_empathy",
+  "description": "在入口段完成插件与模型解析后分析用户情绪；若 sadness > 0.7，先走专家共情占位钩子再生成，否则直接生成。",
+  "onFailure": "HALT",
+  "steps": [
+    { "action": "init_turn", "id": "gate" },
+    { "action": "ensure_role_runtime" },
+    { "action": "load_role" },
+    { "action": "seed_interaction_mode" },
+    { "action": "log_effective_plugin_backends" },
+    { "action": "resolve_plugins" },
+    { "action": "resolve_main_llm_model" },
+    { "action": "analyze_emotion_user", "id": "emotion_in" },
+    {
+      "id": "empathy_branch",
+      "branch": {
+        "predicate": { "type": "emotionAbove", "emotion": "sadness", "min": 0.7 },
+        "onTrue": [
+          { "action": "expert_empathy_touch", "id": "expert_hook" },
+          { "action": "generate_response", "id": "reply" }
+        ],
+        "onFalse": [{ "action": "generate_response", "id": "reply_plain" }]
+      }
+    }
+  ]
+}

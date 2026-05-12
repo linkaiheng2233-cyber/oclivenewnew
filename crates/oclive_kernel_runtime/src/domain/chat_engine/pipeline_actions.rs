@@ -40,6 +40,7 @@ pub static ACTION_IO_TYPES: Lazy<HashMap<&'static str, ActionIOType>> = Lazy::ne
         ("memory_retrieve_long_term", ActionIOType::ReadOnly),
         ("assemble_prompt", ActionIOType::ReadOnly),
         ("generate_response", ActionIOType::Write),
+        ("expert_empathy_touch", ActionIOType::Write),
     ])
 });
 
@@ -291,6 +292,20 @@ pub async fn assemble_prompt(
     _req: &SendMessageRequest,
 ) -> Result<()> {
     tracing::debug!(target: "oclive_pipeline", action = "assemble_prompt", "noop read-only");
+    Ok(())
+}
+
+/// 占位：高共情路径上「专家模型 / 共情触发器」钩子（**WRITE**；当前仅审计日志，后续可接专家图）。
+pub async fn expert_empathy_touch(
+    _state: &KernelAppState,
+    _ctx: &mut TurnContext,
+    _req: &SendMessageRequest,
+) -> Result<()> {
+    tracing::info!(
+        target: "oclive_pipeline",
+        action = "expert_empathy_touch",
+        "expert empathy trigger (placeholder)"
+    );
     Ok(())
 }
 

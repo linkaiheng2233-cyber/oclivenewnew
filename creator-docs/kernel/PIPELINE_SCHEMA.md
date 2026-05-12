@@ -61,6 +61,7 @@ JSON 使用 **`type` 判别字段**（camelCase），与 `PipelinePredicate` 一
 | `agentHandled` | 无 | `ctx.flags.agent_handled == true`（通常在 `run_agent` 之后才有意义）。 |
 | `sceneIdEquals` | `sceneId`（string） | 当前 `effective_scene_id` 与该字符串完全相等。 |
 | `emotionDominant` | `emotion`（string） | 用户七维结果中 **数值最大的一维** 名称与该字符串匹配（忽略大小写），如 `sadness`；亦可与离散主导标签的蛇形名比较（如 `sad`）。缺少情绪结果时视为假。 |
+| `emotionAbove` | `emotion`（string）、`min`（number） | 指定七维维度（如 `sadness`）的数值 **严格大于** `min`；无 `analyze_emotion_user` 结果时为假。 |
 
 ### 受限并行 `parallel`
 
@@ -95,23 +96,41 @@ JSON 使用 **`type` 判别字段**（camelCase），与 `PipelinePredicate` 一
 
 `process_message` 在加载蓝图 **之前** 已执行 `validate_scene`（含场景列表与 `effective_scene_id` 注入）。因此 **`pipeline.ocblueprint` 的 `steps` 不应再包含 `validate_scene`**，否则会在同一轮内重复校验。加载器会 **拒绝** 含该 `action` 的蓝图文件并回退到默认序列。
 
-## 当前允许的原子 `action` 列表（v1.0 白名单）
+## 已知原子 `action` 与 I/O 类型
 
-与 `crates/oclive_kernel_runtime/src/domain/chat_engine/pipeline_loader.rs` 中 `ALLOWED_PIPELINE_ACTIONS` 保持一致（不含 `validate_scene` 于可执行蓝图内；该符号仍保留在实现内部供其它路径使用）：
+与 `pipeline_actions::ACTION_IO_TYPES` 及 `ALLOWED_PIPELINE_BLUEPRINT_ACTIONS` 同步（扩展时须同时改代码与下表）。
 
-- `init_turn`
-- `ensure_role_runtime`
-- `load_role`
-- `seed_interaction_mode`
-- `log_effective_plugin_backends`
-- `resolve_plugins`
-- `resolve_main_llm_model`
-- `run_agent`
-- `set_user_presence_scene`
-- `load_presence_routing`
-- `analyze_emotion_user`
+| `action` | I/O | 说明 |
+|----------|-----|------|
+| `init_turn` | WRITE | 清除本轮生成取消标志。 |
+| `ensure_role_runtime` | WRITE | 确保会话命名空间 DB 表。 |
+| `load_role` | WRITE | 加载角色 `Arc`。 |
+| `seed_interaction_mode` | WRITE | 播种交互模式。 |
+| `log_effective_plugin_backends` | READ_ONLY | 调试日志（不写 DB）。 |
+| `resolve_plugins` | WRITE | 解析 `ResolvedRolePlugins` 写入 `ctx`。 |
+| `resolve_main_llm_model` | WRITE | 解析主对话模型名写入 `ctx`。 |
+| `run_agent` | WRITE | 调用 Agent / LLM。 |
+| `set_user_presence_scene` | WRITE | 写用户 presence 场景。 |
+| `load_presence_routing` | WRITE | 读 DB 并写 `ctx.presence` / `preflight_ms`。 |
+| `analyze_emotion_user` | WRITE | 用户句情绪分析写入 `ctx`。 |
+| `memory_retrieve_short_term` | READ_ONLY | 占位：短期记忆检索（示例 / 并行烟测）。 |
+| `memory_retrieve_long_term` | READ_ONLY | 占位：长期记忆检索。 |
+| `assemble_prompt` | READ_ONLY | 占位：Prompt 组装（真实组装仍在共景路径）。 |
+| `generate_response` | WRITE | 与 `run_agent` 等价，便于蓝图命名。 |
+| `expert_empathy_touch` | WRITE | 占位：高共情专家触发器（审计日志，可接专家图）。 |
 
-## 最小示例（片段）
+## 官方蓝图示例（`examples/blueprints/`）
+
+| 文件 | 说明 |
+|------|------|
+| [`simple_companion.ocblueprint`](../../examples/blueprints/simple_companion.ocblueprint) | 与默认入口八步一致。 |
+| [`minimal_chat.ocblueprint`](../../examples/blueprints/minimal_chat.ocblueprint) | 前置 + `assemble_prompt` + `generate_response`。 |
+| [`memory_heavy.ocblueprint`](../../examples/blueprints/memory_heavy.ocblueprint) | 只读并行「双路记忆检索」占位 + 组装 + 生成。 |
+| [`deep_empathy.ocblueprint`](../../examples/blueprints/deep_empathy.ocblueprint) | `emotionAbove`（sadness>0.7）分支 + `expert_empathy_touch`。 |
+
+部署到角色包时请将所选文件 **复制为** 角色目录下的 `pipeline.ocblueprint`。
+
+## 最小示例（线性入口片段）
 
 ```json
 {
@@ -157,4 +176,4 @@ JSON 使用 **`type` 判别字段**（camelCase），与 `PipelinePredicate` 一
 }
 ```
 
-完整官方示例见仓库 **`examples/blueprints/simple_companion.ocblueprint`**。
+完整官方示例见仓库 **`examples/blueprints/simple_companion.ocblueprint`** 及上表「官方蓝图示例」。

@@ -36,6 +36,7 @@ pub const ALLOWED_PIPELINE_BLUEPRINT_ACTIONS: &[&str] = &[
     "memory_retrieve_long_term",
     "assemble_prompt",
     "generate_response",
+    "expert_empathy_touch",
 ];
 
 /// 某步失败时的策略（与 JSON `onFailure` 对应）。
@@ -468,6 +469,22 @@ mod tests {
         }"#;
         let e = parse_and_validate_blueprint_bytes(j.as_bytes()).unwrap_err();
         assert!(matches!(e, BlueprintError::ParallelContainsBranch(_)));
+    }
+
+    #[test]
+    fn parses_official_example_blueprints() {
+        for name in [
+            "simple_companion.ocblueprint",
+            "minimal_chat.ocblueprint",
+            "memory_heavy.ocblueprint",
+            "deep_empathy.ocblueprint",
+        ] {
+            let p = PathBuf::from(env!("CARGO_MANIFEST_DIR"))
+                .join("../../examples/blueprints/")
+                .join(name);
+            let bytes = std::fs::read(&p).unwrap_or_else(|_| panic!("read {name}"));
+            parse_and_validate_blueprint_bytes(&bytes).unwrap_or_else(|e| panic!("{name}: {e}"));
+        }
     }
 
     #[test]

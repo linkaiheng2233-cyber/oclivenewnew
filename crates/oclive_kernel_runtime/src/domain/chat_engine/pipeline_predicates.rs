@@ -7,7 +7,7 @@ use oclive_kernel_core::models::EmotionResult;
 use serde::Deserialize;
 
 /// JSON `branch.predicate` 与运行时求值共用模型。
-#[derive(Debug, Clone, PartialEq, Eq, Deserialize)]
+#[derive(Debug, Clone, PartialEq, Deserialize)]
 #[serde(tag = "type", rename_all = "camelCase")]
 pub enum PipelinePredicate {
     /// `ctx.flags.agent_handled == Some(true)`（通常在 `run_agent` 之后才有意义）。
@@ -21,6 +21,12 @@ pub enum PipelinePredicate {
     EmotionDominant {
         #[serde(rename = "emotion")]
         emotion: String,
+    },
+    /// 指定维度（如 `sadness`）的数值 **严格大于** `min`（七维 `EmotionResult`）；无分析结果时为假。
+    EmotionAbove {
+        #[serde(rename = "emotion")]
+        emotion: String,
+        min: f64,
     },
 }
 
@@ -45,7 +51,30 @@ impl PipelinePredicate {
                 dominant_dimension_name(er).eq_ignore_ascii_case(want)
                     || emotion_dominant_matches_discrete_label(er, want)
             }
+            PipelinePredicate::EmotionAbove { emotion, min } => {
+                let Some(er) = ctx.emotion.user_emotion.as_ref() else {
+                    return false;
+                };
+                let key = emotion.trim();
+                if key.is_empty() {
+                    return false;
+                }
+                emotion_dimension_value(er, key).is_some_and(|v| v > *min)
+            }
         }
+    }
+}
+
+fn emotion_dimension_value(er: &EmotionResult, name: &str) -> Option<f64> {
+    match name.trim().to_ascii_lowercase().as_str() {
+        "joy" => Some(er.joy),
+        "sadness" => Some(er.sadness),
+        "anger" => Some(er.anger),
+        "fear" => Some(er.fear),
+        "surprise" => Some(er.surprise),
+        "disgust" => Some(er.disgust),
+        "neutral" => Some(er.neutral),
+        _ => None,
     }
 }
 
@@ -96,6 +125,7 @@ pub fn emotion_dominant_matches_discrete_label(er: &EmotionResult, emotion: &str
 #[cfg(test)]
 mod tests {
     use super::*;
+    use crate::domain::chat_engine::turn_context::TurnContext;
 
     #[test]
     fn agent_handled_false_when_none() {
@@ -135,6 +165,30 @@ mod tests {
         .eval(&ctx));
         assert!(!PipelinePredicate::EmotionDominant {
             emotion: "joy".into()
+        }
+        .eval(&ctx));
+    }
+
+    #[test]
+    fn emotion_above_threshold() {
+        let mut ctx = TurnContext::new();
+        ctx.emotion.user_emotion = Some(EmotionResult {
+            joy: 0.0,
+            sadness: 0.71,
+            anger: 0.0,
+            fear: 0.0,
+            surprise: 0.0,
+            disgust: 0.0,
+            neutral: 0.0,
+        });
+        assert!(PipelinePredicate::EmotionAbove {
+            emotion: "sadness".into(),
+            min: 0.7,
+        }
+        .eval(&ctx));
+        assert!(!PipelinePredicate::EmotionAbove {
+            emotion: "sadness".into(),
+            min: 0.72,
         }
         .eval(&ctx));
     }

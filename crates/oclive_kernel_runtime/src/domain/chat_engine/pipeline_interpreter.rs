@@ -181,6 +181,7 @@ async fn dispatch_inner(
         }
         "assemble_prompt" => pipeline_actions::assemble_prompt(state, ctx, req).await,
         "generate_response" => pipeline_actions::generate_response(state, ctx, req).await,
+        "expert_empathy_touch" => pipeline_actions::expert_empathy_touch(state, ctx, req).await,
         _ => Err(AppError::InvalidParameter(format!(
             "unknown pipeline action (interpreter): {action}"
         ))),
