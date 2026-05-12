@@ -49,6 +49,7 @@ semver = "1.0"
 notify = "6"
 tauri-plugin-deep-link = { version = "0.1.2", optional = true }
 sysinfo = { version = "0.32", default-features = false, features = ["system"] }
+reqwest = { workspace = true }
 
 [dev-dependencies]
 axum = { version = "0.7" }

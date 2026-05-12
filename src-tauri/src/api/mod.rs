@@ -7,6 +7,7 @@ pub mod error;
 pub mod event;
 pub mod expert_models;
 pub mod export;
+pub mod github_publish;
 pub mod host_cloud_llm;
 pub mod hotkeys;
 pub mod local_imports;

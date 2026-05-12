@@ -3117,6 +3117,7 @@ dependencies = [
  "oclive_validation",
  "once_cell",
  "parking_lot",
+ "reqwest",
  "semver",
  "serde",
  "serde_json",

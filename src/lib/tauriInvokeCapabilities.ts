@@ -41,6 +41,7 @@ const COMMAND_CAPABILITY: Readonly<
   expert_workflows_get: "expertModels",
   expert_workflows_save: "expertModels",
   expert_workflows_delete: "expertModels",
+  github_publish_oclexpert_recipe: "expertModels",
   ollama_models_health: "expertModels",
   ollama_models_list_names: "expertModels",
   ollama_models_delete: "expertModels",

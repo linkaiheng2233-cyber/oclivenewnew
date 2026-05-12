@@ -16,6 +16,7 @@ import { useExpertModelsStore } from "../../stores/expertModelsStore";
 import { useRoleStore } from "../../stores/roleStore";
 const ExpertModelsCanvas = defineAsyncComponent(() => import("./ExpertModelsCanvas.vue"));
 import ExpertCloudEventSection from "./ExpertCloudEventSection.vue";
+import OclexpertPublishWizard from "./OclexpertPublishWizard.vue";
 import type {
   ExpertGraph,
   ExpertModelsApplyResult,
@@ -300,10 +301,8 @@ const oclexpertAuthorDraft = ref("");
 const oclexpertImportPreview = ref<OclexpertImportPreview | null>(null);
 /** Last successful .oclexpert save path (for “publish to market” helper). */
 const lastExportedOclexpertPath = ref("");
+const publishWizardOpen = ref(false);
 
-const OCLEXPERT_MARKET_ISSUE_NEW =
-  "https://github.com/linkaiheng2233-cyber/awesome-oclive-plugins/issues/new?labels=oclexpert&title=" +
-  encodeURIComponent("[oclexpert] ");
 const OCLEXPERT_ROLES_INDEX = "https://github.com/linkaiheng2233-cyber/awesome-oclive-roles";
 
 watch(
@@ -908,23 +907,10 @@ async function onImportWorkflowJson(): Promise<void> {
   }
 }
 
-function openOclexpertPublishIssue(): void {
-  const name = workflowNameDraft.value.trim();
-  const bodyLines = [
-    String(t("expertModels.oclexpert.publishMarketHint")),
-    "",
-    `Recipe name: ${name || "(none)"}`,
-    lastExportedOclexpertPath.value
-      ? `Local file: ${lastExportedOclexpertPath.value}`
-      : "Local file: (export again if unknown)",
-    "",
-    "Attach your `.oclexpert` below.",
-  ];
-  const u =
-    OCLEXPERT_MARKET_ISSUE_NEW +
-    "&body=" +
-    encodeURIComponent(bodyLines.join("\n"));
-  void openExternal(u);
+function onPublishWizardSyncDrafts(p: { name: string; description: string; author: string }): void {
+  workflowNameDraft.value = p.name;
+  oclexpertDescriptionDraft.value = p.description;
+  oclexpertAuthorDraft.value = p.author;
 }
 
 function openCommunityRecipesIndex(): void {
@@ -1095,13 +1081,13 @@ async function onImportOclexpert(): Promise<void> {
           <button class="em-btn secondary" type="button" :disabled="saving" @click="onImportOclexpert">{{ t("expertModels.oclexpert.import") }}</button>
         </div>
         <div class="em-wf-market">
-          <button type="button" class="em-btn secondary" @click="openOclexpertPublishIssue">
-            {{ t("expertModels.oclexpert.publishMarket") }}
+          <button type="button" class="em-btn secondary" @click="publishWizardOpen = true">
+            {{ t("expertModels.oclexpert.publishRecipe") }}
           </button>
           <button type="button" class="em-btn secondary" @click="openCommunityRecipesIndex">
             {{ t("expertModels.oclexpert.browseRecipes") }}
           </button>
-          <span class="em-muted em-wf-market-hint">{{ t("expertModels.oclexpert.publishMarketHint") }}</span>
+          <span class="em-muted em-wf-market-hint">{{ t("expertModels.oclexpert.publishRecipeShortHint") }}</span>
         </div>
         <p class="em-muted em-wf-hint">
           {{ t("expertModels.workflows.hint") }}
@@ -1917,6 +1903,18 @@ async function onImportOclexpert(): Promise<void> {
         {{ t("expertModels.footer.clearRoleDefault") }}
       </button>
     </div>
+
+    <OclexpertPublishWizard
+      v-model="publishWizardOpen"
+      :embedded="props.embedded"
+      :graph="store.draftGraph"
+      :prompt-style="store.draftPromptStyle ?? null"
+      :initial-name="workflowNameDraft"
+      :initial-description="oclexpertDescriptionDraft"
+      :initial-author="oclexpertAuthorDraft"
+      :last-export-path="lastExportedOclexpertPath"
+      @sync-drafts="onPublishWizardSyncDrafts"
+    />
 
     <Teleport to="body" :disabled="props.embedded">
       <div

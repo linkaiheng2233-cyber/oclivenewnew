@@ -26,3 +26,4 @@ crate::api::expert_models::expert_workflows_list
 crate::api::expert_models::expert_workflows_get
 crate::api::expert_models::expert_workflows_save
 crate::api::expert_models::expert_workflows_delete
+crate::api::github_publish::github_publish_oclexpert_recipe

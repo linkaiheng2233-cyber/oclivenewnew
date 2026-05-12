@@ -513,6 +513,34 @@ export async function expertModelsSetGgufRepoMeta(params: {
   });
 }
 
+/** Optional: publish recipe via GitHub API (gist + issue), server-side. */
+export interface GithubPublishOclexpertRecipeResponse {
+  gistUrl: string;
+  issueUrl: string;
+}
+
+export async function githubPublishOclexpertRecipe(params: {
+  token: string;
+  issueRepo: string;
+  title: string;
+  issueBodyIntro: string;
+  oclexpertFilename: string;
+  oclexpertContent: string;
+  gistDescription?: string | null;
+}): Promise<GithubPublishOclexpertRecipeResponse> {
+  return invokeWithFriendlyError<GithubPublishOclexpertRecipeResponse>("github_publish_oclexpert_recipe", {
+    req: {
+      token: params.token,
+      issueRepo: params.issueRepo,
+      title: params.title,
+      issueBodyIntro: params.issueBodyIntro,
+      oclexpertFilename: params.oclexpertFilename,
+      oclexpertContent: params.oclexpertContent,
+      gistDescription: params.gistDescription ?? null,
+    },
+  });
+}
+
 /** 本机是否出现 Ollama / llama.cpp 系进程（供前端轮询刷新模型列表）。 */
 export interface LocalLlmRuntimeProbeDto {
   ollamaProcess: boolean;
