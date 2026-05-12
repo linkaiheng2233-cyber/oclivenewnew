@@ -2407,6 +2407,10 @@ export const enUS = {
         "Contains a cloud model node: when enabled after apply, chat may use the host-configured cloud LLM.",
       previewConfirm: "Import and save to workflow library",
       previewCancel: "Cancel",
+      exportRequiredFields: "Fill workflow name, recipe description, and author before exporting .oclexpert.",
+      publishMarket: "Publish to community market (GitHub)",
+      publishMarketHint: "Opens a new issue page—attach the .oclexpert you just exported.",
+      browseRecipes: "Browse community personality recipe index",
       offerResetEffective:
         "This file could not be parsed. Reset the draft to the current effective expert graph so you can keep editing?",
     },

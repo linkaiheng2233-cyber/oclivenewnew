@@ -2313,6 +2313,10 @@ export const zhCN = {
       previewPrivacyCloud: "含云端模型节点：应用后若启用，对话可能走宿主已配置的云端 LLM。",
       previewConfirm: "导入并保存到工作流库",
       previewCancel: "取消",
+      exportRequiredFields: "请先填写工作流名称、配方描述与作者后再导出 .oclexpert。",
+      publishMarket: "发布到社区市场（GitHub）",
+      publishMarketHint: "在浏览器中打开新议题页，请附上刚导出的 .oclexpert 文件。",
+      browseRecipes: "浏览社区人格配方索引",
       offerResetEffective: "当前文件无法解析。是否将草稿重置为「当前生效」专家图以便继续编辑？",
     },
     emptyState: {

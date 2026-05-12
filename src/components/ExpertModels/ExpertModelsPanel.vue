@@ -3,6 +3,7 @@ import { computed, defineAsyncComponent, onMounted, ref, watch, withDefaults } f
 import { useI18n } from "vue-i18n";
 import { open, save } from "@tauri-apps/api/dialog";
 import { readTextFile, writeTextFile } from "@tauri-apps/api/fs";
+import { open as openExternal } from "@tauri-apps/api/shell";
 import { useAppToast } from "../../composables/useAppToast";
 import {
   buildOclexpertPayload,
@@ -297,6 +298,13 @@ function oclexpertImportPrivacySummary(graph: ExpertGraph): string {
 const oclexpertDescriptionDraft = ref("");
 const oclexpertAuthorDraft = ref("");
 const oclexpertImportPreview = ref<OclexpertImportPreview | null>(null);
+/** Last successful .oclexpert save path (for “publish to market” helper). */
+const lastExportedOclexpertPath = ref("");
+
+const OCLEXPERT_MARKET_ISSUE_NEW =
+  "https://github.com/linkaiheng2233-cyber/awesome-oclive-plugins/issues/new?labels=oclexpert&title=" +
+  encodeURIComponent("[oclexpert] ");
+const OCLEXPERT_ROLES_INDEX = "https://github.com/linkaiheng2233-cyber/awesome-oclive-roles";
 
 watch(
   () => roleStore.roleInfo?.author,
@@ -900,12 +908,42 @@ async function onImportWorkflowJson(): Promise<void> {
   }
 }
 
+function openOclexpertPublishIssue(): void {
+  const name = workflowNameDraft.value.trim();
+  const bodyLines = [
+    String(t("expertModels.oclexpert.publishMarketHint")),
+    "",
+    `Recipe name: ${name || "(none)"}`,
+    lastExportedOclexpertPath.value
+      ? `Local file: ${lastExportedOclexpertPath.value}`
+      : "Local file: (export again if unknown)",
+    "",
+    "Attach your `.oclexpert` below.",
+  ];
+  const u =
+    OCLEXPERT_MARKET_ISSUE_NEW +
+    "&body=" +
+    encodeURIComponent(bodyLines.join("\n"));
+  void openExternal(u);
+}
+
+function openCommunityRecipesIndex(): void {
+  void openExternal(OCLEXPERT_ROLES_INDEX);
+}
+
 async function onExportOclexpert(): Promise<void> {
-  const base = workflowNameDraft.value.trim() || "expert-graph";
+  const name = workflowNameDraft.value.trim();
+  const desc = oclexpertDescriptionDraft.value.trim();
+  const author = oclexpertAuthorDraft.value.trim();
+  if (!name || !desc || !author) {
+    showToast("warning", String(t("expertModels.oclexpert.exportRequiredFields")));
+    return;
+  }
+  const base = name;
   const payload = buildOclexpertPayload(store.draftGraph, store.draftPromptStyle, {
-    name: workflowNameDraft.value.trim() || undefined,
-    description: oclexpertDescriptionDraft.value.trim() || undefined,
-    author: oclexpertAuthorDraft.value.trim() || undefined,
+    name,
+    description: desc,
+    author,
   });
   const path = await save({
     defaultPath: `${base}.oclexpert`,
@@ -916,6 +954,7 @@ async function onExportOclexpert(): Promise<void> {
   });
   if (!path) return;
   await writeTextFile(path, JSON.stringify(payload, null, 2));
+  lastExportedOclexpertPath.value = path;
   showToast("success", String(t("expertModels.oclexpert.toastExported")));
 }
 
@@ -1054,6 +1093,15 @@ async function onImportOclexpert(): Promise<void> {
           <button class="em-btn secondary" type="button" :disabled="saving" @click="onImportWorkflowJson">{{ t("expertModels.workflows.importFile") }}</button>
           <button class="em-btn secondary" type="button" :disabled="saving" @click="onExportOclexpert">{{ t("expertModels.oclexpert.export") }}</button>
           <button class="em-btn secondary" type="button" :disabled="saving" @click="onImportOclexpert">{{ t("expertModels.oclexpert.import") }}</button>
+        </div>
+        <div class="em-wf-market">
+          <button type="button" class="em-btn secondary" @click="openOclexpertPublishIssue">
+            {{ t("expertModels.oclexpert.publishMarket") }}
+          </button>
+          <button type="button" class="em-btn secondary" @click="openCommunityRecipesIndex">
+            {{ t("expertModels.oclexpert.browseRecipes") }}
+          </button>
+          <span class="em-muted em-wf-market-hint">{{ t("expertModels.oclexpert.publishMarketHint") }}</span>
         </div>
         <p class="em-muted em-wf-hint">
           {{ t("expertModels.workflows.hint") }}
@@ -2003,6 +2051,19 @@ async function onImportOclexpert(): Promise<void> {
 .em-wf-actions .em-btn {
   width: 100%;
   text-align: center;
+}
+.em-wf-market {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  align-items: center;
+  margin-top: 10px;
+  padding-top: 10px;
+  border-top: 1px dashed var(--border-light);
+}
+.em-wf-market-hint {
+  flex: 1 1 200px;
+  font-size: 12px;
 }
 .em-wf-form .em-input,
 .em-wf-form .em-text {
