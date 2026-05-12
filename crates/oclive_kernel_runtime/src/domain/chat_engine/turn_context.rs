@@ -4,11 +4,13 @@
 //! - 不包含 `KernelAppState`：由各原子操作以参数传入。
 //! - 首版字段多为 `Option`，由原子操作按顺序填充。
 
+use super::pipeline_loader::PipelineBlueprint;
 use crate::domain::agent::AgentOutput;
 use crate::domain::emotion_analyzer::EmotionResult;
 use crate::domain::plugin_host::ResolvedRolePlugins;
 use crate::models::dto::SendMessageRequest;
 use crate::models::Role;
+use std::path::PathBuf;
 use std::sync::Arc;
 use std::time::Instant;
 
@@ -84,6 +86,14 @@ pub struct TurnTrace {
     pub preflight_ms: Option<u64>,
 }
 
+/// 本回合可选的 `pipeline.ocblueprint` 加载结果（v0）。
+#[derive(Default, Clone)]
+pub struct TurnPipeline {
+    pub blueprint: Option<PipelineBlueprint>,
+    pub loaded_from: Option<PathBuf>,
+    pub load_error: Option<String>,
+}
+
 /// 单轮对话执行上下文（v0：仅承载 `process_message` 首段与 presence 路由所需状态）。
 #[derive(Default)]
 pub struct TurnContext {
@@ -98,6 +108,7 @@ pub struct TurnContext {
     pub presence: TurnPresence,
     pub flags: TurnFlags,
     pub trace: TurnTrace,
+    pub pipeline: TurnPipeline,
 }
 
 impl TurnContext {

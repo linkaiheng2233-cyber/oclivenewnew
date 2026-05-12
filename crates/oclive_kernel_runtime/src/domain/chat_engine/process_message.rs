@@ -5,6 +5,7 @@
 use super::co_present;
 use super::emotion_to_dto;
 use super::pipeline_actions;
+use super::pipeline_loader;
 use super::turn_context::TurnContext;
 use crate::domain::chat_llm_fallback::{fallback_reply_for_llm_failure, FallbackReplyContext};
 use crate::domain::chat_turn::{relation_favor_for_key, weight_memories_for_scene};
@@ -118,6 +119,32 @@ pub async fn process_message(
         scene_id,
         srid
     );
+
+    let blueprint_path =
+        pipeline_loader::blueprint_path_for_role(state.storage.roles_dir(), mrid.as_str());
+    ctx.pipeline.loaded_from = Some(blueprint_path.clone());
+    match pipeline_loader::load_blueprint_from_path(&blueprint_path) {
+        Ok(Some(bp)) => {
+            let nm = bp.name.clone();
+            ctx.pipeline.blueprint = Some(bp);
+            tracing::info!(
+                target: "oclive_pipeline",
+                path = %blueprint_path.display(),
+                name = %nm,
+                "pipeline blueprint loaded"
+            );
+        }
+        Ok(None) => {}
+        Err(e) => {
+            ctx.pipeline.load_error = Some(e.to_string());
+            tracing::warn!(
+                target: "oclive_pipeline",
+                path = %blueprint_path.display(),
+                err = %e,
+                "pipeline blueprint skipped"
+            );
+        }
+    }
 
     pipeline_actions::init_turn(state, &mut ctx, req).await?;
     pipeline_actions::ensure_role_runtime(state, &mut ctx, req).await?;
