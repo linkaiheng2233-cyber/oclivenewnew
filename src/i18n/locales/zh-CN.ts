@@ -2438,6 +2438,18 @@ export const zhCN = {
       canvasHint: "提示：画布会把节点位置与连线写入专家图 ExpertGraph（用于 M2 编译）。",
     },
     canvas: {
+      validateCompile: "验证并编译",
+      validateRunning: "校验中…",
+      validateOk: "编译检查通过（与「应用到当前会话」前相同的内核校验）。",
+      validateFailedEmpty: "编译失败（无附加节点定位信息）。",
+      issuesTitle: "问题与警告",
+      issuesHint: "点击「验证并编译」以对照本机 GGUF/LoRA 路径运行内核 dry-run。",
+      loraStrengthPort: "强度（写入 ExpertGraph）",
+      nodeMeta: {
+        cloudHostDefault: "（宿主默认模型）",
+        eventKw: "关键词：{kw}",
+        promptStyle: "PromptStyle 覆盖",
+      },
       actions: {
         addBase: "+ BaseModel",
         addLora: "+ LoRA",

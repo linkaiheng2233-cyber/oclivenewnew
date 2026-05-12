@@ -23,6 +23,7 @@ const COMMAND_CAPABILITY: Readonly<
   expert_models_set_role_default: "expertModels",
   expert_models_clear_role_default: "expertModels",
   expert_models_apply_to_session: "expertModels",
+  expert_models_validate_graph: "expertModels",
   expert_models_list_local_base_models: "expertModels",
   expert_models_list_local_loras: "expertModels",
   expert_models_import_base_gguf: "expertModels",

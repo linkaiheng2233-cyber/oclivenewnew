@@ -2567,6 +2567,18 @@ export const enUS = {
         "Tip: canvas writes node positions and edges into ExpertGraph (used for M2 compilation).",
     },
     canvas: {
+      validateCompile: "Validate & compile",
+      validateRunning: "Validating…",
+      validateOk: "Compile check passed (same kernel validation as before “Apply to session”).",
+      validateFailedEmpty: "Compile failed (no node hints returned).",
+      issuesTitle: "Issues & warnings",
+      issuesHint: "Run “Validate & compile” to dry-run against local GGUF/LoRA paths.",
+      loraStrengthPort: "Strength (writes ExpertGraph)",
+      nodeMeta: {
+        cloudHostDefault: "(host default model)",
+        eventKw: "Keyword: {kw}",
+        promptStyle: "PromptStyle override",
+      },
       actions: {
         addBase: "+ BaseModel",
         addLora: "+ LoRA",

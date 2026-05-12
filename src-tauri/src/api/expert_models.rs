@@ -13,7 +13,8 @@ use crate::models::dto::{
     ExpertModelsGetRunDetailResponse, ExpertModelsListRunsResponse,
     ExpertModelsRollbackLastRunRequest, ExpertModelsRollbackToRunRequest,
     ExpertModelsSetRoleDefaultRequest, ExpertModelsSetRunPinnedRequest,
-    ExpertModelsSetSessionOverrideRequest, ExpertWorkflowDto, ExpertWorkflowsDeleteRequest,
+    ExpertModelsSetSessionOverrideRequest, ExpertModelsValidateGraphRequest,
+    ExpertModelsValidateGraphResponse, ExpertWorkflowDto, ExpertWorkflowsDeleteRequest,
     ExpertWorkflowsGetRequest, ExpertWorkflowsListResponse, ExpertWorkflowsSaveRequest,
 };
 use crate::state::AppState;
@@ -76,6 +77,15 @@ pub async fn expert_models_apply_to_session(
     state: State<'_, AppState>,
 ) -> Result<ExpertModelsApplyResult, String> {
     oclive_kernel_runtime::domain::expert_models_admin::expert_models_apply_to_session(&state, &req)
+        .await
+}
+
+#[tauri::command]
+pub async fn expert_models_validate_graph(
+    req: ExpertModelsValidateGraphRequest,
+    state: State<'_, AppState>,
+) -> Result<ExpertModelsValidateGraphResponse, String> {
+    oclive_kernel_runtime::domain::expert_models_admin::expert_models_validate_graph(&state, &req)
         .await
 }
 

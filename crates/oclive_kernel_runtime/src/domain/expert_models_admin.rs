@@ -8,19 +8,20 @@ use crate::infrastructure::plugin_config_disk::write_plugin_config_json;
 use crate::infrastructure::remote_plugin::{invoke_directory_plugin_rpc, RemoteRpcChannel};
 use crate::models::dto::SetSessionPluginBackendRequest;
 use crate::models::dto::{
-    ExpertModelsApplyResult, ExpertModelsApplyToSessionRequest,
+    ExpertGraphCompileIssueDto, ExpertModelsApplyResult, ExpertModelsApplyToSessionRequest,
     ExpertModelsClearRoleDefaultRequest, ExpertModelsClearRunsRequest,
     ExpertModelsClearSessionOverrideRequest, ExpertModelsEffectiveResponse,
     ExpertModelsGetEffectiveRequest, ExpertModelsGetRunDetailRequest,
     ExpertModelsGetRunDetailResponse, ExpertModelsListRunsResponse,
     ExpertModelsRollbackLastRunRequest, ExpertModelsRollbackToRunRequest, ExpertModelsRunDetailDto,
     ExpertModelsRunSummaryDto, ExpertModelsSetRoleDefaultRequest, ExpertModelsSetRunPinnedRequest,
-    ExpertModelsSetSessionOverrideRequest, ExpertWorkflowDto, ExpertWorkflowSummaryDto,
+    ExpertModelsSetSessionOverrideRequest, ExpertModelsValidateGraphRequest,
+    ExpertModelsValidateGraphResponse, ExpertWorkflowDto, ExpertWorkflowSummaryDto,
     ExpertWorkflowsDeleteRequest, ExpertWorkflowsGetRequest, ExpertWorkflowsListResponse,
     ExpertWorkflowsSaveRequest,
 };
 use crate::models::plugin_backends::LlmBackend;
-use crate::models::{ExpertConfigSource, ExpertGraph, LlamaLocalPluginConfig, PromptStyleOverride};
+use crate::models::{ExpertConfigSource, ExpertGraph, ExpertNode, LlamaLocalPluginConfig, PromptStyleOverride};
 use crate::state::KernelAppState;
 use chrono::Utc;
 use serde::Serialize;
@@ -1698,6 +1699,89 @@ pub async fn expert_workflows_delete(
     }
     store_workflows(state, list.as_slice()).await?;
     Ok(())
+}
+
+fn related_node_ids_from_compile_error(graph: &ExpertGraph, err_msg: &str) -> Vec<String> {
+    let mut out: Vec<String> = Vec::new();
+    if let Some(pos) = err_msg.find("(id=") {
+        let rest = &err_msg[pos + "(id=".len()..];
+        if let Some(end) = rest.find(')') {
+            let id = rest[..end].trim();
+            if !id.is_empty() {
+                out.push(id.to_string());
+            }
+        }
+    }
+    if let Some(pos) = err_msg.find("CloudModel ") {
+        let rest = &err_msg[pos + "CloudModel ".len()..];
+        if let Some(end) = rest.find(':') {
+            let id = rest[..end].trim();
+            if !id.is_empty() {
+                out.push(id.to_string());
+            }
+        }
+    }
+    for n in &graph.nodes {
+        match n {
+            ExpertNode::LoraAdapter { id, gguf_path, .. } => {
+                let p = gguf_path.trim();
+                if !p.is_empty() && err_msg.contains(p) {
+                    out.push(id.clone());
+                }
+            }
+            ExpertNode::BaseModel { id, gguf_path, .. } => {
+                let p = gguf_path.trim();
+                if !p.is_empty() && err_msg.contains(p) {
+                    out.push(id.clone());
+                }
+            }
+            _ => {}
+        }
+    }
+    if out.is_empty() && (err_msg.contains("base model") || err_msg.contains("gguf")) {
+        for n in &graph.nodes {
+            if let ExpertNode::BaseModel { id, .. } = n {
+                out.push(id.clone());
+                break;
+            }
+        }
+    }
+    out.sort();
+    out.dedup();
+    out
+}
+
+pub async fn expert_models_validate_graph(
+    state: &KernelAppState,
+    req: &ExpertModelsValidateGraphRequest,
+) -> Result<ExpertModelsValidateGraphResponse, String> {
+    let gguf_dir = llama_models_gguf_dir(state);
+    let loras_dir = llama_loras_dir(state);
+    match compile_expert_graph_plan(&req.graph, gguf_dir.as_path(), loras_dir.as_path()) {
+        Ok(plan) => Ok(ExpertModelsValidateGraphResponse {
+            ok: true,
+            use_remote_llm: plan.use_remote_llm,
+            model_path: plan.llama.model_path.clone(),
+            llama_args: plan.llama.llama_args.clone(),
+            issues: vec![],
+        }),
+        Err(e) => {
+            let msg = e.to_frontend_error();
+            let node_ids = related_node_ids_from_compile_error(&req.graph, msg.as_str());
+            Ok(ExpertModelsValidateGraphResponse {
+                ok: false,
+                use_remote_llm: false,
+                model_path: None,
+                llama_args: None,
+                issues: vec![ExpertGraphCompileIssueDto {
+                    severity: "error".to_string(),
+                    code: "compile_failed".to_string(),
+                    message: msg,
+                    node_ids,
+                }],
+            })
+        }
+    }
 }
 
 // Re-export config type to avoid unused warnings in some builds.

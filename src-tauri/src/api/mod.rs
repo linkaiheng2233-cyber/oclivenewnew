@@ -46,8 +46,8 @@ pub use expert_models::{
     expert_models_list_local_loras, expert_models_list_runs, expert_models_rename_local_base_model,
     expert_models_rollback_last_run, expert_models_rollback_to_run,
     expert_models_set_gguf_repo_meta, expert_models_set_role_default, expert_models_set_run_pinned,
-    expert_models_set_session_override, expert_workflows_delete, expert_workflows_get,
-    expert_workflows_list, expert_workflows_save,
+    expert_models_set_session_override, expert_models_validate_graph, expert_workflows_delete,
+    expert_workflows_get, expert_workflows_list, expert_workflows_save,
 };
 pub use export::export_chat_logs;
 pub use local_imports::{list_local_import_candidates_command, read_local_import_text_command};

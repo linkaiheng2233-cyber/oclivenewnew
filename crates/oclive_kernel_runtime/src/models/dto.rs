@@ -594,6 +594,38 @@ pub struct ExpertModelsApplyResult {
     pub remote_model_override: Option<String>,
 }
 
+/// Dry-run `compile_expert_graph_plan` for the expert canvas (no side effects).
+#[derive(Debug, Clone, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct ExpertModelsValidateGraphRequest {
+    #[serde(default)]
+    pub graph: ExpertGraph,
+}
+
+#[derive(Debug, Clone, Serialize)]
+#[serde(rename_all = "camelCase")]
+pub struct ExpertGraphCompileIssueDto {
+    pub severity: String,
+    pub code: String,
+    pub message: String,
+    #[serde(default)]
+    pub node_ids: Vec<String>,
+}
+
+#[derive(Debug, Clone, Serialize)]
+#[serde(rename_all = "camelCase")]
+pub struct ExpertModelsValidateGraphResponse {
+    pub ok: bool,
+    #[serde(default)]
+    pub use_remote_llm: bool,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub model_path: Option<String>,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub llama_args: Option<String>,
+    #[serde(default)]
+    pub issues: Vec<ExpertGraphCompileIssueDto>,
+}
+
 // ===== Module 9: Expert Workflows (preset library) =====
 
 #[derive(Debug, Clone, Serialize)]

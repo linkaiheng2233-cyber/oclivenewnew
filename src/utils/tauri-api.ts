@@ -178,6 +178,22 @@ export interface ExpertModelsApplyResult {
   remoteModelOverride?: string | null;
 }
 
+/** Result of `expert_models_validate_graph` (dry-run compile). */
+export interface ExpertGraphCompileIssueDto {
+  severity: string;
+  code: string;
+  message: string;
+  nodeIds?: string[];
+}
+
+export interface ExpertModelsValidateGraphResponse {
+  ok: boolean;
+  useRemoteLlm?: boolean;
+  modelPath?: string | null;
+  llamaArgs?: string | null;
+  issues: ExpertGraphCompileIssueDto[];
+}
+
 export interface ExpertModelsEffectiveResponse {
   graph: ExpertGraph;
   promptStyle?: PromptStyleOverride | null;
@@ -308,6 +324,14 @@ export async function expertModelsApplyToSession(params: {
 }): Promise<ExpertModelsApplyResult> {
   return invokeWithFriendlyError<ExpertModelsApplyResult>("expert_models_apply_to_session", {
     req: { roleId: params.roleId, sessionId: params.sessionId ?? null },
+  });
+}
+
+export async function expertModelsValidateGraph(params: {
+  graph: ExpertGraph;
+}): Promise<ExpertModelsValidateGraphResponse> {
+  return invokeWithFriendlyError<ExpertModelsValidateGraphResponse>("expert_models_validate_graph", {
+    req: { graph: params.graph },
   });
 }
 

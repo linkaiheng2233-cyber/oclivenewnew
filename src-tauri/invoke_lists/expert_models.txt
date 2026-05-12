@@ -4,6 +4,7 @@ crate::api::expert_models::expert_models_clear_session_override
 crate::api::expert_models::expert_models_set_role_default
 crate::api::expert_models::expert_models_clear_role_default
 crate::api::expert_models::expert_models_apply_to_session
+crate::api::expert_models::expert_models_validate_graph
 crate::api::expert_models::expert_models_list_local_base_models
 crate::api::expert_models::expert_models_list_local_loras
 crate::api::expert_models::expert_models_import_base_gguf
