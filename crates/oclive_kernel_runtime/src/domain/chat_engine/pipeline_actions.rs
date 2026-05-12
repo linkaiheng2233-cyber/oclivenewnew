@@ -1,6 +1,9 @@
 //! v0 原子操作：从 `process_message` 抽出，行为须与重构前一致（bit-exact）。
 //!
 //! 统一签名：`async fn(state, ctx, req) -> Result<()>`；同步逻辑亦包在 `async fn` 内以满足调用约定。
+//!
+//! **蓝图 I/O**：`ACTION_IO_TYPES` 仅包含可出现在 `pipeline.ocblueprint` 线性步骤中的原子。
+//! `validate_scene` 在加载蓝图之前由 `process_message` 调用，**不参与**蓝图调度，故不在表中。
 
 use super::context::validate_scene_id;
 use super::presence::user_is_remote_from_character;
@@ -83,13 +86,13 @@ fn require_role(ctx: &TurnContext) -> Result<&std::sync::Arc<crate::models::Role
         .ok_or_else(|| AppError::InvalidParameter("TurnContext.role.role".into()))
 }
 
-/// 重置本轮生成取消标志（与 `process_message` 入口一致）。
+/// 重置本轮生成取消标志（与 `process_message` 入口一致）。**I/O：`WRITE`**（原子标志位）。
 pub async fn init_turn(state: &KernelAppState, _ctx: &mut TurnContext, _req: &SendMessageRequest) -> Result<()> {
     state.chat_generation_cancel.store(false, Ordering::Release);
     Ok(())
 }
 
-/// `ensure_role_runtime` + 与原先一致的 `tracing::debug`。
+/// `ensure_role_runtime` + 与原先一致的 `tracing::debug`。**I/O：`WRITE`**（SQLite 会话命名空间）。
 pub async fn ensure_role_runtime(state: &KernelAppState, ctx: &mut TurnContext, _req: &SendMessageRequest) -> Result<()> {
     let mrid = require_manifest_role_id(ctx)?;
     let srid = require_session_namespace(ctx)?;
@@ -105,7 +108,7 @@ pub async fn ensure_role_runtime(state: &KernelAppState, ctx: &mut TurnContext, 
     Ok(())
 }
 
-/// 加载角色（`ensure_role_loaded`）+ 与原先一致的 `tracing::debug`。
+/// 加载角色（`ensure_role_loaded`）+ 与原先一致的 `tracing::debug`。**I/O：`WRITE`**（写入 `ctx.role.role`）。
 pub async fn load_role(state: &KernelAppState, ctx: &mut TurnContext, _req: &SendMessageRequest) -> Result<()> {
     let mrid = require_manifest_role_id(ctx)?;
     let io = Instant::now();
@@ -120,7 +123,7 @@ pub async fn load_role(state: &KernelAppState, ctx: &mut TurnContext, _req: &Sen
     Ok(())
 }
 
-/// `ensure_interaction_mode_seeded`（紧随 `load_role` 之后，与 `process_message` 顺序一致）。
+/// `ensure_interaction_mode_seeded`（紧随 `load_role` 之后，与 `process_message` 顺序一致）。**I/O：`WRITE`**。
 pub async fn seed_interaction_mode(state: &KernelAppState, ctx: &mut TurnContext, _req: &SendMessageRequest) -> Result<()> {
     let srid = require_session_namespace(ctx)?;
     let role = require_role(ctx)?;
@@ -131,7 +134,7 @@ pub async fn seed_interaction_mode(state: &KernelAppState, ctx: &mut TurnContext
     Ok(())
 }
 
-/// 与原先一致的 `effective_plugin_backends` 调试日志。
+/// 与原先一致的 `effective_plugin_backends` 调试日志。**I/O：`READ_ONLY`**（仅日志，不改 `ctx` / DB）。
 pub async fn log_effective_plugin_backends(
     state: &KernelAppState,
     ctx: &mut TurnContext,
@@ -154,7 +157,7 @@ pub async fn log_effective_plugin_backends(
     Ok(())
 }
 
-/// 解析 `ResolvedRolePlugins`（单次回合内复用）。
+/// 解析 `ResolvedRolePlugins`（单次回合内复用）。**I/O：`WRITE`**（`ctx.plugins.resolved`）。
 pub async fn resolve_plugins(state: &KernelAppState, ctx: &mut TurnContext, _req: &SendMessageRequest) -> Result<()> {
     let srid = require_session_namespace(ctx)?;
     let role = require_role(ctx)?;
@@ -162,7 +165,7 @@ pub async fn resolve_plugins(state: &KernelAppState, ctx: &mut TurnContext, _req
     Ok(())
 }
 
-/// 解析主 LLM `model` 参数（与 `resolve_main_llm_model_for_generate` 一致）。
+/// 解析主 LLM `model` 参数（与 `resolve_main_llm_model_for_generate` 一致）。**I/O：`WRITE`**（`ctx.llm.main_llm_model`）。
 pub async fn resolve_main_llm_model(
     state: &KernelAppState,
     ctx: &mut TurnContext,
@@ -175,7 +178,8 @@ pub async fn resolve_main_llm_model(
     Ok(())
 }
 
-/// 场景校验与回退（`validate_scene_id`）。
+/// 场景校验与回退（`validate_scene_id`）。**I/O：`WRITE`**（`effective_scene_id` / `scene_id_list`）。
+/// 须在 `bootstrap_from_request` 之后调用；**不可**放入 `pipeline.ocblueprint`（加载蓝图前已执行）。
 pub async fn validate_scene(state: &KernelAppState, ctx: &mut TurnContext, _req: &SendMessageRequest) -> Result<()> {
     let mrid = require_manifest_role_id(ctx)?;
     let requested_scene_id = require_requested_scene_id(ctx)?;
@@ -185,7 +189,7 @@ pub async fn validate_scene(state: &KernelAppState, ctx: &mut TurnContext, _req:
     Ok(())
 }
 
-/// 写入用户 presence 场景（`set_user_presence_scene`）。
+/// 写入用户 presence 场景（`set_user_presence_scene`）。**I/O：`WRITE`**。
 pub async fn set_user_presence_scene(state: &KernelAppState, ctx: &mut TurnContext, _req: &SendMessageRequest) -> Result<()> {
     let srid = require_session_namespace(ctx)?;
     let scene_id = require_effective_scene_id(ctx)?;
@@ -196,7 +200,7 @@ pub async fn set_user_presence_scene(state: &KernelAppState, ctx: &mut TurnConte
     Ok(())
 }
 
-/// 加载异地/沉浸相关路由信息，并写入 `preflight_ms`（与 `process_message` 中 `t0.elapsed()` 语义一致）。
+/// 加载异地/沉浸相关路由信息，并写入 `preflight_ms`（与 `process_message` 中 `t0.elapsed()` 语义一致）。**I/O：`WRITE`**（读 DB，写 `ctx.presence` / `ctx.trace.preflight_ms`）。
 pub async fn load_presence_routing(state: &KernelAppState, ctx: &mut TurnContext, _req: &SendMessageRequest) -> Result<()> {
     let srid = require_session_namespace(ctx)?;
     let scene_id = require_effective_scene_id(ctx)?;
@@ -219,7 +223,7 @@ pub async fn load_presence_routing(state: &KernelAppState, ctx: &mut TurnContext
     Ok(())
 }
 
-/// 用户句情绪分析（`pl.emotion.analyze`）。
+/// 用户句情绪分析（`pl.emotion.analyze`）。**I/O：`WRITE`**（`ctx.emotion.user_emotion`）。
 pub async fn analyze_emotion_user(_state: &KernelAppState, ctx: &mut TurnContext, _req: &SendMessageRequest) -> Result<()> {
     let pl = ctx
         .plugins
@@ -237,7 +241,7 @@ pub async fn analyze_emotion_user(_state: &KernelAppState, ctx: &mut TurnContext
     Ok(())
 }
 
-/// 运行 Agent（写入 `ctx.agent.output`）；调用方根据 `handled` 分支。
+/// 运行 Agent（写入 `ctx.agent.output` / `ctx.flags.agent_handled`）；调用方根据 `handled` 分支。**I/O：`WRITE`**。
 pub async fn run_agent(_state: &KernelAppState, ctx: &mut TurnContext, req: &SendMessageRequest) -> Result<()> {
     let mrid = require_manifest_role_id(ctx)?;
     let srid = require_session_namespace(ctx)?;
@@ -265,43 +269,43 @@ pub async fn run_agent(_state: &KernelAppState, ctx: &mut TurnContext, req: &Sen
     Ok(())
 }
 
-/// 占位：短期记忆检索（**READ_ONLY**；示例与 `PARALLEL` 烟测用，无实际 DB 访问）。
+/// 占位：短期记忆检索（**I/O：`READ_ONLY`**；示例与 `PARALLEL` 烟测用，无实际 DB 访问）。
 pub async fn memory_retrieve_short_term(
     _state: &KernelAppState,
     _ctx: &mut TurnContext,
     _req: &SendMessageRequest,
 ) -> Result<()> {
-    tracing::debug!(target: "oclive_pipeline", action = "memory_retrieve_short_term", "noop read-only");
+    tracing::trace!(target: "oclive_pipeline", action = "memory_retrieve_short_term", "noop read-only");
     Ok(())
 }
 
-/// 占位：长期记忆检索（**READ_ONLY**；示例与 `PARALLEL` 烟测用）。
+/// 占位：长期记忆检索（**I/O：`READ_ONLY`**；示例与 `PARALLEL` 烟测用）。
 pub async fn memory_retrieve_long_term(
     _state: &KernelAppState,
     _ctx: &mut TurnContext,
     _req: &SendMessageRequest,
 ) -> Result<()> {
-    tracing::debug!(target: "oclive_pipeline", action = "memory_retrieve_long_term", "noop read-only");
+    tracing::trace!(target: "oclive_pipeline", action = "memory_retrieve_long_term", "noop read-only");
     Ok(())
 }
 
-/// 占位：Prompt 组装（**READ_ONLY**；真实组装仍在共景 / 远程路径内，蓝图层仅占位语义）。
+/// 占位：Prompt 组装（**I/O：`READ_ONLY`**；真实组装仍在共景 / 远程路径内，蓝图层仅占位语义）。
 pub async fn assemble_prompt(
     _state: &KernelAppState,
     _ctx: &mut TurnContext,
     _req: &SendMessageRequest,
 ) -> Result<()> {
-    tracing::debug!(target: "oclive_pipeline", action = "assemble_prompt", "noop read-only");
+    tracing::trace!(target: "oclive_pipeline", action = "assemble_prompt", "noop read-only");
     Ok(())
 }
 
-/// 占位：高共情路径上「专家模型 / 共情触发器」钩子（**WRITE**；当前仅审计日志，后续可接专家图）。
+/// 占位：高共情路径上「专家模型 / 共情触发器」钩子（**I/O：`WRITE`**；当前仅 `trace` 日志，后续可接专家图）。
 pub async fn expert_empathy_touch(
     _state: &KernelAppState,
     _ctx: &mut TurnContext,
     _req: &SendMessageRequest,
 ) -> Result<()> {
-    tracing::info!(
+    tracing::trace!(
         target: "oclive_pipeline",
         action = "expert_empathy_touch",
         "expert empathy trigger (placeholder)"
@@ -309,7 +313,7 @@ pub async fn expert_empathy_touch(
     Ok(())
 }
 
-/// 与 `run_agent` 等价（**WRITE**），供蓝图以 `generate_response` 命名展示「生成」步骤。
+/// 与 `run_agent` 等价（**I/O：`WRITE`**），供蓝图以 `generate_response` 命名展示「生成」步骤。
 pub async fn generate_response(
     state: &KernelAppState,
     ctx: &mut TurnContext,

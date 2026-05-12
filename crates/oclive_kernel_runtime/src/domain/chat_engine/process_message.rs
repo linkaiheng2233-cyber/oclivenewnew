@@ -128,7 +128,7 @@ pub async fn process_message(
         Ok(Some(bp)) => {
             let nm = bp.name.clone();
             ctx.pipeline.blueprint = Some(bp);
-            tracing::info!(
+            tracing::trace!(
                 target: "oclive_pipeline",
                 path = %blueprint_path.display(),
                 name = %nm,

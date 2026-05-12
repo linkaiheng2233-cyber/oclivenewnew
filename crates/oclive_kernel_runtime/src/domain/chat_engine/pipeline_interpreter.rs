@@ -67,7 +67,7 @@ fn run_steps<'a>(
                     let g = ctx.lock().await;
                     b.predicate.eval(&*g)
                 };
-                tracing::debug!(
+                tracing::trace!(
                     target: "oclive_pipeline",
                     step_index = idx,
                     predicate = ?b.predicate,
@@ -106,7 +106,7 @@ fn run_steps<'a>(
             let elapsed_ms = t0.elapsed().as_millis() as u64;
             let step_id = step.id.as_deref().unwrap_or("-");
             match &res {
-                Ok(()) => tracing::debug!(
+                Ok(()) => tracing::trace!(
                     target: "oclive_pipeline",
                     step_index = idx,
                     step_id,
