@@ -15,7 +15,7 @@
 |------|------|------|------|
 | `schemaVersion` | `string` | 是 | 蓝图格式版本；当前仅支持 **`"1.0"`**。 |
 | `name` | `string` | 是 | 蓝图逻辑名称（日志与排障）。 |
-| `steps` | `array` | 是 | **有序** 步骤列表；每项至少含 `action`。 |
+| `steps` | `array` | 是 | **有序** 根步骤列表；每项为线性原子、**`branch`** 或 **`parallel`**（见下文），根数组长度上限 **64**。 |
 | `onFailure` | `string` | 否 | 某步返回错误时的策略，见下文。省略时等价于 **`HALT`**。 |
 
 可选扩展字段（解析器当前忽略未知键，便于后续演进）：
@@ -24,17 +24,51 @@
 |------|------|------|------|
 | `description` | `string` | 否 | 人类可读说明。 |
 
-## `steps[]` 元素
+## `steps[]` 元素（线性 / `branch` / `parallel`）
+
+三者 **互斥**：同一步骤不得同时带 `branch` 与 `parallel`；带 `branch` 或 `parallel` 时 **不得** 再设非空 `action`。
+
+### 线性步骤
 
 | 字段 | 类型 | 必填 | 说明 |
 |------|------|------|------|
-| `action` | `string` | 是 | 原子操作标识，须为内核 **白名单** 之一（与 `pipeline_actions` 中 `pub async fn` 的 snake_case 名一致）。 |
+| `action` | `string` | 是 | 原子操作标识，须为白名单之一。 |
 | `id` | `string` | 否 | 步骤别名，便于日志。 |
 | `description` | `string` | 否 | 步骤说明。 |
 
+### 条件分支 `branch`
+
+| 字段 | 类型 | 必填 | 说明 |
+|------|------|------|------|
+| `branch` | `object` | 是 | 见下表。 |
+
+`branch` 对象：
+
+| 字段 | 类型 | 必填 | 说明 |
+|------|------|------|------|
+| `predicate` | `object` | 是 | 受限谓词（见「谓词 `predicate`」）。 |
+| `onTrue` | `array` | 否 | 谓词为真时递归执行的子步骤列表（默认可空数组）。 |
+| `onFalse` | `array` | 否 | 谓词为假时递归执行的子步骤列表。 |
+
+子步骤的结构与根 `steps` 元素相同，可继续嵌套 `branch`（嵌套深度上限见实现常量 `MAX_PIPELINE_BRANCH_DEPTH`）。整棵树节点总数上限见 `MAX_PIPELINE_TREE_NODES`。
+
+### 谓词 `predicate`（`type` + 字段）
+
+JSON 使用 **`type` 判别字段**（camelCase），与 `PipelinePredicate` 一致：
+
+| `type` | 附加字段 | 语义 |
+|--------|-----------|------|
+| `agentHandled` | 无 | `ctx.flags.agent_handled == true`（通常在 `run_agent` 之后才有意义）。 |
+| `sceneIdEquals` | `sceneId`（string） | 当前 `effective_scene_id` 与该字符串完全相等。 |
+| `emotionDominant` | `emotion`（string） | 用户七维结果中 **数值最大的一维** 名称与该字符串匹配（忽略大小写），如 `sadness`；亦可与离散主导标签的蛇形名比较（如 `sad`）。缺少情绪结果时视为假。 |
+
+### 受限并行 `parallel`（见后续版本说明）
+
+`parallel` 为 **多个子步骤列表** 的数组；每一列为一组 arm，调度语义与 I/O 限制见后续提交与文档小节（`PARALLEL` + `READ_ONLY`）。
+
 ### 步骤数量
 
-单文件 `steps.length` 不得超过实现定义的上限（当前 **64**），防止异常大包。
+根 `steps.length` 不得超过 **64**；整棵蓝图树（含所有 `onTrue` / `onFalse` / `parallel` 内子步骤）节点总数不得超过 **`MAX_PIPELINE_TREE_NODES`**（当前实现为 **200**）。
 
 ## `onFailure` 策略
 
@@ -85,6 +119,32 @@
     { "action": "resolve_plugins" },
     { "action": "resolve_main_llm_model" },
     { "action": "run_agent" }
+  ]
+}
+```
+
+### `branch` 示例（按场景拆分加载路径）
+
+```json
+{
+  "schemaVersion": "1.0",
+  "name": "branch_scene",
+  "onFailure": "HALT",
+  "steps": [
+    { "action": "init_turn" },
+    { "action": "ensure_role_runtime" },
+    {
+      "id": "scene_gate",
+      "branch": {
+        "predicate": { "type": "sceneIdEquals", "sceneId": "default" },
+        "onTrue": [
+          { "action": "load_role" },
+          { "action": "seed_interaction_mode" }
+        ],
+        "onFalse": [{ "action": "load_role" }]
+      }
+    },
+    { "action": "log_effective_plugin_backends" }
   ]
 }
 ```

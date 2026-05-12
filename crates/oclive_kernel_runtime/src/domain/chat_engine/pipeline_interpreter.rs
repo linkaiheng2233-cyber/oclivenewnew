@@ -1,12 +1,16 @@
-//! 蓝图解释器：按 `PipelineBlueprint.steps` 顺序调用 `pipeline_actions` 原子。
+//! 蓝图解释器：按 `PipelineBlueprint.steps` 顺序调用 `pipeline_actions` 原子；支持 `branch` 递归子列表。
 
 use super::pipeline_actions;
-use super::pipeline_loader::{OnFailurePolicy, PipelineBlueprint};
+use super::pipeline_loader::{OnFailurePolicy, PipelineBlueprint, PipelineStepSpec};
 use super::turn_context::TurnContext;
 use crate::error::{AppError, Result};
 use crate::models::dto::SendMessageRequest;
 use crate::state::KernelAppState;
+use std::future::Future;
+use std::pin::Pin;
 use std::time::Instant;
+
+type StepsFut<'a> = Pin<Box<dyn Future<Output = Result<()>> + Send + 'a>>;
 
 /// 与 `process_message` 历史默认入口序列一致（`validate_scene` 已在蓝图外执行）。
 pub async fn run_default_entry_pipeline(
@@ -32,47 +36,85 @@ pub async fn execute_pipeline(
     req: &SendMessageRequest,
     blueprint: &PipelineBlueprint,
 ) -> Result<()> {
-    for (idx, step) in blueprint.steps.iter().enumerate() {
-        let t0 = Instant::now();
-        let res = dispatch_action(state, ctx, req, step.action.as_str()).await;
-        let elapsed_ms = t0.elapsed().as_millis() as u64;
-        let step_id = step.id.as_deref().unwrap_or("-");
-        match &res {
-            Ok(()) => tracing::debug!(
-                target: "oclive_pipeline",
-                step_index = idx,
-                step_id,
-                action = %step.action,
-                elapsed_ms,
-                ok = true,
-                "pipeline step"
-            ),
-            Err(e) => tracing::warn!(
-                target: "oclive_pipeline",
-                step_index = idx,
-                step_id,
-                action = %step.action,
-                elapsed_ms,
-                ok = false,
-                error = %e,
-                "pipeline step"
-            ),
-        }
-        if let Err(e) = res {
-            match blueprint.on_failure {
-                OnFailurePolicy::Halt => return Err(e),
-                OnFailurePolicy::Degrade => {
-                    tracing::warn!(
-                        target: "oclive_pipeline",
-                        step_index = idx,
-                        action = %step.action,
-                        "pipeline step failed; onFailure=DEGRADE, continuing"
-                    );
+    run_steps(state, ctx, req, &blueprint.steps, blueprint.on_failure).await
+}
+
+fn run_steps<'a>(
+    state: &'a KernelAppState,
+    ctx: &'a mut TurnContext,
+    req: &'a SendMessageRequest,
+    steps: &'a [PipelineStepSpec],
+    on_failure: OnFailurePolicy,
+) -> StepsFut<'a> {
+    Box::pin(async move {
+        for (idx, step) in steps.iter().enumerate() {
+            if let Some(b) = &step.branch {
+                let take_true = b.predicate.eval(ctx);
+                tracing::debug!(
+                    target: "oclive_pipeline",
+                    step_index = idx,
+                    predicate = ?b.predicate,
+                    branch = if take_true { "onTrue" } else { "onFalse" },
+                    "pipeline branch"
+                );
+                let arm = if take_true {
+                    b.on_true.as_slice()
+                } else {
+                    b.on_false.as_slice()
+                };
+                run_steps(state, ctx, req, arm, on_failure).await?;
+                continue;
+            }
+            if step.parallel.is_some() {
+                return Err(AppError::InvalidParameter(
+                    "parallel steps are not supported by this interpreter build".into(),
+                ));
+            }
+            let action = step.action.as_deref().ok_or_else(|| {
+                AppError::InvalidParameter("pipeline step missing action".into())
+            })?;
+            let t0 = Instant::now();
+            let res = dispatch_action(state, ctx, req, action).await;
+            let elapsed_ms = t0.elapsed().as_millis() as u64;
+            let step_id = step.id.as_deref().unwrap_or("-");
+            match &res {
+                Ok(()) => tracing::debug!(
+                    target: "oclive_pipeline",
+                    step_index = idx,
+                    step_id,
+                    action = %action,
+                    elapsed_ms,
+                    ok = true,
+                    "pipeline step"
+                ),
+                Err(e) => tracing::warn!(
+                    target: "oclive_pipeline",
+                    step_index = idx,
+                    step_id,
+                    action = %action,
+                    elapsed_ms,
+                    ok = false,
+                    error = %e,
+                    "pipeline step"
+                ),
+            }
+            if let Err(e) = res {
+                match on_failure {
+                    OnFailurePolicy::Halt => return Err(e),
+                    OnFailurePolicy::Degrade => {
+                        tracing::warn!(
+                            target: "oclive_pipeline",
+                            step_index = idx,
+                            step_id,
+                            action = %action,
+                            "pipeline step failed; onFailure=DEGRADE, continuing"
+                        );
+                    }
                 }
             }
         }
-    }
-    Ok(())
+        Ok(())
+    })
 }
 
 async fn dispatch_action(

@@ -9,6 +9,7 @@ pub mod llm_cancelable;
 pub mod pipeline_actions;
 pub mod pipeline_interpreter;
 pub mod pipeline_loader;
+pub mod pipeline_predicates;
 pub mod turn_context;
 pub mod presence;
 pub mod process_message;
