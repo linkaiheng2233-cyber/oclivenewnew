@@ -10,8 +10,42 @@ use crate::domain::agent::AgentInput;
 use crate::error::{AppError, Result};
 use crate::models::dto::SendMessageRequest;
 use crate::state::KernelAppState;
+use once_cell::sync::Lazy;
+use std::collections::HashMap;
 use std::sync::atomic::Ordering;
 use std::time::Instant;
+
+/// 蓝图 `PARALLEL` 调度用的 I/O 语义标注（非文件系统只读；**WRITE** 表示会写库 / 改会话 / 调 LLM 等）。
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
+pub enum ActionIOType {
+    ReadOnly,
+    Write,
+}
+
+/// 各原子 `action` 的 I/O 类型（与 `ALLOWED_PIPELINE_BLUEPRINT_ACTIONS` 对齐；扩展原子时须同步）。
+pub static ACTION_IO_TYPES: Lazy<HashMap<&'static str, ActionIOType>> = Lazy::new(|| {
+    HashMap::from([
+        ("init_turn", ActionIOType::Write),
+        ("ensure_role_runtime", ActionIOType::Write),
+        ("load_role", ActionIOType::Write),
+        ("seed_interaction_mode", ActionIOType::Write),
+        ("log_effective_plugin_backends", ActionIOType::ReadOnly),
+        ("resolve_plugins", ActionIOType::Write),
+        ("resolve_main_llm_model", ActionIOType::Write),
+        ("run_agent", ActionIOType::Write),
+        ("set_user_presence_scene", ActionIOType::Write),
+        ("load_presence_routing", ActionIOType::Write),
+        ("analyze_emotion_user", ActionIOType::Write),
+        ("memory_retrieve_short_term", ActionIOType::ReadOnly),
+        ("memory_retrieve_long_term", ActionIOType::ReadOnly),
+        ("assemble_prompt", ActionIOType::ReadOnly),
+        ("generate_response", ActionIOType::Write),
+    ])
+});
+
+pub fn action_io_type(action: &str) -> Option<ActionIOType> {
+    ACTION_IO_TYPES.get(action).copied()
+}
 
 fn require_manifest_role_id<'a>(ctx: &'a TurnContext) -> Result<&'a str> {
     ctx.ids
@@ -228,4 +262,43 @@ pub async fn run_agent(_state: &KernelAppState, ctx: &mut TurnContext, req: &Sen
     ctx.flags.agent_handled = Some(agent_out.handled);
     ctx.agent.output = Some(agent_out);
     Ok(())
+}
+
+/// 占位：短期记忆检索（**READ_ONLY**；示例与 `PARALLEL` 烟测用，无实际 DB 访问）。
+pub async fn memory_retrieve_short_term(
+    _state: &KernelAppState,
+    _ctx: &mut TurnContext,
+    _req: &SendMessageRequest,
+) -> Result<()> {
+    tracing::debug!(target: "oclive_pipeline", action = "memory_retrieve_short_term", "noop read-only");
+    Ok(())
+}
+
+/// 占位：长期记忆检索（**READ_ONLY**；示例与 `PARALLEL` 烟测用）。
+pub async fn memory_retrieve_long_term(
+    _state: &KernelAppState,
+    _ctx: &mut TurnContext,
+    _req: &SendMessageRequest,
+) -> Result<()> {
+    tracing::debug!(target: "oclive_pipeline", action = "memory_retrieve_long_term", "noop read-only");
+    Ok(())
+}
+
+/// 占位：Prompt 组装（**READ_ONLY**；真实组装仍在共景 / 远程路径内，蓝图层仅占位语义）。
+pub async fn assemble_prompt(
+    _state: &KernelAppState,
+    _ctx: &mut TurnContext,
+    _req: &SendMessageRequest,
+) -> Result<()> {
+    tracing::debug!(target: "oclive_pipeline", action = "assemble_prompt", "noop read-only");
+    Ok(())
+}
+
+/// 与 `run_agent` 等价（**WRITE**），供蓝图以 `generate_response` 命名展示「生成」步骤。
+pub async fn generate_response(
+    state: &KernelAppState,
+    ctx: &mut TurnContext,
+    req: &SendMessageRequest,
+) -> Result<()> {
+    run_agent(state, ctx, req).await
 }

@@ -1,4 +1,4 @@
-//! 蓝图解释器：按 `PipelineBlueprint.steps` 顺序调用 `pipeline_actions` 原子；支持 `branch` 递归子列表。
+//! 蓝图解释器：顺序 / `branch` / 受限 `PARALLEL`；`TurnContext` 经 `Arc<Mutex<_>>` 包裹以支持 `join!` 并发 arm。
 
 use super::pipeline_actions;
 use super::pipeline_loader::{OnFailurePolicy, PipelineBlueprint, PipelineStepSpec};
@@ -8,7 +8,9 @@ use crate::models::dto::SendMessageRequest;
 use crate::state::KernelAppState;
 use std::future::Future;
 use std::pin::Pin;
+use std::sync::Arc;
 use std::time::Instant;
+use tokio::sync::Mutex;
 
 type StepsFut<'a> = Pin<Box<dyn Future<Output = Result<()>> + Send + 'a>>;
 
@@ -29,19 +31,31 @@ pub async fn run_default_entry_pipeline(
     Ok(())
 }
 
-/// 顺序执行蓝图中的每一步；`onFailure` 为 `DEGRADE` 时在单步失败后继续。
+/// 执行入口蓝图；内部将 `ctx` 暂存于 `Mutex` 以便 `PARALLEL` 各 arm 可 `join!`。
 pub async fn execute_pipeline(
     state: &KernelAppState,
     ctx: &mut TurnContext,
     req: &SendMessageRequest,
     blueprint: &PipelineBlueprint,
 ) -> Result<()> {
-    run_steps(state, ctx, req, &blueprint.steps, blueprint.on_failure).await
+    let tmp = std::mem::take(ctx);
+    let shared = Arc::new(Mutex::new(tmp));
+    let out = run_steps(
+        state,
+        shared.clone(),
+        req,
+        &blueprint.steps,
+        blueprint.on_failure,
+    )
+    .await;
+    let mut inner = shared.lock().await;
+    std::mem::swap(ctx, &mut *inner);
+    out
 }
 
 fn run_steps<'a>(
     state: &'a KernelAppState,
-    ctx: &'a mut TurnContext,
+    ctx: Arc<Mutex<TurnContext>>,
     req: &'a SendMessageRequest,
     steps: &'a [PipelineStepSpec],
     on_failure: OnFailurePolicy,
@@ -49,7 +63,10 @@ fn run_steps<'a>(
     Box::pin(async move {
         for (idx, step) in steps.iter().enumerate() {
             if let Some(b) = &step.branch {
-                let take_true = b.predicate.eval(ctx);
+                let take_true = {
+                    let g = ctx.lock().await;
+                    b.predicate.eval(&*g)
+                };
                 tracing::debug!(
                     target: "oclive_pipeline",
                     step_index = idx,
@@ -62,19 +79,30 @@ fn run_steps<'a>(
                 } else {
                     b.on_false.as_slice()
                 };
-                run_steps(state, ctx, req, arm, on_failure).await?;
+                run_steps(state, ctx.clone(), req, arm, on_failure).await?;
                 continue;
             }
-            if step.parallel.is_some() {
-                return Err(AppError::InvalidParameter(
-                    "parallel steps are not supported by this interpreter build".into(),
-                ));
+            if let Some(arms) = &step.parallel {
+                if arms.is_empty() {
+                    return Err(AppError::InvalidParameter(
+                        "parallel step has no arms".into(),
+                    ));
+                }
+                let futs: Vec<_> = arms
+                    .iter()
+                    .map(|arm| run_steps(state, ctx.clone(), req, arm.as_slice(), on_failure))
+                    .collect();
+                futures_util::future::try_join_all(futs).await?;
+                continue;
             }
             let action = step.action.as_deref().ok_or_else(|| {
                 AppError::InvalidParameter("pipeline step missing action".into())
             })?;
             let t0 = Instant::now();
-            let res = dispatch_action(state, ctx, req, action).await;
+            let res = {
+                let mut g = ctx.lock().await;
+                dispatch_inner(state, &mut *g, req, action).await
+            };
             let elapsed_ms = t0.elapsed().as_millis() as u64;
             let step_id = step.id.as_deref().unwrap_or("-");
             match &res {
@@ -117,7 +145,7 @@ fn run_steps<'a>(
     })
 }
 
-async fn dispatch_action(
+async fn dispatch_inner(
     state: &KernelAppState,
     ctx: &mut TurnContext,
     req: &SendMessageRequest,
@@ -145,6 +173,14 @@ async fn dispatch_action(
         "analyze_emotion_user" => {
             pipeline_actions::analyze_emotion_user(state, ctx, req).await
         }
+        "memory_retrieve_short_term" => {
+            pipeline_actions::memory_retrieve_short_term(state, ctx, req).await
+        }
+        "memory_retrieve_long_term" => {
+            pipeline_actions::memory_retrieve_long_term(state, ctx, req).await
+        }
+        "assemble_prompt" => pipeline_actions::assemble_prompt(state, ctx, req).await,
+        "generate_response" => pipeline_actions::generate_response(state, ctx, req).await,
         _ => Err(AppError::InvalidParameter(format!(
             "unknown pipeline action (interpreter): {action}"
         ))),

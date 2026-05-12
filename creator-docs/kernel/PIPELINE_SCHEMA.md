@@ -62,9 +62,17 @@ JSON 使用 **`type` 判别字段**（camelCase），与 `PipelinePredicate` 一
 | `sceneIdEquals` | `sceneId`（string） | 当前 `effective_scene_id` 与该字符串完全相等。 |
 | `emotionDominant` | `emotion`（string） | 用户七维结果中 **数值最大的一维** 名称与该字符串匹配（忽略大小写），如 `sadness`；亦可与离散主导标签的蛇形名比较（如 `sad`）。缺少情绪结果时视为假。 |
 
-### 受限并行 `parallel`（见后续版本说明）
+### 受限并行 `parallel`
 
-`parallel` 为 **多个子步骤列表** 的数组；每一列为一组 arm，调度语义与 I/O 限制见后续提交与文档小节（`PARALLEL` + `READ_ONLY`）。
+`parallel` 为 **JSON 数组**，每个元素是一个 **arm**（该 arm 内为顺序执行的子步骤列表）。所有 arm 由 `tokio::join!` / `try_join_all` **同时启动**；因共享 `TurnContext`，运行时将其置于 `Arc<Mutex<…>>` 中，各原子仍串行拿锁执行（主要保证 **join 调度语义** 与错误聚合；极短只读原子可有部分重叠）。
+
+**硬限制（加载期拒绝）：**
+
+- 任一 arm 的子树中 **不得** 出现 `branch`（避免在并行臂内做条件分裂；后续版本可放宽）。
+- 任一 arm 的每个**线性叶子** `action` 必须为 **`READ_ONLY`**（见 `pipeline_actions::ACTION_IO_TYPES`）。出现 **`WRITE`** 原子时返回 `ParallelContainsWrite`。
+- 允许 **嵌套** `parallel`（嵌套 arm 仍须满足上述只读约束）。
+
+**失败语义**：`try_join_all` 中任一 arm 返回 `Err` 时，整段 `parallel` 视为失败，并遵循蓝图根级 `onFailure`（`HALT` / `DEGRADE`）。
 
 ### 步骤数量
 

@@ -32,6 +32,10 @@ pub const ALLOWED_PIPELINE_BLUEPRINT_ACTIONS: &[&str] = &[
     "set_user_presence_scene",
     "load_presence_routing",
     "analyze_emotion_user",
+    "memory_retrieve_short_term",
+    "memory_retrieve_long_term",
+    "assemble_prompt",
+    "generate_response",
 ];
 
 /// 某步失败时的策略（与 JSON `onFailure` 对应）。
@@ -64,7 +68,7 @@ pub struct PipelineStepSpec {
     /// 线性原子；与 `branch` / `parallel` 互斥。
     pub action: Option<String>,
     pub branch: Option<PipelineBranchSpec>,
-    /// A2 起支持；A1 校验阶段若非空则报错（见 `ingest_step`）。
+    /// 与 `branch` 互斥；值为多个 **arm**，每个 arm 为线性步骤列表（可嵌套子 `parallel`，不可含 `branch`）。
     pub parallel: Option<Vec<Vec<PipelineStepSpec>>>,
 }
 
@@ -96,8 +100,10 @@ pub enum BlueprintError {
     MaxDepth(String, usize),
     #[error("blueprint tree exceeds max nodes ({0})")]
     TooManyNodes(usize),
-    #[error("step {0}: parallel blocks are not supported in this blueprint version")]
-    ParallelUnsupported(String),
+    #[error("step {0}: parallel arm contains branch (not allowed)")]
+    ParallelContainsBranch(String),
+    #[error("step {0}: parallel arm contains WRITE action {1:?}")]
+    ParallelContainsWrite(String, String),
 }
 
 #[derive(Debug, Deserialize)]
@@ -181,6 +187,39 @@ fn count_nodes(steps: &[PipelineStepSpec]) -> usize {
     steps.iter().map(count_nodes_in_step).sum()
 }
 
+fn validate_parallel_step_node(s: &PipelineStepSpec, path: &str) -> Result<(), BlueprintError> {
+    if s.branch.is_some() {
+        return Err(BlueprintError::ParallelContainsBranch(path.to_string()));
+    }
+    if let Some(arms) = &s.parallel {
+        for (ai, arm) in arms.iter().enumerate() {
+            validate_parallel_arm_readonly(arm, &format!("{path}.parallel[{ai}]"))?;
+        }
+        return Ok(());
+    }
+    let a = s
+        .action
+        .as_deref()
+        .ok_or_else(|| BlueprintError::LinearRequiresAction(path.to_string()))?;
+    match super::pipeline_actions::action_io_type(a) {
+        Some(super::pipeline_actions::ActionIOType::ReadOnly) => Ok(()),
+        Some(super::pipeline_actions::ActionIOType::Write) => Err(
+            BlueprintError::ParallelContainsWrite(path.to_string(), a.to_string()),
+        ),
+        None => Err(BlueprintError::UnknownOrDisallowedAction(
+            path.to_string(),
+            a.to_string(),
+        )),
+    }
+}
+
+fn validate_parallel_arm_readonly(steps: &[PipelineStepSpec], path: &str) -> Result<(), BlueprintError> {
+    for (i, s) in steps.iter().enumerate() {
+        validate_parallel_step_node(s, &step_path(path, i))?;
+    }
+    Ok(())
+}
+
 fn ingest_branch(
     b: PipelineBranchFile,
     child_depth: usize,
@@ -196,20 +235,19 @@ fn ingest_branch(
 }
 
 fn ingest_step(f: PipelineStepFile, depth: usize, path: &str) -> Result<PipelineStepSpec, BlueprintError> {
-    let has_branch = f.branch.is_some();
-    let has_parallel = f
-        .parallel
-        .as_ref()
-        .is_some_and(|p| !p.is_empty());
-    if has_branch && has_parallel {
+    let PipelineStepFile {
+        action,
+        id,
+        branch,
+        parallel,
+    } = f;
+    let arms_nonempty = parallel.as_ref().is_some_and(|p| !p.is_empty());
+    let has_branch = branch.is_some();
+    if arms_nonempty && has_branch {
         return Err(BlueprintError::BranchAndParallel(path.to_string()));
     }
-    if has_parallel {
-        return Err(BlueprintError::ParallelUnsupported(path.to_string()));
-    }
-    if let Some(bf) = f.branch {
-        let action_nonempty = f
-            .action
+    if arms_nonempty {
+        let action_nonempty = action
             .as_deref()
             .map(str::trim)
             .filter(|s| !s.is_empty())
@@ -223,16 +261,49 @@ fn ingest_step(f: PipelineStepFile, depth: usize, path: &str) -> Result<Pipeline
                 MAX_PIPELINE_BRANCH_DEPTH,
             ));
         }
-        let branch = ingest_branch(bf, depth + 1, path)?;
+        let parallel_files = parallel.expect("arms_nonempty implies Some");
+        let arms: Vec<Vec<PipelineStepSpec>> = parallel_files
+            .into_iter()
+            .enumerate()
+            .map(|(ai, arm_files)| {
+                ingest_steps_inner(arm_files, depth + 1, &format!("{path}.parallel[{ai}]"))
+            })
+            .collect::<Result<Vec<_>, _>>()?;
+        for (ai, arm) in arms.iter().enumerate() {
+            validate_parallel_arm_readonly(arm, &format!("{path}.parallel[{ai}]"))?;
+        }
         return Ok(PipelineStepSpec {
-            id: f.id.map(|x| x.trim().to_string()).filter(|x| !x.is_empty()),
+            id: id.map(|x| x.trim().to_string()).filter(|x| !x.is_empty()),
             action: None,
-            branch: Some(branch),
+            branch: None,
+            parallel: Some(arms),
+        });
+    }
+    if let Some(bf) = branch {
+        let action_nonempty = action
+            .as_deref()
+            .map(str::trim)
+            .filter(|s| !s.is_empty())
+            .is_some();
+        if action_nonempty {
+            return Err(BlueprintError::BranchWithAction(path.to_string()));
+        }
+        if depth + 1 > MAX_PIPELINE_BRANCH_DEPTH {
+            return Err(BlueprintError::MaxDepth(
+                path.to_string(),
+                MAX_PIPELINE_BRANCH_DEPTH,
+            ));
+        }
+        let branch_spec = ingest_branch(bf, depth + 1, path)?;
+        return Ok(PipelineStepSpec {
+            id: id.map(|x| x.trim().to_string()).filter(|x| !x.is_empty()),
+            action: None,
+            branch: Some(branch_spec),
             parallel: None,
         });
     }
 
-    let action = f.action.as_deref().map(str::trim).filter(|s| !s.is_empty());
+    let action = action.as_deref().map(str::trim).filter(|s| !s.is_empty());
     let Some(action) = action.map(|s| s.to_string()) else {
         return Err(BlueprintError::LinearRequiresAction(path.to_string()));
     };
@@ -243,7 +314,7 @@ fn ingest_step(f: PipelineStepFile, depth: usize, path: &str) -> Result<Pipeline
         ));
     }
     Ok(PipelineStepSpec {
-        id: f.id.map(|x| x.trim().to_string()).filter(|x| !x.is_empty()),
+        id: id.map(|x| x.trim().to_string()).filter(|x| !x.is_empty()),
         action: Some(action),
         branch: None,
         parallel: None,
@@ -369,13 +440,44 @@ mod tests {
     }
 
     #[test]
-    fn rejects_parallel_until_supported() {
+    fn parses_parallel_readonly_blueprint() {
         let j = r#"{
             "schemaVersion":"1.0",
             "name":"p",
-            "steps":[{"parallel":[[{"action":"init_turn"}]]}]
+            "steps":[{"parallel":[
+                [{"action":"memory_retrieve_short_term"}],
+                [{"action":"memory_retrieve_long_term"}]
+            ]}]
+        }"#;
+        let bp = parse_and_validate_blueprint_bytes(j.as_bytes()).expect("parse");
+        assert!(bp.steps[0].parallel.as_ref().is_some_and(|a| a.len() == 2));
+    }
+
+    #[test]
+    fn rejects_branch_inside_parallel_arm() {
+        let j = r#"{
+            "schemaVersion":"1.0",
+            "name":"bad",
+            "steps":[{"parallel":[[{
+                "branch":{
+                    "predicate":{"type":"sceneIdEquals","sceneId":"x"},
+                    "onTrue":[{"action":"memory_retrieve_short_term"}],
+                    "onFalse":[{"action":"memory_retrieve_long_term"}]
+                }
+            }]]}]
         }"#;
         let e = parse_and_validate_blueprint_bytes(j.as_bytes()).unwrap_err();
-        assert!(matches!(e, BlueprintError::ParallelUnsupported(_)));
+        assert!(matches!(e, BlueprintError::ParallelContainsBranch(_)));
+    }
+
+    #[test]
+    fn rejects_parallel_with_write_action() {
+        let j = r#"{
+            "schemaVersion":"1.0",
+            "name":"p",
+            "steps":[{"parallel":[[{"action":"init_turn"}],[{"action":"memory_retrieve_long_term"}]]}]
+        }"#;
+        let e = parse_and_validate_blueprint_bytes(j.as_bytes()).unwrap_err();
+        assert!(matches!(e, BlueprintError::ParallelContainsWrite(_, _)));
     }
 }
