@@ -23,7 +23,7 @@
 - **`format`**：必须为 `"oclexpert"`。
 - **`fileVersion`**：当前仅 **1**；未来若破坏性变更会递增。
 - **`name`**、**`description`**、**`author`**：可选字符串，供分享与导入预览；桌面 **专家模型工作台 → 导出 .oclexpert** 会写入；**编写器**侧若需与主程序一致，建议在 `roles/{id}/expert/default.oclexpert` 中同步维护（参见姊妹仓 `oclive-pack-editor` 的 `oclexpertPack` 与高级面板「专家模型」页）。
-- **`graph`**：与内核 `ExpertGraph` 一致（`nodes[].type` 为 `snake_case`：`base_model`、`lora_adapter`、`cloud_model`、`event_trigger`、`prompt_style`；节点内字段为 **camelCase**，与桌面应用 `invoke` 载荷一致）。
+- **`graph`**：与内核 `ExpertGraph` 一致（`nodes[].type` 为 `snake_case`：`base_model`、`lora_adapter`、`cloud_model`、`event_trigger`、`prompt_style`；节点内字段为 **camelCase**，与桌面应用 `invoke` 载荷一致）。其中 **`event_trigger`** 可选 **`matchScope`**：`any`（默认）/ `user_only` / `bot_only`；**`memoryContent`** 支持占位符 **`{match}`** 与 **`{keyword}`**（写入长期记忆前均替换为配置的关键词子串）。
 - **`promptStyle`**：可选，与 `PromptStyleOverride` 一致（camelCase 字段）。
 
 ## 兼容导入

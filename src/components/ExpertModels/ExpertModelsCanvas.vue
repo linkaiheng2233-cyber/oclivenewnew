@@ -347,6 +347,7 @@ function addNode(kind: "base" | "lora" | "style" | "cloud" | "event") {
       memoryContent: "",
       importance: 0.75,
       enabled: true,
+      matchScope: "any",
       ui,
     };
   else node = { type: "prompt_style", id, style: {}, ui };

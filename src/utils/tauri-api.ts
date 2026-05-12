@@ -150,6 +150,8 @@ export type ExpertNode =
       memoryContent: string;
       importance: number;
       enabled: boolean;
+      /** Substring scan scope; aligns with kernel `EventTriggerMatchScope` (default `any`). */
+      matchScope?: "any" | "user_only" | "bot_only" | null;
       ui?: { x: number; y: number } | null;
     };
 

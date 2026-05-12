@@ -60,6 +60,7 @@ function addEventTrigger(): void {
     memoryContent: "",
     importance: 0.75,
     enabled: true,
+    matchScope: "any",
     ui: null,
   };
   store.draftGraph = { ...g, nodes: [...(g.nodes ?? []), n] };

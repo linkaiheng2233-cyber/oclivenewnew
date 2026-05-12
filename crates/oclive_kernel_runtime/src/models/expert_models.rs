@@ -66,6 +66,19 @@ pub struct ExpertNodeUi {
     pub y: f32,
 }
 
+/// Where to look for `match_substring` when evaluating an [`ExpertNode::EventTrigger`].
+#[derive(Debug, Clone, Copy, Default, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(rename_all = "snake_case")]
+pub enum EventTriggerMatchScope {
+    /// User message or assistant reply contains the needle.
+    #[default]
+    Any,
+    /// Only the user message is scanned.
+    UserOnly,
+    /// Only the assistant reply is scanned.
+    BotOnly,
+}
+
 #[derive(Debug, Clone, Serialize, Deserialize)]
 #[serde(tag = "type", rename_all = "snake_case", rename_all_fields = "camelCase")]
 pub enum ExpertNode {
@@ -108,7 +121,7 @@ pub enum ExpertNode {
         #[serde(default, skip_serializing_if = "Option::is_none")]
         ui: Option<ExpertNodeUi>,
     },
-    /// 回合结束后：若用户句或模型回复包含 `match_substring`，写入一条长期记忆。
+    /// 回合结束后：若用户句或模型回复包含 `match_substring`（依 `match_scope`），将模板化后的正文写入长期记忆。
     EventTrigger {
         id: String,
         #[serde(alias = "match_substring")]
@@ -119,6 +132,9 @@ pub enum ExpertNode {
         importance: f32,
         #[serde(default = "default_true")]
         enabled: bool,
+        /// 在哪些文本中匹配 `match_substring`；默认 `any`（与旧数据兼容）。
+        #[serde(default)]
+        match_scope: EventTriggerMatchScope,
         #[serde(default, skip_serializing_if = "Option::is_none")]
         ui: Option<ExpertNodeUi>,
     },

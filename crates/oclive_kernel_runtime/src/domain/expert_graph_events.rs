@@ -1,8 +1,32 @@
 //! Module 9: EventTrigger nodes — after a chat turn, write structured memories via [`MemoryRepository`].
 
 use crate::error::Result;
-use crate::models::expert_models::{ExpertGraph, ExpertNode};
+use crate::models::expert_models::{EventTriggerMatchScope, ExpertGraph, ExpertNode};
 use crate::state::KernelAppState;
+
+/// Replace `{match}` / `{keyword}` with the matched substring (trimmed needle).
+pub(crate) fn apply_event_memory_template(template: &str, needle: &str) -> String {
+    template
+        .replace("{match}", needle)
+        .replace("{keyword}", needle)
+}
+
+/// Returns `(fires, hit_user, hit_bot)` for substring `needle` (non-empty).
+pub(crate) fn event_trigger_fires(
+    scope: EventTriggerMatchScope,
+    needle: &str,
+    user_message: &str,
+    bot_reply: &str,
+) -> (bool, bool, bool) {
+    let hit_user = user_message.contains(needle);
+    let hit_bot = bot_reply.contains(needle);
+    let fires = match scope {
+        EventTriggerMatchScope::Any => hit_user || hit_bot,
+        EventTriggerMatchScope::UserOnly => hit_user,
+        EventTriggerMatchScope::BotOnly => hit_bot,
+    };
+    (fires, hit_user, hit_bot)
+}
 
 /// After `apply_chat_turn_atomic`, evaluate `EventTrigger` nodes on the **effective** expert graph
 /// (session override JSON → role default) and persist matching memories.
@@ -41,6 +65,7 @@ pub async fn apply_expert_graph_event_triggers_after_turn(
             memory_content,
             importance,
             enabled,
+            match_scope,
             ..
         } = n
         else {
@@ -53,9 +78,13 @@ pub async fn apply_expert_graph_event_triggers_after_turn(
         if needle.is_empty() || memory_content.trim().is_empty() {
             continue;
         }
-        let hit_user = user_message.contains(needle);
-        let hit_bot = bot_reply.contains(needle);
-        if !hit_user && !hit_bot {
+        let (fires, _, _) = event_trigger_fires(*match_scope, needle, user_message, bot_reply);
+        if !fires {
+            continue;
+        }
+        let body = apply_event_memory_template(memory_content, needle);
+        let trimmed = body.trim();
+        if trimmed.is_empty() {
             continue;
         }
         let imp = if importance.is_finite() && *importance >= 0.0 {
@@ -65,8 +94,45 @@ pub async fn apply_expert_graph_event_triggers_after_turn(
         };
         let _ = state
             .memory_repo
-            .save_memory(session_namespace, memory_content.trim(), imp)
+            .save_memory(session_namespace, trimmed, imp)
             .await?;
     }
     Ok(())
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn template_replaces_placeholders() {
+        assert_eq!(
+            apply_event_memory_template("回忆{keyword}与{match}", "猫"),
+            "回忆猫与猫"
+        );
+    }
+
+    #[test]
+    fn scope_user_only_ignores_bot_hit() {
+        let (fires, hit_u, hit_b) = event_trigger_fires(
+            EventTriggerMatchScope::UserOnly,
+            "hi",
+            "hi there",
+            "hi bot",
+        );
+        assert!(fires && hit_u && hit_b);
+        let (fires2, _, _) =
+            event_trigger_fires(EventTriggerMatchScope::UserOnly, "hi", "no match", "hi bot");
+        assert!(!fires2);
+    }
+
+    #[test]
+    fn scope_bot_only() {
+        let (fires, _, _) =
+            event_trigger_fires(EventTriggerMatchScope::BotOnly, "x", "no", "has x");
+        assert!(fires);
+        let (fires2, _, _) =
+            event_trigger_fires(EventTriggerMatchScope::BotOnly, "x", "has x", "no");
+        assert!(!fires2);
+    }
 }

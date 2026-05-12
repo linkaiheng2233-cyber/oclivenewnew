@@ -33,6 +33,7 @@
 - 持久化：迁移 **`018_expert_models.sql`**（`role_runtime` JSON 列）；`ExpertModelsRepository` / `SqliteExpertModelsRepository`
 - 状态：`KernelAppState::effective_prompt_style_override` 等
 - 桌面 invoke：`src-tauri/src/api/expert_models.rs`（API 薄层，业务公式仍在内核）
+- **EventTrigger（回合后写长期记忆）**：`crates/oclive_kernel_runtime/src/domain/expert_graph_events.rs`；`matchSubstring` 子串匹配范围由 **`matchScope`**（`any` / `user_only` / `bot_only`，默认 `any`）控制；**`memoryContent`** 中 **`{match}`** / **`{keyword}`** 在写入前替换为所配置的关键词子串。
 
 ---
 

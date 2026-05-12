@@ -10,6 +10,7 @@ import {
   parseOclexpertJson,
   validateExpertGraphNodes,
 } from "../../lib/oclexpert";
+import { previewEventTrigger, type EventTriggerPreviewResult } from "../../lib/eventTriggerEval";
 import { useExpertModelsStore } from "../../stores/expertModelsStore";
 import { useRoleStore } from "../../stores/roleStore";
 const ExpertModelsCanvas = defineAsyncComponent(() => import("./ExpertModelsCanvas.vue"));
@@ -78,6 +79,31 @@ const runFilterStatus = ref<"all" | "ok" | "failed" | "unknown">("all");
 const runFilterText = ref("");
 const expandedRunIndex = ref<number | null>(null);
 const expandedRunDetail = ref<any | null>(null);
+
+/** EventTrigger workbench: simulate user/bot lines for dry-run (aligned with kernel). */
+const eventTriggerTestUser = ref("");
+const eventTriggerTestBot = ref("");
+const eventTriggerTestResult = ref<EventTriggerPreviewResult | null>(null);
+
+watch(selectedCanvasNodeId, () => {
+  eventTriggerTestResult.value = null;
+});
+
+function runEventTriggerWorkbenchTest(): void {
+  const n = selectedNode.value;
+  if (!n || n.type !== "event_trigger") return;
+  eventTriggerTestResult.value = previewEventTrigger(
+    {
+      type: "event_trigger",
+      matchSubstring: n.matchSubstring,
+      memoryContent: n.memoryContent,
+      enabled: n.enabled !== false,
+      matchScope: n.matchScope ?? "any",
+    },
+    eventTriggerTestUser.value,
+    eventTriggerTestBot.value,
+  );
+}
 
 const sourceLabel = (s: string): string => {
   if (s === "session_override") return String(t("expertModels.source.sessionOverride"));
@@ -244,6 +270,29 @@ type OclexpertImportPreview = {
   suggestedDescription?: string;
   suggestedAuthor?: string;
 };
+
+function summarizeExpertGraphNodes(graph: ExpertGraph): string {
+  const nodes = graph.nodes ?? [];
+  if (nodes.length === 0) return String(t("expertModels.oclexpert.previewGraphEmpty"));
+  const counts = new Map<string, number>();
+  for (const n of nodes) {
+    const ty = String((n as { type?: string }).type ?? "?").trim() || "?";
+    counts.set(ty, (counts.get(ty) ?? 0) + 1);
+  }
+  return [...counts.entries()]
+    .sort(([a], [b]) => a.localeCompare(b))
+    .map(([ty, c]) => `${ty}×${c}`)
+    .join(" · ");
+}
+
+function oclexpertImportPrivacySummary(graph: ExpertGraph): string {
+  const hasTriggers = (graph.nodes ?? []).some((n) => (n as { type?: string }).type === "event_trigger");
+  const hasCloud = (graph.nodes ?? []).some((n) => (n as { type?: string }).type === "cloud_model");
+  const parts: string[] = [String(t("expertModels.oclexpert.previewPrivacyBaseline"))];
+  if (hasTriggers) parts.push(String(t("expertModels.oclexpert.previewPrivacyTriggers")));
+  if (hasCloud) parts.push(String(t("expertModels.oclexpert.previewPrivacyCloud")));
+  return parts.join(" ");
+}
 
 const oclexpertDescriptionDraft = ref("");
 const oclexpertAuthorDraft = ref("");
@@ -1158,44 +1207,125 @@ async function onImportOclexpert(): Promise<void> {
 
         <template v-else-if="(selectedNode as any).type === 'event_trigger'">
           <div class="em-muted">{{ t("expertModels.inspector.eventHint") }}</div>
-          <label class="em-field" style="margin-top: 8px">
-            <div class="em-label">{{ t("expertModels.cloudEvent.matchLabel") }}</div>
-            <input
-              class="em-input"
-              type="text"
-              :value="(selectedNode as any).matchSubstring"
-              @input="patchSelectedNode({ matchSubstring: ($event.target as HTMLInputElement).value })"
-            />
-          </label>
-          <label class="em-field">
-            <div class="em-label">{{ t("expertModels.cloudEvent.memoryLabel") }}</div>
-            <textarea
-              class="em-text"
-              rows="3"
-              :value="(selectedNode as any).memoryContent"
-              @input="patchSelectedNode({ memoryContent: ($event.target as HTMLTextAreaElement).value })"
-            />
-          </label>
-          <label class="em-field">
-            <div class="em-label">{{ t("expertModels.cloudEvent.importanceLabel") }}</div>
-            <input
-              class="em-num"
-              type="number"
-              step="0.05"
-              min="0"
-              max="1"
-              :value="(selectedNode as any).importance"
-              @input="patchSelectedNode({ importance: Number(($event.target as HTMLInputElement).value) })"
-            />
-          </label>
-          <label class="em-row" style="margin-top: 8px">
-            <input
-              type="checkbox"
-              :checked="(selectedNode as any).enabled !== false"
-              @change="patchSelectedNode({ enabled: ($event.target as HTMLInputElement).checked })"
-            />
-            <span class="em-muted">{{ t("expertModels.cloudEvent.enabled") }}</span>
-          </label>
+
+          <div class="em-etw-section">
+            <div class="em-etw-h">{{ t("expertModels.eventTriggerWorkbench.sectionCondition") }}</div>
+            <label class="em-field" style="margin-top: 6px">
+              <div class="em-label">{{ t("expertModels.eventTriggerWorkbench.scopeLabel") }}</div>
+              <select
+                class="em-select"
+                :value="(selectedNode as any).matchScope ?? 'any'"
+                @change="
+                  patchSelectedNode({
+                    matchScope: ($event.target as HTMLSelectElement).value as any,
+                  })
+                "
+              >
+                <option value="any">{{ t("expertModels.eventTriggerWorkbench.scopeAny") }}</option>
+                <option value="user_only">{{ t("expertModels.eventTriggerWorkbench.scopeUser") }}</option>
+                <option value="bot_only">{{ t("expertModels.eventTriggerWorkbench.scopeBot") }}</option>
+              </select>
+            </label>
+            <label class="em-field">
+              <div class="em-label">{{ t("expertModels.eventTriggerWorkbench.keywordLabel") }}</div>
+              <input
+                class="em-input"
+                type="text"
+                :value="(selectedNode as any).matchSubstring"
+                @input="patchSelectedNode({ matchSubstring: ($event.target as HTMLInputElement).value })"
+              />
+            </label>
+          </div>
+
+          <div class="em-etw-section">
+            <div class="em-etw-h">{{ t("expertModels.eventTriggerWorkbench.sectionMemory") }}</div>
+            <div class="em-muted em-etw-sub">
+              {{ t("expertModels.eventTriggerWorkbench.memoryHint") }}
+              <code class="em-etw-code">{{ t("expertModels.eventTriggerWorkbench.placeholderTokens") }}</code>
+            </div>
+            <label class="em-field">
+              <div class="em-label">{{ t("expertModels.cloudEvent.memoryLabel") }}</div>
+              <textarea
+                class="em-text"
+                rows="4"
+                :value="(selectedNode as any).memoryContent"
+                @input="patchSelectedNode({ memoryContent: ($event.target as HTMLTextAreaElement).value })"
+              />
+            </label>
+            <label class="em-field">
+              <div class="em-label">{{ t("expertModels.cloudEvent.importanceLabel") }}</div>
+              <input
+                class="em-num"
+                type="number"
+                step="0.05"
+                min="0"
+                max="1"
+                :value="(selectedNode as any).importance"
+                @input="patchSelectedNode({ importance: Number(($event.target as HTMLInputElement).value) })"
+              />
+            </label>
+            <label class="em-row" style="margin-top: 8px">
+              <input
+                type="checkbox"
+                :checked="(selectedNode as any).enabled !== false"
+                @change="patchSelectedNode({ enabled: ($event.target as HTMLInputElement).checked })"
+              />
+              <span class="em-muted">{{ t("expertModels.cloudEvent.enabled") }}</span>
+            </label>
+          </div>
+
+          <div class="em-etw-section em-etw-test">
+            <div class="em-etw-h">{{ t("expertModels.eventTriggerWorkbench.sectionTest") }}</div>
+            <label class="em-field">
+              <div class="em-label">{{ t("expertModels.eventTriggerWorkbench.testUserLabel") }}</div>
+              <textarea
+                v-model="eventTriggerTestUser"
+                class="em-text"
+                rows="2"
+                :placeholder="String(t('expertModels.eventTriggerWorkbench.testUserPlaceholder'))"
+              />
+            </label>
+            <label class="em-field">
+              <div class="em-label">{{ t("expertModels.eventTriggerWorkbench.testBotLabel") }}</div>
+              <textarea
+                v-model="eventTriggerTestBot"
+                class="em-text"
+                rows="2"
+                :placeholder="String(t('expertModels.eventTriggerWorkbench.testBotPlaceholder'))"
+              />
+            </label>
+            <button type="button" class="em-btn secondary" @click="runEventTriggerWorkbenchTest">
+              {{ t("expertModels.eventTriggerWorkbench.testRun") }}
+            </button>
+
+            <div v-if="eventTriggerTestResult" class="em-etw-result">
+              <template v-if="eventTriggerTestResult.kind === 'ok'">
+                <div class="em-etw-ok">{{ t("expertModels.eventTriggerWorkbench.testResultFires") }}</div>
+                <div v-if="eventTriggerTestResult.hitUser" class="em-muted">
+                  {{ t("expertModels.eventTriggerWorkbench.testHitUser") }}
+                </div>
+                <div v-if="eventTriggerTestResult.hitBot" class="em-muted">
+                  {{ t("expertModels.eventTriggerWorkbench.testHitBot") }}
+                </div>
+                <div class="em-etw-resolved-h">{{ t("expertModels.eventTriggerWorkbench.testResolved") }}</div>
+                <pre class="em-etw-pre">{{ eventTriggerTestResult.resolvedMemory }}</pre>
+              </template>
+              <template v-else>
+                <div class="em-etw-no">{{ t("expertModels.eventTriggerWorkbench.testResultNoFire") }}</div>
+                <div class="em-muted">
+                  {{
+                    eventTriggerTestResult.reason === "disabled"
+                      ? t("expertModels.eventTriggerWorkbench.testReasonDisabled")
+                      : eventTriggerTestResult.reason === "empty_keyword"
+                        ? t("expertModels.eventTriggerWorkbench.testReasonEmptyKeyword")
+                        : eventTriggerTestResult.reason === "empty_memory"
+                          ? t("expertModels.eventTriggerWorkbench.testReasonEmptyMemory")
+                          : t("expertModels.eventTriggerWorkbench.testReasonNoMatch")
+                  }}
+                </div>
+              </template>
+            </div>
+          </div>
         </template>
 
         <template v-else-if="(selectedNode as any).type === 'prompt_style'">
@@ -1758,6 +1888,10 @@ async function onImportOclexpert(): Promise<void> {
             <dd>{{ oclexpertImportPreview.suggestedDescription || "—" }}</dd>
             <dt>{{ t("expertModels.oclexpert.previewAuthor") }}</dt>
             <dd>{{ oclexpertImportPreview.suggestedAuthor || "—" }}</dd>
+            <dt>{{ t("expertModels.oclexpert.previewGraphSummary") }}</dt>
+            <dd>{{ summarizeExpertGraphNodes(oclexpertImportPreview.graph) }}</dd>
+            <dt>{{ t("expertModels.oclexpert.previewPrivacy") }}</dt>
+            <dd>{{ oclexpertImportPrivacySummary(oclexpertImportPreview.graph) }}</dd>
           </dl>
           <div class="em-oclexpert-actions">
             <button class="em-btn secondary" type="button" :disabled="saving" @click="cancelOclexpertImportPreview">
@@ -2353,6 +2487,63 @@ async function onImportOclexpert(): Promise<void> {
   .em-editorbar {
     grid-template-columns: 1fr;
   }
+}
+.em-etw-section {
+  margin-top: 12px;
+  padding-top: 10px;
+  border-top: 1px solid var(--border-light);
+}
+.em-etw-h {
+  font-weight: 600;
+  font-size: 13px;
+  margin-bottom: 6px;
+}
+.em-etw-sub {
+  font-size: 12px;
+  margin-bottom: 6px;
+  line-height: 1.45;
+}
+.em-etw-code {
+  font-size: 11px;
+  padding: 1px 4px;
+  border-radius: 4px;
+  background: var(--bg-secondary);
+}
+.em-etw-test {
+  padding-bottom: 4px;
+}
+.em-etw-result {
+  margin-top: 10px;
+  padding: 10px;
+  border-radius: 10px;
+  border: 1px solid var(--border-light);
+  background: var(--bg-secondary);
+}
+.em-etw-ok {
+  font-weight: 600;
+  color: var(--success, #2e7d32);
+  margin-bottom: 6px;
+}
+.em-etw-no {
+  font-weight: 600;
+  margin-bottom: 6px;
+}
+.em-etw-resolved-h {
+  margin-top: 8px;
+  font-weight: 600;
+  font-size: 12px;
+}
+.em-etw-pre {
+  margin: 6px 0 0;
+  padding: 8px;
+  border-radius: 8px;
+  background: var(--bg-primary);
+  border: 1px solid var(--border-light);
+  white-space: pre-wrap;
+  word-break: break-word;
+  font-size: 12px;
+  max-height: 160px;
+  overflow: auto;
 }
 </style>
 
