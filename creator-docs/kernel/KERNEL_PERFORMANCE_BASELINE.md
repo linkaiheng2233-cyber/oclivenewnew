@@ -21,10 +21,23 @@
 
 ```bash
 cargo bench -p oclive_kernel_runtime --bench kernel_hot_paths -- --verbose
+cargo bench -p oclive_kernel_runtime --bench kernel_pipeline_blueprint -- --verbose
 cargo bench -p oclive_kernel_runtime --bench kernel_plugins_persistence -- --verbose
 ```
 
 **CI 基线对比**：机器可读数值见同目录 [`kernel_perf_baseline_v0.json`](./kernel_perf_baseline_v0.json)；GitHub Actions 工作流在 **手动触发** 且勾选 **`bench_full`** 时运行上述 benches，并由 `scripts/criterion_compare_baseline.py` 与 JSON 对比，超约 **15%** 退化输出 `::warning::`（不阻塞主 CI 矩阵）。
+
+## 蓝图解释器（`kernel_pipeline_blueprint`）
+
+对比 **无 `pipeline.ocblueprint` 文件**（默认入口线性序列）与 **示例蓝图**（`simple_companion` / `memory_heavy`）下单次 `process_message` 的耗时。临时目录自 `roles/shimeng` 克隆并写入蓝图；需本机存在 `roles/shimeng`。
+
+| 基准 ID | 含义 | 耗时（`--quick` 估计值，本机一次采样） | 备注 |
+|---------|------|----------------------------------------|------|
+| `process_message_default_no_blueprint` | 无蓝图文件，走默认入口 | **~3.38–3.50 ms** | 与 `kernel_hot_paths` 同量级（Mock LLM） |
+| `process_message_blueprint_simple_companion` | 与默认八步等价的蓝图 | **~3.67–3.86 ms** | 解释器 + 与默认同序原子 |
+| `process_message_blueprint_memory_heavy_parallel` | 含只读 `parallel` + 生成 | **~4.19–4.42 ms** | `join!` 调度与额外只读步 |
+
+**复现**：`cargo bench -p oclive_kernel_runtime --bench kernel_pipeline_blueprint -- --verbose`（完整 Criterion）；快速冒烟可加 `-- --quick`。
 
 ## 热点路径（`kernel_hot_paths`）
 
@@ -50,6 +63,7 @@ cargo bench -p oclive_kernel_runtime --bench kernel_plugins_persistence -- --ver
 
 | 日期 | PR / 提交 | 变更摘要 | 受影响基准 | 变更前（估计值） | 变更后（估计值） | 结论 |
 |------|-----------|----------|------------|------------------|------------------|------|
+| 2026-05-12 | bench(pipeline) 蓝图对照 | 新增 `kernel_pipeline_blueprint`；记录默认 vs 蓝图 vs `memory_heavy` 并行 | `process_message_*`（本表「蓝图解释器」节） | （见上节 quick） | （见上节 quick） | 蓝图路径略增开销；并行示例因 join 与额外步略高 |
 | 2026-05-06 | perf(kernel) IO 缓存 | **`McpClient`**：`mcp-servers/` 目录 mtime 未变则跳过重读 JSON；**目录插件**：`rescan_plugin_roots` 命中 **mtime 指纹磁盘缓存**（`OCLIVE_BUST_PLUGIN_SCAN_CACHE` 可 bust） | `directory_rescan_and_bootstrap_dto`、MCP 列表路径 | 以本机 `cargo bench -p oclive_kernel_runtime --bench kernel_hot_paths --bench kernel_plugins_persistence -- --quick` 复测为准 | 同上 | 二次 rescan / 高频 `list_mcp_servers` 预期改善；全量 Criterion 以 CI `bench_full` 或本地 verbose 为准 |
 
 ## 冷启动与缓存（手测记录位）

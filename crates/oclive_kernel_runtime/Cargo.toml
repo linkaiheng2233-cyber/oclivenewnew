@@ -119,6 +119,10 @@ name = "kernel_hot_paths"
 harness = false
 
 [[bench]]
+name = "kernel_pipeline_blueprint"
+harness = false
+
+[[bench]]
 name = "kernel_plugins_persistence"
 harness = false
 required-features = ["full"]
