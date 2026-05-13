@@ -4,6 +4,18 @@
 
 本地优先的桌面角色对话应用：**Tauri + Vue 3 + Rust**。引擎支持场景、虚拟时间、异地/共景、好感与记忆、可替换子系统（记忆检索 / 情绪 / 事件估计 / Prompt 组装），角色内容以 **`roles/{角色id}/`** 角色包分发。
 
+## 当前工程状态（摘要）
+
+| 领域 | 状态 |
+|------|------|
+| **内核编排** | 主编排在 **`src-tauri/src/domain/chat_engine/mod.rs`** 的 **`process_message`**；无独立入口蓝图 DSL 主路径；子系统经 **`PluginHost`** 解析（含 **`agent`**）。 |
+| **测试** | **Rust**：`src-tauri` 下 **`cargo test`** + `tests/` 集成测（CI Ubuntu/Windows）。**前端**：CI **`npm run build`**；Vitest 单测脚本**未**在 `package.json` 启用。OOCP 独立协议套件**未**入库，见 [creator-docs/testing/OOCP_TEST_SUITE.md](creator-docs/testing/OOCP_TEST_SUITE.md)。 |
+| **安全** | 已跑 **`cargo audit`（0.22.1）**；**已知漏洞跟踪中**（当前锁文件 **5** 条漏洞级命中），见 [creator-docs/security/KNOWN_VULNERABILITIES.md](creator-docs/security/KNOWN_VULNERABILITIES.md)；审查边界见 [creator-docs/security/SECURITY_AUDIT_SCOPE.md](creator-docs/security/SECURITY_AUDIT_SCOPE.md)。 |
+| **CI 守门** | **`rustfmt` + `clippy`（`-D warnings`）+ `cargo test`**（`src-tauri`）+ **`npm ci` / `npm run build`**；另含 **`cargo-audit`** job（**允许失败**）与 **remote-plugin-demo** 烟测。 |
+| **轻量化基线** | [creator-docs/development/LIGHTWEIGHT_PROFILE.md](creator-docs/development/LIGHTWEIGHT_PROFILE.md)（Release、`cargo-bloat` 采样）。 |
+
+协作说明见根目录 **[AGENTS.md](AGENTS.md)**。
+
 ## 平台愿景（开放实验场）
 
 在 **本地优先、可替换子系统、角色包为唯一对接面** 的前提下，oclive 希望成为创作者与玩家都能 **安全实验** 的桌面底座：契约与 CI 守住兼容边界，侧车与目录式插件降低扩展成本。**愿景摘要**见 [creator-docs/roadmap/VISION_OPEN_LAB.md](creator-docs/roadmap/VISION_OPEN_LAB.md)；分阶段路线见 [creator-docs/roadmap/VISION_ROADMAP_MONTHLY.md](creator-docs/roadmap/VISION_ROADMAP_MONTHLY.md)。
@@ -104,7 +116,7 @@ npm run build
 
 ## 测试与检查
 
-**CI（`.github/workflows/ci.yml`）**：在 **Ubuntu** 与 **Windows** 上均执行 Rust **`rustfmt` + `clippy`（`-D warnings`）+ 完整 `cargo test`**（含 `tests/` 集成测试），以及 **`npm ci` + `npm run build`**。用于尽早发现路径、换行符与 Windows 专用链接问题。
+**CI（`.github/workflows/ci.yml`）**：在 **Ubuntu** 与 **Windows** 上均执行 Rust **`rustfmt` + `clippy`（`-D warnings`）+ 完整 `cargo test`**（`src-tauri` 工作目录，含 `tests/` 集成测试），以及 **`npm ci` + `npm run build`**。另含 **`cargo-audit`（0.22.1，`continue-on-error`）** 与 **`remote-plugin-demo`**（Python 侧车 `memory.rank` 烟测）。
 
 | 命令 | 用途 |
 |------|------|
