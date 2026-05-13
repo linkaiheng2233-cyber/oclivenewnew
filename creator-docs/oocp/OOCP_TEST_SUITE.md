@@ -92,6 +92,63 @@
 
 ---
 
+### S7 — 会话关闭（`session.destroy`）
+
+| 项 | 值 |
+|---|-----|
+| **名称** | `session_destroy` |
+| **OOCP 方法** | **`session.destroy`**（v0.1 无 `session.close` 别名；若文档写「关闭」均指本方法） |
+| **请求 params** | `{ "session_ns": "<S4 返回的 session_ns>" }` |
+| **预期 result** | `type: "response"` 且 `result` 为对象（当前运行时为 `{}` 占位）。 |
+| **实现说明** | 当前 `runtime_oocp_handler::session_destroy` **不吊销**后续 `chat.send_message` 能力；本场景仅验证**协议面可调用且不崩溃**。若产品语义要求「销毁后不可再用」，需在运行时补强后再收紧断言。 |
+
+---
+
+### S8 — 多次消息往返
+
+| 项 | 值 |
+|---|-----|
+| **名称** | `chat_send_message_multi_turn` |
+| **OOCP 方法** | `chat.send_message` **连续 3 次**（与 S6 的首条消息合计共 4 轮用户输入；脚本对每轮均断言 `reply` 非空） |
+| **请求 params** | 同 S6，仅 `user_message` 每次不同 |
+| **预期 result** | 每轮均返回非空 `reply`。不强制要求文本互异（stub/兜底可能重复）。 |
+
+---
+
+### S9 — 插件槽 / 会话状态探针
+
+| 项 | 值 |
+|---|-----|
+| **名称** | `session_state_probe` |
+| **OOCP 方法（v0.1 实际）** | **`session.get_state`** |
+| **背景** | **`plugin.list_slots` 不在 OOCP v0.1 方法白名单**（见 `crates/oclive_core/src/capabilities/mod.rs`）。宿主 UI 的插件槽由 Tauri / 市场数据面提供，**不在 `oclive_kernel_server` 本 job 覆盖范围**。 |
+| **请求 params** | `{ "session_ns": "<S4>" }` |
+| **预期 result** | `result.role_id` 为非空字符串；对象含会话快照字段（与 `session.get_state` DTO 一致）。 |
+
+---
+
+### S10 — 无效方法错误处理
+
+| 项 | 值 |
+|---|-----|
+| **名称** | `unsupported_method` |
+| **OOCP 方法** | 任意**不在** `capabilities.methods` 中的名称（脚本使用 `oclive.__nonexistent_method__`） |
+| **请求 params** | `{}` |
+| **预期** | 客户端收到 **`type: "error"`** 或 SDK 以 **reject/throw** 形式暴露；`error.code` 为 **`UNSUPPORTED_METHOD`**（或中文错误信息包含「未在 capabilities」「未知方法」等实现细节）。进程不崩溃。 |
+
+---
+
+### S11 — 角色包元数据（经 `role.get_info`）
+
+| 项 | 值 |
+|---|-----|
+| **名称** | `role_pack_metadata` |
+| **OOCP 方法** | **`role.get_info`**（v0.1 无独立 `role.get_pack_info`） |
+| **请求 params** | 同 S3 |
+| **预期 result** | `version`、`author`、`description` 均为**非空字符串**（与 `RoleInfo` / manifest 对齐；`description` 允许为短文案但不可缺字段）。 |
+
+---
+
 ## 扩展新场景
 
 1. 在 **`OOCP_METHODS`** 白名单与 `oocp_handler::handle_method` 中确认方法已实现。  
