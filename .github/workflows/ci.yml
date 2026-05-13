@@ -48,6 +48,14 @@ jobs:
   oocp-test-suite:
     name: oocp_test_suite (Linux, Node + kernel_server)
     runs-on: ubuntu-latest
+    env:
+      # Deterministic binary path (overrides repo .cargo target-dir redirect for this job only).
+      CARGO_TARGET_DIR: ${{ github.workspace }}/.oocp-ci-target
+      OCLIVE_ROLES_DIR: ${{ github.workspace }}/roles
+      OCLIVE_DB_PATH: /tmp/oclive_oocp_ci.db
+      OCLIVE_APP_DATA_DIR: /tmp/oclive_oocp_ci_appdata
+      OOCP_API_PORT: "48888"
+      OOCP_API_BIND: "127.0.0.1"
     steps:
       - uses: actions/checkout@v4
       - uses: dtolnay/rust-toolchain@stable
@@ -65,30 +73,29 @@ jobs:
           cd tools/oocp-client
           npm install
           npm run build
-      - name: Start oclive_kernel_server (release)
-        env:
-          OCLIVE_ROLES_DIR: ${{ github.workspace }}/roles
-          OCLIVE_DB_PATH: /tmp/oclive_oocp_ci.db
-          OCLIVE_APP_DATA_DIR: /tmp/oclive_oocp_ci_appdata
-          OOCP_API_PORT: "48888"
+      - name: Build and start oclive_kernel_server (release)
         run: |
           set -euo pipefail
           rm -f "$OCLIVE_DB_PATH" || true
-          mkdir -p "$OCLIVE_APP_DATA_DIR"
-          cargo run --release -p oclive_kernel_server > /tmp/oclive_kernel_server_oocp.log 2>&1 &
+          mkdir -p "$OCLIVE_APP_DATA_DIR" "$CARGO_TARGET_DIR"
+          cargo build --release -p oclive_kernel_server
+          KERNEL_BIN="$CARGO_TARGET_DIR/release/oclive_kernel_server"
+          test -x "$KERNEL_BIN"
+          nohup "$KERNEL_BIN" > /tmp/oclive_kernel_server_oocp.log 2>&1 &
           echo $! > /tmp/oclive_kernel_server_oocp.pid
-          for i in $(seq 1 60); do
-            if curl -sf "http://127.0.0.1:48888/health" | grep -q ok; then
-              echo "kernel_server ready"
+          for i in $(seq 1 30); do
+            if curl -sf "http://127.0.0.1:${OOCP_API_PORT}/health" | grep -q ok; then
+              echo "kernel_server ready (attempt $i)"
               exit 0
             fi
-            sleep 0.5
+            sleep 2
           done
           echo "--- kernel_server log ---"
           cat /tmp/oclive_kernel_server_oocp.log || true
           exit 1
       - name: Run OOCP protocol test suite (Node)
         env:
+          OOCP_HTTP_PORT: "48888"
           OOCP_HTTP_BASE: "http://127.0.0.1:48888"
         run: |
           set -euo pipefail
@@ -98,9 +105,16 @@ jobs:
       - name: Stop kernel_server
         if: always()
         run: |
+          set +e
           if [ -f /tmp/oclive_kernel_server_oocp.pid ]; then
-            kill "$(cat /tmp/oclive_kernel_server_oocp.pid)" 2>/dev/null || true
+            PID="$(cat /tmp/oclive_kernel_server_oocp.pid)"
+            if [ -n "$PID" ]; then
+              kill "$PID" 2>/dev/null || true
+              sleep 1
+              kill -9 "$PID" 2>/dev/null || true
+            fi
           fi
+          pkill -f 'oclive_kernel_server' 2>/dev/null || true
 
   rust:
     strategy:
