@@ -275,6 +275,7 @@ pub async fn process_message(
     .await
 }
 
+/// 加载角色 `Arc`（与 `pipeline_actions::load_role` 语义一致，供入口直编路径复用）。
 async fn ensure_role_loaded(state: &KernelAppState, role_id: &str) -> Result<Arc<Role>> {
     state.load_role_cached(role_id)
 }
