@@ -125,6 +125,11 @@ jobs:
     steps:
       - uses: actions/checkout@v4
       - uses: dtolnay/rust-toolchain@stable
+      - name: Minimal dist/ for Tauri generate_context (rust job skips npm build)
+        shell: bash
+        run: |
+          mkdir -p dist
+          printf '%s\n' '<!DOCTYPE html><html><head><meta charset="utf-8"><title>ci</title></head><body></body></html>' > dist/index.html
       - name: Install Linux dependencies (Tauri / webkit)
         if: runner.os == 'Linux'
         run: |

@@ -27,7 +27,7 @@ plugins/official-react-test-runner/
 - **`process`**: `command` + `args` 拉起 JSON-RPC HTTP 侧车（与官方示例一致：stdout 打印 `OCLIVE_READY http://…/rpc`）。  
 - **`rpcMethods`**: 列出宿主可 `directory_plugin_invoke` 的方法名。
 
-权限与审计规则见 **[AGENTS.md](../../AGENTS.md)** 内核约束章节。
+权限与审计规则见 **[AGENTS.md](../AGENTS.md)** 内核约束章节。
 
 ## 3. 替换测试运行器（Vitest → Jest / Mocha / Playwright）
 
