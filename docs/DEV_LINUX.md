@@ -8,7 +8,7 @@
 
 在仓库根目录：
 
-1. **依赖**（与 `.github/workflows/ci.yml` 中 `apt-get install` 一致）：`libwebkit2gtk-4.0-dev`、`libgtk-3-dev`、`libayatana-appindicator3-dev`、`librsvg2-dev`、`patchelf`、`libssl-dev` 等。
+1. **依赖**（与 `.github/workflows/ci.yml` 中 `apt-get install` 一致）：`libwebkit2gtk-4.1-dev`、`libgtk-3-dev`、`libayatana-appindicator3-dev`、`librsvg2-dev`、`patchelf`、`libssl-dev` 等。
 2. **Rust**：`cargo check --workspace`、`cargo test --workspace`
 3. **前端**：`npm ci`、`npm run build`
 4. **Tauri 开发**：`npm run tauri:dev`（或 `package.json` 中等价脚本）
@@ -59,7 +59,7 @@
 # 1) 系统依赖（与 .github/workflows/ci.yml 中 Linux 步骤一致）
 sudo apt-get update
 sudo apt-get install -y \
-  libwebkit2gtk-4.0-dev build-essential curl wget \
+  libwebkit2gtk-4.1-dev build-essential curl wget \
   libssl-dev libgtk-3-dev libayatana-appindicator3-dev librsvg2-dev patchelf
 
 # 2) 安装前端依赖并构建静态资源

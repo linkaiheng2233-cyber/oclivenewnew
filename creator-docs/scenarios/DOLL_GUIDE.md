@@ -44,7 +44,7 @@
 ```bash
 sudo apt-get update
 sudo apt-get install -y build-essential pkg-config git curl \
-  libssl-dev clang cmake libwebkit2gtk-4.0-dev libgtk-3-dev \
+  libssl-dev clang cmake libwebkit2gtk-4.1-dev libgtk-3-dev \
   libayatana-appindicator3-dev librsvg2-dev patchelf
 ```
 

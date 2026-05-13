@@ -145,7 +145,9 @@ fn unix_fs_available_bytes(path: &std::path::Path) -> std::io::Result<u64> {
     if rc != 0 {
         return Err(std::io::Error::last_os_error());
     }
-    Ok(u64::from(v.f_bavail).saturating_mul(u64::from(v.f_frsize)))
+    let bavail = u64::try_from(v.f_bavail).unwrap_or(0);
+    let frsize = u64::try_from(v.f_frsize).unwrap_or(0);
+    Ok(bavail.saturating_mul(frsize))
 }
 
 async fn check_db_ping(state: &KernelAppState) -> String {

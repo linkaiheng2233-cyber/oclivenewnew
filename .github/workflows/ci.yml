@@ -129,7 +129,7 @@ jobs:
         if: runner.os == 'Linux'
         run: |
           sudo apt-get update
-          sudo apt-get install -y libwebkit2gtk-4.0-dev build-essential curl wget \
+          sudo apt-get install -y libwebkit2gtk-4.1-dev build-essential curl wget \
             libssl-dev libgtk-3-dev libayatana-appindicator3-dev librsvg2-dev patchelf
       - name: rustfmt (workspace root)
         run: cargo fmt --all --check
@@ -193,7 +193,10 @@ jobs:
       - name: Smoke test memory.rank JSON-RPC
         run: |
           python - <<'PY'
+          import http.client
           import json
+          import time
+          import urllib.error
           from urllib import request
 
           body = json.dumps({
@@ -214,8 +217,30 @@ jobs:
               headers={"Content-Type": "application/json"},
               method="POST",
           )
-          with request.urlopen(req, timeout=5) as resp:
-              raw = resp.read().decode("utf-8")
+
+          raw = None
+          last_err = None
+          for _ in range(60):
+              try:
+                  with request.urlopen(req, timeout=5) as resp:
+                      raw = resp.read().decode("utf-8")
+                  break
+              except (
+                  urllib.error.URLError,
+                  http.client.RemoteDisconnected,
+                  http.client.IncompleteRead,
+                  ConnectionResetError,
+                  OSError,
+              ) as e:
+                  last_err = e
+                  time.sleep(0.25)
+          if raw is None:
+              try:
+                  print(open("/tmp/remote_plugin_demo.log", encoding="utf-8", errors="replace").read())
+              except OSError as e:
+                  print("(no log)", e)
+              raise SystemExit(f"server not reachable after retries: {last_err}") from last_err
+
           data = json.loads(raw)
           assert data["jsonrpc"] == "2.0", raw
           assert data["id"] == 1, raw
@@ -247,7 +272,7 @@ jobs:
       - name: Install Linux dependencies (Tauri / webkit)
         run: |
           sudo apt-get update
-          sudo apt-get install -y libwebkit2gtk-4.0-dev build-essential curl wget \
+          sudo apt-get install -y libwebkit2gtk-4.1-dev build-essential curl wget \
             libssl-dev libgtk-3-dev libayatana-appindicator3-dev librsvg2-dev patchelf
       - name: Compile Criterion benches (no run)
         run: cargo bench -p oclive_kernel_runtime --no-run
@@ -266,7 +291,7 @@ jobs:
       - name: Install Linux dependencies (Tauri / webkit)
         run: |
           sudo apt-get update
-          sudo apt-get install -y libwebkit2gtk-4.0-dev build-essential curl wget \
+          sudo apt-get install -y libwebkit2gtk-4.1-dev build-essential curl wget \
             libssl-dev libgtk-3-dev libayatana-appindicator3-dev librsvg2-dev patchelf
       - name: Build test binary for directory-plugin benches
         run: cargo build -p oclive_kernel_runtime --bin oclive_test_dir_plugin
