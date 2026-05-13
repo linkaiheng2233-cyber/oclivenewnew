@@ -1,4 +1,4 @@
-//! 编译期可替换子系统宿主：按角色包 [`PluginBackends`](crate::models::PluginBackends) 选择具体实现。
+//! 编译期可替换子系统宿主：按角色包 [`PluginBackends`] 选择具体实现。
 //!
 //! 与仓库 `creator-docs/plugin-and-architecture/PLUGIN_V1.md` 契约一致；`Remote` 在设置 `OCLIVE_REMOTE_*` 时走 HTTP JSON-RPC，否则回退内置。
 

@@ -1,4 +1,4 @@
-//! `EventImpactEngine` 桥接：委托 [`oclive_event_builtin::estimate_event_impact`]（经 [`crate::domain::event_impact_ai`] re-export）。
+//! `EventImpactEngine` 桥接：委托 [`oclive_event_builtin::estimate_event_impact`]（经 `event_impact_ai` 模块 re-export）。
 
 use async_trait::async_trait;
 use oclive_kernel_core::error::Result;

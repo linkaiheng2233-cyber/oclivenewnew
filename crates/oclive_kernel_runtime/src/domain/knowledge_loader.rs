@@ -1,4 +1,4 @@
-//! 从角色包目录加载 [`KnowledgeIndex`](crate::models::knowledge::KnowledgeIndex)：Markdown + YAML front matter。
+//! 从角色包目录加载 [`KnowledgeIndex`]：Markdown + YAML front matter。
 
 use crate::error::{AppError, Result};
 use crate::models::knowledge::{EventHintEntryDisk, KnowledgeChunk, KnowledgeIndex};

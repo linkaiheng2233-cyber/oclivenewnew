@@ -1,4 +1,4 @@
-//! 记忆检索可替换门面；默认实现见设施 crate [`oclive_memory_builtin`](oclive_memory_builtin)。
+//! 记忆检索可替换门面；默认实现见设施 crate [`oclive_memory_builtin`]。
 
 #[cfg(not(feature = "default-memory-providers"))]
 use crate::domain::disabled_default_providers::DisabledMemoryRetrieval;

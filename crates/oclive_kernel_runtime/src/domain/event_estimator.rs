@@ -1,5 +1,5 @@
 //! 事件影响估计：`EventEstimator` trait 定义于 [`oclive_kernel_core::event_estimator`]；
-//! 开启 **`default-event-providers`** 时 Builtin 薄壳在 **`oclive_event_builtin`**，经 [`KernelEventImpactEngine`](super::event_impact_bridge::KernelEventImpactEngine) 委托 [`estimate_event_impact`](super::event_impact_ai::estimate_event_impact)。
+//! 开启 **`default-event-providers`** 时 Builtin 薄壳在 **`oclive_event_builtin`**，经 [`KernelEventImpactEngine`] 委托 [`estimate_event_impact`](super::event_impact_ai::estimate_event_impact)。
 #![allow(clippy::too_many_arguments)] // `EventEstimator::estimate` 与编排层参数一致，不宜为 clippy 拆结构体
 
 pub use oclive_kernel_core::event_estimator::EventEstimator;
