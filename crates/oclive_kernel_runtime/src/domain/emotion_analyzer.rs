@@ -11,6 +11,6 @@ pub trait EmotionResultExt {
 
 impl EmotionResultExt for EmotionResult {
     fn to_emotion(&self) -> Emotion {
-        EmotionAnalyzer::get_dominant_emotion(self)
+        self.dominant_emotion()
     }
 }

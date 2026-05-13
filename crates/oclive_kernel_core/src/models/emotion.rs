@@ -1,7 +1,7 @@
 use serde::{Deserialize, Serialize};
 use std::fmt;
 
-/// UI 向离散情绪标签（与七维 `EmotionResult` 映射见 `oclive_emotion_builtin::classic::EmotionAnalyzer`）。
+/// UI 向离散情绪标签（与七维 `EmotionResult` 映射见 `EmotionResult::dominant_emotion` / `EmotionResultExt::to_emotion`）。
 #[derive(Debug, Clone, Copy, Serialize, Deserialize, PartialEq, Eq)]
 pub enum Emotion {
     Happy,

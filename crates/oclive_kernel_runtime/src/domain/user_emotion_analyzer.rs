@@ -87,10 +87,7 @@ mod tests {
         let v2 = BuiltinUserEmotionAnalyzerV2.analyze(text).unwrap();
         assert!(b.joy > 0.2, "builtin should see joy");
         assert!(v2.neutral >= 0.99);
-        assert_ne!(
-            EmotionAnalyzer::get_dominant_emotion(&b),
-            EmotionAnalyzer::get_dominant_emotion(&v2)
-        );
-        assert_eq!(EmotionAnalyzer::get_dominant_emotion(&v2), Emotion::Neutral);
+        assert_ne!(b.dominant_emotion(), v2.dominant_emotion());
+        assert_eq!(v2.dominant_emotion(), Emotion::Neutral);
     }
 }

@@ -61,7 +61,7 @@ pub(crate) async fn process_co_present(
     let user_emotion = emotion_result.to_emotion();
     let user_emotion_str = user_emotion.to_string();
     let user_emotion_prompt =
-        crate::domain::emotion_analyzer::EmotionAnalyzer::format_for_prompt(&emotion_result);
+        emotion_result.format_emotion_for_prompt();
 
     let main_llm_model = super::resolve_main_llm_model_for_generate(state, role, srid).await?;
     let (recent_turns, recent_turns_for_event, recent_events_for_event) =
