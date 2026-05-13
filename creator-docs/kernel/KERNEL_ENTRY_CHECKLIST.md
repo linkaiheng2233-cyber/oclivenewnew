@@ -216,6 +216,7 @@
 |----------|--------|
 | `tests/public_api_error_contract.rs` | `AppError::code()` / `to_frontend_error()` 与 [`handoff/10_ERROR_CODE_DICTIONARY.md`](../../handoff/10_ERROR_CODE_DICTIONARY.md) §Common |
 | `tests/session_process_message_smoke.rs` | **`send_message`** → `domain::chat_engine::process_message` |
+| `tests/p3_complex_emotion_refine.rs` | 入口直编后 **`chat_generation_cancel`** 复位等细粒度行为 |
 | `tests/p0_support_modules_smoke.rs` | 插件 semver、市场索引缓存、`expert_models` 编译器、`local_imports` |
 | `tests/p0_kernel_lifecycle_smoke.rs` | **`load_role` / `delete_role`**、`expert_models_*` 会话覆盖、**`role-pack-zip`** 下插件归档安装 |
 

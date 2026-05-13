@@ -1,13 +1,15 @@
 # 可编程对话流水线 · 蓝图 JSON（`*.ocblueprint`）
 
-内核在角色目录下可选读取 **`pipeline.ocblueprint`**（与 `manifest.json` 同级），用于描述本角色在 `process_message` 中 **一段** 原子步骤顺序。首版与 `oclive_kernel_runtime` 中的 `pipeline_actions` 原子标识对齐。
+内核在角色目录下可选读取 **`pipeline.ocblueprint`**（与 `manifest.json` 同级），用于描述 **一套** 与 `pipeline_actions` 原子标识对齐的可编程步骤（Schema、校验器、解释器均在 `oclive_kernel_runtime` 内维护）。
+
+> **`send_message` 入口（当前实现）**：`domain::chat_engine::process_message` **不再**在每条用户消息上解释 `pipeline.ocblueprint`；入口改为直编 `validate_scene_id`、会话引导、`AgentProvider::process`、以及共景 / 异地分支。蓝图文件仍可由编写器生成并随角色包分发；`pipeline_loader` / `pipeline_interpreter` 继续用于 **crate 集成测试** 与后续若重新挂回主路径时的语义基线。若文档其他段落仍写「入口执行蓝图」，以本段为准。
 
 ## 文件位置与发现
 
 - **运行时路径**：`{roles_dir}/{manifest_role_id}/pipeline.ocblueprint`
 - **仓库示例**：`examples/blueprints/*.ocblueprint`（文件名可任意，便于分发；拷入角色目录后须命名为 `pipeline.ocblueprint`）
 
-若文件不存在，内核使用内置默认线性入口序列（与未提供蓝图时一致）。若存在但校验失败，内核记录告警并同样回退到默认序列。
+若文件不存在，**集成测试与默认序列对照**仍使用内置默认线性入口（与 `examples/blueprints/simple_companion.ocblueprint` 等示例一致）。若存在但校验失败，加载器记录告警；**主聊天入口当前不加载该文件**，故不影响 `send_message` 的在线行为。
 
 ## 顶层字段
 
@@ -83,7 +85,7 @@ JSON 使用 **`type` 判别字段**（camelCase），与 `PipelinePredicate` 一
 
 | 取值 | 语义 |
 |------|------|
-| **`HALT`** | 某步失败后 **立即** 结束蓝图执行；`process_message` 对入口蓝图会 **降级** 再跑一遍与历史版本一致的默认入口线性序列，保证对话不中断。 |
+| **`HALT`** | 某步失败后 **立即** 结束蓝图执行；在 **解释器被调用** 的场景（如集成测试）下，`process_message` 曾会对入口蓝图 **降级** 再跑一遍默认入口线性序列；**当前主路径不再执行入口蓝图**，故该降级语义仅对仍调用 `pipeline_interpreter` 的路径有效。 |
 | **`DEGRADE`** | 记录告警并 **跳过** 当前失败步，继续执行后续步骤。 |
 
 大小写不敏感（实现归一化为大写枚举）。
@@ -92,9 +94,11 @@ JSON 使用 **`type` 判别字段**（camelCase），与 `PipelinePredicate` 一
 
 产品文档中常把一轮对话概括为三步。当前 v0 原子仍按 **编排实际顺序** 拆分（例如入口段在 `run_agent` 之前完成插件与模型解析；用户情绪分析在 Agent 早退分支内等）。官方示例 **`simple_companion.ocblueprint`** 展示的是 **与默认一致的入口八步**（从 `init_turn` 到 `run_agent`），与「极简陪伴」默认路径对齐；后续若增加 `assemble_prompt` 等独立原子，再在 Schema 与白名单中扩展即可。
 
-## 入口蓝图与 `validate_scene`
+## 入口蓝图与 `validate_scene`（解释器路径）
 
-`process_message` 在加载蓝图 **之前** 已执行 `validate_scene`（含场景列表与 `effective_scene_id` 注入）。因此 **`pipeline.ocblueprint` 的 `steps` 不应再包含 `validate_scene`**，否则会在同一轮内重复校验。加载器会 **拒绝** 含该 `action` 的蓝图文件并回退到默认序列。
+当 **`pipeline_interpreter::execute_pipeline`** 被调用时，调用方须在加载蓝图 **之前** 已完成场景校验（历史上由 `validate_scene` / 现 `validate_scene_id` 注入 `effective_scene_id` 与 `scene_id_list`）。因此 **`pipeline.ocblueprint` 的 `steps` 不应再包含 `validate_scene`**，否则会在同一轮内重复校验。加载器会 **拒绝** 含该 `action` 的蓝图文件并回退到默认序列。
+
+> 主 **`send_message`** 路径当前 **不** 挂载入口蓝图解释器；场景校验在 `process_message` 开头直调 `validate_scene_id`。
 
 ## 已知原子 `action` 与 I/O 类型
 
