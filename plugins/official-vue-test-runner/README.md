@@ -18,6 +18,18 @@ Directory plugin (`com.oclive.official_vue_test_runner`) that exposes a JSON-RPC
 | `get_history` | `{ limit?: number }` | Returns up to **20** (default) or **limit** (max 100) recent run summaries from `test_history.json` beside `rpc_server.mjs`. |
 | `clear_history` | `{}` | Clears the local history file. |
 
+## Unified test output (`run_test.structured`)
+
+`run_test` returns a **`structured`** object aligned with **[`creator-docs/testing/TEST_OUTPUT_SCHEMA.md`](../../creator-docs/testing/TEST_OUTPUT_SCHEMA.md)** (`schemaVersion: 1`, `kind: "oclive.unit_test_run.v1"`). Hosts should prefer `structured.summary` / `structured.failures` / `structured.suites` for UI.
+
+## Adaptation guide (other runners: Jest / Mocha / Playwright)
+
+1. **Fork the sidecar**: keep the JSON-RPC HTTP bootstrap (`OCLIVE_READY …`) and method names your host expects (`health`, `run_test`, …).  
+2. **Swap the CLI** inside `run_test`: replace `npx vitest …` with `npx jest` / `npx mocha` / `npx playwright test`, then map that reporter JSON into the **same `structured` shape** (see schema doc).  
+3. **Permissions**: keep `rpc:invoke`; add `process:spawn` only if your runner shells out (same as Vitest path).  
+4. **OOCP mocks**: `test_utils/oocp_mock.ts` is **Vitest-agnostic** (plain TS types + objects); reuse in Jest or copy the JSON shapes to another language.  
+5. **End-to-end checklist** for a new stack: see **[`creator-docs/ADAPTING_TEST_PLUGIN.md`](../../creator-docs/ADAPTING_TEST_PLUGIN.md)**.
+
 ## OOCP helpers for Vitest (`test_utils/oocp_mock.ts`)
 
 Use these when a Vue/TS test needs **wire-shaped** OOCP JSON (request / response envelopes) without running the kernel.
