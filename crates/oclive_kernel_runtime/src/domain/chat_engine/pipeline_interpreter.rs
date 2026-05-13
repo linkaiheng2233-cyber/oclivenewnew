@@ -65,7 +65,7 @@ fn run_steps<'a>(
             if let Some(b) = &step.branch {
                 let take_true = {
                     let g = ctx.lock().await;
-                    b.predicate.eval(&*g)
+                    b.predicate.eval(&g)
                 };
                 tracing::trace!(
                     target: "oclive_pipeline",
@@ -102,7 +102,7 @@ fn run_steps<'a>(
             let t0 = Instant::now();
             let res = {
                 let mut g = ctx.lock().await;
-                dispatch_inner(state, &mut *g, req, action).await
+                dispatch_inner(state, &mut g, req, action).await
             };
             let elapsed_ms = t0.elapsed().as_millis() as u64;
             let step_id = step.id.as_deref().unwrap_or("-");

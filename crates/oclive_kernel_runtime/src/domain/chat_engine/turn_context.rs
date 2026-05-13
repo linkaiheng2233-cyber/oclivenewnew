@@ -49,16 +49,10 @@ pub struct TurnRole {
     pub role: Option<Arc<Role>>,
 }
 
-#[derive(Clone)]
+#[derive(Clone, Default)]
 pub struct TurnPlugins {
     /// `resolve_plugins` 写入；`analyze_emotion_user` / `run_agent` 等依赖。
     pub resolved: Option<ResolvedRolePlugins>,
-}
-
-impl Default for TurnPlugins {
-    fn default() -> Self {
-        Self { resolved: None }
-    }
 }
 
 #[derive(Default, Clone)]

@@ -51,14 +51,14 @@ pub fn action_io_type(action: &str) -> Option<ActionIOType> {
     ACTION_IO_TYPES.get(action).copied()
 }
 
-fn require_manifest_role_id<'a>(ctx: &'a TurnContext) -> Result<&'a str> {
+fn require_manifest_role_id(ctx: &TurnContext) -> Result<&str> {
     ctx.ids
         .manifest_role_id
         .as_deref()
         .ok_or_else(|| AppError::InvalidParameter("TurnContext.ids.manifest_role_id".into()))
 }
 
-fn require_session_namespace<'a>(ctx: &'a TurnContext) -> Result<&'a str> {
+fn require_session_namespace(ctx: &TurnContext) -> Result<&str> {
     ctx.ids
         .session_namespace
         .as_deref()

@@ -153,9 +153,7 @@ struct PipelineStepFile {
 }
 
 fn action_allowed_for_blueprint(action: &str) -> bool {
-    ALLOWED_PIPELINE_BLUEPRINT_ACTIONS
-        .iter()
-        .any(|a| *a == action)
+    ALLOWED_PIPELINE_BLUEPRINT_ACTIONS.contains(&action)
 }
 
 fn parse_on_failure(raw: Option<&str>) -> Result<OnFailurePolicy, BlueprintError> {
