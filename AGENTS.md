@@ -9,6 +9,11 @@
 - **创作者与架构文档**：[`creator-docs/README.md`](creator-docs/README.md) → [`creator-docs/getting-started/DOCUMENTATION_INDEX.md`](creator-docs/getting-started/DOCUMENTATION_INDEX.md)。
 - **愿景与路线**：[`creator-docs/roadmap/VISION_ROADMAP_MONTHLY.md`](creator-docs/roadmap/VISION_ROADMAP_MONTHLY.md)、[`creator-docs/roadmap/VISION_OPEN_LAB.md`](creator-docs/roadmap/VISION_OPEN_LAB.md)（开放实验场摘要）。
 
+### 测试体系（协议层 + UI 层）
+
+- **OOCP / 无头内核（语言无关）**：标准化场景见 [`creator-docs/oocp/OOCP_TEST_SUITE.md`](creator-docs/oocp/OOCP_TEST_SUITE.md)；索引导航 [`creator-docs/oocp/OOCP_SPEC_COMPLETE_REFERENCE.md`](creator-docs/oocp/OOCP_SPEC_COMPLETE_REFERENCE.md)。官方 Node 可执行对照实现见 [`examples/oocp-test-suite/`](examples/oocp-test-suite/)（对 `oclive_kernel_server` 跑 `GET /health` + WebSocket 方法链）。Linux CI 工作流 **`.github/workflows/ci.yml`** 中的 **`oocp-test-suite`** job 会构建 `tools/oocp-client`、拉起 `oclive_kernel_server` 并执行 `npm test`。
+- **前端 / Vitest（框架专用）**：官方目录插件 [`plugins/official-vue-test-runner/README.md`](plugins/official-vue-test-runner/README.md) 通过 JSON-RPC 侧车调用本机 `npx vitest`，在插件壳 [`ui/index.html`](plugins/official-vue-test-runner/ui/index.html) 展示结构化结果与运行历史；编写器侧可在「前端测试」视图调用同一插件（工作区指向 oclivenewnew 仓库根）。编写组件级 OOCP 载荷时可用同目录 [`test_utils/oocp_mock.ts`](plugins/official-vue-test-runner/test_utils/oocp_mock.ts)。
+
 **契约优先**：角色包 `manifest.json` / `settings.json` 键与行为以 `roles/README_MANIFEST.md`、`RoleStorage::load_role` 及校验 crate 为准；新增顶层键需同步 `crates/oclive_validation` 与文档。
 
 **姊妹仓库**（同级目录常见）：`oclive-pack-editor`（角色包编写器）、`oclive-launcher`（启动器）、`oclive-plugin-market`（市场站）。各仓可有各自的 `AGENTS.md`，指向本仓文档索引即可。
