@@ -1,6 +1,6 @@
 # PLUGIN_V1 — 编排层契约与后端枚举
 
-本文档描述宿主（Tauri / `chat_engine`）与可替换子系统之间的 **v1 契约**：类型命名、DTO 形状、`settings.json` 中的后端枚举。实现以源码为准：`src-tauri/src/domain/*_*.rs`、`src-tauri/src/models/plugin_backends.rs`。
+本文档描述宿主（Tauri / `chat_engine`）与可替换子系统之间的 **v1 契约**：类型命名、DTO 形状、`settings.json` 中的后端枚举。实现以源码为准：`crates/oclive_kernel_runtime/src/domain/*_*.rs`、`crates/oclive_kernel_runtime/src/models/plugin_backends.rs`。
 
 **全库文档索引**：[../getting-started/DOCUMENTATION_INDEX.md](../getting-started/DOCUMENTATION_INDEX.md)。包版本与 `schema_version` 见 **[../role-pack/PACK_VERSIONING.md](../role-pack/PACK_VERSIONING.md)**。HTTP 侧车 JSON-RPC 全文见 **[REMOTE_PLUGIN_PROTOCOL.md](REMOTE_PLUGIN_PROTOCOL.md)**；创作者总览见 **[CREATOR_PLUGIN_ARCHITECTURE.md](CREATOR_PLUGIN_ARCHITECTURE.md)**。**目录式进程插件**（`plugin_backends.* = directory`、整壳、`directory_plugin_invoke` 等）见 **[DIRECTORY_PLUGINS.md](DIRECTORY_PLUGINS.md)**。
 
@@ -15,9 +15,9 @@
 
 ## `send_message` 编排顺序（与 `chat_engine`）
 
-共景主路径见源码 [`chat_engine/co_present.rs`](../../src-tauri/src/domain/chat_engine/co_present.rs) 的 `process_co_present`。入口为 [`chat_engine::process_message`](../../src-tauri/src/domain/chat_engine/mod.rs)（异地分支为 `process_remote_stub` / `process_remote_life`，事件链有简化）。与 **PLUGIN_V1** 子系统相关的顺序如下（与 DTO 流一致）：
+共景主路径见源码 [`chat_engine/co_present.rs`](../../crates/oclive_kernel_runtime/src/domain/chat_engine/co_present.rs) 的 `process_co_present`。入口为 [`chat_engine::process_message`](../../crates/oclive_kernel_runtime/src/domain/chat_engine/mod.rs)（异地分支为 `process_remote_stub` / `process_remote_life`，事件链有简化）。与 **PLUGIN_V1** 子系统相关的顺序如下（与 DTO 流一致）：
 
-1. **`PluginHost`**：[`state::resolved_plugins_for`](../../src-tauri/src/state/mod.rs) → [`PluginHost::resolve_for_role`](../../src-tauri/src/domain/plugin_host.rs)，按 `role.plugin_backends` 绑定 `memory` / `emotion` / `event` / `prompt` / `llm`。
+1. **`PluginHost`**：[`state::resolved_plugins_for`](../../crates/oclive_kernel_runtime/src/state/mod.rs) → [`PluginHost::resolve_for_role`](../../crates/oclive_kernel_runtime/src/domain/plugin_host.rs)，按 `role.plugin_backends` 绑定 `memory` / `emotion` / `event` / `prompt` / `llm`。
 2. **用户情绪**：`pl.emotion.analyze` → `EmotionResult`，对外为响应中的 `emotion`（`EmotionDto`）。
 3. **人格微调**：`PersonalityEngine::adjust_by_user_emotion`（消费用户情绪，非独立 trait 子系统）。
 4. **知识块**（可选）：包内 `knowledge_index` 检索；可与事件估计的 augment 合并。
@@ -116,7 +116,7 @@
 - 输入：`PromptInput`（与 `PromptBuilder` 一致，**五个参数级字段**在 `PromptInput` 结构体上；`build_prompt` 最后一参在实现内部为 `&PromptInput`）。
 - 输出：`String`（主对话 system/user 拼装结果）。
 
-附加：`top_topic_hint(role, scene_id) -> Option<String>` 与现 `PromptBuilder::top_topic_hint` 对齐。
+附加：`top_topic_hint(topic_hint_context, scene_id) -> Option<String>` 与 `TopicHintContext` + `PromptBuilder::top_topic_hint` 对齐（Remote JSON-RPC 见 `REMOTE_PLUGIN_PROTOCOL.md` §4.5）。
 
 ### 后端枚举 `prompt`
 
@@ -146,6 +146,32 @@
 
 ---
 
+## 复杂情感 `ComplexEmotionProvider`
+
+复杂情感用于在“每轮对话后”进行轻量复盘并产出 `narrative_hint`（供下一轮 Prompt 可选注入）。该模块遵循 **平等接口原则**：与其它模块共用同一套 `plugin_backends` 路由与目录槽位语义。
+
+### 输出
+
+- `ComplexEmotionOutput.narrative_hint`：`Option<String>`（`null` 表示不注入、不影响 prompt）
+- `degraded_to_builtin`：当 remote / directory 不可用时回退 builtin 并标记为 `true`
+
+### 后端枚举 `complex_emotion`
+
+| 值 | 含义 |
+|----|------|
+| `builtin` | 内置关键词规则（`builtin_keyword_v1`） |
+| `remote` | 独立 HTTP JSON-RPC：`complex_emotion.resolve_turn`（`OCLIVE_COMPLEX_EMOTION_URL`；失败回退 builtin 并标记 `degraded_to_builtin=true`） |
+| `directory` | 目录插件子进程 JSON-RPC（`directory_plugins.complex_emotion` 指定 manifest id；失败回退 builtin 并标记 `degraded_to_builtin=true`） |
+| `none` | 空 Provider：不复盘，`narrative_hint=null`，不向 prompt 注入 |
+
+### 目录槽位 `directory_plugins.complex_emotion`
+
+当 `plugin_backends.complex_emotion = directory` 时，必须提供：
+
+- `plugin_backends.directory_plugins.complex_emotion = "<manifest.id>"`
+
+---
+
 ## `settings.json` 片段示例
 
 ```json
@@ -167,14 +193,14 @@
 
 ## 会话级 `plugin_backends` 覆盖（Tauri）
 
-宿主命令 **`set_session_plugin_backend`**（实现见 [`src-tauri/src/api/role/mod.rs`](../../src-tauri/src/api/role/mod.rs)），请求体 **`SetSessionPluginBackendRequest`**（[`src-tauri/src/models/dto.rs`](../../src-tauri/src/models/dto.rs)）。覆盖按 **`role_id` + 可选 `session_id`** 对应的会话命名空间持久化，**不写回角色包**；`load_role` / **`get_role_info`**（请求体 **`GetRoleInfoRequest`**，可选 **`session_id`**，与 `send_message` 同命名空间）返回中的 **`plugin_backends_effective`**、**`plugin_backends_effective_sources`** 等为包默认与会话覆盖合并后的快照。
+宿主命令 **`set_session_plugin_backend`**（实现见 [`src-tauri/src/api/role/mod.rs`](../../src-tauri/src/api/role/mod.rs)），请求体 **`SetSessionPluginBackendRequest`**（[`crates/oclive_kernel_runtime/src/models/dto.rs`](../../crates/oclive_kernel_runtime/src/models/dto.rs)）。覆盖按 **`role_id` + 可选 `session_id`** 对应的会话命名空间持久化，**不写回角色包**；`load_role` / **`get_role_info`**（请求体 **`GetRoleInfoRequest`**，可选 **`session_id`**，与 `send_message` 同命名空间）返回中的 **`plugin_backends_effective`**、**`plugin_backends_effective_sources`** 等为包默认与会话覆盖合并后的快照。
 
 ### 请求字段（摘要）
 
 | 字段 | 说明 |
 |------|------|
 | `role_id` | 角色 id |
-| `module` | `memory` \| `emotion` \| `event` \| `prompt` \| `llm` |
+| `module` | `memory` \| `emotion` \| `event` \| `prompt` \| `llm` \| `agent` \| `complex_emotion` |
 | `backend` | 见下表 **三态**（与 Serde `Option<Option<String>>` 对齐：缺键 / `null` / 字符串） |
 | `session_id` | 可选；缺省为默认会话 |
 | `local_memory_provider_id` | **仅当 `module = memory` 时允许**：省略表示不修改本会话对该字段的覆盖；**空串**（trim 后为空）表示移除本会话覆盖、回退包内 `local_memory_provider_id`；否则为 trim 后的 `provider_id`。其它 `module` 携带本字段会返回参数错误。 |
@@ -191,7 +217,9 @@
 
 ### `directory` 与 `directory_plugins`
 
-- **`set_session_plugin_backend`** 只改 **`memory` / `emotion` / `event` / `prompt` / `llm`** 的枚举值（及 **`local_memory_provider_id`**），**不包含** **`directory_plugins` 各槽**。若某模块设为 **`directory`**，槽位 id 仍来自角色包 **`plugin_backends.directory_plugins`**（见 [DIRECTORY_PLUGINS.md](DIRECTORY_PLUGINS.md)）。
+- **`set_session_plugin_backend`** 默认只改 **`memory` / `emotion` / `event` / `prompt` / `llm`** 的枚举值（及 **`local_memory_provider_id`**）。
+- **例外（已实现）**：当 `module="llm"` 且 `backend="directory"` 时，可通过请求字段 **`directory_plugin_id`** 写入会话覆盖的 **`directory_plugins.llm`**（用于切换目录 LLM 插件）。
+- 其余槽位若需要会话级切换，可后续扩展同样的窄字段，或使用 **`set_session_plugin_backends_override`** 一次性写入覆盖对象。
 - 运行时结构体 **`PluginBackendsOverride`** 已预留会话级 **`directory_plugins`** 合并逻辑；待产品化 API 暴露后再与 `set_session_plugin_backend` 或专用命令对齐即可。
 
 ---
@@ -304,6 +332,6 @@ TypeScript 侧 `SendMessageResponse`（`src/utils/tauri-api.ts`）必须与 `mod
 
 ### `RoleInfo` / `RoleData` 与本地 HTTP `POST /chat`
 
-- Tauri **`get_role_info`**（`GetRoleInfoRequest`，可选 **`session_id`**）、**`load_role`** 返回体含 **`personality_source`**：JSON 字符串 **`vector`** | **`profile`**，与角色包 **`evolution.personality_source`** 一致（见 `src-tauri/src/models/dto.rs`）。
+- Tauri **`get_role_info`**（`GetRoleInfoRequest`，可选 **`session_id`**）、**`load_role`** 返回体含 **`personality_source`**：JSON 字符串 **`vector`** | **`profile`**，与角色包 **`evolution.personality_source`** 一致（见 `crates/oclive_kernel_runtime/src/models/dto.rs`）。
 - 启动参数 **`--api`** 时，**`POST /chat`** 成功响应在扁平化的 `SendMessageResponse` 字段之外另含 **`personality_source`**（同上），便于编写器试聊等工具区分人格模式；实现见 `src-tauri/src/http_api.rs`。
 - Remote **`prompt.build_prompt`**：`params` 中含完整 **`role`**（其 `evolution_config.personality_source` 亦可读），并另含顶层 **`personality_source`** 与 `personality` 并列，侧车无需仅从嵌套 `role` 解析（`src-tauri/src/infrastructure/remote_plugin/prompt_http.rs`）。

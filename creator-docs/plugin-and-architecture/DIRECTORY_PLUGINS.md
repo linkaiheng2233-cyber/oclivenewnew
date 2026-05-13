@@ -73,7 +73,7 @@
 }
 ```
 
-**`directory_plugins` 槽位来源**：以角色包 **`settings.json` → `plugin_backends.directory_plugins`** 为准。`PluginBackendsOverride` 在 Rust 中**支持**按槽合并 `directory_plugins`（见 `apply_to`），但当前 Tauri 命令 **`set_session_plugin_backend` 仅覆盖五模块枚举与 `local_memory_provider_id`**，**不**传入 `directory_plugins`；多会话场景下若需不同目录插件 id，请通过角色包或后续扩展的会话 API 提供。
+**`directory_plugins` 槽位来源**：默认以角色包 **`settings.json` → `plugin_backends.directory_plugins`** 为准。会话覆盖层 `PluginBackendsOverride` 在 Rust 中**支持**按槽合并 `directory_plugins`（见 `apply_to`），并且当前 Tauri 命令 **`set_session_plugin_backend` 已支持 `module="llm"` 时通过 `directory_plugin_id` 写入 `directory_plugins.llm`**（其余模块暂未开放该字段；需要时可扩展或改用 `set_session_plugin_backends_override`）。
 
 ---
 
@@ -191,7 +191,7 @@
 
 当 **`get_directory_plugin_bootstrap.developerMode`** 为真时，宿主在编译 `.vue` 前会对脚本做静态 AST 扫描；若匹配危险模式（如 `fetch`、`eval`、`document.cookie`、`localStorage`、`window.__TAURI__` 等），会弹出确认框，用户取消则该插槽回退行为与编译失败一致（可再走 iframe）。
 
-**编译失败提示**：`vue3-sfc-loader` 报错时，插槽 UI 展示 **插件 id、组件路径、可读摘要**；可通过 **「查看详情」** 展开原始堆栈。
+**编译失败提示**：运行时以 **`@vue/compiler-sfc` + `sucrase`** 编译 `.vue`（无 `vue-template-compiler` 链）；报错时插槽 UI 展示 **插件 id、组件路径、可读摘要**；可通过 **「查看详情」** 展开原始堆栈。
 
 ### 4.3.2 强制 iframe 模式
 
@@ -252,7 +252,7 @@
 | 变量 | 说明 |
 |------|------|
 | `OCLIVE_DIRECTORY_PLUGIN_TIMEOUT_MS` | 非 LLM 类目录 RPC 调用超时（毫秒），默认 `8000` |
-| `OCLIVE_DIRECTORY_LLM_TIMEOUT_MS` | `RemoteLlmHttp` 使用目录 URL 时的超时，默认 `120000` |
+| `OCLIVE_DIRECTORY_LLM_TIMEOUT_MS` | `PluginJsonRpcLlm`（目录 LLM RPC）使用目录 URL 时的超时，默认 `120000` |
 | `OCLIVE_DIRECTORY_PLUGIN_TOKEN` | 可选 Bearer，写入 `Authorization` |
 
 ---
@@ -269,8 +269,8 @@
 | 区域 | 路径 |
 |------|------|
 | 扫描 / manifest / 懒启动 / shell URL | `src-tauri/src/infrastructure/directory_plugins/` |
-| 枚举与 `directory_plugins` 槽位 | `src-tauri/src/models/plugin_backends.rs` |
-| 五模块解析与 HTTP 复用 | `src-tauri/src/domain/plugin_host.rs`、`src-tauri/src/infrastructure/remote_plugin/` |
+| 枚举与 `directory_plugins` 槽位 | `crates/oclive_kernel_runtime/src/models/plugin_backends.rs` |
+| 五模块解析与 HTTP 复用 | `crates/oclive_kernel_runtime/src/domain/plugin_host.rs`、`src-tauri/src/infrastructure/remote_plugin/` |
 | Tauri 命令 | `src-tauri/src/api/directory_plugin.rs`、`src-tauri/src/api/plugin_bridge.rs`、`src-tauri/src/api/plugin_update.rs`（本地 zip 覆盖 / 更新检查预留） |
 | 自定义协议 + 启动 | `src-tauri/src/lib.rs` |
 | 内置 UI 启动引导 | `src/main.js`、`src/utils/directoryShellBootstrap.ts`、`src/DirectoryShellApp.vue` |

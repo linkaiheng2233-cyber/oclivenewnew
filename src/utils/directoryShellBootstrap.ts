@@ -1,9 +1,11 @@
 import { invoke } from "@tauri-apps/api/tauri";
-import { createApp } from "vue";
+import { createApp, watch } from "vue";
 import { createPinia } from "pinia";
 import DirectoryShellApp from "../DirectoryShellApp.vue";
 import type { DirectoryPluginBootstrap } from "./tauri-api";
 import { readPluginAssetText } from "./tauri-api";
+import { i18n, setAppLocale } from "../i18n";
+import { useUiStore } from "../stores/uiStore";
 
 export function isTauriRuntime(): boolean {
   return (
@@ -73,6 +75,19 @@ export async function tryReplaceWithDirectoryShell(): Promise<boolean> {
         developerMode: boot.developerMode === true,
       });
       app.use(pinia);
+
+      const uiStore = useUiStore(pinia);
+      await setAppLocale(uiStore.effectiveLocale);
+      app.use(i18n);
+
+      watch(
+        () => uiStore.languagePref,
+        () => {
+          void setAppLocale(uiStore.effectiveLocale);
+        },
+        { immediate: false },
+      );
+
       app.mount("#app");
       return true;
     }

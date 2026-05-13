@@ -2,15 +2,32 @@
 
 本仓库为 **Tauri + Vue 3 + Rust** 桌面角色对话应用。自动化助手或外部 Agent 在修改代码前，请先阅读：
 
+- **跨平台**：[`docs/DEV_CROSS_PLATFORM.md`](docs/DEV_CROSS_PLATFORM.md)。
+- **Rust Release / workspace 依赖**：[`handoff/RUST_RELEASE_AND_DEPENDENCIES.md`](handoff/RUST_RELEASE_AND_DEPENDENCIES.md)。
+- **性能与包体**：阶段总表 [`handoff/PERF_PHASES.md`](handoff/PERF_PHASES.md)（v0.2 P1–P3 已收尾）；[`handoff/PERFORMANCE_BASELINE_ACCEPTANCE.md`](handoff/PERFORMANCE_BASELINE_ACCEPTANCE.md)、[`handoff/FRONTEND_CHUNK_OPTIMIZATION.md`](handoff/FRONTEND_CHUNK_OPTIMIZATION.md)、[`handoff/BUNDLE_RESOURCES_SIZING.md`](handoff/BUNDLE_RESOURCES_SIZING.md)。
 - **项目约束**：根目录 [`.cursor/rules/oclivenewnew.mdc`](.cursor/rules/oclivenewnew.mdc)（编排、持久化、Tauri 命令注册、DTO、Prompt 约定）。
 - **创作者与架构文档**：[`creator-docs/README.md`](creator-docs/README.md) → [`creator-docs/getting-started/DOCUMENTATION_INDEX.md`](creator-docs/getting-started/DOCUMENTATION_INDEX.md)。
 - **愿景与路线**：[`creator-docs/roadmap/VISION_ROADMAP_MONTHLY.md`](creator-docs/roadmap/VISION_ROADMAP_MONTHLY.md)、[`creator-docs/roadmap/VISION_OPEN_LAB.md`](creator-docs/roadmap/VISION_OPEN_LAB.md)（开放实验场摘要）。
+
+### 测试体系（协议层 + UI 层）
+
+- **OOCP / 无头内核（语言无关）**：标准化场景见 [`creator-docs/oocp/OOCP_TEST_SUITE.md`](creator-docs/oocp/OOCP_TEST_SUITE.md)；索引导航 [`creator-docs/oocp/OOCP_SPEC_COMPLETE_REFERENCE.md`](creator-docs/oocp/OOCP_SPEC_COMPLETE_REFERENCE.md)。官方 Node 可执行对照实现见 [`examples/oocp-test-suite/`](examples/oocp-test-suite/)（对 `oclive_kernel_server` 跑 `GET /health` + WebSocket 方法链）。Linux CI 工作流 **`.github/workflows/ci.yml`** 中的 **`oocp-test-suite`** job 会构建 `tools/oocp-client`、拉起 `oclive_kernel_server` 并执行 `npm test`。
+- **前端 / Vitest（框架专用）**：官方目录插件 [`plugins/official-vue-test-runner/README.md`](plugins/official-vue-test-runner/README.md) 通过 JSON-RPC 侧车调用本机 `npx vitest`，在插件壳 [`ui/index.html`](plugins/official-vue-test-runner/ui/index.html) 展示结构化结果与运行历史；编写器侧可在「前端测试」视图调用同一插件（工作区指向 oclivenewnew 仓库根）。编写组件级 OOCP 载荷时可用同目录 [`test_utils/oocp_mock.ts`](plugins/official-vue-test-runner/test_utils/oocp_mock.ts)。
 
 **契约优先**：角色包 `manifest.json` / `settings.json` 键与行为以 `roles/README_MANIFEST.md`、`RoleStorage::load_role` 及校验 crate 为准；新增顶层键需同步 `crates/oclive_validation` 与文档。
 
 **姊妹仓库**（同级目录常见）：`oclive-pack-editor`（角色包编写器）、`oclive-launcher`（启动器）、`oclive-plugin-market`（市场站）。各仓可有各自的 `AGENTS.md`，指向本仓文档索引即可。
 
+**演示视频（Remotion）**：独立仓库 **`oclive-remotion-demo`**（与主应用同级目录常见）。所有 `npm run preview` / `render:*` / `capture:validate` **须在该仓库根目录执行**，勿在主仓 `oclivenewnew` 根目录运行（会报 `Missing script`）。使用说明见该仓库根目录 **`README.md`**（本地常与主仓并列，例如 `D:\oclive-remotion-demo`）。
+
 **开发机磁盘**：本仓库根目录 [`.cargo/config.toml`](.cargo/config.toml) 将 **Cargo `target-dir`** 指到仓库外的 `../oclive-dev-artifacts/oclivenewnew-cargo-target/`，与源码分离；发版安装包体积与此无关。姊妹仓 **oclive-pack-editor**、**oclive-launcher** 使用同级目录下的 `oclive-pack-editor-cargo-target/`、`oclive-launcher-cargo-target/`（各仓自有 `.cargo/config.toml`）。旧版留在仓库内的 `target/`、`src-tauri/target/` 可整夹删除。
+
+### 可编程调度引擎（`pipeline.ocblueprint`）
+
+- **Schema 与错误前缀**：[`creator-docs/kernel/PIPELINE_SCHEMA.md`](creator-docs/kernel/PIPELINE_SCHEMA.md)；加载错误码登记于 [`handoff/10_ERROR_CODE_DICTIONARY.md`](handoff/10_ERROR_CODE_DICTIONARY.md)（Pipeline 蓝图段）。
+- **Rust 模块**：`crates/oclive_kernel_runtime/src/domain/chat_engine/` 下的 `pipeline_loader.rs`（解析校验）、`pipeline_interpreter.rs`（顺序 / `branch` / `parallel`）、`pipeline_actions.rs`（原子与 `ACTION_IO_TYPES`）、`pipeline_predicates.rs`、`turn_context.rs`；**`send_message` 主编排**见 `process_message.rs`（入口为 `validate_scene_id` + 会话引导 + `AgentProvider::process` 等直编步骤，**不再**在入口执行 `pipeline.ocblueprint`；蓝图 crate 仍用于编写器/测试与后续扩展）。
+- **测试**：crate 内 `pipeline_loader` 单测；集成测试 `tests/pipeline_*_smoke.rs`、`tests/pipeline_validator_edges.rs`。
+- **Criterion**：`cargo bench -p oclive_kernel_runtime --bench kernel_pipeline_blueprint`；基线记录 [`creator-docs/kernel/KERNEL_PERFORMANCE_BASELINE.md`](creator-docs/kernel/KERNEL_PERFORMANCE_BASELINE.md)。
 
 ### 前端：插件管理入口与 Tauri `invoke`
 
@@ -20,7 +37,7 @@
 
 ### Agent / Skill（最小闭环）
 
-- **第七模块**：`plugin_backends` 新增 `agent`（`builtin` / `remote` / `directory`）与 `directory_plugins.agent` 槽位；会话覆盖与来源快照同样包含 `agent`。
+- **第七模块**：`plugin_backends` 新增 `agent`（`builtin` / `remote` / `directory` / `none`）与 `directory_plugins.agent` 槽位；会话覆盖与来源快照同样包含 `agent`。（`none` 语义见 `creator-docs/kernel/MODULE_NONE_SEMANTICS.md` §7。）
 - **后端骨架**：
   - [`src-tauri/src/domain/agent.rs`](src-tauri/src/domain/agent.rs)：`AgentProvider` trait 与 `BuiltinReActAgent`。
   - [`src-tauri/src/infrastructure/mcp_client.rs`](src-tauri/src/infrastructure/mcp_client.rs)：扫描 `{app_data}/mcp-servers/*.json`、列出 server、调用工具（http/stdio）。
@@ -35,6 +52,12 @@
   - `parse_from_llm_response` 解析 `tool_calls[]` 与 `function_call` 两种主流输出；
   - `to_function_calling_schema` 将 MCP tool 列表转为函数 schema。
 - **Agent 路由**：`plugin_backends.agent` 为第七模块，与其他模块保持同样的包默认 / 会话覆盖 / 来源快照语义。
+
+## 内核约束 - 权限弹窗
+
+- **Directory 插件**：首次启用高风险能力（如 `process:spawn`、`network:*` 出站）前，必须经过用户确认授予；未授予则必须降级且有可见提示/审计。
+- **MCP servers**：任何 `transport=stdio` 的 server 必须显式授权（等同 `process:spawn`）；`transport=http` 必须显式授权（`network:*`）。未授权不得调用。
+- **Remote env providers**：检测到 env 配置不等于启用；必须先授予 `network:*`，否则 provider 只能降级为 placeholder 并提示。
 
 ### 创作者工具链（v1）
 

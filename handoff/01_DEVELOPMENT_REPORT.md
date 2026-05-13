@@ -22,7 +22,7 @@
 | 类别 | 内容 |
 |------|------|
 | 依赖 | `Cargo.toml`：增加 `async-trait`；`sqlx` 启用 `migrate` |
-| 编排 | `src-tauri/src/domain/chat_engine/`：`process_message` 串联情绪分析、事件检测、性格演化、Prompt 构建、LLM、好感度增量、长期记忆写入；**`save_memory` 成功后 `DbManager::save_event`**（WEEK3-003） |
+| 编排 | `crates/oclive_kernel_runtime/src/domain/chat_engine/`：`process_message` 串联情绪分析、事件检测、性格演化、Prompt 构建、LLM、好感度增量、长期记忆写入；**`save_memory` 成功后 `DbManager::save_event`**（WEEK3-003） |
 | Repository | 新增 `domain/repository.rs`；`infrastructure/repositories.rs`（`SqliteMemoryRepository` / `SqliteFavorabilityRepository`） |
 | LLM 抽象 | `infrastructure/llm.rs`：`LlmClient` trait + `OllamaClient` 实现 + `ollama_llm()` + **`MockLlmClient`**（WEEK3-003） |
 | 数据库 | `infrastructure/db.rs`：新增 `ensure_role_runtime`、`apply_favorability_delta`（更新 `role_runtime.current_favorability`，并写 `favorability_history`） |
@@ -39,7 +39,7 @@
 
 - **EventDetector**：使用 `detect(text, user_emotion: &Emotion, bot_emotion: &Emotion)`；编排中用户情绪来自 `EmotionResult::to_emotion()`，机器人侧当前为 **`Emotion::Neutral`**（可后续改为从状态/库读取）。
 - **PromptBuilder**：`build_prompt` 共 **5 个参数**，返回 **`String`**（无 `?`）。
-- **Schema**：以 `src-tauri/migrations/001_init.sql` 为准；好感度更新针对 **`role_runtime.current_favorability`**，非虚构 `roles` 表。
+- **Schema**：以 `crates/oclive_kernel_runtime/migrations/001_init.sql` 为准；好感度更新针对 **`role_runtime.current_favorability`**，非虚构 `roles` 表。
 - **Tauri**：命令仅在 **`lib.rs`** 注册；**保留** 原有 `.setup` 与 `AppState::manage`。
 
 ---
@@ -98,15 +98,15 @@ cargo test --tests
 | 路径 | 说明 |
 |------|------|
 | `handoff/02_DEVELOPMENT_PLAN_v3.8.md` | 执行大纲定稿 |
-| `src-tauri/src/domain/chat_engine/` | 对话编排 |
-| `src-tauri/src/domain/repository.rs` | Repository trait |
+| `crates/oclive_kernel_runtime/src/domain/chat_engine/` | 对话编排 |
+| `crates/oclive_kernel_runtime/src/domain/repository.rs` | Repository trait |
 | `src-tauri/src/infrastructure/repositories.rs` | SQLite 实现 |
 | `src-tauri/src/infrastructure/llm.rs` | LLM trait |
 | `src-tauri/src/infrastructure/db.rs` | DbManager 与 SQL |
 | `src-tauri/src/state/mod.rs` | AppState、迁移、注入 |
 | `src-tauri/src/api/chat.rs` | `send_message` |
 | `src-tauri/src/lib.rs` | `generate_handler!` |
-| `src-tauri/migrations/001_init.sql` | Schema 唯一来源 |
+| `crates/oclive_kernel_runtime/migrations/001_init.sql` | Schema 唯一来源 |
 | `src-tauri/tests/chat_integration.rs` | 集成测试（Mock LLM、事件 DB 与响应一致） |
 
 ---

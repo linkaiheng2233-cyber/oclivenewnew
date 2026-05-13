@@ -1,20 +1,20 @@
-use chrono::{DateTime, Duration, Utc};
 use parking_lot::RwLock;
 use std::collections::HashMap;
 use std::sync::Arc;
+use std::time::{Duration, Instant};
 
 /// 缓存条目
 #[derive(Clone, Debug)]
 struct CacheEntry<T: Clone> {
     data: T,
-    created_at: DateTime<Utc>,
+    created_at: Instant,
     ttl: Option<Duration>,
 }
 
 impl<T: Clone> CacheEntry<T> {
     fn is_expired(&self) -> bool {
         if let Some(ttl) = self.ttl {
-            Utc::now() - self.created_at > ttl
+            self.created_at.elapsed() > ttl
         } else {
             false
         }
@@ -63,7 +63,7 @@ impl<T: Clone + Send + Sync> Cache<T> {
     pub fn set_with_ttl(&self, key: String, value: T, ttl: Option<Duration>) {
         let entry = CacheEntry {
             data: value,
-            created_at: Utc::now(),
+            created_at: Instant::now(),
             ttl,
         };
         self.data.write().insert(key, entry);
@@ -146,7 +146,7 @@ mod tests {
     #[test]
     fn test_cache_ttl_expiration() {
         let cache: Cache<String> = Cache::new();
-        let ttl = Some(Duration::milliseconds(100));
+        let ttl = Some(Duration::from_millis(100));
         cache.set_with_ttl("key1".to_string(), "value1".to_string(), ttl);
 
         assert_eq!(cache.get("key1"), Some("value1".to_string()));

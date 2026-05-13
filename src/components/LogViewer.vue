@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { computed, ref } from "vue";
+import { useI18n } from "vue-i18n";
 
 const props = defineProps<{
   lines: string[];
@@ -11,6 +12,7 @@ const emit = defineEmits<{
 }>();
 
 const q = ref("");
+const { t } = useI18n();
 
 const filtered = computed(() => {
   const t = q.value.trim().toLowerCase();
@@ -29,15 +31,20 @@ function lineClass(line: string): string {
 <template>
   <div class="pm-dbg-log">
     <div class="pm-dbg-log-head">
-      <input v-model="q" class="pm-dbg-filter" type="search" placeholder="过滤日志…" />
-      <button type="button" class="pm-dbg-btn secondary" @click="emit('clear')">清空</button>
-      <button type="button" class="pm-dbg-btn secondary" @click="emit('export')">导出</button>
+      <input
+        v-model="q"
+        class="pm-dbg-filter"
+        type="search"
+        :placeholder="String(t('pluginDebug.logs.filterPlaceholder'))"
+      />
+      <button type="button" class="pm-dbg-btn secondary" @click="emit('clear')">{{ t("common.clear") }}</button>
+      <button type="button" class="pm-dbg-btn secondary" @click="emit('export')">{{ t("common.export") }}</button>
     </div>
     <div class="pm-dbg-log-body" role="log" aria-live="polite">
       <div v-for="(line, i) in filtered" :key="`${i}-${line.slice(0, 24)}`" class="pm-dbg-line" :class="lineClass(line)">
         {{ line }}
       </div>
-      <p v-if="!filtered.length" class="pm-dbg-empty">暂无日志（启动插件进程后 stdout/stderr 会显示在此）。</p>
+      <p v-if="!filtered.length" class="pm-dbg-empty">{{ t("pluginDebug.logs.empty") }}</p>
     </div>
   </div>
 </template>

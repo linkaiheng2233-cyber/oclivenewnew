@@ -21,7 +21,7 @@
   "field.backend": "运行方式",
   "field.directory_plugin": "目录插件 ID",
   "field.remote_life": "异地心声",
-  "hint.directory_id_empty": "留空会清空会话覆盖，回到角色包默认。",
+  "hint.directory_plugin_id_empty": "留空会清空会话覆盖，回到角色包默认。",
   "hint.endpoint_env": "地址建议放在环境变量里，便于迁移与排错。",
   "action.apply": "应用改动",
   "action.open_v1": "打开专业模式（V1）",

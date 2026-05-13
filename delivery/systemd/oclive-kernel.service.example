@@ -1,0 +1,75 @@
+# =============================================================================
+# systemd 单元示例 — oclive 无头内核（oclive_kernel_server）
+# =============================================================================
+# 安装前准备：
+#   1) 系统用户 oclive（无登录 shell 即可）：
+#        sudo useradd --system --home /opt/oclive --shell /usr/sbin/nologin oclive
+#   2) 目录与权限：
+#        sudo mkdir -p /opt/oclive/{bin,data,roles} /etc/oclive
+#        sudo cp /path/to/oclive_kernel_server /opt/oclive/bin/
+#        sudo rsync -a /path/to/roles/ /opt/oclive/roles/
+#        sudo cp delivery/systemd/oclive-kernel.service.example /etc/systemd/system/oclive-kernel.service
+#        sudo install -m 600 delivery/config.example.env /etc/oclive/kernel.env
+#        （编辑 /etc/oclive/kernel.env：至少取消注释并填写 OOCP_API_TOKEN 等）
+#        sudo chown -R oclive:oclive /opt/oclive
+#
+#   3) 启用：
+#        sudo systemctl daemon-reload
+#        sudo systemctl enable --now oclive-kernel
+#
+# 日志：journalctl -u oclive-kernel -f
+# 状态：systemctl status oclive-kernel
+# =============================================================================
+
+[Unit]
+Description=Oclive kernel server (HTTP + OOCP WebSocket, headless)
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+Type=simple
+User=oclive
+Group=oclive
+WorkingDirectory=/opt/oclive/data
+
+# 集中管理密钥与路径（权限建议 chmod 600）；勿将含密钥的文件提交到版本库。
+EnvironmentFile=-/etc/oclive/kernel.env
+
+# 若未使用 EnvironmentFile，可改用下列行（与 kernel.env 二选一即可）：
+# Environment=RUST_LOG=info
+# Environment=OOCP_API_PORT=48888
+# Environment=OOCP_API_BIND=127.0.0.1
+# Environment=OCLIVE_ROLES_DIR=/opt/oclive/roles
+# Environment=OCLIVE_DB_PATH=/opt/oclive/data/oclive.db
+# Environment=OCLIVE_APP_DATA_DIR=/opt/oclive/data/app
+# Environment=OCLIVE_REQUIRE_EXPLICIT_PATHS=1
+# Environment=OOCP_API_TOKEN=...
+
+ExecStart=/opt/oclive/bin/oclive_kernel_server
+
+# 异常退出后自动拉起（机器人 / 侧车场景常用）。
+Restart=always
+RestartSec=5
+# 防止频繁崩溃刷盘：窗口内超过 StartLimitBurst 次则进入失败状态。
+StartLimitIntervalSec=120
+StartLimitBurst=5
+
+# 优雅停止（内核收到 SIGTERM 后结束 tokio runtime）。
+TimeoutStopSec=30
+KillMode=mixed
+
+# 安全加固
+NoNewPrivileges=true
+PrivateTmp=true
+
+# 资源：768M 在多数对话 + SQLite 场景比 512M 更不易 OOM；嵌入式可改为 384M–512M 并关其它服务。
+# MemoryHigh 可先触发内核回收，MemoryMax 为硬顶。
+MemoryHigh=640M
+MemoryMax=768M
+CPUQuota=85%
+
+# 大量 WebSocket / 插件子进程时可酌情调高（需配合 ulimit）。
+LimitNOFILE=65535
+
+[Install]
+WantedBy=multi-user.target

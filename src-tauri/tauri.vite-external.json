@@ -4,5 +4,10 @@
     "beforeBuildCommand": null,
     "devPath": "http://localhost:1420",
     "distDir": "../dist"
+  },
+  "tauri": {
+    "bundle": {
+      "resources": ["../roles", "../plugins"]
+    }
   }
 }

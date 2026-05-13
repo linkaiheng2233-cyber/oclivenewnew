@@ -24,12 +24,23 @@ dist-ssr
 *.sw?
 
 # Rust / secrets
+src-tauri/tmp_*.exe
+src-tauri/tmp_*.pdb
 src-tauri/.sqlx_prepare.db
 src-tauri/target
 /target
 .env
 .env.*
 !.env.example
+
+# Temp/check artifacts (dev)
+cargo-check-log.txt
+
+# Official Vue test runner — local run history (generated)
+plugins/official-vue-test-runner/test_history.json
+
+# VSCode extension build output
+distributions/vscode/out/
 
 # Local directory-plugin runtime state under roles root (dev)
 roles/.oclive_directory_plugin_data/

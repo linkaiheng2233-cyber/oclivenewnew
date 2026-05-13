@@ -131,10 +131,11 @@ pub fn create_plugin_scaffold(
     }
     let plugin_dir = base.join(plugin_id.as_str());
     if plugin_dir.exists() {
-        return Err(
-            AppError::InvalidParameter(format!("plugin dir already exists: {}", plugin_dir.display()))
-                .to_frontend_error(),
-        );
+        return Err(AppError::InvalidParameter(format!(
+            "plugin dir already exists: {}",
+            plugin_dir.display()
+        ))
+        .to_frontend_error());
     }
     if let Err(e) = write_template_files(
         &plugin_dir,
@@ -145,11 +146,7 @@ pub fn create_plugin_scaffold(
     ) {
         return Err(e.to_frontend_error());
     }
-    let _ = tauri::api::shell::open(
-        &app.shell_scope(),
-        plugin_dir.to_string_lossy().to_string(),
-        None,
-    );
+    let _ = tauri::api::shell::open(&app.shell_scope(), plugin_dir.to_string_lossy(), None);
     Ok(CreatePluginScaffoldResponse {
         plugin_dir: plugin_dir.to_string_lossy().to_string(),
     })

@@ -1,236 +1,186 @@
 use crate::error::AppError;
-use crate::infrastructure::directory_plugins::{parse_manifest_version, OclivePluginManifest};
-use crate::infrastructure::plugin_state::PluginStateStore;
 use crate::state::AppState;
-use semver::VersionReq;
-use serde::{Deserialize, Serialize};
-use std::collections::HashMap;
-use std::fs;
-use std::path::{Path, PathBuf};
-use std::process::Command;
+pub use oclive_kernel_runtime::infrastructure::plugin_archive::{
+    extract_oclive_plugin_archive, peek_plugin_id_from_archive_bytes,
+};
+pub use oclive_kernel_runtime::infrastructure::plugin_index_sync::{
+    load_plugin_index_cache, plugin_index_cache_path_for_source, plugin_index_default_cache_path,
+    resolve_plugin_index_url, sync_plugin_index_from_url, DEFAULT_PLUGIN_INDEX_URL,
+};
+use oclive_kernel_runtime::infrastructure::plugin_install::{
+    install_plugin_from_archive_bytes_at, install_plugin_from_archive_bytes_overwrite_at,
+    install_plugin_from_download_urls_at, install_plugin_from_git_head_at,
+    install_plugin_from_git_tag_at, installed_plugin_version_map, missing_plugin_dependencies,
+    plugin_state_store_default_path, remove_plugin_from_plugin_state_file_async,
+    update_git_plugin_at, update_install_meta_permissions_at,
+};
+pub use oclive_kernel_runtime::infrastructure::plugin_package_verify::verify_plugin_package_signature_text;
+pub use oclive_kernel_runtime::models::plugin_market_index::{
+    PluginIndexEntry, PluginIndexFile, PluginIndexModulePluginSpec, PluginIndexModuleSpec,
+    PluginIndexProfileSpec, PluginIndexVersionEntry, PublisherPublicKey,
+};
 
-#[derive(Debug, Clone, Serialize, Deserialize)]
-#[serde(rename_all = "camelCase")]
-pub struct PluginIndexEntry {
-    pub id: String,
-    pub name: String,
-    #[serde(default)]
-    pub description: String,
-    #[serde(default)]
-    pub author: String,
-    pub version: String,
-    pub git: String,
-    #[serde(default)]
-    pub permissions: Vec<String>,
-    #[serde(default)]
-    pub tags: Vec<String>,
-    #[serde(default)]
-    pub category: Option<String>,
-    #[serde(default)]
-    pub source: Option<String>,
-    #[serde(default)]
-    pub changelog: Option<String>,
-    #[serde(default)]
-    pub dependencies: HashMap<String, String>,
-}
+pub type PluginInstallMeta = crate::models::dto::PluginInstallMetaDto;
 
-#[derive(Debug, Clone, Serialize, Deserialize)]
-#[serde(rename_all = "camelCase")]
-pub struct PluginIndexFile {
-    #[serde(default, alias = "generated_at")]
-    pub generated_at: Option<String>,
-    #[serde(default)]
-    pub plugins: Vec<PluginIndexEntry>,
-}
-
-pub const DEFAULT_PLUGIN_INDEX_URL: &str =
-    "https://raw.githubusercontent.com/linkaiheng2233-cyber/awesome-oclive-plugins/main/plugins.json";
-
-fn plugins_dir(state: &AppState) -> PathBuf {
+fn plugins_dir(state: &AppState) -> std::path::PathBuf {
     state.directory_plugins.app_data_dir().join("plugins")
 }
 
-fn cache_path(state: &AppState) -> PathBuf {
-    state.directory_plugins.app_data_dir().join("plugin_index_cache.json")
+fn plugin_state_store_path(state: &AppState) -> std::path::PathBuf {
+    plugin_state_store_default_path(state.directory_plugins.app_data_dir())
 }
 
-fn plugin_state_store_path(state: &AppState) -> PathBuf {
-    state.directory_plugins.app_data_dir().join("plugin_state.json")
+pub fn update_install_meta_permissions(
+    state: &AppState,
+    plugin_id: &str,
+    declared_permissions: Vec<String>,
+    granted_permissions: Vec<String>,
+) -> Result<(), AppError> {
+    let pid = plugin_id.trim();
+    if pid.is_empty() {
+        return Ok(());
+    }
+    let root = plugins_dir(state).join(pid);
+    update_install_meta_permissions_at(&root, declared_permissions, granted_permissions)
 }
 
 pub fn load_cached_index(state: &AppState) -> Result<PluginIndexFile, AppError> {
-    let p = cache_path(state);
-    if !p.exists() {
-        return Ok(PluginIndexFile {
-            generated_at: None,
-            plugins: Vec::new(),
-        });
-    }
-    let raw = fs::read_to_string(&p)?;
-    serde_json::from_str(&raw)
-        .map_err(|e| AppError::Unknown(format!("parse plugin index cache failed: {}", e)))
+    let p = plugin_index_default_cache_path(state.directory_plugins.app_data_dir());
+    load_plugin_index_cache(&p)
 }
 
-pub fn sync_plugin_index_online(
+pub fn load_cached_index_for_source(
+    state: &AppState,
+    source_url: &str,
+) -> Result<PluginIndexFile, AppError> {
+    let url = source_url.trim();
+    if url.is_empty() {
+        return load_cached_index(state);
+    }
+    let p = plugin_index_cache_path_for_source(state.directory_plugins.app_data_dir(), url);
+    load_plugin_index_cache(&p)
+}
+
+pub fn install_plugin_from_archive_bytes_overwrite(
+    state: &AppState,
+    bytes: &[u8],
+    overwrite: bool,
+) -> Result<String, AppError> {
+    let pid = install_plugin_from_archive_bytes_overwrite_at(
+        &plugins_dir(state),
+        state.directory_plugins.app_data_dir(),
+        bytes,
+        overwrite,
+        &PluginInstallMeta {
+            install_method: "archive".to_string(),
+            git_url: None,
+            pinned_tag: None,
+            declared_permissions: Vec::new(),
+            granted_permissions: Vec::new(),
+        },
+    )?;
+    state
+        .directory_plugins
+        .rescan_plugin_roots(state.storage.roles_dir());
+    Ok(pid)
+}
+
+pub async fn sync_plugin_index_online(
     state: &AppState,
     index_url: Option<&str>,
 ) -> Result<PluginIndexFile, AppError> {
-    let env_url = std::env::var("OCLIVE_PLUGIN_INDEX_URL").ok();
-    let url = index_url
-        .map(str::trim)
-        .filter(|s| !s.is_empty())
-        .or_else(|| env_url.as_deref().map(str::trim).filter(|s| !s.is_empty()))
-        .unwrap_or(DEFAULT_PLUGIN_INDEX_URL);
-    let cli = reqwest::blocking::Client::builder()
-        .timeout(std::time::Duration::from_secs(15))
-        .build()
-        .map_err(|e| AppError::Unknown(format!("index http client failed: {}", e)))?;
-    let resp = cli
-        .get(url)
-        .send()
-        .map_err(|e| AppError::Unknown(format!("sync plugin index failed: {}", e)))?;
-    if !resp.status().is_success() {
-        return Err(AppError::Unknown(format!(
-            "sync plugin index status={} url={}",
-            resp.status(),
-            url
-        )));
+    let url = resolve_plugin_index_url(index_url);
+    let cache = plugin_index_default_cache_path(state.directory_plugins.app_data_dir());
+    sync_plugin_index_from_url(&url, &cache).await
+}
+
+pub async fn sync_plugin_index_online_for_source(
+    state: &AppState,
+    source_url: &str,
+) -> Result<PluginIndexFile, AppError> {
+    let url = source_url.trim();
+    if url.is_empty() {
+        return sync_plugin_index_online(state, None).await;
     }
-    let text = resp
-        .text()
-        .map_err(|e| AppError::Unknown(format!("read plugin index response failed: {}", e)))?;
-    let mut parsed: PluginIndexFile = serde_json::from_str(&text)
-        .map_err(|e| AppError::Unknown(format!("parse plugins.json failed: {}", e)))?;
-    parsed.plugins.sort_by(|a, b| a.id.cmp(&b.id));
-    let cache = cache_path(state);
-    if let Some(parent) = cache.parent() {
-        let _ = fs::create_dir_all(parent);
-    }
-    fs::write(
-        &cache,
-        serde_json::to_string_pretty(&parsed)
-            .map_err(|e| AppError::Unknown(format!("encode index cache failed: {}", e)))?,
+    let cache = plugin_index_cache_path_for_source(state.directory_plugins.app_data_dir(), url);
+    sync_plugin_index_from_url(url, &cache).await
+}
+
+pub fn read_install_meta(root: &std::path::Path) -> Option<PluginInstallMeta> {
+    oclive_kernel_runtime::infrastructure::directory_plugins::read_plugin_install_meta(root)
+}
+
+pub fn install_plugin_from_archive_bytes(
+    state: &AppState,
+    bytes: &[u8],
+) -> Result<String, AppError> {
+    let pid = install_plugin_from_archive_bytes_at(
+        &plugins_dir(state),
+        state.directory_plugins.app_data_dir(),
+        bytes,
     )?;
-    Ok(parsed)
+    state
+        .directory_plugins
+        .rescan_plugin_roots(state.storage.roles_dir());
+    Ok(pid)
 }
 
-fn run_git(args: &[&str], cwd: Option<&Path>) -> Result<(), AppError> {
-    let mut cmd = Command::new("git");
-    cmd.args(args);
-    if let Some(dir) = cwd {
-        cmd.current_dir(dir);
-    }
-    let out = cmd
-        .output()
-        .map_err(|e| AppError::Unknown(format!("git command failed: {}", e)))?;
-    if !out.status.success() {
-        return Err(AppError::Unknown(format!(
-            "git {:?} failed: {}",
-            args,
-            String::from_utf8_lossy(&out.stderr)
-        )));
-    }
-    Ok(())
+pub async fn install_plugin_from_download_urls(
+    state: &AppState,
+    index_entry: &PluginIndexEntry,
+    download_url: &str,
+    signature_url: &str,
+) -> Result<String, AppError> {
+    let pid = install_plugin_from_download_urls_at(
+        &plugins_dir(state),
+        state.directory_plugins.app_data_dir(),
+        index_entry,
+        download_url,
+        signature_url,
+    )
+    .await?;
+    state
+        .directory_plugins
+        .rescan_plugin_roots(state.storage.roles_dir());
+    Ok(pid)
 }
 
-fn installed_version_map(state: &AppState) -> HashMap<String, semver::Version> {
-    let mut out = HashMap::new();
-    let roots = state.directory_plugins.plugin_roots.read();
-    for (pid, root) in roots.iter() {
-        if let Ok(manifest) = OclivePluginManifest::load_from_dir(root) {
-            if let Some(v) = parse_manifest_version(&manifest.version) {
-                out.insert(pid.clone(), v);
-            }
-        }
-    }
-    out
+pub fn install_plugin_from_git_tag(
+    state: &AppState,
+    git_url: &str,
+    tag: &str,
+    deps: Option<&std::collections::HashMap<String, String>>,
+) -> Result<String, AppError> {
+    let versions = {
+        let roots = state.directory_plugins.plugin_roots.read();
+        installed_plugin_version_map(&roots)
+    };
+    let pid = install_plugin_from_git_tag_at(&plugins_dir(state), git_url, tag, &versions, deps)?;
+    state
+        .directory_plugins
+        .rescan_plugin_roots(state.storage.roles_dir());
+    Ok(pid)
 }
 
 pub fn missing_dependencies(
     state: &AppState,
-    deps: &HashMap<String, String>,
+    deps: &std::collections::HashMap<String, String>,
 ) -> Result<Vec<String>, AppError> {
-    let versions = installed_version_map(state);
-    let mut missing = Vec::new();
-    for (dep_id, req_s) in deps {
-        let dep = dep_id.trim();
-        if dep.is_empty() {
-            continue;
-        }
-        let req = VersionReq::parse(req_s.trim()).map_err(|e| {
-            AppError::InvalidParameter(format!(
-                "dependency range invalid dep={} req={} err={}",
-                dep, req_s, e
-            ))
-        })?;
-        match versions.get(dep) {
-            None => missing.push(format!("{} ({})", dep, req_s)),
-            Some(v) => {
-                if !req.matches(v) {
-                    missing.push(format!("{} (need {}, local {})", dep, req_s, v));
-                }
-            }
-        }
-    }
-    Ok(missing)
+    let roots = state.directory_plugins.plugin_roots.read();
+    let versions = installed_plugin_version_map(&roots);
+    missing_plugin_dependencies(&versions, deps)
 }
 
 pub fn install_plugin(
     state: &AppState,
     git_url: &str,
-    deps: Option<&HashMap<String, String>>,
+    deps: Option<&std::collections::HashMap<String, String>>,
 ) -> Result<String, AppError> {
-    if let Some(deps_map) = deps {
-        let miss = missing_dependencies(state, deps_map)?;
-        if !miss.is_empty() {
-            return Err(AppError::InvalidParameter(format!(
-                "[MISSING_DEPENDENCIES] {}",
-                miss.join(" | ")
-            )));
-        }
-    }
-    let url = git_url.trim();
-    if url.is_empty() {
-        return Err(AppError::InvalidParameter("git_url required".into()));
-    }
-    let mut target = plugins_dir(state);
-    fs::create_dir_all(&target)?;
-    let name = url
-        .split('/')
-        .next_back()
-        .unwrap_or("plugin")
-        .trim_end_matches(".git")
-        .trim();
-    if name.is_empty() {
-        return Err(AppError::InvalidParameter("invalid git_url".into()));
-    }
-    target = target.join(name);
-    if target.exists() {
-        return Err(AppError::InvalidParameter(format!(
-            "plugin dir already exists: {}",
-            target.display()
-        )));
-    }
-    run_git(
-        &["clone", "--depth", "1", url, target.to_string_lossy().as_ref()],
-        None,
-    )?;
-    let manifest = OclivePluginManifest::load_from_dir(&target)
-        .map_err(|e| AppError::Unknown(format!("manifest validation failed: {}", e)))?;
-    let pid = manifest.id.trim().to_string();
-    if pid.is_empty() {
-        return Err(AppError::InvalidParameter("manifest.id required".into()));
-    }
-    let final_dir = plugins_dir(state).join(pid.as_str());
-    if final_dir != target {
-        if final_dir.exists() {
-            return Err(AppError::InvalidParameter(format!(
-                "target plugin id already exists: {}",
-                final_dir.display()
-            )));
-        }
-        fs::rename(&target, &final_dir)?;
-    }
+    let versions = {
+        let roots = state.directory_plugins.plugin_roots.read();
+        installed_plugin_version_map(&roots)
+    };
+    let pid = install_plugin_from_git_head_at(&plugins_dir(state), git_url, &versions, deps)?;
     state
         .directory_plugins
         .rescan_plugin_roots(state.storage.roles_dir());
@@ -249,60 +199,14 @@ pub fn update_plugin(state: &AppState, plugin_id: &str) -> Result<(), AppError> 
             .cloned()
             .ok_or_else(|| AppError::InvalidParameter(format!("plugin not found: {}", pid)))?
     };
-    run_git(&["pull", "--ff-only"], Some(&root))?;
-    let _ = OclivePluginManifest::load_from_dir(&root)
-        .map_err(|e| AppError::Unknown(format!("manifest validation failed after pull: {}", e)))?;
+    update_git_plugin_at(&root)?;
     state
         .directory_plugins
         .rescan_plugin_roots(state.storage.roles_dir());
     Ok(())
 }
 
-fn remove_plugin_from_state_store(state: &AppState, plugin_id: &str) -> Result<(), AppError> {
-    let pid = plugin_id.trim();
-    if pid.is_empty() {
-        return Ok(());
-    }
-    let p = plugin_state_store_path(state);
-    let mut store = PluginStateStore::load(&p);
-    if let Some(g) = store.global.as_mut() {
-        g.slots.disabled_plugins.retain(|x| x.trim() != pid);
-        g.slots
-            .slot_order
-            .values_mut()
-            .for_each(|v| v.retain(|x| x.trim() != pid));
-        g.slots
-            .disabled_slot_contributions
-            .values_mut()
-            .for_each(|v| v.retain(|x| x.trim() != pid));
-        g.slots.slot_appearance.remove(pid);
-        if g.shell_plugin_id.trim() == pid {
-            g.shell_plugin_id.clear();
-        }
-    }
-    for role in store.roles.values_mut() {
-        role.slots.disabled_plugins.retain(|x| x.trim() != pid);
-        role.slots
-            .slot_order
-            .values_mut()
-            .for_each(|v| v.retain(|x| x.trim() != pid));
-        role.slots
-            .disabled_slot_contributions
-            .values_mut()
-            .for_each(|v| v.retain(|x| x.trim() != pid));
-        role.slots.slot_appearance.remove(pid);
-        if role.shell_plugin_id.trim() == pid {
-            role.shell_plugin_id.clear();
-        }
-    }
-    store
-        .save(&p)
-        .map_err(|e| AppError::Unknown(format!("save plugin_state failed: {}", e)))?;
-    let _ = state.directory_plugins.reload_plugin_state();
-    Ok(())
-}
-
-pub fn uninstall_plugin(state: &AppState, plugin_id: &str) -> Result<(), AppError> {
+pub async fn uninstall_plugin(state: &AppState, plugin_id: &str) -> Result<(), AppError> {
     let pid = plugin_id.trim();
     if pid.is_empty() {
         return Err(AppError::InvalidParameter("plugin_id required".into()));
@@ -315,10 +219,24 @@ pub fn uninstall_plugin(state: &AppState, plugin_id: &str) -> Result<(), AppErro
             .ok_or_else(|| AppError::InvalidParameter(format!("plugin not found: {}", pid)))?
     };
     state.directory_plugins.clear_plugin_process(pid);
-    if root.exists() {
-        fs::remove_dir_all(&root)?;
-    }
-    remove_plugin_from_state_store(state, pid)?;
+    let root_for_rm = root.clone();
+    tokio::task::spawn_blocking(move || -> std::io::Result<()> {
+        if root_for_rm.exists() {
+            std::fs::remove_dir_all(&root_for_rm)?;
+        }
+        Ok(())
+    })
+    .await
+    .map_err(|e| {
+        AppError::InvalidParameter(format!("[PLUGIN_UNINSTALL] remove_dir join: {}", e))
+    })??;
+
+    remove_plugin_from_plugin_state_file_async(&plugin_state_store_path(state), pid).await?;
+    state
+        .directory_plugins
+        .reload_plugin_state_async()
+        .await
+        .map_err(|e| AppError::InvalidParameter(format!("[PLUGIN_STATE_RELOAD] {}", e)))?;
     state
         .directory_plugins
         .rescan_plugin_roots(state.storage.roles_dir());

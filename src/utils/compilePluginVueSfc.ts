@@ -1,10 +1,11 @@
-import * as Vue from "vue";
 import type { Component } from "vue";
+import { compileScript, compileStyleAsync, compileTemplate, parse } from "@vue/compiler-sfc";
+import { transform as sucraseTransform } from "sucrase";
 import { readPluginAssetText } from "./tauri-api";
 
 const SCHEME = "oclive-plugin://";
 
-/** `vue3-sfc-loader` 编译失败时的可读错误（供插槽 UI 展示）。 */
+/** 目录插件 `.vue` 编译失败时的可读错误（供插槽 UI 展示）。 */
 export class PluginVueCompileError extends Error {
   readonly pluginId: string;
   readonly componentPath: string;
@@ -60,14 +61,36 @@ function buildCompileError(
   return new PluginVueCompileError(pluginId, vueRel, friendly, raw);
 }
 
+/** 稳定 scopeId（与 compileScript / compileStyleAsync 共用）。 */
+function scopeIdFor(pluginId: string, vueRel: string): string {
+  const s = `${pluginId}\0${vueRel}`;
+  let h = 2166136261 >>> 0;
+  for (let i = 0; i < s.length; i += 1) {
+    h ^= s.charCodeAt(i);
+    h = Math.imul(h, 16777619) >>> 0;
+  }
+  return `v${h.toString(16).padStart(8, "0")}`;
+}
+
+function stripTypeScript(source: string, filePath: string): string {
+  try {
+    return sucraseTransform(source, {
+      transforms: ["typescript"],
+      filePath,
+    }).code;
+  } catch (e) {
+    throw new Error(e instanceof Error ? e.message : String(e));
+  }
+}
+
 export type LoadPluginVueOptions = {
   /** 入口 `.vue` 已读入的源码（如安全扫描后），避免对同一文件二次 `read_plugin_asset_text`。 */
   preloadedEntrySource?: string;
 };
 
 /**
- * 从目录插件根编译并加载 `.vue`（运行时 `vue3-sfc-loader`）。
- * 编译失败抛出 {@link PluginVueCompileError}；读盘/网络问题返回 `null` 以便回退 iframe。
+ * 从目录插件根编译并加载 `.vue`（`@vue/compiler-sfc` + sucrase，无 `vue-template-compiler` 依赖链）。
+ * 编译失败抛出 {@link PluginVueCompileError}；读盘失败返回 `null` 以便回退 iframe。
  */
 export async function loadPluginVueComponent(
   pluginId: string,
@@ -78,65 +101,118 @@ export async function loadPluginVueComponent(
   const entry = uri(pluginId, rel0);
   const pre = opts?.preloadedEntrySource;
 
-  const moduleCache = Object.assign(Object.create(null), {
-    vue: Vue,
-  });
-
-  const getFile = async (path: { toString(): string }) => {
-    const p = String(path);
-    let full: string;
-    if (p.startsWith(SCHEME)) {
-      full = p;
-    } else {
-      full = uri(pluginId, joinUnder(dirname(rel0), p));
-    }
-    const body = full.slice(SCHEME.length);
+  const getFileText = async (fullUri: string): Promise<string> => {
+    const body = fullUri.slice(SCHEME.length);
     const slash = body.indexOf("/");
     const pid = body.slice(0, slash);
     const rel = body.slice(slash + 1);
     if (pid !== pluginId) {
-      throw new Error(`cross-plugin import denied: ${p}`);
+      throw new Error(`cross-plugin import denied: ${fullUri}`);
     }
-    if (pre !== undefined && pre.length > 0 && full === entry) {
-      const text = pre;
-      return {
-        getContentData: (asBinary: boolean) =>
-          asBinary
-            ? Promise.resolve(new TextEncoder().encode(text).buffer)
-            : Promise.resolve(text),
-      };
+    if (pre !== undefined && pre.length > 0 && fullUri === entry) {
+      return pre;
     }
-    const text = await readPluginAssetText(pid, rel);
-    return {
-      getContentData: (asBinary: boolean) =>
-        asBinary
-          ? Promise.resolve(new TextEncoder().encode(text).buffer)
-          : Promise.resolve(text),
-    };
+    return readPluginAssetText(pid, rel);
   };
 
+  const addStyle = (styleText: string): void => {
+    const el = document.createElement("style");
+    el.textContent = styleText;
+    document.head.appendChild(el);
+  };
+
+  let source: string;
   try {
-    const { loadModule } = await import("vue3-sfc-loader");
+    source = await getFileText(entry);
+  } catch (e) {
+    console.warn("[loadPluginVueComponent] read failed", pluginId, vueRel, e);
+    return null;
+  }
+
+  try {
+    const scopeId = scopeIdFor(pluginId, rel0);
+    const { descriptor, errors } = parse(source, { filename: rel0 });
+    const parseErr = [...(errors ?? []), ...(descriptor.errors ?? [])]
+      .map((x) => (typeof x === "string" ? x : (x as { message?: string }).message ?? String(x)))
+      .filter(Boolean);
+    if (parseErr.length) {
+      throw new Error(parseErr.join("\n"));
+    }
+
+    const hasScript = Boolean(descriptor.script || descriptor.scriptSetup);
+    let moduleJs: string;
+
+    if (hasScript) {
+      const compiledScript = compileScript(descriptor, {
+        id: scopeId,
+        inlineTemplate: true,
+      });
+      const scriptErrs = (compiledScript as { errors?: { message: string }[] }).errors;
+      if (scriptErrs?.length) {
+        throw new Error(scriptErrs.map((x) => x.message).join("\n"));
+      }
+      moduleJs = stripTypeScript(compiledScript.content, `${rel0}.tsx`);
+    } else if (descriptor.template) {
+      const tmpl = compileTemplate({
+        source: descriptor.template.content,
+        id: scopeId,
+        filename: rel0,
+        compilerOptions: { bindingMetadata: {} },
+      });
+      if (tmpl.errors?.length) {
+        throw new Error(tmpl.errors.map((e) => e.message).join("\n"));
+      }
+      const baseName = rel0.split("/").pop()?.replace(/\.vue$/i, "") || "Anonymous";
+      moduleJs = `import { defineComponent } from "vue";\n${tmpl.code}\nexport default defineComponent({ name: ${JSON.stringify(
+        baseName,
+      )}, render });\n`;
+    } else {
+      throw new Error("SFC 缺少 <script> 与 <template>，无法编译。");
+    }
+
+    for (const style of descriptor.styles) {
+      const res = await compileStyleAsync({
+        source: style.content,
+        filename: rel0,
+        id: scopeId,
+        scoped: style.scoped,
+        trim: true,
+      });
+      if (res.errors?.length) {
+        throw new Error(res.errors.map((e) => e.message).join("\n"));
+      }
+      if (res.code?.trim()) addStyle(res.code);
+    }
+
+    // Blob-module `import()` cannot resolve bare specifiers like `from "vue"`.
+    // Resolve the app bundle's Vue ESM URL (Vite `?url`) and rewrite imports.
+    const needsVueRewrite = /\bfrom\s*["']vue["']/.test(moduleJs);
+    let vueModuleUrl = "";
+    if (needsVueRewrite) {
+      try {
+        const mod = (await import("vue?url")) as { default?: string };
+        const raw = mod.default ?? "";
+        vueModuleUrl = raw ? new URL(raw, window.location.href).href : "";
+      } catch {
+        vueModuleUrl = "";
+      }
+      if (!vueModuleUrl) {
+        throw new Error(
+          "无法解析 Vue 模块地址（vue?url）。请确认以 Vite 构建/开发环境运行；否则目录插件 .vue 无法在浏览器中动态加载。",
+        );
+      }
+      moduleJs = moduleJs.replace(/\bfrom\s*["']vue["']/g, `from ${JSON.stringify(vueModuleUrl)}`);
+    }
+
+    const blob = new Blob([moduleJs], { type: "text/javascript" });
+    const url = URL.createObjectURL(blob);
     try {
-      const mod = await loadModule(entry, {
-        moduleCache,
-        getFile,
-        addStyle(styleText: string) {
-          const el = document.createElement("style");
-          el.textContent = styleText;
-          document.head.appendChild(el);
-        },
-      } as never);
-      const m = mod as { default?: Component };
-      return (m.default ?? (mod as Component)) ?? null;
-    } catch (e) {
-      throw buildCompileError(pluginId, rel0, e);
+      const mod = (await import(/* @vite-ignore */ url)) as { default?: Component };
+      return (mod.default ?? (mod as unknown as Component)) ?? null;
+    } finally {
+      URL.revokeObjectURL(url);
     }
   } catch (e) {
-    if (e instanceof PluginVueCompileError) {
-      throw e;
-    }
-    console.warn("[loadPluginVueComponent]", pluginId, vueRel, e);
-    return null;
+    throw buildCompileError(pluginId, rel0, e);
   }
 }

@@ -1,35 +1,45 @@
 <script setup lang="ts">
 import { computed, ref, watch } from "vue";
+import { useI18n } from "vue-i18n";
 import { usePluginStore } from "../stores/pluginStore";
 import { useRoleStore } from "../stores/roleStore";
 import { useUiStore } from "../stores/uiStore";
 import { buildRelationDropdownOptions } from "../utils/relationOptions";
 import {
   OCLIVE_DEFAULT_RELATION_SENTINEL,
+  createRoleFeedback,
   setEvolutionFactor,
   setUserRelation,
 } from "../utils/tauri-api";
+import { useAppToast } from "../composables/useAppToast";
 import HelpHint from "./HelpHint.vue";
+import ExpertModelsRuntimeCard from "./ExpertModelsRuntimeCard.vue";
 
 const roleStore = useRoleStore();
 const uiStore = useUiStore();
 const pluginStore = usePluginStore();
+const { showToast } = useAppToast();
+const { t } = useI18n();
 const localFactor = ref(roleStore.roleInfo.eventImpactFactor);
 const busy = ref(false);
+const feedbackOpen = ref(false);
+const feedbackBusy = ref(false);
+const feedbackMood = ref("");
+const feedbackMessage = ref("");
 
 const personalitySourceLabel = computed(() =>
   roleStore.roleInfo.personalitySource === "profile"
-    ? "档案（可变正文由对话维护）"
-    : "七维向量",
+    ? t("roleRuntimePanel.personality.sourceLabel.profile")
+    : t("roleRuntimePanel.personality.sourceLabel.vector"),
 );
 const personalitySourceHintParagraphs = computed(() =>
   roleStore.roleInfo.personalitySource === "profile"
     ? [
-        "人格来源为 profile：运行时以核心性格档案与数据库中的「可变性格档案」为准；界面七维多为从正文归纳的视图。",
-        "与 vector 模式（七维直接参与事件演化）不同；设计说明见仓库 docs/personality-archive-notes.md。",
+        t("roleRuntimePanel.personality.hints.profileP1"),
+        t("roleRuntimePanel.personality.hints.profileP2"),
       ]
     : [
-        "人格来源为 vector：事件与情绪按七维精细化调整；与 settings 中 evolution.personality_source 一致。",
+        t("roleRuntimePanel.personality.hints.vectorP1"),
       ],
 );
 const relationRows = computed(() =>
@@ -87,6 +97,38 @@ function onFactorEnter(ev: KeyboardEvent) {
 function openBackendsPanel(): void {
   void pluginStore.openPanel("backends");
 }
+
+function openFeedback(): void {
+  feedbackOpen.value = true;
+  feedbackMood.value = "";
+  feedbackMessage.value = "";
+}
+
+function closeFeedback(): void {
+  feedbackOpen.value = false;
+}
+
+async function submitFeedback(): Promise<void> {
+  if (feedbackBusy.value) return;
+  feedbackBusy.value = true;
+  try {
+    await createRoleFeedback({
+      role_id: roleStore.currentRoleId,
+      mood_tag: feedbackMood.value.trim() ? feedbackMood.value.trim() : null,
+      scene_id: uiStore.sceneId ?? null,
+      presence_mode: (roleStore.roleInfo as any)?.presenceMode ?? null,
+      role_version: roleStore.roleInfo.version ?? null,
+      message: feedbackMessage.value,
+    });
+    showToast("success", t("roleRuntimePanel.toasts.submitted"));
+    closeFeedback();
+  } catch (e) {
+    const msg = e instanceof Error ? e.message : String(e);
+    showToast("error", msg || t("roleRuntimePanel.toasts.submitFailed"));
+  } finally {
+    feedbackBusy.value = false;
+  }
+}
 </script>
 
 <template>
@@ -94,27 +136,39 @@ function openBackendsPanel(): void {
     <div class="meta">
       <p v-if="roleStore.roleInfo.description" class="desc">{{ roleStore.roleInfo.description }}</p>
       <p class="sub">
-        版本 {{ roleStore.roleInfo.version || "—" }} · 作者 {{ roleStore.roleInfo.author || "—" }}
+        {{
+          t("roleRuntimePanel.meta.versionAuthor", {
+            version: roleStore.roleInfo.version || "—",
+            author: roleStore.roleInfo.author || "—",
+          })
+        }}
       </p>
       <p class="sub personality-source-line">
         <span class="ps-inline">
-          人格来源：<strong>{{ personalitySourceLabel }}</strong>
+          {{ t("roleRuntimePanel.personality.sourceLabelTitle") }}：<strong>{{ personalitySourceLabel }}</strong>
           <HelpHint :paragraphs="personalitySourceHintParagraphs" />
         </span>
       </p>
     </div>
+    <ExpertModelsRuntimeCard layout="embedded" />
     <div class="runtime-backend-hint">
       <p class="sub">
-        模块后端、异地心声、会话覆盖与调试快照已迁至
+        {{ t("roleRuntimePanel.backendHint.prefix") }}
         <button type="button" class="link-open-backends" @click="openBackendsPanel">
-          插件与后端管理 → 后端模块
+          {{ t("roleRuntimePanel.backendHint.linkText") }}
         </button>
-        （Ctrl+Shift+F）
+        {{ t("roleRuntimePanel.backendHint.suffix") }}
       </p>
+    </div>
+    <div class="runtime-feedback">
+      <p class="sub" v-html="t('roleRuntimePanel.feedback.leadHtml')" />
+      <button type="button" class="btn-feedback" @click="openFeedback">
+        {{ t("roleRuntimePanel.feedback.openButton") }}
+      </button>
     </div>
     <template v-if="roleStore.roleInfo.userRelations.length > 0">
       <div class="row">
-        <label for="rel-select">关系</label>
+        <label for="rel-select">{{ t("roleRuntimePanel.fields.relation") }}</label>
         <select
           id="rel-select"
           class="select"
@@ -126,7 +180,7 @@ function openBackendsPanel(): void {
         </select>
       </div>
       <div class="row">
-        <label for="evolve-factor">事件影响</label>
+        <label for="evolve-factor">{{ t("roleRuntimePanel.fields.eventImpact") }}</label>
         <input
           id="evolve-factor"
           v-model.number="localFactor"
@@ -142,6 +196,58 @@ function openBackendsPanel(): void {
       </div>
     </template>
   </section>
+
+  <Teleport to="body">
+    <div
+      v-if="feedbackOpen"
+      class="modal-backdrop"
+      role="dialog"
+      aria-modal="true"
+      @click="closeFeedback"
+    >
+      <div class="modal-card modal-card--wide" @click.stop>
+        <h2 class="modal-title">{{ t("roleRuntimePanel.feedbackModal.title") }}</h2>
+        <p class="modal-sub">{{ t("roleRuntimePanel.feedbackModal.sub") }}</p>
+        <div class="modal-row">
+          <label class="modal-label">{{ t("roleRuntimePanel.feedbackModal.moodLabel") }}</label>
+          <input
+            v-model="feedbackMood"
+            class="modal-input"
+            type="text"
+            :placeholder="String(t('roleRuntimePanel.feedbackModal.moodPlaceholder'))"
+            :disabled="feedbackBusy"
+          />
+        </div>
+        <div class="modal-row">
+          <label class="modal-label">{{ t("roleRuntimePanel.feedbackModal.messageLabel") }}</label>
+          <textarea
+            v-model="feedbackMessage"
+            class="modal-textarea"
+            rows="4"
+            :placeholder="String(t('roleRuntimePanel.feedbackModal.messagePlaceholder'))"
+            :disabled="feedbackBusy"
+          />
+        </div>
+        <div class="modal-actions">
+          <button type="button" class="btn-secondary" :disabled="feedbackBusy" @click="closeFeedback">
+            {{ t("common.cancel") }}
+          </button>
+          <button
+            type="button"
+            class="btn-primary"
+            :disabled="feedbackBusy || !feedbackMessage.trim()"
+            @click="submitFeedback"
+          >
+            {{
+              feedbackBusy
+                ? t("roleRuntimePanel.feedbackModal.submitting")
+                : t("roleRuntimePanel.feedbackModal.submit")
+            }}
+          </button>
+        </div>
+      </div>
+    </div>
+  </Teleport>
 </template>
 
 <style scoped>
@@ -182,6 +288,28 @@ function openBackendsPanel(): void {
   padding-bottom: 10px;
   border-bottom: 1px dashed var(--border-light);
 }
+.runtime-feedback {
+  margin-bottom: 12px;
+  padding-bottom: 10px;
+  border-bottom: 1px dashed var(--border-light);
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  justify-content: space-between;
+  flex-wrap: wrap;
+}
+.btn-feedback {
+  padding: 6px 10px;
+  border-radius: 10px;
+  border: 1px solid var(--border-light);
+  background: var(--bg-elevated);
+  color: var(--text-primary);
+  cursor: pointer;
+  font: inherit;
+}
+.btn-feedback:hover {
+  border-color: var(--accent, #6b8cff);
+}
 .link-open-backends {
   margin: 0 2px;
   padding: 0;
@@ -215,5 +343,87 @@ label {
   border-radius: 8px;
   border: 1px solid var(--border-light);
   background: var(--bg-elevated);
+}
+
+.modal-backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 10002;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 20px;
+  background: var(--dialog-backdrop, rgba(0, 0, 0, 0.5));
+}
+.modal-card {
+  width: 100%;
+  max-width: 520px;
+  padding: 18px 18px 14px;
+  border-radius: 12px;
+  background: var(--bg-panel, #1a1a22);
+  border: 1px solid var(--border-light);
+  box-shadow: var(--shadow-md, 0 8px 32px rgba(0, 0, 0, 0.35));
+}
+.modal-title {
+  margin: 0 0 8px;
+  font-size: 16px;
+  font-weight: 650;
+  color: var(--text-primary);
+}
+.modal-sub {
+  margin: 0 0 12px;
+  font-size: 12px;
+  color: var(--text-secondary);
+  line-height: 1.45;
+}
+.modal-row {
+  margin-bottom: 10px;
+}
+.modal-label {
+  display: block;
+  margin-bottom: 6px;
+  font-size: 12px;
+  color: var(--text-secondary);
+}
+.modal-input,
+.modal-textarea {
+  width: 100%;
+  padding: 8px 10px;
+  border-radius: 10px;
+  border: 1px solid var(--border-light);
+  background: var(--bg-elevated);
+  color: var(--text-primary);
+  font: inherit;
+}
+.modal-textarea {
+  resize: vertical;
+}
+.modal-actions {
+  display: flex;
+  gap: 10px;
+  justify-content: flex-end;
+  margin-top: 12px;
+}
+.btn-secondary,
+.btn-primary {
+  padding: 8px 12px;
+  border-radius: 10px;
+  border: 1px solid var(--border-light);
+  cursor: pointer;
+  font: inherit;
+}
+.btn-secondary {
+  background: transparent;
+  color: var(--text-primary);
+}
+.btn-primary {
+  background: var(--accent, #6b8cff);
+  border-color: transparent;
+  color: #fff;
+}
+.btn-primary:disabled,
+.btn-secondary:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
 }
 </style>

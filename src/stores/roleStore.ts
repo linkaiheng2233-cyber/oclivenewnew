@@ -121,6 +121,7 @@ function mapRoleInfo(info: RoleInfo): RoleInfoState {
       prompt: "pack_default",
       llm: "pack_default",
       agent: "pack_default",
+      complex_emotion: "pack_default",
     },
     knowledgeEnabled: info.knowledge_enabled ?? false,
     knowledgeChunkCount: info.knowledge_chunk_count ?? 0,
@@ -171,6 +172,7 @@ export const useRoleStore = defineStore(
           prompt: "builtin",
           llm: "ollama",
           agent: "builtin",
+          complex_emotion: "builtin",
           directory_plugins: {},
         },
         pluginBackendsSessionOverride: null,
@@ -181,6 +183,7 @@ export const useRoleStore = defineStore(
           prompt: "builtin",
           llm: "ollama",
           agent: "builtin",
+          complex_emotion: "builtin",
           directory_plugins: {},
         },
         pluginBackendsEffectiveSources: {
@@ -190,6 +193,7 @@ export const useRoleStore = defineStore(
           prompt: "pack_default",
           llm: "pack_default",
           agent: "pack_default",
+          complex_emotion: "pack_default",
         },
         knowledgeEnabled: false,
         knowledgeChunkCount: 0,
@@ -268,6 +272,10 @@ export const useRoleStore = defineStore(
       /** 沉浸模式：虚拟时间、日程、位移条等 */
       interactionImmersive(): boolean {
         return this.roleInfo.interactionMode === "immersive";
+      },
+      /** 纯聊模式：简化叙事与顶栏部分能力，用于简单路径 UI */
+      interactionPureChat(): boolean {
+        return this.roleInfo.interactionMode === "pure_chat";
       },
     },
   },

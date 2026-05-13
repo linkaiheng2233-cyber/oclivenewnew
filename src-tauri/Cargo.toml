@@ -6,40 +6,55 @@ license = "AGPL-3.0"
 description = "oclive desktop companion — Tauri + Vue + Rust dialogue engine"
 
 [features]
-default = ["custom-protocol"]
+default = [
+  "tauri-app",
+  "custom-protocol",
+  "invoke-full",
+]
+tauri-app = ["dep:tauri", "dep:tauri-plugin-deep-link", "dep:tauri-build"]
 custom-protocol = ["tauri/custom-protocol"]
+# Optional Tauri `invoke` command groups (see `src/invoke_registry.rs` + `src/gen/tauri-invoke-capabilities.ts`).
+invoke-full = [
+  "invoke-agent",
+  "invoke-expert-models",
+  "invoke-role-market",
+  "invoke-plugin-market",
+  "invoke-plugin-creator",
+]
+invoke-agent = []
+invoke-expert-models = []
+invoke-role-market = []
+invoke-plugin-market = []
+invoke-plugin-creator = []
 
 [dependencies]
 oclive_validation = { path = "../crates/oclive_validation" }
-tauri = { version = "1.5", features = [ "protocol-asset", "shell-open", "dialog-open", "dialog-save", "fs-write-file", "fs-read-file", "global-shortcut"] }
+oclive_core = { path = "../crates/oclive_core" }
+oclive_kernel_runtime = { path = "../crates/oclive_kernel_runtime" }
+tauri = { version = "1.5", optional = true, features = [ "protocol-asset", "shell-open", "dialog-open", "dialog-save", "fs-write-file", "fs-read-file", "global-shortcut"] }
 serde = { version = "1.0", features = ["derive"] }
 serde_json = "1.0"
 serde_yaml = "0.9"
-tokio = { version = "1", features = ["full"] }
-sqlx = { version = "0.7", features = ["runtime-tokio-rustls", "sqlite", "migrate"] }
+tokio = { workspace = true }
 async-trait = "0.1"
-chrono = { version = "0.4", features = ["serde"] }
-uuid = { version = "1.0", features = ["v4", "serde"] }
 parking_lot = "0.12"
 anyhow = "1.0"
 thiserror = "1.0"
 log = "0.4"
 env_logger = "0.11"
-reqwest = { version = "0.11", features = ["json", "blocking"] }
 once_cell = "1.0"
 tempfile = "3.8"
 toml = "0.8"
-walkdir = "2.5"
 semver = "1.0"
 notify = "6"
-zip = { version = "0.6", default-features = false, features = ["deflate"] }
-axum = "0.7"
-tower-http = { version = "0.5", features = ["cors"] }
-sha2 = "0.11.0"
-tauri-plugin-deep-link = "0.1.2"
+tauri-plugin-deep-link = { version = "0.1.2", optional = true }
+sysinfo = { version = "0.32", default-features = false, features = ["system"] }
+reqwest = { workspace = true }
 
 [dev-dependencies]
+axum = { version = "0.7" }
 tower = { version = "0.4", features = ["util"] }
+sqlx = { version = "0.7", default-features = false, features = ["macros", "runtime-tokio-rustls", "sqlite", "migrate"] }
 
 [build-dependencies]
-tauri-build = { version = "1.5", features = [] }
+tauri-build = { version = "1.5", features = [], optional = true }

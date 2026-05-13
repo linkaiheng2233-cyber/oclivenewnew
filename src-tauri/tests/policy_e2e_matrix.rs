@@ -144,7 +144,7 @@ fn push_diff_line(
     ));
 }
 
-#[tokio::test]
+#[tokio::test(flavor = "multi_thread")]
 async fn policy_e2e_matrix_home_vs_school() {
     let scene_ids = vec!["home", "school", "company", "park"];
     let mut result_map: BTreeMap<String, RunMetrics> = BTreeMap::new();

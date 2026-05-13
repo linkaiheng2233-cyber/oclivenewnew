@@ -13,3 +13,9 @@ pub async fn send_message(
         .await
         .map_err(|e: AppError| e.to_frontend_error())
 }
+
+#[tauri::command]
+pub fn cancel_chat_generation(state: State<'_, AppState>) -> Result<(), String> {
+    state.cancel_chat_generation();
+    Ok(())
+}

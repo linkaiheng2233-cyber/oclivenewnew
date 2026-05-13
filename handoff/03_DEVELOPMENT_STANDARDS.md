@@ -6,9 +6,9 @@
 
 | 问题 | 以仓库为准 |
 |------|------------|
-| `Emotion` 枚举变体写成 Joy / Fearful… | 见 `src-tauri/src/models/emotion.rs`：`Happy, Sad, Angry, Neutral, Excited, Confused, Shy` |
+| `Emotion` 枚举变体写成 Joy / Fearful… | 见 `crates/oclive_kernel_runtime/src/models/emotion.rs`：`Happy, Sad, Angry, Neutral, Excited, Confused, Shy` |
 | `EmotionResult` 放在 `models/emotion.rs` | 实际在 `domain/emotion_analyzer.rs`，且已有 `to_emotion()` |
-| `EventType::Breakup` 等 | 见 `src-tauri/src/models/event.rs` 实际枚举 |
+| `EventType::Breakup` 等 | 见 `crates/oclive_kernel_runtime/src/models/event.rs` 实际枚举 |
 | `send_message` 返回 `response` 字符串、`emotion` 字符串 | 见 `models/dto.rs`：`reply`、`emotion: EmotionDto`、多字段 |
 | `Repository` 直接 `impl for DbManager` | 实际为 `SqliteMemoryRepository` / `SqliteFavorabilityRepository` 包装 `Arc<DbManager>` |
 | 编排里 `FavorabilityEngine::calculate_delta` | **未实现**；当前用 `EventDetector::get_impact_factor` 等 |

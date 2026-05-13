@@ -1,35 +1,63 @@
 import { invoke } from "@tauri-apps/api/tauri";
+import { i18n } from "../i18n";
+import {
+  TAURI_INVOKE_CAPABILITIES,
+  capabilityKeyForCommand,
+} from "../lib/tauriInvokeCapabilities";
 
-export const TransactionErrorMessages: Record<string, string> = {
-  TXN_BEGIN_FAILED: "事务启动失败，请稍后重试。",
-  TXN_RUNTIME_ENSURE_FAILED: "角色运行时状态初始化失败。",
-  TXN_PERSONALITY_INSERT_FAILED: "性格数据写入失败。",
-  TXN_FAVORABILITY_UPDATE_FAILED: "好感度更新失败。",
-  TXN_FAVORABILITY_HISTORY_INSERT_FAILED: "好感度历史记录失败。",
-  TXN_MEMORY_INSERT_FAILED: "记忆数据保存失败。",
-  TXN_SHORT_TERM_INSERT_FAILED: "对话记录写入失败。",
-  TXN_SHORT_TERM_TRIM_FAILED: "对话记录整理失败。",
-  TXN_EVENT_INSERT_FAILED: "事件写入失败。",
-  TXN_FAVORABILITY_READ_FAILED: "好感度读取失败。",
-  TXN_COMMIT_FAILED: "事务提交失败，请稍后再试。",
-  TXN_ROLLBACK_FAILED: "事务回滚异常，请联系技术支持。",
+function t(key: string, params?: Record<string, unknown>): string {
+  return String(i18n.global.t(key as any, params as any));
+}
+
+const TransactionErrorMessageKeys: Record<string, string> = {
+  TXN_BEGIN_FAILED: "apiErrors.txn.TXN_BEGIN_FAILED",
+  TXN_RUNTIME_ENSURE_FAILED: "apiErrors.txn.TXN_RUNTIME_ENSURE_FAILED",
+  TXN_PERSONALITY_INSERT_FAILED: "apiErrors.txn.TXN_PERSONALITY_INSERT_FAILED",
+  TXN_FAVORABILITY_UPDATE_FAILED: "apiErrors.txn.TXN_FAVORABILITY_UPDATE_FAILED",
+  TXN_FAVORABILITY_HISTORY_INSERT_FAILED:
+    "apiErrors.txn.TXN_FAVORABILITY_HISTORY_INSERT_FAILED",
+  TXN_MEMORY_INSERT_FAILED: "apiErrors.txn.TXN_MEMORY_INSERT_FAILED",
+  TXN_SHORT_TERM_INSERT_FAILED: "apiErrors.txn.TXN_SHORT_TERM_INSERT_FAILED",
+  TXN_SHORT_TERM_TRIM_FAILED: "apiErrors.txn.TXN_SHORT_TERM_TRIM_FAILED",
+  TXN_EVENT_INSERT_FAILED: "apiErrors.txn.TXN_EVENT_INSERT_FAILED",
+  TXN_FAVORABILITY_READ_FAILED: "apiErrors.txn.TXN_FAVORABILITY_READ_FAILED",
+  TXN_COMMIT_FAILED: "apiErrors.txn.TXN_COMMIT_FAILED",
+  TXN_ROLLBACK_FAILED: "apiErrors.txn.TXN_ROLLBACK_FAILED",
 };
 
-const CommonErrorMessages: Record<string, string> = {
-  DB_ERROR: "数据库操作失败，请稍后重试。",
-  IO_ERROR: "本地文件读写失败，请检查环境权限。",
-  API_PLUGIN_NOT_FOUND: "未找到该目录插件或插件未扫描到，请检查插件 id 与安装路径。",
-  API_PERMISSION_DENIED: "插件权限不足，请在 manifest 中声明所需权限。",
-  API_INVALID_MANIFEST: "插件 manifest 无效，请检查 manifest.json。",
-  LLM_ERROR:
-    "模型调用失败（常见：Ollama 未启动、模型未下载或名称不对）。请执行 ollama list，并设置环境变量 OLLAMA_MODEL 为已有模型名；默认 qwen2.5:7b。",
-  ROLE_NOT_FOUND: "角色不存在，请确认 role_id。",
-  ROLE_PACK_EXISTS: "该角色 ID 已存在。若要替换本地版本，请选择覆盖。",
-  INVALID_PARAMETER: "参数无效，请检查输入内容。",
-  OLLAMA_TIMEOUT: "沐沐走神了，再问一次吧。",
-  TXN_ROLLBACK: "操作失败，请稍后再试。",
-  SERDE_ERROR: "数据解析失败，请稍后重试。",
-  UNKNOWN_ERROR: "发生未知错误，请稍后重试。",
+const CommonErrorMessageKeys: Record<string, string> = {
+  DB_ERROR: "apiErrors.common.DB_ERROR",
+  IO_ERROR: "apiErrors.common.IO_ERROR",
+  API_PLUGIN_NOT_FOUND: "apiErrors.common.API_PLUGIN_NOT_FOUND",
+  API_PERMISSION_DENIED: "apiErrors.common.API_PERMISSION_DENIED",
+  API_INVALID_MANIFEST: "apiErrors.common.API_INVALID_MANIFEST",
+  LLM_ERROR: "apiErrors.common.LLM_ERROR",
+  ROLE_NOT_FOUND: "apiErrors.common.ROLE_NOT_FOUND",
+  ROLE_PACK_EXISTS: "apiErrors.common.ROLE_PACK_EXISTS",
+  INVALID_PARAMETER: "apiErrors.common.INVALID_PARAMETER",
+  OLLAMA_TIMEOUT: "apiErrors.common.OLLAMA_TIMEOUT",
+  TXN_ROLLBACK: "apiErrors.common.TXN_ROLLBACK",
+  SERDE_ERROR: "apiErrors.common.SERDE_ERROR",
+  UNKNOWN_ERROR: "apiErrors.common.UNKNOWN_ERROR",
+  PLUGIN_PINNED_VERSION: "apiErrors.common.PLUGIN_PINNED_VERSION",
+  PLUGIN_PUBKEY_REVOKED: "apiErrors.common.PLUGIN_PUBKEY_REVOKED",
+  PLUGIN_PUBKEY_NOT_FOUND: "apiErrors.common.PLUGIN_PUBKEY_NOT_FOUND",
+  PLUGIN_SIGNATURE_VERIFY_FAILED: "apiErrors.common.PLUGIN_SIGNATURE_VERIFY_FAILED",
+  PLUGIN_SIGNATURE_BASE64_INVALID: "apiErrors.common.PLUGIN_SIGNATURE_BASE64_INVALID",
+  PLUGIN_SIGNATURE_SIZE_INVALID: "apiErrors.common.PLUGIN_SIGNATURE_SIZE_INVALID",
+  PLUGIN_SIGNATURE_ALGO_UNSUPPORTED:
+    "apiErrors.common.PLUGIN_SIGNATURE_ALGO_UNSUPPORTED",
+  PLUGIN_SIGNATURE_ID_MISMATCH: "apiErrors.common.PLUGIN_SIGNATURE_ID_MISMATCH",
+  PLUGIN_ARCHIVE_TOO_MANY_FILES: "apiErrors.common.PLUGIN_ARCHIVE_TOO_MANY_FILES",
+  PLUGIN_ARCHIVE_SINGLE_FILE_TOO_LARGE:
+    "apiErrors.common.PLUGIN_ARCHIVE_SINGLE_FILE_TOO_LARGE",
+  PLUGIN_ARCHIVE_TOTAL_TOO_LARGE: "apiErrors.common.PLUGIN_ARCHIVE_TOTAL_TOO_LARGE",
+  PLUGIN_ARCHIVE_ILLEGAL_PATH: "apiErrors.common.PLUGIN_ARCHIVE_ILLEGAL_PATH",
+  ZIP_TOO_MANY_FILES: "apiErrors.common.ZIP_TOO_MANY_FILES",
+  ZIP_SINGLE_FILE_TOO_LARGE: "apiErrors.common.ZIP_SINGLE_FILE_TOO_LARGE",
+  ZIP_TOTAL_TOO_LARGE: "apiErrors.common.ZIP_TOTAL_TOO_LARGE",
+  PLUGIN_PERMISSION_NOT_GRANTED: "apiErrors.common.PLUGIN_PERMISSION_NOT_GRANTED",
+  CHAT_GENERATION_CANCELLED: "apiErrors.common.CHAT_GENERATION_CANCELLED",
 };
 
 function parseBackendError(err: unknown): { code?: string; raw: string } {
@@ -70,6 +98,507 @@ export function isInvalidParameterError(err: unknown): boolean {
   return parseApiErrorCode(err) === "INVALID_PARAMETER";
 }
 
+// ===== Module 9: Expert Models =====
+
+export type ExpertConfigSource =
+  | "pack_default"
+  | "role_default"
+  | "session_override";
+
+export interface PromptStyleOverride {
+  replyQualityAnchor?: string | null;
+  corePersonality?: string | null;
+  description?: string | null;
+}
+
+export type ExpertNode =
+  | {
+      type: "base_model";
+      id: string;
+      ggufPath: string;
+      ui?: { x: number; y: number } | null;
+    }
+  | {
+      type: "lora_adapter";
+      id: string;
+      ggufPath: string;
+      strength: number;
+      enabled: boolean;
+      order: number;
+      ui?: { x: number; y: number } | null;
+    }
+  | {
+      type: "prompt_style";
+      id: string;
+      style: PromptStyleOverride;
+      ui?: { x: number; y: number } | null;
+    }
+  | {
+      type: "cloud_model";
+      id: string;
+      /** Only `"host"` is supported (global host cloud LLM). */
+      hostSource?: string;
+      /** Overrides OpenAI-compatible `model` id for this session when set. */
+      model?: string | null;
+      enabled: boolean;
+      ui?: { x: number; y: number } | null;
+    }
+  | {
+      type: "event_trigger";
+      id: string;
+      matchSubstring: string;
+      memoryContent: string;
+      importance: number;
+      enabled: boolean;
+      /** Substring scan scope; aligns with kernel `EventTriggerMatchScope` (default `any`). */
+      matchScope?: "any" | "user_only" | "bot_only" | null;
+      ui?: { x: number; y: number } | null;
+    };
+
+export interface ExpertEdge {
+  from: string;
+  to: string;
+}
+
+export interface ExpertGraph {
+  /** Graph schema revision (backend accepts 1+; v2 reserved for future). */
+  version: number;
+  nodes: ExpertNode[];
+  edges: ExpertEdge[];
+}
+
+/** Result of `expert_models_apply_to_session` (camelCase from Tauri). */
+export interface ExpertModelsApplyResult {
+  ok: boolean;
+  llamaPluginId: string;
+  modelPath?: string | null;
+  llamaArgs?: string | null;
+  sidecarNotice?: string | null;
+  useRemoteLlm?: boolean;
+  remoteModelOverride?: string | null;
+}
+
+/** Result of `expert_models_validate_graph` (dry-run compile). */
+export interface ExpertGraphCompileIssueDto {
+  severity: string;
+  code: string;
+  message: string;
+  nodeIds?: string[];
+}
+
+export interface ExpertModelsValidateGraphResponse {
+  ok: boolean;
+  useRemoteLlm?: boolean;
+  modelPath?: string | null;
+  llamaArgs?: string | null;
+  issues: ExpertGraphCompileIssueDto[];
+}
+
+export interface ExpertModelsEffectiveResponse {
+  graph: ExpertGraph;
+  promptStyle?: PromptStyleOverride | null;
+  graphSource: ExpertConfigSource;
+  promptStyleSource: ExpertConfigSource;
+  canRollbackLastRun?: boolean;
+  /** DB 中的角色级默认图（会话覆盖生效时仍返回，便于「加载角色默认」）。 */
+  roleDefaultGraph?: ExpertGraph | null;
+  roleDefaultPromptStyle?: PromptStyleOverride | null;
+}
+
+export interface LocalModelFileDto {
+  name: string;
+  path: string;
+  /** 本地仓库备注（`models/gguf/.oclive_gguf_repo.json`） */
+  repoNotes?: string;
+  repoSourceUrl?: string;
+  repoTags?: string[];
+}
+
+export interface ExpertWorkflowSummaryDto {
+  id: string;
+  name: string;
+  updatedAtMs: number;
+}
+
+export interface ExpertWorkflowDto {
+  id: string;
+  name: string;
+  updatedAtMs: number;
+  graph: ExpertGraph;
+  promptStyle?: PromptStyleOverride | null;
+}
+
+export async function expertWorkflowsList(): Promise<{ items: ExpertWorkflowSummaryDto[] }> {
+  return invokeWithFriendlyError<{ items: ExpertWorkflowSummaryDto[] }>(
+    "expert_workflows_list",
+    {},
+  );
+}
+
+export async function expertWorkflowsGet(id: string): Promise<ExpertWorkflowDto> {
+  return invokeWithFriendlyError<ExpertWorkflowDto>("expert_workflows_get", { req: { id } });
+}
+
+export async function expertWorkflowsSave(params: {
+  id?: string | null;
+  name: string;
+  graph: ExpertGraph;
+  promptStyle?: PromptStyleOverride | null;
+}): Promise<ExpertWorkflowDto> {
+  return invokeWithFriendlyError<ExpertWorkflowDto>("expert_workflows_save", {
+    req: {
+      id: params.id ?? null,
+      name: params.name,
+      graph: params.graph,
+      promptStyle: params.promptStyle ?? null,
+    },
+  });
+}
+
+export async function expertWorkflowsDelete(id: string): Promise<void> {
+  return invokeWithFriendlyError<void>("expert_workflows_delete", { req: { id } });
+}
+
+export async function expertModelsGetEffective(params: {
+  roleId: string;
+  sessionId?: string | null;
+}): Promise<ExpertModelsEffectiveResponse> {
+  return invokeWithFriendlyError<ExpertModelsEffectiveResponse>(
+    "expert_models_get_effective",
+    {
+      req: { roleId: params.roleId, sessionId: params.sessionId ?? null },
+    },
+  );
+}
+
+export async function expertModelsSetSessionOverride(params: {
+  roleId: string;
+  sessionId?: string | null;
+  graph: ExpertGraph;
+  promptStyle?: PromptStyleOverride | null;
+}): Promise<void> {
+  return invokeWithFriendlyError<void>("expert_models_set_session_override", {
+    req: {
+      roleId: params.roleId,
+      sessionId: params.sessionId ?? null,
+      graph: params.graph,
+      promptStyle: params.promptStyle ?? null,
+    },
+  });
+}
+
+export async function expertModelsClearSessionOverride(params: {
+  roleId: string;
+  sessionId?: string | null;
+}): Promise<void> {
+  return invokeWithFriendlyError<void>("expert_models_clear_session_override", {
+    req: { roleId: params.roleId, sessionId: params.sessionId ?? null },
+  });
+}
+
+export async function expertModelsSetRoleDefault(params: {
+  roleId: string;
+  graph: ExpertGraph;
+  promptStyle?: PromptStyleOverride | null;
+}): Promise<void> {
+  return invokeWithFriendlyError<void>("expert_models_set_role_default", {
+    req: {
+      roleId: params.roleId,
+      graph: params.graph,
+      promptStyle: params.promptStyle ?? null,
+    },
+  });
+}
+
+export async function expertModelsClearRoleDefault(params: {
+  roleId: string;
+}): Promise<void> {
+  return invokeWithFriendlyError<void>("expert_models_clear_role_default", {
+    req: { roleId: params.roleId },
+  });
+}
+
+export async function expertModelsApplyToSession(params: {
+  roleId: string;
+  sessionId?: string | null;
+}): Promise<ExpertModelsApplyResult> {
+  return invokeWithFriendlyError<ExpertModelsApplyResult>("expert_models_apply_to_session", {
+    req: { roleId: params.roleId, sessionId: params.sessionId ?? null },
+  });
+}
+
+export async function expertModelsValidateGraph(params: {
+  graph: ExpertGraph;
+}): Promise<ExpertModelsValidateGraphResponse> {
+  return invokeWithFriendlyError<ExpertModelsValidateGraphResponse>("expert_models_validate_graph", {
+    req: { graph: params.graph },
+  });
+}
+
+export async function expertModelsRollbackLastRun(params: {
+  roleId: string;
+  sessionId?: string | null;
+}): Promise<ExpertModelsApplyResult> {
+  return invokeWithFriendlyError<ExpertModelsApplyResult>("expert_models_rollback_last_run", {
+    req: { roleId: params.roleId, sessionId: params.sessionId ?? null },
+  });
+}
+
+export interface ExpertModelsRunSummaryDto {
+  indexFromLatest: number;
+  atMs: number;
+  pinned?: boolean | null;
+  targetBaseName: string;
+  targetLoraCount: number;
+  targetHasPromptStyle: boolean;
+  applyOk?: boolean | null;
+  applyError?: string | null;
+  applyDurationMs?: number | null;
+  applySidecarNotice?: string | null;
+}
+
+export async function expertModelsListRuns(params: {
+  roleId: string;
+  sessionId?: string | null;
+}): Promise<{ items: ExpertModelsRunSummaryDto[] }> {
+  return invokeWithFriendlyError<{ items: ExpertModelsRunSummaryDto[] }>(
+    "expert_models_list_runs",
+    { req: { roleId: params.roleId, sessionId: params.sessionId ?? null } },
+  );
+}
+
+export async function expertModelsClearRuns(params: {
+  roleId: string;
+  sessionId?: string | null;
+  mode?: "all" | "ok" | "failed" | "unpinned";
+  keepPinned?: boolean;
+}): Promise<void> {
+  return invokeWithFriendlyError<void>("expert_models_clear_runs", {
+    req: {
+      roleId: params.roleId,
+      sessionId: params.sessionId ?? null,
+      mode: params.mode ?? "all",
+      keepPinned: params.keepPinned ?? null,
+    },
+  });
+}
+
+export async function expertModelsRollbackToRun(params: {
+  roleId: string;
+  sessionId?: string | null;
+  indexFromLatest: number;
+}): Promise<ExpertModelsApplyResult> {
+  return invokeWithFriendlyError<ExpertModelsApplyResult>("expert_models_rollback_to_run", {
+    req: {
+      roleId: params.roleId,
+      sessionId: params.sessionId ?? null,
+      indexFromLatest: params.indexFromLatest,
+    },
+  });
+}
+
+export interface ExpertModelsRunDetailDto {
+  indexFromLatest: number;
+  atMs: number;
+  pinned?: boolean | null;
+  snapshotGraph: ExpertGraph;
+  snapshotPromptStyle?: PromptStyleOverride | null;
+  snapshotBaseName: string;
+  snapshotLoraCount: number;
+  snapshotHasPromptStyle: boolean;
+  targetGraph?: ExpertGraph | null;
+  targetPromptStyle?: PromptStyleOverride | null;
+  targetBaseName: string;
+  targetLoraCount: number;
+  targetHasPromptStyle: boolean;
+  applyOk?: boolean | null;
+  applyError?: string | null;
+  applyModelPath?: string | null;
+  applyLlamaArgs?: string | null;
+  applyDurationMs?: number | null;
+  applySidecarNotice?: string | null;
+}
+
+export async function expertModelsSetRunPinned(params: {
+  roleId: string;
+  sessionId?: string | null;
+  indexFromLatest: number;
+  pinned: boolean;
+}): Promise<void> {
+  return invokeWithFriendlyError<void>("expert_models_set_run_pinned", {
+    req: {
+      roleId: params.roleId,
+      sessionId: params.sessionId ?? null,
+      indexFromLatest: params.indexFromLatest,
+      pinned: params.pinned,
+    },
+  });
+}
+
+export async function expertModelsGetRunDetail(params: {
+  roleId: string;
+  sessionId?: string | null;
+  indexFromLatest: number;
+}): Promise<{ item: ExpertModelsRunDetailDto }> {
+  return invokeWithFriendlyError<{ item: ExpertModelsRunDetailDto }>(
+    "expert_models_get_run_detail",
+    {
+      req: {
+        roleId: params.roleId,
+        sessionId: params.sessionId ?? null,
+        indexFromLatest: params.indexFromLatest,
+      },
+    },
+  );
+}
+
+export async function expertModelsListLocalBaseModels(): Promise<LocalModelFileDto[]> {
+  return invokeWithFriendlyError<LocalModelFileDto[]>(
+    "expert_models_list_local_base_models",
+    {},
+  );
+}
+
+export async function expertModelsListLocalLoras(): Promise<LocalModelFileDto[]> {
+  return invokeWithFriendlyError<LocalModelFileDto[]>(
+    "expert_models_list_local_loras",
+    {},
+  );
+}
+
+export async function expertModelsImportBaseGguf(
+  sourcePath: string,
+): Promise<LocalModelFileDto> {
+  return invokeWithFriendlyError<LocalModelFileDto>("expert_models_import_base_gguf", {
+    req: { sourcePath },
+  });
+}
+
+export async function expertModelsImportLoraGguf(
+  sourcePath: string,
+): Promise<LocalModelFileDto> {
+  return invokeWithFriendlyError<LocalModelFileDto>("expert_models_import_lora_gguf", {
+    req: { sourcePath },
+  });
+}
+
+export async function expertModelsDeleteLocalBaseModel(path: string): Promise<void> {
+  return invokeWithFriendlyError<void>("expert_models_delete_local_base_model", {
+    req: { path },
+  });
+}
+
+export async function expertModelsRenameLocalBaseModel(
+  path: string,
+  newFileName: string,
+): Promise<LocalModelFileDto> {
+  return invokeWithFriendlyError<LocalModelFileDto>("expert_models_rename_local_base_model", {
+    req: { path, newFileName },
+  });
+}
+
+export async function expertModelsSetGgufRepoMeta(params: {
+  path: string;
+  notes: string;
+  sourceUrl: string;
+  tags: string[];
+}): Promise<LocalModelFileDto> {
+  return invokeWithFriendlyError<LocalModelFileDto>("expert_models_set_gguf_repo_meta", {
+    req: {
+      path: params.path,
+      notes: params.notes,
+      sourceUrl: params.sourceUrl,
+      tags: params.tags,
+    },
+  });
+}
+
+/** Optional: publish recipe via GitHub API (gist + issue), server-side. */
+export interface GithubPublishOclexpertRecipeResponse {
+  gistUrl: string;
+  issueUrl: string;
+}
+
+export async function githubPublishOclexpertRecipe(params: {
+  token: string;
+  issueRepo: string;
+  title: string;
+  issueBodyIntro: string;
+  oclexpertFilename: string;
+  oclexpertContent: string;
+  gistDescription?: string | null;
+}): Promise<GithubPublishOclexpertRecipeResponse> {
+  return invokeWithFriendlyError<GithubPublishOclexpertRecipeResponse>("github_publish_oclexpert_recipe", {
+    req: {
+      token: params.token,
+      issueRepo: params.issueRepo,
+      title: params.title,
+      issueBodyIntro: params.issueBodyIntro,
+      oclexpertFilename: params.oclexpertFilename,
+      oclexpertContent: params.oclexpertContent,
+      gistDescription: params.gistDescription ?? null,
+    },
+  });
+}
+
+/** 本机是否出现 Ollama / llama.cpp 系进程（供前端轮询刷新模型列表）。 */
+export interface LocalLlmRuntimeProbeDto {
+  ollamaProcess: boolean;
+  llamaLikeProcess: boolean;
+}
+
+export async function probeLocalLlmRuntime(): Promise<LocalLlmRuntimeProbeDto> {
+  return invokeWithFriendlyError<LocalLlmRuntimeProbeDto>("probe_local_llm_runtime", {});
+}
+
+export async function ollamaModelsHealth(): Promise<boolean> {
+  return invokeWithFriendlyError<boolean>("ollama_models_health", {});
+}
+
+export async function ollamaModelsListNames(): Promise<string[]> {
+  return invokeWithFriendlyError<string[]>("ollama_models_list_names", {});
+}
+
+export async function ollamaModelsDelete(name: string): Promise<void> {
+  return invokeWithFriendlyError<void>("ollama_models_delete", {
+    req: { name },
+  });
+}
+
+/** 纯聊模式：聊天等路径用大白话，避免堆栈与 HTTP 细节。 */
+export function toPureChatPlainErrorMessage(err: unknown): string {
+  const { code, raw } = parseBackendError(err);
+  if (code === "CHAT_GENERATION_CANCELLED") {
+    return t("apiErrors.common.CHAT_GENERATION_CANCELLED");
+  }
+  if (code === "LLM_ERROR" || code === "OLLAMA_TIMEOUT") {
+    return t("app.pureChatErrors.llm");
+  }
+  if (code === "INVALID_PARAMETER") {
+    return t("app.pureChatErrors.invalid");
+  }
+  if (code === "ROLE_NOT_FOUND") {
+    return t("app.pureChatErrors.noRole");
+  }
+  if (code === "ROLE_PACK_EXISTS") {
+    return t("app.pureChatErrors.packExists");
+  }
+  if (code === "DB_ERROR") {
+    return t("app.pureChatErrors.db");
+  }
+  const message = err instanceof Error ? err.message : raw;
+  if (
+    code === "API_PERMISSION_DENIED" ||
+    code === "PLUGIN_PERMISSION_NOT_GRANTED" ||
+    message === t("apiErrors.common.PLUGIN_PERMISSION_NOT_GRANTED") ||
+    message === t("apiErrors.common.API_PERMISSION_DENIED") ||
+    message.includes("尚未被授予所需权限")
+  ) {
+    return t("app.pureChatErrors.permission");
+  }
+  return t("app.pureChatErrors.generic");
+}
+
 export function toFriendlyErrorMessage(err: unknown): string {
   const { code, raw } = parseBackendError(err);
   if (!code) return raw;
@@ -82,14 +611,20 @@ export function toFriendlyErrorMessage(err: unknown): string {
     if (bracket !== -1) {
       const detail = raw.slice(bracket + 1).trim();
       if (detail.startsWith("Role not found:")) {
-        return `角色不存在或找不到 manifest。${detail.slice("Role not found:".length).trim()}`;
+        return t("apiErrors.special.roleNotFoundWithDetail", {
+          detail: detail.slice("Role not found:".length).trim(),
+        });
       }
     }
   }
   if (code === "IO_ERROR" && raw.includes("host json")) {
-    return "插件桥返回的数据无法序列化为 JSON，可能是宿主与插件接口不兼容，请查看控制台日志。";
+    return t("apiErrors.special.hostJsonSerdeFailed");
   }
-  return TransactionErrorMessages[code] ?? CommonErrorMessages[code] ?? raw;
+  const txnKey = TransactionErrorMessageKeys[code];
+  if (txnKey) return t(txnKey);
+  const commonKey = CommonErrorMessageKeys[code];
+  if (commonKey) return t(commonKey);
+  return raw;
 }
 
 export function toFriendlyError(err: unknown): FriendlyError {
@@ -105,6 +640,22 @@ async function invokeWithFriendlyError<T>(
   command: string,
   payload: Record<string, unknown>,
 ): Promise<T> {
+  const cap = capabilityKeyForCommand(command);
+  if (cap && !TAURI_INVOKE_CAPABILITIES[cap]) {
+    const friendly: FriendlyError = {
+      code: "INVOKE_NOT_COMPILED",
+      message: t("apiErrors.invoke.notCompiled", {
+        command,
+        group: cap,
+      }),
+      raw: `invoke ${command} (${cap} disabled)`,
+    };
+    console.error(`[tauri:${command}]`, friendly.code ?? "?", friendly.raw);
+    if (errorReporter) {
+      errorReporter(friendly);
+    }
+    throw new Error(friendly.message);
+  }
   try {
     return await invoke<T>(command, payload);
   } catch (err) {
@@ -203,14 +754,15 @@ export interface DirectoryPluginSlots {
 
 /** 与 `settings.json` → `plugin_backends` 一致（snake_case，与后端 serde 对齐） */
 export interface PluginBackends {
-  memory: "builtin" | "builtin_v2" | "remote" | "local" | "directory";
+  memory: "builtin" | "builtin_v2" | "remote" | "local" | "directory" | "none";
   /** `memory === "local"` 时可选：与 `_local_plugins` 中 descriptor 的 `provider_id` 一致 */
   local_memory_provider_id?: string | null;
-  emotion: "builtin" | "builtin_v2" | "remote" | "directory";
-  event: "builtin" | "builtin_v2" | "remote" | "directory";
-  prompt: "builtin" | "builtin_v2" | "remote" | "directory";
-  llm: "ollama" | "remote" | "directory";
-  agent: "builtin" | "remote" | "directory";
+  emotion: "builtin" | "builtin_v2" | "remote" | "directory" | "none";
+  event: "builtin" | "builtin_v2" | "remote" | "directory" | "none";
+  prompt: "builtin" | "builtin_v2" | "remote" | "directory" | "none";
+  llm: "ollama" | "remote" | "directory" | "none";
+  agent: "builtin" | "remote" | "directory" | "none";
+  complex_emotion: "builtin" | "remote" | "directory" | "none";
   /** 各模块为 `directory` 时对应的 manifest `id`（见 DIRECTORY_PLUGINS.md） */
   directory_plugins?: DirectoryPluginSlots;
 }
@@ -223,8 +775,11 @@ export interface PluginBackendsOverride {
   prompt?: PluginBackends["prompt"] | null;
   llm?: PluginBackends["llm"] | null;
   agent?: PluginBackends["agent"] | null;
+  complex_emotion?: PluginBackends["complex_emotion"] | null;
   /** 会话级与包内按槽合并（当前 UI 未编辑；仅展示与调试） */
   directory_plugins?: DirectoryPluginSlots | null;
+  /** 合并后强制清空 `directory_plugins.llm`（专家图云端路径） */
+  forceClearDirectoryLlmSlot?: boolean;
 }
 
 export type PluginBackendSource = "pack_default" | "session_override" | "env_override";
@@ -236,6 +791,7 @@ export interface PluginBackendsSourceMap {
   prompt: PluginBackendSource;
   llm: PluginBackendSource;
   agent: PluginBackendSource;
+  complex_emotion: PluginBackendSource;
 }
 
 export interface PluginResolutionDebugInfo {
@@ -411,6 +967,8 @@ export interface RoleData {
   pack_ui_baseline?: PackUiConfig;
   /** 可选 `author.json` */
   author_pack?: AuthorPackFile | null;
+  /** manifest `creator_message_to_downloader` */
+  creator_message_to_downloader?: string | null;
 }
 
 export interface SceneLabelEntry {
@@ -472,6 +1030,8 @@ export interface RoleInfo {
   pack_ui_config: PackUiConfig;
   pack_ui_baseline?: PackUiConfig;
   author_pack?: AuthorPackFile | null;
+  /** manifest `creator_message_to_downloader` */
+  creator_message_to_downloader?: string | null;
 }
 
 /** `switch_scene` 扁平化返回：RoleInfo 字段 + 可选场景欢迎语 */
@@ -545,10 +1105,162 @@ export interface CreateEventResponse {
   description?: string | null;
 }
 
+export interface CreateRoleFeedbackRequest {
+  role_id: string;
+  session_id?: string | null;
+  mood_tag?: string | null;
+  scene_id?: string | null;
+  presence_mode?: string | null;
+  role_version?: string | null;
+  client_version?: string | null;
+  message: string;
+}
+
+export interface CreateRoleFeedbackResponse {
+  id: number;
+}
+
+export interface QueryRoleFeedbackRequest {
+  role_id: string;
+  limit: number;
+  offset: number;
+}
+
+export interface RoleFeedbackItem {
+  id: number;
+  role_id: string;
+  session_id?: string | null;
+  mood_tag?: string | null;
+  message: string;
+  timestamp: string;
+  status?: string | null;
+  read_at?: string | null;
+  handled_at?: string | null;
+  handled_note?: string | null;
+  scene_id?: string | null;
+  presence_mode?: string | null;
+  role_version?: string | null;
+  runtime_version?: string | null;
+  client_version?: string | null;
+  source?: string | null;
+}
+
+export interface PluginReviewEntryDto {
+  id: string;
+  plugin_id: string;
+  pubkey_id?: string | null;
+  version?: string | null;
+  rating: number;
+  title?: string | null;
+  body?: string | null;
+  created_at: string;
+  author_github?: string | null;
+}
+
+export interface PluginReviewsIndexDto {
+  schema_version: number;
+  generated_at?: string | null;
+  reviews: PluginReviewEntryDto[];
+}
+
+export type LocalImportKind =
+  | "role_pack"
+  | "plugin_archive"
+  | "plugin_dir"
+  | "module_json"
+  | "profile_json";
+
+export interface LocalImportCandidateDto {
+  kind: LocalImportKind;
+  path: string;
+  fileName: string;
+  relatedSignaturePath?: string | null;
+  sizeBytes?: number | null;
+  modifiedMs?: number | null;
+}
+
+export interface ListLocalImportCandidatesResponseDto {
+  items: LocalImportCandidateDto[];
+  rootDir: string;
+}
+
+export async function listLocalImportCandidates(): Promise<ListLocalImportCandidatesResponseDto> {
+  return invokeWithFriendlyError<ListLocalImportCandidatesResponseDto>(
+    "list_local_import_candidates_command",
+    {},
+  );
+}
+
+export async function readLocalImportText(path: string): Promise<string> {
+  const r = await invokeWithFriendlyError<{ content: string }>(
+    "read_local_import_text_command",
+    { req: { path } },
+  );
+  return r.content;
+}
+
+export interface PreviewLocalPluginArchiveResponseDto {
+  pluginId: string;
+  declaredPermissions: string[];
+  signatureVerified: boolean;
+  signatureMessage?: string | null;
+}
+
+export async function previewLocalPluginArchive(params: {
+  archivePath: string;
+  signaturePath?: string | null;
+}): Promise<PreviewLocalPluginArchiveResponseDto> {
+  return invokeWithFriendlyError<PreviewLocalPluginArchiveResponseDto>(
+    "preview_local_plugin_archive_command",
+    {
+      req: {
+        archivePath: params.archivePath,
+        signaturePath: params.signaturePath ?? null,
+      },
+    },
+  );
+}
+
+export async function installLocalPluginArchive(params: {
+  archivePath: string;
+  signaturePath?: string | null;
+  overwrite: boolean;
+  acceptedPermissions?: string[] | null;
+}): Promise<string> {
+  return invokeWithFriendlyError<string>("install_local_plugin_archive_command", {
+    req: {
+      archivePath: params.archivePath,
+      signaturePath: params.signaturePath ?? null,
+      overwrite: params.overwrite,
+      acceptedPermissions: params.acceptedPermissions ?? null,
+    },
+  });
+}
+
+export async function syncPluginReviewsIndex(
+  sourceUrl?: string | null,
+): Promise<PluginReviewsIndexDto> {
+  return invokeWithFriendlyError<PluginReviewsIndexDto>(
+    "sync_plugin_reviews_index",
+    { req: { sourceUrl: sourceUrl ?? null } },
+  );
+}
+
+export async function getCachedPluginReviewsIndex(): Promise<PluginReviewsIndexDto> {
+  return invokeWithFriendlyError<PluginReviewsIndexDto>(
+    "get_cached_plugin_reviews_index",
+    {},
+  );
+}
+
 export async function sendMessage(
   req: SendMessageRequest,
 ): Promise<SendMessageResponse> {
   return invokeWithFriendlyError<SendMessageResponse>("send_message", { req });
+}
+
+export async function cancelChatGeneration(): Promise<void> {
+  await invoke("cancel_chat_generation");
 }
 
 export async function loadRole(roleId: string): Promise<RoleData> {
@@ -595,6 +1307,43 @@ export async function createEvent(
   return invokeWithFriendlyError<CreateEventResponse>("create_event", { req });
 }
 
+export async function createRoleFeedback(
+  req: CreateRoleFeedbackRequest,
+): Promise<CreateRoleFeedbackResponse> {
+  return invokeWithFriendlyError<CreateRoleFeedbackResponse>("create_role_feedback", { req });
+}
+
+export async function queryRoleFeedback(
+  req: QueryRoleFeedbackRequest,
+): Promise<RoleFeedbackItem[]> {
+  return invokeWithFriendlyError<RoleFeedbackItem[]>("query_role_feedback", { req });
+}
+
+export async function markRoleFeedbackRead(params: {
+  roleId: string;
+  ids: number[];
+}): Promise<number> {
+  return invokeWithFriendlyError<number>("mark_role_feedback_read", {
+    req: { roleId: params.roleId, ids: params.ids },
+  });
+}
+
+export async function setRoleFeedbackHandled(params: {
+  roleId: string;
+  id: number;
+  handled: boolean;
+  note?: string | null;
+}): Promise<void> {
+  return invokeWithFriendlyError<void>("set_role_feedback_handled", {
+    req: {
+      roleId: params.roleId,
+      id: params.id,
+      handled: params.handled,
+      note: params.note ?? null,
+    },
+  });
+}
+
 export async function reloadPolicyPlugins(): Promise<string> {
   return invokeWithFriendlyError<string>("reload_policy_plugins", {});
 }
@@ -608,6 +1357,11 @@ export async function listRoles(): Promise<Array<{ id: string; name: string }>> 
 
 export async function switchRole(roleId: string): Promise<RoleInfo> {
   return invokeWithFriendlyError<RoleInfo>("switch_role", { roleId });
+}
+
+/** 删除本地角色包目录及该角色的会话 DB 状态（不可恢复）。 */
+export async function deleteRole(roleId: string): Promise<unknown> {
+  return invokeWithFriendlyError<unknown>("delete_role", { roleId });
 }
 
 export async function setUserRelation(
@@ -648,12 +1402,19 @@ export async function setRoleInteractionMode(
 
 export async function setSessionPluginBackend(
   roleId: string,
-  module: "memory" | "emotion" | "event" | "prompt" | "llm" | "agent",
+  module:
+    | "memory"
+    | "emotion"
+    | "event"
+    | "prompt"
+    | "llm"
+    | "agent"
+    | "complex_emotion",
   /** 与后端 `parse_backend_wire` 一致，如 `builtin_v2`、`directory`、`remote` */
   backend?: string | null,
   localMemoryProviderId?: string,
   sessionId?: string | null,
-  directoryId?: string | null,
+  directoryPluginId?: string | null,
 ): Promise<RoleInfo> {
   const req: Record<string, unknown> = {
     role_id: roleId,
@@ -666,11 +1427,25 @@ export async function setSessionPluginBackend(
   if (localMemoryProviderId !== undefined) {
     req.local_memory_provider_id = localMemoryProviderId;
   }
-  if (directoryId !== undefined) {
-    req.directory_id = directoryId;
+  if (directoryPluginId !== undefined) {
+    req.directory_plugin_id = directoryPluginId;
   }
   return invokeWithFriendlyError<RoleInfo>("set_session_plugin_backend", {
     req,
+  });
+}
+
+export async function setSessionPluginBackendsOverride(
+  roleId: string,
+  overrideBackends: Record<string, unknown>,
+  sessionId?: string | null,
+): Promise<RoleInfo> {
+  return invokeWithFriendlyError<RoleInfo>("set_session_plugin_backends_override", {
+    req: {
+      role_id: roleId,
+      session_id: sessionId ?? null,
+      override_backends: overrideBackends,
+    },
   });
 }
 
@@ -781,6 +1556,7 @@ export interface RolePackPeek {
   id: string;
   name: string;
   version: string;
+  creator_message_to_downloader?: string | null;
 }
 
 /** 预览角色包：`srcPath` 可为 `.ocpak` / `.zip` 或已解压目录（与 `roles/{id}/` 一致）。 */
@@ -798,6 +1574,65 @@ export async function importRolePack(
   return invokeWithFriendlyError<string>("import_role_pack_command", {
     src_path: srcPath,
     overwrite,
+  });
+}
+
+/** 读取 `roles/{roleId}/creator_message.txt`：每个非空行视为一条寄语。 */
+export async function readRoleCreatorMessageLines(
+  roleId: string,
+): Promise<string[]> {
+  return invokeWithFriendlyError<string[]>(
+    "read_role_creator_message_lines_command",
+    { role_id: roleId },
+  );
+}
+
+export interface RoleMarketDownloadDto {
+  label: string;
+  kind: "direct" | "page" | "pan" | string;
+  url: string;
+  sha256: string;
+  note?: string | null;
+  trust?: "official" | "verified" | "community" | "unknown" | string | null;
+}
+
+export interface RoleMarketEntryDto {
+  type: "role" | string;
+  id: string;
+  name: string;
+  description?: string;
+  author?: string;
+  version: string;
+  minRuntimeVersion?: string | null;
+  tags?: string[];
+  downloads: RoleMarketDownloadDto[];
+}
+
+export interface RoleMarketIndexDto {
+  generatedAt?: string | null;
+  roles: RoleMarketEntryDto[];
+  warning?: string | null;
+}
+
+export async function syncRoleMarketIndex(sourceUrl?: string | null): Promise<RoleMarketIndexDto> {
+  return invokeWithFriendlyError<RoleMarketIndexDto>("sync_role_market_index", {
+    req: { sourceUrl: sourceUrl ?? null },
+  });
+}
+
+export async function installRolePackFromMarket(params: {
+  roleId: string;
+  downloadUrl: string;
+  sha256: string;
+  overwrite: boolean;
+}): Promise<string> {
+  return invokeWithFriendlyError<string>("install_role_pack_from_market", {
+    req: {
+      roleId: params.roleId,
+      downloadUrl: params.downloadUrl,
+      sha256: params.sha256,
+      overwrite: params.overwrite,
+    },
   });
 }
 
@@ -857,6 +1692,8 @@ export interface DirectoryPluginBootstrap {
   developerMode: boolean;
   /** 当前角色下已启用插件在 manifest `bridge.events` 中声明的宿主事件名。 */
   subscribedHostEvents: string[];
+  /** 前端壳（Module 8）支持的官方插槽名清单（稳定契约）。 */
+  supportedUiSlots: string[];
   uiSlots: PluginUiSlotInfo[];
 }
 
@@ -879,11 +1716,75 @@ export async function checkPluginUpdates(
 export async function extractPluginZip(
   zipPath: string,
   pluginId: string,
+  acceptedPermissions?: string[] | null,
 ): Promise<void> {
   return invokeWithFriendlyError<void>("extract_plugin_zip", {
     zip_path: zipPath,
     plugin_id: pluginId,
+    accepted_permissions: acceptedPermissions ?? null,
   });
+}
+
+export interface PluginZipPermissionPreviewDto {
+  pluginId: string;
+  permissions: string[];
+}
+
+export interface PluginDirPermissionPreviewDto {
+  pluginId: string;
+  permissions: string[];
+}
+
+export async function previewPluginZipPermissions(
+  zipPath: string,
+): Promise<PluginZipPermissionPreviewDto> {
+  return invokeWithFriendlyError<PluginZipPermissionPreviewDto>(
+    "preview_plugin_zip_permissions",
+    { zip_path: zipPath },
+  );
+}
+
+export async function previewPluginDirPermissions(
+  dirPath: string,
+): Promise<PluginDirPermissionPreviewDto> {
+  return invokeWithFriendlyError<PluginDirPermissionPreviewDto>(
+    "preview_plugin_dir_permissions",
+    { dir_path: dirPath },
+  );
+}
+
+export async function installPluginDir(
+  dirPath: string,
+  pluginId: string,
+  acceptedPermissions?: string[] | null,
+): Promise<void> {
+  return invokeWithFriendlyError<void>("install_plugin_dir", {
+    dir_path: dirPath,
+    plugin_id: pluginId,
+    accepted_permissions: acceptedPermissions ?? null,
+  });
+}
+
+export interface PluginAuditLogRowDto {
+  createdAt: string;
+  action: string;
+  permission?: string | null;
+  allowed: boolean;
+  metaJson: string;
+}
+
+export interface GetPluginAuditLogsResponseDto {
+  logs: PluginAuditLogRowDto[];
+}
+
+export async function getPluginAuditLogs(
+  pluginId: string,
+  limit?: number,
+): Promise<GetPluginAuditLogsResponseDto> {
+  return invokeWithFriendlyError<GetPluginAuditLogsResponseDto>(
+    "get_plugin_audit_logs",
+    { req: { pluginId, limit: limit ?? 50 } },
+  );
 }
 
 /** 同一 `role_id` 上并发的 bootstrap 合并为单次 IPC，避免多插槽同时挂载时重复打后端。 */
@@ -981,6 +1882,13 @@ export interface DirectoryPluginCatalogEntry {
   id: string;
   version: string;
   pluginType?: string | null;
+  installMeta?: {
+    installMethod: string;
+    gitUrl?: string | null;
+    pinnedTag?: string | null;
+    declaredPermissions?: string[];
+    grantedPermissions?: string[];
+  } | null;
   /** manifest 含 `uiTemplate` 或 `uiSchema.fields` */
   hasUiSettings?: boolean;
   /** manifest 是否含 `process`（可在此面板启动 JSON-RPC 子进程） */
@@ -1072,11 +1980,14 @@ export async function resetPluginStateToRoleDefault(
 
 /** 网页索引中的单条插件（与 `plugin_installer::PluginIndexEntry` 一致，camelCase）。 */
 export interface PluginIndexEntryDto {
+  /** plugins.json 字段名就是 `type`（与 Rust serde rename 对齐） */
+  type?: "plugin" | "module" | "profile";
   id: string;
   name: string;
   description: string;
   author: string;
   version: string;
+  /** `type=plugin` 必填；`module` 可能为空字符串 */
   git: string;
   permissions: string[];
   tags: string[];
@@ -1084,6 +1995,32 @@ export interface PluginIndexEntryDto {
   source?: string | null;
   changelog?: string | null;
   dependencies: Record<string, string>;
+  publisher?: string | null;
+  publicKeys?: {
+    pubkeyId: string;
+    publicKey: string;
+    status?: string | null;
+    rotatedTo?: string | null;
+  }[];
+  versions?: {
+    version: string;
+    downloadUrl?: string | null;
+    signatureUrl?: string | null;
+    gitTag?: string | null;
+  }[];
+
+  /** `type=module` 时可选：模块声明（无代码） */
+  module?: {
+    plugins: { id: string; version?: string | null; source?: string | null }[];
+    backends?: Record<string, unknown> | null;
+  } | null;
+
+  /** `type=profile` 时可选：Profile 声明（无代码） */
+  profile?: {
+    plugins: { id: string; version?: string | null; source?: string | null }[];
+    backends?: Record<string, unknown> | null;
+    predeclaredPermissions?: string[] | null;
+  } | null;
 }
 
 export interface PluginMarketEntryDto extends PluginIndexEntryDto {
@@ -1102,6 +2039,21 @@ export interface PluginMarketSnapshotDto {
 
 export interface PendingProtocolInstallDto {
   gitUrl: string;
+}
+
+export interface PluginMarketSourcesConfigDto {
+  developerMode: boolean;
+  pluginIndexSources: string[];
+}
+
+export interface PluginPermissionGrantDto {
+  permission: string;
+  enabled: boolean;
+}
+
+export interface GetPluginPermissionGrantsResponseDto {
+  pluginId: string;
+  grants: PluginPermissionGrantDto[];
 }
 
 export interface InstallPluginFromMarketResponseDto {
@@ -1127,10 +2079,26 @@ export async function getCachedPluginIndex(): Promise<PluginMarketSnapshotDto> {
 export async function installPluginFromMarket(
   pluginId: string,
   gitUrl?: string | null,
+  acceptedPermissions?: string[] | null,
 ): Promise<InstallPluginFromMarketResponseDto> {
   return invokeWithFriendlyError<InstallPluginFromMarketResponseDto>(
     "install_plugin_from_market",
-    { pluginId, gitUrl: gitUrl ?? null },
+    {
+      pluginId,
+      gitUrl: gitUrl ?? null,
+      consent: { acceptedPermissions: acceptedPermissions ?? [] },
+    },
+  );
+}
+
+export async function installPluginVersionFromMarket(
+  pluginId: string,
+  version: string,
+  acceptedPermissions?: string[] | null,
+): Promise<InstallPluginFromMarketResponseDto> {
+  return invokeWithFriendlyError<InstallPluginFromMarketResponseDto>(
+    "install_plugin_version_from_market",
+    { req: { pluginId, version, acceptedPermissions: acceptedPermissions ?? [] } },
   );
 }
 
@@ -1170,6 +2138,108 @@ export async function consumePendingProtocolInstalls(): Promise<
     "consume_pending_protocol_installs",
     {},
   );
+}
+
+export async function getPluginMarketSourcesConfig(): Promise<PluginMarketSourcesConfigDto> {
+  return invokeWithFriendlyError<PluginMarketSourcesConfigDto>(
+    "get_plugin_market_sources_config",
+    {},
+  );
+}
+
+export async function setPluginMarketDeveloperMode(
+  enabled: boolean,
+): Promise<PluginMarketSourcesConfigDto> {
+  return invokeWithFriendlyError<PluginMarketSourcesConfigDto>(
+    "set_plugin_market_developer_mode",
+    { req: { enabled } },
+  );
+}
+
+export async function setPluginIndexSources(
+  sources: string[],
+): Promise<PluginMarketSourcesConfigDto> {
+  return invokeWithFriendlyError<PluginMarketSourcesConfigDto>(
+    "set_plugin_index_sources",
+    { req: { sources } },
+  );
+}
+
+export async function getPluginPermissionGrants(
+  pluginId: string,
+): Promise<GetPluginPermissionGrantsResponseDto> {
+  return invokeWithFriendlyError<GetPluginPermissionGrantsResponseDto>(
+    "get_plugin_permission_grants",
+    { pluginId },
+  );
+}
+
+export async function setPluginPermissionGrant(
+  pluginId: string,
+  permission: string,
+  enabled: boolean,
+): Promise<void> {
+  return invokeWithFriendlyError<void>("set_plugin_permission_grant", {
+    req: { pluginId, permission, enabled },
+  });
+}
+
+export type PermissionRisk = "low" | "medium" | "high";
+
+export interface PermissionTokenInfoDto {
+  token: string;
+  title: string;
+  description: string;
+  risk: PermissionRisk;
+}
+
+export interface ListPermissionTokensResponseDto {
+  tokens: PermissionTokenInfoDto[];
+}
+
+export async function listPermissionTokens(): Promise<ListPermissionTokensResponseDto> {
+  return invokeWithFriendlyError<ListPermissionTokensResponseDto>(
+    "list_permission_tokens",
+    {},
+  );
+}
+
+export interface ProfilePluginSpecDto {
+  id: string;
+  version?: string | null;
+  source?: string | null;
+}
+
+export interface ProfilePermissionsDto {
+  predeclared: string[];
+  requireConfirm: string[];
+}
+
+export interface ProfileBackendsDto {
+  memory?: string | null;
+  emotion?: string | null;
+  event?: string | null;
+  prompt?: string | null;
+  llm?: string | null;
+  agent?: string | null;
+  complexEmotion?: string | null;
+}
+
+export interface ProfilePreviewDto {
+  id: string;
+  name: string;
+  version: string;
+  developerMode: boolean;
+  marketSources: string[];
+  plugins: ProfilePluginSpecDto[];
+  permissions?: ProfilePermissionsDto | null;
+  backends?: ProfileBackendsDto | null;
+}
+
+export async function previewProfileFromPath(path: string): Promise<ProfilePreviewDto> {
+  return invokeWithFriendlyError<ProfilePreviewDto>("preview_profile_from_path", {
+    req: { path },
+  });
 }
 
 export interface UiSchemaFieldDto {
@@ -1386,6 +2456,33 @@ export async function clearAgentDebugTraces(): Promise<void> {
   return invokeWithFriendlyError<void>("clear_agent_debug_traces", {});
 }
 
+export interface McpServerImportPreview {
+  serverId: string;
+  name: string;
+  transport: string;
+  requiredPermission: string;
+}
+
+export async function previewMcpServerImport(
+  path: string,
+): Promise<McpServerImportPreview> {
+  return invokeWithFriendlyError<McpServerImportPreview>("preview_mcp_server_import", {
+    req: { path },
+  });
+}
+
+export async function importMcpServerFromPath(
+  path: string,
+  grantRequiredPermission: boolean,
+): Promise<McpServerImportPreview> {
+  return invokeWithFriendlyError<McpServerImportPreview>(
+    "import_mcp_server_from_path",
+    {
+      req: { path, grantRequiredPermission },
+    },
+  );
+}
+
 export interface CreatePluginScaffoldRequest {
   pluginId: string;
   pluginName: string;
@@ -1590,6 +2687,44 @@ export interface PluginBridgeConversationListItem {
 
 export interface PluginBridgeGetConversationListResult {
   items: PluginBridgeConversationListItem[];
+}
+
+/** 设置页 / 云端：不含密钥的公开字段（`get_host_cloud_llm_public`）。 */
+export interface HostCloudLlmPublicDto {
+  baseUrl: string;
+  model?: string | null;
+  timeoutMs?: number | null;
+  hasApiKey: boolean;
+}
+
+/** 保存应用内云端 OpenAI 兼容配置（`set_host_cloud_llm`）。 */
+export interface HostCloudLlmSaveDto {
+  baseUrl: string;
+  apiKey: string;
+  model?: string | null;
+  timeoutMs?: number | null;
+}
+
+export async function getHostCloudLlmPublic(): Promise<HostCloudLlmPublicDto> {
+  return invokeWithFriendlyError<HostCloudLlmPublicDto>("get_host_cloud_llm_public", {});
+}
+
+export async function setHostCloudLlm(dto: HostCloudLlmSaveDto): Promise<void> {
+  return invokeWithFriendlyError<void>("set_host_cloud_llm", { dto });
+}
+
+/** 全局对话模型 id（Ollama 与云端路径共用）。 */
+export async function getHostChatModel(): Promise<string> {
+  return invokeWithFriendlyError<string>("get_host_chat_model", {});
+}
+
+export async function setHostChatModel(model: string): Promise<void> {
+  return invokeWithFriendlyError<void>("set_host_chat_model", { model });
+}
+
+/** 在系统文件管理器中打开 `roles/{roleId}/`（编辑 settings.json、manifest 等）。 */
+export async function revealRolePackFolder(roleId: string): Promise<void> {
+  return invokeWithFriendlyError<void>("reveal_role_pack_folder", { roleId });
 }
 
 /** 目录插件页 `OclivePluginBridge.invoke` 对应的后端入口（一般无需在主 UI 调用）。 */

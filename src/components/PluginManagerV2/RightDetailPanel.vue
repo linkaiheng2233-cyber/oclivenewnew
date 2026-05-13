@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { computed } from "vue";
+import { useI18n } from "vue-i18n";
 import { pluginUiTemplateMap } from "../PluginUITemplates";
 import type { PluginV2CardItem } from "../../composables/usePluginManagerV2";
 
@@ -19,19 +20,21 @@ const templateComponent = computed(() => {
   return pluginUiTemplateMap[props.item.uiTemplate];
 });
 
+const { t } = useI18n();
+
 const changeNotice = computed(() => {
   if (!props.item) return "";
   if (props.item.uiTemplate === "endpoint-config") {
-    return "只读说明：此处不会写入任何配置；请在环境变量或角色包中修改后重载应用。";
+    return String(t("pluginManagerV2.rightPanel.changeNotice.readonly"));
   }
-  return "变更预览：点击下方「应用改动」后写入当前会话（不修改角色包 settings.json；若与环境变量冲突，以环境解析为准）。";
+  return String(t("pluginManagerV2.rightPanel.changeNotice.preview"));
 });
 </script>
 
 <template>
   <aside class="pm2-right" :class="{ collapsed }">
     <button type="button" class="pm2-collapse" @click="emit('toggle')">
-      {{ collapsed ? "展开" : "收起" }}
+      {{ collapsed ? t("common.expand") : t("common.collapse") }}
     </button>
     <template v-if="!collapsed">
       <div v-if="item" class="pm2-detail">
@@ -46,7 +49,7 @@ const changeNotice = computed(() => {
           @submit="emit('apply', $event)"
         />
       </div>
-      <p v-else class="pm2-placeholder">先从中间列表选一个卡片。</p>
+      <p v-else class="pm2-placeholder">{{ t("pluginManagerV2.rightPanel.placeholder") }}</p>
     </template>
   </aside>
 </template>
@@ -59,9 +62,9 @@ const changeNotice = computed(() => {
   width: 100%;
   min-width: 0;
   min-height: 0;
-  height: 100%;
+  height: auto;
   overflow-x: hidden;
-  overflow-y: auto;
+  overflow-y: visible;
   flex-shrink: 0;
 }
 .pm2-right.collapsed {

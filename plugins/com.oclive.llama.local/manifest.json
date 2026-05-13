@@ -1,0 +1,64 @@
+{
+  "schema_version": 1,
+  "id": "com.oclive.llama.local",
+  "version": "0.1.0",
+  "provides": ["llm"],
+  "permissions": ["process:spawn", "network:*"],
+  "process": {
+    "command": "bin/oclive-llama-sidecar",
+    "args": []
+  },
+  "ready_prefix": "OCLIVE_READY",
+  "rpcMethods": [
+    "llm.generate",
+    "llm.generate_tag",
+    "rpc.discover",
+    "llama.status",
+    "llama.stop",
+    "llama.list_models",
+    "llama.set_model",
+    "llama.download_model",
+    "config_updated"
+  ],
+  "uiTemplate": "endpoint-config",
+  "uiSchema": {
+    "fields": [
+      {
+        "key": "modelPath",
+        "label": "GGUF 模型路径（绝对路径）",
+        "type": "text",
+        "required": false,
+        "default": ""
+      },
+      {
+        "key": "llamaArgs",
+        "label": "llama-server 额外参数（空格分隔）",
+        "type": "text",
+        "required": false,
+        "default": ""
+      },
+      {
+        "key": "downloadUrl",
+        "label": "下载 URL（可选）",
+        "type": "text",
+        "required": false,
+        "default": ""
+      },
+      {
+        "key": "downloadSha256",
+        "label": "下载 sha256（十六进制，小写）",
+        "type": "text",
+        "required": false,
+        "default": ""
+      },
+      {
+        "key": "downloadFileName",
+        "label": "保存文件名（可选，默认取 URL 文件名）",
+        "type": "text",
+        "required": false,
+        "default": ""
+      }
+    ]
+  }
+}
+

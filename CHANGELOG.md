@@ -4,26 +4,39 @@
 
 ### Added
 
+- **Linux 无头内核运维**：权威部署 **[docs/LINUX_KERNEL_DEPLOY.md](docs/LINUX_KERNEL_DEPLOY.md)**；**`delivery/config.example.env`** 全量变量说明；**`delivery/systemd/oclive-kernel.service.example`**（`MemoryHigh`/`MemoryMax`、`EnvironmentFile`、`Restart` 等）；**`scripts/health_check.sh`**、**`scripts/backup_kernel_db.sh`**；**`OCLIVE_REQUIRE_EXPLICIT_PATHS`** 在 **`oclive_kernel_server`** 中强制三路径显式；**`Dockerfile.kernel-server`** 缩小上下文（不拷 `ui/` 等）、Release **`strip`**、镜像内默认严格路径；CI 增加 **`kernel-runtime-http-linux`** job（**`cargo test -p oclive_kernel_runtime --features kernel-http-api`**）。  
+- **Kernel 集成测试（远程 HTTP / 状态 / 错误信封）**：`tests/c_remote_plugin_http_failures.rs` 覆盖 JSON-RPC **超时**、**HTTP 500/403**、**非 JSON 响应体**；`RemoteMemoryRetrievalHttp` / `RemoteUserEmotionAnalyzerHttp` / `RemoteComplexEmotionHttp` 的 **builtin 回退** 与 `degraded_to_builtin`；`tests/c_message_chain_state.rs` 覆盖 **记忆条数单调**、**共景↔异地心声** 路径下情绪 DTO、**会话级 `plugin_backends` 覆盖命名空间隔离**；`tests/public_api_error_contract.rs` 扩展 **`AppError` 全变体 `[CODE]` 信封** 与远程传输 **英文技术消息** 断言。对外导出 **`remote_plugin_call_async`**（`infrastructure::remote_plugin`）供宿主/测试发起异步 JSON-RPC。  
+- **文档**：重写并冻结 **[creator-docs/kernel/KERNEL_BASELINE_V1.md](creator-docs/kernel/KERNEL_BASELINE_V1.md)**（UTF-8）；新增 **[creator-docs/kernel/KERNEL_RELEASE_CHECKLIST_V1.md](creator-docs/kernel/KERNEL_RELEASE_CHECKLIST_V1.md)**；`DOCUMENTATION_INDEX.md` 已链入。  
+- **`oclive_kernel_runtime` 集成测试**：`tests/session_process_message_smoke.rs` 对 `roles/shimeng` 走 **`process_message`** + Mock LLM 最小闭环；`tests/public_api_error_contract.rs` 校验 `AppError` 与字典一致；`tests/p0_support_modules_smoke.rs` 覆盖 **`missing_plugin_dependencies`**、**`market-sync` 索引缓存读**、**`compile_graph_to_llama_local_config`**、**`list_local_import_candidates`**（无网络）；`tests/p0_kernel_lifecycle_smoke.rs` 覆盖 **`delete_role`**、**`expert_models_*` 会话覆盖**、**`role-pack-zip`** 下插件 zip 安装。  
+- **P1 清单**：[`handoff/P1_KERNEL_RUNTIME_BLOCKING_AND_STARTUP.md`](handoff/P1_KERNEL_RUNTIME_BLOCKING_AND_STARTUP.md)（runtime 内 `spawn_blocking` / 同步 HTTP / 冷启动分段锚点）。  
+- **P2 / CI**：根 **`.github/workflows/ci.yml`** 增加 **`cargo doc -p oclive_kernel_runtime --all-features --no-deps`**（`RUSTDOCFLAGS=-D rustdoc::broken_intra_doc_links`）与 **`scripts/check_kernel_entry_vs_invoke_lists.sh`**（CHECKLIST 命令名 ⊆ `invoke_lists`）；**`Dockerfile.kernel-server`**、**`docker-compose.kernel-server.yml`**、**`.dockerignore`**；**KERNEL_SDK** §5–6 说明 **Docker** 与 **`cargo publish --dry-run`** 的 path 依赖限制。  
+- **内核 SDK 与启动脚本**：[creator-docs/kernel/KERNEL_SDK.md](creator-docs/kernel/KERNEL_SDK.md)；根目录 **`scripts/run_kernel_server.sh`** / **`scripts/run_kernel_server.ps1`**（可选端口参数）。
 - 插件清单支持声明订阅的宿主事件（`shell.bridge.events` 或 `ui_slots[].bridge.events`），避免不必要的事件广播。
 - 设置页「常规」区域增加「强制 iframe 模式」开关，开启后所有插件界面统一使用 iframe 渲染，获得最高级别沙箱隔离。
 - 开发者模式下加载 Vue 插槽组件时，对源码进行静态安全扫描（基于 acorn），检测到危险 API 时弹出警告对话框，由用户决定是否继续。
 
 ### Changed
 
+- **专家模型工作台 UI**：工作流区改为标签 + 控件的 **两列网格** 对齐；导入/导出与库操作按钮 **等宽栅格** 排列；Run 历史工具条与弹窗 **响应式宽度**；窄屏下单列堆叠；运行时人格配方卡片按钮 **网格对齐**。
+- **rustdoc**：`event_detector`、`ollama_timeouts`、`role_manager` 模块注释中的断链/歧义链指向修正，便于 CI **`rustdoc::broken_intra_doc_links`** 门禁。  
+- **`oclive_kernel_runtime` 错误分类（P0.E 续）**：插件安装 / 市场索引同步 / 角色包下载与 ZIP 导出 / MCP 客户端 / `delete_role` 等路径中，将原先 `AppError::Unknown` 收敛为 `InvalidParameter`、`IoError`、`SerializationError`、`DatabaseError` 等，并在消息中使用 `[PLUGIN_*]`、`[ROLE_*]`、`[MCP_*]` 等括号前缀便于检索；`handoff/10_ERROR_CODE_DICTIONARY.md` 补充说明。
+- **云 LLM**：移除 Tauri 应用内「云 LLM UI 设置」命令与相关持久化/编排旁路（`get_cloud_llm_ui_settings` 等、`llm_remote_stack`）；**环境变量 `OCLIVE_CLOUD_LLM_*`** 仍可通过 `cloud_llm_from_env` 走 `OpenAiCompatLlmClient`。`PluginResolutionDebug` 去掉云 UI 字段；`PluginBackendSource` 去掉 `app_auto`。
 - 调整切换角色后的事件广播时机，确保插件订阅信息已同步再发送 `role:switched`。
 - 插件引导信息（`get_directory_plugin_bootstrap`）返回值增加 `subscribedHostEvents` 字段。
 
 ### Fixed
 
+- **前端依赖安全**：移除 `vue3-sfc-loader`（`vue-template-compiler` / 旧 `postcss` 链），目录插件 `.vue` 改为 **`@vue/compiler-sfc` + `sucrase`** 在运行时编译；`npm audit` 清零。
 - 修复多个插槽组件并发拉取引导信息时事件订阅集合可能不一致的问题。
 - 修复插件自定义事件也被 `bridge.events` 过滤误拦截的问题：仅宿主内置事件走订阅过滤，自定义事件保持可广播。
 
 ### Performance
 
+- **v0.2 首包路线（收尾）**：`App.vue` 大块 UI 懒加载 + `v-if`；`vite` `manualChunks`；`i18n` 当前语言按需 `import`、另一语言空闲预取；Rust Release profile / 瘦 tokio 见 `handoff/PERF_PHASES.md`（P1–P3 闭合，P4 `reqwest` async 单列）。
 - 对 `get_directory_plugin_catalog` 的 IPC 合并并发 in-flight 请求（全局单次调用）。
 - 对 `get_directory_plugin_bootstrap` 的 IPC 按 `role_id` 合并并发请求，减少多插槽同时挂载时的重复调用。
 - 对 `get_plugin_state` 的 IPC 按 `role_id` 合并并发请求，并在 `save/reset` 前清理对应 in-flight 键，降低并发下读取陈旧状态的概率。
-- 开发者模式下 Vue 插槽：安全扫描读入的源码复用于 `vue3-sfc-loader`，避免对同一 `.vue` 二次 `read_plugin_asset_text`。
+- 开发者模式下 Vue 插槽：安全扫描读入的源码复用于 **`@vue/compiler-sfc` + `sucrase`** 编译路径，避免对同一 `.vue` 二次 `read_plugin_asset_text`。
 - Rust：`directory_plugin_bootstrap_dto` 在构建 `ui_slots` 的同一趟扫描中合并 `subscribed_host_events`，每个已启用插件目录只解析一次 `manifest.json`（整壳 URL 仍单独解析一次）。
 - `pluginStore.refresh()` 仅在目录插件 `catalog` / `pluginState` 实际变化时才替换状态对象，减少无效重渲染。
 - `setHostEventSubscribedEvents` 增加签名短路，相同订阅集合不重复重建 `Set`。
@@ -49,8 +62,16 @@
 - **Remote 插件**：`EventEstimator::estimate` 与 `event.estimate` 的 `params` 增加 **`personality_source`**；`prompt.build_prompt` 的 `params` 在完整 `role` 之外另含顶层 **`personality_source`**（与 `role.evolution_config` 一致）。
 - **主界面**：`RoleRuntimePanel` 展示当前 **人格来源**（vector / 档案）与 HelpHint，与调试面板文案对齐。
 
+### Changed
+
+- **错误分类**：`plugin_archive`、`directory_plugin_commands`（插件状态持久化）、`plugin_package_verify`（签名 JSON）、`llm_cancelable`（任务 join）减少对 **`AppError::Unknown`** 的依赖，便于调用方诊断。
+
 ### Documentation
 
+- **内核工程路线（DeepSeek 对齐）**：新增 **[handoff/ENGINEERING_ROADMAP_KERNEL_DEEPSEEK.md](handoff/ENGINEERING_ROADMAP_KERNEL_DEEPSEEK.md)**（P0 API/测试/错误、P1 异步与启动与内存、P2 SDK/crates.io/kernel_server）；`DOCUMENTATION_INDEX`、`handoff/README`、`oclive_kernel_runtime/README` 已链入；**[handoff/10_ERROR_CODE_DICTIONARY.md](handoff/10_ERROR_CODE_DICTIONARY.md)** 补充与 `AppError::code()` 一致的 Common 码。  
+- **MATRIX**：模糊地带「远程插件 HTTP」行更新为已收敛；文末增加 **KERNEL_SDK** 与工程路线图链接。
+- **轻量化交接收尾**：**[handoff/LIGHTWEIGHT_FOLLOWUP_PLAN.md](handoff/LIGHTWEIGHT_FOLLOWUP_PLAN.md)** 与实现对齐（阶段 2/4 完成态、维护期执行顺序与防回归清单）；**[handoff/LIGHTWEIGHT_OOCP_WS_AXUM_FOLLOWUP.md](handoff/LIGHTWEIGHT_OOCP_WS_AXUM_FOLLOWUP.md)** 标明决策已收敛并保留回归说明。
+- **内核轻量化**：新增并索引 **[creator-docs/kernel/LIGHTWEIGHT_PROFILE.md](creator-docs/kernel/LIGHTWEIGHT_PROFILE.md)**（`oclive_kernel_runtime` 可选 `Cargo` 特性、场景 × OOCP × `invoke`、Tauri 依赖与 `http_api` 双轨拟定）；`DOCUMENTATION_INDEX`、`KERNEL_ENTRY_CHECKLIST`、`KERNEL_API_IMPLEMENTATION_MATRIX`、`KERNEL_MIGRATION_COMPLETE` 与 `handoff/README` 互链。
 - **PLUGIN_V1 / Remote 协议**：[PLUGIN_V1.md](creator-docs/plugin-and-architecture/PLUGIN_V1.md) 补充 `RoleInfo` / `RoleData`、HTTP `/chat` 与 `prompt.build_prompt` 的 **`personality_source`**；[REMOTE_PLUGIN_PROTOCOL.md](creator-docs/plugin-and-architecture/REMOTE_PLUGIN_PROTOCOL.md) 新增 §3.4 与 `event.estimate` 参数表行。
 - **性格档案设计轴心**：重写 **[docs/personality-archive-notes.md](docs/personality-archive-notes.md)**（核心/可变档案、`personality_source`、七维视图、三应用分工）；新增 **[docs/design-axis-evolution.md](docs/design-axis-evolution.md)** 记录思路变化（旧 handoff 不删）；根 README、`creator-docs` 索引与入门文档、`roles/README_MANIFEST.md` §二 §5.3、`PACK_VERSIONING.md`、`CREATOR_ROLE_PACK_CUSTOMIZATION.md`、`CREATOR_SCENE_GUIDE.md`、`CREATOR_PLUGIN_ARCHITECTURE.md` 等与之一致并互链；**`roles/settings.template.json`** 的 `evolution` 显式包含 **`personality_source`**。
 - 新增 **[creator-docs/getting-started/SIDECAR_LLM_USER_GUIDE.md](creator-docs/getting-started/SIDECAR_LLM_USER_GUIDE.md)**：本机侧车 + 用户自带 Key（BYOK）接闭源云端模型的用户向步骤；与 `REMOTE_PLUGIN_PROTOCOL`、`examples/remote_plugin_minimal`、启动器注入环境变量互链；文档索引与根 README 已链入。
@@ -95,7 +116,7 @@
 
 - 创作者文档迁至根目录 **`creator-docs/`**（分 `getting-started`、`plugin-and-architecture`、`role-pack`、`roadmap`）；旧 `docs/*.md` 迁移说明见 `docs/README.md`。开发日志归档见 **`ARCHIVE_PROJECT_HISTORY.md`**。
 - **`roles/README_MANIFEST.md`**：新增「在 oclive 中导入角色包」；**`CREATOR_WORKFLOW.md`**、**`DOCUMENTATION_INDEX.md`**、根 **`README.md`** 同步应用内导入说明。
-- **`roles/TESTING_ROLE_PACK_IMPORT.md`**：角色包导入手工测试清单；压缩包预览优先根目录 `manifest.json` 等行为见 **`role_pack.rs`**。
+- **`roles/TESTING_ROLE_PACK_IMPORT.md`**：角色包导入手工测试清单；压缩包预览优先根目录 `manifest.json` 等行为见内核 **`crates/oclive_kernel_runtime/src/infrastructure/role_pack_archive.rs`**（桌面 `role_pack.rs` 为 re-export）。
 - 详见 `handoff/20_SESSION_OPTIMIZATION_REPORT.md`。
 
 ---

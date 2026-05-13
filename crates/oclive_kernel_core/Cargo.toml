@@ -1,0 +1,17 @@
+[package]
+name = "oclive_kernel_core"
+version = "0.1.0"
+edition = "2021"
+license = "AGPL-3.0"
+description = "Oclive kernel V2 core layer: shared errors, models, and repository traits (thin; default impl stays in oclive_kernel_runtime)."
+readme = "README.md"
+keywords = ["oclive", "kernel"]
+
+[dependencies]
+oclive_kernel_models = { path = "../oclive_kernel_models" }
+oclive_validation = { path = "../oclive_validation" }
+thiserror = "1.0"
+serde = { version = "1.0", features = ["derive"] }
+serde_json = "1.0"
+async-trait = "0.1"
+chrono = { version = "0.4", features = ["serde"] }

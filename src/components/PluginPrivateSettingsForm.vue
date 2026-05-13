@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { computed, onMounted, ref, watch } from "vue";
+import { useI18n } from "vue-i18n";
 import { useAppToast } from "../composables/useAppToast";
 import {
   getPluginSettingsUi,
@@ -11,6 +12,7 @@ import {
 const props = defineProps<{ pluginId: string }>();
 
 const { showToast } = useAppToast();
+const { t } = useI18n();
 const loading = ref(true);
 const saving = ref(false);
 const dto = ref<PluginUiSettingsDto | null>(null);
@@ -83,7 +85,7 @@ async function onSave() {
   saving.value = true;
   try {
     await setPluginSettingsConfig(pid, draft.value);
-    showToast("success", "已保存插件私有配置。");
+    showToast("success", String(t("pluginPrivateSettingsForm.toasts.saved")));
     await load();
   } catch (e) {
     showToast("error", e instanceof Error ? e.message : String(e));
@@ -95,10 +97,12 @@ async function onSave() {
 
 <template>
   <div class="ppsf">
-    <div v-if="loading" class="ppsf-muted">加载设置…</div>
-    <div v-else-if="!dto?.fields?.length" class="ppsf-muted">该插件未声明 uiSchema.fields。</div>
+    <div v-if="loading" class="ppsf-muted">{{ t("pluginPrivateSettingsForm.loading") }}</div>
+    <div v-else-if="!dto?.fields?.length" class="ppsf-muted">{{ t("pluginPrivateSettingsForm.empty") }}</div>
     <template v-else>
-      <p v-if="dto.uiTemplate" class="ppsf-hint">模板：<code>{{ dto.uiTemplate }}</code></p>
+      <p v-if="dto.uiTemplate" class="ppsf-hint">
+        {{ t("pluginPrivateSettingsForm.templateLabel") }}：<code>{{ dto.uiTemplate }}</code>
+      </p>
       <div class="ppsf-fields">
         <label v-for="f in fields" :key="f.key" class="ppsf-row">
           <span class="ppsf-label">
@@ -137,7 +141,11 @@ async function onSave() {
         </label>
       </div>
       <button type="button" class="ppsf-save" :disabled="saving" @click="onSave">
-        {{ saving ? "保存中…" : "保存私有配置" }}
+        {{
+          saving
+            ? t("pluginPrivateSettingsForm.saving")
+            : t("pluginPrivateSettingsForm.save")
+        }}
       </button>
     </template>
   </div>

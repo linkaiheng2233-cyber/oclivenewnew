@@ -2,9 +2,9 @@
 
 use axum::body::{to_bytes, Body};
 use axum::http::{Request, StatusCode};
-use oclivenewnew_tauri::http_api::api_router;
-use oclivenewnew_tauri::infrastructure::MockLlmClient;
-use oclivenewnew_tauri::state::AppState;
+use oclive_kernel_runtime::http_api::api_router;
+use oclive_kernel_runtime::infrastructure::MockLlmClient;
+use oclive_kernel_runtime::state::KernelAppState;
 use serde_json::{json, Value};
 use std::path::PathBuf;
 use std::sync::Arc;
@@ -19,13 +19,13 @@ async fn response_json(res: axum::response::Response) -> Value {
     serde_json::from_slice(&bytes).expect("json")
 }
 
-#[tokio::test]
+#[tokio::test(flavor = "multi_thread")]
 async fn http_api_health_ok() {
     let llm = Arc::new(MockLlmClient {
         reply: "ok".to_string(),
     });
     let state = Arc::new(
-        AppState::new_in_memory_with_llm(llm, roles_dir())
+        KernelAppState::new_in_memory_with_llm(llm, roles_dir())
             .await
             .expect("state"),
     );
@@ -44,13 +44,13 @@ async fn http_api_health_ok() {
     assert_eq!(bytes.as_ref(), b"ok");
 }
 
-#[tokio::test]
+#[tokio::test(flavor = "multi_thread")]
 async fn http_api_chat_empty_message_400() {
     let llm = Arc::new(MockLlmClient {
         reply: "ok".to_string(),
     });
     let state = Arc::new(
-        AppState::new_in_memory_with_llm(llm, roles_dir())
+        KernelAppState::new_in_memory_with_llm(llm, roles_dir())
             .await
             .expect("state"),
     );
@@ -75,13 +75,13 @@ async fn http_api_chat_empty_message_400() {
     assert_eq!(v["error"]["code"], "empty_message");
 }
 
-#[tokio::test]
+#[tokio::test(flavor = "multi_thread")]
 async fn http_api_chat_ok_includes_personality_source_and_reply() {
     let llm = Arc::new(MockLlmClient {
         reply: "模拟回复".to_string(),
     });
     let state = Arc::new(
-        AppState::new_in_memory_with_llm(llm, roles_dir())
+        KernelAppState::new_in_memory_with_llm(llm, roles_dir())
             .await
             .expect("state"),
     );

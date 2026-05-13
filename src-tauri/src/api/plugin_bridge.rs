@@ -5,6 +5,7 @@
 //!   `export_conversation` / `import_role` 以及写入类命令还要求
 //!   `manifest.type == "ocliveplugin"` 且请求来自 **`shell.entry`** 对应 HTML 或 **`shell.vueEntry`** 宿主 Vue 入口（非 `ui_slots` 页）。
 
+use super::bridge_manifest_permissions::bridge_permission_tokens_from_manifest;
 use crate::api::conversation::get_conversation_list_impl;
 use crate::api::directory_plugin::directory_plugin_bootstrap_dto;
 use crate::api::error::ApiError;
@@ -14,6 +15,7 @@ use crate::api::role::{delete_role_impl, get_role_info_impl, list_roles_impl, sw
 use crate::api::settings::update_settings_impl;
 use crate::api::time::get_time_state_impl;
 use crate::domain::chat_engine::{conversation_state_role_id, process_message};
+use crate::domain::permission_tokens::permission_token_for_bridge_command;
 use crate::infrastructure::directory_plugins::{normalize_plugin_rel, OclivePluginManifest};
 use crate::infrastructure::import_role_pack;
 use crate::models::dto::CreateEventRequest;
@@ -37,21 +39,7 @@ pub struct PluginBridgeInvokeRequest {
 
 /// 桥接命令名 → manifest `bridge.invoke` 中需声明的权限串（与命令名不同则二者任一命中即可）。
 fn required_permission_token(cmd: &str) -> String {
-    match cmd {
-        "get_conversation" => "read:conversation".to_string(),
-        "get_roles" => "read:roles".to_string(),
-        "get_current_role" => "read:current_role".to_string(),
-        "update_memory" | "delete_memory" => "write:memory".to_string(),
-        "update_emotion" => "write:emotion".to_string(),
-        "update_event" => "write:event".to_string(),
-        "update_prompt" => "write:prompt".to_string(),
-        "export_conversation" => "export:conversation".to_string(),
-        "import_role" => "import:role".to_string(),
-        "delete_role" => "delete:role".to_string(),
-        "update_settings" => "write:settings".to_string(),
-        "get_conversation_list" => "read:conversations".to_string(),
-        _ => cmd.to_string(),
-    }
+    permission_token_for_bridge_command(cmd)
 }
 
 #[inline]
@@ -148,20 +136,25 @@ fn validate_shell_ocliveplugin(
     Ok(())
 }
 
-fn validate_bridge(
+async fn validate_bridge(
     state: &AppState,
     plugin_id: &str,
     asset_rel: &str,
     command: &str,
 ) -> Result<(), String> {
-    let roots = state.directory_plugins.plugin_roots.read();
-    let root = roots.get(plugin_id).ok_or_else(|| {
-        ApiError::PluginNotFound {
-            plugin_id: plugin_id.to_string(),
-        }
-        .to_string()
-    })?;
-    let manifest = OclivePluginManifest::load_from_dir(root)
+    let root = state
+        .directory_plugins
+        .plugin_roots
+        .read()
+        .get(plugin_id)
+        .cloned()
+        .ok_or_else(|| {
+            ApiError::PluginNotFound {
+                plugin_id: plugin_id.to_string(),
+            }
+            .to_string()
+        })?;
+    let manifest = OclivePluginManifest::load_from_dir(&root)
         .map_err(|e| ApiError::InvalidManifest { message: e }.to_string())?;
     let rel = normalize_plugin_rel(asset_rel);
     let Some(b) = manifest.bridge_for_asset_rel(&rel) else {
@@ -181,9 +174,82 @@ fn validate_bridge(
         }
         .to_string());
     }
+    // P1：权限授予（安装时一次性授权 + 可撤销）
+    let needed = required_permission_token(command);
+    let mut ok = state
+        .db_manager
+        .is_plugin_permission_granted(plugin_id, needed.as_str())
+        .await
+        .unwrap_or(false);
+    // 兼容：历史上曾按「命令名」写入 grant，或与 canonical 令牌并存
+    if !ok && needed.as_str() != command {
+        ok = state
+            .db_manager
+            .is_plugin_permission_granted(plugin_id, command)
+            .await
+            .unwrap_or(false);
+    }
+    // 内置侧栏/顶栏等：首次无任何 grant 时，按 manifest 桥接列表写入默认授权（仍可在插件权限管理中撤销）
+    if !ok && plugin_id.starts_with("com.oclive.mumu.") {
+        let existing = state
+            .db_manager
+            .list_plugin_permission_grants(plugin_id)
+            .await
+            .unwrap_or_default();
+        if existing.is_empty() {
+            for p in bridge_permission_tokens_from_manifest(&manifest) {
+                let _ = state
+                    .db_manager
+                    .upsert_plugin_permission_grant(plugin_id, p.as_str(), true)
+                    .await;
+            }
+            ok = state
+                .db_manager
+                .is_plugin_permission_granted(plugin_id, needed.as_str())
+                .await
+                .unwrap_or(false);
+            if !ok && needed.as_str() != command {
+                ok = state
+                    .db_manager
+                    .is_plugin_permission_granted(plugin_id, command)
+                    .await
+                    .unwrap_or(false);
+            }
+        }
+    }
+    if !ok {
+        let _ = state
+            .db_manager
+            .insert_plugin_audit_log(
+                plugin_id,
+                "bridge.invoke",
+                Some(needed.as_str()),
+                false,
+                "{}",
+            )
+            .await;
+        return Err(ApiError::PluginPermissionNotGranted {
+            message: format!(
+                "permission {:?} not granted for plugin {}",
+                needed.as_str(),
+                plugin_id
+            ),
+        }
+        .to_string());
+    }
     if requires_typed_shell(command) {
         validate_shell_ocliveplugin(&manifest, &rel)?;
     }
+    let _ = state
+        .db_manager
+        .insert_plugin_audit_log(
+            plugin_id,
+            "bridge.invoke",
+            Some(needed.as_str()),
+            true,
+            "{}",
+        )
+        .await;
     Ok(())
 }
 
@@ -455,17 +521,9 @@ async fn dispatch_bridge_command(
                 .unwrap_or(false);
             let storage = state.storage.clone();
             let path_buf = PathBuf::from(path);
-            let role_id = tokio::task::spawn_blocking(move || {
-                import_role_pack(&storage, &path_buf, overwrite, |_| {})
-            })
-            .await
-            .map_err(|e| {
-                ApiError::Io {
-                    message: format!("import_role join: {}", e),
-                }
-                .to_string()
-            })?
-            .map_err(|e: crate::error::AppError| e.to_frontend_error())?;
+            let role_id = import_role_pack(&storage, &path_buf, overwrite, |_| {})
+                .await
+                .map_err(|e: crate::error::AppError| e.to_frontend_error())?;
             state.invalidate_personality_cache_for_role(&role_id);
             let role = state
                 .storage
@@ -514,6 +572,6 @@ pub async fn plugin_bridge_invoke(
         }
         .to_string());
     }
-    validate_bridge(&state, pid, &asset, cmd)?;
+    validate_bridge(&state, pid, &asset, cmd).await?;
     dispatch_bridge_command(&state, cmd, req.params).await
 }

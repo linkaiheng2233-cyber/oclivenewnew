@@ -6,6 +6,22 @@ on:
   pull_request:
     branches: [main, master]
   workflow_dispatch:
+    inputs:
+      bench_compile:
+        description: "On push to main: quick cargo bench --no-run (ubuntu)"
+        required: false
+        default: false
+        type: boolean
+      bench_full:
+        description: "Run Criterion benches + baseline comparison (ubuntu, ~minutes)"
+        required: false
+        default: false
+        type: boolean
+      memory_smoke:
+        description: "Run oclive_kernel_runtime long chat memory bound test (ubuntu, slow)"
+        required: false
+        default: false
+        type: boolean
 
 concurrency:
   group: ci-${{ github.workflow }}-${{ github.ref }}
@@ -15,36 +31,171 @@ permissions:
   contents: read
 
 jobs:
+  # Linux 专用：无头内核 runtime（含 HTTP/OOCP 路由）回归，与桌面矩阵解耦以便快速定位内核问题。
+  kernel-runtime-http-linux:
+    name: kernel_runtime (Linux, kernel-http-api)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dtolnay/rust-toolchain@stable
+      - name: Install OpenSSL (sqlx / TLS)
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y pkg-config libssl-dev
+      - name: cargo test (oclive_kernel_runtime + kernel-http-api)
+        run: cargo test -p oclive_kernel_runtime --features kernel-http-api
+
+  oocp-test-suite:
+    name: oocp_test_suite (Linux, Node + kernel_server)
+    runs-on: ubuntu-latest
+    env:
+      # Deterministic binary path (overrides repo .cargo target-dir redirect for this job only).
+      CARGO_TARGET_DIR: ${{ github.workspace }}/.oocp-ci-target
+      OCLIVE_ROLES_DIR: ${{ github.workspace }}/roles
+      OCLIVE_DB_PATH: /tmp/oclive_oocp_ci.db
+      OCLIVE_APP_DATA_DIR: /tmp/oclive_oocp_ci_appdata
+      OOCP_API_PORT: "48888"
+      OOCP_API_BIND: "127.0.0.1"
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dtolnay/rust-toolchain@stable
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+          cache: npm
+          cache-dependency-path: examples/oocp-test-suite/package-lock.json
+      - name: Install OpenSSL (sqlx / TLS)
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y pkg-config libssl-dev
+      - name: Build OOCP client SDK (tools/oocp-client)
+        run: |
+          cd tools/oocp-client
+          npm install
+          npm run build
+      - name: Build and start oclive_kernel_server (release)
+        run: |
+          set -euo pipefail
+          rm -f "$OCLIVE_DB_PATH" || true
+          mkdir -p "$OCLIVE_APP_DATA_DIR" "$CARGO_TARGET_DIR"
+          cargo build --release -p oclive_kernel_server
+          KERNEL_BIN="$CARGO_TARGET_DIR/release/oclive_kernel_server"
+          test -x "$KERNEL_BIN"
+          nohup "$KERNEL_BIN" > /tmp/oclive_kernel_server_oocp.log 2>&1 &
+          echo $! > /tmp/oclive_kernel_server_oocp.pid
+          for i in $(seq 1 30); do
+            if curl -sf "http://127.0.0.1:${OOCP_API_PORT}/health" | grep -q ok; then
+              echo "kernel_server ready (attempt $i)"
+              exit 0
+            fi
+            sleep 2
+          done
+          echo "--- kernel_server log ---"
+          cat /tmp/oclive_kernel_server_oocp.log || true
+          exit 1
+      - name: Run OOCP protocol test suite (Node)
+        env:
+          OOCP_HTTP_PORT: "48888"
+          OOCP_HTTP_BASE: "http://127.0.0.1:48888"
+        run: |
+          set -euo pipefail
+          cd examples/oocp-test-suite
+          npm ci
+          npm test
+      - name: Stop kernel_server
+        if: always()
+        run: |
+          set +e
+          if [ -f /tmp/oclive_kernel_server_oocp.pid ]; then
+            PID="$(cat /tmp/oclive_kernel_server_oocp.pid)"
+            if [ -n "$PID" ]; then
+              kill "$PID" 2>/dev/null || true
+              sleep 1
+              kill -9 "$PID" 2>/dev/null || true
+            fi
+          fi
+          pkill -f 'oclive_kernel_server' 2>/dev/null || true
+
   rust:
     strategy:
       fail-fast: false
       matrix:
-        os: [ubuntu-latest, windows-latest]
+        os: [ubuntu-latest, windows-latest, macos-latest]
     runs-on: ${{ matrix.os }}
-    defaults:
-      run:
-        working-directory: src-tauri
     steps:
       - uses: actions/checkout@v4
       - uses: dtolnay/rust-toolchain@stable
+      - name: Minimal dist/ for Tauri generate_context (rust job skips npm build)
+        shell: bash
+        run: |
+          mkdir -p dist
+          printf '%s\n' '<!DOCTYPE html><html><head><meta charset="utf-8"><title>ci</title></head><body></body></html>' > dist/index.html
       - name: Install Linux dependencies (Tauri / webkit)
         if: runner.os == 'Linux'
         run: |
           sudo apt-get update
-          sudo apt-get install -y libwebkit2gtk-4.0-dev build-essential curl wget \
-            libssl-dev libgtk-3-dev libayatana-appindicator3-dev librsvg2-dev patchelf
-      - name: rustfmt
-        run: cargo fmt --all -- --check
-      - name: clippy
-        run: cargo clippy --all-targets --all-features -- -D warnings
-      - name: tests
-        run: cargo test
+          sudo apt-get install -y libwebkit2gtk-4.1-dev build-essential curl wget \
+            libssl-dev libgtk-3-dev libayatana-appindicator3-dev librsvg2-dev patchelf \
+            libsoup2.4-dev
+      - name: WebKit 4.0 shims for Tauri 1 on Noble (4.1 .pc/.so only in repos)
+        if: runner.os == 'Linux'
+        shell: bash
+        run: |
+          set -euo pipefail
+          m="$(dpkg-architecture -qDEB_HOST_MULTIARCH)"
+          lib="/usr/lib/${m}"
+          pc="${lib}/pkgconfig"
+          sudo ln -sf "${pc}/javascriptcoregtk-4.1.pc" "${pc}/javascriptcoregtk-4.0.pc"
+          sudo ln -sf "${pc}/webkit2gtk-4.1.pc" "${pc}/webkit2gtk-4.0.pc"
+          # Linker still receives -ljavascriptcoregtk-4.0 / -lwebkit2gtk-4.0 from older sys crates.
+          if [[ -e "${lib}/libwebkit2gtk-4.1.so.0" ]]; then
+            sudo ln -sf libwebkit2gtk-4.1.so.0 "${lib}/libwebkit2gtk-4.0.so"
+          else
+            echo "missing ${lib}/libwebkit2gtk-4.1.so.0"; ls -la "${lib}"/libwebkit2gtk* || true
+            exit 1
+          fi
+          if [[ -e "${lib}/libjavascriptcoregtk-4.1.so.0" ]]; then
+            sudo ln -sf libjavascriptcoregtk-4.1.so.0 "${lib}/libjavascriptcoregtk-4.0.so"
+          else
+            echo "missing ${lib}/libjavascriptcoregtk-4.1.so.0"; ls -la "${lib}"/libjavascriptcoregtk* || true
+            exit 1
+          fi
+      - name: rustfmt (workspace root)
+        run: cargo fmt --all --check
+      - name: Check creator-docs internal markdown links
+        if: runner.os == 'Linux'
+        run: bash scripts/check_doc_links.sh
+      - name: clippy (workspace root)
+        run: cargo clippy --workspace --all-targets --all-features -- -D warnings
+      - name: rustdoc (oclive_kernel_runtime, deny broken intra-doc links)
+        env:
+          RUSTDOCFLAGS: -D rustdoc::broken_intra_doc_links
+        run: cargo doc -p oclive_kernel_runtime --all-features --no-deps
+      - name: CHECKLIST command rows vs invoke_lists
+        shell: bash
+        run: bash scripts/check_kernel_entry_vs_invoke_lists.sh
+      - name: tests (workspace root)
+        run: cargo test --workspace
+      - name: oclive_kernel_server release (Linux headless deliverable)
+        if: runner.os == 'Linux'
+        run: cargo build -p oclive_kernel_server --release
+      - name: kernel_runtime without default features (minimal closure)
+        run: cargo check -p oclive_kernel_runtime --no-default-features
+      - name: Tauri desktop minimal invoke surface (core invoke only)
+        run: cargo check -p oclivenewnew-tauri --no-default-features --features tauri-app,custom-protocol
+      - name: Restore generated invoke capabilities after minimal Tauri check
+        run: git checkout -- src/gen/tauri-invoke-capabilities.ts
+      - name: Tauri default invoke-full must match committed tauri-invoke-capabilities.ts
+        shell: bash
+        run: |
+          cargo check -p oclivenewnew-tauri
+          git diff --exit-code src/gen/tauri-invoke-capabilities.ts
 
   frontend:
     strategy:
       fail-fast: false
       matrix:
-        os: [ubuntu-latest, windows-latest]
+        os: [ubuntu-latest, windows-latest, macos-latest]
     runs-on: ${{ matrix.os }}
     steps:
       - uses: actions/checkout@v4
@@ -53,6 +204,7 @@ jobs:
           node-version: "20"
           cache: npm
       - run: npm ci
+      - run: npm run test:unit
       - run: npm run build
 
   remote-plugin-demo:
@@ -70,7 +222,10 @@ jobs:
       - name: Smoke test memory.rank JSON-RPC
         run: |
           python - <<'PY'
+          import http.client
           import json
+          import time
+          import urllib.error
           from urllib import request
 
           body = json.dumps({
@@ -91,8 +246,30 @@ jobs:
               headers={"Content-Type": "application/json"},
               method="POST",
           )
-          with request.urlopen(req, timeout=5) as resp:
-              raw = resp.read().decode("utf-8")
+
+          raw = None
+          last_err = None
+          for _ in range(60):
+              try:
+                  with request.urlopen(req, timeout=5) as resp:
+                      raw = resp.read().decode("utf-8")
+                  break
+              except (
+                  urllib.error.URLError,
+                  http.client.RemoteDisconnected,
+                  http.client.IncompleteRead,
+                  ConnectionResetError,
+                  OSError,
+              ) as e:
+                  last_err = e
+                  time.sleep(0.25)
+          if raw is None:
+              try:
+                  print(open("/tmp/remote_plugin_demo.log", encoding="utf-8", errors="replace").read())
+              except OSError as e:
+                  print("(no log)", e)
+              raise SystemExit(f"server not reachable after retries: {last_err}") from last_err
+
           data = json.loads(raw)
           assert data["jsonrpc"] == "2.0", raw
           assert data["id"] == 1, raw
@@ -106,3 +283,70 @@ jobs:
           if [ -f /tmp/remote_plugin_demo.pid ]; then
             kill "$(cat /tmp/remote_plugin_demo.pid)" || true
           fi
+
+  # SQ-3：push main 时仅链接检查；手动 `bench_full` 时跑完整 Criterion 并与基线 JSON 对比（超阈值 ::warning::，不 fail job）。
+  bench-compile:
+    if: |
+      (github.event_name == 'push' && (github.ref == 'refs/heads/main' || github.ref == 'refs/heads/master')) ||
+      (github.event_name == 'workflow_dispatch' && github.event.inputs.bench_compile == 'true')
+    runs-on: ubuntu-latest
+    env:
+      CARGO_BUILD_JOBS: "1"
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dtolnay/rust-toolchain@stable
+      - uses: Swatinem/rust-cache@v2
+        with:
+          shared-key: bench-compile
+      - name: Install Linux dependencies (Tauri / webkit)
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y libwebkit2gtk-4.1-dev build-essential curl wget \
+            libssl-dev libgtk-3-dev libayatana-appindicator3-dev librsvg2-dev patchelf \
+            libsoup2.4-dev
+      - name: Compile Criterion benches (no run)
+        run: cargo bench -p oclive_kernel_runtime --no-run
+
+  kernel-bench-regression:
+    if: github.event_name == 'workflow_dispatch' && github.event.inputs.bench_full == 'true'
+    runs-on: ubuntu-latest
+    env:
+      CARGO_BUILD_JOBS: "2"
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dtolnay/rust-toolchain@stable
+      - uses: Swatinem/rust-cache@v2
+        with:
+          shared-key: kernel-bench-regression
+      - name: Install Linux dependencies (Tauri / webkit)
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y libwebkit2gtk-4.1-dev build-essential curl wget \
+            libssl-dev libgtk-3-dev libayatana-appindicator3-dev librsvg2-dev patchelf \
+            libsoup2.4-dev
+      - name: Build test binary for directory-plugin benches
+        run: cargo build -p oclive_kernel_runtime --bin oclive_test_dir_plugin
+      - name: Run Criterion benches (kernel_hot_paths + kernel_plugins_persistence)
+        run: |
+          set -euo pipefail
+          cargo bench -p oclive_kernel_runtime --bench kernel_hot_paths --bench kernel_plugins_persistence 2>&1 | tee bench_full.log
+      - name: Compare to KERNEL perf baseline (warn on >15% slower)
+        continue-on-error: true
+        run: python3 scripts/criterion_compare_baseline.py --log bench_full.log
+
+  kernel-long-memory-smoke:
+    if: github.event_name == 'workflow_dispatch' && github.event.inputs.memory_smoke == 'true'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dtolnay/rust-toolchain@stable
+      - uses: Swatinem/rust-cache@v2
+        with:
+          shared-key: kernel-long-memory-smoke
+      - name: Install OpenSSL (sqlx / TLS)
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y pkg-config libssl-dev
+      - name: Long chat memory bounds (ignored test, explicit --ignored)
+        run: |
+          cargo test -p oclive_kernel_runtime --features "full,slow-long-tests" --test p_long_chat_memory_bounds -- --ignored --nocapture

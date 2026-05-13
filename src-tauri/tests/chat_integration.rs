@@ -11,7 +11,7 @@ fn roles_dir() -> PathBuf {
     PathBuf::from(env!("CARGO_MANIFEST_DIR")).join("../roles")
 }
 
-#[tokio::test]
+#[tokio::test(flavor = "multi_thread")]
 async fn send_message_happy_path_mock_llm() {
     let llm = Arc::new(MockLlmClient {
         reply: "模拟回复".to_string(),
@@ -39,7 +39,7 @@ async fn send_message_happy_path_mock_llm() {
     assert!(!res.events.is_empty());
 }
 
-#[tokio::test]
+#[tokio::test(flavor = "multi_thread")]
 async fn send_message_persists_event_to_db() {
     let llm = Arc::new(MockLlmClient {
         reply: "别生气啦".to_string(),

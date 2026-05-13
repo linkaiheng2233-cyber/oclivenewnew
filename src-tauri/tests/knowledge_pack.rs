@@ -58,7 +58,8 @@ fn load_knowledge_index_parses_front_matter_and_merge_hints() {
     let disk_role = oclivenewnew_tauri::models::role_manifest_disk::disk_manifest_to_role(&disk);
     let personality = PersonalityVector::from(&disk_role.default_personality);
     let prompt = PromptBuilder::build_prompt(&PromptInput {
-        role: &disk_role,
+        role_any: &disk_role as &dyn std::any::Any,
+        role_prompt: disk_role.prompt_slice(),
         personality: &personality,
         memories: &[],
         user_input: "讲讲设定",
@@ -77,7 +78,8 @@ fn load_knowledge_index_parses_front_matter_and_merge_hints() {
         life_context_line: "",
         worldview_snippet: snippet.as_str(),
         mutable_personality: "",
-        reply_quality_anchor: effective_reply_quality_anchor(&disk_role),
+        reply_quality_anchor: effective_reply_quality_anchor(disk_role.prompt_slice()),
+        complex_emotion_hint: None,
     });
     assert!(prompt.contains("【世界观设定】"));
     assert!(prompt.contains("雾城"));

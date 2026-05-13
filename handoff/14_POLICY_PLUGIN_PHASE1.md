@@ -12,7 +12,7 @@
 
 ### 1) 策略接口与默认实现
 
-- 新增：`src-tauri/src/domain/policy.rs`
+- 新增：`crates/oclive_kernel_runtime/src/domain/policy.rs`
   - `EmotionPolicy`：负责“当前情绪”解析与平滑。
   - `EventPolicy`：负责事件检测、影响系数、置信度。
   - `MemoryPolicy`：负责记忆拼装、是否持久化、重要度、FIFO 上限。
@@ -46,7 +46,7 @@
 
 ### 4) chat_engine 改为依赖策略接口
 
-- 修改：`src-tauri/src/domain/chat_engine/`
+- 修改：`crates/oclive_kernel_runtime/src/domain/chat_engine/`
   - 事件检测、影响系数、置信度由 `event_policy` 提供。
   - 情绪平滑由 `emotion_policy` 提供。
   - 记忆构造/过滤/重要度/FIFO 由 `memory_policy` 提供。

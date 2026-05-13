@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { computed } from "vue";
+import { useI18n } from "vue-i18n";
 import type { PluginV2CardItem } from "../../composables/usePluginManagerV2";
 
 const props = defineProps<{
@@ -11,23 +12,26 @@ const emit = defineEmits<{
   select: [];
 }>();
 
+const { t } = useI18n();
+
 const typeLabel = computed(() => {
-  const t = props.item.type;
-  if (t === "builtin") return "内置";
-  if (t === "remote") return "远程";
-  return "目录插件";
+  const kind = props.item.type;
+  if (kind === "builtin") return String(t("pluginManagerV2.card.type.builtin"));
+  if (kind === "remote") return String(t("pluginManagerV2.card.type.remote"));
+  if (kind === "directory") return String(t("pluginManagerV2.card.type.directory"));
+  return String(t("pluginManagerV2.card.type.none"));
 });
 
 const sourceKind = computed(() => {
   const s = props.item.sourceLabel;
-  if (s.includes("会话")) return "session";
-  if (s.includes("环境")) return "env";
+  if (s.includes("session")) return "session";
+  if (s.includes("env")) return "env";
   return "pack";
 });
 
 const riskLabel = computed(() => {
-  if (props.item.status === "needs_config") return "缺配置";
-  if (sourceKind.value === "env") return "环境优先";
+  if (props.item.status === "needs_config") return String(t("pluginManagerV2.card.risk.needsConfig"));
+  if (sourceKind.value === "env") return String(t("pluginManagerV2.card.risk.envFirst"));
   return "";
 });
 </script>
@@ -44,7 +48,13 @@ const riskLabel = computed(() => {
           'is-disabled': item.status === 'disabled',
         }"
       >
-        {{ item.status === "enabled" ? "已启用" : item.status === "needs_config" ? "还需配置" : "已关闭" }}
+        {{
+          item.status === "enabled"
+            ? t("pluginManagerV2.card.status.enabled")
+            : item.status === "needs_config"
+              ? t("pluginManagerV2.card.status.needsConfig")
+              : t("pluginManagerV2.card.status.disabled")
+        }}
       </span>
     </div>
     <p class="pm2-card-desc">{{ item.description }}</p>

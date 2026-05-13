@@ -1,5 +1,30 @@
 # 创作者：从角色包到 oclive
 
+- [中文](#创作者从角色包到-oclive)
+- [English](#creator-workflow-from-role-pack-to-oclive)
+
+---
+
+## Creator workflow: from role pack to oclive
+
+Key idea: the **editor and runtime are separate apps**. They integrate through the **role pack directory structure** on disk.
+
+- **Runtime (`oclivenewnew`)**: loads/validates role packs, runs chat & persistence.
+- **Editor (`oclive-pack-editor`)**: edits and exports `roles/{roleId}/` or `.zip`/`.ocpak` (both zip).
+- **Optional launcher (`oclive-launcher`)**: helps install role packs from zip, configure paths, and run environment checks.
+
+If you only need to make role pack content, focus on:
+
+- `roles/{roleId}/manifest.json` (+ optional `settings.json`)
+- `core_personality.txt`
+- optional `knowledge/` markdown
+
+Docs you’ll likely need:
+
+- [`roles/README_MANIFEST.md`](../../roles/README_MANIFEST.md) (contract & import)
+- [`plugin-and-architecture/PLUGIN_V1.md`](../plugin-and-architecture/PLUGIN_V1.md) (plugin_backends)
+- [`plugin-and-architecture/REMOTE_PLUGIN_PROTOCOL.md`](../plugin-and-architecture/REMOTE_PLUGIN_PROTOCOL.md) (JSON-RPC)
+
 **全库文档索引**：[DOCUMENTATION_INDEX.md](DOCUMENTATION_INDEX.md)  
 **插件架构、HTTP 侧车、更新策略（完整版）**：[../plugin-and-architecture/CREATOR_PLUGIN_ARCHITECTURE.md](../plugin-and-architecture/CREATOR_PLUGIN_ARCHITECTURE.md)
 
@@ -11,7 +36,7 @@
 
 **在 oclive 中安装包**：除把目录放进 `roles/` 或设置 **`OCLIVE_ROLES_DIR`** 外，可在应用内 **导入 `.ocpak`、`.zip`（与 `.ocpak` 同为 ZIP）或已解压的包目录**（结构须与 `roles/{角色id}/` 一致）。详见 [roles/README_MANIFEST.md](../../roles/README_MANIFEST.md) 中「在 oclive 中导入角色包」。
 
-**使用启动器（可选）**：独立仓库 [oclive-launcher](https://github.com/linkaiheng2233-cyber/oclive-launcher) 提供 **从 zip 安装角色包** 到 `OCLIVE_ROLES_DIR`：选择编写器导出的 zip，在对话框中指定 **Ollama 模型名**（写入 `settings.json` 的 `model`）、可选是否覆盖已有 `model`，并支持一键 **`ollama pull`**。启动器还可选择 **本机 Ollama** 或 **云端 Remote LLM**，为 oclive 注入 **`OCLIVE_LLM_BACKEND`** 与 **`OCLIVE_REMOTE_*`**，运行时**覆盖**角色包中的 `plugin_backends.llm`（见 [PLUGIN_V1.md](../plugin-and-architecture/PLUGIN_V1.md)）。协议见 [REMOTE_PLUGIN_PROTOCOL.md](../plugin-and-architecture/REMOTE_PLUGIN_PROTOCOL.md)。详见启动器 README。
+**使用启动器（可选）**：独立仓库 [oclive-launcher](https://github.com/oclive-app/oclive-launcher) 提供 **从 zip 安装角色包** 到 `OCLIVE_ROLES_DIR`：选择编写器导出的 zip，在对话框中指定 **Ollama 模型名**（写入 `settings.json` 的 `model`）、可选是否覆盖已有 `model`，并支持一键 **`ollama pull`**。启动器还可选择 **本机 Ollama** 或 **云端 Remote LLM**，为 oclive 注入 **`OCLIVE_LLM_BACKEND`** 与 **`OCLIVE_REMOTE_*`**，运行时**覆盖**角色包中的 `plugin_backends.llm`（见 [PLUGIN_V1.md](../plugin-and-architecture/PLUGIN_V1.md)）。协议见 [REMOTE_PLUGIN_PROTOCOL.md](../plugin-and-architecture/REMOTE_PLUGIN_PROTOCOL.md)。详见启动器 README。
 
 建议将编写器 checkout 为与本仓库**同级**目录（例如 `D:\oclive-pack-editor` 与 `D:\oclivenewnew`），在 Cursor / VS Code 中用 **`oclive-pack-editor.code-workspace`** 多根联开两项目。
 
@@ -23,7 +48,7 @@
 
 ## 编写方式（当前）
 
-1. 复制示例包（如 `roles/mumu/`）或 [manifest 模板](../roles/manifest.template.json)。
+1. 复制示例包（如 `roles/mumu/`）或 [manifest 模板](../../roles/manifest.template.json)。
 2. 编辑 `manifest.json` / `settings.json` / `core_personality.txt` 与场景资源。  
    - **`core_personality.txt`** 即包内 **核心性格档案**（运行时不可由模型改写）。若 `settings.json` 里 **`evolution.personality_source`** 为 **`profile`**，对话后的 **可变性格档案**仅存运行时数据库、由模型维护，包内不可手写，只能通过 `evolution`（如 `max_change_per_event`）调强弱；**七维**在该模式下多为视图，仍建议填写。详见 **[docs/personality-archive-notes.md](../../docs/personality-archive-notes.md)** 与 [roles/README_MANIFEST.md](../../roles/README_MANIFEST.md)。
 3. 设置环境变量 **`OCLIVE_ROLES_DIR`** 指向含 `roles/` 的父目录，或把包放在项目/应用资源约定的 `roles/` 下。

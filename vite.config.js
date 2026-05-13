@@ -18,19 +18,21 @@ export default defineConfig(({ mode }) => ({
   ].filter(Boolean),
 
   optimizeDeps: {
-    include: ["vue3-sfc-loader", "mitt"],
+    include: ["sucrase", "@vue/compiler-sfc", "mitt"],
   },
 
   build: {
+    chunkSizeWarningLimit: 2000,
     rollupOptions: {
       output: {
         manualChunks(id) {
           if (!id.includes("node_modules")) return;
-          if (id.includes("@sentry")) return "vendor-sentry";
+          if (id.includes("@vue-flow")) return "vendor-vue-flow";
+          if (id.includes("vue-i18n")) return "vendor-i18n";
           if (id.includes("@tauri-apps")) return "vendor-tauri";
           if (id.includes("vue-virtual-scroller")) return "vendor-scroller";
           if (id.includes("pinia")) return "vendor-pinia";
-          // vue3-sfc-loader 仅经动态 import 加载，不打入首屏 vendor
+          if (id.includes("sucrase")) return "vendor-sucrase";
           if (id.includes("/vue/") || id.includes("@vue/")) return "vendor-vue";
         },
       },

@@ -7,6 +7,7 @@ pub enum ApiError {
     PluginNotFound { plugin_id: String },
     InvalidParameter { message: String },
     PermissionDenied { message: String },
+    PluginPermissionNotGranted { message: String },
     InvalidManifest { message: String },
     Io { message: String },
 }
@@ -17,6 +18,7 @@ impl ApiError {
             ApiError::PluginNotFound { .. } => "API_PLUGIN_NOT_FOUND",
             ApiError::InvalidParameter { .. } => "INVALID_PARAMETER",
             ApiError::PermissionDenied { .. } => "API_PERMISSION_DENIED",
+            ApiError::PluginPermissionNotGranted { .. } => "PLUGIN_PERMISSION_NOT_GRANTED",
             ApiError::InvalidManifest { .. } => "API_INVALID_MANIFEST",
             ApiError::Io { .. } => "IO_ERROR",
         }
@@ -29,6 +31,7 @@ impl ApiError {
             }
             ApiError::InvalidParameter { message }
             | ApiError::PermissionDenied { message }
+            | ApiError::PluginPermissionNotGranted { message }
             | ApiError::InvalidManifest { message }
             | ApiError::Io { message } => message.clone(),
         }

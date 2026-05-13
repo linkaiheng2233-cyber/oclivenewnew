@@ -1,0 +1,21 @@
+[package]
+name = "oclive_memory_builtin"
+version = "0.1.0"
+edition = "2021"
+license = "AGPL-3.0"
+description = "Oclive built-in memory ranking/context helpers (Kernel V2 phase 5 facility crate)."
+readme = "README.md"
+
+[features]
+## 默认开启完整排序算法；极简宿主可 `default-features = false` 并仅按需开 `providers`（仍会要求 `classic`，见下）。
+default = ["classic"]
+## 历史记忆排序 / 上下文 / 搜索算法（纯函数）。关闭时用 `classic/stub`（无 importance 排序）。
+classic = []
+## `MemoryRetrieval` 的 Builtin / BuiltinV2 实现；由 `oclive_kernel_runtime` 的 `default-memory-providers` 开启。依赖 `classic`。
+providers = ["classic"]
+
+[dependencies]
+oclive_kernel_core = { path = "../oclive_kernel_core" }
+
+[dev-dependencies]
+chrono = { version = "0.4", features = ["serde"] }

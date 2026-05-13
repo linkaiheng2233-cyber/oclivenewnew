@@ -1,0 +1,17 @@
+[package]
+name = "oclive_complex_emotion_builtin"
+version = "0.1.0"
+edition = "2021"
+license = "AGPL-3.0"
+description = "Oclive built-in complex emotion keyword patterns (Kernel V2 phase 5 facility crate)."
+readme = "README.md"
+
+[features]
+default = ["classic"]
+## `affect_metrics_from_seven_dim` 完整公式；关闭时恒 `(0.0, 0.0)`。
+classic = []
+## `ComplexEmotionProvider` 关键词实现；由 `oclive_kernel_runtime` 的 `default-complex-emotion-providers` 开启。建议与 `classic` 同开以便编排侧指标一致。
+providers = ["classic"]
+
+[dependencies]
+oclive_kernel_core = { path = "../oclive_kernel_core" }

@@ -14,7 +14,9 @@ pub async fn export_role_pack_command(
     state: State<'_, AppState>,
 ) -> Result<(), String> {
     let p = PathBuf::from(dest_path);
-    export_role_pack(&state.storage, &role_id, &p).map_err(|e: AppError| e.to_frontend_error())
+    export_role_pack(&state.storage, &role_id, &p)
+        .await
+        .map_err(|e: AppError| e.to_frontend_error())
 }
 
 #[tauri::command]
@@ -23,11 +25,9 @@ pub async fn peek_role_pack_command(
     _state: State<'_, AppState>,
 ) -> Result<RolePackPeekResponse, String> {
     let p = PathBuf::from(src_path);
-    let (id, name, version) = tokio::task::spawn_blocking(move || peek_role_pack_manifest(&p))
+    peek_role_pack_manifest(p)
         .await
-        .map_err(|e| format!("预览任务异常: {}", e))?
-        .map_err(|e: AppError| e.to_frontend_error())?;
-    Ok(RolePackPeekResponse { id, name, version })
+        .map_err(|e: AppError| e.to_frontend_error())
 }
 
 #[tauri::command]
@@ -40,13 +40,10 @@ pub async fn import_role_pack_command(
     let storage = state.storage.clone();
     let path = PathBuf::from(src_path);
     let app = app.clone();
-    let role_id = tokio::task::spawn_blocking(move || {
-        import_role_pack(&storage, &path, overwrite, |prog| {
-            let _ = app.emit_all("import_progress", prog);
-        })
+    let role_id = import_role_pack(&storage, &path, overwrite, move |prog| {
+        let _ = app.emit_all("import_progress", prog);
     })
     .await
-    .map_err(|e| format!("导入任务异常: {}", e))?
     .map_err(|e: AppError| e.to_frontend_error())?;
 
     let role = state
@@ -61,4 +58,33 @@ pub async fn import_role_pack_command(
         .insert(role_id.clone(), Arc::new(role));
 
     Ok(role_id)
+}
+
+/// 读取 `roles/{role_id}/creator_message.txt`（每个非空行视为一条寄语；一句模式通常只有一行）。
+#[tauri::command]
+pub async fn read_role_creator_message_lines_command(
+    role_id: String,
+    state: State<'_, AppState>,
+) -> Result<Vec<String>, String> {
+    let rid = role_id.trim();
+    if rid.is_empty() {
+        return Err(AppError::InvalidParameter("role_id required".into()).to_frontend_error());
+    }
+    let path = state
+        .storage
+        .roles_dir()
+        .join(rid)
+        .join("creator_message.txt");
+    if !path.is_file() {
+        return Ok(Vec::new());
+    }
+    let s = std::fs::read_to_string(&path).map_err(|e| e.to_string())?;
+    let mut out: Vec<String> = Vec::new();
+    for line in s.lines() {
+        let t = line.trim();
+        if !t.is_empty() {
+            out.push(t.to_string());
+        }
+    }
+    Ok(out)
 }

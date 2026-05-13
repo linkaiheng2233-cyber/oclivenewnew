@@ -1,0 +1,576 @@
+<!doctype html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>official-vue-test-runner</title>
+    <style>
+      :root {
+        --bg: #0f1117;
+        --card: #161922;
+        --border: #2a3040;
+        --text: #e8eaf0;
+        --muted: #9aa3b2;
+        --ok: #4ade80;
+        --bad: #f87171;
+        --accent: #5b7cff;
+      }
+      * {
+        box-sizing: border-box;
+      }
+      body {
+        margin: 0;
+        font-family: system-ui, -apple-system, Segoe UI, sans-serif;
+        background: var(--bg);
+        color: var(--text);
+        line-height: 1.45;
+        font-size: 14px;
+      }
+      .wrap {
+        max-width: 880px;
+        margin: 0 auto;
+        padding: 16px;
+      }
+      h1 {
+        font-size: 18px;
+        margin: 0 0 12px;
+      }
+      label {
+        display: block;
+        font-size: 12px;
+        color: var(--muted);
+        margin-bottom: 4px;
+      }
+      input[type="text"] {
+        width: 100%;
+        padding: 8px 10px;
+        border-radius: 8px;
+        border: 1px solid var(--border);
+        background: var(--card);
+        color: var(--text);
+        font: inherit;
+      }
+      .row {
+        margin-bottom: 12px;
+      }
+      .btns {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 8px;
+        margin: 12px 0;
+      }
+      button {
+        padding: 8px 14px;
+        border-radius: 8px;
+        border: 1px solid var(--border);
+        background: var(--card);
+        color: var(--text);
+        font: inherit;
+        cursor: pointer;
+      }
+      button.primary {
+        background: var(--accent);
+        border-color: transparent;
+        color: #fff;
+      }
+      button:disabled {
+        opacity: 0.5;
+        cursor: not-allowed;
+      }
+      .banner {
+        padding: 10px 12px;
+        border-radius: 8px;
+        border: 1px solid var(--border);
+        background: var(--card);
+        margin-bottom: 12px;
+        font-weight: 600;
+      }
+      .banner.ok {
+        border-color: rgba(74, 222, 128, 0.35);
+        color: var(--ok);
+      }
+      .banner.bad {
+        border-color: rgba(248, 113, 113, 0.35);
+        color: var(--bad);
+      }
+      .busy {
+        margin: 8px 0;
+        font-size: 13px;
+        color: var(--accent);
+        min-height: 1.2em;
+      }
+      .files-panel {
+        margin-top: 12px;
+        padding: 10px 12px;
+        border: 1px solid var(--border);
+        border-radius: 8px;
+        background: var(--card);
+      }
+      .files-panel ul {
+        margin: 6px 0 0;
+        padding-left: 18px;
+        font-size: 12px;
+        color: var(--muted);
+        max-height: 200px;
+        overflow: auto;
+      }
+      .muted {
+        font-size: 12px;
+        color: var(--muted);
+      }
+      .fail {
+        border: 1px solid var(--border);
+        border-radius: 8px;
+        padding: 10px;
+        margin-bottom: 8px;
+        background: var(--card);
+      }
+      .fail h3 {
+        margin: 0 0 6px;
+        font-size: 13px;
+        color: var(--bad);
+      }
+      .fail pre {
+        margin: 0;
+        white-space: pre-wrap;
+        font-size: 11px;
+        color: var(--muted);
+      }
+      .grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
+        gap: 8px;
+        margin: 8px 0;
+      }
+      .chip {
+        padding: 8px;
+        border-radius: 8px;
+        border: 1px solid var(--border);
+        background: #12151c;
+        font-size: 12px;
+      }
+      .chip strong {
+        display: block;
+        font-size: 18px;
+        color: var(--accent);
+      }
+      .hist {
+        margin-top: 16px;
+        border: 1px solid var(--border);
+        border-radius: 8px;
+        padding: 10px 12px;
+        background: var(--card);
+      }
+      .hist summary {
+        cursor: pointer;
+        font-weight: 600;
+      }
+      table.hist-t {
+        width: 100%;
+        border-collapse: collapse;
+        font-size: 12px;
+        margin-top: 8px;
+      }
+      table.hist-t th,
+      table.hist-t td {
+        text-align: left;
+        padding: 6px 4px;
+        border-bottom: 1px solid var(--border);
+      }
+    </style>
+  </head>
+  <body>
+    <div class="wrap">
+      <h1>Vue 测试运行器（目录插件）</h1>
+      <p class="muted">
+        填写 oclivenewnew 仓库根目录（含 <code>package.json</code>），在授予 <code>rpc:invoke</code> 后可通过宿主调用 Vitest。
+      </p>
+
+      <div class="row">
+        <label for="ws">工作区根目录</label>
+        <input id="ws" type="text" placeholder="例如 D:\oclivenewnew" spellcheck="false" />
+      </div>
+
+      <div class="btns">
+        <button type="button" id="btnHealth">检测 Vitest</button>
+        <button type="button" id="btnList">扫描测试文件</button>
+        <button type="button" class="primary" id="btnRun">运行全部测试</button>
+        <button type="button" id="btnHistRefresh">刷新历史</button>
+        <button type="button" id="btnHistClear">清空历史</button>
+      </div>
+      <div id="busy" class="busy" style="display: none" aria-live="polite"></div>
+
+      <details id="histPanel" class="hist">
+        <summary>历史记录（最近运行摘要）</summary>
+        <div id="histBody" class="muted" style="margin-top: 8px"></div>
+      </details>
+
+      <div id="err" role="alert"></div>
+      <div id="filesPanel" class="files-panel" style="display: none">
+        <strong style="font-size: 13px">测试文件</strong>
+        <div id="filesBody" class="muted" style="margin-top: 6px"></div>
+      </div>
+      <div id="out"></div>
+    </div>
+
+    <script>
+      (function () {
+        var PLUGIN_ID = "com.oclive.official_vue_test_runner";
+        var LS_KEY = "oclive.official_vue_test_runner.workspace";
+
+        var wsEl = document.getElementById("ws");
+        var errEl = document.getElementById("err");
+        var outEl = document.getElementById("out");
+        var btnHealth = document.getElementById("btnHealth");
+        var btnList = document.getElementById("btnList");
+        var btnRun = document.getElementById("btnRun");
+        var btnHistRefresh = document.getElementById("btnHistRefresh");
+        var btnHistClear = document.getElementById("btnHistClear");
+        var histBody = document.getElementById("histBody");
+        var histPanel = document.getElementById("histPanel");
+        var busyEl = document.getElementById("busy");
+        var filesPanel = document.getElementById("filesPanel");
+        var filesBody = document.getElementById("filesBody");
+
+        function renderHistoryTable(data) {
+          var runs = (data && data.runs) || [];
+          if (!runs.length) {
+            histBody.innerHTML = "<p>暂无记录。运行测试后会自动追加摘要。</p>";
+            return;
+          }
+          var rows =
+            "<table class='hist-t'><thead><tr><th>时间</th><th>通过/失败/计</th><th>通过率</th><th>耗时</th><th>退出码</th></tr></thead><tbody>";
+          for (var i = 0; i < runs.length; i++) {
+            var r = runs[i];
+            rows +=
+              "<tr><td>" +
+              String(r.at || "").replace(/</g, "&lt;") +
+              "</td><td>" +
+              (r.passed != null ? r.passed : "—") +
+              " / " +
+              (r.failed != null ? r.failed : "—") +
+              " / " +
+              (r.total != null ? r.total : "—") +
+              "</td><td>" +
+              (r.passRate != null ? r.passRate : "—") +
+              "</td><td>" +
+              (r.durationMs != null ? r.durationMs + " ms" : "—") +
+              "</td><td>" +
+              (r.exitCode != null ? r.exitCode : "—") +
+              "</td></tr>";
+          }
+          rows += "</tbody></table>";
+          histBody.innerHTML = rows;
+        }
+
+        function loadHistory() {
+          var invokeFn = getInvoke();
+          if (!invokeFn) return;
+          rpc(invokeFn, "get_history", { limit: 20 })
+            .then(function (d) {
+              renderHistoryTable(d);
+            })
+            .catch(function (e) {
+              histBody.textContent = String(e);
+            });
+        }
+
+        btnHistRefresh.onclick = function () {
+          var invokeFn = getInvoke();
+          if (!invokeFn) {
+            showErr("未找到宿主桥接。");
+            return;
+          }
+          showErr("");
+          loadHistory();
+          try {
+            histPanel.open = true;
+          } catch (e) {}
+        };
+
+        btnHistClear.onclick = function () {
+          var invokeFn = getInvoke();
+          if (!invokeFn) {
+            showErr("未找到宿主桥接。");
+            return;
+          }
+          showErr("");
+          setBusy(true, "清空历史…");
+          rpc(invokeFn, "clear_history", {})
+            .then(function () {
+              loadHistory();
+            })
+            .catch(function (e) {
+              showErr(String(e));
+            })
+            .finally(function () {
+              setBusy(false);
+            });
+        };
+
+        histPanel.addEventListener("toggle", function () {
+          if (histPanel.open) loadHistory();
+        });
+
+        try {
+          wsEl.value = localStorage.getItem(LS_KEY) || "";
+        } catch (e) {}
+
+        function getInvoke() {
+          if (window.OclivePluginBridge && window.OclivePluginBridge.invoke) {
+            return function (cmd, payload) {
+              return window.OclivePluginBridge.invoke(cmd, payload);
+            };
+          }
+          var ta = window.__TAURI__;
+          var inv = ta && (ta.invoke || (ta.tauri && ta.tauri.invoke));
+          if (!inv) return null;
+          return inv;
+        }
+
+        function setBusy(b, label) {
+          btnHealth.disabled = b;
+          btnList.disabled = b;
+          btnRun.disabled = b;
+          btnHistRefresh.disabled = b;
+          btnHistClear.disabled = b;
+          if (busyEl) {
+            busyEl.style.display = b ? "block" : "none";
+            busyEl.textContent = b ? label || "处理中…" : "";
+          }
+        }
+
+        function showErr(msg) {
+          errEl.textContent = msg || "";
+        }
+
+        function rpc(invokeFn, method, params) {
+          return invokeFn("directory_plugin_invoke", {
+            req: { pluginId: PLUGIN_ID, method: method, params: params || {} },
+          });
+        }
+
+        function renderStructured(structured) {
+          if (!structured || typeof structured !== "object") {
+            outEl.innerHTML =
+              '<p class="muted">无 structured 字段（请更新 rpc_server 后重试）。</p>';
+            return;
+          }
+          var summary = structured.summary;
+          var legacyA = structured.aggregates && structured.aggregates.tests;
+          if (!summary && legacyA) {
+            summary = {
+              passed: legacyA.passed,
+              failed: legacyA.failed,
+              skipped: legacyA.pending,
+              total: legacyA.total,
+              passRate: legacyA.passRate,
+              durationMs: structured.durationMs,
+              ok: structured.runOk,
+            };
+          }
+          if (!summary) summary = {};
+          var fails = structured.failures || structured.failuresDetailed || [];
+          var headline =
+            (structured.meta && structured.meta.headline) || structured.headline || "";
+          var dur =
+            summary.durationMs != null ? summary.durationMs : structured.durationMs;
+          var failedCount =
+            summary.failed != null
+              ? Number(summary.failed)
+              : fails.length;
+          var ok =
+            summary.ok != null ? summary.ok : structured.runOk === true;
+          if (ok && failedCount === 0 && (!fails || !fails.length)) {
+            if (!headline) headline = "全部通过（无失败项）";
+          }
+          var chips =
+            '<div class="grid">' +
+            '<div class="chip"><strong>' +
+            (summary.passed != null ? summary.passed : "—") +
+            "</strong>通过</div>" +
+            '<div class="chip"><strong>' +
+            (summary.failed != null ? summary.failed : "—") +
+            "</strong>失败</div>" +
+            '<div class="chip"><strong>' +
+            (summary.skipped != null ? summary.skipped : "—") +
+            "</strong>跳过</div>" +
+            '<div class="chip"><strong>' +
+            (summary.total != null ? summary.total : "—") +
+            "</strong>合计</div>" +
+            '<div class="chip"><strong>' +
+            (summary.passRate != null ? String(summary.passRate) : "—") +
+            "</strong>通过率</div>" +
+            '<div class="chip"><strong>' +
+            (dur != null ? dur + " ms" : "—") +
+            "</strong>耗时</div>" +
+            "</div>";
+
+          var failHtml = "";
+          for (var i = 0; i < fails.length; i++) {
+            var f = fails[i];
+            var loc =
+              f.file +
+              (f.line != null ? ":" + f.line : "") +
+              (f.column != null ? ":" + f.column : "");
+            var title = (f.fullName || f.testTitle || "失败用例").replace(/</g, "&lt;");
+            var msg = f.message || (f.messages && f.messages[0]) || "";
+            failHtml +=
+              '<div class="fail"><h3>' +
+              title +
+              '</h3><p class="muted">' +
+              String(loc).replace(/</g, "&lt;") +
+              "</p><pre>" +
+              String(msg)
+                .slice(0, 4000)
+                .replace(/</g, "&lt;") +
+              "</pre></div>";
+          }
+          if (!failHtml && summary.failed > 0) {
+            failHtml =
+              '<p class="muted">有失败项但未解析到逐条定位（可查看编写器 JSON 中的 failures）。</p>';
+          }
+
+          var bn = ok ? "ok" : "bad";
+          outEl.innerHTML =
+            '<div class="banner ' +
+            bn +
+            '">' +
+            String(headline).replace(/</g, "&lt;") +
+            "</div>" +
+            chips +
+            failHtml;
+        }
+
+        function renderHealth(data) {
+          var pre =
+            '<pre style="font-size:12px;background:#12151c;padding:10px;border-radius:8px;border:1px solid #2a3040;overflow:auto">' +
+            JSON.stringify(data, null, 2).replace(/</g, "&lt;") +
+            "</pre>";
+          if (!data || !data.ok) {
+            var tail =
+              data && data.stderrTail
+                ? '<p class="muted" style="margin-top:8px">stderr 摘要：</p><pre style="font-size:11px;background:#12151c;padding:8px;border-radius:6px;border:1px solid #2a3040;white-space:pre-wrap">' +
+                  String(data.stderrTail).replace(/</g, "&lt;") +
+                  "</pre>"
+                : "";
+            outEl.innerHTML =
+              '<div class="banner bad">未检测到 Vitest（工作区根目录下 <code>npx vitest --version</code> 失败）。请确认已 <code>npm install</code> 且 devDependencies 含 vitest。</div>' +
+              tail +
+              pre;
+            return;
+          }
+          var vitLine = data.vitest != null ? String(data.vitest) : "";
+          outEl.innerHTML =
+            '<div class="banner ok">Vitest 可用' +
+            (vitLine ? "：" + vitLine.replace(/</g, "&lt;") : "") +
+            "</div>" +
+            pre;
+        }
+
+        btnHealth.onclick = function () {
+          var invokeFn = getInvoke();
+          if (!invokeFn) {
+            showErr("未找到 OclivePluginBridge 或 __TAURI__.invoke。请在 Oclive 桌面内打开本页。");
+            return;
+          }
+          showErr("");
+          setBusy(true, "检测 Vitest…");
+          var cwd = wsEl.value.trim();
+          if (!cwd) {
+            showErr("请先填写工作区根目录。");
+            setBusy(false);
+            return;
+          }
+          try {
+            localStorage.setItem(LS_KEY, cwd);
+          } catch (e) {}
+          rpc(invokeFn, "health", { cwd: cwd })
+            .then(function (r) {
+              renderHealth(r);
+            })
+            .catch(function (e) {
+              showErr(String(e));
+            })
+            .finally(function () {
+              setBusy(false);
+            });
+        };
+
+        btnList.onclick = function () {
+          var invokeFn = getInvoke();
+          if (!invokeFn) {
+            showErr("未找到 OclivePluginBridge 或 __TAURI__.invoke。请在 Oclive 桌面内打开本页。");
+            return;
+          }
+          showErr("");
+          var cwd = wsEl.value.trim();
+          if (!cwd) {
+            showErr("请先填写工作区根目录。");
+            return;
+          }
+          try {
+            localStorage.setItem(LS_KEY, cwd);
+          } catch (e) {}
+          filesPanel.style.display = "block";
+          filesBody.innerHTML = '<p class="muted">扫描中…</p>';
+          setBusy(true, "扫描测试文件…");
+          rpc(invokeFn, "list_test_files", { root: cwd })
+            .then(function (r) {
+              var files = (r && r.files) || [];
+              if (!files.length) {
+                filesBody.innerHTML =
+                  "<p>当前工作区下未找到 <code>*.spec.ts</code> / <code>*.test.ts</code>（已递归扫描，跳过 <code>node_modules</code> 等目录）。</p>";
+                return;
+              }
+              var lis = "";
+              for (var j = 0; j < files.length; j++) {
+                lis += "<li>" + String(files[j]).replace(/</g, "&lt;") + "</li>";
+              }
+              filesBody.innerHTML = "<p>共 " + files.length + " 个文件：</p><ul>" + lis + "</ul>";
+            })
+            .catch(function (e) {
+              filesBody.textContent = String(e);
+            })
+            .finally(function () {
+              setBusy(false);
+            });
+        };
+
+        btnRun.onclick = function () {
+          var invokeFn = getInvoke();
+          if (!invokeFn) {
+            showErr("未找到 OclivePluginBridge 或 __TAURI__.invoke。请在 Oclive 桌面内打开本页。");
+            return;
+          }
+          showErr("");
+          setBusy(true, "运行 Vitest…");
+          var cwd = wsEl.value.trim();
+          if (!cwd) {
+            showErr("请先填写工作区根目录。");
+            setBusy(false);
+            return;
+          }
+          try {
+            localStorage.setItem(LS_KEY, cwd);
+          } catch (e) {}
+          rpc(invokeFn, "run_test", {
+            cwd: cwd,
+            runAll: true,
+            timeoutMs: 600000,
+          })
+            .then(function (r) {
+              renderStructured(r && r.structured);
+              loadHistory();
+            })
+            .catch(function (e) {
+              showErr(String(e));
+            })
+            .finally(function () {
+              setBusy(false);
+            });
+        };
+      })();
+    </script>
+  </body>
+</html>

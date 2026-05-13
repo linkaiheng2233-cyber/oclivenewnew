@@ -1,20 +1,34 @@
 <script setup lang="ts">
 import { PluginManagerV2 } from "../components/PluginManagerV2";
 
-defineProps<{
-  visible: boolean;
-}>();
+withDefaults(
+  defineProps<{
+    visible: boolean;
+    /** 嵌入设置右栏：无 Teleport、无全屏遮罩 */
+    embedded?: boolean;
+  }>(),
+  { embedded: false },
+);
 
 const emit = defineEmits<{
   close: [];
   openV1: [];
+  openV1Backends: [];
 }>();
 </script>
 
 <template>
-  <Teleport to="body">
+  <div v-if="embedded && visible" class="pm2-embed-host">
+    <PluginManagerV2
+      :visible="visible"
+      embedded
+      @close="emit('close')"
+      @open-v1="emit('openV1')"
+      @open-v1-backends="emit('openV1Backends')"
+    />
+  </div>
+  <Teleport v-else-if="visible" to="body">
     <div
-      v-if="visible"
       class="pm2-backdrop"
       role="dialog"
       aria-modal="true"
@@ -22,13 +36,23 @@ const emit = defineEmits<{
       @click.self="emit('close')"
     >
       <div class="pm2-dialog" @click.stop>
-        <PluginManagerV2 :visible="visible" @close="emit('close')" @open-v1="emit('openV1')" />
+        <PluginManagerV2
+          :visible="visible"
+          @close="emit('close')"
+          @open-v1="emit('openV1')"
+          @open-v1-backends="emit('openV1Backends')"
+        />
       </div>
     </div>
   </Teleport>
 </template>
 
 <style scoped>
+.pm2-embed-host {
+  width: 100%;
+  min-width: 0;
+  min-height: 200px;
+}
 .pm2-backdrop {
   position: fixed;
   inset: 0;
@@ -45,16 +69,12 @@ const emit = defineEmits<{
   max-height: min(92vh, 920px);
   display: flex;
   flex-direction: column;
-  overflow: hidden;
+  overflow-x: hidden;
+  overflow-y: auto;
   padding: 14px 16px;
   border-radius: var(--radius-app);
   border: 1px solid var(--border-light);
   background: var(--bg-primary);
   box-shadow: var(--shadow-app);
-}
-@media (max-width: 1080px) {
-  .pm2-dialog {
-    overflow: auto;
-  }
 }
 </style>

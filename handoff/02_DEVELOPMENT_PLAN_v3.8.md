@@ -42,7 +42,7 @@ impl EmotionResult {
 ---
 
 ### 2. 数据库 Schema（以真实迁移为准）✅
-**真实 `role_runtime` 表结构**（`src-tauri/migrations/001_init.sql`）：
+**真实 `role_runtime` 表结构**（`crates/oclive_kernel_runtime/migrations/001_init.sql`）：
 ```
 role_id, current_favorability, current_scene, last_interaction_at, created_at, updated_at
 ```
@@ -207,14 +207,14 @@ assert_eq!(event.event_type, EventType::Quarrel);
 
 ## 关键文件位置
 
-- **编排层**：`src-tauri/src/domain/chat_engine/`
-- **情绪映射**：`src-tauri/src/domain/emotion_analyzer.rs`（复用 `get_dominant_emotion`）
-- **Repository trait**：`src-tauri/src/domain/repository.rs`
+- **编排层**：`crates/oclive_kernel_runtime/src/domain/chat_engine/`
+- **情绪映射**：`crates/oclive_kernel_runtime/src/domain/emotion_analyzer.rs`（复用 `get_dominant_emotion`）
+- **Repository trait**：`crates/oclive_kernel_runtime/src/domain/repository.rs`
 - **Repository 实现**：`src-tauri/src/infrastructure/db.rs`
 - **API 命令**：`src-tauri/src/api/{module}.rs`
 - **Tauri 注册**：`src-tauri/src/lib.rs::run()`
-- **数据库迁移**：`src-tauri/migrations/001_init.sql`（真实 schema 来源）
-- **DTO 定义**：`src-tauri/src/models/dto.rs`
+- **数据库迁移**：`crates/oclive_kernel_runtime/migrations/001_init.sql`（真实 schema 来源）
+- **DTO 定义**：`crates/oclive_kernel_runtime/src/models/dto.rs`
 - **集成测试**：`tests/integration_tests.rs`
 
 ---

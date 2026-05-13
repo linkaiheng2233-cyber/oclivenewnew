@@ -14,6 +14,11 @@
 ## 第一部分：架构在解决什么问题
 
 oclive 把对话管线拆成可替换块：**记忆检索、用户句情绪、事件估计、Prompt 组装、LLM 调用**。角色包通过 `settings.json` → `plugin_backends` 声明每块用 **builtin / builtin_v2 / remote / directory / local（memory）/ ollama** 等（见 PLUGIN_V1）。
+此外还有第七模块：**Agent（工具编排 / ReAct / Hermes / OpenClaw 等）**，同样可通过 `plugin_backends.agent = builtin|remote|directory|none` 插拔接入（`none` 见 `../kernel/MODULE_NONE_SEMANTICS.md` §7；协议见 `REMOTE_PLUGIN_PROTOCOL.md` 的 `agent.process`）。
+
+**第九模块（专家模型设施）** 与上述 **`plugin_backends` 路由槽** 不同：它是 **内核托管的专家模型设施**（简称 *专家模型设施*，全称 *专家模型设施模块*）——在 `role_runtime` 上持久化 ExpertGraph / Prompt 风格覆盖，编译为本地 llama 侧车配置；**不是** memory、agent 那种枚举槽位的并列项。详见 **[../kernel/MODULE_9_EXPERT_MODELS_FACILITY.md](../kernel/MODULE_9_EXPERT_MODELS_FACILITY.md)**。
+
+进程内 **`builtin`** 路径对应的 **官方默认记忆 / 情绪 / 复杂情感 / Agent 模块**（`oclive_*_builtin`）之产品命名，见 **[../kernel/KERNEL_BOUNDARY.md](../kernel/KERNEL_BOUNDARY.md) §1.1**（与第九模块区分）。
 
 - **builtin**：逻辑编译在宿主内，稳定、离线友好。  
 - **remote**：逻辑可在**独立 HTTP 服务（侧车）**中实现，宿主只发 JSON-RPC，按约定解析结果（环境变量 `OCLIVE_REMOTE_*` URL）。  
@@ -60,6 +65,20 @@ oclive 把对话管线拆成可替换块：**记忆检索、用户句情绪、�
 | `OCLIVE_REMOTE_LLM_URL` | `plugin_backends.llm = remote` 时 **必填**（否则回退进程内 LLM 并警告） | **LLM** 专用端点 |
 | `OCLIVE_REMOTE_LLM_TIMEOUT_MS` | 否 | 默认 `120000` |
 | `OCLIVE_REMOTE_LLM_TOKEN` | 否 | Bearer |
+| `OCLIVE_REMOTE_AGENT_URL` | `plugin_backends.agent = remote` 时 **必填**（否则回退 builtin agent 并警告） | **Agent** 专用端点（JSON-RPC `agent.process`） |
+| `OCLIVE_REMOTE_AGENT_TIMEOUT_MS` | 否 | 默认 `30000` |
+| `OCLIVE_REMOTE_AGENT_TOKEN` | 否 | Bearer |
+
+#### 云端直连 LLM（OpenAI-compatible，非 JSON-RPC）
+
+当你希望“宿主直接调用云端 API”（不走 JSON-RPC 侧车）时，可配置：
+
+| 变量 | 是否必填 | 含义 |
+|------|----------|------|
+| `OCLIVE_CLOUD_LLM_BASE_URL` | 是 | OpenAI-compatible base URL（例如 `https://api.openai.com` 或自建兼容网关） |
+| `OCLIVE_CLOUD_LLM_API_KEY` | 是 | API Key（Bearer） |
+| `OCLIVE_CLOUD_LLM_MODEL` | 否 | 默认模型名（当调用方未传 `model` 时使用） |
+| `OCLIVE_CLOUD_LLM_TIMEOUT_MS` | 否 | 默认 `120000` |
 
 端点必须是**完整 URL**（含 `http://`/`https://` 与路径），例如：`http://127.0.0.1:8765/rpc`。
 
@@ -101,6 +120,7 @@ oclive 把对话管线拆成可替换块：**记忆检索、用户句情绪、�
 | `prompt.top_topic_hint` | 可选；话题提示 |
 | `llm.generate` | 主生成 |
 | `llm.generate_tag` | 短标签生成 |
+| `agent.process` | **第七模块 Agent**：工具编排/自动任务（remote/directory agent 插件） |
 
 **重要**：`event.estimate` 的 `event_type` 必须使用 Rust **serde 默认枚举编码**（外部标签对象），例如 `Ignore` → `{"Ignore": null}`，**不能**写成裸字符串 `"Ignore"`。详见 [REMOTE_PLUGIN_PROTOCOL.md](REMOTE_PLUGIN_PROTOCOL.md) 第三节。
 
@@ -111,11 +131,11 @@ oclive 把对话管线拆成可替换块：**记忆检索、用户句情绪、�
 ## 第四部分：联调步骤（从 0 到通）
 
 1. **启动参考侧车**（仓库内仅用于开发演示）：  
-   - 目录：[examples/remote_plugin_minimal/README.md](../examples/remote_plugin_minimal/README.md)  
+   - 目录：[examples/remote_plugin_minimal/README.md](../../examples/remote_plugin_minimal/README.md)  
    - 默认监听示例 URL（以该 README 为准）。  
 
 1b. **目录插件最小示例**（无需 `OCLIVE_REMOTE_*`，改用 `plugins/` + manifest）：  
-   - [examples/directory-plugin-minimal/README.md](../examples/directory-plugin-minimal/README.md)  
+   - [examples/directory-plugin-minimal/README.md](../../examples/directory-plugin-minimal/README.md)  
 
 2. **设置环境变量**后再启动 oclive（**侧车 B** 路径；**目录 D** 路径可跳过本步，仅配置 `plugin_backends` 与磁盘目录）：
 
@@ -177,7 +197,7 @@ export OCLIVE_REMOTE_LLM_URL="http://127.0.0.1:8765/rpc"
 
 | 内容 | 路径 |
 |------|------|
-| 宿主聚合 | `src-tauri/src/domain/plugin_host.rs` |
+| 宿主聚合 | `crates/oclive_kernel_runtime/src/domain/plugin_host.rs` |
 | Remote HTTP 客户端 | `src-tauri/src/infrastructure/remote_plugin/` |
 | 目录插件扫描 / 懒启动 | `src-tauri/src/infrastructure/directory_plugins/` |
 | 运行时解析 | `AppState::resolved_plugins_for` — `src-tauri/src/state/mod.rs` |

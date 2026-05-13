@@ -18,6 +18,7 @@
 ## 未完成项（规划）
 
 - **虚拟滚动**、**测试覆盖率目标**、**CI/e2e**、**签名与自动更新**等：详见 **`19_RELEASE_CHECKLIST.md`** §5、§8。
+- **性能阶段总表**（含 P4 `reqwest` 技术债说明）：**`PERF_PHASES.md`**。
 
 ---
 
@@ -34,13 +35,14 @@
 | 事件写入 `events` 表 | ✅（经 `apply_chat_turn_atomic` 等路径，见 `db.rs`） |
 | 其他 Tauri 命令 | ✅（多命令；真源 **`src-tauri/src/lib.rs`** `generate_handler`） |
 | 前端 `tauri-api` 封装 | ✅（持续演进；与 invoke 名逐项对齐） |
+| 前端首包 / chunk（v0.2 已收尾） | ✅ **`PERF_PHASES.md`** + **`FRONTEND_CHUNK_OPTIMIZATION.md`**（`npm run build` gzip 对照） |
 
 ---
 
 ## 与代码必须一致的事实
 
 - **Tauri 版本**：`Cargo.toml` 为 **Tauri 1.5**（不是 2.x，除非你们已升级）。
-- **`send_message` 响应字段**：`reply`（不是 `response`）；`emotion` 为 **`EmotionDto`（用户输入侧七维）**；**`bot_emotion` 为字符串（角色回复情绪标签）**；另有 `api_version`、`schema`、`events`、`favorability_current` 等。见 `src-tauri/src/models/dto.rs` 与 `CHANGELOG.md`。
+- **`send_message` 响应字段**：`reply`（不是 `response`）；`emotion` 为 **`EmotionDto`（用户输入侧七维）**；**`bot_emotion` 为字符串（角色回复情绪标签）**；另有 `api_version`、`schema`、`events`、`favorability_current` 等。见 `crates/oclive_kernel_runtime/src/models/dto.rs` 与 `CHANGELOG.md`。
 - **调用方式**：通过前端 **`invoke('send_message', payload)`**，**没有**默认的 `http://localhost:5173/api/send_message` REST 接口（除非你们单独加 HTTP 服务）。
 - **好感度**：编排层用 **`EventDetector::get_impact_factor`** 缩放增量，**无**独立 `FavorabilityEngine::calculate_delta` 模块。
 - **性格演化**：**`PersonalityEngine::adjust_by_user_emotion` + `evolve_by_event`**，不是名为 `evolve` 的单一入口。

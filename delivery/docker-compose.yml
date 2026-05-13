@@ -1,0 +1,28 @@
+# Oclive 内核服务（Linux / 机器人灵魂引擎）— 合成模板。
+# 在仓库根目录执行：docker compose -f delivery/docker-compose.yml up --build
+#
+# 生产：务必设置 OOCP_API_TOKEN，并置于内网或通过反向代理 + TLS。
+
+services:
+  oclive-kernel:
+    build:
+      context: ..
+      dockerfile: Dockerfile.kernel-server
+    ports:
+      - "${OOCP_PUBLISH_PORT:-48888}:48888"
+    environment:
+      OOCP_API_PORT: "${OOCP_API_PORT:-48888}"
+      OOCP_API_BIND: "${OOCP_API_BIND:-0.0.0.0}"
+      OOCP_API_TOKEN: "${OOCP_API_TOKEN:-}"
+      OCLIVE_ROLES_DIR: /roles
+      OCLIVE_DB_PATH: /data/oclive.db
+      OCLIVE_APP_DATA_DIR: /data/app
+      OCLIVE_REQUIRE_EXPLICIT_PATHS: "${OCLIVE_REQUIRE_EXPLICIT_PATHS:-1}"
+      RUST_LOG: "${RUST_LOG:-info}"
+    volumes:
+      # 挂载宿主角色目录（可读写以便插件数据；只读可加 :ro）
+      - ${OCLIVE_ROLES_HOST_PATH:-../roles}:/roles:ro
+      - oclive-kernel-data:/data
+
+volumes:
+  oclive-kernel-data:

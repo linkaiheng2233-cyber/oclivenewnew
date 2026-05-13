@@ -1,0 +1,27 @@
+[package]
+name = "oclive_kernel_server"
+version = "0.1.0"
+edition = "2021"
+license = "AGPL-3.0"
+description = "Oclive Kernel Server (standalone, no Tauri): OOCP WS/HTTP endpoint"
+
+[features]
+## 默认与历史行为一致：`oclive_kernel_runtime` 的 **`full`**（桌面 / 既有 Docker 同栈）。
+default = ["runtime-full"]
+runtime-full = ["oclive_kernel_runtime/full"]
+## 校企玩偶 · 小芯片：HTTP API + 延迟初始化 + 记忆/情绪/Prompt/复杂情感；关 LLM 内置提供商 / Agent / 事件 / ZIP / 市场 / 经典算法。
+doll-linux-embedded = [
+  "oclive_kernel_runtime/kernel-http-api",
+  "oclive_kernel_runtime/lazy-init",
+  "oclive_kernel_runtime/default-memory-providers",
+  "oclive_kernel_runtime/default-emotion-providers",
+  "oclive_kernel_runtime/default-prompt-providers",
+  "oclive_kernel_runtime/default-complex-emotion-providers",
+]
+
+[dependencies]
+oclive_kernel_runtime = { path = "../oclive_kernel_runtime", default-features = false }
+tokio = { workspace = true }
+tracing-log = "0.2"
+tracing-subscriber = { version = "0.3", features = ["env-filter", "fmt"] }
+

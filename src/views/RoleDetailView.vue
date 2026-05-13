@@ -1,13 +1,11 @@
 <script setup lang="ts">
 import CharacterInfo from "../components/CharacterInfo.vue";
-import PluginRoleDetailSlots from "../components/PluginRoleDetailSlots.vue";
 
 defineProps<{
   roleId: string;
   name: string;
   emotion: string;
   layout: "stack" | "sidebar";
-  bootstrapEpoch: number;
 }>();
 </script>
 
@@ -20,7 +18,6 @@ defineProps<{
       :name="name"
       :emotion="emotion"
     />
-    <PluginRoleDetailSlots :bootstrap-epoch="bootstrapEpoch" />
   </div>
 </template>
 

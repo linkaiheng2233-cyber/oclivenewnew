@@ -1,5 +1,8 @@
 <script setup lang="ts">
 import { computed } from "vue";
+import { useI18n } from "vue-i18n";
+
+const { t } = useI18n();
 
 const props = withDefaults(
   defineProps<{
@@ -72,9 +75,12 @@ function hhmm(ts: number): string {
             <span v-else>{{ seg.text }}</span>
           </template>
         </div>
-        <div v-if="props.replyIsFallback && props.role === 'assistant'" class="fallback-hint">
-          备用短回复
-        </div>
+      <div
+        v-if="props.replyIsFallback && props.role === 'assistant'"
+        class="fallback-hint"
+      >
+        {{ t("chat.message.fallbackBadge") }}
+      </div>
       </div>
       <div class="bubble-meta">
         <span class="time">{{ hhmm(props.timestamp) }}</span>

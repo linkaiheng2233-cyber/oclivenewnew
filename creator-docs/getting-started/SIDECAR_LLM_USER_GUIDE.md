@@ -44,7 +44,7 @@ python server.py
 
 ### 步骤 C：告诉 oclive 侧车地址（推荐：oclive 启动器）
 
-使用 **[oclive-launcher](https://github.com/linkaiheng2233-cyber/oclive-launcher)** 时，在 **「启动 oclive」** 页：
+使用 **[oclive-launcher](https://github.com/oclive-app/oclive-launcher)** 时，在 **「启动 oclive」** 页：
 
 1. 将 **推理后端（大脑）** 选为 **云端接口（remote）**。  
 2. 填写 **Remote LLM URL** 为侧车完整地址，例如 **`http://127.0.0.1:8765/rpc`**。  

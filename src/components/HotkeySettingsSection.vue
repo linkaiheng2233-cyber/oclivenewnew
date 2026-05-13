@@ -1,5 +1,6 @@
 <script setup lang="ts">
-import { onMounted, ref } from "vue";
+import { computed, onMounted, ref } from "vue";
+import { useI18n } from "vue-i18n";
 import { useAppToast } from "../composables/useAppToast";
 import {
   getHotkeyBindings,
@@ -8,20 +9,53 @@ import {
   type HotkeyBindingsFile,
 } from "../utils/tauri-api";
 
+const props = withDefaults(
+  defineProps<{
+    /** 为 true 时省略大标题与通用说明，用于设置页「系统与内核」分层内嵌 */
+    headless?: boolean;
+  }>(),
+  { headless: false },
+);
+
 const { showToast } = useAppToast();
+const { t } = useI18n();
 
 const loading = ref(false);
+const saving = ref(false);
+const loadError = ref<string | null>(null);
 const file = ref<HotkeyBindingsFile>({ schemaVersion: 1, bindings: [] });
 
-onMounted(async () => {
+const duplicateAccelerators = computed(() => {
+  const counts = new Map<string, number>();
+  for (const b of file.value.bindings) {
+    if (!b.enabled) continue;
+    const a = b.accelerator.trim().toLowerCase();
+    if (!a) continue;
+    counts.set(a, (counts.get(a) ?? 0) + 1);
+  }
+  const dups: string[] = [];
+  counts.forEach((n, k) => {
+    if (n > 1) dups.push(k);
+  });
+  return dups.sort((x, y) => x.localeCompare(y));
+});
+
+async function loadBindings(): Promise<void> {
+  loadError.value = null;
   loading.value = true;
   try {
     file.value = await getHotkeyBindings();
   } catch (e) {
-    showToast("error", e instanceof Error ? e.message : String(e));
+    const msg = e instanceof Error ? e.message : String(e);
+    loadError.value = msg;
+    showToast("error", msg);
   } finally {
     loading.value = false;
   }
+}
+
+onMounted(() => {
+  void loadBindings();
 });
 
 function addBinding(): void {
@@ -65,66 +99,80 @@ function setActionType(i: number, t: string): void {
 }
 
 async function onSave(): Promise<void> {
-  loading.value = true;
+  saving.value = true;
   try {
     await saveHotkeyBindings(file.value);
-    showToast("success", "已保存快捷键配置（仅启用的项会注册全局快捷键）。");
+    showToast("success", String(t("hotkeySettings.toasts.saved")));
   } catch (e) {
     showToast("error", e instanceof Error ? e.message : String(e));
   } finally {
-    loading.value = false;
+    saving.value = false;
   }
 }
 </script>
 
 <template>
   <section class="hkset">
-    <h3 class="hkset-h">全局快捷键</h3>
-    <p class="hkset-lead">
-      默认全部关闭。启用后由系统全局监听，可能与系统或其它应用冲突；保存失败时会提示原因。
+    <template v-if="!props.headless">
+      <h3 class="hkset-h">{{ t("hotkeySettings.title") }}</h3>
+      <p class="hkset-lead">
+        {{ t("hotkeySettings.lead") }}
+      </p>
+    </template>
+    <p v-else class="hkset-lead hkset-lead--compact">
+      {{ t("hotkeySettings.editorLead") }}
     </p>
-    <p v-if="loading" class="hkset-muted">加载中…</p>
+    <p v-if="loading" class="hkset-muted">{{ t("common.loading") }}</p>
+    <div v-else-if="loadError" class="hkset-err">
+      <p class="hkset-muted">{{ loadError }}</p>
+      <button type="button" class="hkset-btn" @click="loadBindings">{{ t("hotkeySettings.retryLoad") }}</button>
+    </div>
     <template v-else>
+      <p v-if="duplicateAccelerators.length" class="hkset-warn" role="alert">
+        {{ t("hotkeySettings.duplicateWarn", { list: duplicateAccelerators.join(", ") }) }}
+      </p>
       <div v-for="(b, i) in file.bindings" :key="b.id" class="hkset-row">
         <label class="hkset-field">
-          <span>快捷键</span>
-          <input v-model="b.accelerator" type="text" placeholder="如 Ctrl+Shift+L" />
+          <span>{{ t("hotkeySettings.fields.accelerator") }}</span>
+          <input v-model="b.accelerator" type="text" :placeholder="String(t('hotkeySettings.fields.acceleratorPlaceholder'))" />
         </label>
         <label class="hkset-chk">
           <input v-model="b.enabled" type="checkbox" />
-          启用
+          {{ t("common.enable") }}
         </label>
         <label class="hkset-field">
-          <span>动作</span>
+          <span>{{ t("hotkeySettings.fields.action") }}</span>
           <select
             :value="b.action.type"
             @change="
               setActionType(i, ($event.target as HTMLSelectElement).value)
             "
           >
-            <option value="openLauncherList">打开插件目录列表</option>
-            <option value="openPluginSlot">打开某插件插槽页</option>
+            <option value="openLauncherList">{{ t("hotkeySettings.actions.openLauncherList") }}</option>
+            <option value="openPluginSlot">{{ t("hotkeySettings.actions.openPluginSlot") }}</option>
           </select>
         </label>
         <template v-if="b.action.type === 'openPluginSlot'">
           <label class="hkset-field">
-            <span>插件 id</span>
+            <span>{{ t("hotkeySettings.fields.pluginId") }}</span>
             <input v-model="b.action.pluginId" type="text" />
           </label>
           <label class="hkset-field">
-            <span>插槽名</span>
+            <span>{{ t("hotkeySettings.fields.slot") }}</span>
             <input v-model="b.action.slot" type="text" />
           </label>
           <label class="hkset-field">
-            <span>appearance（可选）</span>
+            <span>{{ t("hotkeySettings.fields.appearanceOptional") }}</span>
             <input v-model="b.action.appearanceId" type="text" />
           </label>
         </template>
-        <button type="button" class="hkset-remove" @click="removeAt(i)">删除</button>
+        <button type="button" class="hkset-remove" @click="removeAt(i)">{{ t("common.remove") }}</button>
       </div>
       <div class="hkset-actions">
-        <button type="button" class="hkset-btn" @click="addBinding">添加一条</button>
-        <button type="button" class="hkset-btn hkset-btn--primary" @click="onSave">保存</button>
+        <button type="button" class="hkset-btn" :disabled="saving" @click="addBinding">{{ t("hotkeySettings.addOne") }}</button>
+        <button type="button" class="hkset-btn hkset-btn--primary" :disabled="saving" @click="onSave">
+          {{ saving ? t("common.loading") : t("common.save") }}
+        </button>
       </div>
     </template>
   </section>
@@ -146,9 +194,28 @@ async function onSave(): Promise<void> {
   color: var(--text-secondary);
   line-height: 1.45;
 }
+.hkset-lead--compact {
+  margin-bottom: 2px;
+}
 .hkset-muted {
   font-size: 13px;
   color: var(--text-secondary);
+}
+.hkset-err {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 8px;
+}
+.hkset-warn {
+  margin: 0;
+  padding: 8px 10px;
+  font-size: 12px;
+  line-height: 1.45;
+  border-radius: 8px;
+  border: 1px solid color-mix(in srgb, var(--text-danger, #c33) 35%, var(--border-light));
+  color: var(--text-danger, #b45309);
+  background: color-mix(in srgb, var(--text-danger, #c33) 8%, var(--bg-primary));
 }
 .hkset-row {
   display: flex;

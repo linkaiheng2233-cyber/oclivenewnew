@@ -1,4 +1,6 @@
 <script setup lang="ts">
+import { computed } from "vue";
+import { useI18n } from "vue-i18n";
 import AsyncPluginVue from "./AsyncPluginVue.vue";
 import PluginErrorPlaceholder from "./PluginErrorPlaceholder.vue";
 import { useDirectoryPluginSlotEmbed } from "../composables/useDirectoryPluginSlotEmbed";
@@ -12,8 +14,11 @@ const props = withDefaults(
     /** 无障碍名称 */
     ariaLabel?: string;
   }>(),
-  { bootstrapEpoch: 0, ariaLabel: "插件嵌入区" },
+  { bootstrapEpoch: 0, ariaLabel: "" },
 );
+
+const { t } = useI18n();
+const effectiveAriaLabel = computed(() => props.ariaLabel || String(t("pluginSlotEmbed.ariaDefault")));
 
 const {
   pluginError,
@@ -38,7 +43,7 @@ const {
   <div v-if="pluginError" class="pse pse--error" role="status">
     {{ pluginError }}
   </div>
-  <div v-else-if="slots.length > 0" class="pse" :aria-label="ariaLabel">
+  <div v-else-if="slots.length > 0" class="pse" :aria-label="effectiveAriaLabel">
     <div
       v-for="s in slots"
       :key="`${s.pluginId}:${s.appearanceId ?? ''}`"

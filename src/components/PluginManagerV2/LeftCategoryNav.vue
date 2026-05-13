@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { computed, ref } from "vue";
+import { useI18n } from "vue-i18n";
 import type { PluginV2CategoryItem } from "../../composables/usePluginManagerV2";
 
 const props = defineProps<{
@@ -36,16 +37,18 @@ function filterFileName(row: PluginV2CategoryItem): string {
 function toggleFolder(key: keyof typeof openFolders.value) {
   openFolders.value[key] = !openFolders.value[key];
 }
+
+const { t } = useI18n();
 </script>
 
 <template>
-  <aside class="ws-explorer" aria-label="筛选（工作区风格）">
+  <aside class="ws-explorer" :aria-label="String(t('pluginManagerV2.filters.explorerAria'))">
     <header class="ws-head">
-      <div class="ws-head-title">资源管理器</div>
-      <div class="ws-head-sub">筛选视图</div>
+      <div class="ws-head-title">{{ t("pluginManagerV2.filters.explorerTitle") }}</div>
+      <div class="ws-head-sub">{{ t("pluginManagerV2.filters.explorerSub") }}</div>
     </header>
 
-    <div class="ws-root" title="仅用于 UI 层级展示，不代表磁盘路径">
+    <div class="ws-root" :title="String(t('pluginManagerV2.filters.rootTitle'))">
       <span class="ws-root-label">oclivenewnew</span>
       <span class="ws-root-sep">/</span>
       <span class="ws-root-label">plugin-manager</span>
@@ -53,7 +56,7 @@ function toggleFolder(key: keyof typeof openFolders.value) {
       <span class="ws-root-label ws-root-label--accent">filters</span>
     </div>
 
-    <nav class="ws-tree" aria-label="筛选树">
+    <nav class="ws-tree" :aria-label="String(t('pluginManagerV2.filters.treeAria'))">
       <button
         v-if="allRow"
         type="button"
@@ -160,11 +163,11 @@ function toggleFolder(key: keyof typeof openFolders.value) {
   box-sizing: border-box;
   width: 100%;
   min-width: 0;
-  height: 100%;
+  height: auto;
   border-right: 1px solid var(--border-light);
   padding: 8px 10px 10px 6px;
   overflow-x: hidden;
-  overflow-y: auto;
+  overflow-y: visible;
   border-radius: 10px;
   background: color-mix(in srgb, var(--bg-elevated) 45%, var(--bg-primary));
   font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, "Liberation Mono", monospace;

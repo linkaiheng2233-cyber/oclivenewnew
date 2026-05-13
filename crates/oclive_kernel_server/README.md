@@ -1,0 +1,50 @@
+# oclive_kernel_server
+
+Standalone **Oclive Kernel Server** (no Tauri). It exposes:
+
+- `GET /health` → `"ok"`（**不**要求 Bearer；用于探活）
+- `GET /oocp` → OOCP WebSocket endpoint（capabilities first frame）
+- `POST /chat` → JSON 试聊（`process_message`；与编写器/桌面内核对齐，见 `oclive_kernel_runtime::http_api`）
+- `POST/GET /role-feedback` 等 REST（与桌面一致）
+
+## Run
+
+```bash
+# 默认监听 127.0.0.1:48888
+cargo run -p oclive_kernel_server
+```
+
+## 环境变量
+
+| 变量 | 默认 | 说明 |
+|------|------|------|
+| `OOCP_API_PORT` | `48888` | 端口 |
+| `OOCP_API_BIND` | `127.0.0.1` | 监听地址；Docker / 局域网常设为 `0.0.0.0`，须配合鉴权 |
+| `OOCP_API_TOKEN` | （空） | 非空时：REST 与 OOCP WS 均需 `Authorization: Bearer <token>` |
+| `OCLIVE_ROLES_DIR` | 启发式 | **生产请显式设置** |
+| `OCLIVE_DB_PATH` | 临时目录 sqlite | 建议固定路径 |
+| `OCLIVE_APP_DATA_DIR` | 派生 | 插件/MCP 等数据根 |
+| `OCLIVE_REQUIRE_EXPLICIT_PATHS` | 关 | 为 `1`/`true`/`on`/`yes` 时：三路径未齐则退出码 **2**（生产推荐） |
+| `RUST_LOG` | — | 如 `info`、`debug`；与 **`tracing`** 订阅器及 **`oclive_process_message`** / **`oclive_chat_io`** target 配合，见 **[`docs/LOGGING_GUIDE.md`](../../docs/LOGGING_GUIDE.md)** |
+
+**Linux 权威部署**（路径、Docker、systemd、备份/探活脚本）：[`docs/LINUX_KERNEL_DEPLOY.md`](../../docs/LINUX_KERNEL_DEPLOY.md)  
+路线与多模态外挂原则：**[`docs/LINUX_KERNEL_ENGINE.md`](../../docs/LINUX_KERNEL_ENGINE.md)** · 合成模板：**[`delivery/`](../../delivery/)**
+
+## HTTP 试聊脚本示例
+
+- **[`examples/kernel_remote_simple/`](../../examples/kernel_remote_simple/)** — Python / Node，`/health` 与 `/chat`
+- **[`examples/linux_kernel_multimodal_context/`](../../examples/linux_kernel_multimodal_context/)** — 将外挂感知拼入 `message` 的示例
+
+## Status
+
+默认（`cargo run -p oclive_kernel_server`）通过 Cargo feature **`runtime-full`** 链接 **`oclive_kernel_runtime/full`**：与桌面 / 既有 Docker 一致。
+
+**校企玩偶 · 轻量 Linux**（关内置 Ollama/Agent/市场等，保留 HTTP + 核心 builtin 管线）：
+
+```bash
+cargo build --release -p oclive_kernel_server --no-default-features --features doll-linux-embedded
+```
+
+说明与角色模板见 **[`delivery/doll-kernel/README.md`](../../delivery/doll-kernel/README.md)**。
+
+方法参数与结果以 [`creator-docs/oocp/OOCP_SPEC_v0_1.md`](../../creator-docs/oocp/OOCP_SPEC_v0_1.md) 为准。

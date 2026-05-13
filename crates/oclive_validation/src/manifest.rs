@@ -126,6 +126,9 @@ pub struct DiskRoleManifest {
     /// 最低 oclive 宿主版本（semver，如 `"0.2.0"`）；省略则不检查。
     #[serde(default)]
     pub min_runtime_version: Option<String>,
+    /// 创作者留给导入者的一句话（导入/预览时展示；与 `creator_message.txt` 可并存）。
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub creator_message_to_downloader: Option<String>,
 }
 
 fn is_false(b: &bool) -> bool {

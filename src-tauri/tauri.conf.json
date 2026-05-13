@@ -37,7 +37,8 @@
       "targets": "all",
       "identifier": "com.oclivenewnew.app",
       "resources": [
-        "../roles"
+        "../roles",
+        "../plugins"
       ],
       "icon": [
         "icons/32x32.png",
@@ -45,7 +46,17 @@
         "icons/128x128@2x.png",
         "icons/icon.icns",
         "icons/icon.ico"
-      ]
+      ],
+      "macOS": {
+        "minimumSystemVersion": "10.13",
+        "entitlements": "entitlements/macos.plist"
+      },
+      "appimage": {
+        "bundleMediaFramework": false
+      },
+      "deb": {
+        "section": "utils"
+      }
     },
     "security": {
       "csp": null,
@@ -61,6 +72,11 @@
     "windows": [
       {
         "fullscreen": false,
+        "center": true,
+        "decorations": true,
+        "alwaysOnTop": false,
+        "transparent": false,
+        "fileDropEnabled": true,
         "height": 600,
         "resizable": true,
         "title": "oclivenewnew",

@@ -1,0 +1,24 @@
+{
+  "schemaVersion": "1.0",
+  "name": "memory_heavy",
+  "description": "在解析主模型后，并行执行只读「短期 / 长期记忆检索」占位原子，再占位组装 Prompt 并生成回复。",
+  "onFailure": "HALT",
+  "steps": [
+    { "action": "init_turn" },
+    { "action": "ensure_role_runtime" },
+    { "action": "load_role" },
+    { "action": "seed_interaction_mode" },
+    { "action": "log_effective_plugin_backends" },
+    { "action": "resolve_plugins" },
+    { "action": "resolve_main_llm_model" },
+    {
+      "id": "mem_parallel",
+      "parallel": [
+        [{ "action": "memory_retrieve_short_term" }],
+        [{ "action": "memory_retrieve_long_term" }]
+      ]
+    },
+    { "action": "assemble_prompt" },
+    { "action": "generate_response" }
+  ]
+}

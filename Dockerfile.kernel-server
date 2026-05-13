@@ -1,0 +1,48 @@
+# 无头 oclive_kernel_server（OOCP HTTP + WebSocket）。构建上下文为仓库根目录。
+# 不编译 Tauri/Vue；仅复制 Cargo workspace 所需成员，缩小上下文与层缓存失效面。
+#
+# 构建：docker build -f Dockerfile.kernel-server -t oclive-kernel-server .
+# 运行：见 docs/LINUX_KERNEL_DEPLOY.md
+#
+# 镜像内默认 OOCP_API_BIND=0.0.0.0 便于 -p 映射；生产务必 OOCP_API_TOKEN + TLS/反代。
+
+FROM rust:1-bookworm AS builder
+WORKDIR /app
+RUN apt-get update \
+    && apt-get install -y --no-install-recommends pkg-config libssl-dev binutils \
+    && rm -rf /var/lib/apt/lists/*
+
+COPY Cargo.toml Cargo.lock ./
+COPY crates ./crates
+COPY examples/kernel_embed_minimal ./examples/kernel_embed_minimal
+COPY src-tauri ./src-tauri
+
+# 仅链接 oclive_kernel_server 及其依赖，不构建桌面壳。
+RUN cargo build -p oclive_kernel_server --release \
+    && strip target/release/oclive_kernel_server
+
+FROM debian:bookworm-slim
+RUN apt-get update \
+    && apt-get install -y --no-install-recommends ca-certificates \
+    && rm -rf /var/lib/apt/lists/* \
+    && useradd -r -s /bin/false -u 10001 -m oclive \
+    && mkdir -p /data /app/roles \
+    && chown oclive:oclive /data /app/roles
+
+COPY --from=builder /app/target/release/oclive_kernel_server /usr/local/bin/oclive_kernel_server
+
+COPY roles /app/roles
+RUN chown -R oclive:oclive /app/roles
+
+USER oclive
+WORKDIR /data
+
+ENV OOCP_API_PORT=48888
+ENV OOCP_API_BIND=0.0.0.0
+ENV OCLIVE_ROLES_DIR=/app/roles
+ENV OCLIVE_DB_PATH=/data/oclive.db
+ENV OCLIVE_APP_DATA_DIR=/data/app
+ENV OCLIVE_REQUIRE_EXPLICIT_PATHS=1
+
+EXPOSE 48888
+ENTRYPOINT ["/usr/local/bin/oclive_kernel_server"]

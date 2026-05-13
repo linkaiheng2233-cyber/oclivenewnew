@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import { useI18n } from "vue-i18n";
 import PluginCard from "./PluginCard.vue";
 import type { PluginV2CardItem } from "../../composables/usePluginManagerV2";
 
@@ -12,6 +13,8 @@ const emit = defineEmits<{
   "update:keyword": [value: string];
   select: [id: string];
 }>();
+
+const { t } = useI18n();
 </script>
 
 <template>
@@ -20,7 +23,7 @@ const emit = defineEmits<{
       class="pm2-search"
       type="search"
       :value="keyword"
-      placeholder="搜索：例如 远程、情绪、目录插件"
+      :placeholder="String(t('pluginManagerV2.list.searchPlaceholder'))"
       @input="emit('update:keyword', ($event.target as HTMLInputElement).value)"
     />
     <div class="pm2-list">
@@ -31,7 +34,7 @@ const emit = defineEmits<{
         :selected="item.id === selectedId"
         @select="emit('select', item.id)"
       />
-      <p v-if="!items.length" class="pm2-empty">没有匹配项，试试更短的关键词。</p>
+      <p v-if="!items.length" class="pm2-empty">{{ t("pluginManagerV2.list.empty") }}</p>
     </div>
   </section>
 </template>
@@ -43,8 +46,8 @@ const emit = defineEmits<{
   gap: 10px;
   min-width: 0;
   min-height: 0;
-  height: 100%;
-  overflow: hidden;
+  height: auto;
+  overflow: visible;
 }
 .pm2-search {
   padding: 8px 10px;
@@ -53,13 +56,13 @@ const emit = defineEmits<{
   background: var(--bg-elevated);
 }
 .pm2-list {
-  flex: 1;
+  flex: 0 0 auto;
   min-height: 0;
   display: flex;
   flex-direction: column;
   gap: 8px;
-  overflow: auto;
-  padding-right: 4px;
+  overflow: visible;
+  padding-right: 0;
 }
 .pm2-empty {
   font-size: 12px;

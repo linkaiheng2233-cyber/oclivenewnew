@@ -1,5 +1,25 @@
 # 创作者与开源文档（oclive）
 
+- [中文](#创作者与开源文档oclive)
+- [English](#creator--open-source-docs-oclive)
+
+---
+
+## Creator & open-source docs (oclive)
+
+This directory (`creator-docs/`) is the documentation root for **creators**, **sidecar (remote plugin) developers**, and **plugin extension developers**.
+
+- **Start here**: [`getting-started/DOCUMENTATION_INDEX.md`](getting-started/DOCUMENTATION_INDEX.md)
+- **Project overview**: [`getting-started/PROJECT_OVERVIEW.md`](getting-started/PROJECT_OVERVIEW.md)
+- **Troubleshooting / error codes**: [`getting-started/ERROR_CODES.md`](getting-started/ERROR_CODES.md)
+- **Role packs**: [`getting-started/CREATOR_WORKFLOW.md`](getting-started/CREATOR_WORKFLOW.md) + [`roles/README_MANIFEST.md`](../roles/README_MANIFEST.md)
+- **HTTP sidecar**: [`plugin-and-architecture/CREATOR_PLUGIN_ARCHITECTURE.md`](plugin-and-architecture/CREATOR_PLUGIN_ARCHITECTURE.md) + [`plugin-and-architecture/REMOTE_PLUGIN_PROTOCOL.md`](plugin-and-architecture/REMOTE_PLUGIN_PROTOCOL.md)
+
+Notes:
+
+- This repo no longer uses the legacy flat `docs/*.md` layout (see `docs/README.md`).
+- For user-facing launcher/editor instructions, see their own repos.
+
 本目录为 **面向创作者、侧车开发者与插件扩展者** 的文档根目录，按主题分子文件夹。**不再使用**旧的扁平 `docs/*.md` 布局（见 `docs/README.md` 说明）。
 
 ---

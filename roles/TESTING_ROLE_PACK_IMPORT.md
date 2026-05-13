@@ -1,6 +1,6 @@
 # 角色包导入 — 手工测试清单（oclive）
 
-在发版或改动导入逻辑后，建议按下列顺序过一遍。自动化：`cargo test role_pack`（Rust 单元测试）。
+在发版或改动导入逻辑后，建议按下列顺序过一遍。自动化：`cargo test -p oclive_kernel_runtime role_pack_archive`（Rust 单元测试）。
 
 ---
 
@@ -65,7 +65,7 @@
 
 ```bash
 cd src-tauri
-cargo test role_pack
+cargo test -p oclive_kernel_runtime role_pack_archive
 cargo clippy -p oclivenewnew-tauri -- -D warnings
 ```
 

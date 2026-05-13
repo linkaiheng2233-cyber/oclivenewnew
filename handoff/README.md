@@ -21,6 +21,11 @@
 | `11_BACKEND_FREEZE_AND_REGRESSION.md` | 后端封板：接口冻结范围与回归门禁清单 |
 | `12_BACKEND_PERF_RUNBOOK.md` | 后端压测运行手册（P50/P95/P99 输出与阈值） |
 | `13_PERF_BASELINE_2026-04-01.md` | 首版压测基线记录（Mock LLM） |
+| `PERFORMANCE_BASELINE_ACCEPTANCE.md` | 端到端性能验收与 Release 对比 |
+| `FRONTEND_CHUNK_OPTIMIZATION.md` | 前端 chunk / 懒加载 / Sentry / Monaco 移除说明 |
+| `PERF_PHASES.md` | **性能阶段定序与状态**（v0.2：**P1～P3 已收尾**；P4 reqwest-async 可选） |
+| `RUST_RELEASE_AND_DEPENDENCIES.md` | Release profile；tokio/reqwest workspace |
+| `BUNDLE_RESOURCES_SIZING.md` | `roles`/`plugins` 随包体积度量 |
 | `14_POLICY_PLUGIN_PHASE1.md` | 策略插件化第 1 步对接（接口抽象、参数配置、职责收敛） |
 | `15_POLICY_PLUGIN_GUIDE_AND_ROADMAP.md` | 策略插件化架构/流程图、验收标准、风险与中长期规划 |
 | `16_POLICY_RELEASE_CHECKLIST.md` | 策略插件化发布前检查清单（门禁/快照/处置/交接） |
@@ -29,6 +34,14 @@
 | `../roles/README_MANIFEST.md` | **创作者**：`manifest.json` 全字段分类说明（与 `roles/manifest.template.json` 对照） |
 | `18_DEVELOPMENT_REPORT_USER_ACTIONS.md` | **开发汇报终稿**：已完成项 + **需你方处理项**（联调/Ollama/打包网络等） |
 | `WEEKLY_DEV_GUIDE.md` | **周节奏 + 任务 + 门禁**（WEEK3 起） |
+| `KERNEL_MIGRATION_COMPLETE.md` | **内核迁入收尾**：模块归属与自检命令 |
+| `../creator-docs/kernel/LIGHTWEIGHT_PROFILE.md` | **runtime 轻量 profile**：`Cargo` 特性组合、场景矩阵、CI / `scripts/check_kernel_runtime_minimal.*`、`invoke` 与依赖/`http_api` 拟定说明 |
+| `LIGHTWEIGHT_FOLLOWUP_PLAN.md` | **轻量化后续阶段**：`http_api` 单源、Tauri 依赖去重、`tauri-invoke-capabilities` 防呆、P4 reqwest 与执行顺序 |
+| `LIGHTWEIGHT_OOCP_WS_AXUM_FOLLOWUP.md` | **子计划**：壳层 OOCP WebSocket 与 `axum` 去直连评估（中长期，与阶段 2 批量去重解耦） |
+| `ENGINEERING_ROADMAP_KERNEL_DEEPSEEK.md` | **工程质量 P0 / 内核 P1 / 生态 P2**：与 DeepSeek 指令对齐的分阶段清单、验收门槛与仓库事实快照 |
+| `P1_KERNEL_RUNTIME_BLOCKING_AND_STARTUP.md` | **P1**：`oclive_kernel_runtime` 内 `spawn_blocking` / 同步 HTTP 边界与 `KernelAppState` 冷启动分段计时锚点 |
+| `../scripts/check_kernel_entry_vs_invoke_lists.sh` | **P0.A / P2**：校验 **KERNEL_ENTRY_CHECKLIST** 命令名 ⊆ **`invoke_lists/*.txt`**（根 CI 调用） |
+| `../creator-docs/kernel/KERNEL_SDK.md` | **内核 SDK**：库模式、`process_message`、`kernel_server` 与脚本入口 |
 
 **Cursor 规则**：项目根 `.cursor/rules/oclivenewnew.mdc`（指向 `handoff` 文档）。
 
@@ -39,4 +52,4 @@
 ## 注意
 
 - **不要**用 `curl http://localhost:5173/api/send_message` 作为默认联调方式；Tauri 命令应通过 **`invoke`**（或你们自建的 HTTP 层，需单独说明）。
-- **DTO、枚举、表结构** 以 `src-tauri/src/models/`、`src-tauri/migrations/001_init.sql` 为准。
+- **DTO、枚举、表结构** 以 `crates/oclive_kernel_runtime/src/models/`、`crates/oclive_kernel_runtime/migrations/001_init.sql` 为准。

@@ -1,4 +1,8 @@
+#[cfg(feature = "tauri-app")]
 pub mod api;
+#[cfg(feature = "tauri-app")]
+#[macro_use]
+mod invoke_registry;
 pub mod domain;
 pub mod env_flags;
 pub mod error;
@@ -8,16 +12,68 @@ pub mod models;
 pub mod state;
 pub mod utils;
 
+#[cfg(feature = "tauri-app")]
 use std::fs;
+#[cfg(feature = "tauri-app")]
 use std::path::{Path, PathBuf};
+#[cfg(feature = "tauri-app")]
+use std::sync::{Mutex, OnceLock};
+#[cfg(feature = "tauri-app")]
 use tauri::http::{Request, Response, ResponseBuilder};
+#[cfg(feature = "tauri-app")]
 use tauri::{AppHandle, Manager};
 
+#[cfg(feature = "tauri-app")]
 use crate::infrastructure::deep_link::seed_pending_install_urls_from_args;
+#[cfg(feature = "tauri-app")]
 use crate::infrastructure::directory_plugins::{start_plugin_fs_watcher, OclivePluginManifest};
+#[cfg(feature = "tauri-app")]
 use crate::state::AppState;
 
+#[cfg(feature = "tauri-app")]
+type ManifestCacheKey = String;
+#[cfg(feature = "tauri-app")]
+type HtmlCacheKey = (String, String); // (plugin_id, rel)
+#[cfg(feature = "tauri-app")]
+type HtmlCache = OnceLock<Mutex<std::collections::HashMap<HtmlCacheKey, (u64, Vec<u8>)>>>;
+
+#[cfg(feature = "tauri-app")]
+static PLUGIN_MANIFEST_CACHE: OnceLock<
+    Mutex<std::collections::HashMap<ManifestCacheKey, (u64, OclivePluginManifest)>>,
+> = OnceLock::new();
+
+#[cfg(feature = "tauri-app")]
+static PLUGIN_INJECTED_HTML_CACHE: HtmlCache = OnceLock::new();
+
+#[cfg(feature = "tauri-app")]
+fn file_mtime_ms(p: &Path) -> u64 {
+    std::fs::metadata(p)
+        .ok()
+        .and_then(|m| m.modified().ok())
+        .and_then(|t| t.duration_since(std::time::UNIX_EPOCH).ok())
+        .map(|d| d.as_millis() as u64)
+        .unwrap_or(0)
+}
+
+#[cfg(feature = "tauri-app")]
+fn load_manifest_cached(root: &Path, plugin_id: &str) -> Option<OclivePluginManifest> {
+    let mf = root.join("manifest.json");
+    let ver = file_mtime_ms(&mf);
+    let cache = PLUGIN_MANIFEST_CACHE.get_or_init(|| Mutex::new(std::collections::HashMap::new()));
+    if let Some((cached_ver, m)) = cache.lock().ok().and_then(|g| g.get(plugin_id).cloned()) {
+        if cached_ver == ver && ver != 0 {
+            return Some(m);
+        }
+    }
+    let m = OclivePluginManifest::load_from_dir(root).ok()?;
+    if let Ok(mut g) = cache.lock() {
+        g.insert(plugin_id.to_string(), (ver, m.clone()));
+    }
+    Some(m)
+}
+
 /// 向插件 HTML 注入 `window.OclivePluginBridge`（manifest 中 `bridge` + 白名单）。
+#[cfg(feature = "tauri-app")]
 fn inject_plugin_bridge_script(
     html: &str,
     plugin_id: &str,
@@ -65,6 +121,7 @@ window.OclivePluginBridge={{invoke:invoke,listen:listen,allowedInvoke:INV,allowe
     }
 }
 
+#[cfg(feature = "tauri-app")]
 fn mime_for_plugin_asset(rel: &str) -> &'static str {
     let ext = Path::new(rel)
         .extension()
@@ -88,6 +145,7 @@ fn mime_for_plugin_asset(rel: &str) -> &'static str {
     }
 }
 
+#[cfg(feature = "tauri-app")]
 fn plugin_asset_from_request_uri(uri: &str) -> Option<(String, String)> {
     let lower = uri.to_ascii_lowercase();
     let marker = "ocliveplugin.localhost/";
@@ -107,6 +165,7 @@ fn plugin_asset_from_request_uri(uri: &str) -> Option<(String, String)> {
     Some((plugin_id, rel))
 }
 
+#[cfg(feature = "tauri-app")]
 fn serve_ocliveplugin_asset(
     app: &AppHandle,
     request: &Request,
@@ -131,6 +190,7 @@ fn serve_ocliveplugin_asset(
             .mimetype("text/plain; charset=utf-8")
             .body(b"plugin disabled".to_vec());
     }
+    state.directory_plugins.ensure_scanned();
     let roots = state.directory_plugins.plugin_roots.read();
     let Some(root) = roots.get(&plugin_id) else {
         return ResponseBuilder::new()
@@ -157,10 +217,29 @@ fn serve_ocliveplugin_asset(
             .body(b"forbidden".to_vec());
     }
     if mime_for_plugin_asset(&rel).starts_with("text/html") {
-        if let Ok(manifest) = OclivePluginManifest::load_from_dir(root) {
-            if let Ok(s) = String::from_utf8(data.clone()) {
-                let injected = inject_plugin_bridge_script(&s, &plugin_id, &rel, &manifest);
-                data = injected.into_bytes();
+        let html_ver = file_mtime_ms(&path_norm);
+        let key: HtmlCacheKey = (plugin_id.clone(), rel.clone());
+        let cache =
+            PLUGIN_INJECTED_HTML_CACHE.get_or_init(|| Mutex::new(std::collections::HashMap::new()));
+        if let Ok(g) = cache.lock() {
+            if let Some((cached_ver, bytes)) = g.get(&key) {
+                if *cached_ver == html_ver && html_ver != 0 {
+                    data = bytes.clone();
+                    return ResponseBuilder::new()
+                        .status(200)
+                        .mimetype(mime_for_plugin_asset(&rel))
+                        .body(data);
+                }
+            }
+        }
+        if let (Some(manifest), Ok(s)) = (
+            load_manifest_cached(root, &plugin_id),
+            String::from_utf8(data.clone()),
+        ) {
+            let injected = inject_plugin_bridge_script(&s, &plugin_id, &rel, &manifest);
+            data = injected.into_bytes();
+            if let Ok(mut g) = cache.lock() {
+                g.insert(key, (html_ver, data.clone()));
             }
         }
     }
@@ -176,6 +255,7 @@ fn serve_ocliveplugin_asset(
 /// 避免 `tauri dev` 时误用 `resource_dir/roles`（来自上次打包拷贝到 `target/.../resources` 的**旧快照**）。
 ///
 /// **发布构建**：使用打包资源目录下的 `roles/`（`bundle.resources`），再回退到 [`state::resolve_roles_dir`]。
+#[cfg(feature = "tauri-app")]
 fn resolve_roles_dir_for_app(app: &tauri::App) -> PathBuf {
     if let Ok(custom) = std::env::var("OCLIVE_ROLES_DIR") {
         let p = PathBuf::from(custom);
@@ -255,6 +335,7 @@ pub fn run_api_server(port: u16) {
     }
 }
 
+#[cfg(feature = "tauri-app")]
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
 pub fn run() {
     let _ = env_logger::try_init();
@@ -262,6 +343,7 @@ pub fn run() {
     #[cfg(desktop)]
     tauri_plugin_deep_link::prepare("com.oclivenewnew.app");
     tauri::Builder::default()
+        .enable_macos_default_menu(true)
         .register_uri_scheme_protocol("ocliveplugin", |app, request| {
             serve_ocliveplugin_asset(app, request)
         })
@@ -290,6 +372,12 @@ pub fn run() {
                 .app_data_dir()
                 .expect("resolve app_data_dir");
             fs::create_dir_all(&app_dir).expect("create app_data_dir");
+            #[cfg(target_os = "linux")]
+            log::info!(
+                target: "oclive_paths",
+                "app_data_dir (XDG-style): {}",
+                app_dir.display()
+            );
             let db_path = app_dir.join("app.db");
             let roles_dir = resolve_roles_dir_for_app(app);
             let roles_for_watcher = roles_dir.clone();
@@ -299,11 +387,12 @@ pub fn run() {
             .expect("Failed to initialize app state");
 
             app.manage(app_state);
-            let hk = crate::infrastructure::hotkey_bindings::HotkeyBindingsFile::load(
-                app.state::<AppState>()
-                    .directory_plugins
-                    .app_data_dir(),
-            );
+            let hk = tauri::async_runtime::block_on(async {
+                crate::infrastructure::hotkey_bindings::HotkeyBindingsFile::load_async(
+                    app.state::<AppState>().directory_plugins.app_data_dir(),
+                )
+                .await
+            });
             if let Err(e) = crate::api::hotkeys::apply_global_hotkeys(&app.handle(), &hk) {
                 log::warn!(target: "oclive_hotkey", "initial global shortcuts: {}", e);
             }
@@ -314,75 +403,7 @@ pub fn run() {
             );
             Ok(())
         })
-        .invoke_handler(tauri::generate_handler![
-            api::agent::list_mcp_servers,
-            api::agent::list_mcp_tools,
-            api::agent::call_mcp_tool,
-            api::agent::get_agent_debug_traces,
-            api::agent::clear_agent_debug_traces,
-            api::chat::send_message,
-            api::role::load_role,
-            api::role::get_role_info,
-            api::role::list_roles,
-            api::role::switch_role,
-            api::role::set_user_relation,
-            api::role::set_scene_user_relation,
-            api::role::clear_scene_user_relation,
-            api::role::set_evolution_factor,
-            api::role::set_remote_life_enabled,
-            api::role::set_role_interaction_mode,
-            api::role::set_session_plugin_backend,
-            api::role::apply_author_suggested_plugin_backends,
-            api::role::get_plugin_resolution_debug,
-            api::role::resolve_role_asset_path,
-            api::role_pack::export_role_pack_command,
-            api::role_pack::peek_role_pack_command,
-            api::role_pack::import_role_pack_command,
-            api::scene::switch_scene,
-            api::scene::set_user_presence_scene,
-            api::time::get_time_state,
-            api::time::jump_time,
-            api::monologue::generate_monologue,
-            api::export::export_chat_logs,
-            api::memory::query_memories,
-            api::event::query_events,
-            api::event::create_event,
-            api::policy::reload_policy_plugins,
-            api::directory_plugin::get_directory_plugin_bootstrap,
-            api::directory_plugin::read_plugin_asset_text,
-            api::directory_plugin::is_host_event_subscribed,
-            api::directory_plugin::get_directory_plugin_catalog,
-            api::directory_plugin::get_plugin_state,
-            api::directory_plugin::save_plugin_state,
-            api::directory_plugin::save_global_plugin_state,
-            api::directory_plugin::reset_plugin_state_to_role_default,
-            api::hotkeys::get_hotkey_bindings,
-            api::hotkeys::save_hotkey_bindings,
-            api::directory_plugin::directory_plugin_invoke,
-            api::plugin_scaffold::create_plugin_scaffold,
-            api::plugin_pack::pack_plugin,
-            api::plugin_debug::spawn_plugin_for_test,
-            api::plugin_debug::kill_plugin_process,
-            api::plugin_debug::list_plugin_processes,
-            api::plugin_debug::get_plugin_logs,
-            api::plugin_debug::clear_plugin_logs,
-            api::plugin_debug::test_plugin_method,
-            api::plugin_debug::discover_plugin_methods,
-            api::plugin_bridge::plugin_bridge_invoke,
-            api::plugin_update::check_plugin_updates,
-            api::plugin_update::extract_plugin_zip,
-            api::plugin_index::sync_plugin_index_command,
-            api::plugin_index::get_cached_plugin_index,
-            api::plugin_index::install_plugin_from_market,
-            api::plugin_index::install_plugin_from_git,
-            api::plugin_index::update_plugin_from_market,
-            api::plugin_index::uninstall_plugin_from_market,
-            api::plugin_index::batch_update_plugins,
-            api::plugin_index::batch_uninstall_plugins,
-            api::plugin_index::consume_pending_protocol_installs,
-            api::plugin_config::get_plugin_settings_ui,
-            api::plugin_config::set_plugin_settings_config,
-        ])
+        .invoke_handler(oclive_invoke_handler!())
         .run(tauri::generate_context!())
         .expect("error while running tauri application");
 }

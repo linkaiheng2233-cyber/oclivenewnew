@@ -1,10 +1,14 @@
 <script setup lang="ts">
 import { listen, type UnlistenFn } from "@tauri-apps/api/event";
 import { computed, onBeforeUnmount, onMounted, ref } from "vue";
+import { useI18n } from "vue-i18n";
 import { usePluginStore } from "../stores/pluginStore";
+import { useRoleStore } from "../stores/roleStore";
 import type { HotkeyAction } from "../utils/tauri-api";
 
 const pluginStore = usePluginStore();
+const roleStore = useRoleStore();
+const { t } = useI18n();
 
 const launcherOpen = ref(false);
 const hotkeyTarget = ref<{
@@ -33,6 +37,9 @@ onMounted(async () => {
     "hotkey-action",
     (e) => {
       const a = e.payload.action;
+      if (roleStore.interactionPureChat) {
+        return;
+      }
       if (a.type === "openLauncherList") {
         launcherOpen.value = true;
         return;
@@ -68,13 +75,13 @@ function closeLauncher(): void {
       class="hk-backdrop"
       role="dialog"
       aria-modal="true"
-      aria-label="插件快捷窗口"
+      :aria-label="String(t('hotkeyHost.dialogs.pluginWindowAria'))"
       @click.self="closeHotkeyPlugin"
     >
       <div class="hk-dialog">
         <header class="hk-head">
           <span class="hk-title">{{ activeSlot.pluginId }} · {{ activeSlot.slot }}</span>
-          <button type="button" class="hk-close" aria-label="关闭" @click="closeHotkeyPlugin">
+          <button type="button" class="hk-close" :aria-label="String(t('common.close'))" @click="closeHotkeyPlugin">
             ×
           </button>
         </header>
@@ -91,21 +98,23 @@ function closeLauncher(): void {
       class="hk-backdrop"
       role="dialog"
       aria-modal="true"
-      aria-label="插件未找到"
+      :aria-label="String(t('hotkeyHost.dialogs.pluginNotFoundAria'))"
       @click.self="closeHotkeyPlugin"
     >
       <div class="hk-dialog hk-dialog--narrow">
         <header class="hk-head">
-          <span class="hk-title">无法打开插件页</span>
-          <button type="button" class="hk-close" aria-label="关闭" @click="closeHotkeyPlugin">
+          <span class="hk-title">{{ t("hotkeyHost.notFound.title") }}</span>
+          <button type="button" class="hk-close" :aria-label="String(t('common.close'))" @click="closeHotkeyPlugin">
             ×
           </button>
         </header>
         <p class="hk-muted">
-          当前角色 bootstrap 中未找到
-          <strong>{{ hotkeyTarget.pluginId }}</strong> 在槽
-          <strong>{{ hotkeyTarget.slot }}</strong>
-          的界面；请确认插件已启用、未隐藏该槽贡献，并已保存插件配置。
+          {{
+            t("hotkeyHost.notFound.body", {
+              pluginId: hotkeyTarget.pluginId,
+              slot: hotkeyTarget.slot,
+            })
+          }}
         </p>
       </div>
     </div>
@@ -114,13 +123,13 @@ function closeLauncher(): void {
       class="hk-backdrop"
       role="dialog"
       aria-modal="true"
-      aria-label="可启动插件"
+      :aria-label="String(t('hotkeyHost.dialogs.launcherAria'))"
       @click.self="closeLauncher"
     >
       <div class="hk-dialog hk-dialog--narrow">
         <header class="hk-head">
-          <span class="hk-title">插件目录</span>
-          <button type="button" class="hk-close" aria-label="关闭" @click="closeLauncher">
+          <span class="hk-title">{{ t("hotkeyHost.launcher.title") }}</span>
+          <button type="button" class="hk-close" :aria-label="String(t('common.close'))" @click="closeLauncher">
             ×
           </button>
         </header>
@@ -132,7 +141,7 @@ function closeLauncher(): void {
             }}</span>
           </li>
         </ul>
-        <p v-if="!pluginStore.catalog.length" class="hk-muted">未扫描到插件。</p>
+        <p v-if="!pluginStore.catalog.length" class="hk-muted">{{ t("hotkeyHost.launcher.empty") }}</p>
       </div>
     </div>
   </Teleport>

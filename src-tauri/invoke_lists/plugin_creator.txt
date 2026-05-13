@@ -1,0 +1,10 @@
+crate::api::plugin_scaffold::create_plugin_scaffold
+crate::api::plugin_pack::pack_plugin
+crate::api::plugin_debug::spawn_plugin_for_test
+crate::api::plugin_debug::kill_plugin_process
+crate::api::plugin_debug::list_plugin_processes
+crate::api::plugin_debug::get_plugin_logs
+crate::api::plugin_debug::clear_plugin_logs
+crate::api::plugin_debug::test_plugin_method
+crate::api::plugin_debug::discover_plugin_methods
+crate::api::profile::preview_profile_from_path

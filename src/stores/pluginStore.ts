@@ -1,5 +1,6 @@
 import { defineStore } from "pinia";
 import { setHostEventSubscribedEvents } from "../lib/hostEventBus";
+import { i18n } from "../i18n";
 import {
   batchUpdatePlugins,
   checkPluginUpdates,
@@ -9,6 +10,7 @@ import {
   getDirectoryPluginCatalog,
   getPluginState,
   installPluginFromMarket,
+  installPluginVersionFromMarket,
   resetPluginStateToRoleDefault,
   saveGlobalPluginState,
   savePluginState,
@@ -24,6 +26,10 @@ import {
   type UiSlotVariantInfo,
 } from "../utils/tauri-api";
 import { useRoleStore } from "./roleStore";
+
+function t(key: string, params?: Record<string, unknown>): string {
+  return String(i18n.global.t(key as any, params as any));
+}
 
 type SlotOrderMemo = {
   signature: string;
@@ -56,7 +62,10 @@ export const SLOT_LAUNCHER_PALETTE = "launcher.palette";
 /** 调试面板扩展 */
 export const SLOT_DEBUG_DOCK = "debug.dock";
 
-/** 与后端 `EMBEDDED_UI_SLOT_NAMES` 顺序一致（用于遍历）。 */
+/**
+ * 与后端 `EMBEDDED_UI_SLOT_NAMES` 顺序一致（用于遍历）。
+ * 注意：官方插槽名的“单一真相源”在 `src/lib/shellCapabilities.ts`。
+ */
 export const ALL_EMBEDDED_SLOT_NAMES: readonly string[] = [
   SLOT_CHAT_TOOLBAR,
   SLOT_SETTINGS_PANEL,
@@ -216,11 +225,25 @@ function clonePluginState(s: RolePluginState): RolePluginState {
   };
 }
 
-export type PluginPanelMainTab = "plugins" | "backends" | "slots";
+export type PluginPanelMainTab =
+  | "plugins"
+  | "modules"
+  | "profiles"
+  | "backends"
+  | "slots";
+
+/** `settings`：插件管理 UI 嵌在设置窗内；`null`：独立全屏层（Teleport 到 body）。 */
+export type PluginPanelEmbedHost = "settings" | null;
 
 export const usePluginStore = defineStore("plugin", {
   state: () => ({
     panelVisible: false,
+    /** 与 `panelVisible` 配合：嵌在 `SettingsView` 内时为 `settings`。 */
+    panelEmbedHost: null as PluginPanelEmbedHost,
+    /** V1 插件市场；与 `marketPanelEmbedHost` 配合可嵌在设置窗内 */
+    marketPanelVisible: false,
+    /** `settings`：市场 UI 嵌在 `SettingsView` 底部；`null`：独立全屏层 */
+    marketPanelEmbedHost: null as PluginPanelEmbedHost,
     panelMainTab: "plugins" as PluginPanelMainTab,
     loading: false,
     error: null as string | null,
@@ -237,6 +260,8 @@ export const usePluginStore = defineStore("plugin", {
     persistScope: "role" as PluginPersistScope,
     /** 与 `get_directory_plugin_bootstrap.developer_mode` 一致（扫描额外插件根等）。 */
     developerMode: false,
+    /** 前端壳（Module 8）支持的官方插槽名清单（来自 bootstrap）。 */
+    supportedUiSlots: [] as string[],
     /** 最近一次 bootstrap 的嵌入插槽列表（与 `get_directory_plugin_bootstrap.uiSlots` 一致）。 */
     bootstrapUiSlots: [] as PluginUiSlotInfo[],
     /** 变更后嵌入插槽组件会重新拉 bootstrap */
@@ -249,12 +274,26 @@ export const usePluginStore = defineStore("plugin", {
     pluginMarketSnapshot: null as PluginMarketSnapshotDto | null,
     pluginMarketSyncing: false,
     pluginMarketError: null as string | null,
+    /** 递增以触发 App 层打开专家模型工作台（经典视图「后端」页）。 */
+    expertModelsWorkbenchRequestEpoch: 0,
+    /**
+     * 与 `expertModelsWorkbenchRequestEpoch` 同步消费：打开后 `expertModels` 店按此选择草稿来源。
+     * `effective`：当前生效图；`role_default`：角色级默认（若有）。
+     */
+    expertWorkbenchDraftMode: "effective" as "effective" | "role_default",
   }),
+  getters: {
+    /** 主界面左侧栏（立绘列）是否有已启用的目录插件嵌入 */
+    hasSidebarEmbeds(state): boolean {
+      return (state.bootstrapUiSlots ?? []).some((s) => s.slot === SLOT_SIDEBAR);
+    },
+  },
   actions: {
     /** 由 bootstrap DTO 更新宿主事件订阅与开发者模式（插槽与 `refresh` / `sync` 共用）。 */
     applyDirectoryBootstrap(boot: DirectoryPluginBootstrap) {
       setHostEventSubscribedEvents(boot.subscribedHostEvents ?? []);
       this.developerMode = boot.developerMode ?? false;
+      this.supportedUiSlots = boot.supportedUiSlots ?? [];
       this.bootstrapUiSlots = boot.uiSlots ?? [];
     },
     /** 角色切换或插件启用状态变更后更新宿主事件订阅与开发者模式（不拉 catalog）。 */
@@ -268,11 +307,36 @@ export const usePluginStore = defineStore("plugin", {
       }
     },
     async openPanel(tab?: PluginPanelMainTab) {
+      /** 经典插件管理仅嵌于设置中心，不再使用独立 Teleport 层 */
+      this.panelEmbedHost = "settings";
       if (tab) {
         this.panelMainTab = tab;
       }
+      this.marketPanelVisible = false;
+      this.marketPanelEmbedHost = null;
       this.panelVisible = true;
       await this.refresh();
+    },
+    /** 设置侧栏「本页打开」：经典插件管理嵌在设置窗底部，不占用独立全屏层。 */
+    async openPanelInSettingsEmbed(tab: PluginPanelMainTab) {
+      this.panelEmbedHost = "settings";
+      this.panelMainTab = tab;
+      this.marketPanelVisible = false;
+      this.marketPanelEmbedHost = null;
+      this.panelVisible = true;
+      await this.refresh();
+    },
+    async openMarketPanel(): Promise<void> {
+      return this.openMarketPanelInSettingsEmbed();
+    },
+    /** 设置侧栏「市场」：V1 市场嵌在设置窗底部 */
+    async openMarketPanelInSettingsEmbed(): Promise<void> {
+      this.panelVisible = false;
+      this.panelEmbedHost = null;
+      this.marketPanelEmbedHost = "settings";
+      this.marketPanelVisible = true;
+      await this.refresh();
+      await this.loadCachedPluginMarket();
     },
     async loadCachedPluginMarket() {
       this.pluginMarketError = null;
@@ -297,8 +361,29 @@ export const usePluginStore = defineStore("plugin", {
         this.pluginMarketSyncing = false;
       }
     },
-    async installFromPluginMarket(pluginId: string, gitUrl?: string | null) {
-      await installPluginFromMarket(pluginId, gitUrl ?? null);
+    async installFromPluginMarket(
+      pluginId: string,
+      gitUrl?: string | null,
+      acceptedPermissions?: string[] | null,
+    ) {
+      await installPluginFromMarket(
+        pluginId,
+        gitUrl ?? null,
+        acceptedPermissions ?? null,
+      );
+      await this.refresh();
+      this.bootstrapEpoch += 1;
+    },
+    async installVersionFromPluginMarket(
+      pluginId: string,
+      version: string,
+      acceptedPermissions?: string[] | null,
+    ) {
+      await installPluginVersionFromMarket(
+        pluginId,
+        version,
+        acceptedPermissions ?? null,
+      );
       await this.refresh();
       this.bootstrapEpoch += 1;
     },
@@ -329,11 +414,15 @@ export const usePluginStore = defineStore("plugin", {
         this.pluginUpdatesCheckLoading = false;
       }
     },
-    async installPluginFromLocalZip(pluginId: string, zipPath: string) {
+    async installPluginFromLocalZip(
+      pluginId: string,
+      zipPath: string,
+      acceptedPermissions?: string[] | null,
+    ) {
       this.extractingPluginId = pluginId;
       this.error = null;
       try {
-        await extractPluginZip(zipPath, pluginId);
+        await extractPluginZip(zipPath, pluginId, acceptedPermissions ?? null);
         await this.refresh();
         this.bootstrapEpoch += 1;
       } catch (e) {
@@ -345,6 +434,16 @@ export const usePluginStore = defineStore("plugin", {
     },
     closePanel() {
       this.panelVisible = false;
+      this.panelEmbedHost = null;
+    },
+    closeMarketPanel() {
+      this.marketPanelVisible = false;
+      this.marketPanelEmbedHost = null;
+    },
+    /** 请求打开专家模型工作台：由 App 打开经典插件管理并切到「后端」页。 */
+    requestOpenExpertModelsWorkbench(opts?: { draftMode?: "effective" | "role_default" }): void {
+      this.expertWorkbenchDraftMode = opts?.draftMode ?? "effective";
+      this.expertModelsWorkbenchRequestEpoch += 1;
     },
     setPersistScope(scope: PluginPersistScope) {
       if (this.persistScope === scope) {
@@ -364,6 +463,13 @@ export const usePluginStore = defineStore("plugin", {
         this.closePanel();
       } else {
         void this.openPanel();
+      }
+    },
+    toggleMarketPanel() {
+      if (this.marketPanelVisible) {
+        this.closeMarketPanel();
+      } else {
+        void this.openMarketPanel();
       }
     },
     async refresh() {
@@ -448,7 +554,10 @@ export const usePluginStore = defineStore("plugin", {
         const entry = this.catalog.find((c) => c.id === id);
         if (entry && entry.dependencyStatus !== "ok") {
           throw new Error(
-            `插件「${id}」依赖未满足，无法启用。${(entry.dependencyIssues ?? []).join("；")}`,
+            t("pluginStore.errors.depsNotMet", {
+              id,
+              issues: (entry.dependencyIssues ?? []).join("；"),
+            }),
           );
         }
       }
@@ -478,7 +587,10 @@ export const usePluginStore = defineStore("plugin", {
         const entry = this.catalog.find((c) => c.id === id);
         if (entry && entry.dependencyStatus !== "ok") {
           throw new Error(
-            `插件「${id}」依赖未满足，无法启用。${(entry.dependencyIssues ?? []).join("；")}`,
+            t("pluginStore.errors.depsNotMet", {
+              id,
+              issues: (entry.dependencyIssues ?? []).join("；"),
+            }),
           );
         }
       }

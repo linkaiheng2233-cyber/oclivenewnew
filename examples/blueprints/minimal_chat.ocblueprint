@@ -1,0 +1,17 @@
+{
+  "schemaVersion": "1.0",
+  "name": "minimal_chat",
+  "description": "极简入口：在默认前置（到主模型解析）之后，仅「占位组装 Prompt」+「生成回复」两步（与 snake_case 原子 assemble_prompt / generate_response 对应）。",
+  "onFailure": "HALT",
+  "steps": [
+    { "action": "init_turn" },
+    { "action": "ensure_role_runtime" },
+    { "action": "load_role" },
+    { "action": "seed_interaction_mode" },
+    { "action": "log_effective_plugin_backends" },
+    { "action": "resolve_plugins" },
+    { "action": "resolve_main_llm_model" },
+    { "action": "assemble_prompt", "id": "prompt" },
+    { "action": "generate_response", "id": "reply" }
+  ]
+}

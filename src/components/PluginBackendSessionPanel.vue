@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { computed, ref, watch } from "vue";
+import { useI18n } from "vue-i18n";
 import { useRoleStore } from "../stores/roleStore";
 import {
   packPlugin,
@@ -12,8 +13,29 @@ import {
   usesDirectoryPlugins,
 } from "../utils/pluginBackendsDisplay";
 import AgentDebugPanel from "./AgentDebugPanel.vue";
+import { useAppToast } from "../composables/useAppToast";
+import { usePluginStore } from "../stores/pluginStore";
+import { usePermissionGate } from "../composables/usePermissionGate";
 
 const roleStore = useRoleStore();
+const { t } = useI18n();
+
+type PbModuleKey =
+  | "memory"
+  | "emotion"
+  | "event"
+  | "prompt"
+  | "llm"
+  | "complex_emotion"
+  | "agent";
+
+function backendOptionLabel(v: string): string {
+  if (v === "none") return String(t("pluginBackendSessionPanel.backendLabels.none"));
+  return v;
+}
+const { showToast } = useAppToast();
+const pluginStore = usePluginStore();
+const { ensurePermissionsOrCancel } = usePermissionGate();
 const busy = ref(false);
 const pluginBackends = computed(() => roleStore.roleInfo.pluginBackends);
 const pluginBackendsEffective = computed(() => roleStore.roleInfo.pluginBackendsEffective);
@@ -28,27 +50,64 @@ const pluginDebugCopyStatus = ref("");
 const localMemoryProviderDraft = ref("");
 const packStatus = ref("");
 const sourceLabel: Record<"pack_default" | "session_override" | "env_override", string> = {
-  pack_default: "包默认",
-  session_override: "会话覆盖",
-  env_override: "环境覆盖",
+  pack_default: String(t("pluginBackendSessionPanel.sources.packDefault")),
+  session_override: String(t("pluginBackendSessionPanel.sources.sessionOverride")),
+  env_override: String(t("pluginBackendSessionPanel.sources.envOverride")),
 };
-const pluginBackendRows = [
-  { key: "memory" as const, label: "Memory", options: ["builtin", "builtin_v2", "remote", "local", "directory"] },
-  { key: "emotion" as const, label: "Emotion", options: ["builtin", "builtin_v2", "remote", "directory"] },
-  { key: "event" as const, label: "Event", options: ["builtin", "builtin_v2", "remote", "directory"] },
-  { key: "prompt" as const, label: "Prompt", options: ["builtin", "builtin_v2", "remote", "directory"] },
-  { key: "llm" as const, label: "LLM", options: ["ollama", "remote", "directory"] },
-  { key: "agent" as const, label: "Agent", options: ["builtin", "remote", "directory"] },
+const pluginBackendRows: { key: PbModuleKey; label: string; options: string[] }[] = [
+  {
+    key: "memory",
+    label: String(t("pluginBackendSessionPanel.modules.memory")),
+    options: ["builtin", "builtin_v2", "remote", "local", "directory", "none"],
+  },
+  {
+    key: "emotion",
+    label: String(t("pluginBackendSessionPanel.modules.emotion")),
+    options: ["builtin", "builtin_v2", "remote", "directory", "none"],
+  },
+  {
+    key: "event",
+    label: String(t("pluginBackendSessionPanel.modules.event")),
+    options: ["builtin", "builtin_v2", "remote", "directory", "none"],
+  },
+  {
+    key: "prompt",
+    label: String(t("pluginBackendSessionPanel.modules.prompt")),
+    options: ["builtin", "builtin_v2", "remote", "directory", "none"],
+  },
+  {
+    key: "llm",
+    label: String(t("pluginBackendSessionPanel.modules.llm")),
+    options: ["ollama", "remote", "directory", "none"],
+  },
+  {
+    key: "complex_emotion",
+    label: String(t("pluginBackendSessionPanel.modules.complexEmotion")),
+    options: ["builtin", "remote", "directory", "none"],
+  },
+  {
+    key: "agent",
+    label: String(t("pluginBackendSessionPanel.modules.agent")),
+    options: ["builtin", "remote", "directory", "none"],
+  },
 ];
 const directoryPluginsPackLine = computed(() => {
   const pb = pluginBackends.value;
   if (!usesDirectoryPlugins(pb)) return "";
-  return `包 · directory_plugins：${formatDirectoryPluginSlots(pb.directory_plugins)}`;
+  return String(
+    t("pluginBackendSessionPanel.directoryPlugins.packLine", {
+      v: formatDirectoryPluginSlots(pb.directory_plugins),
+    }),
+  );
 });
 const directoryPluginsEffectiveLine = computed(() => {
   const pb = pluginBackendsEffective.value;
   if (!usesDirectoryPlugins(pb)) return "";
-  return `生效 · directory_plugins：${formatDirectoryPluginSlots(pb.directory_plugins)}`;
+  return String(
+    t("pluginBackendSessionPanel.directoryPlugins.effectiveLine", {
+      v: formatDirectoryPluginSlots(pb.directory_plugins),
+    }),
+  );
 });
 watch(
   () =>
@@ -72,12 +131,48 @@ async function onRemoteLifeChange(ev: Event) {
     busy.value = false;
   }
 }
-async function onPluginBackendChange(
-  module: "memory" | "emotion" | "event" | "prompt" | "llm" | "agent",
-  ev: Event,
-) {
+async function onPluginBackendChange(module: PbModuleKey, ev: Event) {
   const selected = (ev.target as HTMLSelectElement).value;
   const backend = selected === "__pack_default__" ? null : selected;
+
+  // v1.0 权限弹窗（最小实现）：在切换到 directory/remote 前做前置授权。
+  if (backend === "directory") {
+    const slotId =
+      (roleStore.roleInfo.pluginBackendsEffective?.directory_plugins as any)?.[module] ??
+      (roleStore.roleInfo.pluginBackends?.directory_plugins as any)?.[module];
+    const pid = String(slotId ?? "").trim();
+    if (pid) {
+      const entry = (pluginStore.catalog ?? []).find((x) => x.id === pid);
+      const declared = (entry?.installMeta?.declaredPermissions ?? [])
+        .map((s) => String(s ?? "").trim())
+        .filter(Boolean);
+      const required = declared.filter((p) => p === "process:spawn" || p === "network:*");
+      if (required.length > 0) {
+        const gate = await ensurePermissionsOrCancel({
+          subjectId: pid,
+          required,
+          title: String(t("permissionGate.titles.enableDirectoryBackend")),
+        });
+        if (!gate.ok) return;
+      }
+    }
+  }
+
+  if (backend === "remote") {
+    const systemProviderId =
+      module === "llm"
+        ? "system:remote_llm_http"
+        : module === "agent"
+          ? "system:remote_agent_http"
+          : "system:remote_plugin_http";
+    const gate = await ensurePermissionsOrCancel({
+      subjectId: systemProviderId,
+      required: ["network:*"],
+      title: String(t("permissionGate.titles.enableRemoteBackend")),
+    });
+    if (!gate.ok) return;
+  }
+
   busy.value = true;
   try {
     const info = await setSessionPluginBackend(roleStore.currentRoleId, module, backend);
@@ -112,6 +207,7 @@ async function refreshPluginDebugSnapshot() {
     `effective event=${debug.plugin_backends_effective.event}(${debug.plugin_backends_effective_sources.event})`,
     `effective prompt=${debug.plugin_backends_effective.prompt}(${debug.plugin_backends_effective_sources.prompt})`,
     `effective llm=${debug.plugin_backends_effective.llm}(${debug.plugin_backends_effective_sources.llm})`,
+    `effective complex_emotion=${debug.plugin_backends_effective.complex_emotion}(${debug.plugin_backends_effective_sources.complex_emotion})`,
     `effective agent=${debug.plugin_backends_effective.agent}(${debug.plugin_backends_effective_sources.agent})`,
     `pack directory_plugins=${formatDirectoryPluginSlots(debug.plugin_backends_pack_default.directory_plugins)}`,
     `effective directory_plugins=${formatDirectoryPluginSlots(debug.plugin_backends_effective.directory_plugins)}`,
@@ -128,9 +224,9 @@ async function copyPluginDebugSnapshot() {
   try {
     if (!navigator.clipboard?.writeText) throw new Error("clipboard API unavailable");
     await navigator.clipboard.writeText(text);
-    pluginDebugCopyStatus.value = "已复制";
+    pluginDebugCopyStatus.value = String(t("pluginBackendSessionPanel.debugSnapshot.copied"));
   } catch {
-    pluginDebugCopyStatus.value = "复制失败";
+    pluginDebugCopyStatus.value = String(t("pluginBackendSessionPanel.debugSnapshot.copyFailed"));
   }
   window.setTimeout(() => {
     pluginDebugCopyStatus.value = "";
@@ -144,13 +240,18 @@ async function onPackCurrentPlugin(): Promise<void> {
       ? active.trim()
       : roleStore.roleInfo.pluginBackendsEffective.directory_plugins?.llm?.trim() || "";
   if (!target) {
-    packStatus.value = "请先在目录插件槽位中配置目标插件（agent 或 llm）。";
+    packStatus.value = String(t("pluginBackendSessionPanel.pack.noTargetHint"));
     return;
   }
   busy.value = true;
   try {
     const r = await packPlugin(target);
-    packStatus.value = `打包完成：${r.archive_path}（sha256=${r.sha256.slice(0, 12)}...）`;
+    packStatus.value = String(
+      t("pluginBackendSessionPanel.pack.done", {
+        path: r.archive_path,
+        sha: `${r.sha256.slice(0, 12)}...`,
+      }),
+    );
   } catch (e) {
     packStatus.value = e instanceof Error ? e.message : String(e);
   } finally {
@@ -162,31 +263,34 @@ async function onPackCurrentPlugin(): Promise<void> {
 <template>
   <div class="pb-root">
     <p class="pb-lead">
-      以下为 <strong>settings.json → plugin_backends</strong> 的包默认与会话级覆盖；不写入磁盘角色包。
+      <span v-html="t('pluginBackendSessionPanel.leadHtml')" />
     </p>
     <div class="pb-meta">
-      <p class="sub plugin-backends" title="settings.json → plugin_backends">
-        模块后端：mem {{ pluginBackends.memory }} · emotion {{ pluginBackends.emotion }} · event
-        {{ pluginBackends.event }} · prompt {{ pluginBackends.prompt }} · llm {{ pluginBackends.llm }} · agent {{ pluginBackends.agent }}
+      <p class="sub plugin-backends" :title="String(t('pluginBackendSessionPanel.meta.packTitle'))">
+        {{ t("pluginBackendSessionPanel.meta.packLabel") }}：mem {{ pluginBackends.memory }} · emotion {{ pluginBackends.emotion }} · event
+        {{ pluginBackends.event }} · prompt {{ pluginBackends.prompt }} · llm {{ pluginBackends.llm }} · complex_emotion
+        {{ pluginBackends.complex_emotion }} · agent {{ pluginBackends.agent }}
       </p>
-      <p class="sub plugin-backends" title="会话生效">
-        会话生效：mem {{ pluginBackendsEffective.memory }} · emotion {{ pluginBackendsEffective.emotion }} · event
-        {{ pluginBackendsEffective.event }} · prompt {{ pluginBackendsEffective.prompt }} · llm {{ pluginBackendsEffective.llm }} · agent {{ pluginBackendsEffective.agent }}
+      <p class="sub plugin-backends" :title="String(t('pluginBackendSessionPanel.meta.sessionEffectiveTitle'))">
+        {{ t("pluginBackendSessionPanel.meta.sessionEffectiveLabel") }}：mem {{ pluginBackendsEffective.memory }} · emotion {{ pluginBackendsEffective.emotion }} · event
+        {{ pluginBackendsEffective.event }} · prompt {{ pluginBackendsEffective.prompt }} · llm {{ pluginBackendsEffective.llm }} · complex_emotion
+        {{ pluginBackendsEffective.complex_emotion }} · agent {{ pluginBackendsEffective.agent }}
       </p>
       <p v-if="directoryPluginsPackLine" class="sub plugin-backends">{{ directoryPluginsPackLine }}</p>
       <p v-if="directoryPluginsEffectiveLine" class="sub plugin-backends">{{ directoryPluginsEffectiveLine }}</p>
       <p v-if="pluginBackendsSessionOverride" class="sub plugin-override-hint">
-        当前会话已启用模块覆盖（仅本会话生效，不写入角色包）。
+        {{ t("pluginBackendSessionPanel.meta.hasSessionOverrideHint") }}
       </p>
-      <p class="sub plugin-backends" title="来源">
-        来源：mem {{ sourceLabel[pluginBackendsEffectiveSources.memory] }} · emotion
+      <p class="sub plugin-backends" :title="String(t('pluginBackendSessionPanel.meta.sourcesTitle'))">
+        {{ t("pluginBackendSessionPanel.meta.sourcesLabel") }}：mem {{ sourceLabel[pluginBackendsEffectiveSources.memory] }} · emotion
         {{ sourceLabel[pluginBackendsEffectiveSources.emotion] }} · event
         {{ sourceLabel[pluginBackendsEffectiveSources.event] }} · prompt
-        {{ sourceLabel[pluginBackendsEffectiveSources.prompt] }} · llm {{ sourceLabel[pluginBackendsEffectiveSources.llm] }} · agent {{ sourceLabel[pluginBackendsEffectiveSources.agent] }}
+        {{ sourceLabel[pluginBackendsEffectiveSources.prompt] }} · llm {{ sourceLabel[pluginBackendsEffectiveSources.llm] }} · complex_emotion
+        {{ sourceLabel[pluginBackendsEffectiveSources.complex_emotion] }} · agent {{ sourceLabel[pluginBackendsEffectiveSources.agent] }}
       </p>
     </div>
     <div v-if="roleStore.interactionImmersive" class="row row-check">
-      <label for="pb-remote-life">异地心声</label>
+      <label for="pb-remote-life">{{ t("pluginBackendSessionPanel.remoteLife.label") }}</label>
       <input
         id="pb-remote-life"
         type="checkbox"
@@ -194,7 +298,7 @@ async function onPackCurrentPlugin(): Promise<void> {
         :disabled="busy"
         @change="onRemoteLifeChange"
       />
-      <span v-if="roleStore.roleInfo.remoteLifePackDefault === true" class="hint">包默认建议开</span>
+      <span v-if="roleStore.roleInfo.remoteLifePackDefault === true" class="hint">{{ t("pluginBackendSessionPanel.remoteLife.packDefaultHint") }}</span>
     </div>
     <div class="backend-grid">
       <div v-for="item in pluginBackendRows" :key="item.key" class="row backend-row">
@@ -206,8 +310,10 @@ async function onPackCurrentPlugin(): Promise<void> {
           :value="pluginBackendsSessionOverride?.[item.key] ?? '__pack_default__'"
           @change="onPluginBackendChange(item.key, $event)"
         >
-          <option value="__pack_default__">跟随包默认（{{ pluginBackends[item.key] }}）</option>
-          <option v-for="v in item.options" :key="v" :value="v">{{ v }}</option>
+          <option value="__pack_default__">
+            {{ t("pluginBackendSessionPanel.followPackDefault", { v: pluginBackends[item.key] }) }}
+          </option>
+          <option v-for="v in item.options" :key="v" :value="v">{{ backendOptionLabel(v) }}</option>
         </select>
       </div>
       <div
@@ -222,27 +328,27 @@ async function onPackCurrentPlugin(): Promise<void> {
           type="text"
           autocomplete="off"
           :disabled="busy"
-          placeholder="provider_id，空串清除本会话覆盖"
+          :placeholder="String(t('pluginBackendSessionPanel.localMemory.placeholder'))"
           @keydown.enter.prevent="commitLocalMemoryProviderId"
         />
         <button type="button" class="btn tiny" :disabled="busy" @click="commitLocalMemoryProviderId">
-          应用到本会话
+          {{ t("pluginBackendSessionPanel.localMemory.applyToSession") }}
         </button>
       </div>
       <div class="row backend-row">
-        <label>调试快照</label>
+        <label>{{ t("pluginBackendSessionPanel.debugSnapshot.label") }}</label>
         <button type="button" class="btn tiny" :disabled="busy" @click="refreshPluginDebugSnapshot">
-          刷新
+          {{ t("common.refresh") }}
         </button>
         <button type="button" class="btn tiny" :disabled="busy" @click="copyPluginDebugSnapshot">
-          复制
+          {{ t("common.copy") }}
         </button>
         <span v-if="pluginDebugCopyStatus" class="debug-copy-status">{{ pluginDebugCopyStatus }}</span>
       </div>
       <div class="row backend-row">
-        <label>打包插件</label>
+        <label>{{ t("pluginBackendSessionPanel.pack.label") }}</label>
         <button type="button" class="btn tiny" :disabled="busy" @click="onPackCurrentPlugin">
-          一键打包（agent/llm）
+          {{ t("pluginBackendSessionPanel.pack.oneClick") }}
         </button>
         <span v-if="packStatus" class="debug-copy-status">{{ packStatus }}</span>
       </div>

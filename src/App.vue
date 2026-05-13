@@ -1,32 +1,19 @@
 <script setup lang="ts">
-import { computed, nextTick, onBeforeUnmount, onMounted, ref, watch } from "vue";
-import AutonomousSceneNotice from "./components/AutonomousSceneNotice.vue";
+import { computed, defineAsyncComponent, nextTick, onBeforeUnmount, onMounted, ref, watch } from "vue";
+import { useI18n } from "vue-i18n";
 import HelpHint from "./components/HelpHint.vue";
-import RoleDetailView from "./views/RoleDetailView.vue";
-import ChatInput from "./components/ChatInput.vue";
-import ChatPluginToolbarSlots from "./components/ChatPluginToolbarSlots.vue";
-import PluginChatHeaderSlots from "./components/PluginChatHeaderSlots.vue";
-import PluginSidebarSlots from "./components/PluginSidebarSlots.vue";
-import RoleplayAsidePanel from "./components/RoleplayAsidePanel.vue";
+import ChatComposer from "./components/ChatComposer.vue";
 import HotkeyHost from "./components/HotkeyHost.vue";
-import PluginManagerPanel from "./views/PluginManagerPanel.vue";
-import PluginManagerV2Panel from "./views/PluginManagerV2Panel.vue";
-import PluginSlotEmbed from "./components/PluginSlotEmbed.vue";
-import SettingsView from "./views/SettingsView.vue";
 import ChatMessageList from "./components/ChatMessageList.vue";
-import DebugPanel from "./components/DebugPanel.vue";
 import RoleSelector from "./components/RoleSelector.vue";
-import SceneTravelBars from "./components/SceneTravelBars.vue";
-import TopBarSceneModeDialog from "./components/TopBarSceneModeDialog.vue";
-import ShortcutHelp from "./components/ShortcutHelp.vue";
 import Toast from "./components/Toast.vue";
-import VirtualTimeBar from "./components/VirtualTimeBar.vue";
 import { useChatStore } from "./stores/chatStore";
 import { useDebugStore } from "./stores/debugStore";
 import { useRoleStore } from "./stores/roleStore";
 import { useUiStore } from "./stores/uiStore";
 import { usePluginStore } from "./stores/pluginStore";
-import { listen } from "@tauri-apps/api/event";
+import { useExpertModelsStore } from "./stores/expertModelsStore";
+import { listen, type UnlistenFn } from "@tauri-apps/api/event";
 import { buildRelationDropdownOptions } from "./utils/relationOptions";
 import { useAppToast } from "./composables/useAppToast";
 import { useOcliveAppearance } from "./composables/useOcliveAppearance";
@@ -34,18 +21,36 @@ import { useNarrativeScene } from "./composables/useNarrativeScene";
 import { useSceneDestination } from "./composables/useSceneDestination";
 import { usePackUiTheme } from "./composables/useTheme";
 import { usePluginManagerWindow } from "./composables/usePluginManagerWindow";
+import { SETTINGS_NAV } from "./lib/settingsNavKeys";
 import { hostEventBus } from "./lib/hostEventBus";
+import { chordModifierKeyDown, isMacLikePlatform } from "./lib/shortcutDisplay";
 import {
+  cancelChatGeneration,
   consumePendingProtocolInstalls,
+  importRolePack,
   installPluginFromGit,
   loadRole,
   OCLIVE_DEFAULT_RELATION_SENTINEL,
+  peekRolePack,
+  parseApiErrorCode,
   setErrorReporter,
   setRemoteLifeEnabled,
   setRoleInteractionMode,
   setUserRelation,
+  toPureChatPlainErrorMessage,
   type JumpTimeResponse,
 } from "./utils/tauri-api";
+
+const AutonomousSceneNotice = defineAsyncComponent(() => import("./components/AutonomousSceneNotice.vue"));
+const RoleDetailView = defineAsyncComponent(() => import("./views/RoleDetailView.vue"));
+const RoleplayAsidePanel = defineAsyncComponent(() => import("./components/RoleplayAsidePanel.vue"));
+const PureChatModelSheet = defineAsyncComponent(() => import("./views/PureChatModelSheet.vue"));
+const SettingsView = defineAsyncComponent(() => import("./views/SettingsView.vue"));
+const SceneTravelBars = defineAsyncComponent(() => import("./components/SceneTravelBars.vue"));
+const TopBarSceneModeDialog = defineAsyncComponent(() => import("./components/TopBarSceneModeDialog.vue"));
+const ShortcutHelp = defineAsyncComponent(() => import("./components/ShortcutHelp.vue"));
+const VirtualTimeBar = defineAsyncComponent(() => import("./components/VirtualTimeBar.vue"));
+const ImportProgressModal = defineAsyncComponent(() => import("./components/ImportProgressModal.vue"));
 
 const roleStore = useRoleStore();
 usePackUiTheme();
@@ -53,7 +58,10 @@ const chatStore = useChatStore();
 const debugStore = useDebugStore();
 const uiStore = useUiStore();
 const pluginStore = usePluginStore();
+const expertModelsStore = useExpertModelsStore();
 const { toast, showToast } = useAppToast();
+const { t } = useI18n();
+
 const { themeCycleLabel, cycleTheme, bumpScale, scaleLabel } = useOcliveAppearance();
 const { applyResolvedNarrativeScene } = useNarrativeScene();
 const {
@@ -65,6 +73,8 @@ const {
 
 const chatListRef = ref<InstanceType<typeof ChatMessageList> | null>(null);
 const roleSwitching = ref(false);
+const startupStatus = ref(String(t("app.startup.loadingRoleAndPlugins")));
+const startupReady = ref(false);
 
 /** 角色回复结束后，若本句含位移意图且有多场景，显示目的地条 */
 const postReplySceneBarVisible = ref(false);
@@ -100,18 +110,22 @@ function clearCtrlLongPressTimer(): void {
 }
 
 function onCtrlHoldHintKeydown(e: KeyboardEvent): void {
-  if (e.key !== "Control" || e.repeat) {
+  if (!roleStore.interactionImmersive) return;
+  const modKey = isMacLikePlatform() ? "Meta" : "Control";
+  if (e.key !== modKey || e.repeat) {
     return;
   }
   clearCtrlLongPressTimer();
   ctrlLongPressTimer = window.setTimeout(() => {
     ctrlLongPressTimer = null;
+    if (!roleStore.interactionImmersive) return;
     shortcutHelpOpen.value = true;
   }, 1000);
 }
 
 function onCtrlHoldHintKeyup(e: KeyboardEvent): void {
-  if (e.key === "Control") {
+  const modKey = isMacLikePlatform() ? "Meta" : "Control";
+  if (e.key === modKey) {
     clearCtrlLongPressTimer();
   }
 }
@@ -173,21 +187,32 @@ const latestRoleplayAside = computed(() => {
 
 const topMoreOpen = ref(false);
 const settingsViewOpen = ref(false);
+const pureChatModelSheetOpen = ref(false);
 
-const {
-  pluginManagerV2Open,
-  openPluginManagerPanel,
-  openPluginManagerV2Preview,
-  pluginManagerMoreBtnLabel,
-  settingsEntryMoreHelp,
-} = usePluginManagerWindow({
+const { settingsEntryMoreHelp } = usePluginManagerWindow({
   closeMoreMenu: () => {
     topMoreOpen.value = false;
   },
-  closeSettingsView: () => {
-    settingsViewOpen.value = false;
-  },
 });
+
+watch(
+  () => pluginStore.expertModelsWorkbenchRequestEpoch,
+  async (n, prev) => {
+    if (n <= 0 || n === prev) return;
+    const draftMode = pluginStore.expertWorkbenchDraftMode;
+    settingsViewOpen.value = true;
+    uiStore.requestSettingsNav(SETTINGS_NAV.pluginsLinkBackends);
+    await nextTick();
+    await pluginStore.openPanel("backends");
+    await nextTick();
+    try {
+      await expertModelsStore.refresh();
+      expertModelsStore.applyWorkbenchNavigationDraft(draftMode);
+    } catch {
+      /* store.error 已设置 */
+    }
+  },
+);
 
 const topBarRef = ref<HTMLElement | null>(null);
 let morePanelClickListenTimer: ReturnType<typeof setTimeout> | null = null;
@@ -205,6 +230,21 @@ function openShortcutHelp(): void {
 function openSettingsView(): void {
   settingsViewOpen.value = true;
   topMoreOpen.value = false;
+}
+
+function openSettingsToNav(navId: string): void {
+  uiStore.requestSettingsNav(navId);
+  settingsViewOpen.value = true;
+  topMoreOpen.value = false;
+}
+
+/** 切到纯聊时收起依赖沉浸/插件栈的浮层，避免与纯聊路径叠在一起 */
+function closePanelsForPureChatMode(): void {
+  shortcutHelpOpen.value = false;
+  settingsViewOpen.value = false;
+  pureChatModelSheetOpen.value = false;
+  pluginStore.closePanel();
+  pluginStore.closeMarketPanel();
 }
 
 function onDocumentClickCloseMore(e: MouseEvent) {
@@ -228,7 +268,7 @@ const packLayoutResolved = computed(() => {
 });
 const sidebarRight = computed(() => packLayoutResolved.value.sidebar === "right");
 const chatInputTop = computed(() => packLayoutResolved.value.chatInput === "top");
-const roleName = computed(() => roleStore.roleInfo.name || "沐沐");
+const roleName = computed(() => roleStore.roleInfo.name || String(t("app.defaults.roleName")));
 const emotion = computed(() => roleStore.roleInfo.currentEmotion || "neutral");
 
 /** 对齐 oclive-new 底部状态栏心形 */
@@ -256,6 +296,7 @@ async function onInteractionModeChange(ev: Event) {
         fromLabel: "",
         toLabel: "",
       };
+      closePanelsForPureChatMode();
     }
   } catch (err) {
     showToast("error", err instanceof Error ? err.message : String(err));
@@ -268,7 +309,10 @@ async function onPluginSetRemoteLife(payload: unknown): Promise<void> {
   try {
     const info = await setRemoteLifeEnabled(roleStore.currentRoleId, enabledRaw);
     roleStore.applyRoleInfo(info);
-    showToast("success", `异地心声已${enabledRaw ? "开启" : "关闭"}`);
+    showToast(
+      "success",
+      String(t(enabledRaw ? "app.toasts.remoteLifeEnabled" : "app.toasts.remoteLifeDisabled")),
+    );
   } catch (err) {
     showToast("error", err instanceof Error ? err.message : String(err));
   }
@@ -292,8 +336,16 @@ async function onPluginSetInteractionMode(payload: unknown): Promise<void> {
         fromLabel: "",
         toLabel: "",
       };
+      closePanelsForPureChatMode();
     }
-    showToast("success", `互动模式已切换为${mode === "immersive" ? "沉浸" : "纯聊"}`);
+    showToast(
+      "success",
+      String(
+        t("app.toasts.interactionModeSwitched", {
+          mode: mode === "immersive" ? t("app.interactionMode.immersive") : t("app.interactionMode.pureChat"),
+        }),
+      ),
+    );
   } catch (err) {
     showToast("error", err instanceof Error ? err.message : String(err));
   }
@@ -306,14 +358,14 @@ function onPluginCycleTheme(): void {
 async function onPluginResetLayout(): Promise<void> {
   try {
     await pluginStore.resetToRolePackDefault();
-    const message = "已恢复为角色包推荐布局。";
+    const message = String(t("app.toasts.layoutResetOk"));
     hostEventBus.emit(settingsResetLayoutResultEvent, { ok: true, message });
     showToast("success", message);
   } catch (err) {
     const message = err instanceof Error ? err.message : String(err);
     hostEventBus.emit(settingsResetLayoutResultEvent, {
       ok: false,
-      message: `恢复失败：${message}`,
+      message: String(t("app.toasts.layoutResetFailed", { message })),
     });
     showToast("error", message);
   }
@@ -321,21 +373,24 @@ async function onPluginResetLayout(): Promise<void> {
 
 async function initialize() {
   try {
+    startupStatus.value = String(t("app.startup.scanningRolePacks"));
     await roleStore.loadRoles();
     if (!roleStore.currentRoleId.trim()) {
       showToast(
         "error",
-        "未扫描到任何可用角色包（roles 目录为空或全部校验失败）。请检查宿主使用的 roles 路径：开发可设置环境变量 OCLIVE_ROLES_DIR 指向仓库的 roles 文件夹。",
+        String(t("app.startup.noRolesFound")),
       );
       return;
     }
+    startupStatus.value = String(t("app.startup.loadingRoleData"));
     await loadRole(roleStore.currentRoleId);
+    startupStatus.value = String(t("app.startup.initializingPlugins"));
     await pluginStore.refresh();
-    await roleStore.refreshRoleInfo();
     hostEventBus.emitBuiltin("role:switched", { roleId: roleStore.currentRoleId });
     applyResolvedNarrativeScene();
-    await debugStore.loadDebugData();
+    startupReady.value = true;
   } catch (err) {
+    startupStatus.value = String(t("app.startup.failed"));
     showToast("error", err instanceof Error ? err.message : String(err));
   }
 }
@@ -348,23 +403,56 @@ async function onSend(payload: { content: string }) {
   const userText = payload.content;
   try {
     const res = await chatStore.sendMessage(userText, uiStore.sceneId);
+    if (!res) {
+      return;
+    }
     await roleStore.refreshRoleInfo();
     applyResolvedNarrativeScene();
-    await debugStore.loadDebugData();
+    if (settingsViewOpen.value) {
+      await debugStore.loadDebugData();
+    }
     if (res.reply_is_fallback) {
-      showToast("info", "本次为备用回复（模型未返回正文时自动生成）");
+      showToast("info", String(t("app.toasts.fallbackReply")));
     }
     const offerTogether = res.offer_together_travel ?? false;
     const offerPicker = res.offer_destination_picker ?? false;
-    // 问卷：邀请同行条优先于「仅选目的地」条（与后端 movement_ui_flags 一致）
-    if (offerTogether && sceneDestinationOptions.value.length > 0) {
-      togetherTravelBarVisible.value = true;
-    } else if (offerPicker && sceneDestinationOptions.value.length > 0) {
-      postReplySceneBarVisible.value = true;
+    // 纯聊不展示叙事位移条；沉浸下才响应后端位移问卷
+    if (!roleStore.interactionPureChat) {
+      // 问卷：邀请同行条优先于「仅选目的地」条（与后端 movement_ui_flags 一致）
+      if (offerTogether && sceneDestinationOptions.value.length > 0) {
+        togetherTravelBarVisible.value = true;
+      } else if (offerPicker && sceneDestinationOptions.value.length > 0) {
+        postReplySceneBarVisible.value = true;
+      }
     }
   } catch (err) {
-    showToast("error", err instanceof Error ? err.message : String(err));
+    if (parseApiErrorCode(err) === "CHAT_GENERATION_CANCELLED") {
+      showToast("info", String(t("app.toasts.chatStopped")));
+      return;
+    }
+    if (roleStore.interactionPureChat) {
+      showToast("error", toPureChatPlainErrorMessage(err));
+    } else {
+      showToast("error", err instanceof Error ? err.message : String(err));
+    }
   }
+}
+
+async function onClearStuckSending() {
+  const hadLoading = chatStore.isLoading;
+  try {
+    await cancelChatGeneration();
+  } catch {
+    /* 无活动生成或非 Tauri 环境 */
+  }
+  chatStore.invalidateActiveSend();
+  if (hadLoading) {
+    chatStore.removeLastUserBubble(
+      roleStore.currentRoleId,
+      uiStore.sceneId || "default",
+    );
+  }
+  showToast("info", String(t("app.toasts.waitCleared")));
 }
 
 async function confirmPostReplyScene(together: boolean) {
@@ -413,6 +501,7 @@ async function confirmTopBarScene(together: boolean) {
 }
 
 function onPluginQuickActionTravel(payload: unknown): void {
+  if (roleStore.interactionPureChat) return;
   const sceneId = (payload as { sceneId?: string } | null)?.sceneId;
   const togetherRaw = (payload as { together?: boolean } | null)?.together;
   const id = typeof sceneId === "string" ? sceneId.trim() : "";
@@ -429,8 +518,10 @@ async function onSwitchRole(nextRoleId: string) {
     await pluginStore.syncDirectoryPluginBootstrap();
     hostEventBus.emitBuiltin("role:switched", { roleId: nextRoleId });
     applyResolvedNarrativeScene();
-    await debugStore.loadDebugData();
-    showToast("success", `已切换角色: ${nextRoleId}`);
+    if (settingsViewOpen.value) {
+      await debugStore.loadDebugData();
+    }
+    showToast("success", String(t("app.toasts.roleSwitched", { id: nextRoleId })));
   } catch (err) {
     showToast("error", err instanceof Error ? err.message : String(err));
   } finally {
@@ -457,8 +548,8 @@ async function onChangeRelation(nextRelation: string) {
     }
     const relationName =
       relationOptions.value.find((r) => r.id === nextRelation)?.name ?? nextRelation;
-    const scopeLabel = perScene ? "当前场景身份" : "身份";
-    showToast("success", `已设置${scopeLabel}：${relationName}`);
+    const scopeLabel = perScene ? t("app.toasts.identityScope.scene") : t("app.toasts.identityScope.global");
+    showToast("success", String(t("app.toasts.identitySet", { scope: scopeLabel, name: relationName })));
   } catch (err) {
     showToast("error", err instanceof Error ? err.message : String(err));
   }
@@ -472,7 +563,9 @@ async function onPackImported(roleId: string) {
     await roleStore.refreshRoleInfo();
     await roleStore.loadRoles();
     applyResolvedNarrativeScene();
-    await debugStore.loadDebugData();
+    if (settingsViewOpen.value) {
+      await debugStore.loadDebugData();
+    }
   } catch (err) {
     showToast("error", err instanceof Error ? err.message : String(err));
   }
@@ -503,14 +596,14 @@ async function onReloadPolicy() {
 
 function onHotkey(e: KeyboardEvent) {
   if (e.key === "Escape") {
-    if (pluginManagerV2Open.value) {
-      e.preventDefault();
-      pluginManagerV2Open.value = false;
-      return;
-    }
     if (shortcutHelpOpen.value) {
       e.preventDefault();
       shortcutHelpOpen.value = false;
+      return;
+    }
+    if (pluginStore.marketPanelVisible) {
+      e.preventDefault();
+      pluginStore.closeMarketPanel();
       return;
     }
     if (pluginStore.panelVisible) {
@@ -528,25 +621,50 @@ function onHotkey(e: KeyboardEvent) {
       topMoreOpen.value = false;
       return;
     }
-    if (debugStore.visible) {
-      e.preventDefault();
-      debugStore.toggle();
-      return;
-    }
   }
-  if (e.ctrlKey && e.shiftKey && e.key.toLowerCase() === "f") {
+  if (chordModifierKeyDown(e) && e.shiftKey && e.key.toLowerCase() === "d") {
     e.preventDefault();
-    openPluginManagerPanel();
+    openSettingsToNav(SETTINGS_NAV.diagnosticsDebug);
+    void nextTick(() => {
+      void debugStore.loadDebugData();
+    });
     return;
   }
-  if (e.ctrlKey && e.shiftKey && e.key.toLowerCase() === "s") {
+  if (roleStore.interactionPureChat) {
+    if (chordModifierKeyDown(e) && e.shiftKey) {
+      const k = e.key.toLowerCase();
+      if (k === "f" || k === "a" || k === "s") e.preventDefault();
+    }
+    return;
+  }
+  if (chordModifierKeyDown(e) && e.shiftKey && e.key.toLowerCase() === "f") {
+    e.preventDefault();
+    if (uiStore.settingsDeveloperMaster && uiStore.experimentalPluginManagerV2) {
+      openSettingsToNav(SETTINGS_NAV.pluginsV2Hub);
+    } else {
+      openSettingsToNav(SETTINGS_NAV.pluginsLinkInstalled);
+      void nextTick(() => {
+        void pluginStore.openPanelInSettingsEmbed("plugins");
+      });
+    }
+    return;
+  }
+  if (chordModifierKeyDown(e) && e.shiftKey && e.key.toLowerCase() === "a") {
+    e.preventDefault();
+    if (uiStore.settingsDeveloperMaster && uiStore.experimentalPluginManagerV2) {
+      openSettingsToNav(SETTINGS_NAV.marketBrowseV2);
+    } else {
+      openSettingsToNav(SETTINGS_NAV.marketBrowse);
+      void nextTick(() => {
+        void pluginStore.openMarketPanelInSettingsEmbed();
+      });
+    }
+    return;
+  }
+  if (chordModifierKeyDown(e) && e.shiftKey && e.key.toLowerCase() === "s") {
     e.preventDefault();
     openSettingsView();
     return;
-  }
-  if (e.ctrlKey && e.shiftKey && e.key.toLowerCase() === "d") {
-    e.preventDefault();
-    debugStore.toggle();
   }
 }
 
@@ -559,15 +677,85 @@ watch(
   { flush: "post" },
 );
 
-watch(
-  () => debugStore.visible,
-  (v) => {
-    if (v) void debugStore.loadDebugData();
-  },
-);
-
 let unlistenPluginFs: (() => void) | undefined;
 let unlistenProtocolInstall: (() => void) | undefined;
+let unlistenFileDrop: UnlistenFn | undefined;
+
+const dropImportOpen = ref(false);
+const dropImportPercent = ref(0);
+const dropImportMessage = ref("");
+
+function pickFirstRolePackArchivePath(paths: string[]): string | null {
+  for (const raw of paths) {
+    const p = (raw ?? "").trim();
+    if (!p) continue;
+    const low = p.toLowerCase();
+    if (low.endsWith(".ocpak") || low.endsWith(".zip")) {
+      return p;
+    }
+  }
+  return null;
+}
+
+async function withDropImportProgress<T>(fn: () => Promise<T>): Promise<T> {
+  dropImportOpen.value = true;
+  dropImportPercent.value = 0;
+  dropImportMessage.value = String(t("rolePackBar.progress.preparing"));
+  let unlistenPr: UnlistenFn | undefined;
+  unlistenPr = await listen<{ percent: number; message: string }>("import_progress", (e) => {
+    dropImportPercent.value = e.payload.percent;
+    dropImportMessage.value = e.payload.message;
+  });
+  try {
+    return await fn();
+  } finally {
+    unlistenPr?.();
+    dropImportOpen.value = false;
+  }
+}
+
+async function handleTauriFileDrop(paths: string[]): Promise<void> {
+  const path = pickFirstRolePackArchivePath(paths);
+  if (!path) {
+    showToast("info", String(t("app.fileDrop.ignoredNonPack")));
+    return;
+  }
+  try {
+    const peek = await peekRolePack(path);
+    const exists = roleStore.roles.some((r) => r.id === peek.id);
+    if (exists) {
+      const ok = window.confirm(
+        String(
+          t("app.fileDrop.confirmOverwrite", {
+            id: peek.id,
+            name: peek.name,
+            version: peek.version,
+          }),
+        ),
+      );
+      if (!ok) return;
+      const roleId = await withDropImportProgress(() => importRolePack(path, true));
+      showToast("success", String(t("app.fileDrop.imported", { id: roleId })));
+      const dlMsg = peek.creator_message_to_downloader?.trim();
+      if (dlMsg) showToast("info", dlMsg);
+      await onPackImported(roleId);
+      return;
+    }
+    const roleId = await withDropImportProgress(() => importRolePack(path, false));
+    showToast("success", String(t("app.fileDrop.imported", { id: roleId })));
+    const dlMsgNew = peek.creator_message_to_downloader?.trim();
+    if (dlMsgNew) showToast("info", dlMsgNew);
+    await onPackImported(roleId);
+  } catch (e) {
+    const msg =
+      roleStore.interactionPureChat && e instanceof Error
+        ? toPureChatPlainErrorMessage(e)
+        : e instanceof Error
+          ? e.message
+          : String(e);
+    showToast("error", msg);
+  }
+}
 
 async function runPendingProtocolInstallsFromQueue(): Promise<void> {
   try {
@@ -577,9 +765,14 @@ async function runPendingProtocolInstallsFromQueue(): Promise<void> {
       if (!git) continue;
       try {
         const r = await installPluginFromGit(git);
-        showToast("success", `已通过网页链接安装插件：${r.installedPluginId}`);
+        showToast("success", String(t("app.toasts.pluginInstalledFromUrl", { id: r.installedPluginId })));
         await pluginStore.refresh();
-        openPluginManagerPanel();
+        if (!roleStore.interactionPureChat) {
+          openSettingsToNav(SETTINGS_NAV.pluginsLinkInstalled);
+          void nextTick(() => {
+            void pluginStore.openPanelInSettingsEmbed("plugins");
+          });
+        }
       } catch (e) {
         showToast("error", e instanceof Error ? e.message : String(e));
       }
@@ -590,6 +783,7 @@ async function runPendingProtocolInstallsFromQueue(): Promise<void> {
 }
 
 onMounted(() => {
+  chatStore.clearStuckSendingState();
   setErrorReporter((err) => {
     showToast("error", err.message);
   });
@@ -606,7 +800,7 @@ onMounted(() => {
   initialize();
   void listen("plugin:changed", () => {
     void pluginStore.onPluginFilesChanged().then(() => {
-      showToast("success", "检测到插件变更，已自动刷新");
+      showToast("success", String(t("app.toasts.pluginsAutoRefreshed")));
     });
   }).then((u) => {
     unlistenPluginFs = u;
@@ -619,6 +813,15 @@ onMounted(() => {
   });
 
   void runPendingProtocolInstallsFromQueue();
+
+  void listen<string[]>("tauri://file-drop", (e) => {
+    const payload = e.payload;
+    const paths = Array.isArray(payload) ? payload : payload ? [String(payload)] : [];
+    if (paths.length === 0) return;
+    void handleTauriFileDrop(paths);
+  }).then((u) => {
+    unlistenFileDrop = u;
+  });
 });
 
 watch(topMoreOpen, (open) => {
@@ -657,6 +860,7 @@ onBeforeUnmount(() => {
   clearCtrlLongPressTimer();
   unlistenPluginFs?.();
   unlistenProtocolInstall?.();
+  unlistenFileDrop?.();
 });
 </script>
 
@@ -665,6 +869,9 @@ onBeforeUnmount(() => {
     <div class="app-frame">
     <!-- 对齐 oclive-new：顶栏角色 + 时间/场景 -->
     <header ref="topBarRef" class="top-bar">
+      <div v-if="!startupReady" class="startup-status" role="status" aria-live="polite">
+        {{ startupStatus }}
+      </div>
       <div class="top-bar-row">
         <RoleSelector
           variant="topbar"
@@ -684,7 +891,7 @@ onBeforeUnmount(() => {
           aria-controls="top-more-panel"
           @click="toggleTopMore"
         >
-          {{ topMoreOpen ? "收起" : "更多" }}
+          {{ topMoreOpen ? t("app.topBar.more.collapse") : t("app.topBar.more.open") }}
         </button>
       </div>
 
@@ -693,193 +900,212 @@ onBeforeUnmount(() => {
         id="top-more-panel"
         class="top-more-panel"
         role="region"
-        aria-label="更多功能"
+        :aria-label="String(t('app.topBar.more.regionLabel'))"
         @click.stop
       >
-        <div class="more-grid">
-          <div class="more-tile more-tile--xs">
-            <div class="more-tile-head">
-              <span class="more-label">互动模式</span>
-              <HelpHint
-                :paragraphs="[
-                  '沉浸：启用虚拟时间、叙事场景、日程推断与位移相关能力。',
-                  '纯聊：只保留对话，隐藏场景与时间条，适合日常闲聊。',
-                ]"
-              />
+        <div class="top-more-panel-inner">
+          <div
+            class="more-panel-body more-panel-body--with-rail"
+          >
+            <div class="more-panel-rows more-panel-rows--main">
+            <div class="more-row more-row--r1-strip">
+              <div class="more-tile more-tile--cell more-tile--top-strip">
+                <div class="more-tile-head">
+                  <span class="more-label">{{ t("app.topBar.tiles.interactionMode.title") }}</span>
+                  <HelpHint
+                    :paragraphs="(t('app.topBar.tiles.interactionMode.hint') as any)"
+                  />
+                </div>
+                <div class="more-tile-body">
+                  <select
+                    id="interaction-mode"
+                    class="interaction-mode-select more-select more-select--fill"
+                    :value="roleStore.roleInfo.interactionMode"
+                    @change="onInteractionModeChange"
+                  >
+                    <option value="immersive">{{ t("app.topBar.tiles.interactionMode.immersive") }}</option>
+                    <option value="pure_chat">{{ t("app.topBar.tiles.interactionMode.pureChat") }}</option>
+                  </select>
+                </div>
+              </div>
+
+              <div class="more-tile more-tile--cell more-tile--top-strip">
+                <div class="more-tile-head">
+                  <span class="more-label">{{ t("app.topBar.tiles.identity.title") }}</span>
+                  <HelpHint :text="String(t('app.topBar.tiles.identity.hint'))" />
+                </div>
+                <div class="more-tile-body more-tile-body--selector">
+                  <RoleSelector
+                    variant="topbar"
+                    :sections="['relation']"
+                    :current-role-id="roleStore.currentRoleId"
+                    :current-relation="roleStore.relationSelectValue"
+                    :roles="roleStore.roles"
+                    :relations="relationOptions"
+                    :loading="chatStore.isLoading"
+                    @change-role="onSwitchRole"
+                    @change-relation="onChangeRelation"
+                  />
+                </div>
+              </div>
+
+              <div class="more-tile more-tile--cell more-tile--top-strip">
+                <div class="more-tile-head">
+                  <span class="more-label">{{ t("app.topBar.tiles.appearance.title") }}</span>
+                  <HelpHint
+                    :paragraphs="(t('app.topBar.tiles.appearance.hint') as any)"
+                  />
+                </div>
+                <div class="more-tile-body">
+                  <div class="top-bar-appearance" role="toolbar" :aria-label="String(t('app.topBar.tiles.appearance.toolbarLabel'))">
+                    <div class="appearance-scale" :aria-label="String(t('app.topBar.tiles.appearance.scaleLabel'))">
+                      <button
+                        type="button"
+                        class="appearance-icon-btn"
+                        :title="String(t('app.topBar.tiles.appearance.shrink'))"
+                        :aria-label="String(t('app.topBar.tiles.appearance.shrinkAria'))"
+                        @click="bumpScale(-1)"
+                      >
+                        A−
+                      </button>
+                      <span
+                        class="appearance-scale-value"
+                        :title="String(t('app.topBar.tiles.appearance.relativeScaleTitle', { label: scaleLabel }))"
+                      >{{ scaleLabel }}</span>
+                      <button
+                        type="button"
+                        class="appearance-icon-btn"
+                        :title="String(t('app.topBar.tiles.appearance.enlarge'))"
+                        :aria-label="String(t('app.topBar.tiles.appearance.enlargeAria'))"
+                        @click="bumpScale(1)"
+                      >
+                        A+
+                      </button>
+                    </div>
+                    <button
+                      type="button"
+                      class="appearance-theme-btn"
+                      :title="String(t('app.topBar.tiles.appearance.themeTitle', { label: themeCycleLabel }))"
+                      @click="cycleTheme"
+                    >
+                      {{
+                        themeCycleLabel === String(t("app.topBar.tiles.appearance.themeSystem"))
+                          ? "◐"
+                          : themeCycleLabel === String(t("app.topBar.tiles.appearance.themeDark"))
+                            ? "🌙"
+                            : "☀️"
+                      }}
+                      {{ themeCycleLabel }}
+                    </button>
+                  </div>
+                </div>
+              </div>
             </div>
-            <div class="more-tile-body">
-              <select
-                id="interaction-mode"
-                class="interaction-mode-select more-select more-select--fill"
-                :value="roleStore.roleInfo.interactionMode"
-                @change="onInteractionModeChange"
+
+            <div class="more-row more-row--r2-wide">
+              <div
+                v-if="roleStore.interactionPureChat"
+                class="more-tile more-tile--cell more-tile--row-wide"
               >
-                <option value="immersive">沉浸</option>
-                <option value="pure_chat">纯聊</option>
-              </select>
-            </div>
-          </div>
-
-          <div class="more-tile more-tile--sm">
-            <div class="more-tile-head">
-              <span class="more-label">身份</span>
-              <HelpHint text="与角色相处时的关系身份（如朋友、恋人等），影响对话与关系数值；与包内「核心性格档案」不同，后者写在 core_personality.txt。" />
-            </div>
-            <div class="more-tile-body more-tile-body--selector">
-              <RoleSelector
-                variant="topbar"
-                :sections="['relation']"
-                :current-role-id="roleStore.currentRoleId"
-                :current-relation="roleStore.relationSelectValue"
-                :roles="roleStore.roles"
-                :relations="relationOptions"
-                :loading="chatStore.isLoading"
-                @change-role="onSwitchRole"
-                @change-relation="onChangeRelation"
-              />
-            </div>
-          </div>
-
-          <div class="more-tile more-tile--lg">
-            <div class="more-tile-head">
-              <span class="more-label">界面</span>
-              <HelpHint
-                :paragraphs="[
-                  '字号 A− / A+ 与编写器、启动器使用同一套档位，会保存在本机。',
-                  '主题为浅色 / 深色 / 跟随系统，亦会记住。',
-                ]"
-              />
-            </div>
-            <div class="more-tile-body">
-              <div class="top-bar-appearance" role="toolbar" aria-label="外观与字号">
-                <div class="appearance-scale" aria-label="界面大小">
+                <div class="more-tile-head">
+                  <span class="more-label">{{ t("app.topBar.tiles.pureChatModels.title") }}</span>
+                  <HelpHint :text="String(t('app.topBar.tiles.pureChatModels.hint'))" />
+                </div>
+                <div class="more-tile-body">
                   <button
                     type="button"
-                    class="appearance-icon-btn"
-                    title="缩小"
-                    aria-label="缩小界面"
-                    @click="bumpScale(-1)"
+                    class="more-debug-btn more-debug-btn--fill"
+                    @click="
+                      pureChatModelSheetOpen = true;
+                      topMoreOpen = false;
+                    "
                   >
-                    A−
-                  </button>
-                  <span
-                    class="appearance-scale-value"
-                    :title="'相对默认字号：' + scaleLabel"
-                  >{{ scaleLabel }}</span>
-                  <button
-                    type="button"
-                    class="appearance-icon-btn"
-                    title="放大"
-                    aria-label="放大界面"
-                    @click="bumpScale(1)"
-                  >
-                    A+
+                    {{ t("app.topBar.tiles.pureChatModels.openSheet") }}
                   </button>
                 </div>
-                <button
-                  type="button"
-                  class="appearance-theme-btn"
-                  :title="'主题：' + themeCycleLabel + '（点击切换）'"
-                  @click="cycleTheme"
-                >
-                  {{
-                    themeCycleLabel === "跟随系统"
-                      ? "◐"
-                      : themeCycleLabel === "深色"
-                        ? "🌙"
-                        : "☀️"
-                  }}
-                  {{ themeCycleLabel }}
-                </button>
               </div>
-            </div>
-          </div>
 
-          <div class="more-tile more-tile--action settings-entry-tile">
-            <div class="more-tile-head">
-              <span class="more-label">设置入口</span>
-              <HelpHint :text="settingsEntryMoreHelp" />
-            </div>
-            <div class="more-tile-body settings-entry-actions" role="group" aria-label="设置入口集合">
-              <button type="button" class="more-debug-btn more-debug-btn--fill settings-entry-btn" @click="openShortcutHelp">
-                快捷键说明
-              </button>
-              <button
-                type="button"
-                class="more-debug-btn more-debug-btn--fill settings-entry-btn settings-entry-btn--primary settings-gear-btn"
-                @click="openSettingsView"
+              <div
+                v-else-if="roleStore.interactionImmersive"
+                class="more-tile more-tile--cell more-tile--row-wide more-tile--duo"
               >
-                ⚙ 设置
-              </button>
-              <button
-                type="button"
-                class="more-debug-btn more-debug-btn--fill settings-entry-btn"
-                @click="openPluginManagerPanel"
-              >
-                {{ pluginManagerMoreBtnLabel }}
-              </button>
-            </div>
-          </div>
-
-          <div class="more-tile more-tile--action">
-            <div class="more-tile-head">
-              <span class="more-label">调试</span>
-              <HelpHint
-                text="开发者与排错用：好感、记忆、策略重载等。Ctrl+Shift+D 可开关调试窗；顶栏「更多」展开时按 Esc 先收起本栏。"
-              />
-            </div>
-            <div class="more-tile-body">
-              <button type="button" class="more-debug-btn more-debug-btn--fill" @click="debugStore.toggle">
-                打开调试面板
-              </button>
-            </div>
-          </div>
-
-          <template v-if="roleStore.interactionImmersive">
-            <div class="more-tile more-tile--third">
-              <div class="more-tile-head more-tile-head--tight">
-                <span class="more-label">虚拟时间</span>
-                <HelpHint
-                  :paragraphs="[
-                    '故事内的时间，与真实时钟独立。点击时间可打开滚轮调整。',
-                    '可用快捷按钮推进时间；部分角色包会在跳转后触发场景或独白。',
-                  ]"
-                />
-              </div>
-              <div class="more-tile-body more-tile-body--row">
-                <VirtualTimeBar
-                  compact
-                  class="more-vtime"
-                  :role-id="roleStore.currentRoleId"
-                  @notify="(p) => showToast(p.type, p.message)"
-                  @refreshed="roleStore.refreshRoleInfo"
-                  @jump-complete="onVirtualTimeJumpComplete"
-                />
+                <div class="more-duo-seg">
+                  <div class="more-tile-head more-tile-head--tight more-duo-seg-head">
+                    <span class="more-label">{{ t("app.topBar.tiles.virtualTime.title") }}</span>
+                    <HelpHint
+                      :paragraphs="(t('app.topBar.tiles.virtualTime.hint') as any)"
+                    />
+                  </div>
+                  <div class="more-tile-body more-tile-body--row more-duo-seg-body">
+                    <VirtualTimeBar
+                      compact
+                      class="more-vtime"
+                      :role-id="roleStore.currentRoleId"
+                      @notify="(p) => showToast(p.type, p.message)"
+                      @refreshed="roleStore.refreshRoleInfo"
+                      @jump-complete="onVirtualTimeJumpComplete"
+                    />
+                  </div>
+                </div>
+                <div v-if="allSceneOptions.length > 0" class="more-duo-seg more-duo-seg--split">
+                  <div class="more-tile-head more-tile-head--tight more-duo-seg-head">
+                    <span class="more-label">{{ t("app.topBar.tiles.narrativeScene.title") }}</span>
+                    <HelpHint
+                      :text="String(t('app.topBar.tiles.narrativeScene.help'))"
+                    />
+                  </div>
+                  <div class="more-tile-body more-tile-body--scene more-tile-body--scene-inline more-duo-seg-body">
+                    <select
+                      id="top-scene-select"
+                      class="scene-select more-select more-select--fill"
+                      :value="uiStore.sceneId"
+                      @change="onTopBarSceneChange($event)"
+                    >
+                      <option v-for="s in allSceneOptions" :key="s.id" :value="s.id">
+                        {{ s.label }}
+                      </option>
+                    </select>
+                    <span class="scene-row-hint scene-row-hint--tile">
+                      {{ t("app.topBar.tiles.narrativeScene.characterAt") }}：{{ characterSceneLabel() }}
+                    </span>
+                  </div>
+                </div>
               </div>
             </div>
 
-            <div v-if="allSceneOptions.length > 0" class="more-tile more-tile--third">
-              <div class="more-tile-head more-tile-head--tight">
-                <span class="more-label">叙事场景</span>
-                <HelpHint
-                  text="你当前叙事的场景；与角色包中的场景配置一致。切换后可能触发历史记录折叠分界。"
-                />
-              </div>
-              <div class="more-tile-body more-tile-body--scene more-tile-body--scene-inline">
-                <select
-                  id="top-scene-select"
-                  class="scene-select more-select more-select--fill"
-                  :value="uiStore.sceneId"
-                  @change="onTopBarSceneChange($event)"
+            </div>
+
+            <div class="more-panel-rail">
+              <div class="more-tile more-tile--cell more-tile--side-tile more-tile--rail settings-entry-tile">
+                <div class="more-tile-head">
+                  <span class="more-label">{{ t("app.topBar.tiles.settingsEntry.title") }}</span>
+                  <HelpHint :text="settingsEntryMoreHelp" />
+                </div>
+                <div
+                  class="more-tile-body settings-entry-actions"
+                  role="group"
+                  :aria-label="String(t('app.topBar.tiles.settingsEntry.groupLabel'))"
                 >
-                  <option v-for="s in allSceneOptions" :key="s.id" :value="s.id">
-                    {{ s.label }}
-                  </option>
-                </select>
-                <span class="scene-row-hint scene-row-hint--tile">角色在：{{ characterSceneLabel() }}</span>
+                  <button type="button" class="more-debug-btn more-debug-btn--fill settings-entry-btn" @click="openShortcutHelp">
+                    {{ t("app.topBar.tiles.settingsEntry.shortcutHelp") }}
+                  </button>
+                  <button
+                    type="button"
+                    class="more-debug-btn more-debug-btn--fill settings-entry-btn settings-entry-btn--primary settings-gear-btn"
+                    @click="openSettingsView"
+                  >
+                    {{ t("app.topBar.tiles.settingsEntry.settings") }}
+                  </button>
+                  <p v-if="roleStore.interactionPureChat" class="settings-entry-hint">
+                    {{ t("app.topBar.tiles.settingsEntry.pureChatHubHint") }}
+                  </p>
+                  <p v-else class="settings-entry-hint">
+                    {{ t("app.topBar.tiles.settingsEntry.hubHint") }}
+                  </p>
+                </div>
               </div>
             </div>
-          </template>
+          </div>
         </div>
       </div>
     </header>
@@ -890,7 +1116,7 @@ onBeforeUnmount(() => {
       role="status"
       aria-live="polite"
     >
-      正在前往「{{ sceneTransition.label }}」…
+      {{ t("app.sceneTravel.travelingTo", { label: sceneTransition.label }) }}
     </div>
 
     <TopBarSceneModeDialog
@@ -916,19 +1142,17 @@ onBeforeUnmount(() => {
             :role-id="roleStore.currentRoleId"
             :name="roleName"
             :emotion="emotion"
-            :bootstrap-epoch="pluginStore.bootstrapEpoch"
           />
           <RoleplayAsidePanel :text="latestRoleplayAside" />
-          <PluginSidebarSlots :bootstrap-epoch="pluginStore.bootstrapEpoch" />
-          <div class="left-pane-status" aria-label="好感度">
-            好感度 {{ Math.round(roleStore.roleInfo.favorability) }} {{ statusHeart }}
+          <div class="left-pane-status" :aria-label="String(t('app.status.favorabilityAria'))">
+            {{ t("app.status.favorabilityLabel") }} {{ Math.round(roleStore.roleInfo.favorability) }} {{ statusHeart }}
           </div>
           <div
             v-if="roleStore.interactionImmersive && roleStore.roleInfo.currentLife?.label"
             class="left-pane-life"
-            aria-label="日程推断"
+            :aria-label="String(t('app.status.lifeAria'))"
           >
-            此刻：{{ roleStore.roleInfo.currentLife?.label }}
+            {{ t("app.status.lifeNow") }}：{{ roleStore.roleInfo.currentLife?.label }}
           </div>
           <AutonomousSceneNotice
             v-if="roleStore.interactionImmersive"
@@ -939,7 +1163,19 @@ onBeforeUnmount(() => {
           />
         </aside>
         <div class="right-pane" :class="{ 'right-pane--input-top': chatInputTop }">
-          <PluginChatHeaderSlots :bootstrap-epoch="pluginStore.bootstrapEpoch" />
+          <div
+            v-if="roleStore.interactionPureChat && messages.length === 0"
+            class="pure-chat-assist"
+            role="region"
+            :aria-label="String(t('app.pureChatAssist.aria'))"
+          >
+            <p class="pure-chat-assist-lead">{{ t("app.pureChatAssist.lead") }}</p>
+            <div class="pure-chat-assist-actions">
+              <button type="button" class="pure-chat-assist-btn pure-chat-assist-btn--primary" @click="openSettingsView">
+                {{ t("app.pureChatAssist.openSettings") }}
+              </button>
+            </div>
+          </div>
           <div class="chat-scroll-wrap chat-list">
             <transition name="fade">
               <ChatMessageList
@@ -949,11 +1185,11 @@ onBeforeUnmount(() => {
                 :history-split-index="sceneHistorySplitIndex"
                 :loading="chatStore.isLoading"
                 :role-switching="roleSwitching"
+                @clear-stuck-loading="onClearStuckSending"
               />
             </transition>
           </div>
           <section class="input-area">
-            <ChatPluginToolbarSlots :bootstrap-epoch="pluginStore.bootstrapEpoch" />
             <SceneTravelBars
               v-if="roleStore.interactionImmersive"
               :together-visible="togetherTravelBarVisible"
@@ -968,52 +1204,43 @@ onBeforeUnmount(() => {
               @confirm-post-reply="confirmPostReplyScene"
               @dismiss-post-reply="dismissPostReplySceneBar"
             />
-            <ChatInput :loading="chatStore.isLoading" @send="onSend" />
+            <ChatComposer
+              :loading="chatStore.isLoading"
+              @send="onSend"
+              @open-settings="openSettingsView"
+              @clear-stuck-loading="onClearStuckSending"
+            />
           </section>
         </div>
       </div>
     </div>
 
-    <DebugPanel
-      :visible="debugStore.visible"
-      :loading="chatStore.isLoading"
-      :favorability="roleStore.roleInfo.favorability"
-      :personality="roleStore.roleInfo.personality ?? []"
-      :events="debugStore.events"
-      :memories="debugStore.memories"
-      @reload="onReloadPolicy"
-      @refresh="debugStore.loadDebugData"
-      @close="debugStore.toggle"
-      @notify="(p) => showToast(p.type, p.message)"
-      @imported="onPackImported"
-    />
-
     <Toast :show="toast.show" :type="toast.type" :message="toast.message" />
     <ShortcutHelp v-model="shortcutHelpOpen" :bootstrap-epoch="pluginStore.bootstrapEpoch" />
 
-    <PluginManagerPanel />
-    <PluginManagerV2Panel
-      :visible="pluginManagerV2Open"
-      @close="pluginManagerV2Open = false"
-      @open-v1="
-        pluginManagerV2Open = false;
-        void pluginStore.openPanel('plugins');
+    <PureChatModelSheet
+      :visible="pureChatModelSheetOpen"
+      @close="pureChatModelSheetOpen = false"
+      @open-settings="
+        pureChatModelSheetOpen = false;
+        openSettingsView();
       "
     />
-
+    <ImportProgressModal
+      v-if="dropImportOpen"
+      :open="dropImportOpen"
+      :percent="dropImportPercent"
+      :message="dropImportMessage"
+    />
     <SettingsView
+      v-if="settingsViewOpen"
       :visible="settingsViewOpen"
       @close="settingsViewOpen = false"
-      @open-plugin-v2="openPluginManagerV2Preview"
+      @switch-role="onSwitchRole"
+      @pack-imported="onPackImported"
+      @reload-policy="onReloadPolicy"
     />
 
-    <div class="app-floating-slot" aria-hidden="true">
-      <PluginSlotEmbed
-        slot-name="overlay.floating"
-        aria-label="浮层插件区"
-        :bootstrap-epoch="pluginStore.bootstrapEpoch"
-      />
-    </div>
     <HotkeyHost />
     </div>
   </main>
@@ -1048,17 +1275,6 @@ onBeforeUnmount(() => {
   box-shadow: var(--shadow-app), var(--frame-inset-highlight);
   overflow: hidden;
 }
-.app-floating-slot {
-  position: fixed;
-  right: 12px;
-  bottom: 12px;
-  z-index: 10020;
-  max-width: min(400px, calc(100vw - 24px));
-  pointer-events: none;
-}
-.app-floating-slot :deep(.pse) {
-  pointer-events: auto;
-}
 .top-bar {
   flex-shrink: 0;
   display: flex;
@@ -1076,7 +1292,23 @@ onBeforeUnmount(() => {
   flex-wrap: wrap;
   align-items: center;
   justify-content: space-between;
-  gap: 10px;
+  gap: 10px 14px;
+}
+.top-bar-row :deep(.selector-row) {
+  flex: 1 1 auto;
+  min-width: 0;
+}
+.top-bar-row .more-toggle {
+  flex-shrink: 0;
+}
+.startup-status {
+  margin-bottom: 8px;
+  padding: 6px 10px;
+  border: 1px solid var(--border-light);
+  border-radius: var(--radius-btn);
+  background: color-mix(in srgb, var(--bg-elevated) 80%, transparent);
+  font-size: 12px;
+  color: var(--text-secondary);
 }
 .settings-entry-tile {
   min-width: min(24rem, 100%);
@@ -1131,6 +1363,106 @@ onBeforeUnmount(() => {
   margin-top: 10px;
   padding-top: 12px;
   border-top: 1px solid var(--border-light);
+  width: fit-content;
+  max-width: min(96vw, 50rem);
+  align-self: flex-start;
+  margin-left: 0;
+  margin-right: auto;
+  box-sizing: border-box;
+}
+.top-more-panel-inner {
+  overflow: visible;
+  overflow-x: hidden;
+  padding-bottom: 4px;
+}
+.more-panel-body {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 10px 12px;
+  align-items: start;
+  min-width: 0;
+}
+.more-panel-body--with-rail {
+  grid-template-columns: minmax(0, 1fr) minmax(17.5rem, 24rem);
+}
+.more-panel-rail {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 8px 10px;
+  align-items: stretch;
+  min-width: 0;
+}
+.more-panel-rail .settings-entry-actions {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+.more-panel-rail .settings-entry-tile,
+.more-panel-rail .more-tile--rolepack {
+  min-height: auto;
+  min-width: 0;
+}
+.top-more-panel .more-tile--rail {
+  gap: 8px;
+  padding: 10px 12px;
+}
+.more-panel-rows {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  width: 100%;
+  min-width: min(22rem, 100%);
+}
+.more-panel-rows--main {
+  min-width: 0;
+}
+.more-row--r1-strip {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 8px 10px;
+  align-items: stretch;
+}
+.more-row--r2-wide,
+.more-row--r3-debug {
+  display: grid;
+  grid-template-columns: 1fr;
+  min-width: 0;
+}
+.more-tile--side-tile {
+  width: 100%;
+}
+@media (max-width: 900px) {
+  .more-panel-body--with-rail {
+    grid-template-columns: 1fr;
+  }
+  .more-panel-rail {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+@media (max-width: 760px) {
+  .more-row--r1-strip {
+    grid-template-columns: 1fr;
+  }
+}
+@media (max-width: 680px) {
+  .more-panel-rail {
+    grid-template-columns: 1fr;
+  }
+  .more-panel-rail .settings-entry-actions {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+@media (max-width: 480px) {
+  .more-panel-rail .settings-entry-actions {
+    grid-template-columns: 1fr;
+  }
+}
+@media (max-width: 560px) {
+  .top-more-panel {
+    width: 100%;
+    max-width: none;
+    align-self: stretch;
+    margin-left: 0;
+    margin-right: 0;
+  }
 }
 .top-more-panel .interaction-mode-select,
 .top-more-panel .scene-select {
@@ -1147,13 +1479,75 @@ onBeforeUnmount(() => {
   font-size: 13px;
   padding: 8px 12px;
 }
-.more-grid {
+/* 顶栏「更多」左栏：两列流水；嵌入 split 时改为单列占满左栏 */
+.more-grid--uniform {
+  --more-u1-h: 5.125rem;
+  --more-u2-min-h: 5.25rem;
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 10px 12px;
+  align-items: stretch;
+}
+.more-grid--uniform.more-grid--in-split {
+  grid-template-columns: 1fr;
+}
+.more-grid--uniform.more-grid--in-split > .more-tile--u1,
+.more-grid--uniform.more-grid--in-split > .more-tile--u2 {
+  grid-column: span 1;
+}
+.more-grid--uniform > .more-tile--cell {
+  min-width: 0;
+  width: auto;
+  max-width: none;
+  flex: unset;
+}
+.more-grid--uniform > .more-tile--u1 {
+  grid-column: span 1;
+  min-height: var(--more-u1-h);
+}
+.more-grid--uniform > .more-tile--u2 {
+  grid-column: span 2;
+  min-height: var(--more-u2-min-h);
+}
+.more-grid--uniform > .more-tile--u2.settings-entry-tile,
+.more-grid--uniform > .more-tile--u2.more-tile--rolepack {
+  min-height: auto;
+}
+.more-grid--uniform > .more-tile--u2.more-tile--duo {
+  min-height: calc(var(--more-u2-min-h) + 2.25rem);
+}
+.more-tile--duo {
   display: flex;
-  flex-wrap: wrap;
-  justify-content: flex-start;
-  align-items: flex-start;
-  align-content: flex-start;
-  gap: 12px 16px;
+  flex-direction: column;
+  padding: 0;
+  gap: 0;
+  overflow: hidden;
+}
+.more-duo-seg {
+  padding: 10px 12px;
+  flex: 1 1 auto;
+  min-height: 0;
+}
+.more-duo-seg--split {
+  border-top: 1px solid var(--border-light);
+}
+.more-duo-seg-head {
+  margin-bottom: 0;
+}
+.more-duo-seg-body {
+  padding-top: 4px;
+}
+.more-tile--duo .scene-row-hint--tile {
+  max-width: 100%;
+  white-space: normal;
+}
+@media (max-width: 380px) {
+  .more-grid--uniform {
+    grid-template-columns: 1fr;
+  }
+  .more-grid--uniform > .more-tile--u2 {
+    grid-column: span 1;
+  }
 }
 .more-tile {
   box-sizing: border-box;
@@ -1166,6 +1560,17 @@ onBeforeUnmount(() => {
   flex-direction: column;
   gap: 10px;
   box-shadow: var(--shadow-sm);
+}
+.top-more-panel .more-tile.more-tile--top-strip,
+.top-more-panel .more-tile.more-tile--row-wide:not(.more-tile--duo) {
+  min-height: 0;
+  gap: 8px;
+  padding: 10px 12px;
+}
+.top-more-panel .more-tile.more-tile--row-wide.more-tile--duo {
+  min-height: calc(5.25rem + 2.25rem);
+  padding: 0;
+  gap: 0;
 }
 /* 按功能自然占地：不强行 flex-grow 拉满整行，宽裕时右侧留白 */
 .more-tile--xs {
@@ -1539,6 +1944,52 @@ onBeforeUnmount(() => {
 }
 .right-pane--input-top {
   flex-direction: column-reverse;
+}
+.settings-entry-hint {
+  margin: 8px 0 0;
+  font-size: 11px;
+  line-height: 1.45;
+  color: var(--text-secondary);
+}
+.pure-chat-assist {
+  flex-shrink: 0;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px 14px;
+  padding: 10px 14px;
+  border-bottom: 1px solid var(--border-light);
+  background: color-mix(in srgb, var(--bg-secondary) 92%, var(--accent) 8%);
+}
+.pure-chat-assist-lead {
+  margin: 0;
+  flex: 1 1 220px;
+  font-size: 12px;
+  line-height: 1.5;
+  color: var(--text-secondary);
+}
+.pure-chat-assist-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  flex-shrink: 0;
+}
+.pure-chat-assist-btn {
+  border-radius: 8px;
+  padding: 6px 12px;
+  font-size: 12px;
+  border: 1px solid var(--border-light);
+  background: transparent;
+  color: inherit;
+  cursor: pointer;
+}
+.pure-chat-assist-btn:hover {
+  background: var(--bg-hover, rgba(255, 255, 255, 0.06));
+}
+.pure-chat-assist-btn--primary {
+  background: color-mix(in srgb, var(--accent) 22%, transparent);
+  border-color: color-mix(in srgb, var(--accent) 45%, var(--border-light));
 }
 /* 聊天记录仅在右侧栏滚动；底部多留空，避免气泡+阴影被输入区视觉上压住 */
 .chat-scroll-wrap {

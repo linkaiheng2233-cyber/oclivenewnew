@@ -1,23 +1,34 @@
 <script setup lang="ts">
 import { computed, onMounted, ref, watch } from "vue";
+import { useI18n } from "vue-i18n";
 import {
   callMcpTool,
   clearAgentDebugTraces,
   getAgentDebugTraces,
+  importMcpServerFromPath,
   listMcpTools,
   listMcpServers,
+  previewMcpServerImport,
   type AgentDebugTrace,
+  type McpServerImportPreview,
   type McpToolManifest,
   type McpServerManifest,
 } from "../utils/tauri-api";
 import EnvVarManager from "./EnvVarManager.vue";
+import { open } from "@tauri-apps/api/dialog";
+import { useAppToast } from "../composables/useAppToast";
+import { usePermissionGate } from "../composables/usePermissionGate";
+
+const { t } = useI18n();
+const { showToast } = useAppToast();
+const { ensurePermissionsOrCancel } = usePermissionGate();
 
 const busy = ref(false);
 const servers = ref<McpServerManifest[]>([]);
 const traces = ref<AgentDebugTrace[]>([]);
 const selectedServerId = ref("");
 const selectedToolName = ref("");
-const paramsText = ref('{"city":"深圳"}');
+const paramsText = ref('{"city":"Shenzhen"}');
 const callResultText = ref("");
 const availableTools = ref<McpToolManifest[]>([]);
 const callResultHistory = ref<Array<{ id: string; label: string; payload: string }>>([]);
@@ -35,11 +46,28 @@ type TemplateItem = {
   params: Record<string, unknown>;
   serverHint?: string;
 };
-const templates = ref<TemplateItem[]>([
-  { id: "weather", label: "天气查询", toolName: "get_weather", params: { city: "北京" } },
-  { id: "file-read", label: "文件读取", toolName: "read_file", params: { path: "./README.md" } },
-  { id: "web-fetch", label: "网页抓取", toolName: "web_fetch", params: { url: "https://example.com" } },
+const customTemplates = ref<TemplateItem[]>([]);
+const builtinTemplates = computed<TemplateItem[]>(() => [
+  {
+    id: "weather",
+    label: String(t("agentDebugPanel.templates.weather")),
+    toolName: "get_weather",
+    params: { city: "Beijing" },
+  },
+  {
+    id: "file-read",
+    label: String(t("agentDebugPanel.templates.fileRead")),
+    toolName: "read_file",
+    params: { path: "./README.md" },
+  },
+  {
+    id: "web-fetch",
+    label: String(t("agentDebugPanel.templates.webFetch")),
+    toolName: "web_fetch",
+    params: { url: "https://example.com" },
+  },
 ]);
+const templates = computed(() => [...builtinTemplates.value, ...customTemplates.value]);
 
 async function refreshServers(): Promise<void> {
   servers.value = await listMcpServers();
@@ -53,6 +81,38 @@ async function refreshServers(): Promise<void> {
 
 async function refreshTraces(): Promise<void> {
   traces.value = await getAgentDebugTraces();
+}
+
+async function importServer(): Promise<void> {
+  const picked = await open({
+    filters: [{ name: "MCP server manifest", extensions: ["json"] }],
+  });
+  if (!picked || Array.isArray(picked)) return;
+  const path = String(picked);
+  let preview: McpServerImportPreview | null = null;
+  try {
+    preview = await previewMcpServerImport(path);
+  } catch (e) {
+    showToast("error", e instanceof Error ? e.message : String(e));
+    return;
+  }
+  const permOk = await ensurePermissionsOrCancel({
+    subjectId: `system:mcp_server:${preview.serverId}`,
+    required: [preview.requiredPermission],
+    title: String(t("permissionGate.titles.importMcpServer")),
+    detailLines: [`server=${preview.serverId}`, `transport=${preview.transport}`],
+  });
+  if (!permOk.ok) return;
+  try {
+    await importMcpServerFromPath(path, false);
+    showToast(
+      "success",
+      String(t("agentDebugPanel.mcpImport.toastImported", { id: preview.serverId })),
+    );
+    await refreshServers();
+  } catch (e) {
+    showToast("error", e instanceof Error ? e.message : String(e));
+  }
 }
 
 async function runToolCall(): Promise<void> {
@@ -92,7 +152,7 @@ function loadCustomTemplates(): void {
     if (!raw) return;
     const arr = JSON.parse(raw) as TemplateItem[];
     if (Array.isArray(arr)) {
-      templates.value = [...templates.value, ...arr];
+      customTemplates.value = arr;
     }
   } catch {
     // ignore
@@ -128,11 +188,8 @@ function saveCurrentTemplate(): void {
     params: paramsObj,
     serverHint: selectedServerId.value || undefined,
   };
-  const base = templates.value.filter((x) => !x.id.startsWith("custom:"));
-  const customs = templates.value.filter((x) => x.id.startsWith("custom:"));
-  const next = [...customs, item];
-  templates.value = [...base, ...next];
-  localStorage.setItem(CUSTOM_TEMPLATE_KEY, JSON.stringify(next));
+  customTemplates.value = [...customTemplates.value, item];
+  localStorage.setItem(CUSTOM_TEMPLATE_KEY, JSON.stringify(customTemplates.value));
   customTemplateName.value = "";
 }
 
@@ -172,7 +229,7 @@ function runDiff(): void {
     }
   }
   walk("", left, right);
-  diffText.value = lines.length > 0 ? lines.join("\n") : "无差异";
+  diffText.value = lines.length > 0 ? lines.join("\n") : String(t("agentDebugPanel.diff.noDiff"));
 }
 
 watch(selectedServerId, async (id) => {
@@ -196,34 +253,43 @@ onMounted(async () => {
 
 <template>
   <section class="adp">
-    <h3 class="adp-h">Agent 调试链路</h3>
+    <h3 class="adp-h">{{ t("agentDebugPanel.title") }}</h3>
     <p class="adp-sub">
-      可查看 MCP Server、手动调用工具，并查看最近 Agent 任务拆解与工具调用轨迹。
+      {{ t("agentDebugPanel.lead") }}
     </p>
 
     <div class="adp-row">
       <button type="button" class="adp-btn" :disabled="busy" @click="refreshServers">
-        刷新 MCP Server
+        {{ t("agentDebugPanel.actions.refreshServers") }}
+      </button>
+      <button type="button" class="adp-btn" :disabled="busy" @click="importServer">
+        导入 MCP
       </button>
       <button type="button" class="adp-btn" :disabled="busy" @click="refreshTraces">
-        刷新 Agent Trace
+        {{ t("agentDebugPanel.actions.refreshTraces") }}
       </button>
       <button type="button" class="adp-btn danger" :disabled="busy" @click="clearTraces">
-        清空 Trace
+        {{ t("agentDebugPanel.actions.clearTraces") }}
       </button>
     </div>
 
     <div class="adp-form">
       <label>
-        模板库
+        {{ t("agentDebugPanel.templates.title") }}
         <select v-model="selectedTemplateId" class="adp-input" @change="applyTemplate">
-          <option value="">选择常用模板</option>
+          <option value="">{{ t("agentDebugPanel.templates.pickPlaceholder") }}</option>
           <option v-for="t in templates" :key="t.id" :value="t.id">{{ t.label }}</option>
         </select>
       </label>
       <div class="adp-row">
-        <input v-model="customTemplateName" class="adp-input" placeholder="保存当前请求为自定义模板" />
-        <button type="button" class="adp-btn" @click="saveCurrentTemplate">保存模板</button>
+        <input
+          v-model="customTemplateName"
+          class="adp-input"
+          :placeholder="String(t('agentDebugPanel.templates.saveAsPlaceholder'))"
+        />
+        <button type="button" class="adp-btn" @click="saveCurrentTemplate">
+          {{ t("agentDebugPanel.templates.save") }}
+        </button>
       </div>
     </div>
 
@@ -231,7 +297,7 @@ onMounted(async () => {
       <label>
         Server
         <select v-model="selectedServerId" class="adp-input">
-          <option value="">请选择</option>
+          <option value="">{{ t("agentDebugPanel.common.pick") }}</option>
           <option v-for="s in servers" :key="s.id" :value="s.id">
             {{ s.id }} ({{ s.transport || "http" }})
           </option>
@@ -244,10 +310,10 @@ onMounted(async () => {
             v-model="selectedToolName"
             class="adp-input"
             type="text"
-            placeholder="例如 get_weather"
+            :placeholder="String(t('agentDebugPanel.tool.placeholder'))"
           />
           <select v-if="availableTools.length" v-model="selectedToolName" class="adp-input">
-            <option value="">从 Server 工具列表选择</option>
+            <option value="">{{ t("agentDebugPanel.tool.pickFromList") }}</option>
             <option v-for="t in availableTools" :key="t.name" :value="t.name">
               {{ t.name }}
             </option>
@@ -259,30 +325,30 @@ onMounted(async () => {
         <textarea v-model="paramsText" class="adp-textarea" rows="3" />
       </label>
       <button type="button" class="adp-btn primary" :disabled="busy" @click="runToolCall">
-        调用工具
+        {{ t("agentDebugPanel.actions.callTool") }}
       </button>
     </div>
 
     <pre v-if="callResultText" class="adp-pre">{{ callResultText }}</pre>
 
     <div v-if="callResultHistory.length >= 2" class="adp-diff">
-      <h4 class="adp-h4">响应 Diff 对比</h4>
+      <h4 class="adp-h4">{{ t("agentDebugPanel.diff.title") }}</h4>
       <div class="adp-row">
         <select v-model="compareLeftId" class="adp-input">
-          <option value="">左侧响应</option>
+          <option value="">{{ t("agentDebugPanel.diff.left") }}</option>
           <option v-for="h in callResultHistory" :key="`l-${h.id}`" :value="h.id">{{ h.label }}</option>
         </select>
         <select v-model="compareRightId" class="adp-input">
-          <option value="">右侧响应</option>
+          <option value="">{{ t("agentDebugPanel.diff.right") }}</option>
           <option v-for="h in callResultHistory" :key="`r-${h.id}`" :value="h.id">{{ h.label }}</option>
         </select>
-        <button type="button" class="adp-btn" @click="runDiff">对比</button>
+        <button type="button" class="adp-btn" @click="runDiff">{{ t("agentDebugPanel.diff.compare") }}</button>
       </div>
       <pre v-if="diffText" class="adp-pre">{{ diffText }}</pre>
     </div>
 
     <div class="adp-traces">
-      <h4 class="adp-h4">最近任务</h4>
+      <h4 class="adp-h4">{{ t("agentDebugPanel.traces.title") }}</h4>
       <div v-for="(t, i) in traces.slice().reverse()" :key="`${t.timestamp_ms}-${i}`" class="adp-trace">
         <div class="adp-trace-line">
           <strong>{{ new Date(t.timestamp_ms).toLocaleString() }}</strong> · {{ t.message }}
@@ -292,7 +358,7 @@ onMounted(async () => {
         <div v-if="t.error" class="adp-trace-line err">error: {{ t.error }}</div>
         <pre v-if="t.tool_calls?.length" class="adp-pre">{{ JSON.stringify(t.tool_calls, null, 2) }}</pre>
       </div>
-      <p v-if="traces.length === 0" class="adp-empty">暂无 Agent 执行轨迹。</p>
+      <p v-if="traces.length === 0" class="adp-empty">{{ t("agentDebugPanel.traces.empty") }}</p>
     </div>
 
     <EnvVarManager />
