@@ -1,5 +1,6 @@
 import { createTestingPinia } from "@pinia/testing";
 import { mount, flushPromises } from "@vue/test-utils";
+import { computed, ref } from "vue";
 import { beforeAll, beforeEach, afterEach, describe, expect, it, vi } from "vitest";
 import { setActivePinia } from "pinia";
 import { i18n, prepareI18nForLocale } from "../../i18n";
@@ -29,11 +30,21 @@ vi.mock("../../utils/isTauriWebview", () => ({
 
 vi.mock("../../composables/useCloudLlmTrustModal", () => ({
   buildCloudLlmTrustPlainText: (fn: (k: string) => string) => fn("k"),
-  useCloudLlmTrustModal: () => ({
-    visible: { value: false },
-    open: vi.fn(),
-    close: vi.fn(),
-  }),
+  useCloudLlmTrustModal: () => {
+    const visible = ref(false);
+    return {
+      visible,
+      capabilities: computed(() => [] as string[]),
+      modalTitle: computed(() => "title"),
+      modalSubtitle: computed(() => "subtitle"),
+      trustSummaryTitle: computed(() => "summaryTitle"),
+      trustSummaryBody: computed(() => "summaryBody"),
+      modalHint: computed(() => "hint"),
+      confirmLabel: computed(() => "confirm"),
+      open: vi.fn(),
+      close: vi.fn(),
+    };
+  },
 }));
 
 vi.mock("../../composables/useHostModelPick", () => ({
@@ -54,7 +65,7 @@ const asyncStub = { template: "<div class=\"async-stub\" />" };
 const settingsViewStubs = {
   Teleport: teleportInlineStub,
   HelpHint: true,
-  TrustConsentModal: true,
+  TrustConsentModal: { name: "TrustConsentModal", template: "<div class=\"tcm-stub\" />" },
   CloudLlmQuickSetup: true,
   ShortcutsManagerPanel: asyncStub,
   ModelSelectorSettings: asyncStub,

@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed, defineAsyncComponent, onMounted, ref, watch, withDefaults } from "vue";
+import { computed, defineAsyncComponent, onMounted, ref, watch } from "vue";
 import { useI18n } from "vue-i18n";
 import { open, save } from "@tauri-apps/api/dialog";
 import { readTextFile, writeTextFile } from "@tauri-apps/api/fs";

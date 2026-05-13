@@ -8,7 +8,6 @@ import {
   ref,
   shallowRef,
   watch,
-  withDefaults,
 } from "vue";
 import { useI18n } from "vue-i18n";
 import { confirm } from "@tauri-apps/api/dialog";

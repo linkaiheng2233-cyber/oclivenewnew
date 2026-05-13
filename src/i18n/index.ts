@@ -32,6 +32,8 @@ export const i18n = createI18n({
   messages: emptyMessages,
   missingWarn: false,
   fallbackWarn: false,
+  /** Locale strings intentionally use HTML in a few places; silence dev/test noise. */
+  warnHtmlMessage: false,
 });
 
 /** 合并指定语言的完整文案（幂等；按需 dynamic import）。 */
