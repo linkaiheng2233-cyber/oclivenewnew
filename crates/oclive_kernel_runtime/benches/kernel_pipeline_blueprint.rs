@@ -78,7 +78,10 @@ fn bench_process_message_default_no_blueprint(c: &mut Criterion) {
     let (_tmp, roles_root) = temp_shimeng_clone_with_blueprint("bench_pl_def", None);
     let rt = Runtime::new().expect("runtime");
     let state = rt
-        .block_on(KernelAppState::new_in_memory_with_llm(mock_llm(), roles_root))
+        .block_on(KernelAppState::new_in_memory_with_llm(
+            mock_llm(),
+            roles_root,
+        ))
         .expect("state");
     rt.block_on(load_role(&state, "bench_pl_def", false))
         .expect("load_role");
@@ -105,7 +108,10 @@ fn bench_process_message_simple_blueprint(c: &mut Criterion) {
     let (_tmp, roles_root) = temp_shimeng_clone_with_blueprint("bench_pl_simple", Some(&bp));
     let rt = Runtime::new().expect("runtime");
     let state = rt
-        .block_on(KernelAppState::new_in_memory_with_llm(mock_llm(), roles_root))
+        .block_on(KernelAppState::new_in_memory_with_llm(
+            mock_llm(),
+            roles_root,
+        ))
         .expect("state");
     rt.block_on(load_role(&state, "bench_pl_simple", false))
         .expect("load_role");
@@ -132,7 +138,10 @@ fn bench_process_message_memory_heavy_parallel(c: &mut Criterion) {
     let (_tmp, roles_root) = temp_shimeng_clone_with_blueprint("bench_pl_mem", Some(&bp));
     let rt = Runtime::new().expect("runtime");
     let state = rt
-        .block_on(KernelAppState::new_in_memory_with_llm(mock_llm(), roles_root))
+        .block_on(KernelAppState::new_in_memory_with_llm(
+            mock_llm(),
+            roles_root,
+        ))
         .expect("state");
     rt.block_on(load_role(&state, "bench_pl_mem", false))
         .expect("load_role");

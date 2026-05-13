@@ -19,9 +19,9 @@ pub mod event_estimator;
 pub(crate) mod event_impact_ai;
 #[cfg(feature = "default-event-providers")]
 pub mod event_impact_bridge;
+pub(crate) mod expert_graph_events;
 pub mod expert_models;
 pub mod expert_models_admin;
-pub(crate) mod expert_graph_events;
 pub mod export_chat_logs;
 pub mod knowledge_loader;
 pub(crate) mod life_schedule;

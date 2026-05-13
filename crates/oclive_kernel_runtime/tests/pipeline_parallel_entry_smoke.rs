@@ -1,7 +1,7 @@
 //! 受限 `PARALLEL`：仅 READ_ONLY 子步骤；`process_message` 烟测。
 
-use oclive_kernel_runtime::domain::chat_engine::process_message;
 use oclive_kernel_runtime::domain::chat_engine::pipeline_loader::PIPELINE_BLUEPRINT_FILENAME;
+use oclive_kernel_runtime::domain::chat_engine::process_message;
 use oclive_kernel_runtime::infrastructure::llm::MockLlmClient;
 use oclive_kernel_runtime::models::dto::SendMessageRequest;
 use oclive_kernel_runtime::state::KernelAppState;
@@ -102,6 +102,8 @@ async fn process_message_parallel_readonly_then_agent_ok() {
         session_id: Some("par_ok_sess".to_string()),
     };
 
-    let res = process_message(&state, &req).await.expect("process_message");
+    let res = process_message(&state, &req)
+        .await
+        .expect("process_message");
     assert!(res.reply.contains("parallel_ok"), "reply={:?}", res.reply);
 }

@@ -114,12 +114,8 @@ mod tests {
 
     #[test]
     fn scope_user_only_ignores_bot_hit() {
-        let (fires, hit_u, hit_b) = event_trigger_fires(
-            EventTriggerMatchScope::UserOnly,
-            "hi",
-            "hi there",
-            "hi bot",
-        );
+        let (fires, hit_u, hit_b) =
+            event_trigger_fires(EventTriggerMatchScope::UserOnly, "hi", "hi there", "hi bot");
         assert!(fires && hit_u && hit_b);
         let (fires2, _, _) =
             event_trigger_fires(EventTriggerMatchScope::UserOnly, "hi", "no match", "hi bot");

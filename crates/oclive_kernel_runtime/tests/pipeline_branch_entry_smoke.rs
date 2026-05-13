@@ -1,7 +1,7 @@
 //! `branch` 谓词与 onTrue/onFalse 路径烟测。
 
-use oclive_kernel_runtime::domain::chat_engine::process_message;
 use oclive_kernel_runtime::domain::chat_engine::pipeline_loader::PIPELINE_BLUEPRINT_FILENAME;
+use oclive_kernel_runtime::domain::chat_engine::process_message;
 use oclive_kernel_runtime::infrastructure::llm::MockLlmClient;
 use oclive_kernel_runtime::models::dto::SendMessageRequest;
 use oclive_kernel_runtime::state::KernelAppState;
@@ -132,7 +132,9 @@ async fn branch_scene_false_executes_on_false_arm() {
         session_id: Some("br_false_sess".to_string()),
     };
 
-    let res = process_message(&state, &req).await.expect("process_message");
+    let res = process_message(&state, &req)
+        .await
+        .expect("process_message");
     assert!(
         res.reply.contains("branch_false_ok"),
         "reply={:?}",
@@ -166,7 +168,9 @@ async fn branch_scene_true_executes_on_true_arm() {
         session_id: Some("br_true_sess".to_string()),
     };
 
-    let res = process_message(&state, &req).await.expect("process_message");
+    let res = process_message(&state, &req)
+        .await
+        .expect("process_message");
     assert!(
         res.reply.contains("branch_true_ok"),
         "reply={:?}",

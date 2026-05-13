@@ -1,4 +1,4 @@
-﻿//! Module 9: Expert Models compiler + safe apply to llama local sidecar config.
+//! Module 9: Expert Models compiler + safe apply to llama local sidecar config.
 
 use crate::error::{AppError, Result};
 use crate::models::expert_models::{
@@ -32,7 +32,10 @@ fn is_path_under(child: &Path, parent: &Path) -> bool {
     cn.starts_with(pn)
 }
 
-fn reachable_from_base<'a>(start: &'a str, adj: &HashMap<&'a str, Vec<&'a str>>) -> HashSet<&'a str> {
+fn reachable_from_base<'a>(
+    start: &'a str,
+    adj: &HashMap<&'a str, Vec<&'a str>>,
+) -> HashSet<&'a str> {
     let mut seen: HashSet<&'a str> = HashSet::new();
     let mut q: VecDeque<&'a str> = VecDeque::new();
     seen.insert(start);

@@ -43,7 +43,10 @@ fn gh_headers(token: &str) -> Result<HeaderMap, String> {
         AUTHORIZATION,
         HeaderValue::from_str(&auth).map_err(|_| "Invalid GitHub token characters.".to_string())?,
     );
-    m.insert(ACCEPT, HeaderValue::from_static("application/vnd.github+json"));
+    m.insert(
+        ACCEPT,
+        HeaderValue::from_static("application/vnd.github+json"),
+    );
     m.insert(USER_AGENT, HeaderValue::from_static("OCLive-Desktop/0.2"));
     Ok(m)
 }
@@ -55,7 +58,13 @@ fn sanitize_gist_filename(name: &str) -> String {
     }
     let mut out: String = t
         .chars()
-        .map(|c| if c.is_ascii_alphanumeric() || c == '.' || c == '-' { c } else { '_' })
+        .map(|c| {
+            if c.is_ascii_alphanumeric() || c == '.' || c == '-' {
+                c
+            } else {
+                '_'
+            }
+        })
         .collect();
     if !out.ends_with(".oclexpert") {
         out.push_str(".oclexpert");

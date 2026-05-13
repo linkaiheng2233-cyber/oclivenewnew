@@ -21,7 +21,9 @@ use crate::models::dto::{
     ExpertWorkflowsSaveRequest,
 };
 use crate::models::plugin_backends::LlmBackend;
-use crate::models::{ExpertConfigSource, ExpertGraph, ExpertNode, LlamaLocalPluginConfig, PromptStyleOverride};
+use crate::models::{
+    ExpertConfigSource, ExpertGraph, ExpertNode, LlamaLocalPluginConfig, PromptStyleOverride,
+};
 use crate::state::KernelAppState;
 use chrono::Utc;
 use serde::Serialize;
@@ -297,8 +299,14 @@ pub async fn expert_models_get_effective(
         .to_string());
     }
     let session_ns = conversation_state_role_id(role_id, req.session_id.as_deref());
-    let (graph, graph_source, prompt_style, prompt_style_source, role_default_graph, role_default_prompt_style) =
-        effective_for_session(state, role_id, session_ns.as_str()).await?;
+    let (
+        graph,
+        graph_source,
+        prompt_style,
+        prompt_style_source,
+        role_default_graph,
+        role_default_prompt_style,
+    ) = effective_for_session(state, role_id, session_ns.as_str()).await?;
     let run_raw = state
         .expert_models_repo
         .get_expert_models_run_history_json(session_ns.as_str())

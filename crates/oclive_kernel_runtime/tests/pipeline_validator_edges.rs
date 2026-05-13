@@ -1,7 +1,7 @@
 //! 蓝图校验与入口降级：`DEGRADE`、非法原子、缺失字段、深层 `BRANCH` 执行等。
 
-use oclive_kernel_runtime::domain::chat_engine::process_message;
 use oclive_kernel_runtime::domain::chat_engine::pipeline_loader::PIPELINE_BLUEPRINT_FILENAME;
+use oclive_kernel_runtime::domain::chat_engine::process_message;
 use oclive_kernel_runtime::infrastructure::llm::MockLlmClient;
 use oclive_kernel_runtime::models::dto::{SendMessageRequest, API_VERSION};
 use oclive_kernel_runtime::state::KernelAppState;
@@ -113,7 +113,7 @@ fn blueprint_three_nested_branches_then_agent() -> String {
     }
   ]
 }"#
-        .to_string()
+    .to_string()
 }
 
 #[tokio::test(flavor = "multi_thread", worker_threads = 2)]
@@ -142,7 +142,9 @@ async fn three_level_nested_branch_process_message_succeeds() {
         session_id: Some("nest3_exec_sess".to_string()),
     };
 
-    let res = process_message(&state, &req).await.expect("process_message");
+    let res = process_message(&state, &req)
+        .await
+        .expect("process_message");
     assert_eq!(res.api_version, API_VERSION);
     assert!(res.reply.contains("nest3_ok"), "reply={:?}", res.reply);
 }
@@ -185,7 +187,9 @@ async fn degrade_skips_failed_step_and_completes() {
         session_id: Some("bp_degrade_sess".to_string()),
     };
 
-    let res = process_message(&state, &req).await.expect("process_message");
+    let res = process_message(&state, &req)
+        .await
+        .expect("process_message");
     assert!(res.reply.contains("degrade_ok"), "reply={:?}", res.reply);
 }
 
@@ -215,7 +219,9 @@ async fn unknown_action_blueprint_skipped_and_default_runs() {
         session_id: Some("bp_unknown_sess".to_string()),
     };
 
-    let res = process_message(&state, &req).await.expect("process_message");
+    let res = process_message(&state, &req)
+        .await
+        .expect("process_message");
     assert!(
         res.reply.contains("unknown_fallback"),
         "reply={:?}",
@@ -249,7 +255,9 @@ async fn missing_steps_field_fails_parse_and_uses_default() {
         session_id: Some("bp_no_steps_sess".to_string()),
     };
 
-    let res = process_message(&state, &req).await.expect("process_message");
+    let res = process_message(&state, &req)
+        .await
+        .expect("process_message");
     assert!(
         res.reply.contains("no_steps_fallback"),
         "reply={:?}",
@@ -264,7 +272,11 @@ async fn memory_heavy_parallel_blueprint_runs() {
     let example = PathBuf::from(env!("CARGO_MANIFEST_DIR"))
         .join("../../examples/blueprints/memory_heavy.ocblueprint");
     let bytes = fs::read(&example).expect("read");
-    fs::write(tmp.path().join(rid).join(PIPELINE_BLUEPRINT_FILENAME), bytes).expect("write");
+    fs::write(
+        tmp.path().join(rid).join(PIPELINE_BLUEPRINT_FILENAME),
+        bytes,
+    )
+    .expect("write");
 
     let state = KernelAppState::new_in_memory_with_llm(
         Arc::new(MockLlmClient {
@@ -282,6 +294,8 @@ async fn memory_heavy_parallel_blueprint_runs() {
         session_id: Some("bp_mem_par_sess".to_string()),
     };
 
-    let res = process_message(&state, &req).await.expect("process_message");
+    let res = process_message(&state, &req)
+        .await
+        .expect("process_message");
     assert!(res.reply.contains("mem_par_ok"), "reply={:?}", res.reply);
 }

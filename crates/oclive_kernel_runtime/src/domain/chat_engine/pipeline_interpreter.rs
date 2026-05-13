@@ -95,9 +95,10 @@ fn run_steps<'a>(
                 futures_util::future::try_join_all(futs).await?;
                 continue;
             }
-            let action = step.action.as_deref().ok_or_else(|| {
-                AppError::InvalidParameter("pipeline step missing action".into())
-            })?;
+            let action = step
+                .action
+                .as_deref()
+                .ok_or_else(|| AppError::InvalidParameter("pipeline step missing action".into()))?;
             let t0 = Instant::now();
             let res = {
                 let mut g = ctx.lock().await;
@@ -160,19 +161,13 @@ async fn dispatch_inner(
             pipeline_actions::log_effective_plugin_backends(state, ctx, req).await
         }
         "resolve_plugins" => pipeline_actions::resolve_plugins(state, ctx, req).await,
-        "resolve_main_llm_model" => {
-            pipeline_actions::resolve_main_llm_model(state, ctx, req).await
-        }
+        "resolve_main_llm_model" => pipeline_actions::resolve_main_llm_model(state, ctx, req).await,
         "run_agent" => pipeline_actions::run_agent(state, ctx, req).await,
         "set_user_presence_scene" => {
             pipeline_actions::set_user_presence_scene(state, ctx, req).await
         }
-        "load_presence_routing" => {
-            pipeline_actions::load_presence_routing(state, ctx, req).await
-        }
-        "analyze_emotion_user" => {
-            pipeline_actions::analyze_emotion_user(state, ctx, req).await
-        }
+        "load_presence_routing" => pipeline_actions::load_presence_routing(state, ctx, req).await,
+        "analyze_emotion_user" => pipeline_actions::analyze_emotion_user(state, ctx, req).await,
         "memory_retrieve_short_term" => {
             pipeline_actions::memory_retrieve_short_term(state, ctx, req).await
         }

@@ -1,7 +1,7 @@
 //! `pipeline.ocblueprint`：加载、解释与 HALT 失败时回退到默认入口序列。
 
-use oclive_kernel_runtime::domain::chat_engine::process_message;
 use oclive_kernel_runtime::domain::chat_engine::pipeline_loader::PIPELINE_BLUEPRINT_FILENAME;
+use oclive_kernel_runtime::domain::chat_engine::process_message;
 use oclive_kernel_runtime::infrastructure::llm::MockLlmClient;
 use oclive_kernel_runtime::models::dto::{SendMessageRequest, API_VERSION};
 use oclive_kernel_runtime::state::KernelAppState;
@@ -57,7 +57,11 @@ async fn process_message_with_example_blueprint_matches_default() {
     let example = PathBuf::from(env!("CARGO_MANIFEST_DIR"))
         .join("../../examples/blueprints/simple_companion.ocblueprint");
     let bp_bytes = fs::read(&example).expect("read example blueprint");
-    fs::write(tmp.path().join(rid).join(PIPELINE_BLUEPRINT_FILENAME), bp_bytes).expect("write pipeline");
+    fs::write(
+        tmp.path().join(rid).join(PIPELINE_BLUEPRINT_FILENAME),
+        bp_bytes,
+    )
+    .expect("write pipeline");
 
     let state = KernelAppState::new_in_memory_with_llm(
         Arc::new(MockLlmClient {
@@ -75,7 +79,9 @@ async fn process_message_with_example_blueprint_matches_default() {
         session_id: Some("bp_ok_sess".to_string()),
     };
 
-    let res = process_message(&state, &req).await.expect("process_message");
+    let res = process_message(&state, &req)
+        .await
+        .expect("process_message");
     assert_eq!(res.api_version, API_VERSION);
     assert!(res.reply.contains("blueprint_ok"), "reply={:?}", res.reply);
 }
@@ -106,8 +112,14 @@ async fn invalid_pipeline_file_skips_blueprint_and_still_replies() {
         session_id: Some("bp_bad_json_sess".to_string()),
     };
 
-    let res = process_message(&state, &req).await.expect("process_message");
-    assert!(res.reply.contains("fallback_bad_json"), "reply={:?}", res.reply);
+    let res = process_message(&state, &req)
+        .await
+        .expect("process_message");
+    assert!(
+        res.reply.contains("fallback_bad_json"),
+        "reply={:?}",
+        res.reply
+    );
 }
 
 #[tokio::test(flavor = "multi_thread", worker_threads = 2)]
@@ -137,7 +149,9 @@ async fn pipeline_halt_first_step_failure_falls_back_to_default() {
         session_id: Some("bp_halt_fb_sess".to_string()),
     };
 
-    let res = process_message(&state, &req).await.expect("process_message");
+    let res = process_message(&state, &req)
+        .await
+        .expect("process_message");
     assert!(
         res.reply.contains("halt_fallback_ok"),
         "reply={:?}",

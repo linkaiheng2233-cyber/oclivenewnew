@@ -101,7 +101,9 @@ pub enum BlueprintError {
     BranchWithAction(String),
     #[error("[PIPELINE_VALIDATION_ERROR] step {0}: linear step requires non-empty action")]
     LinearRequiresAction(String),
-    #[error("[PIPELINE_MAX_NESTING_DEPTH] step {0}: BRANCH/PARALLEL nesting exceeds max depth {1}")]
+    #[error(
+        "[PIPELINE_MAX_NESTING_DEPTH] step {0}: BRANCH/PARALLEL nesting exceeds max depth {1}"
+    )]
     MaxNestingDepth(String, usize),
     #[error("[PIPELINE_TOO_MANY_NODES] blueprint tree exceeds max nodes ({0})")]
     TooManyNodes(usize),
@@ -290,7 +292,10 @@ fn validate_parallel_step_node(s: &PipelineStepSpec, path: &str) -> Result<(), B
     }
 }
 
-fn validate_parallel_arm_readonly(steps: &[PipelineStepSpec], path: &str) -> Result<(), BlueprintError> {
+fn validate_parallel_arm_readonly(
+    steps: &[PipelineStepSpec],
+    path: &str,
+) -> Result<(), BlueprintError> {
     for (i, s) in steps.iter().enumerate() {
         validate_parallel_step_node(s, &step_path(path, i))?;
     }
@@ -311,7 +316,11 @@ fn ingest_branch(
     })
 }
 
-fn ingest_step(f: PipelineStepFile, depth: usize, path: &str) -> Result<PipelineStepSpec, BlueprintError> {
+fn ingest_step(
+    f: PipelineStepFile,
+    depth: usize,
+    path: &str,
+) -> Result<PipelineStepSpec, BlueprintError> {
     let PipelineStepFile {
         action,
         id,
@@ -453,7 +462,9 @@ fn validate_file(file: PipelineBlueprintFile) -> Result<PipelineBlueprint, Bluep
 ///
 /// 校验包括：schema 版本、根步数/树节点数、控制流嵌套深度（[`MAX_PIPELINE_CONTROL_FLOW_NEST_DEPTH`]）、
 /// `PARALLEL` 只读约束、非空 `id` 全树唯一、原子白名单与 `ingest` 一致性等。
-pub fn parse_and_validate_blueprint_bytes(bytes: &[u8]) -> Result<PipelineBlueprint, BlueprintError> {
+pub fn parse_and_validate_blueprint_bytes(
+    bytes: &[u8],
+) -> Result<PipelineBlueprint, BlueprintError> {
     let file: PipelineBlueprintFile = serde_json::from_slice(bytes)?;
     validate_file(file)
 }
@@ -582,8 +593,10 @@ mod tests {
 
     #[test]
     fn blueprint_errors_use_bracket_codes() {
-        let e = parse_and_validate_blueprint_bytes(br#"{"schemaVersion":"1.0","name":"x","steps":[{"action":"nope"}]}"#)
-            .unwrap_err();
+        let e = parse_and_validate_blueprint_bytes(
+            br#"{"schemaVersion":"1.0","name":"x","steps":[{"action":"nope"}]}"#,
+        )
+        .unwrap_err();
         let s = e.to_string();
         assert!(s.contains("[PIPELINE_ACTION_NOT_ALLOWED]"), "{s}");
     }
@@ -635,7 +648,11 @@ mod tests {
         }"#;
         let e = parse_and_validate_blueprint_bytes(j.as_bytes()).unwrap_err();
         assert!(matches!(e, BlueprintError::MaxNestingDepth(_, _)));
-        assert!(e.to_string().contains("[PIPELINE_MAX_NESTING_DEPTH]"), "{}", e);
+        assert!(
+            e.to_string().contains("[PIPELINE_MAX_NESTING_DEPTH]"),
+            "{}",
+            e
+        );
     }
 
     #[test]
@@ -650,7 +667,11 @@ mod tests {
         }"#;
         let e = parse_and_validate_blueprint_bytes(j.as_bytes()).unwrap_err();
         assert!(matches!(e, BlueprintError::DuplicateStepId { .. }));
-        assert!(e.to_string().contains("[PIPELINE_DUPLICATE_STEP_ID]"), "{}", e);
+        assert!(
+            e.to_string().contains("[PIPELINE_DUPLICATE_STEP_ID]"),
+            "{}",
+            e
+        );
     }
 
     #[test]
