@@ -78,7 +78,6 @@ impl Default for RemoteUserEmotionAnalyzerPlaceholder {
 mod tests {
     use super::*;
     use crate::models::Emotion;
-    use oclive_emotion_builtin::classic::EmotionAnalyzer;
 
     #[test]
     fn builtin_v2_neutral_differs_from_builtin_on_clear_joy() {

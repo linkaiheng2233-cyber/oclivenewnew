@@ -165,6 +165,7 @@ cargo check -p oclive_kernel_server
 |------|----------------------|------|
 | **发行版无头服务（默认）** | `cargo build -p oclive_kernel_server --release` | 等同 `oclive_kernel_runtime` 默认 **`full`**：HTTP/OOCP、ZIP 角色包、市场同步、Agent/MCP、各 `default-*-providers` |
 | **仅验证 runtime 最小编译闭包** | `cargo check -p oclive_kernel_runtime --no-default-features` | 无 HTTP、无 ZIP、无 Agent；用于依赖/链接冒烟 |
+| **轻量配置 release 链接（验证 LTO/strip）** | `cargo build -p oclive_kernel_runtime --no-default-features` | 比 `check` 多跑 codegen；与本仓库根 `[profile.release]`（`lto = "thin"`、`strip = "debuginfo"`）一致 |
 | **无头 + HTTP、关市场/Agent（示例组合）** | `cargo check -p oclive_kernel_runtime --no-default-features --features kernel-http-api,role-pack-zip` | 按产品删减 `market-sync` / `kernel-agent` 等；须自行承担契约与角色包能力差异 |
 | **自建二进制链接裁剪 runtime** | 在自有 bin crate 的 `Cargo.toml` 中为 `oclive_kernel_runtime` 设 `default-features = false` 与 §2 所列子 `features` | 与 `oclive_kernel_server` 并行存在；适合玩偶侧车只带 OOCP + 编排 |
 
@@ -178,6 +179,8 @@ ls -lh target/release/oclive_kernel_server
 ```
 
 Docker 多阶段镜像中对 `oclive_kernel_server` 执行 **`strip`** 以缩小磁盘占用（见根目录 **`Dockerfile.kernel-server`**）。**不在此文档承诺固定 MB 数**，以免与发版工具链漂移；发版 gate 以 **`cargo test -p oclive_kernel_runtime --features kernel-http-api`** 与 **`cargo build -p oclive_kernel_server --release`** 为准（见 **`.github/workflows/ci.yml`** 与 **`docs/LINUX_KERNEL_DEPLOY.md`**）。
+
+**依赖卫生（维护者）**：周期性执行 `cargo tree -d` 查看重复版本；安装 [`cargo-udeps`](https://github.com/est31/cargo-udeps) 后运行 `cargo udeps` 清理未使用依赖。`cargo audit` 依赖 **cargo-audit** 与 RustSec 元数据格式一致；若 advisory DB 含 **CVSS:4.0** 等字段而本地工具解析失败，请升级 **cargo-audit** 发行版后再扫。
 
 ---
 

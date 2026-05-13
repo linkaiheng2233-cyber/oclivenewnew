@@ -31,3 +31,5 @@ opt-level = "z"
 # percent more at the cost of much longer builds; keep thin unless a release pipeline explicitly budgets for fat LTO.
 lto = "thin"
 codegen-units = 1
+# Strip debuginfo from release artifacts to shrink disk size while retaining symbol names for backtraces.
+strip = "debuginfo"
