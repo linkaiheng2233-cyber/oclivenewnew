@@ -16,6 +16,50 @@ const PLUGIN_ROOT = path.dirname(fileURLToPath(import.meta.url));
 const HISTORY_PATH = path.join(PLUGIN_ROOT, "test_history.json");
 const HISTORY_CAP = 200;
 
+function readHistoryFile() {
+  try {
+    const raw = fs.readFileSync(HISTORY_PATH, "utf8");
+    const j = JSON.parse(raw);
+    if (!j || typeof j !== "object") return { version: 1, runs: [] };
+    if (!Array.isArray(j.runs)) j.runs = [];
+    return j;
+  } catch {
+    return { version: 1, runs: [] };
+  }
+}
+
+function writeHistoryFile(data) {
+  fs.writeFileSync(HISTORY_PATH, JSON.stringify(data, null, 2), "utf8");
+}
+
+function appendRunHistory(entry) {
+  const data = readHistoryFile();
+  data.version = 1;
+  data.runs.unshift(entry);
+  if (data.runs.length > HISTORY_CAP) {
+    data.runs.length = HISTORY_CAP;
+  }
+  writeHistoryFile(data);
+}
+
+function handleGetHistory(params) {
+  let limit = 20;
+  if (params && typeof params.limit === "number" && Number.isFinite(params.limit)) {
+    limit = Math.min(100, Math.max(1, Math.floor(params.limit)));
+  }
+  const data = readHistoryFile();
+  return {
+    limit,
+    totalStored: data.runs.length,
+    runs: data.runs.slice(0, limit),
+  };
+}
+
+function handleClearHistory() {
+  writeHistoryFile({ version: 1, runs: [] });
+  return { cleared: true };
+}
+
 function jsonRpcResult(id, result) {
   return JSON.stringify({ jsonrpc: "2.0", id, result });
 }
@@ -346,6 +390,21 @@ async function handleRunTest(params) {
     specPath,
   });
 
+  appendRunHistory({
+    at: new Date().toISOString(),
+    durationMs,
+    exitCode: exec.exitCode,
+    runOk: structured.runOk,
+    passRate: structured.aggregates.tests.passRate,
+    passed: structured.aggregates.tests.passed,
+    failed: structured.aggregates.tests.failed,
+    total: structured.aggregates.tests.total,
+    runAll,
+    specPath: runAll ? null : specPath || null,
+    cwd: resolvedCwd,
+    failureCount: structured.failuresDetailed.length,
+  });
+
   return {
     cwd: resolvedCwd,
     specPath: runAll ? null : specPath || null,
@@ -407,6 +466,16 @@ const server = http.createServer((req, res) => {
         const out = await handleRunTest(msg.params);
         res.writeHead(200);
         res.end(jsonRpcResult(id, out));
+        return;
+      }
+      if (msg.method === "get_history") {
+        res.writeHead(200);
+        res.end(jsonRpcResult(id, handleGetHistory(msg.params)));
+        return;
+      }
+      if (msg.method === "clear_history") {
+        res.writeHead(200);
+        res.end(jsonRpcResult(id, handleClearHistory()));
         return;
       }
       res.writeHead(200);

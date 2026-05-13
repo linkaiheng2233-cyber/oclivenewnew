@@ -14,7 +14,9 @@ Directory plugin (`com.oclive.official_vue_test_runner`) that exposes a JSON-RPC
 | `echo.ping` | `{ text?: string }` | Smoke test. |
 | `health` | `{ cwd?: string }` | Runs `npx vitest --version` in `cwd` (default plugin cwd). |
 | `list_test_files` | `{ root?: string }` | Recursively lists `*.spec.ts` / `*.test.ts` under `root`. |
-| `run_test` | `{ cwd: string, specPath?: string, runAll?: boolean, timeoutMs?: number }` | Runs `vitest run` with JSON reporter; returns summary + failures. |
+| `run_test` | `{ cwd: string, specPath?: string, runAll?: boolean, timeoutMs?: number }` | Runs `vitest run` with JSON reporter; returns **legacy** `summary` / `failures` plus **`structured`** (通过率、定位、耗时 headline). |
+| `get_history` | `{ limit?: number }` | Returns up to **20** (default) or **limit** (max 100) recent run summaries from `test_history.json` beside `rpc_server.mjs`. |
+| `clear_history` | `{}` | Clears the local history file. |
 
 ## OOCP helpers for Vitest (`test_utils/oocp_mock.ts`)
 

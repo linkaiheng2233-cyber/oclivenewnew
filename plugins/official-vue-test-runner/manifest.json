@@ -14,6 +14,6 @@
     "command": "node",
     "args": ["rpc_server.mjs"]
   },
-  "rpcMethods": ["health", "list_test_files", "run_test", "echo.ping"],
+  "rpcMethods": ["health", "list_test_files", "run_test", "get_history", "clear_history", "echo.ping"],
   "provides": []
 }

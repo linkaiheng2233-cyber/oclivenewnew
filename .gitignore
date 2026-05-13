@@ -36,6 +36,9 @@ src-tauri/target
 # Temp/check artifacts (dev)
 cargo-check-log.txt
 
+# Official Vue test runner — local run history (generated)
+plugins/official-vue-test-runner/test_history.json
+
 # VSCode extension build output
 distributions/vscode/out/
 

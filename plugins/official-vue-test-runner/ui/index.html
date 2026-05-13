@@ -133,10 +133,28 @@
         font-size: 18px;
         color: var(--accent);
       }
-      #err {
-        color: var(--bad);
-        font-size: 13px;
-        margin: 8px 0;
+      .hist {
+        margin-top: 16px;
+        border: 1px solid var(--border);
+        border-radius: 8px;
+        padding: 10px 12px;
+        background: var(--card);
+      }
+      .hist summary {
+        cursor: pointer;
+        font-weight: 600;
+      }
+      table.hist-t {
+        width: 100%;
+        border-collapse: collapse;
+        font-size: 12px;
+        margin-top: 8px;
+      }
+      table.hist-t th,
+      table.hist-t td {
+        text-align: left;
+        padding: 6px 4px;
+        border-bottom: 1px solid var(--border);
       }
     </style>
   </head>
@@ -155,7 +173,14 @@
       <div class="btns">
         <button type="button" id="btnHealth">检测 Vitest</button>
         <button type="button" class="primary" id="btnRun">运行全部测试</button>
+        <button type="button" id="btnHistRefresh">刷新历史</button>
+        <button type="button" id="btnHistClear">清空历史</button>
       </div>
+
+      <details id="histPanel" class="hist">
+        <summary>历史记录（最近运行摘要）</summary>
+        <div id="histBody" class="muted" style="margin-top: 8px"></div>
+      </details>
 
       <div id="err" role="alert"></div>
       <div id="out"></div>
@@ -170,7 +195,90 @@
         var errEl = document.getElementById("err");
         var outEl = document.getElementById("out");
         var btnHealth = document.getElementById("btnHealth");
-        var btnRun = document.getElementById("btnRun");
+        var btnHistRefresh = document.getElementById("btnHistRefresh");
+        var btnHistClear = document.getElementById("btnHistClear");
+        var histBody = document.getElementById("histBody");
+        var histPanel = document.getElementById("histPanel");
+
+        function renderHistoryTable(data) {
+          var runs = (data && data.runs) || [];
+          if (!runs.length) {
+            histBody.innerHTML = "<p>暂无记录。运行测试后会自动追加摘要。</p>";
+            return;
+          }
+          var rows =
+            "<table class='hist-t'><thead><tr><th>时间</th><th>通过/失败/计</th><th>通过率</th><th>耗时</th><th>退出码</th></tr></thead><tbody>";
+          for (var i = 0; i < runs.length; i++) {
+            var r = runs[i];
+            rows +=
+              "<tr><td>" +
+              String(r.at || "").replace(/</g, "&lt;") +
+              "</td><td>" +
+              (r.passed != null ? r.passed : "—") +
+              " / " +
+              (r.failed != null ? r.failed : "—") +
+              " / " +
+              (r.total != null ? r.total : "—") +
+              "</td><td>" +
+              (r.passRate != null ? r.passRate : "—") +
+              "</td><td>" +
+              (r.durationMs != null ? r.durationMs + " ms" : "—") +
+              "</td><td>" +
+              (r.exitCode != null ? r.exitCode : "—") +
+              "</td></tr>";
+          }
+          rows += "</tbody></table>";
+          histBody.innerHTML = rows;
+        }
+
+        function loadHistory() {
+          var invokeFn = getInvoke();
+          if (!invokeFn) return;
+          rpc(invokeFn, "get_history", { limit: 20 })
+            .then(function (d) {
+              renderHistoryTable(d);
+            })
+            .catch(function (e) {
+              histBody.textContent = String(e);
+            });
+        }
+
+        btnHistRefresh.onclick = function () {
+          var invokeFn = getInvoke();
+          if (!invokeFn) {
+            showErr("未找到宿主桥接。");
+            return;
+          }
+          showErr("");
+          loadHistory();
+          try {
+            histPanel.open = true;
+          } catch (e) {}
+        };
+
+        btnHistClear.onclick = function () {
+          var invokeFn = getInvoke();
+          if (!invokeFn) {
+            showErr("未找到宿主桥接。");
+            return;
+          }
+          showErr("");
+          setBusy(true);
+          rpc(invokeFn, "clear_history", {})
+            .then(function () {
+              loadHistory();
+            })
+            .catch(function (e) {
+              showErr(String(e));
+            })
+            .finally(function () {
+              setBusy(false);
+            });
+        };
+
+        histPanel.addEventListener("toggle", function () {
+          if (histPanel.open) loadHistory();
+        });
 
         try {
           wsEl.value = localStorage.getItem(LS_KEY) || "";
@@ -191,6 +299,8 @@
         function setBusy(b) {
           btnHealth.disabled = b;
           btnRun.disabled = b;
+          btnHistRefresh.disabled = b;
+          btnHistClear.disabled = b;
         }
 
         function showErr(msg) {
@@ -326,6 +436,7 @@
           })
             .then(function (r) {
               renderStructured(r && r.structured);
+              loadHistory();
             })
             .catch(function (e) {
               showErr(String(e));
