@@ -93,6 +93,27 @@
         border-color: rgba(248, 113, 113, 0.35);
         color: var(--bad);
       }
+      .busy {
+        margin: 8px 0;
+        font-size: 13px;
+        color: var(--accent);
+        min-height: 1.2em;
+      }
+      .files-panel {
+        margin-top: 12px;
+        padding: 10px 12px;
+        border: 1px solid var(--border);
+        border-radius: 8px;
+        background: var(--card);
+      }
+      .files-panel ul {
+        margin: 6px 0 0;
+        padding-left: 18px;
+        font-size: 12px;
+        color: var(--muted);
+        max-height: 200px;
+        overflow: auto;
+      }
       .muted {
         font-size: 12px;
         color: var(--muted);
@@ -172,10 +193,12 @@
 
       <div class="btns">
         <button type="button" id="btnHealth">检测 Vitest</button>
+        <button type="button" id="btnList">扫描测试文件</button>
         <button type="button" class="primary" id="btnRun">运行全部测试</button>
         <button type="button" id="btnHistRefresh">刷新历史</button>
         <button type="button" id="btnHistClear">清空历史</button>
       </div>
+      <div id="busy" class="busy" style="display: none" aria-live="polite"></div>
 
       <details id="histPanel" class="hist">
         <summary>历史记录（最近运行摘要）</summary>
@@ -183,6 +206,10 @@
       </details>
 
       <div id="err" role="alert"></div>
+      <div id="filesPanel" class="files-panel" style="display: none">
+        <strong style="font-size: 13px">测试文件</strong>
+        <div id="filesBody" class="muted" style="margin-top: 6px"></div>
+      </div>
       <div id="out"></div>
     </div>
 
@@ -195,10 +222,15 @@
         var errEl = document.getElementById("err");
         var outEl = document.getElementById("out");
         var btnHealth = document.getElementById("btnHealth");
+        var btnList = document.getElementById("btnList");
+        var btnRun = document.getElementById("btnRun");
         var btnHistRefresh = document.getElementById("btnHistRefresh");
         var btnHistClear = document.getElementById("btnHistClear");
         var histBody = document.getElementById("histBody");
         var histPanel = document.getElementById("histPanel");
+        var busyEl = document.getElementById("busy");
+        var filesPanel = document.getElementById("filesPanel");
+        var filesBody = document.getElementById("filesBody");
 
         function renderHistoryTable(data) {
           var runs = (data && data.runs) || [];
@@ -263,7 +295,7 @@
             return;
           }
           showErr("");
-          setBusy(true);
+          setBusy(true, "清空历史…");
           rpc(invokeFn, "clear_history", {})
             .then(function () {
               loadHistory();
@@ -296,11 +328,16 @@
           return inv;
         }
 
-        function setBusy(b) {
+        function setBusy(b, label) {
           btnHealth.disabled = b;
+          btnList.disabled = b;
           btnRun.disabled = b;
           btnHistRefresh.disabled = b;
           btnHistClear.disabled = b;
+          if (busyEl) {
+            busyEl.style.display = b ? "block" : "none";
+            busyEl.textContent = b ? label || "处理中…" : "";
+          }
         }
 
         function showErr(msg) {
@@ -333,10 +370,20 @@
             };
           }
           if (!summary) summary = {};
+          var fails = structured.failures || structured.failuresDetailed || [];
           var headline =
             (structured.meta && structured.meta.headline) || structured.headline || "";
           var dur =
             summary.durationMs != null ? summary.durationMs : structured.durationMs;
+          var failedCount =
+            summary.failed != null
+              ? Number(summary.failed)
+              : fails.length;
+          var ok =
+            summary.ok != null ? summary.ok : structured.runOk === true;
+          if (ok && failedCount === 0 && (!fails || !fails.length)) {
+            if (!headline) headline = "全部通过（无失败项）";
+          }
           var chips =
             '<div class="grid">' +
             '<div class="chip"><strong>' +
@@ -359,7 +406,6 @@
             "</strong>耗时</div>" +
             "</div>";
 
-          var fails = structured.failures || structured.failuresDetailed || [];
           var failHtml = "";
           for (var i = 0; i < fails.length; i++) {
             var f = fails[i];
@@ -385,8 +431,6 @@
               '<p class="muted">有失败项但未解析到逐条定位（可查看编写器 JSON 中的 failures）。</p>';
           }
 
-          var ok =
-            summary.ok != null ? summary.ok : structured.runOk === true;
           var bn = ok ? "ok" : "bad";
           outEl.innerHTML =
             '<div class="banner ' +
@@ -399,10 +443,29 @@
         }
 
         function renderHealth(data) {
-          outEl.innerHTML =
+          var pre =
             '<pre style="font-size:12px;background:#12151c;padding:10px;border-radius:8px;border:1px solid #2a3040;overflow:auto">' +
             JSON.stringify(data, null, 2).replace(/</g, "&lt;") +
             "</pre>";
+          if (!data || !data.ok) {
+            var tail =
+              data && data.stderrTail
+                ? '<p class="muted" style="margin-top:8px">stderr 摘要：</p><pre style="font-size:11px;background:#12151c;padding:8px;border-radius:6px;border:1px solid #2a3040;white-space:pre-wrap">' +
+                  String(data.stderrTail).replace(/</g, "&lt;") +
+                  "</pre>"
+                : "";
+            outEl.innerHTML =
+              '<div class="banner bad">未检测到 Vitest（工作区根目录下 <code>npx vitest --version</code> 失败）。请确认已 <code>npm install</code> 且 devDependencies 含 vitest。</div>' +
+              tail +
+              pre;
+            return;
+          }
+          var vitLine = data.vitest != null ? String(data.vitest) : "";
+          outEl.innerHTML =
+            '<div class="banner ok">Vitest 可用' +
+            (vitLine ? "：" + vitLine.replace(/</g, "&lt;") : "") +
+            "</div>" +
+            pre;
         }
 
         btnHealth.onclick = function () {
@@ -412,7 +475,7 @@
             return;
           }
           showErr("");
-          setBusy(true);
+          setBusy(true, "检测 Vitest…");
           var cwd = wsEl.value.trim();
           if (!cwd) {
             showErr("请先填写工作区根目录。");
@@ -434,6 +497,46 @@
             });
         };
 
+        btnList.onclick = function () {
+          var invokeFn = getInvoke();
+          if (!invokeFn) {
+            showErr("未找到 OclivePluginBridge 或 __TAURI__.invoke。请在 Oclive 桌面内打开本页。");
+            return;
+          }
+          showErr("");
+          var cwd = wsEl.value.trim();
+          if (!cwd) {
+            showErr("请先填写工作区根目录。");
+            return;
+          }
+          try {
+            localStorage.setItem(LS_KEY, cwd);
+          } catch (e) {}
+          filesPanel.style.display = "block";
+          filesBody.innerHTML = '<p class="muted">扫描中…</p>';
+          setBusy(true, "扫描测试文件…");
+          rpc(invokeFn, "list_test_files", { root: cwd })
+            .then(function (r) {
+              var files = (r && r.files) || [];
+              if (!files.length) {
+                filesBody.innerHTML =
+                  "<p>当前工作区下未找到 <code>*.spec.ts</code> / <code>*.test.ts</code>（已递归扫描，跳过 <code>node_modules</code> 等目录）。</p>";
+                return;
+              }
+              var lis = "";
+              for (var j = 0; j < files.length; j++) {
+                lis += "<li>" + String(files[j]).replace(/</g, "&lt;") + "</li>";
+              }
+              filesBody.innerHTML = "<p>共 " + files.length + " 个文件：</p><ul>" + lis + "</ul>";
+            })
+            .catch(function (e) {
+              filesBody.textContent = String(e);
+            })
+            .finally(function () {
+              setBusy(false);
+            });
+        };
+
         btnRun.onclick = function () {
           var invokeFn = getInvoke();
           if (!invokeFn) {
@@ -441,7 +544,7 @@
             return;
           }
           showErr("");
-          setBusy(true);
+          setBusy(true, "运行 Vitest…");
           var cwd = wsEl.value.trim();
           if (!cwd) {
             showErr("请先填写工作区根目录。");

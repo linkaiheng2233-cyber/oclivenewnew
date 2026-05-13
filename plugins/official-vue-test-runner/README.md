@@ -2,6 +2,15 @@
 
 Directory plugin (`com.oclive.official_vue_test_runner`) that exposes a JSON-RPC sidecar for running **Vitest** against an oclive workspace.
 
+## 边界状态说明（插件壳 `ui/index.html`）
+
+| 状态 | UI 行为 |
+|------|---------|
+| **Vitest 未安装 / `npx vitest --version` 失败** | 点击「检测 Vitest」后红色摘要条说明原因，并展示 `stderr` 尾部与完整 JSON；工作区未填时仅提示错误、不发起 RPC。 |
+| **测试文件列表为空** | 点击「扫描测试文件」后展开「测试文件」区域，提示未找到 `*.spec.ts` / `*.test.ts`（已跳过 `node_modules` 等）。 |
+| **运行中（pending）** | 「检测 / 扫描 / 运行 / 历史」按钮禁用，行内 `#busy` 显示当前步骤文案（如「运行 Vitest…」）。 |
+| **全部通过** | `structured.summary.ok === true` 且无 `failures` 时，绿色摘要条；若缺少 `meta.headline` 则显示默认「全部通过（无失败项）」。 |
+
 ## Layout
 
 - `manifest.json` — `process` launches `node rpc_server.mjs`; `shell.bridge.invoke` declares `rpc:invoke` and `process:spawn` for install-time permission consent.
