@@ -180,7 +180,42 @@ ls -lh target/release/oclive_kernel_server
 
 Docker 多阶段镜像中对 `oclive_kernel_server` 执行 **`strip`** 以缩小磁盘占用（见根目录 **`Dockerfile.kernel-server`**）。**不在此文档承诺固定 MB 数**，以免与发版工具链漂移；发版 gate 以 **`cargo test -p oclive_kernel_runtime --features kernel-http-api`** 与 **`cargo build -p oclive_kernel_server --release`** 为准（见 **`.github/workflows/ci.yml`** 与 **`docs/LINUX_KERNEL_DEPLOY.md`**）。
 
-**依赖卫生（维护者）**：周期性执行 `cargo tree -d` 查看重复版本；安装 [`cargo-udeps`](https://github.com/est31/cargo-udeps) 后运行 `cargo udeps` 清理未使用依赖。`cargo audit` 依赖 **cargo-audit** 与 RustSec 元数据格式一致；若 advisory DB 含 **CVSS:4.0** 等字段而本地工具解析失败，请升级 **cargo-audit** 发行版后再扫。
+### 6.4 `cargo audit`（工具链升级后执行，2026-05-13）
+
+- **工具**：`cargo install cargo-audit --force` → **cargo-audit 0.22.1**（可解析含 **CVSS:4.0** 的 advisory 元数据；此前 0.20 会解析失败）。
+- **命令**：仓库根 `cargo audit`（扫描 **`Cargo.lock`** 全包；与「实际链接进二进制的 crate」不完全等价）。
+- **结果**：**退出码 1**（存在 **5** 条 *vulnerability* 类命中 + 若干 *warning*）。工具在慢网下可能对「是否 yanked」报 *request could not be completed in the allotted timeframe*，**不影响** advisory DB 解析本身。
+- **带 CVSS 分数的命中（摘录）**：**RUSTSEC-2023-0071**（`rsa` / Marvin）**Severity 5.9（medium）**；其余条目请以 [RustSec 列表](https://rustsec.org/advisories/) 为准。
+- **缓解与跟踪**：已在 `oclive_kernel_runtime` / `src-tauri` 的 `sqlx` 上启用 **`default-features = false` + `["macros","runtime-tokio-rustls","sqlite","migrate"]`**，减少无谓驱动栈；**`sqlx` 0.7.4 的 `Cargo.lock` 元包仍列出 `sqlx-mysql` 等**，故 **RSA / rustls-webpki / sqlx 本体** 相关 RUSTSEC **仍出现在扫描中**。**根治**需 **`sqlx` ≥ 0.8.1** 等主版本升级（单独里程碑 / Issue，不在本节承诺日期内完成）。
+- **结论**：**已执行可信扫描并如实记录**；**不宣称「cargo audit 退出码 0」或「零漏洞」**。若 CI 要强 gate，请显式维护 `--ignore` 列表与到期日。
+
+### 6.5 未使用依赖（2026-05-13）
+
+- **说明**：本机 **`cargo install cargo-udeps`** 与 **`cargo-audit`** 并行时曾因 **crates.io / 编译锁**长时间阻塞，**未得到可用的 `cargo udeps` 可执行文件**；本节采用 **`cargo machete`**（已安装 0.9.2）+ **源码 `grep`** 对误报项人工剔除。
+- **已移除的 `[dependencies]`**：
+  - **`oclive_kernel_runtime`**：`anyhow`、`env_logger`（全 crate 无引用）。
+  - **`oclive_kernel_server`**：`log`、`tracing`（入口仅使用 `tracing-subscriber` / `tracing-log`，无直接 `log::` / `tracing::` 调用）。
+- **未移除（machete 误报）**：`oclivenewnew-tauri` 报告的 `oclive_core`、`serde_yaml` 等——**主代码大量 `use`**，切勿删除。
+
+### 6.6 `cargo tree -d` 重复依赖审查（2026-05-13）
+
+| 现象 | 处理结论 |
+|------|----------|
+| **base64** 0.21.x（`reqwest` / `sqlx-core` / `tauri-codegen`）与 **0.22.x**（`axum` / `oclive_kernel_runtime` 直接依赖）并存 | **不强行统一**：上游 crate 尚未统一到单一 minor；强 patch 易破坏 `reqwest 0.11` / `sqlx 0.7` / Tauri 1 的已解析图。 |
+| **bitflags** 1.x（Tauri / gtk 栈）与 **2.x**（`tower-http`）并存 | **接受**：分别服务 GUI 栈与现代 tower 生态。 |
+| **block-buffer / digest / sha2** 多版本 | 主要来自 **`sqlx` / `curve25519-dalek` / Tauri 构建链** 的历史分裂；随 **`sqlx` 升级** 再收敛。 |
+
+### 6.7 `cargo bloat` 基线（`oclive_kernel_server`，Windows **release**，2026-05-13）
+
+- **命令**：`cargo build -p oclive_kernel_server --release` 后 `cargo bloat --release -p oclive_kernel_server`（**cargo-bloat 0.12.1**；输出路径指向本仓库 **`.cargo/config.toml` 配置的 `target-dir`**）。
+- **二进制**：`oclive_kernel_server.exe` 约 **7.4 MiB**（工具摘要）；**.text** 约 **5.0 MiB**。
+- **按函数估算的 Top 5（`.text` 占比 / 大小）**：
+  1. `oclive_core::oocp_handler::handle_method::async_fn$0<...RuntimeOocpHandler>` — **约 110 KiB**（最大单符号，后续可专项剖分）。
+  2. `oclive_kernel_runtime::domain::expert_graph_events::event_trigger_fires` — **约 32.6 KiB**。
+  3. `...chat_engine::co_present::process_co_present::async_fn$0` — **约 31.1 KiB**。
+  4. `...chat_engine::backend_resolution_summary` — **约 28.6 KiB**。
+  5. `...infrastructure::db::...apply_chat_turn_atomic::async_fn$0` — **约 28.5 KiB**。
+- **>100KiB 单符号**：**有** — `oclive_core::oocp_handler::handle_method::async_fn$0<...>` 约 **110 KiB**（OOCP 分发路径，后续可专项剖分 / 拆 inline）。
 
 ---
 

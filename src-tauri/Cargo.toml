@@ -54,7 +54,7 @@ reqwest = { workspace = true }
 [dev-dependencies]
 axum = { version = "0.7" }
 tower = { version = "0.4", features = ["util"] }
-sqlx = { version = "0.7", features = ["runtime-tokio-rustls", "sqlite", "migrate"] }
+sqlx = { version = "0.7", default-features = false, features = ["macros", "runtime-tokio-rustls", "sqlite", "migrate"] }
 
 [build-dependencies]
 tauri-build = { version = "1.5", features = [], optional = true }

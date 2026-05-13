@@ -3018,14 +3018,12 @@ dependencies = [
 name = "oclive_kernel_runtime"
 version = "0.1.0"
 dependencies = [
- "anyhow",
  "async-trait",
  "axum",
  "base64 0.22.1",
  "chrono",
  "criterion",
  "ed25519-dalek",
- "env_logger",
  "futures-util",
  "http-body-util",
  "libc",
@@ -3065,10 +3063,8 @@ dependencies = [
 name = "oclive_kernel_server"
 version = "0.1.0"
 dependencies = [
- "log",
  "oclive_kernel_runtime",
  "tokio",
- "tracing",
  "tracing-log",
  "tracing-subscriber",
 ]
@@ -4557,7 +4553,6 @@ dependencies = [
  "serde_json",
  "sha2 0.10.9",
  "sqlx-core",
- "sqlx-mysql",
  "sqlx-sqlite",
  "syn 1.0.109",
  "tempfile",
@@ -4596,7 +4591,6 @@ dependencies = [
  "percent-encoding",
  "rand 0.8.5",
  "rsa",
- "serde",
  "sha1",
  "sha2 0.10.9",
  "smallvec",
