@@ -142,6 +142,9 @@ fn unix_fs_available_bytes(path: &std::path::Path) -> std::io::Result<u64> {
     use std::os::unix::ffi::OsStrExt;
     let c = CString::new(path.as_os_str().as_bytes())
         .map_err(|e| std::io::Error::new(std::io::ErrorKind::InvalidInput, e))?;
+    // SAFETY: `statvfs` expects a NUL-terminated path; `CString` provides that invariant.
+    // `libc::statvfs` fully initializes the out struct on success (return code 0).
+    // Miri does not model this libc call; health-check coverage for this path is host-only integration.
     let mut v: libc::statvfs = unsafe { std::mem::zeroed() };
     let rc = unsafe { libc::statvfs(c.as_ptr(), &mut v) };
     if rc != 0 {
