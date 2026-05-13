@@ -53,6 +53,7 @@ Creator and plugin docs live under the repo root `creator-docs/` (grouped by top
 | **如何接入内核（内嵌 / HTTP / OOCP 三模式、环境变量、排障）** | **[INTEGRATION_GUIDE.md](INTEGRATION_GUIDE.md)** |
 | **OOCP 协议测试场景（规范表 + CI 可执行脚本）** | **[../oocp/OOCP_TEST_SUITE.md](../oocp/OOCP_TEST_SUITE.md)** · 规范索引导航 **[../oocp/OOCP_SPEC_COMPLETE_REFERENCE.md](../oocp/OOCP_SPEC_COMPLETE_REFERENCE.md)** · Node 参考实现 **[`examples/oocp-test-suite/README.md`](../../examples/oocp-test-suite/README.md)** |
 | **统一测试结果 JSON（测试插件 / 面板）** | **[../testing/TEST_OUTPUT_SCHEMA.md](../testing/TEST_OUTPUT_SCHEMA.md)** |
+| **从零适配「语言测试」目录插件（Jest / Playwright …）** | **[../ADAPTING_TEST_PLUGIN.md](../ADAPTING_TEST_PLUGIN.md)** |
 | **官方 Vue 前端测试插件（Vitest 目录侧车 + 插件壳 UI）** | **[`plugins/official-vue-test-runner/README.md`](../../plugins/official-vue-test-runner/README.md)** |
 | **Python OOCP 客户端 SDK（`/health`、`/chat`、Bearer）** | **[../../sdk/python/README.md](../../sdk/python/README.md)** |
 | **事件引擎剥离状态（builtin / directory 示例）** | **[../kernel/EVENT_ENGINE_EXTRACTION_STATUS.md](../kernel/EVENT_ENGINE_EXTRACTION_STATUS.md)** |
