@@ -1,15 +1,20 @@
 /**
  * Official Vue test runner — JSON-RPC sidecar (directory plugin).
- * Methods: echo.ping, health, list_test_files, run_test
+ * Methods: echo.ping, health, list_test_files, run_test, get_history, clear_history
  */
 import http from "node:http";
 import fs from "node:fs";
 import path from "node:path";
 import os from "node:os";
+import { fileURLToPath } from "node:url";
 import { spawn, spawnSync } from "node:child_process";
 
 const PROTOCOL_HEADER = "x-oclive-remote-protocol";
 const PROTOCOL_VALUE = "oclive-remote-jsonrpc-v1";
+
+const PLUGIN_ROOT = path.dirname(fileURLToPath(import.meta.url));
+const HISTORY_PATH = path.join(PLUGIN_ROOT, "test_history.json");
+const HISTORY_CAP = 200;
 
 function jsonRpcResult(id, result) {
   return JSON.stringify({ jsonrpc: "2.0", id, result });
@@ -96,6 +101,145 @@ function handleListTestFiles(params) {
   walkTestFiles(path.resolve(base), out);
   out.sort((a, b) => a.localeCompare(b));
   return { root: base, files: out };
+}
+
+/** Pull file:line:col from Vitest / Jest stack text. */
+function extractPrimaryLocation(text) {
+  if (!text || typeof text !== "string") return null;
+  const re = /(?:^|\n|\r)\s*at\s+.*?\(([^():]+\.(?:m?[jt]sx?|vue|cjs|mjs)):(\d+):(\d+)\)/;
+  const m = text.match(re);
+  if (m) {
+    return { file: m[1], line: Number(m[2]), column: Number(m[3]) };
+  }
+  const re2 = /([A-Za-z]:[^:\s"']+\.(?:m?[jt]sx?|vue)):(\d+):(\d+)/;
+  const m2 = text.match(re2);
+  if (m2) {
+    return { file: m2[1], line: Number(m2[2]), column: Number(m2[3]) };
+  }
+  return null;
+}
+
+/**
+ * Turn Vitest JSON reporter output into a compact, UI-friendly structure.
+ */
+function buildStructuredRunResult({
+  report,
+  exitCode,
+  durationMs,
+  cwd,
+  runAll,
+  specPath,
+}) {
+  const rep = report && typeof report === "object" ? report : null;
+
+  const numPassedTests = rep && typeof rep.numPassedTests === "number" ? rep.numPassedTests : 0;
+  const numFailedTests = rep && typeof rep.numFailedTests === "number" ? rep.numFailedTests : 0;
+  const numPendingTests = rep && typeof rep.numPendingTests === "number" ? rep.numPendingTests : 0;
+  const numTotalTests = rep && typeof rep.numTotalTests === "number" ? rep.numTotalTests : 0;
+
+  const numPassedSuites =
+    rep && typeof rep.numPassedTestSuites === "number" ? rep.numPassedTestSuites : 0;
+  const numFailedSuites =
+    rep && typeof rep.numFailedTestSuites === "number" ? rep.numFailedTestSuites : 0;
+  const numTotalSuites =
+    rep && typeof rep.numTotalTestSuites === "number" ? rep.numTotalTestSuites : 0;
+
+  const vitestReportedSuccess = rep && rep.success === true;
+  const passRate =
+    numTotalTests > 0 ? Math.round((numPassedTests / numTotalTests) * 10_000) / 10_000 : null;
+
+  const failuresDetailed = [];
+  const testResults = rep && Array.isArray(rep.testResults) ? rep.testResults : [];
+
+  for (const tr of testResults) {
+    const suiteFile = typeof tr.name === "string" ? tr.name : "";
+    const asserts = Array.isArray(tr.assertionResults) ? tr.assertionResults : [];
+    for (const ar of asserts) {
+      if (ar.status !== "failed") continue;
+      const title = typeof ar.title === "string" ? ar.title : "";
+      const fullName = typeof ar.fullName === "string" ? ar.fullName : title;
+      const messages = Array.isArray(ar.failureMessages)
+        ? ar.failureMessages.map((x) => String(x))
+        : [];
+      const primaryMsg = messages[0] || "";
+      let loc =
+        ar.location && typeof ar.location === "object"
+          ? {
+              file:
+                typeof ar.location.path === "string"
+                  ? ar.location.path
+                  : typeof ar.location.file === "string"
+                    ? ar.location.file
+                    : suiteFile,
+              line:
+                typeof ar.location.line === "number"
+                  ? ar.location.line
+                  : typeof ar.location.lineNumber === "number"
+                    ? ar.location.lineNumber
+                    : null,
+              column:
+                typeof ar.location.column === "number"
+                  ? ar.location.column
+                  : typeof ar.location.columnNumber === "number"
+                    ? ar.location.columnNumber
+                    : null,
+            }
+          : null;
+      if (!loc || loc.line == null) {
+        const fromStack = extractPrimaryLocation(primaryMsg);
+        if (fromStack) {
+          loc = fromStack;
+        } else if (suiteFile) {
+          loc = { file: suiteFile, line: null, column: null };
+        }
+      }
+      failuresDetailed.push({
+        file: loc?.file || suiteFile || "(unknown file)",
+        line: loc?.line ?? null,
+        column: loc?.column ?? null,
+        suiteFile: suiteFile || null,
+        testTitle: title || null,
+        fullName: fullName || null,
+        messages,
+      });
+    }
+  }
+
+  const runOk =
+    exitCode === 0 &&
+    (vitestReportedSuccess || (rep == null && numFailedTests === 0 && numTotalTests === 0));
+
+  const headline =
+    numTotalTests > 0
+      ? `${numPassedTests} passed, ${numFailedTests} failed, ${numPendingTests} skipped / ${numTotalTests} tests · ${durationMs} ms`
+      : rep == null
+        ? `No JSON report parsed (exit ${exitCode}) · ${durationMs} ms`
+        : `0 tests in report · ${durationMs} ms`;
+
+  return {
+    headline,
+    runOk,
+    exitCode,
+    durationMs,
+    cwd,
+    scope: runAll ? "all" : specPath || "all",
+    aggregates: {
+      tests: {
+        passed: numPassedTests,
+        failed: numFailedTests,
+        pending: numPendingTests,
+        total: numTotalTests,
+        passRate,
+      },
+      suites: {
+        passed: numPassedSuites,
+        failed: numFailedSuites,
+        total: numTotalSuites,
+      },
+    },
+    failuresDetailed,
+    vitestSuccessFlag: vitestReportedSuccess,
+  };
 }
 
 function runNpxVitestJson(vitestArgs, cwd, timeoutMs) {
@@ -192,8 +336,18 @@ async function handleRunTest(params) {
     }
   }
 
+  const resolvedCwd = path.resolve(base);
+  const structured = buildStructuredRunResult({
+    report: rep,
+    exitCode: exec.exitCode,
+    durationMs,
+    cwd: resolvedCwd,
+    runAll,
+    specPath,
+  });
+
   return {
-    cwd: path.resolve(base),
+    cwd: resolvedCwd,
     specPath: runAll ? null : specPath || null,
     runAll,
     exitCode: exec.exitCode,
@@ -202,6 +356,7 @@ async function handleRunTest(params) {
     failures,
     stderrTail: exec.stderrTail,
     rawReportPresent: exec.rawReportLength > 0,
+    structured,
   };
 }
 

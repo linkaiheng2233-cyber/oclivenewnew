@@ -1,10 +1,340 @@
 <!doctype html>
-<html lang="en">
+<html lang="zh-CN">
   <head>
     <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
     <title>official-vue-test-runner</title>
+    <style>
+      :root {
+        --bg: #0f1117;
+        --card: #161922;
+        --border: #2a3040;
+        --text: #e8eaf0;
+        --muted: #9aa3b2;
+        --ok: #4ade80;
+        --bad: #f87171;
+        --accent: #5b7cff;
+      }
+      * {
+        box-sizing: border-box;
+      }
+      body {
+        margin: 0;
+        font-family: system-ui, -apple-system, Segoe UI, sans-serif;
+        background: var(--bg);
+        color: var(--text);
+        line-height: 1.45;
+        font-size: 14px;
+      }
+      .wrap {
+        max-width: 880px;
+        margin: 0 auto;
+        padding: 16px;
+      }
+      h1 {
+        font-size: 18px;
+        margin: 0 0 12px;
+      }
+      label {
+        display: block;
+        font-size: 12px;
+        color: var(--muted);
+        margin-bottom: 4px;
+      }
+      input[type="text"] {
+        width: 100%;
+        padding: 8px 10px;
+        border-radius: 8px;
+        border: 1px solid var(--border);
+        background: var(--card);
+        color: var(--text);
+        font: inherit;
+      }
+      .row {
+        margin-bottom: 12px;
+      }
+      .btns {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 8px;
+        margin: 12px 0;
+      }
+      button {
+        padding: 8px 14px;
+        border-radius: 8px;
+        border: 1px solid var(--border);
+        background: var(--card);
+        color: var(--text);
+        font: inherit;
+        cursor: pointer;
+      }
+      button.primary {
+        background: var(--accent);
+        border-color: transparent;
+        color: #fff;
+      }
+      button:disabled {
+        opacity: 0.5;
+        cursor: not-allowed;
+      }
+      .banner {
+        padding: 10px 12px;
+        border-radius: 8px;
+        border: 1px solid var(--border);
+        background: var(--card);
+        margin-bottom: 12px;
+        font-weight: 600;
+      }
+      .banner.ok {
+        border-color: rgba(74, 222, 128, 0.35);
+        color: var(--ok);
+      }
+      .banner.bad {
+        border-color: rgba(248, 113, 113, 0.35);
+        color: var(--bad);
+      }
+      .muted {
+        font-size: 12px;
+        color: var(--muted);
+      }
+      .fail {
+        border: 1px solid var(--border);
+        border-radius: 8px;
+        padding: 10px;
+        margin-bottom: 8px;
+        background: var(--card);
+      }
+      .fail h3 {
+        margin: 0 0 6px;
+        font-size: 13px;
+        color: var(--bad);
+      }
+      .fail pre {
+        margin: 0;
+        white-space: pre-wrap;
+        font-size: 11px;
+        color: var(--muted);
+      }
+      .grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
+        gap: 8px;
+        margin: 8px 0;
+      }
+      .chip {
+        padding: 8px;
+        border-radius: 8px;
+        border: 1px solid var(--border);
+        background: #12151c;
+        font-size: 12px;
+      }
+      .chip strong {
+        display: block;
+        font-size: 18px;
+        color: var(--accent);
+      }
+      #err {
+        color: var(--bad);
+        font-size: 13px;
+        margin: 8px 0;
+      }
+    </style>
   </head>
   <body>
-    <p>Sidecar RPC only — no shell UI.</p>
+    <div class="wrap">
+      <h1>Vue 测试运行器（目录插件）</h1>
+      <p class="muted">
+        填写 oclivenewnew 仓库根目录（含 <code>package.json</code>），在授予 <code>rpc:invoke</code> 后可通过宿主调用 Vitest。
+      </p>
+
+      <div class="row">
+        <label for="ws">工作区根目录</label>
+        <input id="ws" type="text" placeholder="例如 D:\oclivenewnew" spellcheck="false" />
+      </div>
+
+      <div class="btns">
+        <button type="button" id="btnHealth">检测 Vitest</button>
+        <button type="button" class="primary" id="btnRun">运行全部测试</button>
+      </div>
+
+      <div id="err" role="alert"></div>
+      <div id="out"></div>
+    </div>
+
+    <script>
+      (function () {
+        var PLUGIN_ID = "com.oclive.official_vue_test_runner";
+        var LS_KEY = "oclive.official_vue_test_runner.workspace";
+
+        var wsEl = document.getElementById("ws");
+        var errEl = document.getElementById("err");
+        var outEl = document.getElementById("out");
+        var btnHealth = document.getElementById("btnHealth");
+        var btnRun = document.getElementById("btnRun");
+
+        try {
+          wsEl.value = localStorage.getItem(LS_KEY) || "";
+        } catch (e) {}
+
+        function getInvoke() {
+          if (window.OclivePluginBridge && window.OclivePluginBridge.invoke) {
+            return function (cmd, payload) {
+              return window.OclivePluginBridge.invoke(cmd, payload);
+            };
+          }
+          var ta = window.__TAURI__;
+          var inv = ta && (ta.invoke || (ta.tauri && ta.tauri.invoke));
+          if (!inv) return null;
+          return inv;
+        }
+
+        function setBusy(b) {
+          btnHealth.disabled = b;
+          btnRun.disabled = b;
+        }
+
+        function showErr(msg) {
+          errEl.textContent = msg || "";
+        }
+
+        function rpc(invokeFn, method, params) {
+          return invokeFn("directory_plugin_invoke", {
+            req: { pluginId: PLUGIN_ID, method: method, params: params || {} },
+          });
+        }
+
+        function renderStructured(structured) {
+          if (!structured || typeof structured !== "object") {
+            outEl.innerHTML =
+              '<p class="muted">无 structured 字段（请更新 rpc_server 后重试）。</p>';
+            return;
+          }
+          var a = structured.aggregates && structured.aggregates.tests;
+          var chips =
+            '<div class="grid">' +
+            '<div class="chip"><strong>' +
+            (a && a.passed != null ? a.passed : "—") +
+            "</strong>通过</div>" +
+            '<div class="chip"><strong>' +
+            (a && a.failed != null ? a.failed : "—") +
+            "</strong>失败</div>" +
+            '<div class="chip"><strong>' +
+            (a && a.total != null ? a.total : "—") +
+            "</strong>合计</div>" +
+            '<div class="chip"><strong>' +
+            (a && a.passRate != null ? String(a.passRate) : "—") +
+            "</strong>通过率</div>" +
+            '<div class="chip"><strong>' +
+            (structured.durationMs != null ? structured.durationMs + " ms" : "—") +
+            "</strong>耗时</div>" +
+            "</div>";
+
+          var fails = structured.failuresDetailed || [];
+          var failHtml = "";
+          for (var i = 0; i < fails.length; i++) {
+            var f = fails[i];
+            var loc =
+              f.file +
+              (f.line != null ? ":" + f.line : "") +
+              (f.column != null ? ":" + f.column : "");
+            var title = (f.fullName || f.testTitle || "失败用例").replace(/</g, "&lt;");
+            var msg = (f.messages && f.messages[0]) || "";
+            failHtml +=
+              '<div class="fail"><h3>' +
+              title +
+              '</h3><p class="muted">' +
+              loc.replace(/</g, "&lt;") +
+              "</p><pre>" +
+              String(msg)
+                .slice(0, 4000)
+                .replace(/</g, "&lt;") +
+              "</pre></div>";
+          }
+          if (!failHtml && (a && a.failed > 0)) {
+            failHtml =
+              '<p class="muted">有失败项但未解析到逐条定位（可查看编写器 JSON 中的 failures）。</p>';
+          }
+
+          var bn = structured.runOk ? "ok" : "bad";
+          outEl.innerHTML =
+            '<div class="banner ' +
+            bn +
+            '">' +
+            String(structured.headline || "").replace(/</g, "&lt;") +
+            "</div>" +
+            chips +
+            failHtml;
+        }
+
+        function renderHealth(data) {
+          outEl.innerHTML =
+            '<pre style="font-size:12px;background:#12151c;padding:10px;border-radius:8px;border:1px solid #2a3040;overflow:auto">' +
+            JSON.stringify(data, null, 2).replace(/</g, "&lt;") +
+            "</pre>";
+        }
+
+        btnHealth.onclick = function () {
+          var invokeFn = getInvoke();
+          if (!invokeFn) {
+            showErr("未找到 OclivePluginBridge 或 __TAURI__.invoke。请在 Oclive 桌面内打开本页。");
+            return;
+          }
+          showErr("");
+          setBusy(true);
+          var cwd = wsEl.value.trim();
+          if (!cwd) {
+            showErr("请先填写工作区根目录。");
+            setBusy(false);
+            return;
+          }
+          try {
+            localStorage.setItem(LS_KEY, cwd);
+          } catch (e) {}
+          rpc(invokeFn, "health", { cwd: cwd })
+            .then(function (r) {
+              renderHealth(r);
+            })
+            .catch(function (e) {
+              showErr(String(e));
+            })
+            .finally(function () {
+              setBusy(false);
+            });
+        };
+
+        btnRun.onclick = function () {
+          var invokeFn = getInvoke();
+          if (!invokeFn) {
+            showErr("未找到 OclivePluginBridge 或 __TAURI__.invoke。请在 Oclive 桌面内打开本页。");
+            return;
+          }
+          showErr("");
+          setBusy(true);
+          var cwd = wsEl.value.trim();
+          if (!cwd) {
+            showErr("请先填写工作区根目录。");
+            setBusy(false);
+            return;
+          }
+          try {
+            localStorage.setItem(LS_KEY, cwd);
+          } catch (e) {}
+          rpc(invokeFn, "run_test", {
+            cwd: cwd,
+            runAll: true,
+            timeoutMs: 600000,
+          })
+            .then(function (r) {
+              renderStructured(r && r.structured);
+            })
+            .catch(function (e) {
+              showErr(String(e));
+            })
+            .finally(function () {
+              setBusy(false);
+            });
+        };
+      })();
+    </script>
   </body>
 </html>
