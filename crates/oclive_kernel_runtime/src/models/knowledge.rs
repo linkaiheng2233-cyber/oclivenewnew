@@ -25,7 +25,6 @@ pub struct EventHintEntryDisk {
 pub struct KnowledgeChunk {
     pub id: String,
     pub source_path: PathBuf,
-    #[allow(dead_code)]
     pub tags: Vec<String>,
     /// `None` 表示不限场景；否则仅在这些 `scene_id` 参与检索。
     pub scenes: Option<Vec<String>>,

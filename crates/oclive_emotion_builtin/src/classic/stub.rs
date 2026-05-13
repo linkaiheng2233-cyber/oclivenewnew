@@ -9,15 +9,7 @@ pub struct EmotionAnalyzer;
 impl EmotionAnalyzer {
     /// 恒返回归一化强中性（空文本与非空一致语义：无关键词信号）。
     pub fn analyze(_text: &str) -> Result<EmotionResult> {
-        Ok(EmotionResult {
-            joy: 0.0,
-            sadness: 0.0,
-            anger: 0.0,
-            fear: 0.0,
-            surprise: 0.0,
-            disgust: 0.0,
-            neutral: 1.0,
-        })
+        Ok(EmotionResult::strong_neutral())
     }
 
     #[must_use]

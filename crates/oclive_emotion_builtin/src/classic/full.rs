@@ -9,6 +9,10 @@ pub struct EmotionAnalyzer;
 impl EmotionAnalyzer {
     /// 分析文本情绪
     pub fn analyze(text: &str) -> Result<EmotionResult> {
+        if text.is_empty() {
+            return Ok(EmotionResult::strong_neutral());
+        }
+
         let mut result = EmotionResult {
             joy: 0.0,
             sadness: 0.0,
@@ -18,11 +22,6 @@ impl EmotionAnalyzer {
             disgust: 0.0,
             neutral: 0.0,
         };
-
-        if text.is_empty() {
-            result.neutral = 1.0;
-            return Ok(result);
-        }
 
         let text_lower = text.to_lowercase();
         let padded_en = format!(" {text_lower} ");

@@ -120,17 +120,11 @@ impl RoleManager {
         long_term_memories: &[Memory],
     ) -> (String, PersonalityVector, Option<Event>) {
         // 1. 分析用户情绪（与 `UserEmotionAnalyzer` / 主对话一致）
-        let emotion_result = self.plugins.emotion.analyze(user_input).unwrap_or(
-            crate::domain::emotion_analyzer::EmotionResult {
-                joy: 0.0,
-                sadness: 0.0,
-                anger: 0.0,
-                fear: 0.0,
-                surprise: 0.0,
-                disgust: 0.0,
-                neutral: 1.0,
-            },
-        );
+        let emotion_result = self
+            .plugins
+            .emotion
+            .analyze(user_input)
+            .unwrap_or(crate::domain::emotion_analyzer::EmotionResult::strong_neutral());
 
         let user_emotion = emotion_result.to_emotion();
         let user_emotion_str = user_emotion.to_string();

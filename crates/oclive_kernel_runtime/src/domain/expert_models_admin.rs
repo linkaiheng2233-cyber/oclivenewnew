@@ -22,7 +22,7 @@ use crate::models::dto::{
 };
 use crate::models::plugin_backends::LlmBackend;
 use crate::models::{
-    ExpertConfigSource, ExpertGraph, ExpertNode, LlamaLocalPluginConfig, PromptStyleOverride,
+    ExpertConfigSource, ExpertGraph, ExpertNode, PromptStyleOverride,
 };
 use crate::state::KernelAppState;
 use chrono::Utc;
@@ -1790,10 +1790,4 @@ pub async fn expert_models_validate_graph(
             })
         }
     }
-}
-
-// Re-export config type to avoid unused warnings in some builds.
-#[allow(dead_code)]
-fn _ensure_types(cfg: LlamaLocalPluginConfig) -> LlamaLocalPluginConfig {
-    cfg
 }

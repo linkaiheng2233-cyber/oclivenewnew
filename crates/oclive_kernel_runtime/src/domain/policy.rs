@@ -182,15 +182,7 @@ mod tests {
     use crate::models::Event;
 
     fn neutral_result() -> EmotionResult {
-        EmotionResult {
-            joy: 0.0,
-            sadness: 0.0,
-            anger: 0.0,
-            fear: 0.0,
-            surprise: 0.0,
-            disgust: 0.0,
-            neutral: 1.0,
-        }
+        EmotionResult::strong_neutral()
     }
 
     #[test]
