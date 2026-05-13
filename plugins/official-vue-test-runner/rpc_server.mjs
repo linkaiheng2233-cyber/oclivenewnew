@@ -164,7 +164,7 @@ function extractPrimaryLocation(text) {
 }
 
 /**
- * Turn Vitest JSON reporter output into a compact, UI-friendly structure.
+ * Vitest JSON → unified test output (see creator-docs/testing/TEST_OUTPUT_SCHEMA.md).
  */
 function buildStructuredRunResult({
   report,
@@ -173,6 +173,7 @@ function buildStructuredRunResult({
   cwd,
   runAll,
   specPath,
+  rawReportLength,
 }) {
   const rep = report && typeof report === "object" ? report : null;
 
@@ -192,12 +193,34 @@ function buildStructuredRunResult({
   const passRate =
     numTotalTests > 0 ? Math.round((numPassedTests / numTotalTests) * 10_000) / 10_000 : null;
 
-  const failuresDetailed = [];
+  const failuresOut = [];
+  const suitesOut = [];
   const testResults = rep && Array.isArray(rep.testResults) ? rep.testResults : [];
 
   for (const tr of testResults) {
     const suiteFile = typeof tr.name === "string" ? tr.name : "";
     const asserts = Array.isArray(tr.assertionResults) ? tr.assertionResults : [];
+    let sp = 0;
+    let sf = 0;
+    let ssk = 0;
+    for (const ar of asserts) {
+      if (ar.status === "passed") sp += 1;
+      else if (ar.status === "failed") sf += 1;
+      else ssk += 1;
+    }
+    let suiteMs = null;
+    if (typeof tr.endTime === "number" && typeof tr.startTime === "number") {
+      suiteMs = Math.max(0, tr.endTime - tr.startTime);
+    }
+    suitesOut.push({
+      id: suiteFile || "(suite)",
+      name: suiteFile || "(suite)",
+      passed: sp,
+      failed: sf,
+      skipped: ssk,
+      durationMs: suiteMs,
+    });
+
     for (const ar of asserts) {
       if (ar.status !== "failed") continue;
       const title = typeof ar.title === "string" ? ar.title : "";
@@ -237,11 +260,14 @@ function buildStructuredRunResult({
           loc = { file: suiteFile, line: null, column: null };
         }
       }
-      failuresDetailed.push({
+      failuresOut.push({
         file: loc?.file || suiteFile || "(unknown file)",
         line: loc?.line ?? null,
         column: loc?.column ?? null,
-        suiteFile: suiteFile || null,
+        message: primaryMsg,
+        expected: null,
+        actual: null,
+        suiteTitle: suiteFile || null,
         testTitle: title || null,
         fullName: fullName || null,
         messages,
@@ -261,28 +287,33 @@ function buildStructuredRunResult({
         : `0 tests in report · ${durationMs} ms`;
 
   return {
-    headline,
-    runOk,
-    exitCode,
-    durationMs,
-    cwd,
-    scope: runAll ? "all" : specPath || "all",
-    aggregates: {
-      tests: {
-        passed: numPassedTests,
-        failed: numFailedTests,
-        pending: numPendingTests,
-        total: numTotalTests,
-        passRate,
-      },
-      suites: {
-        passed: numPassedSuites,
-        failed: numFailedSuites,
-        total: numTotalSuites,
-      },
+    schemaVersion: 1,
+    kind: "oclive.unit_test_run.v1",
+    summary: {
+      passed: numPassedTests,
+      failed: numFailedTests,
+      skipped: numPendingTests,
+      total: numTotalTests,
+      passRate,
+      durationMs,
+      exitCode,
+      ok: runOk,
     },
-    failuresDetailed,
-    vitestSuccessFlag: vitestReportedSuccess,
+    suites: suitesOut,
+    suiteTotals: {
+      passed: numPassedSuites,
+      failed: numFailedSuites,
+      total: numTotalSuites,
+    },
+    failures: failuresOut,
+    meta: {
+      headline,
+      cwd,
+      scope: runAll ? "all" : specPath || "all",
+      runner: "vitest",
+      vitestSuccessFlag: vitestReportedSuccess,
+      rawReportPresent: rawReportLength > 0,
+    },
   };
 }
 
@@ -388,21 +419,22 @@ async function handleRunTest(params) {
     cwd: resolvedCwd,
     runAll,
     specPath,
+    rawReportLength: exec.rawReportLength,
   });
 
   appendRunHistory({
     at: new Date().toISOString(),
     durationMs,
     exitCode: exec.exitCode,
-    runOk: structured.runOk,
-    passRate: structured.aggregates.tests.passRate,
-    passed: structured.aggregates.tests.passed,
-    failed: structured.aggregates.tests.failed,
-    total: structured.aggregates.tests.total,
+    runOk: structured.summary.ok,
+    passRate: structured.summary.passRate,
+    passed: structured.summary.passed,
+    failed: structured.summary.failed,
+    total: structured.summary.total,
     runAll,
     specPath: runAll ? null : specPath || null,
     cwd: resolvedCwd,
-    failureCount: structured.failuresDetailed.length,
+    failureCount: structured.failures.length,
   });
 
   return {

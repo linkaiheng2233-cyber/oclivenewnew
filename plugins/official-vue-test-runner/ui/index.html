@@ -319,27 +319,47 @@
               '<p class="muted">无 structured 字段（请更新 rpc_server 后重试）。</p>';
             return;
           }
-          var a = structured.aggregates && structured.aggregates.tests;
+          var summary = structured.summary;
+          var legacyA = structured.aggregates && structured.aggregates.tests;
+          if (!summary && legacyA) {
+            summary = {
+              passed: legacyA.passed,
+              failed: legacyA.failed,
+              skipped: legacyA.pending,
+              total: legacyA.total,
+              passRate: legacyA.passRate,
+              durationMs: structured.durationMs,
+              ok: structured.runOk,
+            };
+          }
+          if (!summary) summary = {};
+          var headline =
+            (structured.meta && structured.meta.headline) || structured.headline || "";
+          var dur =
+            summary.durationMs != null ? summary.durationMs : structured.durationMs;
           var chips =
             '<div class="grid">' +
             '<div class="chip"><strong>' +
-            (a && a.passed != null ? a.passed : "—") +
+            (summary.passed != null ? summary.passed : "—") +
             "</strong>通过</div>" +
             '<div class="chip"><strong>' +
-            (a && a.failed != null ? a.failed : "—") +
+            (summary.failed != null ? summary.failed : "—") +
             "</strong>失败</div>" +
             '<div class="chip"><strong>' +
-            (a && a.total != null ? a.total : "—") +
+            (summary.skipped != null ? summary.skipped : "—") +
+            "</strong>跳过</div>" +
+            '<div class="chip"><strong>' +
+            (summary.total != null ? summary.total : "—") +
             "</strong>合计</div>" +
             '<div class="chip"><strong>' +
-            (a && a.passRate != null ? String(a.passRate) : "—") +
+            (summary.passRate != null ? String(summary.passRate) : "—") +
             "</strong>通过率</div>" +
             '<div class="chip"><strong>' +
-            (structured.durationMs != null ? structured.durationMs + " ms" : "—") +
+            (dur != null ? dur + " ms" : "—") +
             "</strong>耗时</div>" +
             "</div>";
 
-          var fails = structured.failuresDetailed || [];
+          var fails = structured.failures || structured.failuresDetailed || [];
           var failHtml = "";
           for (var i = 0; i < fails.length; i++) {
             var f = fails[i];
@@ -348,29 +368,31 @@
               (f.line != null ? ":" + f.line : "") +
               (f.column != null ? ":" + f.column : "");
             var title = (f.fullName || f.testTitle || "失败用例").replace(/</g, "&lt;");
-            var msg = (f.messages && f.messages[0]) || "";
+            var msg = f.message || (f.messages && f.messages[0]) || "";
             failHtml +=
               '<div class="fail"><h3>' +
               title +
               '</h3><p class="muted">' +
-              loc.replace(/</g, "&lt;") +
+              String(loc).replace(/</g, "&lt;") +
               "</p><pre>" +
               String(msg)
                 .slice(0, 4000)
                 .replace(/</g, "&lt;") +
               "</pre></div>";
           }
-          if (!failHtml && (a && a.failed > 0)) {
+          if (!failHtml && summary.failed > 0) {
             failHtml =
               '<p class="muted">有失败项但未解析到逐条定位（可查看编写器 JSON 中的 failures）。</p>';
           }
 
-          var bn = structured.runOk ? "ok" : "bad";
+          var ok =
+            summary.ok != null ? summary.ok : structured.runOk === true;
+          var bn = ok ? "ok" : "bad";
           outEl.innerHTML =
             '<div class="banner ' +
             bn +
             '">' +
-            String(structured.headline || "").replace(/</g, "&lt;") +
+            String(headline).replace(/</g, "&lt;") +
             "</div>" +
             chips +
             failHtml;
