@@ -21,9 +21,7 @@ use crate::models::dto::{
     ExpertWorkflowsSaveRequest,
 };
 use crate::models::plugin_backends::LlmBackend;
-use crate::models::{
-    ExpertConfigSource, ExpertGraph, ExpertNode, PromptStyleOverride,
-};
+use crate::models::{ExpertConfigSource, ExpertGraph, ExpertNode, PromptStyleOverride};
 use crate::state::KernelAppState;
 use chrono::Utc;
 use serde::Serialize;

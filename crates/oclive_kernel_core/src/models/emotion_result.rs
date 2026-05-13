@@ -99,7 +99,10 @@ mod tests {
     fn strong_neutral_is_normalized() {
         let r = EmotionResult::strong_neutral();
         assert_eq!(r.neutral, 1.0);
-        assert_eq!(r.joy + r.sadness + r.anger + r.fear + r.surprise + r.disgust, 0.0);
+        assert_eq!(
+            r.joy + r.sadness + r.anger + r.fear + r.surprise + r.disgust,
+            0.0
+        );
     }
 
     #[test]

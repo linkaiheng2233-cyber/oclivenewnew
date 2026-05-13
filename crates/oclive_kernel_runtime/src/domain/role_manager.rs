@@ -128,8 +128,7 @@ impl RoleManager {
 
         let user_emotion = emotion_result.to_emotion();
         let user_emotion_str = user_emotion.to_string();
-        let user_emotion_prompt =
-            emotion_result.format_emotion_for_prompt();
+        let user_emotion_prompt = emotion_result.format_emotion_for_prompt();
 
         // 2. 检测事件
         let event = EventDetector::detect(user_input, &user_emotion, &Emotion::Neutral).ok();
