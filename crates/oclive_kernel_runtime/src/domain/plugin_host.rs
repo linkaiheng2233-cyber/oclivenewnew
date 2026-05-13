@@ -4,6 +4,7 @@
 //!
 //! **并发**：`parking_lot::RwLock<LocalPluginRegistry>` 仅保护进程内注册表；持锁路径为同步注册/枚举，不跨越 `.await`。
 //! 目录插件与 MCP 等异步 I/O 在 `DirectoryPluginRuntime` / `McpClient` 内完成，与上述锁正交。
+//! **不变式**：不在持 `RwLock`/`Mutex` 守卫时 `.await`；不把锁守卫存进 `Arc` 再跨任务使用（目录子进程表等结构遵循「短锁更新句柄、长操作用 `Child` / channel」）。
 //! 从历史同步权限钩子调用的 `sqlx` 通过 `BackendRegistry::block_on`（`block_in_place` + `Handle::block_on`）进入异步运行时，避免在异步 worker 上饿死同线程任务；新代码优先改为原生 async API 而非扩展该桥。
 
 #[cfg(all(feature = "kernel-agent", feature = "default-agent-providers"))]

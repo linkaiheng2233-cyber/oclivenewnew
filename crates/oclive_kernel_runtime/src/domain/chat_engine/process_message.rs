@@ -3,6 +3,8 @@
 //! **性能备忘**：本路径不经过 `serde_json::Value` 热克隆；`scene_id` / `user_message` 等 `String` 克隆用于跨 `await` 与多消费者（DB、策略、Tracing），拆成 `&str` 会牵动大量签名，暂维持分配。
 //!
 //! **插件**：`ResolvedRolePlugins` 在入口附近由 `KernelAppState::resolved_plugins_for_session` 从 `plugin_host::BackendRegistry` 解析；本函数不直接操作 `local_plugins` 锁或目录插件运行时，避免与异步插件 I/O 的锁序交织。
+//!
+//! **取消与 LLM**：主生成路径经 `run_llm_generate_cancelable` 与 `KernelAppState::chat_generation_cancel` 协同；`tokio::spawn` 的 `JoinHandle` 在取消分支上 `abort` 并 `await` 收口（见 `llm_cancelable` 模块）。
 
 use super::co_present;
 use super::context::validate_scene_id;

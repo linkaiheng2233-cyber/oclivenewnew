@@ -1,4 +1,7 @@
 //! 主对话 LLM 与用户「取消生成」协同（`KernelAppState::chat_generation_cancel`）。
+//!
+//! **取消语义**：`select!` 在取消分支返回后，对仍在运行的 `work` 调用 `abort` 并 `await` 其 `JoinHandle`，避免泄漏 detached 任务；正常完成路径由 `join` 消费 handle，不再 `abort`。
+//! **不变式**：`LlmClient::generate` 须容忍取消（底层 HTTP 客户端在 drop 时中断）；不要在持有 `state` 短锁时调用本函数（本模块不持锁）。
 
 use crate::error::{AppError, Result};
 use crate::infrastructure::llm::LlmClient;
