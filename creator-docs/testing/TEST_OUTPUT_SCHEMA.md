@@ -11,7 +11,7 @@
 | `kind` | `string` | ✅ | **`oclive.unit_test_run.v1`**：单元/组件测试运行器（Vitest/Jest/…）。**`oclive.protocol_conformance_report.v1`**：协议/集成步骤报告（无 `suites[]` 或 `suites` 为空数组亦可）。 |
 | `summary` | `object` | ✅ | 见下表。 |
 | `suites` | `array` | ❌ | 套件级统计；单测聚合工具可置 `[]`。 |
-| `suiteTotals` | `object` | ❌ | 可选；顶层套件计数（Vitest JSON 的 `num*TestSuites`）。 |
+| `suiteTotals` | `object` | ❌ | 可选；顶层套件计数（Vitest JSON 的 `num*TestSuites`）。建议键：`passed`、`failed`、`total`（与 `plugins/official-vue-test-runner` 的 `structured.suiteTotals` 一致）；OOCP 协议套件可将每条场景计为一条「逻辑用例」并填入相同三键。 |
 | `failures` | `array` | ✅ | 失败列表；无失败时为 `[]`。 |
 | `meta` | `object` | ❌ | 运行器特有元数据（headline、cwd、runner 名等）。 |
 
@@ -53,7 +53,7 @@
 | 组件 | 对齐说明 |
 |------|-----------|
 | **official-vue-test-runner** | `run_test` 返回根级 `structured`，其形状与本页 **`oclive.unit_test_run.v1`** 一致。 |
-| **oocp-test-suite** | `node run.mjs --json` 末尾打印 **`oclive.protocol_conformance_report.v1`**：`summary` + 空 `suites`/`failures` + `meta.scenarios`。 |
+| **oocp-test-suite** | `node run.mjs --json` 末尾打印 **`oclive.protocol_conformance_report.v1`**：`summary` + `suiteTotals`（场景聚合）+ 空 `suites` / `failures` + `meta`（含 `headline`、`runner`、`scenarios` 等）。 |
 
 ## 演进
 

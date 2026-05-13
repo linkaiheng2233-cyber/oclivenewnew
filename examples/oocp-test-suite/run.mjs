@@ -188,9 +188,13 @@ async function main() {
 
   if (WANT_JSON) {
     const durationMs = Date.now() - t0;
+    // Unified JSON envelope — field meanings: creator-docs/testing/TEST_OUTPUT_SCHEMA.md
     const envelope = {
+      // § 顶层 `schemaVersion` — 固定 1
       schemaVersion: 1,
+      // § 顶层 `kind` — 协议一致性报告
       kind: "oclive.protocol_conformance_report.v1",
+      // § `summary` — 本套件将每个场景计为一条用例（共 12）
       summary: {
         passed: 12,
         failed: 0,
@@ -201,7 +205,20 @@ async function main() {
         exitCode: 0,
         ok: true,
       },
+      // § `suiteTotals` — 与 Vitest 侧车相同键名；此处映射为「场景」聚合
+      suiteTotals: {
+        passed: 12,
+        failed: 0,
+        total: 12,
+      },
+      // § `suites[]` — 协议层无文件级套件，置空数组
+      suites: [],
+      // § `failures[]` — 无失败
+      failures: [],
+      // § `meta` — 运行器元数据（含 `scenarios` 顺序，与控制台 S0–S11 日志一致）
       meta: {
+        headline: "OOCP v0.1 protocol conformance — 12 scenarios passed",
+        runner: "oocp-test-suite",
         httpBase: HTTP_BASE,
         wsUrl: WS_URL,
         scenarios: [
@@ -219,8 +236,6 @@ async function main() {
           "S7",
         ],
       },
-      suites: [],
-      failures: [],
     };
     process.stdout.write(`${JSON.stringify(envelope, null, 2)}\n`);
   }
