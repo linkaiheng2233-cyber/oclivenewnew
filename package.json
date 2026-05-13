@@ -29,6 +29,8 @@
     "check": "npm run build && npm run check:rust",
     "check:win": "powershell -NoProfile -ExecutionPolicy Bypass -File scripts/check.ps1",
     "check:release": "npm run build && npm run check:rust:fmt && npm run check:rust:clippy && npm run check:rust:test:all",
+    "test:unit": "vitest run",
+    "test:unit:watch": "vitest",
     "scaffold:ui-plugin": "node scripts/scaffold-ui-slot-plugin.mjs",
     "oocp:serve": "cargo run -p oclivenewnew-tauri -- --api",
     "oocp:kernel:serve": "cargo run -p oclive_kernel_server",
@@ -54,13 +56,17 @@
     "ws": "^8.20.0"
   },
   "devDependencies": {
+    "@pinia/testing": "^1.0.3",
     "@tauri-apps/cli": "1.5.14",
     "@types/node": "^25.6.0",
     "@types/vscode": "^1.80.0",
     "@types/ws": "^8.18.1",
     "@vitejs/plugin-vue": "^5.2.1",
+    "@vue/test-utils": "^2.4.10",
+    "jsdom": "^26.1.0",
     "rollup-plugin-visualizer": "^7.0.1",
     "typescript": "^6.0.3",
-    "vite": "^6.0.3"
+    "vite": "^6.0.3",
+    "vitest": "^3.2.4"
   }
 }
