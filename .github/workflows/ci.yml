@@ -137,15 +137,29 @@ jobs:
           sudo apt-get install -y libwebkit2gtk-4.1-dev build-essential curl wget \
             libssl-dev libgtk-3-dev libayatana-appindicator3-dev librsvg2-dev patchelf \
             libsoup2.4-dev
-      - name: pkg-config shims (Noble WebKit 4.1 only; Tauri 1 stack still probes gtk 4.0 .pc)
+      - name: WebKit 4.0 shims for Tauri 1 on Noble (4.1 .pc/.so only in repos)
         if: runner.os == 'Linux'
         shell: bash
         run: |
           set -euo pipefail
           m="$(dpkg-architecture -qDEB_HOST_MULTIARCH)"
-          pc="/usr/lib/${m}/pkgconfig"
+          lib="/usr/lib/${m}"
+          pc="${lib}/pkgconfig"
           sudo ln -sf "${pc}/javascriptcoregtk-4.1.pc" "${pc}/javascriptcoregtk-4.0.pc"
           sudo ln -sf "${pc}/webkit2gtk-4.1.pc" "${pc}/webkit2gtk-4.0.pc"
+          # Linker still receives -ljavascriptcoregtk-4.0 / -lwebkit2gtk-4.0 from older sys crates.
+          if [[ -e "${lib}/libwebkit2gtk-4.1.so.0" ]]; then
+            sudo ln -sf libwebkit2gtk-4.1.so.0 "${lib}/libwebkit2gtk-4.0.so"
+          else
+            echo "missing ${lib}/libwebkit2gtk-4.1.so.0"; ls -la "${lib}"/libwebkit2gtk* || true
+            exit 1
+          fi
+          if [[ -e "${lib}/libjavascriptcoregtk-4.1.so.0" ]]; then
+            sudo ln -sf libjavascriptcoregtk-4.1.so.0 "${lib}/libjavascriptcoregtk-4.0.so"
+          else
+            echo "missing ${lib}/libjavascriptcoregtk-4.1.so.0"; ls -la "${lib}"/libjavascriptcoregtk* || true
+            exit 1
+          fi
       - name: rustfmt (workspace root)
         run: cargo fmt --all --check
       - name: Check creator-docs internal markdown links
