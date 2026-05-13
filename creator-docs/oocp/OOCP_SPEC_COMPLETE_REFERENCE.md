@@ -23,6 +23,12 @@
 | **[OOCP_TEST_SUITE.md](./OOCP_TEST_SUITE.md)** | 标准化测试场景（HTTP 探活 + OOCP WebSocket 方法） |
 | **参考实现**：[`examples/oocp-test-suite/README.md`](../../examples/oocp-test-suite/README.md) | Node.js 可执行脚本（CI 与本地） |
 
+## 与测试插件输出契约（非 OOCP 正文）
+
+| 文档 | 说明 |
+|------|------|
+| **[../testing/TEST_OUTPUT_SCHEMA.md](../testing/TEST_OUTPUT_SCHEMA.md)** | 单元/组件测试运行器 JSON 输出（`oclive.unit_test_run.v1`）与协议套件报告（`oclive.protocol_conformance_report.v1`） |
+
 ## 无头内核入口
 
 - **`oclive_kernel_server`**：`GET /health`、`GET /oocp`（WebSocket）、REST 试聊等 — 见 [`crates/oclive_kernel_server/README.md`](../../crates/oclive_kernel_server/README.md)
