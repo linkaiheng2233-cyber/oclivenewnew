@@ -42,18 +42,19 @@
 | `ready_prefix` | `string?` | 默认 **`OCLIVE_READY`**；就绪行 = 此前缀 + 空格 + **JSON-RPC 根 URL**（须 `http://` 或 `https://`） |
 | `dependencies` | `object?` | 可选：其它目录插件 **`id` → semver 范围**（如 `">=1.0.0"`、`"^2.0.0"`）；缺失或版本不符时该插件在管理面板标记为依赖不满足且不可启用 |
 
-**懒启动**：首次需要该插件的 RPC（五模块 `directory`、`directory_plugin_invoke`、或需解析 shell manifest）时启动子进程，并缓存 **RPC URL** 与 **子进程**（当前实现不随角色切换回收子进程；应用退出时释放）。并发多次触发同一 `id` 时，宿主对单次启动加锁，避免重复子进程。
+**懒启动**：首次需要该插件的 RPC（`plugin_backends` 六模块中 **`directory`**、`directory_plugin_invoke`、或需解析 shell manifest）时启动子进程，并缓存 **RPC URL** 与 **子进程**（当前实现不随角色切换回收子进程；应用退出时释放）。并发多次触发同一 `id` 时，宿主对单次启动加锁，避免重复子进程。
 
 ---
 
-## 3. 后端五模块（A2）
+## 3. 后端六模块（A2）
 
 在 `settings.json`（或等价磁盘设置）的 `plugin_backends` 中：
 
 - `memory` / `emotion` / `event` / `prompt` 为 **`directory`** 时，使用 **`directory_plugins.<slot>`** 中的插件 `id` 懒启动后，对该 URL 走与 env-remote 相同的 HTTP 客户端（方法名分别为 `memory.rank` 等）。
 - `llm` 为 **`directory`** 时，使用 **`directory_plugins.llm`** 指向的插件 URL，须实现 **`llm.generate` / `llm.generate_tag`**（超时默认按 LLM 档读取，见环境变量）。
+- `agent` 为 **`directory`** 时，使用 **`directory_plugins.agent`** 指向的插件 URL；wire 与其它 Remote/Directory 子系统一致（具体 JSON-RPC 方法以 [REMOTE_PLUGIN_PROTOCOL.md](REMOTE_PLUGIN_PROTOCOL.md) 与宿主实现为准）。
 
-若对应槽位 **id 缺失**、**运行时未注入目录插件**、**spawn 或握手失败**，宿主记日志并回退：**memory/emotion/event/prompt → builtin**，**llm → Ollama**。
+若对应槽位 **id 缺失**、**运行时未注入目录插件**、**spawn 或握手失败**，宿主记日志并回退：**memory/emotion/event/prompt → builtin**，**llm → Ollama**，**agent → builtin**。
 
 ### `plugin_backends` 与 `directory_plugins` 示例（节选）
 
@@ -73,7 +74,7 @@
 }
 ```
 
-**`directory_plugins` 槽位来源**：以角色包 **`settings.json` → `plugin_backends.directory_plugins`** 为准。`PluginBackendsOverride` 在 Rust 中**支持**按槽合并 `directory_plugins`（见 `apply_to`），但当前 Tauri 命令 **`set_session_plugin_backend` 仅覆盖五模块枚举与 `local_memory_provider_id`**，**不**传入 `directory_plugins`；多会话场景下若需不同目录插件 id，请通过角色包或后续扩展的会话 API 提供。
+**`directory_plugins` 槽位来源**：以角色包 **`settings.json` → `plugin_backends.directory_plugins`** 为准。`PluginBackendsOverride` 在 Rust 中**支持**按槽合并 `directory_plugins`（见 `apply_to`），但当前 Tauri 命令 **`set_session_plugin_backend` 仅覆盖六模块枚举与 `local_memory_provider_id`**，**不**传入 `directory_plugins`；多会话场景下若需不同目录插件 id，请通过角色包或后续扩展的会话 API 提供。
 
 ---
 
@@ -270,7 +271,7 @@
 |------|------|
 | 扫描 / manifest / 懒启动 / shell URL | `src-tauri/src/infrastructure/directory_plugins/` |
 | 枚举与 `directory_plugins` 槽位 | `src-tauri/src/models/plugin_backends.rs` |
-| 五模块解析与 HTTP 复用 | `src-tauri/src/domain/plugin_host.rs`、`src-tauri/src/infrastructure/remote_plugin/` |
+| 六模块解析与 HTTP 复用 | `src-tauri/src/domain/plugin_host.rs`、`src-tauri/src/infrastructure/remote_plugin/` |
 | Tauri 命令 | `src-tauri/src/api/directory_plugin.rs`、`src-tauri/src/api/plugin_bridge.rs`、`src-tauri/src/api/plugin_update.rs`（本地 zip 覆盖 / 更新检查预留） |
 | 自定义协议 + 启动 | `src-tauri/src/lib.rs` |
 | 内置 UI 启动引导 | `src/main.js`、`src/utils/directoryShellBootstrap.ts`、`src/DirectoryShellApp.vue` |

@@ -17,10 +17,11 @@
 | **事件影响** | LLM 估计事件类型与影响因子 | `EventEstimator` | `event`: `builtin` / `builtin_v2` / `remote` / `directory` | 同上；**`directory`** 需 `directory_plugins.event` |
 | **Prompt 组装** | 主对话 system/user 字符串 | `PromptAssembler` | `prompt`: `builtin` / `builtin_v2` / `remote` / `directory` | 同上；**`directory`** 需 `directory_plugins.prompt` |
 | **LLM 推理** | 调用大模型生成 | `LlmClient` | `llm`: `ollama` / `remote` / `directory` | `ollama`：进程注入的客户端；`remote`：`OCLIVE_REMOTE_LLM_URL` 的 JSON-RPC，未配置则委托默认 LLM；**`directory`** 需 `directory_plugins.llm`（子进程 URL，无需 `OCLIVE_REMOTE_LLM_URL`） |
+| **Agent 编排** | 工具调度 / ReAct 等 | `AgentProvider` | `agent`: `builtin` / `remote` / `directory` | `builtin`：`BuiltinReActAgent`；**`directory`** 需 `directory_plugins.agent`；MCP 清单目录为 **`{app_data}/mcp-servers`**（`app_data` 与 `PluginHost::new` 第三参一致） |
 | **长期记忆存储** | 读写 SQLite 中的记忆行 | `MemoryRepository` | *（未挂 plugin_backends，换库需改基础设施）* | `SqliteMemoryRepository` |
 | **策略（情感/事件/记忆条）** | 是否写入、重要性等 | `EmotionPolicy` 等 | `config/policy.toml` 场景 profile | `Default*` |
 
-**聚合入口**：[`PluginHost`](../../src-tauri/src/domain/plugin_host.rs) 按枚举挂具体实现；对话内用 **`ResolvedRolePlugins`**（`AppState::resolved_plugins_for`）一次取齐 **memory / emotion / event / prompt / llm** 五条线。`AppState.llm` 仍为进程级默认句柄（与 `plugin_backends.llm = ollama` 指向同一实现）。
+**聚合入口**：[`PluginHost`](../../src-tauri/src/domain/plugin_host.rs) 按枚举挂具体实现；对话内用 **`ResolvedRolePlugins`**（`AppState::resolved_plugins_for`）一次取齐 **memory / emotion / event / prompt / llm / agent** 六条子系统线。`AppState.llm` 仍为进程级默认句柄（与 `plugin_backends.llm = ollama` 指向同一实现）。
 
 ---
 

@@ -17,6 +17,9 @@
 | **[video-script/](video-script/)** | [5 分钟工具栏插件视频脚本](video-script/PLUGIN_DEVELOPMENT_SCRIPT.md) |
 | **[role-pack/](role-pack/)** | 包版本、场景、用户身份、角色包自定义 |
 | **[roadmap/](roadmap/)** | [开放实验场 · 愿景摘要](roadmap/VISION_OPEN_LAB.md)、愿景与按月路线图、[体验差异化 backlog](roadmap/BACKLOG_EXPERIENCE_AND_ECOSYSTEM.md)、[后日待办 · 工具链与 CI](roadmap/SOMEDAY_TOOLCHAIN_CI.md)、[市场 · 启动器联动](roadmap/MARKET_LAUNCHER_INTEGRATION.md)、[社区站愿景（三板块）](roadmap/COMMUNITY_WEB_VISION.md)、[插件区网站 IA](roadmap/PLUGIN_WEB_SECTION.md) |
+| **[development/](development/)** | [轻量化与供应链基线](development/LIGHTWEIGHT_PROFILE.md)（Release、`cargo audit`、`cargo tree -d`、`cargo-bloat`） |
+| **[security/](security/)** | [已知漏洞跟踪](security/KNOWN_VULNERABILITIES.md)、[安全审查范围](security/SECURITY_AUDIT_SCOPE.md) |
+| **[testing/](testing/)** | [测试输出契约](testing/TEST_OUTPUT_SCHEMA.md)、[OOCP 套件说明（占位）](testing/OOCP_TEST_SUITE.md)、[插件相关 Rust 集成测](testing/ADAPTING_TEST_PLUGIN.md) |
 
 ---
 

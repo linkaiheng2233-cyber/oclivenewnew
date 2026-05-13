@@ -2,14 +2,14 @@
 
 **全库文档索引**：[../getting-started/DOCUMENTATION_INDEX.md](../getting-started/DOCUMENTATION_INDEX.md)
 
-与 [PLUGIN_V1.md](PLUGIN_V1.md) 一致：**v1 为编译期枚举**，经 `settings.json` → `plugin_backends` 选择实现；记忆 / 情绪 / 事件 / Prompt 默认均为 **builtin**，**`llm` 默认为 `ollama`**。五模块另可选 **`directory`**（`plugins/*/manifest.json` 子进程，见 [DIRECTORY_PLUGINS.md](DIRECTORY_PLUGINS.md)）。
+与 [PLUGIN_V1.md](PLUGIN_V1.md) 一致：**v1 为编译期枚举**，经 `settings.json` → `plugin_backends` 选择实现；记忆 / 情绪 / 事件 / Prompt / **Agent** 默认均为 **builtin**，**`llm` 默认为 `ollama`**。上述六类另可选 **`remote`** / **`directory`**（`plugins/*/manifest.json` 子进程，见 [DIRECTORY_PLUGINS.md](DIRECTORY_PLUGINS.md)）。
 
 **操作指南（如何替换）**：[HOW_TO_REPLACE_MODULES.md](HOW_TO_REPLACE_MODULES.md)。**HTTP 侧车协议**：[REMOTE_PLUGIN_PROTOCOL.md](REMOTE_PLUGIN_PROTOCOL.md)。
 
 ## 宿主聚合
 
 - **`PluginHost`**：持有各后端一套 `Arc<dyn Trait>`，按枚举分发；[`src-tauri/src/domain/plugin_host.rs`](../../src-tauri/src/domain/plugin_host.rs)。**Remote** 槽位在设置 `OCLIVE_REMOTE_*` 时为 HTTP 客户端 [`src-tauri/src/infrastructure/remote_plugin/`](../../src-tauri/src/infrastructure/remote_plugin/)。**Directory** 槽位在 [`DirectoryPluginRuntime::ensure_rpc_url`](../../src-tauri/src/infrastructure/directory_plugins/runtime.rs) 懒启动子进程后，复用同一套 HTTP 客户端与 URL。
-- **`ResolvedRolePlugins`**：`PluginHost::resolve_for_role(role)` 一次解析 **memory / emotion / event / prompt / llm** 五条线，**单次 `send_message` / `RoleManager` 回合内复用**，避免重复匹配枚举。
+- **`ResolvedRolePlugins`**：`PluginHost::resolve_for_role(role)` 一次解析 **memory / emotion / event / prompt / llm / agent** 六条子系统线，**单次 `send_message` / `RoleManager` 回合内复用**，避免重复匹配枚举。
 
 ## Rust trait 与源文件
 
@@ -20,6 +20,7 @@
 | 事件影响估计 | `EventEstimator` | `BuiltinEventEstimator`、`BuiltinEventEstimatorV2` | `src-tauri/src/domain/event_estimator.rs` |
 | Prompt 组装 | `PromptAssembler` | `BuiltinPromptAssembler`、`BuiltinPromptAssemblerV2` | `src-tauri/src/domain/prompt_assembler.rs` |
 | LLM 调用 | `LlmClient`（`plugin_backends.llm`：`ollama` / `remote` / `directory`） | 进程注入的 `OllamaClient`；`remote` 在配置 `OCLIVE_REMOTE_LLM_URL` 时走 HTTP JSON-RPC；**`directory`** 使用 **`directory_plugins.llm`** 指向的插件 URL（见 [DIRECTORY_PLUGINS.md](DIRECTORY_PLUGINS.md)）；否则回退进程内默认 LLM | `src-tauri/src/infrastructure/llm.rs`、`infrastructure/remote_plugin/` |
+| Agent 编排 | `AgentProvider`（`plugin_backends.agent`：`builtin` / `remote` / `directory`） | `BuiltinReActAgent`；`directory` 需 `directory_plugins.agent`；MCP 配置根见 [`PluginHost::new`](../../src-tauri/src/domain/plugin_host.rs) 的 `app_data_dir` | `src-tauri/src/domain/agent.rs`、`infrastructure/mcp_client.rs` |
 | 长期记忆持久化 | `MemoryRepository` | SQLite | `src-tauri/src/domain/repository.rs`、`infrastructure/repositories` |
 | 策略（情感 / 事件 / 记忆） | `EmotionPolicy` 等 | `Default*` | `src-tauri/src/domain/policy.rs`、`state` 加载 |
 
@@ -27,7 +28,7 @@
 
 ## 运行时选择
 
-- **`AppState::resolved_plugins_for(role)`**：一次解析记忆 / 情绪 / 事件 / Prompt / **LLM** 五条线；**`chat_engine` 主路径优先使用**，见 [`src-tauri/src/state/mod.rs`](../../src-tauri/src/state/mod.rs)。
+- **`AppState::resolved_plugins_for(role)`**：一次解析记忆 / 情绪 / 事件 / Prompt / **LLM** / **Agent** 六条子系统线；**`chat_engine` 主路径优先使用**，见 [`src-tauri/src/state/mod.rs`](../../src-tauri/src/state/mod.rs)。
 - **`memory_retrieval_for` / `user_emotion_analyzer_for` 等**：仅取单类后端时可用；内部按**完整** `role.plugin_backends` 解析（含 **`directory`** 与各槽 id），与 `resolved_plugins_for` 不叠加调用。
 - **`RoleManager`**：持有 [`ResolvedRolePlugins`](../../src-tauri/src/domain/plugin_host.rs)，`process_input` 与主对话同一套情绪与 Prompt 门面；[`with_memory_retrieval`](../../src-tauri/src/domain/role_manager.rs) 可覆盖记忆后端做测试。
 

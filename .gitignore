@@ -23,6 +23,11 @@ dist-ssr
 *.sln
 *.sw?
 
+# Rust / local build artifacts
+src-tauri/tmp_*.exe
+src-tauri/tmp_*.pdb
+distributions/
+
 # Rust / secrets
 src-tauri/.sqlx_prepare.db
 src-tauri/target

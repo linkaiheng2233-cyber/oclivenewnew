@@ -10,7 +10,7 @@
 
 ## `plugin_backends` 与 PLUGIN_V1
 
-- **`plugin_backends`**：可选；省略时记忆 / 情绪 / 事件 / Prompt 为 **builtin**，**`llm` 为 `ollama`**（见 [`PluginBackends`](../../src-tauri/src/models/plugin_backends.rs)）。
+- **`plugin_backends`**：可选；省略时记忆 / 情绪 / 事件 / Prompt / **Agent** 为 **builtin**，**`llm` 为 `ollama`**（见 [`PluginBackends`](../../src-tauri/src/models/plugin_backends.rs)）。
 - 各后端枚举与语义见 **[PLUGIN_V1.md](../plugin-and-architecture/PLUGIN_V1.md)**。
 - **未知枚举值**：反序列化可能失败，需修正拼写或扩展 `serde` 接受别名（若日后增加）。
 

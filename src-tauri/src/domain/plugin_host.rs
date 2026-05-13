@@ -486,6 +486,13 @@ pub struct PluginHost {
 }
 
 impl PluginHost {
+    /// 构造宿主注册表。
+    ///
+    /// - `llm`：进程内默认 LLM 句柄（`plugin_backends.llm = ollama` 等会复用或包装该实现）。
+    /// - `directory_runtime`：目录插件懒启动运行时；无目录插件需求时可传 `None`。
+    /// - `app_data_dir`：应用数据根目录（生产环境为 Tauri app data）。当前用于初始化
+    ///   [`McpClient`](crate::infrastructure::mcp_client::McpClient)（扫描 `{app_data_dir}/mcp-servers/*.json`）。
+    ///   集成测试可传 `std::env::temp_dir()`。
     pub fn new(
         llm: Arc<dyn LlmClient>,
         directory_runtime: Option<Arc<DirectoryPluginRuntime>>,
