@@ -72,7 +72,7 @@ async fn week3_004_load_role_and_get_info() {
 }
 
 #[tokio::test(flavor = "multi_thread")]
-async fn week3_004_get_role_info_before_runtime_fails() {
+async fn week3_004_get_role_info_seeds_runtime_when_missing() {
     let llm = Arc::new(MockLlmClient {
         reply: "ok".to_string(),
     });
@@ -80,8 +80,28 @@ async fn week3_004_get_role_info_before_runtime_fails() {
         .await
         .expect("state");
 
-    let err = get_role_info_impl(&state, "mumu", None).await.unwrap_err();
-    assert!(err.contains("load_role"));
+    assert!(
+        !state
+            .db_manager
+            .role_runtime_exists("mumu")
+            .await
+            .expect("probe"),
+        "precondition: no role_runtime row before first get_role_info"
+    );
+
+    let info = get_role_info_impl(&state, "mumu", None)
+        .await
+        .expect("get_role_info seeds role_runtime for headless/OOCP parity");
+    assert_eq!(info.role_id, "mumu");
+
+    assert!(
+        state
+            .db_manager
+            .role_runtime_exists("mumu")
+            .await
+            .expect("probe"),
+        "role_runtime row exists after get_role_info"
+    );
 }
 
 #[tokio::test(flavor = "multi_thread")]

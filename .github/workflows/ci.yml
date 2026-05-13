@@ -135,7 +135,8 @@ jobs:
         run: |
           sudo apt-get update
           sudo apt-get install -y libwebkit2gtk-4.1-dev build-essential curl wget \
-            libssl-dev libgtk-3-dev libayatana-appindicator3-dev librsvg2-dev patchelf
+            libssl-dev libgtk-3-dev libayatana-appindicator3-dev librsvg2-dev patchelf \
+            libsoup2.4-dev
       - name: rustfmt (workspace root)
         run: cargo fmt --all --check
       - name: Check creator-docs internal markdown links
@@ -278,7 +279,8 @@ jobs:
         run: |
           sudo apt-get update
           sudo apt-get install -y libwebkit2gtk-4.1-dev build-essential curl wget \
-            libssl-dev libgtk-3-dev libayatana-appindicator3-dev librsvg2-dev patchelf
+            libssl-dev libgtk-3-dev libayatana-appindicator3-dev librsvg2-dev patchelf \
+            libsoup2.4-dev
       - name: Compile Criterion benches (no run)
         run: cargo bench -p oclive_kernel_runtime --no-run
 
@@ -297,7 +299,8 @@ jobs:
         run: |
           sudo apt-get update
           sudo apt-get install -y libwebkit2gtk-4.1-dev build-essential curl wget \
-            libssl-dev libgtk-3-dev libayatana-appindicator3-dev librsvg2-dev patchelf
+            libssl-dev libgtk-3-dev libayatana-appindicator3-dev librsvg2-dev patchelf \
+            libsoup2.4-dev
       - name: Build test binary for directory-plugin benches
         run: cargo build -p oclive_kernel_runtime --bin oclive_test_dir_plugin
       - name: Run Criterion benches (kernel_hot_paths + kernel_plugins_persistence)
