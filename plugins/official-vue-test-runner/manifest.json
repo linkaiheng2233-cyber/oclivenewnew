@@ -1,0 +1,19 @@
+{
+  "schema_version": 1,
+  "type": "ocliveplugin",
+  "id": "com.oclive.official_vue_test_runner",
+  "version": "0.1.0",
+  "shell": {
+    "entry": "ui/index.html",
+    "bridge": {
+      "invoke": ["rpc:invoke", "process:spawn"],
+      "events": []
+    }
+  },
+  "process": {
+    "command": "node",
+    "args": ["rpc_server.mjs"]
+  },
+  "rpcMethods": ["health", "list_test_files", "run_test", "echo.ping"],
+  "provides": []
+}
