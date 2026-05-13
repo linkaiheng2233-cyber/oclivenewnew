@@ -34,6 +34,15 @@ jobs:
           sudo apt-get install -y libwebkit2gtk-4.1-dev build-essential curl wget \
             libssl-dev libgtk-3-dev libayatana-appindicator3-dev librsvg2-dev patchelf \
             libsoup2.4-dev
+      - name: pkg-config shims (Noble WebKit 4.1 only; Tauri 1 probes gtk 4.0 .pc)
+        if: runner.os == 'Linux'
+        shell: bash
+        run: |
+          set -euo pipefail
+          m="$(dpkg-architecture -qDEB_HOST_MULTIARCH)"
+          pc="/usr/lib/${m}/pkgconfig"
+          sudo ln -sf "${pc}/javascriptcoregtk-4.1.pc" "${pc}/javascriptcoregtk-4.0.pc"
+          sudo ln -sf "${pc}/webkit2gtk-4.1.pc" "${pc}/webkit2gtk-4.0.pc"
       - run: npm ci
       - run: npm run build
       - name: Tauri build
