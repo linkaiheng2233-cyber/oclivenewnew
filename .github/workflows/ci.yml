@@ -40,6 +40,20 @@ jobs:
       - name: tests
         run: cargo test
 
+  cargo-audit:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: src-tauri
+    continue-on-error: true
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dtolnay/rust-toolchain@stable
+      - name: Install cargo-audit
+        run: cargo install cargo-audit --version 0.22.1 --locked
+      - name: cargo audit
+        run: cargo audit
+
   frontend:
     strategy:
       fail-fast: false
