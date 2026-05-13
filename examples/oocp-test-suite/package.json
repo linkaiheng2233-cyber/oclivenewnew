@@ -1,0 +1,13 @@
+{
+  "name": "oocp-test-suite",
+  "private": true,
+  "version": "0.1.0",
+  "type": "module",
+  "description": "Executable OOCP v0.1 scenario checks against oclive_kernel_server",
+  "scripts": {
+    "test": "node run.mjs"
+  },
+  "dependencies": {
+    "@oclive/oocp-client": "file:../../tools/oocp-client"
+  }
+}
