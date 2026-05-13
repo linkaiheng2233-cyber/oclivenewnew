@@ -135,6 +135,8 @@ pub struct HealthVerboseJson {
 }
 
 #[cfg(unix)]
+// `libc::statvfs` field widths differ by OS; avoid per-target clippy noise on `from`/`try_from`.
+#[allow(clippy::useless_conversion, clippy::unnecessary_fallible_conversions)]
 fn unix_fs_available_bytes(path: &std::path::Path) -> std::io::Result<u64> {
     use std::ffi::CString;
     use std::os::unix::ffi::OsStrExt;

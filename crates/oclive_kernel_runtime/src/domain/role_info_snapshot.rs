@@ -3,7 +3,7 @@
 use crate::domain::chat_engine::conversation_state_role_id;
 use crate::domain::life_schedule::resolve_life_state;
 use crate::domain::user_identity::resolve_effective_user_relation_key;
-use crate::error::{AppError, Result};
+use crate::error::Result;
 use crate::models::dto::{LifeStateDto, RoleData, RoleInfo, SceneLabelEntry, UserRelationDto};
 use crate::models::{InteractionMode, Role};
 use crate::state::KernelAppState;
@@ -181,15 +181,11 @@ pub async fn get_role_info_snapshot(
     session_id: Option<&str>,
 ) -> Result<RoleInfo> {
     let session_ns = conversation_state_role_id(role_id, session_id);
-    if !state
+    // OOCP / HTTP may query pack metadata before any desktop `load_role`; seed `role_runtime` idempotently.
+    state
         .db_manager
-        .role_runtime_exists(session_ns.as_str())
-        .await?
-    {
-        return Err(AppError::InvalidParameter(
-            "Role runtime not initialized; call load_role first".to_string(),
-        ));
-    }
+        .ensure_role_runtime(session_ns.as_str())
+        .await?;
 
     let role = state.load_role_cached(role_id)?;
     let plugin_backends_session_override = state.session_backend_override(session_ns.as_str());
