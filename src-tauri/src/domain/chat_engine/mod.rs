@@ -7,9 +7,10 @@ mod co_present;
 mod context;
 mod favor;
 mod presence;
+mod process_message;
 mod scene;
 
-use crate::domain::agent::AgentInput;
+pub use process_message::process_message;
 use crate::domain::chat_llm_fallback::{fallback_reply_for_llm_failure, FallbackReplyContext};
 use crate::domain::chat_turn::{relation_favor_for_key, weight_memories_for_scene};
 use crate::domain::chat_turn_rules::{soft_append_guard, strip_hallucination_tokens};
@@ -30,9 +31,8 @@ use crate::models::{
 };
 use crate::state::AppState;
 use chrono::Utc;
-use context::{load_recent_context, validate_scene_id};
+use context::load_recent_context;
 use favor::{compute_favor_and_relation, FavorRelationInput};
-use presence::user_is_remote_from_character;
 use scene::{detect_movement_intent, movement_ui_flags};
 use std::sync::Arc;
 use std::time::Instant;
@@ -49,7 +49,7 @@ pub(super) fn emotion_to_dto(r: &crate::domain::emotion_analyzer::EmotionResult)
     }
 }
 
-fn backend_resolution_summary(
+pub(super) fn backend_resolution_summary(
     effective: &PluginBackends,
     sources: &PluginBackendsSourceMap,
 ) -> String {
@@ -101,7 +101,7 @@ pub(crate) fn conversation_state_role_id(
 }
 
 /// 异地 + 关：占位文案，**不**写入短期记忆 / 事件 / 好感事务（避免无对话却涨好感）
-async fn process_remote_stub(
+pub(super) async fn process_remote_stub(
     state: &AppState,
     req: &SendMessageRequest,
     role: &Role,
@@ -169,7 +169,7 @@ async fn process_remote_stub(
 
 /// 异地 + 开：专用 LLM；跳过事件影响探测，以 `Ignore` + 零振幅参与好感事务（仍更新短期记忆等）
 #[allow(clippy::too_many_arguments)] // 与 `process_co_present` 同级编排入口
-async fn process_remote_life(
+pub(super) async fn process_remote_life(
     state: &AppState,
     req: &SendMessageRequest,
     role: &Role,
@@ -550,166 +550,7 @@ async fn process_remote_life(
     })
 }
 
-/// 处理一条用户消息：分析情绪 → 检测事件 → 演化性格 → 构建 Prompt → 调用 LLM → 持久化
-pub async fn process_message(
-    state: &AppState,
-    req: &SendMessageRequest,
-) -> Result<SendMessageResponse> {
-    let mrid = req.role_id.as_str();
-    let state_rid = conversation_state_role_id(mrid, req.session_id.as_deref());
-    let srid = state_rid.as_str();
-    let requested_scene_id = req
-        .scene_id
-        .clone()
-        .unwrap_or_else(|| "default".to_string());
-    let (scene_id, scenes) = validate_scene_id(state, mrid, requested_scene_id)?;
-    let t0 = Instant::now();
-    log::debug!(
-        target: "oclive_chat",
-        "send_message start role_id={} scene_id={} session_ns={}",
-        mrid,
-        scene_id,
-        srid
-    );
-
-    state.db_manager.ensure_role_runtime(srid).await?;
-
-    let role = ensure_role_loaded(state, mrid).await?;
-    state
-        .db_manager
-        .ensure_interaction_mode_seeded(srid, role.interaction_mode.as_deref())
-        .await?;
-    let effective_backends = state.effective_plugin_backends_for_session(role.as_ref(), srid);
-    let effective_sources = state.effective_plugin_backend_sources_for_session(srid);
-    log::debug!(
-        target: "oclive_chat",
-        "send_message backends role_id={} scene_id={} session_ns={} {}",
-        mrid,
-        scene_id,
-        srid,
-        backend_resolution_summary(&effective_backends, &effective_sources)
-    );
-
-    crate::domain::startup_health::ensure_once(state, role.as_ref(), &effective_backends).await?;
-
-    let pl = state.resolved_plugins_for_session(role.as_ref(), Some(srid));
-    let agent_out = pl
-        .agent
-        .process(AgentInput {
-            role_id: mrid.to_string(),
-            session_namespace: srid.to_string(),
-            message: req.user_message.clone(),
-            model: role.resolve_ollama_model(state.ollama_model.as_str()),
-        })
-        .await?;
-    if agent_out.handled {
-        state
-            .db_manager
-            .set_user_presence_scene(srid, scene_id.as_str())
-            .await?;
-        let emotion_result = pl.emotion.analyze(req.user_message.as_str())?;
-        let user_relation_key = resolve_effective_user_relation_key(
-            state,
-            role.as_ref(),
-            srid,
-            Some(scene_id.as_str()),
-        )
-        .await?;
-        let relation_state = state
-            .db_manager
-            .get_relation_state_for_identity(srid, user_relation_key.as_str())
-            .await?
-            .or(state.db_manager.get_relation_state(srid).await?)
-            .unwrap_or_else(|| "Stranger".to_string());
-        let favor_current = state
-            .db_manager
-            .favorability_for_identity_with_runtime_fallback(srid, user_relation_key.as_str())
-            .await?;
-        let portrait_emotion = state
-            .db_manager
-            .get_current_emotion(srid)
-            .await?
-            .unwrap_or_else(|| "neutral".to_string());
-        return Ok(SendMessageResponse {
-            api_version: API_VERSION,
-            schema: SCHEMA_VERSION,
-            presence_mode: PresenceMode::CoPresent,
-            relation_state,
-            reply: agent_out.reply,
-            emotion: emotion_to_dto(&emotion_result),
-            bot_emotion: portrait_emotion.clone(),
-            portrait_emotion,
-            favorability_delta: 0.0,
-            favorability_current: favor_current as f32,
-            events: vec![],
-            scene_id,
-            offer_destination_picker: false,
-            offer_together_travel: false,
-            reply_is_fallback: false,
-            knowledge_chunks_in_prompt: 0,
-            timestamp: chrono::Utc::now().timestamp_millis(),
-        });
-    }
-
-    state
-        .db_manager
-        .set_user_presence_scene(srid, scene_id.as_str())
-        .await?;
-
-    let current_scene = state.db_manager.get_current_scene(srid).await?;
-    let immersive = state
-        .db_manager
-        .get_interaction_mode(srid)
-        .await?
-        .is_immersive();
-    let remote_life_enabled = state.db_manager.get_remote_life_enabled(srid).await?;
-    let is_remote =
-        immersive && user_is_remote_from_character(scene_id.as_str(), current_scene.as_deref());
-    let preflight_ms = t0.elapsed().as_millis() as u64;
-    if is_remote {
-        if !remote_life_enabled {
-            return process_remote_stub(
-                state,
-                req,
-                role.as_ref(),
-                scene_id.as_str(),
-                t0,
-                srid,
-                preflight_ms,
-            )
-            .await;
-        }
-        let char_scene = current_scene.as_deref().unwrap_or("default");
-        return process_remote_life(
-            state,
-            req,
-            role.as_ref(),
-            scene_id.as_str(),
-            char_scene,
-            t0,
-            mrid,
-            srid,
-            preflight_ms,
-        )
-        .await;
-    }
-
-    co_present::process_co_present(
-        state,
-        req,
-        role.as_ref(),
-        scene_id,
-        scenes,
-        immersive,
-        t0,
-        mrid,
-        srid,
-        preflight_ms,
-    )
-    .await
-}
-
-async fn ensure_role_loaded(state: &AppState, role_id: &str) -> Result<Arc<Role>> {
+pub(super) async fn ensure_role_loaded(state: &AppState, role_id: &str) -> Result<Arc<Role>> {
     state.load_role_cached(role_id)
 }
 
