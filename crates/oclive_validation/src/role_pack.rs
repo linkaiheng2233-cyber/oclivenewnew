@@ -231,14 +231,11 @@ pub fn validate_role_pack_directory(
         None
     };
 
-    let disk = match validate_role_pack_manifest_settings_core(
+    let disk = validate_role_pack_manifest_settings_core(
         &manifest_raw,
         settings_raw.as_deref(),
         settings_schema_supported,
-    ) {
-        Ok(d) => d,
-        Err(e) => return Err(e),
-    };
+    )?;
 
     let merged_scenes = match merge_role_pack_scene_ids(role_dir, &disk.scenes) {
         Ok(s) => s,

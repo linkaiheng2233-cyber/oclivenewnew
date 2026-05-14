@@ -2,6 +2,12 @@
 members = ["crates/oclive_validation", "crates/oclive-cli", "src-tauri"]
 resolver = "2"
 
+[workspace.lints.rust]
+unsafe_code = "forbid"
+
+[workspace.lints.clippy]
+return_self_not_must_use = "warn"
+
 [profile.release]
 opt-level = "z"
 lto = true

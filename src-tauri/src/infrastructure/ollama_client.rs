@@ -47,6 +47,7 @@ impl OllamaClient {
     }
 
     /// 设置超时时间
+    #[must_use]
     pub fn with_timeout(mut self, timeout: Duration) -> Self {
         self.timeout = timeout;
         self

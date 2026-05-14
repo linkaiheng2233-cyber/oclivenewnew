@@ -4,6 +4,12 @@ version = "0.1.0"
 edition = "2021"
 description = "Shared role pack manifest validation (native + wasm for pack editor)"
 license = "AGPL-3.0"
+repository = "https://github.com/linkaiheng2233-cyber/oclivenewnew"
+keywords = ["oclive", "validation", "manifest", "role-pack"]
+categories = ["development-tools"]
+
+[lints]
+workspace = true
 
 [lib]
 crate-type = ["cdylib", "rlib"]
