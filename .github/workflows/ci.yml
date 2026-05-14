@@ -54,6 +54,18 @@ jobs:
       - name: cargo audit
         run: cargo audit
 
+  cli:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dtolnay/rust-toolchain@stable
+      - name: fmt oclive-cli
+        run: cargo fmt -p oclive-cli -- --check
+      - name: clippy oclive-cli
+        run: cargo clippy -p oclive-cli --all-targets -- -D warnings
+      - name: test oclive-cli
+        run: cargo test -p oclive-cli
+
   frontend:
     strategy:
       fail-fast: false
