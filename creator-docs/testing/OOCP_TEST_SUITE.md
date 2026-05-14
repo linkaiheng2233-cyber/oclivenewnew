@@ -35,6 +35,8 @@
 
 当前主程序 **`--api`** 为 **HTTP**（`GET /health`、`POST /chat`），**无 WebSocket 方法链**。本套件校验的是 **HTTP 试聊契约** 与编排结果；若规范中的 WS 语义落地，应在本目录扩展脚本与 CI 步骤。
 
+**文档口径**：与本仓库根 **`README.md`**、**`AGENTS.md`** 对 CI job 名 **`oocp-test-suite`**、场景数 **S0–S11**、目录 **`examples/oocp-test-suite/`** 的叙述一致。
+
 ## 测试体系统览
 
 见同目录 [`OVERVIEW.md`](./OVERVIEW.md)。
