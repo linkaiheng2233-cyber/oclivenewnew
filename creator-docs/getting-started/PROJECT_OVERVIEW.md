@@ -2,6 +2,8 @@
 
 本文把 **三件套分工、已落实内容、文档入口、命令、人机分工、待排期** 收拢在一处；细节仍以各专题文档为准。
 
+> **架构总览图**（内核居中、模块环绕；含静态图与 Mermaid）：参见 [KERNEL_AND_MODULES_ARCHITECTURE.md](KERNEL_AND_MODULES_ARCHITECTURE.md)。由此可链到 [PLUGIN_V1.md](../plugin-and-architecture/PLUGIN_V1.md) 与各模块专题。
+
 ---
 
 ## 1. 三个仓库分别是什么
@@ -30,6 +32,7 @@
 | 需求 | 文档 |
 |------|------|
 | **总索引** | [DOCUMENTATION_INDEX.md](DOCUMENTATION_INDEX.md) |
+| **内核与六槽架构总览（图）** | [KERNEL_AND_MODULES_ARCHITECTURE.md](KERNEL_AND_MODULES_ARCHITECTURE.md) |
 | **创作者：从包到 oclive** | [CREATOR_WORKFLOW.md](CREATOR_WORKFLOW.md) |
 | **manifest / 导入** | [roles/README_MANIFEST.md](../../roles/README_MANIFEST.md) |
 | **性格档案设计轴心** | [docs/personality-archive-notes.md](../../docs/personality-archive-notes.md) |
