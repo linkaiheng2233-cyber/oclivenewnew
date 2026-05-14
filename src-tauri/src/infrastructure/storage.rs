@@ -5,7 +5,8 @@ use crate::domain::role_manifest_validate::{
 use crate::error::{AppError, Result};
 use crate::models::role_manifest_disk::{disk_manifest_from_role, disk_manifest_to_role};
 use crate::models::{
-    author_pack::AuthorPackFile, role_settings_disk::CURRENT_SETTINGS_SCHEMA_VERSION,
+    author_pack::AuthorPackFile, disk_role_settings_from_role,
+    role_settings_disk::CURRENT_SETTINGS_SCHEMA_VERSION,
     DiskRoleManifest, DiskRoleSettings, DiskSceneConfig, LlmBackend, Role, UiConfig,
 };
 use chrono::Timelike;
@@ -537,7 +538,7 @@ impl RoleStorage {
         let json = serde_json::to_string_pretty(&disk).map_err(AppError::SerializationError)?;
         fs::write(&manifest_path, json).map_err(AppError::IoError)?;
 
-        let settings = DiskRoleSettings::from_role(role);
+        let settings = disk_role_settings_from_role(role);
         let settings_path = role_dir.join("settings.json");
         let settings_json =
             serde_json::to_string_pretty(&settings).map_err(AppError::SerializationError)?;

@@ -30,6 +30,6 @@ pub use personality::*;
 pub use plugin_backends::*;
 pub use role::*;
 pub use role_manifest_disk::DiskRoleManifest;
-pub use role_settings_disk::DiskRoleSettings;
+pub use role_settings_disk::{disk_role_settings_from_role, DiskRoleSettings};
 pub use scene_disk::{DiskSceneConfig, DiskSceneTimeWindow};
 pub use ui_config::{LayoutConfig, SlotConfig, ThemeConfig, UiConfig, UiSlots};

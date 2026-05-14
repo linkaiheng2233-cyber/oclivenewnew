@@ -6,8 +6,8 @@ use super::knowledge::KnowledgeIndex;
 use super::plugin_backends::PluginBackends;
 use super::ui_config::UiConfig;
 pub use oclive_validation::{
-    IdentityBinding, LifeAvailability, LifeScheduleDisk, LifeScheduleEntryDisk, LifeTrajectoryDisk,
-    PersonalitySource,
+    AutonomousSceneConfig, AutonomousSceneRule, IdentityBinding, LifeAvailability, LifeScheduleDisk,
+    LifeScheduleEntryDisk, LifeTrajectoryDisk, PersonalitySource, RemotePresenceConfig,
 };
 use std::sync::Arc;
 
@@ -127,37 +127,6 @@ pub struct LifeState {
     pub activity_key: String,
     pub busy_level: f32,
     pub optional_scene_hint: Option<String>,
-}
-
-/// 虚拟时间跳转后可选评估的「角色自主换场景」规则（二期，创作者可选）。
-/// 写在 `settings.json` → `autonomous_scene`。
-#[derive(Debug, Clone, Serialize, Deserialize, Default)]
-pub struct AutonomousSceneConfig {
-    /// 在 `jump_time` 更新虚拟时间后按顺序匹配，首条命中则写入 `role_runtime.current_scene`（需 `storage.is_scene_time_allowed`）。
-    #[serde(default)]
-    pub on_virtual_time: Vec<AutonomousSceneRule>,
-}
-
-#[derive(Debug, Clone, Serialize, Deserialize)]
-pub struct AutonomousSceneRule {
-    /// 角色当前须在此场景才评估本规则
-    pub when_scene: String,
-    /// 本地时刻小时 \[start, end\)（0–23）；`end` 可小于 `start` 表示跨午夜
-    pub hour_start: u8,
-    pub hour_end: u8,
-    pub to_scene: String,
-}
-
-/// 角色包 `settings.json` 中「异地心声」**模式开关**（可选）。
-/// 占位句与轨迹总述见 manifest 的 `life_trajectory`。
-#[derive(Debug, Clone, Serialize, Deserialize, Default)]
-pub struct RemotePresenceConfig {
-    /// 安装或首次展示时 UI 是否默认勾选「异地心声」（仅提示；持久化以 DB 为准）
-    #[serde(default)]
-    pub default_enabled: Option<bool>,
-    /// 已迁移至 manifest `life_trajectory.stub_messages`；反序列化仍可读以实现旧包兼容
-    #[serde(default, skip_serializing_if = "Vec::is_empty")]
-    pub stub_messages: Vec<String>,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]

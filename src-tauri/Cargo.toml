@@ -5,6 +5,11 @@ edition = "2021"
 license = "AGPL-3.0"
 description = "oclive desktop companion — Tauri + Vue + Rust dialogue engine"
 
+# Avoid `cargo test --workspace` doc-test races (E0460: stale `oclive_validation` rlib) on Windows
+# when multiple workspace members rebuild the same path dependency in parallel.
+[lib]
+doctest = false
+
 [features]
 default = ["custom-protocol"]
 custom-protocol = ["tauri/custom-protocol"]
