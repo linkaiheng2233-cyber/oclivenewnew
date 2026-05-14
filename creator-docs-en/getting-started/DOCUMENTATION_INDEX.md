@@ -95,4 +95,6 @@ Architecture-level design converges in RFCs (**drafts do not imply merged code o
 
 Build commands and tests: root **[README.md](../../README.md)**; **plugin and sidecar details are authoritative in `creator-docs/`** (and mirrored here in English where listed).
 
-**Chinese hub**: [DOCUMENTATION_INDEX.md](../../creator-docs/getting-started/DOCUMENTATION_INDEX.md)
+---
+
+[中文](../../creator-docs/getting-started/DOCUMENTATION_INDEX.md)

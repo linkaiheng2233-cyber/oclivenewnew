@@ -220,3 +220,7 @@ Concrete numbers come from **`oclive bench`** (section 9); this RFC **makes no p
 - Blueprint schema (runtime): [`creator-docs/kernel/PIPELINE_SCHEMA.md`](../../creator-docs/kernel/PIPELINE_SCHEMA.md)
 
 Link discussions to: `creator-docs/rfc/RFC_OCLIVE_MONOLITH_MODE.md`.
+
+---
+
+[中文](../../creator-docs/rfc/RFC_OCLIVE_MONOLITH_MODE.md)

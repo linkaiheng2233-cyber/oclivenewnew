@@ -13,3 +13,7 @@
 ## Local HTTP API (`--api`)
 
 - **`POST /chat`**: success body includes **`reply: string`**; aligned with `SendMessageResponse`. See root [README.md](../../README.md) section “Local HTTP API”.
+
+---
+
+[中文](../../creator-docs/testing/TEST_OUTPUT_SCHEMA.md)

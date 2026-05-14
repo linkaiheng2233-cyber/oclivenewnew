@@ -39,3 +39,7 @@ This document states **what security-related work exists in this repo today** an
 | Date | Notes |
 |------|--------|
 | 2026-05-13 | First version: defined completed scope and known gaps. |
+
+---
+
+[中文](../../creator-docs/security/SECURITY_AUDIT_SCOPE.md)

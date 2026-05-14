@@ -100,3 +100,7 @@ If you have **oclive-pack-editor** and **oclive-launcher** checked out, each has
 ---
 
 *If this page disagrees with a topic doc or the code, prefer the topic doc + repository code; update this page or `CHANGELOG.md` for major drift.*
+
+---
+
+[中文](../../creator-docs/getting-started/PROJECT_OVERVIEW.md)

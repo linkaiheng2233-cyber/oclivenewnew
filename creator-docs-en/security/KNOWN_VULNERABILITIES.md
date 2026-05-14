@@ -65,3 +65,7 @@ This file records **vulnerability-level** hits from **`cargo audit`** on **`src-
    If network-blocked: `cargo audit --no-fetch --stale`
 2. Sync **vulnerability-level** changes to the table above; sync policy changes to [LIGHTWEIGHT_PROFILE.md §6.4](../../creator-docs/development/LIGHTWEIGHT_PROFILE.md).
 3. Do not claim “zero vulnerabilities” in outward copy; use **“known vulnerabilities under tracking”** and link here.
+
+---
+
+[中文](../../creator-docs/security/KNOWN_VULNERABILITIES.md)

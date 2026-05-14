@@ -13,3 +13,7 @@
 ## HTTP 本地 API（`--api`）
 
 - **`POST /chat`**：成功体含 **`reply: string`**；与 `SendMessageResponse` 对齐。详见根目录 [README.md](../../README.md)「本地 HTTP API」。
+
+---
+
+[English](../../creator-docs-en/testing/TEST_OUTPUT_SCHEMA.md)

@@ -18,3 +18,7 @@
 | **T14–T20**（`official-vue-test-runner` 等） | 编写器内置能力，以**目录插件**范式对接工作区；详见编写器文档与插件 README。 |
 
 主应用通过包格式与 HTTP/`invoke` 契约对接；组件级与插件壳级测试在编写器侧执行即可覆盖创作者工具链。
+
+---
+
+[English](../../creator-docs-en/testing/OVERVIEW.md)

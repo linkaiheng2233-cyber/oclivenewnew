@@ -49,3 +49,7 @@ This defines a **static JSON index** for market sites, launchers, or scripts to 
 ```
 
 **JSON Schema**: `crates/oclive-cli/schemas/role_pack_index.schema.json`.
+
+---
+
+[中文](../../creator-docs/role-pack/ROLE_PACK_INDEX.md)

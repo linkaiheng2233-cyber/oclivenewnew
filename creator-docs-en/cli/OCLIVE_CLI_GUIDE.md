@@ -171,3 +171,7 @@ Repo **`.github/workflows/ci.yml`** **`cli`** job runs `cargo test -p oclive-cli
 
 1. After **`oclive_kernel_runtime`** lands in the workspace, add **`--kernel-source path`** to the CLI to auto-write `Cargo.toml` deps.  
 2. When aligning with `MODULE_NONE_SEMANTICS`, add **auto-validation** for “logical none” vs “loadable JSON”, or a `cargo oclive-validate-settings` subcommand.
+
+---
+
+[中文](../../creator-docs/cli/OCLIVE_CLI_GUIDE.md)

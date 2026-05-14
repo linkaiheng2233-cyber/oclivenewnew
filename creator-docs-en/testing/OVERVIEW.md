@@ -18,3 +18,7 @@ This document pins **what is tested and in which repository**, so it does not co
 | **T14–T20** (`official-vue-test-runner`, etc.) | Editor-built capability, wired to the workspace as a **directory plugin** pattern; see editor docs and plugin READMEs. |
 
 The main app connects via pack format and HTTP / `invoke` contracts; component- and plugin-shell-level tests on the editor side are enough to cover the creator toolchain.
+
+---
+
+[中文](../../creator-docs/testing/OVERVIEW.md)

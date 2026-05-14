@@ -104,3 +104,7 @@ cargo run -p oclive-cli -- pack validate ./roles/my-role --host-version 0.2.0
 | `init … --skip-role-pack` | Kernel project without creating `roles/` |
 
 See [OCLIVE_CLI_GUIDE.md](../cli/OCLIVE_CLI_GUIDE.md).
+
+---
+
+[中文](../../creator-docs/role-pack/ROLE_PACK_SPEC.md)

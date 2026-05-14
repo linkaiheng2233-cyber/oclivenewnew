@@ -171,3 +171,7 @@ cargo run -p oclive-cli -- bench --release -o /path/to/kernel-project --json
 
 1. 在 workspace 中落地 **`oclive_kernel_runtime`** 后，为 CLI 增加 **`--kernel-source path`**，自动写入 `Cargo.toml` 依赖。  
 2. 与 `MODULE_NONE_SEMANTICS` 对齐时，为「逻辑 none」与「可加载 JSON」生成 **自动校验** 或 `cargo oclive-validate-settings` 子命令。
+
+---
+
+[English](../../creator-docs-en/cli/OCLIVE_CLI_GUIDE.md)

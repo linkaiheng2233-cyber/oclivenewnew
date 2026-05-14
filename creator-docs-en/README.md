@@ -86,3 +86,7 @@ This tree mirrors **`creator-docs/`** with hand-maintained English pages. For to
 ## Contributing
 
 - [CONTRIBUTING.en.md](../CONTRIBUTING.en.md) · [CONTRIBUTING.md](../CONTRIBUTING.md)
+
+---
+
+[中文](../creator-docs/README.md)

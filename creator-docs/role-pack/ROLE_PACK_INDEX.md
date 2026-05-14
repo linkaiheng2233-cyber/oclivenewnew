@@ -49,3 +49,7 @@
 ```
 
 **JSON Schema**：`crates/oclive-cli/schemas/role_pack_index.schema.json`。
+
+---
+
+[English](../../creator-docs-en/role-pack/ROLE_PACK_INDEX.md)

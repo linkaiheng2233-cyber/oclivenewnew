@@ -93,3 +93,7 @@ TypeScript **`SendMessageResponse`** (`src/utils/tauri-api.ts`) must match `mode
 `get_role_info`, `load_role`, and **`POST /chat`** (with `--api`) expose **`personality_source`** as **`vector` | `profile`**, aligned with pack **`evolution.personality_source`**.
 
 For the complete RPC tables and manifest examples, open the **[full PLUGIN_V1 (ZH)](../../creator-docs/plugin-and-architecture/PLUGIN_V1.md)**.
+
+---
+
+[中文](../../creator-docs/plugin-and-architecture/PLUGIN_V1.md)

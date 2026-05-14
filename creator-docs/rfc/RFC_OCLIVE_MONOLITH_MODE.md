@@ -220,3 +220,7 @@ my-fast-npc/
 - 蓝图 Schema（运行时）：[`creator-docs/kernel/PIPELINE_SCHEMA.md`](../kernel/PIPELINE_SCHEMA.md)
 
 讨论请链接本文：`creator-docs/rfc/RFC_OCLIVE_MONOLITH_MODE.md`。
+
+---
+
+[English](../../creator-docs-en/rfc/RFC_OCLIVE_MONOLITH_MODE.md)

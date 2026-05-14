@@ -94,3 +94,7 @@
 ## 与仓库根 README 的关系
 
 项目总览、构建命令、测试见仓库根目录 **[README.md](../../README.md)**；**插件与侧车细节以 `creator-docs/` 为准**。
+
+---
+
+[English](../../creator-docs-en/getting-started/DOCUMENTATION_INDEX.md)

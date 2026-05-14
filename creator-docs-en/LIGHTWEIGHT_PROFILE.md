@@ -96,3 +96,7 @@ cargo bloat --release -n 8
 |------|--------|
 | 2026-05-12 | §6.4 / §6.7: re-ran `cargo audit` and `cargo bloat --release -n 8`, refreshed summary date and bloat numbers (`.text` 7.6 MiB, PE 12.0 MiB). |
 | 2026-05-13 | First version: aligned with `main` lockfile, `cargo audit` / `cargo bloat` sampling; linked KNOWN_VULNERABILITIES. |
+
+---
+
+[中文](../creator-docs/development/LIGHTWEIGHT_PROFILE.md)

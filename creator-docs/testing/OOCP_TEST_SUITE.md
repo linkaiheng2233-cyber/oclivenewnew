@@ -40,3 +40,7 @@
 ## 测试体系统览
 
 见同目录 [`OVERVIEW.md`](./OVERVIEW.md)。
+
+---
+
+[English](../../creator-docs-en/testing/OOCP_TEST_SUITE.md)

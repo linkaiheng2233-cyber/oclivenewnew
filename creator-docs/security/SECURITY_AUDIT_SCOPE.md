@@ -39,3 +39,7 @@
 | 日期 | 说明 |
 |------|------|
 | 2026-05-13 | 初版：定义已完成范围与已知局限。 |
+
+---
+
+[English](../../creator-docs-en/security/SECURITY_AUDIT_SCOPE.md)

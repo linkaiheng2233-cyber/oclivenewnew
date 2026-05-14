@@ -100,3 +100,7 @@
 | 插件与侧车总览 | [PLUGIN_V1.md](../plugin-and-architecture/PLUGIN_V1.md) |
 | 目录插件 | [DIRECTORY_PLUGINS.md](../plugin-and-architecture/DIRECTORY_PLUGINS.md) |
 | 编译期高耦合模式（Monolith） | [RFC_OCLIVE_MONOLITH_MODE.md](../rfc/RFC_OCLIVE_MONOLITH_MODE.md)（`monolith.toml`、`build` / `bench`、双 `[[bin]]`） |
+
+---
+
+[English](../../creator-docs-en/cli/SETTINGS_REFERENCE.md)

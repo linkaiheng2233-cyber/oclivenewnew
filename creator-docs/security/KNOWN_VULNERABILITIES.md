@@ -65,3 +65,7 @@
    若网络受限：`cargo audit --no-fetch --stale`
 2. 将 **漏洞级** 变化同步到上表；将策略变化同步到 [LIGHTWEIGHT_PROFILE.md §6.4](../development/LIGHTWEIGHT_PROFILE.md)。
 3. 不在对外文案中宣称「零漏洞」；使用 **「已知漏洞跟踪中」** 并链接本文件。
+
+---
+
+[English](../../creator-docs-en/security/KNOWN_VULNERABILITIES.md)

@@ -20,3 +20,7 @@
 
 - [PLUGIN_V1.md](../plugin-and-architecture/PLUGIN_V1.md)  
 - [EXTENSION_POINTS.md](../plugin-and-architecture/EXTENSION_POINTS.md)
+
+---
+
+[English](../../creator-docs-en/testing/ADAPTING_TEST_PLUGIN.md)

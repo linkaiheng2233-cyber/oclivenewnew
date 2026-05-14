@@ -40,3 +40,7 @@ The main app **`--api`** mode is **HTTP** (`GET /health`, `POST /chat`), **witho
 ## Test stack overview
 
 See [`OVERVIEW.md`](./OVERVIEW.md) in the same folder.
+
+---
+
+[中文](../../creator-docs/testing/OOCP_TEST_SUITE.md)

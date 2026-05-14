@@ -369,3 +369,7 @@ TypeScript 侧 `SendMessageResponse`（`src/utils/tauri-api.ts`）必须与 `mod
 - Tauri **`get_role_info`**（`GetRoleInfoRequest`，可选 **`session_id`**）、**`load_role`** 返回体含 **`personality_source`**：JSON 字符串 **`vector`** | **`profile`**，与角色包 **`evolution.personality_source`** 一致（见 `src-tauri/src/models/dto.rs`）。
 - 启动参数 **`--api`** 时，**`POST /chat`** 成功响应在扁平化的 `SendMessageResponse` 字段之外另含 **`personality_source`**（同上），便于编写器试聊等工具区分人格模式；实现见 `src-tauri/src/http_api.rs`。
 - Remote **`prompt.build_prompt`**：`params` 中含完整 **`role`**（其 `evolution_config.personality_source` 亦可读），并另含顶层 **`personality_source`** 与 `personality` 并列，侧车无需仅从嵌套 `role` 解析（`src-tauri/src/infrastructure/remote_plugin/prompt_http.rs`）。
+
+---
+
+[English](../../creator-docs-en/plugin-and-architecture/PLUGIN_V1.md)
