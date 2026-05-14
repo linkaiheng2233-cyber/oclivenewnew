@@ -28,7 +28,7 @@ pub const PRESET_MATRIX_HELP: &str = r#"预设与 plugin_backends（逻辑槽位
 
 llm 使用 ollama 表示进程内默认本地客户端；无本机模型时请改为 remote 并配置 OCLIVE_REMOTE_LLM_URL（见 PLUGIN_V1）。
 
-开发者编译选项（计划中）：高耦合编译模式可消除热路径上的模块虚调用开销；`monolith.toml` 由 init 生成、build 读取。详见 creator-docs/rfc/RFC_OCLIVE_MONOLITH_MODE.md。
+开发者编译选项（实验性）：非交互可加 **`--monolith`**（仅 kernel_server）；交互流程末尾询问。生成 `monolith.toml`（由 init 生成、build 读取）。详见 creator-docs/rfc/RFC_OCLIVE_MONOLITH_MODE.md。
 "#;
 
 #[derive(Parser, Debug, Clone)]
@@ -77,6 +77,10 @@ pub struct InitArgs {
 
     #[arg(long, value_enum)]
     pub backend_complex_emotion: Option<BackendImpl>,
+
+    /// 非交互：启用 Monolith 实验模式（仅 `kernel_server` 生效；生成 `monolith.toml`、焊接占位源码与双 `[[bin]]`）
+    #[arg(long)]
+    pub monolith: bool,
 }
 
 #[derive(clap::ValueEnum, Clone, Debug, Copy, PartialEq, Eq, Serialize, Deserialize)]
@@ -154,6 +158,8 @@ pub struct ProjectConfig {
     pub plugins: PluginSelection,
     pub features: FeatureSelection,
     pub with_example_role: bool,
+    /// 仅 `kernel_server` 且为 true 时生成 `monolith.toml` 与 Monolith 构建配置。
+    pub monolith_enabled: bool,
 }
 
 impl ProjectConfig {
@@ -176,6 +182,9 @@ impl ProjectConfig {
             self.plugins.directory_plugins, self.plugins.kernel_server, self.plugins.oocp
         );
         println!("示例角色包: {}", self.with_example_role);
+        if self.monolith_enabled {
+            println!("开发者编译: Monolith（实验性，全部模块焊接占位）");
+        }
         println!("——————————————");
     }
 }
@@ -249,6 +258,7 @@ pub fn preset_config(name: &str, preset: &str) -> ProjectConfig {
         plugins,
         features,
         with_example_role,
+        monolith_enabled: false,
     }
 }
 
@@ -278,7 +288,7 @@ pub(crate) fn apply_backend_cli_overrides(cfg: &mut ProjectConfig, args: &InitAr
 }
 
 pub fn run(args: InitArgs) -> Result<()> {
-    let cfg = if args.non_interactive {
+    let mut cfg = if args.non_interactive {
         let preset = args
             .preset
             .as_deref()
@@ -308,6 +318,12 @@ pub fn run(args: InitArgs) -> Result<()> {
         c
     };
 
+    if cfg.project_type != ProjectType::KernelServer {
+        cfg.monolith_enabled = false;
+    } else if args.monolith {
+        cfg.monolith_enabled = true;
+    }
+
     if !args.non_interactive {
         cfg.print_summary();
         if !dialoguer::Confirm::with_theme(&dialoguer::theme::ColorfulTheme::default())
@@ -325,10 +341,20 @@ pub fn run(args: InitArgs) -> Result<()> {
 
     generator::write_project(&cfg, &args.output)?;
     if !args.quiet {
-        println!(
-            "已生成项目: {} （请在该目录执行 cargo build）",
-            args.output.display()
-        );
+        if cfg.monolith_enabled && matches!(cfg.project_type, ProjectType::KernelServer) {
+            let slug = crate::generator::project_slug(&cfg);
+            println!("✓ 项目已创建！");
+            println!("  标准模式二进制: target/release/{slug}");
+            println!("  高耦合模式二进制: target/release/{slug}-monolith");
+            println!("  配置文件: monolith.toml");
+            println!("  详细说明: 参见 creator-docs/rfc/RFC_OCLIVE_MONOLITH_MODE.md");
+            println!("输出目录: {}", args.output.display());
+        } else {
+            println!(
+                "已生成项目: {} （请在该目录执行 cargo build）",
+                args.output.display()
+            );
+        }
     }
     Ok(())
 }

@@ -3,6 +3,7 @@
 mod generator;
 mod init;
 mod interactive;
+mod monolith_codegen;
 
 use anyhow::Result;
 use clap::{Parser, Subcommand};
@@ -39,6 +40,10 @@ mod tests {
         assert!(
             crate::init::PRESET_MATRIX_HELP.contains("RFC_OCLIVE_MONOLITH_MODE.md"),
             "init --help footer should point to Monolith RFC"
+        );
+        assert!(
+            crate::init::PRESET_MATRIX_HELP.contains("--monolith"),
+            "init --help footer should mention --monolith"
         );
     }
 }

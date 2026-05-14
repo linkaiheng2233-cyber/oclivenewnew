@@ -1,8 +1,13 @@
 //! `{{ safe_package_name }}` — oclive-cli 生成的占位内核（无头可执行）。
 //!
-//! 运行方式：在本目录执行 `cargo run`。
+//! 运行方式：在本目录执行 `cargo run`；Monolith 实验构建：`cargo run --features monolith` 或 `cargo build --release --features monolith`。
 
-fn main() {
+{{#if monolith_enabled}}
+mod process_message_monolith;
+{{/if}}
+
+#[allow(dead_code)]
+fn run_stub_kernel() {
     println!("{{ safe_package_name }} — stub kernel (oclive-cli)");
     let settings = std::path::Path::new("roles/default/settings.json");
     if settings.exists() {
@@ -11,4 +16,20 @@ fn main() {
     } else {
         println!("(未找到 roles/default/settings.json，使用 --preset full 或交互生成示例角色包)");
     }
+}
+
+fn main() {
+{{#if monolith_enabled}}
+    #[cfg(feature = "monolith")]
+    {
+        println!("{{ safe_package_name }} — monolith build (experimental)");
+        process_message_monolith::run_monolith_pipeline_demo();
+    }
+    #[cfg(not(feature = "monolith"))]
+    {
+        run_stub_kernel();
+    }
+{{else}}
+    run_stub_kernel();
+{{/if}}
 }

@@ -9,6 +9,21 @@ publish = false
 serde = { version = "1", features = ["derive"] }
 serde_json = "1"
 
+{{#if monolith_enabled}}
+[features]
+default = []
+monolith = []
+
 [[bin]]
-name = "{{ rust_lib_name }}"
+name = "{{ safe_package_name }}"
 path = "src/main.rs"
+
+[[bin]]
+name = "{{ safe_package_name }}-monolith"
+path = "src/main.rs"
+required-features = ["monolith"]
+{{else}}
+[[bin]]
+name = "{{ safe_package_name }}"
+path = "src/main.rs"
+{{/if}}

@@ -38,9 +38,11 @@
 2. **`remote`**：配置 **`OCLIVE_REMOTE_PLUGIN_URL`** / **`OCLIVE_REMOTE_LLM_URL`** 等（见 PLUGIN_V1 与 REMOTE_PLUGIN_PROTOCOL）。
 3. **`directory`**：在包内配置 **`plugin_backends.directory_plugins`** 各槽的 manifest **`id`**，并放置 **`plugins/<id>/`**（见 DIRECTORY_PLUGINS.md）。
 
-## 开发者编译选项（计划中）
+## 开发者编译选项（实验性，第一阶段）
 
-**高耦合编译模式（Monolith）**：在编译期将选定七槽子系统从 `PluginHost` 的 trait 虚调用改为静态调用具体实现，面向游戏 NPC、实时语音、嵌入式等 **延迟敏感** 场景；入口在 **`oclive init`** 终端（**不**进 GUI），由 **`monolith.toml`** 声明焊接范围，**`oclive build`** 读取；**不参与运行时**。
+**高耦合编译模式（Monolith）**：在编译期增加 **`Cargo` feature `monolith`** 与第二二进制 **`{package名}-monolith`**；占位实现见 **`src/process_message_monolith.rs`**（由 `init` 生成）。**仅 `kernel_server` 项目**会生成 **`monolith.toml`**；嵌入式 **library** 忽略 Monolith。
 
-- **状态**：**计划中，尚未实现**；当前 `oclive-cli` 仅生成 `plugin_backends` 与预设说明。
-- **权威设计**：[RFC_OCLIVE_MONOLITH_MODE.md](../../../creator-docs/rfc/RFC_OCLIVE_MONOLITH_MODE.md)（与运行时蓝图边界见 RFC 第 4 节）。
+- **非交互**：`cargo run -p oclive-cli -- init --preset full --monolith -o ./out`（勿与 `--project-type library` 同用）。
+- **交互**：流程末尾「是否启用开发者编译选项？」→「编译模式」→「焊接范围（当前仅全部模块）」。
+- **构建**：`cargo build --release`（标准）、`cargo build --release --features monolith`（焊接产物）。
+- **权威设计**：[RFC_OCLIVE_MONOLITH_MODE.md](../../../creator-docs/rfc/RFC_OCLIVE_MONOLITH_MODE.md)。

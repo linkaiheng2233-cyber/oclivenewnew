@@ -31,6 +31,31 @@ fn cargo_build(project_dir: &std::path::Path) -> std::process::ExitStatus {
         .expect("spawn cargo build")
 }
 
+fn cargo_build_release(project_dir: &std::path::Path) -> std::process::ExitStatus {
+    Command::new("cargo")
+        .args(["build", "--release"])
+        .current_dir(project_dir)
+        .status()
+        .expect("spawn cargo build --release")
+}
+
+fn cargo_build_release_monolith(project_dir: &std::path::Path) -> std::process::ExitStatus {
+    Command::new("cargo")
+        .args(["build", "--release", "--features", "monolith"])
+        .current_dir(project_dir)
+        .status()
+        .expect("spawn cargo build --release --features monolith")
+}
+
+fn release_binary_path(project_dir: &std::path::Path, bin_base: &str) -> std::path::PathBuf {
+    let p = project_dir.join("target/release").join(bin_base);
+    if cfg!(windows) {
+        p.with_extension("exe")
+    } else {
+        p
+    }
+}
+
 #[test]
 fn e2e_preset_minimal_builds() {
     let tmp = tempfile::tempdir().unwrap();
@@ -54,6 +79,10 @@ fn e2e_preset_minimal_builds() {
     assert!(
         cref.contains("RFC_OCLIVE_MONOLITH_MODE"),
         "CONFIG_REFERENCE should link Monolith RFC"
+    );
+    assert!(
+        !out.join("monolith.toml").exists(),
+        "minimal preset without --monolith must not emit monolith.toml"
     );
     let settings_path = out.join("roles/default/settings.json");
     let raw = fs::read_to_string(&settings_path).expect("settings.json");
@@ -125,6 +154,66 @@ fn e2e_preset_mixed_library_builds() {
     ]);
     assert!(st.success());
     assert!(cargo_build(&out).success());
+}
+
+#[test]
+fn e2e_non_interactive_monolith_full_release_builds() {
+    let tmp = tempfile::tempdir().unwrap();
+    let out = tmp.path().join("mono_rel");
+    let st = run_cli(&[
+        "init",
+        "--non-interactive",
+        "--quiet",
+        "--preset",
+        "full",
+        "--monolith",
+        "-o",
+        out.to_str().unwrap(),
+    ]);
+    assert!(st.success(), "oclive-cli init --monolith");
+    let mt_path = out.join("monolith.toml");
+    assert!(mt_path.is_file());
+    let mt = fs::read_to_string(&mt_path).unwrap();
+    assert!(mt.contains("enabled = true"));
+    assert!(mt.contains("weld_modules = []"));
+    assert!(mt.contains("exclude = []"));
+    assert!(out.join("src/process_message_monolith.rs").is_file());
+    assert!(
+        cargo_build_release(&out).success(),
+        "standard release build"
+    );
+    assert!(
+        cargo_build_release_monolith(&out).success(),
+        "monolith release build"
+    );
+    let slug = "my-oclive-kernel";
+    let std_bin = release_binary_path(&out, slug);
+    let mono_bin = release_binary_path(&out, &format!("{slug}-monolith"));
+    assert!(std_bin.is_file(), "expected {:?}", std_bin);
+    assert!(mono_bin.is_file(), "expected {:?}", mono_bin);
+}
+
+#[test]
+fn e2e_monolith_ignored_for_library() {
+    let tmp = tempfile::tempdir().unwrap();
+    let out = tmp.path().join("mono_lib");
+    assert!(run_cli(&[
+        "init",
+        "--non-interactive",
+        "--quiet",
+        "--preset",
+        "full",
+        "--monolith",
+        "--project-type",
+        "library",
+        "-o",
+        out.to_str().unwrap(),
+    ])
+    .success());
+    assert!(
+        !out.join("monolith.toml").exists(),
+        "library project must not emit monolith.toml"
+    );
 }
 
 #[test]

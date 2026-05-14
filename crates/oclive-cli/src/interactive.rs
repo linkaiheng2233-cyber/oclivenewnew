@@ -140,6 +140,35 @@ pub fn run_interactive() -> Result<ProjectConfig> {
         .interact()
         .context("example role")?;
 
+    let mut monolith_enabled = false;
+    if project_type == ProjectType::KernelServer {
+        let dev_opt = Confirm::with_theme(&ColorfulTheme::default())
+            .with_prompt("是否启用开发者编译选项?")
+            .default(false)
+            .interact()
+            .context("developer compile option")?;
+        if dev_opt {
+            let mode_idx = Select::with_theme(&ColorfulTheme::default())
+                .with_prompt("编译模式")
+                .items(&[
+                    "标准模式（低耦合，保留模块可替换性，推荐）",
+                    "高耦合模式（实验性：焊接所有模块，消除虚调用）",
+                ])
+                .default(0)
+                .interact()
+                .context("compile mode")?;
+            if mode_idx == 1 {
+                Select::with_theme(&ColorfulTheme::default())
+                    .with_prompt("焊接范围（自定义 monolith.toml 留待第二阶段）")
+                    .items(&["全部模块（推荐：最大性能提升）"])
+                    .default(0)
+                    .interact()
+                    .context("weld scope")?;
+                monolith_enabled = true;
+            }
+        }
+    }
+
     Ok(ProjectConfig {
         project_name,
         project_type,
@@ -147,5 +176,6 @@ pub fn run_interactive() -> Result<ProjectConfig> {
         plugins,
         features: feats,
         with_example_role,
+        monolith_enabled,
     })
 }

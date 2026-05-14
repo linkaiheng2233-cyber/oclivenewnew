@@ -1,11 +1,17 @@
 //! 模板渲染与落盘。
 
 use crate::init::{BackendImpl, ProjectConfig, ProjectType};
+use crate::monolith_codegen;
 use anyhow::{Context, Result};
 use handlebars::Handlebars;
 use serde_json::{json, Map, Value};
 use std::fs;
 use std::path::Path;
+
+/// 用于 `Cargo.toml` package 名、二进制名与终端提示。
+pub fn project_slug(cfg: &ProjectConfig) -> String {
+    slugify(&cfg.project_name)
+}
 
 fn slugify(raw: &str) -> String {
     let mut s: String = raw
@@ -34,6 +40,7 @@ fn slugify(raw: &str) -> String {
 fn template_context(cfg: &ProjectConfig) -> serde_json::Value {
     let safe_package_name = slugify(&cfg.project_name);
     let rust_lib_name = safe_package_name.replace('-', "_");
+    let monolith_enabled = cfg.monolith_enabled && cfg.project_type == ProjectType::KernelServer;
     serde_json::json!({
         "project_name": cfg.project_name,
         "safe_package_name": safe_package_name,
@@ -44,6 +51,7 @@ fn template_context(cfg: &ProjectConfig) -> serde_json::Value {
         "plugin_oocp": cfg.plugins.oocp,
         "feature_complex_emotion": cfg.features.use_complex_emotion,
         "with_example_role": cfg.with_example_role,
+        "monolith_enabled": monolith_enabled,
     })
 }
 
@@ -247,6 +255,18 @@ pub fn write_project(cfg: &ProjectConfig, out: &Path) -> Result<()> {
                 .render_template(main_t, &ctx)
                 .context("render main.rs")?;
             fs::write(out.join("src").join("main.rs"), main).context("write main.rs")?;
+            if cfg.monolith_enabled && matches!(cfg.project_type, ProjectType::KernelServer) {
+                fs::write(
+                    out.join("src").join("process_message_monolith.rs"),
+                    monolith_codegen::generate_monolith_source(),
+                )
+                .context("write process_message_monolith.rs")?;
+                fs::write(
+                    out.join("monolith.toml"),
+                    monolith_codegen::render_monolith_toml_phase_one(),
+                )
+                .context("write monolith.toml")?;
+            }
         }
         ProjectType::Library => {
             let lib_t = include_str!(concat!(
