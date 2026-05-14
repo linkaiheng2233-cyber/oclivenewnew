@@ -32,20 +32,23 @@ pub fn dependency_report(
             Ok(r) => r,
             Err(e) => {
                 any_mismatch = true;
-                issues.push(format!("依赖 {} 的版本范围无效: {} ({})", dep, req_s, e));
+                issues.push(format!(
+                    "Invalid semver range for dependency {}: {} ({})",
+                    dep, req_s, e
+                ));
                 continue;
             }
         };
         match version_by_id.get(dep) {
             None => {
                 any_missing = true;
-                issues.push(format!("依赖缺失: {}（需要 {}）", dep, req_s));
+                issues.push(format!("Missing dependency: {} (requires {})", dep, req_s));
             }
             Some(ver) => {
                 if !req.matches(ver) {
                     any_mismatch = true;
                     issues.push(format!(
-                        "依赖版本不匹配: {} 需要 {}，实际 {}",
+                        "Dependency version mismatch: {} requires {}, found {}",
                         dep, req_s, ver
                     ));
                 }

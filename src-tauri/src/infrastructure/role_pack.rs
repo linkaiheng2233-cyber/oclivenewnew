@@ -215,12 +215,12 @@ where
         let pct = copy_percent(cur, tot).min(99);
         on_progress(ImportProgress {
             percent: pct,
-            message: format!("正在写入文件 {}/{}", cur, tot),
+            message: format!("Writing files {}/{}", cur, tot),
         });
     })?;
     on_progress(ImportProgress {
         percent: 100,
-        message: "导入完成".into(),
+        message: "Import complete".into(),
     });
     Ok(id)
 }
@@ -257,7 +257,7 @@ fn import_role_from_directory<F: FnMut(ImportProgress)>(
 ) -> Result<String> {
     on_progress(ImportProgress {
         percent: 0,
-        message: "准备读取文件夹…".into(),
+        message: "Reading folder…".into(),
     });
     let root = resolve_extracted_role_root(src)?;
     install_role_from_resolved_root(storage, &root, overwrite, on_progress, |cur, tot| {
@@ -281,14 +281,14 @@ pub fn import_role_pack<F: FnMut(ImportProgress)>(
     }
     on_progress(ImportProgress {
         percent: 0,
-        message: "准备解压…".into(),
+        message: "Preparing extraction…".into(),
     });
     let td = tempfile::tempdir()?;
     unzip_to(src, td.path(), |cur, tot| {
         let pct = ((cur as i64 * 50) / tot as i64).min(50) as i32;
         on_progress(ImportProgress {
             percent: pct,
-            message: format!("正在解压 {}/{}", cur, tot),
+            message: format!("Extracting {}/{}", cur, tot),
         });
     })?;
     let root = resolve_extracted_role_root(td.path())?;
