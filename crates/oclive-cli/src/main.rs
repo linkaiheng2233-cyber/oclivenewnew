@@ -1,5 +1,11 @@
 //! oclive-cli — 官方内核项目脚手架入口。
 
+#![allow(
+    clippy::missing_errors_doc,
+    clippy::missing_panics_doc,
+    clippy::must_use_candidate
+)]
+
 mod bench_cmd;
 mod build_cmd;
 mod dev_cmd;

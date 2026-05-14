@@ -13,6 +13,11 @@ use crate::validate::{
     validate_disk_manifest, validate_interaction_mode_pack_setting, validate_min_runtime_version,
     validate_settings_schema_version,
 };
+/// 合并 `manifest.scenes` 与磁盘 `scenes/` 子目录，得到场景 id 列表（至少含 `default`）。
+///
+/// # Errors
+///
+/// 读取 `scenes/` 目录失败时返回 `Err`。
 pub fn merge_role_pack_scene_ids(
     role_dir: &Path,
     manifest_scenes: &[String],
@@ -46,6 +51,10 @@ pub fn merge_role_pack_scene_ids(
 }
 
 /// `manifest.json` 中 `default_personality`：非空时须 **7** 个有限数，且每维在 \[0, 1\]（与运行时 `PersonalityDefaults` 一致）。
+///
+/// # Errors
+///
+/// 维度数量或取值不合法时返回 `Err`。
 pub fn validate_default_personality_vector(values: &[f32]) -> Result<(), String> {
     if values.is_empty() {
         return Ok(());
@@ -75,6 +84,10 @@ pub fn validate_default_personality_vector(values: &[f32]) -> Result<(), String>
 
 /// manifest + 可选 settings 解析、顶层键、七维、`settings` 合并进 `disk`（与目录加载顺序一致）。
 /// 不含 `validate_disk_manifest` / `min_runtime`（需调用方提供合并后的场景 id）。
+///
+/// # Errors
+///
+/// JSON 解析失败、契约不符或 settings 校验失败时返回 `Err(Vec<String>)`。
 pub fn validate_role_pack_manifest_settings_core(
     manifest_json: &str,
     settings_json: Option<&str>,
@@ -157,6 +170,10 @@ pub fn validate_role_pack_manifest_settings_core(
 }
 
 /// 在已合并场景列表上跑 `validate_disk_manifest` 与 `min_runtime`。
+///
+/// # Errors
+///
+/// 任一子校验失败时返回 `Err(Vec<String>)`。
 pub fn validate_role_pack_tail(
     disk: &DiskRoleManifest,
     merged_scene_ids: &[String],
@@ -177,6 +194,10 @@ pub fn validate_role_pack_tail(
 }
 
 /// 与目录校验同源，供 wasm / 编写器在内存中校验（调用方提供合并后的场景 id，通常含 `scenes/` 扫描结果）。
+///
+/// # Errors
+///
+/// 解析或尾部校验失败时返回 `Err(Vec<String>)`。
 pub fn validate_role_pack_loaded(
     manifest_json: &str,
     settings_json: Option<&str>,
@@ -195,6 +216,10 @@ pub fn validate_role_pack_loaded(
 /// 校验角色包目录（与宿主加载前磁盘校验一致；不读 `core_personality.txt`、不跑 DB）。
 ///
 /// `settings_schema_supported`：与宿主 `CURRENT_SETTINGS_SCHEMA_VERSION` 一致（当前为 1）。
+///
+/// # Errors
+///
+/// 缺少文件、读盘失败或校验未通过时返回 `Err(Vec<String>)`。
 pub fn validate_role_pack_directory(
     role_dir: &Path,
     host_version: &str,

@@ -7,6 +7,9 @@ unsafe_code = "forbid"
 
 [workspace.lints.clippy]
 return_self_not_must_use = "warn"
+missing_errors_doc = "warn"
+missing_panics_doc = "warn"
+must_use_candidate = "warn"
 
 [profile.release]
 opt-level = "z"

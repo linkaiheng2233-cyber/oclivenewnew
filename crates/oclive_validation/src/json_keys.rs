@@ -40,11 +40,19 @@ const SETTINGS_KEYS: &[&str] = &[
 ];
 
 /// 校验 `manifest.json` 根对象键名。
+///
+/// # Errors
+///
+/// 存在未允许的顶层键时返回 `Err`（说明见错误字符串）。
 pub fn validate_manifest_top_level_keys(map: &Map<String, Value>) -> Result<(), String> {
     validate_keys(map, MANIFEST_KEYS, "manifest.json")
 }
 
 /// 校验 `settings.json` 根对象键名。
+///
+/// # Errors
+///
+/// 存在未允许的顶层键时返回 `Err`（说明见错误字符串）。
 pub fn validate_settings_top_level_keys(map: &Map<String, Value>) -> Result<(), String> {
     validate_keys(map, SETTINGS_KEYS, "settings.json")
 }

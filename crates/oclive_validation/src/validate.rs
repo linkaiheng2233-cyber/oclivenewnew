@@ -61,6 +61,10 @@ fn validate_min_runtime_version_for_source(
 }
 
 /// 比较角色包要求的最低宿主版本与当前 oclive 版本（`min_req` 为 `None` 或空则跳过）。
+///
+/// # Errors
+///
+/// 版本字符串非法或宿主低于要求时返回 `Err`。
 pub fn validate_min_runtime_version(
     min_req: Option<&str>,
     host_version: &str,
@@ -73,6 +77,10 @@ pub fn validate_min_runtime_version(
 }
 
 /// 本地插件描述中的 `min_runtime_version` 与宿主版本比较（`min_req` 为 `None` 或空则跳过；语义与 [`validate_min_runtime_version`] 一致，错误文案指向本地插件）。
+///
+/// # Errors
+///
+/// 版本字符串非法或宿主低于要求时返回 `Err`。
 pub fn validate_min_runtime_version_for_local_plugin(
     min_req: Option<&str>,
     host_version: &str,
@@ -85,6 +93,10 @@ pub fn validate_min_runtime_version_for_local_plugin(
 }
 
 /// 校验 `settings.json.schema_version` 与宿主支持范围（当前只接受 `<= current_supported`）。
+///
+/// # Errors
+///
+/// `schema_version` 为 0 或高于宿主支持时返回 `Err`。
 pub fn validate_settings_schema_version(
     schema_version: u32,
     current_supported: u32,
@@ -102,6 +114,7 @@ pub fn validate_settings_schema_version(
 }
 
 /// 解析 `HH:MM` 为自午夜起的分钟数 \[0, 24*60)（与 `domain/life_schedule` 一致）
+#[must_use]
 pub fn parse_hhmm(s: &str) -> Option<u16> {
     let t = s.trim();
     let mut parts = t.split(':');
@@ -121,6 +134,10 @@ pub fn parse_hhmm(s: &str) -> Option<u16> {
 }
 
 /// 供校验层调用：仅校验 `KnowledgePackConfigDisk` 字段合理性（不读文件）。
+///
+/// # Errors
+///
+/// `glob` 为空等字段不合法时返回 `Err`。
 pub fn validate_knowledge_manifest_disk(k: &KnowledgePackConfigDisk) -> Result<(), String> {
     if k.glob.trim().is_empty() {
         return Err("manifest / settings：knowledge.glob 不能为空".to_string());
@@ -129,6 +146,10 @@ pub fn validate_knowledge_manifest_disk(k: &KnowledgePackConfigDisk) -> Result<(
 }
 
 /// 校验磁盘 manifest 与合并后的场景 id 列表（`manifest.scenes` + `scenes/` 子目录）。
+///
+/// # Errors
+///
+/// 必填字段、场景、日程或知识块配置不合法时返回 `Err`。
 pub fn validate_disk_manifest(
     disk: &DiskRoleManifest,
     merged_scene_ids: &[String],
@@ -261,6 +282,10 @@ fn validate_life_schedule(
 }
 
 /// `settings.json` → `interaction_mode`：`immersive` | `pure_chat`；空或省略合法。
+///
+/// # Errors
+///
+/// 取值不在允许集合时返回 `Err`。
 pub fn validate_interaction_mode_pack_setting(raw: Option<&str>) -> Result<(), String> {
     const IMMERSIVE: &str = "immersive";
     const PURE_CHAT: &str = "pure_chat";
