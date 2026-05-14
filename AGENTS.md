@@ -2,45 +2,37 @@
 
 本仓库为 **Tauri + Vue 3 + Rust** 桌面角色对话应用。自动化助手或外部 Agent 在修改代码前，请先阅读：
 
+- **跨平台**：[`docs/DEV_CROSS_PLATFORM.md`](docs/DEV_CROSS_PLATFORM.md)。
+- **Rust Release / workspace 依赖**：[`handoff/RUST_RELEASE_AND_DEPENDENCIES.md`](handoff/RUST_RELEASE_AND_DEPENDENCIES.md)。
+- **性能与包体**：阶段总表 [`handoff/PERF_PHASES.md`](handoff/PERF_PHASES.md)（v0.2 P1–P3 已收尾）；[`handoff/PERFORMANCE_BASELINE_ACCEPTANCE.md`](handoff/PERFORMANCE_BASELINE_ACCEPTANCE.md)、[`handoff/FRONTEND_CHUNK_OPTIMIZATION.md`](handoff/FRONTEND_CHUNK_OPTIMIZATION.md)、[`handoff/BUNDLE_RESOURCES_SIZING.md`](handoff/BUNDLE_RESOURCES_SIZING.md)。
 - **项目约束**：根目录 [`.cursor/rules/oclivenewnew.mdc`](.cursor/rules/oclivenewnew.mdc)（编排、持久化、Tauri 命令注册、DTO、Prompt 约定）。
 - **创作者与架构文档**：[`creator-docs/README.md`](creator-docs/README.md) → [`creator-docs/getting-started/DOCUMENTATION_INDEX.md`](creator-docs/getting-started/DOCUMENTATION_INDEX.md)。
 - **愿景与路线**：[`creator-docs/roadmap/VISION_ROADMAP_MONTHLY.md`](creator-docs/roadmap/VISION_ROADMAP_MONTHLY.md)、[`creator-docs/roadmap/VISION_OPEN_LAB.md`](creator-docs/roadmap/VISION_OPEN_LAB.md)（开放实验场摘要）。
-- **轻量化与审计基线**：[`creator-docs/development/LIGHTWEIGHT_PROFILE.md`](creator-docs/development/LIGHTWEIGHT_PROFILE.md)。
+
+### 脚手架（`oclive-cli`）
+
+- **crate**：[`crates/oclive-cli/`](crates/oclive-cli/)（workspace 成员）；`cargo run -p oclive-cli -- init` 交互或 `--non-interactive --preset` 生成**可独立 `cargo build`** 的最小内核/库骨架（当前占位依赖 `serde`/`serde_json`，便于硬件与无头场景先统一目录与 `settings.json` 形状）。
+- **文档**：[`creator-docs/cli/OCLIVE_CLI_GUIDE.md`](creator-docs/cli/OCLIVE_CLI_GUIDE.md)；接入真实 `oclive_kernel_runtime` / `oclive_kernel_server` 时在生成 `Cargo.toml` 中改为 path 依赖并替换入口代码。
+
+### 测试体系（协议层 + UI 层）
+
+- **OOCP / 无头内核（语言无关）**：标准化场景见 [`creator-docs/oocp/OOCP_TEST_SUITE.md`](creator-docs/oocp/OOCP_TEST_SUITE.md)；索引导航 [`creator-docs/oocp/OOCP_SPEC_COMPLETE_REFERENCE.md`](creator-docs/oocp/OOCP_SPEC_COMPLETE_REFERENCE.md)。官方 Node 可执行对照实现见 [`examples/oocp-test-suite/`](examples/oocp-test-suite/)（对 `oclive_kernel_server` 跑 `GET /health` + WebSocket 方法链）。Linux CI 工作流 **`.github/workflows/ci.yml`** 中的 **`oocp-test-suite`** job 会构建 `tools/oocp-client`、拉起 `oclive_kernel_server` 并执行 `npm test`。
+- **前端 / Vitest（框架专用）**：官方目录插件 [`plugins/official-vue-test-runner/README.md`](plugins/official-vue-test-runner/README.md) 通过 JSON-RPC 侧车调用本机 `npx vitest`，在插件壳 [`ui/index.html`](plugins/official-vue-test-runner/ui/index.html) 展示结构化结果与运行历史；编写器侧可在「前端测试」视图调用同一插件（工作区指向 oclivenewnew 仓库根）。编写组件级 OOCP 载荷时可用同目录 [`test_utils/oocp_mock.ts`](plugins/official-vue-test-runner/test_utils/oocp_mock.ts)。
 
 **契约优先**：角色包 `manifest.json` / `settings.json` 键与行为以 `roles/README_MANIFEST.md`、`RoleStorage::load_role` 及校验 crate 为准；新增顶层键需同步 `crates/oclive_validation` 与文档。
 
 **姊妹仓库**（同级目录常见）：`oclive-pack-editor`（角色包编写器）、`oclive-launcher`（启动器）、`oclive-plugin-market`（市场站）。各仓可有各自的 `AGENTS.md`，指向本仓文档索引即可。
 
+**演示视频（Remotion）**：独立仓库 **`oclive-remotion-demo`**（与主应用同级目录常见）。所有 `npm run preview` / `render:*` / `capture:validate` **须在该仓库根目录执行**，勿在主仓 `oclivenewnew` 根目录运行（会报 `Missing script`）。使用说明见该仓库根目录 **`README.md`**（本地常与主仓并列，例如 `D:\oclive-remotion-demo`）。
+
 **开发机磁盘**：本仓库根目录 [`.cargo/config.toml`](.cargo/config.toml) 将 **Cargo `target-dir`** 指到仓库外的 `../oclive-dev-artifacts/oclivenewnew-cargo-target/`，与源码分离；发版安装包体积与此无关。姊妹仓 **oclive-pack-editor**、**oclive-launcher** 使用同级目录下的 `oclive-pack-editor-cargo-target/`、`oclive-launcher-cargo-target/`（各仓自有 `.cargo/config.toml`）。旧版留在仓库内的 `target/`、`src-tauri/target/` 可整夹删除。
 
-### 编排（内核）
+### 可编程调度引擎（`pipeline.ocblueprint`）
 
-- **主编排入口**：[`src-tauri/src/domain/chat_engine/mod.rs`](src-tauri/src/domain/chat_engine/mod.rs) 的 **`process_message`**（HTTP `--api` 与 Tauri `send_message` 均经此路径）。子路径含共景 **`co_present::process_co_present`**、异地/远程等分支。
-- **无独立「入口蓝图」管线**：编排逻辑集中在 `chat_engine` 与各 `*_engine` / analyzer；**不再**使用单独的入口蓝图 DSL 作为主路径。
-- **可替换子系统**：[`PluginHost`](src-tauri/src/domain/plugin_host.rs) 按 `plugin_backends` 解析 **memory / emotion / event / prompt / llm / agent**；详见 [PLUGIN_V1.md](creator-docs/plugin-and-architecture/PLUGIN_V1.md)。
-
-### 测试体系（三层）
-
-与 **当前 `main` 代码** 对齐的划分如下（**不**宣称已存在未落地的 OOCP CI）：
-
-1. **协议 / 引擎层（Rust）**：`src-tauri` 内 **`cargo test`**（含 `tests/` 集成测试、领域单测）。CI 在 Ubuntu / Windows 上执行。契约以 **`models/dto.rs`** 为准。
-2. **插件 / 侧车层**：`examples/remote_plugin_minimal` 等 + CI job **`remote-plugin-demo`**（`memory.rank` JSON-RPC 烟测）。目录式插件见 [DIRECTORY_PLUGINS.md](creator-docs/plugin-and-architecture/DIRECTORY_PLUGINS.md)。
-3. **前端 / 组件层**：CI 执行 **`npm ci` + `npm run build`** 作为静态构建守门；**未** 在 `package.json` 中启用 Vitest 单测脚本。若引入 Vue 单测，应更新 [`creator-docs/testing/TEST_OUTPUT_SCHEMA.md`](creator-docs/testing/TEST_OUTPUT_SCHEMA.md)。
-
-**OOCP**：若独立协议套件落地，见 [`creator-docs/testing/OOCP_TEST_SUITE.md`](creator-docs/testing/OOCP_TEST_SUITE.md)（当前为占位说明）。
-
-**插件后端烟测**：[`src-tauri/tests/plugin_backends_v2_resolve.rs`](src-tauri/tests/plugin_backends_v2_resolve.rs)（`cargo test --test plugin_backends_v2_resolve`）。
-
-### 已知漏洞跟踪
-
-- **清单与升级路线**：[creator-docs/security/KNOWN_VULNERABILITIES.md](creator-docs/security/KNOWN_VULNERABILITIES.md)（`cargo-audit` **0.22.1**，漏洞级命中 **5** 条，**2026-05-13** 扫描）。
-- **供应链基线**：[creator-docs/development/LIGHTWEIGHT_PROFILE.md](creator-docs/development/LIGHTWEIGHT_PROFILE.md) §6.4–6.7。
-- **声明**：**已知漏洞跟踪中**；不对外宣称「audit 全绿 / 零漏洞」。CI **`cargo-audit`** job 当前 **`continue-on-error: true`**。
-
-### 安全审查范围（当前）
-
-- **已完成 / 未覆盖 / 后续计划**：[creator-docs/security/SECURITY_AUDIT_SCOPE.md](creator-docs/security/SECURITY_AUDIT_SCOPE.md)。
-- 与 **KNOWN_VULNERABILITIES** 互补：后者管 **RUSTSEC 编号与升级**；本文件管 **流程与范围边界**。
+- **Schema 与错误前缀**：[`creator-docs/kernel/PIPELINE_SCHEMA.md`](creator-docs/kernel/PIPELINE_SCHEMA.md)；加载错误码登记于 [`handoff/10_ERROR_CODE_DICTIONARY.md`](handoff/10_ERROR_CODE_DICTIONARY.md)（Pipeline 蓝图段）。
+- **Rust 模块**：`crates/oclive_kernel_runtime/src/domain/chat_engine/` 下的 `pipeline_loader.rs`（解析校验）、`pipeline_interpreter.rs`（顺序 / `branch` / `parallel`）、`pipeline_actions.rs`（原子与 `ACTION_IO_TYPES`）、`pipeline_predicates.rs`、`turn_context.rs`；入口编排见同目录 `process_message.rs`（蓝图在 `validate_scene` 之后加载）。
+- **测试**：crate 内 `pipeline_loader` 单测；集成测试 `tests/pipeline_*_smoke.rs`、`tests/pipeline_validator_edges.rs`。
+- **Criterion**：`cargo bench -p oclive_kernel_runtime --bench kernel_pipeline_blueprint`；基线记录 [`creator-docs/kernel/KERNEL_PERFORMANCE_BASELINE.md`](creator-docs/kernel/KERNEL_PERFORMANCE_BASELINE.md)。
 
 ### 前端：插件管理入口与 Tauri `invoke`
 
@@ -50,7 +42,7 @@
 
 ### Agent / Skill（最小闭环）
 
-- **第七模块**：`plugin_backends` 新增 `agent`（`builtin` / `remote` / `directory`）与 `directory_plugins.agent` 槽位；会话覆盖与来源快照同样包含 `agent`。
+- **第七模块**：`plugin_backends` 新增 `agent`（`builtin` / `remote` / `directory` / `none`）与 `directory_plugins.agent` 槽位；会话覆盖与来源快照同样包含 `agent`。（`none` 语义见 `creator-docs/kernel/MODULE_NONE_SEMANTICS.md` §7。）
 - **后端骨架**：
   - [`src-tauri/src/domain/agent.rs`](src-tauri/src/domain/agent.rs)：`AgentProvider` trait 与 `BuiltinReActAgent`。
   - [`src-tauri/src/infrastructure/mcp_client.rs`](src-tauri/src/infrastructure/mcp_client.rs)：扫描 `{app_data}/mcp-servers/*.json`、列出 server、调用工具（http/stdio）。
@@ -65,6 +57,12 @@
   - `parse_from_llm_response` 解析 `tool_calls[]` 与 `function_call` 两种主流输出；
   - `to_function_calling_schema` 将 MCP tool 列表转为函数 schema。
 - **Agent 路由**：`plugin_backends.agent` 为第七模块，与其他模块保持同样的包默认 / 会话覆盖 / 来源快照语义。
+
+## 内核约束 - 权限弹窗
+
+- **Directory 插件**：首次启用高风险能力（如 `process:spawn`、`network:*` 出站）前，必须经过用户确认授予；未授予则必须降级且有可见提示/审计。
+- **MCP servers**：任何 `transport=stdio` 的 server 必须显式授权（等同 `process:spawn`）；`transport=http` 必须显式授权（`network:*`）。未授权不得调用。
+- **Remote env providers**：检测到 env 配置不等于启用；必须先授予 `network:*`，否则 provider 只能降级为 placeholder 并提示。
 
 ### 创作者工具链（v1）
 
