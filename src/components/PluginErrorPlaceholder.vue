@@ -1,4 +1,7 @@
 <script setup lang="ts">
+import { useI18n } from "vue-i18n";
+
+const { t } = useI18n();
 withDefaults(
   defineProps<{
     title?: string;
@@ -15,8 +18,8 @@ withDefaults(
     detail: "",
     showRetry: true,
     showFallback: false,
-    retryLabel: "加载失败，点击重试",
-    fallbackLabel: "使用 HTML 版本",
+    retryLabel: "",
+    fallbackLabel: "",
   },
 );
 
@@ -37,7 +40,7 @@ defineEmits<{
         class="pep-btn"
         @click="$emit('retry')"
       >
-        {{ retryLabel }}
+        {{ retryLabel || t("pluginManager.errorPlaceholder.retry") }}
       </button>
       <button
         v-if="showFallback"
@@ -45,11 +48,11 @@ defineEmits<{
         class="pep-btn pep-btn--secondary"
         @click="$emit('fallback')"
       >
-        {{ fallbackLabel }}
+        {{ fallbackLabel || t("pluginManager.errorPlaceholder.fallback") }}
       </button>
     </div>
     <details v-if="detail" class="pep-details">
-      <summary>查看详情</summary>
+      <summary>{{ t("pluginManager.errorPlaceholder.viewDetails") }}</summary>
       <pre>{{ detail }}</pre>
     </details>
   </div>

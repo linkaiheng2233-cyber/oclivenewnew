@@ -1,8 +1,11 @@
 <script setup lang="ts">
+import { useI18n } from "vue-i18n";
 import AsyncPluginVue from "./AsyncPluginVue.vue";
 import PluginErrorPlaceholder from "./PluginErrorPlaceholder.vue";
 import { useDirectoryPluginSlotEmbed } from "../composables/useDirectoryPluginSlotEmbed";
 import { SLOT_ROLE_DETAIL } from "../stores/pluginStore";
+
+const { t } = useI18n();
 
 const props = withDefaults(
   defineProps<{
@@ -33,7 +36,7 @@ const {
 
 <template>
   <div v-if="pluginError" class="prd-msg prd-msg--err" role="status">{{ pluginError }}</div>
-  <div v-else-if="slots.length > 0" class="prd-list" aria-label="角色详情插件插槽">
+  <div v-else-if="slots.length > 0" class="prd-list" :aria-label="t('pluginManager.slotsAria.roleDetailList')">
     <div v-for="s in slots" :key="`${s.pluginId}:${s.appearanceId ?? ''}`" class="prd-item">
       <AsyncPluginVue
         v-if="showVue(s)"

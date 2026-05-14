@@ -1,5 +1,8 @@
 <script setup lang="ts">
+import { useI18n } from "vue-i18n";
 import type { DirectoryPluginCatalogEntry } from "../utils/tauri-api";
+
+const { t } = useI18n();
 
 const props = withDefaults(
   defineProps<{
@@ -39,7 +42,7 @@ const emit = defineEmits<{
 </script>
 
 <template>
-  <div class="pli" role="group" :aria-label="`插件 ${entry.id}`">
+  <div class="pli" role="group" :aria-label="t('pluginManager.v1ListItem.aria', { id: entry.id })">
     <label v-if="batchSelectMode" class="pli-batch chk">
       <input
         type="checkbox"
@@ -54,21 +57,25 @@ const emit = defineEmits<{
         <span class="pli-id">{{ entry.id }}</span>
         <span class="pli-ver">v{{ entry.version }}</span>
         <span class="pli-kind" :data-shell="entry.isShell">{{
-          entry.isShell ? "整壳" : "插槽"
+          entry.isShell ? t("pluginManager.v1ListItem.kindShell") : t("pluginManager.v1ListItem.kindSlot")
         }}</span>
       </div>
       <p v-if="entry.provides.length" class="pli-meta">
         provides: {{ entry.provides.join(", ") }}
       </p>
       <p v-if="entry.uiSlotNames.length && !entry.isShell" class="pli-meta">
-        UI 插槽: {{ entry.uiSlotNames.join(", ") }}
+        {{ t("pluginManager.v1ListItem.uiSlots", { list: entry.uiSlotNames.join(", ") }) }}
       </p>
       <p
         v-if="entry.dependencyStatus && entry.dependencyStatus !== 'ok'"
         class="pli-deps"
       >
-        依赖未满足（{{ entry.dependencyStatus }}）：
-        {{ (entry.dependencyIssues ?? []).join("；") }}
+        {{
+          t("pluginManager.v1ListItem.depsUnmet", {
+            status: entry.dependencyStatus,
+            issues: (entry.dependencyIssues ?? []).join("；"),
+          })
+        }}
       </p>
     </div>
     <div class="pli-actions">
@@ -79,7 +86,7 @@ const emit = defineEmits<{
           :disabled="pluginDisabled && entry.dependencyStatus !== 'ok'"
           @change="emit('update:pluginDisabled', ($event.target as HTMLInputElement).checked)"
         />
-        停用插件
+        {{ t("pluginManager.v1ListItem.disablePlugin") }}
       </label>
       <label v-if="!entry.isShell && entry.uiSlotNames.includes('chat_toolbar')" class="chk">
         <input
@@ -92,7 +99,7 @@ const emit = defineEmits<{
             )
           "
         />
-        隐藏工具栏嵌入
+        {{ t("pluginManager.v1ListItem.hideToolbarEmbed") }}
       </label>
       <label v-if="!entry.isShell && entry.uiSlotNames.includes('settings.panel')" class="chk">
         <input
@@ -105,7 +112,7 @@ const emit = defineEmits<{
             )
           "
         />
-        隐藏设置页嵌入
+        {{ t("pluginManager.v1ListItem.hideSettingsEmbed") }}
       </label>
       <label v-if="!entry.isShell && entry.uiSlotNames.includes('role.detail')" class="chk">
         <input
@@ -118,7 +125,7 @@ const emit = defineEmits<{
             )
           "
         />
-        隐藏角色详情嵌入
+        {{ t("pluginManager.v1ListItem.hideRoleDetailEmbed") }}
       </label>
       <label v-if="!entry.isShell && entry.uiSlotNames.includes('sidebar')" class="chk">
         <input
@@ -131,7 +138,7 @@ const emit = defineEmits<{
             )
           "
         />
-        隐藏侧边栏嵌入
+        {{ t("pluginManager.v1ListItem.hideSidebarEmbed") }}
       </label>
       <label v-if="!entry.isShell && entry.uiSlotNames.includes('chat.header')" class="chk">
         <input
@@ -144,7 +151,7 @@ const emit = defineEmits<{
             )
           "
         />
-        隐藏聊天头部嵌入
+        {{ t("pluginManager.v1ListItem.hideChatHeaderEmbed") }}
       </label>
     </div>
   </div>

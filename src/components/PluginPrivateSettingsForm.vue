@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { computed, onMounted, ref, watch } from "vue";
+import { useI18n } from "vue-i18n";
 import { useAppToast } from "../composables/useAppToast";
 import {
   getPluginSettingsUi,
@@ -11,6 +12,7 @@ import {
 const props = defineProps<{ pluginId: string }>();
 
 const { showToast } = useAppToast();
+const { t } = useI18n();
 const loading = ref(true);
 const saving = ref(false);
 const dto = ref<PluginUiSettingsDto | null>(null);
@@ -27,12 +29,12 @@ function setField(key: string, v: unknown) {
 }
 
 function coerceInput(f: UiSchemaFieldDto, raw: string): unknown {
-  const t = f.type.trim().toLowerCase();
-  if (t === "number") {
+  const fieldType = f.type.trim().toLowerCase();
+  if (fieldType === "number") {
     const n = Number(raw);
     return Number.isFinite(n) ? n : 0;
   }
-  if (t === "bool" || t === "boolean") {
+  if (fieldType === "bool" || fieldType === "boolean") {
     return raw === "true" || raw === "1";
   }
   return raw;
@@ -83,7 +85,7 @@ async function onSave() {
   saving.value = true;
   try {
     await setPluginSettingsConfig(pid, draft.value);
-    showToast("success", "已保存插件私有配置。");
+    showToast("success", t("pluginManager.privateSettings.toastSaved"));
     await load();
   } catch (e) {
     showToast("error", e instanceof Error ? e.message : String(e));
@@ -95,10 +97,10 @@ async function onSave() {
 
 <template>
   <div class="ppsf">
-    <div v-if="loading" class="ppsf-muted">加载设置…</div>
-    <div v-else-if="!dto?.fields?.length" class="ppsf-muted">该插件未声明 uiSchema.fields。</div>
+    <div v-if="loading" class="ppsf-muted">{{ t("pluginManager.privateSettings.loading") }}</div>
+    <div v-else-if="!dto?.fields?.length" class="ppsf-muted">{{ t("pluginManager.privateSettings.noFields") }}</div>
     <template v-else>
-      <p v-if="dto.uiTemplate" class="ppsf-hint">模板：<code>{{ dto.uiTemplate }}</code></p>
+      <p v-if="dto.uiTemplate" class="ppsf-hint">{{ t("pluginManager.privateSettings.templatePrefix") }}<code>{{ dto.uiTemplate }}</code></p>
       <div class="ppsf-fields">
         <label v-for="f in fields" :key="f.key" class="ppsf-row">
           <span class="ppsf-label">
@@ -137,7 +139,7 @@ async function onSave() {
         </label>
       </div>
       <button type="button" class="ppsf-save" :disabled="saving" @click="onSave">
-        {{ saving ? "保存中…" : "保存私有配置" }}
+        {{ saving ? t("pluginManager.privateSettings.saving") : t("pluginManager.privateSettings.save") }}
       </button>
     </template>
   </div>

@@ -76,7 +76,7 @@ async function onApply(payload: Record<string, unknown>) {
         <button type="button" class="pm2-btn" @click="emit('close')">{{ t("pluginTerms.action.close") }}</button>
       </div>
     </header>
-    <div class="pm2-legend" aria-label="状态说明">
+    <div class="pm2-legend" :aria-label="t('pluginManager.legendAria')">
       <span class="pm2-legend-item is-enabled">{{ t("pluginManager.legend.enabled") }}</span>
       <span class="pm2-legend-item is-pending">{{ t("pluginManager.legend.pending") }}</span>
       <span class="pm2-legend-item is-disabled">{{ t("pluginManager.legend.disabled") }}</span>
