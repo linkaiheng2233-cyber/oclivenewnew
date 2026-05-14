@@ -11,6 +11,53 @@
 - **Remote**：宿主已实现 **HTTP JSON-RPC**（见 [REMOTE_PLUGIN_PROTOCOL.md](REMOTE_PLUGIN_PROTOCOL.md)）；未配置 `OCLIVE_REMOTE_*` URL 时回退 **builtin**（或进程内 LLM）并写日志。
 - **Directory**：`plugins/*/manifest.json` 子进程 + 与 Remote 相同的 JSON-RPC wire；槽位见 `plugin_backends.directory_plugins`（[DIRECTORY_PLUGINS.md](DIRECTORY_PLUGINS.md)）。
 
+## 架构图（以 `plugin_backends` 宿主槽为准）
+
+运行时结构体 **`PluginBackends`**（[`plugin_backends.rs`](../../src-tauri/src/models/plugin_backends.rs)）含 **六** 个枚举字段；**`directory_plugins`** 与之并列，仅在对应槽为 **`directory`** 时解析 manifest **`id`**。编排层通过 **`PluginHost::resolve_for_role`** 将每槽绑定到具体 **`Arc<dyn …>`** 实现，再由 **`chat_engine`** 按 **`send_message` 编排顺序**（见同文档下一节）调用。**`complex_emotion`** 等脚手架专用键可被 Serde 忽略，**不是**宿主六槽之一（见 [SETTINGS_REFERENCE.md](../cli/SETTINGS_REFERENCE.md)）。
+
+```mermaid
+flowchart TB
+  subgraph pack["角色包 / 会话覆盖"]
+    PB["settings.json → plugin_backends<br/>memory · emotion · event · prompt · llm · agent"]
+    DP["可选 directory_plugins<br/>各槽 → manifest.id"]
+  end
+
+  subgraph resolve["宿主解析链"]
+    RPF["state::resolved_plugins_for"]
+    PH["PluginHost::resolve_for_role<br/>trait 绑定"]
+  end
+
+  subgraph orch["编排"]
+    CE["chat_engine<br/>process_message / co_present"]
+  end
+
+  PB --> RPF
+  DP --> RPF
+  RPF --> PH
+  PH --> CE
+
+  subgraph slots["六条门面线 ResolvedRolePlugins"]
+    M["MemoryRetrieval"]
+    EM["UserEmotionAnalyzer"]
+    EV["EventEstimator"]
+    PR["PromptAssembler"]
+    LL["LlmClient"]
+    AG["AgentProvider<br/>（MCP 等见 AGENTS.md）"]
+  end
+
+  PH --> slots
+  slots --> CE
+
+  subgraph shapes["实现形态（每槽枚举见本文各节表）"]
+    BIN["builtin / builtin_v2 / ollama<br/>进程内 Rust"]
+    REM["remote<br/>HTTP JSON-RPC + OCLIVE_REMOTE_*"]
+    DIR["directory<br/>plugins/ 子进程，同协议 wire"]
+    LOC["memory: local<br/>_local_plugins"]
+  end
+
+  slots -.-> shapes
+```
+
 ---
 
 ## `send_message` 编排顺序（与 `chat_engine`）

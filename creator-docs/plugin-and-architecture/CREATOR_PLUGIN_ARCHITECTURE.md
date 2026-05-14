@@ -13,7 +13,27 @@
 
 ## 第一部分：架构在解决什么问题
 
-oclive 把对话管线拆成可替换块：**记忆检索、用户句情绪、事件估计、Prompt 组装、LLM 调用**。角色包通过 `settings.json` → `plugin_backends` 声明每块用 **builtin / builtin_v2 / remote / directory / local（memory）/ ollama** 等（见 PLUGIN_V1）。
+oclive 把对话管线拆成可替换块：**记忆检索、用户句情绪、事件估计、Prompt 组装、主对话 LLM、Agent 编排（工具 / MCP）**。角色包通过 `settings.json` → `plugin_backends` 声明每块用 **builtin / builtin_v2 / remote / directory / local（memory）/ ollama** 等（见 PLUGIN_V1）。
+
+**以宿主六槽为准的总览图**（与 [PLUGIN_V1.md](PLUGIN_V1.md)「架构图」一致）：
+
+```mermaid
+flowchart TB
+  subgraph pack["角色包 / 会话覆盖"]
+    PB["plugin_backends<br/>六槽 + 可选 directory_plugins"]
+  end
+  subgraph resolve["解析与绑定"]
+    RPF["resolved_plugins_for"]
+    PH["PluginHost"]
+  end
+  subgraph orch["编排"]
+    CE["chat_engine"]
+  end
+  PB --> RPF --> PH --> CE
+  PH --> S["memory · emotion · event · prompt · llm · agent"]
+  S --> CE
+  S -.-> I["builtin / remote / directory …"]
+```
 
 - **builtin**：逻辑编译在宿主内，稳定、离线友好。  
 - **remote**：逻辑可在**独立 HTTP 服务（侧车）**中实现，宿主只发 JSON-RPC，按约定解析结果（环境变量 `OCLIVE_REMOTE_*` URL）。  
@@ -75,7 +95,8 @@ oclive 把对话管线拆成可替换块：**记忆检索、用户句情绪、�
     "emotion": "remote",
     "event": "remote",
     "prompt": "remote",
-    "llm": "remote"
+    "llm": "remote",
+    "agent": "builtin"
   }
 }
 ```
