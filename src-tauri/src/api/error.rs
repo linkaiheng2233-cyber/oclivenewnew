@@ -12,6 +12,7 @@ pub enum ApiError {
 }
 
 impl ApiError {
+    #[must_use] 
     pub fn code(&self) -> &'static str {
         match self {
             ApiError::PluginNotFound { .. } => "API_PLUGIN_NOT_FOUND",
@@ -54,6 +55,7 @@ impl From<ApiError> for tauri::InvokeError {
 }
 
 /// 将 `DirectoryPluginRuntime::ensure_rpc_url` 等返回的纯文本失败映射为带 `[CODE]` 的字符串，供前端解析。
+#[must_use] 
 pub fn map_directory_rpc_url_error(plugin_id: &str, err: String) -> String {
     let id = plugin_id.trim().to_string();
     if err.contains("unknown directory plugin_id=") {

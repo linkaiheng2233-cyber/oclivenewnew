@@ -46,6 +46,7 @@ pub struct RemotePromptAssemblerPlaceholder {
 }
 
 impl RemotePromptAssemblerPlaceholder {
+    #[must_use] 
     pub fn new() -> Self {
         Self {
             inner: BuiltinPromptAssembler,

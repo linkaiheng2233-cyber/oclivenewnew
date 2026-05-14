@@ -3,6 +3,7 @@
 use semver::Version;
 
 /// 将 manifest `version` 解析为 `semver::Version`（兼容 `x.y` → `x.y.0`）。
+#[must_use] 
 pub fn parse_manifest_version(s: &str) -> Option<Version> {
     let t = s.trim();
     if t.is_empty() {

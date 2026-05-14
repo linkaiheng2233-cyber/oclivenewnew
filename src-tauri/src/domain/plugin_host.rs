@@ -717,6 +717,7 @@ impl PluginHost {
 
 impl ResolvedRolePlugins {
     /// 与 `role.plugin_backends` 一致，便于日志/测试断言。
+    #[must_use] 
     pub fn backends_snapshot(role: &Role) -> PluginBackends {
         role.plugin_backends.clone()
     }

@@ -5,6 +5,7 @@ use semver::{Version, VersionReq};
 use std::collections::HashMap;
 
 /// 返回 `(dependency_status, dependency_issues)`，`status` 为 `ok` / `missing` / `mismatch`。
+#[must_use] 
 pub fn dependency_report(
     manifest: &OclivePluginManifest,
     version_by_id: &HashMap<String, Version>,

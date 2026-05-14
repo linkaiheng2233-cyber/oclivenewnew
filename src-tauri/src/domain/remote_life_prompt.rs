@@ -44,6 +44,7 @@ fn stub_rotation_index(len: usize) -> usize {
 }
 
 /// 轮换或单条选取占位文案（优先 manifest `life_trajectory.stub_messages`，其次 settings 遗留字段）。**未配置 `stub_ooc` 时**表示整段占位。
+#[must_use] 
 pub fn pick_stub_message(role: &Role) -> String {
     let msgs = collect_stub_lines(role);
     if msgs.is_empty() {
@@ -54,6 +55,7 @@ pub fn pick_stub_message(role: &Role) -> String {
 }
 
 /// 关闭异地心声且异地时的完整回复：`stub_ooc` + 中文逗号 + 旁白句（旁白来自 `stub_messages` 轮换）；未配置 `stub_ooc` 时回退为 [`pick_stub_message`]。
+#[must_use] 
 pub fn compose_remote_stub_reply(role: &Role) -> String {
     let Some(ref lt) = role.life_trajectory else {
         return pick_stub_message(role);
@@ -96,6 +98,7 @@ pub fn compose_remote_stub_reply(role: &Role) -> String {
 /// `worldview_snippet` 为 [`crate::models::knowledge::KnowledgeIndex::format_for_prompt`] 的输出；空则跳过【世界观设定】段（与共景主对话语义对齐）。
 #[allow(clippy::too_many_arguments)]
 /// `mutable_personality`：人设优先模式下由 LLM 维护的「可变性格档案」全文；空则跳过该段。
+#[must_use] 
 pub fn build_remote_life_prompt(
     role: &Role,
     away_material: &str,

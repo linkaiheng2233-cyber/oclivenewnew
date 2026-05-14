@@ -39,6 +39,7 @@ impl From<AppError> for tauri::InvokeError {
 }
 
 impl AppError {
+    #[must_use] 
     pub fn code(&self) -> &'static str {
         match self {
             AppError::DatabaseError(_) => "DB_ERROR",
@@ -53,6 +54,7 @@ impl AppError {
         }
     }
 
+    #[must_use] 
     pub fn to_frontend_error(&self) -> String {
         format!("[{}] {}", self.code(), self)
     }

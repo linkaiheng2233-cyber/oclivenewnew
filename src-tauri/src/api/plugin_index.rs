@@ -256,6 +256,7 @@ pub fn batch_uninstall_plugins(
 }
 
 #[tauri::command]
+#[must_use] 
 pub fn consume_pending_protocol_installs() -> Vec<PendingProtocolInstall> {
     take_pending_install_git_urls()
         .into_iter()

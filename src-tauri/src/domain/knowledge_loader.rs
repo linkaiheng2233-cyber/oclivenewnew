@@ -121,6 +121,7 @@ fn parse_markdown_chunk(path: &Path, raw: &str) -> Result<KnowledgeChunk> {
 }
 
 /// 是否应在本次加载中读取知识（manifest 省略时仅当存在 `knowledge/` 目录）。
+#[must_use] 
 pub fn should_load_knowledge(disk: &DiskRoleManifest, role_dir: &Path) -> bool {
     match &disk.knowledge {
         Some(k) => k.enabled,
@@ -129,6 +130,7 @@ pub fn should_load_knowledge(disk: &DiskRoleManifest, role_dir: &Path) -> bool {
 }
 
 /// 解析 manifest 中的知识配置；`None` 表示不加载（未启用或自动模式下无目录）。
+#[must_use] 
 pub fn resolved_knowledge_glob(disk: &DiskRoleManifest, role_dir: &Path) -> Option<String> {
     if !should_load_knowledge(disk, role_dir) {
         return None;

@@ -19,6 +19,7 @@ pub struct EmotionResult {
 
 impl EmotionResult {
     /// 转为 `models::Emotion`（与 `EmotionAnalyzer::get_dominant_emotion` 一致）
+    #[must_use] 
     pub fn to_emotion(&self) -> Emotion {
         EmotionAnalyzer::get_dominant_emotion(self)
     }
@@ -264,6 +265,7 @@ impl EmotionAnalyzer {
     ///
     /// # Returns
     /// 主导情绪类型
+    #[must_use] 
     pub fn get_dominant_emotion(result: &EmotionResult) -> Emotion {
         let emotions = [
             (result.joy, Emotion::Happy),
@@ -298,6 +300,7 @@ impl EmotionAnalyzer {
     }
 
     /// 写入主对话 prompt 的一行中文语气线索（含内部标签便于调试与插件对齐）。
+    #[must_use] 
     pub fn format_for_prompt(result: &EmotionResult) -> String {
         let dom = Self::get_dominant_emotion(result);
         let hint_zh = match dom {
@@ -331,6 +334,7 @@ impl EmotionAnalyzer {
     ///
     /// # Returns
     /// 情绪强度 [0.0, 1.0]
+    #[must_use] 
     pub fn calculate_intensity(emotion: &Emotion) -> f64 {
         match emotion {
             Emotion::Happy | Emotion::Angry => 0.8,

@@ -12,6 +12,7 @@ use crate::utils::json_loose::extract_json_object;
 use serde_json::Value;
 use std::sync::Arc;
 
+#[must_use] 
 pub fn event_impact_ai_enabled() -> bool {
     std::env::var("OCLIVE_EVENT_IMPACT_LLM")
         .ok()
@@ -234,6 +235,7 @@ fn apply_recent_context_continuity(
     (adjusted_type, adjusted_impact.clamp(-1.0, 1.0))
 }
 
+#[must_use] 
 pub fn soften_impact_factor(ai_impact_factor: f64, personality: &PersonalityVector) -> f64 {
     let clamped = ai_impact_factor.clamp(-1.0, 1.0);
     let stability = PersonalityEngine::calculate_stability_index(personality);

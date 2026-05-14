@@ -72,6 +72,7 @@ fn log_txn_finish(tx_name: &str, role_id: &str, elapsed_ms: u128) {
 
 impl DbManager {
     /// 创建新的数据库管理器
+    #[must_use] 
     pub fn new(pool: SqlitePool) -> Self {
         Self { pool }
     }

@@ -15,6 +15,7 @@ use super::role::{
 };
 
 /// 从运行时 `Role` 生成可写回磁盘的 manifest（用于测试或导出）
+#[must_use] 
 pub fn disk_manifest_from_role(role: &Role) -> DiskRoleManifest {
     let mut default_personality: Vec<f32> = vec![
         role.default_personality.stubbornness,
@@ -73,6 +74,7 @@ pub fn disk_manifest_from_role(role: &Role) -> DiskRoleManifest {
     }
 }
 
+#[must_use] 
 pub fn disk_manifest_to_role(d: &DiskRoleManifest) -> Role {
     let def = vec_to_defaults(&d.default_personality);
     let bounds = EvolutionBounds::full_01();

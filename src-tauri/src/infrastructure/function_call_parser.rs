@@ -23,6 +23,7 @@ pub struct ToolSchemaInput {
 /// 从 LLM 文本输出中提取 OpenAI 风格函数调用：
 /// - `{"tool_calls":[{"id":"..","function":{"name":"x","arguments":{...}}}]}`
 /// - `{"function_call":{"name":"x","arguments":"{\"city\":\"深圳\"}"}}`
+#[must_use] 
 pub fn parse_from_llm_response(text: &str) -> Vec<ToolCall> {
     let t = text.trim();
     if t.is_empty() {
@@ -93,6 +94,7 @@ pub fn parse_from_llm_response(text: &str) -> Vec<ToolCall> {
 }
 
 /// 将 MCP 工具列表转换成 Function Calling 兼容 schema（最小参数对象）。
+#[must_use] 
 pub fn to_function_calling_schema(tools: &[ToolSchemaInput]) -> Value {
     let items: Vec<Value> = tools
         .iter()

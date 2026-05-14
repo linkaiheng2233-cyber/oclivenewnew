@@ -1009,6 +1009,7 @@ fn path_string_for_frontend(p: &std::path::Path) -> String {
 
 /// 解析 `roles/{role_id}/{relative}` 的绝对路径；文件存在时供前端 `convertFileSrc` / `readBinaryFile` 加载。
 #[tauri::command]
+#[must_use] 
 pub fn resolve_role_asset_path(
     role_id: String,
     relative: String,

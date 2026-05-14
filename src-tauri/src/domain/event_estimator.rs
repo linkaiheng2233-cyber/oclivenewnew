@@ -97,6 +97,7 @@ pub struct RemoteEventEstimatorPlaceholder {
 }
 
 impl RemoteEventEstimatorPlaceholder {
+    #[must_use] 
     pub fn new() -> Self {
         Self {
             inner: BuiltinEventEstimator,

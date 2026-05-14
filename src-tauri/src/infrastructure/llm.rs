@@ -55,6 +55,7 @@ impl LlmClient for OllamaClient {
 }
 
 /// 将 `OllamaClient` 包成 `Arc<dyn LlmClient>`
+#[must_use] 
 pub fn ollama_llm(client: OllamaClient) -> Arc<dyn LlmClient> {
     Arc::new(client)
 }

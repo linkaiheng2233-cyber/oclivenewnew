@@ -38,11 +38,13 @@ impl RoleStorage {
         }
     }
 
+    #[must_use] 
     pub fn roles_dir(&self) -> &Path {
         &self.roles_dir
     }
 
     /// `roles/{role_id}/{relative}`，不检查是否存在。
+    #[must_use] 
     pub fn role_asset_path(&self, role_id: &str, relative: &str) -> PathBuf {
         self.roles_dir.join(role_id).join(relative)
     }
@@ -269,6 +271,7 @@ impl RoleStorage {
     }
 
     /// `scenes/{scene_id}/scene.json` 中 `name` 字段；缺失时用内置中文映射，再退回 id。
+    #[must_use] 
     pub fn scene_display_name(&self, role_id: &str, scene_id: &str) -> String {
         if let Some(cfg) = self.load_scene_config(role_id, scene_id) {
             if let Some(name) = cfg.name {
@@ -282,6 +285,7 @@ impl RoleStorage {
     }
 
     /// 场景切换欢迎语：`welcome_message` 优先；否则从 `monologues` 按 role+scene 稳定选一条。
+    #[must_use] 
     pub fn scene_welcome_line(&self, role_id: &str, scene_id: &str) -> Option<String> {
         let cfg = self.load_scene_config(role_id, scene_id)?;
         if let Some(w) = cfg.welcome_message {
@@ -302,6 +306,7 @@ impl RoleStorage {
     }
 
     /// `scenes/{scene_id}/scene.json` 中可选 `monologues: string[]`，用于独白模板或 LLM 失败兜底。
+    #[must_use] 
     pub fn scene_monologue_templates(&self, role_id: &str, scene_id: &str) -> Vec<String> {
         let Some(cfg) = self.load_scene_config(role_id, scene_id) else {
             return Vec::new();
@@ -309,6 +314,7 @@ impl RoleStorage {
         Self::normalize_string_vec(cfg.monologues)
     }
 
+    #[must_use] 
     pub fn scene_keywords(&self, role_id: &str, scene_id: &str) -> Vec<String> {
         let Some(cfg) = self.load_scene_config(role_id, scene_id) else {
             return Vec::new();
@@ -316,6 +322,7 @@ impl RoleStorage {
         Self::normalize_string_vec(cfg.keywords)
     }
 
+    #[must_use] 
     pub fn scene_events(&self, role_id: &str, scene_id: &str) -> Vec<String> {
         let Some(cfg) = self.load_scene_config(role_id, scene_id) else {
             return Vec::new();
@@ -323,6 +330,7 @@ impl RoleStorage {
         Self::normalize_string_vec(cfg.events)
     }
 
+    #[must_use] 
     pub fn is_scene_time_allowed(
         &self,
         role_id: &str,
@@ -357,6 +365,7 @@ impl RoleStorage {
         })
     }
 
+    #[must_use] 
     pub fn load_scene_config(&self, role_id: &str, scene_id: &str) -> Option<DiskSceneConfig> {
         let path = self.scene_json_path(role_id, scene_id);
         let raw = fs::read_to_string(path).ok()?;
@@ -388,6 +397,7 @@ impl RoleStorage {
     }
 
     /// `scenes/<scene_id>/away_life.txt`（角色位于本场景时的异地生活长文素材）
+    #[must_use] 
     pub fn away_life_txt_file(&self, role_id: &str, scene_id: &str) -> Option<String> {
         let path = self.away_life_txt_path(role_id, scene_id);
         let raw = fs::read_to_string(path).ok()?;
@@ -401,6 +411,7 @@ impl RoleStorage {
 
     /// 角色当前所在场景 `character_scene_id`、用户对话上下文场景 `user_scene_id` 不一致时注入 prompt 的素材。
     /// 优先 `away_life.txt`，其次 `away_life_by_user_scene[user_scene]`，再合并 `away_life_notes`。
+    #[must_use] 
     pub fn away_life_material(
         &self,
         role_id: &str,
@@ -434,6 +445,7 @@ impl RoleStorage {
     }
 
     /// `scenes/<scene_id>/description.txt` 全文（创作者可自行增删，无需改程序）。
+    #[must_use] 
     pub fn scene_description_file(&self, role_id: &str, scene_id: &str) -> Option<String> {
         let path = self.scene_description_path(role_id, scene_id);
         let raw = fs::read_to_string(path).ok()?;
@@ -446,6 +458,7 @@ impl RoleStorage {
     }
 
     /// 主对话 prompt 用的场景说明：优先长文 `description.txt`，否则从 `scene.json` 拼短说明。
+    #[must_use] 
     pub fn scene_prompt_enrichment(&self, role_id: &str, scene_id: &str) -> String {
         const MAX_SCENE_PROMPT_CHARS: usize = 6000;
         if let Some(desc) = self.scene_description_file(role_id, scene_id) {

@@ -17,6 +17,7 @@ fn dim_from_keywords(text: &str, keywords: &[&str]) -> f64 {
 }
 
 /// 由「核心人设 + 可变档案」中的关键词归纳对默认七维的增量，再与默认值相加并限幅。
+#[must_use] 
 pub fn effective_vector_from_profile(role: &Role, mutable_personality: &str) -> PersonalityVector {
     let mut combined = String::new();
     combined.push_str(role.core_personality.trim());

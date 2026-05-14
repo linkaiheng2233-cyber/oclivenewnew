@@ -37,6 +37,7 @@ impl RoleManager {
     /// # Arguments
     /// * `role` - 角色信息
     /// * `personality` - 初始性格向量
+    #[must_use] 
     pub fn new(role: Role, personality: PersonalityVector) -> Self {
         let plugins = resolved_plugins_dummy(&role);
         Self {
@@ -175,16 +176,19 @@ impl RoleManager {
     }
 
     /// 获取当前性格
+    #[must_use] 
     pub fn get_personality(&self) -> &PersonalityVector {
         &self.personality
     }
 
     /// 获取角色信息
+    #[must_use] 
     pub fn get_role(&self) -> &Role {
         &self.role
     }
 
     /// 获取短期记忆
+    #[must_use] 
     pub fn get_short_term_memories(&self) -> Vec<Memory> {
         self.memory_engine.get_short_term()
     }
@@ -195,6 +199,7 @@ impl RoleManager {
     }
 
     /// 获取性格摘要
+    #[must_use] 
     pub fn get_personality_summary(&self) -> String {
         let traits = PersonalityEngine::get_dominant_traits(&self.personality);
         let stability = PersonalityEngine::calculate_stability_index(&self.personality);

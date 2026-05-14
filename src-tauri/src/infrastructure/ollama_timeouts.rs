@@ -13,11 +13,13 @@ fn parse_env_u64(key: &str, default: u64) -> u64 {
 }
 
 /// `OCLIVE_OLLAMA_HTTP_TIMEOUT_SECS`（默认 `120`）：`OllamaClient` 每次 POST 的 `reqwest` 超时。
+#[must_use] 
 pub fn http_client_timeout() -> Duration {
     Duration::from_secs(parse_env_u64("OCLIVE_OLLAMA_HTTP_TIMEOUT_SECS", 120))
 }
 
 /// `OCLIVE_OLLAMA_LEGACY_UTILS_TIMEOUT_SECS`（默认 `30`）：`utils/ollama.rs` 单次 `generate` 外包 `tokio::timeout`。
+#[must_use] 
 pub fn legacy_utils_call_timeout() -> Duration {
     Duration::from_secs(parse_env_u64("OCLIVE_OLLAMA_LEGACY_UTILS_TIMEOUT_SECS", 30))
 }

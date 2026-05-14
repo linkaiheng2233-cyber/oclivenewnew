@@ -8,6 +8,7 @@ use chrono::{DateTime, Timelike, Utc};
 use tauri::State;
 
 /// 虚拟时间对齐到分钟（毫秒时间戳）
+#[must_use] 
 pub fn round_to_minute_ms(ts_ms: i64) -> i64 {
     const M: i64 = 60_000;
     (ts_ms / M) * M

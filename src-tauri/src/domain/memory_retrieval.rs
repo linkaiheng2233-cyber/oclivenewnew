@@ -102,6 +102,7 @@ pub struct RemoteMemoryRetrievalPlaceholder {
 }
 
 impl RemoteMemoryRetrievalPlaceholder {
+    #[must_use] 
     pub fn new() -> Self {
         Self {
             inner: BuiltinMemoryRetrieval,

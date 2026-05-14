@@ -26,6 +26,7 @@ pub struct HostPluginsFile {
 }
 
 impl HostPluginsFile {
+    #[must_use] 
     pub fn load(app_data: &Path) -> Self {
         let p = app_data.join("oclive_host_plugins.json");
         if let Ok(s) = std::fs::read_to_string(&p) {
@@ -35,6 +36,7 @@ impl HostPluginsFile {
         }
     }
 
+    #[must_use] 
     pub fn developer_effective(&self) -> bool {
         self.developer_mode || env_developer()
     }
@@ -92,6 +94,7 @@ fn collect_plugin_dirs(root: &Path, out: &mut HashMap<String, PathBuf>) {
 }
 
 /// 插件包所在容器目录（`plugins/` 等），用于扫描与（开发者模式）文件监听。
+#[must_use] 
 pub fn plugin_scan_container_roots(
     roles_dir: &Path,
     app_data: &Path,

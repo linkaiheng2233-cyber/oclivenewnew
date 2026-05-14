@@ -6,6 +6,7 @@ use super::role::{RemotePresenceConfig, Role};
 pub use oclive_validation::{DiskRoleSettings, CURRENT_SETTINGS_SCHEMA_VERSION};
 
 /// 从运行时 `Role` 生成完整 `settings.json` 内容（与旧版单文件 manifest 中引擎段一致）。
+#[must_use] 
 pub fn disk_role_settings_from_role(role: &Role) -> DiskRoleSettings {
     use super::role_manifest_disk::EvolutionConfigDisk;
     let memory_config = role.memory_config.clone().unwrap_or_default();

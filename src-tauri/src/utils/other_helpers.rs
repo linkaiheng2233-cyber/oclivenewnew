@@ -1,6 +1,7 @@
 use chrono::{DateTime, Utc};
 
 /// 格式化 unix 时间戳为日期字符串 "YYYY-MM-DD"
+#[must_use] 
 pub fn format_timestamp_date(ts: i64) -> String {
     DateTime::<Utc>::from_timestamp(ts, 0)
         .map(|dt| dt.format("%Y-%m-%d").to_string())
@@ -8,6 +9,7 @@ pub fn format_timestamp_date(ts: i64) -> String {
 }
 
 /// 格式化 unix 时间戳为时间字符串 "HH:MM"
+#[must_use] 
 pub fn format_timestamp_time(ts: i64) -> String {
     DateTime::<Utc>::from_timestamp(ts, 0)
         .map(|dt| dt.format("%H:%M").to_string())
@@ -15,6 +17,7 @@ pub fn format_timestamp_time(ts: i64) -> String {
 }
 
 /// 字符串截断，按字符数安全截断防止越界
+#[must_use] 
 pub fn truncate_str(s: &str, max_chars: usize) -> String {
     if s.chars().count() > max_chars {
         s.chars().take(max_chars).collect::<String>() + "..."

@@ -1,4 +1,3 @@
-#![allow(clippy::must_use_candidate)]
 #![cfg_attr(
     test,
     allow(clippy::unwrap_used, clippy::expect_used)

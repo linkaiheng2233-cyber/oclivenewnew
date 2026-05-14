@@ -7,6 +7,7 @@ pub struct Favorability {
 }
 
 impl Favorability {
+    #[must_use] 
     pub fn new(role_id: String) -> Self {
         Self {
             role_id,

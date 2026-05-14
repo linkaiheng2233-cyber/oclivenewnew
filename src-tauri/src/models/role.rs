@@ -35,6 +35,7 @@ pub struct EvolutionBounds {
 }
 
 impl EvolutionBounds {
+    #[must_use] 
     pub fn full_01() -> Self {
         let r = (0.0, 1.0);
         Self {
@@ -257,6 +258,7 @@ impl Role {
     }
 
     /// 解析本角色应使用的 Ollama 模型：**manifest** → **`OLLAMA_MODEL`** → **全局默认**（`AppState` 启动配置）
+    #[must_use] 
     pub fn resolve_ollama_model(&self, global_fallback: &str) -> String {
         if let Some(ref m) = self.ollama_model {
             let t = m.trim();
