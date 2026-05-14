@@ -38,11 +38,12 @@
 2. **`remote`**：配置 **`OCLIVE_REMOTE_PLUGIN_URL`** / **`OCLIVE_REMOTE_LLM_URL`** 等（见 PLUGIN_V1 与 REMOTE_PLUGIN_PROTOCOL）。
 3. **`directory`**：在包内配置 **`plugin_backends.directory_plugins`** 各槽的 manifest **`id`**，并放置 **`plugins/<id>/`**（见 DIRECTORY_PLUGINS.md）。
 
-## 开发者编译选项（实验性，第一阶段）
+## 开发者编译选项（已可用）
 
-**高耦合编译模式（Monolith）**：在编译期增加 **`Cargo` feature `monolith`** 与第二二进制 **`{package名}-monolith`**；占位实现见 **`src/process_message_monolith.rs`**（由 `init` 生成）。**仅 `kernel_server` 项目**会生成 **`monolith.toml`**；嵌入式 **library** 忽略 Monolith。
+**高耦合编译模式（Monolith）**：在编译期增加 **`Cargo` feature `monolith`** 与第二二进制 **`{package名}-monolith`**；`src/process_message_monolith.rs` 与 **`vendor/oclive_monolith_builtin/`** 由 **`oclive init`** 或 **`cargo run -p oclive-cli -- build`** 生成。**仅 `kernel_server` 项目**会生成 **`monolith.toml`**；嵌入式 **library** 忽略 Monolith。
 
 - **非交互**：`cargo run -p oclive-cli -- init --preset full --monolith -o ./out`（勿与 `--project-type library` 同用）。
-- **交互**：流程末尾「是否启用开发者编译选项？」→「编译模式」→「焊接范围（当前仅全部模块）」。
-- **构建**：`cargo build --release`（标准）、`cargo build --release --features monolith`（焊接产物）。
+- **交互**：流程末尾「是否启用开发者编译选项？」→「编译模式」（标准 / 全槽焊接 / 自定义焊接范围）。
+- **再生成**：`cargo run -p oclive-cli -- build -o ./out`（默认继续两次 `cargo build`；`--no-cargo` 仅写源码与 vendor）。
+- **构建**：亦可手动 `cargo build --release`（标准）、`cargo build --release --features monolith`（焊接产物）。
 - **权威设计**：[RFC_OCLIVE_MONOLITH_MODE.md](../../../creator-docs/rfc/RFC_OCLIVE_MONOLITH_MODE.md)。

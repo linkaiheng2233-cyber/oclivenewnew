@@ -2,6 +2,7 @@
 
 use crate::init::{BackendImpl, ProjectConfig, ProjectType};
 use crate::monolith_codegen;
+use crate::monolith_config::WeldPlan;
 use anyhow::{Context, Result};
 use handlebars::Handlebars;
 use serde_json::{json, Map, Value};
@@ -256,9 +257,20 @@ pub fn write_project(cfg: &ProjectConfig, out: &Path) -> Result<()> {
                 .context("render main.rs")?;
             fs::write(out.join("src").join("main.rs"), main).context("write main.rs")?;
             if cfg.monolith_enabled && matches!(cfg.project_type, ProjectType::KernelServer) {
+                let main_mono_t = include_str!(concat!(
+                    env!("CARGO_MANIFEST_DIR"),
+                    "/src/templates/main_monolith.rs.hbs"
+                ));
+                let main_mono = reg
+                    .render_template(main_mono_t, &ctx)
+                    .context("render main_monolith.rs")?;
+                fs::write(out.join("src").join("main_monolith.rs"), main_mono)
+                    .context("write main_monolith.rs")?;
+                monolith_codegen::copy_monolith_vendor(out)
+                    .context("copy vendor/oclive_monolith_builtin")?;
                 fs::write(
                     out.join("src").join("process_message_monolith.rs"),
-                    monolith_codegen::generate_monolith_source(),
+                    monolith_codegen::generate_monolith_source(&WeldPlan::all_welded()),
                 )
                 .context("write process_message_monolith.rs")?;
                 fs::write(

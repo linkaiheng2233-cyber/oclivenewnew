@@ -1,80 +1,147 @@
-//! 高耦合（Monolith）第一阶段：由 `monolith.toml` 生成可编译占位实现。
+//! 高耦合（Monolith）：由 `monolith.toml` 焊接计划生成 `process_message_monolith.rs`。
 //!
-//! 接入真实内核后，将 `welded_*` 内联模块替换为对 `oclive_*_builtin` 等 crate 的静态调用。
+//! 已焊接槽静态调用 `oclive_monolith_builtin`（脚手架 vendor crate，可替换为真实 `oclive_*_builtin`）；
+//! 未焊接槽保留 `PluginHost`/trait 风格占位调用链。
 
-/// 与 RFC §4 一致的第一阶段模板：`weld_modules = []` 表示全部七槽焊接占位实现。
+use crate::monolith_config::{WeldPlan, SLOT_IDS};
+use anyhow::Context;
+use std::fs;
+use std::path::Path;
+
+/// 与 RFC 及校验器一致的第一阶段默认模板（`weld_modules` / `exclude` 互斥说明）。
 pub fn render_monolith_toml_phase_one() -> String {
+    render_monolith_toml_default()
+}
+
+pub fn render_monolith_toml_default() -> String {
     r#"# 高耦合编译配置
-# 由 oclive init 生成，oclive build 在编译时读取
+# 由 oclive init 生成；oclive build 读取并重新生成 process_message_monolith.rs
 # 不参与运行时，可安全删除以恢复标准模式
+#
+# 约束：weld_modules 与 exclude 不能同时非空。
+# - weld_modules = [] 且 exclude = [] → 七槽全部静态焊接
+# - weld_modules = [] 且 exclude = ["agent", …] → 全焊再排除所列槽（其余仍焊接）
+# - weld_modules = ["memory", …] 且 exclude = [] → 仅列表内焊接，其余 trait/PluginHost 占位
 
 [monolith]
-# 是否启用高耦合编译
 enabled = true
-# 参与焊接的模块列表（空数组 = 全部焊接）
 weld_modules = []
-# 排除的模块列表（weld_modules 为空时，从全部模块中排除指定模块；第一阶段通常为空）
 exclude = []
 "#
     .to_string()
 }
 
-/// 生成 `src/process_message_monolith.rs`：七槽均为同 crate 内静态占位，保证 `cargo build --features monolith` 可通过。
-pub fn generate_monolith_source() -> String {
-    r#"#![allow(dead_code)]
+/// 将脚手架内置的 `oclive_monolith_builtin` vendor crate 写入目标项目（覆盖更新）。
+pub fn copy_monolith_vendor(project_root: &Path) -> anyhow::Result<()> {
+    let dir = project_root.join("vendor/oclive_monolith_builtin");
+    fs::create_dir_all(&dir).with_context(|| format!("mkdir {}", dir.display()))?;
+    fs::write(
+        dir.join("Cargo.toml"),
+        include_str!(concat!(
+            env!("CARGO_MANIFEST_DIR"),
+            "/monolith_vendor/oclive_monolith_builtin/Cargo.toml"
+        )),
+    )
+    .with_context(|| format!("write {}", dir.join("Cargo.toml").display()))?;
+    fs::write(
+        dir.join("lib.rs"),
+        include_str!(concat!(
+            env!("CARGO_MANIFEST_DIR"),
+            "/monolith_vendor/oclive_monolith_builtin/lib.rs"
+        )),
+    )
+    .with_context(|| format!("write {}", dir.join("lib.rs").display()))?;
+    Ok(())
+}
+
+fn rust_mod_token(slot: &str) -> String {
+    slot.replace('-', "_")
+}
+
+/// 根据焊接计划生成 `src/process_message_monolith.rs` 源码。
+pub fn generate_monolith_source(plan: &WeldPlan) -> String {
+    let mut out = String::from(
+        r#"#![allow(dead_code)]
 // 此文件由 oclive-cli 根据 monolith.toml 生成。
-// 请勿手改焊接逻辑；修改 `monolith.toml` 后请重新运行 `oclive init` 或后续 `oclive build` 代码生成步骤。
-// 第一阶段为占位：真实宿主应将 welded_* 替换为对 oclive_*_builtin 等 crate 的静态调用。
+// 请勿手改焊接逻辑；修改 monolith.toml 后请运行 `oclive build`（或重新 `oclive init`）再生成。
 
-/// Monolith 入口：演示七槽静态调用链（占位，无 I/O）。
+/// Monolith 入口：演示七槽调用顺序（已焊接 → 静态 `oclive_monolith_builtin`；未焊接 → trait 占位）。
 pub fn run_monolith_pipeline_demo() {
-    welded_memory::step();
-    welded_emotion::step();
-    welded_event::step();
-    welded_prompt::step();
-    welded_llm::step();
-    welded_agent::step();
-    welded_complex_emotion::step();
-    println!("monolith: welded pipeline (phase-1 stub) completed");
+    oclive_monolith_builtin::ensure_linked();
+"#,
+    );
+
+    for slot in SLOT_IDS {
+        let m = rust_mod_token(slot);
+        out.push_str(&format!("    slot_{m}::run();\n"));
+    }
+
+    out.push_str(
+        r##"    println!("monolith: pipeline completed");
 }
 
-macro_rules! welded_slot {
-    ($m:ident, $label:expr) => {
-        mod $m {
-            pub fn step() {
-                println!(concat!("welded::", $label, " (static stub)"));
-            }
+"##,
+    );
+
+    if plan.any_dynamic_slot() {
+        out.push_str("mod dynamic_plugin_host {\n");
+        for slot in SLOT_IDS {
+            let m = rust_mod_token(slot);
+            out.push_str(&format!(
+                "    pub fn trait_dispatch_{m}() {{\n        println!(concat!(\"plugin_host::\", \"{slot}\", \" / trait_dispatch (monolith dynamic stub)\"));\n    }}\n\n"
+            ));
         }
-    };
-}
+        out.push_str("}\n\n");
+    }
 
-welded_slot!(welded_memory, "memory");
-welded_slot!(welded_emotion, "emotion");
-welded_slot!(welded_event, "event");
-welded_slot!(welded_prompt, "prompt");
-welded_slot!(welded_llm, "llm");
-welded_slot!(welded_agent, "agent");
-welded_slot!(welded_complex_emotion, "complex_emotion");
-"#
-    .to_string()
+    for (i, slot) in SLOT_IDS.iter().enumerate() {
+        let m = rust_mod_token(slot);
+        out.push_str(&format!("mod slot_{m} {{\n    pub fn run() {{\n"));
+        if plan.welded[i] {
+            out.push_str(&format!(
+                "        oclive_monolith_builtin::{m}::invoke();\n"
+            ));
+        } else {
+            out.push_str(&format!(
+                "        super::dynamic_plugin_host::trait_dispatch_{m}();\n"
+            ));
+        }
+        out.push_str("    }\n}\n\n");
+    }
+
+    out
 }
 
 #[cfg(test)]
 mod tests {
     use super::*;
+    use crate::monolith_config::WeldPlan;
 
     #[test]
-    fn monolith_toml_contains_enabled_empty_arrays() {
-        let s = render_monolith_toml_phase_one();
+    fn monolith_toml_contains_mutex_note() {
+        let s = render_monolith_toml_default();
+        assert!(s.contains("不能同时非空"));
         assert!(s.contains("enabled = true"));
-        assert!(s.contains("weld_modules = []"));
-        assert!(s.contains("exclude = []"));
     }
 
     #[test]
-    fn monolith_source_contains_run_and_macros() {
-        let s = generate_monolith_source();
+    fn full_weld_uses_builtin_for_all() {
+        let plan = WeldPlan::all_welded();
+        let s = generate_monolith_source(&plan);
         assert!(s.contains("run_monolith_pipeline_demo"));
-        assert!(s.contains("welded_memory"));
+        assert!(s.contains("oclive_monolith_builtin::memory::invoke"));
+        assert!(!s.contains("super::dynamic_plugin_host::trait_dispatch_memory"));
+    }
+
+    #[test]
+    fn partial_weld_mixed() {
+        let plan = WeldPlan {
+            welded: [true, true, false, false, false, false, false],
+        };
+        let s = generate_monolith_source(&plan);
+        assert!(s.contains("oclive_monolith_builtin::memory::invoke"));
+        assert!(s.contains("oclive_monolith_builtin::emotion::invoke"));
+        assert!(s.contains("trait_dispatch_event"));
+        assert!(s.contains("dynamic_plugin_host::trait_dispatch_event"));
     }
 }

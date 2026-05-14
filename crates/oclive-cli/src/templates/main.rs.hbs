@@ -1,10 +1,18 @@
 //! `{{ safe_package_name }}` — oclive-cli 生成的占位内核（无头可执行）。
 //!
-//! 运行方式：在本目录执行 `cargo run`；Monolith 实验构建：`cargo run --features monolith` 或 `cargo build --release --features monolith`。
-
+//! 运行方式：在本目录执行 `cargo run`。
 {{#if monolith_enabled}}
-mod process_message_monolith;
+//! 高耦合构建使用独立入口 **`src/main_monolith.rs`**（`{{ safe_package_name }}-monolith` 二进制），见 `Cargo.toml` 中 `[[bin]]`。
 {{/if}}
+
+fn kernel_bench_iterations() -> u32 {
+    std::env::var("OCLIVE_KERNEL_BENCH_ITERS")
+        .ok()
+        .and_then(|s| s.parse().ok())
+        .filter(|&n| n > 0)
+        .unwrap_or(1)
+        .min(1_000_000)
+}
 
 #[allow(dead_code)]
 fn run_stub_kernel() {
@@ -19,17 +27,8 @@ fn run_stub_kernel() {
 }
 
 fn main() {
-{{#if monolith_enabled}}
-    #[cfg(feature = "monolith")]
-    {
-        println!("{{ safe_package_name }} — monolith build (experimental)");
-        process_message_monolith::run_monolith_pipeline_demo();
-    }
-    #[cfg(not(feature = "monolith"))]
-    {
+    let n = kernel_bench_iterations();
+    for _ in 0..n {
         run_stub_kernel();
     }
-{{else}}
-    run_stub_kernel();
-{{/if}}
 }

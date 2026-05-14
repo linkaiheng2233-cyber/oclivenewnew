@@ -1,0 +1,22 @@
+//! `{{ safe_package_name }}` — Monolith 专用入口（与 `src/main.rs` 分离，避免 Cargo 多 bin 同路径警告）。
+//!
+//! 构建：`cargo run --features monolith` 或 `cargo build --release --features monolith`。
+
+mod process_message_monolith;
+
+fn kernel_bench_iterations() -> u32 {
+    std::env::var("OCLIVE_KERNEL_BENCH_ITERS")
+        .ok()
+        .and_then(|s| s.parse().ok())
+        .filter(|&n| n > 0)
+        .unwrap_or(1)
+        .min(1_000_000)
+}
+
+fn main() {
+    let n = kernel_bench_iterations();
+    println!("{{ safe_package_name }} — monolith build");
+    for _ in 0..n {
+        process_message_monolith::run_monolith_pipeline_demo();
+    }
+}

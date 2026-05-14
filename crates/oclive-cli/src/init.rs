@@ -28,7 +28,7 @@ pub const PRESET_MATRIX_HELP: &str = r#"预设与 plugin_backends（逻辑槽位
 
 llm 使用 ollama 表示进程内默认本地客户端；无本机模型时请改为 remote 并配置 OCLIVE_REMOTE_LLM_URL（见 PLUGIN_V1）。
 
-开发者编译选项（实验性）：非交互可加 **`--monolith`**（仅 kernel_server）；交互流程末尾询问。生成 `monolith.toml`（由 init 生成、build 读取）。详见 creator-docs/rfc/RFC_OCLIVE_MONOLITH_MODE.md。
+开发者编译选项：非交互可加 **`--monolith`**（仅 kernel_server）；交互流程末尾询问。生成 `monolith.toml`（由 init 生成、**`oclive build`** 读取并再生成 `process_message_monolith.rs`）。子命令 **`build`** / **`bench`** 见 **`cargo run -p oclive-cli -- --help`**。详见 creator-docs/rfc/RFC_OCLIVE_MONOLITH_MODE.md。
 "#;
 
 #[derive(Parser, Debug, Clone)]
@@ -78,7 +78,7 @@ pub struct InitArgs {
     #[arg(long, value_enum)]
     pub backend_complex_emotion: Option<BackendImpl>,
 
-    /// 非交互：启用 Monolith 实验模式（仅 `kernel_server` 生效；生成 `monolith.toml`、焊接占位源码与双 `[[bin]]`）
+    /// 非交互：启用 Monolith（仅 `kernel_server` 生效；生成 `monolith.toml`、`vendor/`、焊接源码与双 `[[bin]]`）
     #[arg(long)]
     pub monolith: bool,
 }
@@ -183,7 +183,7 @@ impl ProjectConfig {
         );
         println!("示例角色包: {}", self.with_example_role);
         if self.monolith_enabled {
-            println!("开发者编译: Monolith（实验性，全部模块焊接占位）");
+            println!("开发者编译: Monolith（焊接计划见 monolith.toml；`cargo run -p oclive-cli -- build` 再生成）");
         }
         println!("——————————————");
     }
@@ -347,6 +347,14 @@ pub fn run(args: InitArgs) -> Result<()> {
             println!("  标准模式二进制: target/release/{slug}");
             println!("  高耦合模式二进制: target/release/{slug}-monolith");
             println!("  配置文件: monolith.toml");
+            println!(
+                "  修改焊接计划后: 于项目根执行 oclive build（或 cargo run -p oclive-cli -- build -o {}）",
+                args.output.display()
+            );
+            println!(
+                "  性能对比: oclive bench --release -o {}",
+                args.output.display()
+            );
             println!("  详细说明: 参见 creator-docs/rfc/RFC_OCLIVE_MONOLITH_MODE.md");
             println!("输出目录: {}", args.output.display());
         } else {

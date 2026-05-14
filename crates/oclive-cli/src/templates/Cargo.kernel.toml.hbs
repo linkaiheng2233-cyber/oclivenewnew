@@ -8,8 +8,9 @@ publish = false
 [dependencies]
 serde = { version = "1", features = ["derive"] }
 serde_json = "1"
-
 {{#if monolith_enabled}}
+oclive_monolith_builtin = { path = "vendor/oclive_monolith_builtin" }
+
 [features]
 default = []
 monolith = []
@@ -20,7 +21,7 @@ path = "src/main.rs"
 
 [[bin]]
 name = "{{ safe_package_name }}-monolith"
-path = "src/main.rs"
+path = "src/main_monolith.rs"
 required-features = ["monolith"]
 {{else}}
 [[bin]]

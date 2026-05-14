@@ -1,0 +1,9 @@
+[package]
+name = "oclive_monolith_builtin"
+version = "0.1.0"
+edition = "2021"
+publish = false
+description = "Minimal static slot entry points for Monolith scaffold (replaced by real kernel builtins in production hosts)"
+
+[lib]
+path = "lib.rs"

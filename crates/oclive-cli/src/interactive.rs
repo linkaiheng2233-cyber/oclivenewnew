@@ -152,18 +152,13 @@ pub fn run_interactive() -> Result<ProjectConfig> {
                 .with_prompt("编译模式")
                 .items(&[
                     "标准模式（低耦合，保留模块可替换性，推荐）",
-                    "高耦合模式（实验性：焊接所有模块，消除虚调用）",
+                    "高耦合模式 — 七槽全部静态焊接",
+                    "高耦合模式 — 自定义焊接范围（生成后编辑 monolith.toml，再运行 oclive build）",
                 ])
                 .default(0)
                 .interact()
                 .context("compile mode")?;
-            if mode_idx == 1 {
-                Select::with_theme(&ColorfulTheme::default())
-                    .with_prompt("焊接范围（自定义 monolith.toml 留待第二阶段）")
-                    .items(&["全部模块（推荐：最大性能提升）"])
-                    .default(0)
-                    .interact()
-                    .context("weld scope")?;
+            if mode_idx == 1 || mode_idx == 2 {
                 monolith_enabled = true;
             }
         }

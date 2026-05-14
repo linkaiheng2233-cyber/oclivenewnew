@@ -1,0 +1,38 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://oclive.dev/schemas/oclive_bench_report.schema.json",
+  "title": "oclive bench JSON report",
+  "type": "object",
+  "required": [
+    "schema_version",
+    "package_name",
+    "runs",
+    "inner_iters",
+    "release",
+    "standard_ms",
+    "monolith_ms"
+  ],
+  "properties": {
+    "schema_version": { "type": "integer", "const": 1 },
+    "package_name": { "type": "string" },
+    "runs": { "type": "integer", "minimum": 1 },
+    "inner_iters": { "type": "integer", "minimum": 1 },
+    "release": { "type": "boolean" },
+    "standard_ms": { "$ref": "#/$defs/sample_stats" },
+    "monolith_ms": { "$ref": "#/$defs/sample_stats" }
+  },
+  "$defs": {
+    "sample_stats": {
+      "type": "object",
+      "required": ["samples", "min", "max", "p50", "p95", "mean"],
+      "properties": {
+        "samples": { "type": "array", "items": { "type": "number" } },
+        "min": { "type": "number" },
+        "max": { "type": "number" },
+        "p50": { "type": "number" },
+        "p95": { "type": "number" },
+        "mean": { "type": "number" }
+      }
+    }
+  }
+}
