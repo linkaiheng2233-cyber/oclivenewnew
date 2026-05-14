@@ -25,6 +25,7 @@ export default {
   ROLE_NOT_FOUND_DETAIL: "Role not found or manifest missing. {detail}",
   ROLE_PACK_EXISTS: "This role id already exists. Choose overwrite to replace the local copy.",
   INVALID_PARAMETER: "Invalid parameter. Check your input.",
+  INVALID_PARAMETER_DETAIL: "Invalid parameter: {detail}",
   OLLAMA_TIMEOUT: "The model took too long. Try again.",
   TXN_ROLLBACK: "Operation failed. Try again.",
   SERDE_ERROR: "Data parse error. Try again.",

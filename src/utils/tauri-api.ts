@@ -49,9 +49,15 @@ export function isInvalidParameterError(err: unknown): boolean {
 export function toFriendlyErrorMessage(err: unknown): string {
   const { code, raw } = parseBackendError(err);
   if (!code) return raw;
-  if (code === "INVALID_PARAMETER" && raw.includes("角色包格式错误")) {
+  if (code === "INVALID_PARAMETER") {
     const bracket = raw.indexOf("]");
-    if (bracket !== -1) return raw.slice(bracket + 1).trim();
+    if (bracket !== -1) {
+      let detail = raw.slice(bracket + 1).trim();
+      detail = detail.replace(/^Invalid parameter:\s*/i, "").trim();
+      if (detail && i18n.global.te("apiErrors.INVALID_PARAMETER_DETAIL")) {
+        return String(i18n.global.t("apiErrors.INVALID_PARAMETER_DETAIL", { detail }));
+      }
+    }
   }
   if (code === "ROLE_NOT_FOUND") {
     const bracket = raw.indexOf("]");

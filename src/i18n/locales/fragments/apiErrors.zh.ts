@@ -25,6 +25,7 @@ export default {
   ROLE_NOT_FOUND_DETAIL: "角色不存在或找不到 manifest。{detail}",
   ROLE_PACK_EXISTS: "该角色 ID 已存在。若要替换本地版本，请选择覆盖。",
   INVALID_PARAMETER: "参数无效，请检查输入内容。",
+  INVALID_PARAMETER_DETAIL: "参数无效：{detail}",
   OLLAMA_TIMEOUT: "沐沐走神了，再问一次吧。",
   TXN_ROLLBACK: "操作失败，请稍后再试。",
   SERDE_ERROR: "数据解析失败，请稍后重试。",
