@@ -25,7 +25,7 @@ async function loadState() {
   try {
     const s = await getTimeState(props.roleId);
     virtualTimeMs.value = s.virtual_time_ms;
-    displayLabel.value = new Date(s.virtual_time_ms).toLocaleString("zh-CN", {
+    displayLabel.value = new Date(s.virtual_time_ms).toLocaleString(undefined, {
       year: "numeric",
       month: "2-digit",
       day: "2-digit",
