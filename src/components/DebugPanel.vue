@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { computed, ref } from "vue";
+import { useI18n } from "vue-i18n";
 import ChatExportBar from "./ChatExportBar.vue";
 import PluginSlotEmbed from "./PluginSlotEmbed.vue";
 import HelpHint from "./HelpHint.vue";
@@ -13,7 +14,6 @@ import { SLOT_DEBUG_DOCK, usePluginStore } from "../stores/pluginStore";
 import { generateMonologue } from "../utils/tauri-api";
 import {
   PERSONALITY_TRAIT_KEYS,
-  PERSONALITY_TRAIT_LABELS_ZH,
   vec7ToRecord,
 } from "../utils/personality-traits";
 
@@ -26,6 +26,7 @@ const props = defineProps<{
   memories: Array<{ content?: string; timestamp?: string; importance?: number }>;
 }>();
 
+const { t } = useI18n();
 const roleStore = useRoleStore();
 const debugStore = useDebugStore();
 const chatStore = useChatStore();
@@ -47,8 +48,12 @@ async function insertMonologue(): Promise<void> {
   monoLoading.value = true;
   try {
     const text = await generateMonologue(roleId);
-    chatStore.addAssistantMessage(`【独白】${text}`, undefined, uiStore.sceneId);
-    emit("notify", { type: "info", message: "已插入独白" });
+    chatStore.addAssistantMessage(
+      `${t("editor.debug.monologuePrefix")}${text}`,
+      undefined,
+      uiStore.sceneId,
+    );
+    emit("notify", { type: "info", message: t("editor.debug.monologueInserted") });
   } catch (e) {
     emit("notify", {
       type: "error",
@@ -70,11 +75,11 @@ function favEmoji(v: number): string {
 }
 
 function favStatusText(v: number): string {
-  if (v >= 80) return "💖 超级亲密！";
-  if (v >= 60) return "💕 关系很好~";
-  if (v >= 40) return "👍 还不错";
-  if (v >= 20) return "🤝 慢慢熟悉中";
-  return "😶 还有点陌生";
+  if (v >= 80) return t("editor.debug.fav80");
+  if (v >= 60) return t("editor.debug.fav60");
+  if (v >= 40) return t("editor.debug.fav40");
+  if (v >= 20) return t("editor.debug.fav20");
+  return t("editor.debug.fav0");
 }
 
 function traitEmoji(val: number, hi: string, mid: string, low: string): string {
@@ -82,6 +87,12 @@ function traitEmoji(val: number, hi: string, mid: string, low: string): string {
   if (val >= 0.4) return mid;
   return low;
 }
+
+function traitLabel(key: (typeof PERSONALITY_TRAIT_KEYS)[number]): string {
+  return t(`editor.personalityTrait.${key}`);
+}
+
+const debugHintParagraphs = computed(() => [t("editor.debug.hint1"), t("editor.debug.hint2")]);
 
 const traitEmojiMap: Record<
   (typeof PERSONALITY_TRAIT_KEYS)[number],
@@ -105,9 +116,9 @@ function traitEmojiForKey(
 }
 
 function presenceLabel(mode: string): string {
-  if (mode === "co_present") return "共景";
-  if (mode === "remote_stub") return "异地占位";
-  if (mode === "remote_life") return "异地心声";
+  if (mode === "co_present") return t("editor.debug.presenceCoPresent");
+  if (mode === "remote_stub") return t("editor.debug.presenceRemoteStub");
+  if (mode === "remote_life") return t("editor.debug.presenceRemoteLife");
   return mode;
 }
 </script>
@@ -117,21 +128,16 @@ function presenceLabel(mode: string): string {
     <aside v-if="visible" class="debug debug-scroll">
       <div class="title">
         <div class="title-leading">
-          <strong>🎛️ 开发面板</strong>
-          <HelpHint
-            :paragraphs="[
-              '供开发与排错：查看好感度、性格维度、近期事件与记忆摘要；可重载策略、生成独白、导入或管理角色包等。',
-              '快捷键 Ctrl+Shift+D（同时按住 Ctrl、Shift，再按字母 D）可随时打开或关闭本面板；按 Esc 也可关闭。顶栏「更多」里亦可点「打开调试面板」。',
-            ]"
-          />
+          <strong>{{ t("editor.debug.title") }}</strong>
+          <HelpHint :paragraphs="debugHintParagraphs" />
         </div>
-        <button type="button" aria-label="关闭" @click="emit('close')">✕</button>
+        <button type="button" :aria-label="t('common.close')" @click="emit('close')">✕</button>
       </div>
 
       <section class="debug-dock-slot" aria-label="debug.dock">
         <PluginSlotEmbed
           :slot-name="SLOT_DEBUG_DOCK"
-          aria-label="调试面板扩展槽"
+          :aria-label="t('editor.debug.dockSlotAria')"
           :bootstrap-epoch="pluginStore.bootstrapEpoch"
         />
       </section>
@@ -147,7 +153,7 @@ function presenceLabel(mode: string): string {
           :disabled="loading || monoLoading"
           @click="insertMonologue"
         >
-          {{ monoLoading ? "生成中…" : "插入独白" }}
+          {{ monoLoading ? t("editor.debug.insertMonoGenerating") : t("editor.debug.insertMono") }}
         </button>
       </div>
 
@@ -160,17 +166,22 @@ function presenceLabel(mode: string): string {
       />
 
       <div class="dev-card knowledge-card">
-        <div class="dev-title"><span>📚</span> 世界观知识</div>
+        <div class="dev-title"><span>📚</span> {{ t("editor.debug.knowledgeTitle") }}</div>
         <p class="knowledge-line">
-          包内索引：
+          {{ t("editor.debug.knowledgeIndexed") }}
           <strong>{{
-            roleStore.roleInfo.knowledgeEnabled ? "已加载" : "未加载"
+            roleStore.roleInfo.knowledgeEnabled
+              ? t("editor.debug.knowledgeLoaded")
+              : t("editor.debug.knowledgeNotLoaded")
           }}</strong>
-          · 共 {{ roleStore.roleInfo.knowledgeChunkCount }} 块
+          {{ t("editor.debug.knowledgeChunks", { n: roleStore.roleInfo.knowledgeChunkCount }) }}
         </p>
         <p class="knowledge-line">
-          上一句注入 Prompt：
-          <strong>{{ debugStore.lastKnowledgeChunksInPrompt }}</strong> 块
+          {{
+            t("editor.debug.knowledgeLastPromptLine", {
+              n: debugStore.lastKnowledgeChunksInPrompt,
+            })
+          }}
           <span
             v-if="debugStore.lastKnowledgePresenceMode"
             class="knowledge-mode"
@@ -179,14 +190,13 @@ function presenceLabel(mode: string): string {
           </span>
         </p>
         <p class="knowledge-hint">
-          发话后更新「上一句」；点「刷新调试数据」同步包内块数（改磁盘后请先
-          load_role）。
+          {{ t("editor.debug.knowledgeHint") }}
         </p>
       </div>
 
       <div class="dev-card">
         <div class="dev-title">
-          <span>❤️</span> 好感度
+          <span>❤️</span> {{ t("editor.debug.favorability") }}
           <span class="dev-emoji">{{ favEmoji(favorability) }}</span>
         </div>
         <div class="fav-value">{{ Math.round(favorability) }}</div>
@@ -201,10 +211,10 @@ function presenceLabel(mode: string): string {
 
       <div class="dev-card">
         <div class="dev-title dev-title--row">
-          <span><span>🎭</span> 性格向量</span>
+          <span><span>🎭</span> {{ t("editor.debug.personalityVector") }}</span>
           <HelpHint
             v-if="roleStore.roleInfo.personalitySource === 'profile'"
-            text="当前包为「档案」人格来源：此处七维多为运行时从核心与可变性格档案归纳的视图，便于理解，不是唯一数据源。"
+            :text="t('editor.debug.personalityProfileHelp')"
           />
         </div>
         <div class="trait-grid">
@@ -214,17 +224,24 @@ function presenceLabel(mode: string): string {
             class="trait-item"
           >
             <span class="trait-name">
-              {{ PERSONALITY_TRAIT_LABELS_ZH[key] }} {{ traitEmojiForKey(key, traits[key]) }}
+              {{ traitLabel(key) }} {{ traitEmojiForKey(key, traits[key]) }}
             </span>
             <span class="trait-value">{{ traits[key].toFixed(2) }}</span>
           </div>
         </div>
       </div>
 
-      <p class="meta-line">事件数: {{ events.length }} · 记忆数: {{ memories.length }}</p>
+      <p class="meta-line">
+        {{
+          t("editor.debug.metaCounts", {
+            events: events.length,
+            memories: memories.length,
+          })
+        }}
+      </p>
 
       <details>
-        <summary>最近事件</summary>
+        <summary>{{ t("editor.debug.recentEvents") }}</summary>
         <ul>
           <li v-for="(e, i) in events.slice(0, 5)" :key="`e-${i}`">
             {{ e.event_type ?? "unknown" }} · {{ e.timestamp ?? "-" }}
@@ -232,7 +249,7 @@ function presenceLabel(mode: string): string {
         </ul>
       </details>
       <details>
-        <summary>最近记忆</summary>
+        <summary>{{ t("editor.debug.recentMemories") }}</summary>
         <ul>
           <li v-for="(m, i) in memories.slice(0, 5)" :key="`m-${i}`">
             {{ m.content ?? "-" }} ({{ Number(m.importance ?? 0).toFixed(2) }})
@@ -242,12 +259,12 @@ function presenceLabel(mode: string): string {
 
       <div class="btns">
         <button type="button" :disabled="loading" @click="emit('refresh')">
-          刷新调试数据
+          {{ t("editor.debug.refresh") }}
         </button>
-        <button type="button" :disabled="loading" @click="emit('reload')">重载策略</button>
+        <button type="button" :disabled="loading" @click="emit('reload')">{{ t("editor.debug.reloadPolicy") }}</button>
       </div>
 
-      <div class="dev-footer">💡 Ctrl+Shift+D 开关面板 · 角色包与独白已收在此</div>
+      <div class="dev-footer">{{ t("editor.debug.footer") }}</div>
     </aside>
   </transition>
 </template>

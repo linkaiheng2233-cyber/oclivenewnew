@@ -1,9 +1,13 @@
 <script setup lang="ts">
+import { useI18n } from "vue-i18n";
+
 defineProps<{
   open: boolean;
   percent: number;
   message: string;
 }>();
+
+const { t } = useI18n();
 </script>
 
 <template>
@@ -16,7 +20,7 @@ defineProps<{
       aria-busy="true"
     >
       <div class="modal-card" @click.stop>
-        <h2 class="title">导入角色包</h2>
+        <h2 class="title">{{ t("common.importPackTitle") }}</h2>
         <div class="bar-track" aria-hidden="true">
           <div
             class="bar-fill"

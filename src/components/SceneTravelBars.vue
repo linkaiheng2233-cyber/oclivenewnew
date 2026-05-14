@@ -1,4 +1,6 @@
 <script setup lang="ts">
+import { useI18n } from "vue-i18n";
+
 export type SceneDestinationOption = { id: string; label: string };
 
 defineProps<{
@@ -8,6 +10,8 @@ defineProps<{
   togetherSelectedId: string;
   postReplySelectedId: string;
 }>();
+
+const { t } = useI18n();
 
 const emit = defineEmits<{
   "update:togetherSelectedId": [value: string];
@@ -24,9 +28,11 @@ const emit = defineEmits<{
     v-if="togetherVisible"
     class="post-reply-scene-bar"
     role="region"
-    aria-label="邀请同行并选择目的地"
+    :aria-label="t('common.sceneTravel.togetherAria')"
   >
-    <label class="post-reply-label" for="together-travel-select">检测到邀请同行，请选择目的地</label>
+    <label class="post-reply-label" for="together-travel-select">{{
+      t("common.sceneTravel.togetherLabel")
+    }}</label>
     <select
       id="together-travel-select"
       class="post-reply-select"
@@ -34,30 +40,34 @@ const emit = defineEmits<{
       :value="togetherSelectedId"
       @change="emit('update:togetherSelectedId', ($event.target as HTMLSelectElement).value)"
     >
-      <option disabled value="">请选择目的地</option>
+      <option disabled value="">{{ t("common.sceneTravel.pickPlaceholder") }}</option>
       <option v-for="s in destinationOptions" :key="s.id" :value="s.id">
         {{ s.label }}
       </option>
     </select>
-    <button type="button" class="post-reply-btn" @click="emit('confirmTogether', false)">仅我过去</button>
+    <button type="button" class="post-reply-btn" @click="emit('confirmTogether', false)">{{
+      t("common.sceneTravel.solo")
+    }}</button>
     <button
       type="button"
       class="post-reply-btn post-reply-btn--primary"
       @click="emit('confirmTogether', true)"
     >
-      同行前往
+      {{ t("common.sceneTravel.together") }}
     </button>
-    <button type="button" class="post-reply-btn" @click="emit('dismissTogether')">稍后再说</button>
+    <button type="button" class="post-reply-btn" @click="emit('dismissTogether')">{{
+      t("common.sceneTravel.dismiss")
+    }}</button>
   </div>
   <div
     v-if="postReplyVisible"
     class="post-reply-scene-bar"
     role="region"
-    aria-label="选择要切换的场景"
+    :aria-label="t('common.sceneTravel.postAria')"
   >
-    <label class="post-reply-label" for="post-reply-scene-select"
-      >检测到出行或前往意图，请选择目的地</label
-    >
+    <label class="post-reply-label" for="post-reply-scene-select">{{
+      t("common.sceneTravel.postLabel")
+    }}</label>
     <select
       id="post-reply-scene-select"
       class="post-reply-select"
@@ -65,20 +75,24 @@ const emit = defineEmits<{
       :value="postReplySelectedId"
       @change="emit('update:postReplySelectedId', ($event.target as HTMLSelectElement).value)"
     >
-      <option disabled value="">请选择目的地</option>
+      <option disabled value="">{{ t("common.sceneTravel.pickPlaceholder") }}</option>
       <option v-for="s in destinationOptions" :key="s.id" :value="s.id">
         {{ s.label }}
       </option>
     </select>
-    <button type="button" class="post-reply-btn" @click="emit('confirmPostReply', false)">仅我过去</button>
+    <button type="button" class="post-reply-btn" @click="emit('confirmPostReply', false)">{{
+      t("common.sceneTravel.solo")
+    }}</button>
     <button
       type="button"
       class="post-reply-btn post-reply-btn--primary"
       @click="emit('confirmPostReply', true)"
     >
-      同行前往
+      {{ t("common.sceneTravel.together") }}
     </button>
-    <button type="button" class="post-reply-btn" @click="emit('dismissPostReply')">稍后再说</button>
+    <button type="button" class="post-reply-btn" @click="emit('dismissPostReply')">{{
+      t("common.sceneTravel.dismiss")
+    }}</button>
   </div>
 </template>
 

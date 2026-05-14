@@ -1,4 +1,5 @@
 import { computed, onMounted, onUnmounted, ref, watch } from "vue";
+import { useI18n } from "vue-i18n";
 import { hostEventBus } from "../lib/hostEventBus";
 import { readHostAppearance } from "../lib/hostAppearance";
 
@@ -54,6 +55,7 @@ function readStoredScaleIndex(): number {
 }
 
 export function useOcliveAppearance() {
+  const { t } = useI18n();
   const themePreference = ref<ThemePreference>("system");
   const uiScaleIndex = ref(3);
 
@@ -125,11 +127,7 @@ export function useOcliveAppearance() {
     emitAppearanceChanged();
   });
 
-  const themeCycleLabel = computed(() => {
-    if (themePreference.value === "system") return "跟随系统";
-    if (themePreference.value === "dark") return "深色";
-    return "浅色";
-  });
+  const themeCycleLabel = computed(() => t(`app.theme.${themePreference.value}`));
 
   function cycleTheme() {
     const order: ThemePreference[] = ["system", "light", "dark"];

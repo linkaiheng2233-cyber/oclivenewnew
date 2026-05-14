@@ -1,17 +1,11 @@
 <script setup lang="ts">
 import { ref } from "vue";
+import { useI18n } from "vue-i18n";
 import HelpHint from "../components/HelpHint.vue";
 import HotkeySettingsSection from "../components/HotkeySettingsSection.vue";
 import PluginSettingsPanelSlots from "../components/PluginSettingsPanelSlots.vue";
 import PluginSlotEmbed from "../components/PluginSlotEmbed.vue";
 import { useAppToast } from "../composables/useAppToast";
-import {
-  settingsExperimentalSectionHelpHint,
-  settingsExperimentalToggleDescriptionHtml,
-  settingsGeneralLeadHtml,
-  settingsOpenV2PreviewButtonLabel,
-  settingsShortcutsHelpHint,
-} from "../lib/pluginManagerEntryCopy";
 import { SLOT_SETTINGS_ADVANCED, usePluginStore } from "../stores/pluginStore";
 import { useUiStore } from "../stores/uiStore";
 
@@ -25,6 +19,7 @@ const emit = defineEmits<{
   openPluginV2: [];
 }>();
 
+const { t } = useI18n();
 const pluginStore = usePluginStore();
 const uiStore = useUiStore();
 const { showToast } = useAppToast();
@@ -41,7 +36,7 @@ async function onToggleForceIframe(e: Event) {
   };
   try {
     await pluginStore.persist();
-    showToast("info", "已保存。重启应用后强制 iframe 模式将完全生效。");
+    showToast("info", t("settings.iframeSavedInfo"));
   } catch (err) {
     showToast("error", err instanceof Error ? err.message : String(err));
     pluginStore.pluginState = {
@@ -59,23 +54,23 @@ async function onToggleForceIframe(e: Event) {
       class="sv-backdrop"
       role="dialog"
       aria-modal="true"
-      aria-label="设置"
+      :aria-label="t('settings.ariaDialog')"
       @click.self="emit('close')"
     >
       <div class="sv-dialog" @click.stop>
         <header class="sv-head">
-          <h2 class="sv-title">设置</h2>
-          <button type="button" class="sv-close" aria-label="关闭" @click="emit('close')">×</button>
+          <h2 class="sv-title">{{ t("settings.title") }}</h2>
+          <button type="button" class="sv-close" :aria-label="t('settings.closeAria')" @click="emit('close')">×</button>
         </header>
 
-        <nav class="sv-nav" aria-label="设置分区">
+        <nav class="sv-nav" :aria-label="t('settings.ariaNav')">
           <button
             type="button"
             class="sv-nav-btn"
             :aria-current="tab === 'general' ? 'page' : undefined"
             @click="tab = 'general'"
           >
-            常规
+            {{ t("settings.tabGeneral") }}
           </button>
           <button
             type="button"
@@ -83,25 +78,25 @@ async function onToggleForceIframe(e: Event) {
             :aria-current="tab === 'plugins' ? 'page' : undefined"
             @click="tab = 'plugins'"
           >
-            插件扩展
+            {{ t("settings.tabPlugins") }}
           </button>
         </nav>
 
         <div v-show="tab === 'general'" class="sv-body">
-          <p class="sv-lead" v-html="settingsGeneralLeadHtml()" />
+          <p class="sv-lead" v-html="t('settings.generalLeadHtml')" />
           <section class="sv-section">
             <div class="sv-row-h">
-              <span class="sv-label">快捷</span>
-              <HelpHint :text="settingsShortcutsHelpHint()" />
+              <span class="sv-label">{{ t("settings.shortcutsLabel") }}</span>
+              <HelpHint :text="t('settings.shortcutsHelp')" />
             </div>
             <p class="sv-muted">
-              虚拟时间、叙事场景等仅在沉浸模式下显示于「更多」。
+              {{ t("settings.immersiveOnlyNote") }}
             </p>
           </section>
           <section class="sv-section">
             <div class="sv-row-h">
-              <span class="sv-label">实验性功能</span>
-              <HelpHint :text="settingsExperimentalSectionHelpHint()" />
+              <span class="sv-label">{{ t("settings.experimentalLabel") }}</span>
+              <HelpHint :text="t('settings.experimentalSectionHelp')" />
             </div>
             <label class="sv-toggle-row">
               <input
@@ -110,29 +105,29 @@ async function onToggleForceIframe(e: Event) {
                 @change="uiStore.setExperimentalPluginManagerV2(($event.target as HTMLInputElement).checked)"
               />
               <span class="sv-toggle-text">
-                <strong>启用新版插件管理界面（V2 预览）</strong>
-                <span class="sv-muted sv-toggle-desc" v-html="settingsExperimentalToggleDescriptionHtml()" />
+                <strong>{{ t("settings.experimentalToggleTitle") }}</strong>
+                <span class="sv-muted sv-toggle-desc" v-html="t('settings.experimentalToggleHtml')" />
               </span>
             </label>
             <div v-if="uiStore.experimentalPluginManagerV2" class="sv-v2-launch">
               <button type="button" class="sv-v2-launch-btn" @click="emit('openPluginV2')">
-                {{ settingsOpenV2PreviewButtonLabel() }}
+                {{ t("settings.openV2Preview") }}
               </button>
             </div>
           </section>
           <section class="sv-section">
-            <h3 class="sv-h3">扩展区（settings.advanced）</h3>
-            <p class="sv-muted">manifest 中声明 <code>settings.advanced</code> 的插件显示于此。</p>
+            <h3 class="sv-h3">{{ t("settings.advancedTitle") }}</h3>
+            <p class="sv-muted" v-html="t('settings.advancedDesc')" />
             <PluginSlotEmbed
               :slot-name="SLOT_SETTINGS_ADVANCED"
-              aria-label="设置扩展区"
+              :aria-label="t('settings.advancedSlotAria')"
               :bootstrap-epoch="pluginStore.bootstrapEpoch"
             />
           </section>
 
           <section class="sv-section">
             <div class="sv-row-h">
-              <span class="sv-label">安全</span>
+              <span class="sv-label">{{ t("settings.securityLabel") }}</span>
             </div>
             <label class="sv-toggle-row">
               <input
@@ -141,9 +136,9 @@ async function onToggleForceIframe(e: Event) {
                 @change="onToggleForceIframe"
               />
               <span class="sv-toggle-text">
-                <strong>强制 iframe 模式</strong>
+                <strong>{{ t("settings.forceIframeTitle") }}</strong>
                 <span class="sv-muted sv-toggle-desc">
-                  开启后，所有插件界面将使用 iframe 加载，更安全但体验可能下降。保存后需重启应用以完全生效。
+                  {{ t("settings.forceIframeDesc") }}
                 </span>
               </span>
             </label>
@@ -153,12 +148,9 @@ async function onToggleForceIframe(e: Event) {
         <div v-show="tab === 'plugins'" class="sv-body">
           <section class="sv-section">
             <div class="sv-row-h">
-              <h3 class="sv-h3">目录插件 · 设置页插槽</h3>
+              <h3 class="sv-h3">{{ t("settings.pluginsPanelTitle") }}</h3>
               <HelpHint
-                :paragraphs="[
-                  '在插件 manifest 的 ui_slots 中声明 slot 为 settings.panel，即可在此嵌入配置页。',
-                  '与 chat_toolbar 相同，使用 https://ocliveplugin.localhost/<id>/<entry> 加载；可在插件管理中调整顺序或隐藏。',
-                ]"
+                :paragraphs="[t('settings.pluginsPanelHint1'), t('settings.pluginsPanelHint2')]"
               />
             </div>
             <PluginSettingsPanelSlots :bootstrap-epoch="pluginStore.bootstrapEpoch" />

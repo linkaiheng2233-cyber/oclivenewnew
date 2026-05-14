@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { ref } from "vue";
+import { useI18n } from "vue-i18n";
 import { listen, type UnlistenFn } from "@tauri-apps/api/event";
 import { open, save } from "@tauri-apps/api/dialog";
 import { useRoleStore } from "../stores/roleStore";
@@ -10,6 +11,7 @@ import {
 } from "../utils/tauri-api";
 import ImportProgressModal from "./ImportProgressModal.vue";
 
+const { t } = useI18n();
 const roleStore = useRoleStore();
 
 const emit = defineEmits<{
@@ -37,13 +39,13 @@ const pendingPeek = ref<{ id: string; name: string; version: string } | null>(
 
 const importProgressOpen = ref(false);
 const importPercent = ref(0);
-const importMessage = ref("准备中…");
+const importMessage = ref("");
 let unlistenProgress: UnlistenFn | null = null;
 
 async function withImportProgress<T>(fn: () => Promise<T>): Promise<T> {
   importProgressOpen.value = true;
   importPercent.value = 0;
-  importMessage.value = "准备中…";
+  importMessage.value = t("common.preparing");
   unlistenProgress = await listen<{ percent: number; message: string }>(
     "import_progress",
     (e) => {
@@ -63,12 +65,12 @@ async function withImportProgress<T>(fn: () => Promise<T>): Promise<T> {
 async function onExport(): Promise<void> {
   try {
     const path = await save({
-      filters: [{ name: "OCPak 角色包", extensions: ["ocpak"] }],
+      filters: [{ name: t("common.rolePack.exportFilterName"), extensions: ["ocpak"] }],
       defaultPath: defaultExportFilename(),
     });
     if (!path || typeof path !== "string") return;
     await exportRolePack(roleStore.currentRoleId, path);
-    emit("notify", { type: "success", message: "角色包已导出" });
+    emit("notify", { type: "success", message: t("common.rolePack.exported") });
   } catch (e) {
     emit("notify", {
       type: "error",
@@ -93,7 +95,7 @@ async function confirmOverwrite(): Promise<void> {
   try {
     const roleId = await withImportProgress(() => importRolePack(path, true));
     emit("imported", roleId);
-    emit("notify", { type: "success", message: `已覆盖并导入角色: ${roleId}` });
+    emit("notify", { type: "success", message: t("common.rolePack.importedOverwrite", { id: roleId }) });
   } catch (e) {
     emit("notify", {
       type: "error",
@@ -118,7 +120,7 @@ async function runImportFlow(path: string): Promise<void> {
     importRolePack(path, false),
   );
   emit("imported", roleId);
-  emit("notify", { type: "success", message: `已导入角色: ${peek.name}` });
+  emit("notify", { type: "success", message: t("common.rolePack.imported", { name: peek.name }) });
 }
 
 async function pickImportSource(
@@ -128,7 +130,7 @@ async function pickImportSource(
     mode === "folder"
       ? { directory: true, multiple: false }
       : {
-          filters: [{ name: "OCPak / ZIP", extensions: ["ocpak", "zip"] }],
+          filters: [{ name: t("common.rolePack.importFilterName"), extensions: ["ocpak", "zip"] }],
           multiple: false,
           directory: false,
         },
@@ -163,16 +165,16 @@ function onImportFolder(): void {
 <template>
   <div
     class="pack-bar"
-    title="安装 .ocpak / .zip 压缩包，或已解压的目录（与 roles/{id}/ 一致）"
+    :title="t('common.rolePack.barTitle')"
   >
-    <button type="button" class="btn" @click="onExport">导出角色包</button>
+    <button type="button" class="btn" @click="onExport">{{ t("common.rolePack.export") }}</button>
     <button
       type="button"
       class="btn"
       :disabled="importProgressOpen"
       @click="onImport"
     >
-      导入压缩包
+      {{ t("common.rolePack.importArchive") }}
     </button>
     <button
       type="button"
@@ -180,7 +182,7 @@ function onImportFolder(): void {
       :disabled="importProgressOpen"
       @click="onImportFolder"
     >
-      从文件夹导入
+      {{ t("common.rolePack.importFolder") }}
     </button>
 
     <ImportProgressModal
@@ -198,11 +200,15 @@ function onImportFolder(): void {
         aria-labelledby="pack-conflict-title"
       >
         <div class="modal-card" @click.stop>
-          <h2 id="pack-conflict-title" class="modal-title">角色已存在</h2>
+          <h2 id="pack-conflict-title" class="modal-title">{{ t("common.rolePack.conflictTitle") }}</h2>
           <p class="modal-body">
-            本地已有角色 ID「<strong>{{ pendingPeek.id }}</strong>」
-            （{{ pendingPeek.name }} v{{ pendingPeek.version }}）。
-            导入将覆盖该角色目录，是否继续？
+            {{
+              t("common.rolePack.conflictBody", {
+                id: pendingPeek.id,
+                name: pendingPeek.name,
+                version: pendingPeek.version,
+              })
+            }}
           </p>
           <div class="modal-actions">
             <button
@@ -211,7 +217,7 @@ function onImportFolder(): void {
               :disabled="importProgressOpen"
               @click="closeConflict"
             >
-              取消
+              {{ t("common.cancel") }}
             </button>
             <button
               type="button"
@@ -219,7 +225,7 @@ function onImportFolder(): void {
               :disabled="importProgressOpen"
               @click="confirmOverwrite"
             >
-              覆盖导入
+              {{ t("common.rolePack.overwrite") }}
             </button>
           </div>
         </div>

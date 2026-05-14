@@ -1,9 +1,13 @@
 <script setup lang="ts">
+import { useI18n } from "vue-i18n";
+
 defineProps<{
   visible: boolean;
   fromLabel: string;
   toLabel: string;
 }>();
+
+const { t } = useI18n();
 
 const emit = defineEmits<{
   dismiss: [];
@@ -12,13 +16,13 @@ const emit = defineEmits<{
 
 <template>
   <div v-if="visible" class="autonomous-scene-notice" role="status">
-    <span class="autonomous-scene-notice__text"
-      >系统：虚拟时间变化后，角色场景已从「{{ fromLabel }}」切换为「{{ toLabel }}」（叙事视角未自动改变）。</span
-    >
+    <span class="autonomous-scene-notice__text">{{
+      t("common.autonomousNotice", { from: fromLabel, to: toLabel })
+    }}</span>
     <button
       type="button"
       class="autonomous-scene-notice__close"
-      aria-label="关闭"
+      :aria-label="t('common.close')"
       @click="emit('dismiss')"
     >
       ×

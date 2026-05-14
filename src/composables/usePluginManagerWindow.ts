@@ -1,8 +1,5 @@
 import { computed, ref, watch } from "vue";
-import {
-  moreMenuPluginButtonLabel,
-  moreMenuTileHelpText,
-} from "../lib/pluginManagerEntryCopy";
+import { useI18n } from "vue-i18n";
 import { usePluginStore } from "../stores/pluginStore";
 import { useUiStore } from "../stores/uiStore";
 
@@ -18,16 +15,21 @@ export interface UsePluginManagerWindowOptions {
  * 是否走 V2 由 `uiStore.experimentalPluginManagerV2`（持久化）决定。
  */
 export function usePluginManagerWindow(opts: UsePluginManagerWindowOptions) {
+  const { t } = useI18n();
   const uiStore = useUiStore();
   const pluginStore = usePluginStore();
   const pluginManagerV2Open = ref(false);
 
   const pluginManagerMoreBtnLabel = computed(() =>
-    moreMenuPluginButtonLabel(uiStore.experimentalPluginManagerV2),
+    uiStore.experimentalPluginManagerV2
+      ? t("app.more.pluginBtnV2")
+      : t("app.more.pluginBtnV1"),
   );
 
   const settingsEntryMoreHelp = computed(() =>
-    moreMenuTileHelpText(uiStore.experimentalPluginManagerV2),
+    uiStore.experimentalPluginManagerV2
+      ? t("app.more.settingsTileHelpV2")
+      : t("app.more.settingsTileHelpV1"),
   );
 
   function openPluginManagerPanel(): void {

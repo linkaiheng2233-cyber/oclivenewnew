@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { ref } from "vue";
+import { useI18n } from "vue-i18n";
 import { save } from "@tauri-apps/api/dialog";
 import { writeTextFile } from "@tauri-apps/api/fs";
 import { exportChatLogs } from "../utils/tauri-api";
@@ -10,6 +11,7 @@ const emit = defineEmits<{
   notify: [{ type: "success" | "error" | "info"; message: string }];
 }>();
 
+const { t } = useI18n();
 const exportAllRoles = ref(false);
 const includePluginDebug = ref(false);
 const busy = ref(false);
@@ -40,7 +42,7 @@ async function runExport(format: "json" | "txt") {
       downloadTextFile(res.suggested_filename, res.content, mime);
       emit("notify", {
         type: "success",
-        message: `已下载 ${res.suggested_filename}`,
+        message: t("editor.chatExport.downloaded", { name: res.suggested_filename }),
       });
       return;
     }
@@ -49,12 +51,12 @@ async function runExport(format: "json" | "txt") {
       await writeTextFile(path, res.content);
       emit("notify", {
         type: "success",
-        message: "导出成功",
+        message: t("editor.chatExport.success"),
       });
       return;
     }
 
-    emit("notify", { type: "info", message: "已取消保存" });
+    emit("notify", { type: "info", message: t("editor.chatExport.saveCancelled") });
   } catch (e) {
     emit("notify", {
       type: "error",
@@ -70,7 +72,7 @@ async function runExport(format: "json" | "txt") {
   <div class="export-bar">
     <label class="chk">
       <input v-model="exportAllRoles" type="checkbox" :disabled="busy" />
-      导出全部角色
+      {{ t("editor.chatExport.allRoles") }}
     </label>
     <label class="chk">
       <input
@@ -78,7 +80,7 @@ async function runExport(format: "json" | "txt") {
         type="checkbox"
         :disabled="busy || exportAllRoles"
       />
-      附带插件诊断（单角色）
+      {{ t("editor.chatExport.pluginDebug") }}
     </label>
     <button
       type="button"
@@ -86,7 +88,7 @@ async function runExport(format: "json" | "txt") {
       :disabled="busy"
       @click="runExport('json')"
     >
-      导出 JSON
+      {{ t("editor.chatExport.exportJson") }}
     </button>
     <button
       type="button"
@@ -94,7 +96,7 @@ async function runExport(format: "json" | "txt") {
       :disabled="busy"
       @click="runExport('txt')"
     >
-      导出 TXT
+      {{ t("editor.chatExport.exportTxt") }}
     </button>
   </div>
 </template>

@@ -1,8 +1,13 @@
 <script setup lang="ts">
-import { nextTick, onBeforeUnmount, onMounted, ref } from "vue";
+import { computed, nextTick, onBeforeUnmount, onMounted, ref } from "vue";
+import { useI18n } from "vue-i18n";
 import { hostEventBus } from "../lib/hostEventBus";
+import { useRoleStore } from "../stores/roleStore";
 
 const props = defineProps<{ loading: boolean }>();
+
+const { t } = useI18n();
+const roleStore = useRoleStore();
 
 const emit = defineEmits<{
   send: [payload: { content: string }];
@@ -10,6 +15,12 @@ const emit = defineEmits<{
 
 const text = ref("");
 const textAreaEl = ref<HTMLTextAreaElement | null>(null);
+
+const placeholder = computed(() =>
+  t("common.chatPlaceholder", {
+    name: roleStore.roleInfo.name?.trim() || t("app.defaultRoleName"),
+  }),
+);
 
 function onSetDraftInput(payload: unknown): void {
   const raw = (payload as { text?: string } | null)?.text;
@@ -49,7 +60,7 @@ onBeforeUnmount(() => {
 <template>
   <section class="input-row">
     <div class="input-col">
-      <label class="sr-only" for="chat-user-message">输入消息</label>
+      <label class="sr-only" for="chat-user-message">{{ t("common.chatInputLabel") }}</label>
       <textarea
         ref="textAreaEl"
         id="chat-user-message"
@@ -58,7 +69,7 @@ onBeforeUnmount(() => {
         name="user_message"
         rows="2"
         autocomplete="off"
-        placeholder="对沐沐说点什么..."
+        :placeholder="placeholder"
         :disabled="loading"
         @keydown="onKeydown"
       />
@@ -69,7 +80,7 @@ onBeforeUnmount(() => {
       :disabled="loading || !text.trim()"
       @click="submit"
     >
-      发送
+      {{ t("common.send") }}
     </button>
   </section>
 </template>

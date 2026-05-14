@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { computed, ref, watch } from "vue";
+import { useI18n } from "vue-i18n";
 import { usePluginStore } from "../stores/pluginStore";
 import { useRoleStore } from "../stores/roleStore";
 import { useUiStore } from "../stores/uiStore";
@@ -11,6 +12,7 @@ import {
 } from "../utils/tauri-api";
 import HelpHint from "./HelpHint.vue";
 
+const { t } = useI18n();
 const roleStore = useRoleStore();
 const uiStore = useUiStore();
 const pluginStore = usePluginStore();
@@ -19,18 +21,13 @@ const busy = ref(false);
 
 const personalitySourceLabel = computed(() =>
   roleStore.roleInfo.personalitySource === "profile"
-    ? "档案（可变正文由对话维护）"
-    : "七维向量",
+    ? t("roleRuntime.personalityProfile")
+    : t("roleRuntime.personalityVector"),
 );
 const personalitySourceHintParagraphs = computed(() =>
   roleStore.roleInfo.personalitySource === "profile"
-    ? [
-        "人格来源为 profile：运行时以核心性格档案与数据库中的「可变性格档案」为准；界面七维多为从正文归纳的视图。",
-        "与 vector 模式（七维直接参与事件演化）不同；设计说明见仓库 docs/personality-archive-notes.md。",
-      ]
-    : [
-        "人格来源为 vector：事件与情绪按七维精细化调整；与 settings 中 evolution.personality_source 一致。",
-      ],
+    ? [t("roleRuntime.profileHint1"), t("roleRuntime.profileHint2")]
+    : [t("roleRuntime.vectorHint1")],
 );
 const relationRows = computed(() =>
   buildRelationDropdownOptions(
@@ -94,27 +91,32 @@ function openBackendsPanel(): void {
     <div class="meta">
       <p v-if="roleStore.roleInfo.description" class="desc">{{ roleStore.roleInfo.description }}</p>
       <p class="sub">
-        版本 {{ roleStore.roleInfo.version || "—" }} · 作者 {{ roleStore.roleInfo.author || "—" }}
+        {{
+          t("roleRuntime.versionAuthor", {
+            version: roleStore.roleInfo.version || "—",
+            author: roleStore.roleInfo.author || "—",
+          })
+        }}
       </p>
       <p class="sub personality-source-line">
         <span class="ps-inline">
-          人格来源：<strong>{{ personalitySourceLabel }}</strong>
+          {{ t("roleRuntime.personalitySource") }}<strong>{{ personalitySourceLabel }}</strong>
           <HelpHint :paragraphs="personalitySourceHintParagraphs" />
         </span>
       </p>
     </div>
     <div class="runtime-backend-hint">
       <p class="sub">
-        模块后端、异地心声、会话覆盖与调试快照已迁至
+        {{ t("roleRuntime.backendHintBefore") }}
         <button type="button" class="link-open-backends" @click="openBackendsPanel">
-          插件与后端管理 → 后端模块
+          {{ t("roleRuntime.backendLink") }}
         </button>
-        （Ctrl+Shift+F）
+        {{ t("roleRuntime.backendHintAfter") }}
       </p>
     </div>
     <template v-if="roleStore.roleInfo.userRelations.length > 0">
       <div class="row">
-        <label for="rel-select">关系</label>
+        <label for="rel-select">{{ t("roleRuntime.relation") }}</label>
         <select
           id="rel-select"
           class="select"
@@ -126,7 +128,7 @@ function openBackendsPanel(): void {
         </select>
       </div>
       <div class="row">
-        <label for="evolve-factor">事件影响</label>
+        <label for="evolve-factor">{{ t("roleRuntime.eventImpact") }}</label>
         <input
           id="evolve-factor"
           v-model.number="localFactor"

@@ -1,4 +1,5 @@
 import { ref } from "vue";
+import { useI18n } from "vue-i18n";
 import { useChatStore } from "../stores/chatStore";
 import { useDebugStore } from "../stores/debugStore";
 import { useRoleStore } from "../stores/roleStore";
@@ -17,6 +18,7 @@ export type ShowToast = (type: ToastType, message: string) => void;
  * 顶栏/位移条「前往」：同行则 `switchScene`；仅叙事则 `setUserPresenceScene`。
  */
 export function useSceneDestination(showToast: ShowToast) {
+  const { t } = useI18n();
   const roleStore = useRoleStore();
   const chatStore = useChatStore();
   const debugStore = useDebugStore();
@@ -36,7 +38,7 @@ export function useSceneDestination(showToast: ShowToast) {
 
   async function applySceneDestination(id: string, together: boolean): Promise<void> {
     if (!id.trim()) {
-      showToast("warning", "请先选择目的地");
+      showToast("warning", t("app.scene.selectDestinationFirst"));
       return;
     }
     const label = sceneLabelForId(id);
@@ -54,17 +56,20 @@ export function useSceneDestination(showToast: ShowToast) {
         if (res.scene_welcome) {
           chatStore.addSystemMessage(res.scene_welcome, narrative);
         }
-        showToast("success", "已前往（同行）");
+        showToast("success", t("app.scene.toastTogether"));
       } else {
         const info = await setUserPresenceScene(roleStore.currentRoleId, id);
         roleStore.applyRoleInfo(info);
         const narrative = info.user_presence_scene ?? id;
         chatStore.applySceneChange(narrative);
         chatStore.addSystemMessage(
-          `叙事场景已切换为「${label}」；角色仍位于「${characterSceneLabel()}」。`,
+          t("app.scene.systemLine", {
+            narrative: label,
+            character: characterSceneLabel(),
+          }),
           narrative,
         );
-        showToast("success", "已切换叙事场景（角色未移动）");
+        showToast("success", t("app.scene.toastNarrativeOnly"));
       }
       await debugStore.loadDebugData();
     } catch (err) {

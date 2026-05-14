@@ -1,9 +1,13 @@
 <script setup lang="ts">
+import { useI18n } from "vue-i18n";
+
 defineProps<{
   visible: boolean;
   /** 已解析的展示名，如「客厅」 */
   pendingSceneLabel: string;
 }>();
+
+const { t } = useI18n();
 
 const emit = defineEmits<{
   confirm: [together: boolean];
@@ -20,20 +24,22 @@ const emit = defineEmits<{
     aria-labelledby="top-bar-scene-mode-title"
   >
     <div class="scene-mode-dialog">
-      <p id="top-bar-scene-mode-title" class="scene-mode-title">前往「{{ pendingSceneLabel }}」</p>
-      <p class="scene-mode-desc">仅切换你的叙事视角，或让角色与你同往？</p>
+      <p id="top-bar-scene-mode-title" class="scene-mode-title">
+        {{ t("common.sceneMode.title", { label: pendingSceneLabel }) }}
+      </p>
+      <p class="scene-mode-desc">{{ t("common.sceneMode.desc") }}</p>
       <div class="scene-mode-actions">
         <button type="button" class="post-reply-btn" @click="emit('confirm', false)">
-          仅我过去（角色留守）
+          {{ t("common.sceneMode.solo") }}
         </button>
         <button
           type="button"
           class="post-reply-btn post-reply-btn--primary"
           @click="emit('confirm', true)"
         >
-          同行前往
+          {{ t("common.sceneMode.together") }}
         </button>
-        <button type="button" class="post-reply-btn" @click="emit('dismiss')">取消</button>
+        <button type="button" class="post-reply-btn" @click="emit('dismiss')">{{ t("common.cancel") }}</button>
       </div>
     </div>
   </div>

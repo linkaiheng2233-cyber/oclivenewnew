@@ -70,7 +70,8 @@ function onLocalePreferenceChange(ev: Event): void {
   localePreference.value = v;
 }
 const { toast, showToast } = useAppToast();
-const { themeCycleLabel, cycleTheme, bumpScale, scaleLabel } = useOcliveAppearance();
+const { themePreference, themeCycleLabel, cycleTheme, bumpScale, scaleLabel } =
+  useOcliveAppearance();
 const { applyResolvedNarrativeScene } = useNarrativeScene();
 const {
   sceneTransition,
@@ -244,7 +245,7 @@ const packLayoutResolved = computed(() => {
 });
 const sidebarRight = computed(() => packLayoutResolved.value.sidebar === "right");
 const chatInputTop = computed(() => packLayoutResolved.value.chatInput === "top");
-const roleName = computed(() => roleStore.roleInfo.name || "沐沐");
+const roleName = computed(() => roleStore.roleInfo.name || t("app.defaultRoleName"));
 const emotion = computed(() => roleStore.roleInfo.currentEmotion || "neutral");
 
 /** 对齐 oclive-new 底部状态栏心形 */
@@ -284,7 +285,7 @@ async function onPluginSetRemoteLife(payload: unknown): Promise<void> {
   try {
     const info = await setRemoteLifeEnabled(roleStore.currentRoleId, enabledRaw);
     roleStore.applyRoleInfo(info);
-    showToast("success", `异地心声已${enabledRaw ? "开启" : "关闭"}`);
+    showToast("success", enabledRaw ? t("app.toast.remoteLifeOn") : t("app.toast.remoteLifeOff"));
   } catch (err) {
     showToast("error", err instanceof Error ? err.message : String(err));
   }
@@ -309,7 +310,12 @@ async function onPluginSetInteractionMode(payload: unknown): Promise<void> {
         toLabel: "",
       };
     }
-    showToast("success", `互动模式已切换为${mode === "immersive" ? "沉浸" : "纯聊"}`);
+    showToast(
+      "success",
+      mode === "immersive"
+        ? t("app.toast.interactionImmersive")
+        : t("app.toast.interactionPureChat"),
+    );
   } catch (err) {
     showToast("error", err instanceof Error ? err.message : String(err));
   }
@@ -322,14 +328,14 @@ function onPluginCycleTheme(): void {
 async function onPluginResetLayout(): Promise<void> {
   try {
     await pluginStore.resetToRolePackDefault();
-    const message = "已恢复为角色包推荐布局。";
+    const message = t("app.toast.layoutResetOk");
     hostEventBus.emit(settingsResetLayoutResultEvent, { ok: true, message });
     showToast("success", message);
   } catch (err) {
     const message = err instanceof Error ? err.message : String(err);
     hostEventBus.emit(settingsResetLayoutResultEvent, {
       ok: false,
-      message: `恢复失败：${message}`,
+      message: t("app.toast.layoutResetFailPrefix") + message,
     });
     showToast("error", message);
   }
@@ -339,10 +345,7 @@ async function initialize() {
   try {
     await roleStore.loadRoles();
     if (!roleStore.currentRoleId.trim()) {
-      showToast(
-        "error",
-        "未扫描到任何可用角色包（roles 目录为空或全部校验失败）。请检查宿主使用的 roles 路径：开发可设置环境变量 OCLIVE_ROLES_DIR 指向仓库的 roles 文件夹。",
-      );
+      showToast("error", t("app.toast.noRolesScanned"));
       return;
     }
     await loadRole(roleStore.currentRoleId);
@@ -368,7 +371,7 @@ async function onSend(payload: { content: string }) {
     applyResolvedNarrativeScene();
     await debugStore.loadDebugData();
     if (res.reply_is_fallback) {
-      showToast("info", "本次为备用回复（模型未返回正文时自动生成）");
+      showToast("info", t("app.toast.fallbackReply"));
     }
     const offerTogether = res.offer_together_travel ?? false;
     const offerPicker = res.offer_destination_picker ?? false;
@@ -446,7 +449,7 @@ async function onSwitchRole(nextRoleId: string) {
     hostEventBus.emitBuiltin("role:switched", { roleId: nextRoleId });
     applyResolvedNarrativeScene();
     await debugStore.loadDebugData();
-    showToast("success", `已切换角色: ${nextRoleId}`);
+    showToast("success", t("app.toast.roleSwitched", { id: nextRoleId }));
   } catch (err) {
     showToast("error", err instanceof Error ? err.message : String(err));
   } finally {
@@ -473,8 +476,8 @@ async function onChangeRelation(nextRelation: string) {
     }
     const relationName =
       relationOptions.value.find((r) => r.id === nextRelation)?.name ?? nextRelation;
-    const scopeLabel = perScene ? "当前场景身份" : "身份";
-    showToast("success", `已设置${scopeLabel}：${relationName}`);
+    const scopeKey = perScene ? "app.toast.relationSetPerScene" : "app.toast.relationSetGlobal";
+    showToast("success", t(scopeKey, { name: relationName }));
   } catch (err) {
     showToast("error", err instanceof Error ? err.message : String(err));
   }
@@ -593,7 +596,7 @@ async function runPendingProtocolInstallsFromQueue(): Promise<void> {
       if (!git) continue;
       try {
         const r = await installPluginFromGit(git);
-        showToast("success", `已通过网页链接安装插件：${r.installedPluginId}`);
+        showToast("success", t("app.toast.pluginInstalledFromWeb", { id: r.installedPluginId }));
         await pluginStore.refresh();
         openPluginManagerPanel();
       } catch (e) {
@@ -623,7 +626,7 @@ onMounted(() => {
   initialize();
   void listen("plugin:changed", () => {
     void pluginStore.onPluginFilesChanged().then(() => {
-      showToast("success", "检测到插件变更，已自动刷新");
+      showToast("success", t("app.toast.pluginFilesChanged"));
     });
   }).then((u) => {
     unlistenPluginFs = u;
@@ -701,7 +704,7 @@ onBeforeUnmount(() => {
           aria-controls="top-more-panel"
           @click="toggleTopMore"
         >
-          {{ topMoreOpen ? "收起" : "更多" }}
+          {{ topMoreOpen ? t("app.more.collapse") : t("app.more.more") }}
         </button>
       </div>
 
@@ -710,7 +713,7 @@ onBeforeUnmount(() => {
         id="top-more-panel"
         class="top-more-panel"
         role="region"
-        aria-label="更多功能"
+        :aria-label="t('app.more.ariaMoreFeatures')"
         @click.stop
       >
         <div class="more-grid">
@@ -733,11 +736,11 @@ onBeforeUnmount(() => {
 
           <div class="more-tile more-tile--xs">
             <div class="more-tile-head">
-              <span class="more-label">互动模式</span>
+              <span class="more-label">{{ t("app.more.interactionMode") }}</span>
               <HelpHint
                 :paragraphs="[
-                  '沉浸：启用虚拟时间、叙事场景、日程推断与位移相关能力。',
-                  '纯聊：只保留对话，隐藏场景与时间条，适合日常闲聊。',
+                  t('app.more.interactionImmersiveHint'),
+                  t('app.more.interactionPureChatHint'),
                 ]"
               />
             </div>
@@ -748,16 +751,16 @@ onBeforeUnmount(() => {
                 :value="roleStore.roleInfo.interactionMode"
                 @change="onInteractionModeChange"
               >
-                <option value="immersive">沉浸</option>
-                <option value="pure_chat">纯聊</option>
+                <option value="immersive">{{ t("app.more.interactionImmersive") }}</option>
+                <option value="pure_chat">{{ t("app.more.interactionPureChat") }}</option>
               </select>
             </div>
           </div>
 
           <div class="more-tile more-tile--sm">
             <div class="more-tile-head">
-              <span class="more-label">身份</span>
-              <HelpHint text="与角色相处时的关系身份（如朋友、恋人等），影响对话与关系数值；与包内「核心性格档案」不同，后者写在 core_personality.txt。" />
+              <span class="more-label">{{ t("app.more.identity") }}</span>
+              <HelpHint :text="t('app.more.identityHelp')" />
             </div>
             <div class="more-tile-body more-tile-body--selector">
               <RoleSelector
@@ -776,35 +779,32 @@ onBeforeUnmount(() => {
 
           <div class="more-tile more-tile--lg">
             <div class="more-tile-head">
-              <span class="more-label">界面</span>
+              <span class="more-label">{{ t("app.more.ui") }}</span>
               <HelpHint
-                :paragraphs="[
-                  '字号 A− / A+ 与编写器、启动器使用同一套档位，会保存在本机。',
-                  '主题为浅色 / 深色 / 跟随系统，亦会记住。',
-                ]"
+                :paragraphs="[t('app.more.uiHint1'), t('app.more.uiHint2')]"
               />
             </div>
             <div class="more-tile-body">
-              <div class="top-bar-appearance" role="toolbar" aria-label="外观与字号">
-                <div class="appearance-scale" aria-label="界面大小">
+              <div class="top-bar-appearance" role="toolbar" :aria-label="t('app.more.appearanceToolbar')">
+                <div class="appearance-scale" :aria-label="t('app.more.scaleGroup')">
                   <button
                     type="button"
                     class="appearance-icon-btn"
-                    title="缩小"
-                    aria-label="缩小界面"
+                    :title="t('app.more.shrinkTitle')"
+                    :aria-label="t('app.more.shrinkAria')"
                     @click="bumpScale(-1)"
                   >
                     A−
                   </button>
                   <span
                     class="appearance-scale-value"
-                    :title="'相对默认字号：' + scaleLabel"
+                    :title="t('app.more.scaleRelativeTitle', { label: scaleLabel })"
                   >{{ scaleLabel }}</span>
                   <button
                     type="button"
                     class="appearance-icon-btn"
-                    title="放大"
-                    aria-label="放大界面"
+                    :title="t('app.more.enlargeTitle')"
+                    :aria-label="t('app.more.enlargeAria')"
                     @click="bumpScale(1)"
                   >
                     A+
@@ -813,13 +813,13 @@ onBeforeUnmount(() => {
                 <button
                   type="button"
                   class="appearance-theme-btn"
-                  :title="'主题：' + themeCycleLabel + '（点击切换）'"
+                  :title="t('app.more.themeTitle', { label: themeCycleLabel })"
                   @click="cycleTheme"
                 >
                   {{
-                    themeCycleLabel === "跟随系统"
+                    themePreference === "system"
                       ? "◐"
-                      : themeCycleLabel === "深色"
+                      : themePreference === "dark"
                         ? "🌙"
                         : "☀️"
                   }}
@@ -831,19 +831,19 @@ onBeforeUnmount(() => {
 
           <div class="more-tile more-tile--action settings-entry-tile">
             <div class="more-tile-head">
-              <span class="more-label">设置入口</span>
+              <span class="more-label">{{ t("app.more.settingsEntry") }}</span>
               <HelpHint :text="settingsEntryMoreHelp" />
             </div>
-            <div class="more-tile-body settings-entry-actions" role="group" aria-label="设置入口集合">
+            <div class="more-tile-body settings-entry-actions" role="group" :aria-label="t('app.more.settingsEntry')">
               <button type="button" class="more-debug-btn more-debug-btn--fill settings-entry-btn" @click="openShortcutHelp">
-                快捷键说明
+                {{ t("app.more.shortcutHelp") }}
               </button>
               <button
                 type="button"
                 class="more-debug-btn more-debug-btn--fill settings-entry-btn settings-entry-btn--primary settings-gear-btn"
                 @click="openSettingsView"
               >
-                ⚙ 设置
+                {{ t("app.more.openSettings") }}
               </button>
               <button
                 type="button"
@@ -857,14 +857,12 @@ onBeforeUnmount(() => {
 
           <div class="more-tile more-tile--action">
             <div class="more-tile-head">
-              <span class="more-label">调试</span>
-              <HelpHint
-                text="开发者与排错用：好感、记忆、策略重载等。Ctrl+Shift+D 可开关调试窗；顶栏「更多」展开时按 Esc 先收起本栏。"
-              />
+              <span class="more-label">{{ t("app.more.debug") }}</span>
+              <HelpHint :text="t('app.more.debugHelp')" />
             </div>
             <div class="more-tile-body">
               <button type="button" class="more-debug-btn more-debug-btn--fill" @click="debugStore.toggle">
-                打开调试面板
+                {{ t("app.more.openDebugPanel") }}
               </button>
             </div>
           </div>
@@ -872,12 +870,9 @@ onBeforeUnmount(() => {
           <template v-if="roleStore.interactionImmersive">
             <div class="more-tile more-tile--third">
               <div class="more-tile-head more-tile-head--tight">
-                <span class="more-label">虚拟时间</span>
+                <span class="more-label">{{ t("app.more.virtualTime") }}</span>
                 <HelpHint
-                  :paragraphs="[
-                    '故事内的时间，与真实时钟独立。点击时间可打开滚轮调整。',
-                    '可用快捷按钮推进时间；部分角色包会在跳转后触发场景或独白。',
-                  ]"
+                  :paragraphs="[t('app.more.virtualTimeHint1'), t('app.more.virtualTimeHint2')]"
                 />
               </div>
               <div class="more-tile-body more-tile-body--row">
@@ -894,10 +889,8 @@ onBeforeUnmount(() => {
 
             <div v-if="allSceneOptions.length > 0" class="more-tile more-tile--third">
               <div class="more-tile-head more-tile-head--tight">
-                <span class="more-label">叙事场景</span>
-                <HelpHint
-                  text="你当前叙事的场景；与角色包中的场景配置一致。切换后可能触发历史记录折叠分界。"
-                />
+                <span class="more-label">{{ t("app.more.narrativeScene") }}</span>
+                <HelpHint :text="t('app.more.narrativeSceneHelp')" />
               </div>
               <div class="more-tile-body more-tile-body--scene more-tile-body--scene-inline">
                 <select
@@ -910,7 +903,7 @@ onBeforeUnmount(() => {
                     {{ s.label }}
                   </option>
                 </select>
-                <span class="scene-row-hint scene-row-hint--tile">角色在：{{ characterSceneLabel() }}</span>
+                <span class="scene-row-hint scene-row-hint--tile">{{ t('app.more.characterAt', { label: characterSceneLabel() }) }}</span>
               </div>
             </div>
           </template>
@@ -924,7 +917,7 @@ onBeforeUnmount(() => {
       role="status"
       aria-live="polite"
     >
-      正在前往「{{ sceneTransition.label }}」…
+      {{ t("app.sceneTransition.going", { label: sceneTransition.label }) }}
     </div>
 
     <TopBarSceneModeDialog
@@ -954,15 +947,15 @@ onBeforeUnmount(() => {
           />
           <RoleplayAsidePanel :text="latestRoleplayAside" />
           <PluginSidebarSlots :bootstrap-epoch="pluginStore.bootstrapEpoch" />
-          <div class="left-pane-status" aria-label="好感度">
-            好感度 {{ Math.round(roleStore.roleInfo.favorability) }} {{ statusHeart }}
+          <div class="left-pane-status" :aria-label="t('app.sidebar.favorability')">
+            {{ t("app.sidebar.favorability") }} {{ Math.round(roleStore.roleInfo.favorability) }} {{ statusHeart }}
           </div>
           <div
             v-if="roleStore.interactionImmersive && roleStore.roleInfo.currentLife?.label"
             class="left-pane-life"
-            aria-label="日程推断"
+            :aria-label="t('app.sidebar.scheduleInference')"
           >
-            此刻：{{ roleStore.roleInfo.currentLife?.label }}
+            {{ t("app.sidebar.lifeNow", { label: roleStore.roleInfo.currentLife?.label }) }}
           </div>
           <AutonomousSceneNotice
             v-if="roleStore.interactionImmersive"
@@ -1044,7 +1037,7 @@ onBeforeUnmount(() => {
     <div class="app-floating-slot" aria-hidden="true">
       <PluginSlotEmbed
         slot-name="overlay.floating"
-        aria-label="浮层插件区"
+        :aria-label="t('app.floatingSlot')"
         :bootstrap-epoch="pluginStore.bootstrapEpoch"
       />
     </div>
