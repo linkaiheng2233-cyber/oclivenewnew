@@ -1,7 +1,6 @@
 //! oclive-cli — 官方内核项目脚手架入口。
 
 #![allow(
-    clippy::missing_errors_doc,
     clippy::missing_panics_doc,
     clippy::must_use_candidate
 )]
