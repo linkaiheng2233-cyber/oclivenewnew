@@ -26,3 +26,13 @@
 cargo build
 cargo run
 ```
+
+## oclive-cli 补充命令（主仓 workspace）
+
+在检出 **oclivenewnew** 且已 **`cargo build -p oclive-cli`** 的前提下，可在本生成项目根使用 **`cargo run -p oclive-cli -- …`**（见主仓 **`creator-docs/cli/OCLIVE_CLI_GUIDE.md`**）：
+
+- **`dev`**：监听 **`roles/`** 下 `manifest.json` / `settings.json`。
+- **`bench --save` / `--compare`**：Monolith 双二进制采样的历史记录与对比（项目内需已有 **`monolith.toml`**）。
+- **`pack validate|create|publish`**：角色包校验与 **`.oclivepack`** 导出。
+
+Monolith 生成物与 **`--monolith`** 流程见本目录 **`CONFIG_REFERENCE.md`** 中「开发者编译选项」一节。

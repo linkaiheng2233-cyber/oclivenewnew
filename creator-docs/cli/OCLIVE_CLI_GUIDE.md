@@ -42,6 +42,18 @@ cargo run -p oclive-cli -- pack publish ./out/my-role -o ./dist/com.example.demo
 
 ---
 
+## `dev`：角色包目录监听
+
+在**已存在**的内核 / 脚手架项目根（含 `Cargo.toml`）执行。默认递归监听 **`--roles`**（默认 `roles/`）下变更，对 **`manifest.json`** / **`settings.json`** 防抖后打印提示；**`--reload-cmd`** 可在变更后执行一条 shell 命令（如通知侧车重载）。
+
+```bash
+cargo run -p oclive-cli -- dev -o /path/to/project
+cargo run -p oclive-cli -- dev -o /path/to/project --roles roles --reload-cmd "echo reload"
+cargo run -p oclive-cli -- dev -o /path/to/project --no-watch
+```
+
+---
+
 ## `init`：创建项目
 
 ### 交互式（默认）
@@ -137,6 +149,9 @@ cargo run -p oclive-cli -- build -o /path/to/kernel-project --no-cargo
 cargo run -p oclive-cli -- bench --release -o /path/to/kernel-project --runs 30 --inner-iters 500 --output ./bench-report.json
 cargo run -p oclive-cli -- bench --release -o /path/to/kernel-project --json
 ```
+
+- **`--save`**：将本次报告追加到项目根 **`bench_history.json`**（本地文件，勿提交；与 **`--compare`** 配对使用）。
+- **`--compare`**：不运行采样；读取 **`bench_history.json`** 中**最近两次**记录并输出对比（需已有至少两条历史）。
 
 `--json`：仅将报告 JSON 打印到 **stdout**（进度走 **stderr**），便于管道与 Schema 校验。
 

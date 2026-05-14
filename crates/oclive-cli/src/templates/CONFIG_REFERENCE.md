@@ -47,3 +47,29 @@
 - **再生成**：`cargo run -p oclive-cli -- build -o ./out`（默认继续两次 `cargo build`；`--no-cargo` 仅写源码与 vendor）。
 - **构建**：亦可手动 `cargo build --release`（标准）、`cargo build --release --features monolith`（焊接产物）。
 - **权威设计**：[RFC_OCLIVE_MONOLITH_MODE.md](../../../creator-docs/rfc/RFC_OCLIVE_MONOLITH_MODE.md)。
+
+## `oclive dev`（角色包目录监听）
+
+在**已生成**的内核 / 脚手架项目根（含 `Cargo.toml`）执行；默认监听 **`roles/`** 下递归变更，对 **`manifest.json`** / **`settings.json`** 防抖后打印提示，可选 `--reload-cmd` 触发自定义命令。
+
+```bash
+cargo run -p oclive-cli -- dev -o /path/to/project
+cargo run -p oclive-cli -- dev -o /path/to/project --roles roles --reload-cmd "echo reload"
+cargo run -p oclive-cli -- dev -o /path/to/project --no-watch
+```
+
+详见主仓 [OCLIVE_CLI_GUIDE.md](../../../creator-docs/cli/OCLIVE_CLI_GUIDE.md)（若与本仓库并列检出）。
+
+## `oclive bench --save` / `--compare`（Monolith 项目）
+
+在含 **`monolith.toml`** 的项目根：
+
+- **`--save`**：在 **`bench_history.json`**（项目根，勿提交版本库）中追加本次 JSON 报告。
+- **`--compare`**：**不**重新跑采样；读取历史中**最近两次**记录并打印对比摘要（需先至少两次带 **`--save`** 的 bench，或等价历史）。
+
+```bash
+cargo run -p oclive-cli -- bench --release -o /path/to/monolith-project --runs 20 --save
+cargo run -p oclive-cli -- bench --release -o /path/to/monolith-project --compare
+```
+
+与基础 **`bench`**（输出单次 JSON）的关系见主仓 **`creator-docs/cli/OCLIVE_CLI_GUIDE.md`** 与 **`crates/oclive-cli/src/bench_cmd.rs`** 内帮助说明。
