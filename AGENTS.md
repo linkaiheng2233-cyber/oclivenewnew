@@ -16,14 +16,26 @@
 
 ### 架构 RFC
 
-- **高耦合编译模式（Monolith）**：[RFC_OCLIVE_MONOLITH_MODE.md](creator-docs/rfc/RFC_OCLIVE_MONOLITH_MODE.md)（路线图见 RFC §9，已与 `oclive-cli` 实现对齐）。**`oclive-cli`**：`init --monolith` 或交互「开发者编译选项」生成 **`monolith.toml`**、`vendor/oclive_monolith_builtin/`（**七槽焊接桩唯一模板源**）、**`process_message_monolith.rs`**、双 **`[[bin]]`**（`main.rs` / `main_monolith.rs`）；**`cargo run -p oclive-cli -- build|bench`** 再生成与对比。
+- **高耦合编译模式（Monolith）**：[RFC_OCLIVE_MONOLITH_MODE.md](creator-docs/rfc/RFC_OCLIVE_MONOLITH_MODE.md)（路线图见 RFC §9，已与 `oclive-cli` 实现对齐）。**`oclive-cli`**：`init --monolith` 或交互「开发者编译选项」生成 **`monolith.toml`**、`vendor/oclive_monolith_builtin/`（**七槽焊接桩唯一模板源**）、**`process_message_monolith.rs`**、双 **`[[bin]]`**（`main.rs` / `main_monolith.rs`）；**`cargo run -p oclive-cli -- build|bench`** 再生成与对比；**`bench --save` / `--compare`** 用于本地性能历史与对比（见 [OCLIVE_CLI_GUIDE.md](creator-docs/cli/OCLIVE_CLI_GUIDE.md)）。**`oclive dev`**：监听脚手架或内核项目下 **`roles/`** 中 `manifest.json` / `settings.json` 变更，便于热重载脚本对接。
 
-### 测试体系（协议层 + 组件归属）
+### 内核架构（主应用 `src-tauri`）
 
-- **OOCP 对齐 HTTP 黑盒（S0–S11）**：场景与 CI 说明见 [`creator-docs/testing/OOCP_TEST_SUITE.md`](creator-docs/testing/OOCP_TEST_SUITE.md)；可执行脚本在 [`examples/oocp-test-suite/`](examples/oocp-test-suite/)（`node run.mjs`，无额外 npm 依赖）。CI 工作流 **`.github/workflows/ci.yml`** 中的 **`oocp-test-suite`** job（Ubuntu）会 `cargo build -p oclivenewnew-tauri`、拉起 **`oclivenewnew-tauri --api`**（默认开启 **`OCLIVE_HTTP_API_MOCK_LLM=1`** 以免依赖本机 Ollama）、轮询 **`GET /health`** 后执行 **`node run.mjs`**（失败即红）。
-- **测试体系统览**（主仓 vs **oclive-pack-editor**）：[`creator-docs/testing/OVERVIEW.md`](creator-docs/testing/OVERVIEW.md)。
-- **Vue 组件与插件壳测试（T05–T20）**：权威来源在 **oclive-pack-editor** 仓库（含约 42 条 Vue 用例与 **`official-vue-test-runner`** 目录插件范式）；主仓不复制该树。
-- **主仓前端最小烟测**：根目录 **`npm run test:unit`**（Vitest，`src/smoke.test.ts`），CI **`frontend`** job 已包含该步骤。
+- **主编排入口**：Tauri IPC 与 **`--api` HTTP** 均在 **`src-tauri/src/domain/chat_engine/mod.rs`** 的 **`process_message`**（及 `co_present` / `scene` 等子模块）内顺序编排；**入口蓝图（`pipeline.ocblueprint`）已从主路径移除**，不再作为首轮调度 DSL。若 `creator-docs/kernel/` 仍保留 Pipeline Schema 等文档，仅供契约或史料对照，**运行时行为以本仓库 `process_message` 为准**。
+- **错误与日志**：统一错误类型见 **`src-tauri/src/error.rs`**（`thiserror`、可映射前端文案）；结构化日志为 **`tracing`**（`RUST_LOG`，`init_tracing` 默认 `info`）。
+- **启动健康检查**：首轮对话前 **`startup_health::ensure_once`**（槽位、`plugin_backends`、角色包文件、**`DbManager::health_ping`**、可选 LLM 探测）；环境变量 **`OCLIVE_SKIP_STARTUP_HEALTH`** / **`OCLIVE_SKIP_LLM_STARTUP_PROBE`** 可跳过。实现：**`src-tauri/src/domain/startup_health.rs`**。
+
+### 测试体系（三层归属）
+
+- **协议层 → 本仓**：**OOCP HTTP 黑盒（S0–S11）** 已入库且 **CI 已集成**——场景与 CI 说明见 [`creator-docs/testing/OOCP_TEST_SUITE.md`](creator-docs/testing/OOCP_TEST_SUITE.md)；可执行脚本在 [`examples/oocp-test-suite/`](examples/oocp-test-suite/)（`node run.mjs`）。CI **`.github/workflows/ci.yml`** 的 **`oocp-test-suite`** job（Ubuntu）会 `cargo build -p oclivenewnew-tauri`、拉起 **`oclivenewnew-tauri --api`**（默认 **`OCLIVE_HTTP_API_MOCK_LLM=1`**）、轮询 **`GET /health`** 后执行 **`node run.mjs`**。另含 **`src-tauri`** 下 **`cargo test`**、`tests/` 集成测与 HTTP 路由单测等。
+- **组件层 → oclive-pack-editor**：编写器 UI、Vitest、Playwright E2E 等（不在本仓重复维护用例树）。
+- **插件层 → oclive-pack-editor**：目录插件范式、**`official-vue-test-runner`** 等；主仓不复制该树。
+- **主仓前端最小烟测**：根目录 **`npm run test:unit`**（Vitest，`src/smoke.test.ts`），CI **`frontend`** job 已包含。
+- **总览**：[creator-docs/testing/OVERVIEW.md](creator-docs/testing/OVERVIEW.md)。
+
+### 供应链与安全审计
+
+- **当前状态**：**已知漏洞跟踪中**；**不宣称零漏洞**。摘要执行日期与命中条数见 [creator-docs/development/LIGHTWEIGHT_PROFILE.md](creator-docs/development/LIGHTWEIGHT_PROFILE.md) §6.4；**漏洞级清单与升级路线**见 [creator-docs/security/KNOWN_VULNERABILITIES.md](creator-docs/security/KNOWN_VULNERABILITIES.md)；**审查边界**见 [creator-docs/security/SECURITY_AUDIT_SCOPE.md](creator-docs/security/SECURITY_AUDIT_SCOPE.md)。
+- **CI**：**`cargo-audit`** job（**cargo-audit 0.22.1**）为 **`continue-on-error: true`**，用于可见性；待依赖升级后可改为失败即红。
 
 ### 复杂情感 `narrative_hint`（共景 → 下一轮 Prompt）
 
@@ -38,13 +50,6 @@
 **演示视频（Remotion）**：独立仓库 **`oclive-remotion-demo`**（与主应用同级目录常见）。所有 `npm run preview` / `render:*` / `capture:validate` **须在该仓库根目录执行**，勿在主仓 `oclivenewnew` 根目录运行（会报 `Missing script`）。使用说明见该仓库根目录 **`README.md`**（本地常与主仓并列，例如 `D:\oclive-remotion-demo`）。
 
 **开发机磁盘**：本仓库根目录 [`.cargo/config.toml`](.cargo/config.toml) 将 **Cargo `target-dir`** 指到仓库外的 `../oclive-dev-artifacts/oclivenewnew-cargo-target/`，与源码分离；发版安装包体积与此无关。姊妹仓 **oclive-pack-editor**、**oclive-launcher** 使用同级目录下的 `oclive-pack-editor-cargo-target/`、`oclive-launcher-cargo-target/`（各仓自有 `.cargo/config.toml`）。旧版留在仓库内的 `target/`、`src-tauri/target/` 可整夹删除。
-
-### 可编程调度引擎（`pipeline.ocblueprint`）
-
-- **Schema 与错误前缀**：[`creator-docs/kernel/PIPELINE_SCHEMA.md`](creator-docs/kernel/PIPELINE_SCHEMA.md)；加载错误码登记于 [`handoff/10_ERROR_CODE_DICTIONARY.md`](handoff/10_ERROR_CODE_DICTIONARY.md)（Pipeline 蓝图段）。
-- **Rust 模块**：`crates/oclive_kernel_runtime/src/domain/chat_engine/` 下的 `pipeline_loader.rs`（解析校验）、`pipeline_interpreter.rs`（顺序 / `branch` / `parallel`）、`pipeline_actions.rs`（原子与 `ACTION_IO_TYPES`）、`pipeline_predicates.rs`、`turn_context.rs`；入口编排见同目录 `process_message.rs`（蓝图在 `validate_scene` 之后加载）。
-- **测试**：crate 内 `pipeline_loader` 单测；集成测试 `tests/pipeline_*_smoke.rs`、`tests/pipeline_validator_edges.rs`。
-- **Criterion**：`cargo bench -p oclive_kernel_runtime --bench kernel_pipeline_blueprint`；基线记录 [`creator-docs/kernel/KERNEL_PERFORMANCE_BASELINE.md`](creator-docs/kernel/KERNEL_PERFORMANCE_BASELINE.md)。
 
 ### 前端：插件管理入口与 Tauri `invoke`
 
