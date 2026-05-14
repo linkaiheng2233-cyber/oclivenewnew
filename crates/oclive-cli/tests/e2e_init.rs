@@ -1,5 +1,7 @@
 //! 端到端：非交互生成项目并 `cargo build`。
 
+#![allow(clippy::unwrap_used, clippy::expect_used)]
+
 use serde_json::Value;
 use std::fs;
 use std::path::PathBuf;
