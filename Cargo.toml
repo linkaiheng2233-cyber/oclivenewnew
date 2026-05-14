@@ -1,5 +1,5 @@
 [workspace]
-members = ["crates/oclive_validation", "src-tauri"]
+members = ["crates/oclive_validation", "crates/oclive-cli", "src-tauri"]
 resolver = "2"
 
 [profile.release]

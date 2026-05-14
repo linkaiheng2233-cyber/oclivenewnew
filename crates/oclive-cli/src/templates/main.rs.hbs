@@ -1,0 +1,14 @@
+//! `{{ safe_package_name }}` — oclive-cli 生成的占位内核（无头可执行）。
+//!
+//! 运行方式：在本目录执行 `cargo run`。
+
+fn main() {
+    println!("{{ safe_package_name }} — stub kernel (oclive-cli)");
+    let settings = std::path::Path::new("roles/default/settings.json");
+    if settings.exists() {
+        let n = std::fs::read_to_string(settings).map(|s| s.len()).unwrap_or(0);
+        println!("roles/default/settings.json: {} bytes", n);
+    } else {
+        println!("(未找到 roles/default/settings.json，使用 --preset full 或交互生成示例角色包)");
+    }
+}

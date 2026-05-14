@@ -1,0 +1,22 @@
+{
+  "schema_version": 1,
+  "plugin_backends": {
+    "memory": "{{ backend_memory }}",
+    "emotion": "{{ backend_emotion }}",
+    "event": "{{ backend_event }}",
+    "prompt": "{{ backend_prompt }}",
+    "llm": "{{ backend_llm }}",
+    "agent": "{{ backend_agent }}"
+  },
+  "_oclive_cli": {
+    "complex_emotion": "{{ backend_complex_emotion }}",
+    "plugins": {
+      "directory_plugins": {{ plugin_directory }},
+      "kernel_server_doc": {{ plugin_kernel_server }},
+      "oocp_doc": {{ plugin_oocp }}
+    },
+    "features": {
+      "use_complex_emotion": {{ feature_complex_emotion }}
+    }
+  }
+}
