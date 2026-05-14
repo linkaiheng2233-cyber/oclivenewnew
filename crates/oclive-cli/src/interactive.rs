@@ -17,18 +17,48 @@ const SLOT_LABELS: &[&str] = &[
 ];
 
 fn pick_impl(slot: &str) -> Result<BackendImpl> {
-    let items = &["builtin", "stub", "none"];
+    let (items, labels): (&[&str], &[&str]) = if slot == "llm" {
+        (
+            &["ollama", "remote", "directory", "none"],
+            &[
+                "ollama（主应用默认本地 LLM，需本机 Ollama）",
+                "remote（HTTP 侧车，需 OCLIVE_REMOTE_LLM_URL）",
+                "directory（目录插件子进程）",
+                "none（禁用主 LLM 链；仅用于实验/占位）",
+            ],
+        )
+    } else {
+        (
+            &["builtin", "remote", "directory", "none"],
+            &[
+                "builtin（进程内默认实现）",
+                "remote（HTTP JSON-RPC，需 OCLIVE_REMOTE_PLUGIN_URL 等）",
+                "directory（目录插件；需配置 plugin_backends.directory_plugins）",
+                "none（禁用该子系统；部分槽可能影响主对话链）",
+            ],
+        )
+    };
     let i = Select::with_theme(&ColorfulTheme::default())
         .with_prompt(format!("{slot} 使用哪种实现？"))
-        .items(items)
+        .items(labels)
         .default(0)
         .interact()
         .context("select backend impl")?;
-    Ok(match i {
-        0 => BackendImpl::Builtin,
-        1 => BackendImpl::Stub,
-        _ => BackendImpl::None,
+    let raw = items.get(i).copied().unwrap_or("builtin");
+    Ok(match raw {
+        "ollama" => BackendImpl::Ollama,
+        "remote" => BackendImpl::Remote,
+        "directory" => BackendImpl::Directory,
+        "none" => BackendImpl::None,
+        _ => BackendImpl::Builtin,
     })
+}
+
+fn validate_slot_choice(slot: &str, b: BackendImpl) -> Result<()> {
+    if slot != "llm" && b == BackendImpl::Ollama {
+        return Err(anyhow!("槽位 {slot} 不能使用 ollama（仅 llm 槽合法）。"));
+    }
+    Ok(())
 }
 
 /// 至少包含 memory / emotion / prompt / llm 四条线（与产品最小对话链一致）。
@@ -54,7 +84,7 @@ pub fn run_interactive() -> Result<ProjectConfig> {
     let chosen: Vec<usize> = MultiSelect::with_theme(&ColorfulTheme::default())
         .with_prompt("要启用的后端槽位（至少勾选 memory / emotion / prompt / llm）")
         .items(SLOT_LABELS)
-        .defaults(&[true, true, true, true, true, false, false])
+        .defaults(&[true, true, true, true, true, true, true])
         .interact()
         .context("backend multiselect")?;
 
@@ -71,6 +101,7 @@ pub fn run_interactive() -> Result<ProjectConfig> {
     for &idx in &chosen {
         let slot = SLOT_LABELS[idx];
         let b = pick_impl(slot)?;
+        validate_slot_choice(slot, b)?;
         match idx {
             0 => slots.memory = b,
             1 => slots.emotion = b,

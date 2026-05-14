@@ -1,10 +1,33 @@
 //! `init` 子命令：解析参数、合并预设、调用生成器。
+//!
+//! 非交互模式下 **`--preset`** 决定基线；可选 **`--backend-*`** 逐项覆盖。
+//! 预设与 `plugin_backends` 矩阵见 **`init --help` 末尾**（与生成项目根目录 **`CONFIG_REFERENCE.md`** 一致）。
 
 use crate::generator;
 use anyhow::{Context, Result};
 use clap::Parser;
 use serde::{Deserialize, Serialize};
 use std::path::PathBuf;
+
+/// `init --help` / `init -h` 末尾：预设与 `plugin_backends` 矩阵（与生成项目内 `CONFIG_REFERENCE.md` 一致）。
+pub const PRESET_MATRIX_HELP: &str = r#"预设与 plugin_backends（逻辑槽位）
+
+┌───────────────────┬─────────┬─────────┬────────┐
+│ 槽位              │ minimal │ mixed   │ full   │
+├───────────────────┼─────────┼─────────┼────────┤
+│ memory            │ builtin │ builtin │ builtin│
+│ emotion           │ builtin │ builtin │ builtin│
+│ event             │ builtin │ builtin │ builtin│
+│ prompt            │ builtin │ builtin │ builtin│
+│ llm               │ ollama  │ ollama  │ remote │
+│ agent             │ none*   │ builtin │ builtin│
+│ complex_emotion   │ none    │ builtin │ remote │
+└───────────────────┴─────────┴─────────┴────────┘
+
+* agent = none：写入 settings.json 时省略 agent 键（内核无 none 枚举；加载时回退默认 builtin）。
+
+llm 使用 ollama 表示进程内默认本地客户端；无本机模型时请改为 remote 并配置 OCLIVE_REMOTE_LLM_URL（见 PLUGIN_V1）。
+"#;
 
 #[derive(Parser, Debug, Clone)]
 pub struct InitArgs {
@@ -30,6 +53,28 @@ pub struct InitArgs {
     /// 项目类型（非交互时必填；交互时可省略）
     #[arg(long, value_enum)]
     pub project_type: Option<ProjectTypeArg>,
+
+    /// 覆盖 memory 槽（缺省沿用 `--preset`）
+    #[arg(long, value_enum)]
+    pub backend_memory: Option<BackendImpl>,
+
+    #[arg(long, value_enum)]
+    pub backend_emotion: Option<BackendImpl>,
+
+    #[arg(long, value_enum)]
+    pub backend_event: Option<BackendImpl>,
+
+    #[arg(long, value_enum)]
+    pub backend_prompt: Option<BackendImpl>,
+
+    #[arg(long, value_enum)]
+    pub backend_llm: Option<BackendImpl>,
+
+    #[arg(long, value_enum)]
+    pub backend_agent: Option<BackendImpl>,
+
+    #[arg(long, value_enum)]
+    pub backend_complex_emotion: Option<BackendImpl>,
 }
 
 #[derive(clap::ValueEnum, Clone, Debug, Copy, PartialEq, Eq, Serialize, Deserialize)]
@@ -38,11 +83,20 @@ pub enum ProjectTypeArg {
     Library,
 }
 
-#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
+/// 与 `settings.json` → `plugin_backends` 对齐的脚手架内部表示。
+///
+/// - **`Ollama`**：仅用于 **`llm`** 槽，序列化为 JSON 字符串 **`ollama`**（主应用默认本地 LLM 后端）。
+/// - **`None`**：用于 **`agent`** 时表示「不在 JSON 中写 agent 键」；用于 **`complex_emotion`** 时写 **`none`**（宿主反序列化六槽结构时忽略该扩展键）。
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize, clap::ValueEnum, Default)]
 #[serde(rename_all = "snake_case")]
+#[clap(rename_all = "snake_case")]
 pub enum BackendImpl {
+    #[default]
     Builtin,
-    Stub,
+    Remote,
+    Directory,
+    /// 仅 `llm` 槽合法；对应主应用 `LlmBackend::Ollama`。
+    Ollama,
     None,
 }
 
@@ -54,7 +108,6 @@ pub struct BackendSlots {
     pub prompt: BackendImpl,
     pub llm: BackendImpl,
     pub agent: BackendImpl,
-    /// 与「复杂情感」扩展路线对应；写入 `_oclive_cli` 元数据，便于后续接入独立 crate。
     pub complex_emotion: BackendImpl,
 }
 
@@ -125,7 +178,8 @@ impl ProjectConfig {
     }
 }
 
-fn preset_config(name: &str, preset: &str) -> Result<ProjectConfig> {
+/// 与 `PRESET_MATRIX_HELP` / `CONFIG_REFERENCE.md` 完全一致。
+pub fn preset_config(name: &str, preset: &str) -> ProjectConfig {
     let project_name = if name.trim().is_empty() {
         "my_oclive_kernel".into()
     } else {
@@ -138,27 +192,28 @@ fn preset_config(name: &str, preset: &str) -> Result<ProjectConfig> {
             emotion: BackendImpl::Builtin,
             event: BackendImpl::Builtin,
             prompt: BackendImpl::Builtin,
-            llm: BackendImpl::Builtin,
+            llm: BackendImpl::Remote,
             agent: BackendImpl::Builtin,
-            complex_emotion: BackendImpl::Builtin,
+            complex_emotion: BackendImpl::Remote,
         }
     } else if preset == "mixed" {
         BackendSlots {
             memory: BackendImpl::Builtin,
-            emotion: BackendImpl::Stub,
-            event: BackendImpl::None,
+            emotion: BackendImpl::Builtin,
+            event: BackendImpl::Builtin,
             prompt: BackendImpl::Builtin,
-            llm: BackendImpl::Stub,
-            agent: BackendImpl::None,
-            complex_emotion: BackendImpl::Stub,
+            llm: BackendImpl::Ollama,
+            agent: BackendImpl::Builtin,
+            complex_emotion: BackendImpl::Builtin,
         }
     } else {
+        // minimal（含未知 preset 名时回退为 minimal）
         BackendSlots {
-            memory: BackendImpl::Stub,
-            emotion: BackendImpl::Stub,
-            event: BackendImpl::None,
-            prompt: BackendImpl::Stub,
-            llm: BackendImpl::Stub,
+            memory: BackendImpl::Builtin,
+            emotion: BackendImpl::Builtin,
+            event: BackendImpl::Builtin,
+            prompt: BackendImpl::Builtin,
+            llm: BackendImpl::Ollama,
             agent: BackendImpl::None,
             complex_emotion: BackendImpl::None,
         }
@@ -183,15 +238,41 @@ fn preset_config(name: &str, preset: &str) -> Result<ProjectConfig> {
     let features = FeatureSelection {
         use_complex_emotion: backends.complex_emotion != BackendImpl::None,
     };
-    let with_example_role = preset != "minimal";
-    Ok(ProjectConfig {
+    // 始终生成示例角色包与 settings.json，便于对照 CONFIG_REFERENCE.md 验收。
+    let with_example_role = true;
+    ProjectConfig {
         project_name,
         project_type,
         backends,
         plugins,
         features,
         with_example_role,
-    })
+    }
+}
+
+pub(crate) fn apply_backend_cli_overrides(cfg: &mut ProjectConfig, args: &InitArgs) {
+    if let Some(v) = args.backend_memory {
+        cfg.backends.memory = v;
+    }
+    if let Some(v) = args.backend_emotion {
+        cfg.backends.emotion = v;
+    }
+    if let Some(v) = args.backend_event {
+        cfg.backends.event = v;
+    }
+    if let Some(v) = args.backend_prompt {
+        cfg.backends.prompt = v;
+    }
+    if let Some(v) = args.backend_llm {
+        cfg.backends.llm = v;
+    }
+    if let Some(v) = args.backend_agent {
+        cfg.backends.agent = v;
+    }
+    if let Some(v) = args.backend_complex_emotion {
+        cfg.backends.complex_emotion = v;
+    }
+    cfg.features.use_complex_emotion = cfg.backends.complex_emotion != BackendImpl::None;
 }
 
 pub fn run(args: InitArgs) -> Result<()> {
@@ -201,7 +282,8 @@ pub fn run(args: InitArgs) -> Result<()> {
             .as_deref()
             .unwrap_or("minimal")
             .to_ascii_lowercase();
-        let mut c = preset_config(&args.project_name, &preset)?;
+        let mut c = preset_config(&args.project_name, &preset);
+        apply_backend_cli_overrides(&mut c, &args);
         if let Some(t) = args.project_type {
             c.project_type = match t {
                 ProjectTypeArg::KernelServer => ProjectType::KernelServer,
@@ -211,6 +293,7 @@ pub fn run(args: InitArgs) -> Result<()> {
         c
     } else {
         let mut c = crate::interactive::run_interactive()?;
+        apply_backend_cli_overrides(&mut c, &args);
         if let Some(t) = args.project_type {
             c.project_type = match t {
                 ProjectTypeArg::KernelServer => ProjectType::KernelServer,

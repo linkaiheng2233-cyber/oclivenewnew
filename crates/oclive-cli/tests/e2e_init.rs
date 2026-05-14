@@ -1,5 +1,7 @@
 //! 端到端：非交互生成项目并 `cargo build`。
 
+use serde_json::Value;
+use std::fs;
 use std::path::PathBuf;
 use std::process::Command;
 
@@ -43,6 +45,33 @@ fn e2e_preset_minimal_builds() {
         out.to_str().unwrap(),
     ]);
     assert!(st.success(), "oclive-cli init");
+    assert!(out.join("CONFIG_REFERENCE.md").is_file());
+    let settings_path = out.join("roles/default/settings.json");
+    let raw = fs::read_to_string(&settings_path).expect("settings.json");
+    let v: Value = serde_json::from_str(&raw).expect("parse settings");
+    let pb = v.get("plugin_backends").unwrap().as_object().unwrap();
+    assert!(
+        !pb.contains_key("agent"),
+        "minimal preset omits agent in JSON"
+    );
+    assert_eq!(pb.get("llm").unwrap().as_str().unwrap(), "ollama");
+    for k in [
+        "_comment_memory",
+        "_comment_llm",
+        "_comment_plugin_backends",
+    ] {
+        assert!(v.get(k).is_some(), "missing root key {k}");
+    }
+    for k in [
+        "memory",
+        "emotion",
+        "event",
+        "prompt",
+        "llm",
+        "complex_emotion",
+    ] {
+        assert!(pb.get(k).is_some(), "missing plugin_backends.{k}");
+    }
     let st2 = cargo_build(&out);
     assert!(st2.success(), "generated project cargo build");
 }
@@ -61,6 +90,12 @@ fn e2e_preset_full_builds() {
         out.to_str().unwrap(),
     ]);
     assert!(st.success());
+    assert!(out.join("CONFIG_REFERENCE.md").is_file());
+    let raw = fs::read_to_string(out.join("roles/default/settings.json")).unwrap();
+    let v: Value = serde_json::from_str(&raw).unwrap();
+    let pb = v.get("plugin_backends").unwrap().as_object().unwrap();
+    assert_eq!(pb.get("llm").unwrap().as_str().unwrap(), "remote");
+    assert_eq!(pb.get("agent").unwrap().as_str().unwrap(), "builtin");
     assert!(cargo_build(&out).success());
 }
 
@@ -80,5 +115,22 @@ fn e2e_preset_mixed_library_builds() {
         out.to_str().unwrap(),
     ]);
     assert!(st.success());
+    assert!(cargo_build(&out).success());
+}
+
+#[test]
+fn e2e_non_interactive_minimal_no_extra_input() {
+    let tmp = tempfile::tempdir().unwrap();
+    let out = tmp.path().join("test-project");
+    assert!(run_cli(&[
+        "init",
+        "--non-interactive",
+        "--quiet",
+        "--preset",
+        "minimal",
+        "-o",
+        out.to_str().unwrap(),
+    ])
+    .success());
     assert!(cargo_build(&out).success());
 }

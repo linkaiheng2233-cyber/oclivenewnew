@@ -27,6 +27,6 @@ cargo run -p oclive-cli -- init
 cargo run -p oclive-cli -- init --non-interactive --preset minimal -o /tmp/my-kernel
 ```
 
-预设：`minimal` | `full` | `mixed`。
+预设：`minimal` | `full` | `mixed`。`init --help` 末尾有 **预设与 `plugin_backends` 矩阵**；生成项目根目录含 **`CONFIG_REFERENCE.md`**。
 
-完整说明见 [creator-docs/cli/OCLIVE_CLI_GUIDE.md](../../creator-docs/cli/OCLIVE_CLI_GUIDE.md)。
+完整说明见 [creator-docs/cli/OCLIVE_CLI_GUIDE.md](../../creator-docs/cli/OCLIVE_CLI_GUIDE.md) 与 [creator-docs/cli/SETTINGS_REFERENCE.md](../../creator-docs/cli/SETTINGS_REFERENCE.md)。

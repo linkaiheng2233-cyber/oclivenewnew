@@ -21,6 +21,7 @@ struct Cli {
 #[derive(Subcommand)]
 enum Commands {
     /// 交互或非交互创建内核项目骨架
+    #[command(after_long_help = init::PRESET_MATRIX_HELP)]
     Init(init::InitArgs),
 }
 
