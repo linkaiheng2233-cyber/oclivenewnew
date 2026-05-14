@@ -9,7 +9,10 @@
 | 领域 | 状态 |
 |------|------|
 | **内核编排** | 主编排在 **`src-tauri/src/domain/chat_engine/mod.rs`** 的 **`process_message`**；无独立入口蓝图 DSL 主路径；子系统经 **`PluginHost`** 解析（含 **`agent`**）。 |
-| **测试** | **Rust**：`src-tauri` 下 **`cargo test`** + `src-tauri/tests/` 集成测（CI Ubuntu/Windows）。**前端**：CI **`npm ci` + `npm run test:unit`（Vitest）+ `npm run build`**。**OOCP HTTP 黑盒**：**S0–S11** 已入库 [`examples/oocp-test-suite/`](examples/oocp-test-suite/)，CI job **`oocp-test-suite`**（Ubuntu）；说明见 [creator-docs/testing/OOCP_TEST_SUITE.md](creator-docs/testing/OOCP_TEST_SUITE.md) 与 [creator-docs/testing/OVERVIEW.md](creator-docs/testing/OVERVIEW.md)。 |
+| **测试（三层）** | **协议层（本仓）**：`src-tauri` 的 **`cargo test`** + `tests/` 集成测；**OOCP HTTP 黑盒 S0–S11** 已入库 [`examples/oocp-test-suite/`](examples/oocp-test-suite/)，**CI 已集成** job **`oocp-test-suite`**（Ubuntu）。**组件层（编写器）**：**oclive-pack-editor** 仓库 Vitest / Playwright 等（与本仓 CI 分工）。**插件层（编写器）**：目录插件 / `official-vue-test-runner` 等范式与用例在 **oclive-pack-editor**。**前端最小烟测**：CI **`npm ci` + `npm run test:unit`（Vitest）+ `npm run build`**。总览见 [creator-docs/testing/OVERVIEW.md](creator-docs/testing/OVERVIEW.md)、[creator-docs/testing/OOCP_TEST_SUITE.md](creator-docs/testing/OOCP_TEST_SUITE.md)。 |
+| **oclive-cli** | Workspace crate **`oclive-cli`**：**`oclive dev`**（监听 `roles/` 下 `manifest.json` / `settings.json`）；**`oclive bench`** 支持 **`--save`**（写入 `bench_history.json`）与 **`--compare`**（对比最近两次）；**`oclive pack`** 子命令 **`validate` / `create` / `publish`**；**Monolith** 高耦合编译与 `init` / `build` / `bench` 流程见 [creator-docs/cli/OCLIVE_CLI_GUIDE.md](creator-docs/cli/OCLIVE_CLI_GUIDE.md)。 |
+| **启动健康检查** | 首轮 **`process_message`** 前一次性自检（槽位、角色包文件、SQLite **`health_ping`**、可选 LLM 探测）；可用 **`OCLIVE_SKIP_STARTUP_HEALTH`** / **`OCLIVE_SKIP_LLM_STARTUP_PROBE`** 跳过。实现见 `src-tauri/src/domain/startup_health.rs`。 |
+| **Monolith（高耦合编译）** | 无头脚手架在编译期焊接七槽静态路径；RFC 与 CLI 四阶段（`init` → `build` → 双二进制 `bench`）见 [creator-docs/rfc/RFC_OCLIVE_MONOLITH_MODE.md](creator-docs/rfc/RFC_OCLIVE_MONOLITH_MODE.md) 与上文 CLI 指南。 |
 | **安全** | 已跑 **`cargo audit`（0.22.1）**；**已知漏洞跟踪中**（当前锁文件 **5** 条漏洞级命中），见 [creator-docs/security/KNOWN_VULNERABILITIES.md](creator-docs/security/KNOWN_VULNERABILITIES.md)；审查边界见 [creator-docs/security/SECURITY_AUDIT_SCOPE.md](creator-docs/security/SECURITY_AUDIT_SCOPE.md)。 |
 | **CI 守门** | **`rustfmt` + `clippy`（`-D warnings`）+ `cargo test`**（`src-tauri`）+ **`npm ci` / `npm run test:unit` / `npm run build`**；另含 **`oocp-test-suite`**（HTTP 协议黑盒）、**`cargo-audit`** job（**允许失败**）与 **remote-plugin-demo** 烟测。 |
 | **轻量化基线** | [creator-docs/development/LIGHTWEIGHT_PROFILE.md](creator-docs/development/LIGHTWEIGHT_PROFILE.md)（Release、`cargo-bloat` 采样）。 |
@@ -116,7 +119,7 @@ npm run build
 
 ## 测试与检查
 
-**CI（`.github/workflows/ci.yml`）**：在 **Ubuntu** 与 **Windows** 上均执行 Rust **`rustfmt` + `clippy`（`-D warnings`）+ 完整 `cargo test`**（`src-tauri` 工作目录，含 `tests/` 集成测试），以及 **`npm ci` + `npm run test:unit` + `npm run build`**。在 **Ubuntu** 上另跑 **`oocp-test-suite`**（`--api` + Node `examples/oocp-test-suite/run.mjs`，场景 S0–S11）。另含 **`cargo-audit`（0.22.1，`continue-on-error`）** 与 **`remote-plugin-demo`**（Python 侧车 `memory.rank` 烟测）。
+**CI（`.github/workflows/ci.yml`）**：在 **Ubuntu** 与 **Windows** 上均执行 Rust **`rustfmt` + `clippy`（`-D warnings`）+ 完整 `cargo test`**（`src-tauri` 工作目录，含 `tests/` 集成测试），以及 **`npm ci` + `npm run test:unit` + `npm run build`**。在 **Ubuntu** 上另跑 **`oocp-test-suite`**（`--api` + Node `examples/oocp-test-suite/run.mjs`，场景 S0–S11；**协议层黑盒，已入库且 CI 已集成**）。另含 **`cargo-audit`（0.22.1，`continue-on-error`）** 与 **`remote-plugin-demo`**（Python 侧车 `memory.rank` 烟测）。**组件 / 插件层**自动化在 **oclive-pack-editor** 各自 workflow 中维护（见上文「测试（三层）」）。
 
 | 命令 | 用途 |
 |------|------|
