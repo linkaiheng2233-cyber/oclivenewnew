@@ -2,6 +2,7 @@
 
 mod bench_cmd;
 mod build_cmd;
+mod dev_cmd;
 mod generator;
 mod init;
 mod interactive;
@@ -19,6 +20,10 @@ use clap::{Parser, Subcommand};
     about = "Oclive official kernel project scaffolding"
 )]
 struct Cli {
+    /// 日志详细程度：累计 `-v` 提升（0=INFO, 1=DEBUG, 2+=TRACE）；可被 `RUST_LOG` 覆盖
+    #[arg(short = 'v', long, action = clap::ArgAction::Count, global = true)]
+    verbose: u8,
+
     #[command(subcommand)]
     command: Commands,
 }
@@ -32,16 +37,34 @@ enum Commands {
     Build(build_cmd::BuildArgs),
     /// 对比标准与 Monolith 二进制的子进程耗时（JSON 报告）
     Bench(bench_cmd::BenchArgs),
+    /// 监听角色包目录变更（开发用；生产路径不使用）
+    Dev(dev_cmd::DevArgs),
     /// 角色包：校验、创建、打包（.oclivepack）
     Pack(pack_cmd::PackArgs),
 }
 
+fn init_tracing(verbose: u8) {
+    use tracing_subscriber::EnvFilter;
+    let default = match verbose {
+        0 => "info",
+        1 => "debug",
+        _ => "trace",
+    };
+    let filter = EnvFilter::try_from_default_env().unwrap_or_else(|_| EnvFilter::new(default));
+    let _ = tracing_subscriber::fmt()
+        .with_env_filter(filter)
+        .with_target(false)
+        .try_init();
+}
+
 fn main() -> Result<()> {
     let cli = Cli::parse();
+    init_tracing(cli.verbose);
     match cli.command {
         Commands::Init(args) => init::run(args),
         Commands::Build(args) => build_cmd::run(args),
         Commands::Bench(args) => bench_cmd::run(args),
+        Commands::Dev(args) => dev_cmd::run(args),
         Commands::Pack(args) => pack_cmd::run_pack(args),
     }
 }

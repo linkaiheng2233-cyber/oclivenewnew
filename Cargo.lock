@@ -2769,11 +2769,14 @@ dependencies = [
  "clap",
  "dialoguer",
  "handlebars",
+ "notify",
  "oclive_validation",
  "serde",
  "serde_json",
  "tempfile",
  "toml 0.8.23",
+ "tracing",
+ "tracing-subscriber",
  "zip",
 ]
 
