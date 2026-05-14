@@ -73,6 +73,125 @@ pub fn validate_default_personality_vector(values: &[f32]) -> Result<(), String>
     Ok(())
 }
 
+/// manifest + 可选 settings 解析、顶层键、七维、`settings` 合并进 `disk`（与目录加载顺序一致）。
+/// 不含 `validate_disk_manifest` / `min_runtime`（需调用方提供合并后的场景 id）。
+pub fn validate_role_pack_manifest_settings_core(
+    manifest_json: &str,
+    settings_json: Option<&str>,
+    settings_schema_supported: u32,
+) -> Result<DiskRoleManifest, Vec<String>> {
+    let mut errs: Vec<String> = Vec::new();
+
+    let manifest_value: Value = match serde_json::from_str(manifest_json) {
+        Ok(v) => v,
+        Err(e) => {
+            errs.push(format!("manifest.json JSON 语法错误: {}", e));
+            return Err(errs);
+        }
+    };
+
+    if let Value::Object(ref map) = manifest_value {
+        if let Err(e) = validate_manifest_top_level_keys(map) {
+            errs.push(e);
+        }
+    }
+
+    if !errs.is_empty() {
+        return Err(errs);
+    }
+
+    let mut disk: DiskRoleManifest = match serde_json::from_str(manifest_json) {
+        Ok(d) => d,
+        Err(e) => {
+            errs.push(format!("manifest.json 结构不符合契约: {}", e));
+            return Err(errs);
+        }
+    };
+
+    if let Err(e) = validate_default_personality_vector(&disk.default_personality) {
+        errs.push(e);
+    }
+
+    if let Some(sr) = settings_json {
+        let settings_value: Value = match serde_json::from_str(sr) {
+            Ok(v) => v,
+            Err(e) => {
+                errs.push(format!("settings.json JSON 语法错误: {}", e));
+                return Err(errs);
+            }
+        };
+        if let Value::Object(ref map) = settings_value {
+            if let Err(e) = validate_settings_top_level_keys(map) {
+                errs.push(e);
+            }
+        }
+        if !errs.is_empty() {
+            return Err(errs);
+        }
+
+        let settings: DiskRoleSettings = match serde_json::from_str(sr) {
+            Ok(s) => s,
+            Err(e) => {
+                errs.push(format!("settings.json 结构不符合契约: {}", e));
+                return Err(errs);
+            }
+        };
+        if let Err(e) = validate_settings_schema_version(
+            settings.schema_version,
+            settings_schema_supported,
+        ) {
+            errs.push(e);
+        }
+        settings.apply_to_manifest(&mut disk);
+        if let Err(e) = validate_interaction_mode_pack_setting(settings.interaction_mode.as_deref())
+        {
+            errs.push(e);
+        }
+    }
+
+    if errs.is_empty() {
+        Ok(disk)
+    } else {
+        Err(errs)
+    }
+}
+
+/// 在已合并场景列表上跑 `validate_disk_manifest` 与 `min_runtime`。
+pub fn validate_role_pack_tail(
+    disk: &DiskRoleManifest,
+    merged_scene_ids: &[String],
+    host_version: &str,
+) -> Result<(), Vec<String>> {
+    let mut errs: Vec<String> = Vec::new();
+    if let Err(e) = validate_disk_manifest(disk, merged_scene_ids) {
+        errs.push(e);
+    }
+    if let Err(e) = validate_min_runtime_version(disk.min_runtime_version.as_deref(), host_version) {
+        errs.push(e);
+    }
+    if errs.is_empty() {
+        Ok(())
+    } else {
+        Err(errs)
+    }
+}
+
+/// 与目录校验同源，供 wasm / 编写器在内存中校验（调用方提供合并后的场景 id，通常含 `scenes/` 扫描结果）。
+pub fn validate_role_pack_loaded(
+    manifest_json: &str,
+    settings_json: Option<&str>,
+    merged_scene_ids: &[String],
+    host_version: &str,
+    settings_schema_supported: u32,
+) -> Result<(), Vec<String>> {
+    let disk = validate_role_pack_manifest_settings_core(
+        manifest_json,
+        settings_json,
+        settings_schema_supported,
+    )?;
+    validate_role_pack_tail(&disk, merged_scene_ids, host_version)
+}
+
 /// 校验角色包目录（与宿主加载前磁盘校验一致；不读 `core_personality.txt`、不跑 DB）。
 ///
 /// `settings_schema_supported`：与宿主 `CURRENT_SETTINGS_SCHEMA_VERSION` 一致（当前为 1）。
@@ -99,80 +218,27 @@ pub fn validate_role_pack_directory(
         }
     };
 
-    let manifest_value: Value = match serde_json::from_str(&manifest_raw) {
-        Ok(v) => v,
-        Err(e) => {
-            errs.push(format!("manifest.json JSON 语法错误: {}", e));
-            return Err(errs);
-        }
-    };
-
-    if let Value::Object(ref map) = manifest_value {
-        if let Err(e) = validate_manifest_top_level_keys(map) {
-            errs.push(e);
-        }
-    }
-
-    if !errs.is_empty() {
-        return Err(errs);
-    }
-
-    let mut disk: DiskRoleManifest = match serde_json::from_str(&manifest_raw) {
-        Ok(d) => d,
-        Err(e) => {
-            errs.push(format!("manifest.json 结构不符合契约: {}", e));
-            return Err(errs);
-        }
-    };
-
-    if let Err(e) = validate_default_personality_vector(&disk.default_personality) {
-        errs.push(e);
-    }
-
     let settings_path = role_dir.join("settings.json");
-    if settings_path.is_file() {
-        let settings_raw = match fs::read_to_string(&settings_path) {
-            Ok(s) => s,
+    let settings_raw = if settings_path.is_file() {
+        match fs::read_to_string(&settings_path) {
+            Ok(s) => Some(s),
             Err(e) => {
                 errs.push(format!("读取 settings.json 失败: {}", e));
-                return if errs.is_empty() { Ok(()) } else { Err(errs) };
-            }
-        };
-        let settings_value: Value = match serde_json::from_str(&settings_raw) {
-            Ok(v) => v,
-            Err(e) => {
-                errs.push(format!("settings.json JSON 语法错误: {}", e));
                 return Err(errs);
             }
-        };
-        if let Value::Object(ref map) = settings_value {
-            if let Err(e) = validate_settings_top_level_keys(map) {
-                errs.push(e);
-            }
         }
-        if !errs.is_empty() {
-            return Err(errs);
-        }
+    } else {
+        None
+    };
 
-        let settings: DiskRoleSettings = match serde_json::from_str(&settings_raw) {
-            Ok(s) => s,
-            Err(e) => {
-                errs.push(format!("settings.json 结构不符合契约: {}", e));
-                return Err(errs);
-            }
-        };
-        if let Err(e) = validate_settings_schema_version(
-            settings.schema_version,
-            settings_schema_supported,
-        ) {
-            errs.push(e);
-        }
-        settings.apply_to_manifest(&mut disk);
-        if let Err(e) = validate_interaction_mode_pack_setting(settings.interaction_mode.as_deref())
-        {
-            errs.push(e);
-        }
-    }
+    let disk = match validate_role_pack_manifest_settings_core(
+        &manifest_raw,
+        settings_raw.as_deref(),
+        settings_schema_supported,
+    ) {
+        Ok(d) => d,
+        Err(e) => return Err(e),
+    };
 
     let merged_scenes = match merge_role_pack_scene_ids(role_dir, &disk.scenes) {
         Ok(s) => s,
@@ -182,19 +248,7 @@ pub fn validate_role_pack_directory(
         }
     };
 
-    if let Err(e) = validate_disk_manifest(&disk, &merged_scenes) {
-        errs.push(e);
-    }
-    if let Err(e) = validate_min_runtime_version(disk.min_runtime_version.as_deref(), host_version)
-    {
-        errs.push(e);
-    }
-
-    if errs.is_empty() {
-        Ok(())
-    } else {
-        Err(errs)
-    }
+    validate_role_pack_tail(&disk, &merged_scenes, host_version)
 }
 
 #[cfg(test)]
@@ -239,5 +293,16 @@ mod tests {
         f2.write_all(settings.to_string().as_bytes()).unwrap();
 
         validate_role_pack_directory(&role, "999.0.0", 1).unwrap();
+
+        let merged = merge_role_pack_scene_ids(&role, &["default".to_string()]).unwrap();
+        let settings_raw = fs::read_to_string(role.join("settings.json")).unwrap();
+        validate_role_pack_loaded(
+            &fs::read_to_string(role.join("manifest.json")).unwrap(),
+            Some(&settings_raw),
+            &merged,
+            "999.0.0",
+            1,
+        )
+        .unwrap();
     }
 }

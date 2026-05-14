@@ -26,7 +26,9 @@ pub use plugin_backends::{
     PromptBackend,
 };
 pub use role_pack::{
-    merge_role_pack_scene_ids, validate_default_personality_vector, validate_role_pack_directory,
+    merge_role_pack_scene_ids, validate_default_personality_vector,
+    validate_role_pack_directory, validate_role_pack_loaded, validate_role_pack_manifest_settings_core,
+    validate_role_pack_tail,
 };
 pub use validate::{
     parse_hhmm, validate_disk_manifest, validate_interaction_mode_pack_setting,
