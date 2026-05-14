@@ -44,7 +44,7 @@ cargo run -p oclive-cli -- init -o ./out/my-kernel
 cargo run -p oclive-cli -- init --non-interactive --quiet --preset minimal -o /tmp/my-kernel
 ```
 
-启用 Monolith（**实验性**：`--non-interactive` 下加 **`--monolith`**；仅 **kernel_server**）：
+启用 Monolith（`--non-interactive` 下加 **`--monolith`**；仅 **kernel_server**）：
 
 ```bash
 cargo run -p oclive-cli -- init --non-interactive --preset full --monolith -o /tmp/my-monolith-kernel
@@ -70,7 +70,7 @@ cargo run -p oclive-cli -- init --non-interactive --quiet --preset mixed --proje
 | `--preset` | `minimal` \| `full` \| `mixed` |
 | `--project-type` | `kernel-server` \| `library` |
 | `--project-name` | 默认 `my_oclive_kernel` |
-| `--monolith` | 非交互：**实验性** Monolith；生成 `monolith.toml`、双 `[[bin]]` 与 `process_message_monolith.rs`（**仅 kernel_server**；与 `--project-type library` 互斥时自动忽略） |
+| `--monolith` | 非交互：启用 Monolith；生成 `monolith.toml`、`vendor/oclive_monolith_builtin/`、双 `[[bin]]`（`main.rs` / `main_monolith.rs`）与 `process_message_monolith.rs`（**仅 kernel_server**；与 `--project-type library` 互斥时自动忽略） |
 
 非交互时 **不必** 传入任何 `--backend-*` 即可生成；传入则只覆盖所列槽位。
 
@@ -80,19 +80,44 @@ cargo run -p oclive-cli -- init --non-interactive --quiet --preset mixed --proje
 
 - **占位 `Cargo.toml`**：当前仅依赖 **`serde` / `serde_json`**，不假设本机已存在 `oclive_kernel_runtime` 拆分 crate。接入真实内核时，请改为 `path` / 版本依赖并替换 `main.rs` / `lib.rs` 入口。
 - **`roles/default/settings.json`**：含 **`_comment_*`** 与完整 **`plugin_backends`**（含第 7 键 `complex_emotion`）；与主应用完全对齐时请以 [SETTINGS_REFERENCE.md](SETTINGS_REFERENCE.md) 为准裁剪非法键（如主应用不接受的 `none` 字符串）。
-- **`CONFIG_REFERENCE.md`（项目根）**：预设矩阵与各槽一句话；含 **开发者编译选项（实验性）** 与 Monolith RFC 链接。
+- **`CONFIG_REFERENCE.md`（项目根）**：预设矩阵与各槽一句话；含 **开发者编译选项（Monolith）** 与 RFC 链接。
 - **`init --help` 末尾**：含预设矩阵、**`--monolith`** 说明，指向 [RFC_OCLIVE_MONOLITH_MODE.md](../rfc/RFC_OCLIVE_MONOLITH_MODE.md)。
 - **README（生成）**：根据插件勾选，写入接入 `oclive_kernel_server`、OOCP、目录插件的**文字指引**。
 
 ---
 
-## 高耦合编译模式（Monolith，实验性，第一阶段）
+## 高耦合编译模式（Monolith）
 
-**适用**：无头 **`kernel_server`** 占位工程；需要对比 **标准** 与 **`-monolith`** Release 二进制的开发者。**不适用**：嵌入式 **library**（`--monolith` 会被忽略）。
+**适用**：无头 **`kernel_server`** 占位工程；需要对比 **标准** 与 **`-monolith`** 二进制的开发者。**不适用**：嵌入式 **library**（`--monolith` 会被忽略）。
 
-**行为**：生成 **`monolith.toml`**（`enabled = true`，`weld_modules = []` 表示七槽占位焊接）、**`src/process_message_monolith.rs`**（同 crate 内 `welded_*` 静态桩，可编译；接入真实内核后替换为 `oclive_*_builtin` 等）、**`Cargo.toml`** 中 **`[features] monolith`** 与第二 **`[[bin]]`**（`{package}-monolith`，`required-features = ["monolith"]`）。**`main.rs`** 在 `feature = "monolith"` 时调用 `process_message_monolith::run_monolith_pipeline_demo()`。
+**行为**：`init --monolith` 生成 **`monolith.toml`**、`vendor/oclive_monolith_builtin/`、**`src/process_message_monolith.rs`**（已焊接槽静态调用 vendor crate；未焊接槽为 trait/PluginHost 占位）、**`Cargo.toml`** 中 **`[features] monolith`** 与第二 **`[[bin]]`**（**`src/main.rs`** 为标准入口，**`src/main_monolith.rs`** 为 Monolith 入口，避免双 bin 同路径警告）。
 
-**风险**：双 `[[bin]]` 共享 `src/main.rs` 时 Cargo 会提示「同一文件对应多个 bin」警告，可接受；占位焊接 **无** 真实 `PluginHost` 行为。
+### `build` 子命令
+
+在**已存在**的 Monolith 项目根执行（须含 `monolith.toml`）：
+
+```bash
+cargo run -p oclive-cli -- build -o /path/to/kernel-project
+cargo run -p oclive-cli -- build -o /path/to/kernel-project --release --features somefeat
+cargo run -p oclive-cli -- build -o /path/to/kernel-project --no-cargo
+```
+
+- **`--no-cargo`**：仅再生成 `process_message_monolith.rs` 与 vendor，不调用 `cargo`。
+- **`--release`** / **`--features`**：传给每次 `cargo build`；Monolith 次构建会自动并入 **`monolith`** feature。
+- **`--` 之后**：附加参数透传给 `cargo build`。
+
+### `bench` 子命令
+
+再生成源码、双构建后，对两个二进制各跑 `--runs` 次子进程；子进程内通过环境变量 **`OCLIVE_KERNEL_BENCH_ITERS`** 做热循环。输出 **JSON**（`schema_version: 1`），Schema 见仓库 **`crates/oclive-cli/schemas/oclive_bench_report.schema.json`**。
+
+```bash
+cargo run -p oclive-cli -- bench --release -o /path/to/kernel-project --runs 30 --inner-iters 500 --output ./bench-report.json
+cargo run -p oclive-cli -- bench --release -o /path/to/kernel-project --json
+```
+
+`--json`：仅将报告 JSON 打印到 **stdout**（进度走 **stderr**），便于管道与 Schema 校验。
+
+**风险**：占位工程 **无** 真实 `PluginHost` 行为。
 
 权威设计：[RFC_OCLIVE_MONOLITH_MODE.md](../rfc/RFC_OCLIVE_MONOLITH_MODE.md)。
 
@@ -100,7 +125,7 @@ cargo run -p oclive-cli -- init --non-interactive --quiet --preset mixed --proje
 
 ## 与 CI 的关系
 
-仓库 **`.github/workflows/ci.yml`** 的 **`cli`** job 会 `cargo test -p oclive-cli`（含端到端：生成临时目录并 `cargo build`）。
+仓库 **`.github/workflows/ci.yml`** 的 **`cli`** job 会 `cargo test -p oclive-cli`（含端到端：`init`、`build`、`bench` smoke）。另有轻量 **`cli-bench`** job 跑一轮 `bench`（不设性能阈值）。
 
 ---
 

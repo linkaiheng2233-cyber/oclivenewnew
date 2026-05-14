@@ -31,7 +31,7 @@
 
 **已知漏洞跟踪中**；**不宣称零漏洞**。漏洞级命中与路线图以 **[KNOWN_VULNERABILITIES.md](../security/KNOWN_VULNERABILITIES.md)** 为准（最近更新日期见该文件）。
 
-摘要（**2026-05-13**，`cargo audit --no-fetch --stale`，`src-tauri/Cargo.lock`）：
+摘要（**2026-05-12**，`cargo audit --no-fetch --stale`，`src-tauri/Cargo.lock`）：
 
 - **漏洞级（error）**：**5** 条（`rsa`、`rustls-webpki` ×3 条 advisory、`sqlx`）。
 - **警告级（warning）**：**17** 条（含 gtk-rs *unmaintained*、`rustls-pemfile` *unmaintained*、`glib` *unsound* 等）；**不**写入 KNOWN 表，但在发版评审时应通读 `cargo audit` 全文。
@@ -67,7 +67,7 @@ cd src-tauri
 cargo bloat --release -n 8
 ```
 
-**最近采样**：**2026-05-13**，`oclivenewnew-tauri.exe`（`--release`，配置见 §1）。
+**最近采样**：**2026-05-12**，`oclivenewnew-tauri.exe`（`--release`，配置见 §1）。
 
 | 指标 | 值 |
 |------|-----|

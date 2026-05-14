@@ -77,13 +77,15 @@
 
 ## 五、`monolith.toml`（编译期，非运行时）
 
-由 **`oclive-cli init`** 在启用 Monolith 时写入**项目根目录**；**仅编译期**消费（当前以 **`cargo build --features monolith`** 为入口；**`oclive build` 子命令尚未实现**）。与 **`settings.json` → `plugin_backends`** 正交：角色包加载**不**读取本文件。
+由 **`oclive-cli init`** 在启用 Monolith 时写入**项目根目录**；**仅编译期**消费（**`cargo run -p oclive-cli -- build`** 读取并再生成 `process_message_monolith.rs`；亦可仅用手动 **`cargo build --features monolith`**）。与 **`settings.json` → `plugin_backends`** 正交：角色包加载**不**读取本文件。
 
 | 字段 | 说明 |
 |------|------|
-| **`[monolith].enabled`** | 是否启用高耦合编译路径（第一阶段生成即为 `true`）。 |
-| **`weld_modules`** | 焊接模块名列表；**空数组** 表示「全部七槽」占位焊接（见 RFC）。 |
-| **`exclude`** | 从焊接集合排除的槽位；第一阶段模板多为空数组。 |
+| **`[monolith].enabled`** | 是否为该项目启用 Monolith 编译路径（`oclive build` 在 `false` 时跳过第二次带 `monolith` 的 `cargo build`）。 |
+| **`weld_modules`** | 焊接模块名列表；**空数组** 表示「从全槽焊接出发，再应用 `exclude`」。与 **`exclude` 不能同时非空**。 |
+| **`exclude`** | 当 **`weld_modules` 为空** 时，从全槽焊接中排除所列槽；这些槽在生成代码中走 trait/PluginHost 占位。 |
+
+**基准报告 JSON Schema**（`oclive bench`）：[`crates/oclive-cli/schemas/oclive_bench_report.schema.json`](../../crates/oclive-cli/schemas/oclive_bench_report.schema.json)（仓库内相对链接以克隆路径为准）。
 
 详见 [RFC_OCLIVE_MONOLITH_MODE.md](../rfc/RFC_OCLIVE_MONOLITH_MODE.md) 第 4 节。
 
@@ -97,4 +99,4 @@
 | 生成项目内预设表 | 运行 `init` 后的 **`CONFIG_REFERENCE.md`** |
 | 插件与侧车总览 | [PLUGIN_V1.md](../plugin-and-architecture/PLUGIN_V1.md) |
 | 目录插件 | [DIRECTORY_PLUGINS.md](../plugin-and-architecture/DIRECTORY_PLUGINS.md) |
-| 编译期高耦合模式（Monolith，第一阶段） | [RFC_OCLIVE_MONOLITH_MODE.md](../rfc/RFC_OCLIVE_MONOLITH_MODE.md)（`monolith.toml`、`--monolith`、双 `[[bin]]`） |
+| 编译期高耦合模式（Monolith） | [RFC_OCLIVE_MONOLITH_MODE.md](../rfc/RFC_OCLIVE_MONOLITH_MODE.md)（`monolith.toml`、`build` / `bench`、双 `[[bin]]`） |
