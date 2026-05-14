@@ -1,6 +1,8 @@
 <script setup lang="ts">
 import { computed } from "vue";
+import { useI18n } from "vue-i18n";
 import type { PluginV2CardItem } from "../../composables/usePluginManagerV2";
+import type { PluginBackendSource } from "../../utils/tauri-api";
 
 const props = defineProps<{
   item: PluginV2CardItem;
@@ -11,25 +13,24 @@ const emit = defineEmits<{
   select: [];
 }>();
 
-const typeLabel = computed(() => {
-  const t = props.item.type;
-  if (t === "builtin") return "内置";
-  if (t === "remote") return "远程";
-  return "目录插件";
-});
+const { t } = useI18n();
+
+const typeLabel = computed(() => t(`pluginTerms.type.${props.item.type}`));
 
 const sourceKind = computed(() => {
-  const s = props.item.sourceLabel;
-  if (s.includes("会话")) return "session";
-  if (s.includes("环境")) return "env";
+  const k: PluginBackendSource = props.item.sourceKey;
+  if (k === "session_override") return "session";
+  if (k === "env_override") return "env";
   return "pack";
 });
 
 const riskLabel = computed(() => {
-  if (props.item.status === "needs_config") return "缺配置";
-  if (sourceKind.value === "env") return "环境优先";
+  if (props.item.status === "needs_config") return t("pluginManager.risk.needsConfig");
+  if (props.item.sourceKey === "env_override") return t("pluginManager.risk.envFirst");
   return "";
 });
+
+const statusLabel = computed(() => t(`pluginTerms.status.${props.item.status}`));
 </script>
 
 <template>
@@ -44,7 +45,7 @@ const riskLabel = computed(() => {
           'is-disabled': item.status === 'disabled',
         }"
       >
-        {{ item.status === "enabled" ? "已启用" : item.status === "needs_config" ? "还需配置" : "已关闭" }}
+        {{ statusLabel }}
       </span>
     </div>
     <p class="pm2-card-desc">{{ item.description }}</p>

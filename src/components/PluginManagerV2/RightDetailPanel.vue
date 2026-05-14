@@ -1,7 +1,10 @@
 <script setup lang="ts">
 import { computed } from "vue";
+import { useI18n } from "vue-i18n";
 import { pluginUiTemplateMap } from "../PluginUITemplates";
 import type { PluginV2CardItem } from "../../composables/usePluginManagerV2";
+
+const { t } = useI18n();
 
 const props = defineProps<{
   item: PluginV2CardItem | null;
@@ -22,16 +25,16 @@ const templateComponent = computed(() => {
 const changeNotice = computed(() => {
   if (!props.item) return "";
   if (props.item.uiTemplate === "endpoint-config") {
-    return "只读说明：此处不会写入任何配置；请在环境变量或角色包中修改后重载应用。";
+    return t("pluginManager.detail.readonlyNotice");
   }
-  return "变更预览：点击下方「应用改动」后写入当前会话（不修改角色包 settings.json；若与环境变量冲突，以环境解析为准）。";
+  return t("pluginManager.detail.previewNotice");
 });
 </script>
 
 <template>
   <aside class="pm2-right" :class="{ collapsed }">
     <button type="button" class="pm2-collapse" @click="emit('toggle')">
-      {{ collapsed ? "展开" : "收起" }}
+      {{ collapsed ? t("pluginManager.detail.expand") : t("pluginManager.detail.collapse") }}
     </button>
     <template v-if="!collapsed">
       <div v-if="item" class="pm2-detail">
@@ -46,7 +49,7 @@ const changeNotice = computed(() => {
           @submit="emit('apply', $event)"
         />
       </div>
-      <p v-else class="pm2-placeholder">先从中间列表选一个卡片。</p>
+      <p v-else class="pm2-placeholder">{{ t("pluginManager.detail.placeholder") }}</p>
     </template>
   </aside>
 </template>

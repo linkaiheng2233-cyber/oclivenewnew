@@ -1,10 +1,10 @@
 <script setup lang="ts">
 import { onMounted, ref, watch } from "vue";
+import { useI18n } from "vue-i18n";
 import LeftCategoryNav from "./LeftCategoryNav.vue";
 import PluginCardList from "./PluginCardList.vue";
 import RightDetailPanel from "./RightDetailPanel.vue";
 import { usePluginManagerV2 } from "../../composables/usePluginManagerV2";
-import { usePluginTerm } from "../../composables/usePluginTerm";
 import { usePluginStore } from "../../stores/pluginStore";
 import { useAppToast } from "../../composables/useAppToast";
 
@@ -26,7 +26,7 @@ const {
   selectedCard,
   applyCardChange,
 } = usePluginManagerV2();
-const { term } = usePluginTerm();
+const { t } = useI18n();
 const { showToast } = useAppToast();
 const pluginStore = usePluginStore();
 const busy = ref(false);
@@ -66,20 +66,20 @@ async function onApply(payload: Record<string, unknown>) {
   <div class="pm2-root">
     <header class="pm2-head">
       <div>
-        <h2 class="pm2-title">{{ term("title.v2") }}</h2>
-        <p class="pm2-sub">{{ term("subtitle.v2") }}</p>
+        <h2 class="pm2-title">{{ t("pluginTerms.title.v2") }}</h2>
+        <p class="pm2-sub">{{ t("pluginTerms.subtitle.v2") }}</p>
       </div>
       <div class="pm2-actions">
         <button type="button" class="pm2-btn secondary" @click="emit('openV1')">
-          {{ term("action.open_v1") }}
+          {{ t("pluginTerms.action.open_v1") }}
         </button>
-        <button type="button" class="pm2-btn" @click="emit('close')">{{ term("action.close") }}</button>
+        <button type="button" class="pm2-btn" @click="emit('close')">{{ t("pluginTerms.action.close") }}</button>
       </div>
     </header>
     <div class="pm2-legend" aria-label="状态说明">
-      <span class="pm2-legend-item is-enabled">已启用：当前配置可直接生效</span>
-      <span class="pm2-legend-item is-pending">还需配置：通常缺少目录插件 ID</span>
-      <span class="pm2-legend-item is-disabled">已关闭：当前链路未启用</span>
+      <span class="pm2-legend-item is-enabled">{{ t("pluginManager.legend.enabled") }}</span>
+      <span class="pm2-legend-item is-pending">{{ t("pluginManager.legend.pending") }}</span>
+      <span class="pm2-legend-item is-disabled">{{ t("pluginManager.legend.disabled") }}</span>
     </div>
 
     <div class="pm2-grid">

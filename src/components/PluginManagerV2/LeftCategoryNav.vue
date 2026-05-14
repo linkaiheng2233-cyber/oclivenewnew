@@ -1,6 +1,9 @@
 <script setup lang="ts">
 import { computed, ref } from "vue";
+import { useI18n } from "vue-i18n";
 import type { PluginV2CategoryItem } from "../../composables/usePluginManagerV2";
+
+const { t } = useI18n();
 
 const props = defineProps<{
   categories: PluginV2CategoryItem[];
@@ -39,13 +42,13 @@ function toggleFolder(key: keyof typeof openFolders.value) {
 </script>
 
 <template>
-  <aside class="ws-explorer" aria-label="筛选（工作区风格）">
+  <aside class="ws-explorer" :aria-label="t('pluginManager.nav.explorerAria')">
     <header class="ws-head">
-      <div class="ws-head-title">资源管理器</div>
-      <div class="ws-head-sub">筛选视图</div>
+      <div class="ws-head-title">{{ t("pluginManager.nav.title") }}</div>
+      <div class="ws-head-sub">{{ t("pluginManager.nav.subtitle") }}</div>
     </header>
 
-    <div class="ws-root" title="仅用于 UI 层级展示，不代表磁盘路径">
+    <div class="ws-root" :title="t('pluginManager.nav.rootTooltip')">
       <span class="ws-root-label">oclivenewnew</span>
       <span class="ws-root-sep">/</span>
       <span class="ws-root-label">plugin-manager</span>
@@ -53,7 +56,7 @@ function toggleFolder(key: keyof typeof openFolders.value) {
       <span class="ws-root-label ws-root-label--accent">filters</span>
     </div>
 
-    <nav class="ws-tree" aria-label="筛选树">
+    <nav class="ws-tree" :aria-label="t('pluginManager.nav.treeAria')">
       <button
         v-if="allRow"
         type="button"
@@ -76,7 +79,7 @@ function toggleFolder(key: keyof typeof openFolders.value) {
             openFolders.module ? "▾" : "▸"
           }}</span>
           <span class="ws-folder-icon" aria-hidden="true">[+]</span>
-          <span class="ws-name">by-module</span>
+          <span class="ws-name">{{ t("pluginManager.nav.byModule") }}</span>
         </button>
         <div v-show="openFolders.module" class="ws-children">
           <button
@@ -102,7 +105,7 @@ function toggleFolder(key: keyof typeof openFolders.value) {
         <button type="button" class="ws-row ws-row--folder" @click="toggleFolder('type')">
           <span class="ws-chevron" aria-hidden="true">{{ openFolders.type ? "▾" : "▸" }}</span>
           <span class="ws-folder-icon" aria-hidden="true">[+]</span>
-          <span class="ws-name">by-backend</span>
+          <span class="ws-name">{{ t("pluginManager.nav.byBackend") }}</span>
         </button>
         <div v-show="openFolders.type" class="ws-children">
           <button
@@ -130,7 +133,7 @@ function toggleFolder(key: keyof typeof openFolders.value) {
             openFolders.status ? "▾" : "▸"
           }}</span>
           <span class="ws-folder-icon" aria-hidden="true">[+]</span>
-          <span class="ws-name">by-status</span>
+          <span class="ws-name">{{ t("pluginManager.nav.byStatus") }}</span>
         </button>
         <div v-show="openFolders.status" class="ws-children">
           <button
