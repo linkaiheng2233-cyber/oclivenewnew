@@ -8,6 +8,8 @@ publish = false
 [dependencies]
 serde = { version = "1", features = ["derive"] }
 serde_json = "1"
+tracing = "0.1"
+tracing-subscriber = { version = "0.3", default-features = false, features = ["env-filter", "fmt", "std"] }
 {{#if monolith_enabled}}
 oclive_monolith_builtin = { path = "vendor/oclive_monolith_builtin" }
 

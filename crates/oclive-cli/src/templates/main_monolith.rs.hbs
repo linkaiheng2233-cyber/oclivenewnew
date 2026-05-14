@@ -13,9 +13,20 @@ fn kernel_bench_iterations() -> u32 {
         .min(1_000_000)
 }
 
+fn init_kernel_tracing() {
+    use tracing_subscriber::EnvFilter;
+    let filter = EnvFilter::try_from_default_env()
+        .unwrap_or_else(|_| EnvFilter::new("info"));
+    let _ = tracing_subscriber::fmt()
+        .with_env_filter(filter)
+        .with_target(false)
+        .try_init();
+}
+
 fn main() {
+    init_kernel_tracing();
     let n = kernel_bench_iterations();
-    println!("{{ safe_package_name }} — monolith build");
+    tracing::info!("{{ safe_package_name }} — monolith build");
     for _ in 0..n {
         process_message_monolith::run_monolith_pipeline_demo();
     }

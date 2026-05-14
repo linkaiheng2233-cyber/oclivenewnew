@@ -14,19 +14,30 @@ fn kernel_bench_iterations() -> u32 {
         .min(1_000_000)
 }
 
+fn init_kernel_tracing() {
+    use tracing_subscriber::EnvFilter;
+    let filter = EnvFilter::try_from_default_env()
+        .unwrap_or_else(|_| EnvFilter::new("info"));
+    let _ = tracing_subscriber::fmt()
+        .with_env_filter(filter)
+        .with_target(false)
+        .try_init();
+}
+
 #[allow(dead_code)]
 fn run_stub_kernel() {
-    println!("{{ safe_package_name }} — stub kernel (oclive-cli)");
+    tracing::info!("{{ safe_package_name }} — stub kernel (oclive-cli)");
     let settings = std::path::Path::new("roles/default/settings.json");
     if settings.exists() {
         let n = std::fs::read_to_string(settings).map(|s| s.len()).unwrap_or(0);
-        println!("roles/default/settings.json: {} bytes", n);
+        tracing::info!("roles/default/settings.json: {} bytes", n);
     } else {
-        println!("(未找到 roles/default/settings.json，使用 --preset full 或交互生成示例角色包)");
+        tracing::info!("(未找到 roles/default/settings.json，使用 --preset full 或交互生成示例角色包)");
     }
 }
 
 fn main() {
+    init_kernel_tracing();
     let n = kernel_bench_iterations();
     for _ in 0..n {
         run_stub_kernel();
