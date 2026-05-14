@@ -2769,10 +2769,12 @@ dependencies = [
  "clap",
  "dialoguer",
  "handlebars",
+ "oclive_validation",
  "serde",
  "serde_json",
  "tempfile",
  "toml 0.8.23",
+ "zip",
 ]
 
 [[package]]
@@ -2782,6 +2784,7 @@ dependencies = [
  "semver",
  "serde",
  "serde_json",
+ "tempfile",
  "wasm-bindgen",
 ]
 

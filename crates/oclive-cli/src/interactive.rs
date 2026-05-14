@@ -172,5 +172,6 @@ pub fn run_interactive() -> Result<ProjectConfig> {
         features: feats,
         with_example_role,
         monolith_enabled,
+        skip_role_pack: false,
     })
 }

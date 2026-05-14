@@ -486,3 +486,58 @@ fn e2e_bench_json_schema_valid() {
     let v: Value = serde_json::from_str(json_slice).expect("parse JSON slice");
     assert_bench_report_matches_schema(&v);
 }
+
+#[test]
+fn e2e_pack_create_validate_publish() {
+    let tmp = tempfile::tempdir().unwrap();
+    let root = tmp.path().join("com.example.demo");
+    assert!(run_cli(&[
+        "pack",
+        "create",
+        "-o",
+        root.to_str().unwrap(),
+        "--flat",
+        "--id",
+        "com.example.demo",
+        "--name",
+        "Demo",
+    ])
+    .success());
+    assert!(root.join("manifest.json").exists());
+    assert!(run_cli(&[
+        "pack",
+        "validate",
+        root.to_str().unwrap(),
+        "--host-version",
+        "999.0.0",
+    ])
+    .success());
+    let zip_path = tmp.path().join("out.oclivepack");
+    assert!(run_cli(&[
+        "pack",
+        "publish",
+        root.to_str().unwrap(),
+        "-o",
+        zip_path.to_str().unwrap(),
+    ])
+    .success());
+    assert!(zip_path.is_file());
+}
+
+#[test]
+fn e2e_init_skip_role_pack_no_roles_dir() {
+    let tmp = tempfile::tempdir().unwrap();
+    let out = tmp.path().join("nr");
+    assert!(run_cli(&[
+        "init",
+        "--non-interactive",
+        "--quiet",
+        "--preset",
+        "minimal",
+        "--skip-role-pack",
+        "-o",
+        out.to_str().unwrap(),
+    ])
+    .success());
+    assert!(!out.join("roles").exists());
+}

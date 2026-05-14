@@ -7,6 +7,7 @@ mod init;
 mod interactive;
 mod monolith_codegen;
 mod monolith_config;
+mod pack_cmd;
 
 use anyhow::Result;
 use clap::{Parser, Subcommand};
@@ -31,6 +32,8 @@ enum Commands {
     Build(build_cmd::BuildArgs),
     /// 对比标准与 Monolith 二进制的子进程耗时（JSON 报告）
     Bench(bench_cmd::BenchArgs),
+    /// 角色包：校验、创建、打包（.oclivepack）
+    Pack(pack_cmd::PackArgs),
 }
 
 fn main() -> Result<()> {
@@ -39,6 +42,7 @@ fn main() -> Result<()> {
         Commands::Init(args) => init::run(args),
         Commands::Build(args) => build_cmd::run(args),
         Commands::Bench(args) => bench_cmd::run(args),
+        Commands::Pack(args) => pack_cmd::run_pack(args),
     }
 }
 

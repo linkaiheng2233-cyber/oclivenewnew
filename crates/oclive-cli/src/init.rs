@@ -81,6 +81,10 @@ pub struct InitArgs {
     /// 非交互：启用 Monolith（仅 `kernel_server` 生效；生成 `monolith.toml`、`vendor/`、焊接源码与双 `[[bin]]`）
     #[arg(long)]
     pub monolith: bool,
+
+    /// 非交互：不在生成项目中写入 `roles/` 示例角色包
+    #[arg(long)]
+    pub skip_role_pack: bool,
 }
 
 #[derive(clap::ValueEnum, Clone, Debug, Copy, PartialEq, Eq, Serialize, Deserialize)]
@@ -160,6 +164,8 @@ pub struct ProjectConfig {
     pub with_example_role: bool,
     /// 仅 `kernel_server` 且为 true 时生成 `monolith.toml` 与 Monolith 构建配置。
     pub monolith_enabled: bool,
+    /// 为 true 时不生成 `roles/` 目录（空白内核模板）。
+    pub skip_role_pack: bool,
 }
 
 impl ProjectConfig {
@@ -181,7 +187,16 @@ impl ProjectConfig {
             "插件: directory={} kernel_server_doc={} oocp_doc={}",
             self.plugins.directory_plugins, self.plugins.kernel_server, self.plugins.oocp
         );
-        println!("示例角色包: {}", self.with_example_role);
+        println!(
+            "角色包模板: {}",
+            if self.skip_role_pack {
+                "无（不生成 roles/）"
+            } else if self.with_example_role {
+                "示例（manifest + settings + 默认场景）"
+            } else {
+                "（内部状态）"
+            }
+        );
         if self.monolith_enabled {
             println!("开发者编译: Monolith（焊接计划见 monolith.toml；`cargo run -p oclive-cli -- build` 再生成）");
         }
@@ -259,6 +274,7 @@ pub fn preset_config(name: &str, preset: &str) -> ProjectConfig {
         features,
         with_example_role,
         monolith_enabled: false,
+        skip_role_pack: false,
     }
 }
 
@@ -322,6 +338,11 @@ pub fn run(args: InitArgs) -> Result<()> {
         cfg.monolith_enabled = false;
     } else if args.monolith {
         cfg.monolith_enabled = true;
+    }
+
+    if args.non_interactive && args.skip_role_pack {
+        cfg.skip_role_pack = true;
+        cfg.with_example_role = false;
     }
 
     if !args.non_interactive {
