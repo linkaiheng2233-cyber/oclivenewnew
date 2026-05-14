@@ -220,6 +220,6 @@ mod tests {
         };
         let (v, d) = affect_metrics_from_seven_dim(&er);
         assert!(v > 0.0 && v <= 1.0);
-        assert!(d >= -1.0 && d <= 1.0);
+        assert!((-1.0..=1.0).contains(&d));
     }
 }
