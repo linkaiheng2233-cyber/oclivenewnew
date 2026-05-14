@@ -14,7 +14,7 @@ Creator and plugin documentation lives under repo root **`creator-docs/`** (topi
 | **High-coupling compile mode (Monolith)** | [RFC section](#rfc) (`monolith.toml`, compile-time welding) |
 | **Project map / human roles / commands / release checklist** | **[PROJECT_OVERVIEW.md](PROJECT_OVERVIEW.md)** |
 | **Kernel-centric diagram (six slots + Agent/MCP/Monolith)** | **[KERNEL_AND_MODULES_ARCHITECTURE.md](KERNEL_AND_MODULES_ARCHITECTURE.md)** |
-| **Fast triage after errors / filing issues** | **[../../creator-docs/getting-started/ERROR_CODES.md](../../creator-docs/getting-started/ERROR_CODES.md)** |
+| **Fast triage after errors / filing issues** | **[ERROR_CODES.md](ERROR_CODES.md)** |
 | **GitHub: Dependabot, CI, web settings** | **[../../creator-docs/getting-started/GITHUB_REPO_CHECKLIST.md](../../creator-docs/getting-started/GITHUB_REPO_CHECKLIST.md)** |
 | **Replaceable modules + HTTP sidecar + update strategy** | **[../../creator-docs/plugin-and-architecture/CREATOR_PLUGIN_ARCHITECTURE.md](../../creator-docs/plugin-and-architecture/CREATOR_PLUGIN_ARCHITECTURE.md)** |
 | **BYOK sidecar to proprietary cloud models** | **[../../creator-docs/getting-started/SIDECAR_LLM_USER_GUIDE.md](../../creator-docs/getting-started/SIDECAR_LLM_USER_GUIDE.md)** |

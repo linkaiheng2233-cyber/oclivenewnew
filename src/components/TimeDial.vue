@@ -1,9 +1,12 @@
 <script setup lang="ts">
 import { computed, ref, watch } from "vue";
+import { useI18n } from "vue-i18n";
 import PickerWheel from "./PickerWheel.vue";
 import { jumpTime, type JumpTimeResponse } from "../utils/tauri-api";
 import { useChatStore } from "../stores/chatStore";
 import { useUiStore } from "../stores/uiStore";
+
+const { t, locale } = useI18n();
 
 const props = defineProps<{
   open: boolean;
@@ -44,18 +47,20 @@ const yearItems = computed(() => {
   return out;
 });
 
-const monthItems = computed(() =>
-  Array.from({ length: 12 }, (_, i) => ({
+const monthItems = computed(() => {
+  void locale.value;
+  return Array.from({ length: 12 }, (_, i) => ({
     value: i + 1,
-    label: `${i + 1}月`,
-  })),
-);
+    label: t("virtualTime.monthOption", { n: i + 1 }),
+  }));
+});
 
 const dayItems = computed(() => {
+  void locale.value;
   const max = daysInMonth(pickYear.value, pickMonth.value);
   return Array.from({ length: max }, (_, i) => ({
     value: i + 1,
-    label: `${i + 1}日`,
+    label: t("virtualTime.dayOption", { n: i + 1 }),
   }));
 });
 
@@ -146,12 +151,15 @@ async function doJump(
     }
     emit("jumpComplete", res);
     emit("refreshed");
-    emit("notify", { type: "success", message: "虚拟时间已更新" });
+    emit("notify", { type: "success", message: t("virtualTime.toastUpdated") });
     if (Math.abs(res.favorability_delta) > 1e-5) {
       const sign = res.favorability_delta > 0 ? "+" : "";
       emit("notify", {
         type: "info",
-        message: `好感度变化 ${sign}${res.favorability_delta.toFixed(2)}（当前 ${res.favorability_current.toFixed(1)}）`,
+        message: t("virtualTime.toastFavor", {
+          delta: `${sign}${res.favorability_delta.toFixed(2)}`,
+          current: res.favorability_current.toFixed(1),
+        }),
       });
     }
     emit("update:open", false);
@@ -185,28 +193,28 @@ async function applyPreset(preset: "+2h" | "+6h" | "next_morning" | "skip_idle_t
       @click.self="cancelPick"
     >
       <div class="panel" @click.stop>
-        <h2 id="time-dial-title" class="title">调节虚拟时间</h2>
-        <p class="hint">上下拨动选择日期与时刻（类似系统滚轮），精确到分钟。</p>
+        <h2 id="time-dial-title" class="title">{{ t("virtualTime.dialTitle") }}</h2>
+        <p class="hint">{{ t("virtualTime.dialHint") }}</p>
 
-        <div class="wheels" role="group" aria-label="日期与时间">
+        <div class="wheels" role="group" :aria-label="t('virtualTime.wheelsAria')">
           <div class="wheel-col">
-            <span class="wheel-label">年</span>
+            <span class="wheel-label">{{ t("virtualTime.labelYear") }}</span>
             <PickerWheel v-model="pickYear" :items="yearItems" />
           </div>
           <div class="wheel-col">
-            <span class="wheel-label">月</span>
+            <span class="wheel-label">{{ t("virtualTime.labelMonth") }}</span>
             <PickerWheel v-model="pickMonth" :items="monthItems" />
           </div>
           <div class="wheel-col">
-            <span class="wheel-label">日</span>
+            <span class="wheel-label">{{ t("virtualTime.labelDay") }}</span>
             <PickerWheel v-model="pickDay" :items="dayItems" />
           </div>
           <div class="wheel-col wheel-col--time">
-            <span class="wheel-label">时</span>
+            <span class="wheel-label">{{ t("virtualTime.labelHour") }}</span>
             <PickerWheel v-model="pickHour" :items="hourItems" />
           </div>
           <div class="wheel-col wheel-col--time">
-            <span class="wheel-label">分</span>
+            <span class="wheel-label">{{ t("virtualTime.labelMinute") }}</span>
             <PickerWheel v-model="pickMinute" :items="minuteItems" />
           </div>
         </div>
@@ -226,7 +234,7 @@ async function applyPreset(preset: "+2h" | "+6h" | "next_morning" | "skip_idle_t
             :disabled="applying"
             @click="applyPreset('next_morning')"
           >
-            次日早晨
+            {{ t("virtualTime.presetNextMorning") }}
           </button>
           <button
             type="button"
@@ -234,20 +242,20 @@ async function applyPreset(preset: "+2h" | "+6h" | "next_morning" | "skip_idle_t
             :disabled="applying"
             @click="applyPreset('skip_idle_time')"
           >
-            跳过空窗
+            {{ t("virtualTime.presetSkipIdle") }}
           </button>
         </div>
 
         <div class="actions">
           <button type="button" class="btn ghost" :disabled="applying" @click="cancelPick">
-            取消
+            {{ t("common.cancel") }}
           </button>
           <button type="button" class="btn primary" :disabled="applying" @click="confirmPick">
-            {{ applying ? "…" : "确认所选时间" }}
+            {{ applying ? t("virtualTime.confirmBusy") : t("virtualTime.confirm") }}
           </button>
         </div>
 
-        <button type="button" class="close-x" aria-label="关闭" @click="cancelPick">×</button>
+        <button type="button" class="close-x" :aria-label="t('virtualTime.closeAria')" @click="cancelPick">×</button>
       </div>
     </div>
   </Teleport>

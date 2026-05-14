@@ -1,4 +1,15 @@
+import apiErrors from "./fragments/apiErrors.en";
+import chat from "./fragments/chat.en";
+import devTools from "./fragments/devTools.en";
+import pluginWorkbench from "./fragments/pluginWorkbench.en";
+import virtualTime from "./fragments/virtualTime.en";
+
 export default {
+  apiErrors,
+  chat,
+  devTools,
+  pluginWorkbench,
+  virtualTime,
   app: {
     locale: {
       label: "Language",

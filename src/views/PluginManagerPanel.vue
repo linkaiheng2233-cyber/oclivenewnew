@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { open } from "@tauri-apps/api/dialog";
 import { computed, ref, watch } from "vue";
+import { useI18n } from "vue-i18n";
 import PluginBackendSessionPanel from "../components/PluginBackendSessionPanel.vue";
 import InstalledPluginWorkspaceDetail from "../components/InstalledPluginWorkspaceDetail.vue";
 import PluginScaffoldWizard from "../components/PluginScaffoldWizard.vue";
@@ -30,6 +31,7 @@ import {
 const pluginStore = usePluginStore();
 const roleStore = useRoleStore();
 const { showToast } = useAppToast();
+const { t } = useI18n();
 
 watch(
   () => pluginStore.panelVisible,
@@ -112,7 +114,10 @@ async function onBatchEnable() {
   }
   try {
     pluginStore.batchEnablePluginIds(ids);
-    showToast("success", `已启用 ${ids.length} 个插件；保存后生效，建议重启应用。`);
+    showToast(
+      "success",
+      t("pluginWorkbench.toast.batchEnable", { count: ids.length }),
+    );
     clearBatchSelection();
   } catch (e) {
     showToast("error", e instanceof Error ? e.message : String(e));
@@ -125,7 +130,10 @@ async function onBatchDisable() {
     return;
   }
   pluginStore.batchDisablePluginIds(ids);
-  showToast("success", `已停用 ${ids.length} 个插件；保存后生效，建议重启应用。`);
+  showToast(
+    "success",
+    t("pluginWorkbench.toast.batchDisable", { count: ids.length }),
+  );
   clearBatchSelection();
 }
 
@@ -136,7 +144,7 @@ async function onBatchUpdate() {
   }
   try {
     await pluginStore.batchUpdatePluginsFromGitIndex(ids);
-    showToast("success", "已从索引 Git 源拉取更新（ff-only）；若失败请查看错误提示。");
+    showToast("success", t("pluginWorkbench.toast.batchGitPull"));
     clearBatchSelection();
   } catch (e) {
     showToast("error", e instanceof Error ? e.message : String(e));
@@ -149,7 +157,7 @@ async function onSyncMarketIndex() {
     if (pluginStore.pluginMarketSnapshot?.warning) {
       showToast("info", pluginStore.pluginMarketSnapshot.warning);
     } else {
-      showToast("success", "索引已同步。");
+      showToast("success", t("pluginWorkbench.toast.indexSynced"));
     }
   } catch (e) {
     showToast("error", e instanceof Error ? e.message : String(e));
@@ -160,13 +168,15 @@ async function onInstallMarketEntry(row: PluginMarketEntryDto) {
   if ((row.missingDependencies ?? []).length > 0) {
     showToast(
       "error",
-      `依赖未满足，无法安装：${row.missingDependencies.join("、")}`,
+      t("pluginWorkbench.toast.installDeps", {
+        list: row.missingDependencies.join(", "),
+      }),
     );
     return;
   }
   try {
     await pluginStore.installFromPluginMarket(row.id, row.git);
-    showToast("success", `已安装 ${row.id}，建议保存配置并视需要重启应用。`);
+    showToast("success", t("pluginWorkbench.toast.installed", { id: row.id }));
   } catch (e) {
     showToast("error", e instanceof Error ? e.message : String(e));
   }
@@ -175,7 +185,7 @@ async function onInstallMarketEntry(row: PluginMarketEntryDto) {
 async function onUpdateMarketEntry(row: PluginMarketEntryDto) {
   try {
     await pluginStore.updateInstalledPluginFromGit(row.id);
-    showToast("success", `已更新 ${row.id}（git pull --ff-only）。`);
+    showToast("success", t("pluginWorkbench.toast.updatedGit", { id: row.id }));
   } catch (e) {
     showToast("error", e instanceof Error ? e.message : String(e));
   }
@@ -186,7 +196,7 @@ async function onGitPullWorkspacePlugin() {
   if (!pid) return;
   try {
     await pluginStore.updateInstalledPluginFromGit(pid);
-    showToast("success", "已从远程 Git 拉取更新。");
+    showToast("success", t("pluginWorkbench.toast.gitPulled"));
   } catch (e) {
     showToast("error", e instanceof Error ? e.message : String(e));
   }
@@ -239,7 +249,7 @@ function onDropSlot(slot: string, index: number) {
 async function onSave() {
   try {
     await pluginStore.persist();
-    showToast("success", "已保存插件配置；停用插件建议重启应用后完全生效。");
+    showToast("success", t("pluginWorkbench.toast.saved"));
   } catch (e) {
     showToast("error", e instanceof Error ? e.message : String(e));
   }
@@ -251,10 +261,7 @@ async function onResetToPackDefault() {
       pluginStore.setPersistScope("role");
     }
     await pluginStore.resetToRolePackDefault();
-    showToast(
-      "success",
-      "已重置为当前角色包推荐布局（author.suggested_ui 优先，否则 ui.json）。",
-    );
+    showToast("success", t("pluginWorkbench.toast.resetLayout"));
   } catch (e) {
     showToast("error", e instanceof Error ? e.message : String(e));
   }
@@ -264,7 +271,7 @@ async function onApplyAuthorSuggestedBackends() {
   try {
     const info = await applyAuthorSuggestedPluginBackends(roleStore.currentRoleId);
     roleStore.applyRoleInfo(info);
-    showToast("success", "已应用 author.json 中的 suggested_plugin_backends（会话级，未改 settings.json）。");
+    showToast("success", t("pluginWorkbench.toast.authorBackends"));
   } catch (e) {
     showToast("error", e instanceof Error ? e.message : String(e));
   }
@@ -276,7 +283,7 @@ async function onCheckUpdates() {
     if (pluginStore.error) {
       showToast("error", pluginStore.error);
     } else {
-      showToast("success", "检查完成（在线版本接口预留中）。");
+      showToast("success", t("pluginWorkbench.toast.checkDone"));
     }
   } catch (e) {
     showToast("error", e instanceof Error ? e.message : String(e));
@@ -293,7 +300,7 @@ async function onUpdateFromZip(pluginId: string) {
   }
   try {
     await pluginStore.installPluginFromLocalZip(pluginId, path);
-    showToast("success", "更新完成，请重启应用生效。");
+    showToast("success", t("pluginWorkbench.toast.zipUpdated"));
   } catch (e) {
     showToast("error", e instanceof Error ? e.message : String(e));
   }
@@ -302,12 +309,12 @@ async function onUpdateFromZip(pluginId: string) {
 async function onPackSelectedPlugin(): Promise<void> {
   const pid = selectedWorkspacePlugin.value?.id?.trim() ?? "";
   if (!pid) {
-    pluginPackStatus.value = "请先在目录中选择一个插件。";
+    pluginPackStatus.value = t("pluginWorkbench.pack.pickFirst");
     return;
   }
   try {
     const r = await packPlugin(pid);
-    pluginPackStatus.value = `打包完成：${r.archive_path}`;
+    pluginPackStatus.value = t("pluginWorkbench.pack.done", { path: r.archive_path });
   } catch (e) {
     pluginPackStatus.value = e instanceof Error ? e.message : String(e);
   }
@@ -321,32 +328,32 @@ async function onPackSelectedPlugin(): Promise<void> {
       class="pm-backdrop"
       role="dialog"
       aria-modal="true"
-      aria-label="插件工作台（专业模式）"
+      :aria-label="t('pluginWorkbench.aria.dialogStudio')"
       @click.self="pluginStore.closePanel()"
     >
       <div class="pm-dialog pm-dialog--studio" @click.stop>
         <header class="pm-head">
           <div class="pm-head-row">
-            <h2 class="pm-title">插件工作台</h2>
+            <h2 class="pm-title">{{ t("pluginWorkbench.header.title") }}</h2>
             <span
               class="pm-studio-badge"
-              title="面向创作者与排错：目录插件、后端与会话覆盖"
-            >专业模式</span>
+              :title="t('pluginWorkbench.header.badgeTitle')"
+            >{{ t("pluginWorkbench.header.badge") }}</span>
           </div>
           <p class="pm-sub">
             <kbd class="pm-kbd">Ctrl</kbd>+<kbd class="pm-kbd">Shift</kbd>+<kbd class="pm-kbd">F</kbd>
-            开关本窗口 · 保存后插槽/启用状态建议重启应用生效
+            {{ t("pluginWorkbench.header.sub") }}
           </p>
-          <button type="button" class="pm-close" aria-label="关闭" @click="pluginStore.closePanel()">
+          <button type="button" class="pm-close" :aria-label="t('common.close')" @click="pluginStore.closePanel()">
             ×
           </button>
         </header>
 
-        <div v-if="pluginStore.loading" class="pm-muted pm-dialog-pad">加载中…</div>
+        <div v-if="pluginStore.loading" class="pm-muted pm-dialog-pad">{{ t("pluginWorkbench.loading") }}</div>
         <p v-else-if="pluginStore.error" class="pm-err pm-dialog-pad">{{ pluginStore.error }}</p>
 
         <template v-else>
-          <div class="pm-tabs" role="tablist" aria-label="插件工作台分区">
+          <div class="pm-tabs" role="tablist" :aria-label="t('pluginWorkbench.aria.tablist')">
             <button
               type="button"
               role="tab"
@@ -355,7 +362,7 @@ async function onPackSelectedPlugin(): Promise<void> {
               :aria-selected="pluginStore.panelMainTab === 'plugins'"
               @click="pluginStore.panelMainTab = 'plugins'"
             >
-              界面插件
+              {{ t("pluginWorkbench.tabs.uiPlugins") }}
             </button>
             <button
               type="button"
@@ -365,7 +372,7 @@ async function onPackSelectedPlugin(): Promise<void> {
               :aria-selected="pluginStore.panelMainTab === 'backends'"
               @click="pluginStore.panelMainTab = 'backends'"
             >
-              后端模块
+              {{ t("pluginWorkbench.tabs.backends") }}
             </button>
             <button
               type="button"
@@ -375,7 +382,7 @@ async function onPackSelectedPlugin(): Promise<void> {
               :aria-selected="pluginStore.panelMainTab === 'slots'"
               @click="pluginStore.panelMainTab = 'slots'"
             >
-              插槽顺序
+              {{ t("pluginWorkbench.tabs.slotOrder") }}
             </button>
           </div>
 
@@ -386,11 +393,11 @@ async function onPackSelectedPlugin(): Promise<void> {
             role="tabpanel"
           >
           <section class="pm-section">
-            <h3 class="pm-h3">保存目标</h3>
+            <h3 class="pm-h3">{{ t("pluginWorkbench.persist.title") }}</h3>
             <p class="pm-hint">
-              「全局默认」对所有角色生效并与各角色设置合并（整壳与插槽以当前角色为准；全局禁用插件为并集）。
+              {{ t("pluginWorkbench.persist.hint") }}
             </p>
-            <div class="pm-scope-row" role="group" aria-label="插件配置保存范围">
+            <div class="pm-scope-row" role="group" :aria-label="t('pluginWorkbench.persist.scopeAria')">
               <label class="pm-scope-label">
                 <input
                   type="radio"
@@ -398,7 +405,7 @@ async function onPackSelectedPlugin(): Promise<void> {
                   :checked="pluginStore.persistScope === 'role'"
                   @change="pluginStore.setPersistScope('role')"
                 />
-                仅当前角色
+                {{ t("pluginWorkbench.persist.scopeRole") }}
               </label>
               <label class="pm-scope-label">
                 <input
@@ -407,7 +414,7 @@ async function onPackSelectedPlugin(): Promise<void> {
                   :checked="pluginStore.persistScope === 'global'"
                   @change="pluginStore.setPersistScope('global')"
                 />
-                全局默认
+                {{ t("pluginWorkbench.persist.scopeGlobal") }}
               </label>
             </div>
           </section>
@@ -416,21 +423,21 @@ async function onPackSelectedPlugin(): Promise<void> {
             v-if="roleStore.roleInfo.authorPack?.suggested_plugin_backends"
             class="pm-section"
           >
-            <h3 class="pm-h3">作者建议 · 后端</h3>
+            <h3 class="pm-h3">{{ t("pluginWorkbench.authorBackends.title") }}</h3>
             <p class="pm-hint">
-              将 author.json 中的 suggested_plugin_backends 写入本会话的后端覆盖（与「后端模块」Tab 一致）。
+              {{ t("pluginWorkbench.authorBackends.hint") }}
             </p>
             <button
               type="button"
               class="pm-btn secondary pm-btn--sm"
               @click="onApplyAuthorSuggestedBackends"
             >
-              应用作者建议的后端
+              {{ t("pluginWorkbench.authorBackends.apply") }}
             </button>
           </section>
 
           <section v-if="roleStore.roleInfo.authorPack" class="pm-section">
-            <h3 class="pm-h3">作者与推荐</h3>
+            <h3 class="pm-h3">{{ t("pluginWorkbench.authorRec.title") }}</h3>
             <p v-if="roleStore.roleInfo.authorPack.summary" class="pm-author-summary">
               {{ roleStore.roleInfo.authorPack.summary }}
             </p>
@@ -444,15 +451,15 @@ async function onPackSelectedPlugin(): Promise<void> {
               >
                 <strong>{{ rp.id }}</strong>
                 <span v-if="rp.version_range" class="pm-muted"> · {{ rp.version_range }}</span>
-                <span v-if="rp.optional" class="pm-muted">（可选）</span>
+                <span v-if="rp.optional" class="pm-muted">{{ t("pluginWorkbench.authorRec.optional") }}</span>
               </li>
             </ul>
-            <p v-else class="pm-muted">未列出 recommended_plugins。</p>
+            <p v-else class="pm-muted">{{ t("pluginWorkbench.authorRec.noList") }}</p>
           </section>
 
           <section class="pm-section">
             <div class="pm-section-head">
-              <h3 class="pm-h3">社区索引</h3>
+              <h3 class="pm-h3">{{ t("pluginWorkbench.market.title") }}</h3>
               <div class="pm-section-actions">
                 <button
                   type="button"
@@ -460,7 +467,7 @@ async function onPackSelectedPlugin(): Promise<void> {
                   :disabled="pluginStore.pluginMarketSyncing"
                   @click="onSyncMarketIndex"
                 >
-                  {{ pluginStore.pluginMarketSyncing ? "同步中…" : "同步在线索引" }}
+                  {{ pluginStore.pluginMarketSyncing ? t("pluginWorkbench.market.syncing") : t("pluginWorkbench.market.sync") }}
                 </button>
               </div>
             </div>
@@ -472,7 +479,7 @@ async function onPackSelectedPlugin(): Promise<void> {
               {{ pluginStore.pluginMarketSnapshot.warning }}
             </p>
             <p v-if="pluginStore.pluginMarketSnapshot?.offlineMode" class="pm-hint">
-              当前为离线模式（使用本地缓存索引）。
+              {{ t("pluginWorkbench.market.offline") }}
             </p>
             <p
               v-if="
@@ -481,7 +488,7 @@ async function onPackSelectedPlugin(): Promise<void> {
               "
               class="pm-muted"
             >
-              尚无索引数据，请点击「同步在线索引」。
+              {{ t("pluginWorkbench.market.emptyIndex") }}
             </p>
             <ul
               v-else-if="(pluginStore.pluginMarketSnapshot?.plugins?.length ?? 0) > 0"
@@ -500,7 +507,7 @@ async function onPackSelectedPlugin(): Promise<void> {
                     v-if="(row.missingDependencies ?? []).length"
                     class="pm-err pm-market-deps"
                   >
-                    依赖缺失：{{ row.missingDependencies.join("、") }}
+                    {{ t("pluginWorkbench.market.deps", { list: row.missingDependencies.join(", ") }) }}
                   </p>
                 </div>
                 <div class="pm-market-actions">
@@ -510,18 +517,18 @@ async function onPackSelectedPlugin(): Promise<void> {
                     class="pm-btn secondary pm-btn--sm"
                     @click="onInstallMarketEntry(row)"
                   >
-                    安装
+                    {{ t("pluginWorkbench.market.install") }}
                   </button>
                   <template v-else>
-                    <span v-if="row.hasUpdate" class="pm-badge">可更新</span>
-                    <span v-else class="pm-muted">已安装</span>
+                    <span v-if="row.hasUpdate" class="pm-badge">{{ t("pluginWorkbench.market.badgeUpdate") }}</span>
+                    <span v-else class="pm-muted">{{ t("pluginWorkbench.market.installed") }}</span>
                     <button
                       v-if="row.hasUpdate"
                       type="button"
                       class="pm-btn secondary pm-btn--sm"
                       @click="onUpdateMarketEntry(row)"
                     >
-                      更新
+                      {{ t("pluginWorkbench.market.update") }}
                     </button>
                   </template>
                 </div>
@@ -531,18 +538,18 @@ async function onPackSelectedPlugin(): Promise<void> {
 
           <section class="pm-section pm-section--catalog">
             <div class="pm-section-head">
-              <h3 class="pm-h3">已安装插件</h3>
+              <h3 class="pm-h3">{{ t("pluginWorkbench.catalog.title") }}</h3>
               <div class="pm-section-actions">
                 <label class="pm-batch-toggle chk">
                   <input v-model="batchMode" type="checkbox" />
-                  批量选择
+                  {{ t("pluginWorkbench.catalog.batchToggle") }}
                 </label>
                 <button
                   type="button"
                   class="pm-btn secondary pm-btn--sm"
                   @click="scaffoldWizardVisible = true"
                 >
-                  新建插件
+                  {{ t("pluginWorkbench.catalog.newPlugin") }}
                 </button>
                 <button
                   type="button"
@@ -550,7 +557,7 @@ async function onPackSelectedPlugin(): Promise<void> {
                   :disabled="!selectedWorkspacePlugin"
                   @click="onPackSelectedPlugin"
                 >
-                  打包当前插件
+                  {{ t("pluginWorkbench.catalog.packCurrent") }}
                 </button>
                 <button
                   type="button"
@@ -558,7 +565,7 @@ async function onPackSelectedPlugin(): Promise<void> {
                   :disabled="pluginStore.pluginUpdatesCheckLoading"
                   @click="onCheckUpdates"
                 >
-                  检查更新
+                  {{ t("pluginWorkbench.catalog.checkUpdates") }}
                 </button>
               </div>
             </div>
@@ -567,30 +574,30 @@ async function onPackSelectedPlugin(): Promise<void> {
               v-if="batchMode && batchSelectedCount > 0"
               class="pm-batch-bar"
               role="toolbar"
-              aria-label="批量操作"
+              :aria-label="t('pluginWorkbench.aria.batchToolbar')"
             >
-              <span class="pm-batch-count">已选 {{ batchSelectedCount }} 个</span>
+              <span class="pm-batch-count">{{ t("pluginWorkbench.catalog.selectedCount", { count: batchSelectedCount }) }}</span>
               <button type="button" class="pm-btn secondary pm-btn--sm" @click="onBatchEnable">
-                批量启用
+                {{ t("pluginWorkbench.catalog.batchEnable") }}
               </button>
               <button type="button" class="pm-btn secondary pm-btn--sm" @click="onBatchDisable">
-                批量停用
+                {{ t("pluginWorkbench.catalog.batchDisable") }}
               </button>
               <button type="button" class="pm-btn secondary pm-btn--sm" @click="onBatchUpdate">
-                批量从 Git 更新
+                {{ t("pluginWorkbench.catalog.batchGit") }}
               </button>
             </div>
             <p v-if="!pluginStore.catalog.length" class="pm-muted">
-              未扫描到目录插件（请将插件放入 roles 同级的 plugins/ 等目录）。
+              {{ t("pluginWorkbench.catalog.emptyScan") }}
             </p>
 
-            <div v-else class="pm-wb" aria-label="插件工作区">
+            <div v-else class="pm-wb" :aria-label="t('pluginWorkbench.catalog.workspaceAria')">
               <aside class="pm-wb-sidebar">
                 <div class="pm-wb-sidebar-head">
-                  <span class="pm-wb-sidebar-title">目录</span>
+                  <span class="pm-wb-sidebar-title">{{ t("pluginWorkbench.catalog.sidebarTitle") }}</span>
                   <span class="pm-wb-sidebar-count">{{ pluginStore.catalog.length }}</span>
                 </div>
-                <ul class="pm-wb-list" role="listbox" aria-label="已安装目录插件">
+                <ul class="pm-wb-list" role="listbox" :aria-label="t('pluginWorkbench.catalog.listAria')">
                   <li v-for="p in pluginStore.catalog" :key="p.id" class="pm-wb-li">
                     <label v-if="batchMode" class="pm-wb-batch chk" @click.stop>
                       <input
@@ -615,11 +622,11 @@ async function onPackSelectedPlugin(): Promise<void> {
                       <span class="pm-wb-item-id">{{ p.id }}</span>
                       <span class="pm-wb-item-row2">
                         <span class="pm-wb-item-ver">v{{ p.version }}</span>
-                        <span class="pm-wb-chip">{{ p.isShell ? "整壳" : "目录" }}</span>
+                        <span class="pm-wb-chip">{{ p.isShell ? t("pluginWorkbench.catalog.chipShell") : t("pluginWorkbench.catalog.chipDir") }}</span>
                         <span
                           v-if="pluginStore.pluginUpdateById[p.id]?.hasUpdate"
                           class="pm-wb-pill"
-                        >更新</span>
+                        >{{ t("pluginWorkbench.catalog.pillUpdate") }}</span>
                       </span>
                     </button>
                   </li>
@@ -631,7 +638,7 @@ async function onPackSelectedPlugin(): Promise<void> {
                   <div class="pm-wb-main-titles">
                     <h4 class="pm-wb-main-h">{{ selectedWorkspacePlugin.id }}</h4>
                     <span class="pm-wb-main-sub">
-                      配置与调试 · 左侧切换插件即可保留本区布局
+                      {{ t("pluginWorkbench.catalog.detailSub") }}
                     </span>
                   </div>
                   <div class="pm-wb-main-actions">
@@ -640,13 +647,13 @@ async function onPackSelectedPlugin(): Promise<void> {
                         pluginStore.pluginUpdateById[selectedWorkspacePlugin.id]?.hasUpdate
                       "
                       class="pm-badge"
-                    >有新版本</span>
+                    >{{ t("pluginWorkbench.catalog.hasNew") }}</span>
                     <button
                       type="button"
                       class="pm-btn secondary pm-btn--sm"
                       @click="onGitPullWorkspacePlugin"
                     >
-                      从 Git 拉取更新
+                      {{ t("pluginWorkbench.catalog.pullGit") }}
                     </button>
                     <button
                       type="button"
@@ -656,7 +663,7 @@ async function onPackSelectedPlugin(): Promise<void> {
                       "
                       @click="onUpdateFromZip(selectedWorkspacePlugin.id)"
                     >
-                      从本地 zip 更新
+                      {{ t("pluginWorkbench.catalog.pullZip") }}
                     </button>
                   </div>
                 </div>
@@ -689,9 +696,9 @@ async function onPackSelectedPlugin(): Promise<void> {
             role="tabpanel"
           >
           <section class="pm-section pm-embed-slot">
-            <h3 class="pm-h3">插件管理页预览（只读）</h3>
+            <h3 class="pm-h3">{{ t("pluginWorkbench.slots.previewTitle") }}</h3>
             <p class="pm-hint">
-              与下方「settings.plugins」为同一插槽；预览不可操作，请在列表中拖拽排序。
+              {{ t("pluginWorkbench.slots.previewHint") }}
             </p>
             <div class="pm-embed-preview" aria-hidden="true">
               <PluginSlotEmbed
@@ -702,9 +709,9 @@ async function onPackSelectedPlugin(): Promise<void> {
           </section>
 
           <section class="pm-section">
-            <h3 class="pm-h3">settings.plugins 顺序</h3>
-            <p class="pm-hint">本页内嵌区；拖拽排序，可选外观。</p>
-            <ol class="pm-order" aria-label="插件管理页槽顺序">
+            <h3 class="pm-h3">{{ t("pluginWorkbench.slots.settingsPluginsTitle") }}</h3>
+            <p class="pm-hint">{{ t("pluginWorkbench.slots.settingsPluginsHint") }}</p>
+            <ol class="pm-order" :aria-label="t('pluginWorkbench.slots.ariaSettingsPlugins')">
               <li
                 v-for="(id, i) in settingsPluginsOrder"
                 :key="`spl-${id}`"
@@ -719,13 +726,13 @@ async function onPackSelectedPlugin(): Promise<void> {
                 <PmSlotRow :plugin-id="id" :slot-key="SLOT_SETTINGS_PLUGINS" />
               </li>
             </ol>
-            <p v-if="!settingsPluginsOrder.length" class="pm-muted">当前无 settings.plugins 插槽插件。</p>
+            <p v-if="!settingsPluginsOrder.length" class="pm-muted">{{ t("pluginWorkbench.slots.settingsPluginsEmpty") }}</p>
           </section>
 
           <section class="pm-section">
-            <h3 class="pm-h3">chat_toolbar 顺序</h3>
-            <p class="pm-hint">拖拽排序；仅含声明了该插槽的非整壳插件。</p>
-            <ol class="pm-order" aria-label="工具栏插件顺序">
+            <h3 class="pm-h3">{{ t("pluginWorkbench.slots.chatToolbarTitle") }}</h3>
+            <p class="pm-hint">{{ t("pluginWorkbench.slots.chatToolbarHint") }}</p>
+            <ol class="pm-order" :aria-label="t('pluginWorkbench.slots.ariaChatToolbar')">
               <li
                 v-for="(id, i) in toolbarOrder"
                 :key="id"
@@ -740,13 +747,13 @@ async function onPackSelectedPlugin(): Promise<void> {
                 <PmSlotRow :plugin-id="id" :slot-key="SLOT_CHAT_TOOLBAR" />
               </li>
             </ol>
-            <p v-if="!toolbarOrder.length" class="pm-muted">当前无 chat_toolbar 插槽插件。</p>
+            <p v-if="!toolbarOrder.length" class="pm-muted">{{ t("pluginWorkbench.slots.chatToolbarEmpty") }}</p>
           </section>
 
           <section class="pm-section">
-            <h3 class="pm-h3">settings.panel 顺序</h3>
-            <p class="pm-hint">设置页「插件扩展」中的嵌入顺序；拖拽排序。</p>
-            <ol class="pm-order" aria-label="设置页插件顺序">
+            <h3 class="pm-h3">{{ t("pluginWorkbench.slots.settingsPanelTitle") }}</h3>
+            <p class="pm-hint">{{ t("pluginWorkbench.slots.settingsPanelHint") }}</p>
+            <ol class="pm-order" :aria-label="t('pluginWorkbench.slots.ariaSettingsPanel')">
               <li
                 v-for="(id, i) in settingsPanelOrder"
                 :key="`sp-${id}`"
@@ -761,13 +768,13 @@ async function onPackSelectedPlugin(): Promise<void> {
                 <PmSlotRow :plugin-id="id" :slot-key="SLOT_SETTINGS_PANEL" />
               </li>
             </ol>
-            <p v-if="!settingsPanelOrder.length" class="pm-muted">当前无 settings.panel 插槽插件。</p>
+            <p v-if="!settingsPanelOrder.length" class="pm-muted">{{ t("pluginWorkbench.slots.settingsPanelEmpty") }}</p>
           </section>
 
           <section class="pm-section">
-            <h3 class="pm-h3">role.detail 顺序</h3>
-            <p class="pm-hint">左侧角色详情区（立绘下方）嵌入顺序。</p>
-            <ol class="pm-order" aria-label="角色详情插件顺序">
+            <h3 class="pm-h3">{{ t("pluginWorkbench.slots.roleDetailTitle") }}</h3>
+            <p class="pm-hint">{{ t("pluginWorkbench.slots.roleDetailHint") }}</p>
+            <ol class="pm-order" :aria-label="t('pluginWorkbench.slots.ariaRoleDetail')">
               <li
                 v-for="(id, i) in roleDetailOrder"
                 :key="`rd-${id}`"
@@ -782,13 +789,13 @@ async function onPackSelectedPlugin(): Promise<void> {
                 <PmSlotRow :plugin-id="id" :slot-key="SLOT_ROLE_DETAIL" />
               </li>
             </ol>
-            <p v-if="!roleDetailOrder.length" class="pm-muted">当前无 role.detail 插槽插件。</p>
+            <p v-if="!roleDetailOrder.length" class="pm-muted">{{ t("pluginWorkbench.slots.roleDetailEmpty") }}</p>
           </section>
 
           <section class="pm-section">
-            <h3 class="pm-h3">sidebar 顺序</h3>
-            <p class="pm-hint">左侧栏角色块下方扩展区；拖拽排序。</p>
-            <ol class="pm-order" aria-label="侧边栏插件顺序">
+            <h3 class="pm-h3">{{ t("pluginWorkbench.slots.sidebarTitle") }}</h3>
+            <p class="pm-hint">{{ t("pluginWorkbench.slots.sidebarHint") }}</p>
+            <ol class="pm-order" :aria-label="t('pluginWorkbench.slots.ariaSidebar')">
               <li
                 v-for="(id, i) in sidebarOrder"
                 :key="`sb-${id}`"
@@ -803,13 +810,13 @@ async function onPackSelectedPlugin(): Promise<void> {
                 <PmSlotRow :plugin-id="id" :slot-key="SLOT_SIDEBAR" />
               </li>
             </ol>
-            <p v-if="!sidebarOrder.length" class="pm-muted">当前无 sidebar 插槽插件。</p>
+            <p v-if="!sidebarOrder.length" class="pm-muted">{{ t("pluginWorkbench.slots.sidebarEmpty") }}</p>
           </section>
 
           <section class="pm-section">
-            <h3 class="pm-h3">chat.header 顺序</h3>
-            <p class="pm-hint">聊天列顶部（消息列表上方）；拖拽排序。</p>
-            <ol class="pm-order" aria-label="聊天头部插件顺序">
+            <h3 class="pm-h3">{{ t("pluginWorkbench.slots.chatHeaderTitle") }}</h3>
+            <p class="pm-hint">{{ t("pluginWorkbench.slots.chatHeaderHint") }}</p>
+            <ol class="pm-order" :aria-label="t('pluginWorkbench.slots.ariaChatHeader')">
               <li
                 v-for="(id, i) in chatHeaderOrder"
                 :key="`ch-${id}`"
@@ -824,13 +831,13 @@ async function onPackSelectedPlugin(): Promise<void> {
                 <PmSlotRow :plugin-id="id" :slot-key="SLOT_CHAT_HEADER" />
               </li>
             </ol>
-            <p v-if="!chatHeaderOrder.length" class="pm-muted">当前无 chat.header 插槽插件。</p>
+            <p v-if="!chatHeaderOrder.length" class="pm-muted">{{ t("pluginWorkbench.slots.chatHeaderEmpty") }}</p>
           </section>
 
           <section class="pm-section">
-            <h3 class="pm-h3">settings.advanced 顺序</h3>
-            <p class="pm-hint">设置对话框「常规」扩展区；拖拽排序。</p>
-            <ol class="pm-order" aria-label="settings.advanced 顺序">
+            <h3 class="pm-h3">{{ t("pluginWorkbench.slots.settingsAdvancedTitle") }}</h3>
+            <p class="pm-hint">{{ t("pluginWorkbench.slots.settingsAdvancedHint") }}</p>
+            <ol class="pm-order" :aria-label="t('pluginWorkbench.slots.ariaSettingsAdvanced')">
               <li
                 v-for="(id, i) in settingsAdvancedOrder"
                 :key="`sa-${id}`"
@@ -845,13 +852,13 @@ async function onPackSelectedPlugin(): Promise<void> {
                 <PmSlotRow :plugin-id="id" :slot-key="SLOT_SETTINGS_ADVANCED" />
               </li>
             </ol>
-            <p v-if="!settingsAdvancedOrder.length" class="pm-muted">当前无 settings.advanced 插槽插件。</p>
+            <p v-if="!settingsAdvancedOrder.length" class="pm-muted">{{ t("pluginWorkbench.slots.settingsAdvancedEmpty") }}</p>
           </section>
 
           <section class="pm-section">
-            <h3 class="pm-h3">overlay.floating 顺序</h3>
-            <p class="pm-hint">主界面右下角浮层模板区；拖拽排序。</p>
-            <ol class="pm-order" aria-label="overlay.floating 顺序">
+            <h3 class="pm-h3">{{ t("pluginWorkbench.slots.overlayFloatingTitle") }}</h3>
+            <p class="pm-hint">{{ t("pluginWorkbench.slots.overlayFloatingHint") }}</p>
+            <ol class="pm-order" :aria-label="t('pluginWorkbench.slots.ariaOverlayFloating')">
               <li
                 v-for="(id, i) in overlayFloatingOrder"
                 :key="`of-${id}`"
@@ -866,13 +873,13 @@ async function onPackSelectedPlugin(): Promise<void> {
                 <PmSlotRow :plugin-id="id" :slot-key="SLOT_OVERLAY_FLOATING" />
               </li>
             </ol>
-            <p v-if="!overlayFloatingOrder.length" class="pm-muted">当前无 overlay.floating 插槽插件。</p>
+            <p v-if="!overlayFloatingOrder.length" class="pm-muted">{{ t("pluginWorkbench.slots.overlayFloatingEmpty") }}</p>
           </section>
 
           <section class="pm-section">
-            <h3 class="pm-h3">launcher.palette 顺序</h3>
-            <p class="pm-hint">快捷键说明浮层内聚合区；拖拽排序。</p>
-            <ol class="pm-order" aria-label="launcher.palette 顺序">
+            <h3 class="pm-h3">{{ t("pluginWorkbench.slots.launcherPaletteTitle") }}</h3>
+            <p class="pm-hint">{{ t("pluginWorkbench.slots.launcherPaletteHint") }}</p>
+            <ol class="pm-order" :aria-label="t('pluginWorkbench.slots.ariaLauncherPalette')">
               <li
                 v-for="(id, i) in launcherPaletteOrder"
                 :key="`lp-${id}`"
@@ -887,13 +894,13 @@ async function onPackSelectedPlugin(): Promise<void> {
                 <PmSlotRow :plugin-id="id" :slot-key="SLOT_LAUNCHER_PALETTE" />
               </li>
             </ol>
-            <p v-if="!launcherPaletteOrder.length" class="pm-muted">当前无 launcher.palette 插槽插件。</p>
+            <p v-if="!launcherPaletteOrder.length" class="pm-muted">{{ t("pluginWorkbench.slots.launcherPaletteEmpty") }}</p>
           </section>
 
           <section class="pm-section">
-            <h3 class="pm-h3">debug.dock 顺序</h3>
-            <p class="pm-hint">调试面板内扩展区；拖拽排序。</p>
-            <ol class="pm-order" aria-label="debug.dock 顺序">
+            <h3 class="pm-h3">{{ t("pluginWorkbench.slots.debugDockTitle") }}</h3>
+            <p class="pm-hint">{{ t("pluginWorkbench.slots.debugDockHint") }}</p>
+            <ol class="pm-order" :aria-label="t('pluginWorkbench.slots.ariaDebugDock')">
               <li
                 v-for="(id, i) in debugDockOrder"
                 :key="`dd-${id}`"
@@ -908,17 +915,17 @@ async function onPackSelectedPlugin(): Promise<void> {
                 <PmSlotRow :plugin-id="id" :slot-key="SLOT_DEBUG_DOCK" />
               </li>
             </ol>
-            <p v-if="!debugDockOrder.length" class="pm-muted">当前无 debug.dock 插槽插件。</p>
+            <p v-if="!debugDockOrder.length" class="pm-muted">{{ t("pluginWorkbench.slots.debugDockEmpty") }}</p>
           </section>
           </div>
           </div>
 
           <footer class="pm-foot">
-            <button type="button" class="pm-btn secondary" @click="pluginStore.closePanel()">关闭</button>
+            <button type="button" class="pm-btn secondary" @click="pluginStore.closePanel()">{{ t("pluginWorkbench.footer.close") }}</button>
             <button type="button" class="pm-btn secondary" @click="onResetToPackDefault">
-              重置为角色包推荐
+              {{ t("pluginWorkbench.footer.resetPack") }}
             </button>
-            <button type="button" class="pm-btn primary" @click="onSave">保存</button>
+            <button type="button" class="pm-btn primary" @click="onSave">{{ t("pluginWorkbench.footer.save") }}</button>
           </footer>
         </template>
       </div>

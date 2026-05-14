@@ -95,6 +95,8 @@
 
 项目总览、构建命令、测试见仓库根目录 **[README.md](../../README.md)**；**插件与侧车细节以 `creator-docs/` 为准**。
 
+- **[错误码与排障速查](ERROR_CODES.md)**（运行时 HTTP / JSON-RPC 与提 issue 最少信息）
+
 ---
 
 [English](../../creator-docs-en/getting-started/DOCUMENTATION_INDEX.md)

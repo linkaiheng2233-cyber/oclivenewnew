@@ -53,7 +53,7 @@ roles/{role_id}/
 ### 2.2 错误与错误码
 
 - 领域层优先 `crate::error::Result<T>` / `AppError`
-- 暴露给前端的字符串由 `to_frontend_error()` 等统一格式化；事务类错误码以 `TXN_` 等为前缀（见 `tauri-api.ts` 中 `TransactionErrorMessages`）
+- 暴露给前端的字符串由 `to_frontend_error()` 等统一格式化；事务类错误码以 `TXN_` 等为前缀（前端展示文案见 `src/utils/tauri-api.ts` 对 `apiErrors.*` 的映射，键名与 `creator-docs/getting-started/ERROR_CODES.md` 对照）
 - 参数错误使用 `AppError::InvalidParameter`，对应码 `INVALID_PARAMETER`
 
 ### 2.3 数据库

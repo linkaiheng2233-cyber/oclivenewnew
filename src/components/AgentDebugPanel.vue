@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { computed, onMounted, ref, watch } from "vue";
+import { useI18n } from "vue-i18n";
 import {
   callMcpTool,
   clearAgentDebugTraces,
@@ -11,6 +12,8 @@ import {
   type McpServerManifest,
 } from "../utils/tauri-api";
 import EnvVarManager from "./EnvVarManager.vue";
+
+const { t, locale } = useI18n();
 
 const busy = ref(false);
 const servers = ref<McpServerManifest[]>([]);
@@ -25,8 +28,6 @@ const compareLeftId = ref("");
 const compareRightId = ref("");
 const diffText = ref("");
 
-const selectedTemplateId = ref("");
-const customTemplateName = ref("");
 const CUSTOM_TEMPLATE_KEY = "oclive.agent.templates.v1";
 type TemplateItem = {
   id: string;
@@ -35,11 +36,47 @@ type TemplateItem = {
   params: Record<string, unknown>;
   serverHint?: string;
 };
-const templates = ref<TemplateItem[]>([
-  { id: "weather", label: "天气查询", toolName: "get_weather", params: { city: "北京" } },
-  { id: "file-read", label: "文件读取", toolName: "read_file", params: { path: "./README.md" } },
-  { id: "web-fetch", label: "网页抓取", toolName: "web_fetch", params: { url: "https://example.com" } },
-]);
+
+const BUILTIN_TEMPLATE_DEFS: Array<
+  Pick<TemplateItem, "id" | "toolName" | "params" | "serverHint"> & { labelKey: string }
+> = [
+  {
+    id: "weather",
+    labelKey: "devTools.agentTplWeather",
+    toolName: "get_weather",
+    params: { city: "北京" },
+  },
+  {
+    id: "file-read",
+    labelKey: "devTools.agentTplFileRead",
+    toolName: "read_file",
+    params: { path: "./README.md" },
+  },
+  {
+    id: "web-fetch",
+    labelKey: "devTools.agentTplWebFetch",
+    toolName: "web_fetch",
+    params: { url: "https://example.com" },
+  },
+];
+
+const builtinTemplates = computed<TemplateItem[]>(() => {
+  void locale.value;
+  return BUILTIN_TEMPLATE_DEFS.map((d) => ({
+    id: d.id,
+    label: t(d.labelKey),
+    toolName: d.toolName,
+    params: d.params,
+    serverHint: d.serverHint,
+  }));
+});
+
+const customTemplates = ref<TemplateItem[]>([]);
+
+const templates = computed(() => [...builtinTemplates.value, ...customTemplates.value]);
+
+const selectedTemplateId = ref("");
+const customTemplateName = ref("");
 
 async function refreshServers(): Promise<void> {
   servers.value = await listMcpServers();
@@ -92,7 +129,7 @@ function loadCustomTemplates(): void {
     if (!raw) return;
     const arr = JSON.parse(raw) as TemplateItem[];
     if (Array.isArray(arr)) {
-      templates.value = [...templates.value, ...arr];
+      customTemplates.value = arr;
     }
   } catch {
     // ignore
@@ -128,10 +165,8 @@ function saveCurrentTemplate(): void {
     params: paramsObj,
     serverHint: selectedServerId.value || undefined,
   };
-  const base = templates.value.filter((x) => !x.id.startsWith("custom:"));
-  const customs = templates.value.filter((x) => x.id.startsWith("custom:"));
-  const next = [...customs, item];
-  templates.value = [...base, ...next];
+  const next = [...customTemplates.value, item];
+  customTemplates.value = next;
   localStorage.setItem(CUSTOM_TEMPLATE_KEY, JSON.stringify(next));
   customTemplateName.value = "";
 }
@@ -172,7 +207,7 @@ function runDiff(): void {
     }
   }
   walk("", left, right);
-  diffText.value = lines.length > 0 ? lines.join("\n") : "无差异";
+  diffText.value = lines.length > 0 ? lines.join("\n") : t("devTools.agent.diffEmpty");
 }
 
 watch(selectedServerId, async (id) => {
@@ -196,34 +231,34 @@ onMounted(async () => {
 
 <template>
   <section class="adp">
-    <h3 class="adp-h">Agent 调试链路</h3>
+    <h3 class="adp-h">{{ t("devTools.agent.title") }}</h3>
     <p class="adp-sub">
-      可查看 MCP Server、手动调用工具，并查看最近 Agent 任务拆解与工具调用轨迹。
+      {{ t("devTools.agent.lead") }}
     </p>
 
     <div class="adp-row">
       <button type="button" class="adp-btn" :disabled="busy" @click="refreshServers">
-        刷新 MCP Server
+        {{ t("devTools.agent.refreshMcp") }}
       </button>
       <button type="button" class="adp-btn" :disabled="busy" @click="refreshTraces">
-        刷新 Agent Trace
+        {{ t("devTools.agent.refreshTrace") }}
       </button>
       <button type="button" class="adp-btn danger" :disabled="busy" @click="clearTraces">
-        清空 Trace
+        {{ t("devTools.agent.clearTrace") }}
       </button>
     </div>
 
     <div class="adp-form">
       <label>
-        模板库
+        {{ t("devTools.agent.templateLib") }}
         <select v-model="selectedTemplateId" class="adp-input" @change="applyTemplate">
-          <option value="">选择常用模板</option>
-          <option v-for="t in templates" :key="t.id" :value="t.id">{{ t.label }}</option>
+          <option value="">{{ t("devTools.agent.templatePick") }}</option>
+          <option v-for="tpl in templates" :key="tpl.id" :value="tpl.id">{{ tpl.label }}</option>
         </select>
       </label>
       <div class="adp-row">
-        <input v-model="customTemplateName" class="adp-input" placeholder="保存当前请求为自定义模板" />
-        <button type="button" class="adp-btn" @click="saveCurrentTemplate">保存模板</button>
+        <input v-model="customTemplateName" class="adp-input" :placeholder="t('devTools.agent.saveTplNamePh')" />
+        <button type="button" class="adp-btn" @click="saveCurrentTemplate">{{ t("devTools.agent.saveTpl") }}</button>
       </div>
     </div>
 
@@ -231,7 +266,7 @@ onMounted(async () => {
       <label>
         Server
         <select v-model="selectedServerId" class="adp-input">
-          <option value="">请选择</option>
+          <option value="">{{ t("devTools.agent.pickServer") }}</option>
           <option v-for="s in servers" :key="s.id" :value="s.id">
             {{ s.id }} ({{ s.transport || "http" }})
           </option>
@@ -244,12 +279,12 @@ onMounted(async () => {
             v-model="selectedToolName"
             class="adp-input"
             type="text"
-            placeholder="例如 get_weather"
+            :placeholder="t('devTools.agent.toolPh')"
           />
           <select v-if="availableTools.length" v-model="selectedToolName" class="adp-input">
-            <option value="">从 Server 工具列表选择</option>
-            <option v-for="t in availableTools" :key="t.name" :value="t.name">
-              {{ t.name }}
+            <option value="">{{ t("devTools.agent.pickTool") }}</option>
+            <option v-for="tool in availableTools" :key="tool.name" :value="tool.name">
+              {{ tool.name }}
             </option>
           </select>
         </div>
@@ -259,40 +294,40 @@ onMounted(async () => {
         <textarea v-model="paramsText" class="adp-textarea" rows="3" />
       </label>
       <button type="button" class="adp-btn primary" :disabled="busy" @click="runToolCall">
-        调用工具
+        {{ t("devTools.agent.callTool") }}
       </button>
     </div>
 
     <pre v-if="callResultText" class="adp-pre">{{ callResultText }}</pre>
 
     <div v-if="callResultHistory.length >= 2" class="adp-diff">
-      <h4 class="adp-h4">响应 Diff 对比</h4>
+      <h4 class="adp-h4">{{ t("devTools.agent.diffTitle") }}</h4>
       <div class="adp-row">
         <select v-model="compareLeftId" class="adp-input">
-          <option value="">左侧响应</option>
+          <option value="">{{ t("devTools.agent.diffLeft") }}</option>
           <option v-for="h in callResultHistory" :key="`l-${h.id}`" :value="h.id">{{ h.label }}</option>
         </select>
         <select v-model="compareRightId" class="adp-input">
-          <option value="">右侧响应</option>
+          <option value="">{{ t("devTools.agent.diffRight") }}</option>
           <option v-for="h in callResultHistory" :key="`r-${h.id}`" :value="h.id">{{ h.label }}</option>
         </select>
-        <button type="button" class="adp-btn" @click="runDiff">对比</button>
+        <button type="button" class="adp-btn" @click="runDiff">{{ t("devTools.agent.diffRun") }}</button>
       </div>
       <pre v-if="diffText" class="adp-pre">{{ diffText }}</pre>
     </div>
 
     <div class="adp-traces">
-      <h4 class="adp-h4">最近任务</h4>
-      <div v-for="(t, i) in traces.slice().reverse()" :key="`${t.timestamp_ms}-${i}`" class="adp-trace">
+      <h4 class="adp-h4">{{ t("devTools.agent.recentTitle") }}</h4>
+      <div v-for="(trace, i) in traces.slice().reverse()" :key="`${trace.timestamp_ms}-${i}`" class="adp-trace">
         <div class="adp-trace-line">
-          <strong>{{ new Date(t.timestamp_ms).toLocaleString() }}</strong> · {{ t.message }}
+          <strong>{{ new Date(trace.timestamp_ms).toLocaleString() }}</strong> · {{ trace.message }}
         </div>
-        <div class="adp-trace-line">plan: {{ t.plan }}</div>
-        <div class="adp-trace-line">reply: {{ t.reply }}</div>
-        <div v-if="t.error" class="adp-trace-line err">error: {{ t.error }}</div>
-        <pre v-if="t.tool_calls?.length" class="adp-pre">{{ JSON.stringify(t.tool_calls, null, 2) }}</pre>
+        <div class="adp-trace-line">plan: {{ trace.plan }}</div>
+        <div class="adp-trace-line">reply: {{ trace.reply }}</div>
+        <div v-if="trace.error" class="adp-trace-line err">error: {{ trace.error }}</div>
+        <pre v-if="trace.tool_calls?.length" class="adp-pre">{{ JSON.stringify(trace.tool_calls, null, 2) }}</pre>
       </div>
-      <p v-if="traces.length === 0" class="adp-empty">暂无 Agent 执行轨迹。</p>
+      <p v-if="traces.length === 0" class="adp-empty">{{ t("devTools.agent.emptyTraces") }}</p>
     </div>
 
     <EnvVarManager />

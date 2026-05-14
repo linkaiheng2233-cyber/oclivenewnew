@@ -1,4 +1,15 @@
+import apiErrors from "./fragments/apiErrors.zh";
+import chat from "./fragments/chat.zh";
+import devTools from "./fragments/devTools.zh";
+import pluginWorkbench from "./fragments/pluginWorkbench.zh";
+import virtualTime from "./fragments/virtualTime.zh";
+
 export default {
+  apiErrors,
+  chat,
+  devTools,
+  pluginWorkbench,
+  virtualTime,
   app: {
     locale: {
       label: "界面语言",

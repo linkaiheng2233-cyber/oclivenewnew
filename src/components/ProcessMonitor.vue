@@ -1,5 +1,8 @@
 <script setup lang="ts">
+import { useI18n } from "vue-i18n";
 import type { PluginProcessDebugInfo } from "../utils/tauri-api";
+
+const { t } = useI18n();
 
 defineProps<{
   pluginId: string;
@@ -22,15 +25,15 @@ const emit = defineEmits<{
 <template>
   <div class="pm-dbg-proc">
     <div class="pm-dbg-proc-row">
-      <span class="pm-dbg-label">本插件</span>
+      <span class="pm-dbg-label">{{ t("devTools.proc.thisPlugin") }}</span>
       <span v-if="processInfo" class="pm-dbg-pill ok">
-        运行中 · PID {{ processInfo.pid }}
+        {{ t("devTools.proc.runningPid", { pid: processInfo.pid }) }}
       </span>
-      <span v-else class="pm-dbg-pill">未启动</span>
+      <span v-else class="pm-dbg-pill">{{ t("devTools.proc.notStarted") }}</span>
     </div>
     <p v-if="processInfo" class="pm-dbg-mono">{{ processInfo.rpcUrl }}</p>
     <p v-if="spawnSupported === false" class="pm-dbg-warn">
-      此插件 manifest 未声明 <code>process</code>，无法在此启动 JSON-RPC 子进程；若插件已由宿主或其它方式拉起，仍可在「<strong>RPC</strong>」标签对已就绪端点发请求。
+      {{ t("devTools.proc.noSpawnHint") }}
     </p>
     <div class="pm-dbg-actions">
       <button
@@ -39,20 +42,20 @@ const emit = defineEmits<{
         :disabled="busy || spawnSupported === false"
         @click="emit('spawn')"
       >
-        启动
+        {{ t("devTools.proc.start") }}
       </button>
       <button type="button" class="pm-dbg-btn" :disabled="busy || !processInfo" @click="emit('kill')">
-        停止
+        {{ t("devTools.proc.stop") }}
       </button>
       <button type="button" class="pm-dbg-btn" :disabled="busy || !processInfo" @click="emit('restart')">
-        重启
+        {{ t("devTools.proc.restart") }}
       </button>
       <button type="button" class="pm-dbg-btn secondary" :disabled="busy" @click="emit('refreshAll')">
-        刷新进程列表
+        {{ t("devTools.proc.refresh") }}
       </button>
     </div>
     <div v-if="allProcesses.length" class="pm-dbg-global">
-      <div class="pm-dbg-sub">宿主管理的插件进程</div>
+      <div class="pm-dbg-sub">{{ t("devTools.proc.hostManaged") }}</div>
       <ul class="pm-dbg-plist">
         <li v-for="p in allProcesses" :key="p.pluginId" class="pm-dbg-pli">
           <span class="pm-dbg-mono">{{ p.pluginId }}</span>
@@ -63,7 +66,7 @@ const emit = defineEmits<{
             :disabled="busy"
             @click="emit('killManaged', p.pluginId)"
           >
-            终止
+            {{ t("devTools.proc.kill") }}
           </button>
         </li>
       </ul>

@@ -1,5 +1,8 @@
 <script setup lang="ts">
 import { computed } from "vue";
+import { useI18n } from "vue-i18n";
+
+const { t } = useI18n();
 
 const props = withDefaults(
   defineProps<{
@@ -73,7 +76,7 @@ function hhmm(ts: number): string {
           </template>
         </div>
         <div v-if="props.replyIsFallback && props.role === 'assistant'" class="fallback-hint">
-          备用短回复
+          {{ t("chat.fallbackBadge") }}
         </div>
       </div>
       <div class="bubble-meta">
