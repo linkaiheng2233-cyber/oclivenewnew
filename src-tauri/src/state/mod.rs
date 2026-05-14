@@ -742,7 +742,7 @@ impl AppState {
     pub fn register_local_plugin_provider(
         &self,
         descriptor: LocalPluginProviderDescriptor,
-    ) -> std::result::Result<(), String> {
+    ) -> std::result::Result<(), crate::domain::plugin_host::PluginHostError> {
         self.plugins.register_local_provider(descriptor)
     }
 

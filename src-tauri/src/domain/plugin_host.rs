@@ -34,6 +34,20 @@ use parking_lot::RwLock;
 use serde_json::Value;
 use std::path::PathBuf;
 use std::sync::Arc;
+use thiserror::Error;
+
+/// [`PluginHost`] / [`BackendRegistry`] 在解析与注册本地 provider 时的错误。
+#[derive(Debug, Error)]
+pub enum PluginHostError {
+    #[error("local plugin provider 注册失败: {0}")]
+    LocalProviderRegistration(String),
+}
+
+impl From<String> for PluginHostError {
+    fn from(msg: String) -> Self {
+        PluginHostError::LocalProviderRegistration(msg)
+    }
+}
 
 /// 已按 `role.plugin_backends` 解析的实现句柄；单次 `send_message` 内应只解析一次并复用。
 #[derive(Clone)]
@@ -439,8 +453,11 @@ impl BackendRegistry {
     pub fn register_local_provider(
         &self,
         descriptor: LocalPluginProviderDescriptor,
-    ) -> Result<(), String> {
-        self.local_plugins.write().register_provider(descriptor)
+    ) -> Result<(), PluginHostError> {
+        self.local_plugins
+            .write()
+            .register_provider(descriptor)
+            .map_err(PluginHostError::from)
     }
 
     #[must_use]
@@ -509,7 +526,7 @@ impl PluginHost {
     pub fn register_local_provider(
         &self,
         descriptor: LocalPluginProviderDescriptor,
-    ) -> Result<(), String> {
+    ) -> Result<(), PluginHostError> {
         self.registry.register_local_provider(descriptor)
     }
 
