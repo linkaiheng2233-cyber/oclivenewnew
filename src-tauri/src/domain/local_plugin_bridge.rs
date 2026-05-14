@@ -81,7 +81,7 @@ impl LocalPluginBridge for FileManifestLocalPluginBridge {
             let text = match fs::read_to_string(&p) {
                 Ok(v) => v,
                 Err(e) => {
-                    log::warn!(
+                    tracing::warn!(
                         target: "oclive_plugin",
                         "local plugin manifest read failed path={} err={}",
                         p.display(),
@@ -92,7 +92,7 @@ impl LocalPluginBridge for FileManifestLocalPluginBridge {
             };
             match serde_json::from_str::<LocalPluginProviderDescriptor>(&text) {
                 Ok(desc) => out.push(desc),
-                Err(e) => log::warn!(
+                Err(e) => tracing::warn!(
                     target: "oclive_plugin",
                     "local plugin manifest parse failed path={} err={}",
                     p.display(),

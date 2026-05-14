@@ -66,7 +66,7 @@ pub async fn generate_monologue_lines(
                         .wrapping_add(i)
                         .wrapping_add(templates.len())
                         % templates.len();
-                    log::warn!("jump monologue LLM failed, scene template [{}]: {}", idx, e);
+                    tracing::warn!("jump monologue LLM failed, scene template [{}]: {}", idx, e);
                     templates[idx].clone()
                 } else {
                     return Err(AppError::OllamaError(e.to_string()).to_frontend_error());

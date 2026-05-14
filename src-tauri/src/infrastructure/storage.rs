@@ -69,7 +69,7 @@ impl RoleStorage {
         let mut roles = Vec::new();
 
         if !self.roles_dir.exists() {
-            log::warn!(
+            tracing::warn!(
                 target: "oclive_roles",
                 "roles_dir does not exist: {} — list_roles will be empty; set OCLIVE_ROLES_DIR or fix cwd / exe-relative discovery",
                 self.roles_dir.display()
@@ -85,7 +85,7 @@ impl RoleStorage {
                 match self.load_role_from_dir(&path) {
                     Ok(role) => roles.push(role),
                     Err(e) => {
-                        log::warn!(
+                        tracing::warn!(
                             target: "oclive_role",
                             "skip role directory {}: {}",
                             path.display(),
@@ -157,7 +157,7 @@ impl RoleStorage {
                 Ok(s) => {
                     role.author_pack = AuthorPackFile::from_json_str(&s);
                     if role.author_pack.is_none() {
-                        log::warn!(
+                        tracing::warn!(
                             target: "oclive_role",
                             "author.json invalid JSON: {}",
                             author_path.display()
@@ -165,7 +165,7 @@ impl RoleStorage {
                     }
                 }
                 Err(e) => {
-                    log::warn!(
+                    tracing::warn!(
                         target: "oclive_role",
                         "author.json unreadable: {} — {}",
                         author_path.display(),

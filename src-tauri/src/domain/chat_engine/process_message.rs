@@ -57,7 +57,7 @@ pub async fn process_message(state: &AppState, req: &SendMessageRequest) -> Resu
     match run(state, req).await {
         Ok(v) => Ok(v),
         Err(e) => {
-            log::error!(target: "oclive_chat", "{}", e);
+            tracing::error!(target: "oclive_chat", "{}", e);
             Err(e.into())
         }
     }
@@ -79,7 +79,7 @@ async fn run(
         "validate_scene_id"
     )?;
     let t0 = Instant::now();
-    log::debug!(
+    tracing::debug!(
         target: "oclive_chat",
         "send_message start role_id={} scene_id={} session_ns={}",
         mrid,
@@ -102,7 +102,7 @@ async fn run(
     )?;
     let effective_backends = state.effective_plugin_backends_for_session(role.as_ref(), srid);
     let effective_sources = state.effective_plugin_backend_sources_for_session(srid);
-    log::debug!(
+    tracing::debug!(
         target: "oclive_chat",
         "send_message backends role_id={} scene_id={} session_ns={} {}",
         mrid,

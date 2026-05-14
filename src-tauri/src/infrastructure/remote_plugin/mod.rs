@@ -47,7 +47,7 @@ pub(crate) struct PluginRemoteGroup {
 pub(crate) fn plugin_remote_group() -> PluginRemoteGroup {
     match RemotePluginHttpConfig::from_env_plugin() {
         Some(cfg) => {
-            log::info!(
+            tracing::info!(
                 target: "oclive_plugin",
                 "remote plugin HTTP active (memory/emotion/event/prompt) -> {}",
                 cfg.endpoint
@@ -70,7 +70,7 @@ pub(crate) fn plugin_remote_group() -> PluginRemoteGroup {
 
 pub fn llm_remote_backend(default_llm: Arc<dyn LlmClient>) -> Arc<dyn LlmClient> {
     if let Some(cfg) = RemotePluginHttpConfig::from_env_llm() {
-        log::info!(
+        tracing::info!(
             target: "oclive_plugin",
             "remote LLM HTTP active -> {}",
             cfg.endpoint

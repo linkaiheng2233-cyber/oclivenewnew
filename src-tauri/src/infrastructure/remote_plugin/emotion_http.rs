@@ -48,7 +48,7 @@ impl UserEmotionAnalyzer for RemoteUserEmotionAnalyzerHttp {
                 Ok(r)
             }
             Err(e) => {
-                log::warn!(
+                tracing::warn!(
                     target: "oclive_plugin",
                     "emotion.analyze remote failed endpoint={} err={}; fallback=builtin",
                     self.cfg.endpoint,

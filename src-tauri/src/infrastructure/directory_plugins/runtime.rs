@@ -70,7 +70,7 @@ fn collect_plugin_dirs(root: &Path, out: &mut HashMap<String, PathBuf>) {
             Ok(m) => {
                 let id = m.id.trim().to_string();
                 if let Some(prev) = out.insert(id.clone(), p.clone()) {
-                    log::warn!(
+                    tracing::warn!(
                         target: "oclive_plugin",
                         "directory plugin id={} duplicate; replacing path={} with {}",
                         id,
@@ -80,7 +80,7 @@ fn collect_plugin_dirs(root: &Path, out: &mut HashMap<String, PathBuf>) {
                 }
             }
             Err(e) => {
-                log::warn!(
+                tracing::warn!(
                     target: "oclive_plugin",
                     "skipping plugin directory (manifest invalid or unreadable): {} — {}",
                     p.display(),
@@ -215,7 +215,7 @@ impl DirectoryPluginRuntime {
     pub fn bootstrap(roles_dir: &Path, app_data: &Path) -> Arc<Self> {
         let host = HostPluginsFile::load(app_data);
         let scan = scan_plugins(roles_dir, app_data, &host);
-        log::info!(
+        tracing::info!(
             target: "oclive_plugin",
             "directory plugins scanned count={} ids={:?}",
             scan.roots.len(),
@@ -417,7 +417,7 @@ impl DirectoryPluginRuntime {
                     let ok = manifest.plugin_type.as_deref() == Some("ocliveplugin")
                         && manifest.shell.is_some();
                     if !ok {
-                        log::warn!(
+                        tracing::warn!(
                             target: "oclive_plugin",
                             "invalid shell plugin (require type=ocliveplugin + shell): {}",
                             sid
@@ -428,7 +428,7 @@ impl DirectoryPluginRuntime {
                     state.shell_plugin_id.clear();
                 }
             } else {
-                log::warn!(
+                tracing::warn!(
                     target: "oclive_plugin",
                     "shell plugin id not in scan roots: {}",
                     sid
@@ -502,7 +502,7 @@ impl DirectoryPluginRuntime {
         let scan = scan_plugins(roles_dir, &self.app_data_dir, &self.host);
         let n = scan.roots.len();
         *self.plugin_roots.write() = scan.roots;
-        log::info!(
+        tracing::info!(
             target: "oclive_plugin",
             "plugin roots rescanned count={}",
             n
@@ -579,7 +579,7 @@ impl DirectoryPluginRuntime {
         self.process_started_ms
             .lock()
             .insert(id.to_string(), started_ms);
-        log::info!(
+        tracing::info!(
             target: "oclive_plugin",
             "directory plugin id={} rpc_url={}",
             id,

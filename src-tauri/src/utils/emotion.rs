@@ -28,11 +28,11 @@ pub async fn analyze_emotion(message: &str) -> Result<String, String> {
             }
         }
         Ok(Err(e)) => {
-            log::warn!("[情绪分析] AI 调用失败: {}, 降级为 neutral", e);
+            tracing::warn!("[情绪分析] AI 调用失败: {}, 降级为 neutral", e);
             Ok("neutral".to_string())
         }
         Err(_) => {
-            log::warn!("[情绪分析] 调用超时，降级为 neutral");
+            tracing::warn!("[情绪分析] 调用超时，降级为 neutral");
             Ok("neutral".to_string())
         }
     }

@@ -3,7 +3,7 @@
 
 #[allow(clippy::collapsible_match, clippy::single_match)]
 fn main() {
-    let _ = env_logger::try_init();
+    oclivenewnew_tauri::init_tracing();
     let args: Vec<String> = std::env::args().collect();
     let mut port: u16 = std::env::var("OCLIVE_API_PORT")
         .ok()

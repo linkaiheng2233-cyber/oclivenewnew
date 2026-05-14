@@ -55,7 +55,7 @@ pub async fn generate_monologue_impl(
             if !templates.is_empty() {
                 let idx =
                     (ts.virtual_time_ms as usize).wrapping_add(templates.len()) % templates.len();
-                log::warn!(
+                tracing::warn!(
                     "monologue LLM failed, using scene template [{}]: {}",
                     idx,
                     e

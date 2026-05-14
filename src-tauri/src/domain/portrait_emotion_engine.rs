@@ -353,7 +353,7 @@ pub async fn resolve_portrait_emotion(
             Ok(raw) => parse_emotion_token(&raw)
                 .unwrap_or_else(|| fallback_base(bot_emotion, recent_turns)),
             Err(e) => {
-                log::warn!("portrait_emotion LLM failed, fallback: {}", e);
+                tracing::warn!("portrait_emotion LLM failed, fallback: {}", e);
                 fallback_base(bot_emotion, recent_turns)
             }
         }

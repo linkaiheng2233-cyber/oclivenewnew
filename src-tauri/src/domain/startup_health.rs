@@ -50,18 +50,18 @@ async fn run_checks(state: &AppState, role: &Role, effective: &PluginBackends) -
         .map(|v| v == "1" || v.eq_ignore_ascii_case("true"))
         .unwrap_or(false)
     {
-        log::info!(
+        tracing::info!(
             target: "oclive_startup",
             "OCLIVE_SKIP_LLM_STARTUP_PROBE set; skipping LLM probe"
         );
     } else if let Err(e) = state.llm.startup_probe().await {
-        log::warn!(
+        tracing::warn!(
             target: "oclive_startup",
             "LLM startup_probe non-fatal: {}",
             e.to_frontend_error()
         );
     }
-    log::info!(
+    tracing::info!(
         target: "oclive_startup",
         "startup_health ok role_id={}",
         role.id
@@ -115,7 +115,7 @@ fn verify_role_pack_files(state: &AppState, role: &Role) -> Result<()> {
     }
     let settings = dir.join("settings.json");
     if !settings.is_file() {
-        log::warn!(
+        tracing::warn!(
             target: "oclive_startup",
             "role pack 无 settings.json（可选）: {}",
             settings.display()

@@ -133,14 +133,14 @@ pub(super) async fn process_remote_stub(
         .unwrap_or_else(|| "neutral".to_string());
     let reply = compose_remote_stub_reply(role);
     let duration_ms = t0.elapsed().as_millis() as u64;
-    log::info!(
+    tracing::info!(
         target: "oclive_chat",
         "send_message remote_stub role_id={} scene_id={} duration_ms={}",
         role_id,
         scene_id,
         duration_ms
     );
-    log::debug!(
+    tracing::debug!(
         target: "oclive_chat",
         "send_message remote_stub timing preflight_ms={} duration_ms={}",
         preflight_ms,
@@ -328,7 +328,7 @@ pub(super) async fn process_remote_life(
     let reply_raw = match pl.llm.generate(ollama_model.as_str(), &prompt).await {
         Ok(s) => s,
         Err(e) => {
-            log::warn!("remote_life LLM generate failed, fallback: {}", e);
+            tracing::warn!("remote_life LLM generate failed, fallback: {}", e);
             main_llm_fallback = true;
             fallback_reply_for_llm_failure(
                 role,
@@ -456,7 +456,7 @@ pub(super) async fn process_remote_life(
         {
             Ok(s) => s,
             Err(e) => {
-                log::warn!(
+                tracing::warn!(
                     target: "oclive_chat",
                     "mutable_profile_llm remote_life failed role_id={} err={}; keeping previous archive",
                     srid,
@@ -509,7 +509,7 @@ pub(super) async fn process_remote_life(
 
     let post_llm_ms = t_post_llm.elapsed().as_millis() as u64;
     let duration_ms = t0.elapsed().as_millis() as u64;
-    log::info!(
+    tracing::info!(
         target: "oclive_chat",
         "send_message remote_life role_id={} scene_id={} duration_ms={} main_llm_fallback={} offer_destination_picker={} offer_together_travel={}",
         role_id,
@@ -519,7 +519,7 @@ pub(super) async fn process_remote_life(
         offer_destination_picker,
         offer_together_travel
     );
-    log::debug!(
+    tracing::debug!(
         target: "oclive_chat",
         "send_message remote_life timing preflight_ms={} pre_main_llm_ms={} main_llm_ms={} post_llm_ms={} duration_ms={}",
         preflight_ms,

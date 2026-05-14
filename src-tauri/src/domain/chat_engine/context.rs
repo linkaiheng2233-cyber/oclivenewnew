@@ -38,7 +38,7 @@ pub(super) fn validate_scene_id(
     let mut scene_id = requested_scene_id;
     let scenes = state.storage.list_scene_ids(role_id)?;
     if !scenes.iter().any(|s| s == &scene_id) {
-        log::warn!(
+        tracing::warn!(
             "send_message: invalid scene_id={} for role={}, fallback",
             scene_id,
             role_id

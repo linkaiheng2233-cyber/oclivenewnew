@@ -399,7 +399,7 @@ pub async fn estimate_event_impact(
                     confidence,
                 })
             } else {
-                log::warn!(
+                tracing::warn!(
                     "event_impact LLM output parse/constraint failed, fallback to rules: raw={}",
                     raw.chars().take(300).collect::<String>()
                 );
@@ -411,7 +411,7 @@ pub async fn estimate_event_impact(
             }
         }
         Err(e) => {
-            log::warn!("event_impact LLM failed, fallback to rules: {}", e);
+            tracing::warn!("event_impact LLM failed, fallback to rules: {}", e);
             Ok(EventImpactEstimate {
                 event_type: fallback_event_type,
                 impact_factor: fallback_impact,

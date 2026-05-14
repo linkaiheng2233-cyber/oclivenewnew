@@ -1,3 +1,9 @@
+#![allow(
+    clippy::missing_errors_doc,
+    clippy::missing_panics_doc,
+    clippy::must_use_candidate
+)]
+
 pub mod api;
 pub mod domain;
 pub mod env_flags;
@@ -8,6 +14,17 @@ pub mod models;
 pub mod state;
 pub mod utils;
 
+/// ???? HTTP API ??? `tracing` ?????? `info`??? `RUST_LOG` ???
+pub fn init_tracing() {
+    use tracing_subscriber::EnvFilter;
+    let filter = EnvFilter::try_from_default_env()
+        .unwrap_or_else(|_| EnvFilter::new("info"));
+    let _ = tracing_subscriber::fmt()
+        .with_env_filter(filter)
+        .with_target(true)
+        .try_init();
+}
+
 use std::fs;
 use std::path::{Path, PathBuf};
 use tauri::http::{Request, Response, ResponseBuilder};
@@ -17,7 +34,7 @@ use crate::infrastructure::deep_link::seed_pending_install_urls_from_args;
 use crate::infrastructure::directory_plugins::{start_plugin_fs_watcher, OclivePluginManifest};
 use crate::state::AppState;
 
-/// 向插件 HTML 注入 `window.OclivePluginBridge`（manifest 中 `bridge` + 白名单）。
+/// ??? HTML ?? `window.OclivePluginBridge`?manifest ? `bridge` + ?????
 fn inject_plugin_bridge_script(
     html: &str,
     plugin_id: &str,
@@ -170,24 +187,24 @@ fn serve_ocliveplugin_asset(
         .body(data)
 }
 
-/// 优先 `OCLIVE_ROLES_DIR`。
+/// ?? `OCLIVE_ROLES_DIR`?
 ///
-/// **开发构建**（`debug_assertions`）：优先 [`state::resolve_roles_dir`]（仓库根 `roles/`、`cwd/../roles` 等），
-/// 避免 `tauri dev` 时误用 `resource_dir/roles`（来自上次打包拷贝到 `target/.../resources` 的**旧快照**）。
+/// **????**?`debug_assertions`???? [`state::resolve_roles_dir`]???? `roles/`?`cwd/../roles` ???
+/// ?? `tauri dev` ??? `resource_dir/roles`?????????? `target/.../resources` ?**???**??
 ///
-/// **发布构建**：使用打包资源目录下的 `roles/`（`bundle.resources`），再回退到 [`state::resolve_roles_dir`]。
+/// **????**??????????? `roles/`?`bundle.resources`?????? [`state::resolve_roles_dir`]?
 fn resolve_roles_dir_for_app(app: &tauri::App) -> PathBuf {
     if let Ok(custom) = std::env::var("OCLIVE_ROLES_DIR") {
         let p = PathBuf::from(custom);
         if p.is_dir() {
-            log::info!(
+            tracing::info!(
                 target: "oclive_roles",
                 "using OCLIVE_ROLES_DIR -> {}",
                 p.display()
             );
             return p;
         }
-        log::warn!(
+        tracing::warn!(
             target: "oclive_roles",
             "OCLIVE_ROLES_DIR is set but not a directory: {}",
             p.display()
@@ -197,14 +214,14 @@ fn resolve_roles_dir_for_app(app: &tauri::App) -> PathBuf {
     {
         let dev = state::resolve_roles_dir();
         if dev.is_dir() {
-            log::info!(
+            tracing::info!(
                 target: "oclive_roles",
                 "dev build: prefer repo roles -> {}",
                 dev.display()
             );
             return dev;
         }
-        log::warn!(
+        tracing::warn!(
             target: "oclive_roles",
             "dev build: resolve_roles_dir not a directory ({}); trying bundled",
             dev.display()
@@ -212,29 +229,29 @@ fn resolve_roles_dir_for_app(app: &tauri::App) -> PathBuf {
     }
     match app.path_resolver().resource_dir() {
         Some(res) => {
-            log::info!(target: "oclive_roles", "tauri resource_dir -> {}", res.display());
+            tracing::info!(target: "oclive_roles", "tauri resource_dir -> {}", res.display());
             let bundled = res.join("roles");
             if bundled.is_dir() {
-                log::info!(
+                tracing::info!(
                     target: "oclive_roles",
                     "using bundled roles -> {}",
                     bundled.display()
                 );
                 return bundled;
             }
-            log::warn!(
+            tracing::warn!(
                 target: "oclive_roles",
                 "resource_dir/roles missing or not a directory: {}",
                 bundled.display()
             );
         }
-        None => log::warn!(
+        None => tracing::warn!(
             target: "oclive_roles",
             "resource_dir() is None; falling back to dev resolve_roles_dir"
         ),
     }
     let dev = state::resolve_roles_dir();
-    log::info!(
+    tracing::info!(
         target: "oclive_roles",
         "using dev fallback resolve_roles_dir -> {}",
         dev.display()
@@ -242,7 +259,7 @@ fn resolve_roles_dir_for_app(app: &tauri::App) -> PathBuf {
     dev
 }
 
-/// 本地 HTTP API 模式（`--api`），供编写器试聊等；阻塞至进程退出。
+/// ?? HTTP API ???`--api`??????????????????
 pub fn run_api_server(port: u16) {
     let rt = tokio::runtime::Builder::new_multi_thread()
         .enable_all()
@@ -257,8 +274,7 @@ pub fn run_api_server(port: u16) {
 
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
 pub fn run() {
-    let _ = env_logger::try_init();
-    // 与 `tauri.conf.json` → `bundle.identifier` 一致；`tauri-plugin-deep-link` 用于单实例与 IPC。
+    // ? `tauri.conf.json` ? `bundle.identifier` ???`tauri-plugin-deep-link` ?????? IPC?
     #[cfg(desktop)]
     tauri_plugin_deep_link::prepare("com.oclivenewnew.app");
     tauri::Builder::default()
@@ -270,14 +286,14 @@ pub fn run() {
             {
                 let app_h = app.handle().clone();
                 if let Err(e) = tauri_plugin_deep_link::register("oclive", move |url: String| {
-                    log::info!(target: "oclive_deep_link", "oclive deep link: {}", url);
+                    tracing::info!(target: "oclive_deep_link", "oclive deep link: {}", url);
                     seed_pending_install_urls_from_args(std::iter::once(url));
                     let _ = app_h.emit_all(
                         "protocol:pending_install",
                         serde_json::json!({ "reason": "deep-link" }),
                     );
                 }) {
-                    log::warn!(
+                    tracing::warn!(
                         target: "oclive_deep_link",
                         "register oclive:// handler failed: {}",
                         e
@@ -303,7 +319,7 @@ pub fn run() {
                 app.state::<AppState>().directory_plugins.app_data_dir(),
             );
             if let Err(e) = crate::api::hotkeys::apply_global_hotkeys(&app.handle(), &hk) {
-                log::warn!(target: "oclive_hotkey", "initial global shortcuts: {}", e);
+                tracing::warn!(target: "oclive_hotkey", "initial global shortcuts: {}", e);
             }
             start_plugin_fs_watcher(
                 app.handle().clone(),

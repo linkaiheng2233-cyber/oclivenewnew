@@ -43,14 +43,14 @@ pub fn resolve_roles_dir() -> PathBuf {
     if let Ok(custom) = std::env::var("OCLIVE_ROLES_DIR") {
         let p = PathBuf::from(&custom);
         if p.is_dir() {
-            log::info!(
+            tracing::info!(
                 target: "oclive_roles",
                 "resolve_roles_dir: OCLIVE_ROLES_DIR -> {}",
                 p.display()
             );
             return p;
         }
-        log::warn!(
+        tracing::warn!(
             target: "oclive_roles",
             "OCLIVE_ROLES_DIR is set but not a directory ({}); ignoring",
             custom
@@ -65,7 +65,7 @@ pub fn resolve_roles_dir() -> PathBuf {
             .join("roles");
         match from_manifest.canonicalize() {
             Ok(canon) if canon.is_dir() => {
-                log::info!(
+                tracing::info!(
                     target: "oclive_roles",
                     "resolve_roles_dir: manifest-relative -> {}",
                     canon.display()
@@ -74,7 +74,7 @@ pub fn resolve_roles_dir() -> PathBuf {
             }
             _ => {
                 if from_manifest.is_dir() {
-                    log::info!(
+                    tracing::info!(
                         target: "oclive_roles",
                         "resolve_roles_dir: manifest-relative (non-canon) -> {}",
                         from_manifest.display()
@@ -93,7 +93,7 @@ pub fn resolve_roles_dir() -> PathBuf {
             };
             let candidate = dir.join("roles");
             if candidate.is_dir() && roles_dir_has_any_role_pack(&candidate) {
-                log::info!(
+                tracing::info!(
                     target: "oclive_roles",
                     "resolve_roles_dir: near_exe -> {}",
                     candidate.display()
@@ -106,7 +106,7 @@ pub fn resolve_roles_dir() -> PathBuf {
     if let Ok(cwd) = std::env::current_dir() {
         let a = cwd.join("roles");
         if a.is_dir() && roles_dir_has_any_role_pack(&a) {
-            log::info!(
+            tracing::info!(
                 target: "oclive_roles",
                 "resolve_roles_dir: cwd/roles -> {}",
                 a.display()
@@ -116,7 +116,7 @@ pub fn resolve_roles_dir() -> PathBuf {
         let b = cwd.join("..").join("roles");
         if let Ok(canon) = b.canonicalize() {
             if canon.is_dir() && roles_dir_has_any_role_pack(&canon) {
-                log::info!(
+                tracing::info!(
                     target: "oclive_roles",
                     "resolve_roles_dir: ../roles -> {}",
                     canon.display()
@@ -126,7 +126,7 @@ pub fn resolve_roles_dir() -> PathBuf {
         }
     }
     let fallback = PathBuf::from("roles");
-    log::info!(
+    tracing::info!(
         target: "oclive_roles",
         "resolve_roles_dir: relative fallback -> {}",
         fallback.display()
@@ -228,11 +228,11 @@ fn load_policy_registry_from_path(path: &Path, strict: bool) -> Result<PolicyReg
         let content = fs::read_to_string(path).map_err(crate::error::AppError::IoError)?;
         match toml::from_str::<PolicyFileSchema>(&content) {
             Ok(PolicyFileSchema::Registry(parsed)) => {
-                log::info!("policy config loaded source=file path={}", path.display());
+                tracing::info!("policy config loaded source=file path={}", path.display());
                 parsed
             }
             Ok(PolicyFileSchema::Legacy(legacy)) => {
-                log::info!(
+                tracing::info!(
                     "policy config loaded as legacy source=file path={}",
                     path.display()
                 );
@@ -247,7 +247,7 @@ fn load_policy_registry_from_path(path: &Path, strict: bool) -> Result<PolicyReg
                         err
                     )));
                 }
-                log::warn!(
+                tracing::warn!(
                     "policy config parse failed source=file path={} err={}",
                     path.display(),
                     err
@@ -528,7 +528,7 @@ impl AppState {
         let runtime = Self::build_policy_sets_from_registry(registry);
         let count = runtime.scene_policy_sets.len();
         *self.policy_runtime.write() = runtime;
-        log::info!(
+        tracing::info!(
             "policy plugins reloaded path={} scene_count={}",
             path.display(),
             count
@@ -770,7 +770,7 @@ impl AppState {
         for desc in discovered {
             match plugins.register_local_provider(desc.clone()) {
                 Ok(()) => registered += 1,
-                Err(e) => log::warn!(
+                Err(e) => tracing::warn!(
                     target: "oclive_plugin",
                     "local plugin register failed provider_id={} bridge={} err={}",
                     desc.provider_id,
@@ -779,7 +779,7 @@ impl AppState {
                 ),
             }
         }
-        log::info!(
+        tracing::info!(
             target: "oclive_plugin",
             "local plugin bootstrap bridge={} dir={} registered={}",
             bridge.bridge_name(),

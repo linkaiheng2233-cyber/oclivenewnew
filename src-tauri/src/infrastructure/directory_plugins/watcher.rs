@@ -18,7 +18,7 @@ pub fn start_plugin_fs_watcher(app: tauri::AppHandle, state: &AppState, roles_di
     }
     let roots = plugin_scan_container_roots(&roles_dir, &app_data, &host);
     if roots.is_empty() {
-        log::info!(
+        tracing::info!(
             target: "oclive_plugin",
             "plugin fs watcher: no plugin container directories"
         );
@@ -36,7 +36,7 @@ pub fn start_plugin_fs_watcher(app: tauri::AppHandle, state: &AppState, roles_di
     ) {
         Ok(w) => w,
         Err(e) => {
-            log::warn!(
+            tracing::warn!(
                 target: "oclive_plugin",
                 "plugin fs watcher: create failed: {}",
                 e
@@ -47,7 +47,7 @@ pub fn start_plugin_fs_watcher(app: tauri::AppHandle, state: &AppState, roles_di
 
     for r in &roots {
         if let Err(e) = watcher.watch(r, RecursiveMode::Recursive) {
-            log::warn!(
+            tracing::warn!(
                 target: "oclive_plugin",
                 "plugin fs watcher: watch {:?}: {}",
                 r,

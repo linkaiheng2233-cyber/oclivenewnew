@@ -36,14 +36,14 @@ impl LlmClient for OllamaClient {
         match self.health_check().await {
             Ok(true) => Ok(()),
             Ok(false) => {
-                log::warn!(
+                tracing::warn!(
                     target: "oclive_startup",
                     "Ollama 服务不可达（/api/tags 非成功）；首条对话仍可能走 fallback"
                 );
                 Ok(())
             }
             Err(e) => {
-                log::warn!(
+                tracing::warn!(
                     target: "oclive_startup",
                     "Ollama health_check 异常: {}",
                     e
@@ -95,7 +95,7 @@ impl RemoteLlmPlaceholder {
             .compare_exchange(false, true, Ordering::SeqCst, Ordering::SeqCst)
             .is_ok()
         {
-            log::warn!(
+            tracing::warn!(
                 target: "oclive_plugin",
                 "llm backend Remote is not connected; using configured LlmClient"
             );

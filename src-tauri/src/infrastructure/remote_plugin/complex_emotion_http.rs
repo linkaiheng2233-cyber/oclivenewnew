@@ -52,7 +52,7 @@ impl RemoteComplexEmotionHttp {
                 Ok(out)
             }
             Err(e) => {
-                log::warn!(
+                tracing::warn!(
                     target: "oclive_plugin",
                     "complex_emotion.resolve_turn remote failed endpoint={} err={}; fallback=builtin",
                     self.cfg.endpoint,

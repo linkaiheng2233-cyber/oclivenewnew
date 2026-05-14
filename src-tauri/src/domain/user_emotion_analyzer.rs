@@ -52,7 +52,7 @@ impl RemoteUserEmotionAnalyzerPlaceholder {
             .compare_exchange(false, true, Ordering::SeqCst, Ordering::SeqCst)
             .is_ok()
         {
-            log::warn!(
+            tracing::warn!(
                 target: "oclive_plugin",
                 "emotion backend Remote is not connected; using builtin analyzer"
             );

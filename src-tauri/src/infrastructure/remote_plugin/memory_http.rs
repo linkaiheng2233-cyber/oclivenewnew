@@ -92,7 +92,7 @@ impl MemoryRetrieval for RemoteMemoryRetrievalHttp {
         match self.rank_remote(&input) {
             Some(v) if !v.is_empty() => v,
             _ => {
-                log::warn!(
+                tracing::warn!(
                     target: "oclive_plugin",
                     "memory.rank remote failed or empty endpoint={} fallback=builtin",
                     self.cfg.endpoint

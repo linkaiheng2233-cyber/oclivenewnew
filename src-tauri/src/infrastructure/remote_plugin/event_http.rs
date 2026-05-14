@@ -78,7 +78,7 @@ impl EventEstimator for RemoteEventEstimatorHttp {
                 Ok(est)
             }
             Err(e) => {
-                log::warn!(
+                tracing::warn!(
                     target: "oclive_plugin",
                     "event.estimate remote failed endpoint={} err={}; fallback=builtin",
                     self.cfg.endpoint,

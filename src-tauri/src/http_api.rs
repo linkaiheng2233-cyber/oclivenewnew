@@ -205,7 +205,7 @@ pub async fn serve_api(port: u16) -> Result<(), String> {
         .map(|v| v == "1" || v.eq_ignore_ascii_case("true"))
         .unwrap_or(false);
     let app_state = if mock_llm {
-        log::warn!(target: "oclive_api", "OCLIVE_HTTP_API_MOCK_LLM enabled: using in-memory DB + mock LLM");
+        tracing::warn!(target: "oclive_api", "OCLIVE_HTTP_API_MOCK_LLM enabled: using in-memory DB + mock LLM");
         let llm = Arc::new(MockLlmClient {
             reply: "OOCP mock reply".to_string(),
         });
@@ -228,7 +228,7 @@ pub async fn serve_api(port: u16) -> Result<(), String> {
     let listener = TcpListener::bind(&addr)
         .await
         .map_err(|e| format!("绑定 {} 失败：{}", addr, e))?;
-    log::info!(target: "oclive_api", "HTTP API listening http://{}", addr);
+    tracing::info!(target: "oclive_api", "HTTP API listening http://{}", addr);
     axum::serve(listener, app)
         .await
         .map_err(|e| format!("HTTP 服务异常：{}", e))?;

@@ -294,7 +294,7 @@ pub(crate) async fn process_co_present(
     let reply_raw = match pl.llm.generate(ollama_model.as_str(), &prompt).await {
         Ok(s) => s,
         Err(e) => {
-            log::warn!("main LLM generate failed, talkativeness fallback: {}", e);
+            tracing::warn!("main LLM generate failed, talkativeness fallback: {}", e);
             main_llm_fallback = true;
             fallback_reply_for_llm_failure(
                 role,
@@ -440,7 +440,7 @@ pub(crate) async fn process_co_present(
         {
             Ok(s) => s,
             Err(e) => {
-                log::warn!(
+                tracing::warn!(
                     target: "oclive_chat",
                     "mutable_profile_llm failed role_id={} err={}; keeping previous archive",
                     srid,
@@ -507,7 +507,7 @@ pub(crate) async fn process_co_present(
 
     let post_llm_ms = t_post_llm.elapsed().as_millis() as u64;
     let duration_ms = t0.elapsed().as_millis() as u64;
-    log::info!(
+    tracing::info!(
         target: "oclive_chat",
         "send_message co_present role_id={} scene_id={} duration_ms={} main_llm_fallback={} offer_destination_picker={} offer_together_travel={}",
         mrid,
@@ -517,7 +517,7 @@ pub(crate) async fn process_co_present(
         offer_destination_picker,
         offer_together_travel
     );
-    log::debug!(
+    tracing::debug!(
         target: "oclive_chat",
         "send_message co_present timing preflight_ms={} pre_main_llm_ms={} main_llm_ms={} post_llm_ms={} duration_ms={}",
         preflight_ms,

@@ -193,14 +193,14 @@ impl BackendRegistry {
 
     fn llm_directory_slot(&self, backends: &PluginBackends) -> Arc<dyn LlmClient> {
         let Some(rt) = self.directory_runtime.as_ref() else {
-            log::warn!(
+            tracing::warn!(
                 target: "oclive_plugin",
                 "plugin_backends.llm=directory but directory plugin runtime disabled"
             );
             return self.llm_ollama.clone();
         };
         let Some(pid) = directory_slot_id(&backends.directory_plugins, |s| &s.llm) else {
-            log::warn!(
+            tracing::warn!(
                 target: "oclive_plugin",
                 "plugin_backends.llm=directory but directory_plugins.llm missing"
             );
@@ -212,7 +212,7 @@ impl BackendRegistry {
                 Arc::new(RemoteLlmHttp::new(cfg))
             }
             Err(e) => {
-                log::error!(
+                tracing::error!(
                     target: "oclive_plugin",
                     "directory llm plugin_id={} spawn failed: {}",
                     pid,
@@ -251,19 +251,19 @@ impl BackendRegistry {
         let ids: Vec<String> = providers.iter().map(|p| p.provider_id.clone()).collect();
         let pick = pick_local_memory_provider(ids, backends.local_memory_provider_id.as_deref());
         if pick.provider_id.is_none() {
-            log::warn!(
+            tracing::warn!(
                 target: "oclive_plugin",
                 "plugin_backends.memory=local but no registered local memory provider; ranking uses builtin_v2"
             );
         } else if pick.hint_missed {
-            log::warn!(
+            tracing::warn!(
                 target: "oclive_plugin",
                 "plugin_backends.local_memory_provider_id={:?} not found among memory providers; using provider_id={}",
                 backends.local_memory_provider_id,
                 pick.provider_id.as_deref().unwrap_or("")
             );
         } else if pick.ambiguous_lexicographic {
-            log::warn!(
+            tracing::warn!(
                 target: "oclive_plugin",
                 "plugin_backends.memory=local with multiple memory providers; set plugin_backends.local_memory_provider_id; picked provider_id={}",
                 pick.provider_id.as_deref().unwrap_or("")
@@ -277,14 +277,14 @@ impl BackendRegistry {
 
     fn memory_directory_slot(&self, backends: &PluginBackends) -> Arc<dyn MemoryRetrieval> {
         let Some(rt) = self.directory_runtime.as_ref() else {
-            log::warn!(
+            tracing::warn!(
                 target: "oclive_plugin",
                 "plugin_backends.memory=directory but directory plugin runtime disabled; using builtin"
             );
             return self.memory_builtin.clone();
         };
         let Some(pid) = directory_slot_id(&backends.directory_plugins, |s| &s.memory) else {
-            log::warn!(
+            tracing::warn!(
                 target: "oclive_plugin",
                 "plugin_backends.memory=directory but directory_plugins.memory missing; using builtin"
             );
@@ -295,7 +295,7 @@ impl BackendRegistry {
                 RemotePluginHttpConfig::for_directory_plugin_rpc(url, false),
             )),
             Err(e) => {
-                log::error!(
+                tracing::error!(
                     target: "oclive_plugin",
                     "directory memory plugin_id={} spawn failed: {}",
                     pid,
@@ -327,14 +327,14 @@ impl BackendRegistry {
 
     fn emotion_directory_slot(&self, backends: &PluginBackends) -> Arc<dyn UserEmotionAnalyzer> {
         let Some(rt) = self.directory_runtime.as_ref() else {
-            log::warn!(
+            tracing::warn!(
                 target: "oclive_plugin",
                 "plugin_backends.emotion=directory but directory plugin runtime disabled; using builtin"
             );
             return self.emotion_builtin.clone();
         };
         let Some(pid) = directory_slot_id(&backends.directory_plugins, |s| &s.emotion) else {
-            log::warn!(
+            tracing::warn!(
                 target: "oclive_plugin",
                 "plugin_backends.emotion=directory but directory_plugins.emotion missing; using builtin"
             );
@@ -345,7 +345,7 @@ impl BackendRegistry {
                 RemotePluginHttpConfig::for_directory_plugin_rpc(url, false),
             )),
             Err(e) => {
-                log::error!(
+                tracing::error!(
                     target: "oclive_plugin",
                     "directory emotion plugin_id={} spawn failed: {}",
                     pid,
@@ -374,14 +374,14 @@ impl BackendRegistry {
 
     fn event_directory_slot(&self, backends: &PluginBackends) -> Arc<dyn EventEstimator> {
         let Some(rt) = self.directory_runtime.as_ref() else {
-            log::warn!(
+            tracing::warn!(
                 target: "oclive_plugin",
                 "plugin_backends.event=directory but directory plugin runtime disabled; using builtin"
             );
             return self.event_builtin.clone();
         };
         let Some(pid) = directory_slot_id(&backends.directory_plugins, |s| &s.event) else {
-            log::warn!(
+            tracing::warn!(
                 target: "oclive_plugin",
                 "plugin_backends.event=directory but directory_plugins.event missing; using builtin"
             );
@@ -392,7 +392,7 @@ impl BackendRegistry {
                 RemotePluginHttpConfig::for_directory_plugin_rpc(url, false),
             )),
             Err(e) => {
-                log::error!(
+                tracing::error!(
                     target: "oclive_plugin",
                     "directory event plugin_id={} spawn failed: {}",
                     pid,
@@ -421,14 +421,14 @@ impl BackendRegistry {
 
     fn prompt_directory_slot(&self, backends: &PluginBackends) -> Arc<dyn PromptAssembler> {
         let Some(rt) = self.directory_runtime.as_ref() else {
-            log::warn!(
+            tracing::warn!(
                 target: "oclive_plugin",
                 "plugin_backends.prompt=directory but directory plugin runtime disabled; using builtin"
             );
             return self.prompt_builtin.clone();
         };
         let Some(pid) = directory_slot_id(&backends.directory_plugins, |s| &s.prompt) else {
-            log::warn!(
+            tracing::warn!(
                 target: "oclive_plugin",
                 "plugin_backends.prompt=directory but directory_plugins.prompt missing; using builtin"
             );
@@ -439,7 +439,7 @@ impl BackendRegistry {
                 RemotePluginHttpConfig::for_directory_plugin_rpc(url, false),
             )),
             Err(e) => {
-                log::error!(
+                tracing::error!(
                     target: "oclive_plugin",
                     "directory prompt plugin_id={} spawn failed: {}",
                     pid,

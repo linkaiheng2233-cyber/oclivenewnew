@@ -115,7 +115,7 @@ impl RemoteMemoryRetrievalPlaceholder {
             .compare_exchange(false, true, Ordering::SeqCst, Ordering::SeqCst)
             .is_ok()
         {
-            log::warn!(
+            tracing::warn!(
                 target: "oclive_plugin",
                 "memory backend Remote is not connected; using builtin ranking"
             );
@@ -168,7 +168,7 @@ impl MemoryRetrieval for LocalPluginMemoryRetrieval {
 
     fn rank_memories(&self, input: MemoryRetrievalInput<'_>) -> Vec<Memory> {
         if let Some(id) = &self.resolved_provider_id {
-            log::debug!(
+            tracing::debug!(
                 target: "oclive_plugin",
                 "memory.local rank_memories provider_id={} (stub delegates to builtin_v2 slot)",
                 id

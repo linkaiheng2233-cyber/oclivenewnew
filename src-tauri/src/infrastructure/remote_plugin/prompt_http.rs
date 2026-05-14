@@ -37,7 +37,7 @@ impl PromptAssembler for RemotePromptAssemblerHttp {
         let params = match serde_json::to_value(PromptInputSnapshot::from_input(input)) {
             Ok(v) => v,
             Err(e) => {
-                log::warn!(
+                tracing::warn!(
                     target: "oclive_plugin",
                     "prompt snapshot serialize failed: {}; builtin",
                     e
@@ -60,11 +60,11 @@ impl PromptAssembler for RemotePromptAssemblerHttp {
                 if let Some(s) = v.as_str() {
                     return s.to_string();
                 }
-                log::warn!(target: "oclive_plugin", "prompt.build_prompt: bad shape; builtin");
+                tracing::warn!(target: "oclive_plugin", "prompt.build_prompt: bad shape; builtin");
                 self.fallback.build_prompt(input)
             }
             Err(e) => {
-                log::warn!(
+                tracing::warn!(
                     target: "oclive_plugin",
                     "prompt.build_prompt remote failed endpoint={} err={}; fallback=builtin",
                     self.cfg.endpoint,

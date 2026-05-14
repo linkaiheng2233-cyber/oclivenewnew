@@ -106,7 +106,7 @@ pub fn call_blocking(
     let resp = req.send().map_err(|e| {
         let kind = classify_reqwest_error(&e);
         let ms = t0.elapsed().as_millis();
-        log::warn!(
+        tracing::warn!(
             target: "oclive_plugin",
             "{} rpc_fail kind={} phase=send method={} url={} duration_ms={} err={}",
             ch,
@@ -124,7 +124,7 @@ pub fn call_blocking(
     let status = resp.status();
     let text = resp.text().map_err(|e| {
         let ms = t0.elapsed().as_millis();
-        log::warn!(
+        tracing::warn!(
             target: "oclive_plugin",
             "{} rpc_fail kind=read_body method={} url={} duration_ms={} err={}",
             ch,
@@ -137,7 +137,7 @@ pub fn call_blocking(
     })?;
     if !status.is_success() {
         let ms = t0.elapsed().as_millis();
-        log::warn!(
+        tracing::warn!(
             target: "oclive_plugin",
             "{} rpc_fail kind=http_status method={} url={} status={} duration_ms={} body={}",
             ch,
@@ -156,7 +156,7 @@ pub fn call_blocking(
             body_preview(&text)
         )));
     }
-    log::debug!(
+    tracing::debug!(
         target: "oclive_plugin",
         "{} rpc_ok method={} url={} duration_ms={}",
         ch,
@@ -195,7 +195,7 @@ pub async fn call_async(
     let resp = req.send().await.map_err(|e| {
         let kind = classify_reqwest_error(&e);
         let ms = t0.elapsed().as_millis();
-        log::warn!(
+        tracing::warn!(
             target: "oclive_plugin",
             "{} rpc_fail kind={} phase=send method={} url={} duration_ms={} err={}",
             ch,
@@ -213,7 +213,7 @@ pub async fn call_async(
     let status = resp.status();
     let text = resp.text().await.map_err(|e| {
         let ms = t0.elapsed().as_millis();
-        log::warn!(
+        tracing::warn!(
             target: "oclive_plugin",
             "{} rpc_fail kind=read_body method={} url={} duration_ms={} err={}",
             ch,
@@ -226,7 +226,7 @@ pub async fn call_async(
     })?;
     if !status.is_success() {
         let ms = t0.elapsed().as_millis();
-        log::warn!(
+        tracing::warn!(
             target: "oclive_plugin",
             "{} rpc_fail kind=http_status method={} url={} status={} duration_ms={} body={}",
             ch,
@@ -245,7 +245,7 @@ pub async fn call_async(
             body_preview(&text)
         )));
     }
-    log::debug!(
+    tracing::debug!(
         target: "oclive_plugin",
         "{} rpc_ok method={} url={} duration_ms={}",
         ch,

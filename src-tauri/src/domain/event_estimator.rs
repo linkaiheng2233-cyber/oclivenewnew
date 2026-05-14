@@ -110,7 +110,7 @@ impl RemoteEventEstimatorPlaceholder {
             .compare_exchange(false, true, Ordering::SeqCst, Ordering::SeqCst)
             .is_ok()
         {
-            log::warn!(
+            tracing::warn!(
                 target: "oclive_plugin",
                 "event backend Remote is not connected; using builtin event impact"
             );

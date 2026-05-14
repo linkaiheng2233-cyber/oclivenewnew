@@ -47,21 +47,21 @@ pub struct ChatTurnTxInput<'a> {
 
 fn log_txn_finish(tx_name: &str, role_id: &str, elapsed_ms: u128) {
     if elapsed_ms >= TX_ERROR_MS {
-        log::error!(
+        tracing::error!(
             "tx slow code=TXN_SLOW_CRITICAL tx_name={} role_id={} elapsed_ms={}",
             tx_name,
             role_id,
             elapsed_ms
         );
     } else if elapsed_ms >= TX_WARN_MS {
-        log::warn!(
+        tracing::warn!(
             "tx slow code=TXN_SLOW_WARN tx_name={} role_id={} elapsed_ms={}",
             tx_name,
             role_id,
             elapsed_ms
         );
     } else {
-        log::info!(
+        tracing::info!(
             "tx finish tx_name={} role_id={} elapsed_ms={}",
             tx_name,
             role_id,
@@ -122,7 +122,7 @@ impl DbManager {
         event: &Event,
     ) -> Result<(String, String)> {
         let started = Instant::now();
-        log::info!("tx save_memory_and_event_atomic start role_id={}", role_id);
+        tracing::info!("tx save_memory_and_event_atomic start role_id={}", role_id);
         let mut tx = self
             .pool
             .begin()
@@ -188,7 +188,7 @@ impl DbManager {
             message: e.to_string(),
         })?;
         let elapsed_ms = started.elapsed().as_millis();
-        log::info!(
+        tracing::info!(
             "tx save_memory_and_event_atomic committed role_id={} memory_id={} event_id={} elapsed_ms={}",
             role_id,
             memory_id,
@@ -216,7 +216,7 @@ impl DbManager {
         let bot_reply = input.bot_reply;
         let scene_id = input.scene_id;
         let started = Instant::now();
-        log::info!("tx apply_chat_turn_atomic start role_id={}", role_id);
+        tracing::info!("tx apply_chat_turn_atomic start role_id={}", role_id);
         let mut tx = self
             .pool
             .begin()
@@ -232,7 +232,7 @@ impl DbManager {
                 let _step_started = Instant::now();
                 if let Err(e) = $future.await {
                     let msg = e.to_string();
-                    log::error!(
+                    tracing::error!(
                         "tx step failed code={} step={} role_id={} err={} elapsed_ms={}",
                         $code,
                         $step_name,
@@ -241,7 +241,7 @@ impl DbManager {
                         started.elapsed().as_millis()
                     );
                     if let Err(rb_err) = tx.rollback().await {
-                        log::error!(
+                        tracing::error!(
                             "tx rollback failed code=TXN_ROLLBACK_FAILED role_id={} err={} elapsed_ms={}",
                             role_id,
                             rb_err,
@@ -253,7 +253,7 @@ impl DbManager {
                         message: msg,
                     });
                 }
-                log::debug!(
+                tracing::debug!(
                     "tx step ok step={} role_id={} step_elapsed_ms={} tx_elapsed_ms={}",
                     $step_name,
                     role_id,
@@ -389,7 +389,7 @@ impl DbManager {
                 .execute(&mut *tx)
             );
         } else {
-            log::info!("tx memory skipped role_id={} reason=low_value", role_id);
+            tracing::info!("tx memory skipped role_id={} reason=low_value", role_id);
         }
 
         // 每个角色长期记忆上限 500，超出后按 created_at FIFO 删除旧记录。
@@ -470,14 +470,14 @@ impl DbManager {
             Ok(v) => v,
             Err(e) => {
                 let msg = e.to_string();
-                log::error!(
+                tracing::error!(
                     "tx step failed code=TXN_FAVORABILITY_READ_FAILED role_id={} err={} elapsed_ms={}",
                     role_id,
                     msg,
                     started.elapsed().as_millis()
                 );
                 if let Err(rb_err) = tx.rollback().await {
-                    log::error!(
+                    tracing::error!(
                         "tx rollback failed code=TXN_ROLLBACK_FAILED role_id={} err={} elapsed_ms={}",
                         role_id,
                         rb_err,
@@ -492,7 +492,7 @@ impl DbManager {
         };
 
         tx.commit().await.map_err(|e| {
-            log::error!(
+            tracing::error!(
                 "tx commit failed code=TXN_COMMIT_FAILED role_id={} err={} elapsed_ms={}",
                 role_id,
                 e,
@@ -503,7 +503,7 @@ impl DbManager {
                 message: e.to_string(),
             }
         })?;
-        log::info!(
+        tracing::info!(
             "tx apply_chat_turn_atomic committed role_id={} favor_current={} elapsed_ms={}",
             role_id,
             favor_current,
