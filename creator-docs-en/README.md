@@ -13,6 +13,7 @@ This tree mirrors **`creator-docs/`** with hand-maintained English pages. For to
 | Documentation hub (quick links, RFC, reading order) | [getting-started/DOCUMENTATION_INDEX.md](getting-started/DOCUMENTATION_INDEX.md) |
 | Project overview (repos, commands, checklist) | [getting-started/PROJECT_OVERVIEW.md](getting-started/PROJECT_OVERVIEW.md) |
 | Kernel-centric module diagram (Mermaid + static figure) | [getting-started/KERNEL_AND_MODULES_ARCHITECTURE.md](getting-started/KERNEL_AND_MODULES_ARCHITECTURE.md) |
+| Error codes & triage | [getting-started/ERROR_CODES.md](getting-started/ERROR_CODES.md) |
 
 ---
 
