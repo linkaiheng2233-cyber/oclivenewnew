@@ -217,6 +217,9 @@ pub async fn serve_api(port: u16) -> Result<(), String> {
             .await
             .map_err(|e| e.to_string())?
     };
+    crate::domain::startup_health::run_global_db_ping(&app_state.db_manager)
+        .await
+        .map_err(|e| e.to_string())?;
     let app_state = Arc::new(app_state);
 
     let app = api_router(app_state);

@@ -310,6 +310,8 @@ pub struct AppState {
     session_plugin_overrides: Arc<RwLock<HashMap<String, PluginBackendsOverride>>>,
     /// 共景路径：上一回合内置复杂情感输出的 `narrative_hint`（按 `srid` 命名空间；进程内，非 SQLite）。
     last_complex_emotion_narrative_hint: Arc<RwLock<HashMap<String, String>>>,
+    /// 首轮 `process_message` 启动自检结果（致命错误缓存，后续请求直接短路）。
+    pub(crate) startup_health: Mutex<Option<std::result::Result<(), String>>>,
 }
 
 impl AppState {
@@ -414,6 +416,7 @@ impl AppState {
             directory_plugins,
             session_plugin_overrides: Arc::new(RwLock::new(HashMap::new())),
             last_complex_emotion_narrative_hint: Arc::new(RwLock::new(HashMap::new())),
+            startup_health: Mutex::new(None),
         })
     }
 
@@ -486,6 +489,7 @@ impl AppState {
             directory_plugins,
             session_plugin_overrides: Arc::new(RwLock::new(HashMap::new())),
             last_complex_emotion_narrative_hint: Arc::new(RwLock::new(HashMap::new())),
+            startup_health: Mutex::new(None),
         })
     }
 

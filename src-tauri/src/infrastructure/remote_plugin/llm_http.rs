@@ -77,6 +77,10 @@ impl LlmClient for RemoteLlmHttp {
             })?;
         Ok(text)
     }
+
+    async fn startup_probe(&self) -> Result<()> {
+        Ok(())
+    }
 }
 
 #[cfg(test)]

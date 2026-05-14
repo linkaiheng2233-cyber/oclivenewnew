@@ -76,6 +76,15 @@ impl DbManager {
         Self { pool }
     }
 
+    /// 启动期探活：`SELECT 1`。
+    pub async fn health_ping(&self) -> Result<()> {
+        sqlx::query_scalar::<_, i32>("SELECT 1")
+            .fetch_one(&self.pool)
+            .await
+            .map_err(|e| AppError::DatabaseError(format!("health_ping: {e}")))?;
+        Ok(())
+    }
+
     // ===== 记忆操作 =====
 
     /// 保存长期记忆

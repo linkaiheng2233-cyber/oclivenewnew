@@ -3,6 +3,7 @@ pub mod life_schedule;
 pub mod local_plugin_bridge;
 pub mod local_plugin_memory_pick;
 pub mod role_manifest_validate;
+pub mod startup_health;
 pub mod user_identity;
 
 pub mod affect_policy;

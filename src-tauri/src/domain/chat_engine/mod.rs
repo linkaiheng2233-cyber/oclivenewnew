@@ -590,6 +590,8 @@ pub async fn process_message(
         backend_resolution_summary(&effective_backends, &effective_sources)
     );
 
+    crate::domain::startup_health::ensure_once(state, role.as_ref(), &effective_backends).await?;
+
     let pl = state.resolved_plugins_for_session(role.as_ref(), Some(srid));
     let agent_out = pl
         .agent

@@ -24,6 +24,10 @@ impl LlmClient for CapturePromptLlm {
     async fn generate_tag(&self, _model: &str, _prompt: &str) -> Result<String> {
         Ok("neutral".to_string())
     }
+
+    async fn startup_probe(&self) -> Result<()> {
+        Ok(())
+    }
 }
 
 #[tokio::test]

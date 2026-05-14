@@ -14,6 +14,10 @@ pub trait LlmClient: Send + Sync {
     async fn generate(&self, model: &str, prompt: &str) -> Result<String>;
     /// 低温度短输出（立绘标签等分类任务）
     async fn generate_tag(&self, model: &str, prompt: &str) -> Result<String>;
+    /// 启动期可选探活（不默认失败；Ollama 实现会 ping 服务，失败仅打日志）。
+    async fn startup_probe(&self) -> Result<()> {
+        Ok(())
+    }
 }
 
 #[async_trait]
@@ -26,6 +30,27 @@ impl LlmClient for OllamaClient {
     async fn generate_tag(&self, model: &str, prompt: &str) -> Result<String> {
         let (t, p) = llm_params::tag_task_options();
         OllamaClient::generate(self, model, prompt, t, p).await
+    }
+
+    async fn startup_probe(&self) -> Result<()> {
+        match self.health_check().await {
+            Ok(true) => Ok(()),
+            Ok(false) => {
+                log::warn!(
+                    target: "oclive_startup",
+                    "Ollama 服务不可达（/api/tags 非成功）；首条对话仍可能走 fallback"
+                );
+                Ok(())
+            }
+            Err(e) => {
+                log::warn!(
+                    target: "oclive_startup",
+                    "Ollama health_check 异常: {}",
+                    e
+                );
+                Ok(())
+            }
+        }
     }
 }
 
@@ -88,5 +113,9 @@ impl LlmClient for RemoteLlmPlaceholder {
     async fn generate_tag(&self, model: &str, prompt: &str) -> Result<String> {
         self.warn_once();
         self.inner.generate_tag(model, prompt).await
+    }
+
+    async fn startup_probe(&self) -> Result<()> {
+        self.inner.startup_probe().await
     }
 }
