@@ -49,6 +49,19 @@ export default {
     retry: "重试",
     useHtml: "使用 HTML 版本",
   },
+  envVar: {
+    title: "环境变量管理（会话草稿）",
+    upsert: "添加/更新",
+    remove: "删除",
+    copyCmd: "复制为终端命令",
+    copied: "已复制",
+  },
+  logViewer: {
+    filterPh: "过滤日志…",
+    clear: "清空",
+    export: "导出",
+    empty: "暂无日志（启动插件进程后 stdout/stderr 会显示在此）。",
+  },
   /** 插件管理 V1 · 单插件调试台（PluginDebugPanel） */
   pluginDebug: {
     target: "目标",

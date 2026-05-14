@@ -1,10 +1,13 @@
 <script setup lang="ts">
 import { computed, ref, watch } from "vue";
+import { useI18n } from "vue-i18n";
 
 interface EnvEntry {
   key: string;
   value: string;
 }
+
+const { t } = useI18n();
 
 const STORAGE_KEY = "oclive.env.overrides";
 const rows = ref<EnvEntry[]>([]);
@@ -55,7 +58,7 @@ const cmdText = computed(() =>
 async function copyCmd() {
   if (!cmdText.value) return;
   await navigator.clipboard.writeText(cmdText.value);
-  copied.value = "已复制";
+  copied.value = t("devTools.envVar.copied");
   window.setTimeout(() => (copied.value = ""), 1500);
 }
 
@@ -64,20 +67,20 @@ load();
 
 <template>
   <section class="evm">
-    <h4 class="evm-h">环境变量管理（会话草稿）</h4>
+    <h4 class="evm-h">{{ t("devTools.envVar.title") }}</h4>
     <div class="evm-row">
       <input v-model="draftKey" class="evm-input" placeholder="OCLIVE_*" />
       <input v-model="draftValue" class="evm-input" placeholder="value" />
-      <button type="button" class="evm-btn" @click="upsert">添加/更新</button>
+      <button type="button" class="evm-btn" @click="upsert">{{ t("devTools.envVar.upsert") }}</button>
     </div>
     <ul class="evm-list">
       <li v-for="r in rows" :key="r.key">
         <code>{{ r.key }}</code>=<code>{{ r.value }}</code>
-        <button type="button" class="evm-link" @click="removeKey(r.key)">删除</button>
+        <button type="button" class="evm-link" @click="removeKey(r.key)">{{ t("devTools.envVar.remove") }}</button>
       </li>
     </ul>
     <div class="evm-row">
-      <button type="button" class="evm-btn" @click="copyCmd">复制为终端命令</button>
+      <button type="button" class="evm-btn" @click="copyCmd">{{ t("devTools.envVar.copyCmd") }}</button>
       <span class="evm-copied">{{ copied }}</span>
     </div>
     <pre v-if="cmdText" class="evm-pre">{{ cmdText }}</pre>

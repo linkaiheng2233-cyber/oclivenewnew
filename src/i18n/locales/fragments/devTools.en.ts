@@ -49,6 +49,19 @@ export default {
     retry: "Retry",
     useHtml: "Use HTML version",
   },
+  envVar: {
+    title: "Environment variables (session draft)",
+    upsert: "Add / update",
+    remove: "Remove",
+    copyCmd: "Copy as shell commands",
+    copied: "Copied",
+  },
+  logViewer: {
+    filterPh: "Filter logs…",
+    clear: "Clear",
+    export: "Export",
+    empty: "No logs yet (stdout/stderr appear here after starting a plugin process).",
+  },
   pluginDebug: {
     target: "Target",
     tabsAria: "Debug sections",
