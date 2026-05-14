@@ -260,6 +260,22 @@ fn validate_life_schedule(
     Ok(())
 }
 
+/// `settings.json` → `interaction_mode`：`immersive` | `pure_chat`；空或省略合法。
+pub fn validate_interaction_mode_pack_setting(raw: Option<&str>) -> Result<(), String> {
+    const IMMERSIVE: &str = "immersive";
+    const PURE_CHAT: &str = "pure_chat";
+    if let Some(s) = raw {
+        let t = s.trim();
+        if !t.is_empty() && t != IMMERSIVE && t != PURE_CHAT {
+            return Err(format!(
+                "角色包 settings：interaction_mode 须为 {} 或 {}（当前为 {}）",
+                IMMERSIVE, PURE_CHAT, s
+            ));
+        }
+    }
+    Ok(())
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
