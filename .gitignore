@@ -32,6 +32,7 @@ distributions/
 src-tauri/.sqlx_prepare.db
 src-tauri/target
 /target
+bench_history.json
 .env
 .env.*
 !.env.example

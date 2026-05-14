@@ -5,7 +5,7 @@ use crate::build_cmd::{
 };
 use anyhow::{bail, Context, Result};
 use clap::Parser;
-use serde::Serialize;
+use serde::{Deserialize, Serialize};
 use std::fs;
 use std::path::{Path, PathBuf};
 use std::process::Command;
@@ -37,12 +37,20 @@ pub struct BenchArgs {
     #[arg(long, default_value = "-")]
     pub output: String,
 
+    /// 将本次报告追加到项目根目录 `bench_history.json`（本地文件，勿提交）
+    #[arg(long)]
+    pub save: bool,
+
+    /// 对比 `bench_history.json` 中最近两次记录（不运行采样）
+    #[arg(long)]
+    pub compare: bool,
+
     /// 透传给 `cargo build` 的附加参数（放在 `--` 之后）
     #[arg(trailing_var_arg = true, allow_hyphen_values = true)]
     pub cargo_extra: Vec<String>,
 }
 
-#[derive(Serialize)]
+#[derive(Serialize, Deserialize, Debug, Clone)]
 pub struct BenchReport {
     pub schema_version: u32,
     pub package_name: String,
@@ -53,7 +61,7 @@ pub struct BenchReport {
     pub monolith_ms: SampleStats,
 }
 
-#[derive(Serialize)]
+#[derive(Serialize, Deserialize, Debug, Clone)]
 pub struct SampleStats {
     pub samples: Vec<f64>,
     pub min: f64,
@@ -61,6 +69,104 @@ pub struct SampleStats {
     pub p50: f64,
     pub p95: f64,
     pub mean: f64,
+}
+
+#[derive(Serialize, Deserialize, Default)]
+struct BenchHistoryFile {
+    schema: u32,
+    entries: Vec<BenchHistoryEntry>,
+}
+
+#[derive(Serialize, Deserialize)]
+struct BenchHistoryEntry {
+    ts: u64,
+    report: BenchReport,
+}
+
+fn history_path(root: &Path) -> PathBuf {
+    root.join("bench_history.json")
+}
+
+fn append_history(root: &Path, report: &BenchReport) -> Result<()> {
+    let path = history_path(root);
+    let mut file: BenchHistoryFile = if path.is_file() {
+        let raw = fs::read_to_string(&path).with_context(|| format!("read {}", path.display()))?;
+        serde_json::from_str(&raw).context("parse bench_history.json")?
+    } else {
+        BenchHistoryFile {
+            schema: 1,
+            entries: vec![],
+        }
+    };
+    file.entries.push(BenchHistoryEntry {
+        ts: std::time::SystemTime::now()
+            .duration_since(std::time::UNIX_EPOCH)
+            .unwrap_or_default()
+            .as_secs(),
+        report: report.clone(),
+    });
+    if file.entries.len() > 64 {
+        file.entries.drain(0..file.entries.len() - 64);
+    }
+    let out = serde_json::to_string_pretty(&file)?;
+    fs::write(&path, out).with_context(|| format!("write {}", path.display()))?;
+    Ok(())
+}
+
+fn percentile_of_sorted(sorted: &[f64], p: f64) -> f64 {
+    if sorted.is_empty() {
+        return 0.0;
+    }
+    let idx = ((sorted.len() as f64 - 1.0) * p).round() as usize;
+    sorted[idx.min(sorted.len() - 1)]
+}
+
+fn p99_from_samples(samples: &[f64]) -> f64 {
+    let mut s = samples.to_vec();
+    s.sort_by(|a, b| a.partial_cmp(b).unwrap_or(std::cmp::Ordering::Equal));
+    percentile_of_sorted(&s, 0.99)
+}
+
+fn compare_history(root: &Path) -> Result<()> {
+    let path = history_path(root);
+    if !path.is_file() {
+        bail!("未找到 {}；请先运行 `oclive bench --save ...`", path.display());
+    }
+    let raw = fs::read_to_string(&path).context("read bench_history")?;
+    let file: BenchHistoryFile = serde_json::from_str(&raw).context("parse bench_history")?;
+    if file.entries.len() < 2 {
+        bail!(
+            "bench_history 记录不足 2 条（当前 {}）；请至少保存两次 bench 结果",
+            file.entries.len()
+        );
+    }
+    let a = &file.entries[file.entries.len() - 2].report;
+    let b = &file.entries[file.entries.len() - 1].report;
+    println!("oclive bench --compare（最近两次）");
+    println!("  ts: {} -> {}", file.entries[file.entries.len() - 2].ts, file.entries[file.entries.len() - 1].ts);
+    let lines = [
+        ("standard 中位数 ms", a.standard_ms.p50, b.standard_ms.p50),
+        ("standard P95 ms", a.standard_ms.p95, b.standard_ms.p95),
+        ("standard P99 ms", p99_from_samples(&a.standard_ms.samples), p99_from_samples(&b.standard_ms.samples)),
+        ("monolith 中位数 ms", a.monolith_ms.p50, b.monolith_ms.p50),
+        ("monolith P95 ms", a.monolith_ms.p95, b.monolith_ms.p95),
+        ("monolith P99 ms", p99_from_samples(&a.monolith_ms.samples), p99_from_samples(&b.monolith_ms.samples)),
+    ];
+    for (label, x, y) in lines {
+        let d = y - x;
+        let pct = if x.abs() > f64::EPSILON {
+            (d / x) * 100.0
+        } else {
+            0.0
+        };
+        let warn = if label.contains("monolith") && d > 0.0 && pct > 5.0 {
+            " ⚠️"
+        } else {
+            ""
+        };
+        println!("  {label}: {x:.3} -> {y:.3} (Δ {d:+.3} ms, {pct:+.1}%){warn}");
+    }
+    Ok(())
 }
 
 fn resolve_project_root(path: &Path) -> Result<PathBuf> {
@@ -151,6 +257,9 @@ fn cargo_build_dual(root: &Path, release: bool, extra: &[String]) -> Result<()> 
 
 pub fn run(args: BenchArgs) -> Result<()> {
     let root = resolve_project_root(&args.path)?;
+    if args.compare {
+        return compare_history(&root);
+    }
     let mt = root.join("monolith.toml");
     if !mt.is_file() {
         bail!("未找到 {}", mt.display());
@@ -193,6 +302,10 @@ pub fn run(args: BenchArgs) -> Result<()> {
         eprintln!("已写入 {}", args.output);
     } else {
         println!("{json}");
+    }
+    if args.save {
+        append_history(&root, &report)?;
+        eprintln!("已追加到 {}", history_path(&root).display());
     }
     Ok(())
 }
