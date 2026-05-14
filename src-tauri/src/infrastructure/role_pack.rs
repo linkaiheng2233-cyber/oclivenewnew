@@ -79,12 +79,12 @@ fn peek_role_folder_manifest(dir: &Path) -> Result<(String, String, String)> {
     let manifest_path = root.join("manifest.json");
     if !manifest_path.is_file() {
         return Err(AppError::InvalidParameter(
-            "角色包格式错误：未找到 manifest.json".into(),
+            "Role pack format: manifest.json not found".into(),
         ));
     }
     let s = fs::read_to_string(&manifest_path).map_err(AppError::IoError)?;
     let disk: DiskRoleManifest = serde_json::from_str(&s)
-        .map_err(|_| AppError::InvalidParameter("角色包格式错误：manifest.json 无法解析".into()))?;
+        .map_err(|_| AppError::InvalidParameter("Role pack format: manifest.json is invalid JSON".into()))?;
     Ok((disk.id, disk.name, disk.version))
 }
 /// # Errors
@@ -96,14 +96,14 @@ pub fn peek_role_pack_manifest(src: &Path) -> Result<(String, String, String)> {
         return peek_role_folder_manifest(src);
     }
     let file = File::open(src)
-        .map_err(|e| AppError::InvalidParameter(format!("角色包格式错误：无法打开文件（{e}）")))?;
+        .map_err(|e| AppError::InvalidParameter(format!("Role pack format: cannot open file ({e})")))?;
     let mut archive = ZipArchive::new(file)
-        .map_err(|_| AppError::InvalidParameter("角色包格式错误：不是有效的 ZIP/ocpak".into()))?;
+        .map_err(|_| AppError::InvalidParameter("Role pack format: not a valid ZIP/ocpak archive".into()))?;
     let mut candidates: Vec<(u8, usize)> = Vec::new();
     for i in 0..archive.len() {
         let f = archive
             .by_index(i)
-            .map_err(|_| AppError::InvalidParameter("角色包格式错误：压缩包损坏".into()))?;
+            .map_err(|_| AppError::InvalidParameter("Role pack format: archive is corrupted".into()))?;
         let name = f.name().to_string();
         if name.ends_with('/') {
             continue;
@@ -116,10 +116,10 @@ pub fn peek_role_pack_manifest(src: &Path) -> Result<(String, String, String)> {
     for (_, i) in candidates {
         let mut f = archive
             .by_index(i)
-            .map_err(|_| AppError::InvalidParameter("角色包格式错误：压缩包损坏".into()))?;
+            .map_err(|_| AppError::InvalidParameter("Role pack format: archive is corrupted".into()))?;
         let mut s = String::new();
         std::io::Read::read_to_string(&mut f, &mut s)
-            .map_err(|_| AppError::InvalidParameter("角色包格式错误：无法读取 manifest".into()))?;
+            .map_err(|_| AppError::InvalidParameter("Role pack format: cannot read manifest from archive".into()))?;
         let disk: DiskRoleManifest = match serde_json::from_str(&s) {
             Ok(d) => d,
             Err(_) => continue,
@@ -127,15 +127,15 @@ pub fn peek_role_pack_manifest(src: &Path) -> Result<(String, String, String)> {
         return Ok((disk.id, disk.name, disk.version));
     }
     Err(AppError::InvalidParameter(
-        "角色包格式错误：未找到 manifest.json".into(),
+        "Role pack format: manifest.json not found in archive".into(),
     ))
 }
 
 fn unzip_to(src: &Path, dest: &Path, mut on_entry: impl FnMut(usize, usize)) -> Result<()> {
     let file = File::open(src)
-        .map_err(|e| AppError::InvalidParameter(format!("角色包格式错误：无法打开文件（{e}）")))?;
+        .map_err(|e| AppError::InvalidParameter(format!("Role pack format: cannot open file ({e})")))?;
     let mut archive = ZipArchive::new(file)
-        .map_err(|_| AppError::InvalidParameter("角色包格式错误：不是有效的 ZIP/ocpak".into()))?;
+        .map_err(|_| AppError::InvalidParameter("Role pack format: not a valid ZIP/ocpak archive".into()))?;
     let total = archive.len().max(1);
     for i in 0..archive.len() {
         let mut file = archive
@@ -175,7 +175,7 @@ fn resolve_extracted_role_root(extract_dir: &Path) -> Result<PathBuf> {
         return Ok(dirs[0].clone());
     }
     Err(AppError::InvalidParameter(
-        "未找到 manifest.json：须在包根目录或唯一子目录中包含该文件（与 zip 解压后结构一致）"
+        "manifest.json not found: expected at pack root or inside a single top-level folder (same layout as a zip extract)."
             .into(),
     ))
 }
@@ -183,7 +183,7 @@ fn resolve_extracted_role_root(extract_dir: &Path) -> Result<PathBuf> {
 fn load_role_for_pack_import(storage: &RoleStorage, root: &Path) -> Result<Role> {
     storage.load_role_from_dir(root).map_err(|e| match e {
         AppError::SerializationError(_) | AppError::RoleNotFound(_) => {
-            AppError::InvalidParameter("角色包格式错误：无法解析角色目录".into())
+            AppError::InvalidParameter("Role pack format: cannot parse role directory".into())
         }
         o => o,
     })
