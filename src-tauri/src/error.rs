@@ -14,7 +14,7 @@ pub enum AppError {
     #[error("Role not found: {0}")]
     RoleNotFound(String),
 
-    #[error("角色已存在，需确认是否覆盖：{0}")]
+    #[error("Role already exists; overwrite required: {0}")]
     RolePackExists(String),
 
     #[error("Invalid parameter: {0}")]

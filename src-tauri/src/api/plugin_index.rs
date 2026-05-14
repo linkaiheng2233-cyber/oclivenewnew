@@ -1,3 +1,4 @@
+use crate::error::AppError;
 use crate::infrastructure::deep_link::take_pending_install_git_urls;
 use crate::infrastructure::directory_plugins::{parse_manifest_version, OclivePluginManifest};
 use crate::infrastructure::plugin_data::ensure_default_config_for_manifest;
@@ -119,7 +120,10 @@ pub fn sync_plugin_index_command(
                 cache,
                 true,
                 "cache",
-                Some(format!("在线索引不可达，已回退本地缓存：{}", err)),
+                Some(format!(
+                "Online plugin index unreachable; using local cache: {}",
+                err
+            )),
             ))
         }
     }
@@ -143,7 +147,7 @@ pub fn install_plugin_from_market(
 ) -> Result<InstallPluginFromMarketResponse, String> {
     let pid = plugin_id.trim();
     if pid.is_empty() {
-        return Err("plugin_id required".to_string());
+        return Err(AppError::InvalidParameter("plugin_id required".into()).to_frontend_error());
     }
     let from_index = load_cached_index(&state).map_err(|e| e.to_frontend_error())?;
     let index_item = from_index.plugins.iter().find(|p| p.id == pid).cloned();
@@ -153,7 +157,10 @@ pub fn install_plugin_from_market(
         index_item
             .as_ref()
             .map(|p| p.git.clone())
-            .ok_or_else(|| format!("plugin not found in index: {}", pid))?
+            .ok_or_else(|| {
+                AppError::InvalidParameter(format!("plugin not found in index: {}", pid))
+                    .to_frontend_error()
+            })?
     };
     let installed_id = install_plugin(
         &state,
@@ -184,7 +191,7 @@ pub fn install_plugin_from_git(
 ) -> Result<InstallPluginFromMarketResponse, String> {
     let git = req.git_url.trim();
     if git.is_empty() {
-        return Err("git_url required".to_string());
+        return Err(AppError::InvalidParameter("git_url required".into()).to_frontend_error());
     }
     let installed_id = install_plugin(&state, git, None).map_err(|e| e.to_frontend_error())?;
     let root_opt = {

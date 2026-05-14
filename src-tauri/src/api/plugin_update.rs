@@ -1,5 +1,6 @@
 //! 目录插件本地更新（zip 覆盖）；在线版本检查预留。
 
+use crate::error::AppError;
 use crate::infrastructure::directory_plugins::OclivePluginManifest;
 use crate::state::AppState;
 use serde::Serialize;
@@ -40,7 +41,7 @@ pub fn check_plugin_updates(
             PluginUpdateInfo {
                 has_update: false,
                 latest_version: None,
-                message: Some("在线版本检查尚未接入".to_string()),
+                message: Some("Online plugin version check is not wired yet.".to_string()),
             },
         );
     }
@@ -48,28 +49,40 @@ pub fn check_plugin_updates(
 }
 
 fn unzip_archive(zip_path: &Path, dst: &Path) -> Result<(), String> {
-    let file = File::open(zip_path).map_err(|e| format!("打开 zip: {}", e))?;
-    let mut archive = ZipArchive::new(file).map_err(|e| format!("解析 zip: {}", e))?;
+    let file = File::open(zip_path).map_err(|e| {
+        AppError::InvalidParameter(format!("open zip: {e}"))
+            .to_frontend_error()
+    })?;
+    let mut archive = ZipArchive::new(file).map_err(|e| {
+        AppError::InvalidParameter(format!("parse zip: {e}"))
+            .to_frontend_error()
+    })?;
     for i in 0..archive.len() {
         let mut entry = archive
             .by_index(i)
-            .map_err(|e| format!("zip 条目 {}: {}", i, e))?;
+            .map_err(|e| {
+                AppError::InvalidParameter(format!("zip entry {i}: {e}"))
+                    .to_frontend_error()
+            })?;
         let rel = match entry.enclosed_name() {
             Some(p) => p.to_path_buf(),
             None => {
-                return Err(format!("zip 条目 {}: 非法路径", i));
+                return Err(
+                    AppError::InvalidParameter(format!("zip entry {i}: illegal path"))
+                        .to_frontend_error(),
+                );
             }
         };
         let outpath = dst.join(&rel);
         if entry.is_dir() || rel.to_string_lossy().ends_with('/') {
-            fs::create_dir_all(&outpath).map_err(|e| e.to_string())?;
+            fs::create_dir_all(&outpath).map_err(|e| AppError::from(e).to_frontend_error())?;
             continue;
         }
         if let Some(parent) = outpath.parent() {
-            fs::create_dir_all(parent).map_err(|e| e.to_string())?;
+            fs::create_dir_all(parent).map_err(|e| AppError::from(e).to_frontend_error())?;
         }
-        let mut outf = File::create(&outpath).map_err(|e| e.to_string())?;
-        io::copy(&mut entry, &mut outf).map_err(|e| e.to_string())?;
+        let mut outf = File::create(&outpath).map_err(|e| AppError::from(e).to_frontend_error())?;
+        io::copy(&mut entry, &mut outf).map_err(|e| AppError::from(e).to_frontend_error())?;
     }
     Ok(())
 }
@@ -80,7 +93,7 @@ fn find_manifest_root(dir: &Path) -> Result<PathBuf, String> {
         return Ok(dir.to_path_buf());
     }
     let subs: Vec<_> = fs::read_dir(dir)
-        .map_err(|e| e.to_string())?
+        .map_err(|e| AppError::from(e).to_frontend_error())?
         .filter_map(|e| e.ok())
         .filter(|e| e.path().is_dir())
         .collect();
@@ -90,20 +103,28 @@ fn find_manifest_root(dir: &Path) -> Result<PathBuf, String> {
             return Ok(p);
         }
     }
-    Err("zip 中未找到有效的 manifest.json（根目录或单一顶层目录内）".to_string())
+    Err(
+        AppError::InvalidParameter(
+            "No valid manifest.json in zip (root or single top-level folder)".into(),
+        )
+        .to_frontend_error(),
+    )
 }
 
 fn copy_dir_all(src: &Path, dst: &Path) -> Result<(), String> {
     for entry in WalkDir::new(src).into_iter().filter_map(|e| e.ok()) {
-        let rel = entry.path().strip_prefix(src).map_err(|e| e.to_string())?;
+        let rel = entry
+            .path()
+            .strip_prefix(src)
+            .map_err(|e| AppError::InvalidParameter(e.to_string()).to_frontend_error())?;
         let out = dst.join(rel);
         if entry.file_type().is_dir() {
-            fs::create_dir_all(&out).map_err(|e| e.to_string())?;
+            fs::create_dir_all(&out).map_err(|e| AppError::from(e).to_frontend_error())?;
         } else {
             if let Some(parent) = out.parent() {
-                fs::create_dir_all(parent).map_err(|e| e.to_string())?;
+                fs::create_dir_all(parent).map_err(|e| AppError::from(e).to_frontend_error())?;
             }
-            fs::copy(entry.path(), &out).map_err(|e| e.to_string())?;
+            fs::copy(entry.path(), &out).map_err(|e| AppError::from(e).to_frontend_error())?;
         }
     }
     Ok(())
@@ -133,38 +154,51 @@ pub fn extract_plugin_zip(
 ) -> Result<(), String> {
     let pid = plugin_id.trim();
     if pid.is_empty() {
-        return Err("plugin_id required".to_string());
+        return Err(AppError::InvalidParameter("plugin_id required".into()).to_frontend_error());
     }
     let zip_path = PathBuf::from(zip_path.trim());
     if !zip_path.is_file() {
-        return Err(format!("zip 文件不存在: {}", zip_path.display()));
+        return Err(
+            AppError::InvalidParameter(format!("zip file not found: {}", zip_path.display()))
+                .to_frontend_error(),
+        );
     }
     let zip_path = zip_path
         .canonicalize()
-        .map_err(|e| format!("zip 路径: {}", e))?;
+        .map_err(|e| {
+            AppError::InvalidParameter(format!("zip path: {e}"))
+                .to_frontend_error()
+        })?;
 
-    let tmp = tempfile::tempdir().map_err(|e| e.to_string())?;
+    let tmp = tempfile::tempdir().map_err(|e| AppError::from(e).to_frontend_error())?;
     unzip_archive(&zip_path, tmp.path())?;
     let staged = find_manifest_root(tmp.path())?;
-    let manifest = OclivePluginManifest::load_from_dir(&staged)?;
+    let manifest = OclivePluginManifest::load_from_dir(&staged)
+        .map_err(|e| AppError::InvalidParameter(e).to_frontend_error())?;
     if manifest.id.trim() != pid {
-        return Err(format!(
-            "manifest id={} 与目标插件 {} 不一致",
-            manifest.id.trim(),
-            pid
-        ));
+        return Err(
+            AppError::InvalidParameter(format!(
+                "manifest id={} does not match target plugin {}",
+                manifest.id.trim(),
+                pid
+            ))
+            .to_frontend_error(),
+        );
     }
 
     let target = resolve_install_dir(&state, pid);
     if let Some(parent) = target.parent() {
-        fs::create_dir_all(parent).map_err(|e| e.to_string())?;
+        fs::create_dir_all(parent).map_err(|e| AppError::from(e).to_frontend_error())?;
     }
 
     state.directory_plugins.clear_plugin_process(pid);
     if target.exists() {
-        fs::remove_dir_all(&target).map_err(|e| format!("删除旧插件目录: {}", e))?;
+        fs::remove_dir_all(&target).map_err(|e| {
+            AppError::InvalidParameter(format!("remove old plugin dir: {e}"))
+                .to_frontend_error()
+        })?;
     }
-    fs::create_dir_all(&target).map_err(|e| e.to_string())?;
+    fs::create_dir_all(&target).map_err(|e| AppError::from(e).to_frontend_error())?;
     copy_dir_all(&staged, &target)?;
 
     state

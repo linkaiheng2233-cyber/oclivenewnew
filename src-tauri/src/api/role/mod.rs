@@ -41,14 +41,14 @@ fn parse_backend_wire<T: DeserializeOwned>(module: &str, value: &str) -> Result<
     let t = value.trim();
     if t.is_empty() {
         return Err(AppError::InvalidParameter(format!(
-            "session backend override: module={} backend 不能为空",
+            "session backend override: module={} backend must not be empty",
             module
         ))
         .to_frontend_error());
     }
     serde_json::from_value::<T>(Value::String(t.to_string())).map_err(|_| {
         AppError::InvalidParameter(format!(
-            "session backend override: module={} backend={} 非法",
+            "session backend override: module={} backend={} is invalid",
             module, t
         ))
         .to_frontend_error()
@@ -533,7 +533,7 @@ pub async fn clear_scene_user_relation_impl(
         .map_err(|e| e.to_frontend_error())?;
     if matches!(role.identity_binding, IdentityBinding::Global) {
         return Err(AppError::InvalidParameter(
-            "当前角色包为全局身份模式（identity_binding: global），无需按场景清除身份覆盖"
+            "This role pack uses global identity_binding; per-scene identity overrides are not used."
                 .to_string(),
         )
         .to_frontend_error());
@@ -579,7 +579,8 @@ pub async fn set_scene_user_relation_impl(
         .map_err(|e| e.to_frontend_error())?;
     if matches!(role.identity_binding, IdentityBinding::Global) {
         return Err(AppError::InvalidParameter(
-            "当前角色包为全局身份模式（identity_binding: global），请使用全局身份设置，勿按场景绑定".to_string(),
+            "This role pack uses global identity_binding; set identity globally instead of per scene."
+                .to_string(),
         )
         .to_frontend_error());
     }
@@ -847,7 +848,7 @@ pub async fn apply_author_suggested_plugin_backends(
         .cloned()
     else {
         return Err(AppError::InvalidParameter(
-            "该角色包未提供 author.json suggested_plugin_backends".into(),
+            "This role pack has no author.json suggested_plugin_backends.".into(),
         )
         .to_frontend_error());
     };
@@ -972,7 +973,7 @@ pub async fn clear_scene_user_relation(
 pub async fn delete_role_impl(state: &AppState, role_id: String) -> Result<Value, String> {
     let rid = role_id.trim();
     if rid.is_empty() {
-        return Err("delete_role: role_id required".to_string());
+        return Err(AppError::InvalidParameter("role_id required".into()).to_frontend_error());
     }
     let removed_ns = state
         .db_manager
