@@ -27,6 +27,8 @@ pub const PRESET_MATRIX_HELP: &str = r#"预设与 plugin_backends（逻辑槽位
 * agent = none：写入 settings.json 时省略 agent 键（内核无 none 枚举；加载时回退默认 builtin）。
 
 llm 使用 ollama 表示进程内默认本地客户端；无本机模型时请改为 remote 并配置 OCLIVE_REMOTE_LLM_URL（见 PLUGIN_V1）。
+
+开发者编译选项（计划中）：高耦合编译模式可消除热路径上的模块虚调用开销；`monolith.toml` 由 init 生成、build 读取。详见 creator-docs/rfc/RFC_OCLIVE_MONOLITH_MODE.md。
 "#;
 
 #[derive(Parser, Debug, Clone)]

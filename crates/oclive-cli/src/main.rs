@@ -31,3 +31,14 @@ fn main() -> Result<()> {
         Commands::Init(args) => init::run(args),
     }
 }
+
+#[cfg(test)]
+mod tests {
+    #[test]
+    fn init_after_long_help_mentions_monolith_rfc() {
+        assert!(
+            crate::init::PRESET_MATRIX_HELP.contains("RFC_OCLIVE_MONOLITH_MODE.md"),
+            "init --help footer should point to Monolith RFC"
+        );
+    }
+}

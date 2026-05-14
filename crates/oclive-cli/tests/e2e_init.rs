@@ -46,6 +46,15 @@ fn e2e_preset_minimal_builds() {
     ]);
     assert!(st.success(), "oclive-cli init");
     assert!(out.join("CONFIG_REFERENCE.md").is_file());
+    let cref = fs::read_to_string(out.join("CONFIG_REFERENCE.md")).expect("CONFIG_REFERENCE.md");
+    assert!(
+        cref.contains("开发者编译选项"),
+        "CONFIG_REFERENCE should mention planned developer compile options"
+    );
+    assert!(
+        cref.contains("RFC_OCLIVE_MONOLITH_MODE"),
+        "CONFIG_REFERENCE should link Monolith RFC"
+    );
     let settings_path = out.join("roles/default/settings.json");
     let raw = fs::read_to_string(&settings_path).expect("settings.json");
     let v: Value = serde_json::from_str(&raw).expect("parse settings");
