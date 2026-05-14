@@ -10,6 +10,7 @@ import {
   watch,
   withDefaults,
 } from "vue";
+import { useI18n } from "vue-i18n";
 import { confirm } from "@tauri-apps/api/dialog";
 import { storeToRefs } from "pinia";
 import {
@@ -21,6 +22,8 @@ import { usePluginStore } from "../stores/pluginStore";
 import { readPluginAssetText } from "../utils/tauri-api";
 import { scanVueComponentSource } from "../utils/vueComponentSecurity";
 import PluginSkeleton from "./PluginSkeleton.vue";
+
+const { t } = useI18n();
 
 const props = withDefaults(
   defineProps<{
@@ -93,10 +96,11 @@ watch(
         );
         const { warnings } = scanVueComponentSource(preloadedEntrySource);
         if (warnings.length > 0) {
-          const ok = await confirm(
-            `此插件包含潜在危险代码：\n${warnings.map((w) => `- ${w}`).join("\n")}\n\n是否继续加载？`,
-            { title: "插件安全警告", type: "warning" },
-          );
+          const list = warnings.map((w) => `- ${w}`).join("\n");
+          const ok = await confirm(t("devTools.pluginVueSecurity.confirmBody", { list }), {
+            title: t("devTools.pluginVueSecurity.confirmTitle"),
+            type: "warning",
+          });
           if (!ok) {
             emit("failed");
             return;

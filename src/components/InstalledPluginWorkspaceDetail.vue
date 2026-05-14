@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import { useI18n } from "vue-i18n";
 import PluginPrivateSettingsForm from "./PluginPrivateSettingsForm.vue";
 import PluginDebugPanel from "./PluginDebugPanel.vue";
 import PluginListItem from "./PluginListItem.vue";
@@ -24,6 +25,7 @@ const emit = defineEmits<{
 
 const pluginStore = usePluginStore();
 const { showToast } = useAppToast();
+const { t } = useI18n();
 
 function onPluginDisabledRow(id: string, disabled: boolean): void {
   try {
@@ -73,11 +75,11 @@ function onPluginDisabledRow(id: string, disabled: boolean): void {
       "
     />
     <div v-if="entry.hasUiSettings" class="ipwd-settings">
-      <div class="ipwd-settings-h">插件私有设置</div>
+      <div class="ipwd-settings-h">{{ t("pluginManager.installed.privateSettings") }}</div>
       <PluginPrivateSettingsForm :plugin-id="entry.id" />
     </div>
     <div class="ipwd-debug">
-      <div class="ipwd-debug-h">调试台</div>
+      <div class="ipwd-debug-h">{{ t("pluginManager.installed.debugWorkbench") }}</div>
       <PluginDebugPanel
         :key="entry.id"
         :plugin-id="entry.id"

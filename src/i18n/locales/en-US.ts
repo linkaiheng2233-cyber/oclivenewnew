@@ -241,6 +241,10 @@ export default {
       unsupported: "Only LLM / Emotion session writes are supported right now.",
       sessionSaved: "Saved to the current session.",
     },
+    installed: {
+      privateSettings: "Plugin private settings",
+      debugWorkbench: "Debug console",
+    },
   },
   settings: {
     ariaDialog: "Settings",

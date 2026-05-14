@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { computed, ref, watch } from "vue";
+import { useI18n } from "vue-i18n";
 import type { RpcHistoryItem } from "../composables/usePluginDebug";
 import { usePluginDebug } from "../composables/usePluginDebug";
 import { getPluginLogs, killPluginProcess } from "../utils/tauri-api";
@@ -17,6 +18,8 @@ const props = withDefaults(
   { spawnSupported: true },
 );
 
+const { t } = useI18n();
+
 const section = ref<"process" | "rpc" | "logs">("process");
 const rpcMethod = ref("");
 const rpcParams = ref("{}\n");
@@ -26,8 +29,10 @@ const dbg = usePluginDebug(pluginIdRef);
 const { processInfo, allProcesses, methods, logs, lastResponse, busy } = dbg;
 
 const statusLabel = computed(() => {
-  if (processInfo.value) return `运行中 · PID ${processInfo.value.pid}`;
-  return "未运行";
+  if (processInfo.value) {
+    return t("devTools.proc.runningPid", { pid: processInfo.value.pid });
+  }
+  return t("devTools.proc.notStarted");
 });
 
 watch(
@@ -86,7 +91,7 @@ function onApplyHistory(item: RpcHistoryItem) {
   <div class="pm-dbg-root">
     <header class="pm-dbg-chrome">
       <div class="pm-dbg-chrome-left">
-        <span class="pm-dbg-chrome-label">目标</span>
+        <span class="pm-dbg-chrome-label">{{ t("devTools.pluginDebug.target") }}</span>
         <code class="pm-dbg-chrome-id">{{ pluginId }}</code>
         <span
           class="pm-dbg-chrome-status"
@@ -94,14 +99,14 @@ function onApplyHistory(item: RpcHistoryItem) {
           :title="statusLabel"
         >{{ statusLabel }}</span>
       </div>
-      <nav class="pm-dbg-tabs" aria-label="调试分区">
+      <nav class="pm-dbg-tabs" :aria-label="t('devTools.pluginDebug.tabsAria')">
         <button
           type="button"
           class="pm-dbg-tab"
           :class="{ active: section === 'process' }"
           @click="section = 'process'"
         >
-          进程
+          {{ t("devTools.pluginDebug.tabProcess") }}
         </button>
         <button
           type="button"
@@ -109,7 +114,7 @@ function onApplyHistory(item: RpcHistoryItem) {
           :class="{ active: section === 'rpc' }"
           @click="section = 'rpc'"
         >
-          RPC
+          {{ t("devTools.pluginDebug.tabRpc") }}
         </button>
         <button
           type="button"
@@ -117,7 +122,7 @@ function onApplyHistory(item: RpcHistoryItem) {
           :class="{ active: section === 'logs' }"
           @click="section = 'logs'"
         >
-          控制台
+          {{ t("devTools.pluginDebug.tabLogs") }}
         </button>
       </nav>
     </header>
@@ -150,23 +155,21 @@ function onApplyHistory(item: RpcHistoryItem) {
           @apply-history="onApplyHistory"
         />
         <div v-show="section === 'logs'" class="pm-dbg-console-tab">
-          <p class="pm-dbg-console-hint">
-            下方 <strong>Output</strong> 为环形缓冲（约 1000 行），宿主轮询刷新；与主流 IDE 底部控制台类似。
-          </p>
+          <p class="pm-dbg-console-hint" v-html="t('devTools.pluginDebug.consoleHint')" />
         </div>
       </div>
 
-      <aside class="pm-dbg-inspector" aria-label="响应与日志输出">
+      <aside class="pm-dbg-inspector" :aria-label="t('devTools.pluginDebug.inspectorAria')">
         <section class="pm-dbg-panel">
           <div class="pm-dbg-panel-h">
-            <span class="pm-dbg-panel-title">响应</span>
+            <span class="pm-dbg-panel-title">{{ t("devTools.pluginDebug.responseTitle") }}</span>
             <span class="pm-dbg-panel-meta">JSON-RPC</span>
           </div>
-          <pre class="pm-dbg-pre">{{ lastResponse || "（尚无响应）" }}</pre>
+          <pre class="pm-dbg-pre">{{ lastResponse || t("devTools.pluginDebug.emptyResponse") }}</pre>
         </section>
         <section class="pm-dbg-panel pm-dbg-panel--grow">
           <div class="pm-dbg-panel-h">
-            <span class="pm-dbg-panel-title">输出</span>
+            <span class="pm-dbg-panel-title">{{ t("devTools.pluginDebug.outputTitle") }}</span>
             <span class="pm-dbg-panel-meta">stdout / stderr</span>
           </div>
           <LogViewer

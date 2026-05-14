@@ -20,7 +20,7 @@ const servers = ref<McpServerManifest[]>([]);
 const traces = ref<AgentDebugTrace[]>([]);
 const selectedServerId = ref("");
 const selectedToolName = ref("");
-const paramsText = ref('{"city":"深圳"}');
+const paramsText = ref('{"city":"Beijing"}');
 const callResultText = ref("");
 const availableTools = ref<McpToolManifest[]>([]);
 const callResultHistory = ref<Array<{ id: string; label: string; payload: string }>>([]);
@@ -44,7 +44,7 @@ const BUILTIN_TEMPLATE_DEFS: Array<
     id: "weather",
     labelKey: "devTools.agentTplWeather",
     toolName: "get_weather",
-    params: { city: "北京" },
+    params: { city: "Beijing" },
   },
   {
     id: "file-read",

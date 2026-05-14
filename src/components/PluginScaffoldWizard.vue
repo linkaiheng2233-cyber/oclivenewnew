@@ -1,6 +1,9 @@
 <script setup lang="ts">
 import { computed, ref } from "vue";
+import { useI18n } from "vue-i18n";
 import { createPluginScaffold } from "../utils/tauri-api";
+
+const { t, locale } = useI18n();
 
 const props = defineProps<{ visible: boolean }>();
 const emit = defineEmits<{
@@ -31,15 +34,16 @@ const manifestPreview = computed(() => {
 const allowedPermissions = ["network", "fs", "clipboard", "shell"];
 
 const manifestErrors = computed(() => {
+  void locale.value;
   const errs: string[] = [];
   const v = manifestPreview.value;
-  if (!v.id) errs.push("缺少必填字段 id");
-  if (!v.name) errs.push("缺少必填字段 name");
-  if (!v.version) errs.push("缺少必填字段 version");
-  if (!v.process) errs.push("缺少 process 或 remote_url");
+  if (!v.id) errs.push(t("devTools.scaffold.errId"));
+  if (!v.name) errs.push(t("devTools.scaffold.errName"));
+  if (!v.version) errs.push(t("devTools.scaffold.errVersion"));
+  if (!v.process) errs.push(t("devTools.scaffold.errProcess"));
   for (const p of v.permissions) {
     if (!allowedPermissions.includes(p)) {
-      errs.push(`permissions 含非法值: ${p}`);
+      errs.push(t("devTools.scaffold.errPerm", { p }));
     }
   }
   return errs;
@@ -57,7 +61,7 @@ async function onCreate(): Promise<void> {
       pluginType: pluginType.value,
       baseDir: baseDir.value.trim() || undefined,
     });
-    status.value = `已生成：${r.plugin_dir}`;
+    status.value = t("devTools.scaffold.createdAt", { dir: r.plugin_dir });
     emit("created", r.plugin_dir);
   } catch (e) {
     status.value = e instanceof Error ? e.message : String(e);
@@ -72,39 +76,39 @@ async function onCreate(): Promise<void> {
     <div v-if="props.visible" class="psw-backdrop" @click.self="emit('close')">
       <div class="psw-dialog">
         <header class="psw-head">
-          <h3>新建插件脚手架</h3>
+          <h3>{{ t("devTools.scaffold.title") }}</h3>
           <button type="button" class="psw-close" @click="emit('close')">×</button>
         </header>
         <div class="psw-body">
-          <label>插件 ID <input v-model="pluginId" class="psw-input" placeholder="com.example.demo" /></label>
-          <label>插件名称 <input v-model="pluginName" class="psw-input" placeholder="Demo Plugin" /></label>
-          <label>语言
+          <label>{{ t("devTools.scaffold.fieldId") }} <input v-model="pluginId" class="psw-input" placeholder="com.example.demo" /></label>
+          <label>{{ t("devTools.scaffold.fieldName") }} <input v-model="pluginName" class="psw-input" placeholder="Demo Plugin" /></label>
+          <label>{{ t("devTools.scaffold.fieldLang") }}
             <select v-model="language" class="psw-input">
               <option value="node">Node.js</option>
               <option value="python">Python</option>
               <option value="rust">Rust</option>
             </select>
           </label>
-          <label>类型
+          <label>{{ t("devTools.scaffold.fieldType") }}
             <select v-model="pluginType" class="psw-input">
               <option value="skill">Skill</option>
               <option value="agent">Agent</option>
-              <option value="module_ext">六模块扩展</option>
+              <option value="module_ext">{{ t("devTools.scaffold.typeModuleExt") }}</option>
             </select>
           </label>
-          <label>输出目录（可选） <input v-model="baseDir" class="psw-input" placeholder="留空用默认 plugins/" /></label>
+          <label>{{ t("devTools.scaffold.fieldOutDir") }} <input v-model="baseDir" class="psw-input" :placeholder="t('devTools.scaffold.outDirPh')" /></label>
 
-          <h4 class="psw-sub">manifest 实时校验</h4>
+          <h4 class="psw-sub">{{ t("devTools.scaffold.manifestLive") }}</h4>
           <pre class="psw-pre">{{ JSON.stringify(manifestPreview, null, 2) }}</pre>
           <ul v-if="manifestErrors.length" class="psw-errs">
             <li v-for="e in manifestErrors" :key="e">{{ e }}</li>
           </ul>
-          <p v-else class="psw-ok">manifest 校验通过</p>
+          <p v-else class="psw-ok">{{ t("devTools.scaffold.manifestOk") }}</p>
         </div>
         <footer class="psw-foot">
           <span class="psw-status">{{ status }}</span>
           <button type="button" class="psw-btn" :disabled="busy || manifestErrors.length > 0" @click="onCreate">
-            生成脚手架
+            {{ t("devTools.scaffold.generate") }}
           </button>
         </footer>
       </div>

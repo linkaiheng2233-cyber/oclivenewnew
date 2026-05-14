@@ -14,4 +14,8 @@ export default {
   empty: "No messages yet. Say hi~",
   thinking: "Thinking…",
   fallbackBadge: "Fallback reply",
+  demoTitle: "Chat actions",
+  demoPlaceholder: "Type a message",
+  demoSend: "send_message",
+  demoCreateEvent: "create_event(Praise)",
 } as const;

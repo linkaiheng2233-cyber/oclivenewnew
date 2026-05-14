@@ -1,29 +1,36 @@
-<script setup>
-defineProps({
-  message: {
-    type: String,
-    required: true,
-  },
-  busy: {
-    type: Boolean,
-    default: false,
-  },
-});
+<script setup lang="ts">
+import { useI18n } from "vue-i18n";
 
-const emit = defineEmits(["update:message", "send-message", "create-event"]);
+defineProps<{
+  message: string;
+  busy?: boolean;
+}>();
 
-function onMessageInput(event) {
-  emit("update:message", event.target.value);
+const emit = defineEmits<{
+  "update:message": [value: string];
+  "send-message": [];
+  "create-event": [];
+}>();
+
+const { t } = useI18n();
+
+function onMessageInput(event: Event): void {
+  const el = event.target as HTMLInputElement;
+  emit("update:message", el.value);
 }
 </script>
 
 <template>
   <section class="card">
-    <h2>对话操作</h2>
+    <h2>{{ t("chat.demoTitle") }}</h2>
     <div class="row">
-      <input :value="message" placeholder="输入消息" @input="onMessageInput" />
-      <button :disabled="busy" @click="emit('send-message')">send_message</button>
-      <button :disabled="busy" @click="emit('create-event')">create_event(Praise)</button>
+      <input
+        :value="message"
+        :placeholder="t('chat.demoPlaceholder')"
+        @input="onMessageInput"
+      />
+      <button :disabled="busy" @click="emit('send-message')">{{ t("chat.demoSend") }}</button>
+      <button :disabled="busy" @click="emit('create-event')">{{ t("chat.demoCreateEvent") }}</button>
     </div>
   </section>
 </template>

@@ -14,4 +14,9 @@ export default {
   empty: "暂无消息，开始聊天吧~",
   thinking: "正在想...",
   fallbackBadge: "备用短回复",
+  /** 旧版 / 内嵌演示 ChatPanel */
+  demoTitle: "对话操作",
+  demoPlaceholder: "输入消息",
+  demoSend: "send_message",
+  demoCreateEvent: "create_event(Praise)",
 } as const;

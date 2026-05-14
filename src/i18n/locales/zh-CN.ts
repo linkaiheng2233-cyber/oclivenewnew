@@ -237,6 +237,11 @@ export default {
       unsupported: "当前仅支持 LLM / Emotion 配置写入。",
       sessionSaved: "配置已写入当前会话。",
     },
+    /** V1 已安装区 · 单插件工作区 */
+    installed: {
+      privateSettings: "插件私有设置",
+      debugWorkbench: "调试台",
+    },
   },
   settings: {
     ariaDialog: "设置",
