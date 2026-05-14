@@ -1,6 +1,7 @@
 import apiErrors from "./fragments/apiErrors.zh";
 import chat from "./fragments/chat.zh";
 import devTools from "./fragments/devTools.zh";
+import emotionUi from "./fragments/emotionUi.zh";
 import pluginWorkbench from "./fragments/pluginWorkbench.zh";
 import virtualTime from "./fragments/virtualTime.zh";
 
@@ -8,6 +9,7 @@ export default {
   apiErrors,
   chat,
   devTools,
+  emotionUi,
   pluginWorkbench,
   virtualTime,
   app: {
@@ -101,6 +103,21 @@ export default {
       toastNarrativeOnly: "已切换叙事场景（角色未移动）",
       systemLine:
         "叙事场景已切换为「{narrative}」；角色仍位于「{character}」。",
+    },
+    hotkeyHost: {
+      pluginDialogAria: "插件快捷窗口",
+      notFoundDialogAria: "插件未找到",
+      cannotOpenTitle: "无法打开插件页",
+      notFoundBody:
+        "当前角色 bootstrap 中未找到 {plugin} 在槽 {slot} 的界面；请确认插件已启用、未隐藏该槽贡献，并已保存插件配置。",
+      launcherDialogAria: "可启动插件",
+      launcherTitle: "插件目录",
+      noPlugins: "未扫描到插件。",
+    },
+    helpHintAria: "查看说明",
+    roleSelector: {
+      role: "🎭 角色",
+      identity: "👤 身份",
     },
   },
   pluginTerms: {

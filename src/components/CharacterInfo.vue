@@ -1,13 +1,15 @@
 <script setup lang="ts">
 import { readBinaryFile } from "@tauri-apps/api/fs";
 import { convertFileSrc } from "@tauri-apps/api/tauri";
-import { onBeforeUnmount, ref, watch } from "vue";
+import { computed, onBeforeUnmount, ref, watch } from "vue";
+import { useI18n } from "vue-i18n";
 import {
   emotionToAssetFilename,
   emotionToEmoji,
-  emotionToLabelZh,
 } from "../utils/emotion-assets";
 import { resolveRoleAssetPath } from "../utils/tauri-api";
+
+const { t, te } = useI18n();
 
 const props = withDefaults(
   defineProps<{
@@ -38,6 +40,12 @@ function revokeBlob(): void {
 function emotionKey(): string {
   return props.emotion.trim().toLowerCase() || "neutral";
 }
+
+const emotionDisplayLabel = computed(() => {
+  const key = emotionKey();
+  const path = `emotionUi.${key}`;
+  return te(path) ? t(path) : props.emotion.trim() || key;
+});
 
 function emotionAssetCandidates(key: string): string[] {
   const primary = emotionToAssetFilename(key);
@@ -159,7 +167,7 @@ onBeforeUnmount(() => {
     <h2 class="title">{{ props.name }}</h2>
     <p class="emotion-line">
       <span :key="emotionKey()" class="icon">{{ emotionToEmoji[emotionKey()] ?? "😐" }}</span>
-      <span>{{ emotionToLabelZh[emotionKey()] ?? props.emotion }}</span>
+      <span>{{ emotionDisplayLabel }}</span>
     </p>
   </div>
 </template>

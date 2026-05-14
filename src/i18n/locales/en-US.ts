@@ -1,6 +1,7 @@
 import apiErrors from "./fragments/apiErrors.en";
 import chat from "./fragments/chat.en";
 import devTools from "./fragments/devTools.en";
+import emotionUi from "./fragments/emotionUi.en";
 import pluginWorkbench from "./fragments/pluginWorkbench.en";
 import virtualTime from "./fragments/virtualTime.en";
 
@@ -8,6 +9,7 @@ export default {
   apiErrors,
   chat,
   devTools,
+  emotionUi,
   pluginWorkbench,
   virtualTime,
   app: {
@@ -105,6 +107,21 @@ export default {
       toastNarrativeOnly: "Narrative scene updated (character did not move)",
       systemLine:
         "Narrative scene is now “{narrative}”; character remains at “{character}”.",
+    },
+    hotkeyHost: {
+      pluginDialogAria: "Plugin quick window",
+      notFoundDialogAria: "Plugin not found",
+      cannotOpenTitle: "Cannot open plugin page",
+      notFoundBody:
+        "The current role bootstrap has no UI for {plugin} in slot {slot}. Enable the plugin, unhide that slot, and save plugin settings.",
+      launcherDialogAria: "Launchable plugins",
+      launcherTitle: "Plugin catalog",
+      noPlugins: "No directory plugins scanned.",
+    },
+    helpHintAria: "View help",
+    roleSelector: {
+      role: "🎭 Role",
+      identity: "👤 Identity",
     },
   },
   pluginTerms: {

@@ -1,4 +1,7 @@
 <script setup lang="ts">
+import { useI18n } from "vue-i18n";
+
+const { t } = useI18n();
 const props = withDefaults(
   defineProps<{
     currentRoleId: string;
@@ -21,7 +24,7 @@ const emit = defineEmits<{ changeRole: [string]; changeRelation: [string] }>();
 <template>
   <section class="selector-row" :class="{ 'selector-row--topbar': variant === 'topbar' }">
     <template v-if="showRole()">
-      <label class="label">🎭 角色</label>
+      <label class="label">{{ t("app.roleSelector.role") }}</label>
       <select
         class="select"
         :value="currentRoleId"
@@ -32,7 +35,7 @@ const emit = defineEmits<{ changeRole: [string]; changeRelation: [string] }>();
       </select>
     </template>
     <template v-if="showRelation()">
-      <label class="label">👤 身份</label>
+      <label class="label">{{ t("app.roleSelector.identity") }}</label>
       <select
         class="select"
         :value="currentRelation"

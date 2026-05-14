@@ -1,5 +1,8 @@
 <script setup lang="ts">
 import { computed, onMounted, onUnmounted, ref, watch } from "vue";
+import { useI18n } from "vue-i18n";
+
+const { t } = useI18n();
 
 const props = withDefaults(
   defineProps<{
@@ -18,9 +21,9 @@ const segments = computed(() => {
   if (props.paragraphs?.length) {
     return props.paragraphs.map((s) => s.trim()).filter(Boolean);
   }
-  const t = props.text?.trim() ?? "";
-  if (!t) return [];
-  return t
+  const raw = props.text?.trim() ?? "";
+  if (!raw) return [];
+  return raw
     .split(/\n\n+/)
     .map((s) => s.trim())
     .filter(Boolean);
@@ -81,7 +84,7 @@ onUnmounted(() => {
       type="button"
       class="help-btn"
       :aria-expanded="open"
-      aria-label="查看说明"
+      :aria-label="t('app.helpHintAria')"
       @click="toggle"
     >
       ?
