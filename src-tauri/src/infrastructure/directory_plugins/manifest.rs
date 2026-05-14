@@ -160,7 +160,9 @@ impl OclivePluginManifest {
         };
         !b.invoke.is_empty() || !b.events.is_empty()
     }
-
+/// # Errors
+///
+/// Returns [`Err`] with a human-readable message when the operation fails.
     pub fn load_from_dir(dir: &Path) -> Result<Self, String> {
         let p = dir.join("manifest.json");
         let raw = std::fs::read_to_string(&p).map_err(|e| format!("{}: {}", p.display(), e))?;

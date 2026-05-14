@@ -106,7 +106,9 @@ fn write_template_files(
     }
     Ok(())
 }
-
+/// # Errors
+///
+/// Returns [`Err`] with a human-readable message when the operation fails.
 #[tauri::command]
 pub fn create_plugin_scaffold(
     req: CreatePluginScaffoldRequest,

@@ -189,7 +189,9 @@ pub fn api_router(app_state: Arc<AppState>) -> Router {
         .layer(cors)
         .with_state(app_state)
 }
-
+/// # Errors
+///
+/// Returns [`Err`] with a human-readable message when the operation fails.
 /// 阻塞运行 HTTP 服务，直到进程结束。
 ///
 /// CI / 协议黑盒：设置 `OCLIVE_HTTP_API_MOCK_LLM=1` 时使用内存库 + [`MockLlmClient`]，不依赖本机 Ollama。

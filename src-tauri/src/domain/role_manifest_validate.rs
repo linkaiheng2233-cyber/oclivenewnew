@@ -10,7 +10,9 @@ use crate::models::role::Role;
 use crate::models::InteractionMode;
 
 pub use oclive_validation::validate_disk_manifest;
-
+/// # Errors
+///
+/// Returns [`Err`] with a human-readable message when the operation fails.
 /// 校验 `settings.json` 合并后的 `interaction_mode`（若有）。
 pub fn validate_role_interaction_mode(role: &Role) -> Result<(), String> {
     InteractionMode::validate_optional_pack_field(role.interaction_mode.as_deref())

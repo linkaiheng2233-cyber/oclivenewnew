@@ -63,7 +63,9 @@ pub fn ensure_default_config_for_manifest(state: &AppState, manifest: &OclivePlu
         let _ = fs::write(&p, raw);
     }
 }
-
+/// # Errors
+///
+/// Returns [`Err`] with a human-readable message when the operation fails.
 pub fn read_config_json(state: &AppState, plugin_id: &str) -> Result<Value, String> {
     let p = config_path(state, plugin_id);
     if !p.is_file() {
@@ -72,7 +74,9 @@ pub fn read_config_json(state: &AppState, plugin_id: &str) -> Result<Value, Stri
     let raw = fs::read_to_string(&p).map_err(|e| e.to_string())?;
     serde_json::from_str(&raw).map_err(|e| e.to_string())
 }
-
+/// # Errors
+///
+/// Returns [`Err`] with a human-readable message when the operation fails.
 pub fn write_config_json(state: &AppState, plugin_id: &str, value: &Value) -> Result<(), String> {
     let p = config_path(state, plugin_id);
     if let Some(parent) = p.parent() {

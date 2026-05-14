@@ -38,6 +38,9 @@ pub struct ComplexEmotionOutput {
 }
 
 pub trait ComplexEmotionProvider: Send + Sync {
+    /// # Errors
+    ///
+    /// Propagates [`crate::error::AppError`] from the underlying implementation.
     fn resolve_turn(&self, input: &ComplexEmotionInput) -> Result<ComplexEmotionOutput>;
 }
 

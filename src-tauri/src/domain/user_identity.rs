@@ -3,7 +3,9 @@
 use crate::error::Result;
 use crate::models::role::{IdentityBinding, Role};
 use crate::state::AppState;
-
+/// # Errors
+///
+/// Returns [`Err`] with a human-readable message when the operation fails.
 /// 与 [`crate::api::role::runtime::role_runtime_extras`]、对话回合一致的有效身份键。
 pub async fn resolve_effective_user_relation_key(
     state: &AppState,

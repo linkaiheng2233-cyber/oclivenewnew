@@ -136,7 +136,9 @@ fn build_txt(
     }
     s
 }
-
+/// # Errors
+///
+/// Returns [`Err`] with a human-readable message when the operation fails.
 pub async fn export_chat_logs_impl(
     state: &AppState,
     req: &ExportChatLogsRequest,
@@ -235,7 +237,9 @@ pub async fn export_chat_logs_impl(
         suggested_filename: filename,
     })
 }
-
+/// # Errors
+///
+/// Returns [`Err`] with a human-readable message when the operation fails.
 #[tauri::command]
 pub async fn export_chat_logs(
     req: ExportChatLogsRequest,

@@ -28,7 +28,9 @@ fn validate_hotkey_bindings(file: &HotkeyBindingsFile) -> Result<(), String> {
     }
     Ok(())
 }
-
+/// # Errors
+///
+/// Returns [`Err`] with a human-readable message when the operation fails.
 /// 注销全部后按配置注册；仅 `enabled` 为真且 `accelerator` 非空的条目会注册。
 pub fn apply_global_hotkeys(app: &AppHandle, file: &HotkeyBindingsFile) -> Result<(), String> {
     validate_hotkey_bindings(file)?;
@@ -57,14 +59,18 @@ pub fn apply_global_hotkeys(app: &AppHandle, file: &HotkeyBindingsFile) -> Resul
     }
     Ok(())
 }
-
+/// # Errors
+///
+/// Returns [`Err`] with a human-readable message when the operation fails.
 #[tauri::command]
 pub fn get_hotkey_bindings(state: State<'_, AppState>) -> Result<HotkeyBindingsFile, String> {
     Ok(HotkeyBindingsFile::load(
         state.directory_plugins.app_data_dir(),
     ))
 }
-
+/// # Errors
+///
+/// Returns [`Err`] with a human-readable message when the operation fails.
 #[tauri::command]
 pub fn save_hotkey_bindings(
     bindings: HotkeyBindingsFile,

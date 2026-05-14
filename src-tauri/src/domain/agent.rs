@@ -88,14 +88,18 @@ impl BuiltinReActAgent {
     pub fn list_mcp_servers(&self) -> Vec<McpServerManifest> {
         self.mcp.list_servers()
     }
-
+/// # Errors
+///
+/// Returns [`Err`] with a human-readable message when the operation fails.
     pub fn list_mcp_tools(
         &self,
         server_id: &str,
     ) -> Result<Vec<crate::infrastructure::mcp_client::McpToolManifest>> {
         self.mcp.list_tools(server_id)
     }
-
+/// # Errors
+///
+/// Returns [`Err`] with a human-readable message when the operation fails.
     pub fn call_tool_direct(
         &self,
         server_id: &str,

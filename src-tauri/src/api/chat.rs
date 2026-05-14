@@ -3,7 +3,9 @@ use crate::error::AppError;
 use crate::models::dto::{SendMessageRequest, SendMessageResponse};
 use crate::state::AppState;
 use tauri::State;
-
+/// # Errors
+///
+/// Returns [`Err`] with a human-readable message when the operation fails.
 #[tauri::command]
 pub async fn send_message(
     req: SendMessageRequest,

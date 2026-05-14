@@ -56,7 +56,9 @@ impl HotkeyBindingsFile {
             .and_then(|s| serde_json::from_str(&s).ok())
             .unwrap_or_default()
     }
-
+/// # Errors
+///
+/// Returns [`Err`] with a human-readable message when the operation fails.
     pub fn save(&self, app_data: &Path) -> Result<(), String> {
         let p = Self::path(app_data);
         if let Some(parent) = p.parent() {

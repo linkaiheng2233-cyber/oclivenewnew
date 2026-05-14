@@ -121,7 +121,9 @@ impl McpClient {
     fn timeout_for(&self, server: &McpServerManifest) -> Duration {
         Duration::from_millis(server.timeout_ms.unwrap_or(12_000).max(500))
     }
-
+/// # Errors
+///
+/// Returns [`Err`] with a human-readable message when the operation fails.
     pub fn list_tools(&self, server_id: &str) -> Result<Vec<McpToolManifest>> {
         let server = self.find_server(server_id)?;
         let payload = json!({
@@ -159,7 +161,9 @@ impl McpClient {
             Err(_) => Ok(server.tools),
         }
     }
-
+/// # Errors
+///
+/// Returns [`Err`] with a human-readable message when the operation fails.
     pub fn call_tool(
         &self,
         server_id: &str,

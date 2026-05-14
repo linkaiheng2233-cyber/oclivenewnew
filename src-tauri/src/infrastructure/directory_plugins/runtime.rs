@@ -299,7 +299,9 @@ impl DirectoryPluginRuntime {
             .clone()
             .unwrap_or_default()
     }
-
+/// # Errors
+///
+/// Returns [`Err`] with a human-readable message when the operation fails.
     pub fn save_global_plugin_state(&self, mut state: RolePluginState) -> Result<(), String> {
         self.sanitize_role_shell(&mut state);
         let mut store = self.plugin_state_store.write();
@@ -308,7 +310,9 @@ impl DirectoryPluginRuntime {
         drop(store);
         self.persist_plugin_state_store()
     }
-
+/// # Errors
+///
+/// Returns [`Err`] with a human-readable message when the operation fails.
     pub fn save_role_plugin_state(
         &self,
         role_id: &str,
@@ -358,7 +362,9 @@ impl DirectoryPluginRuntime {
         drop(store);
         let _ = self.persist_plugin_state_store();
     }
-
+/// # Errors
+///
+/// Returns [`Err`] with a human-readable message when the operation fails.
     /// 用磁盘上的 `ui.json` 覆盖该角色的用户记录（「重置为角色包推荐」）。
     pub fn reset_role_plugin_state_from_ui(
         &self,
@@ -378,7 +384,9 @@ impl DirectoryPluginRuntime {
         let p = self.app_data_dir.join("oclive_last_role_id.txt");
         let _ = std::fs::write(&p, role_id.trim());
     }
-
+/// # Errors
+///
+/// Returns [`Err`] with a human-readable message when the operation fails.
     /// 删除某角色的插件 UI 状态；若当前活跃角色相同则清空活跃标记。
     pub fn remove_role_plugin_state(&self, role_id: &str) -> Result<(), String> {
         let rid = role_id.trim();
@@ -459,7 +467,9 @@ impl DirectoryPluginRuntime {
             !by_slot.is_empty()
         });
     }
-
+/// # Errors
+///
+/// Returns [`Err`] with a human-readable message when the operation fails.
     pub fn reload_plugin_state(&self) -> Result<(), String> {
         let p = self.plugin_state_path();
         let next = PluginStateStore::load(&p);
@@ -524,12 +534,16 @@ impl DirectoryPluginRuntime {
             plugin_id, entry
         ))
     }
-
+/// # Errors
+///
+/// Returns [`Err`] with a human-readable message when the operation fails.
     /// 懒启动：返回 JSON-RPC 根 URL（含 path，如 `http://127.0.0.1:9/rpc`）。
     pub fn ensure_rpc_url(&self, plugin_id: &str) -> Result<String, String> {
         self.ensure_rpc_url_impl(plugin_id, false, None)
     }
-
+/// # Errors
+///
+/// Returns [`Err`] with a human-readable message when the operation fails.
     /// 与 [`Self::ensure_rpc_url`] 相同，但不拒绝「停用插件」，并可选注入 `OCLIVE_DEBUG_PLUGIN_CONFIG`。
     pub fn ensure_rpc_url_for_debug(
         &self,
@@ -702,7 +716,9 @@ impl DirectoryPluginRuntime {
             .unwrap_or(0);
         Ok((url, child, started_ms))
     }
-
+/// # Errors
+///
+/// Returns [`Err`] with a human-readable message when the operation fails.
     /// 开发者调试：确保子进程已握手并返回进程信息（已运行时直接返回快照）。
     pub fn spawn_plugin_for_test(
         &self,

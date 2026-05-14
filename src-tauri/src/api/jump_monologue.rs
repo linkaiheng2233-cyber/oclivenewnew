@@ -1,7 +1,9 @@
 use crate::error::AppError;
 use crate::models::dto::TimeStateResponse;
 use crate::state::AppState;
-
+/// # Errors
+///
+/// Returns [`Err`] with a human-readable message when the operation fails.
 /// 时间跳转后批量生成独白（使用已算好的虚拟时间，避免循环依赖 `time` ↔ `monologue`）
 pub async fn generate_monologue_lines(
     state: &AppState,

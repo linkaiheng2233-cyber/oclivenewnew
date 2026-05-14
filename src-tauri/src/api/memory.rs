@@ -2,7 +2,9 @@ use crate::error::AppError;
 use crate::models::dto::{MemoryItem, QueryMemoriesRequest};
 use crate::state::AppState;
 use tauri::State;
-
+/// # Errors
+///
+/// Returns [`Err`] with a human-readable message when the operation fails.
 pub async fn query_memories_impl(
     state: &AppState,
     req: &QueryMemoriesRequest,
@@ -37,7 +39,9 @@ pub async fn query_memories_impl(
         })
         .collect())
 }
-
+/// # Errors
+///
+/// Returns [`Err`] with a human-readable message when the operation fails.
 #[tauri::command]
 pub async fn query_memories(
     req: QueryMemoriesRequest,

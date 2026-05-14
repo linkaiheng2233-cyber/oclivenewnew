@@ -15,12 +15,16 @@ pub struct CallMcpToolRequest {
 pub struct ListMcpToolsRequest {
     pub server_id: String,
 }
-
+/// # Errors
+///
+/// Returns [`Err`] with a human-readable message when the operation fails.
 #[tauri::command]
 pub fn list_mcp_servers(state: State<'_, AppState>) -> Result<Value, String> {
     serde_json::to_value(state.plugins.list_mcp_servers()).map_err(|e| e.to_string())
 }
-
+/// # Errors
+///
+/// Returns [`Err`] with a human-readable message when the operation fails.
 #[tauri::command]
 pub fn list_mcp_tools(
     req: ListMcpToolsRequest,
@@ -31,7 +35,9 @@ pub fn list_mcp_tools(
         .list_mcp_tools(req.server_id.as_str())
         .and_then(|r| serde_json::to_value(r).map_err(|e| e.to_string()))
 }
-
+/// # Errors
+///
+/// Returns [`Err`] with a human-readable message when the operation fails.
 #[tauri::command]
 pub fn call_mcp_tool(req: CallMcpToolRequest, state: State<'_, AppState>) -> Result<Value, String> {
     state
@@ -39,12 +45,16 @@ pub fn call_mcp_tool(req: CallMcpToolRequest, state: State<'_, AppState>) -> Res
         .call_mcp_tool(req.server_id.as_str(), req.tool_name.as_str(), req.params)
         .and_then(|r| serde_json::to_value(r).map_err(|e| e.to_string()))
 }
-
+/// # Errors
+///
+/// Returns [`Err`] with a human-readable message when the operation fails.
 #[tauri::command]
 pub fn get_agent_debug_traces(state: State<'_, AppState>) -> Result<Value, String> {
     serde_json::to_value(state.plugins.recent_agent_traces()).map_err(|e| e.to_string())
 }
-
+/// # Errors
+///
+/// Returns [`Err`] with a human-readable message when the operation fails.
 #[tauri::command]
 pub fn clear_agent_debug_traces(state: State<'_, AppState>) -> Result<(), String> {
     state.plugins.clear_agent_traces();

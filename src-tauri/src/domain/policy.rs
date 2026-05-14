@@ -58,6 +58,9 @@ pub trait EmotionPolicy: Send + Sync {
 }
 
 pub trait EventPolicy: Send + Sync {
+    /// # Errors
+    ///
+    /// Returns an error when the policy cannot classify the message into an [`Event`].
     fn detect(&self, text: &str, user_emotion: &Emotion, bot_emotion: &Emotion) -> Result<Event>;
     fn impact(&self, event_type: &EventType) -> f64;
     fn confidence(&self, event_type: &EventType) -> f32;

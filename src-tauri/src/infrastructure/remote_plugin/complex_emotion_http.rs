@@ -16,6 +16,9 @@ pub struct RemoteComplexEmotionHttp {
 }
 
 impl RemoteComplexEmotionHttp {
+/// # Errors
+///
+/// Returns [`Err`] with a human-readable message when the operation fails.
     pub fn new(cfg: RemotePluginHttpConfig) -> std::result::Result<Self, reqwest::Error> {
         let client = reqwest::blocking::Client::builder()
             .timeout(cfg.timeout)
@@ -27,7 +30,9 @@ impl RemoteComplexEmotionHttp {
             fallback: BuiltinKeywordComplexEmotionProvider,
         })
     }
-
+/// # Errors
+///
+/// Returns [`Err`] with a human-readable message when the operation fails.
     pub fn resolve_turn(&self, input: &ComplexEmotionInput) -> Result<ComplexEmotionOutput> {
         let params = serde_json::to_value(input).map_err(|e| {
             crate::error::AppError::OllamaError(format!("complex_emotion params json: {}", e))

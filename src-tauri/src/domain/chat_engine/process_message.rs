@@ -51,7 +51,9 @@ macro_rules! pm {
         $e.map_err(|source| ProcessMessageError::stage($stage, source))
     };
 }
-
+/// # Errors
+///
+/// Returns [`Err`] with a human-readable message when the operation fails.
 /// 处理一条用户消息：分析情绪 → 检测事件 → 演化性格 → 构建 Prompt → 调用 LLM → 持久化
 pub async fn process_message(state: &AppState, req: &SendMessageRequest) -> Result<SendMessageResponse> {
     match run(state, req).await {

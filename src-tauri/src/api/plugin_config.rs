@@ -52,7 +52,9 @@ fn plugin_root(state: &AppState, plugin_id: &str) -> Result<PathBuf, String> {
         .to_string()
     })
 }
-
+/// # Errors
+///
+/// Returns [`Err`] with a human-readable message when the operation fails.
 #[tauri::command]
 pub fn get_plugin_settings_ui(
     plugin_id: String,
@@ -85,7 +87,9 @@ pub fn get_plugin_settings_ui(
         config,
     })
 }
-
+/// # Errors
+///
+/// Returns [`Err`] with a human-readable message when the operation fails.
 #[tauri::command]
 pub fn set_plugin_settings_config(
     plugin_id: String,

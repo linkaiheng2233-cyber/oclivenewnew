@@ -110,6 +110,9 @@ pub struct LocalPluginRegistry {
 }
 
 impl LocalPluginRegistry {
+/// # Errors
+///
+/// Returns [`Err`] with a human-readable message when the operation fails.
     pub fn register_provider(
         &mut self,
         descriptor: LocalPluginProviderDescriptor,

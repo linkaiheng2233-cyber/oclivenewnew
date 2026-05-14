@@ -88,7 +88,9 @@ impl PersonalityVector {
     pub fn to_json_vec(&self) -> String {
         serde_json::to_string(&self.to_vec7()).unwrap_or_else(|_| "[]".to_string())
     }
-
+/// # Errors
+///
+/// Returns [`Err`] with a human-readable message when the operation fails.
     pub fn from_json_vec(s: &str) -> Result<Self, serde_json::Error> {
         let v: Vec<f64> = serde_json::from_str(s)?;
         Ok(Self::from_vec7(&v))

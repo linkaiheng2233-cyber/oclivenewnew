@@ -54,7 +54,9 @@ fn parse_backend_wire<T: DeserializeOwned>(module: &str, value: &str) -> Result<
         .to_frontend_error()
     })
 }
-
+/// # Errors
+///
+/// Returns [`Err`] with a human-readable message when the operation fails.
 /// `reset_portrait_emotion`：为 `true` 时（应用启动 `load_role`）立绘重置为 `neutral`；切换角色时为 `false` 以保留各角色上次立绘状态。
 pub async fn load_role_impl(
     state: &AppState,
@@ -190,7 +192,9 @@ pub async fn load_role_impl(
         author_pack: role.author_pack.clone(),
     })
 }
-
+/// # Errors
+///
+/// Returns [`Err`] with a human-readable message when the operation fails.
 pub async fn get_role_info_impl(
     state: &AppState,
     role_id: &str,
@@ -332,7 +336,9 @@ pub async fn get_role_info_impl(
         author_pack: role.author_pack.clone(),
     })
 }
-
+/// # Errors
+///
+/// Returns [`Err`] with a human-readable message when the operation fails.
 pub async fn list_roles_impl(state: &AppState) -> Result<Vec<RoleSummary>, String> {
     let list_dev = crate::env_flags::list_dev_roles_enabled();
     let roles = state
@@ -350,17 +356,23 @@ pub async fn list_roles_impl(state: &AppState) -> Result<Vec<RoleSummary>, Strin
         })
         .collect())
 }
-
+/// # Errors
+///
+/// Returns [`Err`] with a human-readable message when the operation fails.
 pub async fn switch_role_impl(state: &AppState, role_id: &str) -> Result<RoleInfo, String> {
     load_role_impl(state, role_id, false).await?;
     get_role_info_impl(state, role_id, None).await
 }
-
+/// # Errors
+///
+/// Returns [`Err`] with a human-readable message when the operation fails.
 #[tauri::command]
 pub async fn load_role(role_id: String, state: State<'_, AppState>) -> Result<RoleData, String> {
     load_role_impl(&state, &role_id, true).await
 }
-
+/// # Errors
+///
+/// Returns [`Err`] with a human-readable message when the operation fails.
 #[tauri::command]
 pub async fn get_role_info(
     req: GetRoleInfoRequest,
@@ -368,17 +380,23 @@ pub async fn get_role_info(
 ) -> Result<RoleInfo, String> {
     get_role_info_impl(&state, &req.role_id, req.session_id.as_deref()).await
 }
-
+/// # Errors
+///
+/// Returns [`Err`] with a human-readable message when the operation fails.
 #[tauri::command]
 pub async fn list_roles(state: State<'_, AppState>) -> Result<Vec<RoleSummary>, String> {
     list_roles_impl(&state).await
 }
-
+/// # Errors
+///
+/// Returns [`Err`] with a human-readable message when the operation fails.
 #[tauri::command]
 pub async fn switch_role(role_id: String, state: State<'_, AppState>) -> Result<RoleInfo, String> {
     switch_role_impl(&state, &role_id).await
 }
-
+/// # Errors
+///
+/// Returns [`Err`] with a human-readable message when the operation fails.
 pub async fn set_user_relation_impl(
     state: &AppState,
     req: &SetUserRelationRequest,
@@ -456,7 +474,9 @@ pub async fn set_user_relation_impl(
         .map_err(|e| e.to_frontend_error())?;
     get_role_info_impl(state, &req.role_id, None).await
 }
-
+/// # Errors
+///
+/// Returns [`Err`] with a human-readable message when the operation fails.
 pub async fn set_evolution_factor_impl(
     state: &AppState,
     req: &SetEvolutionFactorRequest,
@@ -490,7 +510,9 @@ pub async fn set_evolution_factor_impl(
         .map_err(|e| e.to_frontend_error())?;
     get_role_info_impl(state, &req.role_id, None).await
 }
-
+/// # Errors
+///
+/// Returns [`Err`] with a human-readable message when the operation fails.
 pub async fn clear_scene_user_relation_impl(
     state: &AppState,
     req: &ClearSceneUserRelationRequest,
@@ -534,7 +556,9 @@ pub async fn clear_scene_user_relation_impl(
         .map_err(|e| e.to_frontend_error())?;
     get_role_info_impl(state, &req.role_id, None).await
 }
-
+/// # Errors
+///
+/// Returns [`Err`] with a human-readable message when the operation fails.
 pub async fn set_scene_user_relation_impl(
     state: &AppState,
     req: &SetSceneUserRelationRequest,
@@ -588,7 +612,9 @@ pub async fn set_scene_user_relation_impl(
         .map_err(|e| e.to_frontend_error())?;
     get_role_info_impl(state, &req.role_id, None).await
 }
-
+/// # Errors
+///
+/// Returns [`Err`] with a human-readable message when the operation fails.
 #[tauri::command]
 pub async fn set_user_relation(
     req: SetUserRelationRequest,
@@ -596,7 +622,9 @@ pub async fn set_user_relation(
 ) -> Result<RoleInfo, String> {
     set_user_relation_impl(&state, &req).await
 }
-
+/// # Errors
+///
+/// Returns [`Err`] with a human-readable message when the operation fails.
 #[tauri::command]
 pub async fn set_evolution_factor(
     req: SetEvolutionFactorRequest,
@@ -604,7 +632,9 @@ pub async fn set_evolution_factor(
 ) -> Result<RoleInfo, String> {
     set_evolution_factor_impl(&state, &req).await
 }
-
+/// # Errors
+///
+/// Returns [`Err`] with a human-readable message when the operation fails.
 pub async fn set_remote_life_enabled_impl(
     state: &AppState,
     req: &SetRemoteLifeEnabledRequest,
@@ -630,7 +660,9 @@ pub async fn set_remote_life_enabled_impl(
         .map_err(|e| e.to_frontend_error())?;
     get_role_info_impl(state, &req.role_id, None).await
 }
-
+/// # Errors
+///
+/// Returns [`Err`] with a human-readable message when the operation fails.
 #[tauri::command]
 pub async fn set_remote_life_enabled(
     req: SetRemoteLifeEnabledRequest,
@@ -638,7 +670,9 @@ pub async fn set_remote_life_enabled(
 ) -> Result<RoleInfo, String> {
     set_remote_life_enabled_impl(&state, &req).await
 }
-
+/// # Errors
+///
+/// Returns [`Err`] with a human-readable message when the operation fails.
 pub async fn set_role_interaction_mode_impl(
     state: &AppState,
     req: &SetRoleInteractionModeRequest,
@@ -664,7 +698,9 @@ pub async fn set_role_interaction_mode_impl(
         .map_err(|e| e.to_frontend_error())?;
     get_role_info_impl(state, &req.role_id, None).await
 }
-
+/// # Errors
+///
+/// Returns [`Err`] with a human-readable message when the operation fails.
 #[tauri::command]
 pub async fn set_role_interaction_mode(
     req: SetRoleInteractionModeRequest,
@@ -672,7 +708,9 @@ pub async fn set_role_interaction_mode(
 ) -> Result<RoleInfo, String> {
     set_role_interaction_mode_impl(&state, &req).await
 }
-
+/// # Errors
+///
+/// Returns [`Err`] with a human-readable message when the operation fails.
 pub async fn set_session_plugin_backend_impl(
     state: &AppState,
     req: &SetSessionPluginBackendRequest,
@@ -768,7 +806,9 @@ pub async fn set_session_plugin_backend_impl(
     }
     get_role_info_impl(state, &req.role_id, req.session_id.as_deref()).await
 }
-
+/// # Errors
+///
+/// Returns [`Err`] with a human-readable message when the operation fails.
 #[tauri::command]
 pub async fn set_session_plugin_backend(
     req: SetSessionPluginBackendRequest,
@@ -783,7 +823,9 @@ pub struct ApplyAuthorSuggestedBackendsRequest {
     #[serde(default)]
     pub session_id: Option<String>,
 }
-
+/// # Errors
+///
+/// Returns [`Err`] with a human-readable message when the operation fails.
 /// 将 `author.json` → `suggested_plugin_backends` 写入当前会话命名空间的后端覆盖（不写回角色包）。
 #[tauri::command]
 pub async fn apply_author_suggested_plugin_backends(
@@ -828,14 +870,18 @@ pub async fn apply_author_suggested_plugin_backends(
     state.set_session_backend_override(ns.as_str(), ov);
     get_role_info_impl(&state, role_id, req.session_id.as_deref()).await
 }
-
+/// # Errors
+///
+/// Returns [`Err`] with a human-readable message when the operation fails.
 pub async fn get_plugin_resolution_debug_impl(
     state: &AppState,
     req: &GetPluginResolutionDebugRequest,
 ) -> Result<PluginResolutionDebugInfo, String> {
     build_plugin_resolution_debug_info(state, &req.role_id, req.session_id.as_deref()).await
 }
-
+/// # Errors
+///
+/// Returns [`Err`] with a human-readable message when the operation fails.
 #[tauri::command]
 pub async fn get_plugin_resolution_debug(
     req: GetPluginResolutionDebugRequest,
@@ -899,7 +945,9 @@ pub(crate) async fn build_plugin_resolution_debug_info(
         local_provider_ids,
     })
 }
-
+/// # Errors
+///
+/// Returns [`Err`] with a human-readable message when the operation fails.
 #[tauri::command]
 pub async fn set_scene_user_relation(
     req: SetSceneUserRelationRequest,
@@ -907,7 +955,9 @@ pub async fn set_scene_user_relation(
 ) -> Result<RoleInfo, String> {
     set_scene_user_relation_impl(&state, &req).await
 }
-
+/// # Errors
+///
+/// Returns [`Err`] with a human-readable message when the operation fails.
 #[tauri::command]
 pub async fn clear_scene_user_relation(
     req: ClearSceneUserRelationRequest,
@@ -915,7 +965,9 @@ pub async fn clear_scene_user_relation(
 ) -> Result<RoleInfo, String> {
     clear_scene_user_relation_impl(&state, &req).await
 }
-
+/// # Errors
+///
+/// Returns [`Err`] with a human-readable message when the operation fails.
 /// 删除本地角色目录及该 manifest 角色（含 `__sess__` 会话命名空间）的 DB 状态。
 pub async fn delete_role_impl(state: &AppState, role_id: String) -> Result<Value, String> {
     let rid = role_id.trim();

@@ -28,6 +28,9 @@ impl EmotionResult {
 pub struct EmotionAnalyzer;
 
 impl EmotionAnalyzer {
+/// # Errors
+///
+/// Returns [`Err`] with a human-readable message when the operation fails.
     /// 分析文本情绪
     ///
     /// # Arguments

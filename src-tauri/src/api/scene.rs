@@ -5,7 +5,9 @@ use crate::models::dto::{
 };
 use crate::state::AppState;
 use tauri::State;
-
+/// # Errors
+///
+/// Returns [`Err`] with a human-readable message when the operation fails.
 pub async fn switch_scene_impl(
     state: &AppState,
     req: &SwitchSceneRequest,
@@ -47,7 +49,9 @@ pub async fn switch_scene_impl(
         scene_welcome,
     })
 }
-
+/// # Errors
+///
+/// Returns [`Err`] with a human-readable message when the operation fails.
 pub async fn set_user_presence_scene_impl(
     state: &AppState,
     req: &SetUserPresenceSceneRequest,
@@ -70,7 +74,9 @@ pub async fn set_user_presence_scene_impl(
         .map_err(|e| e.to_frontend_error())?;
     get_role_info_impl(state, &req.role_id, None).await
 }
-
+/// # Errors
+///
+/// Returns [`Err`] with a human-readable message when the operation fails.
 #[tauri::command]
 pub async fn switch_scene(
     req: SwitchSceneRequest,
@@ -78,7 +84,9 @@ pub async fn switch_scene(
 ) -> Result<SwitchSceneResponse, String> {
     switch_scene_impl(&state, &req).await
 }
-
+/// # Errors
+///
+/// Returns [`Err`] with a human-readable message when the operation fails.
 #[tauri::command]
 pub async fn set_user_presence_scene(
     req: SetUserPresenceSceneRequest,

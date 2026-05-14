@@ -124,7 +124,9 @@ pub fn strip_wrapping_fences(text: &str) -> String {
     }
     inner.to_string()
 }
-
+/// # Errors
+///
+/// Returns [`Err`] with a human-readable message when the operation fails.
 pub async fn evolve_mutable_personality_with_llm(
     llm: &Arc<dyn LlmClient>,
     model: &str,

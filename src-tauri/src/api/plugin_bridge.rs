@@ -499,7 +499,9 @@ async fn dispatch_bridge_command(
         .to_string()),
     }
 }
-
+/// # Errors
+///
+/// Returns [`Err`] with a human-readable message when the operation fails.
 #[tauri::command]
 pub async fn plugin_bridge_invoke(
     req: PluginBridgeInvokeRequest,

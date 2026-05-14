@@ -102,7 +102,9 @@ fn build_snapshot(
         warning,
     }
 }
-
+/// # Errors
+///
+/// Returns [`Err`] with a human-readable message when the operation fails.
 #[tauri::command]
 pub fn sync_plugin_index_command(
     index_url: Option<String>,
@@ -122,13 +124,17 @@ pub fn sync_plugin_index_command(
         }
     }
 }
-
+/// # Errors
+///
+/// Returns [`Err`] with a human-readable message when the operation fails.
 #[tauri::command]
 pub fn get_cached_plugin_index(state: State<'_, AppState>) -> Result<PluginMarketSnapshot, String> {
     let index = load_cached_index(&state).map_err(|e| e.to_frontend_error())?;
     Ok(build_snapshot(&state, index, true, "cache", None))
 }
-
+/// # Errors
+///
+/// Returns [`Err`] with a human-readable message when the operation fails.
 #[tauri::command]
 pub fn install_plugin_from_market(
     plugin_id: String,
@@ -168,7 +174,9 @@ pub fn install_plugin_from_market(
         installed_plugin_id: installed_id,
     })
 }
-
+/// # Errors
+///
+/// Returns [`Err`] with a human-readable message when the operation fails.
 #[tauri::command]
 pub fn install_plugin_from_git(
     req: InstallPluginFromGitRequest,
@@ -192,7 +200,9 @@ pub fn install_plugin_from_git(
         installed_plugin_id: installed_id,
     })
 }
-
+/// # Errors
+///
+/// Returns [`Err`] with a human-readable message when the operation fails.
 #[tauri::command]
 pub fn update_plugin_from_market(
     plugin_id: String,
@@ -200,7 +210,9 @@ pub fn update_plugin_from_market(
 ) -> Result<(), String> {
     update_plugin(&state, &plugin_id).map_err(|e| e.to_frontend_error())
 }
-
+/// # Errors
+///
+/// Returns [`Err`] with a human-readable message when the operation fails.
 #[tauri::command]
 pub fn uninstall_plugin_from_market(
     plugin_id: String,
@@ -208,7 +220,9 @@ pub fn uninstall_plugin_from_market(
 ) -> Result<(), String> {
     uninstall_plugin(&state, &plugin_id).map_err(|e| e.to_frontend_error())
 }
-
+/// # Errors
+///
+/// Returns [`Err`] with a human-readable message when the operation fails.
 #[tauri::command]
 pub fn batch_update_plugins(
     plugin_ids: Vec<String>,
@@ -223,7 +237,9 @@ pub fn batch_update_plugins(
     }
     Ok(())
 }
-
+/// # Errors
+///
+/// Returns [`Err`] with a human-readable message when the operation fails.
 #[tauri::command]
 pub fn batch_uninstall_plugins(
     plugin_ids: Vec<String>,

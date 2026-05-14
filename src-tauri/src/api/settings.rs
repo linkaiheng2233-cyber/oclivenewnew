@@ -3,7 +3,9 @@
 use crate::models::interaction_mode::InteractionMode;
 use crate::state::AppState;
 use serde_json::{json, Value};
-
+/// # Errors
+///
+/// Returns [`Err`] with a human-readable message when the operation fails.
 pub async fn update_settings_impl(state: &AppState, params: &Value) -> Result<Value, String> {
     let obj = params
         .as_object()

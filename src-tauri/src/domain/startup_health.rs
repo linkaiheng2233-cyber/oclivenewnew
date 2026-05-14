@@ -7,7 +7,9 @@ use crate::models::plugin_backends::{
 };
 use crate::models::Role;
 use crate::state::AppState;
-
+/// # Errors
+///
+/// Returns [`Err`] with a human-readable message when the operation fails.
 /// 与 [`AppState::startup_health`] 配合：仅首轮对话执行一次（锁不跨越 `.await`）。
 pub async fn ensure_once(state: &AppState, role: &Role, effective: &PluginBackends) -> Result<()> {
     if std::env::var("OCLIVE_SKIP_STARTUP_HEALTH")
@@ -80,7 +82,9 @@ fn non_empty_slot(id: &Option<String>, slot: &str) -> Result<()> {
         )))
     }
 }
-
+/// # Errors
+///
+/// Returns [`Err`] with a human-readable message when the operation fails.
 /// 校验 `directory` 槽位与 `directory_plugins` 的 id 非空对应。
 pub fn validate_plugin_backends_slots(pb: &PluginBackends) -> Result<()> {
     if matches!(pb.memory, MemoryBackend::Directory) {
@@ -123,7 +127,9 @@ fn verify_role_pack_files(state: &AppState, role: &Role) -> Result<()> {
     }
     Ok(())
 }
-
+/// # Errors
+///
+/// Returns [`Err`] with a human-readable message when the operation fails.
 /// 供 HTTP `--api` 等在 [`AppState`] 构造后做一次与角色无关的 DB 探活。
 pub async fn run_global_db_ping(db: &crate::infrastructure::db::DbManager) -> Result<()> {
     db.health_ping().await

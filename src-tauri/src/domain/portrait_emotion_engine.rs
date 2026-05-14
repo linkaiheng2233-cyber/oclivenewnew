@@ -319,7 +319,9 @@ fn fallback_base(bot_emotion: &Emotion, recent_turns: &[(String, String)]) -> St
         heuristic_base(bot_emotion)
     }
 }
-
+/// # Errors
+///
+/// Returns [`Err`] with a human-readable message when the operation fails.
 /// 解析立绘情绪标签；失败时回退：无历史时偏 `neutral`，否则 `bot_emotion`。
 #[allow(clippy::too_many_arguments)]
 pub async fn resolve_portrait_emotion(

@@ -119,7 +119,9 @@ pub fn llm_remote_backend(default_llm: Arc<dyn LlmClient>) -> Arc<dyn LlmClient>
         Arc::new(RemoteLlmPlaceholder::new(default_llm))
     }
 }
-
+/// # Errors
+///
+/// Returns [`Err`] with a human-readable message when the operation fails.
 /// 对目录插件（或任意已解析 RPC 根 URL）发起单次 JSON-RPC `call`（阻塞）；供 `directory_plugin_invoke` 等使用。
 pub fn invoke_directory_plugin_rpc_blocking(
     url: &str,

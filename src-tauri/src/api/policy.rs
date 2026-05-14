@@ -1,7 +1,9 @@
 use crate::error::AppError;
 use crate::state::AppState;
 use tauri::State;
-
+/// # Errors
+///
+/// Returns [`Err`] with a human-readable message when the operation fails.
 #[tauri::command]
 pub async fn reload_policy_plugins(state: State<'_, AppState>) -> Result<String, String> {
     state

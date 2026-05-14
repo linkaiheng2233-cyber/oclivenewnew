@@ -10,11 +10,16 @@ use crate::models::{Emotion, Event, EventType};
 pub struct EventDetector;
 
 impl EventDetector {
+/// # Errors
+///
+/// Returns [`Err`] with a human-readable message when the operation fails.
     /// 检测事件类型
     pub fn detect(text: &str, user_emotion: &Emotion, bot_emotion: &Emotion) -> Result<Event> {
         Self::detect_with_augment(text, user_emotion, bot_emotion, None)
     }
-
+/// # Errors
+///
+/// Returns [`Err`] with a human-readable message when the operation fails.
     /// 与 [`detect`] 相同，但合并世界观知识块提供的额外关键词（B1）。
     pub fn detect_with_augment(
         text: &str,

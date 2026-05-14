@@ -52,7 +52,9 @@ impl OllamaClient {
         self.timeout = timeout;
         self
     }
-
+/// # Errors
+///
+/// Returns [`Err`] with a human-readable message when the operation fails.
     /// 检查 Ollama 服务是否可用
     pub async fn health_check(&self) -> Result<bool> {
         let url = format!("{}/api/tags", self.base_url);
@@ -62,7 +64,9 @@ impl OllamaClient {
             Err(_) => Ok(false),
         }
     }
-
+/// # Errors
+///
+/// Returns [`Err`] with a human-readable message when the operation fails.
     /// 获取可用的模型列表
     pub async fn list_models(&self) -> Result<Vec<String>> {
         let url = format!("{}/api/tags", self.base_url);
@@ -99,7 +103,9 @@ impl OllamaClient {
 
         Ok(models)
     }
-
+/// # Errors
+///
+/// Returns [`Err`] with a human-readable message when the operation fails.
     /// 调用 Ollama 生成回复
     pub async fn generate(
         &self,
@@ -154,7 +160,9 @@ impl OllamaClient {
 
         Ok(ollama_response.response)
     }
-
+/// # Errors
+///
+/// Returns [`Err`] with a human-readable message when the operation fails.
     /// 调用 Ollama 生成回复（带流式处理）
     pub async fn generate_stream(
         &self,

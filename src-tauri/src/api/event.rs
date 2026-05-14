@@ -18,7 +18,9 @@ fn parse_event_type(s: &str) -> Result<EventType, String> {
         ),
     }
 }
-
+/// # Errors
+///
+/// Returns [`Err`] with a human-readable message when the operation fails.
 pub async fn query_events_impl(
     state: &AppState,
     req: &QueryEventsRequest,
@@ -54,7 +56,9 @@ pub async fn query_events_impl(
         })
         .collect())
 }
-
+/// # Errors
+///
+/// Returns [`Err`] with a human-readable message when the operation fails.
 pub async fn create_event_impl(
     state: &AppState,
     req: &CreateEventRequest,
@@ -86,7 +90,9 @@ pub async fn create_event_impl(
         description: req.description.clone(),
     })
 }
-
+/// # Errors
+///
+/// Returns [`Err`] with a human-readable message when the operation fails.
 #[tauri::command]
 pub async fn query_events(
     req: QueryEventsRequest,
@@ -94,7 +100,9 @@ pub async fn query_events(
 ) -> Result<Vec<EventItem>, String> {
     query_events_impl(&state, &req).await
 }
-
+/// # Errors
+///
+/// Returns [`Err`] with a human-readable message when the operation fails.
 #[tauri::command]
 pub async fn create_event(
     req: CreateEventRequest,

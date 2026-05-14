@@ -140,7 +140,9 @@ pub fn resolved_knowledge_glob(disk: &DiskRoleManifest, role_dir: &Path) -> Opti
         .unwrap_or("knowledge/**/*.md");
     Some(g.to_string())
 }
-
+/// # Errors
+///
+/// Returns [`Err`] with a human-readable message when the operation fails.
 /// 枚举 `roles/{id}/knowledge/` 下（递归）所有 `.md` 文件。
 /// `glob` 仅支持约定形式 `knowledge/**/*.md` 或 `knowledge/**`（忽略末尾片段，行为一致）。
 pub fn collect_knowledge_files(role_dir: &Path, glob_pat: &str) -> Result<Vec<PathBuf>> {
@@ -167,7 +169,9 @@ pub fn collect_knowledge_files(role_dir: &Path, glob_pat: &str) -> Result<Vec<Pa
     out.sort();
     Ok(out)
 }
-
+/// # Errors
+///
+/// Returns [`Err`] with a human-readable message when the operation fails.
 /// 加载并校验整包知识；任一文件失败则返回错误（避免半包静默）。
 pub fn load_knowledge_index(role_dir: &Path, disk: &DiskRoleManifest) -> Result<KnowledgeIndex> {
     let Some(glob_pat) = resolved_knowledge_glob(disk, role_dir) else {

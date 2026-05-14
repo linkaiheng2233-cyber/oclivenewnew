@@ -6,7 +6,9 @@ use std::path::PathBuf;
 use std::sync::Arc;
 use tauri::Manager;
 use tauri::State;
-
+/// # Errors
+///
+/// Returns [`Err`] with a human-readable message when the operation fails.
 #[tauri::command]
 pub async fn export_role_pack_command(
     role_id: String,
@@ -16,7 +18,9 @@ pub async fn export_role_pack_command(
     let p = PathBuf::from(dest_path);
     export_role_pack(&state.storage, &role_id, &p).map_err(|e: AppError| e.to_frontend_error())
 }
-
+/// # Errors
+///
+/// Returns [`Err`] with a human-readable message when the operation fails.
 #[tauri::command]
 pub async fn peek_role_pack_command(
     src_path: String,
@@ -29,7 +33,9 @@ pub async fn peek_role_pack_command(
         .map_err(|e: AppError| e.to_frontend_error())?;
     Ok(RolePackPeekResponse { id, name, version })
 }
-
+/// # Errors
+///
+/// Returns [`Err`] with a human-readable message when the operation fails.
 #[tauri::command]
 pub async fn import_role_pack_command(
     app: tauri::AppHandle,

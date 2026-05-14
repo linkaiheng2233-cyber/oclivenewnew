@@ -51,7 +51,9 @@ fn ensure_manifest_valid(manifest_path: &Path) -> Result<(), AppError> {
     }
     Ok(())
 }
-
+/// # Errors
+///
+/// Returns [`Err`] with a human-readable message when the operation fails.
 #[tauri::command]
 pub fn pack_plugin(
     req: PackPluginRequest,

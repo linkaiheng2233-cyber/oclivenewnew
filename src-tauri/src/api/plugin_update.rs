@@ -20,7 +20,9 @@ pub struct PluginUpdateInfo {
     #[serde(skip_serializing_if = "Option::is_none")]
     pub message: Option<String>,
 }
-
+/// # Errors
+///
+/// Returns [`Err`] with a human-readable message when the operation fails.
 /// 预留：未来对接社区站 `GET /api/plugins/versions`；当前返回无更新 + 说明文案。
 #[tauri::command]
 pub fn check_plugin_updates(
@@ -119,7 +121,9 @@ fn resolve_install_dir(state: &AppState, plugin_id: &str) -> PathBuf {
         .join("plugins")
         .join(plugin_id)
 }
-
+/// # Errors
+///
+/// Returns [`Err`] with a human-readable message when the operation fails.
 /// 解压 zip 到临时目录，校验 `manifest.json` 的 `id` 与 `plugin_id` 一致后覆盖安装目录。
 #[tauri::command]
 pub fn extract_plugin_zip(

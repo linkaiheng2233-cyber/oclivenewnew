@@ -336,7 +336,9 @@ impl AppState {
             scene_policy_sets,
         }
     }
-
+/// # Errors
+///
+/// Returns [`Err`] with a human-readable message when the operation fails.
     /// `roles_dir_override`：打包应用传入 `resource_dir/roles`；`None` 时用 [`resolve_roles_dir`]。
     /// `app_data_dir`：应用数据目录（与 SQLite 同级），用于 `oclive_host_plugins.json` 与 `plugins/` 扫描根之一。
     pub async fn new(
@@ -419,7 +421,9 @@ impl AppState {
             startup_health: Mutex::new(None),
         })
     }
-
+/// # Errors
+///
+/// Returns [`Err`] with a human-readable message when the operation fails.
     /// 内存库 + 注入 LLM（集成测试 / 不连 Ollama）
     pub async fn new_in_memory_with_llm(
         llm: Arc<dyn LlmClient>,
@@ -427,7 +431,9 @@ impl AppState {
     ) -> Result<Self> {
         Self::new_in_memory_with_llm_and_policy_file(llm, roles_dir, None).await
     }
-
+/// # Errors
+///
+/// Returns [`Err`] with a human-readable message when the operation fails.
     pub async fn new_in_memory_with_llm_and_policy_file(
         llm: Arc<dyn LlmClient>,
         roles_dir: impl AsRef<Path>,
@@ -521,7 +527,9 @@ impl AppState {
     pub fn scene_policy_count(&self) -> usize {
         self.policy_runtime.read().scene_policy_sets.len()
     }
-
+/// # Errors
+///
+/// Returns [`Err`] with a human-readable message when the operation fails.
     pub fn reload_policy_plugins(&self) -> Result<usize> {
         let path = Path::new("./config/policy.toml");
         let registry = load_policy_registry_from_path(path, true)?;
@@ -535,7 +543,9 @@ impl AppState {
         );
         Ok(count)
     }
-
+/// # Errors
+///
+/// Returns [`Err`] with a human-readable message when the operation fails.
     /// 优先使用 [`Self::role_cache`]（与 [`crate::domain::chat_engine`] 一致）；未命中时从磁盘加载并写入缓存。
     ///
     /// 同一 `role_id` 在 [`Self::role_load_inflight`] 下串行冷加载；写缓存前再查一次。本线程退出时若已无其它 waiter，从 inflight 表摘掉该键，避免无限增长。
@@ -586,7 +596,9 @@ impl AppState {
         let prefix = format!("{}__sess__", manifest_role_id);
         cache.retain(|k, _| !k.starts_with(&prefix));
     }
-
+/// # Errors
+///
+/// Returns [`Err`] with a human-readable message when the operation fails.
     /// 当前有效性格：`vector` 模式为 `default_personality` + `delta`；`profile` 模式由核心性格档案 + DB「可变性格档案」归纳七维。
     pub async fn get_current_personality(
         &self,
@@ -738,7 +750,9 @@ impl AppState {
         }
         out
     }
-
+/// # Errors
+///
+/// Returns [`Err`] with a human-readable message when the operation fails.
     pub fn register_local_plugin_provider(
         &self,
         descriptor: LocalPluginProviderDescriptor,

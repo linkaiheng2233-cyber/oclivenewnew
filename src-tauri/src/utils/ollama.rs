@@ -17,6 +17,9 @@ static OLLAMA_CLIENT: Lazy<Client> = Lazy::new(|| {
 });
 
 // 调用 Ollama API 生成文本
+/// # Errors
+///
+/// Returns [`Err`] with a human-readable message when the operation fails.
 pub async fn ollama_generate(
     model: &str,
     prompt: &str,

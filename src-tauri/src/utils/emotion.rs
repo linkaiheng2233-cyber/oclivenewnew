@@ -1,6 +1,8 @@
 use crate::utils::ollama::ollama_generate;
 use tokio::time::{timeout, Duration};
-
+/// # Errors
+///
+/// Returns [`Err`] with a human-readable message when the operation fails.
 /// 通过 Ollama AI 分析用户输入的情绪
 /// 返回词汇：happy, sad, angry, shy, confused, neutral
 /// 失败或超时时返回 neutral 作为默认情绪

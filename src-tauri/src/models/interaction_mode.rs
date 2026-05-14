@@ -33,7 +33,9 @@ impl InteractionMode {
     pub const fn is_immersive(self) -> bool {
         matches!(self, Self::Immersive)
     }
-
+/// # Errors
+///
+/// Returns [`Err`] with a human-readable message when the operation fails.
     /// 校验角色包 `settings.json` 可选字段。
     pub fn validate_optional_pack_field(raw: Option<&str>) -> Result<(), String> {
         if let Some(s) = raw {

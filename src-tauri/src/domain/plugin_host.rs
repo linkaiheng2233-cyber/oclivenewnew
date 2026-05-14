@@ -508,7 +508,9 @@ impl BackendRegistry {
             }
         }
     }
-
+/// # Errors
+///
+/// Returns [`Err`] with a human-readable message when the operation fails.
     pub fn register_local_provider(
         &self,
         descriptor: LocalPluginProviderDescriptor,
@@ -581,7 +583,9 @@ impl PluginHost {
             registry: BackendRegistry::from_runtime(llm, directory_runtime, app_data_dir),
         }
     }
-
+/// # Errors
+///
+/// Returns [`Err`] with a human-readable message when the operation fails.
     pub fn register_local_provider(
         &self,
         descriptor: LocalPluginProviderDescriptor,
@@ -666,14 +670,18 @@ impl PluginHost {
     pub fn list_mcp_servers(&self) -> Vec<McpServerManifest> {
         self.registry.list_mcp_servers()
     }
-
+/// # Errors
+///
+/// Returns [`Err`] with a human-readable message when the operation fails.
     pub fn list_mcp_tools(
         &self,
         server_id: &str,
     ) -> std::result::Result<Vec<crate::infrastructure::mcp_client::McpToolManifest>, String> {
         self.registry.list_mcp_tools(server_id)
     }
-
+/// # Errors
+///
+/// Returns [`Err`] with a human-readable message when the operation fails.
     pub fn call_mcp_tool(
         &self,
         server_id: &str,

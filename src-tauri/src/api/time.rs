@@ -92,7 +92,9 @@ fn resolve_preset_target_ms(base_ms: i64, preset_raw: &str) -> Option<i64> {
         _ => None,
     }
 }
-
+/// # Errors
+///
+/// Returns [`Err`] with a human-readable message when the operation fails.
 pub async fn get_time_state_impl(
     state: &AppState,
     role_id: &str,
@@ -145,7 +147,9 @@ pub async fn get_time_state_impl(
         iso_datetime: dt.to_rfc3339(),
     })
 }
-
+/// # Errors
+///
+/// Returns [`Err`] with a human-readable message when the operation fails.
 pub async fn jump_time_impl(
     state: &AppState,
     req: &JumpTimeRequest,
@@ -254,7 +258,9 @@ pub async fn jump_time_impl(
         autonomous_scene_to: autonomous_scene.as_ref().map(|(_, b)| b.clone()),
     })
 }
-
+/// # Errors
+///
+/// Returns [`Err`] with a human-readable message when the operation fails.
 #[tauri::command]
 pub async fn get_time_state(
     role_id: String,
@@ -262,7 +268,9 @@ pub async fn get_time_state(
 ) -> Result<TimeStateResponse, String> {
     get_time_state_impl(&state, &role_id).await
 }
-
+/// # Errors
+///
+/// Returns [`Err`] with a human-readable message when the operation fails.
 #[tauri::command]
 pub async fn jump_time(
     req: JumpTimeRequest,

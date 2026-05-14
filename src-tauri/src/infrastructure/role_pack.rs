@@ -40,7 +40,9 @@ fn zip_manifest_path_priority(name: &str) -> Option<u8> {
         Some(2)
     }
 }
-
+/// # Errors
+///
+/// Returns [`Err`] with a human-readable message when the operation fails.
 /// 将 `roles/{role_id}/` 打成 `.ocpak`（ZIP）。
 pub fn export_role_pack(storage: &RoleStorage, role_id: &str, dest: &Path) -> Result<()> {
     let src = storage.roles_dir().join(role_id);
@@ -85,7 +87,9 @@ fn peek_role_folder_manifest(dir: &Path) -> Result<(String, String, String)> {
         .map_err(|_| AppError::InvalidParameter("角色包格式错误：manifest.json 无法解析".into()))?;
     Ok((disk.id, disk.name, disk.version))
 }
-
+/// # Errors
+///
+/// Returns [`Err`] with a human-readable message when the operation fails.
 /// 从 `.ocpak` / `.zip` 或**已解压目录**读取 `manifest.json`，用于导入前预览与冲突判断。
 pub fn peek_role_pack_manifest(src: &Path) -> Result<(String, String, String)> {
     if src.is_dir() {
@@ -260,7 +264,9 @@ fn import_role_from_directory<F: FnMut(ImportProgress)>(
         ((cur as i64 * 100) / tot as i64).min(99) as i32
     })
 }
-
+/// # Errors
+///
+/// Returns [`Err`] with a human-readable message when the operation fails.
 /// 解压 `.ocpak` / `.zip` 到 `roles/{id}/`，或从**已解压目录**复制（与 `roles/{id}/` 布局一致）。
 /// 若目录已存在且 `overwrite == false` 则返回 [`AppError::RolePackExists`]。
 /// `on_progress` 在解压与复制阶段多次调用，结束时由调用方再发 100%。

@@ -98,7 +98,9 @@ impl RoleStorage {
 
         Ok(roles)
     }
-
+/// # Errors
+///
+/// Returns [`Err`] with a human-readable message when the operation fails.
     /// 从目录加载单个角色
     pub fn load_role_from_dir(&self, role_dir: &Path) -> Result<Role> {
         let manifest_path = role_dir.join("manifest.json");
@@ -200,7 +202,9 @@ impl RoleStorage {
 
         Ok(role)
     }
-
+/// # Errors
+///
+/// Returns [`Err`] with a human-readable message when the operation fails.
     /// 加载指定角色
     pub fn load_role(&self, role_id: &str) -> Result<Role> {
         let rid = role_id.trim();
@@ -213,7 +217,9 @@ impl RoleStorage {
         let role_dir = self.roles_dir.join(rid);
         self.load_role_from_dir(&role_dir)
     }
-
+/// # Errors
+///
+/// Returns [`Err`] with a human-readable message when the operation fails.
     /// 场景 id 列表：manifest 顶层 `scenes` 数组 + `roles/{role_id}/scenes/` 子目录名，去重排序。
     /// 若均为空则返回 `["default"]`。
     pub fn list_scene_ids(&self, role_id: &str) -> Result<Vec<String>> {
@@ -527,7 +533,9 @@ impl RoleStorage {
             _ => scene_id.to_string(),
         }
     }
-
+/// # Errors
+///
+/// Returns [`Err`] with a human-readable message when the operation fails.
     /// 保存角色配置：写入 `manifest.json`（展示与关系等）与 `settings.json`（引擎字段）。
     pub fn save_role_manifest(&self, role: &Role) -> Result<()> {
         let role_dir = self.roles_dir.join(&role.id);
@@ -546,7 +554,9 @@ impl RoleStorage {
 
         Ok(())
     }
-
+/// # Errors
+///
+/// Returns [`Err`] with a human-readable message when the operation fails.
     /// 保存核心人设（仅创作者可改）
     pub fn save_core_personality(&self, role_id: &str, content: &str) -> Result<()> {
         let role_dir = self.roles_dir.join(role_id);

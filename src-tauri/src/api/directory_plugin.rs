@@ -328,7 +328,9 @@ fn shell_plugin_id_resolved(
         .map(|s| s.trim().to_string())
         .filter(|s| !s.is_empty())
 }
-
+/// # Errors
+///
+/// Returns [`Err`] with a human-readable message when the operation fails.
 #[tauri::command]
 pub fn get_directory_plugin_bootstrap(
     role_id: Option<String>,
@@ -336,7 +338,9 @@ pub fn get_directory_plugin_bootstrap(
 ) -> Result<DirectoryPluginBootstrapDto, String> {
     Ok(directory_plugin_bootstrap_dto(&state, role_id))
 }
-
+/// # Errors
+///
+/// Returns [`Err`] with a human-readable message when the operation fails.
 /// 读取目录插件根下文本文件（用于宿主侧编译 `.vue` 等）；路径不得越出插件目录。
 #[tauri::command]
 pub fn read_plugin_asset_text(
@@ -397,7 +401,9 @@ pub fn read_plugin_asset_text(
         .to_string()
     })
 }
-
+/// # Errors
+///
+/// Returns [`Err`] with a human-readable message when the operation fails.
 /// 查询某宿主内置事件名是否被当前角色下已启用插件订阅（与 `subscribed_host_events` 一致）。
 #[tauri::command]
 pub fn is_host_event_subscribed(
@@ -432,7 +438,9 @@ pub struct DirectoryPluginInvokeDto {
     #[serde(default)]
     pub params: Value,
 }
-
+/// # Errors
+///
+/// Returns [`Err`] with a human-readable message when the operation fails.
 #[tauri::command]
 pub fn directory_plugin_invoke(
     req: DirectoryPluginInvokeDto,
@@ -587,7 +595,9 @@ fn build_directory_plugin_catalog(state: &AppState) -> Vec<DirectoryPluginCatalo
     out.sort_by(|a, b| a.id.cmp(&b.id));
     out
 }
-
+/// # Errors
+///
+/// Returns [`Err`] with a human-readable message when the operation fails.
 #[tauri::command]
 pub fn get_directory_plugin_catalog(
     state: State<'_, AppState>,
@@ -650,7 +660,9 @@ pub struct PluginStateGetResponse {
     /// 全局默认（插件管理「全局默认」）；与 `role` 合并后驱动实际嵌入与整壳。
     pub global_defaults: RolePluginStateDto,
 }
-
+/// # Errors
+///
+/// Returns [`Err`] with a human-readable message when the operation fails.
 #[tauri::command]
 pub fn get_plugin_state(
     role_id: String,
@@ -663,7 +675,9 @@ pub fn get_plugin_state(
         global_defaults: rt.global_plugin_state().into(),
     })
 }
-
+/// # Errors
+///
+/// Returns [`Err`] with a human-readable message when the operation fails.
 #[tauri::command]
 pub fn save_plugin_state(
     role_id: String,
@@ -673,7 +687,9 @@ pub fn save_plugin_state(
     app.directory_plugins
         .save_role_plugin_state(role_id.trim(), state.into())
 }
-
+/// # Errors
+///
+/// Returns [`Err`] with a human-readable message when the operation fails.
 #[tauri::command]
 pub fn save_global_plugin_state(
     state: RolePluginStateDto,
@@ -681,7 +697,9 @@ pub fn save_global_plugin_state(
 ) -> Result<(), String> {
     app.directory_plugins.save_global_plugin_state(state.into())
 }
-
+/// # Errors
+///
+/// Returns [`Err`] with a human-readable message when the operation fails.
 #[tauri::command]
 pub fn reset_plugin_state_to_role_default(
     role_id: String,

@@ -2,7 +2,9 @@
 
 use crate::state::AppState;
 use serde_json::{json, Value};
-
+/// # Errors
+///
+/// Returns [`Err`] with a human-readable message when the operation fails.
 pub async fn get_conversation_list_impl(state: &AppState) -> Result<Value, String> {
     let rows = state
         .db_manager

@@ -23,6 +23,9 @@ pub struct RemoteEventEstimatorHttp {
 }
 
 impl RemoteEventEstimatorHttp {
+/// # Errors
+///
+/// Returns [`Err`] with a human-readable message when the operation fails.
     pub fn new(cfg: RemotePluginHttpConfig) -> std::result::Result<Self, reqwest::Error> {
         let client = reqwest::Client::builder()
             .connect_timeout(cfg.connect_timeout())

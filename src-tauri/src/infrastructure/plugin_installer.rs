@@ -63,7 +63,9 @@ fn plugin_state_store_path(state: &AppState) -> PathBuf {
         .app_data_dir()
         .join("plugin_state.json")
 }
-
+/// # Errors
+///
+/// Returns [`Err`] with a human-readable message when the operation fails.
 pub fn load_cached_index(state: &AppState) -> Result<PluginIndexFile, AppError> {
     let p = cache_path(state);
     if !p.exists() {
@@ -76,7 +78,9 @@ pub fn load_cached_index(state: &AppState) -> Result<PluginIndexFile, AppError> 
     serde_json::from_str(&raw)
         .map_err(|e| AppError::Unknown(format!("parse plugin index cache failed: {}", e)))
 }
-
+/// # Errors
+///
+/// Returns [`Err`] with a human-readable message when the operation fails.
 pub fn sync_plugin_index_online(
     state: &AppState,
     index_url: Option<&str>,
@@ -151,7 +155,9 @@ fn installed_version_map(state: &AppState) -> HashMap<String, semver::Version> {
     }
     out
 }
-
+/// # Errors
+///
+/// Returns [`Err`] with a human-readable message when the operation fails.
 pub fn missing_dependencies(
     state: &AppState,
     deps: &HashMap<String, String>,
@@ -180,7 +186,9 @@ pub fn missing_dependencies(
     }
     Ok(missing)
 }
-
+/// # Errors
+///
+/// Returns [`Err`] with a human-readable message when the operation fails.
 pub fn install_plugin(
     state: &AppState,
     git_url: &str,
@@ -248,7 +256,9 @@ pub fn install_plugin(
         .rescan_plugin_roots(state.storage.roles_dir());
     Ok(pid)
 }
-
+/// # Errors
+///
+/// Returns [`Err`] with a human-readable message when the operation fails.
 pub fn update_plugin(state: &AppState, plugin_id: &str) -> Result<(), AppError> {
     let pid = plugin_id.trim();
     if pid.is_empty() {
@@ -313,7 +323,9 @@ fn remove_plugin_from_state_store(state: &AppState, plugin_id: &str) -> Result<(
     let _ = state.directory_plugins.reload_plugin_state();
     Ok(())
 }
-
+/// # Errors
+///
+/// Returns [`Err`] with a human-readable message when the operation fails.
 pub fn uninstall_plugin(state: &AppState, plugin_id: &str) -> Result<(), AppError> {
     let pid = plugin_id.trim();
     if pid.is_empty() {

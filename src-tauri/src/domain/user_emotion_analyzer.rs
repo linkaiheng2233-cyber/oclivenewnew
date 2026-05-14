@@ -5,6 +5,9 @@ use crate::error::Result;
 use std::sync::atomic::{AtomicBool, Ordering};
 
 pub trait UserEmotionAnalyzer: Send + Sync {
+    /// # Errors
+    ///
+    /// Returns an error when the analyzer cannot produce an [`EmotionResult`].
     fn analyze(&self, text: &str) -> Result<EmotionResult>;
 }
 

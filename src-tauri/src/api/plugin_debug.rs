@@ -10,7 +10,9 @@ use crate::state::AppState;
 use serde::Deserialize;
 use serde_json::{json, Value};
 use tauri::State;
-
+/// # Errors
+///
+/// Returns [`Err`] with a human-readable message when the operation fails.
 #[tauri::command]
 pub fn spawn_plugin_for_test(
     plugin_id: String,
@@ -22,7 +24,9 @@ pub fn spawn_plugin_for_test(
         .directory_plugins
         .spawn_plugin_for_test(plugin_id.trim(), cfg)
 }
-
+/// # Errors
+///
+/// Returns [`Err`] with a human-readable message when the operation fails.
 #[tauri::command]
 pub fn kill_plugin_process(plugin_id: String, state: State<'_, AppState>) -> Result<(), String> {
     let id = plugin_id.trim();
@@ -47,7 +51,9 @@ pub fn get_plugin_logs(plugin_id: String, lines: usize, state: State<'_, AppStat
         .directory_plugins
         .get_plugin_log_tail(plugin_id.trim(), lines.max(1))
 }
-
+/// # Errors
+///
+/// Returns [`Err`] with a human-readable message when the operation fails.
 #[tauri::command]
 pub fn clear_plugin_logs(plugin_id: String, state: State<'_, AppState>) -> Result<(), String> {
     let id = plugin_id.trim();
@@ -69,7 +75,9 @@ pub struct TestPluginMethodDto {
     #[serde(default)]
     pub params: Value,
 }
-
+/// # Errors
+///
+/// Returns [`Err`] with a human-readable message when the operation fails.
 #[tauri::command]
 pub fn test_plugin_method(
     req: TestPluginMethodDto,
@@ -95,7 +103,9 @@ pub fn test_plugin_method(
     invoke_directory_plugin_rpc_blocking(&url, method, req.params, RemoteRpcChannel::Plugin)
         .map_err(|e: AppError| e.to_frontend_error())
 }
-
+/// # Errors
+///
+/// Returns [`Err`] with a human-readable message when the operation fails.
 #[tauri::command]
 pub fn discover_plugin_methods(
     plugin_id: String,

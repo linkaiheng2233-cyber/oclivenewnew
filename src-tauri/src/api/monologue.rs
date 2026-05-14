@@ -3,7 +3,9 @@ use crate::error::AppError;
 use crate::models::dto::{GenerateMonologueRequest, GenerateMonologueResponse};
 use crate::state::AppState;
 use tauri::State;
-
+/// # Errors
+///
+/// Returns [`Err`] with a human-readable message when the operation fails.
 pub async fn generate_monologue_impl(
     state: &AppState,
     role_id: &str,
@@ -71,7 +73,9 @@ pub async fn generate_monologue_impl(
         text: text.trim().to_string(),
     })
 }
-
+/// # Errors
+///
+/// Returns [`Err`] with a human-readable message when the operation fails.
 #[tauri::command]
 pub async fn generate_monologue(
     req: GenerateMonologueRequest,

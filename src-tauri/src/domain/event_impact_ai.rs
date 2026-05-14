@@ -331,7 +331,9 @@ JSON 必须是：
 "#
     )
 }
-
+/// # Errors
+///
+/// Returns [`Err`] with a human-readable message when the operation fails.
 #[allow(clippy::too_many_arguments)]
 pub async fn estimate_event_impact(
     llm: &Arc<dyn LlmClient>,
