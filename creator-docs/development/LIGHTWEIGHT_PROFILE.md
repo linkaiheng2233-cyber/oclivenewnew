@@ -31,7 +31,7 @@
 
 **已知漏洞跟踪中**；**不宣称零漏洞**。漏洞级命中与路线图以 **[KNOWN_VULNERABILITIES.md](../security/KNOWN_VULNERABILITIES.md)** 为准（最近更新日期见该文件）。
 
-摘要（**2026-05-12**，`cargo audit --no-fetch --stale`，`src-tauri/Cargo.lock`）：
+摘要（**2026-05-12**，`cargo audit --no-fetch --stale`，`src-tauri/Cargo.lock`；与当次 CLI 输出一致）：
 
 - **漏洞级（error）**：**5** 条（`rsa`、`rustls-webpki` ×3 条 advisory、`sqlx`）。
 - **警告级（warning）**：**17** 条（含 gtk-rs *unmaintained*、`rustls-pemfile` *unmaintained*、`glib` *unsound* 等）；**不**写入 KNOWN 表，但在发版评审时应通读 `cargo audit` 全文。
@@ -67,23 +67,24 @@ cd src-tauri
 cargo bloat --release -n 8
 ```
 
-**最近采样**：**2026-05-12**，`oclivenewnew-tauri.exe`（`--release`，配置见 §1）。
+**最近采样**：**2026-05-12**，`oclivenewnew-tauri.exe`（`--release`，配置见 §1；`cargo bloat --release -n 8`，外置 `target-dir` 下路径以本机为准）。
 
 | 指标 | 值 |
 |------|-----|
-| **`.text` 段（bloat 报告）** | **约 7.4 MiB** |
-| **PE 文件大小** | **约 11.8 MiB**（含调试信息；未 strip 时偏大） |
+| **`.text` 段（bloat 报告）** | **7.6 MiB**（报告中的「63.1% 100.0%」行） |
+| **PE 文件大小** | **12.0 MiB**（`cargo-bloat` 末行「the file size is …」） |
 
 **Top 符号（按 bloat 报告 `.text` 贡献，节选）**：
 
-| 占比（文件） | 大小（约） | 说明 |
-|--------------|------------|------|
-| 1.7% | 200 KiB | `oclivenewnew_tauri::run` 闭包 |
-| 0.9% | 112 KiB | `RoleStorage::load_role_from_dir` |
-| 0.7% | 89 KiB | `tauri::app::Builder::build` |
-| 0.7% | 88 KiB | `tauri_runtime_wry::handle_user_message` |
-| 0.5% | 61 KiB | `plugin_bridge::dispatch_bridge_command` |
-| 0.3% ×2 | ~39 KiB | `chat_engine::co_present::process_co_present` |
+| 占比（文件） | 大小 | 说明 |
+|--------------|------|------|
+| 1.4% | 170.4 KiB | `oclivenewnew_tauri::run::closure$3` |
+| 0.9% | 113.1 KiB | `RoleStorage::load_role_from_dir` |
+| 0.7% | 88.8 KiB | `tauri::app::Builder::build` |
+| 0.7% | 87.6 KiB | `tauri_runtime_wry::handle_user_message` |
+| 0.5% | 60.5 KiB | `plugin_bridge::dispatch_bridge_command::async_fn$0` |
+| 0.4% ×2 | 52.3 KiB | `chat_engine::co_present::process_co_present::async_fn$0` |
+| 0.3% | 41.6 KiB | `tauri::asset_protocol::asset_protocol_handler` |
 
 > 数值随 **Rust 版本、依赖升级、LTO/strip** 变化；发版前更新本表日期与一行命令输出。
 
@@ -93,4 +94,5 @@ cargo bloat --release -n 8
 
 | 日期 | 说明 |
 |------|------|
+| 2026-05-12 | §6.4 / §6.7：`cargo audit` 与 `cargo bloat --release -n 8` 复测，更新摘要日期与 bloat 数值（`.text` 7.6 MiB、PE 12.0 MiB）。 |
 | 2026-05-13 | 初版：与当前 `main` 锁文件、`cargo audit` / `cargo bloat` 采样对齐；链接 KNOWN_VULNERABILITIES。 |
