@@ -29,6 +29,7 @@
 | `../roles/README_MANIFEST.md` | **创作者**：`manifest.json` 全字段分类说明（与 `roles/manifest.template.json` 对照） |
 | `18_DEVELOPMENT_REPORT_USER_ACTIONS.md` | **开发汇报终稿**：已完成项 + **需你方处理项**（联调/Ollama/打包网络等） |
 | `WEEKLY_DEV_GUIDE.md` | **周节奏 + 任务 + 门禁**（WEEK3 起） |
+| `22_PRODUCT_LEVEL_RELEASE_GOALS.md` | **产品级**目标定义、P0/P1 差距与相关文档索引（与 `19_RELEASE_CHECKLIST` 互补） |
 
 **Cursor 规则**：项目根 `.cursor/rules/oclivenewnew.mdc`（指向 `handoff` 文档）。
 

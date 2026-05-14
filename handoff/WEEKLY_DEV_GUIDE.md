@@ -8,6 +8,7 @@
 
 - **当前进度**：WEEK3-003 完成（事件落库 + 集成测试 + 前端封装规划）
 - **下一步**：WEEK3-004 ~ WEEK3-007（API 命令 → 前端集成 → 事务 + 情绪持久化 → 可选优化）
+- **产品级发布差距（P0/P1 目标记录）**：见 `22_PRODUCT_LEVEL_RELEASE_GOALS.md`
 - **详细计划**：见 `02_DEVELOPMENT_PLAN_v3.8.md`
 - **项目认知**：见 `04_4.6_PROJECT_TRUTH_CHECKLIST.md`
 - **开发规范**：见 `03_DEVELOPMENT_STANDARDS.md`
