@@ -1,5 +1,7 @@
 # oclive（oclivenewnew）
 
+[English](README.en.md)
+
 [![CI](https://github.com/linkaiheng2233-cyber/oclivenewnew/actions/workflows/ci.yml/badge.svg)](https://github.com/linkaiheng2233-cyber/oclivenewnew/actions/workflows/ci.yml)
 
 本地优先的桌面角色对话应用：**Tauri + Vue 3 + Rust**。引擎支持场景、虚拟时间、异地/共景、好感与记忆、可替换子系统（记忆检索 / 情绪 / 事件估计 / Prompt 组装），角色内容以 **`roles/{角色id}/`** 角色包分发。
