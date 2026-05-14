@@ -3,7 +3,8 @@
 **oclive-cli** 是 oclive 官方 **内核 / 无头项目** 脚手架：在终端中交互（或脚本化）生成**可独立 `cargo build`** 的最小工程，便于硬件、侧车与多发行形态复用同一套配置形状。
 
 **源码**：[`crates/oclive-cli/`](../../crates/oclive-cli/)  
-**契约参考**（正式宿主）：[`PLUGIN_V1.md`](../plugin-and-architecture/PLUGIN_V1.md)
+**契约参考**（正式宿主）：[`PLUGIN_V1.md`](../plugin-and-architecture/PLUGIN_V1.md)  
+**`plugin_backends` 字段级权威说明**：[SETTINGS_REFERENCE.md](SETTINGS_REFERENCE.md)
 
 ---
 
@@ -17,6 +18,8 @@ cargo run -p oclive-cli -- --help
 cargo run -p oclive-cli -- init --help
 ```
 
+`init --help` **末尾**附有 **预设与 `plugin_backends` 矩阵**（与生成项目根目录 **`CONFIG_REFERENCE.md`** 一致）。
+
 ---
 
 ## `init`：创建项目
@@ -27,15 +30,17 @@ cargo run -p oclive-cli -- init --help
 cargo run -p oclive-cli -- init -o ./out/my-kernel
 ```
 
-流程包括：项目名、类型（无头可执行 / 库）、后端槽位多选、`builtin`/`stub`/`none` 选择、可选插件开关、是否生成示例 `roles/default`。
+流程包括：项目名、类型（无头可执行 / 库）、后端槽位多选、`builtin` / `remote` / `directory` / `none`（`llm` 槽另有 **`ollama`**）选择、可选插件开关、是否生成示例 `roles/default`。
 
 ### 非交互 + 预设
 
 | 预设 | 说明 |
 |------|------|
-| `minimal` | 多为 `stub` / `none`，不生成示例角色包目录 |
-| `full` | 全 `builtin`，插件说明全开，带示例角色包 |
-| `mixed` | 混合，用于 CI 与文档示例 |
+| `minimal` | 六槽全 `builtin` 语义；`llm` 写 **`ollama`**；`agent` **省略 JSON 键**；`complex_emotion` 为 `none`；插件占位关 |
+| `mixed` | 与矩阵一致：`llm=ollama`，`agent`/`complex_emotion` 为 `builtin`；部分插件说明开启 |
+| `full` | `llm=remote`，`complex_emotion=remote`，其余槽 `builtin`；插件说明全开 |
+
+矩阵全文见 **`init --help`** 或 [SETTINGS_REFERENCE.md](SETTINGS_REFERENCE.md) §三。
 
 ```bash
 cargo run -p oclive-cli -- init --non-interactive --quiet --preset minimal -o /tmp/my-kernel
@@ -57,13 +62,17 @@ cargo run -p oclive-cli -- init --non-interactive --quiet --preset mixed --proje
 | `--preset` | `minimal` \| `full` \| `mixed` |
 | `--project-type` | `kernel-server` \| `library` |
 | `--project-name` | 默认 `my_oclive_kernel` |
+| `--backend-memory` 等 | 逐项覆盖对应槽（`ValueEnum`，与 `BackendImpl` 一致）；**缺省则完全沿用 `--preset`** |
+
+非交互时 **不必** 传入任何 `--backend-*` 即可生成；传入则只覆盖所列槽位。
 
 ---
 
 ## 生成物说明
 
 - **占位 `Cargo.toml`**：当前仅依赖 **`serde` / `serde_json`**，不假设本机已存在 `oclive_kernel_runtime` 拆分 crate。接入真实内核时，请改为 `path` / 版本依赖并替换 `main.rs` / `lib.rs` 入口。
-- **`settings.json`**：`plugin_backends` 六槽 + `_oclive_cli.complex_emotion` 元数据；与桌面端完全对齐前，请视为 **脚手架形状**，按 [PLUGIN_V1.md](../plugin-and-architecture/PLUGIN_V1.md) 校正枚举值。
+- **`roles/default/settings.json`**：含 **`_comment_*`** 与完整 **`plugin_backends`**（含第 7 键 `complex_emotion`）；与主应用完全对齐时请以 [SETTINGS_REFERENCE.md](SETTINGS_REFERENCE.md) 为准裁剪非法键（如主应用不接受的 `none` 字符串）。
+- **`CONFIG_REFERENCE.md`（项目根）**：预设矩阵与各槽一句话，便于离线阅读。
 - **README（生成）**：根据插件勾选，写入接入 `oclive_kernel_server`、OOCP、目录插件的**文字指引**。
 
 ---
@@ -77,5 +86,4 @@ cargo run -p oclive-cli -- init --non-interactive --quiet --preset mixed --proje
 ## 后续路线（建议）
 
 1. 在 workspace 中落地 **`oclive_kernel_runtime`** 后，为 CLI 增加 **`--kernel-source path`**，自动写入 `Cargo.toml` 依赖。  
-2. 为 `stub` / `none` 生成 **cfg(feature)** 开关，与 `MODULE_NONE_SEMANTICS` 文档对齐。  
-3. 提供 **`oclive-cli check`**：对生成目录跑 `cargo clippy` + 可选 `cargo audit`。
+2. 与 `MODULE_NONE_SEMANTICS` 对齐时，为「逻辑 none」与「可加载 JSON」生成 **自动校验** 或 `cargo oclive-validate-settings` 子命令。
