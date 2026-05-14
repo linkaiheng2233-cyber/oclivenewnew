@@ -719,13 +719,16 @@ mod tests {
     #[test]
     fn register_local_provider_tracks_capability() {
         let h = host();
-        h.register_local_provider(LocalPluginProviderDescriptor {
-            provider_id: "local.demo".to_string(),
-            schema_version: crate::domain::LOCAL_PLUGIN_SCHEMA_VERSION,
-            min_runtime_version: None,
-            capabilities: vec![LocalPluginCapability::Prompt],
-        })
-        .expect("register local provider");
+        assert!(
+            h.register_local_provider(LocalPluginProviderDescriptor {
+                provider_id: "local.demo".to_string(),
+                schema_version: crate::domain::LOCAL_PLUGIN_SCHEMA_VERSION,
+                min_runtime_version: None,
+                capabilities: vec![LocalPluginCapability::Prompt],
+            })
+            .is_ok(),
+            "register local provider"
+        );
         assert_eq!(
             h.local_providers_for(LocalPluginCapability::Prompt).len(),
             1
@@ -739,13 +742,16 @@ mod tests {
     #[test]
     fn memory_local_resolves_and_ranks_like_v2_when_provider_registered() {
         let h = host();
-        h.register_local_provider(LocalPluginProviderDescriptor {
-            provider_id: "mem.local.one".to_string(),
-            schema_version: crate::domain::LOCAL_PLUGIN_SCHEMA_VERSION,
-            min_runtime_version: None,
-            capabilities: vec![LocalPluginCapability::Memory],
-        })
-        .expect("register");
+        assert!(
+            h.register_local_provider(LocalPluginProviderDescriptor {
+                provider_id: "mem.local.one".to_string(),
+                schema_version: crate::domain::LOCAL_PLUGIN_SCHEMA_VERSION,
+                min_runtime_version: None,
+                capabilities: vec![LocalPluginCapability::Memory],
+            })
+            .is_ok(),
+            "register mem.local.one"
+        );
         let role = Role {
             plugin_backends: PluginBackends {
                 memory: MemoryBackend::Local,
@@ -793,13 +799,17 @@ mod tests {
     fn memory_local_hint_selects_named_provider() {
         let h = host();
         for id in ["mem.a", "mem.z"] {
-            h.register_local_provider(LocalPluginProviderDescriptor {
-                provider_id: id.to_string(),
-                schema_version: crate::domain::LOCAL_PLUGIN_SCHEMA_VERSION,
-                min_runtime_version: None,
-                capabilities: vec![LocalPluginCapability::Memory],
-            })
-            .expect("register");
+            assert!(
+                h.register_local_provider(LocalPluginProviderDescriptor {
+                    provider_id: id.to_string(),
+                    schema_version: crate::domain::LOCAL_PLUGIN_SCHEMA_VERSION,
+                    min_runtime_version: None,
+                    capabilities: vec![LocalPluginCapability::Memory],
+                })
+                .is_ok(),
+                "register {}",
+                id
+            );
         }
         let role = Role {
             plugin_backends: PluginBackends {
