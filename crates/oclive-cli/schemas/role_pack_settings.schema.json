@@ -1,0 +1,28 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://oclive.app/schemas/role_pack_settings.schema.json",
+  "title": "oclive role pack settings.json (subset)",
+  "type": "object",
+  "required": ["schema_version"],
+  "properties": {
+    "schema_version": { "type": "integer", "minimum": 1 },
+    "plugin_backends": {
+      "type": "object",
+      "properties": {
+        "memory": { "type": "string" },
+        "emotion": { "type": "string" },
+        "event": { "type": "string" },
+        "prompt": { "type": "string" },
+        "llm": { "type": "string" },
+        "agent": { "type": "string" },
+        "local_memory_provider_id": { "type": "string" },
+        "directory_plugins": { "type": "object" },
+        "complex_emotion": { "type": "string" }
+      },
+      "additionalProperties": true
+    },
+    "interaction_mode": { "type": "string" },
+    "reply_quality_anchor": { "type": "string" }
+  },
+  "additionalProperties": true
+}

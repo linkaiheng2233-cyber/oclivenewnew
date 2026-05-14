@@ -1,0 +1,22 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://oclive.app/schemas/role_pack_index.schema.json",
+  "title": "oclive community role pack index",
+  "type": "array",
+  "items": {
+    "type": "object",
+    "required": ["id", "name", "version", "download_url"],
+    "properties": {
+      "id": { "type": "string", "minLength": 1 },
+      "name": { "type": "string", "minLength": 1 },
+      "version": { "type": "string", "minLength": 1 },
+      "author": { "type": "string" },
+      "description": { "type": "string" },
+      "tags": { "type": "array", "items": { "type": "string" } },
+      "download_url": { "type": "string", "format": "uri" },
+      "sha256": { "type": "string", "pattern": "^[a-f0-9]{64}$" },
+      "min_runtime_version": { "type": "string" }
+    },
+    "additionalProperties": true
+  }
+}
