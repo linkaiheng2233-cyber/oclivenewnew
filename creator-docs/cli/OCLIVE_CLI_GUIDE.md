@@ -72,7 +72,8 @@ cargo run -p oclive-cli -- init --non-interactive --quiet --preset mixed --proje
 
 - **占位 `Cargo.toml`**：当前仅依赖 **`serde` / `serde_json`**，不假设本机已存在 `oclive_kernel_runtime` 拆分 crate。接入真实内核时，请改为 `path` / 版本依赖并替换 `main.rs` / `lib.rs` 入口。
 - **`roles/default/settings.json`**：含 **`_comment_*`** 与完整 **`plugin_backends`**（含第 7 键 `complex_emotion`）；与主应用完全对齐时请以 [SETTINGS_REFERENCE.md](SETTINGS_REFERENCE.md) 为准裁剪非法键（如主应用不接受的 `none` 字符串）。
-- **`CONFIG_REFERENCE.md`（项目根）**：预设矩阵与各槽一句话，便于离线阅读。
+- **`CONFIG_REFERENCE.md`（项目根）**：预设矩阵与各槽一句话，便于离线阅读；含 **开发者编译选项（计划中）** 与 Monolith RFC 链接。
+- **`init --help` 末尾**：含预设矩阵及 **开发者编译选项（计划中）** 一行，指向 [RFC_OCLIVE_MONOLITH_MODE.md](../rfc/RFC_OCLIVE_MONOLITH_MODE.md)。
 - **README（生成）**：根据插件勾选，写入接入 `oclive_kernel_server`、OOCP、目录插件的**文字指引**。
 
 ---

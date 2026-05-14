@@ -14,6 +14,10 @@
 - **crate**：[`crates/oclive-cli/`](crates/oclive-cli/)（workspace 成员）；`cargo run -p oclive-cli -- init` 交互或 `--non-interactive --preset` 生成**可独立 `cargo build`** 的最小内核/库骨架（当前占位依赖 `serde`/`serde_json`，便于硬件与无头场景先统一目录与 `settings.json` 形状）。
 - **文档**：[OCLIVE_CLI_GUIDE.md](creator-docs/cli/OCLIVE_CLI_GUIDE.md) · [SETTINGS_REFERENCE.md](creator-docs/cli/SETTINGS_REFERENCE.md)（`plugin_backends` 与预设矩阵）；接入真实 `oclive_kernel_runtime` / `oclive_kernel_server` 时在生成 `Cargo.toml` 中改为 path 依赖并替换入口代码。
 
+### 架构 RFC
+
+- **高耦合编译模式（Monolith）**：[RFC_OCLIVE_MONOLITH_MODE.md](creator-docs/rfc/RFC_OCLIVE_MONOLITH_MODE.md) 描述通过 **`monolith.toml`**（`oclive init` 生成、`oclive build` 读取）与 Cargo **`monolith`** feature 在 **编译期** 焊接选定七槽子系统、消除 trait 虚调用的路线；与运行时 **`pipeline.ocblueprint`** 解耦。**当前状态：第一阶段草案，尚未在 `oclive-cli` 或主仓编排中实现。**
+
 ### 测试体系（协议层 + UI 层）
 
 - **OOCP / 无头内核（语言无关）**：标准化场景见 [`creator-docs/oocp/OOCP_TEST_SUITE.md`](creator-docs/oocp/OOCP_TEST_SUITE.md)；索引导航 [`creator-docs/oocp/OOCP_SPEC_COMPLETE_REFERENCE.md`](creator-docs/oocp/OOCP_SPEC_COMPLETE_REFERENCE.md)。官方 Node 可执行对照实现见 [`examples/oocp-test-suite/`](examples/oocp-test-suite/)（对 `oclive_kernel_server` 跑 `GET /health` + WebSocket 方法链）。Linux CI 工作流 **`.github/workflows/ci.yml`** 中的 **`oocp-test-suite`** job 会构建 `tools/oocp-client`、拉起 `oclive_kernel_server` 并执行 `npm test`。

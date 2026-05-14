@@ -11,7 +11,7 @@
 | 我想… | 阅读 |
 |------|------|
 | **用启动器安装 zip 角色包、选本机 Ollama 模型、一键 pull** | **[oclive-launcher README](https://github.com/linkaiheng2233-cyber/oclive-launcher/blob/main/README.md)**（独立仓库） |
-| **高耦合编译模式（Monolith）RFC：脚手架 + 蓝图焊接** | **[../rfc/RFC_OCLIVE_MONOLITH_MODE.md](../rfc/RFC_OCLIVE_MONOLITH_MODE.md)** |
+| **高耦合编译模式（Monolith）** | [RFC 章节](#rfc)（`monolith.toml`、编译期焊接） |
 | **理清项目全貌 / 人机分工 / 命令与发版清单** | **[PROJECT_OVERVIEW.md](PROJECT_OVERVIEW.md)** |
 | 报错后如何快速定位与提 issue | **[ERROR_CODES.md](ERROR_CODES.md)** |
 | **GitHub：Dependabot、手动跑 CI、网页上要点的设置** | **[GITHUB_REPO_CHECKLIST.md](GITHUB_REPO_CHECKLIST.md)** |
@@ -51,6 +51,16 @@
 | **已知漏洞（cargo-audit）与升级路线** | **[../security/KNOWN_VULNERABILITIES.md](../security/KNOWN_VULNERABILITIES.md)** |
 | **安全审查范围与局限** | **[../security/SECURITY_AUDIT_SCOPE.md](../security/SECURITY_AUDIT_SCOPE.md)** |
 | **测试输出契约、OOCP 占位、插件集成测说明** | **[../testing/TEST_OUTPUT_SCHEMA.md](../testing/TEST_OUTPUT_SCHEMA.md)** · **[../testing/OOCP_TEST_SUITE.md](../testing/OOCP_TEST_SUITE.md)** · **[../testing/ADAPTING_TEST_PLUGIN.md](../testing/ADAPTING_TEST_PLUGIN.md)** |
+
+---
+
+## RFC
+
+架构级设计与实现路线以 RFC 收敛（**草案不代表已合入代码或脚手架行为**）。
+
+| 文档 | 说明 |
+|------|------|
+| **[RFC_OCLIVE_MONOLITH_MODE.md](../rfc/RFC_OCLIVE_MONOLITH_MODE.md)** | **高耦合编译模式（Monolith）**：`monolith.toml`（`init` 生成、`build` 读取）、`Cargo` feature `monolith`、`-monolith` 二进制命名；与运行时 **`pipeline.ocblueprint`** 的边界见 RFC 第 4 节。 |
 
 ---
 

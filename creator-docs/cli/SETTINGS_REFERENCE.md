@@ -83,3 +83,4 @@
 | 生成项目内预设表 | 运行 `init` 后的 **`CONFIG_REFERENCE.md`** |
 | 插件与侧车总览 | [PLUGIN_V1.md](../plugin-and-architecture/PLUGIN_V1.md) |
 | 目录插件 | [DIRECTORY_PLUGINS.md](../plugin-and-architecture/DIRECTORY_PLUGINS.md) |
+| 编译期高耦合模式（Monolith，草案） | [RFC_OCLIVE_MONOLITH_MODE.md](../rfc/RFC_OCLIVE_MONOLITH_MODE.md)（`monolith.toml`，与 `plugin_backends` 运行时解耦） |
