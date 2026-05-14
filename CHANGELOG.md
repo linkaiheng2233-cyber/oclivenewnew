@@ -2,6 +2,15 @@
 
 ## [Unreleased]
 
+**Kernel / CLI / quality（当前 `main`，应用版本号仍为 package.json / `src-tauri` 的 0.2.0）：**
+
+- **内核编排**：**`process_message`** 为 Tauri 与 HTTP API 的**唯一主编排入口**；**入口蓝图（`pipeline.ocblueprint`）主路径已移除**，子流程在 `chat_engine` 模块内顺序展开。
+- **Monolith**：**`oclive-cli`** 四阶段（**`init --monolith`** → **`build`** → 双二进制 **`bench`**）与 **`vendor/oclive_monolith_builtin/`** 焊接桩落地；详见 [RFC_OCLIVE_MONOLITH_MODE.md](creator-docs/rfc/RFC_OCLIVE_MONOLITH_MODE.md) 与 [OCLIVE_CLI_GUIDE.md](creator-docs/cli/OCLIVE_CLI_GUIDE.md)。
+- **CLI**：**`oclive dev`**（`roles/` 热文件监听）；**`oclive bench --save` / `--compare`**（`bench_history.json`）；**`oclive pack validate|create|publish`**（角色包校验与 `.oclivepack` 发布）。
+- **启动健康检查**：首轮对话前 **`startup_health`**（槽位、包文件、**`DbManager::health_ping`**、可选 LLM 探测）；可用 **`OCLIVE_SKIP_STARTUP_HEALTH`** 等环境变量跳过。
+- **错误与可观测性**：**`thiserror`** 统一 **`AppError`**、前端可映射文案；**`tracing`** + **`RUST_LOG`**（CLI / 库 **`init_tracing`** 默认 **`info`**）。
+- **静态分析**：工作区 **`[workspace.lints]`** 与 **`cargo clippy ... -D warnings`** 在 CI 与本地 **`check:rust:clippy`** 对齐，告警即失败。
+
 ### Added
 
 - 插件清单支持声明订阅的宿主事件（`shell.bridge.events` 或 `ui_slots[].bridge.events`），避免不必要的事件广播。
