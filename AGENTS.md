@@ -16,7 +16,7 @@
 
 ### 架构 RFC
 
-- **高耦合编译模式（Monolith）**：[RFC_OCLIVE_MONOLITH_MODE.md](creator-docs/rfc/RFC_OCLIVE_MONOLITH_MODE.md) 描述通过 **`monolith.toml`**（`oclive init` 生成、`oclive build` 读取）与 Cargo **`monolith`** feature 在 **编译期** 焊接选定七槽子系统、消除 trait 虚调用的路线；与运行时 **`pipeline.ocblueprint`** 解耦。**当前状态：第一阶段草案，尚未在 `oclive-cli` 或主仓编排中实现。**
+- **高耦合编译模式（Monolith）**：[RFC_OCLIVE_MONOLITH_MODE.md](creator-docs/rfc/RFC_OCLIVE_MONOLITH_MODE.md)。**第一阶段已在 `oclive-cli` 落地**：`init --monolith`（非交互）或交互「开发者编译选项」生成 **`monolith.toml`**、占位 **`process_message_monolith.rs`**、双 **`[[bin]]`**；真实 `oclive_*_builtin` 链接与 **`oclive build` 子命令** 为后续阶段。
 
 ### 测试体系（协议层 + UI 层）
 

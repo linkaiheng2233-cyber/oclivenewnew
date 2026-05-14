@@ -60,7 +60,7 @@
 
 | 文档 | 说明 |
 |------|------|
-| **[RFC_OCLIVE_MONOLITH_MODE.md](../rfc/RFC_OCLIVE_MONOLITH_MODE.md)** | **高耦合编译模式（Monolith）**：`monolith.toml`（`init` 生成、`build` 读取）、`Cargo` feature `monolith`、`-monolith` 二进制命名；与运行时 **`pipeline.ocblueprint`** 的边界见 RFC 第 4 节。 |
+| **[RFC_OCLIVE_MONOLITH_MODE.md](../rfc/RFC_OCLIVE_MONOLITH_MODE.md)** | **高耦合编译模式（Monolith）**：`monolith.toml`、`--monolith`、双 `[[bin]]`（**第一阶段已在 oclive-cli 实现占位焊接**；`oclive build` 子命令待办）。 |
 
 ---
 
