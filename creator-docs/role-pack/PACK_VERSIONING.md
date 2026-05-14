@@ -1,6 +1,6 @@
 # 角色包版本与兼容性
 
-本文说明 **manifest / settings** 的版本字段、未知字段策略，以及与 [`PLUGIN_V1.md`](../plugin-and-architecture/PLUGIN_V1.md)、[`roles/README_MANIFEST.md`](../../roles/README_MANIFEST.md) 的关系。实现以源码为准。**全库文档索引**：[../getting-started/DOCUMENTATION_INDEX.md](../getting-started/DOCUMENTATION_INDEX.md)。
+本文说明 **manifest / settings** 的版本字段、未知字段策略，以及与 [`PLUGIN_V1.md`](../plugin-and-architecture/PLUGIN_V1.md)、[`roles/README_MANIFEST.md`](../../roles/README_MANIFEST.md)、**[`ROLE_PACK_SPEC.md`](ROLE_PACK_SPEC.md)**（磁盘包形状与 CLI 校验）的关系。实现以源码为准。**全库文档索引**：[../getting-started/DOCUMENTATION_INDEX.md](../getting-started/DOCUMENTATION_INDEX.md)。
 
 ## `settings.json`：`schema_version`
 

@@ -20,6 +20,26 @@ cargo run -p oclive-cli -- init --help
 
 `init --help` **末尾**附有 **预设与 `plugin_backends` 矩阵**（与生成项目根目录 **`CONFIG_REFERENCE.md`** 一致）。
 
+**角色包规范与校验**：见 [ROLE_PACK_SPEC.md](../role-pack/ROLE_PACK_SPEC.md)；子命令 **`pack`** 见同文档第 6 节与下文。
+
+---
+
+## `pack`：角色包校验与打包
+
+在仓库根目录：
+
+```bash
+cargo run -p oclive-cli -- pack validate ./roles/mumu --host-version 0.2.0
+cargo run -p oclive-cli -- pack create -o ./out/my-role --flat --id com.example.demo --name Demo
+cargo run -p oclive-cli -- pack publish ./out/my-role -o ./dist/com.example.demo-0.1.0.oclivepack
+```
+
+- **`validate`**：校验 `manifest.json` / `settings.json` 合并、`plugin_backends` 反序列化、`default_personality` 七维范围、`interaction_mode`、`min_runtime_version` 与 `--host-version` 等（与宿主磁盘加载阶段对齐，不跑 DB）。
+- **`create`**：生成最小可校验目录；`--flat` 时 `-o` 指向的目录即为角色根（否则创建 `roles/<id>/`）。
+- **`publish`**：将角色目录打成 **ZIP**，扩展名 **`.oclivepack`**；ZIP 内顶层文件夹名为 **`manifest.id`**。
+
+**JSON Schema**（IDE / `ajv` 等）：`crates/oclive-cli/schemas/role_pack_manifest.schema.json`、`role_pack_settings.schema.json`、`role_pack_index.schema.json`。
+
 ---
 
 ## `init`：创建项目
@@ -42,7 +62,10 @@ cargo run -p oclive-cli -- init -o ./out/my-kernel
 
 ```bash
 cargo run -p oclive-cli -- init --non-interactive --quiet --preset minimal -o /tmp/my-kernel
+cargo run -p oclive-cli -- init --non-interactive --quiet --preset minimal --skip-role-pack -o /tmp/my-kernel-no-roles
 ```
+
+`--skip-role-pack`：不生成 `roles/`（空白内核工程）。
 
 启用 Monolith（`--non-interactive` 下加 **`--monolith`**；仅 **kernel_server**）：
 
