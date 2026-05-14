@@ -46,6 +46,12 @@ import {
   setUserRelation,
   type JumpTimeResponse,
 } from "./utils/tauri-api";
+import { useI18n } from "vue-i18n";
+import {
+  getLocalePreference,
+  setLocalePreference,
+  type LocalePreference,
+} from "./i18n";
 
 const roleStore = useRoleStore();
 usePackUiTheme();
@@ -53,6 +59,16 @@ const chatStore = useChatStore();
 const debugStore = useDebugStore();
 const uiStore = useUiStore();
 const pluginStore = usePluginStore();
+const { t } = useI18n();
+const localePreference = ref<LocalePreference>(getLocalePreference());
+
+function onLocalePreferenceChange(ev: Event): void {
+  const el = ev.target as HTMLSelectElement | null;
+  if (!el) return;
+  const v = el.value as LocalePreference;
+  setLocalePreference(v);
+  localePreference.value = v;
+}
 const { toast, showToast } = useAppToast();
 const { themeCycleLabel, cycleTheme, bumpScale, scaleLabel } = useOcliveAppearance();
 const { applyResolvedNarrativeScene } = useNarrativeScene();
@@ -590,6 +606,7 @@ async function runPendingProtocolInstallsFromQueue(): Promise<void> {
 }
 
 onMounted(() => {
+  localePreference.value = getLocalePreference();
   setErrorReporter((err) => {
     showToast("error", err.message);
   });
@@ -697,6 +714,23 @@ onBeforeUnmount(() => {
         @click.stop
       >
         <div class="more-grid">
+          <div class="more-tile more-tile--xs">
+            <div class="more-tile-head">
+              <span class="more-label">{{ t("app.locale.label") }}</span>
+            </div>
+            <div class="more-tile-body">
+              <select
+                class="interaction-mode-select more-select more-select--fill"
+                :value="localePreference"
+                @change="onLocalePreferenceChange"
+              >
+                <option value="system">{{ t("app.locale.system") }}</option>
+                <option value="zh-CN">{{ t("app.locale.zhCN") }}</option>
+                <option value="en-US">{{ t("app.locale.enUS") }}</option>
+              </select>
+            </div>
+          </div>
+
           <div class="more-tile more-tile--xs">
             <div class="more-tile-head">
               <span class="more-label">互动模式</span>
