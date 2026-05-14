@@ -10,7 +10,7 @@ use crate::domain::policy::PolicyContext;
 use crate::domain::portrait_emotion_engine::resolve_portrait_emotion;
 use crate::domain::prompt_builder::{effective_reply_quality_anchor, PromptInput};
 use crate::domain::user_identity::resolve_effective_user_relation_key;
-use crate::error::Result;
+use crate::error::AppError;
 use crate::models::dto::{
     DetectedEventDto, PresenceMode, SendMessageRequest, SendMessageResponse, API_VERSION,
     SCHEMA_VERSION,
@@ -20,11 +20,41 @@ use crate::models::{Event, Memory, PersonalitySource, PersonalityVector, Role};
 use crate::state::AppState;
 use chrono::Utc;
 use std::time::Instant;
+use thiserror::Error;
 
 use super::context::load_recent_context;
 use super::emotion_to_dto;
 use super::favor::{compute_favor_and_relation, FavorRelationInput};
 use super::scene::{detect_movement_intent, movement_ui_flags};
+
+/// 共景路径中的失败，带 `stage` 便于与日志对齐。
+#[derive(Debug, Error)]
+#[error("共景({stage}): {source}")]
+pub struct CoPresentError {
+    pub(crate) stage: &'static str,
+    #[source]
+    pub(crate) source: AppError,
+}
+
+impl CoPresentError {
+    pub fn wrap(stage: &'static str, source: AppError) -> Self {
+        Self { stage, source }
+    }
+}
+
+impl From<CoPresentError> for AppError {
+    fn from(e: CoPresentError) -> Self {
+        e.source
+    }
+}
+
+pub(crate) type CoPresentResult<T> = std::result::Result<T, CoPresentError>;
+
+macro_rules! cp {
+    ($e:expr, $stage:literal) => {
+        $e.map_err(|err| CoPresentError::wrap($stage, err))
+    };
+}
 
 #[allow(clippy::too_many_arguments)] // 编排入口：场景 / 计时 / 多 id 与 `Role` 并列传入，不宜为 clippy 强塞单结构体
 pub(crate) async fn process_co_present(
@@ -38,23 +68,29 @@ pub(crate) async fn process_co_present(
     mrid: &str,
     srid: &str,
     preflight_ms: u64,
-) -> Result<SendMessageResponse> {
+) -> CoPresentResult<SendMessageResponse> {
     let t_cp0 = Instant::now();
     let user_message = req.user_message.as_str();
     let policies = state.policies_for_scene(Some(scene_id.as_str()));
     let pl = state.resolved_plugins_for_session(role, Some(srid));
 
-    let event_runtime = state
-        .db_manager
-        .get_event_impact_factor(srid)
-        .await?
-        .unwrap_or(role.evolution_config.event_impact_factor);
+    let event_runtime = cp!(
+        state.db_manager.get_event_impact_factor(srid).await,
+        "event_impact_factor"
+    )?
+    .unwrap_or(role.evolution_config.event_impact_factor);
 
-    let mutable_for_prompt = state.db_manager.get_mutable_personality(srid).await?;
+    let mutable_for_prompt = cp!(
+        state.db_manager.get_mutable_personality(srid).await,
+        "mutable_personality"
+    )?;
 
-    let mut personality = state.get_current_personality(srid, role).await?;
+    let mut personality = cp!(
+        state.get_current_personality(srid, role).await,
+        "current_personality"
+    )?;
 
-    let emotion_result = pl.emotion.analyze(user_message)?;
+    let emotion_result = cp!(pl.emotion.analyze(user_message), "user_emotion_analyze")?;
     let user_emotion = emotion_result.to_emotion();
     let user_emotion_str = user_emotion.to_string();
     let user_emotion_prompt =
@@ -62,7 +98,7 @@ pub(crate) async fn process_co_present(
 
     let ollama_model = role.resolve_ollama_model(state.ollama_model.as_str());
     let (recent_turns, recent_turns_for_event, recent_events_for_event) =
-        load_recent_context(state, srid).await?;
+        cp!(load_recent_context(state, srid).await, "load_recent_context")?;
 
     let prev_stored_narrative_hint = state.stored_complex_emotion_narrative_hint(srid);
     let (prev_user_for_ce, prev_bot_for_ce) = recent_turns
@@ -105,20 +141,22 @@ pub(crate) async fn process_co_present(
         }
     };
 
-    let estimate = pl
-        .event
-        .estimate(
-            &pl.llm,
-            ollama_model.as_str(),
-            user_message,
-            &user_emotion,
-            &personality,
-            role.evolution_config.personality_source,
-            &recent_turns_for_event,
-            &recent_events_for_event,
-            knowledge_augment_opt.as_ref(),
-        )
-        .await?;
+    let estimate = cp!(
+        pl.event
+            .estimate(
+                &pl.llm,
+                ollama_model.as_str(),
+                user_message,
+                &user_emotion,
+                &personality,
+                role.evolution_config.personality_source,
+                &recent_turns_for_event,
+                &recent_events_for_event,
+                knowledge_augment_opt.as_ref(),
+            )
+            .await,
+        "event_estimate"
+    )?;
     let ai_event_type = estimate.event_type;
     let ai_impact_factor_final = estimate.impact_factor;
     let ai_event_confidence = estimate.confidence;
@@ -131,7 +169,10 @@ pub(crate) async fn process_co_present(
         );
     }
 
-    let mut memories = state.memory_repo.load_memories(srid, 10).await?;
+    let mut memories = cp!(
+        state.memory_repo.load_memories(srid, 10).await,
+        "load_memories"
+    )?;
     let scene_m = role
         .memory_config
         .as_ref()
@@ -145,25 +186,41 @@ pub(crate) async fn process_co_present(
         limit: 8,
     });
 
-    let user_relation_key: String =
-        resolve_effective_user_relation_key(state, role, srid, Some(scene_id.as_str())).await?;
+    let user_relation_key: String = cp!(
+        resolve_effective_user_relation_key(state, role, srid, Some(scene_id.as_str())).await,
+        "resolve_user_relation_key"
+    )?;
     let rf = relation_favor_for_key(role, user_relation_key.as_str());
 
-    let relation_before = state
-        .db_manager
-        .get_relation_state_for_identity(srid, user_relation_key.as_str())
-        .await?
-        .or(state.db_manager.get_relation_state(srid).await?)
+    let rel_id = cp!(
+        state
+            .db_manager
+            .get_relation_state_for_identity(srid, user_relation_key.as_str())
+            .await,
+        "relation_state_for_identity"
+    )?;
+    let rel_global = cp!(
+        state.db_manager.get_relation_state(srid).await,
+        "relation_state_global"
+    )?;
+    let relation_before = rel_id
+        .or(rel_global)
         .unwrap_or_else(|| "Stranger".to_string());
     let seed_favor = role.initial_favorability_for_relation(user_relation_key.as_str());
-    state
-        .db_manager
-        .ensure_identity_stats_row(srid, user_relation_key.as_str(), seed_favor)
-        .await?;
-    let favorability_before = state
-        .db_manager
-        .favorability_for_identity_with_runtime_fallback(srid, user_relation_key.as_str())
-        .await?;
+    cp!(
+        state
+            .db_manager
+            .ensure_identity_stats_row(srid, user_relation_key.as_str(), seed_favor)
+            .await,
+        "ensure_identity_stats_row"
+    )?;
+    let favorability_before = cp!(
+        state
+            .db_manager
+            .favorability_for_identity_with_runtime_fallback(srid, user_relation_key.as_str())
+            .await,
+        "favorability_for_identity"
+    )?;
     let event_confidence = ai_event_confidence;
     let favor_relation_input = FavorRelationInput {
         relation_before: relation_before.as_str(),
@@ -186,11 +243,11 @@ pub(crate) async fn process_co_present(
         .map(|t| format!("在「{}」下，你们可能会多聊「{}」相关的事。", scene_label, t))
         .unwrap_or_default();
 
-    let virtual_time_ms = state
-        .db_manager
-        .get_virtual_time_ms(srid)
-        .await?
-        .unwrap_or(0);
+    let virtual_time_ms = cp!(
+        state.db_manager.get_virtual_time_ms(srid).await,
+        "virtual_time_ms"
+    )?
+    .unwrap_or(0);
     let life_context_line: String = if immersive {
         role.life_schedule
             .as_ref()
@@ -261,8 +318,11 @@ pub(crate) async fn process_co_present(
         ai_impact_factor_final,
         relation_after.as_str(),
     ));
-    let bot_emotion_result = pl.emotion.analyze(&reply)?;
-    let previous_emotion = state.db_manager.get_current_emotion(srid).await?;
+    let bot_emotion_result = cp!(pl.emotion.analyze(&reply), "bot_reply_emotion_analyze")?;
+    let previous_emotion = cp!(
+        state.db_manager.get_current_emotion(srid).await,
+        "get_current_emotion"
+    )?;
     let bot_emotion = policies
         .emotion
         .resolve_current_emotion(previous_emotion.as_deref(), &bot_emotion_result);
@@ -308,41 +368,47 @@ pub(crate) async fn process_co_present(
     let mut recent_events = recent_events_for_event;
     recent_events.insert(0, event.clone());
     let core_v = PersonalityVector::from(&role.default_personality);
-    let portrait_emotion_str = resolve_portrait_emotion(
-        &pl.llm,
-        ollama_model.as_str(),
-        role,
-        &core_v,
-        &personality,
-        favorability_before,
-        user_message,
-        &reply,
-        user_emotion_str.as_str(),
-        &bot_emotion,
-        &recent_events,
-        &recent_turns,
-    )
-    .await?;
-
-    let favor_current = state
-        .db_manager
-        .apply_chat_turn_atomic(crate::infrastructure::db::ChatTurnTxInput {
-            role_id: srid,
-            personality: &personality,
-            // 与用户可见语气一致：用语义情绪驱动立绘/状态；立绘 LLM 细调仍通过返回值 portrait_emotion 下发前端
-            current_emotion: bot_emotion_str.as_str(),
-            relation_state: relation_after.as_str(),
-            user_relation_key: user_relation_key.as_str(),
-            favor_delta,
-            memory_content: &memory_line,
-            memory_importance,
-            memory_fifo_limit: policies.memory.fifo_limit(),
-            event: &event,
+    let portrait_emotion_str = cp!(
+        resolve_portrait_emotion(
+            &pl.llm,
+            ollama_model.as_str(),
+            role,
+            &core_v,
+            &personality,
+            favorability_before,
             user_message,
-            bot_reply: &reply,
-            scene_id: scene_id.as_str(),
-        })
-        .await?;
+            &reply,
+            user_emotion_str.as_str(),
+            &bot_emotion,
+            &recent_events,
+            &recent_turns,
+        )
+        .await,
+        "portrait_emotion_llm"
+    )?;
+
+    let favor_current = cp!(
+        state
+            .db_manager
+            .apply_chat_turn_atomic(crate::infrastructure::db::ChatTurnTxInput {
+                role_id: srid,
+                personality: &personality,
+                // 与用户可见语气一致：用语义情绪驱动立绘/状态；立绘 LLM 细调仍通过返回值 portrait_emotion 下发前端
+                current_emotion: bot_emotion_str.as_str(),
+                relation_state: relation_after.as_str(),
+                user_relation_key: user_relation_key.as_str(),
+                favor_delta,
+                memory_content: &memory_line,
+                memory_importance,
+                memory_fifo_limit: policies.memory.fifo_limit(),
+                event: &event,
+                user_message,
+                bot_reply: &reply,
+                scene_id: scene_id.as_str(),
+            })
+            .await,
+        "apply_chat_turn_atomic"
+    )?;
 
     state.set_stored_complex_emotion_narrative_hint(
         srid,
@@ -350,7 +416,10 @@ pub(crate) async fn process_co_present(
     );
 
     if role.evolution_config.personality_source == PersonalitySource::Profile {
-        let prev = state.db_manager.get_mutable_personality(srid).await?;
+        let prev = cp!(
+            state.db_manager.get_mutable_personality(srid).await,
+            "get_mutable_personality"
+        )?;
         let impact_scaled = (ai_impact_factor_final * event_runtime).clamp(-1.0, 1.0);
         let next = match crate::domain::mutable_profile_llm::evolve_mutable_personality_with_llm(
             &pl.llm,
@@ -380,27 +449,33 @@ pub(crate) async fn process_co_present(
                 prev.clone()
             }
         };
-        state
-            .db_manager
-            .set_mutable_personality(srid, &next)
-            .await?;
+        cp!(
+            state.db_manager.set_mutable_personality(srid, &next).await,
+            "set_mutable_personality"
+        )?;
         let personality_after =
             crate::domain::profile_personality::effective_vector_from_profile(role, &next);
         let delta_out = PersonalityVector::sub_components(&personality_after, &core_v);
-        state
-            .db_manager
-            .set_core_delta_personality_json(srid, &core_v.to_json_vec(), &delta_out.to_json_vec())
-            .await?;
+        cp!(
+            state
+                .db_manager
+                .set_core_delta_personality_json(srid, &core_v.to_json_vec(), &delta_out.to_json_vec())
+                .await,
+            "set_core_delta_personality_json_profile"
+        )?;
         state
             .personality_cache
             .write()
             .insert(srid.to_string(), personality_after);
     } else {
         let delta_out = PersonalityVector::sub_components(&personality, &core_v);
-        state
-            .db_manager
-            .set_core_delta_personality_json(srid, &core_v.to_json_vec(), &delta_out.to_json_vec())
-            .await?;
+        cp!(
+            state
+                .db_manager
+                .set_core_delta_personality_json(srid, &core_v.to_json_vec(), &delta_out.to_json_vec())
+                .await,
+            "set_core_delta_personality_json_non_profile"
+        )?;
         state
             .personality_cache
             .write()
