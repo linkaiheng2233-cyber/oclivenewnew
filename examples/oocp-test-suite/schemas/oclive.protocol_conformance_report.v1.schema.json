@@ -1,0 +1,24 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://oclive.app/schemas/oclive.protocol_conformance_report.v1.json",
+  "title": "oclive.protocol_conformance_report.v1",
+  "type": "object",
+  "required": ["schema", "passed", "scenarios"],
+  "properties": {
+    "schema": { "const": "oclive.protocol_conformance_report.v1" },
+    "passed": { "type": "boolean" },
+    "base_url": { "type": "string" },
+    "scenarios": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["id", "ok"],
+        "properties": {
+          "id": { "type": "string" },
+          "ok": { "type": "boolean" },
+          "detail": { "type": "string" }
+        }
+      }
+    }
+  }
+}

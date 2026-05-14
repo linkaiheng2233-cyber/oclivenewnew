@@ -7,6 +7,7 @@
 
 use crate::domain::chat_engine::process_message;
 use crate::error::AppError;
+use crate::infrastructure::MockLlmClient;
 use crate::models::dto::{SendMessageRequest, SendMessageResponse};
 use crate::models::role::PersonalitySource;
 use crate::state::AppState;
@@ -190,6 +191,8 @@ pub fn api_router(app_state: Arc<AppState>) -> Router {
 }
 
 /// 阻塞运行 HTTP 服务，直到进程结束。
+///
+/// CI / 协议黑盒：设置 `OCLIVE_HTTP_API_MOCK_LLM=1` 时使用内存库 + [`MockLlmClient`]，不依赖本机 Ollama。
 pub async fn serve_api(port: u16) -> Result<(), String> {
     let db_path = std::env::temp_dir().join(format!("oclive_api_{}.db", port));
     let roles_dir = crate::state::resolve_roles_dir();
@@ -198,9 +201,22 @@ pub async fn serve_api(port: u16) -> Result<(), String> {
         .map(|p| p.join("oclive_api_app_data"))
         .unwrap_or_else(|| std::env::temp_dir().join("oclive_api_app_data"));
     let _ = std::fs::create_dir_all(&app_data_dir);
-    let app_state = AppState::new(&db_path, Some(roles_dir), &app_data_dir)
-        .await
-        .map_err(|e| e.to_string())?;
+    let mock_llm = std::env::var("OCLIVE_HTTP_API_MOCK_LLM")
+        .map(|v| v == "1" || v.eq_ignore_ascii_case("true"))
+        .unwrap_or(false);
+    let app_state = if mock_llm {
+        log::warn!(target: "oclive_api", "OCLIVE_HTTP_API_MOCK_LLM enabled: using in-memory DB + mock LLM");
+        let llm = Arc::new(MockLlmClient {
+            reply: "OOCP mock reply".to_string(),
+        });
+        AppState::new_in_memory_with_llm(llm, roles_dir.clone())
+            .await
+            .map_err(|e| e.to_string())?
+    } else {
+        AppState::new(&db_path, Some(roles_dir), &app_data_dir)
+            .await
+            .map_err(|e| e.to_string())?
+    };
     let app_state = Arc::new(app_state);
 
     let app = api_router(app_state);

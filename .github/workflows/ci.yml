@@ -95,6 +95,59 @@ jobs:
       - run: npm ci
       - run: npm run build
 
+  oocp-test-suite:
+    runs-on: ubuntu-latest
+    continue-on-error: false
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dtolnay/rust-toolchain@stable
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+      - name: Install Linux dependencies (Tauri / webkit)
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y libwebkit2gtk-4.0-dev build-essential curl wget \
+            libssl-dev libgtk-3-dev libayatana-appindicator3-dev librsvg2-dev patchelf
+      - name: Build oclivenewnew-tauri (--api)
+        working-directory: src-tauri
+        run: cargo build -p oclivenewnew-tauri
+      - name: Start HTTP API and run OOCP suite (S0–S11)
+        run: |
+          set -euo pipefail
+          export OCLIVE_ROLES_DIR="$GITHUB_WORKSPACE/roles"
+          export OCLIVE_HTTP_API_MOCK_LLM=1
+          TARGET="$(python - <<'PY'
+          import json, os, subprocess
+          root = os.environ["GITHUB_WORKSPACE"]
+          out = subprocess.check_output(
+              ["cargo", "metadata", "--format-version=1", "--no-deps"],
+              cwd=os.path.join(root, "src-tauri"),
+          )
+          print(json.loads(out)["target_directory"])
+          PY
+          )"
+          PORT=9842
+          "$TARGET/debug/oclivenewnew-tauri" --api --port "$PORT" > /tmp/oocp_api.log 2>&1 &
+          echo $! > /tmp/oocp_api.pid
+          for _ in $(seq 1 60); do
+            if curl -sf "http://127.0.0.1:${PORT}/health" >/dev/null; then
+              break
+            fi
+            sleep 1
+          done
+          curl -sf "http://127.0.0.1:${PORT}/health" >/dev/null || (echo "--- oclive api log ---"; cat /tmp/oocp_api.log; exit 1)
+          export OCLIVE_API_BASE="http://127.0.0.1:${PORT}"
+          export OCLIVE_OOCP_ROLE_PATH="$GITHUB_WORKSPACE/roles/mumu"
+          cd "$GITHUB_WORKSPACE/examples/oocp-test-suite"
+          node run.mjs
+      - name: Stop HTTP API
+        if: always()
+        run: |
+          if [ -f /tmp/oocp_api.pid ]; then
+            kill "$(cat /tmp/oocp_api.pid)" || true
+          fi
+
   remote-plugin-demo:
     runs-on: ubuntu-latest
     steps:

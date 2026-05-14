@@ -1,0 +1,14 @@
+{
+  "name": "oocp-test-suite",
+  "private": true,
+  "version": "0.1.0",
+  "type": "module",
+  "description": "Black-box HTTP checks against oclive --api (OOCP-aligned surface; S0–S11).",
+  "scripts": {
+    "test": "node run.mjs",
+    "test:json": "node run.mjs --json"
+  },
+  "engines": {
+    "node": ">=20"
+  }
+}
