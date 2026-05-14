@@ -156,6 +156,7 @@ mod tests {
             worldview_snippet: "",
             mutable_personality: "",
             reply_quality_anchor: effective_reply_quality_anchor(&role),
+            previous_complex_emotion_narrative_hint: "",
         };
         let a = BuiltinPromptAssembler.build_prompt(&input);
         let b = BuiltinPromptAssemblerV2.build_prompt(&input);

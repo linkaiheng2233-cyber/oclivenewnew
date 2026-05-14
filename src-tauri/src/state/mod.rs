@@ -308,6 +308,8 @@ pub struct AppState {
     pub directory_plugins: Arc<DirectoryPluginRuntime>,
     /// 会话级后端覆盖（key 为对话命名空间，如 `role_id` 或 `role_id__sess__{session}`）。
     session_plugin_overrides: Arc<RwLock<HashMap<String, PluginBackendsOverride>>>,
+    /// 共景路径：上一回合内置复杂情感输出的 `narrative_hint`（按 `srid` 命名空间；进程内，非 SQLite）。
+    last_complex_emotion_narrative_hint: Arc<RwLock<HashMap<String, String>>>,
 }
 
 impl AppState {
@@ -411,6 +413,7 @@ impl AppState {
             plugins,
             directory_plugins,
             session_plugin_overrides: Arc::new(RwLock::new(HashMap::new())),
+            last_complex_emotion_narrative_hint: Arc::new(RwLock::new(HashMap::new())),
         })
     }
 
@@ -482,7 +485,26 @@ impl AppState {
             plugins,
             directory_plugins,
             session_plugin_overrides: Arc::new(RwLock::new(HashMap::new())),
+            last_complex_emotion_narrative_hint: Arc::new(RwLock::new(HashMap::new())),
         })
+    }
+
+    /// 供下一轮主对话 Prompt 注入的上一轮 `narrative_hint`（空则跳过对应段落）。
+    pub fn stored_complex_emotion_narrative_hint(&self, srid: &str) -> String {
+        self.last_complex_emotion_narrative_hint
+            .read()
+            .get(srid)
+            .cloned()
+            .unwrap_or_default()
+    }
+
+    pub fn set_stored_complex_emotion_narrative_hint(&self, srid: &str, hint: String) {
+        let mut w = self.last_complex_emotion_narrative_hint.write();
+        if hint.trim().is_empty() {
+            w.remove(srid);
+        } else {
+            w.insert(srid.to_string(), hint);
+        }
     }
 
     pub fn policies_for_scene(&self, scene_id: Option<&str>) -> Arc<PolicySet> {

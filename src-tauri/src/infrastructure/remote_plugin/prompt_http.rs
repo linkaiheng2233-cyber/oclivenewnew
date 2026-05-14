@@ -128,6 +128,7 @@ struct PromptInputFlat<'a> {
     worldview_snippet: &'a str,
     mutable_personality: &'a str,
     reply_quality_anchor: &'a str,
+    previous_complex_emotion_narrative_hint: &'a str,
 }
 
 impl<'a> PromptInputSnapshot<'a> {
@@ -155,6 +156,7 @@ impl<'a> PromptInputSnapshot<'a> {
                 worldview_snippet: input.worldview_snippet,
                 mutable_personality: input.mutable_personality,
                 reply_quality_anchor: input.reply_quality_anchor,
+                previous_complex_emotion_narrative_hint: input.previous_complex_emotion_narrative_hint,
             },
         }
     }

@@ -64,6 +64,25 @@ pub(crate) async fn process_co_present(
     let (recent_turns, recent_turns_for_event, recent_events_for_event) =
         load_recent_context(state, srid).await?;
 
+    let prev_stored_narrative_hint = state.stored_complex_emotion_narrative_hint(srid);
+    let (prev_user_for_ce, prev_bot_for_ce) = recent_turns
+        .last()
+        .map(|(u, b)| (Some(u.clone()), b.clone()))
+        .unwrap_or((None, String::new()));
+    let (uv, ud) = crate::domain::complex_emotion::affect_metrics_from_seven_dim(&emotion_result);
+    let complex_emotion_out = crate::domain::complex_emotion::BuiltinKeywordComplexEmotionProvider
+        .resolve_turn_inner(&crate::domain::complex_emotion::ComplexEmotionInput {
+            role_id: mrid.to_string(),
+            scene_id: scene_id.clone(),
+            user_message: user_message.to_string(),
+            bot_reply: prev_bot_for_ce,
+            recent_dialogue_summary: None,
+            previous_narrative_hint: prev_stored_narrative_hint.clone(),
+            user_valence: Some(uv),
+            user_dominance: Some(ud),
+            previous_user_message: prev_user_for_ce,
+        });
+
     if role.evolution_config.personality_source != PersonalitySource::Profile {
         personality = PersonalityEngine::adjust_by_user_emotion(
             personality,
@@ -209,6 +228,7 @@ pub(crate) async fn process_co_present(
         worldview_snippet: worldview_snippet.as_str(),
         mutable_personality: mutable_for_prompt.as_str(),
         reply_quality_anchor: effective_reply_quality_anchor(role),
+        previous_complex_emotion_narrative_hint: prev_stored_narrative_hint.as_str(),
     });
 
     let pre_main_llm_ms = t_cp0.elapsed().as_millis() as u64;
@@ -323,6 +343,11 @@ pub(crate) async fn process_co_present(
             scene_id: scene_id.as_str(),
         })
         .await?;
+
+    state.set_stored_complex_emotion_narrative_hint(
+        srid,
+        complex_emotion_out.narrative_hint.clone(),
+    );
 
     if role.evolution_config.personality_source == PersonalitySource::Profile {
         let prev = state.db_manager.get_mutable_personality(srid).await?;
