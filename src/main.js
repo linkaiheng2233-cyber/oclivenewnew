@@ -5,6 +5,7 @@ import * as Sentry from "@sentry/vue";
 import VueVirtualScroller from "vue-virtual-scroller";
 import "vue-virtual-scroller/dist/vue-virtual-scroller.css";
 import App from "./App.vue";
+import { i18n } from "./i18n";
 import "./styles/theme.css";
 import "./styles/global.css";
 import { tryReplaceWithDirectoryShell } from "./utils/directoryShellBootstrap";
@@ -16,6 +17,7 @@ void (async () => {
   }
 
   const app = createApp(App);
+  app.use(i18n);
 
   try {
     const sentryDsn = import.meta.env.VITE_SENTRY_DSN;

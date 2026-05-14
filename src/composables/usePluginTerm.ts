@@ -1,17 +1,9 @@
-import termsRaw from "../assets/i18n/pluginTerms.json";
-
-type TermMap = Record<string, string>;
-
-const terms = termsRaw as TermMap;
+import { useI18n } from "vue-i18n";
 
 export function usePluginTerm() {
+  const { t } = useI18n();
   function term(key: string): string {
-    const v = terms[key];
-    if (typeof v === "string" && v.trim().length > 0) {
-      return v;
-    }
-    return key;
+    return t(`pluginTerms.${key}`);
   }
-
   return { term };
 }
