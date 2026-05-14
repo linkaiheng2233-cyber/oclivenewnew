@@ -3,6 +3,8 @@
 //! 运行方式：
 //! cargo test --test perf_chat_turns -- --ignored --nocapture
 
+#![allow(clippy::unwrap_used, clippy::expect_used)]
+
 use oclivenewnew_tauri::domain::chat_engine::process_message;
 use oclivenewnew_tauri::infrastructure::MockLlmClient;
 use oclivenewnew_tauri::models::dto::SendMessageRequest;

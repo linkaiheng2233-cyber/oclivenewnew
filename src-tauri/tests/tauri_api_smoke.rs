@@ -1,5 +1,7 @@
 //! 主仓最小烟测：`AppState` + `process_message` 编排链路（不经 Tauri IPC）。
 
+#![allow(clippy::unwrap_used, clippy::expect_used)]
+
 use oclivenewnew_tauri::domain::chat_engine::process_message;
 use oclivenewnew_tauri::infrastructure::MockLlmClient;
 use oclivenewnew_tauri::models::dto::SendMessageRequest;

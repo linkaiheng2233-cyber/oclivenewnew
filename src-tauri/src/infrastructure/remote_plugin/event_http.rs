@@ -23,17 +23,16 @@ pub struct RemoteEventEstimatorHttp {
 }
 
 impl RemoteEventEstimatorHttp {
-    pub fn new(cfg: RemotePluginHttpConfig) -> Self {
+    pub fn new(cfg: RemotePluginHttpConfig) -> std::result::Result<Self, reqwest::Error> {
         let client = reqwest::Client::builder()
             .connect_timeout(cfg.connect_timeout())
             .timeout(cfg.timeout)
-            .build()
-            .expect("reqwest async client");
-        Self {
+            .build()?;
+        Ok(Self {
             client,
             cfg,
             fallback: BuiltinEventEstimator,
-        }
+        })
     }
 }
 

@@ -4,6 +4,8 @@
 //! `PluginHost::new` 第三参为应用数据根目录（生产环境为 Tauri app data；此处用 `std::env::temp_dir()`），
 //! 供 MCP 配置扫描等基础设施使用。
 
+#![allow(clippy::unwrap_used, clippy::expect_used)]
+
 use oclivenewnew_tauri::domain::plugin_host::PluginHost;
 use oclivenewnew_tauri::infrastructure::llm::LlmClient;
 use oclivenewnew_tauri::infrastructure::MockLlmClient;

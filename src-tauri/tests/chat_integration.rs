@@ -1,5 +1,7 @@
 //! 集成测试：编排 + mock LLM（不依赖真实 Ollama）
 
+#![allow(clippy::unwrap_used, clippy::expect_used)]
+
 use oclivenewnew_tauri::domain::chat_engine::process_message;
 use oclivenewnew_tauri::infrastructure::MockLlmClient;
 use oclivenewnew_tauri::models::dto::SendMessageRequest;

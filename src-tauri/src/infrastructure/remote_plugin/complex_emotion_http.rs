@@ -16,17 +16,16 @@ pub struct RemoteComplexEmotionHttp {
 }
 
 impl RemoteComplexEmotionHttp {
-    pub fn new(cfg: RemotePluginHttpConfig) -> Self {
+    pub fn new(cfg: RemotePluginHttpConfig) -> std::result::Result<Self, reqwest::Error> {
         let client = reqwest::blocking::Client::builder()
             .timeout(cfg.timeout)
             .connect_timeout(cfg.connect_timeout())
-            .build()
-            .expect("reqwest blocking client for complex_emotion");
-        Self {
+            .build()?;
+        Ok(Self {
             client,
             cfg,
             fallback: BuiltinKeywordComplexEmotionProvider,
-        }
+        })
     }
 
     pub fn resolve_turn(&self, input: &ComplexEmotionInput) -> Result<ComplexEmotionOutput> {

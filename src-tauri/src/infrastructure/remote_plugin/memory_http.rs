@@ -18,17 +18,16 @@ pub struct RemoteMemoryRetrievalHttp {
 }
 
 impl RemoteMemoryRetrievalHttp {
-    pub fn new(cfg: RemotePluginHttpConfig) -> Self {
+    pub fn new(cfg: RemotePluginHttpConfig) -> std::result::Result<Self, reqwest::Error> {
         let client = reqwest::blocking::Client::builder()
             .connect_timeout(cfg.connect_timeout())
             .timeout(cfg.timeout)
-            .build()
-            .expect("reqwest blocking client");
-        Self {
+            .build()?;
+        Ok(Self {
             client,
             cfg,
             fallback: BuiltinMemoryRetrieval,
-        }
+        })
     }
 
     fn rank_remote(&self, input: &MemoryRetrievalInput<'_>) -> Option<Vec<Memory>> {

@@ -4,6 +4,8 @@
 //! 预期 UI / `get_role_info` 的 `current_favorability` 与当前场景对应身份在 `role_identity_stats` 中的值一致，
 //! 而非停留在全局列上一场景镜像值。
 
+#![allow(clippy::unwrap_used, clippy::expect_used)]
+
 use oclivenewnew_tauri::api::event::{create_event_impl, query_events_impl};
 use oclivenewnew_tauri::api::export::export_chat_logs_impl;
 use oclivenewnew_tauri::api::memory::query_memories_impl;

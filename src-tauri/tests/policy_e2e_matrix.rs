@@ -1,5 +1,7 @@
 //! 端到端策略矩阵回归：scene -> profile 绑定行为验证
 
+#![allow(clippy::unwrap_used, clippy::expect_used)]
+
 use oclivenewnew_tauri::domain::chat_engine::process_message;
 use oclivenewnew_tauri::infrastructure::MockLlmClient;
 use oclivenewnew_tauri::models::dto::SendMessageRequest;

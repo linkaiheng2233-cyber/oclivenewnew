@@ -1,5 +1,7 @@
 //! E05：上一轮内置复杂情感的 `narrative_hint` 注入下一轮主对话 Prompt（共景路径）。
 
+#![allow(clippy::unwrap_used, clippy::expect_used)]
+
 use async_trait::async_trait;
 use oclivenewnew_tauri::domain::chat_engine::process_message;
 use oclivenewnew_tauri::error::Result;

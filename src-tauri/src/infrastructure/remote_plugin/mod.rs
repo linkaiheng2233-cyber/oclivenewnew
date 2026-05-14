@@ -44,27 +44,56 @@ pub(crate) struct PluginRemoteGroup {
     pub prompt: Arc<dyn PromptAssembler>,
 }
 
+fn plugin_remote_placeholder_group() -> PluginRemoteGroup {
+    PluginRemoteGroup {
+        memory: Arc::new(RemoteMemoryRetrievalPlaceholder::new()),
+        emotion: Arc::new(RemoteUserEmotionAnalyzerPlaceholder::new()),
+        event: Arc::new(RemoteEventEstimatorPlaceholder::new()),
+        prompt: Arc::new(RemotePromptAssemblerPlaceholder::new()),
+    }
+}
+
 pub(crate) fn plugin_remote_group() -> PluginRemoteGroup {
-    match RemotePluginHttpConfig::from_env_plugin() {
-        Some(cfg) => {
-            tracing::info!(
-                target: "oclive_plugin",
-                "remote plugin HTTP active (memory/emotion/event/prompt) -> {}",
-                cfg.endpoint
-            );
-            PluginRemoteGroup {
-                memory: Arc::new(RemoteMemoryRetrievalHttp::new(cfg.clone())),
-                emotion: Arc::new(RemoteUserEmotionAnalyzerHttp::new(cfg.clone())),
-                event: Arc::new(RemoteEventEstimatorHttp::new(cfg.clone())),
-                prompt: Arc::new(RemotePromptAssemblerHttp::new(cfg)),
-            }
-        }
-        None => PluginRemoteGroup {
-            memory: Arc::new(RemoteMemoryRetrievalPlaceholder::new()),
-            emotion: Arc::new(RemoteUserEmotionAnalyzerPlaceholder::new()),
-            event: Arc::new(RemoteEventEstimatorPlaceholder::new()),
-            prompt: Arc::new(RemotePromptAssemblerPlaceholder::new()),
+    let Some(cfg) = RemotePluginHttpConfig::from_env_plugin() else {
+        return plugin_remote_placeholder_group();
+    };
+    tracing::info!(
+        target: "oclive_plugin",
+        "remote plugin HTTP active (memory/emotion/event/prompt) -> {}",
+        cfg.endpoint
+    );
+    let memory = RemoteMemoryRetrievalHttp::new(cfg.clone());
+    let emotion = RemoteUserEmotionAnalyzerHttp::new(cfg.clone());
+    let event = RemoteEventEstimatorHttp::new(cfg.clone());
+    let prompt = RemotePromptAssemblerHttp::new(cfg);
+    match (memory, emotion, event, prompt) {
+        (Ok(memory), Ok(emotion), Ok(event), Ok(prompt)) => PluginRemoteGroup {
+            memory: Arc::new(memory),
+            emotion: Arc::new(emotion),
+            event: Arc::new(event),
+            prompt: Arc::new(prompt),
         },
+        (m, e, ev, p) => {
+            let mut parts = Vec::new();
+            if let Err(err) = m {
+                parts.push(format!("memory: {}", err));
+            }
+            if let Err(err) = e {
+                parts.push(format!("emotion: {}", err));
+            }
+            if let Err(err) = ev {
+                parts.push(format!("event: {}", err));
+            }
+            if let Err(err) = p {
+                parts.push(format!("prompt: {}", err));
+            }
+            tracing::error!(
+                target: "oclive_plugin",
+                "remote plugin HTTP reqwest client build failed ({}); disabling remote plugin group",
+                parts.join("; ")
+            );
+            plugin_remote_placeholder_group()
+        }
     }
 }
 
@@ -75,7 +104,17 @@ pub fn llm_remote_backend(default_llm: Arc<dyn LlmClient>) -> Arc<dyn LlmClient>
             "remote LLM HTTP active -> {}",
             cfg.endpoint
         );
-        Arc::new(RemoteLlmHttp::new(cfg))
+        match RemoteLlmHttp::new(cfg) {
+            Ok(remote) => Arc::new(remote),
+            Err(e) => {
+                tracing::error!(
+                    target: "oclive_plugin",
+                    "remote LLM HTTP reqwest client build failed: {}; using default LLM",
+                    e
+                );
+                Arc::new(RemoteLlmPlaceholder::new(default_llm))
+            }
+        }
     } else {
         Arc::new(RemoteLlmPlaceholder::new(default_llm))
     }

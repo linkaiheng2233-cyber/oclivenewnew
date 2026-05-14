@@ -1,5 +1,7 @@
 //! `--api` HTTP 路由集成测试（`tower::ServiceExt::oneshot`，不监听端口）。
 
+#![allow(clippy::unwrap_used, clippy::expect_used)]
+
 use axum::body::{to_bytes, Body};
 use axum::http::{Request, StatusCode};
 use oclivenewnew_tauri::http_api::api_router;

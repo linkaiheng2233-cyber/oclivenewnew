@@ -6,9 +6,14 @@ use std::error::Error;
 use tokio::time::timeout;
 
 static OLLAMA_CLIENT: Lazy<Client> = Lazy::new(|| {
-    Client::builder()
-        .build()
-        .expect("Failed to build HTTP client")
+    Client::builder().build().unwrap_or_else(|e| {
+        tracing::warn!(
+            target: "oclive_ollama",
+            "default HTTP client build failed ({}); using reqwest::Client::new()",
+            e
+        );
+        Client::new()
+    })
 });
 
 // 调用 Ollama API 生成文本

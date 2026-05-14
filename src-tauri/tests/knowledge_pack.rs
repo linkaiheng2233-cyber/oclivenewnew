@@ -1,5 +1,7 @@
 //! 世界观知识包：加载、检索、Prompt 片段与 event_hints 合并。
 
+#![allow(clippy::unwrap_used, clippy::expect_used)]
+
 use oclivenewnew_tauri::domain::knowledge_loader::load_knowledge_index;
 use oclivenewnew_tauri::domain::prompt_builder::{
     effective_reply_quality_anchor, PromptBuilder, PromptInput,

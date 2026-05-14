@@ -3,6 +3,10 @@
     clippy::missing_panics_doc,
     clippy::must_use_candidate
 )]
+#![cfg_attr(
+    test,
+    allow(clippy::unwrap_used, clippy::expect_used)
+)]
 
 pub mod api;
 pub mod domain;
@@ -261,10 +265,13 @@ fn resolve_roles_dir_for_app(app: &tauri::App) -> PathBuf {
 
 /// ?? HTTP API ???`--api`??????????????????
 pub fn run_api_server(port: u16) {
-    let rt = tokio::runtime::Builder::new_multi_thread()
-        .enable_all()
-        .build()
-        .expect("tokio runtime");
+    let rt = match tokio::runtime::Builder::new_multi_thread().enable_all().build() {
+        Ok(rt) => rt,
+        Err(e) => {
+            eprintln!("failed to build tokio runtime: {}", e);
+            std::process::exit(1);
+        }
+    };
     let r = rt.block_on(http_api::serve_api(port));
     if let Err(e) = r {
         eprintln!("{}", e);
@@ -281,7 +288,7 @@ pub fn run() {
         .register_uri_scheme_protocol("ocliveplugin", |app, request| {
             serve_ocliveplugin_asset(app, request)
         })
-        .setup(|app| {
+        .setup(|app| -> Result<(), Box<dyn std::error::Error>> {
             #[cfg(desktop)]
             {
                 let app_h = app.handle().clone();
@@ -301,18 +308,26 @@ pub fn run() {
                 }
             }
             seed_pending_install_urls_from_args(std::env::args());
-            let app_dir = app
-                .path_resolver()
-                .app_data_dir()
-                .expect("resolve app_data_dir");
-            fs::create_dir_all(&app_dir).expect("create app_data_dir");
+            let app_dir = app.path_resolver().app_data_dir().ok_or_else(|| {
+                std::io::Error::new(
+                    std::io::ErrorKind::NotFound,
+                    "failed to resolve app_data_dir (Tauri path_resolver returned None)",
+                )
+            })?;
+            fs::create_dir_all(&app_dir).map_err(|e| {
+                std::io::Error::other(format!(
+                    "create app_data_dir {}: {}",
+                    app_dir.display(),
+                    e
+                ))
+            })?;
             let db_path = app_dir.join("app.db");
             let roles_dir = resolve_roles_dir_for_app(app);
             let roles_for_watcher = roles_dir.clone();
             let app_state = tauri::async_runtime::block_on(async {
                 state::AppState::new(&db_path, Some(roles_dir), &app_dir).await
             })
-            .expect("Failed to initialize app state");
+            .map_err(|e| -> Box<dyn std::error::Error> { Box::new(e) })?;
 
             app.manage(app_state);
             let hk = crate::infrastructure::hotkey_bindings::HotkeyBindingsFile::load(
@@ -398,5 +413,8 @@ pub fn run() {
             api::plugin_config::set_plugin_settings_config,
         ])
         .run(tauri::generate_context!())
-        .expect("error while running tauri application");
+        .unwrap_or_else(|e| {
+            eprintln!("error while running tauri application: {}", e);
+            std::process::exit(1);
+        });
 }
