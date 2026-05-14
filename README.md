@@ -9,9 +9,9 @@
 | 领域 | 状态 |
 |------|------|
 | **内核编排** | 主编排在 **`src-tauri/src/domain/chat_engine/mod.rs`** 的 **`process_message`**；无独立入口蓝图 DSL 主路径；子系统经 **`PluginHost`** 解析（含 **`agent`**）。 |
-| **测试** | **Rust**：`src-tauri` 下 **`cargo test`** + `tests/` 集成测（CI Ubuntu/Windows）。**前端**：CI **`npm run build`**；Vitest 单测脚本**未**在 `package.json` 启用。OOCP 独立协议套件**未**入库，见 [creator-docs/testing/OOCP_TEST_SUITE.md](creator-docs/testing/OOCP_TEST_SUITE.md)。 |
+| **测试** | **Rust**：`src-tauri` 下 **`cargo test`** + `src-tauri/tests/` 集成测（CI Ubuntu/Windows）。**前端**：CI **`npm ci` + `npm run test:unit`（Vitest）+ `npm run build`**。**OOCP HTTP 黑盒**：**S0–S11** 已入库 [`examples/oocp-test-suite/`](examples/oocp-test-suite/)，CI job **`oocp-test-suite`**（Ubuntu）；说明见 [creator-docs/testing/OOCP_TEST_SUITE.md](creator-docs/testing/OOCP_TEST_SUITE.md) 与 [creator-docs/testing/OVERVIEW.md](creator-docs/testing/OVERVIEW.md)。 |
 | **安全** | 已跑 **`cargo audit`（0.22.1）**；**已知漏洞跟踪中**（当前锁文件 **5** 条漏洞级命中），见 [creator-docs/security/KNOWN_VULNERABILITIES.md](creator-docs/security/KNOWN_VULNERABILITIES.md)；审查边界见 [creator-docs/security/SECURITY_AUDIT_SCOPE.md](creator-docs/security/SECURITY_AUDIT_SCOPE.md)。 |
-| **CI 守门** | **`rustfmt` + `clippy`（`-D warnings`）+ `cargo test`**（`src-tauri`）+ **`npm ci` / `npm run build`**；另含 **`cargo-audit`** job（**允许失败**）与 **remote-plugin-demo** 烟测。 |
+| **CI 守门** | **`rustfmt` + `clippy`（`-D warnings`）+ `cargo test`**（`src-tauri`）+ **`npm ci` / `npm run test:unit` / `npm run build`**；另含 **`oocp-test-suite`**（HTTP 协议黑盒）、**`cargo-audit`** job（**允许失败**）与 **remote-plugin-demo** 烟测。 |
 | **轻量化基线** | [creator-docs/development/LIGHTWEIGHT_PROFILE.md](creator-docs/development/LIGHTWEIGHT_PROFILE.md)（Release、`cargo-bloat` 采样）。 |
 
 协作说明见根目录 **[AGENTS.md](AGENTS.md)**。
@@ -103,9 +103,9 @@ npm run tauri:dev
 ```
 
 - **`GET /health`**：返回纯文本 `ok`。
-- **`POST /chat`**：JSON 体 `{ "role_path": "D:/.../roles/某角色id", "message": "你好", "session_id": null }`，返回 `{ "reply": "..." }`。`role_path` 为含 `manifest.json` 的角色目录的**绝对或规范化路径**。
+- **`POST /chat`**：JSON 体 `{ "role_path": "D:/.../roles/某角色id", "message": "你好", "session_id": null }`，成功时扁平字段含 **`reply`**、`personality_source` 等（与 Tauri `send_message` 契约一致）。`role_path` 为含 `manifest.json` 的角色目录的**绝对或规范化路径**。
 
-与 Tauri IPC 相同，内部走 `chat_engine::process_message`；需本机 **Ollama** 等环境可用。
+与 Tauri IPC 相同，内部走 `chat_engine::process_message`；需本机 **Ollama** 等环境可用。自动化/CI 可对进程设置 **`OCLIVE_HTTP_API_MOCK_LLM=1`** 以使用内存库 + Mock LLM（不访问网络），详见 [`examples/oocp-test-suite/README.md`](examples/oocp-test-suite/README.md)。
 
 仅前端静态资源：
 
@@ -116,10 +116,11 @@ npm run build
 
 ## 测试与检查
 
-**CI（`.github/workflows/ci.yml`）**：在 **Ubuntu** 与 **Windows** 上均执行 Rust **`rustfmt` + `clippy`（`-D warnings`）+ 完整 `cargo test`**（`src-tauri` 工作目录，含 `tests/` 集成测试），以及 **`npm ci` + `npm run build`**。另含 **`cargo-audit`（0.22.1，`continue-on-error`）** 与 **`remote-plugin-demo`**（Python 侧车 `memory.rank` 烟测）。
+**CI（`.github/workflows/ci.yml`）**：在 **Ubuntu** 与 **Windows** 上均执行 Rust **`rustfmt` + `clippy`（`-D warnings`）+ 完整 `cargo test`**（`src-tauri` 工作目录，含 `tests/` 集成测试），以及 **`npm ci` + `npm run test:unit` + `npm run build`**。在 **Ubuntu** 上另跑 **`oocp-test-suite`**（`--api` + Node `examples/oocp-test-suite/run.mjs`，场景 S0–S11）。另含 **`cargo-audit`（0.22.1，`continue-on-error`）** 与 **`remote-plugin-demo`**（Python 侧车 `memory.rank` 烟测）。
 
 | 命令 | 用途 |
 |------|------|
+| `npm run test:unit` | **Vitest**：主仓最小烟测（`src/smoke.test.ts`） |
 | `npm run check` | 日常开发：`vite build` + `cargo fmt` / `clippy` / **`cargo test --lib`** |
 | `npm run check:release` | **发版门槛**：`vite build` + fmt / clippy + **完整 `cargo test`**（与 CI 中 Rust  job 一致） |
 | `npm run check:rust:test:all` | 仅跑全量测试（已包含在 `check:release` 中） |

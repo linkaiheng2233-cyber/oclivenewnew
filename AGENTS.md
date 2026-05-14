@@ -18,10 +18,18 @@
 
 - **高耦合编译模式（Monolith）**：[RFC_OCLIVE_MONOLITH_MODE.md](creator-docs/rfc/RFC_OCLIVE_MONOLITH_MODE.md)（路线图见 RFC §9，已与 `oclive-cli` 实现对齐）。**`oclive-cli`**：`init --monolith` 或交互「开发者编译选项」生成 **`monolith.toml`**、`vendor/oclive_monolith_builtin/`（**七槽焊接桩唯一模板源**）、**`process_message_monolith.rs`**、双 **`[[bin]]`**（`main.rs` / `main_monolith.rs`）；**`cargo run -p oclive-cli -- build|bench`** 再生成与对比。
 
-### 测试体系（协议层 + UI 层）
+### 测试体系（协议层 + 组件归属）
 
-- **OOCP / 无头内核（语言无关）**：标准化场景见 [`creator-docs/oocp/OOCP_TEST_SUITE.md`](creator-docs/oocp/OOCP_TEST_SUITE.md)；索引导航 [`creator-docs/oocp/OOCP_SPEC_COMPLETE_REFERENCE.md`](creator-docs/oocp/OOCP_SPEC_COMPLETE_REFERENCE.md)。官方 Node 可执行对照实现见 [`examples/oocp-test-suite/`](examples/oocp-test-suite/)（对 `oclive_kernel_server` 跑 `GET /health` + WebSocket 方法链）。Linux CI 工作流 **`.github/workflows/ci.yml`** 中的 **`oocp-test-suite`** job 会构建 `tools/oocp-client`、拉起 `oclive_kernel_server` 并执行 `npm test`。
-- **前端 / Vitest（框架专用）**：官方目录插件 [`plugins/official-vue-test-runner/README.md`](plugins/official-vue-test-runner/README.md) 通过 JSON-RPC 侧车调用本机 `npx vitest`，在插件壳 [`ui/index.html`](plugins/official-vue-test-runner/ui/index.html) 展示结构化结果与运行历史；编写器侧可在「前端测试」视图调用同一插件（工作区指向 oclivenewnew 仓库根）。编写组件级 OOCP 载荷时可用同目录 [`test_utils/oocp_mock.ts`](plugins/official-vue-test-runner/test_utils/oocp_mock.ts)。
+- **OOCP 对齐 HTTP 黑盒（S0–S11）**：场景与 CI 说明见 [`creator-docs/testing/OOCP_TEST_SUITE.md`](creator-docs/testing/OOCP_TEST_SUITE.md)；可执行脚本在 [`examples/oocp-test-suite/`](examples/oocp-test-suite/)（`node run.mjs`，无额外 npm 依赖）。CI 工作流 **`.github/workflows/ci.yml`** 中的 **`oocp-test-suite`** job（Ubuntu）会 `cargo build -p oclivenewnew-tauri`、拉起 **`oclivenewnew-tauri --api`**（默认开启 **`OCLIVE_HTTP_API_MOCK_LLM=1`** 以免依赖本机 Ollama）、轮询 **`GET /health`** 后执行 **`node run.mjs`**（失败即红）。
+- **测试体系统览**（主仓 vs **oclive-pack-editor**）：[`creator-docs/testing/OVERVIEW.md`](creator-docs/testing/OVERVIEW.md)。
+- **Vue 组件与插件壳测试（T05–T20）**：权威来源在 **oclive-pack-editor** 仓库（含约 42 条 Vue 用例与 **`official-vue-test-runner`** 目录插件范式）；主仓不复制该树。
+- **主仓前端最小烟测**：根目录 **`npm run test:unit`**（Vitest，`src/smoke.test.ts`），CI **`frontend`** job 已包含该步骤。
+
+### 复杂情感 `narrative_hint`（共景 → 下一轮 Prompt）
+
+- **类型与内置规则**：[`src-tauri/src/domain/complex_emotion.rs`](src-tauri/src/domain/complex_emotion.rs)（`ComplexEmotionInput` / `ComplexEmotionOutput`、`BuiltinKeywordComplexEmotionProvider::resolve_turn_inner`）；可选 Remote 见 [`src-tauri/src/infrastructure/remote_plugin/complex_emotion_http.rs`](src-tauri/src/infrastructure/remote_plugin/complex_emotion_http.rs)。
+- **主路径 wiring**：[`src-tauri/src/domain/chat_engine/co_present.rs`](src-tauri/src/domain/chat_engine/co_present.rs) 在 `load_recent_context` 之后、**`build_prompt` 之前**解析本回合复杂情感；上一轮 `narrative_hint` 缓存在 **`AppState::last_complex_emotion_narrative_hint`**（按会话命名空间 `srid`）；通过 **`PromptInput::previous_complex_emotion_narrative_hint`** 传入 [`PromptBuilder::build_prompt`](src-tauri/src/domain/prompt_builder.rs)（段落标题为「复杂情感叙事提示」）。
+- **集成测试**：[`src-tauri/tests/narrative_hint_prompt_roundtrip.rs`](src-tauri/tests/narrative_hint_prompt_roundtrip.rs)。
 
 **契约优先**：角色包 `manifest.json` / `settings.json` 键与行为以 `roles/README_MANIFEST.md`、`RoleStorage::load_role` 及校验 crate 为准；新增顶层键需同步 `crates/oclive_validation` 与文档。
 
