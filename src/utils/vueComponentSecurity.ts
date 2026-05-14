@@ -10,20 +10,26 @@ export interface ScanResult {
 }
 
 export const DANGEROUS_PATTERNS = [
-  { token: "window.__TAURI__", warning: "检测到 `window.__TAURI__` / `window.tauri` 访问" },
-  { token: "window.tauri", warning: "检测到 `window.__TAURI__` / `window.tauri` 访问" },
-  { token: "fetch(", warning: "检测到 `fetch` 调用" },
-  { token: "XMLHttpRequest", warning: "检测到 `XMLHttpRequest`" },
-  { token: "document.cookie", warning: "检测到 `document.cookie`" },
-  { token: "localStorage.setItem", warning: "检测到 `localStorage` 读写" },
-  { token: "localStorage.getItem", warning: "检测到 `localStorage` 读写" },
-  { token: "localStorage.removeItem", warning: "检测到 `localStorage` 读写" },
-  { token: "sessionStorage.", warning: "检测到 `sessionStorage` 访问" },
-  { token: "indexedDB.open", warning: "检测到 `indexedDB` 访问" },
-  { token: "indexedDB.", warning: "检测到 `indexedDB` 访问" },
-  { token: "new WebSocket", warning: "检测到 `WebSocket` 连接" },
-  { token: "WebSocket(", warning: "检测到 `WebSocket` 连接" },
-  { token: "eval(", warning: "检测到 `eval` 调用" },
+  {
+    token: "window.__TAURI__",
+    warning: "Access to `window.__TAURI__` / `window.tauri` detected",
+  },
+  {
+    token: "window.tauri",
+    warning: "Access to `window.__TAURI__` / `window.tauri` detected",
+  },
+  { token: "fetch(", warning: "`fetch()` call detected" },
+  { token: "XMLHttpRequest", warning: "`XMLHttpRequest` usage detected" },
+  { token: "document.cookie", warning: "`document.cookie` access detected" },
+  { token: "localStorage.setItem", warning: "`localStorage` read/write detected" },
+  { token: "localStorage.getItem", warning: "`localStorage` read/write detected" },
+  { token: "localStorage.removeItem", warning: "`localStorage` read/write detected" },
+  { token: "sessionStorage.", warning: "`sessionStorage` access detected" },
+  { token: "indexedDB.open", warning: "`indexedDB` access detected" },
+  { token: "indexedDB.", warning: "`indexedDB` access detected" },
+  { token: "new WebSocket", warning: "`WebSocket` connection detected" },
+  { token: "WebSocket(", warning: "`WebSocket` connection detected" },
+  { token: "eval(", warning: "`eval()` call detected" },
 ] as const;
 
 function extractScriptBodies(sfc: string): string[] {
@@ -82,7 +88,7 @@ function scanScriptAst(source: string, dedupe: Set<string>, warnings: string[]):
         pushDedupe(
           dedupe,
           warnings,
-          "检测到 `window.__TAURI__` / `window.tauri` 访问",
+          "Access to `window.__TAURI__` / `window.tauri` detected",
         );
       }
       if (
@@ -91,7 +97,7 @@ function scanScriptAst(source: string, dedupe: Set<string>, warnings: string[]):
         n.property.type === "Identifier" &&
         n.property.name === "cookie"
       ) {
-        pushDedupe(dedupe, warnings, "检测到 `document.cookie`");
+        pushDedupe(dedupe, warnings, "`document.cookie` access detected");
       }
       if (
         n.object.type === "Identifier" &&
@@ -99,7 +105,7 @@ function scanScriptAst(source: string, dedupe: Set<string>, warnings: string[]):
         n.property.type === "Identifier" &&
         (n.property.name === "setItem" || n.property.name === "getItem")
       ) {
-        pushDedupe(dedupe, warnings, "检测到 `localStorage` 读写");
+        pushDedupe(dedupe, warnings, "`localStorage` read/write detected");
       }
     },
     CallExpression(node: acorn.Node) {
@@ -107,10 +113,10 @@ function scanScriptAst(source: string, dedupe: Set<string>, warnings: string[]):
         callee: { type: string; name?: string };
       };
       if (n.callee.type === "Identifier" && n.callee.name === "fetch") {
-        pushDedupe(dedupe, warnings, "检测到 `fetch` 调用");
+        pushDedupe(dedupe, warnings, "`fetch()` call detected");
       }
       if (n.callee.type === "Identifier" && n.callee.name === "eval") {
-        pushDedupe(dedupe, warnings, "检测到 `eval` 调用");
+        pushDedupe(dedupe, warnings, "`eval()` call detected");
       }
     },
     NewExpression(node: acorn.Node) {
@@ -118,7 +124,7 @@ function scanScriptAst(source: string, dedupe: Set<string>, warnings: string[]):
         callee: { type: string; name?: string };
       };
       if (n.callee.type === "Identifier" && n.callee.name === "XMLHttpRequest") {
-        pushDedupe(dedupe, warnings, "检测到 `XMLHttpRequest`");
+        pushDedupe(dedupe, warnings, "`XMLHttpRequest` usage detected");
       }
     },
   });

@@ -101,6 +101,10 @@ export default {
     scheduleInference: "Schedule hint",
     },
     floatingSlot: "Floating plugin slot",
+    narrativeAside: {
+      aria: "Narrative & inner monologue",
+      title: "Narrative & inner monologue",
+    },
     scene: {
       selectDestinationFirst: "Pick a destination first",
       toastTogether: "Arrived (together)",
@@ -314,6 +318,17 @@ export default {
       sidebarList: "Sidebar plugin slots",
       roleDetailList: "Role detail plugin slots",
       chatHeaderStrip: "Chat header plugin slots",
+      chatToolbar: "Plugin toolbar",
+    },
+    v2PanelAria: "Plugins & backends (V2)",
+    pmSlot: {
+      appearance: "Appearance",
+      defaultVariant: "Default",
+      hideSlot: "Hide this slot",
+    },
+    template: {
+      directoryIdPh: "e.g. my-plugin-id",
+      directoryManualPick: "Type manually or pick a candidate",
     },
     slotEmbed: {
       defaultAria: "Plugin embed area",
@@ -331,6 +346,9 @@ export default {
       save: "Save private settings",
       toastSaved: "Private plugin settings saved.",
     },
+  },
+  relation: {
+    defaultOptionName: "Default identity ({label})",
   },
   settings: {
     ariaDialog: "Settings",

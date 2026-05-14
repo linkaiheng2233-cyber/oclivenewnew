@@ -48,7 +48,11 @@ export default {
     title: "整壳加载失败",
     retry: "重试",
     useHtml: "使用 HTML 版本",
+    shellVueReadError: "无法读取整壳 Vue 入口：{path}",
+    shellHtmlLoadError:
+      "无法加载整壳 HTML 入口，请检查 shell.entry 路径与文件是否存在。",
   },
+  rolePanelTitle: "角色操作",
   envVar: {
     title: "环境变量管理（会话草稿）",
     upsert: "添加/更新",

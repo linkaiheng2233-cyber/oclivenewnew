@@ -48,7 +48,11 @@ export default {
     title: "Shell load failed",
     retry: "Retry",
     useHtml: "Use HTML version",
+    shellVueReadError: "Cannot read shell Vue entry: {path}",
+    shellHtmlLoadError:
+      "Cannot load shell HTML entry; check shell.entry path and that the file exists.",
   },
+  rolePanelTitle: "Role actions",
   envVar: {
     title: "Environment variables (session draft)",
     upsert: "Add / update",

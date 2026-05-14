@@ -1,4 +1,6 @@
-<script setup>
+<script setup lang="ts">
+import { useI18n } from "vue-i18n";
+
 defineProps({
   roleId: {
     type: String,
@@ -21,14 +23,16 @@ const emit = defineEmits([
   "reload-policy-plugins",
 ]);
 
-function onRoleInput(event) {
-  emit("update:roleId", event.target.value);
+const { t } = useI18n();
+
+function onRoleInput(event: Event) {
+  emit("update:roleId", (event.target as HTMLInputElement).value);
 }
 </script>
 
 <template>
   <section class="card">
-    <h2>角色操作</h2>
+    <h2>{{ t("devTools.rolePanelTitle") }}</h2>
     <div class="row">
       <input :value="roleId" placeholder="role_id" @input="onRoleInput" />
       <button :disabled="busy" @click="emit('load-role')">load_role</button>

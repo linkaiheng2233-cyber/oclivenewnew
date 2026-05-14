@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { ref, watch } from "vue";
+import { useI18n } from "vue-i18n";
 
 interface OptionItem {
   value: string;
@@ -22,6 +23,7 @@ const emit = defineEmits<{
   submit: [{ backend: string | null; directoryId?: string | null }];
 }>();
 
+const { t } = useI18n();
 const draftBackend = ref(props.schema.current);
 const draftDirectoryId = ref(props.schema.directoryId ?? "");
 
@@ -51,7 +53,7 @@ function onSubmit() {
 <template>
   <div class="tpl-root">
     <label class="tpl-label">
-      运行方式
+      {{ t("pluginTerms.field.backend") }}
       <select v-model="draftBackend" class="tpl-select" :disabled="busy">
         <option v-for="opt in schema.options" :key="opt.value" :value="opt.value">
           {{ opt.label }}
@@ -60,12 +62,12 @@ function onSubmit() {
     </label>
 
     <label class="tpl-label">
-      目录插件 ID
+      {{ t("pluginTerms.field.directory_plugin") }}
       <input
         v-model="draftDirectoryId"
         class="tpl-input"
         type="text"
-        placeholder="例如 my-plugin-id"
+        :placeholder="t('pluginManager.template.directoryIdPh')"
         :disabled="busy || draftBackend !== 'directory'"
       />
       <select
@@ -73,15 +75,16 @@ function onSubmit() {
         class="tpl-select"
         :disabled="busy || draftBackend !== 'directory'"
       >
-        <option value="">手动输入或选择候选</option>
+        <option value="">{{ t("pluginManager.template.directoryManualPick") }}</option>
         <option v-for="opt in schema.directoryOptions" :key="opt.value" :value="opt.value">
           {{ opt.label }}
         </option>
       </select>
     </label>
 
-    <p class="tpl-hint">留空会清空会话覆盖，回到角色包默认。</p>
-    <button type="button" class="tpl-btn" :disabled="busy" @click="onSubmit">应用改动</button>
+    <p v-if="schema.hint" class="tpl-hint">{{ schema.hint }}</p>
+    <p class="tpl-hint">{{ t("pluginTerms.hint.directory_id_empty") }}</p>
+    <button type="button" class="tpl-btn" :disabled="busy" @click="onSubmit">{{ t("pluginTerms.action.apply") }}</button>
   </div>
 </template>
 

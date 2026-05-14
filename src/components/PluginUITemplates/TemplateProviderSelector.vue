@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { ref, watch } from "vue";
+import { useI18n } from "vue-i18n";
 
 interface OptionItem {
   value: string;
@@ -21,6 +22,7 @@ const emit = defineEmits<{
   submit: [{ backend: string | null }];
 }>();
 
+const { t } = useI18n();
 const draft = ref(props.schema.current);
 
 watch(
@@ -40,7 +42,7 @@ function onSubmit() {
 <template>
   <div class="tpl-root">
     <label class="tpl-label">
-      运行方式
+      {{ t("pluginTerms.field.backend") }}
       <select v-model="draft" class="tpl-select" :disabled="busy">
         <option v-for="opt in schema.options" :key="opt.value" :value="opt.value">
           {{ opt.label }}
@@ -48,7 +50,7 @@ function onSubmit() {
       </select>
     </label>
     <p v-if="schema.hint" class="tpl-hint">{{ schema.hint }}</p>
-    <button type="button" class="tpl-btn" :disabled="busy" @click="onSubmit">应用改动</button>
+    <button type="button" class="tpl-btn" :disabled="busy" @click="onSubmit">{{ t("pluginTerms.action.apply") }}</button>
   </div>
 </template>
 

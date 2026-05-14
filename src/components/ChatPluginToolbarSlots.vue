@@ -1,8 +1,11 @@
 <script setup lang="ts">
+import { useI18n } from "vue-i18n";
 import AsyncPluginVue from "./AsyncPluginVue.vue";
 import PluginErrorPlaceholder from "./PluginErrorPlaceholder.vue";
 import { useDirectoryPluginSlotEmbed } from "../composables/useDirectoryPluginSlotEmbed";
 import { SLOT_CHAT_TOOLBAR } from "../stores/pluginStore";
+
+const { t } = useI18n();
 
 const props = withDefaults(
   defineProps<{
@@ -38,7 +41,7 @@ const {
   <div
     v-else-if="slots.length > 0"
     class="plugin-toolbar"
-    aria-label="插件工具栏"
+    :aria-label="t('pluginManager.slotsAria.chatToolbar')"
   >
     <div
       v-for="s in slots"

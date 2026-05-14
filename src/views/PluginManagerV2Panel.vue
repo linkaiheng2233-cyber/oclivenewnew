@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import { useI18n } from "vue-i18n";
 import { PluginManagerV2 } from "../components/PluginManagerV2";
 
 defineProps<{
@@ -9,6 +10,8 @@ const emit = defineEmits<{
   close: [];
   openV1: [];
 }>();
+
+const { t } = useI18n();
 </script>
 
 <template>
@@ -18,7 +21,7 @@ const emit = defineEmits<{
       class="pm2-backdrop"
       role="dialog"
       aria-modal="true"
-      aria-label="插件与后端管理 V2"
+      :aria-label="t('pluginManager.v2PanelAria')"
       @click.self="emit('close')"
     >
       <div class="pm2-dialog" @click.stop>

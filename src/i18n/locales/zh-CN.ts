@@ -97,6 +97,10 @@ export default {
     scheduleInference: "日程推断",
     },
     floatingSlot: "浮层插件区",
+    narrativeAside: {
+      aria: "叙事与内心",
+      title: "叙事与内心",
+    },
     scene: {
       selectDestinationFirst: "请先选择目的地",
       toastTogether: "已前往（同行）",
@@ -310,6 +314,17 @@ export default {
       sidebarList: "侧边栏插件插槽",
       roleDetailList: "角色详情插件插槽",
       chatHeaderStrip: "聊天页顶部插件插槽",
+      chatToolbar: "插件工具栏",
+    },
+    v2PanelAria: "插件与后端管理 V2",
+    pmSlot: {
+      appearance: "外观",
+      defaultVariant: "默认",
+      hideSlot: "隐藏本槽",
+    },
+    template: {
+      directoryIdPh: "例如 my-plugin-id",
+      directoryManualPick: "手动输入或选择候选",
     },
     slotEmbed: {
       defaultAria: "插件嵌入区",
@@ -327,6 +342,9 @@ export default {
       save: "保存私有配置",
       toastSaved: "已保存插件私有配置。",
     },
+  },
+  relation: {
+    defaultOptionName: "默认身份（{label}）",
   },
   settings: {
     ariaDialog: "设置",

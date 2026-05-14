@@ -1,3 +1,4 @@
+import { i18n } from "../i18n/index";
 import { OCLIVE_DEFAULT_RELATION_SENTINEL } from "./tauri-api";
 import type { UserRelationDto } from "./tauri-api";
 
@@ -20,7 +21,11 @@ export function buildRelationDropdownOptions(
   return [
     {
       id: OCLIVE_DEFAULT_RELATION_SENTINEL,
-      name: `默认身份（${defLabel}）`,
+      name: String(
+        i18n.global.t("relation.defaultOptionName", {
+          label: defLabel,
+        }),
+      ),
     },
     ...rows,
   ];

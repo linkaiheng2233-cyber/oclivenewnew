@@ -1,6 +1,9 @@
 <script setup lang="ts">
 import { computed } from "vue";
+import { useI18n } from "vue-i18n";
 import { usePluginStore } from "../stores/pluginStore";
+
+const { t } = useI18n();
 
 const props = defineProps<{
   pluginId: string;
@@ -17,7 +20,7 @@ const appearanceChoices = computed(() => {
   }
   return raw.map((x) => ({
     appearanceId: x.appearanceId,
-    label: (x.label?.trim() || x.appearanceId || "默认").trim(),
+    label: (x.label?.trim() || x.appearanceId || t("pluginManager.pmSlot.defaultVariant")).trim(),
   }));
 });
 
@@ -38,9 +41,9 @@ const selectedAppearance = computed({
 <template>
   <div class="pm-slot-tools">
     <div v-if="appearanceChoices.length > 1" class="pm-appearance">
-      <label class="pm-appearance-label">外观</label>
+      <label class="pm-appearance-label">{{ t("pluginManager.pmSlot.appearance") }}</label>
       <select v-model="selectedAppearance" class="pm-appearance-select">
-        <option value="">默认</option>
+        <option value="">{{ t("pluginManager.pmSlot.defaultVariant") }}</option>
         <option
           v-for="opt in appearanceChoices"
           :key="`${opt.appearanceId}`"
@@ -62,7 +65,7 @@ const selectedAppearance = computed({
           )
         "
       />
-      隐藏本槽
+      {{ t("pluginManager.pmSlot.hideSlot") }}
     </label>
   </div>
 </template>

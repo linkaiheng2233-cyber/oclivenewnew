@@ -2,6 +2,7 @@ import { invoke } from "@tauri-apps/api/tauri";
 import { createApp } from "vue";
 import { createPinia } from "pinia";
 import DirectoryShellApp from "../DirectoryShellApp.vue";
+import { i18n } from "../i18n/index";
 import type { DirectoryPluginBootstrap } from "./tauri-api";
 import { readPluginAssetText } from "./tauri-api";
 
@@ -60,7 +61,9 @@ export async function tryReplaceWithDirectoryShell(): Promise<boolean> {
         await readPluginAssetText(shellPid, vueEntry);
       } catch {
         redirectShellError(
-          encodeURIComponent(`无法读取整壳 Vue 入口：${vueEntry}`),
+          encodeURIComponent(
+            String(i18n.global.t("devTools.directoryShell.shellVueReadError", { path: vueEntry })),
+          ),
         );
         return true;
       }
@@ -83,7 +86,9 @@ export async function tryReplaceWithDirectoryShell(): Promise<boolean> {
       const ok = await shellHtmlReachable(shellUrl);
       if (!ok) {
         redirectShellError(
-          encodeURIComponent("无法加载整壳 HTML 入口，请检查 shell.entry 路径与文件是否存在"),
+          encodeURIComponent(
+            String(i18n.global.t("devTools.directoryShell.shellHtmlLoadError")),
+          ),
         );
         return true;
       }

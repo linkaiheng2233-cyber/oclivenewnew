@@ -1,12 +1,16 @@
 <script setup lang="ts">
+import { useI18n } from "vue-i18n";
+
 defineProps<{
   text: string;
 }>();
+
+const { t } = useI18n();
 </script>
 
 <template>
-  <section v-if="text.trim().length > 0" class="rap" aria-label="叙事与内心">
-    <h3 class="rap-title">叙事与内心</h3>
+  <section v-if="text.trim().length > 0" class="rap" :aria-label="t('app.narrativeAside.aria')">
+    <h3 class="rap-title">{{ t("app.narrativeAside.title") }}</h3>
     <p class="rap-body">{{ text }}</p>
   </section>
 </template>

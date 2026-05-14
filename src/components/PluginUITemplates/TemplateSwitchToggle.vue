@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { ref, watch } from "vue";
+import { useI18n } from "vue-i18n";
 
 interface SwitchToggleSchema {
   checked: boolean;
@@ -16,6 +17,7 @@ const emit = defineEmits<{
   submit: [{ enabled: boolean }];
 }>();
 
+const { t } = useI18n();
 const checked = ref(props.schema.checked);
 
 watch(
@@ -34,10 +36,10 @@ function onSubmit() {
   <div class="tpl-root">
     <label class="tpl-toggle">
       <input v-model="checked" type="checkbox" :disabled="busy" />
-      <span>{{ schema.label || "异地心声" }}</span>
+      <span>{{ schema.label || t("pluginTerms.field.remote_life") }}</span>
     </label>
     <p v-if="schema.hint" class="tpl-hint">{{ schema.hint }}</p>
-    <button type="button" class="tpl-btn" :disabled="busy" @click="onSubmit">应用改动</button>
+    <button type="button" class="tpl-btn" :disabled="busy" @click="onSubmit">{{ t("pluginTerms.action.apply") }}</button>
   </div>
 </template>
 
