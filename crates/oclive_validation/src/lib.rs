@@ -3,6 +3,11 @@
 //! - **native**：`validate_disk_manifest` 等。
 //! - **wasm**（`--features wasm`，目标 `wasm32-unknown-unknown`）：`validate_manifest_wasm`。
 
+#![cfg_attr(
+    test,
+    allow(clippy::unwrap_used, clippy::expect_used)
+)]
+
 pub mod disk_role_settings;
 pub mod json_keys;
 pub mod manifest;
