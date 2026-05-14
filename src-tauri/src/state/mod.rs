@@ -60,8 +60,9 @@ pub fn resolve_roles_dir() -> PathBuf {
     // 用编译期 `src-tauri` 路径定位仓库根（勿用于 release 安装包逻辑；见下方 `debug_assertions`）。
     #[cfg(debug_assertions)]
     {
-        let from_manifest =
-            PathBuf::from(env!("CARGO_MANIFEST_DIR")).join("..").join("roles");
+        let from_manifest = PathBuf::from(env!("CARGO_MANIFEST_DIR"))
+            .join("..")
+            .join("roles");
         match from_manifest.canonicalize() {
             Ok(canon) if canon.is_dir() => {
                 log::info!(

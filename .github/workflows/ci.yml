@@ -66,6 +66,20 @@ jobs:
       - name: test oclive-cli
         run: cargo test -p oclive-cli
 
+  cli-bench:
+    runs-on: ubuntu-latest
+    continue-on-error: true
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dtolnay/rust-toolchain@stable
+      - name: oclive bench smoke (no hard thresholds)
+        run: |
+          set -euo pipefail
+          tmp="$(mktemp -d)"
+          cargo run -p oclive-cli --quiet -- init --non-interactive --quiet --preset full --monolith -o "$tmp/k"
+          cargo run -p oclive-cli --quiet -- bench --release -o "$tmp/k" --runs 2 --inner-iters 20 --output "$tmp/report.json"
+          test -s "$tmp/report.json"
+
   frontend:
     strategy:
       fail-fast: false

@@ -2,8 +2,8 @@ use crate::infrastructure::deep_link::take_pending_install_git_urls;
 use crate::infrastructure::directory_plugins::{parse_manifest_version, OclivePluginManifest};
 use crate::infrastructure::plugin_data::ensure_default_config_for_manifest;
 use crate::infrastructure::plugin_installer::{
-    install_plugin, load_cached_index, missing_dependencies, sync_plugin_index_online, uninstall_plugin,
-    update_plugin, PluginIndexEntry, PluginIndexFile,
+    install_plugin, load_cached_index, missing_dependencies, sync_plugin_index_online,
+    uninstall_plugin, update_plugin, PluginIndexEntry, PluginIndexFile,
 };
 use crate::state::AppState;
 use semver::Version;
@@ -140,11 +140,7 @@ pub fn install_plugin_from_market(
         return Err("plugin_id required".to_string());
     }
     let from_index = load_cached_index(&state).map_err(|e| e.to_frontend_error())?;
-    let index_item = from_index
-        .plugins
-        .iter()
-        .find(|p| p.id == pid)
-        .cloned();
+    let index_item = from_index.plugins.iter().find(|p| p.id == pid).cloned();
     let resolved = if let Some(g) = git_url.as_deref().map(str::trim).filter(|s| !s.is_empty()) {
         g.to_string()
     } else {
@@ -153,8 +149,12 @@ pub fn install_plugin_from_market(
             .map(|p| p.git.clone())
             .ok_or_else(|| format!("plugin not found in index: {}", pid))?
     };
-    let installed_id = install_plugin(&state, &resolved, index_item.as_ref().map(|x| &x.dependencies))
-        .map_err(|e| e.to_frontend_error())?;
+    let installed_id = install_plugin(
+        &state,
+        &resolved,
+        index_item.as_ref().map(|x| &x.dependencies),
+    )
+    .map_err(|e| e.to_frontend_error())?;
     let root_opt = {
         let roots = state.directory_plugins.plugin_roots.read();
         roots.get(installed_id.as_str()).cloned()
@@ -194,17 +194,26 @@ pub fn install_plugin_from_git(
 }
 
 #[tauri::command]
-pub fn update_plugin_from_market(plugin_id: String, state: State<'_, AppState>) -> Result<(), String> {
+pub fn update_plugin_from_market(
+    plugin_id: String,
+    state: State<'_, AppState>,
+) -> Result<(), String> {
     update_plugin(&state, &plugin_id).map_err(|e| e.to_frontend_error())
 }
 
 #[tauri::command]
-pub fn uninstall_plugin_from_market(plugin_id: String, state: State<'_, AppState>) -> Result<(), String> {
+pub fn uninstall_plugin_from_market(
+    plugin_id: String,
+    state: State<'_, AppState>,
+) -> Result<(), String> {
     uninstall_plugin(&state, &plugin_id).map_err(|e| e.to_frontend_error())
 }
 
 #[tauri::command]
-pub fn batch_update_plugins(plugin_ids: Vec<String>, state: State<'_, AppState>) -> Result<(), String> {
+pub fn batch_update_plugins(
+    plugin_ids: Vec<String>,
+    state: State<'_, AppState>,
+) -> Result<(), String> {
     for pid in plugin_ids {
         let t = pid.trim();
         if t.is_empty() {
@@ -216,7 +225,10 @@ pub fn batch_update_plugins(plugin_ids: Vec<String>, state: State<'_, AppState>)
 }
 
 #[tauri::command]
-pub fn batch_uninstall_plugins(plugin_ids: Vec<String>, state: State<'_, AppState>) -> Result<(), String> {
+pub fn batch_uninstall_plugins(
+    plugin_ids: Vec<String>,
+    state: State<'_, AppState>,
+) -> Result<(), String> {
     for pid in plugin_ids {
         let t = pid.trim();
         if t.is_empty() {

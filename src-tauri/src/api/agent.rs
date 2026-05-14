@@ -22,7 +22,10 @@ pub fn list_mcp_servers(state: State<'_, AppState>) -> Result<Value, String> {
 }
 
 #[tauri::command]
-pub fn list_mcp_tools(req: ListMcpToolsRequest, state: State<'_, AppState>) -> Result<Value, String> {
+pub fn list_mcp_tools(
+    req: ListMcpToolsRequest,
+    state: State<'_, AppState>,
+) -> Result<Value, String> {
     state
         .plugins
         .list_mcp_tools(req.server_id.as_str())
