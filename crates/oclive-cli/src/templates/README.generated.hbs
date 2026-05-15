@@ -1,20 +1,43 @@
 # {{ project_name }}
 
-由 **oclive-cli** 生成的最小可编译内核骨架（占位实现）。
+由 **oclive-cli** 生成的内核项目。
 
-## 说明
+{{#if kernel_linked}}
+## 模式：已接入 oclivenewnew（`--kernel-source`）
+
+- **`Cargo.toml`** 已写入 `oclivenewnew-tauri` / `oclive_kernel_runtime` 的 path 依赖。
+- **`cargo run`** 启动与 **`oclive-kernel-server`** 相同的无头 HTTP API（默认端口见 `OCLIVE_API_PORT` / `8420`）。
+- 设置 **`OCLIVE_HTTP_API_MOCK_LLM=1`** 可在无本机 LLM 时联调；OOCP 黑盒见主仓 `examples/oocp-test-suite`。
+
+```bash
+cargo build
+# PowerShell
+$env:OCLIVE_HTTP_API_MOCK_LLM = "1"
+cargo run -- --port 8420
+```
+
+{{else}}
+## 模式：占位脚手架（serde stub）
 
 - **当前 `Cargo.toml` 仅依赖 `serde` / `serde_json`**，便于在无完整 `oclive_kernel_runtime` 树的环境下验证目录与配置形状。
-- 将 `plugin_backends` 与 `_oclive_cli` 块视为**脚手架元数据**；接入真实宿主时，请替换为与 [PLUGIN_V1.md](https://github.com/oclive-app/oclivenewnew/blob/main/creator-docs/plugin-and-architecture/PLUGIN_V1.md) 一致的枚举值。
+- 接入真实内核：在主仓检出目录执行  
+  `cargo run -p oclive-cli -- init --kernel-source <oclivenewnew根> -o <新目录> …`
+{{/if}}
+
+- 将 `plugin_backends` 与 `_oclive_cli` 块视为**脚手架元数据**；接入真实宿主时，请替换为与 [PLUGIN_V1.md](https://github.com/linkaiheng2233-cyber/oclivenewnew/blob/main/creator-docs/plugin-and-architecture/PLUGIN_V1.md) 一致的枚举值。
 - 根目录 **`CONFIG_REFERENCE.md`**：本 `init` 所用预设与七槽对照表；字段级权威说明见主仓 **`creator-docs/cli/SETTINGS_REFERENCE.md`**（与仓库一并检出时）。
 
 ## 可选路线
 
 {{#if plugin_kernel_server}}
-- **kernel_server**：在 oclivenewnew 工作区构建 `oclive_kernel_server` 后，于此 `Cargo.toml` 添加 path 依赖并替换 `main.rs` 入口。
+{{#if kernel_linked}}
+- **kernel_server**：当前工程已接 HTTP 入口；亦可直接使用主仓 `cargo run -p oclive_kernel_server`。
+{{else}}
+- **kernel_server**：使用 `oclive init --kernel-source <oclivenewnew根>` 或手动添加 path 依赖。
+{{/if}}
 {{/if}}
 {{#if plugin_oocp}}
-- **OOCP**：参见主仓 `examples/oocp-test-suite` 与 `creator-docs/oocp/` 索引，将协议测试与无头服务联调。
+- **OOCP**：参见主仓 `examples/oocp-test-suite` 与 `creator-docs/oocp/` 索引。
 {{/if}}
 {{#if plugin_directory}}
 - **目录插件**：预留 `plugins/` 扫描与 manifest 流程，需接入宿主 `DirectoryPluginRuntime` 后再启用。
@@ -24,15 +47,22 @@
 
 ```bash
 cargo build
+{{#unless kernel_linked}}
 cargo run
+{{/unless}}
 ```
+
+{{#if kernel_linked}}
+无 Monolith 时 **`oclive build`** 会退化为项目根目录的 `cargo build`（见 `crates/oclive-cli/src/build_cmd.rs`）。
+{{/if}}
 
 ## oclive-cli 补充命令（主仓 workspace）
 
 在检出 **oclivenewnew** 且已 **`cargo build -p oclive-cli`** 的前提下，可在本生成项目根使用 **`cargo run -p oclive-cli -- …`**（见主仓 **`creator-docs/cli/OCLIVE_CLI_GUIDE.md`**）：
 
 - **`dev`**：监听 **`roles/`** 下 `manifest.json` / `settings.json`。
-- **`bench --save` / `--compare`**：Monolith 双二进制采样的历史记录与对比（项目内需已有 **`monolith.toml`**）。
+- **`build -o <本项目>`**：无 `monolith.toml` 时等价 `cargo build`；有 Monolith 时再生焊接源码并构建双二进制。
+- **`bench --save` / `--compare`**：Monolith 双二进制采样（项目内需已有 **`monolith.toml`**）。
 - **`pack validate|create|publish`**：角色包校验与 **`.oclivepack`** 导出。
 
 Monolith 生成物与 **`--monolith`** 流程见本目录 **`CONFIG_REFERENCE.md`** 中「开发者编译选项」一节。

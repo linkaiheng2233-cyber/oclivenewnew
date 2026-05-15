@@ -11,8 +11,29 @@
 {{/if}}
 
 {{#if kernel_linked}}
+fn kernel_bench_iterations() -> u32 {
+    std::env::var("OCLIVE_KERNEL_BENCH_ITERS")
+        .ok()
+        .and_then(|s| s.parse().ok())
+        .filter(|&n| n > 0)
+        .unwrap_or(0)
+        .min(1_000_000)
+}
+
 fn main() {
     oclivenewnew_tauri::init_tracing();
+    let bench_iters = kernel_bench_iterations();
+    if bench_iters > 0 {
+        for _ in 0..bench_iters {
+            tracing::info!(
+                target: "oclive_kernel_server",
+                version = oclive_kernel_runtime::RUNTIME_API_VERSION,
+                "kernel-linked bench smoke"
+            );
+        }
+        return;
+    }
+
     let args: Vec<String> = std::env::args().collect();
     let mut cli_port: Option<u16> = None;
     let mut i = 1usize;

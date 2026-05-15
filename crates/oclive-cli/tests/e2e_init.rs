@@ -393,7 +393,7 @@ fn e2e_bench_smoke_json() {
 }
 
 #[test]
-fn e2e_build_fails_when_monolith_toml_missing() {
+fn e2e_build_without_monolith_toml_no_cargo_succeeds() {
     let tmp = tempfile::tempdir().unwrap();
     let out = tmp.path().join("no_mt");
     assert!(run_cli(&[
@@ -408,7 +408,7 @@ fn e2e_build_fails_when_monolith_toml_missing() {
     .success());
     assert!(!out.join("monolith.toml").exists());
     let o = run_cli_output(&["build", "-o", out.to_str().unwrap(), "--no-cargo"]);
-    assert!(!o.status.success());
+    assert!(o.status.success(), "build without monolith should succeed with --no-cargo");
     let combined = format!(
         "{}{}",
         String::from_utf8_lossy(&o.stderr),
@@ -416,7 +416,7 @@ fn e2e_build_fails_when_monolith_toml_missing() {
     );
     assert!(
         combined.contains("monolith.toml"),
-        "error should mention monolith.toml: {combined}"
+        "should mention missing monolith.toml: {combined}"
     );
 }
 

@@ -112,6 +112,23 @@ fn regenerate_monolith_from_disk_inner(root: &Path, log_written: bool) -> Result
 
 pub fn run(args: BuildArgs) -> Result<()> {
     let root = resolve_project_root(&args.path)?;
+    let mt = root.join("monolith.toml");
+    if !mt.is_file() {
+        eprintln!(
+            "未找到 {}；对无 Monolith 项目执行 cargo build。",
+            mt.display()
+        );
+        if args.no_cargo {
+            return Ok(());
+        }
+        let feat = if args.features.is_empty() {
+            None
+        } else {
+            Some(args.features.join(","))
+        };
+        return run_cargo_build(&root, args.release, feat.as_deref(), &args.cargo_extra);
+    }
+
     let file = regenerate_monolith_from_disk(&root)?;
 
     if args.no_cargo {
