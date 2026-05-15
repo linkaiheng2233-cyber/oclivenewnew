@@ -1,5 +1,7 @@
 # Role pack format (ROLE_PACK_SPEC)
 
+**Author learning path (time-boxed):** [CREATOR_LEARNING_PATH.md](CREATOR_LEARNING_PATH.md)
+
 This document describes the **on-disk role pack shape aligned with the oclive main host load path**, so **multiple distributions** (desktop Tauri, headless `kernel_server`, future launcher) can share one pack. Authoritative detail remains source code and existing docs:
 
 - Creator-facing fields: [README_MANIFEST.md](../../roles/README_MANIFEST.md)

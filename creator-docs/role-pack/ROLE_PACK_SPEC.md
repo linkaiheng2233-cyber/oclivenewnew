@@ -1,5 +1,7 @@
 # 角色包格式规范（ROLE_PACK_SPEC）
 
+**创作者学习路径（时间盒：入门 → 进阶 → 发布）**：[CREATOR_LEARNING_PATH.md](CREATOR_LEARNING_PATH.md)
+
 本文档描述 **与 oclive 主宿主加载逻辑一致** 的磁盘角色包形状，便于 **多发行版**（桌面 Tauri、无头 `kernel_server`、未来启动器）共用同一包。权威细节仍以源码与既有文档为准：
 
 - 创作者门面与字段语义：[README_MANIFEST.md](../../roles/README_MANIFEST.md)
