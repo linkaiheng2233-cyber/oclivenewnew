@@ -4,11 +4,21 @@
 
 This tree mirrors **`creator-docs/`** with hand-maintained English pages. For topics without an English file yet, use the Chinese hub or follow links inside each page.
 
+## Navigate by role
+
+| Who you are | Start here |
+|-------------|------------|
+| **End users** (desktop app only; no pack/plugin authoring) | [getting-started/USER_MANUAL.md](getting-started/USER_MANUAL.md) (Chinese: [../creator-docs/getting-started/USER_MANUAL.md](../creator-docs/getting-started/USER_MANUAL.md)) |
+| **Role pack authors** | [role-pack/CREATOR_LEARNING_PATH.md](role-pack/CREATOR_LEARNING_PATH.md) (Chinese: [../creator-docs/role-pack/CREATOR_LEARNING_PATH.md](../creator-docs/role-pack/CREATOR_LEARNING_PATH.md)) · format [role-pack/ROLE_PACK_SPEC.md](role-pack/ROLE_PACK_SPEC.md) |
+| **Plugin authors** | [plugin-and-architecture/PLUGIN_AUTHOR_LEARNING_PATH.md](plugin-and-architecture/PLUGIN_AUTHOR_LEARNING_PATH.md) (Chinese: [../creator-docs/plugin-and-architecture/PLUGIN_AUTHOR_LEARNING_PATH.md](../creator-docs/plugin-and-architecture/PLUGIN_AUTHOR_LEARNING_PATH.md)) · contract [plugin-and-architecture/PLUGIN_V1.md](plugin-and-architecture/PLUGIN_V1.md) |
+| **Kernel / hardware integrators** | [getting-started/KERNEL_INTEGRATOR_LEARNING_PATH.md](getting-started/KERNEL_INTEGRATOR_LEARNING_PATH.md) (Chinese: [../creator-docs/getting-started/KERNEL_INTEGRATOR_LEARNING_PATH.md](../creator-docs/getting-started/KERNEL_INTEGRATOR_LEARNING_PATH.md)) · diagram [getting-started/KERNEL_AND_MODULES_ARCHITECTURE.md](getting-started/KERNEL_AND_MODULES_ARCHITECTURE.md) |
+| **Maintainers** (breaking changes, critical-path handoff) | [../handoff/BREAKING_CHANGE_PROCESS.md](../handoff/BREAKING_CHANGE_PROCESS.md) · [../handoff/BUS_FACTOR_NOTES.md](../handoff/BUS_FACTOR_NOTES.md) |
+
 ## Documentation bilingual closure baseline
 
 **Source of truth**: Simplified Chinese under **`creator-docs/`** (including all normative wording for contracts and role packs).
 
-**English “closure” scope (maintained)** — tables below plus [getting-started/DOCUMENTATION_INDEX.md](getting-started/DOCUMENTATION_INDEX.md) quick links: **getting-started** hub pages listed here; **plugin-and-architecture** (PLUGIN_V1, Remote, directory, bridge, extension points, creator architecture, HOW_TO_REPLACE, LOCAL bridge); **guides/** (configuration paths, mumu acceptance, regression QA); **FAQ**, **COMPATIBILITY**, **LICENSE_POLICY**; **testing/**, **security/**, **cli/**, **rfc/**, **role-pack/** (ROLE_PACK_SPEC, ROLE_PACK_INDEX), **LIGHTWEIGHT_PROFILE**; **handoff** A3 closure summaries ([A3_CLOSURE_SUMMARY.en.md](../handoff/A3_CLOSURE_SUMMARY.en.md) / [A3_CLOSURE_SUMMARY.md](../handoff/A3_CLOSURE_SUMMARY.md)) when touching crash reporting or invoke error UX. Each mirrored page should keep a **`[中文](…)`** link to the matching `creator-docs/` file where one exists.
+**English “closure” scope (maintained)** — tables below plus [getting-started/DOCUMENTATION_INDEX.md](getting-started/DOCUMENTATION_INDEX.md) quick links: **getting-started** hub pages listed here; **learning paths** ([USER_MANUAL.md](getting-started/USER_MANUAL.md), [CREATOR_LEARNING_PATH.md](role-pack/CREATOR_LEARNING_PATH.md), [PLUGIN_AUTHOR_LEARNING_PATH.md](plugin-and-architecture/PLUGIN_AUTHOR_LEARNING_PATH.md), [KERNEL_INTEGRATOR_LEARNING_PATH.md](getting-started/KERNEL_INTEGRATOR_LEARNING_PATH.md)); **plugin-and-architecture** (PLUGIN_V1, Remote, directory, bridge, extension points, creator architecture, HOW_TO_REPLACE, LOCAL bridge); **guides/** (configuration paths, mumu acceptance, regression QA); **FAQ**, **COMPATIBILITY**, **LICENSE_POLICY**; **testing/**, **security/**, **cli/**, **rfc/**, **role-pack/** (ROLE_PACK_SPEC, ROLE_PACK_INDEX), **LIGHTWEIGHT_PROFILE**; **handoff** A3 closure summaries ([A3_CLOSURE_SUMMARY.en.md](../handoff/A3_CLOSURE_SUMMARY.en.md) / [A3_CLOSURE_SUMMARY.md](../handoff/A3_CLOSURE_SUMMARY.md)) when touching crash reporting or invoke error UX. Each mirrored page should keep a **`[中文](…)`** link to the matching `creator-docs/` file where one exists.
 
 **Chinese-only for now (expected)** — no standing commitment to full English mirrors unless a release needs them: e.g. **`creator-docs/roadmap/`** vision and ecosystem long reads, **`creator-docs/video-script/`**, deeper **`creator-docs/role-pack/`** beyond the two spec/index pages, and ad-hoc **`creator-docs/testing/`** notes only linked from the EN hub. The EN index may still point at those Chinese files by relative URL; that is intentional.
 
@@ -21,6 +31,7 @@ This tree mirrors **`creator-docs/`** with hand-maintained English pages. For to
 | Topic | English |
 |-------|---------|
 | Documentation hub (quick links, RFC, reading order) | [getting-started/DOCUMENTATION_INDEX.md](getting-started/DOCUMENTATION_INDEX.md) |
+| **User manual** (install → import pack → chat) | [getting-started/USER_MANUAL.md](getting-started/USER_MANUAL.md) (Chinese: [../creator-docs/getting-started/USER_MANUAL.md](../creator-docs/getting-started/USER_MANUAL.md)) |
 | **Status & goal alignment (one-page hub)** | [getting-started/PROJECT_STATUS_AND_ALIGNMENT.md](getting-started/PROJECT_STATUS_AND_ALIGNMENT.md) |
 | **Current status (version, ships, changelog)** | [getting-started/PROJECT_CURRENT_STATUS.md](getting-started/PROJECT_CURRENT_STATUS.md) |
 | Project overview (repos, commands, checklist) | [getting-started/PROJECT_OVERVIEW.md](getting-started/PROJECT_OVERVIEW.md) |

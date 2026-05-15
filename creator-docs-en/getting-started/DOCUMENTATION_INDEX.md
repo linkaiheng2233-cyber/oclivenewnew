@@ -15,10 +15,38 @@ Creator and plugin documentation lives under repo root **`creator-docs/`** (topi
 
 ---
 
+## Learning paths
+
+Time-boxed “start here → ship”; **authoritative detail stays in each topic page and source**. Cross-check the same rows under **Quick entry**.
+
+| Role | Start here |
+|------|------------|
+| **End users** (install → import pack → chat; no pack/plugin authoring) | **[USER_MANUAL.md](USER_MANUAL.md)** (Chinese: [../../creator-docs/getting-started/USER_MANUAL.md](../../creator-docs/getting-started/USER_MANUAL.md)) |
+| **Role pack authors** | **[../role-pack/CREATOR_LEARNING_PATH.md](../role-pack/CREATOR_LEARNING_PATH.md)** (Chinese: [../../creator-docs/role-pack/CREATOR_LEARNING_PATH.md](../../creator-docs/role-pack/CREATOR_LEARNING_PATH.md)) |
+| **Plugin authors** | **[../plugin-and-architecture/PLUGIN_AUTHOR_LEARNING_PATH.md](../plugin-and-architecture/PLUGIN_AUTHOR_LEARNING_PATH.md)** (Chinese: [../../creator-docs/plugin-and-architecture/PLUGIN_AUTHOR_LEARNING_PATH.md](../../creator-docs/plugin-and-architecture/PLUGIN_AUTHOR_LEARNING_PATH.md)) |
+| **Kernel / hardware integrators** | **[KERNEL_INTEGRATOR_LEARNING_PATH.md](KERNEL_INTEGRATOR_LEARNING_PATH.md)** (Chinese: [../../creator-docs/getting-started/KERNEL_INTEGRATOR_LEARNING_PATH.md](../../creator-docs/getting-started/KERNEL_INTEGRATOR_LEARNING_PATH.md)) |
+
+---
+
+## Contracts quick map
+
+| Topic | Document |
+|-------|----------|
+| Error codes & triage | **[ERROR_CODES.md](ERROR_CODES.md)** |
+| Normative `code` + JSON bodies | **[KERNEL_ERROR_CODE_CONVENTION.md](KERNEL_ERROR_CODE_CONVENTION.md)** |
+| `plugin_backends` + seven slots | **[../plugin-and-architecture/PLUGIN_V1.md](../plugin-and-architecture/PLUGIN_V1.md)** |
+| Remote HTTP JSON-RPC | **[../plugin-and-architecture/REMOTE_PLUGIN_PROTOCOL.md](../plugin-and-architecture/REMOTE_PLUGIN_PROTOCOL.md)** |
+| On-disk pack / `schema_version` | **[../role-pack/ROLE_PACK_SPEC.md](../role-pack/ROLE_PACK_SPEC.md)** · **[../role-pack/PACK_VERSIONING.md](../role-pack/PACK_VERSIONING.md)** |
+| OOCP HTTP black-box (CI) | **[../testing/OOCP_TEST_SUITE.md](../testing/OOCP_TEST_SUITE.md)** |
+| Directory whole-shell `invoke` · permissions & errors | **[../plugin-and-architecture/BRIDGE_API_REFERENCE.md](../plugin-and-architecture/BRIDGE_API_REFERENCE.md)** |
+
+---
+
 ## Quick entry
 
 | I want to… | Read |
 |------------|------|
+| **Pick a role: learning paths hub** | **[Learning paths](#learning-paths)** · **[Contracts quick map](#contracts-quick-map)** |
 | **End users: install → daily use (user manual)** | **[USER_MANUAL.md](USER_MANUAL.md)** (Chinese: [../../creator-docs/getting-started/USER_MANUAL.md](../../creator-docs/getting-started/USER_MANUAL.md)) |
 | **Role pack authors: start → publish (learning path)** | **[../role-pack/CREATOR_LEARNING_PATH.md](../role-pack/CREATOR_LEARNING_PATH.md)** (Chinese: [../../creator-docs/role-pack/CREATOR_LEARNING_PATH.md](../../creator-docs/role-pack/CREATOR_LEARNING_PATH.md)) |
 | **Plugin authors: directory / remote / marketplace (learning path)** | **[../plugin-and-architecture/PLUGIN_AUTHOR_LEARNING_PATH.md](../plugin-and-architecture/PLUGIN_AUTHOR_LEARNING_PATH.md)** (Chinese: [../../creator-docs/plugin-and-architecture/PLUGIN_AUTHOR_LEARNING_PATH.md](../../creator-docs/plugin-and-architecture/PLUGIN_AUTHOR_LEARNING_PATH.md)) |

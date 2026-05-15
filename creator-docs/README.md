@@ -8,7 +8,7 @@
 
 | 文件夹 | 内容 |
 |--------|------|
-| **[getting-started/](getting-started/)** | 文档总索引、[进度与目标对齐](getting-started/PROJECT_STATUS_AND_ALIGNMENT.md)、[项目现状快照](getting-started/PROJECT_CURRENT_STATUS.md)、入门与角色包工作流、[GitHub 仓库清单](getting-started/GITHUB_REPO_CHECKLIST.md) |
+| **[getting-started/](getting-started/)** | 文档总索引、[用户手册](getting-started/USER_MANUAL.md)（[English](../creator-docs-en/getting-started/USER_MANUAL.md)）、[进度与目标对齐](getting-started/PROJECT_STATUS_AND_ALIGNMENT.md)、[项目现状快照](getting-started/PROJECT_CURRENT_STATUS.md)、入门与角色包工作流、[GitHub 仓库清单](getting-started/GITHUB_REPO_CHECKLIST.md) |
 | **[guides/](guides/)** | [配置文件说明](guides/CONFIGURATION_FILES.md)（`plugin_state`、`ui.json`、应用数据路径等）、[mumu 模块验收清单](guides/MUMU_UI_ACCEPTANCE_CHECKLIST.md)、[复杂情感回归清单](guides/REGRESSION_COMPLEX_EMOTION_QA.md) · 英 [`../creator-docs-en/guides/`](../creator-docs-en/guides/) |
 | **[plugin-and-architecture/](plugin-and-architecture/)** | `plugin_backends` 契约、扩展点、HTTP JSON-RPC 协议、[整壳桥接 API 参考](plugin-and-architecture/BRIDGE_API_REFERENCE.md)、替换模块 · 英文总表 [`../creator-docs-en/README.md`](../creator-docs-en/README.md) |
 | **[FAQ.md](FAQ.md)** | 插件与角色包常见问题 · 英文 [`../creator-docs-en/FAQ.md`](../creator-docs-en/FAQ.md) |
@@ -28,6 +28,18 @@
 - **权威**：契约与角色包仍以本目录 **`creator-docs/`** 中文为准。  
 - **英文镜像**：[`../creator-docs-en/README.md`](../creator-docs-en/README.md)（见该页 **Documentation bilingual closure baseline**）：入门与索引、插件契约与 `guides/`、FAQ/兼容/协议策略等已对齐；**`roadmap/`、视频脚本、部分角色包深度文**等仍为 **中文-only**，英文总索引链过去属正常。  
 - **后续开发**：改契约或宿主/插件行为时，**同一变更周期**内同步更新已有英文镜像，或在 `CHANGELOG` 中注明「文档仅中文更新」。
+
+---
+
+## 按角色导航
+
+| 我是谁 | 从这里开始 |
+|--------|------------|
+| **普通用户**（只使用桌面应用；不写角色包/插件） | [getting-started/USER_MANUAL.md](getting-started/USER_MANUAL.md) · [English](../creator-docs-en/getting-started/USER_MANUAL.md) |
+| **我想做角色包** | [role-pack/CREATOR_LEARNING_PATH.md](role-pack/CREATOR_LEARNING_PATH.md) · 格式规范 [role-pack/ROLE_PACK_SPEC.md](role-pack/ROLE_PACK_SPEC.md) |
+| **我想开发插件** | [plugin-and-architecture/PLUGIN_AUTHOR_LEARNING_PATH.md](plugin-and-architecture/PLUGIN_AUTHOR_LEARNING_PATH.md) · 契约 [plugin-and-architecture/PLUGIN_V1.md](plugin-and-architecture/PLUGIN_V1.md) |
+| **我想做硬件 / 无头内核集成** | [getting-started/KERNEL_INTEGRATOR_LEARNING_PATH.md](getting-started/KERNEL_INTEGRATOR_LEARNING_PATH.md) · 总览图 [getting-started/KERNEL_AND_MODULES_ARCHITECTURE.md](getting-started/KERNEL_AND_MODULES_ARCHITECTURE.md) |
+| **维护者**（Breaking 流程、关键路径交接） | [../handoff/BREAKING_CHANGE_PROCESS.md](../handoff/BREAKING_CHANGE_PROCESS.md) · [../handoff/BUS_FACTOR_NOTES.md](../handoff/BUS_FACTOR_NOTES.md) |
 
 ---
 
