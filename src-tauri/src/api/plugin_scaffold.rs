@@ -61,7 +61,7 @@ fn write_template_files(
         "description": format!("{} scaffold ({})", plugin_name, plugin_type),
         "author": "creator",
         "runtime": language,
-        "permissions": ["network"],
+        "permissions": ["process:spawn"],
         "tools": [
           { "name": "example_tool", "description": "example tool placeholder" }
         ]

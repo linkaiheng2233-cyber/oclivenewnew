@@ -1,7 +1,8 @@
 <script setup lang="ts">
-import { computed, ref } from "vue";
+import { computed, ref, toRef } from "vue";
 import { useI18n } from "vue-i18n";
 import { createPluginScaffold } from "../utils/tauri-api";
+import { useModalFocusRestore } from "../composables/useModalFocusRestore";
 
 const { t, locale } = useI18n();
 
@@ -10,6 +11,12 @@ const emit = defineEmits<{
   close: [];
   created: [pluginDir: string];
 }>();
+
+const visibleRef = toRef(props, "visible");
+const dialogRef = ref<HTMLElement | null>(null);
+const primaryBtnRef = ref<HTMLButtonElement | null>(null);
+
+useModalFocusRestore(visibleRef, dialogRef, { primary: primaryBtnRef });
 
 const pluginId = ref("");
 const pluginName = ref("");
@@ -27,11 +34,11 @@ const manifestPreview = computed(() => {
     runtime: language.value,
     type: pluginType.value,
     process: language.value === "rust" ? "target/debug/plugin_scaffold" : "node index.js",
-    permissions: ["network"],
+    permissions: ["process:spawn"],
   };
 });
 
-const allowedPermissions = ["network", "fs", "clipboard", "shell"];
+const allowedPermissions = ["process:spawn", "network:*", "mcp:http", "mcp:stdio"];
 
 const manifestErrors = computed(() => {
   void locale.value;
@@ -74,7 +81,13 @@ async function onCreate(): Promise<void> {
 <template>
   <Teleport to="body">
     <div v-if="props.visible" class="psw-backdrop" @click.self="emit('close')">
-      <div class="psw-dialog">
+      <div
+        ref="dialogRef"
+        class="psw-dialog"
+        tabindex="-1"
+        @click.stop
+        @keydown.escape.stop="emit('close')"
+      >
         <header class="psw-head">
           <h3>{{ t("devTools.scaffold.title") }}</h3>
           <button type="button" class="psw-close" @click="emit('close')">×</button>
@@ -107,7 +120,7 @@ async function onCreate(): Promise<void> {
         </div>
         <footer class="psw-foot">
           <span class="psw-status">{{ status }}</span>
-          <button type="button" class="psw-btn" :disabled="busy || manifestErrors.length > 0" @click="onCreate">
+          <button ref="primaryBtnRef" type="button" class="psw-btn" :disabled="busy || manifestErrors.length > 0" @click="onCreate">
             {{ t("devTools.scaffold.generate") }}
           </button>
         </footer>
