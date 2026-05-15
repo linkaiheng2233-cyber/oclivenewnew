@@ -31,7 +31,7 @@
 |------|------|
 | **全命令表** | `lib.rs` 中其余 `invoke` 按需再挂矩阵行 |
 | **golden / 对照 JSON** | 对关键 DTO 做固定快照时另开任务，避免与目录 mtime 指纹 flake 纠缠 |
-| **IPC 层** | Playwright / Tauri driver 真 `invoke` 归入 **A1.1b** |
+| **IPC 层** | 真 Tauri 窗 / WebDriver / 安装包全屋 E2E 归入发版表 **A1.1c**（另立项） |
 
 ---
 

@@ -39,3 +39,9 @@ bench_history.json
 
 # Local directory-plugin runtime state under roles root (dev)
 roles/.oclive_directory_plugin_data/
+
+# Playwright (A1.1b preview E2E)
+playwright-report/
+test-results/
+blob-report/
+playwright/.cache/

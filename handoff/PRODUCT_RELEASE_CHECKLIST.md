@@ -2,9 +2,9 @@
 
 **用途**：发版会议或维护者自检时**只过本表**；权威缺口仍以 [PRODUCT_AND_KERNEL_GAP_CHECKLIST.md](./PRODUCT_AND_KERNEL_GAP_CHECKLIST.md) **§A** 为准。详细说明与「硬骨头」排期见 [PRODUCT_LINE_TASK_BUCKETS.md](./PRODUCT_LINE_TASK_BUCKETS.md)。
 
-**下一阶段（工程）**：**A1.1a**（HTTP 进程重启）与 **A1.2**（`invoke` 宿主热路径 9 条 `*_impl`）已入库可回归；**未勾主项**仍以 **A1.1b（GUI / 安装器 / 真 IPC）**、**A2.2 / A2.3 / A4.2** 等为主，按 [PRODUCT_LINE_TASK_BUCKETS.md](./PRODUCT_LINE_TASK_BUCKETS.md) **§四** 拆独立 issue。
+**下一阶段（工程）**：**A1**（测试与质量闸门可 CI 子集）已收口：**A1.1a** HTTP、**A1.1b** Web 预览 Playwright、**A1.2** 九条 `invoke` 热路径；**未勾主项**以 **A2.2 / A2.3 / A4.2**、**原生安装包 GUI E2E** 等为主，按 [PRODUCT_LINE_TASK_BUCKETS.md](./PRODUCT_LINE_TASK_BUCKETS.md) **§四** 拆独立 issue。
 
-**与 CI**：本表**不替代** CI。本地建议顺序：`npm run test:unit` → `npm run check:release` →（可选）与 CI 相同的 OOCP / 姊妹仓检查；详见 [CONTRIBUTING.md](../CONTRIBUTING.md)「测试要求」「CI 对齐」。
+**与 CI**：本表**不替代** CI。本地建议顺序：`npm run test:unit` → `npm run build && npm run test:e2e:preview`（与 CI `frontend` 对齐）→ `npm run check:release` →（可选）与 CI 相同的 OOCP / 姊妹仓检查；详见 [CONTRIBUTING.md](../CONTRIBUTING.md)「测试要求」「CI 对齐」。
 
 ---
 
@@ -40,8 +40,9 @@
 ### A1 测试与质量
 
 - [x] **A1.1a（子项）** **HTTP `--api` 进程重启烟测**（[`scripts/e2e-core-api-restart.mjs`](../scripts/e2e-core-api-restart.mjs) + CI `oocp-test-suite`）— 见 [`OOCP_TEST_SUITE.md`](../creator-docs/testing/OOCP_TEST_SUITE.md)  
-- [ ] **A1.1b（主项）** 安装包 / **桌面 GUI** / 切角等完整自动化 — Playwright 等另立项  
-- [x] **A1.2** **`invoke` 宿主热路径（9 条 `*_impl`）**：[`INVOKE_HOTPATH_MATRIX.md`](./INVOKE_HOTPATH_MATRIX.md) + [`invoke_hotpath_matrix.rs`](../src-tauri/tests/invoke_hotpath_matrix.rs)；**全命令 golden / Playwright 真 IPC** 仍属 A1.1b 或后续增强  
+- [x] **A1.1b** **`vite preview` + Playwright 首屏**：[`e2e/preview-shell.spec.ts`](../e2e/preview-shell.spec.ts)，`npm run test:e2e:preview`；**CI：Ubuntu `frontend`**（`PW_TEST_USE_EXTERNAL` + 后台 preview；Windows `frontend` 不跑本项）  
+- [ ] **A1.1c（延伸）** **安装包 / Tauri 原生窗 / 全屋 GUI E2E**：WebDriver 或发行流水线；**不挡 A1 可 CI 子集收口**  
+- [x] **A1.2** **`invoke` 宿主热路径（9 条 `*_impl`）**：[`INVOKE_HOTPATH_MATRIX.md`](./INVOKE_HOTPATH_MATRIX.md) + [`invoke_hotpath_matrix.rs`](../src-tauri/tests/invoke_hotpath_matrix.rs)；**golden / 全 handler** 仍属后续增强  
 - [x] **A1.3** 本地与 CI 闸门习惯已文档化（见 CONTRIBUTING + 本表「闸门」）
 - [x] **A1.4** 回归清单通过上节链接聚合（本表）
 

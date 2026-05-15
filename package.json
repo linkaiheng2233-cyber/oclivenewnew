@@ -30,7 +30,8 @@
     "check:release": "npm run build && npm run check:rust:fmt && npm run check:rust:clippy && npm run check:rust:test:all",
     "scaffold:ui-plugin": "node scripts/scaffold-ui-slot-plugin.mjs",
     "test:unit": "vitest run",
-    "test:e2e:core-api-restart": "node scripts/e2e-core-api-restart.mjs"
+    "test:e2e:core-api-restart": "node scripts/e2e-core-api-restart.mjs",
+    "test:e2e:preview": "playwright test"
   },
   "dependencies": {
     "@sentry/vue": "^10.47.0",
@@ -48,6 +49,7 @@
     "vue3-sfc-loader": "^0.9.5"
   },
   "devDependencies": {
+    "@playwright/test": "^1.52.0",
     "@tauri-apps/cli": "1.5.14",
     "@vitejs/plugin-vue": "^5.2.1",
     "@vue/test-utils": "^2.4.10",

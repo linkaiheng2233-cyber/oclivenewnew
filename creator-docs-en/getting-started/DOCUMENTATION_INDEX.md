@@ -59,7 +59,7 @@ Creator and plugin documentation lives under repo root **`creator-docs/`** (topi
 | **Lightweight / `cargo audit` / `cargo-bloat`** | **[../LIGHTWEIGHT_PROFILE.md](../LIGHTWEIGHT_PROFILE.md)** (English mirror of `creator-docs/development/LIGHTWEIGHT_PROFILE.md`) |
 | **Known vulnerabilities (`cargo-audit`)** | **[../security/KNOWN_VULNERABILITIES.md](../security/KNOWN_VULNERABILITIES.md)** |
 | **Security audit scope** | **[../security/SECURITY_AUDIT_SCOPE.md](../security/SECURITY_AUDIT_SCOPE.md)** |
-| **Test output schema, OOCP suite, `invoke` hot-path matrix, plugin integration tests** | **[../testing/TEST_OUTPUT_SCHEMA.md](../testing/TEST_OUTPUT_SCHEMA.md)** · **[../testing/OOCP_TEST_SUITE.md](../testing/OOCP_TEST_SUITE.md)** · **[../testing/OVERVIEW.md](../testing/OVERVIEW.md)** · **[../../handoff/INVOKE_HOTPATH_MATRIX.md](../../handoff/INVOKE_HOTPATH_MATRIX.md)** · **[../testing/ADAPTING_TEST_PLUGIN.md](../testing/ADAPTING_TEST_PLUGIN.md)** · **[../../creator-docs/testing/L03_GENERATION_CANCEL.md](../../creator-docs/testing/L03_GENERATION_CANCEL.md)** |
+| **Test output schema, OOCP suite, `invoke` hot-path matrix, A1 closure summary, plugin integration tests** | **[../testing/TEST_OUTPUT_SCHEMA.md](../testing/TEST_OUTPUT_SCHEMA.md)** · **[../testing/OOCP_TEST_SUITE.md](../testing/OOCP_TEST_SUITE.md)** · **[../testing/OVERVIEW.md](../testing/OVERVIEW.md)** · **[../../handoff/INVOKE_HOTPATH_MATRIX.md](../../handoff/INVOKE_HOTPATH_MATRIX.md)** · **[../../handoff/A1_CLOSURE_SUMMARY.md](../../handoff/A1_CLOSURE_SUMMARY.md)** · **[../testing/ADAPTING_TEST_PLUGIN.md](../testing/ADAPTING_TEST_PLUGIN.md)** · **[../../creator-docs/testing/L03_GENERATION_CANCEL.md](../../creator-docs/testing/L03_GENERATION_CANCEL.md)** |
 
 ---
 

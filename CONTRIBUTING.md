@@ -50,11 +50,12 @@ npm run build
 | 发版或改引擎 / 契约前 | **`npm run check:release`**（含 **`cargo test`** 全量，即 **`tests/`** 集成与单元） |
 | 仅 Rust workspace | **`cargo test --workspace`**（根目录；含 `crates/*` 与 `src-tauri`） |
 | 仅前端单元 | **`npm run test:unit`**（Vitest） |
-| **核心 HTTP 重启烟测（A1.1 PoC）** | **`npm run test:e2e:core-api-restart`**（需已 `cargo build -p oclivenewnew-tauri`；默认 `OCLIVE_HTTP_API_MOCK_LLM=1`） |
+| **核心 HTTP 重启烟测（A1.1a）** | **`npm run test:e2e:core-api-restart`**（需已 `cargo build -p oclivenewnew-tauri`；默认 `OCLIVE_HTTP_API_MOCK_LLM=1`） |
+| **Web 预览壳 E2E（A1.1b）** | **`npm run build && npm run test:e2e:preview`**（Playwright + `vite preview`；**CI 仅 Ubuntu `frontend`**）。**Windows 本地**：若内置 `webServer` 超时，请先 **`npm run preview -- --host 127.0.0.1 --port 4180 --strictPort`**，再在另一终端 **`$env:PW_TEST_USE_EXTERNAL='1'`**（PowerShell）后执行 **`npm run test:e2e:preview`** |
 
-**CI 对齐（重要）**：**`npm run check:release` 不包含 `npm run test:unit`**；CI 在 **`frontend`** job 中单独执行 **`npm run test:unit`**。发版前建议本地补跑 **`npm run test:unit`**，或确认 **Actions → frontend** 已绿。完整发版勾选见 [handoff/PRODUCT_RELEASE_CHECKLIST.md](handoff/PRODUCT_RELEASE_CHECKLIST.md)。
+**CI 对齐（重要）**：**`npm run check:release` 不包含 `npm run test:unit`**；CI 在 **`frontend`** job 中对 **Ubuntu / Windows** 执行 **`npm run test:unit`** 与 **`npm run build`**；**Playwright（`npm run test:e2e:preview`）仅在 Ubuntu `frontend`** 执行（见 `.github/workflows/ci.yml`）。发版前建议本地补跑 **`npm run test:unit`**；有前端改动时，在 **Linux/macOS** 可 **`npm run build && npm run test:e2e:preview`**，或确认 **Actions → frontend（ubuntu）** 已绿。完整发版勾选见 [handoff/PRODUCT_RELEASE_CHECKLIST.md](handoff/PRODUCT_RELEASE_CHECKLIST.md)。
 
-**CI 对齐**：**`.github/workflows/ci.yml`** 在 Ubuntu / Windows 上跑 Rust 与 **`npm run build`**、**`npm run test:unit`** 等；Ubuntu 另跑 **OOCP** 与 **`oclive-cli`** 相关 job。详见根目录 [README.md](README.md)「测试与检查」。
+**CI 对齐**：**`.github/workflows/ci.yml`** 在 Ubuntu / Windows 上跑 Rust 与 **`npm run build`**、**`npm run test:unit`**；**Ubuntu `frontend`** 另跑 **`npm run test:e2e:preview`**；Ubuntu 另跑 **OOCP** 与 **`oclive-cli`** 相关 job。详见根目录 [README.md](README.md)「测试与检查」。
 
 ## PR 流程
 

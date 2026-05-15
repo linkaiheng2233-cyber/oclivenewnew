@@ -11,7 +11,7 @@
 | 领域 | 状态 |
 |------|------|
 | **内核编排** | 主编排在 **`src-tauri/src/domain/chat_engine/mod.rs`** 的 **`process_message`**；无独立入口蓝图 DSL 主路径；子系统经 **`PluginHost`** 解析（含 **`agent`**）。 |
-| **测试（三层）** | **协议层（本仓）**：`src-tauri` 的 **`cargo test`** + `tests/` 集成测；**OOCP HTTP 黑盒 S0–S11** 已入库 [`examples/oocp-test-suite/`](examples/oocp-test-suite/)，**CI 已集成** job **`oocp-test-suite`**（Ubuntu）。**组件层（编写器）**：**oclive-pack-editor** 仓库 Vitest / Playwright 等（与本仓 CI 分工）。**插件层（编写器）**：目录插件 / `official-vue-test-runner` 等范式与用例在 **oclive-pack-editor**。**前端最小烟测**：CI **`npm ci` + `npm run test:unit`（Vitest）+ `npm run build`**。总览见 [creator-docs/testing/OVERVIEW.md](creator-docs/testing/OVERVIEW.md)、[creator-docs/testing/OOCP_TEST_SUITE.md](creator-docs/testing/OOCP_TEST_SUITE.md)。 |
+| **测试（三层）** | **协议层（本仓）**：`src-tauri` 的 **`cargo test`** + `tests/` 集成测；**OOCP HTTP 黑盒 S0–S11** 已入库 [`examples/oocp-test-suite/`](examples/oocp-test-suite/)，**CI 已集成** job **`oocp-test-suite`**（Ubuntu）。**A1.1b**：**`vite preview` + Playwright** 首屏烟测（[`e2e/preview-shell.spec.ts`](e2e/preview-shell.spec.ts)），**CI 仅 Ubuntu `frontend`**（Windows `frontend` 跑 Vitest + build）。**组件层（编写器）**：**oclive-pack-editor** 仓库 Vitest / Playwright 等（与本仓 CI 分工）。**插件层（编写器）**：目录插件 / `official-vue-test-runner` 等范式与用例在 **oclive-pack-editor**。**前端最小烟测**：CI **`npm ci` + `npm run test:unit`（Vitest）+ `npm run build`**；Playwright 见上。总览见 [creator-docs/testing/OVERVIEW.md](creator-docs/testing/OVERVIEW.md)、[creator-docs/testing/OOCP_TEST_SUITE.md](creator-docs/testing/OOCP_TEST_SUITE.md)。 |
 | **oclive-cli** | Workspace crate **`oclive-cli`**：**`oclive dev`**（监听 `roles/` 下 `manifest.json` / `settings.json`）；**`oclive bench`** 支持 **`--save`**（写入 `bench_history.json`）与 **`--compare`**（对比最近两次）；**`oclive pack`** 子命令 **`validate` / `create` / `publish`**；**Monolith** 高耦合编译与 `init` / `build` / `bench` 流程见 [creator-docs/cli/OCLIVE_CLI_GUIDE.md](creator-docs/cli/OCLIVE_CLI_GUIDE.md)。 |
 | **启动健康检查** | 首轮 **`process_message`** 前一次性自检（槽位、角色包文件、SQLite **`health_ping`**、可选 LLM 探测）；可用 **`OCLIVE_SKIP_STARTUP_HEALTH`** / **`OCLIVE_SKIP_LLM_STARTUP_PROBE`** 跳过。实现见 `src-tauri/src/domain/startup_health.rs`。 |
 | **Monolith（高耦合编译）** | 无头脚手架在编译期焊接七槽静态路径；RFC 与 CLI 四阶段（`init` → `build` → 双二进制 `bench`）见 [creator-docs/rfc/RFC_OCLIVE_MONOLITH_MODE.md](creator-docs/rfc/RFC_OCLIVE_MONOLITH_MODE.md) 与上文 CLI 指南。 |
@@ -33,7 +33,7 @@
 - 当前以 **0.2.x** 桌面宿主为主；**在线更新器未配置**，分发以 **离线安装包** 为准（见下文「可观测性与发布」）。  
 - **Ollama** 为本地对话默认路径；未安装或模型未拉取时对话会失败——请见 [CREATOR_WORKFLOW.md](creator-docs/getting-started/CREATOR_WORKFLOW.md) 与 [ERROR_CODES.md](creator-docs/getting-started/ERROR_CODES.md)（§1.5 首装常见）。  
 - **Remote / 目录插件 / MCP** 涉及出站网络或子进程时，须按 manifest 与宿主授权流程使用（见 [DIRECTORY_PLUGINS.md](creator-docs/plugin-and-architecture/DIRECTORY_PLUGINS.md)）。  
-- **产品级首发 P0 清单**（测试自动化、全路径首装文案等）仍在推进：维护者用 [handoff/PRODUCT_RELEASE_CHECKLIST.md](handoff/PRODUCT_RELEASE_CHECKLIST.md) 与 [handoff/PRODUCT_AND_KERNEL_GAP_CHECKLIST.md](handoff/PRODUCT_AND_KERNEL_GAP_CHECKLIST.md) 跟踪。
+- **产品级首发 P0**：**A1（可 CI 子集）**已收口（HTTP 重启、`vite preview`+Playwright、九条 `invoke` 热路径；见 [handoff/PRODUCT_RELEASE_CHECKLIST.md](handoff/PRODUCT_RELEASE_CHECKLIST.md)）；**A2 首装文案 / 离线弱网** 等仍在推进，维护者用 [handoff/PRODUCT_AND_KERNEL_GAP_CHECKLIST.md](handoff/PRODUCT_AND_KERNEL_GAP_CHECKLIST.md) 跟踪。
 
 ## 模型、插件与数据（速览三问）
 
@@ -143,12 +143,13 @@ npm run build
 
 **主路径快捷键（应用内）**：**Ctrl+Shift+F** 打开插件管理、**Ctrl+Shift+S** 打开设置、**Ctrl+Shift+D** 开关调试面板；完整说明见应用内 **设置** 相关文案与 `src/i18n` 中 **`shortcutHelp`**（与 [FAQ](creator-docs/FAQ.md) 一致）。
 
-**CI（`.github/workflows/ci.yml`）**：在 **Ubuntu** 与 **Windows** 上均执行 Rust **`rustfmt` + `clippy`（`-D warnings`）+ 完整 `cargo test`**（`src-tauri` 工作目录，含 `tests/` 集成测试），以及 **`npm ci` + `npm run test:unit` + `npm run build`**。在 **Ubuntu** 上另跑 **`oocp-test-suite`**（`--api` + `examples/oocp-test-suite/run.mjs` **S0–S11** + 根目录 **`scripts/e2e-core-api-restart.mjs`** 进程重启烟测；**协议层黑盒，已入库且 CI 已集成**）。另含 **`cargo-audit`（0.22.1，`continue-on-error`）** 与 **`remote-plugin-demo`**（Python 侧车 `memory.rank` 烟测）。**组件 / 插件层**自动化在 **oclive-pack-editor** 各自 workflow 中维护（见上文「测试（三层）」）。
+**CI（`.github/workflows/ci.yml`）**：在 **Ubuntu** 与 **Windows** 上均执行 Rust **`rustfmt` + `clippy`（`-D warnings`）+ 完整 `cargo test`**（`src-tauri` 工作目录，含 `tests/` 集成测试），以及 **`npm ci` + `npm run test:unit` + `npm run build`**。**Ubuntu** 的 **`frontend`** job 另跑 **Playwright + `vite preview` 首屏烟测（A1.1b）**；**Windows** 的 **`frontend`** job 不跑 Playwright（避免子进程拉起 `vite preview` 不稳定），以 **Vitest + build** 为主。在 **Ubuntu** 上另跑 **`oocp-test-suite`**（`--api` + `examples/oocp-test-suite/run.mjs` **S0–S11** + 根目录 **`scripts/e2e-core-api-restart.mjs`** 进程重启烟测；**协议层黑盒，已入库且 CI 已集成**）。另含 **`cargo-audit`（0.22.1，`continue-on-error`）** 与 **`remote-plugin-demo`**（Python 侧车 `memory.rank` 烟测）。**组件 / 插件层**自动化在 **oclive-pack-editor** 各自 workflow 中维护（见上文「测试（三层）」）。
 
 | 命令 | 用途 |
 |------|------|
 | `npm run test:unit` | **Vitest**：主仓最小烟测（`src/smoke.test.ts`） |
-| `npm run test:e2e:core-api-restart` | **A1.1 PoC**：`--api` 进程 **重启后** 仍能 `/health` + `POST /chat`（需先 `cargo build -p oclivenewnew-tauri`；默认 Mock LLM） |
+| `npm run test:e2e:core-api-restart` | **A1.1a**：`--api` 进程 **重启后** 仍能 `/health` + `POST /chat`（需先 `cargo build -p oclivenewnew-tauri`；默认 Mock LLM） |
+| `npm run test:e2e:preview` | **A1.1b**：**`vite preview`** 下 **Playwright** 首屏烟测（需先 **`npm run build`**；首次本地需 `npx playwright install chromium`） |
 | `npm run check` | 日常开发：`vite build` + `cargo fmt` / `clippy` / **`cargo test --lib`** |
 | `npm run check:release` | **发版门槛**：`vite build` + fmt / clippy + **完整 `cargo test`**（与 CI 中 Rust  job 一致） |
 | `npm run check:rust:test:all` | 仅跑全量测试（已包含在 `check:release` 中） |

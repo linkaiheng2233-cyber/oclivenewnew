@@ -95,6 +95,36 @@ jobs:
       - run: npm ci
       - run: npm run test:unit
       - run: npm run build
+      - name: Install Playwright Chromium (Linux only)
+        if: runner.os == 'Linux'
+        run: npx playwright install --with-deps chromium
+        env:
+          PLAYWRIGHT_DISABLE_HEADLESS_SHELL: "1"
+      - name: Preview shell E2E — A1.1b (Linux only)
+        if: runner.os == 'Linux'
+        run: |
+          set -euo pipefail
+          export OCLIVE_PREVIEW_PORT="${OCLIVE_PREVIEW_PORT:-4180}"
+          node ./node_modules/vite/bin/vite.js preview --host 127.0.0.1 --port "${OCLIVE_PREVIEW_PORT}" --strictPort > /tmp/vite-preview.log 2>&1 &
+          echo $! > /tmp/vite-preview.pid
+          for _ in $(seq 1 90); do
+            if curl -sf "http://127.0.0.1:${OCLIVE_PREVIEW_PORT}/" >/dev/null; then
+              break
+            fi
+            sleep 1
+          done
+          curl -sf "http://127.0.0.1:${OCLIVE_PREVIEW_PORT}/" >/dev/null || (echo "--- vite preview log ---"; cat /tmp/vite-preview.log; exit 1)
+          export PW_TEST_USE_EXTERNAL=1
+          export CI=true
+          npm run test:e2e:preview
+        env:
+          PLAYWRIGHT_DISABLE_HEADLESS_SHELL: "1"
+      - name: Stop vite preview (Linux)
+        if: always() && runner.os == 'Linux'
+        run: |
+          if [ -f /tmp/vite-preview.pid ]; then
+            kill "$(cat /tmp/vite-preview.pid)" || true
+          fi
 
   oocp-test-suite:
     runs-on: ubuntu-latest

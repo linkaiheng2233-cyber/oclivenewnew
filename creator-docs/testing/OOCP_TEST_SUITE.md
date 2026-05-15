@@ -1,13 +1,19 @@
 # OOCP 协议测试套件（S0–S11）
 
-**状态（`main`）**：已入库 **`examples/oocp-test-suite/`**（`run.mjs` + JSON schema）；CI 工作流 **`.github/workflows/ci.yml`** 中的 **`oocp-test-suite`** job 会构建 `oclivenewnew-tauri`、拉起 **`--api` HTTP 服务**、轮询 **`GET /health`**、执行 **`node run.mjs`**，随后执行 **`scripts/e2e-core-api-restart.mjs`**（**进程重启后再对话** 烟测；失败则 job 失败）。
+**状态（`main`）**：已入库 **`examples/oocp-test-suite/`**（`run.mjs` + JSON schema）；CI 工作流 **`.github/workflows/ci.yml`** 中的 **`oocp-test-suite`** job 会构建 `oclivenewnew-tauri`、拉起 **`--api` HTTP 服务**、轮询 **`GET /health`**、执行 **`node run.mjs`**，随后执行 **`scripts/e2e-core-api-restart.mjs`**（**进程重启后再对话** 烟测；失败则 job 失败）。**`frontend`** job 在 **Ubuntu** 上在 **`npm run build`** 后另跑 **Playwright + `vite preview` 首屏**（**A1.1b**；Windows `frontend` 不跑 Playwright）。
 
 ## A1.1 PoC：核心 HTTP 进程重启烟测
 
 - **脚本**：根目录 **`scripts/e2e-core-api-restart.mjs`**（Node 20+ 内置 `fetch`，无额外 npm 依赖）。  
 - **行为**：在同一端口上 **启动 `--api` → `/health` → `POST /chat` → 终止进程 → 再次启动 → 再 `/health` + `/chat`**；两轮均须成功。默认 **`OCLIVE_HTTP_API_MOCK_LLM=1`**，**无需 Ollama**。  
 - **本地**：`cargo build -p oclivenewnew-tauri` 后，仓库根目录执行 **`npm run test:e2e:core-api-restart`**（或手动设置 `OCLIVE_ROLES_DIR` / `OCLIVE_E2E_PORT` / `OCLIVE_E2E_BINARY`）。  
-- **说明**：覆盖 **「关开恢复」** 的 **HTTP 宿主进程** 维度；**完整桌面安装 / GUI 切角** 仍待 Playwright 等扩展，见 [PRODUCT_LINE_TASK_BUCKETS.md](../../handoff/PRODUCT_LINE_TASK_BUCKETS.md) §四。
+- **说明**：覆盖 **「关开恢复」** 的 **HTTP 宿主进程** 维度；**`vite build` + `vite preview` + Playwright** 首屏烟测见下文 **A1.1b**，CI 在 **`frontend`** job。**安装包 / Tauri 原生窗 / WebDriver 全屋** 另立项，见 [PRODUCT_RELEASE_CHECKLIST.md](../../handoff/PRODUCT_RELEASE_CHECKLIST.md) **A1.1c**。
+
+## A1.1b：Web 预览壳 Playwright 烟测
+
+- **用例**：根目录 [`e2e/preview-shell.spec.ts`](../../e2e/preview-shell.spec.ts)（`#app` 挂载与页签标题）。  
+- **本地**：`npm run build && npm run test:e2e:preview`（首次需 `npx playwright install chromium`；Linux 可用 `npx playwright install --with-deps chromium`）。  
+- **CI**：**`frontend`** job 在 **Ubuntu** 上由 workflow **先后台拉起 `vite preview`**（默认端口 **4180**），设 **`PW_TEST_USE_EXTERNAL=1`** 后执行 **`npm run test:e2e:preview`**；环境变量 **`PLAYWRIGHT_DISABLE_HEADLESS_SHELL=1`** 以减少额外浏览器下载。
 
 ## 运行方式
 
