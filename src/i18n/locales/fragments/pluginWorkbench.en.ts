@@ -16,6 +16,10 @@ export default {
       "Check finished (online version compare is not wired yet; use Community index or Git pull).",
     zipUpdated: "Update finished. Restart the app to apply.",
   },
+  errors: {
+    dependencyNotMet:
+      'Plugin "{id}" cannot be enabled: dependencies not satisfied. {issues}',
+  },
   aria: { dialogStudio: "Plugin workbench (advanced mode)", tablist: "Plugin workbench sections", batchToolbar: "Batch actions" },
   header: {
     title: "Plugin workbench",

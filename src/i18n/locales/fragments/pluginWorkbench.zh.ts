@@ -15,6 +15,10 @@ export default {
     checkDone: "检查完成（在线版本比对尚未接入；可用「社区索引」或 Git 拉取更新）。",
     zipUpdated: "更新完成，请重启应用生效。",
   },
+  errors: {
+    dependencyNotMet:
+      "插件「{id}」依赖未满足，无法启用。{issues}",
+  },
   aria: { dialogStudio: "插件工作台（专业模式）", tablist: "插件工作台分区", batchToolbar: "批量操作" },
   header: {
     title: "插件工作台",

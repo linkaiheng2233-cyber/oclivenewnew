@@ -351,6 +351,11 @@ export default {
   },
   relation: {
     defaultOptionName: "默认身份（{label}）",
+    upgradeAcquaintance: "关系更近了一步：你们不再陌生。",
+    upgradeFriend: "✨ 你们成为了朋友！",
+    upgradeCloseFriend: "🎉 你们已经是好朋友了！",
+    upgradePartner: "💖 关系阶段：伴侣",
+    upgradeUnknown: "关系阶段更新为：{state}",
   },
   settings: {
     ariaDialog: "设置",

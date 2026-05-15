@@ -19,4 +19,6 @@ export default {
   demoPlaceholder: "输入消息",
   demoSend: "send_message",
   demoCreateEvent: "create_event(Praise)",
+  /** 主气泡：仅有旁白/内心行时的占位 */
+  assistReplyAsideOnly: "…",
 } as const;

@@ -93,6 +93,8 @@ export default {
     outputTitle: "输出",
     emptyResponse: "（尚无响应）",
     inspectorAria: "响应与日志输出",
+    rpcMethodEmpty: "请填写 RPC 方法名",
+    rpcParamsInvalid: "参数不是合法 JSON",
   },
   scaffold: {
     title: "新建插件脚手架",

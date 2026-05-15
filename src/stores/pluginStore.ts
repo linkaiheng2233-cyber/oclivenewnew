@@ -1,4 +1,5 @@
 import { defineStore } from "pinia";
+import { rt } from "../i18n/runtimeT";
 import { setHostEventSubscribedEvents } from "../lib/hostEventBus";
 import {
   batchUpdatePlugins,
@@ -458,7 +459,10 @@ export const usePluginStore = defineStore("plugin", {
         const entry = this.catalog.find((c) => c.id === id);
         if (entry && entry.dependencyStatus !== "ok") {
           throw new Error(
-            `插件「${id}」依赖未满足，无法启用。${(entry.dependencyIssues ?? []).join("；")}`,
+            rt("pluginWorkbench.errors.dependencyNotMet", {
+              id,
+              issues: (entry.dependencyIssues ?? []).join("; "),
+            }),
           );
         }
       }
@@ -488,7 +492,10 @@ export const usePluginStore = defineStore("plugin", {
         const entry = this.catalog.find((c) => c.id === id);
         if (entry && entry.dependencyStatus !== "ok") {
           throw new Error(
-            `插件「${id}」依赖未满足，无法启用。${(entry.dependencyIssues ?? []).join("；")}`,
+            rt("pluginWorkbench.errors.dependencyNotMet", {
+              id,
+              issues: (entry.dependencyIssues ?? []).join("; "),
+            }),
           );
         }
       }

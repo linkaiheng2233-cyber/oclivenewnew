@@ -91,8 +91,8 @@ roles/{role_id}/
 - 统一维护 **`src/utils/emotion-assets.ts`**：
   - **`emotionToEmoji`**：小写 key → emoji；
   - **`emotionToImage`**：小写 key → `assets/images/` 下文件名；
-  - **`emotionToLabelZh`**：顶栏中文标签；
   - **`emotionToAssetFilename(emotion)`**：供 `resolve_role_asset_path` 使用。
+  - 顶栏/角色信息中的情绪文案走 **`i18n`**（如 `emotionUi.*`），勿在 TS 中硬编码标签。
 - **新增一种情绪**时（后端 `Emotion` 与角色包需同步规划）：
   1. 在以上映射中补充对应项；
   2. 在 `roles/{role_id}/assets/images/` 放置同名 PNG（可用占位图）；

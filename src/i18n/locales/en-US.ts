@@ -355,6 +355,11 @@ export default {
   },
   relation: {
     defaultOptionName: "Default identity ({label})",
+    upgradeAcquaintance: "You grew closer — no longer strangers.",
+    upgradeFriend: "✨ You became friends!",
+    upgradeCloseFriend: "🎉 You’re close friends now!",
+    upgradePartner: "💖 Relationship stage: partner",
+    upgradeUnknown: "Relationship stage updated: {state}",
   },
   settings: {
     ariaDialog: "Settings",

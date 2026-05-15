@@ -32,18 +32,6 @@ export const emotionToImage: Record<string, string> = {
   disgust_heavy: "disgust_heavy.png",
 };
 
-/** 顶栏中文标签；未知键显示原始 emotion 字符串 */
-export const emotionToLabelZh: Record<string, string> = {
-  happy: "开心",
-  sad: "难过",
-  angry: "生气",
-  shy: "害羞",
-  confused: "困惑",
-  disgust: "嫌弃",
-  neutral: "平静",
-  excited: "兴奋",
-};
-
 export function emotionToAssetFilename(emotion: string): string {
   const e = emotion.trim().toLowerCase();
   return emotionToImage[e] ?? `${e}.png`;

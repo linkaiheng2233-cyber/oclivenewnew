@@ -92,6 +92,8 @@ export default {
     outputTitle: "Output",
     emptyResponse: "(No response yet)",
     inspectorAria: "Response and log output",
+    rpcMethodEmpty: "Enter an RPC method name",
+    rpcParamsInvalid: "Parameters must be valid JSON",
   },
   scaffold: {
     title: "New plugin scaffold",

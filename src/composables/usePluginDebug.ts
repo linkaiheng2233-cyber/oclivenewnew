@@ -6,6 +6,7 @@ import {
   watch,
   type MaybeRefOrGetter,
 } from "vue";
+import { useI18n } from "vue-i18n";
 import type { PluginProcessDebugInfo } from "../utils/tauri-api";
 import {
   clearPluginLogs,
@@ -28,6 +29,7 @@ export interface RpcHistoryItem {
 }
 
 export function usePluginDebug(pluginId: MaybeRefOrGetter<string>) {
+  const { t } = useI18n();
   const processInfo = shallowRef<PluginProcessDebugInfo | null>(null);
   const allProcesses = ref<PluginProcessDebugInfo[]>([]);
   const methods = ref<string[]>([]);
@@ -156,7 +158,11 @@ export function usePluginDebug(pluginId: MaybeRefOrGetter<string>) {
     const id = pid();
     if (!id) return;
     if (!method.trim()) {
-      lastResponse.value = JSON.stringify({ error: "请填写 RPC 方法名" }, null, 2);
+      lastResponse.value = JSON.stringify(
+        { error: t("devTools.pluginDebug.rpcMethodEmpty") },
+        null,
+        2,
+      );
       return;
     }
     const t0 = performance.now();
@@ -164,7 +170,11 @@ export function usePluginDebug(pluginId: MaybeRefOrGetter<string>) {
     try {
       params = paramsText.trim() ? JSON.parse(paramsText) : {};
     } catch {
-      lastResponse.value = JSON.stringify({ error: "参数不是合法 JSON" }, null, 2);
+      lastResponse.value = JSON.stringify(
+        { error: t("devTools.pluginDebug.rpcParamsInvalid") },
+        null,
+        2,
+      );
       return;
     }
     busy.value = true;

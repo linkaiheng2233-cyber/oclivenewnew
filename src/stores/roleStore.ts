@@ -1,4 +1,5 @@
 import { defineStore } from "pinia";
+import { rt } from "../i18n/runtimeT";
 import {
   clearSceneUserRelation,
   getRoleInfo,
@@ -138,7 +139,7 @@ export const useRoleStore = defineStore(
       currentRoleId: "mumu",
       roles: [] as RoleOption[],
       roleInfo: {
-        name: "沐沐",
+        name: rt("app.defaultRoleName"),
         version: "",
         author: "",
         description: "",

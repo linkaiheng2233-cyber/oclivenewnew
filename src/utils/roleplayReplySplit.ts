@@ -6,6 +6,8 @@
  * - 括号短句 `（…）` 且内含 心里/内心/默默/暗想/小声/嘀咕 等 → 从对白移出，归入旁白；
  * - 其余括号（如「笑」「点头」）保留在对白中。
  */
+import { rt } from "../i18n/runtimeT";
+
 const INNER_IN_PAREN = /心里|内心|默默|暗想|小声|嘀咕/;
 const TAG_LINE = /^\s*【(?:内心|动作|场景|旁白|独白)】/;
 const PAREN_CHUNK = /（[^）]{1,500}）/g;
@@ -19,7 +21,7 @@ export interface RoleplaySplit {
 export function assistantDialogueFromSplit(raw: string, split: RoleplaySplit): string {
   const d = split.dialogue.trim();
   if (d.length > 0) return d;
-  if (split.aside.trim().length > 0) return "…";
+  if (split.aside.trim().length > 0) return rt("chat.assistReplyAsideOnly");
   return raw.trim();
 }
 

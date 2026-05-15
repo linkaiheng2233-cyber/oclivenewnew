@@ -18,4 +18,5 @@ export default {
   demoPlaceholder: "Type a message",
   demoSend: "send_message",
   demoCreateEvent: "create_event(Praise)",
+  assistReplyAsideOnly: "…",
 } as const;

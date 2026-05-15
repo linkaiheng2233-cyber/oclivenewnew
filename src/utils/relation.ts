@@ -1,3 +1,5 @@
+import { rt } from "../i18n/runtimeT";
+
 /** 与后端 `RelationState::as_str` 一致（好感度关系阶段） */
 const RELATION_ORDER = [
   "Stranger",
@@ -7,12 +9,11 @@ const RELATION_ORDER = [
   "Partner",
 ] as const;
 
-/** 升级时展示的文案（按新阶段） */
-const RELATION_UPGRADE_TEXT: Record<string, string> = {
-  Acquaintance: "关系更近了一步：你们不再陌生。",
-  Friend: "✨ 你们成为了朋友！",
-  CloseFriend: "🎉 你们已经是好朋友了！",
-  Partner: "💖 关系阶段：伴侣",
+const RELATION_UPGRADE_I18N_KEY: Record<string, string> = {
+  Acquaintance: "relation.upgradeAcquaintance",
+  Friend: "relation.upgradeFriend",
+  CloseFriend: "relation.upgradeCloseFriend",
+  Partner: "relation.upgradePartner",
 };
 
 function rankOf(state: string): number {
@@ -30,10 +31,11 @@ export function getRelationUpgradeMessage(
   const oldIndex = rankOf(oldState);
   if (newIndex < 0 || oldIndex < 0) {
     console.warn(
-      `[Relation] 未知阶段：new=${newState}, old=${oldState}`,
+      `[Relation] Unknown states: new=${newState}, old=${oldState}`,
     );
     return null;
   }
   if (newIndex <= oldIndex) return null;
-  return RELATION_UPGRADE_TEXT[newState] ?? `关系阶段更新为：${newState}`;
+  const key = RELATION_UPGRADE_I18N_KEY[newState];
+  return key ? rt(key) : rt("relation.upgradeUnknown", { state: newState });
 }
