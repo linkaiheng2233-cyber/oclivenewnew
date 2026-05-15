@@ -38,8 +38,8 @@
 
 ### A4. 插件与安全边界（P0）
 
-- [x] **高风险能力（MCP + 目录 process）**：显式授权文件、`HIGH_RISK_CAPABILITY_NOT_GRANTED`、Agent 调试面板 grant/revoke、CI 可 `OCLIVE_SKIP_HIGH_RISK_GRANTS`；**仍缺**：Remote HTTP / 广义 `network:*` 与 manifest `permissions` 校验 crate 对齐（见 [`A4_CLOSURE_SUMMARY.md`](./A4_CLOSURE_SUMMARY.md)）。
-- [ ] **权限与 manifest 完全一致性**：待目录插件 manifest 增加 `permissions` 并由 `oclive_validation` 与运行时同源校验后收口。
+- [x] **高风险能力（MCP + 目录 process + Remote network）**：显式授权文件、`HIGH_RISK_CAPABILITY_NOT_GRANTED`、Agent 调试面板 grant/revoke、CI 可 `OCLIVE_SKIP_HIGH_RISK_GRANTS`；Remote `network:*` 与 manifest `permissions` 已对齐（见 [`A4_CLOSURE_SUMMARY.md`](./A4_CLOSURE_SUMMARY.md)）。
+- [x] **权限与 manifest 完全一致性**：`permissions` 字段 + `oclive_validation::plugin_permissions` + `high_risk_grants.json` 规范键；集成测 [`permission_three_way_consistency.rs`](../src-tauri/tests/permission_three_way_consistency.rs)；文档 [PLUGIN_V1 §权限规范](../creator-docs/plugin-and-architecture/PLUGIN_V1.md)。
 
 ### A5. 版本、兼容与升级（P0）
 

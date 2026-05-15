@@ -28,6 +28,7 @@ Creator and plugin documentation lives under repo root **`creator-docs/`** (topi
 | **Sidecar example: OpenAI-compatible API** | **[../../examples/remote_plugin_openai_compat/README.md](../../examples/remote_plugin_openai_compat/README.md)** |
 | **Sidecar JSON-RPC shapes** | **[../plugin-and-architecture/REMOTE_PLUGIN_PROTOCOL.md](../plugin-and-architecture/REMOTE_PLUGIN_PROTOCOL.md)** |
 | **`plugin_backends` fields** | **[../plugin-and-architecture/PLUGIN_V1.md](../plugin-and-architecture/PLUGIN_V1.md)** |
+| **Directory plugin permissions (A4.2)** | **[PLUGIN_V1 §Permission specification](../plugin-and-architecture/PLUGIN_V1.md)** (ZH: [`creator-docs/.../PLUGIN_V1.md`](../../creator-docs/plugin-and-architecture/PLUGIN_V1.md)) |
 | **Official CLI scaffold `oclive-cli`** | **[../cli/OCLIVE_CLI_GUIDE.md](../cli/OCLIVE_CLI_GUIDE.md)** |
 | **Seven slots + presets, switching to `remote` (authoritative)** | **[../cli/SETTINGS_REFERENCE.md](../cli/SETTINGS_REFERENCE.md)** |
 | **Role pack disk layout, multi-distro alignment, `oclive pack validate`** | **[../role-pack/ROLE_PACK_SPEC.md](../role-pack/ROLE_PACK_SPEC.md)** |
