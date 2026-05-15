@@ -19,6 +19,7 @@
 - 插件清单支持声明订阅的宿主事件（`shell.bridge.events` 或 `ui_slots[].bridge.events`），避免不必要的事件广播。
 - 设置页「常规」区域增加「强制 iframe 模式」开关，开启后所有插件界面统一使用 iframe 渲染，获得最高级别沙箱隔离。
 - 开发者模式下加载 Vue 插槽组件时，对源码进行静态安全扫描（基于 acorn），检测到危险 API 时弹出警告对话框，由用户决定是否继续。
+- **产品线 A1.1（HTTP 子集）**：新增 **`scripts/e2e-core-api-restart.mjs`**（两轮「起 `--api` → `/health` → `POST /chat` → 终止进程」）；根 **`package.json`** 脚本 **`test:e2e:core-api-restart`**；CI **`oocp-test-suite`** 在 OOCP **`run.mjs`** 之后执行该脚本。
 
 ### Changed
 

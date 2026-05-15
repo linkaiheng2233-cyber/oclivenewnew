@@ -7,7 +7,7 @@ This document pins **what is tested and in which repository**, so it does not co
 | Layer | Content | Location / command |
 |-------|---------|---------------------|
 | Rust unit and integration tests | Orchestration, `--api` HTTP routes, `process_message`, etc. | `cargo test` under `src-tauri/`; integration tests in `src-tauri/tests/` |
-| OOCP-aligned HTTP black-box | Scenarios **S0–S11** (see [`OOCP_TEST_SUITE.md`](./OOCP_TEST_SUITE.md)) | `examples/oocp-test-suite/run.mjs`; CI job **`oocp-test-suite`** |
+| OOCP-aligned HTTP black-box | Scenarios **S0–S11** (see [`OOCP_TEST_SUITE.md`](./OOCP_TEST_SUITE.md)) | `examples/oocp-test-suite/run.mjs`; CI job **`oocp-test-suite`**; plus **`scripts/e2e-core-api-restart.mjs`** (process-restart smoke, A1.1 PoC) |
 | Frontend smoke | Minimal Vitest guard | `npm run test:unit` (`src/smoke.test.ts`) |
 
 ## Components and plugin shell (`oclive-pack-editor`)

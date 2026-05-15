@@ -142,6 +142,9 @@ jobs:
           export OCLIVE_OOCP_ROLE_PATH="$GITHUB_WORKSPACE/roles/mumu"
           cd "$GITHUB_WORKSPACE/examples/oocp-test-suite"
           node run.mjs
+          export OCLIVE_E2E_BINARY="$TARGET/debug/oclivenewnew-tauri"
+          export OCLIVE_E2E_PORT=9843
+          node "$GITHUB_WORKSPACE/scripts/e2e-core-api-restart.mjs"
       - name: Stop HTTP API
         if: always()
         run: |

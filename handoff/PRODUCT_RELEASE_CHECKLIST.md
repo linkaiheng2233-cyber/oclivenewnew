@@ -2,7 +2,7 @@
 
 **用途**：发版会议或维护者自检时**只过本表**；权威缺口仍以 [PRODUCT_AND_KERNEL_GAP_CHECKLIST.md](./PRODUCT_AND_KERNEL_GAP_CHECKLIST.md) **§A** 为准。详细说明与「硬骨头」排期见 [PRODUCT_LINE_TASK_BUCKETS.md](./PRODUCT_LINE_TASK_BUCKETS.md)。
 
-**下一阶段（工程）**：文档与闸门批次已就绪；**未勾的 §A 行**（尤其 **A1.1 / A1.2 / A2.2 / A2.3 / A4.2**）按 [PRODUCT_LINE_TASK_BUCKETS.md](./PRODUCT_LINE_TASK_BUCKETS.md) **§四 · 硬骨头** 拆独立 issue 推进，勿堆在本 PR 式文档变更里。
+**下一阶段（工程）**：文档与闸门批次已就绪；**未勾的 §A 行**（尤其 **A1.2 / A2.2 / A2.3 / A4.2**；**A1.1** 全桌面 / GUI 仍待扩）按 [PRODUCT_LINE_TASK_BUCKETS.md](./PRODUCT_LINE_TASK_BUCKETS.md) **§四 · 硬骨头** 拆独立 issue 推进，勿堆在本 PR 式文档变更里。
 
 **与 CI**：本表**不替代** CI。本地建议顺序：`npm run test:unit` → `npm run check:release` →（可选）与 CI 相同的 OOCP / 姊妹仓检查；详见 [CONTRIBUTING.md](../CONTRIBUTING.md)「测试要求」「CI 对齐」。
 
@@ -39,7 +39,7 @@
 
 ### A1 测试与质量
 
-- [ ] **A1.1** 核心路径自动化（装→启→聊→恢复）— 未落地前在 README「已知限制」声明依赖手工回归
+- [ ] **A1.1** 核心路径自动化（装→启→切角→发消息→恢复）— **HTTP 宿主进程重启 PoC 已 CI**：[`scripts/e2e-core-api-restart.mjs`](../scripts/e2e-core-api-restart.mjs)；**全桌面 / 安装器 / GUI** 仍 `[ ]`
 - [ ] **A1.2** `invoke` 集成矩阵 / 对照数据
 - [x] **A1.3** 本地与 CI 闸门习惯已文档化（见 CONTRIBUTING + 本表「闸门」）
 - [x] **A1.4** 回归清单通过上节链接聚合（本表）

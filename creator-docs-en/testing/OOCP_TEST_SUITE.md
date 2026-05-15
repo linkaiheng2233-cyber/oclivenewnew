@@ -1,6 +1,13 @@
 # OOCP protocol test suite (S0–S11)
 
-**Status (`main`)**: Checked in under **`examples/oocp-test-suite/`** (`run.mjs` + JSON schema); CI workflow **`.github/workflows/ci.yml`** job **`oocp-test-suite`** builds `oclivenewnew-tauri`, starts the **`--api` HTTP** service, polls **`GET /health`**, runs **`node run.mjs`** (failure fails the job).
+**Status (`main`)**: Checked in under **`examples/oocp-test-suite/`** (`run.mjs` + JSON schema); CI workflow **`.github/workflows/ci.yml`** job **`oocp-test-suite`** builds `oclivenewnew-tauri`, starts the **`--api` HTTP** service, polls **`GET /health`**, runs **`node run.mjs`**, then runs **`scripts/e2e-core-api-restart.mjs`** (restart process, chat again; failure fails the job).
+
+## A1.1 PoC: core HTTP restart smoke
+
+- **Script:** repo root **`scripts/e2e-core-api-restart.mjs`** (Node 20+ `fetch`, no extra npm deps).  
+- **Behaviour:** **start `--api` → `/health` → `POST /chat` → terminate → start again → `/health` + `POST /chat`** on the same port; both cycles must pass. Defaults to **`OCLIVE_HTTP_API_MOCK_LLM=1`** (**no Ollama**).  
+- **Local:** after `cargo build -p oclivenewnew-tauri`, from repo root **`npm run test:e2e:core-api-restart`** (or set `OCLIVE_ROLES_DIR` / `OCLIVE_E2E_PORT` / `OCLIVE_E2E_BINARY`).  
+- **Scope:** **host process** “restart and recover” for HTTP; **full desktop installer / GUI** is still future work — see [PRODUCT_LINE_TASK_BUCKETS.md](../../handoff/PRODUCT_LINE_TASK_BUCKETS.md) §四.
 
 ## How to run
 

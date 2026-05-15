@@ -143,11 +143,12 @@ npm run build
 
 **主路径快捷键（应用内）**：**Ctrl+Shift+F** 打开插件管理、**Ctrl+Shift+S** 打开设置、**Ctrl+Shift+D** 开关调试面板；完整说明见应用内 **设置** 相关文案与 `src/i18n` 中 **`shortcutHelp`**（与 [FAQ](creator-docs/FAQ.md) 一致）。
 
-**CI（`.github/workflows/ci.yml`）**：在 **Ubuntu** 与 **Windows** 上均执行 Rust **`rustfmt` + `clippy`（`-D warnings`）+ 完整 `cargo test`**（`src-tauri` 工作目录，含 `tests/` 集成测试），以及 **`npm ci` + `npm run test:unit` + `npm run build`**。在 **Ubuntu** 上另跑 **`oocp-test-suite`**（`--api` + Node `examples/oocp-test-suite/run.mjs`，场景 S0–S11；**协议层黑盒，已入库且 CI 已集成**）。另含 **`cargo-audit`（0.22.1，`continue-on-error`）** 与 **`remote-plugin-demo`**（Python 侧车 `memory.rank` 烟测）。**组件 / 插件层**自动化在 **oclive-pack-editor** 各自 workflow 中维护（见上文「测试（三层）」）。
+**CI（`.github/workflows/ci.yml`）**：在 **Ubuntu** 与 **Windows** 上均执行 Rust **`rustfmt` + `clippy`（`-D warnings`）+ 完整 `cargo test`**（`src-tauri` 工作目录，含 `tests/` 集成测试），以及 **`npm ci` + `npm run test:unit` + `npm run build`**。在 **Ubuntu** 上另跑 **`oocp-test-suite`**（`--api` + `examples/oocp-test-suite/run.mjs` **S0–S11** + 根目录 **`scripts/e2e-core-api-restart.mjs`** 进程重启烟测；**协议层黑盒，已入库且 CI 已集成**）。另含 **`cargo-audit`（0.22.1，`continue-on-error`）** 与 **`remote-plugin-demo`**（Python 侧车 `memory.rank` 烟测）。**组件 / 插件层**自动化在 **oclive-pack-editor** 各自 workflow 中维护（见上文「测试（三层）」）。
 
 | 命令 | 用途 |
 |------|------|
 | `npm run test:unit` | **Vitest**：主仓最小烟测（`src/smoke.test.ts`） |
+| `npm run test:e2e:core-api-restart` | **A1.1 PoC**：`--api` 进程 **重启后** 仍能 `/health` + `POST /chat`（需先 `cargo build -p oclivenewnew-tauri`；默认 Mock LLM） |
 | `npm run check` | 日常开发：`vite build` + `cargo fmt` / `clippy` / **`cargo test --lib`** |
 | `npm run check:release` | **发版门槛**：`vite build` + fmt / clippy + **完整 `cargo test`**（与 CI 中 Rust  job 一致） |
 | `npm run check:rust:test:all` | 仅跑全量测试（已包含在 `check:release` 中） |

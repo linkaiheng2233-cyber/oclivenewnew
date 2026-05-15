@@ -49,6 +49,7 @@ npm run build
 | Release or engine/contract changes | **`npm run check:release`** (full **`cargo test`** including `tests/`) |
 | Rust workspace only | **`cargo test --workspace`** |
 | Frontend unit only | **`npm run test:unit`** (Vitest) |
+| **Core HTTP restart smoke (A1.1 PoC)** | **`npm run test:e2e:core-api-restart`** (requires `cargo build -p oclivenewnew-tauri`; defaults to `OCLIVE_HTTP_API_MOCK_LLM=1`) |
 
 **CI alignment:** **`npm run check:release` does not run `npm run test:unit`**; CI runs **`npm run test:unit`** in the **`frontend`** job. Before a release, run **`npm run test:unit`** locally or rely on a green **Actions → frontend** run. Full release gates: [handoff/PRODUCT_RELEASE_CHECKLIST.md](handoff/PRODUCT_RELEASE_CHECKLIST.md).
 

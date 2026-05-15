@@ -28,6 +28,8 @@ cd examples/oocp-test-suite
 npm test
 ```
 
+CI 在 **`oocp-test-suite`** job 中于 **`node run.mjs`** 之后执行仓库根 **`node scripts/e2e-core-api-restart.mjs`**（**两次**「起 `--api` → `/health` → `POST /chat` → 杀进程」），验证宿主进程重启后 HTTP 表面仍可用（**A1.1** 子集；默认 Mock LLM）。本地亦可于仓库根执行 **`npm run test:e2e:core-api-restart`**（需已 `cargo build`）。
+
 可选环境变量：
 
 | 变量 | 含义 |

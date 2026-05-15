@@ -29,7 +29,8 @@
     "check": "npm run build && npm run check:rust",
     "check:release": "npm run build && npm run check:rust:fmt && npm run check:rust:clippy && npm run check:rust:test:all",
     "scaffold:ui-plugin": "node scripts/scaffold-ui-slot-plugin.mjs",
-    "test:unit": "vitest run"
+    "test:unit": "vitest run",
+    "test:e2e:core-api-restart": "node scripts/e2e-core-api-restart.mjs"
   },
   "dependencies": {
     "@sentry/vue": "^10.47.0",

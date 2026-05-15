@@ -50,6 +50,7 @@ npm run build
 | 发版或改引擎 / 契约前 | **`npm run check:release`**（含 **`cargo test`** 全量，即 **`tests/`** 集成与单元） |
 | 仅 Rust workspace | **`cargo test --workspace`**（根目录；含 `crates/*` 与 `src-tauri`） |
 | 仅前端单元 | **`npm run test:unit`**（Vitest） |
+| **核心 HTTP 重启烟测（A1.1 PoC）** | **`npm run test:e2e:core-api-restart`**（需已 `cargo build -p oclivenewnew-tauri`；默认 `OCLIVE_HTTP_API_MOCK_LLM=1`） |
 
 **CI 对齐（重要）**：**`npm run check:release` 不包含 `npm run test:unit`**；CI 在 **`frontend`** job 中单独执行 **`npm run test:unit`**。发版前建议本地补跑 **`npm run test:unit`**，或确认 **Actions → frontend** 已绿。完整发版勾选见 [handoff/PRODUCT_RELEASE_CHECKLIST.md](handoff/PRODUCT_RELEASE_CHECKLIST.md)。
 

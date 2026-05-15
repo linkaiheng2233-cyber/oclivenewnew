@@ -19,6 +19,7 @@
 - Plugin manifests can declare subscribed host events (`shell.bridge.events` or `ui_slots[].bridge.events`) to avoid unnecessary broadcasts.
 - Settings “General”: **“Force iframe mode”** — when on, all plugin UIs render in iframes for maximum sandbox isolation.
 - Dev mode: static security scan (acorn) on Vue slot source; dangerous APIs trigger a warning dialog; user chooses whether to continue.
+- **Product line A1.1 (HTTP slice):** **`scripts/e2e-core-api-restart.mjs`** (two cycles: start `--api` → `/health` → `POST /chat` → terminate); root **`npm run test:e2e:core-api-restart`**; CI **`oocp-test-suite`** runs it after OOCP **`run.mjs`**.
 
 ### Changed
 

@@ -26,7 +26,7 @@
 
 ### 测试体系（三层归属）
 
-- **协议层 → 本仓**：**OOCP HTTP 黑盒（S0–S11）** 已入库且 **CI 已集成**——场景与 CI 说明见 [`creator-docs/testing/OOCP_TEST_SUITE.md`](creator-docs/testing/OOCP_TEST_SUITE.md)；可执行脚本在 [`examples/oocp-test-suite/`](examples/oocp-test-suite/)（`node run.mjs`）。CI **`.github/workflows/ci.yml`** 的 **`oocp-test-suite`** job（Ubuntu）会 `cargo build -p oclivenewnew-tauri`、拉起 **`oclivenewnew-tauri --api`**（默认 **`OCLIVE_HTTP_API_MOCK_LLM=1`**）、轮询 **`GET /health`** 后执行 **`node run.mjs`**。另含 **`src-tauri`** 下 **`cargo test`**、`tests/` 集成测与 HTTP 路由单测等。
+- **协议层 → 本仓**：**OOCP HTTP 黑盒（S0–S11）** 已入库且 **CI 已集成**——场景与 CI 说明见 [`creator-docs/testing/OOCP_TEST_SUITE.md`](creator-docs/testing/OOCP_TEST_SUITE.md)；可执行脚本在 [`examples/oocp-test-suite/`](examples/oocp-test-suite/)（`node run.mjs`）。CI **`.github/workflows/ci.yml`** 的 **`oocp-test-suite`** job（Ubuntu）会 `cargo build -p oclivenewnew-tauri`、拉起 **`oclivenewnew-tauri --api`**（默认 **`OCLIVE_HTTP_API_MOCK_LLM=1`**）、轮询 **`GET /health`** 后执行 **`node run.mjs`**，再执行根目录 **`scripts/e2e-core-api-restart.mjs`**（**进程重启后再对话** 烟测，A1.1 PoC）。另含 **`src-tauri`** 下 **`cargo test`**、`tests/` 集成测与 HTTP 路由单测等。
 - **组件层 → oclive-pack-editor**：编写器 UI、Vitest、Playwright E2E 等（不在本仓重复维护用例树）。
 - **插件层 → oclive-pack-editor**：目录插件范式、**`official-vue-test-runner`** 等；主仓不复制该树。
 - **主仓前端最小烟测**：根目录 **`npm run test:unit`**（Vitest，`src/smoke.test.ts`），CI **`frontend`** job 已包含。
