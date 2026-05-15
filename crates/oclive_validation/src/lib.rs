@@ -12,6 +12,7 @@ pub mod disk_role_settings;
 pub mod json_keys;
 pub mod manifest;
 pub mod plugin_backends;
+pub mod plugin_permissions;
 pub mod role_pack;
 pub mod validate;
 
@@ -24,6 +25,11 @@ pub use manifest::{
     DiskRoleManifest, EvolutionConfigDisk, IdentityBinding, KnowledgePackConfigDisk,
     LifeAvailability, LifeScheduleDisk, LifeScheduleEntryDisk, LifeTrajectoryDisk,
     MemoryConfigDisk, PersonalitySource, UserRelationDisk,
+};
+pub use plugin_permissions::{
+    manifest_declares_process_spawn, validate_directory_plugin_manifest_permissions,
+    validate_permissions_list, ALLOWED as PLUGIN_PERMISSIONS_ALLOWED, MCP_HTTP, MCP_STDIO,
+    NETWORK_GRANT_REMOTE_LLM, NETWORK_GRANT_REMOTE_PLUGIN, NETWORK_WILDCARD, PROCESS_SPAWN,
 };
 pub use plugin_backends::{
     AgentBackend, DirectoryPluginSlots, EmotionBackend, EventBackend, LlmBackend, MemoryBackend,
