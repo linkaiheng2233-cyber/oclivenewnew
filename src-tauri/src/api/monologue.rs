@@ -16,10 +16,7 @@ pub async fn generate_monologue_impl(
         .await
         .map_err(|e| e.to_frontend_error())?
     {
-        return Err(AppError::InvalidParameter(
-            "Role runtime not initialized; call load_role first".to_string(),
-        )
-        .to_frontend_error());
+        return Err(AppError::RoleRuntimeNotReady.to_frontend_error());
     }
 
     let role = state

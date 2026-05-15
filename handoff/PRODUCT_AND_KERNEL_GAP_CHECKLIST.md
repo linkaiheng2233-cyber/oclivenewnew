@@ -27,9 +27,9 @@
 
 ### A2. 首装、环境与可恢复性（P0）
 
-- [ ] **首装失败路径文案（全集）**：Ollama/模型、roles 路径、权限、杀毒误拦 — 错误码 + i18n 覆盖「下一步怎么做」。**子集已做**：[`ERROR_CODES` §1.5](../creator-docs/getting-started/ERROR_CODES.md)、`apiErrors` 中 `LLM_ERROR` / `IO_ERROR` / `ROLE_NOT_FOUND`。
+- [x] **首装失败路径文案（invoke 全码表）**：`apiErrors` 与 `toFriendlyErrorMessage` 覆盖内核 `AppError`、扩展事务码、**`ROLE_RUNTIME_NOT_READY` / `STARTUP_HEALTH_FAILED`**、插件槽 **`PLUGIN_BACKENDS_DIRECTORY_SLOT`**；首装自助仍见 [`ERROR_CODES` §1.5–1.6](../creator-docs/getting-started/ERROR_CODES.md)。**HTTP `--api`** 仍为 JSON `error.code`（snake_case），与 Tauri 方括号码并存属预期。
 - [x] **可选环境自检**：设置 → 常规 →「环境自检」+ `run_environment_diagnostics`（Ollama、roles 根、app_data 可写）；失败见返回 `*Detail` 与 §1.5。
-- [x] **离线/弱网（主路径子集）**：社区插件索引同步失败回退缓存 + 用户可见 i18n（`PluginManagerPanel` / `plugin_index.rs`）；文档见 [`ERROR_CODES` §1.6](../creator-docs/getting-started/ERROR_CODES.md)。**全集**（Remote、市场站、统一网络状态条）仍分项排期。
+- [x] **离线/弱网（主路径 + 全局提示）**：社区索引失败 → 缓存 + 工作台 i18n + **`App.vue` 顶栏下全局条**（`uiStore.connectivityBanner`）；文档 [`ERROR_CODES` §1.6](../creator-docs/getting-started/ERROR_CODES.md)。**后续可增强**：Remote 插件/MCP 失败聚合、与 oclive-plugin-market 站统一「网络状态」组件。
 
 ### A3. 崩溃、遥测与隐私（P0 / P1）
 

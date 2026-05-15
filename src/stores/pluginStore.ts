@@ -24,6 +24,7 @@ import {
   type UiSlotVariantInfo,
 } from "../utils/tauri-api";
 import { useRoleStore } from "./roleStore";
+import { useUiStore } from "./uiStore";
 
 type SlotOrderMemo = {
   signature: string;
@@ -289,6 +290,15 @@ export const usePluginStore = defineStore("plugin", {
         this.pluginMarketSnapshot = await syncPluginIndexCommand(
           indexUrl ?? undefined,
         );
+        const ui = useUiStore();
+        if (
+          this.pluginMarketSnapshot?.offlineMode &&
+          this.pluginMarketSnapshot?.warning
+        ) {
+          ui.setPluginIndexOfflineBanner(this.pluginMarketSnapshot.warning);
+        } else {
+          ui.clearPluginIndexConnectivityBanner();
+        }
         await this.refresh();
       } catch (e) {
         this.pluginMarketError = e instanceof Error ? e.message : String(e);

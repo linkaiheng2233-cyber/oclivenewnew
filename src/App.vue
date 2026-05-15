@@ -160,6 +160,13 @@ const relationOptions = computed(() =>
   ),
 );
 
+const connectivityPluginIndexDetail = computed(() => {
+  const b = uiStore.connectivityBanner;
+  if (!b || b.kind !== "plugin_index_offline" || !b.detail) return "";
+  const d = b.detail;
+  return d.length > 200 ? `${d.slice(0, 200)}…` : d;
+});
+
 /** 顶栏：全部场景选项（展示名） */
 const allSceneOptions = computed(() => {
   const labels = roleStore.roleInfo.sceneLabels ?? [];
@@ -922,6 +929,26 @@ onBeforeUnmount(() => {
     </header>
 
     <div
+      v-if="uiStore.connectivityBanner?.kind === 'plugin_index_offline'"
+      class="connectivity-banner"
+      role="status"
+    >
+      <div class="connectivity-banner__inner">
+        <p class="connectivity-banner__title">{{ t("app.connectivity.pluginIndexOffline") }}</p>
+        <p v-if="connectivityPluginIndexDetail" class="connectivity-banner__detail">
+          {{ connectivityPluginIndexDetail }}
+        </p>
+        <button
+          type="button"
+          class="connectivity-banner__dismiss"
+          @click="uiStore.dismissConnectivityBanner()"
+        >
+          {{ t("app.connectivity.dismiss") }}
+        </button>
+      </div>
+    </div>
+
+    <div
       v-if="roleStore.interactionImmersive && sceneTransition.visible"
       class="scene-transition-overlay"
       role="status"
@@ -1084,6 +1111,48 @@ onBeforeUnmount(() => {
   border: 1px solid var(--border-light);
   box-shadow: var(--shadow-app), var(--frame-inset-highlight);
   overflow: hidden;
+}
+.connectivity-banner {
+  flex-shrink: 0;
+  padding: 8px 14px;
+  background: color-mix(in srgb, var(--accent, #3b82f6) 10%, var(--bg-elevated));
+  border-bottom: 1px solid var(--border-light);
+}
+.connectivity-banner__inner {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-start;
+  gap: 8px 12px;
+}
+.connectivity-banner__title {
+  margin: 0;
+  flex: 1;
+  min-width: 0;
+  font-size: 13px;
+  font-weight: 600;
+  line-height: 1.4;
+  color: var(--text-primary);
+}
+.connectivity-banner__detail {
+  margin: 0;
+  width: 100%;
+  font-size: 11px;
+  line-height: 1.35;
+  color: var(--text-secondary);
+  word-break: break-word;
+}
+.connectivity-banner__dismiss {
+  flex-shrink: 0;
+  padding: 4px 10px;
+  font-size: 12px;
+  border-radius: 6px;
+  border: 1px solid var(--border-light);
+  background: var(--bg-primary);
+  color: var(--text-primary);
+  cursor: pointer;
+}
+.connectivity-banner__dismiss:hover {
+  border-color: color-mix(in srgb, var(--accent, #3b82f6) 35%, var(--border-light));
 }
 .app-floating-slot {
   position: fixed;

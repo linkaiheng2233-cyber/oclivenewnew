@@ -207,10 +207,7 @@ pub async fn get_role_info_impl(
         .await
         .map_err(|e| e.to_frontend_error())?
     {
-        return Err(AppError::InvalidParameter(
-            "Role runtime not initialized; call load_role first".to_string(),
-        )
-        .to_frontend_error());
+        return Err(AppError::RoleRuntimeNotReady.to_frontend_error());
     }
 
     let role = state
@@ -407,10 +404,7 @@ pub async fn set_user_relation_impl(
         .await
         .map_err(|e| e.to_frontend_error())?
     {
-        return Err(AppError::InvalidParameter(
-            "Role runtime not initialized; call load_role first".to_string(),
-        )
-        .to_frontend_error());
+        return Err(AppError::RoleRuntimeNotReady.to_frontend_error());
     }
     let role = state
         .load_role_cached(&req.role_id)
@@ -498,10 +492,7 @@ pub async fn set_evolution_factor_impl(
         .await
         .map_err(|e| e.to_frontend_error())?
     {
-        return Err(AppError::InvalidParameter(
-            "Role runtime not initialized; call load_role first".to_string(),
-        )
-        .to_frontend_error());
+        return Err(AppError::RoleRuntimeNotReady.to_frontend_error());
     }
     state
         .db_manager
@@ -523,10 +514,7 @@ pub async fn clear_scene_user_relation_impl(
         .await
         .map_err(|e| e.to_frontend_error())?
     {
-        return Err(AppError::InvalidParameter(
-            "Role runtime not initialized; call load_role first".to_string(),
-        )
-        .to_frontend_error());
+        return Err(AppError::RoleRuntimeNotReady.to_frontend_error());
     }
     let role = state
         .load_role_cached(&req.role_id)
@@ -569,10 +557,7 @@ pub async fn set_scene_user_relation_impl(
         .await
         .map_err(|e| e.to_frontend_error())?
     {
-        return Err(AppError::InvalidParameter(
-            "Role runtime not initialized; call load_role first".to_string(),
-        )
-        .to_frontend_error());
+        return Err(AppError::RoleRuntimeNotReady.to_frontend_error());
     }
     let role = state
         .load_role_cached(&req.role_id)
@@ -649,10 +634,7 @@ pub async fn set_remote_life_enabled_impl(
         .await
         .map_err(|e| e.to_frontend_error())?
     {
-        return Err(AppError::InvalidParameter(
-            "Role runtime not initialized; call load_role first".to_string(),
-        )
-        .to_frontend_error());
+        return Err(AppError::RoleRuntimeNotReady.to_frontend_error());
     }
     state
         .db_manager
@@ -687,10 +669,7 @@ pub async fn set_role_interaction_mode_impl(
         .await
         .map_err(|e| e.to_frontend_error())?
     {
-        return Err(AppError::InvalidParameter(
-            "Role runtime not initialized; call load_role first".to_string(),
-        )
-        .to_frontend_error());
+        return Err(AppError::RoleRuntimeNotReady.to_frontend_error());
     }
     state
         .db_manager

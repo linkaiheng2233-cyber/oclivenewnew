@@ -49,7 +49,19 @@ export function isInvalidParameterError(err: unknown): boolean {
 export function toFriendlyErrorMessage(err: unknown): string {
   const { code, raw } = parseBackendError(err);
   if (!code) return raw;
+  if (code === "STARTUP_HEALTH_FAILED") {
+    const bracket = raw.indexOf("]");
+    let detail = bracket !== -1 ? raw.slice(bracket + 1).trim() : raw.trim();
+    detail = detail.replace(/^Startup health failed:\s*/i, "").trim();
+    if (i18n.global.te("apiErrors.STARTUP_HEALTH_FAILED")) {
+      return String(i18n.global.t("apiErrors.STARTUP_HEALTH_FAILED", { detail }));
+    }
+  }
   if (code === "INVALID_PARAMETER") {
+    if (raw.includes("plugin_backends:")) {
+      const mapped = translateApiError("PLUGIN_BACKENDS_DIRECTORY_SLOT");
+      if (mapped) return mapped;
+    }
     const bracket = raw.indexOf("]");
     if (bracket !== -1) {
       let detail = raw.slice(bracket + 1).trim();

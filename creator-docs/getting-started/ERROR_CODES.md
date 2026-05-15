@@ -39,6 +39,7 @@
 | **社区插件索引**（插件工作台 → 社区索引 →「同步在线索引」） | 在线 `plugins.json` 失败时自动读 `app_data` 下 **`plugin_index_cache.json`**，返回 `offlineMode=true` 与 `warning`（技术原因）；界面与 Toast 走 i18n 说明 | 检查网络、代理、防火墙；可设 **`OCLIVE_PLUGIN_INDEX_URL`** 指向可访问的索引镜像；联网后再次同步 |
 | **首次从未同步成功** | 缓存可能为空，列表无条目 | 至少成功同步一次，或使用「从文件夹 / zip 安装」等离线路径 |
 | **Ollama / Remote LLM** | 超时或不可达时由对话路径返回带 `[CODE]` 的错误 | 见 **§1.5** 与前端 `apiErrors` 映射 |
+| **Tauri `[CODE]` 常见补充** | 首轮对话前自检失败、未先加载角色 | `[STARTUP_HEALTH_FAILED]`：manifest / 槽位 / DB；`[ROLE_RUNTIME_NOT_READY]`：请先 `load_role` 或在 UI 选择角色；`[PLUGIN_BACKENDS_DIRECTORY_SLOT]`：directory 槽未填插件 id |
 
 GUI 侧若仍展示英文底层错误句，属于 **A3.2 / A6** 持续扫尾；发版前可先依赖上述文档自助排障。
 

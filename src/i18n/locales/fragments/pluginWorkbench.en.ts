@@ -12,7 +12,8 @@ export default {
     saved: "Plugin settings saved. Restart to fully apply disabled plugins.",
     resetLayout: "Reset to the pack’s recommended layout (author.suggested_ui first, else ui.json).",
     authorBackends: "Applied author.json suggested_plugin_backends to this session (settings.json unchanged).",
-    checkDone: "Check finished (online version API is still a stub).",
+    checkDone:
+      "Check finished (online version compare is not wired yet; use Community index or Git pull).",
     zipUpdated: "Update finished. Restart the app to apply.",
   },
   aria: { dialogStudio: "Plugin workbench (advanced mode)", tablist: "Plugin workbench sections", batchToolbar: "Batch actions" },

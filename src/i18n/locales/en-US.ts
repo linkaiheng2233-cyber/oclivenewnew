@@ -19,6 +19,10 @@ export default {
       zhCN: "中文",
       enUS: "English",
     },
+    connectivity: {
+      pluginIndexOffline: "The community plugin index could not be refreshed online; using local cache.",
+      dismiss: "Dismiss",
+    },
     theme: {
       system: "Match system",
       light: "Light",

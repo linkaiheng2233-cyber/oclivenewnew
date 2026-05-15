@@ -19,6 +19,10 @@ export default {
       zhCN: "中文",
       enUS: "English",
     },
+    connectivity: {
+      pluginIndexOffline: "社区插件索引当前无法联网更新，已使用本地缓存。",
+      dismiss: "关闭提示",
+    },
     theme: {
       system: "跟随系统",
       light: "浅色",

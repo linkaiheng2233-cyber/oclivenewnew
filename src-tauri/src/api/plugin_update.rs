@@ -41,7 +41,7 @@ pub fn check_plugin_updates(
             PluginUpdateInfo {
                 has_update: false,
                 latest_version: None,
-                message: Some("Online plugin version check is not wired yet.".to_string()),
+                message: None,
             },
         );
     }

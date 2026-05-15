@@ -22,10 +22,7 @@ pub async fn ensure_once(state: &AppState, role: &Role, effective: &PluginBacken
         let g = state.startup_health.lock();
         match &*g {
             Some(Err(msg)) => {
-                return Err(AppError::InvalidParameter(format!(
-                    "startup_health: {}",
-                    msg
-                )));
+                return Err(AppError::StartupHealthFailed(msg.clone()));
             }
             Some(Ok(())) => return Ok(()),
             None => {}
@@ -34,12 +31,7 @@ pub async fn ensure_once(state: &AppState, role: &Role, effective: &PluginBacken
     let outcome = run_checks(state, role, effective).await;
     let mut g = state.startup_health.lock();
     if g.is_none() {
-        *g = Some(
-            outcome
-                .as_ref()
-                .map(|_| ())
-                .map_err(|e| e.to_frontend_error()),
-        );
+        *g = Some(outcome.as_ref().map(|_| ()).map_err(|e| e.to_string()));
     }
     outcome
 }

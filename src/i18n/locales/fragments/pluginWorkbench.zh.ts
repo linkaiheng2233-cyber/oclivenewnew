@@ -12,7 +12,7 @@ export default {
     saved: "已保存插件配置；停用插件建议重启应用后完全生效。",
     resetLayout: "已重置为当前角色包推荐布局（author.suggested_ui 优先，否则 ui.json）。",
     authorBackends: "已应用 author.json 中的 suggested_plugin_backends（会话级，未改 settings.json）。",
-    checkDone: "检查完成（在线版本接口预留中）。",
+    checkDone: "检查完成（在线版本比对尚未接入；可用「社区索引」或 Git 拉取更新）。",
     zipUpdated: "更新完成，请重启应用生效。",
   },
   aria: { dialogStudio: "插件工作台（专业模式）", tablist: "插件工作台分区", batchToolbar: "批量操作" },

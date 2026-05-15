@@ -12,6 +12,12 @@ export default {
   TXN_FAVORABILITY_READ_FAILED: "Failed to read favorability.",
   TXN_COMMIT_FAILED: "Transaction commit failed. Try again.",
   TXN_ROLLBACK_FAILED: "Transaction rollback failed. Contact support.",
+  TXN_MEMORY_ID_FETCH_FAILED: "Could not read memory row id after insert. Retry or check DB logs.",
+  TXN_EVENT_ID_FETCH_FAILED: "Could not read event row id after insert. Retry or check DB logs.",
+  TXN_IDENTITY_ENSURE_FAILED: "Identity/relation bootstrap failed. Retry.",
+  TXN_IDENTITY_FAVOR_UPDATE_FAILED: "Identity favorability link update failed. Retry.",
+  TXN_RUNTIME_MIRROR_FAILED: "Runtime mirror sync failed. Retry.",
+  TXN_MEMORY_FIFO_TRIM_FAILED: "Short-term memory FIFO trim failed. Retry.",
   DB_ERROR: "Database error. Try again.",
   IO_ERROR:
     "Local file I/O failed. Check: (1) app data dir is writable (Settings → General → Environment check); (2) antivirus/permissions; (3) do not put data on read-only media. See CONFIGURATION_FILES.md.",
@@ -21,14 +27,21 @@ export default {
   API_PERMISSION_DENIED: "Insufficient plugin permissions. Declare required permissions in manifest.json.",
   API_INVALID_MANIFEST: "Invalid plugin manifest. Check manifest.json.",
   LLM_ERROR:
-    "Model call failed. Check: (1) Ollama is installed and running; (2) `ollama list` shows the model and run `ollama pull` if needed; (3) `OLLAMA_MODEL` / pack model name matches; (4) `OLLAMA_BASE_URL` points to the right port (default http://localhost:11434). Settings → General → Environment check runs a quick probe.",
+    "Model call failed. Check: (1) If `OCLIVE_LLM_BACKEND=ollama` (default): Ollama is running, `ollama list` / `ollama pull` matches `OLLAMA_MODEL`, and `OLLAMA_BASE_URL` is correct; (2) If **remote**: `OCLIVE_REMOTE_LLM_URL` is reachable, timeouts (`OCLIVE_REMOTE_LLM_TIMEOUT_MS`) are reasonable, and upstream is healthy. Settings → General → Environment check probes local Ollama.",
   ROLE_NOT_FOUND: "Role not found. Verify role_id and your `OCLIVE_ROLES_DIR` layout.",
   ROLE_NOT_FOUND_DETAIL: "Role not found or manifest missing. {detail}",
+  ROLE_RUNTIME_NOT_READY:
+    "Role runtime is not initialized yet (call load_role / pick the role in the UI first).",
+  STARTUP_HEALTH_FAILED:
+    "Startup health checks failed: {detail}. Verify manifest.json, plugin backend slots, DB writable; or set `OCLIVE_SKIP_STARTUP_HEALTH=1` temporarily for troubleshooting only.",
+  PLUGIN_BACKENDS_DIRECTORY_SLOT:
+    "Plugin backend configuration is incomplete: when a slot uses a directory backend, `directory_plugins` must list a non-empty plugin id for that slot. Use Plugins & backends → Backends or edit pack settings.",
   ROLE_PACK_EXISTS: "This role id already exists. Choose overwrite to replace the local copy.",
   INVALID_PARAMETER: "Invalid parameter. Check your input.",
   INVALID_PARAMETER_DETAIL: "Invalid parameter: {detail}",
   OLLAMA_TIMEOUT: "The model took too long. Try again.",
   TXN_ROLLBACK: "Operation failed. Try again.",
   SERDE_ERROR: "Data parse error. Try again.",
-  UNKNOWN_ERROR: "Unknown error. Try again.",
+  UNKNOWN_ERROR:
+    "Unknown error. Retry; if it looks network- or service-related, check proxy/firewall and env vars (see ERROR_CODES §1.6). If it persists, capture `oclive_chat` / `oclive_plugin` log snippets.",
 } as Record<string, string>;

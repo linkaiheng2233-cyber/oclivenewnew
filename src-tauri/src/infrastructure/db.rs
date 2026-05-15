@@ -1206,9 +1206,7 @@ impl DbManager {
         .map_err(|e| AppError::DatabaseError(e.to_string()))?
         .rows_affected();
         if n == 0 {
-            return Err(AppError::InvalidParameter(
-                "role_runtime row missing; call ensure_role_runtime first".to_string(),
-            ));
+            return Err(AppError::RoleRuntimeNotReady);
         }
         Ok(())
     }
@@ -1252,9 +1250,7 @@ impl DbManager {
         .map_err(|e| AppError::DatabaseError(e.to_string()))?
         .rows_affected();
         if n == 0 {
-            return Err(AppError::InvalidParameter(
-                "role_runtime row missing; call load_role first".to_string(),
-            ));
+            return Err(AppError::RoleRuntimeNotReady);
         }
         Ok(())
     }
@@ -1287,9 +1283,7 @@ impl DbManager {
         .map_err(|e| AppError::DatabaseError(e.to_string()))?
         .rows_affected();
         if n == 0 {
-            return Err(AppError::InvalidParameter(
-                "role_runtime row missing; call load_role first".to_string(),
-            ));
+            return Err(AppError::RoleRuntimeNotReady);
         }
         Ok(())
     }
@@ -1319,9 +1313,7 @@ impl DbManager {
         .map_err(|e| AppError::DatabaseError(e.to_string()))?
         .rows_affected();
         if n == 0 {
-            return Err(AppError::InvalidParameter(
-                "role_runtime row missing; call load_role first".to_string(),
-            ));
+            return Err(AppError::RoleRuntimeNotReady);
         }
         Ok(())
     }
@@ -1406,9 +1398,7 @@ impl DbManager {
         .map_err(|e| AppError::DatabaseError(e.to_string()))?
         .rows_affected();
         if n == 0 {
-            return Err(AppError::InvalidParameter(
-                "role_runtime row missing; call load_role first".to_string(),
-            ));
+            return Err(AppError::RoleRuntimeNotReady);
         }
         Ok(())
     }
