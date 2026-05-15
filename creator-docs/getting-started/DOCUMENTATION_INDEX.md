@@ -22,6 +22,7 @@
 | **纯终端用户：安装到日常对话（用户手册）** | **[USER_MANUAL.md](USER_MANUAL.md)**（[English](../../creator-docs-en/getting-started/USER_MANUAL.md)） |
 | **角色包创作者：从零到发布（学习路径）** | **[../role-pack/CREATOR_LEARNING_PATH.md](../role-pack/CREATOR_LEARNING_PATH.md)**（[English](../../creator-docs-en/role-pack/CREATOR_LEARNING_PATH.md)） |
 | **插件作者：目录 / Remote / 市场（学习路径）** | **[../plugin-and-architecture/PLUGIN_AUTHOR_LEARNING_PATH.md](../plugin-and-architecture/PLUGIN_AUTHOR_LEARNING_PATH.md)**（[English](../../creator-docs-en/plugin-and-architecture/PLUGIN_AUTHOR_LEARNING_PATH.md)） |
+| **内核 / 硬件集成方：脚手架到设备（学习路径）** | **[KERNEL_INTEGRATOR_LEARNING_PATH.md](KERNEL_INTEGRATOR_LEARNING_PATH.md)**（[English](../../creator-docs-en/getting-started/KERNEL_INTEGRATOR_LEARNING_PATH.md)） |
 | **项目现状（版本、交付面、变更日志入口，短快照）** | **[PROJECT_CURRENT_STATUS.md](PROJECT_CURRENT_STATUS.md)** |
 | **对齐进度与目标（一页：摘要 + 按用途分类的文档地图）** | **[PROJECT_STATUS_AND_ALIGNMENT.md](PROJECT_STATUS_AND_ALIGNMENT.md)** |
 | **产品首发门槛 + 内核/平台缺口（与 K 计划、愿景互参）** | **[../../handoff/PRODUCT_AND_KERNEL_GAP_CHECKLIST.md](../../handoff/PRODUCT_AND_KERNEL_GAP_CHECKLIST.md)** · 按复杂度排期 **[../../handoff/PRODUCT_LINE_TASK_BUCKETS.md](../../handoff/PRODUCT_LINE_TASK_BUCKETS.md)**（**§四 · 硬骨头** 为下一工程焦点）· 发版勾选 **[../../handoff/PRODUCT_RELEASE_CHECKLIST.md](../../handoff/PRODUCT_RELEASE_CHECKLIST.md)** |

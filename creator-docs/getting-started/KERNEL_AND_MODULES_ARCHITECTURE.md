@@ -1,5 +1,7 @@
 # 以内核为中心的模块架构（总览图）
 
+**内核集成方学习路径**：[KERNEL_INTEGRATOR_LEARNING_PATH.md](KERNEL_INTEGRATOR_LEARNING_PATH.md)
+
 本文用 **一张「内核居中、模块环绕」的示意图** 对齐当前主仓能力；细节仍以 **[PLUGIN_V1.md](../plugin-and-architecture/PLUGIN_V1.md)**（六槽契约）、**[EXTENSION_POINTS.md](../plugin-and-architecture/EXTENSION_POINTS.md)**（trait 与路径）、**[RFC_OCLIVE_MONOLITH_MODE.md](../rfc/RFC_OCLIVE_MONOLITH_MODE.md)**（编译期 Monolith）为准。
 
 ---
