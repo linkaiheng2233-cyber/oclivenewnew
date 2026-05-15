@@ -224,7 +224,7 @@ async function onPackCurrentPlugin(): Promise<void> {
         t("pluginManager.v1Backend.packDefaultSuggestOn")
       }}</span>
     </div>
-    <div class="backend-grid">
+    <form class="backend-grid" @submit.prevent>
       <div v-for="item in pluginBackendRows" :key="item.key" class="row backend-row">
         <label :for="`pb-backend-${item.key}`">{{ item.label }}</label>
         <select
@@ -277,7 +277,7 @@ async function onPackCurrentPlugin(): Promise<void> {
         <span v-if="packStatus" class="debug-copy-status">{{ packStatus }}</span>
       </div>
       <pre v-if="pluginDebugSnapshot" class="backend-debug">{{ pluginDebugSnapshot }}</pre>
-    </div>
+    </form>
   </div>
   <AgentDebugPanel />
 </template>

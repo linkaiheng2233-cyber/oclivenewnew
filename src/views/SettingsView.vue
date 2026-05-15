@@ -143,6 +143,7 @@ async function onToggleForceIframe(e: Event) {
       aria-modal="true"
       :aria-label="t('settings.ariaDialog')"
       @click.self="emit('close')"
+      @keydown.escape.stop="emit('close')"
     >
       <div
         ref="settingsDialogRef"
@@ -175,7 +176,7 @@ async function onToggleForceIframe(e: Event) {
           </button>
         </nav>
 
-        <div v-show="tab === 'general'" class="sv-body">
+        <form v-show="tab === 'general'" class="sv-body" @submit.prevent>
           <p class="sv-lead" v-html="t('settings.generalLeadHtml')" />
           <section class="sv-section">
             <div class="sv-row-h">
@@ -333,9 +334,9 @@ async function onToggleForceIframe(e: Event) {
               </span>
             </label>
           </section>
-        </div>
+        </form>
 
-        <div v-show="tab === 'plugins'" class="sv-body">
+        <form v-show="tab === 'plugins'" class="sv-body" @submit.prevent>
           <section class="sv-section">
             <div class="sv-row-h">
               <h3 class="sv-h3">{{ t("settings.pluginsPanelTitle") }}</h3>
@@ -347,7 +348,7 @@ async function onToggleForceIframe(e: Event) {
           </section>
 
           <HotkeySettingsSection />
-        </div>
+        </form>
       </div>
     </div>
   </Teleport>
