@@ -353,52 +353,52 @@ pub fn read_plugin_asset_text(
         return Err(ApiError::InvalidParameter {
             message: "plugin_id required".into(),
         }
-        .to_string());
+        .into());
     }
     let rel = normalize_plugin_rel(rel.trim());
     if rel.is_empty() {
         return Err(ApiError::InvalidParameter {
             message: "rel required".into(),
         }
-        .to_string());
+        .into());
     }
     if rel.split('/').any(|p| p == "..") {
         return Err(ApiError::InvalidParameter {
             message: "invalid rel path".into(),
         }
-        .to_string());
+        .into());
     }
     let roots = state.directory_plugins.plugin_roots.read();
     let root = roots.get(pid).ok_or_else(|| {
         ApiError::PluginNotFound {
             plugin_id: pid.to_string(),
         }
-        .to_string()
+        .to_kernel_json()
     })?;
     let path = root.join(&rel);
     let root_canon = root.canonicalize().map_err(|e| {
         ApiError::Io {
             message: format!("plugin root: {}", e),
         }
-        .to_string()
+        .to_kernel_json()
     })?;
     let path_canon = path.canonicalize().map_err(|e| {
         ApiError::Io {
             message: format!("read_plugin_asset_text: {}", e),
         }
-        .to_string()
+        .to_kernel_json()
     })?;
     if !path_canon.starts_with(&root_canon) {
         return Err(ApiError::PermissionDenied {
             message: "path escapes plugin directory".into(),
         }
-        .to_string());
+        .into());
     }
     std::fs::read_to_string(&path_canon).map_err(|e| {
         ApiError::Io {
             message: e.to_string(),
         }
-        .to_string()
+        .to_kernel_json()
     })
 }
 /// # Errors
@@ -451,7 +451,7 @@ pub fn directory_plugin_invoke(
         return Err(ApiError::InvalidParameter {
             message: "plugin_id required".into(),
         }
-        .to_string());
+        .into());
     }
     let url = state
         .directory_plugins
@@ -608,7 +608,7 @@ pub fn get_directory_plugin_catalog_impl(
         ApiError::Io {
             message: e.to_string(),
         }
-        .to_string()
+        .to_kernel_json()
     })?;
     {
         let lock = PLUGIN_CATALOG_CACHE.lock();
@@ -729,7 +729,7 @@ pub fn reset_plugin_state_to_role_default(
     let role = app
         .storage
         .load_role(role_id.trim())
-        .map_err(|e| e.to_string())?;
+        .map_err(|e| e.to_frontend_error())?;
     let ui = role.plugin_state_ui_baseline();
     app.directory_plugins
         .reset_role_plugin_state_from_ui(role_id.trim(), ui)

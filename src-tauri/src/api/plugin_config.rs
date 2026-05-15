@@ -42,14 +42,14 @@ fn plugin_root(state: &AppState, plugin_id: &str) -> Result<PathBuf, String> {
         return Err(ApiError::InvalidParameter {
             message: "plugin_id required".into(),
         }
-        .to_string());
+        .into());
     }
     let roots = state.directory_plugins.plugin_roots.read();
     roots.get(pid).cloned().ok_or_else(|| {
         ApiError::PluginNotFound {
             plugin_id: pid.to_string(),
         }
-        .to_string()
+        .into()
     })
 }
 /// # Errors
@@ -101,14 +101,14 @@ pub fn set_plugin_settings_config(
         return Err(ApiError::InvalidParameter {
             message: "plugin_id required".into(),
         }
-        .to_string());
+        .into());
     }
     let _root = plugin_root(&state, pid)?;
     if !config.is_object() {
         return Err(ApiError::InvalidParameter {
             message: "config must be a JSON object".into(),
         }
-        .to_string());
+        .into());
     }
     write_config_json(&state, pid, &config)?;
     if let Ok(url) = state.directory_plugins.ensure_rpc_url(pid) {

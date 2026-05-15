@@ -2,7 +2,7 @@
 
 **用途**：发版会议或维护者自检时**只过本表**；权威缺口仍以 [PRODUCT_AND_KERNEL_GAP_CHECKLIST.md](./PRODUCT_AND_KERNEL_GAP_CHECKLIST.md) **§A** 为准。详细说明与「硬骨头」排期见 [PRODUCT_LINE_TASK_BUCKETS.md](./PRODUCT_LINE_TASK_BUCKETS.md)。
 
-**下一阶段（工程）**：**A1**（测试与质量闸门可 CI 子集）已收口：**A1.1a** HTTP、**A1.1b** Web 预览 Playwright、**A1.2** 九条 `invoke` 热路径；**未勾主项**以 **A2.2 / A2.3 / A4.2**、**原生安装包 GUI E2E** 等为主，按 [PRODUCT_LINE_TASK_BUCKETS.md](./PRODUCT_LINE_TASK_BUCKETS.md) **§四** 拆独立 issue。
+**下一阶段（工程）**：**A1** 可 CI 子集已收口；**A3**（崩溃与诊断 / 用户可见错误 JSON 与 i18n）已按 `handoff/A3_CLOSURE_SUMMARY.md` 落实；未勾主项以 **A1.1c**、**A4.2**、**原生安装包 GUI E2E** 等为主，按 [PRODUCT_LINE_TASK_BUCKETS.md](./PRODUCT_LINE_TASK_BUCKETS.md) **§四** 拆独立 issue。
 
 **与 CI**：本表**不替代** CI。本地建议顺序：`npm run test:unit` → `npm run build && npm run test:e2e:preview`（与 CI `frontend` 对齐）→ `npm run check:release` →（可选）与 CI 相同的 OOCP / 姊妹仓检查；详见 [CONTRIBUTING.md](../CONTRIBUTING.md)「测试要求」「CI 对齐」。
 
@@ -54,8 +54,8 @@
 
 ### A3 崩溃与诊断
 
-- [ ] **A3.1** Sentry 等（若启用：默认、隐私、可关闭与 README 一致）
-- [ ] **A3.2** 用户可见错误走 `[CODE]` + 前端映射（持续扫尾）
+- [x] **A3.1** Sentry 等（若启用：默认、隐私、可关闭与 README 一致）— 见 [`A3_CLOSURE_SUMMARY.md`](./A3_CLOSURE_SUMMARY.md)
+- [x] **A3.2** 用户可见错误走 **`KernelErrorBody` JSON `code`** + 前端 **`apiErrors`** 映射（含 `ApiError` 与 `UNKNOWN_WITH_CODE` 兜底；`[CODE]` 仅 legacy）— 同上
 
 ### A4 插件与安全
 

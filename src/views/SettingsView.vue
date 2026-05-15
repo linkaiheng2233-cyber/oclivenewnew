@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { ref } from "vue";
 import { useI18n } from "vue-i18n";
+import * as Sentry from "@sentry/vue";
 import HelpHint from "../components/HelpHint.vue";
 import HotkeySettingsSection from "../components/HotkeySettingsSection.vue";
 import PluginSettingsPanelSlots from "../components/PluginSettingsPanelSlots.vue";
@@ -12,6 +13,7 @@ import {
   runEnvironmentDiagnostics,
   type EnvironmentDiagnostics,
 } from "../utils/tauri-api";
+import { isSentryOptOut, setSentryOptOut } from "../utils/telemetrySentry";
 
 defineProps<{
   visible: boolean;
@@ -27,6 +29,22 @@ const { t } = useI18n();
 const pluginStore = usePluginStore();
 const uiStore = useUiStore();
 const { showToast } = useAppToast();
+
+const hasSentryDsn =
+  typeof import.meta.env.VITE_SENTRY_DSN === "string" && import.meta.env.VITE_SENTRY_DSN.length > 0;
+const sentryOptOut = ref(isSentryOptOut());
+
+function onSentryOptOutChange(e: Event) {
+  const optOut = (e.target as HTMLInputElement).checked;
+  setSentryOptOut(optOut);
+  sentryOptOut.value = optOut;
+  if (optOut) {
+    void Sentry.close(2000);
+    showToast("info", t("settings.sentryDisabledToast"));
+  } else {
+    showToast("info", t("settings.sentryReenableRestartToast"));
+  }
+}
 
 type SettingsTab = "general" | "plugins";
 
@@ -177,6 +195,19 @@ async function onToggleForceIframe(e: Event) {
                 <code class="sv-code">{{ envDiag.appDataDir }}</code>
               </p>
             </div>
+          </section>
+          <section v-if="hasSentryDsn" class="sv-section">
+            <div class="sv-row-h">
+              <span class="sv-label">{{ t("settings.sentrySectionTitle") }}</span>
+              <HelpHint :text="t('settings.sentryOptOutHelp')" />
+            </div>
+            <p class="sv-muted">{{ t("settings.sentrySectionLead") }}</p>
+            <label class="sv-toggle-row">
+              <input type="checkbox" :checked="sentryOptOut" @change="onSentryOptOutChange" />
+              <span class="sv-toggle-text">
+                <strong>{{ t("settings.sentryOptOutLabel") }}</strong>
+              </span>
+            </label>
           </section>
           <section class="sv-section">
             <div class="sv-row-h">

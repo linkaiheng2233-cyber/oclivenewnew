@@ -393,6 +393,14 @@ export default {
     envCheckAppDataOk: "writable",
     envCheckAppDataFail: "not writable",
     envCheckDetail: "Detail:",
+    sentrySectionTitle: "Crash diagnostics (Sentry)",
+    sentrySectionLead:
+      "Shown only when this build ships with a DSN. Reports uncaught Vue errors (not chat text); Rust still relies mainly on local logs.",
+    sentryOptOutLabel: "Disable crash reporting",
+    sentryOptOutHelp:
+      "When checked, the Sentry client is closed immediately; preference is stored in localStorage (key oclive.telemetry.sentryOptOut). Uncheck and restart the app to re-enable reporting.",
+    sentryDisabledToast: "Crash reporting disabled.",
+    sentryReenableRestartToast: "Opt-out cleared; restart the app to resume reporting.",
     experimentalLabel: "Experimental",
     experimentalSectionHelp:
       "Preview entry for the new plugin manager (V2). If this build has no V2, the existing advanced mode is used.",

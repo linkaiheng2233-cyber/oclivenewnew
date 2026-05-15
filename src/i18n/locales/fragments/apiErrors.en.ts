@@ -47,4 +47,5 @@ export default {
   SERDE_ERROR: "Data parse error. Try again.",
   UNKNOWN_ERROR:
     "Unknown error. Retry; if it looks network- or service-related, check proxy/firewall and env vars (see ERROR_CODES §1.6). If it persists, capture `oclive_chat` / `oclive_plugin` log snippets.",
+  UNKNOWN_WITH_CODE: "Something went wrong ({code}). Retry or check logs; restart the app if the UI stays broken.",
 } as Record<string, string>;

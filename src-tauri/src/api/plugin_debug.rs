@@ -34,7 +34,7 @@ pub fn kill_plugin_process(plugin_id: String, state: State<'_, AppState>) -> Res
         return Err(ApiError::InvalidParameter {
             message: "plugin_id required".into(),
         }
-        .to_string());
+        .into());
     }
     state.directory_plugins.clear_plugin_process(id);
     Ok(())
@@ -63,7 +63,7 @@ pub fn clear_plugin_logs(plugin_id: String, state: State<'_, AppState>) -> Resul
         return Err(ApiError::InvalidParameter {
             message: "plugin_id required".into(),
         }
-        .to_string());
+        .into());
     }
     state.directory_plugins.clear_plugin_log_buffer(id);
     Ok(())
@@ -90,14 +90,14 @@ pub fn test_plugin_method(
         return Err(ApiError::InvalidParameter {
             message: "plugin_id required".into(),
         }
-        .to_string());
+        .into());
     }
     let method = req.method.trim();
     if method.is_empty() {
         return Err(ApiError::InvalidParameter {
             message: "method required".into(),
         }
-        .to_string());
+        .into());
     }
     let url = state
         .directory_plugins
@@ -118,7 +118,7 @@ pub fn discover_plugin_methods(
         return Err(ApiError::InvalidParameter {
             message: "plugin_id required".into(),
         }
-        .to_string());
+        .into());
     }
     let root = {
         let roots = state.directory_plugins.plugin_roots.read();
@@ -126,7 +126,7 @@ pub fn discover_plugin_methods(
             ApiError::PluginNotFound {
                 plugin_id: pid.to_string(),
             }
-            .to_string()
+            .to_kernel_json()
         })?
     };
     let manifest = OclivePluginManifest::load_from_dir(&root)?;

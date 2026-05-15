@@ -7,6 +7,7 @@
 - **形态**：仅使用 **`SCREAMING_SNAKE_CASE`**（大写 ASCII + 下划线）。
 - **来源**：
   - 绝大多数错误对应 [`AppError`](../../crates/oclive_kernel_runtime/src/error.rs) 变体，**`code` 必须与 `AppError::code()` 返回值一致**（如 `ROLE_NOT_FOUND`、`LLM_ERROR`、`TXN_*`）。
+  - **目录插件宿主 `ApiError`**（`src-tauri/src/api/error.rs`）：与 `KernelErrorBody` **同形 JSON 单行**（`code` 仍为 `SCREAMING_SNAKE_CASE`，如 **`API_PLUGIN_NOT_FOUND`**）。
   - **HTTP `POST /chat` 路由边界**（请求校验、`spawn_blocking` panic 等）无单独 `AppError` 变体时，使用 crate 内常量模块 **`http_chat_codes`**（与实现同仓，避免字面量漂移）：
     - `EMPTY_MESSAGE`
     - `INVALID_ROLE_PATH`

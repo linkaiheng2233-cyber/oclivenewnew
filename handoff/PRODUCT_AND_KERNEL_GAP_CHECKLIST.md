@@ -27,14 +27,14 @@
 
 ### A2. 首装、环境与可恢复性（P0）
 
-- [x] **首装失败路径文案（invoke 全码表）**：`apiErrors` 与 `toFriendlyErrorMessage` 覆盖内核 `AppError`、扩展事务码、**`ROLE_RUNTIME_NOT_READY` / `STARTUP_HEALTH_FAILED`**、插件槽 **`PLUGIN_BACKENDS_DIRECTORY_SLOT`**；首装自助仍见 [`ERROR_CODES` §1.5–1.6](../creator-docs/getting-started/ERROR_CODES.md)。**HTTP `--api`** 仍为 JSON `error.code`（snake_case），与 Tauri 方括号码并存属预期。
+- [x] **首装失败路径文案（invoke 全码表）**：`apiErrors` 与 `toFriendlyErrorMessage` 覆盖内核 `AppError`、扩展事务码、**`ROLE_RUNTIME_NOT_READY` / `STARTUP_HEALTH_FAILED`**、插件槽 **`PLUGIN_BACKENDS_DIRECTORY_SLOT`**；首装自助仍见 [`ERROR_CODES` §1.5–1.6](../creator-docs/getting-started/ERROR_CODES.md)。**HTTP `--api`** 与 Tauri 失败载荷均为 **`KernelErrorBody` JSON**（`SCREAMING_SNAKE_CASE` `code`），见 [`KERNEL_ERROR_CODE_CONVENTION.md`](../creator-docs/getting-started/KERNEL_ERROR_CODE_CONVENTION.md)。
 - [x] **可选环境自检**：设置 → 常规 →「环境自检」+ `run_environment_diagnostics`（Ollama、roles 根、app_data 可写）；失败见返回 `*Detail` 与 §1.5。
 - [x] **离线/弱网（主路径 + 全局提示）**：社区索引失败 → 缓存 + 工作台 i18n + **`App.vue` 顶栏下全局条**（`uiStore.connectivityBanner`）；文档 [`ERROR_CODES` §1.6](../creator-docs/getting-started/ERROR_CODES.md)。**后续可增强**：Remote 插件/MCP 失败聚合、与 oclive-plugin-market 站统一「网络状态」组件。
 
 ### A3. 崩溃、遥测与隐私（P0 / P1）
 
-- [ ] **崩溃与诊断**：Sentry 或等价方案若启用 — 默认开关、隐私说明、脱敏规则、用户可关闭（与根 README 叙述一致）。
-- [ ] **日志与 `[CODE]`**：用户可见错误已走 code + 前端映射的继续扫尾；避免 Rust 直出整句中文给 UI。
+- [x] **崩溃与诊断**：Sentry — 构建期 DSN、**设置页可退出**（`localStorage` **`oclive.telemetry.sentryOptOut`**）、`sendDefaultPii: false`、URL query 脱敏；与根 **README / README.en** 一致。结项说明见 [`A3_CLOSURE_SUMMARY.md`](./A3_CLOSURE_SUMMARY.md)。
+- [x] **日志与用户可见错误**：`invoke` / 目录插件 **`ApiError`** 与内核同源 **JSON `code`**；前端 **`apiErrors`** + **`UNKNOWN_WITH_CODE`** 兜底；避免 UI 主路径依赖 `[CODE]`。
 
 ### A4. 插件与安全边界（P0）
 

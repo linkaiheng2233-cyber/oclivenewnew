@@ -388,6 +388,14 @@ export default {
     envCheckAppDataOk: "可写",
     envCheckAppDataFail: "不可写",
     envCheckDetail: "详情：",
+    sentrySectionTitle: "崩溃诊断（Sentry）",
+    sentrySectionLead:
+      "仅当本发行构建已注入 DSN 时显示本区。会上报 Vue 侧未捕获异常（不含聊天正文）；Rust 侧仍主要依赖本机日志。",
+    sentryOptOutLabel: "禁用崩溃上报",
+    sentryOptOutHelp:
+      "勾选后立即尝试关闭 Sentry 客户端；偏好保存在本机 localStorage（键 oclive.telemetry.sentryOptOut）。取消勾选后需重启应用才会重新初始化上报。",
+    sentryDisabledToast: "已禁用崩溃上报。",
+    sentryReenableRestartToast: "已取消禁用；请重启应用后才会恢复上报。",
     experimentalLabel: "实验性功能",
     experimentalSectionHelp:
       "灰度入口：用于预览新版插件管理界面（V2）。若当前构建未集成 V2，会继续使用现有专业模式。",

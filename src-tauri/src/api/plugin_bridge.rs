@@ -59,7 +59,7 @@ fn bridge_invalid(msg: impl Into<String>) -> String {
     ApiError::InvalidParameter {
         message: msg.into(),
     }
-    .to_string()
+    .into()
 }
 
 #[inline]
@@ -67,7 +67,7 @@ fn bridge_bad_json(ctx: &str, e: serde_json::Error) -> String {
     ApiError::InvalidParameter {
         message: format!("{}: {}", ctx, e),
     }
-    .to_string()
+    .into()
 }
 
 #[inline]
@@ -75,7 +75,7 @@ fn bridge_serialize_host(ctx: &str, e: serde_json::Error) -> String {
     ApiError::Io {
         message: format!("host json {}: {}", ctx, e),
     }
-    .to_string()
+    .into()
 }
 
 fn invoke_list_allows(invoke: &[String], cmd: &str) -> bool {
@@ -118,14 +118,14 @@ fn validate_shell_ocliveplugin(
                 message: "this command requires manifest \"type\": \"ocliveplugin\" and shell.bridge.invoke permission"
                     .into(),
             }
-            .to_string(),
+            .into(),
         );
     }
     let Some(sh) = &manifest.shell else {
         return Err(ApiError::PermissionDenied {
             message: "this command is only allowed for shell plugins".into(),
         }
-        .to_string());
+        .into());
     };
     let rel = normalize_plugin_rel(asset_rel);
     let from_entry = rel == normalize_plugin_rel(&sh.entry);
@@ -143,7 +143,7 @@ fn validate_shell_ocliveplugin(
                 "this command must be invoked from shell.entry or shell.vueEntry (not ui_slots)"
                     .into(),
         }
-        .to_string());
+        .into());
     }
     Ok(())
 }
@@ -159,16 +159,16 @@ fn validate_bridge(
         ApiError::PluginNotFound {
             plugin_id: plugin_id.to_string(),
         }
-        .to_string()
+        .to_kernel_json()
     })?;
     let manifest = OclivePluginManifest::load_from_dir(root)
-        .map_err(|e| ApiError::InvalidManifest { message: e }.to_string())?;
+        .map_err(|e| ApiError::InvalidManifest { message: e }.to_kernel_json())?;
     let rel = normalize_plugin_rel(asset_rel);
     let Some(b) = manifest.bridge_for_asset_rel(&rel) else {
         return Err(ApiError::PermissionDenied {
             message: "asset has no bridge config".into(),
         }
-        .to_string());
+        .into());
     };
     if !invoke_list_allows(&b.invoke, command) {
         let tok = required_permission_token(command);
@@ -179,7 +179,7 @@ fn validate_bridge(
                 tok.as_str()
             ),
         }
-        .to_string());
+        .into());
     }
     if requires_typed_shell(command) {
         validate_shell_ocliveplugin(&manifest, &rel)?;
@@ -496,7 +496,7 @@ async fn dispatch_bridge_command(
         _ => Err(ApiError::InvalidParameter {
             message: format!("unsupported bridge command: {}", command),
         }
-        .to_string()),
+        .into()),
     }
 }
 /// # Errors
@@ -514,7 +514,7 @@ pub async fn plugin_bridge_invoke(
         return Err(ApiError::InvalidParameter {
             message: "plugin_id, asset_rel, command required".into(),
         }
-        .to_string());
+        .into());
     }
     validate_bridge(&state, pid, &asset, cmd)?;
     dispatch_bridge_command(&state, cmd, req.params).await

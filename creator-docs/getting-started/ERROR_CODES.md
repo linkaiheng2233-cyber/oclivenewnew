@@ -50,7 +50,7 @@
 | **Ollama / Remote LLM** | 超时或不可达时由对话路径返回 **`KernelErrorBody` JSON**（如 `LLM_ERROR`）；极旧日志可能仍为 `[CODE]` 前缀 | 见 **§1.5** 与前端 `apiErrors` 映射 |
 | **Tauri 常见补充（JSON；旧版见 `[CODE]` 回退）** | 首轮对话前自检失败、未先加载角色 | `STARTUP_HEALTH_FAILED`：manifest / 槽位 / DB；`ROLE_RUNTIME_NOT_READY`：请先 `load_role` 或在 UI 选择角色；directory 槽等相关码见 `apiErrors` |
 
-GUI 侧若仍展示英文底层错误句，属于 **A3.2 / A6** 持续扫尾；发版前可先依赖上述文档自助排障。
+GUI 侧若仍展示英文底层错误句，属于 **A6** 等持续扫尾；未单独映射的机器码会走 **`apiErrors.UNKNOWN_WITH_CODE`**。发版前可先依赖上述文档自助排障。
 
 ---
 

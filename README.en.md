@@ -35,6 +35,13 @@ Contributor notes: **[AGENTS.md](AGENTS.md)**.
 - **Remote / directory plugins / MCP** may require outbound network or subprocesses per manifest + host prompts — [DIRECTORY_PLUGINS.md](creator-docs/plugin-and-architecture/DIRECTORY_PLUGINS.md).  
 - **Product P0 gates** are tracked in [handoff/PRODUCT_RELEASE_CHECKLIST.md](handoff/PRODUCT_RELEASE_CHECKLIST.md) and [handoff/PRODUCT_AND_KERNEL_GAP_CHECKLIST.md](handoff/PRODUCT_AND_KERNEL_GAP_CHECKLIST.md).
 
+## Observability (Sentry)
+
+- **Opt-in at build time:** set **`VITE_SENTRY_DSN`** during the frontend build to ship a DSN; otherwise nothing is sent.
+- **Vue only:** uncaught Vue errors may be reported; **Rust errors stay local** by default.
+- **Privacy defaults:** `sendDefaultPii: false`, query strings stripped from captured request URLs.
+- **User opt-out:** when a DSN is present, **Settings → General** offers **Disable crash reporting**; preference is stored under **`localStorage`** key **`oclive.telemetry.sentryOptOut`** (`1` = opted out). Uncheck and **restart the app** to resume reporting.
+
 ## Models, plugins, and data (three quick questions)
 
 1. **Third-party models / APIs:** default **local Ollama**; cloud or sidecars are **user-configured** — [SIDECAR_LLM_USER_GUIDE.md](creator-docs/getting-started/SIDECAR_LLM_USER_GUIDE.md), [LICENSE_POLICY.md](creator-docs/LICENSE_POLICY.md).  

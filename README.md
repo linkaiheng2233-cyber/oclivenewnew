@@ -175,7 +175,7 @@ cargo check --lib
 
 ## 可观测性与发布
 
-- **Sentry**：仅当构建时设置环境变量 **`VITE_SENTRY_DSN`** 时，前端会初始化 `@sentry/vue`，上报 **Vue 侧未捕获异常**；**Rust 后端错误默认不上报 Sentry**（以本地/系统日志为准）。未配置 DSN 时无任何上报。
+- **Sentry**：仅当构建时设置环境变量 **`VITE_SENTRY_DSN`** 时，前端**可能**初始化 `@sentry/vue`，上报 **Vue 侧未捕获异常**（`sendDefaultPii: false`，请求 URL 去掉 query）；**Rust 后端错误默认不上报 Sentry**（以本地/系统日志为准）。未配置 DSN 时无任何上报。若构建已带 DSN，用户可在 **设置 → 常规** 勾选 **「禁用崩溃上报」**，将偏好写入本机 **`localStorage`**（键 **`oclive.telemetry.sentryOptOut`**，`1` 表示退出）；取消勾选后需**重启应用**才会重新初始化上报。
 - **在线更新**：当前 **未配置** Tauri 内置更新端点；对外分发以 **离线安装包**（`tauri build` 产物）为准。若日后启用更新器，需另行配置签名与更新源并在发行说明中写明。
 - **版本与协作**：发版前请统一 **`package.json` / `src-tauri/Cargo.toml` / `tauri.conf.json` 版本号**，并更新 **`CHANGELOG.md`** 与 **`CHANGELOG.en.md`**（用户可见变更保持中英同步）；使用 Git 便于回滚与对照 CI。
 

@@ -52,7 +52,7 @@ Example:
 | **Ollama / Remote LLM** | Chat path returns **`KernelErrorBody` JSON** (e.g. `LLM_ERROR`); very old logs may still show `[CODE]` prefixes | See **§1.5** and frontend `apiErrors` mapping |
 | **Extra Tauri hints (JSON; legacy `[CODE]` fallback)** | First-chat startup checks or missing runtime row | `STARTUP_HEALTH_FAILED`: manifest, slots, DB; `ROLE_RUNTIME_NOT_READY`: call `load_role` / pick the role in UI; directory-slot codes in `apiErrors` |
 
-If the GUI still shows raw English backend strings, track under **A3.2 / A6** cleanup; self-serve with the table above first.
+If the GUI still shows raw English backend strings, track under **A6** cleanup; unknown machine codes fall back to **`apiErrors.UNKNOWN_WITH_CODE`**. Self-serve with the table above first.
 
 ---
 

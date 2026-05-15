@@ -7,6 +7,7 @@
 - **Shape**: **`SCREAMING_SNAKE_CASE`** only (uppercase ASCII + underscores).
 - **Origin**:
   - Most errors map to [`AppError`](../../crates/oclive_kernel_runtime/src/error.rs); **`code` must equal `AppError::code()`** (e.g. `ROLE_NOT_FOUND`, `LLM_ERROR`, `TXN_*`).
+  - **Host directory-plugin `ApiError`** (`src-tauri/src/api/error.rs`): same **one-line `KernelErrorBody` JSON** (`code` stays `SCREAMING_SNAKE_CASE`, e.g. **`API_PLUGIN_NOT_FOUND`**).
   - **HTTP `POST /chat` boundary** (request checks, `spawn_blocking` panic, etc.) uses the in-crate constant module **`http_chat_codes`** (no duplicate string literals):
     - `EMPTY_MESSAGE`
     - `INVALID_ROLE_PATH`

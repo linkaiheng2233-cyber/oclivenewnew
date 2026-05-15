@@ -47,4 +47,5 @@ export default {
   SERDE_ERROR: "数据解析失败，请稍后重试。",
   UNKNOWN_ERROR:
     "发生未知错误。请重试；若与网络或外部服务相关，检查代理/防火墙及环境变量（见 ERROR_CODES §1.6）；仍失败请导出 `oclive_chat` / `oclive_plugin` 日志片段。",
+  UNKNOWN_WITH_CODE: "发生错误（{code}）。请重试或查看日志；若界面持续异常可尝试重启应用。",
 } as Record<string, string>;

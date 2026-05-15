@@ -136,7 +136,12 @@ export function toFriendlyErrorMessage(err: unknown): string {
     const mapped = translateApiError("IO_ERROR_HOST_JSON");
     if (mapped) return mapped;
   }
-  return translateApiError(code) ?? raw;
+  const mapped = translateApiError(code);
+  if (mapped) return mapped;
+  if (i18n.global.te("apiErrors.UNKNOWN_WITH_CODE")) {
+    return String(i18n.global.t("apiErrors.UNKNOWN_WITH_CODE", { code }));
+  }
+  return raw;
 }
 
 export function toFriendlyError(err: unknown): FriendlyError {
