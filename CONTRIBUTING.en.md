@@ -71,9 +71,13 @@ npm run build
 
 ## Breaking changes
 
-1. **Open an issue** (or RFC for large surface) describing migration impact on role packs, `plugin_backends`, HTTP `/chat`, or Tauri DTOs.  
-2. **PR must include:** updates to **`crates/oclive_validation`** (if manifest/settings keys change), **`creator-docs/`** / **`creator-docs-en/`** mirrors when applicable, and **`CHANGELOG.md` + `CHANGELOG.en.md`** entries.  
-3. **Reviewer:** at least one maintainer checks CI + [PRODUCT_RELEASE_CHECKLIST.md](handoff/PRODUCT_RELEASE_CHECKLIST.md) P0 rows touched by the change.
+**Full process, compatibility expectations, and PR/migration templates:** read **[`handoff/BREAKING_CHANGE_PROCESS.md`](handoff/BREAKING_CHANGE_PROCESS.md)** (engineering discipline §C2; aligned with [`PRODUCT_AND_KERNEL_GAP_CHECKLIST.md`](handoff/PRODUCT_AND_KERNEL_GAP_CHECKLIST.md)).
+
+Summary:
+
+1. **Open an issue** (or RFC for large surface) describing migration impact on role packs, `plugin_backends`, HTTP OOCP / `invoke` DTOs; label the PR **BREAKING**.  
+2. **PR must include:** updates to **`crates/oclive_validation`** (if manifest/settings keys change), **`PLUGIN_V1.md` / `ERROR_CODES.md` / `COMPATIBILITY.md`** as applicable, **`creator-docs/`** / **`creator-docs-en/`** mirrors, and **`CHANGELOG.md` + `CHANGELOG.en.md`** entries.  
+3. **Review:** at least one maintainer confirms **compatibility shims + migration path**, CI, and [PRODUCT_RELEASE_CHECKLIST.md](handoff/PRODUCT_RELEASE_CHECKLIST.md) P0 rows touched.
 
 ## Documentation
 

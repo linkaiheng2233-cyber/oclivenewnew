@@ -72,9 +72,13 @@ npm run build
 
 ## 破坏性变更（Breaking changes）
 
-1. **先开 issue**（或对大面变更开 RFC），说明对角色包、`plugin_backends`、`/chat` 或 Tauri DTO 的迁移影响。  
-2. **PR 须带**：`crates/oclive_validation` 更新（若 manifest / `settings` 键变更）、相应 **`creator-docs/`** / **`creator-docs-en/`** 文档，以及 **`CHANGELOG.md` / `CHANGELOG.en.md`** 双语条目。  
-3. **审阅者**：至少一名维护者确认 CI + 触及的 [PRODUCT_RELEASE_CHECKLIST.md](handoff/PRODUCT_RELEASE_CHECKLIST.md) P0 行。
+**完整流程、兼容层要求、PR/迁移模板**：必读 **[`handoff/BREAKING_CHANGE_PROCESS.md`](handoff/BREAKING_CHANGE_PROCESS.md)**（§C2 工程纪律；与 [`PRODUCT_AND_KERNEL_GAP_CHECKLIST.md`](handoff/PRODUCT_AND_KERNEL_GAP_CHECKLIST.md) 对齐）。
+
+摘要：
+
+1. **先开 issue**（或对大面变更开 RFC），说明对角色包、`plugin_backends`、HTTP OOCP / `invoke` DTO 的迁移影响；PR 描述中显式标注 **BREAKING**。  
+2. **PR 须带**：`crates/oclive_validation` 更新（若 manifest / `settings` 键变更）、**`PLUGIN_V1.md` / `ERROR_CODES.md` / `COMPATIBILITY.md`** 等触及项、**`creator-docs/`** / **`creator-docs-en/`** 镜像，以及 **`CHANGELOG.md` / `CHANGELOG.en.md`** 双语条目。  
+3. **审阅**：至少一名维护者确认 **兼容层与迁移路径**、CI 与 [PRODUCT_RELEASE_CHECKLIST.md](handoff/PRODUCT_RELEASE_CHECKLIST.md) P0 行。
 
 ## 文档约定
 
