@@ -14,8 +14,8 @@
 |------|------------------|
 | **回合编排** | `src-tauri/src/domain/chat_engine/` · `process_message` |
 | **槽位解析** | `PluginHost::resolve_for_role` · `plugin_backends` |
-| **契约与持久化形状** | `models/dto.rs` · `migrations/001_init.sql` · `oclive_validation` |
-| **无头入口（过渡）** | `http_api` · `oclivenewnew-tauri --api` |
+| **契约与持久化形状** | `oclive_kernel_runtime`（DTO / 纯 domain）· `migrations/001_init.sql` · `oclive_validation` |
+| **无头入口（过渡）** | `http_api` · **`oclive-kernel-server`** · **`oclivenewnew-tauri --api`** |
 
 ```text
 用户/设备边界          →  Vue / 硬件驱动 / 侧车进程（不在「内核」内）
@@ -50,7 +50,7 @@
 
 **机器人场景**：设备上通常只换「灵魂包」与少量 `settings`，不换编排内核版本（在 `min_runtime_version` 兼容前提下）。
 
-工作名 **RobotSoulPack**（最小灵魂包）将在 K3 阶段与 `pack validate` 可选 profile 对齐；当前以完整角色包规范为准。
+工作名 **RobotSoulPack**（最小灵魂包）已与 **`oclive pack validate --profile robot-soul`** 对齐；字段与示例见 [ROLE_PACK_SPEC.md](../role-pack/ROLE_PACK_SPEC.md)、[examples/robot-soul-minimal](../../examples/robot-soul-minimal/README.md)。
 
 ---
 
@@ -72,8 +72,8 @@
 | 形态 | 用途 | Monolith | 说明 |
 |------|------|----------|------|
 | **桌面宿主** | 玩家 / 创作者 | 可选（独立工程） | Tauri + Vue + 同一 domain |
-| **无头 `kernel_server`** | 网关、机器人中控进程 | **支持** `monolith.toml` 焊接 | `oclive-cli init` → 见 [OCLIVE_CLI_GUIDE.md](../cli/OCLIVE_CLI_GUIDE.md) |
-| **嵌入式 `library`** | 进程内嵌、自有 `main` | **不适用** Monolith | 静态链接 runtime lib（K2/K4 接榫） |
+| **无头 HTTP** | 网关、机器人中控、CI 联调 | **Monolith 仅** `oclive-cli` 生成的 **kernel_server** 工程可选 | 主仓 **`oclive-kernel-server`** 与 **`oclivenewnew-tauri --api`** 等价（`http_api`）；默认端口 **8420**（`OCLIVE_API_PORT`） |
+| **嵌入式 `library`** | 进程内嵌、自有 `main` | **不适用** Monolith | 链接 **`crates/oclive_kernel_runtime`**；`oclive-cli init --project-type library --kernel-source`；编排仍在 **`oclivenewnew-tauri`**（见 [KERNEL_PLATFORM_DEVELOPER_PATH.md](KERNEL_PLATFORM_DEVELOPER_PATH.md) §5） |
 | **HTTP `--api`** | 联调、CI、编写器试聊 | N/A | 当前主仓过渡方案，见 [headless-kernel-minimal](../../examples/headless-kernel-minimal/README.md) |
 
 **可拆可焊**：开发期槽位可替换（松耦合）；量产可选 Monolith 将选定 builtin 焊进单一二进制（紧耦合）。二者与 `settings.json` **正交**。
@@ -100,6 +100,7 @@
 ## 7. 相关链接
 
 - 实施计划：[KERNEL_IMPLEMENTATION_PLAN.md](KERNEL_IMPLEMENTATION_PLAN.md)
+- 平台开发者单线：[KERNEL_PLATFORM_DEVELOPER_PATH.md](KERNEL_PLATFORM_DEVELOPER_PATH.md)
 - 差距清单：[PRODUCT_AND_KERNEL_GAP_CHECKLIST.md](../../handoff/PRODUCT_AND_KERNEL_GAP_CHECKLIST.md) §B
 - 校企玩偶交付：与主仓并列的 **oclive doll core** 目录（settings 模板、硬件插件示例、打包说明）；契约以本仓为准。
 - Monolith RFC：[RFC_OCLIVE_MONOLITH_MODE.md](../rfc/RFC_OCLIVE_MONOLITH_MODE.md)

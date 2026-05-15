@@ -6,7 +6,8 @@
 ## 模式：已接入 oclivenewnew（`--kernel-source`）
 
 - **`Cargo.toml`** 已写入 `oclivenewnew-tauri` / `oclive_kernel_runtime` 的 path 依赖。
-- **`cargo run`** 启动与 **`oclive-kernel-server`** 相同的无头 HTTP API（默认端口见 `OCLIVE_API_PORT` / `8420`）。
+{{#if kernel_server_http_entry}}
+- **`cargo run`** 启动与 **`oclive-kernel-server`** 相同的无头 HTTP API（默认端口见 `OCLIVE_API_PORT` / **8420**）。
 - 设置 **`OCLIVE_HTTP_API_MOCK_LLM=1`** 可在无本机 LLM 时联调；OOCP 黑盒见主仓 `examples/oocp-test-suite`。
 
 ```bash
@@ -15,7 +16,10 @@ cargo build
 $env:OCLIVE_HTTP_API_MOCK_LLM = "1"
 cargo run -- --port 8420
 ```
-
+{{/if}}
+{{#if library_kernel_demo}}
+- **library 形态**：本 crate 为可嵌入库；完整对话编排仍在 **`oclivenewnew-tauri`**。请阅读主仓 **[KERNEL_PLATFORM_DEVELOPER_PATH.md](https://github.com/linkaiheng2233-cyber/oclivenewnew/blob/main/creator-docs/getting-started/KERNEL_PLATFORM_DEVELOPER_PATH.md)** §5；无头 HTTP 请用主仓 **`cargo run -p oclive_kernel_server -- --api`** 或 **`oclivenewnew-tauri --api`**。
+{{/if}}
 {{else}}
 ## 模式：占位脚手架（serde stub）
 
@@ -31,7 +35,11 @@ cargo run -- --port 8420
 
 {{#if plugin_kernel_server}}
 {{#if kernel_linked}}
-- **kernel_server**：当前工程已接 HTTP 入口；亦可直接使用主仓 `cargo run -p oclive_kernel_server`。
+{{#if kernel_server_http_entry}}
+- **kernel_server**：当前工程 **`cargo run`** 即无头 HTTP；亦可直接用主仓 **`cargo run -p oclive_kernel_server`**。
+{{else}}
+- **kernel_server**：本工程为 **library**；无头 HTTP 请用主仓 **`oclive_kernel_server`** / **`oclivenewnew-tauri --api`**（见上文 KERNEL_PLATFORM_DEVELOPER_PATH）。
+{{/if}}
 {{else}}
 - **kernel_server**：使用 `oclive init --kernel-source <oclivenewnew根>` 或手动添加 path 依赖。
 {{/if}}

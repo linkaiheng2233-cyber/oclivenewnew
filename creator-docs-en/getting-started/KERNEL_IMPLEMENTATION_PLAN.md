@@ -118,17 +118,17 @@ cd examples/oocp-test-suite && node run.mjs
 | `kernel_server` | ✅ | Gateway, standalone process, robot brain |
 | `library` | ❌ | In-process embed; link `oclive_kernel_runtime` |
 
-- [ ] Keep [PURE_KERNEL_BOUNDARY.md](PURE_KERNEL_BOUNDARY.md) §5 aligned with code
-- [ ] `library` sample calling runtime API (after K2)
-- [ ] Cross-link **oclive doll core** README
+- [x] Keep [PURE_KERNEL_BOUNDARY.md](PURE_KERNEL_BOUNDARY.md) §5 aligned with code
+- [x] `oclive-cli init --project-type library --kernel-source` embed sample (`runtime_api_version` / optional `resolve_api_port` in generated `lib.rs`)
+- [x] Cross-link **oclive doll core** README
 
 ---
 
 ## K5 — Single platform developer path
 
-- [ ] Write [KERNEL_PLATFORM_DEVELOPER_PATH.md](KERNEL_PLATFORM_DEVELOPER_PATH.md) (zh/en)
-- [ ] One line: `oclive-cli init` → pack → directory plugin/sidecar → validate → `--api` or server → deploy
-- [ ] Default LLM sim: `examples/remote_plugin_openai_compat`
+- [x] Write [KERNEL_PLATFORM_DEVELOPER_PATH.md](KERNEL_PLATFORM_DEVELOPER_PATH.md) (zh/en)
+- [x] One line: `oclive-cli init` → pack → directory plugin/sidecar → validate → `--api` or server → deploy
+- [x] Default LLM sim: `examples/remote_plugin_openai_compat`
 - [ ] OTA / remote logs: **P2**, not blocking K1–K4
 
 ---
@@ -149,6 +149,6 @@ cd examples/oocp-test-suite && node run.mjs
 ## Suggested next actions
 
 1. Run K1 acceptance locally  
-2. Open issue: **K2.1 crate split scope review**  
-3. Draft K3 RobotSoulPack fields  
-4. Link doll core README to `PURE_KERNEL_BOUNDARY` and this plan  
+2. ~~K2.1 crate split review~~ (core split landed)  
+3. ~~K3 RobotSoulPack~~ (done)  
+4. Doll core README ↔ **KERNEL_PLATFORM_DEVELOPER_PATH** (see doll core `README.md`)

@@ -119,17 +119,17 @@ cd examples/oocp-test-suite && node run.mjs
 | `kernel_server` | ✅ | 网关、独立进程、机器人中控 |
 | `library` | ❌ | 进程内嵌；链接 `oclive_kernel_runtime`，自有 `main` |
 
-- [ ] [PURE_KERNEL_BOUNDARY.md](PURE_KERNEL_BOUNDARY.md) §5 与实现一致
-- [ ] `oclive-cli init --project-type library` 示例调用 runtime API（K2 完成后）
-- [ ] 与 **oclive doll core** README 互链
+- [x] [PURE_KERNEL_BOUNDARY.md](PURE_KERNEL_BOUNDARY.md) §5 与实现一致
+- [x] `oclive-cli init --project-type library --kernel-source` 示例调用 `oclive_kernel_runtime` API（`lib.rs` 模板含 `runtime_api_version` / 可选 `resolve_api_port` 演示）
+- [x] 与 **oclive doll core** README 互链
 
 ---
 
 ## K5 — 平台开发者一条路径
 
-- [ ] 撰写 [KERNEL_PLATFORM_DEVELOPER_PATH.md](KERNEL_PLATFORM_DEVELOPER_PATH.md)（中英）
-- [ ] 单线：`oclive-cli init` → 角色包 → 目录插件/侧车 → validate → `--api` 或 server bin → 部署
-- [ ] 默认 LLM 仿真：`examples/remote_plugin_openai_compat`
+- [x] 撰写 [KERNEL_PLATFORM_DEVELOPER_PATH.md](KERNEL_PLATFORM_DEVELOPER_PATH.md)（中英）
+- [x] 单线：`oclive-cli init` → 角色包 → 目录插件/侧车 → validate → `--api` 或 server bin → 部署
+- [x] 默认 LLM 仿真：`examples/remote_plugin_openai_compat`
 - [ ] OTA / 远程日志：**P2**，不阻塞 K1–K4
 
 ---
@@ -150,6 +150,6 @@ cd examples/oocp-test-suite && node run.mjs
 ## 近期动作（建议顺序）
 
 1. 本地跑通 K1 验收命令  
-2. 开 issue：**K2.1 crate 拆分范围评审**（列出不迁 Tauri 的模块清单）  
-3. 启动 K3 文档草案（RobotSoulPack 字段）  
-4. doll core README 增加指向 `PURE_KERNEL_BOUNDARY` 与本计划的链接  
+2. ~~开 issue：K2.1 crate 拆分范围评审~~（K2 已落地核心拆分）  
+3. ~~K3 RobotSoulPack~~（已完成）  
+4. doll core README 与主仓 **KERNEL_PLATFORM_DEVELOPER_PATH** 互链（见 doll core `README.md`）

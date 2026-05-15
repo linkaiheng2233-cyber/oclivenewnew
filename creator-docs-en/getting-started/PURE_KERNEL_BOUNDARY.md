@@ -14,8 +14,8 @@ The **pure kernel** is the runtime layer that is **independent of UI**, **indepe
 |----------------|---------------------|
 | **Turn orchestration** | `src-tauri/src/domain/chat_engine/` · `process_message` |
 | **Slot resolution** | `PluginHost::resolve_for_role` · `plugin_backends` |
-| **Contracts & persistence shape** | `models/dto.rs` · `migrations/001_init.sql` · `oclive_validation` |
-| **Headless entry (transition)** | `http_api` · `oclivenewnew-tauri --api` |
+| **Contracts & persistence shape** | `oclive_kernel_runtime` (DTOs / pure domain) · `migrations/001_init.sql` · `oclive_validation` |
+| **Headless entry (transition)** | `http_api` · **`oclive-kernel-server`** · **`oclivenewnew-tauri --api`** |
 
 ```text
 User/device boundary   →  Vue / hardware drivers / sidecar processes (not “kernel”)
@@ -50,7 +50,7 @@ Externally: **soul = versioned data + configurable slot policy**, loaded at runt
 
 **Robot scenario**: swap soul pack and light `settings` tweaks without changing kernel version (within `min_runtime_version`).
 
-Working name **RobotSoulPack** will align with `pack validate` profile in phase K3; until then use full role pack spec.
+Working name **RobotSoulPack** is aligned with **`oclive pack validate --profile robot-soul`**; fields and sample: [ROLE_PACK_SPEC.md](../role-pack/ROLE_PACK_SPEC.md), [examples/robot-soul-minimal](../../examples/robot-soul-minimal/README.md).
 
 ---
 
@@ -72,8 +72,8 @@ The kernel guarantees **call order and DTOs**; quality comes from slots and pack
 | Shape | Use | Monolith | Notes |
 |-------|-----|----------|-------|
 | **Desktop host** | Players / creators | Optional (separate project) | Tauri + Vue + same domain |
-| **Headless `kernel_server`** | Gateway, robot brain process | **Supported** | `oclive-cli init` — [OCLIVE_CLI_GUIDE.md](../cli/OCLIVE_CLI_GUIDE.md) |
-| **Embedded `library`** | In-process embed | **Not supported** | Static-link runtime lib (K2/K4) |
+| **Headless HTTP** | Gateway, robot brain, CI | **Monolith only** for **kernel_server** projects from `oclive-cli` | Workspace **`oclive-kernel-server`** and **`oclivenewnew-tauri --api`** are equivalent (`http_api`); default port **8420** (`OCLIVE_API_PORT`) |
+| **Embedded `library`** | In-process embed | **Not supported** | Link **`crates/oclive_kernel_runtime`**; `oclive-cli init --project-type library --kernel-source`; full orchestration stays in **`oclivenewnew-tauri`** ([KERNEL_PLATFORM_DEVELOPER_PATH.md](KERNEL_PLATFORM_DEVELOPER_PATH.md) §5) |
 | **HTTP `--api`** | Dev, CI, editor try-chat | N/A | Transition — [headless-kernel-minimal](../../examples/headless-kernel-minimal/README.md) |
 
 **Detachable or welded**: dev-time swappable slots; production optional Monolith weld into one binary—orthogonal to `settings.json`.
@@ -100,6 +100,7 @@ The kernel guarantees **call order and DTOs**; quality comes from slots and pack
 ## 7. Related links
 
 - Implementation plan: [KERNEL_IMPLEMENTATION_PLAN.md](KERNEL_IMPLEMENTATION_PLAN.md)
+- Platform developer path: [KERNEL_PLATFORM_DEVELOPER_PATH.md](KERNEL_PLATFORM_DEVELOPER_PATH.md)
 - Gap checklist: [PRODUCT_AND_KERNEL_GAP_CHECKLIST.md](../../handoff/PRODUCT_AND_KERNEL_GAP_CHECKLIST.md) §B
 - Doll / hardware delivery pack: **oclive doll core** sibling directory (settings templates, hardware examples); contracts authoritative in this repo.
 - Monolith RFC: [RFC_OCLIVE_MONOLITH_MODE.md](../rfc/RFC_OCLIVE_MONOLITH_MODE.md)

@@ -58,10 +58,14 @@ fn template_context(cfg: &ProjectConfig, out: &Path) -> serde_json::Value {
     if let Some(ref root) = cfg.kernel_source {
         let path_tauri = relativize_path(out, &root.join("src-tauri"));
         let path_runtime = relativize_path(out, &root.join("crates/oclive_kernel_runtime"));
+        let lib_demo = cfg.project_type == ProjectType::Library;
+        let http_entry = cfg.project_type == ProjectType::KernelServer;
         if let Some(obj) = ctx.as_object_mut() {
             obj.insert("kernel_linked".into(), json!(true));
             obj.insert("path_tauri".into(), json!(path_tauri));
             obj.insert("path_runtime".into(), json!(path_runtime));
+            obj.insert("library_kernel_demo".into(), json!(lib_demo));
+            obj.insert("kernel_server_http_entry".into(), json!(http_entry));
         }
     }
     ctx

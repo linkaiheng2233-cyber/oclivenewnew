@@ -7,6 +7,13 @@ pub use oclive_kernel_runtime as runtime;
 pub fn runtime_api_version() -> &'static str {
     oclive_kernel_runtime::RUNTIME_API_VERSION
 }
+{{#if library_kernel_demo}}
+/// 演示：纯 runtime 入口（无 Tauri、无 HTTP）；完整编排见 `oclivenewnew-tauri`。
+#[must_use]
+pub fn demo_resolve_api_port(cli_port: Option<u16>) -> u16 {
+    oclive_kernel_runtime::resolve_api_port(cli_port)
+}
+{{/if}}
 {{else}}
 /// 返回脚手架包名（占位 API）。
 pub fn oclive_stub_id() -> &'static str {
