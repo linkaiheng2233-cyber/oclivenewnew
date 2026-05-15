@@ -10,6 +10,7 @@
 
 | 我想… | 阅读 |
 |------|------|
+| **四仓双语基线（CJK 扫描、vue-i18n 挂载）** | **[../../handoff/I18N_FOUR_REPO_BASELINE.md](../../handoff/I18N_FOUR_REPO_BASELINE.md)** |
 | **用启动器安装 zip 角色包、选本机 Ollama 模型、一键 pull** | **[oclive-launcher README](https://github.com/linkaiheng2233-cyber/oclive-launcher/blob/main/README.md)**（独立仓库） |
 | **高耦合编译模式（Monolith）** | [RFC 章节](#rfc)（`monolith.toml`、编译期焊接） |
 | **理清项目全貌 / 人机分工 / 命令与发版清单** | **[PROJECT_OVERVIEW.md](PROJECT_OVERVIEW.md)** |

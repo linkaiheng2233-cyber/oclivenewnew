@@ -10,6 +10,7 @@ Creator and plugin documentation lives under repo root **`creator-docs/`** (topi
 
 | I want to… | Read |
 |------------|------|
+| **Four-repo i18n baseline (CJK scan, vue-i18n wiring)** | **[../../handoff/I18N_FOUR_REPO_BASELINE.md](../../handoff/I18N_FOUR_REPO_BASELINE.md)** |
 | **Install zip packs via launcher, pick local Ollama, one-click pull** | **[oclive-launcher README](https://github.com/linkaiheng2233-cyber/oclive-launcher/blob/main/README.md)** (separate repo) |
 | **High-coupling compile mode (Monolith)** | [RFC section](#rfc) (`monolith.toml`, compile-time welding) |
 | **Project map / human roles / commands / release checklist** | **[PROJECT_OVERVIEW.md](PROJECT_OVERVIEW.md)** |
