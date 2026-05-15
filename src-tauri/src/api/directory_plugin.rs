@@ -595,14 +595,16 @@ fn build_directory_plugin_catalog(state: &AppState) -> Vec<DirectoryPluginCatalo
     out.sort_by(|a, b| a.id.cmp(&b.id));
     out
 }
+
+/// 与 [`get_directory_plugin_catalog`] 同逻辑，供集成测不经 `State` 包装直接调用。
+///
 /// # Errors
 ///
 /// Returns [`Err`] with a human-readable message when the operation fails.
-#[tauri::command]
-pub fn get_directory_plugin_catalog(
-    state: State<'_, AppState>,
+pub fn get_directory_plugin_catalog_impl(
+    state: &AppState,
 ) -> Result<Vec<DirectoryPluginCatalogEntry>, String> {
-    let fp = plugin_catalog_fingerprint(&state).map_err(|e| {
+    let fp = plugin_catalog_fingerprint(state).map_err(|e| {
         ApiError::Io {
             message: e.to_string(),
         }
@@ -616,13 +618,23 @@ pub fn get_directory_plugin_catalog(
             }
         }
     }
-    let out = build_directory_plugin_catalog(&state);
+    let out = build_directory_plugin_catalog(state);
     *PLUGIN_CATALOG_CACHE.lock() = Some(PluginCatalogCacheValue {
         fingerprint: fp,
         stored_at: Instant::now(),
         entries: out.clone(),
     });
     Ok(out)
+}
+
+/// # Errors
+///
+/// Returns [`Err`] with a human-readable message when the operation fails.
+#[tauri::command]
+pub fn get_directory_plugin_catalog(
+    state: State<'_, AppState>,
+) -> Result<Vec<DirectoryPluginCatalogEntry>, String> {
+    get_directory_plugin_catalog_impl(&state)
 }
 
 #[derive(Debug, Clone, serde::Serialize, serde::Deserialize)]
@@ -660,6 +672,20 @@ pub struct PluginStateGetResponse {
     /// 全局默认（插件管理「全局默认」）；与 `role` 合并后驱动实际嵌入与整壳。
     pub global_defaults: RolePluginStateDto,
 }
+
+/// 与 [`get_plugin_state`] 同逻辑，供集成测不经 `State` 包装直接调用。
+pub fn get_plugin_state_impl(
+    role_id: &str,
+    state: &AppState,
+) -> Result<PluginStateGetResponse, String> {
+    let rt = &state.directory_plugins;
+    let rid = role_id.trim();
+    Ok(PluginStateGetResponse {
+        role: rt.role_plugin_state_stored_for(rid).into(),
+        global_defaults: rt.global_plugin_state().into(),
+    })
+}
+
 /// # Errors
 ///
 /// Returns [`Err`] with a human-readable message when the operation fails.
@@ -668,12 +694,7 @@ pub fn get_plugin_state(
     role_id: String,
     state: State<'_, AppState>,
 ) -> Result<PluginStateGetResponse, String> {
-    let rt = &state.directory_plugins;
-    let rid = role_id.trim();
-    Ok(PluginStateGetResponse {
-        role: rt.role_plugin_state_stored_for(rid).into(),
-        global_defaults: rt.global_plugin_state().into(),
-    })
+    get_plugin_state_impl(&role_id, &state)
 }
 /// # Errors
 ///

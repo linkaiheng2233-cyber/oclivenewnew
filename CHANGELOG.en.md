@@ -20,6 +20,7 @@
 - Settings “General”: **“Force iframe mode”** — when on, all plugin UIs render in iframes for maximum sandbox isolation.
 - Dev mode: static security scan (acorn) on Vue slot source; dangerous APIs trigger a warning dialog; user chooses whether to continue.
 - **Product line A1.1 (HTTP slice):** **`scripts/e2e-core-api-restart.mjs`** (two cycles: start `--api` → `/health` → `POST /chat` → terminate); root **`npm run test:e2e:core-api-restart`**; CI **`oocp-test-suite`** runs it after OOCP **`run.mjs`**.
+- **Product line A1.2 (`invoke` host hot path):** [`handoff/INVOKE_HOTPATH_MATRIX.md`](handoff/INVOKE_HOTPATH_MATRIX.md) and integration test [`src-tauri/tests/invoke_hotpath_matrix.rs`](src-tauri/tests/invoke_hotpath_matrix.rs) (**nine** `*_impl` chains: role/chat/memory plus **catalog**, **plugin_state**, **hotkeys**); [`handoff/PRODUCT_RELEASE_CHECKLIST.md`](handoff/PRODUCT_RELEASE_CHECKLIST.md) §A1 marks **A1.2** done; **golden / full handler coverage** remains follow-up.
 
 ### Changed
 

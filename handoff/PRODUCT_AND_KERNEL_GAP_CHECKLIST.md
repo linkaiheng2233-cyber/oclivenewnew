@@ -19,8 +19,8 @@
 
 ### A1. 测试与质量闸门（P0）
 
-- [ ] **核心路径自动化**：安装 → 启动 → 切角色 → 发消息 → 关开恢复；至少一条稳定脚本（e2e 或半 e2e）。
-- [ ] **`invoke` 集成矩阵**：高流量命令（发消息、角色信息、插件目录、设置）有针对性测试或固定对照数据集。
+- [ ] **核心路径自动化（GUI / 安装器）**：安装 → 启动 → 切角色 → 发消息 → 关开恢复；**HTTP `--api` 宿主进程重启** 子集已 CI（[`scripts/e2e-core-api-restart.mjs`](../scripts/e2e-core-api-restart.mjs)，见 [`OOCP_TEST_SUITE.md`](../creator-docs/testing/OOCP_TEST_SUITE.md)）。
+- [x] **`invoke` 宿主热路径集成烟测**：高流量命令经 [`INVOKE_HOTPATH_MATRIX.md`](./INVOKE_HOTPATH_MATRIX.md) 对齐；[`invoke_hotpath_matrix.rs`](../src-tauri/tests/invoke_hotpath_matrix.rs) 串联 **9** 条 `*_impl`。**全 handler golden / 真 IPC** 仍后续增强。
 - [ ] **发版前闸门与 CI 对齐**：本地 `npm run check:release` / 全量 `cargo test` 与 CI 一致执行习惯写进贡献说明并坚持。
 - [ ] **回归清单版本化**：关键手工场景（导入包、目录插件、权限拒绝路径）有勾选表，随版本更新。
 

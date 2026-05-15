@@ -2,7 +2,7 @@
 
 **用途**：发版会议或维护者自检时**只过本表**；权威缺口仍以 [PRODUCT_AND_KERNEL_GAP_CHECKLIST.md](./PRODUCT_AND_KERNEL_GAP_CHECKLIST.md) **§A** 为准。详细说明与「硬骨头」排期见 [PRODUCT_LINE_TASK_BUCKETS.md](./PRODUCT_LINE_TASK_BUCKETS.md)。
 
-**下一阶段（工程）**：文档与闸门批次已就绪；**未勾的 §A 行**（尤其 **A1.2 / A2.2 / A2.3 / A4.2**；**A1.1** 全桌面 / GUI 仍待扩）按 [PRODUCT_LINE_TASK_BUCKETS.md](./PRODUCT_LINE_TASK_BUCKETS.md) **§四 · 硬骨头** 拆独立 issue 推进，勿堆在本 PR 式文档变更里。
+**下一阶段（工程）**：**A1.1a**（HTTP 进程重启）与 **A1.2**（`invoke` 宿主热路径 9 条 `*_impl`）已入库可回归；**未勾主项**仍以 **A1.1b（GUI / 安装器 / 真 IPC）**、**A2.2 / A2.3 / A4.2** 等为主，按 [PRODUCT_LINE_TASK_BUCKETS.md](./PRODUCT_LINE_TASK_BUCKETS.md) **§四** 拆独立 issue。
 
 **与 CI**：本表**不替代** CI。本地建议顺序：`npm run test:unit` → `npm run check:release` →（可选）与 CI 相同的 OOCP / 姊妹仓检查；详见 [CONTRIBUTING.md](../CONTRIBUTING.md)「测试要求」「CI 对齐」。
 
@@ -39,8 +39,9 @@
 
 ### A1 测试与质量
 
-- [ ] **A1.1** 核心路径自动化（装→启→切角→发消息→恢复）— **HTTP 宿主进程重启 PoC 已 CI**：[`scripts/e2e-core-api-restart.mjs`](../scripts/e2e-core-api-restart.mjs)；**全桌面 / 安装器 / GUI** 仍 `[ ]`
-- [ ] **A1.2** `invoke` 集成矩阵 / 对照数据
+- [x] **A1.1a（子项）** **HTTP `--api` 进程重启烟测**（[`scripts/e2e-core-api-restart.mjs`](../scripts/e2e-core-api-restart.mjs) + CI `oocp-test-suite`）— 见 [`OOCP_TEST_SUITE.md`](../creator-docs/testing/OOCP_TEST_SUITE.md)  
+- [ ] **A1.1b（主项）** 安装包 / **桌面 GUI** / 切角等完整自动化 — Playwright 等另立项  
+- [x] **A1.2** **`invoke` 宿主热路径（9 条 `*_impl`）**：[`INVOKE_HOTPATH_MATRIX.md`](./INVOKE_HOTPATH_MATRIX.md) + [`invoke_hotpath_matrix.rs`](../src-tauri/tests/invoke_hotpath_matrix.rs)；**全命令 golden / Playwright 真 IPC** 仍属 A1.1b 或后续增强  
 - [x] **A1.3** 本地与 CI 闸门习惯已文档化（见 CONTRIBUTING + 本表「闸门」）
 - [x] **A1.4** 回归清单通过上节链接聚合（本表）
 

@@ -6,7 +6,7 @@
 
 | 层级 | 内容 | 位置 / 命令 |
 |------|------|----------------|
-| Rust 单元与集成测试 | 编排、`--api` HTTP 路由、`process_message` 等 | `src-tauri/` 下 `cargo test`；集成测在 `src-tauri/tests/` |
+| Rust 单元与集成测试 | 编排、`--api` HTTP 路由、`process_message`、**`invoke` 热路径（9 条 `*_impl`）**（[`invoke_hotpath_matrix.rs`](../../src-tauri/tests/invoke_hotpath_matrix.rs)，对照 [`handoff/INVOKE_HOTPATH_MATRIX.md`](../../handoff/INVOKE_HOTPATH_MATRIX.md)）等 | `src-tauri/` 下 `cargo test`；集成测在 `src-tauri/tests/` |
 | OOCP 对齐 HTTP 黑盒 | 场景 **S0–S11**（见 [`OOCP_TEST_SUITE.md`](./OOCP_TEST_SUITE.md)） | `examples/oocp-test-suite/run.mjs`；CI job **`oocp-test-suite`**；另跑 **`scripts/e2e-core-api-restart.mjs`**（进程重启烟测，A1.1 PoC） |
 | 前端最小烟测 | Vitest 单文件守门 | `npm run test:unit`（`src/smoke.test.ts`） |
 

@@ -20,6 +20,7 @@
 - 设置页「常规」区域增加「强制 iframe 模式」开关，开启后所有插件界面统一使用 iframe 渲染，获得最高级别沙箱隔离。
 - 开发者模式下加载 Vue 插槽组件时，对源码进行静态安全扫描（基于 acorn），检测到危险 API 时弹出警告对话框，由用户决定是否继续。
 - **产品线 A1.1（HTTP 子集）**：新增 **`scripts/e2e-core-api-restart.mjs`**（两轮「起 `--api` → `/health` → `POST /chat` → 终止进程」）；根 **`package.json`** 脚本 **`test:e2e:core-api-restart`**；CI **`oocp-test-suite`** 在 OOCP **`run.mjs`** 之后执行该脚本。
+- **产品线 A1.2（`invoke` 宿主热路径）**：[`handoff/INVOKE_HOTPATH_MATRIX.md`](handoff/INVOKE_HOTPATH_MATRIX.md) 与集成测 [`src-tauri/tests/invoke_hotpath_matrix.rs`](src-tauri/tests/invoke_hotpath_matrix.rs)（**9** 条 `*_impl`：角色/对话/记忆 + **catalog**、**plugin_state**、**hotkeys**）；[`handoff/PRODUCT_RELEASE_CHECKLIST.md`](handoff/PRODUCT_RELEASE_CHECKLIST.md) §A1 中 **A1.2** 已可勾选；**golden / 全 handler** 仍后续增强。
 
 ### Changed
 

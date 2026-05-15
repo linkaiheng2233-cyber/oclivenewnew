@@ -59,14 +59,20 @@ pub fn apply_global_hotkeys(app: &AppHandle, file: &HotkeyBindingsFile) -> Resul
     }
     Ok(())
 }
+
+/// 与 [`get_hotkey_bindings`] 同逻辑，供集成测不经 `State` 包装直接调用。
+pub fn get_hotkey_bindings_impl(state: &AppState) -> Result<HotkeyBindingsFile, String> {
+    Ok(HotkeyBindingsFile::load(
+        state.directory_plugins.app_data_dir(),
+    ))
+}
+
 /// # Errors
 ///
 /// Returns [`Err`] with a human-readable message when the operation fails.
 #[tauri::command]
 pub fn get_hotkey_bindings(state: State<'_, AppState>) -> Result<HotkeyBindingsFile, String> {
-    Ok(HotkeyBindingsFile::load(
-        state.directory_plugins.app_data_dir(),
-    ))
+    get_hotkey_bindings_impl(&state)
 }
 /// # Errors
 ///
