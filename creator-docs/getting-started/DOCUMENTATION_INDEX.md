@@ -6,6 +6,15 @@
 
 ---
 
+## 工程纪律（C2）
+
+| 主题 | 文档 |
+|------|------|
+| **Breaking 变更流程**（定义、六步、兼容层、PR/迁移模板） | **[../../handoff/BREAKING_CHANGE_PROCESS.md](../../handoff/BREAKING_CHANGE_PROCESS.md)** |
+| **关键路径交接笔记**（Bus factor：`process_message`、`PluginHost`、错误码、DB、测试/CI 等入口） | **[../../handoff/BUS_FACTOR_NOTES.md](../../handoff/BUS_FACTOR_NOTES.md)** |
+
+---
+
 ## 快速入口
 
 | 我想… | 阅读 |

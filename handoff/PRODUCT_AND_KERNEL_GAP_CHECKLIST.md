@@ -111,8 +111,8 @@
 
 ### C2. 工程纪律（P0）
 
-- [ ] **Breaking 变更流程**：谁审、谁写迁移、谁更新文档与校验。
-- [ ] **Bus factor**：关键路径（编排、迁移、DTO）至少两人可读或有一份「若我不在」的交接笔记。
+- [x] **Breaking 变更流程**：[`handoff/BREAKING_CHANGE_PROCESS.md`](./BREAKING_CHANGE_PROCESS.md)（识别 → 声明 → 审阅 → 迁移指南 → `oclive_validation` → 文档；PR/迁移模板；CONTRIBUTING 已链入）。
+- [x] **Bus factor**：[`handoff/BUS_FACTOR_NOTES.md`](./BUS_FACTOR_NOTES.md)（编排、`PluginHost`、错误码、DB、复杂情感、Monolith、角色包、测试/CI 入口索引；文档索引与 AGENTS 已链入）。
 
 ---
 

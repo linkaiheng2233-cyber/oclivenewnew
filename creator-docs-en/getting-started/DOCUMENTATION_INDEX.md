@@ -6,6 +6,15 @@ Creator and plugin documentation lives under repo root **`creator-docs/`** (topi
 
 ---
 
+## Engineering discipline (C2)
+
+| Topic | Document |
+|-------|----------|
+| **Breaking change process** (definition, six steps, compatibility, PR/migration templates) | **[../../handoff/BREAKING_CHANGE_PROCESS.md](../../handoff/BREAKING_CHANGE_PROCESS.md)** |
+| **Critical-path handoff (bus factor)** (`process_message`, `PluginHost`, errors, DB, tests/CI entry map) | **[../../handoff/BUS_FACTOR_NOTES.md](../../handoff/BUS_FACTOR_NOTES.md)** |
+
+---
+
 ## Quick entry
 
 | I want to… | Read |
