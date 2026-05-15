@@ -21,7 +21,7 @@ Creator and plugin documentation lives under repo root **`creator-docs/`** (topi
 | **Pure kernel boundary, soul delivery, embedded scope** | **[PURE_KERNEL_BOUNDARY.md](PURE_KERNEL_BOUNDARY.md)** · **[KERNEL_IMPLEMENTATION_PLAN.md](KERNEL_IMPLEMENTATION_PLAN.md)** (K0–K5) |
 | **Single-track platform path (scaffold → deploy)** | **[KERNEL_PLATFORM_DEVELOPER_PATH.md](KERNEL_PLATFORM_DEVELOPER_PATH.md)** |
 | **Headless bring-up (`--api`, K1)** | **[examples/headless-kernel-minimal/README.md](../../examples/headless-kernel-minimal/README.md)** |
-| **Fast triage after errors / filing issues** | **[ERROR_CODES.md](ERROR_CODES.md)** (tables) · **Normative `code` + JSON: [KERNEL_ERROR_CODE_CONVENTION.md](KERNEL_ERROR_CODE_CONVENTION.md)** |
+| **Fast triage after errors / filing issues** | **[ERROR_CODES.md](ERROR_CODES.md)** (tables) · **Normative `code` + JSON: [KERNEL_ERROR_CODE_CONVENTION.md](KERNEL_ERROR_CODE_CONVENTION.md)** · **A3 closure** [EN](../../handoff/A3_CLOSURE_SUMMARY.en.md) / [ZH](../../handoff/A3_CLOSURE_SUMMARY.md) (Sentry / user-visible errors) |
 | **GitHub: Dependabot, CI, web settings** | **[GITHUB_REPO_CHECKLIST.md](GITHUB_REPO_CHECKLIST.md)** |
 | **Replaceable modules + HTTP sidecar + update strategy** | **[../plugin-and-architecture/CREATOR_PLUGIN_ARCHITECTURE.md](../plugin-and-architecture/CREATOR_PLUGIN_ARCHITECTURE.md)** |
 | **BYOK sidecar to proprietary cloud models** | **[SIDECAR_LLM_USER_GUIDE.md](SIDECAR_LLM_USER_GUIDE.md)** |

@@ -45,5 +45,6 @@
 - Rust：`crates/oclive_kernel_runtime/src/error.rs`（`KernelErrorBody`、`AppError`、`http_chat_codes`）。
 - HTTP：`src-tauri/src/http_api.rs`。
 - 补丁摘要：`handoff/A2_KERNEL_JSON_ERROR_PATCH.md`。
+- **A3（崩溃上报与用户可见错误扫尾）**：[`handoff/A3_CLOSURE_SUMMARY.md`](../../handoff/A3_CLOSURE_SUMMARY.md) · [`handoff/A3_CLOSURE_SUMMARY.en.md`](../../handoff/A3_CLOSURE_SUMMARY.en.md)。
 
 [English mirror](../../creator-docs-en/getting-started/KERNEL_ERROR_CODE_CONVENTION.md)

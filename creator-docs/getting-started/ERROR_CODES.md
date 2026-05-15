@@ -52,6 +52,15 @@
 
 GUI 侧若仍展示英文底层错误句，属于 **A6** 等持续扫尾；未单独映射的机器码会走 **`apiErrors.UNKNOWN_WITH_CODE`**。发版前可先依赖上述文档自助排障。
 
+### 1.7) 崩溃上报与隐私（A3）
+
+| 项目 | 说明 |
+|------|------|
+| **何时启用** | 仅当前端构建注入 **`VITE_SENTRY_DSN`** 时，才可能初始化 `@sentry/vue`；未配置 DSN 则**零上报**。 |
+| **上报范围** | **Vue** 侧未捕获异常；**不含**聊天正文；Rust 仍以本机日志为主。 |
+| **用户退出** | **设置 → 常规** 在带 DSN 的构建中显示 **「崩溃诊断（Sentry）」**；勾选 **禁用崩溃上报** 写入 **`localStorage`** 键 **`oclive.telemetry.sentryOptOut`**（`1` 表示退出），并尝试关闭客户端；取消勾选后需 **重启应用** 再恢复上报。 |
+| **详文** | 根 [README.md](../../README.md)「可观测性与发布」；结项 [A3 中文](../../handoff/A3_CLOSURE_SUMMARY.md) / [A3 English](../../handoff/A3_CLOSURE_SUMMARY.en.md)。 |
+
 ---
 
 ## 2) Remote JSON-RPC 错误码（侧车建议）

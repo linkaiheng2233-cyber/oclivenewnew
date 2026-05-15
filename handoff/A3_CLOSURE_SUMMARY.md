@@ -10,7 +10,7 @@
 
 ## A3.2 用户可见错误（JSON `code` + 前端映射）
 
-- **目录插件 `ApiError`**：`src-tauri/src/api/error.rs` 与 **`KernelErrorBody` 同源单行 JSON**（不再主路径依赖 `[CODE]`）；`map_directory_rpc_url_error`、插件桥 **`Result<_, String>`** 路径统一 **`.into()`**。
+- **目录插件 `ApiError`**：`src-tauri/src/api/error.rs` 与 **`KernelErrorBody` 同源单行 JSON**（不再主路径依赖 `[CODE]`）；`map_directory_rpc_url_error`、插件桥等 **`Result<_, String>`** 路径统一 **`to_kernel_json()`**（或 `String::from(api_error)`）；闭包内避免 `Into` 歧义。
 - **遗漏码兜底**：`apiErrors.UNKNOWN_WITH_CODE`（中/英）+ **`toFriendlyErrorMessage`** 在无词条时展示带 **`{code}`** 的友好句。
 - **扫尾**：`reset_plugin_state_to_role_default` 中 `load_role` 失败改为 **`to_frontend_error()`**（与内核 JSON 一致）。
 
@@ -24,4 +24,5 @@
 
 - 发版勾选：`handoff/PRODUCT_RELEASE_CHECKLIST.md` §A3  
 - 产品缺口表：`handoff/PRODUCT_AND_KERNEL_GAP_CHECKLIST.md` §A3  
-- 错误码规范：`creator-docs/getting-started/KERNEL_ERROR_CODE_CONVENTION.md`
+- 错误码规范：`creator-docs/getting-started/KERNEL_ERROR_CODE_CONVENTION.md`（英文镜像 `creator-docs-en/getting-started/KERNEL_ERROR_CODE_CONVENTION.md`）  
+- 英文结项（同主题）：[`A3_CLOSURE_SUMMARY.en.md`](./A3_CLOSURE_SUMMARY.en.md)
