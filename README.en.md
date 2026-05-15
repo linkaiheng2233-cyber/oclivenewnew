@@ -21,6 +21,10 @@ A **local-first** desktop companion for roleplay dialogue: **Tauri + Vue 3 + Rus
 
 Contributor notes: **[AGENTS.md](AGENTS.md)**.
 
+## Performance
+
+Release **`cargo-bloat` sampling**, **Monolith** vs **`oclive bench`**, and **known product limits**: **[creator-docs-en/getting-started/PERFORMANCE.md](creator-docs-en/getting-started/PERFORMANCE.md)** (Chinese: [creator-docs/getting-started/PERFORMANCE.md](creator-docs/getting-started/PERFORMANCE.md)). Figures track [LIGHTWEIGHT_PROFILE.md](creator-docs/development/LIGHTWEIGHT_PROFILE.md) §6.7.
+
 ## Help & issues
 
 - **FAQ (plugins, mumu slots, UI):** [creator-docs/FAQ.md](creator-docs/FAQ.md)  

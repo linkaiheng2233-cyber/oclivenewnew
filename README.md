@@ -21,6 +21,10 @@
 
 协作说明见根目录 **[AGENTS.md](AGENTS.md)**。
 
+## 性能
+
+对外披露的 **Release 二进制 `cargo-bloat` 采样、Monolith 与 `oclive bench` 方法、已知产品向限制** 见 **[creator-docs/getting-started/PERFORMANCE.md](creator-docs/getting-started/PERFORMANCE.md)**（[English](creator-docs-en/getting-started/PERFORMANCE.md)）。数值以 [LIGHTWEIGHT_PROFILE.md](creator-docs/development/LIGHTWEIGHT_PROFILE.md) §6.7 最新采样为准。
+
 ## 获取帮助与提 issue
 
 - **常见问题（插件、mumu 默认模块、界面）**：[creator-docs/FAQ.md](creator-docs/FAQ.md)  
