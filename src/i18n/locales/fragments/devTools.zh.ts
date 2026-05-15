@@ -42,6 +42,14 @@ export default {
     recentTitle: "最近任务",
     emptyTraces: "暂无 Agent 执行轨迹。",
     diffEmpty: "无差异",
+    grantsTitle: "高风险能力授权",
+    grantsHint:
+      "首次使用 MCP（http/stdio）或带 process 的目录插件前须在此授权；数据写入应用数据目录下的 high_risk_grants.json。自动化可设 OCLIVE_SKIP_HIGH_RISK_GRANTS=1。",
+    grantKind: "类型",
+    grantId: "目标 id",
+    grantIdPh: "MCP server id 或目录插件 id",
+    grantBtn: "授权",
+    revokeBtn: "撤销授权",
   },
   directoryShell: {
     loadFail: "整壳 Vue 组件加载失败",

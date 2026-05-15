@@ -4,14 +4,16 @@
 use crate::domain::event_estimator::EventEstimator;
 use crate::domain::event_impact_ai::EventImpactEstimate;
 use crate::domain::BuiltinEventEstimator;
-use crate::error::Result;
+use crate::error::{AppError, Result};
 use crate::infrastructure::llm::LlmClient;
+use crate::infrastructure::remote_fallback_policy::remote_fallback_load;
 use crate::infrastructure::remote_plugin::config::RemotePluginHttpConfig;
 use crate::infrastructure::remote_plugin::jsonrpc::{self, RemoteRpcChannel};
 use crate::models::knowledge::KnowledgeEventAugment;
 use crate::models::{Emotion, Event, PersonalitySource, PersonalityVector};
 use async_trait::async_trait;
 use serde_json::json;
+use std::sync::atomic::AtomicBool;
 use std::sync::Arc;
 
 const METHOD_EVENT_ESTIMATE: &str = "event.estimate";
@@ -20,13 +22,17 @@ pub struct RemoteEventEstimatorHttp {
     client: reqwest::Client,
     cfg: RemotePluginHttpConfig,
     fallback: BuiltinEventEstimator,
+    remote_fallback_allowed: Arc<AtomicBool>,
 }
 
 impl RemoteEventEstimatorHttp {
-/// # Errors
-///
-/// Returns [`Err`] with a human-readable message when the operation fails.
-    pub fn new(cfg: RemotePluginHttpConfig) -> std::result::Result<Self, reqwest::Error> {
+    /// # Errors
+    ///
+    /// Returns [`Err`] with a human-readable message when the operation fails.
+    pub fn new(
+        cfg: RemotePluginHttpConfig,
+        remote_fallback_allowed: Arc<AtomicBool>,
+    ) -> std::result::Result<Self, reqwest::Error> {
         let client = reqwest::Client::builder()
             .connect_timeout(cfg.connect_timeout())
             .timeout(cfg.timeout)
@@ -35,6 +41,7 @@ impl RemoteEventEstimatorHttp {
             client,
             cfg,
             fallback: BuiltinEventEstimator,
+            remote_fallback_allowed,
         })
     }
 }
@@ -80,25 +87,32 @@ impl EventEstimator for RemoteEventEstimatorHttp {
                 Ok(est)
             }
             Err(e) => {
-                tracing::warn!(
-                    target: "oclive_plugin",
-                    "event.estimate remote failed endpoint={} err={}; fallback=builtin",
-                    self.cfg.endpoint,
-                    e
-                );
-                self.fallback
-                    .estimate(
-                        llm,
-                        ollama_model,
-                        user_message,
-                        user_emotion,
-                        personality,
-                        personality_source,
-                        recent_turns,
-                        recent_events,
-                        knowledge_augment,
-                    )
-                    .await
+                if remote_fallback_load(&self.remote_fallback_allowed) {
+                    tracing::warn!(
+                        target: "oclive_plugin",
+                        "event.estimate remote failed endpoint={} err={}; fallback=builtin",
+                        self.cfg.endpoint,
+                        e
+                    );
+                    self.fallback
+                        .estimate(
+                            llm,
+                            ollama_model,
+                            user_message,
+                            user_emotion,
+                            personality,
+                            personality_source,
+                            recent_turns,
+                            recent_events,
+                            knowledge_augment,
+                        )
+                        .await
+                } else {
+                    Err(AppError::RemoteServiceUnavailable(format!(
+                        "event.estimate remote failed endpoint={} err={}",
+                        self.cfg.endpoint, e
+                    )))
+                }
             }
         }
     }

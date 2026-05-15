@@ -404,6 +404,12 @@ export default {
       "开启后，<strong>Ctrl+Shift+F</strong> 与顶栏「更多」里的插件管理入口将<strong>打开并切换 V2 预览</strong>（设置会记住此项）。" +
       "需要「开发者调试」等完整能力时，请在 V2 内进入<strong>专业模式（V1）</strong>；也可关闭本项恢复默认。",
     openV2Preview: "打开插件管理 V2 预览",
+    remoteFallbackSectionTitle: "远端插件失败策略",
+    remoteFallbackLabel: "远端 HTTP 失败时自动降级内置",
+    remoteFallbackHelp:
+      "关闭后，若角色包将记忆/情绪/事件/Prompt/LLM 等槽设为 remote 且侧车不可达，将返回错误码 REMOTE_SERVICE_UNAVAILABLE，而不再静默用内置实现。与「高风险网络授权」互补：授权决定能否发起出站请求，本项决定在失败出口是否允许降级。可用环境变量 <code>OCLIVE_REMOTE_FALLBACK_TO_BUILTIN</code> 覆盖（设置后本开关对进程内有效值锁定）。",
+    remoteFallbackEnvLocked: "已设置环境变量，进程内以此为准；数据库值仍可保存供未设置环境时生效。",
+    remoteFallbackSavedToast: "已保存。",
     advancedTitle: "扩展区（settings.advanced）",
     advancedDesc:
       "manifest 中声明 <code>settings.advanced</code> 的插件显示于此。",

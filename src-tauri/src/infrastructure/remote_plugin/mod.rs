@@ -30,6 +30,7 @@ use crate::domain::user_emotion_analyzer::{
 };
 use crate::infrastructure::llm::{LlmClient, RemoteLlmPlaceholder};
 use serde_json::Value;
+use std::sync::atomic::AtomicBool;
 use std::sync::Arc;
 
 use crate::error::{AppError, Result};
@@ -53,7 +54,7 @@ fn plugin_remote_placeholder_group() -> PluginRemoteGroup {
     }
 }
 
-pub(crate) fn plugin_remote_group() -> PluginRemoteGroup {
+pub(crate) fn plugin_remote_group(remote_fallback_allowed: Arc<AtomicBool>) -> PluginRemoteGroup {
     let Some(cfg) = RemotePluginHttpConfig::from_env_plugin() else {
         return plugin_remote_placeholder_group();
     };
@@ -62,10 +63,11 @@ pub(crate) fn plugin_remote_group() -> PluginRemoteGroup {
         "remote plugin HTTP active (memory/emotion/event/prompt) -> {}",
         cfg.endpoint
     );
-    let memory = RemoteMemoryRetrievalHttp::new(cfg.clone());
-    let emotion = RemoteUserEmotionAnalyzerHttp::new(cfg.clone());
-    let event = RemoteEventEstimatorHttp::new(cfg.clone());
-    let prompt = RemotePromptAssemblerHttp::new(cfg);
+    let fb = remote_fallback_allowed.clone();
+    let memory = RemoteMemoryRetrievalHttp::new(cfg.clone(), fb.clone());
+    let emotion = RemoteUserEmotionAnalyzerHttp::new(cfg.clone(), fb.clone());
+    let event = RemoteEventEstimatorHttp::new(cfg.clone(), fb.clone());
+    let prompt = RemotePromptAssemblerHttp::new(cfg, fb);
     match (memory, emotion, event, prompt) {
         (Ok(memory), Ok(emotion), Ok(event), Ok(prompt)) => PluginRemoteGroup {
             memory: Arc::new(memory),
@@ -97,7 +99,10 @@ pub(crate) fn plugin_remote_group() -> PluginRemoteGroup {
     }
 }
 
-pub fn llm_remote_backend(default_llm: Arc<dyn LlmClient>) -> Arc<dyn LlmClient> {
+pub fn llm_remote_backend(
+    default_llm: Arc<dyn LlmClient>,
+    remote_fallback_allowed: Arc<AtomicBool>,
+) -> Arc<dyn LlmClient> {
     if let Some(cfg) = RemotePluginHttpConfig::from_env_llm() {
         tracing::info!(
             target: "oclive_plugin",
@@ -112,11 +117,17 @@ pub fn llm_remote_backend(default_llm: Arc<dyn LlmClient>) -> Arc<dyn LlmClient>
                     "remote LLM HTTP reqwest client build failed: {}; using default LLM",
                     e
                 );
-                Arc::new(RemoteLlmPlaceholder::new(default_llm))
+                Arc::new(RemoteLlmPlaceholder::new(
+                    default_llm,
+                    remote_fallback_allowed.clone(),
+                ))
             }
         }
     } else {
-        Arc::new(RemoteLlmPlaceholder::new(default_llm))
+        Arc::new(RemoteLlmPlaceholder::new(
+            default_llm,
+            remote_fallback_allowed,
+        ))
     }
 }
 /// # Errors

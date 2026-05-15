@@ -44,6 +44,14 @@
 
 **懒启动**：首次需要该插件的 RPC（`plugin_backends` 六模块中 **`directory`**、`directory_plugin_invoke`、或需解析 shell manifest）时启动子进程，并缓存 **RPC URL** 与 **子进程**（当前实现不随角色切换回收子进程；应用退出时释放）。并发多次触发同一 `id` 时，宿主对单次启动加锁，避免重复子进程。
 
+### 高风险：`process` 与子进程 spawn
+
+若 manifest 声明了 **`process`**，宿主在首次 `spawn` 握手指令前会检查应用数据目录下的 **`high_risk_grants.json`** 是否已为该插件 **`id`** 授予 **`directory_plugin_process_spawn`**。未授权时：`directory_plugin_invoke` 等经 `map_directory_rpc_url_error` 映射为 **`HIGH_RISK_CAPABILITY_NOT_GRANTED`**；`plugin_backends` 主路径在无法取得 RPC URL 时记日志并回退内置 / Ollama（见上文 §3）。
+
+用户可在 **设置 → 插件与后端 → Agent 调试** 中查看/授予/撤销（调用 `list_high_risk_grants`、`grant_high_risk_capability`、`revoke_high_risk_capability`）。自动化或 CI 可设 **`OCLIVE_SKIP_HIGH_RISK_GRANTS=1`** 跳过检查（勿用于面向用户的生产场景）。
+
+**MCP**：`{app_data}/mcp-servers/*.json` 的 **`http`** / **`stdio`** 传输分别需要 `mcp_http` / `mcp_stdio` 授权项（同上文件与调试面板）。详见结项说明 [`handoff/A4_CLOSURE_SUMMARY.md`](../../handoff/A4_CLOSURE_SUMMARY.md)。
+
 ---
 
 ## 3. 后端六模块（A2）

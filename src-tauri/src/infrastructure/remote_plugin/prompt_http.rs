@@ -3,10 +3,14 @@
 use crate::domain::prompt_assembler::PromptAssembler;
 use crate::domain::prompt_builder::PromptInput;
 use crate::domain::BuiltinPromptAssembler;
+use crate::error::{AppError, Result};
+use crate::infrastructure::remote_fallback_policy::remote_fallback_load;
 use crate::infrastructure::remote_plugin::config::RemotePluginHttpConfig;
 use crate::infrastructure::remote_plugin::jsonrpc::{self, RemoteRpcChannel};
 use crate::models::{PersonalitySource, Role};
 use serde_json::json;
+use std::sync::atomic::AtomicBool;
+use std::sync::Arc;
 
 const METHOD_PROMPT_BUILD: &str = "prompt.build_prompt";
 const METHOD_PROMPT_TOPIC_HINT: &str = "prompt.top_topic_hint";
@@ -15,13 +19,17 @@ pub struct RemotePromptAssemblerHttp {
     client: reqwest::blocking::Client,
     cfg: RemotePluginHttpConfig,
     fallback: BuiltinPromptAssembler,
+    remote_fallback_allowed: Arc<AtomicBool>,
 }
 
 impl RemotePromptAssemblerHttp {
-/// # Errors
-///
-/// Returns [`Err`] with a human-readable message when the operation fails.
-    pub fn new(cfg: RemotePluginHttpConfig) -> std::result::Result<Self, reqwest::Error> {
+    /// # Errors
+    ///
+    /// Returns [`Err`] with a human-readable message when the operation fails.
+    pub fn new(
+        cfg: RemotePluginHttpConfig,
+        remote_fallback_allowed: Arc<AtomicBool>,
+    ) -> std::result::Result<Self, reqwest::Error> {
         let client = reqwest::blocking::Client::builder()
             .connect_timeout(cfg.connect_timeout())
             .timeout(cfg.timeout)
@@ -30,21 +38,28 @@ impl RemotePromptAssemblerHttp {
             client,
             cfg,
             fallback: BuiltinPromptAssembler,
+            remote_fallback_allowed,
         })
     }
 }
 
 impl PromptAssembler for RemotePromptAssemblerHttp {
-    fn build_prompt(&self, input: &PromptInput<'_>) -> String {
+    fn build_prompt(&self, input: &PromptInput<'_>) -> Result<String> {
         let params = match serde_json::to_value(PromptInputSnapshot::from_input(input)) {
             Ok(v) => v,
             Err(e) => {
-                tracing::warn!(
-                    target: "oclive_plugin",
-                    "prompt snapshot serialize failed: {}; builtin",
+                if remote_fallback_load(&self.remote_fallback_allowed) {
+                    tracing::warn!(
+                        target: "oclive_plugin",
+                        "prompt snapshot serialize failed: {}; builtin",
+                        e
+                    );
+                    return self.fallback.build_prompt(input);
+                }
+                return Err(AppError::OllamaError(format!(
+                    "prompt snapshot serialize failed: {}",
                     e
-                );
-                return self.fallback.build_prompt(input);
+                )));
             }
         };
         match jsonrpc::call_blocking(
@@ -57,22 +72,39 @@ impl PromptAssembler for RemotePromptAssemblerHttp {
         ) {
             Ok(v) => {
                 if let Some(s) = v.get("prompt").and_then(|x| x.as_str()) {
-                    return s.to_string();
+                    return Ok(s.to_string());
                 }
                 if let Some(s) = v.as_str() {
-                    return s.to_string();
+                    return Ok(s.to_string());
                 }
-                tracing::warn!(target: "oclive_plugin", "prompt.build_prompt: bad shape; builtin");
-                self.fallback.build_prompt(input)
+                if remote_fallback_load(&self.remote_fallback_allowed) {
+                    tracing::warn!(
+                        target: "oclive_plugin",
+                        "prompt.build_prompt: bad shape; builtin"
+                    );
+                    self.fallback.build_prompt(input)
+                } else {
+                    Err(AppError::RemoteServiceUnavailable(format!(
+                        "prompt.build_prompt: bad shape endpoint={}",
+                        self.cfg.endpoint
+                    )))
+                }
             }
             Err(e) => {
-                tracing::warn!(
-                    target: "oclive_plugin",
-                    "prompt.build_prompt remote failed endpoint={} err={}; fallback=builtin",
-                    self.cfg.endpoint,
-                    e
-                );
-                self.fallback.build_prompt(input)
+                if remote_fallback_load(&self.remote_fallback_allowed) {
+                    tracing::warn!(
+                        target: "oclive_plugin",
+                        "prompt.build_prompt remote failed endpoint={} err={}; fallback=builtin",
+                        self.cfg.endpoint,
+                        e
+                    );
+                    self.fallback.build_prompt(input)
+                } else {
+                    Err(AppError::RemoteServiceUnavailable(format!(
+                        "prompt.build_prompt remote failed endpoint={} err={}",
+                        self.cfg.endpoint, e
+                    )))
+                }
             }
         }
     }
@@ -95,7 +127,19 @@ impl PromptAssembler for RemotePromptAssemblerHttp {
                 .and_then(|x| x.as_str())
                 .map(String::from)
                 .or_else(|| v.as_str().map(String::from)),
-            Err(_) => self.fallback.top_topic_hint(role, scene_id),
+            Err(e) => {
+                if remote_fallback_load(&self.remote_fallback_allowed) {
+                    tracing::warn!(
+                        target: "oclive_plugin",
+                        "prompt.top_topic_hint remote failed endpoint={} err={}; fallback=builtin",
+                        self.cfg.endpoint,
+                        e
+                    );
+                    self.fallback.top_topic_hint(role, scene_id)
+                } else {
+                    None
+                }
+            }
         }
     }
 }

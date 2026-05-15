@@ -234,7 +234,7 @@ pub(super) async fn process_remote_life(
         user_query: user_message,
         scene_id: Some(scene_id),
         limit: 8,
-    });
+    })?;
 
     let user_relation_key: String =
         resolve_effective_user_relation_key(state, role, srid, Some(scene_id)).await?;

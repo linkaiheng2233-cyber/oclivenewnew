@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { ref } from "vue";
+import { ref, watch } from "vue";
 import { useI18n } from "vue-i18n";
 import * as Sentry from "@sentry/vue";
 import HelpHint from "../components/HelpHint.vue";
@@ -10,12 +10,14 @@ import { useAppToast } from "../composables/useAppToast";
 import { SLOT_SETTINGS_ADVANCED, usePluginStore } from "../stores/pluginStore";
 import { useUiStore } from "../stores/uiStore";
 import {
+  getRemoteFallbackAppSettings,
   runEnvironmentDiagnostics,
+  setRemoteFallbackToBuiltin,
   type EnvironmentDiagnostics,
 } from "../utils/tauri-api";
 import { isSentryOptOut, setSentryOptOut } from "../utils/telemetrySentry";
 
-defineProps<{
+const props = defineProps<{
   visible: boolean;
 }>();
 
@@ -52,6 +54,46 @@ const tab = ref<SettingsTab>("general");
 
 const envDiagLoading = ref(false);
 const envDiag = ref<EnvironmentDiagnostics | null>(null);
+
+const remoteFallbackLoading = ref(false);
+const remoteFallbackChecked = ref(true);
+const remoteFallbackEnvLocked = ref(false);
+
+async function loadRemoteFallbackSettings() {
+  remoteFallbackLoading.value = true;
+  try {
+    const s = await getRemoteFallbackAppSettings();
+    remoteFallbackEnvLocked.value = s.remoteFallbackEnvOverrideActive;
+    remoteFallbackChecked.value = s.remoteFallbackToBuiltin.trim() !== "0";
+  } catch (err) {
+    showToast("error", err instanceof Error ? err.message : String(err));
+  } finally {
+    remoteFallbackLoading.value = false;
+  }
+}
+
+watch(
+  () => props.visible,
+  (v) => {
+    if (v) void loadRemoteFallbackSettings();
+  },
+);
+
+async function onRemoteFallbackToggle(e: Event) {
+  const checked = (e.target as HTMLInputElement).checked;
+  if (remoteFallbackEnvLocked.value) {
+    return;
+  }
+  const prev = remoteFallbackChecked.value;
+  remoteFallbackChecked.value = checked;
+  try {
+    await setRemoteFallbackToBuiltin(checked);
+    showToast("info", t("settings.remoteFallbackSavedToast"));
+  } catch (err) {
+    remoteFallbackChecked.value = prev;
+    showToast("error", err instanceof Error ? err.message : String(err));
+  }
+}
 
 async function onRunEnvironmentDiagnostics() {
   envDiagLoading.value = true;
@@ -230,6 +272,24 @@ async function onToggleForceIframe(e: Event) {
                 {{ t("settings.openV2Preview") }}
               </button>
             </div>
+          </section>
+          <section class="sv-section">
+            <div class="sv-row-h">
+              <span class="sv-label">{{ t("settings.remoteFallbackSectionTitle") }}</span>
+              <HelpHint :text="t('settings.remoteFallbackHelp')" />
+            </div>
+            <p v-if="remoteFallbackEnvLocked" class="sv-muted">{{ t("settings.remoteFallbackEnvLocked") }}</p>
+            <label class="sv-toggle-row">
+              <input
+                type="checkbox"
+                :checked="remoteFallbackChecked"
+                :disabled="remoteFallbackLoading || remoteFallbackEnvLocked"
+                @change="onRemoteFallbackToggle"
+              />
+              <span class="sv-toggle-text">
+                <strong>{{ t("settings.remoteFallbackLabel") }}</strong>
+              </span>
+            </label>
           </section>
           <section class="sv-section">
             <h3 class="sv-h3">{{ t("settings.advancedTitle") }}</h3>

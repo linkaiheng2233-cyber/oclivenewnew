@@ -42,6 +42,10 @@ export default {
   ROLE_PACK_EXISTS: "This role id already exists. Choose overwrite to replace the local copy.",
   INVALID_PARAMETER: "Invalid parameter. Check your input.",
   INVALID_PARAMETER_DETAIL: "Invalid parameter: {detail}",
+  HIGH_RISK_CAPABILITY_NOT_GRANTED:
+    "This high-risk capability is not granted yet (MCP transport or directory plugin process). Grant it under Plugins & backends → Agent debug, or use your distro’s explicit consent flow.",
+  REMOTE_SERVICE_UNAVAILABLE:
+    "The remote HTTP plugin or sidecar is unavailable, and automatic fallback to built-in is disabled. Check that `OCLIVE_REMOTE_PLUGIN_URL` / `OCLIVE_REMOTE_LLM_URL` are reachable, re-enable fallback under Settings → General, or set `OCLIVE_REMOTE_FALLBACK_TO_BUILTIN=1`.",
   OLLAMA_TIMEOUT: "The model took too long. Try again.",
   TXN_ROLLBACK: "Operation failed. Try again.",
   SERDE_ERROR: "Data parse error. Try again.",

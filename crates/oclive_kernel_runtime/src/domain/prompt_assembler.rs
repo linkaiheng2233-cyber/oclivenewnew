@@ -1,19 +1,20 @@
 //! Prompt 组装可替换门面；默认委托 [`PromptBuilder`](super::prompt_builder::PromptBuilder)。
 
 use crate::domain::prompt_builder::{PromptBuilder, PromptInput};
+use crate::error::Result;
 use crate::models::Role;
 use std::sync::atomic::{AtomicBool, Ordering};
 
 pub trait PromptAssembler: Send + Sync {
-    fn build_prompt(&self, input: &PromptInput<'_>) -> String;
+    fn build_prompt(&self, input: &PromptInput<'_>) -> Result<String>;
     fn top_topic_hint(&self, role: &Role, scene_id: &str) -> Option<String>;
 }
 
 pub struct BuiltinPromptAssembler;
 
 impl PromptAssembler for BuiltinPromptAssembler {
-    fn build_prompt(&self, input: &PromptInput<'_>) -> String {
-        PromptBuilder::build_prompt(input)
+    fn build_prompt(&self, input: &PromptInput<'_>) -> Result<String> {
+        Ok(PromptBuilder::build_prompt(input))
     }
 
     fn top_topic_hint(&self, role: &Role, scene_id: &str) -> Option<String> {
@@ -27,12 +28,12 @@ pub struct BuiltinPromptAssemblerV2;
 const PROMPT_BACKEND_V2_PREFIX: &str = "[oclive:prompt:builtin_v2]\n";
 
 impl PromptAssembler for BuiltinPromptAssemblerV2 {
-    fn build_prompt(&self, input: &PromptInput<'_>) -> String {
-        format!(
+    fn build_prompt(&self, input: &PromptInput<'_>) -> Result<String> {
+        Ok(format!(
             "{}{}",
             PROMPT_BACKEND_V2_PREFIX,
             PromptBuilder::build_prompt(input)
-        )
+        ))
     }
 
     fn top_topic_hint(&self, role: &Role, scene_id: &str) -> Option<String> {
@@ -69,7 +70,7 @@ impl RemotePromptAssemblerPlaceholder {
 }
 
 impl PromptAssembler for RemotePromptAssemblerPlaceholder {
-    fn build_prompt(&self, input: &PromptInput<'_>) -> String {
+    fn build_prompt(&self, input: &PromptInput<'_>) -> Result<String> {
         self.warn_once();
         self.inner.build_prompt(input)
     }
@@ -159,8 +160,8 @@ mod tests {
             reply_quality_anchor: effective_reply_quality_anchor(&role),
             previous_complex_emotion_narrative_hint: "",
         };
-        let a = BuiltinPromptAssembler.build_prompt(&input);
-        let b = BuiltinPromptAssemblerV2.build_prompt(&input);
+        let a = BuiltinPromptAssembler.build_prompt(&input).expect("prompt");
+        let b = BuiltinPromptAssemblerV2.build_prompt(&input).expect("prompt");
         assert!(b.starts_with(super::PROMPT_BACKEND_V2_PREFIX));
         assert_eq!(b.len(), a.len() + super::PROMPT_BACKEND_V2_PREFIX.len());
     }

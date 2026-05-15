@@ -38,8 +38,8 @@
 
 ### A4. 插件与安全边界（P0）
 
-- [ ] **高风险能力验收表**：`process:spawn`、`network:*`、stdio MCP 等 — 弹窗、拒绝后降级、审计记录可演示。
-- [ ] **权限与 manifest 一致性**：文档、校验 crate、运行时行为三者对齐，避免「文档说有、实际没有」。
+- [x] **高风险能力（MCP + 目录 process）**：显式授权文件、`HIGH_RISK_CAPABILITY_NOT_GRANTED`、Agent 调试面板 grant/revoke、CI 可 `OCLIVE_SKIP_HIGH_RISK_GRANTS`；**仍缺**：Remote HTTP / 广义 `network:*` 与 manifest `permissions` 校验 crate 对齐（见 [`A4_CLOSURE_SUMMARY.md`](./A4_CLOSURE_SUMMARY.md)）。
+- [ ] **权限与 manifest 完全一致性**：待目录插件 manifest 增加 `permissions` 并由 `oclive_validation` 与运行时同源校验后收口。
 
 ### A5. 版本、兼容与升级（P0）
 

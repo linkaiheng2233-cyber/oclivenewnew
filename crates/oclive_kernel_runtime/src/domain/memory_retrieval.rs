@@ -1,6 +1,7 @@
 //! 记忆检索可替换门面；默认实现委托 [`MemoryEngine`](super::memory_engine::MemoryEngine)。
 
 use crate::domain::memory_engine::MemoryEngine;
+use crate::error::Result;
 use crate::models::{Memory, MemoryContext};
 use std::sync::atomic::{AtomicBool, Ordering};
 use std::sync::Arc;
@@ -14,7 +15,7 @@ pub struct MemoryRetrievalInput<'a> {
 }
 
 pub trait MemoryRetrieval: Send + Sync {
-    fn rank_memories(&self, input: MemoryRetrievalInput<'_>) -> Vec<Memory>;
+    fn rank_memories(&self, input: MemoryRetrievalInput<'_>) -> Result<Vec<Memory>>;
     fn build_context(&self, memories: &[Memory], max_tokens: usize) -> MemoryContext;
     fn search_memories(&self, keyword: &str, memories: &[Memory]) -> Vec<Memory>;
 
@@ -29,8 +30,8 @@ pub trait MemoryRetrieval: Send + Sync {
 pub struct BuiltinMemoryRetrieval;
 
 impl MemoryRetrieval for BuiltinMemoryRetrieval {
-    fn rank_memories(&self, input: MemoryRetrievalInput<'_>) -> Vec<Memory> {
-        MemoryEngine::get_relevant_memories(input.memories, input.limit)
+    fn rank_memories(&self, input: MemoryRetrievalInput<'_>) -> Result<Vec<Memory>> {
+        Ok(MemoryEngine::get_relevant_memories(input.memories, input.limit))
     }
 
     fn build_context(&self, memories: &[Memory], max_tokens: usize) -> MemoryContext {
@@ -70,7 +71,7 @@ fn query_overlap_boost(query: &str, content: &str) -> f64 {
 }
 
 impl MemoryRetrieval for BuiltinMemoryRetrievalV2 {
-    fn rank_memories(&self, input: MemoryRetrievalInput<'_>) -> Vec<Memory> {
+    fn rank_memories(&self, input: MemoryRetrievalInput<'_>) -> Result<Vec<Memory>> {
         let limit = input.limit.max(1);
         let q = input.user_query;
         let mut scored: Vec<(f64, Memory)> = input
@@ -83,7 +84,7 @@ impl MemoryRetrieval for BuiltinMemoryRetrievalV2 {
             })
             .collect();
         scored.sort_by(|a, b| b.0.partial_cmp(&a.0).unwrap_or(std::cmp::Ordering::Equal));
-        scored.into_iter().take(limit).map(|(_, m)| m).collect()
+        Ok(scored.into_iter().take(limit).map(|(_, m)| m).collect())
     }
 
     fn build_context(&self, memories: &[Memory], max_tokens: usize) -> MemoryContext {
@@ -125,7 +126,7 @@ impl RemoteMemoryRetrievalPlaceholder {
 }
 
 impl MemoryRetrieval for RemoteMemoryRetrievalPlaceholder {
-    fn rank_memories(&self, input: MemoryRetrievalInput<'_>) -> Vec<Memory> {
+    fn rank_memories(&self, input: MemoryRetrievalInput<'_>) -> Result<Vec<Memory>> {
         self.warn_once();
         self.inner.rank_memories(input)
     }
@@ -167,7 +168,7 @@ impl MemoryRetrieval for LocalPluginMemoryRetrieval {
         self.resolved_provider_id.as_deref()
     }
 
-    fn rank_memories(&self, input: MemoryRetrievalInput<'_>) -> Vec<Memory> {
+    fn rank_memories(&self, input: MemoryRetrievalInput<'_>) -> Result<Vec<Memory>> {
         if let Some(id) = &self.resolved_provider_id {
             tracing::debug!(
                 target: "oclive_plugin",
@@ -222,7 +223,7 @@ mod tests {
             scene_id: None,
             limit: 1,
         };
-        let top_v1 = BuiltinMemoryRetrieval.rank_memories(input_v1);
+        let top_v1 = BuiltinMemoryRetrieval.rank_memories(input_v1).expect("rank");
         assert_eq!(top_v1[0].id, "high");
 
         let input_v2 = MemoryRetrievalInput {
@@ -231,7 +232,7 @@ mod tests {
             scene_id: None,
             limit: 1,
         };
-        let top_v2 = BuiltinMemoryRetrievalV2.rank_memories(input_v2);
+        let top_v2 = BuiltinMemoryRetrievalV2.rank_memories(input_v2).expect("rank");
         assert_eq!(top_v2[0].id, "match");
     }
 
@@ -267,11 +268,13 @@ mod tests {
         let local = LocalPluginMemoryRetrieval::new(v2.clone(), Some("demo.local".into()));
         let a: Vec<_> = local
             .rank_memories(mk_input())
+            .expect("rank")
             .into_iter()
             .map(|m| m.id)
             .collect();
         let b: Vec<_> = v2
             .rank_memories(mk_input())
+            .expect("rank")
             .into_iter()
             .map(|m| m.id)
             .collect();

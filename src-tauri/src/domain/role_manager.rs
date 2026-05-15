@@ -9,7 +9,9 @@ use crate::domain::{
     prompt_builder::effective_reply_quality_anchor, EventDetector, MemoryEngine, PersonalityEngine,
     PromptInput,
 };
+use crate::infrastructure::high_risk_grants::HighRiskGrantStore;
 use crate::infrastructure::llm::{LlmClient, MockLlmClient};
+use crate::infrastructure::remote_fallback_policy::new_remote_fallback_switch;
 use crate::models::{
     Emotion, Event, EventType, Memory, PersonalitySource, PersonalityVector, Role,
 };
@@ -19,7 +21,10 @@ fn resolved_plugins_dummy(role: &Role) -> ResolvedRolePlugins {
     let dummy_llm: Arc<dyn LlmClient> = Arc::new(MockLlmClient {
         reply: String::new(),
     });
-    PluginHost::new(dummy_llm, None, std::env::temp_dir()).resolve_for_role(role)
+    let tmp = std::env::temp_dir();
+    let grants = HighRiskGrantStore::load(tmp.clone(), false);
+    let remote_fb = new_remote_fallback_switch(true);
+    PluginHost::new(dummy_llm, None, tmp, grants, remote_fb).resolve_for_role(role)
 }
 
 /// 角色管理器
@@ -130,43 +135,51 @@ impl RoleManager {
         self.memory_engine.add_short_term(memory);
 
         // 5. 获取相关记忆（走 MemoryRetrieval，与主对话管线一致）
-        let relevant_memories = self.plugins.memory.rank_memories(MemoryRetrievalInput {
-            memories: long_term_memories,
-            user_query: user_input,
-            scene_id: None,
-            limit: 3,
-        });
+        let relevant_memories = self
+            .plugins
+            .memory
+            .rank_memories(MemoryRetrievalInput {
+                memories: long_term_memories,
+                user_query: user_input,
+                scene_id: None,
+                limit: 3,
+            })
+            .expect("rank_memories");
 
         // 6. 构建提示词
-        let prompt = self.plugins.prompt.build_prompt(&PromptInput {
-            role: &self.role,
-            personality: &updated_personality,
-            memories: &relevant_memories,
-            user_input,
-            user_emotion: user_emotion_prompt.as_str(),
-            user_relation_id: "",
-            relation_hint: "",
-            relation_before: "Stranger",
-            favorability_before: 0.0,
-            relation_preview: "Stranger",
-            favorability_preview: 0.0,
-            event_type: event
-                .as_ref()
-                .map(|e| &e.event_type)
-                .unwrap_or(&EventType::Ignore),
-            impact_factor: event
-                .as_ref()
-                .map(|e| EventDetector::get_impact_factor(&e.event_type))
-                .unwrap_or(0.0),
-            scene_label: "",
-            scene_detail: "",
-            topic_hint_line: "",
-            life_context_line: "",
-            worldview_snippet: "",
-            mutable_personality: "",
-            reply_quality_anchor: effective_reply_quality_anchor(&self.role),
-            previous_complex_emotion_narrative_hint: "",
-        });
+        let prompt = self
+            .plugins
+            .prompt
+            .build_prompt(&PromptInput {
+                role: &self.role,
+                personality: &updated_personality,
+                memories: &relevant_memories,
+                user_input,
+                user_emotion: user_emotion_prompt.as_str(),
+                user_relation_id: "",
+                relation_hint: "",
+                relation_before: "Stranger",
+                favorability_before: 0.0,
+                relation_preview: "Stranger",
+                favorability_preview: 0.0,
+                event_type: event
+                    .as_ref()
+                    .map(|e| &e.event_type)
+                    .unwrap_or(&EventType::Ignore),
+                impact_factor: event
+                    .as_ref()
+                    .map(|e| EventDetector::get_impact_factor(&e.event_type))
+                    .unwrap_or(0.0),
+                scene_label: "",
+                scene_detail: "",
+                topic_hint_line: "",
+                life_context_line: "",
+                worldview_snippet: "",
+                mutable_personality: "",
+                reply_quality_anchor: effective_reply_quality_anchor(&self.role),
+                previous_complex_emotion_narrative_hint: "",
+            })
+            .expect("build_prompt");
 
         // 7. 更新性格
         self.personality = updated_personality.clone();

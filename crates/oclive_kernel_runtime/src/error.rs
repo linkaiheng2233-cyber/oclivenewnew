@@ -50,6 +50,14 @@ pub enum AppError {
     #[error("Invalid parameter: {0}")]
     InvalidParameter(String),
 
+    /// MCP `http`/`stdio` 或目录插件子进程等：未在宿主侧显式授权前不得执行。
+    #[error("High-risk capability not granted: {capability} (id={id})")]
+    HighRiskCapabilityNotGranted { capability: String, id: String },
+
+    /// 已配置 `plugin_backends.* = remote` 且用户关闭「远端失败自动降级」时，远端 HTTP/RPC 不可用或返回不可解析结果。
+    #[error("Remote service unavailable: {0}")]
+    RemoteServiceUnavailable(String),
+
     #[error("Serialization error: {0}")]
     SerializationError(#[from] serde_json::Error),
 
@@ -74,6 +82,8 @@ impl AppError {
             AppError::StartupHealthFailed(_) => "STARTUP_HEALTH_FAILED",
             AppError::RolePackExists(_) => "ROLE_PACK_EXISTS",
             AppError::InvalidParameter(_) => "INVALID_PARAMETER",
+            AppError::HighRiskCapabilityNotGranted { .. } => "HIGH_RISK_CAPABILITY_NOT_GRANTED",
+            AppError::RemoteServiceUnavailable(_) => "REMOTE_SERVICE_UNAVAILABLE",
             AppError::SerializationError(_) => "SERDE_ERROR",
             AppError::Unknown(_) => "UNKNOWN_ERROR",
             AppError::TransactionError { code, .. } => code,
@@ -140,6 +150,26 @@ mod tests {
         let j: KernelErrorBody = serde_json::from_str(&e.to_kernel_json()).expect("json");
         assert_eq!(j.code, "STARTUP_HEALTH_FAILED");
         assert!(j.message.contains("db ping"));
+    }
+
+    #[test]
+    fn high_risk_capability_not_granted_code() {
+        let e = AppError::HighRiskCapabilityNotGranted {
+            capability: "mcp_http".into(),
+            id: "weather".into(),
+        };
+        assert_eq!(e.code(), "HIGH_RISK_CAPABILITY_NOT_GRANTED");
+        let j: KernelErrorBody = serde_json::from_str(&e.to_kernel_json()).expect("json");
+        assert_eq!(j.code, "HIGH_RISK_CAPABILITY_NOT_GRANTED");
+        assert!(j.message.contains("weather"));
+    }
+
+    #[test]
+    fn remote_service_unavailable_code() {
+        let e = AppError::RemoteServiceUnavailable("emotion.analyze timeout".into());
+        assert_eq!(e.code(), "REMOTE_SERVICE_UNAVAILABLE");
+        let j: KernelErrorBody = serde_json::from_str(&e.to_kernel_json()).expect("json");
+        assert_eq!(j.code, "REMOTE_SERVICE_UNAVAILABLE");
     }
 
     #[test]

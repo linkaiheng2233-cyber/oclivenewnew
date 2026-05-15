@@ -35,7 +35,7 @@
 ## 切换后端（概要）
 
 1. 编辑 **`roles/default/settings.json`** 的 `plugin_backends` 对应字段。
-2. **`remote`**：配置 **`OCLIVE_REMOTE_PLUGIN_URL`** / **`OCLIVE_REMOTE_LLM_URL`** 等（见 PLUGIN_V1 与 REMOTE_PLUGIN_PROTOCOL）。
+2. **`remote`**：配置 **`OCLIVE_REMOTE_PLUGIN_URL`** / **`OCLIVE_REMOTE_LLM_URL`** 等（见 PLUGIN_V1 与 REMOTE_PLUGIN_PROTOCOL）。**远端失败是否静默降级内置**由主应用 `app_settings.remote_fallback_to_builtin` 与 **`OCLIVE_REMOTE_FALLBACK_TO_BUILTIN`** 环境变量控制（默认允许降级）；关闭时不可达侧车将返回 **`REMOTE_SERVICE_UNAVAILABLE`**。
 3. **`directory`**：在包内配置 **`plugin_backends.directory_plugins`** 各槽的 manifest **`id`**，并放置 **`plugins/<id>/`**（见 DIRECTORY_PLUGINS.md）。
 
 ## 开发者编译选项（已可用）

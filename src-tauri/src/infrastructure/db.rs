@@ -1675,6 +1675,15 @@ impl DbManager {
         .map_err(|e| AppError::DatabaseError(e.to_string()))?;
         Ok(())
     }
+
+    /// 读取 `app_settings` 单行；无键时返回 `Ok(None)`。
+    pub async fn get_app_setting(&self, key: &str) -> Result<Option<String>> {
+        sqlx::query_scalar::<_, String>("SELECT value FROM app_settings WHERE key = ? LIMIT 1")
+            .bind(key)
+            .fetch_optional(&self.pool)
+            .await
+            .map_err(|e| AppError::DatabaseError(e.to_string()))
+    }
 /// # Errors
 ///
 /// Returns [`Err`] with a human-readable message when the operation fails.

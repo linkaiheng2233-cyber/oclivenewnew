@@ -1,6 +1,7 @@
 //! 扫描根目录、解析 manifest、懒启动子进程并缓存 RPC URL。
 
 use super::manifest::{normalize_ui_slot_appearance_id, OclivePluginManifest};
+use crate::infrastructure::high_risk_grants::HighRiskGrantStore;
 use crate::infrastructure::plugin_state::{PluginStateFile, PluginStateStore, RolePluginState};
 use crate::models::ui_config::UiConfig;
 use parking_lot::{Mutex, RwLock};
@@ -212,10 +213,15 @@ pub struct DirectoryPluginRuntime {
     active_role_id: Arc<RwLock<Option<String>>>,
     /// 与 `get_directory_plugin_catalog` 短时缓存联动；`rescan_plugin_roots` 时递增使缓存失效。
     catalog_invalidate_gen: AtomicU64,
+    high_risk_grants: Arc<HighRiskGrantStore>,
 }
 
 impl DirectoryPluginRuntime {
-    pub fn bootstrap(roles_dir: &Path, app_data: &Path) -> Arc<Self> {
+    pub fn bootstrap(
+        roles_dir: &Path,
+        app_data: &Path,
+        high_risk_grants: Arc<HighRiskGrantStore>,
+    ) -> Arc<Self> {
         let host = HostPluginsFile::load(app_data);
         let scan = scan_plugins(roles_dir, app_data, &host);
         tracing::info!(
@@ -239,6 +245,7 @@ impl DirectoryPluginRuntime {
             plugin_state_store,
             active_role_id: Arc::new(RwLock::new(None)),
             catalog_invalidate_gen: AtomicU64::new(0),
+            high_risk_grants,
         })
     }
 
@@ -589,6 +596,18 @@ impl DirectoryPluginRuntime {
             .cloned()
             .ok_or_else(|| format!("unknown directory plugin_id={}", id))?;
         let manifest = OclivePluginManifest::load_from_dir(&root)?;
+        if manifest.process.is_some()
+            && !self
+                .high_risk_grants
+                .is_directory_plugin_spawn_granted(id)
+        {
+            tracing::warn!(
+                target: "oclive_plugin",
+                "directory plugin id={} spawn blocked: grant directory_plugin_process_spawn missing",
+                id
+            );
+            return Err(format!("directory plugin spawn not granted: plugin_id={}", id));
+        }
         let (url, child, started_ms) =
             self.spawn_child_handshake(id, root, manifest, config_json)?;
         self.children.lock().insert(id.to_string(), child);

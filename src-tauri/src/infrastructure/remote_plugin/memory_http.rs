@@ -3,11 +3,15 @@
 use crate::domain::memory_engine::MemoryEngine;
 use crate::domain::memory_retrieval::{MemoryRetrieval, MemoryRetrievalInput};
 use crate::domain::BuiltinMemoryRetrieval;
+use crate::error::{AppError, Result};
+use crate::infrastructure::remote_fallback_policy::remote_fallback_load;
 use crate::infrastructure::remote_plugin::config::RemotePluginHttpConfig;
 use crate::infrastructure::remote_plugin::jsonrpc::{self, RemoteRpcChannel};
 use crate::models::{Memory, MemoryContext};
 use serde_json::{json, Value};
 use std::collections::{HashMap, HashSet};
+use std::sync::atomic::AtomicBool;
+use std::sync::Arc;
 
 const METHOD_MEMORY_RANK: &str = "memory.rank";
 
@@ -15,13 +19,17 @@ pub struct RemoteMemoryRetrievalHttp {
     client: reqwest::blocking::Client,
     cfg: RemotePluginHttpConfig,
     fallback: BuiltinMemoryRetrieval,
+    remote_fallback_allowed: Arc<AtomicBool>,
 }
 
 impl RemoteMemoryRetrievalHttp {
-/// # Errors
-///
-/// Returns [`Err`] with a human-readable message when the operation fails.
-    pub fn new(cfg: RemotePluginHttpConfig) -> std::result::Result<Self, reqwest::Error> {
+    /// # Errors
+    ///
+    /// Returns [`Err`] with a human-readable message when the operation fails.
+    pub fn new(
+        cfg: RemotePluginHttpConfig,
+        remote_fallback_allowed: Arc<AtomicBool>,
+    ) -> std::result::Result<Self, reqwest::Error> {
         let client = reqwest::blocking::Client::builder()
             .connect_timeout(cfg.connect_timeout())
             .timeout(cfg.timeout)
@@ -30,6 +38,7 @@ impl RemoteMemoryRetrievalHttp {
             client,
             cfg,
             fallback: BuiltinMemoryRetrieval,
+            remote_fallback_allowed,
         })
     }
 
@@ -90,16 +99,23 @@ fn apply_ordered_ids(memories: &[Memory], ordered_ids: &[String], limit: usize) 
 }
 
 impl MemoryRetrieval for RemoteMemoryRetrievalHttp {
-    fn rank_memories(&self, input: MemoryRetrievalInput<'_>) -> Vec<Memory> {
+    fn rank_memories(&self, input: MemoryRetrievalInput<'_>) -> Result<Vec<Memory>> {
         match self.rank_remote(&input) {
-            Some(v) if !v.is_empty() => v,
+            Some(v) if !v.is_empty() => Ok(v),
             _ => {
-                tracing::warn!(
-                    target: "oclive_plugin",
-                    "memory.rank remote failed or empty endpoint={} fallback=builtin",
-                    self.cfg.endpoint
-                );
-                self.fallback.rank_memories(input)
+                if remote_fallback_load(&self.remote_fallback_allowed) {
+                    tracing::warn!(
+                        target: "oclive_plugin",
+                        "memory.rank remote failed or empty endpoint={} fallback=builtin",
+                        self.cfg.endpoint
+                    );
+                    self.fallback.rank_memories(input)
+                } else {
+                    Err(AppError::RemoteServiceUnavailable(format!(
+                        "memory.rank remote failed or empty endpoint={}",
+                        self.cfg.endpoint
+                    )))
+                }
             }
         }
     }

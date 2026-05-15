@@ -2,9 +2,10 @@
 //!
 //! 主对话与标签任务的温度、top_p 见 [`super::llm_params`]（环境变量 `OCLIVE_LLM_*`）。
 
-use crate::error::Result;
+use crate::error::{AppError, Result};
 use crate::infrastructure::llm_params;
 use crate::infrastructure::ollama_client::OllamaClient;
+use crate::infrastructure::remote_fallback_policy::remote_fallback_load;
 use async_trait::async_trait;
 use std::sync::atomic::{AtomicBool, Ordering};
 use std::sync::Arc;
@@ -76,17 +77,20 @@ impl LlmClient for MockLlmClient {
     }
 }
 
-/// `plugin_backends.llm = remote` 时占位：委托内置客户端并记一次警告（与 memory Remote 策略一致）
+/// `plugin_backends.llm = remote` 时占位：未配置 `OCLIVE_REMOTE_LLM_URL` 或侧车客户端构建失败时生效。
+/// 允许降级时委托内置客户端并记一次警告；否则返回 [`AppError::RemoteServiceUnavailable`]。
 pub struct RemoteLlmPlaceholder {
     inner: Arc<dyn LlmClient>,
     warned: AtomicBool,
+    remote_fallback_allowed: Arc<AtomicBool>,
 }
 
 impl RemoteLlmPlaceholder {
-    pub fn new(inner: Arc<dyn LlmClient>) -> Self {
+    pub fn new(inner: Arc<dyn LlmClient>, remote_fallback_allowed: Arc<AtomicBool>) -> Self {
         Self {
             inner,
             warned: AtomicBool::new(false),
+            remote_fallback_allowed,
         }
     }
 
@@ -107,13 +111,25 @@ impl RemoteLlmPlaceholder {
 #[async_trait]
 impl LlmClient for RemoteLlmPlaceholder {
     async fn generate(&self, model: &str, prompt: &str) -> Result<String> {
-        self.warn_once();
-        self.inner.generate(model, prompt).await
+        if remote_fallback_load(&self.remote_fallback_allowed) {
+            self.warn_once();
+            return self.inner.generate(model, prompt).await;
+        }
+        Err(AppError::RemoteServiceUnavailable(
+            "llm backend Remote is not connected (set OCLIVE_REMOTE_LLM_URL or enable remote fallback to builtin)"
+                .to_string(),
+        ))
     }
 
     async fn generate_tag(&self, model: &str, prompt: &str) -> Result<String> {
-        self.warn_once();
-        self.inner.generate_tag(model, prompt).await
+        if remote_fallback_load(&self.remote_fallback_allowed) {
+            self.warn_once();
+            return self.inner.generate_tag(model, prompt).await;
+        }
+        Err(AppError::RemoteServiceUnavailable(
+            "llm backend Remote is not connected (set OCLIVE_REMOTE_LLM_URL or enable remote fallback to builtin)"
+                .to_string(),
+        ))
     }
 
     async fn startup_probe(&self) -> Result<()> {

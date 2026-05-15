@@ -5,9 +5,13 @@ import {
   callMcpTool,
   clearAgentDebugTraces,
   getAgentDebugTraces,
+  grantHighRiskCapability,
+  listHighRiskGrants,
   listMcpTools,
   listMcpServers,
+  revokeHighRiskCapability,
   type AgentDebugTrace,
+  type HighRiskGrantsSnapshot,
   type McpToolManifest,
   type McpServerManifest,
 } from "../utils/tauri-api";
@@ -24,9 +28,39 @@ const paramsText = ref('{"city":"Beijing"}');
 const callResultText = ref("");
 const availableTools = ref<McpToolManifest[]>([]);
 const callResultHistory = ref<Array<{ id: string; label: string; payload: string }>>([]);
-const compareLeftId = ref("");
-const compareRightId = ref("");
-const diffText = ref("");
+const grants = ref<HighRiskGrantsSnapshot | null>(null);
+const grantKind = ref<"mcp_http" | "mcp_stdio" | "directory_plugin_process_spawn">("mcp_http");
+const grantTargetId = ref("");
+
+async function refreshGrants(): Promise<void> {
+  grants.value = await listHighRiskGrants();
+}
+
+async function doGrant(): Promise<void> {
+  const id = grantTargetId.value.trim();
+  if (!id) return;
+  busy.value = true;
+  try {
+    await grantHighRiskCapability(grantKind.value, id);
+    await refreshGrants();
+    await refreshServers();
+  } finally {
+    busy.value = false;
+  }
+}
+
+async function doRevoke(): Promise<void> {
+  const id = grantTargetId.value.trim();
+  if (!id) return;
+  busy.value = true;
+  try {
+    await revokeHighRiskCapability(grantKind.value, id);
+    await refreshGrants();
+    await refreshServers();
+  } finally {
+    busy.value = false;
+  }
+}
 
 const CUSTOM_TEMPLATE_KEY = "oclive.agent.templates.v1";
 type TemplateItem = {
@@ -86,6 +120,7 @@ async function refreshServers(): Promise<void> {
   if (selectedServerId.value) {
     availableTools.value = await listMcpTools(selectedServerId.value);
   }
+  await refreshGrants();
 }
 
 async function refreshTraces(): Promise<void> {
@@ -222,7 +257,7 @@ onMounted(async () => {
   loadCustomTemplates();
   busy.value = true;
   try {
-    await Promise.all([refreshServers(), refreshTraces()]);
+    await Promise.all([refreshServers(), refreshTraces(), refreshGrants()]);
   } finally {
     busy.value = false;
   }
@@ -235,6 +270,34 @@ onMounted(async () => {
     <p class="adp-sub">
       {{ t("devTools.agent.lead") }}
     </p>
+
+    <div v-if="grants" class="adp-form adp-grants">
+      <h4 class="adp-h4">{{ t("devTools.agent.grantsTitle") }}</h4>
+      <p class="adp-grants-hint">{{ t("devTools.agent.grantsHint") }}</p>
+      <pre class="adp-pre adp-pre-compact">{{ JSON.stringify(grants, null, 2) }}</pre>
+      <div class="adp-row">
+        <label class="adp-inline">
+          {{ t("devTools.agent.grantKind") }}
+          <select v-model="grantKind" class="adp-input">
+            <option value="mcp_http">mcp_http</option>
+            <option value="mcp_stdio">mcp_stdio</option>
+            <option value="directory_plugin_process_spawn">directory_plugin_process_spawn</option>
+          </select>
+        </label>
+        <label class="adp-inline adp-grow">
+          {{ t("devTools.agent.grantId") }}
+          <input v-model="grantTargetId" class="adp-input" :placeholder="t('devTools.agent.grantIdPh')" />
+        </label>
+      </div>
+      <div class="adp-row">
+        <button type="button" class="adp-btn primary" :disabled="busy" @click="doGrant">
+          {{ t("devTools.agent.grantBtn") }}
+        </button>
+        <button type="button" class="adp-btn" :disabled="busy" @click="doRevoke">
+          {{ t("devTools.agent.revokeBtn") }}
+        </button>
+      </div>
+    </div>
 
     <div class="adp-row">
       <button type="button" class="adp-btn" :disabled="busy" @click="refreshServers">
@@ -397,6 +460,33 @@ onMounted(async () => {
   background: var(--panel-bg-soft);
   white-space: pre-wrap;
   word-break: break-word;
+}
+.adp-pre-compact {
+  max-height: 140px;
+  overflow: auto;
+  font-size: 11px;
+}
+.adp-grants {
+  margin-bottom: 12px;
+  padding: 10px;
+  border: 1px solid var(--border-light);
+  border-radius: 8px;
+  background: var(--panel-bg-soft);
+}
+.adp-grants-hint {
+  margin: 0 0 8px;
+  font-size: 12px;
+  color: var(--text-secondary);
+}
+.adp-inline {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  font-size: 12px;
+}
+.adp-grow {
+  flex: 1;
+  min-width: 120px;
 }
 .adp-traces {
   margin-top: 10px;

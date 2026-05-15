@@ -179,12 +179,15 @@ pub(crate) async fn process_co_present(
         .map(|m| m.scene_weight_multiplier)
         .unwrap_or(1.0);
     weight_memories_for_scene(&mut memories, scene_id.as_str(), scene_m);
-    let mut relevant = pl.memory.rank_memories(MemoryRetrievalInput {
-        memories: &memories,
-        user_query: user_message,
-        scene_id: Some(scene_id.as_str()),
-        limit: 8,
-    });
+    let mut relevant = cp!(
+        pl.memory.rank_memories(MemoryRetrievalInput {
+            memories: &memories,
+            user_query: user_message,
+            scene_id: Some(scene_id.as_str()),
+            limit: 8,
+        }),
+        "memory_rank"
+    )?;
 
     let user_relation_key: String = cp!(
         resolve_effective_user_relation_key(state, role, srid, Some(scene_id.as_str())).await,
@@ -264,29 +267,32 @@ pub(crate) async fn process_co_present(
         KnowledgeIndex::format_for_prompt(knowledge_chunks.as_slice(), 6000)
     };
 
-    let prompt = pl.prompt.build_prompt(&PromptInput {
-        role,
-        personality: &personality,
-        memories: &relevant,
-        user_input: user_message,
-        user_emotion: user_emotion_prompt.as_str(),
-        user_relation_id: user_relation_key.as_str(),
-        relation_hint: rf.relation_hint,
-        relation_before: relation_before.as_str(),
-        favorability_before,
-        relation_preview: relation_after.as_str(),
-        favorability_preview: (favorability_before + favor_delta).clamp(0.0, 100.0),
-        event_type: &ai_event_type,
-        impact_factor: ai_impact_factor_final,
-        scene_label: &scene_label,
-        scene_detail: scene_detail_buf.as_str(),
-        topic_hint_line: &topic_line,
-        life_context_line: life_context_line.as_str(),
-        worldview_snippet: worldview_snippet.as_str(),
-        mutable_personality: mutable_for_prompt.as_str(),
-        reply_quality_anchor: effective_reply_quality_anchor(role),
-        previous_complex_emotion_narrative_hint: prev_stored_narrative_hint.as_str(),
-    });
+    let prompt = cp!(
+        pl.prompt.build_prompt(&PromptInput {
+            role,
+            personality: &personality,
+            memories: &relevant,
+            user_input: user_message,
+            user_emotion: user_emotion_prompt.as_str(),
+            user_relation_id: user_relation_key.as_str(),
+            relation_hint: rf.relation_hint,
+            relation_before: relation_before.as_str(),
+            favorability_before,
+            relation_preview: relation_after.as_str(),
+            favorability_preview: (favorability_before + favor_delta).clamp(0.0, 100.0),
+            event_type: &ai_event_type,
+            impact_factor: ai_impact_factor_final,
+            scene_label: &scene_label,
+            scene_detail: scene_detail_buf.as_str(),
+            topic_hint_line: &topic_line,
+            life_context_line: life_context_line.as_str(),
+            worldview_snippet: worldview_snippet.as_str(),
+            mutable_personality: mutable_for_prompt.as_str(),
+            reply_quality_anchor: effective_reply_quality_anchor(role),
+            previous_complex_emotion_narrative_hint: prev_stored_narrative_hint.as_str(),
+        }),
+        "build_prompt"
+    )?;
 
     let pre_main_llm_ms = t_cp0.elapsed().as_millis() as u64;
     let t_main_llm = Instant::now();

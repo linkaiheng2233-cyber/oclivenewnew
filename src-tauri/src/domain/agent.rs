@@ -1,4 +1,4 @@
-use crate::error::Result;
+use crate::error::{AppError, Result};
 use crate::infrastructure::function_call_parser::{
     parse_from_llm_response, to_function_calling_schema, ToolSchemaInput,
 };
@@ -109,13 +109,25 @@ impl BuiltinReActAgent {
         self.mcp.call_tool(server_id, tool_name, params)
     }
 
+    fn list_tools_for_server(&self, s: &McpServerManifest) -> Vec<crate::infrastructure::mcp_client::McpToolManifest> {
+        match self.mcp.list_tools(s.id.as_str()) {
+            Ok(t) => t,
+            Err(AppError::HighRiskCapabilityNotGranted { .. }) => {
+                tracing::info!(
+                    target: "oclive_plugin",
+                    "mcp server {} omitted from agent tool schema (transport not granted)",
+                    s.id
+                );
+                Vec::new()
+            }
+            Err(_) => s.tools.clone(),
+        }
+    }
+
     fn collect_tool_schema_inputs(&self) -> Vec<ToolSchemaInput> {
         let mut out: Vec<ToolSchemaInput> = Vec::new();
         for s in self.mcp.list_servers() {
-            let tools = self
-                .mcp
-                .list_tools(s.id.as_str())
-                .unwrap_or_else(|_| s.tools.clone());
+            let tools = self.list_tools_for_server(&s);
             for t in tools {
                 let name = t.name.trim().to_string();
                 if name.is_empty() {
@@ -139,10 +151,7 @@ impl BuiltinReActAgent {
 
     fn server_for_tool(&self, tool_name: &str) -> Option<McpServerManifest> {
         for s in self.mcp.list_servers() {
-            let listed = self
-                .mcp
-                .list_tools(s.id.as_str())
-                .unwrap_or_else(|_| s.tools.clone());
+            let listed = self.list_tools_for_server(&s);
             if listed.iter().any(|t| t.name.trim() == tool_name) {
                 return Some(s);
             }

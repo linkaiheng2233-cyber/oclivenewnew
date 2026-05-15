@@ -3,10 +3,13 @@
 use crate::domain::emotion_analyzer::EmotionResult;
 use crate::domain::user_emotion_analyzer::UserEmotionAnalyzer;
 use crate::domain::BuiltinUserEmotionAnalyzer;
-use crate::error::Result;
+use crate::error::{AppError, Result};
+use crate::infrastructure::remote_fallback_policy::remote_fallback_load;
 use crate::infrastructure::remote_plugin::config::RemotePluginHttpConfig;
 use crate::infrastructure::remote_plugin::jsonrpc::{self, RemoteRpcChannel};
 use serde_json::json;
+use std::sync::atomic::AtomicBool;
+use std::sync::Arc;
 
 const METHOD_EMOTION_ANALYZE: &str = "emotion.analyze";
 
@@ -14,13 +17,17 @@ pub struct RemoteUserEmotionAnalyzerHttp {
     client: reqwest::blocking::Client,
     cfg: RemotePluginHttpConfig,
     fallback: BuiltinUserEmotionAnalyzer,
+    remote_fallback_allowed: Arc<AtomicBool>,
 }
 
 impl RemoteUserEmotionAnalyzerHttp {
-/// # Errors
-///
-/// Returns [`Err`] with a human-readable message when the operation fails.
-    pub fn new(cfg: RemotePluginHttpConfig) -> std::result::Result<Self, reqwest::Error> {
+    /// # Errors
+    ///
+    /// Returns [`Err`] with a human-readable message when the operation fails.
+    pub fn new(
+        cfg: RemotePluginHttpConfig,
+        remote_fallback_allowed: Arc<AtomicBool>,
+    ) -> std::result::Result<Self, reqwest::Error> {
         let client = reqwest::blocking::Client::builder()
             .timeout(cfg.timeout)
             .build()?;
@@ -28,6 +35,7 @@ impl RemoteUserEmotionAnalyzerHttp {
             client,
             cfg,
             fallback: BuiltinUserEmotionAnalyzer,
+            remote_fallback_allowed,
         })
     }
 }
@@ -50,13 +58,20 @@ impl UserEmotionAnalyzer for RemoteUserEmotionAnalyzerHttp {
                 Ok(r)
             }
             Err(e) => {
-                tracing::warn!(
-                    target: "oclive_plugin",
-                    "emotion.analyze remote failed endpoint={} err={}; fallback=builtin",
-                    self.cfg.endpoint,
-                    e
-                );
-                self.fallback.analyze(text)
+                if remote_fallback_load(&self.remote_fallback_allowed) {
+                    tracing::warn!(
+                        target: "oclive_plugin",
+                        "emotion.analyze remote failed endpoint={} err={}; fallback=builtin",
+                        self.cfg.endpoint,
+                        e
+                    );
+                    self.fallback.analyze(text)
+                } else {
+                    Err(AppError::RemoteServiceUnavailable(format!(
+                        "emotion.analyze remote failed endpoint={} err={}",
+                        self.cfg.endpoint, e
+                    )))
+                }
             }
         }
     }

@@ -42,6 +42,10 @@ export default {
   ROLE_PACK_EXISTS: "该角色 ID 已存在。若要替换本地版本，请选择覆盖。",
   INVALID_PARAMETER: "参数无效，请检查输入内容。",
   INVALID_PARAMETER_DETAIL: "参数无效：{detail}",
+  HIGH_RISK_CAPABILITY_NOT_GRANTED:
+    "尚未授权该高风险能力（MCP 传输或目录插件子进程）。请在「插件与后端 → Agent 调试」中授权对应项，或由发行版提供显式确认流程。",
+  REMOTE_SERVICE_UNAVAILABLE:
+    "远端 HTTP 插件或侧车不可用，且当前已关闭「远端失败时自动降级内置」。请检查 `OCLIVE_REMOTE_PLUGIN_URL` / `OCLIVE_REMOTE_LLM_URL` 等是否可达，或在设置 → 常规中重新开启降级；亦可用环境变量 `OCLIVE_REMOTE_FALLBACK_TO_BUILTIN=1`。",
   OLLAMA_TIMEOUT: "沐沐走神了，再问一次吧。",
   TXN_ROLLBACK: "操作失败，请稍后再试。",
   SERDE_ERROR: "数据解析失败，请稍后重试。",

@@ -20,6 +20,7 @@ use crate::domain::user_emotion_analyzer::{
     BuiltinUserEmotionAnalyzer, BuiltinUserEmotionAnalyzerV2, UserEmotionAnalyzer,
 };
 use crate::infrastructure::directory_plugins::DirectoryPluginRuntime;
+use crate::infrastructure::high_risk_grants::HighRiskGrantStore;
 use crate::infrastructure::llm::LlmClient;
 use crate::infrastructure::mcp_client::{McpClient, McpServerManifest, McpToolCallResult};
 use crate::infrastructure::remote_plugin::{
@@ -33,6 +34,7 @@ use crate::models::{
 use parking_lot::RwLock;
 use serde_json::Value;
 use std::path::PathBuf;
+use std::sync::atomic::AtomicBool;
 use std::sync::Arc;
 use thiserror::Error;
 
@@ -81,6 +83,7 @@ pub struct BackendRegistry {
     agent_directory: Arc<dyn AgentProvider>,
     local_plugins: RwLock<LocalPluginRegistry>,
     directory_runtime: Option<Arc<DirectoryPluginRuntime>>,
+    remote_fallback_allowed: Arc<AtomicBool>,
 }
 
 fn directory_slot_id(
@@ -145,14 +148,16 @@ impl BackendRegistry {
         llm: Arc<dyn LlmClient>,
         directory_runtime: Option<Arc<DirectoryPluginRuntime>>,
         app_data_dir: PathBuf,
+        high_risk_grants: Arc<HighRiskGrantStore>,
+        remote_fallback_allowed: Arc<AtomicBool>,
     ) -> Self {
         let llm_ollama = llm.clone();
-        let llm_remote = remote_plugin::llm_remote_backend(llm);
-        let mcp = Arc::new(McpClient::new(app_data_dir));
+        let llm_remote = remote_plugin::llm_remote_backend(llm, remote_fallback_allowed.clone());
+        let mcp = Arc::new(McpClient::new(app_data_dir, high_risk_grants));
         let agent_builtin = Arc::new(BuiltinReActAgent::new(llm_ollama.clone(), mcp));
         let agent_remote: Arc<dyn AgentProvider> = agent_builtin.clone();
         let agent_directory: Arc<dyn AgentProvider> = agent_builtin.clone();
-        let rem = remote_plugin::plugin_remote_group();
+        let rem = remote_plugin::plugin_remote_group(remote_fallback_allowed.clone());
         Self {
             memory_builtin: Arc::new(BuiltinMemoryRetrieval),
             memory_builtin_v2: Arc::new(BuiltinMemoryRetrievalV2),
@@ -173,6 +178,7 @@ impl BackendRegistry {
             agent_directory,
             local_plugins: RwLock::new(LocalPluginRegistry::default()),
             directory_runtime,
+            remote_fallback_allowed,
         }
     }
 
@@ -304,7 +310,7 @@ impl BackendRegistry {
         match rt.ensure_rpc_url(pid.as_str()) {
             Ok(url) => {
                 let cfg = RemotePluginHttpConfig::for_directory_plugin_rpc(url, false);
-                match RemoteMemoryRetrievalHttp::new(cfg) {
+                match RemoteMemoryRetrievalHttp::new(cfg, self.remote_fallback_allowed.clone()) {
                     Ok(http) => Arc::new(http),
                     Err(e) => {
                         tracing::error!(
@@ -366,7 +372,7 @@ impl BackendRegistry {
         match rt.ensure_rpc_url(pid.as_str()) {
             Ok(url) => {
                 let cfg = RemotePluginHttpConfig::for_directory_plugin_rpc(url, false);
-                match RemoteUserEmotionAnalyzerHttp::new(cfg) {
+                match RemoteUserEmotionAnalyzerHttp::new(cfg, self.remote_fallback_allowed.clone()) {
                     Ok(http) => Arc::new(http),
                     Err(e) => {
                         tracing::error!(
@@ -425,7 +431,7 @@ impl BackendRegistry {
         match rt.ensure_rpc_url(pid.as_str()) {
             Ok(url) => {
                 let cfg = RemotePluginHttpConfig::for_directory_plugin_rpc(url, false);
-                match RemoteEventEstimatorHttp::new(cfg) {
+                match RemoteEventEstimatorHttp::new(cfg, self.remote_fallback_allowed.clone()) {
                     Ok(http) => Arc::new(http),
                     Err(e) => {
                         tracing::error!(
@@ -484,7 +490,7 @@ impl BackendRegistry {
         match rt.ensure_rpc_url(pid.as_str()) {
             Ok(url) => {
                 let cfg = RemotePluginHttpConfig::for_directory_plugin_rpc(url, false);
-                match RemotePromptAssemblerHttp::new(cfg) {
+                match RemotePromptAssemblerHttp::new(cfg, self.remote_fallback_allowed.clone()) {
                     Ok(http) => Arc::new(http),
                     Err(e) => {
                         tracing::error!(
@@ -574,13 +580,22 @@ impl PluginHost {
     /// - `app_data_dir`：应用数据根目录（生产环境为 Tauri app data）。当前用于初始化
     ///   [`McpClient`](crate::infrastructure::mcp_client::McpClient)（扫描 `{app_data_dir}/mcp-servers/*.json`）。
     ///   集成测试可传 `std::env::temp_dir()`。
+    /// - `high_risk_grants`：MCP 传输与目录插件子进程等显式授权（`{app_data}/high_risk_grants.json`）。
     pub fn new(
         llm: Arc<dyn LlmClient>,
         directory_runtime: Option<Arc<DirectoryPluginRuntime>>,
         app_data_dir: PathBuf,
+        high_risk_grants: Arc<HighRiskGrantStore>,
+        remote_fallback_allowed: Arc<AtomicBool>,
     ) -> Self {
         Self {
-            registry: BackendRegistry::from_runtime(llm, directory_runtime, app_data_dir),
+            registry: BackendRegistry::from_runtime(
+                llm,
+                directory_runtime,
+                app_data_dir,
+                high_risk_grants,
+                remote_fallback_allowed,
+            ),
         }
     }
 /// # Errors
@@ -727,6 +742,7 @@ impl ResolvedRolePlugins {
 mod tests {
     use super::*;
     use crate::infrastructure::llm::MockLlmClient;
+    use crate::infrastructure::remote_fallback_policy::new_remote_fallback_switch;
     use crate::models::{
         EmotionBackend, EventBackend, LlmBackend, MemoryBackend, PluginBackends,
         PluginBackendsOverride, PromptBackend,
@@ -737,7 +753,10 @@ mod tests {
         let llm: Arc<dyn LlmClient> = Arc::new(MockLlmClient {
             reply: String::new(),
         });
-        PluginHost::new(llm, None, std::env::temp_dir())
+        let tmp = std::env::temp_dir();
+        let grants = HighRiskGrantStore::load(tmp.clone(), false);
+        let remote_fb = new_remote_fallback_switch(true);
+        PluginHost::new(llm, None, tmp, grants, remote_fb)
     }
 
     #[test]
@@ -873,10 +892,16 @@ mod tests {
         let a: Vec<_> = pl
             .memory
             .rank_memories(mk())
+            .expect("rank")
             .into_iter()
             .map(|m| m.id)
             .collect();
-        let b: Vec<_> = v2.rank_memories(mk()).into_iter().map(|m| m.id).collect();
+        let b: Vec<_> = v2
+            .rank_memories(mk())
+            .expect("rank")
+            .into_iter()
+            .map(|m| m.id)
+            .collect();
         assert_eq!(a, b);
     }
 

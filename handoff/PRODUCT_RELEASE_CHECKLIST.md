@@ -59,8 +59,8 @@
 
 ### A4 插件与安全
 
-- [ ] **A4.1** 高风险能力可演示（见 [PLUGIN_HIGH_RISK_ACCEPTANCE.md](./PLUGIN_HIGH_RISK_ACCEPTANCE.md)）
-- [ ] **A4.2** manifest / 校验 / 运行时三面一致盘点
+- [x] **A4.1** 高风险能力可演示（MCP http/stdio、目录插件 `process` spawn；见 [PLUGIN_HIGH_RISK_ACCEPTANCE.md](./PLUGIN_HIGH_RISK_ACCEPTANCE.md)、[A4_CLOSURE_SUMMARY.md](./A4_CLOSURE_SUMMARY.md)）
+- [ ] **A4.2** manifest / 校验 / 运行时三面一致盘点（目录插件 `permissions` 与 `oclive_validation` 仍待对齐；见 [A4_CLOSURE_SUMMARY.md](./A4_CLOSURE_SUMMARY.md)）
 
 ### A5 版本与兼容
 

@@ -148,6 +148,7 @@ jobs:
           set -euo pipefail
           export OCLIVE_ROLES_DIR="$GITHUB_WORKSPACE/roles"
           export OCLIVE_HTTP_API_MOCK_LLM=1
+          export OCLIVE_SKIP_HIGH_RISK_GRANTS=1
           TARGET="$(python - <<'PY'
           import json, os, subprocess
           root = os.environ["GITHUB_WORKSPACE"]

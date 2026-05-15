@@ -1439,6 +1439,34 @@ export async function clearAgentDebugTraces(): Promise<void> {
   return invokeWithFriendlyError<void>("clear_agent_debug_traces", {});
 }
 
+export interface HighRiskGrantsSnapshot {
+  mcp_http: string[];
+  mcp_stdio: string[];
+  directory_plugin_process_spawn: string[];
+}
+
+export async function listHighRiskGrants(): Promise<HighRiskGrantsSnapshot> {
+  return invokeWithFriendlyError<HighRiskGrantsSnapshot>("list_high_risk_grants", {});
+}
+
+export async function grantHighRiskCapability(
+  kind: "mcp_http" | "mcp_stdio" | "directory_plugin_process_spawn",
+  id: string,
+): Promise<void> {
+  return invokeWithFriendlyError<void>("grant_high_risk_capability", {
+    req: { kind, id },
+  });
+}
+
+export async function revokeHighRiskCapability(
+  kind: "mcp_http" | "mcp_stdio" | "directory_plugin_process_spawn",
+  id: string,
+): Promise<void> {
+  return invokeWithFriendlyError<void>("revoke_high_risk_capability", {
+    req: { kind, id },
+  });
+}
+
 export interface CreatePluginScaffoldRequest {
   pluginId: string;
   pluginName: string;
@@ -1631,6 +1659,8 @@ export interface PluginBridgeUpdateSettingsParams {
   theme?: "light" | "dark" | "system";
   ui_theme?: "light" | "dark" | "system";
   interaction_mode?: string;
+  /** 与主应用设置「远端失败自动降级内置」一致：`"0"` / `"1"`。 */
+  remote_fallback_to_builtin?: string;
   [key: string]: unknown;
 }
 
@@ -1677,4 +1707,17 @@ export interface EnvironmentDiagnostics {
 
 export async function runEnvironmentDiagnostics(): Promise<EnvironmentDiagnostics> {
   return invokeWithFriendlyError<EnvironmentDiagnostics>("run_environment_diagnostics");
+}
+
+export interface RemoteFallbackAppSettings {
+  remoteFallbackToBuiltin: string;
+  remoteFallbackEnvOverrideActive: boolean;
+}
+
+export async function getRemoteFallbackAppSettings(): Promise<RemoteFallbackAppSettings> {
+  return invokeWithFriendlyError<RemoteFallbackAppSettings>("get_remote_fallback_app_settings");
+}
+
+export async function setRemoteFallbackToBuiltin(allow: boolean): Promise<void> {
+  return invokeWithFriendlyError<void>("set_remote_fallback_to_builtin", { allow });
 }

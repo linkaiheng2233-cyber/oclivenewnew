@@ -9,9 +9,13 @@ use crate::domain::{
 use crate::error::Result;
 use crate::infrastructure::db::DbManager;
 use crate::infrastructure::directory_plugins::DirectoryPluginRuntime;
+use crate::infrastructure::high_risk_grants::HighRiskGrantStore;
 use crate::infrastructure::llm::ollama_llm;
 use crate::infrastructure::llm::LlmClient;
 use crate::infrastructure::ollama_client::OllamaClient;
+use crate::infrastructure::remote_fallback_policy::{
+    new_remote_fallback_switch, remote_fallback_env_override, remote_fallback_from_db_value,
+};
 use crate::infrastructure::repositories::{SqliteFavorabilityRepository, SqliteMemoryRepository};
 use crate::infrastructure::storage::{resolve_llm_backend_env_override, RoleStorage};
 use crate::models::{
@@ -24,6 +28,7 @@ use sqlx::sqlite::{SqliteConnectOptions, SqlitePoolOptions};
 use std::collections::HashMap;
 use std::fs;
 use std::path::{Path, PathBuf};
+use std::sync::atomic::{AtomicBool, Ordering};
 use std::sync::Arc;
 
 /// 自动发现时要求至少有一个「子目录 + manifest.json」，避免误用盘符根上空的 `D:\roles` 等。
@@ -306,12 +311,16 @@ pub struct AppState {
     pub plugins: PluginHost,
     /// 目录式插件（`plugins/*/manifest.json`）扫描与懒启动。
     pub directory_plugins: Arc<DirectoryPluginRuntime>,
+    /// MCP 传输 / 目录插件子进程等高风险能力授权（`high_risk_grants.json`）。
+    pub high_risk_grants: Arc<HighRiskGrantStore>,
     /// 会话级后端覆盖（key 为对话命名空间，如 `role_id` 或 `role_id__sess__{session}`）。
     session_plugin_overrides: Arc<RwLock<HashMap<String, PluginBackendsOverride>>>,
     /// 共景路径：上一回合内置复杂情感输出的 `narrative_hint`（按 `srid` 命名空间；进程内，非 SQLite）。
     last_complex_emotion_narrative_hint: Arc<RwLock<HashMap<String, String>>>,
     /// 首轮 `process_message` 启动自检结果（致命错误缓存，后续请求直接短路）。
     pub(crate) startup_health: Mutex<Option<std::result::Result<(), String>>>,
+    /// 远端 HTTP 插件失败时是否允许静默降级内置（与 `app_settings.remote_fallback_to_builtin` 及 `OCLIVE_REMOTE_FALLBACK_TO_BUILTIN` 对齐）。
+    pub remote_fallback_allowed: Arc<AtomicBool>,
 }
 
 impl AppState {
@@ -376,6 +385,15 @@ impl AppState {
 
         let db_manager = Arc::new(DbManager::new(db.clone()));
 
+        let remote_raw = db_manager
+            .get_app_setting("remote_fallback_to_builtin")
+            .await?;
+        let mut remote_allowed = remote_fallback_from_db_value(remote_raw);
+        if let Some(v) = remote_fallback_env_override() {
+            remote_allowed = v;
+        }
+        let remote_fallback_allowed = new_remote_fallback_switch(remote_allowed);
+
         let memory_repo: Arc<dyn MemoryRepository> =
             Arc::new(SqliteMemoryRepository::new(db_manager.clone()));
         let favorability_repo: Arc<dyn FavorabilityRepository> =
@@ -394,12 +412,19 @@ impl AppState {
         let runtime = Self::build_policy_sets_from_registry(registry);
 
         let storage = RoleStorage::new(roles_dir_override.unwrap_or_else(resolve_roles_dir));
-        let directory_plugins =
-            DirectoryPluginRuntime::bootstrap(storage.roles_dir(), app_data_dir.as_ref());
+        let app_data_path = app_data_dir.as_ref().to_path_buf();
+        let high_risk_grants = HighRiskGrantStore::load(app_data_path.clone(), true);
+        let directory_plugins = DirectoryPluginRuntime::bootstrap(
+            storage.roles_dir(),
+            app_data_dir.as_ref(),
+            high_risk_grants.clone(),
+        );
         let plugins = PluginHost::new(
             llm.clone(),
             Some(directory_plugins.clone()),
-            app_data_dir.as_ref().to_path_buf(),
+            app_data_path,
+            high_risk_grants.clone(),
+            remote_fallback_allowed.clone(),
         );
         Self::bootstrap_local_plugin_providers(&plugins, storage.roles_dir());
 
@@ -416,9 +441,11 @@ impl AppState {
             ollama_model,
             plugins,
             directory_plugins,
+            high_risk_grants,
             session_plugin_overrides: Arc::new(RwLock::new(HashMap::new())),
             last_complex_emotion_narrative_hint: Arc::new(RwLock::new(HashMap::new())),
             startup_health: Mutex::new(None),
+            remote_fallback_allowed,
         })
     }
 /// # Errors
@@ -452,6 +479,15 @@ impl AppState {
 
         let db_manager = Arc::new(DbManager::new(db));
 
+        let remote_raw = db_manager
+            .get_app_setting("remote_fallback_to_builtin")
+            .await?;
+        let mut remote_allowed = remote_fallback_from_db_value(remote_raw);
+        if let Some(v) = remote_fallback_env_override() {
+            remote_allowed = v;
+        }
+        let remote_fallback_allowed = new_remote_fallback_switch(remote_allowed);
+
         let memory_repo: Arc<dyn MemoryRepository> =
             Arc::new(SqliteMemoryRepository::new(db_manager.clone()));
         let favorability_repo: Arc<dyn FavorabilityRepository> =
@@ -460,8 +496,12 @@ impl AppState {
         let storage = RoleStorage::new(roles_dir);
         let app_data_dir = storage.roles_dir().join(".oclive_directory_plugin_data");
         let _ = fs::create_dir_all(&app_data_dir);
-        let directory_plugins =
-            DirectoryPluginRuntime::bootstrap(storage.roles_dir(), &app_data_dir);
+        let high_risk_grants = HighRiskGrantStore::load(app_data_dir.clone(), false);
+        let directory_plugins = DirectoryPluginRuntime::bootstrap(
+            storage.roles_dir(),
+            &app_data_dir,
+            high_risk_grants.clone(),
+        );
         let runtime = if let Some(path) = policy_file {
             let registry = load_policy_registry_from_path(path, false)
                 .unwrap_or_else(|_| PolicyRegistryFile::with_defaults());
@@ -477,6 +517,8 @@ impl AppState {
             llm.clone(),
             Some(directory_plugins.clone()),
             app_data_dir.clone(),
+            high_risk_grants.clone(),
+            remote_fallback_allowed.clone(),
         );
         Self::bootstrap_local_plugin_providers(&plugins, storage.roles_dir());
 
@@ -493,9 +535,11 @@ impl AppState {
             ollama_model: "test-model".to_string(),
             plugins,
             directory_plugins,
+            high_risk_grants,
             session_plugin_overrides: Arc::new(RwLock::new(HashMap::new())),
             last_complex_emotion_narrative_hint: Arc::new(RwLock::new(HashMap::new())),
             startup_health: Mutex::new(None),
+            remote_fallback_allowed,
         })
     }
 
@@ -515,6 +559,16 @@ impl AppState {
         } else {
             w.insert(srid.to_string(), hint);
         }
+    }
+
+    /// 与 `app_settings.remote_fallback_to_builtin` 及 `OCLIVE_REMOTE_FALLBACK_TO_BUILTIN` 对齐进程内开关。
+    pub fn sync_remote_fallback_from_db_value(&self, raw: Option<String>) {
+        let mut allowed = remote_fallback_from_db_value(raw);
+        if let Some(v) = remote_fallback_env_override() {
+            allowed = v;
+        }
+        self.remote_fallback_allowed
+            .store(allowed, Ordering::Relaxed);
     }
 
     pub fn policies_for_scene(&self, scene_id: Option<&str>) -> Arc<PolicySet> {

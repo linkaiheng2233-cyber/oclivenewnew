@@ -409,6 +409,13 @@ export default {
       "When on, <strong>Ctrl+Shift+F</strong> and the plugin entry in <strong>“More”</strong> open <strong>V2 preview</strong> (remembered in settings). " +
       "For full developer debugging, open <strong>advanced mode (V1)</strong> inside V2; you can turn this off to restore defaults.",
     openV2Preview: "Open plugin manager V2 preview",
+    remoteFallbackSectionTitle: "Remote plugin failure policy",
+    remoteFallbackLabel: "Fall back to built-in when remote HTTP fails",
+    remoteFallbackHelp:
+      "When off, slots configured as remote (memory / emotion / event / prompt / LLM sidecars) return REMOTE_SERVICE_UNAVAILABLE if the sidecar is unreachable, instead of silently using built-in implementations. This complements high-risk network grants: grants gate whether outbound calls are allowed; this switch gates whether failures may degrade to built-in. The environment variable <code>OCLIVE_REMOTE_FALLBACK_TO_BUILTIN</code> overrides the effective in-process value (when set, this toggle is locked for the running process).",
+    remoteFallbackEnvLocked:
+      "An environment variable is set; the running process uses it. The database value can still be saved for sessions without the variable.",
+    remoteFallbackSavedToast: "Saved.",
     advancedTitle: "Advanced area (settings.advanced)",
     advancedDesc:
       "Plugins that declare <code>settings.advanced</code> in the manifest render here.",

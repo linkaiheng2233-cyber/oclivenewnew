@@ -5,7 +5,9 @@
 //! - transport=`stdio`：启动命令，向 stdin 写入请求 JSON，读取 stdout JSON
 
 use crate::error::{AppError, Result};
+use crate::infrastructure::high_risk_grants::HighRiskGrantStore;
 use parking_lot::RwLock;
+use std::sync::Arc;
 use serde::{Deserialize, Serialize};
 use serde_json::{json, Value};
 use std::fs;
@@ -50,17 +52,44 @@ pub struct McpToolCallResult {
 pub struct McpClient {
     root_dir: PathBuf,
     servers_cache: RwLock<Vec<McpServerManifest>>,
+    grants: Arc<HighRiskGrantStore>,
 }
 
 impl McpClient {
     #[must_use]
-    pub fn new(app_data_dir: impl AsRef<Path>) -> Self {
+    pub fn new(app_data_dir: impl AsRef<Path>, grants: Arc<HighRiskGrantStore>) -> Self {
         let root = app_data_dir.as_ref().join("mcp-servers");
         let _ = fs::create_dir_all(&root);
         Self {
             root_dir: root,
             servers_cache: RwLock::new(Vec::new()),
+            grants,
         }
+    }
+
+    fn require_mcp_transport_granted(&self, server: &McpServerManifest) -> Result<()> {
+        let sid = server.id.trim();
+        if sid.is_empty() {
+            return Err(AppError::InvalidParameter("mcp server id empty".into()));
+        }
+        let transport = server.transport.trim().to_ascii_lowercase();
+        let is_stdio = transport == "stdio";
+        if is_stdio {
+            if self.grants.is_mcp_stdio_granted(sid) {
+                return Ok(());
+            }
+            return Err(AppError::HighRiskCapabilityNotGranted {
+                capability: "mcp_stdio".into(),
+                id: server.id.clone(),
+            });
+        }
+        if self.grants.is_mcp_http_granted(sid) {
+            return Ok(());
+        }
+        Err(AppError::HighRiskCapabilityNotGranted {
+            capability: "mcp_http".into(),
+            id: server.id.clone(),
+        })
     }
 
     fn read_manifests_from_disk(&self) -> Vec<McpServerManifest> {
@@ -130,6 +159,7 @@ impl McpClient {
             "method": "list_tools",
             "params": {}
         });
+        self.require_mcp_transport_granted(&server)?;
         let dynamic = match server.transport.trim().to_ascii_lowercase().as_str() {
             "stdio" => self.call_raw_stdio(&server, payload),
             _ => self.call_raw_http(&server, payload),
@@ -158,7 +188,12 @@ impl McpClient {
                 }
                 Ok(server.tools)
             }
-            Err(_) => Ok(server.tools),
+            Err(e) => {
+                if matches!(e, AppError::HighRiskCapabilityNotGranted { .. }) {
+                    return Err(e);
+                }
+                Ok(server.tools)
+            }
         }
     }
 /// # Errors
@@ -179,6 +214,7 @@ impl McpClient {
             "tool": tool,
             "params": params
         });
+        self.require_mcp_transport_granted(&server)?;
         let result = match server.transport.trim().to_ascii_lowercase().as_str() {
             "stdio" => self.call_tool_stdio(&server, payload)?,
             _ => self.call_tool_http(&server, payload)?,

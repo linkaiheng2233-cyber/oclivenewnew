@@ -3,9 +3,12 @@
 use crate::domain::complex_emotion::{
     BuiltinKeywordComplexEmotionProvider, ComplexEmotionInput, ComplexEmotionOutput,
 };
-use crate::error::Result;
+use crate::error::{AppError, Result};
+use crate::infrastructure::remote_fallback_policy::remote_fallback_load;
 use crate::infrastructure::remote_plugin::config::RemotePluginHttpConfig;
 use crate::infrastructure::remote_plugin::jsonrpc::{self, RemoteRpcChannel};
+use std::sync::atomic::AtomicBool;
+use std::sync::Arc;
 
 const METHOD_RESOLVE_TURN: &str = "complex_emotion.resolve_turn";
 
@@ -13,13 +16,17 @@ pub struct RemoteComplexEmotionHttp {
     client: reqwest::blocking::Client,
     cfg: RemotePluginHttpConfig,
     fallback: BuiltinKeywordComplexEmotionProvider,
+    remote_fallback_allowed: Arc<AtomicBool>,
 }
 
 impl RemoteComplexEmotionHttp {
-/// # Errors
-///
-/// Returns [`Err`] with a human-readable message when the operation fails.
-    pub fn new(cfg: RemotePluginHttpConfig) -> std::result::Result<Self, reqwest::Error> {
+    /// # Errors
+    ///
+    /// Returns [`Err`] with a human-readable message when the operation fails.
+    pub fn new(
+        cfg: RemotePluginHttpConfig,
+        remote_fallback_allowed: Arc<AtomicBool>,
+    ) -> std::result::Result<Self, reqwest::Error> {
         let client = reqwest::blocking::Client::builder()
             .timeout(cfg.timeout)
             .connect_timeout(cfg.connect_timeout())
@@ -28,11 +35,12 @@ impl RemoteComplexEmotionHttp {
             client,
             cfg,
             fallback: BuiltinKeywordComplexEmotionProvider,
+            remote_fallback_allowed,
         })
     }
-/// # Errors
-///
-/// Returns [`Err`] with a human-readable message when the operation fails.
+    /// # Errors
+    ///
+    /// Returns [`Err`] with a human-readable message when the operation fails.
     pub fn resolve_turn(&self, input: &ComplexEmotionInput) -> Result<ComplexEmotionOutput> {
         let params = serde_json::to_value(input).map_err(|e| {
             crate::error::AppError::OllamaError(format!("complex_emotion params json: {}", e))
@@ -56,15 +64,22 @@ impl RemoteComplexEmotionHttp {
                 Ok(out)
             }
             Err(e) => {
-                tracing::warn!(
-                    target: "oclive_plugin",
-                    "complex_emotion.resolve_turn remote failed endpoint={} err={}; fallback=builtin",
-                    self.cfg.endpoint,
-                    e
-                );
-                let mut o = self.fallback.resolve_turn_inner(input);
-                o.degraded_to_builtin = true;
-                Ok(o)
+                if remote_fallback_load(&self.remote_fallback_allowed) {
+                    tracing::warn!(
+                        target: "oclive_plugin",
+                        "complex_emotion.resolve_turn remote failed endpoint={} err={}; fallback=builtin",
+                        self.cfg.endpoint,
+                        e
+                    );
+                    let mut o = self.fallback.resolve_turn_inner(input);
+                    o.degraded_to_builtin = true;
+                    Ok(o)
+                } else {
+                    Err(AppError::RemoteServiceUnavailable(format!(
+                        "complex_emotion.resolve_turn remote failed endpoint={} err={}",
+                        self.cfg.endpoint, e
+                    )))
+                }
             }
         }
     }

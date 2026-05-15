@@ -29,7 +29,7 @@
 
 | 日期 | 宿主版本 | 演示人 | 备注 |
 |------|-----------|--------|------|
-| （发版时填写） | | | |
+| 2026-05-15 | oclivenewnew（本分支） | — | 宿主已实现 `high_risk_grants.json` + `HIGH_RISK_CAPABILITY_NOT_GRANTED`；Agent 调试面板可 grant；Remote `network:*` 仍待迭代。 |
 
 ---
 

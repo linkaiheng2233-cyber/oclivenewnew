@@ -42,6 +42,14 @@ export default {
     recentTitle: "Recent runs",
     emptyTraces: "No agent traces yet.",
     diffEmpty: "No diff",
+    grantsTitle: "High-risk grants",
+    grantsHint:
+      "Grant MCP (http/stdio) or directory plugin process spawn before first use; persisted to high_risk_grants.json under app data. For automation, set OCLIVE_SKIP_HIGH_RISK_GRANTS=1.",
+    grantKind: "Kind",
+    grantId: "Target id",
+    grantIdPh: "MCP server id or directory plugin id",
+    grantBtn: "Grant",
+    revokeBtn: "Revoke",
   },
   directoryShell: {
     loadFail: "Failed to load shell Vue component",
