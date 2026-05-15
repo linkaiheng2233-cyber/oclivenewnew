@@ -101,6 +101,7 @@ flowchart TB
 ## 4. 相关链接
 
 - 六槽数据流（自上而下）：[PLUGIN_V1.md § 架构图与 send_message 顺序](../plugin-and-architecture/PLUGIN_V1.md)
+- **纯净内核边界与嵌入式范围**：[PURE_KERNEL_BOUNDARY.md](PURE_KERNEL_BOUNDARY.md)
 - 创作者向三种扩展方式：[CREATOR_PLUGIN_ARCHITECTURE.md](../plugin-and-architecture/CREATOR_PLUGIN_ARCHITECTURE.md)
 - 脚手架与 Monolith：[OCLIVE_CLI_GUIDE.md](../cli/OCLIVE_CLI_GUIDE.md) · [RFC_OCLIVE_MONOLITH_MODE.md](../rfc/RFC_OCLIVE_MONOLITH_MODE.md)
 

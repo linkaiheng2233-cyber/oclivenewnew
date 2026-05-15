@@ -30,6 +30,8 @@
 | `18_DEVELOPMENT_REPORT_USER_ACTIONS.md` | **开发汇报终稿**：已完成项 + **需你方处理项**（联调/Ollama/打包网络等） |
 | `WEEKLY_DEV_GUIDE.md` | **周节奏 + 任务 + 门禁**（WEEK3 起） |
 | `22_PRODUCT_LEVEL_RELEASE_GOALS.md` | **产品级**目标定义、P0/P1 差距与相关文档索引（与 `19_RELEASE_CHECKLIST` 互补） |
+| `PRODUCT_AND_KERNEL_GAP_CHECKLIST.md` | **产品级 + 内核/平台**可优化清单（勾选跟踪） |
+| `KERNEL_IMPLEMENTATION_PLAN.md` | **内核优先**分阶段实施索引 → [creator-docs/getting-started/KERNEL_IMPLEMENTATION_PLAN.md](../creator-docs/getting-started/KERNEL_IMPLEMENTATION_PLAN.md)（[en](../creator-docs-en/getting-started/KERNEL_IMPLEMENTATION_PLAN.md)） |
 
 **Cursor 规则**：项目根 `.cursor/rules/oclivenewnew.mdc`（指向 `handoff` 文档）。
 

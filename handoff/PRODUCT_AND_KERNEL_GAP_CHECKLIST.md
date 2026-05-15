@@ -1,0 +1,133 @@
+# oclive：产品级 + 纯净内核/平台目标 — 可优化清单
+
+本文合并两类差距：
+
+1. **产品级**：陌生人能装、能懂、出事少、你能扛住反馈（桌面宿主首发）。
+2. **纯净内核与平台目标**：机器人侧「灵魂/陪伴」、嵌入式覆盖、AI 软硬件基座（与 [KERNEL_AND_MODULES_ARCHITECTURE.md](../creator-docs/getting-started/KERNEL_AND_MODULES_ARCHITECTURE.md)、[OCLIVE_CLI_GUIDE.md](../creator-docs/cli/OCLIVE_CLI_GUIDE.md) 对齐）。
+
+**优先级约定**
+
+| 标记 | 含义 |
+|------|------|
+| **P0** | 建议作为「公开发布」硬门槛；未做则首发风险高 |
+| **P1** | 不挡首发，但强烈影响口碑与维护成本 |
+| **P2** | 中长期平台/内核叙事；可分阶段排期 |
+
+---
+
+## A. 产品级（桌面宿主与首发）
+
+### A1. 测试与质量闸门（P0）
+
+- [ ] **核心路径自动化**：安装 → 启动 → 切角色 → 发消息 → 关开恢复；至少一条稳定脚本（e2e 或半 e2e）。
+- [ ] **`invoke` 集成矩阵**：高流量命令（发消息、角色信息、插件目录、设置）有针对性测试或固定对照数据集。
+- [ ] **发版前闸门与 CI 对齐**：本地 `npm run check:release` / 全量 `cargo test` 与 CI 一致执行习惯写进贡献说明并坚持。
+- [ ] **回归清单版本化**：关键手工场景（导入包、目录插件、权限拒绝路径）有勾选表，随版本更新。
+
+### A2. 首装、环境与可恢复性（P0）
+
+- [ ] **首装失败路径文案**：Ollama/模型、roles 路径、权限、杀毒误拦 — 错误码 + i18n 覆盖「下一步怎么做」。
+- [ ] **可选环境自检**：首次启动或设置页可触发轻量探测（模型可达性、目录可写等），失败时降级说明清楚。
+- [ ] **离线/弱网**：索引同步、远程插件等失败时的可理解状态与重试，避免「静默坏」。
+
+### A3. 崩溃、遥测与隐私（P0 / P1）
+
+- [ ] **崩溃与诊断**：Sentry 或等价方案若启用 — 默认开关、隐私说明、脱敏规则、用户可关闭（与根 README 叙述一致）。
+- [ ] **日志与 `[CODE]`**：用户可见错误已走 code + 前端映射的继续扫尾；避免 Rust 直出整句中文给 UI。
+
+### A4. 插件与安全边界（P0）
+
+- [ ] **高风险能力验收表**：`process:spawn`、`network:*`、stdio MCP 等 — 弹窗、拒绝后降级、审计记录可演示。
+- [ ] **权限与 manifest 一致性**：文档、校验 crate、运行时行为三者对齐，避免「文档说有、实际没有」。
+
+### A5. 版本、兼容与升级（P0）
+
+- [ ] **对外兼容一页表**：主程序版本 ↔ 编写器/启动器 ↔ `min_runtime_version` ↔ 角色包 schema；破坏性变更的迁移提示。
+- [ ] **CHANGELOG 纪律**：用户可感知的变更必记；插件作者可据此适配。
+
+### A6. 国际化与文案（P1）
+
+- [ ] **界面语言切换后无残留中文**（在承诺范围内；长尾可声明例外）。
+- [ ] **creator-docs-en**：与 [DOCUMENTATION_INDEX.md](../creator-docs/getting-started/DOCUMENTATION_INDEX.md) 对齐的英文长尾与互链。
+
+### A7. 性能与资源（P1）
+
+- [ ] **低端机 / 冷启动 / 长会话**：与 [13_PERF_BASELINE_2026-04-01.md](./13_PERF_BASELINE_2026-04-01.md) 等基线对照，公开「已知限制」或数字底线。
+
+### A8. 无障碍与基础 UX（P1）
+
+- [ ] **高频路径键盘与焦点**：设置、插件管理、聊天发送、关闭对话框。
+- [ ] **长任务进度**：导入、拉取、大索引等不可无限转圈无反馈。
+
+### A9. 支持与预期（P1）
+
+- [ ] **单一主入口**：Issue 模板、FAQ、社区/邮件任选其一写死；降低「不知道去哪问」。
+- [ ] **首发预期管理**：README 明确「早期采用者」范围与已知限制。
+
+### A10. 法律与分发（P1）
+
+- [ ] **许可证与免责声明**：第三方模型、插件市场、用户数据落盘 — README/隐私摘要可扫一眼即答三问。
+
+---
+
+## B. 纯净内核 / 机器人灵魂 / 嵌入式 / 平台
+
+### B1. 叙事与边界（P0 / P2）
+
+- [x] **「纯净内核」定义成文**：见 [PURE_KERNEL_BOUNDARY.md](../creator-docs/getting-started/PURE_KERNEL_BOUNDARY.md)。
+- [ ] **「灵魂」交付单元**：角色包 + 有效 `plugin_backends` + 会话策略 — K3 `RobotSoulPack` profile（文档 + 校验）。
+
+### B2. 机器人 / 多模态 / 低延迟（P1 / P2）
+
+- [ ] **多模态抽象**：语音流、视觉、触觉等若进产品 — 与现有文本回合编排的关系图与 MVP 边界（目录插件 vs 内核扩展）。
+- [ ] **打断与半双工**：边听边说、唤醒打断与当前 `send_message` 模型的差距评估与 PoC。
+- [ ] **多机器人 / 多用户隔离**：身份、密钥、记忆命名空间 — 若做 B 端或云边协同则升格为 P0。
+
+### B3. 嵌入式：`kernel_server` vs `library`（P0 / P2）
+
+- [ ] **能力对称策略**：Monolith 仅 `kernel_server`；`library` 路径的「焊接/瘦身」策略文档化（替代或补充 Monolith 的预期）。
+- [ ] **脚手架 → 真内核接榫**：K1 [headless-kernel-minimal](../examples/headless-kernel-minimal/README.md)（`--api` 过渡）；K2 lib 抽取 + `oclive-cli` path 依赖。
+- [ ] **诚实范围表**：已写入 [PURE_KERNEL_BOUNDARY.md](../creator-docs/getting-started/PURE_KERNEL_BOUNDARY.md) §6；随实机验证更新。
+
+### B4. 平台基座：工具链与开发者路径（P1 / P2）
+
+- [ ] **「平台开发者一条路径」**：从 `oclive-cli init` → 选形态 → 联调 → 发布检查的单线文档（链到 PLUGIN_V1、SETTINGS_REFERENCE、OOCP、目录插件）。
+- [ ] **参考硬件或仿真靶子**：至少一类参考板或 docker-compose 侧车，降低硬件团队试错成本。
+- [ ] **无头/边缘运维**：OTA、回滚、远程日志/健康检查 — 若承诺「平台」则需里程碑。
+
+### B5. 姊妹仓与整机交付（P1）
+
+- [ ] **主仓 ↔ doll core / 交付包**：内核契约与硬件镜像、settings 模板的关系在 [PROJECT_OVERVIEW.md](../creator-docs/getting-started/PROJECT_OVERVIEW.md) 或专页中一眼可链，避免「内核」指代漂移。
+
+---
+
+## C. 横切（两类目标共用）
+
+### C1. 文档与索引（P1）
+
+- [ ] **PRODUCT_RELEASE_CHECKLIST**：仅 P0 子集可勾版（可选独立文件），发版会议只过一张表。
+- [ ] **本清单与路线图互链**：`VISION_ROADMAP_MONTHLY.md`、`BACKLOG_EXPERIENCE_AND_ECOSYSTEM.md` 中指向本节或拆 issue。
+
+### C2. 工程纪律（P0）
+
+- [ ] **Breaking 变更流程**：谁审、谁写迁移、谁更新文档与校验。
+- [ ] **Bus factor**：关键路径（编排、迁移、DTO）至少两人可读或有一份「若我不在」的交接笔记。
+
+---
+
+## D. 建议执行顺序（2026-05 更新：内核优先）
+
+1. **K0–K5 内核里程碑** — 见 [KERNEL_IMPLEMENTATION_PLAN.md](../creator-docs/getting-started/KERNEL_IMPLEMENTATION_PLAN.md)（[English](../creator-docs-en/getting-started/KERNEL_IMPLEMENTATION_PLAN.md)）；**产品级 A 区暂缓**。
+2. **K1**：无头 `--api` + `examples/headless-kernel-minimal` 联调闭环。
+3. **K2**：`oclive_kernel_runtime`（或等价 lib）抽取 + `oclive-cli` path 接榫。
+4. **K3–K4**：灵魂包 profile、library 与 Monolith 分工。
+5. **产品级 P0（A1–A5）** — 建议在 **K1 绿灯 + K2 有里程碑** 后再集中收口。
+
+---
+
+## 相关链接
+
+- 内核与六槽总览：[KERNEL_AND_MODULES_ARCHITECTURE.md](../creator-docs/getting-started/KERNEL_AND_MODULES_ARCHITECTURE.md)
+- CLI / 无头 / 库 / Monolith：[OCLIVE_CLI_GUIDE.md](../creator-docs/cli/OCLIVE_CLI_GUIDE.md) · [RFC_OCLIVE_MONOLITH_MODE.md](../creator-docs/rfc/RFC_OCLIVE_MONOLITH_MODE.md)
+- 六槽与 `send_message`：[PLUGIN_V1.md](../creator-docs/plugin-and-architecture/PLUGIN_V1.md)
+- 项目全貌：[PROJECT_OVERVIEW.md](../creator-docs/getting-started/PROJECT_OVERVIEW.md)

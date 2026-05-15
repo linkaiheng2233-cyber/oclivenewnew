@@ -14,6 +14,8 @@
 | **高耦合编译模式（Monolith）** | [RFC 章节](#rfc)（`monolith.toml`、编译期焊接） |
 | **理清项目全貌 / 人机分工 / 命令与发版清单** | **[PROJECT_OVERVIEW.md](PROJECT_OVERVIEW.md)** |
 | **以内核为中心、六槽环绕的总览图（含 Agent/MCP/Monolith 等）** | **[KERNEL_AND_MODULES_ARCHITECTURE.md](KERNEL_AND_MODULES_ARCHITECTURE.md)** |
+| **纯净内核边界、灵魂交付、嵌入式范围** | **[PURE_KERNEL_BOUNDARY.md](PURE_KERNEL_BOUNDARY.md)** · **[KERNEL_IMPLEMENTATION_PLAN.md](KERNEL_IMPLEMENTATION_PLAN.md)**（K0–K5） |
+| **无头联调（`--api`，K1）** | **[examples/headless-kernel-minimal/README.md](../../examples/headless-kernel-minimal/README.md)** |
 | 报错后如何快速定位与提 issue | **[ERROR_CODES.md](ERROR_CODES.md)** |
 | **GitHub：Dependabot、手动跑 CI、网页上要点的设置** | **[GITHUB_REPO_CHECKLIST.md](GITHUB_REPO_CHECKLIST.md)** |
 | 从零了解「可替换模块 + HTTP 侧车 + 更新策略」 | **[../plugin-and-architecture/CREATOR_PLUGIN_ARCHITECTURE.md](../plugin-and-architecture/CREATOR_PLUGIN_ARCHITECTURE.md)**（总览，建议先读） |

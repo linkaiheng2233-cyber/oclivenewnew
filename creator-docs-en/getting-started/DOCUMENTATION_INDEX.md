@@ -14,6 +14,8 @@ Creator and plugin documentation lives under repo root **`creator-docs/`** (topi
 | **High-coupling compile mode (Monolith)** | [RFC section](#rfc) (`monolith.toml`, compile-time welding) |
 | **Project map / human roles / commands / release checklist** | **[PROJECT_OVERVIEW.md](PROJECT_OVERVIEW.md)** |
 | **Kernel-centric diagram (six slots + Agent/MCP/Monolith)** | **[KERNEL_AND_MODULES_ARCHITECTURE.md](KERNEL_AND_MODULES_ARCHITECTURE.md)** |
+| **Pure kernel boundary, soul delivery, embedded scope** | **[PURE_KERNEL_BOUNDARY.md](PURE_KERNEL_BOUNDARY.md)** · **[KERNEL_IMPLEMENTATION_PLAN.md](KERNEL_IMPLEMENTATION_PLAN.md)** (K0–K5) |
+| **Headless bring-up (`--api`, K1)** | **[examples/headless-kernel-minimal/README.md](../../examples/headless-kernel-minimal/README.md)** |
 | **Fast triage after errors / filing issues** | **[ERROR_CODES.md](ERROR_CODES.md)** |
 | **GitHub: Dependabot, CI, web settings** | **[../../creator-docs/getting-started/GITHUB_REPO_CHECKLIST.md](../../creator-docs/getting-started/GITHUB_REPO_CHECKLIST.md)** |
 | **Replaceable modules + HTTP sidecar + update strategy** | **[../../creator-docs/plugin-and-architecture/CREATOR_PLUGIN_ARCHITECTURE.md](../../creator-docs/plugin-and-architecture/CREATOR_PLUGIN_ARCHITECTURE.md)** |
