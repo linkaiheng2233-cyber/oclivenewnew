@@ -49,15 +49,15 @@ flowchart LR
 
 ---
 
-## K1 — 无头联调闭环（当前工程焦点）
+## K1 — 无头联调闭环 ✅
 
-**现状**：`oclivenewnew-tauri --api`（默认端口 **8420**）、`http_api`、OOCP 套件已存在；`oclive-cli init` 仍为 serde **占位工程**。
+**现状**：`oclivenewnew-tauri --api`（默认端口 **8420**）、`http_api`、OOCP 套件已存在；无头最小闭环见 [examples/headless-kernel-minimal/README.md](../../examples/headless-kernel-minimal/README.md)。**量产/集成形态**：过渡期与 CI 仍以 **`--api`** 为主；独立进程见 **`oclive-kernel-server`**（K2）；进程内嵌见 **`library` + oclive_kernel_runtime**（K4），单线见 [KERNEL_PLATFORM_DEVELOPER_PATH.md](KERNEL_PLATFORM_DEVELOPER_PATH.md)。`oclive-cli init` **未带** `--kernel-source` 时仍为 **serde 占位骨架**；**带 `--kernel-source`** 则写入 path 依赖并指向真实工作区。
 
 **完成标准**
 
-- [ ] [examples/headless-kernel-minimal/README.md](../../examples/headless-kernel-minimal/README.md) 中英步骤可复现
-- [ ] CI `oocp-test-suite` job 保持绿灯（与 K1 等价验收）
-- [ ] 文档写明：机器人集成 **过渡期用 HTTP `--api`**，量产后用 K2 bin / lib
+- [x] [examples/headless-kernel-minimal/README.md](../../examples/headless-kernel-minimal/README.md) 中英步骤可复现
+- [x] CI `oocp-test-suite` job 保持绿灯（与 K1 等价验收；见 `.github/workflows/ci.yml` 与 [AGENTS.md](../../AGENTS.md)）
+- [x] 文档写明：`--api` / **`oclive-kernel-server`** / **`library` 嵌入** 的分工（[PURE_KERNEL_BOUNDARY.md](PURE_KERNEL_BOUNDARY.md) §5、[KERNEL_PLATFORM_DEVELOPER_PATH.md](KERNEL_PLATFORM_DEVELOPER_PATH.md)）
 
 **验收命令**
 
@@ -72,9 +72,9 @@ cd examples/oocp-test-suite && node run.mjs
 
 ---
 
-## K2 — 脚手架 → 真内核（核心工程）
+## K2 — 脚手架 → 真内核（核心工程）✅
 
-**目标**：工作区存在可 `path` 依赖的 **`oclive_kernel_runtime`**（工作名），桌面 Tauri 与无头 bin **共用同一 domain 编排**。
+**目标**：工作区存在可 `path` 依赖的 **`oclive_kernel_runtime`**，桌面 Tauri 与无头 bin **共用同一 domain 编排**（`src-tauri` 与 `oclive_kernel_server` 同仓演进）。
 
 ### K2.1  crate 拆分（建议顺序）
 
@@ -85,11 +85,13 @@ cd examples/oocp-test-suite && node run.mjs
 | 2.1.3 | 新建 `crates/oclive_kernel_server`（bin）：`main` 启动 HTTP，复用 runtime | `cargo run -p oclive_kernel_server -- --api` |
 | 2.1.4 | `src-tauri` 依赖 runtime；`--api` 可委托 server 或保留兼容一层 | 现有 `http_api` 测试仍绿 |
 
+**收口说明（2026-05-15）**：上表 2.1.1–2.1.4 已在工作区落地；本地已执行 `cargo build -p oclivenewnew-tauri`、`cargo test -p oclive_kernel_runtime`、`cargo test -p oclive-cli` 均通过。持续回归以 CI `oocp-test-suite` 与上述单测为准。
+
 ### K2.2 `oclive-cli` 接榫
 
-- [ ] `init --kernel-source <path-to-oclivenewnew>` 写入 `Cargo.toml` path 依赖与示例 `main.rs`
-- [ ] 生成 README 区分：**占位 init** vs **已接 runtime** 两种模式
-- [ ] `bench` / `build` 对真实 runtime 工程可跑（Monolith 仍仅 `kernel_server`）
+- [x] `init --kernel-source <path-to-oclivenewnew>` 写入 `Cargo.toml` path 依赖与示例 `main.rs`
+- [x] 生成 README 区分：**占位 init** vs **已接 runtime** 两种模式
+- [x] `bench` / `build` 对真实 runtime 工程可跑（Monolith 仍仅 `kernel_server`）
 
 ### K2.3 不做的（控制范围）
 
@@ -143,13 +145,26 @@ cd examples/oocp-test-suite && node run.mjs
 | K2–K4 | 可 ship 独立进程 / lib |
 | K5 | 第三方按单线接入 |
 
-**产品级 P0** 建议在 **K1 绿灯 + K2.1.3 完成** 后收口。
+**产品级 P0** 建议在 **K1 绿灯 + K2 收口**（已达成）后集中收口 **产品级 A 区**（见 gap 清单 §A）。
+
+---
+
+## 验收留痕（本地 / 2026-05-15）
+
+| 命令 | 结果 |
+|------|------|
+| `cargo build -p oclivenewnew-tauri` | 通过 |
+| `cargo test -p oclive_kernel_runtime` | 通过 |
+| `cargo test -p oclive-cli` | 通过（含 e2e，约 40s+） |
+
+**CI**：`oocp-test-suite` job（Ubuntu）与 [AGENTS.md](../../AGENTS.md) 描述一致，作为 K1 持续验收。
 
 ---
 
 ## 近期动作（建议顺序）
 
-1. 本地跑通 K1 验收命令  
-2. ~~开 issue：K2.1 crate 拆分范围评审~~（K2 已落地核心拆分）  
+1. ~~本地跑通 K1 验收命令~~（已留痕；日常保持 CI 绿）  
+2. ~~K2.1 crate 拆分 / K2.2 CLI 接榫~~（已完成）  
 3. ~~K3 RobotSoulPack~~（已完成）  
-4. doll core README 与主仓 **KERNEL_PLATFORM_DEVELOPER_PATH** 互链（见 doll core `README.md`）
+4. ~~K4 / K5 文档与 doll core 互链~~（见 [KERNEL_PLATFORM_DEVELOPER_PATH.md](KERNEL_PLATFORM_DEVELOPER_PATH.md) 与 doll core `README.md`）  
+5. **P2**：OTA / 远程日志（不阻塞内核里程碑）

@@ -75,7 +75,7 @@
 ### B1. 叙事与边界（P0 / P2）
 
 - [x] **「纯净内核」定义成文**：见 [PURE_KERNEL_BOUNDARY.md](../creator-docs/getting-started/PURE_KERNEL_BOUNDARY.md)。
-- [ ] **「灵魂」交付单元**：角色包 + 有效 `plugin_backends` + 会话策略 — K3 `RobotSoulPack` profile（文档 + 校验）。
+- [x] **「灵魂」交付单元**：角色包 + 有效 `plugin_backends` + 会话策略 — K3 **RobotSoulPack** profile（[ROLE_PACK_SPEC.md](../creator-docs/role-pack/ROLE_PACK_SPEC.md) + `oclive pack validate --profile robot-soul` + `examples/robot-soul-minimal/`）。
 
 ### B2. 机器人 / 多模态 / 低延迟（P1 / P2）
 
@@ -85,19 +85,19 @@
 
 ### B3. 嵌入式：`kernel_server` vs `library`（P0 / P2）
 
-- [ ] **能力对称策略**：Monolith 仅 `kernel_server`；`library` 路径的「焊接/瘦身」策略文档化（替代或补充 Monolith 的预期）。
-- [ ] **脚手架 → 真内核接榫**：K1 [headless-kernel-minimal](../examples/headless-kernel-minimal/README.md)（`--api` 过渡）；K2 lib 抽取 + `oclive-cli` path 依赖。
-- [ ] **诚实范围表**：已写入 [PURE_KERNEL_BOUNDARY.md](../creator-docs/getting-started/PURE_KERNEL_BOUNDARY.md) §6；随实机验证更新。
+- [x] **能力对称策略**：Monolith 仅 `kernel_server`；`library` 路径见 [PURE_KERNEL_BOUNDARY.md](../creator-docs/getting-started/PURE_KERNEL_BOUNDARY.md) §5、[KERNEL_IMPLEMENTATION_PLAN.md](../creator-docs/getting-started/KERNEL_IMPLEMENTATION_PLAN.md) K4。
+- [x] **脚手架 → 真内核接榫**：K1 [headless-kernel-minimal](../examples/headless-kernel-minimal/README.md)（`--api`）；K2 `oclive_kernel_runtime` / `oclive_kernel_server` + `oclive-cli --kernel-source`（见内核计划 **验收留痕**）。
+- [x] **诚实范围表**：已写入 [PURE_KERNEL_BOUNDARY.md](../creator-docs/getting-started/PURE_KERNEL_BOUNDARY.md) §6；随实机验证更新措辞。
 
 ### B4. 平台基座：工具链与开发者路径（P1 / P2）
 
-- [ ] **「平台开发者一条路径」**：从 `oclive-cli init` → 选形态 → 联调 → 发布检查的单线文档（链到 PLUGIN_V1、SETTINGS_REFERENCE、OOCP、目录插件）。
+- [x] **「平台开发者一条路径」**：[KERNEL_PLATFORM_DEVELOPER_PATH.md](../creator-docs/getting-started/KERNEL_PLATFORM_DEVELOPER_PATH.md)（中英）链到 PLUGIN_V1、SETTINGS_REFERENCE、OOCP、目录插件。
 - [ ] **参考硬件或仿真靶子**：至少一类参考板或 docker-compose 侧车，降低硬件团队试错成本。
-- [ ] **无头/边缘运维**：OTA、回滚、远程日志/健康检查 — 若承诺「平台」则需里程碑。
+- [ ] **无头/边缘运维**：OTA、回滚、远程日志/健康检查 — 若承诺「平台」则需里程碑（**P2**，不阻塞 K1–K5）。
 
 ### B5. 姊妹仓与整机交付（P1）
 
-- [ ] **主仓 ↔ doll core / 交付包**：内核契约与硬件镜像、settings 模板的关系在 [PROJECT_OVERVIEW.md](../creator-docs/getting-started/PROJECT_OVERVIEW.md) 或专页中一眼可链，避免「内核」指代漂移。
+- [x] **主仓 ↔ doll core / 交付包**：契约与交付说明见 [KERNEL_PLATFORM_DEVELOPER_PATH.md](../creator-docs/getting-started/KERNEL_PLATFORM_DEVELOPER_PATH.md) 与 doll core `README.md`。
 
 ---
 
@@ -115,13 +115,11 @@
 
 ---
 
-## D. 建议执行顺序（2026-05 更新：内核优先）
+## D. 建议执行顺序（2026-05-15：内核 K0–K5 已收口）
 
-1. **K0–K5 内核里程碑** — 见 [KERNEL_IMPLEMENTATION_PLAN.md](../creator-docs/getting-started/KERNEL_IMPLEMENTATION_PLAN.md)（[English](../creator-docs-en/getting-started/KERNEL_IMPLEMENTATION_PLAN.md)）；**产品级 A 区暂缓**。
-2. **K1**：无头 `--api` + `examples/headless-kernel-minimal` 联调闭环。
-3. **K2**：`oclive_kernel_runtime`（或等价 lib）抽取 + `oclive-cli` path 接榫。
-4. **K3–K4**：灵魂包 profile、library 与 Monolith 分工。
-5. **产品级 P0（A1–A5）** — 建议在 **K1 绿灯 + K2 有里程碑** 后再集中收口。
+1. **内核里程碑** — [KERNEL_IMPLEMENTATION_PLAN.md](../creator-docs/getting-started/KERNEL_IMPLEMENTATION_PLAN.md)：**K0–K5（除 P2 OTA）** 已在计划与工程中收口；本地验收见该文档 **「验收留痕」**；持续 CI 见 `oocp-test-suite`。
+2. **产品级 A 区（P0）** — 见上文 §A：安装/崩溃/插件安全/兼容等，可在内核里程碑确认后集中排期。
+3. **B2 / B4 未勾项** — 多模态、参考硬件靶子、边缘运维等仍为中长期（P1/P2），与内核里程碑解耦。
 
 ---
 

@@ -49,15 +49,15 @@ flowchart LR
 
 ---
 
-## K1 — Headless integration loop (current engineering focus)
+## K1 — Headless integration loop ✅
 
-**Today**: `oclivenewnew-tauri --api` (default port **8420**), `http_api`, and the OOCP suite exist; `oclive-cli init` still emits a **serde stub** project.
+**Today**: `oclivenewnew-tauri --api` (default port **8420**), `http_api`, and the OOCP suite exist; the minimal loop is [examples/headless-kernel-minimal/README.md](../../examples/headless-kernel-minimal/README.md). **Integration shapes**: CI and fast bring-up still center on **`--api`**; standalone process: **`oclive-kernel-server`** (K2); in-process embed: **`library` + `oclive_kernel_runtime`** (K4) — see [KERNEL_PLATFORM_DEVELOPER_PATH.md](KERNEL_PLATFORM_DEVELOPER_PATH.md). `oclive-cli init` **without** `--kernel-source` remains a **serde stub** for minimal skeletons; use **`--kernel-source`** to link the real workspace.
 
 **Done when**
 
-- [ ] [examples/headless-kernel-minimal/README.md](../../examples/headless-kernel-minimal/README.md) steps work in zh/en
-- [ ] CI `oocp-test-suite` stays green (same bar as K1)
-- [ ] Docs state: robots use HTTP `--api` **until** K2 bin/lib ships
+- [x] [examples/headless-kernel-minimal/README.md](../../examples/headless-kernel-minimal/README.md) steps work in zh/en
+- [x] CI `oocp-test-suite` stays green (same bar as K1; `.github/workflows/ci.yml` + [AGENTS.md](../../AGENTS.md))
+- [x] Docs describe `--api` vs **`oclive-kernel-server`** vs **`library` embed** ([PURE_KERNEL_BOUNDARY.md](PURE_KERNEL_BOUNDARY.md) §5, [KERNEL_PLATFORM_DEVELOPER_PATH.md](KERNEL_PLATFORM_DEVELOPER_PATH.md))
 
 **Acceptance commands**
 
@@ -71,9 +71,9 @@ cd examples/oocp-test-suite && node run.mjs
 
 ---
 
-## K2 — Scaffold → real kernel (core engineering)
+## K2 — Scaffold → real kernel (core engineering) ✅
 
-**Goal**: a `path`-linkable **`oclive_kernel_runtime`** crate; desktop Tauri and headless bin **share the same domain orchestration**.
+**Goal**: a `path`-linkable **`oclive_kernel_runtime`**; desktop Tauri and headless bin **share the same domain orchestration** (`src-tauri` and `oclive_kernel_server` evolve in-repo).
 
 ### K2.1 Crate split (suggested order)
 
@@ -84,11 +84,13 @@ cd examples/oocp-test-suite && node run.mjs
 | 2.1.3 | Add `crates/oclive_kernel_server` bin: HTTP entry reusing runtime | `cargo run -p oclive_kernel_server -- --api` |
 | 2.1.4 | `src-tauri` depends on runtime; keep `--api` compatible | existing `http_api` tests pass |
 
+**Closeout (2026-05-15)**: Rows 2.1.1–2.1.4 are implemented; locally `cargo build -p oclivenewnew-tauri`, `cargo test -p oclive_kernel_runtime`, and `cargo test -p oclive-cli` passed. Ongoing bar: CI `oocp-test-suite` + the tests above.
+
 ### K2.2 `oclive-cli` wiring
 
-- [ ] `init --kernel-source <path-to-oclivenewnew>` writes `path` deps and sample `main.rs`
-- [ ] Generated README distinguishes **stub** vs **runtime-linked** projects
-- [ ] `bench` / `build` work on real runtime trees (Monolith still **kernel_server** only)
+- [x] `init --kernel-source <path-to-oclivenewnew>` writes `path` deps and sample `main.rs`
+- [x] Generated README distinguishes **stub** vs **runtime-linked** projects
+- [x] `bench` / `build` work on real runtime trees (Monolith still **kernel_server** only)
 
 ### K2.3 Out of scope for K2
 
@@ -142,13 +144,26 @@ cd examples/oocp-test-suite && node run.mjs
 | K2–K4 | Shippable process / lib |
 | K5 | Third-party onboarding |
 
-**Product P0** best after **K1 green + K2.1.3 done**.
+**Product P0** is ready to focus on **product checklist §A** now that **K1 is green and K2 is closed** (see [PRODUCT_AND_KERNEL_GAP_CHECKLIST.md](../../handoff/PRODUCT_AND_KERNEL_GAP_CHECKLIST.md) §A).
+
+---
+
+## Verification log (local / 2026-05-15)
+
+| Command | Result |
+|---------|--------|
+| `cargo build -p oclivenewnew-tauri` | Pass |
+| `cargo test -p oclive_kernel_runtime` | Pass |
+| `cargo test -p oclive-cli` | Pass (includes e2e, ~40s+) |
+
+**CI**: `oocp-test-suite` job (Ubuntu) per [AGENTS.md](../../AGENTS.md) is the ongoing K1 bar.
 
 ---
 
 ## Suggested next actions
 
-1. Run K1 acceptance locally  
-2. ~~K2.1 crate split review~~ (core split landed)  
+1. ~~Run K1 acceptance locally~~ (logged above; keep CI green)  
+2. ~~K2.1 / K2.2~~ (done)  
 3. ~~K3 RobotSoulPack~~ (done)  
-4. Doll core README ↔ **KERNEL_PLATFORM_DEVELOPER_PATH** (see doll core `README.md`)
+4. ~~K4 / K5 + doll core cross-links~~ (see [KERNEL_PLATFORM_DEVELOPER_PATH.md](KERNEL_PLATFORM_DEVELOPER_PATH.md) and doll core `README.md`)  
+5. **P2**: OTA / remote logs (non-blocking)

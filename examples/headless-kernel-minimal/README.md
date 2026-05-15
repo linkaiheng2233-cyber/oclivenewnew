@@ -2,7 +2,7 @@
 
 Bilingual quick start for integrating **without the Vue desktop** — same domain orchestration as the main app via **`--api` HTTP**. See [PURE_KERNEL_BOUNDARY.md](../../creator-docs/getting-started/PURE_KERNEL_BOUNDARY.md) · [KERNEL_IMPLEMENTATION_PLAN.md](../../creator-docs/getting-started/KERNEL_IMPLEMENTATION_PLAN.md) phase **K1**.
 
-> **Transition**: until `oclive_kernel_runtime` is split (K2), use this binary for robot/hardware bring-up; future `oclive-cli init` projects will `path`-link the runtime lib.
+> **Shapes today**: **`--api`** on `oclivenewnew-tauri` (this doc), standalone **`oclive-kernel-server`**, or **`library` + `oclive_kernel_runtime`** — see [PURE_KERNEL_BOUNDARY.md](../../creator-docs/getting-started/PURE_KERNEL_BOUNDARY.md) §5 and [KERNEL_PLATFORM_DEVELOPER_PATH.md](../../creator-docs/getting-started/KERNEL_PLATFORM_DEVELOPER_PATH.md). `oclive-cli init --kernel-source <oclivenewnew>` links the real workspace; `init` without that flag stays a minimal serde stub.
 
 ---
 
@@ -52,9 +52,21 @@ node run.mjs
 
 见 [OOCP_TEST_SUITE.md](../../creator-docs/testing/OOCP_TEST_SUITE.md)。
 
-### 3. 与 `oclive-cli` 占位工程
+### 3. 与 `oclive-cli`
 
-`cargo run -p oclive-cli -- init …` 当前为 **serde 占位**，不能替代本节 `--api`。K2 完成后将链接真实 runtime。
+- **无 `--kernel-source`**：`init` 生成 **serde 占位**工程，不能替代本节 `--api` 联调。
+- **有 `--kernel-source <oclivenewnew 根>`**：生成带 **path 依赖** 的工程，指向本仓库 runtime；详见 [OCLIVE_CLI_GUIDE.md](../../creator-docs/cli/OCLIVE_CLI_GUIDE.md)。
+
+### 机器人 / 嵌入式形态（摘要）
+
+| 方式 | 适用 |
+|------|------|
+| **HTTP `--api`** | 快速联调、CI、编写器试聊 |
+| **Sidecar `remote` LLM** | 网关上跑模型 |
+| **目录式插件** | 麦克风、扬声器、电机等外设 |
+| **进程内 `library`** | 嵌入 `oclive_kernel_runtime`（见 K4 / [KERNEL_PLATFORM_DEVELOPER_PATH.md](../../creator-docs/getting-started/KERNEL_PLATFORM_DEVELOPER_PATH.md)） |
+
+角色包与槽位：[ROLE_PACK_SPEC.md](../../creator-docs/role-pack/ROLE_PACK_SPEC.md) · [SETTINGS_REFERENCE.md](../../creator-docs/cli/SETTINGS_REFERENCE.md)。
 
 ---
 
@@ -104,9 +116,10 @@ node run.mjs
 
 See [OOCP_TEST_SUITE.md](../../creator-docs/testing/OOCP_TEST_SUITE.md).
 
-### 3. vs `oclive-cli` stub projects
+### 3. vs `oclive-cli`
 
-`oclive-cli init` still emits a **serde stub**; it does **not** replace this `--api` binary until K2 runtime linking lands.
+- **Without `--kernel-source`**: `init` emits a **serde stub**; it does **not** replace this `--api` loop for bring-up.
+- **With `--kernel-source <oclivenewnew root>`**: generated `Cargo.toml` uses **path** deps into this repo — see [OCLIVE_CLI_GUIDE.md](../../creator-docs/cli/OCLIVE_CLI_GUIDE.md).
 
 ---
 
@@ -117,6 +130,6 @@ See [OOCP_TEST_SUITE.md](../../creator-docs/testing/OOCP_TEST_SUITE.md).
 | **HTTP `--api`** | Fast bring-up, CI, editor try-chat |
 | **Sidecar `remote` LLM** | Model on gateway |
 | **Directory plugins** | Mic, speaker, motors |
-| **Library embed** | After K4: in-process runtime API |
+| **Library embed** | In-process `oclive_kernel_runtime` (see K4 / [KERNEL_PLATFORM_DEVELOPER_PATH.md](../../creator-docs/getting-started/KERNEL_PLATFORM_DEVELOPER_PATH.md)) |
 
 Role pack & slots: [ROLE_PACK_SPEC.md](../../creator-docs/role-pack/ROLE_PACK_SPEC.md) · [SETTINGS_REFERENCE.md](../../creator-docs/cli/SETTINGS_REFERENCE.md).
