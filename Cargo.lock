@@ -2742,7 +2742,11 @@ dependencies = [
  "oclive_validation",
  "serde",
  "serde_json",
+ "serde_yaml",
+ "tempfile",
  "thiserror",
+ "tracing",
+ "walkdir",
 ]
 
 [[package]]
