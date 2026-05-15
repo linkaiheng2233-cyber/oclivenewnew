@@ -4,12 +4,14 @@
 
 **版本号格式**：两项目均采用 **语义化版本（SemVer）** `MAJOR.MINOR.PATCH`，见各仓库根目录 **`package.json`** 的 **`version`** 字段。
 
-**当前仓库快照（文档更新时）**：
+**当前仓库快照（文档更新时 · 与发版审阅对齐）**：
 
-- **oclivenewnew**（主程序）：`0.2.x`（见根 `package.json` / `CHANGELOG.md`）
-- **oclive-pack-editor**（编写器）：`0.2.x`（见编写器仓库 `package.json`）
+- **oclivenewnew**（主程序 / Tauri 宿主）：**`0.2.0`**（根 `package.json` `version` 与 `src-tauri/Cargo.toml` `version` 须一致）
+- **oclive_kernel_runtime**（共享契约 crate）：**`0.2.0`**（`crates/oclive_kernel_runtime/Cargo.toml`；DTO / `API_VERSION` 等见该 crate）
+- **oclive-cli**（脚手架 CLI）：**`0.1.0`**（`crates/oclive-cli/Cargo.toml`；**独立 semver**，不强制与桌面宿主同号；`init --kernel-source` 接主仓时以 path 依赖对齐契约）
+- **oclive-pack-editor**（编写器，姊妹仓）：**`0.2.x`**（该仓 `package.json`；与主程序 **0.2.x** 对拍 `ui.json`）
 
-> 下列表格中 **0.3.x / 0.4.x** 行为 **规划行**：发版后请以对应 `CHANGELOG.md` 与 `ui.json.schema.json` 为准并更新本表。
+> 下列表格中 **0.3.x / 0.4.x** 行为 **规划行**：发版后请以对应 `CHANGELOG.md` / `CHANGELOG.en.md` 与 `ui.json.schema.json` 为准并更新本表「快照」与矩阵。
 
 ---
 
@@ -38,16 +40,25 @@
 
 ---
 
-## 对外兼容一页表（主程序 / 编写器 / 启动器 / 包）
+## 对外兼容一页表（主程序 / 编写器 / 启动器 / 包 / 内核 / CLI）
 
 | 组件 | 版本来源 | 与主程序关系 | 备注 |
 |------|----------|----------------|------|
-| **oclivenewnew（主程序）** | 根 `package.json` / `src-tauri/Cargo.toml` | — | 当前文档快照 **0.2.x** |
+| **oclivenewnew（主程序）** | 根 `package.json` / `src-tauri/Cargo.toml` | — | 当前快照 **0.2.0** |
+| **oclive_kernel_runtime** | `crates/oclive_kernel_runtime/Cargo.toml` | 宿主与无头 HTTP **path 依赖**；`SendMessageResponse.api_version`（`API_VERSION` **u32**，当前 **1**）、`RUNTIME_API_VERSION`（字符串 **0.2.0**） | OOCP / 黑盒脚本若断言载荷版本，以 `creator-docs/testing/OOCP_TEST_SUITE.md` 为准 |
+| **oclive-cli** | `crates/oclive-cli/Cargo.toml` | 生成 `kernel_server` / `library` 骨架；**不自带**桌面 `AppState` / SQLite 策略 | 与主程序契约对齐见 [OCLIVE_CLI_GUIDE.md](cli/OCLIVE_CLI_GUIDE.md)、模板 `CONFIG_REFERENCE.md` |
 | **oclive-pack-editor（编写器）** | 另仓 `package.json` | 产出 `roles/{id}/`；**`ui.json`** 与主程序见上文「兼容性表」 | `HOST_RUNTIME_VERSION` 应对齐主程序 `version`（编写器 README） |
 | **oclive-launcher（启动器）** | 另仓 `package.json` | 注入 **`OCLIVE_ROLES_DIR`**、可选模型名与 zip 安装；**不替代**主程序契约 | [启动器 README](https://github.com/linkaiheng2233-cyber/oclive-launcher/blob/main/README.md) |
 | **角色包** | `manifest.json`（`schema_version`、`min_runtime_version`） | 低版本主程序可能拒载或降级能力 | [PACK_VERSIONING.md](role-pack/PACK_VERSIONING.md)、`RoleStorage::load_role` |
+| **宿主 SQLite** | `src-tauri/migrations/*.sql` | 仅随 **主程序** 发版迁移；**不可**用旧主程序打开新迁移写过的 DB 再降级（除非 CHANGELOG 明确支持） | 破坏性迁移须在 **CHANGELOG 双语** + 本表「破坏性」段写明 |
 
-破坏性变更时：同步 **CHANGELOG**、上文「兼容性表」规划行、及姊妹仓 README 中的最低版本说明。
+破坏性变更时：同步 **`CHANGELOG.md` / `CHANGELOG.en.md`**、上文「兼容性表」规划行、**`oclive_validation`**（若 touched 键）、及姊妹仓 README 中的最低版本说明。
+
+### 发版审阅（维护者自检）
+
+1. 核对本节「快照」三处 semver：**根 `package.json`**、**`src-tauri/Cargo.toml`**、**`oclive_kernel_runtime`**（发版 bump 时常需同改）。  
+2. 打开 [handoff/PRODUCT_RELEASE_CHECKLIST.md](../handoff/PRODUCT_RELEASE_CHECKLIST.md) **「对外说明」**：若 bump 了契约或姊妹仓依赖，更新本页表格或快照句。  
+3. **HTTP / OOCP**：若 `API_VERSION` 或 `RUNTIME_API_VERSION` 变更，必须同步测试套件与文档（见 `creator-docs/testing/OOCP_TEST_SUITE.md`）。
 
 ---
 
@@ -62,6 +73,7 @@
 
 ## 相关文档
 
+- [handoff/A5_CLOSURE_SUMMARY.md](../handoff/A5_CLOSURE_SUMMARY.md)
 - [role-pack/ui.json.schema.json](role-pack/ui.json.schema.json)
 - [plugin-and-architecture/DIRECTORY_PLUGINS.md](plugin-and-architecture/DIRECTORY_PLUGINS.md)
 - [CHANGELOG.md](../CHANGELOG.md)

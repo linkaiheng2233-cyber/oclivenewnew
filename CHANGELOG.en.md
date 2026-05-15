@@ -16,6 +16,7 @@
 
 ### Added
 
+- **Product line A5 (versioning & compatibility):** expanded the one-page matrix in [`creator-docs/COMPATIBILITY.md`](creator-docs/COMPATIBILITY.md) / [`creator-docs-en/COMPATIBILITY.md`](creator-docs-en/COMPATIBILITY.md) (`oclive_kernel_runtime`, `oclive-cli`, `API_VERSION` / `RUNTIME_API_VERSION`, SQLite migrations, three-step release review); closure notes [`handoff/A5_CLOSURE_SUMMARY.md`](handoff/A5_CLOSURE_SUMMARY.md); §A5 in the main gap checklist can be checked.
 - Plugin manifests can declare subscribed host events (`shell.bridge.events` or `ui_slots[].bridge.events`) to avoid unnecessary broadcasts.
 - Settings “General”: **“Force iframe mode”** — when on, all plugin UIs render in iframes for maximum sandbox isolation.
 - Dev mode: static security scan (acorn) on Vue slot source; dangerous APIs trigger a warning dialog; user chooses whether to continue.

@@ -33,7 +33,7 @@ npm run build
   - **Format:** `cargo fmt`; CI uses **`npm run check:rust:fmt`** (`cargo fmt --manifest-path src-tauri/Cargo.toml --all -- --check`).
   - **Clippy:** Root **[`Cargo.toml`](Cargo.toml)** defines **`[workspace.lints.rust]`** and **`[workspace.lints.clippy]`**. Local + CI: **`cargo clippy --manifest-path src-tauri/Cargo.toml --all-targets --all-features -- -D warnings`** (**`npm run check:rust:clippy`**): **warnings are errors**.
   - **`unwrap` / `expect`:** Prefer **`Result` / `Option` + `context`** in product code; integration tests may use **`#![allow(clippy::unwrap_used, clippy::expect_used)]`** at the crate root. Do not widen allows elsewhere.
-- **Vue / TypeScript:** Match existing composables/stores; align with Tauri DTO field names (e.g. **`reply`** in [`src-tauri/src/models/dto.rs`](src-tauri/src/models/dto.rs)).
+- **Vue / TypeScript:** Match existing composables/stores; align with Tauri DTO field names (e.g. **`reply`**, defined in **`oclive_kernel_runtime`** models and re-exported from `src-tauri/src/models/mod.rs`).
 
 ## Commits
 
@@ -74,6 +74,7 @@ npm run build
 - **User-visible copy:** avoid duplicated hard-coded strings (see [AGENTS.md](AGENTS.md) for the plugin manager entry pattern).
 - **Contracts & DB:** follow `roles/README_MANIFEST.md`, `RoleStorage::load_role`, and **`crates/oclive_validation`**; **do not invent** SQL table names.
 - **Doc index:** [creator-docs/getting-started/DOCUMENTATION_INDEX.md](creator-docs/getting-started/DOCUMENTATION_INDEX.md).
+- **Releases & compatibility:** on semver bumps or contract changes, review [`creator-docs/COMPATIBILITY.md`](creator-docs/COMPATIBILITY.md) snapshots and the one-pager table, and walk [handoff/PRODUCT_RELEASE_CHECKLIST.md](handoff/PRODUCT_RELEASE_CHECKLIST.md) “对外说明”; pack rules stay in [PACK_VERSIONING.md](creator-docs/role-pack/PACK_VERSIONING.md).
 
 ## Do not commit
 

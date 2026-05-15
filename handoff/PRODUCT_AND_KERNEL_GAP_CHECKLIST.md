@@ -43,8 +43,8 @@
 
 ### A5. 版本、兼容与升级（P0）
 
-- [ ] **对外兼容一页表**：主程序版本 ↔ 编写器/启动器 ↔ `min_runtime_version` ↔ 角色包 schema；破坏性变更的迁移提示。
-- [ ] **CHANGELOG 纪律**：用户可感知的变更必记；插件作者可据此适配。
+- [x] **对外兼容一页表**：主程序版本 ↔ 编写器/启动器 ↔ `min_runtime_version` ↔ 角色包 schema；破坏性变更的迁移提示。（基线见 [`creator-docs/COMPATIBILITY.md`](../creator-docs/COMPATIBILITY.md)、[`handoff/A5_CLOSURE_SUMMARY.md`](./A5_CLOSURE_SUMMARY.md)；**每次发版**仍须按 [`PRODUCT_RELEASE_CHECKLIST.md`](./PRODUCT_RELEASE_CHECKLIST.md) 核对是否更新表内快照。）
+- [x] **CHANGELOG 纪律**：用户可感知的变更必记；插件作者可据此适配。（`CONTRIBUTING` 已要求双语；发版见 [`PRODUCT_RELEASE_CHECKLIST.md`](./PRODUCT_RELEASE_CHECKLIST.md) 闸门。）
 
 ### A6. 国际化与文案（P1）
 

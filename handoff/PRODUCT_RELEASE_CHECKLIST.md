@@ -2,7 +2,7 @@
 
 **用途**：发版会议或维护者自检时**只过本表**；权威缺口仍以 [PRODUCT_AND_KERNEL_GAP_CHECKLIST.md](./PRODUCT_AND_KERNEL_GAP_CHECKLIST.md) **§A** 为准。详细说明与「硬骨头」排期见 [PRODUCT_LINE_TASK_BUCKETS.md](./PRODUCT_LINE_TASK_BUCKETS.md)。
 
-**下一阶段（工程）**：**A1** 可 CI 子集已收口；**A3**（崩溃与诊断 / 用户可见错误 JSON 与 i18n）已按 `handoff/A3_CLOSURE_SUMMARY.md` 落实；未勾主项以 **A1.1c**、**A4.2**、**原生安装包 GUI E2E** 等为主，按 [PRODUCT_LINE_TASK_BUCKETS.md](./PRODUCT_LINE_TASK_BUCKETS.md) **§四** 拆独立 issue。
+**下一阶段（工程）**：**A1** 可 CI 子集已收口；**A3**（崩溃与诊断 / 用户可见错误 JSON 与 i18n）已按 `handoff/A3_CLOSURE_SUMMARY.md` 落实；**A5** 兼容表与 CHANGELOG 纪律已按 `handoff/A5_CLOSURE_SUMMARY.md` 收口；未勾主项以 **A1.1c**、**A4.2**、**原生安装包 GUI E2E** 等为主，按 [PRODUCT_LINE_TASK_BUCKETS.md](./PRODUCT_LINE_TASK_BUCKETS.md) **§四** 拆独立 issue。
 
 **与 CI**：本表**不替代** CI。本地建议顺序：`npm run test:unit` → `npm run build && npm run test:e2e:preview`（与 CI `frontend` 对齐）→ `npm run check:release` →（可选）与 CI 相同的 OOCP / 姊妹仓检查；详见 [CONTRIBUTING.md](../CONTRIBUTING.md)「测试要求」「CI 对齐」。
 
@@ -64,7 +64,7 @@
 
 ### A5 版本与兼容
 
-- [ ] **A5.1** 对外兼容表已随版本审阅（[COMPATIBILITY.md](../creator-docs/COMPATIBILITY.md)）
+- [x] **A5.1** 对外兼容表基线已入库（[COMPATIBILITY.md](../creator-docs/COMPATIBILITY.md)、[`A5_CLOSURE_SUMMARY.md`](./A5_CLOSURE_SUMMARY.md)）；**每次发版**仍须核对表中快照与姊妹仓是否需要更新
 - [x] **A5.2** CHANGELOG 双语纪律（CONTRIBUTING 已要求；发版勾选本表「闸门与记录」）
 
 ---

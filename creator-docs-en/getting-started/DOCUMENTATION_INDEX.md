@@ -39,7 +39,7 @@ Creator and plugin documentation lives under repo root **`creator-docs/`** (topi
 | **mumu default slots + plugin FAQ (Vue not showing, iframe debug, deps; user Q&A)** | **[../FAQ.md](../FAQ.md)** |
 | **mumu UI release checklist** | **[../guides/MUMU_UI_ACCEPTANCE_CHECKLIST.md](../guides/MUMU_UI_ACCEPTANCE_CHECKLIST.md)** |
 | **Regression: Plugin Manager V2 & Complex Emotion** | **[../guides/REGRESSION_COMPLEX_EMOTION_QA.md](../guides/REGRESSION_COMPLEX_EMOTION_QA.md)** |
-| **Editor vs host compatibility** | **[../COMPATIBILITY.md](../COMPATIBILITY.md)** |
+| **Editor vs host compatibility (A5 one-pager, EN/ZH)** | **[../COMPATIBILITY.md](../COMPATIBILITY.md)** (Chinese source [../../creator-docs/COMPATIBILITY.md](../../creator-docs/COMPATIBILITY.md)); closure [`../../handoff/A5_CLOSURE_SUMMARY.md`](../../handoff/A5_CLOSURE_SUMMARY.md) |
 | **`memory = local`, `_local_plugins`, bridge spec** | **[../plugin-and-architecture/LOCAL_PLUGIN_BRIDGE_SPEC.md](../plugin-and-architecture/LOCAL_PLUGIN_BRIDGE_SPEC.md)** |
 | **Add a new built-in backend in Rust** | **[../plugin-and-architecture/HOW_TO_REPLACE_MODULES.md](../plugin-and-architecture/HOW_TO_REPLACE_MODULES.md)** |
 | **Author pack content only** | **[CREATOR_WORKFLOW.md](CREATOR_WORKFLOW.md)**, [roles/README_MANIFEST.md](../../roles/README_MANIFEST.md), import checklist [roles/TESTING_ROLE_PACK_IMPORT.md](../../roles/TESTING_ROLE_PACK_IMPORT.md) |

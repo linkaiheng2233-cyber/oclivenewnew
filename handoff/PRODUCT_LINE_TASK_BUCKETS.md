@@ -4,7 +4,7 @@
 
 **排序原则**：先做**低风险、短平快、文档/流程类**（可合并为「文档与闸门日」）；再做**有边界的中小工程**；**硬骨头**各自独立里程碑，避免与细碎混在同一 PR。
 
-**当前阶段（2026-05）**：**批次一**（§一 细碎 + §二 中小块中的文档/闸门/兼容表/ERROR_CODES §1.5/高风险演示表/README·SECURITY·CONTRIBUTING 等）**已入库**（见仓库 `CHANGELOG` `[Unreleased]` 与提交 **`33be1c4`** 一带）。**默认下一焦点**：本分桶 **§四 硬骨头** — 每条单独 issue / 里程碑，勿与文档批次混 PR。
+**当前阶段（2026-05）**：**批次一**（§一 细碎 + §二 中小块中的文档/闸门/兼容表/ERROR_CODES §1.5/高风险演示表/README·SECURITY·CONTRIBUTING 等）**已入库**（见仓库 `CHANGELOG` `[Unreleased]` 与提交 **`33be1c4`** 一带）。**A5.1** 兼容表基线已于 **A5 结项** 再次充实（`handoff/A5_CLOSURE_SUMMARY.md`）。**默认下一焦点**：本分桶 **§四 硬骨头** — 每条单独 issue / 里程碑，勿与文档批次混 PR。
 
 ---
 
@@ -29,11 +29,11 @@
 
 ## 二、中小块（可并行，每条约 0.5～3 人日；适合按周迭代）
 
-> **状态（批次一）**：**A5.1** 兼容一页表、**A1.3** CI/`check:release` 说明强化、**A2.1** 文档子集（ERROR_CODES §1.5）、**A4.1** 高风险演示表（`PLUGIN_HIGH_RISK_ACCEPTANCE`）、**A8.1** 快捷键文档（README「测试与检查」）已落。**A6.1 / A8.2** 仍以代码/交互切片跟进；**A3** 已按 `A3_CLOSURE_SUMMARY.md` 收口，见 §四与主清单 §A。
+> **状态（批次一）**：**A5.1** 兼容一页表（含 runtime/CLI/HTTP/DB 行 + 发版审阅）、**A1.3** CI/`check:release` 说明强化、**A2.1** 文档子集（ERROR_CODES §1.5）、**A4.1** 高风险演示表（`PLUGIN_HIGH_RISK_ACCEPTANCE`）、**A8.1** 快捷键文档（README「测试与检查」）已落。**A6.1 / A8.2** 仍以代码/交互切片跟进；**A3** 已按 `A3_CLOSURE_SUMMARY.md` 收口，见 §四与主清单 §A。
 
 | 主清单锚点 | 内容 | 复杂度说明 |
 |------------|------|----------------|
-| **A5.1** | **对外兼容一页表**：主程序 semver ↔ 编写器/启动器 ↔ `min_runtime_version` ↔ 包 schema（表格 + 破坏性迁移指针） | 以文档为主，需与姊妹仓 README 对齐一次 |
+| **A5.1** | **对外兼容一页表**：主程序 semver ↔ 编写器/启动器 ↔ `min_runtime_version` ↔ 包 schema（表格 + 破坏性迁移指针） | **基线已入库**（[`COMPATIBILITY.md`](../creator-docs/COMPATIBILITY.md)、[`A5_CLOSURE_SUMMARY.md`](./A5_CLOSURE_SUMMARY.md)）；姊妹仓版本号仍须发版时人工对拍 |
 | **A1.3（强化）** | **CI 与本地一致**：核对 `.github/workflows` 与 `npm run check:release` 覆盖差；缺则在 CI 或文档补一句「发版前本地补跑」 | CONTRIBUTING 已有 `check:release`，多为 **对齐与文档** |
 | **A6.1（切片）** | **界面无残留中文**：按 **一个垂直域** 扫（如仅设置页 / 仅插件管理），`rg Han` + i18n 键 | 全应用一次扫完工作量大，**按切片收口** |
 | **A3.2（切片）** | **`KernelErrorBody` JSON `code` + `apiErrors`**：目录插件 `ApiError` 已 JSON 化；未知码 **`UNKNOWN_WITH_CODE`** 兜底；`[CODE]` 仅 legacy | 见 `handoff/A3_CLOSURE_SUMMARY.md` |

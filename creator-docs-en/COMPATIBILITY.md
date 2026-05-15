@@ -6,12 +6,14 @@ How **`ui.json` inside a role pack** relates to the **desktop host**, so you do 
 
 **Version format**: both apps use **SemVer** `MAJOR.MINOR.PATCH` in each repo root **`package.json` `version`**.
 
-**Snapshot when this page was written**:
+**Snapshot when this page was written (align with release review)**:
 
-- **oclivenewnew** (host): `0.2.x` (see root `package.json` / `CHANGELOG.md`)
-- **oclive-pack-editor** (authoring tool): `0.2.x` (see that repo’s `package.json`)
+- **oclivenewnew** (Tauri host): **`0.2.0`** (root `package.json` `version` must match `src-tauri/Cargo.toml` `version`)
+- **oclive_kernel_runtime** (shared contracts crate): **`0.2.0`** (`crates/oclive_kernel_runtime/Cargo.toml`; DTO / `API_VERSION` live in that crate)
+- **oclive-cli** (scaffold CLI): **`0.1.0`** (`crates/oclive-cli/Cargo.toml`; **independent SemVer**, not forced to match the desktop host; `--kernel-source` path deps align contracts with this repo)
+- **oclive-pack-editor** (sister repo): **`0.2.x`** (that repo’s `package.json`; pair **`ui.json`** with host **0.2.x**)
 
-> Rows marked **0.3.x / 0.4.x** are **planned**; after release, update this table from each `CHANGELOG.md` and `ui.json.schema.json`.
+> Rows marked **0.3.x / 0.4.x** are **planned**; after each release, refresh the snapshot lines and matrix from **`CHANGELOG.md` / `CHANGELOG.en.md`** and **`ui.json.schema.json`**.
 
 ---
 
@@ -40,14 +42,25 @@ How **`ui.json` inside a role pack** relates to the **desktop host**, so you do 
 
 ---
 
-## Cross-app compatibility (host / editor / launcher / pack)
+## Cross-app compatibility (host / runtime / CLI / editor / launcher / pack / DB)
 
 | Component | Version source | Relationship to host | Notes |
 |-----------|----------------|----------------------|--------|
-| **oclivenewnew** (host) | Root `package.json` / `src-tauri/Cargo.toml` | — | Snapshot **0.2.x** |
+| **oclivenewnew** (host) | Root `package.json` / `src-tauri/Cargo.toml` | — | Snapshot **0.2.0** |
+| **oclive_kernel_runtime** | `crates/oclive_kernel_runtime/Cargo.toml` | Path dep for GUI + headless HTTP; `SendMessageResponse.api_version` (`API_VERSION` **u32**, currently **1**), `RUNTIME_API_VERSION` (**0.2.0** string) | OOCP / black-box expectations: see [`OOCP_TEST_SUITE.md`](../creator-docs/testing/OOCP_TEST_SUITE.md) |
+| **oclive-cli** | `crates/oclive-cli/Cargo.toml` | Generates `kernel_server` / `library` skeletons; **does not ship** desktop `AppState` / SQLite policy | Contract alignment: [`OCLIVE_CLI_GUIDE.md`](../creator-docs/cli/OCLIVE_CLI_GUIDE.md), template `CONFIG_REFERENCE.md` |
 | **oclive-pack-editor** | That repo’s `package.json` | Produces `roles/{id}/`; **`ui.json`** vs host: matrix above | `HOST_RUNTIME_VERSION` should track host `version` (editor README) |
 | **oclive-launcher** | That repo’s `package.json` | Injects **`OCLIVE_ROLES_DIR`**, optional model / zip install; **does not replace** host contracts | [Launcher README](https://github.com/linkaiheng2233-cyber/oclive-launcher/blob/main/README.md) |
-| **Role pack** | `manifest.json` (`schema_version`, `min_runtime_version`) | Older hosts may refuse or downgrade | [PACK_VERSIONING.md](../creator-docs/role-pack/PACK_VERSIONING.md), `RoleStorage::load_role` |
+| **Role pack** | `manifest.json` (`schema_version`, `min_runtime_version`) | Older hosts may refuse or downgrade | [`PACK_VERSIONING.md`](../creator-docs/role-pack/PACK_VERSIONING.md), `RoleStorage::load_role` |
+| **Host SQLite** | `src-tauri/migrations/*.sql` | Migrations ship **with the host** only; **do not** assume you can open a DB written by a newer host with an older binary (unless `CHANGELOG` explicitly supports rollback) | Breaking DB steps must be called out in **bilingual CHANGELOG** + this page |
+
+For breaking changes: update **`CHANGELOG.md` / `CHANGELOG.en.md`**, the planned matrix rows above, **`oclive_validation`** (if keys changed), and sister-repo README minimums.
+
+### Release review (maintainer self-check)
+
+1. Verify the three SemVer snapshots: root **`package.json`**, **`src-tauri/Cargo.toml`**, **`oclive_kernel_runtime`** (often bumped together).  
+2. Open [`PRODUCT_RELEASE_CHECKLIST.md`](../handoff/PRODUCT_RELEASE_CHECKLIST.md) **“对外说明”**: if contracts or sister-repo expectations changed, update this page.  
+3. **HTTP / OOCP**: if `API_VERSION` or `RUNTIME_API_VERSION` changes, update the test suite and docs ([`OOCP_TEST_SUITE.md`](../creator-docs/testing/OOCP_TEST_SUITE.md)).
 
 For the Chinese-maintained superset (same facts), see [COMPATIBILITY.md](../creator-docs/COMPATIBILITY.md).
 
@@ -64,6 +77,7 @@ For the Chinese-maintained superset (same facts), see [COMPATIBILITY.md](../crea
 
 ## Related docs
 
+- [`A5_CLOSURE_SUMMARY.md`](../handoff/A5_CLOSURE_SUMMARY.md)
 - [role-pack/ui.json.schema.json](../creator-docs/role-pack/ui.json.schema.json)
 - [plugin-and-architecture/DIRECTORY_PLUGINS.md](plugin-and-architecture/DIRECTORY_PLUGINS.md)
 - [CHANGELOG.md](../CHANGELOG.md)
