@@ -84,6 +84,7 @@ pub struct BackendRegistry {
     local_plugins: RwLock<LocalPluginRegistry>,
     directory_runtime: Option<Arc<DirectoryPluginRuntime>>,
     remote_fallback_allowed: Arc<AtomicBool>,
+    high_risk_grants: Arc<HighRiskGrantStore>,
 }
 
 fn directory_slot_id(
@@ -152,12 +153,19 @@ impl BackendRegistry {
         remote_fallback_allowed: Arc<AtomicBool>,
     ) -> Self {
         let llm_ollama = llm.clone();
-        let llm_remote = remote_plugin::llm_remote_backend(llm, remote_fallback_allowed.clone());
-        let mcp = Arc::new(McpClient::new(app_data_dir, high_risk_grants));
+        let llm_remote = remote_plugin::llm_remote_backend(
+            llm,
+            remote_fallback_allowed.clone(),
+            high_risk_grants.clone(),
+        );
+        let mcp = Arc::new(McpClient::new(app_data_dir, high_risk_grants.clone()));
         let agent_builtin = Arc::new(BuiltinReActAgent::new(llm_ollama.clone(), mcp));
         let agent_remote: Arc<dyn AgentProvider> = agent_builtin.clone();
         let agent_directory: Arc<dyn AgentProvider> = agent_builtin.clone();
-        let rem = remote_plugin::plugin_remote_group(remote_fallback_allowed.clone());
+        let rem = remote_plugin::plugin_remote_group(
+            remote_fallback_allowed.clone(),
+            high_risk_grants.clone(),
+        );
         Self {
             memory_builtin: Arc::new(BuiltinMemoryRetrieval),
             memory_builtin_v2: Arc::new(BuiltinMemoryRetrievalV2),
@@ -179,6 +187,7 @@ impl BackendRegistry {
             local_plugins: RwLock::new(LocalPluginRegistry::default()),
             directory_runtime,
             remote_fallback_allowed,
+            high_risk_grants,
         }
     }
 
@@ -215,7 +224,7 @@ impl BackendRegistry {
         match rt.ensure_rpc_url(pid.as_str()) {
             Ok(url) => {
                 let cfg = RemotePluginHttpConfig::for_directory_plugin_rpc(url, true);
-                match RemoteLlmHttp::new(cfg) {
+                match RemoteLlmHttp::new(cfg, self.high_risk_grants.clone(), None) {
                     Ok(http) => Arc::new(http),
                     Err(e) => {
                         tracing::error!(
@@ -310,7 +319,12 @@ impl BackendRegistry {
         match rt.ensure_rpc_url(pid.as_str()) {
             Ok(url) => {
                 let cfg = RemotePluginHttpConfig::for_directory_plugin_rpc(url, false);
-                match RemoteMemoryRetrievalHttp::new(cfg, self.remote_fallback_allowed.clone()) {
+                match RemoteMemoryRetrievalHttp::new(
+                    cfg,
+                    self.remote_fallback_allowed.clone(),
+                    self.high_risk_grants.clone(),
+                    None,
+                ) {
                     Ok(http) => Arc::new(http),
                     Err(e) => {
                         tracing::error!(
@@ -372,7 +386,12 @@ impl BackendRegistry {
         match rt.ensure_rpc_url(pid.as_str()) {
             Ok(url) => {
                 let cfg = RemotePluginHttpConfig::for_directory_plugin_rpc(url, false);
-                match RemoteUserEmotionAnalyzerHttp::new(cfg, self.remote_fallback_allowed.clone()) {
+                match RemoteUserEmotionAnalyzerHttp::new(
+                    cfg,
+                    self.remote_fallback_allowed.clone(),
+                    self.high_risk_grants.clone(),
+                    None,
+                ) {
                     Ok(http) => Arc::new(http),
                     Err(e) => {
                         tracing::error!(
@@ -431,7 +450,12 @@ impl BackendRegistry {
         match rt.ensure_rpc_url(pid.as_str()) {
             Ok(url) => {
                 let cfg = RemotePluginHttpConfig::for_directory_plugin_rpc(url, false);
-                match RemoteEventEstimatorHttp::new(cfg, self.remote_fallback_allowed.clone()) {
+                match RemoteEventEstimatorHttp::new(
+                    cfg,
+                    self.remote_fallback_allowed.clone(),
+                    self.high_risk_grants.clone(),
+                    None,
+                ) {
                     Ok(http) => Arc::new(http),
                     Err(e) => {
                         tracing::error!(
@@ -490,7 +514,12 @@ impl BackendRegistry {
         match rt.ensure_rpc_url(pid.as_str()) {
             Ok(url) => {
                 let cfg = RemotePluginHttpConfig::for_directory_plugin_rpc(url, false);
-                match RemotePromptAssemblerHttp::new(cfg, self.remote_fallback_allowed.clone()) {
+                match RemotePromptAssemblerHttp::new(
+                    cfg,
+                    self.remote_fallback_allowed.clone(),
+                    self.high_risk_grants.clone(),
+                    None,
+                ) {
                     Ok(http) => Arc::new(http),
                     Err(e) => {
                         tracing::error!(

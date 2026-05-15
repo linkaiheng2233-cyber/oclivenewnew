@@ -596,17 +596,29 @@ impl DirectoryPluginRuntime {
             .cloned()
             .ok_or_else(|| format!("unknown directory plugin_id={}", id))?;
         let manifest = OclivePluginManifest::load_from_dir(&root)?;
-        if manifest.process.is_some()
-            && !self
-                .high_risk_grants
-                .is_directory_plugin_spawn_granted(id)
-        {
-            tracing::warn!(
-                target: "oclive_plugin",
-                "directory plugin id={} spawn blocked: grant directory_plugin_process_spawn missing",
-                id
-            );
-            return Err(format!("directory plugin spawn not granted: plugin_id={}", id));
+        if manifest.process.is_some() {
+            if !oclive_validation::manifest_declares_process_spawn(
+                &manifest.permissions,
+                true,
+            ) {
+                tracing::warn!(
+                    target: "oclive_plugin",
+                    "directory plugin id={} spawn blocked: manifest missing process:spawn permission",
+                    id
+                );
+                return Err(format!(
+                    "directory plugin spawn not permitted: plugin_id={} missing process:spawn in manifest permissions",
+                    id
+                ));
+            }
+            if !self.high_risk_grants.is_process_spawn_granted(id) {
+                tracing::warn!(
+                    target: "oclive_plugin",
+                    "directory plugin id={} spawn blocked: grant process:spawn missing",
+                    id
+                );
+                return Err(format!("directory plugin spawn not granted: plugin_id={}", id));
+            }
         }
         let (url, child, started_ms) =
             self.spawn_child_handshake(id, root, manifest, config_json)?;

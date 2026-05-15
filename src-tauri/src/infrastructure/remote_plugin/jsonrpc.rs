@@ -1,6 +1,7 @@
 //! 最小 JSON-RPC 2.0 over HTTP POST（与 `creator-docs/plugin-and-architecture/REMOTE_PLUGIN_PROTOCOL.md` 一致）。
 
 use crate::error::{AppError, Result};
+use crate::infrastructure::high_risk_grants::HighRiskGrantStore;
 use serde_json::{json, Value};
 use std::sync::atomic::{AtomicU64, Ordering};
 use std::time::Instant;
@@ -85,7 +86,11 @@ pub fn call_blocking(
     method: &str,
     params: Value,
     bearer_token: Option<&str>,
+    network_grant: Option<(&HighRiskGrantStore, &str)>,
 ) -> Result<Value> {
+    if let Some((grants, grant_id)) = network_grant {
+        grants.require_network(grant_id)?;
+    }
     let id = next_id();
     let t0 = Instant::now();
     let ch = channel.label();
@@ -174,7 +179,11 @@ pub async fn call_async(
     method: &str,
     params: Value,
     bearer_token: Option<&str>,
+    network_grant: Option<(&HighRiskGrantStore, &str)>,
 ) -> Result<Value> {
+    if let Some((grants, grant_id)) = network_grant {
+        grants.require_network(grant_id)?;
+    }
     let id = next_id();
     let t0 = Instant::now();
     let ch = channel.label();

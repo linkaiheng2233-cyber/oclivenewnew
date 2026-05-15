@@ -1,5 +1,6 @@
 //! 高风险能力授权：`list` / `grant` / `revoke`（持久化 `{app_data}/high_risk_grants.json`）。
 
+use crate::infrastructure::high_risk_grants::{normalize_grant_kind, GrantKind};
 use crate::state::AppState;
 use serde::Deserialize;
 use serde_json::Value;
@@ -7,7 +8,7 @@ use tauri::State;
 
 #[derive(Debug, Deserialize)]
 pub struct MutateHighRiskGrantRequest {
-    /// `mcp_http` | `mcp_stdio` | `directory_plugin_process_spawn`
+    /// `mcp:http` | `mcp:stdio` | `process:spawn` | `network:*`（旧版 snake_case 别名仍接受）
     pub kind: String,
     pub id: String,
 }
@@ -29,13 +30,12 @@ pub fn grant_high_risk_capability(
     state: State<'_, AppState>,
 ) -> Result<(), String> {
     let id = req.id.as_str();
-    match req.kind.trim() {
-        "mcp_http" => state.high_risk_grants.grant_mcp_http(id),
-        "mcp_stdio" => state.high_risk_grants.grant_mcp_stdio(id),
-        "directory_plugin_process_spawn" => state
-            .high_risk_grants
-            .grant_directory_plugin_spawn(id),
-        other => Err(format!("unknown high_risk grant kind: {}", other)),
+    match normalize_grant_kind(&req.kind) {
+        Some(GrantKind::McpHttp) => state.high_risk_grants.grant_mcp_http(id),
+        Some(GrantKind::McpStdio) => state.high_risk_grants.grant_mcp_stdio(id),
+        Some(GrantKind::ProcessSpawn) => state.high_risk_grants.grant_process_spawn(id),
+        Some(GrantKind::Network) => state.high_risk_grants.grant_network(id),
+        None => Err(format!("unknown high_risk grant kind: {}", req.kind.trim())),
     }
 }
 
@@ -48,12 +48,11 @@ pub fn revoke_high_risk_capability(
     state: State<'_, AppState>,
 ) -> Result<(), String> {
     let id = req.id.as_str();
-    match req.kind.trim() {
-        "mcp_http" => state.high_risk_grants.revoke_mcp_http(id),
-        "mcp_stdio" => state.high_risk_grants.revoke_mcp_stdio(id),
-        "directory_plugin_process_spawn" => state
-            .high_risk_grants
-            .revoke_directory_plugin_spawn(id),
-        other => Err(format!("unknown high_risk grant kind: {}", other)),
+    match normalize_grant_kind(&req.kind) {
+        Some(GrantKind::McpHttp) => state.high_risk_grants.revoke_mcp_http(id),
+        Some(GrantKind::McpStdio) => state.high_risk_grants.revoke_mcp_stdio(id),
+        Some(GrantKind::ProcessSpawn) => state.high_risk_grants.revoke_process_spawn(id),
+        Some(GrantKind::Network) => state.high_risk_grants.revoke_network(id),
+        None => Err(format!("unknown high_risk grant kind: {}", req.kind.trim())),
     }
 }

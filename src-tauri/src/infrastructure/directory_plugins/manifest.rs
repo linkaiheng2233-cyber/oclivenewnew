@@ -111,6 +111,9 @@ pub struct OclivePluginManifest {
     /// 可选：动态表单 schema（`fields` 数组）。
     #[serde(default, rename = "uiSchema")]
     pub ui_schema: Option<UiSchemaSection>,
+    /// 可选：高危能力声明（见 PLUGIN_V1 §权限规范）；省略视为 `[]`。
+    #[serde(default)]
+    pub permissions: Vec<String>,
 }
 
 /// 规范化 manifest 内相对路径，与请求 URI 中 `rel` 比较。
@@ -192,6 +195,9 @@ impl OclivePluginManifest {
             ));
         }
         validate_ui_slot_appearance_ids(&m)?;
+        oclive_validation::validate_permissions_list(&m.permissions).map_err(|e| {
+            format!("manifest {}: {}", p.display(), e)
+        })?;
         if let Some(ref sh) = m.shell {
             if sh.entry.trim().is_empty() {
                 return Err(format!(

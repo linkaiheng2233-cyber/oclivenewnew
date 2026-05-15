@@ -6,6 +6,7 @@ use crate::domain::BuiltinMemoryRetrieval;
 use crate::error::{AppError, Result};
 use crate::infrastructure::remote_fallback_policy::remote_fallback_load;
 use crate::infrastructure::remote_plugin::config::RemotePluginHttpConfig;
+use crate::infrastructure::high_risk_grants::HighRiskGrantStore;
 use crate::infrastructure::remote_plugin::jsonrpc::{self, RemoteRpcChannel};
 use crate::models::{Memory, MemoryContext};
 use serde_json::{json, Value};
@@ -20,6 +21,9 @@ pub struct RemoteMemoryRetrievalHttp {
     cfg: RemotePluginHttpConfig,
     fallback: BuiltinMemoryRetrieval,
     remote_fallback_allowed: Arc<AtomicBool>,
+    high_risk_grants: Arc<HighRiskGrantStore>,
+    /// `None`：目录插件 localhost RPC（spawn 已授权）；`Some`：Remote 侧车 grant id。
+    network_grant_id: Option<String>,
 }
 
 impl RemoteMemoryRetrievalHttp {
@@ -29,6 +33,8 @@ impl RemoteMemoryRetrievalHttp {
     pub fn new(
         cfg: RemotePluginHttpConfig,
         remote_fallback_allowed: Arc<AtomicBool>,
+        high_risk_grants: Arc<HighRiskGrantStore>,
+        network_grant_id: Option<String>,
     ) -> std::result::Result<Self, reqwest::Error> {
         let client = reqwest::blocking::Client::builder()
             .connect_timeout(cfg.connect_timeout())
@@ -39,33 +45,52 @@ impl RemoteMemoryRetrievalHttp {
             cfg,
             fallback: BuiltinMemoryRetrieval,
             remote_fallback_allowed,
+            high_risk_grants,
+            network_grant_id,
         })
     }
 
-    fn rank_remote(&self, input: &MemoryRetrievalInput<'_>) -> Option<Vec<Memory>> {
-        let memories_json: Value = serde_json::to_value(input.memories).ok()?;
+    fn network_grant(&self) -> Option<(&HighRiskGrantStore, &str)> {
+        self.network_grant_id
+            .as_deref()
+            .map(|id| (self.high_risk_grants.as_ref(), id))
+    }
+
+    fn rank_remote(&self, input: &MemoryRetrievalInput<'_>) -> Result<Option<Vec<Memory>>> {
+        let memories_json: Value = serde_json::to_value(input.memories).map_err(|e| {
+            AppError::Unknown(format!("memory.rank encode memories: {}", e))
+        })?;
         let params = json!({
             "memories": memories_json,
             "user_query": input.user_query,
             "scene_id": input.scene_id,
             "limit": input.limit,
         });
-        let result = jsonrpc::call_blocking(
+        let result = match jsonrpc::call_blocking(
             RemoteRpcChannel::Plugin,
             &self.client,
             &self.cfg.endpoint,
             METHOD_MEMORY_RANK,
             params,
             self.cfg.bearer_token.as_deref(),
-        )
-        .ok()?;
-        let ordered_ids: Vec<String> = result
-            .get("ordered_ids")?
-            .as_array()?
+            self.network_grant(),
+        ) {
+            Ok(v) => v,
+            Err(e @ AppError::HighRiskCapabilityNotGranted { .. }) => return Err(e),
+            Err(_) => return Ok(None),
+        };
+        let Some(arr) = result.get("ordered_ids").and_then(|x| x.as_array()) else {
+            return Ok(None);
+        };
+        let ordered_ids: Vec<String> = arr
             .iter()
             .filter_map(|v| v.as_str().map(String::from))
             .collect();
-        Some(apply_ordered_ids(input.memories, &ordered_ids, input.limit))
+        Ok(Some(apply_ordered_ids(
+            input.memories,
+            &ordered_ids,
+            input.limit,
+        )))
     }
 }
 
@@ -100,7 +125,7 @@ fn apply_ordered_ids(memories: &[Memory], ordered_ids: &[String], limit: usize) 
 
 impl MemoryRetrieval for RemoteMemoryRetrievalHttp {
     fn rank_memories(&self, input: MemoryRetrievalInput<'_>) -> Result<Vec<Memory>> {
-        match self.rank_remote(&input) {
+        match self.rank_remote(&input)? {
             Some(v) if !v.is_empty() => Ok(v),
             _ => {
                 if remote_fallback_load(&self.remote_fallback_allowed) {

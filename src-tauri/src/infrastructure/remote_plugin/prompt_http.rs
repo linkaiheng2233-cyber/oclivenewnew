@@ -6,6 +6,7 @@ use crate::domain::BuiltinPromptAssembler;
 use crate::error::{AppError, Result};
 use crate::infrastructure::remote_fallback_policy::remote_fallback_load;
 use crate::infrastructure::remote_plugin::config::RemotePluginHttpConfig;
+use crate::infrastructure::high_risk_grants::HighRiskGrantStore;
 use crate::infrastructure::remote_plugin::jsonrpc::{self, RemoteRpcChannel};
 use crate::models::{PersonalitySource, Role};
 use serde_json::json;
@@ -20,6 +21,8 @@ pub struct RemotePromptAssemblerHttp {
     cfg: RemotePluginHttpConfig,
     fallback: BuiltinPromptAssembler,
     remote_fallback_allowed: Arc<AtomicBool>,
+    high_risk_grants: Arc<HighRiskGrantStore>,
+    network_grant_id: Option<String>,
 }
 
 impl RemotePromptAssemblerHttp {
@@ -29,6 +32,8 @@ impl RemotePromptAssemblerHttp {
     pub fn new(
         cfg: RemotePluginHttpConfig,
         remote_fallback_allowed: Arc<AtomicBool>,
+        high_risk_grants: Arc<HighRiskGrantStore>,
+        network_grant_id: Option<String>,
     ) -> std::result::Result<Self, reqwest::Error> {
         let client = reqwest::blocking::Client::builder()
             .connect_timeout(cfg.connect_timeout())
@@ -39,7 +44,15 @@ impl RemotePromptAssemblerHttp {
             cfg,
             fallback: BuiltinPromptAssembler,
             remote_fallback_allowed,
+            high_risk_grants,
+            network_grant_id,
         })
+    }
+
+    fn network_grant(&self) -> Option<(&HighRiskGrantStore, &str)> {
+        self.network_grant_id
+            .as_deref()
+            .map(|id| (self.high_risk_grants.as_ref(), id))
     }
 }
 
@@ -69,6 +82,7 @@ impl PromptAssembler for RemotePromptAssemblerHttp {
             METHOD_PROMPT_BUILD,
             params,
             self.cfg.bearer_token.as_deref(),
+            self.network_grant(),
         ) {
             Ok(v) => {
                 if let Some(s) = v.get("prompt").and_then(|x| x.as_str()) {
@@ -91,6 +105,9 @@ impl PromptAssembler for RemotePromptAssemblerHttp {
                 }
             }
             Err(e) => {
+                if matches!(e, AppError::HighRiskCapabilityNotGranted { .. }) {
+                    return Err(e);
+                }
                 if remote_fallback_load(&self.remote_fallback_allowed) {
                     tracing::warn!(
                         target: "oclive_plugin",
@@ -121,6 +138,7 @@ impl PromptAssembler for RemotePromptAssemblerHttp {
             METHOD_PROMPT_TOPIC_HINT,
             params,
             self.cfg.bearer_token.as_deref(),
+            self.network_grant(),
         ) {
             Ok(v) => v
                 .get("hint")
@@ -128,6 +146,9 @@ impl PromptAssembler for RemotePromptAssemblerHttp {
                 .map(String::from)
                 .or_else(|| v.as_str().map(String::from)),
             Err(e) => {
+                if matches!(e, AppError::HighRiskCapabilityNotGranted { .. }) {
+                    return None;
+                }
                 if remote_fallback_load(&self.remote_fallback_allowed) {
                     tracing::warn!(
                         target: "oclive_plugin",

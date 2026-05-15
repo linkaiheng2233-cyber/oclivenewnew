@@ -46,11 +46,11 @@
 
 ### 高风险：`process` 与子进程 spawn
 
-若 manifest 声明了 **`process`**，宿主在首次 `spawn` 握手指令前会检查应用数据目录下的 **`high_risk_grants.json`** 是否已为该插件 **`id`** 授予 **`directory_plugin_process_spawn`**。未授权时：`directory_plugin_invoke` 等经 `map_directory_rpc_url_error` 映射为 **`HIGH_RISK_CAPABILITY_NOT_GRANTED`**；`plugin_backends` 主路径在无法取得 RPC URL 时记日志并回退内置 / Ollama（见上文 §3）。
+可选 **`permissions`** 数组声明高危能力（见 [PLUGIN_V1.md §权限规范](PLUGIN_V1.md)）。若 manifest 声明了 **`process`**（或显式 **`process:spawn`**），宿主在首次 `spawn` 前检查 **`high_risk_grants.json`** 是否已为该插件 **`id`** 授予 **`process:spawn`**。省略 `permissions` 的旧包仍按 **`process` 块存在** 触发同一授权路径。未授权时：`directory_plugin_invoke` 等经 `map_directory_rpc_url_error` 映射为 **`HIGH_RISK_CAPABILITY_NOT_GRANTED`**；`plugin_backends` 主路径在无法取得 RPC URL 时记日志并回退内置 / Ollama（见上文 §3）。
 
 用户可在 **设置 → 插件与后端 → Agent 调试** 中查看/授予/撤销（调用 `list_high_risk_grants`、`grant_high_risk_capability`、`revoke_high_risk_capability`）。自动化或 CI 可设 **`OCLIVE_SKIP_HIGH_RISK_GRANTS=1`** 跳过检查（勿用于面向用户的生产场景）。
 
-**MCP**：`{app_data}/mcp-servers/*.json` 的 **`http`** / **`stdio`** 传输分别需要 `mcp_http` / `mcp_stdio` 授权项（同上文件与调试面板）。详见结项说明 [`handoff/A4_CLOSURE_SUMMARY.md`](../../handoff/A4_CLOSURE_SUMMARY.md)。
+**MCP**：`{app_data}/mcp-servers/*.json` 的 **`http`** / **`stdio`** 传输分别需要 **`mcp:http`** / **`mcp:stdio`** 授权项。**Remote 侧车**（`OCLIVE_REMOTE_*`）出站前需要 **`network:*`**（grant id **`remote:plugin`** / **`remote:llm`**）。详见 [`handoff/A4_CLOSURE_SUMMARY.md`](../../handoff/A4_CLOSURE_SUMMARY.md)。
 
 ---
 

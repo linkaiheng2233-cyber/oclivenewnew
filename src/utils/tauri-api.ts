@@ -1440,17 +1440,24 @@ export async function clearAgentDebugTraces(): Promise<void> {
 }
 
 export interface HighRiskGrantsSnapshot {
-  mcp_http: string[];
-  mcp_stdio: string[];
-  directory_plugin_process_spawn: string[];
+  "mcp:http": string[];
+  "mcp:stdio": string[];
+  "process:spawn": string[];
+  "network:*": string[];
 }
+
+export type HighRiskGrantKind =
+  | "mcp:http"
+  | "mcp:stdio"
+  | "process:spawn"
+  | "network:*";
 
 export async function listHighRiskGrants(): Promise<HighRiskGrantsSnapshot> {
   return invokeWithFriendlyError<HighRiskGrantsSnapshot>("list_high_risk_grants", {});
 }
 
 export async function grantHighRiskCapability(
-  kind: "mcp_http" | "mcp_stdio" | "directory_plugin_process_spawn",
+  kind: HighRiskGrantKind,
   id: string,
 ): Promise<void> {
   return invokeWithFriendlyError<void>("grant_high_risk_capability", {
@@ -1459,7 +1466,7 @@ export async function grantHighRiskCapability(
 }
 
 export async function revokeHighRiskCapability(
-  kind: "mcp_http" | "mcp_stdio" | "directory_plugin_process_spawn",
+  kind: HighRiskGrantKind,
   id: string,
 ): Promise<void> {
   return invokeWithFriendlyError<void>("revoke_high_risk_capability", {

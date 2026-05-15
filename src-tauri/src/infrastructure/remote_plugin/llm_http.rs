@@ -1,11 +1,13 @@
 //! JSON-RPC：`llm.generate` / `llm.generate_tag`
 
 use crate::error::Result;
+use crate::infrastructure::high_risk_grants::HighRiskGrantStore;
 use crate::infrastructure::llm::LlmClient;
 use crate::infrastructure::remote_plugin::config::RemotePluginHttpConfig;
 use crate::infrastructure::remote_plugin::jsonrpc::{self, RemoteRpcChannel};
 use async_trait::async_trait;
 use serde_json::json;
+use std::sync::Arc;
 
 const METHOD_LLM_GENERATE: &str = "llm.generate";
 const METHOD_LLM_GENERATE_TAG: &str = "llm.generate_tag";
@@ -13,18 +15,35 @@ const METHOD_LLM_GENERATE_TAG: &str = "llm.generate_tag";
 pub struct RemoteLlmHttp {
     client: reqwest::Client,
     cfg: RemotePluginHttpConfig,
+    high_risk_grants: Arc<HighRiskGrantStore>,
+    network_grant_id: Option<String>,
 }
 
 impl RemoteLlmHttp {
 /// # Errors
 ///
 /// Returns [`Err`] with a human-readable message when the operation fails.
-    pub fn new(cfg: RemotePluginHttpConfig) -> std::result::Result<Self, reqwest::Error> {
+    pub fn new(
+        cfg: RemotePluginHttpConfig,
+        high_risk_grants: Arc<HighRiskGrantStore>,
+        network_grant_id: Option<String>,
+    ) -> std::result::Result<Self, reqwest::Error> {
         let client = reqwest::Client::builder()
             .connect_timeout(cfg.connect_timeout())
             .timeout(cfg.timeout)
             .build()?;
-        Ok(Self { client, cfg })
+        Ok(Self {
+            client,
+            cfg,
+            high_risk_grants,
+            network_grant_id,
+        })
+    }
+
+    fn network_grant(&self) -> Option<(&HighRiskGrantStore, &str)> {
+        self.network_grant_id
+            .as_deref()
+            .map(|id| (self.high_risk_grants.as_ref(), id))
     }
 }
 
@@ -42,6 +61,7 @@ impl LlmClient for RemoteLlmHttp {
             METHOD_LLM_GENERATE,
             params,
             self.cfg.bearer_token.as_deref(),
+            self.network_grant(),
         )
         .await?;
         let text = v
@@ -67,6 +87,7 @@ impl LlmClient for RemoteLlmHttp {
             METHOD_LLM_GENERATE_TAG,
             params,
             self.cfg.bearer_token.as_deref(),
+            self.network_grant(),
         )
         .await?;
         let text = v

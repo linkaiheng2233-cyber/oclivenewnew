@@ -11,6 +11,7 @@ import {
   listMcpServers,
   revokeHighRiskCapability,
   type AgentDebugTrace,
+  type HighRiskGrantKind,
   type HighRiskGrantsSnapshot,
   type McpToolManifest,
   type McpServerManifest,
@@ -29,7 +30,7 @@ const callResultText = ref("");
 const availableTools = ref<McpToolManifest[]>([]);
 const callResultHistory = ref<Array<{ id: string; label: string; payload: string }>>([]);
 const grants = ref<HighRiskGrantsSnapshot | null>(null);
-const grantKind = ref<"mcp_http" | "mcp_stdio" | "directory_plugin_process_spawn">("mcp_http");
+const grantKind = ref<HighRiskGrantKind>("mcp:http");
 const grantTargetId = ref("");
 
 async function refreshGrants(): Promise<void> {
@@ -279,9 +280,10 @@ onMounted(async () => {
         <label class="adp-inline">
           {{ t("devTools.agent.grantKind") }}
           <select v-model="grantKind" class="adp-input">
-            <option value="mcp_http">mcp_http</option>
-            <option value="mcp_stdio">mcp_stdio</option>
-            <option value="directory_plugin_process_spawn">directory_plugin_process_spawn</option>
+            <option value="mcp:http">mcp:http</option>
+            <option value="mcp:stdio">mcp:stdio</option>
+            <option value="process:spawn">process:spawn</option>
+            <option value="network:*">network:*</option>
           </select>
         </label>
         <label class="adp-inline adp-grow">

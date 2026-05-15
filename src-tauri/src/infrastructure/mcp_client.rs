@@ -6,6 +6,7 @@
 
 use crate::error::{AppError, Result};
 use crate::infrastructure::high_risk_grants::HighRiskGrantStore;
+use oclive_validation::{MCP_HTTP, MCP_STDIO};
 use parking_lot::RwLock;
 use std::sync::Arc;
 use serde::{Deserialize, Serialize};
@@ -79,7 +80,7 @@ impl McpClient {
                 return Ok(());
             }
             return Err(AppError::HighRiskCapabilityNotGranted {
-                capability: "mcp_stdio".into(),
+                capability: MCP_STDIO.into(),
                 id: server.id.clone(),
             });
         }
@@ -87,7 +88,7 @@ impl McpClient {
             return Ok(());
         }
         Err(AppError::HighRiskCapabilityNotGranted {
-            capability: "mcp_http".into(),
+            capability: MCP_HTTP.into(),
             id: server.id.clone(),
         })
     }

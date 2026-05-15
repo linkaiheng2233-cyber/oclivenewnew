@@ -34,6 +34,8 @@ use std::sync::atomic::AtomicBool;
 use std::sync::Arc;
 
 use crate::error::{AppError, Result};
+use crate::infrastructure::high_risk_grants::HighRiskGrantStore;
+use oclive_validation::{NETWORK_GRANT_REMOTE_LLM, NETWORK_GRANT_REMOTE_PLUGIN};
 use jsonrpc::call_blocking;
 pub use jsonrpc::RemoteRpcChannel;
 
@@ -54,7 +56,10 @@ fn plugin_remote_placeholder_group() -> PluginRemoteGroup {
     }
 }
 
-pub(crate) fn plugin_remote_group(remote_fallback_allowed: Arc<AtomicBool>) -> PluginRemoteGroup {
+pub(crate) fn plugin_remote_group(
+    remote_fallback_allowed: Arc<AtomicBool>,
+    grants: Arc<HighRiskGrantStore>,
+) -> PluginRemoteGroup {
     let Some(cfg) = RemotePluginHttpConfig::from_env_plugin() else {
         return plugin_remote_placeholder_group();
     };
@@ -64,10 +69,12 @@ pub(crate) fn plugin_remote_group(remote_fallback_allowed: Arc<AtomicBool>) -> P
         cfg.endpoint
     );
     let fb = remote_fallback_allowed.clone();
-    let memory = RemoteMemoryRetrievalHttp::new(cfg.clone(), fb.clone());
-    let emotion = RemoteUserEmotionAnalyzerHttp::new(cfg.clone(), fb.clone());
-    let event = RemoteEventEstimatorHttp::new(cfg.clone(), fb.clone());
-    let prompt = RemotePromptAssemblerHttp::new(cfg, fb);
+    let g = grants.clone();
+    let ng = Some(NETWORK_GRANT_REMOTE_PLUGIN.to_string());
+    let memory = RemoteMemoryRetrievalHttp::new(cfg.clone(), fb.clone(), g.clone(), ng.clone());
+    let emotion = RemoteUserEmotionAnalyzerHttp::new(cfg.clone(), fb.clone(), g.clone(), ng.clone());
+    let event = RemoteEventEstimatorHttp::new(cfg.clone(), fb.clone(), g.clone(), ng.clone());
+    let prompt = RemotePromptAssemblerHttp::new(cfg, fb, g, ng);
     match (memory, emotion, event, prompt) {
         (Ok(memory), Ok(emotion), Ok(event), Ok(prompt)) => PluginRemoteGroup {
             memory: Arc::new(memory),
@@ -102,6 +109,7 @@ pub(crate) fn plugin_remote_group(remote_fallback_allowed: Arc<AtomicBool>) -> P
 pub fn llm_remote_backend(
     default_llm: Arc<dyn LlmClient>,
     remote_fallback_allowed: Arc<AtomicBool>,
+    grants: Arc<HighRiskGrantStore>,
 ) -> Arc<dyn LlmClient> {
     if let Some(cfg) = RemotePluginHttpConfig::from_env_llm() {
         tracing::info!(
@@ -109,7 +117,11 @@ pub fn llm_remote_backend(
             "remote LLM HTTP active -> {}",
             cfg.endpoint
         );
-        match RemoteLlmHttp::new(cfg) {
+        match RemoteLlmHttp::new(
+            cfg,
+            grants,
+            Some(NETWORK_GRANT_REMOTE_LLM.to_string()),
+        ) {
             Ok(remote) => Arc::new(remote),
             Err(e) => {
                 tracing::error!(
@@ -161,5 +173,6 @@ pub fn invoke_directory_plugin_rpc_blocking(
         method,
         params,
         cfg.bearer_token.as_deref(),
+        None,
     )
 }
