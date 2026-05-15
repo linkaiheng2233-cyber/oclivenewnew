@@ -32,7 +32,7 @@ Release **`cargo-bloat` sampling**, **Monolith** vs **`oclive bench`**, and **kn
 - **First response:** we usually triage within **3–5 business days** (best-effort volunteer window, **not an SLA**).  
 - **Attach environment context:** **OS**; **app version** (e.g. `package.json` / `src-tauri/Cargo.toml` `version`); **`oclive-cli` version** (`crates/oclive-cli/Cargo.toml` or `cargo run -p oclive-cli -- --help`); plus a short summary from **Settings → General → Environment check**. **Do not** paste API keys, tokens, or full private paths.
 
-**Self-serve:** [FAQ](creator-docs/FAQ.md) · [Documentation index](creator-docs/getting-started/DOCUMENTATION_INDEX.md) · [ERROR_CODES](creator-docs/getting-started/ERROR_CODES.md). For bugs, include **error code** and **minimal repro** when possible.
+**Self-serve:** [FAQ](creator-docs/FAQ.md) · [Documentation index (EN)](creator-docs-en/getting-started/DOCUMENTATION_INDEX.md) · [Documentation index (ZH)](creator-docs/getting-started/DOCUMENTATION_INDEX.md) · [ERROR_CODES](creator-docs/getting-started/ERROR_CODES.md). For bugs, include **error code** and **minimal repro** when possible.
 
 ## Early adopters & known limits
 
@@ -54,20 +54,18 @@ Release **`cargo-bloat` sampling**, **Monolith** vs **`oclive bench`**, and **kn
 2. **Plugins:** follow **manifest permissions** and host grants; AGPL + plugin exception in [LICENSE](LICENSE).  
 3. **Data on disk:** SQLite + `{app_data}` — [CONFIGURATION_FILES.md](creator-docs/guides/CONFIGURATION_FILES.md); do not paste private paths in public issues.
 
-## English documentation hub
-
-- **[creator-docs-en/README.md](creator-docs-en/README.md)** — index of English mirrors for core docs.
-
 ## Vision (open lab)
 
 Local-first, swappable subsystems, role packs as the contract surface — see [creator-docs/roadmap/VISION_OPEN_LAB.md](creator-docs/roadmap/VISION_OPEN_LAB.md) and [creator-docs/roadmap/VISION_ROADMAP_MONTHLY.md](creator-docs/roadmap/VISION_ROADMAP_MONTHLY.md).
 
 ## Documentation (creators & extensions)
 
-Chinese hub: **[creator-docs/README.md](creator-docs/README.md)** · index **[DOCUMENTATION_INDEX.md](creator-docs/getting-started/DOCUMENTATION_INDEX.md)**.
+**English entry** (folder layout and reading order — same role as the Chinese hub **[creator-docs/README.md](creator-docs/README.md)**): **[creator-docs-en/README.md](creator-docs-en/README.md)**.
 
 | Topic | Path |
 |------|------|
+| **Documentation index (EN)** | **[creator-docs-en/getting-started/DOCUMENTATION_INDEX.md](creator-docs-en/getting-started/DOCUMENTATION_INDEX.md)** |
+| **Documentation index (ZH)** | [creator-docs/getting-started/DOCUMENTATION_INDEX.md](creator-docs/getting-started/DOCUMENTATION_INDEX.md) |
 | **Project overview (EN)** | [creator-docs-en/getting-started/PROJECT_OVERVIEW.md](creator-docs-en/getting-started/PROJECT_OVERVIEW.md) |
 | **Kernel & modules diagram (EN)** | [creator-docs-en/getting-started/KERNEL_AND_MODULES_ARCHITECTURE.md](creator-docs-en/getting-started/KERNEL_AND_MODULES_ARCHITECTURE.md) |
 | **Plugin contract summary (EN)** | [creator-docs-en/plugin-and-architecture/PLUGIN_V1.md](creator-docs-en/plugin-and-architecture/PLUGIN_V1.md) |
