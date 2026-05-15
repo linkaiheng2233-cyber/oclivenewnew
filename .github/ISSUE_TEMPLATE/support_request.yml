@@ -1,0 +1,57 @@
+name: Support / Question
+description: 问题求助 — 安装、配置或行为疑问（非安全漏洞）
+title: "[support]: "
+labels: ["question"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Use this template when you are **unsure it is a bug** or need **setup help**.
+        **Security vulnerabilities:** do **not** file here — see [SECURITY.md](https://github.com/linkaiheng2233-cyber/oclivenewnew/blob/main/SECURITY.md).
+
+  - type: textarea
+    id: goal
+    attributes:
+      label: What are you trying to do? / 你想达成什么？
+    validations:
+      required: true
+
+  - type: input
+    id: os
+    attributes:
+      label: OS
+      placeholder: Windows 11 / Ubuntu 22.04 / …
+    validations:
+      required: true
+
+  - type: input
+    id: app_version
+    attributes:
+      label: oclive app version
+      placeholder: 0.2.x
+    validations:
+      required: true
+
+  - type: textarea
+    id: env_check
+    attributes:
+      label: Environment check summary (recommended) / 环境自检摘要
+      description: From **Settings → General → Environment check** in the app. No secrets.
+    validations:
+      required: false
+
+  - type: textarea
+    id: tried
+    attributes:
+      label: What did you already try? / 已尝试的排查
+      placeholder: Read ERROR_CODES §1.5, ran ollama list, …
+    validations:
+      required: false
+
+  - type: textarea
+    id: logs
+    attributes:
+      label: Logs or screenshots (optional)
+      description: Redact paths/tokens if needed.
+    validations:
+      required: false

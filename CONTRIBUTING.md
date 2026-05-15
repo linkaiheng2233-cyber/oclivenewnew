@@ -8,6 +8,12 @@
 
 合并默认分支后，**Dependabot** 会按 [`.github/dependabot.yml`](.github/dependabot.yml) 开依赖更新 PR；**CI** 见 Actions。若你维护组织/仓库设置（分支保护、Secrets 等），见 **[creator-docs/getting-started/GITHUB_REPO_CHECKLIST.md](creator-docs/getting-started/GITHUB_REPO_CHECKLIST.md)**。
 
+## 获取帮助
+
+- **一般问题、安装与配置**：请使用仓库 [**GitHub Issues**](https://github.com/linkaiheng2233-cyber/oclivenewnew/issues)，并选用 **Bug / Feature / Support** 模板；标题建议 `[bug]:` / `[feat]:` / `[support]:` 前缀（见根目录 [README.md](README.md)「支持」小节）。维护者通常在 **3–5 个工作日** 内做首轮分类（非 SLA）。  
+- **自助材料**：[FAQ](creator-docs/FAQ.md) · [文档索引](creator-docs/getting-started/DOCUMENTATION_INDEX.md) · [ERROR_CODES](creator-docs/getting-started/ERROR_CODES.md)。  
+- **安全漏洞**：**勿**在公开 issue 披露细节 — 见 [SECURITY.md](SECURITY.md)。
+
 ## 开发环境
 
 - **本仓库**：**Node.js**（建议 18+）、**npm**、**Rust** stable、**Ollama**（本地对话默认路径，可选）。

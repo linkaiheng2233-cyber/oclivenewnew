@@ -8,6 +8,12 @@ Thank you for helping improve oclive. High-level goals are described in [creator
 
 After merges to the default branch, **Dependabot** opens PRs per [`.github/dependabot.yml`](.github/dependabot.yml). **CI** runs on Actions. For org/repo settings (branch protection, secrets), see **[creator-docs/getting-started/GITHUB_REPO_CHECKLIST.md](creator-docs/getting-started/GITHUB_REPO_CHECKLIST.md)**.
 
+## Getting help
+
+- **General questions, install, and configuration:** use [**GitHub Issues**](https://github.com/linkaiheng2233-cyber/oclivenewnew/issues) with the **Bug / Feature / Support** templates; prefer `[bug]:` / `[feat]:` / `[support]:` title prefixes (see root [README.en.md](README.en.md) **Support**). First triage is usually within **3–5 business days** (best effort, not an SLA).  
+- **Self-serve:** [FAQ](creator-docs/FAQ.md) · [Documentation index](creator-docs/getting-started/DOCUMENTATION_INDEX.md) · [ERROR_CODES](creator-docs/getting-started/ERROR_CODES.md).  
+- **Security vulnerabilities:** do **not** disclose in public issues — see [SECURITY.md](SECURITY.md).
+
 ## Development environment
 
 - **This repo:** **Node.js** (18+ recommended), **npm**, **Rust** stable, **Ollama** (optional for local dialogue).

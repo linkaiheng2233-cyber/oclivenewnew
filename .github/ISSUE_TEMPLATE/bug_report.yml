@@ -12,6 +12,42 @@ body:
         **Before opening:** skim [FAQ](https://github.com/linkaiheng2233-cyber/oclivenewnew/blob/main/creator-docs/FAQ.md) and the [documentation index](https://github.com/linkaiheng2233-cyber/oclivenewnew/blob/main/creator-docs/getting-started/DOCUMENTATION_INDEX.md); for HTTP/`--api` errors see [ERROR_CODES](https://github.com/linkaiheng2233-cyber/oclivenewnew/blob/main/creator-docs/getting-started/ERROR_CODES.md).
 
   - type: input
+    id: os
+    attributes:
+      label: Environment — OS
+      description: e.g. Windows 11 23H2 / Ubuntu 22.04 / macOS 14
+      placeholder: Windows 11 x64
+    validations:
+      required: true
+
+  - type: input
+    id: app_version
+    attributes:
+      label: Environment — oclive app version
+      description: From About screen, `package.json`, or `src-tauri/Cargo.toml` version field.
+      placeholder: 0.2.x
+    validations:
+      required: true
+
+  - type: input
+    id: cli_version
+    attributes:
+      label: Environment — oclive-cli version (if used)
+      description: From `crates/oclive-cli/Cargo.toml` or `cargo run -p oclive-cli -- --help` output; write N/A if not applicable.
+      placeholder: N/A
+    validations:
+      required: false
+
+  - type: textarea
+    id: env_check
+    attributes:
+      label: Environment check summary (optional)
+      description: Paste a short summary from **Settings → General → Environment check** (no secrets). Chinese UI 环境自检.
+      placeholder: Ollama reachable; roles dir OK; app_data writable …
+    validations:
+      required: false
+
+  - type: input
     id: error_code
     attributes:
       label: Error Code
@@ -24,7 +60,7 @@ body:
     id: error_message
     attributes:
       label: Error Message
-      placeholder: role_path 不是目录：D:\roles\demo
+      placeholder: role_path is not a directory …
     validations:
       required: true
 
@@ -32,19 +68,18 @@ body:
     id: error_hint
     attributes:
       label: Error Hint (if any)
-      placeholder: 请传入包含 manifest.json 的角色目录绝对路径
+      placeholder: Provide a role directory path that contains manifest.json …
     validations:
       required: false
 
   - type: textarea
     id: repro_steps
     attributes:
-      label: Repro Steps
-      description: Minimal steps to reproduce
+      label: Repro Steps / 重现步骤
+      description: Minimal steps to reproduce (numbered list preferred).
       placeholder: |
         1) Start oclive with --api
-        2) Open pack-editor chat panel
-        3) ...
+        2) …
     validations:
       required: true
 
@@ -68,4 +103,3 @@ body:
       description: Include snippets for targets like oclive_chat / oclive_plugin
     validations:
       required: false
-

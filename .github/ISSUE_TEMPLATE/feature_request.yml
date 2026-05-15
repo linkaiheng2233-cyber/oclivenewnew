@@ -1,0 +1,41 @@
+name: Feature Request
+description: Suggest an idea or improvement for oclive
+title: "[feat]: "
+labels: ["enhancement"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Thanks for the suggestion. Roadmap context: [VISION_ROADMAP_MONTHLY](https://github.com/linkaiheng2233-cyber/oclivenewnew/blob/main/creator-docs/roadmap/VISION_ROADMAP_MONTHLY.md).
+
+  - type: textarea
+    id: use_case
+    attributes:
+      label: Use case / 使用场景
+      description: Who benefits, and in what workflow (desktop host, pack editor, launcher, headless, etc.)?
+      placeholder: As a pack author, I want …
+    validations:
+      required: true
+
+  - type: textarea
+    id: problem
+    attributes:
+      label: Problem today
+      description: What is painful or impossible without this?
+    validations:
+      required: true
+
+  - type: textarea
+    id: proposal
+    attributes:
+      label: Proposed solution (optional)
+      description: Sketch UX/API; maintainers may reshape during design.
+    validations:
+      required: false
+
+  - type: textarea
+    id: alternatives
+    attributes:
+      label: Alternatives considered (optional)
+    validations:
+      required: false

@@ -25,12 +25,14 @@ Contributor notes: **[AGENTS.md](AGENTS.md)**.
 
 Release **`cargo-bloat` sampling**, **Monolith** vs **`oclive bench`**, and **known product limits**: **[creator-docs-en/getting-started/PERFORMANCE.md](creator-docs-en/getting-started/PERFORMANCE.md)** (Chinese: [creator-docs/getting-started/PERFORMANCE.md](creator-docs/getting-started/PERFORMANCE.md)). Figures track [LIGHTWEIGHT_PROFILE.md](creator-docs/development/LIGHTWEIGHT_PROFILE.md) §6.7.
 
-## Help & issues
+## Support
 
-- **FAQ (plugins, mumu slots, UI):** [creator-docs/FAQ.md](creator-docs/FAQ.md)  
-- **Documentation hub:** [creator-docs/getting-started/DOCUMENTATION_INDEX.md](creator-docs/getting-started/DOCUMENTATION_INDEX.md)  
-- **Error codes & minimum repro:** [creator-docs/getting-started/ERROR_CODES.md](creator-docs/getting-started/ERROR_CODES.md)  
-- **Bug reports:** GitHub **Issues** (template provided). Include **error code**, **repro steps**, and **env var names (no secrets)** when possible.
+- **Single entry point:** [**GitHub Issues**](https://github.com/linkaiheng2233-cyber/oclivenewnew/issues) (this repository).  
+- **Suggested titles:** `[bug]: …` · `[feat]: …` · `[support]: …` (matches issue templates).  
+- **First response:** we usually triage within **3–5 business days** (best-effort volunteer window, **not an SLA**).  
+- **Attach environment context:** **OS**; **app version** (e.g. `package.json` / `src-tauri/Cargo.toml` `version`); **`oclive-cli` version** (`crates/oclive-cli/Cargo.toml` or `cargo run -p oclive-cli -- --help`); plus a short summary from **Settings → General → Environment check**. **Do not** paste API keys, tokens, or full private paths.
+
+**Self-serve:** [FAQ](creator-docs/FAQ.md) · [Documentation index](creator-docs/getting-started/DOCUMENTATION_INDEX.md) · [ERROR_CODES](creator-docs/getting-started/ERROR_CODES.md). For bugs, include **error code** and **minimal repro** when possible.
 
 ## Early adopters & known limits
 
