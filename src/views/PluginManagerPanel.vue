@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { open } from "@tauri-apps/api/dialog";
-import { computed, ref, watch } from "vue";
+import { computed, ref, toRef, watch } from "vue";
 import { useI18n } from "vue-i18n";
 import PluginBackendSessionPanel from "../components/PluginBackendSessionPanel.vue";
 import InstalledPluginWorkspaceDetail from "../components/InstalledPluginWorkspaceDetail.vue";
@@ -8,6 +8,7 @@ import PluginScaffoldWizard from "../components/PluginScaffoldWizard.vue";
 import PmSlotRow from "../components/PmSlotRow.vue";
 import PluginSlotEmbed from "../components/PluginSlotEmbed.vue";
 import { useAppToast } from "../composables/useAppToast";
+import { useModalFocusRestore } from "../composables/useModalFocusRestore";
 import {
   SLOT_CHAT_HEADER,
   SLOT_CHAT_TOOLBAR,
@@ -48,6 +49,12 @@ const scaffoldWizardVisible = ref(false);
 const pluginPackStatus = ref("");
 /** 已安装区：侧栏当前选中（右侧单一配置 + 调试台） */
 const selectedWorkspacePluginId = ref("");
+
+const panelDialogRef = ref<HTMLElement | null>(null);
+const panelFirstTabRef = ref<HTMLButtonElement | null>(null);
+useModalFocusRestore(toRef(pluginStore, "panelVisible"), panelDialogRef, {
+  primary: panelFirstTabRef,
+});
 
 const selectedWorkspacePlugin = computed(() =>
   pluginStore.catalog.find((c) => c.id === selectedWorkspacePluginId.value) ?? null,
@@ -330,8 +337,9 @@ async function onPackSelectedPlugin(): Promise<void> {
       aria-modal="true"
       :aria-label="t('pluginWorkbench.aria.dialogStudio')"
       @click.self="pluginStore.closePanel()"
+      @keydown.escape.stop="pluginStore.closePanel()"
     >
-      <div class="pm-dialog pm-dialog--studio" @click.stop>
+      <div ref="panelDialogRef" class="pm-dialog pm-dialog--studio" tabindex="-1" @click.stop>
         <header class="pm-head">
           <div class="pm-head-row">
             <h2 class="pm-title">{{ t("pluginWorkbench.header.title") }}</h2>
@@ -355,6 +363,7 @@ async function onPackSelectedPlugin(): Promise<void> {
         <template v-else>
           <div class="pm-tabs" role="tablist" :aria-label="t('pluginWorkbench.aria.tablist')">
             <button
+              ref="panelFirstTabRef"
               type="button"
               role="tab"
               class="pm-tab"

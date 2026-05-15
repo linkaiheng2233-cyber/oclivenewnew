@@ -1,11 +1,12 @@
 <script setup lang="ts">
-import { computed } from "vue";
+import { computed, ref, toRef } from "vue";
 import { useI18n } from "vue-i18n";
 import PluginSlotEmbed from "./PluginSlotEmbed.vue";
 import { SLOT_LAUNCHER_PALETTE } from "../stores/pluginStore";
 import { useUiStore } from "../stores/uiStore";
+import { useModalFocusRestore } from "../composables/useModalFocusRestore";
 
-withDefaults(
+const props = withDefaults(
   defineProps<{
     modelValue: boolean;
     /** 与插件 bootstrap 同步 */
@@ -17,6 +18,9 @@ withDefaults(
 const emit = defineEmits<{
   "update:modelValue": [value: boolean];
 }>();
+
+const shDialogRef = ref<HTMLElement | null>(null);
+useModalFocusRestore(toRef(props, "modelValue"), shDialogRef);
 
 const { t } = useI18n();
 const uiStore = useUiStore();
@@ -42,8 +46,9 @@ const rows = computed(() => {
       aria-modal="true"
       :aria-label="t('common.shortcutHelp.aria')"
       @click.self="emit('update:modelValue', false)"
+      @keydown.escape.stop="emit('update:modelValue', false)"
     >
-      <div class="sh-dialog" @click.stop>
+      <div ref="shDialogRef" class="sh-dialog" tabindex="-1" @click.stop @keydown.escape.stop="emit('update:modelValue', false)">
         <header class="sh-head">
           <h2 class="sh-title">{{ t("common.shortcutHelp.title") }}</h2>
           <button

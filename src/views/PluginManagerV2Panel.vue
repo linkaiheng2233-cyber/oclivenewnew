@@ -1,8 +1,10 @@
 <script setup lang="ts">
+import { ref, toRef } from "vue";
 import { useI18n } from "vue-i18n";
 import { PluginManagerV2 } from "../components/PluginManagerV2";
+import { useModalFocusRestore } from "../composables/useModalFocusRestore";
 
-defineProps<{
+const props = defineProps<{
   visible: boolean;
 }>();
 
@@ -12,6 +14,9 @@ const emit = defineEmits<{
 }>();
 
 const { t } = useI18n();
+
+const dialogRef = ref<HTMLElement | null>(null);
+useModalFocusRestore(toRef(props, "visible"), dialogRef);
 </script>
 
 <template>
@@ -23,8 +28,9 @@ const { t } = useI18n();
       aria-modal="true"
       :aria-label="t('pluginManager.v2PanelAria')"
       @click.self="emit('close')"
+      @keydown.escape.stop="emit('close')"
     >
-      <div class="pm2-dialog" @click.stop>
+      <div ref="dialogRef" class="pm2-dialog" tabindex="-1" @click.stop @keydown.escape.stop="emit('close')">
         <PluginManagerV2 :visible="visible" @close="emit('close')" @open-v1="emit('openV1')" />
       </div>
     </div>
