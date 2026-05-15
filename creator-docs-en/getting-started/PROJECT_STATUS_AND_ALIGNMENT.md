@@ -27,12 +27,12 @@
 |-------|--------|
 | Hub & quick links | [DOCUMENTATION_INDEX.md](DOCUMENTATION_INDEX.md) |
 | **Current status snapshot (version, ships, changelogs)** | [PROJECT_CURRENT_STATUS.md](PROJECT_CURRENT_STATUS.md) |
-| In-app FAQ (mumu slots, plugins, UI) | [../../creator-docs/FAQ.md](../../creator-docs/FAQ.md) |
+| In-app FAQ (mumu slots, plugins, UI) | [../FAQ.md](../FAQ.md) |
 | Error codes & triage | [ERROR_CODES.md](ERROR_CODES.md) |
 | Local sidecar + BYOK | [SIDECAR_LLM_USER_GUIDE.md](SIDECAR_LLM_USER_GUIDE.md) |
 | Config paths | [../../creator-docs/guides/CONFIGURATION_FILES.md](../../creator-docs/guides/CONFIGURATION_FILES.md) |
 | mumu UI acceptance | [../../creator-docs/guides/MUMU_UI_ACCEPTANCE_CHECKLIST.md](../../creator-docs/guides/MUMU_UI_ACCEPTANCE_CHECKLIST.md) |
-| Editor vs host compatibility | [../../creator-docs/COMPATIBILITY.md](../../creator-docs/COMPATIBILITY.md) |
+| Editor vs host compatibility | [../COMPATIBILITY.md](../COMPATIBILITY.md) |
 | Creator workflow | [CREATOR_WORKFLOW.md](CREATOR_WORKFLOW.md) |
 
 ### 2. Modules, contracts, architecture
@@ -110,4 +110,4 @@
 
 ## Index dedupe note
 
-In [DOCUMENTATION_INDEX.md](DOCUMENTATION_INDEX.md), duplicate FAQ rows point to a **single** [../../creator-docs/FAQ.md](../../creator-docs/FAQ.md) row. Directory plugins + manager shortcuts remain one canonical [../../creator-docs/plugin-and-architecture/DIRECTORY_PLUGINS.md](../../creator-docs/plugin-and-architecture/DIRECTORY_PLUGINS.md).
+In [DOCUMENTATION_INDEX.md](DOCUMENTATION_INDEX.md), duplicate FAQ rows point to a **single** [../FAQ.md](../FAQ.md) row. Directory plugins + manager shortcuts remain one canonical [../plugin-and-architecture/DIRECTORY_PLUGINS.md](../plugin-and-architecture/DIRECTORY_PLUGINS.md).

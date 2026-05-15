@@ -23,22 +23,22 @@ Creator and plugin documentation lives under repo root **`creator-docs/`** (topi
 | **Headless bring-up (`--api`, K1)** | **[examples/headless-kernel-minimal/README.md](../../examples/headless-kernel-minimal/README.md)** |
 | **Fast triage after errors / filing issues** | **[ERROR_CODES.md](ERROR_CODES.md)** |
 | **GitHub: Dependabot, CI, web settings** | **[GITHUB_REPO_CHECKLIST.md](GITHUB_REPO_CHECKLIST.md)** |
-| **Replaceable modules + HTTP sidecar + update strategy** | **[../../creator-docs/plugin-and-architecture/CREATOR_PLUGIN_ARCHITECTURE.md](../../creator-docs/plugin-and-architecture/CREATOR_PLUGIN_ARCHITECTURE.md)** |
+| **Replaceable modules + HTTP sidecar + update strategy** | **[../plugin-and-architecture/CREATOR_PLUGIN_ARCHITECTURE.md](../plugin-and-architecture/CREATOR_PLUGIN_ARCHITECTURE.md)** |
 | **BYOK sidecar to proprietary cloud models** | **[SIDECAR_LLM_USER_GUIDE.md](SIDECAR_LLM_USER_GUIDE.md)** |
 | **Sidecar example: OpenAI-compatible API** | **[../../examples/remote_plugin_openai_compat/README.md](../../examples/remote_plugin_openai_compat/README.md)** |
-| **Sidecar JSON-RPC shapes** | **[../../creator-docs/plugin-and-architecture/REMOTE_PLUGIN_PROTOCOL.md](../../creator-docs/plugin-and-architecture/REMOTE_PLUGIN_PROTOCOL.md)** |
+| **Sidecar JSON-RPC shapes** | **[../plugin-and-architecture/REMOTE_PLUGIN_PROTOCOL.md](../plugin-and-architecture/REMOTE_PLUGIN_PROTOCOL.md)** |
 | **`plugin_backends` fields** | **[../plugin-and-architecture/PLUGIN_V1.md](../plugin-and-architecture/PLUGIN_V1.md)** |
 | **Official CLI scaffold `oclive-cli`** | **[../cli/OCLIVE_CLI_GUIDE.md](../cli/OCLIVE_CLI_GUIDE.md)** |
 | **Seven slots + presets, switching to `remote` (authoritative)** | **[../cli/SETTINGS_REFERENCE.md](../cli/SETTINGS_REFERENCE.md)** |
 | **Role pack disk layout, multi-distro alignment, `oclive pack validate`** | **[../role-pack/ROLE_PACK_SPEC.md](../role-pack/ROLE_PACK_SPEC.md)** |
 | **Community role pack index JSON** | **[../role-pack/ROLE_PACK_INDEX.md](../role-pack/ROLE_PACK_INDEX.md)** |
-| **Directory process plugins** (`plugins/`, manifest, whole-shell, `directory_plugin_invoke`, dev mode; **plugin manager** `Ctrl+Shift+F`, enable/disable/reorder/local zip) | **[../../creator-docs/plugin-and-architecture/DIRECTORY_PLUGINS.md](../../creator-docs/plugin-and-architecture/DIRECTORY_PLUGINS.md)** |
-| **Bridge `invoke` table, permission aliases, error codes** | **[../../creator-docs/plugin-and-architecture/BRIDGE_API_REFERENCE.md](../../creator-docs/plugin-and-architecture/BRIDGE_API_REFERENCE.md)** |
+| **Directory process plugins** (`plugins/`, manifest, whole-shell, `directory_plugin_invoke`, dev mode; **plugin manager** `Ctrl+Shift+F`, enable/disable/reorder/local zip) | **[../plugin-and-architecture/DIRECTORY_PLUGINS.md](../plugin-and-architecture/DIRECTORY_PLUGINS.md)** |
+| **Bridge `invoke` table, permission aliases, error codes** | **[../plugin-and-architecture/BRIDGE_API_REFERENCE.md](../plugin-and-architecture/BRIDGE_API_REFERENCE.md)** |
 | **Config file locations** | **[../../creator-docs/guides/CONFIGURATION_FILES.md](../../creator-docs/guides/CONFIGURATION_FILES.md)** |
 | **Open-source licensing policy** | **[../../creator-docs/LICENSE_POLICY.md](../../creator-docs/LICENSE_POLICY.md)** |
-| **mumu default slots + plugin FAQ (Vue not showing, iframe debug, deps; user Q&A)** | **[../../creator-docs/FAQ.md](../../creator-docs/FAQ.md)** |
+| **mumu default slots + plugin FAQ (Vue not showing, iframe debug, deps; user Q&A)** | **[../FAQ.md](../FAQ.md)** |
 | **mumu UI release checklist** | **[../../creator-docs/guides/MUMU_UI_ACCEPTANCE_CHECKLIST.md](../../creator-docs/guides/MUMU_UI_ACCEPTANCE_CHECKLIST.md)** |
-| **Editor vs host compatibility** | **[../../creator-docs/COMPATIBILITY.md](../../creator-docs/COMPATIBILITY.md)** |
+| **Editor vs host compatibility** | **[../COMPATIBILITY.md](../COMPATIBILITY.md)** |
 | **`memory = local`, `_local_plugins`, bridge spec** | **[../../creator-docs/plugin-and-architecture/LOCAL_PLUGIN_BRIDGE_SPEC.md](../../creator-docs/plugin-and-architecture/LOCAL_PLUGIN_BRIDGE_SPEC.md)** |
 | **Add a new built-in backend in Rust** | **[../../creator-docs/plugin-and-architecture/HOW_TO_REPLACE_MODULES.md](../../creator-docs/plugin-and-architecture/HOW_TO_REPLACE_MODULES.md)** |
 | **Author pack content only** | **[CREATOR_WORKFLOW.md](CREATOR_WORKFLOW.md)**, [roles/README_MANIFEST.md](../../roles/README_MANIFEST.md), import checklist [roles/TESTING_ROLE_PACK_IMPORT.md](../../roles/TESTING_ROLE_PACK_IMPORT.md) |

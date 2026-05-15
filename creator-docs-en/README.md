@@ -66,13 +66,18 @@ This tree mirrors **`creator-docs/`** with hand-maintained English pages. For to
 
 ---
 
-## Plugin architecture
+## Plugin architecture & contracts
 
 | Topic | English |
 |-------|---------|
-| PLUGIN_V1 — contract summary (orchestration + six slots) | [plugin-and-architecture/PLUGIN_V1.md](plugin-and-architecture/PLUGIN_V1.md) |
-
----
+| PLUGIN_V1 — `plugin_backends` contract | [plugin-and-architecture/PLUGIN_V1.md](plugin-and-architecture/PLUGIN_V1.md) |
+| Remote HTTP JSON-RPC (host ↔ sidecar) | [plugin-and-architecture/REMOTE_PLUGIN_PROTOCOL.md](plugin-and-architecture/REMOTE_PLUGIN_PROTOCOL.md) |
+| Directory plugins (`plugins/`, manifest, shell, invoke) | [plugin-and-architecture/DIRECTORY_PLUGINS.md](plugin-and-architecture/DIRECTORY_PLUGINS.md) |
+| Whole-shell bridge `invoke` reference | [plugin-and-architecture/BRIDGE_API_REFERENCE.md](plugin-and-architecture/BRIDGE_API_REFERENCE.md) |
+| Extension points index (traits → source files) | [plugin-and-architecture/EXTENSION_POINTS.md](plugin-and-architecture/EXTENSION_POINTS.md) |
+| Creator architecture (sidecar vs directory vs fork) | [plugin-and-architecture/CREATOR_PLUGIN_ARCHITECTURE.md](plugin-and-architecture/CREATOR_PLUGIN_ARCHITECTURE.md) |
+| Plugin & pack FAQ | [FAQ.md](FAQ.md) |
+| Pack editor vs host compatibility (`ui.json`) | [COMPATIBILITY.md](COMPATIBILITY.md) |
 
 ## Full Chinese corpus
 

@@ -1,6 +1,6 @@
 # oclive 文档索引与阅读顺序
 
-创作者与插件相关说明位于仓库根目录 **`creator-docs/`**（按主题分子文件夹）。可按角色选择阅读路径。
+创作者与插件相关说明位于仓库根目录 **`creator-docs/`**（按主题分子文件夹）。可按角色选择阅读路径。**插件契约等英文镜像**：[`creator-docs-en/README.md`](../../creator-docs-en/README.md)（与中文长文对拍时以 `creator-docs/` 为准；已含 Remote / 目录插件 / 桥接 / 扩展点 / 创作者架构 / FAQ / 兼容表等）。
 
 **若思路较乱、想一次看清三件套与事项分工**：先读 **[PROJECT_OVERVIEW.md](PROJECT_OVERVIEW.md)**（项目全貌与总览）。**若要对齐「当前进度 + 未来目标 + 按用途分类的文档地图」**：读 **[PROJECT_STATUS_AND_ALIGNMENT.md](PROJECT_STATUS_AND_ALIGNMENT.md)**。**若只要版本号、交付面摘要与 CHANGELOG 入口**：读 **[PROJECT_CURRENT_STATUS.md](PROJECT_CURRENT_STATUS.md)**。
 

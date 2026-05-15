@@ -63,6 +63,7 @@
 
 ### Documentation
 
+- **creator-docs-en**: added **`FAQ.md`**, **`COMPATIBILITY.md`**; under **`plugin-and-architecture/`** full English pages **`REMOTE_PLUGIN_PROTOCOL`**, **`DIRECTORY_PLUGINS`**, **`BRIDGE_API_REFERENCE`**, **`EXTENSION_POINTS`**, **`CREATOR_PLUGIN_ARCHITECTURE`** aligned with Chinese `creator-docs/`. Updated **`DOCUMENTATION_INDEX` (EN)**, **`PROJECT_STATUS_AND_ALIGNMENT` (EN)**, **`creator-docs-en/README.md`**, **`creator-docs/README.md`**, and **`creator-docs/getting-started/DOCUMENTATION_INDEX.md` (ZH)** cross-links.
 - **PLUGIN_V1 / Remote**: [PLUGIN_V1.md](creator-docs/plugin-and-architecture/PLUGIN_V1.md) — `RoleInfo` / `RoleData`, HTTP `/chat`, `prompt.build_prompt` **`personality_source`**; [REMOTE_PLUGIN_PROTOCOL.md](creator-docs/plugin-and-architecture/REMOTE_PLUGIN_PROTOCOL.md) — new §3.4 and `event.estimate` param row.
 - **Personality archive axis**: rewrote **[docs/personality-archive-notes.md](docs/personality-archive-notes.md)**; added **[docs/design-axis-evolution.md](docs/design-axis-evolution.md)**; cross-linked README, `creator-docs`, `roles/README_MANIFEST.md`, pack docs; **`roles/settings.template.json`** `evolution` includes **`personality_source`**.
 - **[creator-docs/getting-started/SIDECAR_LLM_USER_GUIDE.md](creator-docs/getting-started/SIDECAR_LLM_USER_GUIDE.md)**: local sidecar + BYOK for proprietary APIs.
