@@ -34,3 +34,5 @@ rg -l "\p{Han}" --glob "*.vue" --glob "*.ts" src
 各仓：`npm run build`。主仓额外：`npm run test:unit`、`cargo test --workspace`。
 
 **最近一次本机验收（Agent 会话内）**：主仓 `npm run test:unit` + `npm run build` + `cargo test --workspace`；`oclive-pack-editor`、`oclive-launcher`、`oclive-plugin-market` 均 `npm run build` 通过。
+
+**2026-05-15 补充**：`creator-docs-en/getting-started/` 新增 `OVERVIEW.md`、`CREATOR_WORKFLOW.md`、`SIDECAR_LLM_USER_GUIDE.md`、`GITHUB_REPO_CHECKLIST.md` 英文摘要/别名页；英文索引改为优先链到同目录 stub，权威长文仍以 `creator-docs/` 中文或既有英文镜像为准。主仓 `src/**/*.vue` 用户可见中文以 `vue-i18n` 词条为主（其余多为注释）。

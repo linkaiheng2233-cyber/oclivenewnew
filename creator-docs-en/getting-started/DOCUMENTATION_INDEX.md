@@ -19,9 +19,9 @@ Creator and plugin documentation lives under repo root **`creator-docs/`** (topi
 | **Single-track platform path (scaffold → deploy)** | **[KERNEL_PLATFORM_DEVELOPER_PATH.md](KERNEL_PLATFORM_DEVELOPER_PATH.md)** |
 | **Headless bring-up (`--api`, K1)** | **[examples/headless-kernel-minimal/README.md](../../examples/headless-kernel-minimal/README.md)** |
 | **Fast triage after errors / filing issues** | **[ERROR_CODES.md](ERROR_CODES.md)** |
-| **GitHub: Dependabot, CI, web settings** | **[../../creator-docs/getting-started/GITHUB_REPO_CHECKLIST.md](../../creator-docs/getting-started/GITHUB_REPO_CHECKLIST.md)** |
+| **GitHub: Dependabot, CI, web settings** | **[GITHUB_REPO_CHECKLIST.md](GITHUB_REPO_CHECKLIST.md)** |
 | **Replaceable modules + HTTP sidecar + update strategy** | **[../../creator-docs/plugin-and-architecture/CREATOR_PLUGIN_ARCHITECTURE.md](../../creator-docs/plugin-and-architecture/CREATOR_PLUGIN_ARCHITECTURE.md)** |
-| **BYOK sidecar to proprietary cloud models** | **[../../creator-docs/getting-started/SIDECAR_LLM_USER_GUIDE.md](../../creator-docs/getting-started/SIDECAR_LLM_USER_GUIDE.md)** |
+| **BYOK sidecar to proprietary cloud models** | **[SIDECAR_LLM_USER_GUIDE.md](SIDECAR_LLM_USER_GUIDE.md)** |
 | **Sidecar example: OpenAI-compatible API** | **[../../examples/remote_plugin_openai_compat/README.md](../../examples/remote_plugin_openai_compat/README.md)** |
 | **Sidecar JSON-RPC shapes** | **[../../creator-docs/plugin-and-architecture/REMOTE_PLUGIN_PROTOCOL.md](../../creator-docs/plugin-and-architecture/REMOTE_PLUGIN_PROTOCOL.md)** |
 | **`plugin_backends` fields** | **[../plugin-and-architecture/PLUGIN_V1.md](../plugin-and-architecture/PLUGIN_V1.md)** |
@@ -40,7 +40,7 @@ Creator and plugin documentation lives under repo root **`creator-docs/`** (topi
 | **Editor vs host compatibility** | **[../../creator-docs/COMPATIBILITY.md](../../creator-docs/COMPATIBILITY.md)** |
 | **`memory = local`, `_local_plugins`, bridge spec** | **[../../creator-docs/plugin-and-architecture/LOCAL_PLUGIN_BRIDGE_SPEC.md](../../creator-docs/plugin-and-architecture/LOCAL_PLUGIN_BRIDGE_SPEC.md)** |
 | **Add a new built-in backend in Rust** | **[../../creator-docs/plugin-and-architecture/HOW_TO_REPLACE_MODULES.md](../../creator-docs/plugin-and-architecture/HOW_TO_REPLACE_MODULES.md)** |
-| **Author pack content only** | **[../../creator-docs/getting-started/CREATOR_WORKFLOW.md](../../creator-docs/getting-started/CREATOR_WORKFLOW.md)**, [roles/README_MANIFEST.md](../../roles/README_MANIFEST.md), import checklist [roles/TESTING_ROLE_PACK_IMPORT.md](../../roles/TESTING_ROLE_PACK_IMPORT.md) |
+| **Author pack content only** | **[CREATOR_WORKFLOW.md](CREATOR_WORKFLOW.md)**, [roles/README_MANIFEST.md](../../roles/README_MANIFEST.md), import checklist [roles/TESTING_ROLE_PACK_IMPORT.md](../../roles/TESTING_ROLE_PACK_IMPORT.md) |
 | **Core / mutable personality archives, `personality_source`** | **[../../docs/personality-archive-notes.md](../../docs/personality-archive-notes.md)** |
 | **Design evolution (seven-dim vs archive axis)** | **[../../docs/design-axis-evolution.md](../../docs/design-axis-evolution.md)** |
 | **Editor validation roadmap** | **[../../creator-docs/role-pack/EDITOR_VALIDATION_ROADMAP.md](../../creator-docs/role-pack/EDITOR_VALIDATION_ROADMAP.md)** |
@@ -53,7 +53,7 @@ Creator and plugin documentation lives under repo root **`creator-docs/`** (topi
 | **Market + launcher integration** | **[../../creator-docs/roadmap/MARKET_LAUNCHER_INTEGRATION.md](../../creator-docs/roadmap/MARKET_LAUNCHER_INTEGRATION.md)** |
 | **Community web vision** | **[../../creator-docs/roadmap/COMMUNITY_WEB_VISION.md](../../creator-docs/roadmap/COMMUNITY_WEB_VISION.md)** |
 | **Plugin web section + `plugins.json`** | **[../../creator-docs/roadmap/PLUGIN_WEB_SECTION.md](../../creator-docs/roadmap/PLUGIN_WEB_SECTION.md)** |
-| **OVERVIEW alias** | **[../../creator-docs/getting-started/OVERVIEW.md](../../creator-docs/getting-started/OVERVIEW.md)** → [PROJECT_OVERVIEW.md](PROJECT_OVERVIEW.md) |
+| **OVERVIEW alias** | **[OVERVIEW.md](OVERVIEW.md)** → [PROJECT_OVERVIEW.md](PROJECT_OVERVIEW.md) |
 | **Lightweight / `cargo audit` / `cargo-bloat`** | **[../LIGHTWEIGHT_PROFILE.md](../LIGHTWEIGHT_PROFILE.md)** (English mirror of `creator-docs/development/LIGHTWEIGHT_PROFILE.md`) |
 | **Known vulnerabilities (`cargo-audit`)** | **[../security/KNOWN_VULNERABILITIES.md](../security/KNOWN_VULNERABILITIES.md)** |
 | **Security audit scope** | **[../security/SECURITY_AUDIT_SCOPE.md](../security/SECURITY_AUDIT_SCOPE.md)** |
@@ -73,11 +73,11 @@ Architecture-level design converges in RFCs (**drafts do not imply merged code o
 
 ## Suggested reading order (creators / sidecar devs)
 
-1. [CREATOR_WORKFLOW.md](../../creator-docs/getting-started/CREATOR_WORKFLOW.md) — pack directories and load paths  
+1. [CREATOR_WORKFLOW.md](CREATOR_WORKFLOW.md) — pack directories and load paths  
 2. [PLUGIN_V1.md](../plugin-and-architecture/PLUGIN_V1.md) — six swappable backends + **agent**  
 2b. [DIRECTORY_PLUGINS.md](../../creator-docs/plugin-and-architecture/DIRECTORY_PLUGINS.md) — directory plugins (`directory` enum, `directory_plugins` slots)  
 3. [CREATOR_PLUGIN_ARCHITECTURE.md](../../creator-docs/plugin-and-architecture/CREATOR_PLUGIN_ARCHITECTURE.md) — three extension styles, env vars, “hot reload” boundaries  
-4. [SIDECAR_LLM_USER_GUIDE.md](../../creator-docs/getting-started/SIDECAR_LLM_USER_GUIDE.md) — **local sidecar + BYOK**  
+4. [SIDECAR_LLM_USER_GUIDE.md](SIDECAR_LLM_USER_GUIDE.md) — **local sidecar + BYOK**  
 5. [REMOTE_PLUGIN_PROTOCOL.md](../../creator-docs/plugin-and-architecture/REMOTE_PLUGIN_PROTOCOL.md) — JSON-RPC methods, params/result, full JSON samples  
 6. [examples/remote_plugin_minimal/README.md](../../examples/remote_plugin_minimal/README.md) — minimal Python sidecar  
 6b. [examples/directory-plugin-minimal/README.md](../../examples/directory-plugin-minimal/README.md) — minimal directory plugin  
