@@ -50,6 +50,8 @@ npm run build
 | Rust workspace only | **`cargo test --workspace`** |
 | Frontend unit only | **`npm run test:unit`** (Vitest) |
 
+**CI alignment:** **`npm run check:release` does not run `npm run test:unit`**; CI runs **`npm run test:unit`** in the **`frontend`** job. Before a release, run **`npm run test:unit`** locally or rely on a green **Actions → frontend** run. Full release gates: [handoff/PRODUCT_RELEASE_CHECKLIST.md](handoff/PRODUCT_RELEASE_CHECKLIST.md).
+
 **CI:** `.github/workflows/ci.yml` runs Rust + **`npm run build`** + **`npm run test:unit`** on Ubuntu and Windows; Ubuntu also runs **OOCP** and **`oclive-cli`** jobs. See root README **Testing**.
 
 ## Pull requests
@@ -58,6 +60,12 @@ npm run build
 2. **Description:** motivation, behavior change, risks, manual verification; link issues if any.
 3. **Self-check:** at least **`npm run check`**; for persistence / HTTP / orchestration, prefer **`npm run check:release`**.
 4. **Review:** CI green, security, user-visible copy; large features should align with the roadmap (issue first).
+
+## Breaking changes
+
+1. **Open an issue** (or RFC for large surface) describing migration impact on role packs, `plugin_backends`, HTTP `/chat`, or Tauri DTOs.  
+2. **PR must include:** updates to **`crates/oclive_validation`** (if manifest/settings keys change), **`creator-docs/`** / **`creator-docs-en/`** mirrors when applicable, and **`CHANGELOG.md` + `CHANGELOG.en.md`** entries.  
+3. **Reviewer:** at least one maintainer checks CI + [PRODUCT_RELEASE_CHECKLIST.md](handoff/PRODUCT_RELEASE_CHECKLIST.md) P0 rows touched by the change.
 
 ## Documentation
 

@@ -38,6 +38,19 @@
 
 ---
 
+## 对外兼容一页表（主程序 / 编写器 / 启动器 / 包）
+
+| 组件 | 版本来源 | 与主程序关系 | 备注 |
+|------|----------|----------------|------|
+| **oclivenewnew（主程序）** | 根 `package.json` / `src-tauri/Cargo.toml` | — | 当前文档快照 **0.2.x** |
+| **oclive-pack-editor（编写器）** | 另仓 `package.json` | 产出 `roles/{id}/`；**`ui.json`** 与主程序见上文「兼容性表」 | `HOST_RUNTIME_VERSION` 应对齐主程序 `version`（编写器 README） |
+| **oclive-launcher（启动器）** | 另仓 `package.json` | 注入 **`OCLIVE_ROLES_DIR`**、可选模型名与 zip 安装；**不替代**主程序契约 | [启动器 README](https://github.com/linkaiheng2233-cyber/oclive-launcher/blob/main/README.md) |
+| **角色包** | `manifest.json`（`schema_version`、`min_runtime_version`） | 低版本主程序可能拒载或降级能力 | [PACK_VERSIONING.md](role-pack/PACK_VERSIONING.md)、`RoleStorage::load_role` |
+
+破坏性变更时：同步 **CHANGELOG**、上文「兼容性表」规划行、及姊妹仓 README 中的最低版本说明。
+
+---
+
 ## 如何查看版本
 
 | 产品 | 查看方式 |

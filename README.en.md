@@ -21,6 +21,26 @@ A **local-first** desktop companion for roleplay dialogue: **Tauri + Vue 3 + Rus
 
 Contributor notes: **[AGENTS.md](AGENTS.md)**.
 
+## Help & issues
+
+- **FAQ (plugins, mumu slots, UI):** [creator-docs/FAQ.md](creator-docs/FAQ.md)  
+- **Documentation hub:** [creator-docs/getting-started/DOCUMENTATION_INDEX.md](creator-docs/getting-started/DOCUMENTATION_INDEX.md)  
+- **Error codes & minimum repro:** [creator-docs/getting-started/ERROR_CODES.md](creator-docs/getting-started/ERROR_CODES.md)  
+- **Bug reports:** GitHub **Issues** (template provided). Include **error code**, **repro steps**, and **env var names (no secrets)** when possible.
+
+## Early adopters & known limits
+
+- **0.2.x** desktop host focus; **no in-app updater** wired yet — ship **offline installers** (see **Observability & release** if present below).  
+- **Ollama** is the default local LLM path; missing daemon or models will fail chat — see [CREATOR_WORKFLOW.md](creator-docs/getting-started/CREATOR_WORKFLOW.md) and [ERROR_CODES.md](creator-docs/getting-started/ERROR_CODES.md) (§1.5 first-install subset).  
+- **Remote / directory plugins / MCP** may require outbound network or subprocesses per manifest + host prompts — [DIRECTORY_PLUGINS.md](creator-docs/plugin-and-architecture/DIRECTORY_PLUGINS.md).  
+- **Product P0 gates** are tracked in [handoff/PRODUCT_RELEASE_CHECKLIST.md](handoff/PRODUCT_RELEASE_CHECKLIST.md) and [handoff/PRODUCT_AND_KERNEL_GAP_CHECKLIST.md](handoff/PRODUCT_AND_KERNEL_GAP_CHECKLIST.md).
+
+## Models, plugins, and data (three quick questions)
+
+1. **Third-party models / APIs:** default **local Ollama**; cloud or sidecars are **user-configured** — [SIDECAR_LLM_USER_GUIDE.md](creator-docs/getting-started/SIDECAR_LLM_USER_GUIDE.md), [LICENSE_POLICY.md](creator-docs/LICENSE_POLICY.md).  
+2. **Plugins:** follow **manifest permissions** and host grants; AGPL + plugin exception in [LICENSE](LICENSE).  
+3. **Data on disk:** SQLite + `{app_data}` — [CONFIGURATION_FILES.md](creator-docs/guides/CONFIGURATION_FILES.md); do not paste private paths in public issues.
+
 ## English documentation hub
 
 - **[creator-docs-en/README.md](creator-docs-en/README.md)** — index of English mirrors for core docs.

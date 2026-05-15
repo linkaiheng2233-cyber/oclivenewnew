@@ -76,6 +76,9 @@
 ## 四、相关索引
 
 - 按月里程碑：[VISION_ROADMAP_MONTHLY.md](VISION_ROADMAP_MONTHLY.md)  
+- **产品首发门槛（P0/P1）**：[../../handoff/PRODUCT_AND_KERNEL_GAP_CHECKLIST.md](../../handoff/PRODUCT_AND_KERNEL_GAP_CHECKLIST.md)  
+- **产品线任务分桶（按复杂度）**：[../../handoff/PRODUCT_LINE_TASK_BUCKETS.md](../../handoff/PRODUCT_LINE_TASK_BUCKETS.md)  
+- **发版前勾选表（P0 子集）**：[../../handoff/PRODUCT_RELEASE_CHECKLIST.md](../../handoff/PRODUCT_RELEASE_CHECKLIST.md)  
 - 包版本：[PACK_VERSIONING.md](../role-pack/PACK_VERSIONING.md)  
 - 创作者工作流：[../getting-started/CREATOR_WORKFLOW.md](../getting-started/CREATOR_WORKFLOW.md)  
 - 角色包导入测试清单：[../../roles/TESTING_ROLE_PACK_IMPORT.md](../../roles/TESTING_ROLE_PACK_IMPORT.md)  

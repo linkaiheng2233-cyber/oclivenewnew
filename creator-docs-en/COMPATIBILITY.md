@@ -40,6 +40,19 @@ How **`ui.json` inside a role pack** relates to the **desktop host**, so you do 
 
 ---
 
+## Cross-app compatibility (host / editor / launcher / pack)
+
+| Component | Version source | Relationship to host | Notes |
+|-----------|----------------|----------------------|--------|
+| **oclivenewnew** (host) | Root `package.json` / `src-tauri/Cargo.toml` | — | Snapshot **0.2.x** |
+| **oclive-pack-editor** | That repo’s `package.json` | Produces `roles/{id}/`; **`ui.json`** vs host: matrix above | `HOST_RUNTIME_VERSION` should track host `version` (editor README) |
+| **oclive-launcher** | That repo’s `package.json` | Injects **`OCLIVE_ROLES_DIR`**, optional model / zip install; **does not replace** host contracts | [Launcher README](https://github.com/linkaiheng2233-cyber/oclive-launcher/blob/main/README.md) |
+| **Role pack** | `manifest.json` (`schema_version`, `min_runtime_version`) | Older hosts may refuse or downgrade | [PACK_VERSIONING.md](../creator-docs/role-pack/PACK_VERSIONING.md), `RoleStorage::load_role` |
+
+For the Chinese-maintained superset (same facts), see [COMPATIBILITY.md](../creator-docs/COMPATIBILITY.md).
+
+---
+
 ## How to read the version
 
 | Product | Where |

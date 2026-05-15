@@ -9,6 +9,8 @@ body:
         Thanks for the report.
         For faster triage, include error code, hint, and minimal repro.
 
+        **Before opening:** skim [FAQ](https://github.com/linkaiheng2233-cyber/oclivenewnew/blob/main/creator-docs/FAQ.md) and the [documentation index](https://github.com/linkaiheng2233-cyber/oclivenewnew/blob/main/creator-docs/getting-started/DOCUMENTATION_INDEX.md); for HTTP/`--api` errors see [ERROR_CODES](https://github.com/linkaiheng2233-cyber/oclivenewnew/blob/main/creator-docs/getting-started/ERROR_CODES.md).
+
   - type: input
     id: error_code
     attributes:

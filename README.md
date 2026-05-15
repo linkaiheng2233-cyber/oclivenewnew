@@ -21,6 +21,26 @@
 
 协作说明见根目录 **[AGENTS.md](AGENTS.md)**。
 
+## 获取帮助与提 issue
+
+- **常见问题（插件、mumu 默认模块、界面）**：[creator-docs/FAQ.md](creator-docs/FAQ.md)  
+- **文档总索引与排障入口**：[creator-docs/getting-started/DOCUMENTATION_INDEX.md](creator-docs/getting-started/DOCUMENTATION_INDEX.md)  
+- **错误码与最少信息**：[creator-docs/getting-started/ERROR_CODES.md](creator-docs/getting-started/ERROR_CODES.md)  
+- **报告 bug**：GitHub **Issues**（仓库已提供模板）；请先尽量带上 **错误码 / 复现步骤 / 环境变量名（勿贴密钥）**。
+
+## 早期采用者与已知限制
+
+- 当前以 **0.2.x** 桌面宿主为主；**在线更新器未配置**，分发以 **离线安装包** 为准（见下文「可观测性与发布」）。  
+- **Ollama** 为本地对话默认路径；未安装或模型未拉取时对话会失败——请见 [CREATOR_WORKFLOW.md](creator-docs/getting-started/CREATOR_WORKFLOW.md) 与 [ERROR_CODES.md](creator-docs/getting-started/ERROR_CODES.md)（§1.5 首装常见）。  
+- **Remote / 目录插件 / MCP** 涉及出站网络或子进程时，须按 manifest 与宿主授权流程使用（见 [DIRECTORY_PLUGINS.md](creator-docs/plugin-and-architecture/DIRECTORY_PLUGINS.md)）。  
+- **产品级首发 P0 清单**（测试自动化、全路径首装文案等）仍在推进：维护者用 [handoff/PRODUCT_RELEASE_CHECKLIST.md](handoff/PRODUCT_RELEASE_CHECKLIST.md) 与 [handoff/PRODUCT_AND_KERNEL_GAP_CHECKLIST.md](handoff/PRODUCT_AND_KERNEL_GAP_CHECKLIST.md) 跟踪。
+
+## 模型、插件与数据（速览三问）
+
+1. **第三方模型与 API**：默认 **本地 Ollama**；若使用云端或侧车，密钥与出站网络由 **用户与侧车配置** 负责 — 见 [creator-docs/getting-started/SIDECAR_LLM_USER_GUIDE.md](creator-docs/getting-started/SIDECAR_LLM_USER_GUIDE.md) 与 [LICENSE_POLICY.md](creator-docs/LICENSE_POLICY.md)。  
+2. **插件**：须遵守 **manifest 权限** 与宿主授权；AGPL + 插件例外见 [LICENSE](LICENSE)。  
+3. **用户数据落盘**：SQLite 与 `{app_data}` 路径见 [creator-docs/guides/CONFIGURATION_FILES.md](creator-docs/guides/CONFIGURATION_FILES.md)；勿在公开渠道粘贴含隐私的路径全文。
+
 ## 平台愿景（开放实验场）
 
 在 **本地优先、可替换子系统、角色包为唯一对接面** 的前提下，oclive 希望成为创作者与玩家都能 **安全实验** 的桌面底座：契约与 CI 守住兼容边界，侧车与目录式插件降低扩展成本。**愿景摘要**见 [creator-docs/roadmap/VISION_OPEN_LAB.md](creator-docs/roadmap/VISION_OPEN_LAB.md)；分阶段路线见 [creator-docs/roadmap/VISION_ROADMAP_MONTHLY.md](creator-docs/roadmap/VISION_ROADMAP_MONTHLY.md)。
@@ -120,6 +140,8 @@ npm run build
 ```
 
 ## 测试与检查
+
+**主路径快捷键（应用内）**：**Ctrl+Shift+F** 打开插件管理、**Ctrl+Shift+S** 打开设置、**Ctrl+Shift+D** 开关调试面板；完整说明见应用内 **设置** 相关文案与 `src/i18n` 中 **`shortcutHelp`**（与 [FAQ](creator-docs/FAQ.md) 一致）。
 
 **CI（`.github/workflows/ci.yml`）**：在 **Ubuntu** 与 **Windows** 上均执行 Rust **`rustfmt` + `clippy`（`-D warnings`）+ 完整 `cargo test`**（`src-tauri` 工作目录，含 `tests/` 集成测试），以及 **`npm ci` + `npm run test:unit` + `npm run build`**。在 **Ubuntu** 上另跑 **`oocp-test-suite`**（`--api` + Node `examples/oocp-test-suite/run.mjs`，场景 S0–S11；**协议层黑盒，已入库且 CI 已集成**）。另含 **`cargo-audit`（0.22.1，`continue-on-error`）** 与 **`remote-plugin-demo`**（Python 侧车 `memory.rank` 烟测）。**组件 / 插件层**自动化在 **oclive-pack-editor** 各自 workflow 中维护（见上文「测试（三层）」）。
 

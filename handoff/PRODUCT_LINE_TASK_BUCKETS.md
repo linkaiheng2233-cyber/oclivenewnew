@@ -12,7 +12,7 @@
 
 | 主清单锚点 | 内容 | 备注 |
 |------------|------|------|
-| **C1** | 新建 **`handoff/PRODUCT_RELEASE_CHECKLIST.md`** 骨架：只列 **§A 的 P0 行**（引用主清单 §A1–A5 文案或编号），发版会议只过此表 | 与 [PRODUCT_AND_KERNEL_GAP_CHECKLIST.md](./PRODUCT_AND_KERNEL_GAP_CHECKLIST.md) §C1 对应 |
+| **C1** | 新建 **`handoff/PRODUCT_RELEASE_CHECKLIST.md`** 骨架：只列 **§A 的 P0 行**（引用主清单 §A1–A5 文案或编号），发版会议只过此表 | **已建**：[`PRODUCT_RELEASE_CHECKLIST.md`](./PRODUCT_RELEASE_CHECKLIST.md)；高风险演示表见 [`PLUGIN_HIGH_RISK_ACCEPTANCE.md`](./PLUGIN_HIGH_RISK_ACCEPTANCE.md) |
 | **C1（路线图互链）** | **路线图互链**：在 `VISION_ROADMAP_MONTHLY.md`、`BACKLOG_EXPERIENCE_AND_ECOSYSTEM.md` 各加一节或一段，指向主清单 §A / 本分桶 | 对应主清单 §C1 第二项 |
 | **A9.1** | **单一支持入口**：根 `README.md` 固定一句「提问先去…」+ Issue 模板指向 [FAQ](../creator-docs/FAQ.md) / [DOCUMENTATION_INDEX](../creator-docs/getting-started/DOCUMENTATION_INDEX.md) | 机械活 |
 | **A9.2** | **首发预期**：`README` 或 `README.en.md` 增加「早期采用者 / 已知限制」短段落（5～10 行级） | 与 A9.1 同 PR 亦可 |

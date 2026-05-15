@@ -25,6 +25,16 @@ Example response body:
 | `load_role_failed` | Failed to load role dir | Missing `manifest` / `settings` or bad structure | Run full checks in the pack editor; verify tree |
 | `chat_engine_failed` | Chat engine internal failure | Sidecar timeout, model down, runtime state | Check logs `oclive_chat` / `oclive_plugin` |
 
+### 1.5) First install: Ollama and role paths (subset)
+
+| Symptom | Common cause | Next step |
+|---------|--------------|-----------|
+| Chat fails; logs/UI mention **Ollama** unreachable | Daemon not installed/running, wrong port, model not pulled | Install/start [Ollama](https://ollama.com); run `ollama list` / `ollama pull <model>`; verify model names in pack or env |
+| **`invalid_role_path` / `load_role_failed`** | **`OCLIVE_ROLES_DIR`** not the **parent** of role folders, or missing `manifest.json` under the role dir | Point the var at the **roles root**; use [oclive-launcher](https://github.com/linkaiheng2233-cyber/oclive-launcher) or [CREATOR_WORKFLOW.md](CREATOR_WORKFLOW.md) |
+| **Directory not writable** (OS or Rust I/O errors) | AV blocking, permissions, read-only media | Use a writable path; avoid read-only shares for `app.db` (see [CONFIGURATION_FILES.md](../guides/CONFIGURATION_FILES.md)) |
+
+If the GUI still shows raw English backend strings, track under **A3.2 / A6** cleanup; self-serve with the table above first.
+
 ---
 
 ## 2) Remote JSON-RPC errors (sidecar convention)

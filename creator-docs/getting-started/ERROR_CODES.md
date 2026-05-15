@@ -23,6 +23,16 @@
 | `load_role_failed` | 角色目录加载失败 | `manifest/settings` 缺失或结构错误 | 用编写器“运行全部检查”，核对目录树 |
 | `chat_engine_failed` | 对话引擎内部失败 | 侧车超时、模型不可用、运行时状态异常 | 查看运行时日志 `oclive_chat` / `oclive_plugin` |
 
+### 1.5) 首装常见：Ollama 与角色目录（A2.1 子集）
+
+| 现象 | 常见原因 | 建议下一步 |
+|------|----------|------------|
+| 对话失败、日志或 UI 提示无法连接 **Ollama** | 本机未安装、服务未启动、端口非默认、模型未 `pull` | 安装并启动 [Ollama](https://ollama.com)；终端执行 `ollama list` / `ollama pull <模型>`；核对角色包或环境变量中的模型名 |
+| **`invalid_role_path` / `load_role_failed`** | **`OCLIVE_ROLES_DIR`** 未指向含子目录的 roles 根，或子目录缺 `manifest.json` | 将变量设为 **各角色文件夹的父目录**；用 [启动器](https://github.com/linkaiheng2233-cyber/oclive-launcher) 一键配置或对照 [CREATOR_WORKFLOW.md](CREATOR_WORKFLOW.md) |
+| **目录不可写 / 权限**（系统弹窗或 Rust I/O 错误） | 杀毒拦截、用户目录权限、指向了只读介质 | 换可写路径或排除误拦；勿在只读共享盘上放 `app.db`（路径见 [CONFIGURATION_FILES.md](../guides/CONFIGURATION_FILES.md)） |
+
+GUI 侧若仍展示英文底层错误句，属于 **A3.2 / A6** 持续扫尾；发版前可先依赖上述文档自助排障。
+
 ---
 
 ## 2) Remote JSON-RPC 错误码（侧车建议）

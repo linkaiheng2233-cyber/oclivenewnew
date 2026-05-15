@@ -51,6 +51,8 @@ npm run build
 | 仅 Rust workspace | **`cargo test --workspace`**（根目录；含 `crates/*` 与 `src-tauri`） |
 | 仅前端单元 | **`npm run test:unit`**（Vitest） |
 
+**CI 对齐（重要）**：**`npm run check:release` 不包含 `npm run test:unit`**；CI 在 **`frontend`** job 中单独执行 **`npm run test:unit`**。发版前建议本地补跑 **`npm run test:unit`**，或确认 **Actions → frontend** 已绿。完整发版勾选见 [handoff/PRODUCT_RELEASE_CHECKLIST.md](handoff/PRODUCT_RELEASE_CHECKLIST.md)。
+
 **CI 对齐**：**`.github/workflows/ci.yml`** 在 Ubuntu / Windows 上跑 Rust 与 **`npm run build`**、**`npm run test:unit`** 等；Ubuntu 另跑 **OOCP** 与 **`oclive-cli`** 相关 job。详见根目录 [README.md](README.md)「测试与检查」。
 
 ## PR 流程
@@ -59,6 +61,12 @@ npm run build
 2. **描述**：说明动机、行为变化、风险与手动验证步骤；关联 issue（若有）。
 3. **自检**：至少 **`npm run check`**；触及持久化 / HTTP / 编排时建议 **`npm run check:release`**。
 4. **Review**：关注 CI 红绿、安全与本地化文案；大功能建议先开 issue 对照路线图。
+
+## 破坏性变更（Breaking changes）
+
+1. **先开 issue**（或对大面变更开 RFC），说明对角色包、`plugin_backends`、`/chat` 或 Tauri DTO 的迁移影响。  
+2. **PR 须带**：`crates/oclive_validation` 更新（若 manifest / `settings` 键变更）、相应 **`creator-docs/`** / **`creator-docs-en/`** 文档，以及 **`CHANGELOG.md` / `CHANGELOG.en.md`** 双语条目。  
+3. **审阅者**：至少一名维护者确认 CI + 触及的 [PRODUCT_RELEASE_CHECKLIST.md](handoff/PRODUCT_RELEASE_CHECKLIST.md) P0 行。
 
 ## 文档约定
 

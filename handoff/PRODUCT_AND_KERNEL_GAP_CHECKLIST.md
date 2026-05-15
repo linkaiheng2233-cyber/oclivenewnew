@@ -105,8 +105,8 @@
 
 ### C1. 文档与索引（P1）
 
-- [ ] **PRODUCT_RELEASE_CHECKLIST**：仅 P0 子集可勾版（可选独立文件），发版会议只过一张表。
-- [ ] **本清单与路线图互链**：`VISION_ROADMAP_MONTHLY.md`、`BACKLOG_EXPERIENCE_AND_ECOSYSTEM.md` 中指向本节或拆 issue。
+- [x] **PRODUCT_RELEASE_CHECKLIST**：仅 P0 子集可勾版（**骨架已建**：[`handoff/PRODUCT_RELEASE_CHECKLIST.md`](./PRODUCT_RELEASE_CHECKLIST.md)）；发版会议只过一张表。
+- [x] **本清单与路线图互链**：`VISION_ROADMAP_MONTHLY.md`、`BACKLOG_EXPERIENCE_AND_ECOSYSTEM.md` 已链至 §A / 分桶 / 发版勾选表。
 
 ### C2. 工程纪律（P0）
 
