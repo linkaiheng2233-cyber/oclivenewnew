@@ -372,4 +372,40 @@ TypeScript 侧 `SendMessageResponse`（`src/utils/tauri-api.ts`）必须与 `mod
 
 ---
 
+## 权限规范（目录插件 · A4.2）
+
+目录插件 **`manifest.json`** 可选字段 **`permissions`** 声明宿主侧需启用的高危能力。校验 crate **`oclive_validation::plugin_permissions`** 与运行时 **`high_risk_grants.json`** 使用**同一套权限标识**；运行时实际检查的标识为权威来源。
+
+| 权限标识 | 说明 | 是否需要用户授权 | 默认值 |
+|----------|------|------------------|--------|
+| `process:spawn` | 允许宿主为该插件 spawn 子进程（`process` 块） | 是 | 未授权 |
+| `network:*` | 允许 Remote 后端或插件侧出站 HTTP（见下） | 是 | 未授权 |
+| `mcp:http` | 允许 MCP server `transport=http` 出站 | 是（按 server `id`） | 未授权 |
+| `mcp:stdio` | 允许 MCP server `transport=stdio` 子进程 | 是（按 server `id`） | 未授权 |
+
+### `manifest.json` 格式
+
+```json
+{
+  "schema_version": 1,
+  "id": "com.example.myplugin",
+  "version": "1.0.0",
+  "permissions": ["process:spawn", "network:*"],
+  "process": {
+    "command": "node",
+    "args": ["rpc_server.mjs"]
+  }
+}
+```
+
+- **`permissions` 省略**：视为 **`[]`**，校验**不报错**（无显式高危声明）。
+- **旧版兼容**：若省略 `permissions` 且存在 **`process`** 块，宿主仍按 **`process:spawn`** 路径要求用户在 **`high_risk_grants.json`** 中授权该插件 `id`（与 A4.1 行为一致）；**新插件应显式声明** `process:spawn`。
+- **Remote 侧车**：`plugin_backends.* = remote` 且配置了 `OCLIVE_REMOTE_*` 时，出站 JSON-RPC 前检查 **`network:*`**；grant **`id`** 为 **`remote:plugin`**（共用 plugin 端点）或 **`remote:llm`**（LLM 端点）。
+- **MCP**：与目录插件 manifest 无关；按 `{app_data}/mcp-servers/*.json` 的 server **`id`** 检查 **`mcp:http`** / **`mcp:stdio`**。
+- **持久化**：`{app_data}/high_risk_grants.json` 顶层键与权限标识一致（如 `"process:spawn": ["com.example.myplugin"]`）。Tauri **`grant_high_risk_capability`** 的 `kind` 接受规范标识；旧键名 `mcp_http` 等仍可读。
+
+实现与测试：`crates/oclive_validation/src/plugin_permissions.rs`、`src-tauri/src/infrastructure/high_risk_grants.rs`、集成测 `src-tauri/tests/permission_three_way_consistency.rs`。
+
+---
+
 [English](../../creator-docs-en/plugin-and-architecture/PLUGIN_V1.md)

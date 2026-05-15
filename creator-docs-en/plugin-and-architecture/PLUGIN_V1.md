@@ -96,4 +96,35 @@ For the complete RPC tables and manifest examples, open the **[full PLUGIN_V1 (Z
 
 ---
 
+## Permission specification (directory plugins · A4.2)
+
+Optional **`permissions`** on directory-plugin **`manifest.json`** declares high-risk host capabilities. **`oclive_validation::plugin_permissions`**, runtime **`high_risk_grants.json`**, and this table share the **same permission ids** (runtime enforcement is authoritative).
+
+| Permission id | Meaning | User grant required | Default |
+|---------------|---------|---------------------|---------|
+| `process:spawn` | Host may spawn the plugin child (`process` block) | Yes | Not granted |
+| `network:*` | Outbound HTTP for Remote backends (see below) | Yes | Not granted |
+| `mcp:http` | MCP server with `transport=http` | Yes (per server `id`) | Not granted |
+| `mcp:stdio` | MCP server with `transport=stdio` | Yes (per server `id`) | Not granted |
+
+```json
+{
+  "schema_version": 1,
+  "id": "com.example.myplugin",
+  "version": "1.0.0",
+  "permissions": ["process:spawn", "network:*"],
+  "process": { "command": "node", "args": ["rpc_server.mjs"] }
+}
+```
+
+- **Omitted `permissions`**: treated as **`[]`** (validation passes).
+- **Legacy**: omitted `permissions` + existing **`process`** block still requires a **`process:spawn`** grant for that plugin `id` (A4.1); new plugins should declare **`process:spawn`** explicitly.
+- **Remote sidecars**: before JSON-RPC to `OCLIVE_REMOTE_*`, check **`network:*`** with grant ids **`remote:plugin`** / **`remote:llm`**.
+- **MCP**: `{app_data}/mcp-servers/*.json`; grants keyed by server **`id`**.
+- **On disk**: `high_risk_grants.json` top-level keys match permission ids. **`grant_high_risk_capability`** accepts spec ids; legacy key names remain readable.
+
+Full Chinese section: **[PLUGIN_V1 §权限规范](../../creator-docs/plugin-and-architecture/PLUGIN_V1.md)**.
+
+---
+
 [中文](../../creator-docs/plugin-and-architecture/PLUGIN_V1.md)
