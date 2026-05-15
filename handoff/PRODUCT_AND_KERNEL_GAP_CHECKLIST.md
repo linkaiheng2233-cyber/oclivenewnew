@@ -53,7 +53,7 @@
 
 ### A7. 性能与资源（P1）
 
-- [ ] **低端机 / 冷启动 / 长会话**：与 [13_PERF_BASELINE_2026-04-01.md](./13_PERF_BASELINE_2026-04-01.md) 等基线对照，公开「已知限制」或数字底线。
+- [x] **低端机 / 冷启动 / 长会话**：与 [13_PERF_BASELINE_2026-04-01.md](./13_PERF_BASELINE_2026-04-01.md) 等基线对照，公开「已知限制」或数字底线。（**对外一页**：[`PERFORMANCE.md`](../creator-docs/getting-started/PERFORMANCE.md) / [`creator-docs-en/.../PERFORMANCE.md`](../creator-docs-en/getting-started/PERFORMANCE.md)，数值锚定 [`LIGHTWEIGHT_PROFILE.md`](../creator-docs/development/LIGHTWEIGHT_PROFILE.md) §6.7 与 `oclive bench` Schema。）
 
 ### A8. 无障碍与基础 UX（P1）
 
@@ -62,12 +62,12 @@
 
 ### A9. 支持与预期（P1）
 
-- [ ] **单一主入口**：Issue 模板、FAQ、社区/邮件任选其一写死；降低「不知道去哪问」。
-- [ ] **首发预期管理**：README 明确「早期采用者」范围与已知限制。
+- [x] **单一主入口**：Issue 模板、FAQ、社区/邮件任选其一写死；降低「不知道去哪问」。（**GitHub Issues** + Bug / Feature / Support 模板；README「支持」小节；首次响应预期见 README。）
+- [x] **首发预期管理**：README 明确「早期采用者」范围与已知限制。
 
 ### A10. 法律与分发（P1）
 
-- [ ] **许可证与免责声明**：第三方模型、插件市场、用户数据落盘 — README/隐私摘要可扫一眼即答三问。
+- [x] **许可证与免责声明**：第三方模型、插件市场、用户数据落盘 — README/隐私摘要可扫一眼即答三问。（**[`DISCLAIMER.md`](../creator-docs/legal/DISCLAIMER.md)** / EN 镜像，链自 README 与 `SECURITY*`。）
 
 ---
 

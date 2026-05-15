@@ -56,6 +56,9 @@
 | **插件区（网站）**信息架构与 `plugins.json` 清单 | **[../roadmap/PLUGIN_WEB_SECTION.md](../roadmap/PLUGIN_WEB_SECTION.md)** |
 | **项目全貌（OVERVIEW 入口）** | **[OVERVIEW.md](OVERVIEW.md)**（同义跳转至 [PROJECT_OVERVIEW.md](PROJECT_OVERVIEW.md)） |
 | **轻量化 / `cargo audit` / `cargo-bloat` 基线** | **[../development/LIGHTWEIGHT_PROFILE.md](../development/LIGHTWEIGHT_PROFILE.md)** |
+| **性能与已知限制（A7 · 对外披露）** | **[PERFORMANCE.md](PERFORMANCE.md)**（[English](../../creator-docs-en/getting-started/PERFORMANCE.md)） |
+| **支持入口（A9 · GitHub Issues）** | 根目录 [README.md](../../README.md)「**支持**」小节 · [`.github/ISSUE_TEMPLATE`](../../.github/ISSUE_TEMPLATE) |
+| **免责声明（A10 · 模型 / 插件 / 数据）** | **[../legal/DISCLAIMER.md](../legal/DISCLAIMER.md)**（[English](../../creator-docs-en/legal/DISCLAIMER.md)） |
 | **已知漏洞（cargo-audit）与升级路线** | **[../security/KNOWN_VULNERABILITIES.md](../security/KNOWN_VULNERABILITIES.md)** |
 | **安全审查范围与局限** | **[../security/SECURITY_AUDIT_SCOPE.md](../security/SECURITY_AUDIT_SCOPE.md)** |
 | **测试输出契约、OOCP 套件、`invoke` 热路径矩阵、A1 收口摘要、插件集成测说明** | **[../testing/TEST_OUTPUT_SCHEMA.md](../testing/TEST_OUTPUT_SCHEMA.md)** · **[../testing/OOCP_TEST_SUITE.md](../testing/OOCP_TEST_SUITE.md)** · **[../testing/OVERVIEW.md](../testing/OVERVIEW.md)** · **[../../handoff/INVOKE_HOTPATH_MATRIX.md](../../handoff/INVOKE_HOTPATH_MATRIX.md)** · **[../../handoff/A1_CLOSURE_SUMMARY.md](../../handoff/A1_CLOSURE_SUMMARY.md)** · **[../testing/ADAPTING_TEST_PLUGIN.md](../testing/ADAPTING_TEST_PLUGIN.md)** · **[../testing/L03_GENERATION_CANCEL.md](../testing/L03_GENERATION_CANCEL.md)** |

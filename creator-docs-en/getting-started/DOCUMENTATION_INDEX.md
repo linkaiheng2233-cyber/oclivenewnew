@@ -57,6 +57,9 @@ Creator and plugin documentation lives under repo root **`creator-docs/`** (topi
 | **Plugin web section + `plugins.json`** | **[../../creator-docs/roadmap/PLUGIN_WEB_SECTION.md](../../creator-docs/roadmap/PLUGIN_WEB_SECTION.md)** |
 | **OVERVIEW alias** | **[OVERVIEW.md](OVERVIEW.md)** → [PROJECT_OVERVIEW.md](PROJECT_OVERVIEW.md) |
 | **Lightweight / `cargo audit` / `cargo-bloat`** | **[../LIGHTWEIGHT_PROFILE.md](../LIGHTWEIGHT_PROFILE.md)** (English mirror of `creator-docs/development/LIGHTWEIGHT_PROFILE.md`) |
+| **Performance & known limits (A7)** | **[PERFORMANCE.md](PERFORMANCE.md)** (Chinese: [`creator-docs/getting-started/PERFORMANCE.md`](../../creator-docs/getting-started/PERFORMANCE.md)) |
+| **Support entry (A9 · GitHub Issues)** | Root [README.en.md](../../README.en.md) **Support** · [`.github/ISSUE_TEMPLATE`](../../.github/ISSUE_TEMPLATE) |
+| **Disclaimer (A10 · models / plugins / data)** | **[../legal/DISCLAIMER.md](../legal/DISCLAIMER.md)** (Chinese: [`creator-docs/legal/DISCLAIMER.md`](../../creator-docs/legal/DISCLAIMER.md)) |
 | **Known vulnerabilities (`cargo-audit`)** | **[../security/KNOWN_VULNERABILITIES.md](../security/KNOWN_VULNERABILITIES.md)** |
 | **Security audit scope** | **[../security/SECURITY_AUDIT_SCOPE.md](../security/SECURITY_AUDIT_SCOPE.md)** |
 | **Test output schema, OOCP suite, `invoke` hot-path matrix, A1 closure summary, plugin integration tests** | **[../testing/TEST_OUTPUT_SCHEMA.md](../testing/TEST_OUTPUT_SCHEMA.md)** · **[../testing/OOCP_TEST_SUITE.md](../testing/OOCP_TEST_SUITE.md)** · **[../testing/OVERVIEW.md](../testing/OVERVIEW.md)** · **[../../handoff/INVOKE_HOTPATH_MATRIX.md](../../handoff/INVOKE_HOTPATH_MATRIX.md)** · **[../../handoff/A1_CLOSURE_SUMMARY.md](../../handoff/A1_CLOSURE_SUMMARY.md)** · **[../testing/ADAPTING_TEST_PLUGIN.md](../testing/ADAPTING_TEST_PLUGIN.md)** · **[../../creator-docs/testing/L03_GENERATION_CANCEL.md](../../creator-docs/testing/L03_GENERATION_CANCEL.md)** |
