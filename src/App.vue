@@ -59,7 +59,12 @@ const chatStore = useChatStore();
 const debugStore = useDebugStore();
 const uiStore = useUiStore();
 const pluginStore = usePluginStore();
-const { t } = useI18n();
+const { t, locale } = useI18n();
+
+function syncBrowserChromeFromLocale(): void {
+  document.title = t("app.documentTitle");
+  document.documentElement.setAttribute("lang", locale.value === "en-US" ? "en" : "zh-CN");
+}
 const localePreference = ref<LocalePreference>(getLocalePreference());
 
 function onLocalePreferenceChange(ev: Event): void {
@@ -608,8 +613,13 @@ async function runPendingProtocolInstallsFromQueue(): Promise<void> {
   }
 }
 
+watch(locale, () => {
+  syncBrowserChromeFromLocale();
+});
+
 onMounted(() => {
   localePreference.value = getLocalePreference();
+  syncBrowserChromeFromLocale();
   setErrorReporter((err) => {
     showToast("error", err.message);
   });

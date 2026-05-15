@@ -32,6 +32,8 @@
 | 需求 | 文档 |
 |------|------|
 | **总索引** | [DOCUMENTATION_INDEX.md](DOCUMENTATION_INDEX.md) |
+| **项目现状（版本、交付面、CHANGELOG 中英）** | [PROJECT_CURRENT_STATUS.md](PROJECT_CURRENT_STATUS.md) |
+| **进度快照与目标对齐（内核 + 产品 + 按用途分类的文档地图）** | [PROJECT_STATUS_AND_ALIGNMENT.md](PROJECT_STATUS_AND_ALIGNMENT.md) |
 | **内核与六槽架构总览（图）** | [KERNEL_AND_MODULES_ARCHITECTURE.md](KERNEL_AND_MODULES_ARCHITECTURE.md) |
 | **创作者：从包到 oclive** | [CREATOR_WORKFLOW.md](CREATOR_WORKFLOW.md) |
 | **manifest / 导入** | [roles/README_MANIFEST.md](../../roles/README_MANIFEST.md) |
@@ -62,7 +64,7 @@
 
 - **Git**：`clone` / `pull`、**push** 到 GitHub（或你的远端），在 **Actions** 里确认 workflow **绿灯**。
 - **LNK1104**（Windows 链接失败）：关占用进程、`cargo test -j 1` 等；属环境/占用问题，**无法靠 CI 在每台开发机上强制避免**。
-- **发版决策**：版本号、`CHANGELOG`、是否配置 `VITE_SENTRY_DSN`、安装包签名、对外说明。
+- **发版决策**：版本号、`CHANGELOG.md` / `CHANGELOG.en.md`、是否配置 `VITE_SENTRY_DSN`、安装包签名、对外说明。
 - **冒烟与联调**：装包 → 启动 → 对话 → 导入包；编写器导出 → oclive 导入（按测试清单）。
 
 ### 适合在协作里交给开发/AI 的

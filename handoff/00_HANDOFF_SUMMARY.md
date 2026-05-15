@@ -10,7 +10,7 @@
 
 ## API 与版本（0.2.0）
 
-- **版本**：`package.json` / `tauri.conf.json` / `Cargo.toml` 为 **0.2.0**；变更说明见根目录 **`CHANGELOG.md`**。
+- **版本**：`package.json` / `tauri.conf.json` / `Cargo.toml` 为 **0.2.0**；变更说明见根目录 **`CHANGELOG.md`**（中文）与 **`CHANGELOG.en.md`**（英文，条目同步）。
 - **API 增强**：`send_message` 响应新增 **`bot_emotion`**（角色本回合情绪标签）；`emotion` 仍为**用户**侧七维 DTO。详情见 **`20_SESSION_OPTIMIZATION_REPORT.md`**。
 
 ---

@@ -2,7 +2,7 @@
 
 Creator and plugin documentation lives under repo root **`creator-docs/`** (topic subfolders). Pick a path by role.
 
-**If you feel lost**: start with **[PROJECT_OVERVIEW.md](PROJECT_OVERVIEW.md)** (three repos, commands, checklist).
+**If you feel lost**: start with **[PROJECT_OVERVIEW.md](PROJECT_OVERVIEW.md)** (three repos, commands, checklist). **To align status + goals + doc map by purpose**: **[PROJECT_STATUS_AND_ALIGNMENT.md](PROJECT_STATUS_AND_ALIGNMENT.md)**. **For semver, what ships, and changelog entry points only**: **[PROJECT_CURRENT_STATUS.md](PROJECT_CURRENT_STATUS.md)**.
 
 ---
 
@@ -10,6 +10,9 @@ Creator and plugin documentation lives under repo root **`creator-docs/`** (topi
 
 | I want to… | Read |
 |------------|------|
+| **Current status (version, what ships, changelog entry points)** | **[PROJECT_CURRENT_STATUS.md](PROJECT_CURRENT_STATUS.md)** |
+| **Align progress and goals (one page: summary + doc map by purpose)** | **[PROJECT_STATUS_AND_ALIGNMENT.md](PROJECT_STATUS_AND_ALIGNMENT.md)** |
+| **Product launch gates + kernel/platform gaps** | **[../../handoff/PRODUCT_AND_KERNEL_GAP_CHECKLIST.md](../../handoff/PRODUCT_AND_KERNEL_GAP_CHECKLIST.md)** |
 | **Four-repo i18n baseline (CJK scan, vue-i18n wiring)** | **[../../handoff/I18N_FOUR_REPO_BASELINE.md](../../handoff/I18N_FOUR_REPO_BASELINE.md)** |
 | **Install zip packs via launcher, pick local Ollama, one-click pull** | **[oclive-launcher README](https://github.com/linkaiheng2233-cyber/oclive-launcher/blob/main/README.md)** (separate repo) |
 | **High-coupling compile mode (Monolith)** | [RFC section](#rfc) (`monolith.toml`, compile-time welding) |
@@ -29,14 +32,12 @@ Creator and plugin documentation lives under repo root **`creator-docs/`** (topi
 | **Seven slots + presets, switching to `remote` (authoritative)** | **[../cli/SETTINGS_REFERENCE.md](../cli/SETTINGS_REFERENCE.md)** |
 | **Role pack disk layout, multi-distro alignment, `oclive pack validate`** | **[../role-pack/ROLE_PACK_SPEC.md](../role-pack/ROLE_PACK_SPEC.md)** |
 | **Community role pack index JSON** | **[../role-pack/ROLE_PACK_INDEX.md](../role-pack/ROLE_PACK_INDEX.md)** |
-| **Directory process plugins** | **[../../creator-docs/plugin-and-architecture/DIRECTORY_PLUGINS.md](../../creator-docs/plugin-and-architecture/DIRECTORY_PLUGINS.md)** |
+| **Directory process plugins** (`plugins/`, manifest, whole-shell, `directory_plugin_invoke`, dev mode; **plugin manager** `Ctrl+Shift+F`, enable/disable/reorder/local zip) | **[../../creator-docs/plugin-and-architecture/DIRECTORY_PLUGINS.md](../../creator-docs/plugin-and-architecture/DIRECTORY_PLUGINS.md)** |
 | **Bridge `invoke` table, permission aliases, error codes** | **[../../creator-docs/plugin-and-architecture/BRIDGE_API_REFERENCE.md](../../creator-docs/plugin-and-architecture/BRIDGE_API_REFERENCE.md)** |
 | **Config file locations** | **[../../creator-docs/guides/CONFIGURATION_FILES.md](../../creator-docs/guides/CONFIGURATION_FILES.md)** |
 | **Open-source licensing policy** | **[../../creator-docs/LICENSE_POLICY.md](../../creator-docs/LICENSE_POLICY.md)** |
-| **Manage plugins (enable/disable/reorder/local zip)** | **[../../creator-docs/plugin-and-architecture/DIRECTORY_PLUGINS.md](../../creator-docs/plugin-and-architecture/DIRECTORY_PLUGINS.md)** (`Ctrl+Shift+F`) |
-| **mumu default front-end slots** | **[../../creator-docs/FAQ.md](../../creator-docs/FAQ.md)** |
+| **mumu default slots + plugin FAQ (Vue not showing, iframe debug, deps; user Q&A)** | **[../../creator-docs/FAQ.md](../../creator-docs/FAQ.md)** |
 | **mumu UI release checklist** | **[../../creator-docs/guides/MUMU_UI_ACCEPTANCE_CHECKLIST.md](../../creator-docs/guides/MUMU_UI_ACCEPTANCE_CHECKLIST.md)** |
-| **Plugin FAQ** | **[../../creator-docs/FAQ.md](../../creator-docs/FAQ.md)** |
 | **Editor vs host compatibility** | **[../../creator-docs/COMPATIBILITY.md](../../creator-docs/COMPATIBILITY.md)** |
 | **`memory = local`, `_local_plugins`, bridge spec** | **[../../creator-docs/plugin-and-architecture/LOCAL_PLUGIN_BRIDGE_SPEC.md](../../creator-docs/plugin-and-architecture/LOCAL_PLUGIN_BRIDGE_SPEC.md)** |
 | **Add a new built-in backend in Rust** | **[../../creator-docs/plugin-and-architecture/HOW_TO_REPLACE_MODULES.md](../../creator-docs/plugin-and-architecture/HOW_TO_REPLACE_MODULES.md)** |

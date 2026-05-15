@@ -76,6 +76,7 @@ export async function tryReplaceWithDirectoryShell(): Promise<boolean> {
         developerMode: boot.developerMode === true,
       });
       app.use(pinia);
+      app.use(i18n);
       app.mount("#app");
       return true;
     }

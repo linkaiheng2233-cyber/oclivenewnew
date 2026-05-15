@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { storeToRefs } from "pinia";
-import { ref, watch } from "vue";
+import { onMounted, ref, watch } from "vue";
 import { useI18n } from "vue-i18n";
 import AsyncPluginVue from "./components/AsyncPluginVue.vue";
 import PluginErrorPlaceholder from "./components/PluginErrorPlaceholder.vue";
@@ -8,7 +8,20 @@ import { useSinglePluginError } from "./composables/usePluginError";
 import { usePluginStore } from "./stores/pluginStore";
 import type { PluginVueCompileError } from "./utils/compilePluginVueSfc";
 
-const { t } = useI18n();
+const { t, locale } = useI18n();
+
+function syncBrowserChromeFromLocale(): void {
+  document.title = t("app.documentTitle");
+  document.documentElement.setAttribute("lang", locale.value === "en-US" ? "en" : "zh-CN");
+}
+
+onMounted(() => {
+  syncBrowserChromeFromLocale();
+});
+
+watch(locale, () => {
+  syncBrowserChromeFromLocale();
+});
 
 const props = defineProps<{
   pluginId: string;

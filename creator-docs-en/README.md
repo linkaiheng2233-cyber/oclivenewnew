@@ -11,6 +11,8 @@ This tree mirrors **`creator-docs/`** with hand-maintained English pages. For to
 | Topic | English |
 |-------|---------|
 | Documentation hub (quick links, RFC, reading order) | [getting-started/DOCUMENTATION_INDEX.md](getting-started/DOCUMENTATION_INDEX.md) |
+| **Status & goal alignment (one-page hub)** | [getting-started/PROJECT_STATUS_AND_ALIGNMENT.md](getting-started/PROJECT_STATUS_AND_ALIGNMENT.md) |
+| **Current status (version, ships, changelog)** | [getting-started/PROJECT_CURRENT_STATUS.md](getting-started/PROJECT_CURRENT_STATUS.md) |
 | Project overview (repos, commands, checklist) | [getting-started/PROJECT_OVERVIEW.md](getting-started/PROJECT_OVERVIEW.md) |
 | Kernel-centric module diagram (Mermaid + static figure) | [getting-started/KERNEL_AND_MODULES_ARCHITECTURE.md](getting-started/KERNEL_AND_MODULES_ARCHITECTURE.md) |
 | Error codes & triage | [getting-started/ERROR_CODES.md](getting-started/ERROR_CODES.md) |

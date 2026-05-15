@@ -32,6 +32,8 @@ This page collects **how the three repos split work**, what is **already shipped
 | Need | Document |
 |------|----------|
 | **Master index (ZH)** | [DOCUMENTATION_INDEX.md](../../creator-docs/getting-started/DOCUMENTATION_INDEX.md) |
+| **Current status (version, ships, bilingual CHANGELOG)** | [PROJECT_CURRENT_STATUS.md](PROJECT_CURRENT_STATUS.md) |
+| **Status snapshot & goal alignment (kernel + product + doc map by purpose)** | [PROJECT_STATUS_AND_ALIGNMENT.md](PROJECT_STATUS_AND_ALIGNMENT.md) |
 | **Kernel & six-slot diagram** | [KERNEL_AND_MODULES_ARCHITECTURE.md](KERNEL_AND_MODULES_ARCHITECTURE.md) |
 | **Creator: from pack to oclive** | [CREATOR_WORKFLOW.md](../../creator-docs/getting-started/CREATOR_WORKFLOW.md) |
 | **manifest / import** | [roles/README_MANIFEST.md](../../roles/README_MANIFEST.md) |

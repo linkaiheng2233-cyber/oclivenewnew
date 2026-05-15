@@ -1,5 +1,7 @@
 # Changelog
 
+> **English mirror**: [CHANGELOG.en.md](CHANGELOG.en.md) — 用户可见变更请与中英两份同步维护。
+
 ## [Unreleased]
 
 **Kernel / CLI / quality（当前 `main`，应用版本号仍为 package.json / `src-tauri` 的 0.2.0）：**
@@ -10,6 +12,7 @@
 - **启动健康检查**：首轮对话前 **`startup_health`**（槽位、包文件、**`DbManager::health_ping`**、可选 LLM 探测）；可用 **`OCLIVE_SKIP_STARTUP_HEALTH`** 等环境变量跳过。
 - **错误与可观测性**：**`thiserror`** 统一 **`AppError`**、前端可映射文案；**`tracing`** + **`RUST_LOG`**（CLI / 库 **`init_tracing`** 默认 **`info`**）。
 - **静态分析**：工作区 **`[workspace.lints]`** 与 **`cargo clippy ... -D warnings`** 在 CI 与本地 **`check:rust:clippy`** 对齐，告警即失败。
+- **前端 i18n**：新增 **`app.documentTitle`**，**`App.vue` / `DirectoryShellApp.vue`** 随语言同步 **`document.title`** 与 **`document.documentElement.lang`**；**`index.html`** 内联脚本按 **`oclive.appLocale`** 与浏览器语言减少首屏页签语言闪动；**整壳 Vue 引导**（`directoryShellBootstrap`）补充 **`app.use(i18n)`**。新增 Vitest **`i18n_locale_parity`** 校验 **zh-CN / en-US** 词条键树一致。
 
 ### Added
 

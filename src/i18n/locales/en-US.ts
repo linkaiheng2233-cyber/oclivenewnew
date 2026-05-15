@@ -25,6 +25,8 @@ export default {
       dark: "Dark",
     },
     defaultRoleName: "Mumu",
+    /** Browser tab title (keep in sync with index.html inline bootstrap) */
+    documentTitle: "OCLIVE — Desktop AI companion",
     more: {
       collapse: "Collapse",
       more: "More",

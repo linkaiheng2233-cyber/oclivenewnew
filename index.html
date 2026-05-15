@@ -4,7 +4,28 @@
     <meta charset="UTF-8" />
     <link rel="icon" type="image/svg+xml" href="/vite.svg" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>沐沐 - 桌面AI伴侣</title>
+    <title>OCLIVE</title>
+    <script>
+      (function () {
+        try {
+          var lk = "oclive.appLocale";
+          var lv = localStorage.getItem(lk);
+          var en = false;
+          if (lv === "en-US") en = true;
+          else if (lv === "zh-CN") en = false;
+          else {
+            var raw = (navigator.languages && navigator.languages[0]) || navigator.language || "";
+            en = String(raw).toLowerCase().indexOf("zh") !== 0;
+          }
+          document.documentElement.setAttribute("lang", en ? "en" : "zh-CN");
+          document.title = en
+            ? "OCLIVE — Desktop AI companion"
+            : "沐沐 - 桌面AI伴侣";
+        } catch (e) {
+          document.title = "OCLIVE";
+        }
+      })();
+    </script>
     <script>
       (function () {
         try {

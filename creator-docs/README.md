@@ -8,7 +8,7 @@
 
 | 文件夹 | 内容 |
 |--------|------|
-| **[getting-started/](getting-started/)** | 文档总索引、入门与角色包工作流、[GitHub 仓库清单](getting-started/GITHUB_REPO_CHECKLIST.md) |
+| **[getting-started/](getting-started/)** | 文档总索引、[进度与目标对齐](getting-started/PROJECT_STATUS_AND_ALIGNMENT.md)、[项目现状快照](getting-started/PROJECT_CURRENT_STATUS.md)、入门与角色包工作流、[GitHub 仓库清单](getting-started/GITHUB_REPO_CHECKLIST.md) |
 | **[guides/](guides/)** | [配置文件说明](guides/CONFIGURATION_FILES.md)（`plugin_state`、`ui.json`、应用数据路径等）、[mumu 模块验收清单](guides/MUMU_UI_ACCEPTANCE_CHECKLIST.md) |
 | **[plugin-and-architecture/](plugin-and-architecture/)** | `plugin_backends` 契约、扩展点、HTTP JSON-RPC 协议、[整壳桥接 API 参考](plugin-and-architecture/BRIDGE_API_REFERENCE.md)、替换模块 |
 | **[FAQ.md](FAQ.md)** | 插件与角色包常见问题 |
@@ -27,7 +27,7 @@
 
 ## 从这里开始
 
-1. 打开 **[getting-started/DOCUMENTATION_INDEX.md](getting-started/DOCUMENTATION_INDEX.md)**，按「快速入口」表选读。  
+1. 维护者先核对 **版本与变更日志入口**：[getting-started/PROJECT_CURRENT_STATUS.md](getting-started/PROJECT_CURRENT_STATUS.md)；再读 **进度与目标对齐**：[getting-started/PROJECT_STATUS_AND_ALIGNMENT.md](getting-started/PROJECT_STATUS_AND_ALIGNMENT.md)；日常仍从 **[getting-started/DOCUMENTATION_INDEX.md](getting-started/DOCUMENTATION_INDEX.md)**「快速入口」选读。  
 2. 先看错误与排障：**[getting-started/ERROR_CODES.md](getting-started/ERROR_CODES.md)**（用户提示与开发日志对齐）。  
 3. 做角色包内容： **[getting-started/CREATOR_WORKFLOW.md](getting-started/CREATOR_WORKFLOW.md)**（运行时与**独立编写器**分工、**`OCLIVE_ROLES_DIR`**）+ 仓库 **[roles/README_MANIFEST.md](../roles/README_MANIFEST.md)**；性格档案轴心见 **[docs/personality-archive-notes.md](../docs/personality-archive-notes.md)**，思路演进见 **[docs/design-axis-evolution.md](../docs/design-axis-evolution.md)**。编写器为另仓（如 **`oclive-pack-editor`**），包为唯一对接面。  
 4. 做 HTTP 侧车： **[plugin-and-architecture/CREATOR_PLUGIN_ARCHITECTURE.md](plugin-and-architecture/CREATOR_PLUGIN_ARCHITECTURE.md)** + **[plugin-and-architecture/REMOTE_PLUGIN_PROTOCOL.md](plugin-and-architecture/REMOTE_PLUGIN_PROTOCOL.md)**。  
