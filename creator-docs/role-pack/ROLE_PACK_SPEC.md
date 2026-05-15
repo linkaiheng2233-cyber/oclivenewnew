@@ -92,6 +92,25 @@ cargo run -p oclive-cli -- pack validate ./roles/my-role --host-version 0.2.0
 
 **JSON Schema**（IDE 提示 / 外部校验器）：`crates/oclive-cli/schemas/role_pack_manifest.schema.json`、`role_pack_settings.schema.json`。
 
+### RobotSoulPack（`--profile robot-soul`）
+
+在标准目录校验通过后追加，用于 **机器人 / 无头 / 嵌入式** 最小可交付「灵魂包」：
+
+| 规则 | 说明 |
+|------|------|
+| `manifest.min_runtime_version` | 必填、非空 semver，与目标宿主对齐 |
+| `settings.json` | 必须存在 |
+| `settings.plugin_backends` | 必须显式写出对象（六槽；可选 `complex_emotion` 等扩展键） |
+| `settings.interaction_mode` | 必填：`immersive` 或 `pure_chat` |
+| 人格载体 | **二选一**：非空 `core_personality.txt`，或 `manifest.default_personality` 恰好 7 维（0.0～1.0） |
+| `remote_presence` | 可选 |
+
+```bash
+cargo run -p oclive-cli -- pack validate ./roles/my-role --host-version 0.2.0 --profile robot-soul
+```
+
+示例：`examples/robot-soul-minimal/roles/default/`。
+
 ---
 
 ## 6. 脚手架命令摘要
@@ -99,6 +118,7 @@ cargo run -p oclive-cli -- pack validate ./roles/my-role --host-version 0.2.0
 | 命令 | 作用 |
 |------|------|
 | `pack validate <dir>` | 目录级校验 |
+| `pack validate <dir> --profile robot-soul` | 追加 RobotSoulPack 规则（见上文 §） |
 | `pack create -o <out> --id <id> [--flat]` | 生成最小可校验包（`--flat` 时 `<out>` 即为角色根） |
 | `pack publish <dir> [-o file.oclivepack]` | ZIP 打包；根目录为 `manifest.id` |
 | `init … --skip-role-pack` | 生成内核工程时不创建 `roles/` |

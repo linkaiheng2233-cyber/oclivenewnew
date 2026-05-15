@@ -527,6 +527,36 @@ fn e2e_pack_create_validate_publish() {
 }
 
 #[test]
+fn e2e_pack_validate_robot_soul_example() {
+    let example = PathBuf::from(env!("CARGO_MANIFEST_DIR"))
+        .join("../..")
+        .join("examples")
+        .join("robot-soul-minimal")
+        .join("roles")
+        .join("default");
+    let example = example.canonicalize().expect("robot-soul-minimal example path");
+    assert!(
+        example.join("manifest.json").is_file(),
+        "missing {}",
+        example.display()
+    );
+    let o = run_cli_output(&[
+        "pack",
+        "validate",
+        example.to_str().unwrap(),
+        "--host-version",
+        "0.2.0",
+        "--profile",
+        "robot-soul",
+    ]);
+    assert!(
+        o.status.success(),
+        "robot-soul validate failed: {}",
+        String::from_utf8_lossy(&o.stderr)
+    );
+}
+
+#[test]
 fn e2e_init_skip_role_pack_no_roles_dir() {
     let tmp = tempfile::tempdir().unwrap();
     let out = tmp.path().join("nr");

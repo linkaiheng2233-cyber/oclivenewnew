@@ -92,6 +92,25 @@ cargo run -p oclive-cli -- pack validate ./roles/my-role --host-version 0.2.0
 
 **JSON Schema** (IDE hints / external validators): `crates/oclive-cli/schemas/role_pack_manifest.schema.json`, `role_pack_settings.schema.json`.
 
+### RobotSoulPack (`--profile robot-soul`)
+
+After the standard directory checks pass, adds rules for a **minimal shippable soul pack** (robot / headless / embedded):
+
+| Rule | Notes |
+|------|--------|
+| `manifest.min_runtime_version` | Required, non-empty semver aligned with the target host |
+| `settings.json` | Must exist |
+| `settings.plugin_backends` | Must be an explicit object (six slots; optional `complex_emotion`, etc.) |
+| `settings.interaction_mode` | Required: `immersive` or `pure_chat` |
+| Personality carrier | **Either/or**: non-empty `core_personality.txt`, or `manifest.default_personality` with exactly 7 dims in 0.0–1.0 |
+| `remote_presence` | Optional |
+
+```bash
+cargo run -p oclive-cli -- pack validate ./roles/my-role --host-version 0.2.0 --profile robot-soul
+```
+
+Example: `examples/robot-soul-minimal/roles/default/`.
+
 ---
 
 ## 6. Scaffold command summary
@@ -99,6 +118,7 @@ cargo run -p oclive-cli -- pack validate ./roles/my-role --host-version 0.2.0
 | Command | Role |
 |---------|------|
 | `pack validate <dir>` | Directory-level validation |
+| `pack validate <dir> --profile robot-soul` | Adds RobotSoulPack rules (see § above) |
 | `pack create -o <out> --id <id> [--flat]` | Minimal valid pack (`--flat` means `<out>` is the role root) |
 | `pack publish <dir> [-o file.oclivepack]` | ZIP pack; root folder name is `manifest.id` |
 | `init … --skip-role-pack` | Kernel project without creating `roles/` |

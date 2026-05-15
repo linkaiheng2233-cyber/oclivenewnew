@@ -6,7 +6,8 @@ use std::path::{Path, PathBuf};
 use anyhow::{Context, Result};
 use clap::{Parser, Subcommand};
 use oclive_validation::{
-    validate_role_pack_directory, CURRENT_SETTINGS_SCHEMA_VERSION,
+    validate_role_pack_directory_with_profile, RolePackValidationProfile,
+    CURRENT_SETTINGS_SCHEMA_VERSION,
 };
 use serde_json::json;
 use zip::write::FileOptions;
@@ -35,6 +36,9 @@ pub struct PackValidateArgs {
     /// 用于比较 `manifest.min_runtime_version` 的宿主 semver（默认：本 CLI 的 `CARGO_PKG_VERSION`）
     #[arg(long)]
     pub host_version: Option<String>,
+    /// 扩展校验：`default` | `robot-soul`（见主仓 ROLE_PACK_SPEC § RobotSoulPack）
+    #[arg(long, default_value = "default")]
+    pub profile: String,
 }
 
 #[derive(Parser, Debug)]
@@ -81,7 +85,16 @@ fn run_validate(args: PackValidateArgs) -> Result<()> {
         .host_version
         .as_deref()
         .unwrap_or(env!("CARGO_PKG_VERSION"));
-    match validate_role_pack_directory(&role_dir, host, CURRENT_SETTINGS_SCHEMA_VERSION) {
+    let profile: RolePackValidationProfile = args
+        .profile
+        .parse()
+        .map_err(|e: String| anyhow::anyhow!(e))?;
+    match validate_role_pack_directory_with_profile(
+        &role_dir,
+        host,
+        CURRENT_SETTINGS_SCHEMA_VERSION,
+        profile,
+    ) {
         Ok(()) => {
             println!("✓ 角色包验证通过");
             Ok(())

@@ -3,6 +3,7 @@
 use std::collections::BTreeSet;
 use std::fs;
 use std::path::Path;
+use std::str::FromStr;
 
 use serde_json::Value;
 
@@ -13,6 +14,104 @@ use crate::validate::{
     validate_disk_manifest, validate_interaction_mode_pack_setting, validate_min_runtime_version,
     validate_settings_schema_version,
 };
+
+/// 角色包目录校验的扩展策略（在标准磁盘校验通过后追加规则）。
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Default)]
+pub enum RolePackValidationProfile {
+    /// 与宿主加载前磁盘校验一致（默认）。
+    #[default]
+    Default,
+    /// 机器人 / 无头交付最小「灵魂包」：显式 `settings`、`min_runtime_version`、人格载体二选一等。
+    RobotSoul,
+}
+
+impl FromStr for RolePackValidationProfile {
+    type Err = String;
+
+    fn from_str(s: &str) -> Result<Self, Self::Err> {
+        match s.trim().to_ascii_lowercase().as_str() {
+            "" | "default" => Ok(Self::Default),
+            "robot-soul" | "robotsoul" | "robot_soul" => Ok(Self::RobotSoul),
+            other => Err(format!(
+                "未知 pack validate profile「{other}」（支持 default | robot-soul）"
+            )),
+        }
+    }
+}
+
+fn robot_soul_profile_errors(
+    role_dir: Option<&Path>,
+    disk: &DiskRoleManifest,
+    settings_json: Option<&str>,
+) -> Vec<String> {
+    let mut errs: Vec<String> = Vec::new();
+
+    if disk
+        .min_runtime_version
+        .as_ref()
+        .map(|s| s.trim())
+        .filter(|s| !s.is_empty())
+        .is_none()
+    {
+        errs.push(
+            "robot-soul：manifest.json 须包含非空 min_runtime_version（semver，与目标 oclive 宿主对齐）"
+                .into(),
+        );
+    }
+
+    let Some(settings_raw) = settings_json else {
+        errs.push("robot-soul：须存在 settings.json（含显式 plugin_backends）".into());
+        return errs;
+    };
+
+    let settings: DiskRoleSettings = match serde_json::from_str(settings_raw) {
+        Ok(s) => s,
+        Err(e) => {
+            errs.push(format!("robot-soul：settings.json 解析失败: {}", e));
+            return errs;
+        }
+    };
+
+    if settings.plugin_backends.is_none() {
+        errs.push(
+            "robot-soul：settings.json 须显式包含 plugin_backends（memory…agent 六槽；可选 complex_emotion 等扩展键）"
+                .into(),
+        );
+    }
+
+    match settings.interaction_mode.as_deref() {
+        None | Some("") => {
+            errs.push(
+                "robot-soul：settings.json 须包含 interaction_mode（immersive 或 pure_chat）".into(),
+            );
+        }
+        Some(m) => {
+            if let Err(e) = validate_interaction_mode_pack_setting(Some(m)) {
+                errs.push(format!("robot-soul：{}", e));
+            }
+        }
+    }
+
+    let core_ok = role_dir
+        .map(|dir| dir.join("core_personality.txt"))
+        .and_then(|p| fs::read_to_string(p).ok())
+        .map(|s| !s.trim().is_empty())
+        .unwrap_or(false);
+    let vec_ok = !disk.default_personality.is_empty()
+        && validate_default_personality_vector(&disk.default_personality).is_ok();
+    if !core_ok && !vec_ok {
+        errs.push(if role_dir.is_some() {
+            "robot-soul：须提供非空的 core_personality.txt，或 manifest.default_personality（恰好 7 维、0.0～1.0）"
+                .into()
+        } else {
+            "robot-soul（内存校验）：manifest.default_personality 须为非空且恰好 7 维（0.0～1.0）；目录级校验可改用 core_personality.txt"
+                .into()
+        });
+    }
+
+    errs
+}
+
 /// 合并 `manifest.scenes` 与磁盘 `scenes/` 子目录，得到场景 id 列表（至少含 `default`）。
 ///
 /// # Errors
@@ -205,15 +304,42 @@ pub fn validate_role_pack_loaded(
     host_version: &str,
     settings_schema_supported: u32,
 ) -> Result<(), Vec<String>> {
+    validate_role_pack_loaded_with_profile(
+        manifest_json,
+        settings_json,
+        merged_scene_ids,
+        host_version,
+        settings_schema_supported,
+        RolePackValidationProfile::Default,
+    )
+}
+
+/// 与 [`validate_role_pack_loaded`] 相同，并支持 `robot-soul` 扩展规则（内存校验无 `core_personality.txt` 路径时仅认七维向量）。
+pub fn validate_role_pack_loaded_with_profile(
+    manifest_json: &str,
+    settings_json: Option<&str>,
+    merged_scene_ids: &[String],
+    host_version: &str,
+    settings_schema_supported: u32,
+    profile: RolePackValidationProfile,
+) -> Result<(), Vec<String>> {
     let disk = validate_role_pack_manifest_settings_core(
         manifest_json,
         settings_json,
         settings_schema_supported,
     )?;
-    validate_role_pack_tail(&disk, merged_scene_ids, host_version)
+    validate_role_pack_tail(&disk, merged_scene_ids, host_version)?;
+    if matches!(profile, RolePackValidationProfile::RobotSoul) {
+        let extra = robot_soul_profile_errors(None, &disk, settings_json);
+        if !extra.is_empty() {
+            return Err(extra);
+        }
+    }
+    Ok(())
 }
 
-/// 校验角色包目录（与宿主加载前磁盘校验一致；不读 `core_personality.txt`、不跑 DB）。
+/// 校验角色包目录（与宿主加载前磁盘校验一致；标准路径不跑 DB）。
+/// `profile = robot-soul` 时会读取 `core_personality.txt` 以检查「人格载体」规则。
 ///
 /// `settings_schema_supported`：与宿主 `CURRENT_SETTINGS_SCHEMA_VERSION` 一致（当前为 1）。
 ///
@@ -224,6 +350,21 @@ pub fn validate_role_pack_directory(
     role_dir: &Path,
     host_version: &str,
     settings_schema_supported: u32,
+) -> Result<(), Vec<String>> {
+    validate_role_pack_directory_with_profile(
+        role_dir,
+        host_version,
+        settings_schema_supported,
+        RolePackValidationProfile::Default,
+    )
+}
+
+/// 与 [`validate_role_pack_directory`] 相同，并支持 `--profile robot-soul` 扩展规则。
+pub fn validate_role_pack_directory_with_profile(
+    role_dir: &Path,
+    host_version: &str,
+    settings_schema_supported: u32,
+    profile: RolePackValidationProfile,
 ) -> Result<(), Vec<String>> {
     let mut errs: Vec<String> = Vec::new();
     let manifest_path = role_dir.join("manifest.json");
@@ -270,7 +411,14 @@ pub fn validate_role_pack_directory(
         }
     };
 
-    validate_role_pack_tail(&disk, &merged_scenes, host_version)
+    validate_role_pack_tail(&disk, &merged_scenes, host_version)?;
+    if matches!(profile, RolePackValidationProfile::RobotSoul) {
+        let extra = robot_soul_profile_errors(Some(role_dir), &disk, settings_raw.as_deref());
+        if !extra.is_empty() {
+            return Err(extra);
+        }
+    }
+    Ok(())
 }
 
 #[cfg(test)]
@@ -324,6 +472,144 @@ mod tests {
             &merged,
             "999.0.0",
             1,
+        )
+        .unwrap();
+    }
+
+    #[test]
+    fn robot_soul_rejects_without_min_runtime() {
+        let dir = tempfile::tempdir().unwrap();
+        let role = dir.path().join("rs");
+        fs::create_dir_all(role.join("scenes").join("default")).unwrap();
+        let manifest = serde_json::json!({
+            "id": "rs.demo",
+            "name": "R",
+            "version": "0.1.0",
+            "author": "t",
+            "description": "d",
+            "default_personality": [0.5, 0.5, 0.5, 0.5, 0.5, 0.5, 0.5],
+            "scenes": ["default"],
+            "user_relations": {
+                "friend": { "initial_favorability": 50.0, "favor_multiplier": 1.0 }
+            },
+            "default_relation": "friend"
+        });
+        fs::write(role.join("manifest.json"), manifest.to_string()).unwrap();
+        let settings = serde_json::json!({
+            "schema_version": 1,
+            "interaction_mode": "immersive",
+            "plugin_backends": {
+                "memory": "builtin",
+                "emotion": "builtin",
+                "event": "builtin",
+                "prompt": "builtin",
+                "llm": "ollama",
+                "agent": "builtin"
+            }
+        });
+        fs::write(role.join("settings.json"), settings.to_string()).unwrap();
+        let r = validate_role_pack_directory_with_profile(
+            &role,
+            "999.0.0",
+            1,
+            RolePackValidationProfile::RobotSoul,
+        );
+        assert!(r.is_err());
+        let errs = r.unwrap_err().join("\n");
+        assert!(errs.contains("min_runtime_version"), "{}", errs);
+    }
+
+    #[test]
+    fn robot_soul_accepts_minimal_vector_pack() {
+        let dir = tempfile::tempdir().unwrap();
+        let role = dir.path().join("rs2");
+        fs::create_dir_all(role.join("scenes").join("default")).unwrap();
+        let manifest = serde_json::json!({
+            "id": "rs2.demo",
+            "name": "R2",
+            "version": "0.1.0",
+            "author": "t",
+            "description": "d",
+            "min_runtime_version": "0.2.0",
+            "default_personality": [0.5, 0.5, 0.5, 0.5, 0.5, 0.5, 0.5],
+            "scenes": ["default"],
+            "user_relations": {
+                "friend": { "initial_favorability": 50.0, "favor_multiplier": 1.0 }
+            },
+            "default_relation": "friend"
+        });
+        fs::write(role.join("manifest.json"), manifest.to_string()).unwrap();
+        let settings = serde_json::json!({
+            "schema_version": 1,
+            "interaction_mode": "pure_chat",
+            "plugin_backends": {
+                "memory": "builtin",
+                "emotion": "builtin",
+                "event": "builtin",
+                "prompt": "builtin",
+                "llm": "ollama",
+                "agent": "builtin"
+            }
+        });
+        fs::write(role.join("settings.json"), settings.to_string()).unwrap();
+        validate_role_pack_directory_with_profile(
+            &role,
+            "999.0.0",
+            1,
+            RolePackValidationProfile::RobotSoul,
+        )
+        .unwrap();
+    }
+
+    #[test]
+    fn robot_soul_accepts_core_file_without_vector() {
+        let dir = tempfile::tempdir().unwrap();
+        let role = dir.path().join("rs3");
+        fs::create_dir_all(role.join("scenes").join("default")).unwrap();
+        let manifest = serde_json::json!({
+            "id": "rs3.demo",
+            "name": "R3",
+            "version": "0.1.0",
+            "author": "t",
+            "description": "d",
+            "min_runtime_version": "0.2.0",
+            "scenes": ["default"],
+            "user_relations": {
+                "friend": { "initial_favorability": 50.0, "favor_multiplier": 1.0 }
+            },
+            "default_relation": "friend"
+        });
+        fs::write(role.join("manifest.json"), manifest.to_string()).unwrap();
+        let settings = serde_json::json!({
+            "schema_version": 1,
+            "interaction_mode": "immersive",
+            "plugin_backends": {
+                "memory": "builtin",
+                "emotion": "builtin",
+                "event": "builtin",
+                "prompt": "builtin",
+                "llm": "remote",
+                "agent": "builtin"
+            }
+        });
+        fs::write(role.join("settings.json"), settings.to_string()).unwrap();
+        fs::write(role.join("core_personality.txt"), "核心人设：简短、稳定、可部署。\n").unwrap();
+        let scene = serde_json::json!({
+            "name": "Default",
+            "time_windows": [],
+            "keywords": [],
+            "events": []
+        });
+        fs::write(
+            role.join("scenes").join("default").join("scene.json"),
+            scene.to_string(),
+        )
+        .unwrap();
+        validate_role_pack_directory_with_profile(
+            &role,
+            "999.0.0",
+            1,
+            RolePackValidationProfile::RobotSoul,
         )
         .unwrap();
     }

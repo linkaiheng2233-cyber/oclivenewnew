@@ -32,8 +32,9 @@ pub use plugin_backends::{
 };
 pub use role_pack::{
     merge_role_pack_scene_ids, validate_default_personality_vector,
-    validate_role_pack_directory, validate_role_pack_loaded, validate_role_pack_manifest_settings_core,
-    validate_role_pack_tail,
+    validate_role_pack_directory, validate_role_pack_directory_with_profile,
+    validate_role_pack_loaded, validate_role_pack_loaded_with_profile,
+    validate_role_pack_manifest_settings_core, validate_role_pack_tail, RolePackValidationProfile,
 };
 pub use validate::{
     parse_hhmm, validate_disk_manifest, validate_interaction_mode_pack_setting,

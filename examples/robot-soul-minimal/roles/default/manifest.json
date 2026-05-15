@@ -1,0 +1,16 @@
+{
+  "id": "default",
+  "name": "Robot Soul Minimal",
+  "version": "0.1.0",
+  "author": "oclive",
+  "description": "Minimal soul pack for headless / embedded (K3 example).",
+  "min_runtime_version": "0.2.0",
+  "scenes": ["default"],
+  "user_relations": {
+    "friend": {
+      "initial_favorability": 50.0,
+      "favor_multiplier": 1.0
+    }
+  },
+  "default_relation": "friend"
+}

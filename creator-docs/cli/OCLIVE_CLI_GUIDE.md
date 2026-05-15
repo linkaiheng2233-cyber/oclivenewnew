@@ -30,6 +30,7 @@ cargo run -p oclive-cli -- init --help
 
 ```bash
 cargo run -p oclive-cli -- pack validate ./roles/mumu --host-version 0.2.0
+cargo run -p oclive-cli -- pack validate ./roles/mumu --host-version 0.2.0 --profile robot-soul
 cargo run -p oclive-cli -- pack create -o ./out/my-role --flat --id com.example.demo --name Demo
 cargo run -p oclive-cli -- pack publish ./out/my-role -o ./dist/com.example.demo-0.1.0.oclivepack
 ```

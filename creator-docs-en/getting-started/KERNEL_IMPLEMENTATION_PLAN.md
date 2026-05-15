@@ -101,13 +101,13 @@ cd examples/oocp-test-suite && node run.mjs
 
 **Done when**
 
-- [ ] Add **§ minimal robot soul pack** to [ROLE_PACK_SPEC.md](../role-pack/ROLE_PACK_SPEC.md) (or a linked page)
-- [ ] Minimal fields (draft):
+- [x] Add **RobotSoulPack** (`--profile robot-soul`) to [ROLE_PACK_SPEC.md](../role-pack/ROLE_PACK_SPEC.md)
+- [x] Minimal fields:
   - `manifest.json`: `id`, `name`, `version`, `min_runtime_version`
-  - `settings.json`: `plugin_backends` (seven slots), `interaction_mode`, optional `remote_presence`
-  - `core_personality.txt` or `default_personality` axes (pick one in docs)
-- [ ] `oclive-cli pack validate --profile robot-soul` (or documented profile)
-- [ ] `examples/robot-soul-minimal/roles/default/`
+  - `settings.json`: explicit `plugin_backends` (six slots + optional extensions), `interaction_mode`, optional `remote_presence`
+  - `core_personality.txt` or seven-dim `default_personality` (either/or)
+- [x] `oclive-cli pack validate --profile robot-soul`
+- [x] `examples/robot-soul-minimal/roles/default/`
 
 ---
 

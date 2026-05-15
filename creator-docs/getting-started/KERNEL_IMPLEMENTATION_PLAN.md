@@ -102,13 +102,13 @@ cd examples/oocp-test-suite && node run.mjs
 
 **完成标准**
 
-- [ ] 在 [ROLE_PACK_SPEC.md](../role-pack/ROLE_PACK_SPEC.md) 增加 **§机器人最小灵魂包**（或链接专页）
-- [ ] 最小字段集（草案）：
+- [x] 在 [ROLE_PACK_SPEC.md](../role-pack/ROLE_PACK_SPEC.md) 增加 **RobotSoulPack**（`--profile robot-soul`）
+- [x] 最小字段集（草案）：
   - `manifest.json`：`id`、`name`、`version`、`min_runtime_version`
-  - `settings.json`：`plugin_backends`（七槽）、`interaction_mode`、`remote_presence`（可选）
-  - `core_personality.txt` 或 `default_personality` 七维（二选一，文档定夺）
-- [ ] `oclive-cli pack validate --profile robot-soul`（或等价文档 profile）
-- [ ] `examples/robot-soul-minimal/roles/default/` 示例目录
+  - `settings.json`：`plugin_backends`（六槽显式 + 可选扩展键）、`interaction_mode`、`remote_presence`（可选）
+  - `core_personality.txt` 或 `default_personality` 七维（二选一）
+- [x] `oclive-cli pack validate --profile robot-soul`
+- [x] `examples/robot-soul-minimal/roles/default/` 示例目录
 
 ---
 
