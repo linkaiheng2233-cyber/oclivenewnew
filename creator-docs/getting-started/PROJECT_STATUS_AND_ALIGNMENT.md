@@ -91,7 +91,7 @@
 ## 现有进度摘要（与目标对齐）
 
 - **内核（K0–K5）**：除 **P2（OTA / 远程日志）** 外，已在 [KERNEL_IMPLEMENTATION_PLAN.md](KERNEL_IMPLEMENTATION_PLAN.md) 标为收口；**验收留痕**与 CI `oocp-test-suite` 见该文与 [AGENTS.md](../../AGENTS.md)。
-- **产品级首发**：仍按 gap 清单 **§A** 为硬门槛集合；与「内核里程碑」解耦排期，见 [PRODUCT_AND_KERNEL_GAP_CHECKLIST.md](../../handoff/PRODUCT_AND_KERNEL_GAP_CHECKLIST.md) **§D**。
+- **产品级首发**：仍按 gap 清单 **§A** 为硬门槛集合；与「内核里程碑」解耦排期，见 [PRODUCT_AND_KERNEL_GAP_CHECKLIST.md](../../handoff/PRODUCT_AND_KERNEL_GAP_CHECKLIST.md) **§D**。**文档/闸门批次一**（发版勾选表、高风险演示表、README·SECURITY·CONTRIBUTING 等）已就绪；**下一默认焦点**为 [PRODUCT_LINE_TASK_BUCKETS.md](../../handoff/PRODUCT_LINE_TASK_BUCKETS.md) **§四 · 硬骨头**（A1.1 e2e、A1.2 invoke 矩阵等），逐项单独立项。
 - **体验与生态**：以 [VISION_ROADMAP_MONTHLY.md](../roadmap/VISION_ROADMAP_MONTHLY.md) + [BACKLOG…](../roadmap/BACKLOG_EXPERIENCE_AND_ECOSYSTEM.md) 对照，避免与内核表格混为一谈。
 - **创作者文档双语（`creator-docs-en/`）**：主干（索引、插件契约、`guides/`、LICENSE、FAQ 等）已与中文总索引对拍收尾；**`roadmap/` 等愿景长文**仍以 `creator-docs/` 为准。后续契约或行为变更时同步更新英文镜像或于 CHANGELOG 声明；约定全文见 [creator-docs-en/README.md](../../creator-docs-en/README.md#documentation-bilingual-closure-baseline)。
 

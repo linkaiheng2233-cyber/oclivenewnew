@@ -2,6 +2,8 @@
 
 **用途**：发版会议或维护者自检时**只过本表**；权威缺口仍以 [PRODUCT_AND_KERNEL_GAP_CHECKLIST.md](./PRODUCT_AND_KERNEL_GAP_CHECKLIST.md) **§A** 为准。详细说明与「硬骨头」排期见 [PRODUCT_LINE_TASK_BUCKETS.md](./PRODUCT_LINE_TASK_BUCKETS.md)。
 
+**下一阶段（工程）**：文档与闸门批次已就绪；**未勾的 §A 行**（尤其 **A1.1 / A1.2 / A2.2 / A2.3 / A4.2**）按 [PRODUCT_LINE_TASK_BUCKETS.md](./PRODUCT_LINE_TASK_BUCKETS.md) **§四 · 硬骨头** 拆独立 issue 推进，勿堆在本 PR 式文档变更里。
+
 **与 CI**：本表**不替代** CI。本地建议顺序：`npm run test:unit` → `npm run check:release` →（可选）与 CI 相同的 OOCP / 姊妹仓检查；详见 [CONTRIBUTING.md](../CONTRIBUTING.md)「测试要求」「CI 对齐」。
 
 ---

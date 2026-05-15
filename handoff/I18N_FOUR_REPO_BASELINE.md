@@ -39,4 +39,6 @@ rg -l "\p{Han}" --glob "*.vue" --glob "*.ts" src
 
 **2026-05-15 创作者文档双语收尾**：`creator-docs-en/README.md` 增加 **Documentation bilingual closure baseline**（权威语料、已镜像范围、中文-only 长尾、随开发更新的纪律）；`PRODUCT_AND_KERNEL_GAP_CHECKLIST.md` §A6 将 **creator-docs-en** 该项标为已满足主干对拍（界面 UI 无残留中文仍为未勾选）。详见 [creator-docs-en/README.md](../creator-docs-en/README.md#documentation-bilingual-closure-baseline)。
 
+**2026-05-15 产品线阶段**：**批次一**（发版勾选、高风险演示表、README/CONTRIBUTING/路线图互链等）已入库；**下一工程焦点**为 [PRODUCT_LINE_TASK_BUCKETS.md](./PRODUCT_LINE_TASK_BUCKETS.md) **§四 · 硬骨头**（逐项 issue）。见根 `CHANGELOG` `[Unreleased]`。
+
 **2026-05-15 内核收口**：`KERNEL_IMPLEMENTATION_PLAN.md`（中英）将 **K1、K2** 标为完成并写入 **验收留痕**（`cargo build -p oclivenewnew-tauri`、`cargo test -p oclive_kernel_runtime`、`cargo test -p oclive-cli`）；`examples/headless-kernel-minimal/README.md` 与 `PRODUCT_AND_KERNEL_GAP_CHECKLIST.md` §B 已对齐现状。

@@ -93,7 +93,7 @@
 ## Status snapshot (aligned with goals)
 
 - **Kernel K0–K5**: closed in plan except **P2 (OTA / remote logs)** — see [KERNEL_IMPLEMENTATION_PLAN.md](KERNEL_IMPLEMENTATION_PLAN.md) and [AGENTS.md](../../AGENTS.md) for CI.
-- **Product launch**: still driven by gap checklist **§A**, decoupled as in checklist **§D**.
+- **Product launch**: still driven by gap checklist **§A**, decoupled as in checklist **§D**. **Docs / gate batch one** (release checklist, high-risk demo table, README·SECURITY·CONTRIBUTING, etc.) is landed; **default next engineering focus** is [PRODUCT_LINE_TASK_BUCKETS.md](../../handoff/PRODUCT_LINE_TASK_BUCKETS.md) **§四（Hard items）** — A1.1 e2e, A1.2 invoke matrix, etc.; **one issue per item**.
 - **Experience**: use monthly vision + backlog; do not merge into the kernel milestone table.
 - **Creator docs bilingual (`creator-docs-en/`)**: hub + plugin contracts + `guides/` etc. are aligned with the Chinese corpus for a **closure baseline**; long-form vision under `creator-docs/roadmap/` stays **Chinese-first** until a release needs EN. Update mirrors in the same change-set as contract changes, or note Chinese-only doc updates in CHANGELOG — see [Documentation bilingual closure baseline](../README.md#documentation-bilingual-closure-baseline) in `creator-docs-en/README.md`.
 

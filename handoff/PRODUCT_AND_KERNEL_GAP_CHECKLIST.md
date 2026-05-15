@@ -120,6 +120,7 @@
 1. **内核里程碑** — [KERNEL_IMPLEMENTATION_PLAN.md](../creator-docs/getting-started/KERNEL_IMPLEMENTATION_PLAN.md)：**K0–K5（除 P2 OTA）** 已在计划与工程中收口；本地验收见该文档 **「验收留痕」**；持续 CI 见 `oocp-test-suite`。
 2. **产品级 A 区（P0）** — 见上文 §A：安装/崩溃/插件安全/兼容等，可在内核里程碑确认后集中排期。
 3. **B2 / B4 未勾项** — 多模态、参考硬件靶子、边缘运维等仍为中长期（P1/P2），与内核里程碑解耦。
+4. **产品线 · 硬骨头（§A 中高成本项）** — 见 [PRODUCT_LINE_TASK_BUCKETS.md](./PRODUCT_LINE_TASK_BUCKETS.md) **§四**：核心路径 e2e（**A1.1**）、`invoke` 矩阵（**A1.2**）、离线弱网（**A2.3**）等；**逐项单独立项**，验收标准写在 issue 正文，发版仍过 [PRODUCT_RELEASE_CHECKLIST.md](./PRODUCT_RELEASE_CHECKLIST.md)。
 
 **按复杂度分桶的执行排序（细碎打包 vs 硬骨头分击）**：[PRODUCT_LINE_TASK_BUCKETS.md](./PRODUCT_LINE_TASK_BUCKETS.md)（不改变本节 §A 勾选权威，仅作排期视图）。
 
