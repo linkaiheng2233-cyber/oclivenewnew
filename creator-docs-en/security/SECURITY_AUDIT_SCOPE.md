@@ -25,6 +25,12 @@ This document states **what security-related work exists in this repo today** an
 
 ---
 
+## Third-party risk (models, plugins, user data)
+
+Engineering work above does **not** cover licensing of user-downloaded model weights, third-party plugin code, or compliance of user-configured Remote egress endpoints. **Product-facing legal boundaries** are in [DISCLAIMER.md](../legal/DISCLAIMER.md) (Chinese canonical: [`creator-docs/legal/DISCLAIMER.md`](../../creator-docs/legal/DISCLAIMER.md)).
+
+---
+
 ## Rolling follow-ups
 
 1. **Each feature cycle**: run `cargo audit` and update [KNOWN_VULNERABILITIES.md](./KNOWN_VULNERABILITIES.md).
@@ -38,6 +44,7 @@ This document states **what security-related work exists in this repo today** an
 
 | Date | Notes |
 |------|--------|
+| 2026-05-15 | Added “Third-party risk” section linking to `legal/DISCLAIMER.md`. |
 | 2026-05-13 | First version: defined completed scope and known gaps. |
 
 ---

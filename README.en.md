@@ -115,6 +115,10 @@ Same binary with **`--api`** on **`127.0.0.1`** (default **8420**, **`OCLIVE_API
 
 See **Testing** in this file (Chinese README mirrors commands). **`npm run check`**, **`npm run check:release`**, **`npm run test:unit`**.
 
+## Disclaimer
+
+Full text on **model weights & licenses**, **third-party plugin responsibility**, and **local data & telemetry**: **[creator-docs/legal/DISCLAIMER.md](creator-docs/legal/DISCLAIMER.md)** (English-focused mirror: [creator-docs-en/legal/DISCLAIMER.md](creator-docs-en/legal/DISCLAIMER.md)). Third-party risk cross-link: [SECURITY_AUDIT_SCOPE.md](creator-docs/security/SECURITY_AUDIT_SCOPE.md).
+
 ## License
 
 AGPL-3.0 with Oclive plugin exception — [LICENSE](LICENSE).

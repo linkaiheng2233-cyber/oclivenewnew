@@ -202,9 +202,11 @@ cd src-tauri && npx tauri build
 
 「完全愿景」分阶段推进，详见 [creator-docs/roadmap/VISION_ROADMAP_MONTHLY.md](creator-docs/roadmap/VISION_ROADMAP_MONTHLY.md)。**本仓库已落实**：开源与 CI、契约文档、扩展点索引、**HTTP JSON-RPC Remote 宿主客户端**、创作者架构说明、`PluginHost` 五类后端枚举；记忆 **与** 情绪 / 事件 / Prompt 均具备 **`builtin` + `builtin_v2` + `remote`（LLM 为 `ollama`/`remote`）** 可切换路径及回归测试、`get_role_info`/`load_role` 暴露 `plugin_backends` 等。**独立角色包编写器**为**另仓**（见上表），经同一包格式对接。**仍属路线图**：包内知识库深化、启动器等（侧车逻辑由创作者自部署，见 [creator-docs/plugin-and-architecture/CREATOR_PLUGIN_ARCHITECTURE.md](creator-docs/plugin-and-architecture/CREATOR_PLUGIN_ARCHITECTURE.md)）。
 
-## 许可证
+## 免责声明
 
-GNU Affero General Public License v3.0（AGPL-3.0），并在 `LICENSE` 末尾附有 **Oclive 插件例外**（允许仅通过文档化扩展面接入的独立插件使用其他许可）。详见 [LICENSE](LICENSE)。
+关于 **模型权重与许可证**、**第三方插件责任**、**本地数据与遥测** 的完整说明见 **[creator-docs/legal/DISCLAIMER.md](creator-docs/legal/DISCLAIMER.md)**（[English](creator-docs-en/legal/DISCLAIMER.md)）。安全审查边界见 [SECURITY_AUDIT_SCOPE.md](creator-docs/security/SECURITY_AUDIT_SCOPE.md) 中的「第三方风险」。
+
+## 许可证
 
 ## 贡献与安全
 

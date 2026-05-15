@@ -25,6 +25,12 @@
 
 ---
 
+## 第三方风险（模型、插件与用户数据）
+
+工程审查（上节）**不**覆盖用户自行安装的模型权重、第三方插件代码、以及用户配置的 Remote 出站路径之合规性。**产品向法律与责任边界**见 [DISCLAIMER.md](../legal/DISCLAIMER.md)（[English](../../creator-docs-en/legal/DISCLAIMER.md)）。
+
+---
+
 ## 后续计划（滚动）
 
 1. **每个功能周期**：运行 `cargo audit` 并更新 [KNOWN_VULNERABILITIES.md](./KNOWN_VULNERABILITIES.md)。
@@ -38,6 +44,7 @@
 
 | 日期 | 说明 |
 |------|------|
+| 2026-05-15 | 增加「第三方风险」小节，链至 `legal/DISCLAIMER.md`。 |
 | 2026-05-13 | 初版：定义已完成范围与已知局限。 |
 
 ---

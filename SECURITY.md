@@ -6,6 +6,8 @@
 2. **插件与权限**：目录插件 / MCP 须遵守 **manifest** 与宿主授权 — 见 [LICENSE_POLICY.md](creator-docs/LICENSE_POLICY.md)、[DIRECTORY_PLUGINS.md](creator-docs/plugin-and-architecture/DIRECTORY_PLUGINS.md)。  
 3. **用户数据落盘**：SQLite 与 `{app_data}` 路径见 [CONFIGURATION_FILES.md](creator-docs/guides/CONFIGURATION_FILES.md)；漏洞报告请勿粘贴含隐私的完整路径或密钥。
 
+**第三方风险（模型、插件、数据边界）** — 产品向摘要见 [creator-docs/legal/DISCLAIMER.md](creator-docs/legal/DISCLAIMER.md)（[English](creator-docs-en/legal/DISCLAIMER.md)）。
+
 ## 报告漏洞
 
 若你发现安全漏洞，请**不要**在公开 issue 中披露细节。请通过以下方式联系维护者（请替换为实际邮箱或 GitHub Security 启用后的入口）：
