@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed, nextTick, onBeforeUnmount, onMounted, ref } from "vue";
+import { computed, defineExpose, nextTick, onBeforeUnmount, onMounted, ref } from "vue";
 import { useI18n } from "vue-i18n";
 import { hostEventBus } from "../lib/hostEventBus";
 import { useRoleStore } from "../stores/roleStore";
@@ -33,12 +33,21 @@ function onSetDraftInput(payload: unknown): void {
   });
 }
 
+function focusInput(): void {
+  void nextTick(() => {
+    textAreaEl.value?.focus();
+  });
+}
+
 function submit() {
   const value = text.value.trim();
   if (!value || props.loading) return;
   emit("send", { content: value });
   text.value = "";
+  focusInput();
 }
+
+defineExpose({ focusInput });
 
 function onKeydown(e: KeyboardEvent) {
   if (e.key !== "Enter") return;

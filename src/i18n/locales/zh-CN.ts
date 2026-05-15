@@ -388,6 +388,8 @@ export default {
     envCheckAppDataOk: "可写",
     envCheckAppDataFail: "不可写",
     envCheckDetail: "详情：",
+    envCheckOllamaPullNote:
+      "模型下载与拉取进度请在终端通过 ollama pull 查看；此处仅检测服务是否可达，不显示拉取百分比。",
     sentrySectionTitle: "崩溃诊断（Sentry）",
     sentrySectionLead:
       "仅当本发行构建已注入 DSN 时显示本区。会上报 Vue 侧未捕获异常（不含聊天正文）；Rust 侧仍主要依赖本机日志。",
@@ -538,6 +540,7 @@ export default {
       knowledgeLastPrompt: "上一句注入 Prompt：",
       knowledgeChunksUnit: "块",
       knowledgeLastPromptLine: "上一句注入 Prompt：{n} 块",
+      knowledgePresenceInline: "（{label}）",
       knowledgeHint:
         "发话后更新「上一句」；点「刷新调试数据」同步包内块数（改磁盘后请先 load_role）。",
       favorability: "好感度",

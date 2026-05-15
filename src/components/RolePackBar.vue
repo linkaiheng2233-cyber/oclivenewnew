@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { ref } from "vue";
+import { nextTick, ref, watch } from "vue";
 import { useI18n } from "vue-i18n";
 import { listen, type UnlistenFn } from "@tauri-apps/api/event";
 import { open, save } from "@tauri-apps/api/dialog";
@@ -41,6 +41,14 @@ const importProgressOpen = ref(false);
 const importPercent = ref(0);
 const importMessage = ref("");
 let unlistenProgress: UnlistenFn | null = null;
+
+const conflictPrimaryRef = ref<HTMLButtonElement | null>(null);
+
+watch(conflictOpen, (open) => {
+  if (open) {
+    void nextTick(() => conflictPrimaryRef.value?.focus());
+  }
+});
 
 async function withImportProgress<T>(fn: () => Promise<T>): Promise<T> {
   importProgressOpen.value = true;
@@ -220,6 +228,7 @@ function onImportFolder(): void {
               {{ t("common.cancel") }}
             </button>
             <button
+              ref="conflictPrimaryRef"
               type="button"
               class="btn btn-danger"
               :disabled="importProgressOpen"

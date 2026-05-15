@@ -134,7 +134,7 @@ function presenceLabel(mode: string): string {
         <button type="button" :aria-label="t('common.close')" @click="emit('close')">✕</button>
       </div>
 
-      <section class="debug-dock-slot" aria-label="debug.dock">
+      <section class="debug-dock-slot" :aria-label="t('editor.debug.dockSlotAria')">
         <PluginSlotEmbed
           :slot-name="SLOT_DEBUG_DOCK"
           :aria-label="t('editor.debug.dockSlotAria')"
@@ -182,11 +182,12 @@ function presenceLabel(mode: string): string {
               n: debugStore.lastKnowledgeChunksInPrompt,
             })
           }}
-          <span
-            v-if="debugStore.lastKnowledgePresenceMode"
-            class="knowledge-mode"
-          >
-            （{{ presenceLabel(debugStore.lastKnowledgePresenceMode) }}）
+          <span v-if="debugStore.lastKnowledgePresenceMode" class="knowledge-mode">
+            {{
+              t("editor.debug.knowledgePresenceInline", {
+                label: presenceLabel(debugStore.lastKnowledgePresenceMode),
+              })
+            }}
           </span>
         </p>
         <p class="knowledge-hint">

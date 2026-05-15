@@ -50,6 +50,12 @@ export default {
     grantIdPh: "MCP server id or directory plugin id",
     grantBtn: "Grant",
     revokeBtn: "Revoke",
+    fieldServer: "MCP server",
+    fieldTool: "Tool",
+    fieldParamsJson: "Params (JSON)",
+    tracePlan: "plan",
+    traceReply: "reply",
+    traceError: "error",
   },
   directoryShell: {
     loadFail: "Failed to load shell Vue component",

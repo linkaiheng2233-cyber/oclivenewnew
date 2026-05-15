@@ -293,7 +293,7 @@ async function onCheckUpdates() {
 async function onUpdateFromZip(pluginId: string) {
   const path = await open({
     multiple: false,
-    filters: [{ name: "Zip", extensions: ["zip"] }],
+    filters: [{ name: t("pluginWorkbench.localZipFilterName"), extensions: ["zip"] }],
   });
   if (path === null || Array.isArray(path)) {
     return;

@@ -86,7 +86,7 @@ async function onSave(): Promise<void> {
       {{ t("hotkeys.lead") }}
     </p>
     <p v-if="loading" class="hkset-muted">{{ t("common.loading") }}</p>
-    <template v-else>
+    <form v-else class="hkset-form" @submit.prevent="onSave">
       <div v-for="(b, i) in file.bindings" :key="b.id" class="hkset-row">
         <label class="hkset-field">
           <span>{{ t("hotkeys.fieldAccelerator") }}</span>
@@ -126,9 +126,9 @@ async function onSave(): Promise<void> {
       </div>
       <div class="hkset-actions">
         <button type="button" class="hkset-btn" @click="addBinding">{{ t("hotkeys.addRow") }}</button>
-        <button type="button" class="hkset-btn hkset-btn--primary" @click="onSave">{{ t("hotkeys.save") }}</button>
+        <button type="submit" class="hkset-btn hkset-btn--primary">{{ t("hotkeys.save") }}</button>
       </div>
-    </template>
+    </form>
   </section>
 </template>
 
@@ -151,6 +151,11 @@ async function onSave(): Promise<void> {
 .hkset-muted {
   font-size: 13px;
   color: var(--text-secondary);
+}
+.hkset-form {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
 }
 .hkset-row {
   display: flex;

@@ -1,5 +1,6 @@
 import * as Vue from "vue";
 import type { Component } from "vue";
+import { i18n } from "../i18n";
 import { readPluginAssetText } from "./tauri-api";
 
 const SCHEME = "oclive-plugin://";
@@ -56,7 +57,13 @@ function buildCompileError(
   const short = err instanceof Error ? err.message : String(err ?? "");
   const lineHint =
     short.match(/\((\d+),(\d+)\)|:(\d+):(\d+)|line\s*(\d+)/i)?.[0] ?? short.slice(0, 240);
-  const friendly = `插件 ${pluginId} 的 Vue 组件编译失败，请检查语法。组件路径：${vueRel}。错误详情：${lineHint}`;
+  const friendly = String(
+    i18n.global.t("pluginWorkbench.slotEmbed.vueCompileFailed", {
+      pluginId,
+      path: vueRel,
+      detail: lineHint,
+    }),
+  );
   return new PluginVueCompileError(pluginId, vueRel, friendly, raw);
 }
 

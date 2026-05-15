@@ -124,4 +124,12 @@ export default {
     ariaDebugDock: "debug.dock 顺序",
   },
   footer: { close: "关闭", resetPack: "重置为角色包推荐", save: "保存" },
+  /** 目录插件插槽：iframe / Vue 回退错误（嵌入区用户可见） */
+  slotEmbed: {
+    frameLoadFailed: "页面加载失败",
+    vueIframeFallback: "Vue 组件加载失败，已尝试 iframe 回退",
+    vueCompileFailed:
+      "插件 {pluginId} 的 Vue 组件编译失败，请检查语法。组件路径：{path}。错误详情：{detail}",
+  },
+  localZipFilterName: "ZIP 压缩包",
 } as const;

@@ -126,4 +126,12 @@ export default {
     ariaDebugDock: "debug.dock order",
   },
   footer: { close: "Close", resetPack: "Reset to pack default", save: "Save" },
+  /** Embedded slot: iframe / Vue fallback errors (user-visible). */
+  slotEmbed: {
+    frameLoadFailed: "Page failed to load",
+    vueIframeFallback: "Vue component failed to load; fell back to iframe",
+    vueCompileFailed:
+      "Vue compile failed for plugin {pluginId}. Check syntax. Path: {path}. Detail: {detail}",
+  },
+  localZipFilterName: "ZIP archive",
 } as const;

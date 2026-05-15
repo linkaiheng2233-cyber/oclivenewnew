@@ -1,7 +1,8 @@
 <script setup lang="ts">
+import { nextTick, ref, watch } from "vue";
 import { useI18n } from "vue-i18n";
 
-defineProps<{
+const props = defineProps<{
   visible: boolean;
   /** 已解析的展示名，如「客厅」 */
   pendingSceneLabel: string;
@@ -13,6 +14,17 @@ const emit = defineEmits<{
   confirm: [together: boolean];
   dismiss: [];
 }>();
+
+const primaryTogetherRef = ref<HTMLButtonElement | null>(null);
+
+watch(
+  () => props.visible,
+  (visible) => {
+    if (visible) {
+      void nextTick(() => primaryTogetherRef.value?.focus());
+    }
+  },
+);
 </script>
 
 <template>
@@ -33,6 +45,7 @@ const emit = defineEmits<{
           {{ t("common.sceneMode.solo") }}
         </button>
         <button
+          ref="primaryTogetherRef"
           type="button"
           class="post-reply-btn post-reply-btn--primary"
           @click="emit('confirm', true)"

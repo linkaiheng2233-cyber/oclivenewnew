@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { ref, watch } from "vue";
+import { nextTick, ref, watch } from "vue";
 import { useI18n } from "vue-i18n";
 import * as Sentry from "@sentry/vue";
 import HelpHint from "../components/HelpHint.vue";
@@ -59,6 +59,8 @@ const remoteFallbackLoading = ref(false);
 const remoteFallbackChecked = ref(true);
 const remoteFallbackEnvLocked = ref(false);
 
+const settingsDialogRef = ref<HTMLElement | null>(null);
+
 async function loadRemoteFallbackSettings() {
   remoteFallbackLoading.value = true;
   try {
@@ -75,7 +77,12 @@ async function loadRemoteFallbackSettings() {
 watch(
   () => props.visible,
   (v) => {
-    if (v) void loadRemoteFallbackSettings();
+    if (v) {
+      void loadRemoteFallbackSettings();
+      void nextTick(() => {
+        settingsDialogRef.value?.focus({ preventScroll: true });
+      });
+    }
   },
 );
 
@@ -137,7 +144,13 @@ async function onToggleForceIframe(e: Event) {
       :aria-label="t('settings.ariaDialog')"
       @click.self="emit('close')"
     >
-      <div class="sv-dialog" @click.stop>
+      <div
+        ref="settingsDialogRef"
+        class="sv-dialog"
+        tabindex="-1"
+        @click.stop
+        @keydown.escape.stop="emit('close')"
+      >
         <header class="sv-head">
           <h2 class="sv-title">{{ t("settings.title") }}</h2>
           <button type="button" class="sv-close" :aria-label="t('settings.closeAria')" @click="emit('close')">×</button>
@@ -179,6 +192,7 @@ async function onToggleForceIframe(e: Event) {
               <HelpHint :text="t('settings.envCheckHelp')" />
             </div>
             <p class="sv-muted">{{ t("settings.envCheckLead") }}</p>
+            <p class="sv-muted sv-small">{{ t("settings.envCheckOllamaPullNote") }}</p>
             <button
               type="button"
               class="sv-env-btn"

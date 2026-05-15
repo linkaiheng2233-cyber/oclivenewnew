@@ -1,5 +1,6 @@
 import { storeToRefs } from "pinia";
 import { computed, ref, toValue, watch, type MaybeRefOrGetter } from "vue";
+import { useI18n } from "vue-i18n";
 import type { PluginUiSlotInfo } from "../utils/tauri-api";
 import { PluginVueCompileError } from "../utils/compilePluginVueSfc";
 import { useKeyedPluginErrors } from "./usePluginError";
@@ -15,6 +16,7 @@ export function useDirectoryPluginSlotEmbed(options: {
   /** 与插件保存/刷新联动（如 `pluginStore.bootstrapEpoch`） */
   bootstrapEpoch: MaybeRefOrGetter<number>;
 }) {
+  const { t } = useI18n();
   const roleStore = useRoleStore();
   const { currentRoleId } = storeToRefs(roleStore);
   const pluginStore = usePluginStore();
@@ -47,7 +49,7 @@ export function useDirectoryPluginSlotEmbed(options: {
   );
 
   function onFrameError(pluginId: string): void {
-    setKeyedError(pluginId, "页面加载失败");
+    setKeyedError(pluginId, t("pluginWorkbench.slotEmbed.frameLoadFailed"));
   }
 
   function onFrameLoad(pluginId: string): void {
@@ -60,7 +62,7 @@ export function useDirectoryPluginSlotEmbed(options: {
   function onVueFailed(pluginId: string): void {
     vueFallback.value = { ...vueFallback.value, [pluginId]: true };
     if (!frameErrors.value[pluginId]) {
-      setKeyedError(pluginId, "Vue 组件加载失败，已尝试 iframe 回退");
+      setKeyedError(pluginId, t("pluginWorkbench.slotEmbed.vueIframeFallback"));
     }
   }
 

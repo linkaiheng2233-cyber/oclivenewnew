@@ -393,6 +393,8 @@ export default {
     envCheckAppDataOk: "writable",
     envCheckAppDataFail: "not writable",
     envCheckDetail: "Detail:",
+    envCheckOllamaPullNote:
+      "Model download/pull progress is shown in the terminal (`ollama pull`). This check only probes reachability, not pull percentage.",
     sentrySectionTitle: "Crash diagnostics (Sentry)",
     sentrySectionLead:
       "Shown only when this build ships with a DSN. Reports uncaught Vue errors (not chat text); Rust still relies mainly on local logs.",
@@ -544,6 +546,7 @@ export default {
       knowledgeLastPrompt: "Last prompt injection:",
       knowledgeChunksUnit: "chunks",
       knowledgeLastPromptLine: "Last prompt injection: {n} chunks",
+      knowledgePresenceInline: "({label})",
       knowledgeHint:
         "Updates after you send; click “Refresh debug data” to sync chunk counts (call load_role after disk changes).",
       favorability: "Favorability",

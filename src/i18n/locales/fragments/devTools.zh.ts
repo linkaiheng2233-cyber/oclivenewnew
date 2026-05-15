@@ -50,6 +50,12 @@ export default {
     grantIdPh: "MCP server id 或目录插件 id",
     grantBtn: "授权",
     revokeBtn: "撤销授权",
+    fieldServer: "MCP Server",
+    fieldTool: "工具",
+    fieldParamsJson: "参数（JSON）",
+    tracePlan: "计划",
+    traceReply: "回复",
+    traceError: "错误",
   },
   directoryShell: {
     loadFail: "整壳 Vue 组件加载失败",

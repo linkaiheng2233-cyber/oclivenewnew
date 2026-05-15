@@ -86,7 +86,26 @@ const {
 } = useSceneDestination(showToast);
 
 const chatListRef = ref<InstanceType<typeof ChatMessageList> | null>(null);
+const chatInputRef = ref<{ focusInput?: () => void } | null>(null);
+const leftPaneRef = ref<HTMLElement | null>(null);
 const roleSwitching = ref(false);
+
+/** Escape / backdrop 关闭对话框后恢复打开前的焦点 */
+const settingsFocusReturn = ref<HTMLElement | null>(null);
+const pluginV2FocusReturn = ref<HTMLElement | null>(null);
+const pluginPanelFocusReturn = ref<HTMLElement | null>(null);
+const shortcutHelpFocusReturn = ref<HTMLElement | null>(null);
+
+function stashFocusTarget(target: typeof settingsFocusReturn): void {
+  const a = document.activeElement;
+  target.value = a instanceof HTMLElement ? a : null;
+}
+
+function restoreFocusTarget(target: typeof settingsFocusReturn): void {
+  const el = target.value;
+  target.value = null;
+  void nextTick(() => el?.focus({ preventScroll: true }));
+}
 
 /** 角色回复结束后，若本句含位移意图且有多场景，显示目的地条 */
 const postReplySceneBarVisible = ref(false);
@@ -97,6 +116,8 @@ const togetherTravelSelectedId = ref("");
 /** 顶栏改场景：叙事独行 / 同行 */
 const topBarSceneDialogVisible = ref(false);
 const pendingTopBarSceneId = ref("");
+/** 顶栏场景确认弹关闭后恢复焦点到场景下拉 */
+const topBarSceneOpenerFocus = ref<HTMLElement | null>(null);
 const quickActionTravelEvent = "com.oclive.mumu.quick-actions:travel";
 const settingsSetRemoteLifeEvent = "com.oclive.mumu.settings-panel:set_remote_life";
 const settingsSetInteractionModeEvent =
@@ -216,6 +237,41 @@ const {
   closeSettingsView: () => {
     settingsViewOpen.value = false;
   },
+});
+
+watch(settingsViewOpen, (open) => {
+  if (open) {
+    stashFocusTarget(settingsFocusReturn);
+  } else {
+    restoreFocusTarget(settingsFocusReturn);
+  }
+});
+
+watch(pluginManagerV2Open, (open) => {
+  if (open) {
+    stashFocusTarget(pluginV2FocusReturn);
+  } else {
+    restoreFocusTarget(pluginV2FocusReturn);
+  }
+});
+
+watch(
+  () => pluginStore.panelVisible,
+  (open) => {
+    if (open) {
+      stashFocusTarget(pluginPanelFocusReturn);
+    } else {
+      restoreFocusTarget(pluginPanelFocusReturn);
+    }
+  },
+);
+
+watch(shortcutHelpOpen, (open) => {
+  if (open) {
+    stashFocusTarget(shortcutHelpFocusReturn);
+  } else {
+    restoreFocusTarget(shortcutHelpFocusReturn);
+  }
 });
 
 const topBarRef = ref<HTMLElement | null>(null);
@@ -395,6 +451,8 @@ async function onSend(payload: { content: string }) {
     }
   } catch (err) {
     showToast("error", err instanceof Error ? err.message : String(err));
+  } finally {
+    chatInputRef.value?.focusInput?.();
   }
 }
 
@@ -426,6 +484,8 @@ function onTopBarSceneChange(ev: Event) {
   const sel = ev.target as HTMLSelectElement;
   const next = sel.value;
   if (next === uiStore.sceneId) return;
+  const a = document.activeElement;
+  topBarSceneOpenerFocus.value = a instanceof HTMLElement ? a : null;
   pendingTopBarSceneId.value = next;
   topBarSceneDialogVisible.value = true;
   sel.value = uiStore.sceneId;
@@ -434,12 +494,18 @@ function onTopBarSceneChange(ev: Event) {
 function dismissTopBarSceneDialog() {
   topBarSceneDialogVisible.value = false;
   pendingTopBarSceneId.value = "";
+  const el = topBarSceneOpenerFocus.value;
+  topBarSceneOpenerFocus.value = null;
+  void nextTick(() => el?.focus({ preventScroll: true }));
 }
 
 async function confirmTopBarScene(together: boolean) {
   const id = pendingTopBarSceneId.value.trim();
   topBarSceneDialogVisible.value = false;
   pendingTopBarSceneId.value = "";
+  const el = topBarSceneOpenerFocus.value;
+  topBarSceneOpenerFocus.value = null;
+  void nextTick(() => el?.focus({ preventScroll: true }));
   await applySceneDestination(id, together);
 }
 
@@ -454,6 +520,7 @@ function onPluginQuickActionTravel(payload: unknown): void {
 }
 
 async function onSwitchRole(nextRoleId: string) {
+  const savedLeftScroll = leftPaneRef.value?.scrollTop ?? 0;
   try {
     roleSwitching.value = true;
     await roleStore.switchRole(nextRoleId);
@@ -467,6 +534,12 @@ async function onSwitchRole(nextRoleId: string) {
   } finally {
     window.setTimeout(() => {
       roleSwitching.value = false;
+      void nextTick(() => {
+        const pane = leftPaneRef.value;
+        if (pane) {
+          pane.scrollTop = savedLeftScroll;
+        }
+      });
     }, 220);
   }
 }
@@ -973,7 +1046,7 @@ onBeforeUnmount(() => {
           'split-row--sidebar-right': sidebarRight,
         }"
       >
-        <aside class="left-pane">
+        <aside ref="leftPaneRef" class="left-pane">
           <RoleDetailView
             class="character-block"
             :layout="wideSplitLayout ? 'sidebar' : 'stack'"
@@ -1032,7 +1105,7 @@ onBeforeUnmount(() => {
               @confirm-post-reply="confirmPostReplyScene"
               @dismiss-post-reply="dismissPostReplySceneBar"
             />
-            <ChatInput :loading="chatStore.isLoading" @send="onSend" />
+            <ChatInput ref="chatInputRef" :loading="chatStore.isLoading" @send="onSend" />
           </section>
         </div>
       </div>

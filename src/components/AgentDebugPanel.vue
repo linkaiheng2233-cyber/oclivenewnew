@@ -327,7 +327,7 @@ onMounted(async () => {
 
     <div class="adp-form">
       <label>
-        Server
+        {{ t("devTools.agent.fieldServer") }}
         <select v-model="selectedServerId" class="adp-input">
           <option value="">{{ t("devTools.agent.pickServer") }}</option>
           <option v-for="s in servers" :key="s.id" :value="s.id">
@@ -336,7 +336,7 @@ onMounted(async () => {
         </select>
       </label>
       <label>
-        Tool
+        {{ t("devTools.agent.fieldTool") }}
         <div class="adp-tool-wrap">
           <input
             v-model="selectedToolName"
@@ -353,7 +353,7 @@ onMounted(async () => {
         </div>
       </label>
       <label>
-        Params(JSON)
+        {{ t("devTools.agent.fieldParamsJson") }}
         <textarea v-model="paramsText" class="adp-textarea" rows="3" />
       </label>
       <button type="button" class="adp-btn primary" :disabled="busy" @click="runToolCall">
@@ -385,9 +385,11 @@ onMounted(async () => {
         <div class="adp-trace-line">
           <strong>{{ new Date(trace.timestamp_ms).toLocaleString() }}</strong> · {{ trace.message }}
         </div>
-        <div class="adp-trace-line">plan: {{ trace.plan }}</div>
-        <div class="adp-trace-line">reply: {{ trace.reply }}</div>
-        <div v-if="trace.error" class="adp-trace-line err">error: {{ trace.error }}</div>
+        <div class="adp-trace-line">{{ t("devTools.agent.tracePlan") }}: {{ trace.plan }}</div>
+        <div class="adp-trace-line">{{ t("devTools.agent.traceReply") }}: {{ trace.reply }}</div>
+        <div v-if="trace.error" class="adp-trace-line err">
+          {{ t("devTools.agent.traceError") }}: {{ trace.error }}
+        </div>
         <pre v-if="trace.tool_calls?.length" class="adp-pre">{{ JSON.stringify(trace.tool_calls, null, 2) }}</pre>
       </div>
       <p v-if="traces.length === 0" class="adp-empty">{{ t("devTools.agent.emptyTraces") }}</p>
