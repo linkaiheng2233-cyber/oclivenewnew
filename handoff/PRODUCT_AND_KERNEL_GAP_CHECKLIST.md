@@ -48,7 +48,7 @@
 ### A6. 国际化与文案（P1）
 
 - [ ] **界面语言切换后无残留中文**（在承诺范围内；长尾可声明例外）。
-- [ ] **creator-docs-en**：与 [DOCUMENTATION_INDEX.md](../creator-docs/getting-started/DOCUMENTATION_INDEX.md) 对齐的英文长尾与互链。
+- [x] **creator-docs-en（创作者文档英文镜像）**：主干（总索引、插件契约、`guides/`、`LICENSE_POLICY`、FAQ/兼容等）已与 [DOCUMENTATION_INDEX.md](../creator-docs/getting-started/DOCUMENTATION_INDEX.md) 及 [creator-docs-en/README.md](../creator-docs-en/README.md) 对拍收尾；**`creator-docs/roadmap/`** 等愿景与生态长文仍以中文为准；**更新纪律**（契约变更时同步英文或 CHANGELOG 声明）见英文 README 小节 [Documentation bilingual closure baseline](../creator-docs-en/README.md#documentation-bilingual-closure-baseline)。
 
 ### A7. 性能与资源（P1）
 

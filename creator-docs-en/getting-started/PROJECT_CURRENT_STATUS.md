@@ -30,6 +30,7 @@
 
 - **oclive-pack-editor**, **oclive-launcher**, **oclive-plugin-market**: integrate via on-disk packs and shared docs; see [PROJECT_OVERVIEW.md](../../creator-docs/getting-started/PROJECT_OVERVIEW.md).
 - **Four-repo UI bilingual baseline**: [I18N_FOUR_REPO_BASELINE.md](../../handoff/I18N_FOUR_REPO_BASELINE.md).
+- **Creator English docs (`creator-docs-en/`)**: closure scope and update rules: [Documentation bilingual closure baseline](../README.md#documentation-bilingual-closure-baseline) in `creator-docs-en/README.md` (Chinese `creator-docs/` remains authoritative; roadmap long reads may stay Chinese-only).
 
 ---
 

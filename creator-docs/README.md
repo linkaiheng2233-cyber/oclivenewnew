@@ -23,6 +23,12 @@
 | **[rfc/](rfc/)** | [RFC：高耦合编译模式 Monolith](rfc/RFC_OCLIVE_MONOLITH_MODE.md)（`monolith.toml`、`oclive-cli --monolith`；第一阶段已实现占位焊接） |
 | **[cli/](cli/)** | [oclive-cli 脚手架指南](cli/OCLIVE_CLI_GUIDE.md) · [`plugin_backends` 参考](cli/SETTINGS_REFERENCE.md)（内核 / 无头最小工程生成） |
 
+### 文档双语收尾基线
+
+- **权威**：契约与角色包仍以本目录 **`creator-docs/`** 中文为准。  
+- **英文镜像**：[`../creator-docs-en/README.md`](../creator-docs-en/README.md)（见该页 **Documentation bilingual closure baseline**）：入门与索引、插件契约与 `guides/`、FAQ/兼容/协议策略等已对齐；**`roadmap/`、视频脚本、部分角色包深度文**等仍为 **中文-only**，英文总索引链过去属正常。  
+- **后续开发**：改契约或宿主/插件行为时，**同一变更周期**内同步更新已有英文镜像，或在 `CHANGELOG` 中注明「文档仅中文更新」。
+
 ---
 
 ## 从这里开始

@@ -37,4 +37,6 @@ rg -l "\p{Han}" --glob "*.vue" --glob "*.ts" src
 
 **2026-05-15 补充**：`creator-docs-en/getting-started/` 新增 `OVERVIEW.md`、`CREATOR_WORKFLOW.md`、`SIDECAR_LLM_USER_GUIDE.md`、`GITHUB_REPO_CHECKLIST.md` 英文摘要/别名页；英文索引改为优先链到同目录 stub，权威长文仍以 `creator-docs/` 中文或既有英文镜像为准。主仓 `src/**/*.vue` 用户可见中文以 `vue-i18n` 词条为主（其余多为注释）。
 
+**2026-05-15 创作者文档双语收尾**：`creator-docs-en/README.md` 增加 **Documentation bilingual closure baseline**（权威语料、已镜像范围、中文-only 长尾、随开发更新的纪律）；`PRODUCT_AND_KERNEL_GAP_CHECKLIST.md` §A6 将 **creator-docs-en** 该项标为已满足主干对拍（界面 UI 无残留中文仍为未勾选）。详见 [creator-docs-en/README.md](../creator-docs-en/README.md#documentation-bilingual-closure-baseline)。
+
 **2026-05-15 内核收口**：`KERNEL_IMPLEMENTATION_PLAN.md`（中英）将 **K1、K2** 标为完成并写入 **验收留痕**（`cargo build -p oclivenewnew-tauri`、`cargo test -p oclive_kernel_runtime`、`cargo test -p oclive-cli`）；`examples/headless-kernel-minimal/README.md` 与 `PRODUCT_AND_KERNEL_GAP_CHECKLIST.md` §B 已对齐现状。

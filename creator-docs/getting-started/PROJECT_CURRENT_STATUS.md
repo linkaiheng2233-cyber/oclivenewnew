@@ -30,8 +30,7 @@
 
 - **编写器** `oclive-pack-editor`、**启动器** `oclive-launcher`、**插件市场站** `oclive-plugin-market`：与本仓通过角色包与文档索引协作；详见 [PROJECT_OVERVIEW.md](PROJECT_OVERVIEW.md)。
 - **四仓 UI 文案双语基线**：见 [handoff/I18N_FOUR_REPO_BASELINE.md](../../handoff/I18N_FOUR_REPO_BASELINE.md)。
-
----
+- **创作者英文文档（`creator-docs-en/`）**：收尾范围与更新约定见 [creator-docs-en/README.md](../../creator-docs-en/README.md#documentation-bilingual-closure-baseline)（与中文 `creator-docs/` 对拍；路线图等长尾仍为中文）。
 
 ## 路线图与对齐习惯
 

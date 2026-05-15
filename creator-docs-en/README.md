@@ -4,6 +4,16 @@
 
 This tree mirrors **`creator-docs/`** with hand-maintained English pages. For topics without an English file yet, use the Chinese hub or follow links inside each page.
 
+## Documentation bilingual closure baseline
+
+**Source of truth**: Simplified Chinese under **`creator-docs/`** (including all normative wording for contracts and role packs).
+
+**English “closure” scope (maintained)** — tables below plus [getting-started/DOCUMENTATION_INDEX.md](getting-started/DOCUMENTATION_INDEX.md) quick links: **getting-started** hub pages listed here; **plugin-and-architecture** (PLUGIN_V1, Remote, directory, bridge, extension points, creator architecture, HOW_TO_REPLACE, LOCAL bridge); **guides/** (configuration paths, mumu acceptance, regression QA); **FAQ**, **COMPATIBILITY**, **LICENSE_POLICY**; **testing/**, **security/**, **cli/**, **rfc/**, **role-pack/** (ROLE_PACK_SPEC, ROLE_PACK_INDEX), **LIGHTWEIGHT_PROFILE**. Each mirrored page should keep a **`[中文](…)`** link to the matching `creator-docs/` file where one exists.
+
+**Chinese-only for now (expected)** — no standing commitment to full English mirrors unless a release needs them: e.g. **`creator-docs/roadmap/`** vision and ecosystem long reads, **`creator-docs/video-script/`**, deeper **`creator-docs/role-pack/`** beyond the two spec/index pages, and ad-hoc **`creator-docs/testing/`** notes only linked from the EN hub. The EN index may still point at those Chinese files by relative URL; that is intentional.
+
+**Update discipline (as development continues)** — When you change runtime or author-facing contracts (slots, `plugin_backends`, bridge, OOCP, pack schema), update the **English mirror in the same change-set** when a mirror exists, or add a **CHANGELOG** note that docs were updated Chinese-only. For small copy edits, batching EN sync in the same release is fine.
+
 ---
 
 ## Getting started
