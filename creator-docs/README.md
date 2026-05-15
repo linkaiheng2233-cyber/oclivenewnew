@@ -9,7 +9,7 @@
 | 文件夹 | 内容 |
 |--------|------|
 | **[getting-started/](getting-started/)** | 文档总索引、[进度与目标对齐](getting-started/PROJECT_STATUS_AND_ALIGNMENT.md)、[项目现状快照](getting-started/PROJECT_CURRENT_STATUS.md)、入门与角色包工作流、[GitHub 仓库清单](getting-started/GITHUB_REPO_CHECKLIST.md) |
-| **[guides/](guides/)** | [配置文件说明](guides/CONFIGURATION_FILES.md)（`plugin_state`、`ui.json`、应用数据路径等）、[mumu 模块验收清单](guides/MUMU_UI_ACCEPTANCE_CHECKLIST.md) |
+| **[guides/](guides/)** | [配置文件说明](guides/CONFIGURATION_FILES.md)（`plugin_state`、`ui.json`、应用数据路径等）、[mumu 模块验收清单](guides/MUMU_UI_ACCEPTANCE_CHECKLIST.md)、[复杂情感回归清单](guides/REGRESSION_COMPLEX_EMOTION_QA.md) · 英 [`../creator-docs-en/guides/`](../creator-docs-en/guides/) |
 | **[plugin-and-architecture/](plugin-and-architecture/)** | `plugin_backends` 契约、扩展点、HTTP JSON-RPC 协议、[整壳桥接 API 参考](plugin-and-architecture/BRIDGE_API_REFERENCE.md)、替换模块 · 英文总表 [`../creator-docs-en/README.md`](../creator-docs-en/README.md) |
 | **[FAQ.md](FAQ.md)** | 插件与角色包常见问题 · 英文 [`../creator-docs-en/FAQ.md`](../creator-docs-en/FAQ.md) |
 | **[LICENSE_POLICY.md](LICENSE_POLICY.md)** | 主程序与插件的开源协议策略（发布前最小检查） |

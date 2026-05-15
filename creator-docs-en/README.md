@@ -76,8 +76,30 @@ This tree mirrors **`creator-docs/`** with hand-maintained English pages. For to
 | Whole-shell bridge `invoke` reference | [plugin-and-architecture/BRIDGE_API_REFERENCE.md](plugin-and-architecture/BRIDGE_API_REFERENCE.md) |
 | Extension points index (traits → source files) | [plugin-and-architecture/EXTENSION_POINTS.md](plugin-and-architecture/EXTENSION_POINTS.md) |
 | Creator architecture (sidecar vs directory vs fork) | [plugin-and-architecture/CREATOR_PLUGIN_ARCHITECTURE.md](plugin-and-architecture/CREATOR_PLUGIN_ARCHITECTURE.md) |
+| How to replace modules (builtin / remote / directory) | [plugin-and-architecture/HOW_TO_REPLACE_MODULES.md](plugin-and-architecture/HOW_TO_REPLACE_MODULES.md) |
+| Local plugin bridge (`memory = local`, `_local_plugins`) | [plugin-and-architecture/LOCAL_PLUGIN_BRIDGE_SPEC.md](plugin-and-architecture/LOCAL_PLUGIN_BRIDGE_SPEC.md) |
 | Plugin & pack FAQ | [FAQ.md](FAQ.md) |
 | Pack editor vs host compatibility (`ui.json`) | [COMPATIBILITY.md](COMPATIBILITY.md) |
+
+---
+
+## Guides
+
+| Topic | English |
+|-------|---------|
+| Configuration paths (`plugin_state`, `ui.json`, `{app_data}`) | [guides/CONFIGURATION_FILES.md](guides/CONFIGURATION_FILES.md) |
+| mumu UI release checklist (`ui.json` + directory slots) | [guides/MUMU_UI_ACCEPTANCE_CHECKLIST.md](guides/MUMU_UI_ACCEPTANCE_CHECKLIST.md) |
+| Regression: Plugin Manager V2 & Complex Emotion | [guides/REGRESSION_COMPLEX_EMOTION_QA.md](guides/REGRESSION_COMPLEX_EMOTION_QA.md) |
+
+---
+
+## Legal & licensing
+
+| Topic | English |
+|-------|---------|
+| Open-source policy (host & plugins) | [LICENSE_POLICY.md](LICENSE_POLICY.md) |
+
+---
 
 ## Full Chinese corpus
 

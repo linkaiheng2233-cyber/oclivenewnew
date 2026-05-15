@@ -30,9 +30,10 @@
 | In-app FAQ (mumu slots, plugins, UI) | [../FAQ.md](../FAQ.md) |
 | Error codes & triage | [ERROR_CODES.md](ERROR_CODES.md) |
 | Local sidecar + BYOK | [SIDECAR_LLM_USER_GUIDE.md](SIDECAR_LLM_USER_GUIDE.md) |
-| Config paths | [../../creator-docs/guides/CONFIGURATION_FILES.md](../../creator-docs/guides/CONFIGURATION_FILES.md) |
-| mumu UI acceptance | [../../creator-docs/guides/MUMU_UI_ACCEPTANCE_CHECKLIST.md](../../creator-docs/guides/MUMU_UI_ACCEPTANCE_CHECKLIST.md) |
+| Config paths | [../guides/CONFIGURATION_FILES.md](../guides/CONFIGURATION_FILES.md) |
+| mumu UI acceptance | [../guides/MUMU_UI_ACCEPTANCE_CHECKLIST.md](../guides/MUMU_UI_ACCEPTANCE_CHECKLIST.md) |
 | Editor vs host compatibility | [../COMPATIBILITY.md](../COMPATIBILITY.md) |
+| Open-source licensing (host & plugins) | [../LICENSE_POLICY.md](../LICENSE_POLICY.md) |
 | Creator workflow | [CREATOR_WORKFLOW.md](CREATOR_WORKFLOW.md) |
 
 ### 2. Modules, contracts, architecture
@@ -46,6 +47,7 @@
 | Remote JSON-RPC | [../plugin-and-architecture/REMOTE_PLUGIN_PROTOCOL.md](../plugin-and-architecture/REMOTE_PLUGIN_PROTOCOL.md) |
 | Extension styles overview | [../plugin-and-architecture/CREATOR_PLUGIN_ARCHITECTURE.md](../plugin-and-architecture/CREATOR_PLUGIN_ARCHITECTURE.md) |
 | Extension points index | [../plugin-and-architecture/EXTENSION_POINTS.md](../plugin-and-architecture/EXTENSION_POINTS.md) |
+| Replace modules (builtin / remote / directory) | [../plugin-and-architecture/HOW_TO_REPLACE_MODULES.md](../plugin-and-architecture/HOW_TO_REPLACE_MODULES.md) |
 | `memory = local` bridge | [../plugin-and-architecture/LOCAL_PLUGIN_BRIDGE_SPEC.md](../plugin-and-architecture/LOCAL_PLUGIN_BRIDGE_SPEC.md) |
 | On-disk pack / RobotSoulPack | [../role-pack/ROLE_PACK_SPEC.md](../role-pack/ROLE_PACK_SPEC.md) |
 

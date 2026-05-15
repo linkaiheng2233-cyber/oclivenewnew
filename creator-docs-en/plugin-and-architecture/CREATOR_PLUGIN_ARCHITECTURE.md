@@ -6,8 +6,8 @@ How **oclive’s swappable subsystems** work for creators: extend **without fork
 **JSON‑RPC fields & samples**: [REMOTE_PLUGIN_PROTOCOL.md](REMOTE_PLUGIN_PROTOCOL.md)  
 **`plugin_backends` contract**: [PLUGIN_V1.md](PLUGIN_V1.md)  
 **Directory plugins** (`plugins/`, `manifest`, whole shell, `directory_plugin_invoke`): [DIRECTORY_PLUGINS.md](DIRECTORY_PLUGINS.md)  
-**Rust replacement steps**: [HOW_TO_REPLACE_MODULES.md](../../creator-docs/plugin-and-architecture/HOW_TO_REPLACE_MODULES.md)  
-**Local bridge (`memory = local`)**: [LOCAL_PLUGIN_BRIDGE_SPEC.md](../../creator-docs/plugin-and-architecture/LOCAL_PLUGIN_BRIDGE_SPEC.md)
+**Rust replacement steps**: [HOW_TO_REPLACE_MODULES.md](HOW_TO_REPLACE_MODULES.md)  
+**Local bridge (`memory = local`)**: [LOCAL_PLUGIN_BRIDGE_SPEC.md](LOCAL_PLUGIN_BRIDGE_SPEC.md)
 
 [中文](../../creator-docs/plugin-and-architecture/CREATOR_PLUGIN_ARCHITECTURE.md)
 
@@ -204,4 +204,4 @@ More HTTP/JSON detail: [REMOTE_PLUGIN_PROTOCOL.md](REMOTE_PLUGIN_PROTOCOL.md).
 - **Authoring packs**: [../getting-started/CREATOR_WORKFLOW.md](../getting-started/CREATOR_WORKFLOW.md), [roles/README_MANIFEST.md](../../roles/README_MANIFEST.md)  
 - **Enums & defaults**: [PLUGIN_V1.md](PLUGIN_V1.md), [../role-pack/PACK_VERSIONING.md](../role-pack/PACK_VERSIONING.md)  
 - **Directory plugins**: [DIRECTORY_PLUGINS.md](DIRECTORY_PLUGINS.md), [../../examples/directory-plugin-minimal/README.md](../../examples/directory-plugin-minimal/README.md)  
-- **Rust replacement only**: [HOW_TO_REPLACE_MODULES.md](../../creator-docs/plugin-and-architecture/HOW_TO_REPLACE_MODULES.md)
+- **Rust replacement only**: [HOW_TO_REPLACE_MODULES.md](HOW_TO_REPLACE_MODULES.md)

@@ -4,7 +4,7 @@
 
 Same model as [PLUGIN_V1.md](PLUGIN_V1.md): **v1 uses compile‑time enums** selected via `settings.json` → `plugin_backends`. Memory / emotion / event / prompt / **Agent** default to **builtin**; **`llm` defaults to `ollama`**. Each slot may instead use **`remote`** or **`directory`** (`plugins/*/manifest.json` child process — see [DIRECTORY_PLUGINS.md](DIRECTORY_PLUGINS.md)).
 
-**How to replace implementations**: [HOW_TO_REPLACE_MODULES.md](../../creator-docs/plugin-and-architecture/HOW_TO_REPLACE_MODULES.md) (Chinese). **HTTP sidecar JSON‑RPC**: [REMOTE_PLUGIN_PROTOCOL.md](REMOTE_PLUGIN_PROTOCOL.md).
+**How to replace implementations**: [HOW_TO_REPLACE_MODULES.md](HOW_TO_REPLACE_MODULES.md). **HTTP sidecar JSON‑RPC**: [REMOTE_PLUGIN_PROTOCOL.md](REMOTE_PLUGIN_PROTOCOL.md).
 
 [中文](../../creator-docs/plugin-and-architecture/EXTENSION_POINTS.md)
 

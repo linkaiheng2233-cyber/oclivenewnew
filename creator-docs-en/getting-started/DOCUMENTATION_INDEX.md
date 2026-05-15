@@ -34,19 +34,20 @@ Creator and plugin documentation lives under repo root **`creator-docs/`** (topi
 | **Community role pack index JSON** | **[../role-pack/ROLE_PACK_INDEX.md](../role-pack/ROLE_PACK_INDEX.md)** |
 | **Directory process plugins** (`plugins/`, manifest, whole-shell, `directory_plugin_invoke`, dev mode; **plugin manager** `Ctrl+Shift+F`, enable/disable/reorder/local zip) | **[../plugin-and-architecture/DIRECTORY_PLUGINS.md](../plugin-and-architecture/DIRECTORY_PLUGINS.md)** |
 | **Bridge `invoke` table, permission aliases, error codes** | **[../plugin-and-architecture/BRIDGE_API_REFERENCE.md](../plugin-and-architecture/BRIDGE_API_REFERENCE.md)** |
-| **Config file locations** | **[../../creator-docs/guides/CONFIGURATION_FILES.md](../../creator-docs/guides/CONFIGURATION_FILES.md)** |
-| **Open-source licensing policy** | **[../../creator-docs/LICENSE_POLICY.md](../../creator-docs/LICENSE_POLICY.md)** |
+| **Config file locations** | **[../guides/CONFIGURATION_FILES.md](../guides/CONFIGURATION_FILES.md)** |
+| **Open-source licensing policy** | **[../LICENSE_POLICY.md](../LICENSE_POLICY.md)** |
 | **mumu default slots + plugin FAQ (Vue not showing, iframe debug, deps; user Q&A)** | **[../FAQ.md](../FAQ.md)** |
-| **mumu UI release checklist** | **[../../creator-docs/guides/MUMU_UI_ACCEPTANCE_CHECKLIST.md](../../creator-docs/guides/MUMU_UI_ACCEPTANCE_CHECKLIST.md)** |
+| **mumu UI release checklist** | **[../guides/MUMU_UI_ACCEPTANCE_CHECKLIST.md](../guides/MUMU_UI_ACCEPTANCE_CHECKLIST.md)** |
+| **Regression: Plugin Manager V2 & Complex Emotion** | **[../guides/REGRESSION_COMPLEX_EMOTION_QA.md](../guides/REGRESSION_COMPLEX_EMOTION_QA.md)** |
 | **Editor vs host compatibility** | **[../COMPATIBILITY.md](../COMPATIBILITY.md)** |
-| **`memory = local`, `_local_plugins`, bridge spec** | **[../../creator-docs/plugin-and-architecture/LOCAL_PLUGIN_BRIDGE_SPEC.md](../../creator-docs/plugin-and-architecture/LOCAL_PLUGIN_BRIDGE_SPEC.md)** |
-| **Add a new built-in backend in Rust** | **[../../creator-docs/plugin-and-architecture/HOW_TO_REPLACE_MODULES.md](../../creator-docs/plugin-and-architecture/HOW_TO_REPLACE_MODULES.md)** |
+| **`memory = local`, `_local_plugins`, bridge spec** | **[../plugin-and-architecture/LOCAL_PLUGIN_BRIDGE_SPEC.md](../plugin-and-architecture/LOCAL_PLUGIN_BRIDGE_SPEC.md)** |
+| **Add a new built-in backend in Rust** | **[../plugin-and-architecture/HOW_TO_REPLACE_MODULES.md](../plugin-and-architecture/HOW_TO_REPLACE_MODULES.md)** |
 | **Author pack content only** | **[CREATOR_WORKFLOW.md](CREATOR_WORKFLOW.md)**, [roles/README_MANIFEST.md](../../roles/README_MANIFEST.md), import checklist [roles/TESTING_ROLE_PACK_IMPORT.md](../../roles/TESTING_ROLE_PACK_IMPORT.md) |
 | **Core / mutable personality archives, `personality_source`** | **[../../docs/personality-archive-notes.md](../../docs/personality-archive-notes.md)** |
 | **Design evolution (seven-dim vs archive axis)** | **[../../docs/design-axis-evolution.md](../../docs/design-axis-evolution.md)** |
 | **Editor validation roadmap** | **[../../creator-docs/role-pack/EDITOR_VALIDATION_ROADMAP.md](../../creator-docs/role-pack/EDITOR_VALIDATION_ROADMAP.md)** |
 | **Pack versioning, `schema_version`, `knowledge/`** | **[../../creator-docs/role-pack/PACK_VERSIONING.md](../../creator-docs/role-pack/PACK_VERSIONING.md)** · **[../../creator-docs/role-pack/WORLDVIEW_KNOWLEDGE.md](../../creator-docs/role-pack/WORLDVIEW_KNOWLEDGE.md)** |
-| **Extension points and source map** | **[../../creator-docs/plugin-and-architecture/EXTENSION_POINTS.md](../../creator-docs/plugin-and-architecture/EXTENSION_POINTS.md)** |
+| **Extension points and source map** | **[../plugin-and-architecture/EXTENSION_POINTS.md](../plugin-and-architecture/EXTENSION_POINTS.md)** |
 | **Vision and roadmap** | **[../../creator-docs/roadmap/VISION_ROADMAP_MONTHLY.md](../../creator-docs/roadmap/VISION_ROADMAP_MONTHLY.md)** |
 | **Open lab vision** | **[../../creator-docs/roadmap/VISION_OPEN_LAB.md](../../creator-docs/roadmap/VISION_OPEN_LAB.md)** |
 | **Experience backlog** | **[../../creator-docs/roadmap/BACKLOG_EXPERIENCE_AND_ECOSYSTEM.md](../../creator-docs/roadmap/BACKLOG_EXPERIENCE_AND_ECOSYSTEM.md)** |
@@ -76,10 +77,10 @@ Architecture-level design converges in RFCs (**drafts do not imply merged code o
 
 1. [CREATOR_WORKFLOW.md](CREATOR_WORKFLOW.md) — pack directories and load paths  
 2. [PLUGIN_V1.md](../plugin-and-architecture/PLUGIN_V1.md) — six swappable backends + **agent**  
-2b. [DIRECTORY_PLUGINS.md](../../creator-docs/plugin-and-architecture/DIRECTORY_PLUGINS.md) — directory plugins (`directory` enum, `directory_plugins` slots)  
-3. [CREATOR_PLUGIN_ARCHITECTURE.md](../../creator-docs/plugin-and-architecture/CREATOR_PLUGIN_ARCHITECTURE.md) — three extension styles, env vars, “hot reload” boundaries  
+2b. [DIRECTORY_PLUGINS.md](../plugin-and-architecture/DIRECTORY_PLUGINS.md) — directory plugins (`directory` enum, `directory_plugins` slots)  
+3. [CREATOR_PLUGIN_ARCHITECTURE.md](../plugin-and-architecture/CREATOR_PLUGIN_ARCHITECTURE.md) — three extension styles, env vars, “hot reload” boundaries  
 4. [SIDECAR_LLM_USER_GUIDE.md](SIDECAR_LLM_USER_GUIDE.md) — **local sidecar + BYOK**  
-5. [REMOTE_PLUGIN_PROTOCOL.md](../../creator-docs/plugin-and-architecture/REMOTE_PLUGIN_PROTOCOL.md) — JSON-RPC methods, params/result, full JSON samples  
+5. [REMOTE_PLUGIN_PROTOCOL.md](../plugin-and-architecture/REMOTE_PLUGIN_PROTOCOL.md) — JSON-RPC methods, params/result, full JSON samples  
 6. [examples/remote_plugin_minimal/README.md](../../examples/remote_plugin_minimal/README.md) — minimal Python sidecar  
 6b. [examples/directory-plugin-minimal/README.md](../../examples/directory-plugin-minimal/README.md) — minimal directory plugin  
 7. [examples/remote_plugin_openai_compat/README.md](../../examples/remote_plugin_openai_compat/README.md) — OpenAI-compatible `chat/completions`  
@@ -89,8 +90,8 @@ Architecture-level design converges in RFCs (**drafts do not imply merged code o
 
 ## Suggested reading order (host / Rust contributors)
 
-1. [EXTENSION_POINTS.md](../../creator-docs/plugin-and-architecture/EXTENSION_POINTS.md)  
-2. [HOW_TO_REPLACE_MODULES.md](../../creator-docs/plugin-and-architecture/HOW_TO_REPLACE_MODULES.md)  
+1. [EXTENSION_POINTS.md](../plugin-and-architecture/EXTENSION_POINTS.md)  
+2. [HOW_TO_REPLACE_MODULES.md](../plugin-and-architecture/HOW_TO_REPLACE_MODULES.md)  
 3. Source: `src-tauri/src/domain/plugin_host.rs`, `src-tauri/src/infrastructure/remote_plugin/`, **`src-tauri/src/infrastructure/directory_plugins/`**  
 4. Integration smoke: [`src-tauri/tests/plugin_backends_v2_resolve.rs`](../../src-tauri/tests/plugin_backends_v2_resolve.rs) (`cargo test --test plugin_backends_v2_resolve`)
 
