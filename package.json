@@ -50,7 +50,7 @@
   },
   "devDependencies": {
     "@playwright/test": "^1.52.0",
-    "@tauri-apps/cli": "1.5.14",
+    "@tauri-apps/cli": "2.11.1",
     "@vitejs/plugin-vue": "^5.2.1",
     "@vue/test-utils": "^2.4.10",
     "jsdom": "^29.1.1",
