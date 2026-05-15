@@ -32,7 +32,7 @@
 - **首次响应**：维护者通常在 **3–5 个工作日** 内完成首轮分类（志愿维护窗口，**非合同 SLA**；节假日顺延）。  
 - **请附带环境信息**：**操作系统**；**应用版本**（例如 `package.json` / `src-tauri/Cargo.toml` 的 `version`）；**`oclive-cli` 版本**（`crates/oclive-cli/Cargo.toml` 的 `version` 或 `cargo run -p oclive-cli -- --help` 输出）；并粘贴应用内 **设置 → 常规 → 环境自检** 的结果摘要。**勿**在公开 issue 中粘贴 API 密钥、Token 或可识别隐私的完整本机路径。
 
-**自助排查**：[FAQ](creator-docs/FAQ.md) · [文档索引](creator-docs/getting-started/DOCUMENTATION_INDEX.md) · [ERROR_CODES](creator-docs/getting-started/ERROR_CODES.md)。报告缺陷请尽量包含 **错误码** 与 **最少复现步骤**。
+**自助排查**：[用户手册](creator-docs/getting-started/USER_MANUAL.md)（[English](creator-docs-en/getting-started/USER_MANUAL.md)）· [FAQ](creator-docs/FAQ.md) · [文档索引](creator-docs/getting-started/DOCUMENTATION_INDEX.md) · [ERROR_CODES](creator-docs/getting-started/ERROR_CODES.md)。报告缺陷请尽量包含 **错误码** 与 **最少复现步骤**。
 
 ## 早期采用者与已知限制
 
@@ -57,6 +57,7 @@
 
 | 说明 | 路径 |
 |------|------|
+| **用户手册**（安装 → 导入角色包 → 日常对话） | [creator-docs/getting-started/USER_MANUAL.md](creator-docs/getting-started/USER_MANUAL.md)（[English](creator-docs-en/getting-started/USER_MANUAL.md)） |
 | 文档总索引 | [creator-docs/getting-started/DOCUMENTATION_INDEX.md](creator-docs/getting-started/DOCUMENTATION_INDEX.md) |
 | **项目全貌（三件套、事项、命令）** | [creator-docs/getting-started/PROJECT_OVERVIEW.md](creator-docs/getting-started/PROJECT_OVERVIEW.md) |
 | **GitHub：CI / Dependabot / 网页设置清单** | [creator-docs/getting-started/GITHUB_REPO_CHECKLIST.md](creator-docs/getting-started/GITHUB_REPO_CHECKLIST.md) |

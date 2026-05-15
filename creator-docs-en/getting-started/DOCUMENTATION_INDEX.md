@@ -19,6 +19,7 @@ Creator and plugin documentation lives under repo root **`creator-docs/`** (topi
 
 | I want to… | Read |
 |------------|------|
+| **End users: install → daily use (user manual)** | **[USER_MANUAL.md](USER_MANUAL.md)** (Chinese: [../../creator-docs/getting-started/USER_MANUAL.md](../../creator-docs/getting-started/USER_MANUAL.md)) |
 | **Current status (version, what ships, changelog entry points)** | **[PROJECT_CURRENT_STATUS.md](PROJECT_CURRENT_STATUS.md)** |
 | **Align progress and goals (one page: summary + doc map by purpose)** | **[PROJECT_STATUS_AND_ALIGNMENT.md](PROJECT_STATUS_AND_ALIGNMENT.md)** |
 | **Product launch gates + kernel/platform gaps** | **[../../handoff/PRODUCT_AND_KERNEL_GAP_CHECKLIST.md](../../handoff/PRODUCT_AND_KERNEL_GAP_CHECKLIST.md)** |
