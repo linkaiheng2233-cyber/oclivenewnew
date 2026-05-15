@@ -2,12 +2,17 @@
 
 ## A2.1 invoke 可见路径（全码表）
 
-- **内核**：`crates/oclive_kernel_runtime/src/error.rs` 新增 **`RoleRuntimeNotReady`**、**`StartupHealthFailed(String)`**；`to_frontend_error()` 仍为 `[CODE] message`。
-- **调用点**：`load_role` 前未就绪、`role_runtime` 更新行缺失等由 **`ROLE_RUNTIME_NOT_READY`** 统一表达，替代泛型 `INVALID_PARAMETER`；`startup_health` 缓存失败回放为 **`STARTUP_HEALTH_FAILED`**（缓存存 `e.to_string()`，避免双层方括号）。
-- **前端**：`src/i18n/locales/fragments/apiErrors.{zh,en}.ts` 补全 **扩展事务码**（`TXN_MEMORY_ID_FETCH_FAILED` 等）、**`ROLE_RUNTIME_NOT_READY`**、**`STARTUP_HEALTH_FAILED`**、**`PLUGIN_BACKENDS_DIRECTORY_SLOT`**；**`LLM_ERROR`** 区分 ollama / **remote**；**`UNKNOWN_ERROR`** 增加弱网/日志指引。
-- **`toFriendlyErrorMessage`**（`src/utils/tauri-api.ts`）：`STARTUP_HEALTH_FAILED` 插值 `{detail}`；`INVALID_PARAMETER` 且含 `plugin_backends:` 时映射 **`PLUGIN_BACKENDS_DIRECTORY_SLOT`**。
-- **文档**：`creator-docs/getting-started/ERROR_CODES.md` / 英文镜像 **§1.6** 增补 Tauri 方括号码一行。  
-- **说明**：**HTTP `--api`** 仍为 JSON **`error.code`（snake_case）**，与桌面 **Tauri `[BRACKET_CODE]`** 并存为契约预期，非 bug。
+- **内核**：`crates/oclive_kernel_runtime/src/error.rs` 定义 **`KernelErrorBody` `{ code, message, hint? }`**；**`AppError::to_kernel_json()` / `to_frontend_error()`** 均返回 **单行 JSON**（与 HTTP `error` 内层同形）；**`kernel_error_body()`** 供 HTTP 组装。
+- **调用点**：（略，同前版）`ROLE_RUNTIME_NOT_READY`、`STARTUP_HEALTH_FAILED` 等。
+- **前端**：`src/utils/tauri-api.ts` **`parseBackendError`** 优先解析 JSON，**保留 `[CODE]` 回退**；`FriendlyError` 增加可选 **`kernel`**；`apiErrors` 增补 **`EMPTY_MESSAGE` / `INVALID_ROLE_PATH` / `LOAD_ROLE_TASK_PANIC`**。
+- **HTTP `--api`**：`src-tauri/src/http_api.rs` 的 **`error`** 直接使用 **`KernelErrorBody`**；`POST /chat` 专有码 **`EMPTY_MESSAGE`**、**`INVALID_ROLE_PATH`**；加载/引擎失败使用 **`AppError::code()`**（如 **`ROLE_NOT_FOUND`**、**`LLM_ERROR`**），不再使用 `chat_engine_failed` 等第二层笼统码。
+- **OOCP / 测试**：`examples/oocp-test-suite/run.mjs`、`src-tauri/tests/http_api_chat.rs` 断言已对齐 **`SCREAMING_SNAKE_CASE`**。
+- **文档**：`ERROR_CODES.md`（中/英）§1、`OOCP_TEST_SUITE.md`、`bug_report.yml` 已更新。
+
+## A2 补丁：内核 JSON 错误体（权威契约，2026-05-15）
+
+- **目标**：传输层不各自发明字符串；**Tauri `invoke` 失败载荷**与 **`POST /chat` 的 `error` 对象**字段同源（`KernelErrorBody`）。
+- **实现要点**：见 **`handoff/A2_KERNEL_JSON_ERROR_PATCH.md`**（与本文互链）。
 
 ## A2.2 环境自检
 

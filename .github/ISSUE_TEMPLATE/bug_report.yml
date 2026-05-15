@@ -15,8 +15,8 @@ body:
     id: error_code
     attributes:
       label: Error Code
-      description: e.g. invalid_role_path / chat_engine_failed / -32012
-      placeholder: invalid_role_path
+      description: e.g. EMPTY_MESSAGE / INVALID_ROLE_PATH / LLM_ERROR / -32012
+      placeholder: INVALID_ROLE_PATH
     validations:
       required: false
 

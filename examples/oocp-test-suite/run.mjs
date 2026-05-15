@@ -60,7 +60,7 @@ async function scenarioHandlers(base, rolePath) {
         body: JSON.stringify({ role_path: mumu, message: '   ' }),
       })
       if (res.status !== 400) throw new Error(`S1 status ${res.status}`)
-      if (body?.error?.code !== 'empty_message') throw new Error(`S1 code ${JSON.stringify(body)}`)
+      if (body?.error?.code !== 'EMPTY_MESSAGE') throw new Error(`S1 code ${JSON.stringify(body)}`)
     },
     S2: async () => {
       const { res, body } = await fetchJson(`${base}/chat`, {
@@ -70,7 +70,7 @@ async function scenarioHandlers(base, rolePath) {
       })
       if (res.status !== 400) throw new Error(`S2 status ${res.status}`)
       const code = body?.error?.code
-      if (code !== 'invalid_role_path' && code !== 'load_role_failed') {
+      if (code !== 'INVALID_ROLE_PATH' && code !== 'ROLE_NOT_FOUND') {
         throw new Error(`S2 unexpected code ${code}`)
       }
     },

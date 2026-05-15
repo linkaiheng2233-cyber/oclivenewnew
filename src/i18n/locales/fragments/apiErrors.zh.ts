@@ -1,5 +1,8 @@
-/** Tauri `[CODE]` → zh copy (see `toFriendlyErrorMessage` in `utils/tauri-api.ts`). */
+/** 内核 `KernelErrorBody.code`（`SCREAMING_SNAKE_CASE`）→ 文案（见 `toFriendlyErrorMessage`）。 */
 export default {
+  EMPTY_MESSAGE: "消息不能为空或仅含空格/换行，请输入至少一个可见字符。",
+  INVALID_ROLE_PATH: "角色路径不是有效目录。请传入包含 manifest.json 的角色目录绝对路径。",
+  LOAD_ROLE_TASK_PANIC: "加载角色时后台任务异常，请查看日志并重试；若可稳定复现请提 issue。",
   TXN_BEGIN_FAILED: "事务启动失败，请稍后重试。",
   TXN_RUNTIME_ENSURE_FAILED: "角色运行时状态初始化失败。",
   TXN_PERSONALITY_INSERT_FAILED: "性格数据写入失败。",

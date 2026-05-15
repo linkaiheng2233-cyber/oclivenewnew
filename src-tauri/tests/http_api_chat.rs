@@ -74,7 +74,7 @@ async fn http_api_chat_empty_message_400() {
         .expect("oneshot");
     assert_eq!(res.status(), StatusCode::BAD_REQUEST);
     let v = response_json(res).await;
-    assert_eq!(v["error"]["code"], "empty_message");
+    assert_eq!(v["error"]["code"], "EMPTY_MESSAGE");
 }
 
 #[tokio::test]

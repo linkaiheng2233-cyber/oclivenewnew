@@ -1,4 +1,18 @@
+use serde::{Deserialize, Serialize};
 use thiserror::Error;
+
+/// 无头内核与宿主共用的 **JSON 错误体**（Tauri `invoke` 失败字符串、HTTP `error` 对象同源字段）。
+///
+/// - `code`：与 [`AppError::code`] 一致的机器码（`SCREAMING_SNAKE_CASE`），供壳层 i18n 与黑盒断言。
+/// - `message`：[`AppError`] 的 `Display` 文本（默认英文技术句）；本地化由发行版用 `code` 映射。
+/// - `hint`：可选「下一步」；HTTP 路由可为试聊等场景附加，内核默认 `None`。
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq)]
+pub struct KernelErrorBody {
+    pub code: String,
+    pub message: String,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub hint: Option<String>,
+}
 
 #[derive(Error, Debug)]
 pub enum AppError {
@@ -57,9 +71,36 @@ impl AppError {
         }
     }
 
+    /// 构造与 HTTP `error` 对象字段一致的 JSON 错误体（不含外层 `{ "error": … }`）。
+    #[must_use]
+    pub fn kernel_error_body(&self) -> KernelErrorBody {
+        KernelErrorBody {
+            code: self.code().to_string(),
+            message: self.to_string(),
+            hint: None,
+        }
+    }
+
+    /// JSON 单行字符串，供 Tauri `invoke` 失败载荷与日志使用（与 HTTP 内层 `error` 同形）。
+    #[must_use]
+    pub fn to_kernel_json(&self) -> String {
+        serde_json::to_string(&self.kernel_error_body()).unwrap_or_else(|_| {
+            serde_json::to_string(&KernelErrorBody {
+                code: "UNKNOWN_ERROR".into(),
+                message: self.to_string(),
+                hint: None,
+            })
+            .unwrap_or_else(|_| {
+                "{\"code\":\"UNKNOWN_ERROR\",\"message\":\"serialization failed\",\"hint\":null}"
+                    .into()
+            })
+        })
+    }
+
+    /// 与 [`Self::to_kernel_json`] 相同（历史命名：「前端」泛指任意宿主壳）。
     #[must_use]
     pub fn to_frontend_error(&self) -> String {
-        format!("[{}] {}", self.code(), self)
+        self.to_kernel_json()
     }
 }
 
@@ -87,6 +128,17 @@ mod tests {
     fn startup_health_failed_code() {
         let e = AppError::StartupHealthFailed("db ping".into());
         assert_eq!(e.code(), "STARTUP_HEALTH_FAILED");
-        assert!(e.to_frontend_error().contains("STARTUP_HEALTH_FAILED"));
+        let j: KernelErrorBody = serde_json::from_str(&e.to_kernel_json()).expect("json");
+        assert_eq!(j.code, "STARTUP_HEALTH_FAILED");
+        assert!(j.message.contains("db ping"));
+    }
+
+    #[test]
+    fn to_kernel_json_roundtrip() {
+        let e = AppError::RoleNotFound("x".into());
+        let s = e.to_kernel_json();
+        let j: KernelErrorBody = serde_json::from_str(&s).unwrap();
+        assert_eq!(j.code, "ROLE_NOT_FOUND");
+        assert!(j.message.contains('x'));
     }
 }

@@ -28,8 +28,8 @@
 | ID | Assertion focus |
 |----|-----------------|
 | S0 | `GET /health` → 200, body `ok` |
-| S1 | `POST /chat` empty message → 400, `error.code=empty_message` |
-| S2 | Invalid `role_path` → 400, `invalid_role_path` or `load_role_failed` |
+| S1 | `POST /chat` empty message → 400, `error.code=EMPTY_MESSAGE` |
+| S2 | Invalid `role_path` → 400, `INVALID_ROLE_PATH` or a kernel load code (e.g. `ROLE_NOT_FOUND`) |
 | S3 | `role_path=""` → 400 with error body |
 | S4 | Valid chat → 200, top-level `reply` non-empty |
 | S5 | Success body includes `personality_source` (`vector` \| `profile`) |

@@ -4,14 +4,20 @@ Audience: users and developers. Goal: **self-serve first**, then file a high-qua
 
 ---
 
-## 1) Runtime HTTP API (`/chat`) errors
+## 1) Runtime HTTP API (`/chat`) error body (same as kernel / Tauri)
 
-Example response body:
+On `POST /chat` failures, JSON uses **`error` = `KernelErrorBody`** (same fields as the JSON string Tauri `invoke` may return):
+
+- `code`: **`SCREAMING_SNAKE_CASE`**, aligned with [`AppError::code`](../../crates/oclive_kernel_runtime/src/error.rs).
+- `message`: kernel `Display` (default English technical text); shells localize via `code`.
+- `hint`: optional next step; HTTP may attach extra hints for editor try-chat.
+
+Example:
 
 ```json
 {
   "error": {
-    "code": "invalid_role_path",
+    "code": "INVALID_ROLE_PATH",
     "message": "role_path is not a directory: D:\\roles\\demo",
     "hint": "Pass an absolute path to the role directory that contains manifest.json"
   }
@@ -20,17 +26,18 @@ Example response body:
 
 | code | Meaning | Common cause | What to try |
 |------|---------|--------------|-------------|
-| `empty_message` | Empty message | Only whitespace / newlines | Type at least one visible character |
-| `invalid_role_path` | Path is not a directory | Typo, pointed at a file | Pass `{roles_root}/{role_id}` as an absolute directory |
-| `load_role_failed` | Failed to load role dir | Missing `manifest` / `settings` or bad structure | Run full checks in the pack editor; verify tree |
-| `chat_engine_failed` | Chat engine internal failure | Sidecar timeout, model down, runtime state | Check logs `oclive_chat` / `oclive_plugin` |
+| `EMPTY_MESSAGE` | Empty message | Only whitespace / newlines | Type at least one visible character |
+| `INVALID_ROLE_PATH` | Path is not a directory | Typo, pointed at a file | Pass `{roles_root}/{role_id}` as an absolute directory |
+| `ROLE_NOT_FOUND`, etc. | Dir exists but pack invalid | Missing `manifest` / `settings` or bad structure | Run full checks in the pack editor; same `code` as Tauri `load_role` |
+| `LLM_ERROR`, `DB_ERROR`, `TXN_*`, … | Chat engine internal failure | Model, DB, transactions | Check logs `oclive_chat` / `oclive_plugin`; same catalog as desktop |
+| `LOAD_ROLE_TASK_PANIC` | Load task panicked | Rare | File an issue with logs |
 
 ### 1.5) First install: Ollama and role paths (subset)
 
 | Symptom | Common cause | Next step |
 |---------|--------------|-----------|
 | Chat fails; logs/UI mention **Ollama** unreachable | Daemon not installed/running, wrong port, model not pulled | Install/start [Ollama](https://ollama.com); run `ollama list` / `ollama pull <model>`; verify model names in pack or env |
-| **`invalid_role_path` / `load_role_failed`** | **`OCLIVE_ROLES_DIR`** not the **parent** of role folders, or missing `manifest.json` under the role dir | Point the var at the **roles root**; use [oclive-launcher](https://github.com/linkaiheng2233-cyber/oclive-launcher) or [CREATOR_WORKFLOW.md](CREATOR_WORKFLOW.md) |
+| **`INVALID_ROLE_PATH` / `ROLE_NOT_FOUND`, etc.** | **`OCLIVE_ROLES_DIR`** not the **parent** of role folders, or missing `manifest.json` under the role dir | Point the var at the **roles root**; use [oclive-launcher](https://github.com/linkaiheng2233-cyber/oclive-launcher) or [CREATOR_WORKFLOW.md](CREATOR_WORKFLOW.md) |
 | **Directory not writable** (OS or Rust I/O errors) | AV blocking, permissions, read-only media | Use a writable path; avoid read-only shares for `app.db` (see [CONFIGURATION_FILES.md](../guides/CONFIGURATION_FILES.md)) |
 | **Settings → General → Environment check** | Quick confirmation of Ollama, roles root, app data dir | **Ctrl+Shift+S** → General → **Run check** (Tauri `run_environment_diagnostics`) |
 

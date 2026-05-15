@@ -28,8 +28,8 @@
 | ID | 断言要点 |
 |----|-----------|
 | S0 | `GET /health` → 200，body `ok` |
-| S1 | `POST /chat` 空消息 → 400，`error.code=empty_message` |
-| S2 | 非法 `role_path` → 400，`invalid_role_path` 或 `load_role_failed` |
+| S1 | `POST /chat` 空消息 → 400，`error.code=EMPTY_MESSAGE` |
+| S2 | 非法 `role_path` → 400，`INVALID_ROLE_PATH` 或内核加载码（如 `ROLE_NOT_FOUND`） |
 | S3 | `role_path=""` → 400，带错误体 |
 | S4 | 合法聊天 → 200，顶层 `reply` 非空 |
 | S5 | 成功响应含 `personality_source`（`vector` \| `profile`） |

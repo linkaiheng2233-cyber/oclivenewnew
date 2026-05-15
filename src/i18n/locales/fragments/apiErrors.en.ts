@@ -1,5 +1,8 @@
-/** Tauri `[CODE]` → en-US copy. */
+/** Kernel `KernelErrorBody.code` → en-US copy. */
 export default {
+  EMPTY_MESSAGE: "Message must not be empty or whitespace-only. Type at least one visible character.",
+  INVALID_ROLE_PATH: "role_path is not a valid directory. Pass an absolute path to a folder that contains manifest.json.",
+  LOAD_ROLE_TASK_PANIC: "The load-role task panicked. Check logs and retry; file an issue with repro if it persists.",
   TXN_BEGIN_FAILED: "Transaction failed to start. Try again.",
   TXN_RUNTIME_ENSURE_FAILED: "Role runtime state failed to initialize.",
   TXN_PERSONALITY_INSERT_FAILED: "Failed to save personality data.",

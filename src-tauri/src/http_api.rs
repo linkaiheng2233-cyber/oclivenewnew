@@ -4,6 +4,9 @@
 //!
 //! `POST /chat` 成功响应在扁平化的 `SendMessageResponse` 字段之外另含 **`personality_source`**
 //!（与包内 `settings.json` → `evolution.personality_source` 一致：`vector` | `profile`），便于试聊工具区分人格模式。
+//!
+//! **错误体**：`{ "error": KernelErrorBody }` 与 Tauri `invoke` 失败字符串 **同源**（见 `oclive_kernel_runtime::KernelErrorBody`），
+//! `code` 与 [`AppError::code`] 一致（`SCREAMING_SNAKE_CASE`）；HTTP 专有错误使用同形 `code`（如 `EMPTY_MESSAGE`）。
 
 use crate::domain::chat_engine::process_message;
 use crate::error::AppError;
@@ -16,6 +19,7 @@ use axum::http::Method;
 use axum::routing::{get, post};
 use axum::Json;
 use axum::Router;
+use oclive_kernel_runtime::KernelErrorBody;
 use serde::{Deserialize, Serialize};
 use std::path::PathBuf;
 use std::sync::Arc;
@@ -53,36 +57,24 @@ pub struct ChatApiResponse {
 }
 
 #[derive(Debug, Serialize)]
-pub struct ApiErrorDetail {
-    pub code: &'static str,
-    pub message: String,
-    #[serde(skip_serializing_if = "Option::is_none")]
-    pub hint: Option<String>,
-}
-
-#[derive(Debug, Serialize)]
 pub struct ApiErrorResponse {
-    pub error: ApiErrorDetail,
+    pub error: KernelErrorBody,
 }
 
 type ApiError = (axum::http::StatusCode, Json<ApiErrorResponse>);
 
-fn api_error(
-    status: axum::http::StatusCode,
-    code: &'static str,
-    message: impl Into<String>,
-    hint: Option<String>,
-) -> ApiError {
-    (
-        status,
-        Json(ApiErrorResponse {
-            error: ApiErrorDetail {
-                code,
-                message: message.into(),
-                hint,
-            },
-        }),
-    )
+#[must_use]
+fn api_error(status: axum::http::StatusCode, error: KernelErrorBody) -> ApiError {
+    (status, Json(ApiErrorResponse { error }))
+}
+
+#[must_use]
+fn kernel_http_error(code: &str, message: impl Into<String>, hint: Option<String>) -> KernelErrorBody {
+    KernelErrorBody {
+        code: code.to_string(),
+        message: message.into(),
+        hint,
+    }
 }
 
 async fn health() -> &'static str {
@@ -98,9 +90,11 @@ async fn chat(
     if user_message.is_empty() {
         return Err(api_error(
             axum::http::StatusCode::BAD_REQUEST,
-            "empty_message",
-            "message 不能为空",
-            Some("请至少输入 1 个可见字符".to_string()),
+            kernel_http_error(
+                "EMPTY_MESSAGE",
+                "message must not be empty or whitespace-only",
+                Some("请至少输入 1 个可见字符".into()),
+            ),
         ));
     }
     let path = PathBuf::from(body.role_path.trim());
@@ -117,9 +111,11 @@ async fn chat(
     .map_err(|e| {
         api_error(
             axum::http::StatusCode::INTERNAL_SERVER_ERROR,
-            "load_role_task_panic",
-            format!("加载角色任务异常: {}", e),
-            None,
+            kernel_http_error(
+                "LOAD_ROLE_TASK_PANIC",
+                format!("load_role task panicked: {e}"),
+                None,
+            ),
         )
     })?;
 
@@ -127,18 +123,17 @@ async fn chat(
         Err(ChatRoleLoadError::NotDirectory(display)) => {
             return Err(api_error(
                 axum::http::StatusCode::BAD_REQUEST,
-                "invalid_role_path",
-                format!("role_path 不是目录：{}", display),
-                Some("请传入包含 manifest.json 的角色目录绝对路径".to_string()),
+                kernel_http_error(
+                    "INVALID_ROLE_PATH",
+                    format!("role_path is not a directory: {display}"),
+                    Some("请传入包含 manifest.json 的角色目录绝对路径".into()),
+                ),
             ));
         }
         Err(ChatRoleLoadError::Load(e)) => {
-            return Err(api_error(
-                axum::http::StatusCode::BAD_REQUEST,
-                "load_role_failed",
-                e.to_frontend_error(),
-                Some("请检查角色目录结构与 manifest/settings 是否完整".to_string()),
-            ));
+            let mut k = e.kernel_error_body();
+            k.hint = Some("请检查角色目录结构与 manifest/settings 是否完整".into());
+            return Err(api_error(axum::http::StatusCode::BAD_REQUEST, k));
         }
         Ok(r) => r,
     };
@@ -161,12 +156,9 @@ async fn chat(
     };
 
     let res: SendMessageResponse = process_message(&state, &req).await.map_err(|e: AppError| {
-        api_error(
-            axum::http::StatusCode::INTERNAL_SERVER_ERROR,
-            "chat_engine_failed",
-            e.to_frontend_error(),
-            Some("请查看 oclive 日志（target: oclive_chat / oclive_plugin）".to_string()),
-        )
+        let mut k = e.kernel_error_body();
+        k.hint = Some("请查看 oclive 日志（target: oclive_chat / oclive_plugin）".into());
+        api_error(axum::http::StatusCode::INTERNAL_SERVER_ERROR, k)
     })?;
 
     Ok(Json(ChatApiResponse {
@@ -251,16 +243,18 @@ mod tests {
     }
 
     #[test]
-    fn api_error_serializes_code_message_hint() {
+    fn api_error_serializes_kernel_error_body() {
         let (_, Json(body)) = api_error(
             axum::http::StatusCode::BAD_REQUEST,
-            "invalid_role_path",
-            "role_path 不是目录",
-            Some("请传入绝对路径".to_string()),
+            kernel_http_error(
+                "INVALID_ROLE_PATH",
+                "role_path is not a directory: /x",
+                Some("请传入绝对路径".into()),
+            ),
         );
         let v = serde_json::to_value(body).expect("serialize");
-        assert_eq!(v["error"]["code"], "invalid_role_path");
-        assert_eq!(v["error"]["message"], "role_path 不是目录");
+        assert_eq!(v["error"]["code"], "INVALID_ROLE_PATH");
+        assert_eq!(v["error"]["message"], "role_path is not a directory: /x");
         assert_eq!(v["error"]["hint"], "请传入绝对路径");
     }
 }

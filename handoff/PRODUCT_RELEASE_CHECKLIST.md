@@ -48,7 +48,7 @@
 
 ### A2 首装与环境
 
-- [x] **A2.1** 首装与 invoke 可见路径：`[CODE]` + `apiErrors` 覆盖（含事务扩展码、`ROLE_RUNTIME_NOT_READY`、`STARTUP_HEALTH_FAILED`、`PLUGIN_BACKENDS_DIRECTORY_SLOT`、Remote LLM 文案）；HTTP `--api` 仍用 snake_case，见同文档 §1 表
+- [x] **A2.1** 首装与 invoke 可见路径：`[CODE]` + `apiErrors` 覆盖（含事务扩展码、`ROLE_RUNTIME_NOT_READY`、`STARTUP_HEALTH_FAILED`、`PLUGIN_BACKENDS_DIRECTORY_SLOT`、Remote LLM 文案）；**补丁**：`invoke` 失败载荷已统一为 **内核 `KernelErrorBody` JSON 单行**（与 HTTP `error` 同形），见 [`A2_KERNEL_JSON_ERROR_PATCH.md`](./A2_KERNEL_JSON_ERROR_PATCH.md)
 - [x] **A2.2** 可选环境自检（设置 → 常规 →「环境自检」+ `run_environment_diagnostics`：Ollama `/api/tags`、roles 根可读、app_data 写探针）
 - [x] **A2.3** 离线/弱网（插件索引失败 → 缓存 + 工作台 i18n + **顶栏下全局提示条**；[ERROR_CODES §1.6](../creator-docs/getting-started/ERROR_CODES.md)；全产品 Remote 统一状态机仍可迭代）
 

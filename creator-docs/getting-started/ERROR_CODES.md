@@ -2,15 +2,21 @@
 
 面向用户与开发者的统一错误语义。目标：**先自助定位，再高质量提 issue**。
 
-## 1) 运行时 HTTP API（`/chat`）错误码
+## 1) 运行时 HTTP API（`/chat`）错误体（与内核 / Tauri 同源）
+
+`POST /chat` 失败时返回 JSON，**`error` 与 `oclive_kernel_runtime::KernelErrorBody` 同形**（与 Tauri `invoke` 失败载荷为**同一 JSON 单行**时可互解析）：
+
+- `code`：**`SCREAMING_SNAKE_CASE`** 机器码，与内核 [`AppError::code`](../../crates/oclive_kernel_runtime/src/error.rs) 一致。
+- `message`：内核 `Display`（默认英文技术句）；本地化由发行版用 `code` 映射。
+- `hint`：可选「下一步」；HTTP 可为试聊附加中文提示。
 
 返回体（示例）：
 
 ```json
 {
   "error": {
-    "code": "invalid_role_path",
-    "message": "role_path 不是目录：D:\\roles\\demo",
+    "code": "INVALID_ROLE_PATH",
+    "message": "role_path is not a directory: D:\\roles\\demo",
     "hint": "请传入包含 manifest.json 的角色目录绝对路径"
   }
 }
@@ -18,17 +24,18 @@
 
 | code | 含义 | 常见原因 | 建议 |
 |------|------|----------|------|
-| `empty_message` | 消息为空 | 输入只有空格/换行 | 输入至少 1 个可见字符 |
-| `invalid_role_path` | 角色路径不是目录 | 路径拼错、指到了文件 | 传入 `{roles_root}/{role_id}` 目录绝对路径 |
-| `load_role_failed` | 角色目录加载失败 | `manifest/settings` 缺失或结构错误 | 用编写器“运行全部检查”，核对目录树 |
-| `chat_engine_failed` | 对话引擎内部失败 | 侧车超时、模型不可用、运行时状态异常 | 查看运行时日志 `oclive_chat` / `oclive_plugin` |
+| `EMPTY_MESSAGE` | 消息为空 | 输入只有空格/换行 | 输入至少 1 个可见字符 |
+| `INVALID_ROLE_PATH` | 角色路径不是目录 | 路径拼错、指到了文件 | 传入 `{roles_root}/{role_id}` 目录绝对路径 |
+| `ROLE_NOT_FOUND` 等 | 目录存在但包无效 | `manifest/settings` 缺失或结构错误 | 用编写器“运行全部检查”；`code` 与 Tauri `load_role` 一致 |
+| `LLM_ERROR`、`DB_ERROR`、`TXN_*` 等 | 对话引擎内失败 | 模型、DB、事务等 | 查看 `oclive_chat` / `oclive_plugin`；与桌面同一码表 |
+| `LOAD_ROLE_TASK_PANIC` | 加载任务 panic | 极少见 | 带日志提 issue |
 
 ### 1.5) 首装常见：Ollama 与角色目录（A2.1 子集）
 
 | 现象 | 常见原因 | 建议下一步 |
 |------|----------|------------|
 | 对话失败、日志或 UI 提示无法连接 **Ollama** | 本机未安装、服务未启动、端口非默认、模型未 `pull` | 安装并启动 [Ollama](https://ollama.com)；终端执行 `ollama list` / `ollama pull <模型>`；核对角色包或环境变量中的模型名 |
-| **`invalid_role_path` / `load_role_failed`** | **`OCLIVE_ROLES_DIR`** 未指向含子目录的 roles 根，或子目录缺 `manifest.json` | 将变量设为 **各角色文件夹的父目录**；用 [启动器](https://github.com/linkaiheng2233-cyber/oclive-launcher) 一键配置或对照 [CREATOR_WORKFLOW.md](CREATOR_WORKFLOW.md) |
+| **`INVALID_ROLE_PATH` / `ROLE_NOT_FOUND` 等** | **`OCLIVE_ROLES_DIR`** 未指向含子目录的 roles 根，或子目录缺 `manifest.json` | 将变量设为 **各角色文件夹的父目录**；用 [启动器](https://github.com/linkaiheng2233-cyber/oclive-launcher) 一键配置或对照 [CREATOR_WORKFLOW.md](CREATOR_WORKFLOW.md) |
 | **目录不可写 / 权限**（系统弹窗或 Rust I/O 错误） | 杀毒拦截、用户目录权限、指向了只读介质 | 换可写路径或排除误拦；勿在只读共享盘上放 `app.db`（路径见 [CONFIGURATION_FILES.md](../guides/CONFIGURATION_FILES.md)） |
 | **设置页「环境自检」** | 需快速确认本机 Ollama / 角色根 / 数据目录 | 应用内 **Ctrl+Shift+S** 打开设置 → **常规** → **环境自检** → **运行检测**（对应 Tauri `run_environment_diagnostics`） |
 

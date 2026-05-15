@@ -8,8 +8,30 @@ function translateApiError(code: string): string | undefined {
   return undefined;
 }
 
-function parseBackendError(err: unknown): { code?: string; raw: string } {
+/** 与 `oclive_kernel_runtime::KernelErrorBody` / HTTP `error` 对象同形（内核权威 JSON）。 */
+export interface KernelErrorPayload {
+  code: string;
+  message: string;
+  hint?: string | null;
+}
+
+function parseBackendError(err: unknown): {
+  code?: string;
+  raw: string;
+  kernel?: KernelErrorPayload;
+} {
   const raw = String(err ?? "");
+  const trimmed = raw.trim();
+  if (trimmed.startsWith("{")) {
+    try {
+      const j = JSON.parse(trimmed) as Partial<KernelErrorPayload>;
+      if (j && typeof j.code === "string" && typeof j.message === "string") {
+        return { code: j.code, raw, kernel: j as KernelErrorPayload };
+      }
+    } catch {
+      /* fallthrough: legacy `[CODE]` or plain text */
+    }
+  }
   const match = raw.match(/\[([A-Z0-9_]+)\]/);
   return { code: match?.[1], raw };
 }
@@ -18,6 +40,8 @@ export interface FriendlyError {
   code?: string;
   message: string;
   raw: string;
+  /** 当 `invoke` 失败载荷为内核 JSON 时填充，便于 UI/遥测与 HTTP 对齐。 */
+  kernel?: KernelErrorPayload;
 }
 
 type ErrorReporter = (err: FriendlyError) => void;
@@ -28,7 +52,7 @@ export function setErrorReporter(reporter: ErrorReporter | null): void {
   errorReporter = reporter;
 }
 
-/** 从 `invoke` 抛出的字符串中解析 `[CODE]`（与 Rust `ApiError` 等一致）。 */
+/** 从 `invoke` 抛出的字符串中解析机器码：优先内核 JSON `code`，否则 legacy `[CODE]`。 */
 export function parseApiErrorCode(err: unknown): string | undefined {
   return parseBackendError(err).code;
 }
@@ -47,31 +71,54 @@ export function isInvalidParameterError(err: unknown): boolean {
 }
 
 export function toFriendlyErrorMessage(err: unknown): string {
-  const { code, raw } = parseBackendError(err);
+  const { code, raw, kernel } = parseBackendError(err);
   if (!code) return raw;
+  const text = kernel?.message ?? raw;
   if (code === "STARTUP_HEALTH_FAILED") {
-    const bracket = raw.indexOf("]");
-    let detail = bracket !== -1 ? raw.slice(bracket + 1).trim() : raw.trim();
-    detail = detail.replace(/^Startup health failed:\s*/i, "").trim();
+    let detail = (kernel?.message ?? "").replace(/^Startup health failed:\s*/i, "").trim();
+    if (!detail) {
+      const bracket = raw.indexOf("]");
+      detail =
+        bracket !== -1
+          ? raw.slice(bracket + 1).trim()
+          : raw.trim();
+      detail = detail.replace(/^Startup health failed:\s*/i, "").trim();
+    }
     if (i18n.global.te("apiErrors.STARTUP_HEALTH_FAILED")) {
       return String(i18n.global.t("apiErrors.STARTUP_HEALTH_FAILED", { detail }));
     }
   }
   if (code === "INVALID_PARAMETER") {
-    if (raw.includes("plugin_backends:")) {
+    if (text.includes("plugin_backends:")) {
       const mapped = translateApiError("PLUGIN_BACKENDS_DIRECTORY_SLOT");
       if (mapped) return mapped;
     }
-    const bracket = raw.indexOf("]");
-    if (bracket !== -1) {
-      let detail = raw.slice(bracket + 1).trim();
-      detail = detail.replace(/^Invalid parameter:\s*/i, "").trim();
-      if (detail && i18n.global.te("apiErrors.INVALID_PARAMETER_DETAIL")) {
-        return String(i18n.global.t("apiErrors.INVALID_PARAMETER_DETAIL", { detail }));
+    let detail = "";
+    if (kernel?.message) {
+      const m = kernel.message.match(/^Invalid parameter:\s*(.*)/i);
+      if (m) detail = m[1]?.trim() ?? "";
+    }
+    if (!detail) {
+      const bracket = raw.indexOf("]");
+      if (bracket !== -1) {
+        detail = raw.slice(bracket + 1).trim();
+        detail = detail.replace(/^Invalid parameter:\s*/i, "").trim();
       }
+    }
+    if (detail && i18n.global.te("apiErrors.INVALID_PARAMETER_DETAIL")) {
+      return String(i18n.global.t("apiErrors.INVALID_PARAMETER_DETAIL", { detail }));
     }
   }
   if (code === "ROLE_NOT_FOUND") {
+    if (kernel?.message) {
+      const km = kernel.message.trim();
+      if (km.startsWith("Role not found:")) {
+        const suffix = km.slice("Role not found:".length).trim();
+        if (i18n.global.te("apiErrors.ROLE_NOT_FOUND_DETAIL")) {
+          return String(i18n.global.t("apiErrors.ROLE_NOT_FOUND_DETAIL", { detail: suffix }));
+        }
+      }
+    }
     const bracket = raw.indexOf("]");
     if (bracket !== -1) {
       const detail = raw.slice(bracket + 1).trim();
@@ -85,7 +132,7 @@ export function toFriendlyErrorMessage(err: unknown): string {
       }
     }
   }
-  if (code === "IO_ERROR" && raw.includes("host json")) {
+  if (code === "IO_ERROR" && (text.includes("host json") || raw.includes("host json"))) {
     const mapped = translateApiError("IO_ERROR_HOST_JSON");
     if (mapped) return mapped;
   }
@@ -93,10 +140,11 @@ export function toFriendlyErrorMessage(err: unknown): string {
 }
 
 export function toFriendlyError(err: unknown): FriendlyError {
-  const { code, raw } = parseBackendError(err);
+  const { code, raw, kernel } = parseBackendError(err);
   return {
     code,
     raw,
+    kernel,
     message: toFriendlyErrorMessage(err),
   };
 }
