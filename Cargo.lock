@@ -2734,6 +2734,27 @@ dependencies = [
 ]
 
 [[package]]
+name = "oclive_kernel_runtime"
+version = "0.2.0"
+dependencies = [
+ "async-trait",
+ "chrono",
+ "oclive_validation",
+ "serde",
+ "serde_json",
+ "thiserror",
+]
+
+[[package]]
+name = "oclive_kernel_server"
+version = "0.2.0"
+dependencies = [
+ "oclive_kernel_runtime",
+ "oclivenewnew-tauri",
+ "tracing",
+]
+
+[[package]]
 name = "oclive_validation"
 version = "0.1.0"
 dependencies = [
@@ -2753,6 +2774,7 @@ dependencies = [
  "axum",
  "chrono",
  "notify",
+ "oclive_kernel_runtime",
  "oclive_validation",
  "once_cell",
  "parking_lot",

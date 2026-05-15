@@ -115,13 +115,14 @@ async function scenarioHandlers(base, rolePath) {
       if (body?.session_id !== sid) throw new Error(`S6 session echo ${JSON.stringify(body?.session_id)}`)
     },
     S7: async () => {
+      const sceneId = 'home'
       const { res, body } = await fetchJson(`${base}/chat`, {
         method: 'POST',
         headers: { 'content-type': 'application/json' },
-        body: JSON.stringify({ role_path: mumu, message: 'scene explicit', scene_id: 'default' }),
+        body: JSON.stringify({ role_path: mumu, message: 'scene explicit', scene_id: sceneId }),
       })
       if (!res.ok) throw new Error(`S7 status ${res.status}`)
-      if (body?.scene_id !== 'default') throw new Error(`S7 scene_id ${body?.scene_id}`)
+      if (body?.scene_id !== sceneId) throw new Error(`S7 scene_id ${body?.scene_id}`)
     },
     S8: async () => {
       const { res, body } = await fetchJson(`${base}/chat`, {

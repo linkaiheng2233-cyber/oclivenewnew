@@ -1,0 +1,21 @@
+[package]
+name = "oclive_kernel_server"
+version = "0.2.0"
+edition = "2021"
+license = "AGPL-3.0"
+description = "Headless oclive kernel HTTP server (no Tauri window)"
+repository = "https://github.com/linkaiheng2233-cyber/oclivenewnew"
+keywords = ["oclive", "kernel", "headless", "http"]
+categories = ["command-line-utilities"]
+
+[lints]
+workspace = true
+
+[[bin]]
+name = "oclive-kernel-server"
+path = "src/main.rs"
+
+[dependencies]
+oclivenewnew-tauri = { path = "../../src-tauri" }
+oclive_kernel_runtime = { path = "../oclive_kernel_runtime" }
+tracing = "0.1"

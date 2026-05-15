@@ -1,35 +1,3 @@
-pub mod author_pack;
-pub mod chat;
-pub mod dto;
-pub mod emotion;
-pub mod error;
-pub mod event;
-pub mod favorability;
-pub mod interaction_mode;
-pub mod knowledge;
-pub mod memory;
-pub mod personality;
-pub mod plugin_backends;
-pub mod role;
-pub mod role_manifest_disk;
-pub mod role_settings_disk;
-pub mod scene_disk;
-pub mod ui_config;
+//! DTOs and role-pack models (see `oclive_kernel_runtime::models`).
 
-pub use author_pack::{AuthorPackFile, AuthorRecommendedPlugin};
-pub use chat::*;
-pub use dto::*;
-pub use emotion::*;
-pub use error::*;
-pub use event::*;
-pub use favorability::*;
-pub use interaction_mode::InteractionMode;
-pub use knowledge::{KnowledgeEventAugment, KnowledgeIndex, KnowledgePackConfigDisk};
-pub use memory::*;
-pub use personality::*;
-pub use plugin_backends::*;
-pub use role::*;
-pub use role_manifest_disk::DiskRoleManifest;
-pub use role_settings_disk::{disk_role_settings_from_role, DiskRoleSettings};
-pub use scene_disk::{DiskSceneConfig, DiskSceneTimeWindow};
-pub use ui_config::{LayoutConfig, SlotConfig, ThemeConfig, UiConfig, UiSlots};
+pub use oclive_kernel_runtime::models::*;

@@ -5,10 +5,7 @@
 fn main() {
     oclivenewnew_tauri::init_tracing();
     let args: Vec<String> = std::env::args().collect();
-    let mut port: u16 = std::env::var("OCLIVE_API_PORT")
-        .ok()
-        .and_then(|s| s.parse().ok())
-        .unwrap_or(8420);
+    let mut cli_port: Option<u16> = None;
     let mut api = false;
     let mut i = 1usize;
     while i < args.len() {
@@ -16,9 +13,7 @@ fn main() {
             "--api" => api = true,
             "--port" => {
                 if i + 1 < args.len() {
-                    if let Ok(p) = args[i + 1].parse::<u16>() {
-                        port = p;
-                    }
+                    cli_port = args[i + 1].parse().ok();
                     i += 1;
                 }
             }
@@ -28,6 +23,7 @@ fn main() {
     }
 
     if api {
+        let port = oclive_kernel_runtime::resolve_api_port(cli_port);
         oclivenewnew_tauri::run_api_server(port);
     } else {
         oclivenewnew_tauri::run();

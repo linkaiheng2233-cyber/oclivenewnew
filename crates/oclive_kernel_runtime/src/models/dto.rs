@@ -1,13 +1,13 @@
 //! 前后端契约（Tauri invoke）
 
-use crate::models::author_pack::AuthorPackFile;
-use crate::models::plugin_backends::PluginBackends;
-use crate::models::plugin_backends::PluginBackendsOverride;
-use crate::models::plugin_backends::PluginBackendsSourceMap;
-use crate::models::role::IdentityBinding;
-use crate::models::role::LifeState;
-use crate::models::role::PersonalitySource;
-use crate::models::ui_config::UiConfig;
+use super::author_pack::AuthorPackFile;
+use super::plugin_backends::PluginBackends;
+use super::plugin_backends::PluginBackendsOverride;
+use super::plugin_backends::PluginBackendsSourceMap;
+use super::role::IdentityBinding;
+use super::role::LifeState;
+use super::role::PersonalitySource;
+use super::ui_config::UiConfig;
 use serde::{Deserialize, Serialize};
 
 pub const API_VERSION: u32 = 1;

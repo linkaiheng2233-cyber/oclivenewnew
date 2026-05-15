@@ -7,7 +7,7 @@ use anyhow::{Context, Result};
 use handlebars::Handlebars;
 use serde_json::{json, Map, Value};
 use std::fs;
-use std::path::Path;
+use std::path::{Path, PathBuf};
 
 /// 用于 `Cargo.toml` package 名、二进制名与终端提示。
 pub fn project_slug(cfg: &ProjectConfig) -> String {
@@ -38,11 +38,11 @@ fn slugify(raw: &str) -> String {
     }
 }
 
-fn template_context(cfg: &ProjectConfig) -> serde_json::Value {
+fn template_context(cfg: &ProjectConfig, out: &Path) -> serde_json::Value {
     let safe_package_name = slugify(&cfg.project_name);
     let rust_lib_name = safe_package_name.replace('-', "_");
     let monolith_enabled = cfg.monolith_enabled && cfg.project_type == ProjectType::KernelServer;
-    serde_json::json!({
+    let mut ctx = serde_json::json!({
         "project_name": cfg.project_name,
         "safe_package_name": safe_package_name,
         "rust_lib_name": rust_lib_name,
@@ -53,7 +53,52 @@ fn template_context(cfg: &ProjectConfig) -> serde_json::Value {
         "feature_complex_emotion": cfg.features.use_complex_emotion,
         "with_example_role": cfg.with_example_role,
         "monolith_enabled": monolith_enabled,
-    })
+        "kernel_linked": false,
+    });
+    if let Some(ref root) = cfg.kernel_source {
+        let path_tauri = relativize_path(out, &root.join("src-tauri"));
+        let path_runtime = relativize_path(out, &root.join("crates/oclive_kernel_runtime"));
+        if let Some(obj) = ctx.as_object_mut() {
+            obj.insert("kernel_linked".into(), json!(true));
+            obj.insert("path_tauri".into(), json!(path_tauri));
+            obj.insert("path_runtime".into(), json!(path_runtime));
+        }
+    }
+    ctx
+}
+
+/// `--kernel-source` 须为 oclivenewnew 仓库根。
+pub fn validate_kernel_source(root: &Path) -> Result<()> {
+    let tauri = root.join("src-tauri").join("Cargo.toml");
+    let runtime = root
+        .join("crates")
+        .join("oclive_kernel_runtime")
+        .join("Cargo.toml");
+    if !tauri.is_file() || !runtime.is_file() {
+        anyhow::bail!(
+            "--kernel-source 须指向 oclivenewnew 仓库根（需含 src-tauri/ 与 crates/oclive_kernel_runtime/）"
+        );
+    }
+    Ok(())
+}
+
+fn relativize_path(from: &Path, to: &Path) -> String {
+    let from = from.canonicalize().unwrap_or_else(|_| from.to_path_buf());
+    let to = to.canonicalize().unwrap_or_else(|_| to.to_path_buf());
+    let from_c: Vec<_> = from.components().collect();
+    let to_c: Vec<_> = to.components().collect();
+    let mut shared = 0usize;
+    while shared < from_c.len() && shared < to_c.len() && from_c[shared] == to_c[shared] {
+        shared += 1;
+    }
+    let mut rel = PathBuf::new();
+    for _ in shared..from_c.len() {
+        rel.push("..");
+    }
+    for c in &to_c[shared..] {
+        rel.push(c.as_os_str());
+    }
+    rel.to_string_lossy().replace('\\', "/")
 }
 
 const COMMENT_PLUGIN_BACKENDS: &str = "七条编排槽位（与 PLUGIN_V1 / plugin_host 对齐）。主应用当前反序列化 6 个标准槽；complex_emotion 为扩展键，宿主会忽略未知字段。可选值以各槽枚举为准（见 SETTINGS_REFERENCE.md）。";
@@ -225,7 +270,7 @@ pub fn write_project(cfg: &ProjectConfig, out: &Path) -> Result<()> {
     fs::create_dir_all(out.join("src")).context("create src")?;
 
     let reg = Handlebars::new();
-    let ctx = template_context(cfg);
+    let ctx = template_context(cfg, out);
 
     let cargo_tmpl = match cfg.project_type {
         ProjectType::KernelServer => {
@@ -406,5 +451,23 @@ mod tests {
             pb.get("complex_emotion").unwrap().as_str().unwrap(),
             "builtin"
         );
+    }
+
+    #[test]
+    fn kernel_linked_cargo_contains_path_deps() {
+        use crate::init::{preset_config, ProjectType};
+        use std::path::PathBuf;
+        use tempfile::tempdir;
+
+        let mut cfg = preset_config("linked-kernel", "minimal");
+        cfg.project_type = ProjectType::KernelServer;
+        cfg.kernel_source = Some(PathBuf::from(env!("CARGO_MANIFEST_DIR")).join("../.."));
+        let out = tempdir().unwrap();
+        write_project(&cfg, out.path()).unwrap();
+        let cargo = std::fs::read_to_string(out.path().join("Cargo.toml")).unwrap();
+        assert!(cargo.contains("oclivenewnew-tauri"));
+        assert!(cargo.contains("oclive_kernel_runtime"));
+        let main_rs = std::fs::read_to_string(out.path().join("src/main.rs")).unwrap();
+        assert!(main_rs.contains("run_api_server"));
     }
 }

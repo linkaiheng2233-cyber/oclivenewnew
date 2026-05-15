@@ -173,5 +173,6 @@ pub fn run_interactive() -> Result<ProjectConfig> {
         with_example_role,
         monolith_enabled,
         skip_role_pack: false,
+        kernel_source: None,
     })
 }

@@ -85,6 +85,10 @@ pub struct InitArgs {
     /// 非交互：不在生成项目中写入 `roles/` 示例角色包
     #[arg(long)]
     pub skip_role_pack: bool,
+
+    /// 指向 oclivenewnew 仓库根：生成项目写入 `oclivenewnew-tauri` / `oclive_kernel_runtime` path 依赖
+    #[arg(long)]
+    pub kernel_source: Option<PathBuf>,
 }
 
 #[derive(clap::ValueEnum, Clone, Debug, Copy, PartialEq, Eq, Serialize, Deserialize)]
@@ -166,6 +170,8 @@ pub struct ProjectConfig {
     pub monolith_enabled: bool,
     /// 为 true 时不生成 `roles/` 目录（空白内核模板）。
     pub skip_role_pack: bool,
+    /// 指向 oclivenewnew 仓库根；生成项目写入 path 依赖并替换占位 `main`/`lib`。
+    pub kernel_source: Option<std::path::PathBuf>,
 }
 
 impl ProjectConfig {
@@ -199,6 +205,9 @@ impl ProjectConfig {
         );
         if self.monolith_enabled {
             println!("开发者编译: Monolith（焊接计划见 monolith.toml；`cargo run -p oclive-cli -- build` 再生成）");
+        }
+        if let Some(ks) = &self.kernel_source {
+            println!("内核源码: {}（已接 runtime / HTTP 入口）", ks.display());
         }
         println!("——————————————");
     }
@@ -275,6 +284,7 @@ pub fn preset_config(name: &str, preset: &str) -> ProjectConfig {
         with_example_role,
         monolith_enabled: false,
         skip_role_pack: false,
+        kernel_source: None,
     }
 }
 
@@ -343,6 +353,14 @@ pub fn run(args: InitArgs) -> Result<()> {
     if args.non_interactive && args.skip_role_pack {
         cfg.skip_role_pack = true;
         cfg.with_example_role = false;
+    }
+
+    if let Some(ref ks) = args.kernel_source {
+        let canonical = ks
+            .canonicalize()
+            .with_context(|| format!("kernel-source: {}", ks.display()))?;
+        generator::validate_kernel_source(&canonical)?;
+        cfg.kernel_source = Some(canonical);
     }
 
     if !args.non_interactive {

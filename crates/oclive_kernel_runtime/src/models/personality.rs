@@ -75,7 +75,7 @@ impl PersonalityVector {
     pub fn effective_from_core_delta(
         core: &PersonalityDefaults,
         delta: &PersonalityVector,
-        bounds: &crate::models::EvolutionBounds,
+        bounds: &super::role::EvolutionBounds,
     ) -> Self {
         let mut e = PersonalityVector::from(core);
         e.stubbornness += delta.stubbornness;
@@ -115,7 +115,7 @@ impl PersonalityVector {
         }
     }
 
-    pub fn clamp(&mut self, bounds: &crate::models::EvolutionBounds) {
+    pub fn clamp(&mut self, bounds: &super::role::EvolutionBounds) {
         self.stubbornness = self
             .stubbornness
             .clamp(bounds.stubbornness.0, bounds.stubbornness.1);
@@ -141,7 +141,7 @@ impl PersonalityVector {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::models::EvolutionBounds;
+    use crate::models::role::EvolutionBounds;
 
     #[test]
     fn test_clamp() {

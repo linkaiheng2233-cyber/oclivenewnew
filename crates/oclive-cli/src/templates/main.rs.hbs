@@ -1,10 +1,50 @@
-//! `{{ safe_package_name }}` — oclive-cli 生成的占位内核（无头可执行）。
+//! `{{ safe_package_name }}` — oclive-cli 生成的内核入口。
+{{#if kernel_linked}}
 //!
-//! 运行方式：在本目录执行 `cargo run`。
+//! 已接入 **oclivenewnew**（`--kernel-source`）：与 `oclive-kernel-server` 相同的无头 HTTP API。
+{{else}}
+//!
+//! 占位实现：在本目录执行 `cargo run`。接入真实内核请重新 `oclive init --kernel-source <oclivenewnew根>`。
+{{/if}}
 {{#if monolith_enabled}}
 //! 高耦合构建使用独立入口 **`src/main_monolith.rs`**（`{{ safe_package_name }}-monolith` 二进制），见 `Cargo.toml` 中 `[[bin]]`。
 {{/if}}
 
+{{#if kernel_linked}}
+fn main() {
+    oclivenewnew_tauri::init_tracing();
+    let args: Vec<String> = std::env::args().collect();
+    let mut cli_port: Option<u16> = None;
+    let mut i = 1usize;
+    while i < args.len() {
+        match args[i].as_str() {
+            "--port" => {
+                if i + 1 < args.len() {
+                    cli_port = args[i + 1].parse().ok();
+                    i += 1;
+                }
+            }
+            "-h" | "--help" => {
+                eprintln!(
+                    "Usage: {} [--api] [--port PORT]\nEnv: OCLIVE_API_PORT, OCLIVE_HTTP_API_MOCK_LLM, OCLIVE_ROLES_DIR, RUST_LOG",
+                    args[0]
+                );
+                return;
+            }
+            _ => {}
+        }
+        i += 1;
+    }
+    let port = oclive_kernel_runtime::resolve_api_port(cli_port);
+    tracing::info!(
+        target: "oclive_kernel_server",
+        version = oclive_kernel_runtime::RUNTIME_API_VERSION,
+        port,
+        "starting headless HTTP API"
+    );
+    oclivenewnew_tauri::run_api_server(port);
+}
+{{else}}
 fn kernel_bench_iterations() -> u32 {
     std::env::var("OCLIVE_KERNEL_BENCH_ITERS")
         .ok()
@@ -43,3 +83,4 @@ fn main() {
         run_stub_kernel();
     }
 }
+{{/if}}

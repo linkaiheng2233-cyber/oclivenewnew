@@ -1,0 +1,23 @@
+[package]
+name = "oclive_kernel_runtime"
+version = "0.2.0"
+edition = "2021"
+license = "AGPL-3.0"
+description = "oclive dialogue kernel contracts and shared constants (headless / embedded)"
+repository = "https://github.com/linkaiheng2233-cyber/oclivenewnew"
+keywords = ["oclive", "kernel", "runtime", "companion"]
+categories = ["development-tools"]
+
+[lints]
+workspace = true
+
+[lib]
+doctest = false
+
+[dependencies]
+oclive_validation = { path = "../oclive_validation" }
+serde = { version = "1.0", features = ["derive"] }
+serde_json = "1.0"
+thiserror = "1.0"
+chrono = { version = "0.4", features = ["serde"] }
+async-trait = "0.1"

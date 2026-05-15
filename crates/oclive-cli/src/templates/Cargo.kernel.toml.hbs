@@ -4,19 +4,29 @@ version = "0.1.0"
 edition = "2021"
 publish = false
 
-# 占位内核：可独立 cargo build。接入 oclive_kernel_runtime 时在此添加 path / git 依赖。
+{{#if kernel_linked}}
+# 已接入 oclivenewnew 工作区（`oclive init --kernel-source`）。
+{{else}}
+# 占位内核：可独立 cargo build。接入 oclivenewnew 时请使用 `oclive init --kernel-source <path>`。
+{{/if}}
 [dependencies]
+{{#if kernel_linked}}
+oclivenewnew-tauri = { path = "{{ path_tauri }}" }
+oclive_kernel_runtime = { path = "{{ path_runtime }}" }
+{{else}}
 serde = { version = "1", features = ["derive"] }
 serde_json = "1"
 tracing = "0.1"
 tracing-subscriber = { version = "0.3", default-features = false, features = ["env-filter", "fmt", "std"] }
+{{/if}}
 {{#if monolith_enabled}}
 oclive_monolith_builtin = { path = "vendor/oclive_monolith_builtin" }
 
 [features]
 default = []
 monolith = []
-
+{{/if}}
+{{#if monolith_enabled}}
 [[bin]]
 name = "{{ safe_package_name }}"
 path = "src/main.rs"
