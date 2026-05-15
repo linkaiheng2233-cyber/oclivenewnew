@@ -1,13 +1,27 @@
 <script setup lang="ts">
+import { computed, ref, toRef } from "vue";
 import { useI18n } from "vue-i18n";
+import { useModalFocusRestore } from "../composables/useModalFocusRestore";
 
-defineProps<{
+const props = defineProps<{
   open: boolean;
   percent: number;
   message: string;
+  fileIndex?: number | null;
+  fileTotal?: number | null;
 }>();
 
 const { t } = useI18n();
+
+const cardRef = ref<HTMLElement | null>(null);
+useModalFocusRestore(toRef(props, "open"), cardRef);
+
+const fileLine = computed(() => {
+  const cur = props.fileIndex;
+  const tot = props.fileTotal;
+  if (cur == null || tot == null || tot <= 0) return "";
+  return t("common.importPackFileProgress", { current: cur, total: tot });
+});
 </script>
 
 <template>
@@ -19,7 +33,7 @@ const { t } = useI18n();
       aria-modal="true"
       aria-busy="true"
     >
-      <div class="modal-card" @click.stop>
+      <div ref="cardRef" class="modal-card" tabindex="-1" @click.stop>
         <h2 class="title">{{ t("common.importPackTitle") }}</h2>
         <div class="bar-track" aria-hidden="true">
           <div
@@ -27,6 +41,7 @@ const { t } = useI18n();
             :style="{ width: `${Math.min(100, Math.max(0, percent))}%` }"
           />
         </div>
+        <p v-if="fileLine" class="msg file-line">{{ fileLine }}</p>
         <p class="msg">{{ message }}</p>
       </div>
     </div>
@@ -76,5 +91,10 @@ const { t } = useI18n();
   font-size: 13px;
   color: var(--text-secondary);
   line-height: 1.45;
+}
+.file-line {
+  margin-top: 10px;
+  font-weight: 500;
+  color: var(--text-primary);
 }
 </style>

@@ -438,6 +438,7 @@ export default {
     loading: "加载中…",
     preparing: "准备中…",
     importPackTitle: "导入角色包",
+    importPackFileProgress: "文件进度 {current} / {total}",
     chatInputLabel: "输入消息",
     chatPlaceholder: "对 {name} 说点什么...",
     send: "发送",

@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { nextTick, ref, watch } from "vue";
+import { ref } from "vue";
 import { useI18n } from "vue-i18n";
 import { listen, type UnlistenFn } from "@tauri-apps/api/event";
 import { open, save } from "@tauri-apps/api/dialog";
@@ -10,6 +10,7 @@ import {
   peekRolePack,
 } from "../utils/tauri-api";
 import ImportProgressModal from "./ImportProgressModal.vue";
+import { useModalFocusRestore } from "../composables/useModalFocusRestore";
 
 const { t } = useI18n();
 const roleStore = useRoleStore();
@@ -40,27 +41,36 @@ const pendingPeek = ref<{ id: string; name: string; version: string } | null>(
 const importProgressOpen = ref(false);
 const importPercent = ref(0);
 const importMessage = ref("");
+const importFileIndex = ref<number | null>(null);
+const importFileTotal = ref<number | null>(null);
 let unlistenProgress: UnlistenFn | null = null;
 
 const conflictPrimaryRef = ref<HTMLButtonElement | null>(null);
+const conflictCardRef = ref<HTMLElement | null>(null);
 
-watch(conflictOpen, (open) => {
-  if (open) {
-    void nextTick(() => conflictPrimaryRef.value?.focus());
-  }
+useModalFocusRestore(conflictOpen, conflictCardRef, {
+  primary: conflictPrimaryRef,
 });
 
 async function withImportProgress<T>(fn: () => Promise<T>): Promise<T> {
   importProgressOpen.value = true;
   importPercent.value = 0;
   importMessage.value = t("common.preparing");
-  unlistenProgress = await listen<{ percent: number; message: string }>(
-    "import_progress",
-    (e) => {
-      importPercent.value = e.payload.percent;
-      importMessage.value = e.payload.message;
-    },
-  );
+  importFileIndex.value = null;
+  importFileTotal.value = null;
+  unlistenProgress = await listen<{
+    percent: number;
+    message: string;
+    fileIndex?: number;
+    fileTotal?: number;
+  }>("import_progress", (e) => {
+    importPercent.value = e.payload.percent;
+    importMessage.value = e.payload.message;
+    importFileIndex.value =
+      typeof e.payload.fileIndex === "number" ? e.payload.fileIndex : null;
+    importFileTotal.value =
+      typeof e.payload.fileTotal === "number" ? e.payload.fileTotal : null;
+  });
   try {
     return await fn();
   } finally {
@@ -197,6 +207,8 @@ function onImportFolder(): void {
       :open="importProgressOpen"
       :percent="importPercent"
       :message="importMessage"
+      :file-index="importFileIndex"
+      :file-total="importFileTotal"
     />
 
     <Teleport to="body">
@@ -207,7 +219,7 @@ function onImportFolder(): void {
         aria-modal="true"
         aria-labelledby="pack-conflict-title"
       >
-        <div class="modal-card" @click.stop>
+        <div ref="conflictCardRef" class="modal-card" tabindex="-1" @click.stop @keydown.escape.stop="closeConflict">
           <h2 id="pack-conflict-title" class="modal-title">{{ t("common.rolePack.conflictTitle") }}</h2>
           <p class="modal-body">
             {{

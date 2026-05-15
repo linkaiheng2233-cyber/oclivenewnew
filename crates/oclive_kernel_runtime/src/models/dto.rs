@@ -272,10 +272,15 @@ pub struct RoleInfo {
     pub author_pack: Option<AuthorPackFile>,
 }
 
-#[derive(Debug, Clone, Serialize)]
+#[derive(Debug, Clone, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
 pub struct ImportProgress {
     pub percent: i32,
     pub message: String,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub file_index: Option<u32>,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub file_total: Option<u32>,
 }
 
 #[derive(Debug, Clone, Deserialize)]

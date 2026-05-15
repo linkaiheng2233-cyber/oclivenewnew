@@ -216,11 +216,15 @@ where
         on_progress(ImportProgress {
             percent: pct,
             message: format!("Writing files {}/{}", cur, tot),
+            file_index: Some(cur as u32),
+            file_total: Some(tot as u32),
         });
     })?;
     on_progress(ImportProgress {
         percent: 100,
         message: "Import complete".into(),
+        file_index: None,
+        file_total: None,
     });
     Ok(id)
 }
@@ -258,6 +262,8 @@ fn import_role_from_directory<F: FnMut(ImportProgress)>(
     on_progress(ImportProgress {
         percent: 0,
         message: "Reading folder…".into(),
+        file_index: None,
+        file_total: None,
     });
     let root = resolve_extracted_role_root(src)?;
     install_role_from_resolved_root(storage, &root, overwrite, on_progress, |cur, tot| {
@@ -282,6 +288,8 @@ pub fn import_role_pack<F: FnMut(ImportProgress)>(
     on_progress(ImportProgress {
         percent: 0,
         message: "Preparing extraction…".into(),
+        file_index: None,
+        file_total: None,
     });
     let td = tempfile::tempdir()?;
     unzip_to(src, td.path(), |cur, tot| {
@@ -289,6 +297,8 @@ pub fn import_role_pack<F: FnMut(ImportProgress)>(
         on_progress(ImportProgress {
             percent: pct,
             message: format!("Extracting {}/{}", cur, tot),
+            file_index: Some(cur as u32),
+            file_total: Some(tot as u32),
         });
     })?;
     let root = resolve_extracted_role_root(td.path())?;
