@@ -28,7 +28,7 @@
 | Hub & quick links | [DOCUMENTATION_INDEX.md](DOCUMENTATION_INDEX.md) |
 | **Current status snapshot (version, ships, changelogs)** | [PROJECT_CURRENT_STATUS.md](PROJECT_CURRENT_STATUS.md) |
 | In-app FAQ (mumu slots, plugins, UI) | [../FAQ.md](../FAQ.md) |
-| Error codes & triage | [ERROR_CODES.md](ERROR_CODES.md) |
+| Error codes & triage | [ERROR_CODES.md](ERROR_CODES.md) · [KERNEL_ERROR_CODE_CONVENTION.md](KERNEL_ERROR_CODE_CONVENTION.md) |
 | Local sidecar + BYOK | [SIDECAR_LLM_USER_GUIDE.md](SIDECAR_LLM_USER_GUIDE.md) |
 | Config paths | [../guides/CONFIGURATION_FILES.md](../guides/CONFIGURATION_FILES.md) |
 | mumu UI acceptance | [../guides/MUMU_UI_ACCEPTANCE_CHECKLIST.md](../guides/MUMU_UI_ACCEPTANCE_CHECKLIST.md) |

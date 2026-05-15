@@ -32,6 +32,7 @@
 
 ## 相关文档
 
-- `creator-docs/getting-started/ERROR_CODES.md` §1（中）及英文镜像  
+- **单一规范（命名 + 形状 + 传输层）**：`creator-docs/getting-started/KERNEL_ERROR_CODE_CONVENTION.md`（英文镜像 `creator-docs-en/getting-started/KERNEL_ERROR_CODE_CONVENTION.md`）
+- `creator-docs/getting-started/ERROR_CODES.md` §1（中）及英文镜像（排障表）
 - `creator-docs/testing/OOCP_TEST_SUITE.md`  
 - 总览：`handoff/A2_CLOSURE_SUMMARY.md`

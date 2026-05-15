@@ -21,7 +21,7 @@
 ### 内核架构（主应用 `src-tauri`）
 
 - **主编排入口**：Tauri IPC 与 **`--api` HTTP** 均在 **`src-tauri/src/domain/chat_engine/mod.rs`** 的 **`process_message`**（及 `co_present` / `scene` 等子模块）内顺序编排；**入口蓝图（`pipeline.ocblueprint`）已从主路径移除**，不再作为首轮调度 DSL。若 `creator-docs/kernel/` 仍保留 Pipeline Schema 等文档，仅供契约或史料对照，**运行时行为以本仓库 `process_message` 为准**。
-- **错误与日志**：统一错误类型见 **`src-tauri/src/error.rs`**（`thiserror`、可映射前端文案）；结构化日志为 **`tracing`**（`RUST_LOG`，`init_tracing` 默认 `info`）。
+- **错误与日志**：统一错误类型见 **`src-tauri/src/error.rs`**（`thiserror`、可映射前端文案）；**机器 `code` 与 JSON 体**以 **`oclive_kernel_runtime::KernelErrorBody`** 与 **`creator-docs/getting-started/KERNEL_ERROR_CODE_CONVENTION.md`** 为准（与 `AppError::code()`、`http_chat_codes` 对齐）。结构化日志为 **`tracing`**（`RUST_LOG`，`init_tracing` 默认 `info`）。
 - **启动健康检查**：首轮对话前 **`startup_health::ensure_once`**（槽位、`plugin_backends`、角色包文件、**`DbManager::health_ping`**、可选 LLM 探测）；环境变量 **`OCLIVE_SKIP_STARTUP_HEALTH`** / **`OCLIVE_SKIP_LLM_STARTUP_PROBE`** 可跳过。实现：**`src-tauri/src/domain/startup_health.rs`**。
 
 ### 测试体系（三层归属）

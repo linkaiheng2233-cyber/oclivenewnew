@@ -12,7 +12,7 @@ pub mod utils;
 pub use oclive_validation as validation;
 
 pub use domain::{FavorabilityRepository, MemoryRepository};
-pub use error::{AppError, KernelErrorBody, Result};
+pub use error::{http_chat_codes, AppError, KernelErrorBody, Result};
 pub use models::*;
 
 /// Runtime API / contract revision (bump when HTTP or DTO breaking changes ship).

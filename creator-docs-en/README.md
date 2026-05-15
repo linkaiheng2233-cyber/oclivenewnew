@@ -25,7 +25,7 @@ This tree mirrors **`creator-docs/`** with hand-maintained English pages. For to
 | **Current status (version, ships, changelog)** | [getting-started/PROJECT_CURRENT_STATUS.md](getting-started/PROJECT_CURRENT_STATUS.md) |
 | Project overview (repos, commands, checklist) | [getting-started/PROJECT_OVERVIEW.md](getting-started/PROJECT_OVERVIEW.md) |
 | Kernel-centric module diagram (Mermaid + static figure) | [getting-started/KERNEL_AND_MODULES_ARCHITECTURE.md](getting-started/KERNEL_AND_MODULES_ARCHITECTURE.md) |
-| Error codes & triage | [getting-started/ERROR_CODES.md](getting-started/ERROR_CODES.md) |
+| Error codes & triage | [getting-started/ERROR_CODES.md](getting-started/ERROR_CODES.md) · [KERNEL_ERROR_CODE_CONVENTION.md](getting-started/KERNEL_ERROR_CODE_CONVENTION.md) (normative) |
 
 ---
 

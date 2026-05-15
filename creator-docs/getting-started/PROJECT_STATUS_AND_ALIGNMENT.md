@@ -28,7 +28,7 @@
 | 总索引与快速入口 | [DOCUMENTATION_INDEX.md](DOCUMENTATION_INDEX.md) |
 | **项目现状（版本、交付面、变更日志入口）** | [PROJECT_CURRENT_STATUS.md](PROJECT_CURRENT_STATUS.md) |
 | 主程序常见问题（含 mumu 默认模块、插件、界面） | [../FAQ.md](../FAQ.md) · [英文 FAQ](../../creator-docs-en/FAQ.md) |
-| 错误码与排障、提 issue 最少信息 | [ERROR_CODES.md](ERROR_CODES.md) |
+| 错误码与排障、提 issue 最少信息 | [ERROR_CODES.md](ERROR_CODES.md) · [KERNEL_ERROR_CODE_CONVENTION.md](KERNEL_ERROR_CODE_CONVENTION.md) |
 | 本机侧车 + BYOK（闭源云端） | [SIDECAR_LLM_USER_GUIDE.md](SIDECAR_LLM_USER_GUIDE.md) |
 | 配置文件与数据路径 | [../guides/CONFIGURATION_FILES.md](../guides/CONFIGURATION_FILES.md) |
 | mumu 模块发版前验收 | [../guides/MUMU_UI_ACCEPTANCE_CHECKLIST.md](../guides/MUMU_UI_ACCEPTANCE_CHECKLIST.md) |

@@ -2,6 +2,8 @@
 
 面向用户与开发者的统一错误语义。目标：**先自助定位，再高质量提 issue**。
 
+**机器码与 JSON 形状的唯一规范**（命名、传输层、与 JSON-RPC 边界）：**[KERNEL_ERROR_CODE_CONVENTION.md](KERNEL_ERROR_CODE_CONVENTION.md)**。
+
 ## 1) 运行时 HTTP API（`/chat`）错误体（与内核 / Tauri 同源）
 
 `POST /chat` 失败时返回 JSON，**`error` 与 `oclive_kernel_runtime::KernelErrorBody` 同形**（与 Tauri `invoke` 失败载荷为**同一 JSON 单行**时可互解析）：
@@ -45,8 +47,8 @@
 |------|------------|------|
 | **社区插件索引**（插件工作台 → 社区索引 →「同步在线索引」） | 在线 `plugins.json` 失败时自动读 `app_data` 下 **`plugin_index_cache.json`**，返回 `offlineMode=true` 与 `warning`（技术原因）；界面与 Toast 走 i18n 说明 | 检查网络、代理、防火墙；可设 **`OCLIVE_PLUGIN_INDEX_URL`** 指向可访问的索引镜像；联网后再次同步 |
 | **首次从未同步成功** | 缓存可能为空，列表无条目 | 至少成功同步一次，或使用「从文件夹 / zip 安装」等离线路径 |
-| **Ollama / Remote LLM** | 超时或不可达时由对话路径返回带 `[CODE]` 的错误 | 见 **§1.5** 与前端 `apiErrors` 映射 |
-| **Tauri `[CODE]` 常见补充** | 首轮对话前自检失败、未先加载角色 | `[STARTUP_HEALTH_FAILED]`：manifest / 槽位 / DB；`[ROLE_RUNTIME_NOT_READY]`：请先 `load_role` 或在 UI 选择角色；`[PLUGIN_BACKENDS_DIRECTORY_SLOT]`：directory 槽未填插件 id |
+| **Ollama / Remote LLM** | 超时或不可达时由对话路径返回 **`KernelErrorBody` JSON**（如 `LLM_ERROR`）；极旧日志可能仍为 `[CODE]` 前缀 | 见 **§1.5** 与前端 `apiErrors` 映射 |
+| **Tauri 常见补充（JSON；旧版见 `[CODE]` 回退）** | 首轮对话前自检失败、未先加载角色 | `STARTUP_HEALTH_FAILED`：manifest / 槽位 / DB；`ROLE_RUNTIME_NOT_READY`：请先 `load_role` 或在 UI 选择角色；directory 槽等相关码见 `apiErrors` |
 
 GUI 侧若仍展示英文底层错误句，属于 **A3.2 / A6** 持续扫尾；发版前可先依赖上述文档自助排障。
 

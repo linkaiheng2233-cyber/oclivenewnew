@@ -14,6 +14,15 @@ pub struct KernelErrorBody {
     pub hint: Option<String>,
 }
 
+/// `POST /chat`（及同类 HTTP 边界）专有 **`code`**：无对应 [`AppError`] 变体，但命名规则与 [`AppError::code`] 相同（`SCREAMING_SNAKE_CASE`）。
+///
+/// 宿主在构造 [`KernelErrorBody`] 时应引用本模块常量，避免字面量漂移。
+pub mod http_chat_codes {
+    pub const EMPTY_MESSAGE: &str = "EMPTY_MESSAGE";
+    pub const INVALID_ROLE_PATH: &str = "INVALID_ROLE_PATH";
+    pub const LOAD_ROLE_TASK_PANIC: &str = "LOAD_ROLE_TASK_PANIC";
+}
+
 #[derive(Error, Debug)]
 pub enum AppError {
     #[error("Database error: {0}")]
@@ -140,5 +149,19 @@ mod tests {
         let j: KernelErrorBody = serde_json::from_str(&s).unwrap();
         assert_eq!(j.code, "ROLE_NOT_FOUND");
         assert!(j.message.contains('x'));
+    }
+
+    #[test]
+    fn http_chat_codes_are_screaming_snake() {
+        for c in [
+            http_chat_codes::EMPTY_MESSAGE,
+            http_chat_codes::INVALID_ROLE_PATH,
+            http_chat_codes::LOAD_ROLE_TASK_PANIC,
+        ] {
+            assert!(
+                c.bytes().all(|b| b.is_ascii_uppercase() || b == b'_'),
+                "{c} must be SCREAMING_SNAKE_CASE"
+            );
+        }
     }
 }

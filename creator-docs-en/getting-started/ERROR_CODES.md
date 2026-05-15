@@ -2,6 +2,8 @@
 
 Audience: users and developers. Goal: **self-serve first**, then file a high-quality issue.
 
+**Normative machine `code` + JSON shape** (naming, transports, JSON-RPC boundary): **[KERNEL_ERROR_CODE_CONVENTION.md](KERNEL_ERROR_CODE_CONVENTION.md)**.
+
 ---
 
 ## 1) Runtime HTTP API (`/chat`) error body (same as kernel / Tauri)
@@ -47,8 +49,8 @@ Example:
 |----------|------------------|-------------|
 | **Community plugin index** (workbench → Community index → **Sync online index**) | If online `plugins.json` fails, the host reads **`plugin_index_cache.json`** under app data, returns `offlineMode=true` and a `warning` string (technical); UI + toast use i18n for the headline | Check network, proxy, firewall; set **`OCLIVE_PLUGIN_INDEX_URL`** to a reachable mirror; sync again when online |
 | **Never synced successfully** | Cache may be empty; list stays empty | Complete one successful sync, or install from folder / zip offline |
-| **Ollama / Remote LLM** | Chat path returns `[CODE]`-style errors on timeout/unavailable | See **§1.5** and frontend `apiErrors` mapping |
-| **Extra Tauri `[CODE]` hints** | First-chat startup checks or missing runtime row | `[STARTUP_HEALTH_FAILED]`: manifest, slots, DB; `[ROLE_RUNTIME_NOT_READY]`: call `load_role` / pick the role in UI; `[PLUGIN_BACKENDS_DIRECTORY_SLOT]`: directory slot without `directory_plugins` id |
+| **Ollama / Remote LLM** | Chat path returns **`KernelErrorBody` JSON** (e.g. `LLM_ERROR`); very old logs may still show `[CODE]` prefixes | See **§1.5** and frontend `apiErrors` mapping |
+| **Extra Tauri hints (JSON; legacy `[CODE]` fallback)** | First-chat startup checks or missing runtime row | `STARTUP_HEALTH_FAILED`: manifest, slots, DB; `ROLE_RUNTIME_NOT_READY`: call `load_role` / pick the role in UI; directory-slot codes in `apiErrors` |
 
 If the GUI still shows raw English backend strings, track under **A3.2 / A6** cleanup; self-serve with the table above first.
 

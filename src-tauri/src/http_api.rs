@@ -6,7 +6,7 @@
 //!（与包内 `settings.json` → `evolution.personality_source` 一致：`vector` | `profile`），便于试聊工具区分人格模式。
 //!
 //! **错误体**：`{ "error": KernelErrorBody }` 与 Tauri `invoke` 失败字符串 **同源**（见 `oclive_kernel_runtime::KernelErrorBody`），
-//! `code` 与 [`AppError::code`] 一致（`SCREAMING_SNAKE_CASE`）；HTTP 专有错误使用同形 `code`（如 `EMPTY_MESSAGE`）。
+//! `code` 与 [`AppError::code`] 一致（`SCREAMING_SNAKE_CASE`）；HTTP 专有错误使用 [`oclive_kernel_runtime::http_chat_codes`] 常量（与内核 crate 同源，避免字面量漂移）。
 
 use crate::domain::chat_engine::process_message;
 use crate::error::AppError;
@@ -19,7 +19,7 @@ use axum::http::Method;
 use axum::routing::{get, post};
 use axum::Json;
 use axum::Router;
-use oclive_kernel_runtime::KernelErrorBody;
+use oclive_kernel_runtime::{http_chat_codes, KernelErrorBody};
 use serde::{Deserialize, Serialize};
 use std::path::PathBuf;
 use std::sync::Arc;
@@ -91,7 +91,7 @@ async fn chat(
         return Err(api_error(
             axum::http::StatusCode::BAD_REQUEST,
             kernel_http_error(
-                "EMPTY_MESSAGE",
+                http_chat_codes::EMPTY_MESSAGE,
                 "message must not be empty or whitespace-only",
                 Some("请至少输入 1 个可见字符".into()),
             ),
@@ -112,7 +112,7 @@ async fn chat(
         api_error(
             axum::http::StatusCode::INTERNAL_SERVER_ERROR,
             kernel_http_error(
-                "LOAD_ROLE_TASK_PANIC",
+                http_chat_codes::LOAD_ROLE_TASK_PANIC,
                 format!("load_role task panicked: {e}"),
                 None,
             ),
@@ -124,7 +124,7 @@ async fn chat(
             return Err(api_error(
                 axum::http::StatusCode::BAD_REQUEST,
                 kernel_http_error(
-                    "INVALID_ROLE_PATH",
+                    http_chat_codes::INVALID_ROLE_PATH,
                     format!("role_path is not a directory: {display}"),
                     Some("请传入包含 manifest.json 的角色目录绝对路径".into()),
                 ),
@@ -247,7 +247,7 @@ mod tests {
         let (_, Json(body)) = api_error(
             axum::http::StatusCode::BAD_REQUEST,
             kernel_http_error(
-                "INVALID_ROLE_PATH",
+                http_chat_codes::INVALID_ROLE_PATH,
                 "role_path is not a directory: /x",
                 Some("请传入绝对路径".into()),
             ),
