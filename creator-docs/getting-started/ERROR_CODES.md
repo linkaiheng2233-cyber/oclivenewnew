@@ -30,6 +30,15 @@
 | 对话失败、日志或 UI 提示无法连接 **Ollama** | 本机未安装、服务未启动、端口非默认、模型未 `pull` | 安装并启动 [Ollama](https://ollama.com)；终端执行 `ollama list` / `ollama pull <模型>`；核对角色包或环境变量中的模型名 |
 | **`invalid_role_path` / `load_role_failed`** | **`OCLIVE_ROLES_DIR`** 未指向含子目录的 roles 根，或子目录缺 `manifest.json` | 将变量设为 **各角色文件夹的父目录**；用 [启动器](https://github.com/linkaiheng2233-cyber/oclive-launcher) 一键配置或对照 [CREATOR_WORKFLOW.md](CREATOR_WORKFLOW.md) |
 | **目录不可写 / 权限**（系统弹窗或 Rust I/O 错误） | 杀毒拦截、用户目录权限、指向了只读介质 | 换可写路径或排除误拦；勿在只读共享盘上放 `app.db`（路径见 [CONFIGURATION_FILES.md](../guides/CONFIGURATION_FILES.md)） |
+| **设置页「环境自检」** | 需快速确认本机 Ollama / 角色根 / 数据目录 | 应用内 **Ctrl+Shift+S** 打开设置 → **常规** → **环境自检** → **运行检测**（对应 Tauri `run_environment_diagnostics`） |
+
+### 1.6) 离线 / 弱网（A2.3）
+
+| 场景 | 运行时行为 | 建议 |
+|------|------------|------|
+| **社区插件索引**（插件工作台 → 社区索引 →「同步在线索引」） | 在线 `plugins.json` 失败时自动读 `app_data` 下 **`plugin_index_cache.json`**，返回 `offlineMode=true` 与 `warning`（技术原因）；界面与 Toast 走 i18n 说明 | 检查网络、代理、防火墙；可设 **`OCLIVE_PLUGIN_INDEX_URL`** 指向可访问的索引镜像；联网后再次同步 |
+| **首次从未同步成功** | 缓存可能为空，列表无条目 | 至少成功同步一次，或使用「从文件夹 / zip 安装」等离线路径 |
+| **Ollama / Remote LLM** | 超时或不可达时由对话路径返回带 `[CODE]` 的错误 | 见 **§1.5** 与前端 `apiErrors` 映射 |
 
 GUI 侧若仍展示英文底层错误句，属于 **A3.2 / A6** 持续扫尾；发版前可先依赖上述文档自助排障。
 
@@ -63,6 +72,7 @@ GUI 侧若仍展示英文底层错误句，属于 **A3.2 / A6** 持续扫尾；�
    - `OCLIVE_REMOTE_LLM_URL`
    - `OCLIVE_REMOTE_PLUGIN_TIMEOUT_MS`
    - `OCLIVE_REMOTE_LLM_TIMEOUT_MS`
+   - `OCLIVE_PLUGIN_INDEX_URL`（社区插件 `plugins.json` 镜像；离线排障见 **§1.6**）
 4. 关键日志片段（`oclive_chat` / `oclive_plugin`）
 
 ---

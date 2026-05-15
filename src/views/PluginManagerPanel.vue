@@ -155,7 +155,7 @@ async function onSyncMarketIndex() {
   try {
     await pluginStore.syncPluginMarket();
     if (pluginStore.pluginMarketSnapshot?.warning) {
-      showToast("info", pluginStore.pluginMarketSnapshot.warning);
+      showToast("info", t("pluginWorkbench.market.toastOfflineCache"));
     } else {
       showToast("success", t("pluginWorkbench.toast.indexSynced"));
     }
@@ -472,13 +472,20 @@ async function onPackSelectedPlugin(): Promise<void> {
               </div>
             </div>
             <p v-if="pluginStore.pluginMarketError" class="pm-err">{{ pluginStore.pluginMarketError }}</p>
-            <p
+            <div
               v-else-if="pluginStore.pluginMarketSnapshot?.warning"
+              class="pm-market-callout"
+              role="status"
+            >
+              <p class="pm-hint pm-hint--strong">{{ t("pluginWorkbench.market.syncFailedTitle") }}</p>
+              <p class="pm-muted pm-hint-detail">
+                {{ t("pluginWorkbench.market.syncFailedDetail", { detail: pluginStore.pluginMarketSnapshot.warning }) }}
+              </p>
+            </div>
+            <p
+              v-else-if="pluginStore.pluginMarketSnapshot?.offlineMode"
               class="pm-hint"
             >
-              {{ pluginStore.pluginMarketSnapshot.warning }}
-            </p>
-            <p v-if="pluginStore.pluginMarketSnapshot?.offlineMode" class="pm-hint">
               {{ t("pluginWorkbench.market.offline") }}
             </p>
             <p
@@ -1385,6 +1392,23 @@ async function onPackSelectedPlugin(): Promise<void> {
   margin: 0 0 8px;
   font-size: 12px;
   color: var(--text-secondary);
+}
+.pm-hint--strong {
+  font-weight: 600;
+  color: var(--text-primary);
+}
+.pm-hint-detail {
+  margin: 4px 0 0;
+  font-size: 11px;
+  line-height: 1.45;
+  word-break: break-word;
+}
+.pm-market-callout {
+  margin: 0 0 10px;
+  padding: 8px 10px;
+  border-radius: 8px;
+  border: 1px solid color-mix(in srgb, var(--accent, #3b82f6) 28%, var(--border-light));
+  background: color-mix(in srgb, var(--accent, #3b82f6) 8%, var(--bg-elevated));
 }
 .pm-order {
   margin: 0;

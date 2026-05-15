@@ -48,9 +48,9 @@
 
 ### A2 首装与环境
 
-- [ ] **A2.1** 首装失败路径文案 + i18n（子集见 [ERROR_CODES §1.5](../creator-docs/getting-started/ERROR_CODES.md) 增补说明）
-- [ ] **A2.2** 可选环境自检
-- [ ] **A2.3** 离线/弱网
+- [x] **A2.1（子集）** 首装失败路径文案 + i18n（[ERROR_CODES §1.5](../creator-docs/getting-started/ERROR_CODES.md)；`apiErrors`：`LLM_ERROR` / `IO_ERROR` / `ROLE_NOT_FOUND`；全集路径仍归 **A2.1（全集）** 里程碑）
+- [x] **A2.2** 可选环境自检（设置 → 常规 →「环境自检」+ `run_environment_diagnostics`：Ollama `/api/tags`、roles 根可读、app_data 写探针）
+- [x] **A2.3** 离线/弱网（插件索引失败 → 缓存 + 工作台 i18n；[ERROR_CODES §1.6](../creator-docs/getting-started/ERROR_CODES.md)；全产品面统一状态机另立项）
 
 ### A3 崩溃与诊断
 

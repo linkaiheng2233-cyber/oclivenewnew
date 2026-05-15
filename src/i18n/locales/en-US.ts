@@ -368,6 +368,27 @@ export default {
       "Ctrl+Shift+S opens settings; Ctrl+Shift+F opens the plugin manager (V1/V2 per the experimental toggle); Ctrl+Shift+D toggles the debug panel.",
     immersiveOnlyNote:
       "Virtual time and narrative scenes appear under “More” only in immersive mode.",
+    envCheckTitle: "Environment check",
+    envCheckHelp:
+      "Quick probe: Ollama reachability, roles root readability, app data dir writable; not a full startup health pass.",
+    envCheckLead:
+      "If chat or the model fails, run this first; see ERROR_CODES.md §1.5 for detailed codes.",
+    envCheckRun: "Run check",
+    envCheckRunning: "Checking…",
+    envCheckDoneToast: "Environment check finished.",
+    envCheckOllama: "Ollama ({url})",
+    envCheckOllamaOk: "reachable",
+    envCheckOllamaFail: "unreachable or error",
+    envCheckRoles: "Roles root",
+    envCheckRolesMissing: "missing",
+    envCheckRolesUnreadable: "exists but not readable",
+    envCheckRolesOk: "readable",
+    envCheckRolesHint:
+      "Path from OCLIVE_ROLES_DIR or default; must be the parent of per-role folders, each with manifest.json.",
+    envCheckAppData: "App data directory",
+    envCheckAppDataOk: "writable",
+    envCheckAppDataFail: "not writable",
+    envCheckDetail: "Detail:",
     experimentalLabel: "Experimental",
     experimentalSectionHelp:
       "Preview entry for the new plugin manager (V2). If this build has no V2, the existing advanced mode is used.",

@@ -1,6 +1,7 @@
 pub mod agent;
 pub mod chat;
 pub mod conversation;
+pub mod diagnostics;
 pub mod directory_plugin;
 pub mod error;
 pub mod event;

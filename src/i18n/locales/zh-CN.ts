@@ -363,6 +363,27 @@ export default {
     shortcutsHelp:
       "Ctrl+Shift+S 打开设置；Ctrl+Shift+F 打开插件管理（V1/V2 由下方实验性勾选决定）；Ctrl+Shift+D 开关调试面板。",
     immersiveOnlyNote: "虚拟时间、叙事场景等仅在沉浸模式下显示于「更多」。",
+    envCheckTitle: "环境自检",
+    envCheckHelp:
+      "快速探测本机 Ollama 是否可达、角色根目录是否可读、应用数据目录是否可写；不替代完整启动健康检查。",
+    envCheckLead:
+      "若对话报错或模型无响应，可先运行此项；详细错误码见文档 ERROR_CODES.md §1.5。",
+    envCheckRun: "运行检测",
+    envCheckRunning: "检测中…",
+    envCheckDoneToast: "环境自检已完成。",
+    envCheckOllama: "Ollama（{url}）",
+    envCheckOllamaOk: "可达",
+    envCheckOllamaFail: "不可达或异常",
+    envCheckRoles: "角色根目录",
+    envCheckRolesMissing: "不存在",
+    envCheckRolesUnreadable: "存在但不可读",
+    envCheckRolesOk: "可读",
+    envCheckRolesHint:
+      "路径来自 OCLIVE_ROLES_DIR 或默认；需为各角色子文件夹的父目录，且子目录含 manifest.json。",
+    envCheckAppData: "应用数据目录",
+    envCheckAppDataOk: "可写",
+    envCheckAppDataFail: "不可写",
+    envCheckDetail: "详情：",
     experimentalLabel: "实验性功能",
     experimentalSectionHelp:
       "灰度入口：用于预览新版插件管理界面（V2）。若当前构建未集成 V2，会继续使用现有专业模式。",

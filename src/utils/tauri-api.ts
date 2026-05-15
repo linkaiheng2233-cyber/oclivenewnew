@@ -1596,3 +1596,20 @@ export async function pluginBridgeInvoke(req: {
     },
   });
 }
+
+/** A2.2：环境自检（Ollama、角色根目录、应用数据可写）。 */
+export interface EnvironmentDiagnostics {
+  ollamaBaseUrl: string;
+  ollamaReachable: boolean;
+  ollamaDetail: string;
+  rolesDir: string;
+  rolesDirExists: boolean;
+  rolesDirReadable: boolean;
+  appDataDir: string;
+  appDataWritable: boolean;
+  appDataDetail: string;
+}
+
+export async function runEnvironmentDiagnostics(): Promise<EnvironmentDiagnostics> {
+  return invokeWithFriendlyError<EnvironmentDiagnostics>("run_environment_diagnostics");
+}

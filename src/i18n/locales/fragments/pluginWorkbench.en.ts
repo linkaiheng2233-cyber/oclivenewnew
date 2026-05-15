@@ -46,6 +46,10 @@ export default {
     sync: "Sync online index",
     syncing: "Syncing…",
     offline: "Offline mode (using cached index).",
+    syncFailedTitle: "Online plugin index unavailable; using local cache.",
+    syncFailedDetail: "Technical detail: {detail}",
+    toastOfflineCache:
+      "Plugin index fell back to local cache (online sync failed). See Community index below.",
     emptyIndex: "No index yet. Click “Sync online index”.",
     deps: "Missing dependencies: {list}",
     install: "Install",

@@ -8,6 +8,10 @@ import PluginSlotEmbed from "../components/PluginSlotEmbed.vue";
 import { useAppToast } from "../composables/useAppToast";
 import { SLOT_SETTINGS_ADVANCED, usePluginStore } from "../stores/pluginStore";
 import { useUiStore } from "../stores/uiStore";
+import {
+  runEnvironmentDiagnostics,
+  type EnvironmentDiagnostics,
+} from "../utils/tauri-api";
 
 defineProps<{
   visible: boolean;
@@ -27,6 +31,22 @@ const { showToast } = useAppToast();
 type SettingsTab = "general" | "plugins";
 
 const tab = ref<SettingsTab>("general");
+
+const envDiagLoading = ref(false);
+const envDiag = ref<EnvironmentDiagnostics | null>(null);
+
+async function onRunEnvironmentDiagnostics() {
+  envDiagLoading.value = true;
+  envDiag.value = null;
+  try {
+    envDiag.value = await runEnvironmentDiagnostics();
+    showToast("info", t("settings.envCheckDoneToast"));
+  } catch (err) {
+    showToast("error", err instanceof Error ? err.message : String(err));
+  } finally {
+    envDiagLoading.value = false;
+  }
+}
 
 async function onToggleForceIframe(e: Event) {
   const checked = (e.target as HTMLInputElement).checked;
@@ -92,6 +112,71 @@ async function onToggleForceIframe(e: Event) {
             <p class="sv-muted">
               {{ t("settings.immersiveOnlyNote") }}
             </p>
+          </section>
+          <section class="sv-section">
+            <div class="sv-row-h">
+              <span class="sv-label">{{ t("settings.envCheckTitle") }}</span>
+              <HelpHint :text="t('settings.envCheckHelp')" />
+            </div>
+            <p class="sv-muted">{{ t("settings.envCheckLead") }}</p>
+            <button
+              type="button"
+              class="sv-env-btn"
+              :disabled="envDiagLoading"
+              @click="onRunEnvironmentDiagnostics"
+            >
+              {{ envDiagLoading ? t("settings.envCheckRunning") : t("settings.envCheckRun") }}
+            </button>
+            <div v-if="envDiag" class="sv-env-results" role="status">
+              <p class="sv-env-line">
+                <strong>{{ t("settings.envCheckOllama", { url: envDiag.ollamaBaseUrl }) }}</strong>
+                —
+                <span :class="envDiag.ollamaReachable ? 'sv-ok' : 'sv-bad'">
+                  {{
+                    envDiag.ollamaReachable
+                      ? t("settings.envCheckOllamaOk")
+                      : t("settings.envCheckOllamaFail")
+                  }}
+                </span>
+                <span v-if="envDiag.ollamaDetail" class="sv-muted sv-detail">
+                  {{ t("settings.envCheckDetail") }} {{ envDiag.ollamaDetail }}
+                </span>
+              </p>
+              <p class="sv-env-line">
+                <strong>{{ t("settings.envCheckRoles") }}</strong>
+                —
+                <span
+                  :class="
+                    envDiag.rolesDirExists && envDiag.rolesDirReadable ? 'sv-ok' : 'sv-bad'
+                  "
+                >
+                  {{
+                    !envDiag.rolesDirExists
+                      ? t("settings.envCheckRolesMissing")
+                      : !envDiag.rolesDirReadable
+                        ? t("settings.envCheckRolesUnreadable")
+                        : t("settings.envCheckRolesOk")
+                  }}
+                </span>
+                <code class="sv-code">{{ envDiag.rolesDir }}</code>
+              </p>
+              <p class="sv-muted sv-small">{{ t("settings.envCheckRolesHint") }}</p>
+              <p class="sv-env-line">
+                <strong>{{ t("settings.envCheckAppData") }}</strong>
+                —
+                <span :class="envDiag.appDataWritable ? 'sv-ok' : 'sv-bad'">
+                  {{
+                    envDiag.appDataWritable
+                      ? t("settings.envCheckAppDataOk")
+                      : t("settings.envCheckAppDataFail")
+                  }}
+                </span>
+                <span v-if="envDiag.appDataDetail" class="sv-muted sv-detail">
+                  {{ t("settings.envCheckDetail") }} {{ envDiag.appDataDetail }}
+                </span>
+                <code class="sv-code">{{ envDiag.appDataDir }}</code>
+              </p>
+            </div>
           </section>
           <section class="sv-section">
             <div class="sv-row-h">
@@ -302,5 +387,58 @@ async function onToggleForceIframe(e: Event) {
 }
 .sv-v2-launch-btn:hover {
   border-color: color-mix(in srgb, var(--accent, #3b82f6) 45%, var(--border-light));
+}
+.sv-env-btn {
+  align-self: flex-start;
+  padding: 8px 14px;
+  font-size: 13px;
+  border-radius: 8px;
+  border: 1px solid var(--border-light);
+  background: var(--bg-elevated);
+  color: var(--text-primary);
+  cursor: pointer;
+}
+.sv-env-btn:disabled {
+  opacity: 0.55;
+  cursor: not-allowed;
+}
+.sv-env-results {
+  margin-top: 4px;
+  padding: 10px 12px;
+  border-radius: 8px;
+  border: 1px solid var(--border-light);
+  background: var(--bg-elevated);
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+.sv-env-line {
+  margin: 0;
+  font-size: 12px;
+  line-height: 1.45;
+  color: var(--text-primary);
+}
+.sv-small {
+  font-size: 11px;
+}
+.sv-detail {
+  display: block;
+  margin-top: 2px;
+  word-break: break-word;
+}
+.sv-code {
+  display: block;
+  margin-top: 4px;
+  font-size: 11px;
+  padding: 4px 6px;
+  border-radius: 4px;
+  background: color-mix(in srgb, var(--border-light) 35%, transparent);
+  word-break: break-all;
+}
+.sv-ok {
+  color: var(--success, #15803d);
+}
+.sv-bad {
+  color: var(--danger, #b91c1c);
 }
 </style>
