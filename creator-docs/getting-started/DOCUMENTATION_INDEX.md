@@ -50,6 +50,7 @@
 | **纯终端用户：安装到日常对话（用户手册）** | **[USER_MANUAL.md](USER_MANUAL.md)**（[English](../../creator-docs-en/getting-started/USER_MANUAL.md)） |
 | **角色包创作者：从零到发布（学习路径）** | **[../role-pack/CREATOR_LEARNING_PATH.md](../role-pack/CREATOR_LEARNING_PATH.md)**（[English](../../creator-docs-en/role-pack/CREATOR_LEARNING_PATH.md)） |
 | **插件作者：目录 / Remote / 市场（学习路径）** | **[../plugin-and-architecture/PLUGIN_AUTHOR_LEARNING_PATH.md](../plugin-and-architecture/PLUGIN_AUTHOR_LEARNING_PATH.md)**（[English](../../creator-docs-en/plugin-and-architecture/PLUGIN_AUTHOR_LEARNING_PATH.md)） |
+| **LLM 目录插件 + llama.cpp（不经 Ollama，按角色切换）** | **[examples/directory-plugin-llamacpp/README.md](../../examples/directory-plugin-llamacpp/README.md)**（[English](../../examples/directory-plugin-llamacpp/README.en.md)） |
 | **内核 / 硬件集成方：脚手架到设备（学习路径）** | **[KERNEL_INTEGRATOR_LEARNING_PATH.md](KERNEL_INTEGRATOR_LEARNING_PATH.md)**（[English](../../creator-docs-en/getting-started/KERNEL_INTEGRATOR_LEARNING_PATH.md)） |
 | **项目现状（版本、交付面、变更日志入口，短快照）** | **[PROJECT_CURRENT_STATUS.md](PROJECT_CURRENT_STATUS.md)** |
 | **对齐进度与目标（一页：摘要 + 按用途分类的文档地图）** | **[PROJECT_STATUS_AND_ALIGNMENT.md](PROJECT_STATUS_AND_ALIGNMENT.md)** |
@@ -127,6 +128,7 @@
 5. [../plugin-and-architecture/REMOTE_PLUGIN_PROTOCOL.md](../plugin-and-architecture/REMOTE_PLUGIN_PROTOCOL.md) — JSON-RPC 方法、params/result、**完整 JSON 示例**  
 6. [examples/remote_plugin_minimal/README.md](../../examples/remote_plugin_minimal/README.md) — 最小 Python 侧车联调  
 6b. [examples/directory-plugin-minimal/README.md](../../examples/directory-plugin-minimal/README.md) — 最小目录插件（manifest + 整壳 + Node RPC）  
+6c. [examples/directory-plugin-llamacpp/README.md](../../examples/directory-plugin-llamacpp/README.md) — LLM 槽目录插件 + 本机 llama.cpp HTTP（[English](../../examples/directory-plugin-llamacpp/README.en.md)）  
 7. [examples/remote_plugin_openai_compat/README.md](../../examples/remote_plugin_openai_compat/README.md) — OpenAI 兼容 `chat/completions` 范例（BYOK）  
 8. [examples/common/README.md](../../examples/common/README.md) — 侧车示例共用 JSON-RPC / 非 LLM 占位模块  
 

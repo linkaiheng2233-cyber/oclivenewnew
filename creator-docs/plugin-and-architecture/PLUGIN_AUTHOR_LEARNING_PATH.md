@@ -43,5 +43,6 @@
 
 ## 延伸
 
+- **LLM 目录插件 + llama.cpp**：[`examples/directory-plugin-llamacpp/README.md`](../../examples/directory-plugin-llamacpp/README.md)（与 Ollama 按角色包并存）  
 - 替换内置后端（Rust）：[HOW_TO_REPLACE_MODULES.md](HOW_TO_REPLACE_MODULES.md)  
 - Monolith 焊接（无头/硬件）：[RFC_OCLIVE_MONOLITH_MODE.md](../rfc/RFC_OCLIVE_MONOLITH_MODE.md) · [OCLIVE_CLI_GUIDE.md](../cli/OCLIVE_CLI_GUIDE.md)

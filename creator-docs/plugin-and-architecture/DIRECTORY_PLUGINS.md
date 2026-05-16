@@ -64,6 +64,8 @@
 
 若对应槽位 **id 缺失**、**运行时未注入目录插件**、**spawn 或握手失败**，宿主记日志并回退：**memory/emotion/event/prompt → builtin**，**llm → Ollama**，**agent → builtin**。
 
+**示例（LLM 槽 → 本机 llama.cpp HTTP，不经 Ollama）**：仓库 [`examples/directory-plugin-llamacpp/`](../../examples/directory-plugin-llamacpp/README.md)（[English](../../examples/directory-plugin-llamacpp/README.en.md)）— Node 侧车实现 `llm.generate` / `llm.generate_tag`，将请求转发到 `OCLIVE_LLAMACPP_SERVER_URL`（默认 `http://127.0.0.1:8080`）上的 `llama-server`；角色包内将 `plugin_backends.llm` 设为 **`directory`** 并填写 `directory_plugins.llm` 为该 manifest **`id`** 即可与其它仍用 Ollama 的角色并存。
+
 ### `plugin_backends` 与 `directory_plugins` 示例（节选）
 
 ```json
@@ -293,6 +295,7 @@
 ## 8. 仓库内最小示例
 
 见 **`examples/directory-plugin-minimal/`**（含 **`Shell.vue`** + **`shell.vueEntry`** 示例）：可复制到 `plugins/<id>/` 或加入 `extra_plugin_roots` 后，配置 `shell_plugin_id` 与（可选）`plugin_backends` 做联调。  
+**LLM 槽 + 本机 llama.cpp**：**[`examples/directory-plugin-llamacpp/`](../../examples/directory-plugin-llamacpp/README.md)**（[English](../../examples/directory-plugin-llamacpp/README.en.md)）。  
 **非整壳 + 工具栏插槽**：**`examples/directory-plugin-ui-slot/`**；**原生 Vue 工具栏 + iframe 回退**：**`examples/directory-plugin-ui-slot-vue/`**。
 
 快速起手可用脚手架命令：

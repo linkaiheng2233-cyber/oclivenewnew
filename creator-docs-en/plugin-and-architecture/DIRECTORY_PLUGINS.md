@@ -58,6 +58,8 @@ In `settings.json` `plugin_backends`:
 
 If id missing, scan miss, spawn/handshake fails → log + fallback: **memory/emotion/event/prompt → builtin**, **llm → Ollama**, **agent → builtin**.
 
+**Example (LLM slot → local llama.cpp HTTP, no Ollama):** repo [`examples/directory-plugin-llamacpp/`](../../examples/directory-plugin-llamacpp/README.en.md) — Node sidecar implements `llm.generate` / `llm.generate_tag` and forwards to `OCLIVE_LLAMACPP_SERVER_URL` (default `http://127.0.0.1:8080`) on `llama-server`. Set `plugin_backends.llm` to **`directory`** and `directory_plugins.llm` to this manifest **`id`** to coexist with roles that still use Ollama. Chinese: [../../creator-docs/plugin-and-architecture/DIRECTORY_PLUGINS.md](../../creator-docs/plugin-and-architecture/DIRECTORY_PLUGINS.md) §3.
+
 ### Example (excerpt)
 
 ```json
@@ -257,6 +259,7 @@ Front‑end `invoke` wraps args under **`req`** (same as other commands):
 ## 8. Minimal examples
 
 **`examples/directory-plugin-minimal/`** — includes **`Shell.vue`** + **`shell.vueEntry`**.  
+**`examples/directory-plugin-llamacpp/`** — LLM slot + local **llama.cpp** HTTP ([README.en.md](../../examples/directory-plugin-llamacpp/README.en.md) · [中文 README](../../examples/directory-plugin-llamacpp/README.md)).  
 **`examples/directory-plugin-ui-slot/`** — toolbar iframe.  
 **`examples/directory-plugin-ui-slot-vue/`** — Vue toolbar + HTML fallback.
 

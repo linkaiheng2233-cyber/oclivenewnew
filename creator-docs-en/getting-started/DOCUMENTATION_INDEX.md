@@ -50,6 +50,7 @@ Time-boxed “start here → ship”; **authoritative detail stays in each topic
 | **End users: install → daily use (user manual)** | **[USER_MANUAL.md](USER_MANUAL.md)** (Chinese: [../../creator-docs/getting-started/USER_MANUAL.md](../../creator-docs/getting-started/USER_MANUAL.md)) |
 | **Role pack authors: start → publish (learning path)** | **[../role-pack/CREATOR_LEARNING_PATH.md](../role-pack/CREATOR_LEARNING_PATH.md)** (Chinese: [../../creator-docs/role-pack/CREATOR_LEARNING_PATH.md](../../creator-docs/role-pack/CREATOR_LEARNING_PATH.md)) |
 | **Plugin authors: directory / remote / marketplace (learning path)** | **[../plugin-and-architecture/PLUGIN_AUTHOR_LEARNING_PATH.md](../plugin-and-architecture/PLUGIN_AUTHOR_LEARNING_PATH.md)** (Chinese: [../../creator-docs/plugin-and-architecture/PLUGIN_AUTHOR_LEARNING_PATH.md](../../creator-docs/plugin-and-architecture/PLUGIN_AUTHOR_LEARNING_PATH.md)) |
+| **Directory LLM + llama.cpp (no Ollama, per role pack)** | **[../../examples/directory-plugin-llamacpp/README.en.md](../../examples/directory-plugin-llamacpp/README.en.md)** (Chinese: [../../examples/directory-plugin-llamacpp/README.md](../../examples/directory-plugin-llamacpp/README.md)) |
 | **Kernel / hardware integrators: scaffold → device (learning path)** | **[KERNEL_INTEGRATOR_LEARNING_PATH.md](KERNEL_INTEGRATOR_LEARNING_PATH.md)** (Chinese: [../../creator-docs/getting-started/KERNEL_INTEGRATOR_LEARNING_PATH.md](../../creator-docs/getting-started/KERNEL_INTEGRATOR_LEARNING_PATH.md)) |
 | **Current status (version, what ships, changelog entry points)** | **[PROJECT_CURRENT_STATUS.md](PROJECT_CURRENT_STATUS.md)** |
 | **Align progress and goals (one page: summary + doc map by purpose)** | **[PROJECT_STATUS_AND_ALIGNMENT.md](PROJECT_STATUS_AND_ALIGNMENT.md)** |
@@ -128,6 +129,7 @@ Architecture-level design converges in RFCs (**drafts do not imply merged code o
 5. [REMOTE_PLUGIN_PROTOCOL.md](../plugin-and-architecture/REMOTE_PLUGIN_PROTOCOL.md) — JSON-RPC methods, params/result, full JSON samples  
 6. [examples/remote_plugin_minimal/README.md](../../examples/remote_plugin_minimal/README.md) — minimal Python sidecar  
 6b. [examples/directory-plugin-minimal/README.md](../../examples/directory-plugin-minimal/README.md) — minimal directory plugin  
+6c. [examples/directory-plugin-llamacpp/README.en.md](../../examples/directory-plugin-llamacpp/README.en.md) — directory LLM slot + local llama.cpp HTTP (Chinese: [README.md](../../examples/directory-plugin-llamacpp/README.md))  
 7. [examples/remote_plugin_openai_compat/README.md](../../examples/remote_plugin_openai_compat/README.md) — OpenAI-compatible `chat/completions`  
 8. [examples/common/README.md](../../examples/common/README.md) — shared JSON-RPC / non-LLM stubs  
 

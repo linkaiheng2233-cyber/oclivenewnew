@@ -43,5 +43,6 @@ For **directory plugins**, **remote sidecars**, and **host slot** work. Contract
 
 ## Next
 
+- **Directory LLM + llama.cpp (no Ollama for that role):** [`examples/directory-plugin-llamacpp/README.en.md`](../../examples/directory-plugin-llamacpp/README.en.md) (Chinese: [README.md](../../examples/directory-plugin-llamacpp/README.md))  
 - Swap a built-in backend in Rust: [HOW_TO_REPLACE_MODULES.md](HOW_TO_REPLACE_MODULES.md)  
 - Monolith: [RFC_OCLIVE_MONOLITH_MODE.md](../rfc/RFC_OCLIVE_MONOLITH_MODE.md) · [OCLIVE_CLI_GUIDE.md](../cli/OCLIVE_CLI_GUIDE.md)

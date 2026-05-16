@@ -1,0 +1,12 @@
+{
+  "schema_version": 1,
+  "id": "com.oclive.example.llamacpp_llm",
+  "version": "0.1.0",
+  "provides": ["llm"],
+  "rpcMethods": ["llm.generate", "llm.generate_tag"],
+  "process": {
+    "command": "node",
+    "args": ["rpc_server.mjs"]
+  },
+  "permissions": ["process:spawn", "network:*"]
+}
