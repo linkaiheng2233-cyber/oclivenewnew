@@ -104,6 +104,57 @@ cargo run -p oclive-cli -- profile -o ./my-kernel --json
 
 ---
 
+## T 维：协作与分发
+
+### `market` — 插件 / 模板市场
+
+| 子命令 | 作用 |
+|--------|------|
+| `market search <kw>` | 搜索插件、模板、角色包（复用 `OCLIVE_PLUGIN_INDEX_URL` / `OCLIVE_MARKET_INDEX_URL`） |
+| `market browse` | TUI：左侧分类、右侧列表与详情；**Enter** 安装，**Esc** 退出 |
+| `market install <id>` | 安装条目（插件→`plugins/`；模板→`init`；角色包→`roles/`） |
+| `market info <id>` | 查看详情 |
+
+离线缓存：`~/.oclive/plugin_index_cache.json`（在线拉取失败时自动回退）。默认索引：`examples/market-index.json`。
+
+```bash
+cargo run -p oclive-cli -- market browse
+cargo run -p oclive-cli -- market search llm
+cargo run -p oclive-cli -- market install template:dialogue-only --template-output ./from-market
+```
+
+### `registry` 云端同步
+
+| 子命令 | 作用 |
+|--------|------|
+| `registry login <url> <token>` | 保存 Bearer Token 至 `~/.oclive/auth.json` |
+| `registry logout` | 删除凭据 |
+| `registry push <name>` | 将本地注册工程打包为 `.oclive-template.tar.gz` 并 `POST /api/v1/projects/{name}` |
+| `registry pull <name>` | `GET .../archive` 解压并写入 `~/.oclive/registry.json` |
+| `registry search <kw>` | `GET /api/v1/projects?q=` |
+
+环境变量：**`OCLIVE_REGISTRY_URL`**、**`OCLIVE_REGISTRY_TOKEN`**（可覆盖 auth 文件）。协议：REST + Bearer；服务端需实现约定路径（见下文「云端注册表 API」）。
+
+```bash
+cargo run -p oclive-cli -- registry login https://registry.example.com your-token
+cargo run -p oclive-cli -- registry push my-kernel
+cargo run -p oclive-cli -- registry pull my-kernel -o ./my-kernel
+```
+
+### `collab` — 角色包 Git 协作
+
+在**角色包根目录**（含 `manifest.json`）：
+
+| 子命令 | 作用 |
+|--------|------|
+| `collab init --remote <git-url>` | 写入 `.oclive-collab.yml` 并 `git remote add origin` |
+| `collab status` | 未提交变更 / 领先·落后远程提交数 |
+| `collab pull` / `push` / `diff` | 包装 `git pull` / `push` / `diff origin/<branch>` |
+
+`push` 前要求工作区干净；远程有新提交时 `push` 会提示先 `pull`。见 [ROLE_PACK_SPEC.md](../role-pack/ROLE_PACK_SPEC.md) § 协作。
+
+---
+
 ## `doctor`：环境诊断
 
 ```bash

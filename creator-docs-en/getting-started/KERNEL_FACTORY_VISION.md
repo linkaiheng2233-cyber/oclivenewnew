@@ -83,6 +83,16 @@ See [OCLIVE_CLI_GUIDE.md](../cli/OCLIVE_CLI_GUIDE.md) (Chinese guide includes Uâ
 
 ---
 
+## Collaboration & distribution (T1 / T2 / T3)
+
+| ID | Capability | CLI |
+|----|------------|-----|
+| **T3** | Marketplace | `oclive market` |
+| **T1** | Cloud registry | `oclive registry login/push/pull/search` |
+| **T2** | Role-pack collab | `oclive collab` |
+
+---
+
 ## Factory workflow
 
 1. Browse recipes: `oclive init --list-templates` or the interactive template picker; then pick `robot-soul`, `robot-gateway` (MCP scaffold), `dialogue-only`, `headless-api`, or `library-embed`.

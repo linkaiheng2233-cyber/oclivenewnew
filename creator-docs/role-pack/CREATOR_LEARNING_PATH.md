@@ -27,6 +27,8 @@
 
 **验收**：能在 `settings.json` 中为目标槽选择 `builtin` / `remote` / `directory` 之一，并理解 `directory_plugins` 与 manifest `id` 的对应关系。
 
+| **团队协作** | `oclive collab init/status/pull/push` · [ROLE_PACK_SPEC.md §7](ROLE_PACK_SPEC.md#7-团队协作oclive-collab) |
+
 ---
 
 ## 高级（约半天）

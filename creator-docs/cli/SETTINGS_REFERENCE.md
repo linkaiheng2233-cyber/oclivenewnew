@@ -89,6 +89,12 @@
 
 **`init --tui`** · **`debug`**（`OCLIVE_DEBUG_TRACE`）：见 [OCLIVE_CLI_GUIDE.md](OCLIVE_CLI_GUIDE.md)。
 
+**`market`**：`OCLIVE_MARKET_INDEX_URL` 或 **`OCLIVE_PLUGIN_INDEX_URL`**；离线 **`~/.oclive/plugin_index_cache.json`**。
+
+**`registry` 云端**：**`OCLIVE_REGISTRY_URL`**、**`OCLIVE_REGISTRY_TOKEN`**；凭据 **`~/.oclive/auth.json`**（`registry login`）。
+
+**`collab`**：角色包目录 **`.oclive-collab.yml`**（Git `remote` / `branch`）。
+
 ## 四、`oclive-cli` 预设矩阵（逻辑 → JSON）
 
 | 槽位 | minimal | mixed | full |

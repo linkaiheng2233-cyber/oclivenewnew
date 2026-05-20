@@ -90,6 +90,22 @@ curl -X POST http://127.0.0.1:8420/chat \
 
 ---
 
+## 协作与分发（T1 / T2 / T3）
+
+| 代号 | 能力 | CLI | 说明 |
+|------|------|-----|------|
+| **T3** | 市场浏览 | `oclive market` | TUI / CLI 搜索安装插件与模板；索引缓存 `plugin_index_cache.json` |
+| **T1** | 云端注册表 | `oclive registry login/push/pull/search` | 团队共享内核工程模板包；`~/.oclive/auth.json` |
+| **T2** | 角色包协作 | `oclive collab` | `.oclive-collab.yml` + Git；多人编辑 `roles/<id>/` |
+
+```bash
+cargo run -p oclive-cli -- market browse
+cargo run -p oclive-cli -- registry push my-team-kernel
+cargo run -p oclive-cli -- collab init --remote git@github.com:org/role-pack.git -o ./roles/demo
+```
+
+---
+
 ## 工厂工作流（推荐）
 
 1. **浏览配方**：`oclive init --list-templates` 或交互式「选择场景模板」；再 `oclive init --template robot-soul -o ./my-doll`（玩偶）、`robot-gateway`（网关 + MCP 骨架）、`dialogue-only`、`headless-api`、`library-embed`。

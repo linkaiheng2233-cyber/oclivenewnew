@@ -129,4 +129,27 @@ cargo run -p oclive-cli -- pack validate ./roles/my-role --host-version 0.2.0 --
 
 ---
 
+## 7. 团队协作（`oclive collab`）
+
+在角色包根目录使用 Git 同步多人编辑：
+
+```yaml
+# .oclive-collab.yml（由 oclive collab init 生成）
+remote: git@github.com:user/role-pack.git
+branch: main
+auto_sync: false
+```
+
+| 命令 | 说明 |
+|------|------|
+| `collab init --remote <url>` | 写入上述文件并配置 `origin` |
+| `collab status` | 工作区是否干净；相对 `origin/<branch>` 领先/落后提交数 |
+| `collab pull` | 拉取远程（本地有未推送提交时会警告） |
+| `collab push` | 推送（要求已 commit；远程领先时须先 pull） |
+| `collab diff` | `git diff origin/<branch>` |
+
+冲突解决：手动合并文件 → `git add` → `git commit` → `oclive collab push`。
+
+---
+
 [English](../../creator-docs-en/role-pack/ROLE_PACK_SPEC.md)
