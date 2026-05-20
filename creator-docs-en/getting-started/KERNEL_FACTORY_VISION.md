@@ -70,6 +70,19 @@ Use **`--kernel-source <repo root>`** on `init` for the real HTTP API and **`OCL
 
 ---
 
+## U / V / W / X deepening (main)
+
+| Dimension | Focus | Examples |
+|-----------|--------|----------|
+| **U** | Visibility & onboarding | `dashboard`, `bench --dashboard`, `learn` |
+| **V** | Quality & matrix bench | `bench --matrix`, `test`, `lint` |
+| **W** | Plugin ecosystem | `plugin_dependencies`, `plugin install/test/search/update` |
+| **X** | Weld & pipeline | TUI weld picker, `init --pipeline`, `profile` |
+
+See [OCLIVE_CLI_GUIDE.md](../cli/OCLIVE_CLI_GUIDE.md) (Chinese guide includes U–X sections).
+
+---
+
 ## Factory workflow
 
 1. Browse recipes: `oclive init --list-templates` or the interactive template picker; then pick `robot-soul`, `robot-gateway` (MCP scaffold), `dialogue-only`, `headless-api`, or `library-embed`.
