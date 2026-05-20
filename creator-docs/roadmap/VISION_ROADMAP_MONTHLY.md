@@ -125,6 +125,19 @@
 
 ---
 
+## oclive-cli 脚手架（计划中）
+
+以下方向**尚未**在 `oclive-cli` 实现；勿写入「十二阶段 / 已完成能力」总览。落地时优先保持 **A 级主轴** 简洁，避免重复 `market` / `template` 入口。
+
+| 方向 | 说明 |
+|------|------|
+| `pack diff` / `pack update` | 角色包版本 diff 与依赖升级检查 |
+| `oclive kernel update` | 生成工程的内核 path 依赖版本对齐主仓 |
+| `dev --inject` | 热注入测试消息并观察步骤追踪 |
+| `bench history clear` / `export` / `import` | 基准历史管理（当前仅有 `--save` / `--history` / `--compare`） |
+
+---
+
 ## 文档索引
 
 - 角色包契约：[roles/README_MANIFEST.md](../../roles/README_MANIFEST.md)  

@@ -6,6 +6,20 @@
 
 ---
 
+## 能力分级（对外门面）
+
+与 [OCLIVE_CLI_GUIDE.md](../cli/OCLIVE_CLI_GUIDE.md) 一致；**以 `main.rs` 子命令为准**，下表为宣传结构。
+
+| 级别 | 范围 |
+|------|------|
+| **A** | `init`、`build`、`bench`、`pack`、`plugin`（create/install/uninstall/test）、`doctor`、`config`、`test`、`lint`、`ci` |
+| **B** | `registry`、`compose`、`market`、`template`、`dev`、`debug`、`profile` |
+| **C** | `learn`、`dashboard`、`collab`、`blueprint`（experimental/legacy） |
+
+**计划中（未实现）**：`pack diff`/`update`、`kernel update`、`dev --inject`、`bench history` 导入导出 — [VISION_ROADMAP_MONTHLY.md](../roadmap/VISION_ROADMAP_MONTHLY.md#oclive-cli-脚手架计划中)。
+
+---
+
 ## 三层架构
 
 ```mermaid
@@ -81,9 +95,9 @@ curl -X POST http://127.0.0.1:8420/chat \
 
 | 维度 | 主题 | 代表能力 |
 |------|------|----------|
-| **U** | 可视化与上手 | `dashboard` Web UI、`bench --dashboard`、`learn` 教程 |
+| **U** | 可视化与上手（C 级） | `dashboard` Web UI、`bench --live`、`learn` 教程 |
 | **V** | 质量与矩阵 | `bench --matrix`、`test` 回归、`lint` 工程健康 |
-| **W** | 插件生态 | `plugin_dependencies`、`plugin install/test/search/update` |
+| **W** | 插件生态 | `plugin_dependencies`、`plugin install/test`；发现安装见 **`market`** |
 | **X** | 焊接与编排 | TUI 勾选焊接、`init --pipeline`、`profile` 画像 |
 
 详见 [OCLIVE_CLI_GUIDE.md](../cli/OCLIVE_CLI_GUIDE.md) 中 U–X 各节。
@@ -95,7 +109,7 @@ curl -X POST http://127.0.0.1:8420/chat \
 | 代号 | 能力 | CLI | 说明 |
 |------|------|-----|------|
 | **T3** | 市场浏览 | `oclive market` | TUI / CLI 搜索安装插件与模板；索引缓存 `plugin_index_cache.json` |
-| **T1** | 云端注册表 | `oclive registry login/push/pull/search` | 团队共享内核工程模板包；`~/.oclive/auth.json` |
+| **T1** | 云端注册表 | `oclive registry push/pull/search`；凭据优先 **`oclive config set`** | 团队共享模板包；`login` 为 deprecated 薄封装 |
 | **T2** | 角色包协作 | `oclive collab` | `.oclive-collab.yml` + Git；多人编辑 `roles/<id>/` |
 
 ```bash
@@ -134,7 +148,7 @@ cargo run -p oclive-cli -- collab init --remote git@github.com:org/role-pack.git
 
 - **蓝图**：历史上用于描述**运行时**「原子步骤」的编排（DSL）；与 **Monolith 焊接范围正交**，焊接只写在 **`monolith.toml`**（见 [RFC_OCLIVE_MONOLITH_MODE.md](../rfc/RFC_OCLIVE_MONOLITH_MODE.md)）。
 - **桌面主应用**：入口蓝图**已从主路径移除**；主编排以 **`process_message`** 为准（见 [AGENTS.md](../../AGENTS.md)）。
-- **工厂定位（蓝图校验）**：`oclive blueprint validate <path>` 读取并校验 `pipeline.ocblueprint` JSON（步骤 `id`/`type`、`next` 引用、已知类型枚举）。**不**改变桌面宿主固定 `process_message` 路径；为纯内核「蓝图 → 定制内核」预备工具链。生成工程含 **`docs/BLUEPRINT_REFERENCE.md`**。
+- **工厂定位（蓝图校验，C 级 / experimental）**：`oclive blueprint validate <path>` 仅校验 JSON 形状。**不**改变桌面宿主 `process_message`；新工程优先 **`init --pipeline`**。生成工程仍含 **`docs/BLUEPRINT_REFERENCE.md`** 供参考。
 - **开发者定制编排**：短期 = 阅读 **`docs/ORCHESTRATION_REFERENCE.md`**（中英）+ 改 `monolith.toml` / fork `process_message`；中期 = 受控蓝图解释器（runtime 侧，非本次 `init` 范围）。
 
 ---
@@ -256,9 +270,9 @@ Monolith 是工厂里的 **「性能档位」**：
 
 ---
 
-## 模板发布（`publish` / `--template-url`）
+## 模板发布（`template pack` / `--template-url`）
 
-**`oclive publish --type template`** 打包为 **`.oclive-template.tar.gz`**（含 **`template.json`**，排除 `target/` 等）。**`oclive init --template-url <url>`** 下载解压为新建工程。
+**`oclive template pack`** 打包为 **`.oclive-template.tar.gz`**（含 **`template.json`**）。**`oclive template create`** 反向生成并登记本地库。**`oclive init --template-url <url>`** 下载解压为新建工程。顶层 **`oclive publish`** 为 deprecated 别名。
 
 ---
 

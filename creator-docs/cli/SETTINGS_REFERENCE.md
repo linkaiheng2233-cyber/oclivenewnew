@@ -85,7 +85,7 @@
 
 **`compose`**：`oclive-compose.yml` + `.oclive-compose.pids.json`。
 
-**`publish` / `--template-url`**：`.oclive-template.tar.gz` + `template.json`。
+**`template pack` / `--template-url`**：`.oclive-template.tar.gz` + `template.json`（`publish` 为 deprecated 别名）。
 
 **`init --tui`** · **`debug`**（`OCLIVE_DEBUG_TRACE`）：见 [OCLIVE_CLI_GUIDE.md](OCLIVE_CLI_GUIDE.md)。
 

@@ -22,6 +22,10 @@ The end of `init --help` lists **presets and the `plugin_backends` matrix** (sam
 
 **Role pack spec and validation**: [ROLE_PACK_SPEC.md](../role-pack/ROLE_PACK_SPEC.md); **`pack`** subcommands are in section 6 of that doc and below.
 
+**Aligned with code**: top-level commands match `crates/oclive-cli/src/main.rs`. See the Chinese guide for the full **A / B / C** tier table, deprecated aliases, and **planned** (not yet implemented) items.
+
+**Planned CLI** (not shipped): `pack diff`/`update`, `kernel update`, `dev --inject`, `bench history clear`/`export`/`import` — [VISION_ROADMAP_MONTHLY.md](../../creator-docs/roadmap/VISION_ROADMAP_MONTHLY.md#oclive-cli-脚手架计划中).
+
 ---
 
 ## `pack`: validate and publish role packs

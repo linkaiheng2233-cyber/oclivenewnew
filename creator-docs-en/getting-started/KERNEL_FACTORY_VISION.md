@@ -6,6 +6,20 @@
 
 ---
 
+## Capability tiers (public surface)
+
+Aligned with [OCLIVE_CLI_GUIDE.md](../cli/OCLIVE_CLI_GUIDE.md); **source of truth** is `crates/oclive-cli/src/main.rs`.
+
+| Tier | Scope |
+|------|--------|
+| **A** | `init`, `build`, `bench`, `pack`, `plugin` (create/install/uninstall/test), `doctor`, `config`, `test`, `lint`, `ci` |
+| **B** | `registry`, `compose`, `market`, `template`, `dev`, `debug`, `profile` |
+| **C** | `learn`, `dashboard`, `collab`, `blueprint` (experimental/legacy) |
+
+**Planned (not shipped)**: `pack diff`/`update`, `kernel update`, `dev --inject`, `bench history` import/export — [VISION_ROADMAP_MONTHLY.md](../../creator-docs/roadmap/VISION_ROADMAP_MONTHLY.md#oclive-cli-脚手架计划中).
+
+---
+
 ## Three layers
 
 ```mermaid
@@ -74,9 +88,9 @@ Use **`--kernel-source <repo root>`** on `init` for the real HTTP API and **`OCL
 
 | Dimension | Focus | Examples |
 |-----------|--------|----------|
-| **U** | Visibility & onboarding | `dashboard`, `bench --dashboard`, `learn` |
+| **U** | Visibility & onboarding (tier C) | `dashboard`, `bench --live`, `learn` |
 | **V** | Quality & matrix bench | `bench --matrix`, `test`, `lint` |
-| **W** | Plugin ecosystem | `plugin_dependencies`, `plugin install/test/search/update` |
+| **W** | Plugin ecosystem | `plugin_dependencies`, `plugin install/test`; discovery via **`market`** |
 | **X** | Weld & pipeline | TUI weld picker, `init --pipeline`, `profile` |
 
 See [OCLIVE_CLI_GUIDE.md](../cli/OCLIVE_CLI_GUIDE.md) (Chinese guide includes U–X sections).

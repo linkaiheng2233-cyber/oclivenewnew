@@ -24,6 +24,43 @@ cargo run -p oclive-cli -- init --help
 
 **5 分钟上手**（`doctor` → `init --quick` → `cargo run`）：[KERNEL_FACTORY_VISION.md](../getting-started/KERNEL_FACTORY_VISION.md#5-分钟从零到对话纯内核脚手架)。
 
+**与实现对齐**：顶层子命令以 `crates/oclive-cli/src/main.rs` 的 `Commands` 枚举为准；下列分级为对外门面，**不**把未实现的 CLI 算作「已完成能力」。
+
+---
+
+## 能力分级（A / B / C）
+
+### A 级 — 核心工厂主轴
+
+| 域 | 命令 | 说明 |
+|----|------|------|
+| 项目初始化 | `init` | 模板、`--preset`、`--monolith`、`--with-role-pack`、`--kernel-source`、`--quick` 等 |
+| 构建与基准 | `build`、`bench` | 标准版 + 焊接版；`--save`、`--regression`、`--compare-versions` |
+| 角色包 | `pack create` / `validate` / `publish` | 创建、校验、`.oclivepack` 打包 |
+| 插件 | `plugin create` / `install` / `uninstall` / `test` | 脚手架与工程内安装（发现安装见 **market**） |
+| 环境 | `doctor`（`--fix`）、`config` | 诊断与 `~/.oclive/config.toml` |
+| 质量 | `test`、`lint`、`ci init` / `ci check` | 回归、静态形状、CI 模板 |
+
+### B 级 — 增强工具
+
+| 域 | 命令 | 说明 |
+|----|------|------|
+| 本地管理 | `registry`、`compose` | 多工程注册表与编排 |
+| 市场 | `market` | `browse` / `search` / `install` / `info`（**推荐**统一发现入口） |
+| 模板 | `template pack` / `create`，`init --template-url` | 打包与反向生成（`publish` 已 deprecated） |
+| 开发 | `dev`、`debug`、`profile` | 监听、追踪、依赖/体积画像 |
+
+### C 级 — 开发者体验（不计入工厂能力数）
+
+| 命令 | 说明 |
+|------|------|
+| `learn` | 交互式教程 |
+| `dashboard` | Web 仪表盘（默认 `:8420`） |
+| `collab` | 角色包 Git 薄封装（需远程仓库） |
+| `blueprint` | `[experimental/legacy]` `pipeline.ocblueprint` 校验 |
+
+**计划中（未实现，勿写入「已完成」）**：`pack diff` / `pack update`、`oclive kernel update`、`dev --inject`、`bench history clear` / `export` / `import` — 见 [VISION_ROADMAP_MONTHLY.md](../roadmap/VISION_ROADMAP_MONTHLY.md#oclive-cli-脚手架计划中)。
+
 ---
 
 ## 平台能力速览（N–S）
@@ -32,7 +69,7 @@ cargo run -p oclive-cli -- init --help
 |------|------|
 | `registry` | 本地工程注册表 `~/.oclive/registry.json`（`init` 后自动注册） |
 | `compose` | 多内核 `oclive-compose.yml` 编排 `up` / `down` / `ps` |
-| `publish` | 打包 `.oclive-template.tar.gz`；`init --template-url` 远程初始化 |
+| `template pack` | 打包 `.oclive-template.tar.gz`（`publish` 为 deprecated 别名） |
 | `init --tui` | ratatui 模板选择器（TTY 不可用时回退） |
 | `bench --watch` | 源码变更触发自动 bench + 历史对比 |
 | `debug` | `OCLIVE_DEBUG_TRACE` 逐步骤追踪 |
@@ -44,12 +81,12 @@ cargo run -p oclive-cli -- init --help
 | 命令 | 作用 |
 |------|------|
 | `dashboard` | 本地 Web 仪表盘（默认 `http://127.0.0.1:8420`）：工程列表、模板库、`bench_history` 折线 |
-| `bench --dashboard` | 终端实时刷新标准/焊接 p50·P95·内存·体积；底部 ASCII sparkline；`q` 退出 |
+| `bench --live` | 终端实时刷新标准/焊接 p50·P95·内存·体积（sparkline；`--dashboard` 为 deprecated 别名） |
 | `learn` | 五步交互教程（`doctor` → 模板说明 → `init` → `cargo build` → curl 提示） |
 
 ```bash
 cargo run -p oclive-cli -- dashboard
-cargo run -p oclive-cli -- bench --dashboard --release -o ./my-kernel
+cargo run -p oclive-cli -- bench --live --release -o ./my-kernel
 cargo run -p oclive-cli -- learn -o ./oclive-learn-demo
 ```
 
@@ -81,8 +118,7 @@ cargo run -p oclive-cli -- lint -o ./my-kernel --json
 | `plugin install <id>` | 解析 `manifest.json` 的 `plugin_dependencies`，拓扑排序安装 |
 | `plugin uninstall <id>` | 卸载并提示被依赖关系 |
 | `plugin test <path>` | 子进程 + RPC 烟测（`health` / 槽位方法） |
-| `plugin search <kw>` | 从 `OCLIVE_PLUGIN_INDEX_URL`（默认仓库 `examples/plugin-index.json` 的 raw）搜索 |
-| `plugin update <id>` | 检查索引版本并更新 |
+| `plugin search` / `update` | **deprecated** — 请用 `market search` / `market install` |
 
 `plugin_dependencies` 为 manifest 可选字符串数组；环依赖报错。见 [PLUGIN_V1.md](../plugin-and-architecture/PLUGIN_V1.md)。
 
@@ -127,7 +163,7 @@ cargo run -p oclive-cli -- market install template:dialogue-only --template-outp
 
 | 子命令 | 作用 |
 |--------|------|
-| `registry login <url> <token>` | 保存 Bearer Token 至 `~/.oclive/auth.json` |
+| `registry login` | **deprecated** — 内部写入 `config.toml`；请用 `oclive config set OCLIVE_REGISTRY_URL` / `OCLIVE_REGISTRY_TOKEN` |
 | `registry logout` | 删除凭据 |
 | `registry push <name>` | 将本地注册工程打包为 `.oclive-template.tar.gz` 并 `POST /api/v1/projects/{name}` |
 | `registry pull <name>` | `GET .../archive` 解压并写入 `~/.oclive/registry.json` |
@@ -298,7 +334,7 @@ cargo run -p oclive-cli -- init --non-interactive --template library-embed --ker
 
 生成工程含 **`plugins/README.md`**、**`docs/BLUEPRINT_REFERENCE.md`**、**`docs/ORCHESTRATION_REFERENCE.md`**（中英编排参考）。
 
-**蓝图校验**（不改变桌面宿主主路径）：
+**蓝图校验**（`[experimental/legacy]`，不改变桌面宿主主路径；新工程优先 `init --pipeline`）：
 
 ```bash
 cargo run -p oclive-cli -- blueprint validate ./roles/myrole/pipeline.ocblueprint
@@ -377,14 +413,17 @@ cargo run -p oclive-cli -- compose ps
 
 ---
 
-## `publish`：模板包
+## `template`：模板打包与复用
 
 ```bash
-cargo run -p oclive-cli -- publish --type template -o ./my-kernel.oclive-template.tar.gz
+cargo run -p oclive-cli -- template pack -o ./my-kernel -O ./my-kernel.oclive-template.tar.gz
+cargo run -p oclive-cli -- template create my-team -o ./my-kernel
 cargo run -p oclive-cli -- init --template-url https://example.com/template.tar.gz -o ./from-remote
 ```
 
-排除 **`target/`**、**`.git/`**、**`bench_results/`** 等；包内附带 **`template.json`** 元数据。
+- **`template pack`**：将工程打包为 **`.oclive-template.tar.gz`**（排除 `target/`、`.git/` 等；含 `template.json`）。
+- **`template create`**：反向分析工程并注册 `~/.oclive/templates/`。
+- **`publish --type template`**：**deprecated** 别名，行为同 `template pack` 并打印迁移提示。
 
 ---
 
@@ -441,8 +480,13 @@ cargo run -p oclive-cli -- bench --release -o /path/to/kernel-project --json
 ```
 
 - **`--save`**：将本次报告追加到项目根 **`bench_history.json`**（本地文件，勿提交）。
-- **`--compare`**：不运行采样；读取 **`bench_history.json`** 中**最近两次**记录并输出对比（需已有至少两条历史）。
-- **`--history`**：打印 **`bench_history.json`** 全部记录的趋势表（日期、标准/Monolith p50、峰值内存、二进制体积）；记录 ≥2 条时附相对上一行的 **↑/↓/→**。可加 **`--json`** 供外部工具消费。
+- **`--compare`**（历史对比）：**不运行采样**；对比 `bench_history.json` 中**最近两次** save 记录（需 ≥2 条）。用于开发时肉眼看趋势，**无退出码门禁**。
+- **`--regression`**（回归门禁）：**先跑本轮 bench**，再与历史中**最近一条** save 对比；任一指标超阈值则 **退出码 1**（CI 用）。与 `--compare` 不同，勿混用。
+- **`--compare-versions <git-ref>`**：当前工作区 vs 指定 Git 引用各跑多轮，输出矩阵表。
+- **`--live`**：终端 sparkline 实时仪表盘（`q` 退出）。**勿与** 顶层 Web **`oclive dashboard`** 混淆；`--dashboard` 为 deprecated 别名。
+- **`--history`**：打印 **`bench_history.json`** 全部记录的趋势表；可加 **`--json`**。
+
+**未实现**：`bench history clear` / `export` / `import` 子命令（见路线图「计划中」）。
 
 ```bash
 cargo run -p oclive-cli -- bench --release -o ./my-kernel --save
