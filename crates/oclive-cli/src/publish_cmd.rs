@@ -41,6 +41,8 @@ pub struct TemplateManifest {
     #[serde(skip_serializing_if = "Option::is_none")]
     pub monolith_preset: Option<String>,
     pub project_type: String,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub monolith_enabled: Option<bool>,
 }
 
 const EXCLUDE_DIRS: &[&str] = &[
@@ -82,13 +84,22 @@ pub fn pack_template_tarball(root: &Path, out: &Path) -> Result<()> {
         } else {
             "library".into()
         },
+        monolith_enabled: Some(root.join("monolith.toml").is_file()),
     };
+    pack_template_tarball_with_meta(root, out, &template_meta)
+}
+
+pub fn pack_template_tarball_with_meta(
+    root: &Path,
+    out: &Path,
+    template_meta: &TemplateManifest,
+) -> Result<()> {
     let tmp = tempfile::tempdir().context("tempdir")?;
     let staging = tmp.path().join("bundle");
     copy_tree_filtered(root, &staging)?;
     fs::write(
         staging.join("template.json"),
-        serde_json::to_string_pretty(&template_meta)?,
+        serde_json::to_string_pretty(template_meta)?,
     )?;
     write_tar_gz(&staging, out)?;
     Ok(())
