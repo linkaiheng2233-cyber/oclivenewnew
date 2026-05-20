@@ -224,6 +224,11 @@ pub fn run_interactive(args: &InitArgs) -> Result<ProjectConfig> {
 
     let template_choice = if let Some(t) = args.template {
         Some(t)
+    } else if args.tui || crate::init_tui::terminal_supports_tui() {
+        match crate::init_tui::pick_template_tui(&project_name)? {
+            Some(t) => Some(t),
+            None => pick_factory_template()?,
+        }
     } else {
         pick_factory_template()?
     };
