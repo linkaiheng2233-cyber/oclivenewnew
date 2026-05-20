@@ -28,10 +28,21 @@ Example:
 
 | code | Meaning | Common cause | What to try |
 |------|---------|--------------|-------------|
+<!-- code:EMPTY_MESSAGE -->
 | `EMPTY_MESSAGE` | Empty message | Only whitespace / newlines | Type at least one visible character |
+<!-- code:INVALID_ROLE_PATH -->
 | `INVALID_ROLE_PATH` | Path is not a directory | Typo, pointed at a file | Pass `{roles_root}/{role_id}` as an absolute directory |
-| `ROLE_NOT_FOUND`, etc. | Dir exists but pack invalid | Missing `manifest` / `settings` or bad structure | Run full checks in the pack editor; same `code` as Tauri `load_role` |
-| `LLM_ERROR`, `DB_ERROR`, `TXN_*`, … | Chat engine internal failure | Model, DB, transactions | Check logs `oclive_chat` / `oclive_plugin`; same catalog as desktop |
+<!-- code:ROLE_NOT_FOUND -->
+| `ROLE_NOT_FOUND` | Pack invalid or missing | Missing `manifest` / `settings` or bad structure | Run full checks in the pack editor; same `code` as Tauri `load_role` |
+<!-- code:LLM_ERROR -->
+| `LLM_ERROR` | LLM provider failure | Ollama down, model not pulled, remote timeout | Start Ollama and `ollama pull`; verify model name in role pack; use `OCLIVE_HTTP_API_MOCK_LLM=1` for bench | See §1.5 |
+<!-- code:DB_ERROR -->
+| `DB_ERROR` | Database error | Corrupt `app.db`, disk full, migration failure | Ensure data dir is writable; see `Database error` in logs |
+<!-- code:ROLE_RUNTIME_NOT_READY -->
+| `ROLE_RUNTIME_NOT_READY` | Role not loaded | No `load_role` / no role selected in UI | Load a role before chatting |
+<!-- code:STARTUP_HEALTH_FAILED -->
+| `STARTUP_HEALTH_FAILED` | Startup health failed | Slots, manifest, DB ping, LLM probe | Run in-app environment diagnostics; see `startup_health` logs |
+<!-- code:LOAD_ROLE_TASK_PANIC -->
 | `LOAD_ROLE_TASK_PANIC` | Load task panicked | Rare | File an issue with logs |
 
 ### 1.5) First install: Ollama and role paths (subset)

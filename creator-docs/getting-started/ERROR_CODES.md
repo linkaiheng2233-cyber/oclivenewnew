@@ -26,10 +26,21 @@
 
 | code | 含义 | 常见原因 | 建议 |
 |------|------|----------|------|
+<!-- code:EMPTY_MESSAGE -->
 | `EMPTY_MESSAGE` | 消息为空 | 输入只有空格/换行 | 输入至少 1 个可见字符 |
+<!-- code:INVALID_ROLE_PATH -->
 | `INVALID_ROLE_PATH` | 角色路径不是目录 | 路径拼错、指到了文件 | 传入 `{roles_root}/{role_id}` 目录绝对路径 |
-| `ROLE_NOT_FOUND` 等 | 目录存在但包无效 | `manifest/settings` 缺失或结构错误 | 用编写器“运行全部检查”；`code` 与 Tauri `load_role` 一致 |
-| `LLM_ERROR`、`DB_ERROR`、`TXN_*` 等 | 对话引擎内失败 | 模型、DB、事务等 | 查看 `oclive_chat` / `oclive_plugin`；与桌面同一码表 |
+<!-- code:ROLE_NOT_FOUND -->
+| `ROLE_NOT_FOUND` | 角色包无效或缺失 | `manifest/settings` 缺失或结构错误 | 用编写器“运行全部检查”；`code` 与 Tauri `load_role` 一致 |
+<!-- code:LLM_ERROR -->
+| `LLM_ERROR` | LLM 提供方失败 | Ollama 未启动、模型未 pull、Remote 超时 | 启动 Ollama 并 `ollama pull`；核对角色包模型名；试聊可设 `OCLIVE_HTTP_API_MOCK_LLM=1` | 见 §1.5 |
+<!-- code:DB_ERROR -->
+| `DB_ERROR` | 数据库错误 | `app.db` 损坏、磁盘满、迁移失败 | 检查数据目录可写；备份后重建库；见日志 `Database error` |
+<!-- code:ROLE_RUNTIME_NOT_READY -->
+| `ROLE_RUNTIME_NOT_READY` | 尚未加载角色 | 未 `load_role` 或未在 UI 选角色 | 先加载角色再发消息 |
+<!-- code:STARTUP_HEALTH_FAILED -->
+| `STARTUP_HEALTH_FAILED` | 启动自检失败 | 槽位、manifest、DB ping、LLM 探测 | 运行设置页环境自检；见 `startup_health` 日志 |
+<!-- code:LOAD_ROLE_TASK_PANIC -->
 | `LOAD_ROLE_TASK_PANIC` | 加载任务 panic | 极少见 | 带日志提 issue |
 
 ### 1.5) 首装常见：Ollama 与角色目录（A2.1 子集）
