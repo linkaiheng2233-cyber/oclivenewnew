@@ -63,6 +63,29 @@ cargo run -p oclive-cli -- init --help
 
 ---
 
+## 确定性加固（AB1–AB6）
+
+| 编号 | 能力 | 说明 |
+|------|------|------|
+| **AB1** | `narrative_hint` 契约 | 集成测 + [NARRATIVE_HINT_CONTRACT.md](../testing/NARRATIVE_HINT_CONTRACT.md) |
+| **AB2** | 侧车 / 内核错误分层 | `oclive_validation::protocol_boundary`；OOCP **S12** |
+| **AB3** | `bench --equivalence` | 标准 vs Monolith `/chat` 回复逐条对比（MOCK_LLM） |
+| **AB4** | `test --loom` | `cargo-loom` 模型检查（CI `loom` job，`continue-on-error`） |
+| **AB5** | 模糊测试 | [FUZZING.md](../testing/FUZZING.md)；`fuzz/` + proptest |
+| **AB6** | `bench --soak` | 长稳 RSS 趋势（`--soak-duration` 小时） |
+
+```bash
+cargo test -p oclivenewnew-tauri --test narrative_hint_contract_audit
+cargo test -p oclivenewnew-tauri --test protocol_boundary_sidecar
+cargo run -p oclive-cli -- bench --equivalence --release -o ./my-kernel
+cargo run -p oclive-cli -- test --loom
+cargo test -p oclive_validation --test proptest_fuzz_parsing
+cargo run -p oclive-cli -- bench --soak --soak-duration 24 -o ./my-kernel
+cargo run -p oclive-cli -- test --equivalence-check -o ./my-kernel
+```
+
+---
+
 ## 巩固强化（AA1–AA11）
 
 | 编号 | 命令 | 说明 |

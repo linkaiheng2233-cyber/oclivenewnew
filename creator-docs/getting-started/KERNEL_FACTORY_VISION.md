@@ -57,6 +57,12 @@
 
 ---
 
+## 确定性加固（AB1–AB6）
+
+可证明性与长稳：叙事 hint 全链路审计、侧车/内核错误分层校验、Monolith **行为等价**（`bench --equivalence`）、**Loom** 并发模型、**模糊测试**、**soak** 资源趋势。见 CLI 指南「确定性加固」与 [FUZZING.md](../testing/FUZZING.md)、[NARRATIVE_HINT_CONTRACT.md](../testing/NARRATIVE_HINT_CONTRACT.md)。
+
+---
+
 ## 三层架构
 
 ```mermaid

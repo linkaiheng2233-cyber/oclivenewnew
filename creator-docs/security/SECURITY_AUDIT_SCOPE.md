@@ -19,7 +19,8 @@
 
 - **第三方供应链**：crate **作者信誉、发布历史、构建可重复性** 等未做系统审计。
 - **Miri**：未对全部 `unsafe` 做 **Miri 全量**；仅在关键路径评估可行性。
-- **模糊测试（fuzzing）**：**未**建立 `cargo-fuzz` / `proptest` 等基础设施。
+- **模糊测试（fuzzing）**：已建立 **`fuzz/`**（libFuzzer）与 **`oclive_validation` proptest** harness（见 [FUZZING.md](../testing/FUZZING.md)）；CI `fuzz` job 为 `continue-on-error` 烟测。
+- **Loom 并发模型**：`src-tauri/tests/loom_concurrency.rs`（JSON-RPC 请求 ID、`narrative_hint` 缓存 RwLock 模型）；`oclive test --loom` / CI `loom` job（`continue-on-error`）。主仓 **无 `unsafe` 块**；Loom 覆盖逻辑并发而非 FFI。
 - **侧信道**：**未**分析时序、功耗等侧信道风险。
 - **威胁建模（STRIDE 等）**：**未**对全产品做完整建模；仅对 **对话主编排链路** 做并发与取消向审查。
 
@@ -35,7 +36,7 @@
 
 1. **每个功能周期**：运行 `cargo audit` 并更新 [KNOWN_VULNERABILITIES.md](./KNOWN_VULNERABILITIES.md)。
 2. **Miri**：引入 **允许失败** 的 Miri CI job，从 **最小 `unsafe` 闭包** 起扩大覆盖。
-3. **模糊测试**：评估对 **协议解析**、**Prompt 拼接边界**、**不可信 JSON** 等输入引入 `proptest` 或 `cargo-fuzz`。
+3. **模糊测试**：持续扩展 `fuzz/` 目标与 proptest 属性；对发现 crash 建立最小复现入库。
 4. **Tauri / gtk-rs 警告链**：跟踪 [KNOWN_VULNERABILITIES.md](./KNOWN_VULNERABILITIES.md) 中的 *unmaintained* 集群，随 **Tauri 大版本** 升级收敛。
 
 ---
