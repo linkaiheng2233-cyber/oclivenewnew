@@ -13,6 +13,45 @@ pub fn render_monolith_toml_phase_one() -> String {
     render_monolith_toml_default()
 }
 
+/// 按性能档位预填 `weld_modules`（`exclude` 为空；与 [`crate::init::MonolithPresetArg`] 对应）。
+pub fn weld_modules_for_preset(preset: crate::init::MonolithPresetArg) -> Vec<&'static str> {
+    use crate::init::MonolithPresetArg;
+    match preset {
+        MonolithPresetArg::Latency => SLOT_IDS.to_vec(),
+        MonolithPresetArg::Memory => vec!["memory", "prompt", "llm"],
+        MonolithPresetArg::Embedded => vec!["emotion", "memory", "llm"],
+    }
+}
+
+pub fn render_monolith_toml_with_weld(weld_modules: &[&str]) -> String {
+    let items: Vec<String> = weld_modules.iter().map(|s| format!("\"{s}\"")).collect();
+    format!(
+        r#"# 高耦合编译配置
+# 由 oclive init 生成；oclive build 读取并重新生成 process_message_monolith.rs
+# 不参与运行时，可安全删除以恢复标准模式
+#
+# 约束：weld_modules 与 exclude 不能同时非空。
+
+[monolith]
+enabled = true
+weld_modules = [{modules}]
+exclude = []
+"#,
+        modules = items.join(", ")
+    )
+}
+
+/// 根据焊接列表生成 TOML 与 [`WeldPlan`]（供 init 与测试）。
+pub fn monolith_toml_and_plan(weld_modules: &[&str]) -> (String, WeldPlan) {
+    let section = crate::monolith_config::MonolithSection {
+        enabled: true,
+        weld_modules: weld_modules.iter().map(|s| (*s).to_string()).collect(),
+        exclude: vec![],
+    };
+    let plan = crate::monolith_config::resolve_weld_plan(&section);
+    (render_monolith_toml_with_weld(weld_modules), plan)
+}
+
 pub fn render_monolith_toml_default() -> String {
     r#"# 高耦合编译配置
 # 由 oclive init 生成；oclive build 读取并重新生成 process_message_monolith.rs
@@ -64,6 +103,9 @@ pub fn generate_monolith_source(plan: &WeldPlan) -> String {
         r#"#![allow(dead_code)]
 // 此文件由 oclive-cli 根据 monolith.toml 生成。
 // 请勿手改焊接逻辑；修改 monolith.toml 后请运行 `oclive build`（或重新 `oclive init`）再生成。
+//
+// 编排说明（纯内核开发者）：见项目根 docs/ORCHESTRATION_REFERENCE.md（English: ORCHESTRATION_REFERENCE.en.md）。
+// 桌面宿主主路径仍以 oclivenewnew 内 `process_message` 为准；本文件仅演示 Monolith 七槽静态调用顺序。
 
 /// Monolith 入口：演示七槽调用顺序（已焊接 → 静态 `oclive_monolith_builtin`；未焊接 → trait 占位）。
 pub fn run_monolith_pipeline_demo() {

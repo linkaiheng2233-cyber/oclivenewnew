@@ -2,7 +2,6 @@
 
 use crate::init::{BackendImpl, ProjectConfig, ProjectType};
 use crate::monolith_codegen;
-use crate::monolith_config::WeldPlan;
 use anyhow::{Context, Result};
 use handlebars::Handlebars;
 use serde_json::{json, Map, Value};
@@ -252,6 +251,68 @@ fn line_complex(b: BackendImpl) -> &'static str {
     }
 }
 
+fn write_kernel_dev_docs(out: &Path) -> Result<()> {
+    let docs = out.join("docs");
+    fs::create_dir_all(&docs).context("create docs")?;
+    fs::write(
+        docs.join("BLUEPRINT_REFERENCE.md"),
+        include_str!(concat!(
+            env!("CARGO_MANIFEST_DIR"),
+            "/src/templates/docs/BLUEPRINT_REFERENCE.md"
+        )),
+    )
+    .context("write BLUEPRINT_REFERENCE.md")?;
+    fs::write(
+        docs.join("ORCHESTRATION_REFERENCE.md"),
+        include_str!(concat!(
+            env!("CARGO_MANIFEST_DIR"),
+            "/src/templates/docs/ORCHESTRATION_REFERENCE.md"
+        )),
+    )
+    .context("write ORCHESTRATION_REFERENCE.md")?;
+    fs::write(
+        docs.join("ORCHESTRATION_REFERENCE.en.md"),
+        include_str!(concat!(
+            env!("CARGO_MANIFEST_DIR"),
+            "/src/templates/docs/ORCHESTRATION_REFERENCE.en.md"
+        )),
+    )
+    .context("write ORCHESTRATION_REFERENCE.en.md")?;
+    Ok(())
+}
+
+fn example_llamacpp_plugin_src() -> PathBuf {
+    PathBuf::from(env!("CARGO_MANIFEST_DIR")).join("../../examples/directory-plugin-llamacpp")
+}
+
+fn copy_example_llamacpp_plugin(out: &Path) -> Result<()> {
+    let src = example_llamacpp_plugin_src();
+    if !src.is_dir() {
+        anyhow::bail!(
+            "示例插件源目录不存在: {}（请在 oclivenewnew 仓库内运行 oclive-cli）",
+            src.display()
+        );
+    }
+    let dst = out.join("plugins/com.oclive.example.llamacpp_llm");
+    copy_dir_all(&src, &dst).with_context(|| format!("copy example plugin to {}", dst.display()))
+}
+
+fn copy_dir_all(src: &Path, dst: &Path) -> Result<()> {
+    fs::create_dir_all(dst)?;
+    for entry in fs::read_dir(src)? {
+        let entry = entry?;
+        let ty = entry.file_type()?;
+        let name = entry.file_name();
+        let to = dst.join(name);
+        if ty.is_dir() {
+            copy_dir_all(&entry.path(), &to)?;
+        } else {
+            fs::copy(entry.path(), &to)?;
+        }
+    }
+    Ok(())
+}
+
 fn config_reference_markdown() -> &'static str {
     include_str!(concat!(
         env!("CARGO_MANIFEST_DIR"),
@@ -317,16 +378,15 @@ pub fn write_project(cfg: &ProjectConfig, out: &Path) -> Result<()> {
                     .context("write main_monolith.rs")?;
                 monolith_codegen::copy_monolith_vendor(out)
                     .context("copy vendor/oclive_monolith_builtin")?;
+                let weld = crate::init::resolve_monolith_weld_modules(cfg);
+                let weld_refs: Vec<&str> = weld.iter().copied().collect();
+                let (toml, plan) = monolith_codegen::monolith_toml_and_plan(&weld_refs);
                 fs::write(
                     out.join("src").join("process_message_monolith.rs"),
-                    monolith_codegen::generate_monolith_source(&WeldPlan::all_welded()),
+                    monolith_codegen::generate_monolith_source(&plan),
                 )
                 .context("write process_message_monolith.rs")?;
-                fs::write(
-                    out.join("monolith.toml"),
-                    monolith_codegen::render_monolith_toml_phase_one(),
-                )
-                .context("write monolith.toml")?;
+                fs::write(out.join("monolith.toml"), toml).context("write monolith.toml")?;
             }
         }
         ProjectType::Library => {
@@ -351,6 +411,8 @@ pub fn write_project(cfg: &ProjectConfig, out: &Path) -> Result<()> {
     fs::write(out.join("CONFIG_REFERENCE.md"), config_reference_markdown())
         .context("write CONFIG_REFERENCE.md")?;
 
+    write_kernel_dev_docs(out)?;
+
     fs::create_dir_all(out.join("plugins")).context("create plugins")?;
     fs::write(
         out.join("plugins").join("README.md"),
@@ -360,6 +422,10 @@ pub fn write_project(cfg: &ProjectConfig, out: &Path) -> Result<()> {
         )),
     )
     .context("write plugins/README.md")?;
+
+    if cfg.with_example_plugin {
+        copy_example_llamacpp_plugin(out)?;
+    }
 
     if !cfg.skip_role_pack && cfg.role_pack_kind != crate::init::RolePackKind::None {
         crate::role_pack::write_role_pack(cfg, out).context("write role pack")?;
