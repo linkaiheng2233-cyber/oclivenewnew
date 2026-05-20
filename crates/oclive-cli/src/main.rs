@@ -6,7 +6,9 @@
 )]
 
 mod bench_cmd;
+mod bench_metrics;
 mod blueprint;
+mod doctor_cmd;
 mod blueprint_cmd;
 mod build_cmd;
 mod dev_cmd;
@@ -53,6 +55,8 @@ enum Commands {
     Pack(pack_cmd::PackArgs),
     /// 蓝图（pipeline.ocblueprint）读取与校验
     Blueprint(blueprint_cmd::BlueprintCli),
+    /// 环境诊断（Rust / 磁盘 / Ollama / 网络等）
+    Doctor(doctor_cmd::DoctorArgs),
 }
 
 fn init_tracing(verbose: u8) {
@@ -79,6 +83,7 @@ fn main() -> Result<()> {
         Commands::Dev(args) => dev_cmd::run(args),
         Commands::Pack(args) => pack_cmd::run_pack(args),
         Commands::Blueprint(cli) => blueprint_cmd::run(cli),
+        Commands::Doctor(args) => doctor_cmd::run(args),
     }
 }
 

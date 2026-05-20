@@ -1,0 +1,24 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://oclive.dev/schemas/oclive_doctor_report.schema.json",
+  "title": "oclive doctor JSON report",
+  "type": "object",
+  "required": ["schema_version", "ok", "checks"],
+  "properties": {
+    "schema_version": { "type": "integer", "const": 1 },
+    "ok": { "type": "boolean" },
+    "checks": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["id", "status", "message"],
+        "properties": {
+          "id": { "type": "string" },
+          "status": { "type": "string", "enum": ["ok", "warn", "fail"] },
+          "message": { "type": "string" },
+          "detail": { "type": "string" }
+        }
+      }
+    }
+  }
+}
