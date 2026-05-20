@@ -46,6 +46,37 @@ flowchart TB
 
 ---
 
+## 5 分钟从零到对话（纯内核脚手架）
+
+在 **oclivenewnew** 仓库根、已安装 Rust 的前提下（可先 `cargo build -p oclive-cli`）：
+
+```bash
+# 1. 检查环境（Rust / 磁盘 / Ollama / 网络等）
+cargo run -p oclive-cli -- doctor
+
+# 2. 极速创建纯对话内核（full 预设，无 Monolith，无示例 roles/）
+cargo run -p oclive-cli -- init --quick --non-interactive -o ./my-chat --project-name my-chat
+
+# 3. 进入项目
+cd my-chat
+
+# 4. 编译运行（占位 HTTP 入口；接真内核请 init 时加 --kernel-source <本仓根>）
+cargo build --release
+cargo run --release
+```
+
+另开终端测试（默认端口 **8420**；占位 main 可能仅演示，**接 `--kernel-source` 后**才与主应用 HTTP 一致）：
+
+```bash
+curl -X POST http://127.0.0.1:8420/chat \
+  -H "Content-Type: application/json" \
+  -d "{\"message\": \"你好，请介绍一下你自己\"}"
+```
+
+**预期**：`doctor` 至少 Rust/Cargo/磁盘为 ✅；Ollama 未启动时为 ❌（纯 remote LLM 可忽略）。`init --quick` 生成 `Cargo.toml` 且无 `monolith.toml`。HTTP 回复需本机 LLM 或 `--kernel-source` + `OCLIVE_HTTP_API_MOCK_LLM=1` 联调。
+
+---
+
 ## 工厂工作流（推荐）
 
 1. **浏览配方**：`oclive init --list-templates` 或交互式「选择场景模板」；再 `oclive init --template robot-soul -o ./my-doll`（玩偶）、`robot-gateway`（网关 + MCP 骨架）、`dialogue-only`、`headless-api`、`library-embed`。
@@ -90,8 +121,17 @@ Monolith 是工厂里的 **「性能档位」**：
 
 ## Monolith 焊接对比
 
-- **`--monolith-bench-preset <latency|memory|embedded>`**（需 Monolith 启用）：生成完成后自动 `cargo build --release`（标准 + 焊接双二进制）并 **`bench --runs 5`**，终端打印 p50/P95 对比，写入 **`bench_results/report.json`**。构建或 bench 失败**不阻塞**生成，仅警告。
-- **报告模板**：生成工程含 **`docs/WELD_BENCH_REPORT.md`**（中英），用于记录各槽/整体延迟与调优 `weld_modules` 的决策。
+- **`oclive bench --release`**：`bench_results/report.json`（schema **v2**）除 **p50/P95 延迟**外，含 **`binary_size`**（字节）、**`peak_memory`**（MiB 峰值）、**`build_time`**（秒，分别计时标准 / Monolith 两次 release 构建）。
+- **`--monolith-bench-preset`**：init 完成后自动 bench 5 轮；失败不阻塞生成。
+- **报告模板**：**`docs/WELD_BENCH_REPORT.md`**（中英）含多维度表格说明。
+
+## 环境诊断
+
+**`oclive doctor`** / **`oclive doctor --json`**：检查 Rust 工具链、Cargo、系统内存、磁盘、Ollama（`GET /api/tags`）、GitHub 连通、工作区可写。init 完成后提示可运行。
+
+## 极速模式
+
+**`oclive init --quick`** / **`-q`**：`preset=full`、无 Monolith、无 `roles/`、不接 `--kernel-source`。交互仅问**项目名**与**输出目录**；CLI 已传 `--preset` / `--monolith` / `--template` 等时，交互流程**不再重复询问**对应项。
 
 ---
 

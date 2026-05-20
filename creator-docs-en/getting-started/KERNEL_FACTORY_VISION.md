@@ -46,6 +46,30 @@ flowchart TB
 
 ---
 
+## 5-minute walkthrough (headless scaffold)
+
+From the **oclivenewnew** repo root (with Rust installed):
+
+```bash
+cargo run -p oclive-cli -- doctor
+cargo run -p oclive-cli -- init --quick --non-interactive -o ./my-chat --project-name my-chat
+cd my-chat
+cargo build --release
+cargo run --release
+```
+
+Another terminal:
+
+```bash
+curl -X POST http://127.0.0.1:8420/chat \
+  -H "Content-Type: application/json" \
+  -d '{"message": "Hello, introduce yourself"}'
+```
+
+Use **`--kernel-source <repo root>`** on `init` for the real HTTP API and **`OCLIVE_HTTP_API_MOCK_LLM=1`** for mock LLM smoke tests.
+
+---
+
 ## Factory workflow
 
 1. Browse recipes: `oclive init --list-templates` or the interactive template picker; then pick `robot-soul`, `robot-gateway` (MCP scaffold), `dialogue-only`, `headless-api`, or `library-embed`.
@@ -75,6 +99,16 @@ flowchart TB
 | `library-embed` | off | no `monolith.toml` for `library` |
 
 **`--monolith-preset`** (when Monolith is on): `latency` (all seven slots) | `memory` | `embedded`. You may edit `monolith.toml` afterward.
+
+**`oclive bench --release`** report schema **v2** adds **`binary_size`**, **`peak_memory`**, and **`build_time`** alongside latency stats.
+
+## Environment diagnostics
+
+**`oclive doctor`** / **`--json`**: Rust, Cargo, RAM, disk, Ollama, GitHub reachability, writable workspace.
+
+## Quick mode
+
+**`oclive init --quick`**: `preset=full`, no Monolith, no `roles/`. Interactive mode asks only **project name** and **output directory**. CLI flags already set skip duplicate prompts.
 
 ---
 
