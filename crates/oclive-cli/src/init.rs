@@ -51,6 +51,8 @@ llm 使用 ollama 表示进程内默认本地客户端；无本机模型时请�
 `--list-templates`：打印上表模板矩阵后退出（不生成工程）。
 
 `--monolith-bench-preset`（仅 Monolith 启用时）：生成后自动 `cargo build --release`（双二进制）并 `bench --runs 5`，结果写入 `bench_results/report.json`；失败不阻塞生成。
+
+`--quick` / `-q`：极速模式（preset=full、无 Monolith、无角色包、不接真内核）；交互时仅问项目名与输出目录。
 "#;
 
 #[derive(Parser, Debug, Clone)]
@@ -58,6 +60,10 @@ pub struct InitArgs {
     /// 输出目录（将创建该目录并写入新项目）
     #[arg(short = 'o', long, default_value = "generated-kernel")]
     pub output: PathBuf,
+
+    /// 极速模式：full 预设、无 Monolith、无角色包；交互仅问项目名与输出目录
+    #[arg(short = 'q', long)]
+    pub quick: bool,
 
     /// 非交互模式（与 --preset 联用）
     #[arg(long)]
@@ -535,10 +541,59 @@ pub(crate) fn apply_backend_cli_overrides(cfg: &mut ProjectConfig, args: &InitAr
     cfg.features.use_complex_emotion = cfg.backends.complex_emotion != BackendImpl::None;
 }
 
+/// `--quick` 默认配方：full 预设、无头服务、无 Monolith、无示例角色包。
+pub fn quick_project_config(project_name: &str) -> ProjectConfig {
+    let mut cfg = preset_config(project_name, "full");
+    cfg.monolith_enabled = false;
+    cfg.skip_role_pack = true;
+    cfg.role_pack_kind = RolePackKind::None;
+    cfg.kernel_source = None;
+    cfg.with_example_plugin = false;
+    cfg.run_monolith_bench_after_init = false;
+    cfg
+}
+
+fn run_quick_init(args: &InitArgs) -> Result<()> {
+    let mut project_name = args.project_name.clone();
+    let mut output = args.output.clone();
+    if !args.non_interactive {
+        project_name = dialoguer::Input::with_theme(&dialoguer::theme::ColorfulTheme::default())
+            .with_prompt("项目名（极速模式）")
+            .default(project_name)
+            .interact_text()
+            .context("quick project name")?;
+        let out_default = output.display().to_string();
+        let out_str: String = dialoguer::Input::with_theme(&dialoguer::theme::ColorfulTheme::default())
+            .with_prompt("输出目录")
+            .default(out_default)
+            .interact_text()
+            .context("quick output")?;
+        output = PathBuf::from(out_str);
+    }
+    let mut cfg = quick_project_config(&project_name);
+    apply_backend_cli_overrides(&mut cfg, args);
+    if !args.quiet {
+        println!("—— 极速模式（--quick）——");
+        println!("preset=full，Monolith=关，无 roles/，未接 --kernel-source");
+        cfg.print_summary();
+    }
+    generator::write_project(&cfg, &output)?;
+    if !args.quiet {
+        println!("已生成: {}", output.display());
+        println!("建议下一步: cargo run -p oclive-cli -- doctor");
+        println!("  然后 cd {} && cargo build && cargo run --release", output.display());
+    }
+    Ok(())
+}
+
 pub fn run(args: InitArgs) -> Result<()> {
     if args.list_templates {
         crate::template_catalog::print_templates_table();
         return Ok(());
+    }
+
+    if args.quick {
+        return run_quick_init(&args);
     }
 
     let mut cfg = if args.non_interactive {
@@ -557,7 +612,7 @@ pub fn run(args: InitArgs) -> Result<()> {
         }
         c
     } else {
-        let mut c = crate::interactive::run_interactive()?;
+        let mut c = crate::interactive::run_interactive(&args)?;
         apply_backend_cli_overrides(&mut c, &args);
         if let Some(t) = args.project_type {
             c.project_type = match t {
@@ -645,6 +700,7 @@ pub fn run(args: InitArgs) -> Result<()> {
                 args.output.display()
             );
         }
+        println!("环境自检: cargo run -p oclive-cli -- doctor");
     }
     Ok(())
 }
@@ -691,6 +747,7 @@ mod template_tests {
             monolith_preset: None,
             monolith_bench_preset: None,
             list_templates: false,
+            quick: false,
             skip_role_pack: false,
             with_role_pack: None,
             with_example_plugin: false,
@@ -723,6 +780,7 @@ mod template_tests {
             monolith_preset: None,
             monolith_bench_preset: None,
             list_templates: false,
+            quick: false,
             skip_role_pack: false,
             with_role_pack: None,
             with_example_plugin: false,
@@ -755,6 +813,7 @@ mod template_tests {
             monolith_preset: None,
             monolith_bench_preset: None,
             list_templates: false,
+            quick: false,
             skip_role_pack: false,
             with_role_pack: Some(RolePackKindArg::Default),
             with_example_plugin: false,
@@ -764,6 +823,14 @@ mod template_tests {
             resolve_role_pack_kind(&args),
             RolePackKind::DefaultExample
         );
+    }
+
+    #[test]
+    fn quick_config_uses_full_without_roles() {
+        let cfg = quick_project_config("q");
+        assert_eq!(cfg.backends.llm, BackendImpl::Remote);
+        assert!(!cfg.monolith_enabled);
+        assert_eq!(cfg.role_pack_kind, RolePackKind::None);
     }
 
     #[test]
@@ -787,6 +854,7 @@ mod template_tests {
             monolith_preset: None,
             monolith_bench_preset: Some(MonolithPresetArg::Latency),
             list_templates: false,
+            quick: false,
             skip_role_pack: true,
             with_role_pack: None,
             with_example_plugin: false,
