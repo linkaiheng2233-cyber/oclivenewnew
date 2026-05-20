@@ -87,21 +87,36 @@ cargo run -p oclive-cli -- init --non-interactive --quiet --preset minimal --ski
 | template | 场景 | preset | Monolith 默认 | project-type | 默认 `--with-role-pack` |
 |----------|------|--------|---------------|--------------|-------------------------|
 | `robot-soul` | 玩偶 / 嵌入式 | minimal | 启用 | kernel_server | `robot-soul-minimal` |
+| `robot-gateway` | 智能网关 / 家庭中枢 | mixed | 启用 | kernel_server | 无 |
+| `dialogue-only` | 纯对话服务 | full | 关闭 | kernel_server | `default` |
 | `headless-api` | 纯 API 无头 | full | 关闭 | kernel_server | 无 |
 | `library-embed` | 库嵌入 | minimal | 关闭 | library | 无 |
 
 ```bash
 cargo run -p oclive-cli -- init --non-interactive --quiet --template robot-soul -o ./out/doll
+cargo run -p oclive-cli -- init --non-interactive --template robot-gateway -o ./out/gateway
+cargo run -p oclive-cli -- init --non-interactive --template dialogue-only -o ./out/chat
 cargo run -p oclive-cli -- init --non-interactive --template headless-api --monolith -o ./out/api-weld
 cargo run -p oclive-cli -- init --non-interactive --template library-embed --kernel-source . -o ./out/embed
 ```
 
-**`--with-role-pack`**：`robot-soul-minimal`（七维 + `prompts/system.md`）| `default`（通用 `roles/default`）。未指定且未用模板时，非交互仍生成 **default** 示例包（与历史一致）。生成工程根目录含 **`plugins/README.md`**（说明插件路径，不含示例插件）。
+**`--with-role-pack`**：`robot-soul-minimal`（七维 + `prompts/system.md`）| `default`（通用 `roles/default`）。未指定且未用模板时，非交互仍生成 **default** 示例包（与历史一致）。
+
+**`--with-example-plugin`**：复制 `com.oclive.example.llamacpp_llm/` 到 `plugins/`（源自主仓 `examples/directory-plugin-llamacpp/`；默认关闭）。
+
+生成工程含 **`plugins/README.md`**、**`docs/BLUEPRINT_REFERENCE.md`**、**`docs/ORCHESTRATION_REFERENCE.md`**（中英编排参考）。
+
+**蓝图校验**（不改变桌面宿主主路径）：
+
+```bash
+cargo run -p oclive-cli -- blueprint validate ./roles/myrole/pipeline.ocblueprint
+cargo run -p oclive-cli -- blueprint validate ./path.json --json
+```
 
 启用 Monolith（`--non-interactive` 下加 **`--monolith`**；仅 **kernel_server**）：
 
 ```bash
-cargo run -p oclive-cli -- init --non-interactive --preset full --monolith -o /tmp/my-monolith-kernel
+cargo run -p oclive-cli -- init --non-interactive --preset full --monolith --monolith-preset latency -o /tmp/my-monolith-kernel
 cargo build --release --manifest-path /tmp/my-monolith-kernel/Cargo.toml
 cargo build --release --features monolith --manifest-path /tmp/my-monolith-kernel/Cargo.toml
 ```
@@ -125,8 +140,10 @@ cargo run -p oclive-cli -- init --non-interactive --quiet --preset mixed --proje
 | `--project-type` | `kernel-server` \| `library` |
 | `--project-name` | 默认 `my_oclive_kernel` |
 | `--monolith` | 非交互：启用 Monolith；生成 `monolith.toml`、`vendor/oclive_monolith_builtin/`、双 `[[bin]]`（`main.rs` / `main_monolith.rs`）与 `process_message_monolith.rs`（**仅 kernel_server**；与 `--project-type library` 互斥时自动忽略） |
-| `--template` | `robot-soul` \| `headless-api` \| `library-embed`（内核工厂套餐；见上表） |
+| `--monolith-preset` | 仅 Monolith 启用时：`latency`（七槽全焊）\| `memory` \| `embedded`；预填 `monolith.toml` 的 `weld_modules` |
+| `--template` | `robot-soul` \| `robot-gateway` \| `dialogue-only` \| `headless-api` \| `library-embed`（内核工厂套餐；见上表） |
 | `--with-role-pack` | `robot-soul-minimal` \| `default`；与 `--skip-role-pack` 互斥 |
+| `--with-example-plugin` | 附带 llamacpp 目录插件示例到 `plugins/` |
 | `--kernel-source` | 指向 oclivenewnew 根目录，生成 path 依赖与真实 HTTP 入口 |
 
 非交互时 **不必** 传入任何 `--backend-*` 即可生成；传入则只覆盖所列槽位。

@@ -13,7 +13,8 @@ flowchart TB
   subgraph recipe["Recipe layer (scaffold)"]
     T["--template"]
     R["--with-role-pack"]
-    P["--preset / --monolith / --kernel-source"]
+    P["--preset / --monolith / --monolith-preset / --kernel-source"]
+    E["--with-example-plugin"]
   end
   subgraph impl["Implementation layer"]
     PB["plugin_backends seven slots"]
@@ -28,6 +29,8 @@ flowchart TB
   R --> PB
   P --> PB
   T --> M
+  P --> M
+  E --> PL
   PB --> PM
   M --> PM
   PL --> PB
@@ -44,12 +47,12 @@ flowchart TB
 
 ## Factory workflow
 
-1. Pick a **template**: e.g. `robot-soul` (toy/embedded), `headless-api` (HTTP only), `library-embed` (link into your Rust binary).
-2. **Override** explicitly if needed: `--preset`, `--monolith`, `--with-role-pack` beat template defaults.
+1. Pick a **template**: `robot-soul` (toy), `robot-gateway` (smart hub), `dialogue-only` (conversation service), `headless-api` (HTTP), `library-embed` (library).
+2. **Override** explicitly if needed: `--preset`, `--monolith`, `--monolith-preset`, `--with-role-pack`, `--with-example-plugin` beat template defaults.
 3. **Wire the real kernel**: `--kernel-source <oclivenewnew root>`; `cargo build` / `cargo run -- --api` in the generated tree.
 4. **Swap soul**: edit `roles/<id>/` or `oclive pack create`; `oclive dev` watches manifest/settings.
 5. **Swap implementations**: `plugin_backends`, `plugins/<id>/`, or Remote sidecars ([PLUGIN_AUTHOR_LEARNING_PATH.md](../plugin-and-architecture/PLUGIN_AUTHOR_LEARNING_PATH.md)).
-6. **Need speed**: `robot-soul` enables Monolith by default; edit `monolith.toml` then `oclive build`.
+6. **Need speed**: `robot-soul` / `robot-gateway` enable Monolith by default; edit `monolith.toml` then `oclive build`.
 
 ---
 
@@ -57,8 +60,8 @@ flowchart TB
 
 - **Blueprints** describe **runtime** orchestration of atomic steps; **orthogonal** to Monolith (`monolith.toml` only).
 - **Desktop host**: entry blueprint **removed** from the hot path; use **`process_message`** ([AGENTS.md](../../AGENTS.md)).
-- **Factory today**: optional blueprint file shape may live in role packs; **scaffold does not generate or parse** blueprints yet. Re-enabling blueprints belongs in **runtime** + a revision RFC / `PIPELINE_SCHEMA`.
-- **Custom step order (short term)**: extend `process_message` or use Monolith welding; **not** `init` code generation in v1.
+- **Factory (validation)**: `oclive blueprint validate <path>` checks JSON shape, known step types, and `next` references. Does **not** change the desktop host. Generated projects include **`docs/BLUEPRINT_REFERENCE.md`**.
+- **Custom orchestration (short term)**: read **`docs/ORCHESTRATION_REFERENCE.md`** (and `.en.md`) + edit `monolith.toml` / fork `process_message`.
 
 ---
 
@@ -66,9 +69,11 @@ flowchart TB
 
 | Template | Monolith default | Notes |
 |----------|------------------|--------|
-| `robot-soul` | **on** | Welded slots for toys / latency-sensitive devices |
-| `headless-api` | off | pass `--monolith` to enable |
+| `robot-soul` / `robot-gateway` | **on** | Welded slots for latency-sensitive devices |
+| `headless-api` / `dialogue-only` | off | pass `--monolith` to enable |
 | `library-embed` | off | no `monolith.toml` for `library` |
+
+**`--monolith-preset`** (when Monolith is on): `latency` (all seven slots) | `memory` | `embedded`. You may edit `monolith.toml` afterward.
 
 ---
 
@@ -77,8 +82,24 @@ flowchart TB
 | `--template` | Use case | preset | Monolith | project-type | Default role pack |
 |--------------|----------|--------|----------|--------------|-------------------|
 | `robot-soul` | Smart toy / embedded | minimal | on | kernel_server | `robot-soul-minimal` |
+| `robot-gateway` | Smart gateway / home hub | mixed | on | kernel_server | none (OEM `roles/`) |
+| `dialogue-only` | Pure conversation service | full | off | kernel_server | `default` |
 | `headless-api` | Headless API | full | off | kernel_server | none |
 | `library-embed` | Embedded library | minimal | off | library | none |
+
+`--with-role-pack`: `robot-soul-minimal` | `default`; `--skip-role-pack` forces empty `roles/`.
+
+---
+
+## Orchestration reference (generated projects)
+
+`oclive init` writes **`docs/ORCHESTRATION_REFERENCE.md`** describing the six-stage pipeline, safe reorderings, hard constraints (`build_prompt` before `call_llm`), and skipping slots via `monolith.toml`. **Desktop host remains fixed**; for kernel developers only.
+
+---
+
+## Example plugin
+
+`--with-example-plugin` (default off) copies **`examples/directory-plugin-llamacpp/`** to **`plugins/com.oclive.example.llamacpp_llm/`**. See **`plugins/README.md`** in the generated tree.
 
 ---
 

@@ -57,13 +57,17 @@
 
 ## 三、`oclive-cli` 内核工厂模板（`--template`）
 
-与 **`init --help`** 末尾模板表一致；显式 **`--preset`** / **`--monolith`** / **`--project-type`** / **`--with-role-pack`** 优先。愿景：[KERNEL_FACTORY_VISION.md](../getting-started/KERNEL_FACTORY_VISION.md)
+与 **`init --help`** 末尾模板表一致；显式 **`--preset`** / **`--monolith`** / **`--monolith-preset`** / **`--project-type`** / **`--with-role-pack`** / **`--with-example-plugin`** 优先。愿景：[KERNEL_FACTORY_VISION.md](../getting-started/KERNEL_FACTORY_VISION.md)
 
 | template | preset | Monolith 默认 | project-type |
 |----------|--------|---------------|--------------|
 | `robot-soul` | minimal | 启用 | kernel_server |
+| `robot-gateway` | mixed | 启用 | kernel_server |
+| `dialogue-only` | full | 关闭 | kernel_server |
 | `headless-api` | full | 关闭 | kernel_server |
 | `library-embed` | minimal | 关闭 | library |
+
+**`--monolith-preset`**（Monolith 启用时）：`latency` | `memory` | `embedded` — 预填 `weld_modules`（见生成工程 `CONFIG_REFERENCE.md`）。
 
 ## 四、`oclive-cli` 预设矩阵（逻辑 → JSON）
 
