@@ -1,0 +1,31 @@
+[package]
+name = "oclive-fuzz"
+version = "0.0.0"
+publish = false
+edition = "2021"
+
+[package.metadata]
+cargo-fuzz = true
+
+[dependencies]
+libfuzzer-sys = "0.4"
+oclive_validation = { path = "../crates/oclive_validation" }
+serde_json = "1"
+
+[[bin]]
+name = "fuzz_manifest_load"
+path = "fuzz_targets/fuzz_manifest_load.rs"
+test = false
+doc = false
+
+[[bin]]
+name = "fuzz_settings_parse"
+path = "fuzz_targets/fuzz_settings_parse.rs"
+test = false
+doc = false
+
+[[bin]]
+name = "fuzz_oocp_message"
+path = "fuzz_targets/fuzz_oocp_message.rs"
+test = false
+doc = false
