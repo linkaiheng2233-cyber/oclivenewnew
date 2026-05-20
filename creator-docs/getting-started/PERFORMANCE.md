@@ -111,6 +111,16 @@ cargo run -p oclive-cli -- profile -o ./my-kernel
 | `--regression` 误报 | 历史样本过少或环境抖动 | 固定 `--runs` / 关闭后台重负载 |
 | matrix 耗时过长 | 组合数 × 编译 | 仅在调参阶段使用；日常用单次 `--save` |
 
+### 5.7 长稳运行（`bench --soak`）
+
+```bash
+cargo run -p oclive-cli -- bench --soak --soak-duration 24 -o ./my-kernel --json
+```
+
+在工程根启动 `cargo run --release -- --api`（`MOCK_LLM=1`），按**名义小时**采样 RSS 与聊天次数。本地为加速实现，墙钟约 **2s × 小时数**（上限 120s）；完整 **72h** 压测请在专用机器上放宽实现或延长 `wall_duration`。
+
+若 **最终 RSS > 首样本 × 1.2**，终端输出 ⚠️ 警告。
+
 ---
 
 ## 修订记录
