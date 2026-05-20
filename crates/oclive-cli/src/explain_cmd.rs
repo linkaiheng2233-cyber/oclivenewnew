@@ -130,14 +130,16 @@ fn parse_error_codes(raw: &str) -> Vec<ExplainEntry> {
             }
         }
         if let Some(c) = parse_table_row(line) {
-            flush(
-                &mut entries,
-                &mut current_code,
-                &mut meaning,
-                &mut causes,
-                &mut suggestions,
-                &mut hint,
-            );
+            if current_code.as_ref().is_some_and(|cur| cur != &c.0) {
+                flush(
+                    &mut entries,
+                    &mut current_code,
+                    &mut meaning,
+                    &mut causes,
+                    &mut suggestions,
+                    &mut hint,
+                );
+            }
             current_code = Some(c.0);
             meaning = c.1;
             causes = c.2;

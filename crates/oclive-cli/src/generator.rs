@@ -88,11 +88,25 @@ pub fn validate_kernel_source(root: &Path) -> Result<()> {
     Ok(())
 }
 
+/// Strip Windows `\\?\` verbatim prefix so Cargo.toml `path =` stays valid.
+fn canonicalize_for_cargo(path: &Path) -> PathBuf {
+    let p = path.canonicalize().unwrap_or_else(|_| path.to_path_buf());
+    let s = p.to_string_lossy();
+    let s = s.strip_prefix(r"\\?\").unwrap_or(&s);
+    PathBuf::from(s)
+}
+
 fn relativize_path(from: &Path, to: &Path) -> String {
-    let from = from.canonicalize().unwrap_or_else(|_| from.to_path_buf());
-    let to = to.canonicalize().unwrap_or_else(|_| to.to_path_buf());
-    let from_c: Vec<_> = from.components().collect();
-    let to_c: Vec<_> = to.components().collect();
+    let from = canonicalize_for_cargo(from);
+    let to = canonicalize_for_cargo(to);
+    let from_c: Vec<_> = from
+        .components()
+        .filter(|c| !matches!(c, std::path::Component::Prefix(_)))
+        .collect();
+    let to_c: Vec<_> = to
+        .components()
+        .filter(|c| !matches!(c, std::path::Component::Prefix(_)))
+        .collect();
     let mut shared = 0usize;
     while shared < from_c.len() && shared < to_c.len() && from_c[shared] == to_c[shared] {
         shared += 1;
