@@ -29,6 +29,18 @@ pub const PRESET_MATRIX_HELP: &str = r#"预设与 plugin_backends（逻辑槽位
 llm 使用 ollama 表示进程内默认本地客户端；无本机模型时请改为 remote 并配置 OCLIVE_REMOTE_LLM_URL（见 PLUGIN_V1）。
 
 开发者编译选项：非交互可加 **`--monolith`**（仅 kernel_server）；交互流程末尾询问。生成 `monolith.toml`（由 init 生成、**`oclive build`** 读取并再生成 `process_message_monolith.rs`）。子命令 **`build`** / **`bench`** 见 **`cargo run -p oclive-cli -- --help`**。详见 creator-docs/rfc/RFC_OCLIVE_MONOLITH_MODE.md。
+
+内核工厂模板（`--template`，与 `--preset` / `--project-type` / `--monolith` 可叠加；显式 CLI 参数优先）：
+
+┌─────────────────┬─────────┬──────────────────┬────────────────┬──────────────────────────────┐
+│ template        │ preset  │ monolith 默认    │ project-type   │ 默认 --with-role-pack        │
+├─────────────────┼─────────┼──────────────────┼────────────────┼──────────────────────────────┤
+│ robot-soul      │ minimal │ 启用             │ kernel_server  │ robot-soul-minimal           │
+│ headless-api    │ full    │ 关闭（可加 --monolith） │ kernel_server  │ 无（空 roles/）              │
+│ library-embed   │ minimal │ 关闭             │ library        │ 无                           │
+└─────────────────┴─────────┴──────────────────┴────────────────┴──────────────────────────────┘
+
+`--with-role-pack`：`robot-soul-minimal` | `default`；未指定且未用模板时，非交互仍生成通用 `roles/default`（与历史行为一致）。`--skip-role-pack` 强制不生成 `roles/`。
 "#;
 
 #[derive(Parser, Debug, Clone)]
@@ -44,6 +56,10 @@ pub struct InitArgs {
     /// 跳过配置摘要与完成提示（脚本 / 测试用）
     #[arg(long)]
     pub quiet: bool,
+
+    /// 内核工厂模板：robot-soul | headless-api | library-embed（与 --preset 等可叠加，显式参数优先）
+    #[arg(long, value_enum)]
+    pub template: Option<InitTemplateArg>,
 
     /// 预设：minimal | full | mixed
     #[arg(long)]
@@ -86,9 +102,78 @@ pub struct InitArgs {
     #[arg(long)]
     pub skip_role_pack: bool,
 
+    /// 生成示例角色包：robot-soul-minimal | default（未指定时由 --template 或历史默认决定）
+    #[arg(long, value_enum)]
+    pub with_role_pack: Option<RolePackKindArg>,
+
     /// 指向 oclivenewnew 仓库根：生成项目写入 `oclivenewnew-tauri` / `oclive_kernel_runtime` path 依赖
     #[arg(long)]
     pub kernel_source: Option<PathBuf>,
+}
+
+/// 内核工厂套餐（`--template`）。
+#[derive(clap::ValueEnum, Clone, Debug, Copy, PartialEq, Eq)]
+#[clap(rename_all = "kebab-case")]
+pub enum InitTemplateArg {
+    RobotSoul,
+    HeadlessApi,
+    LibraryEmbed,
+}
+
+/// 示例角色包种类（`--with-role-pack`）。
+#[derive(clap::ValueEnum, Clone, Debug, Copy, PartialEq, Eq)]
+#[clap(rename_all = "kebab-case")]
+pub enum RolePackKindArg {
+    RobotSoulMinimal,
+    Default,
+}
+
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(rename_all = "snake_case")]
+pub enum RolePackKind {
+    None,
+    DefaultExample,
+    RobotSoulMinimal,
+}
+
+impl From<RolePackKindArg> for RolePackKind {
+    fn from(v: RolePackKindArg) -> Self {
+        match v {
+            RolePackKindArg::Default => RolePackKind::DefaultExample,
+            RolePackKindArg::RobotSoulMinimal => RolePackKind::RobotSoulMinimal,
+        }
+    }
+}
+
+pub struct TemplateDefaults {
+    pub preset: &'static str,
+    pub project_type: ProjectType,
+    /// 模板是否默认启用 Monolith（仅 kernel_server；可被 `--monolith` 覆盖为启用）
+    pub monolith_default: bool,
+    pub role_pack: RolePackKind,
+}
+
+pub fn template_defaults(t: InitTemplateArg) -> TemplateDefaults {
+    match t {
+        InitTemplateArg::RobotSoul => TemplateDefaults {
+            preset: "minimal",
+            project_type: ProjectType::KernelServer,
+            monolith_default: true,
+            role_pack: RolePackKind::RobotSoulMinimal,
+        },
+        InitTemplateArg::HeadlessApi => TemplateDefaults {
+            preset: "full",
+            project_type: ProjectType::KernelServer,
+            monolith_default: false,
+            role_pack: RolePackKind::None,
+        },
+        InitTemplateArg::LibraryEmbed => TemplateDefaults {
+            preset: "minimal",
+            project_type: ProjectType::Library,
+            monolith_default: false,
+            role_pack: RolePackKind::None,
+        },
+    }
 }
 
 #[derive(clap::ValueEnum, Clone, Debug, Copy, PartialEq, Eq, Serialize, Deserialize)]
@@ -165,7 +250,8 @@ pub struct ProjectConfig {
     pub backends: BackendSlots,
     pub plugins: PluginSelection,
     pub features: FeatureSelection,
-    pub with_example_role: bool,
+    /// 生成哪种示例角色包（`None` = 不创建 `roles/`）。
+    pub role_pack_kind: RolePackKind,
     /// 仅 `kernel_server` 且为 true 时生成 `monolith.toml` 与 Monolith 构建配置。
     pub monolith_enabled: bool,
     /// 为 true 时不生成 `roles/` 目录（空白内核模板）。
@@ -197,10 +283,12 @@ impl ProjectConfig {
             "角色包模板: {}",
             if self.skip_role_pack {
                 "无（不生成 roles/）"
-            } else if self.with_example_role {
-                "示例（manifest + settings + 默认场景）"
             } else {
-                "（内部状态）"
+                match self.role_pack_kind {
+                    RolePackKind::None => "无（不生成 roles/）",
+                    RolePackKind::DefaultExample => "default（通用示例 roles/default）",
+                    RolePackKind::RobotSoulMinimal => "robot-soul-minimal（七维 + prompts/system.md）",
+                }
             }
         );
         if self.monolith_enabled {
@@ -273,19 +361,64 @@ pub fn preset_config(name: &str, preset: &str) -> ProjectConfig {
     let features = FeatureSelection {
         use_complex_emotion: backends.complex_emotion != BackendImpl::None,
     };
-    // 始终生成示例角色包与 settings.json，便于对照 CONFIG_REFERENCE.md 验收。
-    let with_example_role = true;
     ProjectConfig {
         project_name,
         project_type,
         backends,
         plugins,
         features,
-        with_example_role,
+        role_pack_kind: RolePackKind::DefaultExample,
         monolith_enabled: false,
         skip_role_pack: false,
         kernel_source: None,
     }
+}
+
+/// 合并 `--template` 与显式 CLI 覆盖（显式优先）。
+pub fn apply_template_layer(args: &InitArgs, cfg: &mut ProjectConfig) {
+    let Some(t) = args.template else {
+        return;
+    };
+    let td = template_defaults(t);
+    if args.preset.is_none() {
+        let fresh = preset_config(&cfg.project_name, td.preset);
+        cfg.backends = fresh.backends;
+        cfg.plugins = fresh.plugins;
+        cfg.features = fresh.features;
+    }
+    if args.project_type.is_none() {
+        cfg.project_type = td.project_type;
+    }
+}
+
+pub fn resolve_monolith(args: &InitArgs, cfg: &mut ProjectConfig) {
+    if cfg.project_type != ProjectType::KernelServer {
+        cfg.monolith_enabled = false;
+        return;
+    }
+    if args.monolith {
+        cfg.monolith_enabled = true;
+        return;
+    }
+    if let Some(t) = args.template {
+        let td = template_defaults(t);
+        if td.monolith_default {
+            cfg.monolith_enabled = true;
+        }
+    }
+}
+
+pub fn resolve_role_pack_kind(args: &InitArgs) -> RolePackKind {
+    if args.skip_role_pack {
+        return RolePackKind::None;
+    }
+    if let Some(rp) = args.with_role_pack {
+        return rp.into();
+    }
+    if let Some(t) = args.template {
+        return template_defaults(t).role_pack;
+    }
+    RolePackKind::DefaultExample
 }
 
 pub(crate) fn apply_backend_cli_overrides(cfg: &mut ProjectConfig, args: &InitArgs) {
@@ -344,15 +477,12 @@ pub fn run(args: InitArgs) -> Result<()> {
         c
     };
 
-    if cfg.project_type != ProjectType::KernelServer {
-        cfg.monolith_enabled = false;
-    } else if args.monolith {
-        cfg.monolith_enabled = true;
-    }
-
-    if args.non_interactive && args.skip_role_pack {
+    apply_template_layer(&args, &mut cfg);
+    resolve_monolith(&args, &mut cfg);
+    cfg.role_pack_kind = resolve_role_pack_kind(&args);
+    if args.skip_role_pack {
         cfg.skip_role_pack = true;
-        cfg.with_example_role = false;
+        cfg.role_pack_kind = RolePackKind::None;
     }
 
     if let Some(ref ks) = args.kernel_source {
@@ -404,4 +534,110 @@ pub fn run(args: InitArgs) -> Result<()> {
         }
     }
     Ok(())
+}
+
+#[cfg(test)]
+mod template_tests {
+    use super::*;
+
+    #[test]
+    fn template_robot_soul_defaults() {
+        let td = template_defaults(InitTemplateArg::RobotSoul);
+        assert_eq!(td.preset, "minimal");
+        assert!(td.monolith_default);
+        assert_eq!(td.project_type, ProjectType::KernelServer);
+        assert_eq!(td.role_pack, RolePackKind::RobotSoulMinimal);
+    }
+
+    #[test]
+    fn template_headless_api_defaults() {
+        let td = template_defaults(InitTemplateArg::HeadlessApi);
+        assert_eq!(td.preset, "full");
+        assert!(!td.monolith_default);
+        assert_eq!(td.role_pack, RolePackKind::None);
+    }
+
+    #[test]
+    fn preset_override_wins_over_template() {
+        let args = InitArgs {
+            output: PathBuf::from("out"),
+            non_interactive: true,
+            quiet: true,
+            template: Some(InitTemplateArg::RobotSoul),
+            preset: Some("full".into()),
+            project_name: "t".into(),
+            project_type: None,
+            backend_memory: None,
+            backend_emotion: None,
+            backend_event: None,
+            backend_prompt: None,
+            backend_llm: None,
+            backend_agent: None,
+            backend_complex_emotion: None,
+            monolith: false,
+            skip_role_pack: false,
+            with_role_pack: None,
+            kernel_source: None,
+        };
+        let preset = args.preset.as_deref().unwrap_or("minimal");
+        let mut cfg = preset_config("t", preset);
+        apply_template_layer(&args, &mut cfg);
+        assert_eq!(cfg.backends.llm, BackendImpl::Remote);
+    }
+
+    #[test]
+    fn robot_soul_template_enables_monolith_without_flag() {
+        let args = InitArgs {
+            output: PathBuf::from("out"),
+            non_interactive: true,
+            quiet: true,
+            template: Some(InitTemplateArg::RobotSoul),
+            preset: None,
+            project_name: "t".into(),
+            project_type: None,
+            backend_memory: None,
+            backend_emotion: None,
+            backend_event: None,
+            backend_prompt: None,
+            backend_llm: None,
+            backend_agent: None,
+            backend_complex_emotion: None,
+            monolith: false,
+            skip_role_pack: false,
+            with_role_pack: None,
+            kernel_source: None,
+        };
+        let mut cfg = preset_config("t", "minimal");
+        apply_template_layer(&args, &mut cfg);
+        resolve_monolith(&args, &mut cfg);
+        assert!(cfg.monolith_enabled);
+    }
+
+    #[test]
+    fn with_role_pack_overrides_template_default() {
+        let args = InitArgs {
+            output: PathBuf::from("out"),
+            non_interactive: true,
+            quiet: true,
+            template: Some(InitTemplateArg::RobotSoul),
+            preset: None,
+            project_name: "t".into(),
+            project_type: None,
+            backend_memory: None,
+            backend_emotion: None,
+            backend_event: None,
+            backend_prompt: None,
+            backend_llm: None,
+            backend_agent: None,
+            backend_complex_emotion: None,
+            monolith: false,
+            skip_role_pack: false,
+            with_role_pack: Some(RolePackKindArg::Default),
+            kernel_source: None,
+        };
+        assert_eq!(
+            resolve_role_pack_kind(&args),
+            RolePackKind::DefaultExample
+        );
+    }
 }

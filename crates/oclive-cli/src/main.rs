@@ -14,6 +14,7 @@ mod interactive;
 mod monolith_codegen;
 mod monolith_config;
 mod pack_cmd;
+mod role_pack;
 
 use anyhow::Result;
 use clap::{Parser, Subcommand};
@@ -85,6 +86,10 @@ mod tests {
         assert!(
             crate::init::PRESET_MATRIX_HELP.contains("--monolith"),
             "init --help footer should mention --monolith"
+        );
+        assert!(
+            crate::init::PRESET_MATRIX_HELP.contains("robot-soul"),
+            "init --help footer should mention --template"
         );
     }
 }
