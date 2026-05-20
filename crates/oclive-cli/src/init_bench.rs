@@ -49,6 +49,9 @@ fn run_post_init_bench_inner(root: &Path, bench_dir: &Path) -> Result<()> {
         watch: false,
         dashboard: false,
         matrix: false,
+        regression: false,
+        regression_threshold: None,
+        compare_versions: None,
         cargo_extra: vec![],
     };
     crate::bench_cmd::run(args)?;

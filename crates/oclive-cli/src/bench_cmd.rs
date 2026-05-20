@@ -61,6 +61,18 @@ pub struct BenchArgs {
     #[arg(long)]
     pub matrix: bool,
 
+    /// 与 bench_history 最近一条对比，超阈值则退出码 1
+    #[arg(long)]
+    pub regression: bool,
+
+    /// 回归阈值（%），未指定时使用各指标默认（p50 5 / p95 10 / 内存与体积 5–10）
+    #[arg(long)]
+    pub regression_threshold: Option<f64>,
+
+    /// 与指定 Git 引用对比性能（各 5 轮）
+    #[arg(long = "compare-versions")]
+    pub compare_versions: Option<String>,
+
     /// 透传给 `cargo build` 的附加参数（放在 `--` 之后）
     #[arg(trailing_var_arg = true, allow_hyphen_values = true)]
     pub cargo_extra: Vec<String>,
@@ -520,6 +532,9 @@ fn arrow(delta: f64) -> &'static str {
 
 pub fn run(args: BenchArgs) -> Result<()> {
     let root = resolve_project_root(&args.path)?;
+    if let Some(ref git_ref) = args.compare_versions {
+        return run_bench_compare_versions(&root, git_ref, &args);
+    }
     if args.dashboard {
         return run_bench_dashboard(&root, &args);
     }
@@ -609,6 +624,20 @@ pub fn run(args: BenchArgs) -> Result<()> {
     } else {
         println!("{json}");
     }
+    if args.regression {
+        let code = run_bench_regression(&root, &report, args.regression_threshold, args.json)?;
+        if !args.json && args.output != "-" {
+            print_bench_comparison(&report);
+        }
+        if args.save {
+            append_history(&root, &report)?;
+            eprintln!("已追加到 {}", history_path(&root).display());
+        }
+        if code != 0 {
+            std::process::exit(1);
+        }
+        return Ok(());
+    }
     if args.save {
         append_history(&root, &report)?;
         eprintln!("已追加到 {}", history_path(&root).display());
@@ -617,6 +646,324 @@ pub fn run(args: BenchArgs) -> Result<()> {
         print_bench_comparison(&report);
     }
     Ok(())
+}
+
+struct RegressionThresholds {
+    p50: f64,
+    p95: f64,
+    peak_mem: f64,
+    binary: f64,
+}
+
+fn default_thresholds(custom: Option<f64>) -> RegressionThresholds {
+    if let Some(t) = custom {
+        return RegressionThresholds {
+            p50: t,
+            p95: t,
+            peak_mem: t,
+            binary: t,
+        };
+    }
+    RegressionThresholds {
+        p50: 5.0,
+        p95: 10.0,
+        peak_mem: 10.0,
+        binary: 5.0,
+    }
+}
+
+fn run_bench_regression(
+    root: &Path,
+    current: &BenchReport,
+    custom_threshold: Option<f64>,
+    json_out: bool,
+) -> Result<i32> {
+    let path = history_path(root);
+    if !path.is_file() {
+        anyhow::bail!("--regression 需要 bench_history.json；请先 oclive bench --save");
+    }
+    let raw = fs::read_to_string(&path)?;
+    let file: BenchHistoryFile = serde_json::from_str(&raw)?;
+    let baseline = file
+        .entries
+        .last()
+        .map(|e| &e.report)
+        .context("bench_history 无记录")?;
+    let th = default_thresholds(custom_threshold);
+    let mut regressions = Vec::new();
+
+    let checks = [
+        (
+            "monolith_p50",
+            baseline.monolith_ms.p50,
+            current.monolith_ms.p50,
+            th.p50,
+        ),
+        (
+            "monolith_p95",
+            baseline.monolith_ms.p95,
+            current.monolith_ms.p95,
+            th.p95,
+        ),
+        (
+            "peak_memory",
+            baseline.peak_memory.monolith as f64,
+            current.peak_memory.monolith as f64,
+            th.peak_mem,
+        ),
+        (
+            "binary_size",
+            baseline.binary_size.monolith as f64,
+            current.binary_size.monolith as f64,
+            th.binary,
+        ),
+    ];
+    for (name, base, cur, limit) in checks {
+        let pct = if base <= 0.0 {
+            0.0
+        } else {
+            ((cur - base) / base) * 100.0
+        };
+        if pct > limit {
+            regressions.push((name, base, cur, pct, limit));
+        }
+    }
+
+    if json_out {
+        #[derive(Serialize)]
+        struct Row {
+            metric: String,
+            baseline: f64,
+            current: f64,
+            change_pct: f64,
+            threshold_pct: f64,
+            regressed: bool,
+        }
+        let rows: Vec<Row> = checks
+            .iter()
+            .map(|(name, base, cur, limit)| {
+                let pct = if *base <= 0.0 {
+                    0.0
+                } else {
+                    ((cur - base) / base) * 100.0
+                };
+                Row {
+                    metric: (*name).into(),
+                    baseline: *base,
+                    current: *cur,
+                    change_pct: pct,
+                    threshold_pct: *limit,
+                    regressed: pct > *limit,
+                }
+            })
+            .collect();
+        println!("{}", serde_json::to_string_pretty(&rows)?);
+    } else {
+        println!("oclive bench --regression（对比 bench_history 最近一条）\n");
+        for (name, base, cur, pct, limit) in &regressions {
+            println!(
+                "  ⚠️ {name}: {base:.1} -> {cur:.1} (+{pct:.1}% > 阈值 {limit:.0}%)"
+            );
+        }
+        if regressions.is_empty() {
+            println!("  ✅ 未检测到超过阈值的性能退化");
+        }
+    }
+    Ok(if regressions.is_empty() { 0 } else { 1 })
+}
+
+fn run_bench_compare_versions(root: &Path, git_ref: &str, base: &BenchArgs) -> Result<()> {
+    let root = root.canonicalize()?;
+    let mut args_other = base.clone();
+    args_other.compare_versions = None;
+    args_other.regression = false;
+    args_other.runs = 5;
+    args_other.release = true;
+    args_other.save = false;
+
+    eprintln!("oclive bench --compare-versions {git_ref}");
+    let stashed = git_stash_push(&root)?;
+    let original_ref = git_current_ref(&root)?;
+
+    eprintln!("→ 检出 {git_ref} 并采样…");
+    git_checkout(&root, git_ref)?;
+    let other = collect_bench_report(&root, &args_other)?;
+
+    eprintln!("→ 恢复当前工作区并采样…");
+    git_checkout(&root, &original_ref)?;
+    if stashed {
+        git_stash_pop(&root)?;
+    }
+    let current = collect_bench_report(&root, &args_other)?;
+
+    if base.json {
+        #[derive(Serialize)]
+        struct Cmp {
+            git_ref: String,
+            other: BenchReport,
+            current: BenchReport,
+        }
+        println!(
+            "{}",
+            serde_json::to_string_pretty(&Cmp {
+                git_ref: git_ref.to_string(),
+                other,
+                current,
+            })?
+        );
+        return Ok(());
+    }
+
+    print_version_matrix(git_ref, &other, &current);
+    Ok(())
+}
+
+fn collect_bench_report(root: &Path, args: &BenchArgs) -> Result<BenchReport> {
+    let mt = root.join("monolith.toml");
+    if !mt.is_file() {
+        anyhow::bail!("需要 monolith.toml");
+    }
+    let file = regenerate_monolith_from_disk_quiet(root)?;
+    if args.release {
+        let _ = run_timed_dual_build(root, true, &args.cargo_extra, file.monolith.enabled)?;
+    } else {
+        cargo_build_dual(root, false, &args.cargo_extra)?;
+    }
+    let pkg = read_package_name(root)?;
+    let std_bin = release_bin_path(root, &pkg, args.release);
+    let mono_bin = release_bin_path(root, &format!("{pkg}-monolith"), args.release);
+    let binary_size = StandardMonolithPair {
+        standard: binary_file_size(&std_bin)?,
+        monolith: binary_file_size(&mono_bin)?,
+    };
+    let mut std_samples = Vec::new();
+    let mut mono_samples = Vec::new();
+    let mut std_peak = 0u64;
+    let mut mono_peak = 0u64;
+    for _ in 0..args.runs {
+        let (ms, peak) = run_bench_child_with_peak(&std_bin, args.inner_iters)?;
+        std_samples.push(ms);
+        std_peak = std_peak.max(peak);
+        let (ms, peak) = run_bench_child_with_peak(&mono_bin, args.inner_iters)?;
+        mono_samples.push(ms);
+        mono_peak = mono_peak.max(peak);
+    }
+    Ok(BenchReport {
+        schema_version: BENCH_REPORT_SCHEMA_VERSION,
+        package_name: pkg,
+        runs: args.runs,
+        inner_iters: args.inner_iters,
+        release: args.release,
+        standard_ms: stats(std_samples),
+        monolith_ms: stats(mono_samples),
+        binary_size,
+        peak_memory: StandardMonolithPair {
+            standard: std_peak,
+            monolith: mono_peak,
+        },
+        build_time: StandardMonolithPair {
+            standard: 0.0,
+            monolith: 0.0,
+        },
+    })
+}
+
+fn print_version_matrix(git_ref: &str, other: &BenchReport, current: &BenchReport) {
+    let rows = [
+        (
+            "Median Lat",
+            other.monolith_ms.p50,
+            current.monolith_ms.p50,
+        ),
+        (
+            "P95 Lat",
+            other.monolith_ms.p95,
+            current.monolith_ms.p95,
+        ),
+        (
+            "Peak Memory",
+            other.peak_memory.monolith as f64,
+            current.peak_memory.monolith as f64,
+        ),
+        (
+            "Binary Size",
+            other.binary_size.monolith as f64,
+            current.binary_size.monolith as f64,
+        ),
+    ];
+    println!("┌──────────────┬──────────┬──────────┬────────┐");
+    println!("│ Metric       │ {:>8} │ Current  │ Change │", git_ref);
+    println!("├──────────────┼──────────┼──────────┼────────┤");
+    for (label, base, cur) in rows {
+        let ch = pct_change_label(base, cur);
+        let b = format_metric(label, base);
+        let c = format_metric(label, cur);
+        println!("│ {:12} │ {:>8} │ {:>8} │ {:>6} │", label, b, c, ch);
+    }
+    println!("└──────────────┴──────────┴──────────┴────────┘");
+}
+
+fn format_metric(label: &str, v: f64) -> String {
+    if label.contains("Memory") || label.contains("Binary") {
+        format!("{:.0}MiB", v / (1024.0 * 1024.0))
+    } else {
+        format!("{:.0}ms", v)
+    }
+}
+
+fn pct_change_label(base: f64, cur: f64) -> String {
+    if base.abs() <= f64::EPSILON {
+        return "—".into();
+    }
+    let pct = ((cur - base) / base) * 100.0;
+    if pct.abs() < 0.5 {
+        "→".into()
+    } else if pct < 0.0 {
+        format!("↓ {:.1}%", pct.abs())
+    } else {
+        format!("↑ {:.1}%", pct)
+    }
+}
+
+fn git_stash_push(root: &Path) -> Result<bool> {
+    let st = std::process::Command::new("git")
+        .args(["stash", "push", "-u", "-m", "oclive-bench-compare"])
+        .current_dir(root)
+        .output()?;
+    Ok(st.status.success() && !String::from_utf8_lossy(&st.stdout).trim().is_empty())
+}
+
+fn git_stash_pop(root: &Path) -> Result<()> {
+    let st = std::process::Command::new("git")
+        .args(["stash", "pop"])
+        .current_dir(root)
+        .status()?;
+    if !st.success() {
+        eprintln!("⚠ git stash pop 有冲突，请手动解决");
+    }
+    Ok(())
+}
+
+fn git_checkout(root: &Path, refname: &str) -> Result<()> {
+    let st = std::process::Command::new("git")
+        .args(["checkout", refname])
+        .current_dir(root)
+        .status()?;
+    if !st.success() {
+        anyhow::bail!("git checkout {refname} 失败");
+    }
+    Ok(())
+}
+
+fn git_current_ref(root: &Path) -> Result<String> {
+    let out = std::process::Command::new("git")
+        .args(["rev-parse", "--abbrev-ref", "HEAD"])
+        .current_dir(root)
+        .output()?;
+    if !out.status.success() {
+        return Ok("HEAD".into());
+    }
+    Ok(String::from_utf8_lossy(&out.stdout).trim().to_string())
 }
 
 /// 终端输出标准版 vs Monolith 焊接版延迟对比（p50 / P95）。
