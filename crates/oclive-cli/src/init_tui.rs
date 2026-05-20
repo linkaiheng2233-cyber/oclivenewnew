@@ -116,6 +116,97 @@ fn run_loop(project_name: &str) -> Result<Option<InitTemplateArg>> {
     Ok(chosen)
 }
 
+/// Monolith 自定义焊接：空格切换槽位，Enter 确认，Esc 跳过（回退 preset 默认焊接）。
+pub fn pick_weld_modules_tui() -> Result<Option<Vec<String>>> {
+    use crate::monolith_config::SLOT_IDS;
+    enable_raw_mode().context("enable_raw_mode")?;
+    stdout().execute(EnterAlternateScreen).context("alt screen")?;
+    let result = run_weld_loop(&SLOT_IDS);
+    disable_raw_mode().ok();
+    let _ = stdout().execute(LeaveAlternateScreen);
+    result
+}
+
+fn run_weld_loop(slots: &[&str; 7]) -> Result<Option<Vec<String>>> {
+    let mut terminal = ratatui::init();
+    let mut selected = [true, true, true, false, true, false, false];
+    let mut cursor = 0usize;
+    let mut skip = false;
+
+    loop {
+        terminal.draw(|f| {
+            let chunks = Layout::default()
+                .direction(Direction::Horizontal)
+                .constraints([Constraint::Percentage(50), Constraint::Percentage(50)])
+                .split(f.area());
+            let lines: Vec<Line> = slots
+                .iter()
+                .enumerate()
+                .map(|(i, id)| {
+                    let mark = if selected[i] { "[x]" } else { "[ ]" };
+                    let cur = if i == cursor { ">" } else { " " };
+                    let style = if i == cursor {
+                        Style::default().add_modifier(Modifier::REVERSED)
+                    } else {
+                        Style::default()
+                    };
+                    Line::styled(format!("{cur} {mark} {id}"), style)
+                })
+                .collect();
+            let list = Paragraph::new(lines).block(
+                Block::default()
+                    .title(" 自定义焊接（↑↓ · 空格 · Enter · Esc 跳过） ")
+                    .borders(Borders::ALL),
+            );
+            f.render_widget(list, chunks[0]);
+            let n = selected.iter().filter(|&&b| b).count();
+            let est_mib = (7 - n) as f64 * 0.35;
+            let est_latency = -(n as f64 * 2.5);
+            let preview = format!(
+                "焊接槽位: {n} / 7\n预计二进制缩减: ~{est_mib:.1} MiB（启发式）\n预计延迟变化: ~{est_latency:.0}ms（启发式）\n\nEnter → 写入 monolith.toml weld_modules",
+            );
+            f.render_widget(
+                Paragraph::new(preview).block(Block::default().title(" 预览 ").borders(Borders::ALL)),
+                chunks[1],
+            );
+        })?;
+
+        if event::poll(std::time::Duration::from_millis(100))? {
+            if let Event::Key(key) = event::read()? {
+                if key.kind != KeyEventKind::Press {
+                    continue;
+                }
+                match key.code {
+                    KeyCode::Up => cursor = cursor.saturating_sub(1),
+                    KeyCode::Down => cursor = (cursor + 1).min(slots.len() - 1),
+                    KeyCode::Char(' ') => selected[cursor] = !selected[cursor],
+                    KeyCode::Enter => break,
+                    KeyCode::Esc => {
+                        skip = true;
+                        break;
+                    }
+                    _ => {}
+                }
+            }
+        }
+    }
+
+    ratatui::restore();
+    if skip {
+        return Ok(None);
+    }
+    let out: Vec<String> = slots
+        .iter()
+        .enumerate()
+        .filter_map(|(i, id)| selected[i].then(|| (*id).to_string()))
+        .collect();
+    if out.is_empty() {
+        println!("未选择任何槽位，跳过自定义焊接。");
+        return Ok(None);
+    }
+    Ok(Some(out))
+}
+
 fn preview_text(project_name: &str, idx: usize) -> String {
     let Some(entry) = CATALOG.get(idx) else {
         return String::new();
