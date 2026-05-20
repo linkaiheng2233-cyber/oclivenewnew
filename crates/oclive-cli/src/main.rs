@@ -76,7 +76,7 @@ enum Commands {
     Dev(dev_cmd::DevArgs),
     /// 角色包：校验、创建、打包（.oclivepack）
     Pack(pack_cmd::PackArgs),
-    /// 蓝图（pipeline.ocblueprint）读取与校验
+    /// [experimental/legacy] 蓝图（pipeline.ocblueprint）校验
     Blueprint(blueprint_cmd::BlueprintCli),
     /// 环境诊断（Rust / 磁盘 / Ollama / 网络等）
     Doctor(doctor_cmd::DoctorArgs),
@@ -86,7 +86,7 @@ enum Commands {
     Registry(registry_cmd::RegistryCli),
     /// 多内核 compose 编排
     Compose(compose_cmd::ComposeCli),
-    /// 发布模板包
+    /// [deprecated] 发布模板包 — 请用 `oclive template pack`
     Publish(publish_cmd::PublishArgs),
     /// 逐步骤调试 process_message
     Debug(debug_cmd::DebugArgs),
@@ -108,7 +108,7 @@ enum Commands {
     Config(config_cmd::ConfigCli),
     /// 生成 GitHub Actions CI
     Ci(ci_cmd::CiCli),
-    /// 模板反向生成
+    /// 模板打包与反向生成（`pack` / `create`）
     Template(template_cmd::TemplateCli),
 }
 
