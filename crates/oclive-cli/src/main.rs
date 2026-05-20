@@ -22,6 +22,12 @@ mod template_catalog;
 mod monolith_codegen;
 mod monolith_config;
 mod pack_cmd;
+mod compose_cmd;
+mod debug_cmd;
+mod init_tui;
+mod publish_cmd;
+mod registry;
+mod registry_cmd;
 mod role_pack;
 
 use anyhow::Result;
@@ -61,6 +67,14 @@ enum Commands {
     Doctor(doctor_cmd::DoctorArgs),
     /// 插件脚手架（directory / remote）
     Plugin(plugin_cmd::PluginCli),
+    /// 本地内核工程注册表
+    Registry(registry_cmd::RegistryCli),
+    /// 多内核 compose 编排
+    Compose(compose_cmd::ComposeCli),
+    /// 发布模板包
+    Publish(publish_cmd::PublishArgs),
+    /// 逐步骤调试 process_message
+    Debug(debug_cmd::DebugArgs),
 }
 
 fn init_tracing(verbose: u8) {
@@ -89,6 +103,10 @@ fn main() -> Result<()> {
         Commands::Blueprint(cli) => blueprint_cmd::run(cli),
         Commands::Doctor(args) => doctor_cmd::run(args),
         Commands::Plugin(cli) => plugin_cmd::run(cli),
+        Commands::Registry(cli) => registry_cmd::run(cli),
+        Commands::Compose(cli) => compose_cmd::run(cli),
+        Commands::Publish(args) => publish_cmd::run(args),
+        Commands::Debug(args) => debug_cmd::run(args),
     }
 }
 

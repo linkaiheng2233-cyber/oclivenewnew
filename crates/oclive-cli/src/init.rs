@@ -153,6 +153,14 @@ pub struct InitArgs {
     /// 写入 `[package].description`（留空则不写入）
     #[arg(long)]
     pub description: Option<String>,
+
+    /// 从 URL 下载 `.oclive-template.tar.gz` 并解压到输出目录
+    #[arg(long)]
+    pub template_url: Option<String>,
+
+    /// 使用终端 TUI 选择内核工厂模板（不支持时回退 dialoguer）
+    #[arg(long)]
+    pub tui: bool,
 }
 
 /// 内核工厂套餐（`--template`）。
@@ -649,6 +657,13 @@ pub fn run(args: InitArgs) -> Result<()> {
         return Ok(());
     }
 
+    if let Some(ref url) = args.template_url {
+        if args.output.exists() {
+            anyhow::bail!("输出目录已存在: {}", args.output.display());
+        }
+        return crate::publish_cmd::init_from_template_url(url, &args.output);
+    }
+
     if args.quick {
         return run_quick_init(&args);
     }
@@ -734,6 +749,9 @@ pub fn run(args: InitArgs) -> Result<()> {
     }
 
     generator::write_project(&cfg, &args.output)?;
+    if let Err(e) = crate::registry::register_after_init(&cfg, &args.output) {
+        eprintln!("⚠ 注册到本地 registry 失败: {e}");
+    }
     if cfg.run_monolith_bench_after_init {
         crate::init_bench::try_post_init_monolith_bench(&args.output);
     }
@@ -815,6 +833,8 @@ mod template_tests {
             author: None,
             license: None,
             description: None,
+            template_url: None,
+            tui: false,
         };
         let preset = args.preset.as_deref().unwrap_or("minimal");
         let mut cfg = preset_config("t", preset);
@@ -851,6 +871,8 @@ mod template_tests {
             author: None,
             license: None,
             description: None,
+            template_url: None,
+            tui: false,
         };
         let mut cfg = preset_config("t", "minimal");
         apply_template_layer(&args, &mut cfg);
@@ -887,6 +909,8 @@ mod template_tests {
             author: None,
             license: None,
             description: None,
+            template_url: None,
+            tui: false,
         };
         assert_eq!(
             resolve_role_pack_kind(&args),
@@ -931,6 +955,8 @@ mod template_tests {
             author: None,
             license: None,
             description: None,
+            template_url: None,
+            tui: false,
         };
         let mut cfg = preset_config("t", "minimal");
         apply_backend_cli_overrides(&mut cfg, &args);

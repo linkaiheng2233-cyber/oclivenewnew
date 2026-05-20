@@ -1,0 +1,144 @@
+//! `oclive registry` 子命令。
+
+use anyhow::{bail, Context, Result};
+use clap::{Parser, Subcommand};
+use std::path::PathBuf;
+
+use crate::registry::{find_entry, load_registry, register_project, remove_entry, RegistryEntry};
+use crate::init::InitTemplateArg;
+
+#[derive(Parser, Debug)]
+pub struct RegistryCli {
+    #[command(subcommand)]
+    pub command: RegistryCommands,
+}
+
+#[derive(Subcommand, Debug)]
+pub enum RegistryCommands {
+    /// 列出已注册的本地内核工程
+    List(RegistryListArgs),
+    /// 手动注册工程
+    Add(RegistryAddArgs),
+    /// 从注册表移除（不删除磁盘目录）
+    Remove(RegistryRemoveArgs),
+    /// 打印切换工作目录的命令（Windows: cd /d；Unix: cd）
+    Switch(RegistrySwitchArgs),
+}
+
+#[derive(Parser, Debug)]
+pub struct RegistryListArgs {
+    #[arg(long)]
+    pub json: bool,
+}
+
+#[derive(Parser, Debug)]
+pub struct RegistryAddArgs {
+    pub name: String,
+    pub path: PathBuf,
+    #[arg(long)]
+    pub template: Option<String>,
+}
+
+#[derive(Parser, Debug)]
+pub struct RegistryRemoveArgs {
+    pub name: String,
+}
+
+#[derive(Parser, Debug)]
+pub struct RegistrySwitchArgs {
+    pub name: String,
+}
+
+pub fn run(cli: RegistryCli) -> Result<()> {
+    match cli.command {
+        RegistryCommands::List(a) => run_list(a),
+        RegistryCommands::Add(a) => run_add(a),
+        RegistryCommands::Remove(a) => run_remove(a),
+        RegistryCommands::Switch(a) => run_switch(a),
+    }
+}
+
+fn run_list(args: RegistryListArgs) -> Result<()> {
+    let file = load_registry()?;
+    if args.json {
+        println!("{}", serde_json::to_string_pretty(&file.projects)?);
+        return Ok(());
+    }
+    if file.projects.is_empty() {
+        println!("（注册表为空；`oclive init` 成功后会自动注册）");
+        println!("路径: {}", crate::registry::registry_path().display());
+        return Ok(());
+    }
+    println!(
+        "{:<24} {:<12} {:<10} {}",
+        "名称", "模板", "创建时间", "路径"
+    );
+    println!("{}", "-".repeat(96));
+    for p in &file.projects {
+        let tpl = p.template.as_deref().unwrap_or("—");
+        let date = format_date(p.created_at);
+        println!(
+            "{:<24} {:<12} {:<10} {}",
+            p.name, tpl, date, p.path
+        );
+    }
+    Ok(())
+}
+
+fn run_add(args: RegistryAddArgs) -> Result<()> {
+    let path = args
+        .path
+        .canonicalize()
+        .with_context(|| format!("path {}", args.path.display()))?;
+    if !path.join("Cargo.toml").is_file() {
+        bail!("{} 不是有效的 Cargo 工程根（缺少 Cargo.toml）", path.display());
+    }
+    let template = args
+        .template
+        .as_deref()
+        .and_then(template_from_str);
+    register_project(&args.name, &path, template)?;
+    println!("已注册: {} → {}", args.name, path.display());
+    Ok(())
+}
+
+fn run_remove(args: RegistryRemoveArgs) -> Result<()> {
+    if remove_entry(&args.name)? {
+        println!("已从注册表移除: {}（工程目录未删除）", args.name);
+    } else {
+        bail!("注册表中无工程: {}", args.name);
+    }
+    Ok(())
+}
+
+fn run_switch(args: RegistrySwitchArgs) -> Result<()> {
+    let entry = find_entry(&args.name)?
+        .ok_or_else(|| anyhow::anyhow!("注册表中无工程: {}", args.name))?;
+    print_switch_hint(&entry);
+    Ok(())
+}
+
+pub fn print_switch_hint(entry: &RegistryEntry) {
+    if cfg!(windows) {
+        println!("cd /d \"{}\"", entry.path);
+    } else {
+        println!("cd \"{}\"", entry.path);
+    }
+}
+
+fn template_from_str(s: &str) -> Option<InitTemplateArg> {
+    match s {
+        "robot-soul" => Some(InitTemplateArg::RobotSoul),
+        "robot-gateway" => Some(InitTemplateArg::RobotGateway),
+        "dialogue-only" => Some(InitTemplateArg::DialogueOnly),
+        "headless-api" => Some(InitTemplateArg::HeadlessApi),
+        "library-embed" => Some(InitTemplateArg::LibraryEmbed),
+        _ => None,
+    }
+}
+
+fn format_date(ts: u64) -> String {
+    let days = ts / 86_400;
+    let y = 1970 + days / 365;
+    format!("{y}-{:02}", (days % 365 / 30 + 1).min(12))
+}
