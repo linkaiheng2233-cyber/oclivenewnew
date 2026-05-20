@@ -19,6 +19,18 @@ pub struct TemplateCli {
 pub enum TemplateCommands {
     /// 从当前工程反向生成可复用模板
     Create(TemplateCreateArgs),
+    /// 将工程打包为 `.oclive-template.tar.gz`（推荐路径；原 `oclive publish`）
+    Pack(TemplatePackArgs),
+}
+
+#[derive(Parser, Debug)]
+pub struct TemplatePackArgs {
+    /// 工程根目录（默认当前目录）
+    #[arg(short = 'o', long, default_value = ".")]
+    pub path: PathBuf,
+    /// 输出文件（默认 ./<package>-<version>.oclive-template.tar.gz）
+    #[arg(short = 'O', long)]
+    pub output: Option<PathBuf>,
 }
 
 #[derive(Parser, Debug)]
@@ -166,8 +178,13 @@ fn register_local_template(name: &str, path: &Path, meta: &TemplateManifest) -> 
     Ok(())
 }
 
+pub fn run_pack(args: TemplatePackArgs) -> Result<()> {
+    crate::publish_cmd::run_template_pack(args.path, args.output)
+}
+
 pub fn run(cli: TemplateCli) -> Result<()> {
     match cli.command {
         TemplateCommands::Create(args) => run_create(args),
+        TemplateCommands::Pack(args) => run_pack(args),
     }
 }
