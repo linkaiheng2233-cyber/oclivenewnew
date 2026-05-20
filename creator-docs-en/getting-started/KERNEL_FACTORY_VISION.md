@@ -20,6 +20,22 @@ Aligned with [OCLIVE_CLI_GUIDE.md](../cli/OCLIVE_CLI_GUIDE.md); **source of trut
 
 ---
 
+## Quality deepening (Z11–Z16 / Z14 / Z19)
+
+| ID | Capability |
+|----|------------|
+| **Z14** | `init --from-existing` / `--share` — reproduce init command + share file |
+| **Z11** | `bench --stress` — concurrent `/chat` load test |
+| **Z12** | `test --ci-parity` — run CI workflow steps locally |
+| **Z13** | `lint --deps` — `cargo audit` + yanked crates |
+| **Z15** | `doctor --watch` — periodic environment alerts |
+| **Z16** | All CLI user output in **English** |
+| **Z19** | `kernel info` — runtime dependency version matrix |
+
+See [OCLIVE_CLI_GUIDE.md](../cli/OCLIVE_CLI_GUIDE.md) (Chinese guide, quality section).
+
+---
+
 ## Three layers
 
 ```mermaid

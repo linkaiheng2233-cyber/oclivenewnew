@@ -20,6 +20,22 @@
 
 ---
 
+## 质量深耕（Z11–Z16 / Z14 / Z19）
+
+| 代号 | 能力 |
+|------|------|
+| **Z14** | `init --from-existing` / `--share` — 1:1 工程复现命令与分享文件 |
+| **Z11** | `bench --stress` — HTTP `/chat` 并发压测与 P50/P95/P99 |
+| **Z12** | `test --ci-parity` — 本地 CI job 对齐 |
+| **Z13** | `lint --deps` — 依赖漏洞与 yanked 检查 |
+| **Z15** | `doctor --watch` — 持续环境监控 |
+| **Z16** | CLI 输出统一 **英文** |
+| **Z19** | `kernel info` — 内核依赖版本与兼容性 |
+
+详见 [OCLIVE_CLI_GUIDE.md](../cli/OCLIVE_CLI_GUIDE.md)「质量深耕」节。
+
+---
+
 ## 三层架构
 
 ```mermaid

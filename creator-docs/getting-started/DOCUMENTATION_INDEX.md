@@ -71,7 +71,7 @@
 | 实现侧车：请求/响应 JSON 长什么样 | **[../plugin-and-architecture/REMOTE_PLUGIN_PROTOCOL.md](../plugin-and-architecture/REMOTE_PLUGIN_PROTOCOL.md)**（协议全文，含示例） |
 | `settings.json` 里 `plugin_backends` 每个字段含义 | **[../plugin-and-architecture/PLUGIN_V1.md](../plugin-and-architecture/PLUGIN_V1.md)** |
 | **目录插件权限规范（A4.2 · manifest / 校验 / 运行时）** | **[../plugin-and-architecture/PLUGIN_V1.md §权限规范](../plugin-and-architecture/PLUGIN_V1.md)**（[English](../../creator-docs-en/plugin-and-architecture/PLUGIN_V1.md)） |
-| **官方 CLI 脚手架 `oclive-cli`（A/B/C 分级；`template pack` / `market` / `config`）** | **[../cli/OCLIVE_CLI_GUIDE.md](../cli/OCLIVE_CLI_GUIDE.md)** · [KERNEL_FACTORY_VISION.md](KERNEL_FACTORY_VISION.md) |
+| **官方 CLI 脚手架 `oclive-cli`（A/B/C 分级；质量深耕 Z11–Z19；英文输出）** | **[../cli/OCLIVE_CLI_GUIDE.md](../cli/OCLIVE_CLI_GUIDE.md)** · [KERNEL_FACTORY_VISION.md](KERNEL_FACTORY_VISION.md) |
 | **内核工厂愿景（U–X + T 协作分发 + Y 持续精进）** | **[KERNEL_FACTORY_VISION.md](KERNEL_FACTORY_VISION.md)**（[English](../../creator-docs-en/getting-started/KERNEL_FACTORY_VISION.md)） |
 | **`plugin_backends` 七槽与预设、切换 remote 步骤（权威）** | **[../cli/SETTINGS_REFERENCE.md](../cli/SETTINGS_REFERENCE.md)** |
 | **角色包磁盘格式、多发行版对齐、`oclive pack validate`** | **[../role-pack/ROLE_PACK_SPEC.md](../role-pack/ROLE_PACK_SPEC.md)** |

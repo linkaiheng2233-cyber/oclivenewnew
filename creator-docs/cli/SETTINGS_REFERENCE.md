@@ -87,6 +87,8 @@
 
 **`template pack` / `--template-url`**：`.oclive-template.tar.gz` + `template.json`（`publish` 为 deprecated 别名）。
 
+**质量深耕**：`init --from-existing`、`bench --stress`、`test --ci-parity`、`lint --deps`、`doctor --watch`、`kernel info` — 见 [OCLIVE_CLI_GUIDE.md](OCLIVE_CLI_GUIDE.md)。
+
 **`init --tui`** · **`debug`**（`OCLIVE_DEBUG_TRACE`）：见 [OCLIVE_CLI_GUIDE.md](OCLIVE_CLI_GUIDE.md)。
 
 **`market`**：`OCLIVE_MARKET_INDEX_URL` 或 **`OCLIVE_PLUGIN_INDEX_URL`**；离线 **`~/.oclive/plugin_index_cache.json`**。

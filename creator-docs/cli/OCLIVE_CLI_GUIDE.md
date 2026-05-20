@@ -63,6 +63,29 @@ cargo run -p oclive-cli -- init --help
 
 ---
 
+## 质量深耕（Z11–Z16 / Z14 / Z19）
+
+| 代号 | 命令 | 说明 |
+|------|------|------|
+| **Z14** | `init --from-existing` / `--share` | 从现有工程反推完整 `oclive init` 复现命令；`--share` 写 `.oclive-share.toml` |
+| **Z11** | `bench --stress` | 对运行中的内核 HTTP `/chat` 做并发压测（`--stress-concurrency` / `--stress-duration`） |
+| **Z12** | `test --ci-parity` | 本地按 `.github/workflows/ci.yml` 顺序执行 fmt/clippy/build/test 等 |
+| **Z13** | `lint --deps` | `cargo audit` + lockfile 中 yanked 包检查 |
+| **Z15** | `doctor --watch` | 每 60s 轮询环境；磁盘 &lt;1GiB、内存 &lt;500MiB、Ollama 停止时告警 |
+| **Z16** | （全局） | **CLI 输出统一英文**（避免终端乱码） |
+| **Z19** | `kernel info` | `oclive_kernel_runtime` path/version 与兼容性摘要 |
+
+```bash
+cargo run -p oclive-cli -- init --from-existing ./my-kernel --json
+cargo run -p oclive-cli -- bench --stress --stress-concurrency 5 --stress-duration 10 -o ./my-kernel
+cargo run -p oclive-cli -- test --ci-parity -o ./my-kernel --skip-oocp
+cargo run -p oclive-cli -- lint --deps -o ./my-kernel
+cargo run -p oclive-cli -- doctor --watch
+cargo run -p oclive-cli -- kernel info -o ./my-kernel --json
+```
+
+---
+
 ## 平台能力速览（N–S）
 
 | 命令 | 作用 |
