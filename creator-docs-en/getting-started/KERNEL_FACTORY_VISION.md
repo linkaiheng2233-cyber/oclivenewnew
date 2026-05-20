@@ -36,6 +36,12 @@ See [OCLIVE_CLI_GUIDE.md](../cli/OCLIVE_CLI_GUIDE.md) (Chinese guide, quality se
 
 ---
 
+## Hardening (AA1–AA11)
+
+Extends existing subcommands (new top-level: **`explain`**, **`completions`** only): cold-start bench, `test --coverage` / `--miri`, `init --dry-run` / `--check`, `lint --audit-ci`, `doctor --sbom`, and [PERFORMANCE.md](PERFORMANCE.md) §5. See the Chinese [OCLIVE_CLI_GUIDE.md](../../creator-docs/cli/OCLIVE_CLI_GUIDE.md) «巩固强化» section.
+
+---
+
 ## Three layers
 
 ```mermaid

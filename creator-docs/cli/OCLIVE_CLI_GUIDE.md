@@ -63,6 +63,38 @@ cargo run -p oclive-cli -- init --help
 
 ---
 
+## 巩固强化（AA1–AA11）
+
+| 编号 | 命令 | 说明 |
+|------|------|------|
+| **AA1** | `bench --cold-start` | 重启内核 `--api`，测首条 `/chat` 与热启动对比；`--cold-start-runs` / `--cold-start-warm-messages` |
+| **AA2** | `test --coverage` | 需 `cargo-llvm-cov`；HTML → `target/llvm-cov/html/index.html`；`--open` 打开浏览器 |
+| **AA3** | `test --miri` | 需 `cargo-miri`；`--miri-only <crate>` 限定包 |
+| **AA4** | `explain <CODE>` | 解析 [ERROR_CODES.md](../getting-started/ERROR_CODES.md)（`<!-- code:... -->`）；`--json` |
+| **AA5** | `init --dry-run` | 只打印目录树，不写盘；`--json` |
+| **AA10** | `init --check` | 生成前预检（Rust、kernel-source、Monolith 链、角色包等）；失败 exit 1 |
+| **AA7** | `lint --audit-ci` | 检查 CI 是否含 `cargo-audit` 及 `continue-on-error` |
+| **AA8** | `doctor --sbom` | 需 `cargo-cyclonedx`；`--sbom-format spdx` |
+| **AA9** | `completions <shell>` | `bash` / `zsh` / `fish` / `powershell`（或 `power-shell`） |
+
+```bash
+cargo run -p oclive-cli -- bench --cold-start --cold-start-runs 3 -o ./my-kernel
+cargo run -p oclive-cli -- test --coverage -o .
+cargo run -p oclive-cli -- test --miri -o .
+cargo run -p oclive-cli -- explain LLM_ERROR
+cargo run -p oclive-cli -- init --dry-run --template robot-soul -o ./preview
+cargo run -p oclive-cli -- init --check --template robot-soul --kernel-source . -o ./out
+cargo run -p oclive-cli -- lint --audit-ci
+cargo run -p oclive-cli -- doctor --sbom -o .
+cargo run -p oclive-cli -- completions bash > oclive.bash
+```
+
+**Shell 补全安装（bash 示例）**：`eval "$(cargo run -p oclive-cli -- completions bash)"` 或写入 `~/.bash_completion.d/oclive` 后 `source`。
+
+调优闭环见 [PERFORMANCE.md §5](../getting-started/PERFORMANCE.md#5-用-oclive-bench-做性能调优实战闭环)。
+
+---
+
 ## 质量深耕（Z11–Z16 / Z14 / Z19）
 
 | 代号 | 命令 | 说明 |

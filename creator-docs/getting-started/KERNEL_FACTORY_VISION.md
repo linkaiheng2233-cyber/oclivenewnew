@@ -36,6 +36,27 @@
 
 ---
 
+## 巩固强化（AA1–AA11）
+
+在 Z 阶段「质量深耕」之上，工厂 CLI 以**增强既有子命令**为主（仅新增 **`explain`**、**`completions`**）：
+
+| 代号 | 能力 |
+|------|------|
+| **AA1** | `bench --cold-start` — 进程冷启动 vs 热启动延迟 |
+| **AA2** | `test --coverage` — `cargo llvm-cov` HTML 报告 |
+| **AA3** | `test --miri` — 未定义行为检测 |
+| **AA4** | `explain <CODE>` — 错误码人类可读说明 |
+| **AA5** | `init --dry-run` — 生成前目录预览 |
+| **AA10** | `init --check` — 环境与模板预检 |
+| **AA6** | [PERFORMANCE.md](PERFORMANCE.md) §5 — bench 调优闭环 |
+| **AA7** | `lint --audit-ci` — CI `cargo-audit` 配置审查 |
+| **AA8** | `doctor --sbom` — CycloneDX / SPDX 物料清单 |
+| **AA9** | `completions` — Shell Tab 补全脚本 |
+
+详见 [OCLIVE_CLI_GUIDE.md](../cli/OCLIVE_CLI_GUIDE.md)「巩固强化」节。
+
+---
+
 ## 三层架构
 
 ```mermaid
