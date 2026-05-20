@@ -15,7 +15,7 @@ English: **`ORCHESTRATION_REFERENCE.en.md`**
 5. **LLM** — 主生成（`call_llm`）
 6. **后处理** — 持久化、复杂情感叙事缓存等（`post_process`）
 
-生成项目中的 **`src/process_message_monolith.rs`** 由 `monolith.toml` 驱动，演示七槽（memory / emotion / event / prompt / llm / agent / complex_emotion）的静态或 trait 占位调用。
+生成项目中的 **`src/process_message_monolith.rs`** 由 `monolith.toml` 驱动，演示七焊接键（第 1–6 模块：memory / emotion / event / prompt / llm / agent；设施焊接键 `complex_emotion`）的静态或 trait 占位调用。
 
 ## 可安全调整顺序的步骤
 

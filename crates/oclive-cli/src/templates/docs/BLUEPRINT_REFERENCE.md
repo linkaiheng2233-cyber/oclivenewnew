@@ -55,6 +55,6 @@ cargo run -p oclive-cli -- blueprint validate path/to/pipeline.ocblueprint --jso
 ## 与 Monolith 的关系
 
 - **蓝图**：运行时/设计期「步骤图」契约（JSON）。
-- **Monolith**：编译期 `monolith.toml` 的 `weld_modules`，决定七槽是否静态焊接。
+- **Monolith**：编译期 `monolith.toml` 的 `weld_modules`，决定七焊接键是否静态焊接。
 
 二者可并行用于定制内核，但互不替代。编排代码参考见 **`ORCHESTRATION_REFERENCE.md`**。

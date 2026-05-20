@@ -178,7 +178,7 @@ cargo run -p oclive-cli -- learn -o ./oclive-learn-demo
 |------|------|
 | `bench --matrix` | Monolith 档位（none/latency/memory/embedded）× preset（minimal/mixed/full）矩阵；各 3 轮 |
 | `test` | `cargo check`、clippy、角色包 `pack validate`、OOCP 路径提示（`--skip-oocp`） |
-| `lint` | 目录结构、`Cargo.toml` 元数据、`settings.json` 七槽、`monolith.toml`、Git 脏检查 |
+| `lint` | 目录结构、`Cargo.toml` 元数据、`settings.json` 第 1–6 模块、`monolith.toml`、Git 脏检查 |
 
 ```bash
 cargo run -p oclive-cli -- bench --matrix --release -o ./my-kernel
@@ -206,7 +206,7 @@ cargo run -p oclive-cli -- lint -o ./my-kernel --json
 
 | 能力 | 说明 |
 |------|------|
-| `init --tui` + Monolith | 模板确认后进入**自定义焊接**页：空格勾选七槽，生成 `monolith.toml` |
+| `init --tui` + Monolith | 模板确认后进入**自定义焊接**页：空格勾选七焊接键（第 1–6 模块 + `complex_emotion`），生成 `monolith.toml` |
 | `init --weld-modules` | 非 TUI：`memory,emotion,prompt,llm` 等逗号列表 |
 | `init --pipeline` | `default` \| `emotion-first` \| `memory-last`；生成 `docs/PIPELINE_CUSTOM.md` 与 `src/oclive_pipeline_order.rs` |
 | `profile` | `cargo tree`、release 二进制体积、可选 `cargo bloat` Top crate |
@@ -446,7 +446,7 @@ cargo run -p oclive-cli -- init --non-interactive --quiet --preset mixed --proje
 | `--project-type` | `kernel-server` \| `library` |
 | `--project-name` | 默认 `my_oclive_kernel` |
 | `--monolith` | 非交互：启用 Monolith；生成 `monolith.toml`、`vendor/oclive_monolith_builtin/`、双 `[[bin]]`（`main.rs` / `main_monolith.rs`）与 `process_message_monolith.rs`（**仅 kernel_server**；与 `--project-type library` 互斥时自动忽略） |
-| `--monolith-preset` | 仅 Monolith 启用时：`latency`（七槽全焊）\| `memory` \| `embedded`；预填 `monolith.toml` 的 `weld_modules` |
+| `--monolith-preset` | 仅 Monolith 启用时：`latency`（七焊接键全焊）\| `memory` \| `embedded`；预填 `monolith.toml` 的 `weld_modules` |
 | `--monolith-bench-preset` | 同档位枚举；生成后自动 release 双构建 + `bench --runs 5` → `bench_results/report.json`（失败不阻塞） |
 | `--list-templates` | 打印模板矩阵后退出；交互 `init` 亦可在项目类型前选模板 |
 | `--quick` / `-q` | 极速：`preset=full`、无 Monolith、无 `roles/`；交互仅问项目名与输出目录 |

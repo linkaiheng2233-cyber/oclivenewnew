@@ -375,7 +375,7 @@ impl ProjectConfig {
             let preset = self
                 .monolith_preset
                 .map(|p| format!("{p:?}"))
-                .unwrap_or_else(|| "default (all seven slots welded)".into());
+                .unwrap_or_else(|| "default (all seven weld keys welded)".into());
             println!(
                 "Developer build: Monolith (weld tier: {preset}; see monolith.toml; run `oclive build` to regenerate)"
             );
@@ -478,7 +478,7 @@ pub fn preset_config(name: &str, preset: &str) -> ProjectConfig {
     }
 }
 
-/// 解析 Monolith 焊接档位（无 `--monolith-preset` 时默认七槽全焊）。
+/// 解析 Monolith 焊接档位（无 `--monolith-preset` 时默认七焊接键全焊）。
 pub fn resolve_monolith_weld_modules(cfg: &ProjectConfig) -> Vec<String> {
     if !cfg.monolith_enabled {
         return vec![];

@@ -91,7 +91,7 @@ flowchart TB
 
 | 能力 | 说明 |
 |------|------|
-| **第六槽 `agent`** | `plugin_backends.agent`；`BuiltinReActAgent`；MCP 扫描目录见仓库根 `AGENTS.md`。 |
+| **第 6 模块 `agent`** | `plugin_backends.agent`；`BuiltinReActAgent`；MCP 扫描目录见仓库根 `AGENTS.md`。 |
 | **MCP** | Agent 路径上工具发现 / 调用；配置在应用数据目录下 `mcp-servers`。 |
 | **`memory = local`** | `_local_plugins` 与桥接契约见 [LOCAL_PLUGIN_BRIDGE_SPEC.md](../plugin-and-architecture/LOCAL_PLUGIN_BRIDGE_SPEC.md)。 |
 | **会话级后端覆盖** | `set_session_plugin_backend`；`get_role_info` / `load_role` 返回 `plugin_backends_effective*` 快照。 |

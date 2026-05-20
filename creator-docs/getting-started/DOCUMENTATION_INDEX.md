@@ -45,7 +45,7 @@
 |------|------|
 | 错误码与用户可见文案 · 提 issue 最少信息 | **[ERROR_CODES.md](ERROR_CODES.md)** |
 | **`code` 与 JSON 错误体规范** | **[KERNEL_ERROR_CODE_CONVENTION.md](KERNEL_ERROR_CODE_CONVENTION.md)** |
-| **`plugin_backends` 与七槽契约** | **[../plugin-and-architecture/PLUGIN_V1.md](../plugin-and-architecture/PLUGIN_V1.md)** |
+| **`plugin_backends` 与第 1–6 模块契约** | **[../plugin-and-architecture/PLUGIN_V1.md](../plugin-and-architecture/PLUGIN_V1.md)** · 编号总览 **[OCLIVE_ARCHITECTURE_OVERVIEW.md](OCLIVE_ARCHITECTURE_OVERVIEW.md)** |
 | Remote HTTP JSON-RPC | **[../plugin-and-architecture/REMOTE_PLUGIN_PROTOCOL.md](../plugin-and-architecture/REMOTE_PLUGIN_PROTOCOL.md)** |
 | 角色包磁盘格式 / `schema_version` | **[../role-pack/ROLE_PACK_SPEC.md](../role-pack/ROLE_PACK_SPEC.md)** · **[../role-pack/PACK_VERSIONING.md](../role-pack/PACK_VERSIONING.md)** |
 | OOCP HTTP 黑盒套件（CI） | **[../testing/OOCP_TEST_SUITE.md](../testing/OOCP_TEST_SUITE.md)** |
@@ -85,7 +85,7 @@
 | **目录插件权限规范（A4.2 · manifest / 校验 / 运行时）** | **[../plugin-and-architecture/PLUGIN_V1.md §权限规范](../plugin-and-architecture/PLUGIN_V1.md)**（[English](../../creator-docs-en/plugin-and-architecture/PLUGIN_V1.md)） |
 | **官方 CLI 脚手架 `oclive-cli`（A/B/C；质量深耕 Z11–Z19；巩固强化 AA1–AA11；英文输出）** | **[../cli/OCLIVE_CLI_GUIDE.md](../cli/OCLIVE_CLI_GUIDE.md)** · [KERNEL_FACTORY_VISION.md](KERNEL_FACTORY_VISION.md) |
 | **内核工厂愿景（U–X + T 协作分发 + Y 持续精进）** | **[KERNEL_FACTORY_VISION.md](KERNEL_FACTORY_VISION.md)**（[English](../../creator-docs-en/getting-started/KERNEL_FACTORY_VISION.md)） |
-| **`plugin_backends` 七槽与预设、切换 remote 步骤（权威）** | **[../cli/SETTINGS_REFERENCE.md](../cli/SETTINGS_REFERENCE.md)** |
+| **`plugin_backends` 第 1–6 模块与预设、切换 remote 步骤（权威）** | **[../cli/SETTINGS_REFERENCE.md](../cli/SETTINGS_REFERENCE.md)** |
 | **角色包磁盘格式、多发行版对齐、`oclive pack validate`** | **[../role-pack/ROLE_PACK_SPEC.md](../role-pack/ROLE_PACK_SPEC.md)** |
 | **社区角色包索引 JSON 格式** | **[../role-pack/ROLE_PACK_INDEX.md](../role-pack/ROLE_PACK_INDEX.md)** |
 | **目录式进程插件**（`plugins/`、`manifest.json`、整壳、`directory_plugin_invoke`、开发者模式；**含插件管理面板** `Ctrl+Shift+F`、启用/停用/拖拽排序/本地 zip 更新） | **[../plugin-and-architecture/DIRECTORY_PLUGINS.md](../plugin-and-architecture/DIRECTORY_PLUGINS.md)** |

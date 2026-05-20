@@ -34,9 +34,9 @@
 
 | 项目 | 说明 |
 |------|------|
-| **装配与解析** | **`src-tauri/src/domain/plugin_host.rs`**：`PluginHost::resolve_for_role` 按角色包 + 会话覆盖解析 **七槽** 后端实现（`memory` / `emotion` / `event` / `prompt` / `llm` / `agent` 等），得到 `ResolvedRolePlugins`（各槽 `Arc<dyn …Provider>`）。 |
+| **装配与解析** | **`src-tauri/src/domain/plugin_host.rs`**：`PluginHost::resolve_for_role` 按角色包 + 会话覆盖解析 **第 1–6 模块**（见 [OCLIVE_ARCHITECTURE_OVERVIEW.md](../creator-docs/getting-started/OCLIVE_ARCHITECTURE_OVERVIEW.md)），得到 `ResolvedRolePlugins`（各槽 `Arc<dyn …Provider>`）。 |
 | **配置来源** | `settings.json` → `plugin_backends` 与 DB 会话覆盖；有效值与来源快照由 `AppState` 上方法聚合（搜索 `effective_plugin_backends_for_session`）。 |
-| **七槽与枚举** | 权威说明：**[`creator-docs/cli/SETTINGS_REFERENCE.md`](../creator-docs/cli/SETTINGS_REFERENCE.md)**、**[`PLUGIN_V1.md`](../creator-docs/plugin-and-architecture/PLUGIN_V1.md)**。 |
+| **模块编号与枚举** | **[`OCLIVE_ARCHITECTURE_OVERVIEW.md`](../creator-docs/getting-started/OCLIVE_ARCHITECTURE_OVERVIEW.md)**、**[`SETTINGS_REFERENCE.md`](../creator-docs/cli/SETTINGS_REFERENCE.md)**、**[`PLUGIN_V1.md`](../creator-docs/plugin-and-architecture/PLUGIN_V1.md)**。 |
 | **降级策略** | 目录插件 / Remote 失败时主对话路径尽量 **记日志 + 回退内置或 Ollama**（具体分支见 `co_present`、remote 子模块与插件运行时；错误码见 ERROR_CODES）。 |
 | **目录插件运行时** | `src-tauri/src/infrastructure/directory_plugins/`（manifest 校验、`runtime` 等）；与 **`high_risk_grants`**、**`mcp_client`** 联动见 [`A4_CLOSURE_SUMMARY.md`](./A4_CLOSURE_SUMMARY.md)。 |
 

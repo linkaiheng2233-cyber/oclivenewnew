@@ -129,7 +129,7 @@
 
 ## 相关链接
 
-- 内核与六槽总览：[KERNEL_AND_MODULES_ARCHITECTURE.md](../creator-docs/getting-started/KERNEL_AND_MODULES_ARCHITECTURE.md)
+- 架构与模块编号：[OCLIVE_ARCHITECTURE_OVERVIEW.md](../creator-docs/getting-started/OCLIVE_ARCHITECTURE_OVERVIEW.md) · 内核与六宿主槽总览图：[KERNEL_AND_MODULES_ARCHITECTURE.md](../creator-docs/getting-started/KERNEL_AND_MODULES_ARCHITECTURE.md)
 - CLI / 无头 / 库 / Monolith：[OCLIVE_CLI_GUIDE.md](../creator-docs/cli/OCLIVE_CLI_GUIDE.md) · [RFC_OCLIVE_MONOLITH_MODE.md](../creator-docs/rfc/RFC_OCLIVE_MONOLITH_MODE.md)
-- 六槽与 `send_message`：[PLUGIN_V1.md](../creator-docs/plugin-and-architecture/PLUGIN_V1.md)
+- 第 1–6 模块与 `send_message`：[PLUGIN_V1.md](../creator-docs/plugin-and-architecture/PLUGIN_V1.md)
 - 项目全貌：[PROJECT_OVERVIEW.md](../creator-docs/getting-started/PROJECT_OVERVIEW.md)

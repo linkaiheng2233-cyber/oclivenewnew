@@ -4,7 +4,7 @@ use anyhow::{bail, Context, Result};
 use serde::Deserialize;
 use std::collections::HashSet;
 
-/// 与 `plugin_backends` / RFC 对齐的七槽顺序（编排演示顺序）。
+/// 与 `plugin_backends` / RFC 对齐的七焊接键顺序（第 1–6 模块 + `complex_emotion`，编排演示顺序）。
 pub const SLOT_IDS: [&str; 7] = [
     "memory",
     "emotion",
@@ -51,7 +51,7 @@ pub fn parse_monolith_toml(text: &str) -> Result<MonolithFile> {
     toml::from_str(text).context("parse monolith.toml as TOML")
 }
 
-/// `weld_modules` 与 `exclude` 不得同时非空；槽名必须在七槽集合内。
+/// `weld_modules` 与 `exclude` 不得同时非空；键名必须在七焊接键集合内。
 pub fn validate_monolith_section(m: &MonolithSection) -> Result<()> {
     let known: HashSet<&str> = SLOT_IDS.iter().copied().collect();
     if !m.weld_modules.is_empty() && !m.exclude.is_empty() {

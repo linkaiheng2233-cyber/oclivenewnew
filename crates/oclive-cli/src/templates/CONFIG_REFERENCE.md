@@ -18,7 +18,7 @@
 
 | 档位 | weld_modules |
 |------|----------------|
-| `latency` | 全部七槽 |
+| `latency` | 全部七焊接键 |
 | `memory` | memory, prompt, llm |
 | `embedded` | emotion, memory, llm |
 

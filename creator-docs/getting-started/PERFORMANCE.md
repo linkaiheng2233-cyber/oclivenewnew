@@ -19,7 +19,7 @@
 
 ## 2. Monolith 模式与「消除虚调用」在说什么
 
-**Monolith（高耦合编译）**面向无头/嵌入式脚手架：在编译期将七槽后端**焊接**为静态路径，使热点路径尽量走**直接调用**而非经 `PluginHost` 等层的**动态分派**（trait 对象、间接分支），从而有利于 **ICache / 内联** 与可预测的优化空间。
+**Monolith（高耦合编译）**面向无头/嵌入式脚手架：在编译期将 **第 1–6 模块**（及可选 `complex_emotion` 焊接键）**焊接**为静态路径，使热点路径尽量走**直接调用**而非经 `PluginHost` 等层的**动态分派**（trait 对象、间接分支），从而有利于 **ICache / 内联** 与可预测的优化空间。模块编号见 [OCLIVE_ARCHITECTURE_OVERVIEW.md](OCLIVE_ARCHITECTURE_OVERVIEW.md)。
 
 - **原理摘要**：将「运行时选后端」收缩为「编译期已知实现」，减少虚调用与分支预测压力；**不等价于**自动变快多少个百分点。  
 - **如何自证**：在由 **`oclive-cli`** 生成的 Monolith 工程上，使用下文 **`oclive bench`** 对比 **`main.rs`** 与 **`main_monolith.rs`** 双二进制输出；结论以**你本机** JSON 报告为准。  

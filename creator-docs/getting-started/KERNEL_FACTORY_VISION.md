@@ -93,7 +93,7 @@ flowchart TB
     E["--with-example-plugin"]
   end
   subgraph impl["实现层（运行时 + 编译期）"]
-    PB["plugin_backends 七槽"]
+    PB["plugin_backends 第1-6模块"]
     M["monolith.toml 编译期焊接"]
     PL["plugins/ 目录插件 · Remote 侧车"]
   end
@@ -115,7 +115,7 @@ flowchart TB
 
 | 层 | 谁用 | 工具 / 产物 | 改什么 |
 |----|------|-------------|--------|
-| **配方层** | 平台 / 硬件开发者 | `oclive init --template …` | 工程类型、预设七槽、是否 Monolith、是否带示例 `roles/` |
+| **配方层** | 平台 / 硬件开发者 | `oclive init --template …` | 工程类型、预设第 1–6 模块、是否 Monolith、是否带示例 `roles/` |
 | **实现层** | 集成方 + 创作者 | `settings.json`、`monolith.toml`、`plugins/` | 各槽 **builtin / remote / directory / ollama**；编译期焊哪些槽 |
 | **代码层** | 内核维护者 | `src-tauri` / `oclive_kernel_runtime` 的 `chat_engine` | **一轮对话的原子步骤顺序**（记忆→情绪→事件→Prompt→LLM→…） |
 
@@ -220,12 +220,12 @@ Monolith 是工厂里的 **「性能档位」**：
 
 | 模板 | Monolith 默认 | 说明 |
 |------|---------------|------|
-| `robot-soul` | **启用** | 七槽可焊，适合玩偶/低延迟设备 |
+| `robot-soul` | **启用** | 七焊接键可焊，适合玩偶/低延迟设备 |
 | `robot-gateway` | **启用** | 网关类设备默认全焊 + mixed 预设 |
 | `headless-api` / `dialogue-only` | 关闭 | 可用 `--monolith` 手动开启 |
 | `library-embed` | 关闭 | `library` 类型不生成 `monolith.toml` |
 
-**`--monolith-preset`**（仅 Monolith 启用时写入 `weld_modules`）：`latency`（七槽）| `memory`（memory+prompt+llm）| `embedded`（emotion+memory+llm）。可事后手改 `monolith.toml`。
+**`--monolith-preset`**（仅 Monolith 启用时写入 `weld_modules`）：`latency`（七焊接键全焊）| `memory`（memory+prompt+llm）| `embedded`（emotion+memory+llm）。可事后手改 `monolith.toml`。
 
 ---
 
@@ -291,7 +291,7 @@ Monolith 是工厂里的 **「性能档位」**：
 
 ## 插件脚手架（`plugin create`）
 
-**`oclive plugin create <name>`** 生成目录或 Remote 插件完整骨架（manifest + RPC 桩 + README），降低第一道门槛。与桌面 **PluginScaffoldWizard** 互补：CLI 面向仓库外/CI 脚本，侧重七槽 **`provides`** 与 `oclive_validation` 权限形状。见 [PLUGIN_AUTHOR_LEARNING_PATH.md](../plugin-and-architecture/PLUGIN_AUTHOR_LEARNING_PATH.md)。
+**`oclive plugin create <name>`** 生成目录或 Remote 插件完整骨架（manifest + RPC 桩 + README），降低第一道门槛。与桌面 **PluginScaffoldWizard** 互补：CLI 面向仓库外/CI 脚本，侧重第 1–6 模块 **`provides`** 与 `oclive_validation` 权限形状。见 [PLUGIN_AUTHOR_LEARNING_PATH.md](../plugin-and-architecture/PLUGIN_AUTHOR_LEARNING_PATH.md)。
 
 ---
 
@@ -360,4 +360,4 @@ Monolith 是工厂里的 **「性能档位」**：
 - [OCLIVE_CLI_GUIDE.md](../cli/OCLIVE_CLI_GUIDE.md) — 命令与参数
 - [KERNEL_PLATFORM_DEVELOPER_PATH.md](KERNEL_PLATFORM_DEVELOPER_PATH.md) — 单线交付
 - [KERNEL_IMPLEMENTATION_PLAN.md](KERNEL_IMPLEMENTATION_PLAN.md) — K0–K5 与工厂延伸
-- [PLUGIN_V1.md](../plugin-and-architecture/PLUGIN_V1.md) — 七槽契约
+- [PLUGIN_V1.md](../plugin-and-architecture/PLUGIN_V1.md) — 第 1–6 模块契约 · [OCLIVE_ARCHITECTURE_OVERVIEW.md](OCLIVE_ARCHITECTURE_OVERVIEW.md) — 编号总览

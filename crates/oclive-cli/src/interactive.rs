@@ -64,7 +64,7 @@ fn validate_slot_choice(slot: &str, b: BackendImpl) -> Result<()> {
 }
 
 fn pick_factory_template() -> Result<Option<InitTemplateArg>> {
-    let mut labels: Vec<String> = vec!["No template — configure preset / seven slots manually".into()];
+    let mut labels: Vec<String> = vec!["No template — configure preset / modules 1-6 manually".into()];
     for e in CATALOG {
         labels.push(format!(
             "{} — {} (preset={}, Monolith={})",
@@ -165,7 +165,7 @@ fn pick_monolith_for_kernel(template_default_on: bool) -> Result<bool> {
         .with_prompt("Compile mode")
         .items(&[
             "Standard (loosely coupled, modules stay swappable; recommended)",
-            "Monolith — weld all seven slots statically",
+            "Monolith — weld all seven keys statically (modules 1-6 + complex_emotion)",
             "Monolith — custom weld scope (edit monolith.toml after generate, then run oclive build)",
         ])
         .default(if template_default_on { 1 } else { 0 })

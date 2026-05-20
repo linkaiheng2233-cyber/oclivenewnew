@@ -13,7 +13,7 @@ This document describes the **six-stage logical pipeline** aligned with the main
 5. **LLM** — primary generation (`call_llm`)
 6. **Post-process** — persistence, narrative hints, etc. (`post_process`)
 
-Generated **`src/process_message_monolith.rs`** is driven by `monolith.toml` and demonstrates seven slots (memory, emotion, event, prompt, llm, agent, complex_emotion) as static builtin calls or trait stubs.
+Generated **`src/process_message_monolith.rs`** is driven by `monolith.toml` and demonstrates seven weld keys (modules 1–6: memory, emotion, event, prompt, llm, agent; facility weld key `complex_emotion`) as static builtin calls or trait stubs.
 
 ## Steps that may be reordered safely
 

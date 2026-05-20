@@ -72,7 +72,7 @@ flowchart TB
     E["--with-example-plugin"]
   end
   subgraph impl["Implementation layer"]
-    PB["plugin_backends seven slots"]
+    PB["plugin_backends modules 1-6"]
     M["monolith.toml compile-time weld"]
     PL["plugins/ directory Â· Remote sidecars"]
   end
@@ -188,7 +188,7 @@ See [OCLIVE_CLI_GUIDE.md](../cli/OCLIVE_CLI_GUIDE.md) (Chinese guide includes Uâ
 | `headless-api` / `dialogue-only` | off | pass `--monolith` to enable |
 | `library-embed` | off | no `monolith.toml` for `library` |
 
-**`--monolith-preset`** (when Monolith is on): `latency` (all seven slots) | `memory` | `embedded`. You may edit `monolith.toml` afterward.
+**`--monolith-preset`** (when Monolith is on): `latency` (all seven weld keys) | `memory` | `embedded`. You may edit `monolith.toml` afterward.
 
 **`oclive bench --release`** report schema **v2** adds **`binary_size`**, **`peak_memory`**, and **`build_time`** alongside latency stats.
 

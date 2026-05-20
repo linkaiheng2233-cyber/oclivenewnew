@@ -21,7 +21,7 @@
 | 主题 | 读什么 |
 |------|--------|
 | **`process_message` 编排** | 宿主参考实现 **`src-tauri/src/domain/chat_engine/process_message.rs`** 与 **`co_present.rs`**（[handoff/BUS_FACTOR_NOTES.md](../../handoff/BUS_FACTOR_NOTES.md) 摘要） |
-| **`PluginHost` 七槽** | **`src-tauri/src/domain/plugin_host.rs`** · [PLUGIN_V1.md](../plugin-and-architecture/PLUGIN_V1.md) |
+| **`PluginHost` 第 1–6 模块** | **`src-tauri/src/domain/plugin_host.rs`** · [PLUGIN_V1.md](../plugin-and-architecture/PLUGIN_V1.md) · [OCLIVE_ARCHITECTURE_OVERVIEW.md](OCLIVE_ARCHITECTURE_OVERVIEW.md) |
 | **`plugin_backends` 与兜底** | [SETTINGS_REFERENCE.md](../cli/SETTINGS_REFERENCE.md) · 远端失败回退相关设置见 [CONFIGURATION_FILES.md](../guides/CONFIGURATION_FILES.md) / 设置页「兜底」 |
 
 **验收**：能描述一条 `send_message` 从入口到 LLM 再持久化的大致阶段名（便于对齐日志）。
@@ -33,7 +33,7 @@
 | 主题 | 读什么 |
 |------|--------|
 | **OOCP / HTTP 与内核对话** | [OOCP_TEST_SUITE.md](../testing/OOCP_TEST_SUITE.md) · 示例 [`examples/oocp-test-suite/`](../../examples/oocp-test-suite/) · 无头最小示例 [headless-kernel-minimal](../../examples/headless-kernel-minimal/README.md) |
-| **Monolith 使用场景** | 需要 **编译期焊接七槽**、减少动态解析时选用；[RFC_OCLIVE_MONOLITH_MODE.md](../rfc/RFC_OCLIVE_MONOLITH_MODE.md) · `oclive-cli init --monolith` + `build` / `bench` |
+| **Monolith 使用场景** | 需要 **编译期七焊接键焊接**、减少动态解析时选用；[RFC_OCLIVE_MONOLITH_MODE.md](../rfc/RFC_OCLIVE_MONOLITH_MODE.md) · `oclive-cli init --monolith` + `build` / `bench` |
 | **`--kernel-source`** | [OCLIVE_CLI_GUIDE.md](../cli/OCLIVE_CLI_GUIDE.md)（将脚手架依赖切到 path 的 `oclive_kernel_runtime` / `oclive_kernel_server`） |
 | **平台单线文档** | [KERNEL_PLATFORM_DEVELOPER_PATH.md](KERNEL_PLATFORM_DEVELOPER_PATH.md) |
 

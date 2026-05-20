@@ -21,6 +21,20 @@ This is an **English summary** of the v1 contract between the host (Tauri / `cha
 
 Runtime struct **`PluginBackends`** has **six** enum fields: **`memory` · `emotion` · `event` · `prompt` · `llm` · `agent`**. Optional **`directory_plugins`** maps each slot to a manifest **`id`** when that slot is **`directory`**. Resolution: **`PluginHost::resolve_for_role`** → **`Arc<dyn …>`** per facade, then **`chat_engine`** calls them in the **`send_message` order** (see below). **`complex_emotion`** scaffold keys are ignored by Serde; runtime maps to the **complex-emotion expert-model facility submodule** ([OCLIVE_ARCHITECTURE_OVERVIEW.md](../getting-started/OCLIVE_ARCHITECTURE_OVERVIEW.md), [SETTINGS_REFERENCE.md](../../creator-docs/cli/SETTINGS_REFERENCE.md) §II).
 
+### Module numbering (aligned with architecture overview)
+
+| # | `plugin_backends` key | Kind |
+|---|------------------------|------|
+| Module 1 | `memory` | Backend module |
+| Module 2 | `emotion` | Backend module |
+| Module 3 | `event` | Backend module |
+| Module 4 | `prompt` | Backend module |
+| Module 5 | `llm` | Backend module |
+| Module 6 | `agent` | Backend module |
+| Facility submodule 1 | *(no key; in orchestration)* | Complex-emotion expert-model facility submodule |
+
+**Backend-module plugin modules** (Remote / directory, etc.) attach to **module K**; they do **not** consume a “module 7” host slot. Full rules: [OCLIVE_ARCHITECTURE_OVERVIEW.md](../getting-started/OCLIVE_ARCHITECTURE_OVERVIEW.md).
+
 ---
 
 ## `send_message` order (co-present path)

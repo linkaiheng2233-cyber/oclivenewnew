@@ -2,20 +2,20 @@
 
 | 元数据 | 值 |
 |--------|-----|
-| 状态 | **已落地**：`oclive-cli` 提供 **`init` / `build` / `bench`**、焊接计划校验、双入口 **`main.rs` + `main_monolith.rs`**；七槽静态入口以 **`vendor/oclive_monolith_builtin`**（模板见 `crates/oclive-cli/monolith_vendor/`）为权威来源，可替换为真实 `oclive_*_builtin`。 |
+| 状态 | **已落地**：`oclive-cli` 提供 **`init` / `build` / `bench`**、焊接计划校验、双入口 **`main.rs` + `main_monolith.rs`**；**七焊接键**静态入口以 **`vendor/oclive_monolith_builtin`**（模板见 `crates/oclive-cli/monolith_vendor/`）为权威来源，可替换为真实 `oclive_*_builtin`。 |
 | 入口 | **`oclive init`** 创建脚手架；**`cargo run -p oclive-cli -- build|bench`** 维护与对比 Monolith 产物 |
 | 编译配置 | **`monolith.toml`**：由 `init` 生成，**`oclive build`** 读取并再生成 `process_message_monolith.rs`；**不参与运行时**，与角色包/宿主加载路径无关 |
 | 与蓝图边界 | **`pipeline.ocblueprint`**（或 `*.ocblueprint`）描述 **运行时** 编排；**焊接范围不以蓝图字段承载**（避免与 `PIPELINE_SCHEMA` 运行时语义混淆）。Monolith 仅通过 **`monolith.toml` + Cargo feature** 生效。 |
 | 受众 | **仅开发者**；普通用户只使用开发者构建的发行版，不接触终端 |
-| 本质 | **编译期**优化路径：以模块可替换性换取极限性能（可选、默认关闭），用于打破七槽抽象在 **高频热路径** 上的性能天花板 |
+| 本质 | **编译期**优化路径：以模块可替换性换取极限性能（可选、默认关闭），用于打破 **第 1–6 模块** 抽象在 **高频热路径** 上的性能天花板 |
 
-**相关文档**：[`PLUGIN_V1.md`](../plugin-and-architecture/PLUGIN_V1.md)（七槽与 `PluginHost`）、[`PIPELINE_SCHEMA.md`](../kernel/PIPELINE_SCHEMA.md)（蓝图运行时 Schema）、[`OCLIVE_CLI_GUIDE.md`](../cli/OCLIVE_CLI_GUIDE.md)（脚手架用法）。
+**相关文档**：[`OCLIVE_ARCHITECTURE_OVERVIEW.md`](../getting-started/OCLIVE_ARCHITECTURE_OVERVIEW.md)（模块编号）、[`PLUGIN_V1.md`](../plugin-and-architecture/PLUGIN_V1.md)（第 1–6 模块与 `PluginHost`）、[`PIPELINE_SCHEMA.md`](../kernel/PIPELINE_SCHEMA.md)（蓝图运行时 Schema）、[`OCLIVE_CLI_GUIDE.md`](../cli/OCLIVE_CLI_GUIDE.md)（脚手架用法）。
 
 **与实现一致（仓库主分支）**：`cargo run -p oclive-cli -- init … --monolith`（非交互，且项目类型为 **kernel_server**）或交互选择 **高耦合** 时，生成 **`monolith.toml`**、`vendor/oclive_monolith_builtin/`、`src/process_message_monolith.rs`，并在 `Cargo.toml` 中声明 **`[features] monolith`** 与第二 **`[[bin]]`**。修改 `monolith.toml` 后执行 **`cargo run -p oclive-cli -- build -o <项目根>`** 可再生成焊接源码并默认连续执行两次 `cargo build`（若 `enabled = true` 则第二次带 **`monolith`** feature）。**`cargo run -p oclive-cli -- bench`** 输出 JSON 延迟报告（Schema：`crates/oclive-cli/schemas/oclive_bench_report.schema.json`）。嵌入式 **library** 忽略 `--monolith` 且不生成 `monolith.toml`。
 
 ## 1. 问题陈述
 
-oclive 的 **七槽插件化架构**（`plugin_backends` + `PluginHost` + trait 门面）在提供 **生态灵活性**（builtin / remote / directory、侧车、目录插件）的同时，引入 **架构性开销**：
+oclive 的 **六宿主后端模块（第 1–6 模块）插件化架构**（`plugin_backends` + `PluginHost` + trait 门面）在提供 **生态灵活性**（builtin / remote / directory、侧车、目录插件）的同时，引入 **架构性开销**：
 
 - **trait 虚调用**：`process_message` 编排链上多次动态分发；
 - **模块间 DTO**：边界处为通用性往往走堆分配与拷贝路径（本 RFC 中「序列化」泛指跨抽象边界的打包成本，不限于 JSON）；
@@ -47,7 +47,7 @@ oclive 的 **七槽插件化架构**（`plugin_backends` + `PluginHost` + trait 
 $ oclive init my-fast-npc
   欢迎使用 oclive 脚手架！
   ? 项目名称: my-fast-npc
-  …（角色包、七槽后端等既有步骤）
+  …（角色包、第 1–6 模块后端等既有步骤）
   ? 是否启用开发者编译选项? [y/N]: y
 ```
 
@@ -56,7 +56,7 @@ $ oclive init my-fast-npc
 ```text
   ? 编译模式:
     ● 标准模式（低耦合，保留模块可替换性，推荐）
-    ○ 高耦合模式 — 七槽全部静态焊接
+    ○ 高耦合模式 — 七焊接键全部静态焊接（第 1–6 模块 + `complex_emotion`）
     ○ 高耦合模式 — 自定义焊接范围（生成后编辑 monolith.toml，再运行 oclive build）
 ```
 
@@ -110,7 +110,7 @@ exclude = ["event", "agent", "complex_emotion"]
 | 字段 | 语义 |
 |------|------|
 | **`enabled`** | 是否为该项目启用 Monolith 编译路径（生成 `process_message_monolith.rs` 或等价物，并打开 `monolith` feature 相关 cfg）。 |
-| **`weld_modules`** | 参与焊接的模块名列表（与七槽命名对齐：`memory`、`emotion`、`event`、`prompt`、`llm`、`agent`、`complex_emotion`）。**空数组** 表示 **全部可焊接槽位均参与焊接**（再应用 `exclude`）。 |
+| **`weld_modules`** | 参与焊接的键名列表（**七焊接键**：第 1–6 模块对应键 + `complex_emotion` 设施焊接键）。**空数组** 表示 **全部可焊接键均参与焊接**（再应用 `exclude`）。 |
 | **`exclude`** | 当且仅当 **`weld_modules` 为空** 时有效：从「全槽焊接」集合中排除；被排除槽在生成代码中走 **`PluginHost` + trait** 占位路径。 |
 
 **校验（当前实现）**：**`weld_modules` 与 `exclude` 不得同时非空**；槽名须为七键之一。`enabled == false` 时 **`oclive build`** 仍会再生成 `process_message_monolith.rs`，但 **跳过** 第二次 `cargo build --features monolith`。
@@ -197,10 +197,10 @@ my-fast-npc/
 
 | 阶段 | 状态 |
 |------|------|
-| **第一阶段（脚手架）** | **已完成**：`oclive-cli init` 支持 **`--monolith`**（非交互）与交互「开发者编译选项」；生成 **`monolith.toml`**、**`vendor/oclive_monolith_builtin/`**（七槽静态入口的**权威来源**）、**`process_message_monolith.rs`**；**双 `[[bin]]`** 且 **标准入口 `src/main.rs` / Monolith 入口 `src/main_monolith.rs`**（避免 Cargo 同路径警告）；`cargo test -p oclive-cli` 含 release 双构建 E2E。 |
+| **第一阶段（脚手架）** | **已完成**：`oclive-cli init` 支持 **`--monolith`**（非交互）与交互「开发者编译选项」；生成 **`monolith.toml`**、**`vendor/oclive_monolith_builtin/`**（七焊接键静态入口的**权威来源**）、**`process_message_monolith.rs`**；**双 `[[bin]]`** 且 **标准入口 `src/main.rs` / Monolith 入口 `src/main_monolith.rs`**（避免 Cargo 同路径警告）；`cargo test -p oclive-cli` 含 release 双构建 E2E。 |
 | **第二阶段（自定义焊接）** | **已完成**：**`weld_modules` / `exclude`** 互斥校验、部分焊接代码生成；**`oclive build`** 读取 `monolith.toml` 再生成焊接源码并可选双构建。 |
 | **第三阶段（`oclive bench`）** | **已完成**：**`oclive bench`** 对比标准与 **`-monolith`** 二进制，输出 JSON（Schema：`crates/oclive-cli/schemas/oclive_bench_report.schema.json`）。 |
-| **第四阶段（真实符号）** | **已完成（vendor 路径）**：已焊接槽静态链接 **`oclive_monolith_builtin`**；主仓 **不** 在 `src-tauri` 另起一套七槽桩。后续若拆分 **`oclive_*_builtin`** crate，仅替换生成项目的依赖与调用点，脚手架 **仍** 以 `crates/oclive-cli/monolith_vendor/oclive_monolith_builtin/` 为模板权威来源。 |
+| **第四阶段（真实符号）** | **已完成（vendor 路径）**：已焊接键静态链接 **`oclive_monolith_builtin`**；主仓 **不** 在 `src-tauri` 另起一套焊接桩。后续若拆分 **`oclive_*_builtin`** crate，仅替换生成项目的依赖与调用点，脚手架 **仍** 以 `crates/oclive-cli/monolith_vendor/oclive_monolith_builtin/` 为模板权威来源。 |
 
 ---
 
@@ -216,7 +216,7 @@ my-fast-npc/
 ## 11. 参考与索引
 
 - 脚手架：[`creator-docs/cli/OCLIVE_CLI_GUIDE.md`](../cli/OCLIVE_CLI_GUIDE.md)
-- 七槽契约：[`creator-docs/plugin-and-architecture/PLUGIN_V1.md`](../plugin-and-architecture/PLUGIN_V1.md)
+- 第 1–6 模块契约：[`PLUGIN_V1.md`](../plugin-and-architecture/PLUGIN_V1.md) · 编号总览：[`OCLIVE_ARCHITECTURE_OVERVIEW.md`](../getting-started/OCLIVE_ARCHITECTURE_OVERVIEW.md)
 - 蓝图 Schema（运行时）：[`creator-docs/kernel/PIPELINE_SCHEMA.md`](../kernel/PIPELINE_SCHEMA.md)
 
 讨论请链接本文：`creator-docs/rfc/RFC_OCLIVE_MONOLITH_MODE.md`。

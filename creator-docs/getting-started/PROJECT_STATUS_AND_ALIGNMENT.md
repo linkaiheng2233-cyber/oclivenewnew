@@ -35,12 +35,13 @@
 | 编写器与主程序版本兼容 | [../COMPATIBILITY.md](../COMPATIBILITY.md) |
 | 创作者工作流（包、目录、导入） | [CREATOR_WORKFLOW.md](CREATOR_WORKFLOW.md) |
 
-### 2. 模块说明 / 架构与契约（六槽、插件、协议）
+### 2. 模块说明 / 架构与契约（第 1–6 模块、设施子模块、插件）
 
 | 主题 | 入口 |
 |------|------|
-| 内核与六槽总览（图 + 与源码锚点） | [KERNEL_AND_MODULES_ARCHITECTURE.md](KERNEL_AND_MODULES_ARCHITECTURE.md) |
-| `plugin_backends` 字段与枚举 | [../plugin-and-architecture/PLUGIN_V1.md](../plugin-and-architecture/PLUGIN_V1.md) |
+| **架构总览与模块编号**（单核双态、后端模块插件模块） | [OCLIVE_ARCHITECTURE_OVERVIEW.md](OCLIVE_ARCHITECTURE_OVERVIEW.md)（[English](../../creator-docs-en/getting-started/OCLIVE_ARCHITECTURE_OVERVIEW.md)） |
+| 内核与六宿主槽总览图（与源码锚点） | [KERNEL_AND_MODULES_ARCHITECTURE.md](KERNEL_AND_MODULES_ARCHITECTURE.md) |
+| `plugin_backends` 字段与枚举（含编号表） | [../plugin-and-architecture/PLUGIN_V1.md](../plugin-and-architecture/PLUGIN_V1.md) |
 | 目录式插件、管理面板、权限与降级 | [../plugin-and-architecture/DIRECTORY_PLUGINS.md](../plugin-and-architecture/DIRECTORY_PLUGINS.md) |
 | 整壳 / 插槽 `invoke`、权限别名 | [../plugin-and-architecture/BRIDGE_API_REFERENCE.md](../plugin-and-architecture/BRIDGE_API_REFERENCE.md) |
 | Remote JSON-RPC 协议与示例 | [../plugin-and-architecture/REMOTE_PLUGIN_PROTOCOL.md](../plugin-and-architecture/REMOTE_PLUGIN_PROTOCOL.md) |

@@ -23,7 +23,7 @@
 |------|--------|
 | **七维人格向量** | [README_MANIFEST § default_personality](../../roles/README_MANIFEST.md) · [docs/personality-archive-notes.md](../../docs/personality-archive-notes.md) |
 | **系统提示词与开场白** | 角色包内 `prompts/` 自管素材与引擎组装关系见 ROLE_PACK_SPEC 与 [WORLDVIEW_KNOWLEDGE.md](WORLDVIEW_KNOWLEDGE.md)；主对话 Prompt 由 **`plugin_backends.prompt`** 与内置策略决定 |
-| **`plugin_backends` 七槽** | [PLUGIN_V1.md](../plugin-and-architecture/PLUGIN_V1.md) · 字段级权威 [SETTINGS_REFERENCE.md](../cli/SETTINGS_REFERENCE.md) |
+| **`plugin_backends` 第 1–6 模块** | [OCLIVE_ARCHITECTURE_OVERVIEW.md](../getting-started/OCLIVE_ARCHITECTURE_OVERVIEW.md) · [PLUGIN_V1.md](../plugin-and-architecture/PLUGIN_V1.md) · [SETTINGS_REFERENCE.md](../cli/SETTINGS_REFERENCE.md) |
 
 **验收**：能在 `settings.json` 中为目标槽选择 `builtin` / `remote` / `directory` 之一，并理解 `directory_plugins` 与 manifest `id` 的对应关系。
 
