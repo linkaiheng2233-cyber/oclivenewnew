@@ -92,6 +92,7 @@ cd examples/oocp-test-suite && node run.mjs
 - [x] `init --kernel-source <path-to-oclivenewnew>` 写入 `Cargo.toml` path 依赖与示例 `main.rs`
 - [x] 生成 README 区分：**占位 init** vs **已接 runtime** 两种模式
 - [x] `bench` / `build` 对真实 runtime 工程可跑（Monolith 仍仅 `kernel_server`）
+- [x] **内核工厂（配方层）**：`init --template`（`robot-soul` / `headless-api` / `library-embed`）、`--with-role-pack`、`plugins/README.md` — 见 [KERNEL_FACTORY_VISION.md](KERNEL_FACTORY_VISION.md)
 
 ### K2.3 不做的（控制范围）
 
@@ -130,7 +131,8 @@ cd examples/oocp-test-suite && node run.mjs
 ## K5 — 平台开发者一条路径
 
 - [x] 撰写 [KERNEL_PLATFORM_DEVELOPER_PATH.md](KERNEL_PLATFORM_DEVELOPER_PATH.md)（中英）
-- [x] 单线：`oclive-cli init` → 角色包 → 目录插件/侧车 → validate → `--api` 或 server bin → 部署
+- [x] 撰写 [KERNEL_FACTORY_VISION.md](KERNEL_FACTORY_VISION.md)（中英）：配方 / 实现 / 代码三层与蓝图、Monolith 边界
+- [x] 单线：`oclive-cli init`（可选 **`--template`**）→ 角色包 → 目录插件/侧车 → validate → `--api` 或 server bin → 部署
 - [x] 默认 LLM 仿真：`examples/remote_plugin_openai_compat`
 - [ ] OTA / 远程日志：**P2**，不阻塞 K1–K4
 
