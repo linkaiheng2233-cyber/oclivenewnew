@@ -307,5 +307,43 @@ pub fn run(args: BenchArgs) -> Result<()> {
         append_history(&root, &report)?;
         eprintln!("已追加到 {}", history_path(&root).display());
     }
+    if !args.json && args.output != "-" {
+        print_bench_comparison(&report);
+    }
     Ok(())
+}
+
+/// 终端输出标准版 vs Monolith 焊接版延迟对比（p50 / P95）。
+pub fn print_bench_comparison(report: &BenchReport) {
+    let std_p50 = report.standard_ms.p50;
+    let mono_p50 = report.monolith_ms.p50;
+    let std_p95 = report.standard_ms.p95;
+    let mono_p95 = report.monolith_ms.p95;
+    let improve_p50 = pct_improvement(std_p50, mono_p50);
+    let improve_p95 = pct_improvement(std_p95, mono_p95);
+    println!("\n—— 标准版 vs Monolith 焊接版（{} 轮, release={}）——", report.runs, report.release);
+    println!("  指标        标准版(ms)   焊接版(ms)   变化");
+    println!(
+        "  p50         {:>10.3}   {:>10.3}   {:>+6.1}%",
+        std_p50, mono_p50, improve_p50
+    );
+    println!(
+        "  P95         {:>10.3}   {:>10.3}   {:>+6.1}%",
+        std_p95, mono_p95, improve_p95
+    );
+    if mono_p50 < std_p50 {
+        println!("  → 焊接版中位数更低（约 {:.1}%）", improve_p50);
+    } else if mono_p50 > std_p50 {
+        println!("  → 焊接版中位数更高；可缩小 monolith.toml 的 weld_modules");
+    } else {
+        println!("  → 中位数接近；可增加 runs 或检查构建 profile");
+    }
+}
+
+fn pct_improvement(standard: f64, monolith: f64) -> f64 {
+    if standard.abs() <= f64::EPSILON {
+        0.0
+    } else {
+        ((standard - monolith) / standard) * 100.0
+    }
 }
