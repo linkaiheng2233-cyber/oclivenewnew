@@ -213,7 +213,8 @@ fn e2e_non_interactive_monolith_full_release_builds() {
     assert!(mt_path.is_file());
     let mt = fs::read_to_string(&mt_path).unwrap();
     assert!(mt.contains("enabled = true"));
-    assert!(mt.contains("weld_modules = []"));
+    assert!(mt.contains("weld_modules = ["));
+    assert!(mt.contains("\"memory\""));
     assert!(mt.contains("exclude = []"));
     assert!(out.join("src/process_message_monolith.rs").is_file());
     let mono_rs = fs::read_to_string(out.join("src/process_message_monolith.rs")).unwrap();
@@ -637,6 +638,140 @@ fn e2e_template_library_embed() {
     let cargo = fs::read_to_string(out.join("Cargo.toml")).unwrap();
     assert!(cargo.contains("[lib]") || cargo.contains("crate-type"));
     assert!(!out.join("roles").exists());
+}
+
+#[test]
+fn e2e_template_robot_gateway_matches_manual_combo() {
+    let tmp = tempfile::tempdir().unwrap();
+    let out_tpl = tmp.path().join("tpl");
+    let out_manual = tmp.path().join("manual");
+    assert!(run_cli(&[
+        "init",
+        "--non-interactive",
+        "--quiet",
+        "--template",
+        "robot-gateway",
+        "-o",
+        out_tpl.to_str().unwrap(),
+    ])
+    .success());
+    assert!(run_cli(&[
+        "init",
+        "--non-interactive",
+        "--quiet",
+        "--preset",
+        "mixed",
+        "--monolith",
+        "--skip-role-pack",
+        "-o",
+        out_manual.to_str().unwrap(),
+    ])
+    .success());
+    assert!(out_tpl.join("monolith.toml").is_file());
+    assert!(out_manual.join("monolith.toml").is_file());
+    assert!(!out_tpl.join("roles").exists());
+    assert!(!out_manual.join("roles").exists());
+    let mt_tpl = fs::read_to_string(out_tpl.join("monolith.toml")).unwrap();
+    let mt_man = fs::read_to_string(out_manual.join("monolith.toml")).unwrap();
+    assert_eq!(mt_tpl, mt_man);
+}
+
+#[test]
+fn e2e_template_dialogue_only_matches_manual_combo() {
+    let tmp = tempfile::tempdir().unwrap();
+    let out_tpl = tmp.path().join("tpl");
+    let out_manual = tmp.path().join("manual");
+    assert!(run_cli(&[
+        "init",
+        "--non-interactive",
+        "--quiet",
+        "--template",
+        "dialogue-only",
+        "-o",
+        out_tpl.to_str().unwrap(),
+    ])
+    .success());
+    assert!(run_cli(&[
+        "init",
+        "--non-interactive",
+        "--quiet",
+        "--preset",
+        "full",
+        "-o",
+        out_manual.to_str().unwrap(),
+    ])
+    .success());
+    assert!(!out_tpl.join("monolith.toml").exists());
+    assert!(out_tpl.join("roles/default/settings.json").is_file());
+    let s_tpl = fs::read_to_string(out_tpl.join("roles/default/settings.json")).unwrap();
+    let s_man = fs::read_to_string(out_manual.join("roles/default/settings.json")).unwrap();
+    let v_tpl: Value = serde_json::from_str(&s_tpl).unwrap();
+    let v_man: Value = serde_json::from_str(&s_man).unwrap();
+    assert_eq!(
+        v_tpl.get("plugin_backends"),
+        v_man.get("plugin_backends")
+    );
+    assert!(out_tpl.join("docs/ORCHESTRATION_REFERENCE.md").is_file());
+}
+
+#[test]
+fn e2e_monolith_preset_latency_welds_all_slots() {
+    let tmp = tempfile::tempdir().unwrap();
+    let out = tmp.path().join("mono");
+    assert!(run_cli(&[
+        "init",
+        "--non-interactive",
+        "--quiet",
+        "--preset",
+        "minimal",
+        "--monolith",
+        "--monolith-preset",
+        "latency",
+        "-o",
+        out.to_str().unwrap(),
+    ])
+    .success());
+    let mt = fs::read_to_string(out.join("monolith.toml")).unwrap();
+    for slot in [
+        "memory", "emotion", "event", "prompt", "llm", "agent", "complex_emotion",
+    ] {
+        assert!(mt.contains(slot), "monolith.toml should weld {slot}");
+    }
+}
+
+#[test]
+fn e2e_with_example_plugin_copies_llamacpp() {
+    let tmp = tempfile::tempdir().unwrap();
+    let out_on = tmp.path().join("with");
+    let out_off = tmp.path().join("without");
+    assert!(run_cli(&[
+        "init",
+        "--non-interactive",
+        "--quiet",
+        "--preset",
+        "minimal",
+        "--with-example-plugin",
+        "-o",
+        out_on.to_str().unwrap(),
+    ])
+    .success());
+    assert!(run_cli(&[
+        "init",
+        "--non-interactive",
+        "--quiet",
+        "--preset",
+        "minimal",
+        "-o",
+        out_off.to_str().unwrap(),
+    ])
+    .success());
+    let plug = out_on.join("plugins/com.oclive.example.llamacpp_llm/manifest.json");
+    assert!(plug.is_file());
+    assert!(
+        !out_off
+            .join("plugins/com.oclive.example.llamacpp_llm")
+            .exists()
+    );
 }
 
 #[test]

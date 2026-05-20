@@ -170,6 +170,8 @@ pub fn run_interactive() -> Result<ProjectConfig> {
     }
 
     Ok(ProjectConfig {
+        monolith_preset: None,
+        with_example_plugin: false,
         project_name,
         project_type,
         backends: slots,

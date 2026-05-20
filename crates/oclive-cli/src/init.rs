@@ -36,11 +36,17 @@ llm 使用 ollama 表示进程内默认本地客户端；无本机模型时请�
 │ template        │ preset  │ monolith 默认    │ project-type   │ 默认 --with-role-pack        │
 ├─────────────────┼─────────┼──────────────────┼────────────────┼──────────────────────────────┤
 │ robot-soul      │ minimal │ 启用             │ kernel_server  │ robot-soul-minimal           │
+│ robot-gateway   │ mixed   │ 启用             │ kernel_server  │ 无（厂商自订 roles/）        │
+│ dialogue-only   │ full    │ 关闭（可加 --monolith） │ kernel_server  │ default（通用示例）          │
 │ headless-api    │ full    │ 关闭（可加 --monolith） │ kernel_server  │ 无（空 roles/）              │
 │ library-embed   │ minimal │ 关闭             │ library        │ 无                           │
 └─────────────────┴─────────┴──────────────────┴────────────────┴──────────────────────────────┘
 
+`--monolith-preset`（仅 `--monolith` 或模板默认启用 Monolith 时生效）：`latency`（七槽全焊）| `memory`（memory+prompt+llm）| `embedded`（emotion+memory+llm）。生成 `monolith.toml` 的 `weld_modules` 可事后手改。
+
 `--with-role-pack`：`robot-soul-minimal` | `default`；未指定且未用模板时，非交互仍生成通用 `roles/default`（与历史行为一致）。`--skip-role-pack` 强制不生成 `roles/`。
+
+`--with-example-plugin`：复制主仓 `examples/directory-plugin-llamacpp/` 到 `plugins/com.oclive.example.llamacpp_llm/`（默认关闭）。
 "#;
 
 #[derive(Parser, Debug, Clone)]
@@ -57,7 +63,7 @@ pub struct InitArgs {
     #[arg(long)]
     pub quiet: bool,
 
-    /// 内核工厂模板：robot-soul | headless-api | library-embed（与 --preset 等可叠加，显式参数优先）
+    /// 内核工厂模板：robot-soul | robot-gateway | dialogue-only | headless-api | library-embed
     #[arg(long, value_enum)]
     pub template: Option<InitTemplateArg>,
 
@@ -98,6 +104,10 @@ pub struct InitArgs {
     #[arg(long)]
     pub monolith: bool,
 
+    /// Monolith 焊接档位（仅 Monolith 启用时写入 monolith.toml 的 weld_modules）
+    #[arg(long, value_enum)]
+    pub monolith_preset: Option<MonolithPresetArg>,
+
     /// 非交互：不在生成项目中写入 `roles/` 示例角色包
     #[arg(long)]
     pub skip_role_pack: bool,
@@ -105,6 +115,10 @@ pub struct InitArgs {
     /// 生成示例角色包：robot-soul-minimal | default（未指定时由 --template 或历史默认决定）
     #[arg(long, value_enum)]
     pub with_role_pack: Option<RolePackKindArg>,
+
+    /// 附带 llamacpp 目录插件示例到 plugins/com.oclive.example.llamacpp_llm/
+    #[arg(long)]
+    pub with_example_plugin: bool,
 
     /// 指向 oclivenewnew 仓库根：生成项目写入 `oclivenewnew-tauri` / `oclive_kernel_runtime` path 依赖
     #[arg(long)]
@@ -116,8 +130,20 @@ pub struct InitArgs {
 #[clap(rename_all = "kebab-case")]
 pub enum InitTemplateArg {
     RobotSoul,
+    RobotGateway,
+    DialogueOnly,
     HeadlessApi,
     LibraryEmbed,
+}
+
+/// Monolith 性能档位（`--monolith-preset`）。
+#[derive(clap::ValueEnum, Clone, Debug, Copy, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(rename_all = "kebab-case")]
+#[clap(rename_all = "kebab-case")]
+pub enum MonolithPresetArg {
+    Latency,
+    Memory,
+    Embedded,
 }
 
 /// 示例角色包种类（`--with-role-pack`）。
@@ -160,6 +186,18 @@ pub fn template_defaults(t: InitTemplateArg) -> TemplateDefaults {
             project_type: ProjectType::KernelServer,
             monolith_default: true,
             role_pack: RolePackKind::RobotSoulMinimal,
+        },
+        InitTemplateArg::RobotGateway => TemplateDefaults {
+            preset: "mixed",
+            project_type: ProjectType::KernelServer,
+            monolith_default: true,
+            role_pack: RolePackKind::None,
+        },
+        InitTemplateArg::DialogueOnly => TemplateDefaults {
+            preset: "full",
+            project_type: ProjectType::KernelServer,
+            monolith_default: false,
+            role_pack: RolePackKind::DefaultExample,
         },
         InitTemplateArg::HeadlessApi => TemplateDefaults {
             preset: "full",
@@ -254,8 +292,12 @@ pub struct ProjectConfig {
     pub role_pack_kind: RolePackKind,
     /// 仅 `kernel_server` 且为 true 时生成 `monolith.toml` 与 Monolith 构建配置。
     pub monolith_enabled: bool,
+    /// Monolith 焊接档位；仅 `monolith_enabled` 时用于 init 生成的 `monolith.toml`。
+    pub monolith_preset: Option<MonolithPresetArg>,
     /// 为 true 时不生成 `roles/` 目录（空白内核模板）。
     pub skip_role_pack: bool,
+    /// 复制 llamacpp 示例目录插件到 `plugins/`。
+    pub with_example_plugin: bool,
     /// 指向 oclivenewnew 仓库根；生成项目写入 path 依赖并替换占位 `main`/`lib`。
     pub kernel_source: Option<std::path::PathBuf>,
 }
@@ -292,7 +334,16 @@ impl ProjectConfig {
             }
         );
         if self.monolith_enabled {
-            println!("开发者编译: Monolith（焊接计划见 monolith.toml；`cargo run -p oclive-cli -- build` 再生成）");
+            let preset = self
+                .monolith_preset
+                .map(|p| format!("{p:?}"))
+                .unwrap_or_else(|| "默认（七槽全焊）".into());
+            println!(
+                "开发者编译: Monolith（焊接档位: {preset}；见 monolith.toml；`oclive build` 再生成）"
+            );
+        }
+        if self.with_example_plugin {
+            println!("示例插件: plugins/com.oclive.example.llamacpp_llm/");
         }
         if let Some(ks) = &self.kernel_source {
             println!("内核源码: {}（已接 runtime / HTTP 入口）", ks.display());
@@ -369,8 +420,21 @@ pub fn preset_config(name: &str, preset: &str) -> ProjectConfig {
         features,
         role_pack_kind: RolePackKind::DefaultExample,
         monolith_enabled: false,
+        monolith_preset: None,
         skip_role_pack: false,
+        with_example_plugin: false,
         kernel_source: None,
+    }
+}
+
+/// 解析 Monolith 焊接档位（无 `--monolith-preset` 时默认七槽全焊）。
+pub fn resolve_monolith_weld_modules(cfg: &ProjectConfig) -> Vec<&'static str> {
+    if !cfg.monolith_enabled {
+        return vec![];
+    }
+    match cfg.monolith_preset {
+        Some(p) => crate::monolith_codegen::weld_modules_for_preset(p),
+        None => crate::monolith_config::SLOT_IDS.to_vec(),
     }
 }
 
@@ -479,6 +543,10 @@ pub fn run(args: InitArgs) -> Result<()> {
 
     apply_template_layer(&args, &mut cfg);
     resolve_monolith(&args, &mut cfg);
+    if cfg.monolith_enabled {
+        cfg.monolith_preset = args.monolith_preset;
+    }
+    cfg.with_example_plugin = args.with_example_plugin;
     cfg.role_pack_kind = resolve_role_pack_kind(&args);
     if args.skip_role_pack {
         cfg.skip_role_pack = true;
@@ -575,8 +643,10 @@ mod template_tests {
             backend_agent: None,
             backend_complex_emotion: None,
             monolith: false,
+            monolith_preset: None,
             skip_role_pack: false,
             with_role_pack: None,
+            with_example_plugin: false,
             kernel_source: None,
         };
         let preset = args.preset.as_deref().unwrap_or("minimal");
@@ -603,8 +673,10 @@ mod template_tests {
             backend_agent: None,
             backend_complex_emotion: None,
             monolith: false,
+            monolith_preset: None,
             skip_role_pack: false,
             with_role_pack: None,
+            with_example_plugin: false,
             kernel_source: None,
         };
         let mut cfg = preset_config("t", "minimal");
@@ -631,13 +703,40 @@ mod template_tests {
             backend_agent: None,
             backend_complex_emotion: None,
             monolith: false,
+            monolith_preset: None,
             skip_role_pack: false,
             with_role_pack: Some(RolePackKindArg::Default),
+            with_example_plugin: false,
             kernel_source: None,
         };
         assert_eq!(
             resolve_role_pack_kind(&args),
             RolePackKind::DefaultExample
         );
+    }
+
+    #[test]
+    fn robot_gateway_template_defaults() {
+        let td = template_defaults(InitTemplateArg::RobotGateway);
+        assert_eq!(td.preset, "mixed");
+        assert!(td.monolith_default);
+        assert_eq!(td.role_pack, RolePackKind::None);
+    }
+
+    #[test]
+    fn dialogue_only_template_defaults() {
+        let td = template_defaults(InitTemplateArg::DialogueOnly);
+        assert_eq!(td.preset, "full");
+        assert!(!td.monolith_default);
+        assert_eq!(td.role_pack, RolePackKind::DefaultExample);
+    }
+
+    #[test]
+    fn monolith_preset_latency_welds_all_slots() {
+        let mut cfg = preset_config("t", "minimal");
+        cfg.monolith_enabled = true;
+        cfg.monolith_preset = Some(MonolithPresetArg::Latency);
+        let weld = resolve_monolith_weld_modules(&cfg);
+        assert_eq!(weld.len(), 7);
     }
 }
