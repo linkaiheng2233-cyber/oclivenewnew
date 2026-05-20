@@ -415,7 +415,7 @@ fn preset_gateway_config() -> ProjectConfig {
     cfg
 }
 
-fn example_llamacpp_plugin_src() -> PathBuf {
+pub fn example_llamacpp_plugin_src() -> PathBuf {
     PathBuf::from(env!("CARGO_MANIFEST_DIR")).join("../../examples/directory-plugin-llamacpp")
 }
 
