@@ -21,6 +21,10 @@ A **local-first** desktop companion for roleplay dialogue: **Tauri + Vue 3 + Rus
 
 Contributor notes: **[AGENTS.md](AGENTS.md)**.
 
+## Quick start (kernel factory / oclive-cli)
+
+A **~5 minute** path from zero to a buildable headless kernel scaffold: see **[Kernel factory vision — 5-minute walkthrough](creator-docs-en/getting-started/KERNEL_FACTORY_VISION.md)** (Chinese: [creator-docs/getting-started/KERNEL_FACTORY_VISION.md](creator-docs/getting-started/KERNEL_FACTORY_VISION.md)). Commands: `oclive doctor` → `oclive init --quick`.
+
 ## Performance
 
 Release **`cargo-bloat` sampling**, **Monolith** vs **`oclive bench`**, and **known product limits**: **[creator-docs-en/getting-started/PERFORMANCE.md](creator-docs-en/getting-started/PERFORMANCE.md)** (Chinese: [creator-docs/getting-started/PERFORMANCE.md](creator-docs/getting-started/PERFORMANCE.md)). Figures track [LIGHTWEIGHT_PROFILE.md](creator-docs/development/LIGHTWEIGHT_PROFILE.md) §6.7.

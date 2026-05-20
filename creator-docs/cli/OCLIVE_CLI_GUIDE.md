@@ -22,6 +22,20 @@ cargo run -p oclive-cli -- init --help
 
 **角色包规范与校验**：见 [ROLE_PACK_SPEC.md](../role-pack/ROLE_PACK_SPEC.md)；子命令 **`pack`** 见同文档第 6 节与下文。
 
+**5 分钟上手**（`doctor` → `init --quick` → `cargo run`）：[KERNEL_FACTORY_VISION.md](../getting-started/KERNEL_FACTORY_VISION.md#5-分钟从零到对话纯内核脚手架)。
+
+---
+
+## `doctor`：环境诊断
+
+```bash
+cargo run -p oclive-cli -- doctor
+cargo run -p oclive-cli -- doctor --json
+cargo run -p oclive-cli -- doctor -o ./my-project
+```
+
+检查 Rust/Cargo、系统内存、磁盘剩余、Ollama（`http://127.0.0.1:11434/api/tags`）、GitHub 连通、工作区可写。存在 **fail** 项时退出码非 0。JSON Schema：`crates/oclive-cli/schemas/oclive_doctor_report.schema.json`。
+
 ---
 
 ## `pack`：角色包校验与打包
@@ -143,6 +157,7 @@ cargo run -p oclive-cli -- init --non-interactive --quiet --preset mixed --proje
 | `--monolith-preset` | 仅 Monolith 启用时：`latency`（七槽全焊）\| `memory` \| `embedded`；预填 `monolith.toml` 的 `weld_modules` |
 | `--monolith-bench-preset` | 同档位枚举；生成后自动 release 双构建 + `bench --runs 5` → `bench_results/report.json`（失败不阻塞） |
 | `--list-templates` | 打印模板矩阵后退出；交互 `init` 亦可在项目类型前选模板 |
+| `--quick` / `-q` | 极速：`preset=full`、无 Monolith、无 `roles/`；交互仅问项目名与输出目录 |
 | `--template` | `robot-soul` \| `robot-gateway` \| `dialogue-only` \| `headless-api` \| `library-embed`（内核工厂套餐；见上表） |
 | `--with-role-pack` | `robot-soul-minimal` \| `default`；与 `--skip-role-pack` 互斥 |
 | `--with-example-plugin` | 附带 llamacpp 目录插件示例到 `plugins/` |
@@ -184,7 +199,7 @@ cargo run -p oclive-cli -- build -o /path/to/kernel-project --no-cargo
 
 ### `bench` 子命令
 
-再生成源码、双构建后，对两个二进制各跑 `--runs` 次子进程；子进程内通过环境变量 **`OCLIVE_KERNEL_BENCH_ITERS`** 做热循环。输出 **JSON**（`schema_version: 1`），Schema 见仓库 **`crates/oclive-cli/schemas/oclive_bench_report.schema.json`**。
+再生成源码、双构建后，对两个二进制各跑 `--runs` 次子进程；子进程内通过环境变量 **`OCLIVE_KERNEL_BENCH_ITERS`** 做热循环。输出 **JSON**（`schema_version: 2`），除延迟分位数外含 **`binary_size`**（字节）、**`peak_memory`**（MiB）、**`build_time`**（秒）。Schema：`crates/oclive-cli/schemas/oclive_bench_report.schema.json`。
 
 ```bash
 cargo run -p oclive-cli -- bench --release -o /path/to/kernel-project --runs 30 --inner-iters 500 --output ./bench-report.json

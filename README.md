@@ -21,6 +21,10 @@
 
 协作说明见根目录 **[AGENTS.md](AGENTS.md)**。
 
+## 快速开始（内核工厂 / oclive-cli）
+
+约 5 分钟从零到可编译内核工程（纯对话、极速模板）见 **[内核工厂愿景 · 5 分钟从零到对话](creator-docs/getting-started/KERNEL_FACTORY_VISION.md#5-分钟从零到对话纯内核脚手架)**（[English](creator-docs-en/getting-started/KERNEL_FACTORY_VISION.md)）。入口命令：`oclive doctor` → `oclive init --quick`。
+
 ## 性能
 
 对外披露的 **Release 二进制 `cargo-bloat` 采样、Monolith 与 `oclive bench` 方法、已知产品向限制** 见 **[creator-docs/getting-started/PERFORMANCE.md](creator-docs/getting-started/PERFORMANCE.md)**（[English](creator-docs-en/getting-started/PERFORMANCE.md)）。数值以 [LIGHTWEIGHT_PROFILE.md](creator-docs/development/LIGHTWEIGHT_PROFILE.md) §6.7 最新采样为准。

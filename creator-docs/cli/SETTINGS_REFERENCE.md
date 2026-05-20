@@ -75,6 +75,12 @@
 
 **`robot-gateway`**：附带 `mcp_servers/` 与 `roles/gateway/settings.json`（`agent` = builtin，`agent_mcp` 占位）。
 
+**`--quick` / `-q`**：full 预设、无 Monolith、无示例角色包。
+
+**`oclive doctor`**：环境一键诊断（`--json` 可编程解析）。
+
+**`oclive bench`**：报告 schema v2 含 `binary_size`、`peak_memory`、`build_time`。
+
 ## 四、`oclive-cli` 预设矩阵（逻辑 → JSON）
 
 | 槽位 | minimal | mixed | full |
