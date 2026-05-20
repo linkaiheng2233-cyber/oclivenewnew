@@ -1,0 +1,44 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8" />
+  <title>oclive dashboard</title>
+  <style>
+    body { font-family: system-ui, sans-serif; margin: 2rem; background: #fafafa; }
+    h1 { margin-bottom: 0.5rem; }
+    nav a { margin-right: 1rem; }
+    table { border-collapse: collapse; width: 100%; background: #fff; }
+    th, td { border: 1px solid #ddd; padding: 0.6rem; text-align: left; }
+    th { background: #eee; }
+    tr:hover { background: #f0f7ff; }
+    a { color: #2563eb; }
+  </style>
+</head>
+<body>
+  <h1>oclive 内核工厂仪表盘</h1>
+  <nav>
+    <a href="/templates">模板库</a>
+  </nav>
+  <p>注册表中的本地工程（<code>~/.oclive/registry.json</code>）</p>
+  <table>
+    <thead><tr><th>名称</th><th>模板</th><th>创建</th><th>路径</th></tr></thead>
+    <tbody id="rows"></tbody>
+  </table>
+  <script>
+    fetch('/api/projects').then(r => r.json()).then(rows => {
+      const tb = document.getElementById('rows');
+      if (!rows.length) {
+        tb.innerHTML = '<tr><td colspan="4">（空）请先 oclive init</td></tr>';
+        return;
+      }
+      tb.innerHTML = rows.map(p => `
+        <tr>
+          <td><a href="/api/project/${encodeURIComponent(p.name)}">${p.name}</a></td>
+          <td>${p.template || '—'}</td>
+          <td>${p.created_at}</td>
+          <td><code>${p.path}</code></td>
+        </tr>`).join('');
+    });
+  </script>
+</body>
+</html>
