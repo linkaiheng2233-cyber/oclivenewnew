@@ -1,0 +1,318 @@
+//! 插件 install / test / search / update / uninstall。
+
+use anyhow::{bail, Context, Result};
+use clap::Parser;
+use oclive_validation::{parse_plugin_dependencies, resolve_install_order};
+use serde::Deserialize;
+use serde_json::Value;
+use std::fs;
+use std::path::{Path, PathBuf};
+use std::process::{Command, Stdio};
+use std::time::Duration;
+
+#[derive(Parser, Debug)]
+pub struct PluginInstallArgs {
+    pub id: String,
+    #[arg(short = 'o', long, default_value = "./plugins")]
+    pub plugins_dir: PathBuf,
+    /// 源目录（含 manifest.json）；默认 plugins_dir/<id>
+    #[arg(long)]
+    pub source: Option<PathBuf>,
+}
+
+#[derive(Parser, Debug)]
+pub struct PluginUninstallArgs {
+    pub id: String,
+    #[arg(short = 'o', long, default_value = "./plugins")]
+    pub plugins_dir: PathBuf,
+}
+
+#[derive(Parser, Debug)]
+pub struct PluginTestArgs {
+    pub plugin_path: PathBuf,
+    #[arg(long)]
+    pub json: bool,
+}
+
+#[derive(Parser, Debug)]
+pub struct PluginSearchArgs {
+    pub keyword: String,
+}
+
+#[derive(Parser, Debug)]
+pub struct PluginUpdateArgs {
+    pub id: String,
+    #[arg(short = 'o', long, default_value = "./plugins")]
+    pub plugins_dir: PathBuf,
+}
+
+#[derive(Deserialize)]
+struct IndexEntry {
+    id: String,
+    name: String,
+    version: String,
+    #[serde(default)]
+    author: String,
+    #[serde(default)]
+    description: String,
+    #[serde(default)]
+    tags: Vec<String>,
+}
+
+#[derive(Deserialize)]
+struct PluginIndex {
+    plugins: Vec<IndexEntry>,
+}
+
+pub fn run_install(args: PluginInstallArgs) -> Result<()> {
+    let plugins_dir = args.plugins_dir.canonicalize().unwrap_or(args.plugins_dir);
+    fs::create_dir_all(&plugins_dir)?;
+    let src = args
+        .source
+        .clone()
+        .unwrap_or_else(|| plugins_dir.join(&args.id));
+    if !src.join("manifest.json").is_file() {
+        bail!("缺少 manifest.json: {}", src.display());
+    }
+    let manifest_raw = fs::read_to_string(src.join("manifest.json"))?;
+    let deps = parse_plugin_dependencies(&manifest_raw).map_err(|e| anyhow::anyhow!(e))?;
+
+    let load_deps = |id: &str| -> Result<Vec<String>, String> {
+        let p = plugins_dir.join(id).join("manifest.json");
+        let raw = fs::read_to_string(&p).map_err(|e| e.to_string())?;
+        parse_plugin_dependencies(&raw)
+    };
+
+    let order = resolve_install_order(&args.id, load_deps).map_err(|e| anyhow::anyhow!(e))?;
+    let order_display = order.join(" → ");
+    for id in &order {
+        let dst = plugins_dir.join(&id);
+        if dst.is_dir() && *id != args.id {
+            continue;
+        }
+        let from = if *id == args.id {
+            src.clone()
+        } else {
+            plugins_dir.join(id)
+        };
+        if !from.join("manifest.json").is_file() {
+            bail!("依赖插件 {id} 未找到于 {}", plugins_dir.display());
+        }
+        if *id == args.id || !dst.exists() {
+            copy_plugin_tree(&from, &dst)?;
+            println!("✓ 安装 {id} → {}", dst.display());
+        }
+    }
+    if !deps.is_empty() {
+        println!("依赖树: {order_display}");
+    }
+    Ok(())
+}
+
+pub fn run_uninstall(args: PluginUninstallArgs) -> Result<()> {
+    let plugins_dir = args.plugins_dir.canonicalize().unwrap_or(args.plugins_dir);
+    let installed = list_installed(&plugins_dir)?;
+    let dependents: Vec<String> = installed
+        .iter()
+        .filter_map(|(id, raw)| {
+            parse_plugin_dependencies(raw)
+                .ok()
+                .filter(|d| d.contains(&args.id))
+                .map(|_| id.clone())
+        })
+        .collect();
+    if !dependents.is_empty() {
+        eprintln!("⚠ 以下插件仍声明依赖 {}: {}", args.id, dependents.join(", "));
+    }
+    let target = plugins_dir.join(&args.id);
+    if target.is_dir() {
+        fs::remove_dir_all(&target).context("remove plugin dir")?;
+        println!("已卸载 {}", args.id);
+    } else {
+        bail!("未安装: {}", args.id);
+    }
+    Ok(())
+}
+
+pub fn run_test(args: PluginTestArgs) -> Result<()> {
+    let path = args.plugin_path.canonicalize().unwrap_or(args.plugin_path);
+    let manifest_path = path.join("manifest.json");
+    let raw = fs::read_to_string(&manifest_path).context("manifest")?;
+    let v: Value = serde_json::from_str(&raw)?;
+    let id = v["id"].as_str().context("manifest.id")?;
+    let methods: Vec<String> = v["rpcMethods"]
+        .as_array()
+        .map(|a| {
+            a.iter()
+                .filter_map(|x| x.as_str().map(String::from))
+                .collect()
+        })
+        .unwrap_or_default();
+
+    let mut child = spawn_plugin(&path)?;
+    std::thread::sleep(Duration::from_millis(800));
+    let mut results = Vec::new();
+    results.push(rpc_call(&mut child, "health", json!({})));
+    results.push(rpc_call(&mut child, "list_methods", json!({})));
+    for m in &methods {
+        results.push(rpc_call(&mut child, m, json!({"probe": true})));
+    }
+    let _ = child.kill();
+
+    if args.json {
+        println!("{}", serde_json::to_string_pretty(&results)?);
+        return Ok(());
+    }
+    println!("oclive plugin test — {id}");
+    for r in &results {
+        let mark = if r.ok { "✅" } else { "❌" };
+        println!("  {mark} {} — {}", r.method, r.detail);
+    }
+    Ok(())
+}
+
+pub fn run_search(args: PluginSearchArgs) -> Result<()> {
+    let index = fetch_plugin_index()?;
+    let kw = args.keyword.to_ascii_lowercase();
+    let hits: Vec<_> = index
+        .plugins
+        .into_iter()
+        .filter(|p| {
+            p.id.to_ascii_lowercase().contains(&kw)
+                || p.name.to_ascii_lowercase().contains(&kw)
+                || p.description.to_ascii_lowercase().contains(&kw)
+                || p.tags.iter().any(|t| t.to_ascii_lowercase().contains(&kw))
+        })
+        .collect();
+    if hits.is_empty() {
+        println!("（无匹配）");
+        return Ok(());
+    }
+    for p in hits {
+        println!(
+            "{} v{} — {} — {}",
+            p.id, p.version, p.author, p.description
+        );
+    }
+    Ok(())
+}
+
+pub fn run_update(args: PluginUpdateArgs) -> Result<()> {
+    let plugins_dir = args.plugins_dir.canonicalize().unwrap_or(args.plugins_dir);
+    let local = plugins_dir.join(&args.id).join("manifest.json");
+    if !local.is_file() {
+        bail!("未安装 {}", args.id);
+    }
+    let index = fetch_plugin_index()?;
+    let remote = index.plugins.iter().find(|p| p.id == args.id);
+    let Some(remote) = remote else {
+        bail!("索引中无 {}", args.id);
+    };
+    let local_v: Value = serde_json::from_str(&fs::read_to_string(&local)?)?;
+    let cur = local_v["version"].as_str().unwrap_or("0.0.0");
+    if cur == remote.version {
+        println!("{} 已是最新 ({})", args.id, cur);
+        return Ok(());
+    }
+    println!(
+        "发现新版本 {} → {}（请从索引 URL 下载包后重新 install）",
+        cur, remote.version
+    );
+    Ok(())
+}
+
+fn fetch_plugin_index() -> Result<PluginIndex> {
+    let url = std::env::var("OCLIVE_PLUGIN_INDEX_URL").unwrap_or_else(|_| {
+        "https://raw.githubusercontent.com/linkaiheng2233-cyber/oclivenewnew/main/examples/plugin-index.json".into()
+    });
+    let body = ureq::get(&url)
+        .call()
+        .map_err(|e| anyhow::anyhow!("拉取索引失败: {e}"))?
+        .into_string()?;
+    Ok(serde_json::from_str(&body).context("parse plugin index")?)
+}
+
+fn list_installed(dir: &Path) -> Result<Vec<(String, String)>> {
+    let mut out = Vec::new();
+    if !dir.is_dir() {
+        return Ok(out);
+    }
+    for e in fs::read_dir(dir)? {
+        let e = e?;
+        let m = e.path().join("manifest.json");
+        if m.is_file() {
+            let raw = fs::read_to_string(&m)?;
+            if let Ok(v) = serde_json::from_str::<Value>(&raw) {
+                if let Some(id) = v["id"].as_str() {
+                    out.push((id.to_string(), raw));
+                }
+            }
+        }
+    }
+    Ok(out)
+}
+
+fn copy_plugin_tree(from: &Path, to: &Path) -> Result<()> {
+    if to.exists() {
+        fs::remove_dir_all(to).ok();
+    }
+    copy_dir(from, to)
+}
+
+fn copy_dir(from: &Path, to: &Path) -> Result<()> {
+    fs::create_dir_all(to)?;
+    for e in fs::read_dir(from)? {
+        let e = e?;
+        let p = e.path();
+        let name = e.file_name();
+        let dest = to.join(name);
+        if p.is_dir() {
+            copy_dir(&p, &dest)?;
+        } else {
+            fs::copy(&p, &dest)?;
+        }
+    }
+    Ok(())
+}
+
+fn spawn_plugin(path: &Path) -> Result<std::process::Child> {
+    let manifest: Value =
+        serde_json::from_str(&fs::read_to_string(path.join("manifest.json"))?)?;
+    let cmd = manifest["process"]["command"]
+        .as_str()
+        .context("process.command")?;
+    let args: Vec<String> = manifest["process"]["args"]
+        .as_array()
+        .map(|a| {
+            a.iter()
+                .filter_map(|v| v.as_str().map(String::from))
+                .collect()
+        })
+        .unwrap_or_default();
+    let mut c = Command::new(cmd);
+    c.args(&args).current_dir(path).stdout(Stdio::piped()).stderr(Stdio::piped());
+    c.spawn().context("spawn plugin")
+}
+
+#[derive(serde::Serialize)]
+struct RpcResult {
+    method: String,
+    ok: bool,
+    detail: String,
+}
+
+fn rpc_call(child: &mut std::process::Child, method: &str, params: Value) -> RpcResult {
+    // 简化：仅检查子进程仍存活（完整 JSON-RPC 需读 OCLIVE_READY 行与 HTTP 端口）
+    let alive = child.try_wait().ok().flatten().is_none();
+    RpcResult {
+        method: method.into(),
+        ok: alive,
+        detail: if alive {
+            "子进程存活（完整 RPC 契约请用管理面板探活）".into()
+        } else {
+            "子进程已退出".into()
+        },
+    }
+}
+
+use serde_json::json;

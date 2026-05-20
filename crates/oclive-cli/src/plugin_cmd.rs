@@ -18,6 +18,16 @@ pub struct PluginCli {
 pub enum PluginCommands {
     /// 生成目录或 Remote 插件骨架（manifest + RPC 桩 + README）
     Create(PluginCreateArgs),
+    /// 安装插件并解析 plugin_dependencies
+    Install(crate::plugin_ext::PluginInstallArgs),
+    /// 卸载插件
+    Uninstall(crate::plugin_ext::PluginUninstallArgs),
+    /// RPC 契约烟测
+    Test(crate::plugin_ext::PluginTestArgs),
+    /// 搜索插件市场索引
+    Search(crate::plugin_ext::PluginSearchArgs),
+    /// 检查更新
+    Update(crate::plugin_ext::PluginUpdateArgs),
 }
 
 #[derive(Parser, Debug, Clone)]
@@ -90,6 +100,11 @@ impl PluginSlotArg {
 pub fn run(cli: PluginCli) -> Result<()> {
     match cli.command {
         PluginCommands::Create(args) => run_create(args),
+        PluginCommands::Install(args) => crate::plugin_ext::run_install(args),
+        PluginCommands::Uninstall(args) => crate::plugin_ext::run_uninstall(args),
+        PluginCommands::Test(args) => crate::plugin_ext::run_test(args),
+        PluginCommands::Search(args) => crate::plugin_ext::run_search(args),
+        PluginCommands::Update(args) => crate::plugin_ext::run_update(args),
     }
 }
 
@@ -253,7 +268,8 @@ fn build_directory_plugin(
             "command": "node",
             "args": ["rpc_server.mjs"]
         },
-        "permissions": ["process:spawn", "network:*"]
+        "permissions": ["process:spawn", "network:*"],
+        "plugin_dependencies": []
     });
     let readme = include_str!(concat!(
         env!("CARGO_MANIFEST_DIR"),

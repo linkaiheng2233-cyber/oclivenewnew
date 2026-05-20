@@ -12,6 +12,7 @@ pub mod disk_role_settings;
 pub mod json_keys;
 pub mod manifest;
 pub mod plugin_backends;
+pub mod plugin_dependencies;
 pub mod plugin_permissions;
 pub mod role_pack;
 pub mod validate;
@@ -25,6 +26,9 @@ pub use manifest::{
     DiskRoleManifest, EvolutionConfigDisk, IdentityBinding, KnowledgePackConfigDisk,
     LifeAvailability, LifeScheduleDisk, LifeScheduleEntryDisk, LifeTrajectoryDisk,
     MemoryConfigDisk, PersonalitySource, UserRelationDisk,
+};
+pub use plugin_dependencies::{
+    parse_plugin_dependencies, resolve_install_order,
 };
 pub use plugin_permissions::{
     manifest_declares_process_spawn, validate_directory_plugin_manifest_permissions,
