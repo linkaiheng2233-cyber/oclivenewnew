@@ -77,6 +77,19 @@ curl -X POST http://127.0.0.1:8420/chat \
 
 ---
 
+## U / V / W / X 四向深化（main）
+
+| 维度 | 主题 | 代表能力 |
+|------|------|----------|
+| **U** | 可视化与上手 | `dashboard` Web UI、`bench --dashboard`、`learn` 教程 |
+| **V** | 质量与矩阵 | `bench --matrix`、`test` 回归、`lint` 工程健康 |
+| **W** | 插件生态 | `plugin_dependencies`、`plugin install/test/search/update` |
+| **X** | 焊接与编排 | TUI 勾选焊接、`init --pipeline`、`profile` 画像 |
+
+详见 [OCLIVE_CLI_GUIDE.md](../cli/OCLIVE_CLI_GUIDE.md) 中 U–X 各节。
+
+---
+
 ## 工厂工作流（推荐）
 
 1. **浏览配方**：`oclive init --list-templates` 或交互式「选择场景模板」；再 `oclive init --template robot-soul -o ./my-doll`（玩偶）、`robot-gateway`（网关 + MCP 骨架）、`dialogue-only`、`headless-api`、`library-embed`。

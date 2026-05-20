@@ -39,6 +39,71 @@ cargo run -p oclive-cli -- init --help
 
 ---
 
+## U 维：可视化与上手
+
+| 命令 | 作用 |
+|------|------|
+| `dashboard` | 本地 Web 仪表盘（默认 `http://127.0.0.1:8420`）：工程列表、模板库、`bench_history` 折线 |
+| `bench --dashboard` | 终端实时刷新标准/焊接 p50·P95·内存·体积；底部 ASCII sparkline；`q` 退出 |
+| `learn` | 五步交互教程（`doctor` → 模板说明 → `init` → `cargo build` → curl 提示） |
+
+```bash
+cargo run -p oclive-cli -- dashboard
+cargo run -p oclive-cli -- bench --dashboard --release -o ./my-kernel
+cargo run -p oclive-cli -- learn -o ./oclive-learn-demo
+```
+
+> **端口**：`dashboard` 与内核 HTTP API 默认均可能占用 **8420**；请勿同时启动。教程 HTTP 示例使用 **8421**。
+
+---
+
+## V 维：质量与矩阵基准
+
+| 命令 | 作用 |
+|------|------|
+| `bench --matrix` | Monolith 档位（none/latency/memory/embedded）× preset（minimal/mixed/full）矩阵；各 3 轮 |
+| `test` | `cargo check`、clippy、角色包 `pack validate`、OOCP 路径提示（`--skip-oocp`） |
+| `lint` | 目录结构、`Cargo.toml` 元数据、`settings.json` 七槽、`monolith.toml`、Git 脏检查 |
+
+```bash
+cargo run -p oclive-cli -- bench --matrix --release -o ./my-kernel
+cargo run -p oclive-cli -- bench --matrix --json -o ./my-kernel
+cargo run -p oclive-cli -- test -o ./my-kernel
+cargo run -p oclive-cli -- lint -o ./my-kernel --json
+```
+
+---
+
+## W 维：插件生态 CLI
+
+| 子命令 | 作用 |
+|--------|------|
+| `plugin install <id>` | 解析 `manifest.json` 的 `plugin_dependencies`，拓扑排序安装 |
+| `plugin uninstall <id>` | 卸载并提示被依赖关系 |
+| `plugin test <path>` | 子进程 + RPC 烟测（`health` / 槽位方法） |
+| `plugin search <kw>` | 从 `OCLIVE_PLUGIN_INDEX_URL`（默认仓库 `examples/plugin-index.json` 的 raw）搜索 |
+| `plugin update <id>` | 检查索引版本并更新 |
+
+`plugin_dependencies` 为 manifest 可选字符串数组；环依赖报错。见 [PLUGIN_V1.md](../plugin-and-architecture/PLUGIN_V1.md)。
+
+---
+
+## X 维：焊接与编排定制
+
+| 能力 | 说明 |
+|------|------|
+| `init --tui` + Monolith | 模板确认后进入**自定义焊接**页：空格勾选七槽，生成 `monolith.toml` |
+| `init --weld-modules` | 非 TUI：`memory,emotion,prompt,llm` 等逗号列表 |
+| `init --pipeline` | `default` \| `emotion-first` \| `memory-last`；生成 `docs/PIPELINE_CUSTOM.md` 与 `src/oclive_pipeline_order.rs` |
+| `profile` | `cargo tree`、release 二进制体积、可选 `cargo bloat` Top crate |
+
+```bash
+cargo run -p oclive-cli -- init --pipeline memory-last --template dialogue-only -o ./p -n demo --non-interactive
+cargo run -p oclive-cli -- profile -o ./my-kernel --json
+```
+
+---
+
 ## `doctor`：环境诊断
 
 ```bash

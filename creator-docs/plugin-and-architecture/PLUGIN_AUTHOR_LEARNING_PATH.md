@@ -9,6 +9,7 @@
 | 步骤 | 做什么 | 读什么 |
 |------|--------|--------|
 | 0 | **快速开始**：一键生成插件骨架 | 在 oclivenewnew 根：`cargo run -p oclive-cli -- plugin create my-plugin --type directory --provides llm -o ./plugins/`；见 [OCLIVE_CLI_GUIDE.md](../cli/OCLIVE_CLI_GUIDE.md) § `plugin create` |
+| 0b | **依赖与市场** | `plugin install` / `plugin_dependencies`；`plugin test <path>`；`plugin search` / `plugin update`（索引 `OCLIVE_PLUGIN_INDEX_URL` 或仓库 `examples/plugin-index.json`） |
 | 1 | 建立「六宿主槽 + agent」心智模型 | [PLUGIN_V1.md](PLUGIN_V1.md) 架构图与 **`PluginBackends`** 说明（`complex_emotion` 等为脚手架键，非六槽之一） |
 | 2 | 理解 `plugin_backends` 与 `directory_plugins` | [SETTINGS_REFERENCE.md](../cli/SETTINGS_REFERENCE.md) |
 | 3 | 三种后端差异 | **builtin**：进程内默认；**remote**：HTTP JSON-RPC 侧车；**directory**：`plugins/<id>/` 子进程 + 同 wire（见 [DIRECTORY_PLUGINS.md](DIRECTORY_PLUGINS.md)） |
