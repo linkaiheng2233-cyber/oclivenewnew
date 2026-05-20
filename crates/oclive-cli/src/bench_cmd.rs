@@ -772,6 +772,7 @@ fn run_bench_regression(
     Ok(if regressions.is_empty() { 0 } else { 1 })
 }
 
+/// 与指定 Git 引用各跑 N 轮 bench 并输出对比矩阵（`git stash` / `checkout` / 恢复）。
 fn run_bench_compare_versions(root: &Path, git_ref: &str, base: &BenchArgs) -> Result<()> {
     let root = root.canonicalize()?;
     let mut args_other = base.clone();
