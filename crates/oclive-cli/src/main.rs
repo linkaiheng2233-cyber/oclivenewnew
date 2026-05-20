@@ -12,12 +12,18 @@ mod cargo_hints;
 mod doctor_cmd;
 mod blueprint_cmd;
 mod build_cmd;
+mod dashboard_cmd;
 mod dev_cmd;
 mod plugin_cmd;
+mod plugin_ext;
 mod generator;
 mod init;
 mod init_bench;
 mod interactive;
+mod learn_cmd;
+mod lint_cmd;
+mod pipeline;
+mod profile_cmd;
 mod template_catalog;
 mod monolith_codegen;
 mod monolith_config;
@@ -29,6 +35,7 @@ mod publish_cmd;
 mod registry;
 mod registry_cmd;
 mod role_pack;
+mod test_cmd;
 
 use anyhow::Result;
 use clap::{Parser, Subcommand};
@@ -75,6 +82,16 @@ enum Commands {
     Publish(publish_cmd::PublishArgs),
     /// 逐步骤调试 process_message
     Debug(debug_cmd::DebugArgs),
+    /// 本地 Web 仪表盘（默认 127.0.0.1:8420）
+    Dashboard(dashboard_cmd::DashboardArgs),
+    /// 新用户交互式教程
+    Learn(learn_cmd::LearnArgs),
+    /// 内核工程回归测试
+    Test(test_cmd::TestArgs),
+    /// 内核工程静态健康检查
+    Lint(lint_cmd::LintArgs),
+    /// 内核性能画像
+    Profile(profile_cmd::ProfileArgs),
 }
 
 fn init_tracing(verbose: u8) {
@@ -107,6 +124,11 @@ fn main() -> Result<()> {
         Commands::Compose(cli) => compose_cmd::run(cli),
         Commands::Publish(args) => publish_cmd::run(args),
         Commands::Debug(args) => debug_cmd::run(args),
+        Commands::Dashboard(args) => dashboard_cmd::run(args),
+        Commands::Learn(args) => learn_cmd::run(args),
+        Commands::Test(args) => test_cmd::run(args),
+        Commands::Lint(args) => lint_cmd::run(args),
+        Commands::Profile(args) => profile_cmd::run(args),
     }
 }
 
