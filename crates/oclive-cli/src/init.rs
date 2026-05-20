@@ -138,6 +138,14 @@ pub struct InitArgs {
     /// Machine-readable output for `--from-existing`
     #[arg(long)]
     pub json: bool,
+
+    /// Print planned directory tree without writing files
+    #[arg(long)]
+    pub dry_run: bool,
+
+    /// Pre-flight checks for template and environment (no generation)
+    #[arg(long)]
+    pub check: bool,
 }
 
 /// Kernel factory recipe (`--template`).
@@ -643,9 +651,101 @@ fn run_quick_init(args: &InitArgs) -> Result<()> {
     Ok(())
 }
 
+/// Build resolved project configuration without writing to disk.
+pub fn resolve_init_config(args: &InitArgs, skip_interactive_confirm: bool) -> Result<ProjectConfig> {
+    if args.quick {
+        let mut cfg = quick_project_config(&args.project_name);
+        apply_backend_cli_overrides(&mut cfg, args);
+        apply_cargo_metadata_cli(&mut cfg, args);
+        ensure_cargo_license_default(&mut cfg);
+        return Ok(cfg);
+    }
+
+    let mut cfg = if args.non_interactive || args.dry_run || args.check || skip_interactive_confirm {
+        let preset = args
+            .preset
+            .as_deref()
+            .unwrap_or("minimal")
+            .to_ascii_lowercase();
+        let mut c = preset_config(&args.project_name, &preset);
+        apply_backend_cli_overrides(&mut c, args);
+        if let Some(t) = args.project_type {
+            c.project_type = match t {
+                ProjectTypeArg::KernelServer => ProjectType::KernelServer,
+                ProjectTypeArg::Library => ProjectType::Library,
+            };
+        }
+        c
+    } else {
+        let mut c = crate::interactive::run_interactive(args)?;
+        apply_backend_cli_overrides(&mut c, args);
+        if let Some(t) = args.project_type {
+            c.project_type = match t {
+                ProjectTypeArg::KernelServer => ProjectType::KernelServer,
+                ProjectTypeArg::Library => ProjectType::Library,
+            };
+        }
+        if !args.project_name.is_empty() && args.project_name != "my_oclive_kernel" {
+            c.project_name = args.project_name.clone();
+        }
+        c
+    };
+
+    apply_template_layer(args, &mut cfg);
+    resolve_monolith(args, &mut cfg);
+    if cfg.monolith_enabled {
+        cfg.monolith_preset = args.monolith_preset.or(args.monolith_bench_preset);
+    }
+    if args.monolith_bench_preset.is_some() {
+        if cfg.project_type == ProjectType::KernelServer {
+            if !cfg.monolith_enabled {
+                cfg.monolith_enabled = true;
+            }
+            cfg.monolith_preset = cfg.monolith_preset.or(args.monolith_bench_preset);
+            cfg.run_monolith_bench_after_init = cfg.monolith_enabled;
+        }
+    }
+    cfg.factory_template = args.template;
+    cfg.with_example_plugin = args.with_example_plugin;
+    cfg.role_pack_kind = resolve_role_pack_kind(args);
+    if args.skip_role_pack {
+        cfg.skip_role_pack = true;
+        cfg.role_pack_kind = RolePackKind::None;
+    }
+    if let Some(ref ks) = args.kernel_source {
+        let canonical = ks
+            .canonicalize()
+            .with_context(|| format!("kernel-source: {}", ks.display()))?;
+        generator::validate_kernel_source(&canonical)?;
+        cfg.kernel_source = Some(canonical);
+    }
+    apply_cargo_metadata_cli(&mut cfg, args);
+    ensure_cargo_license_default(&mut cfg);
+    cfg.pipeline = args.pipeline;
+    if !args.weld_modules.is_empty() {
+        cfg.custom_weld_modules = Some(args.weld_modules.clone());
+        cfg.monolith_enabled = true;
+    }
+    if args.tui
+        && !skip_interactive_confirm
+        && cfg.monolith_enabled
+        && cfg.custom_weld_modules.is_none()
+        && matches!(cfg.project_type, ProjectType::KernelServer)
+    {
+        if let Some(w) = crate::init_tui::pick_weld_modules_tui()? {
+            cfg.custom_weld_modules = Some(w);
+        }
+    }
+    Ok(cfg)
+}
+
 pub fn run(args: InitArgs) -> Result<()> {
     if let Some(ref existing) = args.from_existing {
         return crate::init_from_existing::run_from_existing(existing, &args);
+    }
+
+    if args.check {
+        return crate::init_check::run_precheck(&args);
     }
 
     if args.list_templates {
@@ -664,84 +764,13 @@ pub fn run(args: InitArgs) -> Result<()> {
         return run_quick_init(&args);
     }
 
-    let mut cfg = if args.non_interactive {
-        let preset = args
-            .preset
-            .as_deref()
-            .unwrap_or("minimal")
-            .to_ascii_lowercase();
-        let mut c = preset_config(&args.project_name, &preset);
-        apply_backend_cli_overrides(&mut c, &args);
-        if let Some(t) = args.project_type {
-            c.project_type = match t {
-                ProjectTypeArg::KernelServer => ProjectType::KernelServer,
-                ProjectTypeArg::Library => ProjectType::Library,
-            };
-        }
-        c
-    } else {
-        let mut c = crate::interactive::run_interactive(&args)?;
-        apply_backend_cli_overrides(&mut c, &args);
-        if let Some(t) = args.project_type {
-            c.project_type = match t {
-                ProjectTypeArg::KernelServer => ProjectType::KernelServer,
-                ProjectTypeArg::Library => ProjectType::Library,
-            };
-        }
-        if !args.project_name.is_empty() && args.project_name != "my_oclive_kernel" {
-            c.project_name = args.project_name.clone();
-        }
-        c
-    };
+    let cfg = resolve_init_config(&args, false)?;
 
-    apply_template_layer(&args, &mut cfg);
-    resolve_monolith(&args, &mut cfg);
-    if cfg.monolith_enabled {
-        cfg.monolith_preset = args.monolith_preset.or(args.monolith_bench_preset);
-    }
-    if args.monolith_bench_preset.is_some() {
-        if cfg.project_type == ProjectType::KernelServer {
-            if !cfg.monolith_enabled {
-                cfg.monolith_enabled = true;
-            }
-            cfg.monolith_preset = cfg.monolith_preset.or(args.monolith_bench_preset);
-            cfg.run_monolith_bench_after_init = cfg.monolith_enabled;
-        } else if !args.quiet {
-            eprintln!("⚠ --monolith-bench-preset applies only to kernel_server; ignored.");
-        }
-    }
-    cfg.factory_template = args.template;
-    cfg.with_example_plugin = args.with_example_plugin;
-    cfg.role_pack_kind = resolve_role_pack_kind(&args);
-    if args.skip_role_pack {
-        cfg.skip_role_pack = true;
-        cfg.role_pack_kind = RolePackKind::None;
+    if args.dry_run {
+        return crate::init_plan::print_dry_run(&cfg, &args);
     }
 
-    if let Some(ref ks) = args.kernel_source {
-        let canonical = ks
-            .canonicalize()
-            .with_context(|| format!("kernel-source: {}", ks.display()))?;
-        generator::validate_kernel_source(&canonical)?;
-        cfg.kernel_source = Some(canonical);
-    }
-
-    apply_cargo_metadata_cli(&mut cfg, &args);
-    ensure_cargo_license_default(&mut cfg);
-    cfg.pipeline = args.pipeline;
-    if !args.weld_modules.is_empty() {
-        cfg.custom_weld_modules = Some(args.weld_modules.clone());
-        cfg.monolith_enabled = true;
-    }
-    if args.tui
-        && cfg.monolith_enabled
-        && cfg.custom_weld_modules.is_none()
-        && matches!(cfg.project_type, ProjectType::KernelServer)
-    {
-        if let Some(w) = crate::init_tui::pick_weld_modules_tui()? {
-            cfg.custom_weld_modules = Some(w);
-        }
-    }
+    let mut cfg = cfg;
 
     if !args.non_interactive {
         cfg.print_summary();
@@ -850,6 +879,8 @@ mod template_tests {
             from_existing: None,
             share: false,
             json: false,
+            dry_run: false,
+            check: false,
         };
         let preset = args.preset.as_deref().unwrap_or("minimal");
         let mut cfg = preset_config("t", preset);
@@ -893,6 +924,8 @@ mod template_tests {
             from_existing: None,
             share: false,
             json: false,
+            dry_run: false,
+            check: false,
         };
         let mut cfg = preset_config("t", "minimal");
         apply_template_layer(&args, &mut cfg);
@@ -936,6 +969,8 @@ mod template_tests {
             from_existing: None,
             share: false,
             json: false,
+            dry_run: false,
+            check: false,
         };
         assert_eq!(
             resolve_role_pack_kind(&args),
@@ -987,6 +1022,8 @@ mod template_tests {
             from_existing: None,
             share: false,
             json: false,
+            dry_run: false,
+            check: false,
         };
         let mut cfg = preset_config("t", "minimal");
         apply_backend_cli_overrides(&mut cfg, &args);
