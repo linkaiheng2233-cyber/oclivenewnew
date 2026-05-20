@@ -15,6 +15,10 @@ pub struct LintArgs {
     /// Dependency audit (cargo-audit) and yanked crate check via cargo metadata
     #[arg(long)]
     pub deps: bool,
+
+    /// Check `.github/workflows/ci.yml` for cargo-audit job configuration
+    #[arg(long = "audit-ci")]
+    pub audit_ci: bool,
 }
 
 #[derive(Serialize, Clone)]
@@ -26,6 +30,9 @@ struct LintItem {
 
 pub fn run(args: LintArgs) -> Result<()> {
     let root = args.path.canonicalize().unwrap_or(args.path);
+    if args.audit_ci {
+        return crate::lint_audit_ci::run_audit_ci(&root);
+    }
     if args.deps {
         return run_deps_audit(&root, args.json);
     }
