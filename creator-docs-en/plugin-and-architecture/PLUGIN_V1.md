@@ -4,7 +4,7 @@
 
 This is an **English summary** of the v1 contract between the host (Tauri / `chat_engine`) and swappable subsystems: naming, DTO shape, and `settings.json` enums. **Source of truth** remains Rust: `src-tauri/src/domain/*_*.rs`, `src-tauri/src/models/plugin_backends.rs`. **Full tables and edge cases (Chinese):** [../../creator-docs/plugin-and-architecture/PLUGIN_V1.md](../../creator-docs/plugin-and-architecture/PLUGIN_V1.md).
 
-**Index (ZH):** [DOCUMENTATION_INDEX.md](../../creator-docs/getting-started/DOCUMENTATION_INDEX.md) · **Kernel diagram:** [../getting-started/KERNEL_AND_MODULES_ARCHITECTURE.md](../getting-started/KERNEL_AND_MODULES_ARCHITECTURE.md) · **Pack versioning:** [PACK_VERSIONING.md](../../creator-docs/role-pack/PACK_VERSIONING.md) · **Remote JSON-RPC:** [REMOTE_PLUGIN_PROTOCOL.md](../../creator-docs/plugin-and-architecture/REMOTE_PLUGIN_PROTOCOL.md) · **Directory plugins:** [DIRECTORY_PLUGINS.md](../../creator-docs/plugin-and-architecture/DIRECTORY_PLUGINS.md).
+**Index (ZH):** [DOCUMENTATION_INDEX.md](../../creator-docs/getting-started/DOCUMENTATION_INDEX.md) · **Architecture overview:** [../getting-started/OCLIVE_ARCHITECTURE_OVERVIEW.md](../getting-started/OCLIVE_ARCHITECTURE_OVERVIEW.md) · **Kernel diagram:** [../getting-started/KERNEL_AND_MODULES_ARCHITECTURE.md](../getting-started/KERNEL_AND_MODULES_ARCHITECTURE.md) · **Pack versioning:** [PACK_VERSIONING.md](../../creator-docs/role-pack/PACK_VERSIONING.md) · **Remote JSON-RPC:** [REMOTE_PLUGIN_PROTOCOL.md](../../creator-docs/plugin-and-architecture/REMOTE_PLUGIN_PROTOCOL.md) · **Directory plugins:** [DIRECTORY_PLUGINS.md](../../creator-docs/plugin-and-architecture/DIRECTORY_PLUGINS.md).
 
 ---
 
@@ -19,7 +19,7 @@ This is an **English summary** of the v1 contract between the host (Tauri / `cha
 
 ## `PluginBackends` host slots
 
-Runtime struct **`PluginBackends`** has **six** enum fields: **`memory` · `emotion` · `event` · `prompt` · `llm` · `agent`**. Optional **`directory_plugins`** maps each slot to a manifest **`id`** when that slot is **`directory`**. Resolution: **`PluginHost::resolve_for_role`** → **`Arc<dyn …>`** per facade, then **`chat_engine`** calls them in the **`send_message` order** (see below). **`complex_emotion`** keys in scaffolds may be ignored by Serde and are **not** one of the six host slots ([SETTINGS_REFERENCE.md](../../creator-docs/cli/SETTINGS_REFERENCE.md)).
+Runtime struct **`PluginBackends`** has **six** enum fields: **`memory` · `emotion` · `event` · `prompt` · `llm` · `agent`**. Optional **`directory_plugins`** maps each slot to a manifest **`id`** when that slot is **`directory`**. Resolution: **`PluginHost::resolve_for_role`** → **`Arc<dyn …>`** per facade, then **`chat_engine`** calls them in the **`send_message` order** (see below). **`complex_emotion`** scaffold keys are ignored by Serde; runtime maps to the **complex-emotion expert-model facility submodule** ([OCLIVE_ARCHITECTURE_OVERVIEW.md](../getting-started/OCLIVE_ARCHITECTURE_OVERVIEW.md), [SETTINGS_REFERENCE.md](../../creator-docs/cli/SETTINGS_REFERENCE.md) §II).
 
 ---
 
@@ -27,15 +27,16 @@ Runtime struct **`PluginBackends`** has **six** enum fields: **`memory` · `emot
 
 Entry: **`chat_engine::process_message`** → **`process_co_present`** ([`co_present.rs`](../../src-tauri/src/domain/chat_engine/co_present.rs)). Remote / stub branches differ; this list is the **PLUGIN_V1-relevant** sequence:
 
-1. **`PluginHost`**: `resolved_plugins_for` → **`PluginHost::resolve_for_role`** binds **memory / emotion / event / prompt / llm / agent** (host needs app-data root for **`mcp-servers/*.json`**).
-2. **User emotion:** `emotion.analyze` → `EmotionDto` in the response.
-3. **Personality nudge:** `PersonalityEngine::adjust_by_user_emotion`.
-4. **Knowledge blocks** (optional): pack `knowledge_index` retrieval; may merge with event augment.
-5. **Event impact:** `event.estimate` → `PersonalityEngine::evolve_by_event`.
-6. **Memory:** repository candidates → scene weighting → `memory.rank_memories`.
-7. **Favor & relation stage:** `compute_favor_and_relation`.
-8. **Prompt:** `prompt.top_topic_hint` + `prompt.build_prompt` (`PromptInput`).
-9. **Main LLM:** `llm.generate` (plus bot emotion, portrait, short-term memory, movement intent, etc. — see the same file).
+1. **`PluginHost`**: `resolved_plugins_for` → **`PluginHost::resolve_for_role`** binds six **backend modules** (host needs app-data root for **`mcp-servers/*.json`**).
+2. **User emotion (backend module):** `emotion.analyze` → `EmotionDto` in the response.
+3. **Personality nudge (facility):** `PersonalityEngine::adjust_by_user_emotion`.
+4. **Complex-emotion expert-model facility submodule:** `BuiltinKeywordComplexEmotionProvider` in `co_present` (future Remote); `narrative_hint` → later Prompt (**not** via `PluginHost`).
+5. **Knowledge blocks** (optional · facility): pack `knowledge_index` retrieval; may merge with event augment.
+6. **Event impact (backend module):** `event.estimate` → `PersonalityEngine::evolve_by_event` (facility).
+7. **Memory (backend module):** repository candidates → scene weighting → `memory.rank_memories`.
+8. **Favor & relation stage** (facility): `compute_favor_and_relation`.
+9. **Prompt (backend module):** `prompt.top_topic_hint` + `prompt.build_prompt` (`PromptInput`, incl. `previous_complex_emotion_narrative_hint`).
+10. **Main LLM (backend module):** `llm.generate` (plus bot emotion, portrait, short-term memory, movement intent, etc. — see the same file).
 
 ---
 

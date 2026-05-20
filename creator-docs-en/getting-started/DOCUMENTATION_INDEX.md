@@ -28,11 +28,11 @@ Time-boxed “start here → ship”; **authoritative detail stays in each topic
 
 ---
 
-## Architecture (single-kernel, dual-mode build)
+## Architecture (single-kernel, dual-mode · three module layers)
 
 | Topic | Document |
 |-------|----------|
-| **Oclive narrative, dual-mode terms, characteristics** | **[OCLIVE_ARCHITECTURE_OVERVIEW.md](OCLIVE_ARCHITECTURE_OVERVIEW.md)** (Chinese: [../../creator-docs/getting-started/OCLIVE_ARCHITECTURE_OVERVIEW.md](../../creator-docs/getting-started/OCLIVE_ARCHITECTURE_OVERVIEW.md)) |
+| **Narrative, dual-mode, backend / backend-plugin / facility modules, complex-emotion expert-model facility submodule** | **[OCLIVE_ARCHITECTURE_OVERVIEW.md](OCLIVE_ARCHITECTURE_OVERVIEW.md)** (Chinese: [../../creator-docs/getting-started/OCLIVE_ARCHITECTURE_OVERVIEW.md](../../creator-docs/getting-started/OCLIVE_ARCHITECTURE_OVERVIEW.md)) |
 | Kernel factory & three layers | [KERNEL_FACTORY_VISION.md](KERNEL_FACTORY_VISION.md) |
 | Kernel-centric diagram | [KERNEL_AND_MODULES_ARCHITECTURE.md](../../creator-docs/getting-started/KERNEL_AND_MODULES_ARCHITECTURE.md) |
 | Monolith (macro-mode) | [RFC_OCLIVE_MONOLITH_MODE.md](../../creator-docs/rfc/RFC_OCLIVE_MONOLITH_MODE.md) |

@@ -28,11 +28,11 @@
 
 ---
 
-## 架构总览（单核双态构建架构）
+## 架构总览（单核双态 · 模块三层）
 
 | 主题 | 文档 |
 |------|------|
-| **Oclive 架构简述、单核双态术语、特点清单** | **[OCLIVE_ARCHITECTURE_OVERVIEW.md](OCLIVE_ARCHITECTURE_OVERVIEW.md)**（[English](../../creator-docs-en/getting-started/OCLIVE_ARCHITECTURE_OVERVIEW.md)） |
+| **架构简述、单核双态、后端模块 / 后端插件模块 / 设施模块、复杂情感专家模型设施子模块** | **[OCLIVE_ARCHITECTURE_OVERVIEW.md](OCLIVE_ARCHITECTURE_OVERVIEW.md)**（[English](../../creator-docs-en/getting-started/OCLIVE_ARCHITECTURE_OVERVIEW.md)） |
 | 内核工厂与三层 | [KERNEL_FACTORY_VISION.md](KERNEL_FACTORY_VISION.md) |
 | 内核居中总览图 | [KERNEL_AND_MODULES_ARCHITECTURE.md](KERNEL_AND_MODULES_ARCHITECTURE.md) |
 | Monolith（宏核态） | [RFC_OCLIVE_MONOLITH_MODE.md](../rfc/RFC_OCLIVE_MONOLITH_MODE.md) |

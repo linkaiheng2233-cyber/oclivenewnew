@@ -1,6 +1,6 @@
 # 纯净内核：边界、灵魂与嵌入式范围
 
-本文定义 oclive **「纯净内核」** 在工程与产品叙事中的含义，并与桌面宿主、无头服务、嵌入式库、机器人「灵魂」交付对齐。架构总览图见 [KERNEL_AND_MODULES_ARCHITECTURE.md](KERNEL_AND_MODULES_ARCHITECTURE.md)；实施阶段见 [KERNEL_IMPLEMENTATION_PLAN.md](KERNEL_IMPLEMENTATION_PLAN.md)。
+本文定义 oclive **「纯净内核」** 在工程与产品叙事中的含义，并与桌面宿主、无头服务、嵌入式库、机器人「灵魂」交付对齐。模块分层见 [OCLIVE_ARCHITECTURE_OVERVIEW.md](OCLIVE_ARCHITECTURE_OVERVIEW.md)；总览图见 [KERNEL_AND_MODULES_ARCHITECTURE.md](KERNEL_AND_MODULES_ARCHITECTURE.md)；实施阶段见 [KERNEL_IMPLEMENTATION_PLAN.md](KERNEL_IMPLEMENTATION_PLAN.md)。
 
 [English](../../creator-docs-en/getting-started/PURE_KERNEL_BOUNDARY.md)
 
@@ -56,9 +56,9 @@
 
 ## 4. 情感陪伴在架构中的位置
 
-陪伴能力由**多槽协作**完成，而非单一「情感模块」黑盒：
+陪伴能力由**后端模块 + 设施模块**协作完成，而非单一「情感模块」黑盒（分层见 [OCLIVE_ARCHITECTURE_OVERVIEW.md](OCLIVE_ARCHITECTURE_OVERVIEW.md)）：
 
-- **emotion / complex_emotion**：回合内情绪与复杂情感信号。
+- **emotion 后端模块** + **复杂情感专家模型设施子模块**：用户句情绪与跨回合叙事 `narrative_hint`。
 - **memory / event**：关系与事件对后续回合的影响。
 - **prompt / llm**：语言表达与 persona 注入。
 - **agent**（可选）：工具与外部世界（MCP、目录插件）。

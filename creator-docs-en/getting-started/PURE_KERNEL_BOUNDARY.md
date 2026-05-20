@@ -1,6 +1,6 @@
 # Pure kernel: boundary, soul, and embedded scope
 
-This page defines what oclive means by a **pure kernel**, and how it aligns with the desktop host, headless service, embedded library, and robot **“soul”** delivery. See [KERNEL_AND_MODULES_ARCHITECTURE.md](KERNEL_AND_MODULES_ARCHITECTURE.md) for the diagram and [KERNEL_IMPLEMENTATION_PLAN.md](KERNEL_IMPLEMENTATION_PLAN.md) for phases.
+This page defines what oclive means by a **pure kernel**, and how it aligns with the desktop host, headless service, embedded library, and robot **“soul”** delivery. Module taxonomy: [OCLIVE_ARCHITECTURE_OVERVIEW.md](OCLIVE_ARCHITECTURE_OVERVIEW.md). Diagram: [KERNEL_AND_MODULES_ARCHITECTURE.md](KERNEL_AND_MODULES_ARCHITECTURE.md). Phases: [KERNEL_IMPLEMENTATION_PLAN.md](KERNEL_IMPLEMENTATION_PLAN.md).
 
 [中文](../../creator-docs/getting-started/PURE_KERNEL_BOUNDARY.md)
 
@@ -56,9 +56,9 @@ Working name **RobotSoulPack** is aligned with **`oclive pack validate --profile
 
 ## 4. Where companion emotion sits
 
-Companion behavior is **multi-slot collaboration**, not one black-box “emotion module”:
+Companion behavior is **backend modules + facility modules**, not one black-box “emotion module” (taxonomy: [OCLIVE_ARCHITECTURE_OVERVIEW.md](OCLIVE_ARCHITECTURE_OVERVIEW.md)):
 
-- **emotion / complex_emotion**: in-turn signals.
+- **emotion backend module** + **complex-emotion expert-model facility submodule**: user affect and cross-turn `narrative_hint`.
 - **memory / event**: relationship and event impact on later turns.
 - **prompt / llm**: language and persona injection.
 - **agent** (optional): tools and external world (MCP, directory plugins).

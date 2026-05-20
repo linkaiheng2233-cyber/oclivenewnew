@@ -10,7 +10,9 @@
 
 ## Single-kernel, dual-mode build architecture
 
-Above the factory, Oclive uses **single-kernel, dual-mode build architecture**: **single kernel** = one `process_message` + PLUGIN_V1 contract; **dual-mode** = two compile-time tiers—**exo-mode** (low coupling / `PluginHost` / desktop default) and **macro-mode** (`monolith.toml` / Monolith weld / optional all-seven weld). Modes are chosen at `oclive init` and `cargo build` (often dual `[[bin]]` outputs), **not** runtime hot-switch.
+Above the factory, Oclive uses **single-kernel, dual-mode build architecture**: **single kernel** = one `process_message` + PLUGIN_V1 contract; **dual-mode** = two compile-time tiers—**exo-mode** (low coupling / `PluginHost` / desktop default) and **macro-mode** (`monolith.toml` / Monolith weld / optional weld of all six host slots + `complex_emotion` weld key). Modes are chosen at `oclive init` and `cargo build` (often dual `[[bin]]` outputs), **not** runtime hot-switch.
+
+**Module layers** (backend / backend plugin / facility): **[OCLIVE_ARCHITECTURE_OVERVIEW.md](OCLIVE_ARCHITECTURE_OVERVIEW.md)** ([中文](../../creator-docs/getting-started/OCLIVE_ARCHITECTURE_OVERVIEW.md)).
 
 | Umbrella | Exo-mode | Macro-mode |
 |----------|----------|------------|

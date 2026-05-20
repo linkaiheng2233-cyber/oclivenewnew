@@ -46,12 +46,20 @@
 
 ---
 
-## 二、第七条槽：`complex_emotion`（脚手架与路线图）
+## 二、复杂情感：`plugin_backends` 扩展键（非宿主第六/第七槽）
 
-**当前 `PluginBackends` 不含此字段。** `oclive-cli` 将 `complex_emotion` 写在 **`plugin_backends` 对象内** 便于阅读；宿主反序列化时**忽略**该键，不影响 `load_role`。
+**架构定位**：**复杂情感专家模型设施子模块**（设施模块 → 专家模型设施子模块）。全名与三层术语见 **[OCLIVE_ARCHITECTURE_OVERVIEW.md](../getting-started/OCLIVE_ARCHITECTURE_OVERVIEW.md)**（[English](../../creator-docs-en/getting-started/OCLIVE_ARCHITECTURE_OVERVIEW.md)）。
 
-- 若侧车实验需要独立进程：与 `remote` 其它子系统相同 wire，见 [REMOTE_PLUGIN_PROTOCOL.md](../plugin-and-architecture/REMOTE_PLUGIN_PROTOCOL.md)。
-- 与 **`oclive-cli`** 的 `CONFIG_REFERENCE.md`、**`init --help`** 末尾矩阵一致。
+**当前 `PluginBackends` 不含 `complex_emotion` 字段。** `oclive-cli` 将 `complex_emotion` 写在 **`plugin_backends` 对象内** 便于工厂预设与文档对齐；宿主 Serde **忽略**该键，不影响 `load_role`。主路径在 `co_present` 内调用内置关键词实现（`BuiltinKeywordComplexEmotionProvider`），**不经** `PluginHost`。
+
+| 项 | 说明 |
+|----|------|
+| 与 **emotion 后端模块** | emotion 产出 `EmotionResult`；本设施消费其推导指标，产出 `narrative_hint` 供 **prompt 后端模块** |
+| 与 **后端插件模块** | 侧车方法 `complex_emotion.resolve_turn`（`OCLIVE_COMPLEX_EMOTION_URL`）已存在；**尚未**按本 JSON 键切换（路线图） |
+| 与 **Monolith** | 焊接键名 `complex_emotion`（七焊接键之一），≠ 宿主槽位 |
+
+- 侧车 wire：[REMOTE_PLUGIN_PROTOCOL.md](../plugin-and-architecture/REMOTE_PLUGIN_PROTOCOL.md)。
+- 与 **`oclive-cli`** `CONFIG_REFERENCE.md`、`init --help` 预设矩阵一致。
 
 ---
 

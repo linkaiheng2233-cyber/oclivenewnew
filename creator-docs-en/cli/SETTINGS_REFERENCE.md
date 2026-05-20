@@ -46,12 +46,20 @@ When any slot is **`directory`**, fill **`manifest.id`** (string) for that slot 
 
 ---
 
-## II. Seventh slot: `complex_emotion` (scaffold & roadmap)
+## II. Complex emotion: `plugin_backends` extension key (not a host slot)
 
-**Current `PluginBackends` has no such field.** `oclive-cli` writes `complex_emotion` inside **`plugin_backends`** for readability; the host **ignores** this key on deserialize without affecting `load_role`.
+**Architecture:** **complex-emotion expert-model facility submodule** (facility module → expert-model facility submodule). Full taxonomy: **[OCLIVE_ARCHITECTURE_OVERVIEW.md](../getting-started/OCLIVE_ARCHITECTURE_OVERVIEW.md)** ([中文](../../creator-docs/getting-started/OCLIVE_ARCHITECTURE_OVERVIEW.md)).
 
-- If you need a separate process for experiments: same wiring as other `remote` subsystems, see [REMOTE_PLUGIN_PROTOCOL.md](../plugin-and-architecture/REMOTE_PLUGIN_PROTOCOL.md).
-- Matches **`oclive-cli`** `CONFIG_REFERENCE.md` and the matrix at the end of **`init --help`**.
+**`PluginBackends` has no `complex_emotion` field.** `oclive-cli` writes the key inside **`plugin_backends`** for factory presets; the host **ignores** it on deserialize. The hot path uses `BuiltinKeywordComplexEmotionProvider` in `co_present`—**not** `PluginHost`.
+
+| Item | Detail |
+|------|--------|
+| vs **emotion backend module** | emotion produces `EmotionResult`; this facility outputs `narrative_hint` for the **prompt backend module** |
+| vs **backend plugin modules** | Sidecar method `complex_emotion.resolve_turn` (`OCLIVE_COMPLEX_EMOTION_URL`) exists; **not** switched via this JSON key yet (roadmap) |
+| vs **Monolith** | Weld key `complex_emotion` (one of seven weld keys), ≠ host slot |
+
+- Sidecar wire: [REMOTE_PLUGIN_PROTOCOL.md](../plugin-and-architecture/REMOTE_PLUGIN_PROTOCOL.md).
+- Matches **`oclive-cli`** `CONFIG_REFERENCE.md` and **`init --help`** preset matrix.
 
 ---
 

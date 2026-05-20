@@ -6,7 +6,7 @@
 
 本地优先的桌面角色对话应用：**Tauri + Vue 3 + Rust**。引擎支持场景、虚拟时间、异地/共景、好感与记忆、可替换子系统（记忆检索 / 情绪 / 事件估计 / Prompt 组装），角色内容以 **`roles/{角色id}/`** 角色包分发。
 
-**架构（摘要）**：Oclive 采用 **契约型薄核** + **单核双态构建架构**——内核负责回合编排与会话/错误契约，能力经 **PLUGIN_V1 七槽**（内置 / Remote / 目录插件）接入；交付上通过 **OOCP**、角色包规范与 **`oclive-cli` 内核工厂** 产出无头或桌面宿主；延迟敏感场景可选 **Monolith 宏核态** 将选定后端静态编入单二进制，与外核态（可替换扩展）**按构建产物切换**，而非二选一。完整叙述与特点见 **[架构总览](creator-docs/getting-started/OCLIVE_ARCHITECTURE_OVERVIEW.md)**（[English](creator-docs-en/getting-started/OCLIVE_ARCHITECTURE_OVERVIEW.md)）。
+**架构（摘要）**：Oclive 采用 **契约型薄核** + **单核双态构建架构**——**六宿主后端模块**（memory / emotion / event / prompt / llm / agent）经 `PluginHost` 接入；**复杂情感专家模型设施子模块** 等为编排行内设施；**后端插件模块** 指各槽的 Remote / 目录插件实现。交付：**OOCP**、角色包、**`oclive-cli` 内核工厂**；构建可选 **Monolith 宏核态**。详见 **[架构总览](creator-docs/getting-started/OCLIVE_ARCHITECTURE_OVERVIEW.md)**（[English](creator-docs-en/getting-started/OCLIVE_ARCHITECTURE_OVERVIEW.md)）。
 
 ## 当前工程状态（摘要）
 

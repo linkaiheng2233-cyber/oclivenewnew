@@ -44,7 +44,9 @@
 - **当前状态**：**已知漏洞跟踪中**；**不宣称零漏洞**。摘要执行日期与命中条数见 [creator-docs/development/LIGHTWEIGHT_PROFILE.md](creator-docs/development/LIGHTWEIGHT_PROFILE.md) §6.4；**漏洞级清单与升级路线**见 [creator-docs/security/KNOWN_VULNERABILITIES.md](creator-docs/security/KNOWN_VULNERABILITIES.md)；**审查边界**见 [creator-docs/security/SECURITY_AUDIT_SCOPE.md](creator-docs/security/SECURITY_AUDIT_SCOPE.md)。
 - **CI**：**`cargo-audit`** job（**cargo-audit 0.22.1**）为 **`continue-on-error: true`**，用于可见性；待依赖升级后可改为失败即红。
 
-### 复杂情感 `narrative_hint`（共景 → 下一轮 Prompt）
+### 复杂情感专家模型设施子模块（`narrative_hint` · 共景 → 下一轮 Prompt）
+
+文档分层见 [`creator-docs/getting-started/OCLIVE_ARCHITECTURE_OVERVIEW.md`](creator-docs/getting-started/OCLIVE_ARCHITECTURE_OVERVIEW.md)（**设施模块 → 专家模型设施子模块**；**不是**六宿主后端模块）。
 
 - **类型与内置规则**：[`src-tauri/src/domain/complex_emotion.rs`](src-tauri/src/domain/complex_emotion.rs)（`ComplexEmotionInput` / `ComplexEmotionOutput`、`BuiltinKeywordComplexEmotionProvider::resolve_turn_inner`）；可选 Remote 见 [`src-tauri/src/infrastructure/remote_plugin/complex_emotion_http.rs`](src-tauri/src/infrastructure/remote_plugin/complex_emotion_http.rs)。
 - **主路径 wiring**：[`src-tauri/src/domain/chat_engine/co_present.rs`](src-tauri/src/domain/chat_engine/co_present.rs) 在 `load_recent_context` 之后、**`build_prompt` 之前**解析本回合复杂情感；上一轮 `narrative_hint` 缓存在 **`AppState::last_complex_emotion_narrative_hint`**（按会话命名空间 `srid`）；通过 **`PromptInput::previous_complex_emotion_narrative_hint`** 传入 [`PromptBuilder::build_prompt`](src-tauri/src/domain/prompt_builder.rs)（段落标题为「复杂情感叙事提示」）。
@@ -66,7 +68,7 @@
 
 ### Agent / Skill（最小闭环）
 
-- **第七模块**：`plugin_backends` 新增 `agent`（`builtin` / `remote` / `directory` / `none`）与 `directory_plugins.agent` 槽位；会话覆盖与来源快照同样包含 `agent`。（`none` 语义见 `creator-docs/kernel/MODULE_NONE_SEMANTICS.md` §7。）
+- **agent 后端模块**（产品亦称扩展槽）：`plugin_backends.agent`（`builtin` / `remote` / `directory`）；会话覆盖与来源快照包含 `agent`。（`none` 语义见 `creator-docs/kernel/MODULE_NONE_SEMANTICS.md` §7（若存在）。）
 - **后端骨架**：
   - [`src-tauri/src/domain/agent.rs`](src-tauri/src/domain/agent.rs)：`AgentProvider` trait 与 `BuiltinReActAgent`。
   - [`src-tauri/src/infrastructure/mcp_client.rs`](src-tauri/src/infrastructure/mcp_client.rs)：扫描 `{app_data}/mcp-servers/*.json`、列出 server、调用工具（http/stdio）。
@@ -80,7 +82,7 @@
 - **Function Calling**：后端统一走 [`src-tauri/src/infrastructure/function_call_parser.rs`](src-tauri/src/infrastructure/function_call_parser.rs)：
   - `parse_from_llm_response` 解析 `tool_calls[]` 与 `function_call` 两种主流输出；
   - `to_function_calling_schema` 将 MCP tool 列表转为函数 schema。
-- **Agent 路由**：`plugin_backends.agent` 为第七模块，与其他模块保持同样的包默认 / 会话覆盖 / 来源快照语义。
+- **Agent 路由**：`plugin_backends.agent` 为六宿主槽之一，与 memory/emotion 等保持同样的包默认 / 会话覆盖 / 来源快照语义。
 
 ## 内核约束 - 权限弹窗
 
