@@ -113,6 +113,8 @@
 
 **基准报告 JSON Schema**（`oclive bench`）：[`crates/oclive-cli/schemas/oclive_bench_report.schema.json`](../../crates/oclive-cli/schemas/oclive_bench_report.schema.json)（仓库内相对链接以克隆路径为准）。
 
+**本地历史**：`bench --save` 追加 **`bench_history.json`**；`bench --history` 打印趋势表；`bench --compare` 对比最近两次。勿提交 `bench_history.json`。
+
 详见 [RFC_OCLIVE_MONOLITH_MODE.md](../rfc/RFC_OCLIVE_MONOLITH_MODE.md) 第 4 节。
 
 ---

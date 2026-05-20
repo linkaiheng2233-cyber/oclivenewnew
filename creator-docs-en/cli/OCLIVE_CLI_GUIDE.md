@@ -42,9 +42,27 @@ cargo run -p oclive-cli -- pack publish ./out/my-role -o ./dist/com.example.demo
 
 ---
 
+## `plugin create`: plugin scaffold
+
+Generate a **directory** plugin (Node `rpc_server.mjs` + child process) or **remote HTTP** plugin (Python `rpc_server.py`) with `manifest.json` (`id`, `provides`, `permissions`, `rpcMethods`), README, and RPC stubs.
+
+```bash
+cargo run -p oclive-cli -- plugin create my-llm-plugin --type directory --provides llm -o ./plugins/
+cargo run -p oclive-cli -- plugin create my-remote --type remote --provides memory --provides emotion -o ./out/plugin --non-interactive
+cargo run -p oclive-cli -- plugin create my-plugin
+```
+
+**`--provides`**: `llm` | `memory` | `emotion` | `event` | `prompt` | `agent` | `complex_emotion` (repeatable). Output defaults to `./plugins/`; final path is `<output>/<plugin_id>/`. See [PLUGIN_AUTHOR_LEARNING_PATH.md](../plugin-and-architecture/PLUGIN_AUTHOR_LEARNING_PATH.md).
+
+---
+
 ## `dev`: watch role pack directories
 
-Run from an **existing** kernel / scaffold project root (with `Cargo.toml`). By default recursively watches **`--roles`** (default `roles/`) for changes; debounces **`manifest.json`** / **`settings.json`** and prints hints; **`--reload-cmd`** runs a shell command after changes (e.g. notify a sidecar to reload).
+Run from an **existing** kernel / scaffold project root (with `Cargo.toml`). **Recursive notify** on **`roles/**/manifest.json`** and **`roles/**/settings.json`**; **500ms debounce** then:
+
+`[oclive dev] role pack '<id>' changed — reload`
+
+**`--reload-cmd`** runs a shell command after changes.
 
 ```bash
 cargo run -p oclive-cli -- dev -o /path/to/project
@@ -106,6 +124,7 @@ cargo run -p oclive-cli -- init --non-interactive --quiet --preset mixed --proje
 | `--project-type` | `kernel-server` \| `library` |
 | `--project-name` | Default `my_oclive_kernel` |
 | `--monolith` | Non-interactive: enable Monolith; generates `monolith.toml`, `vendor/oclive_monolith_builtin/`, dual `[[bin]]` (`main.rs` / `main_monolith.rs`) and `process_message_monolith.rs` (**kernel_server only**; ignored when incompatible with `--project-type library`) |
+| `--author` / `--license` / `--description` | Written into generated `Cargo.toml` (`license` defaults to **MIT**; interactive author defaults to `git config user.name`) |
 
 Non-interactive mode does **not** require any `--backend-*` flags; if passed, they override only listed slots.
 
@@ -141,17 +160,25 @@ cargo run -p oclive-cli -- build -o /path/to/kernel-project --no-cargo
 - **`--release`** / **`--features`**: forwarded to each `cargo build`; the Monolith second build automatically adds **`monolith`** feature.
 - **After `--`**: extra args forwarded to `cargo build`.
 
+**Common build failures**: on `cargo build` failure, the CLI parses stderr and prints fix hints (missing crate, linker, Rust version, OpenSSL, OOM). Otherwise see raw output and run **`oclive doctor`**.
+
 ### `bench` subcommand
 
-After regenerating sources and dual builds, runs each binary `--runs` times as subprocesses; inside the subprocess **`OCLIVE_KERNEL_BENCH_ITERS`** controls the hot loop. Output is **JSON** (`schema_version: 1`); schema at **`crates/oclive-cli/schemas/oclive_bench_report.schema.json`**.
+After regenerating sources and dual builds, runs each binary `--runs` times as subprocesses; inside the subprocess **`OCLIVE_KERNEL_BENCH_ITERS`** controls the hot loop. Output is **JSON** (`schema_version: 2`, includes `binary_size`, `peak_memory`, `build_time`); schema at **`crates/oclive-cli/schemas/oclive_bench_report.schema.json`**.
 
 ```bash
 cargo run -p oclive-cli -- bench --release -o /path/to/kernel-project --runs 30 --inner-iters 500 --output ./bench-report.json
 cargo run -p oclive-cli -- bench --release -o /path/to/kernel-project --json
 ```
 
-- **`--save`**: append this report to project root **`bench_history.json`** (local file, do not commit; pair with **`--compare`**).
+- **`--save`**: append this report to project root **`bench_history.json`** (local file, do not commit).
 - **`--compare`**: do not run sampling; read **last two** entries from **`bench_history.json`** and print comparison (needs at least two history rows).
+- **`--history`**: print a trend table of all saved runs; with ≥2 rows, shows **↑/↓/→** vs previous. Use **`--json`** for tooling.
+
+```bash
+cargo run -p oclive-cli -- bench --release -o ./my-kernel --save
+cargo run -p oclive-cli -- bench --history -o ./my-kernel
+```
 
 `--json`: print report JSON to **stdout** only (progress on **stderr**) for piping and schema checks.
 

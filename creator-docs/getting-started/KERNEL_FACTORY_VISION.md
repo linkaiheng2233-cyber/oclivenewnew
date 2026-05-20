@@ -172,6 +172,36 @@ Monolith 是工厂里的 **「性能档位」**：
 
 ---
 
+## 插件脚手架（`plugin create`）
+
+**`oclive plugin create <name>`** 生成目录或 Remote 插件完整骨架（manifest + RPC 桩 + README），降低第一道门槛。与桌面 **PluginScaffoldWizard** 互补：CLI 面向仓库外/CI 脚本，侧重七槽 **`provides`** 与 `oclive_validation` 权限形状。见 [PLUGIN_AUTHOR_LEARNING_PATH.md](../plugin-and-architecture/PLUGIN_AUTHOR_LEARNING_PATH.md)。
+
+---
+
+## 开发监听增强（`dev`）
+
+**`oclive dev`** 递归监听 **`roles/**/manifest.json`** 与 **`settings.json`**，任意子目录角色包变更时输出 **`检测到角色包 '<id>' 变更`**（500ms 防抖），便于多角色并行开发。
+
+---
+
+## 智能错误诊断（`build` / `bench`）
+
+**`oclive build`** 与 **`bench`** 内嵌的 `cargo build` 失败时，解析常见 stderr 模式并给出修复建议（依赖索引、链接器、Rust 版本、OpenSSL、内存等）；否则提示 **`oclive doctor`**。
+
+---
+
+## 性能趋势（`bench --history`）
+
+多次 **`bench --save`** 后，**`bench --history`** 在终端展示标准版 / Monolith 延迟、峰值内存与二进制体积的趋势表；支持 **`--json`**。
+
+---
+
+## 项目元数据（`init`）
+
+**`oclive init`** 支持 **`--author`**、**`--license`**（默认 MIT）、**`--description`**，写入生成工程的 **`Cargo.toml`**；交互模式默认作者来自 **`git config user.name`**。
+
+---
+
 ## 相关文档
 
 - [OCLIVE_CLI_GUIDE.md](../cli/OCLIVE_CLI_GUIDE.md) — 命令与参数

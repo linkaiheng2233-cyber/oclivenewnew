@@ -57,9 +57,34 @@ cargo run -p oclive-cli -- pack publish ./out/my-role -o ./dist/com.example.demo
 
 ---
 
+## `plugin create`：插件脚手架
+
+一键生成**目录插件**（Node `rpc_server.mjs` + 子进程）或 **Remote HTTP 插件**（Python `rpc_server.py`）骨架，含 `manifest.json`（`id` / `provides` / `permissions` / `rpcMethods`）、README 与 RPC 方法桩。
+
+```bash
+# 非交互：目录插件，提供 llm 槽
+cargo run -p oclive-cli -- plugin create my-llm-plugin --type directory --provides llm -o ./plugins/
+
+# Remote 侧车，多槽
+cargo run -p oclive-cli -- plugin create my-remote --type remote --provides memory --provides emotion -o ./out/plugin --non-interactive
+
+# 交互：选择类型、槽位、输出目录
+cargo run -p oclive-cli -- plugin create my-plugin
+```
+
+**`--provides`**：`llm` | `memory` | `emotion` | `event` | `prompt` | `agent` | `complex_emotion`（可重复）。输出目录默认为 `./plugins/`；最终包路径为 `<output>/<plugin_id>/`（`id` 由名称 slug 为 `com.oclive.plugin.<name>`）。
+
+生成 manifest 经 **`oclive_validation`** 权限校验（目录插件）。快速上手见 [PLUGIN_AUTHOR_LEARNING_PATH.md](../plugin-and-architecture/PLUGIN_AUTHOR_LEARNING_PATH.md)。
+
+---
+
 ## `dev`：角色包目录监听
 
-在**已存在**的内核 / 脚手架项目根（含 `Cargo.toml`）执行。默认递归监听 **`--roles`**（默认 `roles/`）下变更，对 **`manifest.json`** / **`settings.json`** 防抖后打印提示；**`--reload-cmd`** 可在变更后执行一条 shell 命令（如通知侧车重载）。
+在**已存在**的内核 / 脚手架项目根（含 `Cargo.toml`）执行。使用 **notify 递归模式**监听 **`roles/**/manifest.json`** 与 **`roles/**/settings.json`**（任意子目录角色包）；**500ms 防抖**后打印：
+
+`[oclive dev] 检测到角色包 '<id>' 变更，已重载`
+
+**`--reload-cmd`** 可在变更后执行一条 shell 命令（如通知侧车重载）。
 
 ```bash
 cargo run -p oclive-cli -- dev -o /path/to/project
@@ -162,8 +187,11 @@ cargo run -p oclive-cli -- init --non-interactive --quiet --preset mixed --proje
 | `--with-role-pack` | `robot-soul-minimal` \| `default`；与 `--skip-role-pack` 互斥 |
 | `--with-example-plugin` | 附带 llamacpp 目录插件示例到 `plugins/` |
 | `--kernel-source` | 指向 oclivenewnew 根目录，生成 path 依赖与真实 HTTP 入口 |
+| `--author` | 写入生成 `Cargo.toml` 的 `[package].authors` |
+| `--license` | SPDX 许可证（默认 **MIT**） |
+| `--description` | 写入 `[package].description`（留空则不写） |
 
-非交互时 **不必** 传入任何 `--backend-*` 即可生成；传入则只覆盖所列槽位。
+非交互时 **不必** 传入任何 `--backend-*` 即可生成；传入则只覆盖所列槽位。交互模式在输入项目名后会询问作者（默认 `git config user.name`）、许可证与简短描述。
 
 ---
 
@@ -197,6 +225,8 @@ cargo run -p oclive-cli -- build -o /path/to/kernel-project --no-cargo
 - **`--release`** / **`--features`**：传给每次 `cargo build`；Monolith 次构建会自动并入 **`monolith`** feature。
 - **`--` 之后**：附加参数透传给 `cargo build`。
 
+**常见编译错误与修复**：`cargo build` 失败时，CLI 会解析 stderr 并给出中文建议（crate 未找到、缺少 C 链接器、Rust 版本过低、OpenSSL 开发库、内存不足等）。未匹配时保留原始输出并提示运行 **`oclive doctor`**。
+
 ### `bench` 子命令
 
 再生成源码、双构建后，对两个二进制各跑 `--runs` 次子进程；子进程内通过环境变量 **`OCLIVE_KERNEL_BENCH_ITERS`** 做热循环。输出 **JSON**（`schema_version: 2`），除延迟分位数外含 **`binary_size`**（字节）、**`peak_memory`**（MiB）、**`build_time`**（秒）。Schema：`crates/oclive-cli/schemas/oclive_bench_report.schema.json`。
@@ -206,8 +236,15 @@ cargo run -p oclive-cli -- bench --release -o /path/to/kernel-project --runs 30 
 cargo run -p oclive-cli -- bench --release -o /path/to/kernel-project --json
 ```
 
-- **`--save`**：将本次报告追加到项目根 **`bench_history.json`**（本地文件，勿提交；与 **`--compare`** 配对使用）。
+- **`--save`**：将本次报告追加到项目根 **`bench_history.json`**（本地文件，勿提交）。
 - **`--compare`**：不运行采样；读取 **`bench_history.json`** 中**最近两次**记录并输出对比（需已有至少两条历史）。
+- **`--history`**：打印 **`bench_history.json`** 全部记录的趋势表（日期、标准/Monolith p50、峰值内存、二进制体积）；记录 ≥2 条时附相对上一行的 **↑/↓/→**。可加 **`--json`** 供外部工具消费。
+
+```bash
+cargo run -p oclive-cli -- bench --release -o ./my-kernel --save
+cargo run -p oclive-cli -- bench --history -o ./my-kernel
+cargo run -p oclive-cli -- bench --history -o ./my-kernel --json
+```
 
 `--json`：仅将报告 JSON 打印到 **stdout**（进度走 **stderr**），便于管道与 Schema 校验。
 

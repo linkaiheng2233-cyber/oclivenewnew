@@ -158,6 +158,36 @@ Generates **`mcp_servers/`** (README + example JSON) and **`roles/gateway/settin
 
 ---
 
+## Plugin scaffold (`plugin create`)
+
+**`oclive plugin create <name>`** scaffolds directory or remote plugins (manifest + RPC stubs + README). See [PLUGIN_AUTHOR_LEARNING_PATH.md](../plugin-and-architecture/PLUGIN_AUTHOR_LEARNING_PATH.md).
+
+---
+
+## Dev watch (`dev`)
+
+**`oclive dev`** recursively watches **`roles/**/manifest.json`** and **`settings.json`** with **500ms debounce** and prints which role pack `<id>` changed.
+
+---
+
+## Smart build diagnostics
+
+**`oclive build`** / **`bench`** surface human-readable hints for common `cargo build` stderr patterns; otherwise run **`oclive doctor`**.
+
+---
+
+## Bench trends (`bench --history`)
+
+After multiple **`bench --save`** runs, **`bench --history`** prints a terminal trend table (and optional **`--json`**).
+
+---
+
+## Project metadata (`init`)
+
+**`--author`**, **`--license`** (default MIT), **`--description`** populate generated **`Cargo.toml`**.
+
+---
+
 ## See also
 
 - [OCLIVE_CLI_GUIDE.md](../cli/OCLIVE_CLI_GUIDE.md)
