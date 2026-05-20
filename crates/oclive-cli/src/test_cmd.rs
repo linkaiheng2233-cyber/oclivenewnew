@@ -15,6 +15,10 @@ pub struct TestArgs {
     /// 跳过 OOCP 协议黑盒（耗时）
     #[arg(long)]
     pub skip_oocp: bool,
+
+    /// Run jobs aligned with `.github/workflows/ci.yml` locally
+    #[arg(long)]
+    pub ci_parity: bool,
 }
 
 #[derive(Serialize)]
@@ -26,6 +30,9 @@ struct CheckResult {
 
 pub fn run(args: TestArgs) -> Result<()> {
     let root = args.path.canonicalize().unwrap_or(args.path.clone());
+    if args.ci_parity {
+        return crate::test_ci_parity::run_ci_parity(&root, args.skip_oocp, args.json);
+    }
     let mut checks = Vec::new();
 
     checks.push(run_cargo_check(&root));
