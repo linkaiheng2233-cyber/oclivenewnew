@@ -134,6 +134,7 @@ pub fn run_uninstall(args: PluginUninstallArgs) -> Result<()> {
     Ok(())
 }
 
+/// 目录插件 RPC 契约烟测（health / list_methods / 槽位 generate）。
 pub fn run_test(args: PluginTestArgs) -> Result<()> {
     let path = args.plugin_path.canonicalize().unwrap_or(args.plugin_path);
     let manifest_path = path.join("manifest.json");
@@ -171,6 +172,7 @@ pub fn run_test(args: PluginTestArgs) -> Result<()> {
     Ok(())
 }
 
+/// 从 `OCLIVE_PLUGIN_INDEX_URL` 拉取索引并按关键词过滤。
 pub fn run_search(args: PluginSearchArgs) -> Result<()> {
     let index = fetch_plugin_index()?;
     let kw = args.keyword.to_ascii_lowercase();
