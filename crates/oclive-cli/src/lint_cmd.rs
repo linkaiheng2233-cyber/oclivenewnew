@@ -11,6 +11,10 @@ pub struct LintArgs {
     pub path: PathBuf,
     #[arg(long)]
     pub json: bool,
+
+    /// Dependency audit (cargo-audit) and yanked crate check via cargo metadata
+    #[arg(long)]
+    pub deps: bool,
 }
 
 #[derive(Serialize, Clone)]
@@ -22,6 +26,9 @@ struct LintItem {
 
 pub fn run(args: LintArgs) -> Result<()> {
     let root = args.path.canonicalize().unwrap_or(args.path);
+    if args.deps {
+        return run_deps_audit(&root, args.json);
+    }
     let mut items = Vec::new();
     for (dir, name) in [
         ("src", "src/"),
@@ -194,4 +201,99 @@ fn fail(check: &str, msg: impl ToString) -> LintItem {
         check: check.into(),
         message: msg.to_string(),
     }
+}
+
+fn run_deps_audit(root: &Path, json: bool) -> Result<()> {
+    use std::process::Command;
+
+    let mut items = Vec::new();
+    let audit_bin = Command::new("cargo-audit").arg("--version").output();
+    if audit_bin.is_err() || !audit_bin.as_ref().map(|o| o.status.success()).unwrap_or(false) {
+        let msg = "cargo-audit not installed. Install: cargo install cargo-audit";
+        if json {
+            println!(
+                "{}",
+                serde_json::to_string_pretty(&serde_json::json!([{
+                    "level": "warn", "check": "cargo_audit", "message": msg
+                }]))?
+            );
+        } else {
+            println!("oclive lint --deps — {}", root.display());
+            println!("  [WARN] {msg}");
+        }
+        return Ok(());
+    }
+
+    let out = Command::new("cargo")
+        .args(["audit", "--json"])
+        .current_dir(root)
+        .output();
+    match out {
+        Ok(o) => {
+            let stdout = String::from_utf8_lossy(&o.stdout);
+            if o.status.success() && stdout.trim().is_empty() {
+                items.push(pass("cargo_audit", "no vulnerabilities reported"));
+            } else {
+                let vuln_count = stdout.matches("\"id\":").count();
+                if vuln_count == 0 && o.status.success() {
+                    items.push(pass("cargo_audit", "clean"));
+                } else {
+                    items.push(warn(
+                        "cargo_audit",
+                        format!("audit findings or non-zero exit (see cargo audit)"),
+                    ));
+                }
+            }
+        }
+        Err(e) => items.push(fail("cargo_audit", e.to_string())),
+    }
+
+    let meta = Command::new("cargo")
+        .args(["metadata", "--format-version", "1", "--locked"])
+        .current_dir(root)
+        .output();
+    match meta {
+        Ok(o) if o.status.success() => {
+            let body = String::from_utf8_lossy(&o.stdout);
+            let v: serde_json::Value = serde_json::from_str(&body).unwrap_or(serde_json::json!({}));
+            let mut yanked = Vec::new();
+            if let Some(pkgs) = v.get("packages").and_then(|p| p.as_array()) {
+                for pkg in pkgs {
+                    if pkg.get("yanked").and_then(|y| y.as_bool()) == Some(true) {
+                        let name = pkg.get("name").and_then(|n| n.as_str()).unwrap_or("?");
+                        let ver = pkg.get("version").and_then(|n| n.as_str()).unwrap_or("?");
+                        yanked.push(format!("{name}@{ver}"));
+                    }
+                }
+            }
+            if yanked.is_empty() {
+                items.push(pass("yanked", "no yanked packages in lockfile metadata"));
+            } else {
+                items.push(fail(
+                    "yanked",
+                    format!("yanked: {}", yanked.join(", ")),
+                ));
+            }
+        }
+        _ => items.push(warn("yanked", "cargo metadata failed")),
+    }
+
+    if json {
+        println!("{}", serde_json::to_string_pretty(&items)?);
+        return Ok(());
+    }
+    println!("oclive lint --deps — {}", root.display());
+    for it in &items {
+        let icon = match it.level.as_str() {
+            "pass" => "PASS",
+            "warn" => "WARN",
+            _ => "FAIL",
+        };
+        println!("  [{icon}] {} — {}", it.check, it.message);
+    }
+    let failed = items.iter().any(|i| i.level == "fail");
+    if failed {
+        anyhow::bail!("dependency health check failed");
+    }
+    Ok(())
 }
