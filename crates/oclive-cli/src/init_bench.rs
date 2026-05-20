@@ -46,6 +46,7 @@ fn run_post_init_bench_inner(root: &Path, bench_dir: &Path) -> Result<()> {
         save: false,
         compare: false,
         history: false,
+        watch: false,
         cargo_extra: vec![],
     };
     crate::bench_cmd::run(args)?;
