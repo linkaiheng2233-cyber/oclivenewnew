@@ -13,7 +13,8 @@ flowchart TB
   subgraph recipe["Recipe layer (scaffold)"]
     T["--template"]
     R["--with-role-pack"]
-    P["--preset / --monolith / --monolith-preset / --kernel-source"]
+    P["--preset / --monolith / --monolith-preset / --monolith-bench-preset"]
+    L["--list-templates"]
     E["--with-example-plugin"]
   end
   subgraph impl["Implementation layer"]
@@ -47,7 +48,7 @@ flowchart TB
 
 ## Factory workflow
 
-1. Pick a **template**: `robot-soul` (toy), `robot-gateway` (smart hub), `dialogue-only` (conversation service), `headless-api` (HTTP), `library-embed` (library).
+1. Browse recipes: `oclive init --list-templates` or the interactive template picker; then pick `robot-soul`, `robot-gateway` (MCP scaffold), `dialogue-only`, `headless-api`, or `library-embed`.
 2. **Override** explicitly if needed: `--preset`, `--monolith`, `--monolith-preset`, `--with-role-pack`, `--with-example-plugin` beat template defaults.
 3. **Wire the real kernel**: `--kernel-source <oclivenewnew root>`; `cargo build` / `cargo run -- --api` in the generated tree.
 4. **Swap soul**: edit `roles/<id>/` or `oclive pack create`; `oclive dev` watches manifest/settings.
@@ -77,12 +78,32 @@ flowchart TB
 
 ---
 
+## Visual recipes
+
+- **`--list-templates`**: print the five-template matrix and exit (no project directory).
+- **Interactive `oclive init`**: choose a scene template before project type; default is manual configuration; selected templates pre-fill preset / Monolith / role pack (CLI flags still win).
+
+---
+
+## Monolith weld comparison
+
+- **`--monolith-bench-preset`**: after generation, auto `cargo build --release` + `bench --runs 5`, print standard vs welded latency, save **`bench_results/report.json`**. Failures warn only; init still succeeds.
+- **`docs/WELD_BENCH_REPORT.md`** (and `.en.md`): worksheet for tuning `weld_modules`.
+
+---
+
+## robot-gateway MCP
+
+Generates **`mcp_servers/`** (README + example JSON) and **`roles/gateway/settings.json`** with `agent: builtin` and **`agent_mcp`** placeholders for smart-home sidecars.
+
+---
+
 ## Templates
 
 | `--template` | Use case | preset | Monolith | project-type | Default role pack |
 |--------------|----------|--------|----------|--------------|-------------------|
 | `robot-soul` | Smart toy / embedded | minimal | on | kernel_server | `robot-soul-minimal` |
-| `robot-gateway` | Smart gateway / home hub | mixed | on | kernel_server | none (OEM `roles/`) |
+| `robot-gateway` | Smart gateway / home hub | mixed | on | kernel_server | `gateway` stub + `mcp_servers/` |
 | `dialogue-only` | Pure conversation service | full | off | kernel_server | `default` |
 | `headless-api` | Headless API | full | off | kernel_server | none |
 | `library-embed` | Embedded library | minimal | off | library | none |

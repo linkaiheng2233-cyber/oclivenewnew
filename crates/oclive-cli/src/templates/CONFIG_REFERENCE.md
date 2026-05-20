@@ -24,7 +24,15 @@
 
 愿景说明：[KERNEL_FACTORY_VISION.md](../../../creator-docs/getting-started/KERNEL_FACTORY_VISION.md)
 
-生成工程含 **`docs/BLUEPRINT_REFERENCE.md`**、**`docs/ORCHESTRATION_REFERENCE.md`**（中英编排参考），以及 **`plugins/README.md`**。可选 **`--with-example-plugin`** 复制 `com.oclive.example.llamacpp_llm` 示例。
+生成工程含 **`docs/BLUEPRINT_REFERENCE.md`**、**`docs/ORCHESTRATION_REFERENCE.md`**、**`docs/WELD_BENCH_REPORT.md`**（中英焊接对比报告模板），以及 **`plugins/README.md`**。
+
+| 参数 | 说明 |
+|------|------|
+| `--list-templates` | 打印模板矩阵后退出 |
+| `--monolith-bench-preset` | Monolith 启用时：设定 `weld_modules` 并在生成后自动 `bench --runs 5` → `bench_results/report.json` |
+| `--with-example-plugin` | 复制 `com.oclive.example.llamacpp_llm` 示例 |
+
+**`robot-gateway` 模板**额外生成 **`mcp_servers/`** 与 **`roles/gateway/settings.json`**（`agent` = builtin + `agent_mcp` 占位）。
 
 ## 预设矩阵（逻辑槽位）
 

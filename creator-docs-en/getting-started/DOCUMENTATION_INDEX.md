@@ -72,7 +72,7 @@ Time-boxed “start here → ship”; **authoritative detail stays in each topic
 | **`plugin_backends` fields** | **[../plugin-and-architecture/PLUGIN_V1.md](../plugin-and-architecture/PLUGIN_V1.md)** |
 | **Directory plugin permissions (A4.2)** | **[PLUGIN_V1 §Permission specification](../plugin-and-architecture/PLUGIN_V1.md)** (ZH: [`creator-docs/.../PLUGIN_V1.md`](../../creator-docs/plugin-and-architecture/PLUGIN_V1.md)) |
 | **Official CLI scaffold `oclive-cli`** | **[../cli/OCLIVE_CLI_GUIDE.md](../cli/OCLIVE_CLI_GUIDE.md)** |
-| **Kernel factory vision (`--template`, three layers)** | **[KERNEL_FACTORY_VISION.md](KERNEL_FACTORY_VISION.md)** (Chinese: [../../creator-docs/getting-started/KERNEL_FACTORY_VISION.md](../../creator-docs/getting-started/KERNEL_FACTORY_VISION.md)) |
+| **Kernel factory vision (`--list-templates`, weld bench, MCP)** | **[KERNEL_FACTORY_VISION.md](KERNEL_FACTORY_VISION.md)** (Chinese: [../../creator-docs/getting-started/KERNEL_FACTORY_VISION.md](../../creator-docs/getting-started/KERNEL_FACTORY_VISION.md)) |
 | **Seven slots + presets, switching to `remote` (authoritative)** | **[../cli/SETTINGS_REFERENCE.md](../cli/SETTINGS_REFERENCE.md)** |
 | **Role pack disk layout, multi-distro alignment, `oclive pack validate`** | **[../role-pack/ROLE_PACK_SPEC.md](../role-pack/ROLE_PACK_SPEC.md)** |
 | **Community role pack index JSON** | **[../role-pack/ROLE_PACK_INDEX.md](../role-pack/ROLE_PACK_INDEX.md)** |

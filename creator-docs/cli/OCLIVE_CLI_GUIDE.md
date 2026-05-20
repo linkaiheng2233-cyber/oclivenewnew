@@ -82,12 +82,12 @@ cargo run -p oclive-cli -- init --non-interactive --quiet --preset minimal --ski
 
 ### 内核工厂模板（`--template`）
 
-套餐封装 **preset / Monolith / project-type**（显式 CLI 参数优先）。愿景：[KERNEL_FACTORY_VISION.md](../getting-started/KERNEL_FACTORY_VISION.md)
+套餐封装 **preset / Monolith / project-type**（显式 CLI 参数优先）。浏览矩阵：`oclive init --list-templates`。愿景：[KERNEL_FACTORY_VISION.md](../getting-started/KERNEL_FACTORY_VISION.md)
 
 | template | 场景 | preset | Monolith 默认 | project-type | 默认 `--with-role-pack` |
 |----------|------|--------|---------------|--------------|-------------------------|
 | `robot-soul` | 玩偶 / 嵌入式 | minimal | 启用 | kernel_server | `robot-soul-minimal` |
-| `robot-gateway` | 智能网关 / 家庭中枢 | mixed | 启用 | kernel_server | 无 |
+| `robot-gateway` | 智能网关 / 家庭中枢 | mixed | 启用 | kernel_server | `gateway` + `mcp_servers/` |
 | `dialogue-only` | 纯对话服务 | full | 关闭 | kernel_server | `default` |
 | `headless-api` | 纯 API 无头 | full | 关闭 | kernel_server | 无 |
 | `library-embed` | 库嵌入 | minimal | 关闭 | library | 无 |
@@ -141,6 +141,8 @@ cargo run -p oclive-cli -- init --non-interactive --quiet --preset mixed --proje
 | `--project-name` | 默认 `my_oclive_kernel` |
 | `--monolith` | 非交互：启用 Monolith；生成 `monolith.toml`、`vendor/oclive_monolith_builtin/`、双 `[[bin]]`（`main.rs` / `main_monolith.rs`）与 `process_message_monolith.rs`（**仅 kernel_server**；与 `--project-type library` 互斥时自动忽略） |
 | `--monolith-preset` | 仅 Monolith 启用时：`latency`（七槽全焊）\| `memory` \| `embedded`；预填 `monolith.toml` 的 `weld_modules` |
+| `--monolith-bench-preset` | 同档位枚举；生成后自动 release 双构建 + `bench --runs 5` → `bench_results/report.json`（失败不阻塞） |
+| `--list-templates` | 打印模板矩阵后退出；交互 `init` 亦可在项目类型前选模板 |
 | `--template` | `robot-soul` \| `robot-gateway` \| `dialogue-only` \| `headless-api` \| `library-embed`（内核工厂套餐；见上表） |
 | `--with-role-pack` | `robot-soul-minimal` \| `default`；与 `--skip-role-pack` 互斥 |
 | `--with-example-plugin` | 附带 llamacpp 目录插件示例到 `plugins/` |

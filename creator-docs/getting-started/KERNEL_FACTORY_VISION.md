@@ -13,7 +13,8 @@ flowchart TB
   subgraph recipe["配方层（脚手架）"]
     T["--template"]
     R["--with-role-pack"]
-    P["--preset / --monolith / --monolith-preset / --kernel-source"]
+    P["--preset / --monolith / --monolith-preset / --monolith-bench-preset"]
+    L["--list-templates"]
     E["--with-example-plugin"]
   end
   subgraph impl["实现层（运行时 + 编译期）"]
@@ -47,7 +48,7 @@ flowchart TB
 
 ## 工厂工作流（推荐）
 
-1. **选配方**：`oclive init --template robot-soul -o ./my-doll --kernel-source <oclivenewnew根>`（玩偶）；`robot-gateway`（智能网关）；`dialogue-only`（纯对话服务）；`headless-api`（纯 API）；`library-embed`（库嵌入）。
+1. **浏览配方**：`oclive init --list-templates` 或交互式「选择场景模板」；再 `oclive init --template robot-soul -o ./my-doll`（玩偶）、`robot-gateway`（网关 + MCP 骨架）、`dialogue-only`、`headless-api`、`library-embed`。
 2. **覆盖细节**（可选）：显式 `--preset` / `--monolith` / `--monolith-preset` / `--with-role-pack` / `--with-example-plugin` **优先于**模板默认值。
 3. **接真内核**：`--kernel-source` 写入 path 依赖；在生成工程内 `cargo build` / `cargo run -- --api`。
 4. **换灵魂**：编辑 `roles/<id>/` 或 `oclive pack create`；`oclive dev` 监听 manifest/settings。
@@ -80,12 +81,37 @@ Monolith 是工厂里的 **「性能档位」**：
 
 ---
 
+## 可视化配方
+
+- **`--list-templates`**：打印五套模板矩阵（场景、preset、Monolith、角色包）后退出，不生成目录。
+- **交互式 `oclive init`**：在「项目类型」之前增加「选择场景模板」；默认第一项为**不使用模板、手动配置**；选中模板后自动填充 preset / Monolith / 角色包，并提示可用 CLI 显式覆盖。
+
+---
+
+## Monolith 焊接对比
+
+- **`--monolith-bench-preset <latency|memory|embedded>`**（需 Monolith 启用）：生成完成后自动 `cargo build --release`（标准 + 焊接双二进制）并 **`bench --runs 5`**，终端打印 p50/P95 对比，写入 **`bench_results/report.json`**。构建或 bench 失败**不阻塞**生成，仅警告。
+- **报告模板**：生成工程含 **`docs/WELD_BENCH_REPORT.md`**（中英），用于记录各槽/整体延迟与调优 `weld_modules` 的决策。
+
+---
+
+## robot-gateway 与 MCP
+
+`--template robot-gateway` 额外生成：
+
+- **`mcp_servers/`**：`README.md` + `smart_home.example.json`（HTTP 侧车示例）。
+- **`roles/gateway/settings.json`**：`plugin_backends.agent` = **builtin**，含 **`agent_mcp`** 占位（扫描目录与 server id）。
+
+厂商将 MCP manifest 同步到宿主 `{app_data}/mcp-servers/` 后即可接智能家居工具链（见 PLUGIN_V1 / AGENTS.md）。
+
+---
+
 ## 模板一览
 
 | `--template` | 场景 | 默认 preset | 默认 Monolith | project-type | 默认角色包 |
 |--------------|------|-------------|---------------|--------------|------------|
 | `robot-soul` | 智能玩偶 / 嵌入式 | minimal | 启用 | kernel_server | `robot-soul-minimal` |
-| `robot-gateway` | 智能网关 / 家庭中枢 | mixed | 启用 | kernel_server | 无（厂商自订） |
+| `robot-gateway` | 智能网关 / 家庭中枢 | mixed | 启用 | kernel_server | `gateway` 骨架 + `mcp_servers/` |
 | `dialogue-only` | 纯对话服务 | full | 关闭 | kernel_server | `default` |
 | `headless-api` | 纯 HTTP API | full | 关闭 | kernel_server | 无 |
 | `library-embed` | 库嵌入 | minimal | 关闭 | library | 无 |

@@ -69,6 +69,12 @@
 
 **`--monolith-preset`**（Monolith 启用时）：`latency` | `memory` | `embedded` — 预填 `weld_modules`（见生成工程 `CONFIG_REFERENCE.md`）。
 
+**`--monolith-bench-preset`**：同上档位；生成后自动 bench（5 轮），结果见 `bench_results/report.json` 与 `docs/WELD_BENCH_REPORT.md`。
+
+**`--list-templates`**：列出五套模板；交互 `init` 默认含「不使用模板」项。
+
+**`robot-gateway`**：附带 `mcp_servers/` 与 `roles/gateway/settings.json`（`agent` = builtin，`agent_mcp` 占位）。
+
 ## 四、`oclive-cli` 预设矩阵（逻辑 → JSON）
 
 | 槽位 | minimal | mixed | full |
