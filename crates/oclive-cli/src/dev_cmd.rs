@@ -42,6 +42,17 @@ fn is_role_pack_hot_file(path: &Path) -> bool {
         .is_some_and(|n| n == "manifest.json" || n == "settings.json")
 }
 
+/// 从 `roles/<id>/manifest.json` 或 `roles/<id>/settings.json` 解析角色包 id。
+fn role_pack_id_from_hot_file(path: &Path, roles_root: &Path) -> Option<String> {
+    let rel = path.strip_prefix(roles_root).ok()?;
+    if rel.components().count() < 2 {
+        return None;
+    }
+    rel.parent()
+        .and_then(|dir| dir.file_name())
+        .map(|s| s.to_string_lossy().into_owned())
+}
+
 pub fn run(args: DevArgs) -> Result<()> {
     let root = resolve_root(&args.path)?;
     let watch_dir = root.join(&args.roles);
@@ -59,7 +70,7 @@ pub fn run(args: DevArgs) -> Result<()> {
         );
     }
     eprintln!(
-        "[oclive dev] 监听 {}（manifest.json / settings.json 变更将提示重载）",
+        "[oclive dev] 递归监听 {} 下任意子目录的 manifest.json / settings.json",
         watch_dir.display()
     );
     let (tx, rx) = channel();
@@ -79,21 +90,20 @@ pub fn run(args: DevArgs) -> Result<()> {
         ) {
             continue;
         }
-        let mut hit = false;
+        let mut role_id: Option<String> = None;
         for p in ev.paths {
             if is_role_pack_hot_file(&p) {
-                hit = true;
-                break;
+                role_id = role_pack_id_from_hot_file(&p, &watch_dir).or(role_id);
             }
         }
-        if !hit {
+        let Some(rid) = role_id else {
             continue;
-        }
-        if last_fire.elapsed() < Duration::from_millis(400) {
+        };
+        if last_fire.elapsed() < Duration::from_millis(500) {
             continue;
         }
         last_fire = std::time::Instant::now();
-        println!("[oclive dev] 检测到角色包配置变更，请重载内核（或配置 --reload-cmd 自动执行）");
+        println!("[oclive dev] 检测到角色包 '{rid}' 变更，已重载");
         if let Some(cmd) = args.reload_cmd.as_deref() {
             let st = if cfg!(windows) {
                 std::process::Command::new("cmd")
