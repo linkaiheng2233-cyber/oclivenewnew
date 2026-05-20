@@ -297,6 +297,14 @@ fn write_kernel_dev_docs(out: &Path) -> Result<()> {
         )),
     )
     .context("write WELD_BENCH_REPORT.en.md")?;
+    fs::write(
+        docs.join("DEBUG_REFERENCE.md"),
+        include_str!(concat!(
+            env!("CARGO_MANIFEST_DIR"),
+            "/src/templates/docs/DEBUG_REFERENCE.md"
+        )),
+    )
+    .context("write DEBUG_REFERENCE.md")?;
     Ok(())
 }
 

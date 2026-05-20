@@ -91,6 +91,11 @@ pub(crate) async fn process_co_present(
     )?;
 
     let emotion_result = cp!(pl.emotion.analyze(user_message), "user_emotion_analyze")?;
+    crate::domain::debug_trace::emit_step(
+        "user_emotion_analyze",
+        serde_json::json!({ "text_len": user_message.len() }),
+        serde_json::json!({ "emotion": format!("{:?}", emotion_result.to_emotion()) }),
+    );
     let user_emotion = emotion_result.to_emotion();
     let user_emotion_str = user_emotion.to_string();
     let user_emotion_prompt =
@@ -99,6 +104,11 @@ pub(crate) async fn process_co_present(
     let ollama_model = role.resolve_ollama_model(state.ollama_model.as_str());
     let (recent_turns, recent_turns_for_event, recent_events_for_event) =
         cp!(load_recent_context(state, srid).await, "load_recent_context")?;
+    crate::domain::debug_trace::emit_step(
+        "load_recent_context",
+        serde_json::json!({ "srid": srid, "user_message_len": user_message.len() }),
+        serde_json::json!({ "turns": recent_turns.len() }),
+    );
 
     let prev_stored_narrative_hint = state.stored_complex_emotion_narrative_hint(srid);
     let (prev_user_for_ce, prev_bot_for_ce) = recent_turns
@@ -157,6 +167,15 @@ pub(crate) async fn process_co_present(
             .await,
         "event_estimate"
     )?;
+    crate::domain::debug_trace::emit_step(
+        "event_estimate",
+        serde_json::json!({ "scene_id": scene_id }),
+        serde_json::json!({
+            "event_type": estimate.event_type,
+            "impact_factor": estimate.impact_factor,
+            "confidence": estimate.confidence
+        }),
+    );
     let ai_event_type = estimate.event_type;
     let ai_impact_factor_final = estimate.impact_factor;
     let ai_event_confidence = estimate.confidence;
@@ -188,6 +207,11 @@ pub(crate) async fn process_co_present(
         }),
         "memory_rank"
     )?;
+    crate::domain::debug_trace::emit_step(
+        "memory_rank",
+        serde_json::json!({ "candidates": memories.len() }),
+        serde_json::json!({ "ranked": relevant.len() }),
+    );
 
     let user_relation_key: String = cp!(
         resolve_effective_user_relation_key(state, role, srid, Some(scene_id.as_str())).await,
@@ -293,6 +317,11 @@ pub(crate) async fn process_co_present(
         }),
         "build_prompt"
     )?;
+    crate::domain::debug_trace::emit_step(
+        "build_prompt",
+        serde_json::json!({ "memories": relevant.len(), "scene_id": scene_id }),
+        serde_json::json!({ "prompt_len": prompt.len() }),
+    );
 
     let pre_main_llm_ms = t_cp0.elapsed().as_millis() as u64;
     let t_main_llm = Instant::now();
@@ -317,6 +346,14 @@ pub(crate) async fn process_co_present(
         }
     };
     let main_llm_ms = t_main_llm.elapsed().as_millis() as u64;
+    crate::domain::debug_trace::emit_step(
+        "llm_generate",
+        serde_json::json!({ "model": ollama_model, "prompt_len": prompt.len() }),
+        serde_json::json!({
+            "reply_len": reply_raw.len(),
+            "fallback": main_llm_fallback
+        }),
+    );
     let t_post_llm = Instant::now();
     let reply = strip_hallucination_tokens(&soft_append_guard(
         &reply_raw,
@@ -325,6 +362,11 @@ pub(crate) async fn process_co_present(
         relation_after.as_str(),
     ));
     let bot_emotion_result = cp!(pl.emotion.analyze(&reply), "bot_reply_emotion_analyze")?;
+    crate::domain::debug_trace::emit_step(
+        "postprocess",
+        serde_json::json!({ "reply_len": reply.len() }),
+        serde_json::json!({ "bot_emotion": format!("{:?}", bot_emotion_result.to_emotion()) }),
+    );
     let previous_emotion = cp!(
         state.db_manager.get_current_emotion(srid).await,
         "get_current_emotion"

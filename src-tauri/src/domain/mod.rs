@@ -13,6 +13,7 @@ pub mod chat_llm_fallback;
 pub mod chat_turn;
 pub mod chat_turn_rules;
 pub mod complex_emotion;
+pub mod debug_trace;
 pub mod emotion_analyzer;
 pub mod event_detector;
 pub mod event_estimator;
