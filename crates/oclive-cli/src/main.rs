@@ -38,6 +38,10 @@ mod registry_remote;
 mod market_index;
 mod market_cmd;
 mod collab_cmd;
+mod config;
+mod config_cmd;
+mod ci_cmd;
+mod template_cmd;
 mod role_pack;
 mod test_cmd;
 
@@ -100,6 +104,12 @@ enum Commands {
     Market(market_cmd::MarketCli),
     /// 角色包 Git 协作
     Collab(collab_cmd::CollabCli),
+    /// 全局 / 工程级配置（~/.oclive/config.toml）
+    Config(config_cmd::ConfigCli),
+    /// 生成 GitHub Actions CI
+    Ci(ci_cmd::CiCli),
+    /// 模板反向生成
+    Template(template_cmd::TemplateCli),
 }
 
 fn init_tracing(verbose: u8) {
@@ -139,6 +149,9 @@ fn main() -> Result<()> {
         Commands::Profile(args) => profile_cmd::run(args),
         Commands::Market(cli) => market_cmd::run(cli),
         Commands::Collab(cli) => collab_cmd::run(cli),
+        Commands::Config(cli) => config_cmd::run(cli),
+        Commands::Ci(cli) => ci_cmd::run(cli),
+        Commands::Template(cli) => template_cmd::run(cli),
     }
 }
 

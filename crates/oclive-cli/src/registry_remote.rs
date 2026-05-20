@@ -38,22 +38,18 @@ pub fn save_auth(auth: &RegistryAuth) -> Result<()> {
 }
 
 pub fn registry_base_url() -> Result<String> {
-    if let Ok(u) = std::env::var("OCLIVE_REGISTRY_URL") {
-        if !u.trim().is_empty() {
-            return Ok(u.trim().trim_end_matches('/').to_string());
-        }
+    if let Some(u) = crate::config::resolve("OCLIVE_REGISTRY_URL", None) {
+        return Ok(u.trim().trim_end_matches('/').to_string());
     }
     if let Some(a) = load_auth()? {
         return Ok(a.registry_url.trim_end_matches('/').to_string());
     }
-    bail!("未配置云端注册表：请 `oclive registry login <url> <token>` 或设置 OCLIVE_REGISTRY_URL")
+    bail!("未配置云端注册表：请 `oclive registry login <url> <token>` 或 `oclive config set OCLIVE_REGISTRY_URL <url>`")
 }
 
 fn bearer_token() -> Result<String> {
-    if let Ok(t) = std::env::var("OCLIVE_REGISTRY_TOKEN") {
-        if !t.trim().is_empty() {
-            return Ok(t.trim().to_string());
-        }
+    if let Some(t) = crate::config::resolve("OCLIVE_REGISTRY_TOKEN", None) {
+        return Ok(t);
     }
     load_auth()?
         .map(|a| a.token)

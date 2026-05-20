@@ -122,9 +122,9 @@ pub fn cache_path() -> PathBuf {
 }
 
 pub fn index_url() -> String {
-    std::env::var("OCLIVE_PLUGIN_INDEX_URL")
-        .or_else(|_| std::env::var("OCLIVE_MARKET_INDEX_URL"))
-        .unwrap_or_else(|_| DEFAULT_MARKET_INDEX_URL.to_string())
+    crate::config::resolve("OCLIVE_MARKET_INDEX_URL", None)
+        .or_else(|| crate::config::resolve("OCLIVE_PLUGIN_INDEX_URL", None))
+        .unwrap_or_else(|| DEFAULT_MARKET_INDEX_URL.to_string())
 }
 
 /// 拉取市场索引；失败时回退缓存。
