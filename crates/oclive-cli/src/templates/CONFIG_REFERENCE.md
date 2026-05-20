@@ -2,6 +2,20 @@
 
 本文件由 **`oclive-cli init`** 自动生成，与 `init --help` 中的预设矩阵一致。正式契约以主仓 **[PLUGIN_V1.md](../../../creator-docs/plugin-and-architecture/PLUGIN_V1.md)** 与 **`src-tauri/src/models/plugin_backends.rs`** 为准；权威说明见 **[SETTINGS_REFERENCE.md](../../../creator-docs/cli/SETTINGS_REFERENCE.md)**。
 
+## 内核工厂模板（`--template`）
+
+与 `init --help` 末尾模板表一致；显式传入的 **`--preset`** / **`--project-type`** / **`--monolith`** / **`--with-role-pack`** 优先于模板默认值。
+
+| template | preset | Monolith | project-type | 默认角色包 |
+|----------|--------|----------|--------------|------------|
+| `robot-soul` | minimal | 启用 | kernel_server | `robot-soul-minimal`（`prompts/system.md` + 七维） |
+| `headless-api` | full | 关闭（可加 `--monolith`） | kernel_server | 无 |
+| `library-embed` | minimal | 关闭 | library | 无 |
+
+愿景说明：[KERNEL_FACTORY_VISION.md](../../../creator-docs/getting-started/KERNEL_FACTORY_VISION.md)
+
+生成工程含 **`plugins/README.md`**（插件安装说明，不含示例插件）。
+
 ## 预设矩阵（逻辑槽位）
 
 | 槽位 | minimal | mixed | full |
