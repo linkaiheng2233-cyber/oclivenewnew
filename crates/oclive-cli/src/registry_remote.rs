@@ -103,13 +103,23 @@ struct RemoteList {
 }
 
 pub fn run_login(args: RegistryLoginArgs) -> Result<()> {
+    eprintln!(
+        "⚠ [deprecated] `oclive registry login` 请改用:\n  \
+         oclive config set OCLIVE_REGISTRY_URL <url> --global\n  \
+         oclive config set OCLIVE_REGISTRY_TOKEN <token> --global"
+    );
     let url = args.url.trim().trim_end_matches('/').to_string();
+    let token = args.token.trim().to_string();
+    let cfg_url = crate::config::set_key("OCLIVE_REGISTRY_URL", &url, true, None)?;
+    let cfg_token = crate::config::set_key("OCLIVE_REGISTRY_TOKEN", &token, true, None)?;
+    // 兼容仍读取 auth.json 的旧脚本
     save_auth(&RegistryAuth {
         registry_url: url.clone(),
-        token: args.token.trim().to_string(),
+        token: token.clone(),
     })?;
-    println!("已登录云端注册表: {}", url);
-    println!("凭据: {}", auth_path().display());
+    println!("已写入配置: {}", cfg_url.display());
+    println!("已写入配置: {}", cfg_token.display());
+    println!("（兼容）auth.json: {}", auth_path().display());
     Ok(())
 }
 

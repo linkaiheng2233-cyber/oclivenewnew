@@ -23,7 +23,7 @@ pub enum RegistryCommands {
     Remove(RegistryRemoveArgs),
     /// 打印切换工作目录的命令（Windows: cd /d；Unix: cd）
     Switch(RegistrySwitchArgs),
-    /// 登录云端注册表（保存 Bearer Token 至 ~/.oclive/auth.json）
+    /// [deprecated] 登录云端注册表 — 请用 `oclive config set`（内部写入 config.toml + auth.json）
     Login(crate::registry_remote::RegistryLoginArgs),
     /// 登出云端注册表
     Logout,
