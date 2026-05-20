@@ -1,4 +1,4 @@
-//! `oclive learn` — 新用户交互式教程。
+//! `oclive learn` — interactive tutorial for new users.
 
 use anyhow::{Context, Result};
 use clap::Parser;
@@ -13,18 +13,28 @@ pub struct LearnArgs {
 }
 
 pub fn run(args: LearnArgs) -> Result<()> {
-    println!("=== oclive 交互式教程（5 步）===\n");
-    step(1, "环境检查", "将运行 `oclive doctor` 检查 Rust、磁盘与可选 Ollama。")?;
+    println!("=== oclive interactive tutorial (5 steps) ===\n");
+    step(1, "Environment check", "Runs `oclive doctor` for Rust, disk, and optional Ollama.")?;
     run_oclive(&["doctor"])?;
     pause()?;
 
-    step(2, "选择模板", "推荐新手使用 `dialogue-only`（full 预设、通用角色包）。")?;
-    println!("  · robot-soul — 玩偶 / 嵌入式 + Monolith\n  · dialogue-only — 纯对话服务\n  · headless-api — 无角色包 API\n");
+    step(
+        2,
+        "Choose a template",
+        "Recommended for beginners: `dialogue-only` (full preset, default role pack).",
+    )?;
+    println!(
+        "  · robot-soul — doll / embedded + Monolith\n  · dialogue-only — dialogue service\n  · headless-api — API without role pack\n"
+    );
     pause()?;
 
-    step(3, "生成工程", "将执行 `oclive init --non-interactive --template dialogue-only`。")?;
+    step(
+        3,
+        "Generate project",
+        "Runs `oclive init --non-interactive --template dialogue-only`.",
+    )?;
     if args.output.exists() {
-        println!("输出目录已存在: {}", args.output.display());
+        println!("Output directory already exists: {}", args.output.display());
     } else {
         let out = args.output.to_string_lossy();
         run_oclive(&[
@@ -41,41 +51,50 @@ pub fn run(args: LearnArgs) -> Result<()> {
     }
     pause()?;
 
-    step(4, "编译", "在项目目录执行 `cargo build`（首次可能较慢）。")?;
+    step(4, "Build", "Runs `cargo build` in the project directory (first build may be slow).")?;
     let st = Command::new("cargo")
         .arg("build")
         .current_dir(&args.output)
         .status();
     match st {
-        Ok(s) if s.success() => println!("✅ cargo build 成功"),
+        Ok(s) if s.success() => println!("✅ cargo build succeeded"),
         Ok(s) => {
-            println!("❌ cargo build 退出码 {:?}", s.code());
-            println!("建议: 运行 `oclive doctor`；或 `oclive init --kernel-source <oclivenewnew根>` 接入完整内核。");
+            println!("❌ cargo build exit code {:?}", s.code());
+            println!(
+                "Try: `oclive doctor`; or `oclive init --kernel-source <oclivenewnew-root>` for the full kernel."
+            );
         }
-        Err(e) => println!("无法启动 cargo: {e}"),
+        Err(e) => println!("Cannot start cargo: {e}"),
     }
     pause()?;
 
-    step(5, "第一条消息", "若已 `--kernel-source` 并启动 HTTP API，可用 curl 测试：")?;
+    step(
+        5,
+        "First message",
+        "With `--kernel-source` and HTTP API running, test with curl:",
+    )?;
     println!(
         r#"
   $env:OCLIVE_HTTP_API_MOCK_LLM = "1"
   cargo run --release -- --api --port 8421
-  curl -X POST http://127.0.0.1:8421/chat -H "Content-Type: application/json" -d '{{"message":"你好","role_id":"default"}}'
+  curl -X POST http://127.0.0.1:8421/chat -H "Content-Type: application/json" -d '{{"message":"hello","role_id":"default"}}'
 "#
     );
-    println!("\n🎉 教程完成。下一步: `oclive bench --release -o {}`（需 Monolith 时加 --monolith init）", args.output.display());
+    println!(
+        "\n🎉 Tutorial complete. Next: `oclive bench --release -o {}` (add Monolith via init --monolith when needed)",
+        args.output.display()
+    );
     Ok(())
 }
 
 fn step(n: u32, title: &str, detail: &str) -> Result<()> {
-    println!("【步骤 {n}/5】{title}\n{detail}\n");
+    println!("【Step {n}/5】{title}\n{detail}\n");
     Ok(())
 }
 
 fn pause() -> Result<()> {
     Confirm::with_theme(&ColorfulTheme::default())
-        .with_prompt("按 Enter 继续")
+        .with_prompt("Press Enter to continue")
         .default(true)
         .interact()?;
     println!();
@@ -86,7 +105,11 @@ fn run_oclive(args: &[&str]) -> Result<()> {
     let exe = std::env::current_exe().context("current_exe")?;
     let st = Command::new(exe).args(args).status()?;
     if !st.success() {
-        println!("⚠ 命令未成功（退出码 {:?}）；可单独重试: oclive {}", st.code(), args.join(" "));
+        println!(
+            "⚠ Command did not succeed (exit {:?}); retry: oclive {}",
+            st.code(),
+            args.join(" ")
+        );
     }
     Ok(())
 }

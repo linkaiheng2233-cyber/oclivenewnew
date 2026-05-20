@@ -9,19 +9,19 @@ use std::time::Duration;
 
 #[derive(Parser, Debug, Clone)]
 pub struct DevArgs {
-    /// 内核项目根（含 Cargo.toml）
+    /// Kernel project root (contains Cargo.toml)
     #[arg(short = 'o', long, default_value = ".")]
     pub path: PathBuf,
 
-    /// 相对于项目根的 roles 根目录（其下为各角色 id 子目录）
+    /// Roles root relative to project (subdirs per role id)
     #[arg(long, default_value = "roles")]
     pub roles: PathBuf,
 
-    /// 不监听文件系统（仅打印一次提示后退出）
+    /// Do not watch filesystem (print hint once and exit)
     #[arg(long)]
     pub no_watch: bool,
 
-    /// 检测到变更后执行的 shell 命令（未设置则仅打印提示）
+    /// Shell command on change (if unset, only print a hint)
     #[arg(long)]
     pub reload_cmd: Option<String>,
 }
@@ -33,7 +33,7 @@ fn resolve_root(path: &Path) -> Result<PathBuf> {
         std::env::current_dir().context("current_dir")?.join(path)
     };
     root.canonicalize()
-        .with_context(|| format!("无法解析项目路径: {}", root.display()))
+        .with_context(|| format!("cannot resolve project path: {}", root.display()))
 }
 
 fn is_role_pack_hot_file(path: &Path) -> bool {
@@ -58,19 +58,19 @@ pub fn run(args: DevArgs) -> Result<()> {
     let watch_dir = root.join(&args.roles);
     if args.no_watch {
         eprintln!(
-            "[oclive dev] --no-watch：未监听。角色包目录：{}",
+            "[oclive dev] --no-watch: not watching. Role packs dir: {}",
             watch_dir.display()
         );
         return Ok(());
     }
     if !watch_dir.is_dir() {
         anyhow::bail!(
-            "角色包根目录不存在：{}（可先 `oclive init` 或创建 roles/）",
+            "Role packs root does not exist: {} (run `oclive init` or create roles/)",
             watch_dir.display()
         );
     }
     eprintln!(
-        "[oclive dev] 递归监听 {} 下任意子目录的 manifest.json / settings.json",
+        "[oclive dev] watching manifest.json / settings.json under {} recursively",
         watch_dir.display()
     );
     let (tx, rx) = channel();
@@ -103,7 +103,7 @@ pub fn run(args: DevArgs) -> Result<()> {
             continue;
         }
         last_fire = std::time::Instant::now();
-        println!("[oclive dev] 检测到角色包 '{rid}' 变更，已重载");
+        println!("[oclive dev] role pack '{rid}' changed; reload signaled");
         if let Some(cmd) = args.reload_cmd.as_deref() {
             let st = if cfg!(windows) {
                 std::process::Command::new("cmd")
@@ -119,7 +119,7 @@ pub fn run(args: DevArgs) -> Result<()> {
             }
             .with_context(|| format!("reload_cmd: {cmd}"))?;
             if !st.success() {
-                eprintln!("[oclive dev] reload_cmd 退出码: {:?}", st.code());
+                eprintln!("[oclive dev] reload_cmd exit code: {:?}", st.code());
             }
         }
     }

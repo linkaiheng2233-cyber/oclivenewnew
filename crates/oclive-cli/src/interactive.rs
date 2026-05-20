@@ -1,4 +1,4 @@
-//! 交互式收集 [`crate::init::ProjectConfig`]（支持 CLI 已指定项时智能跳过）。
+//! Interactive collection of [`crate::init::ProjectConfig`] (skips prompts already set via CLI).
 
 use crate::init::{
     BackendImpl, BackendSlots, FeatureSelection, InitArgs, InitTemplateArg, PluginSelection,
@@ -23,25 +23,25 @@ fn pick_impl(slot: &str) -> Result<BackendImpl> {
         (
             &["ollama", "remote", "directory", "none"],
             &[
-                "ollama（主应用默认本地 LLM，需本机 Ollama）",
-                "remote（HTTP 侧车，需 OCLIVE_REMOTE_LLM_URL）",
-                "directory（目录插件子进程）",
-                "none（禁用主 LLM 链；仅用于实验/占位）",
+                "ollama (host default local LLM; requires Ollama on this machine)",
+                "remote (HTTP sidecar; needs OCLIVE_REMOTE_LLM_URL)",
+                "directory (directory plugin subprocess)",
+                "none (disable main LLM chain; experimental / placeholder only)",
             ],
         )
     } else {
         (
             &["builtin", "remote", "directory", "none"],
             &[
-                "builtin（进程内默认实现）",
-                "remote（HTTP JSON-RPC，需 OCLIVE_REMOTE_PLUGIN_URL 等）",
-                "directory（目录插件；需配置 plugin_backends.directory_plugins）",
-                "none（禁用该子系统；部分槽可能影响主对话链）",
+                "builtin (in-process default implementation)",
+                "remote (HTTP JSON-RPC; needs OCLIVE_REMOTE_PLUGIN_URL, etc.)",
+                "directory (directory plugin; configure plugin_backends.directory_plugins)",
+                "none (disable this subsystem; some slots may affect the main chat path)",
             ],
         )
     };
     let i = Select::with_theme(&ColorfulTheme::default())
-        .with_prompt(format!("{slot} 使用哪种实现？"))
+        .with_prompt(format!("Which implementation for {slot}?"))
         .items(labels)
         .default(0)
         .interact()
@@ -58,21 +58,21 @@ fn pick_impl(slot: &str) -> Result<BackendImpl> {
 
 fn validate_slot_choice(slot: &str, b: BackendImpl) -> Result<()> {
     if slot != "llm" && b == BackendImpl::Ollama {
-        return Err(anyhow!("槽位 {slot} 不能使用 ollama（仅 llm 槽合法）。"));
+        return Err(anyhow!("Slot {slot} cannot use ollama (valid only for the llm slot)."));
     }
     Ok(())
 }
 
 fn pick_factory_template() -> Result<Option<InitTemplateArg>> {
-    let mut labels: Vec<String> = vec!["不使用模板 — 手动配置 preset / 七槽".into()];
+    let mut labels: Vec<String> = vec!["No template — configure preset / seven slots manually".into()];
     for e in CATALOG {
         labels.push(format!(
-            "{} — {}（preset={}, Monolith={}）",
+            "{} — {} (preset={}, Monolith={})",
             e.id, e.scene, e.preset, e.monolith
         ));
     }
     let idx = Select::with_theme(&ColorfulTheme::default())
-        .with_prompt("选择场景模板（内核工厂配方）")
+        .with_prompt("Choose scenario template (kernel factory recipe)")
         .items(&labels)
         .default(0)
         .interact()
@@ -82,15 +82,15 @@ fn pick_factory_template() -> Result<Option<InitTemplateArg>> {
     }
     let entry = CATALOG.get(idx - 1).context("template index")?;
     crate::template_catalog::template_from_id(entry.id)
-        .ok_or_else(|| anyhow!("未知模板: {}", entry.id))
+        .ok_or_else(|| anyhow!("Unknown template: {}", entry.id))
         .map(Some)
 }
 
 fn pick_project_type(default_kernel: bool) -> Result<ProjectType> {
     let default = if default_kernel { 0 } else { 1 };
     let pt_idx = Select::with_theme(&ColorfulTheme::default())
-        .with_prompt("项目类型")
-        .items(&["无头服务 (kernel_server)", "嵌入式库 (library)"])
+        .with_prompt("Project type")
+        .items(&["Headless service (kernel_server)", "Embedded library (library)"])
         .default(default)
         .interact()
         .context("project type")?;
@@ -103,7 +103,7 @@ fn pick_project_type(default_kernel: bool) -> Result<ProjectType> {
 
 fn pick_slots_manual() -> Result<BackendSlots> {
     let chosen: Vec<usize> = MultiSelect::with_theme(&ColorfulTheme::default())
-        .with_prompt("要启用的后端槽位（至少勾选 memory / emotion / prompt / llm）")
+        .with_prompt("Backend slots to enable (at least memory / emotion / prompt / llm)")
         .items(SLOT_LABELS)
         .defaults(&[true, true, true, true, true, true, true])
         .interact()
@@ -112,7 +112,7 @@ fn pick_slots_manual() -> Result<BackendSlots> {
     for r in required {
         if !chosen.contains(&r) {
             return Err(anyhow!(
-                "至少需要启用 memory、emotion、prompt、llm 四个槽位。"
+                "At least memory, emotion, prompt, and llm slots must be enabled."
             ));
         }
     }
@@ -137,11 +137,11 @@ fn pick_slots_manual() -> Result<BackendSlots> {
 
 fn pick_plugins() -> Result<PluginSelection> {
     let plug_idx: Vec<usize> = MultiSelect::with_theme(&ColorfulTheme::default())
-        .with_prompt("可选插件")
+        .with_prompt("Optional plugins")
         .items(&[
-            "directory-plugins（生成目录插件占位说明）",
-            "kernel-server（README 中说明如何接入 oclive_kernel_server）",
-            "oocp（README 中说明 OOCP 对照测试入口）",
+            "directory-plugins (directory plugin placeholder docs)",
+            "kernel-server (README: how to wire oclive_kernel_server)",
+            "oocp (README: OOCP black-box test entry)",
         ])
         .interact()
         .context("plugins")?;
@@ -154,7 +154,7 @@ fn pick_plugins() -> Result<PluginSelection> {
 
 fn pick_monolith_for_kernel(template_default_on: bool) -> Result<bool> {
     let dev_opt = Confirm::with_theme(&ColorfulTheme::default())
-        .with_prompt("是否启用开发者编译选项（Monolith）？")
+        .with_prompt("Enable developer compile options (Monolith)?")
         .default(template_default_on)
         .interact()
         .context("developer compile option")?;
@@ -162,11 +162,11 @@ fn pick_monolith_for_kernel(template_default_on: bool) -> Result<bool> {
         return Ok(false);
     }
     let mode_idx = Select::with_theme(&ColorfulTheme::default())
-        .with_prompt("编译模式")
+        .with_prompt("Compile mode")
         .items(&[
-            "标准模式（低耦合，保留模块可替换性，推荐）",
-            "高耦合模式 — 七槽全部静态焊接",
-            "高耦合模式 — 自定义焊接范围（生成后编辑 monolith.toml，再运行 oclive build）",
+            "Standard (loosely coupled, modules stay swappable; recommended)",
+            "Monolith — weld all seven slots statically",
+            "Monolith — custom weld scope (edit monolith.toml after generate, then run oclive build)",
         ])
         .default(if template_default_on { 1 } else { 0 })
         .interact()
@@ -181,7 +181,7 @@ fn pick_cargo_metadata(args: &InitArgs, cfg: &mut ProjectConfig) -> Result<()> {
     let default_author =
         crate::init::git_config_user_name().unwrap_or_else(|| "oclive".to_string());
     let author: String = Input::with_theme(&ColorfulTheme::default())
-        .with_prompt("作者（写入 Cargo.toml authors）")
+        .with_prompt("Author (written to Cargo.toml authors)")
         .default(default_author)
         .interact_text()
         .context("author")?;
@@ -190,14 +190,14 @@ fn pick_cargo_metadata(args: &InitArgs, cfg: &mut ProjectConfig) -> Result<()> {
     }
     let licenses = ["MIT", "Apache-2.0", "GPL-3.0", "AGPL-3.0"];
     let lic_idx = Select::with_theme(&ColorfulTheme::default())
-        .with_prompt("许可证（SPDX）")
+        .with_prompt("License (SPDX)")
         .items(&licenses)
         .default(0)
         .interact()
         .context("license")?;
     cfg.cargo_license = Some(licenses.get(lic_idx).copied().unwrap_or("MIT").to_string());
     let desc: String = Input::with_theme(&ColorfulTheme::default())
-        .with_prompt("简短描述（可选，留空不写 description）")
+        .with_prompt("Short description (optional; leave empty to omit description)")
         .allow_empty(true)
         .interact_text()
         .context("description")?;
@@ -212,13 +212,13 @@ fn resolve_project_name(args: &InitArgs) -> Result<String> {
         return Ok(args.project_name.clone());
     }
     Input::with_theme(&ColorfulTheme::default())
-        .with_prompt("项目名（用于 Cargo package 与目录名）")
+        .with_prompt("Project name (Cargo package and directory name)")
         .default("my_oclive_kernel".into())
         .interact_text()
         .context("project name")
 }
 
-/// 至少包含 memory / emotion / prompt / llm 四条线（与产品最小对话链一致）。
+/// At least memory / emotion / prompt / llm (minimal product chat path).
 pub fn run_interactive(args: &InitArgs) -> Result<ProjectConfig> {
     let project_name = resolve_project_name(args)?;
 
@@ -239,22 +239,22 @@ pub fn run_interactive(args: &InitArgs) -> Result<ProjectConfig> {
             let c = project_config_from_template(&project_name, t);
             let monolith_default = c.monolith_enabled;
             println!(
-                "\n已应用模板「{}」：preset={}，Monolith 默认={}，角色包={}。",
+                "\nApplied template \"{}\": preset={}, Monolith default={}, role pack={}.",
                 CATALOG
                     .iter()
                     .find(|e| crate::template_catalog::template_from_id(e.id) == Some(t))
                     .map(|e| e.id)
                     .unwrap_or("?"),
                 crate::init::template_defaults(t).preset,
-                if c.monolith_enabled { "启用" } else { "关闭" },
+                if c.monolith_enabled { "on" } else { "off" },
                 crate::template_catalog::role_pack_label(c.role_pack_kind)
             );
-            println!("CLI 已传入的参数将覆盖模板默认值。\n");
+            println!("CLI flags override template defaults.\n");
             (c, monolith_default)
         }
         (None, Some(p)) => {
             let c = crate::init::preset_config(&project_name, p);
-            println!("\n已使用 CLI 指定 preset={p}，跳过七槽多选。\n");
+            println!("\nUsing CLI preset={p}; skipping seven-slot multiselect.\n");
             (c, false)
         }
         (None, None) => {
@@ -317,7 +317,7 @@ pub fn run_interactive(args: &InitArgs) -> Result<ProjectConfig> {
     if !skip_role_prompt {
         let default_role = cfg.role_pack_kind != RolePackKind::None;
         let example_role = Confirm::with_theme(&ColorfulTheme::default())
-            .with_prompt("是否生成示例角色包（roles/）？")
+            .with_prompt("Generate example role pack (roles/)?")
             .default(default_role)
             .interact()
             .context("example role")?;
@@ -344,7 +344,7 @@ pub fn run_interactive(args: &InitArgs) -> Result<ProjectConfig> {
         && cfg.project_type == ProjectType::KernelServer
     {
         let bench_after = Confirm::with_theme(&ColorfulTheme::default())
-            .with_prompt("生成后自动跑 Monolith vs 标准 bench（5 轮，写入 bench_results/）？")
+            .with_prompt("After generation, auto-run Monolith vs standard bench (5 runs, writes bench_results/)?")
             .default(false)
             .interact()
             .context("bench after init")?;

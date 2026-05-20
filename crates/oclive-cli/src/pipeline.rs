@@ -48,16 +48,16 @@ impl PipelineArg {
 
     pub fn doc_markdown(self) -> String {
         let steps = self.steps();
-        let mut md = String::from("# 自定义编排 (PIPELINE_CUSTOM)\n\n");
-        md.push_str(&format!("模式: `{self:?}`\n\n## 步骤顺序\n\n"));
+        let mut md = String::from("# Custom pipeline (PIPELINE_CUSTOM)\n\n");
+        md.push_str(&format!("Mode: `{self:?}`\n\n## Step order\n\n"));
         for (i, s) in steps.iter().enumerate() {
             md.push_str(&format!("{}. `{}`\n", i + 1, s));
         }
         if self == Self::EmotionFirst {
-            md.push_str("\n> 与 default 相比，本模式在文档与生成注释中强调 **情绪分析优先于事件检测** 的产品语义；完整宿主仍以 oclivenewnew `process_message` 为准。\n");
+            md.push_str("\n> Compared to default, this mode documents **emotion analysis before event detection**; full host behavior is still oclivenewnew `process_message`.\n");
         }
         if self == Self::MemoryLast {
-            md.push_str("\n> **memory_rank** 在文档中置于 **llm_generate** 之后，供实验性「先对话后检索」架构探索。\n");
+            md.push_str("\n> **memory_rank** is documented after **llm_generate** for experimental dialogue-first retrieval.\n");
         }
         md
     }

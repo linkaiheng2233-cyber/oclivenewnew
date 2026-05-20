@@ -12,7 +12,7 @@ pub struct TestArgs {
     pub path: PathBuf,
     #[arg(long)]
     pub json: bool,
-    /// 跳过 OOCP 协议黑盒（耗时）
+    /// Skip OOCP protocol black-box tests (slow)
     #[arg(long)]
     pub skip_oocp: bool,
 
@@ -45,7 +45,7 @@ pub fn run(args: TestArgs) -> Result<()> {
         checks.push(CheckResult {
             name: "oocp".into(),
             ok: true,
-            detail: "已跳过 (--skip-oocp)".into(),
+            detail: "skipped (--skip-oocp)".into(),
         });
     }
 
@@ -62,13 +62,13 @@ pub fn run(args: TestArgs) -> Result<()> {
         println!(
             "\n{}",
             if ok_all {
-                "全部通过"
+                "All checks passed"
             } else {
-                "存在失败项"
+                "Some checks failed"
             }
         );
         if !ok_all {
-            bail!("test 未全部通过");
+            bail!("test did not pass all checks");
         }
     }
     Ok(())
@@ -80,8 +80,8 @@ fn run_cargo_check(root: &Path) -> CheckResult {
         .arg(root.join("Cargo.toml"))
         .status();
     match st {
-        Ok(s) if s.success() => ok("cargo check", "通过"),
-        Ok(s) => fail("cargo check", format!("退出码 {:?}", s.code())),
+        Ok(s) if s.success() => ok("cargo check", "passed"),
+        Ok(s) => fail("cargo check", format!("exit code {:?}", s.code())),
         Err(e) => fail("cargo check", e.to_string()),
     }
 }
@@ -98,16 +98,16 @@ fn run_clippy(root: &Path) -> CheckResult {
         ])
         .status();
     match st {
-        Ok(s) if s.success() => ok("clippy", "通过"),
-        Ok(s) => fail("clippy", format!("退出码 {:?}", s.code())),
-        Err(e) => fail("clippy", "无法启动 cargo"),
+        Ok(s) if s.success() => ok("clippy", "passed"),
+        Ok(s) => fail("clippy", format!("exit code {:?}", s.code())),
+        Err(e) => fail("clippy", format!("cannot start cargo: {e}")),
     }
 }
 
 fn run_pack_validate_all(root: &Path) -> CheckResult {
     let roles = root.join("roles");
     if !roles.is_dir() {
-        return ok("pack validate", "无 roles/ 目录，跳过");
+        return ok("pack validate", "no roles/ directory; skipped");
     }
     let mut n = 0u32;
     let mut fail_n = 0u32;
@@ -127,9 +127,9 @@ fn run_pack_validate_all(root: &Path) -> CheckResult {
         }
     }
     if fail_n > 0 {
-        fail("pack validate", format!("{fail_n}/{n} 角色包失败"))
+        fail("pack validate", format!("{fail_n}/{n} role packs failed"))
     } else {
-        ok("pack validate", format!("{n} 个角色包"))
+        ok("pack validate", format!("{n} role packs"))
     }
 }
 
@@ -138,13 +138,13 @@ fn run_oocp_hint(root: &Path) -> CheckResult {
     let Some(script) = script else {
         return ok(
             "oocp",
-            "未找到 examples/oocp-test-suite/run.mjs（请在 oclivenewnew 根或设置 OCLIVE_ROOT）",
+            "examples/oocp-test-suite/run.mjs not found (use oclivenewnew root or set OCLIVE_ROOT)",
         );
     };
     ok(
         "oocp",
         format!(
-            "请在本机启动内核 HTTP 后执行: node {} （项目: {}）",
+            "Start kernel HTTP locally, then run: node {} (project: {})",
             script.display(),
             root.display()
         ),

@@ -55,19 +55,19 @@ pub fn run(args: ProfileArgs) -> Result<()> {
 
     println!("📊 Kernel Profile: {name}");
     if let Some(b) = report.binary_mib {
-        println!("├── 二进制大小: {b:.1} MiB");
+        println!("├── Binary size: {b:.1} MiB");
     }
-    println!("├── 依赖行数: {}", report.dep_lines);
-    println!("├── 最大依赖深度: {}", report.max_depth);
+    println!("├── Dependency lines: {}", report.dep_lines);
+    println!("├── Max dependency depth: {}", report.max_depth);
     if let Some(s) = report.build_secs_hint {
-        println!("├── target 最近写入: 约 {s:.0} 秒前");
+        println!("├── target last written: ~{s:.0}s ago");
     }
-    println!("└── Top crate (cargo bloat，若可用):");
+    println!("└── Top crates (cargo bloat, if available):");
     for c in &report.top_crates {
         println!("    ├── {}: {:.1} MiB", c.name, c.mib);
     }
     if report.top_crates.is_empty() {
-        println!("    （未安装 cargo-bloat 或构建失败；可: cargo install cargo-bloat）");
+        println!("    (cargo-bloat not installed or build failed; try: cargo install cargo-bloat)");
     }
     Ok(())
 }

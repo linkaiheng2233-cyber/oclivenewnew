@@ -15,23 +15,23 @@ pub struct RegistryCli {
 
 #[derive(Subcommand, Debug)]
 pub enum RegistryCommands {
-    /// 列出已注册的本地内核工程
+    /// List locally registered kernel projects
     List(RegistryListArgs),
-    /// 手动注册工程
+    /// Register a project manually
     Add(RegistryAddArgs),
-    /// 从注册表移除（不删除磁盘目录）
+    /// Remove from registry (does not delete files on disk)
     Remove(RegistryRemoveArgs),
-    /// 打印切换工作目录的命令（Windows: cd /d；Unix: cd）
+    /// Print command to switch working directory (Windows: cd /d; Unix: cd)
     Switch(RegistrySwitchArgs),
-    /// [deprecated] 登录云端注册表 — 请用 `oclive config set`（内部写入 config.toml + auth.json）
+    /// [deprecated] Log in to cloud registry — use `oclive config set` (writes config.toml + auth.json)
     Login(crate::registry_remote::RegistryLoginArgs),
-    /// 登出云端注册表
+    /// Log out of cloud registry
     Logout,
-    /// 推送工程为 .oclive-template.tar.gz
+    /// Push project as .oclive-template.tar.gz
     Push(crate::registry_remote::RegistryPushArgs),
-    /// 从云端拉取工程并写入本地注册表
+    /// Pull project from cloud and register locally
     Pull(crate::registry_remote::RegistryPullArgs),
-    /// 搜索云端工程
+    /// Search cloud projects
     Search(crate::registry_remote::RegistrySearchArgs),
 }
 
@@ -80,13 +80,13 @@ fn run_list(args: RegistryListArgs) -> Result<()> {
         return Ok(());
     }
     if file.projects.is_empty() {
-        println!("（注册表为空；`oclive init` 成功后会自动注册）");
-        println!("路径: {}", crate::registry::registry_path().display());
+        println!("(registry empty; successful `oclive init` auto-registers)");
+        println!("Path: {}", crate::registry::registry_path().display());
         return Ok(());
     }
     println!(
         "{:<24} {:<12} {:<10} {}",
-        "名称", "模板", "创建时间", "路径"
+        "name", "template", "created", "path"
     );
     println!("{}", "-".repeat(96));
     for p in &file.projects {
@@ -106,29 +106,29 @@ fn run_add(args: RegistryAddArgs) -> Result<()> {
         .canonicalize()
         .with_context(|| format!("path {}", args.path.display()))?;
     if !path.join("Cargo.toml").is_file() {
-        bail!("{} 不是有效的 Cargo 工程根（缺少 Cargo.toml）", path.display());
+        bail!("{} is not a valid Cargo project root (missing Cargo.toml)", path.display());
     }
     let template = args
         .template
         .as_deref()
         .and_then(template_from_str);
     register_project(&args.name, &path, template)?;
-    println!("已注册: {} → {}", args.name, path.display());
+    println!("Registered: {} → {}", args.name, path.display());
     Ok(())
 }
 
 fn run_remove(args: RegistryRemoveArgs) -> Result<()> {
     if remove_entry(&args.name)? {
-        println!("已从注册表移除: {}（工程目录未删除）", args.name);
+        println!("Removed from registry: {} (project directory not deleted)", args.name);
     } else {
-        bail!("注册表中无工程: {}", args.name);
+        bail!("No project in registry: {}", args.name);
     }
     Ok(())
 }
 
 fn run_switch(args: RegistrySwitchArgs) -> Result<()> {
     let entry = find_entry(&args.name)?
-        .ok_or_else(|| anyhow::anyhow!("注册表中无工程: {}", args.name))?;
+        .ok_or_else(|| anyhow::anyhow!("No project in registry: {}", args.name))?;
     print_switch_hint(&entry);
     Ok(())
 }

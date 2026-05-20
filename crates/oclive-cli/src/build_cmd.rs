@@ -12,23 +12,23 @@ use std::process::Command;
 
 #[derive(Parser, Debug, Clone)]
 pub struct BuildArgs {
-    /// 项目根目录（含 Cargo.toml 与 monolith.toml）
+    /// Project root (contains Cargo.toml and monolith.toml)
     #[arg(short = 'o', long, default_value = ".")]
     pub path: PathBuf,
 
-    /// 仅重新生成源码，不调用 cargo
+    /// Regenerate sources only; do not invoke cargo
     #[arg(long)]
     pub no_cargo: bool,
 
-    /// 等价于 `cargo build --release`
+    /// Equivalent to `cargo build --release`
     #[arg(long)]
     pub release: bool,
 
-    /// 传给两次 `cargo build` 的额外 feature（逗号分隔）；Monolith 次构建会自动并入 `monolith`
+    /// Extra features for both cargo builds (comma-separated); Monolith build auto-adds `monolith`
     #[arg(long, value_delimiter = ',')]
     pub features: Vec<String>,
 
-    /// 透传给 `cargo build` 的附加参数（建议放在 `--` 之后）
+    /// Extra args forwarded to `cargo build` (place after `--`)
     #[arg(trailing_var_arg = true, allow_hyphen_values = true)]
     pub cargo_extra: Vec<String>,
 }
@@ -40,7 +40,7 @@ fn resolve_project_root(path: &Path) -> Result<PathBuf> {
         std::env::current_dir().context("current_dir")?.join(path)
     };
     root.canonicalize()
-        .with_context(|| format!("无法解析项目路径: {}", root.display()))
+        .with_context(|| format!("cannot resolve project path: {}", root.display()))
 }
 
 fn merge_features_for_monolith(user: &[String]) -> String {
@@ -80,7 +80,7 @@ pub fn run_cargo_build(
         if !stderr.is_empty() {
             eprintln!("--- cargo stderr ---\n{stderr}");
         }
-        bail!("cargo build 失败（退出码 {:?}）", output.status.code());
+        bail!("cargo build failed (exit code {:?})", output.status.code());
     }
     Ok(())
 }
@@ -98,7 +98,7 @@ fn regenerate_monolith_from_disk_inner(root: &Path, log_written: bool) -> Result
     let mt = root.join("monolith.toml");
     if !mt.is_file() {
         bail!(
-            "未找到 {}。`oclive build` 仅适用于已启用 Monolith 且含 monolith.toml 的内核脚手架项目。",
+            "Not found: {}. `oclive build` applies only to kernel scaffolds with Monolith enabled and monolith.toml.",
             mt.display()
         );
     }
@@ -111,7 +111,7 @@ fn regenerate_monolith_from_disk_inner(root: &Path, log_written: bool) -> Result
     fs::write(&out_rs, generate_monolith_source(&plan))
         .with_context(|| format!("write {}", out_rs.display()))?;
     if log_written {
-        eprintln!("已生成 {}", out_rs.display());
+        eprintln!("Generated {}", out_rs.display());
     }
     Ok(file)
 }
@@ -154,7 +154,7 @@ pub fn run(args: BuildArgs) -> Result<()> {
     let mt = root.join("monolith.toml");
     if !mt.is_file() {
         eprintln!(
-            "未找到 {}；对无 Monolith 项目执行 cargo build。",
+            "Not found: {}; running cargo build for non-Monolith project.",
             mt.display()
         );
         if args.no_cargo {
@@ -182,11 +182,11 @@ pub fn run(args: BuildArgs) -> Result<()> {
     let feat_std = feat_std_owned.as_deref();
     let feat_mono_owned = merge_features_for_monolith(&args.features);
 
-    eprintln!("cargo build（标准）…");
+    eprintln!("cargo build (standard)…");
     run_cargo_build(&root, args.release, feat_std, &args.cargo_extra)?;
 
     if file.monolith.enabled {
-        eprintln!("cargo build（features 含 monolith）…");
+        eprintln!("cargo build (features include monolith)…");
         run_cargo_build(
             &root,
             args.release,
@@ -194,7 +194,7 @@ pub fn run(args: BuildArgs) -> Result<()> {
             &args.cargo_extra,
         )?;
     } else {
-        eprintln!("monolith.toml: enabled = false，跳过 Monolith 次构建。");
+        eprintln!("monolith.toml: enabled = false; skipping Monolith build.");
     }
 
     Ok(())

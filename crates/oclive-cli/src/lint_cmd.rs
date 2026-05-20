@@ -33,15 +33,15 @@ pub fn run(args: LintArgs) -> Result<()> {
     for (dir, name) in [
         ("src", "src/"),
         ("docs", "docs/"),
-        ("roles", "roles/（可选）"),
+        ("roles", "roles/ (optional)"),
     ] {
         let p = root.join(dir);
         if p.is_dir() {
-            items.push(pass(&format!("dir_{dir}"), &format!("存在 {name}")));
+            items.push(pass(&format!("dir_{dir}"), &format!("found {name}")));
         } else if dir == "roles" {
-            items.push(warn(&format!("dir_{dir}"), &format!("缺少 {name}")));
+            items.push(warn(&format!("dir_{dir}"), &format!("missing {name}")));
         } else {
-            items.push(fail(&format!("dir_{dir}"), &format!("缺少 {name}")));
+            items.push(fail(&format!("dir_{dir}"), &format!("missing {name}")));
         }
     }
     lint_cargo_toml(&root, &mut items);
@@ -68,29 +68,29 @@ pub fn run(args: LintArgs) -> Result<()> {
 fn lint_cargo_toml(root: &Path, items: &mut Vec<LintItem>) {
     let p = root.join("Cargo.toml");
     let Ok(raw) = std::fs::read_to_string(&p) else {
-        items.push(fail("cargo_toml", "无法读取 Cargo.toml"));
+        items.push(fail("cargo_toml", "cannot read Cargo.toml"));
         return;
     };
     let v: toml::Value = match toml::from_str(&raw) {
         Ok(v) => v,
         Err(e) => {
-            items.push(fail("cargo_toml", format!("解析失败: {e}")));
+            items.push(fail("cargo_toml", format!("parse failed: {e}")));
             return;
         }
     };
     let pkg = v.get("package").and_then(|x| x.as_table());
     for key in ["name", "version"] {
         if pkg.and_then(|t| t.get(key)).is_some() {
-            items.push(pass(&format!("cargo_{key}"), &format!("[package].{key} 已填写")));
+            items.push(pass(&format!("cargo_{key}"), &format!("[package].{key} set")));
         } else {
-            items.push(fail("cargo_toml", format!("缺少 [package].{key}")));
+            items.push(fail("cargo_toml", format!("missing [package].{key}")));
         }
     }
     for key in ["authors", "license"] {
         if pkg.and_then(|t| t.get(key)).is_some() {
-            items.push(pass(&format!("cargo_{key}"), &format!("[package].{key} 已填写")));
+            items.push(pass(&format!("cargo_{key}"), &format!("[package].{key} set")));
         } else {
-            items.push(warn("cargo_meta", format!("建议填写 [package].{key}")));
+            items.push(warn("cargo_meta", format!("consider setting [package].{key}")));
         }
     }
 }
@@ -114,7 +114,7 @@ fn lint_settings(root: &Path, items: &mut Vec<LintItem>) {
                 match oclive_validation::validate_settings_top_level_keys(map) {
                     Ok(()) => items.push(pass(
                         "settings_keys",
-                        &format!("{} settings 顶层键合法", entry.display()),
+                        &format!("{} settings top-level keys valid", entry.display()),
                     )),
                     Err(e) => items.push(fail("settings_keys", e)),
                 }
@@ -126,7 +126,7 @@ fn lint_settings(root: &Path, items: &mut Vec<LintItem>) {
 fn lint_monolith(root: &Path, items: &mut Vec<LintItem>) {
     let p = root.join("monolith.toml");
     if !p.is_file() {
-        items.push(warn("monolith", "无 monolith.toml（标准模式）"));
+        items.push(warn("monolith", "no monolith.toml (standard mode)"));
         return;
     }
     match std::fs::read_to_string(&p) {
@@ -135,7 +135,7 @@ fn lint_monolith(root: &Path, items: &mut Vec<LintItem>) {
                 if let Err(e) = crate::monolith_config::validate_monolith_section(&f.monolith) {
                     items.push(fail("monolith", e.to_string()));
                 } else {
-                    items.push(pass("monolith", "monolith.toml 格式正确"));
+                    items.push(pass("monolith", "monolith.toml format OK"));
                 }
             }
             Err(e) => items.push(fail("monolith", e.to_string())),
@@ -146,7 +146,7 @@ fn lint_monolith(root: &Path, items: &mut Vec<LintItem>) {
 
 fn lint_git_dirty(root: &Path, items: &mut Vec<LintItem>) {
     if !root.join(".git").exists() {
-        items.push(warn("git", "非 Git 仓库"));
+        items.push(warn("git", "not a Git repository"));
         return;
     }
     let out = std::process::Command::new("git")
@@ -157,12 +157,12 @@ fn lint_git_dirty(root: &Path, items: &mut Vec<LintItem>) {
         Ok(o) if o.status.success() => {
             let s = String::from_utf8_lossy(&o.stdout);
             if s.trim().is_empty() {
-                items.push(pass("git", "工作区干净"));
+                items.push(pass("git", "working tree clean"));
             } else {
-                items.push(warn("git", "存在未提交变更"));
+                items.push(warn("git", "uncommitted changes"));
             }
         }
-        _ => items.push(warn("git", "无法运行 git status")),
+        _ => items.push(warn("git", "cannot run git status")),
     }
 }
 

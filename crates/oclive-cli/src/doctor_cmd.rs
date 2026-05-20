@@ -10,19 +10,19 @@ use std::time::Duration;
 
 #[derive(Parser, Debug)]
 pub struct DoctorArgs {
-    /// 机器可读 JSON（`schema_version` + `checks[]`）
+    /// Machine-readable JSON (`schema_version` + `checks[]`)
     #[arg(long)]
     pub json: bool,
 
-    /// 工作区探针目录（默认可写性检查用当前目录）
+    /// Workspace probe directory (writable check; default: current directory)
     #[arg(short = 'o', long, default_value = ".")]
     pub path: PathBuf,
 
-    /// 对可自动修复项执行修复（交互确认）
+    /// Apply auto-fixable checks (interactive confirmation)
     #[arg(long)]
     pub fix: bool,
 
-    /// 与 `--fix` 联用：跳过确认
+    /// With `--fix`: skip confirmation prompts
     #[arg(long)]
     pub yes: bool,
 
@@ -141,7 +141,7 @@ fn apply_fixes(checks: &[DoctorCheck], yes: bool) -> Result<()> {
             true
         } else {
             Confirm::new()
-                .with_prompt(format!("修复 [{}]: 运行 `{label}`？", c.id))
+                .with_prompt(format!("Fix [{}]: run `{label}`?", c.id))
                 .default(true)
                 .interact()?
         };
@@ -154,16 +154,16 @@ fn apply_fixes(checks: &[DoctorCheck], yes: bool) -> Result<()> {
         }
         let st = Command::new(&cmd[0]).args(&cmd[1..]).status();
         match st {
-            Ok(s) if s.success() => println!("  ✓ 已执行: {label}"),
-            Ok(s) => println!("  ⚠ 命令退出码 {:?}: {label}", s.code()),
-            Err(e) => println!("  ⚠ 无法执行: {e}"),
+            Ok(s) if s.success() => println!("  ✓ Ran: {label}"),
+            Ok(s) => println!("  ⚠ Command exit code {:?}: {label}", s.code()),
+            Err(e) => println!("  ⚠ Could not run: {e}"),
         }
     }
     Ok(())
 }
 
 fn print_human(report: &DoctorReport) {
-    println!("oclive doctor — 环境诊断\n");
+    println!("oclive doctor — environment diagnostics\n");
     for c in &report.checks {
         let icon = match c.status.as_str() {
             "ok" => "✅",
@@ -177,9 +177,9 @@ fn print_human(report: &DoctorReport) {
     }
     println!();
     if report.ok {
-        println!("总结: 环境就绪，可执行 oclive init / cargo build。");
+        println!("Summary: environment ready; you can run oclive init / cargo build.");
     } else {
-        println!("总结: 存在失败项，请先修复后再初始化内核项目。");
+        println!("Summary: fix failed checks before initializing a kernel project.");
     }
 }
 
@@ -198,8 +198,8 @@ fn check_rust_toolchain() -> DoctorCheck {
                 return DoctorCheck {
                     id: "rust_toolchain".into(),
                     status: "warn".into(),
-                    message: format!("{ver} — 建议 Rust 1.70+"),
-                    detail: Some("可运行 rustup update stable".into()),
+                    message: format!("{ver} — Rust 1.70+ recommended"),
+                    detail: Some("Run: rustup update stable".into()),
                     fix_command: Some(vec![
                         "rustup".into(),
                         "update".into(),
@@ -217,8 +217,8 @@ fn check_rust_toolchain() -> DoctorCheck {
     DoctorCheck {
         id: "rust_toolchain".into(),
         status: "fail".into(),
-        message: "未检测到 Rust 工具链（rustc / rustup）".into(),
-        detail: Some("请安装 https://rustup.rs/".into()),
+        message: "Rust toolchain not found (rustc / rustup)".into(),
+        detail: Some("Install from https://rustup.rs/".into()),
         fix_command: None,
     }
 }
@@ -238,11 +238,11 @@ fn check_cargo() -> DoctorCheck {
         DoctorCheck {
             id: "cargo".into(),
             status: "fail".into(),
-            message: "未检测到 cargo".into(),
+            message: "cargo not found".into(),
             detail: if cfg!(windows) {
-                Some("请安装 Rust: https://rustup.rs/ 或 Visual Studio Build Tools".into())
+                Some("Install Rust: https://rustup.rs/ or Visual Studio Build Tools".into())
             } else {
-                Some("请安装: curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh".into())
+                Some("Install: curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh".into())
             },
             fix_command: None,
         }
@@ -252,14 +252,14 @@ fn check_cargo() -> DoctorCheck {
 fn check_cpp_toolchain() -> DoctorCheck {
     if cfg!(windows) {
         if run_capture(&mut Command::new("cl")).is_some() {
-            return DoctorCheck::ok("cpp_toolchain", "MSVC cl 可用");
+            return DoctorCheck::ok("cpp_toolchain", "MSVC cl available");
         }
         return DoctorCheck {
             id: "cpp_toolchain".into(),
             status: "warn".into(),
-            message: "未检测到 MSVC cl（部分 native 依赖可能需要）".into(),
+            message: "MSVC cl not found (some native deps may need it)".into(),
             detail: Some(
-                "请安装 Visual Studio Build Tools（C++ 工作负载）或 rustup default stable-msvc"
+                "Install Visual Studio Build Tools (C++ workload) or: rustup default stable-msvc"
                     .into(),
             ),
             fix_command: None,
@@ -268,12 +268,12 @@ fn check_cpp_toolchain() -> DoctorCheck {
     if run_capture(Command::new("cc").arg("--version")).is_some()
         || run_capture(Command::new("g++").arg("--version")).is_some()
     {
-        return DoctorCheck::ok("cpp_toolchain", "C/C++ 编译器可用");
+        return DoctorCheck::ok("cpp_toolchain", "C/C++ compiler available");
     }
     DoctorCheck {
         id: "cpp_toolchain".into(),
         status: "warn".into(),
-        message: "未检测到 cc/g++".into(),
+        message: "cc/g++ not found".into(),
         detail: Some("Linux: sudo apt install build-essential · macOS: xcode-select --install".into()),
         fix_command: None,
     }
@@ -289,8 +289,8 @@ fn check_system_memory() -> DoctorCheck {
     if total < 4096 {
         DoctorCheck::warn(
             "system_memory",
-            format!("{msg} — 低于 4 GiB 建议"),
-            Some("Monolith 双 release 构建可能吃满内存".into()),
+            format!("{msg} — below 4 GiB recommended"),
+            Some("Dual Monolith release builds can use a lot of RAM".into()),
         )
     } else {
         DoctorCheck::ok("system_memory", msg)
@@ -306,9 +306,9 @@ fn check_disk_space(path: &Path) -> DoctorCheck {
                 DoctorCheck {
                     id: "disk_space".into(),
                     status: "warn".into(),
-                    message: format!("{msg} — 低于 1 GiB"),
+                    message: format!("{msg} — below 1 GiB"),
                     detail: Some(
-                        "建议: 清理 target/、bench_results/ 或增大磁盘（无法自动删除）".into(),
+                        "Suggestion: clean target/, bench_results/, or free disk space (cannot auto-delete)".into(),
                     ),
                     fix_command: Some(vec!["echo".into(), "manual_cleanup".into()]),
                 }
@@ -318,7 +318,7 @@ fn check_disk_space(path: &Path) -> DoctorCheck {
         }
         Err(e) => DoctorCheck::warn(
             "disk_space",
-            "无法读取可用磁盘空间",
+            "Could not read available disk space",
             Some(e.to_string()),
         ),
     }
@@ -331,7 +331,7 @@ fn check_ollama() -> DoctorCheck {
             if resp.status() != 200 {
                 return DoctorCheck::fail(
                     "ollama",
-                    format!("Ollama 响应 HTTP {}", resp.status()),
+                    format!("Ollama returned HTTP {}", resp.status()),
                     None,
                 );
             }
@@ -340,13 +340,13 @@ fn check_ollama() -> DoctorCheck {
                 .ok()
                 .and_then(|v| v.get("models").and_then(|m| m.as_array()).map(|a| a.len()))
                 .unwrap_or(0);
-            DoctorCheck::ok("ollama", format!("已运行，{n} 个模型"))
+            DoctorCheck::ok("ollama", format!("running, {n} model(s)"))
         }
         Err(e) => DoctorCheck {
             id: "ollama".into(),
             status: "fail".into(),
-            message: "Ollama 未运行或不可达（127.0.0.1:11434）".into(),
-            detail: Some(format!("{e}；纯 remote LLM 可忽略")),
+            message: "Ollama not running or unreachable (127.0.0.1:11434)".into(),
+            detail: Some(format!("{e}; safe to ignore if using remote LLM only")),
             fix_command: if cfg!(windows) {
                 Some(vec![
                     "powershell".into(),
@@ -363,15 +363,15 @@ fn check_ollama() -> DoctorCheck {
 fn check_network_github() -> DoctorCheck {
     let agent = ureq::AgentBuilder::new().timeout(Duration::from_secs(5)).build();
     match agent.get("https://github.com").call() {
-        Ok(resp) if resp.status() == 200 => DoctorCheck::ok("network", "https://github.com 可达"),
+        Ok(resp) if resp.status() == 200 => DoctorCheck::ok("network", "https://github.com reachable"),
         Ok(resp) => DoctorCheck::warn(
             "network",
-            format!("GitHub 响应 HTTP {}", resp.status()),
+            format!("GitHub returned HTTP {}", resp.status()),
             None,
         ),
         Err(e) => DoctorCheck::fail(
             "network",
-            "无法访问 https://github.com",
+            "Cannot reach https://github.com",
             Some(e.to_string()),
         ),
     }
@@ -483,14 +483,14 @@ fn check_workspace_writable(path: &Path) -> DoctorCheck {
     match fs::write(&probe, b"ok") {
         Ok(()) => {
             let _ = fs::remove_file(&probe);
-            DoctorCheck::ok("workspace_writable", format!("{} 可写", probe_dir.display()))
+            DoctorCheck::ok("workspace_writable", format!("{} is writable", probe_dir.display()))
         }
         Err(e) => DoctorCheck {
             id: "workspace_writable".into(),
             status: "fail".into(),
-            message: format!("{} 不可写", probe_dir.display()),
+            message: format!("{} is not writable", probe_dir.display()),
             detail: Some(format!(
-                "{e}；请检查目录权限或换可写路径（Windows: 以管理员运行或修改 ACL）"
+                "{e}; check permissions or use a writable path (Windows: run as admin or adjust ACL)"
             )),
             fix_command: Some(vec!["echo".into(), "fix_permissions".into()]),
         },

@@ -21,9 +21,9 @@ pub enum MarketKind {
 impl MarketKind {
     pub fn label(self) -> &'static str {
         match self {
-            Self::Plugin => "插件",
-            Self::Template => "模板",
-            Self::RolePack => "角色包",
+            Self::Plugin => "plugin",
+            Self::Template => "template",
+            Self::RolePack => "role pack",
         }
     }
 
@@ -137,7 +137,7 @@ pub fn fetch_market_index() -> Result<MarketIndexFile> {
         }
         Err(e) => {
             if let Ok(cached) = load_cache() {
-                eprintln!("⚠ 在线索引失败 ({e})，使用缓存 {}", cache_path().display());
+                eprintln!("⚠ Online index failed ({e}); using cache {}", cache_path().display());
                 return Ok(cached);
             }
             Err(e)
@@ -148,7 +148,7 @@ pub fn fetch_market_index() -> Result<MarketIndexFile> {
 pub fn fetch_online(url: &str) -> Result<MarketIndexFile> {
     let body = ureq::get(url)
         .call()
-        .map_err(|e| anyhow::anyhow!("拉取市场索引失败: {e}"))?
+        .map_err(|e| anyhow::anyhow!("failed to fetch market index: {e}"))?
         .into_string()?;
     parse_index_json(&body)
 }

@@ -1,4 +1,4 @@
-//! `oclive config` — 全局与工程级配置。
+//! `oclive config` — global and project-level configuration.
 
 use anyhow::{bail, Result};
 use clap::{Parser, Subcommand};
@@ -20,7 +20,7 @@ pub enum ConfigCommands {
     Get(ConfigGetArgs),
     List(ConfigListArgs),
     Unset(ConfigUnsetArgs),
-    /// 交互式配置向导（并导入当前环境变量中未持久化的 OCLIVE_*）
+    /// Interactive config wizard (imports unset OCLIVE_* from the environment)
     Init(ConfigInitArgs),
 }
 
@@ -93,7 +93,7 @@ fn scope_global(args_global: bool, args_local: bool) -> bool {
 fn run_set(args: ConfigSetArgs) -> Result<()> {
     let global = scope_global(args.global, args.local);
     let path = config::set_key(&args.key, &args.value, global, project_root().as_deref())?;
-    println!("已写入 {}: {}={}", path.display(), args.key, args.value);
+    println!("Wrote {}: {}={}", path.display(), args.key, args.value);
     Ok(())
 }
 
@@ -113,7 +113,7 @@ fn run_get(args: ConfigGetArgs) -> Result<()> {
         println!("{v}");
         return Ok(());
     }
-    bail!("未配置: {}", args.key);
+    bail!("Not configured: {}", args.key);
 }
 
 fn run_list(args: ConfigListArgs) -> Result<()> {
@@ -140,19 +140,25 @@ fn run_list(args: ConfigListArgs) -> Result<()> {
 fn run_unset(args: ConfigUnsetArgs) -> Result<()> {
     let global = scope_global(args.global, args.local);
     let path = config::unset_key(&args.key, global, project_root().as_deref())?;
-    println!("已从 {} 删除 {}", path.display(), args.key);
+    println!("Removed {} from {}", args.key, path.display());
     Ok(())
 }
 
 fn run_init(_args: ConfigInitArgs) -> Result<()> {
     let n = config::import_env_to_global()?;
     if n > 0 {
-        println!("已从环境变量导入 {n} 项到 {}", config::global_config_path().display());
+        println!(
+            "Imported {n} key(s) from environment into {}",
+            config::global_config_path().display()
+        );
     }
     let theme = ColorfulTheme::default();
     for key in KNOWN_KEYS {
         let current = config::resolve(key, None).unwrap_or_default();
-        let label = format!("{key}（当前: {}）", if current.is_empty() { "—" } else { &current });
+        let label = format!(
+            "{key} (current: {})",
+            if current.is_empty() { "—" } else { &current }
+        );
         let val: String = Input::with_theme(&theme)
             .with_prompt(&label)
             .default(current)
@@ -163,24 +169,24 @@ fn run_init(_args: ConfigInitArgs) -> Result<()> {
         }
     }
     let more = Confirm::with_theme(&theme)
-        .with_prompt("是否继续添加其他 OCLIVE_* 键？")
+        .with_prompt("Add more OCLIVE_* keys?")
         .default(false)
         .interact()?;
     if more {
         loop {
             let key: String = Input::with_theme(&theme)
-                .with_prompt("键名（留空结束）")
+                .with_prompt("Key name (empty to finish)")
                 .allow_empty(true)
                 .interact_text()?;
             if key.trim().is_empty() {
                 break;
             }
             let val: String = Input::with_theme(&theme)
-                .with_prompt("值")
+                .with_prompt("Value")
                 .interact_text()?;
             config::set_key(key.trim(), val.trim(), true, None)?;
         }
     }
-    println!("配置已保存至 {}", config::global_config_path().display());
+    println!("Config saved to {}", config::global_config_path().display());
     Ok(())
 }

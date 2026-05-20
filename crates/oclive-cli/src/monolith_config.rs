@@ -56,18 +56,18 @@ pub fn validate_monolith_section(m: &MonolithSection) -> Result<()> {
     let known: HashSet<&str> = SLOT_IDS.iter().copied().collect();
     if !m.weld_modules.is_empty() && !m.exclude.is_empty() {
         bail!(
-            "monolith.toml: `weld_modules` 与 `exclude` 不能同时非空；请二选一：\
-             显式列表焊接，或 `weld_modules = []` 配合 `exclude` 做「全焊再排除」。"
+            "monolith.toml: `weld_modules` and `exclude` cannot both be non-empty; pick one: \
+             explicit weld list, or `weld_modules = []` with `exclude` for weld-all-then-exclude."
         );
     }
     for w in &m.weld_modules {
         if !known.contains(w.as_str()) {
-            bail!("monolith.toml: 未知槽位 `{w}`（合法值: memory, emotion, event, prompt, llm, agent, complex_emotion）");
+            bail!("monolith.toml: unknown slot `{w}` (valid: memory, emotion, event, prompt, llm, agent, complex_emotion)");
         }
     }
     for e in &m.exclude {
         if !known.contains(e.as_str()) {
-            bail!("monolith.toml: exclude 含未知槽位 `{e}`");
+            bail!("monolith.toml: exclude contains unknown slot `{e}`");
         }
     }
     Ok(())

@@ -17,18 +17,18 @@ pub struct TemplateCli {
 
 #[derive(Subcommand, Debug)]
 pub enum TemplateCommands {
-    /// 从当前工程反向生成可复用模板
+    /// Create a reusable template from the current project
     Create(TemplateCreateArgs),
-    /// 将工程打包为 `.oclive-template.tar.gz`（推荐路径；原 `oclive publish`）
+    /// Pack project as `.oclive-template.tar.gz` (preferred; replaces `oclive publish`)
     Pack(TemplatePackArgs),
 }
 
 #[derive(Parser, Debug)]
 pub struct TemplatePackArgs {
-    /// 工程根目录（默认当前目录）
+    /// Project root (default: current directory)
     #[arg(short = 'o', long, default_value = ".")]
     pub path: PathBuf,
-    /// 输出文件（默认 ./<package>-<version>.oclive-template.tar.gz）
+    /// Output file (default: ./<package>-<version>.oclive-template.tar.gz)
     #[arg(short = 'O', long)]
     pub output: Option<PathBuf>,
 }
@@ -60,16 +60,16 @@ pub fn run_create(args: TemplateCreateArgs) -> Result<()> {
     let dest = lib_dir.join(format!("{}.oclive-template.tar.gz", args.name));
     fs::copy(&out, &dest).with_context(|| format!("copy to {}", dest.display()))?;
     register_local_template(&args.name, &dest, &meta)?;
-    println!("已生成模板包: {}", out.display());
-    println!("已注册本地模板库: {}", dest.display());
-    println!("使用: oclive init --template-url file://{}", dest.display());
+    println!("Template package written: {}", out.display());
+    println!("Registered in local template library: {}", dest.display());
+    println!("Use: oclive init --template-url file://{}", dest.display());
     Ok(())
 }
 
 fn analyze_project(root: &Path, args: &TemplateCreateArgs) -> Result<TemplateManifest> {
     let cargo_toml = root.join("Cargo.toml");
     if !cargo_toml.is_file() {
-        bail!("缺少 Cargo.toml");
+        bail!("Missing Cargo.toml");
     }
     let (pkg_name, version) = read_package_meta(&cargo_toml)?;
     let project_type = if root.join("src/main.rs").is_file() {

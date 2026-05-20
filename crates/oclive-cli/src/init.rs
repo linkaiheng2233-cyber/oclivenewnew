@@ -10,90 +10,46 @@ use clap::Parser;
 use serde::{Deserialize, Serialize};
 use std::path::PathBuf;
 
-/// `init --help` / `init -h` 末尾：预设与 `plugin_backends` 矩阵（与生成项目内 `CONFIG_REFERENCE.md` 一致）。
-pub const PRESET_MATRIX_HELP: &str = r#"预设与 plugin_backends（逻辑槽位）
-
-┌───────────────────┬─────────┬─────────┬────────┐
-│ 槽位              │ minimal │ mixed   │ full   │
-├───────────────────┼─────────┼─────────┼────────┤
-│ memory            │ builtin │ builtin │ builtin│
-│ emotion           │ builtin │ builtin │ builtin│
-│ event             │ builtin │ builtin │ builtin│
-│ prompt            │ builtin │ builtin │ builtin│
-│ llm               │ ollama  │ ollama  │ remote │
-│ agent             │ none*   │ builtin │ builtin│
-│ complex_emotion   │ none    │ builtin │ remote │
-└───────────────────┴─────────┴─────────┴────────┘
-
-* agent = none：写入 settings.json 时省略 agent 键（内核无 none 枚举；加载时回退默认 builtin）。
-
-llm 使用 ollama 表示进程内默认本地客户端；无本机模型时请改为 remote 并配置 OCLIVE_REMOTE_LLM_URL（见 PLUGIN_V1）。
-
-开发者编译选项：非交互可加 **`--monolith`**（仅 kernel_server）；交互流程末尾询问。生成 `monolith.toml`（由 init 生成、**`oclive build`** 读取并再生成 `process_message_monolith.rs`）。子命令 **`build`** / **`bench`** 见 **`cargo run -p oclive-cli -- --help`**。详见 creator-docs/rfc/RFC_OCLIVE_MONOLITH_MODE.md。
-
-内核工厂模板（`--template`，与 `--preset` / `--project-type` / `--monolith` 可叠加；显式 CLI 参数优先）：
-
-┌─────────────────┬─────────┬──────────────────┬────────────────┬──────────────────────────────┐
-│ template        │ preset  │ monolith 默认    │ project-type   │ 默认 --with-role-pack        │
-├─────────────────┼─────────┼──────────────────┼────────────────┼──────────────────────────────┤
-│ robot-soul      │ minimal │ 启用             │ kernel_server  │ robot-soul-minimal           │
-│ robot-gateway   │ mixed   │ 启用             │ kernel_server  │ gateway 骨架 + mcp_servers/  │
-│ dialogue-only   │ full    │ 关闭（可加 --monolith） │ kernel_server  │ default（通用示例）          │
-│ headless-api    │ full    │ 关闭（可加 --monolith） │ kernel_server  │ 无（空 roles/）              │
-│ library-embed   │ minimal │ 关闭             │ library        │ 无                           │
-└─────────────────┴─────────┴──────────────────┴────────────────┴──────────────────────────────┘
-
-`--monolith-preset`（仅 `--monolith` 或模板默认启用 Monolith 时生效）：`latency`（七槽全焊）| `memory`（memory+prompt+llm）| `embedded`（emotion+memory+llm）。生成 `monolith.toml` 的 `weld_modules` 可事后手改。
-
-`--with-role-pack`：`robot-soul-minimal` | `default`；未指定且未用模板时，非交互仍生成通用 `roles/default`（与历史行为一致）。`--skip-role-pack` 强制不生成 `roles/`。
-
-`--with-example-plugin`：复制主仓 `examples/directory-plugin-llamacpp/` 到 `plugins/com.oclive.example.llamacpp_llm/`（默认关闭）。
-
-`--list-templates`：打印上表模板矩阵后退出（不生成工程）。
-
-`--monolith-bench-preset`（仅 Monolith 启用时）：生成后自动 `cargo build --release`（双二进制）并 `bench --runs 5`，结果写入 `bench_results/report.json`；失败不阻塞生成。
-
-`--quick` / `-q`：极速模式（preset=full、无 Monolith、无角色包、不接真内核）；交互时仅问项目名与输出目录。
-"#;
+pub use crate::cli_english_init::PRESET_MATRIX_HELP;
 
 #[derive(Parser, Debug, Clone)]
 pub struct InitArgs {
-    /// 输出目录（将创建该目录并写入新项目）
+    /// Output directory (created and populated with the new project)
     #[arg(short = 'o', long, default_value = "generated-kernel")]
     pub output: PathBuf,
 
-    /// 极速模式：full 预设、无 Monolith、无角色包；交互仅问项目名与输出目录
+    /// Quick mode: full preset, no Monolith, no role pack; interactive prompts only project name and output dir
     #[arg(short = 'q', long)]
     pub quick: bool,
 
-    /// 非交互模式（与 --preset 联用）
+    /// Non-interactive mode (use with --preset)
     #[arg(long)]
     pub non_interactive: bool,
 
-    /// 跳过配置摘要与完成提示（脚本 / 测试用）
+    /// Skip config summary and completion hints (for scripts / tests)
     #[arg(long)]
     pub quiet: bool,
 
-    /// 打印内核工厂模板矩阵后退出（不写入输出目录）
+    /// Print kernel factory template matrix and exit (do not write output directory)
     #[arg(long)]
     pub list_templates: bool,
 
-    /// 内核工厂模板：robot-soul | robot-gateway | dialogue-only | headless-api | library-embed
+    /// Kernel factory template: robot-soul | robot-gateway | dialogue-only | headless-api | library-embed
     #[arg(long, value_enum)]
     pub template: Option<InitTemplateArg>,
 
-    /// 预设：minimal | full | mixed
+    /// Preset: minimal | full | mixed
     #[arg(long)]
     pub preset: Option<String>,
 
     #[arg(long, default_value = "my_oclive_kernel")]
     pub project_name: String,
 
-    /// 项目类型（非交互时必填；交互时可省略）
+    /// Project type (required in non-interactive mode; optional in interactive mode)
     #[arg(long, value_enum)]
     pub project_type: Option<ProjectTypeArg>,
 
-    /// 覆盖 memory 槽（缺省沿用 `--preset`）
+    /// Override memory slot (defaults to `--preset`)
     #[arg(long, value_enum)]
     pub backend_memory: Option<BackendImpl>,
 
@@ -115,59 +71,59 @@ pub struct InitArgs {
     #[arg(long, value_enum)]
     pub backend_complex_emotion: Option<BackendImpl>,
 
-    /// 非交互：启用 Monolith（仅 `kernel_server` 生效；生成 `monolith.toml`、`vendor/`、焊接源码与双 `[[bin]]`）
+    /// Non-interactive: enable Monolith (kernel_server only; writes monolith.toml, vendor/, welded sources, dual [[bin]])
     #[arg(long)]
     pub monolith: bool,
 
-    /// Monolith 焊接档位（仅 Monolith 启用时写入 monolith.toml 的 weld_modules）
+    /// Monolith weld tier (written to monolith.toml weld_modules when Monolith is enabled)
     #[arg(long, value_enum)]
     pub monolith_preset: Option<MonolithPresetArg>,
 
-    /// 生成后自动跑 Monolith vs 标准 bench（5 轮）；同时可设定焊接档位（等同 --monolith-preset）
+    /// After generation, auto-run Monolith vs standard bench (5 runs); also sets weld tier (same as --monolith-preset)
     #[arg(long, value_enum)]
     pub monolith_bench_preset: Option<MonolithPresetArg>,
 
-    /// 非交互：不在生成项目中写入 `roles/` 示例角色包
+    /// Non-interactive: do not write example role packs under `roles/`
     #[arg(long)]
     pub skip_role_pack: bool,
 
-    /// 生成示例角色包：robot-soul-minimal | default（未指定时由 --template 或历史默认决定）
+    /// Example role pack: robot-soul-minimal | default (defaults from --template or historical default)
     #[arg(long, value_enum)]
     pub with_role_pack: Option<RolePackKindArg>,
 
-    /// 附带 llamacpp 目录插件示例到 plugins/com.oclive.example.llamacpp_llm/
+    /// Include llamacpp directory plugin example at plugins/com.oclive.example.llamacpp_llm/
     #[arg(long)]
     pub with_example_plugin: bool,
 
-    /// 指向 oclivenewnew 仓库根：生成项目写入 `oclivenewnew-tauri` / `oclive_kernel_runtime` path 依赖
+    /// Path to oclivenewnew repo root: generated project uses path deps on oclivenewnew-tauri / oclive_kernel_runtime
     #[arg(long)]
     pub kernel_source: Option<PathBuf>,
 
-    /// 写入生成 `Cargo.toml` 的 `[package].authors`
+    /// Write `[package].authors` in generated Cargo.toml
     #[arg(long)]
     pub author: Option<String>,
 
-    /// 写入 `[package].license`（默认 MIT）
+    /// Write `[package].license` (default MIT)
     #[arg(long)]
     pub license: Option<String>,
 
-    /// 写入 `[package].description`（留空则不写入）
+    /// Write `[package].description` (omit if empty)
     #[arg(long)]
     pub description: Option<String>,
 
-    /// 从 URL 下载 `.oclive-template.tar.gz` 并解压到输出目录
+    /// Download `.oclive-template.tar.gz` from URL and extract to output directory
     #[arg(long)]
     pub template_url: Option<String>,
 
-    /// 使用终端 TUI 选择内核工厂模板（不支持时回退 dialoguer）
+    /// Pick kernel factory template via terminal TUI (falls back to dialoguer if unavailable)
     #[arg(long)]
     pub tui: bool,
 
-    /// 自定义编排顺序：default | emotion-first | memory-last
+    /// Custom pipeline order: default | emotion-first | memory-last
     #[arg(long, value_enum, default_value_t = PipelineArg::Default)]
     pub pipeline: PipelineArg,
 
-    /// TUI 自定义 Monolith 焊接槽位（逗号分隔，覆盖 monolith-preset）
+    /// TUI custom Monolith weld slots (comma-separated; overrides monolith-preset)
     #[arg(long, value_delimiter = ',')]
     pub weld_modules: Vec<String>,
 
@@ -184,7 +140,7 @@ pub struct InitArgs {
     pub json: bool,
 }
 
-/// 内核工厂套餐（`--template`）。
+/// Kernel factory recipe (`--template`).
 #[derive(clap::ValueEnum, Clone, Debug, Copy, PartialEq, Eq, Serialize, Deserialize)]
 #[serde(rename_all = "kebab-case")]
 #[clap(rename_all = "kebab-case")]
@@ -196,7 +152,7 @@ pub enum InitTemplateArg {
     LibraryEmbed,
 }
 
-/// Monolith 性能档位（`--monolith-preset`）。
+/// Monolith performance tier (`--monolith-preset`).
 #[derive(clap::ValueEnum, Clone, Debug, Copy, PartialEq, Eq, Serialize, Deserialize)]
 #[serde(rename_all = "kebab-case")]
 #[clap(rename_all = "kebab-case")]
@@ -206,7 +162,7 @@ pub enum MonolithPresetArg {
     Embedded,
 }
 
-/// 示例角色包种类（`--with-role-pack`）。
+/// Example role pack kind (`--with-role-pack`).
 #[derive(clap::ValueEnum, Clone, Debug, Copy, PartialEq, Eq)]
 #[clap(rename_all = "kebab-case")]
 pub enum RolePackKindArg {
@@ -292,7 +248,7 @@ pub enum BackendImpl {
     Builtin,
     Remote,
     Directory,
-    /// 仅 `llm` 槽合法；对应主应用 `LlmBackend::Ollama`。
+    /// Valid only for the `llm` slot; maps to host `LlmBackend::Ollama`.
     Ollama,
     None,
 }
@@ -378,11 +334,11 @@ pub struct ProjectConfig {
 
 impl ProjectConfig {
     pub fn print_summary(&self) {
-        println!("—— 配置摘要 ——");
-        println!("项目名: {}", self.project_name);
-        println!("类型: {:?}", self.project_type);
+        println!("—— Configuration summary ——");
+        println!("Project name: {}", self.project_name);
+        println!("Type: {:?}", self.project_type);
         println!(
-            "后端: memory={:?} emotion={:?} event={:?} prompt={:?} llm={:?} agent={:?} complex_emotion={:?}",
+            "Backends: memory={:?} emotion={:?} event={:?} prompt={:?} llm={:?} agent={:?} complex_emotion={:?}",
             self.backends.memory,
             self.backends.emotion,
             self.backends.event,
@@ -392,18 +348,18 @@ impl ProjectConfig {
             self.backends.complex_emotion
         );
         println!(
-            "插件: directory={} kernel_server_doc={} oocp_doc={}",
+            "Plugins: directory={} kernel_server_doc={} oocp_doc={}",
             self.plugins.directory_plugins, self.plugins.kernel_server, self.plugins.oocp
         );
         println!(
-            "角色包模板: {}",
+            "Role pack template: {}",
             if self.skip_role_pack {
-                "无（不生成 roles/）"
+                "none (no roles/)"
             } else {
                 match self.role_pack_kind {
-                    RolePackKind::None => "无（不生成 roles/）",
-                    RolePackKind::DefaultExample => "default（通用示例 roles/default）",
-                    RolePackKind::RobotSoulMinimal => "robot-soul-minimal（七维 + prompts/system.md）",
+                    RolePackKind::None => "none (no roles/)",
+                    RolePackKind::DefaultExample => "default (example roles/default)",
+                    RolePackKind::RobotSoulMinimal => "robot-soul-minimal (seven dims + prompts/system.md)",
                 }
             }
         );
@@ -411,22 +367,22 @@ impl ProjectConfig {
             let preset = self
                 .monolith_preset
                 .map(|p| format!("{p:?}"))
-                .unwrap_or_else(|| "默认（七槽全焊）".into());
+                .unwrap_or_else(|| "default (all seven slots welded)".into());
             println!(
-                "开发者编译: Monolith（焊接档位: {preset}；见 monolith.toml；`oclive build` 再生成）"
+                "Developer build: Monolith (weld tier: {preset}; see monolith.toml; run `oclive build` to regenerate)"
             );
         }
         if self.with_example_plugin {
-            println!("示例插件: plugins/com.oclive.example.llamacpp_llm/");
+            println!("Example plugin: plugins/com.oclive.example.llamacpp_llm/");
         }
         if let Some(t) = self.factory_template {
-            println!("工厂模板: {t:?}");
+            println!("Factory template: {t:?}");
         }
         if self.run_monolith_bench_after_init {
-            println!("生成后: 自动 Monolith bench（5 轮）→ bench_results/report.json");
+            println!("After generation: auto Monolith bench (5 runs) → bench_results/report.json");
         }
         if let Some(ks) = &self.kernel_source {
-            println!("内核源码: {}（已接 runtime / HTTP 入口）", ks.display());
+            println!("Kernel source: {} (runtime / HTTP entry wired)", ks.display());
         }
         println!("——————————————");
     }
@@ -657,13 +613,13 @@ fn run_quick_init(args: &InitArgs) -> Result<()> {
     let mut output = args.output.clone();
     if !args.non_interactive {
         project_name = dialoguer::Input::with_theme(&dialoguer::theme::ColorfulTheme::default())
-            .with_prompt("项目名（极速模式）")
+            .with_prompt("Project name (quick mode)")
             .default(project_name)
             .interact_text()
             .context("quick project name")?;
         let out_default = output.display().to_string();
         let out_str: String = dialoguer::Input::with_theme(&dialoguer::theme::ColorfulTheme::default())
-            .with_prompt("输出目录")
+            .with_prompt("Output directory")
             .default(out_default)
             .interact_text()
             .context("quick output")?;
@@ -674,15 +630,15 @@ fn run_quick_init(args: &InitArgs) -> Result<()> {
     apply_cargo_metadata_cli(&mut cfg, args);
     ensure_cargo_license_default(&mut cfg);
     if !args.quiet {
-        println!("—— 极速模式（--quick）——");
-        println!("preset=full，Monolith=关，无 roles/，未接 --kernel-source");
+        println!("—— Quick mode (--quick) ——");
+        println!("preset=full, Monolith=off, no roles/, no --kernel-source");
         cfg.print_summary();
     }
     generator::write_project(&cfg, &output)?;
     if !args.quiet {
-        println!("已生成: {}", output.display());
-        println!("建议下一步: cargo run -p oclive-cli -- doctor");
-        println!("  然后 cd {} && cargo build && cargo run --release", output.display());
+        println!("Generated: {}", output.display());
+        println!("Suggested next: cargo run -p oclive-cli -- doctor");
+        println!("  then cd {} && cargo build && cargo run --release", output.display());
     }
     Ok(())
 }
@@ -699,7 +655,7 @@ pub fn run(args: InitArgs) -> Result<()> {
 
     if let Some(ref url) = args.template_url {
         if args.output.exists() {
-            anyhow::bail!("输出目录已存在: {}", args.output.display());
+            anyhow::bail!("Output directory already exists: {}", args.output.display());
         }
         return crate::publish_cmd::init_from_template_url(url, &args.output);
     }
@@ -751,7 +707,7 @@ pub fn run(args: InitArgs) -> Result<()> {
             cfg.monolith_preset = cfg.monolith_preset.or(args.monolith_bench_preset);
             cfg.run_monolith_bench_after_init = cfg.monolith_enabled;
         } else if !args.quiet {
-            eprintln!("⚠ --monolith-bench-preset 仅对 kernel_server 生效，已忽略。");
+            eprintln!("⚠ --monolith-bench-preset applies only to kernel_server; ignored.");
         }
     }
     cfg.factory_template = args.template;
@@ -790,12 +746,12 @@ pub fn run(args: InitArgs) -> Result<()> {
     if !args.non_interactive {
         cfg.print_summary();
         if !dialoguer::Confirm::with_theme(&dialoguer::theme::ColorfulTheme::default())
-            .with_prompt("确认生成到该目录？")
+            .with_prompt("Generate project in this directory?")
             .default(true)
             .interact()
             .context("confirm")?
         {
-            println!("已取消。");
+            println!("Cancelled.");
             return Ok(());
         }
     } else if !args.quiet {
@@ -804,7 +760,7 @@ pub fn run(args: InitArgs) -> Result<()> {
 
     generator::write_project(&cfg, &args.output)?;
     if let Err(e) = crate::registry::register_after_init(&cfg, &args.output) {
-        eprintln!("⚠ 注册到本地 registry 失败: {e}");
+        eprintln!("⚠ Failed to register in local registry: {e}");
     }
     if cfg.run_monolith_bench_after_init {
         crate::init_bench::try_post_init_monolith_bench(&args.output);
@@ -812,27 +768,27 @@ pub fn run(args: InitArgs) -> Result<()> {
     if !args.quiet {
         if cfg.monolith_enabled && matches!(cfg.project_type, ProjectType::KernelServer) {
             let slug = crate::generator::project_slug(&cfg);
-            println!("✓ 项目已创建！");
-            println!("  标准模式二进制: target/release/{slug}");
-            println!("  高耦合模式二进制: target/release/{slug}-monolith");
-            println!("  配置文件: monolith.toml");
+            println!("✓ Project created!");
+            println!("  Standard binary: target/release/{slug}");
+            println!("  Monolith binary: target/release/{slug}-monolith");
+            println!("  Config file: monolith.toml");
             println!(
-                "  修改焊接计划后: 于项目根执行 oclive build（或 cargo run -p oclive-cli -- build -o {}）",
+                "  After changing weld plan: run oclive build at project root (or cargo run -p oclive-cli -- build -o {})",
                 args.output.display()
             );
             println!(
-                "  性能对比: oclive bench --release -o {}",
+                "  Performance compare: oclive bench --release -o {}",
                 args.output.display()
             );
-            println!("  详细说明: 参见 creator-docs/rfc/RFC_OCLIVE_MONOLITH_MODE.md");
-            println!("输出目录: {}", args.output.display());
+            println!("  Details: see creator-docs/rfc/RFC_OCLIVE_MONOLITH_MODE.md");
+            println!("Output directory: {}", args.output.display());
         } else {
             println!(
-                "已生成项目: {} （请在该目录执行 cargo build）",
+                "Generated project: {} (run cargo build in that directory)",
                 args.output.display()
             );
         }
-        println!("环境自检: cargo run -p oclive-cli -- doctor");
+        println!("Environment check: cargo run -p oclive-cli -- doctor");
     }
     Ok(())
 }

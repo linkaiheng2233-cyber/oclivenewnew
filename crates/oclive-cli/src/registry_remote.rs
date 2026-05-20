@@ -44,7 +44,7 @@ pub fn registry_base_url() -> Result<String> {
     if let Some(a) = load_auth()? {
         return Ok(a.registry_url.trim_end_matches('/').to_string());
     }
-    bail!("未配置云端注册表：请 `oclive registry login <url> <token>` 或 `oclive config set OCLIVE_REGISTRY_URL <url>`")
+    bail!("Cloud registry not configured: run `oclive registry login <url> <token>` or `oclive config set OCLIVE_REGISTRY_URL <url>`")
 }
 
 fn bearer_token() -> Result<String> {
@@ -53,7 +53,7 @@ fn bearer_token() -> Result<String> {
     }
     load_auth()?
         .map(|a| a.token)
-        .ok_or_else(|| anyhow::anyhow!("未登录：请 oclive registry login <url> <token>"))
+        .ok_or_else(|| anyhow::anyhow!("Not logged in: run oclive registry login <url> <token>"))
 }
 
 #[derive(Parser, Debug)]
@@ -104,7 +104,7 @@ struct RemoteList {
 
 pub fn run_login(args: RegistryLoginArgs) -> Result<()> {
     eprintln!(
-        "⚠ [deprecated] `oclive registry login` 请改用:\n  \
+        "⚠ [deprecated] `oclive registry login` — use:\n  \
          oclive config set OCLIVE_REGISTRY_URL <url> --global\n  \
          oclive config set OCLIVE_REGISTRY_TOKEN <token> --global"
     );
@@ -117,9 +117,9 @@ pub fn run_login(args: RegistryLoginArgs) -> Result<()> {
         registry_url: url.clone(),
         token: token.clone(),
     })?;
-    println!("已写入配置: {}", cfg_url.display());
-    println!("已写入配置: {}", cfg_token.display());
-    println!("（兼容）auth.json: {}", auth_path().display());
+    println!("Wrote config: {}", cfg_url.display());
+    println!("Wrote config: {}", cfg_token.display());
+    println!("(compat) auth.json: {}", auth_path().display());
     Ok(())
 }
 
@@ -127,9 +127,9 @@ pub fn run_logout() -> Result<()> {
     let p = auth_path();
     if p.is_file() {
         fs::remove_file(&p).context("remove auth.json")?;
-        println!("已登出云端注册表");
+        println!("Logged out of cloud registry");
     } else {
-        println!("（未登录）");
+        println!("(not logged in)");
     }
     Ok(())
 }
@@ -147,11 +147,11 @@ pub fn run_push(args: RegistryPushArgs) -> Result<()> {
         .set("Authorization", &format!("Bearer {token}"))
         .set("Content-Type", "application/gzip")
         .send_bytes(&bytes)
-        .map_err(|e| anyhow::anyhow!("push 失败: {e}"))?;
+        .map_err(|e| anyhow::anyhow!("push failed: {e}"))?;
     if !(200..300).contains(&resp.status()) {
         bail!("push HTTP {} — {}", resp.status(), resp.into_string().unwrap_or_default());
     }
-    println!("✓ 已推送工程 {} → {}", args.name, base);
+    println!("✓ Pushed project {} → {}", args.name, base);
     Ok(())
 }
 
@@ -163,7 +163,7 @@ pub fn run_pull(args: RegistryPullArgs) -> Result<()> {
         .clone()
         .unwrap_or_else(|| PathBuf::from(&args.name));
     if out.exists() {
-        bail!("输出目录已存在: {}", out.display());
+        bail!("Output directory already exists: {}", out.display());
     }
     fs::create_dir_all(&out)?;
     let url = format!(
@@ -174,7 +174,7 @@ pub fn run_pull(args: RegistryPullArgs) -> Result<()> {
     let resp = ureq::get(&url)
         .set("Authorization", &format!("Bearer {token}"))
         .call()
-        .map_err(|e| anyhow::anyhow!("pull 失败: {e}"))?;
+        .map_err(|e| anyhow::anyhow!("pull failed: {e}"))?;
     if !(200..300).contains(&resp.status()) {
         bail!("pull HTTP {} — {}", resp.status(), resp.into_string().unwrap_or_default());
     }
@@ -185,7 +185,7 @@ pub fn run_pull(args: RegistryPullArgs) -> Result<()> {
     std::io::copy(&mut reader, &mut file)?;
     publish_cmd::extract_tar_gz(&archive, &out)?;
     register_project(&args.name, &out, None)?;
-    println!("✓ 已拉取并注册 {} → {}", args.name, out.display());
+    println!("✓ Pulled and registered {} → {}", args.name, out.display());
     Ok(())
 }
 
@@ -200,7 +200,7 @@ pub fn run_search(args: RegistrySearchArgs) -> Result<()> {
     let resp = ureq::get(&url)
         .set("Authorization", &format!("Bearer {token}"))
         .call()
-        .map_err(|e| anyhow::anyhow!("search 失败: {e}"))?;
+        .map_err(|e| anyhow::anyhow!("search failed: {e}"))?;
     let body = resp.into_string().context("read body")?;
     if args.json {
         println!("{body}");
@@ -210,7 +210,7 @@ pub fn run_search(args: RegistrySearchArgs) -> Result<()> {
         projects: vec![],
     });
     if list.projects.is_empty() {
-        println!("（无匹配）");
+        println!("(no matches)");
         return Ok(());
     }
     for p in list.projects {
@@ -227,7 +227,7 @@ fn resolve_project_root(name: &str, path: Option<&Path>) -> Result<PathBuf> {
         return p.canonicalize().with_context(|| format!("path {}", p.display()));
     }
     let entry = crate::registry::find_entry(name)?
-        .ok_or_else(|| anyhow::anyhow!("本地注册表无工程 {name}；请 registry add 或 -o 指定路径"))?;
+        .ok_or_else(|| anyhow::anyhow!("No project {name} in local registry; use registry add or -o with a path"))?;
     PathBuf::from(&entry.path)
         .canonicalize()
         .with_context(|| format!("registry path {}", entry.path))

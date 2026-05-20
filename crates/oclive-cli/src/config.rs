@@ -87,7 +87,7 @@ pub fn set_key(key: &str, value: &str, global: bool, project_root: Option<&Path>
     let path = if global {
         global_config_path()
     } else {
-        let root = project_root.context("工程级配置需指定项目目录（当前目录）")?;
+        let root = project_root.context("project-level config requires a project directory (cwd)")?;
         local_config_path(root)
     };
     let mut map = load_toml_map(&path)?;
@@ -100,7 +100,7 @@ pub fn unset_key(key: &str, global: bool, project_root: Option<&Path>) -> Result
     let path = if global {
         global_config_path()
     } else {
-        let root = project_root.context("工程级配置需指定项目目录")?;
+        let root = project_root.context("project-level config requires a project directory")?;
         local_config_path(root)
     };
     let mut map = load_toml_map(&path)?;
@@ -113,7 +113,7 @@ pub fn get_key(key: &str, global: bool, project_root: Option<&Path>) -> Result<O
     if global {
         Ok(load_toml_map(&global_config_path())?.get(key).cloned())
     } else {
-        let root = project_root.context("工程级配置需指定项目目录")?;
+        let root = project_root.context("project-level config requires a project directory")?;
         Ok(load_toml_map(&local_config_path(root))?.get(key).cloned())
     }
 }
@@ -122,7 +122,7 @@ pub fn list_keys(global: bool, project_root: Option<&Path>) -> Result<BTreeMap<S
     let file_map = if global {
         load_toml_map(&global_config_path())?
     } else {
-        let root = project_root.context("工程级配置需指定项目目录")?;
+        let root = project_root.context("project-level config requires a project directory")?;
         load_toml_map(&local_config_path(root))?
     };
     let mut merged = BTreeMap::new();

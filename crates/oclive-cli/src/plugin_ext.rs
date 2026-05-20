@@ -14,7 +14,7 @@ pub struct PluginInstallArgs {
     pub id: String,
     #[arg(short = 'o', long, default_value = "./plugins")]
     pub plugins_dir: PathBuf,
-    /// 源目录（含 manifest.json）；默认 plugins_dir/<id>
+    /// Source directory (with manifest.json); default plugins_dir/<id>
     #[arg(long)]
     pub source: Option<PathBuf>,
 }
@@ -55,7 +55,7 @@ pub fn run_install(args: PluginInstallArgs) -> Result<()> {
         .clone()
         .unwrap_or_else(|| plugins_dir.join(&args.id));
     if !src.join("manifest.json").is_file() {
-        bail!("缺少 manifest.json: {}", src.display());
+        bail!("Missing manifest.json: {}", src.display());
     }
     let manifest_raw = fs::read_to_string(src.join("manifest.json"))?;
     let deps = parse_plugin_dependencies(&manifest_raw).map_err(|e| anyhow::anyhow!(e))?;
@@ -79,15 +79,15 @@ pub fn run_install(args: PluginInstallArgs) -> Result<()> {
             plugins_dir.join(id)
         };
         if !from.join("manifest.json").is_file() {
-            bail!("依赖插件 {id} 未找到于 {}", plugins_dir.display());
+            bail!("Dependency plugin {id} not found under {}", plugins_dir.display());
         }
         if *id == args.id || !dst.exists() {
             copy_plugin_tree(&from, &dst)?;
-            println!("✓ 安装 {id} → {}", dst.display());
+            println!("✓ Installed {id} → {}", dst.display());
         }
     }
     if !deps.is_empty() {
-        println!("依赖树: {order_display}");
+        println!("Dependency tree: {order_display}");
     }
     Ok(())
 }
@@ -105,14 +105,14 @@ pub fn run_uninstall(args: PluginUninstallArgs) -> Result<()> {
         })
         .collect();
     if !dependents.is_empty() {
-        eprintln!("⚠ 以下插件仍声明依赖 {}: {}", args.id, dependents.join(", "));
+        eprintln!("⚠ These plugins still depend on {}: {}", args.id, dependents.join(", "));
     }
     let target = plugins_dir.join(&args.id);
     if target.is_dir() {
         fs::remove_dir_all(&target).context("remove plugin dir")?;
-        println!("已卸载 {}", args.id);
+        println!("Uninstalled {}", args.id);
     } else {
-        bail!("未安装: {}", args.id);
+        bail!("Not installed: {}", args.id);
     }
     Ok(())
 }
@@ -158,7 +158,7 @@ pub fn run_test(args: PluginTestArgs) -> Result<()> {
 /// 从 `OCLIVE_PLUGIN_INDEX_URL` 拉取索引并按关键词过滤。
 pub fn run_search(args: PluginSearchArgs) -> Result<()> {
     eprintln!(
-        "⚠ [deprecated] `oclive plugin search` 请改用 `oclive market search \"{}\"`",
+        "⚠ [deprecated] `oclive plugin search` — use `oclive market search \"{}\"`",
         args.keyword
     );
     let index = fetch_market_index()?;
@@ -167,7 +167,7 @@ pub fn run_search(args: PluginSearchArgs) -> Result<()> {
         .filter(|p| matches!(p.kind, MarketKindSerde::Plugin))
         .collect();
     if hits.is_empty() {
-        println!("（无匹配）");
+        println!("(no matches)");
         return Ok(());
     }
     for p in hits {
@@ -182,13 +182,13 @@ pub fn run_search(args: PluginSearchArgs) -> Result<()> {
 /// 对比索引版本并覆盖安装插件目录。
 pub fn run_update(args: PluginUpdateArgs) -> Result<()> {
     eprintln!(
-        "⚠ [deprecated] `oclive plugin update` 请改用 `oclive market install {}` 安装最新版本",
+        "⚠ [deprecated] `oclive plugin update` — use `oclive market install {}` for the latest version",
         args.id
     );
     let plugins_dir = args.plugins_dir.canonicalize().unwrap_or(args.plugins_dir);
     let local = plugins_dir.join(&args.id).join("manifest.json");
     if !local.is_file() {
-        bail!("未安装 {}", args.id);
+        bail!("Not installed: {}", args.id);
     }
     let index = fetch_market_index()?;
     let remote = index
@@ -196,16 +196,16 @@ pub fn run_update(args: PluginUpdateArgs) -> Result<()> {
         .iter()
         .find(|p| p.id == args.id);
     let Some(remote) = remote else {
-        bail!("索引中无 {}", args.id);
+        bail!("Not in index: {}", args.id);
     };
     let local_v: Value = serde_json::from_str(&fs::read_to_string(&local)?)?;
     let cur = local_v["version"].as_str().unwrap_or("0.0.0");
     if cur == remote.version {
-        println!("{} 已是最新 ({})", args.id, cur);
+        println!("{} is up to date ({})", args.id, cur);
         return Ok(());
     }
     println!(
-        "发现新版本 {} → {}（请从索引 URL 下载包后重新 install）",
+        "New version available {} → {} (download from index URL and re-run install)",
         cur, remote.version
     );
     Ok(())
@@ -287,9 +287,9 @@ fn rpc_call(child: &mut std::process::Child, method: &str, params: Value) -> Rpc
         method: method.into(),
         ok: alive,
         detail: if alive {
-            "子进程存活（完整 RPC 契约请用管理面板探活）".into()
+            "subprocess alive (full RPC contract: use plugin manager panel)".into()
         } else {
-            "子进程已退出".into()
+            "subprocess exited".into()
         },
     }
 }

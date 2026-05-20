@@ -457,7 +457,7 @@ exclude = []
         String::from_utf8_lossy(&o.stdout)
     );
     assert!(
-        combined.contains("跳过 Monolith"),
+        combined.contains("skipping Monolith build"),
         "expected skip message: {combined}"
     );
 }

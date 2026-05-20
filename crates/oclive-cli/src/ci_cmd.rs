@@ -13,9 +13,9 @@ pub struct CiCli {
 
 #[derive(Subcommand, Debug)]
 pub enum CiCommands {
-    /// 生成 `.github/workflows/ci.yml`
+    /// Generate `.github/workflows/ci.yml`
     Init(CiInitArgs),
-    /// 检查 CI 是否与最新模板一致
+    /// Check whether CI matches the latest template
     Check(CiCheckArgs),
 }
 
@@ -52,14 +52,14 @@ fn run_init(args: CiInitArgs) -> Result<()> {
     let workflow = root.join(".github/workflows/ci.yml");
     if workflow.is_file() && !args.force {
         bail!(
-            "已存在 {}；使用 --force 覆盖",
+            "{} already exists; use --force to overwrite",
             workflow.display()
         );
     }
     fs::create_dir_all(workflow.parent().unwrap()).context("mkdir .github/workflows")?;
     let content = render_ci_yaml(kind);
     fs::write(&workflow, content).context("write ci.yml")?;
-    println!("已生成 {}（{:?}）", workflow.display(), kind);
+    println!("Generated {} ({:?})", workflow.display(), kind);
     Ok(())
 }
 
@@ -68,15 +68,15 @@ fn run_check(args: CiCheckArgs) -> Result<()> {
     let kind = detect_project_kind(&root)?;
     let workflow = root.join(".github/workflows/ci.yml");
     if !workflow.is_file() {
-        bail!("缺少 {}；请运行 oclive ci init", workflow.display());
+        bail!("Missing {}; run oclive ci init", workflow.display());
     }
     let current = fs::read_to_string(&workflow)?;
     let expected = render_ci_yaml(kind);
     if current.trim() == expected.trim() {
-        println!("✅ CI 配置与 oclive 最新模板一致");
+        println!("✅ CI config matches latest oclive template");
         Ok(())
     } else {
-        println!("⚠️ CI 配置与模板不一致；运行 `oclive ci init --force` 更新");
+        println!("⚠️ CI config differs from template; run `oclive ci init --force` to update");
         std::process::exit(1);
     }
 }
@@ -84,7 +84,7 @@ fn run_check(args: CiCheckArgs) -> Result<()> {
 fn detect_project_kind(root: &Path) -> Result<ProjectCiKind> {
     let cargo = root.join("Cargo.toml");
     if !cargo.is_file() {
-        bail!("缺少 Cargo.toml");
+        bail!("Missing Cargo.toml");
     }
     let raw = fs::read_to_string(&cargo)?;
     let v: toml::Value = toml::from_str(&raw)?;

@@ -12,15 +12,15 @@ use tar::{Builder, Header};
 
 #[derive(Parser, Debug)]
 pub struct PublishArgs {
-    /// 发布类型（当前仅 template）
+    /// Publish type (template only for now)
     #[arg(long, value_enum, default_value_t = PublishTypeArg::Template)]
     pub r#type: PublishTypeArg,
 
-    /// 工程根目录（默认当前目录）
+    /// Project root (default: current directory)
     #[arg(short = 'o', long, default_value = ".")]
     pub path: PathBuf,
 
-    /// 输出文件（默认 ./<package>-<version>.oclive-template.tar.gz）
+    /// Output file (default: ./<package>-<version>.oclive-template.tar.gz)
     #[arg(short = 'O', long)]
     pub output: Option<PathBuf>,
 }
@@ -57,7 +57,7 @@ const EXCLUDE_FILES: &[&str] = &["bench_history.json", ".oclive-compose.pids.jso
 
 pub fn run(args: PublishArgs) -> Result<()> {
     eprintln!(
-        "⚠ [deprecated] `oclive publish` 请改用 `oclive template pack`（下一主版本将移除顶层 publish）"
+        "⚠ [deprecated] `oclive publish` — use `oclive template pack` (top-level publish will be removed in a future major)"
     );
     match args.r#type {
         PublishTypeArg::Template => publish_template(&args),
@@ -77,7 +77,7 @@ pub fn run_template_pack(path: PathBuf, output: Option<PathBuf>) -> Result<()> {
 pub fn pack_template_tarball(root: &Path, out: &Path) -> Result<()> {
     let cargo_toml = root.join("Cargo.toml");
     if !cargo_toml.is_file() {
-        anyhow::bail!("{} 不是 Cargo 工程根", root.display());
+        anyhow::bail!("{} is not a Cargo project root", root.display());
     }
     let (name, version) = read_package_meta(&cargo_toml)?;
     let template_meta = TemplateManifest {
@@ -124,7 +124,7 @@ pub fn publish_template(args: &PublishArgs) -> Result<()> {
         .with_context(|| format!("path {}", args.path.display()))?;
     let cargo_toml = root.join("Cargo.toml");
     if !cargo_toml.is_file() {
-        bail!("{} 不是 Cargo 工程根", root.display());
+        bail!("{} is not a Cargo project root", root.display());
     }
     let (name, version) = read_package_meta(&cargo_toml)?;
     let out = args.output.clone().unwrap_or_else(|| {
@@ -133,24 +133,24 @@ pub fn publish_template(args: &PublishArgs) -> Result<()> {
             .join(format!("{name}-{version}.oclive-template.tar.gz"))
     });
     pack_template_tarball(&root, &out)?;
-    println!("已生成模板包: {}", out.display());
+    println!("Template package written: {}", out.display());
     Ok(())
 }
 
 pub fn init_from_template_url(url: &str, output: &Path) -> Result<()> {
     if output.exists() {
-        bail!("输出目录已存在: {}", output.display());
+        bail!("Output directory already exists: {}", output.display());
     }
     fs::create_dir_all(output).context("create output")?;
     let tmp = tempfile::tempdir()?;
     let archive = tmp.path().join("dl.tar.gz");
-    eprintln!("下载 {url} …");
+    eprintln!("Downloading {url} …");
     let resp = ureq::get(url).call().context("HTTP GET template")?;
     let mut reader = resp.into_reader();
     let mut file = File::create(&archive)?;
     std::io::copy(&mut reader, &mut file)?;
     extract_tar_gz(&archive, output)?;
-    println!("已从远程模板初始化: {}", output.display());
+    println!("Initialized from remote template: {}", output.display());
     Ok(())
 }
 

@@ -62,7 +62,7 @@ fn run_loop(project_name: &str) -> Result<Option<InitTemplateArg>> {
                 .collect();
             let list = List::new(items).block(
                 Block::default()
-                    .title(" 内核工厂模板 (↑↓ Enter Esc) ")
+                    .title(" kernel factory templates (↑↓ Enter Esc) ")
                     .borders(Borders::ALL),
             );
             f.render_stateful_widget(list, chunks[0], &mut list_state);
@@ -71,7 +71,7 @@ fn run_loop(project_name: &str) -> Result<Option<InitTemplateArg>> {
             let preview = preview_text(project_name, idx);
             let para = Paragraph::new(preview).block(
                 Block::default()
-                    .title(" 预览 ")
+                    .title(" preview ")
                     .borders(Borders::ALL),
             );
             f.render_widget(para, chunks[1]);
@@ -110,7 +110,7 @@ fn run_loop(project_name: &str) -> Result<Option<InitTemplateArg>> {
 
     ratatui::restore();
     if cancelled {
-        println!("已取消 TUI，回退到常规交互。");
+        println!("TUI cancelled; falling back to standard prompts.");
         return Ok(None);
     }
     Ok(chosen)
@@ -155,7 +155,7 @@ fn run_weld_loop(slots: &[&str; 7]) -> Result<Option<Vec<String>>> {
                 .collect();
             let list = Paragraph::new(lines).block(
                 Block::default()
-                    .title(" 自定义焊接（↑↓ · 空格 · Enter · Esc 跳过） ")
+                    .title(" custom weld (↑↓ · space · Enter · Esc skip) ")
                     .borders(Borders::ALL),
             );
             f.render_widget(list, chunks[0]);
@@ -163,10 +163,10 @@ fn run_weld_loop(slots: &[&str; 7]) -> Result<Option<Vec<String>>> {
             let est_mib = (7 - n) as f64 * 0.35;
             let est_latency = -(n as f64 * 2.5);
             let preview = format!(
-                "焊接槽位: {n} / 7\n预计二进制缩减: ~{est_mib:.1} MiB（启发式）\n预计延迟变化: ~{est_latency:.0}ms（启发式）\n\nEnter → 写入 monolith.toml weld_modules",
+                "Welded slots: {n} / 7\nEst. binary reduction: ~{est_mib:.1} MiB (heuristic)\nEst. latency delta: ~{est_latency:.0}ms (heuristic)\n\nEnter → write monolith.toml weld_modules",
             );
             f.render_widget(
-                Paragraph::new(preview).block(Block::default().title(" 预览 ").borders(Borders::ALL)),
+                Paragraph::new(preview).block(Block::default().title(" preview ").borders(Borders::ALL)),
                 chunks[1],
             );
         })?;
@@ -201,7 +201,7 @@ fn run_weld_loop(slots: &[&str; 7]) -> Result<Option<Vec<String>>> {
         .filter_map(|(i, id)| selected[i].then(|| (*id).to_string()))
         .collect();
     if out.is_empty() {
-        println!("未选择任何槽位，跳过自定义焊接。");
+        println!("No slots selected; skipping custom weld.");
         return Ok(None);
     }
     Ok(Some(out))
@@ -216,7 +216,7 @@ fn preview_text(project_name: &str, idx: usize) -> String {
     };
     let cfg = project_config_from_template(project_name, t);
     format!(
-        "模板: {}\n场景: {}\n描述: {}\n\npreset: {}\nMonolith: {}\nproject-type: {:?}\n角色包: {}\n\nEnter 确认 · Esc 手动配置",
+        "Template: {}\nScene: {}\nDescription: {}\n\npreset: {}\nMonolith: {}\nproject-type: {:?}\nRole pack: {}\n\nEnter confirm · Esc manual setup",
         entry.id,
         entry.scene,
         entry.description,

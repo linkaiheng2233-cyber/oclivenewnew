@@ -27,13 +27,13 @@ pub struct MarketCli {
 
 #[derive(Subcommand, Debug)]
 pub enum MarketCommands {
-    /// 搜索插件、模板与角色包
+    /// Search plugins, templates, and role packs
     Search(MarketSearchArgs),
-    /// TUI 分类浏览（Enter 安装，Esc 退出）
+    /// TUI browse by category (Enter install, Esc quit)
     Browse(MarketBrowseArgs),
-    /// 安装插件 / 模板 / 角色包
+    /// Install plugin / template / role pack
     Install(MarketInstallArgs),
-    /// 查看条目详情
+    /// Show item details
     Info(MarketInfoArgs),
 }
 
@@ -85,7 +85,7 @@ fn run_search(args: MarketSearchArgs) -> Result<()> {
         return Ok(());
     }
     if hits.is_empty() {
-        println!("（无匹配）");
+        println!("(no matches)");
         return Ok(());
     }
     for p in hits {
@@ -97,7 +97,7 @@ fn run_search(args: MarketSearchArgs) -> Result<()> {
 fn run_info(args: MarketInfoArgs) -> Result<()> {
     let index = fetch_market_index()?;
     let item = find_item(&index, &args.id)
-        .ok_or_else(|| anyhow::anyhow!("市场索引中无: {}", args.id))?;
+        .ok_or_else(|| anyhow::anyhow!("Not in market index: {}", args.id))?;
     if args.json {
         println!("{}", serde_json::to_string_pretty(&item)?);
         return Ok(());
@@ -109,7 +109,7 @@ fn run_info(args: MarketInfoArgs) -> Result<()> {
 fn run_install(args: MarketInstallArgs) -> Result<()> {
     let index = fetch_market_index()?;
     let item = find_item(&index, &args.id)
-        .ok_or_else(|| anyhow::anyhow!("市场索引中无: {}", args.id))?;
+        .ok_or_else(|| anyhow::anyhow!("Not in market index: {}", args.id))?;
     install_item(&item, &args.plugins_dir, &args.template_output)?;
     Ok(())
 }
@@ -135,14 +135,14 @@ fn install_plugin_item(item: &MarketItem, plugins_dir: &PathBuf) -> Result<()> {
             .status()
             .context("git clone")?;
         if !st.success() {
-            bail!("git clone 失败: {git}");
+            bail!("git clone failed: {git}");
         }
-        println!("✓ 已从 Git 安装插件 {} → {}", item.id, dst.display());
+        println!("✓ Installed plugin {} from Git → {}", item.id, dst.display());
         return Ok(());
     }
     if let Some(url) = item.download_url.as_deref().filter(|s| !s.is_empty()) {
         bail!(
-            "插件 {} 需提供 git 或本地路径；download_url 解压安装尚未实现: {url}",
+            "Plugin {} needs git or a local path; download_url extract install not implemented: {url}",
             item.id
         );
     }
@@ -156,10 +156,10 @@ fn install_plugin_item(item: &MarketItem, plugins_dir: &PathBuf) -> Result<()> {
 fn install_template_item(item: &MarketItem, out: &PathBuf) -> Result<()> {
     if let Some(url) = item.download_url.as_deref().filter(|s| !s.is_empty()) {
         if out.exists() {
-            bail!("输出目录已存在: {}", out.display());
+            bail!("Output directory already exists: {}", out.display());
         }
         publish_cmd::init_from_template_url(url, out)?;
-        println!("✓ 已从 URL 安装模板 → {}", out.display());
+        println!("✓ Installed template from URL → {}", out.display());
         return Ok(());
     }
     let tid = item
@@ -168,7 +168,7 @@ fn install_template_item(item: &MarketItem, out: &PathBuf) -> Result<()> {
         .or_else(|| item.id.strip_prefix("template:"))
         .unwrap_or(item.id.as_str());
     if out.exists() {
-        bail!("输出目录已存在: {}", out.display());
+        bail!("Output directory already exists: {}", out.display());
     }
     let exe = std::env::current_exe().context("current_exe")?;
     let st = Command::new(exe)
@@ -185,9 +185,9 @@ fn install_template_item(item: &MarketItem, out: &PathBuf) -> Result<()> {
         ])
         .status()?;
     if !st.success() {
-        bail!("模板 init 失败");
+        bail!("template init failed");
     }
-    println!("✓ 已用内置模板 `{tid}` 生成工程 → {}", out.display());
+    println!("✓ Generated project with builtin template `{tid}` → {}", out.display());
     Ok(())
 }
 
@@ -196,10 +196,10 @@ fn install_role_pack_item(item: &MarketItem, out: &PathBuf) -> Result<()> {
         .download_url
         .as_deref()
         .filter(|s| !s.is_empty())
-        .ok_or_else(|| anyhow::anyhow!("角色包 {} 缺少 download_url", item.id))?;
+        .ok_or_else(|| anyhow::anyhow!("Role pack {} missing download_url", item.id))?;
     let roles = out.join("roles").join(&item.id);
     if roles.exists() {
-        bail!("已存在: {}", roles.display());
+        bail!("Already exists: {}", roles.display());
     }
     std::fs::create_dir_all(roles.parent().unwrap_or(out))?;
     if url.ends_with(".tar.gz") || url.ends_with(".tgz") {
@@ -211,15 +211,15 @@ fn install_role_pack_item(item: &MarketItem, out: &PathBuf) -> Result<()> {
         std::io::copy(&mut reader, &mut file)?;
         publish_cmd::extract_tar_gz(&archive, roles.parent().unwrap_or(out))?;
     } else {
-        bail!("角色包仅支持 .tar.gz download_url");
+        bail!("Role packs only support .tar.gz download_url");
     }
-    println!("✓ 角色包 {} → {}", item.id, roles.display());
+    println!("✓ Role pack {} → {}", item.id, roles.display());
     Ok(())
 }
 
 fn run_browse(args: MarketBrowseArgs) -> Result<()> {
     if !crate::init_tui::terminal_supports_tui() {
-        bail!("需要交互式终端；可设置 OCLIVE_NO_TUI=0 或改用 `oclive market search`");
+        bail!("Interactive terminal required; set OCLIVE_NO_TUI=0 or use `oclive market search`");
     }
     let index = fetch_market_index()?;
     enable_raw_mode().context("raw")?;
@@ -270,7 +270,7 @@ fn browse_loop(index: &crate::market_index::MarketIndexFile, args: &MarketBrowse
             f.render_stateful_widget(
                 List::new(cat_items).block(
                     Block::default()
-                        .title(" 分类 ")
+                        .title(" category ")
                         .borders(Borders::ALL),
                 ),
                 chunks[0],
@@ -297,7 +297,7 @@ fn browse_loop(index: &crate::market_index::MarketIndexFile, args: &MarketBrowse
             f.render_stateful_widget(
                 List::new(list_lines).block(
                     Block::default()
-                        .title(" 条目 (↑↓ Enter 安装 Esc 退出) ")
+                        .title(" items (↑↓ Enter install Esc quit) ")
                         .borders(Borders::ALL),
                 ),
                 right[0],
@@ -306,7 +306,7 @@ fn browse_loop(index: &crate::market_index::MarketIndexFile, args: &MarketBrowse
             let detail = if let Some(it) = items.get(item_i) {
                 item_detail_text(it)
             } else {
-                "（无条目）".into()
+                "(no items)".into()
             };
             let foot = if message.is_empty() {
                 String::new()
@@ -316,7 +316,7 @@ fn browse_loop(index: &crate::market_index::MarketIndexFile, args: &MarketBrowse
             f.render_widget(
                 Paragraph::new(format!("{detail}{foot}"))
                     .wrap(Wrap { trim: true })
-                    .block(Block::default().title(" 详情 ").borders(Borders::ALL)),
+                    .block(Block::default().title(" details ").borders(Borders::ALL)),
                 right[1],
             );
         })?;
@@ -354,7 +354,7 @@ fn browse_loop(index: &crate::market_index::MarketIndexFile, args: &MarketBrowse
                     KeyCode::Enter => {
                         if let Some(it) = items.get(item_state.selected().unwrap_or(0)) {
                             match install_item(it, &args.plugins_dir, &args.template_output) {
-                                Ok(()) => message = format!("✓ 已安装 {}", it.id),
+                                Ok(()) => message = format!("✓ Installed {}", it.id),
                                 Err(e) => message = format!("❌ {e}"),
                             }
                         }
@@ -383,31 +383,31 @@ fn print_item_line(p: &MarketItem) {
 
 fn print_item_detail(p: &MarketItem) {
     let kind = MarketKind::from(p.kind);
-    println!("类型: {}", kind.label());
+    println!("Type: {}", kind.label());
     println!("ID: {}", p.id);
-    println!("名称: {}", p.name);
-    println!("版本: {}", p.version);
-    println!("作者: {}", p.author);
-    println!("描述: {}", p.description);
+    println!("Name: {}", p.name);
+    println!("Version: {}", p.version);
+    println!("Author: {}", p.author);
+    println!("Description: {}", p.description);
     if !p.tags.is_empty() {
-        println!("标签: {}", p.tags.join(", "));
+        println!("Tags: {}", p.tags.join(", "));
     }
-    println!("安装量: {}", p.install_count);
+    println!("Install count: {}", p.install_count);
     if let Some(u) = &p.download_url {
-        println!("下载: {u}");
+        println!("Download: {u}");
     }
     if let Some(g) = &p.git {
         println!("Git: {g}");
     }
     if let Some(t) = &p.template_id {
-        println!("模板 ID: {t}");
+        println!("Template ID: {t}");
     }
 }
 
 fn item_detail_text(p: &MarketItem) -> String {
     let kind = MarketKind::from(p.kind);
     format!(
-        "类型: {}\nID: {}\n名称: {}\n版本: {}\n作者: {}\n\n{}\n\n标签: {}\n安装量: {}\n{}\n{}",
+        "Type: {}\nID: {}\nName: {}\nVersion: {}\nAuthor: {}\n\n{}\n\nTags: {}\nInstall count: {}\n{}\n{}",
         kind.label(),
         p.id,
         p.name,
@@ -422,7 +422,7 @@ fn item_detail_text(p: &MarketItem) -> String {
         p.install_count,
         p.download_url
             .as_ref()
-            .map(|u| format!("下载: {u}"))
+            .map(|u| format!("Download: {u}"))
             .unwrap_or_default(),
         p.git.as_ref().map(|g| format!("Git: {g}")).unwrap_or_default(),
     )

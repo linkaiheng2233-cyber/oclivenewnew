@@ -15,24 +15,24 @@ pub struct CollabCli {
 
 #[derive(Subcommand, Debug)]
 pub enum CollabCommands {
-    /// 初始化 `.oclive-collab.yml`（可选 git init）
+    /// Initialize `.oclive-collab.yml` (optional git init)
     Init(CollabInitArgs),
-    /// 协作状态（本地未推送 / 远程领先）
+    /// Collaboration status (unpushed local / remote ahead)
     Status(CollabStatusArgs),
-    /// 拉取远程编辑
+    /// Pull remote edits
     Pull(CollabPullArgs),
-    /// 推送本地编辑
+    /// Push local edits
     Push(CollabPushArgs),
-    /// 与远程分支 diff
+    /// Diff against remote branch
     Diff(CollabDiffArgs),
 }
 
 #[derive(Parser, Debug)]
 pub struct CollabInitArgs {
-    /// 角色包根目录（含 manifest.json；默认当前目录）
+    /// Role pack root (with manifest.json; default: current directory)
     #[arg(short = 'o', long, default_value = ".")]
     pub path: PathBuf,
-    /// Git 远程 URL
+    /// Git remote URL
     #[arg(long)]
     pub remote: String,
     #[arg(long, default_value = "main")]
@@ -91,7 +91,7 @@ fn load_config(root: &Path) -> Result<CollabConfig> {
     let p = collab_file(root);
     if !p.is_file() {
         bail!(
-            "未找到 {}；请先 oclive collab init",
+            "Not found: {}; run oclive collab init first",
             p.display()
         );
     }
@@ -112,11 +112,11 @@ fn run_init(args: CollabInitArgs) -> Result<()> {
     )?;
     if !root.join(".git").is_dir() {
         git_in(&root, &["init"])?;
-        println!("已 git init: {}", root.display());
+        println!("git init: {}", root.display());
     }
     let _ = git_in(&root, &["remote", "remove", "origin"]).ok();
     git_in(&root, &["remote", "add", "origin", &args.remote])?;
-    println!("已写入 {} ", collab_file(&root).display());
+    println!("Wrote {} ", collab_file(&root).display());
     println!("  remote: {}", args.remote);
     println!("  branch: {}", args.branch);
     Ok(())
@@ -131,9 +131,9 @@ fn run_status(args: CollabStatusArgs) -> Result<()> {
     git_in(&root, &["fetch", "origin"])?;
     let porcelain = git_output(&root, &["status", "--porcelain"])?;
     if porcelain.trim().is_empty() {
-        println!("  本地工作区: ✅ 干净");
+        println!("  Local workspace: ✅ clean");
     } else {
-        println!("  本地工作区: ⚠️ 有未提交变更");
+        println!("  Local workspace: ⚠️ uncommitted changes");
     }
     let ahead = git_output(&root, &["rev-list", "--count", &format!("origin/{}..HEAD", cfg.branch)])?
         .trim()
@@ -144,13 +144,13 @@ fn run_status(args: CollabStatusArgs) -> Result<()> {
         .parse::<u32>()
         .unwrap_or(0);
     if ahead > 0 {
-        println!("  本地领先远程 {ahead} 个提交（collab push）");
+        println!("  Local ahead of remote by {ahead} commit(s) (collab push)");
     }
     if behind > 0 {
-        println!("  远程领先本地 {behind} 个提交（collab pull）");
+        println!("  Remote ahead of local by {behind} commit(s) (collab pull)");
     }
     if ahead == 0 && behind == 0 {
-        println!("  与 origin/{} 同步", cfg.branch);
+        println!("  In sync with origin/{}", cfg.branch);
     }
     Ok(())
 }
@@ -160,7 +160,7 @@ fn run_pull(args: CollabPullArgs) -> Result<()> {
     let cfg = load_config(&root)?;
     pre_pull_checks(&root, &cfg)?;
     git_in(&root, &["pull", "origin", &cfg.branch])?;
-    println!("✓ 已拉取 origin/{}", cfg.branch);
+    println!("✓ Pulled origin/{}", cfg.branch);
     Ok(())
 }
 
@@ -169,7 +169,7 @@ fn run_push(args: CollabPushArgs) -> Result<()> {
     let cfg = load_config(&root)?;
     pre_push_checks(&root, &cfg)?;
     git_in(&root, &["push", "origin", &cfg.branch])?;
-    println!("✓ 已推送至 origin/{}", cfg.branch);
+    println!("✓ Pushed to origin/{}", cfg.branch);
     Ok(())
 }
 
@@ -189,8 +189,8 @@ fn pre_pull_checks(root: &Path, cfg: &CollabConfig) -> Result<()> {
         .parse::<u32>()
         .unwrap_or(0);
     if ahead > 0 {
-        eprintln!("⚠ 本地有 {ahead} 个未推送提交；pull 可能产生合并提交。");
-        eprintln!("  建议先 `oclive collab push` 或 `git stash` 后再 pull。");
+        eprintln!("⚠ Local has {ahead} unpushed commit(s); pull may create a merge commit.");
+        eprintln!("  Consider `oclive collab push` or `git stash` before pull.");
     }
     Ok(())
 }
@@ -199,7 +199,7 @@ fn pre_push_checks(root: &Path, cfg: &CollabConfig) -> Result<()> {
     let porcelain = git_output(root, &["status", "--porcelain"])?;
     if !porcelain.trim().is_empty() {
         bail!(
-            "存在未提交变更；请先 git add / git commit，再 collab push\n{porcelain}"
+            "Uncommitted changes; run git add / git commit before collab push\n{porcelain}"
         );
     }
     git_in(root, &["fetch", "origin"])?;
@@ -209,8 +209,8 @@ fn pre_push_checks(root: &Path, cfg: &CollabConfig) -> Result<()> {
         .unwrap_or(0);
     if behind > 0 {
         bail!(
-            "远程领先 {behind} 个提交；请先 `oclive collab pull`，解决冲突后再 push。\n\
-             冲突时：编辑文件 → git add → git commit → collab push"
+            "Remote is {behind} commit(s) ahead; run `oclive collab pull`, resolve conflicts, then push.\n\
+             On conflict: edit files → git add → git commit → collab push"
         );
     }
     Ok(())
@@ -225,11 +225,11 @@ fn resolve_role_pack_root(path: &Path) -> Result<PathBuf> {
     }
     if p.join("roles").is_dir() {
         bail!(
-            "请指向单个角色包目录（含 manifest.json），而非内核工程根 {}",
+            "Point to a single role pack directory (with manifest.json), not kernel project root {}",
             p.display()
         );
     }
-    bail!("{} 不是角色包根（缺少 manifest.json）", p.display())
+    bail!("{} is not a role pack root (missing manifest.json)", p.display())
 }
 
 fn git_in(root: &Path, args: &[&str]) -> Result<()> {
@@ -240,7 +240,7 @@ fn git_in(root: &Path, args: &[&str]) -> Result<()> {
         .with_context(|| format!("git {}", args.join(" ")))?;
     if !out.status.success() {
         let stderr = String::from_utf8_lossy(&out.stderr);
-        bail!("git {} 失败: {stderr}", args.join(" "));
+        bail!("git {} failed: {stderr}", args.join(" "));
     }
     Ok(())
 }
@@ -253,7 +253,7 @@ fn git_output(root: &Path, args: &[&str]) -> Result<String> {
         .with_context(|| format!("git {}", args.join(" ")))?;
     if !out.status.success() {
         let stderr = String::from_utf8_lossy(&out.stderr);
-        bail!("git {} 失败: {stderr}", args.join(" "));
+        bail!("git {} failed: {stderr}", args.join(" "));
     }
     Ok(String::from_utf8_lossy(&out.stdout).into_owned())
 }

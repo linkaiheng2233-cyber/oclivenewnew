@@ -82,7 +82,7 @@ pub fn validate_kernel_source(root: &Path) -> Result<()> {
         .join("Cargo.toml");
     if !tauri.is_file() || !runtime.is_file() {
         anyhow::bail!(
-            "--kernel-source 须指向 oclivenewnew 仓库根（需含 src-tauri/ 与 crates/oclive_kernel_runtime/）"
+            "--kernel-source must point to oclivenewnew repo root (needs src-tauri/ and crates/oclive_kernel_runtime/)"
         );
     }
     Ok(())
@@ -423,7 +423,7 @@ fn copy_example_llamacpp_plugin(out: &Path) -> Result<()> {
     let src = example_llamacpp_plugin_src();
     if !src.is_dir() {
         anyhow::bail!(
-            "示例插件源目录不存在: {}（请在 oclivenewnew 仓库内运行 oclive-cli）",
+            "Example plugin source missing: {} (run oclive-cli from oclivenewnew repo)",
             src.display()
         );
     }
@@ -459,7 +459,7 @@ pub fn write_project(cfg: &ProjectConfig, out: &Path) -> Result<()> {
         let mut it = fs::read_dir(out).with_context(|| format!("read_dir {}", out.display()))?;
         if it.next().transpose()?.is_some() {
             anyhow::bail!(
-                "输出目录非空：{}。请使用空目录或删除后再试。",
+                "Output directory not empty: {}. Use an empty directory or delete it first.",
                 out.display()
             );
         }

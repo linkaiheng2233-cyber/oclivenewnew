@@ -22,13 +22,13 @@ pub struct ComposeCli {
 
 #[derive(Subcommand, Debug)]
 pub enum ComposeCommands {
-    /// 生成 oclive-compose.yml 模板
+    /// Generate oclive-compose.yml template
     Init(ComposeInitArgs),
-    /// 按依赖顺序启动所有服务
+    /// Start all services in dependency order
     Up(ComposeUpArgs),
-    /// 停止所有已启动实例
+    /// Stop all running instances
     Down(ComposeDownArgs),
-    /// 查看运行状态
+    /// Show running status
     Ps(ComposePsArgs),
 }
 
@@ -91,7 +91,7 @@ fn run_init(args: ComposeInitArgs) -> Result<()> {
     let root = args.path.canonicalize().unwrap_or(args.path);
     let out = root.join(COMPOSE_FILE);
     if out.exists() {
-        bail!("{} 已存在", out.display());
+        bail!("{} already exists", out.display());
     }
     let sample = r#"services:
   emotion-engine:
@@ -108,7 +108,7 @@ fn run_init(args: ComposeInitArgs) -> Result<()> {
       OCLIVE_HTTP_API_MOCK_LLM: "1"
 "#;
     fs::write(&out, sample).context("write compose file")?;
-    println!("已生成 {}", out.display());
+    println!("Generated {}", out.display());
     Ok(())
 }
 
@@ -128,7 +128,7 @@ fn topo_order(services: &HashMap<String, ComposeService>) -> Result<Vec<String>>
     for (name, svc) in services {
         for dep in &svc.depends_on {
             if !services.contains_key(dep) {
-                bail!("depends_on 引用未知服务: {dep}");
+                bail!("depends_on references unknown service: {dep}");
             }
             *indeg.get_mut(name.as_str()).unwrap() += 1;
         }
@@ -152,7 +152,7 @@ fn topo_order(services: &HashMap<String, ComposeService>) -> Result<Vec<String>>
         }
     }
     if order.len() != services.len() {
-        bail!("compose 服务存在循环依赖");
+        bail!("compose services have a circular dependency");
     }
     Ok(order)
 }
@@ -184,7 +184,7 @@ fn spawn_service(
 ) -> Result<Child> {
     let proj = cwd.join(&svc.path);
     if !proj.join("Cargo.toml").is_file() {
-        bail!("服务 {name}: {} 缺少 Cargo.toml", proj.display());
+        bail!("service {name}: {} missing Cargo.toml", proj.display());
     }
     let mut cmd = Command::new("cargo");
     cmd.arg("run")
@@ -240,7 +240,7 @@ fn run_up(args: ComposeUpArgs) -> Result<()> {
     };
     for name in order {
         let svc = compose.services.get(&name).unwrap();
-        eprintln!("[oclive compose] 启动 {name} (port {})…", svc.port);
+        eprintln!("[oclive compose] starting {name} (port {})…", svc.port);
         let child = spawn_service(&cwd, &name, svc)?;
         state.services.insert(name.clone(), child.id());
         std::mem::forget(child);
@@ -248,7 +248,7 @@ fn run_up(args: ComposeUpArgs) -> Result<()> {
     }
     save_state(&cwd, &state)?;
     println!(
-        "[oclive compose] 已启动 {} 个服务（后台）；`oclive compose down` 停止",
+        "[oclive compose] started {} service(s) in background; stop with `oclive compose down`",
         state.services.len()
     );
     Ok(())
@@ -271,13 +271,13 @@ fn run_down(args: ComposeDownArgs) -> Result<()> {
     let cwd = args.cwd.canonicalize().unwrap_or(args.cwd);
     let state = load_state(&cwd)?;
     if state.services.is_empty() {
-        println!("[oclive compose] 无运行中的记录");
+        println!("[oclive compose] no running records");
         return Ok(());
     }
     let names: Vec<_> = state.services.keys().cloned().collect();
     for name in names.iter().rev() {
         if let Some(pid) = state.services.get(name) {
-            eprintln!("[oclive compose] 停止 {name} (pid {pid})");
+            eprintln!("[oclive compose] stopping {name} (pid {pid})");
             kill_pid(*pid);
         }
     }
@@ -287,7 +287,7 @@ fn run_down(args: ComposeDownArgs) -> Result<()> {
             services: HashMap::new(),
         },
     )?;
-    println!("[oclive compose] 已全部停止");
+    println!("[oclive compose] all stopped");
     Ok(())
 }
 
@@ -295,7 +295,7 @@ fn run_ps(args: ComposePsArgs) -> Result<()> {
     let cwd = args.cwd.canonicalize().unwrap_or(args.cwd);
     let state = load_state(&cwd)?;
     if state.services.is_empty() {
-        println!("（无 compose 状态文件或尚未 up）");
+        println!("(no compose state file or not yet up)");
         return Ok(());
     }
     for (name, pid) in &state.services {

@@ -21,32 +21,32 @@ pub struct PackArgs {
 
 #[derive(Subcommand, Debug)]
 pub enum PackCommands {
-    /// 校验角色包目录（manifest + settings 合并后与宿主加载前磁盘校验一致）
+    /// Validate role pack directory (manifest + settings; same checks as host before load)
     Validate(PackValidateArgs),
-    /// 生成可校验的最小角色包目录
+    /// Generate a minimal valid role pack directory
     Create(PackCreateArgs),
-    /// 将角色包目录打成 `.oclivepack`（ZIP 容器，根目录为角色 id）
+    /// Pack role pack directory into `.oclivepack` (ZIP; top-level folder is role id)
     Publish(PackPublishArgs),
 }
 
 #[derive(Parser, Debug)]
 pub struct PackValidateArgs {
-    /// 角色包根目录（内含 manifest.json）
+    /// Role pack root (contains manifest.json)
     pub path: PathBuf,
-    /// 用于比较 `manifest.min_runtime_version` 的宿主 semver（默认：本 CLI 的 `CARGO_PKG_VERSION`）
+    /// Host semver for `manifest.min_runtime_version` (default: this CLI `CARGO_PKG_VERSION`)
     #[arg(long)]
     pub host_version: Option<String>,
-    /// 扩展校验：`default` | `robot-soul`（见主仓 ROLE_PACK_SPEC § RobotSoulPack）
+    /// Extended profile: `default` | `robot-soul` (see ROLE_PACK_SPEC § RobotSoulPack)
     #[arg(long, default_value = "default")]
     pub profile: String,
 }
 
 #[derive(Parser, Debug)]
 pub struct PackCreateArgs {
-    /// 输出目录：默认在其下创建 `roles/<id>/`；若指定 `--flat` 则本目录即为角色根（须已存在或将被创建为包根）
+    /// Output dir: creates `roles/<id>/` under it by default; with `--flat`, output is the role root
     #[arg(short = 'o', long)]
     pub output: PathBuf,
-    /// 角色 id（写入 manifest；`--flat` 时也应与磁盘文件夹名一致）
+    /// Role id (written to manifest; with `--flat` should match folder name)
     #[arg(long)]
     pub id: String,
     #[arg(long, default_value = "My Character")]
@@ -57,16 +57,16 @@ pub struct PackCreateArgs {
     pub author: String,
     #[arg(long, default_value = "")]
     pub description: String,
-    /// `output` 直接作为角色包根目录（不创建 `roles/<id>/` 前缀）
+    /// Use `output` as role pack root directly (no `roles/<id>/` prefix)
     #[arg(long, default_value_t = false)]
     pub flat: bool,
 }
 
 #[derive(Parser, Debug)]
 pub struct PackPublishArgs {
-    /// 角色包根目录（内含 manifest.json；其中的 `id` 决定 ZIP 内顶层目录名）
+    /// Role pack root (manifest.json `id` becomes ZIP top-level folder name)
     pub path: PathBuf,
-    /// 输出文件路径（默认：`<cwd>/<id>-<version>.oclivepack`）
+    /// Output path (default: `<cwd>/<id>-<version>.oclivepack`)
     #[arg(short = 'o', long)]
     pub output: Option<PathBuf>,
 }
@@ -96,11 +96,11 @@ fn run_validate(args: PackValidateArgs) -> Result<()> {
         profile,
     ) {
         Ok(()) => {
-            println!("✓ 角色包验证通过");
+            println!("✓ Role pack validation passed");
             Ok(())
         }
         Err(errs) => {
-            eprintln!("✗ 角色包验证失败：");
+            eprintln!("✗ Role pack validation failed:");
             for e in errs {
                 eprintln!("  - {}", e);
             }
@@ -112,7 +112,7 @@ fn run_validate(args: PackValidateArgs) -> Result<()> {
 fn run_create(args: PackCreateArgs) -> Result<()> {
     let id = args.id.trim();
     if id.is_empty() {
-        anyhow::bail!("--id 不能为空");
+        anyhow::bail!("--id cannot be empty");
     }
     let root: PathBuf = if args.flat {
         args.output.clone()
@@ -132,7 +132,7 @@ fn run_create(args: PackCreateArgs) -> Result<()> {
         "scenes": ["default"],
         "user_relations": {
             "friend": {
-                "_comment_display_name": "可选；与 id 相同时可省略展示名",
+                "_comment_display_name": "Optional; omit display name when same as id",
                 "initial_favorability": 50.0,
                 "favor_multiplier": 1.0
             }
@@ -146,7 +146,7 @@ fn run_create(args: PackCreateArgs) -> Result<()> {
     .context("write manifest.json")?;
 
     let settings = json!({
-        "_comment": "标准 JSON 无 // 注释；说明请用 _ 前缀键",
+        "_comment": "Standard JSON has no // comments; use _-prefixed keys for notes",
         "schema_version": 1,
         "plugin_backends": {
             "memory": "builtin",
@@ -181,7 +181,7 @@ fn run_create(args: PackCreateArgs) -> Result<()> {
     )
     .context("write scene.json")?;
 
-    println!("已生成角色包目录：{}", root.display());
+    println!("Role pack directory created: {}", root.display());
     Ok(())
 }
 
@@ -192,7 +192,7 @@ fn run_publish(args: PackPublishArgs) -> Result<()> {
     let id = v
         .get("id")
         .and_then(|x| x.as_str())
-        .context("manifest.json 缺少 id")?;
+        .context("manifest.json missing id")?;
     let version = v
         .get("version")
         .and_then(|x| x.as_str())
@@ -207,7 +207,7 @@ fn run_publish(args: PackPublishArgs) -> Result<()> {
     let mut zip = ZipWriter::new(file);
     walk_pack(&mut zip, &role_dir, &role_dir, id)?;
     zip.finish().context("zip finish")?;
-    println!("已写入 {}", out_path.display());
+    println!("Wrote {}", out_path.display());
     Ok(())
 }
 

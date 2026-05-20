@@ -10,24 +10,24 @@ use std::time::Duration;
 
 #[derive(Parser, Debug)]
 pub struct DebugArgs {
-    /// 内核工程根（含 Cargo.toml）
+    /// Kernel project root (contains Cargo.toml)
     #[arg(short = 'o', long, default_value = ".")]
     pub path: PathBuf,
 
-    /// 仅展示指定步骤（如 load_recent_context、user_emotion_analyze）
+    /// Show only the given step (e.g. load_recent_context, user_emotion_analyze)
     #[arg(long)]
     pub step: Option<String>,
 
-    /// 输出完整 JSON 追踪到 stdout
+    /// Emit full JSON trace to stdout
     #[arg(long)]
     pub json: bool,
 
-    /// HTTP API 端口
+    /// HTTP API port
     #[arg(long, default_value_t = 8420)]
     pub port: u16,
 
-    /// 测试消息
-    #[arg(long, default_value = "你好")]
+    /// Test message
+    #[arg(long, default_value = "hello")]
     pub message: String,
 }
 
@@ -39,7 +39,7 @@ pub fn run(args: DebugArgs) -> Result<()> {
         .canonicalize()
         .with_context(|| format!("path {}", args.path.display()))?;
     if !root.join("Cargo.toml").is_file() {
-        bail!("{} 缺少 Cargo.toml", root.display());
+        bail!("{} missing Cargo.toml", root.display());
     }
 
     let mut cmd = Command::new("cargo");
@@ -56,7 +56,7 @@ pub fn run(args: DebugArgs) -> Result<()> {
         .stderr(Stdio::piped());
 
     eprintln!(
-        "[oclive debug] 启动 {} (port {}, MOCK_LLM=1)…",
+        "[oclive debug] starting {} (port {}, MOCK_LLM=1)…",
         root.display(),
         args.port
     );
@@ -94,10 +94,10 @@ pub fn run(args: DebugArgs) -> Result<()> {
             if args.json {
                 println!("{text}");
             } else {
-                eprintln!("[oclive debug] 回复长度: {} 字符", text.len());
+                eprintln!("[oclive debug] reply length: {} chars", text.len());
             }
         }
-        Err(e) => eprintln!("[oclive debug] chat 请求失败（内核可能仍在编译）: {e}"),
+        Err(e) => eprintln!("[oclive debug] chat request failed (kernel may still be compiling): {e}"),
     }
 
     let _ = child.kill();
@@ -109,10 +109,10 @@ pub fn run(args: DebugArgs) -> Result<()> {
 
 fn print_traces(lines: &[String], step_filter: Option<&str>, full_json: bool) -> Result<()> {
     if lines.is_empty() {
-        eprintln!("[oclive debug] 未捕获到 OCLIVE_DEBUG_TRACE 行。请使用 `oclive init --kernel-source <oclivenewnew根>` 接入完整内核。");
+        eprintln!("[oclive debug] no OCLIVE_DEBUG_TRACE lines captured. Use `oclive init --kernel-source <oclivenewnew-root>` for the full kernel.");
         return Ok(());
     }
-    println!("\n—— process_message 调试追踪 ——");
+    println!("\n—— process_message debug trace ——");
     for line in lines {
         let payload = line.trim_start_matches(TRACE_PREFIX);
         let v: Value = serde_json::from_str(payload).unwrap_or(Value::String(payload.into()));

@@ -11,7 +11,7 @@ use crate::template_catalog::CATALOG;
 
 #[derive(Parser, Debug)]
 pub struct DashboardArgs {
-    /// 监听地址
+    /// Listen address
     #[arg(long, default_value = "127.0.0.1:8420")]
     pub bind: String,
 }
@@ -28,7 +28,7 @@ pub fn run(args: DashboardArgs) -> Result<()> {
     let listener = TcpListener::bind(&args.bind)
         .with_context(|| format!("bind {}", args.bind))?;
     eprintln!(
-        "oclive dashboard: http://{}/ （Ctrl+C 停止；勿与内核 HTTP API 同端口同时占用）",
+        "oclive dashboard: http://{}/ (Ctrl+C to stop; avoid same port as kernel HTTP API)",
         args.bind
     );
     for stream in listener.incoming() {
@@ -105,11 +105,11 @@ fn templates_html() -> String {
         ));
     }
     format!(
-        r#"<!DOCTYPE html><html><head><meta charset="utf-8"><title>模板库</title>
+        r#"<!DOCTYPE html><html><head><meta charset="utf-8"><title>Template library</title>
 <style>body{{font-family:system-ui;margin:2rem}}table{{border-collapse:collapse;width:100%}}
 td,th{{border:1px solid #ccc;padding:.5rem}}</style></head><body>
-<h1>内核工厂模板</h1><p><a href="/">← 工程列表</a></p>
-<table><tr><th>id</th><th>场景</th><th>preset</th><th>描述</th></tr>{rows}</table></body></html>"#
+<h1>Kernel factory templates</h1><p><a href="/">← Project list</a></p>
+<table><tr><th>id</th><th>scene</th><th>preset</th><th>description</th></tr>{rows}</table></body></html>"#
     )
 }
 
@@ -118,20 +118,20 @@ fn project_detail_html(name: &str) -> String {
         .ok()
         .and_then(|f| f.projects.into_iter().find(|p| p.name == name));
     let Some(entry) = entry else {
-        return format!("<html><body><h1>未找到: {name}</h1><a href=\"/\">返回</a></body></html>");
+        return format!("<html><body><h1>Not found: {name}</h1><a href=\"/\">Back</a></body></html>");
     };
     let root = Path::new(&entry.path);
-    let cargo = fs_read_or(&root.join("Cargo.toml"), "(无 Cargo.toml)");
-    let mono = fs_read_or(&root.join("monolith.toml"), "(未启用 Monolith)");
+    let cargo = fs_read_or(&root.join("Cargo.toml"), "(no Cargo.toml)");
+    let mono = fs_read_or(&root.join("monolith.toml"), "(Monolith not enabled)");
     let chart = bench_chart_js(root);
     format!(
         r#"<!DOCTYPE html><html><head><meta charset="utf-8"><title>{name}</title>
 <style>body{{font-family:system-ui;margin:2rem;max-width:960px}}pre{{background:#f4f4f4;padding:1rem;overflow:auto}}
 canvas{{max-width:100%}}</style></head><body>
-<h1>{name}</h1><p>路径: <code>{}</code> · 模板: {} · <a href="/">列表</a></p>
+<h1>{name}</h1><p>Path: <code>{}</code> · Template: {} · <a href="/">List</a></p>
 <h2>Cargo.toml</h2><pre>{cargo}</pre>
 <h2>monolith.toml</h2><pre>{mono}</pre>
-<h2>bench 趋势 (p50 ms)</h2>
+<h2>bench trend (p50 ms)</h2>
 <canvas id="c" width="640" height="200"></canvas>
 <script>{chart}</script>
 </body></html>"#,
@@ -147,7 +147,7 @@ fn fs_read_or(p: &Path, fallback: &str) -> String {
 fn bench_chart_js(root: &Path) -> String {
     let path = root.join("bench_history.json");
     let Ok(raw) = std::fs::read_to_string(&path) else {
-        return "document.getElementById('c').insertAdjacentHTML('afterend','<p>无 bench_history.json</p>');".into();
+        return "document.getElementById('c').insertAdjacentHTML('afterend','<p>No bench_history.json</p>');".into();
     };
     let Ok(v) = serde_json::from_str::<serde_json::Value>(&raw) else {
         return String::new();
@@ -179,7 +179,7 @@ function draw(data,color) {{
   ctx.stroke();
 }}
 draw(std,'#2563eb'); draw(mono,'#16a34a');
-ctx.fillStyle='#333'; ctx.fillText('标准',p,14); ctx.fillStyle='#16a34a'; ctx.fillText('Monolith',p+50,14);
+ctx.fillStyle='#333'; ctx.fillText('Standard',p,14); ctx.fillStyle='#16a34a'; ctx.fillText('Monolith',p+50,14);
 "#
     )
 }

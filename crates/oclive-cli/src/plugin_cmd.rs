@@ -16,38 +16,38 @@ pub struct PluginCli {
 
 #[derive(Subcommand, Debug)]
 pub enum PluginCommands {
-    /// 生成目录或 Remote 插件骨架（manifest + RPC 桩 + README）
+    /// Scaffold directory or Remote plugin (manifest + RPC stubs + README)
     Create(PluginCreateArgs),
-    /// 安装插件并解析 plugin_dependencies
+    /// Install plugin and resolve plugin_dependencies
     Install(crate::plugin_ext::PluginInstallArgs),
-    /// 卸载插件
+    /// Uninstall plugin
     Uninstall(crate::plugin_ext::PluginUninstallArgs),
-    /// RPC 契约烟测
+    /// RPC contract smoke test
     Test(crate::plugin_ext::PluginTestArgs),
-    /// [deprecated] 搜索插件 — 请用 `oclive market search`
+    /// [deprecated] Search plugins — use `oclive market search`
     Search(crate::plugin_ext::PluginSearchArgs),
-    /// [deprecated] 检查更新 — 请用 `oclive market install`
+    /// [deprecated] Check updates — use `oclive market install`
     Update(crate::plugin_ext::PluginUpdateArgs),
 }
 
 #[derive(Parser, Debug, Clone)]
 pub struct PluginCreateArgs {
-    /// 插件名称（用于生成 id 与显示名）
+    /// Plugin name (used for id and display name)
     pub name: String,
 
-    /// 插件类型：directory（子进程 RPC）| remote（HTTP 侧车）
+    /// Plugin type: directory (subprocess RPC) | remote (HTTP sidecar)
     #[arg(long, value_enum)]
     pub r#type: Option<PluginTypeArg>,
 
-    /// 提供的槽位（可重复：--provides llm --provides memory）
+    /// Slots provided (repeat: --provides llm --provides memory)
     #[arg(long = "provides", value_enum)]
     pub provides: Vec<PluginSlotArg>,
 
-    /// 输出根目录（默认 ./plugins/；最终目录为 <output>/<plugin_id>/）
+    /// Output root (default ./plugins/; final dir is <output>/<plugin_id>/)
     #[arg(short = 'o', long, default_value = "./plugins")]
     pub output: PathBuf,
 
-    /// 非交互（须同时提供 --type 与至少一个 --provides）
+    /// Non-interactive (requires --type and at least one --provides)
     #[arg(long)]
     pub non_interactive: bool,
 }
@@ -133,7 +133,7 @@ fn slug_to_plugin_id(name: &str) -> String {
 
 fn run_create(args: PluginCreateArgs) -> Result<()> {
     let display_name = if args.name.trim().is_empty() {
-        bail!("插件名称不能为空");
+        bail!("Plugin name cannot be empty");
     } else {
         args.name.trim().to_string()
     };
@@ -141,11 +141,11 @@ fn run_create(args: PluginCreateArgs) -> Result<()> {
     let plugin_type = if let Some(t) = args.r#type {
         t
     } else if args.non_interactive {
-        bail!("非交互模式须指定 --type directory 或 --type remote");
+        bail!("Non-interactive mode requires --type directory or --type remote");
     } else {
-        let items = ["directory（目录插件，Node RPC 子进程）", "remote（Remote HTTP 侧车，Python）"];
+        let items = ["directory (directory plugin, Node RPC subprocess)", "remote (Remote HTTP sidecar, Python)"];
         let idx = Select::with_theme(&ColorfulTheme::default())
-            .with_prompt("插件类型")
+            .with_prompt("Plugin type")
             .items(&items)
             .default(0)
             .interact()
@@ -163,19 +163,19 @@ fn run_create(args: PluginCreateArgs) -> Result<()> {
         v.dedup();
         v
     } else if args.non_interactive {
-        bail!("非交互模式须至少指定一个 --provides（如 --provides llm）");
+        bail!("Non-interactive mode requires at least one --provides (e.g. --provides llm)");
     } else {
         let labels = [
-            "llm（主对话）",
-            "memory（记忆）",
-            "emotion（情绪）",
-            "event（事件）",
-            "prompt（Prompt）",
-            "agent（Agent）",
-            "complex_emotion（复杂情感）",
+            "llm (main dialogue)",
+            "memory",
+            "emotion",
+            "event",
+            "prompt",
+            "agent",
+            "complex_emotion",
         ];
         let chosen: Vec<usize> = MultiSelect::with_theme(&ColorfulTheme::default())
-            .with_prompt("提供哪些槽位（RPC 方法桩）")
+            .with_prompt("Which slots to provide (RPC method stubs)")
             .items(&labels)
             .defaults(&[true, false, false, false, false, false, false])
             .interact()
@@ -197,7 +197,7 @@ fn run_create(args: PluginCreateArgs) -> Result<()> {
     };
 
     if slots.is_empty() {
-        bail!("至少选择一个 provides 槽位");
+        bail!("Select at least one provides slot");
     }
 
     let plugin_id = slug_to_plugin_id(&display_name);
@@ -205,7 +205,7 @@ fn run_create(args: PluginCreateArgs) -> Result<()> {
     fs::create_dir_all(&out_root).context("create output")?;
     let plugin_dir = out_root.join(&plugin_id);
     if plugin_dir.exists() {
-        bail!("目标目录已存在: {}", plugin_dir.display());
+        bail!("Target directory already exists: {}", plugin_dir.display());
     }
     fs::create_dir_all(&plugin_dir).context("create plugin dir")?;
 
@@ -238,10 +238,10 @@ fn run_create(args: PluginCreateArgs) -> Result<()> {
     let manifest_str = fs::read_to_string(plugin_dir.join("manifest.json"))?;
     if plugin_type == PluginTypeArg::Directory {
         validate_directory_plugin_manifest_permissions(&manifest_str)
-            .map_err(|e| anyhow::anyhow!("manifest 权限校验失败: {e}"))?;
+            .map_err(|e| anyhow::anyhow!("manifest permission validation failed: {e}"))?;
     }
 
-    println!("✓ 插件骨架已生成: {}", plugin_dir.display());
+    println!("✓ Plugin scaffold generated: {}", plugin_dir.display());
     println!("  manifest.json · {} · README.md", rpc_file.0);
     Ok(())
 }

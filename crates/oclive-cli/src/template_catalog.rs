@@ -1,4 +1,4 @@
-//! 内核工厂模板目录（`--list-templates` 与交互式配方选择）。
+//! Kernel factory template catalog (`--list-templates` and interactive recipe selection).
 
 use crate::init::{InitTemplateArg, RolePackKind, ProjectType, template_defaults};
 
@@ -15,56 +15,56 @@ pub struct TemplateCatalogEntry {
 pub const CATALOG: &[TemplateCatalogEntry] = &[
     TemplateCatalogEntry {
         id: "robot-soul",
-        scene: "智能玩偶 / 嵌入式",
-        description: "minimal 预设 + 默认 Monolith + robot-soul-minimal 角色包",
+        scene: "Smart doll / embedded",
+        description: "minimal preset + default Monolith + robot-soul-minimal role pack",
         preset: "minimal",
-        monolith: "启用",
+        monolith: "on",
         project_type: "kernel_server",
         default_role_pack: "robot-soul-minimal",
     },
     TemplateCatalogEntry {
         id: "robot-gateway",
-        scene: "智能网关 / 家庭中枢",
-        description: "mixed 预设 + Monolith + Agent/MCP 骨架（roles/gateway + mcp_servers/）",
+        scene: "Smart gateway / home hub",
+        description: "mixed preset + Monolith + Agent/MCP skeleton (roles/gateway + mcp_servers/)",
         preset: "mixed",
-        monolith: "启用",
+        monolith: "on",
         project_type: "kernel_server",
-        default_role_pack: "gateway 骨架（非 default 示例包）",
+        default_role_pack: "gateway skeleton (not default example pack)",
     },
     TemplateCatalogEntry {
         id: "dialogue-only",
-        scene: "纯对话服务",
-        description: "full 预设 + 通用 default 角色包，Monolith 默认关闭",
+        scene: "Dialogue-only service",
+        description: "full preset + default example role pack; Monolith off by default",
         preset: "full",
-        monolith: "关闭",
+        monolith: "off",
         project_type: "kernel_server",
         default_role_pack: "default",
     },
     TemplateCatalogEntry {
         id: "headless-api",
-        scene: "纯 HTTP API",
-        description: "full 预设、无示例角色包，可按需 --monolith",
+        scene: "Headless HTTP API",
+        description: "full preset, no example role pack; optional --monolith",
         preset: "full",
-        monolith: "关闭",
+        monolith: "off",
         project_type: "kernel_server",
-        default_role_pack: "无",
+        default_role_pack: "none",
     },
     TemplateCatalogEntry {
         id: "library-embed",
-        scene: "库嵌入其它 Rust 进程",
-        description: "minimal 预设、library 类型，不生成 monolith.toml",
+        scene: "Library embedded in another Rust process",
+        description: "minimal preset, library type; no monolith.toml generated",
         preset: "minimal",
-        monolith: "关闭",
+        monolith: "off",
         project_type: "library",
-        default_role_pack: "无",
+        default_role_pack: "none",
     },
 ];
 
 pub fn print_templates_table() {
-    println!("oclive 内核工厂模板（--template <id>）\n");
+    println!("oclive kernel factory templates (--template <id>)\n");
     println!(
         "{:<16} {:<22} {:<8} {:<8} {:<14} {}",
-        "template", "场景", "preset", "Monolith", "project-type", "默认角色包"
+        "template", "scene", "preset", "Monolith", "project-type", "default role pack"
     );
     println!("{}", "-".repeat(96));
     for e in CATALOG {
@@ -73,8 +73,8 @@ pub fn print_templates_table() {
             e.id, e.scene, e.preset, e.monolith, e.project_type, e.default_role_pack
         );
     }
-    println!("\n说明：显式 --preset / --monolith / --with-role-pack 等参数优先于模板默认值。");
-    println!("愿景与焊接对比：creator-docs/getting-started/KERNEL_FACTORY_VISION.md");
+    println!("\nNote: explicit --preset / --monolith / --with-role-pack override template defaults.");
+    println!("Vision and weld comparison: creator-docs/getting-started/KERNEL_FACTORY_VISION.md");
     for e in CATALOG {
         println!("  · {} — {}", e.id, e.description);
     }
@@ -93,13 +93,13 @@ pub fn template_from_id(id: &str) -> Option<InitTemplateArg> {
 
 pub fn role_pack_label(kind: RolePackKind) -> &'static str {
     match kind {
-        RolePackKind::None => "无",
+        RolePackKind::None => "none",
         RolePackKind::DefaultExample => "default",
         RolePackKind::RobotSoulMinimal => "robot-soul-minimal",
     }
 }
 
-/// 由模板构建初始 `ProjectConfig` 基线（不含 project_name 以外的 CLI 覆盖）。
+/// Build initial `ProjectConfig` baseline from a template (CLI overrides apply afterward).
 pub fn project_config_from_template(name: &str, t: InitTemplateArg) -> crate::init::ProjectConfig {
     let td = template_defaults(t);
     let mut cfg = crate::init::preset_config(name, td.preset);

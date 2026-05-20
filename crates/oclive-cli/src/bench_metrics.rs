@@ -8,7 +8,7 @@ use std::time::{Duration, Instant};
 /// 运行 bench 子进程并返回（耗时 ms, 峰值 RSS MiB）。
 pub fn run_bench_child_with_peak(bin: &Path, inner_iters: u32) -> Result<(f64, u64)> {
     if !bin.is_file() {
-        bail!("找不到二进制: {}", bin.display());
+        bail!("Binary not found: {}", bin.display());
     }
     let mut child = Command::new(bin)
         .env("OCLIVE_KERNEL_BENCH_ITERS", inner_iters.to_string())
@@ -18,7 +18,7 @@ pub fn run_bench_child_with_peak(bin: &Path, inner_iters: u32) -> Result<(f64, u
     let peak_bytes = poll_peak_rss(&mut child)?;
     let st = child.wait().with_context(|| format!("wait {}", bin.display()))?;
     if !st.success() {
-        bail!("二进制退出失败: {:?}", st.code());
+        bail!("Binary exited with failure: {:?}", st.code());
     }
     let elapsed_ms = t0.elapsed().as_secs_f64() * 1000.0;
     let peak_mib = peak_bytes / (1024 * 1024);

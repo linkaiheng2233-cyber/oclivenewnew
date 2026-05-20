@@ -13,67 +13,67 @@ use std::path::{Path, PathBuf};
 
 #[derive(Parser, Debug, Clone)]
 pub struct BenchArgs {
-    /// 项目根目录（含 Cargo.toml、monolith.toml）
+    /// Project root (contains Cargo.toml, monolith.toml)
     #[arg(short = 'o', long, default_value = ".")]
     pub path: PathBuf,
 
-    /// 外层重复次数（每轮一次子进程，用于分位数）
+    /// Outer repeat count (one subprocess per run, for percentiles)
     #[arg(long, default_value_t = 20)]
     pub runs: u32,
 
-    /// 每次子进程内由 `OCLIVE_KERNEL_BENCH_ITERS` 驱动的热循环次数
+    /// Hot-loop iterations per subprocess (`OCLIVE_KERNEL_BENCH_ITERS`)
     #[arg(long, default_value_t = 400)]
     pub inner_iters: u32,
 
-    /// 先执行 `cargo build --release`（两次构建）
+    /// Run `cargo build --release` first (two builds)
     #[arg(long)]
     pub release: bool,
 
-    /// 仅将 JSON 报告写到 stdout（便于管道与 Schema 校验）；进度信息走 stderr
+    /// Write JSON report to stdout only (pipes / schema validation); progress on stderr
     #[arg(long)]
     pub json: bool,
 
-    /// 写入 JSON 报告路径；`-` 表示 stdout（与 `--json` 二选一效果接近时优先本参数写文件）
+    /// JSON report path; `-` means stdout (prefer this over `--json` when writing to a file)
     #[arg(long, default_value = "-")]
     pub output: String,
 
-    /// 将本次报告追加到项目根目录 `bench_history.json`（本地文件，勿提交）
+    /// Append this report to `bench_history.json` at project root (local; do not commit)
     #[arg(long)]
     pub save: bool,
 
-    /// 对比 `bench_history.json` 中最近两次记录（不运行采样）
+    /// Compare the two most recent entries in `bench_history.json` (no sampling)
     #[arg(long)]
     pub compare: bool,
 
-    /// 打印 `bench_history.json` 全部记录的趋势表（不运行采样）
+    /// Print trend table for all `bench_history.json` entries (no sampling)
     #[arg(long)]
     pub history: bool,
 
-    /// 监听 `src/**/*.rs` 与 `Cargo.toml`，变更后自动 release 构建 + bench（3 轮）并 --save
+    /// Watch `src/**/*.rs` and `Cargo.toml`; on change run release build + bench (3 runs) and --save
     #[arg(long)]
     pub watch: bool,
 
-    /// 终端实时性能仪表盘（sparkline；与顶层 Web `oclive dashboard` 不同）
+    /// Terminal live performance dashboard (sparkline; not the web `oclive dashboard`)
     #[arg(long)]
     pub live: bool,
 
-    /// [deprecated] 请改用 `--live`
+    /// [deprecated] Use `--live` instead
     #[arg(long, hide = true)]
     pub dashboard: bool,
 
-    /// Monolith 档位 × preset 矩阵（各 3 轮）
+    /// Monolith tier × preset matrix (3 runs each)
     #[arg(long)]
     pub matrix: bool,
 
-    /// 与 bench_history 最近一条对比，超阈值则退出码 1
+    /// Compare to latest bench_history entry; exit 1 if over threshold
     #[arg(long)]
     pub regression: bool,
 
-    /// 回归阈值（%），未指定时使用各指标默认（p50 5 / p95 10 / 内存与体积 5–10）
+    /// Regression threshold (%); defaults per metric if omitted (p50 5 / p95 10 / memory & size 5–10)
     #[arg(long)]
     pub regression_threshold: Option<f64>,
 
-    /// 与指定 Git 引用对比性能（各 5 轮）
+    /// Compare performance against a Git ref (5 runs each)
     #[arg(long = "compare-versions")]
     pub compare_versions: Option<String>,
 
@@ -89,7 +89,7 @@ pub struct BenchArgs {
     #[arg(long, default_value_t = 30)]
     pub stress_duration: u64,
 
-    /// 透传给 `cargo build` 的附加参数（放在 `--` 之后）
+    /// Extra args forwarded to `cargo build` (after `--`)
     #[arg(trailing_var_arg = true, allow_hyphen_values = true)]
     pub cargo_extra: Vec<String>,
 }
@@ -224,12 +224,12 @@ fn trend_arrow(prev: f64, cur: f64, lower_is_better: bool) -> &'static str {
 fn print_bench_history(root: &Path, json_out: bool) -> Result<()> {
     let path = history_path(root);
     if !path.is_file() {
-        bail!("未找到 {}；请先运行 `oclive bench --save ...`", path.display());
+        bail!("Not found: {}; run `oclive bench --save ...` first", path.display());
     }
     let raw = fs::read_to_string(&path).context("read bench_history")?;
     let file: BenchHistoryFile = serde_json::from_str(&raw).context("parse bench_history")?;
     if file.entries.is_empty() {
-        bail!("bench_history 无记录；请先 `oclive bench --save`");
+        bail!("bench_history has no entries; run `oclive bench --save` first");
     }
     if json_out {
         #[derive(Serialize)]
@@ -286,7 +286,7 @@ fn print_bench_history(root: &Path, json_out: bool) -> Result<()> {
         return Ok(());
     }
 
-    println!("oclive bench --history（{} 条）", file.entries.len());
+    println!("oclive bench --history ({} entries)", file.entries.len());
     println!("┌────────────┬──────────┬────────────┬──────────┬──────────┐");
     println!("│ Date       │ Standard │ Monolith   │ Peak Mem │ Binary   │");
     println!("├────────────┼──────────┼────────────┼──────────┼──────────┤");
@@ -320,7 +320,7 @@ fn print_bench_history(root: &Path, json_out: bool) -> Result<()> {
     }
     println!("└────────────┴──────────┴────────────┴──────────┴──────────┘");
     if file.entries.len() >= 2 {
-        println!("趋势（相对上一行）：Standard Monolith PeakMem Binary（↓=改善 ↑=变差 →=持平）");
+        println!("Trend (vs previous row): Standard Monolith PeakMem Binary (↓=better ↑=worse →=flat)");
     }
     Ok(())
 }
@@ -344,25 +344,25 @@ fn unix_ts_to_date(ts: u64) -> String {
 fn compare_history(root: &Path) -> Result<()> {
     let path = history_path(root);
     if !path.is_file() {
-        bail!("未找到 {}；请先运行 `oclive bench --save ...`", path.display());
+        bail!("Not found: {}; run `oclive bench --save ...` first", path.display());
     }
     let raw = fs::read_to_string(&path).context("read bench_history")?;
     let file: BenchHistoryFile = serde_json::from_str(&raw).context("parse bench_history")?;
     if file.entries.len() < 2 {
         bail!(
-            "bench_history 记录不足 2 条（当前 {}）；请至少保存两次 bench 结果",
+            "bench_history has fewer than 2 entries (current {}); save at least two bench results",
             file.entries.len()
         );
     }
     let a = &file.entries[file.entries.len() - 2].report;
     let b = &file.entries[file.entries.len() - 1].report;
-    println!("oclive bench --compare（最近两次）");
+    println!("oclive bench --compare (last two runs)");
     println!("  ts: {} -> {}", file.entries[file.entries.len() - 2].ts, file.entries[file.entries.len() - 1].ts);
     let lines = [
-        ("standard 中位数 ms", a.standard_ms.p50, b.standard_ms.p50),
+        ("standard median ms", a.standard_ms.p50, b.standard_ms.p50),
         ("standard P95 ms", a.standard_ms.p95, b.standard_ms.p95),
         ("standard P99 ms", p99_from_samples(&a.standard_ms.samples), p99_from_samples(&b.standard_ms.samples)),
-        ("monolith 中位数 ms", a.monolith_ms.p50, b.monolith_ms.p50),
+        ("monolith median ms", a.monolith_ms.p50, b.monolith_ms.p50),
         ("monolith P95 ms", a.monolith_ms.p95, b.monolith_ms.p95),
         ("monolith P99 ms", p99_from_samples(&a.monolith_ms.samples), p99_from_samples(&b.monolith_ms.samples)),
     ];
@@ -390,7 +390,7 @@ fn resolve_project_root(path: &Path) -> Result<PathBuf> {
         std::env::current_dir().context("current_dir")?.join(path)
     };
     root.canonicalize()
-        .with_context(|| format!("无法解析项目路径: {}", root.display()))
+        .with_context(|| format!("cannot resolve project path: {}", root.display()))
 }
 
 fn read_package_name(manifest_dir: &Path) -> Result<String> {
@@ -401,7 +401,7 @@ fn read_package_name(manifest_dir: &Path) -> Result<String> {
         .and_then(|x| x.get("name"))
         .and_then(|n| n.as_str())
         .map(String::from)
-        .context("Cargo.toml 缺少 [package].name")
+        .context("Cargo.toml missing [package].name")
 }
 
 fn release_bin_path(dir: &Path, name: &str, release: bool) -> PathBuf {
@@ -468,10 +468,10 @@ fn run_bench_watch(root: &Path, base: &BenchArgs) -> Result<()> {
 
     let mt = root.join("monolith.toml");
     if !mt.is_file() {
-        bail!("bench --watch 需要 monolith.toml");
+        bail!("bench --watch requires monolith.toml");
     }
     eprintln!(
-        "[oclive bench --watch] 监听 {}（2s 防抖）",
+        "[oclive bench --watch] watching {} (2s debounce)",
         root.join("src").display()
     );
     let (tx, rx) = channel();
@@ -501,14 +501,14 @@ fn run_bench_watch(root: &Path, base: &BenchArgs) -> Result<()> {
         }
         if pending && last.elapsed() >= Duration::from_millis(2000) {
             last = Instant::now();
-            eprintln!("\n[oclive bench --watch] 检测到变更，开始构建与采样…");
+            eprintln!("\n[oclive bench --watch] change detected; building and sampling…");
             let mut run_args = base.clone();
             run_args.watch = false;
             run_args.release = true;
             run_args.runs = 3;
             run_args.save = true;
             if let Err(e) = run(run_args) {
-                eprintln!("[oclive bench --watch] 失败: {e}");
+                eprintln!("[oclive bench --watch] failed: {e}");
             } else if let Ok(file) = fs::read_to_string(history_path(root)) {
                 if let Ok(hist) = serde_json::from_str::<BenchHistoryFile>(&file) {
                     if let Some(cur) = hist.entries.last() {
@@ -528,7 +528,7 @@ fn print_watch_delta(prev: &BenchReport, cur: &BenchReport) {
     let d_std = cur.standard_ms.p50 - prev.standard_ms.p50;
     let d_mono = cur.monolith_ms.p50 - prev.monolith_ms.p50;
     println!(
-        "  对比上轮: standard p50 {:+.1}ms {} | monolith p50 {:+.1}ms {}",
+        "  vs last run: standard p50 {:+.1}ms {} | monolith p50 {:+.1}ms {}",
         d_std,
         arrow(d_std),
         d_mono,
@@ -555,7 +555,7 @@ pub fn run(args: BenchArgs) -> Result<()> {
         return run_bench_compare_versions(&root, git_ref, &args);
     }
     if args.dashboard {
-        eprintln!("⚠ [deprecated] `oclive bench --dashboard` 请改用 `--live`（Web 仪表盘请用 `oclive dashboard`）");
+        eprintln!("⚠ [deprecated] `oclive bench --dashboard` — use `--live` (web UI: `oclive dashboard`)");
     }
     if args.live || args.dashboard {
         return run_bench_live(&root, &args);
@@ -574,7 +574,7 @@ pub fn run(args: BenchArgs) -> Result<()> {
     }
     let mt = root.join("monolith.toml");
     if !mt.is_file() {
-        bail!("未找到 {}", mt.display());
+        bail!("Not found: {}", mt.display());
     }
     let file = if args.json {
         regenerate_monolith_from_disk_quiet(&root)?
@@ -582,20 +582,20 @@ pub fn run(args: BenchArgs) -> Result<()> {
         regenerate_monolith_from_disk(&root)?
     };
     if !file.monolith.enabled {
-        bail!("monolith.toml: enabled = false；bench 需要启用 Monolith 以对比双二进制。");
+        bail!("monolith.toml: enabled = false; bench needs Monolith enabled to compare both binaries.");
     }
 
     let build_time = if args.release {
-        eprintln!("cargo build --release（标准 + Monolith，计时）…");
+        eprintln!("cargo build --release (standard + Monolith, timed)…");
         let t = run_timed_dual_build(&root, true, &args.cargo_extra, file.monolith.enabled)
-            .context("预热构建（标准 + Monolith）")?;
+            .context("warm-up build (standard + Monolith)")?;
         StandardMonolithPair {
             standard: t.standard_secs,
             monolith: t.monolith_secs,
         }
     } else {
         cargo_build_dual(&root, false, &args.cargo_extra)
-            .context("预热构建（标准 + Monolith）")?;
+            .context("warm-up build (standard + Monolith)")?;
         StandardMonolithPair {
             standard: 0.0,
             monolith: 0.0,
@@ -642,7 +642,7 @@ pub fn run(args: BenchArgs) -> Result<()> {
     let json = serde_json::to_string_pretty(&report)?;
     if args.output != "-" && !args.json {
         fs::write(&args.output, &json).with_context(|| format!("write {}", args.output))?;
-        eprintln!("已写入 {}", args.output);
+        eprintln!("Wrote {}", args.output);
     } else {
         println!("{json}");
     }
@@ -653,7 +653,7 @@ pub fn run(args: BenchArgs) -> Result<()> {
         }
         if args.save {
             append_history(&root, &report)?;
-            eprintln!("已追加到 {}", history_path(&root).display());
+            eprintln!("Appended to {}", history_path(&root).display());
         }
         if code != 0 {
             std::process::exit(1);
@@ -662,7 +662,7 @@ pub fn run(args: BenchArgs) -> Result<()> {
     }
     if args.save {
         append_history(&root, &report)?;
-        eprintln!("已追加到 {}", history_path(&root).display());
+        eprintln!("Appended to {}", history_path(&root).display());
     }
     if !args.json && args.output != "-" {
         print_bench_comparison(&report);
@@ -702,7 +702,7 @@ fn run_bench_regression(
 ) -> Result<i32> {
     let path = history_path(root);
     if !path.is_file() {
-        anyhow::bail!("--regression 需要 bench_history.json；请先 oclive bench --save");
+        anyhow::bail!("--regression requires bench_history.json; run oclive bench --save first");
     }
     let raw = fs::read_to_string(&path)?;
     let file: BenchHistoryFile = serde_json::from_str(&raw)?;
@@ -710,7 +710,7 @@ fn run_bench_regression(
         .entries
         .last()
         .map(|e| &e.report)
-        .context("bench_history 无记录")?;
+        .context("bench_history has no entries")?;
     let th = default_thresholds(custom_threshold);
     let mut regressions = Vec::new();
 
@@ -781,14 +781,14 @@ fn run_bench_regression(
             .collect();
         println!("{}", serde_json::to_string_pretty(&rows)?);
     } else {
-        println!("oclive bench --regression（对比 bench_history 最近一条）\n");
+        println!("oclive bench --regression (vs latest bench_history entry)\n");
         for (name, base, cur, pct, limit) in &regressions {
             println!(
-                "  ⚠️ {name}: {base:.1} -> {cur:.1} (+{pct:.1}% > 阈值 {limit:.0}%)"
+                "  ⚠️ {name}: {base:.1} -> {cur:.1} (+{pct:.1}% > threshold {limit:.0}%)"
             );
         }
         if regressions.is_empty() {
-            println!("  ✅ 未检测到超过阈值的性能退化");
+            println!("  ✅ No regression above threshold detected");
         }
     }
     Ok(if regressions.is_empty() { 0 } else { 1 })
@@ -808,11 +808,11 @@ fn run_bench_compare_versions(root: &Path, git_ref: &str, base: &BenchArgs) -> R
     let stashed = git_stash_push(&root)?;
     let original_ref = git_current_ref(&root)?;
 
-    eprintln!("→ 检出 {git_ref} 并采样…");
+    eprintln!("→ Checking out {git_ref} and sampling…");
     git_checkout(&root, git_ref)?;
     let other = collect_bench_report(&root, &args_other)?;
 
-    eprintln!("→ 恢复当前工作区并采样…");
+    eprintln!("→ Restoring workspace and sampling…");
     git_checkout(&root, &original_ref)?;
     if stashed {
         git_stash_pop(&root)?;
@@ -844,7 +844,7 @@ fn run_bench_compare_versions(root: &Path, git_ref: &str, base: &BenchArgs) -> R
 fn collect_bench_report(root: &Path, args: &BenchArgs) -> Result<BenchReport> {
     let mt = root.join("monolith.toml");
     if !mt.is_file() {
-        anyhow::bail!("需要 monolith.toml");
+        anyhow::bail!("monolith.toml required");
     }
     let file = regenerate_monolith_from_disk_quiet(root)?;
     if args.release {
@@ -962,7 +962,7 @@ fn git_stash_pop(root: &Path) -> Result<()> {
         .current_dir(root)
         .status()?;
     if !st.success() {
-        eprintln!("⚠ git stash pop 有冲突，请手动解决");
+        eprintln!("⚠ git stash pop conflict; resolve manually");
     }
     Ok(())
 }
@@ -973,7 +973,7 @@ fn git_checkout(root: &Path, refname: &str) -> Result<()> {
         .current_dir(root)
         .status()?;
     if !st.success() {
-        anyhow::bail!("git checkout {refname} 失败");
+        anyhow::bail!("git checkout {refname} failed");
     }
     Ok(())
 }
@@ -997,8 +997,8 @@ pub fn print_bench_comparison(report: &BenchReport) {
     let mono_p95 = report.monolith_ms.p95;
     let improve_p50 = pct_improvement(std_p50, mono_p50);
     let improve_p95 = pct_improvement(std_p95, mono_p95);
-    println!("\n—— 标准版 vs Monolith 焊接版（{} 轮, release={}）——", report.runs, report.release);
-    println!("  指标        标准版(ms)   焊接版(ms)   变化");
+    println!("\n—— Standard vs Monolith welded ({}, release={}) ——", report.runs, report.release);
+    println!("  metric      standard(ms)  monolith(ms)  change");
     println!(
         "  p50         {:>10.3}   {:>10.3}   {:>+6.1}%",
         std_p50, mono_p50, improve_p50
@@ -1008,21 +1008,21 @@ pub fn print_bench_comparison(report: &BenchReport) {
         std_p95, mono_p95, improve_p95
     );
     if mono_p50 < std_p50 {
-        println!("  → 焊接版中位数更低（约 {:.1}%）", improve_p50);
+        println!("  → Monolith median lower (~{:.1}%)", improve_p50);
     } else if mono_p50 > std_p50 {
-        println!("  → 焊接版中位数更高；可缩小 monolith.toml 的 weld_modules");
+        println!("  → Monolith median higher; reduce weld_modules in monolith.toml");
     } else {
-        println!("  → 中位数接近；可增加 runs 或检查构建 profile");
+        println!("  → Medians close; increase runs or check build profile");
     }
-    print_pair_u64("二进制 (bytes)", report.binary_size.standard, report.binary_size.monolith);
+    print_pair_u64("binary (bytes)", report.binary_size.standard, report.binary_size.monolith);
     print_pair_u64(
-        "峰值内存 (MiB)",
+        "peak memory (MiB)",
         report.peak_memory.standard,
         report.peak_memory.monolith,
     );
     if report.release {
         print_pair_f64(
-            "编译时间 (s)",
+            "compile time (s)",
             report.build_time.standard,
             report.build_time.monolith,
         );
@@ -1089,7 +1089,7 @@ fn run_bench_live(root: &Path, base: &BenchArgs) -> Result<()> {
 
     let mt = root.join("monolith.toml");
     if !mt.is_file() {
-        bail!("bench --live 需要 monolith.toml");
+        bail!("bench --live requires monolith.toml");
     }
     enable_raw_mode().context("raw")?;
     stdout().execute(EnterAlternateScreen).context("alt")?;
@@ -1140,12 +1140,12 @@ fn run_bench_live(root: &Path, base: &BenchArgs) -> Result<()> {
                     Constraint::Length(3),
                 ])
                 .split(f.area());
-            let title = Paragraph::new("oclive bench --live（q 退出 · 每秒采样）")
+            let title = Paragraph::new("oclive bench --live (q quit · sample every second)")
                 .block(Block::default().borders(Borders::ALL));
             f.render_widget(title, chunks[0]);
             let body = if let Some(ref r) = latest {
                 format!(
-                    "标准版  p50 {:>7.1}ms  P95 {:>7.1}ms  峰值 {:>6}MiB  二进制 {:>6.1}MiB\n焊接版  p50 {:>7.1}ms  P95 {:>7.1}ms  峰值 {:>6}MiB  二进制 {:>6.1}MiB\n\n最近5轮 p50 趋势:\n  标准 {} {}\n  焊接 {} {}",
+                    "standard  p50 {:>7.1}ms  P95 {:>7.1}ms  peak {:>6}MiB  binary {:>6.1}MiB\nmonolith  p50 {:>7.1}ms  P95 {:>7.1}ms  peak {:>6}MiB  binary {:>6.1}MiB\n\nlast 5 runs p50 trend:\n  std {} {}\n  mono {} {}",
                     r.standard_ms.p50,
                     r.standard_ms.p95,
                     r.peak_memory.standard,
@@ -1168,10 +1168,10 @@ fn run_bench_live(root: &Path, base: &BenchArgs) -> Result<()> {
                     ),
                 )
             } else {
-                "正在首次采样…".into()
+                "Running first sample…".into()
             };
             f.render_widget(
-                Paragraph::new(body).block(Block::default().title(" 指标 ").borders(Borders::ALL)),
+                Paragraph::new(body).block(Block::default().title(" metrics ").borders(Borders::ALL)),
                 chunks[1],
             );
             f.render_widget(
@@ -1180,7 +1180,7 @@ fn run_bench_live(root: &Path, base: &BenchArgs) -> Result<()> {
                     sparkline(&hist_std),
                     sparkline(&hist_mono)
                 ))
-                .block(Block::default().title(" 趋势 ").borders(Borders::ALL)),
+                .block(Block::default().title(" trend ").borders(Borders::ALL)),
                 chunks[2],
             );
         })?;
@@ -1261,13 +1261,13 @@ fn run_bench_matrix(root: &Path, base: &BenchArgs) -> Result<()> {
     let mut matrix: Vec<Vec<f64>> = vec![vec![0.0; presets.len()]; tiers.len()];
 
     if base.release {
-        eprintln!("矩阵基准：release 预热构建…");
+        eprintln!("Matrix baseline: release warm-up build…");
         cargo_build_dual(root, true, &base.cargo_extra)?;
     }
 
     for (ri, (tier_name, tier)) in tiers.iter().enumerate() {
         for (pi, preset) in presets.iter().enumerate() {
-            eprintln!("矩阵 [{tier_name} × {preset}] …");
+            eprintln!("matrix [{tier_name} × {preset}] …");
             apply_matrix_preset(root, preset)?;
             write_matrix_monolith(root, *tier)?;
             regenerate_monolith_from_disk_quiet(root)?;
