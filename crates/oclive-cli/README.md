@@ -34,3 +34,5 @@ cargo run -p oclive-cli -- init --non-interactive --preset minimal -o /tmp/my-ke
 **快速上手**：`cargo run -p oclive-cli -- doctor` → `cargo run -p oclive-cli -- init --quick -o ./my-chat`（见 [KERNEL_FACTORY_VISION.md](../../creator-docs/getting-started/KERNEL_FACTORY_VISION.md)）。
 
 **`doctor`** / **`bench`**（报告 schema v2：延迟 + 二进制大小 + 峰值内存 + 编译时间）/ **`--list-templates`** / **`--quick`**：见 [OCLIVE_CLI_GUIDE.md](../../creator-docs/cli/OCLIVE_CLI_GUIDE.md) 与 [SETTINGS_REFERENCE.md](../../creator-docs/cli/SETTINGS_REFERENCE.md)。
+
+**Shell 补全**：`cargo run -p oclive-cli -- completions bash`（亦支持 `zsh`、`fish`、`powershell`）；安装说明见 CLI 指南「巩固强化」节。
