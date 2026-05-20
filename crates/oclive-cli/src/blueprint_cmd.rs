@@ -6,6 +6,12 @@ use clap::{Parser, Subcommand};
 use std::path::PathBuf;
 
 #[derive(Parser, Debug)]
+#[command(
+    about = "[experimental/legacy] pipeline.ocblueprint 校验（桌面主路径已移除；纯内核预备工具链）",
+    long_about = "校验角色包或工程中的 pipeline.ocblueprint JSON。\n\
+                  桌面宿主主编排以 process_message 为准，本命令不改变运行时行为。\n\
+                  推荐新工程使用 init --pipeline 生成 Rust 编排顺序文档。"
+)]
 pub struct BlueprintCli {
     #[command(subcommand)]
     pub command: BlueprintCommand,
