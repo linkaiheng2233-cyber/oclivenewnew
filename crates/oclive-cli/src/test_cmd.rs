@@ -19,6 +19,22 @@ pub struct TestArgs {
     /// Run jobs aligned with `.github/workflows/ci.yml` locally
     #[arg(long)]
     pub ci_parity: bool,
+
+    /// Generate HTML coverage via cargo llvm-cov
+    #[arg(long)]
+    pub coverage: bool,
+
+    /// Open coverage report in browser after generation
+    #[arg(long)]
+    pub open: bool,
+
+    /// Run Miri undefined-behavior tests
+    #[arg(long)]
+    pub miri: bool,
+
+    /// Miri: test only this crate (`-p`)
+    #[arg(long = "miri-only")]
+    pub miri_only: Option<String>,
 }
 
 #[derive(Serialize)]
@@ -30,6 +46,12 @@ struct CheckResult {
 
 pub fn run(args: TestArgs) -> Result<()> {
     let root = args.path.canonicalize().unwrap_or(args.path.clone());
+    if args.coverage {
+        return crate::test_coverage::run_coverage(&root, args.open);
+    }
+    if args.miri {
+        return crate::test_miri::run_miri(&root, args.miri_only.as_deref());
+    }
     if args.ci_parity {
         return crate::test_ci_parity::run_ci_parity(&root, args.skip_oocp, args.json);
     }
