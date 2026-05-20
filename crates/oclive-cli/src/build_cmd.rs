@@ -51,7 +51,7 @@ fn merge_features_for_monolith(user: &[String]) -> String {
     parts.join(",")
 }
 
-fn run_cargo_build(
+pub fn run_cargo_build(
     root: &Path,
     release: bool,
     features: Option<&str>,
@@ -70,11 +70,17 @@ fn run_cargo_build(
     for a in extra {
         cmd.arg(a);
     }
-    let st = cmd
-        .status()
+    let output = cmd
+        .output()
         .with_context(|| format!("spawn {:?}", cmd.get_program()))?;
-    if !st.success() {
-        bail!("cargo build 失败（退出码 {:?}）", st.code());
+    if !output.status.success() {
+        let stderr = String::from_utf8_lossy(&output.stderr);
+        let hint = crate::cargo_hints::suggest_cargo_build_failure(&stderr);
+        eprintln!("\n{hint}\n");
+        if !stderr.is_empty() {
+            eprintln!("--- cargo stderr ---\n{stderr}");
+        }
+        bail!("cargo build 失败（退出码 {:?}）", output.status.code());
     }
     Ok(())
 }

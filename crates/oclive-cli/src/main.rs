@@ -8,6 +8,7 @@
 mod bench_cmd;
 mod bench_metrics;
 mod blueprint;
+mod cargo_hints;
 mod doctor_cmd;
 mod blueprint_cmd;
 mod build_cmd;
