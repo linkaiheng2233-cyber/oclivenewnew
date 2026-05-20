@@ -47,6 +47,7 @@ fn run_post_init_bench_inner(root: &Path, bench_dir: &Path) -> Result<()> {
         compare: false,
         history: false,
         watch: false,
+        live: false,
         dashboard: false,
         matrix: false,
         regression: false,

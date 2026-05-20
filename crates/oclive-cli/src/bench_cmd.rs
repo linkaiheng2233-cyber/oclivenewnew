@@ -53,8 +53,12 @@ pub struct BenchArgs {
     #[arg(long)]
     pub watch: bool,
 
-    /// 终端实时仪表盘（每秒 bench --runs 1，按 q 退出）
+    /// 终端实时性能仪表盘（sparkline；与顶层 Web `oclive dashboard` 不同）
     #[arg(long)]
+    pub live: bool,
+
+    /// [deprecated] 请改用 `--live`
+    #[arg(long, hide = true)]
     pub dashboard: bool,
 
     /// Monolith 档位 × preset 矩阵（各 3 轮）
@@ -536,7 +540,10 @@ pub fn run(args: BenchArgs) -> Result<()> {
         return run_bench_compare_versions(&root, git_ref, &args);
     }
     if args.dashboard {
-        return run_bench_dashboard(&root, &args);
+        eprintln!("⚠ [deprecated] `oclive bench --dashboard` 请改用 `--live`（Web 仪表盘请用 `oclive dashboard`）");
+    }
+    if args.live || args.dashboard {
+        return run_bench_live(&root, &args);
     }
     if args.matrix {
         return run_bench_matrix(&root, &args);
@@ -1056,7 +1063,7 @@ fn sparkline(values: &[f64]) -> String {
         .collect()
 }
 
-fn run_bench_dashboard(root: &Path, base: &BenchArgs) -> Result<()> {
+fn run_bench_live(root: &Path, base: &BenchArgs) -> Result<()> {
     use crossterm::event::{self, Event, KeyCode, KeyEventKind};
     use crossterm::terminal::{disable_raw_mode, enable_raw_mode, EnterAlternateScreen, LeaveAlternateScreen};
     use crossterm::ExecutableCommand;
@@ -1067,7 +1074,7 @@ fn run_bench_dashboard(root: &Path, base: &BenchArgs) -> Result<()> {
 
     let mt = root.join("monolith.toml");
     if !mt.is_file() {
-        bail!("bench --dashboard 需要 monolith.toml");
+        bail!("bench --live 需要 monolith.toml");
     }
     enable_raw_mode().context("raw")?;
     stdout().execute(EnterAlternateScreen).context("alt")?;
@@ -1084,6 +1091,7 @@ fn run_bench_dashboard(root: &Path, base: &BenchArgs) -> Result<()> {
         if last_run.elapsed() >= Duration::from_secs(1) {
             last_run = Instant::now();
             let mut run_args = base.clone();
+            run_args.live = false;
             run_args.dashboard = false;
             run_args.matrix = false;
             run_args.watch = false;
@@ -1117,7 +1125,7 @@ fn run_bench_dashboard(root: &Path, base: &BenchArgs) -> Result<()> {
                     Constraint::Length(3),
                 ])
                 .split(f.area());
-            let title = Paragraph::new("oclive bench --dashboard（q 退出 · 每秒采样）")
+            let title = Paragraph::new("oclive bench --live（q 退出 · 每秒采样）")
                 .block(Block::default().borders(Borders::ALL));
             f.render_widget(title, chunks[0]);
             let body = if let Some(ref r) = latest {
@@ -1249,6 +1257,7 @@ fn run_bench_matrix(root: &Path, base: &BenchArgs) -> Result<()> {
             write_matrix_monolith(root, *tier)?;
             regenerate_monolith_from_disk_quiet(root)?;
             let mut cell_args = base.clone();
+            cell_args.live = false;
             cell_args.dashboard = false;
             cell_args.matrix = false;
             cell_args.runs = 3;
