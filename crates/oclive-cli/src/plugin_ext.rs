@@ -199,6 +199,7 @@ pub fn run_search(args: PluginSearchArgs) -> Result<()> {
     Ok(())
 }
 
+/// 对比索引版本并覆盖安装插件目录。
 pub fn run_update(args: PluginUpdateArgs) -> Result<()> {
     let plugins_dir = args.plugins_dir.canonicalize().unwrap_or(args.plugins_dir);
     let local = plugins_dir.join(&args.id).join("manifest.json");
