@@ -1,6 +1,6 @@
 //! 模板渲染与落盘。
 
-use crate::init::{BackendImpl, ProjectConfig, ProjectType};
+use crate::init::{BackendImpl, InitTemplateArg, ProjectConfig, ProjectType};
 use crate::monolith_codegen;
 use anyhow::{Context, Result};
 use handlebars::Handlebars;
@@ -278,7 +278,109 @@ fn write_kernel_dev_docs(out: &Path) -> Result<()> {
         )),
     )
     .context("write ORCHESTRATION_REFERENCE.en.md")?;
+    fs::write(
+        docs.join("WELD_BENCH_REPORT.md"),
+        include_str!(concat!(
+            env!("CARGO_MANIFEST_DIR"),
+            "/src/templates/docs/WELD_BENCH_REPORT.md"
+        )),
+    )
+    .context("write WELD_BENCH_REPORT.md")?;
+    fs::write(
+        docs.join("WELD_BENCH_REPORT.en.md"),
+        include_str!(concat!(
+            env!("CARGO_MANIFEST_DIR"),
+            "/src/templates/docs/WELD_BENCH_REPORT.en.md"
+        )),
+    )
+    .context("write WELD_BENCH_REPORT.en.md")?;
     Ok(())
+}
+
+fn write_robot_gateway_extras(out: &Path) -> Result<()> {
+    let mcp_dir = out.join("mcp_servers");
+    fs::create_dir_all(&mcp_dir).context("create mcp_servers")?;
+    fs::write(
+        mcp_dir.join("README.md"),
+        include_str!(concat!(
+            env!("CARGO_MANIFEST_DIR"),
+            "/src/templates/mcp_servers/README.md"
+        )),
+    )
+    .context("write mcp_servers/README.md")?;
+    fs::write(
+        mcp_dir.join("smart_home.example.json"),
+        include_str!(concat!(
+            env!("CARGO_MANIFEST_DIR"),
+            "/src/templates/mcp_servers/smart_home.example.json"
+        )),
+    )
+    .context("write smart_home.example.json")?;
+
+    let role_root = out.join("roles/gateway");
+    fs::create_dir_all(role_root.join("scenes").join("default")).context("create roles/gateway")?;
+
+    let mut settings: serde_json::Value =
+        serde_json::from_str(&render_settings_json(&preset_gateway_config())?)
+            .context("parse gateway settings")?;
+    if let Some(obj) = settings.as_object_mut() {
+        obj.insert(
+            "agent_mcp".to_string(),
+            json!({
+                "_comment": "脚手架占位：建议将 mcp_servers/*.json 同步到宿主 {app_data}/mcp-servers/",
+                "local_scan_dir": "mcp_servers",
+                "server_ids": ["smart_home_stub"]
+            }),
+        );
+    }
+    fs::write(
+        role_root.join("settings.json"),
+        serde_json::to_string_pretty(&settings).context("gateway settings")?,
+    )
+    .context("write roles/gateway/settings.json")?;
+
+    let manifest = json!({
+        "id": "gateway",
+        "name": "Smart gateway (OEM stub)",
+        "version": "0.1.0",
+        "author": "oclive-cli",
+        "description": "Replace with vendor role pack; agent uses builtin + MCP.",
+        "min_runtime_version": "0.2.0",
+        "scenes": ["default"],
+        "user_relations": {
+            "household": { "initial_favorability": 50.0, "favor_multiplier": 1.0 }
+        },
+        "default_relation": "household"
+    });
+    fs::write(
+        role_root.join("manifest.json"),
+        serde_json::to_string_pretty(&manifest).context("gateway manifest")?,
+    )
+    .context("write manifest.json")?;
+    fs::write(
+        role_root.join("character.md"),
+        "# Gateway persona (OEM)\n\nCoordinate smart home devices via Agent + MCP.\n",
+    )
+    .context("write character.md")?;
+    let scene = json!({
+        "name": "Default",
+        "time_windows": [],
+        "keywords": [],
+        "events": []
+    });
+    fs::write(
+        role_root.join("scenes/default/scene.json"),
+        serde_json::to_string_pretty(&scene).context("scene")?,
+    )
+    .context("write scene.json")?;
+    Ok(())
+}
+
+fn preset_gateway_config() -> ProjectConfig {
+    let mut cfg = crate::init::preset_config("gateway", "mixed");
+    cfg.backends.agent = BackendImpl::Builtin;
+    cfg.role_pack_kind = crate::init::RolePackKind::None;
+    cfg
 }
 
 fn example_llamacpp_plugin_src() -> PathBuf {
@@ -427,6 +529,10 @@ pub fn write_project(cfg: &ProjectConfig, out: &Path) -> Result<()> {
         copy_example_llamacpp_plugin(out)?;
     }
 
+    if cfg.factory_template == Some(InitTemplateArg::RobotGateway) {
+        write_robot_gateway_extras(out).context("robot-gateway MCP scaffold")?;
+    }
+
     if !cfg.skip_role_pack && cfg.role_pack_kind != crate::init::RolePackKind::None {
         crate::role_pack::write_role_pack(cfg, out).context("write role pack")?;
     }
@@ -479,6 +585,20 @@ mod tests {
             pb.get("complex_emotion").unwrap().as_str().unwrap(),
             "builtin"
         );
+    }
+
+    #[test]
+    fn robot_gateway_writes_mcp_and_gateway_role() {
+        use crate::init::{preset_config, InitTemplateArg};
+        use tempfile::tempdir;
+
+        let mut cfg = preset_config("gw", "mixed");
+        cfg.factory_template = Some(InitTemplateArg::RobotGateway);
+        cfg.monolith_enabled = true;
+        let dir = tempdir().unwrap();
+        write_project(&cfg, dir.path()).unwrap();
+        assert!(dir.path().join("mcp_servers/README.md").is_file());
+        assert!(dir.path().join("roles/gateway/settings.json").is_file());
     }
 
     #[test]

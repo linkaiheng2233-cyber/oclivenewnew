@@ -1,0 +1,17 @@
+{
+  "id": "smart_home_stub",
+  "name": "Smart home hub (example)",
+  "transport": "http",
+  "url": "http://127.0.0.1:3100/mcp",
+  "timeout_ms": 30000,
+  "tools": [
+    {
+      "name": "list_devices",
+      "description": "List paired smart home devices"
+    },
+    {
+      "name": "set_device_state",
+      "description": "Set device on/off or level"
+    }
+  ]
+}
