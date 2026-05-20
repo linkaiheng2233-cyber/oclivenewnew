@@ -23,4 +23,8 @@
 - 插件作者学习路径：[PLUGIN_AUTHOR_LEARNING_PATH.md](../../../creator-docs/plugin-and-architecture/PLUGIN_AUTHOR_LEARNING_PATH.md)
 - 目录插件详解：[DIRECTORY_PLUGINS.md](../../../creator-docs/plugin-and-architecture/DIRECTORY_PLUGINS.md)
 
-本脚手架**不**附带示例插件，保持工程干净；可从主仓 `examples/directory-plugin-minimal/` 或 `examples/directory-plugin-llamacpp/` 复制。
+## 示例插件（可选）
+
+`oclive init --with-example-plugin` 会复制 **`com.oclive.example.llamacpp_llm/`**（源自主仓 `examples/directory-plugin-llamacpp/`），演示 **llm** 槽目录插件 + JSON-RPC。
+
+未加该参数时，本目录仅含本 README；也可手动从主仓 `examples/directory-plugin-minimal/` 或 `examples/directory-plugin-llamacpp/` 复制。
