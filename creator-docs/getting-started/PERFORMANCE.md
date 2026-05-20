@@ -57,6 +57,62 @@ cargo run -p oclive-cli -- bench --release -o /path/to/kernel-project --json
 
 ---
 
+## 5. 用 `oclive bench` 做性能调优（实战闭环）
+
+以下命令均在**已 `init` + 可选 `--kernel-source` 链接**的内核工程根目录执行（`-o` 指向该目录）。完整参数见 [OCLIVE_CLI_GUIDE.md § bench](../cli/OCLIVE_CLI_GUIDE.md)。
+
+### 5.1 建立本地基线（`--save`）
+
+```bash
+cargo run -p oclive-cli -- bench --release -o ./my-kernel --runs 30 --inner-iters 500 --save
+```
+
+每次 `--save` 会向项目根 **`bench_history.json`** 追加一条采样（勿提交 Git）。后续用 `--compare` 或 `--history` 查看趋势。
+
+### 5.2 回归门禁（`--regression`）
+
+```bash
+cargo run -p oclive-cli -- bench --release -o ./my-kernel --runs 20 --save
+cargo run -p oclive-cli -- bench --release -o ./my-kernel --runs 20 --regression --regression-threshold 5
+```
+
+与最近一条历史对比；超出阈值时进程 **exit 1**，可接入本地 pre-push 或 CI（自建 job）。
+
+### 5.3 Monolith 焊接矩阵（`--matrix`）
+
+```bash
+cargo run -p oclive-cli -- bench --matrix --release -o ./my-kernel --json > matrix.json
+```
+
+对 **档位 × preset** 组合各跑少量轮次，用于挑选嵌入式/低延迟预设下的最优焊接组合；结论以本机 JSON 为准。
+
+### 5.4 冷启动（`--cold-start`）
+
+```bash
+cargo run -p oclive-cli -- bench --cold-start --cold-start-runs 3 -o ./my-kernel
+```
+
+每次重启 `cargo run --release -- --api`（`OCLIVE_HTTP_API_MOCK_LLM=1`），输出 **冷启动首条 `/chat` 延迟**、**热启动平均**、**API 端口就绪（预热）**。工程须能编译并暴露 HTTP API；无头桩项目请先用 `--kernel-source` 链接主仓 runtime。
+
+### 5.5 编译瓶颈（`oclive profile`）
+
+```bash
+cargo run -p oclive-cli -- profile -o ./my-kernel
+```
+
+结合 `cargo bloat` / 依赖体积提示定位 Release 体积与链接热点（见 [LIGHTWEIGHT_PROFILE.md](../development/LIGHTWEIGHT_PROFILE.md)）。
+
+### 5.6 常见陷阱
+
+| 现象 | 可能原因 | 处理 |
+|------|----------|------|
+| bench 子进程极慢 | Debug 构建 | 加 **`--release`** |
+| 冷启动 180s 超时 | 未链接真实内核 / 无 `--api` | `--kernel-source` 指向 oclivenewnew；确认 `Cargo.toml` 含 runtime |
+| `--regression` 误报 | 历史样本过少或环境抖动 | 固定 `--runs` / 关闭后台重负载 |
+| matrix 耗时过长 | 组合数 × 编译 | 仅在调参阶段使用；日常用单次 `--save` |
+
+---
+
 ## 修订记录
 
 | 日期 | 说明 |

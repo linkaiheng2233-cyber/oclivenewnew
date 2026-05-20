@@ -55,6 +55,42 @@ cargo run -p oclive-cli -- bench --release -o /path/to/kernel-project --json
 
 ---
 
+## 5. Performance tuning with `oclive bench`
+
+Run from a kernel project root (`-o` points at the generated tree). See [OCLIVE_CLI_GUIDE.md](../cli/OCLIVE_CLI_GUIDE.md) (Chinese, authoritative).
+
+### Baseline (`--save`)
+
+```bash
+cargo run -p oclive-cli -- bench --release -o ./my-kernel --runs 30 --inner-iters 500 --save
+```
+
+### Regression gate (`--regression`)
+
+```bash
+cargo run -p oclive-cli -- bench --release -o ./my-kernel --runs 20 --regression --regression-threshold 5
+```
+
+### Monolith matrix (`--matrix`)
+
+```bash
+cargo run -p oclive-cli -- bench --matrix --release -o ./my-kernel --json > matrix.json
+```
+
+### Cold start (`--cold-start`)
+
+```bash
+cargo run -p oclive-cli -- bench --cold-start --cold-start-runs 3 -o ./my-kernel
+```
+
+### Compile profile (`oclive profile`)
+
+```bash
+cargo run -p oclive-cli -- profile -o ./my-kernel
+```
+
+---
+
 ## Revision history
 
 | Date | Notes |
