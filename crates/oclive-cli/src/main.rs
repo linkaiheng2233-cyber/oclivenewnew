@@ -18,6 +18,7 @@ mod dev_cmd;
 mod plugin_cmd;
 mod plugin_ext;
 mod generator;
+mod cli_english_init;
 mod init;
 mod init_from_existing;
 mod init_bench;
@@ -60,7 +61,7 @@ use clap::{Parser, Subcommand};
     about = "Oclive official kernel project scaffolding"
 )]
 struct Cli {
-    /// 日志详细程度：累计 `-v` 提升（0=INFO, 1=DEBUG, 2+=TRACE）；可被 `RUST_LOG` 覆盖
+    /// Verbosity: `-v` count or `RUST_LOG` (0=INFO, 1=DEBUG, 2+=TRACE)
     #[arg(short = 'v', long, action = clap::ArgAction::Count, global = true)]
     verbose: u8,
 
@@ -70,50 +71,50 @@ struct Cli {
 
 #[derive(Subcommand)]
 enum Commands {
-    /// 交互或非交互创建内核项目骨架
+    /// Create a kernel project (interactive or scripted)
     #[command(after_long_help = init::PRESET_MATRIX_HELP)]
     Init(init::InitArgs),
-    /// 读取 monolith.toml，写入 vendor 与 process_message_monolith.rs；默认执行标准 + Monolith 两次 cargo build
+    /// Regenerate Monolith artifacts and build standard + monolith binaries
     Build(build_cmd::BuildArgs),
-    /// 对比标准与 Monolith 二进制的子进程耗时（JSON 报告）
+    /// Benchmark standard vs monolith binaries (JSON report)
     Bench(bench_cmd::BenchArgs),
-    /// 监听角色包目录变更（开发用；生产路径不使用）
+    /// Watch role pack manifest/settings changes
     Dev(dev_cmd::DevArgs),
-    /// 角色包：校验、创建、打包（.oclivepack）
+    /// Role pack validate, create, publish (.oclivepack)
     Pack(pack_cmd::PackArgs),
-    /// [experimental/legacy] 蓝图（pipeline.ocblueprint）校验
+    /// [experimental/legacy] Validate pipeline.ocblueprint JSON
     Blueprint(blueprint_cmd::BlueprintCli),
-    /// 环境诊断（Rust / 磁盘 / Ollama / 网络等）
+    /// Environment diagnostics (Rust, disk, Ollama, network)
     Doctor(doctor_cmd::DoctorArgs),
-    /// 插件脚手架（directory / remote）
+    /// Plugin scaffolds (directory / remote)
     Plugin(plugin_cmd::PluginCli),
-    /// 本地内核工程注册表
+    /// Local kernel project registry
     Registry(registry_cmd::RegistryCli),
-    /// 多内核 compose 编排
+    /// Multi-kernel compose orchestration
     Compose(compose_cmd::ComposeCli),
-    /// [deprecated] 发布模板包 — 请用 `oclive template pack`
+    /// [deprecated] Use `oclive template pack`
     Publish(publish_cmd::PublishArgs),
-    /// 逐步骤调试 process_message
+    /// Step trace debug for process_message
     Debug(debug_cmd::DebugArgs),
-    /// 本地 Web 仪表盘（默认 127.0.0.1:8420）
+    /// Local web dashboard (default 127.0.0.1:8420)
     Dashboard(dashboard_cmd::DashboardArgs),
-    /// 新用户交互式教程
+    /// Interactive onboarding tutorial
     Learn(learn_cmd::LearnArgs),
-    /// 内核工程回归测试
+    /// Project regression checks
     Test(test_cmd::TestArgs),
-    /// 内核工程静态健康检查
+    /// Static project health lint
     Lint(lint_cmd::LintArgs),
-    /// 内核性能画像
+    /// Build size and dependency profile
     Profile(profile_cmd::ProfileArgs),
-    /// 插件 / 模板市场浏览与安装
+    /// Browse and install from market index
     Market(market_cmd::MarketCli),
-    /// 角色包 Git 协作
+    /// Role pack Git collaboration helpers
     Collab(collab_cmd::CollabCli),
-    /// 全局 / 工程级配置（~/.oclive/config.toml）
+    /// Global / project config (~/.oclive/config.toml)
     Config(config_cmd::ConfigCli),
-    /// 生成 GitHub Actions CI
+    /// Generate or check GitHub Actions CI
     Ci(ci_cmd::CiCli),
-    /// 模板打包与反向生成（`pack` / `create`）
+    /// Template pack / create from existing project
     Template(template_cmd::TemplateCli),
     /// Kernel runtime dependency info
     Kernel(kernel_cmd::KernelCli),

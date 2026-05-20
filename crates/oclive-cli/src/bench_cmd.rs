@@ -77,6 +77,18 @@ pub struct BenchArgs {
     #[arg(long = "compare-versions")]
     pub compare_versions: Option<String>,
 
+    /// HTTP /chat concurrency stress test (kernel must be running)
+    #[arg(long)]
+    pub stress: bool,
+
+    /// Stress test concurrent workers (default 10)
+    #[arg(long, default_value_t = 10)]
+    pub stress_concurrency: u32,
+
+    /// Stress test duration in seconds (default 30)
+    #[arg(long, default_value_t = 30)]
+    pub stress_duration: u64,
+
     /// 透传给 `cargo build` 的附加参数（放在 `--` 之后）
     #[arg(trailing_var_arg = true, allow_hyphen_values = true)]
     pub cargo_extra: Vec<String>,
@@ -536,6 +548,9 @@ fn arrow(delta: f64) -> &'static str {
 
 pub fn run(args: BenchArgs) -> Result<()> {
     let root = resolve_project_root(&args.path)?;
+    if args.stress {
+        return crate::bench_stress::run_stress(&root, &args);
+    }
     if let Some(ref git_ref) = args.compare_versions {
         return run_bench_compare_versions(&root, git_ref, &args);
     }
