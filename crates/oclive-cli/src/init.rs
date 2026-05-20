@@ -170,6 +170,18 @@ pub struct InitArgs {
     /// TUI 自定义 Monolith 焊接槽位（逗号分隔，覆盖 monolith-preset）
     #[arg(long, value_delimiter = ',')]
     pub weld_modules: Vec<String>,
+
+    /// Analyze an existing project and print a full non-interactive `oclive init` reproduction command
+    #[arg(long)]
+    pub from_existing: Option<PathBuf>,
+
+    /// With `--from-existing`: write `.oclive-share.toml` in the source project
+    #[arg(long)]
+    pub share: bool,
+
+    /// Machine-readable output for `--from-existing`
+    #[arg(long)]
+    pub json: bool,
 }
 
 /// 内核工厂套餐（`--template`）。
@@ -676,6 +688,10 @@ fn run_quick_init(args: &InitArgs) -> Result<()> {
 }
 
 pub fn run(args: InitArgs) -> Result<()> {
+    if let Some(ref existing) = args.from_existing {
+        return crate::init_from_existing::run_from_existing(existing, &args);
+    }
+
     if args.list_templates {
         crate::template_catalog::print_templates_table();
         return Ok(());
@@ -875,6 +891,9 @@ mod template_tests {
             tui: false,
             pipeline: PipelineArg::Default,
             weld_modules: vec![],
+            from_existing: None,
+            share: false,
+            json: false,
         };
         let preset = args.preset.as_deref().unwrap_or("minimal");
         let mut cfg = preset_config("t", preset);
@@ -915,6 +934,9 @@ mod template_tests {
             tui: false,
             pipeline: PipelineArg::Default,
             weld_modules: vec![],
+            from_existing: None,
+            share: false,
+            json: false,
         };
         let mut cfg = preset_config("t", "minimal");
         apply_template_layer(&args, &mut cfg);
@@ -955,6 +977,9 @@ mod template_tests {
             tui: false,
             pipeline: PipelineArg::Default,
             weld_modules: vec![],
+            from_existing: None,
+            share: false,
+            json: false,
         };
         assert_eq!(
             resolve_role_pack_kind(&args),
@@ -1003,6 +1028,9 @@ mod template_tests {
             tui: false,
             pipeline: PipelineArg::Default,
             weld_modules: vec![],
+            from_existing: None,
+            share: false,
+            json: false,
         };
         let mut cfg = preset_config("t", "minimal");
         apply_backend_cli_overrides(&mut cfg, &args);

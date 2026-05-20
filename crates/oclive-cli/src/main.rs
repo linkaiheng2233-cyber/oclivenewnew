@@ -7,6 +7,7 @@
 
 mod bench_cmd;
 mod bench_metrics;
+mod bench_stress;
 mod blueprint;
 mod cargo_hints;
 mod doctor_cmd;
@@ -18,7 +19,9 @@ mod plugin_cmd;
 mod plugin_ext;
 mod generator;
 mod init;
+mod init_from_existing;
 mod init_bench;
+mod project_introspect;
 mod interactive;
 mod learn_cmd;
 mod lint_cmd;
@@ -44,6 +47,8 @@ mod ci_cmd;
 mod template_cmd;
 mod role_pack;
 mod test_cmd;
+mod test_ci_parity;
+mod kernel_cmd;
 
 use anyhow::Result;
 use clap::{Parser, Subcommand};
@@ -110,6 +115,8 @@ enum Commands {
     Ci(ci_cmd::CiCli),
     /// 模板打包与反向生成（`pack` / `create`）
     Template(template_cmd::TemplateCli),
+    /// Kernel runtime dependency info
+    Kernel(kernel_cmd::KernelCli),
 }
 
 fn init_tracing(verbose: u8) {
@@ -152,6 +159,7 @@ fn main() -> Result<()> {
         Commands::Config(cli) => config_cmd::run(cli),
         Commands::Ci(cli) => ci_cmd::run(cli),
         Commands::Template(cli) => template_cmd::run(cli),
+        Commands::Kernel(cli) => kernel_cmd::run(cli),
     }
 }
 
