@@ -93,6 +93,19 @@ See [OCLIVE_CLI_GUIDE.md](../cli/OCLIVE_CLI_GUIDE.md) (Chinese guide includes U�
 
 ---
 
+## Continuous improvement (Y1–Y6)
+
+| ID | Capability | CLI |
+|----|------------|-----|
+| **Y3** | Unified config | `oclive config` → `~/.oclive/config.toml` |
+| **Y1** | CI scaffold | `oclive ci init` / `ci check` |
+| **Y6** | Doctor auto-fix | `oclive doctor --fix` |
+| **Y2** | Bench regression gate | `oclive bench --regression` |
+| **Y5** | Cross-version bench | `oclive bench --compare-versions <ref>` |
+| **Y4** | Template from project | `oclive template create` |
+
+---
+
 ## Factory workflow
 
 1. Browse recipes: `oclive init --list-templates` or the interactive template picker; then pick `robot-soul`, `robot-gateway` (MCP scaffold), `dialogue-only`, `headless-api`, or `library-embed`.

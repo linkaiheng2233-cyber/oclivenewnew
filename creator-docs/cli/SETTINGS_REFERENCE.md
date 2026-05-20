@@ -95,6 +95,12 @@
 
 **`collab`**：角色包目录 **`.oclive-collab.yml`**（Git `remote` / `branch`）。
 
+**`oclive config`**：用户级 **`~/.oclive/config.toml`**、工程级 **`.oclive.toml`**；`config list` 合并已知 `OCLIVE_*` 键。`registry` / `market` 优先读进程环境变量，其次配置文件。
+
+**`oclive ci init`**：生成 **`.github/workflows/ci.yml`**（ubuntu / windows / macos 矩阵）。
+
+**`bench --regression`**：对比 **`bench_history.json`** 末条；默认阈值 p50 5% / P95 10% / 内存与二进制 5–10%。
+
 ## 四、`oclive-cli` 预设矩阵（逻辑 → JSON）
 
 | 槽位 | minimal | mixed | full |

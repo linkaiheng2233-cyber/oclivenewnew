@@ -155,15 +155,39 @@ cargo run -p oclive-cli -- registry pull my-kernel -o ./my-kernel
 
 ---
 
+## 持续精进（Y1–Y6）
+
+| 能力 | 命令 |
+|------|------|
+| **Y3 配置** | `oclive config set/get/list/unset/init`（`~/.oclive/config.toml` / `.oclive.toml`） |
+| **Y1 CI** | `oclive ci init` / `oclive ci check` |
+| **Y6 修复** | `oclive doctor --fix` / `--fix --yes` |
+| **Y2 回归门禁** | `oclive bench --regression` / `--regression-threshold 3` |
+| **Y5 跨版本** | `oclive bench --compare-versions v0.2.0` |
+| **Y4 模板** | `oclive template create <name>` |
+
+```bash
+cargo run -p oclive-cli -- config set OCLIVE_REGISTRY_URL https://registry.example.com --global
+cargo run -p oclive-cli -- ci init -o ./my-kernel
+cargo run -p oclive-cli -- doctor --fix --yes
+cargo run -p oclive-cli -- bench --release --save -o ./my-kernel
+cargo run -p oclive-cli -- bench --release --regression -o ./my-kernel
+cargo run -p oclive-cli -- template create my-team -o ./my-kernel
+```
+
+---
+
 ## `doctor`：环境诊断
 
 ```bash
 cargo run -p oclive-cli -- doctor
 cargo run -p oclive-cli -- doctor --json
 cargo run -p oclive-cli -- doctor -o ./my-project
+cargo run -p oclive-cli -- doctor --fix
+cargo run -p oclive-cli -- doctor --fix --yes
 ```
 
-检查 Rust/Cargo、系统内存、磁盘剩余、Ollama（`http://127.0.0.1:11434/api/tags`）、GitHub 连通、工作区可写。存在 **fail** 项时退出码非 0。JSON Schema：`crates/oclive-cli/schemas/oclive_doctor_report.schema.json`。
+检查 Rust/Cargo、C++ 工具链、系统内存、磁盘剩余、Ollama（`http://127.0.0.1:11434/api/tags`）、GitHub 连通、工作区可写。`--fix` 可对 Rust（`rustup update stable`）、Ollama（尝试启动 serve）等项自动修复。存在 **fail** 项时退出码非 0。JSON Schema：`crates/oclive-cli/schemas/oclive_doctor_report.schema.json`。
 
 ---
 

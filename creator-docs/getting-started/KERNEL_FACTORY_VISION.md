@@ -106,6 +106,19 @@ cargo run -p oclive-cli -- collab init --remote git@github.com:org/role-pack.git
 
 ---
 
+## 持续精进（Y1–Y6）
+
+| 代号 | 能力 | 说明 |
+|------|------|------|
+| **Y3** | `oclive config` | 统一 `OCLIVE_*` 至 `~/.oclive/config.toml` / 工程 `.oclive.toml` |
+| **Y1** | `oclive ci init` | 生成多 OS GitHub Actions（含 bench 回归 job 占位） |
+| **Y6** | `doctor --fix` | 环境诊断 + 可自动修复项 |
+| **Y2** | `bench --regression` | 对比 `bench_history` 最近一条，超阈值退出码 1 |
+| **Y5** | `bench --compare-versions` | 与 Git tag/commit 性能矩阵对比 |
+| **Y4** | `template create` | 从现有工程反向打包模板至 `~/.oclive/templates/` |
+
+---
+
 ## 工厂工作流（推荐）
 
 1. **浏览配方**：`oclive init --list-templates` 或交互式「选择场景模板」；再 `oclive init --template robot-soul -o ./my-doll`（玩偶）、`robot-gateway`（网关 + MCP 骨架）、`dialogue-only`、`headless-api`、`library-embed`。
