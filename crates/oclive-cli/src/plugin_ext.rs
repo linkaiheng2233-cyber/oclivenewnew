@@ -3,7 +3,6 @@
 use anyhow::{bail, Context, Result};
 use clap::Parser;
 use oclive_validation::{parse_plugin_dependencies, resolve_install_order};
-use serde::Deserialize;
 use serde_json::Value;
 use std::fs;
 use std::path::{Path, PathBuf};
@@ -46,23 +45,7 @@ pub struct PluginUpdateArgs {
     pub plugins_dir: PathBuf,
 }
 
-#[derive(Deserialize)]
-struct IndexEntry {
-    id: String,
-    name: String,
-    version: String,
-    #[serde(default)]
-    author: String,
-    #[serde(default)]
-    description: String,
-    #[serde(default)]
-    tags: Vec<String>,
-}
-
-#[derive(Deserialize)]
-struct PluginIndex {
-    plugins: Vec<IndexEntry>,
-}
+use crate::market_index::{fetch_market_index, MarketKindSerde};
 
 pub fn run_install(args: PluginInstallArgs) -> Result<()> {
     let plugins_dir = args.plugins_dir.canonicalize().unwrap_or(args.plugins_dir);
@@ -174,17 +157,10 @@ pub fn run_test(args: PluginTestArgs) -> Result<()> {
 
 /// 从 `OCLIVE_PLUGIN_INDEX_URL` 拉取索引并按关键词过滤。
 pub fn run_search(args: PluginSearchArgs) -> Result<()> {
-    let index = fetch_plugin_index()?;
-    let kw = args.keyword.to_ascii_lowercase();
-    let hits: Vec<_> = index
-        .plugins
+    let index = fetch_market_index()?;
+    let hits: Vec<_> = crate::market_index::search_items(&index, &args.keyword)
         .into_iter()
-        .filter(|p| {
-            p.id.to_ascii_lowercase().contains(&kw)
-                || p.name.to_ascii_lowercase().contains(&kw)
-                || p.description.to_ascii_lowercase().contains(&kw)
-                || p.tags.iter().any(|t| t.to_ascii_lowercase().contains(&kw))
-        })
+        .filter(|p| matches!(p.kind, MarketKindSerde::Plugin))
         .collect();
     if hits.is_empty() {
         println!("（无匹配）");
@@ -206,8 +182,11 @@ pub fn run_update(args: PluginUpdateArgs) -> Result<()> {
     if !local.is_file() {
         bail!("未安装 {}", args.id);
     }
-    let index = fetch_plugin_index()?;
-    let remote = index.plugins.iter().find(|p| p.id == args.id);
+    let index = fetch_market_index()?;
+    let remote = index
+        .plugins
+        .iter()
+        .find(|p| p.id == args.id);
     let Some(remote) = remote else {
         bail!("索引中无 {}", args.id);
     };
@@ -222,17 +201,6 @@ pub fn run_update(args: PluginUpdateArgs) -> Result<()> {
         cur, remote.version
     );
     Ok(())
-}
-
-fn fetch_plugin_index() -> Result<PluginIndex> {
-    let url = std::env::var("OCLIVE_PLUGIN_INDEX_URL").unwrap_or_else(|_| {
-        "https://raw.githubusercontent.com/linkaiheng2233-cyber/oclivenewnew/main/examples/plugin-index.json".into()
-    });
-    let body = ureq::get(&url)
-        .call()
-        .map_err(|e| anyhow::anyhow!("拉取索引失败: {e}"))?
-        .into_string()?;
-    Ok(serde_json::from_str(&body).context("parse plugin index")?)
 }
 
 fn list_installed(dir: &Path) -> Result<Vec<(String, String)>> {

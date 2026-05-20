@@ -34,6 +34,10 @@ mod init_tui;
 mod publish_cmd;
 mod registry;
 mod registry_cmd;
+mod registry_remote;
+mod market_index;
+mod market_cmd;
+mod collab_cmd;
 mod role_pack;
 mod test_cmd;
 
@@ -92,6 +96,10 @@ enum Commands {
     Lint(lint_cmd::LintArgs),
     /// 内核性能画像
     Profile(profile_cmd::ProfileArgs),
+    /// 插件 / 模板市场浏览与安装
+    Market(market_cmd::MarketCli),
+    /// 角色包 Git 协作
+    Collab(collab_cmd::CollabCli),
 }
 
 fn init_tracing(verbose: u8) {
@@ -129,6 +137,8 @@ fn main() -> Result<()> {
         Commands::Test(args) => test_cmd::run(args),
         Commands::Lint(args) => lint_cmd::run(args),
         Commands::Profile(args) => profile_cmd::run(args),
+        Commands::Market(cli) => market_cmd::run(cli),
+        Commands::Collab(cli) => collab_cmd::run(cli),
     }
 }
 
