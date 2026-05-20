@@ -14,6 +14,7 @@ pub mod manifest;
 pub mod plugin_backends;
 pub mod plugin_dependencies;
 pub mod plugin_permissions;
+pub mod protocol_boundary;
 pub mod role_pack;
 pub mod validate;
 
@@ -34,6 +35,10 @@ pub use plugin_permissions::{
     manifest_declares_process_spawn, validate_directory_plugin_manifest_permissions,
     validate_permissions_list, ALLOWED as PLUGIN_PERMISSIONS_ALLOWED, MCP_HTTP, MCP_STDIO,
     NETWORK_GRANT_REMOTE_LLM, NETWORK_GRANT_REMOTE_PLUGIN, NETWORK_WILDCARD, PROCESS_SPAWN,
+};
+pub use protocol_boundary::{
+    assert_layers_do_not_overlap, validate_jsonrpc_error_response, validate_kernel_error_body,
+    ProtocolValidationError,
 };
 pub use plugin_backends::{
     AgentBackend, DirectoryPluginSlots, EmotionBackend, EventBackend, LlmBackend, MemoryBackend,

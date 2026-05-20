@@ -61,6 +61,24 @@ async function scenarioHandlers(base, rolePath) {
       })
       if (res.status !== 400) throw new Error(`S1 status ${res.status}`)
       if (body?.error?.code !== 'EMPTY_MESSAGE') throw new Error(`S1 code ${JSON.stringify(body)}`)
+      if (typeof body?.error?.code !== 'string') {
+        throw new Error(`S1 kernel error.code must be string, got ${typeof body?.error?.code}`)
+      }
+    },
+    S12: async () => {
+      const { res, body } = await fetchJson(`${base}/chat`, {
+        method: 'POST',
+        headers: { 'content-type': 'application/json' },
+        body: JSON.stringify({ role_path: mumu, message: '   ' }),
+      })
+      if (res.status !== 400) throw new Error(`S12 status ${res.status}`)
+      const code = body?.error?.code
+      if (typeof code !== 'string') {
+        throw new Error(`S12 expected string kernel code, got ${JSON.stringify(code)}`)
+      }
+      if (Number.isFinite(Number(code)) && String(Number(code)) === String(code)) {
+        throw new Error(`S12 kernel code must not be JSON-RPC integer form: ${code}`)
+      }
     },
     S2: async () => {
       const { res, body } = await fetchJson(`${base}/chat`, {
@@ -194,6 +212,7 @@ async function main() {
     'S9',
     'S10',
     'S11',
+    'S12',
   ]
 
   const scenarios = []

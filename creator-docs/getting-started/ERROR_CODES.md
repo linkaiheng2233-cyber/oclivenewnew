@@ -74,6 +74,19 @@ GUI 侧若仍展示英文底层错误句，属于 **A6** 等持续扫尾；未�
 
 ---
 
+## 1.8) 分层边界（侧车 JSON-RPC vs 内核 `KernelErrorBody`）
+
+| 层 | 载荷 | `code` 形态 | 典型通道 |
+|----|------|-------------|----------|
+| **侧车 JSON-RPC** | `{ "jsonrpc":"2.0", "error": { "code": <int>, "message": "<string>" } }` | **整数**（如 `-32603`、`-32010`） | Remote 插件 / LLM HTTP 侧车 |
+| **内核 `KernelErrorBody`** | `{ "code": "<SCREAMING_SNAKE>", "message": "<string>", "hint"? }` | **字符串**（如 `LLM_ERROR`、`ROLE_NOT_FOUND`） | Tauri `invoke`、HTTP `POST /chat` 失败体 |
+
+**禁止混用**：不得在内核 `error.code` 使用 JSON-RPC 整数码；侧车响应也不得用 `LLM_ERROR` 字符串作为 `error.code`。宿主将侧车失败包装为 `AppError::OllamaError` → 对外 **`LLM_ERROR`** 字符串码。
+
+机器校验：`oclive_validation::protocol_boundary`（`validate_jsonrpc_error_response` / `validate_kernel_error_body`）。OOCP **S12** 断言 HTTP 错误 `code` 为字符串。
+
+---
+
 ## 2) Remote JSON-RPC 错误码（侧车建议）
 
 宿主会记录 `code/message/data`，并在失败时回退内置实现。推荐约定：
