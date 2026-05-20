@@ -157,6 +157,10 @@ pub fn run_test(args: PluginTestArgs) -> Result<()> {
 
 /// 从 `OCLIVE_PLUGIN_INDEX_URL` 拉取索引并按关键词过滤。
 pub fn run_search(args: PluginSearchArgs) -> Result<()> {
+    eprintln!(
+        "⚠ [deprecated] `oclive plugin search` 请改用 `oclive market search \"{}\"`",
+        args.keyword
+    );
     let index = fetch_market_index()?;
     let hits: Vec<_> = crate::market_index::search_items(&index, &args.keyword)
         .into_iter()
@@ -177,6 +181,10 @@ pub fn run_search(args: PluginSearchArgs) -> Result<()> {
 
 /// 对比索引版本并覆盖安装插件目录。
 pub fn run_update(args: PluginUpdateArgs) -> Result<()> {
+    eprintln!(
+        "⚠ [deprecated] `oclive plugin update` 请改用 `oclive market install {}` 安装最新版本",
+        args.id
+    );
     let plugins_dir = args.plugins_dir.canonicalize().unwrap_or(args.plugins_dir);
     let local = plugins_dir.join(&args.id).join("manifest.json");
     if !local.is_file() {

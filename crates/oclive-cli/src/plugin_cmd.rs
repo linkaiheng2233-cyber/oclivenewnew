@@ -24,9 +24,9 @@ pub enum PluginCommands {
     Uninstall(crate::plugin_ext::PluginUninstallArgs),
     /// RPC 契约烟测
     Test(crate::plugin_ext::PluginTestArgs),
-    /// 搜索插件市场索引
+    /// [deprecated] 搜索插件 — 请用 `oclive market search`
     Search(crate::plugin_ext::PluginSearchArgs),
-    /// 检查更新
+    /// [deprecated] 检查更新 — 请用 `oclive market install`
     Update(crate::plugin_ext::PluginUpdateArgs),
 }
 
