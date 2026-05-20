@@ -35,7 +35,7 @@ fn run_cli(args: &[&str]) -> std::process::ExitStatus {
 }
 
 fn assert_bench_report_matches_schema(v: &Value) {
-    assert_eq!(v.get("schema_version").and_then(|x| x.as_u64()), Some(1));
+    assert_eq!(v.get("schema_version").and_then(|x| x.as_u64()), Some(2));
     assert!(v.get("package_name").and_then(|x| x.as_str()).is_some());
     assert!(v.get("runs").and_then(|x| x.as_u64()).is_some());
     assert!(v.get("inner_iters").and_then(|x| x.as_u64()).is_some());
@@ -59,6 +59,11 @@ fn assert_bench_report_matches_schema(v: &Value) {
     };
     check_stats("standard_ms");
     check_stats("monolith_ms");
+    for key in ["binary_size", "peak_memory", "build_time"] {
+        let o = v.get(key).and_then(|x| x.as_object()).expect(key);
+        assert!(o.get("standard").is_some());
+        assert!(o.get("monolith").is_some());
+    }
 }
 
 fn cargo_build(project_dir: &std::path::Path) -> std::process::ExitStatus {
@@ -388,9 +393,11 @@ fn e2e_bench_smoke_json() {
     assert!(st.success(), "oclive bench smoke");
     let raw = fs::read_to_string(&report_path).unwrap();
     let v: serde_json::Value = serde_json::from_str(&raw).unwrap();
-    assert_eq!(v["schema_version"], 1);
+    assert_eq!(v["schema_version"], 2);
     assert!(v["standard_ms"]["p50"].is_number());
     assert!(v["monolith_ms"]["p50"].is_number());
+    assert!(v["binary_size"]["standard"].is_number());
+    assert!(v["peak_memory"]["monolith"].is_number());
 }
 
 #[test]
@@ -773,6 +780,36 @@ fn e2e_with_example_plugin_copies_llamacpp() {
             .join("plugins/com.oclive.example.llamacpp_llm")
             .exists()
     );
+}
+
+#[test]
+fn e2e_doctor_json_smoke() {
+    let output = run_cli_output(&["doctor", "--json"]);
+    let v: Value = serde_json::from_slice(&output.stdout).expect("doctor json");
+    assert_eq!(v.get("schema_version").and_then(|x| x.as_u64()), Some(1));
+    assert!(v.get("checks").and_then(|x| x.as_array()).map(|a| !a.is_empty()) == Some(true));
+}
+
+#[test]
+fn e2e_init_quick_non_interactive() {
+    let tmp = tempfile::tempdir().unwrap();
+    let out = tmp.path().join("quick");
+    assert!(run_cli(&[
+        "init",
+        "--quick",
+        "--non-interactive",
+        "--quiet",
+        "-o",
+        out.to_str().unwrap(),
+        "--project-name",
+        "quick-chat",
+    ])
+    .success());
+    assert!(out.join("Cargo.toml").is_file());
+    assert!(!out.join("monolith.toml").exists());
+    assert!(!out.join("roles").exists());
+    let settings = out.join("CONFIG_REFERENCE.md");
+    assert!(settings.is_file());
 }
 
 #[test]

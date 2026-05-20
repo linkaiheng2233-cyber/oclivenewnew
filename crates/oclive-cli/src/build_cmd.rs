@@ -110,6 +110,39 @@ fn regenerate_monolith_from_disk_inner(root: &Path, log_written: bool) -> Result
     Ok(file)
 }
 
+/// 标准 / Monolith 两次 `cargo build` 的耗时（秒）。
+#[derive(Debug, Clone, Copy)]
+pub struct DualBuildTimings {
+    pub standard_secs: f64,
+    pub monolith_secs: f64,
+}
+
+/// 在已有 `monolith.toml` 且 enabled 时分别计时两次 release 构建。
+pub fn run_timed_dual_build(
+    root: &Path,
+    release: bool,
+    extra: &[String],
+    monolith_enabled: bool,
+) -> Result<DualBuildTimings> {
+    let feat_std_owned = None::<String>;
+    let feat_std = feat_std_owned.as_deref();
+    let t0 = std::time::Instant::now();
+    run_cargo_build(root, release, feat_std, extra)?;
+    let standard_secs = t0.elapsed().as_secs_f64();
+    let monolith_secs = if monolith_enabled {
+        let feat_mono = merge_features_for_monolith(&[]);
+        let t1 = std::time::Instant::now();
+        run_cargo_build(root, release, Some(feat_mono.as_str()), extra)?;
+        t1.elapsed().as_secs_f64()
+    } else {
+        0.0
+    };
+    Ok(DualBuildTimings {
+        standard_secs,
+        monolith_secs,
+    })
+}
+
 pub fn run(args: BuildArgs) -> Result<()> {
     let root = resolve_project_root(&args.path)?;
     let mt = root.join("monolith.toml");

@@ -1,15 +1,15 @@
 //! `oclive bench`：对标准与 Monolith 两个二进制各跑多轮子进程采样，输出 JSON 报告。
 
+use crate::bench_metrics::{binary_file_size, run_bench_child_with_peak};
 use crate::build_cmd::{
-    regenerate_monolith_from_disk, regenerate_monolith_from_disk_quiet, BuildArgs,
+    regenerate_monolith_from_disk, regenerate_monolith_from_disk_quiet, run_timed_dual_build,
+    BuildArgs,
 };
 use anyhow::{bail, Context, Result};
 use clap::Parser;
 use serde::{Deserialize, Serialize};
 use std::fs;
 use std::path::{Path, PathBuf};
-use std::process::Command;
-use std::time::Instant;
 
 #[derive(Parser, Debug, Clone)]
 pub struct BenchArgs {
@@ -50,6 +50,8 @@ pub struct BenchArgs {
     pub cargo_extra: Vec<String>,
 }
 
+pub const BENCH_REPORT_SCHEMA_VERSION: u32 = 2;
+
 #[derive(Serialize, Deserialize, Debug, Clone)]
 pub struct BenchReport {
     pub schema_version: u32,
@@ -59,6 +61,16 @@ pub struct BenchReport {
     pub release: bool,
     pub standard_ms: SampleStats,
     pub monolith_ms: SampleStats,
+    pub binary_size: StandardMonolithPair<u64>,
+    pub peak_memory: StandardMonolithPair<u64>,
+    pub build_time: StandardMonolithPair<f64>,
+}
+
+/// 标准版 vs Monolith 成对指标（字节 / MiB / 秒等由字段语义区分）。
+#[derive(Serialize, Deserialize, Debug, Clone, Default)]
+pub struct StandardMonolithPair<T> {
+    pub standard: T,
+    pub monolith: T,
 }
 
 #[derive(Serialize, Deserialize, Debug, Clone)]
@@ -229,21 +241,6 @@ fn stats(mut samples: Vec<f64>) -> SampleStats {
     }
 }
 
-fn run_subprocess_bench(bin: &Path, inner_iters: u32) -> Result<f64> {
-    if !bin.is_file() {
-        bail!("找不到二进制: {}", bin.display());
-    }
-    let t0 = Instant::now();
-    let st = Command::new(bin)
-        .env("OCLIVE_KERNEL_BENCH_ITERS", inner_iters.to_string())
-        .status()
-        .with_context(|| format!("run {}", bin.display()))?;
-    if !st.success() {
-        bail!("二进制退出失败: {:?}", st.code());
-    }
-    Ok(t0.elapsed().as_secs_f64() * 1000.0)
-}
-
 fn cargo_build_dual(root: &Path, release: bool, extra: &[String]) -> Result<()> {
     let b = BuildArgs {
         path: root.to_path_buf(),
@@ -273,28 +270,59 @@ pub fn run(args: BenchArgs) -> Result<()> {
         bail!("monolith.toml: enabled = false；bench 需要启用 Monolith 以对比双二进制。");
     }
 
-    cargo_build_dual(&root, args.release, &args.cargo_extra)
-        .context("预热构建（标准 + Monolith）")?;
+    let build_time = if args.release {
+        eprintln!("cargo build --release（标准 + Monolith，计时）…");
+        let t = run_timed_dual_build(&root, true, &args.cargo_extra, file.monolith.enabled)
+            .context("预热构建（标准 + Monolith）")?;
+        StandardMonolithPair {
+            standard: t.standard_secs,
+            monolith: t.monolith_secs,
+        }
+    } else {
+        cargo_build_dual(&root, false, &args.cargo_extra)
+            .context("预热构建（标准 + Monolith）")?;
+        StandardMonolithPair {
+            standard: 0.0,
+            monolith: 0.0,
+        }
+    };
 
     let pkg = read_package_name(&root)?;
     let std_bin = release_bin_path(&root, &pkg, args.release);
     let mono_bin = release_bin_path(&root, &format!("{pkg}-monolith"), args.release);
 
+    let binary_size = StandardMonolithPair {
+        standard: binary_file_size(&std_bin)?,
+        monolith: binary_file_size(&mono_bin)?,
+    };
+
     let mut std_samples = Vec::with_capacity(args.runs as usize);
     let mut mono_samples = Vec::with_capacity(args.runs as usize);
+    let mut std_peak_mib = 0u64;
+    let mut mono_peak_mib = 0u64;
     for _ in 0..args.runs {
-        std_samples.push(run_subprocess_bench(&std_bin, args.inner_iters)?);
-        mono_samples.push(run_subprocess_bench(&mono_bin, args.inner_iters)?);
+        let (ms, peak) = run_bench_child_with_peak(&std_bin, args.inner_iters)?;
+        std_samples.push(ms);
+        std_peak_mib = std_peak_mib.max(peak);
+        let (ms, peak) = run_bench_child_with_peak(&mono_bin, args.inner_iters)?;
+        mono_samples.push(ms);
+        mono_peak_mib = mono_peak_mib.max(peak);
     }
 
     let report = BenchReport {
-        schema_version: 1,
+        schema_version: BENCH_REPORT_SCHEMA_VERSION,
         package_name: pkg,
         runs: args.runs,
         inner_iters: args.inner_iters,
         release: args.release,
         standard_ms: stats(std_samples),
         monolith_ms: stats(mono_samples),
+        binary_size,
+        peak_memory: StandardMonolithPair {
+            standard: std_peak_mib,
+            monolith: mono_peak_mib,
+        },
+        build_time,
     };
     let json = serde_json::to_string_pretty(&report)?;
     if args.output != "-" && !args.json {
@@ -337,6 +365,43 @@ pub fn print_bench_comparison(report: &BenchReport) {
         println!("  → 焊接版中位数更高；可缩小 monolith.toml 的 weld_modules");
     } else {
         println!("  → 中位数接近；可增加 runs 或检查构建 profile");
+    }
+    print_pair_u64("二进制 (bytes)", report.binary_size.standard, report.binary_size.monolith);
+    print_pair_u64(
+        "峰值内存 (MiB)",
+        report.peak_memory.standard,
+        report.peak_memory.monolith,
+    );
+    if report.release {
+        print_pair_f64(
+            "编译时间 (s)",
+            report.build_time.standard,
+            report.build_time.monolith,
+        );
+    }
+}
+
+fn print_pair_u64(label: &str, standard: u64, monolith: u64) {
+    let pct = pct_improvement_u64(standard, monolith);
+    println!(
+        "  {label:<16} {:>12}   {:>12}   {:>+6.1}%",
+        standard, monolith, pct
+    );
+}
+
+fn print_pair_f64(label: &str, standard: f64, monolith: f64) {
+    let pct = pct_improvement(standard, monolith);
+    println!(
+        "  {label:<16} {:>12.2}   {:>12.2}   {:>+6.1}%",
+        standard, monolith, pct
+    );
+}
+
+fn pct_improvement_u64(standard: u64, monolith: u64) -> f64 {
+    if standard == 0 {
+        0.0
+    } else {
+        ((standard as f64 - monolith as f64) / standard as f64) * 100.0
     }
 }
 

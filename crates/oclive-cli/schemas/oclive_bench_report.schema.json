@@ -10,16 +10,22 @@
     "inner_iters",
     "release",
     "standard_ms",
-    "monolith_ms"
+    "monolith_ms",
+    "binary_size",
+    "peak_memory",
+    "build_time"
   ],
   "properties": {
-    "schema_version": { "type": "integer", "const": 1 },
+    "schema_version": { "type": "integer", "minimum": 2 },
     "package_name": { "type": "string" },
     "runs": { "type": "integer", "minimum": 1 },
     "inner_iters": { "type": "integer", "minimum": 1 },
     "release": { "type": "boolean" },
     "standard_ms": { "$ref": "#/$defs/sample_stats" },
-    "monolith_ms": { "$ref": "#/$defs/sample_stats" }
+    "monolith_ms": { "$ref": "#/$defs/sample_stats" },
+    "binary_size": { "$ref": "#/$defs/standard_monolith_pair_u64" },
+    "peak_memory": { "$ref": "#/$defs/standard_monolith_pair_u64" },
+    "build_time": { "$ref": "#/$defs/standard_monolith_pair_number" }
   },
   "$defs": {
     "sample_stats": {
@@ -32,6 +38,22 @@
         "p50": { "type": "number" },
         "p95": { "type": "number" },
         "mean": { "type": "number" }
+      }
+    },
+    "standard_monolith_pair_u64": {
+      "type": "object",
+      "required": ["standard", "monolith"],
+      "properties": {
+        "standard": { "type": "integer", "minimum": 0 },
+        "monolith": { "type": "integer", "minimum": 0 }
+      }
+    },
+    "standard_monolith_pair_number": {
+      "type": "object",
+      "required": ["standard", "monolith"],
+      "properties": {
+        "standard": { "type": "number" },
+        "monolith": { "type": "number" }
       }
     }
   }

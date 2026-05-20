@@ -28,6 +28,9 @@ serde_json = "1"
 toml = "0.8"
 tracing = "0.1"
 tracing-subscriber = { version = "0.3", default-features = false, features = ["env-filter", "fmt", "std"] }
+sysinfo = "0.33"
+fs2 = "0.4"
+ureq = { version = "2.10", default-features = false, features = ["tls"] }
 zip = { version = "0.6", default-features = false, features = ["deflate"] }
 
 [dev-dependencies]

@@ -31,7 +31,15 @@ Use this worksheet to compare **standard** vs **Monolith welded** subprocess lat
 
 **Gain % (p50)** ≈ `(standard_p50 - monolith_p50) / standard_p50 × 100`.
 
-## 3. Next steps
+## 3. Multi-dimensional metrics (report schema v2)
+
+| Dimension | JSON field | Unit | Notes |
+|-----------|------------|------|--------|
+| Binary size | `binary_size.*` | bytes | release binaries on disk |
+| Peak memory | `peak_memory.*` | MiB | max RSS across bench runs per variant |
+| Build time | `build_time.*` | seconds | separate timed `cargo build --release` passes |
+
+## 4. Next steps
 
 - [ ] Monolith faster → keep or expand `weld_modules`
 - [ ] Similar → shrink weld set (e.g. `embedded` preset)
