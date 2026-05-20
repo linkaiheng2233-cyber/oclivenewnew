@@ -4,6 +4,7 @@
 //! 预设与 `plugin_backends` 矩阵见 **`init --help` 末尾**（与生成项目根目录 **`CONFIG_REFERENCE.md`** 一致）。
 
 use crate::generator;
+use crate::pipeline::PipelineArg;
 use anyhow::{Context, Result};
 use clap::Parser;
 use serde::{Deserialize, Serialize};
@@ -161,6 +162,14 @@ pub struct InitArgs {
     /// 使用终端 TUI 选择内核工厂模板（不支持时回退 dialoguer）
     #[arg(long)]
     pub tui: bool,
+
+    /// 自定义编排顺序：default | emotion-first | memory-last
+    #[arg(long, value_enum, default_value_t = PipelineArg::Default)]
+    pub pipeline: PipelineArg,
+
+    /// TUI 自定义 Monolith 焊接槽位（逗号分隔，覆盖 monolith-preset）
+    #[arg(long, value_delimiter = ',')]
+    pub weld_modules: Vec<String>,
 }
 
 /// 内核工厂套餐（`--template`）。
@@ -349,6 +358,10 @@ pub struct ProjectConfig {
     pub cargo_license: Option<String>,
     /// 生成 `Cargo.toml` 的 `[package].description`。
     pub cargo_description: Option<String>,
+    /// 编排模式（生成 `docs/PIPELINE_CUSTOM.md` 与 `src/oclive_pipeline_order.rs`）。
+    pub pipeline: crate::pipeline::PipelineArg,
+    /// 自定义 `monolith.toml` 的 `weld_modules`（TUI 或 `--weld-modules`）。
+    pub custom_weld_modules: Option<Vec<String>>,
 }
 
 impl ProjectConfig {
@@ -484,17 +497,28 @@ pub fn preset_config(name: &str, preset: &str) -> ProjectConfig {
         cargo_author: None,
         cargo_license: None,
         cargo_description: None,
+        pipeline: crate::pipeline::PipelineArg::Default,
+        custom_weld_modules: None,
     }
 }
 
 /// 解析 Monolith 焊接档位（无 `--monolith-preset` 时默认七槽全焊）。
-pub fn resolve_monolith_weld_modules(cfg: &ProjectConfig) -> Vec<&'static str> {
+pub fn resolve_monolith_weld_modules(cfg: &ProjectConfig) -> Vec<String> {
     if !cfg.monolith_enabled {
         return vec![];
     }
+    if let Some(ref custom) = cfg.custom_weld_modules {
+        return custom.clone();
+    }
     match cfg.monolith_preset {
-        Some(p) => crate::monolith_codegen::weld_modules_for_preset(p),
-        None => crate::monolith_config::SLOT_IDS.to_vec(),
+        Some(p) => crate::monolith_codegen::weld_modules_for_preset(p)
+            .into_iter()
+            .map(|s| s.to_string())
+            .collect(),
+        None => crate::monolith_config::SLOT_IDS
+            .iter()
+            .map(|s| s.to_string())
+            .collect(),
     }
 }
 
@@ -732,6 +756,20 @@ pub fn run(args: InitArgs) -> Result<()> {
 
     apply_cargo_metadata_cli(&mut cfg, &args);
     ensure_cargo_license_default(&mut cfg);
+    cfg.pipeline = args.pipeline;
+    if !args.weld_modules.is_empty() {
+        cfg.custom_weld_modules = Some(args.weld_modules.clone());
+        cfg.monolith_enabled = true;
+    }
+    if args.tui
+        && cfg.monolith_enabled
+        && cfg.custom_weld_modules.is_none()
+        && matches!(cfg.project_type, ProjectType::KernelServer)
+    {
+        if let Some(w) = crate::init_tui::pick_weld_modules_tui()? {
+            cfg.custom_weld_modules = Some(w);
+        }
+    }
 
     if !args.non_interactive {
         cfg.print_summary();
@@ -835,6 +873,8 @@ mod template_tests {
             description: None,
             template_url: None,
             tui: false,
+            pipeline: PipelineArg::Default,
+            weld_modules: vec![],
         };
         let preset = args.preset.as_deref().unwrap_or("minimal");
         let mut cfg = preset_config("t", preset);
@@ -873,6 +913,8 @@ mod template_tests {
             description: None,
             template_url: None,
             tui: false,
+            pipeline: PipelineArg::Default,
+            weld_modules: vec![],
         };
         let mut cfg = preset_config("t", "minimal");
         apply_template_layer(&args, &mut cfg);
@@ -911,6 +953,8 @@ mod template_tests {
             description: None,
             template_url: None,
             tui: false,
+            pipeline: PipelineArg::Default,
+            weld_modules: vec![],
         };
         assert_eq!(
             resolve_role_pack_kind(&args),
@@ -957,6 +1001,8 @@ mod template_tests {
             description: None,
             template_url: None,
             tui: false,
+            pipeline: PipelineArg::Default,
+            weld_modules: vec![],
         };
         let mut cfg = preset_config("t", "minimal");
         apply_backend_cli_overrides(&mut cfg, &args);
@@ -994,5 +1040,29 @@ mod template_tests {
         cfg.monolith_preset = Some(MonolithPresetArg::Latency);
         let weld = resolve_monolith_weld_modules(&cfg);
         assert_eq!(weld.len(), 7);
+    }
+
+    #[test]
+    fn pipeline_memory_last_llm_before_memory_in_order_file() {
+        let dir = tempfile::tempdir().unwrap();
+        let mut cfg = preset_config("pipe", "minimal");
+        cfg.pipeline = PipelineArg::MemoryLast;
+        cfg.monolith_enabled = false;
+        crate::generator::write_project(&cfg, dir.path()).unwrap();
+        let raw =
+            std::fs::read_to_string(dir.path().join("src/oclive_pipeline_order.rs")).unwrap();
+        let llm = raw.find("llm_generate").expect("llm_generate");
+        let mem = raw.find("memory_rank").expect("memory_rank");
+        assert!(llm < mem, "memory-last: llm before memory in OCLIVE_PIPELINE_STEPS");
+    }
+
+    #[test]
+    fn pipeline_emotion_first_memory_before_event() {
+        let steps = PipelineArg::EmotionFirst.steps();
+        let em = steps.iter().position(|s| *s == "user_emotion_analyze").unwrap();
+        let ev = steps.iter().position(|s| *s == "event_estimate").unwrap();
+        let mem = steps.iter().position(|s| *s == "memory_rank").unwrap();
+        assert!(em < ev);
+        assert!(mem < ev);
     }
 }

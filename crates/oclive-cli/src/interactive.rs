@@ -281,6 +281,8 @@ pub fn run_interactive(args: &InitArgs) -> Result<ProjectConfig> {
                 cargo_author: None,
                 cargo_license: None,
                 cargo_description: None,
+                pipeline: crate::pipeline::PipelineArg::Default,
+                custom_weld_modules: None,
             };
             (c, false)
         }

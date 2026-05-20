@@ -254,6 +254,27 @@ fn line_complex(b: BackendImpl) -> &'static str {
     }
 }
 
+fn write_pipeline_artifacts(cfg: &ProjectConfig, out: &Path) -> Result<()> {
+    let docs = out.join("docs");
+    fs::create_dir_all(&docs).context("create docs")?;
+    fs::write(
+        docs.join("PIPELINE_CUSTOM.md"),
+        cfg.pipeline.doc_markdown(),
+    )
+    .context("write PIPELINE_CUSTOM.md")?;
+    let steps = cfg.pipeline.steps();
+    let body: String = steps
+        .iter()
+        .map(|s| format!("    \"{s}\",\n"))
+        .collect();
+    let rs = format!(
+        "//! 编排步骤顺序快照（`oclive init --pipeline {:?}`）。\n//! 完整宿主以 oclivenewnew `process_message` 为准。\n\npub const OCLIVE_PIPELINE_STEPS: &[&str] = &[\n{body}];\n",
+        cfg.pipeline
+    );
+    fs::write(out.join("src/oclive_pipeline_order.rs"), rs).context("write oclive_pipeline_order.rs")?;
+    Ok(())
+}
+
 fn write_kernel_dev_docs(out: &Path) -> Result<()> {
     let docs = out.join("docs");
     fs::create_dir_all(&docs).context("create docs")?;
@@ -492,7 +513,7 @@ pub fn write_project(cfg: &ProjectConfig, out: &Path) -> Result<()> {
                 monolith_codegen::copy_monolith_vendor(out)
                     .context("copy vendor/oclive_monolith_builtin")?;
                 let weld = crate::init::resolve_monolith_weld_modules(cfg);
-                let weld_refs: Vec<&str> = weld.iter().copied().collect();
+                let weld_refs: Vec<&str> = weld.iter().map(|s| s.as_str()).collect();
                 let (toml, plan) = monolith_codegen::monolith_toml_and_plan(&weld_refs);
                 fs::write(
                     out.join("src").join("process_message_monolith.rs"),
@@ -525,6 +546,7 @@ pub fn write_project(cfg: &ProjectConfig, out: &Path) -> Result<()> {
         .context("write CONFIG_REFERENCE.md")?;
 
     write_kernel_dev_docs(out)?;
+    write_pipeline_artifacts(cfg, out)?;
 
     fs::create_dir_all(out.join("plugins")).context("create plugins")?;
     fs::write(
