@@ -1,0 +1,223 @@
+//! `oclive publish` 与远程模板 `init --template-url`。
+
+use anyhow::{bail, Context, Result};
+use clap::Parser;
+use flate2::write::GzEncoder;
+use flate2::Compression;
+use serde::{Deserialize, Serialize};
+use std::fs::{self, File};
+use std::io::Write;
+use std::path::{Path, PathBuf};
+use tar::{Builder, Header};
+
+#[derive(Parser, Debug)]
+pub struct PublishArgs {
+    /// 发布类型（当前仅 template）
+    #[arg(long, value_enum, default_value_t = PublishTypeArg::Template)]
+    pub r#type: PublishTypeArg,
+
+    /// 工程根目录（默认当前目录）
+    #[arg(short = 'o', long, default_value = ".")]
+    pub path: PathBuf,
+
+    /// 输出文件（默认 ./<package>-<version>.oclive-template.tar.gz）
+    #[arg(short = 'O', long)]
+    pub output: Option<PathBuf>,
+}
+
+#[derive(clap::ValueEnum, Clone, Debug, Default)]
+pub enum PublishTypeArg {
+    #[default]
+    Template,
+}
+
+#[derive(Debug, Serialize, Deserialize)]
+pub struct TemplateManifest {
+    pub name: String,
+    pub version: String,
+    pub description: String,
+    pub scene: String,
+    pub preset: String,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub monolith_preset: Option<String>,
+    pub project_type: String,
+}
+
+const EXCLUDE_DIRS: &[&str] = &[
+    "target",
+    ".git",
+    "bench_results",
+    "node_modules",
+    ".oclive-compose.pids.json",
+];
+
+const EXCLUDE_FILES: &[&str] = &["bench_history.json", ".oclive-compose.pids.json"];
+
+pub fn run(args: PublishArgs) -> Result<()> {
+    match args.r#type {
+        PublishTypeArg::Template => publish_template(&args),
+    }
+}
+
+fn publish_template(args: &PublishArgs) -> Result<()> {
+    let root = args
+        .path
+        .canonicalize()
+        .with_context(|| format!("path {}", args.path.display()))?;
+    let cargo_toml = root.join("Cargo.toml");
+    if !cargo_toml.is_file() {
+        bail!("{} 不是 Cargo 工程根", root.display());
+    }
+    let (name, version) = read_package_meta(&cargo_toml)?;
+    let out = args.output.clone().unwrap_or_else(|| {
+        root.parent()
+            .unwrap_or(&root)
+            .join(format!("{name}-{version}.oclive-template.tar.gz"))
+    });
+    let template_meta = TemplateManifest {
+        name: name.clone(),
+        description: format!("{name} oclive kernel template"),
+        version: version.clone(),
+        scene: "custom".into(),
+        preset: "minimal".into(),
+        monolith_preset: if root.join("monolith.toml").is_file() {
+            Some("latency".into())
+        } else {
+            None
+        },
+        project_type: if root.join("src/main.rs").is_file() {
+            "kernel_server".into()
+        } else {
+            "library".into()
+        },
+    };
+    let tmp = tempfile::tempdir().context("tempdir")?;
+    let staging = tmp.path().join("bundle");
+    copy_tree_filtered(&root, &staging)?;
+    fs::write(
+        staging.join("template.json"),
+        serde_json::to_string_pretty(&template_meta)?,
+    )?;
+    write_tar_gz(&staging, &out)?;
+    println!("已生成模板包: {}", out.display());
+    Ok(())
+}
+
+pub fn init_from_template_url(url: &str, output: &Path) -> Result<()> {
+    if output.exists() {
+        bail!("输出目录已存在: {}", output.display());
+    }
+    fs::create_dir_all(output).context("create output")?;
+    let tmp = tempfile::tempdir()?;
+    let archive = tmp.path().join("dl.tar.gz");
+    eprintln!("下载 {url} …");
+    let resp = ureq::get(url).call().context("HTTP GET template")?;
+    let mut reader = resp.into_reader();
+    let mut file = File::create(&archive)?;
+    std::io::copy(&mut reader, &mut file)?;
+    extract_tar_gz(&archive, output)?;
+    println!("已从远程模板初始化: {}", output.display());
+    Ok(())
+}
+
+fn read_package_meta(cargo_toml: &Path) -> Result<(String, String)> {
+    let raw = fs::read_to_string(cargo_toml)?;
+    let v: toml::Value = toml::from_str(&raw)?;
+    let name = v
+        .get("package")
+        .and_then(|p| p.get("name"))
+        .and_then(|n| n.as_str())
+        .context("Cargo.toml [package].name")?
+        .to_string();
+    let version = v
+        .get("package")
+        .and_then(|p| p.get("version"))
+        .and_then(|n| n.as_str())
+        .unwrap_or("0.1.0")
+        .to_string();
+    Ok((name, version))
+}
+
+fn should_skip(rel: &Path) -> bool {
+    for part in rel.components() {
+        let s = part.as_os_str().to_string_lossy();
+        if EXCLUDE_DIRS.iter().any(|d| d == &s) {
+            return true;
+        }
+        if EXCLUDE_FILES.iter().any(|f| f == &s) {
+            return true;
+        }
+    }
+    false
+}
+
+fn copy_tree_filtered(src_root: &Path, dst_root: &Path) -> Result<()> {
+    let mut stack = vec![src_root.to_path_buf()];
+    while let Some(dir) = stack.pop() {
+        for entry in fs::read_dir(&dir)? {
+            let entry = entry?;
+            let path = entry.path();
+            let rel = path.strip_prefix(src_root).unwrap_or(&path);
+            if should_skip(rel) {
+                continue;
+            }
+            let to = dst_root.join(rel);
+            if path.is_dir() {
+                fs::create_dir_all(&to)?;
+                stack.push(path);
+            } else {
+                if let Some(parent) = to.parent() {
+                    fs::create_dir_all(parent)?;
+                }
+                fs::copy(&path, &to)?;
+            }
+        }
+    }
+    Ok(())
+}
+
+fn write_tar_gz(src_dir: &Path, out_path: &Path) -> Result<()> {
+    let file = File::create(out_path)?;
+    let enc = GzEncoder::new(file, Compression::default());
+    let mut tar = Builder::new(enc);
+    for entry in walkdir_flat(src_dir)? {
+        let path = entry.0;
+        let rel = path.strip_prefix(src_dir).unwrap();
+        let mut header = Header::new_gnu();
+        if path.is_file() {
+            let mut f = File::open(&path)?;
+            header.set_size(f.metadata()?.len());
+            header.set_mode(0o644);
+            header.set_path(rel)?;
+            header.set_cksum();
+            tar.append(&header, &mut f)?;
+        }
+    }
+    tar.finish()?;
+    Ok(())
+}
+
+fn walkdir_flat(dir: &Path) -> Result<Vec<(PathBuf, bool)>> {
+    let mut out = Vec::new();
+    let mut stack = vec![dir.to_path_buf()];
+    while let Some(d) = stack.pop() {
+        for entry in fs::read_dir(&d)? {
+            let entry = entry?;
+            let p = entry.path();
+            if p.is_dir() {
+                stack.push(p);
+            } else {
+                out.push((p, false));
+            }
+        }
+    }
+    Ok(out)
+}
+
+fn extract_tar_gz(archive: &Path, dest: &Path) -> Result<()> {
+    let file = File::open(archive)?;
+    let dec = flate2::read::GzDecoder::new(file);
+    let mut archive = tar::Archive::new(dec);
+    archive.unpack(dest).context("unpack template")?;
+    Ok(())
+}
