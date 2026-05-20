@@ -1,6 +1,6 @@
 # Oclive 架构总览（单核双态构建架构）
 
-本文是 **对外架构叙述** 与 **模块分层术语** 的权威页：单核双态构建、**后端模块 / 后端插件模块 / 设施模块** 三层，以及 **专家模型设施子模块** 命名规则。实现细节仍以 [PLUGIN_V1.md](../plugin-and-architecture/PLUGIN_V1.md)、[SETTINGS_REFERENCE.md](../cli/SETTINGS_REFERENCE.md)、[PURE_KERNEL_BOUNDARY.md](PURE_KERNEL_BOUNDARY.md)、[RFC_OCLIVE_MONOLITH_MODE.md](../rfc/RFC_OCLIVE_MONOLITH_MODE.md) 与源码为准。
+本文是 **对外架构叙述** 与 **模块编号与分层术语** 的权威页：单核双态构建、**后端模块（第 1–6 模块）** 与 **设施模块（第 N 设施子模块）** 两大类，以及 **后端模块插件模块**（不归入第几模块序列）。实现细节仍以 [PLUGIN_V1.md](../plugin-and-architecture/PLUGIN_V1.md)、[SETTINGS_REFERENCE.md](../cli/SETTINGS_REFERENCE.md)、[PURE_KERNEL_BOUNDARY.md](PURE_KERNEL_BOUNDARY.md)、[RFC_OCLIVE_MONOLITH_MODE.md](../rfc/RFC_OCLIVE_MONOLITH_MODE.md) 与源码为准。
 
 [English](../../creator-docs-en/getting-started/OCLIVE_ARCHITECTURE_OVERVIEW.md)
 
@@ -18,103 +18,102 @@
 
 ---
 
-## 模块分层（三层 + 设施子类）
+## 模块编号约定（规定）
 
-纯净内核内的能力按 **职责** 分为三层；**不要** 与「内核工厂配方层·实现层·代码层」混淆（后者见 [KERNEL_FACTORY_VISION.md](KERNEL_FACTORY_VISION.md)）。
+纯净内核能力划分为 **两大类**；**不要** 与「内核工厂配方层·实现层·代码层」混淆（后者见 [KERNEL_FACTORY_VISION.md](KERNEL_FACTORY_VISION.md)）。
 
-```mermaid
-flowchart TB
-  subgraph L1["后端模块（6 宿主槽）"]
-    M[memory]
-    E[emotion]
-    EV[event]
-    P[prompt]
-    L[llm]
-    A[agent]
-  end
-  subgraph L2["后端插件模块（实现形态）"]
-    R[Remote 侧车]
-    D[directory 目录插件]
-    LOC[memory: local]
-  end
-  subgraph L3["设施模块"]
-    ORCH[编排设施子模块]
-    PERS[持久化设施子模块]
-    REL[关系/人格设施子模块]
-    EXP[专家模型设施子模块]
-  end
-  L1 --> L2
-  E --> EXP
-  EXP --> CE[复杂情感专家模型设施子模块]
-  CE --> P
-```
+| 大类 | 编号系列 | 是否写入 `plugin_backends` |
+|------|----------|---------------------------|
+| **后端模块** | **第 1–6 模块**（固定，见下表） | **是**（六枚举字段） |
+| **设施模块** | **第 N 设施子模块**（从 **第 1 设施子模块** 起编，与 1–6 **独立序号**） | **否**（编排行内调用） |
+| **后端模块插件模块** | **不使用「第 N 模块」编号** | 仅表示某 **第 K 后端模块** 的外挂实现 |
 
-### 1. 后端模块（六宿主槽）
+**扩展规则**
 
-**定义**：`settings.json` → `plugin_backends` 中 **6 个枚举字段**；经 **`PluginHost::resolve_for_role`** 绑定 `Arc<dyn Trait>`；由 `chat_engine` 按 [PLUGIN_V1 § 编排顺序](../plugin-and-architecture/PLUGIN_V1.md) 调用。
+- 新增 **后端模块**（须 RFC + 宿主）：依次为 **第 7 模块**、**第 8 模块**…
+- 新增 **专家模型类设施**（设施模块子类）：依次为 **第 2 设施子模块**、**第 3 设施子模块**…
+- 新增 **后端模块插件**（侧车 / 目录包）：写作 **「第 K 模块的 xxx 插件实现」**，**不** 占用第 7、第 8 模块号，也 **不** 占用设施子模块号。
 
-| 槽 | 职责 |
-|----|------|
-| memory | 记忆检索排序 |
-| emotion | 用户句情绪分析 |
-| event | 事件影响估计 |
-| prompt | Prompt 组装 |
-| llm | 主对话生成 |
-| agent | Agent / 工具编排 |
+### 第 1–6 模块（后端模块，固定）
 
-**默认内置实现**（如 `emotion_analyzer`、`memory_retrieval`）仍属 **该后端模块的内置分支**，不是单独的「插件模块类型」。
+| 编号 | `plugin_backends` 键 | 职责 |
+|------|------------------------|------|
+| **第 1 模块** | `memory` | 记忆检索排序 |
+| **第 2 模块** | `emotion` | 用户句情绪分析 |
+| **第 3 模块** | `event` | 事件影响估计 |
+| **第 4 模块** | `prompt` | Prompt 组装 |
+| **第 5 模块** | `llm` | 主对话生成 |
+| **第 6 模块** | `agent` | Agent / 工具编排 |
 
-文档中的 **「第七模块」**（见 [AGENTS.md](../../AGENTS.md)）指产品上的 **`agent` 扩展槽**（六字段中的 `agent`），**不是** `complex_emotion`。
+简称示例：**第 2 模块** = emotion 后端模块。内置 / ollama 实现仍属该模块的 **内置插头**，不是独立编号。
 
-### 2. 后端插件模块
+### 第 N 设施子模块（设施模块 · 已登记）
 
-**定义**：**某一后端模块** 在配置为 `remote` / `directory` / `local`（仅 memory）时，**落在宿主进程外**的实现与分发形态。**不新增宿主槽**。
+**专家模型设施子模块** 类型使用 **第 N 设施子模块** 简称（全名仍带「专家模型」前缀）。
 
-| 形态 | 配置 | 换逻辑是否要重编译桌面端 |
-|------|------|--------------------------|
-| Remote 侧车 | 槽 = `remote` + `OCLIVE_REMOTE_*` 等 | 通常 **不要**（改侧车） |
-| 目录插件 | 槽 = `directory` + `directory_plugins.<槽>` | 通常 **不要**（换 `plugins/<id>/`） |
-| 打包插件 | `.oclive-plugin` 安装到目录 | 同上 |
-| Fork 宿主 Rust | 新枚举 / `PluginHost` 注册 | **要**（新安装包） |
+| 编号 | 全名 | 说明 |
+|------|------|------|
+| **第 1 设施子模块** | **复杂情感专家模型设施子模块** | `narrative_hint`；消费 **第 2 模块** 产出；详见下节 |
 
-**常见偏差**：把「后端插件模块」理解成与六槽 **并列的第七类业务** —— 正确理解是 **「emotion 槽的目录插件实现」** 等。
+其它设施（`PluginHost`、`PersonalityEngine`、好感、Repository 等）统称 **设施模块**，**不单独占用「第 N 设施子模块」序号**；若未来需要可为编排/持久化类另立类型表。
 
-**MCP**（`mcp-servers/*.json`）是 **agent 后端模块** 的工具依赖，不是第八槽。
+### 后端模块插件模块（不编入第 N 模块）
 
-详见 [CREATOR_PLUGIN_ARCHITECTURE.md](../plugin-and-architecture/CREATOR_PLUGIN_ARCHITECTURE.md)、[DIRECTORY_PLUGINS.md](../plugin-and-architecture/DIRECTORY_PLUGINS.md)。
+**定义**：挂在 **某一第 K 模块（1≤K≤6）** 插座上的 **外挂实现**（Remote、directory、local 等）。**不与第 1–6 模块并列**，也 **不是** 第 7 模块。
 
-### 3. 设施模块
+| 说法示例 | 含义 |
+|----------|------|
+| 第 5 模块的目录插件实现 | `llm = directory`，`plugins/<id>/` 子进程 |
+| 第 2 模块的 Remote 侧车 | `emotion = remote`，共用 `OCLIVE_REMOTE_PLUGIN_URL` |
+| ✗ 第 7 模块（目录插件） | **错误**——插件不单独占模块号 |
 
-**定义**：**不在 `PluginBackends` 六字段内**、由 `chat_engine` / `co_present` **直接调用** 的内核能力。
-
-| 设施子模块（类型） | 说明 | 示例 |
-|--------------------|------|------|
-| **编排设施子模块** | 入口、解析、自检 | `process_message`、`PluginHost`、`startup_health` |
-| **持久化设施子模块** | 仓储与加载 | `Repository`、SQLite、`role_manager` |
-| **关系/人格设施子模块** | 规则域、非窄模型 | `PersonalityEngine`、好感/关系、`knowledge_index` |
-| **专家模型设施子模块** | 窄任务；消费后端 DTO；可换策略（路线图） | 见下节 |
-
-**UI（Vue/Tauri）、OOCP HTTP 壳、角色包数据、oclive-cli 工厂** 不在上述三层内（边界外或工具链）。
+目录插件可选 **整壳 / ui_slots** UI，仍属 **该插件包**，不是新的「前端模块号」。
 
 ---
 
-## 命名规则：专家模型 × 设施
+## 结构总图
 
-| 层级 | 句式 | 含义 |
-|------|------|------|
-| 类型 | **设施模块** | 上表第 3 层总称 |
-| 子类 | **专家模型设施子模块** | 设施模块中的一类：窄域、主编排调用、策略可替换（**专家模型** 为文档前缀，**不强制**独立大模型） |
-| 实例全名 | **{能力}专家模型设施子模块** | 如 **复杂情感专家模型设施子模块** |
+```mermaid
+flowchart TB
+  ORCH["co_present 编排"]
 
-**与后端模块关系**：专家模型设施子模块 **引用后端模块的输出**（如 `EmotionResult`），**自身不是** 后端模块，**不经** `PluginHost` 解析（在升格为第七 `plugin_backends` 字段之前）。
+  subgraph back["大类：后端模块（第 1–6 模块）"]
+    M1["第1模块 memory"]
+    M2["第2模块 emotion"]
+    M3["第3模块 event"]
+    M4["第4模块 prompt"]
+    M5["第5模块 llm"]
+    M6["第6模块 agent"]
+  end
 
-### 复杂情感专家模型设施子模块
+  subgraph plug["后端模块插件模块（无独立编号）"]
+    P5["例：第5模块的 directory 插件"]
+    P2["例：第2模块的 Remote 侧车"]
+  end
+
+  subgraph fac["大类：设施模块"]
+    F0["编排/持久化/人格等<br/>（无第N设施子模块号）"]
+    F1["第1设施子模块<br/>复杂情感专家模型设施子模块"]
+  end
+
+  ORCH --> M2
+  M2 --> F1
+  F1 --> M4
+  ORCH --> back
+  M5 -.-> P5
+  M2 -.-> P2
+  ORCH --> F0
+```
+
+---
+
+## 第 1 设施子模块（复杂情感专家模型设施子模块）
 
 | 项 | 说明 |
 |----|------|
 | **职责** | 共景回合内产出 `narrative_hint`，经 `PromptInput` 进入 Prompt（「复杂情感叙事提示」） |
 | **编排位置** | `co_present`：`emotion.analyze` 与上下文加载之后，`build_prompt` 之前 |
-| **与 emotion 槽** | emotion = 测用户情绪；本设施 = 叙事级 hint（关键词规则 / 将来 Remote） |
+| **与第 2 模块** | 第 2 模块 = 测用户情绪；本设施 = 叙事级 hint（关键词规则 / 将来 Remote） |
 | **现状** | 主路径 **写死** `BuiltinKeywordComplexEmotionProvider`；`settings.json` 的 `complex_emotion` 键 **宿主忽略** |
 | **路线图** | Remote：`complex_emotion.resolve_turn`（`OCLIVE_COMPLEX_EMOTION_URL`）；可选将来与六槽同级插件化 |
 | **Monolith** | 编译焊接键名 `complex_emotion`（**七焊接键**之一），≠ 宿主第六/第七槽 |
@@ -149,25 +148,25 @@ flowchart TB
 
 ---
 
-## 共景主链（三层对照）
+## 共景主链（编号对照）
 
-1. **设施**：`PluginHost` 解析 **六后端模块**
-2. **后端模块**：`emotion.analyze`
-3. **设施**：`PersonalityEngine`（用户情绪）
-4. **设施**：`knowledge_index`（可选）
-5. **专家模型设施子模块**：**复杂情感专家模型设施子模块** → `narrative_hint`
-6. **后端模块**：`event.estimate` → **设施**：`PersonalityEngine`（事件）
-7. **后端模块**：`memory.rank_memories`（+ 持久化设施）
-8. **设施**：好感/关系
-9. **后端模块**：`prompt.build` → **后端模块**：`llm.generate`
-10. **后端模块**：**agent**（按场景，非每轮必调）
+1. **设施模块**：`PluginHost` 解析 **第 1–6 模块**
+2. **第 2 模块**：`emotion.analyze`
+3. **设施模块**：`PersonalityEngine`（用户情绪）
+4. **设施模块**：`knowledge_index`（可选）
+5. **第 1 设施子模块**：复杂情感专家模型设施子模块 → `narrative_hint`
+6. **第 3 模块**：`event.estimate` → **设施模块**：`PersonalityEngine`（事件）
+7. **第 1 模块**：`memory.rank_memories`（+ 持久化设施）
+8. **设施模块**：好感/关系
+9. **第 4 模块**：`prompt.build` → **第 5 模块**：`llm.generate`（若 `directory` 则为 **第 5 模块的插件实现**）
+10. **第 6 模块**：**agent**（按场景；MCP 为第 6 模块工具依赖）
 
 ---
 
 ## 特点（摘要）
 
 - **契约型薄核** + **六宿主槽** + **设施模块**（含专家模型设施子模块）
-- **后端插件模块**：侧车 / 目录插件 / MCP（agent）实现可替换，无需 ComfyUI 式主界面
+- **后端模块插件模块**：按第 K 模块挂 Remote / 目录插件，**不占第 N 模块号**
 - **发行版式交付**：OOCP、角色包、`oclive-cli` 工厂、Breaking 流程
 - **单核双态**：标准二进制 + 可选 Monolith；`bench` 对比
 - **权限**：目录插件 / MCP 高风险能力须用户授权

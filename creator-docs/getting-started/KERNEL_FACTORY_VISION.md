@@ -12,7 +12,7 @@
 
 Oclive 在工厂之上采用 **单核双态构建架构**：**单核** = 一套 `process_message` + PLUGIN_V1 编排与 DTO 契约；**双态** = 构建期两档——**外核态**（低耦合 / `PluginHost` / 桌面宿主默认）与 **宏核态**（`monolith.toml` / Monolith 焊接 / 可选六宿主槽 + `complex_emotion` 焊接键全焊）。态由 `oclive init` 与 `cargo build` 选定，常见为双 `[[bin]]` 产物，**非** 运行时热切换。
 
-**模块分层**（后端模块 / 后端插件模块 / 设施模块）：见 **[OCLIVE_ARCHITECTURE_OVERVIEW.md](OCLIVE_ARCHITECTURE_OVERVIEW.md)**。
+**模块编号**（第 1–6 模块 / 第 N 设施子模块 / 后端模块插件模块）：见 **[OCLIVE_ARCHITECTURE_OVERVIEW.md](OCLIVE_ARCHITECTURE_OVERVIEW.md)**。
 
 | 总称 | 外核态 | 宏核态 |
 |------|--------|--------|

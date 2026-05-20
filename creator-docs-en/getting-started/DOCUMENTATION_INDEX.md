@@ -32,7 +32,7 @@ Time-boxed “start here → ship”; **authoritative detail stays in each topic
 
 | Topic | Document |
 |-------|----------|
-| **Narrative, dual-mode, backend / backend-plugin / facility modules, complex-emotion expert-model facility submodule** | **[OCLIVE_ARCHITECTURE_OVERVIEW.md](OCLIVE_ARCHITECTURE_OVERVIEW.md)** (Chinese: [../../creator-docs/getting-started/OCLIVE_ARCHITECTURE_OVERVIEW.md](../../creator-docs/getting-started/OCLIVE_ARCHITECTURE_OVERVIEW.md)) |
+| **Narrative, modules 1–6, facility submodules 1+, backend-module plugin modules (numbering)** | **[OCLIVE_ARCHITECTURE_OVERVIEW.md](OCLIVE_ARCHITECTURE_OVERVIEW.md)** (Chinese: [../../creator-docs/getting-started/OCLIVE_ARCHITECTURE_OVERVIEW.md](../../creator-docs/getting-started/OCLIVE_ARCHITECTURE_OVERVIEW.md)) |
 | Kernel factory & three layers | [KERNEL_FACTORY_VISION.md](KERNEL_FACTORY_VISION.md) |
 | Kernel-centric diagram | [KERNEL_AND_MODULES_ARCHITECTURE.md](../../creator-docs/getting-started/KERNEL_AND_MODULES_ARCHITECTURE.md) |
 | Monolith (macro-mode) | [RFC_OCLIVE_MONOLITH_MODE.md](../../creator-docs/rfc/RFC_OCLIVE_MONOLITH_MODE.md) |
