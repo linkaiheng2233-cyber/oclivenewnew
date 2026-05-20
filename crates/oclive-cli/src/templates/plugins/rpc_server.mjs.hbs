@@ -1,0 +1,63 @@
+/**
+ * 目录插件 JSON-RPC 侧车（oclive plugin create 生成）。
+ * 就绪行：OCLIVE_READY http://127.0.0.1:<port>/rpc
+ */
+import http from "node:http";
+
+const PROTOCOL_HEADER = "x-oclive-remote-protocol";
+const PROTOCOL_VALUE = "oclive-remote-jsonrpc-v1";
+
+const handlers = {
+{{METHOD_STUBS}}
+};
+
+function jsonRpcResult(id, result) {
+  return JSON.stringify({ jsonrpc: "2.0", id, result });
+}
+
+function jsonRpcError(id, code, message) {
+  return JSON.stringify({
+    jsonrpc: "2.0",
+    id,
+    error: { code, message },
+  });
+}
+
+const server = http.createServer(async (req, res) => {
+  if (req.method !== "POST") {
+    res.writeHead(405);
+    res.end();
+    return;
+  }
+  res.setHeader(PROTOCOL_HEADER, PROTOCOL_VALUE);
+  let body = "";
+  for await (const chunk of req) body += chunk;
+  let msg;
+  try {
+    msg = JSON.parse(body);
+  } catch {
+    res.writeHead(400);
+    res.end(jsonRpcError(null, -32700, "parse error"));
+    return;
+  }
+  const fn = handlers[msg.method];
+  if (!fn) {
+    res.writeHead(200, { "Content-Type": "application/json" });
+    res.end(jsonRpcError(msg.id, -32601, `method not found: ${msg.method}`));
+    return;
+  }
+  try {
+    const result = await fn(msg.params ?? {});
+    res.writeHead(200, { "Content-Type": "application/json" });
+    res.end(jsonRpcResult(msg.id, result));
+  } catch (e) {
+    res.writeHead(200, { "Content-Type": "application/json" });
+    res.end(jsonRpcError(msg.id, -32000, String(e)));
+  }
+});
+
+server.listen(0, "127.0.0.1", () => {
+  const addr = server.address();
+  const port = typeof addr === "object" && addr ? addr.port : 0;
+  console.log(`OCLIVE_READY http://127.0.0.1:${port}/rpc`);
+});

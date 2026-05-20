@@ -12,6 +12,7 @@ mod doctor_cmd;
 mod blueprint_cmd;
 mod build_cmd;
 mod dev_cmd;
+mod plugin_cmd;
 mod generator;
 mod init;
 mod init_bench;
@@ -57,6 +58,8 @@ enum Commands {
     Blueprint(blueprint_cmd::BlueprintCli),
     /// 环境诊断（Rust / 磁盘 / Ollama / 网络等）
     Doctor(doctor_cmd::DoctorArgs),
+    /// 插件脚手架（directory / remote）
+    Plugin(plugin_cmd::PluginCli),
 }
 
 fn init_tracing(verbose: u8) {
@@ -84,6 +87,7 @@ fn main() -> Result<()> {
         Commands::Pack(args) => pack_cmd::run_pack(args),
         Commands::Blueprint(cli) => blueprint_cmd::run(cli),
         Commands::Doctor(args) => doctor_cmd::run(args),
+        Commands::Plugin(cli) => plugin_cmd::run(cli),
     }
 }
 

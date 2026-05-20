@@ -1,0 +1,55 @@
+#!/usr/bin/env python3
+"""Remote HTTP JSON-RPC 侧车（oclive plugin create 生成）。"""
+from __future__ import annotations
+
+import json
+from http.server import BaseHTTPRequestHandler, HTTPServer
+
+
+def handle_stub(slot: str, method: str, params: dict) -> dict:
+    return {"ok": True, "slot": slot, "method": method, "params": params}
+
+
+class RpcHandler(BaseHTTPRequestHandler):
+    protocol_version = "HTTP/1.1"
+
+    def do_POST(self) -> None:
+        length = int(self.headers.get("Content-Length", "0"))
+        raw = self.rfile.read(length)
+        try:
+            msg = json.loads(raw.decode("utf-8"))
+        except json.JSONDecodeError:
+            self._send_json(-32700, None, error={"code": -32700, "message": "parse error"})
+            return
+        method = msg.get("method")
+        params = msg.get("params") or {}
+        req_id = msg.get("id")
+{{METHOD_ARMS}}
+        return self._send_json(req_id, error={"code": -32601, "message": f"method not found: {method}"})
+
+    def _send_json(self, req_id, result=None, error=None) -> None:
+        body = {"jsonrpc": "2.0", "id": req_id}
+        if error:
+            body["error"] = error
+        else:
+            body["result"] = result
+        data = json.dumps(body).encode("utf-8")
+        self.send_response(200)
+        self.send_header("Content-Type", "application/json")
+        self.send_header("Content-Length", str(len(data)))
+        self.send_header("x-oclive-remote-protocol", "oclive-remote-jsonrpc-v1")
+        self.end_headers()
+        self.wfile.write(data)
+
+    def log_message(self, fmt: str, *args) -> None:
+        pass
+
+
+def main() -> None:
+    server = HTTPServer(("127.0.0.1", 8765), RpcHandler)
+    print("OCLIVE_READY http://127.0.0.1:8765/rpc")
+    server.serve_forever()
+
+
+if __name__ == "__main__":
+    main()
