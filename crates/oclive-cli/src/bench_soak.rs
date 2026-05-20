@@ -38,10 +38,20 @@ pub fn run_soak(root: &Path, args: &BenchArgs) -> Result<()> {
     let n_samples = hours as u32;
     let sample_interval = wall_duration / n_samples.max(1);
 
+    let pkg = crate::bench_cmd::read_package_name(root)?;
     let port = 18500u16;
     let mut child = Command::new("cargo");
     child
-        .args(["run", "--release", "--", "--api", "--port", &port.to_string()])
+        .args([
+            "run",
+            "--release",
+            "--bin",
+            &pkg,
+            "--",
+            "--api",
+            "--port",
+            &port.to_string(),
+        ])
         .current_dir(root)
         .env("OCLIVE_HTTP_API_MOCK_LLM", "1")
         .stdout(Stdio::piped())

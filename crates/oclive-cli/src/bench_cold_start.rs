@@ -30,6 +30,7 @@ pub fn run_cold_start(root: &Path, args: &BenchArgs) -> Result<()> {
         .ok()
         .and_then(|p| p.parse().ok())
         .unwrap_or(8420u16);
+    let pkg = crate::bench_cmd::read_package_name(root)?;
     let warm_n = args.cold_start_warm_messages.max(1);
     let mut cold_samples = Vec::new();
     let mut all_warm = Vec::new();
@@ -46,7 +47,7 @@ pub fn run_cold_start(root: &Path, args: &BenchArgs) -> Result<()> {
         if runs > 1 && !args.json {
             eprintln!("\n--- cold-start run {}/{} ---", run_idx + 1, runs);
         }
-        let (cold_ms, warmup_ms, warm_ms) = one_cold_start_round(root, port, warm_n)?;
+        let (cold_ms, warmup_ms, warm_ms) = one_cold_start_round(root, &pkg, port, warm_n)?;
         cold_samples.push(cold_ms);
         last_warmup = Some(warmup_ms);
         all_warm.extend(warm_ms);
@@ -76,10 +77,24 @@ pub fn run_cold_start(root: &Path, args: &BenchArgs) -> Result<()> {
     Ok(())
 }
 
-fn one_cold_start_round(root: &Path, port: u16, warm_n: u32) -> Result<(f64, f64, Vec<f64>)> {
+fn one_cold_start_round(
+    root: &Path,
+    bin_name: &str,
+    port: u16,
+    warm_n: u32,
+) -> Result<(f64, f64, Vec<f64>)> {
     let mut child = Command::new("cargo");
     child
-        .args(["run", "--release", "--", "--api", "--port", &port.to_string()])
+        .args([
+            "run",
+            "--release",
+            "--bin",
+            bin_name,
+            "--",
+            "--api",
+            "--port",
+            &port.to_string(),
+        ])
         .current_dir(root)
         .env("OCLIVE_HTTP_API_MOCK_LLM", "1")
         .stdout(Stdio::piped())
