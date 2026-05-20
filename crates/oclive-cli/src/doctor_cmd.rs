@@ -17,6 +17,14 @@ pub struct DoctorArgs {
     /// 工作区探针目录（默认可写性检查用当前目录）
     #[arg(short = 'o', long, default_value = ".")]
     pub path: PathBuf,
+
+    /// 对可自动修复项执行修复（交互确认）
+    #[arg(long)]
+    pub fix: bool,
+
+    /// 与 `--fix` 联用：跳过确认
+    #[arg(long)]
+    pub yes: bool,
 }
 
 #[derive(Debug, Clone, Serialize)]
@@ -35,6 +43,8 @@ pub struct DoctorCheck {
     pub message: String,
     #[serde(skip_serializing_if = "Option::is_none")]
     pub detail: Option<String>,
+    #[serde(skip)]
+    pub fix_command: Option<Vec<String>>,
 }
 
 impl DoctorCheck {
@@ -44,6 +54,7 @@ impl DoctorCheck {
             status: "ok".into(),
             message: message.into(),
             detail: None,
+            fix_command: None,
         }
     }
 
@@ -53,6 +64,7 @@ impl DoctorCheck {
             status: "warn".into(),
             message: message.into(),
             detail,
+            fix_command: None,
         }
     }
 
@@ -62,6 +74,7 @@ impl DoctorCheck {
             status: "fail".into(),
             message: message.into(),
             detail,
+            fix_command: None,
         }
     }
 }
@@ -72,15 +85,29 @@ pub fn run(args: DoctorArgs) -> Result<()> {
     } else {
         std::env::current_dir()?.join(&args.path)
     };
-    let checks = vec![
+    let mut checks = vec![
         check_rust_toolchain(),
         check_cargo(),
+        check_cpp_toolchain(),
         check_system_memory(),
         check_disk_space(&root),
         check_ollama(),
         check_network_github(),
         check_workspace_writable(&root),
     ];
+    if args.fix {
+        apply_fixes(&checks, args.yes)?;
+        checks = vec![
+            check_rust_toolchain(),
+            check_cargo(),
+            check_cpp_toolchain(),
+            check_system_memory(),
+            check_disk_space(&root),
+            check_ollama(),
+            check_network_github(),
+            check_workspace_writable(&root),
+        ];
+    }
     let ok = checks.iter().all(|c| c.status != "fail");
     let report = DoctorReport {
         schema_version: 1,
@@ -94,6 +121,36 @@ pub fn run(args: DoctorArgs) -> Result<()> {
     }
     if !ok {
         std::process::exit(1);
+    }
+    Ok(())
+}
+
+fn apply_fixes(checks: &[DoctorCheck], yes: bool) -> Result<()> {
+    use dialoguer::Confirm;
+    for c in checks {
+        let Some(cmd) = &c.fix_command else { continue };
+        let label = cmd.join(" ");
+        let run_it = if yes {
+            true
+        } else {
+            Confirm::new()
+                .with_prompt(format!("修复 [{}]: 运行 `{label}`？", c.id))
+                .default(true)
+                .interact()?
+        };
+        if !run_it {
+            continue;
+        }
+        if c.id == "disk_space" || c.id == "workspace_writable" || c.id == "cpp_toolchain" {
+            println!("  → {}", c.detail.as_deref().unwrap_or(&label));
+            continue;
+        }
+        let st = Command::new(&cmd[0]).args(&cmd[1..]).status();
+        match st {
+            Ok(s) if s.success() => println!("  ✓ 已执行: {label}"),
+            Ok(s) => println!("  ⚠ 命令退出码 {:?}: {label}", s.code()),
+            Err(e) => println!("  ⚠ 无法执行: {e}"),
+        }
     }
     Ok(())
 }
@@ -129,24 +186,89 @@ fn run_capture(cmd: &mut Command) -> Option<String> {
 
 fn check_rust_toolchain() -> DoctorCheck {
     if let Some(ver) = run_capture(Command::new("rustc").arg("--version")) {
+        if let Some((maj, min)) = parse_rustc_version(&ver) {
+            if maj < 1 || (maj == 1 && min < 70) {
+                return DoctorCheck {
+                    id: "rust_toolchain".into(),
+                    status: "warn".into(),
+                    message: format!("{ver} — 建议 Rust 1.70+"),
+                    detail: Some("可运行 rustup update stable".into()),
+                    fix_command: Some(vec![
+                        "rustup".into(),
+                        "update".into(),
+                        "stable".into(),
+                    ]),
+                };
+            }
+        }
         return DoctorCheck::ok("rust_toolchain", ver);
     }
     if let Some(show) = run_capture(Command::new("rustup").arg("show").arg("active-toolchain")) {
         let line = show.lines().next().unwrap_or(&show).trim();
         return DoctorCheck::ok("rust_toolchain", format!("rustup: {line}"));
     }
-    DoctorCheck::fail(
-        "rust_toolchain",
-        "未检测到 Rust 工具链（rustc / rustup）",
-        Some("请安装 https://rustup.rs/".into()),
-    )
+    DoctorCheck {
+        id: "rust_toolchain".into(),
+        status: "fail".into(),
+        message: "未检测到 Rust 工具链（rustc / rustup）".into(),
+        detail: Some("请安装 https://rustup.rs/".into()),
+        fix_command: None,
+    }
+}
+
+fn parse_rustc_version(ver: &str) -> Option<(u32, u32)> {
+    let part = ver.split_whitespace().nth(1)?;
+    let mut it = part.split('.');
+    let maj: u32 = it.next()?.parse().ok()?;
+    let min: u32 = it.next()?.parse().ok()?;
+    Some((maj, min))
 }
 
 fn check_cargo() -> DoctorCheck {
     if let Some(ver) = run_capture(Command::new("cargo").arg("--version")) {
         DoctorCheck::ok("cargo", ver)
     } else {
-        DoctorCheck::fail("cargo", "未检测到 cargo", None)
+        DoctorCheck {
+            id: "cargo".into(),
+            status: "fail".into(),
+            message: "未检测到 cargo".into(),
+            detail: if cfg!(windows) {
+                Some("请安装 Rust: https://rustup.rs/ 或 Visual Studio Build Tools".into())
+            } else {
+                Some("请安装: curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh".into())
+            },
+            fix_command: None,
+        }
+    }
+}
+
+fn check_cpp_toolchain() -> DoctorCheck {
+    if cfg!(windows) {
+        if run_capture(&mut Command::new("cl")).is_some() {
+            return DoctorCheck::ok("cpp_toolchain", "MSVC cl 可用");
+        }
+        return DoctorCheck {
+            id: "cpp_toolchain".into(),
+            status: "warn".into(),
+            message: "未检测到 MSVC cl（部分 native 依赖可能需要）".into(),
+            detail: Some(
+                "请安装 Visual Studio Build Tools（C++ 工作负载）或 rustup default stable-msvc"
+                    .into(),
+            ),
+            fix_command: None,
+        };
+    }
+    if run_capture(Command::new("cc").arg("--version")).is_some()
+        || run_capture(Command::new("g++").arg("--version")).is_some()
+    {
+        return DoctorCheck::ok("cpp_toolchain", "C/C++ 编译器可用");
+    }
+    DoctorCheck {
+        id: "cpp_toolchain".into(),
+        status: "warn".into(),
+        message: "未检测到 cc/g++".into(),
+        detail: Some("Linux: sudo apt install build-essential · macOS: xcode-select --install".into()),
+        fix_command: None,
     }
 }
 
@@ -174,11 +296,15 @@ fn check_disk_space(path: &Path) -> DoctorCheck {
             let gb = bytes as f64 / (1024.0 * 1024.0 * 1024.0);
             let msg = format!("{gb:.1} GiB free ({})", path.display());
             if bytes < 1024 * 1024 * 1024 {
-                DoctorCheck::warn(
-                    "disk_space",
-                    format!("{msg} — 低于 1 GiB"),
-                    Some("cargo target 目录可能占满磁盘".into()),
-                )
+                DoctorCheck {
+                    id: "disk_space".into(),
+                    status: "warn".into(),
+                    message: format!("{msg} — 低于 1 GiB"),
+                    detail: Some(
+                        "建议: 清理 target/、bench_results/ 或增大磁盘（无法自动删除）".into(),
+                    ),
+                    fix_command: Some(vec!["echo".into(), "manual_cleanup".into()]),
+                }
             } else {
                 DoctorCheck::ok("disk_space", msg)
             }
@@ -209,11 +335,21 @@ fn check_ollama() -> DoctorCheck {
                 .unwrap_or(0);
             DoctorCheck::ok("ollama", format!("已运行，{n} 个模型"))
         }
-        Err(e) => DoctorCheck::fail(
-            "ollama",
-            "Ollama 未运行或不可达（127.0.0.1:11434）",
-            Some(format!("{e}；纯 remote LLM 可忽略")),
-        ),
+        Err(e) => DoctorCheck {
+            id: "ollama".into(),
+            status: "fail".into(),
+            message: "Ollama 未运行或不可达（127.0.0.1:11434）".into(),
+            detail: Some(format!("{e}；纯 remote LLM 可忽略")),
+            fix_command: if cfg!(windows) {
+                Some(vec![
+                    "powershell".into(),
+                    "-Command".into(),
+                    "Start-Process ollama -ArgumentList serve".into(),
+                ])
+            } else {
+                Some(vec!["sh".into(), "-c".into(), "ollama serve &".into()])
+            },
+        },
     }
 }
 
@@ -245,11 +381,15 @@ fn check_workspace_writable(path: &Path) -> DoctorCheck {
             let _ = fs::remove_file(&probe);
             DoctorCheck::ok("workspace_writable", format!("{} 可写", probe_dir.display()))
         }
-        Err(e) => DoctorCheck::fail(
-            "workspace_writable",
-            format!("{} 不可写", probe_dir.display()),
-            Some(e.to_string()),
-        ),
+        Err(e) => DoctorCheck {
+            id: "workspace_writable".into(),
+            status: "fail".into(),
+            message: format!("{} 不可写", probe_dir.display()),
+            detail: Some(format!(
+                "{e}；请检查目录权限或换可写路径（Windows: 以管理员运行或修改 ACL）"
+            )),
+            fix_command: Some(vec!["echo".into(), "fix_permissions".into()]),
+        },
     }
 }
 
