@@ -51,7 +51,7 @@ fn template_context(cfg: &ProjectConfig, out: &Path) -> serde_json::Value {
         "plugin_kernel_server": cfg.plugins.kernel_server,
         "plugin_oocp": cfg.plugins.oocp,
         "feature_complex_emotion": cfg.features.use_complex_emotion,
-        "with_example_role": cfg.with_example_role,
+        "has_role_pack": cfg.role_pack_kind != crate::init::RolePackKind::None,
         "monolith_enabled": monolith_enabled,
         "kernel_linked": false,
     });
@@ -351,60 +351,18 @@ pub fn write_project(cfg: &ProjectConfig, out: &Path) -> Result<()> {
     fs::write(out.join("CONFIG_REFERENCE.md"), config_reference_markdown())
         .context("write CONFIG_REFERENCE.md")?;
 
-    if cfg.with_example_role && !cfg.skip_role_pack {
-        let role_root = out.join("roles").join("default");
-        fs::create_dir_all(role_root.join("scenes").join("default"))
-            .context("create roles/default/scenes/default")?;
-        let settings = render_settings_json(cfg).context("settings.json")?;
-        fs::write(role_root.join("settings.json"), settings).context("write settings.json")?;
-        fs::write(
-            role_root.join("character.md"),
-            include_str!(concat!(
-                env!("CARGO_MANIFEST_DIR"),
-                "/src/templates/character.md"
-            )),
-        )
-        .context("write character.md")?;
+    fs::create_dir_all(out.join("plugins")).context("create plugins")?;
+    fs::write(
+        out.join("plugins").join("README.md"),
+        include_str!(concat!(
+            env!("CARGO_MANIFEST_DIR"),
+            "/src/templates/plugins_README.md"
+        )),
+    )
+    .context("write plugins/README.md")?;
 
-        let manifest = json!({
-            "id": "default",
-            "name": "Example role",
-            "version": "0.1.0",
-            "author": "oclive-cli",
-            "description": "Scaffold example; replace with your role pack.",
-            "default_personality": [0.5, 0.5, 0.5, 0.5, 0.5, 0.5, 0.5],
-            "scenes": ["default"],
-            "user_relations": {
-                "friend": { "initial_favorability": 50.0, "favor_multiplier": 1.0 }
-            },
-            "default_relation": "friend"
-        });
-        fs::write(
-            role_root.join("manifest.json"),
-            serde_json::to_string_pretty(&manifest).context("manifest.json")?,
-        )
-        .context("write manifest.json")?;
-
-        fs::write(
-            role_root.join("core_personality.txt"),
-            "# Core personality text (optional).\n",
-        )
-        .context("write core_personality.txt")?;
-
-        let scene = json!({
-            "name": "Default",
-            "time_windows": [],
-            "keywords": [],
-            "events": []
-        });
-        fs::write(
-            role_root
-                .join("scenes")
-                .join("default")
-                .join("scene.json"),
-            serde_json::to_string_pretty(&scene).context("scene.json")?,
-        )
-        .context("write scene.json")?;
+    if !cfg.skip_role_pack && cfg.role_pack_kind != crate::init::RolePackKind::None {
+        crate::role_pack::write_role_pack(cfg, out).context("write role pack")?;
     }
 
     Ok(())

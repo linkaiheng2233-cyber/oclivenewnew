@@ -557,6 +557,89 @@ fn e2e_pack_validate_robot_soul_example() {
 }
 
 #[test]
+fn e2e_template_robot_soul_matches_manual_combo() {
+    let tmp = tempfile::tempdir().unwrap();
+    let out_tpl = tmp.path().join("tpl");
+    let out_manual = tmp.path().join("manual");
+    assert!(run_cli(&[
+        "init",
+        "--non-interactive",
+        "--quiet",
+        "--template",
+        "robot-soul",
+        "-o",
+        out_tpl.to_str().unwrap(),
+    ])
+    .success());
+    assert!(run_cli(&[
+        "init",
+        "--non-interactive",
+        "--quiet",
+        "--preset",
+        "minimal",
+        "--monolith",
+        "-o",
+        out_manual.to_str().unwrap(),
+    ])
+    .success());
+    assert!(out_tpl.join("monolith.toml").is_file());
+    assert!(out_manual.join("monolith.toml").is_file());
+    let s_tpl = fs::read_to_string(out_tpl.join("roles/default/settings.json")).unwrap();
+    let s_man = fs::read_to_string(out_manual.join("roles/default/settings.json")).unwrap();
+    let v_tpl: Value = serde_json::from_str(&s_tpl).unwrap();
+    let v_man: Value = serde_json::from_str(&s_man).unwrap();
+    assert_eq!(
+        v_tpl.get("plugin_backends"),
+        v_man.get("plugin_backends")
+    );
+    assert!(out_tpl.join("roles/default/prompts/system.md").is_file());
+    assert!(out_tpl.join("plugins/README.md").is_file());
+    let m: Value =
+        serde_json::from_str(&fs::read_to_string(out_tpl.join("roles/default/manifest.json")).unwrap())
+            .unwrap();
+    assert!(m.get("default_personality").is_some());
+}
+
+#[test]
+fn e2e_template_headless_api_no_roles_by_default() {
+    let tmp = tempfile::tempdir().unwrap();
+    let out = tmp.path().join("api");
+    assert!(run_cli(&[
+        "init",
+        "--non-interactive",
+        "--quiet",
+        "--template",
+        "headless-api",
+        "-o",
+        out.to_str().unwrap(),
+    ])
+    .success());
+    assert!(!out.join("roles").exists());
+    assert!(!out.join("monolith.toml").exists());
+    assert!(out.join("plugins/README.md").is_file());
+}
+
+#[test]
+fn e2e_template_library_embed() {
+    let tmp = tempfile::tempdir().unwrap();
+    let out = tmp.path().join("lib");
+    assert!(run_cli(&[
+        "init",
+        "--non-interactive",
+        "--quiet",
+        "--template",
+        "library-embed",
+        "-o",
+        out.to_str().unwrap(),
+    ])
+    .success());
+    assert!(!out.join("monolith.toml").exists());
+    let cargo = fs::read_to_string(out.join("Cargo.toml")).unwrap();
+    assert!(cargo.contains("[lib]") || cargo.contains("crate-type"));
+    assert!(!out.join("roles").exists());
+}
+
+#[test]
 fn e2e_init_skip_role_pack_no_roles_dir() {
     let tmp = tempfile::tempdir().unwrap();
     let out = tmp.path().join("nr");

@@ -134,11 +134,16 @@ pub fn run_interactive() -> Result<ProjectConfig> {
         use_complex_emotion: slots.complex_emotion != BackendImpl::None,
     };
 
-    let with_example_role = Confirm::with_theme(&ColorfulTheme::default())
+    let example_role = Confirm::with_theme(&ColorfulTheme::default())
         .with_prompt("是否生成示例角色包（roles/default）？")
         .default(true)
         .interact()
         .context("example role")?;
+    let role_pack_kind = if example_role {
+        crate::init::RolePackKind::DefaultExample
+    } else {
+        crate::init::RolePackKind::None
+    };
 
     let mut monolith_enabled = false;
     if project_type == ProjectType::KernelServer {
@@ -170,7 +175,7 @@ pub fn run_interactive() -> Result<ProjectConfig> {
         backends: slots,
         plugins,
         features: feats,
-        with_example_role,
+        role_pack_kind,
         monolith_enabled,
         skip_role_pack: false,
         kernel_source: None,
