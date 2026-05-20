@@ -59,21 +59,13 @@ pub fn run(args: PublishArgs) -> Result<()> {
     }
 }
 
-fn publish_template(args: &PublishArgs) -> Result<()> {
-    let root = args
-        .path
-        .canonicalize()
-        .with_context(|| format!("path {}", args.path.display()))?;
+/// 将工程根目录打包为 `.oclive-template.tar.gz`（供 registry push 等复用）。
+pub fn pack_template_tarball(root: &Path, out: &Path) -> Result<()> {
     let cargo_toml = root.join("Cargo.toml");
     if !cargo_toml.is_file() {
-        bail!("{} 不是 Cargo 工程根", root.display());
+        anyhow::bail!("{} 不是 Cargo 工程根", root.display());
     }
     let (name, version) = read_package_meta(&cargo_toml)?;
-    let out = args.output.clone().unwrap_or_else(|| {
-        root.parent()
-            .unwrap_or(&root)
-            .join(format!("{name}-{version}.oclive-template.tar.gz"))
-    });
     let template_meta = TemplateManifest {
         name: name.clone(),
         description: format!("{name} oclive kernel template"),
@@ -93,12 +85,31 @@ fn publish_template(args: &PublishArgs) -> Result<()> {
     };
     let tmp = tempfile::tempdir().context("tempdir")?;
     let staging = tmp.path().join("bundle");
-    copy_tree_filtered(&root, &staging)?;
+    copy_tree_filtered(root, &staging)?;
     fs::write(
         staging.join("template.json"),
         serde_json::to_string_pretty(&template_meta)?,
     )?;
-    write_tar_gz(&staging, &out)?;
+    write_tar_gz(&staging, out)?;
+    Ok(())
+}
+
+fn publish_template(args: &PublishArgs) -> Result<()> {
+    let root = args
+        .path
+        .canonicalize()
+        .with_context(|| format!("path {}", args.path.display()))?;
+    let cargo_toml = root.join("Cargo.toml");
+    if !cargo_toml.is_file() {
+        bail!("{} 不是 Cargo 工程根", root.display());
+    }
+    let (name, version) = read_package_meta(&cargo_toml)?;
+    let out = args.output.clone().unwrap_or_else(|| {
+        root.parent()
+            .unwrap_or(&root)
+            .join(format!("{name}-{version}.oclive-template.tar.gz"))
+    });
+    pack_template_tarball(&root, &out)?;
     println!("已生成模板包: {}", out.display());
     Ok(())
 }
@@ -214,7 +225,7 @@ fn walkdir_flat(dir: &Path) -> Result<Vec<(PathBuf, bool)>> {
     Ok(out)
 }
 
-fn extract_tar_gz(archive: &Path, dest: &Path) -> Result<()> {
+pub fn extract_tar_gz(archive: &Path, dest: &Path) -> Result<()> {
     let file = File::open(archive)?;
     let dec = flate2::read::GzDecoder::new(file);
     let mut archive = tar::Archive::new(dec);

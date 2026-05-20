@@ -23,6 +23,16 @@ pub enum RegistryCommands {
     Remove(RegistryRemoveArgs),
     /// 打印切换工作目录的命令（Windows: cd /d；Unix: cd）
     Switch(RegistrySwitchArgs),
+    /// 登录云端注册表（保存 Bearer Token 至 ~/.oclive/auth.json）
+    Login(crate::registry_remote::RegistryLoginArgs),
+    /// 登出云端注册表
+    Logout,
+    /// 推送工程为 .oclive-template.tar.gz
+    Push(crate::registry_remote::RegistryPushArgs),
+    /// 从云端拉取工程并写入本地注册表
+    Pull(crate::registry_remote::RegistryPullArgs),
+    /// 搜索云端工程
+    Search(crate::registry_remote::RegistrySearchArgs),
 }
 
 #[derive(Parser, Debug)]
@@ -55,6 +65,11 @@ pub fn run(cli: RegistryCli) -> Result<()> {
         RegistryCommands::Add(a) => run_add(a),
         RegistryCommands::Remove(a) => run_remove(a),
         RegistryCommands::Switch(a) => run_switch(a),
+        RegistryCommands::Login(a) => crate::registry_remote::run_login(a),
+        RegistryCommands::Logout => crate::registry_remote::run_logout(),
+        RegistryCommands::Push(a) => crate::registry_remote::run_push(a),
+        RegistryCommands::Pull(a) => crate::registry_remote::run_pull(a),
+        RegistryCommands::Search(a) => crate::registry_remote::run_search(a),
     }
 }
 
