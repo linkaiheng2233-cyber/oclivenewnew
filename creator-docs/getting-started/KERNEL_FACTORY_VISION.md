@@ -2,7 +2,23 @@
 
 **oclive-cli** 的 `init` 子命令是「内核工厂」的**配方层入口**：用套餐（`--template`）与可选示例角色包（`--with-role-pack`）生成**可独立构建**的定制内核工程，再叠加 **Monolith**（实现层性能档）与主仓 **process_message**（代码层编排）。
 
+**架构总述**（契约型薄核、发行版式交付、特点清单）：**[OCLIVE_ARCHITECTURE_OVERVIEW.md](OCLIVE_ARCHITECTURE_OVERVIEW.md)**（[English](../../creator-docs-en/getting-started/OCLIVE_ARCHITECTURE_OVERVIEW.md)）。
+
 [English](../../creator-docs-en/getting-started/KERNEL_FACTORY_VISION.md)
+
+---
+
+## 单核双态构建架构
+
+Oclive 在工厂之上采用 **单核双态构建架构**：**单核** = 一套 `process_message` + PLUGIN_V1 编排与 DTO 契约；**双态** = 构建期两档——**外核态**（低耦合 / `PluginHost` / 桌面宿主默认）与 **宏核态**（`monolith.toml` / Monolith 焊接 / 可选七槽全焊）。态由 `oclive init` 与 `cargo build` 选定，常见为双 `[[bin]]` 产物，**非** 运行时热切换。
+
+| 总称 | 外核态 | 宏核态 |
+|------|--------|--------|
+| 单核双态构建架构 | 标准 `main.rs`、`plugin_backends` | `main_monolith.rs`、`feature monolith` |
+| 已有专名 | PLUGIN_V1、纯净内核、PluginHost | RFC Monolith、高耦合、`monolith.toml` |
+| 全焊 | — | `weld_modules = []` 且 `exclude = []`，或 `--monolith-preset latency` |
+
+完整叙述、特点与脚注见 **[OCLIVE_ARCHITECTURE_OVERVIEW.md](OCLIVE_ARCHITECTURE_OVERVIEW.md)**。外核态 / 宏核态仅为**工程类比**（可替换实现 vs 编译期一体化），非操作系统分类。
 
 ---
 

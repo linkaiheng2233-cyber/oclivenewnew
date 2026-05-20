@@ -28,6 +28,17 @@ Time-boxed “start here → ship”; **authoritative detail stays in each topic
 
 ---
 
+## Architecture (single-kernel, dual-mode build)
+
+| Topic | Document |
+|-------|----------|
+| **Oclive narrative, dual-mode terms, characteristics** | **[OCLIVE_ARCHITECTURE_OVERVIEW.md](OCLIVE_ARCHITECTURE_OVERVIEW.md)** (Chinese: [../../creator-docs/getting-started/OCLIVE_ARCHITECTURE_OVERVIEW.md](../../creator-docs/getting-started/OCLIVE_ARCHITECTURE_OVERVIEW.md)) |
+| Kernel factory & three layers | [KERNEL_FACTORY_VISION.md](KERNEL_FACTORY_VISION.md) |
+| Kernel-centric diagram | [KERNEL_AND_MODULES_ARCHITECTURE.md](../../creator-docs/getting-started/KERNEL_AND_MODULES_ARCHITECTURE.md) |
+| Monolith (macro-mode) | [RFC_OCLIVE_MONOLITH_MODE.md](../../creator-docs/rfc/RFC_OCLIVE_MONOLITH_MODE.md) |
+
+---
+
 ## Contracts quick map
 
 | Topic | Document |
@@ -59,6 +70,7 @@ Time-boxed “start here → ship”; **authoritative detail stays in each topic
 | **Install zip packs via launcher, pick local Ollama, one-click pull** | **[oclive-launcher README](https://github.com/linkaiheng2233-cyber/oclive-launcher/blob/main/README.md)** (separate repo) |
 | **High-coupling compile mode (Monolith)** | [RFC section](#rfc) (`monolith.toml`, compile-time welding) |
 | **Project map / human roles / commands / release checklist** | **[PROJECT_OVERVIEW.md](PROJECT_OVERVIEW.md)** |
+| **Architecture narrative (thin kernel · dual-mode build · traits)** | **[OCLIVE_ARCHITECTURE_OVERVIEW.md](OCLIVE_ARCHITECTURE_OVERVIEW.md)** |
 | **Kernel-centric diagram (six slots + Agent/MCP/Monolith)** | **[KERNEL_AND_MODULES_ARCHITECTURE.md](KERNEL_AND_MODULES_ARCHITECTURE.md)** |
 | **Pure kernel boundary, soul delivery, embedded scope** | **[PURE_KERNEL_BOUNDARY.md](PURE_KERNEL_BOUNDARY.md)** · **[KERNEL_IMPLEMENTATION_PLAN.md](KERNEL_IMPLEMENTATION_PLAN.md)** (K0–K5) |
 | **Single-track platform path (scaffold → deploy)** | **[KERNEL_PLATFORM_DEVELOPER_PATH.md](KERNEL_PLATFORM_DEVELOPER_PATH.md)** |

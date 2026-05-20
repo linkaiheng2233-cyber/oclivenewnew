@@ -2,7 +2,23 @@
 
 **oclive-cli** `init` is the **recipe-layer** entry of the kernel factory: ship a buildable custom kernel project with **`--template`** bundles and optional **`--with-role-pack`**, then layer **Monolith** (implementation-layer performance) and the main repo’s **`process_message`** (code-layer orchestration).
 
+**Architecture narrative** (contract-first thin kernel, distribution-style delivery, characteristics): **[OCLIVE_ARCHITECTURE_OVERVIEW.md](OCLIVE_ARCHITECTURE_OVERVIEW.md)** ([中文](../../creator-docs/getting-started/OCLIVE_ARCHITECTURE_OVERVIEW.md)).
+
 [中文](../../creator-docs/getting-started/KERNEL_FACTORY_VISION.md)
+
+---
+
+## Single-kernel, dual-mode build architecture
+
+Above the factory, Oclive uses **single-kernel, dual-mode build architecture**: **single kernel** = one `process_message` + PLUGIN_V1 contract; **dual-mode** = two compile-time tiers—**exo-mode** (low coupling / `PluginHost` / desktop default) and **macro-mode** (`monolith.toml` / Monolith weld / optional all-seven weld). Modes are chosen at `oclive init` and `cargo build` (often dual `[[bin]]` outputs), **not** runtime hot-switch.
+
+| Umbrella | Exo-mode | Macro-mode |
+|----------|----------|------------|
+| Single-kernel, dual-mode build | Standard `main.rs`, `plugin_backends` | `main_monolith.rs`, `feature monolith` |
+| Existing names | PLUGIN_V1, pure kernel, PluginHost | Monolith RFC, high coupling, `monolith.toml` |
+| Full weld | — | `weld_modules = []` and `exclude = []`, or `--monolith-preset latency` |
+
+Full narrative and characteristics: **[OCLIVE_ARCHITECTURE_OVERVIEW.md](OCLIVE_ARCHITECTURE_OVERVIEW.md)**. Exo/macro labels are **engineering analogies**, not OS taxonomy.
 
 ---
 

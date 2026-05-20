@@ -2,7 +2,7 @@
 
 本文把 **三件套分工、已落实内容、文档入口、命令、人机分工、待排期** 收拢在一处；细节仍以各专题文档为准。
 
-> **架构总览图**（内核居中、模块环绕；含静态图与 Mermaid）：参见 [KERNEL_AND_MODULES_ARCHITECTURE.md](KERNEL_AND_MODULES_ARCHITECTURE.md)。由此可链到 [PLUGIN_V1.md](../plugin-and-architecture/PLUGIN_V1.md) 与各模块专题。
+> **架构文字总述**（契约型薄核、单核双态构建、特点）：[OCLIVE_ARCHITECTURE_OVERVIEW.md](OCLIVE_ARCHITECTURE_OVERVIEW.md)。**架构总览图**（内核居中、模块环绕；含静态图与 Mermaid）：[KERNEL_AND_MODULES_ARCHITECTURE.md](KERNEL_AND_MODULES_ARCHITECTURE.md)。由此可链到 [PLUGIN_V1.md](../plugin-and-architecture/PLUGIN_V1.md) 与各模块专题。
 
 ---
 
@@ -32,6 +32,7 @@
 | 需求 | 文档 |
 |------|------|
 | **总索引** | [DOCUMENTATION_INDEX.md](DOCUMENTATION_INDEX.md) |
+| **架构总述（单核双态）** | [OCLIVE_ARCHITECTURE_OVERVIEW.md](OCLIVE_ARCHITECTURE_OVERVIEW.md) |
 | **项目现状（版本、交付面、CHANGELOG 中英）** | [PROJECT_CURRENT_STATUS.md](PROJECT_CURRENT_STATUS.md) |
 | **进度快照与目标对齐（内核 + 产品 + 按用途分类的文档地图）** | [PROJECT_STATUS_AND_ALIGNMENT.md](PROJECT_STATUS_AND_ALIGNMENT.md) |
 | **内核与六槽架构总览（图）** | [KERNEL_AND_MODULES_ARCHITECTURE.md](KERNEL_AND_MODULES_ARCHITECTURE.md) |
