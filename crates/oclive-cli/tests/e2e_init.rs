@@ -669,7 +669,8 @@ fn e2e_template_robot_gateway_matches_manual_combo() {
     .success());
     assert!(out_tpl.join("monolith.toml").is_file());
     assert!(out_manual.join("monolith.toml").is_file());
-    assert!(!out_tpl.join("roles").exists());
+    assert!(out_tpl.join("roles/gateway/settings.json").is_file());
+    assert!(out_tpl.join("mcp_servers/README.md").is_file());
     assert!(!out_manual.join("roles").exists());
     let mt_tpl = fs::read_to_string(out_tpl.join("monolith.toml")).unwrap();
     let mt_man = fs::read_to_string(out_manual.join("monolith.toml")).unwrap();
@@ -772,6 +773,45 @@ fn e2e_with_example_plugin_copies_llamacpp() {
             .join("plugins/com.oclive.example.llamacpp_llm")
             .exists()
     );
+}
+
+#[test]
+fn e2e_list_templates_prints_matrix() {
+    let output = run_cli_output(&["init", "--list-templates"]);
+    assert!(output.status.success());
+    let out = String::from_utf8_lossy(&output.stdout);
+    assert!(out.contains("robot-gateway"));
+    assert!(out.contains("dialogue-only"));
+    assert!(out.contains("preset"));
+}
+
+#[test]
+fn e2e_template_robot_gateway_has_mcp_scaffold() {
+    let tmp = tempfile::tempdir().unwrap();
+    let out = tmp.path().join("gw");
+    assert!(run_cli(&[
+        "init",
+        "--non-interactive",
+        "--quiet",
+        "--template",
+        "robot-gateway",
+        "-o",
+        out.to_str().unwrap(),
+    ])
+    .success());
+    assert!(out.join("mcp_servers/README.md").is_file());
+    assert!(out.join("mcp_servers/smart_home.example.json").is_file());
+    let settings = fs::read_to_string(out.join("roles/gateway/settings.json")).unwrap();
+    assert!(settings.contains("\"agent\""));
+    assert!(settings.contains("agent_mcp"));
+    let v: Value = serde_json::from_str(&settings).unwrap();
+    assert_eq!(
+        v.get("plugin_backends")
+            .and_then(|p| p.get("agent"))
+            .and_then(|a| a.as_str()),
+        Some("builtin")
+    );
+    assert!(out.join("docs/WELD_BENCH_REPORT.md").is_file());
 }
 
 #[test]

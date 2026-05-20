@@ -12,7 +12,9 @@ mod build_cmd;
 mod dev_cmd;
 mod generator;
 mod init;
+mod init_bench;
 mod interactive;
+mod template_catalog;
 mod monolith_codegen;
 mod monolith_config;
 mod pack_cmd;
@@ -95,6 +97,14 @@ mod tests {
         assert!(
             crate::init::PRESET_MATRIX_HELP.contains("robot-soul"),
             "init --help footer should mention --template"
+        );
+        assert!(
+            crate::init::PRESET_MATRIX_HELP.contains("--list-templates"),
+            "init --help footer should mention --list-templates"
+        );
+        assert!(
+            crate::init::PRESET_MATRIX_HELP.contains("--monolith-bench-preset"),
+            "init --help footer should mention --monolith-bench-preset"
         );
     }
 }

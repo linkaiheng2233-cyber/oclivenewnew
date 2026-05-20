@@ -36,7 +36,7 @@ llm 使用 ollama 表示进程内默认本地客户端；无本机模型时请�
 │ template        │ preset  │ monolith 默认    │ project-type   │ 默认 --with-role-pack        │
 ├─────────────────┼─────────┼──────────────────┼────────────────┼──────────────────────────────┤
 │ robot-soul      │ minimal │ 启用             │ kernel_server  │ robot-soul-minimal           │
-│ robot-gateway   │ mixed   │ 启用             │ kernel_server  │ 无（厂商自订 roles/）        │
+│ robot-gateway   │ mixed   │ 启用             │ kernel_server  │ gateway 骨架 + mcp_servers/  │
 │ dialogue-only   │ full    │ 关闭（可加 --monolith） │ kernel_server  │ default（通用示例）          │
 │ headless-api    │ full    │ 关闭（可加 --monolith） │ kernel_server  │ 无（空 roles/）              │
 │ library-embed   │ minimal │ 关闭             │ library        │ 无                           │
@@ -47,6 +47,10 @@ llm 使用 ollama 表示进程内默认本地客户端；无本机模型时请�
 `--with-role-pack`：`robot-soul-minimal` | `default`；未指定且未用模板时，非交互仍生成通用 `roles/default`（与历史行为一致）。`--skip-role-pack` 强制不生成 `roles/`。
 
 `--with-example-plugin`：复制主仓 `examples/directory-plugin-llamacpp/` 到 `plugins/com.oclive.example.llamacpp_llm/`（默认关闭）。
+
+`--list-templates`：打印上表模板矩阵后退出（不生成工程）。
+
+`--monolith-bench-preset`（仅 Monolith 启用时）：生成后自动 `cargo build --release`（双二进制）并 `bench --runs 5`，结果写入 `bench_results/report.json`；失败不阻塞生成。
 "#;
 
 #[derive(Parser, Debug, Clone)]
@@ -62,6 +66,10 @@ pub struct InitArgs {
     /// 跳过配置摘要与完成提示（脚本 / 测试用）
     #[arg(long)]
     pub quiet: bool,
+
+    /// 打印内核工厂模板矩阵后退出（不写入输出目录）
+    #[arg(long)]
+    pub list_templates: bool,
 
     /// 内核工厂模板：robot-soul | robot-gateway | dialogue-only | headless-api | library-embed
     #[arg(long, value_enum)]
@@ -108,6 +116,10 @@ pub struct InitArgs {
     #[arg(long, value_enum)]
     pub monolith_preset: Option<MonolithPresetArg>,
 
+    /// 生成后自动跑 Monolith vs 标准 bench（5 轮）；同时可设定焊接档位（等同 --monolith-preset）
+    #[arg(long, value_enum)]
+    pub monolith_bench_preset: Option<MonolithPresetArg>,
+
     /// 非交互：不在生成项目中写入 `roles/` 示例角色包
     #[arg(long)]
     pub skip_role_pack: bool,
@@ -126,7 +138,8 @@ pub struct InitArgs {
 }
 
 /// 内核工厂套餐（`--template`）。
-#[derive(clap::ValueEnum, Clone, Debug, Copy, PartialEq, Eq)]
+#[derive(clap::ValueEnum, Clone, Debug, Copy, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(rename_all = "kebab-case")]
 #[clap(rename_all = "kebab-case")]
 pub enum InitTemplateArg {
     RobotSoul,
@@ -298,6 +311,10 @@ pub struct ProjectConfig {
     pub skip_role_pack: bool,
     /// 复制 llamacpp 示例目录插件到 `plugins/`。
     pub with_example_plugin: bool,
+    /// 使用的内核工厂模板（生成 robot-gateway MCP 等产物）。
+    pub factory_template: Option<InitTemplateArg>,
+    /// 生成完成后自动执行 Monolith 基准测试。
+    pub run_monolith_bench_after_init: bool,
     /// 指向 oclivenewnew 仓库根；生成项目写入 path 依赖并替换占位 `main`/`lib`。
     pub kernel_source: Option<std::path::PathBuf>,
 }
@@ -344,6 +361,12 @@ impl ProjectConfig {
         }
         if self.with_example_plugin {
             println!("示例插件: plugins/com.oclive.example.llamacpp_llm/");
+        }
+        if let Some(t) = self.factory_template {
+            println!("工厂模板: {t:?}");
+        }
+        if self.run_monolith_bench_after_init {
+            println!("生成后: 自动 Monolith bench（5 轮）→ bench_results/report.json");
         }
         if let Some(ks) = &self.kernel_source {
             println!("内核源码: {}（已接 runtime / HTTP 入口）", ks.display());
@@ -423,6 +446,8 @@ pub fn preset_config(name: &str, preset: &str) -> ProjectConfig {
         monolith_preset: None,
         skip_role_pack: false,
         with_example_plugin: false,
+        factory_template: None,
+        run_monolith_bench_after_init: false,
         kernel_source: None,
     }
 }
@@ -511,6 +536,11 @@ pub(crate) fn apply_backend_cli_overrides(cfg: &mut ProjectConfig, args: &InitAr
 }
 
 pub fn run(args: InitArgs) -> Result<()> {
+    if args.list_templates {
+        crate::template_catalog::print_templates_table();
+        return Ok(());
+    }
+
     let mut cfg = if args.non_interactive {
         let preset = args
             .preset
@@ -544,8 +574,20 @@ pub fn run(args: InitArgs) -> Result<()> {
     apply_template_layer(&args, &mut cfg);
     resolve_monolith(&args, &mut cfg);
     if cfg.monolith_enabled {
-        cfg.monolith_preset = args.monolith_preset;
+        cfg.monolith_preset = args.monolith_preset.or(args.monolith_bench_preset);
     }
+    if args.monolith_bench_preset.is_some() {
+        if cfg.project_type == ProjectType::KernelServer {
+            if !cfg.monolith_enabled {
+                cfg.monolith_enabled = true;
+            }
+            cfg.monolith_preset = cfg.monolith_preset.or(args.monolith_bench_preset);
+            cfg.run_monolith_bench_after_init = cfg.monolith_enabled;
+        } else if !args.quiet {
+            eprintln!("⚠ --monolith-bench-preset 仅对 kernel_server 生效，已忽略。");
+        }
+    }
+    cfg.factory_template = args.template;
     cfg.with_example_plugin = args.with_example_plugin;
     cfg.role_pack_kind = resolve_role_pack_kind(&args);
     if args.skip_role_pack {
@@ -577,6 +619,9 @@ pub fn run(args: InitArgs) -> Result<()> {
     }
 
     generator::write_project(&cfg, &args.output)?;
+    if cfg.run_monolith_bench_after_init {
+        crate::init_bench::try_post_init_monolith_bench(&args.output);
+    }
     if !args.quiet {
         if cfg.monolith_enabled && matches!(cfg.project_type, ProjectType::KernelServer) {
             let slug = crate::generator::project_slug(&cfg);
@@ -644,6 +689,8 @@ mod template_tests {
             backend_complex_emotion: None,
             monolith: false,
             monolith_preset: None,
+            monolith_bench_preset: None,
+            list_templates: false,
             skip_role_pack: false,
             with_role_pack: None,
             with_example_plugin: false,
@@ -674,6 +721,8 @@ mod template_tests {
             backend_complex_emotion: None,
             monolith: false,
             monolith_preset: None,
+            monolith_bench_preset: None,
+            list_templates: false,
             skip_role_pack: false,
             with_role_pack: None,
             with_example_plugin: false,
@@ -704,6 +753,8 @@ mod template_tests {
             backend_complex_emotion: None,
             monolith: false,
             monolith_preset: None,
+            monolith_bench_preset: None,
+            list_templates: false,
             skip_role_pack: false,
             with_role_pack: Some(RolePackKindArg::Default),
             with_example_plugin: false,
@@ -713,6 +764,45 @@ mod template_tests {
             resolve_role_pack_kind(&args),
             RolePackKind::DefaultExample
         );
+    }
+
+    #[test]
+    fn monolith_bench_preset_enables_post_bench() {
+        let args = InitArgs {
+            output: PathBuf::from("out"),
+            non_interactive: true,
+            quiet: true,
+            template: None,
+            preset: Some("minimal".into()),
+            project_name: "t".into(),
+            project_type: Some(ProjectTypeArg::KernelServer),
+            backend_memory: None,
+            backend_emotion: None,
+            backend_event: None,
+            backend_prompt: None,
+            backend_llm: None,
+            backend_agent: None,
+            backend_complex_emotion: None,
+            monolith: false,
+            monolith_preset: None,
+            monolith_bench_preset: Some(MonolithPresetArg::Latency),
+            list_templates: false,
+            skip_role_pack: true,
+            with_role_pack: None,
+            with_example_plugin: false,
+            kernel_source: None,
+        };
+        let mut cfg = preset_config("t", "minimal");
+        apply_backend_cli_overrides(&mut cfg, &args);
+        cfg.project_type = ProjectType::KernelServer;
+        resolve_monolith(&args, &mut cfg);
+        if args.monolith_bench_preset.is_some() {
+            cfg.monolith_enabled = true;
+            cfg.monolith_preset = args.monolith_bench_preset;
+            cfg.run_monolith_bench_after_init = true;
+        }
+        assert!(cfg.run_monolith_bench_after_init);
+        assert!(cfg.monolith_enabled);
     }
 
     #[test]
