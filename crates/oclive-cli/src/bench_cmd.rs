@@ -89,6 +89,18 @@ pub struct BenchArgs {
     #[arg(long, default_value_t = 30)]
     pub stress_duration: u64,
 
+    /// Cold-start latency: spawn kernel --api and measure first /chat reply
+    #[arg(long)]
+    pub cold_start: bool,
+
+    /// Cold-start repetitions (restart kernel each time; default 1)
+    #[arg(long, default_value_t = 1)]
+    pub cold_start_runs: u32,
+
+    /// Warm messages after cold-start probe per run (default 5)
+    #[arg(long, default_value_t = 5)]
+    pub cold_start_warm_messages: u32,
+
     /// Extra args forwarded to `cargo build` (after `--`)
     #[arg(trailing_var_arg = true, allow_hyphen_values = true)]
     pub cargo_extra: Vec<String>,
@@ -548,6 +560,9 @@ fn arrow(delta: f64) -> &'static str {
 
 pub fn run(args: BenchArgs) -> Result<()> {
     let root = resolve_project_root(&args.path)?;
+    if args.cold_start {
+        return crate::bench_cold_start::run_cold_start(&root, &args);
+    }
     if args.stress {
         return crate::bench_stress::run_stress(&root, &args);
     }

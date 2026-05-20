@@ -59,6 +59,9 @@ fn run_post_init_bench_inner(root: &Path, bench_dir: &Path) -> Result<()> {
         stress: false,
         stress_concurrency: 10,
         stress_duration: 30,
+        cold_start: false,
+        cold_start_runs: 1,
+        cold_start_warm_messages: 5,
         cargo_extra: vec![],
     };
     crate::bench_cmd::run(args)?;
