@@ -1,0 +1,6 @@
+{
+  "schema_version": 1,
+  "steps": [
+    { "id": "a", "type": "unknown_step", "next": "missing" }
+  ]
+}

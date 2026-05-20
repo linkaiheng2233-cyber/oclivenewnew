@@ -6,6 +6,8 @@
 )]
 
 mod bench_cmd;
+mod blueprint;
+mod blueprint_cmd;
 mod build_cmd;
 mod dev_cmd;
 mod generator;
@@ -47,6 +49,8 @@ enum Commands {
     Dev(dev_cmd::DevArgs),
     /// 角色包：校验、创建、打包（.oclivepack）
     Pack(pack_cmd::PackArgs),
+    /// 蓝图（pipeline.ocblueprint）读取与校验
+    Blueprint(blueprint_cmd::BlueprintCli),
 }
 
 fn init_tracing(verbose: u8) {
@@ -72,6 +76,7 @@ fn main() -> Result<()> {
         Commands::Bench(args) => bench_cmd::run(args),
         Commands::Dev(args) => dev_cmd::run(args),
         Commands::Pack(args) => pack_cmd::run_pack(args),
+        Commands::Blueprint(cli) => blueprint_cmd::run(cli),
     }
 }
 

@@ -1,0 +1,9 @@
+{
+  "schema_version": 1,
+  "entry": "s1",
+  "steps": [
+    { "id": "s1", "type": "load_context", "next": "s2" },
+    { "id": "s2", "type": "build_prompt", "next": "s3" },
+    { "id": "s3", "type": "call_llm" }
+  ]
+}
