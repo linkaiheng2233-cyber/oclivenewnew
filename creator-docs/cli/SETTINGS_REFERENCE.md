@@ -79,7 +79,15 @@
 
 **`oclive doctor`**：环境一键诊断（`--json` 可编程解析）。
 
-**`oclive bench`**：报告 schema v2 含 `binary_size`、`peak_memory`、`build_time`。
+**`oclive bench`**：报告 schema v2 含 `binary_size`、`peak_memory`、`build_time`；**`--history`** / **`--watch`**。
+
+**`registry`**：`~/.oclive/registry.json`（`OCLIVE_HOME`）；`init` 后自动注册。
+
+**`compose`**：`oclive-compose.yml` + `.oclive-compose.pids.json`。
+
+**`publish` / `--template-url`**：`.oclive-template.tar.gz` + `template.json`。
+
+**`init --tui`** · **`debug`**（`OCLIVE_DEBUG_TRACE`）：见 [OCLIVE_CLI_GUIDE.md](OCLIVE_CLI_GUIDE.md)。
 
 ## 四、`oclive-cli` 预设矩阵（逻辑 → JSON）
 

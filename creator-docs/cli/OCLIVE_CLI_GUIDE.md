@@ -26,6 +26,19 @@ cargo run -p oclive-cli -- init --help
 
 ---
 
+## 平台能力速览（N–S）
+
+| 命令 | 作用 |
+|------|------|
+| `registry` | 本地工程注册表 `~/.oclive/registry.json`（`init` 后自动注册） |
+| `compose` | 多内核 `oclive-compose.yml` 编排 `up` / `down` / `ps` |
+| `publish` | 打包 `.oclive-template.tar.gz`；`init --template-url` 远程初始化 |
+| `init --tui` | ratatui 模板选择器（TTY 不可用时回退） |
+| `bench --watch` | 源码变更触发自动 bench + 历史对比 |
+| `debug` | `OCLIVE_DEBUG_TRACE` 逐步骤追踪 |
+
+---
+
 ## `doctor`：环境诊断
 
 ```bash
@@ -190,8 +203,59 @@ cargo run -p oclive-cli -- init --non-interactive --quiet --preset mixed --proje
 | `--author` | 写入生成 `Cargo.toml` 的 `[package].authors` |
 | `--license` | SPDX 许可证（默认 **MIT**） |
 | `--description` | 写入 `[package].description`（留空则不写） |
+| `--template-url` | 从 URL 下载 `.oclive-template.tar.gz` 并解压到 `-o` |
+| `--tui` | 使用 ratatui 可视化选模板（TTY 不可用时回退） |
 
 非交互时 **不必** 传入任何 `--backend-*` 即可生成；传入则只覆盖所列槽位。交互模式在输入项目名后会询问作者（默认 `git config user.name`）、许可证与简短描述。
+
+---
+
+## `registry`：本地工程注册表
+
+数据文件：**`~/.oclive/registry.json`**（可用 **`OCLIVE_HOME`** 覆盖根目录）。**`oclive init` 成功后会自动注册**。
+
+```bash
+cargo run -p oclive-cli -- registry list
+cargo run -p oclive-cli -- registry list --json
+cargo run -p oclive-cli -- registry add my-kernel ./path/to/project --template robot-soul
+cargo run -p oclive-cli -- registry remove my-kernel
+cargo run -p oclive-cli -- registry switch my-kernel
+```
+
+---
+
+## `compose`：多内核编排
+
+```bash
+cargo run -p oclive-cli -- compose init
+cargo run -p oclive-cli -- compose up
+cargo run -p oclive-cli -- compose down
+cargo run -p oclive-cli -- compose ps
+```
+
+见项目根 **`oclive-compose.yml`**（`services.<id>.path` / `port` / `env` / `depends_on`）。**`up`** 按依赖顺序启动，日志带 **`[服务名]`** 前缀；状态写入 **`.oclive-compose.pids.json`**。
+
+---
+
+## `publish`：模板包
+
+```bash
+cargo run -p oclive-cli -- publish --type template -o ./my-kernel.oclive-template.tar.gz
+cargo run -p oclive-cli -- init --template-url https://example.com/template.tar.gz -o ./from-remote
+```
+
+排除 **`target/`**、**`.git/`**、**`bench_results/`** 等；包内附带 **`template.json`** 元数据。
+
+---
+
+## `debug`：逐步骤追踪
+
+```bash
+cargo run -p oclive-cli -- debug -o ./my-kernel --kernel-source  # 工程须已接主仓内核
+cargo run -p oclive-cli -- debug -o . --step build_prompt --json
+```
+
+设置 **`OCLIVE_DEBUG_TRACE=1`** 并启动 **`--api`**（默认 Mock LLM）。详见生成工程 **`docs/DEBUG_REFERENCE.md`**。
 
 ---
 
@@ -244,7 +308,10 @@ cargo run -p oclive-cli -- bench --release -o /path/to/kernel-project --json
 cargo run -p oclive-cli -- bench --release -o ./my-kernel --save
 cargo run -p oclive-cli -- bench --history -o ./my-kernel
 cargo run -p oclive-cli -- bench --history -o ./my-kernel --json
+cargo run -p oclive-cli -- bench --watch -o ./my-kernel
 ```
+
+- **`--watch`**：监听 **`src/`** 与 **`Cargo.toml`**（2s 防抖），自动 release 构建 + **3 轮** bench 并 **`--save`**，打印相对上一轮 **↑/↓/→**。
 
 `--json`：仅将报告 JSON 打印到 **stdout**（进度走 **stderr**），便于管道与 Schema 校验。
 

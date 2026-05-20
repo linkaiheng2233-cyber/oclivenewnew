@@ -25,6 +25,10 @@
 
 约 5 分钟从零到可编译内核工程（纯对话、极速模板）见 **[内核工厂愿景 · 5 分钟从零到对话](creator-docs/getting-started/KERNEL_FACTORY_VISION.md#5-分钟从零到对话纯内核脚手架)**（[English](creator-docs-en/getting-started/KERNEL_FACTORY_VISION.md)）。入口命令：`oclive doctor` → `oclive init --quick`。
 
+### 平台能力（oclive-cli）
+
+除 **`init` / `build` / `bench` / `dev` / `pack` / `plugin` / `doctor`** 外，还支持：**`registry`**（本地工程清单）、**`compose`**（多实例 YAML 编排）、**`publish`** 与 **`init --template-url`**（模板分享）、**`init --tui`**（模板可视化）、**`bench --watch`**（变更触发基准）、**`debug`**（`process_message` 逐步追踪）。见 [OCLIVE_CLI_GUIDE.md](creator-docs/cli/OCLIVE_CLI_GUIDE.md) 与 [KERNEL_FACTORY_VISION.md](creator-docs/getting-started/KERNEL_FACTORY_VISION.md)。
+
 ## 性能
 
 对外披露的 **Release 二进制 `cargo-bloat` 采样、Monolith 与 `oclive bench` 方法、已知产品向限制** 见 **[creator-docs/getting-started/PERFORMANCE.md](creator-docs/getting-started/PERFORMANCE.md)**（[English](creator-docs-en/getting-started/PERFORMANCE.md)）。数值以 [LIGHTWEIGHT_PROFILE.md](creator-docs/development/LIGHTWEIGHT_PROFILE.md) §6.7 最新采样为准。

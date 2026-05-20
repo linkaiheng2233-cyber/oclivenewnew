@@ -188,6 +188,42 @@ After multiple **`bench --save`** runs, **`bench --history`** prints a terminal 
 
 ---
 
+## Local registry (`registry`)
+
+**`~/.oclive/registry.json`** lists local kernel projects (`init` auto-registers). Commands: **`list`**, **`add`**, **`remove`**, **`switch`**; **`--json`** supported.
+
+---
+
+## Multi-kernel compose (`compose`)
+
+**`oclive-compose.yml`** defines services (`path`, `port`, `env`, `depends_on`). **`compose up`** / **`down`** / **`ps`**.
+
+---
+
+## Template publish (`publish` / `--template-url`)
+
+**`oclive publish --type template`** → **`.oclive-template.tar.gz`**. **`oclive init --template-url`** downloads and unpacks.
+
+---
+
+## TUI template picker (`init --tui`)
+
+**ratatui** list + preview panel; **`OCLIVE_NO_TUI=1`** disables. Falls back to dialoguer when not a TTY.
+
+---
+
+## Continuous bench (`bench --watch`)
+
+Watches **`src/**/*.rs`** and **`Cargo.toml`** (2s debounce); auto release build + 3-run bench + **`--save`** with **↑/↓/→** deltas.
+
+---
+
+## Kernel debug (`debug`)
+
+**`oclive debug`** with **`OCLIVE_DEBUG_TRACE=1`**; parses **`OCLIVE_DEBUG_TRACE`** JSON lines on stderr. Requires full kernel via **`--kernel-source`**. Generated **`docs/DEBUG_REFERENCE.md`**.
+
+---
+
 ## See also
 
 - [OCLIVE_CLI_GUIDE.md](../cli/OCLIVE_CLI_GUIDE.md)

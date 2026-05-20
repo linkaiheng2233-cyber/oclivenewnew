@@ -25,6 +25,10 @@ Contributor notes: **[AGENTS.md](AGENTS.md)**.
 
 A **~5 minute** path from zero to a buildable headless kernel scaffold: see **[Kernel factory vision — 5-minute walkthrough](creator-docs-en/getting-started/KERNEL_FACTORY_VISION.md)** (Chinese: [creator-docs/getting-started/KERNEL_FACTORY_VISION.md](creator-docs/getting-started/KERNEL_FACTORY_VISION.md)). Commands: `oclive doctor` → `oclive init --quick`.
 
+### Platform capabilities (oclive-cli)
+
+**`registry`**, **`compose`**, **`publish`** / **`init --template-url`**, **`init --tui`**, **`bench --watch`**, and **`debug`** extend the factory CLI. See [OCLIVE_CLI_GUIDE.md](creator-docs-en/cli/OCLIVE_CLI_GUIDE.md) and [KERNEL_FACTORY_VISION.md](creator-docs-en/getting-started/KERNEL_FACTORY_VISION.md).
+
 ## Performance
 
 Release **`cargo-bloat` sampling**, **Monolith** vs **`oclive bench`**, and **known product limits**: **[creator-docs-en/getting-started/PERFORMANCE.md](creator-docs-en/getting-started/PERFORMANCE.md)** (Chinese: [creator-docs/getting-started/PERFORMANCE.md](creator-docs/getting-started/PERFORMANCE.md)). Figures track [LIGHTWEIGHT_PROFILE.md](creator-docs/development/LIGHTWEIGHT_PROFILE.md) §6.7.

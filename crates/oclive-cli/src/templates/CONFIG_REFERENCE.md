@@ -35,6 +35,8 @@
 
 **插件脚手架**（仓库根）：`cargo run -p oclive-cli -- plugin create <name> --type directory|remote --provides <slot> …`
 
+**平台扩展**：`registry` · `compose` · `publish` / `init --template-url` · `init --tui` · `bench --watch` · `debug` — 见 [OCLIVE_CLI_GUIDE.md](../../../creator-docs/cli/OCLIVE_CLI_GUIDE.md)。
+
 **`robot-gateway` 模板**额外生成 **`mcp_servers/`** 与 **`roles/gateway/settings.json`**（`agent` = builtin + `agent_mcp` 占位）。
 
 ## 预设矩阵（逻辑槽位）

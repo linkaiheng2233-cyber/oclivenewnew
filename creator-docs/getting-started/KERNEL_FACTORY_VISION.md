@@ -202,6 +202,42 @@ Monolith 是工厂里的 **「性能档位」**：
 
 ---
 
+## 本地注册表（`registry`）
+
+**`~/.oclive/registry.json`** 记录本机通过 **`oclive init`** 生成的工程（名称、路径、模板、时间）。子命令：**`list`** / **`add`** / **`remove`** / **`switch`**（打印 `cd` 命令）；支持 **`--json`**。
+
+---
+
+## 多工程编排（`compose`）
+
+**`oclive-compose.yml`** 定义多个内核实例（`path`、`port`、`env`、`depends_on`）。**`compose up`** 按依赖顺序后台启动并前缀日志；**`compose down`** 停止；**`compose ps`** 查看 PID 状态。
+
+---
+
+## 模板发布（`publish` / `--template-url`）
+
+**`oclive publish --type template`** 打包为 **`.oclive-template.tar.gz`**（含 **`template.json`**，排除 `target/` 等）。**`oclive init --template-url <url>`** 下载解压为新建工程。
+
+---
+
+## TUI 可视化（`init --tui`）
+
+交互式 **`init`** 在支持 TTY 时可用 **ratatui** 模板列表 + 右侧参数预览（**Enter** 确认，**Esc** 回退 dialoguer）。设置 **`OCLIVE_NO_TUI=1`** 可强制关闭。
+
+---
+
+## 持续性能监控（`bench --watch`）
+
+**`oclive bench --watch`** 监听 **`src/**/*.rs`** 与 **`Cargo.toml`**（2s 防抖），自动 **release 构建 + 3 轮 bench** 并 **`--save`**，终端打印相对上一轮 **↑/↓/→**。
+
+---
+
+## 内核调试（`debug`）
+
+**`oclive debug`** 以 **`OCLIVE_DEBUG_TRACE=1`** 启动 **`--api`**，发送测试消息后解析 stderr 中的 **`OCLIVE_DEBUG_TRACE`** JSON 行（共景主链各步摘要）。生成工程含 **`docs/DEBUG_REFERENCE.md`**。需 **`--kernel-source`** 接入完整内核。
+
+---
+
 ## 相关文档
 
 - [OCLIVE_CLI_GUIDE.md](../cli/OCLIVE_CLI_GUIDE.md) — 命令与参数
