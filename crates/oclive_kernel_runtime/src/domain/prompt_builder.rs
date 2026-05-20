@@ -896,4 +896,71 @@ mod tests {
         assert!(prompt.contains("【包级质量锚点】仅测试覆盖用。"));
         assert!(!prompt.contains("【回复质量锚点】（每轮须遵守）"));
     }
+
+    #[test]
+    fn empty_narrative_hint_skips_section() {
+        let role = create_test_role();
+        let personality = create_test_personality();
+        let prompt = PromptBuilder::build_prompt(&PromptInput {
+            role: &role,
+            personality: &personality,
+            memories: &[],
+            user_input: "hi",
+            user_emotion: "neutral",
+            user_relation_id: "",
+            relation_hint: "",
+            relation_before: "Stranger",
+            favorability_before: 0.0,
+            relation_preview: "Stranger",
+            favorability_preview: 0.0,
+            event_type: &EventType::Ignore,
+            impact_factor: 0.0,
+            scene_label: "",
+            scene_detail: "",
+            topic_hint_line: "",
+            life_context_line: "",
+            worldview_snippet: "",
+            mutable_personality: "",
+            reply_quality_anchor: effective_reply_quality_anchor(&role),
+            previous_complex_emotion_narrative_hint: "   \n  ",
+        });
+        assert!(!prompt.contains("【复杂情感叙事提示】"));
+        assert!(prompt.contains("用户说: hi"));
+    }
+
+    #[test]
+    fn special_chars_in_narrative_hint_preserve_prompt_structure() {
+        let role = create_test_role();
+        let personality = create_test_personality();
+        let hint = "引号\"与\n换行\n**markdown** `_未闭合";
+        let prompt = PromptBuilder::build_prompt(&PromptInput {
+            role: &role,
+            personality: &personality,
+            memories: &[],
+            user_input: "after",
+            user_emotion: "neutral",
+            user_relation_id: "",
+            relation_hint: "",
+            relation_before: "Stranger",
+            favorability_before: 0.0,
+            relation_preview: "Stranger",
+            favorability_preview: 0.0,
+            event_type: &EventType::Ignore,
+            impact_factor: 0.0,
+            scene_label: "",
+            scene_detail: "",
+            topic_hint_line: "",
+            life_context_line: "",
+            worldview_snippet: "",
+            mutable_personality: "",
+            reply_quality_anchor: effective_reply_quality_anchor(&role),
+            previous_complex_emotion_narrative_hint: hint,
+        });
+        assert!(prompt.contains("【复杂情感叙事提示】"));
+        assert!(prompt.contains("引号\""));
+        assert!(prompt.contains("**markdown**"));
+        let user_idx = prompt.find("用户说: after").expect("user section");
+        let section_idx = prompt.find("【复杂情感叙事提示】").expect("section");
+        assert!(section_idx < user_idx, "narrative section must precede user line");
+    }
 }
