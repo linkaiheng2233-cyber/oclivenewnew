@@ -45,6 +45,10 @@ pub struct BenchArgs {
     #[arg(long)]
     pub compare: bool,
 
+    /// 打印 `bench_history.json` 全部记录的趋势表（不运行采样）
+    #[arg(long)]
+    pub history: bool,
+
     /// 透传给 `cargo build` 的附加参数（放在 `--` 之后）
     #[arg(trailing_var_arg = true, allow_hyphen_values = true)]
     pub cargo_extra: Vec<String>,
@@ -137,6 +141,164 @@ fn p99_from_samples(samples: &[f64]) -> f64 {
     let mut s = samples.to_vec();
     s.sort_by(|a, b| a.partial_cmp(b).unwrap_or(std::cmp::Ordering::Equal));
     percentile_of_sorted(&s, 0.99)
+}
+
+fn format_ms(v: f64) -> String {
+    format!("{:.0}ms", v)
+}
+
+fn format_mib(bytes: u64) -> String {
+    if bytes == 0 {
+        "—".into()
+    } else {
+        format!("{:.0}MiB", bytes as f64 / (1024.0 * 1024.0))
+    }
+}
+
+fn format_binary(bytes: u64) -> String {
+    if bytes == 0 {
+        "—".into()
+    } else {
+        format!("{:.1}MiB", bytes as f64 / (1024.0 * 1024.0))
+    }
+}
+
+fn trend_arrow(prev: f64, cur: f64, lower_is_better: bool) -> &'static str {
+    let eps = 0.5;
+    if (cur - prev).abs() < eps {
+        return "→";
+    }
+    if lower_is_better {
+        if cur < prev {
+            "↓"
+        } else {
+            "↑"
+        }
+    } else if cur > prev {
+        "↑"
+    } else {
+        "↓"
+    }
+}
+
+fn print_bench_history(root: &Path, json_out: bool) -> Result<()> {
+    let path = history_path(root);
+    if !path.is_file() {
+        bail!("未找到 {}；请先运行 `oclive bench --save ...`", path.display());
+    }
+    let raw = fs::read_to_string(&path).context("read bench_history")?;
+    let file: BenchHistoryFile = serde_json::from_str(&raw).context("parse bench_history")?;
+    if file.entries.is_empty() {
+        bail!("bench_history 无记录；请先 `oclive bench --save`");
+    }
+    if json_out {
+        #[derive(Serialize)]
+        struct Row {
+            date: String,
+            standard_ms: f64,
+            monolith_ms: f64,
+            peak_mem_mib: u64,
+            binary_mib: f64,
+            trend_standard: Option<String>,
+            trend_monolith: Option<String>,
+            trend_peak_mem: Option<String>,
+            trend_binary: Option<String>,
+        }
+        let mut rows = Vec::new();
+        for (i, e) in file.entries.iter().enumerate() {
+            let r = &e.report;
+            let date = unix_ts_to_date(e.ts);
+            let peak = r.peak_memory.standard.max(r.peak_memory.monolith);
+            let bin = r.binary_size.standard;
+            let (ts, tm, tp, tb) = if i > 0 {
+                let p = &file.entries[i - 1].report;
+                (
+                    Some(trend_arrow(p.standard_ms.p50, r.standard_ms.p50, true).to_string()),
+                    Some(trend_arrow(p.monolith_ms.p50, r.monolith_ms.p50, true).to_string()),
+                    Some(
+                        trend_arrow(
+                            p.peak_memory.standard.max(p.peak_memory.monolith) as f64,
+                            peak as f64,
+                            true,
+                        )
+                        .to_string(),
+                    ),
+                    Some(
+                        trend_arrow(p.binary_size.standard as f64, bin as f64, true).to_string(),
+                    ),
+                )
+            } else {
+                (None, None, None, None)
+            };
+            rows.push(Row {
+                date,
+                standard_ms: r.standard_ms.p50,
+                monolith_ms: r.monolith_ms.p50,
+                peak_mem_mib: peak,
+                binary_mib: bin as f64 / (1024.0 * 1024.0),
+                trend_standard: ts,
+                trend_monolith: tm,
+                trend_peak_mem: tp,
+                trend_binary: tb,
+            });
+        }
+        println!("{}", serde_json::to_string_pretty(&rows)?);
+        return Ok(());
+    }
+
+    println!("oclive bench --history（{} 条）", file.entries.len());
+    println!("┌────────────┬──────────┬────────────┬──────────┬──────────┐");
+    println!("│ Date       │ Standard │ Monolith   │ Peak Mem │ Binary   │");
+    println!("├────────────┼──────────┼────────────┼──────────┼──────────┤");
+    for (i, e) in file.entries.iter().enumerate() {
+        let r = &e.report;
+        let date = unix_ts_to_date(e.ts);
+        let std = format_ms(r.standard_ms.p50);
+        let mono = format_ms(r.monolith_ms.p50);
+        let peak = format_mib(r.peak_memory.standard.max(r.peak_memory.monolith));
+        let bin = format_binary(r.binary_size.standard);
+        let trend = if i > 0 && file.entries.len() >= 2 {
+            let p = &file.entries[i - 1].report;
+            format!(
+                " {} {} {} {}",
+                trend_arrow(p.standard_ms.p50, r.standard_ms.p50, true),
+                trend_arrow(p.monolith_ms.p50, r.monolith_ms.p50, true),
+                trend_arrow(
+                    p.peak_memory.standard.max(p.peak_memory.monolith) as f64,
+                    r.peak_memory.standard.max(r.peak_memory.monolith) as f64,
+                    true,
+                ),
+                trend_arrow(p.binary_size.standard as f64, r.binary_size.standard as f64, true),
+            )
+        } else {
+            String::new()
+        };
+        println!(
+            "│ {:10} │ {:>8} │ {:>10} │ {:>8} │ {:>8} │{trend}",
+            date, std, mono, peak, bin
+        );
+    }
+    println!("└────────────┴──────────┴────────────┴──────────┴──────────┘");
+    if file.entries.len() >= 2 {
+        println!("趋势（相对上一行）：Standard Monolith PeakMem Binary（↓=改善 ↑=变差 →=持平）");
+    }
+    Ok(())
+}
+
+/// UTC 日历日期（`YYYY-MM-DD`），无额外依赖。
+fn unix_ts_to_date(ts: u64) -> String {
+    let z = ts / 86_400 + 719_468;
+    let era = (if z >= 0 { z } else { z - 146_096 }) / 146_097;
+    let doe = z - era * 146_097;
+    let yoe = (doe - doe / 1_460 + doe / 36_524 - doe / 146_096) / 365;
+    let y = yoe + era * 400;
+    let doy = doe - (365 * yoe + yoe / 4 - yoe / 100);
+    let mp = (5 * doy + 2) / 153;
+    let d = doy - (153 * mp + 2) / 5 + 1;
+    let m = mp as i32 + if mp < 10 { 3 } else { -9 };
+    let y = y + if m <= 2 { 1 } else { 0 };
+    let m = m as u32;
+    format!("{y:04}-{m:02}-{d:02}")
 }
 
 fn compare_history(root: &Path) -> Result<()> {
@@ -254,6 +416,9 @@ fn cargo_build_dual(root: &Path, release: bool, extra: &[String]) -> Result<()> 
 
 pub fn run(args: BenchArgs) -> Result<()> {
     let root = resolve_project_root(&args.path)?;
+    if args.history {
+        return print_bench_history(&root, args.json);
+    }
     if args.compare {
         return compare_history(&root);
     }

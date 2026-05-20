@@ -45,6 +45,7 @@ fn run_post_init_bench_inner(root: &Path, bench_dir: &Path) -> Result<()> {
         output: report_path.to_string_lossy().into_owned(),
         save: false,
         compare: false,
+        history: false,
         cargo_extra: vec![],
     };
     crate::bench_cmd::run(args)?;
