@@ -1,6 +1,6 @@
 //! `oclive doctor` — 一键环境诊断。
 
-use anyhow::Result;
+use anyhow::{Context, Result};
 use clap::Parser;
 use serde::Serialize;
 use std::fs;
@@ -25,6 +25,10 @@ pub struct DoctorArgs {
     /// 与 `--fix` 联用：跳过确认
     #[arg(long)]
     pub yes: bool,
+
+    /// Poll environment every 60s; press q to quit
+    #[arg(long)]
+    pub watch: bool,
 }
 
 #[derive(Debug, Clone, Serialize)]
@@ -85,6 +89,9 @@ pub fn run(args: DoctorArgs) -> Result<()> {
     } else {
         std::env::current_dir()?.join(&args.path)
     };
+    if args.watch {
+        return run_watch(&root, args.json);
+    }
     let mut checks = vec![
         check_rust_toolchain(),
         check_cargo(),
@@ -368,6 +375,103 @@ fn check_network_github() -> DoctorCheck {
             Some(e.to_string()),
         ),
     }
+}
+
+fn run_watch(root: &Path, json: bool) -> Result<()> {
+    use crossterm::event::{self, Event, KeyCode, KeyEventKind};
+    use crossterm::terminal::{disable_raw_mode, enable_raw_mode};
+    use std::io::{stdout, Write};
+    use std::time::{Duration, Instant};
+
+    if json {
+        anyhow::bail!("--watch does not support --json; omit --json");
+    }
+    enable_raw_mode().context("enable_raw_mode")?;
+    let mut last_ollama_ok = check_ollama().status == "ok";
+    let mut _last_disk_gb = disk_free_gb(root);
+    let mut _last_mem_mb = sys_available_mb();
+
+    eprintln!("oclive doctor --watch (every 60s, press q to quit)\n");
+    loop {
+        let checks = vec![
+            check_disk_space(root),
+            check_system_memory(),
+            check_ollama(),
+        ];
+        let ollama_ok = checks[2].status == "ok";
+        let disk_gb = disk_free_gb(root);
+        let mem_mb = sys_available_mb();
+
+        let mut alerts = Vec::new();
+        if let Some(gb) = disk_gb {
+            if gb < 1.0 {
+                alerts.push(format!("WARN disk free {gb:.2} GiB (< 1 GiB)"));
+            }
+        }
+        if let Some(mb) = mem_mb {
+            if mb < 500 {
+                alerts.push(format!("WARN available memory {mb} MiB (< 500 MiB)"));
+            }
+        }
+        if last_ollama_ok && !ollama_ok {
+            alerts.push("WARN Ollama stopped or unreachable".into());
+        }
+
+        print!("\x1b[2J\x1b[H");
+        let _ = stdout().flush();
+        println!("oclive doctor --watch — {}", root.display());
+        println!("Updated: {}\n", chrono_lite_now());
+        for c in &checks {
+            let icon = match c.status.as_str() {
+                "ok" => "OK",
+                "warn" => "WARN",
+                _ => "FAIL",
+            };
+            println!("  [{icon}] {} — {}", c.id, c.message);
+        }
+        for a in &alerts {
+            println!("\n  ⚠ {a}");
+        }
+        println!("\nPress q to quit.");
+
+        last_ollama_ok = ollama_ok;
+        _last_disk_gb = disk_gb;
+        _last_mem_mb = mem_mb;
+
+        let until = Instant::now() + Duration::from_secs(60);
+        while Instant::now() < until {
+            if event::poll(Duration::from_millis(200))? {
+                if let Event::Key(k) = event::read()? {
+                    if k.kind == KeyEventKind::Press && k.code == KeyCode::Char('q') {
+                        disable_raw_mode().ok();
+                        return Ok(());
+                    }
+                }
+            }
+        }
+    }
+}
+
+fn chrono_lite_now() -> String {
+    use std::time::{SystemTime, UNIX_EPOCH};
+    let secs = SystemTime::now()
+        .duration_since(UNIX_EPOCH)
+        .map(|d| d.as_secs())
+        .unwrap_or(0);
+    format!("unix:{secs}")
+}
+
+fn disk_free_gb(path: &Path) -> Option<f64> {
+    fs2::available_space(path)
+        .ok()
+        .map(|b| b as f64 / (1024.0 * 1024.0 * 1024.0))
+}
+
+fn sys_available_mb() -> Option<u64> {
+    use sysinfo::System;
+    let mut sys = System::new();
+    sys.refresh_memory();
+    Some(sys.available_memory() / (1024 * 1024))
 }
 
 fn check_workspace_writable(path: &Path) -> DoctorCheck {
