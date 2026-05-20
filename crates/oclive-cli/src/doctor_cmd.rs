@@ -29,6 +29,14 @@ pub struct DoctorArgs {
     /// Poll environment every 60s; press q to quit
     #[arg(long)]
     pub watch: bool,
+
+    /// Generate SBOM (requires cargo-cyclonedx)
+    #[arg(long)]
+    pub sbom: bool,
+
+    /// SBOM format: cyclonedx (default) or spdx
+    #[arg(long = "sbom-format", default_value = "cyclonedx")]
+    pub sbom_format: String,
 }
 
 #[derive(Debug, Clone, Serialize)]
@@ -91,6 +99,9 @@ pub fn run(args: DoctorArgs) -> Result<()> {
     };
     if args.watch {
         return run_watch(&root, args.json);
+    }
+    if args.sbom {
+        return crate::doctor_sbom::run_sbom(&root, &args.sbom_format);
     }
     let mut checks = vec![
         check_rust_toolchain(),

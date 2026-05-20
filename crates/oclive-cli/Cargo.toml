@@ -19,6 +19,7 @@ path = "src/main.rs"
 [dependencies]
 anyhow = "1"
 clap = { version = "4.5", features = ["derive"] }
+clap_complete = "4.5"
 dialoguer = "0.11"
 handlebars = "5.1"
 notify = "6"

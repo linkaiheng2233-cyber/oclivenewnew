@@ -6,8 +6,17 @@
 )]
 
 mod bench_cmd;
+mod bench_cold_start;
 mod bench_metrics;
 mod bench_stress;
+mod completions_cmd;
+mod doctor_sbom;
+mod explain_cmd;
+mod init_check;
+mod init_plan;
+mod lint_audit_ci;
+mod test_coverage;
+mod test_miri;
 mod blueprint;
 mod cargo_hints;
 mod doctor_cmd;
@@ -60,7 +69,7 @@ use clap::{Parser, Subcommand};
     version,
     about = "Oclive official kernel project scaffolding"
 )]
-struct Cli {
+pub struct Cli {
     /// Verbosity: `-v` count or `RUST_LOG` (0=INFO, 1=DEBUG, 2+=TRACE)
     #[arg(short = 'v', long, action = clap::ArgAction::Count, global = true)]
     verbose: u8,
@@ -118,6 +127,10 @@ enum Commands {
     Template(template_cmd::TemplateCli),
     /// Kernel runtime dependency info
     Kernel(kernel_cmd::KernelCli),
+    /// Explain a kernel error code (from ERROR_CODES.md)
+    Explain(explain_cmd::ExplainArgs),
+    /// Shell completion scripts (install to your shell profile)
+    Completions(completions_cmd::CompletionsArgs),
 }
 
 fn init_tracing(verbose: u8) {
@@ -161,6 +174,8 @@ fn main() -> Result<()> {
         Commands::Ci(cli) => ci_cmd::run(cli),
         Commands::Template(cli) => template_cmd::run(cli),
         Commands::Kernel(cli) => kernel_cmd::run(cli),
+        Commands::Explain(args) => explain_cmd::run(args),
+        Commands::Completions(args) => completions_cmd::run(args),
     }
 }
 
