@@ -89,6 +89,18 @@ pub struct BenchArgs {
     #[arg(long, default_value_t = 30)]
     pub stress_duration: u64,
 
+    /// Compare standard vs Monolith /chat replies (exact match; MOCK_LLM)
+    #[arg(long)]
+    pub equivalence: bool,
+
+    /// Long-duration stability: periodic /chat + resource snapshots
+    #[arg(long)]
+    pub soak: bool,
+
+    /// Soak duration in hours (default 72)
+    #[arg(long, default_value_t = 72)]
+    pub soak_duration: u64,
+
     /// Cold-start latency: spawn kernel --api and measure first /chat reply
     #[arg(long)]
     pub cold_start: bool,
@@ -405,7 +417,7 @@ fn resolve_project_root(path: &Path) -> Result<PathBuf> {
         .with_context(|| format!("cannot resolve project path: {}", root.display()))
 }
 
-fn read_package_name(manifest_dir: &Path) -> Result<String> {
+pub(crate) fn read_package_name(manifest_dir: &Path) -> Result<String> {
     let p = manifest_dir.join("Cargo.toml");
     let raw = fs::read_to_string(&p).context("read Cargo.toml")?;
     let v: toml::Value = toml::from_str(&raw).context("parse Cargo.toml")?;
@@ -416,7 +428,7 @@ fn read_package_name(manifest_dir: &Path) -> Result<String> {
         .context("Cargo.toml missing [package].name")
 }
 
-fn release_bin_path(dir: &Path, name: &str, release: bool) -> PathBuf {
+pub(crate) fn release_bin_path(dir: &Path, name: &str, release: bool) -> PathBuf {
     let profile = if release { "release" } else { "debug" };
     let p = dir.join("target").join(profile).join(name);
     if cfg!(windows) {
@@ -560,6 +572,12 @@ fn arrow(delta: f64) -> &'static str {
 
 pub fn run(args: BenchArgs) -> Result<()> {
     let root = resolve_project_root(&args.path)?;
+    if args.equivalence {
+        return crate::bench_equivalence::run_equivalence(&root, &args);
+    }
+    if args.soak {
+        return crate::bench_soak::run_soak(&root, &args);
+    }
     if args.cold_start {
         return crate::bench_cold_start::run_cold_start(&root, &args);
     }

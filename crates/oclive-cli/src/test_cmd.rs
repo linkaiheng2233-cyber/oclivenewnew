@@ -35,6 +35,14 @@ pub struct TestArgs {
     /// Miri: test only this crate (`-p`)
     #[arg(long = "miri-only")]
     pub miri_only: Option<String>,
+
+    /// Loom concurrency model tests (`cargo-loom` required)
+    #[arg(long)]
+    pub loom: bool,
+
+    /// With `test`: run Monolith equivalence via `bench --equivalence` when `monolith.toml` exists
+    #[arg(long)]
+    pub equivalence_check: bool,
 }
 
 #[derive(Serialize)]
@@ -49,8 +57,14 @@ pub fn run(args: TestArgs) -> Result<()> {
     if args.coverage {
         return crate::test_coverage::run_coverage(&root, args.open);
     }
+    if args.loom {
+        return crate::test_loom::run_loom(&root);
+    }
     if args.miri {
         return crate::test_miri::run_miri(&root, args.miri_only.as_deref());
+    }
+    if args.equivalence_check {
+        return crate::test_equivalence_check::run(&root);
     }
     if args.ci_parity {
         return crate::test_ci_parity::run_ci_parity(&root, args.skip_oocp, args.json);

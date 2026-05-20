@@ -7,6 +7,8 @@
 
 mod bench_cmd;
 mod bench_cold_start;
+mod bench_equivalence;
+mod bench_soak;
 mod bench_metrics;
 mod bench_stress;
 mod completions_cmd;
@@ -17,6 +19,8 @@ mod init_plan;
 mod lint_audit_ci;
 mod test_coverage;
 mod test_miri;
+mod test_loom;
+mod test_equivalence_check;
 mod blueprint;
 mod cargo_hints;
 mod doctor_cmd;
