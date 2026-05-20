@@ -31,6 +31,9 @@
 | `--list-templates` | 打印模板矩阵后退出 |
 | `--monolith-bench-preset` | Monolith 启用时：设定 `weld_modules` 并在生成后自动 `bench --runs 5` → `bench_results/report.json` |
 | `--with-example-plugin` | 复制 `com.oclive.example.llamacpp_llm` 示例 |
+| `--author` / `--license` / `--description` | 写入生成 `Cargo.toml` 的 package 元数据（license 默认 MIT） |
+
+**插件脚手架**（仓库根）：`cargo run -p oclive-cli -- plugin create <name> --type directory|remote --provides <slot> …`
 
 **`robot-gateway` 模板**额外生成 **`mcp_servers/`** 与 **`roles/gateway/settings.json`**（`agent` = builtin + `agent_mcp` 占位）。
 

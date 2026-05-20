@@ -174,6 +174,39 @@ fn pick_monolith_for_kernel(template_default_on: bool) -> Result<bool> {
     Ok(mode_idx == 1 || mode_idx == 2)
 }
 
+fn pick_cargo_metadata(args: &InitArgs, cfg: &mut ProjectConfig) -> Result<()> {
+    if args.author.is_some() || args.license.is_some() || args.description.is_some() {
+        return Ok(());
+    }
+    let default_author =
+        crate::init::git_config_user_name().unwrap_or_else(|| "oclive".to_string());
+    let author: String = Input::with_theme(&ColorfulTheme::default())
+        .with_prompt("作者（写入 Cargo.toml authors）")
+        .default(default_author)
+        .interact_text()
+        .context("author")?;
+    if !author.trim().is_empty() {
+        cfg.cargo_author = Some(author.trim().to_string());
+    }
+    let licenses = ["MIT", "Apache-2.0", "GPL-3.0", "AGPL-3.0"];
+    let lic_idx = Select::with_theme(&ColorfulTheme::default())
+        .with_prompt("许可证（SPDX）")
+        .items(&licenses)
+        .default(0)
+        .interact()
+        .context("license")?;
+    cfg.cargo_license = Some(licenses.get(lic_idx).copied().unwrap_or("MIT").to_string());
+    let desc: String = Input::with_theme(&ColorfulTheme::default())
+        .with_prompt("简短描述（可选，留空不写 description）")
+        .allow_empty(true)
+        .interact_text()
+        .context("description")?;
+    if !desc.trim().is_empty() {
+        cfg.cargo_description = Some(desc.trim().to_string());
+    }
+    Ok(())
+}
+
 fn resolve_project_name(args: &InitArgs) -> Result<String> {
     if !args.project_name.is_empty() && args.project_name != "my_oclive_kernel" {
         return Ok(args.project_name.clone());
@@ -240,12 +273,16 @@ pub fn run_interactive(args: &InitArgs) -> Result<ProjectConfig> {
                 factory_template: None,
                 run_monolith_bench_after_init: false,
                 kernel_source: None,
+                cargo_author: None,
+                cargo_license: None,
+                cargo_description: None,
             };
             (c, false)
         }
     };
 
     cfg.project_name = project_name;
+    pick_cargo_metadata(args, &mut cfg)?;
 
     if args.project_type.is_none() {
         if manual_config {

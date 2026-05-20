@@ -53,6 +53,9 @@ fn template_context(cfg: &ProjectConfig, out: &Path) -> serde_json::Value {
         "has_role_pack": cfg.role_pack_kind != crate::init::RolePackKind::None,
         "monolith_enabled": monolith_enabled,
         "kernel_linked": false,
+        "cargo_author": cfg.cargo_author.as_deref().unwrap_or(""),
+        "cargo_license": cfg.cargo_license.as_deref().unwrap_or("MIT"),
+        "cargo_description": cfg.cargo_description.as_deref().unwrap_or(""),
     });
     if let Some(ref root) = cfg.kernel_source {
         let path_tauri = relativize_path(out, &root.join("src-tauri"));

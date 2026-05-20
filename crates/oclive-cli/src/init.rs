@@ -141,6 +141,18 @@ pub struct InitArgs {
     /// 指向 oclivenewnew 仓库根：生成项目写入 `oclivenewnew-tauri` / `oclive_kernel_runtime` path 依赖
     #[arg(long)]
     pub kernel_source: Option<PathBuf>,
+
+    /// 写入生成 `Cargo.toml` 的 `[package].authors`
+    #[arg(long)]
+    pub author: Option<String>,
+
+    /// 写入 `[package].license`（默认 MIT）
+    #[arg(long)]
+    pub license: Option<String>,
+
+    /// 写入 `[package].description`（留空则不写入）
+    #[arg(long)]
+    pub description: Option<String>,
 }
 
 /// 内核工厂套餐（`--template`）。
@@ -323,6 +335,12 @@ pub struct ProjectConfig {
     pub run_monolith_bench_after_init: bool,
     /// 指向 oclivenewnew 仓库根；生成项目写入 path 依赖并替换占位 `main`/`lib`。
     pub kernel_source: Option<std::path::PathBuf>,
+    /// 生成 `Cargo.toml` 的 `[package].authors`。
+    pub cargo_author: Option<String>,
+    /// 生成 `Cargo.toml` 的 `[package].license`（缺省 MIT）。
+    pub cargo_license: Option<String>,
+    /// 生成 `Cargo.toml` 的 `[package].description`。
+    pub cargo_description: Option<String>,
 }
 
 impl ProjectConfig {
@@ -455,6 +473,9 @@ pub fn preset_config(name: &str, preset: &str) -> ProjectConfig {
         factory_template: None,
         run_monolith_bench_after_init: false,
         kernel_source: None,
+        cargo_author: None,
+        cargo_license: None,
+        cargo_description: None,
     }
 }
 
@@ -516,6 +537,40 @@ pub fn resolve_role_pack_kind(args: &InitArgs) -> RolePackKind {
     RolePackKind::DefaultExample
 }
 
+pub(crate) fn git_config_user_name() -> Option<String> {
+    std::process::Command::new("git")
+        .args(["config", "user.name"])
+        .output()
+        .ok()
+        .filter(|o| o.status.success())
+        .and_then(|o| String::from_utf8(o.stdout).ok())
+        .map(|s| s.trim().to_string())
+        .filter(|s| !s.is_empty())
+}
+
+pub(crate) fn apply_cargo_metadata_cli(cfg: &mut ProjectConfig, args: &InitArgs) {
+    if let Some(a) = args.author.as_ref().map(|s| s.trim()).filter(|s| !s.is_empty()) {
+        cfg.cargo_author = Some(a.to_string());
+    }
+    if let Some(l) = args.license.as_ref().map(|s| s.trim()).filter(|s| !s.is_empty()) {
+        cfg.cargo_license = Some(l.to_string());
+    }
+    if let Some(d) = args
+        .description
+        .as_ref()
+        .map(|s| s.trim())
+        .filter(|s| !s.is_empty())
+    {
+        cfg.cargo_description = Some(d.to_string());
+    }
+}
+
+pub(crate) fn ensure_cargo_license_default(cfg: &mut ProjectConfig) {
+    if cfg.cargo_license.is_none() {
+        cfg.cargo_license = Some("MIT".into());
+    }
+}
+
 pub(crate) fn apply_backend_cli_overrides(cfg: &mut ProjectConfig, args: &InitArgs) {
     if let Some(v) = args.backend_memory {
         cfg.backends.memory = v;
@@ -572,6 +627,8 @@ fn run_quick_init(args: &InitArgs) -> Result<()> {
     }
     let mut cfg = quick_project_config(&project_name);
     apply_backend_cli_overrides(&mut cfg, args);
+    apply_cargo_metadata_cli(&mut cfg, args);
+    ensure_cargo_license_default(&mut cfg);
     if !args.quiet {
         println!("—— 极速模式（--quick）——");
         println!("preset=full，Monolith=关，无 roles/，未接 --kernel-source");
@@ -657,6 +714,9 @@ pub fn run(args: InitArgs) -> Result<()> {
         generator::validate_kernel_source(&canonical)?;
         cfg.kernel_source = Some(canonical);
     }
+
+    apply_cargo_metadata_cli(&mut cfg, &args);
+    ensure_cargo_license_default(&mut cfg);
 
     if !args.non_interactive {
         cfg.print_summary();
@@ -752,6 +812,9 @@ mod template_tests {
             with_role_pack: None,
             with_example_plugin: false,
             kernel_source: None,
+            author: None,
+            license: None,
+            description: None,
         };
         let preset = args.preset.as_deref().unwrap_or("minimal");
         let mut cfg = preset_config("t", preset);
@@ -785,6 +848,9 @@ mod template_tests {
             with_role_pack: None,
             with_example_plugin: false,
             kernel_source: None,
+            author: None,
+            license: None,
+            description: None,
         };
         let mut cfg = preset_config("t", "minimal");
         apply_template_layer(&args, &mut cfg);
@@ -818,6 +884,9 @@ mod template_tests {
             with_role_pack: Some(RolePackKindArg::Default),
             with_example_plugin: false,
             kernel_source: None,
+            author: None,
+            license: None,
+            description: None,
         };
         assert_eq!(
             resolve_role_pack_kind(&args),
@@ -859,6 +928,9 @@ mod template_tests {
             with_role_pack: None,
             with_example_plugin: false,
             kernel_source: None,
+            author: None,
+            license: None,
+            description: None,
         };
         let mut cfg = preset_config("t", "minimal");
         apply_backend_cli_overrides(&mut cfg, &args);

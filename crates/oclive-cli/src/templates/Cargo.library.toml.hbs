@@ -3,6 +3,13 @@ name = "{{ safe_package_name }}"
 version = "0.1.0"
 edition = "2021"
 publish = false
+{{#if cargo_author}}
+authors = ["{{cargo_author}}"]
+{{/if}}
+license = "{{cargo_license}}"
+{{#if cargo_description}}
+description = "{{cargo_description}}"
+{{/if}}
 
 [dependencies]
 {{#if kernel_linked}}
