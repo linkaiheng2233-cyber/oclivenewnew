@@ -1,5 +1,5 @@
 import { computed, ref } from "vue";
-import { Position } from "@vue-flow/core";
+import { Position, type Node } from "@vue-flow/core";
 import { layoutOnRing, pointOnRay } from "../lib/radialGraphLayout";
 import { normalizeBackendKind, type BackendKind } from "../lib/graphEditorTheme";
 import { useRoleStore } from "../stores/roleStore";
@@ -97,7 +97,6 @@ export function useArchitectureGraphModel() {
       position: { x: HUB_CX - KERNEL_SIZE / 2, y: HUB_CY - KERNEL_OUTER_R - KERNEL_SIZE / 2 },
       data: { labelKey: "pluginWorkbench.graph.kernel", sub: "process_message" },
       draggable: true,
-      connectable: false,
     });
 
     list.push({
@@ -110,7 +109,6 @@ export function useArchitectureGraphModel() {
         moduleKeys: coreModules.map((m) => m.key),
       },
       draggable: true,
-      connectable: false,
     });
 
     coreModules.forEach((m, i) => {
@@ -135,7 +133,6 @@ export function useArchitectureGraphModel() {
           sourcePosition: Position.Right,
         },
         draggable: true,
-        connectable: false,
       });
 
       if (kind === "directory") {
@@ -152,7 +149,6 @@ export function useArchitectureGraphModel() {
               version: pluginStore.catalog.find((c) => c.id === pid)?.version ?? "?",
             },
             draggable: true,
-            connectable: false,
           });
         });
       }
@@ -167,7 +163,6 @@ export function useArchitectureGraphModel() {
       position: { x: cx0 - 100, y: cy0 - NODE_H / 2 },
       data: { labelKey: "pluginWorkbench.graph.complexEmotion", hintKey: "pluginWorkbench.graph.complexHint" },
       draggable: true,
-      connectable: false,
     });
 
     return list;
@@ -183,7 +178,9 @@ export function useArchitectureGraphModel() {
       sourceHandle: "pipeline",
       targetHandle: "pipeline-in",
       type: "archBackend",
-      data: { kind: "builtin" },
+      deletable: false,
+      updatable: false,
+      data: { kind: "builtin", system: true },
     });
 
     coreModules.forEach((m) => {
@@ -195,7 +192,9 @@ export function useArchitectureGraphModel() {
         sourceHandle: `fac-${m.key}`,
         targetHandle: "backend-in",
         type: "archBackend",
-        data: { kind, moduleKey: m.key },
+        deletable: false,
+        updatable: false,
+        data: { kind, moduleKey: m.key, system: true },
         animated: kind === "remote",
       });
       for (const pid of visiblePluginIds(m.key)) {
@@ -206,6 +205,8 @@ export function useArchitectureGraphModel() {
           sourceHandle: "plugin-out",
           targetHandle: "plugin-in",
           type: "archBackend",
+          deletable: true,
+          updatable: true,
           data: { kind: "directory", moduleKey: m.key },
         });
       }
@@ -218,7 +219,9 @@ export function useArchitectureGraphModel() {
       sourceHandle: "fac-complex",
       targetHandle: "backend-in",
       type: "archBackend",
-      data: { kind: "builtin" },
+      deletable: false,
+      updatable: false,
+      data: { kind: "builtin", system: true },
     });
 
     return out;

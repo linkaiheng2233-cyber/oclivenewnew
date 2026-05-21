@@ -25,7 +25,15 @@ const size = ARCH_NODE_DEFAULT_SIZE.archComplex!;
       :class="{ 'agn--selected': selected }"
       :style="backendCssVars('builtin')"
     >
-      <Handle id="backend-in" type="target" :position="Position.Left" class="agn-handle agn-handle--in" />
+      <Handle
+        id="backend-in"
+        type="target"
+        :position="Position.Left"
+        :connectable-start="false"
+        :connectable-end="true"
+        connectable="single"
+        class="agn-handle agn-handle--in"
+      />
       <div class="agn-accent-bar" />
       <div class="agn-head">🎭 {{ t("pluginWorkbench.graph.complexEmotion") }}</div>
       <p class="agn-hint agn-complex-hint">{{ t("pluginWorkbench.graph.complexHint") }}</p>

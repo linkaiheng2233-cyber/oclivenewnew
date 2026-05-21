@@ -36,6 +36,8 @@ const size = ARCH_NODE_DEFAULT_SIZE.archKernel!;
         id="pipeline"
         type="source"
         :position="Position.Bottom"
+        :connectable-start="true"
+        :connectable-end="false"
         class="agn-handle agn-handle--out"
       />
     </div>

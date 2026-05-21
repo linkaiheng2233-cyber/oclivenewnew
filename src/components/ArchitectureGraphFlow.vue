@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { applyNodeChanges, VueFlow } from "@vue-flow/core";
+import { applyNodeChanges, VueFlow, type Edge, type Node } from "@vue-flow/core";
 import { markRaw, onMounted, provide, ref, watch } from "vue";
 import { useI18n } from "vue-i18n";
 import { Background } from "@vue-flow/background";
@@ -8,11 +8,13 @@ import { MiniMap } from "@vue-flow/minimap";
 import ArchBackendEdge from "./architecture-graph/ArchBackendEdge.vue";
 import ArchBusNode from "./architecture-graph/ArchBusNode.vue";
 import ArchComplexNode from "./architecture-graph/ArchComplexNode.vue";
+import ArchConnectionLine from "./architecture-graph/ArchConnectionLine.vue";
 import ArchGraphFitView from "./architecture-graph/ArchGraphFitView.vue";
 import ArchKernelNode from "./architecture-graph/ArchKernelNode.vue";
 import ArchModuleNode from "./architecture-graph/ArchModuleNode.vue";
 import ArchPluginNode from "./architecture-graph/ArchPluginNode.vue";
 import { archGraphActionsKey } from "./architecture-graph/archGraphContext";
+import { useArchitectureGraphConnections } from "../composables/useArchitectureGraphConnections";
 import { useArchitectureGraphLayout } from "../composables/useArchitectureGraphLayout";
 import { useArchitectureGraphModel, type CoreModule } from "../composables/useArchitectureGraphModel";
 import { BACKEND_COLORS, GRAPH_SURFACE } from "../lib/graphEditorTheme";
@@ -43,8 +45,10 @@ const {
   hiddenPluginCount,
 } = useArchitectureGraphModel();
 
-const nodes = ref([]);
-const edges = ref([]);
+const nodes = ref<Node[]>([]);
+const edges = ref<Edge[]>([]);
+
+const graphConnections = useArchitectureGraphConnections(nodes, edges);
 
 function syncGraphFromModel() {
   nodes.value = builtNodes.value.map((n) => {
@@ -181,15 +185,26 @@ onMounted(syncGraphFromModel);
         v-model:edges="edges"
         :node-types="nodeTypes"
         :edge-types="edgeTypes"
+        :connection-mode="graphConnections.connectionMode"
         :min-zoom="0.35"
         :max-zoom="1.8"
         :nodes-draggable="true"
-        :nodes-connectable="false"
+        :nodes-connectable="true"
+        :edges-updatable="true"
         :elements-selectable="true"
+        :is-valid-connection="graphConnections.isValidConnection"
         :fit-view-on-init="false"
         :default-viewport="{ zoom: 0.85 }"
         @nodes-change="onNodesChange"
+        @edges-change="graphConnections.onEdgesChange"
+        @connect="graphConnections.onConnect"
+        @edge-update="graphConnections.onEdgeUpdate"
+        @connect-start="graphConnections.onConnectStart"
+        @connect-end="graphConnections.onConnectEnd"
       >
+        <template #connection-line="lineProps">
+          <ArchConnectionLine v-bind="lineProps" />
+        </template>
         <Background
           variant="dots"
           :gap="GRAPH_SURFACE.gridGap"
@@ -213,7 +228,7 @@ onMounted(syncGraphFromModel);
       <span class="agf-legend-item" role="listitem">
         <span class="agf-swatch agf-swatch--directory" />{{ t("pluginWorkbench.graph.legendDirectory") }}
       </span>
-      <span class="agf-legend-hint">{{ t("pluginWorkbench.graph.panHint") }}</span>
+      <span class="agf-legend-hint">{{ t("pluginWorkbench.graph.connectHint") }}</span>
     </div>
   </div>
 </template>
@@ -314,6 +329,15 @@ onMounted(syncGraphFromModel);
 .agf-vf :deep(.vue-flow__handle.agn-handle--out) {
   border-color: v-bind(handleOutColor);
   background: color-mix(in srgb, v-bind(handleOutColor) 22%, #3c3c3c);
+}
+.agf-vf :deep(.vue-flow__handle.connectingto) {
+  box-shadow: 0 0 0 3px color-mix(in srgb, #7aad8f 45%, transparent);
+}
+.agf-vf :deep(.vue-flow__handle.connectingto.invalid) {
+  box-shadow: 0 0 0 3px color-mix(in srgb, #c45c5c 50%, transparent);
+}
+.agf-vf :deep(.vue-flow__handle.valid) {
+  box-shadow: 0 0 0 2px color-mix(in srgb, #7aad8f 55%, transparent);
 }
 .agf-vf :deep(.vue-flow__edge-path) {
   stroke-width: 1.75;

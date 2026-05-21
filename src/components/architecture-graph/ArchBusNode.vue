@@ -33,7 +33,15 @@ function outTop(i: number, n: number): string {
       :class="{ 'agn--selected': selected }"
       :style="{ '--arch-accent': GRAPH_SURFACE.busAccent, '--arch-node-border': GRAPH_SURFACE.busAccent }"
     >
-      <Handle id="pipeline-in" type="target" :position="Position.Top" class="agn-handle agn-handle--in" />
+      <Handle
+        id="pipeline-in"
+        type="target"
+        :position="Position.Top"
+        :connectable-start="false"
+        :connectable-end="true"
+        connectable="single"
+        class="agn-handle agn-handle--in"
+      />
       <div class="agn-accent-bar" />
       <div class="agn-head">
         <span class="agn-head-title">{{ t("pluginWorkbench.graph.facilityBus") }}</span>
@@ -46,6 +54,9 @@ function outTop(i: number, n: number): string {
         :key="key"
         type="source"
         :position="Position.Right"
+        :connectable-start="true"
+        :connectable-end="false"
+        connectable="single"
         class="agn-handle agn-handle--out"
         :style="{ top: outTop(i, moduleKeys.length) }"
       />
@@ -53,6 +64,9 @@ function outTop(i: number, n: number): string {
         id="fac-complex"
         type="source"
         :position="Position.Right"
+        :connectable-start="true"
+        :connectable-end="false"
+        connectable="single"
         class="agn-handle agn-handle--out"
         style="top: 92%"
       />

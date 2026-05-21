@@ -31,7 +31,15 @@ const themeStyle = backendCssVars("directory");
       :style="themeStyle"
       @contextmenu.prevent="actions?.onUninstallPlugin(String(data?.pluginId))"
     >
-      <Handle id="plugin-in" type="target" :position="Position.Left" class="agn-handle agn-handle--in" />
+      <Handle
+        id="plugin-in"
+        type="target"
+        :position="Position.Left"
+        :connectable-start="false"
+        :connectable-end="true"
+        connectable="single"
+        class="agn-handle agn-handle--in"
+      />
       <div class="agn-accent-bar" />
       <div class="agn-head agn-plugin-head">{{ data?.pluginId }}</div>
       <div class="agn-hint agn-plugin-meta agn-mono">

@@ -38,12 +38,22 @@ function onSelect(ev: Event) {
       :class="{ 'agn--selected': selected }"
       :style="themeStyle"
     >
-      <Handle id="backend-in" type="target" :position="Position.Left" class="agn-handle agn-handle--in" />
+      <Handle
+        id="backend-in"
+        type="target"
+        :position="Position.Left"
+        :connectable-start="false"
+        :connectable-end="true"
+        connectable="single"
+        class="agn-handle agn-handle--in"
+      />
       <Handle
         v-if="data?.backendKind === 'directory'"
         id="plugin-out"
         type="source"
         :position="Position.Right"
+        :connectable-start="true"
+        :connectable-end="false"
         class="agn-handle agn-handle--out"
       />
       <div class="agn-accent-bar" />
