@@ -7,7 +7,7 @@
 ## 前置条件
 
 - 已编译：`cargo build -p oclivenewnew-tauri`（产物位于 Cargo 配置的 `target-dir`）。
-- 角色目录：默认使用仓库根目录 `roles/mumu`（可通过环境变量覆盖）。
+- 角色目录：默认使用仓库根目录 **`roles/mumu`**（**v2** `pipeline.ocblueprint` 黄金包；可通过 `OCLIVE_OOCP_ROLE_PATH` 覆盖）。
 - **可选**：设置 **`OCLIVE_HTTP_API_MOCK_LLM=1`** 时，`--api` 使用内存库 + 固定 Mock LLM，**无需本机 Ollama**（CI 与 `examples/oocp-test-suite` 默认依赖此路径）。
 
 ## 启动内核（本地）
