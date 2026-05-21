@@ -31,7 +31,7 @@ export default {
   tabs: { graph: "Architecture", layout: "UI layout" },
   openMarket: "Browse plugin market",
   graph: {
-    lead: "ComfyUI-style graph: one edge from the kernel to the facility bus (visual guide), then six real plugin_backends modules; directory plugins connect only to their module. Drag node headers to rearrange.",
+    lead: "ComfyUI-style wires: kernel on the outer ring, one link to the centered facility bus, six modules orbiting the bus; left/right ports stage connections. Drag node headers to rearrange.",
     facilityBus: "Facility bus",
     facilityBusHint: "Guide node: runtime wiring is kernel↔six modules only; the bus avoids six overlapping center lines.",
     portPipeline: "pipeline",
@@ -47,7 +47,8 @@ export default {
     layerHub: "Orchestrator",
     layerFacility: "Facility modules",
     layerPlugin: "Directory plugins",
-    ringFacility: "plugin_backends",
+    ringKernel: "Orchestrator (outer)",
+    ringFacility: "Facilities (around bus)",
     ringPlugin: "directory_plugins",
     kernel: "Orchestrator",
     kernelTitle: "Main chat pipeline entry",

@@ -2,7 +2,7 @@ import { onMounted, ref } from "vue";
 
 export type NodeOffset = { dx: number; dy: number };
 
-const STORAGE_KEY = "oclive-arch-graph-node-offsets-v1";
+const STORAGE_KEY = "oclive-arch-graph-node-offsets-v2";
 
 export function useGraphNodeLayout() {
   const offsets = ref<Record<string, NodeOffset>>({});

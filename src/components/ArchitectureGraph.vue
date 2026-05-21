@@ -10,11 +10,12 @@ import {
   type BackendKind,
 } from "../lib/graphEditorTheme";
 import {
-  hubToNodeEdge,
   layoutOnRing,
-  nodeToPluginEdge,
+  linkBusSlotToModule,
+  linkKernelToRect,
+  linkModuleToPlugin,
   pointOnRay,
-  radialQuadraticPath,
+  type RectBox,
 } from "../lib/radialGraphLayout";
 import { useRoleStore } from "../stores/roleStore";
 import { usePluginStore } from "../stores/pluginStore";
@@ -32,11 +33,16 @@ const NODE_W = 212;
 const NODE_H = 108;
 const PLUGIN_W = 176;
 const PLUGIN_H = 68;
-const MODULE_RING = 248;
-const PLUGIN_ORBIT_FROM_MODULE = 96;
+const HUB_CX = WORLD_W / 2;
+const HUB_CY = WORLD_H / 2 - 6;
+const KERNEL_OUTER_R = 268;
+const MODULE_RING = 178;
+const PLUGIN_INSET = 80;
+const KERNEL_R = 58;
 const BUS_W = 236;
-const BUS_H = 82;
+const BUS_H = 88;
 const BUS_ID = "__facility_bus__";
+const KERNEL_ID = "__kernel__";
 const COMPLEX_ID = "__complex_emotion__";
 
 const roleStore = useRoleStore();
@@ -99,7 +105,18 @@ const coreModules: {
   { key: "agent", labelKey: "pluginWorkbench.graph.agent", icon: "🛠", options: ["builtin", "remote", "directory"] },
 ];
 
-const KERNEL = { cx: WORLD_W / 2, cy: WORLD_H / 2 - 8, r: 62 };
+const kernelBase = { cx: HUB_CX, cy: HUB_CY - KERNEL_OUTER_R, r: KERNEL_R };
+
+const kernelLayout = computed(() => {
+  const o = nodeOffsets.value[KERNEL_ID] ?? { dx: 0, dy: 0 };
+  return {
+    cx: kernelBase.cx + o.dx,
+    cy: kernelBase.cy + o.dy,
+    r: KERNEL_R,
+    x: kernelBase.cx + o.dx - KERNEL_R,
+    y: kernelBase.cy + o.dy - KERNEL_R,
+  };
+});
 
 const pluginBackends = computed(() => roleStore.roleInfo.pluginBackends);
 const pluginBackendsEffective = computed(() => roleStore.roleInfo.pluginBackendsEffective);
@@ -120,13 +137,12 @@ type SlotLayout = {
 };
 
 const facilityBusBase = {
-  x: KERNEL.cx - BUS_W / 2,
-  y: KERNEL.cy - 24,
-  cx: KERNEL.cx,
-  cy: KERNEL.cy + 14,
+  x: HUB_CX - BUS_W / 2,
+  y: HUB_CY - BUS_H / 2,
+  cx: HUB_CX,
+  cy: HUB_CY,
   w: BUS_W,
   h: BUS_H,
-  r: 40,
 };
 
 const facilityBus = computed(() => {
@@ -143,8 +159,8 @@ const facilityBus = computed(() => {
 const slotLayouts = computed<SlotLayout[]>(() =>
   coreModules.map((m, i) => {
     const ring = layoutOnRing(
-      KERNEL.cx,
-      KERNEL.cy,
+      HUB_CX,
+      HUB_CY,
       MODULE_RING,
       i,
       coreModules.length,
@@ -164,9 +180,9 @@ const slotLayouts = computed<SlotLayout[]>(() =>
 );
 
 const complexLayout = computed(() => {
-  const angle = Math.PI / 2 + 0.22;
-  const cx0 = KERNEL.cx + Math.cos(angle) * (MODULE_RING - 24);
-  const cy0 = KERNEL.cy + Math.sin(angle) * (MODULE_RING - 24);
+  const angle = Math.PI / 2 + 0.18;
+  const cx0 = HUB_CX + Math.cos(angle) * (MODULE_RING * 0.78);
+  const cy0 = HUB_CY + Math.sin(angle) * (MODULE_RING * 0.78);
   const o = nodeOffsets.value[COMPLEX_ID] ?? { dx: 0, dy: 0 };
   return {
     x: cx0 - 100 + o.dx,
@@ -236,8 +252,8 @@ const pluginLayouts = computed<PluginLayout[]>(() => {
     if (backendKind(sl.key) !== "directory") continue;
     const plugins = visiblePluginIds(sl.key);
     plugins.forEach((pid, j) => {
-      const dist = PLUGIN_ORBIT_FROM_MODULE + j * (PLUGIN_H + 14);
-      const center = pointOnRay(sl.cx, sl.cy, sl.angle, dist);
+      const dist = PLUGIN_INSET + j * (PLUGIN_H + 12);
+      const center = pointOnRay(sl.cx, sl.cy, sl.angle + Math.PI, dist);
       const pidKey = `plugin:${pid}`;
       const o = nodeOffsets.value[pidKey] ?? { dx: 0, dy: 0 };
       out.push({
@@ -263,61 +279,55 @@ type EdgeDef = {
   animated?: boolean;
 };
 
+function moduleBox(sl: SlotLayout): RectBox {
+  return { x: sl.x, y: sl.y, w: NODE_W, h: NODE_H };
+}
+
+function pluginBox(pl: PluginLayout): RectBox {
+  return { x: pl.x, y: pl.y, w: PLUGIN_W, h: PLUGIN_H };
+}
+
 const edges = computed<EdgeDef[]>(() => {
   const out: EdgeDef[] = [];
+  const k = kernelLayout.value;
   const bus = facilityBus.value;
+  const busBox: RectBox = { x: bus.x, y: bus.y, w: bus.w, h: bus.h };
+  const modules = slotLayouts.value;
+  const n = modules.length;
 
   out.push({
     id: "kernel-bus",
-    d: hubToNodeEdge(
-      KERNEL.cx,
-      KERNEL.cy,
-      KERNEL.r,
-      bus.cx,
-      bus.cy,
-      -Math.PI / 2,
-      bus.w / 2,
-      0.08,
-    ),
+    d: linkKernelToRect(k.cx, k.cy, k.r, busBox),
     kind: "builtin",
   });
 
-  for (const sl of slotLayouts.value) {
+  modules.forEach((sl, i) => {
     const kind = backendKind(sl.key);
     out.push({
       id: `bus-${sl.key}`,
-      d: hubToNodeEdge(bus.cx, bus.cy, bus.r, sl.cx, sl.cy, sl.angle, NODE_W / 2, 0.14),
+      d: linkBusSlotToModule(busBox, moduleBox(sl), i, n),
       kind,
       toModule: sl.key,
       animated: kind === "remote",
     });
-  }
+  });
 
   for (const pl of pluginLayouts.value) {
-    const sl = slotLayouts.value.find((s) => s.key === pl.moduleKey);
+    const sl = modules.find((s) => s.key === pl.moduleKey);
     if (!sl) continue;
     out.push({
       id: `p-${pl.moduleKey}-${pl.pid}`,
-      d: nodeToPluginEdge(
-        sl.cx,
-        sl.cy,
-        sl.angle,
-        NODE_W / 2,
-        pl.cx,
-        pl.cy,
-        PLUGIN_H / 2,
-      ),
+      d: linkModuleToPlugin(moduleBox(sl), pluginBox(pl)),
       kind: "directory",
       animated: false,
     });
   }
 
   const cx = complexLayout.value;
-  const from = pointOnRay(bus.cx, bus.cy, cx.angle, bus.r * 0.9);
-  const to = pointOnRay(cx.cx, cx.cy, cx.angle + Math.PI, 100);
+  const complexBox: RectBox = { x: cx.x, y: cx.y, w: cx.w, h: NODE_H };
   out.push({
     id: "bus-complex",
-    d: radialQuadraticPath(from.x, from.y, to.x, to.y, 0.1),
+    d: linkBusSlotToModule(busBox, complexBox, n - 1, n + 1),
     kind: "builtin",
   });
 
@@ -501,8 +511,14 @@ watch(
       <div class="arch-minimap" aria-hidden="true" @click.stop>
         <svg :viewBox="`0 0 ${WORLD_W} ${WORLD_H}`" class="arch-minimap-svg">
           <circle
-            :cx="KERNEL.cx"
-            :cy="KERNEL.cy"
+            :cx="HUB_CX"
+            :cy="HUB_CY"
+            :r="KERNEL_OUTER_R"
+            class="arch-minimap-ring arch-minimap-ring--outer"
+          />
+          <circle
+            :cx="HUB_CX"
+            :cy="HUB_CY"
             :r="MODULE_RING"
             class="arch-minimap-ring"
           />
@@ -522,7 +538,12 @@ watch(
             :height="NODE_H"
             class="arch-minimap-node"
           />
-          <circle :cx="KERNEL.cx" :cy="KERNEL.cy" :r="KERNEL.r" class="arch-minimap-kernel" />
+          <circle
+            :cx="kernelLayout.cx"
+            :cy="kernelLayout.cy"
+            :r="kernelLayout.r"
+            class="arch-minimap-kernel"
+          />
         </svg>
       </div>
 
@@ -545,15 +566,29 @@ watch(
             </filter>
           </defs>
           <circle
-            :cx="KERNEL.cx"
-            :cy="KERNEL.cy"
+            :cx="HUB_CX"
+            :cy="HUB_CY"
+            :r="KERNEL_OUTER_R"
+            class="arch-orbit arch-orbit--kernel"
+          />
+          <circle
+            :cx="HUB_CX"
+            :cy="HUB_CY"
             :r="MODULE_RING"
             class="arch-orbit arch-orbit--facility"
           />
           <text
-            :x="KERNEL.cx"
-            :y="KERNEL.cy - MODULE_RING - 10"
+            :x="HUB_CX"
+            :y="HUB_CY - KERNEL_OUTER_R - 10"
             class="arch-orbit-label"
+            text-anchor="middle"
+          >
+            {{ t("pluginWorkbench.graph.ringKernel") }}
+          </text>
+          <text
+            :x="HUB_CX"
+            :y="HUB_CY - MODULE_RING - 8"
+            class="arch-orbit-label arch-orbit-label--inner"
             text-anchor="middle"
           >
             {{ t("pluginWorkbench.graph.ringFacility") }}
@@ -580,21 +615,31 @@ watch(
 
         <div
           class="arch-kernel arch-kernel--hex arch-kernel--comfy"
-          :style="{ left: KERNEL.cx - KERNEL.r + 'px', top: KERNEL.cy - KERNEL.r + 'px', width: KERNEL.r * 2 + 'px', height: KERNEL.r * 2 + 'px' }"
+          :style="{
+            left: kernelLayout.x + 'px',
+            top: kernelLayout.y + 'px',
+            width: kernelLayout.r * 2 + 'px',
+            height: kernelLayout.r * 2 + 'px',
+          }"
           :title="t('pluginWorkbench.graph.kernelTitle')"
         >
-          <span class="arch-kernel-glow" aria-hidden="true" />
-          <span class="arch-kernel-ico" aria-hidden="true">⚙️</span>
-          <span class="arch-kernel-lbl">{{ t("pluginWorkbench.graph.kernel") }}</span>
-          <span class="arch-kernel-sub">process_message</span>
-          <span class="ge-port-labeled ge-port-labeled--out" :style="{ left: '50%', bottom: '-6px', transform: 'translateX(-50%)' }">
-            <span class="ge-port-dot ge-port-dot--out" />
-            <span class="ge-port-name">{{ t("pluginWorkbench.graph.portPipeline") }}</span>
-          </span>
+          <div
+            class="arch-kernel-drag ge-node-drag-handle"
+            @pointerdown="onNodeDragStart($event, KERNEL_ID)"
+          >
+            <span class="arch-kernel-glow" aria-hidden="true" />
+            <span class="arch-kernel-ico" aria-hidden="true">⚙️</span>
+            <span class="arch-kernel-lbl">{{ t("pluginWorkbench.graph.kernel") }}</span>
+            <span class="arch-kernel-sub">process_message</span>
+          </div>
+          <span
+            class="ge-slot-dot ge-slot-dot--out arch-kernel-out-dot"
+            :title="t('pluginWorkbench.graph.portPipeline')"
+          />
         </div>
 
         <div
-          class="ge-node ge-node--comfy ge-node--bus"
+          class="ge-node ge-node--comfy ge-node--bus ge-node--slots"
           :style="{ left: facilityBus.x + 'px', top: facilityBus.y + 'px', width: facilityBus.w + 'px', minHeight: facilityBus.h + 'px' }"
           @click.stop="selectedModule = null"
         >
@@ -605,23 +650,37 @@ watch(
             <span class="ge-node-header-title">{{ t("pluginWorkbench.graph.facilityBus") }}</span>
             <span class="ge-node-header-type">plugin_backends</span>
           </div>
-          <div class="ge-node-ports">
-            <div class="ge-port-row ge-port-row--in">
-              <span class="ge-port-dot ge-port-dot--in" />
-              <span class="ge-port-name">{{ t("pluginWorkbench.graph.portIn") }}</span>
+          <div class="ge-node-body-row">
+            <div class="ge-slot-col ge-slot-col--in">
+              <div
+                class="ge-slot-item"
+                :style="{ top: `${(1 / 2) * 100}%` }"
+              >
+                <span class="ge-slot-dot ge-slot-dot--in" />
+                <span class="ge-slot-label">{{ t("pluginWorkbench.graph.portIn") }}</span>
+              </div>
             </div>
-            <div class="ge-port-row ge-port-row--out">
-              <span class="ge-port-dot ge-port-dot--out" />
-              <span class="ge-port-name">{{ t("pluginWorkbench.graph.portFacilities") }}</span>
+            <div class="ge-slot-col ge-slot-col--mid">
+              <p class="ge-bus-hint">{{ t("pluginWorkbench.graph.facilityBusHint") }}</p>
+            </div>
+            <div class="ge-slot-col ge-slot-col--out">
+              <div
+                v-for="(sl, i) in slotLayouts"
+                :key="'bus-out-' + sl.key"
+                class="ge-slot-item ge-slot-item--anchored"
+                :style="{ top: `${((i + 1) / (slotLayouts.length + 1)) * 100}%` }"
+              >
+                <span class="ge-slot-label ge-slot-label--out">{{ sl.key }}</span>
+                <span class="ge-slot-dot ge-slot-dot--out" />
+              </div>
             </div>
           </div>
-          <p class="ge-bus-hint">{{ t("pluginWorkbench.graph.facilityBusHint") }}</p>
         </div>
 
         <div
           v-for="sl in slotLayouts"
           :key="sl.key"
-          class="ge-node ge-node--comfy"
+          class="ge-node ge-node--comfy ge-node--slots"
           :class="{
             'ge-node--selected': selectedModule === sl.key,
             'ge-node--hover': hoveredModule === sl.key,
@@ -642,20 +701,17 @@ watch(
             <span class="ge-node-header-title">{{ sl.key }}</span>
             <span class="ge-node-header-type">{{ t(sl.labelKey) }}</span>
           </div>
-          <div class="ge-node-ports">
-            <div class="ge-port-row ge-port-row--in">
-              <span
-                class="ge-port-dot ge-port-dot--in"
-                :style="{ borderColor: BACKEND_COLORS[backendKind(sl.key)].bar }"
-              />
-              <span class="ge-port-name">{{ t("pluginWorkbench.graph.portBackend") }}</span>
+          <div class="ge-node-body-row">
+            <div class="ge-slot-col ge-slot-col--in">
+              <div class="ge-slot-item ge-slot-item--anchored" :style="{ top: '50%' }">
+                <span
+                  class="ge-slot-dot ge-slot-dot--in"
+                  :style="{ borderColor: BACKEND_COLORS[backendKind(sl.key)].bar }"
+                />
+                <span class="ge-slot-label">{{ t("pluginWorkbench.graph.portBackend") }}</span>
+              </div>
             </div>
-            <div v-if="backendKind(sl.key) === 'directory'" class="ge-port-row ge-port-row--out">
-              <span class="ge-port-dot ge-port-dot--out" />
-              <span class="ge-port-name">{{ t("pluginWorkbench.graph.portPlugin") }}</span>
-            </div>
-          </div>
-          <div class="ge-node-widgets">
+            <div class="ge-slot-col ge-slot-col--mid ge-node-widgets">
             <p
               v-if="backendKind(sl.key) === 'directory' && directoryPluginIds(sl.key).length"
               class="ge-dir-line"
@@ -695,13 +751,20 @@ watch(
                 +{{ hiddenPluginCount(sl.key) }} {{ t("pluginWorkbench.graph.plugins") }}
               </button>
             </div>
+            </div>
+            <div v-if="backendKind(sl.key) === 'directory'" class="ge-slot-col ge-slot-col--out">
+              <div class="ge-slot-item ge-slot-item--anchored" :style="{ top: '50%' }">
+                <span class="ge-slot-label ge-slot-label--out">{{ t("pluginWorkbench.graph.portPlugin") }}</span>
+                <span class="ge-slot-dot ge-slot-dot--out" />
+              </div>
+            </div>
           </div>
         </div>
 
         <div
           v-for="pl in pluginLayouts"
           :key="pl.pid"
-          class="ge-plugin ge-node--comfy"
+          class="ge-plugin ge-node--comfy ge-node--slots"
           :class="{ 'ge-plugin--off': pluginStore.isPluginDisabled(pl.pid) }"
           :style="{ left: pl.x + 'px', top: pl.y + 'px', width: PLUGIN_W + 'px' }"
           @click.stop="onFocusPlugin(pl.pid)"
@@ -714,11 +777,14 @@ watch(
             <span class="ge-node-header-title">{{ pl.pid }}</span>
             <span class="ge-node-header-type">directory</span>
           </div>
-          <div class="ge-port-row ge-port-row--in ge-port-row--plugin">
-            <span class="ge-port-dot ge-port-dot--in ge-port-dot--plugin" />
-            <span class="ge-port-name">{{ pl.moduleKey }}</span>
-          </div>
-          <div class="ge-plugin-body">
+          <div class="ge-node-body-row ge-node-body-row--plugin">
+            <div class="ge-slot-col ge-slot-col--in">
+              <div class="ge-slot-item ge-slot-item--anchored" :style="{ top: '50%' }">
+                <span class="ge-slot-dot ge-slot-dot--in ge-slot-dot--plugin" />
+                <span class="ge-slot-label">{{ pl.moduleKey }}</span>
+              </div>
+            </div>
+            <div class="ge-slot-col ge-slot-col--mid ge-plugin-body">
             <span class="ge-plugin-module">{{ pl.moduleKey }}</span>
             <strong class="ge-plugin-id">{{ pl.pid }}</strong>
             <span class="ge-plugin-ver">v{{ catalogEntry(pl.pid)?.version ?? "?" }}</span>
@@ -729,15 +795,17 @@ watch(
                   : t("pluginWorkbench.graph.pluginEnabled")
               }}
             </span>
+            </div>
           </div>
         </div>
 
         <div
-          class="ge-node ge-node--comfy ge-node--complex ge-node--builtin"
+          class="ge-node ge-node--comfy ge-node--slots ge-node--complex ge-node--builtin"
           :style="{
             left: complexLayout.x + 'px',
             top: complexLayout.y + 'px',
             width: complexLayout.w + 'px',
+            minHeight: NODE_H + 'px',
           }"
         >
           <div
@@ -748,11 +816,17 @@ watch(
             <span class="ge-node-header-ico" aria-hidden="true">🎭</span>
             <span class="ge-node-header-title">{{ t("pluginWorkbench.graph.complexEmotion") }}</span>
           </div>
-          <div class="ge-port-row ge-port-row--in">
-            <span class="ge-port-dot ge-port-dot--in" :style="{ borderColor: BACKEND_COLORS.builtin.bar }" />
-            <span class="ge-port-name">{{ t("pluginWorkbench.graph.portBackend") }}</span>
+          <div class="ge-node-body-row">
+            <div class="ge-slot-col ge-slot-col--in">
+              <div class="ge-slot-item ge-slot-item--anchored" :style="{ top: '50%' }">
+                <span class="ge-slot-dot ge-slot-dot--in" :style="{ borderColor: BACKEND_COLORS.builtin.bar }" />
+                <span class="ge-slot-label">{{ t("pluginWorkbench.graph.portBackend") }}</span>
+              </div>
+            </div>
+            <div class="ge-slot-col ge-slot-col--mid">
+              <p class="ge-complex-hint">{{ t("pluginWorkbench.graph.complexHint") }}</p>
+            </div>
           </div>
-          <p class="ge-complex-hint">{{ t("pluginWorkbench.graph.complexHint") }}</p>
         </div>
       </div>
     </div>
@@ -866,8 +940,128 @@ html:not([data-theme="dark"]) .arch-grid {
   pointer-events: none;
   overflow: visible;
 }
+.arch-edge {
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
 .arch-edge--flow {
   animation: arch-flow 1.1s linear infinite;
+}
+.arch-orbit--kernel {
+  stroke: color-mix(in srgb, #4caf50 35%, transparent);
+  stroke-dasharray: 6 8;
+}
+.arch-orbit-label--inner {
+  font-size: 9px;
+  opacity: 0.6;
+}
+.arch-minimap-ring--outer {
+  stroke: color-mix(in srgb, #4caf50 30%, transparent);
+}
+.arch-kernel-drag {
+  position: relative;
+  z-index: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  width: 100%;
+  height: 100%;
+  cursor: grab;
+}
+.arch-kernel-drag:active {
+  cursor: grabbing;
+}
+.arch-kernel-out-dot {
+  position: absolute;
+  left: 50%;
+  bottom: 2px;
+  transform: translate(-50%, 50%);
+  z-index: 2;
+}
+.ge-node--slots .ge-node-body-row {
+  display: flex;
+  flex-direction: row;
+  align-items: stretch;
+  min-height: 72px;
+  position: relative;
+}
+.ge-node--bus .ge-node-body-row {
+  min-height: 120px;
+}
+.ge-slot-col {
+  position: relative;
+  flex-shrink: 0;
+  display: flex;
+  flex-direction: column;
+}
+.ge-slot-col--in {
+  width: 22px;
+  margin-left: -11px;
+}
+.ge-slot-col--out {
+  width: 22px;
+  margin-right: -11px;
+}
+.ge-slot-col--mid {
+  flex: 1;
+  min-width: 0;
+  padding: 6px 10px 8px;
+}
+.ge-slot-item {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  font-size: 9px;
+  color: var(--text-secondary);
+  white-space: nowrap;
+}
+.ge-slot-item--anchored {
+  position: absolute;
+  left: 0;
+  right: 0;
+  transform: translateY(-50%);
+}
+.ge-slot-col--out .ge-slot-item--anchored {
+  flex-direction: row-reverse;
+  justify-content: flex-start;
+}
+.ge-slot-col--in .ge-slot-item--anchored {
+  justify-content: flex-start;
+}
+.ge-slot-dot {
+  width: 12px;
+  height: 12px;
+  border-radius: 50%;
+  border: 2px solid var(--border-light);
+  background: var(--bg-primary);
+  box-shadow: 0 0 0 2px var(--bg-primary);
+  flex-shrink: 0;
+  z-index: 2;
+}
+.ge-slot-dot--in {
+  border-color: #4caf50;
+}
+.ge-slot-dot--out {
+  border-color: #9c27b0;
+}
+.ge-slot-dot--plugin {
+  border-color: #9c27b0;
+}
+.ge-slot-label {
+  font-family: ui-monospace, Menlo, Consolas, monospace;
+  max-width: 72px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.ge-slot-label--out {
+  text-align: right;
+}
+.ge-node-body-row--plugin {
+  min-height: 52px;
+}
+.ge-node-body-row--plugin .ge-slot-col--mid {
+  padding: 4px 8px 6px;
 }
 @keyframes arch-flow {
   to {

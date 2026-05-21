@@ -30,7 +30,7 @@ export default {
   tabs: { graph: "架构图", layout: "界面布局" },
   openMarket: "浏览插件市场",
   graph: {
-    lead: "ComfyUI 风格节点图：内核仅一条连线至设施总线（表达用），总线再分接六个真实 plugin_backends 模块；目录插件只连所属模块。可拖拽节点排布。",
+    lead: "ComfyUI 节点连线：内核在最外环，单线接入居中设施总线，六模块环绕总线；左右端口分阶段连接，目录插件只连父模块。可拖拽节点。",
     facilityBus: "设施总线",
     facilityBusHint: "引导节点：运行时仅内核↔六模块，总线用于避免六条线叠在中心。",
     portPipeline: "pipeline",
@@ -46,7 +46,8 @@ export default {
     layerHub: "编排中心",
     layerFacility: "设施子模块",
     layerPlugin: "目录插件",
-    ringFacility: "plugin_backends",
+    ringKernel: "编排中心（外环）",
+    ringFacility: "设施子模块（环绕总线）",
     ringPlugin: "directory_plugins",
     kernel: "编排中心",
     kernelTitle: "对话主链编排入口",

@@ -21,6 +21,33 @@ export function edgeDash(kind: BackendKind): string {
   return "none";
 }
 
+/** Classic left→right ComfyUI cubic wire (horizontal tangents). */
+export function comfyLinkPath(x1: number, y1: number, x2: number, y2: number): string {
+  const dx = Math.abs(x2 - x1);
+  const pull = Math.max(48, Math.min(160, dx * 0.45));
+  const dir = x2 >= x1 ? 1 : -1;
+  return `M ${x1} ${y1} C ${x1 + pull * dir} ${y1}, ${x2 - pull * dir} ${y2}, ${x2} ${y2}`;
+}
+
+/** Direction-aware cubic link for radial / arbitrary node positions. */
+export function comfyLinkPathDirected(
+  x1: number,
+  y1: number,
+  x2: number,
+  y2: number,
+  tangentScale = 0.42,
+): string {
+  const dx = x2 - x1;
+  const dy = y2 - y1;
+  const dist = Math.hypot(dx, dy) || 1;
+  const t = Math.min(140, dist * tangentScale);
+  const c1x = x1 + (dx / dist) * t;
+  const c1y = y1 + (dy / dist) * t;
+  const c2x = x2 - (dx / dist) * t;
+  const c2y = y2 - (dy / dist) * t;
+  return `M ${x1} ${y1} C ${c1x} ${c1y}, ${c2x} ${c2y}, ${x2} ${y2}`;
+}
+
 export function bezierPath(
   x1: number,
   y1: number,
