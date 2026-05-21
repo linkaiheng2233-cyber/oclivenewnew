@@ -1,16 +1,15 @@
 //! `oclive blueprint` — 蓝图读取与校验。
 
-use crate::blueprint::{load_blueprint, validate_blueprint};
+use crate::blueprint::{load_blueprint_text, validate_blueprint_file};
 use anyhow::Result;
 use clap::{Parser, Subcommand};
 use std::path::PathBuf;
 
 #[derive(Parser, Debug)]
 #[command(
-    about = "[experimental/legacy] Validate pipeline.ocblueprint (desktop main path removed; kernel-only toolchain)",
-    long_about = "Validate pipeline.ocblueprint JSON in a role pack or project.\n\
-                  Desktop host orchestration uses process_message; this command does not change runtime.\n\
-                  Prefer init --pipeline for generated Rust pipeline order docs on new projects."
+    about = "Validate pipeline.ocblueprint v2 (meta + slot_registry)",
+    long_about = "Validate pipeline.ocblueprint JSON (schema_version 2 only).\n\
+                  Legacy steps[] DSL is rejected. Desktop host uses process_message; this command does not change runtime."
 )]
 pub struct BlueprintCli {
     #[command(subcommand)]
@@ -19,7 +18,7 @@ pub struct BlueprintCli {
 
 #[derive(Subcommand, Debug)]
 pub enum BlueprintCommand {
-    /// Validate `pipeline.ocblueprint` (or `.json`) format and step references
+    /// Validate `pipeline.ocblueprint` v2 (meta + slot_registry)
     Validate(BlueprintValidateArgs),
 }
 
@@ -40,8 +39,8 @@ pub fn run(cli: BlueprintCli) -> Result<()> {
 }
 
 fn run_validate(args: BlueprintValidateArgs) -> Result<()> {
-    let bp = load_blueprint(&args.path)?;
-    let report = validate_blueprint(&bp);
+    let raw = load_blueprint_text(&args.path)?;
+    let report = validate_blueprint_file(&raw);
     if args.json {
         let body = if report.ok {
             serde_json::json!({ "ok": true })

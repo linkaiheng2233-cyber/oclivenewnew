@@ -1,0 +1,612 @@
+//! `pipeline.ocblueprint` schema_version 2 校验（角色包 SSOT）。
+
+use std::collections::{BTreeMap, HashMap, HashSet};
+use std::fs;
+use std::path::Path;
+
+use serde::Deserialize;
+use serde_json::Value;
+
+use crate::manifest::{
+    DiskRoleManifest, EvolutionConfigDisk, IdentityBinding, KnowledgePackConfigDisk,
+    MemoryConfigDisk, UserRelationDisk,
+};
+use crate::role_pack::{merge_role_pack_scene_ids, validate_default_personality_vector};
+use crate::validate::{
+    validate_disk_manifest, validate_interaction_mode_pack_setting, validate_knowledge_manifest_disk,
+    validate_min_runtime_version,
+};
+
+pub const BLUEPRINT_V2_SCHEMA_VERSION: u32 = 2;
+pub const PIPELINE_BLUEPRINT_FILENAME: &str = "pipeline.ocblueprint";
+
+const FORBIDDEN_ROOT_KEYS: &[&str] = &["module_relations", "steps", "entry"];
+
+const SLOT_TYPES: &[&str] = &[
+    "memory",
+    "emotion",
+    "event",
+    "prompt",
+    "llm",
+    "agent",
+    "complex_emotion",
+];
+
+const PERSONALITY_OBJECT_KEYS: &[&str] = &[
+    "stubbornness",
+    "clinginess",
+    "sensitivity",
+    "assertiveness",
+    "forgiveness",
+    "talkativeness",
+    "warmth",
+];
+
+#[derive(Debug, Clone, Deserialize)]
+struct BlueprintV2File {
+    schema_version: u32,
+    meta: BlueprintMeta,
+    slot_registry: BTreeMap<String, SlotEntry>,
+}
+
+#[derive(Debug, Clone, Deserialize)]
+struct BlueprintMeta {
+    pub id: String,
+    pub name: String,
+    pub version: String,
+    pub author: String,
+    pub description: String,
+    #[serde(default)]
+    pub personality: Option<serde_json::Value>,
+    #[serde(default)]
+    pub relations: HashMap<String, UserRelationDisk>,
+    #[serde(default)]
+    pub default_relation: String,
+    #[serde(default)]
+    pub scenes: Vec<String>,
+    #[serde(default)]
+    pub evolution: EvolutionConfigDisk,
+    #[serde(default)]
+    pub memory_config: MemoryConfigDisk,
+    #[serde(default)]
+    pub identity_binding: IdentityBinding,
+    #[serde(default, alias = "model")]
+    pub ollama_model: Option<String>,
+    #[serde(default)]
+    pub interaction_mode: Option<String>,
+    #[serde(default)]
+    pub knowledge: Option<KnowledgePackConfigDisk>,
+    #[serde(default)]
+    pub min_runtime_version: Option<String>,
+    #[serde(default)]
+    pub dev_only: bool,
+}
+
+#[derive(Debug, Clone, Deserialize)]
+struct SlotEntry {
+    #[serde(rename = "type")]
+    slot_type: String,
+    label: String,
+    backend: String,
+    position: i64,
+    #[serde(default)]
+    plugin: Option<String>,
+    #[serde(default)]
+    plugins: Option<Vec<String>>,
+    #[serde(default)]
+    model: Option<String>,
+    #[serde(default)]
+    #[allow(dead_code)]
+    url: Option<String>,
+    #[serde(default)]
+    #[allow(dead_code)]
+    local_memory_provider_id: Option<String>,
+}
+
+/// 校验 v2 蓝图 JSON 文本。
+///
+/// # Errors
+///
+/// 契约不符时返回 `Err(Vec<String>)`。
+pub fn validate_blueprint_v2_json(raw: &str) -> Result<(), Vec<String>> {
+    let root: Value = match serde_json::from_str(raw) {
+        Ok(v) => v,
+        Err(e) => return Err(vec![format!("pipeline.ocblueprint JSON 语法错误: {}", e)]),
+    };
+
+    let mut errs = Vec::new();
+    if let Value::Object(map) = &root {
+        for key in FORBIDDEN_ROOT_KEYS {
+            if map.contains_key(*key) {
+                errs.push(format!(
+                    "pipeline.ocblueprint：禁止顶层字段「{key}」（B3：module_relations 仅运行时派生；steps/entry 已废弃）"
+                ));
+            }
+        }
+        if map.contains_key("steps") || map.contains_key("entry") {
+            errs.push(
+                "pipeline.ocblueprint：schema_version 2 不再支持 steps[]/entry；请迁移为 meta + slot_registry"
+                    .into(),
+            );
+        }
+    } else {
+        return Err(vec!["pipeline.ocblueprint 根节点须为 JSON 对象".into()]);
+    }
+
+    if !errs.is_empty() {
+        return Err(errs);
+    }
+
+    let bp: BlueprintV2File = match serde_json::from_value(root) {
+        Ok(b) => b,
+        Err(e) => return Err(vec![format!("pipeline.ocblueprint 结构不符合 v2 契约: {}", e)]),
+    };
+
+    validate_blueprint_v2_parsed(&bp, None)
+}
+
+/// 校验角色包目录（v2 SSOT：`pipeline.ocblueprint`；不得含 manifest/settings）。
+///
+/// # Errors
+///
+/// 缺少文件、读盘失败或校验未通过时返回 `Err(Vec<String>)`。
+pub fn validate_role_pack_blueprint_v2_directory(
+    role_dir: &Path,
+    host_version: &str,
+) -> Result<(), Vec<String>> {
+    let mut errs = Vec::new();
+
+    let manifest_path = role_dir.join("manifest.json");
+    if manifest_path.is_file() {
+        errs.push(format!(
+            "v2 角色包不得包含 manifest.json（已废弃）：{}",
+            manifest_path.display()
+        ));
+    }
+    let settings_path = role_dir.join("settings.json");
+    if settings_path.is_file() {
+        errs.push(format!(
+            "v2 角色包不得包含 settings.json（已废弃）：{}",
+            settings_path.display()
+        ));
+    }
+
+    let blueprint_path = role_dir.join(PIPELINE_BLUEPRINT_FILENAME);
+    if !blueprint_path.is_file() {
+        errs.push(format!(
+            "缺少 {}：{}",
+            PIPELINE_BLUEPRINT_FILENAME,
+            blueprint_path.display()
+        ));
+        return Err(errs);
+    }
+
+    if !errs.is_empty() {
+        return Err(errs);
+    }
+
+    let raw = match fs::read_to_string(&blueprint_path) {
+        Ok(s) => s,
+        Err(e) => {
+            return Err(vec![format!("读取 {} 失败: {}", PIPELINE_BLUEPRINT_FILENAME, e)]);
+        }
+    };
+
+    let root: Value = match serde_json::from_str(&raw) {
+        Ok(v) => v,
+        Err(e) => return Err(vec![format!("pipeline.ocblueprint JSON 语法错误: {}", e)]),
+    };
+
+    let mut parse_errs = Vec::new();
+    if let Value::Object(map) = &root {
+        for key in FORBIDDEN_ROOT_KEYS {
+            if map.contains_key(*key) {
+                parse_errs.push(format!(
+                    "pipeline.ocblueprint：禁止顶层字段「{key}」"
+                ));
+            }
+        }
+    }
+    if !parse_errs.is_empty() {
+        return Err(parse_errs);
+    }
+
+    let bp: BlueprintV2File = match serde_json::from_value(root) {
+        Ok(b) => b,
+        Err(e) => return Err(vec![format!("pipeline.ocblueprint 结构不符合 v2 契约: {}", e)]),
+    };
+
+    let folder_name = role_dir
+        .file_name()
+        .and_then(|s| s.to_str())
+        .unwrap_or("");
+    validate_blueprint_v2_parsed(&bp, Some(folder_name))?;
+
+    let disk = meta_to_disk_manifest(&bp.meta);
+    let merged_scenes = merge_role_pack_scene_ids(role_dir, &disk.scenes)
+        .map_err(|e| vec![e])?;
+    if let Err(e) = validate_disk_manifest(&disk, &merged_scenes) {
+        return Err(vec![e]);
+    }
+
+    if let Some(ref m) = bp.meta.interaction_mode {
+        if let Err(e) = validate_interaction_mode_pack_setting(Some(m.as_str())) {
+            return Err(vec![e]);
+        }
+    }
+
+    if let Err(e) = validate_min_runtime_version(
+        bp.meta.min_runtime_version.as_deref(),
+        host_version,
+    ) {
+        return Err(vec![e]);
+    }
+
+    Ok(())
+}
+
+fn validate_blueprint_v2_parsed(
+    bp: &BlueprintV2File,
+    folder_name: Option<&str>,
+) -> Result<(), Vec<String>> {
+    let mut errs = Vec::new();
+
+    if bp.schema_version != BLUEPRINT_V2_SCHEMA_VERSION {
+        errs.push(format!(
+            "pipeline.ocblueprint：schema_version 须为 {}（当前 {}）",
+            BLUEPRINT_V2_SCHEMA_VERSION, bp.schema_version
+        ));
+    }
+
+    if bp.meta.id.trim().is_empty() {
+        errs.push("meta.id 不能为空".into());
+    }
+    if let Some(dir) = folder_name {
+        if bp.meta.id.trim() != dir {
+            errs.push(format!(
+                "meta.id「{}」与角色包目录名「{}」不一致（R4：ERROR）",
+                bp.meta.id.trim(),
+                dir
+            ));
+        }
+    }
+
+    if let Some(ref p) = bp.meta.personality {
+        if let Err(e) = validate_meta_personality(p) {
+            errs.push(e);
+        }
+    }
+
+    if bp.meta.relations.is_empty() {
+        errs.push("meta.relations 至少需要配置一种用户身份".into());
+    }
+
+    if bp.meta.name.trim().is_empty() {
+        errs.push("meta.name 不能为空".into());
+    }
+
+    if bp.slot_registry.is_empty() {
+        errs.push("slot_registry 不能为空".into());
+    }
+
+    let mut llm_count = 0usize;
+    let mut positions_by_type: HashMap<&str, HashSet<i64>> = HashMap::new();
+
+    for (key, slot) in &bp.slot_registry {
+        if key.trim().is_empty() {
+            errs.push("slot_registry 键名不能为空".into());
+            continue;
+        }
+        if slot.label.trim().is_empty() {
+            errs.push(format!("slot_registry[{key}].label 不能为空"));
+        }
+
+        let t = slot.slot_type.trim();
+        if !SLOT_TYPES.contains(&t) {
+            errs.push(format!(
+                "slot_registry[{key}].type「{t}」非法（允许: {}）",
+                SLOT_TYPES.join(", ")
+            ));
+            continue;
+        }
+
+        if slot.position < 0 {
+            errs.push(format!("slot_registry[{key}].position 须为非负整数"));
+        }
+
+        if !positions_by_type
+            .entry(t)
+            .or_default()
+            .insert(slot.position)
+        {
+            errs.push(format!(
+                "slot_registry：type「{t}」下 position {} 重复（B5）",
+                slot.position
+            ));
+        }
+
+        if t == "llm" {
+            llm_count += 1;
+        }
+
+        if let Err(e) = validate_slot_backend_and_fields(key, slot) {
+            errs.push(e);
+        }
+    }
+
+    if llm_count == 0 {
+        errs.push("slot_registry 须至少包含一个 type: llm 的实例".into());
+    }
+
+    if let Some(ref k) = bp.meta.knowledge {
+        if let Err(e) = validate_knowledge_manifest_disk(k) {
+            errs.push(e);
+        }
+    }
+
+    if errs.is_empty() {
+        Ok(())
+    } else {
+        Err(errs)
+    }
+}
+
+fn validate_meta_personality(value: &Value) -> Result<(), String> {
+    match value {
+        Value::Array(arr) => {
+            let floats: Result<Vec<f32>, _> = arr
+                .iter()
+                .map(|v| {
+                    v.as_f64()
+                        .ok_or_else(|| "personality 数组元素须为数字".to_string())
+                        .map(|x| x as f32)
+                })
+                .collect();
+            let floats = floats?;
+            validate_default_personality_vector(&floats)
+                .map_err(|e| e.replace("manifest：", "meta.personality："))
+        }
+        Value::Object(map) => {
+            let mut vec = Vec::with_capacity(7);
+            for key in PERSONALITY_OBJECT_KEYS {
+                let Some(v) = map.get(*key) else {
+                    return Err(format!(
+                        "meta.personality 对象缺少键「{key}」（须含七维: {}）",
+                        PERSONALITY_OBJECT_KEYS.join(", ")
+                    ));
+                };
+                let Some(n) = v.as_f64() else {
+                    return Err(format!("meta.personality.{key} 须为数字"));
+                };
+                vec.push(n as f32);
+            }
+            validate_default_personality_vector(&vec)
+                .map_err(|e| e.replace("manifest：", "meta.personality："))
+        }
+        _ => Err("meta.personality 须为七键对象或长度 7 的数组".into()),
+    }
+}
+
+fn validate_slot_backend_and_fields(key: &str, slot: &SlotEntry) -> Result<(), String> {
+    let t = slot.slot_type.trim();
+    let b = slot.backend.trim();
+
+    let allowed = allowed_backends_for_type(t);
+    if !allowed.contains(&b) {
+        return Err(format!(
+            "slot_registry[{key}]：type「{t}」的 backend「{b}」非法（允许: {}）",
+            allowed.join(", ")
+        ));
+    }
+
+    let has_plugin = slot
+        .plugin
+        .as_ref()
+        .map(|s| !s.trim().is_empty())
+        .unwrap_or(false);
+    let plugins: Vec<&str> = slot
+        .plugins
+        .as_ref()
+        .map(|ps| ps.iter().map(|s| s.as_str()).filter(|s| !s.trim().is_empty()).collect())
+        .unwrap_or_default();
+    let has_plugins = !plugins.is_empty();
+
+    if t != "agent" && has_plugin && has_plugins {
+        return Err(format!(
+            "slot_registry[{key}]：非 agent 槽位不得同时包含 plugin 与 plugins（S4）"
+        ));
+    }
+
+    if t == "agent" && b != "directory" && has_plugins {
+        return Err(format!(
+            "slot_registry[{key}]：agent backend 为「{b}」时不得包含 plugins（S3）"
+        ));
+    }
+
+    if b == "directory" && !has_plugin && !has_plugins {
+        return Err(format!(
+            "slot_registry[{key}]：backend 为 directory 时须指定 plugin 或 plugins"
+        ));
+    }
+
+    if t == "llm" && b == "ollama" {
+        if let Some(ref m) = slot.model {
+            if m.trim().is_empty() {
+                return Err(format!("slot_registry[{key}]：ollama 槽位的 model 若存在则不得为空"));
+            }
+        }
+    }
+
+    Ok(())
+}
+
+fn allowed_backends_for_type(slot_type: &str) -> &'static [&'static str] {
+    match slot_type {
+        "memory" => &["builtin", "builtin_v2", "remote", "directory", "local"],
+        "emotion" | "event" | "prompt" => {
+            &["builtin", "builtin_v2", "remote", "directory"]
+        }
+        "llm" => &["ollama", "remote", "directory"],
+        "agent" => &["builtin", "remote", "directory"],
+        "complex_emotion" => &["builtin", "remote", "directory"],
+        _ => &[],
+    }
+}
+
+fn meta_to_disk_manifest(meta: &BlueprintMeta) -> DiskRoleManifest {
+    let default_personality = meta
+        .personality
+        .as_ref()
+        .and_then(personality_to_vector)
+        .unwrap_or_default();
+
+    DiskRoleManifest {
+        id: meta.id.clone(),
+        name: meta.name.clone(),
+        version: meta.version.clone(),
+        author: meta.author.clone(),
+        description: meta.description.clone(),
+        ollama_model: meta.ollama_model.clone(),
+        default_personality,
+        evolution: meta.evolution.clone(),
+        scenes: meta.scenes.clone(),
+        user_relations: meta.relations.clone(),
+        default_relation: meta.default_relation.clone(),
+        memory_config: meta.memory_config.clone(),
+        identity_binding: meta.identity_binding,
+        life_trajectory: None,
+        life_schedule: None,
+        dev_only: meta.dev_only,
+        knowledge: meta.knowledge.clone(),
+        min_runtime_version: meta.min_runtime_version.clone(),
+    }
+}
+
+fn personality_to_vector(value: &Value) -> Option<Vec<f32>> {
+    match value {
+        Value::Array(arr) => {
+            let mut out = Vec::new();
+            for v in arr {
+                out.push(v.as_f64()? as f32);
+            }
+            Some(out)
+        }
+        Value::Object(map) => {
+            let mut out = Vec::with_capacity(7);
+            for key in PERSONALITY_OBJECT_KEYS {
+                out.push(map.get(*key)?.as_f64()? as f32);
+            }
+            Some(out)
+        }
+        _ => None,
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    fn minimal_v2_json() -> String {
+        r#"{
+          "schema_version": 2,
+          "meta": {
+            "id": "demo.pack",
+            "name": "Demo",
+            "version": "0.1.0",
+            "author": "t",
+            "description": "d",
+            "personality": [0.5, 0.5, 0.5, 0.5, 0.5, 0.5, 0.5],
+            "relations": {
+              "friend": { "initial_favorability": 50.0, "favor_multiplier": 1.0 }
+            },
+            "default_relation": "friend",
+            "scenes": ["default"]
+          },
+          "slot_registry": {
+            "memory": { "type": "memory", "label": "Memory", "backend": "builtin", "position": 0 },
+            "emotion": { "type": "emotion", "label": "Emotion", "backend": "builtin", "position": 0 },
+            "event": { "type": "event", "label": "Event", "backend": "builtin", "position": 0 },
+            "prompt": { "type": "prompt", "label": "Prompt", "backend": "builtin", "position": 0 },
+            "llm": { "type": "llm", "label": "LLM", "backend": "ollama", "position": 0 },
+            "agent": { "type": "agent", "label": "Agent", "backend": "builtin", "position": 0 },
+            "complex_emotion": { "type": "complex_emotion", "label": "Complex", "backend": "builtin", "position": 1 }
+          }
+        }"#
+        .to_string()
+    }
+
+    #[test]
+    fn valid_minimal_v2_passes() {
+        validate_blueprint_v2_json(&minimal_v2_json()).unwrap();
+    }
+
+    #[test]
+    fn rejects_module_relations() {
+        let mut v: Value = serde_json::from_str(&minimal_v2_json()).unwrap();
+        v.as_object_mut().unwrap().insert(
+            "module_relations".into(),
+            serde_json::json!({}),
+        );
+        let errs = validate_blueprint_v2_json(&v.to_string()).unwrap_err();
+        assert!(errs.iter().any(|e| e.contains("module_relations")));
+    }
+
+    #[test]
+    fn rejects_schema_version_not_2() {
+        let raw = minimal_v2_json().replace("\"schema_version\": 2", "\"schema_version\": 1");
+        let errs = validate_blueprint_v2_json(&raw).unwrap_err();
+        assert!(errs.iter().any(|e| e.contains("schema_version")));
+    }
+
+    #[test]
+    fn rejects_no_llm() {
+        let raw = r#"{
+          "schema_version": 2,
+          "meta": {
+            "id": "x", "name": "X", "version": "0.1.0", "author": "a", "description": "d",
+            "relations": { "f": { "initial_favorability": 50.0, "favor_multiplier": 1.0 } },
+            "default_relation": "f"
+          },
+          "slot_registry": {
+            "memory": { "type": "memory", "label": "M", "backend": "builtin", "position": 0 }
+          }
+        }"#;
+        let errs = validate_blueprint_v2_json(raw).unwrap_err();
+        assert!(errs.iter().any(|e| e.contains("llm")));
+    }
+
+    #[test]
+    fn rejects_duplicate_position_same_type() {
+        let raw = r#"{
+          "schema_version": 2,
+          "meta": {
+            "id": "x", "name": "X", "version": "0.1.0", "author": "a", "description": "d",
+            "relations": { "f": { "initial_favorability": 50.0, "favor_multiplier": 1.0 } },
+            "default_relation": "f"
+          },
+          "slot_registry": {
+            "llm_a": { "type": "llm", "label": "A", "backend": "ollama", "position": 0 },
+            "llm_b": { "type": "llm", "label": "B", "backend": "ollama", "position": 0 }
+          }
+        }"#;
+        let errs = validate_blueprint_v2_json(raw).unwrap_err();
+        assert!(errs.iter().any(|e| e.contains("position")));
+    }
+
+    #[test]
+    fn rejects_directory_without_plugin() {
+        let raw = r#"{
+          "schema_version": 2,
+          "meta": {
+            "id": "x", "name": "X", "version": "0.1.0", "author": "a", "description": "d",
+            "relations": { "f": { "initial_favorability": 50.0, "favor_multiplier": 1.0 } },
+            "default_relation": "f"
+          },
+          "slot_registry": {
+            "llm": { "type": "llm", "label": "L", "backend": "directory", "position": 0 }
+          }
+        }"#;
+        let errs = validate_blueprint_v2_json(raw).unwrap_err();
+        assert!(errs.iter().any(|e| e.contains("directory")));
+    }
+}

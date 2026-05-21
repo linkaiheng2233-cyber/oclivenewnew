@@ -1,0 +1,112 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://oclive.dev/schemas/pipeline.ocblueprint.v2.schema.json",
+  "title": "pipeline.ocblueprint v2",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["schema_version", "meta", "slot_registry"],
+  "properties": {
+    "schema_version": {
+      "type": "integer",
+      "const": 2,
+      "description": "Only integer 2 is accepted (B2)."
+    },
+    "meta": {
+      "type": "object",
+      "required": [
+        "id",
+        "name",
+        "version",
+        "author",
+        "description",
+        "relations",
+        "default_relation"
+      ],
+      "properties": {
+        "id": { "type": "string", "minLength": 1 },
+        "name": { "type": "string", "minLength": 1 },
+        "version": { "type": "string" },
+        "author": { "type": "string" },
+        "description": { "type": "string" },
+        "personality": {
+          "oneOf": [
+            {
+              "type": "object",
+              "required": [
+                "stubbornness",
+                "clinginess",
+                "sensitivity",
+                "assertiveness",
+                "forgiveness",
+                "talkativeness",
+                "warmth"
+              ],
+              "additionalProperties": false
+            },
+            {
+              "type": "array",
+              "minItems": 7,
+              "maxItems": 7,
+              "items": { "type": "number", "minimum": 0, "maximum": 1 }
+            }
+          ]
+        },
+        "relations": {
+          "type": "object",
+          "minProperties": 1,
+          "additionalProperties": {
+            "type": "object",
+            "required": ["initial_favorability", "favor_multiplier"],
+            "properties": {
+              "initial_favorability": { "type": "number" },
+              "favor_multiplier": { "type": "number" }
+            }
+          }
+        },
+        "default_relation": { "type": "string" },
+        "scenes": {
+          "type": "array",
+          "items": { "type": "string" }
+        },
+        "interaction_mode": { "type": "string" },
+        "ollama_model": { "type": "string" },
+        "min_runtime_version": { "type": "string" }
+      },
+      "additionalProperties": true
+    },
+    "slot_registry": {
+      "type": "object",
+      "minProperties": 1,
+      "additionalProperties": {
+        "type": "object",
+        "required": ["type", "label", "backend", "position"],
+        "properties": {
+          "type": {
+            "type": "string",
+            "enum": [
+              "memory",
+              "emotion",
+              "event",
+              "prompt",
+              "llm",
+              "agent",
+              "complex_emotion"
+            ]
+          },
+          "label": { "type": "string", "minLength": 1 },
+          "backend": { "type": "string" },
+          "position": { "type": "integer", "minimum": 0 },
+          "plugin": { "type": "string" },
+          "plugins": {
+            "type": "array",
+            "items": { "type": "string" }
+          },
+          "model": { "type": "string" },
+          "url": { "type": "string" },
+          "local_memory_provider_id": { "type": "string" }
+        },
+        "additionalProperties": false
+      }
+    }
+  }
+}

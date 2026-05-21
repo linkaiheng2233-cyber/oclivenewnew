@@ -1,6 +1,17 @@
 {
-  "schema_version": 1,
-  "steps": [
-    { "id": "a", "type": "unknown_step", "next": "missing" }
-  ]
+  "schema_version": 2,
+  "meta": {
+    "id": "fixture.invalid",
+    "name": "Fixture",
+    "version": "0.1.0",
+    "author": "test",
+    "description": "invalid: no llm slot",
+    "relations": {
+      "friend": { "initial_favorability": 50.0, "favor_multiplier": 1.0 }
+    },
+    "default_relation": "friend"
+  },
+  "slot_registry": {
+    "memory": { "type": "memory", "label": "Memory", "backend": "builtin", "position": 0 }
+  }
 }

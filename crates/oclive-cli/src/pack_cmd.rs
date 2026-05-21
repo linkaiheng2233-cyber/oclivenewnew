@@ -21,7 +21,7 @@ pub struct PackArgs {
 
 #[derive(Subcommand, Debug)]
 pub enum PackCommands {
-    /// Validate role pack directory (manifest + settings; same checks as host before load)
+    /// Validate role pack directory (default: manifest+settings; --profile blueprint-v2: pipeline.ocblueprint only)
     Validate(PackValidateArgs),
     /// Generate a minimal valid role pack directory
     Create(PackCreateArgs),

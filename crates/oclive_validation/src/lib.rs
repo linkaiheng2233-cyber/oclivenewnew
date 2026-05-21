@@ -8,6 +8,7 @@
     allow(clippy::unwrap_used, clippy::expect_used)
 )]
 
+pub mod blueprint_v2;
 pub mod disk_role_settings;
 pub mod json_keys;
 pub mod manifest;
@@ -18,6 +19,10 @@ pub mod protocol_boundary;
 pub mod role_pack;
 pub mod validate;
 
+pub use blueprint_v2::{
+    validate_blueprint_v2_json, validate_role_pack_blueprint_v2_directory,
+    BLUEPRINT_V2_SCHEMA_VERSION, PIPELINE_BLUEPRINT_FILENAME,
+};
 pub use disk_role_settings::{
     AutonomousSceneConfig, AutonomousSceneRule, DiskRoleSettings, RemotePresenceConfig,
     CURRENT_SETTINGS_SCHEMA_VERSION,

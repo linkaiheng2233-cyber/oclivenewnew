@@ -7,6 +7,7 @@ use std::str::FromStr;
 
 use serde_json::Value;
 
+use crate::blueprint_v2::validate_role_pack_blueprint_v2_directory;
 use crate::disk_role_settings::DiskRoleSettings;
 use crate::json_keys::{validate_manifest_top_level_keys, validate_settings_top_level_keys};
 use crate::manifest::DiskRoleManifest;
@@ -23,6 +24,8 @@ pub enum RolePackValidationProfile {
     Default,
     /// 机器人 / 无头交付最小「灵魂包」：显式 `settings`、`min_runtime_version`、人格载体二选一等。
     RobotSoul,
+    /// `pipeline.ocblueprint` v2 SSOT（无 manifest/settings）。
+    BlueprintV2,
 }
 
 impl FromStr for RolePackValidationProfile {
@@ -32,8 +35,9 @@ impl FromStr for RolePackValidationProfile {
         match s.trim().to_ascii_lowercase().as_str() {
             "" | "default" => Ok(Self::Default),
             "robot-soul" | "robotsoul" | "robot_soul" => Ok(Self::RobotSoul),
+            "blueprint-v2" | "blueprint_v2" | "blueprintv2" => Ok(Self::BlueprintV2),
             other => Err(format!(
-                "未知 pack validate profile「{other}」（支持 default | robot-soul）"
+                "未知 pack validate profile「{other}」（支持 default | robot-soul | blueprint-v2）"
             )),
         }
     }
@@ -374,6 +378,10 @@ pub fn validate_role_pack_directory_with_profile(
     settings_schema_supported: u32,
     profile: RolePackValidationProfile,
 ) -> Result<(), Vec<String>> {
+    if matches!(profile, RolePackValidationProfile::BlueprintV2) {
+        return validate_role_pack_blueprint_v2_directory(role_dir, host_version);
+    }
+
     let mut errs: Vec<String> = Vec::new();
     let manifest_path = role_dir.join("manifest.json");
     if !manifest_path.is_file() {

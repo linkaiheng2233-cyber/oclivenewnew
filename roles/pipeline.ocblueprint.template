@@ -1,0 +1,73 @@
+{
+  "schema_version": 2,
+  "meta": {
+    "id": "your.role.id",
+    "name": "Your Character",
+    "version": "0.1.0",
+    "author": "author",
+    "description": "Role pack description",
+    "personality": {
+      "stubbornness": 0.5,
+      "clinginess": 0.5,
+      "sensitivity": 0.5,
+      "assertiveness": 0.5,
+      "forgiveness": 0.5,
+      "talkativeness": 0.5,
+      "warmth": 0.5
+    },
+    "relations": {
+      "friend": {
+        "initial_favorability": 50.0,
+        "favor_multiplier": 1.0
+      }
+    },
+    "default_relation": "friend",
+    "scenes": ["default"],
+    "interaction_mode": "immersive",
+    "ollama_model": "llama3.2"
+  },
+  "slot_registry": {
+    "memory": {
+      "type": "memory",
+      "label": "Memory",
+      "backend": "builtin",
+      "position": 0
+    },
+    "emotion": {
+      "type": "emotion",
+      "label": "Emotion",
+      "backend": "builtin",
+      "position": 0
+    },
+    "complex_emotion": {
+      "type": "complex_emotion",
+      "label": "Complex emotion",
+      "backend": "builtin",
+      "position": 1
+    },
+    "event": {
+      "type": "event",
+      "label": "Event",
+      "backend": "builtin",
+      "position": 0
+    },
+    "prompt": {
+      "type": "prompt",
+      "label": "Prompt",
+      "backend": "builtin",
+      "position": 0
+    },
+    "llm": {
+      "type": "llm",
+      "label": "LLM",
+      "backend": "ollama",
+      "position": 0
+    },
+    "agent": {
+      "type": "agent",
+      "label": "Agent",
+      "backend": "builtin",
+      "position": 0
+    }
+  }
+}

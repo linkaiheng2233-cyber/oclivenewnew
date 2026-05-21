@@ -1,9 +1,18 @@
 {
-  "schema_version": 1,
-  "entry": "s1",
-  "steps": [
-    { "id": "s1", "type": "load_context", "next": "s2" },
-    { "id": "s2", "type": "build_prompt", "next": "s3" },
-    { "id": "s3", "type": "call_llm" }
-  ]
+  "schema_version": 2,
+  "meta": {
+    "id": "fixture.valid",
+    "name": "Fixture",
+    "version": "0.1.0",
+    "author": "test",
+    "description": "valid v2 blueprint fixture",
+    "personality": [0.5, 0.5, 0.5, 0.5, 0.5, 0.5, 0.5],
+    "relations": {
+      "friend": { "initial_favorability": 50.0, "favor_multiplier": 1.0 }
+    },
+    "default_relation": "friend"
+  },
+  "slot_registry": {
+    "llm": { "type": "llm", "label": "LLM", "backend": "ollama", "position": 0 }
+  }
 }
