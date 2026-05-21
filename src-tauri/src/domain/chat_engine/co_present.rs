@@ -9,7 +9,7 @@ use crate::domain::personality_engine::PersonalityEngine;
 use crate::domain::policy::PolicyContext;
 use crate::domain::portrait_emotion_engine::resolve_portrait_emotion;
 use crate::domain::prompt_builder::{effective_reply_quality_anchor, PromptInput};
-use crate::domain::slot_runner::SlotRunner;
+use crate::domain::slot_runner::{CoPresentSlotRunner, SlotRunner};
 use crate::domain::user_identity::resolve_effective_user_relation_key;
 use crate::error::AppError;
 use crate::models::dto::{
@@ -74,6 +74,7 @@ pub(crate) async fn process_co_present(
     let user_message = req.user_message.as_str();
     let policies = state.policies_for_scene(Some(scene_id.as_str()));
     let pl = state.resolved_plugins_for_session(role, Some(srid));
+    let slot_runner = SlotRunner;
 
     let event_runtime = cp!(
         state.db_manager.get_event_impact_factor(srid).await,
@@ -92,7 +93,7 @@ pub(crate) async fn process_co_present(
     )?;
 
     let emotion_result = cp!(
-        SlotRunner::analyze_emotion(&pl, user_message),
+        slot_runner.analyze_emotion(&pl, user_message),
         "user_emotion_analyze"
     )?;
     crate::domain::debug_trace::emit_step(
@@ -123,7 +124,7 @@ pub(crate) async fn process_co_present(
         .unwrap_or((None, String::new()));
     let (uv, ud) = crate::domain::complex_emotion::affect_metrics_from_seven_dim(&emotion_result);
     let complex_emotion_out = cp!(
-        SlotRunner::resolve_complex_emotion(
+        slot_runner.resolve_complex_emotion(
             &pl,
             &crate::domain::complex_emotion::ComplexEmotionInput {
                 role_id: mrid.to_string(),
@@ -163,7 +164,7 @@ pub(crate) async fn process_co_present(
     };
 
     let estimate = cp!(
-        SlotRunner::estimate_event(
+        slot_runner.estimate_event(
             &pl,
             ollama_model.as_str(),
             user_message,
@@ -209,7 +210,7 @@ pub(crate) async fn process_co_present(
         .unwrap_or(1.0);
     weight_memories_for_scene(&mut memories, scene_id.as_str(), scene_m);
     let mut relevant = cp!(
-        SlotRunner::rank_memories(
+        slot_runner.rank_memories(
             &pl,
             MemoryRetrievalInput {
                 memories: &memories,
@@ -278,7 +279,7 @@ pub(crate) async fn process_co_present(
     let scene_detail_buf = state
         .storage
         .scene_prompt_enrichment(mrid, scene_id.as_str());
-    let top_topic = SlotRunner::top_topic_hint(&pl, role, scene_id.as_str());
+    let top_topic = slot_runner.top_topic_hint(&pl, role, scene_id.as_str());
     let topic_line = top_topic
         .map(|t| format!("在「{}」下，你们可能会多聊「{}」相关的事。", scene_label, t))
         .unwrap_or_default();
@@ -305,7 +306,7 @@ pub(crate) async fn process_co_present(
     };
 
     let prompt = cp!(
-        SlotRunner::build_prompt(
+        slot_runner.build_prompt(
             &pl,
             &PromptInput {
                 role,
@@ -342,7 +343,7 @@ pub(crate) async fn process_co_present(
     let pre_main_llm_ms = t_cp0.elapsed().as_millis() as u64;
     let t_main_llm = Instant::now();
     let mut main_llm_fallback = false;
-    let reply_raw = match SlotRunner::generate_llm(&pl, ollama_model.as_str(), &prompt).await {
+    let reply_raw = match slot_runner.generate_llm(&pl, ollama_model.as_str(), &prompt).await {
         Ok(s) => s,
         Err(e) => {
             tracing::warn!("main LLM generate failed, talkativeness fallback: {}", e);
@@ -378,7 +379,7 @@ pub(crate) async fn process_co_present(
         relation_after.as_str(),
     ));
     let bot_emotion_result = cp!(
-        SlotRunner::analyze_emotion(&pl, &reply),
+        slot_runner.analyze_emotion(&pl, &reply),
         "bot_reply_emotion_analyze"
     )?;
     crate::domain::debug_trace::emit_step(
@@ -437,7 +438,7 @@ pub(crate) async fn process_co_present(
     let core_v = PersonalityVector::from(&role.default_personality);
     let portrait_emotion_str = cp!(
         resolve_portrait_emotion(
-            &SlotRunner::primary_llm(&pl),
+            &slot_runner.primary_llm(&pl),
             ollama_model.as_str(),
             role,
             &core_v,
@@ -489,7 +490,7 @@ pub(crate) async fn process_co_present(
         )?;
         let impact_scaled = (ai_impact_factor_final * event_runtime).clamp(-1.0, 1.0);
         let next = match crate::domain::mutable_profile_llm::evolve_mutable_personality_with_llm(
-            &SlotRunner::primary_llm(&pl),
+            &slot_runner.primary_llm(&pl),
             ollama_model.as_str(),
             crate::domain::mutable_profile_llm::MutableEvolutionInput {
                 role_name: role.name.as_str(),
@@ -564,7 +565,7 @@ pub(crate) async fn process_co_present(
 
     let movement = detect_movement_intent(
         state,
-        &SlotRunner::primary_llm(&pl),
+        &slot_runner.primary_llm(&pl),
         mrid,
         srid,
         scene_id.as_str(),

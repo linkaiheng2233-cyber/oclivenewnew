@@ -19,7 +19,7 @@ use crate::domain::prompt_builder::PromptInput;
 use crate::domain::slot_resolver::ResolvedRoleSlots;
 use crate::domain::user_emotion_analyzer::UserEmotionAnalyzer;
 use crate::error::{AppError, Result};
-use crate::infrastructure::llm::LlmClient;
+use crate::domain::ports::LlmClient;
 use crate::models::knowledge::KnowledgeEventAugment;
 use crate::models::{Emotion, Event, Memory, PersonalitySource, PersonalityVector, Role};
 use std::collections::HashSet;
@@ -432,6 +432,109 @@ fn registry_instances<'a, T: ?Sized>(
         None
     } else {
         Some(v)
+    }
+}
+
+/// 共景编排对槽位合并器的端口；[`crate::domain::chat_engine::co_present`] 仅通过本 trait 调用。
+#[async_trait::async_trait]
+pub trait CoPresentSlotRunner: Send + Sync {
+    fn analyze_emotion(&self, pl: &ResolvedRolePlugins, text: &str) -> Result<EmotionResult>;
+    fn resolve_complex_emotion(
+        &self,
+        pl: &ResolvedRolePlugins,
+        input: &ComplexEmotionInput,
+    ) -> Result<ComplexEmotionOutput>;
+    async fn estimate_event(
+        &self,
+        pl: &ResolvedRolePlugins,
+        ollama_model: &str,
+        user_message: &str,
+        user_emotion: &Emotion,
+        personality: &PersonalityVector,
+        personality_source: PersonalitySource,
+        recent_turns: &[(String, String)],
+        recent_events: &[Event],
+        knowledge_augment: Option<&KnowledgeEventAugment>,
+    ) -> Result<EventImpactEstimate>;
+    fn rank_memories(
+        &self,
+        pl: &ResolvedRolePlugins,
+        input: MemoryRetrievalInput<'_>,
+    ) -> Result<Vec<Memory>>;
+    fn top_topic_hint(&self, pl: &ResolvedRolePlugins, role: &Role, scene_id: &str) -> Option<String>;
+    fn build_prompt(&self, pl: &ResolvedRolePlugins, input: &PromptInput<'_>) -> Result<String>;
+    async fn generate_llm(&self, pl: &ResolvedRolePlugins, model: &str, prompt: &str)
+        -> Result<String>;
+    fn primary_llm(&self, pl: &ResolvedRolePlugins) -> Arc<dyn LlmClient>;
+}
+
+#[async_trait::async_trait]
+impl CoPresentSlotRunner for SlotRunner {
+    fn analyze_emotion(&self, pl: &ResolvedRolePlugins, text: &str) -> Result<EmotionResult> {
+        SlotRunner::analyze_emotion(pl, text)
+    }
+
+    fn resolve_complex_emotion(
+        &self,
+        pl: &ResolvedRolePlugins,
+        input: &ComplexEmotionInput,
+    ) -> Result<ComplexEmotionOutput> {
+        SlotRunner::resolve_complex_emotion(pl, input)
+    }
+
+    async fn estimate_event(
+        &self,
+        pl: &ResolvedRolePlugins,
+        ollama_model: &str,
+        user_message: &str,
+        user_emotion: &Emotion,
+        personality: &PersonalityVector,
+        personality_source: PersonalitySource,
+        recent_turns: &[(String, String)],
+        recent_events: &[Event],
+        knowledge_augment: Option<&KnowledgeEventAugment>,
+    ) -> Result<EventImpactEstimate> {
+        SlotRunner::estimate_event(
+            pl,
+            ollama_model,
+            user_message,
+            user_emotion,
+            personality,
+            personality_source,
+            recent_turns,
+            recent_events,
+            knowledge_augment,
+        )
+        .await
+    }
+
+    fn rank_memories(
+        &self,
+        pl: &ResolvedRolePlugins,
+        input: MemoryRetrievalInput<'_>,
+    ) -> Result<Vec<Memory>> {
+        SlotRunner::rank_memories(pl, input)
+    }
+
+    fn top_topic_hint(&self, pl: &ResolvedRolePlugins, role: &Role, scene_id: &str) -> Option<String> {
+        SlotRunner::top_topic_hint(pl, role, scene_id)
+    }
+
+    fn build_prompt(&self, pl: &ResolvedRolePlugins, input: &PromptInput<'_>) -> Result<String> {
+        SlotRunner::build_prompt(pl, input)
+    }
+
+    async fn generate_llm(
+        &self,
+        pl: &ResolvedRolePlugins,
+        model: &str,
+        prompt: &str,
+    ) -> Result<String> {
+        SlotRunner::generate_llm(pl, model, prompt).await
+    }
+
+    fn primary_llm(&self, pl: &ResolvedRolePlugins) -> Arc<dyn LlmClient> {
+        SlotRunner::primary_llm(pl)
     }
 }
 
