@@ -190,7 +190,13 @@ onMounted(syncGraphFromModel);
         :default-viewport="{ zoom: 0.85 }"
         @nodes-change="onNodesChange"
       >
-        <Background :gap="18" pattern-color="var(--arch-grid-color)" />
+        <Background
+          variant="dots"
+          :gap="GRAPH_SURFACE.gridGap"
+          :size="GRAPH_SURFACE.gridDotSize"
+          :pattern-color="GRAPH_SURFACE.gridDot"
+          :bg-color="GRAPH_SURFACE.canvas"
+        />
         <MiniMap pannable zoomable />
         <Controls />
         <ArchGraphFitView />
@@ -251,35 +257,40 @@ onMounted(syncGraphFromModel);
   padding: 4px 12px;
   font-size: 11px;
   border-radius: 6px;
-  border: 1px solid #e8e4dc;
-  background: #f7f5f0;
+  border: 1px solid var(--border-light);
+  background: var(--bg-elevated);
   color: var(--text-primary);
   cursor: pointer;
 }
 .agf-tb-btn:hover {
-  border-color: #d8d4cc;
-  background: #fffef9;
+  border-color: color-mix(in srgb, var(--accent) 30%, var(--border-light));
 }
 .agf-tb-hint {
   font-size: 10px;
   color: var(--text-secondary);
 }
 .agf-vf {
-  --arch-grid-color: v-bind("GRAPH_SURFACE.grid");
   --arch-node-bg: v-bind("GRAPH_SURFACE.nodeBg");
+  --arch-node-elevated: v-bind("GRAPH_SURFACE.nodeElevated");
   --arch-node-border: v-bind("GRAPH_SURFACE.nodeBorder");
   --arch-node-shadow: v-bind("GRAPH_SURFACE.nodeShadow");
   --arch-selection: v-bind("GRAPH_SURFACE.selectionRing");
+  --arch-text: v-bind("GRAPH_SURFACE.text");
+  --arch-text-muted: v-bind("GRAPH_SURFACE.textMuted");
   height: min(560px, 58vh);
   min-height: 400px;
   border-radius: var(--radius-card);
-  border: 1px solid #e8e4dc;
+  border: 1px solid #3c3c3c;
   background: v-bind("GRAPH_SURFACE.canvas");
   overflow: hidden;
 }
 .agf-vf :deep(.vue-flow) {
   width: 100%;
   height: 100%;
+  background: v-bind("GRAPH_SURFACE.canvas");
+}
+.agf-vf :deep(.vue-flow__background) {
+  background: v-bind("GRAPH_SURFACE.canvas");
 }
 .agf-vf :deep(.vue-flow__node) {
   border: none;
@@ -293,39 +304,42 @@ onMounted(syncGraphFromModel);
 .agf-vf :deep(.vue-flow__handle) {
   width: 10px;
   height: 10px;
-  border: 2px solid #fffef9;
-  background: #f7f5f0;
+  border: 2px solid #2d2d30;
+  background: #3c3c3c;
 }
 .agf-vf :deep(.vue-flow__handle.agn-handle--in) {
   border-color: v-bind(handleInColor);
-  background: color-mix(in srgb, v-bind(handleInColor) 18%, #f7f5f0);
+  background: color-mix(in srgb, v-bind(handleInColor) 22%, #3c3c3c);
 }
 .agf-vf :deep(.vue-flow__handle.agn-handle--out) {
   border-color: v-bind(handleOutColor);
-  background: color-mix(in srgb, v-bind(handleOutColor) 18%, #f7f5f0);
+  background: color-mix(in srgb, v-bind(handleOutColor) 22%, #3c3c3c);
 }
 .agf-vf :deep(.vue-flow__edge-path) {
   stroke-width: 1.75;
 }
 .agf-vf :deep(.vue-flow__minimap) {
   border-radius: 8px;
-  border: 1px solid #e8e4dc;
-  background: color-mix(in srgb, #fffef9 92%, transparent);
+  border: 1px solid #4e4e52;
+  background: #2d2d30;
+}
+.agf-vf :deep(.vue-flow__minimap-mask) {
+  fill: color-mix(in srgb, #252526 55%, transparent);
 }
 .agf-vf :deep(.vue-flow__controls) {
   box-shadow: none;
-  border: 1px solid #e8e4dc;
+  border: 1px solid #4e4e52;
   border-radius: 8px;
   overflow: hidden;
-  background: #fffef9;
+  background: #2d2d30;
 }
 .agf-vf :deep(.vue-flow__controls-button) {
-  background: #f7f5f0;
-  border-bottom: 1px solid #e8e4dc;
-  fill: #8a857c;
+  background: #3c3c3c;
+  border-bottom: 1px solid #4e4e52;
+  fill: #c5c5c5;
 }
 .agf-vf :deep(.vue-flow__controls-button:hover) {
-  background: #fffaf0;
+  background: #454548;
 }
 .agf-legend {
   display: flex;

@@ -1,21 +1,22 @@
-/** Architecture graph palette — ivory (象牙白) base, low-saturation accents. */
+/** Architecture graph palette — ComfyUI-style dark canvas + dot grid. */
 
 export type BackendKind = "builtin" | "remote" | "directory";
 
-/** Warm ivory family for canvas / nodes (works as fixed graph chrome). */
-export const IVORY = {
-  base: "#FFFAF0",
-  paper: "#FAF8F4",
-  card: "#FFFEF9",
-  elevated: "#F7F5F0",
-  border: "#E8E4DC",
-  borderMuted: "#DDD8CF",
-  grid: "#D8D4CC",
-  taupe: "#B8B4AC",
-  taupeCool: "#B0B4B0",
-  taupeRose: "#B8B0AC",
-  inkMuted: "#8A857C",
-  shadow: "0 2px 10px color-mix(in srgb, #6d6860 9%, transparent)",
+/** Dark graph chrome (fixed; independent of app light/dark theme). */
+export const GRAPH_COMFY = {
+  canvas: "#252526",
+  gridDot: "#454545",
+  gridGap: 20,
+  gridDotSize: 1.25,
+  nodeBg: "#2d2d30",
+  nodeElevated: "#3c3c3c",
+  nodeBorder: "#4e4e52",
+  text: "#d4d4d4",
+  textMuted: "#9d9d9d",
+  nodeShadow: "0 4px 14px color-mix(in srgb, #000 42%, transparent)",
+  selectionRing: "#6b8cae",
+  kernelAccent: "#5a6a5a",
+  busAccent: "#4a4a4e",
 } as const;
 
 export type BackendColorSet = {
@@ -26,41 +27,32 @@ export type BackendColorSet = {
   muted: string;
 };
 
-/** Backend distinction via warm/cool taupe on ivory — no saturated primaries. */
+/** Low-saturation accents readable on dark nodes (ComfyUI-like). */
 export const BACKEND_COLORS: Record<BackendKind, BackendColorSet> = {
   builtin: {
-    bar: IVORY.taupe,
-    stroke: "#A8A39A",
-    tagBg: `color-mix(in srgb, ${IVORY.base} 72%, ${IVORY.elevated})`,
-    handle: "#A8A39A",
-    muted: `color-mix(in srgb, ${IVORY.taupe} 28%, ${IVORY.border})`,
+    bar: "#6d9a7d",
+    stroke: "#7aad8f",
+    tagBg: "color-mix(in srgb, #6d9a7d 18%, #2d2d30)",
+    handle: "#7aad8f",
+    muted: "color-mix(in srgb, #6d9a7d 30%, #4e4e52)",
   },
   remote: {
-    bar: IVORY.taupeCool,
-    stroke: "#9EA39E",
-    tagBg: `color-mix(in srgb, ${IVORY.base} 68%, ${IVORY.borderMuted})`,
-    handle: "#9EA39E",
-    muted: `color-mix(in srgb, ${IVORY.taupeCool} 26%, ${IVORY.border})`,
+    bar: "#7a92b0",
+    stroke: "#8b9db8",
+    tagBg: "color-mix(in srgb, #7a92b0 18%, #2d2d30)",
+    handle: "#8b9db8",
+    muted: "color-mix(in srgb, #7a92b0 28%, #4e4e52)",
   },
   directory: {
-    bar: IVORY.taupeRose,
-    stroke: "#A69E98",
-    tagBg: `color-mix(in srgb, ${IVORY.card} 70%, ${IVORY.border})`,
-    handle: "#A69E98",
-    muted: `color-mix(in srgb, ${IVORY.taupeRose} 26%, ${IVORY.border})`,
+    bar: "#9a88a6",
+    stroke: "#a899b0",
+    tagBg: "color-mix(in srgb, #9a88a6 18%, #2d2d30)",
+    handle: "#a899b0",
+    muted: "color-mix(in srgb, #9a88a6 28%, #4e4e52)",
   },
 };
 
-export const GRAPH_SURFACE = {
-  canvas: IVORY.paper,
-  grid: `color-mix(in srgb, ${IVORY.grid} 42%, transparent)`,
-  nodeBg: IVORY.card,
-  nodeBorder: IVORY.border,
-  nodeShadow: IVORY.shadow,
-  selectionRing: `color-mix(in srgb, ${IVORY.inkMuted} 35%, ${IVORY.base})`,
-  kernelAccent: IVORY.borderMuted,
-  busAccent: IVORY.border,
-} as const;
+export const GRAPH_SURFACE = GRAPH_COMFY;
 
 export function normalizeBackendKind(raw: string): BackendKind {
   const v = raw.trim().toLowerCase();
@@ -83,8 +75,8 @@ export function backendCssVars(kind: BackendKind): Record<string, string> {
     "--arch-tag-bg": c.tagBg,
     "--arch-handle": c.handle,
     "--arch-muted": c.muted,
-    "--arch-node-bg": IVORY.card,
-    "--arch-node-border": IVORY.border,
+    "--arch-node-bg": GRAPH_COMFY.nodeBg,
+    "--arch-node-border": GRAPH_COMFY.nodeBorder,
   };
 }
 

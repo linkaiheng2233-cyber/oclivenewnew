@@ -52,9 +52,10 @@ const size = ARCH_NODE_DEFAULT_SIZE.archKernel!;
   clip-path: polygon(50% 0%, 93% 25%, 93% 75%, 50% 100%, 7% 75%, 7% 25%);
   background: linear-gradient(
     155deg,
-    #fffef9,
-    color-mix(in srgb, var(--arch-accent) 12%, #faf8f4)
+    #353538,
+    color-mix(in srgb, var(--arch-accent) 18%, #2d2d30)
   );
+  color: var(--arch-text, #d4d4d4);
   border: none;
   box-shadow: none;
   position: relative;
