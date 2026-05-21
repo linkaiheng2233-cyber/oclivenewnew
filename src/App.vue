@@ -10,6 +10,7 @@ import PluginSidebarSlots from "./components/PluginSidebarSlots.vue";
 import RoleplayAsidePanel from "./components/RoleplayAsidePanel.vue";
 import HotkeyHost from "./components/HotkeyHost.vue";
 import PluginManagerPanel from "./views/PluginManagerPanel.vue";
+import MarketView from "./views/MarketView.vue";
 import PluginManagerV2Panel from "./views/PluginManagerV2Panel.vue";
 import PluginSlotEmbed from "./components/PluginSlotEmbed.vue";
 import SettingsView from "./views/SettingsView.vue";
@@ -228,6 +229,7 @@ const {
   pluginManagerV2Open,
   openPluginManagerPanel,
   openPluginManagerV2Preview,
+  openPluginMarket,
   pluginManagerMoreBtnLabel,
   settingsEntryMoreHelp,
 } = usePluginManagerWindow({
@@ -942,6 +944,13 @@ onBeforeUnmount(() => {
               >
                 {{ pluginManagerMoreBtnLabel }}
               </button>
+              <button
+                type="button"
+                class="more-debug-btn more-debug-btn--fill settings-entry-btn"
+                @click="openPluginMarket"
+              >
+                {{ t("app.more.pluginMarket") }}
+              </button>
             </div>
           </div>
 
@@ -1129,12 +1138,13 @@ onBeforeUnmount(() => {
     <ShortcutHelp v-model="shortcutHelpOpen" :bootstrap-epoch="pluginStore.bootstrapEpoch" />
 
     <PluginManagerPanel />
+    <MarketView />
     <PluginManagerV2Panel
       :visible="pluginManagerV2Open"
       @close="pluginManagerV2Open = false"
       @open-v1="
         pluginManagerV2Open = false;
-        void pluginStore.openPanel('plugins');
+        void pluginStore.openPanel('graph');
       "
     />
 

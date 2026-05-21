@@ -78,15 +78,18 @@ function onPluginDisabledRow(id: string, disabled: boolean): void {
       <div class="ipwd-settings-h">{{ t("pluginManager.installed.privateSettings") }}</div>
       <PluginPrivateSettingsForm :plugin-id="entry.id" />
     </div>
-    <div class="ipwd-debug">
-      <div class="ipwd-debug-h">{{ t("pluginManager.installed.debugWorkbench") }}</div>
-      <PluginDebugPanel
-        :key="entry.id"
-        :plugin-id="entry.id"
-        :expanded="true"
-        :spawn-supported="entry.hasRpcProcess"
-      />
-    </div>
+    <details class="ipwd-advanced">
+      <summary class="ipwd-advanced-sum">{{ t("pluginManager.installed.advanced") }}</summary>
+      <div class="ipwd-debug">
+        <div class="ipwd-debug-h">{{ t("pluginManager.installed.debugWorkbench") }}</div>
+        <PluginDebugPanel
+          :key="entry.id"
+          :plugin-id="entry.id"
+          :expanded="true"
+          :spawn-supported="entry.hasRpcProcess"
+        />
+      </div>
+    </details>
   </div>
 </template>
 
@@ -116,5 +119,15 @@ function onPluginDisabledRow(id: string, disabled: boolean): void {
   font-weight: 600;
   color: var(--text-secondary);
   margin-bottom: 6px;
+}
+.ipwd-advanced {
+  border-top: 1px dashed var(--border-light);
+  padding-top: 8px;
+}
+.ipwd-advanced-sum {
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--text-secondary);
+  cursor: pointer;
 }
 </style>

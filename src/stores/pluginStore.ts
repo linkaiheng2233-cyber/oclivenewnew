@@ -218,12 +218,15 @@ function clonePluginState(s: RolePluginState): RolePluginState {
   };
 }
 
-export type PluginPanelMainTab = "plugins" | "backends" | "slots";
+export type PluginPanelMainTab = "graph" | "layout";
 
 export const usePluginStore = defineStore("plugin", {
   state: () => ({
     panelVisible: false,
-    panelMainTab: "plugins" as PluginPanelMainTab,
+    marketPanelVisible: false,
+    panelMainTab: "graph" as PluginPanelMainTab,
+    /** 架构图等入口请求聚焦的已安装插件 id */
+    focusPluginId: null as string | null,
     loading: false,
     error: null as string | null,
     catalog: [] as DirectoryPluginCatalogEntry[],
@@ -274,7 +277,26 @@ export const usePluginStore = defineStore("plugin", {
         this.panelMainTab = tab;
       }
       this.panelVisible = true;
+      this.marketPanelVisible = false;
       await this.refresh();
+    },
+    async openMarketPanel() {
+      this.marketPanelVisible = true;
+      this.panelVisible = false;
+      await this.loadCachedPluginMarket();
+    },
+    closeMarketPanel() {
+      this.marketPanelVisible = false;
+    },
+    requestFocusInstalledPlugin(pluginId: string) {
+      const id = pluginId.trim();
+      if (!id) return;
+      this.focusPluginId = id;
+      this.marketPanelVisible = false;
+      this.panelVisible = true;
+    },
+    clearFocusInstalledPlugin() {
+      this.focusPluginId = null;
     },
     async loadCachedPluginMarket() {
       this.pluginMarketError = null;
@@ -356,6 +378,30 @@ export const usePluginStore = defineStore("plugin", {
     },
     closePanel() {
       this.panelVisible = false;
+      this.clearFocusInstalledPlugin();
+    },
+    /** 下拉布局：设置某 UI 插槽的插件顺序（不含已禁用贡献的过滤，由 UI 传入有效 id 列表）。 */
+    setSlotPluginIds(slot: string, orderedIds: string[]) {
+      const candidates = this.catalogCandidatesBySlot[slot] ?? [];
+      const candidateSet = new Set(candidates);
+      const seen = new Set<string>();
+      const out: string[] = [];
+      for (const id of orderedIds) {
+        if (candidateSet.has(id) && !seen.has(id)) {
+          out.push(id);
+          seen.add(id);
+        }
+      }
+      for (const id of candidates) {
+        if (!seen.has(id)) {
+          out.push(id);
+        }
+      }
+      this.pluginState.slot_order = {
+        ...this.pluginState.slot_order,
+        [slot]: out,
+      };
+      slotOrderMemo.delete(slot);
     },
     setPersistScope(scope: PluginPersistScope) {
       if (this.persistScope === scope) {

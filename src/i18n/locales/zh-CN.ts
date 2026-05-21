@@ -71,6 +71,7 @@ export default {
       characterAt: "角色在：{label}",
       pluginBtnV1: "插件与后端（V1）",
       pluginBtnV2: "插件管理（V2）",
+      pluginMarket: "插件市场",
       settingsTileHelpV2:
         "将快捷键说明、设置页、插件管理集中到同一处。快捷键：Ctrl+Shift+S 打开设置；" +
         "Ctrl+Shift+F 与下方按钮打开插件管理（V2 预览）；在设置中关闭「V2 预览」可恢复专业模式（V1）。 Ctrl+Shift+D 开关调试面板。",
@@ -267,6 +268,7 @@ export default {
     /** V1 已安装区 · 单插件工作区 */
     installed: {
       privateSettings: "插件私有设置",
+      advanced: "高级",
       debugWorkbench: "调试台",
     },
     legendAria: "状态说明",

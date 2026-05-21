@@ -75,6 +75,7 @@ export default {
       characterAt: "Character at: {label}",
       pluginBtnV1: "Plugins & backends (V1)",
       pluginBtnV2: "Plugin manager (V2)",
+      pluginMarket: "Plugin market",
       settingsTileHelpV2:
         "Shortcuts, settings, and plugin manager in one place. Ctrl+Shift+S opens settings; " +
         "Ctrl+Shift+F and the button below open V2 preview; turn off “V2 preview” in settings to restore V1. Ctrl+Shift+D toggles the debug panel.",
@@ -270,6 +271,7 @@ export default {
     },
     installed: {
       privateSettings: "Plugin private settings",
+      advanced: "Advanced",
       debugWorkbench: "Debug console",
     },
     legendAria: "Status legend",

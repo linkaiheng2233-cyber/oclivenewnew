@@ -55,6 +55,13 @@ export function usePluginManagerWindow(opts: UsePluginManagerWindowOptions) {
     opts.closeSettingsView?.();
   }
 
+  function openPluginMarket(): void {
+    pluginManagerV2Open.value = false;
+    pluginStore.closePanel();
+    void pluginStore.openMarketPanel();
+    opts.closeMoreMenu();
+  }
+
   watch(
     () => uiStore.experimentalPluginManagerV2,
     (v) => {
@@ -68,6 +75,7 @@ export function usePluginManagerWindow(opts: UsePluginManagerWindowOptions) {
     pluginManagerV2Open,
     openPluginManagerPanel,
     openPluginManagerV2Preview,
+    openPluginMarket,
     pluginManagerMoreBtnLabel,
     settingsEntryMoreHelp,
   };
