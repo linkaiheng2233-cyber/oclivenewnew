@@ -9,7 +9,10 @@ use oclivenewnew_tauri::api::directory_plugin::{
 };
 use oclivenewnew_tauri::api::hotkeys::get_hotkey_bindings_impl;
 use oclivenewnew_tauri::api::memory::query_memories_impl;
-use oclivenewnew_tauri::api::role::{get_role_info_impl, list_roles_impl, load_role_impl};
+use oclivenewnew_tauri::api::role::{
+    get_role_info_impl, list_roles_impl, load_role_impl, set_session_slot_override_impl,
+};
+use oclivenewnew_tauri::models::dto::SetSessionSlotOverrideRequest;
 use oclivenewnew_tauri::api::time::get_time_state_impl;
 use oclivenewnew_tauri::domain::chat_engine::process_message;
 use oclivenewnew_tauri::infrastructure::MockLlmClient;
@@ -45,6 +48,33 @@ async fn invoke_hotpath_smoke_list_load_info_time_chat_memories_catalog_plugin_h
         .await
         .expect("get_role_info");
     assert_eq!(info.role_id, "mumu");
+    assert!(
+        info.slot_registry_pack.as_ref().is_some_and(|m| m.contains_key("llm")),
+        "mumu v2 blueprint should expose slot_registry_pack"
+    );
+
+    let info2 = set_session_slot_override_impl(
+        &state,
+        &SetSessionSlotOverrideRequest {
+            role_id: "mumu".to_string(),
+            slot_key: "llm".to_string(),
+            backend: Some("remote".to_string()),
+            plugin: None,
+            plugins: None,
+            model: None,
+            local_memory_provider_id: None,
+            session_id: None,
+        },
+    )
+    .await
+    .expect("set_session_slot_override");
+    assert!(
+        info2
+            .slot_session_overridden_keys
+            .iter()
+            .any(|k| k == "llm"),
+        "session override should mark llm"
+    );
 
     let ts = get_time_state_impl(&state, "mumu").await.expect("get_time_state");
     assert!(ts.virtual_time_ms > 0 || !ts.iso_datetime.is_empty());

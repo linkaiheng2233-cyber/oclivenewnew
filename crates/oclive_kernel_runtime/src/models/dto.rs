@@ -323,6 +323,13 @@ pub struct ClearAllSessionSlotOverridesRequest {
     pub session_id: Option<String>,
 }
 
+/// 将完整 `slot_registry` 写回角色包 `pipeline.ocblueprint`（架构图 R2 写盘）。
+#[derive(Debug, Clone, Deserialize)]
+pub struct SaveRoleSlotRegistryRequest {
+    pub role_id: String,
+    pub slot_registry: BTreeMap<String, oclive_validation::SlotRegistryEntry>,
+}
+
 #[derive(Debug, Clone, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
 pub struct ImportProgress {

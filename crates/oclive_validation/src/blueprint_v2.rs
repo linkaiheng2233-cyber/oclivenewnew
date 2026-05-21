@@ -295,6 +295,53 @@ pub fn validate_role_pack_blueprint_v2_directory(
     )
 }
 
+/// 将 `slot_registry` 写回 `pipeline.ocblueprint`（保留 `meta` 等其余字段），写前全量校验。
+///
+/// # Errors
+///
+/// 缺少蓝图、JSON 非法或校验未通过时返回 `Err(Vec<String>)`。
+pub fn write_role_pack_blueprint_slot_registry(
+    role_dir: &Path,
+    slot_registry: &BTreeMap<String, SlotRegistryEntry>,
+    host_version: &str,
+) -> Result<(), Vec<String>> {
+    let blueprint_path = role_dir.join(PIPELINE_BLUEPRINT_FILENAME);
+    if !blueprint_path.is_file() {
+        return Err(vec![format!(
+            "缺少 {}：{}",
+            PIPELINE_BLUEPRINT_FILENAME,
+            blueprint_path.display()
+        )]);
+    }
+    let raw = fs::read_to_string(&blueprint_path)
+        .map_err(|e| vec![format!("读取 {} 失败: {}", PIPELINE_BLUEPRINT_FILENAME, e)])?;
+    let mut root: Value = serde_json::from_str(&raw)
+        .map_err(|e| vec![format!("{} JSON 解析失败: {}", PIPELINE_BLUEPRINT_FILENAME, e)])?;
+    let obj = root.as_object_mut().ok_or_else(|| {
+        vec![format!("{} 根节点须为对象", PIPELINE_BLUEPRINT_FILENAME)]
+    })?;
+    let reg_val = serde_json::to_value(slot_registry)
+        .map_err(|e| vec![format!("slot_registry 序列化失败: {e}")])?;
+    obj.insert("slot_registry".to_string(), reg_val);
+    let out = serde_json::to_string_pretty(&root)
+        .map_err(|e| vec![format!("{} 序列化失败: {e}", PIPELINE_BLUEPRINT_FILENAME)])?;
+    let folder_name = role_dir
+        .file_name()
+        .and_then(|s| s.to_str())
+        .unwrap_or("");
+    validate_blueprint_v2_json_with_context(
+        &out,
+        BlueprintV2ValidateContext {
+            folder_name: Some(folder_name),
+            role_dir: Some(role_dir),
+            host_version: Some(host_version),
+        },
+    )?;
+    fs::write(&blueprint_path, format!("{out}\n"))
+        .map_err(|e| vec![format!("写入 {} 失败: {e}", blueprint_path.display())])?;
+    Ok(())
+}
+
 /// 读取并校验角色包目录中的 v2 蓝图，返回宿主加载用结构。
 ///
 /// # Errors
@@ -992,5 +1039,31 @@ mod tests {
         }"#;
         let errs = validate_blueprint_v2_json(raw).unwrap_err();
         assert!(errs.iter().any(|e| e.contains("directory")));
+    }
+
+    #[test]
+    fn write_role_pack_blueprint_slot_registry_persists_and_validates() {
+        let dir = tempfile::tempdir().unwrap();
+        let role = dir.path().join("demo.pack");
+        fs::create_dir_all(role.join("scenes").join("default")).unwrap();
+        fs::write(role.join(PIPELINE_BLUEPRINT_FILENAME), minimal_v2_json()).unwrap();
+        let mut reg = BTreeMap::new();
+        reg.insert(
+            "llm".into(),
+            SlotRegistryEntry {
+                slot_type: "llm".into(),
+                label: "L".into(),
+                backend: "remote".into(),
+                position: 0,
+                plugin: None,
+                plugins: None,
+                model: None,
+                url: None,
+                local_memory_provider_id: None,
+            },
+        );
+        write_role_pack_blueprint_slot_registry(&role, &reg, "999.0.0").unwrap();
+        let loaded = load_blueprint_v2_for_role_dir(&role, "999.0.0").unwrap();
+        assert_eq!(loaded.slot_registry.get("llm").unwrap().backend, "remote");
     }
 }

@@ -29,8 +29,9 @@ pub use blueprint_v2::{
     plugin_backends_for_slot_entry, slot_registry_instances_sorted,
     slot_registry_to_plugin_backends,
     validate_blueprint_v2_json, validate_blueprint_v2_json_with_context,
-    validate_role_pack_blueprint_v2_directory, BlueprintV2LoadResult, BlueprintV2ValidateContext,
-    SlotOverridePatch, SlotRegistryEntry, BLUEPRINT_V2_SCHEMA_VERSION, PIPELINE_BLUEPRINT_FILENAME,
+    validate_role_pack_blueprint_v2_directory, write_role_pack_blueprint_slot_registry,
+    BlueprintV2LoadResult, BlueprintV2ValidateContext, SlotOverridePatch, SlotRegistryEntry,
+    BLUEPRINT_V2_SCHEMA_VERSION, PIPELINE_BLUEPRINT_FILENAME,
 };
 pub use disk_role_settings::{
     AutonomousSceneConfig, AutonomousSceneRule, DiskRoleSettings, RemotePresenceConfig,

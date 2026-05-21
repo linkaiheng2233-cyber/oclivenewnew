@@ -657,6 +657,11 @@ impl AppState {
         let prefix = format!("{}__sess__", manifest_role_id);
         cache.retain(|k, _| !k.starts_with(&prefix));
     }
+
+    /// 丢弃内存中的 `Role` 缓存（`pipeline.ocblueprint` 写盘后须调用）。
+    pub fn invalidate_role_cache(&self, role_id: &str) {
+        self.role_cache.write().remove(role_id);
+    }
 /// # Errors
 ///
 /// Returns [`Err`] with a human-readable message when the operation fails.

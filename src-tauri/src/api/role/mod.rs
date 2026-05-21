@@ -11,8 +11,9 @@ use crate::models::dto::{
     ClearSessionSlotOverrideRequest, GetPluginResolutionDebugRequest, GetRoleInfoRequest,
     PluginResolutionDebugInfo, RoleData, RoleInfo, RoleSummary, SceneLabelEntry,
     SetEvolutionFactorRequest, SetRemoteLifeEnabledRequest, SetRoleInteractionModeRequest,
-    SetSceneUserRelationRequest, SetSessionPluginBackendRequest, SetSessionSlotOverrideRequest,
-    SetUserRelationRequest, API_VERSION, OCLIVE_DEFAULT_RELATION_SENTINEL, SCHEMA_VERSION,
+    SaveRoleSlotRegistryRequest, SetSceneUserRelationRequest, SetSessionPluginBackendRequest,
+    SetSessionSlotOverrideRequest, SetUserRelationRequest, API_VERSION,
+    OCLIVE_DEFAULT_RELATION_SENTINEL, SCHEMA_VERSION,
 };
 use oclive_validation::{default_slot_key_for_module, SlotOverridePatch};
 use crate::models::plugin_backends::{
@@ -886,6 +887,36 @@ pub async fn clear_all_session_slot_overrides_impl(
     let ns = session_namespace(&req.role_id, req.session_id.as_deref());
     state.clear_all_session_slot_overrides(ns.as_str());
     get_role_info_impl(state, &req.role_id, req.session_id.as_deref()).await
+}
+
+pub async fn save_role_slot_registry_impl(
+    state: &AppState,
+    req: &SaveRoleSlotRegistryRequest,
+) -> Result<RoleInfo, String> {
+    let role_id = req.role_id.trim();
+    if role_id.is_empty() {
+        return Err(AppError::InvalidParameter("role_id must not be empty".into())
+            .to_frontend_error());
+    }
+    state
+        .storage
+        .save_blueprint_v2_slot_registry(role_id, &req.slot_registry)
+        .map_err(|e| e.to_frontend_error())?;
+    state.invalidate_role_cache(role_id);
+    state.invalidate_personality_cache_for_role(role_id);
+    load_role_impl(state, role_id, false).await?;
+    get_role_info_impl(state, role_id, None).await
+}
+
+/// # Errors
+///
+/// Returns [`Err`] with a human-readable message when the operation fails.
+#[tauri::command]
+pub async fn save_role_slot_registry(
+    req: SaveRoleSlotRegistryRequest,
+    state: State<'_, AppState>,
+) -> Result<RoleInfo, String> {
+    save_role_slot_registry_impl(&state, &req).await
 }
 
 /// # Errors

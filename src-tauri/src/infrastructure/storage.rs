@@ -14,8 +14,9 @@ use oclive_validation::{
     load_blueprint_v2_for_role_dir, slot_registry_to_plugin_backends,
     validate_manifest_top_level_keys, validate_min_runtime_version,
     validate_settings_schema_version, validate_settings_top_level_keys,
-    PIPELINE_BLUEPRINT_FILENAME,
+    write_role_pack_blueprint_slot_registry, SlotRegistryEntry, PIPELINE_BLUEPRINT_FILENAME,
 };
+use std::collections::BTreeMap;
 use serde_json;
 use std::collections::BTreeSet;
 use std::fs;
@@ -596,6 +597,35 @@ impl RoleStorage {
             _ => scene_id.to_string(),
         }
     }
+/// # Errors
+///
+/// Returns [`Err`] with a human-readable message when the operation fails.
+    /// 将 `slot_registry` 写回 `roles/{role_id}/pipeline.ocblueprint`（须为 v2 蓝图包）。
+    pub fn save_blueprint_v2_slot_registry(
+        &self,
+        role_id: &str,
+        registry: &BTreeMap<String, SlotRegistryEntry>,
+    ) -> Result<()> {
+        let role_dir = self.roles_dir.join(role_id);
+        if !role_dir.join(PIPELINE_BLUEPRINT_FILENAME).is_file() {
+            return Err(AppError::InvalidParameter(format!(
+                "角色 {role_id} 无 {PIPELINE_BLUEPRINT_FILENAME}，无法写 slot_registry"
+            )));
+        }
+        write_role_pack_blueprint_slot_registry(
+            &role_dir,
+            registry,
+            env!("CARGO_PKG_VERSION"),
+        )
+        .map_err(|errs| {
+            AppError::InvalidParameter(format!(
+                "pipeline.ocblueprint slot_registry 校验失败:\n{}",
+                errs.join("\n")
+            ))
+        })?;
+        Ok(())
+    }
+
 /// # Errors
 ///
 /// Returns [`Err`] with a human-readable message when the operation fails.
