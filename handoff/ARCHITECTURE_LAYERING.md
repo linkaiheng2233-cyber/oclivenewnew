@@ -25,6 +25,10 @@
 
 拆法建议（非本迭代范围）：将 `PluginHost::resolve_*` 的 **工厂** 迁至 `infrastructure/plugin_wiring.rs`，`domain` 只保留 trait 与 DTO。
 
+## `unsafe` 审查（任务 8）
+
+全仓 `rg '\bunsafe\b' --type rust`：**无** `unsafe` 块；工作区 `[workspace.lints] unsafe_code = "forbid"` 与 CI clippy 一致。
+
 ## 审阅命令
 
 ```bash
