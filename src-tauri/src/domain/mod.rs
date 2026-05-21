@@ -24,6 +24,7 @@ pub mod mutable_profile_llm;
 pub mod personality_engine;
 pub mod plugin_host;
 pub mod slot_resolver;
+pub mod slot_runner;
 pub mod policy;
 pub mod portrait_emotion_engine;
 pub mod profile_personality;

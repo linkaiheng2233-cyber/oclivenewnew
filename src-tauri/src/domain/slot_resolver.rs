@@ -1,4 +1,4 @@
-//! 蓝图 v2 `slot_registry` 按实例解析（P3）；共景多实例串行合并留待 P4。
+//! 蓝图 v2 `slot_registry` 按实例解析（P3）；多实例串行合并见 [`super::slot_runner::SlotRunner`]（P4）。
 
 use crate::domain::agent::AgentProvider;
 use crate::domain::complex_emotion::{
