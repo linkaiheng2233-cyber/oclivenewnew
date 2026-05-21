@@ -40,15 +40,13 @@ pub(crate) fn session_namespace(role_id: &str, session_id: Option<&str>) -> Stri
     crate::domain::chat_engine::conversation_state_role_id(role_id, session_id)
 }
 
+type SlotRegistryMap = std::collections::BTreeMap<String, oclive_validation::SlotRegistryEntry>;
+
 fn slot_registry_role_info_fields(
     state: &AppState,
     role: &Role,
     session_ns: &str,
-) -> (
-    Option<std::collections::BTreeMap<String, oclive_validation::SlotRegistryEntry>>,
-    Option<std::collections::BTreeMap<String, oclive_validation::SlotRegistryEntry>>,
-    Vec<String>,
-) {
+) -> (Option<SlotRegistryMap>, Option<SlotRegistryMap>, Vec<String>) {
     let pack = role.slot_registry.clone();
     let effective = state.effective_slot_registry_for_session(role, session_ns);
     let keys = state.slot_session_overridden_keys(session_ns);
@@ -837,6 +835,9 @@ pub async fn set_session_plugin_backend_impl(
     get_role_info_impl(state, &req.role_id, req.session_id.as_deref()).await
 }
 
+/// # Errors
+///
+/// Returns [`Err`] with a human-readable message when the operation fails.
 pub async fn set_session_slot_override_impl(
     state: &AppState,
     req: &SetSessionSlotOverrideRequest,
@@ -872,6 +873,9 @@ pub async fn set_session_slot_override_impl(
     get_role_info_impl(state, &req.role_id, req.session_id.as_deref()).await
 }
 
+/// # Errors
+///
+/// Returns [`Err`] with a human-readable message when the operation fails.
 pub async fn clear_session_slot_override_impl(
     state: &AppState,
     req: &ClearSessionSlotOverrideRequest,
@@ -881,6 +885,9 @@ pub async fn clear_session_slot_override_impl(
     get_role_info_impl(state, &req.role_id, req.session_id.as_deref()).await
 }
 
+/// # Errors
+///
+/// Returns [`Err`] with a human-readable message when the operation fails.
 pub async fn clear_all_session_slot_overrides_impl(
     state: &AppState,
     req: &ClearAllSessionSlotOverridesRequest,
@@ -890,6 +897,9 @@ pub async fn clear_all_session_slot_overrides_impl(
     get_role_info_impl(state, &req.role_id, req.session_id.as_deref()).await
 }
 
+/// # Errors
+///
+/// Returns [`Err`] with a human-readable message when the operation fails.
 pub async fn save_role_slot_registry_impl(
     state: &AppState,
     req: &SaveRoleSlotRegistryRequest,

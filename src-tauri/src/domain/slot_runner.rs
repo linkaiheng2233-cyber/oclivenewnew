@@ -1,5 +1,11 @@
 //! 蓝图 v2 多实例槽位在共景阶段表内的串行合并（P4，RFC §4.2）。
 
+#![allow(
+    clippy::missing_errors_doc,
+    clippy::must_use_candidate,
+    clippy::too_many_arguments,
+)]
+
 use crate::domain::complex_emotion::{
     ComplexEmotionInput, ComplexEmotionOutput, ComplexEmotionProvider,
 };

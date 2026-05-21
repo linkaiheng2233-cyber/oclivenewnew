@@ -514,9 +514,10 @@ fn e2e_pack_create_validate_publish() {
         "com.example.demo",
         "--name",
         "Demo",
+        "--format-blueprint-v2",
     ])
     .success());
-    assert!(root.join("manifest.json").exists());
+    assert!(root.join("pipeline.ocblueprint").exists());
     assert!(run_cli(&[
         "pack",
         "validate",
