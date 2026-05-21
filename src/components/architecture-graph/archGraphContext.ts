@@ -3,9 +3,11 @@ import type { CoreModule } from "../../composables/useArchitectureGraphModel";
 
 export type ArchGraphActions = {
   busy: () => boolean;
-  onBackendChange: (module: CoreModule, value: string) => void;
+  usesBlueprint: () => boolean;
+  onBackendChange: (targetKey: string, value: string) => void;
+  onClearSlotOverride: (slotKey: string) => void;
   onFocusPlugin: (id: string) => void;
-  onToggleExpand: (module: CoreModule) => void;
+  onToggleExpand: (targetKey: string) => void;
   onTogglePluginDisabled: (id: string) => void;
   onUninstallPlugin: (id: string) => void;
 };

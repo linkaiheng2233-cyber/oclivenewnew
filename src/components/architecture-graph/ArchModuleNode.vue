@@ -17,11 +17,18 @@ const actions = inject(archGraphActionsKey);
 const size = ARCH_NODE_DEFAULT_SIZE.archModule!;
 
 const moduleKey = computed(() => props.data?.moduleKey as CoreModule);
+const slotKey = computed(() => String(props.data?.slotKey ?? props.data?.moduleKey ?? ""));
 const kind = computed(() => props.data?.backendKind as keyof typeof BACKEND_COLORS);
 const themeStyle = computed(() => backendCssVars(kind.value));
+const blueprintV2 = computed(() => Boolean(props.data?.blueprintV2));
+const sessionOverridden = computed(() => Boolean(props.data?.sessionOverridden));
 
 function onSelect(ev: Event) {
-  actions?.onBackendChange(moduleKey.value, (ev.target as HTMLSelectElement).value);
+  actions?.onBackendChange(slotKey.value, (ev.target as HTMLSelectElement).value);
+}
+
+function onResetOverride() {
+  actions?.onClearSlotOverride(slotKey.value);
 }
 </script>
 
@@ -35,7 +42,7 @@ function onSelect(ev: Event) {
   >
     <div
       class="agn-module agn-shell-inner"
-      :class="{ 'agn--selected': selected }"
+      :class="{ 'agn--selected': selected, 'agn--session-override': sessionOverridden }"
       :style="themeStyle"
     >
       <Handle
@@ -43,12 +50,12 @@ function onSelect(ev: Event) {
         type="target"
         :position="Position.Left"
         :connectable-start="false"
-        :connectable-end="true"
-        connectable="single"
+        :connectable-end="!blueprintV2"
+        :connectable="blueprintV2 ? false : 'single'"
         class="agn-handle agn-handle--in"
       />
       <Handle
-        v-if="data?.backendKind === 'directory'"
+        v-if="data?.backendKind === 'directory' && !blueprintV2"
         id="plugin-out"
         type="source"
         :position="Position.Right"
@@ -59,9 +66,13 @@ function onSelect(ev: Event) {
       <div class="agn-accent-bar" />
       <div class="agn-head">
         <span aria-hidden="true">{{ data?.icon }}</span>
-        <span class="agn-mono agn-module-id">{{ data?.moduleKey }}</span>
+        <span class="agn-mono agn-module-id">{{ data?.slotKey ?? data?.moduleKey }}</span>
       </div>
-      <p class="agn-hint agn-module-zh">{{ t(data?.labelKey as string) }}</p>
+      <p v-if="sessionOverridden" class="agn-override-tag">{{ t("pluginWorkbench.graph.sessionOverride") }}</p>
+      <p class="agn-hint agn-module-zh">
+        {{ data?.slotLabel ? data.slotLabel : t(data?.labelKey as string) }}
+        <span v-if="data?.slotType" class="agn-type"> · {{ data.slotType }}</span>
+      </p>
       <span class="agn-tag">{{ data?.backend }}</span>
       <p v-if="data?.primaryPlugin" class="agn-hint agn-dir agn-mono">{{ data.primaryPlugin }}</p>
       <label class="agn-widget-lbl">{{ t("pluginWorkbench.graph.switchBackend") }}</label>
@@ -90,9 +101,18 @@ function onSelect(ev: Event) {
           v-if="(data?.hiddenPluginCount as number) > 0"
           type="button"
           class="agn-btn"
-          @click="actions?.onToggleExpand(moduleKey)"
+          @click="actions?.onToggleExpand(slotKey)"
         >
           +{{ data.hiddenPluginCount }} {{ t("pluginWorkbench.graph.plugins") }}
+        </button>
+        <button
+          v-if="sessionOverridden && blueprintV2"
+          type="button"
+          class="agn-btn"
+          :disabled="actions?.busy()"
+          @click="onResetOverride"
+        >
+          {{ t("pluginWorkbench.graph.resetSlotDefault") }}
         </button>
       </div>
     </div>
@@ -112,5 +132,17 @@ function onSelect(ev: Event) {
 .agn-module-zh,
 .agn-dir {
   padding: 0 12px;
+}
+.agn--session-override {
+  outline: 1px dashed var(--arch-stroke, #7aad8f);
+  outline-offset: 2px;
+}
+.agn-override-tag {
+  margin: 0 12px 4px;
+  font-size: 10px;
+  color: var(--arch-stroke, #7aad8f);
+}
+.agn-type {
+  opacity: 0.75;
 }
 </style>

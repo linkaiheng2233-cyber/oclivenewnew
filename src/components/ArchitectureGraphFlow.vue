@@ -24,7 +24,11 @@ const handleOutColor = BACKEND_COLORS.directory.handle;
 import { useAppToast } from "../composables/useAppToast";
 import { useRoleStore } from "../stores/roleStore";
 import { usePluginStore } from "../stores/pluginStore";
-import { setSessionPluginBackend } from "../utils/tauri-api";
+import {
+  clearSessionSlotOverride,
+  setSessionPluginBackend,
+  setSessionSlotOverride,
+} from "../utils/tauri-api";
 
 const emit = defineEmits<{
   "focus-plugin": [pluginId: string];
@@ -41,6 +45,7 @@ const graphLayout = useArchitectureGraphLayout();
 const {
   nodes: builtNodes,
   edges: builtEdges,
+  usesBlueprint,
   togglePluginExpand,
   hiddenPluginCount,
 } = useArchitectureGraphModel();
@@ -100,10 +105,24 @@ function onResetLayout() {
   showToast("success", t("pluginWorkbench.graph.layoutResetDone"));
 }
 
+function onEdgesChangeBlueprint() {
+  /* v2：边由 slot_registry 派生，忽略 Vue Flow 边变更 */
+}
+
 watch(builtNodes, syncGraphFromModel, { deep: true });
 watch(builtEdges, syncGraphFromModel, { deep: true });
 watch(
   () => roleStore.roleInfo.pluginBackendsEffective,
+  syncGraphFromModel,
+  { deep: true },
+);
+watch(
+  () => roleStore.roleInfo.slotRegistryEffective,
+  syncGraphFromModel,
+  { deep: true },
+);
+watch(
+  () => roleStore.roleInfo.slotSessionOverriddenKeys,
   syncGraphFromModel,
   { deep: true },
 );
@@ -122,11 +141,20 @@ const edgeTypes = {
 
 provide(archGraphActionsKey, {
   busy: () => busy.value,
-  onBackendChange: async (module: CoreModule, value: string) => {
+  usesBlueprint: () => usesBlueprint.value,
+  onBackendChange: async (targetKey: string, value: string) => {
     const backend = value === "__pack_default__" ? null : value;
     busy.value = true;
     try {
-      const info = await setSessionPluginBackend(roleStore.currentRoleId, module, backend);
+      const info = usesBlueprint.value
+        ? await setSessionSlotOverride(roleStore.currentRoleId, targetKey, {
+            backend: backend ?? undefined,
+          })
+        : await setSessionPluginBackend(
+            roleStore.currentRoleId,
+            targetKey as CoreModule,
+            backend,
+          );
       roleStore.applyRoleInfo(info);
     } catch (e) {
       showToast("error", e instanceof Error ? e.message : String(e));
@@ -134,9 +162,21 @@ provide(archGraphActionsKey, {
       busy.value = false;
     }
   },
+  onClearSlotOverride: async (slotKey: string) => {
+    busy.value = true;
+    try {
+      const info = await clearSessionSlotOverride(roleStore.currentRoleId, slotKey);
+      roleStore.applyRoleInfo(info);
+      showToast("success", t("pluginWorkbench.graph.resetSlotDefaultDone"));
+    } catch (e) {
+      showToast("error", e instanceof Error ? e.message : String(e));
+    } finally {
+      busy.value = false;
+    }
+  },
   onFocusPlugin: (id: string) => emit("focus-plugin", id),
-  onToggleExpand: (module: CoreModule) => {
-    if (hiddenPluginCount(module) > 0) togglePluginExpand(module);
+  onToggleExpand: (targetKey: string) => {
+    if (hiddenPluginCount(targetKey) > 0) togglePluginExpand(targetKey);
   },
   onTogglePluginDisabled: (id: string) => {
     try {
@@ -161,7 +201,13 @@ onMounted(syncGraphFromModel);
 
 <template>
   <div class="agf-root">
-    <p class="agf-lead">{{ t("pluginWorkbench.graph.lead") }}</p>
+    <p class="agf-lead">
+      {{
+        usesBlueprint
+          ? t("pluginWorkbench.graph.leadBlueprint")
+          : t("pluginWorkbench.graph.lead")
+      }}
+    </p>
     <p class="agf-vendor">
       {{ t("pluginWorkbench.graph.poweredBy") }}
       <a href="https://vueflow.dev/" target="_blank" rel="noopener noreferrer">Vue Flow</a>
@@ -189,18 +235,18 @@ onMounted(syncGraphFromModel);
         :min-zoom="0.35"
         :max-zoom="1.8"
         :nodes-draggable="true"
-        :nodes-connectable="true"
-        :edges-updatable="true"
+        :nodes-connectable="!usesBlueprint"
+        :edges-updatable="!usesBlueprint"
         :elements-selectable="true"
-        :is-valid-connection="graphConnections.isValidConnection"
+        :is-valid-connection="usesBlueprint ? () => false : graphConnections.isValidConnection"
         :fit-view-on-init="false"
         :default-viewport="{ zoom: 0.85 }"
         @nodes-change="onNodesChange"
-        @edges-change="graphConnections.onEdgesChange"
-        @connect="graphConnections.onConnect"
-        @edge-update="graphConnections.onEdgeUpdate"
-        @connect-start="graphConnections.onConnectStart"
-        @connect-end="graphConnections.onConnectEnd"
+        @edges-change="usesBlueprint ? onEdgesChangeBlueprint : graphConnections.onEdgesChange"
+        @connect="usesBlueprint ? onEdgesChangeBlueprint : graphConnections.onConnect"
+        @edge-update="usesBlueprint ? onEdgesChangeBlueprint : graphConnections.onEdgeUpdate"
+        @connect-start="usesBlueprint ? onEdgesChangeBlueprint : graphConnections.onConnectStart"
+        @connect-end="usesBlueprint ? onEdgesChangeBlueprint : graphConnections.onConnectEnd"
       >
         <template #connection-line="lineProps">
           <ArchConnectionLine v-bind="lineProps" />
@@ -228,7 +274,13 @@ onMounted(syncGraphFromModel);
       <span class="agf-legend-item" role="listitem">
         <span class="agf-swatch agf-swatch--directory" />{{ t("pluginWorkbench.graph.legendDirectory") }}
       </span>
-      <span class="agf-legend-hint">{{ t("pluginWorkbench.graph.connectHint") }}</span>
+      <span class="agf-legend-hint">
+        {{
+          usesBlueprint
+            ? t("pluginWorkbench.graph.connectHintBlueprint")
+            : t("pluginWorkbench.graph.connectHint")
+        }}
+      </span>
     </div>
   </div>
 </template>

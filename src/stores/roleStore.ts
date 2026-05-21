@@ -78,6 +78,9 @@ type RoleInfoState = {
   packUiConfig: PackUiConfig;
   /** 可选 `author.json`（推荐插件、建议后端等） */
   authorPack: AuthorPackFile | null;
+  slotRegistryPack: import("../lib/slotRegistry").SlotRegistryMap | null;
+  slotRegistryEffective: import("../lib/slotRegistry").SlotRegistryMap | null;
+  slotSessionOverriddenKeys: string[];
 };
 
 function mapRoleInfo(info: RoleInfo): RoleInfoState {
@@ -129,6 +132,9 @@ function mapRoleInfo(info: RoleInfo): RoleInfoState {
       info.pack_ui_baseline ?? info.pack_ui_config,
     ),
     authorPack: info.author_pack ?? null,
+    slotRegistryPack: info.slot_registry_pack ?? null,
+    slotRegistryEffective: info.slot_registry_effective ?? null,
+    slotSessionOverriddenKeys: info.slot_session_overridden_keys ?? [],
   };
 }
 
@@ -196,6 +202,9 @@ export const useRoleStore = defineStore(
         knowledgeChunkCount: 0,
         packUiConfig: emptyPackUiConfig(),
         authorPack: null,
+        slotRegistryPack: null,
+        slotRegistryEffective: null,
+        slotSessionOverriddenKeys: [],
       } as RoleInfoState,
     }),
     actions: {

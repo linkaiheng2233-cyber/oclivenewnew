@@ -4,7 +4,7 @@
 |----|-----|
 | 状态 | **已确认 / 可以落实**（决议见 [BLUEPRINT_V2_DECISIONS.md](BLUEPRINT_V2_DECISIONS.md)） |
 | RFC | [RFC_ROLE_BLUEPRINT_V2.md](RFC_ROLE_BLUEPRINT_V2.md)（**Accepted**） |
-| 当前阶段 | **P1–P4 与 P6（仓库 roles）已落实**；**P5–P8** 待续 |
+| 当前阶段 | **P1–P5（主应用架构图 v2）与 P6 已落实**；**P5 写盘工具栏 / P7–P8** 待续 |
 
 ---
 

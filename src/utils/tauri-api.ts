@@ -464,6 +464,10 @@ export interface RoleData {
   pack_ui_baseline?: PackUiConfig;
   /** 可选 `author.json` */
   author_pack?: AuthorPackFile | null;
+  /** v2 蓝图 `slot_registry`（legacy 为 null） */
+  slot_registry_pack?: import("../lib/slotRegistry").SlotRegistryMap | null;
+  slot_registry_effective?: import("../lib/slotRegistry").SlotRegistryMap | null;
+  slot_session_overridden_keys?: string[];
 }
 
 export interface SceneLabelEntry {
@@ -525,6 +529,9 @@ export interface RoleInfo {
   pack_ui_config: PackUiConfig;
   pack_ui_baseline?: PackUiConfig;
   author_pack?: AuthorPackFile | null;
+  slot_registry_pack?: import("../lib/slotRegistry").SlotRegistryMap | null;
+  slot_registry_effective?: import("../lib/slotRegistry").SlotRegistryMap | null;
+  slot_session_overridden_keys?: string[];
 }
 
 /** `switch_scene` 扁平化返回：RoleInfo 字段 + 可选场景欢迎语 */
@@ -724,6 +731,58 @@ export async function setSessionPluginBackend(
   }
   return invokeWithFriendlyError<RoleInfo>("set_session_plugin_backend", {
     req,
+  });
+}
+
+export async function setSessionSlotOverride(
+  roleId: string,
+  slotKey: string,
+  patch: {
+    backend?: string | null;
+    plugin?: string | null;
+    plugins?: string[] | null;
+    model?: string | null;
+    localMemoryProviderId?: string | null;
+  },
+  sessionId?: string | null,
+): Promise<RoleInfo> {
+  return invokeWithFriendlyError<RoleInfo>("set_session_slot_override", {
+    req: {
+      role_id: roleId,
+      slot_key: slotKey,
+      backend: patch.backend ?? null,
+      plugin: patch.plugin ?? null,
+      plugins: patch.plugins ?? null,
+      model: patch.model ?? null,
+      local_memory_provider_id: patch.localMemoryProviderId ?? null,
+      session_id: sessionId ?? null,
+    },
+  });
+}
+
+export async function clearSessionSlotOverride(
+  roleId: string,
+  slotKey: string,
+  sessionId?: string | null,
+): Promise<RoleInfo> {
+  return invokeWithFriendlyError<RoleInfo>("clear_session_slot_override", {
+    req: {
+      role_id: roleId,
+      slot_key: slotKey,
+      session_id: sessionId ?? null,
+    },
+  });
+}
+
+export async function clearAllSessionSlotOverrides(
+  roleId: string,
+  sessionId?: string | null,
+): Promise<RoleInfo> {
+  return invokeWithFriendlyError<RoleInfo>("clear_all_session_slot_overrides", {
+    req: {
+      role_id: roleId,
+      session_id: sessionId ?? null,
+    },
   });
 }
 

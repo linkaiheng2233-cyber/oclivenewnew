@@ -32,6 +32,9 @@ export default {
   openMarket: "Browse plugin market",
   graph: {
     lead: "ComfyUI-style wires: kernel on the outer ring, one link to the centered facility bus, six modules orbiting the bus; left/right ports stage connections. Drag to move; select a node and drag corners to resize.",
+    leadBlueprint:
+      "Blueprint v2: one node per slot_registry key; edges are derived (no manual wiring). Backend switches are session-only; dashed outline means session override.",
+    facilityBusHintBlueprint: "Derived from pipeline.ocblueprint; multiple instances of the same type share a fac-{type} port.",
     facilityBus: "Facility bus",
     facilityBusHint: "Guide node: runtime wiring is kernel↔six modules only; the bus avoids six overlapping center lines.",
     portPipeline: "pipeline",
@@ -80,6 +83,10 @@ export default {
     fitAll: "Fit all",
     panHint: "Wheel zoom · Space/middle-drag pan · Double-click node to focus",
     connectHint: "Drag from an output port to an input · Delete removes a wire (system wires are locked)",
+    connectHintBlueprint: "Blueprint v2: wires are read-only; edit pipeline.ocblueprint or use the dropdown for session overrides.",
+    sessionOverride: "Session override",
+    resetSlotDefault: "Reset to pack default",
+    resetSlotDefaultDone: "Cleared session override for this slot",
     connectSelfLoop: "Cannot connect a node to itself",
     connectWrongDirection: "Wiring must follow the stack: kernel → bus → module → directory plugin",
     connectUnknownPort: "Port mismatch",

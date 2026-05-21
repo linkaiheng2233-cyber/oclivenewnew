@@ -2,6 +2,16 @@ import { computed, ref } from "vue";
 import { Position, type Node } from "@vue-flow/core";
 import { layoutOnRing, pointOnRay } from "../lib/radialGraphLayout";
 import { normalizeBackendKind, type BackendKind } from "../lib/graphEditorTheme";
+import {
+  primaryPluginId,
+  SLOT_BACKEND_OPTIONS,
+  SLOT_TYPE_ICONS,
+  SLOT_TYPE_LABEL_KEYS,
+  sortedSlotRegistryEntries,
+  uniqueSlotTypes,
+  type SlotRegistryEntry,
+  type SlotRegistryMap,
+} from "../lib/slotRegistry";
 import { useRoleStore } from "../stores/roleStore";
 import { usePluginStore } from "../stores/pluginStore";
 
@@ -51,12 +61,40 @@ export function useArchitectureGraphModel() {
     () => roleStore.roleInfo.pluginBackendsSessionOverride,
   );
 
+  const slotRegistryPack = computed(() => roleStore.roleInfo.slotRegistryPack);
+  const slotRegistryEffective = computed(() => roleStore.roleInfo.slotRegistryEffective);
+  const slotSessionOverriddenKeys = computed(
+    () => roleStore.roleInfo.slotSessionOverriddenKeys,
+  );
+
+  const usesBlueprint = computed(() => {
+    const eff = slotRegistryEffective.value;
+    return eff != null && Object.keys(eff).length > 0;
+  });
+
   function effectiveBackend(key: CoreModule): string {
     return String(pluginBackendsEffective.value[key] ?? "");
   }
 
   function backendKind(key: CoreModule): BackendKind {
     return normalizeBackendKind(effectiveBackend(key));
+  }
+
+  function slotBackendKind(entry: SlotRegistryEntry): BackendKind {
+    return normalizeBackendKind(entry.backend);
+  }
+
+  function isSlotSessionOverridden(slotKey: string): boolean {
+    return slotSessionOverriddenKeys.value.includes(slotKey);
+  }
+
+  function directoryPluginIdsForSlot(slotKey: string, entry: SlotRegistryEntry): string[] {
+    if (slotBackendKind(entry) !== "directory") return [];
+    const pid = primaryPluginId(entry);
+    if (!pid) return [];
+    const extra = (entry.plugins ?? []).map((s) => s.trim()).filter(Boolean);
+    const set = new Set<string>([pid, ...extra]);
+    return [...set];
   }
 
   function directoryPluginIds(key: CoreModule): string[] {
@@ -73,22 +111,31 @@ export function useArchitectureGraphModel() {
     return list;
   }
 
-  function visiblePluginIds(key: CoreModule): string[] {
-    const all = directoryPluginIds(key);
-    if (backendKind(key) !== "directory" || all.length === 0) return [];
+  function visiblePluginIds(key: string, entry?: SlotRegistryEntry): string[] {
+    if (usesBlueprint.value && entry) {
+      const all = directoryPluginIdsForSlot(key, entry);
+      if (all.length === 0) return [];
+      if (expandedPlugins.value[key] || all.length <= 1) return all;
+      return [all[0]!];
+    }
+    const all = directoryPluginIds(key as CoreModule);
+    if (backendKind(key as CoreModule) !== "directory" || all.length === 0) return [];
     if (expandedPlugins.value[key] || all.length <= 1) return all;
     return [all[0]!];
   }
 
-  function hiddenPluginCount(key: CoreModule): number {
-    return Math.max(0, directoryPluginIds(key).length - 1);
+  function hiddenPluginCount(key: string, entry?: SlotRegistryEntry): number {
+    if (usesBlueprint.value && entry) {
+      return Math.max(0, directoryPluginIdsForSlot(key, entry).length - 1);
+    }
+    return Math.max(0, directoryPluginIds(key as CoreModule).length - 1);
   }
 
-  function togglePluginExpand(key: CoreModule) {
+  function togglePluginExpand(key: string) {
     expandedPlugins.value = { ...expandedPlugins.value, [key]: !expandedPlugins.value[key] };
   }
 
-  const nodes = computed<Node[]>(() => {
+  function buildLegacyNodes(): Node[] {
     const list: Node[] = [];
 
     list.push({
@@ -129,6 +176,7 @@ export function useArchitectureGraphModel() {
           sessionOverride: pluginBackendsSessionOverride.value?.[m.key] ?? "__pack_default__",
           primaryPlugin: directoryPluginIds(m.key)[0] ?? "",
           hiddenPluginCount: hiddenPluginCount(m.key),
+          blueprintV2: false,
           targetPosition: Position.Left,
           sourcePosition: Position.Right,
         },
@@ -166,9 +214,98 @@ export function useArchitectureGraphModel() {
     });
 
     return list;
+  }
+
+  function buildBlueprintNodes(registry: SlotRegistryMap): Node[] {
+    const list: Node[] = [];
+    const entries = sortedSlotRegistryEntries(registry);
+    const busTypes = uniqueSlotTypes(registry);
+
+    list.push({
+      id: ARCH_GRAPH_KERNEL_ID,
+      type: "archKernel",
+      position: { x: HUB_CX - KERNEL_SIZE / 2, y: HUB_CY - KERNEL_OUTER_R - KERNEL_SIZE / 2 },
+      data: { labelKey: "pluginWorkbench.graph.kernel", sub: "process_message" },
+      draggable: true,
+    });
+
+    list.push({
+      id: ARCH_GRAPH_BUS_ID,
+      type: "archBus",
+      position: { x: HUB_CX - BUS_W / 2, y: HUB_CY - BUS_H / 2 },
+      data: {
+        labelKey: "pluginWorkbench.graph.facilityBus",
+        hintKey: "pluginWorkbench.graph.facilityBusHintBlueprint",
+        moduleKeys: busTypes,
+        blueprintV2: true,
+      },
+      draggable: true,
+    });
+
+    entries.forEach(([slotKey, entry], i) => {
+      const ring = layoutOnRing(HUB_CX, HUB_CY, MODULE_RING, i, entries.length, NODE_W, NODE_H);
+      const kind = slotBackendKind(entry);
+      const pack = slotRegistryPack.value?.[slotKey];
+      const overridden = isSlotSessionOverridden(slotKey);
+      const labelKey = SLOT_TYPE_LABEL_KEYS[entry.type] ?? "pluginWorkbench.graph.memory";
+      const options = SLOT_BACKEND_OPTIONS[entry.type] ?? ["builtin"];
+      list.push({
+        id: slotKey,
+        type: "archModule",
+        position: { x: ring.x, y: ring.y },
+        data: {
+          slotKey,
+          slotType: entry.type,
+          moduleKey: entry.type,
+          labelKey,
+          slotLabel: entry.label,
+          icon: SLOT_TYPE_ICONS[entry.type] ?? "⚙",
+          options,
+          backend: entry.backend,
+          backendKind: kind,
+          packDefault: pack?.backend ?? entry.backend,
+          sessionOverride: overridden ? entry.backend : "__pack_default__",
+          sessionOverridden: overridden,
+          primaryPlugin: primaryPluginId(entry),
+          hiddenPluginCount: hiddenPluginCount(slotKey, entry),
+          blueprintV2: true,
+          targetPosition: Position.Left,
+          sourcePosition: Position.Right,
+        },
+        draggable: true,
+      });
+
+      if (kind === "directory") {
+        visiblePluginIds(slotKey, entry).forEach((pid, j) => {
+          const center = pointOnRay(ring.cx, ring.cy, ring.angle + Math.PI, PLUGIN_INSET + j * (PLUGIN_H + 12));
+          list.push({
+            id: `plugin:${pid}`,
+            type: "archPlugin",
+            position: { x: center.x - PLUGIN_W / 2, y: center.y - PLUGIN_H / 2 },
+            data: {
+              pluginId: pid,
+              moduleKey: entry.type,
+              slotKey,
+              disabled: pluginStore.isPluginDisabled(pid),
+              version: pluginStore.catalog.find((c) => c.id === pid)?.version ?? "?",
+            },
+            draggable: true,
+          });
+        });
+      }
+    });
+
+    return list;
+  }
+
+  const nodes = computed<Node[]>(() => {
+    if (usesBlueprint.value && slotRegistryEffective.value) {
+      return buildBlueprintNodes(slotRegistryEffective.value);
+    }
+    return buildLegacyNodes();
   });
 
-  const edges = computed(() => {
+  function buildLegacyEdges() {
     const out = [];
 
     out.push({
@@ -225,11 +362,70 @@ export function useArchitectureGraphModel() {
     });
 
     return out;
+  }
+
+  function buildBlueprintEdges(registry: SlotRegistryMap) {
+    const out = [];
+    const entries = sortedSlotRegistryEntries(registry);
+
+    out.push({
+      id: "kernel-bus",
+      source: ARCH_GRAPH_KERNEL_ID,
+      target: ARCH_GRAPH_BUS_ID,
+      sourceHandle: "pipeline",
+      targetHandle: "pipeline-in",
+      type: "archBackend",
+      deletable: false,
+      updatable: false,
+      data: { kind: "builtin", system: true },
+    });
+
+    for (const [slotKey, entry] of entries) {
+      const kind = slotBackendKind(entry);
+      out.push({
+        id: `bus-${slotKey}`,
+        source: ARCH_GRAPH_BUS_ID,
+        target: slotKey,
+        sourceHandle: `fac-${entry.type}`,
+        targetHandle: "backend-in",
+        type: "archBackend",
+        deletable: false,
+        updatable: false,
+        data: { kind, slotKey, slotType: entry.type, system: true },
+        animated: kind === "remote",
+      });
+      for (const pid of visiblePluginIds(slotKey, entry)) {
+        out.push({
+          id: `slot-${slotKey}-${pid}`,
+          source: slotKey,
+          target: `plugin:${pid}`,
+          sourceHandle: "plugin-out",
+          targetHandle: "plugin-in",
+          type: "archBackend",
+          deletable: false,
+          updatable: false,
+          data: { kind: "directory", slotKey, slotType: entry.type, system: true },
+        });
+      }
+    }
+
+    return out;
+  }
+
+  const edges = computed(() => {
+    if (usesBlueprint.value && slotRegistryEffective.value) {
+      return buildBlueprintEdges(slotRegistryEffective.value);
+    }
+    return buildLegacyEdges();
   });
 
   return {
     nodes,
     edges,
+    usesBlueprint,
+    slotRegistryPack,
+    slotRegistryEffective,
+    slotSessionOverriddenKeys,
     pluginBackends,
     pluginBackendsSessionOverride,
     expandedPlugins,

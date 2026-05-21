@@ -31,6 +31,9 @@ export default {
   openMarket: "浏览插件市场",
   graph: {
     lead: "ComfyUI 节点连线：内核在最外环，单线接入居中设施总线，六模块环绕总线；左右端口分阶段连接，目录插件只连父模块。可拖拽移动，选中后可缩放节点。",
+    leadBlueprint:
+      "蓝图 v2：每个 slot_registry 实例键一节点，连线由配置派生（不可手拖）。切换后端仅影响当前会话；虚线框表示「本次覆盖」。",
+    facilityBusHintBlueprint: "由 pipeline.ocblueprint 派生；同 type 多实例共享 fac-{type} 示意端口。",
     facilityBus: "设施总线",
     facilityBusHint: "引导节点：运行时仅内核↔六模块，总线用于避免六条线叠在中心。",
     portPipeline: "pipeline",
@@ -79,6 +82,10 @@ export default {
     fitAll: "适配全部",
     panHint: "滚轮缩放 · 空格或中键拖拽平移 · 双击节点聚焦",
     connectHint: "从输出口拖向输入口接线 · 选中连线按 Delete 可删（系统连线除外）",
+    connectHintBlueprint: "v2 蓝图模式：连线只读，请编辑 pipeline.ocblueprint 或在下拉中做会话覆盖。",
+    sessionOverride: "本次覆盖",
+    resetSlotDefault: "重置为包默认",
+    resetSlotDefaultDone: "已清除该槽位的会话覆盖",
     connectSelfLoop: "不能连接到同一节点",
     connectWrongDirection: "只能按架构层级接线：内核→总线→模块→目录插件",
     connectUnknownPort: "端口不匹配",
