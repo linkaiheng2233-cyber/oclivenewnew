@@ -2,12 +2,16 @@
 import { Handle, Position } from "@vue-flow/core";
 import { computed } from "vue";
 import { useI18n } from "vue-i18n";
+import { GRAPH_SURFACE } from "../../lib/graphEditorTheme";
+import { ARCH_NODE_DEFAULT_SIZE } from "../../composables/useArchitectureGraphLayout";
+import ArchNodeChrome from "./ArchNodeChrome.vue";
 
 const props = defineProps({
   selected: { type: Boolean, default: false },
   data: { type: Object, default: () => ({}) },
 });
 const { t } = useI18n();
+const size = ARCH_NODE_DEFAULT_SIZE.archBus!;
 
 const moduleKeys = computed(() => (props.data?.moduleKeys as string[]) ?? []);
 
@@ -17,54 +21,60 @@ function outTop(i: number, n: number): string {
 </script>
 
 <template>
-  <div class="agn agn-bus" :class="{ 'agn--selected': selected }">
-    <Handle id="pipeline-in" type="target" :position="Position.Top" class="agn-handle agn-handle--in" />
-    <div class="agn-bus-head">{{ t("pluginWorkbench.graph.facilityBus") }}</div>
-    <div class="agn-bus-type">plugin_backends</div>
-    <p class="agn-bus-hint">{{ t("pluginWorkbench.graph.facilityBusHint") }}</p>
-    <Handle
-      v-for="(key, i) in moduleKeys"
-      :id="`fac-${key}`"
-      :key="key"
-      type="source"
-      :position="Position.Right"
-      class="agn-handle agn-handle--out"
-      :style="{ top: outTop(i, moduleKeys.length) }"
-    />
-    <Handle
-      id="fac-complex"
-      type="source"
-      :position="Position.Right"
-      class="agn-handle agn-handle--out"
-      style="top: 92%"
-    />
-  </div>
+  <ArchNodeChrome
+    :selected="selected"
+    :min-width="size.minWidth"
+    :min-height="size.minHeight"
+    :max-width="size.maxWidth"
+    :max-height="size.maxHeight"
+  >
+    <div
+      class="agn-bus agn-shell-inner"
+      :class="{ 'agn--selected': selected }"
+      :style="{ '--arch-accent': GRAPH_SURFACE.busAccent, '--arch-node-border': GRAPH_SURFACE.busAccent }"
+    >
+      <Handle id="pipeline-in" type="target" :position="Position.Top" class="agn-handle agn-handle--in" />
+      <div class="agn-accent-bar" />
+      <div class="agn-head">
+        <span class="agn-head-title">{{ t("pluginWorkbench.graph.facilityBus") }}</span>
+      </div>
+      <p class="agn-mono agn-bus-type">plugin_backends</p>
+      <p class="agn-hint agn-bus-hint">{{ t("pluginWorkbench.graph.facilityBusHint") }}</p>
+      <Handle
+        v-for="(key, i) in moduleKeys"
+        :id="`fac-${key}`"
+        :key="key"
+        type="source"
+        :position="Position.Right"
+        class="agn-handle agn-handle--out"
+        :style="{ top: outTop(i, moduleKeys.length) }"
+      />
+      <Handle
+        id="fac-complex"
+        type="source"
+        :position="Position.Right"
+        class="agn-handle agn-handle--out"
+        style="top: 92%"
+      />
+    </div>
+  </ArchNodeChrome>
 </template>
 
 <style scoped>
-.agn-bus {
-  width: 240px;
-  min-height: 100px;
-  border-radius: 10px;
-  border: 2px dashed color-mix(in srgb, #2196f3 45%, var(--border-light));
-  background: color-mix(in srgb, #2196f3 8%, var(--bg-primary));
-  padding: 10px 14px 10px 10px;
-  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.12);
-  position: relative;
+.agn-shell-inner {
+  border-style: dashed;
+  padding: 8px 12px 10px;
+  min-height: 100%;
+  box-sizing: border-box;
 }
-.agn-bus-head {
+.agn-head-title {
   font-size: 13px;
-  font-weight: 700;
 }
 .agn-bus-type {
+  margin: 2px 12px 0;
   font-size: 10px;
-  color: var(--text-secondary);
-  font-family: ui-monospace, monospace;
 }
 .agn-bus-hint {
-  margin: 6px 0 0;
-  font-size: 10px;
-  color: var(--text-secondary);
-  line-height: 1.35;
+  padding: 0 12px 4px;
 }
 </style>

@@ -1,19 +1,24 @@
 <script setup lang="ts">
+import { applyNodeChanges, VueFlow } from "@vue-flow/core";
 import { markRaw, onMounted, provide, ref, watch } from "vue";
 import { useI18n } from "vue-i18n";
-import { VueFlow } from "@vue-flow/core";
 import { Background } from "@vue-flow/background";
 import { Controls } from "@vue-flow/controls";
 import { MiniMap } from "@vue-flow/minimap";
 import ArchBackendEdge from "./architecture-graph/ArchBackendEdge.vue";
 import ArchBusNode from "./architecture-graph/ArchBusNode.vue";
 import ArchComplexNode from "./architecture-graph/ArchComplexNode.vue";
+import ArchGraphFitView from "./architecture-graph/ArchGraphFitView.vue";
 import ArchKernelNode from "./architecture-graph/ArchKernelNode.vue";
 import ArchModuleNode from "./architecture-graph/ArchModuleNode.vue";
 import ArchPluginNode from "./architecture-graph/ArchPluginNode.vue";
 import { archGraphActionsKey } from "./architecture-graph/archGraphContext";
+import { useArchitectureGraphLayout } from "../composables/useArchitectureGraphLayout";
 import { useArchitectureGraphModel, type CoreModule } from "../composables/useArchitectureGraphModel";
-import ArchGraphFitView from "./architecture-graph/ArchGraphFitView.vue";
+import { BACKEND_COLORS, GRAPH_SURFACE } from "../lib/graphEditorTheme";
+
+const handleInColor = BACKEND_COLORS.builtin.handle;
+const handleOutColor = BACKEND_COLORS.directory.handle;
 import { useAppToast } from "../composables/useAppToast";
 import { useRoleStore } from "../stores/roleStore";
 import { usePluginStore } from "../stores/pluginStore";
@@ -29,6 +34,8 @@ const pluginStore = usePluginStore();
 const { showToast } = useAppToast();
 const busy = ref(false);
 
+const graphLayout = useArchitectureGraphLayout();
+
 const {
   nodes: builtNodes,
   edges: builtEdges,
@@ -40,12 +47,53 @@ const nodes = ref([]);
 const edges = ref([]);
 
 function syncGraphFromModel() {
-  const posMap = new Map(nodes.value.map((n) => [n.id, n.position]));
-  nodes.value = builtNodes.value.map((n) => ({
-    ...n,
-    position: posMap.get(n.id) ?? n.position,
-  }));
+  nodes.value = builtNodes.value.map((n) => {
+    const applied = graphLayout.applyToNode(n.id, n.type, n.position.x, n.position.y);
+    return {
+      ...n,
+      position: { x: applied.x, y: applied.y },
+      width: applied.width,
+      height: applied.height,
+      style: applied.style,
+    };
+  });
   edges.value = [...builtEdges.value];
+}
+
+function onNodesChange(changes: unknown[]) {
+  const list = changes as Array<{
+    type: string;
+    id?: string;
+    position?: { x: number; y: number };
+    dimensions?: { width: number; height: number };
+    dragging?: boolean;
+  }>;
+  nodes.value = applyNodeChanges(list, nodes.value);
+  let dirty = false;
+  for (const c of list) {
+    if (c.type === "position" && c.id && c.position && c.dragging === false) {
+      const base = builtNodes.value.find((b) => b.id === c.id);
+      if (base) {
+        graphLayout.setPosition(
+          c.id,
+          c.position.x - base.position.x,
+          c.position.y - base.position.y,
+        );
+        dirty = true;
+      }
+    }
+    if (c.type === "dimensions" && c.id && c.dimensions) {
+      graphLayout.setSize(c.id, Math.round(c.dimensions.width), Math.round(c.dimensions.height));
+      dirty = true;
+    }
+  }
+  if (dirty) graphLayout.save();
+}
+
+function onResetLayout() {
+  graphLayout.reset();
+  syncGraphFromModel();
+  showToast("success", t("pluginWorkbench.graph.layoutResetDone"));
 }
 
 watch(builtNodes, syncGraphFromModel, { deep: true });
@@ -116,6 +164,13 @@ onMounted(syncGraphFromModel);
       · {{ t("pluginWorkbench.graph.comfyRef") }}
     </p>
 
+    <div class="agf-toolbar">
+      <button type="button" class="agf-tb-btn" @click="onResetLayout">
+        {{ t("pluginWorkbench.graph.resetLayout") }}
+      </button>
+      <span class="agf-tb-hint">{{ t("pluginWorkbench.graph.resizeHint") }}</span>
+    </div>
+
     <div
       class="agf-vf"
       role="application"
@@ -133,8 +188,9 @@ onMounted(syncGraphFromModel);
         :elements-selectable="true"
         :fit-view-on-init="false"
         :default-viewport="{ zoom: 0.85 }"
+        @nodes-change="onNodesChange"
       >
-        <Background pattern-color="var(--graph-grid-color, rgba(128,128,128,0.2))" :gap="18" />
+        <Background :gap="18" pattern-color="var(--arch-grid-color)" />
         <MiniMap pannable zoomable />
         <Controls />
         <ArchGraphFitView />
@@ -161,6 +217,8 @@ onMounted(syncGraphFromModel);
 @import "@vue-flow/core/dist/theme-default.css";
 @import "@vue-flow/controls/dist/style.css";
 @import "@vue-flow/minimap/dist/style.css";
+@import "@vue-flow/node-resizer/dist/style.css";
+@import "./architecture-graph/archGraphTheme.css";
 </style>
 
 <style scoped>
@@ -181,34 +239,93 @@ onMounted(syncGraphFromModel);
   color: var(--text-secondary);
 }
 .agf-vendor a {
-  color: var(--text-accent, var(--accent));
+  color: color-mix(in srgb, var(--text-accent, var(--accent)) 75%, var(--text-secondary));
+}
+.agf-toolbar {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 10px;
+}
+.agf-tb-btn {
+  padding: 4px 12px;
+  font-size: 11px;
+  border-radius: 6px;
+  border: 1px solid #e8e4dc;
+  background: #f7f5f0;
+  color: var(--text-primary);
+  cursor: pointer;
+}
+.agf-tb-btn:hover {
+  border-color: #d8d4cc;
+  background: #fffef9;
+}
+.agf-tb-hint {
+  font-size: 10px;
+  color: var(--text-secondary);
 }
 .agf-vf {
+  --arch-grid-color: v-bind("GRAPH_SURFACE.grid");
+  --arch-node-bg: v-bind("GRAPH_SURFACE.nodeBg");
+  --arch-node-border: v-bind("GRAPH_SURFACE.nodeBorder");
+  --arch-node-shadow: v-bind("GRAPH_SURFACE.nodeShadow");
+  --arch-selection: v-bind("GRAPH_SURFACE.selectionRing");
   height: min(560px, 58vh);
   min-height: 400px;
   border-radius: var(--radius-card);
-  border: 1px solid var(--border-light);
-  background: var(--graph-canvas-bg, var(--bg-elevated));
+  border: 1px solid #e8e4dc;
+  background: v-bind("GRAPH_SURFACE.canvas");
   overflow: hidden;
 }
 .agf-vf :deep(.vue-flow) {
   width: 100%;
   height: 100%;
 }
+.agf-vf :deep(.vue-flow__node) {
+  border: none;
+  background: transparent;
+  box-shadow: none;
+  padding: 0;
+}
+.agf-vf :deep(.vue-flow__node.selected) {
+  box-shadow: none;
+}
 .agf-vf :deep(.vue-flow__handle) {
-  width: 12px;
-  height: 12px;
-  border: 2px solid var(--bg-primary);
-  background: var(--bg-elevated);
+  width: 10px;
+  height: 10px;
+  border: 2px solid #fffef9;
+  background: #f7f5f0;
 }
 .agf-vf :deep(.vue-flow__handle.agn-handle--in) {
-  border-color: #4caf50;
+  border-color: v-bind(handleInColor);
+  background: color-mix(in srgb, v-bind(handleInColor) 18%, #f7f5f0);
 }
 .agf-vf :deep(.vue-flow__handle.agn-handle--out) {
-  border-color: #9c27b0;
+  border-color: v-bind(handleOutColor);
+  background: color-mix(in srgb, v-bind(handleOutColor) 18%, #f7f5f0);
 }
 .agf-vf :deep(.vue-flow__edge-path) {
-  stroke-width: 2;
+  stroke-width: 1.75;
+}
+.agf-vf :deep(.vue-flow__minimap) {
+  border-radius: 8px;
+  border: 1px solid #e8e4dc;
+  background: color-mix(in srgb, #fffef9 92%, transparent);
+}
+.agf-vf :deep(.vue-flow__controls) {
+  box-shadow: none;
+  border: 1px solid #e8e4dc;
+  border-radius: 8px;
+  overflow: hidden;
+  background: #fffef9;
+}
+.agf-vf :deep(.vue-flow__controls-button) {
+  background: #f7f5f0;
+  border-bottom: 1px solid #e8e4dc;
+  fill: #8a857c;
+}
+.agf-vf :deep(.vue-flow__controls-button:hover) {
+  background: #fffaf0;
 }
 .agf-legend {
   display: flex;
@@ -229,16 +346,17 @@ onMounted(syncGraphFromModel);
   border-top: 3px solid;
   margin-right: 4px;
   vertical-align: middle;
+  opacity: 0.9;
 }
 .agf-swatch--builtin {
-  border-color: #4caf50;
+  border-color: v-bind("BACKEND_COLORS.builtin.stroke");
 }
 .agf-swatch--remote {
-  border-color: #2196f3;
+  border-color: v-bind("BACKEND_COLORS.remote.stroke");
   border-top-style: dashed;
 }
 .agf-swatch--directory {
-  border-color: #9c27b0;
+  border-color: v-bind("BACKEND_COLORS.directory.stroke");
   border-top-style: dotted;
 }
 </style>

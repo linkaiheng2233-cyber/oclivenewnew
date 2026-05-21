@@ -35,8 +35,9 @@ export default { inheritAttrs: false };
     :path="path[0]"
     :style="{
       stroke: stroke,
-      strokeWidth: props.selected ? 3 : 2,
+      strokeWidth: selected ? 2.25 : 1.75,
       strokeDasharray: dash,
+      opacity: 0.88,
     }"
     :marker-end="undefined"
   />

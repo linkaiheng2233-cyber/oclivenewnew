@@ -2,9 +2,11 @@
 import { Handle, Position } from "@vue-flow/core";
 import { computed, inject } from "vue";
 import { useI18n } from "vue-i18n";
-import { BACKEND_COLORS } from "../../lib/graphEditorTheme";
+import { BACKEND_COLORS, backendCssVars } from "../../lib/graphEditorTheme";
 import type { CoreModule } from "../../composables/useArchitectureGraphModel";
+import { ARCH_NODE_DEFAULT_SIZE } from "../../composables/useArchitectureGraphLayout";
 import { archGraphActionsKey } from "./archGraphContext";
+import ArchNodeChrome from "./ArchNodeChrome.vue";
 
 const props = defineProps({
   selected: { type: Boolean, default: false },
@@ -12,10 +14,11 @@ const props = defineProps({
 });
 const { t } = useI18n();
 const actions = inject(archGraphActionsKey);
+const size = ARCH_NODE_DEFAULT_SIZE.archModule!;
 
 const moduleKey = computed(() => props.data?.moduleKey as CoreModule);
 const kind = computed(() => props.data?.backendKind as keyof typeof BACKEND_COLORS);
-const bar = computed(() => BACKEND_COLORS[kind.value]?.bar ?? BACKEND_COLORS.builtin.bar);
+const themeStyle = computed(() => backendCssVars(kind.value));
 
 function onSelect(ev: Event) {
   actions?.onBackendChange(moduleKey.value, (ev.target as HTMLSelectElement).value);
@@ -23,129 +26,81 @@ function onSelect(ev: Event) {
 </script>
 
 <template>
-  <div class="agn agn-module" :class="{ 'agn--selected': selected }" :style="{ borderColor: bar }">
-    <Handle id="backend-in" type="target" :position="Position.Left" class="agn-handle agn-handle--in" />
-    <Handle
-      v-if="data?.backendKind === 'directory'"
-      id="plugin-out"
-      type="source"
-      :position="Position.Right"
-      class="agn-handle agn-handle--out"
-    />
-    <div class="agn-module-bar" :style="{ background: bar }" />
-    <div class="agn-module-head">
-      <span aria-hidden="true">{{ data?.icon }}</span>
-      <span class="agn-module-id">{{ data?.moduleKey }}</span>
-    </div>
-    <div class="agn-module-zh">{{ t(data?.labelKey as string) }}</div>
-    <span class="agn-tag" :style="{ color: bar, background: BACKEND_COLORS[kind].tagBg }">{{ data?.backend }}</span>
-    <p v-if="data?.primaryPlugin" class="agn-dir">{{ data.primaryPlugin }}</p>
-    <label class="agn-widget-lbl">{{ t("pluginWorkbench.graph.switchBackend") }}</label>
-    <select
-      class="agn-select nodrag nopan"
-      :disabled="actions?.busy()"
-      :value="data?.sessionOverride"
-      @change="onSelect"
-      @pointerdown.stop
+  <ArchNodeChrome
+    :selected="selected"
+    :min-width="size.minWidth"
+    :min-height="size.minHeight"
+    :max-width="size.maxWidth"
+    :max-height="size.maxHeight"
+  >
+    <div
+      class="agn-module agn-shell-inner"
+      :class="{ 'agn--selected': selected }"
+      :style="themeStyle"
     >
-      <option value="__pack_default__">
-        {{ t("pluginWorkbench.graph.followPack", { value: data?.packDefault }) }}
-      </option>
-      <option v-for="v in (data?.options as string[])" :key="v" :value="v">{{ v }}</option>
-    </select>
-    <div class="agn-module-actions nodrag nopan">
-      <button
-        v-if="data?.primaryPlugin"
-        type="button"
-        class="agn-btn"
-        @click="actions?.onFocusPlugin(String(data.primaryPlugin))"
+      <Handle id="backend-in" type="target" :position="Position.Left" class="agn-handle agn-handle--in" />
+      <Handle
+        v-if="data?.backendKind === 'directory'"
+        id="plugin-out"
+        type="source"
+        :position="Position.Right"
+        class="agn-handle agn-handle--out"
+      />
+      <div class="agn-accent-bar" />
+      <div class="agn-head">
+        <span aria-hidden="true">{{ data?.icon }}</span>
+        <span class="agn-mono agn-module-id">{{ data?.moduleKey }}</span>
+      </div>
+      <p class="agn-hint agn-module-zh">{{ t(data?.labelKey as string) }}</p>
+      <span class="agn-tag">{{ data?.backend }}</span>
+      <p v-if="data?.primaryPlugin" class="agn-hint agn-dir agn-mono">{{ data.primaryPlugin }}</p>
+      <label class="agn-widget-lbl">{{ t("pluginWorkbench.graph.switchBackend") }}</label>
+      <select
+        class="agn-select nodrag nopan"
+        :disabled="actions?.busy()"
+        :value="data?.sessionOverride"
+        @change="onSelect"
+        @pointerdown.stop
       >
-        {{ t("pluginWorkbench.graph.detail") }}
-      </button>
-      <button
-        v-if="(data?.hiddenPluginCount as number) > 0"
-        type="button"
-        class="agn-btn"
-        @click="actions?.onToggleExpand(moduleKey)"
-      >
-        +{{ data.hiddenPluginCount }} {{ t("pluginWorkbench.graph.plugins") }}
-      </button>
+        <option value="__pack_default__">
+          {{ t("pluginWorkbench.graph.followPack", { value: data?.packDefault }) }}
+        </option>
+        <option v-for="v in (data?.options as string[])" :key="v" :value="v">{{ v }}</option>
+      </select>
+      <div class="agn-actions nodrag nopan">
+        <button
+          v-if="data?.primaryPlugin"
+          type="button"
+          class="agn-btn"
+          @click="actions?.onFocusPlugin(String(data.primaryPlugin))"
+        >
+          {{ t("pluginWorkbench.graph.detail") }}
+        </button>
+        <button
+          v-if="(data?.hiddenPluginCount as number) > 0"
+          type="button"
+          class="agn-btn"
+          @click="actions?.onToggleExpand(moduleKey)"
+        >
+          +{{ data.hiddenPluginCount }} {{ t("pluginWorkbench.graph.plugins") }}
+        </button>
+      </div>
     </div>
-  </div>
+  </ArchNodeChrome>
 </template>
 
 <style scoped>
-.agn-module {
-  width: 220px;
-  border-radius: 10px;
-  background: var(--bg-primary);
-  border: 1px solid var(--border-light);
-  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.14);
-  padding: 0 0 10px;
-  position: relative;
-}
-.agn-module-bar {
-  height: 3px;
-  border-radius: 10px 10px 0 0;
-}
-.agn-module-head {
-  display: flex;
-  align-items: center;
-  gap: 6px;
-  padding: 8px 12px 0;
-  font-weight: 700;
+.agn-shell-inner {
+  padding: 0 0 4px;
+  min-height: 100%;
+  box-sizing: border-box;
 }
 .agn-module-id {
-  font-family: ui-monospace, Menlo, Consolas, monospace;
   font-size: 12px;
-}
-.agn-module-zh {
-  padding: 0 12px;
-  font-size: 11px;
-  color: var(--text-secondary);
-}
-.agn-tag {
-  margin: 6px 12px 0;
-  display: inline-block;
-  font-size: 11px;
   font-weight: 600;
-  padding: 2px 8px;
-  border-radius: var(--radius-pill);
-  font-family: ui-monospace, monospace;
 }
+.agn-module-zh,
 .agn-dir {
-  margin: 6px 12px 0;
-  font-size: 11px;
-  color: var(--text-secondary);
-  word-break: break-all;
-}
-.agn-widget-lbl {
-  display: block;
-  margin: 8px 12px 2px;
-  font-size: 10px;
-  color: var(--text-secondary);
-}
-.agn-select {
-  margin: 0 12px;
-  width: calc(100% - 24px);
-  font-size: 11px;
-  padding: 4px 6px;
-  border-radius: 6px;
-  border: 1px solid var(--border-light);
-  background: var(--bg-elevated);
-}
-.agn-module-actions {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 6px;
-  padding: 8px 12px 0;
-}
-.agn-btn {
-  font-size: 11px;
-  padding: 4px 8px;
-  border-radius: 6px;
-  border: 1px solid var(--border-light);
-  background: var(--bg-elevated);
-  cursor: pointer;
+  padding: 0 12px;
 }
 </style>
