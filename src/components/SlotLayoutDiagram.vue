@@ -1,7 +1,7 @@
 <script setup lang="ts">
-import { computed, onMounted, ref } from "vue";
+import { computed, ref } from "vue";
 import { useI18n } from "vue-i18n";
-import { useGraphCanvas } from "../composables/useGraphCanvas";
+import UiSlotMockRegion from "./UiSlotMockRegion.vue";
 import {
   SLOT_CHAT_HEADER,
   SLOT_CHAT_TOOLBAR,
@@ -10,91 +10,19 @@ import {
   SLOT_SIDEBAR,
   usePluginStore,
 } from "../stores/pluginStore";
-import type { DirectoryPluginCatalogEntry } from "../utils/tauri-api";
-
-const WORLD_W = 820;
-const WORLD_H = 500;
 
 const pluginStore = usePluginStore();
 const { t } = useI18n();
 
-const {
-  viewportRef,
-  transformStyle,
-  gridStyle,
-  spaceHeld,
-  panning,
-  scalePercent,
-  zoomIn,
-  zoomOut,
-  resetView,
-  fitWorld,
-  focusPoint,
-  onWheel,
-  onPointerDown,
-  onPointerMove,
-  onPointerUp,
-} = useGraphCanvas({ worldWidth: WORLD_W, worldHeight: WORLD_H, minScale: 0.55, maxScale: 1.8 });
+const activeSlot = ref<string | null>(SLOT_CHAT_HEADER);
 
-const selectedSlot = ref<string | null>(null);
-
-type DiagramSlot = {
-  key: string;
-  labelKey: string;
-  descKey: string;
-  x: number;
-  y: number;
-  w: number;
-};
-
-const diagramSlots: DiagramSlot[] = [
-  {
-    key: SLOT_CHAT_HEADER,
-    labelKey: "pluginWorkbench.layout.chatHeader",
-    descKey: "pluginWorkbench.layout.descHeader",
-    x: 300,
-    y: 36,
-    w: 220,
-  },
-  {
-    key: SLOT_SIDEBAR,
-    labelKey: "pluginWorkbench.layout.sidebar",
-    descKey: "pluginWorkbench.layout.descSidebar",
-    x: 40,
-    y: 150,
-    w: 200,
-  },
-  {
-    key: SLOT_CHAT_TOOLBAR,
-    labelKey: "pluginWorkbench.layout.chatToolbar",
-    descKey: "pluginWorkbench.layout.descToolbar",
-    x: 300,
-    y: 200,
-    w: 220,
-  },
-  {
-    key: SLOT_ROLE_DETAIL,
-    labelKey: "pluginWorkbench.layout.roleDetail",
-    descKey: "pluginWorkbench.layout.descRoleDetail",
-    x: 300,
-    y: 300,
-    w: 220,
-  },
-  {
-    key: SLOT_OVERLAY_FLOATING,
-    labelKey: "pluginWorkbench.layout.overlay",
-    descKey: "pluginWorkbench.layout.descOverlay",
-    x: 220,
-    y: 400,
-    w: 240,
-  },
-];
-
-const regions = [
-  { id: "header", x: 260, y: 12, w: 520, h: 88, labelKey: "pluginWorkbench.layout.regionHeader" },
-  { id: "body", x: 24, y: 108, w: 772, h: 280, labelKey: "pluginWorkbench.layout.regionMain" },
-  { id: "overlay", x: 180, y: 378, w: 460, h: 100, labelKey: "pluginWorkbench.layout.regionOverlay" },
-];
+const slotRows = [
+  { key: SLOT_CHAT_HEADER, labelKey: "pluginWorkbench.layout.chatHeader", hintKey: "pluginWorkbench.layout.descHeader" },
+  { key: SLOT_SIDEBAR, labelKey: "pluginWorkbench.layout.sidebar", hintKey: "pluginWorkbench.layout.descSidebar" },
+  { key: SLOT_CHAT_TOOLBAR, labelKey: "pluginWorkbench.layout.chatToolbar", hintKey: "pluginWorkbench.layout.descToolbar", toolbar: true },
+  { key: SLOT_ROLE_DETAIL, labelKey: "pluginWorkbench.layout.roleDetail", hintKey: "pluginWorkbench.layout.descRoleDetail" },
+  { key: SLOT_OVERLAY_FLOATING, labelKey: "pluginWorkbench.layout.overlay", hintKey: "pluginWorkbench.layout.descOverlay" },
+] as const;
 
 function isContributionOff(slot: string, pluginId: string): boolean {
   if (slot === SLOT_CHAT_TOOLBAR) {
@@ -103,161 +31,146 @@ function isContributionOff(slot: string, pluginId: string): boolean {
   return pluginStore.isSlotContributionDisabled(slot, pluginId);
 }
 
-function candidatesForSlot(slot: string): string[] {
-  return (pluginStore.catalogCandidatesBySlot[slot] ?? []).filter(
-    (id) => !pluginStore.isPluginDisabled(id) && !isContributionOff(slot, id),
-  );
+function boundLabel(slot: string): string {
+  const ids = pluginStore
+    .pluginsOrderedForSlot(slot)
+    .filter((id) => !pluginStore.isPluginDisabled(id) && !isContributionOff(slot, id));
+  if (!ids.length) return t("pluginWorkbench.layout.none");
+  return ids.join(", ");
 }
 
-function orderedActive(slot: string): string[] {
-  return pluginStore.pluginsOrderedForSlot(slot).filter((id) => candidatesForSlot(slot).includes(id));
-}
-
-function catalogEntry(id: string): DirectoryPluginCatalogEntry | undefined {
-  return pluginStore.catalog.find((c) => c.id === id);
-}
-
-function onSlotSelect(slot: string, ev: Event) {
-  const v = (ev.target as HTMLSelectElement).value;
-  if (!v) {
-    pluginStore.setSlotPluginIds(slot, []);
-    return;
-  }
-  const rest = orderedActive(slot).filter((id) => id !== v);
-  pluginStore.setSlotPluginIds(slot, [v, ...rest]);
-}
-
-function isEmpty(slot: string): boolean {
-  return orderedActive(slot).length === 0;
-}
-
-function selectSlot(key: string) {
-  selectedSlot.value = key;
-}
-
-function onSlotDblClick(sl: DiagramSlot) {
-  selectSlot(sl.key);
-  focusPoint(sl.x + sl.w / 2, sl.y + 60);
-}
-
-const contributionRows = computed(() =>
-  pluginStore.catalog.map((entry) => ({
-    id: entry.id,
-    slots: entry.uiSlotNames ?? [],
-    disabled: pluginStore.isPluginDisabled(entry.id),
+const mapRows = computed(() =>
+  slotRows.map((r) => ({
+    key: r.key,
+    label: t(r.labelKey),
+    bound: boundLabel(r.key),
+    empty: boundLabel(r.key) === t("pluginWorkbench.layout.none"),
   })),
 );
-
-onMounted(() => fitWorld());
 </script>
 
 <template>
   <div class="sld-root">
     <p class="sld-lead">{{ t("pluginWorkbench.layout.lead") }}</p>
 
-    <div
-      ref="viewportRef"
-      class="sld-viewport"
-      :class="{ 'sld-viewport--pan': spaceHeld || panning }"
-      :aria-label="t('pluginWorkbench.layout.frameAria')"
-      @wheel="onWheel"
-      @pointerdown="onPointerDown"
-      @pointermove="onPointerMove"
-      @pointerup="onPointerUp"
-      @pointercancel="onPointerUp"
-    >
-      <div class="sld-toolbar" @click.stop>
-        <button type="button" class="sld-tb-btn" @click="zoomIn()">+</button>
-        <button type="button" class="sld-tb-btn" @click="zoomOut()">−</button>
-        <button type="button" class="sld-tb-btn" @click="resetView()">
-          {{ t("pluginWorkbench.graph.resetView") }}
-        </button>
-        <button type="button" class="sld-tb-btn" @click="fitWorld()">
-          {{ t("pluginWorkbench.graph.fitAll") }}
-        </button>
-        <span class="sld-tb-scale">{{ scalePercent }}</span>
-      </div>
+    <div class="sld-workspace">
+      <div class="sld-mock-wrap" :aria-label="t('pluginWorkbench.layout.frameAria')">
+        <p class="sld-mock-caption">{{ t("pluginWorkbench.layout.mockCaption") }}</p>
 
-      <div class="sld-grid" :style="gridStyle" />
+        <div class="sld-mock-app">
+          <header class="sld-mock-chrome">
+            <span class="sld-mock-dot" />
+            <span class="sld-mock-dot" />
+            <span class="sld-mock-dot" />
+            <span class="sld-mock-chrome-title">{{ t("pluginWorkbench.layout.mockAppTitle") }}</span>
+          </header>
 
-      <div
-        class="sld-world"
-        :style="{ transform: transformStyle, width: WORLD_W + 'px', height: WORLD_H + 'px' }"
-      >
-        <div
-          v-for="reg in regions"
-          :key="reg.id"
-          class="sld-zone"
-          :style="{ left: reg.x + 'px', top: reg.y + 'px', width: reg.w + 'px', height: reg.h + 'px' }"
-        >
-          <span class="sld-zone-lbl">{{ t(reg.labelKey) }}</span>
-        </div>
+          <div class="sld-mock-main">
+            <aside class="sld-mock-aside">
+              <div class="sld-mock-role">
+                <div class="sld-mock-avatar" aria-hidden="true" />
+                <div class="sld-mock-role-lines">
+                  <span class="sld-mock-line sld-mock-line--wide" />
+                  <span class="sld-mock-line" />
+                </div>
+              </div>
 
-        <div
-          v-for="sl in diagramSlots"
-          :key="sl.key"
-          class="ui-node"
-          :class="{
-            'ui-node--empty': isEmpty(sl.key),
-            'ui-node--selected': selectedSlot === sl.key,
-            'ui-node--filled': !isEmpty(sl.key),
-          }"
-          :style="{ left: sl.x + 'px', top: sl.y + 'px', width: sl.w + 'px' }"
-          @click.stop="selectSlot(sl.key)"
-          @dblclick.stop="onSlotDblClick(sl)"
-        >
-          <div class="ui-node-bar" :class="{ 'ui-node-bar--empty': isEmpty(sl.key) }" />
-          <div class="ui-node-body">
-            <div class="ui-node-head">
-              <span class="ui-node-key">{{ sl.key }}</span>
-              <span
-                class="ui-led"
-                :class="isEmpty(sl.key) ? 'ui-led--off' : 'ui-led--on'"
+              <UiSlotMockRegion
+                :slot-key="SLOT_SIDEBAR"
+                label-key="pluginWorkbench.layout.sidebar"
+                hint-key="pluginWorkbench.layout.descSidebar"
+                :active="activeSlot === SLOT_SIDEBAR"
+                @select="activeSlot = SLOT_SIDEBAR"
               />
-            </div>
-            <p class="ui-node-desc">{{ t(sl.descKey) }}</p>
-            <div v-if="!isEmpty(sl.key)" class="ui-bound">
-              <span
-                v-for="pid in orderedActive(sl.key)"
-                :key="pid"
-                class="ui-chip"
-                :title="catalogEntry(pid)?.version ? 'v' + catalogEntry(pid)!.version : ''"
-              >
-                <span class="ui-chip-ico" aria-hidden="true">🧩</span>
-                {{ pid }}
-              </span>
-            </div>
-            <p v-else class="ui-empty-lbl">{{ t("pluginWorkbench.layout.emptySlot") }}</p>
-            <label class="ui-select-wrap">
-              <span class="ui-select-lbl">{{ t("pluginWorkbench.layout.bindPlugin") }}</span>
-              <select
-                class="ui-select"
-                :value="orderedActive(sl.key)[0] ?? ''"
-                :aria-label="t('pluginWorkbench.layout.selectAria', { slot: t(sl.labelKey) })"
-                @click.stop
-                @change="onSlotSelect(sl.key, $event)"
-              >
-                <option value="">{{ t("pluginWorkbench.layout.none") }}</option>
-                <option v-for="id in candidatesForSlot(sl.key)" :key="id" :value="id">
-                  {{ id }}
-                </option>
-              </select>
-            </label>
+
+              <UiSlotMockRegion
+                :slot-key="SLOT_ROLE_DETAIL"
+                label-key="pluginWorkbench.layout.roleDetail"
+                hint-key="pluginWorkbench.layout.descRoleDetail"
+                :active="activeSlot === SLOT_ROLE_DETAIL"
+                @select="activeSlot = SLOT_ROLE_DETAIL"
+              />
+            </aside>
+
+            <section class="sld-mock-chat">
+              <UiSlotMockRegion
+                :slot-key="SLOT_CHAT_HEADER"
+                label-key="pluginWorkbench.layout.chatHeader"
+                hint-key="pluginWorkbench.layout.descHeader"
+                :active="activeSlot === SLOT_CHAT_HEADER"
+                @select="activeSlot = SLOT_CHAT_HEADER"
+              />
+
+              <UiSlotMockRegion
+                :slot-key="SLOT_CHAT_TOOLBAR"
+                label-key="pluginWorkbench.layout.chatToolbar"
+                hint-key="pluginWorkbench.layout.descToolbar"
+                toolbar-slot
+                :active="activeSlot === SLOT_CHAT_TOOLBAR"
+                @select="activeSlot = SLOT_CHAT_TOOLBAR"
+              />
+
+              <div class="sld-mock-messages" aria-hidden="true">
+                <div class="sld-bubble sld-bubble--user" />
+                <div class="sld-bubble sld-bubble--role" />
+                <div class="sld-bubble sld-bubble--user sld-bubble--short" />
+              </div>
+
+              <div class="sld-mock-input" aria-hidden="true">
+                <span class="sld-mock-input-ph">{{ t("pluginWorkbench.layout.mockInput") }}</span>
+                <span class="sld-mock-send" />
+              </div>
+            </section>
+          </div>
+
+          <div class="sld-mock-overlay-wrap">
+            <UiSlotMockRegion
+              :slot-key="SLOT_OVERLAY_FLOATING"
+              label-key="pluginWorkbench.layout.overlay"
+              hint-key="pluginWorkbench.layout.descOverlay"
+              :active="activeSlot === SLOT_OVERLAY_FLOATING"
+              @select="activeSlot = SLOT_OVERLAY_FLOATING"
+            />
           </div>
         </div>
       </div>
+
+      <aside class="sld-map" :aria-label="t('pluginWorkbench.layout.mapAria')">
+        <h4 class="sld-map-title">{{ t("pluginWorkbench.layout.mapTitle") }}</h4>
+        <p class="sld-map-hint">{{ t("pluginWorkbench.layout.mapHint") }}</p>
+        <table class="sld-map-table">
+          <thead>
+            <tr>
+              <th>{{ t("pluginWorkbench.layout.mapColSlot") }}</th>
+              <th>{{ t("pluginWorkbench.layout.mapColPlugin") }}</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr
+              v-for="row in mapRows"
+              :key="row.key"
+              :class="{ 'sld-map-row--active': activeSlot === row.key, 'sld-map-row--empty': row.empty }"
+              @click="activeSlot = row.key"
+            >
+              <td>
+                <code class="sld-map-code">{{ row.key }}</code>
+                <span class="sld-map-zh">{{ row.label }}</span>
+              </td>
+              <td>{{ row.bound }}</td>
+            </tr>
+          </tbody>
+        </table>
+      </aside>
     </div>
 
     <details class="sld-contrib">
       <summary>{{ t("pluginWorkbench.layout.contribSummary") }}</summary>
       <ul class="sld-contrib-list">
-        <li v-for="row in contributionRows" :key="row.id" class="sld-contrib-li">
-          <strong>{{ row.id }}</strong>
-          <span v-if="row.disabled" class="sld-muted"> · {{ t("pluginWorkbench.layout.pluginOff") }}</span>
-          <span v-else-if="!row.slots.length" class="sld-muted">
-            · {{ t("pluginWorkbench.layout.noSlots") }}
+        <li v-for="c in pluginStore.catalog" :key="c.id">
+          <strong>{{ c.id }}</strong>
+          <span class="sld-muted">
+            · {{ (c.uiSlotNames ?? []).join(", ") || t("pluginWorkbench.layout.noSlots") }}
           </span>
-          <span v-else class="sld-muted"> · {{ row.slots.join(", ") }}</span>
         </li>
       </ul>
     </details>
@@ -274,197 +187,223 @@ onMounted(() => fitWorld());
   margin: 0;
   font-size: 12px;
   color: var(--text-secondary);
+  line-height: 1.45;
 }
-.sld-viewport {
-  position: relative;
-  height: min(480px, 52vh);
-  min-height: 320px;
-  overflow: hidden;
+.sld-workspace {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(200px, 280px);
+  gap: 14px;
+  align-items: start;
+}
+@media (max-width: 860px) {
+  .sld-workspace {
+    grid-template-columns: 1fr;
+  }
+}
+.sld-mock-wrap {
   border-radius: var(--radius-card);
   border: 1px solid var(--border-light);
-  background: var(--bg-elevated);
-  touch-action: none;
+  background: color-mix(in srgb, var(--bg-elevated) 50%, var(--bg-primary));
+  padding: 12px;
 }
-.sld-viewport--pan {
-  cursor: grab;
-}
-.sld-viewport--pan:active {
-  cursor: grabbing;
-}
-.sld-grid {
-  position: absolute;
-  inset: 0;
-  pointer-events: none;
-  background-image: radial-gradient(
-    circle,
-    var(--graph-grid-color, color-mix(in srgb, var(--text-secondary) 35%, transparent)) var(--graph-grid-dot, 1px),
-    transparent var(--graph-grid-dot, 1px)
-  );
-}
-html[data-theme="dark"] .sld-grid {
-  --graph-grid-color: color-mix(in srgb, #fff 20%, transparent);
-}
-html:not([data-theme="dark"]) .sld-grid {
-  --graph-grid-color: color-mix(in srgb, #000 16%, transparent);
-}
-.sld-toolbar {
-  position: absolute;
-  z-index: 5;
-  left: 10px;
-  top: 10px;
-  display: flex;
-  gap: 6px;
-  align-items: center;
-  padding: 6px 8px;
-  border-radius: 8px;
-  border: 1px solid var(--border-light);
-  background: color-mix(in srgb, var(--bg-primary) 92%, transparent);
-}
-.sld-tb-btn {
-  padding: 4px 10px;
-  font-size: 12px;
-  border-radius: 6px;
-  border: 1px solid var(--border-light);
-  background: var(--bg-elevated);
-  cursor: pointer;
-}
-.sld-tb-scale {
+.sld-mock-caption {
+  margin: 0 0 8px;
   font-size: 11px;
   color: var(--text-secondary);
 }
-.sld-world {
-  position: absolute;
-  left: 0;
-  top: 0;
-  transform-origin: 0 0;
-}
-.sld-zone {
-  position: absolute;
-  border: 2px dashed color-mix(in srgb, var(--border-light) 85%, transparent);
-  border-radius: 12px;
-  pointer-events: none;
-  background: color-mix(in srgb, var(--bg-primary) 40%, transparent);
-}
-.sld-zone-lbl {
-  position: absolute;
-  top: 6px;
-  left: 10px;
-  font-size: 10px;
-  font-weight: 700;
-  letter-spacing: 0.06em;
-  text-transform: uppercase;
-  color: var(--text-secondary);
-}
-.ui-node {
-  position: absolute;
-  z-index: 2;
-  border-radius: 8px;
+.sld-mock-app {
+  position: relative;
+  border-radius: 10px;
+  border: 1px solid var(--border-light);
   background: var(--bg-primary);
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.14);
-  border: 1px solid var(--border-light);
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.08);
   overflow: hidden;
-  transition:
-    transform 0.15s ease,
-    box-shadow 0.15s ease,
-    border-color 0.15s ease;
+  min-height: 340px;
 }
-.ui-node:hover {
-  transform: scale(1.02);
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
-}
-.ui-node--selected {
-  border: 2px solid #2196f3;
-  box-shadow: 0 0 0 2px color-mix(in srgb, #2196f3 22%, transparent);
-}
-.ui-node--empty {
-  border-style: dashed;
-  background: color-mix(in srgb, var(--bg-elevated) 80%, var(--bg-primary));
-}
-.ui-node-bar {
-  height: 3px;
-  background: var(--accent);
-}
-.ui-node-bar--empty {
-  background: color-mix(in srgb, var(--text-secondary) 40%, transparent);
-}
-.ui-node-body {
-  padding: 8px 10px 10px;
-  display: flex;
-  flex-direction: column;
-  gap: 6px;
-}
-.ui-node-head {
+.sld-mock-chrome {
   display: flex;
   align-items: center;
-  justify-content: space-between;
-  gap: 8px;
+  gap: 6px;
+  padding: 8px 12px;
+  border-bottom: 1px solid var(--border-light);
+  background: var(--bg-secondary, var(--bg-elevated));
 }
-.ui-node-key {
-  font-size: 11px;
-  font-family: ui-monospace, Menlo, Consolas, monospace;
-  font-weight: 600;
-  color: var(--text-primary);
-}
-.ui-led {
+.sld-mock-dot {
   width: 8px;
   height: 8px;
   border-radius: 50%;
-  flex-shrink: 0;
+  background: color-mix(in srgb, var(--text-secondary) 30%, transparent);
 }
-.ui-led--on {
-  background: #4caf50;
-  box-shadow: 0 0 6px rgba(76, 175, 80, 0.7);
-}
-.ui-led--off {
-  background: color-mix(in srgb, var(--text-secondary) 50%, transparent);
-}
-.ui-node-desc {
-  margin: 0;
+.sld-mock-chrome-title {
+  margin-left: 8px;
   font-size: 11px;
   color: var(--text-secondary);
 }
-.ui-bound {
+.sld-mock-main {
+  display: grid;
+  grid-template-columns: minmax(148px, 32%) 1fr;
+  min-height: 280px;
+}
+.sld-mock-aside {
+  border-right: 1px solid var(--border-light);
+  padding: 10px;
   display: flex;
-  flex-wrap: wrap;
-  gap: 4px;
+  flex-direction: column;
+  gap: 10px;
+  background: color-mix(in srgb, var(--bg-elevated) 40%, var(--bg-primary));
 }
-.ui-chip {
-  display: inline-flex;
+.sld-mock-role {
+  display: flex;
+  gap: 8px;
   align-items: center;
-  gap: 4px;
-  font-size: 10px;
-  padding: 2px 8px;
-  border-radius: var(--radius-pill);
-  background: color-mix(in srgb, var(--accent) 14%, var(--bg-elevated));
-  border: 1px solid color-mix(in srgb, var(--accent) 30%, var(--border-light));
-  font-family: ui-monospace, monospace;
+  padding: 8px;
+  border-radius: 8px;
+  background: var(--bg-primary);
+  border: 1px solid var(--border-light);
 }
-.ui-chip-ico {
-  font-size: 10px;
+.sld-mock-avatar {
+  width: 40px;
+  height: 48px;
+  border-radius: 6px;
+  background: linear-gradient(
+    160deg,
+    color-mix(in srgb, var(--accent) 25%, var(--bg-elevated)),
+    var(--bg-elevated)
+  );
+  flex-shrink: 0;
 }
-.ui-empty-lbl {
-  margin: 0;
+.sld-mock-role-lines {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+.sld-mock-line {
+  height: 6px;
+  border-radius: 3px;
+  background: color-mix(in srgb, var(--text-secondary) 18%, var(--border-light));
+  width: 70%;
+}
+.sld-mock-line--wide {
+  width: 90%;
+}
+.sld-mock-chat {
+  padding: 10px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  min-width: 0;
+}
+.sld-mock-messages {
+  flex: 1;
+  min-height: 100px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  padding: 8px 4px;
+  opacity: 0.55;
+}
+.sld-bubble {
+  height: 28px;
+  border-radius: 10px;
+  max-width: 72%;
+}
+.sld-bubble--user {
+  align-self: flex-end;
+  background: color-mix(in srgb, var(--accent) 20%, var(--bg-elevated));
+}
+.sld-bubble--role {
+  align-self: flex-start;
+  background: var(--bg-elevated);
+  border: 1px solid var(--border-light);
+}
+.sld-bubble--short {
+  max-width: 48%;
+}
+.sld-mock-input {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 10px;
+  border-radius: 8px;
+  border: 1px solid var(--border-light);
+  background: var(--bg-elevated);
+  opacity: 0.7;
+}
+.sld-mock-input-ph {
+  flex: 1;
   font-size: 11px;
+  color: var(--text-secondary);
+}
+.sld-mock-send {
+  width: 28px;
+  height: 28px;
+  border-radius: 6px;
+  background: color-mix(in srgb, var(--accent) 35%, var(--bg-primary));
+}
+.sld-mock-overlay-wrap {
+  position: absolute;
+  right: 12px;
+  bottom: 12px;
+  width: min(220px, 42%);
+  z-index: 2;
+}
+.sld-map {
+  border-radius: var(--radius-card);
+  border: 1px solid var(--border-light);
+  background: var(--bg-secondary, var(--bg-elevated));
+  padding: 12px;
+  font-size: 12px;
+}
+.sld-map-title {
+  margin: 0 0 4px;
+  font-size: 13px;
+  font-weight: 600;
+}
+.sld-map-hint {
+  margin: 0 0 10px;
+  font-size: 11px;
+  color: var(--text-secondary);
+  line-height: 1.4;
+}
+.sld-map-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 11px;
+}
+.sld-map-table th {
+  text-align: left;
+  padding: 6px 4px;
+  border-bottom: 1px solid var(--border-light);
+  color: var(--text-secondary);
+  font-weight: 600;
+}
+.sld-map-table td {
+  padding: 8px 4px;
+  border-bottom: 1px solid color-mix(in srgb, var(--border-light) 60%, transparent);
+  vertical-align: top;
+}
+.sld-map-row--active td {
+  background: color-mix(in srgb, #2196f3 10%, transparent);
+}
+.sld-map-row--empty td:last-child {
   color: var(--text-secondary);
   font-style: italic;
 }
-.ui-select-wrap {
-  display: flex;
-  flex-direction: column;
-  gap: 4px;
-  margin-top: 2px;
+.sld-map-table tbody tr {
+  cursor: pointer;
 }
-.ui-select-lbl {
+.sld-map-table tbody tr:hover td {
+  background: color-mix(in srgb, var(--accent) 8%, transparent);
+}
+.sld-map-code {
+  display: block;
+  font-size: 10px;
+  margin-bottom: 2px;
+}
+.sld-map-zh {
   font-size: 10px;
   color: var(--text-secondary);
-}
-.ui-select {
-  width: 100%;
-  padding: 5px 8px;
-  font-size: 12px;
-  border-radius: 6px;
-  border: 1px solid var(--border-light);
-  background: var(--bg-elevated);
 }
 .sld-contrib {
   font-size: 12px;

@@ -19,10 +19,10 @@ const emit = defineEmits<{
   "focus-plugin": [pluginId: string];
 }>();
 
-const WORLD_W = 1080;
-const WORLD_H = 520;
-const NODE_W = 220;
-const NODE_H = 108;
+const WORLD_W = 1180;
+const WORLD_H = 560;
+const NODE_W = 228;
+const NODE_H = 112;
 const PLUGIN_W = 188;
 const PLUGIN_H = 72;
 
@@ -72,7 +72,7 @@ const coreModules: {
   { key: "agent", labelKey: "pluginWorkbench.graph.agent", icon: "🛠", options: ["builtin", "remote", "directory"] },
 ];
 
-const KERNEL = { cx: 118, cy: 268, r: 52 };
+const KERNEL = { cx: 150, cy: 280, r: 56 };
 
 const pluginBackends = computed(() => roleStore.roleInfo.pluginBackends);
 const pluginBackendsEffective = computed(() => roleStore.roleInfo.pluginBackendsEffective);
@@ -89,13 +89,15 @@ type SlotLayout = {
   options: string[];
 };
 
-const slotLayouts = computed<SlotLayout[]>(() =>
-  coreModules.map((m, i) => ({
+const slotLayouts = computed<SlotLayout[]>(() => {
+  const colX = [468, 708];
+  const rowY = [32, 132, 232];
+  return coreModules.map((m, i) => ({
     ...m,
-    x: 400,
-    y: 24 + i * 76,
-  })),
-);
+    x: colX[Math.floor(i / 3)] ?? colX[0]!,
+    y: rowY[i % 3] ?? 32,
+  }));
+});
 
 function effectiveBackend(key: CoreModule): string {
   return String(pluginBackendsEffective.value[key] ?? "");
@@ -148,16 +150,16 @@ type EdgeDef = {
 
 const edges = computed<EdgeDef[]>(() => {
   const out: EdgeDef[] = [];
-  const kx = KERNEL.cx + KERNEL.r;
+  const kx = KERNEL.cx + KERNEL.r * 0.92;
   const ky = KERNEL.cy;
 
   for (const sl of slotLayouts.value) {
     const kind = backendKind(sl.key);
-    const sx = sl.x;
+    const sx = sl.x + 6;
     const sy = sl.y + NODE_H / 2;
     out.push({
       id: `k-${sl.key}`,
-      d: bezierPath(kx, ky, sx, sy),
+      d: bezierPath(kx, ky, sx, sy, 0.5),
       kind,
       toModule: sl.key,
       animated: kind === "remote",
@@ -166,11 +168,13 @@ const edges = computed<EdgeDef[]>(() => {
     if (kind !== "directory") continue;
     const plugins = visiblePluginIds(sl.key);
     plugins.forEach((pid, j) => {
-      const px = sl.x + NODE_W;
-      const py = sl.y + 18 + j * (PLUGIN_H + 8);
+      const ox = sl.x + NODE_W - 4;
+      const oy = sl.y + NODE_H / 2;
+      const px = ox + 28;
+      const py = sl.y + 20 + j * (PLUGIN_H + 12);
       out.push({
         id: `p-${sl.key}-${pid}`,
-        d: bezierPath(sl.x + NODE_W, sl.y + NODE_H / 2, px + 4, py + PLUGIN_H / 2, 0.35),
+        d: bezierPath(ox, oy, px, py + PLUGIN_H / 2, 0.4),
         kind: "directory",
         animated: false,
       });
@@ -179,7 +183,7 @@ const edges = computed<EdgeDef[]>(() => {
 
   out.push({
     id: "k-complex",
-    d: bezierPath(kx, ky, 280, 448, 0.35),
+    d: bezierPath(kx, ky, 520, 468, 0.4),
     kind: "builtin",
   });
 
@@ -286,6 +290,10 @@ watch(
       @pointercancel="onPointerUp"
       @click.stop
     >
+      <div class="arch-canvas-title" @click.stop>
+        {{ t("pluginWorkbench.graph.canvasTitle") }}
+      </div>
+
       <div class="arch-toolbar" @click.stop>
         <button type="button" class="arch-tb-btn" :title="t('pluginWorkbench.graph.zoomIn')" @click="zoomIn()">
           +
@@ -326,6 +334,15 @@ watch(
           :height="WORLD_H"
           aria-hidden="true"
         >
+          <defs>
+            <filter id="arch-glow-remote" x="-20%" y="-20%" width="140%" height="140%">
+              <feGaussianBlur stdDeviation="2" result="blur" />
+              <feMerge>
+                <feMergeNode in="blur" />
+                <feMergeNode in="SourceGraphic" />
+              </feMerge>
+            </filter>
+          </defs>
           <path
             v-for="edge in edges"
             :key="edge.id"
@@ -333,17 +350,21 @@ watch(
             class="arch-edge"
             :class="[
               `arch-edge--${edge.kind}`,
-              { 'arch-edge--flow': edge.animated, 'arch-edge--hot': edge.toModule && hoveredModule === edge.toModule },
+              {
+                'arch-edge--flow': edge.animated,
+                'arch-edge--hot': edge.toModule && hoveredModule === edge.toModule,
+              },
             ]"
             fill="none"
             :stroke="BACKEND_COLORS[edge.kind].stroke"
             :stroke-width="edgeStrokeWidth(edge)"
             :stroke-dasharray="edgeDash(edge.kind) === 'none' ? undefined : edgeDash(edge.kind)"
+            :filter="edge.animated ? 'url(#arch-glow-remote)' : undefined"
           />
         </svg>
 
         <div
-          class="arch-kernel"
+          class="arch-kernel arch-kernel--hex"
           :style="{ left: KERNEL.cx - KERNEL.r + 'px', top: KERNEL.cy - KERNEL.r + 'px', width: KERNEL.r * 2 + 'px', height: KERNEL.r * 2 + 'px' }"
           :title="t('pluginWorkbench.graph.kernelTitle')"
         >
@@ -362,12 +383,20 @@ watch(
             'ge-node--hover': hoveredModule === sl.key,
             [`ge-node--${backendKind(sl.key)}`]: true,
           }"
-          :style="{ left: sl.x + 'px', top: sl.y + 'px', width: NODE_W + 'px' }"
+          :style="{ left: sl.x + 'px', top: sl.y + 'px', width: NODE_W + 'px', minHeight: NODE_H + 'px' }"
           @mouseenter="hoveredModule = sl.key"
           @mouseleave="hoveredModule = null"
           @click.stop="selectModule(sl.key)"
           @dblclick.stop="onNodeDblClick(sl)"
         >
+          <span
+            class="ge-port ge-port--in"
+            :style="{ borderColor: BACKEND_COLORS[backendKind(sl.key)].bar }"
+          />
+          <span
+            v-if="backendKind(sl.key) === 'directory'"
+            class="ge-port ge-port--out"
+          />
           <div
             class="ge-node-bar"
             :style="{ background: BACKEND_COLORS[backendKind(sl.key)].bar }"
@@ -472,8 +501,9 @@ watch(
 
         <div
           class="ge-node ge-node--complex ge-node--builtin"
-          :style="{ left: '240px', top: '420px', width: '200px' }"
+          :style="{ left: '500px', top: '448px', width: '220px' }"
         >
+          <span class="ge-port ge-port--in" :style="{ borderColor: BACKEND_COLORS.builtin.bar }" />
           <div class="ge-node-bar" :style="{ background: BACKEND_COLORS.builtin.bar }" />
           <div class="ge-node-body">
             <div class="ge-node-title">
@@ -535,13 +565,30 @@ watch(
 }
 .arch-viewport {
   position: relative;
-  height: min(520px, 58vh);
-  min-height: 360px;
+  height: min(540px, 58vh);
+  min-height: 380px;
   overflow: hidden;
   border-radius: var(--radius-card);
   border: 1px solid var(--border-light);
   background: var(--graph-canvas-bg, var(--bg-elevated));
   touch-action: none;
+}
+.arch-canvas-title {
+  position: absolute;
+  z-index: 6;
+  left: 50%;
+  top: 8px;
+  transform: translateX(-50%);
+  padding: 4px 14px;
+  border-radius: var(--radius-pill);
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.04em;
+  color: var(--text-secondary);
+  border: 1px solid var(--border-light);
+  background: color-mix(in srgb, var(--bg-primary) 90%, transparent);
+  backdrop-filter: blur(4px);
+  pointer-events: none;
 }
 .arch-viewport--pan {
   cursor: grab;
@@ -653,9 +700,19 @@ html:not([data-theme="dark"]) .arch-grid {
   justify-content: center;
   border-radius: 50%;
   border: 2px solid color-mix(in srgb, #4caf50 55%, var(--border-light));
-  background: var(--bg-primary);
-  box-shadow: 0 2px 12px rgba(0, 0, 0, 0.18);
+  background: linear-gradient(
+    145deg,
+    var(--bg-primary),
+    color-mix(in srgb, #4caf50 8%, var(--bg-elevated))
+  );
+  box-shadow:
+    0 2px 12px rgba(0, 0, 0, 0.18),
+    inset 0 1px 0 color-mix(in srgb, #fff 12%, transparent);
   text-align: center;
+}
+.arch-kernel--hex {
+  border-radius: 0;
+  clip-path: polygon(50% 0%, 93% 25%, 93% 75%, 50% 100%, 7% 75%, 7% 25%);
 }
 .arch-kernel-glow {
   position: absolute;
@@ -696,9 +753,11 @@ html:not([data-theme="dark"]) .arch-grid {
   z-index: 3;
   border-radius: 8px;
   background: var(--bg-primary);
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
-  border: 1px solid var(--border-light);
-  overflow: hidden;
+  box-shadow:
+    0 2px 8px rgba(0, 0, 0, 0.15),
+    inset 0 1px 0 color-mix(in srgb, #fff 8%, transparent);
+  border: 1px solid color-mix(in srgb, var(--border-light) 90%, #000);
+  overflow: visible;
   transition:
     transform 0.15s ease,
     box-shadow 0.15s ease,
@@ -707,11 +766,36 @@ html:not([data-theme="dark"]) .arch-grid {
 }
 .ge-node:hover {
   transform: scale(1.02);
-  box-shadow: 0 4px 14px rgba(0, 0, 0, 0.22);
+  box-shadow: 0 6px 18px rgba(0, 0, 0, 0.22);
+  z-index: 4;
 }
 .ge-node--selected {
   border: 2px solid #2196f3;
-  box-shadow: 0 0 0 2px color-mix(in srgb, #2196f3 25%, transparent);
+  box-shadow:
+    0 0 0 3px color-mix(in srgb, #2196f3 22%, transparent),
+    0 6px 18px rgba(0, 0, 0, 0.2);
+  z-index: 5;
+}
+.ge-port {
+  position: absolute;
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  border: 2px solid;
+  background: var(--bg-primary);
+  box-shadow: 0 0 0 2px var(--bg-primary);
+  z-index: 2;
+}
+.ge-port--in {
+  left: -5px;
+  top: 50%;
+  margin-top: -5px;
+}
+.ge-port--out {
+  right: -5px;
+  top: 50%;
+  margin-top: -5px;
+  border-color: #9c27b0;
 }
 .ge-node-bar {
   height: 3px;
