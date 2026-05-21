@@ -1,9 +1,12 @@
 <script setup lang="ts">
 import { open } from "@tauri-apps/api/dialog";
-import { computed, ref, toRef, watch } from "vue";
+import { computed, defineAsyncComponent, ref, toRef, watch } from "vue";
 import { useI18n } from "vue-i18n";
-import ArchitectureGraph from "../components/ArchitectureGraph.vue";
 import InstalledPluginWorkspaceDetail from "../components/InstalledPluginWorkspaceDetail.vue";
+
+const ArchitectureGraph = defineAsyncComponent(
+  () => import("../components/ArchitectureGraphFlow.vue"),
+);
 import PluginScaffoldWizard from "../components/PluginScaffoldWizard.vue";
 import SlotLayoutDiagram from "../components/SlotLayoutDiagram.vue";
 import { useAppToast } from "../composables/useAppToast";

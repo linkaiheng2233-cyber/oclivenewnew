@@ -41,6 +41,8 @@ export default {
     plugins: "插件",
     resetLayout: "重置布局",
     dragHint: "拖拽节点标题栏可调整位置",
+    poweredBy: "节点画布基于",
+    comfyRef: "连线与交互参考 ComfyUI / LiteGraph 范式",
     canvasAria: "后端架构节点画布",
     canvasTitle: "后端设施 · 辐射节点图",
     layerHub: "编排中心",

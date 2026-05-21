@@ -42,6 +42,8 @@ export default {
     plugins: "plugins",
     resetLayout: "Reset layout",
     dragHint: "Drag node headers to reposition",
+    poweredBy: "Graph powered by",
+    comfyRef: "Wiring/interaction inspired by ComfyUI / LiteGraph",
     canvasAria: "Backend facility node canvas",
     canvasTitle: "Backend facilities · radial graph",
     layerHub: "Orchestrator",
