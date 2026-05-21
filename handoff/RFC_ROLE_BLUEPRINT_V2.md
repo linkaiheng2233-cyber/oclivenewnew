@@ -93,7 +93,7 @@ roles/{role_id}/
 
 ### 4.4 `module_relations`
 
-**派生视图**（非 SSOT）；由 `slot_registry` 中 directory 槽自动生成。
+**派生视图**（非 SSOT）；由 `slot_registry` 中 directory 槽自动生成。**禁止**写入 `pipeline.ocblueprint` 文件（决议 B3=C）。
 
 ---
 
@@ -167,4 +167,8 @@ roles/{role_id}/
 
 - [x] 产品关闭 Q1–Q8  
 - [x] RFC Accepted  
-- [ ] 维护者确认 [BLUEPRINT_V2_IMPLEMENTATION_PLAN.md](BLUEPRINT_V2_IMPLEMENTATION_PLAN.md) 后开工  
+- [x] 维护者确认实施计划（2026-05-20；[BLUEPRINT_V2_DECISIONS.md](BLUEPRINT_V2_DECISIONS.md)）  
+
+## 11. 决议记录
+
+完整问卷答复见 [BLUEPRINT_V2_DECISIONS.md](BLUEPRINT_V2_DECISIONS.md)。

@@ -1,10 +1,10 @@
-# 蓝图 v2 实施计划（待维护者确认后开工）
+# 蓝图 v2 实施计划
 
 | 项 | 值 |
 |----|-----|
-| 状态 | **待确认** — 请审阅本文件，确认后回复「可以落实」再写代码 |
+| 状态 | **已确认 / 可以落实**（决议见 [BLUEPRINT_V2_DECISIONS.md](BLUEPRINT_V2_DECISIONS.md)） |
 | RFC | [RFC_ROLE_BLUEPRINT_V2.md](RFC_ROLE_BLUEPRINT_V2.md)（**Accepted**） |
-| 当前阶段 | **计划冻结**；**仅 P1 为首批代码**（Schema + validation，**不改** `co_present`） |
+| 当前阶段 | **P1 已落实**（Schema + validation）；**P2+ 待二次确认** |
 
 ---
 
@@ -72,7 +72,7 @@
 - `meta.relations` / `default_relation` 结构合法
 - `slot_registry` 至少一个 `type: llm`
 - 每个槽位 `type` / `backend` 枚举合法；directory 必填 `plugin` 或 `plugins`
-- `module_relations` 若存在，须与 `slot_registry` 派生结果一致（或 validate 时忽略作者手写、仅输出 normalized）
+- **`module_relations` 禁止出现在文件中**（B3=C）；仅运行时由 `slot_registry` 派生
 
 ---
 
@@ -195,31 +195,29 @@ P8  CI（OOCP + invoke 矩阵 + 新黄金包）
 
 ---
 
-## 6. 确认前仅剩的澄清项（可选回复）
+## 6. R1–R4（已关闭）
 
-以下不影响 RFC Accepted；**不阻塞 P1**，但 **阻塞 P2 API 设计** 前最好确认：
-
-| # | 问题 | 建议 |
-|---|------|------|
-| R1 | 会话覆盖粒度：按 **registry 键** 还是仍接受按 **type** 覆盖该 type 下全部实例？ | **按 registry 键** |
-| R2 | 蓝图工具栏「保存」：立即写盘 `pipeline.ocblueprint` 还是仅内存草稿 + 显式保存？ | **立即写盘**（与「蓝图 SSOT」一致） |
-| R3 | 架构图是否仍画 **内核 / 设施总线** 示意节点？ | **保留示意**，非 SSOT |
-| R4 | `meta.id` 与目录名不一致时：ERROR 还是 WARN？ | **ERROR**（与现 pack validate 一致） |
+见 [BLUEPRINT_V2_DECISIONS.md](BLUEPRINT_V2_DECISIONS.md)。
 
 ---
 
-## 7. 确认清单（请维护者勾选）
+## 7. 确认清单
 
-确认无误后回复 **「可以落实」**，将按下列顺序开工：
+- [x] RFC Accepted 与 Q1–Q8  
+- [x] P1 范围（仅 Schema/validation）  
+- [x] P2–P8 顺序（P6∥P2）  
+- [x] 会话覆盖交互（§4）  
+- [x] P5 移除手拖连线  
+- [x] R1–R4  
 
-- [ ] RFC Accepted 与 Q1–Q8 记录无误  
-- [ ] P1 范围（仅 Schema/validation）同意  
-- [ ] P2–P8 顺序与并行关系（P6∥P2）同意  
-- [ ] 会话覆盖交互（§4）同意  
-- [ ] 预研手拖连线在 P5 移除同意  
-- [ ] R1–R4 无异议或已注明修改  
+### Git 提交提醒
 
-**首批 PR 建议标题**：`feat(validation): pipeline.ocblueprint v2 schema and pack validate`
+| 顺序 | 建议 commit message | 内容 |
+|------|---------------------|------|
+| 1 | `docs(handoff): blueprint v2 decisions frozen` | 决议 + RFC/计划状态 |
+| 2 | `feat(validation): pipeline.ocblueprint v2 schema and CLI validate` | `blueprint_v2.rs`、Schema、CLI、`pipeline.ocblueprint.template`、测试 |
+
+**门禁**：`cargo test -p oclive_validation`、`cargo test -p oclive-cli`。
 
 ---
 
