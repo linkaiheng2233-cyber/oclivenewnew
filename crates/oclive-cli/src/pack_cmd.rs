@@ -6,8 +6,8 @@ use std::path::{Path, PathBuf};
 use anyhow::{Context, Result};
 use clap::{Parser, Subcommand};
 use oclive_validation::{
-    validate_role_pack_directory_with_profile, RolePackValidationProfile,
-    CURRENT_SETTINGS_SCHEMA_VERSION,
+    migrate_role_pack_dir_to_blueprint_v2, validate_role_pack_directory_with_profile,
+    RolePackValidationProfile, CURRENT_SETTINGS_SCHEMA_VERSION, PIPELINE_BLUEPRINT_FILENAME,
 };
 use serde_json::json;
 use zip::write::FileOptions;
@@ -27,6 +27,8 @@ pub enum PackCommands {
     Create(PackCreateArgs),
     /// Pack role pack directory into `.oclivepack` (ZIP; top-level folder is role id)
     Publish(PackPublishArgs),
+    /// Migrate manifest.json + settings.json → pipeline.ocblueprint v2
+    MigrateToBlueprint(MigrateToBlueprintArgs),
 }
 
 #[derive(Parser, Debug)]
@@ -60,6 +62,18 @@ pub struct PackCreateArgs {
     /// Use `output` as role pack root directly (no `roles/<id>/` prefix)
     #[arg(long, default_value_t = false)]
     pub flat: bool,
+    /// Output v2 blueprint pack (`pipeline.ocblueprint` only) instead of manifest/settings
+    #[arg(long, default_value_t = false)]
+    pub format_blueprint_v2: bool,
+}
+
+#[derive(Parser, Debug)]
+pub struct MigrateToBlueprintArgs {
+    /// Role pack root (contains manifest.json)
+    pub path: PathBuf,
+    /// Remove manifest.json and settings.json after writing blueprint
+    #[arg(long, default_value_t = true)]
+    pub remove_legacy: bool,
 }
 
 #[derive(Parser, Debug)]
@@ -76,6 +90,7 @@ pub fn run_pack(args: PackArgs) -> Result<()> {
         PackCommands::Validate(a) => run_validate(a),
         PackCommands::Create(a) => run_create(a),
         PackCommands::Publish(a) => run_publish(a),
+        PackCommands::MigrateToBlueprint(a) => run_migrate_to_blueprint(a),
     }
 }
 
@@ -109,6 +124,23 @@ fn run_validate(args: PackValidateArgs) -> Result<()> {
     }
 }
 
+fn run_migrate_to_blueprint(args: MigrateToBlueprintArgs) -> Result<()> {
+    let role_dir = args.path.canonicalize().context("resolve role path")?;
+    migrate_role_pack_dir_to_blueprint_v2(&role_dir, args.remove_legacy).map_err(|errs| {
+        anyhow::anyhow!("migrate failed:\n{}", errs.join("\n"))
+    })?;
+    println!(
+        "Migrated to {} ({})",
+        role_dir.join(PIPELINE_BLUEPRINT_FILENAME).display(),
+        if args.remove_legacy {
+            "legacy files removed"
+        } else {
+            "legacy files kept"
+        }
+    );
+    Ok(())
+}
+
 fn run_create(args: PackCreateArgs) -> Result<()> {
     let id = args.id.trim();
     if id.is_empty() {
@@ -139,6 +171,41 @@ fn run_create(args: PackCreateArgs) -> Result<()> {
         },
         "default_relation": "friend"
     });
+    if args.format_blueprint_v2 {
+        let bp = serde_json::json!({
+            "schema_version": 2,
+            "meta": {
+                "id": id,
+                "name": args.name,
+                "version": args.version,
+                "author": args.author,
+                "description": args.description,
+                "personality": [0.5, 0.5, 0.5, 0.5, 0.5, 0.5, 0.5],
+                "relations": {
+                    "friend": { "initial_favorability": 50.0, "favor_multiplier": 1.0 }
+                },
+                "default_relation": "friend",
+                "interaction_mode": "immersive"
+            },
+            "slot_registry": {
+                "memory": { "type": "memory", "label": "Memory", "backend": "builtin", "position": 0 },
+                "emotion": { "type": "emotion", "label": "Emotion", "backend": "builtin", "position": 0 },
+                "complex_emotion": { "type": "complex_emotion", "label": "Complex emotion", "backend": "builtin", "position": 1 },
+                "event": { "type": "event", "label": "Event", "backend": "builtin", "position": 0 },
+                "prompt": { "type": "prompt", "label": "Prompt", "backend": "builtin", "position": 0 },
+                "llm": { "type": "llm", "label": "LLM", "backend": "ollama", "position": 0 },
+                "agent": { "type": "agent", "label": "Agent", "backend": "builtin", "position": 0 }
+            }
+        });
+        fs::write(
+            root.join(PIPELINE_BLUEPRINT_FILENAME),
+            serde_json::to_string_pretty(&bp).context("serialize blueprint")?,
+        )
+        .context("write pipeline.ocblueprint")?;
+        println!("Role pack directory created (v2): {}", root.display());
+        return Ok(());
+    }
+
     fs::write(
         root.join("manifest.json"),
         serde_json::to_string_pretty(&manifest).context("serialize manifest")?,
@@ -187,19 +254,41 @@ fn run_create(args: PackCreateArgs) -> Result<()> {
 
 fn run_publish(args: PackPublishArgs) -> Result<()> {
     let role_dir = args.path.canonicalize().context("resolve role path")?;
-    let manifest_raw = fs::read_to_string(role_dir.join("manifest.json")).context("read manifest")?;
-    let v: serde_json::Value = serde_json::from_str(&manifest_raw).context("parse manifest")?;
-    let id = v
-        .get("id")
-        .and_then(|x| x.as_str())
-        .context("manifest.json missing id")?;
-    let version = v
-        .get("version")
-        .and_then(|x| x.as_str())
-        .unwrap_or("0.0.0");
+    let blueprint_path = role_dir.join(PIPELINE_BLUEPRINT_FILENAME);
+    let manifest_path = role_dir.join("manifest.json");
+    let (id, version) = if blueprint_path.is_file() {
+        let raw = fs::read_to_string(&blueprint_path).context("read blueprint")?;
+        let v: serde_json::Value = serde_json::from_str(&raw).context("parse blueprint")?;
+        let id = v
+            .get("meta")
+            .and_then(|m| m.get("id"))
+            .and_then(|x| x.as_str())
+            .context("pipeline.ocblueprint meta.id missing")?;
+        let version = v
+            .get("meta")
+            .and_then(|m| m.get("version"))
+            .and_then(|x| x.as_str())
+            .unwrap_or("0.0.0");
+        (id.to_string(), version.to_string())
+    } else {
+        let manifest_raw = fs::read_to_string(&manifest_path).context("read manifest")?;
+        let v: serde_json::Value = serde_json::from_str(&manifest_raw).context("parse manifest")?;
+        let id = v
+            .get("id")
+            .and_then(|x| x.as_str())
+            .context("manifest.json missing id")?
+            .to_string();
+        let version = v
+            .get("version")
+            .and_then(|x| x.as_str())
+            .unwrap_or("0.0.0")
+            .to_string();
+        (id, version)
+    };
     let out_path = args.output.clone().unwrap_or_else(|| {
         PathBuf::from(format!("{}-{}.oclivepack", id.replace('/', "_"), version))
     });
+    let id = id.as_str();
     if let Some(parent) = out_path.parent() {
         fs::create_dir_all(parent).ok();
     }

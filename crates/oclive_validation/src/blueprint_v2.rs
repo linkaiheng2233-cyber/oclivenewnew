@@ -414,6 +414,89 @@ fn b_is_local(backend: &str) -> bool {
     backend.trim() == "local"
 }
 
+/// 会话级对单实例的覆盖（不落盘）。
+#[derive(Debug, Clone, Default, Serialize, Deserialize, PartialEq, Eq)]
+pub struct SlotOverridePatch {
+    #[serde(default)]
+    pub backend: Option<String>,
+    #[serde(default)]
+    pub plugin: Option<String>,
+    #[serde(default)]
+    pub plugins: Option<Vec<String>>,
+    #[serde(default)]
+    pub model: Option<String>,
+    #[serde(default)]
+    pub local_memory_provider_id: Option<String>,
+}
+
+impl SlotOverridePatch {
+    #[must_use]
+    pub fn is_empty(&self) -> bool {
+        self.backend.as_ref().is_none_or(|s| s.trim().is_empty())
+            && self.plugin.as_ref().is_none_or(|s| s.trim().is_empty())
+            && self.plugins.as_ref().is_none_or(|v| v.is_empty())
+            && self.model.as_ref().is_none_or(|s| s.trim().is_empty())
+            && self
+                .local_memory_provider_id
+                .as_ref()
+                .is_none_or(|s| s.trim().is_empty())
+    }
+}
+
+/// 将包默认 `slot_registry` 与命名空间覆盖合并为 effective 视图。
+#[must_use]
+pub fn effective_slot_registry(
+    pack: &BTreeMap<String, SlotRegistryEntry>,
+    overrides: &BTreeMap<String, SlotOverridePatch>,
+) -> BTreeMap<String, SlotRegistryEntry> {
+    let mut out = pack.clone();
+    for (key, patch) in overrides {
+        if patch.is_empty() {
+            continue;
+        }
+        if let Some(entry) = out.get_mut(key) {
+            apply_slot_override(entry, patch);
+        }
+    }
+    out
+}
+
+/// 默认六槽模块名 → `slot_registry` 键（C1 薄包装）。
+#[must_use]
+pub fn default_slot_key_for_module(module: &str) -> Option<&'static str> {
+    match module.trim().to_ascii_lowercase().as_str() {
+        "memory" => Some("memory"),
+        "emotion" => Some("emotion"),
+        "event" => Some("event"),
+        "prompt" => Some("prompt"),
+        "llm" => Some("llm"),
+        "agent" => Some("agent"),
+        "complex_emotion" => Some("complex_emotion"),
+        _ => None,
+    }
+}
+
+pub fn apply_slot_override(entry: &mut SlotRegistryEntry, patch: &SlotOverridePatch) {
+    if let Some(ref b) = patch.backend {
+        let t = b.trim();
+        if !t.is_empty() {
+            entry.backend = t.to_string();
+        }
+    }
+    if patch.plugin.is_some() {
+        entry.plugin = patch.plugin.clone();
+    }
+    if patch.plugins.is_some() {
+        entry.plugins = patch.plugins.clone();
+    }
+    if patch.model.is_some() {
+        entry.model = patch.model.clone();
+    }
+    if patch.local_memory_provider_id.is_some() {
+        entry.local_memory_provider_id = patch.local_memory_provider_id.clone();
+    }
+}
+
 fn single_plugin_id(entry: &SlotRegistryEntry) -> Option<String> {
     entry
         .plugin

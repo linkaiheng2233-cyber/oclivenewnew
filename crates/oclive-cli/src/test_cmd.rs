@@ -148,12 +148,21 @@ fn run_pack_validate_all(root: &Path) -> CheckResult {
     let mut n = 0u32;
     let mut fail_n = 0u32;
     for entry in walk_dirs(&roles) {
-        if entry.join("manifest.json").is_file() {
+        if entry.join("manifest.json").is_file()
+            || entry.join(oclive_validation::PIPELINE_BLUEPRINT_FILENAME).is_file()
+        {
             n += 1;
+            let profile = if entry.join("manifest.json").is_file() {
+                "default"
+            } else {
+                "blueprint-v2"
+            };
             let st = Command::new(std::env::current_exe().unwrap_or_default())
                 .args([
                     "pack",
                     "validate",
+                    "--profile",
+                    profile,
                     entry.to_str().unwrap_or("."),
                 ])
                 .status();
