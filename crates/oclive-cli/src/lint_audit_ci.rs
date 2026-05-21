@@ -10,8 +10,8 @@ pub fn run_audit_ci(start: &Path) -> Result<()> {
     println!("  workflow: {}", ci.display());
 
     let has_job = text.contains("cargo-audit:") || text.contains("cargo-audit ");
-    let has_continue = text.contains("continue-on-error: true")
-        || text.contains("continue-on-error:true");
+    let has_continue =
+        text.contains("continue-on-error: true") || text.contains("continue-on-error:true");
 
     if !has_job {
         println!("  [FAIL] No cargo-audit job found in ci.yml");

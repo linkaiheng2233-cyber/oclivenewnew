@@ -248,7 +248,10 @@ fn trend_arrow(prev: f64, cur: f64, lower_is_better: bool) -> &'static str {
 fn print_bench_history(root: &Path, json_out: bool) -> Result<()> {
     let path = history_path(root);
     if !path.is_file() {
-        bail!("Not found: {}; run `oclive bench --save ...` first", path.display());
+        bail!(
+            "Not found: {}; run `oclive bench --save ...` first",
+            path.display()
+        );
     }
     let raw = fs::read_to_string(&path).context("read bench_history")?;
     let file: BenchHistoryFile = serde_json::from_str(&raw).context("parse bench_history")?;
@@ -287,9 +290,7 @@ fn print_bench_history(root: &Path, json_out: bool) -> Result<()> {
                         )
                         .to_string(),
                     ),
-                    Some(
-                        trend_arrow(p.binary_size.standard as f64, bin as f64, true).to_string(),
-                    ),
+                    Some(trend_arrow(p.binary_size.standard as f64, bin as f64, true).to_string()),
                 )
             } else {
                 (None, None, None, None)
@@ -332,7 +333,11 @@ fn print_bench_history(root: &Path, json_out: bool) -> Result<()> {
                     r.peak_memory.standard.max(r.peak_memory.monolith) as f64,
                     true,
                 ),
-                trend_arrow(p.binary_size.standard as f64, r.binary_size.standard as f64, true),
+                trend_arrow(
+                    p.binary_size.standard as f64,
+                    r.binary_size.standard as f64,
+                    true
+                ),
             )
         } else {
             String::new()
@@ -344,7 +349,9 @@ fn print_bench_history(root: &Path, json_out: bool) -> Result<()> {
     }
     println!("└────────────┴──────────┴────────────┴──────────┴──────────┘");
     if file.entries.len() >= 2 {
-        println!("Trend (vs previous row): Standard Monolith PeakMem Binary (↓=better ↑=worse →=flat)");
+        println!(
+            "Trend (vs previous row): Standard Monolith PeakMem Binary (↓=better ↑=worse →=flat)"
+        );
     }
     Ok(())
 }
@@ -368,7 +375,10 @@ fn unix_ts_to_date(ts: u64) -> String {
 fn compare_history(root: &Path) -> Result<()> {
     let path = history_path(root);
     if !path.is_file() {
-        bail!("Not found: {}; run `oclive bench --save ...` first", path.display());
+        bail!(
+            "Not found: {}; run `oclive bench --save ...` first",
+            path.display()
+        );
     }
     let raw = fs::read_to_string(&path).context("read bench_history")?;
     let file: BenchHistoryFile = serde_json::from_str(&raw).context("parse bench_history")?;
@@ -381,14 +391,26 @@ fn compare_history(root: &Path) -> Result<()> {
     let a = &file.entries[file.entries.len() - 2].report;
     let b = &file.entries[file.entries.len() - 1].report;
     println!("oclive bench --compare (last two runs)");
-    println!("  ts: {} -> {}", file.entries[file.entries.len() - 2].ts, file.entries[file.entries.len() - 1].ts);
+    println!(
+        "  ts: {} -> {}",
+        file.entries[file.entries.len() - 2].ts,
+        file.entries[file.entries.len() - 1].ts
+    );
     let lines = [
         ("standard median ms", a.standard_ms.p50, b.standard_ms.p50),
         ("standard P95 ms", a.standard_ms.p95, b.standard_ms.p95),
-        ("standard P99 ms", p99_from_samples(&a.standard_ms.samples), p99_from_samples(&b.standard_ms.samples)),
+        (
+            "standard P99 ms",
+            p99_from_samples(&a.standard_ms.samples),
+            p99_from_samples(&b.standard_ms.samples),
+        ),
         ("monolith median ms", a.monolith_ms.p50, b.monolith_ms.p50),
         ("monolith P95 ms", a.monolith_ms.p95, b.monolith_ms.p95),
-        ("monolith P99 ms", p99_from_samples(&a.monolith_ms.samples), p99_from_samples(&b.monolith_ms.samples)),
+        (
+            "monolith P99 ms",
+            p99_from_samples(&a.monolith_ms.samples),
+            p99_from_samples(&b.monolith_ms.samples),
+        ),
     ];
     for (label, x, y) in lines {
         let d = y - x;
@@ -501,13 +523,9 @@ fn run_bench_watch(root: &Path, base: &BenchArgs) -> Result<()> {
     let (tx, rx) = channel();
     let mut watcher = RecommendedWatcher::new(tx, Config::default()).context("watcher")?;
     let src_dir = root.join("src");
-    watcher
-        .watch(&src_dir, RecursiveMode::Recursive)
-        .ok();
+    watcher.watch(&src_dir, RecursiveMode::Recursive).ok();
     let cargo_toml = root.join("Cargo.toml");
-    watcher
-        .watch(&cargo_toml, RecursiveMode::NonRecursive)
-        .ok();
+    watcher.watch(&cargo_toml, RecursiveMode::NonRecursive).ok();
 
     let mut last = Instant::now()
         .checked_sub(Duration::from_secs(10))
@@ -588,7 +606,9 @@ pub fn run(args: BenchArgs) -> Result<()> {
         return run_bench_compare_versions(&root, git_ref, &args);
     }
     if args.dashboard {
-        eprintln!("⚠ [deprecated] `oclive bench --dashboard` — use `--live` (web UI: `oclive dashboard`)");
+        eprintln!(
+            "⚠ [deprecated] `oclive bench --dashboard` — use `--live` (web UI: `oclive dashboard`)"
+        );
     }
     if args.live || args.dashboard {
         return run_bench_live(&root, &args);
@@ -816,9 +836,7 @@ fn run_bench_regression(
     } else {
         println!("oclive bench --regression (vs latest bench_history entry)\n");
         for (name, base, cur, pct, limit) in &regressions {
-            println!(
-                "  ⚠️ {name}: {base:.1} -> {cur:.1} (+{pct:.1}% > threshold {limit:.0}%)"
-            );
+            println!("  ⚠️ {name}: {base:.1} -> {cur:.1} (+{pct:.1}% > threshold {limit:.0}%)");
         }
         if regressions.is_empty() {
             println!("  ✅ No regression above threshold detected");
@@ -926,16 +944,8 @@ fn collect_bench_report(root: &Path, args: &BenchArgs) -> Result<BenchReport> {
 
 fn print_version_matrix(git_ref: &str, other: &BenchReport, current: &BenchReport) {
     let rows = [
-        (
-            "Median Lat",
-            other.monolith_ms.p50,
-            current.monolith_ms.p50,
-        ),
-        (
-            "P95 Lat",
-            other.monolith_ms.p95,
-            current.monolith_ms.p95,
-        ),
+        ("Median Lat", other.monolith_ms.p50, current.monolith_ms.p50),
+        ("P95 Lat", other.monolith_ms.p95, current.monolith_ms.p95),
         (
             "Peak Memory",
             other.peak_memory.monolith as f64,
@@ -1030,7 +1040,10 @@ pub fn print_bench_comparison(report: &BenchReport) {
     let mono_p95 = report.monolith_ms.p95;
     let improve_p50 = pct_improvement(std_p50, mono_p50);
     let improve_p95 = pct_improvement(std_p95, mono_p95);
-    println!("\n—— Standard vs Monolith welded ({}, release={}) ——", report.runs, report.release);
+    println!(
+        "\n—— Standard vs Monolith welded ({}, release={}) ——",
+        report.runs, report.release
+    );
     println!("  metric      standard(ms)  monolith(ms)  change");
     println!(
         "  p50         {:>10.3}   {:>10.3}   {:>+6.1}%",
@@ -1047,7 +1060,11 @@ pub fn print_bench_comparison(report: &BenchReport) {
     } else {
         println!("  → Medians close; increase runs or check build profile");
     }
-    print_pair_u64("binary (bytes)", report.binary_size.standard, report.binary_size.monolith);
+    print_pair_u64(
+        "binary (bytes)",
+        report.binary_size.standard,
+        report.binary_size.monolith,
+    );
     print_pair_u64(
         "peak memory (MiB)",
         report.peak_memory.standard,
@@ -1113,7 +1130,9 @@ fn sparkline(values: &[f64]) -> String {
 
 fn run_bench_live(root: &Path, base: &BenchArgs) -> Result<()> {
     use crossterm::event::{self, Event, KeyCode, KeyEventKind};
-    use crossterm::terminal::{disable_raw_mode, enable_raw_mode, EnterAlternateScreen, LeaveAlternateScreen};
+    use crossterm::terminal::{
+        disable_raw_mode, enable_raw_mode, EnterAlternateScreen, LeaveAlternateScreen,
+    };
     use crossterm::ExecutableCommand;
     use ratatui::layout::{Constraint, Direction, Layout};
     use ratatui::widgets::{Block, Borders, Paragraph};
@@ -1371,11 +1390,7 @@ fn sample_bench_matrix_cell(
     })
 }
 
-fn print_matrix_table(
-    tiers: &[(&str, MatrixMonolithTier)],
-    presets: &[&str],
-    matrix: &[Vec<f64>],
-) {
+fn print_matrix_table(tiers: &[(&str, MatrixMonolithTier)], presets: &[&str], matrix: &[Vec<f64>]) {
     let col_w = 10usize;
     print!("{:>10}", "");
     for p in presets {
@@ -1396,14 +1411,12 @@ fn write_matrix_monolith(root: &Path, tier: MatrixMonolithTier) -> Result<()> {
     use crate::init::MonolithPresetArg;
     let path = root.join("monolith.toml");
     let toml = match tier {
-        MatrixMonolithTier::None => {
-            r#"[monolith]
+        MatrixMonolithTier::None => r#"[monolith]
 enabled = false
 weld_modules = []
 exclude = []
 "#
-            .to_string()
-        }
+        .to_string(),
         MatrixMonolithTier::Latency => {
             let w = crate::monolith_codegen::weld_modules_for_preset(MonolithPresetArg::Latency);
             let refs: Vec<&str> = w.to_vec();

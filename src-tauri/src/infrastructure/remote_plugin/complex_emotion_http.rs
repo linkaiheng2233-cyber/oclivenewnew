@@ -4,9 +4,9 @@ use crate::domain::complex_emotion::{
     BuiltinKeywordComplexEmotionProvider, ComplexEmotionInput, ComplexEmotionOutput,
 };
 use crate::error::{AppError, Result};
+use crate::infrastructure::high_risk_grants::HighRiskGrantStore;
 use crate::infrastructure::remote_fallback_policy::remote_fallback_load;
 use crate::infrastructure::remote_plugin::config::RemotePluginHttpConfig;
-use crate::infrastructure::high_risk_grants::HighRiskGrantStore;
 use crate::infrastructure::remote_plugin::jsonrpc::{self, RemoteRpcChannel};
 use oclive_validation::NETWORK_GRANT_REMOTE_PLUGIN;
 use std::sync::atomic::AtomicBool;

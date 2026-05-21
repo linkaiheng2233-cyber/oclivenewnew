@@ -105,7 +105,10 @@ pub fn run_soak(root: &Path, args: &BenchArgs) -> Result<()> {
     if args.json {
         println!("{}", serde_json::to_string_pretty(&report)?);
     } else {
-        println!("oclive bench --soak (simulated {hours}h wall window {:?})", wall_duration);
+        println!(
+            "oclive bench --soak (simulated {hours}h wall window {:?})",
+            wall_duration
+        );
         println!("  initial RSS: {initial_rss:.1} MiB  final: {final_rss:.1} MiB  chats: {chats}");
         if growth_warn {
             println!("  ⚠️  RSS grew more than 20% vs first sample");
@@ -133,7 +136,8 @@ fn wait_tcp(port: u16, since: Instant, timeout: Duration) -> Result<()> {
 
 fn post_chat(port: u16, message: &str) -> Result<()> {
     let url = format!("http://127.0.0.1:{port}/chat");
-    let body = serde_json::json!({ "message": message, "role_id": "default", "scene_id": "default" });
+    let body =
+        serde_json::json!({ "message": message, "role_id": "default", "scene_id": "default" });
     let resp = ureq::post(&url)
         .set("Content-Type", "application/json")
         .timeout(Duration::from_secs(60))

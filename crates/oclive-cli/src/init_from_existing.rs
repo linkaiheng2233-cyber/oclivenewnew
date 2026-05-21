@@ -4,7 +4,9 @@ use anyhow::Result;
 use std::path::Path;
 
 use crate::init::InitArgs;
-use crate::project_introspect::{analyze_project, build_init_command_line, write_share_file, ProjectSnapshot};
+use crate::project_introspect::{
+    analyze_project, build_init_command_line, write_share_file, ProjectSnapshot,
+};
 
 pub fn run_from_existing(path: &Path, args: &InitArgs) -> Result<()> {
     let snap = analyze_project(path)?;
@@ -52,7 +54,10 @@ fn print_snapshot_summary(s: &ProjectSnapshot) {
             "disabled".into()
         }
     );
-    println!("  kernel_runtime: {} {:?}", s.kernel_dep_kind, s.kernel_source);
+    println!(
+        "  kernel_runtime: {} {:?}",
+        s.kernel_dep_kind, s.kernel_source
+    );
     if let Some(ref p) = s.pipeline {
         println!("  pipeline: {p}");
     }

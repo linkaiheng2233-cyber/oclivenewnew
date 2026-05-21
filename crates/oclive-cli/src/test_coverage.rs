@@ -13,13 +13,17 @@ pub fn run_coverage(root: &Path, open: bool) -> Result<()> {
     {
         // ok
     } else {
-        bail!(
-            "cargo-llvm-cov not installed. Install: cargo install cargo-llvm-cov"
-        );
+        bail!("cargo-llvm-cov not installed. Install: cargo install cargo-llvm-cov");
     }
 
     let st = Command::new("cargo")
-        .args(["llvm-cov", "--workspace", "--html", "--output-dir", "target/llvm-cov/html"])
+        .args([
+            "llvm-cov",
+            "--workspace",
+            "--html",
+            "--output-dir",
+            "target/llvm-cov/html",
+        ])
         .current_dir(root)
         .status()?;
     if !st.success() {

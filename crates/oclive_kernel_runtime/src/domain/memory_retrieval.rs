@@ -36,7 +36,10 @@ pub struct BuiltinMemoryRetrieval;
 
 impl MemoryRetrieval for BuiltinMemoryRetrieval {
     fn rank_memories(&self, input: MemoryRetrievalInput<'_>) -> Result<Vec<Memory>> {
-        Ok(MemoryEngine::get_relevant_memories(input.memories, input.limit))
+        Ok(MemoryEngine::get_relevant_memories(
+            input.memories,
+            input.limit,
+        ))
     }
 
     fn build_context(&self, memories: &[Memory], max_tokens: usize) -> MemoryContext {
@@ -108,7 +111,7 @@ pub struct RemoteMemoryRetrievalPlaceholder {
 }
 
 impl RemoteMemoryRetrievalPlaceholder {
-    #[must_use] 
+    #[must_use]
     pub fn new() -> Self {
         Self {
             inner: BuiltinMemoryRetrieval,
@@ -228,7 +231,9 @@ mod tests {
             scene_id: None,
             limit: 1,
         };
-        let top_v1 = BuiltinMemoryRetrieval.rank_memories(input_v1).expect("rank");
+        let top_v1 = BuiltinMemoryRetrieval
+            .rank_memories(input_v1)
+            .expect("rank");
         assert_eq!(top_v1[0].id, "high");
 
         let input_v2 = MemoryRetrievalInput {
@@ -237,7 +242,9 @@ mod tests {
             scene_id: None,
             limit: 1,
         };
-        let top_v2 = BuiltinMemoryRetrievalV2.rank_memories(input_v2).expect("rank");
+        let top_v2 = BuiltinMemoryRetrievalV2
+            .rank_memories(input_v2)
+            .expect("rank");
         assert_eq!(top_v2[0].id, "match");
     }
 

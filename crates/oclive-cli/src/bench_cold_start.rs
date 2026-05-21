@@ -101,7 +101,9 @@ fn one_cold_start_round(
         .stderr(Stdio::piped());
 
     let spawn_at = Instant::now();
-    let mut proc = child.spawn().context("spawn kernel (cargo run --release -- --api)")?;
+    let mut proc = child
+        .spawn()
+        .context("spawn kernel (cargo run --release -- --api)")?;
     let stderr = proc.stderr.take();
     let _reader = stderr.map(|s| {
         std::thread::spawn(move || {
@@ -144,7 +146,10 @@ fn wait_tcp_listen(port: u16, since: Instant, timeout: Duration) -> Result<f64> 
         }
         std::thread::sleep(Duration::from_millis(200));
     }
-    bail!("kernel API port {port} did not accept connections within {:?}", timeout);
+    bail!(
+        "kernel API port {port} did not accept connections within {:?}",
+        timeout
+    );
 }
 
 fn post_chat(port: u16, message: &str) -> Result<()> {
@@ -180,7 +185,10 @@ fn print_human(r: &ColdStartReport) {
     if let Some(w) = r.warmup_ms {
         println!("  warmup (spawn → API port listen): {:.1} ms", w);
     }
-    println!("  warm average (after first message): {:.1} ms", r.warm_avg_ms);
+    println!(
+        "  warm average (after first message): {:.1} ms",
+        r.warm_avg_ms
+    );
     if !r.warm_samples.is_empty() {
         println!(
             "  warm samples: min={:.1} max={:.1} (n={})",

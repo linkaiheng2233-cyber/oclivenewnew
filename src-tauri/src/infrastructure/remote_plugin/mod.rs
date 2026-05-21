@@ -37,9 +37,9 @@ use std::sync::Arc;
 
 use crate::error::{AppError, Result};
 use crate::infrastructure::high_risk_grants::HighRiskGrantStore;
-use oclive_validation::{NETWORK_GRANT_REMOTE_LLM, NETWORK_GRANT_REMOTE_PLUGIN};
 use jsonrpc::call_blocking;
 pub use jsonrpc::RemoteRpcChannel;
+use oclive_validation::{NETWORK_GRANT_REMOTE_LLM, NETWORK_GRANT_REMOTE_PLUGIN};
 
 /// 四类 `plugin_backends.* = remote` 共用一套配置，只读一次环境变量并打一条日志。
 pub(crate) struct PluginRemoteGroup {
@@ -74,7 +74,8 @@ pub(crate) fn plugin_remote_group(
     let g = grants.clone();
     let ng = Some(NETWORK_GRANT_REMOTE_PLUGIN.to_string());
     let memory = RemoteMemoryRetrievalHttp::new(cfg.clone(), fb.clone(), g.clone(), ng.clone());
-    let emotion = RemoteUserEmotionAnalyzerHttp::new(cfg.clone(), fb.clone(), g.clone(), ng.clone());
+    let emotion =
+        RemoteUserEmotionAnalyzerHttp::new(cfg.clone(), fb.clone(), g.clone(), ng.clone());
     let event = RemoteEventEstimatorHttp::new(cfg.clone(), fb.clone(), g.clone(), ng.clone());
     let prompt = RemotePromptAssemblerHttp::new(cfg, fb, g, ng);
     match (memory, emotion, event, prompt) {
@@ -119,11 +120,7 @@ pub fn llm_remote_backend(
             "remote LLM HTTP active -> {}",
             cfg.endpoint
         );
-        match RemoteLlmHttp::new(
-            cfg,
-            grants,
-            Some(NETWORK_GRANT_REMOTE_LLM.to_string()),
-        ) {
+        match RemoteLlmHttp::new(cfg, grants, Some(NETWORK_GRANT_REMOTE_LLM.to_string())) {
             Ok(remote) => Arc::new(remote),
             Err(e) => {
                 tracing::error!(

@@ -117,7 +117,7 @@ pub struct OclivePluginManifest {
 }
 
 /// 规范化 manifest 内相对路径，与请求 URI 中 `rel` 比较。
-#[must_use] 
+#[must_use]
 pub fn normalize_plugin_rel(s: &str) -> String {
     s.replace('\\', "/")
         .trim()
@@ -131,7 +131,7 @@ fn default_ready_prefix() -> String {
 
 impl OclivePluginManifest {
     /// 当前资源相对路径（插件根下）是否配置了 bridge，返回 `BridgeConfig`。
-    #[must_use] 
+    #[must_use]
     pub fn bridge_for_asset_rel(&self, rel: &str) -> Option<&BridgeConfig> {
         let n = normalize_plugin_rel(rel);
         if let Some(sh) = &self.shell {
@@ -159,16 +159,16 @@ impl OclivePluginManifest {
     }
 
     /// 是否应注入桥接脚本：有 bridge 且 invoke 或 events 非空。
-    #[must_use] 
+    #[must_use]
     pub fn should_inject_bridge(&self, rel: &str) -> bool {
         let Some(b) = self.bridge_for_asset_rel(rel) else {
             return false;
         };
         !b.invoke.is_empty() || !b.events.is_empty()
     }
-/// # Errors
-///
-/// Returns [`Err`] with a human-readable message when the operation fails.
+    /// # Errors
+    ///
+    /// Returns [`Err`] with a human-readable message when the operation fails.
     pub fn load_from_dir(dir: &Path) -> Result<Self, String> {
         let p = dir.join("manifest.json");
         let raw = std::fs::read_to_string(&p).map_err(|e| format!("{}: {}", p.display(), e))?;
@@ -195,9 +195,8 @@ impl OclivePluginManifest {
             ));
         }
         validate_ui_slot_appearance_ids(&m)?;
-        oclive_validation::validate_permissions_list(&m.permissions).map_err(|e| {
-            format!("manifest {}: {}", p.display(), e)
-        })?;
+        oclive_validation::validate_permissions_list(&m.permissions)
+            .map_err(|e| format!("manifest {}: {}", p.display(), e))?;
         if let Some(ref sh) = m.shell {
             if sh.entry.trim().is_empty() {
                 return Err(format!(

@@ -5,11 +5,11 @@ use crate::domain::chat_turn::{relation_favor_for_key, weight_memories_for_scene
 use crate::domain::chat_turn_rules::{soft_append_guard, strip_hallucination_tokens};
 use crate::domain::life_schedule::{format_life_prompt_line, resolve_life_state};
 use crate::domain::memory_retrieval::MemoryRetrievalInput;
-use crate::domain::slot_runner::SlotRunner;
 use crate::domain::personality_engine::PersonalityEngine;
 use crate::domain::policy::PolicyContext;
 use crate::domain::portrait_emotion_engine::resolve_portrait_emotion;
 use crate::domain::prompt_builder::{effective_reply_quality_anchor, PromptInput};
+use crate::domain::slot_runner::SlotRunner;
 use crate::domain::user_identity::resolve_effective_user_relation_key;
 use crate::error::AppError;
 use crate::models::dto::{
@@ -91,8 +91,10 @@ pub(crate) async fn process_co_present(
         "current_personality"
     )?;
 
-    let emotion_result =
-        cp!(SlotRunner::analyze_emotion(&pl, user_message), "user_emotion_analyze")?;
+    let emotion_result = cp!(
+        SlotRunner::analyze_emotion(&pl, user_message),
+        "user_emotion_analyze"
+    )?;
     crate::domain::debug_trace::emit_step(
         "user_emotion_analyze",
         serde_json::json!({ "text_len": user_message.len() }),
@@ -104,8 +106,10 @@ pub(crate) async fn process_co_present(
         crate::domain::emotion_analyzer::EmotionAnalyzer::format_for_prompt(&emotion_result);
 
     let ollama_model = role.resolve_ollama_model(state.ollama_model.as_str());
-    let (recent_turns, recent_turns_for_event, recent_events_for_event) =
-        cp!(load_recent_context(state, srid).await, "load_recent_context")?;
+    let (recent_turns, recent_turns_for_event, recent_events_for_event) = cp!(
+        load_recent_context(state, srid).await,
+        "load_recent_context"
+    )?;
     crate::domain::debug_trace::emit_step(
         "load_recent_context",
         serde_json::json!({ "srid": srid, "user_message_len": user_message.len() }),
@@ -122,15 +126,15 @@ pub(crate) async fn process_co_present(
         SlotRunner::resolve_complex_emotion(
             &pl,
             &crate::domain::complex_emotion::ComplexEmotionInput {
-            role_id: mrid.to_string(),
-            scene_id: scene_id.clone(),
-            user_message: user_message.to_string(),
-            bot_reply: prev_bot_for_ce,
-            recent_dialogue_summary: None,
-            previous_narrative_hint: prev_stored_narrative_hint.clone(),
-            user_valence: Some(uv),
-            user_dominance: Some(ud),
-            previous_user_message: prev_user_for_ce,
+                role_id: mrid.to_string(),
+                scene_id: scene_id.clone(),
+                user_message: user_message.to_string(),
+                bot_reply: prev_bot_for_ce,
+                recent_dialogue_summary: None,
+                previous_narrative_hint: prev_stored_narrative_hint.clone(),
+                user_valence: Some(uv),
+                user_dominance: Some(ud),
+                previous_user_message: prev_user_for_ce,
             },
         ),
         "complex_emotion_resolve_turn"
@@ -304,27 +308,27 @@ pub(crate) async fn process_co_present(
         SlotRunner::build_prompt(
             &pl,
             &PromptInput {
-            role,
-            personality: &personality,
-            memories: &relevant,
-            user_input: user_message,
-            user_emotion: user_emotion_prompt.as_str(),
-            user_relation_id: user_relation_key.as_str(),
-            relation_hint: rf.relation_hint,
-            relation_before: relation_before.as_str(),
-            favorability_before,
-            relation_preview: relation_after.as_str(),
-            favorability_preview: (favorability_before + favor_delta).clamp(0.0, 100.0),
-            event_type: &ai_event_type,
-            impact_factor: ai_impact_factor_final,
-            scene_label: &scene_label,
-            scene_detail: scene_detail_buf.as_str(),
-            topic_hint_line: &topic_line,
-            life_context_line: life_context_line.as_str(),
-            worldview_snippet: worldview_snippet.as_str(),
-            mutable_personality: mutable_for_prompt.as_str(),
-            reply_quality_anchor: effective_reply_quality_anchor(role),
-            previous_complex_emotion_narrative_hint: prev_stored_narrative_hint.as_str(),
+                role,
+                personality: &personality,
+                memories: &relevant,
+                user_input: user_message,
+                user_emotion: user_emotion_prompt.as_str(),
+                user_relation_id: user_relation_key.as_str(),
+                relation_hint: rf.relation_hint,
+                relation_before: relation_before.as_str(),
+                favorability_before,
+                relation_preview: relation_after.as_str(),
+                favorability_preview: (favorability_before + favor_delta).clamp(0.0, 100.0),
+                event_type: &ai_event_type,
+                impact_factor: ai_impact_factor_final,
+                scene_label: &scene_label,
+                scene_detail: scene_detail_buf.as_str(),
+                topic_hint_line: &topic_line,
+                life_context_line: life_context_line.as_str(),
+                worldview_snippet: worldview_snippet.as_str(),
+                mutable_personality: mutable_for_prompt.as_str(),
+                reply_quality_anchor: effective_reply_quality_anchor(role),
+                previous_complex_emotion_narrative_hint: prev_stored_narrative_hint.as_str(),
             },
         ),
         "build_prompt"
@@ -373,8 +377,10 @@ pub(crate) async fn process_co_present(
         ai_impact_factor_final,
         relation_after.as_str(),
     ));
-    let bot_emotion_result =
-        cp!(SlotRunner::analyze_emotion(&pl, &reply), "bot_reply_emotion_analyze")?;
+    let bot_emotion_result = cp!(
+        SlotRunner::analyze_emotion(&pl, &reply),
+        "bot_reply_emotion_analyze"
+    )?;
     crate::domain::debug_trace::emit_step(
         "postprocess",
         serde_json::json!({ "reply_len": reply.len() }),
@@ -520,7 +526,11 @@ pub(crate) async fn process_co_present(
         cp!(
             state
                 .db_manager
-                .set_core_delta_personality_json(srid, &core_v.to_json_vec(), &delta_out.to_json_vec())
+                .set_core_delta_personality_json(
+                    srid,
+                    &core_v.to_json_vec(),
+                    &delta_out.to_json_vec()
+                )
                 .await,
             "set_core_delta_personality_json_profile"
         )?;
@@ -533,7 +543,11 @@ pub(crate) async fn process_co_present(
         cp!(
             state
                 .db_manager
-                .set_core_delta_personality_json(srid, &core_v.to_json_vec(), &delta_out.to_json_vec())
+                .set_core_delta_personality_json(
+                    srid,
+                    &core_v.to_json_vec(),
+                    &delta_out.to_json_vec()
+                )
                 .await,
             "set_core_delta_personality_json_non_profile"
         )?;

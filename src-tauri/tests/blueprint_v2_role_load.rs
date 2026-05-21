@@ -39,5 +39,8 @@ fn load_role_from_blueprint_v2_pack() {
     assert_eq!(role.id, "demo.pack");
     assert_eq!(role.interaction_mode.as_deref(), Some("immersive"));
     assert_eq!(role.ollama_model.as_deref(), Some("llama3.2"));
-    assert!(role.slot_registry.as_ref().is_some_and(|m| m.contains_key("llm")));
+    assert!(role
+        .slot_registry
+        .as_ref()
+        .is_some_and(|m| m.contains_key("llm")));
 }

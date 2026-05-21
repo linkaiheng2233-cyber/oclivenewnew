@@ -33,20 +33,28 @@ pub struct ProjectSnapshot {
 }
 
 pub fn analyze_project(root: &Path) -> Result<ProjectSnapshot> {
-    let root = root.canonicalize().with_context(|| format!("path {}", root.display()))?;
+    let root = root
+        .canonicalize()
+        .with_context(|| format!("path {}", root.display()))?;
     let cargo_toml = root.join("Cargo.toml");
     if !cargo_toml.is_file() {
         bail!("not a Cargo project root: {}", root.display());
     }
     let cargo = fs::read_to_string(&cargo_toml)?;
     let v: toml::Value = toml::from_str(&cargo)?;
-    let pkg = v.get("package").and_then(|p| p.as_table()).context("package")?;
+    let pkg = v
+        .get("package")
+        .and_then(|p| p.as_table())
+        .context("package")?;
     let project_name = pkg
         .get("name")
         .and_then(|n| n.as_str())
         .context("[package].name")?
         .to_string();
-    let license = pkg.get("license").and_then(|x| x.as_str()).map(str::to_string);
+    let license = pkg
+        .get("license")
+        .and_then(|x| x.as_str())
+        .map(str::to_string);
     let description = pkg
         .get("description")
         .and_then(|x| x.as_str())
@@ -60,7 +68,9 @@ pub fn analyze_project(root: &Path) -> Result<ProjectSnapshot> {
 
     let project_type = if root.join("src/main.rs").is_file()
         || root.join("src/main_monolith.rs").is_file()
-        || v.get("bin").and_then(|b| b.as_array()).is_some_and(|a| !a.is_empty())
+        || v.get("bin")
+            .and_then(|b| b.as_array())
+            .is_some_and(|a| !a.is_empty())
     {
         "kernel_server"
     } else {
@@ -224,7 +234,10 @@ fn detect_roles(root: &Path) -> (bool, Option<String>) {
     if ids.is_empty() {
         return (true, None);
     }
-    let hint = if ids.iter().any(|id| id.contains("robot-soul") || id == "robot-soul-minimal") {
+    let hint = if ids
+        .iter()
+        .any(|id| id.contains("robot-soul") || id == "robot-soul-minimal")
+    {
         Some("robot-soul-minimal".into())
     } else if ids.iter().any(|id| id == "default") {
         Some("default".into())
@@ -279,7 +292,9 @@ pub fn build_init_command_line(snap: &ProjectSnapshot, output: &Path) -> String 
 }
 
 fn shell_quote(s: &str) -> String {
-    if s.chars().any(|c| c.is_whitespace() || c == '"' || c == '\'') {
+    if s.chars()
+        .any(|c| c.is_whitespace() || c == '"' || c == '\'')
+    {
         format!("\"{}\"", s.replace('\\', "\\\\").replace('"', "\\\""))
     } else {
         s.to_string()

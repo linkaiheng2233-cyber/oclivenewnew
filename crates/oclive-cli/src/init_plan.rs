@@ -33,10 +33,7 @@ pub fn print_dry_run(cfg: &ProjectConfig, args: &InitArgs) -> Result<()> {
             ProjectType::KernelServer => "kernel_server".into(),
             ProjectType::Library => "library".into(),
         },
-        preset: args
-            .preset
-            .clone()
-            .unwrap_or_else(|| "minimal".into()),
+        preset: args.preset.clone().unwrap_or_else(|| "minimal".into()),
         monolith_enabled: cfg.monolith_enabled,
         monolith_preset: cfg.monolith_preset.map(|p| format!("{p:?}").to_lowercase()),
         kernel_linked: cfg.kernel_source.is_some(),
@@ -84,7 +81,10 @@ pub fn print_dry_run(cfg: &ProjectConfig, args: &InitArgs) -> Result<()> {
 }
 
 pub fn build_tree_lines(cfg: &ProjectConfig, output: &std::path::Path) -> Vec<String> {
-    let name = output.file_name().and_then(|s| s.to_str()).unwrap_or("project");
+    let name = output
+        .file_name()
+        .and_then(|s| s.to_str())
+        .unwrap_or("project");
     let mut lines = vec![format!("{name}/")];
     lines.push("  Cargo.toml".into());
     lines.push("  README.md".into());

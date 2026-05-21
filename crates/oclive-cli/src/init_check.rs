@@ -83,7 +83,11 @@ pub fn run_precheck(args: &InitArgs) -> Result<()> {
 }
 
 fn check_rust_toolchain() -> CheckItem {
-    let ok = Command::new("rustc").arg("--version").output().map(|o| o.status.success()).unwrap_or(false);
+    let ok = Command::new("rustc")
+        .arg("--version")
+        .output()
+        .map(|o| o.status.success())
+        .unwrap_or(false);
     if ok {
         CheckItem {
             id: "rust".into(),
@@ -102,7 +106,11 @@ fn check_rust_toolchain() -> CheckItem {
 }
 
 fn check_cargo() -> CheckItem {
-    let ok = Command::new("cargo").arg("--version").output().map(|o| o.status.success()).unwrap_or(false);
+    let ok = Command::new("cargo")
+        .arg("--version")
+        .output()
+        .map(|o| o.status.success())
+        .unwrap_or(false);
     CheckItem {
         id: "cargo".into(),
         status: if ok { "pass" } else { "fail" }.into(),
@@ -138,7 +146,11 @@ fn check_kernel_source(path: &Path) -> CheckItem {
 
 fn check_monolith_toolchain() -> CheckItem {
     let cpp = if cfg!(windows) {
-        Command::new("cl").arg("?").output().map(|o| o.status.success()).unwrap_or(false)
+        Command::new("cl")
+            .arg("?")
+            .output()
+            .map(|o| o.status.success())
+            .unwrap_or(false)
     } else {
         Command::new("cc")
             .arg("--version")

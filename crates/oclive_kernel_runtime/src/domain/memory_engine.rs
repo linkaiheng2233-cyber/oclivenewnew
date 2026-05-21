@@ -14,7 +14,7 @@ pub struct MemoryEngine {
 
 impl MemoryEngine {
     /// 创建新的记忆引擎
-    #[must_use] 
+    #[must_use]
     pub fn new() -> Self {
         Self {
             short_term: VecDeque::with_capacity(SHORT_TERM_CAPACITY),
@@ -33,7 +33,7 @@ impl MemoryEngine {
     }
 
     /// 获取所有短期记忆
-    #[must_use] 
+    #[must_use]
     pub fn get_short_term(&self) -> Vec<Memory> {
         self.short_term.iter().cloned().collect()
     }
@@ -51,7 +51,7 @@ impl MemoryEngine {
     ///
     /// # Returns
     /// 匹配的记忆列表
-    #[must_use] 
+    #[must_use]
     pub fn search_memories(keyword: &str, memories: &[Memory]) -> Vec<Memory> {
         let keyword_lower = keyword.to_lowercase();
         memories
@@ -69,7 +69,7 @@ impl MemoryEngine {
     ///
     /// # Returns
     /// 排序后的记忆列表
-    #[must_use] 
+    #[must_use]
     pub fn get_relevant_memories(memories: &[Memory], limit: usize) -> Vec<Memory> {
         let mut sorted = memories.to_vec();
         sorted.sort_by(|a, b| {
@@ -90,7 +90,7 @@ impl MemoryEngine {
     ///
     /// # Returns
     /// 记忆上下文
-    #[must_use] 
+    #[must_use]
     pub fn build_context(memories: &[Memory], max_tokens: usize) -> MemoryContext {
         let mut context_memories = Vec::new();
         let mut total_tokens = 0;
@@ -119,7 +119,7 @@ impl MemoryEngine {
     ///
     /// # Returns
     /// 更新后的记忆
-    #[must_use] 
+    #[must_use]
     pub fn update_importance(mut memory: Memory, delta: f64) -> Memory {
         memory.importance = (memory.importance + delta).clamp(0.0, 1.0);
         memory
@@ -133,7 +133,7 @@ impl MemoryEngine {
     ///
     /// # Returns
     /// 衰减后的记忆
-    #[must_use] 
+    #[must_use]
     pub fn decay_weight(mut memory: Memory, days_passed: f64) -> Memory {
         let decay_factor = 0.95_f64.powf(days_passed);
         memory.weight *= decay_factor;
@@ -148,7 +148,7 @@ impl MemoryEngine {
     ///
     /// # Returns
     /// 合并后的记忆列表
-    #[must_use] 
+    #[must_use]
     pub fn merge_similar_memories(memories: &[Memory]) -> Vec<Memory> {
         if memories.is_empty() {
             return Vec::new();

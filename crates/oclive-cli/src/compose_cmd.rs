@@ -177,11 +177,7 @@ fn save_state(cwd: &Path, state: &ComposeState) -> Result<()> {
     Ok(())
 }
 
-fn spawn_service(
-    cwd: &Path,
-    name: &str,
-    svc: &ComposeService,
-) -> Result<Child> {
+fn spawn_service(cwd: &Path, name: &str, svc: &ComposeService) -> Result<Child> {
     let proj = cwd.join(&svc.path);
     if !proj.join("Cargo.toml").is_file() {
         bail!("service {name}: {} missing Cargo.toml", proj.display());
@@ -199,7 +195,9 @@ fn spawn_service(
     for (k, v) in &svc.env {
         cmd.env(k, v);
     }
-    let mut child = cmd.spawn().with_context(|| format!("spawn service {name}"))?;
+    let mut child = cmd
+        .spawn()
+        .with_context(|| format!("spawn service {name}"))?;
     if let Some(out) = child.stdout.take() {
         stream_lines(name, out, false);
     }

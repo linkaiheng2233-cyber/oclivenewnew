@@ -121,9 +121,9 @@ pub fn sync_plugin_index_command(
                 true,
                 "cache",
                 Some(format!(
-                "Online plugin index unreachable; using local cache: {}",
-                err
-            )),
+                    "Online plugin index unreachable; using local cache: {}",
+                    err
+                )),
             ))
         }
     }
@@ -154,13 +154,10 @@ pub fn install_plugin_from_market(
     let resolved = if let Some(g) = git_url.as_deref().map(str::trim).filter(|s| !s.is_empty()) {
         g.to_string()
     } else {
-        index_item
-            .as_ref()
-            .map(|p| p.git.clone())
-            .ok_or_else(|| {
-                AppError::InvalidParameter(format!("plugin not found in index: {}", pid))
-                    .to_frontend_error()
-            })?
+        index_item.as_ref().map(|p| p.git.clone()).ok_or_else(|| {
+            AppError::InvalidParameter(format!("plugin not found in index: {}", pid))
+                .to_frontend_error()
+        })?
     };
     let installed_id = install_plugin(
         &state,
@@ -263,7 +260,7 @@ pub fn batch_uninstall_plugins(
 }
 
 #[tauri::command]
-#[must_use] 
+#[must_use]
 pub fn consume_pending_protocol_installs() -> Vec<PendingProtocolInstall> {
     take_pending_install_git_urls()
         .into_iter()

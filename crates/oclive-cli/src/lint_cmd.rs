@@ -88,16 +88,25 @@ fn lint_cargo_toml(root: &Path, items: &mut Vec<LintItem>) {
     let pkg = v.get("package").and_then(|x| x.as_table());
     for key in ["name", "version"] {
         if pkg.and_then(|t| t.get(key)).is_some() {
-            items.push(pass(&format!("cargo_{key}"), &format!("[package].{key} set")));
+            items.push(pass(
+                &format!("cargo_{key}"),
+                &format!("[package].{key} set"),
+            ));
         } else {
             items.push(fail("cargo_toml", format!("missing [package].{key}")));
         }
     }
     for key in ["authors", "license"] {
         if pkg.and_then(|t| t.get(key)).is_some() {
-            items.push(pass(&format!("cargo_{key}"), &format!("[package].{key} set")));
+            items.push(pass(
+                &format!("cargo_{key}"),
+                &format!("[package].{key} set"),
+            ));
         } else {
-            items.push(warn("cargo_meta", format!("consider setting [package].{key}")));
+            items.push(warn(
+                "cargo_meta",
+                format!("consider setting [package].{key}"),
+            ));
         }
     }
 }
@@ -215,7 +224,12 @@ fn run_deps_audit(root: &Path, json: bool) -> Result<()> {
 
     let mut items = Vec::new();
     let audit_bin = Command::new("cargo-audit").arg("--version").output();
-    if audit_bin.is_err() || !audit_bin.as_ref().map(|o| o.status.success()).unwrap_or(false) {
+    if audit_bin.is_err()
+        || !audit_bin
+            .as_ref()
+            .map(|o| o.status.success())
+            .unwrap_or(false)
+    {
         let msg = "cargo-audit not installed. Install: cargo install cargo-audit";
         if json {
             println!(
@@ -276,10 +290,7 @@ fn run_deps_audit(root: &Path, json: bool) -> Result<()> {
             if yanked.is_empty() {
                 items.push(pass("yanked", "no yanked packages in lockfile metadata"));
             } else {
-                items.push(fail(
-                    "yanked",
-                    format!("yanked: {}", yanked.join(", ")),
-                ));
+                items.push(fail("yanked", format!("yanked: {}", yanked.join(", "))));
             }
         }
         _ => items.push(warn("yanked", "cargo metadata failed")),

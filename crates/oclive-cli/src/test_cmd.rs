@@ -149,7 +149,9 @@ fn run_pack_validate_all(root: &Path) -> CheckResult {
     let mut fail_n = 0u32;
     for entry in walk_dirs(&roles) {
         if entry.join("manifest.json").is_file()
-            || entry.join(oclive_validation::PIPELINE_BLUEPRINT_FILENAME).is_file()
+            || entry
+                .join(oclive_validation::PIPELINE_BLUEPRINT_FILENAME)
+                .is_file()
         {
             n += 1;
             let mut args = vec![

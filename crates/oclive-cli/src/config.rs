@@ -60,7 +60,8 @@ fn save_toml_map(path: &Path, map: &BTreeMap<String, String>) -> Result<()> {
         table.insert(k.clone(), toml::Value::String(v.clone()));
     }
     let doc = toml::Value::Table(table);
-    fs::write(path, toml::to_string_pretty(&doc)?).with_context(|| format!("write {}", path.display()))?;
+    fs::write(path, toml::to_string_pretty(&doc)?)
+        .with_context(|| format!("write {}", path.display()))?;
     Ok(())
 }
 
@@ -83,11 +84,17 @@ pub fn resolve(key: &str, project_root: Option<&Path>) -> Option<String> {
         .and_then(|g| g.get(key).cloned())
 }
 
-pub fn set_key(key: &str, value: &str, global: bool, project_root: Option<&Path>) -> Result<PathBuf> {
+pub fn set_key(
+    key: &str,
+    value: &str,
+    global: bool,
+    project_root: Option<&Path>,
+) -> Result<PathBuf> {
     let path = if global {
         global_config_path()
     } else {
-        let root = project_root.context("project-level config requires a project directory (cwd)")?;
+        let root =
+            project_root.context("project-level config requires a project directory (cwd)")?;
         local_config_path(root)
     };
     let mut map = load_toml_map(&path)?;

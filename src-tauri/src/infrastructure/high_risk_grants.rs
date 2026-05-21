@@ -5,9 +5,7 @@
 
 use crate::env_flags;
 use oclive_kernel_runtime::AppError;
-use oclive_validation::{
-    MCP_HTTP, MCP_STDIO, NETWORK_WILDCARD, PROCESS_SPAWN,
-};
+use oclive_validation::{MCP_HTTP, MCP_STDIO, NETWORK_WILDCARD, PROCESS_SPAWN};
 use parking_lot::RwLock;
 use serde::{Deserialize, Serialize};
 use serde_json::Value;
@@ -39,7 +37,8 @@ impl HighRiskGrantsFile {
     }
 
     fn from_json_value(v: Value) -> Self {
-        let legacy = serde_json::from_value::<LegacyHighRiskGrantsFile>(v.clone()).unwrap_or_default();
+        let legacy =
+            serde_json::from_value::<LegacyHighRiskGrantsFile>(v.clone()).unwrap_or_default();
         let mut raw = v;
         if let Value::Object(ref mut m) = raw {
             migrate_legacy_bucket(m, "mcp_http", MCP_HTTP);
@@ -49,7 +48,10 @@ impl HighRiskGrantsFile {
         let mut file: Self = serde_json::from_value(raw).unwrap_or_default();
         Self::merge_legacy_key(&mut file.mcp_http, &legacy.mcp_http);
         Self::merge_legacy_key(&mut file.mcp_stdio, &legacy.mcp_stdio);
-        Self::merge_legacy_key(&mut file.process_spawn, &legacy.directory_plugin_process_spawn);
+        Self::merge_legacy_key(
+            &mut file.process_spawn,
+            &legacy.directory_plugin_process_spawn,
+        );
         file
     }
 }
@@ -112,7 +114,8 @@ impl HighRiskGrantStore {
     fn persist(&self, data: &HighRiskGrantsFile) -> Result<(), String> {
         let p = Self::file_path(&self.app_data);
         if let Some(parent) = p.parent() {
-            fs::create_dir_all(parent).map_err(|e| format!("create_dir_all {}: {}", parent.display(), e))?;
+            fs::create_dir_all(parent)
+                .map_err(|e| format!("create_dir_all {}: {}", parent.display(), e))?;
         }
         let raw = serde_json::to_string_pretty(data).map_err(|e| e.to_string())?;
         fs::write(&p, raw).map_err(|e| format!("write {}: {}", p.display(), e))
@@ -133,14 +136,12 @@ impl HighRiskGrantStore {
 
     #[must_use]
     pub fn is_mcp_http_granted(&self, server_id: &str) -> bool {
-        !self.enforcement_active()
-            || Self::granted(&self.inner.read().mcp_http, server_id)
+        !self.enforcement_active() || Self::granted(&self.inner.read().mcp_http, server_id)
     }
 
     #[must_use]
     pub fn is_mcp_stdio_granted(&self, server_id: &str) -> bool {
-        !self.enforcement_active()
-            || Self::granted(&self.inner.read().mcp_stdio, server_id)
+        !self.enforcement_active() || Self::granted(&self.inner.read().mcp_stdio, server_id)
     }
 
     #[must_use]
@@ -150,8 +151,7 @@ impl HighRiskGrantStore {
 
     #[must_use]
     pub fn is_process_spawn_granted(&self, plugin_id: &str) -> bool {
-        !self.enforcement_active()
-            || Self::granted(&self.inner.read().process_spawn, plugin_id)
+        !self.enforcement_active() || Self::granted(&self.inner.read().process_spawn, plugin_id)
     }
 
     #[must_use]

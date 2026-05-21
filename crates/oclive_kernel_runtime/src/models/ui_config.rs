@@ -78,7 +78,7 @@ pub struct SlotConfig {
 
 impl UiConfig {
     /// 从角色包目录读取 `ui.json`；不存在或解析失败时返回默认空配置。
-    #[must_use] 
+    #[must_use]
     pub fn load_from_path(path: &Path) -> Self {
         let raw = std::fs::read_to_string(path).ok();
         let Some(s) = raw else {

@@ -367,7 +367,9 @@ impl ProjectConfig {
                 match self.role_pack_kind {
                     RolePackKind::None => "none (no roles/)",
                     RolePackKind::DefaultExample => "default (example roles/default)",
-                    RolePackKind::RobotSoulMinimal => "robot-soul-minimal (seven dims + prompts/system.md)",
+                    RolePackKind::RobotSoulMinimal => {
+                        "robot-soul-minimal (seven dims + prompts/system.md)"
+                    }
                 }
             }
         );
@@ -390,7 +392,10 @@ impl ProjectConfig {
             println!("After generation: auto Monolith bench (5 runs) → bench_results/report.json");
         }
         if let Some(ks) = &self.kernel_source {
-            println!("Kernel source: {} (runtime / HTTP entry wired)", ks.display());
+            println!(
+                "Kernel source: {} (runtime / HTTP entry wired)",
+                ks.display()
+            );
         }
         println!("——————————————");
     }
@@ -557,10 +562,20 @@ pub(crate) fn git_config_user_name() -> Option<String> {
 }
 
 pub(crate) fn apply_cargo_metadata_cli(cfg: &mut ProjectConfig, args: &InitArgs) {
-    if let Some(a) = args.author.as_ref().map(|s| s.trim()).filter(|s| !s.is_empty()) {
+    if let Some(a) = args
+        .author
+        .as_ref()
+        .map(|s| s.trim())
+        .filter(|s| !s.is_empty())
+    {
         cfg.cargo_author = Some(a.to_string());
     }
-    if let Some(l) = args.license.as_ref().map(|s| s.trim()).filter(|s| !s.is_empty()) {
+    if let Some(l) = args
+        .license
+        .as_ref()
+        .map(|s| s.trim())
+        .filter(|s| !s.is_empty())
+    {
         cfg.cargo_license = Some(l.to_string());
     }
     if let Some(d) = args
@@ -626,11 +641,12 @@ fn run_quick_init(args: &InitArgs) -> Result<()> {
             .interact_text()
             .context("quick project name")?;
         let out_default = output.display().to_string();
-        let out_str: String = dialoguer::Input::with_theme(&dialoguer::theme::ColorfulTheme::default())
-            .with_prompt("Output directory")
-            .default(out_default)
-            .interact_text()
-            .context("quick output")?;
+        let out_str: String =
+            dialoguer::Input::with_theme(&dialoguer::theme::ColorfulTheme::default())
+                .with_prompt("Output directory")
+                .default(out_default)
+                .interact_text()
+                .context("quick output")?;
         output = PathBuf::from(out_str);
     }
     let mut cfg = quick_project_config(&project_name);
@@ -646,13 +662,19 @@ fn run_quick_init(args: &InitArgs) -> Result<()> {
     if !args.quiet {
         println!("Generated: {}", output.display());
         println!("Suggested next: cargo run -p oclive-cli -- doctor");
-        println!("  then cd {} && cargo build && cargo run --release", output.display());
+        println!(
+            "  then cd {} && cargo build && cargo run --release",
+            output.display()
+        );
     }
     Ok(())
 }
 
 /// Build resolved project configuration without writing to disk.
-pub fn resolve_init_config(args: &InitArgs, skip_interactive_confirm: bool) -> Result<ProjectConfig> {
+pub fn resolve_init_config(
+    args: &InitArgs,
+    skip_interactive_confirm: bool,
+) -> Result<ProjectConfig> {
     if args.quick {
         let mut cfg = quick_project_config(&args.project_name);
         apply_backend_cli_overrides(&mut cfg, args);
@@ -661,7 +683,8 @@ pub fn resolve_init_config(args: &InitArgs, skip_interactive_confirm: bool) -> R
         return Ok(cfg);
     }
 
-    let mut cfg = if args.non_interactive || args.dry_run || args.check || skip_interactive_confirm {
+    let mut cfg = if args.non_interactive || args.dry_run || args.check || skip_interactive_confirm
+    {
         let preset = args
             .preset
             .as_deref()
@@ -696,14 +719,13 @@ pub fn resolve_init_config(args: &InitArgs, skip_interactive_confirm: bool) -> R
     if cfg.monolith_enabled {
         cfg.monolith_preset = args.monolith_preset.or(args.monolith_bench_preset);
     }
-    if args.monolith_bench_preset.is_some()
-        && cfg.project_type == ProjectType::KernelServer {
-            if !cfg.monolith_enabled {
-                cfg.monolith_enabled = true;
-            }
-            cfg.monolith_preset = cfg.monolith_preset.or(args.monolith_bench_preset);
-            cfg.run_monolith_bench_after_init = cfg.monolith_enabled;
+    if args.monolith_bench_preset.is_some() && cfg.project_type == ProjectType::KernelServer {
+        if !cfg.monolith_enabled {
+            cfg.monolith_enabled = true;
         }
+        cfg.monolith_preset = cfg.monolith_preset.or(args.monolith_bench_preset);
+        cfg.run_monolith_bench_after_init = cfg.monolith_enabled;
+    }
     cfg.factory_template = args.template;
     cfg.with_example_plugin = args.with_example_plugin;
     cfg.role_pack_kind = resolve_role_pack_kind(args);
@@ -969,10 +991,7 @@ mod template_tests {
             dry_run: false,
             check: false,
         };
-        assert_eq!(
-            resolve_role_pack_kind(&args),
-            RolePackKind::DefaultExample
-        );
+        assert_eq!(resolve_role_pack_kind(&args), RolePackKind::DefaultExample);
     }
 
     #[test]
@@ -1067,17 +1086,22 @@ mod template_tests {
         cfg.pipeline = PipelineArg::MemoryLast;
         cfg.monolith_enabled = false;
         crate::generator::write_project(&cfg, dir.path()).unwrap();
-        let raw =
-            std::fs::read_to_string(dir.path().join("src/oclive_pipeline_order.rs")).unwrap();
+        let raw = std::fs::read_to_string(dir.path().join("src/oclive_pipeline_order.rs")).unwrap();
         let llm = raw.find("llm_generate").expect("llm_generate");
         let mem = raw.find("memory_rank").expect("memory_rank");
-        assert!(llm < mem, "memory-last: llm before memory in OCLIVE_PIPELINE_STEPS");
+        assert!(
+            llm < mem,
+            "memory-last: llm before memory in OCLIVE_PIPELINE_STEPS"
+        );
     }
 
     #[test]
     fn pipeline_emotion_first_memory_before_event() {
         let steps = PipelineArg::EmotionFirst.steps();
-        let em = steps.iter().position(|s| *s == "user_emotion_analyze").unwrap();
+        let em = steps
+            .iter()
+            .position(|s| *s == "user_emotion_analyze")
+            .unwrap();
         let ev = steps.iter().position(|s| *s == "event_estimate").unwrap();
         let mem = steps.iter().position(|s| *s == "memory_rank").unwrap();
         assert!(em < ev);

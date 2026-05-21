@@ -58,13 +58,16 @@ fn pick_impl(slot: &str) -> Result<BackendImpl> {
 
 fn validate_slot_choice(slot: &str, b: BackendImpl) -> Result<()> {
     if slot != "llm" && b == BackendImpl::Ollama {
-        return Err(anyhow!("Slot {slot} cannot use ollama (valid only for the llm slot)."));
+        return Err(anyhow!(
+            "Slot {slot} cannot use ollama (valid only for the llm slot)."
+        ));
     }
     Ok(())
 }
 
 fn pick_factory_template() -> Result<Option<InitTemplateArg>> {
-    let mut labels: Vec<String> = vec!["No template — configure preset / modules 1-6 manually".into()];
+    let mut labels: Vec<String> =
+        vec!["No template — configure preset / modules 1-6 manually".into()];
     for e in CATALOG {
         labels.push(format!(
             "{} — {} (preset={}, Monolith={})",
@@ -90,7 +93,10 @@ fn pick_project_type(default_kernel: bool) -> Result<ProjectType> {
     let default = if default_kernel { 0 } else { 1 };
     let pt_idx = Select::with_theme(&ColorfulTheme::default())
         .with_prompt("Project type")
-        .items(&["Headless service (kernel_server)", "Embedded library (library)"])
+        .items(&[
+            "Headless service (kernel_server)",
+            "Embedded library (library)",
+        ])
         .default(default)
         .interact()
         .context("project type")?;
@@ -295,8 +301,7 @@ pub fn run_interactive(args: &InitArgs) -> Result<ProjectConfig> {
         if manual_config {
             cfg.project_type = pick_project_type(true)?;
         } else {
-            cfg.project_type =
-                pick_project_type(cfg.project_type == ProjectType::KernelServer)?;
+            cfg.project_type = pick_project_type(cfg.project_type == ProjectType::KernelServer)?;
         }
     } else if let Some(pt) = args.project_type {
         cfg.project_type = match pt {
@@ -311,9 +316,8 @@ pub fn run_interactive(args: &InitArgs) -> Result<ProjectConfig> {
         cfg.plugins = pick_plugins()?;
     }
 
-    let skip_role_prompt = args.skip_role_pack
-        || args.with_role_pack.is_some()
-        || template_choice.is_some();
+    let skip_role_prompt =
+        args.skip_role_pack || args.with_role_pack.is_some() || template_choice.is_some();
     if !skip_role_prompt {
         let default_role = cfg.role_pack_kind != RolePackKind::None;
         let example_role = Confirm::with_theme(&ColorfulTheme::default())
@@ -328,14 +332,11 @@ pub fn run_interactive(args: &InitArgs) -> Result<ProjectConfig> {
         };
     }
 
-    let skip_monolith_prompt = args.monolith
-        || args.monolith_bench_preset.is_some()
-        || template_choice.is_some();
+    let skip_monolith_prompt =
+        args.monolith || args.monolith_bench_preset.is_some() || template_choice.is_some();
     if args.monolith {
         cfg.monolith_enabled = true;
-    } else if !skip_monolith_prompt
-        && cfg.project_type == ProjectType::KernelServer
-    {
+    } else if !skip_monolith_prompt && cfg.project_type == ProjectType::KernelServer {
         cfg.monolith_enabled = pick_monolith_for_kernel(template_default_monolith)?;
     }
 

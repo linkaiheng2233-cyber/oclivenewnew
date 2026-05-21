@@ -140,7 +140,10 @@ mod tests {
 
     #[test]
     fn role_runtime_not_ready_code() {
-        assert_eq!(AppError::RoleRuntimeNotReady.code(), "ROLE_RUNTIME_NOT_READY");
+        assert_eq!(
+            AppError::RoleRuntimeNotReady.code(),
+            "ROLE_RUNTIME_NOT_READY"
+        );
     }
 
     #[test]

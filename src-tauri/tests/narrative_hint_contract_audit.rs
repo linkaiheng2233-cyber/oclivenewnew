@@ -96,7 +96,10 @@ async fn second_turn_injects_prior_turn_hint() {
     let guard = prompts.lock();
     let p2 = main_prompt_for_user(&guard, "接着说正事").expect("turn2 main prompt");
     assert!(p2.contains(SECTION));
-    assert!(p2.contains(TURN1_HINT), "turn2 should carry turn1 narrative_hint");
+    assert!(
+        p2.contains(TURN1_HINT),
+        "turn2 should carry turn1 narrative_hint"
+    );
 }
 
 #[tokio::test]
@@ -121,8 +124,5 @@ async fn third_turn_prompt_includes_narrative_section_after_chain() {
         p3.contains(SECTION),
         "after three turns, turn3 prompt must include narrative section (from turn2 stored hint)"
     );
-    assert!(
-        !p3.trim().is_empty(),
-        "turn3 prompt should be non-empty"
-    );
+    assert!(!p3.trim().is_empty(), "turn3 prompt should be non-empty");
 }

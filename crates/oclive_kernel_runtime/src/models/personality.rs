@@ -29,7 +29,7 @@ impl From<&PersonalityDefaults> for PersonalityVector {
 }
 
 impl PersonalityVector {
-    #[must_use] 
+    #[must_use]
     pub fn zero() -> Self {
         Self {
             stubbornness: 0.0,
@@ -43,7 +43,7 @@ impl PersonalityVector {
     }
 
     /// 七维数组顺序：倔强…温暖
-    #[must_use] 
+    #[must_use]
     pub fn to_vec7(&self) -> Vec<f64> {
         vec![
             self.stubbornness,
@@ -56,7 +56,7 @@ impl PersonalityVector {
         ]
     }
 
-    #[must_use] 
+    #[must_use]
     pub fn from_vec7(v: &[f64]) -> Self {
         let g = |i: usize| v.get(i).copied().unwrap_or(0.0);
         Self {
@@ -71,7 +71,7 @@ impl PersonalityVector {
     }
 
     /// effective = clamp(core + delta) 各维到 evolution_bounds
-    #[must_use] 
+    #[must_use]
     pub fn effective_from_core_delta(
         core: &PersonalityDefaults,
         delta: &PersonalityVector,
@@ -89,20 +89,20 @@ impl PersonalityVector {
         e
     }
 
-    #[must_use] 
+    #[must_use]
     pub fn to_json_vec(&self) -> String {
         serde_json::to_string(&self.to_vec7()).unwrap_or_else(|_| "[]".to_string())
     }
-/// # Errors
-///
-/// Returns [`Err`] with a human-readable message when the operation fails.
+    /// # Errors
+    ///
+    /// Returns [`Err`] with a human-readable message when the operation fails.
     pub fn from_json_vec(s: &str) -> Result<Self, serde_json::Error> {
         let v: Vec<f64> = serde_json::from_str(s)?;
         Ok(Self::from_vec7(&v))
     }
 
     /// 分量差（用于从有效向量反推 delta）
-    #[must_use] 
+    #[must_use]
     pub fn sub_components(a: &Self, b: &Self) -> Self {
         Self {
             stubbornness: a.stubbornness - b.stubbornness,

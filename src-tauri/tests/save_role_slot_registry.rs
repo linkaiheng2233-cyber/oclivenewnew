@@ -2,10 +2,10 @@
 
 #![allow(clippy::unwrap_used, clippy::expect_used)]
 
+use oclive_validation::load_blueprint_v2_for_role_dir;
 use oclivenewnew_tauri::api::role::{get_role_info_impl, save_role_slot_registry_impl};
 use oclivenewnew_tauri::models::dto::SaveRoleSlotRegistryRequest;
 use oclivenewnew_tauri::state::AppState;
-use oclive_validation::load_blueprint_v2_for_role_dir;
 use std::path::PathBuf;
 use std::sync::Arc;
 
@@ -53,7 +53,10 @@ async fn save_role_slot_registry_writes_and_reloads() {
     );
 
     let disk = load_blueprint_v2_for_role_dir(&role_dir, "999.0.0").unwrap();
-    assert_eq!(disk.slot_registry.get("llm").unwrap().backend, reg["llm"].backend);
+    assert_eq!(
+        disk.slot_registry.get("llm").unwrap().backend,
+        reg["llm"].backend
+    );
 
     reg.get_mut("llm").unwrap().backend = prev_backend;
     save_role_slot_registry_impl(

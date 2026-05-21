@@ -1,7 +1,4 @@
-#![cfg_attr(
-    test,
-    allow(clippy::unwrap_used, clippy::expect_used)
-)]
+#![cfg_attr(test, allow(clippy::unwrap_used, clippy::expect_used))]
 
 pub mod api;
 pub mod domain;
@@ -16,8 +13,7 @@ pub mod utils;
 /// ???? HTTP API ??? `tracing` ?????? `info`??? `RUST_LOG` ???
 pub fn init_tracing() {
     use tracing_subscriber::EnvFilter;
-    let filter = EnvFilter::try_from_default_env()
-        .unwrap_or_else(|_| EnvFilter::new("info"));
+    let filter = EnvFilter::try_from_default_env().unwrap_or_else(|_| EnvFilter::new("info"));
     let _ = tracing_subscriber::fmt()
         .with_env_filter(filter)
         .with_target(true)
@@ -260,7 +256,10 @@ fn resolve_roles_dir_for_app(app: &tauri::App) -> PathBuf {
 
 /// ?? HTTP API ???`--api`??????????????????
 pub fn run_api_server(port: u16) {
-    let rt = match tokio::runtime::Builder::new_multi_thread().enable_all().build() {
+    let rt = match tokio::runtime::Builder::new_multi_thread()
+        .enable_all()
+        .build()
+    {
         Ok(rt) => rt,
         Err(e) => {
             eprintln!("failed to build tokio runtime: {}", e);
@@ -310,11 +309,7 @@ pub fn run() {
                 )
             })?;
             fs::create_dir_all(&app_dir).map_err(|e| {
-                std::io::Error::other(format!(
-                    "create app_data_dir {}: {}",
-                    app_dir.display(),
-                    e
-                ))
+                std::io::Error::other(format!("create app_data_dir {}: {}", app_dir.display(), e))
             })?;
             let db_path = app_dir.join("app.db");
             let roles_dir = resolve_roles_dir_for_app(app);

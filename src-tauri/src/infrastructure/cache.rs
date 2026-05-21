@@ -31,7 +31,7 @@ pub struct Cache<T: Clone + Send + Sync> {
 
 impl<T: Clone + Send + Sync> Cache<T> {
     /// 创建新缓存
-    #[must_use] 
+    #[must_use]
     pub fn new() -> Self {
         Self {
             data: Arc::new(RwLock::new(HashMap::new())),
@@ -41,7 +41,7 @@ impl<T: Clone + Send + Sync> Cache<T> {
     /// 获取缓存值
     ///
     /// 如果缓存过期，会自动清理并返回 None
-    #[must_use] 
+    #[must_use]
     pub fn get(&self, key: &str) -> Option<T> {
         let mut cache = self.data.write();
 
@@ -82,13 +82,13 @@ impl<T: Clone + Send + Sync> Cache<T> {
     }
 
     /// 获取缓存大小
-    #[must_use] 
+    #[must_use]
     pub fn len(&self) -> usize {
         self.data.read().len()
     }
 
     /// 检查缓存是否为空
-    #[must_use] 
+    #[must_use]
     pub fn is_empty(&self) -> bool {
         self.data.read().is_empty()
     }

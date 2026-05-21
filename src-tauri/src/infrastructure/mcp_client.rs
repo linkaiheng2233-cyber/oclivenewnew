@@ -8,13 +8,13 @@ use crate::error::{AppError, Result};
 use crate::infrastructure::high_risk_grants::HighRiskGrantStore;
 use oclive_validation::{MCP_HTTP, MCP_STDIO};
 use parking_lot::RwLock;
-use std::sync::Arc;
 use serde::{Deserialize, Serialize};
 use serde_json::{json, Value};
 use std::fs;
 use std::io::Write;
 use std::path::{Path, PathBuf};
 use std::process::{Command, Stdio};
+use std::sync::Arc;
 use std::thread;
 use std::time::{Duration, Instant};
 
@@ -151,9 +151,9 @@ impl McpClient {
     fn timeout_for(&self, server: &McpServerManifest) -> Duration {
         Duration::from_millis(server.timeout_ms.unwrap_or(12_000).max(500))
     }
-/// # Errors
-///
-/// Returns [`Err`] with a human-readable message when the operation fails.
+    /// # Errors
+    ///
+    /// Returns [`Err`] with a human-readable message when the operation fails.
     pub fn list_tools(&self, server_id: &str) -> Result<Vec<McpToolManifest>> {
         let server = self.find_server(server_id)?;
         let payload = json!({
@@ -197,9 +197,9 @@ impl McpClient {
             }
         }
     }
-/// # Errors
-///
-/// Returns [`Err`] with a human-readable message when the operation fails.
+    /// # Errors
+    ///
+    /// Returns [`Err`] with a human-readable message when the operation fails.
     pub fn call_tool(
         &self,
         server_id: &str,

@@ -9,8 +9,8 @@ use std::collections::HashSet;
 ///
 /// manifest 非对象、字段类型错误或空字符串依赖 id 时返回描述性 `String`。
 pub fn parse_plugin_dependencies(manifest_json: &str) -> Result<Vec<String>, String> {
-    let v: Value = serde_json::from_str(manifest_json)
-        .map_err(|e| format!("manifest JSON 错误: {e}"))?;
+    let v: Value =
+        serde_json::from_str(manifest_json).map_err(|e| format!("manifest JSON 错误: {e}"))?;
     let Some(obj) = v.as_object() else {
         return Err("manifest 根须为对象".into());
     };
@@ -74,10 +74,7 @@ pub fn resolve_install_order(
 
 /// 哪些已安装插件声明依赖 `target_id`。
 #[must_use]
-pub fn dependents_of(
-    installed: &[(String, String)],
-    target_id: &str,
-) -> Vec<String> {
+pub fn dependents_of(installed: &[(String, String)], target_id: &str) -> Vec<String> {
     installed
         .iter()
         .filter_map(|(id, manifest)| {

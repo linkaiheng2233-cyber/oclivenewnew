@@ -23,8 +23,6 @@ pub mod memory_retrieval;
 pub mod mutable_profile_llm;
 pub mod personality_engine;
 pub mod plugin_host;
-pub mod slot_resolver;
-pub mod slot_runner;
 pub mod policy;
 pub mod portrait_emotion_engine;
 pub mod profile_personality;
@@ -34,6 +32,8 @@ pub mod relation_engine;
 pub mod remote_life_prompt;
 pub mod repository;
 pub mod role_manager;
+pub mod slot_resolver;
+pub mod slot_runner;
 pub mod user_emotion_analyzer;
 
 pub use agent::{AgentDebugTrace, AgentInput, AgentOutput, AgentProvider, BuiltinReActAgent};

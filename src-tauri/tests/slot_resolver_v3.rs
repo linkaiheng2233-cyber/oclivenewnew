@@ -2,6 +2,7 @@
 
 #![allow(clippy::unwrap_used, clippy::expect_used)]
 
+use oclive_kernel_runtime::domain::complex_emotion::ComplexEmotionInput;
 use oclive_validation::{SlotOverridePatch, SlotRegistryEntry};
 use oclivenewnew_tauri::domain::plugin_host::PluginHost;
 use oclivenewnew_tauri::infrastructure::high_risk_grants::HighRiskGrantStore;
@@ -9,7 +10,6 @@ use oclivenewnew_tauri::infrastructure::llm::LlmClient;
 use oclivenewnew_tauri::infrastructure::remote_fallback_policy::new_remote_fallback_switch;
 use oclivenewnew_tauri::infrastructure::MockLlmClient;
 use oclivenewnew_tauri::models::{MemoryBackend, Role};
-use oclive_kernel_runtime::domain::complex_emotion::ComplexEmotionInput;
 use oclivenewnew_tauri::state::AppState;
 use std::collections::BTreeMap;
 use std::sync::Arc;
@@ -65,17 +65,20 @@ fn slot_resolver_lists_memory_instances_by_position() {
     assert_eq!(slots.memory.len(), 2);
     assert_eq!(slots.memory[0].0, "mem_a");
     assert_eq!(slots.memory[1].0, "mem_b");
-    assert!(pl.complex_emotion.resolve_turn(&ComplexEmotionInput {
-        role_id: "r".into(),
-        scene_id: "s".into(),
-        user_message: "hi".into(),
-        bot_reply: String::new(),
-        recent_dialogue_summary: None,
-        previous_narrative_hint: String::new(),
-        user_valence: None,
-        user_dominance: None,
-        previous_user_message: None,
-    }).is_ok());
+    assert!(pl
+        .complex_emotion
+        .resolve_turn(&ComplexEmotionInput {
+            role_id: "r".into(),
+            scene_id: "s".into(),
+            user_message: "hi".into(),
+            bot_reply: String::new(),
+            recent_dialogue_summary: None,
+            previous_narrative_hint: String::new(),
+            user_valence: None,
+            user_dominance: None,
+            previous_user_message: None,
+        })
+        .is_ok());
 }
 
 #[tokio::test]
@@ -119,8 +122,6 @@ async fn session_slot_override_changes_folded_memory_backend() {
     let eff = state.effective_plugin_backends_for_session(&role, ns);
     assert_eq!(eff.memory, MemoryBackend::BuiltinV2);
     let pl = state.resolved_plugins_for_session(&role, Some(ns));
-    let expected = state
-        .plugins
-        .memory_retrieval_for_plugin_backends(&eff);
+    let expected = state.plugins.memory_retrieval_for_plugin_backends(&eff);
     assert!(Arc::ptr_eq(&pl.memory, &expected));
 }

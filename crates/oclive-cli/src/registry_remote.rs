@@ -139,7 +139,9 @@ pub fn run_push(args: RegistryPushArgs) -> Result<()> {
     let token = bearer_token()?;
     let root = resolve_project_root(&args.name, args.path.as_deref())?;
     let tmp = tempfile::tempdir()?;
-    let archive = tmp.path().join(format!("{}.oclive-template.tar.gz", args.name));
+    let archive = tmp
+        .path()
+        .join(format!("{}.oclive-template.tar.gz", args.name));
     publish_cmd::pack_template_tarball(&root, &archive)?;
     let bytes = fs::read(&archive)?;
     let url = format!("{base}/api/v1/projects/{}", url_encode(&args.name));
@@ -149,7 +151,11 @@ pub fn run_push(args: RegistryPushArgs) -> Result<()> {
         .send_bytes(&bytes)
         .map_err(|e| anyhow::anyhow!("push failed: {e}"))?;
     if !(200..300).contains(&resp.status()) {
-        bail!("push HTTP {} — {}", resp.status(), resp.into_string().unwrap_or_default());
+        bail!(
+            "push HTTP {} — {}",
+            resp.status(),
+            resp.into_string().unwrap_or_default()
+        );
     }
     println!("✓ Pushed project {} → {}", args.name, base);
     Ok(())
@@ -176,7 +182,11 @@ pub fn run_pull(args: RegistryPullArgs) -> Result<()> {
         .call()
         .map_err(|e| anyhow::anyhow!("pull failed: {e}"))?;
     if !(200..300).contains(&resp.status()) {
-        bail!("pull HTTP {} — {}", resp.status(), resp.into_string().unwrap_or_default());
+        bail!(
+            "pull HTTP {} — {}",
+            resp.status(),
+            resp.into_string().unwrap_or_default()
+        );
     }
     let tmp = tempfile::tempdir()?;
     let archive = tmp.path().join("pull.tar.gz");
@@ -192,11 +202,7 @@ pub fn run_pull(args: RegistryPullArgs) -> Result<()> {
 pub fn run_search(args: RegistrySearchArgs) -> Result<()> {
     let base = registry_base_url()?;
     let token = bearer_token()?;
-    let url = format!(
-        "{}/api/v1/projects?q={}",
-        base,
-        url_encode(&args.keyword)
-    );
+    let url = format!("{}/api/v1/projects?q={}", base, url_encode(&args.keyword));
     let resp = ureq::get(&url)
         .set("Authorization", &format!("Bearer {token}"))
         .call()
@@ -206,9 +212,7 @@ pub fn run_search(args: RegistrySearchArgs) -> Result<()> {
         println!("{body}");
         return Ok(());
     }
-    let list: RemoteList = serde_json::from_str(&body).unwrap_or(RemoteList {
-        projects: vec![],
-    });
+    let list: RemoteList = serde_json::from_str(&body).unwrap_or(RemoteList { projects: vec![] });
     if list.projects.is_empty() {
         println!("(no matches)");
         return Ok(());
@@ -224,10 +228,13 @@ pub fn run_search(args: RegistrySearchArgs) -> Result<()> {
 
 fn resolve_project_root(name: &str, path: Option<&Path>) -> Result<PathBuf> {
     if let Some(p) = path {
-        return p.canonicalize().with_context(|| format!("path {}", p.display()));
+        return p
+            .canonicalize()
+            .with_context(|| format!("path {}", p.display()));
     }
-    let entry = crate::registry::find_entry(name)?
-        .ok_or_else(|| anyhow::anyhow!("No project {name} in local registry; use registry add or -o with a path"))?;
+    let entry = crate::registry::find_entry(name)?.ok_or_else(|| {
+        anyhow::anyhow!("No project {name} in local registry; use registry add or -o with a path")
+    })?;
     PathBuf::from(&entry.path)
         .canonicalize()
         .with_context(|| format!("registry path {}", entry.path))

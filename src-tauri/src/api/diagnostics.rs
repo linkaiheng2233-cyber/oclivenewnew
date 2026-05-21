@@ -44,10 +44,7 @@ fn probe_writable_dir(dir: &Path) -> (bool, String) {
 }
 
 async fn probe_ollama(base: &str) -> (bool, String) {
-    let url = format!(
-        "{}/api/tags",
-        base.trim_end_matches('/')
-    );
+    let url = format!("{}/api/tags", base.trim_end_matches('/'));
     let client = match reqwest::Client::builder()
         .timeout(std::time::Duration::from_secs(PROBE_TIMEOUT_SECS))
         .build()
@@ -74,8 +71,8 @@ async fn probe_ollama(base: &str) -> (bool, String) {
 pub async fn run_environment_diagnostics(
     state: State<'_, AppState>,
 ) -> Result<EnvironmentDiagnostics, String> {
-    let ollama_base_url = std::env::var("OLLAMA_BASE_URL")
-        .unwrap_or_else(|_| "http://localhost:11434".to_string());
+    let ollama_base_url =
+        std::env::var("OLLAMA_BASE_URL").unwrap_or_else(|_| "http://localhost:11434".to_string());
     let (ollama_reachable, ollama_detail) = probe_ollama(&ollama_base_url).await;
 
     let roles_path = state.storage.roles_dir();

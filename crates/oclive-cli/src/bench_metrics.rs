@@ -16,7 +16,9 @@ pub fn run_bench_child_with_peak(bin: &Path, inner_iters: u32) -> Result<(f64, u
         .with_context(|| format!("spawn {}", bin.display()))?;
     let t0 = Instant::now();
     let peak_bytes = poll_peak_rss(&mut child)?;
-    let st = child.wait().with_context(|| format!("wait {}", bin.display()))?;
+    let st = child
+        .wait()
+        .with_context(|| format!("wait {}", bin.display()))?;
     if !st.success() {
         bail!("Binary exited with failure: {:?}", st.code());
     }
@@ -44,7 +46,6 @@ fn poll_peak_rss(child: &mut Child) -> Result<u64> {
 }
 
 pub fn binary_file_size(path: &Path) -> Result<u64> {
-    let meta = std::fs::metadata(path)
-        .with_context(|| format!("stat {}", path.display()))?;
+    let meta = std::fs::metadata(path).with_context(|| format!("stat {}", path.display()))?;
     Ok(meta.len())
 }

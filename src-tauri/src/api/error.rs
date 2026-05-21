@@ -5,13 +5,25 @@ use std::fmt;
 
 #[derive(Debug, Clone)]
 pub enum ApiError {
-    PluginNotFound { plugin_id: String },
-    InvalidParameter { message: String },
-    PermissionDenied { message: String },
+    PluginNotFound {
+        plugin_id: String,
+    },
+    InvalidParameter {
+        message: String,
+    },
+    PermissionDenied {
+        message: String,
+    },
     /// 与内核 [`oclive_kernel_runtime::AppError::HighRiskCapabilityNotGranted`] 同码，供目录插件纯文本错误映射。
-    HighRiskCapabilityNotGranted { message: String },
-    InvalidManifest { message: String },
-    Io { message: String },
+    HighRiskCapabilityNotGranted {
+        message: String,
+    },
+    InvalidManifest {
+        message: String,
+    },
+    Io {
+        message: String,
+    },
 }
 
 impl ApiError {

@@ -52,7 +52,7 @@ pub struct RemotePromptAssemblerPlaceholder {
 }
 
 impl RemotePromptAssemblerPlaceholder {
-    #[must_use] 
+    #[must_use]
     pub fn new() -> Self {
         Self {
             inner: BuiltinPromptAssembler,
@@ -166,7 +166,9 @@ mod tests {
             previous_complex_emotion_narrative_hint: "",
         };
         let a = BuiltinPromptAssembler.build_prompt(&input).expect("prompt");
-        let b = BuiltinPromptAssemblerV2.build_prompt(&input).expect("prompt");
+        let b = BuiltinPromptAssemblerV2
+            .build_prompt(&input)
+            .expect("prompt");
         assert!(b.starts_with(super::PROMPT_BACKEND_V2_PREFIX));
         assert_eq!(b.len(), a.len() + super::PROMPT_BACKEND_V2_PREFIX.len());
     }

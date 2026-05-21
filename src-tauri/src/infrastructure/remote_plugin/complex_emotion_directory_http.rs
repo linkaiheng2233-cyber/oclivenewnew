@@ -43,9 +43,8 @@ impl DirectoryComplexEmotionHttp {
 
 impl ComplexEmotionProvider for DirectoryComplexEmotionHttp {
     fn resolve_turn(&self, input: &ComplexEmotionInput) -> Result<ComplexEmotionOutput> {
-        let params = serde_json::to_value(input).map_err(|e| {
-            AppError::OllamaError(format!("complex_emotion params json: {}", e))
-        })?;
+        let params = serde_json::to_value(input)
+            .map_err(|e| AppError::OllamaError(format!("complex_emotion params json: {}", e)))?;
         match jsonrpc::call_blocking(
             RemoteRpcChannel::Plugin,
             &self.client,

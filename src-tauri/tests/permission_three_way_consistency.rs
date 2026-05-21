@@ -86,7 +86,10 @@ fn legacy_manifest_without_permissions_still_declares_spawn_with_process() {
     let dir = tempdir().unwrap();
     write_manifest(dir.path(), json);
     let manifest = OclivePluginManifest::load_from_dir(dir.path()).unwrap();
-    assert!(manifest_declares_process_spawn(&manifest.permissions, manifest.process.is_some()));
+    assert!(manifest_declares_process_spawn(
+        &manifest.permissions,
+        manifest.process.is_some()
+    ));
 }
 
 #[test]
@@ -123,10 +126,7 @@ fn remote_http_requires_network_grant() {
             limit: 3,
         })
         .unwrap_err();
-    assert!(matches!(
-        err,
-        AppError::HighRiskCapabilityNotGranted { .. }
-    ));
+    assert!(matches!(err, AppError::HighRiskCapabilityNotGranted { .. }));
 
     grants.grant_network(NETWORK_GRANT_REMOTE_PLUGIN).unwrap();
     assert!(grants.require_network(NETWORK_GRANT_REMOTE_PLUGIN).is_ok());

@@ -11,7 +11,7 @@ pub struct FallbackReplyContext<'a> {
 }
 
 /// `talkativeness` 0~1：越低越短句，越高可稍长（约 28~220 字量级）。
-#[must_use] 
+#[must_use]
 pub fn fallback_reply_for_llm_failure(
     role: &Role,
     personality: &PersonalityVector,

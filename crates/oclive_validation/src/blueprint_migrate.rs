@@ -50,12 +50,7 @@ pub fn build_blueprint_v2_from_legacy_dir(role_dir: &Path) -> Result<Value, Vec<
     let slot_registry = plugin_backends_to_slot_registry(&pb);
 
     let personality = if disk.default_personality.len() == 7 {
-        Value::Array(
-            disk.default_personality
-                .iter()
-                .map(|x| json!(x))
-                .collect(),
-        )
+        Value::Array(disk.default_personality.iter().map(|x| json!(x)).collect())
     } else {
         json!({
             "stubbornness": 0.5,
@@ -141,7 +136,8 @@ pub fn migrate_role_pack_dir_to_blueprint_v2(
         for name in ["manifest.json", "settings.json"] {
             let p = role_dir.join(name);
             if p.is_file() {
-                fs::remove_file(&p).map_err(|e| vec![format!("删除 {} 失败: {}", p.display(), e)])?;
+                fs::remove_file(&p)
+                    .map_err(|e| vec![format!("删除 {} 失败: {}", p.display(), e)])?;
             }
         }
     }
@@ -152,11 +148,23 @@ fn plugin_backends_to_slot_registry(pb: &PluginBackends) -> BTreeMap<String, Slo
     let mut reg = BTreeMap::new();
     reg.insert(
         "memory".into(),
-        entry_for("memory", backend_snake(pb.memory), 0, &pb.directory_plugins, pb),
+        entry_for(
+            "memory",
+            backend_snake(pb.memory),
+            0,
+            &pb.directory_plugins,
+            pb,
+        ),
     );
     reg.insert(
         "emotion".into(),
-        entry_for("emotion", backend_snake(pb.emotion), 0, &pb.directory_plugins, pb),
+        entry_for(
+            "emotion",
+            backend_snake(pb.emotion),
+            0,
+            &pb.directory_plugins,
+            pb,
+        ),
     );
     reg.insert(
         "complex_emotion".into(),
@@ -174,11 +182,23 @@ fn plugin_backends_to_slot_registry(pb: &PluginBackends) -> BTreeMap<String, Slo
     );
     reg.insert(
         "event".into(),
-        entry_for("event", backend_snake(pb.event), 0, &pb.directory_plugins, pb),
+        entry_for(
+            "event",
+            backend_snake(pb.event),
+            0,
+            &pb.directory_plugins,
+            pb,
+        ),
     );
     reg.insert(
         "prompt".into(),
-        entry_for("prompt", backend_snake(pb.prompt), 0, &pb.directory_plugins, pb),
+        entry_for(
+            "prompt",
+            backend_snake(pb.prompt),
+            0,
+            &pb.directory_plugins,
+            pb,
+        ),
     );
     reg.insert(
         "llm".into(),
@@ -186,7 +206,13 @@ fn plugin_backends_to_slot_registry(pb: &PluginBackends) -> BTreeMap<String, Slo
     );
     reg.insert(
         "agent".into(),
-        entry_for("agent", backend_snake(pb.agent), 0, &pb.directory_plugins, pb),
+        entry_for(
+            "agent",
+            backend_snake(pb.agent),
+            0,
+            &pb.directory_plugins,
+            pb,
+        ),
     );
     reg
 }

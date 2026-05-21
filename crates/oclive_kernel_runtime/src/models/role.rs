@@ -6,8 +6,9 @@ use super::knowledge::KnowledgeIndex;
 use super::plugin_backends::PluginBackends;
 use super::ui_config::UiConfig;
 pub use oclive_validation::{
-    AutonomousSceneConfig, AutonomousSceneRule, IdentityBinding, LifeAvailability, LifeScheduleDisk,
-    LifeScheduleEntryDisk, LifeTrajectoryDisk, PersonalitySource, RemotePresenceConfig,
+    AutonomousSceneConfig, AutonomousSceneRule, IdentityBinding, LifeAvailability,
+    LifeScheduleDisk, LifeScheduleEntryDisk, LifeTrajectoryDisk, PersonalitySource,
+    RemotePresenceConfig,
 };
 use std::sync::Arc;
 
@@ -35,7 +36,7 @@ pub struct EvolutionBounds {
 }
 
 impl EvolutionBounds {
-    #[must_use] 
+    #[must_use]
     pub fn full_01() -> Self {
         let r = (0.0, 1.0);
         Self {
@@ -237,7 +238,9 @@ impl Default for Role {
     }
 }
 
-fn slot_registry_is_empty(m: &Option<BTreeMap<String, oclive_validation::SlotRegistryEntry>>) -> bool {
+fn slot_registry_is_empty(
+    m: &Option<BTreeMap<String, oclive_validation::SlotRegistryEntry>>,
+) -> bool {
     m.as_ref().is_none_or(|map| map.is_empty())
 }
 
@@ -266,7 +269,7 @@ impl Role {
     }
 
     /// 解析本角色应使用的 Ollama 模型：**manifest** → **`OLLAMA_MODEL`** → **全局默认**（`AppState` 启动配置）
-    #[must_use] 
+    #[must_use]
     pub fn resolve_ollama_model(&self, global_fallback: &str) -> String {
         if let Some(ref m) = self.ollama_model {
             let t = m.trim();

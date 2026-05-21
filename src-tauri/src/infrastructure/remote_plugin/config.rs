@@ -12,7 +12,7 @@ pub struct RemotePluginHttpConfig {
 
 impl RemotePluginHttpConfig {
     /// 连接阶段超时：约为总超时的 1/4，夹在 500ms～15s，避免 TCP 握手长时间挂死。
-    #[must_use] 
+    #[must_use]
     pub fn connect_timeout(&self) -> Duration {
         let ms = self.timeout.as_millis() as u64;
         let quarter = ms / 4;
@@ -20,7 +20,7 @@ impl RemotePluginHttpConfig {
     }
 
     /// `OCLIVE_REMOTE_PLUGIN_URL`：非空则启用远程插件 HTTP 客户端（与 `memory`/`emotion`/`event`/`prompt` 的 remote 配合）。
-    #[must_use] 
+    #[must_use]
     pub fn from_env_plugin() -> Option<Self> {
         let endpoint = std::env::var("OCLIVE_REMOTE_PLUGIN_URL").ok()?;
         let t = endpoint.trim();
@@ -43,7 +43,7 @@ impl RemotePluginHttpConfig {
     }
 
     /// `OCLIVE_REMOTE_LLM_URL`：非空则 `plugin_backends.llm = remote` 时走该端点（JSON-RPC `llm.generate` / `llm.generate_tag`）。
-    #[must_use] 
+    #[must_use]
     pub fn from_env_llm() -> Option<Self> {
         let endpoint = std::env::var("OCLIVE_REMOTE_LLM_URL").ok()?;
         let t = endpoint.trim();
@@ -67,7 +67,7 @@ impl RemotePluginHttpConfig {
 
     /// `OCLIVE_COMPLEX_EMOTION_URL`：复杂情感 Remote 侧车（`complex_emotion.resolve_turn`）。
     /// 兼容旧名 `OCLIVE_REMOTE_COMPLEX_EMOTION_URL`。
-    #[must_use] 
+    #[must_use]
     pub fn from_env_complex_emotion() -> Option<Self> {
         let endpoint = std::env::var("OCLIVE_COMPLEX_EMOTION_URL")
             .ok()

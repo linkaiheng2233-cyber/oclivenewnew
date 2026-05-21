@@ -25,7 +25,10 @@ pub fn try_post_init_monolith_bench(project_root: &Path) {
     }
     let bench_dir = root.join("bench_results");
     if let Err(e) = run_post_init_bench_inner(&root, &bench_dir) {
-        eprintln!("⚠ Monolith auto-benchmark incomplete (project was generated): {:#}", e);
+        eprintln!(
+            "⚠ Monolith auto-benchmark incomplete (project was generated): {:#}",
+            e
+        );
         eprintln!(
             "  Run manually later: cargo run -p oclive-cli -- bench --release --runs 5 -o {}",
             root.display()

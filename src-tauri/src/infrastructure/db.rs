@@ -72,13 +72,13 @@ fn log_txn_finish(tx_name: &str, role_id: &str, elapsed_ms: u128) {
 
 impl DbManager {
     /// 创建新的数据库管理器
-    #[must_use] 
+    #[must_use]
     pub fn new(pool: SqlitePool) -> Self {
         Self { pool }
     }
-/// # Errors
-///
-/// Returns [`Err`] with a human-readable message when the operation fails.
+    /// # Errors
+    ///
+    /// Returns [`Err`] with a human-readable message when the operation fails.
     /// 启动期探活：`SELECT 1`。
     pub async fn health_ping(&self) -> Result<()> {
         sqlx::query_scalar::<_, i32>("SELECT 1")
@@ -89,9 +89,9 @@ impl DbManager {
     }
 
     // ===== 记忆操作 =====
-/// # Errors
-///
-/// Returns [`Err`] with a human-readable message when the operation fails.
+    /// # Errors
+    ///
+    /// Returns [`Err`] with a human-readable message when the operation fails.
     /// 保存长期记忆
     pub async fn save_memory(
         &self,
@@ -115,9 +115,9 @@ impl DbManager {
         .map_err(|e| AppError::DatabaseError(e.to_string()))?;
         Ok(result.last_insert_rowid().to_string())
     }
-/// # Errors
-///
-/// Returns [`Err`] with a human-readable message when the operation fails.
+    /// # Errors
+    ///
+    /// Returns [`Err`] with a human-readable message when the operation fails.
     /// 原子写入：长期记忆 + 事件
     ///
     /// 用于 `send_message` 成功路径，避免出现「记忆已写入但事件未写入」的不一致。
@@ -206,9 +206,9 @@ impl DbManager {
 
         Ok((memory_id, event_id))
     }
-/// # Errors
-///
-/// Returns [`Err`] with a human-readable message when the operation fails.
+    /// # Errors
+    ///
+    /// Returns [`Err`] with a human-readable message when the operation fails.
     /// 原子写入一个 chat turn 的关键状态：
     /// personality + favorability + memory + event
     pub async fn apply_chat_turn_atomic(&self, input: ChatTurnTxInput<'_>) -> Result<f64> {
@@ -525,9 +525,9 @@ impl DbManager {
         );
         Ok(favor_current)
     }
-/// # Errors
-///
-/// Returns [`Err`] with a human-readable message when the operation fails.
+    /// # Errors
+    ///
+    /// Returns [`Err`] with a human-readable message when the operation fails.
     /// 加载角色的长期记忆
     pub async fn load_memories(&self, role_id: &str, limit: i32) -> Result<Vec<Memory>> {
         let rows = sqlx::query_as::<_, (i64, String, String, f64, f64, String, Option<String>)>(
@@ -562,9 +562,9 @@ impl DbManager {
 
         Ok(memories)
     }
-/// # Errors
-///
-/// Returns [`Err`] with a human-readable message when the operation fails.
+    /// # Errors
+    ///
+    /// Returns [`Err`] with a human-readable message when the operation fails.
     pub async fn count_memories(&self, role_id: &str) -> Result<i64> {
         let row: (i64,) = sqlx::query_as("SELECT COUNT(*) FROM long_term_memory WHERE role_id = ?")
             .bind(role_id)
@@ -573,9 +573,9 @@ impl DbManager {
             .map_err(|e| AppError::DatabaseError(e.to_string()))?;
         Ok(row.0)
     }
-/// # Errors
-///
-/// Returns [`Err`] with a human-readable message when the operation fails.
+    /// # Errors
+    ///
+    /// Returns [`Err`] with a human-readable message when the operation fails.
     pub async fn load_memories_paged(
         &self,
         role_id: &str,
@@ -615,9 +615,9 @@ impl DbManager {
 
         Ok(memories)
     }
-/// # Errors
-///
-/// Returns [`Err`] with a human-readable message when the operation fails.
+    /// # Errors
+    ///
+    /// Returns [`Err`] with a human-readable message when the operation fails.
     /// 最近一次长期记忆时间（用于 `get_role_info`）
     pub async fn get_latest_memory_created_at(
         &self,
@@ -637,9 +637,9 @@ impl DbManager {
                 .map(|dt| dt.with_timezone(&Utc))
         }))
     }
-/// # Errors
-///
-/// Returns [`Err`] with a human-readable message when the operation fails.
+    /// # Errors
+    ///
+    /// Returns [`Err`] with a human-readable message when the operation fails.
     pub async fn role_runtime_exists(&self, role_id: &str) -> Result<bool> {
         let row: Option<(i64,)> =
             sqlx::query_as("SELECT 1 FROM role_runtime WHERE role_id = ? LIMIT 1")
@@ -649,9 +649,9 @@ impl DbManager {
                 .map_err(|e| AppError::DatabaseError(e.to_string()))?;
         Ok(row.is_some())
     }
-/// # Errors
-///
-/// Returns [`Err`] with a human-readable message when the operation fails.
+    /// # Errors
+    ///
+    /// Returns [`Err`] with a human-readable message when the operation fails.
     /// 删除记忆
     pub async fn delete_memory(&self, memory_id: &str) -> Result<()> {
         sqlx::query("DELETE FROM long_term_memory WHERE id = ?")
@@ -662,9 +662,9 @@ impl DbManager {
 
         Ok(())
     }
-/// # Errors
-///
-/// Returns [`Err`] with a human-readable message when the operation fails.
+    /// # Errors
+    ///
+    /// Returns [`Err`] with a human-readable message when the operation fails.
     /// 删除指定角色的长期记忆（`id` 须属于该 `role_id`）
     pub async fn delete_memory_for_role(&self, role_id: &str, memory_id: &str) -> Result<bool> {
         let r = sqlx::query("DELETE FROM long_term_memory WHERE id = ? AND role_id = ?")
@@ -677,9 +677,9 @@ impl DbManager {
     }
 
     // ===== 性格操作 =====
-/// # Errors
-///
-/// Returns [`Err`] with a human-readable message when the operation fails.
+    /// # Errors
+    ///
+    /// Returns [`Err`] with a human-readable message when the operation fails.
     /// 保存性格向量
     pub async fn save_personality_vector(
         &self,
@@ -704,9 +704,9 @@ impl DbManager {
 
         Ok(())
     }
-/// # Errors
-///
-/// Returns [`Err`] with a human-readable message when the operation fails.
+    /// # Errors
+    ///
+    /// Returns [`Err`] with a human-readable message when the operation fails.
     /// 获取最新的性格向量（历史快照：有效七维 JSON）
     pub async fn get_latest_personality_vector(
         &self,
@@ -734,9 +734,9 @@ impl DbManager {
     }
 
     // --- 用户身份：全局 `user_relation`、场景覆盖、`role_identity_stats` 按键存好感/阶段 ---
-/// # Errors
-///
-/// Returns [`Err`] with a human-readable message when the operation fails.
+    /// # Errors
+    ///
+    /// Returns [`Err`] with a human-readable message when the operation fails.
     pub async fn get_user_relation(&self, role_id: &str) -> Result<Option<String>> {
         let row: Option<(String,)> =
             sqlx::query_as("SELECT user_relation FROM role_runtime WHERE role_id = ?")
@@ -746,9 +746,9 @@ impl DbManager {
                 .map_err(|e| AppError::DatabaseError(e.to_string()))?;
         Ok(row.map(|(s,)| s))
     }
-/// # Errors
-///
-/// Returns [`Err`] with a human-readable message when the operation fails.
+    /// # Errors
+    ///
+    /// Returns [`Err`] with a human-readable message when the operation fails.
     pub async fn set_user_relation(&self, role_id: &str, relation: &str) -> Result<()> {
         let now = Utc::now().to_rfc3339();
         sqlx::query("UPDATE role_runtime SET user_relation = ?, updated_at = ? WHERE role_id = ?")
@@ -760,9 +760,9 @@ impl DbManager {
             .map_err(|e| AppError::DatabaseError(e.to_string()))?;
         Ok(())
     }
-/// # Errors
-///
-/// Returns [`Err`] with a human-readable message when the operation fails.
+    /// # Errors
+    ///
+    /// Returns [`Err`] with a human-readable message when the operation fails.
     pub async fn get_user_relation_for_scene(
         &self,
         role_id: &str,
@@ -778,9 +778,9 @@ impl DbManager {
         .map_err(|e| AppError::DatabaseError(e.to_string()))?;
         Ok(row.map(|(s,)| s))
     }
-/// # Errors
-///
-/// Returns [`Err`] with a human-readable message when the operation fails.
+    /// # Errors
+    ///
+    /// Returns [`Err`] with a human-readable message when the operation fails.
     pub async fn set_user_relation_for_scene(
         &self,
         role_id: &str,
@@ -803,9 +803,9 @@ impl DbManager {
         .map_err(|e| AppError::DatabaseError(e.to_string()))?;
         Ok(())
     }
-/// # Errors
-///
-/// Returns [`Err`] with a human-readable message when the operation fails.
+    /// # Errors
+    ///
+    /// Returns [`Err`] with a human-readable message when the operation fails.
     pub async fn clear_user_relation_for_scene(&self, role_id: &str, scene_id: &str) -> Result<()> {
         sqlx::query("DELETE FROM role_scene_identity WHERE role_id = ? AND scene_id = ?")
             .bind(role_id)
@@ -815,9 +815,9 @@ impl DbManager {
             .map_err(|e| AppError::DatabaseError(e.to_string()))?;
         Ok(())
     }
-/// # Errors
-///
-/// Returns [`Err`] with a human-readable message when the operation fails.
+    /// # Errors
+    ///
+    /// Returns [`Err`] with a human-readable message when the operation fails.
     /// 全局身份模式下调 `set_user_relation` 时清空，避免残留 `role_scene_identity` 在改回 `per_scene` 时误生效。
     pub async fn clear_all_scene_identities_for_role(&self, role_id: &str) -> Result<()> {
         sqlx::query("DELETE FROM role_scene_identity WHERE role_id = ?")
@@ -827,9 +827,9 @@ impl DbManager {
             .map_err(|e| AppError::DatabaseError(e.to_string()))?;
         Ok(())
     }
-/// # Errors
-///
-/// Returns [`Err`] with a human-readable message when the operation fails.
+    /// # Errors
+    ///
+    /// Returns [`Err`] with a human-readable message when the operation fails.
     pub async fn get_use_manifest_default(&self, role_id: &str) -> Result<bool> {
         let row: Option<(i64,)> = sqlx::query_as(
             "SELECT COALESCE(use_manifest_default, 0) FROM role_runtime WHERE role_id = ?",
@@ -840,9 +840,9 @@ impl DbManager {
         .map_err(|e| AppError::DatabaseError(e.to_string()))?;
         Ok(row.map(|(v,)| v != 0).unwrap_or(false))
     }
-/// # Errors
-///
-/// Returns [`Err`] with a human-readable message when the operation fails.
+    /// # Errors
+    ///
+    /// Returns [`Err`] with a human-readable message when the operation fails.
     pub async fn set_use_manifest_default(&self, role_id: &str, v: bool) -> Result<()> {
         let now = Utc::now().to_rfc3339();
         let n = if v { 1i64 } else { 0i64 };
@@ -857,9 +857,9 @@ impl DbManager {
         .map_err(|e| AppError::DatabaseError(e.to_string()))?;
         Ok(())
     }
-/// # Errors
-///
-/// Returns [`Err`] with a human-readable message when the operation fails.
+    /// # Errors
+    ///
+    /// Returns [`Err`] with a human-readable message when the operation fails.
     pub async fn get_remote_life_enabled(&self, role_id: &str) -> Result<bool> {
         let row: Option<(i64,)> = sqlx::query_as(
             "SELECT COALESCE(remote_life_enabled, 0) FROM role_runtime WHERE role_id = ?",
@@ -870,9 +870,9 @@ impl DbManager {
         .map_err(|e| AppError::DatabaseError(e.to_string()))?;
         Ok(row.map(|(v,)| v != 0).unwrap_or(false))
     }
-/// # Errors
-///
-/// Returns [`Err`] with a human-readable message when the operation fails.
+    /// # Errors
+    ///
+    /// Returns [`Err`] with a human-readable message when the operation fails.
     pub async fn set_remote_life_enabled(&self, role_id: &str, v: bool) -> Result<()> {
         let now = Utc::now().to_rfc3339();
         let n = if v { 1i64 } else { 0i64 };
@@ -887,9 +887,9 @@ impl DbManager {
         .map_err(|e| AppError::DatabaseError(e.to_string()))?;
         Ok(())
     }
-/// # Errors
-///
-/// Returns [`Err`] with a human-readable message when the operation fails.
+    /// # Errors
+    ///
+    /// Returns [`Err`] with a human-readable message when the operation fails.
     pub async fn get_favorability_for_identity(
         &self,
         role_id: &str,
@@ -905,9 +905,9 @@ impl DbManager {
         .map_err(|e| AppError::DatabaseError(e.to_string()))?;
         Ok(row.map(|(f,)| f))
     }
-/// # Errors
-///
-/// Returns [`Err`] with a human-readable message when the operation fails.
+    /// # Errors
+    ///
+    /// Returns [`Err`] with a human-readable message when the operation fails.
     pub async fn get_relation_state_for_identity(
         &self,
         role_id: &str,
@@ -923,9 +923,9 @@ impl DbManager {
         .map_err(|e| AppError::DatabaseError(e.to_string()))?;
         Ok(row.map(|(s,)| s))
     }
-/// # Errors
-///
-/// Returns [`Err`] with a human-readable message when the operation fails.
+    /// # Errors
+    ///
+    /// Returns [`Err`] with a human-readable message when the operation fails.
     /// 若不存在则插入（`INSERT OR IGNORE`），用于对话前保证本回合可 UPDATE。
     pub async fn ensure_identity_stats_row(
         &self,
@@ -947,9 +947,9 @@ impl DbManager {
         .map_err(|e| AppError::DatabaseError(e.to_string()))?;
         Ok(())
     }
-/// # Errors
-///
-/// Returns [`Err`] with a human-readable message when the operation fails.
+    /// # Errors
+    ///
+    /// Returns [`Err`] with a human-readable message when the operation fails.
     pub async fn set_identity_favorability_value(
         &self,
         role_id: &str,
@@ -970,9 +970,9 @@ impl DbManager {
         self.mirror_runtime_from_identity(role_id, user_relation_key)
             .await
     }
-/// # Errors
-///
-/// Returns [`Err`] with a human-readable message when the operation fails.
+    /// # Errors
+    ///
+    /// Returns [`Err`] with a human-readable message when the operation fails.
     /// 将 `role_identity_stats` 中该身份的好感与关系阶段复制到 `role_runtime`（单角色当前选中身份）。
     pub async fn mirror_runtime_from_identity(
         &self,
@@ -1002,9 +1002,9 @@ impl DbManager {
         }
         Ok(())
     }
-/// # Errors
-///
-/// Returns [`Err`] with a human-readable message when the operation fails.
+    /// # Errors
+    ///
+    /// Returns [`Err`] with a human-readable message when the operation fails.
     pub async fn get_event_impact_factor(&self, role_id: &str) -> Result<Option<f64>> {
         let row: Option<(f64,)> =
             sqlx::query_as("SELECT event_impact_factor FROM role_runtime WHERE role_id = ?")
@@ -1014,9 +1014,9 @@ impl DbManager {
                 .map_err(|e| AppError::DatabaseError(e.to_string()))?;
         Ok(row.map(|(f,)| f))
     }
-/// # Errors
-///
-/// Returns [`Err`] with a human-readable message when the operation fails.
+    /// # Errors
+    ///
+    /// Returns [`Err`] with a human-readable message when the operation fails.
     pub async fn set_event_impact_factor(&self, role_id: &str, factor: f64) -> Result<()> {
         let now = Utc::now().to_rfc3339();
         sqlx::query(
@@ -1030,9 +1030,9 @@ impl DbManager {
         .map_err(|e| AppError::DatabaseError(e.to_string()))?;
         Ok(())
     }
-/// # Errors
-///
-/// Returns [`Err`] with a human-readable message when the operation fails.
+    /// # Errors
+    ///
+    /// Returns [`Err`] with a human-readable message when the operation fails.
     pub async fn get_core_delta_personality_json(
         &self,
         role_id: &str,
@@ -1046,9 +1046,9 @@ impl DbManager {
         .map_err(|e| AppError::DatabaseError(e.to_string()))?;
         Ok(row.unwrap_or((None, None)))
     }
-/// # Errors
-///
-/// Returns [`Err`] with a human-readable message when the operation fails.
+    /// # Errors
+    ///
+    /// Returns [`Err`] with a human-readable message when the operation fails.
     pub async fn set_core_delta_personality_json(
         &self,
         role_id: &str,
@@ -1068,9 +1068,9 @@ impl DbManager {
         .map_err(|e| AppError::DatabaseError(e.to_string()))?;
         Ok(())
     }
-/// # Errors
-///
-/// Returns [`Err`] with a human-readable message when the operation fails.
+    /// # Errors
+    ///
+    /// Returns [`Err`] with a human-readable message when the operation fails.
     /// 人设优先模式：相处中由模型维护的「可变性格档案」正文（与 manifest 核心性格档案并列）。
     pub async fn get_mutable_personality(&self, role_id: &str) -> Result<String> {
         let row: Option<(Option<String>,)> =
@@ -1081,9 +1081,9 @@ impl DbManager {
                 .map_err(|e| AppError::DatabaseError(e.to_string()))?;
         Ok(row.and_then(|(c,)| c).unwrap_or_default())
     }
-/// # Errors
-///
-/// Returns [`Err`] with a human-readable message when the operation fails.
+    /// # Errors
+    ///
+    /// Returns [`Err`] with a human-readable message when the operation fails.
     pub async fn set_mutable_personality(&self, role_id: &str, text: &str) -> Result<()> {
         let now = Utc::now().to_rfc3339();
         sqlx::query(
@@ -1099,9 +1099,9 @@ impl DbManager {
     }
 
     // ===== 好感度操作 =====
-/// # Errors
-///
-/// Returns [`Err`] with a human-readable message when the operation fails.
+    /// # Errors
+    ///
+    /// Returns [`Err`] with a human-readable message when the operation fails.
     /// 确保 `role_runtime` 中存在该角色（性格/记忆外键依赖）
     pub async fn ensure_role_runtime(&self, role_id: &str) -> Result<()> {
         let now = Utc::now().to_rfc3339();
@@ -1115,9 +1115,9 @@ impl DbManager {
         .map_err(|e| AppError::DatabaseError(e.to_string()))?;
         Ok(())
     }
-/// # Errors
-///
-/// Returns [`Err`] with a human-readable message when the operation fails.
+    /// # Errors
+    ///
+    /// Returns [`Err`] with a human-readable message when the operation fails.
     /// 保存好感度（仅更新数值列，避免 `INSERT OR REPLACE` 整行覆盖导致 `user_relation` 等丢失）
     pub async fn save_favorability(&self, role_id: &str, value: f64) -> Result<()> {
         let now = Utc::now().to_rfc3339();
@@ -1144,9 +1144,9 @@ impl DbManager {
         }
         Ok(())
     }
-/// # Errors
-///
-/// Returns [`Err`] with a human-readable message when the operation fails.
+    /// # Errors
+    ///
+    /// Returns [`Err`] with a human-readable message when the operation fails.
     /// 获取好感度
     pub async fn get_favorability(&self, role_id: &str) -> Result<Option<f64>> {
         let row = sqlx::query_as::<_, (f64,)>(
@@ -1159,9 +1159,9 @@ impl DbManager {
 
         Ok(row.map(|(value,)| value))
     }
-/// # Errors
-///
-/// Returns [`Err`] with a human-readable message when the operation fails.
+    /// # Errors
+    ///
+    /// Returns [`Err`] with a human-readable message when the operation fails.
     /// 按身份读 `role_identity_stats`，缺失时回退到全局 `role_runtime.current_favorability`（与 UI / 对话引擎一致）。
     pub async fn favorability_for_identity_with_runtime_fallback(
         &self,
@@ -1175,9 +1175,9 @@ impl DbManager {
             .or(self.get_favorability(role_id).await?)
             .unwrap_or(0.0))
     }
-/// # Errors
-///
-/// Returns [`Err`] with a human-readable message when the operation fails.
+    /// # Errors
+    ///
+    /// Returns [`Err`] with a human-readable message when the operation fails.
     pub async fn get_current_emotion(&self, role_id: &str) -> Result<Option<String>> {
         let row = sqlx::query_as::<_, (String,)>(
             "SELECT current_emotion FROM role_runtime WHERE role_id = ?",
@@ -1188,9 +1188,9 @@ impl DbManager {
         .map_err(|e| AppError::DatabaseError(e.to_string()))?;
         Ok(row.map(|(v,)| v))
     }
-/// # Errors
-///
-/// Returns [`Err`] with a human-readable message when the operation fails.
+    /// # Errors
+    ///
+    /// Returns [`Err`] with a human-readable message when the operation fails.
     /// 仅更新立绘/运行时展示用情绪（小写英文，如 `neutral`），用于 `load_role` 启动默认「正常」等。
     pub async fn set_current_emotion(&self, role_id: &str, emotion: &str) -> Result<()> {
         let now = Utc::now().to_rfc3339();
@@ -1210,9 +1210,9 @@ impl DbManager {
         }
         Ok(())
     }
-/// # Errors
-///
-/// Returns [`Err`] with a human-readable message when the operation fails.
+    /// # Errors
+    ///
+    /// Returns [`Err`] with a human-readable message when the operation fails.
     pub async fn get_relation_state(&self, role_id: &str) -> Result<Option<String>> {
         let value: Option<String> =
             sqlx::query_scalar("SELECT relation_state FROM role_runtime WHERE role_id = ?")
@@ -1222,9 +1222,9 @@ impl DbManager {
                 .map_err(|e| AppError::DatabaseError(e.to_string()))?;
         Ok(value)
     }
-/// # Errors
-///
-/// Returns [`Err`] with a human-readable message when the operation fails.
+    /// # Errors
+    ///
+    /// Returns [`Err`] with a human-readable message when the operation fails.
     pub async fn get_current_scene(&self, role_id: &str) -> Result<Option<String>> {
         let row: Option<(Option<String>,)> =
             sqlx::query_as("SELECT current_scene FROM role_runtime WHERE role_id = ?")
@@ -1234,9 +1234,9 @@ impl DbManager {
                 .map_err(|e| AppError::DatabaseError(e.to_string()))?;
         Ok(row.and_then(|(s,)| s))
     }
-/// # Errors
-///
-/// Returns [`Err`] with a human-readable message when the operation fails.
+    /// # Errors
+    ///
+    /// Returns [`Err`] with a human-readable message when the operation fails.
     pub async fn set_current_scene(&self, role_id: &str, scene_id: &str) -> Result<()> {
         let now = Utc::now().to_rfc3339();
         let n = sqlx::query(
@@ -1254,9 +1254,9 @@ impl DbManager {
         }
         Ok(())
     }
-/// # Errors
-///
-/// Returns [`Err`] with a human-readable message when the operation fails.
+    /// # Errors
+    ///
+    /// Returns [`Err`] with a human-readable message when the operation fails.
     /// 用户叙事/发消息上下文场景（可与 `current_scene` 不同＝异地）
     pub async fn get_user_presence_scene(&self, role_id: &str) -> Result<Option<String>> {
         let row: Option<(Option<String>,)> =
@@ -1267,9 +1267,9 @@ impl DbManager {
                 .map_err(|e| AppError::DatabaseError(e.to_string()))?;
         Ok(row.and_then(|(s,)| s))
     }
-/// # Errors
-///
-/// Returns [`Err`] with a human-readable message when the operation fails.
+    /// # Errors
+    ///
+    /// Returns [`Err`] with a human-readable message when the operation fails.
     pub async fn set_user_presence_scene(&self, role_id: &str, scene_id: &str) -> Result<()> {
         let now = Utc::now().to_rfc3339();
         let n = sqlx::query(
@@ -1287,9 +1287,9 @@ impl DbManager {
         }
         Ok(())
     }
-/// # Errors
-///
-/// Returns [`Err`] with a human-readable message when the operation fails.
+    /// # Errors
+    ///
+    /// Returns [`Err`] with a human-readable message when the operation fails.
     pub async fn get_virtual_time_ms(&self, role_id: &str) -> Result<Option<i64>> {
         sqlx::query_scalar::<_, i64>("SELECT virtual_time_ms FROM role_runtime WHERE role_id = ?")
             .bind(role_id)
@@ -1297,9 +1297,9 @@ impl DbManager {
             .await
             .map_err(|e| AppError::DatabaseError(e.to_string()))
     }
-/// # Errors
-///
-/// Returns [`Err`] with a human-readable message when the operation fails.
+    /// # Errors
+    ///
+    /// Returns [`Err`] with a human-readable message when the operation fails.
     pub async fn set_virtual_time_ms(&self, role_id: &str, ms: i64) -> Result<()> {
         let now = Utc::now().to_rfc3339();
         let n = sqlx::query(
@@ -1329,9 +1329,9 @@ impl DbManager {
             .map(|(v,)| v)
             .filter(|s| s == InteractionMode::IMMERSIVE || s == InteractionMode::PURE_CHAT))
     }
-/// # Errors
-///
-/// Returns [`Err`] with a human-readable message when the operation fails.
+    /// # Errors
+    ///
+    /// Returns [`Err`] with a human-readable message when the operation fails.
     /// 首次为 `role_runtime.interaction_mode` 赋值：优先旧版全局设置，否则 `settings.json` 建议值，否则沉浸。
     pub async fn ensure_interaction_mode_seeded(
         &self,
@@ -1368,9 +1368,9 @@ impl DbManager {
         .map_err(|e| AppError::DatabaseError(e.to_string()))?;
         Ok(())
     }
-/// # Errors
-///
-/// Returns [`Err`] with a human-readable message when the operation fails.
+    /// # Errors
+    ///
+    /// Returns [`Err`] with a human-readable message when the operation fails.
     pub async fn get_interaction_mode(&self, role_id: &str) -> Result<InteractionMode> {
         let row: Option<(Option<String>,)> =
             sqlx::query_as("SELECT interaction_mode FROM role_runtime WHERE role_id = ?")
@@ -1381,9 +1381,9 @@ impl DbManager {
         let raw = row.and_then(|(v,)| v);
         Ok(InteractionMode::normalize(raw.as_deref()))
     }
-/// # Errors
-///
-/// Returns [`Err`] with a human-readable message when the operation fails.
+    /// # Errors
+    ///
+    /// Returns [`Err`] with a human-readable message when the operation fails.
     pub async fn set_interaction_mode_for_role(&self, role_id: &str, mode: &str) -> Result<()> {
         let normalized = InteractionMode::normalize(Some(mode));
         let now = Utc::now().to_rfc3339();
@@ -1402,9 +1402,9 @@ impl DbManager {
         }
         Ok(())
     }
-/// # Errors
-///
-/// Returns [`Err`] with a human-readable message when the operation fails.
+    /// # Errors
+    ///
+    /// Returns [`Err`] with a human-readable message when the operation fails.
     /// 最近 N 轮对话（旧→新），仅 user/bot 文本，供立绘情绪等上下文
     pub async fn list_short_term_recent_turns(
         &self,
@@ -1424,9 +1424,9 @@ impl DbManager {
         .map_err(|e| AppError::DatabaseError(e.to_string()))?;
         Ok(rows.into_iter().rev().collect())
     }
-/// # Errors
-///
-/// Returns [`Err`] with a human-readable message when the operation fails.
+    /// # Errors
+    ///
+    /// Returns [`Err`] with a human-readable message when the operation fails.
     /// 导出用：按时间升序返回短期对话
     pub async fn list_short_term_turns(
         &self,
@@ -1443,9 +1443,9 @@ impl DbManager {
         .map_err(|e| AppError::DatabaseError(e.to_string()))?;
         Ok(rows)
     }
-/// # Errors
-///
-/// Returns [`Err`] with a human-readable message when the operation fails.
+    /// # Errors
+    ///
+    /// Returns [`Err`] with a human-readable message when the operation fails.
     /// 好感度增量（更新 `role_runtime.current_favorability`，并写入 `favorability_history`）
     pub async fn apply_favorability_delta(&self, role_id: &str, delta: f64) -> Result<()> {
         let now = Utc::now();
@@ -1488,9 +1488,9 @@ impl DbManager {
     }
 
     // ===== 事件操作 =====
-/// # Errors
-///
-/// Returns [`Err`] with a human-readable message when the operation fails.
+    /// # Errors
+    ///
+    /// Returns [`Err`] with a human-readable message when the operation fails.
     /// 保存事件
     pub async fn save_event(&self, role_id: &str, event: &Event) -> Result<String> {
         let now = Utc::now();
@@ -1509,9 +1509,9 @@ impl DbManager {
         .map_err(|e| AppError::DatabaseError(e.to_string()))?;
         Ok(result.last_insert_rowid().to_string())
     }
-/// # Errors
-///
-/// Returns [`Err`] with a human-readable message when the operation fails.
+    /// # Errors
+    ///
+    /// Returns [`Err`] with a human-readable message when the operation fails.
     pub async fn count_events(&self, role_id: &str) -> Result<i64> {
         let row: (i64,) = sqlx::query_as("SELECT COUNT(*) FROM events WHERE role_id = ?")
             .bind(role_id)
@@ -1520,9 +1520,9 @@ impl DbManager {
             .map_err(|e| AppError::DatabaseError(e.to_string()))?;
         Ok(row.0)
     }
-/// # Errors
-///
-/// Returns [`Err`] with a human-readable message when the operation fails.
+    /// # Errors
+    ///
+    /// Returns [`Err`] with a human-readable message when the operation fails.
     /// 分页事件列表（含 `id` / `resolution`，供 `query_events`）
     pub async fn list_events_paged(
         &self,
@@ -1572,9 +1572,9 @@ impl DbManager {
             )
             .collect())
     }
-/// # Errors
-///
-/// Returns [`Err`] with a human-readable message when the operation fails.
+    /// # Errors
+    ///
+    /// Returns [`Err`] with a human-readable message when the operation fails.
     /// 手动插入事件（`create_event` API），返回 `(id, created_at)`
     pub async fn insert_manual_event(
         &self,
@@ -1600,9 +1600,9 @@ impl DbManager {
         .map_err(|e| AppError::DatabaseError(e.to_string()))?;
         Ok((result.last_insert_rowid(), now))
     }
-/// # Errors
-///
-/// Returns [`Err`] with a human-readable message when the operation fails.
+    /// # Errors
+    ///
+    /// Returns [`Err`] with a human-readable message when the operation fails.
     /// 获取角色事件历史
     pub async fn get_events(&self, role_id: &str, limit: i32) -> Result<Vec<Event>> {
         let rows = sqlx::query_as::<_, (String, String, String, String)>(
@@ -1643,9 +1643,9 @@ impl DbManager {
 
         Ok(events)
     }
-/// # Errors
-///
-/// Returns [`Err`] with a human-readable message when the operation fails.
+    /// # Errors
+    ///
+    /// Returns [`Err`] with a human-readable message when the operation fails.
     /// 列出所有短期对话命名空间（`short_term_memory.role_id`）及轮数、最后一条时间。
     pub async fn list_conversation_sessions(&self) -> Result<Vec<(String, i64, Option<String>)>> {
         let rows = sqlx::query_as::<_, (String, i64, Option<String>)>(
@@ -1659,9 +1659,9 @@ impl DbManager {
         .map_err(|e| AppError::DatabaseError(e.to_string()))?;
         Ok(rows)
     }
-/// # Errors
-///
-/// Returns [`Err`] with a human-readable message when the operation fails.
+    /// # Errors
+    ///
+    /// Returns [`Err`] with a human-readable message when the operation fails.
     /// 写入或更新 `app_settings` 单行。
     pub async fn upsert_app_setting(&self, key: &str, value: &str) -> Result<()> {
         sqlx::query(

@@ -2,12 +2,12 @@
 
 use crate::domain::agent::AgentInput;
 use crate::domain::chat_engine::co_present;
+use crate::domain::chat_engine::presence::user_is_remote_from_character;
 use crate::domain::chat_engine::{
     backend_resolution_summary, conversation_state_role_id, ensure_role_loaded,
     process_remote_life, process_remote_stub,
 };
 use crate::domain::chat_engine::{context::validate_scene_id, emotion_to_dto};
-use crate::domain::chat_engine::presence::user_is_remote_from_character;
 use crate::domain::startup_health;
 use crate::domain::user_identity::resolve_effective_user_relation_key;
 use crate::error::{AppError, Result};
@@ -55,7 +55,10 @@ macro_rules! pm {
 ///
 /// Returns [`Err`] with a human-readable message when the operation fails.
 /// 处理一条用户消息：分析情绪 → 检测事件 → 演化性格 → 构建 Prompt → 调用 LLM → 持久化
-pub async fn process_message(state: &AppState, req: &SendMessageRequest) -> Result<SendMessageResponse> {
+pub async fn process_message(
+    state: &AppState,
+    req: &SendMessageRequest,
+) -> Result<SendMessageResponse> {
     match run(state, req).await {
         Ok(v) => Ok(v),
         Err(e) => {

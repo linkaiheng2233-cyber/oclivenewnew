@@ -13,7 +13,7 @@ pub struct SqliteMemoryRepository {
 }
 
 impl SqliteMemoryRepository {
-    #[must_use] 
+    #[must_use]
     pub fn new(inner: Arc<DbManager>) -> Self {
         Self { inner }
     }
@@ -49,7 +49,7 @@ pub struct SqliteFavorabilityRepository {
 }
 
 impl SqliteFavorabilityRepository {
-    #[must_use] 
+    #[must_use]
     pub fn new(inner: Arc<DbManager>) -> Self {
         Self { inner }
     }

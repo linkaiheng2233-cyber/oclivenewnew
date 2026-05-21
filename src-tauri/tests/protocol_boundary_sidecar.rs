@@ -26,7 +26,9 @@ fn kernel_error_body_from_app_error_is_string_code() {
     validate_kernel_error_body(&serde_json::to_value(&body).unwrap()).expect("kernel shape");
     assert_eq!(body.code, "LLM_ERROR");
     assert!(
-        body.code.chars().all(|c| c.is_ascii_uppercase() || c == '_'),
+        body.code
+            .chars()
+            .all(|c| c.is_ascii_uppercase() || c == '_'),
         "kernel code must be SCREAMING_SNAKE_CASE, got {}",
         body.code
     );

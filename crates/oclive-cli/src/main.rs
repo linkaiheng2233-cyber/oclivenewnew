@@ -1,68 +1,65 @@
 //! oclive-cli — 官方内核项目脚手架入口。
 
-#![cfg_attr(
-    test,
-    allow(clippy::unwrap_used, clippy::expect_used)
-)]
+#![cfg_attr(test, allow(clippy::unwrap_used, clippy::expect_used))]
 
 mod bench_cmd;
 mod bench_cold_start;
 mod bench_equivalence;
-mod bench_soak;
 mod bench_metrics;
+mod bench_soak;
 mod bench_stress;
-mod completions_cmd;
-mod doctor_sbom;
-mod explain_cmd;
-mod init_check;
-mod init_plan;
-mod lint_audit_ci;
-mod test_coverage;
-mod test_miri;
-mod test_loom;
-mod test_equivalence_check;
 mod blueprint;
-mod cargo_hints;
-mod doctor_cmd;
 mod blueprint_cmd;
 mod build_cmd;
-mod dashboard_cmd;
-mod dev_cmd;
-mod plugin_cmd;
-mod plugin_ext;
-mod generator;
+mod cargo_hints;
+mod ci_cmd;
 mod cli_english_init;
+mod collab_cmd;
+mod completions_cmd;
+mod compose_cmd;
+mod config;
+mod config_cmd;
+mod dashboard_cmd;
+mod debug_cmd;
+mod dev_cmd;
+mod doctor_cmd;
+mod doctor_sbom;
+mod explain_cmd;
+mod generator;
 mod init;
-mod init_from_existing;
 mod init_bench;
-mod project_introspect;
+mod init_check;
+mod init_from_existing;
+mod init_plan;
+mod init_tui;
 mod interactive;
+mod kernel_cmd;
 mod learn_cmd;
+mod lint_audit_ci;
 mod lint_cmd;
-mod pipeline;
-mod profile_cmd;
-mod template_catalog;
+mod market_cmd;
+mod market_index;
 mod monolith_codegen;
 mod monolith_config;
 mod pack_cmd;
-mod compose_cmd;
-mod debug_cmd;
-mod init_tui;
+mod pipeline;
+mod plugin_cmd;
+mod plugin_ext;
+mod profile_cmd;
+mod project_introspect;
 mod publish_cmd;
 mod registry;
 mod registry_cmd;
 mod registry_remote;
-mod market_index;
-mod market_cmd;
-mod collab_cmd;
-mod config;
-mod config_cmd;
-mod ci_cmd;
-mod template_cmd;
 mod role_pack;
-mod test_cmd;
+mod template_catalog;
+mod template_cmd;
 mod test_ci_parity;
-mod kernel_cmd;
+mod test_cmd;
+mod test_coverage;
+mod test_equivalence_check;
+mod test_loom;
+mod test_miri;
 
 use anyhow::Result;
 use clap::{Parser, Subcommand};

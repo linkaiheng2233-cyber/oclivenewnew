@@ -16,7 +16,11 @@ fn blueprint_validate_valid_fixture() {
         .args(["blueprint", "validate", path])
         .output()
         .unwrap();
-    assert!(o.status.success(), "stderr={}", String::from_utf8_lossy(&o.stderr));
+    assert!(
+        o.status.success(),
+        "stderr={}",
+        String::from_utf8_lossy(&o.stderr)
+    );
     let out = String::from_utf8_lossy(&o.stdout);
     assert!(out.contains("OK") || out.contains("valid"));
 }
@@ -33,8 +37,5 @@ fn blueprint_validate_invalid_fixture_exits_nonzero() {
         .unwrap();
     assert!(!o.status.success());
     let err = String::from_utf8_lossy(&o.stderr);
-    assert!(
-        err.contains("llm") || err.contains("FAIL"),
-        "stderr={err}"
-    );
+    assert!(err.contains("llm") || err.contains("FAIL"), "stderr={err}");
 }

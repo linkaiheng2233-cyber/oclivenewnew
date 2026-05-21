@@ -4,9 +4,9 @@ use crate::domain::prompt_assembler::PromptAssembler;
 use crate::domain::prompt_builder::PromptInput;
 use crate::domain::BuiltinPromptAssembler;
 use crate::error::{AppError, Result};
+use crate::infrastructure::high_risk_grants::HighRiskGrantStore;
 use crate::infrastructure::remote_fallback_policy::remote_fallback_load;
 use crate::infrastructure::remote_plugin::config::RemotePluginHttpConfig;
-use crate::infrastructure::high_risk_grants::HighRiskGrantStore;
 use crate::infrastructure::remote_plugin::jsonrpc::{self, RemoteRpcChannel};
 use crate::models::{PersonalitySource, Role};
 use serde_json::json;
@@ -223,7 +223,8 @@ impl<'a> PromptInputSnapshot<'a> {
                 worldview_snippet: input.worldview_snippet,
                 mutable_personality: input.mutable_personality,
                 reply_quality_anchor: input.reply_quality_anchor,
-                previous_complex_emotion_narrative_hint: input.previous_complex_emotion_narrative_hint,
+                previous_complex_emotion_narrative_hint: input
+                    .previous_complex_emotion_narrative_hint,
             },
         }
     }

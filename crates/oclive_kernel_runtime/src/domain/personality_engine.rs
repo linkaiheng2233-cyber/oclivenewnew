@@ -5,7 +5,7 @@ use crate::models::{EvolutionBounds, PersonalityVector};
 pub struct PersonalityEngine;
 
 impl PersonalityEngine {
-    #[must_use] 
+    #[must_use]
     pub fn evolve_by_event(
         mut personality: PersonalityVector,
         impact_factor: f64,
@@ -27,7 +27,7 @@ impl PersonalityEngine {
         personality
     }
 
-    #[must_use] 
+    #[must_use]
     pub fn adjust_by_user_emotion(
         mut personality: PersonalityVector,
         user_emotion_str: &str,
@@ -66,7 +66,7 @@ impl PersonalityEngine {
         personality
     }
 
-    #[must_use] 
+    #[must_use]
     pub fn calculate_similarity(pv1: &PersonalityVector, pv2: &PersonalityVector) -> f64 {
         let diff: f64 = ((pv1.stubbornness - pv2.stubbornness).abs()
             + (pv1.clinginess - pv2.clinginess).abs()
@@ -80,24 +80,24 @@ impl PersonalityEngine {
         (1.0 - diff).max(0.0)
     }
 
-    #[must_use] 
+    #[must_use]
     pub fn calculate_stability_index(personality: &PersonalityVector) -> f64 {
         let base = 1.0 - personality.sensitivity * 0.35;
         base.clamp(0.0, 1.0)
     }
 
-    #[must_use] 
+    #[must_use]
     pub fn calculate_extroversion_index(personality: &PersonalityVector) -> f64 {
         (personality.warmth + personality.talkativeness + personality.assertiveness) / 3.0
     }
 
-    #[must_use] 
+    #[must_use]
     pub fn calculate_rationality_index(personality: &PersonalityVector) -> f64 {
         let base = (personality.assertiveness + personality.forgiveness) / 2.0;
         (base - personality.sensitivity * 0.2).clamp(0.0, 1.0)
     }
 
-    #[must_use] 
+    #[must_use]
     pub fn get_dominant_traits(personality: &PersonalityVector) -> Vec<String> {
         let mut traits = Vec::new();
         let threshold = 0.6;
@@ -131,7 +131,7 @@ impl PersonalityEngine {
         traits
     }
 
-    #[must_use] 
+    #[must_use]
     pub fn smooth_evolution(
         current: &PersonalityVector,
         target: &PersonalityVector,

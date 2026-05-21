@@ -73,7 +73,8 @@ fn run_info(args: KernelInfoArgs) -> Result<()> {
                         path: None,
                         git_commit: None,
                         runtime_api_version: None,
-                        compatibility_note: "Stub scaffold — use init --kernel-source <oclivenewnew root>.".into(),
+                        compatibility_note:
+                            "Stub scaffold — use init --kernel-source <oclivenewnew root>.".into(),
                         crates_io_update_hint: None,
                     })?
                 );
@@ -88,12 +89,7 @@ fn run_info(args: KernelInfoArgs) -> Result<()> {
             if let Some(p) = t.get("path").and_then(|x| x.as_str()) {
                 let abs = root.join(p).canonicalize().unwrap_or_else(|_| root.join(p));
                 let commit = git_head_short(abs.parent().unwrap_or(&abs));
-                (
-                    "path".into(),
-                    None,
-                    Some(abs.display().to_string()),
-                    commit,
-                )
+                ("path".into(), None, Some(abs.display().to_string()), commit)
             } else if let Some(s) = t.as_str() {
                 ("version".into(), Some(s.into()), None, None)
             } else if let Some(ver) = t.get("version").and_then(|x| x.as_str()) {
@@ -107,7 +103,10 @@ fn run_info(args: KernelInfoArgs) -> Result<()> {
     let api_ver = read_runtime_api_version(path.as_deref());
     let compat = compatibility_blurb();
     let update_hint = if dep_kind == "version" {
-        Some("Run `cargo update -p oclive_kernel_runtime` or check crates.io for newer releases.".into())
+        Some(
+            "Run `cargo update -p oclive_kernel_runtime` or check crates.io for newer releases."
+                .into(),
+        )
     } else {
         None
     };

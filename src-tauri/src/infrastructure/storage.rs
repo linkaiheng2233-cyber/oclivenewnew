@@ -6,8 +6,8 @@ use crate::error::{AppError, Result};
 use crate::models::role_manifest_disk::{disk_manifest_from_role, disk_manifest_to_role};
 use crate::models::{
     author_pack::AuthorPackFile, disk_role_settings_from_role,
-    role_settings_disk::CURRENT_SETTINGS_SCHEMA_VERSION,
-    DiskRoleManifest, DiskRoleSettings, DiskSceneConfig, LlmBackend, Role, UiConfig,
+    role_settings_disk::CURRENT_SETTINGS_SCHEMA_VERSION, DiskRoleManifest, DiskRoleSettings,
+    DiskSceneConfig, LlmBackend, Role, UiConfig,
 };
 use chrono::Timelike;
 use oclive_validation::{
@@ -16,8 +16,8 @@ use oclive_validation::{
     validate_settings_schema_version, validate_settings_top_level_keys,
     write_role_pack_blueprint_slot_registry, SlotRegistryEntry, PIPELINE_BLUEPRINT_FILENAME,
 };
-use std::collections::BTreeMap;
 use serde_json;
+use std::collections::BTreeMap;
 use std::collections::BTreeSet;
 use std::fs;
 use std::hash::{Hash, Hasher};
@@ -41,13 +41,13 @@ impl RoleStorage {
         }
     }
 
-    #[must_use] 
+    #[must_use]
     pub fn roles_dir(&self) -> &Path {
         &self.roles_dir
     }
 
     /// `roles/{role_id}/{relative}`，不检查是否存在。
-    #[must_use] 
+    #[must_use]
     pub fn role_asset_path(&self, role_id: &str, relative: &str) -> PathBuf {
         self.roles_dir.join(role_id).join(relative)
     }
@@ -103,9 +103,9 @@ impl RoleStorage {
 
         Ok(roles)
     }
-/// # Errors
-///
-/// Returns [`Err`] with a human-readable message when the operation fails.
+    /// # Errors
+    ///
+    /// Returns [`Err`] with a human-readable message when the operation fails.
     /// 从目录加载单个角色（优先 `pipeline.ocblueprint` v2，否则 legacy manifest/settings）。
     pub fn load_role_from_dir(&self, role_dir: &Path) -> Result<Role> {
         if role_dir.join(PIPELINE_BLUEPRINT_FILENAME).is_file() {
@@ -255,9 +255,9 @@ impl RoleStorage {
 
         Ok(role)
     }
-/// # Errors
-///
-/// Returns [`Err`] with a human-readable message when the operation fails.
+    /// # Errors
+    ///
+    /// Returns [`Err`] with a human-readable message when the operation fails.
     /// 加载指定角色
     pub fn load_role(&self, role_id: &str) -> Result<Role> {
         let rid = role_id.trim();
@@ -270,9 +270,9 @@ impl RoleStorage {
         let role_dir = self.roles_dir.join(rid);
         self.load_role_from_dir(&role_dir)
     }
-/// # Errors
-///
-/// Returns [`Err`] with a human-readable message when the operation fails.
+    /// # Errors
+    ///
+    /// Returns [`Err`] with a human-readable message when the operation fails.
     /// 场景 id 列表：manifest 顶层 `scenes` 数组 + `roles/{role_id}/scenes/` 子目录名，去重排序。
     /// 若均为空则返回 `["default"]`。
     pub fn list_scene_ids(&self, role_id: &str) -> Result<Vec<String>> {
@@ -322,7 +322,7 @@ impl RoleStorage {
     }
 
     /// `scenes/{scene_id}/scene.json` 中 `name` 字段；缺失时用内置中文映射，再退回 id。
-    #[must_use] 
+    #[must_use]
     pub fn scene_display_name(&self, role_id: &str, scene_id: &str) -> String {
         if let Some(cfg) = self.load_scene_config(role_id, scene_id) {
             if let Some(name) = cfg.name {
@@ -336,7 +336,7 @@ impl RoleStorage {
     }
 
     /// 场景切换欢迎语：`welcome_message` 优先；否则从 `monologues` 按 role+scene 稳定选一条。
-    #[must_use] 
+    #[must_use]
     pub fn scene_welcome_line(&self, role_id: &str, scene_id: &str) -> Option<String> {
         let cfg = self.load_scene_config(role_id, scene_id)?;
         if let Some(w) = cfg.welcome_message {
@@ -357,7 +357,7 @@ impl RoleStorage {
     }
 
     /// `scenes/{scene_id}/scene.json` 中可选 `monologues: string[]`，用于独白模板或 LLM 失败兜底。
-    #[must_use] 
+    #[must_use]
     pub fn scene_monologue_templates(&self, role_id: &str, scene_id: &str) -> Vec<String> {
         let Some(cfg) = self.load_scene_config(role_id, scene_id) else {
             return Vec::new();
@@ -365,7 +365,7 @@ impl RoleStorage {
         Self::normalize_string_vec(cfg.monologues)
     }
 
-    #[must_use] 
+    #[must_use]
     pub fn scene_keywords(&self, role_id: &str, scene_id: &str) -> Vec<String> {
         let Some(cfg) = self.load_scene_config(role_id, scene_id) else {
             return Vec::new();
@@ -373,7 +373,7 @@ impl RoleStorage {
         Self::normalize_string_vec(cfg.keywords)
     }
 
-    #[must_use] 
+    #[must_use]
     pub fn scene_events(&self, role_id: &str, scene_id: &str) -> Vec<String> {
         let Some(cfg) = self.load_scene_config(role_id, scene_id) else {
             return Vec::new();
@@ -381,7 +381,7 @@ impl RoleStorage {
         Self::normalize_string_vec(cfg.events)
     }
 
-    #[must_use] 
+    #[must_use]
     pub fn is_scene_time_allowed(
         &self,
         role_id: &str,
@@ -416,7 +416,7 @@ impl RoleStorage {
         })
     }
 
-    #[must_use] 
+    #[must_use]
     pub fn load_scene_config(&self, role_id: &str, scene_id: &str) -> Option<DiskSceneConfig> {
         let path = self.scene_json_path(role_id, scene_id);
         let raw = fs::read_to_string(path).ok()?;
@@ -448,7 +448,7 @@ impl RoleStorage {
     }
 
     /// `scenes/<scene_id>/away_life.txt`（角色位于本场景时的异地生活长文素材）
-    #[must_use] 
+    #[must_use]
     pub fn away_life_txt_file(&self, role_id: &str, scene_id: &str) -> Option<String> {
         let path = self.away_life_txt_path(role_id, scene_id);
         let raw = fs::read_to_string(path).ok()?;
@@ -462,7 +462,7 @@ impl RoleStorage {
 
     /// 角色当前所在场景 `character_scene_id`、用户对话上下文场景 `user_scene_id` 不一致时注入 prompt 的素材。
     /// 优先 `away_life.txt`，其次 `away_life_by_user_scene[user_scene]`，再合并 `away_life_notes`。
-    #[must_use] 
+    #[must_use]
     pub fn away_life_material(
         &self,
         role_id: &str,
@@ -496,7 +496,7 @@ impl RoleStorage {
     }
 
     /// `scenes/<scene_id>/description.txt` 全文（创作者可自行增删，无需改程序）。
-    #[must_use] 
+    #[must_use]
     pub fn scene_description_file(&self, role_id: &str, scene_id: &str) -> Option<String> {
         let path = self.scene_description_path(role_id, scene_id);
         let raw = fs::read_to_string(path).ok()?;
@@ -509,7 +509,7 @@ impl RoleStorage {
     }
 
     /// 主对话 prompt 用的场景说明：优先长文 `description.txt`，否则从 `scene.json` 拼短说明。
-    #[must_use] 
+    #[must_use]
     pub fn scene_prompt_enrichment(&self, role_id: &str, scene_id: &str) -> String {
         const MAX_SCENE_PROMPT_CHARS: usize = 6000;
         if let Some(desc) = self.scene_description_file(role_id, scene_id) {
@@ -597,9 +597,9 @@ impl RoleStorage {
             _ => scene_id.to_string(),
         }
     }
-/// # Errors
-///
-/// Returns [`Err`] with a human-readable message when the operation fails.
+    /// # Errors
+    ///
+    /// Returns [`Err`] with a human-readable message when the operation fails.
     /// 将 `slot_registry` 写回 `roles/{role_id}/pipeline.ocblueprint`（须为 v2 蓝图包）。
     pub fn save_blueprint_v2_slot_registry(
         &self,
@@ -612,23 +612,19 @@ impl RoleStorage {
                 "角色 {role_id} 无 {PIPELINE_BLUEPRINT_FILENAME}，无法写 slot_registry"
             )));
         }
-        write_role_pack_blueprint_slot_registry(
-            &role_dir,
-            registry,
-            env!("CARGO_PKG_VERSION"),
-        )
-        .map_err(|errs| {
-            AppError::InvalidParameter(format!(
-                "pipeline.ocblueprint slot_registry 校验失败:\n{}",
-                errs.join("\n")
-            ))
-        })?;
+        write_role_pack_blueprint_slot_registry(&role_dir, registry, env!("CARGO_PKG_VERSION"))
+            .map_err(|errs| {
+                AppError::InvalidParameter(format!(
+                    "pipeline.ocblueprint slot_registry 校验失败:\n{}",
+                    errs.join("\n")
+                ))
+            })?;
         Ok(())
     }
 
-/// # Errors
-///
-/// Returns [`Err`] with a human-readable message when the operation fails.
+    /// # Errors
+    ///
+    /// Returns [`Err`] with a human-readable message when the operation fails.
     /// 保存角色配置：写入 `manifest.json`（展示与关系等）与 `settings.json`（引擎字段）。
     pub fn save_role_manifest(&self, role: &Role) -> Result<()> {
         let role_dir = self.roles_dir.join(&role.id);
@@ -647,9 +643,9 @@ impl RoleStorage {
 
         Ok(())
     }
-/// # Errors
-///
-/// Returns [`Err`] with a human-readable message when the operation fails.
+    /// # Errors
+    ///
+    /// Returns [`Err`] with a human-readable message when the operation fails.
     /// 保存核心人设（仅创作者可改）
     pub fn save_core_personality(&self, role_id: &str, content: &str) -> Result<()> {
         let role_dir = self.roles_dir.join(role_id);

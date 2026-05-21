@@ -43,7 +43,7 @@ pub struct KnowledgeIndex {
 
 impl KnowledgeIndex {
     /// 对用户句做轻量重合打分 + 场景过滤，取 Top-K（确定性排序：分数降序，`id` 升序）。
-    #[must_use] 
+    #[must_use]
     pub fn retrieve<'a>(
         &'a self,
         user_message: &str,
@@ -111,7 +111,7 @@ impl KnowledgeIndex {
     }
 
     /// 将检索到的块合并为 Prompt 用纯文本（已截断）。
-    #[must_use] 
+    #[must_use]
     pub fn format_for_prompt(chunks: &[&KnowledgeChunk], max_chars: usize) -> String {
         let mut out = String::new();
         for c in chunks {
@@ -133,7 +133,7 @@ impl KnowledgeIndex {
     }
 
     /// 从检索结果合并事件关键词，供 [`crate::domain::event_detector::EventDetector`] 使用。
-    #[must_use] 
+    #[must_use]
     pub fn merge_event_augment(chunks: &[&KnowledgeChunk]) -> KnowledgeEventAugment {
         let mut by_event: HashMap<EventType, Vec<String>> = HashMap::new();
         for ch in chunks {

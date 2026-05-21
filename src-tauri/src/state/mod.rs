@@ -40,7 +40,8 @@ fn roles_dir_has_any_role_pack(roles_root: &Path) -> bool {
         let p = e.path();
         p.is_dir()
             && (p.join("manifest.json").is_file()
-                || p.join(oclive_validation::PIPELINE_BLUEPRINT_FILENAME).is_file())
+                || p.join(oclive_validation::PIPELINE_BLUEPRINT_FILENAME)
+                    .is_file())
     })
 }
 
@@ -318,7 +319,8 @@ pub struct AppState {
     /// 会话级后端覆盖（key 为对话命名空间，如 `role_id` 或 `role_id__sess__{session}`）。
     session_plugin_overrides: Arc<RwLock<HashMap<String, PluginBackendsOverride>>>,
     /// 按 `slot_registry` 实例键的会话覆盖（v2）。
-    session_slot_overrides: Arc<RwLock<HashMap<String, BTreeMap<String, oclive_validation::SlotOverridePatch>>>>,
+    session_slot_overrides:
+        Arc<RwLock<HashMap<String, BTreeMap<String, oclive_validation::SlotOverridePatch>>>>,
     /// 共景路径：上一回合内置复杂情感输出的 `narrative_hint`（按 `srid` 命名空间；进程内，非 SQLite）。
     last_complex_emotion_narrative_hint: Arc<RwLock<HashMap<String, String>>>,
     /// 首轮 `process_message` 启动自检结果（致命错误缓存，后续请求直接短路）。
@@ -349,9 +351,9 @@ impl AppState {
             scene_policy_sets,
         }
     }
-/// # Errors
-///
-/// Returns [`Err`] with a human-readable message when the operation fails.
+    /// # Errors
+    ///
+    /// Returns [`Err`] with a human-readable message when the operation fails.
     /// `roles_dir_override`：打包应用传入 `resource_dir/roles`；`None` 时用 [`resolve_roles_dir`]。
     /// `app_data_dir`：应用数据目录（与 SQLite 同级），用于 `oclive_host_plugins.json` 与 `plugins/` 扫描根之一。
     pub async fn new(
@@ -454,9 +456,9 @@ impl AppState {
             remote_fallback_allowed,
         })
     }
-/// # Errors
-///
-/// Returns [`Err`] with a human-readable message when the operation fails.
+    /// # Errors
+    ///
+    /// Returns [`Err`] with a human-readable message when the operation fails.
     /// 内存库 + 注入 LLM（集成测试 / 不连 Ollama）
     pub async fn new_in_memory_with_llm(
         llm: Arc<dyn LlmClient>,
@@ -464,9 +466,9 @@ impl AppState {
     ) -> Result<Self> {
         Self::new_in_memory_with_llm_and_policy_file(llm, roles_dir, None).await
     }
-/// # Errors
-///
-/// Returns [`Err`] with a human-readable message when the operation fails.
+    /// # Errors
+    ///
+    /// Returns [`Err`] with a human-readable message when the operation fails.
     pub async fn new_in_memory_with_llm_and_policy_file(
         llm: Arc<dyn LlmClient>,
         roles_dir: impl AsRef<Path>,
@@ -588,9 +590,9 @@ impl AppState {
     pub fn scene_policy_count(&self) -> usize {
         self.policy_runtime.read().scene_policy_sets.len()
     }
-/// # Errors
-///
-/// Returns [`Err`] with a human-readable message when the operation fails.
+    /// # Errors
+    ///
+    /// Returns [`Err`] with a human-readable message when the operation fails.
     pub fn reload_policy_plugins(&self) -> Result<usize> {
         let path = Path::new("./config/policy.toml");
         let registry = load_policy_registry_from_path(path, true)?;
@@ -604,9 +606,9 @@ impl AppState {
         );
         Ok(count)
     }
-/// # Errors
-///
-/// Returns [`Err`] with a human-readable message when the operation fails.
+    /// # Errors
+    ///
+    /// Returns [`Err`] with a human-readable message when the operation fails.
     /// 优先使用 [`Self::role_cache`]（与 [`crate::domain::chat_engine`] 一致）；未命中时从磁盘加载并写入缓存。
     ///
     /// 同一 `role_id` 在 [`Self::role_load_inflight`] 下串行冷加载；写缓存前再查一次。本线程退出时若已无其它 waiter，从 inflight 表摘掉该键，避免无限增长。
@@ -662,9 +664,9 @@ impl AppState {
     pub fn invalidate_role_cache(&self, role_id: &str) {
         self.role_cache.write().remove(role_id);
     }
-/// # Errors
-///
-/// Returns [`Err`] with a human-readable message when the operation fails.
+    /// # Errors
+    ///
+    /// Returns [`Err`] with a human-readable message when the operation fails.
     /// 当前有效性格：`vector` 模式为 `default_personality` + `delta`；`profile` 模式由核心性格档案 + DB「可变性格档案」归纳七维。
     pub async fn get_current_personality(
         &self,
@@ -714,11 +716,8 @@ impl AppState {
         let effective = self.effective_plugin_backends_for_session(role, ns);
         let slot_reg = self.effective_slot_registry_for_session(role, ns);
         let ov = self.session_backend_override(ns);
-        self.plugins.resolve_for_effective_backends(
-            &effective,
-            slot_reg.as_ref(),
-            ov.as_ref(),
-        )
+        self.plugins
+            .resolve_for_effective_backends(&effective, slot_reg.as_ref(), ov.as_ref())
     }
 
     pub fn memory_retrieval_for(&self, role: &Role) -> Arc<dyn MemoryRetrieval> {
@@ -833,7 +832,9 @@ impl AppState {
     }
 
     pub fn clear_all_session_slot_overrides(&self, session_namespace: &str) {
-        self.session_slot_overrides.write().remove(session_namespace);
+        self.session_slot_overrides
+            .write()
+            .remove(session_namespace);
     }
 
     #[must_use]
@@ -844,10 +845,7 @@ impl AppState {
     ) -> Option<BTreeMap<String, oclive_validation::SlotRegistryEntry>> {
         let pack = role.slot_registry.as_ref()?;
         let ov = self.session_slot_overrides(session_namespace);
-        Some(oclive_validation::effective_slot_registry(
-            pack,
-            &ov,
-        ))
+        Some(oclive_validation::effective_slot_registry(pack, &ov))
     }
 
     #[must_use]
@@ -864,12 +862,12 @@ impl AppState {
         role: &Role,
         session_namespace: &str,
     ) -> PluginBackends {
-        let base = if let Some(eff) = self.effective_slot_registry_for_session(role, session_namespace)
-        {
-            oclive_validation::slot_registry_to_plugin_backends(&eff)
-        } else {
-            role.plugin_backends.clone()
-        };
+        let base =
+            if let Some(eff) = self.effective_slot_registry_for_session(role, session_namespace) {
+                oclive_validation::slot_registry_to_plugin_backends(&eff)
+            } else {
+                role.plugin_backends.clone()
+            };
         self.session_backend_override(session_namespace)
             .map(|ov| ov.apply_to(&base))
             .unwrap_or(base)
@@ -909,9 +907,9 @@ impl AppState {
         }
         out
     }
-/// # Errors
-///
-/// Returns [`Err`] with a human-readable message when the operation fails.
+    /// # Errors
+    ///
+    /// Returns [`Err`] with a human-readable message when the operation fails.
     pub fn register_local_plugin_provider(
         &self,
         descriptor: LocalPluginProviderDescriptor,

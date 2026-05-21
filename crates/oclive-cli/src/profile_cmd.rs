@@ -111,9 +111,7 @@ fn target_build_age_secs(root: &Path) -> Option<f64> {
     let meta = std::fs::metadata(t).ok()?;
     let modified = meta.modified().ok()?;
     let now = SystemTime::now();
-    now.duration_since(modified)
-        .ok()
-        .map(|d| d.as_secs_f64())
+    now.duration_since(modified).ok().map(|d| d.as_secs_f64())
 }
 
 fn cargo_bloat_top(root: &Path) -> Result<Vec<CrateShare>> {

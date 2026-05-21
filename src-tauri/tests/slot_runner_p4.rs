@@ -20,12 +20,20 @@ struct CountingLlm {
 
 #[async_trait::async_trait]
 impl LlmClient for CountingLlm {
-    async fn generate(&self, model: &str, prompt: &str) -> oclivenewnew_tauri::error::Result<String> {
+    async fn generate(
+        &self,
+        model: &str,
+        prompt: &str,
+    ) -> oclivenewnew_tauri::error::Result<String> {
         self.calls.fetch_add(1, Ordering::SeqCst);
         self.inner.generate(model, prompt).await
     }
 
-    async fn generate_tag(&self, model: &str, prompt: &str) -> oclivenewnew_tauri::error::Result<String> {
+    async fn generate_tag(
+        &self,
+        model: &str,
+        prompt: &str,
+    ) -> oclivenewnew_tauri::error::Result<String> {
         self.calls.fetch_add(1, Ordering::SeqCst);
         self.inner.generate_tag(model, prompt).await
     }
@@ -130,5 +138,9 @@ async fn dual_llm_slots_call_both_serially() {
         .await
         .expect("generate");
     assert_eq!(reply, "from-mock");
-    assert_eq!(calls.load(Ordering::SeqCst), 2, "both llm instances should run");
+    assert_eq!(
+        calls.load(Ordering::SeqCst),
+        2,
+        "both llm instances should run"
+    );
 }

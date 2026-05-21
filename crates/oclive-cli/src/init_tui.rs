@@ -1,7 +1,7 @@
 //! `oclive init --tui` 模板可视化选择器（ratatui）。
 
 use crate::init::InitTemplateArg;
-use crate::template_catalog::{project_config_from_template, CATALOG, template_from_id};
+use crate::template_catalog::{project_config_from_template, template_from_id, CATALOG};
 use anyhow::{Context, Result};
 use crossterm::event::{self, Event, KeyCode, KeyEventKind};
 use crossterm::terminal::{
@@ -23,7 +23,9 @@ pub fn terminal_supports_tui() -> bool {
 
 pub fn pick_template_tui(project_name: &str) -> Result<Option<InitTemplateArg>> {
     enable_raw_mode().context("enable_raw_mode")?;
-    stdout().execute(EnterAlternateScreen).context("alt screen")?;
+    stdout()
+        .execute(EnterAlternateScreen)
+        .context("alt screen")?;
     let result = run_loop(project_name);
     disable_raw_mode().ok();
     let _ = stdout().execute(LeaveAlternateScreen);
@@ -69,11 +71,8 @@ fn run_loop(project_name: &str) -> Result<Option<InitTemplateArg>> {
 
             let idx = list_state.selected().unwrap_or(0);
             let preview = preview_text(project_name, idx);
-            let para = Paragraph::new(preview).block(
-                Block::default()
-                    .title(" preview ")
-                    .borders(Borders::ALL),
-            );
+            let para = Paragraph::new(preview)
+                .block(Block::default().title(" preview ").borders(Borders::ALL));
             f.render_widget(para, chunks[1]);
         })?;
 
@@ -120,7 +119,9 @@ fn run_loop(project_name: &str) -> Result<Option<InitTemplateArg>> {
 pub fn pick_weld_modules_tui() -> Result<Option<Vec<String>>> {
     use crate::monolith_config::SLOT_IDS;
     enable_raw_mode().context("enable_raw_mode")?;
-    stdout().execute(EnterAlternateScreen).context("alt screen")?;
+    stdout()
+        .execute(EnterAlternateScreen)
+        .context("alt screen")?;
     let result = run_weld_loop(&SLOT_IDS);
     disable_raw_mode().ok();
     let _ = stdout().execute(LeaveAlternateScreen);
@@ -198,7 +199,8 @@ fn run_weld_loop(slots: &[&str; 7]) -> Result<Option<Vec<String>>> {
     let out: Vec<String> = slots
         .iter()
         .enumerate()
-        .filter(|&(i, _id)| selected[i]).map(|(_i, id)| (*id).to_string())
+        .filter(|&(i, _id)| selected[i])
+        .map(|(_i, id)| (*id).to_string())
         .collect();
     if out.is_empty() {
         println!("No slots selected; skipping custom weld.");

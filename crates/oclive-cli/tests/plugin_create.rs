@@ -28,5 +28,7 @@ fn plugin_create_directory_llm_validates() {
     let raw = std::fs::read_to_string(&manifest_path).expect("read manifest");
     oclive_validation::validate_directory_plugin_manifest_permissions(&raw)
         .expect("permissions validate");
-    assert!(out.join("com.oclive.plugin.test-plugin/rpc_server.mjs").is_file());
+    assert!(out
+        .join("com.oclive.plugin.test-plugin/rpc_server.mjs")
+        .is_file());
 }

@@ -9,19 +9,19 @@ use crate::infrastructure::storage::resolve_llm_backend_env_override;
 use crate::models::dto::{
     ClearAllSessionSlotOverridesRequest, ClearSceneUserRelationRequest,
     ClearSessionSlotOverrideRequest, GetPluginResolutionDebugRequest, GetRoleInfoRequest,
-    PluginResolutionDebugInfo, RoleData, RoleInfo, RoleSummary, SceneLabelEntry,
-    SetEvolutionFactorRequest, SetRemoteLifeEnabledRequest, SetRoleInteractionModeRequest,
-    SaveRoleSlotRegistryRequest, SetSceneUserRelationRequest, SetSessionPluginBackendRequest,
+    PluginResolutionDebugInfo, RoleData, RoleInfo, RoleSummary, SaveRoleSlotRegistryRequest,
+    SceneLabelEntry, SetEvolutionFactorRequest, SetRemoteLifeEnabledRequest,
+    SetRoleInteractionModeRequest, SetSceneUserRelationRequest, SetSessionPluginBackendRequest,
     SetSessionSlotOverrideRequest, SetUserRelationRequest, API_VERSION,
     OCLIVE_DEFAULT_RELATION_SENTINEL, SCHEMA_VERSION,
 };
-use oclive_validation::{default_slot_key_for_module, SlotOverridePatch};
 use crate::models::plugin_backends::{
     AgentBackend, EmotionBackend, EventBackend, LlmBackend, MemoryBackend, PluginBackendsOverride,
     PromptBackend,
 };
 use crate::models::role::{IdentityBinding, Role};
 use crate::state::AppState;
+use oclive_validation::{default_slot_key_for_module, SlotOverridePatch};
 use std::sync::Arc;
 use tauri::State;
 
@@ -843,8 +843,9 @@ pub async fn set_session_slot_override_impl(
 ) -> Result<RoleInfo, String> {
     let slot_key = req.slot_key.trim();
     if slot_key.is_empty() {
-        return Err(AppError::InvalidParameter("slot_key must not be empty".into())
-            .to_frontend_error());
+        return Err(
+            AppError::InvalidParameter("slot_key must not be empty".into()).to_frontend_error(),
+        );
     }
     state
         .load_role_cached(&req.role_id)
@@ -895,8 +896,9 @@ pub async fn save_role_slot_registry_impl(
 ) -> Result<RoleInfo, String> {
     let role_id = req.role_id.trim();
     if role_id.is_empty() {
-        return Err(AppError::InvalidParameter("role_id must not be empty".into())
-            .to_frontend_error());
+        return Err(
+            AppError::InvalidParameter("role_id must not be empty".into()).to_frontend_error(),
+        );
     }
     state
         .storage
@@ -1155,7 +1157,7 @@ fn path_string_for_frontend(p: &std::path::Path) -> String {
 
 /// 解析 `roles/{role_id}/{relative}` 的绝对路径；文件存在时供前端 `convertFileSrc` / `readBinaryFile` 加载。
 #[tauri::command]
-#[must_use] 
+#[must_use]
 pub fn resolve_role_asset_path(
     role_id: String,
     relative: String,

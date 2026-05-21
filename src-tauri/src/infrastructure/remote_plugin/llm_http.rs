@@ -20,9 +20,9 @@ pub struct RemoteLlmHttp {
 }
 
 impl RemoteLlmHttp {
-/// # Errors
-///
-/// Returns [`Err`] with a human-readable message when the operation fails.
+    /// # Errors
+    ///
+    /// Returns [`Err`] with a human-readable message when the operation fails.
     pub fn new(
         cfg: RemotePluginHttpConfig,
         high_risk_grants: Arc<HighRiskGrantStore>,

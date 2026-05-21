@@ -63,10 +63,7 @@ fn parse_permissions_from_map(
             let mut out = Vec::with_capacity(arr.len());
             for (i, v) in arr.iter().enumerate() {
                 let Some(s) = v.as_str() else {
-                    return Err(format!(
-                        "目录插件 manifest：permissions[{}] 须为字符串",
-                        i
-                    ));
+                    return Err(format!("目录插件 manifest：permissions[{}] 须为字符串", i));
                 };
                 out.push(s.to_string());
             }
@@ -79,10 +76,7 @@ fn parse_permissions_from_map(
 /// 是否声明需要 `process:spawn`（含旧版兼容：省略 `permissions` 且存在 `process` 块）。
 #[must_use]
 pub fn manifest_declares_process_spawn(permissions: &[String], has_process_section: bool) -> bool {
-    if permissions
-        .iter()
-        .any(|p| p.trim() == PROCESS_SPAWN)
-    {
+    if permissions.iter().any(|p| p.trim() == PROCESS_SPAWN) {
         return has_process_section;
     }
     permissions.is_empty() && has_process_section
@@ -94,11 +88,7 @@ mod tests {
 
     #[test]
     fn allowed_permissions_pass() {
-        validate_permissions_list(&[
-            PROCESS_SPAWN.into(),
-            NETWORK_WILDCARD.into(),
-        ])
-        .unwrap();
+        validate_permissions_list(&[PROCESS_SPAWN.into(), NETWORK_WILDCARD.into()]).unwrap();
     }
 
     #[test]

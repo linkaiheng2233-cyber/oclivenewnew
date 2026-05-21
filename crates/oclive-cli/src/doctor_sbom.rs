@@ -19,9 +19,7 @@ pub fn run_sbom(root: &Path, format: &str) -> Result<()> {
         .map(|o| o.status.success())
         .unwrap_or(false)
     {
-        bail!(
-            "cargo-cyclonedx not installed. Install: cargo install cargo-cyclonedx"
-        );
+        bail!("cargo-cyclonedx not installed. Install: cargo install cargo-cyclonedx");
     }
 
     let out_file = if fmt == "spdx" {
@@ -57,7 +55,10 @@ pub fn run_sbom(root: &Path, format: &str) -> Result<()> {
     }
     println!("  vulnerability scan: run `oclive lint --deps` or `cargo audit`");
     if !output.is_file() {
-        println!("  note: expected file not found at {}; check cargo-cyclonedx CLI output path", output.display());
+        println!(
+            "  note: expected file not found at {}; check cargo-cyclonedx CLI output path",
+            output.display()
+        );
     }
     Ok(())
 }

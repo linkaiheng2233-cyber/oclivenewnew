@@ -83,8 +83,9 @@ fn peek_role_folder_manifest(dir: &Path) -> Result<(String, String, String)> {
         ));
     }
     let s = fs::read_to_string(&manifest_path).map_err(AppError::IoError)?;
-    let disk: DiskRoleManifest = serde_json::from_str(&s)
-        .map_err(|_| AppError::InvalidParameter("Role pack format: manifest.json is invalid JSON".into()))?;
+    let disk: DiskRoleManifest = serde_json::from_str(&s).map_err(|_| {
+        AppError::InvalidParameter("Role pack format: manifest.json is invalid JSON".into())
+    })?;
     Ok((disk.id, disk.name, disk.version))
 }
 /// # Errors
@@ -95,15 +96,17 @@ pub fn peek_role_pack_manifest(src: &Path) -> Result<(String, String, String)> {
     if src.is_dir() {
         return peek_role_folder_manifest(src);
     }
-    let file = File::open(src)
-        .map_err(|e| AppError::InvalidParameter(format!("Role pack format: cannot open file ({e})")))?;
-    let mut archive = ZipArchive::new(file)
-        .map_err(|_| AppError::InvalidParameter("Role pack format: not a valid ZIP/ocpak archive".into()))?;
+    let file = File::open(src).map_err(|e| {
+        AppError::InvalidParameter(format!("Role pack format: cannot open file ({e})"))
+    })?;
+    let mut archive = ZipArchive::new(file).map_err(|_| {
+        AppError::InvalidParameter("Role pack format: not a valid ZIP/ocpak archive".into())
+    })?;
     let mut candidates: Vec<(u8, usize)> = Vec::new();
     for i in 0..archive.len() {
-        let f = archive
-            .by_index(i)
-            .map_err(|_| AppError::InvalidParameter("Role pack format: archive is corrupted".into()))?;
+        let f = archive.by_index(i).map_err(|_| {
+            AppError::InvalidParameter("Role pack format: archive is corrupted".into())
+        })?;
         let name = f.name().to_string();
         if name.ends_with('/') {
             continue;
@@ -114,12 +117,13 @@ pub fn peek_role_pack_manifest(src: &Path) -> Result<(String, String, String)> {
     }
     candidates.sort_by(|a, b| a.0.cmp(&b.0).then_with(|| a.1.cmp(&b.1)));
     for (_, i) in candidates {
-        let mut f = archive
-            .by_index(i)
-            .map_err(|_| AppError::InvalidParameter("Role pack format: archive is corrupted".into()))?;
+        let mut f = archive.by_index(i).map_err(|_| {
+            AppError::InvalidParameter("Role pack format: archive is corrupted".into())
+        })?;
         let mut s = String::new();
-        std::io::Read::read_to_string(&mut f, &mut s)
-            .map_err(|_| AppError::InvalidParameter("Role pack format: cannot read manifest from archive".into()))?;
+        std::io::Read::read_to_string(&mut f, &mut s).map_err(|_| {
+            AppError::InvalidParameter("Role pack format: cannot read manifest from archive".into())
+        })?;
         let disk: DiskRoleManifest = match serde_json::from_str(&s) {
             Ok(d) => d,
             Err(_) => continue,
@@ -132,10 +136,12 @@ pub fn peek_role_pack_manifest(src: &Path) -> Result<(String, String, String)> {
 }
 
 fn unzip_to(src: &Path, dest: &Path, mut on_entry: impl FnMut(usize, usize)) -> Result<()> {
-    let file = File::open(src)
-        .map_err(|e| AppError::InvalidParameter(format!("Role pack format: cannot open file ({e})")))?;
-    let mut archive = ZipArchive::new(file)
-        .map_err(|_| AppError::InvalidParameter("Role pack format: not a valid ZIP/ocpak archive".into()))?;
+    let file = File::open(src).map_err(|e| {
+        AppError::InvalidParameter(format!("Role pack format: cannot open file ({e})"))
+    })?;
+    let mut archive = ZipArchive::new(file).map_err(|_| {
+        AppError::InvalidParameter("Role pack format: not a valid ZIP/ocpak archive".into())
+    })?;
     let total = archive.len().max(1);
     for i in 0..archive.len() {
         let mut file = archive

@@ -90,10 +90,7 @@ fn collab_file(root: &Path) -> PathBuf {
 fn load_config(root: &Path) -> Result<CollabConfig> {
     let p = collab_file(root);
     if !p.is_file() {
-        bail!(
-            "Not found: {}; run oclive collab init first",
-            p.display()
-        );
+        bail!("Not found: {}; run oclive collab init first", p.display());
     }
     let raw = fs::read_to_string(&p)?;
     serde_yaml::from_str(&raw).context("parse .oclive-collab.yml")
@@ -135,14 +132,28 @@ fn run_status(args: CollabStatusArgs) -> Result<()> {
     } else {
         println!("  Local workspace: ⚠️ uncommitted changes");
     }
-    let ahead = git_output(&root, &["rev-list", "--count", &format!("origin/{}..HEAD", cfg.branch)])?
-        .trim()
-        .parse::<u32>()
-        .unwrap_or(0);
-    let behind = git_output(&root, &["rev-list", "--count", &format!("HEAD..origin/{}", cfg.branch)])?
-        .trim()
-        .parse::<u32>()
-        .unwrap_or(0);
+    let ahead = git_output(
+        &root,
+        &[
+            "rev-list",
+            "--count",
+            &format!("origin/{}..HEAD", cfg.branch),
+        ],
+    )?
+    .trim()
+    .parse::<u32>()
+    .unwrap_or(0);
+    let behind = git_output(
+        &root,
+        &[
+            "rev-list",
+            "--count",
+            &format!("HEAD..origin/{}", cfg.branch),
+        ],
+    )?
+    .trim()
+    .parse::<u32>()
+    .unwrap_or(0);
     if ahead > 0 {
         println!("  Local ahead of remote by {ahead} commit(s) (collab push)");
     }
@@ -184,10 +195,17 @@ fn run_diff(args: CollabDiffArgs) -> Result<()> {
 
 fn pre_pull_checks(root: &Path, cfg: &CollabConfig) -> Result<()> {
     git_in(root, &["fetch", "origin"])?;
-    let ahead = git_output(root, &["rev-list", "--count", &format!("origin/{}..HEAD", cfg.branch)])?
-        .trim()
-        .parse::<u32>()
-        .unwrap_or(0);
+    let ahead = git_output(
+        root,
+        &[
+            "rev-list",
+            "--count",
+            &format!("origin/{}..HEAD", cfg.branch),
+        ],
+    )?
+    .trim()
+    .parse::<u32>()
+    .unwrap_or(0);
     if ahead > 0 {
         eprintln!("⚠ Local has {ahead} unpushed commit(s); pull may create a merge commit.");
         eprintln!("  Consider `oclive collab push` or `git stash` before pull.");
@@ -198,15 +216,20 @@ fn pre_pull_checks(root: &Path, cfg: &CollabConfig) -> Result<()> {
 fn pre_push_checks(root: &Path, cfg: &CollabConfig) -> Result<()> {
     let porcelain = git_output(root, &["status", "--porcelain"])?;
     if !porcelain.trim().is_empty() {
-        bail!(
-            "Uncommitted changes; run git add / git commit before collab push\n{porcelain}"
-        );
+        bail!("Uncommitted changes; run git add / git commit before collab push\n{porcelain}");
     }
     git_in(root, &["fetch", "origin"])?;
-    let behind = git_output(root, &["rev-list", "--count", &format!("HEAD..origin/{}", cfg.branch)])?
-        .trim()
-        .parse::<u32>()
-        .unwrap_or(0);
+    let behind = git_output(
+        root,
+        &[
+            "rev-list",
+            "--count",
+            &format!("HEAD..origin/{}", cfg.branch),
+        ],
+    )?
+    .trim()
+    .parse::<u32>()
+    .unwrap_or(0);
     if behind > 0 {
         bail!(
             "Remote is {behind} commit(s) ahead; run `oclive collab pull`, resolve conflicts, then push.\n\
@@ -217,9 +240,7 @@ fn pre_push_checks(root: &Path, cfg: &CollabConfig) -> Result<()> {
 }
 
 fn resolve_role_pack_root(path: &Path) -> Result<PathBuf> {
-    let p = path
-        .canonicalize()
-        .unwrap_or_else(|_| path.to_path_buf());
+    let p = path.canonicalize().unwrap_or_else(|_| path.to_path_buf());
     if p.join("manifest.json").is_file() {
         return Ok(p);
     }
@@ -229,7 +250,10 @@ fn resolve_role_pack_root(path: &Path) -> Result<PathBuf> {
             p.display()
         );
     }
-    bail!("{} is not a role pack root (missing manifest.json)", p.display())
+    bail!(
+        "{} is not a role pack root (missing manifest.json)",
+        p.display()
+    )
 }
 
 fn git_in(root: &Path, args: &[&str]) -> Result<()> {

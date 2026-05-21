@@ -26,7 +26,11 @@ fn run_cli(args: &[&str]) -> std::process::Output {
 fn explain_llm_error_prints_meaning() {
     let o = run_cli(&["explain", "LLM_ERROR"]);
     let stdout = String::from_utf8_lossy(&o.stdout);
-    assert!(o.status.success(), "stderr={}", String::from_utf8_lossy(&o.stderr));
+    assert!(
+        o.status.success(),
+        "stderr={}",
+        String::from_utf8_lossy(&o.stderr)
+    );
     assert!(stdout.contains("LLM") || stdout.contains("Meaning"));
 }
 

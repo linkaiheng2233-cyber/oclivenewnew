@@ -11,9 +11,7 @@ pub fn run_loom(root: &Path) -> Result<()> {
         .map(|o| o.status.success())
         .unwrap_or(false)
     {
-        bail!(
-            "cargo-loom not installed. Install: cargo install cargo-loom --locked"
-        );
+        bail!("cargo-loom not installed. Install: cargo install cargo-loom --locked");
     }
     println!("oclive test --loom — {}", root.display());
     let st = Command::new("cargo")

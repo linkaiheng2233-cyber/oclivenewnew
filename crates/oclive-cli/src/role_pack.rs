@@ -59,10 +59,7 @@ fn write_default_example(cfg: &ProjectConfig, out: &Path) -> Result<()> {
         "events": []
     });
     fs::write(
-        role_root
-            .join("scenes")
-            .join("default")
-            .join("scene.json"),
+        role_root.join("scenes").join("default").join("scene.json"),
         serde_json::to_string_pretty(&scene).context("scene.json")?,
     )
     .context("write scene.json")?;
@@ -120,10 +117,7 @@ fn write_robot_soul_minimal(cfg: &ProjectConfig, out: &Path) -> Result<()> {
         "events": []
     });
     fs::write(
-        role_root
-            .join("scenes")
-            .join("default")
-            .join("scene.json"),
+        role_root.join("scenes").join("default").join("scene.json"),
         serde_json::to_string_pretty(&scene).context("scene.json")?,
     )
     .context("write scene.json")?;

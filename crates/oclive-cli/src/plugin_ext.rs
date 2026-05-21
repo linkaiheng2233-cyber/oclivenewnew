@@ -79,7 +79,10 @@ pub fn run_install(args: PluginInstallArgs) -> Result<()> {
             plugins_dir.join(id)
         };
         if !from.join("manifest.json").is_file() {
-            bail!("Dependency plugin {id} not found under {}", plugins_dir.display());
+            bail!(
+                "Dependency plugin {id} not found under {}",
+                plugins_dir.display()
+            );
         }
         if *id == args.id || !dst.exists() {
             copy_plugin_tree(&from, &dst)?;
@@ -105,7 +108,11 @@ pub fn run_uninstall(args: PluginUninstallArgs) -> Result<()> {
         })
         .collect();
     if !dependents.is_empty() {
-        eprintln!("⚠ These plugins still depend on {}: {}", args.id, dependents.join(", "));
+        eprintln!(
+            "⚠ These plugins still depend on {}: {}",
+            args.id,
+            dependents.join(", ")
+        );
     }
     let target = plugins_dir.join(&args.id);
     if target.is_dir() {
@@ -171,10 +178,7 @@ pub fn run_search(args: PluginSearchArgs) -> Result<()> {
         return Ok(());
     }
     for p in hits {
-        println!(
-            "{} v{} — {} — {}",
-            p.id, p.version, p.author, p.description
-        );
+        println!("{} v{} — {} — {}", p.id, p.version, p.author, p.description);
     }
     Ok(())
 }
@@ -191,10 +195,7 @@ pub fn run_update(args: PluginUpdateArgs) -> Result<()> {
         bail!("Not installed: {}", args.id);
     }
     let index = fetch_market_index()?;
-    let remote = index
-        .plugins
-        .iter()
-        .find(|p| p.id == args.id);
+    let remote = index.plugins.iter().find(|p| p.id == args.id);
     let Some(remote) = remote else {
         bail!("Not in index: {}", args.id);
     };
@@ -255,8 +256,7 @@ fn copy_dir(from: &Path, to: &Path) -> Result<()> {
 }
 
 fn spawn_plugin(path: &Path) -> Result<std::process::Child> {
-    let manifest: Value =
-        serde_json::from_str(&fs::read_to_string(path.join("manifest.json"))?)?;
+    let manifest: Value = serde_json::from_str(&fs::read_to_string(path.join("manifest.json"))?)?;
     let cmd = manifest["process"]["command"]
         .as_str()
         .context("process.command")?;
@@ -269,7 +269,10 @@ fn spawn_plugin(path: &Path) -> Result<std::process::Child> {
         })
         .unwrap_or_default();
     let mut c = Command::new(cmd);
-    c.args(&args).current_dir(path).stdout(Stdio::piped()).stderr(Stdio::piped());
+    c.args(&args)
+        .current_dir(path)
+        .stdout(Stdio::piped())
+        .stderr(Stdio::piped());
     c.spawn().context("spawn plugin")
 }
 

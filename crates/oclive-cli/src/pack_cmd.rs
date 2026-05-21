@@ -126,9 +126,8 @@ fn run_validate(args: PackValidateArgs) -> Result<()> {
 
 fn run_migrate_to_blueprint(args: MigrateToBlueprintArgs) -> Result<()> {
     let role_dir = args.path.canonicalize().context("resolve role path")?;
-    migrate_role_pack_dir_to_blueprint_v2(&role_dir, args.remove_legacy).map_err(|errs| {
-        anyhow::anyhow!("migrate failed:\n{}", errs.join("\n"))
-    })?;
+    migrate_role_pack_dir_to_blueprint_v2(&role_dir, args.remove_legacy)
+        .map_err(|errs| anyhow::anyhow!("migrate failed:\n{}", errs.join("\n")))?;
     println!(
         "Migrated to {} ({})",
         role_dir.join(PIPELINE_BLUEPRINT_FILENAME).display(),
@@ -292,7 +291,8 @@ fn run_publish(args: PackPublishArgs) -> Result<()> {
     if let Some(parent) = out_path.parent() {
         fs::create_dir_all(parent).ok();
     }
-    let file = fs::File::create(&out_path).with_context(|| format!("create {}", out_path.display()))?;
+    let file =
+        fs::File::create(&out_path).with_context(|| format!("create {}", out_path.display()))?;
     let mut zip = ZipWriter::new(file);
     walk_pack(&mut zip, &role_dir, &role_dir, id)?;
     zip.finish().context("zip finish")?;
@@ -322,7 +322,8 @@ fn walk_pack(
             let file_opts = FileOptions::default()
                 .compression_method(zip::CompressionMethod::Deflated)
                 .unix_permissions(0o644);
-            zip.start_file(zip_path, file_opts).context("zip start_file")?;
+            zip.start_file(zip_path, file_opts)
+                .context("zip start_file")?;
             std::io::copy(&mut f, zip).context("zip write")?;
         }
     }

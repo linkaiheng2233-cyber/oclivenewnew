@@ -49,21 +49,14 @@ pub fn check_plugin_updates(
 }
 
 fn unzip_archive(zip_path: &Path, dst: &Path) -> Result<(), String> {
-    let file = File::open(zip_path).map_err(|e| {
-        AppError::InvalidParameter(format!("open zip: {e}"))
-            .to_frontend_error()
-    })?;
-    let mut archive = ZipArchive::new(file).map_err(|e| {
-        AppError::InvalidParameter(format!("parse zip: {e}"))
-            .to_frontend_error()
-    })?;
+    let file = File::open(zip_path)
+        .map_err(|e| AppError::InvalidParameter(format!("open zip: {e}")).to_frontend_error())?;
+    let mut archive = ZipArchive::new(file)
+        .map_err(|e| AppError::InvalidParameter(format!("parse zip: {e}")).to_frontend_error())?;
     for i in 0..archive.len() {
-        let mut entry = archive
-            .by_index(i)
-            .map_err(|e| {
-                AppError::InvalidParameter(format!("zip entry {i}: {e}"))
-                    .to_frontend_error()
-            })?;
+        let mut entry = archive.by_index(i).map_err(|e| {
+            AppError::InvalidParameter(format!("zip entry {i}: {e}")).to_frontend_error()
+        })?;
         let rel = match entry.enclosed_name() {
             Some(p) => p.to_path_buf(),
             None => {
@@ -103,12 +96,10 @@ fn find_manifest_root(dir: &Path) -> Result<PathBuf, String> {
             return Ok(p);
         }
     }
-    Err(
-        AppError::InvalidParameter(
-            "No valid manifest.json in zip (root or single top-level folder)".into(),
-        )
-        .to_frontend_error(),
+    Err(AppError::InvalidParameter(
+        "No valid manifest.json in zip (root or single top-level folder)".into(),
     )
+    .to_frontend_error())
 }
 
 fn copy_dir_all(src: &Path, dst: &Path) -> Result<(), String> {
@@ -158,17 +149,15 @@ pub fn extract_plugin_zip(
     }
     let zip_path = PathBuf::from(zip_path.trim());
     if !zip_path.is_file() {
-        return Err(
-            AppError::InvalidParameter(format!("zip file not found: {}", zip_path.display()))
-                .to_frontend_error(),
-        );
+        return Err(AppError::InvalidParameter(format!(
+            "zip file not found: {}",
+            zip_path.display()
+        ))
+        .to_frontend_error());
     }
     let zip_path = zip_path
         .canonicalize()
-        .map_err(|e| {
-            AppError::InvalidParameter(format!("zip path: {e}"))
-                .to_frontend_error()
-        })?;
+        .map_err(|e| AppError::InvalidParameter(format!("zip path: {e}")).to_frontend_error())?;
 
     let tmp = tempfile::tempdir().map_err(|e| AppError::from(e).to_frontend_error())?;
     unzip_archive(&zip_path, tmp.path())?;
@@ -176,14 +165,12 @@ pub fn extract_plugin_zip(
     let manifest = OclivePluginManifest::load_from_dir(&staged)
         .map_err(|e| AppError::InvalidParameter(e).to_frontend_error())?;
     if manifest.id.trim() != pid {
-        return Err(
-            AppError::InvalidParameter(format!(
-                "manifest id={} does not match target plugin {}",
-                manifest.id.trim(),
-                pid
-            ))
-            .to_frontend_error(),
-        );
+        return Err(AppError::InvalidParameter(format!(
+            "manifest id={} does not match target plugin {}",
+            manifest.id.trim(),
+            pid
+        ))
+        .to_frontend_error());
     }
 
     let target = resolve_install_dir(&state, pid);
@@ -194,8 +181,7 @@ pub fn extract_plugin_zip(
     state.directory_plugins.clear_plugin_process(pid);
     if target.exists() {
         fs::remove_dir_all(&target).map_err(|e| {
-            AppError::InvalidParameter(format!("remove old plugin dir: {e}"))
-                .to_frontend_error()
+            AppError::InvalidParameter(format!("remove old plugin dir: {e}")).to_frontend_error()
         })?;
     }
     fs::create_dir_all(&target).map_err(|e| AppError::from(e).to_frontend_error())?;

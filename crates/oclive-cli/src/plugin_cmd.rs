@@ -145,7 +145,10 @@ fn run_create(args: PluginCreateArgs) -> Result<()> {
     } else if args.non_interactive {
         bail!("Non-interactive mode requires --type directory or --type remote");
     } else {
-        let items = ["directory (directory plugin, Node RPC subprocess)", "remote (Remote HTTP sidecar, Python)"];
+        let items = [
+            "directory (directory plugin, Node RPC subprocess)",
+            "remote (Remote HTTP sidecar, Python)",
+        ];
         let idx = Select::with_theme(&ColorfulTheme::default())
             .with_prompt("Plugin type")
             .items(&items)
@@ -221,13 +224,9 @@ fn run_create(args: PluginCreateArgs) -> Result<()> {
     rpc_methods.dedup();
 
     let (manifest, readme, rpc_file) = match plugin_type {
-        PluginTypeArg::Directory => build_directory_plugin(
-            &plugin_id,
-            &display_name,
-            &provides,
-            &rpc_methods,
-            &slots,
-        )?,
+        PluginTypeArg::Directory => {
+            build_directory_plugin(&plugin_id, &display_name, &provides, &rpc_methods, &slots)?
+        }
         PluginTypeArg::Remote => {
             build_remote_plugin(&plugin_id, &display_name, &provides, &rpc_methods, &slots)?
         }

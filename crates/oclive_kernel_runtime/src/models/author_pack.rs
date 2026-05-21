@@ -47,7 +47,7 @@ fn author_pack_schema_v1() -> u32 {
 
 impl AuthorPackFile {
     /// 从 UTF-8 JSON 解析；失败时返回 `None`（调用方可记日志）。
-    #[must_use] 
+    #[must_use]
     pub fn from_json_str(raw: &str) -> Option<Self> {
         serde_json::from_str(raw.trim()).ok()
     }

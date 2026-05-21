@@ -14,7 +14,11 @@ pub struct LearnArgs {
 
 pub fn run(args: LearnArgs) -> Result<()> {
     println!("=== oclive interactive tutorial (5 steps) ===\n");
-    step(1, "Environment check", "Runs `oclive doctor` for Rust, disk, and optional Ollama.")?;
+    step(
+        1,
+        "Environment check",
+        "Runs `oclive doctor` for Rust, disk, and optional Ollama.",
+    )?;
     run_oclive(&["doctor"])?;
     pause()?;
 
@@ -51,7 +55,11 @@ pub fn run(args: LearnArgs) -> Result<()> {
     }
     pause()?;
 
-    step(4, "Build", "Runs `cargo build` in the project directory (first build may be slow).")?;
+    step(
+        4,
+        "Build",
+        "Runs `cargo build` in the project directory (first build may be slow).",
+    )?;
     let st = Command::new("cargo")
         .arg("build")
         .current_dir(&args.output)

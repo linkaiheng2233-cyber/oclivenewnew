@@ -88,18 +88,18 @@ impl BuiltinReActAgent {
     pub fn list_mcp_servers(&self) -> Vec<McpServerManifest> {
         self.mcp.list_servers()
     }
-/// # Errors
-///
-/// Returns [`Err`] with a human-readable message when the operation fails.
+    /// # Errors
+    ///
+    /// Returns [`Err`] with a human-readable message when the operation fails.
     pub fn list_mcp_tools(
         &self,
         server_id: &str,
     ) -> Result<Vec<crate::infrastructure::mcp_client::McpToolManifest>> {
         self.mcp.list_tools(server_id)
     }
-/// # Errors
-///
-/// Returns [`Err`] with a human-readable message when the operation fails.
+    /// # Errors
+    ///
+    /// Returns [`Err`] with a human-readable message when the operation fails.
     pub fn call_tool_direct(
         &self,
         server_id: &str,
@@ -109,7 +109,10 @@ impl BuiltinReActAgent {
         self.mcp.call_tool(server_id, tool_name, params)
     }
 
-    fn list_tools_for_server(&self, s: &McpServerManifest) -> Vec<crate::infrastructure::mcp_client::McpToolManifest> {
+    fn list_tools_for_server(
+        &self,
+        s: &McpServerManifest,
+    ) -> Vec<crate::infrastructure::mcp_client::McpToolManifest> {
         match self.mcp.list_tools(s.id.as_str()) {
             Ok(t) => t,
             Err(AppError::HighRiskCapabilityNotGranted { .. }) => {

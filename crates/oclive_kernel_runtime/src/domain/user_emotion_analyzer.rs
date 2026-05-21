@@ -42,7 +42,7 @@ pub struct RemoteUserEmotionAnalyzerPlaceholder {
 }
 
 impl RemoteUserEmotionAnalyzerPlaceholder {
-    #[must_use] 
+    #[must_use]
     pub fn new() -> Self {
         Self {
             inner: BuiltinUserEmotionAnalyzer,

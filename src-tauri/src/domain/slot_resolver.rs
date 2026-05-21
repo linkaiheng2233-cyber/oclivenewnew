@@ -14,19 +14,22 @@ use crate::infrastructure::llm::LlmClient;
 use crate::infrastructure::remote_plugin::{
     DirectoryComplexEmotionHttp, RemoteComplexEmotionHttp, RemotePluginHttpConfig,
 };
-use std::time::Duration;
 use oclive_validation::{
     merged_agent_directory_plugin_ids, plugin_backends_for_slot_entry,
     slot_registry_instances_sorted, SlotRegistryEntry,
 };
 use std::collections::BTreeMap;
 use std::sync::Arc;
+use std::time::Duration;
 
 /// 内置复杂情感（包装为 trait 对象）。
 pub struct BuiltinComplexEmotionArc;
 
 impl ComplexEmotionProvider for BuiltinComplexEmotionArc {
-    fn resolve_turn(&self, input: &ComplexEmotionInput) -> crate::error::Result<ComplexEmotionOutput> {
+    fn resolve_turn(
+        &self,
+        input: &ComplexEmotionInput,
+    ) -> crate::error::Result<ComplexEmotionOutput> {
         Ok(BuiltinKeywordComplexEmotionProvider.resolve_turn_inner(input))
     }
 }
@@ -34,7 +37,10 @@ impl ComplexEmotionProvider for BuiltinComplexEmotionArc {
 struct RemoteComplexEmotionArc(Arc<RemoteComplexEmotionHttp>);
 
 impl ComplexEmotionProvider for RemoteComplexEmotionArc {
-    fn resolve_turn(&self, input: &ComplexEmotionInput) -> crate::error::Result<ComplexEmotionOutput> {
+    fn resolve_turn(
+        &self,
+        input: &ComplexEmotionInput,
+    ) -> crate::error::Result<ComplexEmotionOutput> {
         self.0.resolve_turn(input)
     }
 }
@@ -71,35 +77,30 @@ pub struct SlotResolver;
 
 impl SlotResolver {
     #[must_use]
-    pub fn resolve(registry: &BackendRegistry, slot_registry: &BTreeMap<String, SlotRegistryEntry>) -> ResolvedRoleSlots {
+    pub fn resolve(
+        registry: &BackendRegistry,
+        slot_registry: &BTreeMap<String, SlotRegistryEntry>,
+    ) -> ResolvedRoleSlots {
         let mut out = ResolvedRoleSlots::default();
         for (key, entry) in slot_registry_instances_sorted(slot_registry, "memory") {
             let pb = plugin_backends_for_slot_entry(&entry);
-            out.memory.push((
-                key,
-                registry.memory_retrieval_for_plugin_backends(&pb),
-            ));
+            out.memory
+                .push((key, registry.memory_retrieval_for_plugin_backends(&pb)));
         }
         for (key, entry) in slot_registry_instances_sorted(slot_registry, "emotion") {
             let pb = plugin_backends_for_slot_entry(&entry);
-            out.emotion.push((
-                key,
-                registry.user_emotion_analyzer_for_backends(&pb),
-            ));
+            out.emotion
+                .push((key, registry.user_emotion_analyzer_for_backends(&pb)));
         }
         for (key, entry) in slot_registry_instances_sorted(slot_registry, "event") {
             let pb = plugin_backends_for_slot_entry(&entry);
-            out.event.push((
-                key,
-                registry.event_estimator_for_backends(&pb),
-            ));
+            out.event
+                .push((key, registry.event_estimator_for_backends(&pb)));
         }
         for (key, entry) in slot_registry_instances_sorted(slot_registry, "prompt") {
             let pb = plugin_backends_for_slot_entry(&entry);
-            out.prompt.push((
-                key,
-                registry.prompt_assembler_for_backends(&pb),
-            ));
+            out.prompt
+                .push((key, registry.prompt_assembler_for_backends(&pb)));
         }
         for (key, entry) in slot_registry_instances_sorted(slot_registry, "llm") {
             let pb = plugin_backends_for_slot_entry(&entry);
@@ -107,7 +108,8 @@ impl SlotResolver {
         }
         for (key, entry) in slot_registry_instances_sorted(slot_registry, "agent") {
             let pb = plugin_backends_for_slot_entry(&entry);
-            out.agent.push((key, registry.agent_for_plugin_backends(&pb)));
+            out.agent
+                .push((key, registry.agent_for_plugin_backends(&pb)));
         }
         for (key, entry) in slot_registry_instances_sorted(slot_registry, "complex_emotion") {
             out.complex_emotion.push((

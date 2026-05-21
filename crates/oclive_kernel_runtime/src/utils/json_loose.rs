@@ -1,7 +1,7 @@
 //! 从模型输出中截取 JSON 对象子串，供 `serde_json` 解析（容忍前后废话/ Markdown）。
 
 /// 取第一个 `{` 到最后一个 `}` 之间的切片；若不是合法 JSON 子串，由调用方解析失败处理。
-#[must_use] 
+#[must_use]
 pub fn extract_json_object(raw: &str) -> Option<&str> {
     let start = raw.find('{')?;
     let end = raw.rfind('}')?;

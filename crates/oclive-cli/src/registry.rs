@@ -72,14 +72,8 @@ pub fn save_registry(file: &RegistryFile) -> Result<()> {
     Ok(())
 }
 
-pub fn register_project(
-    name: &str,
-    path: &Path,
-    template: Option<InitTemplateArg>,
-) -> Result<()> {
-    let canonical = path
-        .canonicalize()
-        .unwrap_or_else(|_| path.to_path_buf());
+pub fn register_project(name: &str, path: &Path, template: Option<InitTemplateArg>) -> Result<()> {
+    let canonical = path.canonicalize().unwrap_or_else(|_| path.to_path_buf());
     let mut file = load_registry()?;
     let template_s = template.map(template_id_str).map(str::to_string);
     let entry = RegistryEntry {
@@ -107,11 +101,7 @@ fn template_id_str(t: InitTemplateArg) -> &'static str {
 }
 
 pub fn register_after_init(cfg: &ProjectConfig, output: &Path) -> Result<()> {
-    register_project(
-        cfg.project_name.as_str(),
-        output,
-        cfg.factory_template,
-    )
+    register_project(cfg.project_name.as_str(), output, cfg.factory_template)
 }
 
 fn now_ts() -> u64 {

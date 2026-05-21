@@ -3,10 +3,7 @@
 //! - **native**：`validate_disk_manifest` 等。
 //! - **wasm**（`--features wasm`，目标 `wasm32-unknown-unknown`）：`validate_manifest_wasm`。
 
-#![cfg_attr(
-    test,
-    allow(clippy::unwrap_used, clippy::expect_used)
-)]
+#![cfg_attr(test, allow(clippy::unwrap_used, clippy::expect_used))]
 
 pub mod blueprint_migrate;
 pub mod blueprint_v2;
@@ -27,11 +24,10 @@ pub use blueprint_v2::{
     apply_slot_override, default_slot_key_for_module, effective_slot_registry,
     load_blueprint_v2_for_role_dir, merged_agent_directory_plugin_ids,
     plugin_backends_for_slot_entry, slot_registry_instances_sorted,
-    slot_registry_to_plugin_backends,
-    validate_blueprint_v2_json, validate_blueprint_v2_json_with_context,
-    validate_role_pack_blueprint_v2_directory, write_role_pack_blueprint_slot_registry,
-    BlueprintV2LoadResult, BlueprintV2ValidateContext, SlotOverridePatch, SlotRegistryEntry,
-    BLUEPRINT_V2_SCHEMA_VERSION, PIPELINE_BLUEPRINT_FILENAME,
+    slot_registry_to_plugin_backends, validate_blueprint_v2_json,
+    validate_blueprint_v2_json_with_context, validate_role_pack_blueprint_v2_directory,
+    write_role_pack_blueprint_slot_registry, BlueprintV2LoadResult, BlueprintV2ValidateContext,
+    SlotOverridePatch, SlotRegistryEntry, BLUEPRINT_V2_SCHEMA_VERSION, PIPELINE_BLUEPRINT_FILENAME,
 };
 pub use disk_role_settings::{
     AutonomousSceneConfig, AutonomousSceneRule, DiskRoleSettings, RemotePresenceConfig,
@@ -43,9 +39,12 @@ pub use manifest::{
     LifeAvailability, LifeScheduleDisk, LifeScheduleEntryDisk, LifeTrajectoryDisk,
     MemoryConfigDisk, PersonalitySource, UserRelationDisk,
 };
-pub use plugin_dependencies::{
-    parse_plugin_dependencies, resolve_install_order,
+pub use plugin_backends::{
+    AgentBackend, DirectoryPluginSlots, EmotionBackend, EventBackend, LlmBackend, MemoryBackend,
+    PluginBackendSource, PluginBackends, PluginBackendsOverride, PluginBackendsSourceMap,
+    PromptBackend,
 };
+pub use plugin_dependencies::{parse_plugin_dependencies, resolve_install_order};
 pub use plugin_permissions::{
     manifest_declares_process_spawn, validate_directory_plugin_manifest_permissions,
     validate_permissions_list, ALLOWED as PLUGIN_PERMISSIONS_ALLOWED, MCP_HTTP, MCP_STDIO,
@@ -55,16 +54,11 @@ pub use protocol_boundary::{
     assert_layers_do_not_overlap, validate_jsonrpc_error_response, validate_kernel_error_body,
     ProtocolValidationError,
 };
-pub use plugin_backends::{
-    AgentBackend, DirectoryPluginSlots, EmotionBackend, EventBackend, LlmBackend, MemoryBackend,
-    PluginBackendSource, PluginBackends, PluginBackendsOverride, PluginBackendsSourceMap,
-    PromptBackend,
-};
 pub use role_pack::{
-    merge_role_pack_scene_ids, validate_default_personality_vector,
-    validate_role_pack_directory, validate_role_pack_directory_with_profile,
-    validate_role_pack_loaded, validate_role_pack_loaded_with_profile,
-    validate_role_pack_manifest_settings_core, validate_role_pack_tail, RolePackValidationProfile,
+    merge_role_pack_scene_ids, validate_default_personality_vector, validate_role_pack_directory,
+    validate_role_pack_directory_with_profile, validate_role_pack_loaded,
+    validate_role_pack_loaded_with_profile, validate_role_pack_manifest_settings_core,
+    validate_role_pack_tail, RolePackValidationProfile,
 };
 pub use validate::{
     parse_hhmm, validate_disk_manifest, validate_interaction_mode_pack_setting,

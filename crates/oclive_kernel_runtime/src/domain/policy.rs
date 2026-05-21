@@ -78,7 +78,7 @@ pub struct DefaultEmotionPolicy {
 }
 
 impl DefaultEmotionPolicy {
-    #[must_use] 
+    #[must_use]
     pub fn new(config: EmotionPolicyConfig) -> Self {
         Self { config }
     }
@@ -151,7 +151,7 @@ pub struct DefaultMemoryPolicy {
 }
 
 impl DefaultMemoryPolicy {
-    #[must_use] 
+    #[must_use]
     pub fn new(config: MemoryPolicyConfig) -> Self {
         Self { config }
     }

@@ -18,8 +18,8 @@ use crate::plugin_backends::{
 };
 use crate::role_pack::{merge_role_pack_scene_ids, validate_default_personality_vector};
 use crate::validate::{
-    validate_disk_manifest, validate_interaction_mode_pack_setting, validate_knowledge_manifest_disk,
-    validate_min_runtime_version,
+    validate_disk_manifest, validate_interaction_mode_pack_setting,
+    validate_knowledge_manifest_disk, validate_min_runtime_version,
 };
 
 pub const BLUEPRINT_V2_SCHEMA_VERSION: u32 = 2;
@@ -203,10 +203,7 @@ fn validate_blueprint_v2_file(
     }
 
     if let Some(host) = ctx.host_version {
-        if let Err(e) = validate_min_runtime_version(
-            bp.meta.min_runtime_version.as_deref(),
-            host,
-        ) {
+        if let Err(e) = validate_min_runtime_version(bp.meta.min_runtime_version.as_deref(), host) {
             return Err(vec![e]);
         }
     }
@@ -277,14 +274,14 @@ pub fn validate_role_pack_blueprint_v2_directory(
     let raw = match fs::read_to_string(&blueprint_path) {
         Ok(s) => s,
         Err(e) => {
-            return Err(vec![format!("读取 {} 失败: {}", PIPELINE_BLUEPRINT_FILENAME, e)]);
+            return Err(vec![format!(
+                "读取 {} 失败: {}",
+                PIPELINE_BLUEPRINT_FILENAME, e
+            )]);
         }
     };
 
-    let folder_name = role_dir
-        .file_name()
-        .and_then(|s| s.to_str())
-        .unwrap_or("");
+    let folder_name = role_dir.file_name().and_then(|s| s.to_str()).unwrap_or("");
     validate_blueprint_v2_json_with_context(
         &raw,
         BlueprintV2ValidateContext {
@@ -315,20 +312,21 @@ pub fn write_role_pack_blueprint_slot_registry(
     }
     let raw = fs::read_to_string(&blueprint_path)
         .map_err(|e| vec![format!("读取 {} 失败: {}", PIPELINE_BLUEPRINT_FILENAME, e)])?;
-    let mut root: Value = serde_json::from_str(&raw)
-        .map_err(|e| vec![format!("{} JSON 解析失败: {}", PIPELINE_BLUEPRINT_FILENAME, e)])?;
-    let obj = root.as_object_mut().ok_or_else(|| {
-        vec![format!("{} 根节点须为对象", PIPELINE_BLUEPRINT_FILENAME)]
+    let mut root: Value = serde_json::from_str(&raw).map_err(|e| {
+        vec![format!(
+            "{} JSON 解析失败: {}",
+            PIPELINE_BLUEPRINT_FILENAME, e
+        )]
     })?;
+    let obj = root
+        .as_object_mut()
+        .ok_or_else(|| vec![format!("{} 根节点须为对象", PIPELINE_BLUEPRINT_FILENAME)])?;
     let reg_val = serde_json::to_value(slot_registry)
         .map_err(|e| vec![format!("slot_registry 序列化失败: {e}")])?;
     obj.insert("slot_registry".to_string(), reg_val);
     let out = serde_json::to_string_pretty(&root)
         .map_err(|e| vec![format!("{} 序列化失败: {e}", PIPELINE_BLUEPRINT_FILENAME)])?;
-    let folder_name = role_dir
-        .file_name()
-        .and_then(|s| s.to_str())
-        .unwrap_or("");
+    let folder_name = role_dir.file_name().and_then(|s| s.to_str()).unwrap_or("");
     validate_blueprint_v2_json_with_context(
         &out,
         BlueprintV2ValidateContext {
@@ -360,7 +358,9 @@ pub fn load_blueprint_v2_for_role_dir(
 
 /// 将 `slot_registry` 折叠为现网六槽 `PluginBackends`（同 type **last-wins**，按 `position`）。
 #[must_use]
-pub fn slot_registry_to_plugin_backends(registry: &BTreeMap<String, SlotRegistryEntry>) -> PluginBackends {
+pub fn slot_registry_to_plugin_backends(
+    registry: &BTreeMap<String, SlotRegistryEntry>,
+) -> PluginBackends {
     let mut winners: HashMap<&str, (&str, &SlotRegistryEntry)> = HashMap::new();
     for (key, entry) in registry {
         let t = entry.slot_type.trim();
@@ -765,7 +765,12 @@ fn validate_slot_backend_and_fields(key: &str, slot: &SlotRegistryEntry) -> Resu
     let plugins: Vec<&str> = slot
         .plugins
         .as_ref()
-        .map(|ps| ps.iter().map(|s| s.as_str()).filter(|s| !s.trim().is_empty()).collect())
+        .map(|ps| {
+            ps.iter()
+                .map(|s| s.as_str())
+                .filter(|s| !s.trim().is_empty())
+                .collect()
+        })
         .unwrap_or_default();
     let has_plugins = !plugins.is_empty();
 
@@ -790,7 +795,9 @@ fn validate_slot_backend_and_fields(key: &str, slot: &SlotRegistryEntry) -> Resu
     if t == "llm" && b == "ollama" {
         if let Some(ref m) = slot.model {
             if m.trim().is_empty() {
-                return Err(format!("slot_registry[{key}]：ollama 槽位的 model 若存在则不得为空"));
+                return Err(format!(
+                    "slot_registry[{key}]：ollama 槽位的 model 若存在则不得为空"
+                ));
             }
         }
     }
@@ -801,9 +808,7 @@ fn validate_slot_backend_and_fields(key: &str, slot: &SlotRegistryEntry) -> Resu
 fn allowed_backends_for_type(slot_type: &str) -> &'static [&'static str] {
     match slot_type {
         "memory" => &["builtin", "builtin_v2", "remote", "directory", "local"],
-        "emotion" | "event" | "prompt" => {
-            &["builtin", "builtin_v2", "remote", "directory"]
-        }
+        "emotion" | "event" | "prompt" => &["builtin", "builtin_v2", "remote", "directory"],
         "llm" => &["ollama", "remote", "directory"],
         "agent" => &["builtin", "remote", "directory"],
         "complex_emotion" => &["builtin", "remote", "directory"],
@@ -901,10 +906,9 @@ mod tests {
     #[test]
     fn rejects_module_relations() {
         let mut v: Value = serde_json::from_str(&minimal_v2_json()).unwrap();
-        v.as_object_mut().unwrap().insert(
-            "module_relations".into(),
-            serde_json::json!({}),
-        );
+        v.as_object_mut()
+            .unwrap()
+            .insert("module_relations".into(), serde_json::json!({}));
         let errs = validate_blueprint_v2_json(&v.to_string()).unwrap_err();
         assert!(errs.iter().any(|e| e.contains("module_relations")));
     }

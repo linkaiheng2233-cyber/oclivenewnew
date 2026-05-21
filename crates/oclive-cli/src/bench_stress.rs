@@ -39,7 +39,9 @@ pub fn run_stress(root: &std::path::Path, args: &BenchArgs) -> Result<()> {
         .and_then(|p| p.parse().ok())
         .unwrap_or(8420u16);
     let url = format!("http://127.0.0.1:{port}/chat");
-    let agent = ureq::AgentBuilder::new().timeout(Duration::from_secs(30)).build();
+    let agent = ureq::AgentBuilder::new()
+        .timeout(Duration::from_secs(30))
+        .build();
     let body = r#"{"message":"bench stress ping"}"#;
 
     let samples: Arc<Mutex<Vec<f64>>> = Arc::new(Mutex::new(Vec::new()));
@@ -74,7 +76,11 @@ pub fn run_stress(root: &std::path::Path, args: &BenchArgs) -> Result<()> {
         handles.push(std::thread::spawn(move || {
             while !stop.load(Ordering::SeqCst) && Instant::now() < deadline {
                 let t0 = Instant::now();
-                match agent.post(&url).set("Content-Type", "application/json").send_string(&body) {
+                match agent
+                    .post(&url)
+                    .set("Content-Type", "application/json")
+                    .send_string(&body)
+                {
                     Ok(_) => {
                         let ms = t0.elapsed().as_secs_f64() * 1000.0;
                         total.fetch_add(1, Ordering::Relaxed);
@@ -96,7 +102,10 @@ pub fn run_stress(root: &std::path::Path, args: &BenchArgs) -> Result<()> {
         if !args.json {
             let n = total.load(Ordering::Relaxed);
             let e = errors.load(Ordering::Relaxed);
-            eprint!("\r  requests={n} errors={e} elapsed={:.1}s   ", start.elapsed().as_secs_f64());
+            eprint!(
+                "\r  requests={n} errors={e} elapsed={:.1}s   ",
+                start.elapsed().as_secs_f64()
+            );
         }
     }
     stop.store(true, Ordering::SeqCst);
@@ -153,7 +162,10 @@ pub fn run_stress(root: &std::path::Path, args: &BenchArgs) -> Result<()> {
     }
 
     if err_n > tot / 2 {
-        bail!("stress test error rate too high ({:.1}%)", report.error_rate * 100.0);
+        bail!(
+            "stress test error rate too high ({:.1}%)",
+            report.error_rate * 100.0
+        );
     }
     Ok(())
 }
@@ -175,9 +187,14 @@ fn print_stress_human(r: &StressReport, url: &str) {
     println!("  duration:     {:.2}s", r.duration_secs);
     println!("  concurrency:  {}", r.concurrency);
     println!("  requests:     {}", r.total_requests);
-    println!("  errors:       {} ({:.2}%)", r.errors, r.error_rate * 100.0);
+    println!(
+        "  errors:       {} ({:.2}%)",
+        r.errors,
+        r.error_rate * 100.0
+    );
     println!("  throughput:   {:.2} req/s", r.throughput_rps);
-    println!("  latency (ms): p50={:.1} p95={:.1} p99={:.1} min={:.1} max={:.1} mean={:.1}",
+    println!(
+        "  latency (ms): p50={:.1} p95={:.1} p99={:.1} min={:.1} max={:.1} mean={:.1}",
         r.latency_ms.p50,
         r.latency_ms.p95,
         r.latency_ms.p99,

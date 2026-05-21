@@ -4,9 +4,9 @@ use crate::domain::memory_engine::MemoryEngine;
 use crate::domain::memory_retrieval::{MemoryRetrieval, MemoryRetrievalInput};
 use crate::domain::BuiltinMemoryRetrieval;
 use crate::error::{AppError, Result};
+use crate::infrastructure::high_risk_grants::HighRiskGrantStore;
 use crate::infrastructure::remote_fallback_policy::remote_fallback_load;
 use crate::infrastructure::remote_plugin::config::RemotePluginHttpConfig;
-use crate::infrastructure::high_risk_grants::HighRiskGrantStore;
 use crate::infrastructure::remote_plugin::jsonrpc::{self, RemoteRpcChannel};
 use crate::models::{Memory, MemoryContext};
 use serde_json::{json, Value};
@@ -57,9 +57,8 @@ impl RemoteMemoryRetrievalHttp {
     }
 
     fn rank_remote(&self, input: &MemoryRetrievalInput<'_>) -> Result<Option<Vec<Memory>>> {
-        let memories_json: Value = serde_json::to_value(input.memories).map_err(|e| {
-            AppError::Unknown(format!("memory.rank encode memories: {}", e))
-        })?;
+        let memories_json: Value = serde_json::to_value(input.memories)
+            .map_err(|e| AppError::Unknown(format!("memory.rank encode memories: {}", e)))?;
         let params = json!({
             "memories": memories_json,
             "user_query": input.user_query,

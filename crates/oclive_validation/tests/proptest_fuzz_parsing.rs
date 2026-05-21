@@ -3,8 +3,8 @@
 #![allow(clippy::unwrap_used, clippy::expect_used)]
 
 use oclive_validation::{
-    validate_jsonrpc_error_response, validate_kernel_error_body,
-    validate_manifest_top_level_keys, validate_settings_top_level_keys,
+    validate_jsonrpc_error_response, validate_kernel_error_body, validate_manifest_top_level_keys,
+    validate_settings_top_level_keys,
 };
 use proptest::prelude::*;
 use serde_json::{json, Value};

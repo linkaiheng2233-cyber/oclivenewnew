@@ -1,6 +1,6 @@
 //! Kernel factory template catalog (`--list-templates` and interactive recipe selection).
 
-use crate::init::{InitTemplateArg, RolePackKind, ProjectType, template_defaults};
+use crate::init::{template_defaults, InitTemplateArg, ProjectType, RolePackKind};
 
 pub struct TemplateCatalogEntry {
     pub id: &'static str,
@@ -73,7 +73,9 @@ pub fn print_templates_table() {
             e.id, e.scene, e.preset, e.monolith, e.project_type, e.default_role_pack
         );
     }
-    println!("\nNote: explicit --preset / --monolith / --with-role-pack override template defaults.");
+    println!(
+        "\nNote: explicit --preset / --monolith / --with-role-pack override template defaults."
+    );
     println!("Vision and weld comparison: creator-docs/getting-started/KERNEL_FACTORY_VISION.md");
     for e in CATALOG {
         println!("  · {} — {}", e.id, e.description);

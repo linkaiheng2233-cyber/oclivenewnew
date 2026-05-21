@@ -41,13 +41,13 @@ pub fn kill_plugin_process(plugin_id: String, state: State<'_, AppState>) -> Res
 }
 
 #[tauri::command]
-#[must_use] 
+#[must_use]
 pub fn list_plugin_processes(state: State<'_, AppState>) -> Vec<PluginProcessDebugInfo> {
     state.directory_plugins.list_managed_plugin_processes()
 }
 
 #[tauri::command]
-#[must_use] 
+#[must_use]
 pub fn get_plugin_logs(plugin_id: String, lines: usize, state: State<'_, AppState>) -> Vec<String> {
     state
         .directory_plugins

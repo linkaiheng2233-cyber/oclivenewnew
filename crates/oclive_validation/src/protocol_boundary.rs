@@ -8,7 +8,10 @@ use serde_json::Value;
 pub enum ProtocolValidationError {
     NotObject,
     MissingField(&'static str),
-    WrongType { field: &'static str, expected: &'static str },
+    WrongType {
+        field: &'static str,
+        expected: &'static str,
+    },
     InvalidKernelCode(String),
     JsonRpcCodeNotInteger,
     LayerOverlap,
@@ -35,7 +38,9 @@ impl std::fmt::Display for ProtocolValidationError {
 ///
 /// 形状或类型不符合 JSON-RPC 2.0 错误对象时返回 [`ProtocolValidationError`]。
 pub fn validate_jsonrpc_error_response(value: &Value) -> Result<(), ProtocolValidationError> {
-    let obj = value.as_object().ok_or(ProtocolValidationError::NotObject)?;
+    let obj = value
+        .as_object()
+        .ok_or(ProtocolValidationError::NotObject)?;
     let ver = obj.get("jsonrpc").and_then(|v| v.as_str());
     if ver != Some("2.0") {
         return Err(ProtocolValidationError::WrongType {
@@ -69,9 +74,7 @@ pub fn validate_jsonrpc_error_response(value: &Value) -> Result<(), ProtocolVali
 }
 
 fn is_screaming_snake(s: &str) -> bool {
-    !s.is_empty()
-        && s.bytes().all(|b| b.is_ascii_uppercase() || b == b'_')
-        && s.contains('_')
+    !s.is_empty() && s.bytes().all(|b| b.is_ascii_uppercase() || b == b'_') && s.contains('_')
         || s.bytes().all(|b| b.is_ascii_uppercase() || b == b'_')
             && s.len() >= 3
             && !s.chars().any(|c| c.is_ascii_lowercase())
@@ -83,7 +86,9 @@ fn is_screaming_snake(s: &str) -> bool {
 ///
 /// 缺字段、类型错误或 `code` 与 JSON-RPC 整数形态混用时返回 [`ProtocolValidationError`]。
 pub fn validate_kernel_error_body(value: &Value) -> Result<(), ProtocolValidationError> {
-    let obj = value.as_object().ok_or(ProtocolValidationError::NotObject)?;
+    let obj = value
+        .as_object()
+        .ok_or(ProtocolValidationError::NotObject)?;
     let code = obj
         .get("code")
         .ok_or(ProtocolValidationError::MissingField("code"))?;
@@ -95,7 +100,9 @@ pub fn validate_kernel_error_body(value: &Value) -> Result<(), ProtocolValidatio
         expected: "string (SCREAMING_SNAKE_CASE)",
     })?;
     if !is_screaming_snake(code_str) {
-        return Err(ProtocolValidationError::InvalidKernelCode(code_str.to_string()));
+        return Err(ProtocolValidationError::InvalidKernelCode(
+            code_str.to_string(),
+        ));
     }
     let msg = obj
         .get("message")
@@ -122,7 +129,10 @@ pub fn validate_kernel_error_body(value: &Value) -> Result<(), ProtocolValidatio
 /// # Errors
 ///
 /// 任一层校验失败时返回对应 [`ProtocolValidationError`]。
-pub fn assert_layers_do_not_overlap(jsonrpc_err: &Value, kernel_body: &Value) -> Result<(), ProtocolValidationError> {
+pub fn assert_layers_do_not_overlap(
+    jsonrpc_err: &Value,
+    kernel_body: &Value,
+) -> Result<(), ProtocolValidationError> {
     validate_jsonrpc_error_response(jsonrpc_err)?;
     validate_kernel_error_body(kernel_body)?;
     Ok(())

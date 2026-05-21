@@ -10,7 +10,6 @@ mod presence;
 mod process_message;
 mod scene;
 
-pub use process_message::process_message;
 use crate::domain::chat_llm_fallback::{fallback_reply_for_llm_failure, FallbackReplyContext};
 use crate::domain::chat_turn::{relation_favor_for_key, weight_memories_for_scene};
 use crate::domain::chat_turn_rules::{soft_append_guard, strip_hallucination_tokens};
@@ -33,6 +32,7 @@ use crate::state::AppState;
 use chrono::Utc;
 use context::load_recent_context;
 use favor::{compute_favor_and_relation, FavorRelationInput};
+pub use process_message::process_message;
 use scene::{detect_movement_intent, movement_ui_flags};
 use std::sync::Arc;
 use std::time::Instant;

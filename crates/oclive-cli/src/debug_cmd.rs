@@ -97,7 +97,9 @@ pub fn run(args: DebugArgs) -> Result<()> {
                 eprintln!("[oclive debug] reply length: {} chars", text.len());
             }
         }
-        Err(e) => eprintln!("[oclive debug] chat request failed (kernel may still be compiling): {e}"),
+        Err(e) => {
+            eprintln!("[oclive debug] chat request failed (kernel may still be compiling): {e}")
+        }
     }
 
     let _ = child.kill();

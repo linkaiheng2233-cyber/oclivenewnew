@@ -15,7 +15,7 @@ use std::io::stdout;
 use std::path::{Path, PathBuf};
 use std::process::Command;
 
-use crate::market_index::{fetch_market_index, find_item, search_items, MarketKind, MarketItem};
+use crate::market_index::{fetch_market_index, find_item, search_items, MarketItem, MarketKind};
 use crate::plugin_ext::PluginInstallArgs;
 use crate::publish_cmd;
 
@@ -137,7 +137,11 @@ fn install_plugin_item(item: &MarketItem, plugins_dir: &Path) -> Result<()> {
         if !st.success() {
             bail!("git clone failed: {git}");
         }
-        println!("✓ Installed plugin {} from Git → {}", item.id, dst.display());
+        println!(
+            "✓ Installed plugin {} from Git → {}",
+            item.id,
+            dst.display()
+        );
         return Ok(());
     }
     if let Some(url) = item.download_url.as_deref().filter(|s| !s.is_empty()) {
@@ -187,7 +191,10 @@ fn install_template_item(item: &MarketItem, out: &Path) -> Result<()> {
     if !st.success() {
         bail!("template init failed");
     }
-    println!("✓ Generated project with builtin template `{tid}` → {}", out.display());
+    println!(
+        "✓ Generated project with builtin template `{tid}` → {}",
+        out.display()
+    );
     Ok(())
 }
 
@@ -230,7 +237,10 @@ fn run_browse(args: MarketBrowseArgs) -> Result<()> {
     r
 }
 
-fn browse_loop(index: &crate::market_index::MarketIndexFile, args: &MarketBrowseArgs) -> Result<()> {
+fn browse_loop(
+    index: &crate::market_index::MarketIndexFile,
+    args: &MarketBrowseArgs,
+) -> Result<()> {
     let categories = [
         MarketKind::Plugin,
         MarketKind::Template,
@@ -256,24 +266,18 @@ fn browse_loop(index: &crate::market_index::MarketIndexFile, args: &MarketBrowse
                 .map(|(i, k)| {
                     let n = index.items_for_kind(*k).len();
                     let sel = cat_i == i;
-                    ListItem::new(Line::from(format!(
-                        "{} · {} ({n})",
-                        k.label(),
-                        k.id()
-                    )))
-                    .style(if sel {
-                        Style::default().add_modifier(Modifier::REVERSED)
-                    } else {
-                        Style::default()
-                    })
+                    ListItem::new(Line::from(format!("{} · {} ({n})", k.label(), k.id()))).style(
+                        if sel {
+                            Style::default().add_modifier(Modifier::REVERSED)
+                        } else {
+                            Style::default()
+                        },
+                    )
                 })
                 .collect();
             f.render_stateful_widget(
-                List::new(cat_items).block(
-                    Block::default()
-                        .title(" category ")
-                        .borders(Borders::ALL),
-                ),
+                List::new(cat_items)
+                    .block(Block::default().title(" category ").borders(Borders::ALL)),
                 chunks[0],
                 &mut cat_state,
             );

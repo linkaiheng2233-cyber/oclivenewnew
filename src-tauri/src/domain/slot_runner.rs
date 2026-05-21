@@ -3,19 +3,19 @@
 use crate::domain::complex_emotion::{
     ComplexEmotionInput, ComplexEmotionOutput, ComplexEmotionProvider,
 };
+use crate::domain::emotion_analyzer::EmotionResult;
 use crate::domain::event_estimator::EventEstimator;
 use crate::domain::event_impact_ai::EventImpactEstimate;
 use crate::domain::memory_retrieval::{MemoryRetrieval, MemoryRetrievalInput};
 use crate::domain::plugin_host::ResolvedRolePlugins;
 use crate::domain::prompt_assembler::PromptAssembler;
+use crate::domain::prompt_builder::PromptInput;
 use crate::domain::slot_resolver::ResolvedRoleSlots;
 use crate::domain::user_emotion_analyzer::UserEmotionAnalyzer;
-use crate::domain::emotion_analyzer::EmotionResult;
 use crate::error::{AppError, Result};
 use crate::infrastructure::llm::LlmClient;
 use crate::models::knowledge::KnowledgeEventAugment;
 use crate::models::{Emotion, Event, Memory, PersonalitySource, PersonalityVector, Role};
-use crate::domain::prompt_builder::PromptInput;
 use std::collections::HashSet;
 use std::sync::Arc;
 
@@ -72,31 +72,33 @@ impl SlotRunner {
         if let Some(instances) = registry_instances(&pl.slots, |s| &s.event) {
             if instances.len() >= 2 {
                 return Self::event_last_wins(
-                instances,
-                &llm,
-                ollama_model,
-                user_message,
-                user_emotion,
-                personality,
-                personality_source,
-                recent_turns,
-                recent_events,
-                knowledge_augment,
-            )
-            .await;
+                    instances,
+                    &llm,
+                    ollama_model,
+                    user_message,
+                    user_emotion,
+                    personality,
+                    personality_source,
+                    recent_turns,
+                    recent_events,
+                    knowledge_augment,
+                )
+                .await;
             }
-            return instances[0].1.estimate(
-                &llm,
-                ollama_model,
-                user_message,
-                user_emotion,
-                personality,
-                personality_source,
-                recent_turns,
-                recent_events,
-                knowledge_augment,
-            )
-            .await;
+            return instances[0]
+                .1
+                .estimate(
+                    &llm,
+                    ollama_model,
+                    user_message,
+                    user_emotion,
+                    personality,
+                    personality_source,
+                    recent_turns,
+                    recent_events,
+                    knowledge_augment,
+                )
+                .await;
         }
         pl.event
             .estimate(
@@ -218,7 +220,9 @@ impl SlotRunner {
                 }
             }
         }
-        last.ok_or_else(|| AppError::OllamaError("no complex_emotion slot produced a result".into()))
+        last.ok_or_else(|| {
+            AppError::OllamaError("no complex_emotion slot produced a result".into())
+        })
     }
 
     async fn event_last_wins(
@@ -407,9 +411,7 @@ impl SlotRunner {
         if any_ok {
             Ok(last)
         } else {
-            Err(AppError::OllamaError(
-                "no llm slot produced a reply".into(),
-            ))
+            Err(AppError::OllamaError("no llm slot produced a reply".into()))
         }
     }
 }
@@ -460,7 +462,10 @@ mod tests {
     #[test]
     fn memory_merge_dedupes_by_id() {
         let instances = [
-            ("m1".into(), Arc::new(BuiltinMemoryRetrieval) as Arc<dyn MemoryRetrieval>),
+            (
+                "m1".into(),
+                Arc::new(BuiltinMemoryRetrieval) as Arc<dyn MemoryRetrieval>,
+            ),
             (
                 "m2".into(),
                 Arc::new(BuiltinMemoryRetrievalV2) as Arc<dyn MemoryRetrieval>,

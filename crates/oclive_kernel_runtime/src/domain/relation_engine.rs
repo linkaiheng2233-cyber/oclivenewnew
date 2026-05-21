@@ -10,7 +10,7 @@ pub enum RelationState {
 }
 
 impl RelationState {
-    #[must_use] 
+    #[must_use]
     pub fn as_str(&self) -> &'static str {
         match self {
             RelationState::Stranger => "Stranger",
@@ -21,7 +21,7 @@ impl RelationState {
         }
     }
 
-    #[must_use] 
+    #[must_use]
     pub fn parse(s: &str) -> Self {
         match s {
             "Acquaintance" => RelationState::Acquaintance,
@@ -40,7 +40,7 @@ impl RelationEngine {
     const PROMOTION_TRIGGER_THRESHOLD: f64 = 0.35;
     const MAX_PROMOTION_DAMPING_EXTRA: f64 = 0.12;
 
-    #[must_use] 
+    #[must_use]
     pub fn next_state(
         current: RelationState,
         favorability: f64,
@@ -51,7 +51,7 @@ impl RelationEngine {
         Self::next_state_with_damping(current, favorability, event, impact_factor, confidence, 0.0)
     }
 
-    #[must_use] 
+    #[must_use]
     pub fn next_state_with_damping(
         current: RelationState,
         favorability: f64,

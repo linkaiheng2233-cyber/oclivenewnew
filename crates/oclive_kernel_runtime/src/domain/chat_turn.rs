@@ -21,7 +21,7 @@ pub struct RelationFavorContext<'a> {
     pub favor_mult: f64,
 }
 
-#[must_use] 
+#[must_use]
 pub fn relation_favor_for_key<'a>(
     role: &'a Role,
     user_relation_key: &str,

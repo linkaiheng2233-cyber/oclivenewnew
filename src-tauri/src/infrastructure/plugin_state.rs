@@ -35,7 +35,7 @@ pub struct RolePluginState {
 
 impl RolePluginState {
     /// 由角色包 `ui.json` 生成初始状态（`visible` 必须为 `order` 子集；此处再过滤一遍）。
-    #[must_use] 
+    #[must_use]
     pub fn from_ui_config(cfg: &UiConfig) -> Self {
         let mut slots = PluginStateFile::default();
         apply_slot("chat_toolbar", &cfg.slots.chat_toolbar, &mut slots);
@@ -132,7 +132,7 @@ impl Default for PluginStateStore {
 }
 
 impl PluginStateStore {
-    #[must_use] 
+    #[must_use]
     pub fn load(path: &Path) -> Self {
         let Ok(s) = std::fs::read_to_string(path) else {
             return Self::default();
@@ -156,9 +156,9 @@ impl PluginStateStore {
         }
         Self::default()
     }
-/// # Errors
-///
-/// Returns [`Err`] with a human-readable message when the operation fails.
+    /// # Errors
+    ///
+    /// Returns [`Err`] with a human-readable message when the operation fails.
     pub fn save(&self, path: &Path) -> Result<(), String> {
         if let Some(parent) = path.parent() {
             std::fs::create_dir_all(parent).map_err(|e| e.to_string())?;
@@ -272,16 +272,16 @@ impl PluginStateFile {
         }
     }
 
-    #[must_use] 
+    #[must_use]
     pub fn load(path: &Path) -> Self {
         std::fs::read_to_string(path)
             .ok()
             .and_then(|s| serde_json::from_str(&s).ok())
             .unwrap_or_default()
     }
-/// # Errors
-///
-/// Returns [`Err`] with a human-readable message when the operation fails.
+    /// # Errors
+    ///
+    /// Returns [`Err`] with a human-readable message when the operation fails.
     pub fn save(&self, path: &Path) -> Result<(), String> {
         if let Some(parent) = path.parent() {
             std::fs::create_dir_all(parent).map_err(|e| e.to_string())?;

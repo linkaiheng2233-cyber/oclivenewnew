@@ -211,11 +211,7 @@ fn check_rust_toolchain() -> DoctorCheck {
                     status: "warn".into(),
                     message: format!("{ver} — Rust 1.70+ recommended"),
                     detail: Some("Run: rustup update stable".into()),
-                    fix_command: Some(vec![
-                        "rustup".into(),
-                        "update".into(),
-                        "stable".into(),
-                    ]),
+                    fix_command: Some(vec!["rustup".into(), "update".into(), "stable".into()]),
                 };
             }
         }
@@ -253,7 +249,10 @@ fn check_cargo() -> DoctorCheck {
             detail: if cfg!(windows) {
                 Some("Install Rust: https://rustup.rs/ or Visual Studio Build Tools".into())
             } else {
-                Some("Install: curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh".into())
+                Some(
+                    "Install: curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh"
+                        .into(),
+                )
             },
             fix_command: None,
         }
@@ -285,7 +284,9 @@ fn check_cpp_toolchain() -> DoctorCheck {
         id: "cpp_toolchain".into(),
         status: "warn".into(),
         message: "cc/g++ not found".into(),
-        detail: Some("Linux: sudo apt install build-essential · macOS: xcode-select --install".into()),
+        detail: Some(
+            "Linux: sudo apt install build-essential · macOS: xcode-select --install".into(),
+        ),
         fix_command: None,
     }
 }
@@ -336,7 +337,9 @@ fn check_disk_space(path: &Path) -> DoctorCheck {
 }
 
 fn check_ollama() -> DoctorCheck {
-    let agent = ureq::AgentBuilder::new().timeout(Duration::from_secs(3)).build();
+    let agent = ureq::AgentBuilder::new()
+        .timeout(Duration::from_secs(3))
+        .build();
     match agent.get("http://127.0.0.1:11434/api/tags").call() {
         Ok(resp) => {
             if resp.status() != 200 {
@@ -372,9 +375,13 @@ fn check_ollama() -> DoctorCheck {
 }
 
 fn check_network_github() -> DoctorCheck {
-    let agent = ureq::AgentBuilder::new().timeout(Duration::from_secs(5)).build();
+    let agent = ureq::AgentBuilder::new()
+        .timeout(Duration::from_secs(5))
+        .build();
     match agent.get("https://github.com").call() {
-        Ok(resp) if resp.status() == 200 => DoctorCheck::ok("network", "https://github.com reachable"),
+        Ok(resp) if resp.status() == 200 => {
+            DoctorCheck::ok("network", "https://github.com reachable")
+        }
         Ok(resp) => DoctorCheck::warn(
             "network",
             format!("GitHub returned HTTP {}", resp.status()),
@@ -486,9 +493,7 @@ fn sys_available_mb() -> Option<u64> {
 }
 
 fn check_workspace_writable(path: &Path) -> DoctorCheck {
-    let probe_dir = path
-        .canonicalize()
-        .unwrap_or_else(|_| path.to_path_buf());
+    let probe_dir = path.canonicalize().unwrap_or_else(|_| path.to_path_buf());
     fs::create_dir_all(&probe_dir).ok();
     let probe = probe_dir.join(".oclive_doctor_probe");
     match fs::write(&probe, b"ok") {

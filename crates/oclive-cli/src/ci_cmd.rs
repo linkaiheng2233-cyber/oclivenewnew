@@ -88,8 +88,8 @@ fn detect_project_kind(root: &Path) -> Result<ProjectCiKind> {
     }
     let raw = fs::read_to_string(&cargo)?;
     let v: toml::Value = toml::from_str(&raw)?;
-    let has_main = root.join("src/main.rs").is_file()
-        || root.join("src/main_monolith.rs").is_file();
+    let has_main =
+        root.join("src/main.rs").is_file() || root.join("src/main_monolith.rs").is_file();
     let bins = v
         .get("bin")
         .and_then(|b| b.as_array())

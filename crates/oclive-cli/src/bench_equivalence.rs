@@ -51,7 +51,8 @@ pub fn run_equivalence(root: &Path, args: &BenchArgs) -> Result<()> {
     }
     let pkg = crate::bench_cmd::read_package_name(root)?;
     let std_bin = crate::bench_cmd::release_bin_path(root, &pkg, args.release);
-    let mono_bin = crate::bench_cmd::release_bin_path(root, &format!("{pkg}-monolith"), args.release);
+    let mono_bin =
+        crate::bench_cmd::release_bin_path(root, &format!("{pkg}-monolith"), args.release);
 
     let mut exact = 0u32;
     let mut diffs = Vec::new();
@@ -84,7 +85,10 @@ pub fn run_equivalence(root: &Path, args: &BenchArgs) -> Result<()> {
         print_human(&report);
     }
     if report.mismatches > 0 {
-        bail!("{} message(s) differ between standard and Monolith", report.mismatches);
+        bail!(
+            "{} message(s) differ between standard and Monolith",
+            report.mismatches
+        );
     }
     Ok(())
 }
@@ -97,7 +101,9 @@ fn chat_once(bin: &Path, port: u16, message: &str) -> Result<String> {
         .stdout(Stdio::piped())
         .stderr(Stdio::piped());
     let spawn_at = Instant::now();
-    let mut proc = child.spawn().with_context(|| format!("spawn {}", bin.display()))?;
+    let mut proc = child
+        .spawn()
+        .with_context(|| format!("spawn {}", bin.display()))?;
     if let Some(stderr) = proc.stderr.take() {
         std::thread::spawn(move || {
             let r = BufReader::new(stderr);

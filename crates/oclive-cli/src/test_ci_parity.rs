@@ -43,7 +43,12 @@ pub fn run_ci_parity(root: &Path, skip_oocp: bool, json: bool) -> Result<()> {
         println!("oclive test --ci-parity — {}", root.display());
         for r in &results {
             let mark = if r.ok { "PASS" } else { "FAIL" };
-            println!("  [{mark}] {} ({:.2}s) — {}", r.name, r.elapsed_ms as f64 / 1000.0, r.detail);
+            println!(
+                "  [{mark}] {} ({:.2}s) — {}",
+                r.name,
+                r.elapsed_ms as f64 / 1000.0,
+                r.detail
+            );
         }
         println!(
             "\n{}",
@@ -131,7 +136,10 @@ fn run_job(root: &Path, job: &str) -> Result<(bool, String)> {
             Ok((st.success(), format!("exit {:?}", st.code())))
         }
         "cargo_test" => {
-            let st = Command::new("cargo").args(["test"]).current_dir(root).status()?;
+            let st = Command::new("cargo")
+                .args(["test"])
+                .current_dir(root)
+                .status()?;
             Ok((st.success(), format!("exit {:?}", st.code())))
         }
         "oclive_test" => {

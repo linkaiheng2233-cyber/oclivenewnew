@@ -10,27 +10,28 @@ use tauri::State;
 ///
 /// Returns [`Err`] with a human-readable message when the operation fails.
 pub async fn update_settings_impl(state: &AppState, params: &Value) -> Result<Value, String> {
-    let obj = params
-        .as_object()
-        .ok_or_else(|| AppError::InvalidParameter("update_settings: params must be an object".into()).to_frontend_error())?;
+    let obj = params.as_object().ok_or_else(|| {
+        AppError::InvalidParameter("update_settings: params must be an object".into())
+            .to_frontend_error()
+    })?;
     if obj.is_empty() {
-        return Err(AppError::InvalidParameter("update_settings: empty object".into()).to_frontend_error());
+        return Err(
+            AppError::InvalidParameter("update_settings: empty object".into()).to_frontend_error(),
+        );
     }
     for (k, v) in obj {
         match k.as_str() {
             "theme" | "ui_theme" => {
-                let s = v
-                    .as_str()
-                    .ok_or_else(|| {
-                        AppError::InvalidParameter(format!("update_settings: {k} must be a string"))
-                            .to_frontend_error()
-                    })?;
+                let s = v.as_str().ok_or_else(|| {
+                    AppError::InvalidParameter(format!("update_settings: {k} must be a string"))
+                        .to_frontend_error()
+                })?;
                 let t = s.trim().to_ascii_lowercase();
                 if !matches!(t.as_str(), "light" | "dark" | "system") {
-                    return Err(
-                        AppError::InvalidParameter(format!("update_settings: invalid theme {s}"))
-                            .to_frontend_error(),
-                    );
+                    return Err(AppError::InvalidParameter(format!(
+                        "update_settings: invalid theme {s}"
+                    ))
+                    .to_frontend_error());
                 }
                 state
                     .db_manager
@@ -75,13 +76,11 @@ pub async fn update_settings_impl(state: &AppState, params: &Value) -> Result<Va
                         }
                     }
                     _ => {
-                        return Err(
-                            AppError::InvalidParameter(
-                                "update_settings: remote_fallback_to_builtin must be a string or bool"
-                                    .into(),
-                            )
-                            .to_frontend_error(),
-                        );
+                        return Err(AppError::InvalidParameter(
+                            "update_settings: remote_fallback_to_builtin must be a string or bool"
+                                .into(),
+                        )
+                        .to_frontend_error());
                     }
                 };
                 state

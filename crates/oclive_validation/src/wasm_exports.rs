@@ -40,9 +40,8 @@ pub fn validate_role_pack_wasm(
     host_runtime_version: &str,
     settings_schema_supported: u32,
 ) -> Result<(), JsValue> {
-    let merged: Vec<String> = serde_json::from_str(merged_scene_ids_json).map_err(|e| {
-        JsValue::from_str(&format!("merged_scene_ids JSON 解析失败：{}", e))
-    })?;
+    let merged: Vec<String> = serde_json::from_str(merged_scene_ids_json)
+        .map_err(|e| JsValue::from_str(&format!("merged_scene_ids JSON 解析失败：{}", e)))?;
     let settings_opt = if settings_json.trim().is_empty() {
         None
     } else {

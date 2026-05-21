@@ -4,8 +4,8 @@ use anyhow::{bail, Context, Result};
 use clap::{Parser, Subcommand};
 use std::path::PathBuf;
 
-use crate::registry::{find_entry, load_registry, register_project, remove_entry, RegistryEntry};
 use crate::init::InitTemplateArg;
+use crate::registry::{find_entry, load_registry, register_project, remove_entry, RegistryEntry};
 
 #[derive(Parser, Debug)]
 pub struct RegistryCli {
@@ -84,18 +84,12 @@ fn run_list(args: RegistryListArgs) -> Result<()> {
         println!("Path: {}", crate::registry::registry_path().display());
         return Ok(());
     }
-    println!(
-        "{:<24} {:<12} {:<10} path",
-        "name", "template", "created"
-    );
+    println!("{:<24} {:<12} {:<10} path", "name", "template", "created");
     println!("{}", "-".repeat(96));
     for p in &file.projects {
         let tpl = p.template.as_deref().unwrap_or("—");
         let date = format_date(p.created_at);
-        println!(
-            "{:<24} {:<12} {:<10} {}",
-            p.name, tpl, date, p.path
-        );
+        println!("{:<24} {:<12} {:<10} {}", p.name, tpl, date, p.path);
     }
     Ok(())
 }
@@ -106,12 +100,12 @@ fn run_add(args: RegistryAddArgs) -> Result<()> {
         .canonicalize()
         .with_context(|| format!("path {}", args.path.display()))?;
     if !path.join("Cargo.toml").is_file() {
-        bail!("{} is not a valid Cargo project root (missing Cargo.toml)", path.display());
+        bail!(
+            "{} is not a valid Cargo project root (missing Cargo.toml)",
+            path.display()
+        );
     }
-    let template = args
-        .template
-        .as_deref()
-        .and_then(template_from_str);
+    let template = args.template.as_deref().and_then(template_from_str);
     register_project(&args.name, &path, template)?;
     println!("Registered: {} → {}", args.name, path.display());
     Ok(())
@@ -119,7 +113,10 @@ fn run_add(args: RegistryAddArgs) -> Result<()> {
 
 fn run_remove(args: RegistryRemoveArgs) -> Result<()> {
     if remove_entry(&args.name)? {
-        println!("Removed from registry: {} (project directory not deleted)", args.name);
+        println!(
+            "Removed from registry: {} (project directory not deleted)",
+            args.name
+        );
     } else {
         bail!("No project in registry: {}", args.name);
     }

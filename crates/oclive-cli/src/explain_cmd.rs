@@ -98,11 +98,11 @@ fn parse_error_codes(raw: &str) -> Vec<ExplainEntry> {
     let mut hint = None;
 
     let flush = |entries: &mut Vec<ExplainEntry>,
-               code: &mut Option<String>,
-               meaning: &mut String,
-               causes: &mut String,
-               suggestions: &mut String,
-               hint: &mut Option<String>| {
+                 code: &mut Option<String>,
+                 meaning: &mut String,
+                 causes: &mut String,
+                 suggestions: &mut String,
+                 hint: &mut Option<String>| {
         if let Some(c) = code.take() {
             entries.push(ExplainEntry {
                 code: c,
@@ -163,7 +163,11 @@ fn parse_table_row(line: &str) -> Option<(String, String, String, String, Option
     if !line.starts_with('|') || line.contains("---") || line.contains("code |") {
         return None;
     }
-    let parts: Vec<&str> = line.split('|').map(|s| s.trim()).filter(|s| !s.is_empty()).collect();
+    let parts: Vec<&str> = line
+        .split('|')
+        .map(|s| s.trim())
+        .filter(|s| !s.is_empty())
+        .collect();
     if parts.len() < 4 {
         return None;
     }

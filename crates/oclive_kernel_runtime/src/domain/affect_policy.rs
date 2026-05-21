@@ -4,7 +4,7 @@ use crate::models::PersonalityVector;
 
 /// 轻量三轴：softness / coldness / volatility（与立绘纠偏一致）。
 #[inline]
-#[must_use] 
+#[must_use]
 pub fn softness_coldness_volatility(personality: &PersonalityVector) -> (f64, f64, f64) {
     let softness = (personality.warmth * 0.48
         + personality.forgiveness * 0.32
@@ -21,7 +21,7 @@ pub fn softness_coldness_volatility(personality: &PersonalityVector) -> (f64, f6
 
 /// 戒备态驱动（不新增标签，仅细化中间态）。
 #[inline]
-#[must_use] 
+#[must_use]
 pub fn guarded_drive(personality: &PersonalityVector) -> f64 {
     (personality.assertiveness * 0.46
         + personality.stubbornness * 0.34
@@ -32,7 +32,7 @@ pub fn guarded_drive(personality: &PersonalityVector) -> f64 {
 
 /// 受伤态驱动。
 #[inline]
-#[must_use] 
+#[must_use]
 pub fn hurt_drive(personality: &PersonalityVector) -> f64 {
     (personality.sensitivity * 0.48
         + personality.clinginess * 0.26
@@ -43,7 +43,7 @@ pub fn hurt_drive(personality: &PersonalityVector) -> f64 {
 
 /// 试探态驱动。
 #[inline]
-#[must_use] 
+#[must_use]
 pub fn probing_drive(personality: &PersonalityVector) -> f64 {
     (personality.sensitivity * 0.32
         + personality.talkativeness * 0.24

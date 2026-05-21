@@ -416,7 +416,10 @@ fn e2e_build_without_monolith_toml_no_cargo_succeeds() {
     .success());
     assert!(!out.join("monolith.toml").exists());
     let o = run_cli_output(&["build", "-o", out.to_str().unwrap(), "--no-cargo"]);
-    assert!(o.status.success(), "build without monolith should succeed with --no-cargo");
+    assert!(
+        o.status.success(),
+        "build without monolith should succeed with --no-cargo"
+    );
     let combined = format!(
         "{}{}",
         String::from_utf8_lossy(&o.stderr),
@@ -542,7 +545,9 @@ fn e2e_pack_validate_robot_soul_example() {
         .join("robot-soul-minimal")
         .join("roles")
         .join("default");
-    let example = example.canonicalize().expect("robot-soul-minimal example path");
+    let example = example
+        .canonicalize()
+        .expect("robot-soul-minimal example path");
     assert!(
         example.join("manifest.json").is_file(),
         "missing {}",
@@ -596,15 +601,13 @@ fn e2e_template_robot_soul_matches_manual_combo() {
     let s_man = fs::read_to_string(out_manual.join("roles/default/settings.json")).unwrap();
     let v_tpl: Value = serde_json::from_str(&s_tpl).unwrap();
     let v_man: Value = serde_json::from_str(&s_man).unwrap();
-    assert_eq!(
-        v_tpl.get("plugin_backends"),
-        v_man.get("plugin_backends")
-    );
+    assert_eq!(v_tpl.get("plugin_backends"), v_man.get("plugin_backends"));
     assert!(out_tpl.join("roles/default/prompts/system.md").is_file());
     assert!(out_tpl.join("plugins/README.md").is_file());
-    let m: Value =
-        serde_json::from_str(&fs::read_to_string(out_tpl.join("roles/default/manifest.json")).unwrap())
-            .unwrap();
+    let m: Value = serde_json::from_str(
+        &fs::read_to_string(out_tpl.join("roles/default/manifest.json")).unwrap(),
+    )
+    .unwrap();
     assert!(m.get("default_personality").is_some());
 }
 
@@ -715,10 +718,7 @@ fn e2e_template_dialogue_only_matches_manual_combo() {
     let s_man = fs::read_to_string(out_manual.join("roles/default/settings.json")).unwrap();
     let v_tpl: Value = serde_json::from_str(&s_tpl).unwrap();
     let v_man: Value = serde_json::from_str(&s_man).unwrap();
-    assert_eq!(
-        v_tpl.get("plugin_backends"),
-        v_man.get("plugin_backends")
-    );
+    assert_eq!(v_tpl.get("plugin_backends"), v_man.get("plugin_backends"));
     assert!(out_tpl.join("docs/ORCHESTRATION_REFERENCE.md").is_file());
 }
 
@@ -741,7 +741,13 @@ fn e2e_monolith_preset_latency_welds_all_slots() {
     .success());
     let mt = fs::read_to_string(out.join("monolith.toml")).unwrap();
     for slot in [
-        "memory", "emotion", "event", "prompt", "llm", "agent", "complex_emotion",
+        "memory",
+        "emotion",
+        "event",
+        "prompt",
+        "llm",
+        "agent",
+        "complex_emotion",
     ] {
         assert!(mt.contains(slot), "monolith.toml should weld {slot}");
     }
@@ -775,11 +781,9 @@ fn e2e_with_example_plugin_copies_llamacpp() {
     .success());
     let plug = out_on.join("plugins/com.oclive.example.llamacpp_llm/manifest.json");
     assert!(plug.is_file());
-    assert!(
-        !out_off
-            .join("plugins/com.oclive.example.llamacpp_llm")
-            .exists()
-    );
+    assert!(!out_off
+        .join("plugins/com.oclive.example.llamacpp_llm")
+        .exists());
 }
 
 #[test]
@@ -787,7 +791,12 @@ fn e2e_doctor_json_smoke() {
     let output = run_cli_output(&["doctor", "--json"]);
     let v: Value = serde_json::from_slice(&output.stdout).expect("doctor json");
     assert_eq!(v.get("schema_version").and_then(|x| x.as_u64()), Some(1));
-    assert!(v.get("checks").and_then(|x| x.as_array()).map(|a| !a.is_empty()) == Some(true));
+    assert!(
+        v.get("checks")
+            .and_then(|x| x.as_array())
+            .map(|a| !a.is_empty())
+            == Some(true)
+    );
 }
 
 #[test]

@@ -103,7 +103,7 @@ fn build_prompt(input: &MutableEvolutionInput<'_>) -> String {
     )
 }
 
-#[must_use] 
+#[must_use]
 pub fn strip_wrapping_fences(text: &str) -> String {
     let t = text.trim();
     if !t.starts_with("```") {

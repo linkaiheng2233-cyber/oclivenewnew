@@ -271,21 +271,16 @@ fn line_complex(b: BackendImpl) -> &'static str {
 fn write_pipeline_artifacts(cfg: &ProjectConfig, out: &Path) -> Result<()> {
     let docs = out.join("docs");
     fs::create_dir_all(&docs).context("create docs")?;
-    fs::write(
-        docs.join("PIPELINE_CUSTOM.md"),
-        cfg.pipeline.doc_markdown(),
-    )
-    .context("write PIPELINE_CUSTOM.md")?;
+    fs::write(docs.join("PIPELINE_CUSTOM.md"), cfg.pipeline.doc_markdown())
+        .context("write PIPELINE_CUSTOM.md")?;
     let steps = cfg.pipeline.steps();
-    let body: String = steps
-        .iter()
-        .map(|s| format!("    \"{s}\",\n"))
-        .collect();
+    let body: String = steps.iter().map(|s| format!("    \"{s}\",\n")).collect();
     let rs = format!(
         "//! 编排步骤顺序快照（`oclive init --pipeline {:?}`）。\n//! 完整宿主以 oclivenewnew `process_message` 为准。\n\npub const OCLIVE_PIPELINE_STEPS: &[&str] = &[\n{body}];\n",
         cfg.pipeline
     );
-    fs::write(out.join("src/oclive_pipeline_order.rs"), rs).context("write oclive_pipeline_order.rs")?;
+    fs::write(out.join("src/oclive_pipeline_order.rs"), rs)
+        .context("write oclive_pipeline_order.rs")?;
     Ok(())
 }
 

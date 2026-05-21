@@ -1,13 +1,13 @@
 //! `oclive dashboard` — 本地 Web 仪表盘（嵌入式 HTML，默认 :8420）。
 
+use crate::registry::load_registry;
+use crate::template_catalog::CATALOG;
 use anyhow::{Context, Result};
 use clap::Parser;
 use serde::Serialize;
 use std::io::{Read, Write};
 use std::net::{TcpListener, TcpStream};
 use std::path::Path;
-use crate::registry::load_registry;
-use crate::template_catalog::CATALOG;
 
 #[derive(Parser, Debug)]
 pub struct DashboardArgs {
@@ -25,8 +25,7 @@ struct ProjectRow {
 }
 
 pub fn run(args: DashboardArgs) -> Result<()> {
-    let listener = TcpListener::bind(&args.bind)
-        .with_context(|| format!("bind {}", args.bind))?;
+    let listener = TcpListener::bind(&args.bind).with_context(|| format!("bind {}", args.bind))?;
     eprintln!(
         "oclive dashboard: http://{}/ (Ctrl+C to stop; avoid same port as kernel HTTP API)",
         args.bind
@@ -118,7 +117,9 @@ fn project_detail_html(name: &str) -> String {
         .ok()
         .and_then(|f| f.projects.into_iter().find(|p| p.name == name));
     let Some(entry) = entry else {
-        return format!("<html><body><h1>Not found: {name}</h1><a href=\"/\">Back</a></body></html>");
+        return format!(
+            "<html><body><h1>Not found: {name}</h1><a href=\"/\">Back</a></body></html>"
+        );
     };
     let root = Path::new(&entry.path);
     let cargo = fs_read_or(&root.join("Cargo.toml"), "(no Cargo.toml)");

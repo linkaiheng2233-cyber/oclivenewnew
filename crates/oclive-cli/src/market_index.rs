@@ -137,7 +137,10 @@ pub fn fetch_market_index() -> Result<MarketIndexFile> {
         }
         Err(e) => {
             if let Ok(cached) = load_cache() {
-                eprintln!("⚠ Online index failed ({e}); using cache {}", cache_path().display());
+                eprintln!(
+                    "⚠ Online index failed ({e}); using cache {}",
+                    cache_path().display()
+                );
                 return Ok(cached);
             }
             Err(e)

@@ -68,7 +68,11 @@ fn api_error(status: axum::http::StatusCode, error: KernelErrorBody) -> ApiError
 }
 
 #[must_use]
-fn kernel_http_error(code: &str, message: impl Into<String>, hint: Option<String>) -> KernelErrorBody {
+fn kernel_http_error(
+    code: &str,
+    message: impl Into<String>,
+    hint: Option<String>,
+) -> KernelErrorBody {
     KernelErrorBody {
         code: code.to_string(),
         message: message.into(),

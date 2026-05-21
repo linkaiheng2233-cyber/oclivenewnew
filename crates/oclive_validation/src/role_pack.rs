@@ -86,7 +86,8 @@ fn robot_soul_profile_errors(
     match settings.interaction_mode.as_deref() {
         None | Some("") => {
             errs.push(
-                "robot-soul：settings.json 须包含 interaction_mode（immersive 或 pure_chat）".into(),
+                "robot-soul：settings.json 须包含 interaction_mode（immersive 或 pure_chat）"
+                    .into(),
             );
         }
         Some(m) => {
@@ -134,7 +135,8 @@ pub fn merge_role_pack_scene_ids(
 
     let scenes_dir = role_dir.join("scenes");
     if scenes_dir.is_dir() {
-        for entry in fs::read_dir(&scenes_dir).map_err(|e| format!("读取 scenes/ 失败: {}", e))? {
+        for entry in fs::read_dir(&scenes_dir).map_err(|e| format!("读取 scenes/ 失败: {}", e))?
+        {
             let entry = entry.map_err(|e| format!("读取 scenes/ 项失败: {}", e))?;
             let path = entry.path();
             if path.is_dir() {
@@ -170,10 +172,7 @@ pub fn validate_default_personality_vector(values: &[f32]) -> Result<(), String>
     }
     for (i, x) in values.iter().enumerate() {
         if !x.is_finite() {
-            return Err(format!(
-                "manifest：default_personality[{}] 不是有限数字",
-                i
-            ));
+            return Err(format!("manifest：default_personality[{}] 不是有限数字", i));
         }
         if *x < 0.0 || *x > 1.0 {
             return Err(format!(
@@ -252,10 +251,9 @@ pub fn validate_role_pack_manifest_settings_core(
                 return Err(errs);
             }
         };
-        if let Err(e) = validate_settings_schema_version(
-            settings.schema_version,
-            settings_schema_supported,
-        ) {
+        if let Err(e) =
+            validate_settings_schema_version(settings.schema_version, settings_schema_supported)
+        {
             errs.push(e);
         }
         settings.apply_to_manifest(&mut disk);
@@ -286,7 +284,8 @@ pub fn validate_role_pack_tail(
     if let Err(e) = validate_disk_manifest(disk, merged_scene_ids) {
         errs.push(e);
     }
-    if let Err(e) = validate_min_runtime_version(disk.min_runtime_version.as_deref(), host_version) {
+    if let Err(e) = validate_min_runtime_version(disk.min_runtime_version.as_deref(), host_version)
+    {
         errs.push(e);
     }
     if errs.is_empty() {
@@ -386,10 +385,7 @@ pub fn validate_role_pack_directory_with_profile(
     let mut errs: Vec<String> = Vec::new();
     let manifest_path = role_dir.join("manifest.json");
     if !manifest_path.is_file() {
-        errs.push(format!(
-            "缺少 manifest.json：{}",
-            manifest_path.display()
-        ));
+        errs.push(format!("缺少 manifest.json：{}", manifest_path.display()));
         return Err(errs);
     }
 
@@ -617,7 +613,11 @@ mod tests {
             }
         });
         fs::write(role.join("settings.json"), settings.to_string()).unwrap();
-        fs::write(role.join("core_personality.txt"), "核心人设：简短、稳定、可部署。\n").unwrap();
+        fs::write(
+            role.join("core_personality.txt"),
+            "核心人设：简短、稳定、可部署。\n",
+        )
+        .unwrap();
         let scene = serde_json::json!({
             "name": "Default",
             "time_windows": [],

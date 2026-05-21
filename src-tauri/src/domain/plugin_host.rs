@@ -4,9 +4,6 @@
 
 use crate::domain::agent::{AgentDebugTrace, AgentProvider, BuiltinReActAgent};
 use crate::domain::complex_emotion::ComplexEmotionProvider;
-use crate::domain::slot_resolver::{
-    BuiltinComplexEmotionArc, ResolvedRoleSlots, SlotResolver,
-};
 use crate::domain::event_estimator::{
     BuiltinEventEstimator, BuiltinEventEstimatorV2, EventEstimator,
 };
@@ -20,6 +17,7 @@ use crate::domain::memory_retrieval::{
 use crate::domain::prompt_assembler::{
     BuiltinPromptAssembler, BuiltinPromptAssemblerV2, PromptAssembler,
 };
+use crate::domain::slot_resolver::{BuiltinComplexEmotionArc, ResolvedRoleSlots, SlotResolver};
 use crate::domain::user_emotion_analyzer::{
     BuiltinUserEmotionAnalyzer, BuiltinUserEmotionAnalyzerV2, UserEmotionAnalyzer,
 };
@@ -35,8 +33,8 @@ use crate::models::{
     AgentBackend, DirectoryPluginSlots, EmotionBackend, EventBackend, LlmBackend, MemoryBackend,
     PluginBackends, PluginBackendsOverride, PromptBackend, Role,
 };
-use parking_lot::RwLock;
 use oclive_validation::SlotRegistryEntry;
+use parking_lot::RwLock;
 use serde_json::Value;
 use std::collections::BTreeMap;
 use std::path::PathBuf;
@@ -110,7 +108,10 @@ fn directory_slot_id(
 }
 
 impl BackendRegistry {
-    pub(crate) fn agent_for_plugin_backends(&self, backends: &PluginBackends) -> Arc<dyn AgentProvider> {
+    pub(crate) fn agent_for_plugin_backends(
+        &self,
+        backends: &PluginBackends,
+    ) -> Arc<dyn AgentProvider> {
         match backends.agent {
             AgentBackend::Builtin => self.agent_builtin.clone(),
             AgentBackend::Remote => self.agent_remote.clone(),
@@ -561,9 +562,9 @@ impl BackendRegistry {
             }
         }
     }
-/// # Errors
-///
-/// Returns [`Err`] with a human-readable message when the operation fails.
+    /// # Errors
+    ///
+    /// Returns [`Err`] with a human-readable message when the operation fails.
     pub fn register_local_provider(
         &self,
         descriptor: LocalPluginProviderDescriptor,
@@ -620,7 +621,8 @@ impl PluginResolver {
             None => role_backends.clone(),
         };
         let mut agent = registry.agent_for_plugin_backends(&effective);
-        let mut complex_emotion: Arc<dyn ComplexEmotionProvider> = Arc::new(BuiltinComplexEmotionArc);
+        let mut complex_emotion: Arc<dyn ComplexEmotionProvider> =
+            Arc::new(BuiltinComplexEmotionArc);
         let mut slots = None;
         let mut merged_agent_directory_plugin_ids = Vec::new();
         if let Some(reg) = slot_registry {
@@ -675,9 +677,9 @@ impl PluginHost {
             ),
         }
     }
-/// # Errors
-///
-/// Returns [`Err`] with a human-readable message when the operation fails.
+    /// # Errors
+    ///
+    /// Returns [`Err`] with a human-readable message when the operation fails.
     pub fn register_local_provider(
         &self,
         descriptor: LocalPluginProviderDescriptor,
@@ -762,18 +764,18 @@ impl PluginHost {
     pub fn list_mcp_servers(&self) -> Vec<McpServerManifest> {
         self.registry.list_mcp_servers()
     }
-/// # Errors
-///
-/// Returns [`Err`] with a human-readable message when the operation fails.
+    /// # Errors
+    ///
+    /// Returns [`Err`] with a human-readable message when the operation fails.
     pub fn list_mcp_tools(
         &self,
         server_id: &str,
     ) -> std::result::Result<Vec<crate::infrastructure::mcp_client::McpToolManifest>, String> {
         self.registry.list_mcp_tools(server_id)
     }
-/// # Errors
-///
-/// Returns [`Err`] with a human-readable message when the operation fails.
+    /// # Errors
+    ///
+    /// Returns [`Err`] with a human-readable message when the operation fails.
     pub fn call_mcp_tool(
         &self,
         server_id: &str,
@@ -834,7 +836,7 @@ impl PluginHost {
 
 impl ResolvedRolePlugins {
     /// 与 `role.plugin_backends` 一致，便于日志/测试断言。
-    #[must_use] 
+    #[must_use]
     pub fn backends_snapshot(role: &Role) -> PluginBackends {
         role.plugin_backends.clone()
     }
