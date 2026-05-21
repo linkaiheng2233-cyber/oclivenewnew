@@ -3,6 +3,7 @@
 use serde::Serialize;
 use serde_json::Value;
 
+#[must_use]
 pub fn enabled() -> bool {
     std::env::var("OCLIVE_DEBUG_TRACE")
         .ok()

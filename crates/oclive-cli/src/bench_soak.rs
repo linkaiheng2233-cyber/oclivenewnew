@@ -33,7 +33,7 @@ pub fn run_soak(root: &Path, args: &BenchArgs) -> Result<()> {
     }
     let hours = args.soak_duration.max(1) as f64;
     // Accelerated wall clock: ~2s per nominal hour (cap 120s) so local/CI can finish; see PERFORMANCE.md §长稳.
-    let wall_secs = ((hours * 2.0).max(8.0).min(120.0)) as u64;
+    let wall_secs = (hours * 2.0).clamp(8.0, 120.0) as u64;
     let wall_duration = Duration::from_secs(wall_secs);
     let n_samples = hours as u32;
     let sample_interval = wall_duration / n_samples.max(1);
@@ -62,7 +62,7 @@ pub fn run_soak(root: &Path, args: &BenchArgs) -> Result<()> {
         std::thread::spawn(move || {
             let r = BufReader::new(stderr);
             for line in r.lines().map_while(Result::ok) {
-                eprint!("[soak] {line}\n");
+                eprintln!("[soak] {line}");
             }
         });
     }

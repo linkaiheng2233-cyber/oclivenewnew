@@ -352,7 +352,7 @@ fn print_bench_history(root: &Path, json_out: bool) -> Result<()> {
 /// UTC 日历日期（`YYYY-MM-DD`），无额外依赖。
 fn unix_ts_to_date(ts: u64) -> String {
     let z = ts / 86_400 + 719_468;
-    let era = (if z >= 0 { z } else { z - 146_096 }) / 146_097;
+    let era = z / 146_097;
     let doe = z - era * 146_097;
     let yoe = (doe - doe / 1_460 + doe / 36_524 - doe / 146_096) / 365;
     let y = yoe + era * 400;

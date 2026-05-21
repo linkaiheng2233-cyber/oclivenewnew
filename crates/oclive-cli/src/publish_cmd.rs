@@ -6,7 +6,6 @@ use flate2::write::GzEncoder;
 use flate2::Compression;
 use serde::{Deserialize, Serialize};
 use std::fs::{self, File};
-use std::io::Write;
 use std::path::{Path, PathBuf};
 use tar::{Builder, Header};
 

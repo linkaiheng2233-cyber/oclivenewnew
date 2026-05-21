@@ -674,6 +674,10 @@ pub struct PluginStateGetResponse {
 }
 
 /// 与 [`get_plugin_state`] 同逻辑，供集成测不经 `State` 包装直接调用。
+///
+/// # Errors
+///
+/// 目录插件运行时状态读取失败时返回 `Err(String)`。
 pub fn get_plugin_state_impl(
     role_id: &str,
     state: &AppState,

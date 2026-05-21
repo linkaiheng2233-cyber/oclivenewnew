@@ -298,8 +298,8 @@ pub fn run_interactive(args: &InitArgs) -> Result<ProjectConfig> {
             cfg.project_type =
                 pick_project_type(cfg.project_type == ProjectType::KernelServer)?;
         }
-    } else {
-        cfg.project_type = match args.project_type.unwrap() {
+    } else if let Some(pt) = args.project_type {
+        cfg.project_type = match pt {
             ProjectTypeArg::KernelServer => ProjectType::KernelServer,
             ProjectTypeArg::Library => ProjectType::Library,
         };
@@ -339,7 +339,7 @@ pub fn run_interactive(args: &InitArgs) -> Result<ProjectConfig> {
         cfg.monolith_enabled = pick_monolith_for_kernel(template_default_monolith)?;
     }
 
-    if !args.monolith_bench_preset.is_some()
+    if args.monolith_bench_preset.is_none()
         && cfg.monolith_enabled
         && cfg.project_type == ProjectType::KernelServer
     {

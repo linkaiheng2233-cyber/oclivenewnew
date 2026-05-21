@@ -9,9 +9,8 @@ use loom::thread;
 
 #[cfg(not(loom))]
 #[test]
-fn loom_tests_require_cfg_loom() {
-    assert!(true, "run with: cargo loom test --test loom_concurrency");
-}
+#[ignore = "run with: cargo loom test --test loom_concurrency (requires cfg(loom))"]
+fn loom_tests_require_cfg_loom() {}
 
 /// 模型化 `jsonrpc` 请求 ID 分配（`fetch_add` SeqCst）无数据竞争。
 #[cfg(loom)]

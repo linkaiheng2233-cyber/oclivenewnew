@@ -93,7 +93,7 @@ struct RemoteProject {
     #[serde(default)]
     author: String,
     #[serde(default)]
-    template: Option<String>,
+    _template: Option<String>,
 }
 
 #[derive(Deserialize)]

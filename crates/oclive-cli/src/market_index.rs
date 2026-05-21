@@ -272,6 +272,14 @@ fn tag_kind_on_sections(file: &mut MarketIndexFile) {
     }
 }
 
+fn matches_keyword(p: &MarketItem, kw: &str) -> bool {
+    p.id.to_ascii_lowercase().contains(kw)
+        || p.name.to_ascii_lowercase().contains(kw)
+        || p.description.to_ascii_lowercase().contains(kw)
+        || p.author.to_ascii_lowercase().contains(kw)
+        || p.tags.iter().any(|t| t.to_ascii_lowercase().contains(kw))
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -283,12 +291,4 @@ mod tests {
         assert!(!f.plugins.is_empty());
         assert!(!f.templates.is_empty());
     }
-}
-
-fn matches_keyword(p: &MarketItem, kw: &str) -> bool {
-    p.id.to_ascii_lowercase().contains(kw)
-        || p.name.to_ascii_lowercase().contains(kw)
-        || p.description.to_ascii_lowercase().contains(kw)
-        || p.author.to_ascii_lowercase().contains(kw)
-        || p.tags.iter().any(|t| t.to_ascii_lowercase().contains(kw))
 }

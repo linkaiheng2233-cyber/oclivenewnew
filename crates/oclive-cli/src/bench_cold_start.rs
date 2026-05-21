@@ -107,7 +107,7 @@ fn one_cold_start_round(
         std::thread::spawn(move || {
             let r = BufReader::new(s);
             for line in r.lines().map_while(Result::ok) {
-                eprint!("[kernel] {line}\n");
+                eprintln!("[kernel] {line}");
             }
         })
     });

@@ -2,7 +2,7 @@
 
 use anyhow::{bail, Context, Result};
 use serde::Serialize;
-use std::path::{Path, PathBuf};
+use std::path::Path;
 use std::process::Command;
 use std::time::Instant;
 
@@ -107,7 +107,7 @@ fn parse_ci_jobs(path: &Path) -> Result<Vec<String>> {
 
 fn run_job(root: &Path, job: &str) -> Result<(bool, String)> {
     let manifest = root.join("Cargo.toml");
-    let m = manifest.to_str().unwrap_or("Cargo.toml");
+    let _m = manifest.to_str().unwrap_or("Cargo.toml");
     match job {
         "cargo_fmt" => {
             let st = Command::new("cargo")

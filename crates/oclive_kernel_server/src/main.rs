@@ -28,11 +28,9 @@ fn main() {
     while i < args.len() {
         match args[i].as_str() {
             "--api" => api = true,
-            "--port" => {
-                if i + 1 < args.len() {
-                    cli_port = args[i + 1].parse().ok();
-                    i += 1;
-                }
+            "--port" if i + 1 < args.len() => {
+                cli_port = args[i + 1].parse().ok();
+                i += 1;
             }
             _ => {}
         }

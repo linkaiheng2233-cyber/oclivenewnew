@@ -87,7 +87,7 @@ fn run_info(args: KernelInfoArgs) -> Result<()> {
         Some(t) => {
             if let Some(p) = t.get("path").and_then(|x| x.as_str()) {
                 let abs = root.join(p).canonicalize().unwrap_or_else(|_| root.join(p));
-                let commit = git_head_short(&abs.parent().unwrap_or(&abs));
+                let commit = git_head_short(abs.parent().unwrap_or(&abs));
                 (
                     "path".into(),
                     None,
@@ -156,9 +156,7 @@ fn run_info(args: KernelInfoArgs) -> Result<()> {
 }
 
 fn read_runtime_api_version(path: Option<&str>) -> Option<String> {
-    let Some(p) = path else {
-        return None;
-    };
+    let p = path?;
     let lib_rs = Path::new(p).join("src/lib.rs");
     let raw = fs::read_to_string(lib_rs).ok()?;
     for line in raw.lines() {

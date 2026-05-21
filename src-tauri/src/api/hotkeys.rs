@@ -61,6 +61,10 @@ pub fn apply_global_hotkeys(app: &AppHandle, file: &HotkeyBindingsFile) -> Resul
 }
 
 /// 与 [`get_hotkey_bindings`] 同逻辑，供集成测不经 `State` 包装直接调用。
+///
+/// # Errors
+///
+/// 快捷键配置文件读盘或解析失败时返回 `Err(String)`。
 pub fn get_hotkey_bindings_impl(state: &AppState) -> Result<HotkeyBindingsFile, String> {
     Ok(HotkeyBindingsFile::load(
         state.directory_plugins.app_data_dir(),

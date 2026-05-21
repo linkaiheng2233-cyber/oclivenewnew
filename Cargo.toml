@@ -11,6 +11,7 @@ resolver = "2"
 
 [workspace.lints.rust]
 unsafe_code = "forbid"
+unexpected_cfgs = { level = "warn", check-cfg = ["cfg(loom)"] }
 
 [workspace.lints.clippy]
 return_self_not_must_use = "warn"

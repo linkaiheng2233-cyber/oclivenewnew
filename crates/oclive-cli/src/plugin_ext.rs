@@ -69,7 +69,7 @@ pub fn run_install(args: PluginInstallArgs) -> Result<()> {
     let order = resolve_install_order(&args.id, load_deps).map_err(|e| anyhow::anyhow!(e))?;
     let order_display = order.join(" → ");
     for id in &order {
-        let dst = plugins_dir.join(&id);
+        let dst = plugins_dir.join(id);
         if dst.is_dir() && *id != args.id {
             continue;
         }
@@ -280,7 +280,7 @@ struct RpcResult {
     detail: String,
 }
 
-fn rpc_call(child: &mut std::process::Child, method: &str, params: Value) -> RpcResult {
+fn rpc_call(child: &mut std::process::Child, method: &str, _params: Value) -> RpcResult {
     // 简化：仅检查子进程仍存活（完整 JSON-RPC 需读 OCLIVE_READY 行与 HTTP 端口）
     let alive = child.try_wait().ok().flatten().is_none();
     RpcResult {

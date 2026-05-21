@@ -102,7 +102,7 @@ fn chat_once(bin: &Path, port: u16, message: &str) -> Result<String> {
         std::thread::spawn(move || {
             let r = BufReader::new(stderr);
             for line in r.lines().map_while(Result::ok) {
-                eprint!("[kernel] {line}\n");
+                eprintln!("[kernel] {line}");
             }
         });
     }

@@ -3,7 +3,7 @@
 use anyhow::{bail, Context, Result};
 use clap::Parser;
 use serde_json::Value;
-use std::io::{BufRead, BufReader, Write};
+use std::io::{BufRead, BufReader};
 use std::path::PathBuf;
 use std::process::{Command, Stdio};
 use std::time::Duration;

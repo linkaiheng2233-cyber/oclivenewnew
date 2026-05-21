@@ -46,9 +46,9 @@ pub fn run(args: LintArgs) -> Result<()> {
         if p.is_dir() {
             items.push(pass(&format!("dir_{dir}"), &format!("found {name}")));
         } else if dir == "roles" {
-            items.push(warn(&format!("dir_{dir}"), &format!("missing {name}")));
+            items.push(warn(&format!("dir_{dir}"), format!("missing {name}")));
         } else {
-            items.push(fail(&format!("dir_{dir}"), &format!("missing {name}")));
+            items.push(fail(&format!("dir_{dir}"), format!("missing {name}")));
         }
     }
     lint_cargo_toml(&root, &mut items);
@@ -247,7 +247,7 @@ fn run_deps_audit(root: &Path, json: bool) -> Result<()> {
                 } else {
                     items.push(warn(
                         "cargo_audit",
-                        format!("audit findings or non-zero exit (see cargo audit)"),
+                        "audit findings or non-zero exit (see cargo audit)".to_string(),
                     ));
                 }
             }

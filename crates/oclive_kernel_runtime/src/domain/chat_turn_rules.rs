@@ -1,6 +1,7 @@
 use crate::domain::relation_engine::RelationState;
 use crate::models::{Event, EventType};
 
+#[must_use]
 pub fn confidence_decay_weight(confidence: f32) -> f64 {
     let c = (confidence as f64).clamp(0.0, 1.0);
     let threshold = 0.60_f64;
@@ -26,6 +27,7 @@ fn is_low_relation_stage(relation_preview: &str) -> bool {
     )
 }
 
+#[must_use]
 pub fn avoid_fast_promote_score(
     current_event: &EventType,
     current_impact_factor: f64,
@@ -64,6 +66,7 @@ fn event_direction(event_type: &EventType) -> i8 {
     }
 }
 
+#[must_use]
 pub fn smooth_favor_delta_for_short_streak(raw_delta: f64, recent_events: &[Event]) -> f64 {
     const WINDOW: usize = 4;
     const MIN_ACTIVE_DELTA: f64 = 0.03;
@@ -94,6 +97,7 @@ pub fn smooth_favor_delta_for_short_streak(raw_delta: f64, recent_events: &[Even
     raw_delta * scale
 }
 
+#[must_use]
 pub fn soft_append_guard(
     reply: &str,
     event_type: &EventType,
@@ -157,6 +161,7 @@ pub fn soft_append_guard(
 }
 
 /// 去掉模型偶发输出的无意义英文碎片（如 `uppyuppy`），避免污染对话。
+#[must_use]
 pub fn strip_hallucination_tokens(reply: &str) -> String {
     const JUNK: &str = "uppyuppy";
     let junk_len = JUNK.chars().count();

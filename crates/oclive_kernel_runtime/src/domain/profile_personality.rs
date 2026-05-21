@@ -46,6 +46,7 @@ pub fn effective_vector_from_profile(role: &Role, mutable_personality: &str) -> 
     e
 }
 
+#[must_use]
 pub fn trim_mutable_storage(s: &str) -> String {
     let mut t = s.to_string();
     while t.chars().count() > MUTABLE_MAX_CHARS {

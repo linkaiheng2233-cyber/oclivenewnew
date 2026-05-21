@@ -128,6 +128,15 @@ pub fn validate_blueprint(bp: &BlueprintFile) -> ValidationReport {
         }
     }
 
+    if bp.schema_version != 0 && bp.schema_version != 1 {
+        errors.push(ValidationError {
+            message: format!(
+                "unsupported schema_version {} (supported: 0, 1)",
+                bp.schema_version
+            ),
+        });
+    }
+
     if errors.is_empty() {
         ValidationReport::success()
     } else {

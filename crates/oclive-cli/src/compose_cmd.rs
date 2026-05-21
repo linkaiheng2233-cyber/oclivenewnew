@@ -169,7 +169,7 @@ fn load_state(cwd: &Path) -> Result<ComposeState> {
         });
     }
     let raw = fs::read_to_string(&p)?;
-    Ok(serde_json::from_str(&raw).context("parse compose state")?)
+    serde_json::from_str(&raw).context("parse compose state")
 }
 
 fn save_state(cwd: &Path, state: &ComposeState) -> Result<()> {

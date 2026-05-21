@@ -77,6 +77,10 @@ impl RoleManager {
     ///
     /// # Returns
     /// (回复文本, 更新后的性格, 检测到的事件)
+    ///
+    /// # Panics
+    ///
+    /// 当 `memory.rank_memories` 在测试/内置路径下失败时 panic（与历史 `expect` 行为一致）。
     pub fn process_input(
         &mut self,
         user_input: &str,

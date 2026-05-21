@@ -15,6 +15,11 @@ pub struct MemoryRetrievalInput<'a> {
 }
 
 pub trait MemoryRetrieval: Send + Sync {
+    /// 按相关性对记忆排序。
+    ///
+    /// # Errors
+    ///
+    /// 实现方在检索/排序失败时返回 [`crate::error::Result`] 的 `Err` 变体。
     fn rank_memories(&self, input: MemoryRetrievalInput<'_>) -> Result<Vec<Memory>>;
     fn build_context(&self, memories: &[Memory], max_tokens: usize) -> MemoryContext;
     fn search_memories(&self, keyword: &str, memories: &[Memory]) -> Vec<Memory>;

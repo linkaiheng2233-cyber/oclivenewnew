@@ -9,6 +9,7 @@ use std::fs;
 use std::path::Path;
 
 /// 与 RFC 及校验器一致的第一阶段默认模板（`weld_modules` / `exclude` 互斥说明）。
+#[allow(dead_code)] // 供 `cargo test` 与文档示例；`cargo clippy` 对 bin 目标不启用 `cfg(test)` 消费者
 pub fn render_monolith_toml_phase_one() -> String {
     render_monolith_toml_default()
 }
@@ -49,9 +50,13 @@ pub fn monolith_toml_and_plan(weld_modules: &[&str]) -> (String, WeldPlan) {
         exclude: vec![],
     };
     let plan = crate::monolith_config::resolve_weld_plan(&section);
+    if weld_modules.len() == SLOT_IDS.len() {
+        debug_assert_eq!(plan.welded, WeldPlan::all_welded().welded);
+    }
     (render_monolith_toml_with_weld(weld_modules), plan)
 }
 
+#[allow(dead_code)]
 pub fn render_monolith_toml_default() -> String {
     r#"# 高耦合编译配置
 # 由 oclive init 生成；oclive build 读取并重新生成 process_message_monolith.rs
@@ -161,7 +166,7 @@ mod tests {
 
     #[test]
     fn monolith_toml_contains_mutex_note() {
-        let s = render_monolith_toml_default();
+        let s = render_monolith_toml_phase_one();
         assert!(s.contains("不能同时非空"));
         assert!(s.contains("enabled = true"));
     }

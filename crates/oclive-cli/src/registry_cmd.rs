@@ -85,8 +85,8 @@ fn run_list(args: RegistryListArgs) -> Result<()> {
         return Ok(());
     }
     println!(
-        "{:<24} {:<12} {:<10} {}",
-        "name", "template", "created", "path"
+        "{:<24} {:<12} {:<10} path",
+        "name", "template", "created"
     );
     println!("{}", "-".repeat(96));
     for p in &file.projects {

@@ -1677,6 +1677,10 @@ impl DbManager {
     }
 
     /// 读取 `app_settings` 单行；无键时返回 `Ok(None)`。
+    ///
+    /// # Errors
+    ///
+    /// 数据库查询失败时返回 [`AppError::DatabaseError`]。
     pub async fn get_app_setting(&self, key: &str) -> Result<Option<String>> {
         sqlx::query_scalar::<_, String>("SELECT value FROM app_settings WHERE key = ? LIMIT 1")
             .bind(key)
@@ -1684,10 +1688,12 @@ impl DbManager {
             .await
             .map_err(|e| AppError::DatabaseError(e.to_string()))
     }
-/// # Errors
-///
-/// Returns [`Err`] with a human-readable message when the operation fails.
+
     /// 删除 manifest 角色 id 及其所有会话命名空间（`{id}__sess__*`）在 DB 中的运行时数据；返回已删除的 `role_id` 键列表。
+    ///
+    /// # Errors
+    ///
+    /// `manifest_role_id` 为空或数据库删除失败时返回 `Err`。
     pub async fn delete_all_data_for_manifest_role(
         &self,
         manifest_role_id: &str,

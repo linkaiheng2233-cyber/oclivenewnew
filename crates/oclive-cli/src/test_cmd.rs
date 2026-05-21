@@ -1,6 +1,6 @@
 //! `oclive test` — 内核工程回归检查。
 
-use anyhow::{bail, Context, Result};
+use anyhow::{bail, Result};
 use clap::Parser;
 use serde::Serialize;
 use std::path::{Path, PathBuf};

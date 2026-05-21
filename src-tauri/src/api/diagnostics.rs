@@ -81,11 +81,11 @@ pub async fn run_environment_diagnostics(
     let roles_path = state.storage.roles_dir();
     let roles_dir = roles_path.to_string_lossy().into_owned();
     let roles_dir_exists = roles_path.exists();
-    let roles_dir_readable = roles_path.is_dir() && std::fs::read_dir(&roles_path).is_ok();
+    let roles_dir_readable = roles_path.is_dir() && std::fs::read_dir(roles_path).is_ok();
 
     let app_data_path = state.directory_plugins.app_data_dir();
     let app_data_dir = app_data_path.to_string_lossy().into_owned();
-    let (app_data_writable, app_data_detail) = probe_writable_dir(&app_data_path);
+    let (app_data_writable, app_data_detail) = probe_writable_dir(app_data_path);
 
     Ok(EnvironmentDiagnostics {
         ollama_base_url,

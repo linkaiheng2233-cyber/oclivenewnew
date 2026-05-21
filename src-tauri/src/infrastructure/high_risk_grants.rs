@@ -160,6 +160,10 @@ impl HighRiskGrantStore {
     }
 
     /// Remote / 出站 HTTP 前调用；未授权返回 [`AppError::HighRiskCapabilityNotGranted`]。
+    ///
+    /// # Errors
+    ///
+    /// 未授予 `network:*` 时返回 [`AppError::HighRiskCapabilityNotGranted`]。
     pub fn require_network(&self, grant_id: &str) -> Result<(), AppError> {
         if self.is_network_granted(grant_id) {
             return Ok(());
@@ -170,42 +174,72 @@ impl HighRiskGrantStore {
         })
     }
 
+    /// # Errors
+    ///
+    /// `id` 为空或 grants 文件持久化失败时返回 `Err(String)`。
     pub fn grant_mcp_http(&self, server_id: &str) -> Result<(), String> {
         self.grant_bucket(MCP_HTTP, server_id, |f| &mut f.mcp_http)
     }
 
+    /// # Errors
+    ///
+    /// `id` 为空或 grants 文件持久化失败时返回 `Err(String)`。
     pub fn revoke_mcp_http(&self, server_id: &str) -> Result<(), String> {
         self.revoke_bucket(server_id, |f| &mut f.mcp_http)
     }
 
+    /// # Errors
+    ///
+    /// `id` 为空或 grants 文件持久化失败时返回 `Err(String)`。
     pub fn grant_mcp_stdio(&self, server_id: &str) -> Result<(), String> {
         self.grant_bucket(MCP_STDIO, server_id, |f| &mut f.mcp_stdio)
     }
 
+    /// # Errors
+    ///
+    /// `id` 为空或 grants 文件持久化失败时返回 `Err(String)`。
     pub fn revoke_mcp_stdio(&self, server_id: &str) -> Result<(), String> {
         self.revoke_bucket(server_id, |f| &mut f.mcp_stdio)
     }
 
+    /// # Errors
+    ///
+    /// `id` 为空或 grants 文件持久化失败时返回 `Err(String)`。
     pub fn grant_directory_plugin_spawn(&self, plugin_id: &str) -> Result<(), String> {
         self.grant_process_spawn(plugin_id)
     }
 
+    /// # Errors
+    ///
+    /// `id` 为空或 grants 文件持久化失败时返回 `Err(String)`。
     pub fn revoke_directory_plugin_spawn(&self, plugin_id: &str) -> Result<(), String> {
         self.revoke_process_spawn(plugin_id)
     }
 
+    /// # Errors
+    ///
+    /// `id` 为空或 grants 文件持久化失败时返回 `Err(String)`。
     pub fn grant_process_spawn(&self, plugin_id: &str) -> Result<(), String> {
         self.grant_bucket(PROCESS_SPAWN, plugin_id, |f| &mut f.process_spawn)
     }
 
+    /// # Errors
+    ///
+    /// `id` 为空或 grants 文件持久化失败时返回 `Err(String)`。
     pub fn revoke_process_spawn(&self, plugin_id: &str) -> Result<(), String> {
         self.revoke_bucket(plugin_id, |f| &mut f.process_spawn)
     }
 
+    /// # Errors
+    ///
+    /// `id` 为空或 grants 文件持久化失败时返回 `Err(String)`。
     pub fn grant_network(&self, grant_id: &str) -> Result<(), String> {
         self.grant_bucket(NETWORK_WILDCARD, grant_id, |f| &mut f.network)
     }
 
+    /// # Errors
+    ///
+    /// `id` 为空或 grants 文件持久化失败时返回 `Err(String)`。
     pub fn revoke_network(&self, grant_id: &str) -> Result<(), String> {
         self.revoke_bucket(grant_id, |f| &mut f.network)
     }

@@ -198,7 +198,7 @@ fn run_weld_loop(slots: &[&str; 7]) -> Result<Option<Vec<String>>> {
     let out: Vec<String> = slots
         .iter()
         .enumerate()
-        .filter_map(|(i, id)| selected[i].then(|| (*id).to_string()))
+        .filter(|&(i, _id)| selected[i]).map(|(_i, id)| (*id).to_string())
         .collect();
     if out.is_empty() {
         println!("No slots selected; skipping custom weld.");

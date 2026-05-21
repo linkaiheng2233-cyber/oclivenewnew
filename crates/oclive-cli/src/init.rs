@@ -696,15 +696,14 @@ pub fn resolve_init_config(args: &InitArgs, skip_interactive_confirm: bool) -> R
     if cfg.monolith_enabled {
         cfg.monolith_preset = args.monolith_preset.or(args.monolith_bench_preset);
     }
-    if args.monolith_bench_preset.is_some() {
-        if cfg.project_type == ProjectType::KernelServer {
+    if args.monolith_bench_preset.is_some()
+        && cfg.project_type == ProjectType::KernelServer {
             if !cfg.monolith_enabled {
                 cfg.monolith_enabled = true;
             }
             cfg.monolith_preset = cfg.monolith_preset.or(args.monolith_bench_preset);
             cfg.run_monolith_bench_after_init = cfg.monolith_enabled;
         }
-    }
     cfg.factory_template = args.template;
     cfg.with_example_plugin = args.with_example_plugin;
     cfg.role_pack_kind = resolve_role_pack_kind(args);
@@ -769,8 +768,6 @@ pub fn run(args: InitArgs) -> Result<()> {
     if args.dry_run {
         return crate::init_plan::print_dry_run(&cfg, &args);
     }
-
-    let mut cfg = cfg;
 
     if !args.non_interactive {
         cfg.print_summary();

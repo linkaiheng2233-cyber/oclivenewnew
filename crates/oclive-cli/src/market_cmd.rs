@@ -12,7 +12,7 @@ use ratatui::style::{Modifier, Style};
 use ratatui::text::Line;
 use ratatui::widgets::{Block, Borders, List, ListItem, ListState, Paragraph, Wrap};
 use std::io::stdout;
-use std::path::PathBuf;
+use std::path::{Path, PathBuf};
 use std::process::Command;
 
 use crate::market_index::{fetch_market_index, find_item, search_items, MarketKind, MarketItem};
@@ -114,7 +114,7 @@ fn run_install(args: MarketInstallArgs) -> Result<()> {
     Ok(())
 }
 
-pub fn install_item(item: &MarketItem, plugins_dir: &PathBuf, template_out: &PathBuf) -> Result<()> {
+pub fn install_item(item: &MarketItem, plugins_dir: &Path, template_out: &Path) -> Result<()> {
     let kind: MarketKind = item.kind.into();
     match kind {
         MarketKind::Plugin => install_plugin_item(item, plugins_dir),
@@ -123,7 +123,7 @@ pub fn install_item(item: &MarketItem, plugins_dir: &PathBuf, template_out: &Pat
     }
 }
 
-fn install_plugin_item(item: &MarketItem, plugins_dir: &PathBuf) -> Result<()> {
+fn install_plugin_item(item: &MarketItem, plugins_dir: &Path) -> Result<()> {
     if let Some(git) = item.git.as_deref().filter(|s| !s.is_empty()) {
         let dst = plugins_dir.join(&item.id);
         std::fs::create_dir_all(plugins_dir)?;
@@ -148,12 +148,12 @@ fn install_plugin_item(item: &MarketItem, plugins_dir: &PathBuf) -> Result<()> {
     }
     crate::plugin_ext::run_install(PluginInstallArgs {
         id: item.id.clone(),
-        plugins_dir: plugins_dir.clone(),
+        plugins_dir: plugins_dir.to_path_buf(),
         source: None,
     })
 }
 
-fn install_template_item(item: &MarketItem, out: &PathBuf) -> Result<()> {
+fn install_template_item(item: &MarketItem, out: &Path) -> Result<()> {
     if let Some(url) = item.download_url.as_deref().filter(|s| !s.is_empty()) {
         if out.exists() {
             bail!("Output directory already exists: {}", out.display());
@@ -191,7 +191,7 @@ fn install_template_item(item: &MarketItem, out: &PathBuf) -> Result<()> {
     Ok(())
 }
 
-fn install_role_pack_item(item: &MarketItem, out: &PathBuf) -> Result<()> {
+fn install_role_pack_item(item: &MarketItem, out: &Path) -> Result<()> {
     let url = item
         .download_url
         .as_deref()
@@ -257,8 +257,9 @@ fn browse_loop(index: &crate::market_index::MarketIndexFile, args: &MarketBrowse
                     let n = index.items_for_kind(*k).len();
                     let sel = cat_i == i;
                     ListItem::new(Line::from(format!(
-                        "{} ({n})",
-                        k.label()
+                        "{} · {} ({n})",
+                        k.label(),
+                        k.id()
                     )))
                     .style(if sel {
                         Style::default().add_modifier(Modifier::REVERSED)

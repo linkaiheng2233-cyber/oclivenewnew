@@ -13,10 +13,10 @@ pub fn new_remote_fallback_switch(initial: bool) -> Arc<AtomicBool> {
 /// 自数据库读出的原始值 → 是否允许降级（缺省 / 无法解析 → `true`）。
 #[must_use]
 pub fn remote_fallback_from_db_value(raw: Option<String>) -> bool {
-    match raw.as_deref().map(|s| s.trim().to_ascii_lowercase()) {
-        Some(ref s) if matches!(s.as_str(), "0" | "false" | "no" | "off") => false,
-        _ => true,
-    }
+    !matches!(
+        raw.as_deref().map(|s| s.trim().to_ascii_lowercase()),
+        Some(s) if matches!(s.as_str(), "0" | "false" | "no" | "off")
+    )
 }
 
 /// 环境变量覆盖（若设置）：`0`/`false`/`no`/`off` → 不允许降级；`1`/`true`/`yes`/`on` → 允许。

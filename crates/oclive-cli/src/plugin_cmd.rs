@@ -8,6 +8,8 @@ use serde_json::json;
 use std::fs;
 use std::path::PathBuf;
 
+type PluginScaffoldBundle = (String, (&'static str, String), (&'static str, String));
+
 #[derive(Parser, Debug)]
 pub struct PluginCli {
     #[command(subcommand)]
@@ -252,7 +254,7 @@ fn build_directory_plugin(
     provides: &[&str],
     rpc_methods: &[&'static str],
     slots: &[PluginSlotArg],
-) -> Result<(String, (&'static str, String), (&'static str, String))> {
+) -> Result<PluginScaffoldBundle> {
     let provides_json: Vec<&str> = provides.to_vec();
     let rpc_json: Vec<&str> = rpc_methods.to_vec();
     let manifest = json!({
@@ -291,7 +293,7 @@ fn build_remote_plugin(
     provides: &[&str],
     rpc_methods: &[&'static str],
     slots: &[PluginSlotArg],
-) -> Result<(String, (&'static str, String), (&'static str, String))> {
+) -> Result<PluginScaffoldBundle> {
     let manifest = json!({
         "schema_version": 1,
         "id": plugin_id,

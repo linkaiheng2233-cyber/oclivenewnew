@@ -63,7 +63,6 @@ pub struct ApiErrorResponse {
 
 type ApiError = (axum::http::StatusCode, Json<ApiErrorResponse>);
 
-#[must_use]
 fn api_error(status: axum::http::StatusCode, error: KernelErrorBody) -> ApiError {
     (status, Json(ApiErrorResponse { error }))
 }

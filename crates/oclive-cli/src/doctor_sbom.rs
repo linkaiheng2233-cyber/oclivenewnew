@@ -1,19 +1,8 @@
 //! `doctor --sbom` — CycloneDX / SPDX bill of materials via cargo-cyclonedx.
 
 use anyhow::{bail, Result};
-use serde::Serialize;
 use std::path::Path;
 use std::process::Command;
-
-#[derive(Serialize)]
-struct SbomSummary {
-    schema_version: u32,
-    format: String,
-    output: String,
-    dependency_count: Option<u32>,
-    license_buckets: Vec<(String, u32)>,
-    note: String,
-}
 
 pub fn run_sbom(root: &Path, format: &str) -> Result<()> {
     if !root.join("Cargo.toml").is_file() {
@@ -113,6 +102,6 @@ fn license_histogram(root: &Path) -> Vec<(String, u32)> {
         }
     }
     let mut v: Vec<_> = buckets.into_iter().collect();
-    v.sort_by(|a, b| b.1.cmp(&a.1));
+    v.sort_by_key(|b| std::cmp::Reverse(b.1));
     v
 }

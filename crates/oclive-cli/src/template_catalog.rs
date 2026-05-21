@@ -63,8 +63,8 @@ pub const CATALOG: &[TemplateCatalogEntry] = &[
 pub fn print_templates_table() {
     println!("oclive kernel factory templates (--template <id>)\n");
     println!(
-        "{:<16} {:<22} {:<8} {:<8} {:<14} {}",
-        "template", "scene", "preset", "Monolith", "project-type", "default role pack"
+        "{:<16} {:<22} {:<8} {:<8} {:<14} default role pack",
+        "template", "scene", "preset", "Monolith", "project-type"
     );
     println!("{}", "-".repeat(96));
     for e in CATALOG {

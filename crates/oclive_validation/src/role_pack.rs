@@ -315,6 +315,10 @@ pub fn validate_role_pack_loaded(
 }
 
 /// 与 [`validate_role_pack_loaded`] 相同，并支持 `robot-soul` 扩展规则（内存校验无 `core_personality.txt` 路径时仅认七维向量）。
+///
+/// # Errors
+///
+/// manifest/settings/场景/宿主版本或 profile 扩展规则未通过时返回 `Err(Vec<String>)`。
 pub fn validate_role_pack_loaded_with_profile(
     manifest_json: &str,
     settings_json: Option<&str>,
@@ -360,6 +364,10 @@ pub fn validate_role_pack_directory(
 }
 
 /// 与 [`validate_role_pack_directory`] 相同，并支持 `--profile robot-soul` 扩展规则。
+///
+/// # Errors
+///
+/// 缺少文件、读盘失败或校验未通过时返回 `Err(Vec<String>)`。
 pub fn validate_role_pack_directory_with_profile(
     role_dir: &Path,
     host_version: &str,

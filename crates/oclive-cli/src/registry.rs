@@ -1,6 +1,6 @@
 //! 本地内核工程注册表（`~/.oclive/registry.json`）。
 
-use anyhow::{bail, Context, Result};
+use anyhow::{Context, Result};
 use serde::{Deserialize, Serialize};
 use std::fs;
 use std::path::{Path, PathBuf};

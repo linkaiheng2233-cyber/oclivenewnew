@@ -17,6 +17,7 @@ pub struct FavorRelationInput<'a> {
     pub recent_events_for_event: &'a [Event],
 }
 
+#[must_use]
 pub fn compute_favor_and_relation(input: &FavorRelationInput<'_>) -> (f64, RelationState) {
     let confidence_weight = confidence_decay_weight(input.event_confidence);
     let favor_delta_raw = (input.ai_impact_factor_final
