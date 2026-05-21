@@ -51,9 +51,10 @@ impl From<CoPresentError> for AppError {
 
 pub(crate) type CoPresentResult<T> = std::result::Result<T, CoPresentError>;
 
+/// 共景 `crate::map_copresent_err!($stage, $expr)` 已废弃；请写 `crate::map_copresent_err!($stage, $expr)`。
 macro_rules! cp {
     ($e:expr, $stage:literal) => {
-        $e.map_err(|err| CoPresentError::wrap($stage, err))
+        $crate::map_copresent_err!($stage, $e)
     };
 }
 
@@ -76,26 +77,14 @@ pub(crate) async fn process_co_present(
     let pl = state.resolved_plugins_for_session(role, Some(srid));
     let slot_runner = SlotRunner;
 
-    let event_runtime = cp!(
-        state.db_manager.get_event_impact_factor(srid).await,
-        "event_impact_factor"
-    )?
+    let event_runtime = crate::map_copresent_err!("event_impact_factor", state.db_manager.get_event_impact_factor(srid).await)?
     .unwrap_or(role.evolution_config.event_impact_factor);
 
-    let mutable_for_prompt = cp!(
-        state.db_manager.get_mutable_personality(srid).await,
-        "mutable_personality"
-    )?;
+    let mutable_for_prompt = crate::map_copresent_err!("mutable_personality", state.db_manager.get_mutable_personality(srid).await)?;
 
-    let mut personality = cp!(
-        state.get_current_personality(srid, role).await,
-        "current_personality"
-    )?;
+    let mut personality = crate::map_copresent_err!("current_personality", state.get_current_personality(srid, role).await)?;
 
-    let emotion_result = cp!(
-        slot_runner.analyze_emotion(&pl, user_message),
-        "user_emotion_analyze"
-    )?;
+    let emotion_result = crate::map_copresent_err!("user_emotion_analyze", slot_runner.analyze_emotion(&pl, user_message))?;
     crate::domain::debug_trace::emit_step(
         "user_emotion_analyze",
         serde_json::json!({ "text_len": user_message.len() }),
@@ -107,10 +96,7 @@ pub(crate) async fn process_co_present(
         crate::domain::emotion_analyzer::EmotionAnalyzer::format_for_prompt(&emotion_result);
 
     let ollama_model = role.resolve_ollama_model(state.ollama_model.as_str());
-    let (recent_turns, recent_turns_for_event, recent_events_for_event) = cp!(
-        load_recent_context(state, srid).await,
-        "load_recent_context"
-    )?;
+    let (recent_turns, recent_turns_for_event, recent_events_for_event) = crate::map_copresent_err!("load_recent_context", load_recent_context(state, srid).await)?;
     crate::domain::debug_trace::emit_step(
         "load_recent_context",
         serde_json::json!({ "srid": srid, "user_message_len": user_message.len() }),
@@ -123,22 +109,21 @@ pub(crate) async fn process_co_present(
         .map(|(u, b)| (Some(u.clone()), b.clone()))
         .unwrap_or((None, String::new()));
     let (uv, ud) = crate::domain::complex_emotion::affect_metrics_from_seven_dim(&emotion_result);
-    let complex_emotion_out = cp!(
+    let complex_emotion_out = crate::map_copresent_err!("complex_emotion_resolve_turn",
         slot_runner.resolve_complex_emotion(
-            &pl,
-            &crate::domain::complex_emotion::ComplexEmotionInput {
-                role_id: mrid.to_string(),
-                scene_id: scene_id.clone(),
-                user_message: user_message.to_string(),
-                bot_reply: prev_bot_for_ce,
-                recent_dialogue_summary: None,
-                previous_narrative_hint: prev_stored_narrative_hint.clone(),
-                user_valence: Some(uv),
-                user_dominance: Some(ud),
-                previous_user_message: prev_user_for_ce,
-            },
-        ),
-        "complex_emotion_resolve_turn"
+                    &pl,
+                    &crate::domain::complex_emotion::ComplexEmotionInput {
+                        role_id: mrid.to_string(),
+                        scene_id: scene_id.clone(),
+                        user_message: user_message.to_string(),
+                        bot_reply: prev_bot_for_ce,
+                        recent_dialogue_summary: None,
+                        previous_narrative_hint: prev_stored_narrative_hint.clone(),
+                        user_valence: Some(uv),
+                        user_dominance: Some(ud),
+                        previous_user_message: prev_user_for_ce,
+                    },
+                )
     )?;
 
     if role.evolution_config.personality_source != PersonalitySource::Profile {
@@ -163,20 +148,19 @@ pub(crate) async fn process_co_present(
         }
     };
 
-    let estimate = cp!(
+    let estimate = crate::map_copresent_err!("event_estimate",
         slot_runner.estimate_event(
-            &pl,
-            ollama_model.as_str(),
-            user_message,
-            &user_emotion,
-            &personality,
-            role.evolution_config.personality_source,
-            &recent_turns_for_event,
-            &recent_events_for_event,
-            knowledge_augment_opt.as_ref(),
-        )
-        .await,
-        "event_estimate"
+                    &pl,
+                    ollama_model.as_str(),
+                    user_message,
+                    &user_emotion,
+                    &personality,
+                    role.evolution_config.personality_source,
+                    &recent_turns_for_event,
+                    &recent_events_for_event,
+                    knowledge_augment_opt.as_ref(),
+                )
+                .await
     )?;
     crate::domain::debug_trace::emit_step(
         "event_estimate",
@@ -199,27 +183,23 @@ pub(crate) async fn process_co_present(
         );
     }
 
-    let mut memories = cp!(
-        state.memory_repo.load_memories(srid, 10).await,
-        "load_memories"
-    )?;
+    let mut memories = crate::map_copresent_err!("load_memories", state.memory_repo.load_memories(srid, 10).await)?;
     let scene_m = role
         .memory_config
         .as_ref()
         .map(|m| m.scene_weight_multiplier)
         .unwrap_or(1.0);
     weight_memories_for_scene(&mut memories, scene_id.as_str(), scene_m);
-    let mut relevant = cp!(
+    let mut relevant = crate::map_copresent_err!("memory_rank",
         slot_runner.rank_memories(
-            &pl,
-            MemoryRetrievalInput {
-                memories: &memories,
-                user_query: user_message,
-                scene_id: Some(scene_id.as_str()),
-                limit: 8,
-            },
-        ),
-        "memory_rank"
+                    &pl,
+                    MemoryRetrievalInput {
+                        memories: &memories,
+                        user_query: user_message,
+                        scene_id: Some(scene_id.as_str()),
+                        limit: 8,
+                    },
+                )
     )?;
     crate::domain::debug_trace::emit_step(
         "memory_rank",
@@ -227,40 +207,31 @@ pub(crate) async fn process_co_present(
         serde_json::json!({ "ranked": relevant.len() }),
     );
 
-    let user_relation_key: String = cp!(
-        resolve_effective_user_relation_key(state, role, srid, Some(scene_id.as_str())).await,
-        "resolve_user_relation_key"
-    )?;
+    let user_relation_key: String = crate::map_copresent_err!("resolve_user_relation_key", resolve_effective_user_relation_key(state, role, srid, Some(scene_id.as_str())).await)?;
     let rf = relation_favor_for_key(role, user_relation_key.as_str());
 
-    let rel_id = cp!(
+    let rel_id = crate::map_copresent_err!("relation_state_for_identity",
         state
-            .db_manager
-            .get_relation_state_for_identity(srid, user_relation_key.as_str())
-            .await,
-        "relation_state_for_identity"
+                    .db_manager
+                    .get_relation_state_for_identity(srid, user_relation_key.as_str())
+                    .await
     )?;
-    let rel_global = cp!(
-        state.db_manager.get_relation_state(srid).await,
-        "relation_state_global"
-    )?;
+    let rel_global = crate::map_copresent_err!("relation_state_global", state.db_manager.get_relation_state(srid).await)?;
     let relation_before = rel_id
         .or(rel_global)
         .unwrap_or_else(|| "Stranger".to_string());
     let seed_favor = role.initial_favorability_for_relation(user_relation_key.as_str());
-    cp!(
+    crate::map_copresent_err!("ensure_identity_stats_row",
         state
-            .db_manager
-            .ensure_identity_stats_row(srid, user_relation_key.as_str(), seed_favor)
-            .await,
-        "ensure_identity_stats_row"
+                    .db_manager
+                    .ensure_identity_stats_row(srid, user_relation_key.as_str(), seed_favor)
+                    .await
     )?;
-    let favorability_before = cp!(
+    let favorability_before = crate::map_copresent_err!("favorability_for_identity",
         state
-            .db_manager
-            .favorability_for_identity_with_runtime_fallback(srid, user_relation_key.as_str())
-            .await,
-        "favorability_for_identity"
+                    .db_manager
+                    .favorability_for_identity_with_runtime_fallback(srid, user_relation_key.as_str())
+                    .await
     )?;
     let event_confidence = ai_event_confidence;
     let favor_relation_input = FavorRelationInput {
@@ -284,10 +255,7 @@ pub(crate) async fn process_co_present(
         .map(|t| format!("在「{}」下，你们可能会多聊「{}」相关的事。", scene_label, t))
         .unwrap_or_default();
 
-    let virtual_time_ms = cp!(
-        state.db_manager.get_virtual_time_ms(srid).await,
-        "virtual_time_ms"
-    )?
+    let virtual_time_ms = crate::map_copresent_err!("virtual_time_ms", state.db_manager.get_virtual_time_ms(srid).await)?
     .unwrap_or(0);
     let life_context_line: String = if immersive {
         role.life_schedule
@@ -305,34 +273,33 @@ pub(crate) async fn process_co_present(
         KnowledgeIndex::format_for_prompt(knowledge_chunks.as_slice(), 6000)
     };
 
-    let prompt = cp!(
+    let prompt = crate::map_copresent_err!("build_prompt",
         slot_runner.build_prompt(
-            &pl,
-            &PromptInput {
-                role,
-                personality: &personality,
-                memories: &relevant,
-                user_input: user_message,
-                user_emotion: user_emotion_prompt.as_str(),
-                user_relation_id: user_relation_key.as_str(),
-                relation_hint: rf.relation_hint,
-                relation_before: relation_before.as_str(),
-                favorability_before,
-                relation_preview: relation_after.as_str(),
-                favorability_preview: (favorability_before + favor_delta).clamp(0.0, 100.0),
-                event_type: &ai_event_type,
-                impact_factor: ai_impact_factor_final,
-                scene_label: &scene_label,
-                scene_detail: scene_detail_buf.as_str(),
-                topic_hint_line: &topic_line,
-                life_context_line: life_context_line.as_str(),
-                worldview_snippet: worldview_snippet.as_str(),
-                mutable_personality: mutable_for_prompt.as_str(),
-                reply_quality_anchor: effective_reply_quality_anchor(role),
-                previous_complex_emotion_narrative_hint: prev_stored_narrative_hint.as_str(),
-            },
-        ),
-        "build_prompt"
+                    &pl,
+                    &PromptInput {
+                        role,
+                        personality: &personality,
+                        memories: &relevant,
+                        user_input: user_message,
+                        user_emotion: user_emotion_prompt.as_str(),
+                        user_relation_id: user_relation_key.as_str(),
+                        relation_hint: rf.relation_hint,
+                        relation_before: relation_before.as_str(),
+                        favorability_before,
+                        relation_preview: relation_after.as_str(),
+                        favorability_preview: (favorability_before + favor_delta).clamp(0.0, 100.0),
+                        event_type: &ai_event_type,
+                        impact_factor: ai_impact_factor_final,
+                        scene_label: &scene_label,
+                        scene_detail: scene_detail_buf.as_str(),
+                        topic_hint_line: &topic_line,
+                        life_context_line: life_context_line.as_str(),
+                        worldview_snippet: worldview_snippet.as_str(),
+                        mutable_personality: mutable_for_prompt.as_str(),
+                        reply_quality_anchor: effective_reply_quality_anchor(role),
+                        previous_complex_emotion_narrative_hint: prev_stored_narrative_hint.as_str(),
+                    },
+                )
     )?;
     crate::domain::debug_trace::emit_step(
         "build_prompt",
@@ -378,19 +345,13 @@ pub(crate) async fn process_co_present(
         ai_impact_factor_final,
         relation_after.as_str(),
     ));
-    let bot_emotion_result = cp!(
-        slot_runner.analyze_emotion(&pl, &reply),
-        "bot_reply_emotion_analyze"
-    )?;
+    let bot_emotion_result = crate::map_copresent_err!("bot_reply_emotion_analyze", slot_runner.analyze_emotion(&pl, &reply))?;
     crate::domain::debug_trace::emit_step(
         "postprocess",
         serde_json::json!({ "reply_len": reply.len() }),
         serde_json::json!({ "bot_emotion": format!("{:?}", bot_emotion_result.to_emotion()) }),
     );
-    let previous_emotion = cp!(
-        state.db_manager.get_current_emotion(srid).await,
-        "get_current_emotion"
-    )?;
+    let previous_emotion = crate::map_copresent_err!("get_current_emotion", state.db_manager.get_current_emotion(srid).await)?;
     let bot_emotion = policies
         .emotion
         .resolve_current_emotion(previous_emotion.as_deref(), &bot_emotion_result);
@@ -436,46 +397,44 @@ pub(crate) async fn process_co_present(
     let mut recent_events = recent_events_for_event;
     recent_events.insert(0, event.clone());
     let core_v = PersonalityVector::from(&role.default_personality);
-    let portrait_emotion_str = cp!(
+    let portrait_emotion_str = crate::map_copresent_err!("portrait_emotion_llm",
         resolve_portrait_emotion(
-            &slot_runner.primary_llm(&pl),
-            ollama_model.as_str(),
-            role,
-            &core_v,
-            &personality,
-            favorability_before,
-            user_message,
-            &reply,
-            user_emotion_str.as_str(),
-            &bot_emotion,
-            &recent_events,
-            &recent_turns,
-        )
-        .await,
-        "portrait_emotion_llm"
+                    &slot_runner.primary_llm(&pl),
+                    ollama_model.as_str(),
+                    role,
+                    &core_v,
+                    &personality,
+                    favorability_before,
+                    user_message,
+                    &reply,
+                    user_emotion_str.as_str(),
+                    &bot_emotion,
+                    &recent_events,
+                    &recent_turns,
+                )
+                .await
     )?;
 
-    let favor_current = cp!(
+    let favor_current = crate::map_copresent_err!("apply_chat_turn_atomic",
         state
-            .db_manager
-            .apply_chat_turn_atomic(crate::infrastructure::db::ChatTurnTxInput {
-                role_id: srid,
-                personality: &personality,
-                // 与用户可见语气一致：用语义情绪驱动立绘/状态；立绘 LLM 细调仍通过返回值 portrait_emotion 下发前端
-                current_emotion: bot_emotion_str.as_str(),
-                relation_state: relation_after.as_str(),
-                user_relation_key: user_relation_key.as_str(),
-                favor_delta,
-                memory_content: &memory_line,
-                memory_importance,
-                memory_fifo_limit: policies.memory.fifo_limit(),
-                event: &event,
-                user_message,
-                bot_reply: &reply,
-                scene_id: scene_id.as_str(),
-            })
-            .await,
-        "apply_chat_turn_atomic"
+                    .db_manager
+                    .apply_chat_turn_atomic(crate::infrastructure::db::ChatTurnTxInput {
+                        role_id: srid,
+                        personality: &personality,
+                        // 与用户可见语气一致：用语义情绪驱动立绘/状态；立绘 LLM 细调仍通过返回值 portrait_emotion 下发前端
+                        current_emotion: bot_emotion_str.as_str(),
+                        relation_state: relation_after.as_str(),
+                        user_relation_key: user_relation_key.as_str(),
+                        favor_delta,
+                        memory_content: &memory_line,
+                        memory_importance,
+                        memory_fifo_limit: policies.memory.fifo_limit(),
+                        event: &event,
+                        user_message,
+                        bot_reply: &reply,
+                        scene_id: scene_id.as_str(),
+                    })
+                    .await
     )?;
 
     state.set_stored_complex_emotion_narrative_hint(
@@ -484,10 +443,7 @@ pub(crate) async fn process_co_present(
     );
 
     if role.evolution_config.personality_source == PersonalitySource::Profile {
-        let prev = cp!(
-            state.db_manager.get_mutable_personality(srid).await,
-            "get_mutable_personality"
-        )?;
+        let prev = crate::map_copresent_err!("get_mutable_personality", state.db_manager.get_mutable_personality(srid).await)?;
         let impact_scaled = (ai_impact_factor_final * event_runtime).clamp(-1.0, 1.0);
         let next = match crate::domain::mutable_profile_llm::evolve_mutable_personality_with_llm(
             &slot_runner.primary_llm(&pl),
@@ -517,23 +473,19 @@ pub(crate) async fn process_co_present(
                 prev.clone()
             }
         };
-        cp!(
-            state.db_manager.set_mutable_personality(srid, &next).await,
-            "set_mutable_personality"
-        )?;
+        crate::map_copresent_err!("set_mutable_personality", state.db_manager.set_mutable_personality(srid, &next).await)?;
         let personality_after =
             crate::domain::profile_personality::effective_vector_from_profile(role, &next);
         let delta_out = PersonalityVector::sub_components(&personality_after, &core_v);
-        cp!(
+        crate::map_copresent_err!("set_core_delta_personality_json_profile",
             state
-                .db_manager
-                .set_core_delta_personality_json(
-                    srid,
-                    &core_v.to_json_vec(),
-                    &delta_out.to_json_vec()
-                )
-                .await,
-            "set_core_delta_personality_json_profile"
+                            .db_manager
+                            .set_core_delta_personality_json(
+                                srid,
+                                &core_v.to_json_vec(),
+                                &delta_out.to_json_vec()
+                            )
+                            .await
         )?;
         state
             .personality_cache
@@ -541,16 +493,15 @@ pub(crate) async fn process_co_present(
             .insert(srid.to_string(), personality_after);
     } else {
         let delta_out = PersonalityVector::sub_components(&personality, &core_v);
-        cp!(
+        crate::map_copresent_err!("set_core_delta_personality_json_non_profile",
             state
-                .db_manager
-                .set_core_delta_personality_json(
-                    srid,
-                    &core_v.to_json_vec(),
-                    &delta_out.to_json_vec()
-                )
-                .await,
-            "set_core_delta_personality_json_non_profile"
+                            .db_manager
+                            .set_core_delta_personality_json(
+                                srid,
+                                &core_v.to_json_vec(),
+                                &delta_out.to_json_vec()
+                            )
+                            .await
         )?;
         state
             .personality_cache

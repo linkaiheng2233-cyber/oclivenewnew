@@ -134,9 +134,7 @@ impl BackendRegistry {
         &self,
         server_id: &str,
     ) -> std::result::Result<Vec<crate::infrastructure::mcp_client::McpToolManifest>, String> {
-        self.agent_builtin
-            .list_mcp_tools(server_id)
-            .map_err(|e| e.to_frontend_error())
+        crate::map_frontend_err!(self.agent_builtin.list_mcp_tools(server_id))
     }
 
     fn call_mcp_tool(
@@ -145,9 +143,7 @@ impl BackendRegistry {
         tool_name: &str,
         params: Value,
     ) -> std::result::Result<McpToolCallResult, String> {
-        self.agent_builtin
-            .call_tool_direct(server_id, tool_name, params)
-            .map_err(|e| e.to_frontend_error())
+        crate::map_frontend_err!(self.agent_builtin.call_tool_direct(server_id, tool_name, params))
     }
 
     fn recent_agent_traces(&self) -> Vec<AgentDebugTrace> {
@@ -569,10 +565,7 @@ impl BackendRegistry {
         &self,
         descriptor: LocalPluginProviderDescriptor,
     ) -> Result<(), PluginHostError> {
-        self.local_plugins
-            .write()
-            .register_provider(descriptor)
-            .map_err(PluginHostError::from)
+        crate::map_plugin_err!(self.local_plugins.write().register_provider(descriptor))
     }
 
     #[must_use]

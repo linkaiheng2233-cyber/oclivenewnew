@@ -45,3 +45,29 @@ macro_rules! map_err_unknown {
         $expr.map_err(|e| $crate::domain::error_helpers::serde_to_unknown($ctx, e))
     };
 }
+
+/// 共景阶段错误：`AppError` → [`CoPresentError::wrap`].
+#[macro_export]
+macro_rules! map_copresent_err {
+    ($stage:literal, $expr:expr) => {
+        $expr.map_err(|err| {
+            $crate::domain::chat_engine::co_present::CoPresentError::wrap($stage, err)
+        })
+    };
+}
+
+/// 插件宿主注册错误：`String` / `Display` → [`PluginHostError`].
+#[macro_export]
+macro_rules! map_plugin_err {
+    ($expr:expr) => {
+        $expr.map_err($crate::domain::plugin_host::PluginHostError::from)
+    };
+}
+
+/// Tauri 命令边界：`AppError` → 前端可读 `String`（`KernelErrorBody` JSON）。
+#[macro_export]
+macro_rules! map_frontend_err {
+    ($expr:expr) => {
+        $expr.map_err(|e| e.to_frontend_error())
+    };
+}
