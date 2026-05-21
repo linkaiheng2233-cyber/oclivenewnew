@@ -28,15 +28,6 @@ pub fn load_auth() -> Result<Option<RegistryAuth>> {
     Ok(Some(serde_json::from_str(&raw).context("parse auth.json")?))
 }
 
-pub fn save_auth(auth: &RegistryAuth) -> Result<()> {
-    let p = auth_path();
-    if let Some(parent) = p.parent() {
-        fs::create_dir_all(parent)?;
-    }
-    fs::write(&p, serde_json::to_string_pretty(auth)?).context("write auth.json")?;
-    Ok(())
-}
-
 pub fn registry_base_url() -> Result<String> {
     if let Some(u) = crate::config::resolve("OCLIVE_REGISTRY_URL", None) {
         return Ok(u.trim().trim_end_matches('/').to_string());
@@ -44,7 +35,10 @@ pub fn registry_base_url() -> Result<String> {
     if let Some(a) = load_auth()? {
         return Ok(a.registry_url.trim_end_matches('/').to_string());
     }
-    bail!("Cloud registry not configured: run `oclive registry login <url> <token>` or `oclive config set OCLIVE_REGISTRY_URL <url>`")
+    bail!(
+        "Cloud registry not configured: `oclive config set OCLIVE_REGISTRY_URL <url> --global` \
+         and `oclive config set OCLIVE_REGISTRY_TOKEN <token> --global`"
+    )
 }
 
 fn bearer_token() -> Result<String> {
@@ -100,27 +94,6 @@ struct RemoteProject {
 struct RemoteList {
     #[serde(default)]
     projects: Vec<RemoteProject>,
-}
-
-pub fn run_login(args: RegistryLoginArgs) -> Result<()> {
-    eprintln!(
-        "⚠ [deprecated] `oclive registry login` — use:\n  \
-         oclive config set OCLIVE_REGISTRY_URL <url> --global\n  \
-         oclive config set OCLIVE_REGISTRY_TOKEN <token> --global"
-    );
-    let url = args.url.trim().trim_end_matches('/').to_string();
-    let token = args.token.trim().to_string();
-    let cfg_url = crate::config::set_key("OCLIVE_REGISTRY_URL", &url, true, None)?;
-    let cfg_token = crate::config::set_key("OCLIVE_REGISTRY_TOKEN", &token, true, None)?;
-    // 兼容仍读取 auth.json 的旧脚本
-    save_auth(&RegistryAuth {
-        registry_url: url.clone(),
-        token: token.clone(),
-    })?;
-    println!("Wrote config: {}", cfg_url.display());
-    println!("Wrote config: {}", cfg_token.display());
-    println!("(compat) auth.json: {}", auth_path().display());
-    Ok(())
 }
 
 pub fn run_logout() -> Result<()> {

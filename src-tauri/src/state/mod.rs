@@ -1,4 +1,5 @@
 use crate::domain::plugin_host::{PluginHost, ResolvedRolePlugins};
+use crate::domain::ports::PluginHostPort;
 use crate::domain::repository::{FavorabilityRepository, MemoryRepository};
 use crate::domain::{
     DefaultEmotionPolicy, DefaultEventPolicy, DefaultMemoryPolicy, EmotionPolicy,
@@ -699,9 +700,14 @@ impl AppState {
         Ok(effective)
     }
 
+    #[must_use]
+    pub fn plugin_host_port(&self) -> &dyn PluginHostPort {
+        &self.plugins
+    }
+
     /// 单次对话内优先调用本方法一次，再复用返回的 `memory` / `emotion` / `event` / `prompt` / `llm`，避免重复解析后端枚举。
     pub fn resolved_plugins_for(&self, role: &Role) -> ResolvedRolePlugins {
-        self.plugins.resolve_for_role(role)
+        self.plugin_host_port().resolve_for_role(role)
     }
 
     /// 会话级后端解析：effective `slot_registry` 折叠六槽 + 实例键/六槽覆盖后再绑定实现。
@@ -711,12 +717,12 @@ impl AppState {
         session_namespace: Option<&str>,
     ) -> ResolvedRolePlugins {
         let Some(ns) = session_namespace.map(str::trim).filter(|s| !s.is_empty()) else {
-            return self.plugins.resolve_for_role(role);
+            return self.plugin_host_port().resolve_for_role(role);
         };
         let effective = self.effective_plugin_backends_for_session(role, ns);
         let slot_reg = self.effective_slot_registry_for_session(role, ns);
         let ov = self.session_backend_override(ns);
-        self.plugins
+        self.plugin_host_port()
             .resolve_for_effective_backends(&effective, slot_reg.as_ref(), ov.as_ref())
     }
 

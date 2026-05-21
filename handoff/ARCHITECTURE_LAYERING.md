@@ -17,6 +17,17 @@
 - **`module_relations`**：禁止写入 `pipeline.ocblueprint`（`oclive_validation`）；架构图边由前端 `buildBlueprintEdges(slot_registry)` **只读派生**，无 Rust/磁盘直写路径。
 - **`api/`**：无 `domain` → `api` 引用。
 
+## 深化加固（2026-05 第二批）
+
+| 项 | 状态 |
+|----|------|
+| Remote HTTP 统一 `RemoteHttpClientBlocking` / `RemoteHttpClientAsync` | 已落实 |
+| `domain/error_helpers` 错误映射辅助 | 已落实 |
+| `PluginHostPort` + `AppState::plugin_host_port` | 已落实 |
+| CLI 废弃别名移除（见 `crates/oclive-cli/DEPRECATED_COMMANDS.md`） | 已落实 |
+| `cargo udeps` 全 workspace | 需 **nightly**（本机 stable 未跑通）；依赖手工审阅 |
+| 前端 `depcheck` | 见当次提交说明 |
+
 ## 已知适配层（后续可拆）
 
 以下 **`domain` 仍引用 `infrastructure` 具体类型**（插件宿主、Remote HTTP、目录子进程、高风险授权等），属于 **防腐层未完全抽出** 的技术债；新代码应优先扩展 `domain` 内已有 trait（`MemoryRetrieval`、`PluginHost` 解析接口等），避免新增 `domain → infrastructure` 依赖：

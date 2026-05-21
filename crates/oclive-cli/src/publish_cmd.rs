@@ -54,15 +54,6 @@ const EXCLUDE_DIRS: &[&str] = &[
 
 const EXCLUDE_FILES: &[&str] = &["bench_history.json", ".oclive-compose.pids.json"];
 
-pub fn run(args: PublishArgs) -> Result<()> {
-    eprintln!(
-        "⚠ [deprecated] `oclive publish` — use `oclive template pack` (top-level publish will be removed in a future major)"
-    );
-    match args.r#type {
-        PublishTypeArg::Template => publish_template(&args),
-    }
-}
-
 /// `oclive template pack`：将工程打包为 `.oclive-template.tar.gz`。
 pub fn run_template_pack(path: PathBuf, output: Option<PathBuf>) -> Result<()> {
     publish_template(&PublishArgs {

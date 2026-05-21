@@ -1,4 +1,4 @@
-//! 插件 install / test / search / update / uninstall。
+//! 插件 install / test / uninstall。
 
 use anyhow::{bail, Context, Result};
 use clap::Parser;
@@ -32,20 +32,6 @@ pub struct PluginTestArgs {
     #[arg(long)]
     pub json: bool,
 }
-
-#[derive(Parser, Debug)]
-pub struct PluginSearchArgs {
-    pub keyword: String,
-}
-
-#[derive(Parser, Debug)]
-pub struct PluginUpdateArgs {
-    pub id: String,
-    #[arg(short = 'o', long, default_value = "./plugins")]
-    pub plugins_dir: PathBuf,
-}
-
-use crate::market_index::{fetch_market_index, MarketKindSerde};
 
 pub fn run_install(args: PluginInstallArgs) -> Result<()> {
     let plugins_dir = args.plugins_dir.canonicalize().unwrap_or(args.plugins_dir);
@@ -159,56 +145,6 @@ pub fn run_test(args: PluginTestArgs) -> Result<()> {
         let mark = if r.ok { "✅" } else { "❌" };
         println!("  {mark} {} — {}", r.method, r.detail);
     }
-    Ok(())
-}
-
-/// 从 `OCLIVE_PLUGIN_INDEX_URL` 拉取索引并按关键词过滤。
-pub fn run_search(args: PluginSearchArgs) -> Result<()> {
-    eprintln!(
-        "⚠ [deprecated] `oclive plugin search` — use `oclive market search \"{}\"`",
-        args.keyword
-    );
-    let index = fetch_market_index()?;
-    let hits: Vec<_> = crate::market_index::search_items(&index, &args.keyword)
-        .into_iter()
-        .filter(|p| matches!(p.kind, MarketKindSerde::Plugin))
-        .collect();
-    if hits.is_empty() {
-        println!("(no matches)");
-        return Ok(());
-    }
-    for p in hits {
-        println!("{} v{} — {} — {}", p.id, p.version, p.author, p.description);
-    }
-    Ok(())
-}
-
-/// 对比索引版本并覆盖安装插件目录。
-pub fn run_update(args: PluginUpdateArgs) -> Result<()> {
-    eprintln!(
-        "⚠ [deprecated] `oclive plugin update` — use `oclive market install {}` for the latest version",
-        args.id
-    );
-    let plugins_dir = args.plugins_dir.canonicalize().unwrap_or(args.plugins_dir);
-    let local = plugins_dir.join(&args.id).join("manifest.json");
-    if !local.is_file() {
-        bail!("Not installed: {}", args.id);
-    }
-    let index = fetch_market_index()?;
-    let remote = index.plugins.iter().find(|p| p.id == args.id);
-    let Some(remote) = remote else {
-        bail!("Not in index: {}", args.id);
-    };
-    let local_v: Value = serde_json::from_str(&fs::read_to_string(&local)?)?;
-    let cur = local_v["version"].as_str().unwrap_or("0.0.0");
-    if cur == remote.version {
-        println!("{} is up to date ({})", args.id, cur);
-        return Ok(());
-    }
-    println!(
-        "New version available {} → {} (download from index URL and re-run install)",
-        cur, remote.version
-    );
     Ok(())
 }
 

@@ -3,5 +3,7 @@
 //! 具体适配器（Ollama、Remote HTTP、目录插件等）在 `infrastructure/` 实现这些 trait。
 
 pub mod llm;
+pub mod plugin_host;
 
 pub use llm::LlmClient;
+pub use plugin_host::PluginHostPort;
