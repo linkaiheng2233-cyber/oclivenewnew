@@ -1,4 +1,7 @@
 //! 角色 API：清单加载、运行时快照、身份与进化系数等 Tauri 命令。
+//!
+//! 蓝图 v2 写盘走 [`save_role_slot_registry`]；**无**仅写 `manifest.json`/`settings.json`
+//! `plugin_backends` 的遗留 Tauri 命令（旧包仅 [`RoleStorage::load_role_from_legacy_manifest_dir`] 只读兼容）。
 
 mod display;
 mod interaction;

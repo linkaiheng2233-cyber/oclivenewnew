@@ -625,27 +625,6 @@ impl RoleStorage {
     /// # Errors
     ///
     /// Returns [`Err`] with a human-readable message when the operation fails.
-    /// 保存角色配置：写入 `manifest.json`（展示与关系等）与 `settings.json`（引擎字段）。
-    pub fn save_role_manifest(&self, role: &Role) -> Result<()> {
-        let role_dir = self.roles_dir.join(&role.id);
-        fs::create_dir_all(&role_dir).map_err(AppError::IoError)?;
-
-        let disk = disk_manifest_from_role(role);
-        let manifest_path = role_dir.join("manifest.json");
-        let json = serde_json::to_string_pretty(&disk).map_err(AppError::SerializationError)?;
-        fs::write(&manifest_path, json).map_err(AppError::IoError)?;
-
-        let settings = disk_role_settings_from_role(role);
-        let settings_path = role_dir.join("settings.json");
-        let settings_json =
-            serde_json::to_string_pretty(&settings).map_err(AppError::SerializationError)?;
-        fs::write(&settings_path, settings_json).map_err(AppError::IoError)?;
-
-        Ok(())
-    }
-    /// # Errors
-    ///
-    /// Returns [`Err`] with a human-readable message when the operation fails.
     /// 保存核心人设（仅创作者可改）
     pub fn save_core_personality(&self, role_id: &str, content: &str) -> Result<()> {
         let role_dir = self.roles_dir.join(role_id);
@@ -772,9 +751,16 @@ mod tests {
             slot_registry: None,
         };
 
-        storage.save_role_manifest(&role).unwrap();
+        let role_dir = temp_dir.path().join("test_role");
+        fs::create_dir_all(&role_dir).unwrap();
+        let manifest_json =
+            serde_json::to_string_pretty(&disk_manifest_from_role(&role)).unwrap();
+        fs::write(role_dir.join("manifest.json"), manifest_json).unwrap();
+        let settings_json =
+            serde_json::to_string_pretty(&disk_role_settings_from_role(&role)).unwrap();
+        fs::write(role_dir.join("settings.json"), settings_json).unwrap();
 
-        let settings_path = temp_dir.path().join("test_role").join("settings.json");
+        let settings_path = role_dir.join("settings.json");
         assert!(settings_path.exists());
 
         let loaded_role = storage.load_role("test_role").unwrap();
