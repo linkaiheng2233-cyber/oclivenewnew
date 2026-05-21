@@ -2,13 +2,20 @@
 import { computed, onMounted, ref, watch } from "vue";
 import { useI18n } from "vue-i18n";
 import { useGraphCanvas } from "../composables/useGraphCanvas";
+import { useGraphNodeLayout } from "../composables/useGraphNodeLayout";
 import {
   BACKEND_COLORS,
-  bezierPath,
   edgeDash,
   normalizeBackendKind,
   type BackendKind,
 } from "../lib/graphEditorTheme";
+import {
+  hubToNodeEdge,
+  layoutOnRing,
+  nodeToPluginEdge,
+  pointOnRay,
+  radialQuadraticPath,
+} from "../lib/radialGraphLayout";
 import { useRoleStore } from "../stores/roleStore";
 import { usePluginStore } from "../stores/pluginStore";
 import { useAppToast } from "../composables/useAppToast";
@@ -19,12 +26,18 @@ const emit = defineEmits<{
   "focus-plugin": [pluginId: string];
 }>();
 
-const WORLD_W = 1180;
-const WORLD_H = 560;
-const NODE_W = 228;
-const NODE_H = 112;
-const PLUGIN_W = 188;
-const PLUGIN_H = 72;
+const WORLD_W = 1040;
+const WORLD_H = 720;
+const NODE_W = 212;
+const NODE_H = 108;
+const PLUGIN_W = 176;
+const PLUGIN_H = 68;
+const MODULE_RING = 248;
+const PLUGIN_ORBIT_FROM_MODULE = 96;
+const BUS_W = 236;
+const BUS_H = 82;
+const BUS_ID = "__facility_bus__";
+const COMPLEX_ID = "__complex_emotion__";
 
 const roleStore = useRoleStore();
 const pluginStore = usePluginStore();
@@ -44,16 +57,30 @@ const {
   fitWorld,
   focusPoint,
   onWheel,
+  scale,
   onPointerDown,
   onPointerMove,
   onPointerUp,
 } = useGraphCanvas({ worldWidth: WORLD_W, worldHeight: WORLD_H });
 
+const {
+  offsets: nodeOffsets,
+  save: persistNodeOffsetsFromStore,
+  reset: resetNodeLayoutStore,
+  load: loadNodeOffsetsFromStore,
+} = useGraphNodeLayout();
+
 const busy = ref(false);
+const draggingNode = ref<{
+  id: string;
+  startX: number;
+  startY: number;
+  origDx: number;
+  origDy: number;
+} | null>(null);
 const selectedModule = ref<string | null>(null);
 const hoveredModule = ref<string | null>(null);
 const expandedPlugins = ref<Record<string, boolean>>({});
-const switchOpen = ref<string | null>(null);
 const ctxMenu = ref<{ x: number; y: number; pluginId: string } | null>(null);
 
 type CoreModule = "memory" | "emotion" | "event" | "prompt" | "llm" | "agent";
@@ -72,7 +99,7 @@ const coreModules: {
   { key: "agent", labelKey: "pluginWorkbench.graph.agent", icon: "🛠", options: ["builtin", "remote", "directory"] },
 ];
 
-const KERNEL = { cx: 150, cy: 280, r: 56 };
+const KERNEL = { cx: WORLD_W / 2, cy: WORLD_H / 2 - 8, r: 62 };
 
 const pluginBackends = computed(() => roleStore.roleInfo.pluginBackends);
 const pluginBackendsEffective = computed(() => roleStore.roleInfo.pluginBackendsEffective);
@@ -84,19 +111,71 @@ type SlotLayout = {
   key: CoreModule;
   x: number;
   y: number;
+  cx: number;
+  cy: number;
+  angle: number;
   labelKey: string;
   icon: string;
   options: string[];
 };
 
-const slotLayouts = computed<SlotLayout[]>(() => {
-  const colX = [468, 708];
-  const rowY = [32, 132, 232];
-  return coreModules.map((m, i) => ({
-    ...m,
-    x: colX[Math.floor(i / 3)] ?? colX[0]!,
-    y: rowY[i % 3] ?? 32,
-  }));
+const facilityBusBase = {
+  x: KERNEL.cx - BUS_W / 2,
+  y: KERNEL.cy - 24,
+  cx: KERNEL.cx,
+  cy: KERNEL.cy + 14,
+  w: BUS_W,
+  h: BUS_H,
+  r: 40,
+};
+
+const facilityBus = computed(() => {
+  const o = nodeOffsets.value[BUS_ID] ?? { dx: 0, dy: 0 };
+  return {
+    ...facilityBusBase,
+    x: facilityBusBase.x + o.dx,
+    y: facilityBusBase.y + o.dy,
+    cx: facilityBusBase.cx + o.dx,
+    cy: facilityBusBase.cy + o.dy,
+  };
+});
+
+const slotLayouts = computed<SlotLayout[]>(() =>
+  coreModules.map((m, i) => {
+    const ring = layoutOnRing(
+      KERNEL.cx,
+      KERNEL.cy,
+      MODULE_RING,
+      i,
+      coreModules.length,
+      NODE_W,
+      NODE_H,
+    );
+    const o = nodeOffsets.value[m.key] ?? { dx: 0, dy: 0 };
+    return {
+      ...m,
+      x: ring.x + o.dx,
+      y: ring.y + o.dy,
+      cx: ring.cx + o.dx,
+      cy: ring.cy + o.dy,
+      angle: ring.angle,
+    };
+  }),
+);
+
+const complexLayout = computed(() => {
+  const angle = Math.PI / 2 + 0.22;
+  const cx0 = KERNEL.cx + Math.cos(angle) * (MODULE_RING - 24);
+  const cy0 = KERNEL.cy + Math.sin(angle) * (MODULE_RING - 24);
+  const o = nodeOffsets.value[COMPLEX_ID] ?? { dx: 0, dy: 0 };
+  return {
+    x: cx0 - 100 + o.dx,
+    y: cy0 - NODE_H / 2 + o.dy,
+    cx: cx0 + o.dx,
+    cy: cy0 + o.dy,
+    angle,
+    w: 200,
+  };
 });
 
 function effectiveBackend(key: CoreModule): string {
@@ -140,6 +219,42 @@ function hiddenPluginCount(key: CoreModule): number {
   return Math.max(0, all.length - 1);
 }
 
+type PluginLayout = {
+  pid: string;
+  moduleKey: CoreModule;
+  x: number;
+  y: number;
+  cx: number;
+  cy: number;
+  angle: number;
+  index: number;
+};
+
+const pluginLayouts = computed<PluginLayout[]>(() => {
+  const out: PluginLayout[] = [];
+  for (const sl of slotLayouts.value) {
+    if (backendKind(sl.key) !== "directory") continue;
+    const plugins = visiblePluginIds(sl.key);
+    plugins.forEach((pid, j) => {
+      const dist = PLUGIN_ORBIT_FROM_MODULE + j * (PLUGIN_H + 14);
+      const center = pointOnRay(sl.cx, sl.cy, sl.angle, dist);
+      const pidKey = `plugin:${pid}`;
+      const o = nodeOffsets.value[pidKey] ?? { dx: 0, dy: 0 };
+      out.push({
+        pid,
+        moduleKey: sl.key,
+        x: center.x - PLUGIN_W / 2 + o.dx,
+        y: center.y - PLUGIN_H / 2 + o.dy,
+        cx: center.x + o.dx,
+        cy: center.y + o.dy,
+        angle: sl.angle,
+        index: j,
+      });
+    });
+  }
+  return out;
+});
+
 type EdgeDef = {
   id: string;
   d: string;
@@ -150,40 +265,59 @@ type EdgeDef = {
 
 const edges = computed<EdgeDef[]>(() => {
   const out: EdgeDef[] = [];
-  const kx = KERNEL.cx + KERNEL.r * 0.92;
-  const ky = KERNEL.cy;
+  const bus = facilityBus.value;
+
+  out.push({
+    id: "kernel-bus",
+    d: hubToNodeEdge(
+      KERNEL.cx,
+      KERNEL.cy,
+      KERNEL.r,
+      bus.cx,
+      bus.cy,
+      -Math.PI / 2,
+      bus.w / 2,
+      0.08,
+    ),
+    kind: "builtin",
+  });
 
   for (const sl of slotLayouts.value) {
     const kind = backendKind(sl.key);
-    const sx = sl.x + 6;
-    const sy = sl.y + NODE_H / 2;
     out.push({
-      id: `k-${sl.key}`,
-      d: bezierPath(kx, ky, sx, sy, 0.5),
+      id: `bus-${sl.key}`,
+      d: hubToNodeEdge(bus.cx, bus.cy, bus.r, sl.cx, sl.cy, sl.angle, NODE_W / 2, 0.14),
       kind,
       toModule: sl.key,
       animated: kind === "remote",
     });
+  }
 
-    if (kind !== "directory") continue;
-    const plugins = visiblePluginIds(sl.key);
-    plugins.forEach((pid, j) => {
-      const ox = sl.x + NODE_W - 4;
-      const oy = sl.y + NODE_H / 2;
-      const px = ox + 28;
-      const py = sl.y + 20 + j * (PLUGIN_H + 12);
-      out.push({
-        id: `p-${sl.key}-${pid}`,
-        d: bezierPath(ox, oy, px, py + PLUGIN_H / 2, 0.4),
-        kind: "directory",
-        animated: false,
-      });
+  for (const pl of pluginLayouts.value) {
+    const sl = slotLayouts.value.find((s) => s.key === pl.moduleKey);
+    if (!sl) continue;
+    out.push({
+      id: `p-${pl.moduleKey}-${pl.pid}`,
+      d: nodeToPluginEdge(
+        sl.cx,
+        sl.cy,
+        sl.angle,
+        NODE_W / 2,
+        pl.cx,
+        pl.cy,
+        PLUGIN_H / 2,
+      ),
+      kind: "directory",
+      animated: false,
     });
   }
 
+  const cx = complexLayout.value;
+  const from = pointOnRay(bus.cx, bus.cy, cx.angle, bus.r * 0.9);
+  const to = pointOnRay(cx.cx, cx.cy, cx.angle + Math.PI, 100);
   out.push({
-    id: "k-complex",
-    d: bezierPath(kx, ky, 520, 468, 0.4),
+    id: "bus-complex",
+    d: radialQuadraticPath(from.x, from.y, to.x, to.y, 0.1),
     kind: "builtin",
   });
 
@@ -202,7 +336,6 @@ async function onBackendChange(module: CoreModule, ev: Event) {
   try {
     const info = await setSessionPluginBackend(roleStore.currentRoleId, module, backend);
     roleStore.applyRoleInfo(info);
-    switchOpen.value = null;
   } catch (e) {
     showToast("error", e instanceof Error ? e.message : String(e));
   } finally {
@@ -223,7 +356,52 @@ function selectModule(key: string) {
 
 function onNodeDblClick(sl: SlotLayout) {
   selectModule(sl.key);
-  focusPoint(sl.x + NODE_W / 2, sl.y + NODE_H / 2);
+  focusPoint(sl.cx, sl.cy);
+}
+
+function onNodeDragStart(e: PointerEvent, id: string): void {
+  if (e.button !== 0 || spaceHeld.value) return;
+  e.stopPropagation();
+  e.preventDefault();
+  const o = nodeOffsets.value[id] ?? { dx: 0, dy: 0 };
+  draggingNode.value = {
+    id,
+    startX: e.clientX,
+    startY: e.clientY,
+    origDx: o.dx,
+    origDy: o.dy,
+  };
+  (e.currentTarget as HTMLElement).setPointerCapture(e.pointerId);
+}
+
+function onViewportPointerMove(e: PointerEvent): void {
+  if (draggingNode.value) {
+    const s = scale.value;
+    const dx = (e.clientX - draggingNode.value.startX) / s;
+    const dy = (e.clientY - draggingNode.value.startY) / s;
+    nodeOffsets.value = {
+      ...nodeOffsets.value,
+      [draggingNode.value.id]: {
+        dx: draggingNode.value.origDx + dx,
+        dy: draggingNode.value.origDy + dy,
+      },
+    };
+    return;
+  }
+  onPointerMove(e);
+}
+
+function onViewportPointerUp(e: PointerEvent): void {
+  if (draggingNode.value) {
+    draggingNode.value = null;
+    persistNodeOffsetsFromStore();
+    return;
+  }
+  onPointerUp();
+}
+
+function onResetNodeLayout(): void {
+  resetNodeLayoutStore();
 }
 
 function onFocusPlugin(id: string) {
@@ -262,6 +440,7 @@ async function uninstallPlugin(id: string) {
 }
 
 onMounted(() => {
+  loadNodeOffsetsFromStore();
   fitWorld();
 });
 
@@ -285,9 +464,9 @@ watch(
       :aria-label="t('pluginWorkbench.graph.canvasAria')"
       @wheel="onWheel"
       @pointerdown="onPointerDown"
-      @pointermove="onPointerMove"
-      @pointerup="onPointerUp"
-      @pointercancel="onPointerUp"
+      @pointermove="onViewportPointerMove"
+      @pointerup="onViewportPointerUp"
+      @pointercancel="onViewportPointerUp"
       @click.stop
     >
       <div class="arch-canvas-title" @click.stop>
@@ -307,11 +486,33 @@ watch(
         <button type="button" class="arch-tb-btn" @click="fitWorld()">
           {{ t("pluginWorkbench.graph.fitAll") }}
         </button>
+        <button type="button" class="arch-tb-btn" :title="t('pluginWorkbench.graph.resetLayout')" @click="onResetNodeLayout">
+          {{ t("pluginWorkbench.graph.resetLayout") }}
+        </button>
         <span class="arch-tb-scale">{{ scalePercent }}</span>
+      </div>
+
+      <div class="arch-layer-legend" @click.stop>
+        <span class="arch-layer-pill arch-layer-pill--hub">{{ t("pluginWorkbench.graph.layerHub") }}</span>
+        <span class="arch-layer-pill arch-layer-pill--facility">{{ t("pluginWorkbench.graph.layerFacility") }}</span>
+        <span class="arch-layer-pill arch-layer-pill--plugin">{{ t("pluginWorkbench.graph.layerPlugin") }}</span>
       </div>
 
       <div class="arch-minimap" aria-hidden="true" @click.stop>
         <svg :viewBox="`0 0 ${WORLD_W} ${WORLD_H}`" class="arch-minimap-svg">
+          <circle
+            :cx="KERNEL.cx"
+            :cy="KERNEL.cy"
+            :r="MODULE_RING"
+            class="arch-minimap-ring"
+          />
+          <rect
+            :x="facilityBus.x"
+            :y="facilityBus.y"
+            :width="facilityBus.w"
+            :height="facilityBus.h"
+            class="arch-minimap-bus"
+          />
           <rect
             v-for="sl in slotLayouts"
             :key="'mm-' + sl.key"
@@ -343,6 +544,20 @@ watch(
               </feMerge>
             </filter>
           </defs>
+          <circle
+            :cx="KERNEL.cx"
+            :cy="KERNEL.cy"
+            :r="MODULE_RING"
+            class="arch-orbit arch-orbit--facility"
+          />
+          <text
+            :x="KERNEL.cx"
+            :y="KERNEL.cy - MODULE_RING - 10"
+            class="arch-orbit-label"
+            text-anchor="middle"
+          >
+            {{ t("pluginWorkbench.graph.ringFacility") }}
+          </text>
           <path
             v-for="edge in edges"
             :key="edge.id"
@@ -364,7 +579,7 @@ watch(
         </svg>
 
         <div
-          class="arch-kernel arch-kernel--hex"
+          class="arch-kernel arch-kernel--hex arch-kernel--comfy"
           :style="{ left: KERNEL.cx - KERNEL.r + 'px', top: KERNEL.cy - KERNEL.r + 'px', width: KERNEL.r * 2 + 'px', height: KERNEL.r * 2 + 'px' }"
           :title="t('pluginWorkbench.graph.kernelTitle')"
         >
@@ -372,12 +587,41 @@ watch(
           <span class="arch-kernel-ico" aria-hidden="true">⚙️</span>
           <span class="arch-kernel-lbl">{{ t("pluginWorkbench.graph.kernel") }}</span>
           <span class="arch-kernel-sub">process_message</span>
+          <span class="ge-port-labeled ge-port-labeled--out" :style="{ left: '50%', bottom: '-6px', transform: 'translateX(-50%)' }">
+            <span class="ge-port-dot ge-port-dot--out" />
+            <span class="ge-port-name">{{ t("pluginWorkbench.graph.portPipeline") }}</span>
+          </span>
+        </div>
+
+        <div
+          class="ge-node ge-node--comfy ge-node--bus"
+          :style="{ left: facilityBus.x + 'px', top: facilityBus.y + 'px', width: facilityBus.w + 'px', minHeight: facilityBus.h + 'px' }"
+          @click.stop="selectedModule = null"
+        >
+          <div
+            class="ge-node-header ge-node-drag-handle"
+            @pointerdown="onNodeDragStart($event, BUS_ID)"
+          >
+            <span class="ge-node-header-title">{{ t("pluginWorkbench.graph.facilityBus") }}</span>
+            <span class="ge-node-header-type">plugin_backends</span>
+          </div>
+          <div class="ge-node-ports">
+            <div class="ge-port-row ge-port-row--in">
+              <span class="ge-port-dot ge-port-dot--in" />
+              <span class="ge-port-name">{{ t("pluginWorkbench.graph.portIn") }}</span>
+            </div>
+            <div class="ge-port-row ge-port-row--out">
+              <span class="ge-port-dot ge-port-dot--out" />
+              <span class="ge-port-name">{{ t("pluginWorkbench.graph.portFacilities") }}</span>
+            </div>
+          </div>
+          <p class="ge-bus-hint">{{ t("pluginWorkbench.graph.facilityBusHint") }}</p>
         </div>
 
         <div
           v-for="sl in slotLayouts"
           :key="sl.key"
-          class="ge-node"
+          class="ge-node ge-node--comfy"
           :class="{
             'ge-node--selected': selectedModule === sl.key,
             'ge-node--hover': hoveredModule === sl.key,
@@ -389,76 +633,42 @@ watch(
           @click.stop="selectModule(sl.key)"
           @dblclick.stop="onNodeDblClick(sl)"
         >
-          <span
-            class="ge-port ge-port--in"
-            :style="{ borderColor: BACKEND_COLORS[backendKind(sl.key)].bar }"
-          />
-          <span
-            v-if="backendKind(sl.key) === 'directory'"
-            class="ge-port ge-port--out"
-          />
           <div
-            class="ge-node-bar"
-            :style="{ background: BACKEND_COLORS[backendKind(sl.key)].bar }"
-          />
-          <div class="ge-node-body">
-            <div class="ge-node-title">
-              <span aria-hidden="true">{{ sl.icon }}</span>
-              <span class="ge-node-title-text">
-                <span class="ge-node-id">{{ sl.key }}</span>
-                <span class="ge-node-zh">{{ t(sl.labelKey) }}</span>
-              </span>
+            class="ge-node-header ge-node-drag-handle"
+            :style="{ borderColor: BACKEND_COLORS[backendKind(sl.key)].bar }"
+            @pointerdown="onNodeDragStart($event, sl.key)"
+          >
+            <span class="ge-node-header-ico" aria-hidden="true">{{ sl.icon }}</span>
+            <span class="ge-node-header-title">{{ sl.key }}</span>
+            <span class="ge-node-header-type">{{ t(sl.labelKey) }}</span>
+          </div>
+          <div class="ge-node-ports">
+            <div class="ge-port-row ge-port-row--in">
               <span
-                class="ge-status-led"
-                :style="{ background: BACKEND_COLORS[backendKind(sl.key)].bar }"
-                :title="effectiveBackend(sl.key)"
+                class="ge-port-dot ge-port-dot--in"
+                :style="{ borderColor: BACKEND_COLORS[backendKind(sl.key)].bar }"
               />
+              <span class="ge-port-name">{{ t("pluginWorkbench.graph.portBackend") }}</span>
             </div>
-            <span
-              class="ge-tag"
-              :style="{
-                color: BACKEND_COLORS[backendKind(sl.key)].bar,
-                background: BACKEND_COLORS[backendKind(sl.key)].tagBg,
-              }"
-            >
-              {{ effectiveBackend(sl.key) }}
-            </span>
+            <div v-if="backendKind(sl.key) === 'directory'" class="ge-port-row ge-port-row--out">
+              <span class="ge-port-dot ge-port-dot--out" />
+              <span class="ge-port-name">{{ t("pluginWorkbench.graph.portPlugin") }}</span>
+            </div>
+          </div>
+          <div class="ge-node-widgets">
             <p
               v-if="backendKind(sl.key) === 'directory' && directoryPluginIds(sl.key).length"
               class="ge-dir-line"
             >
               {{ directoryPluginIds(sl.key)[0] }}
-              <button
-                v-if="hiddenPluginCount(sl.key) > 0"
-                type="button"
-                class="ge-plus-n"
-                @click.stop="togglePluginExpand(sl.key)"
-              >
-                +{{ hiddenPluginCount(sl.key) }}
-              </button>
             </p>
-            <div class="ge-node-actions">
-              <button
-                type="button"
-                class="ge-btn"
-                @click.stop="switchOpen = switchOpen === sl.key ? null : sl.key"
-              >
-                {{ t("pluginWorkbench.graph.switchBackend") }}
-              </button>
-              <button
-                v-if="directoryPluginIds(sl.key)[0]"
-                type="button"
-                class="ge-btn ge-btn--ghost"
-                @click.stop="onFocusPlugin(directoryPluginIds(sl.key)[0]!)"
-              >
-                {{ t("pluginWorkbench.graph.detail") }}
-              </button>
-            </div>
-            <div v-if="switchOpen === sl.key" class="ge-switch-panel" @click.stop>
+            <div class="ge-widget-row">
+              <label class="ge-widget-lbl">{{ t("pluginWorkbench.graph.switchBackend") }}</label>
               <select
-                class="ge-select"
+                class="ge-select ge-select--widget"
                 :disabled="busy"
                 :value="pluginBackendsSessionOverride?.[sl.key] ?? '__pack_default__'"
+                @click.stop
                 @change="onBackendChange(sl.key, $event)"
               >
                 <option value="__pack_default__">
@@ -467,53 +677,82 @@ watch(
                 <option v-for="v in sl.options" :key="v" :value="v">{{ v }}</option>
               </select>
             </div>
+            <div class="ge-node-actions">
+              <button
+                v-if="directoryPluginIds(sl.key)[0]"
+                type="button"
+                class="ge-btn ge-btn--ghost"
+                @click.stop="onFocusPlugin(directoryPluginIds(sl.key)[0]!)"
+              >
+                {{ t("pluginWorkbench.graph.detail") }}
+              </button>
+              <button
+                v-if="hiddenPluginCount(sl.key) > 0"
+                type="button"
+                class="ge-plus-n"
+                @click.stop="togglePluginExpand(sl.key)"
+              >
+                +{{ hiddenPluginCount(sl.key) }} {{ t("pluginWorkbench.graph.plugins") }}
+              </button>
+            </div>
           </div>
         </div>
 
-        <template v-for="sl in slotLayouts" :key="'pl-' + sl.key">
+        <div
+          v-for="pl in pluginLayouts"
+          :key="pl.pid"
+          class="ge-plugin ge-node--comfy"
+          :class="{ 'ge-plugin--off': pluginStore.isPluginDisabled(pl.pid) }"
+          :style="{ left: pl.x + 'px', top: pl.y + 'px', width: PLUGIN_W + 'px' }"
+          @click.stop="onFocusPlugin(pl.pid)"
+          @contextmenu="openCtx($event, pl.pid)"
+        >
           <div
-            v-for="(pid, j) in visiblePluginIds(sl.key)"
-            :key="pid"
-            class="ge-plugin"
-            :class="{ 'ge-plugin--off': pluginStore.isPluginDisabled(pid) }"
-            :style="{
-              left: sl.x + NODE_W + 16 + 'px',
-              top: sl.y + 14 + j * (PLUGIN_H + 10) + 'px',
-              width: PLUGIN_W + 'px',
-            }"
-            @click.stop="onFocusPlugin(pid)"
-            @contextmenu="openCtx($event, pid)"
+            class="ge-node-header ge-node-header--plugin ge-node-drag-handle"
+            @pointerdown="onNodeDragStart($event, `plugin:${pl.pid}`)"
           >
-            <div class="ge-plugin-bar" />
-            <div class="ge-plugin-body">
-              <strong class="ge-plugin-id">{{ pid }}</strong>
-              <span class="ge-plugin-ver">v{{ catalogEntry(pid)?.version ?? "?" }}</span>
-              <span class="ge-plugin-state">
-                {{
-                  pluginStore.isPluginDisabled(pid)
-                    ? t("pluginWorkbench.graph.pluginDisabled")
-                    : t("pluginWorkbench.graph.pluginEnabled")
-                }}
-              </span>
-            </div>
+            <span class="ge-node-header-title">{{ pl.pid }}</span>
+            <span class="ge-node-header-type">directory</span>
           </div>
-        </template>
+          <div class="ge-port-row ge-port-row--in ge-port-row--plugin">
+            <span class="ge-port-dot ge-port-dot--in ge-port-dot--plugin" />
+            <span class="ge-port-name">{{ pl.moduleKey }}</span>
+          </div>
+          <div class="ge-plugin-body">
+            <span class="ge-plugin-module">{{ pl.moduleKey }}</span>
+            <strong class="ge-plugin-id">{{ pl.pid }}</strong>
+            <span class="ge-plugin-ver">v{{ catalogEntry(pl.pid)?.version ?? "?" }}</span>
+            <span class="ge-plugin-state">
+              {{
+                pluginStore.isPluginDisabled(pl.pid)
+                  ? t("pluginWorkbench.graph.pluginDisabled")
+                  : t("pluginWorkbench.graph.pluginEnabled")
+              }}
+            </span>
+          </div>
+        </div>
 
         <div
-          class="ge-node ge-node--complex ge-node--builtin"
-          :style="{ left: '500px', top: '448px', width: '220px' }"
+          class="ge-node ge-node--comfy ge-node--complex ge-node--builtin"
+          :style="{
+            left: complexLayout.x + 'px',
+            top: complexLayout.y + 'px',
+            width: complexLayout.w + 'px',
+          }"
         >
-          <span class="ge-port ge-port--in" :style="{ borderColor: BACKEND_COLORS.builtin.bar }" />
-          <div class="ge-node-bar" :style="{ background: BACKEND_COLORS.builtin.bar }" />
-          <div class="ge-node-body">
-            <div class="ge-node-title">
-              <span aria-hidden="true">🎭</span>
-              <span class="ge-node-title-text">
-                <span class="ge-node-zh">{{ t("pluginWorkbench.graph.complexEmotion") }}</span>
-              </span>
-            </div>
-            <p class="ge-complex-hint">{{ t("pluginWorkbench.graph.complexHint") }}</p>
+          <div
+            class="ge-node-header ge-node-drag-handle"
+            :style="{ borderColor: BACKEND_COLORS.builtin.bar }"
+            @pointerdown="onNodeDragStart($event, COMPLEX_ID)"
+          >
+            <span class="ge-node-header-ico" aria-hidden="true">🎭</span>
+            <span class="ge-node-header-title">{{ t("pluginWorkbench.graph.complexEmotion") }}</span>
           </div>
+          <div class="ge-port-row ge-port-row--in">
+            <span class="ge-port-dot ge-port-dot--in" :style="{ borderColor: BACKEND_COLORS.builtin.bar }" />
+            <span class="ge-port-name">{{ t("pluginWorkbench.graph.portBackend") }}</span>
+          </div>
+          <p class="ge-complex-hint">{{ t("pluginWorkbench.graph.complexHint") }}</p>
         </div>
       </div>
     </div>
@@ -529,6 +768,7 @@ watch(
         <span class="arch-swatch arch-swatch--directory" />{{ t("pluginWorkbench.graph.legendDirectory") }}
       </span>
       <span class="arch-legend-hint">{{ t("pluginWorkbench.graph.panHint") }}</span>
+      <span class="arch-legend-hint">{{ t("pluginWorkbench.graph.dragHint") }}</span>
     </div>
 
     <div
@@ -565,8 +805,8 @@ watch(
 }
 .arch-viewport {
   position: relative;
-  height: min(540px, 58vh);
-  min-height: 380px;
+  height: min(600px, 62vh);
+  min-height: 420px;
   overflow: hidden;
   border-radius: var(--radius-card);
   border: 1px solid var(--border-light);
@@ -688,8 +928,72 @@ html:not([data-theme="dark"]) .arch-grid {
   fill: color-mix(in srgb, var(--accent) 25%, transparent);
   stroke: none;
 }
+.arch-minimap-ring {
+  fill: none;
+  stroke: color-mix(in srgb, var(--text-secondary) 25%, transparent);
+  stroke-width: 1;
+}
+.arch-minimap-ring--outer {
+  stroke-dasharray: 2 3;
+}
 .arch-minimap-kernel {
   fill: color-mix(in srgb, #4caf50 35%, transparent);
+}
+.arch-layer-legend {
+  position: absolute;
+  z-index: 5;
+  right: 10px;
+  top: 44px;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  padding: 6px 8px;
+  border-radius: 8px;
+  border: 1px solid var(--border-light);
+  background: color-mix(in srgb, var(--bg-primary) 90%, transparent);
+  backdrop-filter: blur(6px);
+  font-size: 10px;
+}
+.arch-layer-pill {
+  padding: 2px 8px;
+  border-radius: var(--radius-pill);
+  border: 1px solid var(--border-light);
+  color: var(--text-secondary);
+}
+.arch-layer-pill--hub {
+  border-color: color-mix(in srgb, #4caf50 45%, var(--border-light));
+  color: color-mix(in srgb, #4caf50 80%, var(--text-primary));
+}
+.arch-layer-pill--facility {
+  border-color: color-mix(in srgb, #2196f3 35%, var(--border-light));
+}
+.arch-layer-pill--plugin {
+  border-color: color-mix(in srgb, #9c27b0 35%, var(--border-light));
+}
+.arch-orbit {
+  fill: none;
+  stroke: color-mix(in srgb, var(--text-secondary) 18%, transparent);
+  stroke-width: 1;
+  pointer-events: none;
+}
+.arch-orbit--facility {
+  stroke-dasharray: 4 6;
+}
+.arch-orbit--plugin {
+  stroke-dasharray: 2 5;
+  opacity: 0.65;
+}
+.arch-orbit-label {
+  fill: var(--text-secondary);
+  font-size: 10px;
+  font-weight: 600;
+  letter-spacing: 0.06em;
+  opacity: 0.75;
+  pointer-events: none;
+}
+.arch-orbit-label--outer {
+  font-size: 9px;
+  opacity: 0.55;
 }
 .arch-kernel {
   position: absolute;
@@ -748,6 +1052,135 @@ html:not([data-theme="dark"]) .arch-grid {
   font-family: ui-monospace, monospace;
   z-index: 1;
 }
+.ge-node--comfy {
+  border-radius: 10px;
+  background: color-mix(in srgb, var(--bg-primary) 96%, #1a1a2e 4%);
+}
+.ge-node--bus {
+  border: 2px dashed color-mix(in srgb, #2196f3 40%, var(--border-light));
+  background: color-mix(in srgb, #2196f3 6%, var(--bg-primary));
+  z-index: 3;
+}
+.ge-node-header {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 10px;
+  border-radius: 9px 9px 0 0;
+  border-bottom: 2px solid var(--border-light);
+  background: color-mix(in srgb, var(--bg-elevated) 85%, #000 15%);
+  cursor: grab;
+  user-select: none;
+}
+.ge-node-header:active {
+  cursor: grabbing;
+}
+.ge-node-header--plugin {
+  padding: 5px 8px;
+  border-bottom-width: 1px;
+}
+.ge-node-header-ico {
+  font-size: 14px;
+}
+.ge-node-header-title {
+  flex: 1;
+  min-width: 0;
+  font-size: 12px;
+  font-weight: 700;
+  font-family: ui-monospace, Menlo, Consolas, monospace;
+  color: var(--text-primary);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.ge-node-header-type {
+  font-size: 9px;
+  color: var(--text-secondary);
+  max-width: 42%;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.ge-node-ports {
+  padding: 4px 8px 2px;
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+}
+.ge-port-row {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 10px;
+  color: var(--text-secondary);
+}
+.ge-port-row--in {
+  justify-content: flex-start;
+}
+.ge-port-row--out {
+  justify-content: flex-end;
+  flex-direction: row-reverse;
+}
+.ge-port-row--plugin {
+  padding: 0 8px 4px;
+}
+.ge-port-dot {
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  border: 2px solid var(--border-light);
+  background: var(--bg-primary);
+  flex-shrink: 0;
+}
+.ge-port-dot--in {
+  border-color: #4caf50;
+}
+.ge-port-dot--out {
+  border-color: #9c27b0;
+}
+.ge-port-dot--plugin {
+  border-color: #9c27b0;
+}
+.ge-port-name {
+  font-family: ui-monospace, Menlo, Consolas, monospace;
+}
+.ge-port-labeled {
+  position: absolute;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 2px;
+  pointer-events: none;
+}
+.ge-bus-hint {
+  margin: 0;
+  padding: 4px 10px 8px;
+  font-size: 10px;
+  color: var(--text-secondary);
+  line-height: 1.35;
+}
+.ge-node-widgets {
+  padding: 6px 10px 10px;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+.ge-widget-row {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+}
+.ge-widget-lbl {
+  font-size: 10px;
+  color: var(--text-secondary);
+}
+.ge-select--widget {
+  width: 100%;
+}
+.arch-minimap-bus {
+  fill: color-mix(in srgb, #2196f3 20%, transparent);
+  stroke: none;
+}
 .ge-node {
   position: absolute;
   z-index: 3;
@@ -786,16 +1219,20 @@ html:not([data-theme="dark"]) .arch-grid {
   box-shadow: 0 0 0 2px var(--bg-primary);
   z-index: 2;
 }
-.ge-port--in {
-  left: -5px;
-  top: 50%;
-  margin-top: -5px;
+.ge-port--radial {
+  margin: 0;
 }
 .ge-port--out {
-  right: -5px;
-  top: 50%;
-  margin-top: -5px;
   border-color: #9c27b0;
+}
+.ge-port--plugin-in {
+  border-color: #9c27b0;
+}
+.ge-plugin-module {
+  width: 100%;
+  font-size: 9px;
+  font-family: ui-monospace, monospace;
+  color: var(--text-secondary);
 }
 .ge-node-bar {
   height: 3px;

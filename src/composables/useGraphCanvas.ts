@@ -149,6 +149,7 @@ export function useGraphCanvas(opts: GraphCanvasOptions) {
 
   return {
     scale,
+    getScale: () => scale.value,
     panX,
     panY,
     viewportRef,
