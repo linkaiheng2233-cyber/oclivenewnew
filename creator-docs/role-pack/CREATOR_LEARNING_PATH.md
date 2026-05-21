@@ -9,11 +9,11 @@
 | 步骤 | 做什么 | 读什么 / 做什么 |
 |------|--------|------------------|
 | 1 | 理解角色包长什么样 | [ROLE_PACK_SPEC.md](ROLE_PACK_SPEC.md) **§1 目录结构** |
-| 2 | 生成第一个可校验的最小包 | `cargo run -p oclive-cli -- pack create -o <输出父目录> --id my_first_role`（会在 `roles/<id>/` 下生成骨架；见 [../cli/OCLIVE_CLI_GUIDE.md](../cli/OCLIVE_CLI_GUIDE.md)） |
-| 3 | 在编写器中打开 | 使用 **oclive-pack-editor** 打开 `manifest.json` / `settings.json`（分工见 [CREATOR_WORKFLOW.md](../getting-started/CREATOR_WORKFLOW.md)） |
-| 4 | 改门面信息 | 编辑 `manifest.json` 的 `name`、`description`、场景列表等（字段语义见 [README_MANIFEST](../../roles/README_MANIFEST.md)） |
+| 2 | 生成第一个可校验的最小包 | `cargo run -p oclive-cli -- pack create -o <输出父目录> --id my_first_role --format-blueprint-v2`（写入 `pipeline.ocblueprint`；见 [../cli/OCLIVE_CLI_GUIDE.md](../cli/OCLIVE_CLI_GUIDE.md)） |
+| 3 | 在编写器中打开 | **oclive-pack-editor** 编辑 v2 蓝图或 legacy 双文件（分工见 [CREATOR_WORKFLOW.md](../getting-started/CREATOR_WORKFLOW.md)） |
+| 4 | 改门面信息 | v2：编辑 `pipeline.ocblueprint` → `meta`（`name`、`description`、`personality`、`scenes` 等）；legacy 见 [README_MANIFEST](../../roles/README_MANIFEST.md) |
 
-**验收**：能运行 `cargo run -p oclive-cli -- pack validate <角色根目录>` 且通过（或按 CLI 输出修正错误）。
+**验收**：`cargo run -p oclive-cli -- pack validate <角色根>` **默认 v2** 通过；维护中的旧包用 `--profile legacy`。
 
 ---
 
@@ -36,8 +36,8 @@
 | 主题 | 读什么 / 注意 |
 |------|----------------|
 | **`reply_quality_anchor` 与回复风格** | [README_MANIFEST](../../roles/README_MANIFEST.md) · ROLE_PACK_SPEC 中 `settings` 合并表；用于锚定回复质量/风格相关配置（以校验 crate 与宿主加载为准） |
-| **`pipeline.ocblueprint`（可选）** | ROLE_PACK_SPEC 提到的 **可选** 蓝图文件；**桌面宿主主对话编排**以 **`process_message` → `co_present`** 为准（见 [AGENTS.md](../../AGENTS.md)）。蓝图与 **Monolith 编译期焊接** 正交，进阶或硬件场景再深入 [RFC_OCLIVE_MONOLITH_MODE.md](../rfc/RFC_OCLIVE_MONOLITH_MODE.md) |
-| **校验** | `cargo run -p oclive-cli -- pack validate <角色根>`；profile 可选 `robot-soul`（见 CLI `--profile` 帮助） |
+| **`pipeline.ocblueprint` v2（推荐 SSOT）** | [ROLE_PACK_SPEC.md](ROLE_PACK_SPEC.md) · [handoff/BLUEPRINT_V2_IMPLEMENTATION_PLAN.md](../../handoff/BLUEPRINT_V2_IMPLEMENTATION_PLAN.md)。**桌面编排**以 **`process_message` → `co_present`** 为准，**不**再读蓝图 `steps[]`（见 [AGENTS.md](../../AGENTS.md)）。主应用架构图可 **`save_role_slot_registry`** 写回 `slot_registry` |
+| **校验** | 默认 v2：`pack validate <角色根>`；旧包 `--profile legacy`；无头交付 `--profile robot-soul`（须 legacy 形状，见 ROLE_PACK_SPEC §6） |
 | **编写器侧 wasm 校验** | [oclive-pack-editor](https://github.com/linkaiheng2233-cyber/oclive-pack-editor) 的 `wasm:build` 与「运行全部检查」 |
 
 **验收**：`pack validate` 无错误；理解「哪些键会进宿主合并校验、哪些仅作者自管」。

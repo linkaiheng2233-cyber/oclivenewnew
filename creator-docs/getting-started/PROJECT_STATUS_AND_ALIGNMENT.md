@@ -92,6 +92,7 @@
 ## 现有进度摘要（与目标对齐）
 
 - **内核（K0–K5）**：除 **P2（OTA / 远程日志）** 外，已在 [KERNEL_IMPLEMENTATION_PLAN.md](KERNEL_IMPLEMENTATION_PLAN.md) 标为收口；**验收留痕**与 CI `oocp-test-suite` 见该文与 [AGENTS.md](../../AGENTS.md)。
+- **角色包蓝图 v2（P0–P8）**：`pipeline.ocblueprint` 为推荐 SSOT；`pack validate` 默认 v2；黄金包 `roles/mumu`；架构图 **`save_role_slot_registry`**。路线图与 CI 说明见 [BLUEPRINT_V2_IMPLEMENTATION_PLAN.md](../../handoff/BLUEPRINT_V2_IMPLEMENTATION_PLAN.md)。
 - **产品级首发**：仍按 gap 清单 **§A** 为硬门槛集合；与「内核里程碑」解耦排期，见 [PRODUCT_AND_KERNEL_GAP_CHECKLIST.md](../../handoff/PRODUCT_AND_KERNEL_GAP_CHECKLIST.md) **§D**。**A1（可 CI 子集）**已收口（A1.1a HTTP、A1.1b Web 预览 Playwright、A1.2 九条 `invoke`）；**下一默认焦点**为 **A2.2 / A2.3 / A4.2** 与 **A1.1c（原生安装包 GUI）**，见 [PRODUCT_LINE_TASK_BUCKETS.md](../../handoff/PRODUCT_LINE_TASK_BUCKETS.md) **§四**，逐项单独立项。
 - **体验与生态**：以 [VISION_ROADMAP_MONTHLY.md](../roadmap/VISION_ROADMAP_MONTHLY.md) + [BACKLOG…](../roadmap/BACKLOG_EXPERIENCE_AND_ECOSYSTEM.md) 对照，避免与内核表格混为一谈。
 - **创作者文档双语（`creator-docs-en/`）**：主干（索引、插件契约、`guides/`、LICENSE、FAQ 等）已与中文总索引对拍收尾；**`roadmap/` 等愿景长文**仍以 `creator-docs/` 为准。后续契约或行为变更时同步更新英文镜像或于 CHANGELOG 声明；约定全文见 [creator-docs-en/README.md](../../creator-docs-en/README.md#documentation-bilingual-closure-baseline)。

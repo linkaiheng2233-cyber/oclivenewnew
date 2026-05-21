@@ -310,17 +310,23 @@ cargo run -p oclive-cli -- doctor --fix --yes
 在仓库根目录：
 
 ```bash
+# 默认：v2 蓝图（pipeline.ocblueprint schema_version 2）
 cargo run -p oclive-cli -- pack validate ./roles/mumu --host-version 0.2.0
-cargo run -p oclive-cli -- pack validate ./roles/mumu --host-version 0.2.0 --profile robot-soul
-cargo run -p oclive-cli -- pack create -o ./out/my-role --flat --id com.example.demo --name Demo
+# legacy manifest/settings 包
+cargo run -p oclive-cli -- pack validate ./roles/legacy-example --profile legacy
+# RobotSoulPack（在 legacy 校验通过后追加规则）
+cargo run -p oclive-cli -- pack validate ./roles/legacy-example --profile robot-soul
+cargo run -p oclive-cli -- pack create -o ./out/my-role --flat --id com.example.demo --name Demo --format-blueprint-v2
 cargo run -p oclive-cli -- pack publish ./out/my-role -o ./dist/com.example.demo-0.1.0.oclivepack
 ```
 
-- **`validate`**：校验 `manifest.json` / `settings.json` 合并、`plugin_backends` 反序列化、`default_personality` 七维范围、`interaction_mode`、`min_runtime_version` 与 `--host-version` 等（与宿主磁盘加载阶段对齐，不跑 DB）。
-- **`create`**：生成最小可校验目录；`--flat` 时 `-o` 指向的目录即为角色根（否则创建 `roles/<id>/`）。
-- **`publish`**：将角色目录打成 **ZIP**，扩展名 **`.oclivepack`**；ZIP 内顶层文件夹名为 **`manifest.id`**。
+- **`validate`（默认 v2）**：校验 `pipeline.ocblueprint`（`meta`、`slot_registry`、至少一个 `type: llm`、`meta.personality` 七维等）；与 [`ROLE_PACK_SPEC.md`](../role-pack/ROLE_PACK_SPEC.md) 及 `oclive_validation` 对齐，不跑 DB。
+- **`validate --profile legacy`**：校验 `manifest.json` / `settings.json` 合并、`plugin_backends`、`min_runtime_version` 与 `--host-version` 等（旧包路径）。
+- **`validate --profile robot-soul`**：在 **legacy** 校验通过后追加 RobotSoulPack 规则（见 ROLE_PACK_SPEC §6）。
+- **`create`**：生成最小可校验目录；推荐 **`--format-blueprint-v2`**（写入 `pipeline.ocblueprint`）；`--flat` 时 `-o` 即为角色根。
+- **`publish`**：将角色目录打成 **ZIP**，扩展名 **`.oclivepack`**；ZIP 内顶层文件夹名为包内 **`meta.id`**（v2）或 **`manifest.id`**（legacy）。
 
-**JSON Schema**（IDE / `ajv` 等）：`crates/oclive-cli/schemas/role_pack_manifest.schema.json`、`role_pack_settings.schema.json`、`role_pack_index.schema.json`。
+**JSON Schema**（IDE / `ajv` 等）：`crates/oclive-cli/schemas/pipeline.ocblueprint.v2.schema.json`（v2）；legacy 见 `role_pack_manifest.schema.json`、`role_pack_settings.schema.json`、`role_pack_index.schema.json`。
 
 ---
 

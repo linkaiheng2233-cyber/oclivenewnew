@@ -47,6 +47,8 @@ roles/{role_id}/
 | `meta` | yes | Former manifest + engine fields (`id`, `personality`, `relations`, `interaction_mode`, …) |
 | `slot_registry` | yes | Instance key → `{ type, label, backend, position, … }`; **at least one `type: llm`** |
 
+**Desktop architecture graph**: add/remove `slot_registry` keys via **`save_role_slot_registry`**; **at least one `llm`**; **the last `llm` instance cannot be removed** (matches `oclive_validation`).
+
 **`module_relations`**, **`steps`**, **`entry`** must **not** appear in the file (runtime-derived for the architecture graph). Schema: `crates/oclive-cli/schemas/pipeline.ocblueprint.v2.schema.json`.
 
 ---

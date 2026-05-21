@@ -87,6 +87,7 @@ Time-boxed “start here → ship”; **authoritative detail stays in each topic
 | **Kernel factory (registry, compose, templates, TUI, bench watch, debug)** | **[KERNEL_FACTORY_VISION.md](KERNEL_FACTORY_VISION.md)** (Chinese: [../../creator-docs/getting-started/KERNEL_FACTORY_VISION.md](../../creator-docs/getting-started/KERNEL_FACTORY_VISION.md)) |
 | **Seven slots + presets, switching to `remote` (authoritative)** | **[../cli/SETTINGS_REFERENCE.md](../cli/SETTINGS_REFERENCE.md)** |
 | **Role pack disk layout, multi-distro alignment, `oclive pack validate`** | **[../role-pack/ROLE_PACK_SPEC.md](../role-pack/ROLE_PACK_SPEC.md)** |
+| **Blueprint v2 (`pipeline.ocblueprint` · P0–P8 closed)** | **[../../handoff/RFC_ROLE_BLUEPRINT_V2.md](../../handoff/RFC_ROLE_BLUEPRINT_V2.md)** · **[../../handoff/BLUEPRINT_V2_IMPLEMENTATION_PLAN.md](../../handoff/BLUEPRINT_V2_IMPLEMENTATION_PLAN.md)** · **[../../handoff/BLUEPRINT_V2_DECISIONS.md](../../handoff/BLUEPRINT_V2_DECISIONS.md)** |
 | **Community role pack index JSON** | **[../role-pack/ROLE_PACK_INDEX.md](../role-pack/ROLE_PACK_INDEX.md)** |
 | **Directory process plugins** (`plugins/`, manifest, whole-shell, `directory_plugin_invoke`, dev mode; **plugin manager** `Ctrl+Shift+F`, enable/disable/reorder/local zip) | **[../plugin-and-architecture/DIRECTORY_PLUGINS.md](../plugin-and-architecture/DIRECTORY_PLUGINS.md)** |
 | **Bridge `invoke` table, permission aliases, error codes** | **[../plugin-and-architecture/BRIDGE_API_REFERENCE.md](../plugin-and-architecture/BRIDGE_API_REFERENCE.md)** |

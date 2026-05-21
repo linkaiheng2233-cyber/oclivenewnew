@@ -4,7 +4,7 @@
 |----|-----|
 | 状态 | **已确认 / 可以落实**（决议见 [BLUEPRINT_V2_DECISIONS.md](BLUEPRINT_V2_DECISIONS.md)） |
 | RFC | [RFC_ROLE_BLUEPRINT_V2.md](RFC_ROLE_BLUEPRINT_V2.md)（**Accepted**） |
-| 当前阶段 | **P0–P7 已完成**；**P8**（`pack validate` 默认 v2、OOCP 黄金包、全量 CI）**进行中 / 本迭代收尾** |
+| 当前阶段 | **P0–P8 已收口**（2026-05-20）；远程 CI 绿线见 [§8](#8-p8--ci-与验收) |
 
 ---
 
@@ -87,8 +87,29 @@ P4  co_present 多实例执行器  [x]
 P5  架构图 + 会话覆盖 + 写盘工具栏  [x]
 P6  roles 迁移（与 P2 同迭代）  [x]
 P7  文档 + CHANGELOG Breaking  [x]
-P8  CI（pack validate 默认 v2、OOCP、全量测）  [x 本迭代]
+P8  CI（pack validate 默认 v2、OOCP、全量测）  [x]
 ```
+
+### P5 交付摘要（架构图写盘）
+
+| 能力 | 说明 |
+|------|------|
+| `save_role_slot_registry` | Tauri 命令；经 `oclive_validation::write_role_pack_blueprint_slot_registry` 写回 `pipeline.ocblueprint` → `slot_registry` |
+| 工具栏 | 添加槽位（`ArchAddSlotDialog`）、删除槽位；**至少保留一个 `type: llm`**，最后一个 llm 不可删 |
+| 前端 | `ArchitectureGraphFlow.vue` + `src/lib/slotRegistry.ts`；Vitest `src/__tests__/slotRegistry.test.ts` |
+| 缓存 | 写盘后 `invalidate_role_cache` + `load_role` 刷新 |
+
+### P8 — CI 与验收
+
+| 检查项 | 说明 |
+|--------|------|
+| `pack validate` 默认 | **BlueprintV2**；`--profile legacy` 仅旧包 |
+| OOCP 黄金包 | `roles/mumu`（v2 `pipeline.ocblueprint`）；CI **`oocp-test-suite`** |
+| Tauri 1.5 Linux | **`rust` / `oocp-test-suite`** 使用 **`ubuntu-22.04`** + `libwebkit2gtk-4.0-dev`（非 4.1） |
+| `generate_context!` | **`rust`** job 在 clippy/test 前先 **`npm ci && npm run build`**（需 `dist/`） |
+| 阻塞 job | `rust`×2、`frontend`、`oocp-test-suite`、`cli`、`cli-bench`；`cargo-audit` / `remote-plugin-demo` 可失败 |
+
+维护者本地：`cargo test -p oclive_validation`、`cargo test -p oclivenewnew-tauri`、`npm run test:unit`、`pack validate ./roles/mumu`。
 
 ### P1 — 首批代码（确认后唯一自动开工项）
 

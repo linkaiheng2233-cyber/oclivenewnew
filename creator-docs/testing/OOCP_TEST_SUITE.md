@@ -20,7 +20,7 @@
 - **本地**：见 [`examples/oocp-test-suite/README.md`](../../examples/oocp-test-suite/README.md)。
 - **环境变量**：
   - `OCLIVE_API_BASE`：默认 `http://127.0.0.1:8420`
-  - `OCLIVE_OOCP_ROLE_PATH`：角色包目录（默认 `<repo>/roles/mumu`）
+  - `OCLIVE_OOCP_ROLE_PATH`：角色包目录（默认 `<repo>/roles/mumu`，**v2** `pipeline.ocblueprint`；勿指向仅含 legacy `manifest.json` 的目录）
   - **`OCLIVE_HTTP_API_MOCK_LLM=1`**（仅 `--api`）：使用内存库 + 固定回复的 Mock LLM，**CI 默认开启**，无需本机 Ollama。
 
 ## 场景表（HTTP 黑盒）

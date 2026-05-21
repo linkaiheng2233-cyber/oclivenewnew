@@ -71,6 +71,8 @@ roles/{role_id}/
 
 同 `type` 多实例由 **`SlotRunner`** 合并（见 RFC）；主应用架构图可通过 **`save_role_slot_registry`** 写回本文件。
 
+**架构图编辑规则（主应用）**：可增删 `slot_registry` 键；**至少一个 `type: llm`**；删除时 **不可移除最后一个 llm** 实例。字段校验与写盘逻辑见 `oclive_validation` 与 Tauri `save_role_slot_registry`。
+
 ### 2.3 `module_relations`（仅运行时）
 
 **禁止**在 `pipeline.ocblueprint` 文件中出现 `module_relations`、`steps`、`entry`（校验报错）。运行时由 `slot_registry` **派生**模块间示意关系，供架构图只读连线。

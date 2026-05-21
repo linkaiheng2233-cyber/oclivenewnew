@@ -16,7 +16,7 @@
 | `directory_plugins.{module}` | 各 directory 槽的 `plugin` / `plugins` |
 | 复杂情感（设施子模块，无六槽键） | `slot_registry` 中 `type: complex_emotion` 实例 |
 
-架构图 **写盘**：`save_role_slot_registry`（Tauri）更新包内 `slot_registry`；会话覆盖仍为 `set_session_slot_override`（内存）。
+架构图 **写盘**：`save_role_slot_registry`（Tauri）更新包内 `slot_registry`；写盘后宿主 **`invalidate_role_cache`** 并重新 **`load_role`**。工具栏可 **添加/删除** 槽位实例；**至少保留一个 `type: llm`**，**最后一个 llm 不可删除**（与 `oclive_validation` 一致）。会话覆盖仍为 `set_session_slot_override`（内存，不写盘）。
 
 ---
 

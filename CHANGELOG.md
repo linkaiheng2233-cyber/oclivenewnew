@@ -16,7 +16,7 @@
 
 ### Added
 
-- **蓝图 v2（角色包）**：`pipeline.ocblueprint` `schema_version: 2` 为 SSOT（`meta` + `slot_registry`）；`oclive-cli blueprint validate` / `pack validate --profile blueprint-v2`；主应用 `SlotResolver` / `SlotRunner`、会话 `set_session_slot_override`、架构图写盘 `save_role_slot_registry`；仓库黄金包 `roles/mumu` 等已迁 v2。
+- **蓝图 v2（角色包）**：`pipeline.ocblueprint` `schema_version: 2` 为 SSOT（`meta` + `slot_registry`）；`oclive-cli blueprint validate` / **`pack validate` 默认 v2**（`--profile legacy` 保留旧包）；主应用 `SlotResolver` / `SlotRunner`、会话 `set_session_slot_override`、架构图写盘 **`save_role_slot_registry`**（含添加/删除槽位、末个 `llm` 不可删）；仓库黄金包 `roles/mumu` 等已迁 v2。
 - **产品线 A5（版本与兼容）**：[`creator-docs/COMPATIBILITY.md`](creator-docs/COMPATIBILITY.md) / [`creator-docs-en/COMPATIBILITY.md`](creator-docs-en/COMPATIBILITY.md) 充实 **对外兼容一页表**（`oclive_kernel_runtime`、`oclive-cli`、`API_VERSION` / `RUNTIME_API_VERSION`、SQLite 迁移、发版审阅三步）；结项摘要 [`handoff/A5_CLOSURE_SUMMARY.md`](handoff/A5_CLOSURE_SUMMARY.md)；主清单 §A5 可勾。
 - 插件清单支持声明订阅的宿主事件（`shell.bridge.events` 或 `ui_slots[].bridge.events`），避免不必要的事件广播。
 - 设置页「常规」区域增加「强制 iframe 模式」开关，开启后所有插件界面统一使用 iframe 渲染，获得最高级别沙箱隔离。
@@ -60,7 +60,7 @@
 - **HTTP API 测试**：新增 `tests/http_api_chat.rs`，`tower::oneshot` 覆盖 `GET /health`、`POST /chat`（空消息 400、成功含 `personality_source` + `reply`）；导出 **`api_router`** 与 `serve_api` 共用路由。
 - **角色加载**：若 `plugin_backends` 声明 `remote` 但未设置 `OCLIVE_REMOTE_PLUGIN_URL` / `OCLIVE_REMOTE_LLM_URL`，在 `load_role_from_dir` 成功路径上记 `oclive_plugin` 警告（行为仍为回退内置，与 PLUGIN_V1 一致）。
 - **角色包契约收紧**：`manifest.json` 可选 **`min_runtime_version`**（semver）；宿主版本低于要求时 **`load_role` 拒绝加载**。根对象 **顶层键白名单**（`oclive_validation::json_keys`）；`manifest` / `settings` 中不允许的顶层键报错，**`_` 前缀说明键**仍允许。共享 crate 增加 **`validate_min_runtime_version`**；wasm 侧 **`validate_manifest_wasm`** 第三参为宿主版本字符串。
-- **CI**：`oclivenewnew` 在 Ubuntu 与 Windows 上运行 Rust（fmt / clippy / `cargo test`）与 `npm run build`；**oclive-pack-editor**、**oclive-launcher** 各自增加/对齐双平台 workflow。
+- **CI**：`oclivenewnew` 在 **Ubuntu 22.04** 与 Windows 上运行 Rust（fmt / clippy / `cargo test`）；**`rust` job** 在 clippy 前先 **`npm run build`**（满足 Tauri `generate_context!` 的 `dist/`）；Linux Tauri 1.5 依赖 **`libwebkit2gtk-4.0-dev`**；**oclive-pack-editor**、**oclive-launcher** 各自增加/对齐双平台 workflow。
 - **npm**：新增 `npm run check:release`（发版门槛：全量 `cargo test`）；README 补充 Sentry / 离线安装包说明。
 - **界面**：顶栏「身份」HelpHint 区分关系身份与核心性格档案；注释「人设回复」改为「角色回复」。
 - **API / UI**：`RoleInfo` 与 `RoleData` 增加 **`personality_source`**（`vector` | `profile`），与 `evolution` 一致；前端 `roleStore` 与调试面板「性格向量」在 **profile** 下显示视图说明 HelpHint。
@@ -69,6 +69,7 @@
 
 ### Documentation
 
+- **蓝图 v2 文档收口**：[`handoff/BLUEPRINT_V2_IMPLEMENTATION_PLAN.md`](handoff/BLUEPRINT_V2_IMPLEMENTATION_PLAN.md) 标 **P0–P8 完成**；[`ROLE_PACK_SPEC.md`](creator-docs/role-pack/ROLE_PACK_SPEC.md)、[`PLUGIN_V1.md`](creator-docs/plugin-and-architecture/PLUGIN_V1.md)、[`OCLIVE_CLI_GUIDE.md`](creator-docs/cli/OCLIVE_CLI_GUIDE.md) **`pack validate` 默认 v2**；[`CREATOR_LEARNING_PATH.md`](creator-docs/role-pack/CREATOR_LEARNING_PATH.md) 与 [`roles/README_MANIFEST.md`](roles/README_MANIFEST.md) 互链 v2；索引见 [`DOCUMENTATION_INDEX.md`](creator-docs/getting-started/DOCUMENTATION_INDEX.md)。
 - **creator-docs-en**：新增 **`FAQ.md`**、**`COMPATIBILITY.md`**；**`plugin-and-architecture/`** 下补齐 **`REMOTE_PLUGIN_PROTOCOL`**、**`DIRECTORY_PLUGINS`**、**`BRIDGE_API_REFERENCE`**、**`EXTENSION_POINTS`**、**`CREATOR_PLUGIN_ARCHITECTURE`** 英文全文（与 `creator-docs/` 中文对拍）。**`DOCUMENTATION_INDEX`（英）**、**`PROJECT_STATUS_AND_ALIGNMENT`（英）**、**`creator-docs-en/README.md`**、**`creator-docs/README.md`** 与 **`getting-started/DOCUMENTATION_INDEX.md`（中）** 已互链更新。
 - **creator-docs-en（续）**：新增 **`LICENSE_POLICY.md`**、**`guides/CONFIGURATION_FILES.md`**、**`guides/REGRESSION_COMPLEX_EMOTION_QA.md`**、**`guides/MUMU_UI_ACCEPTANCE_CHECKLIST.md`**、**`plugin-and-architecture/LOCAL_PLUGIN_BRIDGE_SPEC.md`**、**`plugin-and-architecture/HOW_TO_REPLACE_MODULES.md`**；英 **`DOCUMENTATION_INDEX`** 快速入口与「建议阅读顺序」中插件类链接统一为 **`creator-docs-en/plugin-and-architecture/...`**，**mumu** 与 **Extension points** 改 **`../guides/...`** / **`../plugin-and-architecture/...`**；**`PROJECT_STATUS_AND_ALIGNMENT`（英）** 用户手册表指向 **`../guides/CONFIGURATION_FILES.md`**、**`../LICENSE_POLICY.md`**、**mumu** 英稿，插件表补充 **`HOW_TO_REPLACE_MODULES`**；**`EXTENSION_POINTS` / `CREATOR_PLUGIN_ARCHITECTURE`（英）** 内 **`HOW_TO` / `LOCAL`** 指同目录英文稿。
 - **创作者文档双语收尾**：**`creator-docs-en/README.md`** 增加 **Documentation bilingual closure baseline**（权威语料、已镜像范围、中文-only 长尾、随开发更新的纪律）；**`creator-docs/README.md`**、**`getting-started/DOCUMENTATION_INDEX.md`（中）**、**`PROJECT_STATUS_AND_ALIGNMENT`（中/英）**、**`PROJECT_CURRENT_STATUS`（中/英）**、**`handoff/I18N_FOUR_REPO_BASELINE.md`**、**`PRODUCT_AND_KERNEL_GAP_CHECKLIST.md` §A6** 与之互参（§A6 中 **creator-docs-en** 主干项标为已满足；**界面无残留中文**仍为未勾选）。

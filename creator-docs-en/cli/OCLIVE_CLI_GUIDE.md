@@ -33,16 +33,20 @@ The end of `init --help` lists **presets and the `plugin_backends` matrix** (sam
 From repo root:
 
 ```bash
+# Default: v2 blueprint (pipeline.ocblueprint schema_version 2)
 cargo run -p oclive-cli -- pack validate ./roles/mumu --host-version 0.2.0
-cargo run -p oclive-cli -- pack create -o ./out/my-role --flat --id com.example.demo --name Demo
+cargo run -p oclive-cli -- pack validate ./roles/legacy-example --profile legacy
+cargo run -p oclive-cli -- pack create -o ./out/my-role --flat --id com.example.demo --name Demo --format-blueprint-v2
 cargo run -p oclive-cli -- pack publish ./out/my-role -o ./dist/com.example.demo-0.1.0.oclivepack
 ```
 
-- **`validate`**: checks merged `manifest.json` / `settings.json`, `plugin_backends` deserialization, seven-dim `default_personality` range, `interaction_mode`, `min_runtime_version` vs `--host-version`, etc. (aligned with host disk load; no DB).
-- **`create`**: minimal valid directory; with `--flat`, `-o` is the role root (otherwise creates `roles/<id>/`).
-- **`publish`**: zips the role directory as **`.oclivepack`**; top-level folder name inside the ZIP is **`manifest.id`**.
+- **`validate` (default v2)**: `pipeline.ocblueprint` (`meta`, `slot_registry`, at least one `type: llm`, etc.) — see [ROLE_PACK_SPEC.md](../role-pack/ROLE_PACK_SPEC.md).
+- **`validate --profile legacy`**: merged `manifest.json` / `settings.json`, `plugin_backends`, `min_runtime_version` vs `--host-version`, etc.
+- **`validate --profile robot-soul`**: RobotSoulPack rules after legacy validation (ROLE_PACK_SPEC §6).
+- **`create`**: minimal pack; prefer **`--format-blueprint-v2`**; with `--flat`, `-o` is the role root.
+- **`publish`**: **`.oclivepack`** ZIP; top-level folder is **`meta.id`** (v2) or **`manifest.id`** (legacy).
 
-**JSON Schema** (IDE / `ajv`, etc.): `crates/oclive-cli/schemas/role_pack_manifest.schema.json`, `role_pack_settings.schema.json`, `role_pack_index.schema.json`.
+**JSON Schema**: `crates/oclive-cli/schemas/pipeline.ocblueprint.v2.schema.json` (v2); legacy: `role_pack_manifest.schema.json`, `role_pack_settings.schema.json`, `role_pack_index.schema.json`.
 
 ---
 

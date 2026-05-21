@@ -168,6 +168,7 @@ roles/{role_id}/
 - [x] 产品关闭 Q1–Q8  
 - [x] RFC Accepted  
 - [x] 维护者确认实施计划（2026-05-20；[BLUEPRINT_V2_DECISIONS.md](BLUEPRINT_V2_DECISIONS.md)）  
+- [x] **P0–P8 实现收口**（`pack validate` 默认 v2、黄金包 `roles/mumu`、架构图写盘）；见 [BLUEPRINT_V2_IMPLEMENTATION_PLAN.md](BLUEPRINT_V2_IMPLEMENTATION_PLAN.md) §8  
 
 ## 11. 决议记录
 

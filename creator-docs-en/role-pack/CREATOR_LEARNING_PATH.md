@@ -9,11 +9,11 @@ Time-boxed steps. **Normative layout** remains [ROLE_PACK_SPEC.md](ROLE_PACK_SPE
 | Step | Goal | Read / do |
 |------|------|-------------|
 | 1 | Know the on-disk shape | [ROLE_PACK_SPEC.md](ROLE_PACK_SPEC.md) **§1** |
-| 2 | Generate a minimal pack | `cargo run -p oclive-cli -- pack create -o <parent> --id my_first_role` (creates `roles/<id>/`; see [../cli/OCLIVE_CLI_GUIDE.md](../cli/OCLIVE_CLI_GUIDE.md)) |
-| 3 | Open in the editor | Use **oclive-pack-editor** for `manifest.json` / `settings.json` ([CREATOR_WORKFLOW.md](../getting-started/CREATOR_WORKFLOW.md)) |
-| 4 | Edit façade fields | `name`, `description`, scenes — [README_MANIFEST](../../roles/README_MANIFEST.md) |
+| 2 | Generate a minimal pack | `cargo run -p oclive-cli -- pack create -o <parent> --id my_first_role --format-blueprint-v2` (writes `pipeline.ocblueprint`; see [../cli/OCLIVE_CLI_GUIDE.md](../cli/OCLIVE_CLI_GUIDE.md)) |
+| 3 | Open in the editor | **oclive-pack-editor** for v2 blueprint or legacy files ([CREATOR_WORKFLOW.md](../getting-started/CREATOR_WORKFLOW.md)) |
+| 4 | Edit façade fields | v2: `pipeline.ocblueprint` → `meta`; legacy: [README_MANIFEST](../../roles/README_MANIFEST.md) |
 
-**Done when:** `cargo run -p oclive-cli -- pack validate <role-root>` passes.
+**Done when:** `pack validate <role-root>` passes (default v2); legacy packs use `--profile legacy`.
 
 ---
 
@@ -34,8 +34,8 @@ Time-boxed steps. **Normative layout** remains [ROLE_PACK_SPEC.md](ROLE_PACK_SPE
 | Topic | Notes |
 |-------|--------|
 | **`reply_quality_anchor`** | See README_MANIFEST + ROLE_PACK_SPEC merged settings table; behavior follows validation + host load rules |
-| **`pipeline.ocblueprint` (optional)** | Optional file per ROLE_PACK_SPEC; **desktop hot path** is **`process_message` → `co_present`** ([AGENTS.md](../../AGENTS.md)). Blueprint is orthogonal to **Monolith** compile-time welding — see [RFC_OCLIVE_MONOLITH_MODE.md](../rfc/RFC_OCLIVE_MONOLITH_MODE.md) |
-| **Validate** | `cargo run -p oclive-cli -- pack validate <role-root>` (`--profile robot-soul` when needed) |
+| **`pipeline.ocblueprint` v2 (recommended SSOT)** | [ROLE_PACK_SPEC.md](ROLE_PACK_SPEC.md) · [BLUEPRINT_V2_IMPLEMENTATION_PLAN.md](../../handoff/BLUEPRINT_V2_IMPLEMENTATION_PLAN.md). **Desktop orchestration** is **`process_message` → `co_present`** (no blueprint `steps[]`; [AGENTS.md](../../AGENTS.md)). Desktop graph can **`save_role_slot_registry`** |
+| **Validate** | Default v2: `pack validate <role-root>`; legacy: `--profile legacy`; headless: `--profile robot-soul` (legacy shape; ROLE_PACK_SPEC §6) |
 | **Editor wasm checks** | **oclive-pack-editor** `wasm:build` + “run all checks” |
 
 **Done when:** `pack validate` is clean and you know which keys are host-validated vs author-only.

@@ -10,7 +10,7 @@ This is an **English summary** of the v1 contract between the host (Tauri / `cha
 
 ## Blueprint v2 role packs (`pipeline.ocblueprint`)
 
-**`schema_version: 2`** packs use [`pipeline.ocblueprint`](../role-pack/ROLE_PACK_SPEC.md) **`slot_registry`** as SSOT (open instance keys), not fixed six keys in `settings.json`. The host resolves via **`SlotResolver` / `SlotRunner`**; folding to `PluginBackends` uses **last-wins** per `type`. **`complex_emotion`** is a first-class `slot_registry` `type`; directory plugins declare **`provides: ["complex_emotion"]`** when serving that slot. Persist pack edits: Tauri **`save_role_slot_registry`**; session overrides: **`set_session_slot_override`**.
+**`schema_version: 2`** packs use [`pipeline.ocblueprint`](../role-pack/ROLE_PACK_SPEC.md) **`slot_registry`** as SSOT (open instance keys), not fixed six keys in `settings.json`. The host resolves via **`SlotResolver` / `SlotRunner`**; folding to `PluginBackends` uses **last-wins** per `type`. **`complex_emotion`** is a first-class `slot_registry` `type`; directory plugins declare **`provides: ["complex_emotion"]`** when serving that slot. Persist pack edits: Tauri **`save_role_slot_registry`** (toolbar add/remove slots; **at least one `llm`**; **last `llm` cannot be removed**); then **`invalidate_role_cache`** + **`load_role`**. Session overrides: **`set_session_slot_override`** (in-memory only).
 
 ---
 
