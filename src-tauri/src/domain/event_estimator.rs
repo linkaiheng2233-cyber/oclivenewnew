@@ -3,7 +3,7 @@
 
 use crate::domain::event_impact_ai::EventImpactEstimate;
 use crate::error::Result;
-use crate::infrastructure::llm::LlmClient;
+use crate::domain::ports::LlmClient;
 use crate::models::knowledge::KnowledgeEventAugment;
 use crate::models::{Emotion, Event, PersonalitySource, PersonalityVector};
 use async_trait::async_trait;

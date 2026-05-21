@@ -6,7 +6,7 @@
 //! - 创作者不能手写运行中的可变档案进程，只能通过配置调节影响强弱。
 
 use crate::error::Result;
-use crate::infrastructure::llm::LlmClient;
+use crate::domain::ports::LlmClient;
 use crate::models::{EventType, EvolutionConfig};
 use std::sync::Arc;
 

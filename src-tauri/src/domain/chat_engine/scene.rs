@@ -1,6 +1,6 @@
 //! 场景位移意图：规则命中 → 可选 LLM 判定（仅判断是否「要去/前往某地」，不解析目标 scene_id）
 
-use crate::infrastructure::llm::LlmClient;
+use crate::domain::ports::LlmClient;
 use crate::state::AppState;
 use crate::utils::json_loose::extract_json_object;
 use chrono::Utc;

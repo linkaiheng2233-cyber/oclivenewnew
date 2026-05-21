@@ -2,7 +2,7 @@ use crate::error::{AppError, Result};
 use crate::infrastructure::function_call_parser::{
     parse_from_llm_response, to_function_calling_schema, ToolSchemaInput,
 };
-use crate::infrastructure::llm::LlmClient;
+use crate::domain::ports::LlmClient;
 use crate::infrastructure::mcp_client::{McpClient, McpServerManifest, McpToolCallResult};
 use async_trait::async_trait;
 use parking_lot::RwLock;

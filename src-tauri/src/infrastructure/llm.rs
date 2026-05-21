@@ -10,16 +10,7 @@ use async_trait::async_trait;
 use std::sync::atomic::{AtomicBool, Ordering};
 use std::sync::Arc;
 
-#[async_trait]
-pub trait LlmClient: Send + Sync {
-    async fn generate(&self, model: &str, prompt: &str) -> Result<String>;
-    /// 低温度短输出（立绘标签等分类任务）
-    async fn generate_tag(&self, model: &str, prompt: &str) -> Result<String>;
-    /// 启动期可选探活（不默认失败；Ollama 实现会 ping 服务，失败仅打日志）。
-    async fn startup_probe(&self) -> Result<()> {
-        Ok(())
-    }
-}
+pub use crate::domain::ports::LlmClient;
 
 #[async_trait]
 impl LlmClient for OllamaClient {

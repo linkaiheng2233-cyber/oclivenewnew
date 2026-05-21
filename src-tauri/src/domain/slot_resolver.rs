@@ -10,7 +10,7 @@ use crate::domain::memory_retrieval::MemoryRetrieval;
 use crate::domain::plugin_host::BackendRegistry;
 use crate::domain::prompt_assembler::PromptAssembler;
 use crate::domain::user_emotion_analyzer::UserEmotionAnalyzer;
-use crate::infrastructure::llm::LlmClient;
+use crate::domain::ports::LlmClient;
 use crate::infrastructure::remote_plugin::{
     DirectoryComplexEmotionHttp, RemoteComplexEmotionHttp, RemotePluginHttpConfig,
 };

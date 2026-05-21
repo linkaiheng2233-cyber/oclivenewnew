@@ -10,7 +10,8 @@ use crate::domain::{
     PromptInput,
 };
 use crate::infrastructure::high_risk_grants::HighRiskGrantStore;
-use crate::infrastructure::llm::{LlmClient, MockLlmClient};
+use crate::domain::ports::LlmClient;
+use crate::infrastructure::llm::MockLlmClient;
 use crate::infrastructure::remote_fallback_policy::new_remote_fallback_switch;
 use crate::models::{
     Emotion, Event, EventType, Memory, PersonalitySource, PersonalityVector, Role,
