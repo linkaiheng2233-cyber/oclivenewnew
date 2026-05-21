@@ -4,7 +4,7 @@
 |----|-----|
 | 状态 | **已确认 / 可以落实**（决议见 [BLUEPRINT_V2_DECISIONS.md](BLUEPRINT_V2_DECISIONS.md)） |
 | RFC | [RFC_ROLE_BLUEPRINT_V2.md](RFC_ROLE_BLUEPRINT_V2.md)（**Accepted**） |
-| 当前阶段 | **P1 已落实**；**P2 加载链已落实**（会话 API / P6 迁移进行中） |
+| 当前阶段 | **P1–P2 与 P6（仓库 roles）已落实**；**P3–P5** 待续 |
 
 ---
 
