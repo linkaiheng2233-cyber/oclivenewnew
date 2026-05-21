@@ -38,7 +38,9 @@ fn roles_dir_has_any_role_pack(roles_root: &Path) -> bool {
     };
     rd.flatten().any(|e| {
         let p = e.path();
-        p.is_dir() && p.join("manifest.json").is_file()
+        p.is_dir()
+            && (p.join("manifest.json").is_file()
+                || p.join(oclive_validation::PIPELINE_BLUEPRINT_FILENAME).is_file())
     })
 }
 

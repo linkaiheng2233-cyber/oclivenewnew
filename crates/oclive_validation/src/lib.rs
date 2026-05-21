@@ -20,9 +20,10 @@ pub mod role_pack;
 pub mod validate;
 
 pub use blueprint_v2::{
+    load_blueprint_v2_for_role_dir, slot_registry_to_plugin_backends,
     validate_blueprint_v2_json, validate_blueprint_v2_json_with_context,
-    validate_role_pack_blueprint_v2_directory, BlueprintV2ValidateContext,
-    BLUEPRINT_V2_SCHEMA_VERSION, PIPELINE_BLUEPRINT_FILENAME,
+    validate_role_pack_blueprint_v2_directory, BlueprintV2LoadResult, BlueprintV2ValidateContext,
+    SlotRegistryEntry, BLUEPRINT_V2_SCHEMA_VERSION, PIPELINE_BLUEPRINT_FILENAME,
 };
 pub use disk_role_settings::{
     AutonomousSceneConfig, AutonomousSceneRule, DiskRoleSettings, RemotePresenceConfig,

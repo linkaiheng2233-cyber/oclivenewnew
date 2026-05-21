@@ -11,8 +11,10 @@ use crate::models::{
 };
 use chrono::Timelike;
 use oclive_validation::{
+    load_blueprint_v2_for_role_dir, slot_registry_to_plugin_backends,
     validate_manifest_top_level_keys, validate_min_runtime_version,
     validate_settings_schema_version, validate_settings_top_level_keys,
+    PIPELINE_BLUEPRINT_FILENAME,
 };
 use serde_json;
 use std::collections::BTreeSet;
@@ -103,13 +105,52 @@ impl RoleStorage {
 /// # Errors
 ///
 /// Returns [`Err`] with a human-readable message when the operation fails.
-    /// 从目录加载单个角色
+    /// 从目录加载单个角色（优先 `pipeline.ocblueprint` v2，否则 legacy manifest/settings）。
     pub fn load_role_from_dir(&self, role_dir: &Path) -> Result<Role> {
+        if role_dir.join(PIPELINE_BLUEPRINT_FILENAME).is_file() {
+            return self.load_role_from_blueprint_v2_dir(role_dir);
+        }
+        self.load_role_from_legacy_manifest_dir(role_dir)
+    }
+
+    fn load_role_from_blueprint_v2_dir(&self, role_dir: &Path) -> Result<Role> {
+        let loaded = load_blueprint_v2_for_role_dir(role_dir, env!("CARGO_PKG_VERSION")).map_err(
+            |errs| {
+                AppError::InvalidParameter(format!(
+                    "pipeline.ocblueprint 校验失败:\n{}",
+                    errs.join("\n")
+                ))
+            },
+        )?;
+
+        let mut role = disk_manifest_to_role(&loaded.disk);
+        role.plugin_backends = slot_registry_to_plugin_backends(&loaded.slot_registry);
+        role.slot_registry = Some(loaded.slot_registry);
+        role.interaction_mode = loaded.interaction_mode;
+        role.remote_presence = loaded.remote_presence;
+        role.autonomous_scene = loaded.autonomous_scene;
+        role.reply_quality_anchor = loaded.reply_quality_anchor;
+
+        for entry in role.slot_registry.as_ref().into_iter().flatten() {
+            if entry.1.slot_type.trim() == "llm"
+                && entry.1.backend.trim() == "ollama"
+                && entry.1.model.as_ref().is_some_and(|m| !m.trim().is_empty())
+            {
+                role.ollama_model = entry.1.model.clone();
+                break;
+            }
+        }
+
+        self.finish_role_pack_load(role_dir, &loaded.disk, role, None)
+    }
+
+    fn load_role_from_legacy_manifest_dir(&self, role_dir: &Path) -> Result<Role> {
         let manifest_path = role_dir.join("manifest.json");
 
         if !manifest_path.exists() {
             return Err(AppError::RoleNotFound(format!(
-                "manifest.json not found in {:?} (roles_dir={})",
+                "manifest.json or {} not found in {:?} (roles_dir={})",
+                PIPELINE_BLUEPRINT_FILENAME,
                 role_dir,
                 self.roles_dir.display()
             )));
@@ -154,6 +195,25 @@ impl RoleStorage {
         .map_err(AppError::InvalidParameter)?;
 
         let mut role = disk_manifest_to_role(&disk);
+        if let Some(ref s) = settings_opt {
+            role.remote_presence = s.remote_presence.clone();
+            role.autonomous_scene = s.autonomous_scene.clone();
+            role.interaction_mode = s.interaction_mode.clone();
+            if let Some(ref pb) = s.plugin_backends {
+                role.plugin_backends = pb.clone();
+            }
+            role.reply_quality_anchor = s.reply_quality_anchor.clone();
+        }
+        self.finish_role_pack_load(role_dir, &disk, role, settings_opt.as_ref())
+    }
+
+    fn finish_role_pack_load(
+        &self,
+        role_dir: &Path,
+        disk: &DiskRoleManifest,
+        mut role: Role,
+        _settings: Option<&DiskRoleSettings>,
+    ) -> Result<Role> {
         role.ui_config = UiConfig::load_from_path(&role_dir.join("ui.json"));
         let author_path = role_dir.join("author.json");
         if author_path.is_file() {
@@ -178,24 +238,14 @@ impl RoleStorage {
                 }
             }
         }
-        if should_load_knowledge(&disk, role_dir) {
-            let idx = load_knowledge_index(role_dir, &disk)?;
+        if should_load_knowledge(disk, role_dir) {
+            let idx = load_knowledge_index(role_dir, disk)?;
             role.knowledge_index = Some(Arc::new(idx));
-        }
-        if let Some(ref s) = settings_opt {
-            role.remote_presence = s.remote_presence.clone();
-            role.autonomous_scene = s.autonomous_scene.clone();
-            role.interaction_mode = s.interaction_mode.clone();
-            if let Some(ref pb) = s.plugin_backends {
-                role.plugin_backends = pb.clone();
-            }
-            role.reply_quality_anchor = s.reply_quality_anchor.clone();
         }
         apply_llm_backend_env_override(&mut role);
         validate_role_interaction_mode(&role).map_err(AppError::InvalidParameter)?;
         log_plugin_backends_remote_missing_env(&role);
 
-        // 加载核心人设
         let core_personality_path = role_dir.join("core_personality.txt");
         if core_personality_path.exists() {
             role.core_personality =

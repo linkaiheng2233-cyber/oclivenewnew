@@ -137,6 +137,7 @@ pub fn disk_manifest_to_role(d: &DiskRoleManifest) -> Role {
         min_runtime_version: d.min_runtime_version.clone(),
         dev_only: d.dev_only,
         plugin_backends: super::PluginBackends::default(),
+        slot_registry: None,
         knowledge_index: None,
         ui_config: super::UiConfig::default(),
         author_pack: None,

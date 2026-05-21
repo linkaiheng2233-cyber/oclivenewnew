@@ -1,5 +1,5 @@
 use serde::{Deserialize, Serialize};
-use std::collections::HashMap;
+use std::collections::{BTreeMap, HashMap};
 
 use super::author_pack::AuthorPackFile;
 use super::knowledge::KnowledgeIndex;
@@ -178,6 +178,9 @@ pub struct Role {
     /// `settings.json` → `plugin_backends`（可选；默认全 builtin）
     #[serde(default)]
     pub plugin_backends: PluginBackends,
+    /// `pipeline.ocblueprint` v2 → `slot_registry`（多实例；P2+ 编排用；序列化供调试/导出）
+    #[serde(default, skip_serializing_if = "slot_registry_is_empty")]
+    pub slot_registry: Option<BTreeMap<String, oclive_validation::SlotRegistryEntry>>,
     /// `knowledge/` 加载后的索引（仅内存；由 [`crate::infrastructure::storage::RoleStorage`] 填充）
     #[serde(skip)]
     pub knowledge_index: Option<Arc<KnowledgeIndex>>,
@@ -225,12 +228,17 @@ impl Default for Role {
             min_runtime_version: None,
             dev_only: false,
             plugin_backends: PluginBackends::default(),
+            slot_registry: None,
             knowledge_index: None,
             ui_config: UiConfig::default(),
             author_pack: None,
             reply_quality_anchor: None,
         }
     }
+}
+
+fn slot_registry_is_empty(m: &Option<BTreeMap<String, oclive_validation::SlotRegistryEntry>>) -> bool {
+    m.as_ref().is_none_or(|map| map.is_empty())
 }
 
 impl Role {

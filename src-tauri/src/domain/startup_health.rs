@@ -102,11 +102,13 @@ pub fn validate_plugin_backends_slots(pb: &PluginBackends) -> Result<()> {
 
 fn verify_role_pack_files(state: &AppState, role: &Role) -> Result<()> {
     let dir = state.storage.roles_dir().join(role.id.as_str());
+    let blueprint = dir.join(oclive_validation::PIPELINE_BLUEPRINT_FILENAME);
     let manifest = dir.join("manifest.json");
-    if !manifest.is_file() {
+    if !blueprint.is_file() && !manifest.is_file() {
         return Err(AppError::RoleNotFound(format!(
-            "startup_health: 缺少 manifest.json: {}",
-            manifest.display()
+            "startup_health: 缺少 {} 或 manifest.json: {}",
+            oclive_validation::PIPELINE_BLUEPRINT_FILENAME,
+            dir.display()
         )));
     }
     let settings = dir.join("settings.json");

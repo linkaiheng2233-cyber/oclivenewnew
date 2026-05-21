@@ -4,12 +4,17 @@ use std::collections::{BTreeMap, HashMap, HashSet};
 use std::fs;
 use std::path::Path;
 
-use serde::Deserialize;
+use serde::{Deserialize, Serialize};
 use serde_json::Value;
 
+use crate::disk_role_settings::{AutonomousSceneConfig, RemotePresenceConfig};
 use crate::manifest::{
     DiskRoleManifest, EvolutionConfigDisk, IdentityBinding, KnowledgePackConfigDisk,
     MemoryConfigDisk, UserRelationDisk,
+};
+use crate::plugin_backends::{
+    AgentBackend, DirectoryPluginSlots, EmotionBackend, EventBackend, LlmBackend, MemoryBackend,
+    PluginBackends, PromptBackend,
 };
 use crate::role_pack::{merge_role_pack_scene_ids, validate_default_personality_vector};
 use crate::validate::{
@@ -42,11 +47,42 @@ const PERSONALITY_OBJECT_KEYS: &[&str] = &[
     "warmth",
 ];
 
+/// 蓝图 `slot_registry` 单实例（与 `pipeline.ocblueprint` v2 文件一致）。
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq)]
+pub struct SlotRegistryEntry {
+    #[serde(rename = "type")]
+    pub slot_type: String,
+    pub label: String,
+    pub backend: String,
+    pub position: i64,
+    #[serde(default)]
+    pub plugin: Option<String>,
+    #[serde(default)]
+    pub plugins: Option<Vec<String>>,
+    #[serde(default)]
+    pub model: Option<String>,
+    #[serde(default)]
+    pub url: Option<String>,
+    #[serde(default)]
+    pub local_memory_provider_id: Option<String>,
+}
+
+/// 校验通过后的 v2 蓝图加载结果（供宿主 `RoleStorage` 映射为 `Role`）。
+#[derive(Debug, Clone)]
+pub struct BlueprintV2LoadResult {
+    pub disk: DiskRoleManifest,
+    pub slot_registry: BTreeMap<String, SlotRegistryEntry>,
+    pub interaction_mode: Option<String>,
+    pub remote_presence: Option<RemotePresenceConfig>,
+    pub autonomous_scene: Option<AutonomousSceneConfig>,
+    pub reply_quality_anchor: Option<String>,
+}
+
 #[derive(Debug, Clone, Deserialize)]
 struct BlueprintV2File {
     schema_version: u32,
     meta: BlueprintMeta,
-    slot_registry: BTreeMap<String, SlotEntry>,
+    slot_registry: BTreeMap<String, SlotRegistryEntry>,
 }
 
 #[derive(Debug, Clone, Deserialize)]
@@ -80,27 +116,12 @@ struct BlueprintMeta {
     pub min_runtime_version: Option<String>,
     #[serde(default)]
     pub dev_only: bool,
-}
-
-#[derive(Debug, Clone, Deserialize)]
-struct SlotEntry {
-    #[serde(rename = "type")]
-    slot_type: String,
-    label: String,
-    backend: String,
-    position: i64,
     #[serde(default)]
-    plugin: Option<String>,
+    pub remote_presence: Option<RemotePresenceConfig>,
     #[serde(default)]
-    plugins: Option<Vec<String>>,
+    pub autonomous_scene: Option<AutonomousSceneConfig>,
     #[serde(default)]
-    model: Option<String>,
-    #[serde(default)]
-    #[allow(dead_code)]
-    url: Option<String>,
-    #[serde(default)]
-    #[allow(dead_code)]
-    local_memory_provider_id: Option<String>,
+    pub reply_quality_anchor: Option<String>,
 }
 
 /// 可选上下文：目录名校验、`scenes/` 合并、`min_runtime_version` 与宿主比较。
@@ -274,6 +295,133 @@ pub fn validate_role_pack_blueprint_v2_directory(
     )
 }
 
+/// 读取并校验角色包目录中的 v2 蓝图，返回宿主加载用结构。
+///
+/// # Errors
+///
+/// 与 [`validate_role_pack_blueprint_v2_directory`] 相同。
+pub fn load_blueprint_v2_for_role_dir(
+    role_dir: &Path,
+    host_version: &str,
+) -> Result<BlueprintV2LoadResult, Vec<String>> {
+    validate_role_pack_blueprint_v2_directory(role_dir, host_version)?;
+    let raw = fs::read_to_string(role_dir.join(PIPELINE_BLUEPRINT_FILENAME))
+        .map_err(|e| vec![format!("读取 {} 失败: {}", PIPELINE_BLUEPRINT_FILENAME, e)])?;
+    let bp = parse_blueprint_v2_root(&raw)?;
+    Ok(blueprint_v2_file_to_load_result(&bp))
+}
+
+/// 将 `slot_registry` 折叠为现网六槽 `PluginBackends`（同 type **last-wins**，按 `position`）。
+#[must_use]
+pub fn slot_registry_to_plugin_backends(registry: &BTreeMap<String, SlotRegistryEntry>) -> PluginBackends {
+    let mut winners: HashMap<&str, (&str, &SlotRegistryEntry)> = HashMap::new();
+    for (key, entry) in registry {
+        let t = entry.slot_type.trim();
+        let keep = winners
+            .get(t)
+            .map(|(_, e)| entry.position >= e.position)
+            .unwrap_or(true);
+        if keep {
+            winners.insert(t, (key.as_str(), entry));
+        }
+    }
+
+    let mut pb = PluginBackends::default();
+    let mut dir = DirectoryPluginSlots::default();
+
+    if let Some((_, e)) = winners.get("memory") {
+        if let Ok(b) = parse_backend_wire::<MemoryBackend>(&e.backend) {
+            pb.memory = b;
+        }
+        if b_is_local(&e.backend) {
+            pb.local_memory_provider_id = e.local_memory_provider_id.clone();
+        }
+        if b_is_directory(&e.backend) {
+            dir.memory = single_plugin_id(e);
+        }
+    }
+    if let Some((_, e)) = winners.get("emotion") {
+        if let Ok(b) = parse_backend_wire::<EmotionBackend>(&e.backend) {
+            pb.emotion = b;
+        }
+        if b_is_directory(&e.backend) {
+            dir.emotion = single_plugin_id(e);
+        }
+    }
+    if let Some((_, e)) = winners.get("event") {
+        if let Ok(b) = parse_backend_wire::<EventBackend>(&e.backend) {
+            pb.event = b;
+        }
+        if b_is_directory(&e.backend) {
+            dir.event = single_plugin_id(e);
+        }
+    }
+    if let Some((_, e)) = winners.get("prompt") {
+        if let Ok(b) = parse_backend_wire::<PromptBackend>(&e.backend) {
+            pb.prompt = b;
+        }
+        if b_is_directory(&e.backend) {
+            dir.prompt = single_plugin_id(e);
+        }
+    }
+    if let Some((_, e)) = winners.get("llm") {
+        if let Ok(b) = parse_backend_wire::<LlmBackend>(&e.backend) {
+            pb.llm = b;
+        }
+        if b_is_directory(&e.backend) {
+            dir.llm = single_plugin_id(e);
+        }
+    }
+    if let Some((_, e)) = winners.get("agent") {
+        if let Ok(b) = parse_backend_wire::<AgentBackend>(&e.backend) {
+            pb.agent = b;
+        }
+        if b_is_directory(&e.backend) {
+            dir.agent = single_plugin_id(e).or_else(|| {
+                e.plugins
+                    .as_ref()
+                    .and_then(|ps| ps.first())
+                    .map(|s| s.trim().to_string())
+                    .filter(|s| !s.is_empty())
+            });
+        }
+    }
+
+    pb.directory_plugins = dir;
+    pb
+}
+
+fn blueprint_v2_file_to_load_result(bp: &BlueprintV2File) -> BlueprintV2LoadResult {
+    BlueprintV2LoadResult {
+        disk: meta_to_disk_manifest(&bp.meta),
+        slot_registry: bp.slot_registry.clone(),
+        interaction_mode: bp.meta.interaction_mode.clone(),
+        remote_presence: bp.meta.remote_presence.clone(),
+        autonomous_scene: bp.meta.autonomous_scene.clone(),
+        reply_quality_anchor: bp.meta.reply_quality_anchor.clone(),
+    }
+}
+
+fn parse_backend_wire<T: serde::de::DeserializeOwned>(backend: &str) -> Result<T, ()> {
+    serde_json::from_value(Value::String(backend.trim().to_string())).map_err(|_| ())
+}
+
+fn b_is_directory(backend: &str) -> bool {
+    backend.trim() == "directory"
+}
+
+fn b_is_local(backend: &str) -> bool {
+    backend.trim() == "local"
+}
+
+fn single_plugin_id(entry: &SlotRegistryEntry) -> Option<String> {
+    entry
+        .plugin
+        .as_ref()
+        .map(|s| s.trim().to_string())
+        .filter(|s| !s.is_empty())
+}
+
 fn validate_blueprint_v2_parsed(
     bp: &BlueprintV2File,
     folder_name: Option<&str>,
@@ -416,7 +564,7 @@ fn validate_meta_personality(value: &Value) -> Result<(), String> {
     }
 }
 
-fn validate_slot_backend_and_fields(key: &str, slot: &SlotEntry) -> Result<(), String> {
+fn validate_slot_backend_and_fields(key: &str, slot: &SlotRegistryEntry) -> Result<(), String> {
     let t = slot.slot_type.trim();
     let b = slot.backend.trim();
 
@@ -637,6 +785,41 @@ mod tests {
         }"#;
         let errs = validate_blueprint_v2_json(raw).unwrap_err();
         assert!(errs.iter().any(|e| e.contains("favorability")));
+    }
+
+    #[test]
+    fn slot_registry_last_wins_maps_to_plugin_backends() {
+        let mut reg = BTreeMap::new();
+        reg.insert(
+            "llm_a".into(),
+            SlotRegistryEntry {
+                slot_type: "llm".into(),
+                label: "A".into(),
+                backend: "ollama".into(),
+                position: 0,
+                plugin: None,
+                plugins: None,
+                model: Some("model-a".into()),
+                url: None,
+                local_memory_provider_id: None,
+            },
+        );
+        reg.insert(
+            "llm_b".into(),
+            SlotRegistryEntry {
+                slot_type: "llm".into(),
+                label: "B".into(),
+                backend: "remote".into(),
+                position: 1,
+                plugin: None,
+                plugins: None,
+                model: None,
+                url: None,
+                local_memory_provider_id: None,
+            },
+        );
+        let pb = slot_registry_to_plugin_backends(&reg);
+        assert_eq!(pb.llm, LlmBackend::Remote);
     }
 
     #[test]
