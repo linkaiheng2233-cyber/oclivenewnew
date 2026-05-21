@@ -67,7 +67,8 @@
 | **对齐进度与目标（一页：摘要 + 按用途分类的文档地图）** | **[PROJECT_STATUS_AND_ALIGNMENT.md](PROJECT_STATUS_AND_ALIGNMENT.md)** |
 | **产品首发门槛 + 内核/平台缺口（与 K 计划、愿景互参）** | **[../../handoff/PRODUCT_AND_KERNEL_GAP_CHECKLIST.md](../../handoff/PRODUCT_AND_KERNEL_GAP_CHECKLIST.md)** · 按复杂度排期 **[../../handoff/PRODUCT_LINE_TASK_BUCKETS.md](../../handoff/PRODUCT_LINE_TASK_BUCKETS.md)**（**§四 · 硬骨头** 为下一工程焦点）· 发版勾选 **[../../handoff/PRODUCT_RELEASE_CHECKLIST.md](../../handoff/PRODUCT_RELEASE_CHECKLIST.md)** |
 | **四仓双语基线（CJK 扫描、vue-i18n 挂载）** | **[../../handoff/I18N_FOUR_REPO_BASELINE.md](../../handoff/I18N_FOUR_REPO_BASELINE.md)** |
-| **用启动器安装 zip 角色包、选本机 Ollama 模型、一键 pull** | **[oclive-launcher README](https://github.com/linkaiheng2233-cyber/oclive-launcher/blob/main/README.md)**（独立仓库） |
+| **工作室：启动 + 创作、环境诊断、深链接、整合包** | **[../studio/USER_GUIDE.md](../studio/USER_GUIDE.md)**（[English](../../creator-docs-en/studio/USER_GUIDE.md)）· 仓库 [oclive-studio](https://github.com/oclive-app/oclive-studio) |
+| **用启动器安装 zip 角色包（已废弃，见工作室）** | **[oclive-launcher README](https://github.com/oclive-app/oclive-launcher/blob/main/README.md)**（**Deprecated** → oclive-studio） |
 | **高耦合编译模式（Monolith）** | [RFC 章节](#rfc)（`monolith.toml`、编译期焊接） |
 | **理清项目全貌 / 人机分工 / 命令与发版清单** | **[PROJECT_OVERVIEW.md](PROJECT_OVERVIEW.md)** |
 | **架构总述（契约型薄核 · 单核双态构建 · 特点）** | **[OCLIVE_ARCHITECTURE_OVERVIEW.md](OCLIVE_ARCHITECTURE_OVERVIEW.md)**（[English](../../creator-docs-en/getting-started/OCLIVE_ARCHITECTURE_OVERVIEW.md)） |
@@ -129,6 +130,7 @@
 | 文档 | 说明 |
 |------|------|
 | **[RFC_OCLIVE_MONOLITH_MODE.md](../rfc/RFC_OCLIVE_MONOLITH_MODE.md)** | **高耦合编译模式（Monolith）**：`monolith.toml`、`--monolith`、双 `[[bin]]`；**`build` / `bench`** 子命令与部分焊接（见 RFC 与 CLI 指南）。 |
+| **[RFC_STUDIO_MERGE.md](../rfc/RFC_STUDIO_MERGE.md)** | **工作室（合并启动器 + 编写器）**：新仓 `oclive-studio`、两安装物叙事、配置与验收。 |
 
 ---
 
