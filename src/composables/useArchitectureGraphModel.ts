@@ -364,6 +364,7 @@ export function useArchitectureGraphModel() {
     return out;
   }
 
+  /** v2：示意连线由 slot_registry 派生；勿写入 pipeline.ocblueprint（无 module_relations 字段）。 */
   function buildBlueprintEdges(registry: SlotRegistryMap) {
     const out = [];
     const entries = sortedSlotRegistryEntries(registry);

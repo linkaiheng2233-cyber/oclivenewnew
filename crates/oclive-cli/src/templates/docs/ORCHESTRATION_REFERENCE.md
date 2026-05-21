@@ -1,5 +1,7 @@
 # 编排参考（纯内核开发者）
 
+> **已废弃**：`pipeline.ocblueprint` 的 **`steps[]` / `load_context` 步骤类型** 不再实现；下文阶段名为**概念对照**，非可执行 DSL。
+
 本文说明 **Monolith / 无头内核** 场景下与主应用 `process_message` 对齐的**六段主流程**概念顺序，以及 Monolith 焊接可跳过哪些槽位。
 
 > **桌面宿主**：oclivenewnew Tauri / `--api` HTTP 路径**不走**本文件的可变顺序；以仓库内 `src-tauri/src/domain/chat_engine/mod.rs` 的 `process_message` 为准。

@@ -25,6 +25,7 @@ use crate::validate::{
 pub const BLUEPRINT_V2_SCHEMA_VERSION: u32 = 2;
 pub const PIPELINE_BLUEPRINT_FILENAME: &str = "pipeline.ocblueprint";
 
+/// 禁止落盘：`module_relations` 仅由宿主/前端从 `slot_registry` 派生示意边，勿手改 JSON。
 const FORBIDDEN_ROOT_KEYS: &[&str] = &["module_relations", "steps", "entry"];
 
 const SLOT_TYPES: &[&str] = &[
