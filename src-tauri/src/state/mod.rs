@@ -25,7 +25,7 @@ use crate::models::{
 use parking_lot::{Mutex, RwLock};
 use serde::Deserialize;
 use sqlx::sqlite::{SqliteConnectOptions, SqlitePoolOptions};
-use std::collections::HashMap;
+use std::collections::{BTreeMap, HashMap};
 use std::fs;
 use std::path::{Path, PathBuf};
 use std::sync::atomic::{AtomicBool, Ordering};
@@ -317,6 +317,8 @@ pub struct AppState {
     pub high_risk_grants: Arc<HighRiskGrantStore>,
     /// 会话级后端覆盖（key 为对话命名空间，如 `role_id` 或 `role_id__sess__{session}`）。
     session_plugin_overrides: Arc<RwLock<HashMap<String, PluginBackendsOverride>>>,
+    /// 按 `slot_registry` 实例键的会话覆盖（v2）。
+    session_slot_overrides: Arc<RwLock<HashMap<String, BTreeMap<String, oclive_validation::SlotOverridePatch>>>>,
     /// 共景路径：上一回合内置复杂情感输出的 `narrative_hint`（按 `srid` 命名空间；进程内，非 SQLite）。
     last_complex_emotion_narrative_hint: Arc<RwLock<HashMap<String, String>>>,
     /// 首轮 `process_message` 启动自检结果（致命错误缓存，后续请求直接短路）。
@@ -446,6 +448,7 @@ impl AppState {
             directory_plugins,
             high_risk_grants,
             session_plugin_overrides: Arc::new(RwLock::new(HashMap::new())),
+            session_slot_overrides: Arc::new(RwLock::new(HashMap::new())),
             last_complex_emotion_narrative_hint: Arc::new(RwLock::new(HashMap::new())),
             startup_health: Mutex::new(None),
             remote_fallback_allowed,
@@ -540,6 +543,7 @@ impl AppState {
             directory_plugins,
             high_risk_grants,
             session_plugin_overrides: Arc::new(RwLock::new(HashMap::new())),
+            session_slot_overrides: Arc::new(RwLock::new(HashMap::new())),
             last_complex_emotion_narrative_hint: Arc::new(RwLock::new(HashMap::new())),
             startup_health: Mutex::new(None),
             remote_fallback_allowed,
@@ -763,14 +767,99 @@ impl AppState {
     }
 
     #[must_use]
+    pub fn session_slot_overrides(
+        &self,
+        session_namespace: &str,
+    ) -> BTreeMap<String, oclive_validation::SlotOverridePatch> {
+        self.session_slot_overrides
+            .read()
+            .get(session_namespace)
+            .cloned()
+            .unwrap_or_default()
+    }
+
+    pub fn set_session_slot_override(
+        &self,
+        session_namespace: &str,
+        slot_key: &str,
+        patch: oclive_validation::SlotOverridePatch,
+    ) {
+        let key = slot_key.trim();
+        if key.is_empty() {
+            return;
+        }
+        if patch.is_empty() {
+            let mut map = self.session_slot_overrides.write();
+            if let Some(m) = map.get_mut(session_namespace) {
+                m.remove(key);
+                if m.is_empty() {
+                    map.remove(session_namespace);
+                }
+            }
+            return;
+        }
+        self.session_slot_overrides
+            .write()
+            .entry(session_namespace.to_string())
+            .or_default()
+            .insert(key.to_string(), patch);
+    }
+
+    pub fn clear_session_slot_override(&self, session_namespace: &str, slot_key: &str) {
+        let key = slot_key.trim();
+        if key.is_empty() {
+            return;
+        }
+        let mut map = self.session_slot_overrides.write();
+        if let Some(m) = map.get_mut(session_namespace) {
+            m.remove(key);
+            if m.is_empty() {
+                map.remove(session_namespace);
+            }
+        }
+    }
+
+    pub fn clear_all_session_slot_overrides(&self, session_namespace: &str) {
+        self.session_slot_overrides.write().remove(session_namespace);
+    }
+
+    #[must_use]
+    pub fn effective_slot_registry_for_session(
+        &self,
+        role: &Role,
+        session_namespace: &str,
+    ) -> Option<BTreeMap<String, oclive_validation::SlotRegistryEntry>> {
+        let pack = role.slot_registry.as_ref()?;
+        let ov = self.session_slot_overrides(session_namespace);
+        Some(oclive_validation::effective_slot_registry(
+            pack,
+            &ov,
+        ))
+    }
+
+    #[must_use]
+    pub fn slot_session_overridden_keys(&self, session_namespace: &str) -> Vec<String> {
+        self.session_slot_overrides(session_namespace)
+            .keys()
+            .cloned()
+            .collect()
+    }
+
+    #[must_use]
     pub fn effective_plugin_backends_for_session(
         &self,
         role: &Role,
         session_namespace: &str,
     ) -> PluginBackends {
+        let base = if let Some(eff) = self.effective_slot_registry_for_session(role, session_namespace)
+        {
+            oclive_validation::slot_registry_to_plugin_backends(&eff)
+        } else {
+            role.plugin_backends.clone()
+        };
         self.session_backend_override(session_namespace)
-            .map(|ov| ov.apply_to(&role.plugin_backends))
-            .unwrap_or_else(|| role.plugin_backends.clone())
+            .map(|ov| ov.apply_to(&base))
+            .unwrap_or(base)
     }
 
     #[must_use]

@@ -1,5 +1,7 @@
 //! 前后端契约（Tauri invoke）
 
+use std::collections::BTreeMap;
+
 use super::author_pack::AuthorPackFile;
 use super::plugin_backends::PluginBackends;
 use super::plugin_backends::PluginBackendsOverride;
@@ -11,7 +13,7 @@ use super::ui_config::UiConfig;
 use serde::{Deserialize, Serialize};
 
 pub const API_VERSION: u32 = 1;
-pub const SCHEMA_VERSION: u32 = 12;
+pub const SCHEMA_VERSION: u32 = 13;
 
 #[derive(Debug, Deserialize)]
 pub struct SendMessageRequest {
@@ -161,6 +163,12 @@ pub struct RoleData {
     /// 可选 `author.json` 全文（推荐插件、建议后端等）。
     #[serde(default)]
     pub author_pack: Option<AuthorPackFile>,
+    #[serde(default)]
+    pub slot_registry_pack: Option<BTreeMap<String, oclive_validation::SlotRegistryEntry>>,
+    #[serde(default)]
+    pub slot_registry_effective: Option<BTreeMap<String, oclive_validation::SlotRegistryEntry>>,
+    #[serde(default)]
+    pub slot_session_overridden_keys: Vec<String>,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -270,6 +278,49 @@ pub struct RoleInfo {
     /// 可选 `author.json`。
     #[serde(default)]
     pub author_pack: Option<AuthorPackFile>,
+    /// 角色包 `slot_registry`（v2 蓝图；legacy 包为 `null`）。
+    #[serde(default)]
+    pub slot_registry_pack: Option<BTreeMap<String, oclive_validation::SlotRegistryEntry>>,
+    /// 会话覆盖叠加后的 effective `slot_registry`。
+    #[serde(default)]
+    pub slot_registry_effective: Option<BTreeMap<String, oclive_validation::SlotRegistryEntry>>,
+    /// 当前会话中存在覆盖的实例键列表。
+    #[serde(default)]
+    pub slot_session_overridden_keys: Vec<String>,
+}
+
+#[derive(Debug, Clone, Deserialize)]
+pub struct SetSessionSlotOverrideRequest {
+    pub role_id: String,
+    /// `slot_registry` 实例键（如 `memory`、`llm`）。
+    pub slot_key: String,
+    #[serde(default)]
+    pub backend: Option<String>,
+    #[serde(default)]
+    pub plugin: Option<String>,
+    #[serde(default)]
+    pub plugins: Option<Vec<String>>,
+    #[serde(default)]
+    pub model: Option<String>,
+    #[serde(default)]
+    pub local_memory_provider_id: Option<String>,
+    #[serde(default)]
+    pub session_id: Option<String>,
+}
+
+#[derive(Debug, Clone, Deserialize)]
+pub struct ClearSessionSlotOverrideRequest {
+    pub role_id: String,
+    pub slot_key: String,
+    #[serde(default)]
+    pub session_id: Option<String>,
+}
+
+#[derive(Debug, Clone, Deserialize)]
+pub struct ClearAllSessionSlotOverridesRequest {
+    pub role_id: String,
+    #[serde(default)]
+    pub session_id: Option<String>,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]

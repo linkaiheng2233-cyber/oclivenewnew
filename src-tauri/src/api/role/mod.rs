@@ -7,17 +7,19 @@ mod runtime;
 use crate::error::AppError;
 use crate::infrastructure::storage::resolve_llm_backend_env_override;
 use crate::models::dto::{
-    ClearSceneUserRelationRequest, GetPluginResolutionDebugRequest, GetRoleInfoRequest,
+    ClearAllSessionSlotOverridesRequest, ClearSceneUserRelationRequest,
+    ClearSessionSlotOverrideRequest, GetPluginResolutionDebugRequest, GetRoleInfoRequest,
     PluginResolutionDebugInfo, RoleData, RoleInfo, RoleSummary, SceneLabelEntry,
     SetEvolutionFactorRequest, SetRemoteLifeEnabledRequest, SetRoleInteractionModeRequest,
-    SetSceneUserRelationRequest, SetSessionPluginBackendRequest, SetUserRelationRequest,
-    API_VERSION, OCLIVE_DEFAULT_RELATION_SENTINEL, SCHEMA_VERSION,
+    SetSceneUserRelationRequest, SetSessionPluginBackendRequest, SetSessionSlotOverrideRequest,
+    SetUserRelationRequest, API_VERSION, OCLIVE_DEFAULT_RELATION_SENTINEL, SCHEMA_VERSION,
 };
+use oclive_validation::{default_slot_key_for_module, SlotOverridePatch};
 use crate::models::plugin_backends::{
     AgentBackend, EmotionBackend, EventBackend, LlmBackend, MemoryBackend, PluginBackendsOverride,
     PromptBackend,
 };
-use crate::models::role::IdentityBinding;
+use crate::models::role::{IdentityBinding, Role};
 use crate::state::AppState;
 use std::sync::Arc;
 use tauri::State;
@@ -35,6 +37,21 @@ const EVENT_IMPACT_MAX: f64 = 5.0;
 
 pub(crate) fn session_namespace(role_id: &str, session_id: Option<&str>) -> String {
     crate::domain::chat_engine::conversation_state_role_id(role_id, session_id)
+}
+
+fn slot_registry_role_info_fields(
+    state: &AppState,
+    role: &Role,
+    session_ns: &str,
+) -> (
+    Option<std::collections::BTreeMap<String, oclive_validation::SlotRegistryEntry>>,
+    Option<std::collections::BTreeMap<String, oclive_validation::SlotRegistryEntry>>,
+    Vec<String>,
+) {
+    let pack = role.slot_registry.clone();
+    let effective = state.effective_slot_registry_for_session(role, session_ns);
+    let keys = state.slot_session_overridden_keys(session_ns);
+    (pack, effective, keys)
 }
 
 fn parse_backend_wire<T: DeserializeOwned>(module: &str, value: &str) -> Result<T, String> {
@@ -152,6 +169,8 @@ pub async fn load_role_impl(
         state.effective_plugin_backends_for_session(role.as_ref(), session_ns.as_str());
     let plugin_backends_effective_sources =
         state.effective_plugin_backend_sources_for_session(session_ns.as_str());
+    let (slot_registry_pack, slot_registry_effective, slot_session_overridden_keys) =
+        slot_registry_role_info_fields(state, role.as_ref(), session_ns.as_str());
 
     Ok(RoleData {
         role_id: role_id.to_string(),
@@ -190,6 +209,9 @@ pub async fn load_role_impl(
         pack_ui_config: role.ui_config.clone(),
         pack_ui_baseline: role.plugin_state_ui_baseline().clone(),
         author_pack: role.author_pack.clone(),
+        slot_registry_pack,
+        slot_registry_effective,
+        slot_session_overridden_keys,
     })
 }
 /// # Errors
@@ -288,6 +310,9 @@ pub async fn get_role_info_impl(
         None => (false, 0),
     };
 
+    let (slot_registry_pack, slot_registry_effective, slot_session_overridden_keys) =
+        slot_registry_role_info_fields(state, role.as_ref(), session_ns.as_str());
+
     Ok(RoleInfo {
         role_id: role_id.to_string(),
         role_name: role.name.clone(),
@@ -331,6 +356,9 @@ pub async fn get_role_info_impl(
         pack_ui_config: role.ui_config.clone(),
         pack_ui_baseline: role.plugin_state_ui_baseline().clone(),
         author_pack: role.author_pack.clone(),
+        slot_registry_pack,
+        slot_registry_effective,
+        slot_session_overridden_keys,
     })
 }
 /// # Errors
@@ -784,8 +812,82 @@ pub async fn set_session_plugin_backend_impl(
     } else {
         state.set_session_backend_override(ns.as_str(), next);
     }
+
+    if let Some(slot_key) = default_slot_key_for_module(&module) {
+        let role = state
+            .load_role_cached(&req.role_id)
+            .map_err(|e| e.to_frontend_error())?;
+        if role.slot_registry.is_some() {
+            let mut patch = SlotOverridePatch::default();
+            if let Some(backend) = req.backend.as_ref().and_then(|o| o.as_ref()) {
+                patch.backend = Some(backend.clone());
+            }
+            if let Some(provider_id) = req.local_memory_provider_id.as_ref() {
+                patch.local_memory_provider_id = Some(provider_id.clone());
+            }
+            if patch.is_empty() {
+                state.clear_session_slot_override(ns.as_str(), slot_key);
+            } else {
+                state.set_session_slot_override(ns.as_str(), slot_key, patch);
+            }
+        }
+    }
+
     get_role_info_impl(state, &req.role_id, req.session_id.as_deref()).await
 }
+
+pub async fn set_session_slot_override_impl(
+    state: &AppState,
+    req: &SetSessionSlotOverrideRequest,
+) -> Result<RoleInfo, String> {
+    let slot_key = req.slot_key.trim();
+    if slot_key.is_empty() {
+        return Err(AppError::InvalidParameter("slot_key must not be empty".into())
+            .to_frontend_error());
+    }
+    state
+        .load_role_cached(&req.role_id)
+        .map_err(|e| e.to_frontend_error())?;
+    let ns = session_namespace(&req.role_id, req.session_id.as_deref());
+    state
+        .db_manager
+        .ensure_role_runtime(ns.as_str())
+        .await
+        .map_err(|e| e.to_frontend_error())?;
+
+    let patch = SlotOverridePatch {
+        backend: req.backend.clone(),
+        plugin: req.plugin.clone(),
+        plugins: req.plugins.clone(),
+        model: req.model.clone(),
+        local_memory_provider_id: req.local_memory_provider_id.clone(),
+    };
+    if patch.is_empty() {
+        state.clear_session_slot_override(ns.as_str(), slot_key);
+    } else {
+        state.set_session_slot_override(ns.as_str(), slot_key, patch);
+    }
+    get_role_info_impl(state, &req.role_id, req.session_id.as_deref()).await
+}
+
+pub async fn clear_session_slot_override_impl(
+    state: &AppState,
+    req: &ClearSessionSlotOverrideRequest,
+) -> Result<RoleInfo, String> {
+    let ns = session_namespace(&req.role_id, req.session_id.as_deref());
+    state.clear_session_slot_override(ns.as_str(), req.slot_key.trim());
+    get_role_info_impl(state, &req.role_id, req.session_id.as_deref()).await
+}
+
+pub async fn clear_all_session_slot_overrides_impl(
+    state: &AppState,
+    req: &ClearAllSessionSlotOverridesRequest,
+) -> Result<RoleInfo, String> {
+    let ns = session_namespace(&req.role_id, req.session_id.as_deref());
+    state.clear_all_session_slot_overrides(ns.as_str());
+    get_role_info_impl(state, &req.role_id, req.session_id.as_deref()).await
+}
+
 /// # Errors
 ///
 /// Returns [`Err`] with a human-readable message when the operation fails.
@@ -795,6 +897,39 @@ pub async fn set_session_plugin_backend(
     state: State<'_, AppState>,
 ) -> Result<RoleInfo, String> {
     set_session_plugin_backend_impl(&state, &req).await
+}
+
+/// # Errors
+///
+/// Returns [`Err`] with a human-readable message when the operation fails.
+#[tauri::command]
+pub async fn set_session_slot_override(
+    req: SetSessionSlotOverrideRequest,
+    state: State<'_, AppState>,
+) -> Result<RoleInfo, String> {
+    set_session_slot_override_impl(&state, &req).await
+}
+
+/// # Errors
+///
+/// Returns [`Err`] with a human-readable message when the operation fails.
+#[tauri::command]
+pub async fn clear_session_slot_override(
+    req: ClearSessionSlotOverrideRequest,
+    state: State<'_, AppState>,
+) -> Result<RoleInfo, String> {
+    clear_session_slot_override_impl(&state, &req).await
+}
+
+/// # Errors
+///
+/// Returns [`Err`] with a human-readable message when the operation fails.
+#[tauri::command]
+pub async fn clear_all_session_slot_overrides(
+    req: ClearAllSessionSlotOverridesRequest,
+    state: State<'_, AppState>,
+) -> Result<RoleInfo, String> {
+    clear_all_session_slot_overrides_impl(&state, &req).await
 }
 
 #[derive(Debug, serde::Deserialize)]
