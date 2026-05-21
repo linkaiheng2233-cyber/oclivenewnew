@@ -97,7 +97,7 @@ P8  CI（OOCP + invoke 矩阵 + 新黄金包）
 | `crates/oclive_validation/src/blueprint_v2.rs` | Rust 校验 |
 | `crates/oclive-cli/schemas/pipeline.ocblueprint.v2.schema.json` | JSON Schema |
 | `oclive-cli blueprint validate` | 仅接受 v2；移除/废弃 steps 校验路径 |
-| `oclive-cli pack validate` | 要求 `pipeline.ocblueprint` v2；无 manifest/settings |
+| `oclive-cli pack validate` | `--profile blueprint-v2` 要求 `pipeline.ocblueprint` v2、无 manifest/settings；**默认 profile 仍 legacy**（P6 后切换） |
 | 单测 | 合法/非法样例 JSON |
 
 **明确不做**：`role_pack.rs` 加载、`co_present`、`PluginHost` 改造。

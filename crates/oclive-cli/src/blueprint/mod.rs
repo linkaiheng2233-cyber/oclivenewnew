@@ -1,7 +1,7 @@
 //! 角色包蓝图（`pipeline.ocblueprint` v2）读取与校验。
 
 use anyhow::{Context, Result};
-use oclive_validation::validate_blueprint_v2_json;
+use oclive_validation::{validate_blueprint_v2_json_with_context, BlueprintV2ValidateContext};
 use serde_json::Value;
 use std::fs;
 use std::path::Path;
@@ -75,7 +75,15 @@ pub fn validate_blueprint_file(raw: &str) -> ValidationReport {
     }
 
     ValidationReport::from_strings(
-        validate_blueprint_v2_json(raw).err().unwrap_or_default(),
+        validate_blueprint_v2_json_with_context(
+            raw,
+            BlueprintV2ValidateContext {
+                host_version: Some(env!("CARGO_PKG_VERSION")),
+                ..BlueprintV2ValidateContext::default()
+            },
+        )
+        .err()
+        .unwrap_or_default(),
     )
 }
 

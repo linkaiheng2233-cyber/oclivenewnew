@@ -103,12 +103,40 @@ struct SlotEntry {
     local_memory_provider_id: Option<String>,
 }
 
-/// 校验 v2 蓝图 JSON 文本。
+/// 可选上下文：目录名校验、`scenes/` 合并、`min_runtime_version` 与宿主比较。
+#[derive(Debug, Clone, Copy, Default)]
+pub struct BlueprintV2ValidateContext<'a> {
+    /// 角色包目录名，与 `meta.id` 比对（R4）。
+    pub folder_name: Option<&'a str>,
+    /// 提供时合并 `scenes/` 子目录并跑完整 `validate_disk_manifest`。
+    pub role_dir: Option<&'a Path>,
+    /// 提供时校验 `meta.min_runtime_version`。
+    pub host_version: Option<&'a str>,
+}
+
+/// 校验 v2 蓝图 JSON 文本（槽位 + meta 结构；不含宿主版本时可省略 `min_runtime`）。
 ///
 /// # Errors
 ///
 /// 契约不符时返回 `Err(Vec<String>)`。
 pub fn validate_blueprint_v2_json(raw: &str) -> Result<(), Vec<String>> {
+    validate_blueprint_v2_json_with_context(raw, BlueprintV2ValidateContext::default())
+}
+
+/// 带上下文的 v2 蓝图 JSON 校验（CLI / 目录校验共用）。
+///
+/// # Errors
+///
+/// 契约不符时返回 `Err(Vec<String>)`。
+pub fn validate_blueprint_v2_json_with_context(
+    raw: &str,
+    ctx: BlueprintV2ValidateContext<'_>,
+) -> Result<(), Vec<String>> {
+    let bp = parse_blueprint_v2_root(raw)?;
+    validate_blueprint_v2_file(&bp, ctx)
+}
+
+fn parse_blueprint_v2_root(raw: &str) -> Result<BlueprintV2File, Vec<String>> {
     let root: Value = match serde_json::from_str(raw) {
         Ok(v) => v,
         Err(e) => return Err(vec![format!("pipeline.ocblueprint JSON 语法错误: {}", e)]),
@@ -123,12 +151,6 @@ pub fn validate_blueprint_v2_json(raw: &str) -> Result<(), Vec<String>> {
                 ));
             }
         }
-        if map.contains_key("steps") || map.contains_key("entry") {
-            errs.push(
-                "pipeline.ocblueprint：schema_version 2 不再支持 steps[]/entry；请迁移为 meta + slot_registry"
-                    .into(),
-            );
-        }
     } else {
         return Err(vec!["pipeline.ocblueprint 根节点须为 JSON 对象".into()]);
     }
@@ -137,12 +159,58 @@ pub fn validate_blueprint_v2_json(raw: &str) -> Result<(), Vec<String>> {
         return Err(errs);
     }
 
-    let bp: BlueprintV2File = match serde_json::from_value(root) {
-        Ok(b) => b,
-        Err(e) => return Err(vec![format!("pipeline.ocblueprint 结构不符合 v2 契约: {}", e)]),
-    };
+    serde_json::from_value(root)
+        .map_err(|e| vec![format!("pipeline.ocblueprint 结构不符合 v2 契约: {}", e)])
+}
 
-    validate_blueprint_v2_parsed(&bp, None)
+fn validate_blueprint_v2_file(
+    bp: &BlueprintV2File,
+    ctx: BlueprintV2ValidateContext<'_>,
+) -> Result<(), Vec<String>> {
+    validate_blueprint_v2_parsed(bp, ctx.folder_name)?;
+
+    let disk = meta_to_disk_manifest(&bp.meta);
+    let merged_scenes = merged_scenes_for_validate(ctx.role_dir, &disk.scenes)?;
+    if let Err(e) = validate_disk_manifest(&disk, &merged_scenes) {
+        return Err(vec![e]);
+    }
+
+    if let Some(ref m) = bp.meta.interaction_mode {
+        if let Err(e) = validate_interaction_mode_pack_setting(Some(m.as_str())) {
+            return Err(vec![e]);
+        }
+    }
+
+    if let Some(host) = ctx.host_version {
+        if let Err(e) = validate_min_runtime_version(
+            bp.meta.min_runtime_version.as_deref(),
+            host,
+        ) {
+            return Err(vec![e]);
+        }
+    }
+
+    Ok(())
+}
+
+fn merged_scenes_for_validate(
+    role_dir: Option<&Path>,
+    manifest_scenes: &[String],
+) -> Result<Vec<String>, Vec<String>> {
+    match role_dir {
+        Some(dir) => merge_role_pack_scene_ids(dir, manifest_scenes).map_err(|e| vec![e]),
+        None => {
+            let mut scenes: Vec<String> = manifest_scenes
+                .iter()
+                .filter(|s| !s.trim().is_empty())
+                .cloned()
+                .collect();
+            if scenes.is_empty() {
+                scenes.push("default".into());
+            }
+            Ok(scenes)
+        }
+    }
 }
 
 /// 校验角色包目录（v2 SSOT：`pipeline.ocblueprint`；不得含 manifest/settings）。
@@ -192,57 +260,18 @@ pub fn validate_role_pack_blueprint_v2_directory(
         }
     };
 
-    let root: Value = match serde_json::from_str(&raw) {
-        Ok(v) => v,
-        Err(e) => return Err(vec![format!("pipeline.ocblueprint JSON 语法错误: {}", e)]),
-    };
-
-    let mut parse_errs = Vec::new();
-    if let Value::Object(map) = &root {
-        for key in FORBIDDEN_ROOT_KEYS {
-            if map.contains_key(*key) {
-                parse_errs.push(format!(
-                    "pipeline.ocblueprint：禁止顶层字段「{key}」"
-                ));
-            }
-        }
-    }
-    if !parse_errs.is_empty() {
-        return Err(parse_errs);
-    }
-
-    let bp: BlueprintV2File = match serde_json::from_value(root) {
-        Ok(b) => b,
-        Err(e) => return Err(vec![format!("pipeline.ocblueprint 结构不符合 v2 契约: {}", e)]),
-    };
-
     let folder_name = role_dir
         .file_name()
         .and_then(|s| s.to_str())
         .unwrap_or("");
-    validate_blueprint_v2_parsed(&bp, Some(folder_name))?;
-
-    let disk = meta_to_disk_manifest(&bp.meta);
-    let merged_scenes = merge_role_pack_scene_ids(role_dir, &disk.scenes)
-        .map_err(|e| vec![e])?;
-    if let Err(e) = validate_disk_manifest(&disk, &merged_scenes) {
-        return Err(vec![e]);
-    }
-
-    if let Some(ref m) = bp.meta.interaction_mode {
-        if let Err(e) = validate_interaction_mode_pack_setting(Some(m.as_str())) {
-            return Err(vec![e]);
-        }
-    }
-
-    if let Err(e) = validate_min_runtime_version(
-        bp.meta.min_runtime_version.as_deref(),
-        host_version,
-    ) {
-        return Err(vec![e]);
-    }
-
-    Ok(())
+    validate_blueprint_v2_json_with_context(
+        &raw,
+        BlueprintV2ValidateContext {
+            folder_name: Some(folder_name),
+            role_dir: Some(role_dir),
+            host_version: Some(host_version),
+        },
+    )
 }
 
 fn validate_blueprint_v2_parsed(
@@ -591,6 +620,44 @@ mod tests {
         }"#;
         let errs = validate_blueprint_v2_json(raw).unwrap_err();
         assert!(errs.iter().any(|e| e.contains("position")));
+    }
+
+    #[test]
+    fn rejects_invalid_relation_favorability_via_disk_manifest() {
+        let raw = r#"{
+          "schema_version": 2,
+          "meta": {
+            "id": "x", "name": "X", "version": "0.1.0", "author": "a", "description": "d",
+            "relations": { "f": { "initial_favorability": 200.0, "favor_multiplier": 1.0 } },
+            "default_relation": "f"
+          },
+          "slot_registry": {
+            "llm": { "type": "llm", "label": "L", "backend": "ollama", "position": 0 }
+          }
+        }"#;
+        let errs = validate_blueprint_v2_json(raw).unwrap_err();
+        assert!(errs.iter().any(|e| e.contains("favorability")));
+    }
+
+    #[test]
+    fn blueprint_v2_directory_minimal_pack() {
+        let dir = tempfile::tempdir().unwrap();
+        let role = dir.path().join("demo.pack");
+        fs::create_dir_all(role.join("scenes").join("default")).unwrap();
+        let bp = minimal_v2_json().replace("demo.pack", "demo.pack");
+        fs::write(role.join(PIPELINE_BLUEPRINT_FILENAME), bp).unwrap();
+        validate_role_pack_blueprint_v2_directory(&role, "999.0.0").unwrap();
+    }
+
+    #[test]
+    fn blueprint_v2_directory_rejects_legacy_manifest() {
+        let dir = tempfile::tempdir().unwrap();
+        let role = dir.path().join("demo.pack");
+        fs::create_dir_all(&role).unwrap();
+        fs::write(role.join(PIPELINE_BLUEPRINT_FILENAME), minimal_v2_json()).unwrap();
+        fs::write(role.join("manifest.json"), "{}").unwrap();
+        let errs = validate_role_pack_blueprint_v2_directory(&role, "999.0.0").unwrap_err();
+        assert!(errs.iter().any(|e| e.contains("manifest.json")));
     }
 
     #[test]

@@ -20,7 +20,8 @@ pub mod role_pack;
 pub mod validate;
 
 pub use blueprint_v2::{
-    validate_blueprint_v2_json, validate_role_pack_blueprint_v2_directory,
+    validate_blueprint_v2_json, validate_blueprint_v2_json_with_context,
+    validate_role_pack_blueprint_v2_directory, BlueprintV2ValidateContext,
     BLUEPRINT_V2_SCHEMA_VERSION, PIPELINE_BLUEPRINT_FILENAME,
 };
 pub use disk_role_settings::{

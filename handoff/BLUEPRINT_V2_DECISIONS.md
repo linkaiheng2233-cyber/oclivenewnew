@@ -88,3 +88,8 @@
 2. `feat(validation): pipeline.ocblueprint v2 schema and CLI validate` — Rust + Schema + CLI + 模板 + 测试
 
 发 PR 前：`cargo test -p oclive_validation` 与 `cargo test -p oclive-cli`。勿提交 `src-tauri/Cargo.toml` 仅行尾变更。
+
+### P1.1 补全（2026-05-20）
+
+- `blueprint validate` 与目录校验共用 `validate_blueprint_v2_json_with_context`（含 `validate_disk_manifest`）。
+- 新增目录级 `blueprint-v2` 集成测；`roles/pipeline.ocblueprint.template` 为**样例 JSON**，须复制到 `roles/<id>/pipeline.ocblueprint` 再做 `pack validate`。
