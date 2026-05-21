@@ -3,17 +3,17 @@
 **全库文档索引**：[DOCUMENTATION_INDEX.md](DOCUMENTATION_INDEX.md)  
 **插件架构、HTTP 侧车、更新策略（完整版）**：[../plugin-and-architecture/CREATOR_PLUGIN_ARCHITECTURE.md](../plugin-and-architecture/CREATOR_PLUGIN_ARCHITECTURE.md)
 
-## 双软件分工（运行时 vs 编写器）
+## 双应用分工（运行时 + 工作室）
 
 - **运行时（oclivenewnew 本仓库）**：加载角色包、校验、对话与持久化。  
-- **角色包编写器（独立仓库）**：仅在本地编辑并导出 **`roles/{角色id}/`** 树或 zip（`.ocpak` 与 `.zip` 均为 zip）；**不**嵌入运行时源码。  
-- **唯一接口**：磁盘上的包结构；契约以本仓库 **`creator-docs/`** 与 **`roles/README_MANIFEST.md`** 为准，编写器 README 链到此处即可。
+- **oclive 工作室（[oclive-studio](https://github.com/oclive-app/oclive-studio)）**：统一创作者入口——**启动模式**（配置 `roles` 根、Ollama/Remote LLM、拉起运行时）与 **创作模式**（编辑并导出 **`roles/{角色id}/`** 树或 zip；`.ocpak` 与 `.zip` 均为 zip）。原独立仓库 **oclive-launcher**、**oclive-pack-editor** 已废弃，仅作归档。  
+- **唯一接口**：磁盘上的包结构；契约以本仓库 **`creator-docs/`** 与 **`roles/README_MANIFEST.md`** 为准，工作室 README 链到此处即可。
 
 **在 oclive 中安装包**：除把目录放进 `roles/` 或设置 **`OCLIVE_ROLES_DIR`** 外，可在应用内 **导入 `.ocpak`、`.zip`（与 `.ocpak` 同为 ZIP）或已解压的包目录**（结构须与 `roles/{角色id}/` 一致）。详见 [roles/README_MANIFEST.md](../../roles/README_MANIFEST.md) 中「在 oclive 中导入角色包」。
 
-**使用启动器（可选）**：独立仓库 [oclive-launcher](https://github.com/linkaiheng2233-cyber/oclive-launcher) 提供 **从 zip 安装角色包** 到 `OCLIVE_ROLES_DIR`：选择编写器导出的 zip，在对话框中指定 **Ollama 模型名**（写入 `settings.json` 的 `model`）、可选是否覆盖已有 `model`，并支持一键 **`ollama pull`**。启动器还可选择 **本机 Ollama** 或 **云端 Remote LLM**，为 oclive 注入 **`OCLIVE_LLM_BACKEND`** 与 **`OCLIVE_REMOTE_*`**，运行时**覆盖**角色包中的 `plugin_backends.llm`（见 [PLUGIN_V1.md](../plugin-and-architecture/PLUGIN_V1.md)）。协议见 [REMOTE_PLUGIN_PROTOCOL.md](../plugin-and-architecture/REMOTE_PLUGIN_PROTOCOL.md)。详见启动器 README。
+**使用工作室（推荐）**：[oclive-studio](https://github.com/oclive-app/oclive-studio) 在启动模式中提供 **从 zip 安装角色包** 到 `OCLIVE_ROLES_DIR`、**Ollama / Remote LLM** 配置（注入 **`OCLIVE_LLM_BACKEND`** 与 **`OCLIVE_REMOTE_*`**，运行时**覆盖**角色包中的 `plugin_backends.llm`，见 [PLUGIN_V1.md](../plugin-and-architecture/PLUGIN_V1.md)）及一键拉起 **`oclivenewnew --api`** 供创作模式试聊。协议见 [REMOTE_PLUGIN_PROTOCOL.md](../plugin-and-architecture/REMOTE_PLUGIN_PROTOCOL.md)。
 
-建议将编写器 checkout 为与本仓库**同级**目录（例如 `D:\oclive-pack-editor` 与 `D:\oclivenewnew`），在 Cursor / VS Code 中用 **`oclive-pack-editor.code-workspace`** 多根联开两项目。
+建议将 **oclive-studio** 与本仓库**同级**克隆（例如 `D:\oclivenewnew` 与 `D:\oclive-studio`）。
 
 ## 目录布局
 
@@ -37,6 +37,6 @@
 - 插件后端见 [PLUGIN_V1.md](../plugin-and-architecture/PLUGIN_V1.md) 与 [PACK_VERSIONING.md](../role-pack/PACK_VERSIONING.md)。记忆 / 情绪 / 事件 / Prompt 除 `builtin` 与 `remote` 外，宿主还提供 **`builtin_v2` 第二套内置实现**（用于可替换性验证与保守策略），详见该文档各枚举表。
 - 自建 HTTP 侧车、环境变量与「本地 / 线上」更新边界见 [CREATOR_PLUGIN_ARCHITECTURE.md](../plugin-and-architecture/CREATOR_PLUGIN_ARCHITECTURE.md)。
 
-## 编写器（独立仓库）
+## 创作模式（工作室内置）
 
-独立应用 **`oclive-pack-editor`**（与运行时**不同** `package.json` / 仓库）。导出后仍以 **`load_role`** 为最终校验；编写器侧轻量检查与中长期 **crate/CLI** 路线见 [EDITOR_VALIDATION_ROADMAP.md](../role-pack/EDITOR_VALIDATION_ROADMAP.md)。产品里程碑仍见 [VISION_ROADMAP_MONTHLY.md](../roadmap/VISION_ROADMAP_MONTHLY.md)。
+工作室 **创作模式**（原 `oclive-pack-editor` 前端迁入 `oclive-studio/src/create/`）与运行时**不同**进程。导出后仍以 **`load_role`** 为最终校验；轻量检查与中长期 **crate/CLI** 路线见 [EDITOR_VALIDATION_ROADMAP.md](../role-pack/EDITOR_VALIDATION_ROADMAP.md)。合并说明见 [RFC_STUDIO_MERGE.md](../rfc/RFC_STUDIO_MERGE.md)。产品里程碑仍见 [VISION_ROADMAP_MONTHLY.md](../roadmap/VISION_ROADMAP_MONTHLY.md)。
