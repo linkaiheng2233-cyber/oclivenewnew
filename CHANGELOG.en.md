@@ -16,6 +16,7 @@
 
 ### Added
 
+- **Blueprint v2 (role packs):** `pipeline.ocblueprint` with `schema_version: 2` as SSOT (`meta` + `slot_registry`); `oclive-cli blueprint validate` / `pack validate --profile blueprint-v2`; host `SlotResolver` / `SlotRunner`, session `set_session_slot_override`, architecture graph persist `save_role_slot_registry`; golden packs such as `roles/mumu` migrated to v2.
 - **Product line A5 (versioning & compatibility):** expanded the one-page matrix in [`creator-docs/COMPATIBILITY.md`](creator-docs/COMPATIBILITY.md) / [`creator-docs-en/COMPATIBILITY.md`](creator-docs-en/COMPATIBILITY.md) (`oclive_kernel_runtime`, `oclive-cli`, `API_VERSION` / `RUNTIME_API_VERSION`, SQLite migrations, three-step release review); closure notes [`handoff/A5_CLOSURE_SUMMARY.md`](handoff/A5_CLOSURE_SUMMARY.md); §A5 in the main gap checklist can be checked.
 - Plugin manifests can declare subscribed host events (`shell.bridge.events` or `ui_slots[].bridge.events`) to avoid unnecessary broadcasts.
 - Settings “General”: **“Force iframe mode”** — when on, all plugin UIs render in iframes for maximum sandbox isolation.
@@ -26,6 +27,7 @@
 
 ### Changed
 
+- **Breaking (role packs):** New packs should use v2 blueprint only. `pack validate` **defaults** to v2 (`--profile legacy` for manifest/settings packs).
 - Role switch: host event broadcast timing adjusted so plugin subscriptions are synced before `role:switched`.
 - Directory plugin bootstrap (`get_directory_plugin_bootstrap`) result includes `subscribedHostEvents`.
 

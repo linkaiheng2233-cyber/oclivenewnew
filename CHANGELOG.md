@@ -16,6 +16,7 @@
 
 ### Added
 
+- **蓝图 v2（角色包）**：`pipeline.ocblueprint` `schema_version: 2` 为 SSOT（`meta` + `slot_registry`）；`oclive-cli blueprint validate` / `pack validate --profile blueprint-v2`；主应用 `SlotResolver` / `SlotRunner`、会话 `set_session_slot_override`、架构图写盘 `save_role_slot_registry`；仓库黄金包 `roles/mumu` 等已迁 v2。
 - **产品线 A5（版本与兼容）**：[`creator-docs/COMPATIBILITY.md`](creator-docs/COMPATIBILITY.md) / [`creator-docs-en/COMPATIBILITY.md`](creator-docs-en/COMPATIBILITY.md) 充实 **对外兼容一页表**（`oclive_kernel_runtime`、`oclive-cli`、`API_VERSION` / `RUNTIME_API_VERSION`、SQLite 迁移、发版审阅三步）；结项摘要 [`handoff/A5_CLOSURE_SUMMARY.md`](handoff/A5_CLOSURE_SUMMARY.md)；主清单 §A5 可勾。
 - 插件清单支持声明订阅的宿主事件（`shell.bridge.events` 或 `ui_slots[].bridge.events`），避免不必要的事件广播。
 - 设置页「常规」区域增加「强制 iframe 模式」开关，开启后所有插件界面统一使用 iframe 渲染，获得最高级别沙箱隔离。
@@ -26,6 +27,7 @@
 
 ### Changed
 
+- **Breaking（角色包）**：新包应使用 v2 蓝图；`pack validate` **默认**已切 v2（`--profile legacy` 校验旧 manifest/settings）。
 - 调整切换角色后的事件广播时机，确保插件订阅信息已同步再发送 `role:switched`。
 - 插件引导信息（`get_directory_plugin_bootstrap`）返回值增加 `subscribedHostEvents` 字段。
 

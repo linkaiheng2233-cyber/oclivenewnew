@@ -42,7 +42,7 @@
 - [x] **A1.1a（子项）** **HTTP `--api` 进程重启烟测**（[`scripts/e2e-core-api-restart.mjs`](../scripts/e2e-core-api-restart.mjs) + CI `oocp-test-suite`）— 见 [`OOCP_TEST_SUITE.md`](../creator-docs/testing/OOCP_TEST_SUITE.md)  
 - [x] **A1.1b** **`vite preview` + Playwright 首屏**：[`e2e/preview-shell.spec.ts`](../e2e/preview-shell.spec.ts)，`npm run test:e2e:preview`；**CI：Ubuntu `frontend`**（`PW_TEST_USE_EXTERNAL` + 后台 preview；Windows `frontend` 不跑本项）  
 - [ ] **A1.1c（延伸）** **安装包 / Tauri 原生窗 / 全屋 GUI E2E**：WebDriver 或发行流水线；**不挡 A1 可 CI 子集收口**  
-- [x] **A1.2** **`invoke` 宿主热路径（9 条 `*_impl`）**：[`INVOKE_HOTPATH_MATRIX.md`](./INVOKE_HOTPATH_MATRIX.md) + [`invoke_hotpath_matrix.rs`](../src-tauri/tests/invoke_hotpath_matrix.rs)；**golden / 全 handler** 仍属后续增强  
+- [x] **A1.2** **`invoke` 宿主热路径（11 条 `*_impl` 烟测，含蓝图槽 API）**：[`INVOKE_HOTPATH_MATRIX.md`](./INVOKE_HOTPATH_MATRIX.md) + [`invoke_hotpath_matrix.rs`](../src-tauri/tests/invoke_hotpath_matrix.rs)；**golden / 全 handler** 仍属后续增强  
 - [x] **A1.3** 本地与 CI 闸门习惯已文档化（见 CONTRIBUTING + 本表「闸门」）
 - [x] **A1.4** 回归清单通过上节链接聚合（本表）
 

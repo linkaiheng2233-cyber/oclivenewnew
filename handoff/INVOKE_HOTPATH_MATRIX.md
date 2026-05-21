@@ -22,6 +22,8 @@
 | `get_directory_plugin_catalog` | `get_directory_plugin_catalog_impl` | 目录插件 catalog（含 5s 指纹缓存） |
 | `get_plugin_state` | `get_plugin_state_impl` | `plugin_state.json` 角色态 + 全局默认 |
 | `get_hotkey_bindings` | `get_hotkey_bindings_impl` | `hotkey_bindings.json`（与 `HotkeyBindingsFile::load` 缺省行为一致） |
+| `set_session_slot_override` | `set_session_slot_override_impl` | 蓝图 v2 会话槽覆盖（`slot_registry_effective`） |
+| `save_role_slot_registry` | `save_role_slot_registry_impl` | 架构图写盘 `pipeline.ocblueprint`（集成测见 `save_role_slot_registry.rs`） |
 
 ---
 

@@ -4,7 +4,7 @@
 |----|-----|
 | 状态 | **已确认 / 可以落实**（决议见 [BLUEPRINT_V2_DECISIONS.md](BLUEPRINT_V2_DECISIONS.md)） |
 | RFC | [RFC_ROLE_BLUEPRINT_V2.md](RFC_ROLE_BLUEPRINT_V2.md)（**Accepted**） |
-| 当前阶段 | **P1–P5（主应用架构图 v2）与 P6 已落实**；**P5 写盘工具栏 / P7–P8** 待续 |
+| 当前阶段 | **P0–P7 已完成**；**P8**（`pack validate` 默认 v2、OOCP 黄金包、全量 CI）**进行中 / 本迭代收尾** |
 
 ---
 
@@ -79,15 +79,15 @@
 ## 3. 分阶段路线图
 
 ```
-P0  Accepted RFC + 本计划确认     ← 当前
-P1  Schema + oclive_validation + CLI validate（不动 co_present）
-P2  蓝图加载 → Role + SessionSlotRegistry
-P3  PluginHost 按槽实例解析
-P4  co_present 多实例执行器
-P5  架构图 + 会话覆盖 UI/API
-P6  roles 迁移（与 P2 同迭代）
-P7  文档 + CHANGELOG Breaking
-P8  CI（OOCP + invoke 矩阵 + 新黄金包）
+P0  Accepted RFC + 本计划确认     [x]
+P1  Schema + oclive_validation + CLI validate（不动 co_present）  [x]
+P2  蓝图加载 → Role + SessionSlotRegistry  [x]
+P3  PluginHost 按槽实例解析  [x]
+P4  co_present 多实例执行器  [x]
+P5  架构图 + 会话覆盖 + 写盘工具栏  [x]
+P6  roles 迁移（与 P2 同迭代）  [x]
+P7  文档 + CHANGELOG Breaking  [x]
+P8  CI（pack validate 默认 v2、OOCP、全量测）  [x 本迭代]
 ```
 
 ### P1 — 首批代码（确认后唯一自动开工项）
@@ -97,7 +97,7 @@ P8  CI（OOCP + invoke 矩阵 + 新黄金包）
 | `crates/oclive_validation/src/blueprint_v2.rs` | Rust 校验 |
 | `crates/oclive-cli/schemas/pipeline.ocblueprint.v2.schema.json` | JSON Schema |
 | `oclive-cli blueprint validate` | 仅接受 v2；移除/废弃 steps 校验路径 |
-| `oclive-cli pack validate` | `--profile blueprint-v2` 要求 `pipeline.ocblueprint` v2、无 manifest/settings；**默认 profile 仍 legacy**（P6 后切换） |
+| `oclive-cli pack validate` | **默认** v2（`pipeline.ocblueprint`）；`--profile legacy` 保留 manifest/settings 路径 |
 | 单测 | 合法/非法样例 JSON |
 
 **明确不做**：`role_pack.rs` 加载、`co_present`、`PluginHost` 改造。
