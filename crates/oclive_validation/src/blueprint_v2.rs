@@ -505,6 +505,57 @@ fn single_plugin_id(entry: &SlotRegistryEntry) -> Option<String> {
         .filter(|s| !s.is_empty())
 }
 
+/// 同 `type` 内按 `position` 升序排列的实例列表（P3 多实例解析）。
+#[must_use]
+pub fn slot_registry_instances_sorted(
+    registry: &BTreeMap<String, SlotRegistryEntry>,
+    slot_type: &str,
+) -> Vec<(String, SlotRegistryEntry)> {
+    let want = slot_type.trim();
+    let mut v: Vec<_> = registry
+        .iter()
+        .filter(|(_, e)| e.slot_type.trim() == want)
+        .map(|(k, e)| (k.clone(), e.clone()))
+        .collect();
+    v.sort_by_key(|(_, e)| e.position);
+    v
+}
+
+/// 单实例 → 折叠后的六槽 `PluginBackends`（仅该实例 `type` 对应槽非默认）。
+#[must_use]
+pub fn plugin_backends_for_slot_entry(entry: &SlotRegistryEntry) -> PluginBackends {
+    let mut one = BTreeMap::new();
+    one.insert("_".to_string(), entry.clone());
+    slot_registry_to_plugin_backends(&one)
+}
+
+/// 所有 `type: agent` 且 `backend: directory` 的 `plugin` / `plugins[]` 合并（去重、字典序）。
+#[must_use]
+pub fn merged_agent_directory_plugin_ids(
+    registry: &BTreeMap<String, SlotRegistryEntry>,
+) -> Vec<String> {
+    let mut ids = Vec::new();
+    for (_, entry) in slot_registry_instances_sorted(registry, "agent") {
+        if entry.backend.trim() != "directory" {
+            continue;
+        }
+        if let Some(p) = single_plugin_id(&entry) {
+            ids.push(p);
+        }
+        if let Some(ps) = &entry.plugins {
+            for p in ps {
+                let t = p.trim();
+                if !t.is_empty() {
+                    ids.push(t.to_string());
+                }
+            }
+        }
+    }
+    ids.sort();
+    ids.dedup();
+    ids
+}
+
 fn validate_blueprint_v2_parsed(
     bp: &BlueprintV2File,
     folder_name: Option<&str>,

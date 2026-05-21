@@ -25,7 +25,9 @@ pub use blueprint_migrate::{
 };
 pub use blueprint_v2::{
     apply_slot_override, default_slot_key_for_module, effective_slot_registry,
-    load_blueprint_v2_for_role_dir, slot_registry_to_plugin_backends,
+    load_blueprint_v2_for_role_dir, merged_agent_directory_plugin_ids,
+    plugin_backends_for_slot_entry, slot_registry_instances_sorted,
+    slot_registry_to_plugin_backends,
     validate_blueprint_v2_json, validate_blueprint_v2_json_with_context,
     validate_role_pack_blueprint_v2_directory, BlueprintV2LoadResult, BlueprintV2ValidateContext,
     SlotOverridePatch, SlotRegistryEntry, BLUEPRINT_V2_SCHEMA_VERSION, PIPELINE_BLUEPRINT_FILENAME,

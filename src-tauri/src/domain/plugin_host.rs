@@ -3,6 +3,10 @@
 //! 与仓库 `creator-docs/plugin-and-architecture/PLUGIN_V1.md` 契约一致；`Remote` 在设置 `OCLIVE_REMOTE_*` 时走 HTTP JSON-RPC，否则回退内置。
 
 use crate::domain::agent::{AgentDebugTrace, AgentProvider, BuiltinReActAgent};
+use crate::domain::complex_emotion::ComplexEmotionProvider;
+use crate::domain::slot_resolver::{
+    BuiltinComplexEmotionArc, ResolvedRoleSlots, SlotResolver,
+};
 use crate::domain::event_estimator::{
     BuiltinEventEstimator, BuiltinEventEstimatorV2, EventEstimator,
 };
@@ -32,7 +36,9 @@ use crate::models::{
     PluginBackends, PluginBackendsOverride, PromptBackend, Role,
 };
 use parking_lot::RwLock;
+use oclive_validation::SlotRegistryEntry;
 use serde_json::Value;
+use std::collections::BTreeMap;
 use std::path::PathBuf;
 use std::sync::atomic::AtomicBool;
 use std::sync::Arc;
@@ -60,6 +66,12 @@ pub struct ResolvedRolePlugins {
     pub prompt: Arc<dyn PromptAssembler>,
     pub llm: Arc<dyn LlmClient>,
     pub agent: Arc<dyn AgentProvider>,
+    /// 蓝图 `complex_emotion` 槽 last-wins 解析（无 registry 时为 builtin）。
+    pub complex_emotion: Arc<dyn ComplexEmotionProvider>,
+    /// 按实例解析的多槽视图（P3；P4 编排串行合并用）。
+    pub slots: Option<ResolvedRoleSlots>,
+    /// 多 `agent` directory 槽合并的插件 id（观测 / P4）。
+    pub merged_agent_directory_plugin_ids: Vec<String>,
 }
 
 /// 后端注册表：管理 builtin / remote 插槽，并预留本地 provider 注册骨架。
@@ -98,7 +110,7 @@ fn directory_slot_id(
 }
 
 impl BackendRegistry {
-    fn agent_for_plugin_backends(&self, backends: &PluginBackends) -> Arc<dyn AgentProvider> {
+    pub(crate) fn agent_for_plugin_backends(&self, backends: &PluginBackends) -> Arc<dyn AgentProvider> {
         match backends.agent {
             AgentBackend::Builtin => self.agent_builtin.clone(),
             AgentBackend::Remote => self.agent_remote.clone(),
@@ -191,7 +203,7 @@ impl BackendRegistry {
         }
     }
 
-    fn llm_for_plugin_backends(&self, backends: &PluginBackends) -> Arc<dyn LlmClient> {
+    pub(crate) fn llm_for_plugin_backends(&self, backends: &PluginBackends) -> Arc<dyn LlmClient> {
         match backends.llm {
             LlmBackend::Ollama => self.llm_ollama.clone(),
             LlmBackend::Remote => self.llm_remote.clone(),
@@ -249,7 +261,7 @@ impl BackendRegistry {
         }
     }
 
-    fn memory_retrieval_for_plugin_backends(
+    pub(crate) fn memory_retrieval_for_plugin_backends(
         &self,
         backends: &PluginBackends,
     ) -> Arc<dyn MemoryRetrieval> {
@@ -349,7 +361,7 @@ impl BackendRegistry {
         }
     }
 
-    fn user_emotion_analyzer_for_backends(
+    pub(crate) fn user_emotion_analyzer_for_backends(
         &self,
         backends: &PluginBackends,
     ) -> Arc<dyn UserEmotionAnalyzer> {
@@ -416,7 +428,10 @@ impl BackendRegistry {
         }
     }
 
-    fn event_estimator_for_backends(&self, backends: &PluginBackends) -> Arc<dyn EventEstimator> {
+    pub(crate) fn event_estimator_for_backends(
+        &self,
+        backends: &PluginBackends,
+    ) -> Arc<dyn EventEstimator> {
         match backends.event {
             EventBackend::Builtin => self.event_builtin.clone(),
             EventBackend::BuiltinV2 => self.event_builtin_v2.clone(),
@@ -480,7 +495,10 @@ impl BackendRegistry {
         }
     }
 
-    fn prompt_assembler_for_backends(&self, backends: &PluginBackends) -> Arc<dyn PromptAssembler> {
+    pub(crate) fn prompt_assembler_for_backends(
+        &self,
+        backends: &PluginBackends,
+    ) -> Arc<dyn PromptAssembler> {
         match backends.prompt {
             PromptBackend::Builtin => self.prompt_builtin.clone(),
             PromptBackend::BuiltinV2 => self.prompt_builtin_v2.clone(),
@@ -570,6 +588,21 @@ impl BackendRegistry {
     pub fn local_all_providers(&self) -> Vec<Arc<LocalPluginProviderDescriptor>> {
         self.local_plugins.read().all_providers()
     }
+
+    #[must_use]
+    pub fn remote_fallback_allowed(&self) -> Arc<AtomicBool> {
+        self.remote_fallback_allowed.clone()
+    }
+
+    #[must_use]
+    pub fn high_risk_grants(&self) -> Arc<HighRiskGrantStore> {
+        self.high_risk_grants.clone()
+    }
+
+    #[must_use]
+    pub fn directory_runtime(&self) -> Option<Arc<DirectoryPluginRuntime>> {
+        self.directory_runtime.clone()
+    }
 }
 
 /// 解析层：将角色包默认后端 + 可选会话覆盖合成为有效后端并绑定实现。
@@ -580,18 +613,33 @@ impl PluginResolver {
         registry: &BackendRegistry,
         role_backends: &PluginBackends,
         session_override: Option<&PluginBackendsOverride>,
+        slot_registry: Option<&BTreeMap<String, SlotRegistryEntry>>,
     ) -> ResolvedRolePlugins {
         let effective = match session_override {
             Some(ov) => ov.apply_to(role_backends),
             None => role_backends.clone(),
         };
+        let mut agent = registry.agent_for_plugin_backends(&effective);
+        let mut complex_emotion: Arc<dyn ComplexEmotionProvider> = Arc::new(BuiltinComplexEmotionArc);
+        let mut slots = None;
+        let mut merged_agent_directory_plugin_ids = Vec::new();
+        if let Some(reg) = slot_registry {
+            slots = Some(SlotResolver::resolve(registry, reg));
+            complex_emotion = SlotResolver::resolve_complex_emotion_winner(registry, reg);
+            agent = SlotResolver::wrap_agent_if_merged(agent, reg);
+            merged_agent_directory_plugin_ids =
+                oclive_validation::merged_agent_directory_plugin_ids(reg);
+        }
         ResolvedRolePlugins {
             memory: registry.memory_retrieval_for_plugin_backends(&effective),
             emotion: registry.user_emotion_analyzer_for_backends(&effective),
             event: registry.event_estimator_for_backends(&effective),
             prompt: registry.prompt_assembler_for_backends(&effective),
             llm: registry.llm_for_plugin_backends(&effective),
-            agent: registry.agent_for_plugin_backends(&effective),
+            agent,
+            complex_emotion,
+            slots,
+            merged_agent_directory_plugin_ids,
         }
     }
 }
@@ -746,7 +794,12 @@ impl PluginHost {
 
     /// 解析当前角色包声明的全部后端（一次克隆五套 `Arc`，供整段对话复用）。
     pub fn resolve_for_role(&self, role: &Role) -> ResolvedRolePlugins {
-        PluginResolver::resolve(&self.registry, &role.plugin_backends, None)
+        PluginResolver::resolve(
+            &self.registry,
+            &role.plugin_backends,
+            None,
+            role.slot_registry.as_ref(),
+        )
     }
 
     /// 解析角色默认后端 + 会话级覆盖（覆盖为空时等价于 [`Self::resolve_for_role`]）。
@@ -755,7 +808,27 @@ impl PluginHost {
         role: &Role,
         session_override: Option<&PluginBackendsOverride>,
     ) -> ResolvedRolePlugins {
-        PluginResolver::resolve(&self.registry, &role.plugin_backends, session_override)
+        PluginResolver::resolve(
+            &self.registry,
+            &role.plugin_backends,
+            session_override,
+            role.slot_registry.as_ref(),
+        )
+    }
+
+    /// 有效六槽 + 蓝图 registry + 可选六槽会话覆盖（v2 热路径）。
+    pub fn resolve_for_effective_backends(
+        &self,
+        effective_backends: &PluginBackends,
+        slot_registry: Option<&BTreeMap<String, SlotRegistryEntry>>,
+        session_override: Option<&PluginBackendsOverride>,
+    ) -> ResolvedRolePlugins {
+        PluginResolver::resolve(
+            &self.registry,
+            effective_backends,
+            session_override,
+            slot_registry,
+        )
     }
 }
 

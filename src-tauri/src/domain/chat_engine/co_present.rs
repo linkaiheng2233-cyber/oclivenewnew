@@ -116,8 +116,8 @@ pub(crate) async fn process_co_present(
         .map(|(u, b)| (Some(u.clone()), b.clone()))
         .unwrap_or((None, String::new()));
     let (uv, ud) = crate::domain::complex_emotion::affect_metrics_from_seven_dim(&emotion_result);
-    let complex_emotion_out = crate::domain::complex_emotion::BuiltinKeywordComplexEmotionProvider
-        .resolve_turn_inner(&crate::domain::complex_emotion::ComplexEmotionInput {
+    let complex_emotion_out = cp!(
+        pl.complex_emotion.resolve_turn(&crate::domain::complex_emotion::ComplexEmotionInput {
             role_id: mrid.to_string(),
             scene_id: scene_id.clone(),
             user_message: user_message.to_string(),
@@ -127,7 +127,9 @@ pub(crate) async fn process_co_present(
             user_valence: Some(uv),
             user_dominance: Some(ud),
             previous_user_message: prev_user_for_ce,
-        });
+        }),
+        "complex_emotion_resolve_turn"
+    )?;
 
     if role.evolution_config.personality_source != PersonalitySource::Profile {
         personality = PersonalityEngine::adjust_by_user_emotion(

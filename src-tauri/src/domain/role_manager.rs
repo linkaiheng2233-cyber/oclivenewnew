@@ -272,6 +272,7 @@ mod tests {
             knowledge_index: None,
             author_pack: None,
             reply_quality_anchor: None,
+            slot_registry: None,
         }
     }
 

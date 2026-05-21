@@ -529,6 +529,23 @@ impl DirectoryPluginRuntime {
         );
     }
 
+    /// 目录插件 manifest `provides` 是否声明某能力（如 `complex_emotion`）。
+    #[must_use]
+    pub fn manifest_provides_capability(&self, plugin_id: &str, capability: &str) -> bool {
+        let id = plugin_id.trim();
+        let cap = capability.trim();
+        if id.is_empty() || cap.is_empty() {
+            return false;
+        }
+        let root = match self.plugin_roots.read().get(id) {
+            Some(p) => p.clone(),
+            None => return false,
+        };
+        OclivePluginManifest::load_from_dir(&root)
+            .ok()
+            .is_some_and(|m| m.provides.iter().any(|p| p.trim() == cap))
+    }
+
     pub fn shell_url_for(&self, plugin_id: &str, entry: &str) -> Option<String> {
         let roots = self.plugin_roots.read();
         if !roots.contains_key(plugin_id) {

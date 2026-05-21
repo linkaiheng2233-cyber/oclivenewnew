@@ -697,15 +697,23 @@ impl AppState {
         self.plugins.resolve_for_role(role)
     }
 
-    /// 会话级后端解析：在角色包 `plugin_backends` 上叠加覆盖后再绑定实现。
+    /// 会话级后端解析：effective `slot_registry` 折叠六槽 + 实例键/六槽覆盖后再绑定实现。
     pub fn resolved_plugins_for_session(
         &self,
         role: &Role,
         session_namespace: Option<&str>,
     ) -> ResolvedRolePlugins {
-        let ov = session_namespace.and_then(|ns| self.session_backend_override(ns));
-        self.plugins
-            .resolve_for_role_with_override(role, ov.as_ref())
+        let Some(ns) = session_namespace.map(str::trim).filter(|s| !s.is_empty()) else {
+            return self.plugins.resolve_for_role(role);
+        };
+        let effective = self.effective_plugin_backends_for_session(role, ns);
+        let slot_reg = self.effective_slot_registry_for_session(role, ns);
+        let ov = self.session_backend_override(ns);
+        self.plugins.resolve_for_effective_backends(
+            &effective,
+            slot_reg.as_ref(),
+            ov.as_ref(),
+        )
     }
 
     pub fn memory_retrieval_for(&self, role: &Role) -> Arc<dyn MemoryRetrieval> {
