@@ -269,11 +269,11 @@ mod tests {
             min_runtime_version: None,
             dev_only: false,
             plugin_backends: crate::models::PluginBackends::default(),
+            slot_registry: None,
             ui_config: crate::models::UiConfig::default(),
             knowledge_index: None,
             author_pack: None,
             reply_quality_anchor: None,
-            slot_registry: None,
         }
     }
 

@@ -25,8 +25,19 @@
 | `domain/error_helpers` 错误映射辅助 | 已落实 |
 | `PluginHostPort` + `AppState::plugin_host_port` | 已落实 |
 | CLI 废弃别名移除（见 `crates/oclive-cli/DEPRECATED_COMMANDS.md`） | 已落实 |
-| `cargo udeps` 全 workspace | 需 **nightly**（本机 stable 未跑通）；依赖手工审阅 |
-| 前端 `depcheck` | 见当次提交说明 |
+| `cargo udeps` 全 workspace | 需 **nightly**（本机 stable 未跑通）；见 `CONTRIBUTING.md` |
+| 前端 `depcheck` | 已移除 `idb-keyval`、`monaco-editor`、`vite-plugin-monaco-editor` |
+
+### 任务 7 验证（2026-05-22）
+
+| 检查 | 结果 |
+|------|------|
+| `cargo clippy --workspace --all-targets --all-features -- -D warnings` | 通过 |
+| `cargo test --workspace --lib` | 通过 |
+| `cargo test -p oclive-cli` | 通过 |
+| `cargo test --workspace`（含 integration `tests/`） | Windows 本机出现 `rlib format` 链接异常；CI Ubuntu 为准 |
+| `npm run test:unit` / `npm run build`（oclivenewnew） | 通过 |
+| `oclive-studio` | 本 workspace 无该子目录；未执行 |
 
 ## 已知适配层（后续可拆）
 

@@ -1013,7 +1013,7 @@ mod tests {
         let dir = tempfile::tempdir().unwrap();
         let role = dir.path().join("demo.pack");
         fs::create_dir_all(role.join("scenes").join("default")).unwrap();
-        let bp = minimal_v2_json().replace("demo.pack", "demo.pack");
+        let bp = minimal_v2_json();
         fs::write(role.join(PIPELINE_BLUEPRINT_FILENAME), bp).unwrap();
         validate_role_pack_blueprint_v2_directory(&role, "999.0.0").unwrap();
     }
