@@ -23,8 +23,6 @@ pub enum RegistryCommands {
     Remove(RegistryRemoveArgs),
     /// Print command to switch working directory (Windows: cd /d; Unix: cd)
     Switch(RegistrySwitchArgs),
-    /// [deprecated] Log in to cloud registry — use `oclive config set` (writes config.toml + auth.json)
-    Login(crate::registry_remote::RegistryLoginArgs),
     /// Log out of cloud registry
     Logout,
     /// Push project as .oclive-template.tar.gz
@@ -65,7 +63,6 @@ pub fn run(cli: RegistryCli) -> Result<()> {
         RegistryCommands::Add(a) => run_add(a),
         RegistryCommands::Remove(a) => run_remove(a),
         RegistryCommands::Switch(a) => run_switch(a),
-        RegistryCommands::Login(a) => crate::registry_remote::run_login(a),
         RegistryCommands::Logout => crate::registry_remote::run_logout(),
         RegistryCommands::Push(a) => crate::registry_remote::run_push(a),
         RegistryCommands::Pull(a) => crate::registry_remote::run_pull(a),

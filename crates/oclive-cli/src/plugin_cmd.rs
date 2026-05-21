@@ -26,10 +26,6 @@ pub enum PluginCommands {
     Uninstall(crate::plugin_ext::PluginUninstallArgs),
     /// RPC contract smoke test
     Test(crate::plugin_ext::PluginTestArgs),
-    /// [deprecated] Search plugins — use `oclive market search`
-    Search(crate::plugin_ext::PluginSearchArgs),
-    /// [deprecated] Check updates — use `oclive market install`
-    Update(crate::plugin_ext::PluginUpdateArgs),
 }
 
 #[derive(Parser, Debug, Clone)]
@@ -105,8 +101,6 @@ pub fn run(cli: PluginCli) -> Result<()> {
         PluginCommands::Install(args) => crate::plugin_ext::run_install(args),
         PluginCommands::Uninstall(args) => crate::plugin_ext::run_uninstall(args),
         PluginCommands::Test(args) => crate::plugin_ext::run_test(args),
-        PluginCommands::Search(args) => crate::plugin_ext::run_search(args),
-        PluginCommands::Update(args) => crate::plugin_ext::run_update(args),
     }
 }
 

@@ -102,8 +102,6 @@ enum Commands {
     Registry(registry_cmd::RegistryCli),
     /// Multi-kernel compose orchestration
     Compose(compose_cmd::ComposeCli),
-    /// [deprecated] Use `oclive template pack`
-    Publish(publish_cmd::PublishArgs),
     /// Step trace debug for process_message
     Debug(debug_cmd::DebugArgs),
     /// Local web dashboard (default 127.0.0.1:8420)
@@ -162,7 +160,6 @@ fn main() -> Result<()> {
         Commands::Plugin(cli) => plugin_cmd::run(cli),
         Commands::Registry(cli) => registry_cmd::run(cli),
         Commands::Compose(cli) => compose_cmd::run(cli),
-        Commands::Publish(args) => publish_cmd::run(args),
         Commands::Debug(args) => debug_cmd::run(args),
         Commands::Dashboard(args) => dashboard_cmd::run(args),
         Commands::Learn(args) => learn_cmd::run(args),
