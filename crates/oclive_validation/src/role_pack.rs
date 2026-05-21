@@ -19,13 +19,13 @@ use crate::validate::{
 /// 角色包目录校验的扩展策略（在标准磁盘校验通过后追加规则）。
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Default)]
 pub enum RolePackValidationProfile {
-    /// 与宿主加载前磁盘校验一致（默认）。
+    /// `pipeline.ocblueprint` v2 SSOT（`pack validate` 默认）。
     #[default]
-    Default,
-    /// 机器人 / 无头交付最小「灵魂包」：显式 `settings`、`min_runtime_version`、人格载体二选一等。
-    RobotSoul,
-    /// `pipeline.ocblueprint` v2 SSOT（无 manifest/settings）。
     BlueprintV2,
+    /// legacy：`manifest.json` + `settings.json`（`--profile legacy`）。
+    Legacy,
+    /// 机器人 / 无头交付最小「灵魂包」：在 legacy 磁盘校验通过后追加规则。
+    RobotSoul,
 }
 
 impl FromStr for RolePackValidationProfile {
@@ -33,11 +33,11 @@ impl FromStr for RolePackValidationProfile {
 
     fn from_str(s: &str) -> Result<Self, Self::Err> {
         match s.trim().to_ascii_lowercase().as_str() {
-            "" | "default" => Ok(Self::Default),
+            "" | "default" | "blueprint-v2" | "blueprint_v2" | "blueprintv2" => Ok(Self::BlueprintV2),
+            "legacy" => Ok(Self::Legacy),
             "robot-soul" | "robotsoul" | "robot_soul" => Ok(Self::RobotSoul),
-            "blueprint-v2" | "blueprint_v2" | "blueprintv2" => Ok(Self::BlueprintV2),
             other => Err(format!(
-                "未知 pack validate profile「{other}」（支持 default | robot-soul | blueprint-v2）"
+                "未知 pack validate profile「{other}」（支持 default/blueprint-v2 | legacy | robot-soul）"
             )),
         }
     }
@@ -314,7 +314,7 @@ pub fn validate_role_pack_loaded(
         merged_scene_ids,
         host_version,
         settings_schema_supported,
-        RolePackValidationProfile::Default,
+        RolePackValidationProfile::Legacy,
     )
 }
 
@@ -363,7 +363,7 @@ pub fn validate_role_pack_directory(
         role_dir,
         host_version,
         settings_schema_supported,
-        RolePackValidationProfile::Default,
+        RolePackValidationProfile::BlueprintV2,
     )
 }
 
@@ -382,6 +382,7 @@ pub fn validate_role_pack_directory_with_profile(
         return validate_role_pack_blueprint_v2_directory(role_dir, host_version);
     }
 
+    // Legacy + RobotSoul：manifest/settings 路径
     let mut errs: Vec<String> = Vec::new();
     let manifest_path = role_dir.join("manifest.json");
     if !manifest_path.is_file() {
@@ -478,16 +479,23 @@ mod tests {
         let mut f2 = fs::File::create(role.join("settings.json")).unwrap();
         f2.write_all(settings.to_string().as_bytes()).unwrap();
 
-        validate_role_pack_directory(&role, "999.0.0", 1).unwrap();
+        validate_role_pack_directory_with_profile(
+            &role,
+            "999.0.0",
+            1,
+            RolePackValidationProfile::Legacy,
+        )
+        .unwrap();
 
         let merged = merge_role_pack_scene_ids(&role, &["default".to_string()]).unwrap();
         let settings_raw = fs::read_to_string(role.join("settings.json")).unwrap();
-        validate_role_pack_loaded(
+        validate_role_pack_loaded_with_profile(
             &fs::read_to_string(role.join("manifest.json")).unwrap(),
             Some(&settings_raw),
             &merged,
             "999.0.0",
             1,
+            RolePackValidationProfile::Legacy,
         )
         .unwrap();
     }

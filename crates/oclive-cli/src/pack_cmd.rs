@@ -21,7 +21,7 @@ pub struct PackArgs {
 
 #[derive(Subcommand, Debug)]
 pub enum PackCommands {
-    /// Validate role pack directory (default: manifest+settings; --profile blueprint-v2: pipeline.ocblueprint only)
+    /// Validate role pack directory (default: pipeline.ocblueprint v2; --profile legacy: manifest+settings)
     Validate(PackValidateArgs),
     /// Generate a minimal valid role pack directory
     Create(PackCreateArgs),
@@ -38,7 +38,7 @@ pub struct PackValidateArgs {
     /// Host semver for `manifest.min_runtime_version` (default: this CLI `CARGO_PKG_VERSION`)
     #[arg(long)]
     pub host_version: Option<String>,
-    /// Extended profile: `default` | `robot-soul` (see ROLE_PACK_SPEC § RobotSoulPack)
+    /// Profile: `default` (blueprint v2) | `legacy` | `robot-soul` (see ROLE_PACK_SPEC)
     #[arg(long, default_value = "default")]
     pub profile: String,
 }

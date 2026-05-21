@@ -152,19 +152,17 @@ fn run_pack_validate_all(root: &Path) -> CheckResult {
             || entry.join(oclive_validation::PIPELINE_BLUEPRINT_FILENAME).is_file()
         {
             n += 1;
-            let profile = if entry.join("manifest.json").is_file() {
-                "default"
-            } else {
-                "blueprint-v2"
-            };
+            let mut args = vec![
+                "pack".to_string(),
+                "validate".to_string(),
+                entry.to_str().unwrap_or(".").to_string(),
+            ];
+            if entry.join("manifest.json").is_file() {
+                args.push("--profile".into());
+                args.push("legacy".into());
+            }
             let st = Command::new(std::env::current_exe().unwrap_or_default())
-                .args([
-                    "pack",
-                    "validate",
-                    "--profile",
-                    profile,
-                    entry.to_str().unwrap_or("."),
-                ])
+                .args(&args)
                 .status();
             if !matches!(st, Ok(s) if s.success()) {
                 fail_n += 1;
