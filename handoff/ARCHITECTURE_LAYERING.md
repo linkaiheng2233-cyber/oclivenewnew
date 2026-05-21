@@ -28,16 +28,22 @@
 | `cargo udeps` 全 workspace | 需 **nightly**（本机 stable 未跑通）；见 `CONTRIBUTING.md` |
 | 前端 `depcheck` | 已移除 `idb-keyval`、`monaco-editor`、`vite-plugin-monaco-editor` |
 
-### 任务 7 验证（2026-05-22）
+## 深化加固（2026-05 第三批）
+
+| 项 | 状态 |
+|----|------|
+| `map_copresent_err!` / `map_plugin_err!` / `map_frontend_err!` 批量替换 | 已落实（`co_present` / `plugin_host` 无手写 `map_err`） |
+| 遗留 manifest 专用 Tauri 写盘 API | 已移除 `RoleStorage::save_role_manifest`；保留 `set_session_plugin_backend` 等 C1 包装 |
+| `cargo udeps`（nightly，2026-05-22） | **无未使用依赖**；见 `CONTRIBUTING.md` |
+
+### 验证（2026-05-22，第三批）
 
 | 检查 | 结果 |
 |------|------|
 | `cargo clippy --workspace --all-targets --all-features -- -D warnings` | 通过 |
-| `cargo test --workspace --lib` | 通过 |
-| `cargo test -p oclive-cli` | 通过 |
-| `cargo test --workspace`（含 integration `tests/`） | Windows 本机出现 `rlib format` 链接异常；CI Ubuntu 为准 |
+| `cargo test --workspace --lib` / `-p oclive-cli` / `-p oclivenewnew-tauri --lib` | 通过 |
+| `cargo test --workspace`（含 `tests/` 集成） | Windows 本机可能 `rlib format` 链接异常；以 CI Ubuntu 为准 |
 | `npm run test:unit` / `npm run build`（oclivenewnew） | 通过 |
-| `oclive-studio` | 本 workspace 无该子目录；未执行 |
 
 ## 已知适配层（后续可拆）
 

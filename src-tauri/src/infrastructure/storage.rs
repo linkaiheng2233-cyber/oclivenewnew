@@ -3,9 +3,9 @@ use crate::domain::role_manifest_validate::{
     log_plugin_backends_remote_missing_env, validate_disk_manifest, validate_role_interaction_mode,
 };
 use crate::error::{AppError, Result};
-use crate::models::role_manifest_disk::{disk_manifest_from_role, disk_manifest_to_role};
+use crate::models::role_manifest_disk::disk_manifest_to_role;
 use crate::models::{
-    author_pack::AuthorPackFile, disk_role_settings_from_role,
+    author_pack::AuthorPackFile,
     role_settings_disk::CURRENT_SETTINGS_SCHEMA_VERSION, DiskRoleManifest, DiskRoleSettings,
     DiskSceneConfig, LlmBackend, Role, UiConfig,
 };
@@ -753,11 +753,14 @@ mod tests {
 
         let role_dir = temp_dir.path().join("test_role");
         fs::create_dir_all(&role_dir).unwrap();
-        let manifest_json =
-            serde_json::to_string_pretty(&disk_manifest_from_role(&role)).unwrap();
+        let manifest_json = serde_json::to_string_pretty(
+            &crate::models::role_manifest_disk::disk_manifest_from_role(&role),
+        )
+        .unwrap();
         fs::write(role_dir.join("manifest.json"), manifest_json).unwrap();
         let settings_json =
-            serde_json::to_string_pretty(&disk_role_settings_from_role(&role)).unwrap();
+            serde_json::to_string_pretty(&crate::models::disk_role_settings_from_role(&role))
+                .unwrap();
         fs::write(role_dir.join("settings.json"), settings_json).unwrap();
 
         let settings_path = role_dir.join("settings.json");

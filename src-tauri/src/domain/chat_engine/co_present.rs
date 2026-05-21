@@ -51,13 +51,6 @@ impl From<CoPresentError> for AppError {
 
 pub(crate) type CoPresentResult<T> = std::result::Result<T, CoPresentError>;
 
-/// 共景 `crate::map_copresent_err!($stage, $expr)` 已废弃；请写 `crate::map_copresent_err!($stage, $expr)`。
-macro_rules! cp {
-    ($e:expr, $stage:literal) => {
-        $crate::map_copresent_err!($stage, $e)
-    };
-}
-
 #[allow(clippy::too_many_arguments)] // 编排入口：场景 / 计时 / 多 id 与 `Role` 并列传入，不宜为 clippy 强塞单结构体
 pub(crate) async fn process_co_present(
     state: &AppState,
