@@ -18,7 +18,7 @@ use crate::domain::prompt_assembler::PromptAssembler;
 use crate::domain::prompt_builder::PromptInput;
 use crate::domain::slot_resolver::ResolvedRoleSlots;
 use crate::domain::user_emotion_analyzer::UserEmotionAnalyzer;
-use crate::error::{AppError, Result};
+use crate::error::Result;
 use crate::domain::ports::LlmClient;
 use crate::models::knowledge::KnowledgeEventAugment;
 use crate::models::{Emotion, Event, Memory, PersonalitySource, PersonalityVector, Role};
@@ -197,7 +197,9 @@ impl SlotRunner {
                 }
             }
         }
-        last.ok_or_else(|| AppError::OllamaError("no emotion slot produced a result".into()))
+        last.ok_or_else(|| {
+            crate::domain::error_helpers::ollama_msg("emotion", "no slot produced a result")
+        })
     }
 
     fn complex_emotion_last_wins(
@@ -227,7 +229,10 @@ impl SlotRunner {
             }
         }
         last.ok_or_else(|| {
-            AppError::OllamaError("no complex_emotion slot produced a result".into())
+            crate::domain::error_helpers::ollama_msg(
+                "complex_emotion",
+                "no slot produced a result",
+            )
         })
     }
 
@@ -279,7 +284,9 @@ impl SlotRunner {
                 }
             }
         }
-        last.ok_or_else(|| AppError::OllamaError("no event slot produced a result".into()))
+        last.ok_or_else(|| {
+            crate::domain::error_helpers::ollama_msg("event", "no slot produced a result")
+        })
     }
 
     fn memory_merge_rank(
@@ -379,7 +386,9 @@ impl SlotRunner {
                 }
             }
         }
-        last.ok_or_else(|| AppError::OllamaError("no prompt slot produced a result".into()))
+        last.ok_or_else(|| {
+            crate::domain::error_helpers::ollama_msg("prompt", "no slot produced a result")
+        })
     }
 
     async fn llm_serial_last_wins(
@@ -417,7 +426,10 @@ impl SlotRunner {
         if any_ok {
             Ok(last)
         } else {
-            Err(AppError::OllamaError("no llm slot produced a reply".into()))
+            Err(crate::domain::error_helpers::ollama_msg(
+                "llm",
+                "no slot produced a reply",
+            ))
         }
     }
 }

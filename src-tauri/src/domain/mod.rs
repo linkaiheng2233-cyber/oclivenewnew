@@ -1,5 +1,7 @@
 pub mod ports;
 
+pub mod error_helpers;
+
 pub mod knowledge_loader;
 pub mod life_schedule;
 pub mod local_plugin_bridge;
