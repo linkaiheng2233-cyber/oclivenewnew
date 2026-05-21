@@ -8,9 +8,15 @@ This is an **English summary** of the v1 contract between the host (Tauri / `cha
 
 ---
 
+## Blueprint v2 role packs (`pipeline.ocblueprint`)
+
+**`schema_version: 2`** packs use [`pipeline.ocblueprint`](../role-pack/ROLE_PACK_SPEC.md) **`slot_registry`** as SSOT (open instance keys), not fixed six keys in `settings.json`. The host resolves via **`SlotResolver` / `SlotRunner`**; folding to `PluginBackends` uses **last-wins** per `type`. **`complex_emotion`** is a first-class `slot_registry` `type`; directory plugins declare **`provides: ["complex_emotion"]`** when serving that slot. Persist pack edits: Tauri **`save_role_slot_registry`**; session overrides: **`set_session_slot_override`**.
+
+---
+
 ## Design rules
 
-- **v1 backends = compile-time enums** chosen via `settings.json`; no dynamic `cdylib` loading.
+- **Backends = compile-time enums**: legacy via `settings.json`; v2 via **`slot_registry`**. No dynamic `cdylib` loading.
 - **Default implementations** are the built-in Rust paths; switching backend **does not rename API fields** (especially **`SendMessageResponse.reply`**).
 - **Remote:** the host speaks **HTTP JSON-RPC** ([REMOTE_PLUGIN_PROTOCOL.md](../../creator-docs/plugin-and-architecture/REMOTE_PLUGIN_PROTOCOL.md)). Missing `OCLIVE_REMOTE_*` URLs → fall back to builtin / in-process LLM with logs.
 - **Directory:** `plugins/*/manifest.json` child processes; same JSON-RPC wire as Remote; slot ids in `plugin_backends.directory_plugins` ([DIRECTORY_PLUGINS.md](../../creator-docs/plugin-and-architecture/DIRECTORY_PLUGINS.md)).

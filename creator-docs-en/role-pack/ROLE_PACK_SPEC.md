@@ -14,12 +14,13 @@ This document describes the **on-disk role pack shape aligned with the oclive ma
 
 ## 1. Directory layout (recommended)
 
-The pack root is usually **`roles/{roleId}/`** (`{roleId}` matches `manifest.json` → **`id`**, which simplifies import and validation).
+The pack root is usually **`roles/{roleId}/`** (v2: `{roleId}` matches **`meta.id`**).
 
 ```text
 roles/{role_id}/
-├── manifest.json           # Facade: display info, seven-dim default_personality, scenes, relations, …
-├── settings.json           # Optional; engine: plugin_backends, evolution, schema_version, …
+├── pipeline.ocblueprint    # **v2 SSOT (recommended)**: schema_version 2 · meta · slot_registry
+├── manifest.json           # **deprecated (legacy)** — do not ship alongside v2 blueprint
+├── settings.json           # **deprecated (legacy)** — do not ship alongside v2 blueprint
 ├── core_personality.txt    # Optional; core personality prose (profile mode, etc.)
 ├── ui.json                 # Optional; front-end layout
 ├── author.json             # Optional; author metadata
@@ -31,14 +32,26 @@ roles/{role_id}/
 ├── knowledge/              # Optional; worldview Markdown (see WORLDVIEW_KNOWLEDGE.md)
 ├── memories/               # Optional; preset memory assets (if the product uses them)
 ├── assets/                 # Optional; sprites, avatars, static assets
-└── pipeline.ocblueprint    # Optional; runtime blueprint (orthogonal to monolith.toml compile-time welding; see RFC)
+└── assets/                 # Optional
 ```
 
-**Note**: There is **no** top-level `personality.json` convention in the repo; **seven-dimensional personality** lives in **`manifest.json` → `default_personality`** (7 `f32`s, see below). `prompts/*.md` may be creator-managed material; it is **not** a required host path; the main dialogue prompt is decided by the engine and `plugin_backends.prompt`.
+**Note**: v2 packs must **not** mix `manifest.json` / `settings.json` with `pipeline.ocblueprint`. Personality is **`meta.personality`** in v2.
 
 ---
 
-## 2. `manifest.json` (`DiskRoleManifest`)
+## 2. `pipeline.ocblueprint` (v2 SSOT)
+
+| Top-level key | Required | Notes |
+|---------------|----------|--------|
+| `schema_version` | yes | Must be **2** |
+| `meta` | yes | Former manifest + engine fields (`id`, `personality`, `relations`, `interaction_mode`, …) |
+| `slot_registry` | yes | Instance key → `{ type, label, backend, position, … }`; **at least one `type: llm`** |
+
+**`module_relations`**, **`steps`**, **`entry`** must **not** appear in the file (runtime-derived for the architecture graph). Schema: `crates/oclive-cli/schemas/pipeline.ocblueprint.v2.schema.json`.
+
+---
+
+## 3. `manifest.json` (legacy · `DiskRoleManifest`)
 
 | Field | Type | Required | Notes |
 |-------|------|----------|--------|

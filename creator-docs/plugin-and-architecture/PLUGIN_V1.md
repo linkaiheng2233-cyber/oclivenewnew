@@ -6,9 +6,23 @@
 
 **全库文档索引**：[../getting-started/DOCUMENTATION_INDEX.md](../getting-started/DOCUMENTATION_INDEX.md)。**架构总览（单核双态 · 后端/插件/设施三层 · 专家模型设施子模块）**：[../getting-started/OCLIVE_ARCHITECTURE_OVERVIEW.md](../getting-started/OCLIVE_ARCHITECTURE_OVERVIEW.md)。**以内核为中心、模块环绕的总览（图 + Mermaid）**：[../getting-started/KERNEL_AND_MODULES_ARCHITECTURE.md](../getting-started/KERNEL_AND_MODULES_ARCHITECTURE.md)。包版本与 `schema_version` 见 **[../role-pack/PACK_VERSIONING.md](../role-pack/PACK_VERSIONING.md)**。HTTP 侧车 JSON-RPC 全文见 **[REMOTE_PLUGIN_PROTOCOL.md](REMOTE_PLUGIN_PROTOCOL.md)**；创作者总览见 **[CREATOR_PLUGIN_ARCHITECTURE.md](CREATOR_PLUGIN_ARCHITECTURE.md)**。**目录式进程插件**（`plugin_backends.* = directory`、整壳、`directory_plugin_invoke` 等）见 **[DIRECTORY_PLUGINS.md](DIRECTORY_PLUGINS.md)**。
 
+## 蓝图 v2 角色包（`pipeline.ocblueprint`）
+
+自 **schema_version: 2** 起，角色包 **SSOT** 为 [`pipeline.ocblueprint`](../role-pack/ROLE_PACK_SPEC.md) 的 **`slot_registry`**（开放多实例键），不再使用 `settings.json` → `plugin_backends` 六键固定形状。宿主经 **`SlotResolver` / `SlotRunner`** 按实例解析；同 `type` 折叠为 `PluginBackends` 时 **last-wins**（`position` 最大者优先）。
+
+| v1（legacy） | v2 蓝图 |
+|--------------|---------|
+| `plugin_backends.memory` … `agent` | `slot_registry.{实例键}.type` + `backend` |
+| `directory_plugins.{module}` | 各 directory 槽的 `plugin` / `plugins` |
+| 复杂情感（设施子模块，无六槽键） | `slot_registry` 中 `type: complex_emotion` 实例 |
+
+架构图 **写盘**：`save_role_slot_registry`（Tauri）更新包内 `slot_registry`；会话覆盖仍为 `set_session_slot_override`（内存）。
+
+---
+
 ## 设计约束
 
-- **v1 插件 = 编译期枚举**：通过 `settings.json` 选择实现，无动态 `cdylib`。
+- **v1 插件 = 编译期枚举**：legacy 通过 `settings.json` 选择实现；v2 通过 **`slot_registry`**。无动态 `cdylib`。
 - **默认实现**即当前内置逻辑；换后端时 **API 字段名不变**（尤其 `SendMessageResponse.reply`）。
 - **Remote**：宿主已实现 **HTTP JSON-RPC**（见 [REMOTE_PLUGIN_PROTOCOL.md](REMOTE_PLUGIN_PROTOCOL.md)）；未配置 `OCLIVE_REMOTE_*` URL 时回退 **builtin**（或进程内 LLM）并写日志。
 - **Directory**：`plugins/*/manifest.json` 子进程 + 与 Remote 相同的 JSON-RPC wire；槽位见 `plugin_backends.directory_plugins`（[DIRECTORY_PLUGINS.md](DIRECTORY_PLUGINS.md)）。
@@ -331,16 +345,23 @@ TypeScript 侧 `SendMessageResponse`（`src/utils/tauri-api.ts`）必须与 `mod
 }
 ```
 
-### `category` 字段
+### `provides` 与 `category`
 
-用于声明插件所属模块，供 V2 左栏分类与筛选使用。建议值：
+目录插件 **`manifest.json` → `provides`**：声明本插件可挂载的槽位类型（字符串数组）。宿主与 `oclive-cli plugin create --provides` 支持的合法值包括：
 
-- `llm`
-- `emotion`
-- `complex_emotion`
-- `event`
-- `prompt`
-- `memory`
+| `provides` 值 | 说明 |
+|---------------|------|
+| `memory` | 记忆检索 |
+| `emotion` | 用户情绪分析 |
+| `event` | 事件影响估计 |
+| `prompt` | Prompt 组装 |
+| `llm` | 主 LLM |
+| `agent` | Agent / MCP 工具链 |
+| **`complex_emotion`** | **复杂情感**（共景 `narrative_hint`）；蓝图 v2 中对应 `slot_registry` 的 `type: complex_emotion`，`backend: directory` 时须在 `provides` 中含此项 |
+
+解析时 [`SlotResolver`](../../src-tauri/src/domain/slot_resolver.rs) 会校验 directory 插件是否声明 `provides` 含目标能力（含 `complex_emotion`）。
+
+**`category`**（单值，可选）：供插件工作台左栏分类，建议与 `provides` 主槽一致，例如 `llm`、`complex_emotion`。
 
 ### `description_zh` 字段
 

@@ -14,31 +14,72 @@
 
 ## 1. 目录结构（推荐）
 
-角色包根目录通常命名为 **`roles/{角色id}/`**（`{角色id}` 与 `manifest.json` → **`id`** 一致，便于导入与校验）。
+角色包根目录通常命名为 **`roles/{角色id}/`**（v2 时 `{角色id}` 与 `meta.id` 一致）。
 
 ```text
 roles/{role_id}/
-├── manifest.json           # 门面：展示信息、七维 default_personality、场景列表、关系等
-├── settings.json           # 可选；引擎段：plugin_backends、evolution、schema_version 等
-├── core_personality.txt    # 可选；核心性格长文（profile 模式等）
+├── pipeline.ocblueprint    # **v2 SSOT（推荐）**：schema_version 2 · meta · slot_registry
+├── manifest.json           # **已废弃（legacy）**：勿与 v2 蓝图并存
+├── settings.json           # **已废弃（legacy）**：勿与 v2 蓝图并存
+├── core_personality.txt    # 可选；profile 模式长文
 ├── ui.json                 # 可选；前端布局
 ├── author.json             # 可选；作者元数据
 ├── scenes/
-│   └── {scene_id}/
-│       ├── scene.json
-│       ├── description.txt # 可选
-│       └── …
-├── knowledge/              # 可选；世界观 Markdown（见 WORLDVIEW_KNOWLEDGE.md）
-├── memories/               # 可选；预设记忆资源（若产品使用）
-├── assets/                 # 可选；立绘、头像等静态资源
-└── pipeline.ocblueprint    # 可选；运行时蓝图（与 monolith.toml 编译期焊接正交，见 RFC）
+│   └── {scene_id}/ …
+├── knowledge/              # 可选
+├── memories/               # 可选
+└── assets/                 # 可选
 ```
 
-**说明**：仓库内 **不存在** 顶层 `personality.json` 文件约定；**七维人格**在 **`manifest.json` → `default_personality`**（7 个 `f32`，见下文）。`prompts/*.md` 可作为创作者自管素材，**不是**宿主加载的必需路径；主对话 Prompt 由引擎与 `plugin_backends.prompt` 决定。
+**说明**：v2 包 **不得** 同时存在 `manifest.json` / `settings.json` 与 `pipeline.ocblueprint`。七维人格在 v2 写入 **`meta.personality`**（对象或 7 元数组）。`prompts/*.md` 非宿主必需路径。
 
 ---
 
-## 2. `manifest.json`（`DiskRoleManifest`）
+## 2. `pipeline.ocblueprint`（v2 SSOT）
+
+| 顶层键 | 类型 | 必填 | 说明 |
+|--------|------|------|------|
+| `schema_version` | number | 是 | 固定 **2** |
+| `meta` | object | 是 | 原 `manifest.json` + 原 `settings.json` 引擎字段（见下表） |
+| `slot_registry` | object | 是 | 实例键 → 槽位配置；**至少一个 `type: llm`** |
+
+### 2.1 `meta`（门面与引擎）
+
+| 字段 | 说明 |
+|------|------|
+| `id`, `name`, `version`, `author`, `description` | 与 legacy manifest 同义 |
+| `personality` | 七维：对象（`stubbornness`…`warmth`）或 `[f32; 7]`，0.0～1.0 |
+| `relations`, `default_relation` | 用户关系 |
+| `scenes` | 场景 id 列表；与 `scenes/` 子目录合并 |
+| `evolution`, `memory_config`, `identity_binding`, `life_*`, `knowledge` | 见 README_MANIFEST |
+| `interaction_mode` | `immersive` \| `pure_chat` |
+| `ollama_model`, `remote_presence`, `autonomous_scene`, `reply_quality_anchor` | 可选 |
+| `min_runtime_version`, `dev_only` | 可选 |
+
+### 2.2 `slot_registry`（开放多实例）
+
+键为**用户定义的实例名**（如 `memory`、`memory_short`、`llm`）。值：
+
+| 字段 | 类型 | 必填 | 说明 |
+|------|------|------|------|
+| `type` | string | 是 | `memory` \| `emotion` \| `event` \| `prompt` \| `llm` \| `agent` \| `complex_emotion` |
+| `label` | string | 是 | 架构图展示名 |
+| `backend` | string | 是 | 与该 `type` 对应的 PLUGIN_V1 枚举 |
+| `position` | number | 是 | 同 `type` 排序；折叠六槽时 **last-wins** |
+| `plugin` / `plugins` | string / string[] | directory 时必填 | 目录插件 id |
+| `model`, `url`, `local_memory_provider_id` | 可选 | 见 SETTINGS_REFERENCE |
+
+同 `type` 多实例由 **`SlotRunner`** 合并（见 RFC）；主应用架构图可通过 **`save_role_slot_registry`** 写回本文件。
+
+### 2.3 `module_relations`（仅运行时）
+
+**禁止**在 `pipeline.ocblueprint` 文件中出现 `module_relations`、`steps`、`entry`（校验报错）。运行时由 `slot_registry` **派生**模块间示意关系，供架构图只读连线。
+
+JSON Schema：`crates/oclive-cli/schemas/pipeline.ocblueprint.v2.schema.json`。
+
+---
+
+## 3. `manifest.json`（legacy · `DiskRoleManifest`）
 
 | 字段 | 类型 | 必填 | 说明 |
 |------|------|------|------|
@@ -60,7 +101,7 @@ roles/{role_id}/
 
 ---
 
-## 3. `settings.json`（`DiskRoleSettings`）
+## 4. `settings.json`（legacy · `DiskRoleSettings`）
 
 | 字段 | 类型 | 必填 | 说明 |
 |------|------|------|------|
@@ -71,22 +112,25 @@ roles/{role_id}/
 
 ---
 
-## 4. 与内核概念对齐
+## 5. 与内核概念对齐
 
-| 概念 | 磁盘落点 |
-|------|-----------|
-| `PluginBackends`（memory…agent） | `settings.json` → `plugin_backends` |
-| 七维人格（vector 模式） | `manifest.json` → `default_personality` |
-| 交互模式 | `settings.json` → `interaction_mode` |
-| 场景 | `manifest.scenes` + `scenes/{id}/` |
-| Monolith 焊接 | **仅** 脚手架项目 `monolith.toml` / `process_message_monolith.rs`，**不**随角色包分发 |
+| 概念 | 磁盘落点（v2 蓝图） | legacy |
+|------|---------------------|--------|
+| `PluginBackends`（memory…agent） | `pipeline.ocblueprint` → `slot_registry`（同 `type` 多实例，折叠为六槽时 **last-wins**） | `settings.json` → `plugin_backends` |
+| 七维人格（vector 模式） | `meta.personality`（对象或 7 元数组） | `manifest.json` → `default_personality` |
+| 交互模式 | `meta.interaction_mode` | `settings.json` → `interaction_mode` |
+| 场景 | `meta.scenes` + `scenes/{id}/` | `manifest.scenes` + `scenes/{id}/` |
+| 会话槽覆盖 | 内存 overlay；架构图改包默认经 `save_role_slot_registry` 写盘 | `set_session_plugin_backend` |
+| Monolith 焊接 | **仅** 脚手架 `monolith.toml` / `process_message_monolith.rs`，**不**随角色包分发 | 同左 |
+
+校验：`cargo run -p oclive-cli -- pack validate <dir>`（**默认 v2**）；legacy 包用 `--profile legacy`。另：`blueprint validate <dir>`。路线图 [`handoff/BLUEPRINT_V2_IMPLEMENTATION_PLAN.md`](../../handoff/BLUEPRINT_V2_IMPLEMENTATION_PLAN.md)。
 
 ---
 
-## 5. 自动化校验
+## 6. 自动化校验
 
 ```bash
-cargo run -p oclive-cli -- pack validate ./roles/my-role --host-version 0.2.0
+cargo run -p oclive-cli -- pack validate ./roles/mumu --host-version 0.2.0
 ```
 
 - 默认 `--host-version` 为 **本 CLI 的 `CARGO_PKG_VERSION`**；与桌面宿主版本不一致时，请显式传入 **与目标 oclive 发行版一致的 semver** 再检查 `min_runtime_version`。
@@ -115,12 +159,13 @@ cargo run -p oclive-cli -- pack validate ./roles/my-role --host-version 0.2.0 --
 
 ---
 
-## 6. 脚手架命令摘要
+## 7. 脚手架命令摘要
 
 | 命令 | 作用 |
 |------|------|
-| `pack validate <dir>` | 目录级校验 |
-| `pack validate <dir> --profile robot-soul` | 追加 RobotSoulPack 规则（见上文 §） |
+| `pack validate <dir>` | **默认** v2 蓝图目录校验 |
+| `pack validate <dir> --profile legacy` | legacy manifest/settings |
+| `pack validate <dir> --profile robot-soul` | legacy + RobotSoulPack（见 §6） |
 | `pack create -o <out> --id <id> [--flat]` | 生成最小可校验包（`--flat` 时 `<out>` 即为角色根） |
 | `pack publish <dir> [-o file.oclivepack]` | ZIP 打包；根目录为 `manifest.id` |
 | `init … --skip-role-pack` | 生成内核工程时不创建 `roles/` |
@@ -129,7 +174,7 @@ cargo run -p oclive-cli -- pack validate ./roles/my-role --host-version 0.2.0 --
 
 ---
 
-## 7. 团队协作（`oclive collab`）
+## 8. 团队协作（`oclive collab`）
 
 在角色包根目录使用 Git 同步多人编辑：
 
