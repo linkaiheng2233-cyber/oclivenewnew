@@ -13,7 +13,7 @@ export interface SlotRegistryEntry {
 
 export type SlotRegistryMap = Record<string, SlotRegistryEntry>;
 
-const SLOT_TYPE_ORDER = [
+export const SLOT_TYPE_ORDER = [
   "emotion",
   "complex_emotion",
   "event",
@@ -77,6 +77,83 @@ export function uniqueSlotTypes(registry: SlotRegistryMap): string[] {
     set.add(e.type);
   }
   return [...set].sort((a, b) => slotTypeOrderIndex(a) - slotTypeOrderIndex(b));
+}
+
+/** 新实例键：优先用 type 名，冲突时 `type_2`、`type_3`… */
+export function nextUniqueSlotKey(registry: SlotRegistryMap, slotType: string): string {
+  if (!registry[slotType]) return slotType;
+  let i = 2;
+  while (registry[`${slotType}_${i}`]) i += 1;
+  return `${slotType}_${i}`;
+}
+
+export function nextPositionForType(registry: SlotRegistryMap, slotType: string): number {
+  let max = -1;
+  for (const e of Object.values(registry)) {
+    if (e.type === slotType && e.position > max) max = e.position;
+  }
+  return max + 1;
+}
+
+const DEFAULT_BACKEND: Record<string, string> = {
+  memory: "builtin",
+  emotion: "builtin",
+  event: "builtin",
+  prompt: "builtin",
+  llm: "ollama",
+  agent: "builtin",
+  complex_emotion: "builtin",
+};
+
+export function defaultBackendForSlotType(slotType: string): string {
+  return DEFAULT_BACKEND[slotType] ?? "builtin";
+}
+
+export function countSlotsOfType(registry: SlotRegistryMap, slotType: string): number {
+  return Object.values(registry).filter((e) => e.type === slotType).length;
+}
+
+/** 最后一个 `llm` 实例不可删。 */
+export function canRemoveSlotKey(registry: SlotRegistryMap, key: string): boolean {
+  const entry = registry[key];
+  if (!entry) return false;
+  if (entry.type !== "llm") return true;
+  return countSlotsOfType(registry, "llm") > 1;
+}
+
+export function addSlotToRegistry(
+  registry: SlotRegistryMap,
+  slotType: string,
+  label: string,
+): { registry: SlotRegistryMap; key: string } {
+  const key = nextUniqueSlotKey(registry, slotType);
+  const trimmed = label.trim() || key;
+  return {
+    key,
+    registry: {
+      ...registry,
+      [key]: {
+        type: slotType,
+        label: trimmed,
+        backend: defaultBackendForSlotType(slotType),
+        position: nextPositionForType(registry, slotType),
+      },
+    },
+  };
+}
+
+export const SLOT_REGISTRY_LAST_LLM = "CANNOT_REMOVE_LAST_LLM";
+
+export function removeSlotFromRegistry(
+  registry: SlotRegistryMap,
+  key: string,
+): SlotRegistryMap {
+  if (!canRemoveSlotKey(registry, key)) {
+    throw new Error(SLOT_REGISTRY_LAST_LLM);
+  }
+  const next = { ...registry };
+  delete next[key];
+  return next;
 }
 
 export function primaryPluginId(entry: SlotRegistryEntry): string {

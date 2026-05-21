@@ -786,6 +786,19 @@ export async function clearAllSessionSlotOverrides(
   });
 }
 
+/** 将完整 `slot_registry` 写回 `pipeline.ocblueprint`（蓝图 v2 架构图写盘）。 */
+export async function saveRoleSlotRegistry(
+  roleId: string,
+  slotRegistry: import("../lib/slotRegistry").SlotRegistryMap,
+): Promise<RoleInfo> {
+  return invokeWithFriendlyError<RoleInfo>("save_role_slot_registry", {
+    req: {
+      role_id: roleId,
+      slot_registry: slotRegistry,
+    },
+  });
+}
+
 /** 将 `author.json` → `suggested_plugin_backends` 写入当前会话后端覆盖。 */
 export async function applyAuthorSuggestedPluginBackends(
   roleId: string,

@@ -33,7 +33,7 @@ export default {
   graph: {
     lead: "ComfyUI-style wires: kernel on the outer ring, one link to the centered facility bus, six modules orbiting the bus; left/right ports stage connections. Drag to move; select a node and drag corners to resize.",
     leadBlueprint:
-      "Blueprint v2: one node per slot_registry key; edges are derived (no manual wiring). Backend switches are session-only; dashed outline means session override.",
+      "Blueprint v2: one node per slot_registry key; edges are derived (no manual wiring). Backend changes are written to pipeline.ocblueprint; dashed outline still means in-memory session override only.",
     facilityBusHintBlueprint: "Derived from pipeline.ocblueprint; multiple instances of the same type share a fac-{type} port.",
     facilityBus: "Facility bus",
     facilityBusHint: "Guide node: runtime wiring is kernel↔six modules only; the bus avoids six overlapping center lines.",
@@ -83,7 +83,24 @@ export default {
     fitAll: "Fit all",
     panHint: "Wheel zoom · Space/middle-drag pan · Double-click node to focus",
     connectHint: "Drag from an output port to an input · Delete removes a wire (system wires are locked)",
-    connectHintBlueprint: "Blueprint v2: wires are read-only; edit pipeline.ocblueprint or use the dropdown for session overrides.",
+    connectHintBlueprint:
+      "Blueprint v2: wires are read-only; use the toolbar to add/remove slots on disk, or the dropdown to persist backend changes.",
+    addSlot: "Add slot",
+    addSlotWizardTitle: "Add slot instance",
+    addSlotLabel: "Display label",
+    addSlotLabelPlaceholder: "Leave empty to use the auto-generated instance key",
+    addSlotWizardHint:
+      "Instance keys are generated from type (e.g. memory, memory_2). Confirm to write pipeline.ocblueprint.",
+    addSlotCancel: "Cancel",
+    addSlotConfirm: "Confirm and save",
+    removeSlot: "Remove slot",
+    addSlotType: "Slot type",
+    removeSlotLastLlm: "At least one llm slot instance must remain",
+    removeSlotKey: "Instance key to remove",
+    addSlotDone: "Saved to pipeline.ocblueprint",
+    removeSlotDone: "Removed slot and saved pack",
+    removeSlotConfirm:
+      'Remove slot "{key}" from the role pack? At least one llm slot must remain.',
     sessionOverride: "Session override",
     resetSlotDefault: "Reset to pack default",
     resetSlotDefaultDone: "Cleared session override for this slot",

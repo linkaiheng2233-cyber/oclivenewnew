@@ -1,10 +1,11 @@
 <script setup lang="ts">
 import { applyNodeChanges, VueFlow, type Edge, type Node } from "@vue-flow/core";
-import { markRaw, onMounted, provide, ref, watch } from "vue";
+import { computed, markRaw, onMounted, provide, ref, watch } from "vue";
 import { useI18n } from "vue-i18n";
 import { Background } from "@vue-flow/background";
 import { Controls } from "@vue-flow/controls";
 import { MiniMap } from "@vue-flow/minimap";
+import ArchAddSlotDialog from "./architecture-graph/ArchAddSlotDialog.vue";
 import ArchBackendEdge from "./architecture-graph/ArchBackendEdge.vue";
 import ArchBusNode from "./architecture-graph/ArchBusNode.vue";
 import ArchComplexNode from "./architecture-graph/ArchComplexNode.vue";
@@ -25,9 +26,16 @@ import { useAppToast } from "../composables/useAppToast";
 import { useRoleStore } from "../stores/roleStore";
 import { usePluginStore } from "../stores/pluginStore";
 import {
+  addSlotToRegistry,
+  canRemoveSlotKey,
+  removeSlotFromRegistry,
+  SLOT_REGISTRY_LAST_LLM,
+  type SlotRegistryMap,
+} from "../lib/slotRegistry";
+import {
   clearSessionSlotOverride,
+  saveRoleSlotRegistry,
   setSessionPluginBackend,
-  setSessionSlotOverride,
 } from "../utils/tauri-api";
 
 const emit = defineEmits<{
@@ -39,6 +47,30 @@ const roleStore = useRoleStore();
 const pluginStore = usePluginStore();
 const { showToast } = useAppToast();
 const busy = ref(false);
+const showAddSlotWizard = ref(false);
+const removeSlotKey = ref("");
+
+const packSlotKeys = computed(() => {
+  const pack = roleStore.roleInfo.slotRegistryPack;
+  return pack ? Object.keys(pack).sort() : [];
+});
+
+const removeSlotDisabled = computed(() => {
+  const pack = roleStore.roleInfo.slotRegistryPack;
+  const key = removeSlotKey.value.trim();
+  if (!pack || !key) return true;
+  return !canRemoveSlotKey(pack, key);
+});
+
+watch(
+  packSlotKeys,
+  (keys) => {
+    if (keys.length && !keys.includes(removeSlotKey.value)) {
+      removeSlotKey.value = keys[0];
+    }
+  },
+  { immediate: true },
+);
 
 const graphLayout = useArchitectureGraphLayout();
 
@@ -143,19 +175,39 @@ provide(archGraphActionsKey, {
   busy: () => busy.value,
   usesBlueprint: () => usesBlueprint.value,
   onBackendChange: async (targetKey: string, value: string) => {
-    const backend = value === "__pack_default__" ? null : value;
     busy.value = true;
     try {
-      const info = usesBlueprint.value
-        ? await setSessionSlotOverride(roleStore.currentRoleId, targetKey, {
-            backend: backend ?? undefined,
-          })
-        : await setSessionPluginBackend(
+      if (usesBlueprint.value) {
+        if (value === "__pack_default__") {
+          const info = await clearSessionSlotOverride(
             roleStore.currentRoleId,
-            targetKey as CoreModule,
-            backend,
+            targetKey,
           );
-      roleStore.applyRoleInfo(info);
+          roleStore.applyRoleInfo(info);
+          return;
+        }
+        const pack = roleStore.roleInfo.slotRegistryPack;
+        if (!pack?.[targetKey]) {
+          showToast("error", t("pluginWorkbench.graph.connectUnknownPort"));
+          return;
+        }
+        const next: SlotRegistryMap = {
+          ...pack,
+          [targetKey]: { ...pack[targetKey], backend: value },
+        };
+        let info = await saveRoleSlotRegistry(roleStore.currentRoleId, next);
+        roleStore.applyRoleInfo(info);
+        info = await clearSessionSlotOverride(roleStore.currentRoleId, targetKey);
+        roleStore.applyRoleInfo(info);
+      } else {
+        const backend = value === "__pack_default__" ? null : value;
+        const info = await setSessionPluginBackend(
+          roleStore.currentRoleId,
+          targetKey as CoreModule,
+          backend,
+        );
+        roleStore.applyRoleInfo(info);
+      }
     } catch (e) {
       showToast("error", e instanceof Error ? e.message : String(e));
     } finally {
@@ -196,6 +248,62 @@ provide(archGraphActionsKey, {
   },
 });
 
+async function persistPackRegistry(next: SlotRegistryMap) {
+  busy.value = true;
+  try {
+    const info = await saveRoleSlotRegistry(roleStore.currentRoleId, next);
+    roleStore.applyRoleInfo(info);
+  } catch (e) {
+    showToast("error", e instanceof Error ? e.message : String(e));
+    throw e;
+  } finally {
+    busy.value = false;
+  }
+}
+
+function openAddSlotWizard() {
+  showAddSlotWizard.value = true;
+}
+
+async function onAddSlotConfirm(slotType: string, label: string) {
+  const pack = roleStore.roleInfo.slotRegistryPack;
+  if (!pack) return;
+  try {
+    const { registry, key } = addSlotToRegistry(pack, slotType, label);
+    await persistPackRegistry(registry);
+    removeSlotKey.value = key;
+    showAddSlotWizard.value = false;
+    showToast("success", t("pluginWorkbench.graph.addSlotDone"));
+  } catch (e) {
+    showToast("error", e instanceof Error ? e.message : String(e));
+  }
+}
+
+async function onRemoveSlot() {
+  const pack = roleStore.roleInfo.slotRegistryPack;
+  const key = removeSlotKey.value.trim();
+  if (!pack || !key || !pack[key]) return;
+  if (!canRemoveSlotKey(pack, key)) {
+    showToast("error", t("pluginWorkbench.graph.removeSlotLastLlm"));
+    return;
+  }
+  if (!window.confirm(t("pluginWorkbench.graph.removeSlotConfirm", { key }))) {
+    return;
+  }
+  try {
+    const next = removeSlotFromRegistry(pack, key);
+    await persistPackRegistry(next);
+    await clearSessionSlotOverride(roleStore.currentRoleId, key).catch(() => undefined);
+    showToast("success", t("pluginWorkbench.graph.removeSlotDone"));
+  } catch (e) {
+    if (e instanceof Error && e.message === SLOT_REGISTRY_LAST_LLM) {
+      showToast("error", t("pluginWorkbench.graph.removeSlotLastLlm"));
+    } else {
+      showToast("error", e instanceof Error ? e.message : String(e));
+    }
+  }
+}
+
 onMounted(syncGraphFromModel);
 </script>
 
@@ -218,8 +326,41 @@ onMounted(syncGraphFromModel);
       <button type="button" class="agf-tb-btn" @click="onResetLayout">
         {{ t("pluginWorkbench.graph.resetLayout") }}
       </button>
+      <template v-if="usesBlueprint">
+        <button
+          type="button"
+          class="agf-tb-btn"
+          :disabled="busy || !roleStore.roleInfo.slotRegistryPack"
+          @click="openAddSlotWizard"
+        >
+          {{ t("pluginWorkbench.graph.addSlot") }}
+        </button>
+        <label v-if="packSlotKeys.length" class="agf-tb-label">
+          {{ t("pluginWorkbench.graph.removeSlotKey") }}
+          <select v-model="removeSlotKey" class="agf-tb-select" :disabled="busy">
+            <option v-for="k in packSlotKeys" :key="k" :value="k">{{ k }}</option>
+          </select>
+        </label>
+        <button
+          v-if="packSlotKeys.length"
+          type="button"
+          class="agf-tb-btn agf-tb-btn--danger"
+          :disabled="busy || removeSlotDisabled"
+          :title="removeSlotDisabled ? t('pluginWorkbench.graph.removeSlotLastLlm') : undefined"
+          @click="onRemoveSlot"
+        >
+          {{ t("pluginWorkbench.graph.removeSlot") }}
+        </button>
+      </template>
       <span class="agf-tb-hint">{{ t("pluginWorkbench.graph.resizeHint") }}</span>
     </div>
+
+    <ArchAddSlotDialog
+      :open="showAddSlotWizard"
+      :busy="busy"
+      @close="showAddSlotWizard = false"
+      @confirm="onAddSlotConfirm"
+    />
 
     <div
       class="agf-vf"
@@ -314,139 +455,83 @@ onMounted(syncGraphFromModel);
 .agf-vendor a {
   color: color-mix(in srgb, var(--text-accent, var(--accent)) 75%, var(--text-secondary));
 }
+.agf-tb-label {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 12px;
+  color: var(--text-secondary);
+}
+.agf-tb-select {
+  font-size: 12px;
+  padding: 4px 8px;
+  border-radius: 6px;
+  border: 1px solid var(--border-subtle, #333);
+  background: var(--surface-elevated, #1a1a1a);
+  color: var(--text-primary);
+}
+.agf-tb-btn--danger {
+  color: var(--danger, #e55);
+}
 .agf-toolbar {
   display: flex;
   flex-wrap: wrap;
   align-items: center;
-  gap: 10px;
+  gap: 8px;
 }
 .agf-tb-btn {
-  padding: 4px 12px;
-  font-size: 11px;
+  font-size: 12px;
+  padding: 5px 10px;
   border-radius: 6px;
-  border: 1px solid var(--border-light);
-  background: var(--bg-elevated);
+  border: 1px solid var(--border-subtle, #333);
+  background: var(--surface-elevated, #1a1a1a);
   color: var(--text-primary);
   cursor: pointer;
 }
-.agf-tb-btn:hover {
-  border-color: color-mix(in srgb, var(--accent) 30%, var(--border-light));
+.agf-tb-btn:disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
 }
 .agf-tb-hint {
-  font-size: 10px;
+  font-size: 11px;
   color: var(--text-secondary);
 }
 .agf-vf {
-  --arch-node-bg: v-bind("GRAPH_SURFACE.nodeBg");
-  --arch-node-elevated: v-bind("GRAPH_SURFACE.nodeElevated");
-  --arch-node-border: v-bind("GRAPH_SURFACE.nodeBorder");
-  --arch-node-shadow: v-bind("GRAPH_SURFACE.nodeShadow");
-  --arch-selection: v-bind("GRAPH_SURFACE.selectionRing");
-  --arch-text: v-bind("GRAPH_SURFACE.text");
-  --arch-text-muted: v-bind("GRAPH_SURFACE.textMuted");
-  height: min(560px, 58vh);
-  min-height: 400px;
-  border-radius: var(--radius-card);
-  border: 1px solid #3c3c3c;
-  background: v-bind("GRAPH_SURFACE.canvas");
+  height: min(62vh, 520px);
+  min-height: 280px;
+  border-radius: 10px;
+  border: 1px solid var(--border-subtle, #2a2a2a);
   overflow: hidden;
-}
-.agf-vf :deep(.vue-flow) {
-  width: 100%;
-  height: 100%;
-  background: v-bind("GRAPH_SURFACE.canvas");
-}
-.agf-vf :deep(.vue-flow__background) {
-  background: v-bind("GRAPH_SURFACE.canvas");
-}
-.agf-vf :deep(.vue-flow__node) {
-  border: none;
-  background: transparent;
-  box-shadow: none;
-  padding: 0;
-}
-.agf-vf :deep(.vue-flow__node.selected) {
-  box-shadow: none;
-}
-.agf-vf :deep(.vue-flow__handle) {
-  width: 10px;
-  height: 10px;
-  border: 2px solid #2d2d30;
-  background: #3c3c3c;
-}
-.agf-vf :deep(.vue-flow__handle.agn-handle--in) {
-  border-color: v-bind(handleInColor);
-  background: color-mix(in srgb, v-bind(handleInColor) 22%, #3c3c3c);
-}
-.agf-vf :deep(.vue-flow__handle.agn-handle--out) {
-  border-color: v-bind(handleOutColor);
-  background: color-mix(in srgb, v-bind(handleOutColor) 22%, #3c3c3c);
-}
-.agf-vf :deep(.vue-flow__handle.connectingto) {
-  box-shadow: 0 0 0 3px color-mix(in srgb, #7aad8f 45%, transparent);
-}
-.agf-vf :deep(.vue-flow__handle.connectingto.invalid) {
-  box-shadow: 0 0 0 3px color-mix(in srgb, #c45c5c 50%, transparent);
-}
-.agf-vf :deep(.vue-flow__handle.valid) {
-  box-shadow: 0 0 0 2px color-mix(in srgb, #7aad8f 55%, transparent);
-}
-.agf-vf :deep(.vue-flow__edge-path) {
-  stroke-width: 1.75;
-}
-.agf-vf :deep(.vue-flow__minimap) {
-  border-radius: 8px;
-  border: 1px solid #4e4e52;
-  background: #2d2d30;
-}
-.agf-vf :deep(.vue-flow__minimap-mask) {
-  fill: color-mix(in srgb, #252526 55%, transparent);
-}
-.agf-vf :deep(.vue-flow__controls) {
-  box-shadow: none;
-  border: 1px solid #4e4e52;
-  border-radius: 8px;
-  overflow: hidden;
-  background: #2d2d30;
-}
-.agf-vf :deep(.vue-flow__controls-button) {
-  background: #3c3c3c;
-  border-bottom: 1px solid #4e4e52;
-  fill: #c5c5c5;
-}
-.agf-vf :deep(.vue-flow__controls-button:hover) {
-  background: #454548;
 }
 .agf-legend {
   display: flex;
   flex-wrap: wrap;
-  align-items: center;
-  gap: 12px;
+  gap: 10px 14px;
   font-size: 11px;
   color: var(--text-secondary);
 }
-.agf-legend-hint {
-  margin-left: auto;
-  font-size: 10px;
+.agf-legend-item {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
 }
 .agf-swatch {
-  display: inline-block;
-  width: 18px;
-  height: 0;
-  border-top: 3px solid;
-  margin-right: 4px;
-  vertical-align: middle;
-  opacity: 0.9;
+  width: 10px;
+  height: 10px;
+  border-radius: 2px;
 }
 .agf-swatch--builtin {
-  border-color: v-bind("BACKEND_COLORS.builtin.stroke");
+  background: #6b9bd1;
 }
 .agf-swatch--remote {
-  border-color: v-bind("BACKEND_COLORS.remote.stroke");
-  border-top-style: dashed;
+  background: #c9a227;
 }
 .agf-swatch--directory {
-  border-color: v-bind("BACKEND_COLORS.directory.stroke");
-  border-top-style: dotted;
+  background: #7dce82;
+}
+.agf-legend-hint {
+  flex: 1 1 100%;
+  font-size: 10px;
+  opacity: 0.85;
 }
 </style>
