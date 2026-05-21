@@ -3,7 +3,7 @@
 #![allow(
     clippy::missing_errors_doc,
     clippy::must_use_candidate,
-    clippy::too_many_arguments,
+    clippy::too_many_arguments
 )]
 
 use crate::domain::complex_emotion::{

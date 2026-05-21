@@ -46,7 +46,11 @@ fn slot_registry_role_info_fields(
     state: &AppState,
     role: &Role,
     session_ns: &str,
-) -> (Option<SlotRegistryMap>, Option<SlotRegistryMap>, Vec<String>) {
+) -> (
+    Option<SlotRegistryMap>,
+    Option<SlotRegistryMap>,
+    Vec<String>,
+) {
     let pack = role.slot_registry.clone();
     let effective = state.effective_slot_registry_for_session(role, session_ns);
     let keys = state.slot_session_overridden_keys(session_ns);
