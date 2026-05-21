@@ -194,8 +194,12 @@ async function scenarioHandlers(base, rolePath) {
 async function main() {
   const base = env('OCLIVE_API_BASE', 'http://127.0.0.1:8420').replace(/\/$/, '')
   const rolePath = defaultRolePath()
-  if (!existsSync(join(rolePath, 'manifest.json'))) {
-    throw new Error(`role_path invalid (no manifest): ${rolePath}`)
+  const hasLegacy = existsSync(join(rolePath, 'manifest.json'))
+  const hasV2 = existsSync(join(rolePath, 'pipeline.ocblueprint'))
+  if (!hasLegacy && !hasV2) {
+    throw new Error(
+      `role_path invalid (need manifest.json or pipeline.ocblueprint): ${rolePath}`,
+    )
   }
 
   const handlers = await scenarioHandlers(base, rolePath)

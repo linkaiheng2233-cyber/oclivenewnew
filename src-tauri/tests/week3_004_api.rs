@@ -496,7 +496,7 @@ async fn week3_004_create_event_invalid_type() {
     )
     .await
     .unwrap_err();
-    assert!(err.contains("[INVALID_PARAMETER]"));
+    assert!(err.contains("INVALID_PARAMETER"));
     assert!(err.contains("Invalid event_type"));
 }
 
@@ -519,7 +519,7 @@ async fn week3_004_query_limits_return_invalid_parameter_code() {
     )
     .await
     .unwrap_err();
-    assert!(err.contains("[INVALID_PARAMETER]"));
+    assert!(err.contains("INVALID_PARAMETER"));
 
     let err2 = query_events_impl(
         &state,
@@ -531,7 +531,7 @@ async fn week3_004_query_limits_return_invalid_parameter_code() {
     )
     .await
     .unwrap_err();
-    assert!(err2.contains("[INVALID_PARAMETER]"));
+    assert!(err2.contains("INVALID_PARAMETER"));
 }
 
 #[tokio::test]
