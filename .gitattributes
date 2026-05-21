@@ -1,0 +1,2 @@
+# SQLx migration checksums are content-sensitive; keep LF in working tree on Windows.
+src-tauri/migrations/*.sql text eol=lf

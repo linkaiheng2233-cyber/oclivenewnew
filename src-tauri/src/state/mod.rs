@@ -378,6 +378,7 @@ impl AppState {
                 .map_err(|e| crate::error::AppError::DatabaseError(e.to_string()))?
         };
 
+        // Migration SQL is compile-time embedded; see src-tauri/build.rs rerun-if-changed.
         sqlx::migrate!("./migrations")
             .run(&db)
             .await
