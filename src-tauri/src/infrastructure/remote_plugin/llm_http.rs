@@ -1,10 +1,11 @@
 //! JSON-RPC：`llm.generate` / `llm.generate_tag`
 
+use crate::domain::error_helpers::ollama_msg;
+use crate::domain::ports::LlmClient;
 use crate::error::Result;
 use crate::infrastructure::high_risk_grants::HighRiskGrantStore;
-use crate::infrastructure::llm::LlmClient;
 use crate::infrastructure::remote_plugin::config::RemotePluginHttpConfig;
-use crate::infrastructure::remote_plugin::jsonrpc::{self, RemoteRpcChannel};
+use crate::infrastructure::remote_plugin::RemoteHttpClientAsync;
 use async_trait::async_trait;
 use serde_json::json;
 use std::sync::Arc;
@@ -13,10 +14,7 @@ const METHOD_LLM_GENERATE: &str = "llm.generate";
 const METHOD_LLM_GENERATE_TAG: &str = "llm.generate_tag";
 
 pub struct RemoteLlmHttp {
-    client: reqwest::Client,
-    cfg: RemotePluginHttpConfig,
-    high_risk_grants: Arc<HighRiskGrantStore>,
-    network_grant_id: Option<String>,
+    http: RemoteHttpClientAsync,
 }
 
 impl RemoteLlmHttp {
@@ -28,22 +26,16 @@ impl RemoteLlmHttp {
         high_risk_grants: Arc<HighRiskGrantStore>,
         network_grant_id: Option<String>,
     ) -> std::result::Result<Self, reqwest::Error> {
-        let client = reqwest::Client::builder()
-            .connect_timeout(cfg.connect_timeout())
-            .timeout(cfg.timeout)
-            .build()?;
-        Ok(Self {
-            client,
-            cfg,
-            high_risk_grants,
-            network_grant_id,
-        })
+        let http = RemoteHttpClientAsync::new(cfg, high_risk_grants, network_grant_id)?;
+        Ok(Self { http })
     }
 
-    fn network_grant(&self) -> Option<(&HighRiskGrantStore, &str)> {
-        self.network_grant_id
-            .as_deref()
-            .map(|id| (self.high_risk_grants.as_ref(), id))
+    fn text_from_result(v: serde_json::Value, method: &str) -> Result<String> {
+        v.get("text")
+            .and_then(|x| x.as_str())
+            .map(String::from)
+            .or_else(|| v.as_str().map(String::from))
+            .ok_or_else(|| ollama_msg(method, "missing text"))
     }
 }
 
@@ -54,25 +46,11 @@ impl LlmClient for RemoteLlmHttp {
             "model": model,
             "prompt": prompt,
         });
-        let v = jsonrpc::call_async(
-            RemoteRpcChannel::Llm,
-            &self.client,
-            &self.cfg.endpoint,
-            METHOD_LLM_GENERATE,
-            params,
-            self.cfg.bearer_token.as_deref(),
-            self.network_grant(),
-        )
-        .await?;
-        let text = v
-            .get("text")
-            .and_then(|x| x.as_str())
-            .map(String::from)
-            .or_else(|| v.as_str().map(String::from))
-            .ok_or_else(|| {
-                crate::error::AppError::OllamaError("llm.generate: missing text".to_string())
-            })?;
-        Ok(text)
+        let v = self
+            .http
+            .call_llm(METHOD_LLM_GENERATE, params)
+            .await?;
+        Self::text_from_result(v, METHOD_LLM_GENERATE)
     }
 
     async fn generate_tag(&self, model: &str, prompt: &str) -> Result<String> {
@@ -80,25 +58,11 @@ impl LlmClient for RemoteLlmHttp {
             "model": model,
             "prompt": prompt,
         });
-        let v = jsonrpc::call_async(
-            RemoteRpcChannel::Llm,
-            &self.client,
-            &self.cfg.endpoint,
-            METHOD_LLM_GENERATE_TAG,
-            params,
-            self.cfg.bearer_token.as_deref(),
-            self.network_grant(),
-        )
-        .await?;
-        let text = v
-            .get("text")
-            .and_then(|x| x.as_str())
-            .map(String::from)
-            .or_else(|| v.as_str().map(String::from))
-            .ok_or_else(|| {
-                crate::error::AppError::OllamaError("llm.generate_tag: missing text".to_string())
-            })?;
-        Ok(text)
+        let v = self
+            .http
+            .call_llm(METHOD_LLM_GENERATE_TAG, params)
+            .await?;
+        Self::text_from_result(v, METHOD_LLM_GENERATE_TAG)
     }
 
     async fn startup_probe(&self) -> Result<()> {

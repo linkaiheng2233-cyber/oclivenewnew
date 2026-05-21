@@ -4,18 +4,19 @@ use crate::domain::complex_emotion::{
     BuiltinKeywordComplexEmotionProvider, ComplexEmotionInput, ComplexEmotionOutput,
     ComplexEmotionProvider,
 };
+use crate::domain::error_helpers::serde_to_ollama;
 use crate::error::{AppError, Result};
+use crate::infrastructure::high_risk_grants::HighRiskGrantStore;
 use crate::infrastructure::remote_fallback_policy::remote_fallback_load;
 use crate::infrastructure::remote_plugin::config::RemotePluginHttpConfig;
-use crate::infrastructure::remote_plugin::jsonrpc::{self, RemoteRpcChannel};
+use crate::infrastructure::remote_plugin::RemoteHttpClientBlocking;
 use std::sync::atomic::AtomicBool;
 use std::sync::Arc;
 
 const METHOD_RESOLVE_TURN: &str = "complex_emotion.resolve_turn";
 
 pub struct DirectoryComplexEmotionHttp {
-    client: reqwest::blocking::Client,
-    cfg: RemotePluginHttpConfig,
+    http: RemoteHttpClientBlocking,
     fallback: BuiltinKeywordComplexEmotionProvider,
     remote_fallback_allowed: Arc<AtomicBool>,
 }
@@ -28,13 +29,13 @@ impl DirectoryComplexEmotionHttp {
         cfg: RemotePluginHttpConfig,
         remote_fallback_allowed: Arc<AtomicBool>,
     ) -> std::result::Result<Self, reqwest::Error> {
-        let client = reqwest::blocking::Client::builder()
-            .timeout(cfg.timeout)
-            .connect_timeout(cfg.connect_timeout())
-            .build()?;
-        Ok(Self {
-            client,
+        let http = RemoteHttpClientBlocking::new(
             cfg,
+            HighRiskGrantStore::load(std::env::temp_dir(), false),
+            None,
+        )?;
+        Ok(Self {
+            http,
             fallback: BuiltinKeywordComplexEmotionProvider,
             remote_fallback_allowed,
         })
@@ -43,21 +44,12 @@ impl DirectoryComplexEmotionHttp {
 
 impl ComplexEmotionProvider for DirectoryComplexEmotionHttp {
     fn resolve_turn(&self, input: &ComplexEmotionInput) -> Result<ComplexEmotionOutput> {
-        let params = serde_json::to_value(input)
-            .map_err(|e| AppError::OllamaError(format!("complex_emotion params json: {}", e)))?;
-        match jsonrpc::call_blocking(
-            RemoteRpcChannel::Plugin,
-            &self.client,
-            &self.cfg.endpoint,
-            METHOD_RESOLVE_TURN,
-            params,
-            self.cfg.bearer_token.as_deref(),
-            None,
-        ) {
+        let params =
+            serde_json::to_value(input).map_err(|e| serde_to_ollama("complex_emotion params json", e))?;
+        match self.http.call_plugin(METHOD_RESOLVE_TURN, params) {
             Ok(v) => {
-                let mut out: ComplexEmotionOutput = serde_json::from_value(v).map_err(|e| {
-                    AppError::OllamaError(format!("complex_emotion result decode: {}", e))
-                })?;
+                let mut out: ComplexEmotionOutput = serde_json::from_value(v)
+                    .map_err(|e| serde_to_ollama("complex_emotion result decode", e))?;
                 out.degraded_to_builtin = false;
                 Ok(out)
             }
@@ -66,7 +58,7 @@ impl ComplexEmotionProvider for DirectoryComplexEmotionHttp {
                     tracing::warn!(
                         target: "oclive_plugin",
                         "complex_emotion.resolve_turn directory failed endpoint={} err={}; fallback=builtin",
-                        self.cfg.endpoint,
+                        self.http.endpoint(),
                         e
                     );
                     let mut o = self.fallback.resolve_turn_inner(input);
@@ -75,20 +67,11 @@ impl ComplexEmotionProvider for DirectoryComplexEmotionHttp {
                 } else {
                     Err(AppError::RemoteServiceUnavailable(format!(
                         "complex_emotion.resolve_turn directory failed endpoint={} err={}",
-                        self.cfg.endpoint, e
+                        self.http.endpoint(),
+                        e
                     )))
                 }
             }
         }
-    }
-}
-
-#[cfg(test)]
-mod tests {
-    use super::*;
-
-    #[test]
-    fn method_name_matches_doc() {
-        assert_eq!(METHOD_RESOLVE_TURN, "complex_emotion.resolve_turn");
     }
 }

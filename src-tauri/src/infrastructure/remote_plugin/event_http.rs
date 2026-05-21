@@ -1,15 +1,16 @@
 //! JSON-RPC：`event.estimate` — 侧车返回 [`EventImpactEstimate`](crate::domain::event_impact_ai::EventImpactEstimate)。
 //! `params` 含 `personality_source`（`vector`|`profile`），与包内 `evolution` 一致；侧车可忽略。
 
+use crate::domain::error_helpers::serde_to_ollama;
 use crate::domain::event_estimator::EventEstimator;
 use crate::domain::event_impact_ai::EventImpactEstimate;
 use crate::domain::BuiltinEventEstimator;
+use crate::domain::ports::LlmClient;
 use crate::error::{AppError, Result};
 use crate::infrastructure::high_risk_grants::HighRiskGrantStore;
-use crate::infrastructure::llm::LlmClient;
 use crate::infrastructure::remote_fallback_policy::remote_fallback_load;
 use crate::infrastructure::remote_plugin::config::RemotePluginHttpConfig;
-use crate::infrastructure::remote_plugin::jsonrpc::{self, RemoteRpcChannel};
+use crate::infrastructure::remote_plugin::RemoteHttpClientAsync;
 use crate::models::knowledge::KnowledgeEventAugment;
 use crate::models::{Emotion, Event, PersonalitySource, PersonalityVector};
 use async_trait::async_trait;
@@ -20,12 +21,9 @@ use std::sync::Arc;
 const METHOD_EVENT_ESTIMATE: &str = "event.estimate";
 
 pub struct RemoteEventEstimatorHttp {
-    client: reqwest::Client,
-    cfg: RemotePluginHttpConfig,
+    http: RemoteHttpClientAsync,
     fallback: BuiltinEventEstimator,
     remote_fallback_allowed: Arc<AtomicBool>,
-    high_risk_grants: Arc<HighRiskGrantStore>,
-    network_grant_id: Option<String>,
 }
 
 impl RemoteEventEstimatorHttp {
@@ -38,24 +36,12 @@ impl RemoteEventEstimatorHttp {
         high_risk_grants: Arc<HighRiskGrantStore>,
         network_grant_id: Option<String>,
     ) -> std::result::Result<Self, reqwest::Error> {
-        let client = reqwest::Client::builder()
-            .connect_timeout(cfg.connect_timeout())
-            .timeout(cfg.timeout)
-            .build()?;
+        let http = RemoteHttpClientAsync::new(cfg, high_risk_grants, network_grant_id)?;
         Ok(Self {
-            client,
-            cfg,
+            http,
             fallback: BuiltinEventEstimator,
             remote_fallback_allowed,
-            high_risk_grants,
-            network_grant_id,
         })
-    }
-
-    fn network_grant(&self) -> Option<(&HighRiskGrantStore, &str)> {
-        self.network_grant_id
-            .as_deref()
-            .map(|id| (self.high_risk_grants.as_ref(), id))
     }
 }
 
@@ -83,21 +69,14 @@ impl EventEstimator for RemoteEventEstimatorHttp {
             "recent_events": recent_events,
             "knowledge_augment": knowledge_augment.map(|a| &a.by_event),
         });
-        match jsonrpc::call_async(
-            RemoteRpcChannel::Plugin,
-            &self.client,
-            &self.cfg.endpoint,
-            METHOD_EVENT_ESTIMATE,
-            params,
-            self.cfg.bearer_token.as_deref(),
-            self.network_grant(),
-        )
-        .await
+        match self
+            .http
+            .call_plugin(METHOD_EVENT_ESTIMATE, params)
+            .await
         {
             Ok(v) => {
-                let est: EventImpactEstimate = serde_json::from_value(v).map_err(|e| {
-                    crate::error::AppError::OllamaError(format!("event.estimate decode: {}", e))
-                })?;
+                let est: EventImpactEstimate = serde_json::from_value(v)
+                    .map_err(|e| serde_to_ollama("event.estimate decode", e))?;
                 Ok(est)
             }
             Err(e) => {
@@ -108,7 +87,7 @@ impl EventEstimator for RemoteEventEstimatorHttp {
                     tracing::warn!(
                         target: "oclive_plugin",
                         "event.estimate remote failed endpoint={} err={}; fallback=builtin",
-                        self.cfg.endpoint,
+                        self.http.config().endpoint,
                         e
                     );
                     self.fallback
@@ -127,7 +106,8 @@ impl EventEstimator for RemoteEventEstimatorHttp {
                 } else {
                     Err(AppError::RemoteServiceUnavailable(format!(
                         "event.estimate remote failed endpoint={} err={}",
-                        self.cfg.endpoint, e
+                        self.http.config().endpoint,
+                        e
                     )))
                 }
             }

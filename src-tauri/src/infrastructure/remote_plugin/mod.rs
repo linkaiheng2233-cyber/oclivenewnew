@@ -14,6 +14,7 @@ mod jsonrpc;
 mod llm_http;
 mod memory_http;
 mod prompt_http;
+mod remote_client;
 
 pub use complex_emotion_directory_http::DirectoryComplexEmotionHttp;
 pub use complex_emotion_http::RemoteComplexEmotionHttp;
@@ -37,8 +38,8 @@ use std::sync::Arc;
 
 use crate::error::{AppError, Result};
 use crate::infrastructure::high_risk_grants::HighRiskGrantStore;
-use jsonrpc::call_blocking;
 pub use jsonrpc::RemoteRpcChannel;
+pub use remote_client::{RemoteHttpClientAsync, RemoteHttpClientBlocking};
 use oclive_validation::{NETWORK_GRANT_REMOTE_LLM, NETWORK_GRANT_REMOTE_PLUGIN};
 
 /// 四类 `plugin_backends.* = remote` 共用一套配置，只读一次环境变量并打一条日志。
@@ -155,23 +156,16 @@ pub fn invoke_directory_plugin_rpc_blocking(
         url,
         matches!(channel, RemoteRpcChannel::Llm),
     );
-    let client = reqwest::blocking::Client::builder()
-        .connect_timeout(cfg.connect_timeout())
-        .timeout(cfg.timeout)
-        .build()
+    let http = RemoteHttpClientBlocking::new(
+        cfg,
+        HighRiskGrantStore::load(std::env::temp_dir(), false),
+        None,
+    )
         .map_err(|e| {
             AppError::OllamaError(format!(
                 "directory plugin reqwest client build failed: {}",
                 e
             ))
         })?;
-    call_blocking(
-        channel,
-        &client,
-        &cfg.endpoint,
-        method,
-        params,
-        cfg.bearer_token.as_deref(),
-        None,
-    )
+    http.call(channel, method, params)
 }

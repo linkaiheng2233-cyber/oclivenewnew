@@ -3,11 +3,12 @@
 use crate::domain::memory_engine::MemoryEngine;
 use crate::domain::memory_retrieval::{MemoryRetrieval, MemoryRetrievalInput};
 use crate::domain::BuiltinMemoryRetrieval;
+use crate::domain::error_helpers::serde_to_unknown;
 use crate::error::{AppError, Result};
 use crate::infrastructure::high_risk_grants::HighRiskGrantStore;
 use crate::infrastructure::remote_fallback_policy::remote_fallback_load;
 use crate::infrastructure::remote_plugin::config::RemotePluginHttpConfig;
-use crate::infrastructure::remote_plugin::jsonrpc::{self, RemoteRpcChannel};
+use crate::infrastructure::remote_plugin::RemoteHttpClientBlocking;
 use crate::models::{Memory, MemoryContext};
 use serde_json::{json, Value};
 use std::collections::{HashMap, HashSet};
@@ -17,13 +18,9 @@ use std::sync::Arc;
 const METHOD_MEMORY_RANK: &str = "memory.rank";
 
 pub struct RemoteMemoryRetrievalHttp {
-    client: reqwest::blocking::Client,
-    cfg: RemotePluginHttpConfig,
+    http: RemoteHttpClientBlocking,
     fallback: BuiltinMemoryRetrieval,
     remote_fallback_allowed: Arc<AtomicBool>,
-    high_risk_grants: Arc<HighRiskGrantStore>,
-    /// `None`：目录插件 localhost RPC（spawn 已授权）；`Some`：Remote 侧车 grant id。
-    network_grant_id: Option<String>,
 }
 
 impl RemoteMemoryRetrievalHttp {
@@ -36,47 +33,26 @@ impl RemoteMemoryRetrievalHttp {
         high_risk_grants: Arc<HighRiskGrantStore>,
         network_grant_id: Option<String>,
     ) -> std::result::Result<Self, reqwest::Error> {
-        let client = reqwest::blocking::Client::builder()
-            .connect_timeout(cfg.connect_timeout())
-            .timeout(cfg.timeout)
-            .build()?;
+        let http = RemoteHttpClientBlocking::new(cfg, high_risk_grants, network_grant_id)?;
         Ok(Self {
-            client,
-            cfg,
+            http,
             fallback: BuiltinMemoryRetrieval,
             remote_fallback_allowed,
-            high_risk_grants,
-            network_grant_id,
         })
-    }
-
-    fn network_grant(&self) -> Option<(&HighRiskGrantStore, &str)> {
-        self.network_grant_id
-            .as_deref()
-            .map(|id| (self.high_risk_grants.as_ref(), id))
     }
 
     fn rank_remote(&self, input: &MemoryRetrievalInput<'_>) -> Result<Option<Vec<Memory>>> {
         let memories_json: Value = serde_json::to_value(input.memories)
-            .map_err(|e| AppError::Unknown(format!("memory.rank encode memories: {}", e)))?;
+            .map_err(|e| serde_to_unknown("memory.rank encode memories", e))?;
         let params = json!({
             "memories": memories_json,
             "user_query": input.user_query,
             "scene_id": input.scene_id,
             "limit": input.limit,
         });
-        let result = match jsonrpc::call_blocking(
-            RemoteRpcChannel::Plugin,
-            &self.client,
-            &self.cfg.endpoint,
-            METHOD_MEMORY_RANK,
-            params,
-            self.cfg.bearer_token.as_deref(),
-            self.network_grant(),
-        ) {
-            Ok(v) => v,
-            Err(e @ AppError::HighRiskCapabilityNotGranted { .. }) => return Err(e),
-            Err(_) => return Ok(None),
+        let result = match self.http.call_plugin_soft(METHOD_MEMORY_RANK, params)? {
+            Some(v) => v,
+            None => return Ok(None),
         };
         let Some(arr) = result.get("ordered_ids").and_then(|x| x.as_array()) else {
             return Ok(None);
@@ -131,13 +107,13 @@ impl MemoryRetrieval for RemoteMemoryRetrievalHttp {
                     tracing::warn!(
                         target: "oclive_plugin",
                         "memory.rank remote failed or empty endpoint={} fallback=builtin",
-                        self.cfg.endpoint
+                        self.http.endpoint()
                     );
                     self.fallback.rank_memories(input)
                 } else {
                     Err(AppError::RemoteServiceUnavailable(format!(
                         "memory.rank remote failed or empty endpoint={}",
-                        self.cfg.endpoint
+                        self.http.endpoint()
                     )))
                 }
             }
