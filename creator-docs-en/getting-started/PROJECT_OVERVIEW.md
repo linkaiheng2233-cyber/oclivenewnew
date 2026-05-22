@@ -20,7 +20,7 @@ This page collects **how the three repos split work**, what is **already shipped
 
 ## 2. What this repo already covers (summary)
 
-- **Pack import:** `.ocpak`, `.zip`, extracted folders; preview & conflict handling; import progress; ZIP `manifest.json` precedence (root first).
+- **Role packs (v2):** `pipeline.ocblueprint` SSOT (`meta`, `slot_registry`, optional `groups`); import `.ocpak` / `.zip` / folders. Legacy `manifest.json`+`settings.json` — migration only ([V1_TO_V2_MIGRATION.md](../../creator-docs/role-pack/V1_TO_V2_MIGRATION.md)).
 - **Tooling:** `npm run check` (daily), `npm run check:release` (before release); Rust fmt / clippy / `cargo test`.
 - **CI:** GitHub Actions on **Ubuntu + Windows** for Rust and `npm run build` (see `.github/workflows/ci.yml`).
 - **Docs:** `creator-docs/`, `roles/README_MANIFEST.md`, import checklist `roles/TESTING_ROLE_PACK_IMPORT.md`, roadmap & backlog pages.

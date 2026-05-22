@@ -2,7 +2,7 @@
 
 **Kernel integrator learning path:** [KERNEL_INTEGRATOR_LEARNING_PATH.md](KERNEL_INTEGRATOR_LEARNING_PATH.md)
 
-This page uses a **kernel-in-the-center** diagram to align with the current **main** branch. Authoritative detail remains in **[PLUGIN_V1.md](../plugin-and-architecture/PLUGIN_V1.md)** (six-slot contract), **[EXTENSION_POINTS.md](../../creator-docs/plugin-and-architecture/EXTENSION_POINTS.md)** (traits & paths), and **[RFC_OCLIVE_MONOLITH_MODE.md](../../creator-docs/rfc/RFC_OCLIVE_MONOLITH_MODE.md)** (Monolith compile-time mode).
+This page uses a **kernel-in-the-center** diagram. **v2** role packs use **`pipeline.ocblueprint`** (`meta`, **`slot_registry`**, optional **`groups`** for the architecture graph). Authoritative detail: **[PLUGIN_V1.md](../plugin-and-architecture/PLUGIN_V1.md)**, **[ROLE_PACK_SPEC.md](../../creator-docs/role-pack/ROLE_PACK_SPEC.md)**, **[RFC_ROLE_BLUEPRINT_V2.md](../../handoff/RFC_ROLE_BLUEPRINT_V2.md)**.
 
 ---
 
