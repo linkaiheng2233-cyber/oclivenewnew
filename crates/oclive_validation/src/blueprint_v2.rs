@@ -8,6 +8,7 @@ use serde::{Deserialize, Serialize};
 use serde_json::Value;
 
 use crate::disk_role_settings::{AutonomousSceneConfig, RemotePresenceConfig};
+use crate::runtime_config::RuntimeConfig;
 use crate::manifest::{
     DiskRoleManifest, EvolutionConfigDisk, IdentityBinding, KnowledgePackConfigDisk,
     MemoryConfigDisk, UserRelationDisk,
@@ -103,6 +104,10 @@ struct BlueprintV2File {
     slot_registry: BTreeMap<String, SlotRegistryEntry>,
     #[serde(default)]
     groups: BTreeMap<String, SlotGroupEntry>,
+    /// v3 目标段；v2 校验通过但不参与 v2 加载（见 `validate_blueprint_json_by_schema_version` 警告）。
+    #[serde(default)]
+    #[allow(dead_code)]
+    runtime_config: Option<RuntimeConfig>,
 }
 
 #[derive(Debug, Clone, Deserialize)]
@@ -803,7 +808,12 @@ fn validate_blueprint_v2_parsed(
     }
 }
 
-fn validate_meta_personality(value: &Value) -> Result<(), String> {
+/// 校验 `meta.personality` 对象或七维数组。
+///
+/// # Errors
+///
+/// 维度非法或超出 0.0～1.0 时返回 `Err` 说明字符串。
+pub fn validate_meta_personality(value: &Value) -> Result<(), String> {
     match value {
         Value::Array(arr) => {
             let floats: Result<Vec<f32>, _> = arr

@@ -1,7 +1,7 @@
 {
   "$schema": "https://json-schema.org/draft/2020-12/schema",
   "$id": "https://oclive.dev/schemas/pipeline.ocblueprint.v2.schema.json",
-  "title": "pipeline.ocblueprint v2",
+  "title": "pipeline.ocblueprint v2 (stable; runtime_config is v3-only at runtime)",
   "type": "object",
   "additionalProperties": false,
   "required": ["schema_version", "meta", "slot_registry"],
@@ -128,6 +128,29 @@
             "items": { "type": "string", "minLength": 1 }
           }
         }
+      }
+    },
+    "runtime_config": {
+      "type": "object",
+      "description": "v3 system configuration SSOT. Present on v2 files: ignored at load with pack validate warning; use schema_version 3 for hosts.",
+      "additionalProperties": false,
+      "properties": {
+        "interaction_mode": { "type": "string", "enum": ["immersive", "pure_chat"] },
+        "memory_config": { "type": "object" },
+        "reply_quality_anchor": { "type": "string" },
+        "remote_fallback_to_builtin": { "type": "boolean" },
+        "dual_core": {
+          "type": "object",
+          "properties": {
+            "enabled": { "type": "boolean", "default": false }
+          },
+          "additionalProperties": false
+        },
+        "identity_binding": { "type": "string" },
+        "evolution": { "type": "object" },
+        "ollama_model": { "type": "string" },
+        "remote_presence": { "type": "object" },
+        "autonomous_scene": { "type": "object" }
       }
     }
   }

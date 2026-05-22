@@ -1,0 +1,66 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://oclive.dev/schemas/pipeline.ocblueprint.v3.schema.json",
+  "title": "pipeline.ocblueprint v3",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["schema_version", "meta", "slot_registry"],
+  "properties": {
+    "schema_version": { "type": "integer", "const": 3 },
+    "meta": { "$ref": "pipeline.ocblueprint.v2.schema.json#/properties/meta" },
+    "slot_registry": {
+      "type": "object",
+      "minProperties": 1,
+      "additionalProperties": {
+        "allOf": [
+          { "$ref": "pipeline.ocblueprint.v2.schema.json#/properties/slot_registry/additionalProperties" },
+          {
+            "type": "object",
+            "properties": {
+              "zone": {
+                "oneOf": [
+                  { "type": "string", "enum": ["stable", "experimental"] },
+                  {
+                    "type": "array",
+                    "items": { "type": "string", "enum": ["stable", "experimental"] },
+                    "minItems": 1
+                  }
+                ]
+              }
+            }
+          }
+        ]
+      }
+    },
+    "groups": { "$ref": "pipeline.ocblueprint.v2.schema.json#/properties/groups" },
+    "runtime_config": { "$ref": "pipeline.ocblueprint.v2.schema.json#/properties/runtime_config" },
+    "pipeline": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "stable": { "$ref": "#/$defs/pipelineSteps" },
+        "experimental": { "$ref": "#/$defs/pipelineSteps" }
+      }
+    }
+  },
+  "$defs": {
+    "pipelineSteps": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["action"],
+        "additionalProperties": false,
+        "properties": {
+          "action": {
+            "type": "string",
+            "pattern": "^slot\\.[^.]+\\.[^.]+"
+          },
+          "depends_on": {
+            "type": "array",
+            "items": { "type": "string" }
+          }
+        }
+      }
+    }
+  }
+}

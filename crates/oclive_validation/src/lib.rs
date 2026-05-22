@@ -7,6 +7,9 @@
 
 pub mod blueprint_migrate;
 pub mod blueprint_v2;
+pub mod blueprint_v3;
+pub mod creator_profile;
+pub mod runtime_config;
 pub mod disk_role_settings;
 pub mod json_keys;
 pub mod manifest;
@@ -21,12 +24,19 @@ pub mod validate;
 pub use blueprint_migrate::{
     build_blueprint_v2_from_legacy_dir, migrate_role_pack_dir_to_blueprint_v2,
 };
+pub use blueprint_v3::{
+    validate_blueprint_json_by_schema_version, validate_blueprint_v3_json,
+    BLUEPRINT_V3_SCHEMA_VERSION, PLUGIN_HOST_SLOT_TYPES,
+};
+pub use creator_profile::validate_role_pack_creator_directory;
+pub use runtime_config::{DualCoreConfig, RuntimeConfig};
 pub use blueprint_v2::{
     apply_slot_override, default_slot_key_for_module, effective_slot_registry,
     load_blueprint_v2_for_role_dir, merged_agent_directory_plugin_ids,
     plugin_backends_for_slot_entry, slot_registry_instances_sorted,
     slot_registry_to_plugin_backends, validate_blueprint_v2_json,
-    validate_blueprint_v2_json_with_context, validate_role_pack_blueprint_v2_directory,
+    validate_blueprint_v2_json_with_context, validate_meta_personality,
+    validate_role_pack_blueprint_v2_directory,
     write_role_pack_blueprint_slot_registry, BlueprintV2LoadResult, BlueprintV2ValidateContext,
     SlotGroupEntry, SlotOverridePatch, SlotRegistryEntry, BLUEPRINT_V2_SCHEMA_VERSION,
     GROUP_SLOT_TYPES, PIPELINE_BLUEPRINT_FILENAME,
