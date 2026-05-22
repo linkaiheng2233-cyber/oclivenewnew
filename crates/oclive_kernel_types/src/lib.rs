@@ -6,6 +6,18 @@
 //! **下游**：`oclive_kernel_contracts`、`oclive_kernel_runtime`、`src-tauri` 模型再导出。
 //!
 //! **关键决策**：类型与行为分离，保证契约 crate 可独立版本化；优先从本 crate 根或 [`models`] / [`error`] 导入。
+//!
+//! ## 公开导出审计（维护约定）
+//!
+//! | 允许 | 禁止 |
+//! |------|------|
+//! | `struct` / `enum` DTO、`Default`、`From`/`Into` 映射 | 数据库、HTTP、子进程、目录 I/O |
+//! | `impl Role` 上的**只读派生**（门控布尔、配置解析、manifest 往返） | 编排顺序、插件解析、会话副作用 |
+//! | [`AppError`] 与 [`KernelErrorBody`] | 在 types 内调用 `PluginHost` 或 LLM |
+//!
+//! `Role::resolve_ollama_model` 仅解析 manifest / 环境变量 / 全局默认的**字符串优先级**，不发起网络请求。
+//! 双核门控 [`Role::dual_core_gated`](models::role::Role::dual_core_gated) 只读取已加载蓝图字段。
+//! 磁盘 ↔ 内存转换见 [`models::role_manifest_disk`] / [`models::role_settings_disk`]。
 
 pub mod agent;
 pub mod complex_emotion;

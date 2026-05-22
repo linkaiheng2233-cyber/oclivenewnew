@@ -252,7 +252,9 @@ impl Default for Role {
 }
 
 impl Role {
-    /// 双核门控：`dual_core.enabled` 且 `pipeline.experimental` 非空。
+    /// 双核门控（纯谓词）：`runtime_config.dual_core.enabled` 且 `pipeline.experimental` 非空。
+    ///
+    /// 宿主据此选择双核调度或单路径 `co_present`；**不**执行实验步骤。
     #[must_use]
     pub fn dual_core_gated(&self) -> bool {
         self.runtime_config
@@ -300,7 +302,7 @@ impl Role {
             .unwrap_or(50.0)
     }
 
-    /// 解析本角色应使用的 Ollama 模型：**manifest** → **`OLLAMA_MODEL`** → **全局默认**（`AppState` 启动配置）
+    /// 解析本角色应使用的 Ollama 模型名（无网络 I/O）：**manifest** → **`OLLAMA_MODEL`** → **全局默认**。
     #[must_use]
     pub fn resolve_ollama_model(&self, global_fallback: &str) -> String {
         if let Some(ref m) = self.ollama_model {
