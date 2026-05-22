@@ -42,6 +42,22 @@
 | `STARTUP_HEALTH_FAILED` | 启动自检失败 | 槽位、manifest、DB ping、LLM 探测 | 运行设置页环境自检；见 `startup_health` 日志 |
 <!-- code:LOAD_ROLE_TASK_PANIC -->
 | `LOAD_ROLE_TASK_PANIC` | 加载任务 panic | 极少见 | 带日志提 issue |
+<!-- code:IO_ERROR -->
+| `IO_ERROR` | 文件或磁盘 I/O 失败 | 路径不存在、权限、磁盘满、杀毒拦截 | 核对角色目录与 `app_data` 可写；见系统弹窗与 Rust 日志 |
+<!-- code:ROLE_PACK_EXISTS -->
+| `ROLE_PACK_EXISTS` | 导入角色已存在且未允许覆盖 | 重复导入同 id 包 | 删除旧目录或导入时勾选覆盖 |
+<!-- code:INVALID_PARAMETER -->
+| `INVALID_PARAMETER` | 请求参数不合法 | 空 `role_id`、未知模块名、v2 包缺 `slot_registry` 等 | 对照 API 文档与 [ROLE_PACK_SPEC.md](../role-pack/ROLE_PACK_SPEC.md) |
+<!-- code:HIGH_RISK_CAPABILITY_NOT_GRANTED -->
+| `HIGH_RISK_CAPABILITY_NOT_GRANTED` | 高风险能力未授权 | MCP stdio/http、目录插件 `process:spawn` / `network:*` 未确认 | 在插件管理或 MCP 设置中显式授权；见 AGENTS.md 权限约定 |
+<!-- code:REMOTE_SERVICE_UNAVAILABLE -->
+| `REMOTE_SERVICE_UNAVAILABLE` | Remote 后端不可用且未允许降级 | URL 错误、超时、关闭 `remote_fallback_to_builtin` | 检查 `OCLIVE_REMOTE_*`；或开启降级 / 改回 `builtin`/`ollama` |
+<!-- code:SERDE_ERROR -->
+| `SERDE_ERROR` | JSON 解析或序列化失败 | 损坏的配置、非 JSON 响应 | 校验 `pipeline.ocblueprint` / 插件 manifest；`pack validate` |
+<!-- code:UNKNOWN_ERROR -->
+| `UNKNOWN_ERROR` | 未分类内部错误 | 兜底路径 | 带完整日志提 issue；前端可能显示 `UNKNOWN_WITH_CODE` |
+
+**事务类**：[`AppError::TransactionError`](../../crates/oclive_kernel_runtime/src/error.rs) 的 `code` 为**动态字符串**（如好感/记忆事务子步骤），不在上表逐条列出；`oclive explain <CODE>` 仅覆盖静态 `AppError` 变体与 HTTP 补充码。
 
 ### 1.5) 首装常见：Ollama 与角色目录（A2.1 子集）
 

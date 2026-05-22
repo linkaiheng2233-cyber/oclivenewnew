@@ -44,6 +44,22 @@ Example:
 | `STARTUP_HEALTH_FAILED` | Startup health failed | Slots, manifest, DB ping, LLM probe | Run in-app environment diagnostics; see `startup_health` logs |
 <!-- code:LOAD_ROLE_TASK_PANIC -->
 | `LOAD_ROLE_TASK_PANIC` | Load task panicked | Rare | File an issue with logs |
+<!-- code:IO_ERROR -->
+| `IO_ERROR` | File or disk I/O failed | Missing path, permissions, disk full | Ensure role dir and `app_data` are writable |
+<!-- code:ROLE_PACK_EXISTS -->
+| `ROLE_PACK_EXISTS` | Import target exists without overwrite | Duplicate role id | Remove old dir or enable overwrite on import |
+<!-- code:INVALID_PARAMETER -->
+| `INVALID_PARAMETER` | Invalid request parameter | Empty `role_id`, unknown module, v2 pack without `slot_registry` | See API docs and [ROLE_PACK_SPEC.md](../role-pack/ROLE_PACK_SPEC.md) |
+<!-- code:HIGH_RISK_CAPABILITY_NOT_GRANTED -->
+| `HIGH_RISK_CAPABILITY_NOT_GRANTED` | High-risk capability not granted | MCP stdio/http or directory `process:spawn` / `network:*` | Grant in plugin manager / MCP settings |
+<!-- code:REMOTE_SERVICE_UNAVAILABLE -->
+| `REMOTE_SERVICE_UNAVAILABLE` | Remote backend down and fallback disabled | Bad URL, timeout, `remote_fallback_to_builtin` off | Fix `OCLIVE_REMOTE_*` or enable fallback / use local backend |
+<!-- code:SERDE_ERROR -->
+| `SERDE_ERROR` | JSON parse/serialize failure | Corrupt config or non-JSON body | `pack validate`; check manifests |
+<!-- code:UNKNOWN_ERROR -->
+| `UNKNOWN_ERROR` | Unclassified internal error | Catch-all | File issue with logs; UI may show `UNKNOWN_WITH_CODE` |
+
+**Transactions**: [`AppError::TransactionError`](../../crates/oclive_kernel_runtime/src/error.rs) uses a **dynamic** `code` string; not listed above. `oclive explain` covers static `AppError` variants and HTTP supplement codes only.
 
 ### 1.5) First install: Ollama and role paths (subset)
 
