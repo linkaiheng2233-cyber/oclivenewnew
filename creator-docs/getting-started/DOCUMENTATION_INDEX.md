@@ -122,6 +122,7 @@
 | **免责声明（A10 · 模型 / 插件 / 数据）** | **[../legal/DISCLAIMER.md](../legal/DISCLAIMER.md)**（[English](../../creator-docs-en/legal/DISCLAIMER.md)） |
 | **已知漏洞（cargo-audit）与升级路线** | **[../security/KNOWN_VULNERABILITIES.md](../security/KNOWN_VULNERABILITIES.md)** |
 | **安全审查范围与局限** | **[../security/SECURITY_AUDIT_SCOPE.md](../security/SECURITY_AUDIT_SCOPE.md)** |
+| **矩阵 / 冷启动 / 长稳测试指南（复制即用命令）** | **[../testing/TESTING_GUIDE.md](../testing/TESTING_GUIDE.md)**（[English](../../creator-docs-en/testing/TESTING_GUIDE.md)） |
 | **测试输出契约、OOCP 套件、`invoke` 热路径矩阵、A1 收口摘要、插件集成测说明** | **[../testing/TEST_OUTPUT_SCHEMA.md](../testing/TEST_OUTPUT_SCHEMA.md)** · **[../testing/OOCP_TEST_SUITE.md](../testing/OOCP_TEST_SUITE.md)** · **[../testing/OVERVIEW.md](../testing/OVERVIEW.md)** · **[../../handoff/INVOKE_HOTPATH_MATRIX.md](../../handoff/INVOKE_HOTPATH_MATRIX.md)** · **[../../handoff/A1_CLOSURE_SUMMARY.md](../../handoff/A1_CLOSURE_SUMMARY.md)** · **[../testing/ADAPTING_TEST_PLUGIN.md](../testing/ADAPTING_TEST_PLUGIN.md)** · **[../testing/L03_GENERATION_CANCEL.md](../testing/L03_GENERATION_CANCEL.md)** |
 | **AB 确定性加固：`narrative_hint` 契约、模糊测试** | **[../testing/NARRATIVE_HINT_CONTRACT.md](../testing/NARRATIVE_HINT_CONTRACT.md)** · **[../testing/FUZZING.md](../testing/FUZZING.md)** |
 
