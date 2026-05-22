@@ -7,7 +7,7 @@
 | 新 crate | 职责 | 依赖方向 |
 |----------|------|----------|
 | **`oclive_kernel_types`** | DTO、`AppError` / `KernelErrorBody`、纯数据结构（含 `PromptInput`、`MemoryRetrievalInput`、策略配置、本地插件描述符） | `serde`、`thiserror`、`chrono`、`oclive_validation`（共享磁盘契约） |
-| **`oclive_kernel_contracts`** | `trait` 端口（`MemoryRepository`、`MemoryRetrieval`、`PromptAssembler` 等） | 仅 `kernel_types` + `async-trait` |
+| **`oclive_kernel_contracts`** | `trait` 端口（`MemoryRepository`、`MemoryRetrieval`、`PromptAssembler`、`PluginHostPort`、`LlmClient`、`SlotRegistryResolver` 等） | `kernel_types` + `async-trait`（`SlotRegistryEntry` 经 types 再导出） |
 | **`oclive_kernel_runtime`** | 领域引擎实现、HTTP 边界常量；**`pub use oclive_kernel_types::*`** + trait 根 re-export | `kernel_types` + `kernel_contracts` + 运行时依赖 |
 
 **`oclivenewnew-tauri`** 继续依赖 `oclive_kernel_runtime`（未强制直引 `kernel_types`）。**`PluginHostPort` / `LlmClient`** 仍在 `src-tauri/domain/ports/`，不在本拆分范围。

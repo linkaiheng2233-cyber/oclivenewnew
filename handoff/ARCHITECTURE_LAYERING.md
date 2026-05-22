@@ -44,6 +44,14 @@
 | `oclive_kernel_contracts`（`MemoryRepository`、`MemoryRetrieval` 等 trait） | 已落实 |
 | `oclive_kernel_runtime` 编排实现 + 过渡期 re-export | 已落实；详见 [KERNEL_CRATE_SPLIT_PLAN.md](KERNEL_CRATE_SPLIT_PLAN.md) |
 
+## 防腐层补全（2026-05-20）
+
+| 项 | 状态 |
+|----|------|
+| `kernel_types` / `kernel_contracts` / `kernel_runtime` **pub 可见性审计** | 已落实（types 显式根导出；contracts `pub(crate)` 子模块；runtime `utils` 收紧 + `extract_json_object` 根导出） |
+| `PluginHostPort` / `LlmClient` / `SlotRegistryResolver` 迁入 `oclive_kernel_contracts` | 已落实 |
+| `src-tauri/domain/ports/` 退化为兼容 re-export + 宿主 `impl` | 已落实；`SlotResolver` struct 仍在 `domain/slot_resolver.rs`，经 `SlotRegistryResolver` 端口化 |
+
 ## 最终收尾（2026-05-20）
 
 | 项 | 状态 |
