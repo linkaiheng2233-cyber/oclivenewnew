@@ -28,6 +28,7 @@ mod debug_cmd;
 mod dev_cmd;
 mod doctor_blueprint;
 mod doctor_cmd;
+mod doctor_kernel_contracts;
 mod env_probe;
 mod doctor_sbom;
 mod explain_cmd;

@@ -40,6 +40,11 @@ pub struct SampleStats {
     pub mean: f64,
 }
 
+/// Canonicalize a project root from CLI `-o` / cwd-relative path.
+///
+/// # Errors
+///
+/// Fails when the path cannot be resolved or canonicalized.
 pub fn resolve_project_root(path: &Path) -> Result<PathBuf> {
     let root = if path.is_absolute() {
         path.to_path_buf()
@@ -50,6 +55,11 @@ pub fn resolve_project_root(path: &Path) -> Result<PathBuf> {
         .with_context(|| format!("cannot resolve project path: {}", root.display()))
 }
 
+/// Read `[package].name` from `Cargo.toml`.
+///
+/// # Errors
+///
+/// Fails when the manifest is missing or invalid.
 pub fn read_package_name(manifest_dir: &Path) -> Result<String> {
     let p = manifest_dir.join("Cargo.toml");
     let raw = fs::read_to_string(&p).context("read Cargo.toml")?;
@@ -61,6 +71,7 @@ pub fn read_package_name(manifest_dir: &Path) -> Result<String> {
         .context("Cargo.toml missing [package].name")
 }
 
+#[must_use]
 pub fn release_bin_path(dir: &Path, name: &str, release: bool) -> PathBuf {
     let profile = if release { "release" } else { "debug" };
     let p = dir.join("target").join(profile).join(name);
@@ -79,6 +90,7 @@ fn percentile_sorted(sorted: &[f64], p: f64) -> f64 {
     sorted[idx.min(sorted.len() - 1)]
 }
 
+#[must_use]
 pub fn stats(mut samples: Vec<f64>) -> SampleStats {
     samples.sort_by(|a, b| a.partial_cmp(b).unwrap_or(std::cmp::Ordering::Equal));
     let min = samples.first().copied().unwrap_or(0.0);
@@ -100,6 +112,11 @@ pub fn stats(mut samples: Vec<f64>) -> SampleStats {
     }
 }
 
+/// Build standard + monolith binaries via shared `build_cmd`.
+///
+/// # Errors
+///
+/// Propagates `cargo` / manifest errors from `build_cmd::run`.
 pub fn cargo_build_dual(root: &Path, release: bool, extra: &[String]) -> Result<()> {
     let b = BuildArgs {
         path: root.to_path_buf(),
@@ -110,6 +127,11 @@ pub fn cargo_build_dual(root: &Path, release: bool, extra: &[String]) -> Result<
     };
     crate::build_cmd::run(b)
 }
+/// Sample standard vs monolith binaries and aggregate a [`BenchReport`].
+///
+/// # Errors
+///
+/// Fails when `monolith.toml` is missing, builds fail, or child bench processes error.
 pub fn collect_bench_report(root: &Path, args: &BenchArgs) -> Result<BenchReport> {
     let mt = root.join("monolith.toml");
     if !mt.is_file() {

@@ -413,6 +413,8 @@ cargo run -p oclive-cli -- init --smart --non-interactive -o ./out --project-nam
 
 交互式 `init` 默认会先做一次轻量探测（Ollama / NVIDIA GPU / 内存）；可用 **`--no-smart`** 关闭。完整诊断仍用 **`oclive doctor`**。
 
+对含 `oclive_kernel_*` 依赖的内核工程，`doctor` 另增五项 **contracts 实现** 检查（`plugin_host_port_impl`、`llm_client_impl`、`slot_registry_resolver_impl`、`event_estimator_impl`、`agent_provider_impl`）：在 `src/` 或 `src-tauri/src/` 下搜索对应 `impl Trait` 块。在 monorepo 根目录执行时探测 `src-tauri/Cargo.toml`。
+
 ### 内核工厂模板（`--template`）
 
 套餐封装 **preset / Monolith / project-type**（显式 CLI 参数优先）。浏览矩阵：`oclive init --list-templates`。愿景：[KERNEL_FACTORY_VISION.md](../getting-started/KERNEL_FACTORY_VISION.md)

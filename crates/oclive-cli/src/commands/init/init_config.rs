@@ -1,7 +1,6 @@
 //! Init presets, project configuration types, and builders.
 
 use super::InitArgs;
-use crate::pipeline::PipelineArg;
 use serde::{Deserialize, Serialize};
 /// Kernel factory recipe (`--template`).
 #[derive(clap::ValueEnum, Clone, Debug, Copy, PartialEq, Eq, Serialize, Deserialize)]
