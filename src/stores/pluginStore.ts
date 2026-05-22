@@ -227,6 +227,8 @@ export const usePluginStore = defineStore("plugin", {
     panelMainTab: "graph" as PluginPanelMainTab,
     /** 架构图等入口请求聚焦的已安装插件 id */
     focusPluginId: null as string | null,
+    /** V2 / 外部入口请求在架构图中高亮的 slot_registry 实例键 */
+    focusSlotKey: null as string | null,
     loading: false,
     error: null as string | null,
     catalog: [] as DirectoryPluginCatalogEntry[],
@@ -297,6 +299,17 @@ export const usePluginStore = defineStore("plugin", {
     },
     clearFocusInstalledPlugin() {
       this.focusPluginId = null;
+    },
+    requestFocusArchSlot(slotKey: string, tab: PluginPanelMainTab = "graph") {
+      const key = slotKey.trim();
+      if (!key) return;
+      this.focusSlotKey = key;
+      this.panelMainTab = tab;
+      this.panelVisible = true;
+      this.marketPanelVisible = false;
+    },
+    clearFocusArchSlot() {
+      this.focusSlotKey = null;
     },
     async loadCachedPluginMarket() {
       this.pluginMarketError = null;

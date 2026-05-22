@@ -1,30 +1,37 @@
 import { computed, ref, watch } from "vue";
 import { useI18n } from "vue-i18n";
+import { patchSlotRegistryBackend } from "../lib/archGraphSlotBackend";
+import {
+  SLOT_BACKEND_OPTIONS,
+  SLOT_TYPE_LABEL_KEYS,
+  sortedSlotRegistryEntries,
+  type SlotRegistryEntry,
+} from "../lib/slotRegistry";
 import { usePluginStore } from "../stores/pluginStore";
 import { useRoleStore } from "../stores/roleStore";
 import {
+  clearSessionSlotOverride,
+  saveRoleSlotRegistry,
   setRemoteLifeEnabled,
-  setSessionPluginBackend,
-  type PluginBackendSource,
+  setSessionSlotOverride,
 } from "../utils/tauri-api";
-import type { PluginUiTemplateName } from "../components/PluginUITemplates";
 
-export type V2ModuleKey = "llm" | "emotion" | "complex_emotion";
 export type V2TypeKey = "builtin" | "remote" | "directory";
-export type V2StatusKey = "enabled" | "disabled" | "needs_config";
 
 export interface PluginV2CardItem {
   id: string;
+  slotKey: string;
   title: string;
-  module: V2ModuleKey;
+  /** slot_registry `type` */
+  module: string;
   moduleLabel: string;
   type: V2TypeKey;
-  status: V2StatusKey;
-  /** Effective backend resolution source (drives chip styling). */
-  sourceKey: PluginBackendSource;
-  sourceLabel: string;
+  status: "enabled" | "disabled" | "needs_config";
+  sessionOverridden: boolean;
+  packBackend: string;
+  effectiveBackend: string;
   description: string;
-  uiTemplate: PluginUiTemplateName;
+  uiTemplate: "slot-registry" | "switch-toggle" | "endpoint-config";
   schema: Record<string, unknown>;
 }
 
@@ -40,20 +47,60 @@ function normalizeType(backend: string): V2TypeKey {
   return "builtin";
 }
 
-function sourceLabelFor(
-  t: (key: string, values?: Record<string, unknown>) => string,
-  source: PluginBackendSource,
+function moduleLabelFor(
+  t: (key: string) => string,
+  te: (key: string) => boolean,
+  slotType: string,
 ): string {
-  const map: Record<PluginBackendSource, string> = {
-    session_override: "pluginManager.source.session_override",
-    env_override: "pluginManager.source.env_override",
-    pack_default: "pluginManager.source.pack_default",
+  const key = `pluginTerms.module.${slotType}`;
+  return te(key) ? t(key) : slotType;
+}
+
+function buildRegistryCard(
+  slotKey: string,
+  entry: SlotRegistryEntry,
+  packEntry: SlotRegistryEntry | undefined,
+  sessionOverridden: boolean,
+  directoryOptions: { value: string; label: string }[],
+  t: (key: string, values?: Record<string, unknown>) => string,
+  te: (key: string) => boolean,
+): PluginV2CardItem {
+  const type = normalizeType(entry.backend);
+  const primaryPlugin = entry.plugin?.trim() ?? "";
+  const needsConfig = type === "directory" && !primaryPlugin;
+  const labelKey = SLOT_TYPE_LABEL_KEYS[entry.type];
+  const options = (SLOT_BACKEND_OPTIONS[entry.type] ?? ["builtin"]).map((v) => ({
+    value: v,
+    label: v,
+  }));
+
+  return {
+    id: slotKey,
+    slotKey,
+    title: entry.label?.trim() || slotKey,
+    module: entry.type,
+    moduleLabel: moduleLabelFor(t, te, entry.type),
+    type,
+    status: needsConfig ? "needs_config" : "enabled",
+    sessionOverridden,
+    packBackend: packEntry?.backend ?? entry.backend,
+    effectiveBackend: entry.backend,
+    description: labelKey ? t(labelKey) : entry.type,
+    uiTemplate: "slot-registry",
+    schema: {
+      slotKey,
+      backend: entry.backend,
+      packBackend: packEntry?.backend ?? entry.backend,
+      sessionOverridden,
+      options,
+      directoryOptions,
+      directoryId: primaryPlugin,
+    },
   };
-  return t(map[source]);
 }
 
 export function usePluginManagerV2() {
-  const { t, locale } = useI18n();
+  const { t, te, locale } = useI18n();
   const roleStore = useRoleStore();
   const pluginStore = usePluginStore();
 
@@ -67,168 +114,47 @@ export function usePluginManagerV2() {
 
   const cards = computed<PluginV2CardItem[]>(() => {
     void locale.value;
-    const effective = roleStore.roleInfo.pluginBackendsEffective;
-    const defaults = roleStore.roleInfo.pluginBackends;
-    const sources = roleStore.roleInfo.pluginBackendsEffectiveSources;
-    const dirs = effective.directory_plugins ?? {};
-    const overrideDirs = roleStore.roleInfo.pluginBackendsSessionOverride?.directory_plugins ?? {};
+    const effective = roleStore.roleInfo.slotRegistryEffective;
+    const pack = roleStore.roleInfo.slotRegistryPack;
+    const overridden = new Set(roleStore.roleInfo.slotSessionOverriddenKeys);
 
-    const llmDirectoryId = overrideDirs.llm ?? dirs.llm ?? "";
-    const emotionDirectoryId = overrideDirs.emotion ?? dirs.emotion ?? "";
+    if (effective && Object.keys(effective).length > 0) {
+      const rows = sortedSlotRegistryEntries(effective).map(([slotKey, entry]) =>
+        buildRegistryCard(
+          slotKey,
+          entry,
+          pack?.[slotKey],
+          overridden.has(slotKey),
+          directoryOptions.value,
+          t,
+          te,
+        ),
+      );
+      if (roleStore.roleInfo.remoteLifeEnabled !== undefined) {
+        rows.push({
+          id: "complex-remote-life",
+          slotKey: "",
+          title: t("pluginManager.cards.complexSwitch.title"),
+          module: "complex_emotion",
+          moduleLabel: moduleLabelFor(t, te, "complex_emotion"),
+          type: "remote",
+          status: roleStore.roleInfo.remoteLifeEnabled ? "enabled" : "disabled",
+          sessionOverridden: false,
+          packBackend: "",
+          effectiveBackend: roleStore.roleInfo.remoteLifeEnabled ? "remote" : "builtin",
+          description: t("pluginManager.cards.complexSwitch.description"),
+          uiTemplate: "switch-toggle",
+          schema: {
+            checked: roleStore.roleInfo.remoteLifeEnabled,
+            label: t("pluginManager.cards.complexSwitch.label"),
+            hint: t("pluginManager.cards.complexSwitch.hint"),
+          },
+        });
+      }
+      return rows;
+    }
 
-    const llmPackOpt = t("pluginManager.cards.optionPackDefault", {
-      backend: defaults.llm,
-    });
-    const emotionPackOpt = t("pluginManager.cards.optionPackDefault", {
-      backend: defaults.emotion,
-    });
-
-    return [
-      {
-        id: "llm-main",
-        title: t("pluginManager.cards.llmMain.title"),
-        module: "llm" as const,
-        moduleLabel: t("pluginTerms.module.llm"),
-        type: normalizeType(effective.llm),
-        status:
-          effective.llm === "directory" && !llmDirectoryId ? "needs_config" : "enabled",
-        sourceKey: sources.llm,
-        sourceLabel: sourceLabelFor(t, sources.llm),
-        description: t("pluginManager.cards.llmMain.description"),
-        uiTemplate: "slot-selector",
-        schema: {
-          module: "llm",
-          current: roleStore.roleInfo.pluginBackendsSessionOverride?.llm ?? "__pack_default__",
-          directoryId: llmDirectoryId,
-          options: [
-            { value: "__pack_default__", label: llmPackOpt },
-            { value: "ollama", label: t("pluginTerms.backend.ollama") },
-            { value: "remote", label: t("pluginTerms.backend.remote") },
-            { value: "directory", label: t("pluginTerms.backend.directory") },
-          ],
-          directoryOptions: directoryOptions.value,
-        },
-      },
-      {
-        id: "llm-endpoint",
-        title: t("pluginManager.cards.llmEndpoint.title"),
-        module: "llm" as const,
-        moduleLabel: t("pluginTerms.module.llm"),
-        type: "remote" as const,
-        status: effective.llm === "remote" ? "enabled" : "disabled",
-        sourceKey: "env_override",
-        sourceLabel: t("pluginManager.env.label"),
-        description: t("pluginManager.cards.llmEndpoint.description"),
-        uiTemplate: "endpoint-config",
-        schema: {
-          summary: t("pluginManager.cards.llmEndpoint.summary"),
-          fields: [
-            {
-              name: "OCLIVE_REMOTE_LLM_URL",
-              description: t("pluginManager.cards.llmEndpoint.fieldLlmUrl"),
-            },
-            {
-              name: "OCLIVE_REMOTE_PLUGIN_URL",
-              description: t("pluginManager.cards.llmEndpoint.fieldPluginUrl"),
-            },
-          ],
-        },
-      },
-      {
-        id: "emotion-main",
-        title: t("pluginManager.cards.emotionMain.title"),
-        module: "emotion" as const,
-        moduleLabel: t("pluginTerms.module.emotion"),
-        type: normalizeType(effective.emotion),
-        status:
-          effective.emotion === "directory" && !emotionDirectoryId
-            ? "needs_config"
-            : "enabled",
-        sourceKey: sources.emotion,
-        sourceLabel: sourceLabelFor(t, sources.emotion),
-        description: t("pluginManager.cards.emotionMain.description"),
-        uiTemplate: "slot-selector",
-        schema: {
-          module: "emotion",
-          current:
-            roleStore.roleInfo.pluginBackendsSessionOverride?.emotion ?? "__pack_default__",
-          directoryId: emotionDirectoryId,
-          options: [
-            { value: "__pack_default__", label: emotionPackOpt },
-            { value: "builtin", label: t("pluginTerms.type.builtin") },
-            { value: "builtin_v2", label: t("pluginTerms.backend.builtin_v2") },
-            { value: "remote", label: t("pluginTerms.backend.remote") },
-            { value: "directory", label: t("pluginTerms.backend.directory") },
-          ],
-          directoryOptions: directoryOptions.value,
-        },
-      },
-      {
-        id: "emotion-endpoint",
-        title: t("pluginManager.cards.emotionEndpoint.title"),
-        module: "emotion" as const,
-        moduleLabel: t("pluginTerms.module.emotion"),
-        type: "remote" as const,
-        status: effective.emotion === "remote" ? "enabled" : "disabled",
-        sourceKey: "env_override",
-        sourceLabel: t("pluginManager.env.label"),
-        description: t("pluginManager.cards.emotionEndpoint.description"),
-        uiTemplate: "endpoint-config",
-        schema: {
-          summary: t("pluginManager.cards.emotionEndpoint.summary"),
-          fields: [
-            {
-              name: "OCLIVE_REMOTE_PLUGIN_URL",
-              description: t("pluginManager.cards.emotionEndpoint.fieldPluginUrl"),
-            },
-          ],
-        },
-      },
-      {
-        id: "complex-switch",
-        title: t("pluginManager.cards.complexSwitch.title"),
-        module: "complex_emotion" as const,
-        moduleLabel: t("pluginTerms.module.complex_emotion"),
-        type: "remote" as const,
-        status: roleStore.roleInfo.remoteLifeEnabled ? "enabled" : "disabled",
-        sourceKey: roleStore.roleInfo.remoteLifeEnabled ? "session_override" : "pack_default",
-        sourceLabel: roleStore.roleInfo.remoteLifeEnabled
-          ? t("pluginManager.cards.complexSwitch.sessionOn")
-          : t("pluginManager.cards.complexSwitch.sessionOff"),
-        description: t("pluginManager.cards.complexSwitch.description"),
-        uiTemplate: "switch-toggle",
-        schema: {
-          checked: roleStore.roleInfo.remoteLifeEnabled,
-          label: t("pluginManager.cards.complexSwitch.label"),
-          hint: t("pluginManager.cards.complexSwitch.hint"),
-        },
-      },
-      {
-        id: "complex-endpoint",
-        title: t("pluginManager.cards.complexEndpoint.title"),
-        module: "complex_emotion" as const,
-        moduleLabel: t("pluginTerms.module.complex_emotion"),
-        type: "remote" as const,
-        status: roleStore.roleInfo.remoteLifeEnabled ? "enabled" : "disabled",
-        sourceKey: "env_override",
-        sourceLabel: t("pluginManager.env.label"),
-        description: t("pluginManager.cards.complexEndpoint.description"),
-        uiTemplate: "endpoint-config",
-        schema: {
-          summary: t("pluginManager.cards.complexEndpoint.summary"),
-          fields: [
-            {
-              name: "OCLIVE_COMPLEX_EMOTION_URL",
-              description: t("pluginManager.cards.complexEndpoint.fieldUrl"),
-            },
-            {
-              name: "OCLIVE_COMPLEX_EMOTION_TOKEN",
-              description: t("pluginManager.cards.complexEndpoint.fieldToken"),
-            },
-          ],
-        },
-      },
-    ];
+    return [];
   });
 
   const categories = computed<PluginV2CategoryItem[]>(() => {
@@ -236,67 +162,30 @@ export function usePluginManagerV2() {
     const rows = cards.value;
     const countBy = (fn: (x: PluginV2CardItem) => boolean) =>
       rows.filter((x) => fn(x)).length;
-    return [
+    const types = [...new Set(rows.map((x) => x.module))];
+    const base: PluginV2CategoryItem[] = [
       { id: "all", label: t("pluginTerms.category.all"), count: rows.length },
-      {
-        id: "module:llm",
-        label: t("pluginTerms.module.llm"),
-        count: countBy((x) => x.module === "llm"),
-      },
-      {
-        id: "module:emotion",
-        label: t("pluginTerms.module.emotion"),
-        count: countBy((x) => x.module === "emotion"),
-      },
-      {
-        id: "module:complex_emotion",
-        label: t("pluginTerms.module.complex_emotion"),
-        count: countBy((x) => x.module === "complex_emotion"),
-      },
-      {
-        id: "type:builtin",
-        label: t("pluginTerms.type.builtin"),
-        count: countBy((x) => x.type === "builtin"),
-      },
-      {
-        id: "type:remote",
-        label: t("pluginTerms.type.remote"),
-        count: countBy((x) => x.type === "remote"),
-      },
-      {
-        id: "type:directory",
-        label: t("pluginTerms.type.directory"),
-        count: countBy((x) => x.type === "directory"),
-      },
-      {
-        id: "status:enabled",
-        label: t("pluginTerms.status.enabled"),
-        count: countBy((x) => x.status === "enabled"),
-      },
-      {
-        id: "status:disabled",
-        label: t("pluginTerms.status.disabled"),
-        count: countBy((x) => x.status === "disabled"),
-      },
-      {
-        id: "status:needs_config",
-        label: t("pluginTerms.status.needs_config"),
-        count: countBy((x) => x.status === "needs_config"),
-      },
     ];
+    for (const mod of types) {
+      if (!mod) continue;
+      base.push({
+        id: `module:${mod}`,
+        label: moduleLabelFor(t, te, mod),
+        count: countBy((x) => x.module === mod),
+      });
+    }
+    return base;
   });
 
   const filteredCards = computed(() => {
     const keyword = searchKeyword.value.trim().toLowerCase();
     return cards.value.filter((item) => {
       if (selectedCategory.value !== "all") {
-        const [kind, val] = selectedCategory.value.split(":");
-        if (kind === "module" && item.module !== val) return false;
-        if (kind === "type" && item.type !== val) return false;
-        if (kind === "status" && item.status !== val) return false;
+        const [, val] = selectedCategory.value.split(":");
+        if (item.module !== val) return false;
       }
       if (!keyword) return true;
-      const hay = `${item.title} ${item.description} ${item.moduleLabel}`.toLowerCase();
+      const hay = `${item.title} ${item.description} ${item.moduleLabel} ${item.slotKey}`.toLowerCase();
       return hay.includes(keyword);
     });
   });
@@ -323,9 +212,6 @@ export function usePluginManagerV2() {
     item: PluginV2CardItem,
     payload: Record<string, unknown>,
   ): Promise<string> {
-    if (item.uiTemplate === "endpoint-config") {
-      return t("pluginManager.apply.endpointNoSave");
-    }
     if (item.uiTemplate === "switch-toggle") {
       const info = await setRemoteLifeEnabled(
         roleStore.currentRoleId,
@@ -335,20 +221,40 @@ export function usePluginManagerV2() {
       return t("pluginManager.apply.remoteLifeUpdated");
     }
 
-    const module = String((item.schema as { module?: string }).module ?? "");
-    if (module !== "llm" && module !== "emotion") {
-      throw new Error(t("pluginManager.apply.unsupported"));
+    if (item.uiTemplate === "slot-registry") {
+      const slotKey = String(payload.slotKey ?? item.slotKey);
+      const backend = String(payload.backend ?? "");
+      const applyMode = payload.applyMode as "session" | "pack";
+      const directoryId = payload.directoryId as string | null | undefined;
+
+      if (applyMode === "pack") {
+        const pack = roleStore.roleInfo.slotRegistryPack;
+        if (!pack?.[slotKey]) {
+          throw new Error(t("pluginWorkbench.graph.connectUnknownPort"));
+        }
+        let next = patchSlotRegistryBackend(pack, slotKey, backend);
+        if (backend === "directory" && directoryId !== undefined) {
+          next = {
+            ...next,
+            [slotKey]: { ...next[slotKey], plugin: directoryId, plugins: directoryId ? [directoryId] : [] },
+          };
+        }
+        let info = await saveRoleSlotRegistry(roleStore.currentRoleId, next);
+        roleStore.applyRoleInfo(info);
+        info = await clearSessionSlotOverride(roleStore.currentRoleId, slotKey);
+        roleStore.applyRoleInfo(info);
+        return t("pluginWorkbench.graph.applyPackDone");
+      }
+
+      const info = await setSessionSlotOverride(roleStore.currentRoleId, slotKey, {
+        backend,
+        plugin: backend === "directory" ? (directoryId ?? null) : null,
+      });
+      roleStore.applyRoleInfo(info);
+      return t("pluginWorkbench.graph.applySessionDone");
     }
-    const info = await setSessionPluginBackend(
-      roleStore.currentRoleId,
-      module,
-      (payload.backend as string | null | undefined) ?? undefined,
-      undefined,
-      undefined,
-      (payload.directoryId as string | null | undefined) ?? undefined,
-    );
-    roleStore.applyRoleInfo(info);
-    return t("pluginManager.apply.sessionSaved");
+
+    throw new Error(t("pluginManager.apply.unsupported"));
   }
 
   return {
@@ -359,5 +265,9 @@ export function usePluginManagerV2() {
     filteredCards,
     selectedCard,
     applyCardChange,
+    hasBlueprint: computed(() => {
+      const eff = roleStore.roleInfo.slotRegistryEffective;
+      return eff != null && Object.keys(eff).length > 0;
+    }),
   };
 }

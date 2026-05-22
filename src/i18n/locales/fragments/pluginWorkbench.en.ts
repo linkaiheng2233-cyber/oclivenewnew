@@ -33,7 +33,7 @@ export default {
   graph: {
     lead: "ComfyUI-style wires: kernel on the outer ring, one link to the centered facility bus, six modules orbiting the bus; left/right ports stage connections. Drag to move; select a node and drag corners to resize.",
     leadBlueprint:
-      "Blueprint v2: one node per slot_registry key; optional `groups` draw bordered regions (collapsible). Edges are derived (no manual wiring). Backend changes write to pipeline.ocblueprint; dashed outline = session override only.",
+      "Blueprint v2: one node per slot_registry key; optional `groups` (collapsible). Edges are derived (no manual wiring). Use **Session only** or **Save to pack** on each node; dashed outline = active session override.",
     groupCollapse: "Collapse group",
     groupExpand: "Expand group",
     facilityBusHintBlueprint: "Derived from pipeline.ocblueprint; multiple instances of the same type share a fac-{type} port.",
@@ -86,7 +86,7 @@ export default {
     panHint: "Wheel zoom · Space/middle-drag pan · Double-click node to focus",
     connectHint: "Drag from an output port to an input · Delete removes a wire (system wires are locked)",
     connectHintBlueprint:
-      "Blueprint v2: wires are read-only; use the toolbar to add/remove slots on disk, or the dropdown to persist backend changes.",
+      "Blueprint v2: read-only wires; toolbar add/remove slots on disk; per-node buttons for session vs pack default.",
     addSlot: "Add slot",
     addSlotWizardTitle: "Add slot instance",
     addSlotLabel: "Display label",
@@ -104,8 +104,15 @@ export default {
     removeSlotConfirm:
       'Remove slot "{key}" from the role pack? At least one llm slot must remain.',
     sessionOverride: "Session override",
-    resetSlotDefault: "Reset to pack default",
+    packDefaultHint: "Pack default: {value}",
+    applySessionOnly: "Session only",
+    applyPackDefault: "Save to pack",
+    applySessionDone: "Session override applied",
+    applyPackDone: "Saved pack default and cleared session override",
+    resetSlotDefault: "Clear override",
     resetSlotDefaultDone: "Cleared session override for this slot",
+    removeSlotDialogTitle: "Remove slot instance",
+    removeSlotConfirmBtn: "Remove",
     connectSelfLoop: "Cannot connect a node to itself",
     connectWrongDirection: "Wiring must follow the stack: kernel → bus → module → directory plugin",
     connectUnknownPort: "Port mismatch",

@@ -178,7 +178,7 @@ export default {
     title: { v2: "插件与后端管理 V2（简易模式）" },
     subtitle: {
       v2:
-        "面向日常使用：大白话说明、分类筛选、模板化配置。目录插件「开发者调试」请在专业模式（V1）的「界面插件」中使用。",
+        "轻量概览：按 slot_registry 实例展示后端与「本次覆盖」；完整增删槽位、分组与写盘请在 V1 专业模式 → 架构图（Ctrl+Shift+F）。",
     },
   },
   pluginManager: {
@@ -325,6 +325,14 @@ export default {
       chatToolbar: "插件工具栏",
     },
     v2PanelAria: "插件与后端管理 V2",
+    v2: {
+      archGraphBanner:
+        "轻量卡片视图：数据与架构图一致。多实例、分组与写盘请用专业模式（V1）→ 架构图（Ctrl+Shift+F）。",
+      openArchGraph: "在架构图中打开此槽位",
+      noBlueprintHint: "当前角色无 v2 蓝图；请用 V1 专业模式或迁移到 pipeline.ocblueprint。",
+      slotKey: "实例键",
+      packBackend: "包默认后端",
+    },
     pmSlot: {
       appearance: "外观",
       defaultVariant: "默认",
@@ -410,8 +418,8 @@ export default {
       "灰度入口：用于预览新版插件管理界面（V2）。若当前构建未集成 V2，会继续使用现有专业模式。",
     experimentalToggleTitle: "启用新版插件管理界面（V2 预览）",
     experimentalToggleHtml:
-      "开启后，<strong>Ctrl+Shift+F</strong> 与顶栏「更多」里的插件管理入口将<strong>打开并切换 V2 预览</strong>（设置会记住此项）。" +
-      "需要「开发者调试」等完整能力时，请在 V2 内进入<strong>专业模式（V1）</strong>；也可关闭本项恢复默认。",
+      "开启后，<strong>Ctrl+Shift+F</strong> 与顶栏「更多」将打开 <strong>V2 轻量卡片</strong>（数据来自 <code>slot_registry_effective</code>，与架构图一致）。" +
+      "多实例增删、分组与写盘请用 V2 内链接或关闭本项后打开 <strong>V1 → 架构图</strong>。",
     openV2Preview: "打开插件管理 V2 预览",
     remoteFallbackSectionTitle: "远端插件失败策略",
     remoteFallbackLabel: "远端 HTTP 失败时自动降级内置",

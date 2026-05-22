@@ -182,7 +182,7 @@ export default {
     title: { v2: "Plugins & backends (simple mode)" },
     subtitle: {
       v2:
-        "For daily use: plain-language cards, filters, and templated configuration. Use advanced mode (V1) → UI plugins for directory-plugin developer debugging.",
+        "Lightweight overview from slot_registry instances and session overrides. Full add/remove, groups, and pack writes: V1 advanced mode → Architecture graph (Ctrl+Shift+F).",
     },
   },
   pluginManager: {
@@ -329,6 +329,15 @@ export default {
       chatToolbar: "Plugin toolbar",
     },
     v2PanelAria: "Plugins & backends (V2)",
+    v2: {
+      archGraphBanner:
+        "Lightweight cards synced with the architecture graph. Use V1 → Architecture graph (Ctrl+Shift+F) for multi-instance editing on disk.",
+      openArchGraph: "Open this slot in the graph",
+      noBlueprintHint:
+        "No v2 blueprint on this role; use V1 advanced mode or migrate to pipeline.ocblueprint.",
+      slotKey: "Instance key",
+      packBackend: "Pack default backend",
+    },
     pmSlot: {
       appearance: "Appearance",
       defaultVariant: "Default",
@@ -415,8 +424,8 @@ export default {
       "Preview entry for the new plugin manager (V2). If this build has no V2, the existing advanced mode is used.",
     experimentalToggleTitle: "Enable new plugin manager (V2 preview)",
     experimentalToggleHtml:
-      "When on, <strong>Ctrl+Shift+F</strong> and the plugin entry in <strong>“More”</strong> open <strong>V2 preview</strong> (remembered in settings). " +
-      "For full developer debugging, open <strong>advanced mode (V1)</strong> inside V2; you can turn this off to restore defaults.",
+      "When on, <strong>Ctrl+Shift+F</strong> and <strong>More → Plugins</strong> open <strong>V2 lightweight cards</strong> (from <code>slot_registry_effective</code>, same as the graph). " +
+      "Multi-instance editing on disk: use the in-panel link or turn this off and open <strong>V1 → Architecture graph</strong>.",
     openV2Preview: "Open plugin manager V2 preview",
     remoteFallbackSectionTitle: "Remote plugin failure policy",
     remoteFallbackLabel: "Fall back to built-in when remote HTTP fails",

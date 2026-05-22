@@ -11,6 +11,7 @@ const props = defineProps<{
 const emit = defineEmits<{
   close: [];
   openV1: [];
+  focusArchSlot: [slotKey: string];
 }>();
 
 const { t } = useI18n();
@@ -31,7 +32,12 @@ useModalFocusRestore(toRef(props, "visible"), dialogRef);
       @keydown.escape.stop="emit('close')"
     >
       <div ref="dialogRef" class="pm2-dialog" tabindex="-1" @click.stop @keydown.escape.stop="emit('close')">
-        <PluginManagerV2 :visible="visible" @close="emit('close')" @open-v1="emit('openV1')" />
+        <PluginManagerV2
+          :visible="visible"
+          @close="emit('close')"
+          @open-v1="emit('openV1')"
+          @focus-arch-slot="emit('focusArchSlot', $event)"
+        />
       </div>
     </div>
   </Teleport>

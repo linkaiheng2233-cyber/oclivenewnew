@@ -1146,6 +1146,12 @@ onBeforeUnmount(() => {
         pluginManagerV2Open = false;
         void pluginStore.openPanel('graph');
       "
+      @focus-arch-slot="
+        (key) => {
+          pluginManagerV2Open = false;
+          pluginStore.requestFocusArchSlot(key, 'graph');
+        }
+      "
     />
 
     <SettingsView

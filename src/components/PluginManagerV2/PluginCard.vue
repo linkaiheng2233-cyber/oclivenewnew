@@ -2,7 +2,6 @@
 import { computed } from "vue";
 import { useI18n } from "vue-i18n";
 import type { PluginV2CardItem } from "../../composables/usePluginManagerV2";
-import type { PluginBackendSource } from "../../utils/tauri-api";
 
 const props = defineProps<{
   item: PluginV2CardItem;
@@ -17,16 +16,8 @@ const { t } = useI18n();
 
 const typeLabel = computed(() => t(`pluginTerms.type.${props.item.type}`));
 
-const sourceKind = computed(() => {
-  const k: PluginBackendSource = props.item.sourceKey;
-  if (k === "session_override") return "session";
-  if (k === "env_override") return "env";
-  return "pack";
-});
-
 const riskLabel = computed(() => {
   if (props.item.status === "needs_config") return t("pluginManager.risk.needsConfig");
-  if (props.item.sourceKey === "env_override") return t("pluginManager.risk.envFirst");
   return "";
 });
 
@@ -50,9 +41,12 @@ const statusLabel = computed(() => t(`pluginTerms.status.${props.item.status}`))
     </div>
     <p class="pm2-card-desc">{{ item.description }}</p>
     <div class="pm2-card-meta">
+      <span v-if="item.sessionOverridden" class="pm2-chip pm2-chip--override">{{
+        t("pluginWorkbench.graph.sessionOverride")
+      }}</span>
       <span class="pm2-chip pm2-chip--module">{{ item.moduleLabel }}</span>
       <span class="pm2-chip pm2-chip--type">{{ typeLabel }}</span>
-      <span class="pm2-chip" :class="`pm2-chip--source-${sourceKind}`">{{ item.sourceLabel }}</span>
+      <span v-if="item.slotKey" class="pm2-chip pm2-chip--backend">{{ item.effectiveBackend }}</span>
       <span v-if="riskLabel" class="pm2-chip pm2-chip--risk">{{ riskLabel }}</span>
     </div>
   </button>
@@ -152,6 +146,14 @@ const statusLabel = computed(() => t(`pluginTerms.status.${props.item.status}`))
   color: color-mix(in srgb, #6d28d9 90%, var(--text-primary));
   background: color-mix(in srgb, #a855f7 14%, var(--bg-primary));
   border-color: color-mix(in srgb, #a855f7 35%, transparent);
+}
+.pm2-chip--override {
+  color: color-mix(in srgb, #166534 80%, var(--text-primary));
+  border-style: dashed;
+}
+.pm2-chip--backend {
+  font-family: ui-monospace, monospace;
+  font-size: 10px;
 }
 .pm2-chip--risk {
   color: color-mix(in srgb, #92400e 90%, var(--text-primary));

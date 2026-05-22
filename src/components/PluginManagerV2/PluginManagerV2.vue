@@ -15,6 +15,7 @@ const props = defineProps<{
 const emit = defineEmits<{
   close: [];
   openV1: [];
+  focusArchSlot: [slotKey: string];
 }>();
 
 const {
@@ -25,6 +26,7 @@ const {
   filteredCards,
   selectedCard,
   applyCardChange,
+  hasBlueprint,
 } = usePluginManagerV2();
 const { t } = useI18n();
 const { showToast } = useAppToast();
@@ -76,6 +78,20 @@ async function onApply(payload: Record<string, unknown>) {
         <button type="button" class="pm2-btn" @click="emit('close')">{{ t("pluginTerms.action.close") }}</button>
       </div>
     </header>
+    <p v-if="hasBlueprint" class="pm2-banner" role="note">
+      {{ t("pluginManager.v2.archGraphBanner") }}
+      <button
+        v-if="selectedCard?.slotKey"
+        type="button"
+        class="pm2-banner-link"
+        @click="emit('focusArchSlot', selectedCard.slotKey)"
+      >
+        {{ t("pluginManager.v2.openArchGraph") }}
+      </button>
+    </p>
+    <p v-else class="pm2-banner pm2-banner--warn" role="note">
+      {{ t("pluginManager.v2.noBlueprintHint") }}
+    </p>
     <div class="pm2-legend" :aria-label="t('pluginManager.legendAria')">
       <span class="pm2-legend-item is-enabled">{{ t("pluginManager.legend.enabled") }}</span>
       <span class="pm2-legend-item is-pending">{{ t("pluginManager.legend.pending") }}</span>
@@ -125,6 +141,29 @@ async function onApply(payload: Record<string, unknown>) {
   font-size: 12px;
   color: var(--text-secondary);
   line-height: 1.45;
+}
+.pm2-banner {
+  margin: 0;
+  padding: 10px 12px;
+  font-size: 12px;
+  line-height: 1.45;
+  border-radius: 8px;
+  border: 1px dashed var(--border-light);
+  background: var(--bg-elevated);
+  color: var(--text-secondary);
+}
+.pm2-banner--warn {
+  border-color: color-mix(in srgb, #f59e0b 35%, var(--border-light));
+}
+.pm2-banner-link {
+  margin-left: 8px;
+  padding: 0;
+  border: none;
+  background: none;
+  color: var(--accent, #3b82f6);
+  text-decoration: underline;
+  cursor: pointer;
+  font-size: inherit;
 }
 .pm2-actions {
   display: flex;
