@@ -385,11 +385,12 @@ impl AppState {
                 .map_err(|e| crate::error::AppError::DatabaseError(e.to_string()))?
         };
 
-        // Migration SQL is compile-time embedded; see src-tauri/build.rs rerun-if-changed.
-        sqlx::migrate!("./migrations")
-            .run(&db)
-            .await
-            .map_err(|e| crate::error::AppError::DatabaseError(e.to_string()))?;
+        crate::infrastructure::sql_migrate::run_sql_migrations(
+            &db,
+            &PathBuf::from(env!("CARGO_MANIFEST_DIR")).join("migrations"),
+        )
+        .await
+        .map_err(crate::error::AppError::DatabaseError)?;
 
         let db_manager = Arc::new(DbManager::new(db.clone()));
 
@@ -481,10 +482,12 @@ impl AppState {
             .await
             .map_err(|e| crate::error::AppError::DatabaseError(e.to_string()))?;
 
-        sqlx::migrate!("./migrations")
-            .run(&db)
-            .await
-            .map_err(|e| crate::error::AppError::DatabaseError(e.to_string()))?;
+        crate::infrastructure::sql_migrate::run_sql_migrations(
+            &db,
+            &PathBuf::from(env!("CARGO_MANIFEST_DIR")).join("migrations"),
+        )
+        .await
+        .map_err(crate::error::AppError::DatabaseError)?;
 
         let db_manager = Arc::new(DbManager::new(db));
 
