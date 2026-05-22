@@ -495,6 +495,12 @@ pub struct DirectoryPluginCatalogEntry {
     #[serde(default, skip_serializing_if = "Vec::is_empty")]
     pub ui_slot_variants: Vec<UiSlotVariantDto>,
     pub provides: Vec<String>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub description: Option<String>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub author: Option<String>,
+    #[serde(default, skip_serializing_if = "Vec::is_empty")]
+    pub permissions: Vec<String>,
     /// `ok` / `missing` / `mismatch`
     pub dependency_status: String,
     #[serde(skip_serializing_if = "Vec::is_empty")]
@@ -587,6 +593,9 @@ fn build_directory_plugin_catalog(state: &AppState) -> Vec<DirectoryPluginCatalo
                 ui_slot_names,
                 ui_slot_variants,
                 provides: manifest.provides.clone(),
+                description: manifest.description.clone(),
+                author: manifest.author.clone(),
+                permissions: manifest.permissions.clone(),
                 dependency_status,
                 dependency_issues,
             })

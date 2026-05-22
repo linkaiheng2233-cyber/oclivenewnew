@@ -400,6 +400,7 @@ pub fn run() {
             api::plugin_bridge::plugin_bridge_invoke,
             api::plugin_update::check_plugin_updates,
             api::plugin_update::extract_plugin_zip,
+            api::plugin_update::install_plugin_from_zip,
             api::plugin_index::sync_plugin_index_command,
             api::plugin_index::get_cached_plugin_index,
             api::plugin_index::install_plugin_from_market,

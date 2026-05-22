@@ -11,7 +11,7 @@ import RoleplayAsidePanel from "./components/RoleplayAsidePanel.vue";
 import HotkeyHost from "./components/HotkeyHost.vue";
 import PluginManagerPanel from "./views/PluginManagerPanel.vue";
 import MarketView from "./views/MarketView.vue";
-import PluginManagerV2Panel from "./views/PluginManagerV2Panel.vue";
+import SimplePluginManagerPanel from "./views/SimplePluginManagerPanel.vue";
 import PluginSlotEmbed from "./components/PluginSlotEmbed.vue";
 import SettingsView from "./views/SettingsView.vue";
 import ChatMessageList from "./components/ChatMessageList.vue";
@@ -226,9 +226,9 @@ const topMoreOpen = ref(false);
 const settingsViewOpen = ref(false);
 
 const {
-  pluginManagerV2Open,
+  simplePluginManagerOpen,
   openPluginManagerPanel,
-  openPluginManagerV2Preview,
+  openAdvancedPluginManager,
   openPluginMarket,
   pluginManagerMoreBtnLabel,
   settingsEntryMoreHelp,
@@ -1139,25 +1139,17 @@ onBeforeUnmount(() => {
 
     <PluginManagerPanel />
     <MarketView />
-    <PluginManagerV2Panel
-      :visible="pluginManagerV2Open"
-      @close="pluginManagerV2Open = false"
-      @open-v1="
-        pluginManagerV2Open = false;
-        void pluginStore.openPanel('graph');
-      "
-      @focus-arch-slot="
-        (key) => {
-          pluginManagerV2Open = false;
-          pluginStore.requestFocusArchSlot(key, 'graph');
-        }
-      "
+    <SimplePluginManagerPanel
+      :visible="simplePluginManagerOpen"
+      @close="simplePluginManagerOpen = false"
+      @open-advanced="openAdvancedPluginManager"
+      @open-market="openPluginMarket"
     />
 
     <SettingsView
       :visible="settingsViewOpen"
       @close="settingsViewOpen = false"
-      @open-plugin-v2="openPluginManagerV2Preview"
+      @open-advanced-plugin="openAdvancedPluginManager"
     />
 
     <div class="app-floating-slot" aria-hidden="true">

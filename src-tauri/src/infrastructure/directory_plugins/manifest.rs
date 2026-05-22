@@ -114,6 +114,15 @@ pub struct OclivePluginManifest {
     /// 可选：高危能力声明（见 PLUGIN_V1 §权限规范）；省略视为 `[]`。
     #[serde(default)]
     pub permissions: Vec<String>,
+    /// 可选：插件描述（简单管理列表展开详情）。
+    #[serde(default)]
+    pub description: Option<String>,
+    /// 可选：作者或组织名。
+    #[serde(default)]
+    pub author: Option<String>,
+    /// 可选：安装时自动写入角色包 `slot_registry`（见 PLUGIN_V1 · `slot_attachment`）。
+    #[serde(default, rename = "slot_attachment")]
+    pub slot_attachment: Option<serde_json::Value>,
 }
 
 /// 规范化 manifest 内相对路径，与请求 URI 中 `rel` 比较。
@@ -197,6 +206,10 @@ impl OclivePluginManifest {
         validate_ui_slot_appearance_ids(&m)?;
         oclive_validation::validate_permissions_list(&m.permissions)
             .map_err(|e| format!("manifest {}: {}", p.display(), e))?;
+        if m.slot_attachment.is_some() {
+            oclive_validation::parse_slot_attachments_from_manifest_json(&raw)
+                .map_err(|e| format!("manifest {}: {}", p.display(), e))?;
+        }
         if let Some(ref sh) = m.shell {
             if sh.entry.trim().is_empty() {
                 return Err(format!(

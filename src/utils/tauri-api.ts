@@ -1013,6 +1013,13 @@ export async function extractPluginZip(
   });
 }
 
+/** 从 zip 安装目录插件；返回 manifest.id。 */
+export async function installPluginFromZip(zipPath: string): Promise<string> {
+  return invokeWithFriendlyError<string>("install_plugin_from_zip", {
+    zipPath,
+  });
+}
+
 /** 同一 `role_id` 上并发的 bootstrap 合并为单次 IPC，避免多插槽同时挂载时重复打后端。 */
 const directoryBootstrapInflight = new Map<
   string,
@@ -1119,6 +1126,9 @@ export interface DirectoryPluginCatalogEntry {
   /** 每条 manifest `ui_slots`（嵌入槽）一条 */
   uiSlotVariants?: UiSlotVariantInfo[];
   provides: string[];
+  description?: string | null;
+  author?: string | null;
+  permissions?: string[];
   /** `ok` / `missing` / `mismatch` */
   dependencyStatus: string;
   dependencyIssues: string[];

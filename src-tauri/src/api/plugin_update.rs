@@ -173,7 +173,17 @@ pub fn extract_plugin_zip(
         .to_frontend_error());
     }
 
-    let target = resolve_install_dir(&state, pid);
+    install_staged_directory_plugin(&state, &staged, pid)?;
+    Ok(())
+}
+
+fn install_staged_directory_plugin(
+    state: &AppState,
+    staged: &Path,
+    plugin_id: &str,
+) -> Result<(), String> {
+    let pid = plugin_id.trim();
+    let target = resolve_install_dir(state, pid);
     if let Some(parent) = target.parent() {
         fs::create_dir_all(parent).map_err(|e| AppError::from(e).to_frontend_error())?;
     }
@@ -185,10 +195,39 @@ pub fn extract_plugin_zip(
         })?;
     }
     fs::create_dir_all(&target).map_err(|e| AppError::from(e).to_frontend_error())?;
-    copy_dir_all(&staged, &target)?;
+    copy_dir_all(staged, &target)?;
 
     state
         .directory_plugins
         .rescan_plugin_roots(state.storage.roles_dir());
     Ok(())
+}
+
+/// 从 zip 安装目录插件：读取包内 `manifest.id`，无需调用方预先传入 `plugin_id`。
+///
+/// # Errors
+///
+/// Returns [`Err`] when the zip is missing, invalid, or `manifest.id` cannot be read.
+#[tauri::command]
+pub fn install_plugin_from_zip(zip_path: String, state: State<'_, AppState>) -> Result<String, String> {
+    let zip_path = PathBuf::from(zip_path.trim());
+    if !zip_path.is_file() {
+        return Err(AppError::InvalidParameter(format!(
+            "zip file not found: {}",
+            zip_path.display()
+        ))
+        .to_frontend_error());
+    }
+    let zip_path = zip_path
+        .canonicalize()
+        .map_err(|e| AppError::InvalidParameter(format!("zip path: {e}")).to_frontend_error())?;
+
+    let tmp = tempfile::tempdir().map_err(|e| AppError::from(e).to_frontend_error())?;
+    unzip_archive(&zip_path, tmp.path())?;
+    let staged = find_manifest_root(tmp.path())?;
+    let manifest = OclivePluginManifest::load_from_dir(&staged)
+        .map_err(|e| AppError::InvalidParameter(e).to_frontend_error())?;
+    let pid = manifest.id.trim().to_string();
+    install_staged_directory_plugin(&state, &staged, &pid)?;
+    Ok(pid)
 }

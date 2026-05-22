@@ -1,0 +1,22 @@
+/** Simple plugin manager — zh-CN */
+export const simplePluginManagerZh = {
+  title: "已安装插件",
+  panelAria: "插件管理",
+  installZip: "安装插件",
+  browseMarket: "浏览市场",
+  close: "关闭",
+  loading: "加载中…",
+  empty: "暂无已安装插件。可通过「安装插件」导入本地 zip，或从市场安装。",
+  uninstall: "卸载",
+  toggleHint: "启用或停用此插件",
+  confirmUninstall: "确定卸载插件「{id}」？将删除插件文件并清理相关状态。",
+  uninstalled: "已卸载 {id}",
+  installed: "已安装 {id}",
+  author: "作者",
+  provides: "提供能力",
+  permissions: "权限声明",
+  deps: "依赖",
+  advancedFold: "高级管理",
+  advancedHint: "架构图、多槽位与会话覆盖请在 CLI 或下方专业面板中操作。",
+  openAdvanced: "打开高级插件管理",
+};
