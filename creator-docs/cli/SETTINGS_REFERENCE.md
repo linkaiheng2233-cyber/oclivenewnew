@@ -1,6 +1,34 @@
-# 后端配置参考（v2 蓝图 + legacy `settings.json`）
+# 蓝图与系统配置参考（SETTINGS_REFERENCE）
 
-**v2 角色包（当前）**：后端实例写在 **`pipeline.ocblueprint` → `slot_registry`**（可选 **`groups`** 仅架构图示意）；字段语义见 **[ROLE_PACK_SPEC.md](../role-pack/ROLE_PACK_SPEC.md)**。主应用**架构图**仅在设置开启「高级插件管理」后可见；CLI 总览见 **`oclive plugin manage --tui`**。下文 **`settings.json` → `plugin_backends`** 段落面向 **legacy v1（已废弃）** 与运行时六槽折叠语义对照。
+> **蓝图 `pipeline.ocblueprint` 是系统配置的唯一来源。** 下列字段为**蓝图 / 宿主管理员**专属，**不应**由初级创作者在「角色包」视图中修改。角色身份与人格见 **[ROLE_PACK_SPEC.md](../role-pack/ROLE_PACK_SPEC.md) §0** · 职责边界 **[handoff/ROLE_PACK_BOUNDARY.md](../../handoff/ROLE_PACK_BOUNDARY.md)**。
+
+## 零、蓝图专属字段（非角色包）
+
+| 类别 | 字段 / 段 | 说明 |
+|------|-----------|------|
+| 槽位实例 | **`slot_registry`**（`type`、`backend`、`plugin`、`model`、`url`、`position`…） | 六槽路由与 directory 插件 id |
+| 架构图 | **`groups`** | 同 type 实例分组 |
+| 运行时派生 | **`module_relations`** | **禁止落盘**；由 `slot_registry` 派生 |
+| 交互与记忆 | **`interaction_mode`**、**`memory_config`**、**`identity_binding`** | 目标：`runtime_config.*`；今日多仍在 **`meta.*`** |
+| 演化引擎 | **`evolution`**（除 `personality_source` 外数值策略） | 蓝图 |
+| 模型 | **`ollama_model`** 或 **`slot_registry` 内 `model`** | 蓝图 |
+| 远程 / 场景引擎 | **`remote_presence`**、**`autonomous_scene`** | 蓝图 |
+| 知识引擎块 | **`meta.knowledge`**（检索配置） | 蓝图，与 `knowledge/` 内容目录区分 |
+| 双核（RFC） | **`runtime_config.dual_core.enabled`**、`pipeline.stable` / `pipeline.experimental`、`zone` | 默认 **关**；创作者包不得单独开启 |
+| 发版 | **`min_runtime_version`**、**`dev_only`** | 管理员 |
+
+**不属于蓝图文件、属宿主应用**：
+
+| 字段 | 落点 |
+|------|------|
+| **`remote_fallback_to_builtin`** | `app_settings` / **`OCLIVE_REMOTE_FALLBACK_TO_BUILTIN`** |
+| Monolith **`weld_modules`** | 工程 **`monolith.toml`** |
+
+**legacy `settings.json`**（已废弃，勿与 v2 蓝图并存）：下表 §一 的 `plugin_backends` 等价于今日 **`slot_registry`**。
+
+---
+
+**v2 角色包（当前）**：后端实例写在 **`pipeline.ocblueprint` → `slot_registry`**。CLI 总览 **`oclive plugin manage --tui`**。下文 §一 **`settings.json` → `plugin_backends`** 仅 **legacy** 对照。
 
 本文档描述 **桌面宿主（Tauri）** 与 **`oclive-cli` 脚手架** 共用的配置语义。单一事实来源以源码为准：
 

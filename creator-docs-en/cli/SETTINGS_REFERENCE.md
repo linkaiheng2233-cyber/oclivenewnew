@@ -1,6 +1,22 @@
-# Backend configuration reference (v2 blueprint + legacy `settings.json`)
+# Blueprint and system configuration (SETTINGS_REFERENCE)
 
-**v2 role packs (current):** backend instances live in **`pipeline.ocblueprint` → `slot_registry`** (optional **`groups`** for the architecture graph only). Field semantics: **[ROLE_PACK_SPEC.md](../role-pack/ROLE_PACK_SPEC.md)**. Sections below titled **`settings.json` → `plugin_backends`** are **legacy v1 (deprecated)** and runtime six-slot fold semantics for comparison.
+> **`pipeline.ocblueprint` is the single source of system configuration.** Fields below are **blueprint / host admin** only — not entry-level role-pack edits. Creator-facing fields: **[ROLE_PACK_SPEC.md](../role-pack/ROLE_PACK_SPEC.md) §0** · **[ROLE_PACK_BOUNDARY.md](../../handoff/ROLE_PACK_BOUNDARY.md)**.
+
+## 0. Blueprint-only fields
+
+| Category | Fields |
+|----------|--------|
+| Slots | **`slot_registry`** (`type`, `backend`, `plugin`, `model`, `url`, `position`, …) |
+| Graph | **`groups`**; **`module_relations`** must **not** be stored (derived at runtime) |
+| Engine | **`interaction_mode`**, **`memory_config`**, **`identity_binding`**, **`evolution`** (engine params), **`remote_presence`**, **`autonomous_scene`** — target: **`runtime_config.*`** (today often still under **`meta.*`**) |
+| Dual-core (RFC) | **`runtime_config.dual_core.enabled`**, **`pipeline.*`**, **`zone`** — default off; creators must not enable alone |
+| Host app (not in pack) | **`remote_fallback_to_builtin`**, **`monolith.toml`** |
+
+[中文全文](../cli/SETTINGS_REFERENCE.md)
+
+---
+
+**v2:** backends in **`slot_registry`**. Legacy **`settings.json` → `plugin_backends`** sections below are **deprecated** comparison only.
 
 This document describes configuration semantics shared by the **desktop host (Tauri)** and **`oclive-cli` scaffolds**. Single sources of truth remain code:
 
