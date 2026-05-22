@@ -56,7 +56,7 @@ CI：`.github/workflows/ci.yml` 中 **`cargo-audit`** job 使用 **`continue-on-
 - `bitflags` v1 vs v2（`tauri` / `tower-http`）
 - `block-buffer` / `crypto-common` 多版本（`sha2` 0.10 vs 0.11 链）
 
-全量输出随锁文件变化；发版前可抽样复查。
+全量输出随锁文件变化；发版前可抽样复查。**2026-05-20 最终扫尾**：`base64` 0.21（reqwest/sqlx/tauri）与 0.22（`oclive-cli`→`ureq`）并存，不 pin；待 `oclive-cli` 与主程序 HTTP 栈收敛后再统一。
 
 ### §6.7 `cargo-bloat` 基线（Windows x86_64，Release）
 
