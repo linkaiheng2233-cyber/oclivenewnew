@@ -13,6 +13,7 @@ pub mod manifest;
 pub mod plugin_backends;
 pub mod plugin_dependencies;
 pub mod plugin_permissions;
+pub mod plugin_slot_attachment;
 pub mod protocol_boundary;
 pub mod role_pack;
 pub mod validate;
@@ -50,6 +51,10 @@ pub use plugin_permissions::{
     manifest_declares_process_spawn, validate_directory_plugin_manifest_permissions,
     validate_permissions_list, ALLOWED as PLUGIN_PERMISSIONS_ALLOWED, MCP_HTTP, MCP_STDIO,
     NETWORK_GRANT_REMOTE_LLM, NETWORK_GRANT_REMOTE_PLUGIN, NETWORK_WILDCARD, PROCESS_SPAWN,
+};
+pub use plugin_slot_attachment::{
+    apply_slot_attachments_to_registry, parse_slot_attachments_from_manifest_json,
+    validate_slot_attachment_decl, SlotAttachmentDecl,
 };
 pub use protocol_boundary::{
     assert_layers_do_not_overlap, validate_jsonrpc_error_response, validate_kernel_error_body,
