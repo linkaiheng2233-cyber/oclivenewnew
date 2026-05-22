@@ -224,6 +224,8 @@ export const usePluginStore = defineStore("plugin", {
   state: () => ({
     panelVisible: false,
     marketPanelVisible: false,
+    /** 递增后由 App 打开极简插件管理（市场等入口） */
+    simpleManagerOpenNonce: 0,
     panelMainTab: "graph" as PluginPanelMainTab,
     /** 架构图等入口请求聚焦的已安装插件 id */
     focusPluginId: null as string | null,
@@ -289,6 +291,11 @@ export const usePluginStore = defineStore("plugin", {
     },
     closeMarketPanel() {
       this.marketPanelVisible = false;
+    },
+    requestOpenSimplePluginManager() {
+      this.closePanel();
+      this.marketPanelVisible = false;
+      this.simpleManagerOpenNonce += 1;
     },
     requestFocusInstalledPlugin(pluginId: string) {
       const id = pluginId.trim();

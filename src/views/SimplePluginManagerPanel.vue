@@ -10,7 +10,6 @@ const props = defineProps<{
 
 const emit = defineEmits<{
   close: [];
-  openAdvanced: [];
   openMarket: [];
 }>();
 
@@ -41,7 +40,6 @@ useModalFocusRestore(toRef(props, "visible"), dialogRef);
         <SimplePluginManager
           :visible="visible"
           @close="emit('close')"
-          @open-advanced="emit('openAdvanced')"
           @open-market="emit('openMarket')"
         />
       </div>

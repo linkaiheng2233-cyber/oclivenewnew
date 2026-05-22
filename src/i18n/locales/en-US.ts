@@ -76,14 +76,10 @@ export default {
         "The scene you are narrating; matches pack scene config. Switching may fold chat history.",
       characterAt: "Character at: {label}",
       pluginBtnSimple: "Plugin manager",
-      pluginBtnAdvanced: "Plugins & backends (advanced)",
       pluginMarket: "Plugin market",
       settingsTileHelpSimple:
         "Shortcuts, settings, and plugin manager in one place. Ctrl+Shift+S opens settings; " +
-        "Ctrl+Shift+F opens the simple installed-plugins list. Enable “Advanced plugin management” in settings for the architecture graph. Ctrl+Shift+D toggles the debug panel.",
-      settingsTileHelpAdvanced:
-        "Shortcuts, settings, and plugin/back-end management together. Ctrl+Shift+S opens settings; " +
-        "Ctrl+Shift+F opens advanced plugin management (incl. architecture graph). Turn off “Advanced plugin management” for the simple list. Ctrl+Shift+D toggles the debug panel.",
+        "Ctrl+Shift+F opens the installed-plugins list. Advanced slots: <code>oclive plugin manage</code>. Ctrl+Shift+D toggles the debug panel.",
     },
     toast: {
       remoteLifeOn: "Remote inner voice enabled",
@@ -421,14 +417,10 @@ export default {
       "When checked, the Sentry client is closed immediately; preference is stored in localStorage (key oclive.telemetry.sentryOptOut). Uncheck and restart the app to re-enable reporting.",
     sentryDisabledToast: "Crash reporting disabled.",
     sentryReenableRestartToast: "Opt-out cleared; restart the app to resume reporting.",
-    experimentalLabel: "Plugins",
-    experimentalSectionHelp:
-      "Default: simple installed-plugins list (mod-list style). Advanced mode includes architecture graph and multi-slot tools.",
-    experimentalToggleTitle: "Enable advanced plugin management",
-    experimentalToggleHtml:
-      "When on, <strong>Ctrl+Shift+F</strong> and <strong>More → Plugins</strong> open the <strong>professional panel</strong> (architecture graph & debug). " +
-      "CLI slot editing: <code>oclive plugin manage</code>. When off, the simple list is used.",
-    openAdvancedPluginManager: "Open advanced plugin management",
+    pluginCliLabel: "Advanced plugin configuration",
+    pluginCliHelp: "Architecture graph, multi-slot blueprint, and disk writes are not in this UI.",
+    pluginCliNote:
+      "Use <code>oclive plugin manage</code> (optional <code>--tui</code>) for slot_registry; install with manifest <code>slot_attachment</code> for auto wiring. See creator docs.",
     remoteFallbackSectionTitle: "Remote plugin failure policy",
     remoteFallbackLabel: "Fall back to built-in when remote HTTP fails",
     remoteFallbackHelp:
@@ -489,9 +481,7 @@ export default {
       slotSectionAria: "Launcher slot",
       slotHeading: "Plugin slot (launcher.palette)",
       slotEmbedAria: "Launcher slot",
-      ctrlShiftFSimple: "Open simple plugin manager list",
-      ctrlShiftFAdvanced:
-        "Open advanced plugin management (incl. architecture graph); turn off “Advanced plugin management” in settings for the simple list",
+      ctrlShiftFSimple: "Open installed plugins list",
     },
     rolePack: {
       exportFilterName: "OCPak role pack",

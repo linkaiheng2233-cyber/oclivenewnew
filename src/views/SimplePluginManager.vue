@@ -2,7 +2,9 @@
 import { open } from "@tauri-apps/api/dialog";
 import { computed, ref, watch } from "vue";
 import { useI18n } from "vue-i18n";
+import PluginUiSlotSelectorDialog from "../components/PluginUiSlotSelectorDialog.vue";
 import { useAppToast } from "../composables/useAppToast";
+import { usePluginSlotEnable } from "../composables/usePluginSlotEnable";
 import { usePluginStore } from "../stores/pluginStore";
 import { installPluginFromZip } from "../utils/tauri-api";
 
@@ -12,23 +14,28 @@ const props = defineProps<{
 
 const emit = defineEmits<{
   close: [];
-  openAdvanced: [];
   openMarket: [];
 }>();
 
 const { t } = useI18n();
 const pluginStore = usePluginStore();
 const { showToast } = useAppToast();
+const {
+  selector,
+  closeSelector,
+  toggleSlotChoice,
+  applySelectorAndEnable,
+  setPluginEnabled,
+} = usePluginSlotEnable();
 
-const expandedId = ref<string | null>(null);
-const advancedFoldOpen = ref(false);
 const busyId = ref<string | null>(null);
+const selectorBusy = ref(false);
 
 const rows = computed(() =>
   pluginStore.catalog.map((c) => ({
-    ...c,
+    id: c.id,
+    version: c.version,
     disabled: pluginStore.isPluginDisabled(c.id),
-    displayName: c.id,
   })),
 );
 
@@ -37,24 +44,33 @@ watch(
   (v) => {
     if (v) {
       void pluginStore.refresh();
-      expandedId.value = null;
     }
   },
 );
 
-function toggleExpand(id: string): void {
-  expandedId.value = expandedId.value === id ? null : id;
-}
-
 async function onToggleEnabled(id: string, enabled: boolean): Promise<void> {
   busyId.value = id;
   try {
-    pluginStore.setPluginDisabled(id, !enabled);
-    await pluginStore.persist();
+    const openedSelector = await setPluginEnabled(id, enabled);
+    if (!openedSelector && enabled) {
+      showToast("success", t("simplePluginManager.enabled", { id }));
+    }
   } catch (e) {
     showToast("error", e instanceof Error ? e.message : String(e));
   } finally {
     busyId.value = null;
+  }
+}
+
+async function onConfirmSlotSelector(): Promise<void> {
+  selectorBusy.value = true;
+  try {
+    await applySelectorAndEnable();
+    showToast("success", t("simplePluginManager.enabled", { id: selector.value.pluginId }));
+  } catch (e) {
+    showToast("error", e instanceof Error ? e.message : String(e));
+  } finally {
+    selectorBusy.value = false;
   }
 }
 
@@ -64,7 +80,6 @@ async function onUninstall(id: string): Promise<void> {
   try {
     await pluginStore.uninstallPluginFromGitIndex(id);
     showToast("success", t("simplePluginManager.uninstalled", { id }));
-    if (expandedId.value === id) expandedId.value = null;
   } catch (e) {
     showToast("error", e instanceof Error ? e.message : String(e));
   } finally {
@@ -120,82 +135,35 @@ async function onInstallZip(): Promise<void> {
         {{ t("simplePluginManager.empty") }}
       </li>
       <li v-for="row in rows" :key="row.id" class="spm-row">
-        <div class="spm-row-main">
-          <button
-            type="button"
-            class="spm-name"
-            :aria-expanded="expandedId === row.id"
-            @click="toggleExpand(row.id)"
-          >
-            <span class="spm-title">{{ row.displayName }}</span>
-            <span class="spm-ver">v{{ row.version }}</span>
-          </button>
-          <label class="spm-switch" :title="t('simplePluginManager.toggleHint')">
-            <input
-              type="checkbox"
-              :checked="!row.disabled"
-              :disabled="
-                busyId === row.id ||
-                (row.dependencyStatus !== 'ok' && row.disabled)
-              "
-              @change="onToggleEnabled(row.id, ($event.target as HTMLInputElement).checked)"
-            />
-            <span class="spm-switch-ui" />
-          </label>
-          <button
-            type="button"
-            class="spm-btn danger"
+        <span class="spm-title">{{ row.id }}</span>
+        <span class="spm-ver">v{{ row.version }}</span>
+        <label class="spm-switch" :title="t('simplePluginManager.toggleHint')">
+          <input
+            type="checkbox"
+            :checked="!row.disabled"
             :disabled="busyId === row.id"
-            @click="onUninstall(row.id)"
-          >
-            {{ t("simplePluginManager.uninstall") }}
-          </button>
-        </div>
-        <div v-if="expandedId === row.id" class="spm-detail">
-          <p v-if="row.description" class="spm-detail-line">
-            {{ row.description }}
-          </p>
-          <p v-if="row.author" class="spm-detail-line">
-            {{ t("simplePluginManager.author") }}: {{ row.author }}
-          </p>
-          <p v-if="row.provides?.length" class="spm-detail-line">
-            {{ t("simplePluginManager.provides") }}:
-            {{ row.provides.join(", ") }}
-          </p>
-          <p
-            v-if="row.permissions?.length"
-            class="spm-detail-line"
-          >
-            {{ t("simplePluginManager.permissions") }}:
-            {{ row.permissions.join(", ") }}
-          </p>
-          <p
-            v-if="row.dependencyStatus !== 'ok'"
-            class="spm-detail-warn"
-          >
-            {{ t("simplePluginManager.deps") }}:
-            {{ (row.dependencyIssues ?? []).join("; ") }}
-          </p>
-        </div>
+            @change="onToggleEnabled(row.id, ($event.target as HTMLInputElement).checked)"
+          />
+          <span class="spm-switch-ui" />
+        </label>
+        <button
+          type="button"
+          class="spm-btn danger"
+          :disabled="busyId === row.id"
+          @click="onUninstall(row.id)"
+        >
+          {{ t("simplePluginManager.uninstall") }}
+        </button>
       </li>
     </ul>
 
-    <footer class="spm-advanced">
-      <button
-        type="button"
-        class="spm-advanced-toggle"
-        :aria-expanded="advancedFoldOpen"
-        @click="advancedFoldOpen = !advancedFoldOpen"
-      >
-        {{ t("simplePluginManager.advancedFold") }}
-      </button>
-      <div v-if="advancedFoldOpen" class="spm-advanced-body">
-        <p class="spm-muted">{{ t("simplePluginManager.advancedHint") }}</p>
-        <button type="button" class="spm-btn" @click="emit('openAdvanced')">
-          {{ t("simplePluginManager.openAdvanced") }}
-        </button>
-      </div>
-    </footer>
+    <PluginUiSlotSelectorDialog
+      :state="selector"
+      :busy="selectorBusy"
+      @close="closeSelector"
+      @confirm="onConfirmSlotSelector"
+      @toggle-slot="toggleSlotChoice"
+    />
   </div>
 </template>
 
@@ -249,32 +217,20 @@ async function onInstallZip(): Promise<void> {
   border-radius: var(--radius-sm, 6px);
 }
 .spm-row {
+  display: grid;
+  grid-template-columns: 1fr auto auto auto;
+  gap: 10px;
+  align-items: center;
+  padding: 10px 12px;
   border-bottom: 1px solid var(--border-light);
 }
 .spm-row:last-child {
   border-bottom: none;
 }
-.spm-row-main {
-  display: grid;
-  grid-template-columns: 1fr auto auto;
-  gap: 10px;
-  align-items: center;
-  padding: 10px 12px;
-}
-.spm-name {
-  display: flex;
-  flex-direction: column;
-  align-items: flex-start;
-  gap: 2px;
-  background: none;
-  border: none;
-  cursor: pointer;
-  text-align: left;
-  color: inherit;
-  padding: 0;
-}
 .spm-title {
   font-weight: 600;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 .spm-ver {
   font-size: 0.8rem;
@@ -316,18 +272,6 @@ async function onInstallZip(): Promise<void> {
 .spm-switch input:checked + .spm-switch-ui::after {
   transform: translateX(18px);
 }
-.spm-detail {
-  padding: 0 12px 10px;
-  font-size: 0.85rem;
-  color: var(--text-muted, #64748b);
-}
-.spm-detail-line {
-  margin: 4px 0;
-}
-.spm-detail-warn {
-  margin: 4px 0;
-  color: #b45309;
-}
 .spm-empty,
 .spm-muted,
 .spm-error {
@@ -336,23 +280,5 @@ async function onInstallZip(): Promise<void> {
 }
 .spm-error {
   color: #b91c1c;
-}
-.spm-advanced {
-  border-top: 1px solid var(--border-light);
-  padding-top: 10px;
-}
-.spm-advanced-toggle {
-  background: none;
-  border: none;
-  color: var(--text-muted, #64748b);
-  cursor: pointer;
-  font-size: 0.85rem;
-  padding: 4px 0;
-}
-.spm-advanced-body {
-  margin-top: 8px;
-  display: flex;
-  flex-direction: column;
-  gap: 8px;
 }
 </style>

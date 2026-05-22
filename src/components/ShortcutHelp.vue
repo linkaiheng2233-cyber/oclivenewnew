@@ -3,7 +3,6 @@ import { computed, ref, toRef } from "vue";
 import { useI18n } from "vue-i18n";
 import PluginSlotEmbed from "./PluginSlotEmbed.vue";
 import { SLOT_LAUNCHER_PALETTE } from "../stores/pluginStore";
-import { useUiStore } from "../stores/uiStore";
 import { useModalFocusRestore } from "../composables/useModalFocusRestore";
 
 const props = withDefaults(
@@ -23,12 +22,9 @@ const shDialogRef = ref<HTMLElement | null>(null);
 useModalFocusRestore(toRef(props, "modelValue"), shDialogRef);
 
 const { t } = useI18n();
-const uiStore = useUiStore();
 
 const rows = computed(() => {
-  const pluginF = uiStore.advancedPluginManagement
-    ? t("common.shortcutHelp.ctrlShiftFAdvanced")
-    : t("common.shortcutHelp.ctrlShiftFSimple");
+  const pluginF = t("common.shortcutHelp.ctrlShiftFSimple");
   return [
     { keys: "Ctrl + Shift + S", desc: t("common.shortcutHelp.rowOpenSettings") },
     { keys: "Ctrl + Shift + F", desc: pluginF },

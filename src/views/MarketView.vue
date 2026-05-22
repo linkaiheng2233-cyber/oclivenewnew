@@ -97,8 +97,7 @@ async function onUpdate(row: PluginMarketEntryDto) {
 }
 
 function openPluginManager() {
-  pluginStore.closeMarketPanel();
-  void pluginStore.openPanel();
+  pluginStore.requestOpenSimplePluginManager();
 }
 
 function close() {

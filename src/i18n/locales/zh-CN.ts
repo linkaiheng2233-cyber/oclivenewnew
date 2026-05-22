@@ -72,14 +72,10 @@ export default {
         "你当前叙事的场景；与角色包中的场景配置一致。切换后可能触发历史记录折叠分界。",
       characterAt: "角色在：{label}",
       pluginBtnSimple: "插件管理",
-      pluginBtnAdvanced: "插件与后端（高级）",
       pluginMarket: "插件市场",
       settingsTileHelpSimple:
         "将快捷键说明、设置页、插件管理集中到同一处。快捷键：Ctrl+Shift+S 打开设置；" +
-        "Ctrl+Shift+F 打开简洁插件列表。在设置中开启「高级插件管理」可打开架构图与多槽位面板。 Ctrl+Shift+D 开关调试面板。",
-      settingsTileHelpAdvanced:
-        "将快捷键说明、设置页、插件与后端管理集中到同一处。快捷键：Ctrl+Shift+S 打开设置；" +
-        "Ctrl+Shift+F 打开高级插件管理（含架构图）。关闭设置中的「高级插件管理」可恢复简洁列表。 Ctrl+Shift+D 开关调试面板。",
+        "Ctrl+Shift+F 打开已安装插件列表。高级槽位配置见 <code>oclive plugin manage</code>。 Ctrl+Shift+D 开关调试面板。",
     },
     toast: {
       remoteLifeOn: "异地心声已开启",
@@ -415,14 +411,10 @@ export default {
       "勾选后立即尝试关闭 Sentry 客户端；偏好保存在本机 localStorage（键 oclive.telemetry.sentryOptOut）。取消勾选后需重启应用才会重新初始化上报。",
     sentryDisabledToast: "已禁用崩溃上报。",
     sentryReenableRestartToast: "已取消禁用；请重启应用后才会恢复上报。",
-    experimentalLabel: "插件",
-    experimentalSectionHelp:
-      "默认使用简洁的已安装插件列表（类似模组列表）。高级功能含架构图、多槽位与会话覆盖。",
-    experimentalToggleTitle: "启用高级插件管理",
-    experimentalToggleHtml:
-      "开启后，<strong>Ctrl+Shift+F</strong> 与顶栏「更多」将打开 <strong>专业面板</strong>（含架构图与调试）。" +
-      "多槽位 CLI 管理请使用 <code>oclive plugin manage</code>。关闭本项则使用简洁列表。",
-    openAdvancedPluginManager: "打开高级插件管理",
+    pluginCliLabel: "插件高级配置",
+    pluginCliHelp: "架构图、多槽位蓝图与写盘不在本界面提供。",
+    pluginCliNote:
+      "请使用终端 <code>oclive plugin manage</code>（可选 <code>--tui</code>）管理 slot_registry；安装时可用 manifest 的 slot_attachment 自动装配。详见创作者文档。",
     remoteFallbackSectionTitle: "远端插件失败策略",
     remoteFallbackLabel: "远端 HTTP 失败时自动降级内置",
     remoteFallbackHelp:
@@ -482,9 +474,7 @@ export default {
       slotSectionAria: "启动器插槽",
       slotHeading: "插件槽（launcher.palette）",
       slotEmbedAria: "启动器插槽",
-      ctrlShiftFSimple: "打开简洁插件管理列表",
-      ctrlShiftFAdvanced:
-        "打开高级插件管理（含架构图）；关闭设置中的「高级插件管理」后恢复简洁列表",
+      ctrlShiftFSimple: "打开已安装插件列表",
     },
     rolePack: {
       exportFilterName: "OCPak 角色包",

@@ -82,7 +82,7 @@ function onFactorEnter(ev: KeyboardEvent) {
   (ev.target as HTMLInputElement).blur();
 }
 function openBackendsPanel(): void {
-  void pluginStore.openPanel("graph");
+  pluginStore.requestOpenSimplePluginManager();
 }
 </script>
 
