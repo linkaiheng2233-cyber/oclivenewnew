@@ -2,10 +2,12 @@
 
 use super::lint_deps::run_deps_audit;
 use super::lint_deny::run_deny_check;
+use crate::lint_report::{self, LintCheck};
 use anyhow::Result;
 use clap::Parser;
 use serde::Serialize;
 use std::path::{Path, PathBuf};
+use std::time::Instant;
 
 #[derive(Parser, Debug)]
 pub struct LintArgs {
@@ -28,12 +30,12 @@ pub struct LintArgs {
 }
 
 #[derive(Serialize, Clone)]
-pub(super) struct LintItem {
-    pub(super) level: String,
-    pub(super) check: String,
-    pub(super) message: String,
+pub struct LintItem {
+    pub level: String,
+    pub check: String,
+    pub message: String,
     #[serde(skip_serializing_if = "Option::is_none")]
-    pub(super) fix: Option<String>,
+    pub fix: Option<String>,
 }
 
 /// Run static project health checks (or `--deps` / `--audit-ci` modes).
@@ -52,71 +54,60 @@ pub fn run(args: LintArgs) -> Result<()> {
     if args.deny {
         return run_deny_check(&root, args.json);
     }
-    let mut items = Vec::new();
+    let started = Instant::now();
+    let mut checks: Vec<LintCheck> = Vec::new();
     for (dir, name) in [
         ("src", "src/"),
         ("docs", "docs/"),
         ("roles", "roles/ (optional)"),
     ] {
         let p = root.join(dir);
-        if p.is_dir() {
-            items.push(pass(
-                &format!("dir_{dir}"),
-                &format!("found {name}"),
-                None,
-            ));
-        } else if dir == "roles" {
-            items.push(warn(
-                &format!("dir_{dir}"),
-                format!("missing {name}"),
-                Some(format!(
-                    "mkdir -p {}",
-                    p.display()
-                )),
-            ));
-        } else {
-            items.push(fail(
-                &format!("dir_{dir}"),
-                format!("missing {name}"),
-                Some(format!(
-                    "re-run oclive init or mkdir -p {}",
-                    p.display()
-                )),
-            ));
-        }
+        let (item, duration) = lint_report::timed(|| {
+            if p.is_dir() {
+                pass(&format!("dir_{dir}"), &format!("found {name}"), None)
+            } else if dir == "roles" {
+                warn(
+                    &format!("dir_{dir}"),
+                    format!("missing {name}"),
+                    Some(format!("mkdir -p {}", p.display())),
+                )
+            } else {
+                fail(
+                    &format!("dir_{dir}"),
+                    format!("missing {name}"),
+                    Some(format!(
+                        "re-run oclive init or mkdir -p {}",
+                        p.display()
+                    )),
+                )
+            }
+        });
+        checks.push(LintCheck { item, duration });
     }
-    lint_cargo_toml(&root, &mut items);
-    lint_settings(&root, &mut items);
-    lint_monolith(&root, &mut items);
-    lint_git_dirty(&root, &mut items);
+    lint_cargo_toml(&root, &mut checks);
+    lint_settings(&root, &mut checks);
+    lint_monolith(&root, &mut checks);
+    lint_git_dirty(&root, &mut checks);
 
+    let items: Vec<LintItem> = checks.iter().map(|c| c.item.clone()).collect();
     if args.json {
         println!("{}", serde_json::to_string_pretty(&items)?);
         return Ok(());
     }
-    println!("oclive lint — {}", root.display());
-    let mut fail_n = 0u32;
-    for it in &items {
-        let icon = match it.level.as_str() {
-            "pass" => "✅",
-            "warn" => "⚠️",
-            _ => {
-                fail_n += 1;
-                "❌"
-            }
-        };
-        println!("  {icon} [{}] {}", it.check, it.message);
-        if let Some(ref fix) = it.fix {
-            println!("      → {fix}");
-        }
-    }
+    lint_report::print_human_report(&root, &checks, started.elapsed());
+    let fail_n = checks
+        .iter()
+        .filter(|c| c.item.level == "fail")
+        .count();
     if fail_n > 0 {
         anyhow::bail!("lint: {fail_n} failed check(s)");
     }
     Ok(())
 }
 
-fn lint_cargo_toml(root: &Path, items: &mut Vec<LintItem>) {
+fn lint_cargo_toml(root: &Path, checks: &mut Vec<LintCheck>) {
+    let started = Instant::now();
+    let mut items = Vec::new();
     let p = root.join("Cargo.toml");
     let Ok(raw) = std::fs::read_to_string(&p) else {
         items.push(fail(
@@ -171,9 +162,12 @@ fn lint_cargo_toml(root: &Path, items: &mut Vec<LintItem>) {
             ));
         }
     }
+    append_lint_items(checks, items, started.elapsed());
 }
 
-fn lint_settings(root: &Path, items: &mut Vec<LintItem>) {
+fn lint_settings(root: &Path, checks: &mut Vec<LintCheck>) {
+    let started = Instant::now();
+    let mut items = Vec::new();
     let roles = root.join("roles");
     if !roles.is_dir() {
         return;
@@ -207,9 +201,12 @@ fn lint_settings(root: &Path, items: &mut Vec<LintItem>) {
             }
         }
     }
+    append_lint_items(checks, items, started.elapsed());
 }
 
-fn lint_monolith(root: &Path, items: &mut Vec<LintItem>) {
+fn lint_monolith(root: &Path, checks: &mut Vec<LintCheck>) {
+    let started = Instant::now();
+    let mut items = Vec::new();
     let p = root.join("monolith.toml");
     if !p.is_file() {
         items.push(warn(
@@ -247,9 +244,12 @@ fn lint_monolith(root: &Path, items: &mut Vec<LintItem>) {
             None,
         )),
     }
+    append_lint_items(checks, items, started.elapsed());
 }
 
-fn lint_git_dirty(root: &Path, items: &mut Vec<LintItem>) {
+fn lint_git_dirty(root: &Path, checks: &mut Vec<LintCheck>) {
+    let started = Instant::now();
+    let mut items = Vec::new();
     if !root.join(".git").exists() {
         items.push(warn(
             "git",
@@ -277,6 +277,20 @@ fn lint_git_dirty(root: &Path, items: &mut Vec<LintItem>) {
         }
         _ => items.push(warn("git", "cannot run git status", None)),
     }
+    append_lint_items(checks, items, started.elapsed());
+}
+
+fn append_lint_items(checks: &mut Vec<LintCheck>, items: Vec<LintItem>, elapsed: std::time::Duration) {
+    let n = items.len().max(1) as u32;
+    let share = elapsed / n;
+    checks.extend(
+        items
+            .into_iter()
+            .map(|item| LintCheck {
+                item,
+                duration: share,
+            }),
+    );
 }
 
 fn walk_role_roots(roles: &Path) -> Vec<PathBuf> {

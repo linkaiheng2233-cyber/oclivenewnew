@@ -42,6 +42,7 @@ mod interactive;
 mod kernel_cmd;
 mod learn_cmd;
 mod lint_audit_ci;
+mod lint_report;
 mod market_cmd;
 mod market_index;
 mod monolith_codegen;
