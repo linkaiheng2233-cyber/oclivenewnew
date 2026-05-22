@@ -73,7 +73,32 @@ roles/{role_id}/
 
 **架构图编辑规则（主应用）**：可增删 `slot_registry` 键；**至少一个 `type: llm`**；删除时 **不可移除最后一个 llm** 实例。字段校验与写盘逻辑见 `oclive_validation` 与 Tauri `save_role_slot_registry`。
 
-### 2.3 `module_relations`（仅运行时）
+### 2.3 `groups`（可选 · 架构图分组）
+
+将同 **`type`** 的多个 `slot_registry` 实例归到逻辑分组，供主应用架构图绘制边框（可折叠）。
+
+| 字段 | 类型 | 必填 | 说明 |
+|------|------|------|------|
+| `label` | string | 是 | 分组标题（架构图边框顶栏） |
+| `description` | string | 否 | 创作者备注 |
+| `type` | string | 是 | 六种模块之一：`memory` \| `emotion` \| `event` \| `prompt` \| `llm` \| `agent` |
+| `members` | string[] | 是 | `slot_registry` 实例键列表；每项须存在且 `type` 与分组 `type` 一致 |
+
+**规则**：`members` 非空；同一实例键只能属于一个分组；`complex_emotion` 不参与分组。
+
+示例：
+
+```json
+"groups": {
+  "memory_tier": {
+    "label": "记忆层",
+    "type": "memory",
+    "members": ["memory_long", "memory_short"]
+  }
+}
+```
+
+### 2.4 `module_relations`（仅运行时）
 
 **禁止**在 `pipeline.ocblueprint` 文件中出现 `module_relations`、`steps`、`entry`（校验报错）。运行时由 `slot_registry` **派生**模块间示意关系，供架构图只读连线。
 

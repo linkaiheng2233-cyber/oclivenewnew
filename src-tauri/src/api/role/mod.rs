@@ -60,6 +60,13 @@ fn slot_registry_role_info_fields(
     (pack, effective, keys)
 }
 
+fn blueprint_groups_pack(role: &Role) -> Option<std::collections::BTreeMap<String, oclive_validation::SlotGroupEntry>> {
+    role.slot_groups
+        .as_ref()
+        .filter(|m| !m.is_empty())
+        .cloned()
+}
+
 /// 从会话 `slot_registry` 覆盖折叠为 C1 兼容的六槽 `PluginBackendsOverride`（只读展示）。
 fn plugin_backends_override_from_slot_session(
     state: &AppState,
@@ -280,6 +287,7 @@ pub async fn load_role_impl(
         slot_registry_pack,
         slot_registry_effective,
         slot_session_overridden_keys,
+        blueprint_groups_pack: blueprint_groups_pack(role.as_ref()),
     })
 }
 /// # Errors
@@ -428,6 +436,7 @@ pub async fn get_role_info_impl(
         slot_registry_pack,
         slot_registry_effective,
         slot_session_overridden_keys,
+        blueprint_groups_pack: blueprint_groups_pack(role.as_ref()),
     })
 }
 /// # Errors

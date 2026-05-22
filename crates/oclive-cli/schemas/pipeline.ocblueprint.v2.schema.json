@@ -107,6 +107,28 @@
         },
         "additionalProperties": false
       }
+    },
+    "groups": {
+      "type": "object",
+      "description": "Optional logical grouping of slot_registry instance keys (architecture graph).",
+      "additionalProperties": {
+        "type": "object",
+        "required": ["label", "type", "members"],
+        "additionalProperties": false,
+        "properties": {
+          "label": { "type": "string", "minLength": 1 },
+          "description": { "type": "string" },
+          "type": {
+            "type": "string",
+            "enum": ["memory", "emotion", "event", "prompt", "llm", "agent"]
+          },
+          "members": {
+            "type": "array",
+            "minItems": 1,
+            "items": { "type": "string", "minLength": 1 }
+          }
+        }
+      }
     }
   }
 }

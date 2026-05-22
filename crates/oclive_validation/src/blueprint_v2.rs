@@ -38,6 +38,11 @@ const SLOT_TYPES: &[&str] = &[
     "complex_emotion",
 ];
 
+/// 六种可编排模块类型（`groups.type` 仅允许此集合，不含 `complex_emotion`）。
+pub const GROUP_SLOT_TYPES: &[&str] = &[
+    "memory", "emotion", "event", "prompt", "llm", "agent",
+];
+
 const PERSONALITY_OBJECT_KEYS: &[&str] = &[
     "stubbornness",
     "clinginess",
@@ -47,6 +52,17 @@ const PERSONALITY_OBJECT_KEYS: &[&str] = &[
     "talkativeness",
     "warmth",
 ];
+
+/// 蓝图 `groups` 单条：同 `type` 的 `slot_registry` 实例逻辑分组。
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq)]
+pub struct SlotGroupEntry {
+    pub label: String,
+    #[serde(default)]
+    pub description: Option<String>,
+    #[serde(rename = "type")]
+    pub group_type: String,
+    pub members: Vec<String>,
+}
 
 /// 蓝图 `slot_registry` 单实例（与 `pipeline.ocblueprint` v2 文件一致）。
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq)]
@@ -73,6 +89,7 @@ pub struct SlotRegistryEntry {
 pub struct BlueprintV2LoadResult {
     pub disk: DiskRoleManifest,
     pub slot_registry: BTreeMap<String, SlotRegistryEntry>,
+    pub groups: BTreeMap<String, SlotGroupEntry>,
     pub interaction_mode: Option<String>,
     pub remote_presence: Option<RemotePresenceConfig>,
     pub autonomous_scene: Option<AutonomousSceneConfig>,
@@ -84,6 +101,8 @@ struct BlueprintV2File {
     schema_version: u32,
     meta: BlueprintMeta,
     slot_registry: BTreeMap<String, SlotRegistryEntry>,
+    #[serde(default)]
+    groups: BTreeMap<String, SlotGroupEntry>,
 }
 
 #[derive(Debug, Clone, Deserialize)]
@@ -439,10 +458,66 @@ pub fn slot_registry_to_plugin_backends(
     pb
 }
 
+fn validate_blueprint_groups(
+    groups: &BTreeMap<String, SlotGroupEntry>,
+    registry: &BTreeMap<String, SlotRegistryEntry>,
+) -> Vec<String> {
+    let mut errs = Vec::new();
+    let mut member_owner: HashMap<&str, &str> = HashMap::new();
+
+    for (group_id, group) in groups {
+        if group_id.trim().is_empty() {
+            errs.push("groups 键名不能为空".into());
+            continue;
+        }
+        if group.label.trim().is_empty() {
+            errs.push(format!("groups[{group_id}].label 不能为空"));
+        }
+        let gt = group.group_type.trim();
+        if !GROUP_SLOT_TYPES.contains(&gt) {
+            errs.push(format!(
+                "groups[{group_id}].type「{gt}」非法（允许: {}）",
+                GROUP_SLOT_TYPES.join(", ")
+            ));
+            continue;
+        }
+        if group.members.is_empty() {
+            errs.push(format!("groups[{group_id}].members 不能为空"));
+            continue;
+        }
+        for member in &group.members {
+            let m = member.trim();
+            if m.is_empty() {
+                errs.push(format!("groups[{group_id}].members 含空键名"));
+                continue;
+            }
+            let Some(slot) = registry.get(m) else {
+                errs.push(format!(
+                    "groups[{group_id}].members 引用未知 slot_registry 键「{m}」"
+                ));
+                continue;
+            };
+            if slot.slot_type.trim() != gt {
+                errs.push(format!(
+                    "groups[{group_id}].members「{m}」的 type 为「{}」，与 groups.type「{gt}」不一致",
+                    slot.slot_type.trim()
+                ));
+            }
+            if let Some(prev) = member_owner.insert(m, group_id.as_str()) {
+                errs.push(format!(
+                    "slot_registry 键「{m}」同时属于 groups「{prev}」与「{group_id}」"
+                ));
+            }
+        }
+    }
+    errs
+}
+
 fn blueprint_v2_file_to_load_result(bp: &BlueprintV2File) -> BlueprintV2LoadResult {
     BlueprintV2LoadResult {
         disk: meta_to_disk_manifest(&bp.meta),
         slot_registry: bp.slot_registry.clone(),
+        groups: bp.groups.clone(),
         interaction_mode: bp.meta.interaction_mode.clone(),
         remote_presence: bp.meta.remote_presence.clone(),
         autonomous_scene: bp.meta.autonomous_scene.clone(),
@@ -712,6 +787,8 @@ fn validate_blueprint_v2_parsed(
     if llm_count == 0 {
         errs.push("slot_registry 须至少包含一个 type: llm 的实例".into());
     }
+
+    errs.extend(validate_blueprint_groups(&bp.groups, &bp.slot_registry));
 
     if let Some(ref k) = bp.meta.knowledge {
         if let Err(e) = validate_knowledge_manifest_disk(k) {
@@ -1060,6 +1137,68 @@ mod tests {
         }"#;
         let errs = validate_blueprint_v2_json(raw).unwrap_err();
         assert!(errs.iter().any(|e| e.contains("directory")));
+    }
+
+    #[test]
+    fn groups_valid_when_members_match_type() {
+        let raw = r#"{
+          "schema_version": 2,
+          "meta": {
+            "id": "x", "name": "X", "version": "0.1.0", "author": "a", "description": "d",
+            "relations": { "f": { "initial_favorability": 50.0, "favor_multiplier": 1.0 } },
+            "default_relation": "f"
+          },
+          "slot_registry": {
+            "mem_a": { "type": "memory", "label": "A", "backend": "builtin", "position": 0 },
+            "mem_b": { "type": "memory", "label": "B", "backend": "builtin", "position": 1 },
+            "llm": { "type": "llm", "label": "L", "backend": "ollama", "position": 0 }
+          },
+          "groups": {
+            "mem_group": {
+              "label": "Memory tier",
+              "type": "memory",
+              "members": ["mem_a", "mem_b"]
+            }
+          }
+        }"#;
+        assert!(validate_blueprint_v2_json(raw).is_ok());
+    }
+
+    #[test]
+    fn groups_reject_empty_members_and_type_mismatch() {
+        let raw = r#"{
+          "schema_version": 2,
+          "meta": {
+            "id": "x", "name": "X", "version": "0.1.0", "author": "a", "description": "d",
+            "relations": { "f": { "initial_favorability": 50.0, "favor_multiplier": 1.0 } },
+            "default_relation": "f"
+          },
+          "slot_registry": {
+            "llm": { "type": "llm", "label": "L", "backend": "ollama", "position": 0 }
+          },
+          "groups": {
+            "bad": { "label": "G", "type": "memory", "members": [] }
+          }
+        }"#;
+        let errs = validate_blueprint_v2_json(raw).unwrap_err();
+        assert!(errs.iter().any(|e| e.contains("members")));
+
+        let raw2 = r#"{
+          "schema_version": 2,
+          "meta": {
+            "id": "x", "name": "X", "version": "0.1.0", "author": "a", "description": "d",
+            "relations": { "f": { "initial_favorability": 50.0, "favor_multiplier": 1.0 } },
+            "default_relation": "f"
+          },
+          "slot_registry": {
+            "llm": { "type": "llm", "label": "L", "backend": "ollama", "position": 0 }
+          },
+          "groups": {
+            "bad": { "label": "G", "type": "memory", "members": ["llm"] }
+          }
+        }"#;
+        let errs2 = validate_blueprint_v2_json(raw2).unwrap_err();
+        assert!(errs2.iter().any(|e| e.contains("不一致") || e.contains("type")));
     }
 
     #[test]

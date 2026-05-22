@@ -32,7 +32,7 @@ pub use policy::{
 };
 pub use prompt::PromptInput;
 
-pub use oclive_validation::SlotRegistryEntry;
+pub use oclive_validation::{SlotGroupEntry, SlotRegistryEntry};
 
 pub use models::{
     author_pack::{AuthorPackFile, AuthorRecommendedPlugin},

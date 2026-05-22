@@ -127,6 +127,11 @@ impl RoleStorage {
         let mut role = disk_manifest_to_role(&loaded.disk);
         role.plugin_backends = slot_registry_to_plugin_backends(&loaded.slot_registry);
         role.slot_registry = Some(loaded.slot_registry);
+        role.slot_groups = if loaded.groups.is_empty() {
+            None
+        } else {
+            Some(loaded.groups)
+        };
         role.interaction_mode = loaded.interaction_mode;
         role.remote_presence = loaded.remote_presence;
         role.autonomous_scene = loaded.autonomous_scene;
@@ -749,6 +754,7 @@ mod tests {
             author_pack: None,
             reply_quality_anchor: None,
             slot_registry: None,
+            slot_groups: None,
         };
 
         let role_dir = temp_dir.path().join("test_role");

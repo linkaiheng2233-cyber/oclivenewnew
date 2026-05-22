@@ -177,6 +177,9 @@ pub struct RoleData {
     pub slot_registry_effective: Option<BTreeMap<String, oclive_validation::SlotRegistryEntry>>,
     #[serde(default)]
     pub slot_session_overridden_keys: Vec<String>,
+    /// v2 蓝图 `groups`（架构图逻辑分组；legacy 为 `null`）。
+    #[serde(default)]
+    pub blueprint_groups_pack: Option<BTreeMap<String, oclive_validation::SlotGroupEntry>>,
 }
 
 /// Lightweight role list entry (`list_roles`).
@@ -298,6 +301,9 @@ pub struct RoleInfo {
     /// 当前会话中存在覆盖的实例键列表。
     #[serde(default)]
     pub slot_session_overridden_keys: Vec<String>,
+    /// v2 蓝图 `groups`（架构图逻辑分组；legacy 为 `null`）。
+    #[serde(default)]
+    pub blueprint_groups_pack: Option<BTreeMap<String, oclive_validation::SlotGroupEntry>>,
 }
 
 /// Per-session `slot_registry` backend override (`set_session_slot_override`).

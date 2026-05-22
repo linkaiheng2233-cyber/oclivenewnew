@@ -183,6 +183,9 @@ pub struct Role {
     /// `pipeline.ocblueprint` v2 → `slot_registry`（多实例；P2+ 编排用；序列化供调试/导出）
     #[serde(default, skip_serializing_if = "slot_registry_is_empty")]
     pub slot_registry: Option<BTreeMap<String, oclive_validation::SlotRegistryEntry>>,
+    /// `pipeline.ocblueprint` v2 → `groups`（架构图分组；可选）
+    #[serde(default, skip_serializing_if = "slot_groups_is_empty")]
+    pub slot_groups: Option<BTreeMap<String, oclive_validation::SlotGroupEntry>>,
     /// `knowledge/` 加载后的索引（仅内存；由 [`crate::infrastructure::storage::RoleStorage`] 填充）
     #[serde(skip)]
     pub knowledge_index: Option<Arc<KnowledgeIndex>>,
@@ -231,6 +234,7 @@ impl Default for Role {
             dev_only: false,
             plugin_backends: PluginBackends::default(),
             slot_registry: None,
+            slot_groups: None,
             knowledge_index: None,
             ui_config: UiConfig::default(),
             author_pack: None,
@@ -242,6 +246,10 @@ impl Default for Role {
 fn slot_registry_is_empty(
     m: &Option<BTreeMap<String, oclive_validation::SlotRegistryEntry>>,
 ) -> bool {
+    m.as_ref().is_none_or(|map| map.is_empty())
+}
+
+fn slot_groups_is_empty(m: &Option<BTreeMap<String, oclive_validation::SlotGroupEntry>>) -> bool {
     m.as_ref().is_none_or(|map| map.is_empty())
 }
 
