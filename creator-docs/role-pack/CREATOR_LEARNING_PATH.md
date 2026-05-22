@@ -17,9 +17,19 @@
 | 1 | 理解角色包长什么样 | [ROLE_PACK_SPEC.md](ROLE_PACK_SPEC.md) **§1 目录结构** |
 | 2 | 生成第一个可校验的最小包 | `cargo run -p oclive-cli -- pack create -o <输出父目录> --id my_first_role --format-blueprint-v2`（写入 `pipeline.ocblueprint`；见 [../cli/OCLIVE_CLI_GUIDE.md](../cli/OCLIVE_CLI_GUIDE.md)） |
 | 3 | 在编写器中打开 | **oclive-pack-editor** 编辑 v2 蓝图或 legacy 双文件（分工见 [CREATOR_WORKFLOW.md](../getting-started/CREATOR_WORKFLOW.md)） |
-| 4 | 改门面信息 | v2：编辑 `pipeline.ocblueprint` → `meta`（`name`、`description`、`personality`、`scenes` 等）；legacy 见 [README_MANIFEST](../../roles/README_MANIFEST.md) |
+| 4 | 改门面信息 | v2：仅编辑 **角色包字段**（`meta` 中 `name`、`personality`、`relations`、`reply_quality_anchor` 与 **`prompts/`**）；勿改 `slot_registry`（见上表） |
 
 **验收**：`cargo run -p oclive-cli -- pack validate <角色根>` **默认 v2** 通过；维护中的旧包用 `--profile legacy`。
+
+### 权限边界（入门必读）
+
+| 你只需关心 | 不必关心（交给蓝图 / 管理员） |
+|------------|-------------------------------|
+| `meta` 门面、**`personality`**、**`relations`**、**`reply_quality_anchor`** | **`slot_registry`**、**`backend`**、**`model`** |
+| **`prompts/`** 系统提示词与开场白 | **`interaction_mode`**、**`memory_config`**、远程策略 |
+| **`scenes/`** 场景文案 | **`groups`**、双核 **`dual_core.enabled`** |
+
+详见 **[ROLE_PACK_SPEC.md §0](ROLE_PACK_SPEC.md#0-角色包-vs-蓝图职责)** · **[handoff/ROLE_PACK_BOUNDARY.md](../../handoff/ROLE_PACK_BOUNDARY.md)**。进阶阶段再学槽位时，请使用 **蓝图 / 高级** 视图或 **`oclive plugin manage`**。
 
 ---
 

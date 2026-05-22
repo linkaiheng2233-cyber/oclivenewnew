@@ -17,9 +17,13 @@ Packs still on **`manifest.json` + `settings.json`**: **[V1_TO_V2_MIGRATION.md](
 | 1 | Know the on-disk shape | [ROLE_PACK_SPEC.md](ROLE_PACK_SPEC.md) **§1** |
 | 2 | Generate a minimal pack | `cargo run -p oclive-cli -- pack create -o <parent> --id my_first_role --format-blueprint-v2` (writes `pipeline.ocblueprint`; see [../cli/OCLIVE_CLI_GUIDE.md](../cli/OCLIVE_CLI_GUIDE.md)) |
 | 3 | Open in the editor | **oclive-pack-editor** for v2 blueprint or legacy files ([CREATOR_WORKFLOW.md](../getting-started/CREATOR_WORKFLOW.md)) |
-| 4 | Edit façade fields | v2: `pipeline.ocblueprint` → `meta`; legacy: [README_MANIFEST](../../roles/README_MANIFEST.md) |
+| 4 | Edit façade fields | v2: **role-pack `meta` only** + **`prompts/`**; do not edit `slot_registry`; legacy: [README_MANIFEST](../../roles/README_MANIFEST.md) |
 
 **Done when:** `pack validate <role-root>` passes (default v2); legacy packs use `--profile legacy`.
+
+### Permission boundary
+
+Edit only **role-pack** fields; do not touch **`slot_registry`** or **`dual_core.enabled`**. See [ROLE_PACK_SPEC §0](ROLE_PACK_SPEC.md#0-role-pack-vs-blueprint) · [ROLE_PACK_BOUNDARY.md](../../handoff/ROLE_PACK_BOUNDARY.md).
 
 ---
 
