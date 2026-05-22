@@ -217,8 +217,14 @@ Monolith **不** 替代双核；双核 **不** 替代 Monolith。二者正交。
 | Q12 | Experimental `type` **完全开放** |
 | Q13 | 两 pipeline 可共用同一 registry 键 |
 | Q14 | P4 标准构建；P5 Monolith 另里程碑 |
+| Q15 | `runtime_config.dual_core.enabled`（蓝图）；创作者不得单独开启 |
+| Q16 | **schema_version 分流**：2 → v2 逻辑；3 → v3/双核校验 |
+| Q17 | P1 **只校验 registry 键**；不校验 `method` |
+| Q18 | P4 前手写 v3 示例；迁移工具延后 |
+| Q19 | 省略 `pipeline.stable` → **`co_present` 硬编码** |
+| Q20 | P4 运行时仅 **PluginHost 七种 type** |
 
-**待决（第二轮）**：Q15–Q20，见 [DUAL_CORE_CURSOR_HANDOFF.md §十一](../../handoff/DUAL_CORE_CURSOR_HANDOFF.md#十一待决问题第二轮--答复后写入九)。
+**P1 校验**：`oclive_validation::validate_blueprint_v3_json`。角色包边界：[ROLE_PACK_BOUNDARY.md](../../handoff/ROLE_PACK_BOUNDARY.md)。
 
 ---
 

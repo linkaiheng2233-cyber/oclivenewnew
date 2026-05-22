@@ -19,8 +19,10 @@
 
 | 阶段 | 内容 | 状态 | 说明 |
 |------|------|------|------|
-| **P0** | 设计对齐文档（本页 + RFC + 索引）+ **已决事项** | **已完成** | 见 §九 |
-| **P1** | 蓝图契约：`zone`、`pipeline.*`、`depends_on` DAG 校验 | **未开始** | `oclive_validation` · 拟 `schema_version: 3` |
+| **P0** | 设计对齐文档（本页 + RFC + 索引）+ **已决事项 Q1–Q20** | **已完成** | 见 §九 |
+| **P1** | 蓝图契约：`zone`、`pipeline.*`、`depends_on` DAG 校验 | **已完成（校验 crate）** | `blueprint_v3.rs` · `validate_blueprint_v3_json` |
+| **边界** | 角色包 / 蓝图 / `runtime_config` 文档 + creator profile | **已完成** | [ROLE_PACK_BOUNDARY.md](ROLE_PACK_BOUNDARY.md) |
+| **P1b** | `runtime_config` schema（v2 忽略警告） | **已完成** | `runtime_config.rs` + JSON Schema |
 | **P2** | `DualPipelineRunner` + `SessionState` 快照/回滚 | **未开始** | 复用 Remote 降级思路，无新错误框架 |
 | **P3** | `oclive init --dual-core` 模板（蓝图 `runtime_config`） | **未开始** | 默认关；非角色包 |
 | **P4** | `process_message` 接线 + OOCP 降级用例 | **未开始** | 不开双核 = 零行为差异 |
@@ -152,14 +154,16 @@ flowchart TD
 
 ---
 
-## 七、当前状态与 Cursor 工作约束
+## 七、当前状态、角色包边界与 Cursor 约束
 
 | 项 | 结论 |
 |----|------|
 | 当前项目 | v2 蓝图 **已闭环**，可正常交付 |
-| 双核 | **未来**；**不阻塞**发布 |
-| Cursor 默认 | **勿**在未开 RFC 审阅时实现 `DualPipelineRunner` 或改默认编排 |
-| 已实现、与双核无关 | 极简插件 UI、`slot_attachment`、CLI `plugin manage`、OOCP CI |
+| 角色包 / 蓝图 | [ROLE_PACK_BOUNDARY.md](ROLE_PACK_BOUNDARY.md) · `pack validate --profile creator` |
+| 双核 P1 校验 | **`validate_blueprint_v3_json`** 已入库；**宿主调度未接线** |
+| 双核 | **P2+ 未来**；**不阻塞** v2 发布 |
+| Cursor 默认 | **勿**改未开双核时的 `process_message` 默认路径 |
+| 交叉引用 | 创作者**不得**在分发包单独 `runtime_config.dual_core.enabled: true`（§十二） |
 
 ### 实现顺序（建议）
 
@@ -200,6 +204,12 @@ flowchart TD
 | Q12 | Experimental `type` | **完全开放**；校验只保证 `action` 解析到的 **registry 键存在**，不校验 `type` |
 | Q13 | Experimental 引用 Stable 实例 | **允许**（同一 `slot_registry` 键可被两 pipeline 引用） |
 | Q14 | 首版范围 | **P4** = 标准构建 + `--dual-core`；**P5** `--monolith --dual-core` **单独里程碑** |
+| Q15 | 双核启用标志 | **`runtime_config.dual_core.enabled`**（蓝图）；创作者包不得单独 `true` |
+| Q16 | schema 分流 | 宿主按 **`schema_version` 分流**：**2** → 今日 v2 逻辑；**3** → 双核校验（`validate_blueprint_json_by_schema_version`） |
+| Q17 | `method` 校验 | **P1 只校验 registry 键存在**；不校验 `method` 闭表 |
+| Q18 | v3 迁移工具 | **P4 前手写 v3 示例**；`migrate-v2-v3` **延后** |
+| Q19 | 省略 `pipeline.stable` | Stable 走 **`co_present` 硬编码**，不经 pipeline 解释器 |
+| Q20 | Experimental `type` 运行时 | **P4 仅支持 `PluginHost` 七种 type**；开放 type 校验过、运行时报未实现 |
 
 ---
 
@@ -272,40 +282,26 @@ flowchart TD
 
 ---
 
-## 十一、待决问题（第二轮 — 答复后写入 §九）
+## 十一、待决问题（第二轮）
 
-1. **Q15 — 双核「已启用」标志存哪？** → **已决（角色包边界对齐）**  
-   - **`runtime_config.dual_core.enabled`** 在 **蓝图**；默认 `false`；创作者包不得单独 `true`。legacy **`settings.json` 不含**该键。
-
-2. **Q16 — v2 加载器遇到 `schema_version: 3` 文件**  
-   - A：直接报错，须先迁移  
-   - B：宿主按版本分流，v3 走 v3 校验（推荐与 Q10 一致）
-
-3. **Q17 — `method` 校验深度（P1）**  
-   - A：只校验 registry **键存在**，`method` 运行时由调度器/trait 解析（失败走 Q9 降级）  
-   - B：P1 维护 **Stable 六槽** 的 `method` 闭表；Experimental 仍开放  
-   - C：P1 对两核均维护 `method` 闭表（工作量大）
-
-4. **Q18 — v3 迁移工具**  
-   - A：`oclive pack blueprint migrate-v2-v3`（官方子命令）  
-   - B：编写器 / pack-editor 导出时升级  
-   - C：P4 前仅手写示例，工具延后
-
-5. **Q19 — Stable 显式 `pipeline.stable` 与宿主默认表关系**  
-   - A：省略 = 宿主注入与今日等价的默认 action 表（可文档化）  
-   - B：省略 = 仍走 `co_present` 硬编码，**不**经 pipeline 解释器（与 Q1 第七设施一致，推荐）  
-   - C：有 `pipeline.stable` 才走 pipeline 解释器，否则硬编码
-
-6. **Q20 — Experimental 自定义 `type` 的运行时绑定**  
-   - A：仅 directory / remote 插件；宿主对未知 type 返回明确 Err → 降级  
-   - B：允许 `builtin` 占位 + 日志，便于原型  
-   - C：P4 仅支持已在 `PluginHost` 有门面的 type；其余 type 校验过但运行时报「未实现」
+**已全部并入 §九（Q15–Q20）。**
 
 ---
 
-## 十二、开放问题（已关闭）
+## 十二、与角色包边界（交叉引用）
 
-原 §八 四项已由 §九 覆盖；第二轮见 §十一。
+| 主题 | 文档 |
+|------|------|
+| 职责 SSOT | [ROLE_PACK_BOUNDARY.md](ROLE_PACK_BOUNDARY.md) |
+| 双核开关不得由创作者单独开启 | BOUNDARY §5.1 · 本页 Q15 |
+| Experimental 与角色包内容 | BOUNDARY §5.2 · 角色包只承载 Stable 灵魂数据 |
+| 创作者校验 | `pack validate --profile creator`（不校验 `slot_registry` / `pipeline`） |
+
+---
+
+## 十三、开放问题（已关闭）
+
+Q1–Q20 已决；实现缺口：**宿主加载 `runtime_config`**、**DualPipelineRunner**（P2+）仍待开发。
 
 ---
 

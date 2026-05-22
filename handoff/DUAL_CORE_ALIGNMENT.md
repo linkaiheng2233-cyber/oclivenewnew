@@ -1,7 +1,8 @@
 # 双核双态 · 对齐速查
 
-**Cursor 主文档**（含进度与仓库计划关系）：[DUAL_CORE_CURSOR_HANDOFF.md](DUAL_CORE_CURSOR_HANDOFF.md)  
-**RFC 全文**：[creator-docs/rfc/RFC_OCLIVE_DUAL_CORE_DUAL_MODE.md](../creator-docs/rfc/RFC_OCLIVE_DUAL_CORE_DUAL_MODE.md)
+**Cursor 主文档**：[DUAL_CORE_CURSOR_HANDOFF.md](DUAL_CORE_CURSOR_HANDOFF.md)  
+**RFC**：[creator-docs/rfc/RFC_OCLIVE_DUAL_CORE_DUAL_MODE.md](../creator-docs/rfc/RFC_OCLIVE_DUAL_CORE_DUAL_MODE.md)  
+**角色包边界**：[ROLE_PACK_BOUNDARY.md](ROLE_PACK_BOUNDARY.md)
 
 ---
 
@@ -9,9 +10,11 @@
 
 | 阶段 | 状态 |
 |------|------|
-| P0 文档 + Q1–Q14 已决 | **已完成** |
-| 第二轮 Q15–Q20 | **待答复** |
-| P1–P5 实现 | **未开始** |
+| P0 文档 + Q1–Q20 | **已完成** |
+| 角色包 / 蓝图 / `runtime_config` 文档 | **已完成** |
+| P1 `validate_blueprint_v3` | **已完成（crate）** |
+| `pack validate --profile creator` | **已完成** |
+| P2–P5 调度器 / 宿主 / Monolith | **未开始** |
 | v2 交付 / 插件极简 | **已闭环** |
 
 ---
@@ -20,32 +23,21 @@
 
 | 术语 | 层次 | 今天 |
 |------|------|------|
-| 单核双态**构建** | 编译期 PluginHost vs Monolith | **有** |
-| 双核双态**运行时** | Stable + Experimental + 快照降级 | **无**（RFC only） |
+| 单核双态**构建** | 编译期 | **有** |
+| 双核双态**运行时** | Stable + Experimental | **校验 only**；调度 **未接线** |
 
 ---
 
-## 与 v2 今日差异（一条表）
+## 已确认（Q16–Q20 摘要）
 
-| 项 | 今天 | 双核开启后 |
-|----|------|------------|
-| `slot_registry` | 总表，无 `zone` | 总表 + `zone`（可 **同时** stable & experimental） |
-| 编排 | 隐式共景阶段表 | `pipeline.stable` / `pipeline.experimental` + **`depends_on` DAG** |
-| 入口 | 无 | `oclive init --dual-core` |
-| 失败 | Remote→builtin 等 | 实验核失败 → 快照恢复 → Stable |
-| 用户 | 极简插件 UI | **不变** |
-
----
-
-## 已确认决策（摘要）
-
-1. `action` = `slot.<registry_key>.<method>`；`depends_on` → action 字符串。  
-2. `complex_emotion` = 第七设施，**不进** pipeline。  
-3. Experimental `type` **完全开放**；校验只查 registry 键。  
-4. 降级 **静默**；快照 **仅内存**（P2 MVP）。  
-5. **`schema_version: 3`**；P4 标准构建，P5 Monolith 另里程碑。  
-6. 详表见 [DUAL_CORE_CURSOR_HANDOFF.md §九](DUAL_CORE_CURSOR_HANDOFF.md#九已决事项2026-05-对齐)。
+| ID | 决议 |
+|----|------|
+| Q16 | schema **2/3 分流**校验 |
+| Q17 | 只校验 registry **键** |
+| Q18 | 迁移工具 **延后** |
+| Q19 | 无 `pipeline.stable` → **co_present** |
+| Q20 | P4 仅 **七种 PluginHost type** |
 
 ---
 
-[English](../creator-docs-en/rfc/RFC_OCLIVE_DUAL_CORE_DUAL_MODE.md)
+[English RFC](../creator-docs-en/rfc/RFC_OCLIVE_DUAL_CORE_DUAL_MODE.md)
