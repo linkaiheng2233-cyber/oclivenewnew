@@ -1,15 +1,3 @@
-//! LLM 生成端口：编排层与策略只依赖此 trait，实现由 `infrastructure::llm` 提供。
+//! LLM 生成端口（定义见 [`oclive_kernel_contracts::LlmClient`]）。
 
-use crate::error::Result;
-use async_trait::async_trait;
-
-#[async_trait]
-pub trait LlmClient: Send + Sync {
-    async fn generate(&self, model: &str, prompt: &str) -> Result<String>;
-    /// 低温度短输出（立绘标签等分类任务）
-    async fn generate_tag(&self, model: &str, prompt: &str) -> Result<String>;
-    /// 启动期可选探活（默认成功；实现可 ping 远端）。
-    async fn startup_probe(&self) -> Result<()> {
-        Ok(())
-    }
-}
+pub use oclive_kernel_contracts::LlmClient;
