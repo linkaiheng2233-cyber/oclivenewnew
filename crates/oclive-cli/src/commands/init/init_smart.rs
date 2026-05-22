@@ -1,6 +1,6 @@
 //! Smart environment recommendations during init.
 
-use super::init::InitArgs;
+use super::InitArgs;
 
 /// Print env-based init hints. Returns `true` when init should stop early (smart + non-interactive, no preset).
 pub(crate) fn apply_smart_hints(args: &InitArgs) -> anyhow::Result<bool> {
