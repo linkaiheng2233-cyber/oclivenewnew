@@ -34,12 +34,12 @@ cargo run -p oclive-cli -- init --help
 
 | 域 | 命令 | 说明 |
 |----|------|------|
-| 项目初始化 | `init` | 模板、`--preset`、`--monolith`、`--with-role-pack`、`--kernel-source`、`--quick` 等 |
+| 项目初始化 | `init` | 模板、`--preset`、`--monolith`、`--smart`（环境推荐）、`--with-role-pack`、`--kernel-source`、`--quick` 等 |
 | 构建与基准 | `build`、`bench` | 标准版 + 焊接版；`--save`、`--regression`、`--compare-versions` |
 | 角色包 | `pack create` / `validate` / `publish` | 创建、校验、`.oclivepack` 打包 |
 | 插件 | `plugin create` / `install` / `uninstall` / `test` | 脚手架与工程内安装（发现安装见 **market**） |
 | 环境 | `doctor`（`--fix`）、`config` | 诊断与 `~/.oclive/config.toml` |
-| 质量 | `test`、`lint`、`ci init` / `ci check` | 回归、静态形状、CI 模板 |
+| 质量 | `test`、`lint`、`ci init` / `ci check` | 回归（彩色摘要）、lint（含 **→ 修复命令**）、CI 模板 |
 
 ### B 级 — 增强工具
 
@@ -403,6 +403,15 @@ cargo run -p oclive-cli -- init --non-interactive --quiet --preset minimal --ski
 ```
 
 `--skip-role-pack`：不生成 `roles/`（空白内核工程）。
+
+### 环境推荐（`--smart`）
+
+```bash
+# 仅打印推荐（不生成工程）
+cargo run -p oclive-cli -- init --smart --non-interactive -o ./out --project-name my_kernel
+```
+
+交互式 `init` 默认会先做一次轻量探测（Ollama / NVIDIA GPU / 内存）；可用 **`--no-smart`** 关闭。完整诊断仍用 **`oclive doctor`**。
 
 ### 内核工厂模板（`--template`）
 
