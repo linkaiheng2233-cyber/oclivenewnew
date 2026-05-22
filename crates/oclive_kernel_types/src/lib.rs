@@ -1,9 +1,11 @@
-//! # oclive_kernel_types
+//! # oclive_kernel_types — 纯数据结构层
 //!
-//! Pure data structures for the oclive kernel.
-//! All DTOs, error types, and configuration structs.
+//! **角色**：内核共享的 **DTO、错误类型、配置结构**（`Role`、`SendMessageRequest`、`AppError` 等）；**不包含业务逻辑或 I/O**。
 //!
-//! Prefer importing from this crate root or [`models`] / [`error`]; avoid undocumented internal helpers.
+//! **上游**：[`oclive_validation`](https://docs.rs/oclive_validation)（蓝图 / manifest 校验类型如 `SlotRegistryEntry`）。
+//! **下游**：`oclive_kernel_contracts`、`oclive_kernel_runtime`、`src-tauri` 模型再导出。
+//!
+//! **关键决策**：类型与行为分离，保证契约 crate 可独立版本化；优先从本 crate 根或 [`models`] / [`error`] 导入。
 
 pub mod agent;
 pub mod complex_emotion;

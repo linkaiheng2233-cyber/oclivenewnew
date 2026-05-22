@@ -1,4 +1,11 @@
-//! 单条用户消息编排入口与分层错误类型。
+//! # 内核主编排入口（单条用户消息）
+//!
+//! **角色**：Tauri / HTTP 收到一条用户消息后的**总调度**——校验场景与角色、健康检查、Agent 短路、异地/远程人生分支，否则进入共景 [`co_present`](super::co_present)。
+//!
+//! **上游**：`api` / `http_api` → `AppState`；读取 `Role`、`plugin_backends`、会话级 `slot_registry` 覆盖。
+//! **下游**：[`co_present::process_co_present`](super::co_present)、`process_remote_*`；槽位实现经 [`PluginHostPort`](crate::domain::ports::PluginHostPort) 解析，**不在此文件硬编码六槽顺序**。
+//!
+//! **关键决策**：编排顺序由 **Rust 代码**（`co_present` + [`SlotRunner`](../slot_runner.rs)）审计，**不由** `pipeline.ocblueprint` 动态解释执行；蓝图仅提供 `slot_registry` / `groups` 配置，避免「文件里写的流程」与运行时脱节。
 
 use crate::domain::agent::AgentInput;
 use crate::domain::chat_engine::co_present;

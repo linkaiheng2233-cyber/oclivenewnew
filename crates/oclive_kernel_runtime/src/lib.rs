@@ -1,10 +1,11 @@
-//! 无头 / 嵌入式 / 桌面宿主共用的内核运行时。
+//! # oclive_kernel_runtime — 编排实现与兼容 re-export
 //!
-//! - **纯数据**：[`oclive_kernel_types`]
-//! - **trait 端口**：[`oclive_kernel_contracts`]
-//! - **本 crate**：领域引擎实现与 HTTP 边界常量（主编排仍在 `oclivenewnew-tauri`）
+//! **角色**：承载可在**无头 / 嵌入式**复用的领域引擎片段与 HTTP 常量；**桌面主编排**仍在 `oclivenewnew-tauri` 的 `chat_engine::process_message`。
 //!
-//! `domain` 模块为 **oclivenewnew-tauri 兼容** 而保持 `pub`；新下游请优先依赖 `kernel_types` / `kernel_contracts`。
+//! **上游**：[`oclive_kernel_contracts`](https://docs.rs/oclive_kernel_contracts)、[`oclive_kernel_types`](https://docs.rs/oclive_kernel_types)。
+//! **下游**：`oclive_kernel_server`、`src-tauri`（经 re-export 保持旧路径可用）。
+//!
+//! **关键决策**：新代码应直接依赖 `kernel_types` / `kernel_contracts`；本 crate `pub use *` 为**过渡期**，后续将收紧 surface。
 
 pub mod domain;
 pub(crate) mod utils;

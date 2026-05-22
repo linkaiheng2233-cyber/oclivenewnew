@@ -1,4 +1,11 @@
-//! 蓝图 v2 多实例槽位在共景阶段表内的串行合并（P4，RFC §4.2）。
+//! # 蓝图 v2 多实例槽位执行器（`SlotRunner`）
+//!
+//! **角色**：当 `slot_registry` 中同一 `slot_type` 有多个实例时，按类型选择**合并策略**（串行 last-wins、记忆合并去重、LLM 串行等）并调用对应 `dyn` 实现。
+//!
+//! **上游**：[`SlotResolver`](../slot_resolver.rs) 产出 `ResolvedRoleSlots`；[`PluginHost`](../plugin_host.rs) 提供 `BackendRegistry`。
+//! **下游**：`co_present` 各阶段（情绪、事件、记忆排序、Prompt、LLM）；**Agent 多目录插件合并**在 `PluginHost` / `SlotResolver::wrap_agent_if_merged`，不在本文件。
+//!
+//! **关键决策**：合并策略按槽位语义选择（见各 `*_last_wins` / `memory_merge_rank` 函数头注释）——例如记忆需**去重合并**，LLM 只需**最终回复**，避免一刀切并行导致上下文错乱。
 
 #![allow(
     clippy::missing_errors_doc,
@@ -38,6 +45,10 @@ impl SlotRunner {
     }
 
     /// `emotion`：串行调用，**last-wins**（≥2 实例）；单实例用 registry 条目。
+    ///
+    /// **为何 last-wins**：情绪分析更新的是「当前用户情绪状态」，中间态无需保留；最后一次分析覆盖前序结果即可。
+    /// **为何不用并行**：各分析器输入相同、输出互斥，并行只会浪费算力且增加合并歧义。
+    /// **局限**：前序实例失败时仅打日志，仍可能无有效结果（见 `emotion_last_wins`）。
     pub fn analyze_emotion(pl: &ResolvedRolePlugins, text: &str) -> Result<EmotionResult> {
         if let Some(instances) = registry_instances(&pl.slots, |s| &s.emotion) {
             if instances.len() >= 2 {
@@ -172,6 +183,7 @@ impl SlotRunner {
         pl.llm.generate(ollama_model, prompt).await
     }
 
+    /// 情绪链 **last-wins** 实现：按 `position` 顺序串行，保留最后一次成功结果。
     fn emotion_last_wins(
         instances: &[(String, Arc<dyn UserEmotionAnalyzer>)],
         text: &str,
@@ -202,6 +214,7 @@ impl SlotRunner {
         })
     }
 
+    /// **complex_emotion last-wins**：与 emotion 相同——叙事提示取最后一次成功 `resolve_turn`。
     fn complex_emotion_last_wins(
         instances: &[(String, Arc<dyn ComplexEmotionProvider>)],
         input: &ComplexEmotionInput,
@@ -236,6 +249,11 @@ impl SlotRunner {
         })
     }
 
+    /// **event 串行 last-wins**：多事件检测器依次估计，保留最后一次成功结果。
+    ///
+    /// **解决的问题**：不同检测器可能对同一回合打出重复或冲突的事件标签。
+    /// **为何 last-wins**：事件影响用于后续性格/记忆策略，只需**一个**归一化估计；中间态打 debug 日志。
+    /// **局限**：前序检测器的补充信号不会合并，仅最后一路生效。
     async fn event_last_wins(
         instances: &[(String, Arc<dyn EventEstimator>)],
         llm: &Arc<dyn LlmClient>,
@@ -289,6 +307,12 @@ impl SlotRunner {
         })
     }
 
+    /// **memory 串行合并去重**：多路检索结果按 `memory.id` 去重后按 importance×weight 排序截断。
+    ///
+    /// **解决的问题**：同一事件可能被多个记忆实例（不同 provider）重复召回。
+    /// **为何串行而非并行**：后续实例可能依赖已写入的排序启发式；且合并逻辑需全局去重集。
+    /// **为何不用 last-wins**：用户需要**并集**而非单一路径的 Top-K。
+    /// **局限**：单实例失败会跳过该路，可能漏召回；`limit` 在合并后统一 truncate。
     fn memory_merge_rank(
         instances: &[(String, Arc<dyn MemoryRetrieval>)],
         input: MemoryRetrievalInput<'_>,
@@ -339,6 +363,7 @@ impl SlotRunner {
         Ok(merged)
     }
 
+    /// **prompt top_topic last-wins**：多组装器的 `top_topic_hint` 串行，保留最后一个 `Some`。
     fn prompt_top_topic_last_wins(
         instances: &[(String, Arc<dyn PromptAssembler>)],
         role: &Role,
@@ -360,6 +385,11 @@ impl SlotRunner {
         last
     }
 
+    /// **prompt last-wins**：多组装器依次 `build_prompt`，最终字符串为最后一次成功输出。
+    ///
+    /// **解决的问题**：创作者可叠多个 Prompt 插件做实验，但发往 LLM 的只能有一份文本。
+    /// **为何 last-wins**：Prompt 是**构建最终上下文**的流水线末端，后写覆盖前写符合「最后一道加工」直觉。
+    /// **局限**：无法自动拼接多段 Prompt；需单实例内自行合并。
     fn prompt_build_last_wins(
         instances: &[(String, Arc<dyn PromptAssembler>)],
         input: &PromptInput<'_>,
@@ -391,6 +421,12 @@ impl SlotRunner {
         })
     }
 
+    /// **llm 串行 last-wins**：多 LLM 实例依次对**同一 prompt** 生成，仅保留最后一次成功回复。
+    ///
+    /// **解决的问题**：蓝图允许配置多个 LLM 槽（如主模型 + 备用），运行时只需**一条**用户可见回复。
+    /// **为何串行**：各调用共享同一 prompt 上下文，无链式依赖时也避免并发打爆 GPU/配额。
+    /// **为何 last-wins**：与「最终展示回复」语义一致；前序成功结果仅作日志对比。
+    /// **局限**：不是 ensemble 投票；失败实例被跳过，若全部失败则返回错误。
     async fn llm_serial_last_wins(
         instances: &[(String, Arc<dyn LlmClient>)],
         ollama_model: &str,

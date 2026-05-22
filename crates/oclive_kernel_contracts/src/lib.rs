@@ -1,7 +1,11 @@
-//! # oclive_kernel_contracts
+//! # oclive_kernel_contracts — 内核端口（trait）层
 //!
-//! Core trait definitions for the oclive kernel.
-//! All abstractions that the orchestration layer depends on.
+//! **角色**：定义编排层依赖的**全部抽象接口**（LLM、记忆、插件宿主、Agent 等）；**不含任何实现代码**。
+//!
+//! **上游**：仅依赖 [`oclive_kernel_types`](https://docs.rs/oclive_kernel_types)（DTO / 错误）。
+//! **下游**：`oclivenewnew-tauri` 的 `domain` / `infrastructure` 提供实现；`oclive_kernel_runtime` 过渡期 re-export。
+//!
+//! **关键决策**：trait 与 Tauri 解耦，便于无头服务、嵌入式或测试注入 mock；插件作者实现本 crate 中的 trait，而非直接改编排代码。
 
 pub(crate) mod agent_provider;
 pub(crate) mod complex_emotion;

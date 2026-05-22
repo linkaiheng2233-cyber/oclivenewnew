@@ -1,4 +1,11 @@
-//! 共景（非异地）路径：情绪 → 事件估计 → prompt → 主 LLM → 持久化 → movement 检测 → 响应
+//! # 共景模式编排（同屏对话主路径）
+//!
+//! **角色**：用户与角色**同屏**时的回合编排——加载近期上下文、复杂情感 `narrative_hint`、按阶段调用 [`SlotRunner`](../slot_runner.rs) / [`CoPresentSlotRunner`] 执行多实例槽位，再组 Prompt、调 LLM、写库与返回 DTO。
+//!
+//! **上游**：[`process_message`](super::process_message) 在排除 Agent 短路与异地分支后调用本模块。
+//! **下游**：`PromptBuilder`、`DbManager`、各 `dyn` 端口（经 `ResolvedRolePlugins`）；多实例合并策略见 [`slot_runner`](../slot_runner.rs)。
+//!
+//! **关键决策**：共景路径**显式分阶段**（`CoPresentError::stage`），便于日志与 OOCP 断言；槽位调用统一走 `SlotRunner`，避免在共景里散落 `pl.emotion` 直连。
 
 use crate::domain::chat_llm_fallback::{fallback_reply_for_llm_failure, FallbackReplyContext};
 use crate::domain::chat_turn::{relation_favor_for_key, weight_memories_for_scene};

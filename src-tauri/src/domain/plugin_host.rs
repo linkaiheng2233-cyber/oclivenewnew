@@ -1,6 +1,11 @@
-//! 编译期可替换子系统宿主：按角色包 [`PluginBackends`](crate::models::PluginBackends) 选择具体实现。
+//! # 插件装配中心（`PluginHost`）
 //!
-//! 与仓库 `creator-docs/plugin-and-architecture/PLUGIN_V1.md` 契约一致；`Remote` 在设置 `OCLIVE_REMOTE_*` 时走 HTTP JSON-RPC，否则回退内置。
+//! **角色**：把角色包配置（`plugin_backends`、`slot_registry`、目录插件 manifest）解析为可执行的 **`Arc<dyn …>`** 句柄集合（`ResolvedRolePlugins`），供编排层通过 [`PluginHostPort`](crate::domain::ports::PluginHostPort) 消费。
+//!
+//! **上游**：`RoleStorage` 加载的 `Role`；会话覆盖来自 `AppState`；`BackendRegistry` 缓存 builtin / remote / directory 构造器。
+//! **下游**：`chat_engine`、`SlotResolver::resolve`；实现 [`PluginHostPort`](crate::domain::ports::PluginHostPort) 以解耦具体 `PluginHost` 类型。
+//!
+//! **关键决策**：编排只依赖 **trait 对象**，桌面 / 无头 / 测试可替换宿主；Remote 未配置 env 时**降级 + 日志**，避免静默失败。契约见 `creator-docs/plugin-and-architecture/PLUGIN_V1.md`。
 
 use crate::domain::agent::{AgentDebugTrace, AgentProvider, BuiltinReActAgent};
 use crate::domain::complex_emotion::ComplexEmotionProvider;
@@ -621,6 +626,7 @@ impl PluginResolver {
         if let Some(reg) = slot_registry {
             slots = Some(SlotResolver::resolve(registry, reg));
             complex_emotion = SlotResolver::resolve_complex_emotion_winner(registry, reg);
+            // Agent：多 directory 实例合并工具集（并行语义在装配层，非 SlotRunner）
             agent = SlotResolver::wrap_agent_if_merged(agent, reg);
             merged_agent_directory_plugin_ids =
                 oclive_validation::merged_agent_directory_plugin_ids(reg);

@@ -1,4 +1,11 @@
-//! 蓝图 v2 `slot_registry` 按实例解析（P3）；多实例串行合并见 [`super::slot_runner::SlotRunner`]（P4）。
+//! # 蓝图 `slot_registry` → 可执行槽位列表
+//!
+//! **角色**：读取角色包内已校验的 `slot_registry`（来自 `pipeline.ocblueprint`），为每个实例绑定 `BackendRegistry` 中的具体实现，产出 [`ResolvedRoleSlots`] 供 [`SlotRunner`](super::slot_runner::SlotRunner) 合并执行。
+//!
+//! **上游**：`oclive_validation::slot_registry_instances_sorted`；[`PluginHost::resolve_for_role`](super::plugin_host.rs) 传入 registry + `slot_registry`。
+//! **下游**：[`SlotRunner`](super::slot_runner::SlotRunner)；`groups` 仅影响前端架构图分组，**不**改变本模块解析顺序。
+//!
+//! **关键决策**：按 `slot_type` + `position` 排序实例；`module_relations` **不写入磁盘**，由前端从 `slot_registry` **只读派生**边，避免双源不一致。
 
 use crate::domain::agent::AgentProvider;
 use crate::domain::complex_emotion::{
@@ -76,6 +83,9 @@ pub struct ResolvedRoleSlots {
 pub struct SlotResolver;
 
 impl SlotResolver {
+    /// 将校验后的 `slot_registry` 映射为 `Arc<dyn …>` 实例列表（按 type 分桶，桶内按 `position` 排序）。
+    ///
+    /// 调用方：`PluginHost::resolve_for_*` 在已有 `BackendRegistry` 上执行；结果交给 [`SlotRunner`](super::slot_runner::SlotRunner) 合并。
     #[must_use]
     pub fn resolve(
         registry: &BackendRegistry,
@@ -239,6 +249,9 @@ impl SlotResolver {
         }
     }
 
+    /// **agent 多实例**：合并多个 directory 插件 ID 为复合 Agent（工具集并行暴露，非 SlotRunner 内串行）。
+    ///
+    /// **为何在解析层合并**：多 Agent 槽之间无 LLM 上下文依赖，只需统一工具列表给 `process_message` 入口短路。
     #[must_use]
     pub fn wrap_agent_if_merged(
         inner: Arc<dyn AgentProvider>,
