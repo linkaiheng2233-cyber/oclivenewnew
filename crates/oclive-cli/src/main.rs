@@ -51,6 +51,8 @@ mod pack_cmd;
 mod pipeline;
 mod plugin_cmd;
 mod plugin_ext;
+mod plugin_manage_cmd;
+mod plugin_manage_tui;
 mod profile_cmd;
 mod project_introspect;
 mod publish_cmd;

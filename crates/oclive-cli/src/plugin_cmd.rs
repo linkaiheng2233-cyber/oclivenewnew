@@ -26,6 +26,8 @@ pub enum PluginCommands {
     Uninstall(crate::plugin_ext::PluginUninstallArgs),
     /// RPC contract smoke test
     Test(crate::plugin_ext::PluginTestArgs),
+    /// Advanced slot / blueprint management (list, link, TUI)
+    Manage(crate::plugin_manage_cmd::PluginManageCli),
 }
 
 #[derive(Parser, Debug, Clone)]
@@ -101,6 +103,7 @@ pub fn run(cli: PluginCli) -> Result<()> {
         PluginCommands::Install(args) => crate::plugin_ext::run_install(args),
         PluginCommands::Uninstall(args) => crate::plugin_ext::run_uninstall(args),
         PluginCommands::Test(args) => crate::plugin_ext::run_test(args),
+        PluginCommands::Manage(args) => crate::plugin_manage_cmd::run_manage(args),
     }
 }
 
