@@ -92,7 +92,7 @@ $env:RUST_LOG = "info,oclive_dual_core=info"
 |------|------|
 | `INFO` 开始执行实验核，`step_count=N` | 进入实验 pipeline |
 | `INFO` 实验核执行成功 | 实验步全部完成（含 Agent 短路或即将交稳定核收尾） |
-| `WARN` 实验核在第 X 步失败: …，正在降级到稳定核 | 某步 `action` / method / 共景子阶段失败 |
+| `WARN` 实验核在第 X 步失败: …，正在降级到稳定核 | 某步 `action` / method / 共景子阶段失败；错误体阶段名为 `dual_core_experimental` |
 | `INFO` 稳定核执行完成（降级模式） | 快照已回滚，`co_present` 已返回回复 |
 
 过滤示例：
