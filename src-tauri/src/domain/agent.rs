@@ -1,22 +1,16 @@
+use crate::domain::ports::LlmClient;
 use crate::error::{AppError, Result};
 use crate::infrastructure::function_call_parser::{
     parse_from_llm_response, to_function_calling_schema, ToolSchemaInput,
 };
-use crate::domain::ports::LlmClient;
 use crate::infrastructure::mcp_client::{McpClient, McpServerManifest, McpToolCallResult};
+pub use oclive_kernel_contracts::AgentProvider;
+pub use oclive_kernel_runtime::{AgentInput, AgentOutput};
 use async_trait::async_trait;
 use parking_lot::RwLock;
 use serde::{Deserialize, Serialize};
 use serde_json::Value;
 use std::sync::Arc;
-
-#[derive(Debug, Clone, Serialize, Deserialize)]
-pub struct AgentInput {
-    pub role_id: String,
-    pub session_namespace: String,
-    pub message: String,
-    pub model: String,
-}
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct AgentToolCallTrace {
@@ -36,17 +30,6 @@ pub struct AgentDebugTrace {
     pub tool_calls: Vec<AgentToolCallTrace>,
     pub reply: String,
     pub error: Option<String>,
-}
-
-#[derive(Debug, Clone, Serialize, Deserialize)]
-pub struct AgentOutput {
-    pub handled: bool,
-    pub reply: String,
-}
-
-#[async_trait]
-pub trait AgentProvider: Send + Sync {
-    async fn process(&self, input: AgentInput) -> Result<AgentOutput>;
 }
 
 pub struct BuiltinReActAgent {
