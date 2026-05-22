@@ -66,6 +66,7 @@ mod test_equivalence_check;
 mod test_loom;
 mod test_miri;
 mod test_oocp;
+mod test_json_report;
 mod test_report;
 
 use anyhow::Result;

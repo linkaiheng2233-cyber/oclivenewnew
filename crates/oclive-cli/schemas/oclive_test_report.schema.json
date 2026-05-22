@@ -1,0 +1,50 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://oclive.dev/schemas/oclive_test_report.schema.json",
+  "title": "oclive test --json report",
+  "type": "object",
+  "required": ["schema_version", "summary", "suites", "failures"],
+  "properties": {
+    "schema_version": { "type": "integer", "minimum": 1 },
+    "summary": { "$ref": "#/$defs/summary" },
+    "suites": {
+      "type": "array",
+      "items": { "$ref": "#/$defs/suite" }
+    },
+    "failures": {
+      "type": "array",
+      "items": { "$ref": "#/$defs/failure" }
+    }
+  },
+  "$defs": {
+    "summary": {
+      "type": "object",
+      "required": ["passed", "failed", "skipped"],
+      "properties": {
+        "passed": { "type": "integer", "minimum": 0 },
+        "failed": { "type": "integer", "minimum": 0 },
+        "skipped": { "type": "integer", "minimum": 0 }
+      }
+    },
+    "suite": {
+      "type": "object",
+      "required": ["name", "status"],
+      "properties": {
+        "name": { "type": "string" },
+        "status": { "type": "string", "enum": ["passed", "failed", "skipped"] },
+        "duration_ms": { "type": "integer", "minimum": 0 },
+        "detail": { "type": "string" }
+      }
+    },
+    "failure": {
+      "type": "object",
+      "required": ["suite", "error"],
+      "properties": {
+        "suite": { "type": "string" },
+        "file": { "type": "string" },
+        "line": { "type": "integer", "minimum": 1 },
+        "error": { "type": "string" }
+      }
+    }
+  }
+}

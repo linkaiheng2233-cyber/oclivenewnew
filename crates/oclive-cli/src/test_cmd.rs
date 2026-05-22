@@ -99,7 +99,9 @@ pub fn run(args: TestArgs) -> Result<()> {
 
     let elapsed = t0.elapsed();
     if args.json {
-        println!("{}", serde_json::to_string_pretty(&checks)?);
+        if !crate::test_json_report::print_json(&checks)? {
+            bail!("test did not pass all checks");
+        }
     } else {
         crate::test_report::print_human_report(&root, &checks, elapsed);
         if checks.iter().any(|c| !c.ok) {

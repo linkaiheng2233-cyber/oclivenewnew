@@ -1,18 +1,36 @@
-# Test output and contracts (TEST_OUTPUT_SCHEMA)
+# Test output contracts (TEST_OUTPUT_SCHEMA)
 
-## Tauri / Rust
+## `oclive test --json`
 
-- **Main chat response**: front/back contract is defined in **`src-tauri/src/models/dto.rs`**; the user-visible reply field is **`reply`** (not `response`).
-- **Integration / API tests**: `src-tauri/tests/*.rs` assert structure with **`serde_json`**; there is **no** unified machine-readable schema file; if JSON fixtures are introduced, place them under `src-tauri/tests/fixtures/` and index them here.
+**Schema:** [`crates/oclive-cli/schemas/oclive_test_report.schema.json`](../../crates/oclive-cli/schemas/oclive_test_report.schema.json)
+
+**Shape:** `schema_version`, `summary` (`passed` / `failed` / `skipped`), `suites[]` (`name`, `status`, optional `duration_ms`, `detail`), `failures[]` (`suite`, optional `file` / `line`, `error`).
+
+**CI:** `oclive test -o . --json | jq '.summary.failed'` must be `0`; non-zero exits with code **1**.
+
+**Note:** `oclive test --ci-parity --json` still emits the legacy job list format.
+
+---
+
+## Tauri / Rust integration tests
+
+- Chat DTOs: **`oclive_kernel_types`**; assistant text field is **`reply`**.
+- Fixtures: prefer `src-tauri/tests/fixtures/`.
 
 ## Frontend
 
-- **Current CI gate**: `npm run build` (production bundle must compile).
-- **Unit tests (Vitest, etc.)**: `package.json` **does not** configure `test:unit`; if added later, document **`npm run test:unit`** here with coverage / snapshot policy.
+- `npm run test:unit` + `npm run build`; Ubuntu CI also runs Playwright preview E2E.
 
-## Local HTTP API (`--api`)
+## HTTP `--api`
 
-- **`POST /chat`**: success body includes **`reply: string`**; aligned with `SendMessageResponse`. See root [README.md](../../README.md) section “Local HTTP API”.
+- `POST /chat` success body includes **`reply`**.
+
+## Other schemas
+
+| Command | Schema file |
+|---------|-------------|
+| `oclive bench --json` | `oclive_bench_report.schema.json` |
+| `oclive doctor --json` | `oclive_doctor_report.schema.json` |
 
 ---
 
