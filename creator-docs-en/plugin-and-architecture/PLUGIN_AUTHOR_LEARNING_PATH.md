@@ -34,7 +34,7 @@ For **directory plugins**, **remote sidecars**, and **host slot** work. Contract
 
 | Topic | Read |
 |-------|------|
-| **Market flow** | [../roadmap/PLUGIN_WEB_SECTION.md](../roadmap/PLUGIN_WEB_SECTION.md) · [MARKET_LAUNCHER_INTEGRATION.md](../roadmap/MARKET_LAUNCHER_INTEGRATION.md) |
+| **Market flow** | [../../creator-docs/roadmap/PLUGIN_WEB_SECTION.md](../../creator-docs/roadmap/PLUGIN_WEB_SECTION.md) · [../../creator-docs/roadmap/MARKET_LAUNCHER_INTEGRATION.md](../../creator-docs/roadmap/MARKET_LAUNCHER_INTEGRATION.md) |
 | **`oclive_validation`** | `crates/oclive_validation`; three-way test `src-tauri/tests/permission_three_way_consistency.rs` |
 | **Debug** | Plugin manager **Ctrl+Shift+F**; [FAQ.md](../FAQ.md); [ERROR_CODES.md](../getting-started/ERROR_CODES.md); `tracing` |
 

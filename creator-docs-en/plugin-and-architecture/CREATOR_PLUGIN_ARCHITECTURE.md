@@ -202,6 +202,6 @@ More HTTP/JSON detail: [REMOTE_PLUGIN_PROTOCOL.md](REMOTE_PLUGIN_PROTOCOL.md).
 ## Part 9 — Related docs
 
 - **Authoring packs**: [../getting-started/CREATOR_WORKFLOW.md](../getting-started/CREATOR_WORKFLOW.md), [roles/README_MANIFEST.md](../../roles/README_MANIFEST.md)  
-- **Enums & defaults**: [PLUGIN_V1.md](PLUGIN_V1.md), [../role-pack/PACK_VERSIONING.md](../role-pack/PACK_VERSIONING.md)  
+- **Enums & defaults**: [PLUGIN_V1.md](PLUGIN_V1.md), [../../creator-docs/role-pack/PACK_VERSIONING.md](../../creator-docs/role-pack/PACK_VERSIONING.md)  
 - **Directory plugins**: [DIRECTORY_PLUGINS.md](DIRECTORY_PLUGINS.md), [../../examples/directory-plugin-minimal/README.md](../../examples/directory-plugin-minimal/README.md)  
 - **Rust replacement only**: [HOW_TO_REPLACE_MODULES.md](HOW_TO_REPLACE_MODULES.md)
