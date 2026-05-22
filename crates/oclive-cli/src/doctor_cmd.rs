@@ -60,7 +60,7 @@ pub struct DoctorCheck {
 }
 
 impl DoctorCheck {
-    fn ok(id: &str, message: impl Into<String>) -> Self {
+    pub(crate) fn ok(id: &str, message: impl Into<String>) -> Self {
         Self {
             id: id.into(),
             status: "ok".into(),
@@ -80,7 +80,7 @@ impl DoctorCheck {
         }
     }
 
-    fn fail(id: &str, message: impl Into<String>, detail: Option<String>) -> Self {
+    pub(crate) fn fail(id: &str, message: impl Into<String>, detail: Option<String>) -> Self {
         Self {
             id: id.into(),
             status: "fail".into(),
@@ -113,6 +113,7 @@ pub fn run(args: DoctorArgs) -> Result<()> {
         check_network_github(),
         check_workspace_writable(&root),
     ];
+    checks.extend(crate::doctor_blueprint::blueprint_v2_checks(&root));
     if args.fix {
         apply_fixes(&checks, args.yes)?;
         checks = vec![

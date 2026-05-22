@@ -114,6 +114,8 @@ cargo run -p oclive-cli -- completions bash > oclive.bash
 
 **Shell 补全安装（bash 示例）**：`eval "$(cargo run -p oclive-cli -- completions bash)"` 或写入 `~/.bash_completion.d/oclive` 后 `source`。
 
+补全由 **`clap_complete` 从当前 `Cli` 派生**（约 **24** 个顶层子命令：`init`、`build`、`bench`、`pack`、`doctor`、`test`、`explain` 等）。已移除的顶层 **`publish`**、**`plugin search`/`update`**、**`registry login`** **不会**出现在补全中；角色包分发请用 **`pack publish`**。
+
 调优闭环见 [PERFORMANCE.md §5](../getting-started/PERFORMANCE.md#5-用-oclive-bench-做性能调优实战闭环)。
 
 ---
@@ -177,7 +179,7 @@ cargo run -p oclive-cli -- learn -o ./oclive-learn-demo
 | 命令 | 作用 |
 |------|------|
 | `bench --matrix` | Monolith 档位（none/latency/memory/embedded）× preset（minimal/mixed/full）矩阵；各 3 轮 |
-| `test` | `cargo check`、clippy、角色包 `pack validate`、OOCP 路径提示（`--skip-oocp`） |
+| `test` | `cargo check`、clippy、角色包 `pack validate`；**`--oocp`** 自动起内核并跑 OOCP S0–S11（`--skip-oocp` 仅提示路径） |
 | `lint` | 目录结构、`Cargo.toml` 元数据、`settings.json` 第 1–6 模块、`monolith.toml`、Git 脏检查 |
 
 ```bash
@@ -301,7 +303,17 @@ cargo run -p oclive-cli -- doctor --fix
 cargo run -p oclive-cli -- doctor --fix --yes
 ```
 
-检查 Rust/Cargo、C++ 工具链、系统内存、磁盘剩余、Ollama（`http://127.0.0.1:11434/api/tags`）、GitHub 连通、工作区可写。`--fix` 可对 Rust（`rustup update stable`）、Ollama（尝试启动 serve）等项自动修复。存在 **fail** 项时退出码非 0。JSON Schema：`crates/oclive-cli/schemas/oclive_doctor_report.schema.json`。
+检查 Rust/Cargo、C++ 工具链、系统内存、磁盘剩余、Ollama（`http://127.0.0.1:11434/api/tags`）、GitHub 连通、工作区可写。在 **oclivenewnew 根**且存在 `roles/*/pipeline.ocblueprint` 时，额外三项 v2 蓝图检查：**`blueprint_file_format`**（文件存在且 JSON 合法）、**`slot_registry_llm`**（至少一个 `type: llm`）、**`slot_position_unique`**（同 type 下 `position` 不重复）。`--fix` 可对 Rust（`rustup update stable`）、Ollama（尝试启动 serve）等项自动修复。存在 **fail** 项时退出码非 0。JSON Schema：`crates/oclive-cli/schemas/oclive_doctor_report.schema.json`。
+
+### `test --oocp`（本地 OOCP 闭环）
+
+在 **oclivenewnew 仓库根**执行（需已能 `cargo build -p oclivenewnew-tauri --release`）：
+
+```bash
+cargo run -p oclive-cli -- test --oocp -o .
+```
+
+流程：启动 `cargo run --release -p oclivenewnew-tauri -- --api`（`OCLIVE_HTTP_API_MOCK_LLM=1`）→ 轮询 `GET /health`（默认 `http://127.0.0.1:8420`，**30s** 超时）→ `node examples/oocp-test-suite/run.mjs` → 终止内核进程。可设 **`OCLIVE_API_BASE`** 覆盖探活 URL。
 
 ---
 
