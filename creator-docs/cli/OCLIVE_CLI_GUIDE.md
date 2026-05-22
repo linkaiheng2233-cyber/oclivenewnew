@@ -331,11 +331,14 @@ cargo run -p oclive-cli -- pack validate ./roles/mumu --host-version 0.2.0
 cargo run -p oclive-cli -- pack validate ./roles/legacy-example --profile legacy
 # RobotSoulPack（在 legacy 校验通过后追加规则）
 cargo run -p oclive-cli -- pack validate ./roles/legacy-example --profile robot-soul
+# 创作者 profile：仅 meta 子集 + prompts/（不校验 slot_registry / runtime_config）
+cargo run -p oclive-cli -- pack validate ./roles/mumu --profile creator
 cargo run -p oclive-cli -- pack create -o ./out/my-role --flat --id com.example.demo --name Demo --format-blueprint-v2
 cargo run -p oclive-cli -- pack publish ./out/my-role -o ./dist/com.example.demo-0.1.0.oclivepack
 ```
 
-- **`validate`（默认 v2）**：校验 `pipeline.ocblueprint`（`meta`、`slot_registry`、至少一个 `type: llm`、`meta.personality` 七维等）；与 [`ROLE_PACK_SPEC.md`](../role-pack/ROLE_PACK_SPEC.md) 及 `oclive_validation` 对齐，不跑 DB。
+- **`validate`（默认 v2/v3）**：校验 `pipeline.ocblueprint`（`meta`、`slot_registry`、至少一个 `type: llm` 等）；**v3** 含 `runtime_config` / `pipeline`；**v2** 含 `runtime_config` 时仅警告。见 [`ROLE_PACK_SPEC.md`](../role-pack/ROLE_PACK_SPEC.md)。
+- **`validate --profile creator`**：仅角色包（`meta` 创作者子集 + **`prompts/`**）；不校验 `slot_registry` / `runtime_config`。见 [ROLE_PACK_BOUNDARY.md](../../handoff/ROLE_PACK_BOUNDARY.md)。
 - **`validate --profile legacy`**：校验 `manifest.json` / `settings.json` 合并、`plugin_backends`、`min_runtime_version` 与 `--host-version` 等（旧包路径）。
 - **`validate --profile robot-soul`**：在 **legacy** 校验通过后追加 RobotSoulPack 规则（见 ROLE_PACK_SPEC §6）。
 - **`create`**：生成最小可校验目录；推荐 **`--format-blueprint-v2`**（写入 `pipeline.ocblueprint`）；`--flat` 时 `-o` 即为角色根。

@@ -7,7 +7,13 @@ use std::str::FromStr;
 
 use serde_json::Value;
 
-use crate::blueprint_v2::validate_role_pack_blueprint_v2_directory;
+use crate::blueprint_v2::{
+    validate_blueprint_v2_json_with_context, BlueprintV2ValidateContext, PIPELINE_BLUEPRINT_FILENAME,
+};
+use crate::blueprint_v3::{
+    validate_blueprint_json_by_schema_version, BLUEPRINT_V3_SCHEMA_VERSION,
+};
+use crate::creator_profile::validate_role_pack_creator_directory;
 use crate::disk_role_settings::DiskRoleSettings;
 use crate::json_keys::{validate_manifest_top_level_keys, validate_settings_top_level_keys};
 use crate::manifest::DiskRoleManifest;
@@ -24,6 +30,8 @@ pub enum RolePackValidationProfile {
     BlueprintV2,
     /// legacy：`manifest.json` + `settings.json`（`--profile legacy`）。
     Legacy,
+    /// 仅角色包（创作者）：`meta` 子集 + `prompts/`，不校验 `slot_registry` / `runtime_config`。
+    Creator,
     /// 机器人 / 无头交付最小「灵魂包」：在 legacy 磁盘校验通过后追加规则。
     RobotSoul,
 }
@@ -35,9 +43,10 @@ impl FromStr for RolePackValidationProfile {
         match s.trim().to_ascii_lowercase().as_str() {
             "" | "default" | "blueprint-v2" | "blueprint_v2" | "blueprintv2" => Ok(Self::BlueprintV2),
             "legacy" => Ok(Self::Legacy),
+            "creator" => Ok(Self::Creator),
             "robot-soul" | "robotsoul" | "robot_soul" => Ok(Self::RobotSoul),
             other => Err(format!(
-                "未知 pack validate profile「{other}」（支持 default/blueprint-v2 | legacy | robot-soul）"
+                "未知 pack validate profile「{other}」（支持 default | legacy | creator | robot-soul）"
             )),
         }
     }
@@ -377,8 +386,12 @@ pub fn validate_role_pack_directory_with_profile(
     settings_schema_supported: u32,
     profile: RolePackValidationProfile,
 ) -> Result<(), Vec<String>> {
+    if matches!(profile, RolePackValidationProfile::Creator) {
+        return validate_role_pack_creator_directory(role_dir);
+    }
+
     if matches!(profile, RolePackValidationProfile::BlueprintV2) {
-        return validate_role_pack_blueprint_v2_directory(role_dir, host_version);
+        return validate_role_pack_blueprint_directory(role_dir, host_version);
     }
 
     // Legacy + RobotSoul：manifest/settings 路径
@@ -432,6 +445,77 @@ pub fn validate_role_pack_directory_with_profile(
         }
     }
     Ok(())
+}
+
+fn validate_role_pack_blueprint_directory(
+    role_dir: &Path,
+    host_version: &str,
+) -> Result<(), Vec<String>> {
+    let mut errs = Vec::new();
+    let manifest_path = role_dir.join("manifest.json");
+    if manifest_path.is_file() {
+        errs.push(format!(
+            "v2/v3 角色包不得包含 manifest.json（已废弃）：{}",
+            manifest_path.display()
+        ));
+    }
+    let settings_path = role_dir.join("settings.json");
+    if settings_path.is_file() {
+        errs.push(format!(
+            "v2/v3 角色包不得包含 settings.json（已废弃）：{}",
+            settings_path.display()
+        ));
+    }
+    if !errs.is_empty() {
+        return Err(errs);
+    }
+
+    let blueprint_path = role_dir.join(PIPELINE_BLUEPRINT_FILENAME);
+    if !blueprint_path.is_file() {
+        return Err(vec![format!(
+            "缺少 {}：{}",
+            PIPELINE_BLUEPRINT_FILENAME,
+            blueprint_path.display()
+        )]);
+    }
+
+    let raw = fs::read_to_string(&blueprint_path)
+        .map_err(|e| vec![format!("读取 {} 失败: {}", blueprint_path.display(), e)])?;
+    let folder_name = role_dir.file_name().and_then(|s| s.to_str());
+
+    let warnings = validate_blueprint_json_by_schema_version(&raw, folder_name)?;
+
+    let version = serde_json::from_str::<serde_json::Value>(&raw)
+        .ok()
+        .and_then(|v| v.get("schema_version").and_then(|n| n.as_u64()))
+        .unwrap_or(0) as u32;
+
+    if version == BLUEPRINT_V3_SCHEMA_VERSION {
+        if !warnings.is_empty() {
+            print_pack_warnings(&warnings);
+        }
+        return Ok(());
+    }
+
+    validate_blueprint_v2_json_with_context(
+        &raw,
+        BlueprintV2ValidateContext {
+            folder_name,
+            role_dir: Some(role_dir),
+            host_version: Some(host_version),
+        },
+    )?;
+    if !warnings.is_empty() {
+        print_pack_warnings(&warnings);
+    }
+    Ok(())
+}
+
+fn print_pack_warnings(warnings: &[String]) {
+    eprintln!("pack validate 警告:");
+    for w in warnings {
+        eprintln!("  - {w}");
+    }
 }
 
 #[cfg(test)]
@@ -494,6 +578,34 @@ mod tests {
             RolePackValidationProfile::Legacy,
         )
         .unwrap();
+    }
+
+    #[test]
+    fn creator_profile_validates_meta_and_prompts_only() {
+        let dir = tempfile::tempdir().unwrap();
+        let role = dir.path().join("hero");
+        fs::create_dir_all(role.join("prompts")).unwrap();
+        let bp = r#"{
+          "schema_version": 2,
+          "meta": {
+            "id": "hero",
+            "name": "Hero",
+            "version": "1",
+            "author": "a",
+            "description": "d",
+            "personality": [0.5,0.5,0.5,0.5,0.5,0.5,0.5],
+            "relations": { "f": { "initial_favorability": 50, "favor_multiplier": 1.0 } },
+            "default_relation": "f",
+            "interaction_mode": "immersive"
+          },
+          "slot_registry": {
+            "llm": { "type": "llm", "label": "L", "backend": "ollama", "position": 1 }
+          }
+        }"#;
+        fs::write(role.join(PIPELINE_BLUEPRINT_FILENAME), bp).unwrap();
+        let errs = validate_role_pack_creator_directory(&role).unwrap_err();
+        assert!(errs.iter().any(|e| e.contains("interaction_mode")));
+        assert!(errs.iter().any(|e| e.contains("非创作者字段")));
     }
 
     #[test]
