@@ -3,6 +3,7 @@ import chat from "./fragments/chat.en";
 import devTools from "./fragments/devTools.en";
 import emotionUi from "./fragments/emotionUi.en";
 import pluginWorkbench from "./fragments/pluginWorkbench.en";
+import { simplePluginManagerEn as simplePluginManager } from "./fragments/simplePluginManager.en";
 import virtualTime from "./fragments/virtualTime.en";
 
 export default {
@@ -11,6 +12,7 @@ export default {
   devTools,
   emotionUi,
   pluginWorkbench,
+  simplePluginManager,
   virtualTime,
   app: {
     locale: {
@@ -73,15 +75,15 @@ export default {
       narrativeSceneHelp:
         "The scene you are narrating; matches pack scene config. Switching may fold chat history.",
       characterAt: "Character at: {label}",
-      pluginBtnV1: "Plugins & backends (V1)",
-      pluginBtnV2: "Plugin manager (V2)",
+      pluginBtnSimple: "Plugin manager",
+      pluginBtnAdvanced: "Plugins & backends (advanced)",
       pluginMarket: "Plugin market",
-      settingsTileHelpV2:
+      settingsTileHelpSimple:
         "Shortcuts, settings, and plugin manager in one place. Ctrl+Shift+S opens settings; " +
-        "Ctrl+Shift+F and the button below open V2 preview; turn off “V2 preview” in settings to restore V1. Ctrl+Shift+D toggles the debug panel.",
-      settingsTileHelpV1:
+        "Ctrl+Shift+F opens the simple installed-plugins list. Enable “Advanced plugin management” in settings for the architecture graph. Ctrl+Shift+D toggles the debug panel.",
+      settingsTileHelpAdvanced:
         "Shortcuts, settings, and plugin/back-end management together. Ctrl+Shift+S opens settings; " +
-        "Ctrl+Shift+F opens advanced mode (V1) including developer debugging. Ctrl+Shift+D toggles the debug panel.",
+        "Ctrl+Shift+F opens advanced plugin management (incl. architecture graph). Turn off “Advanced plugin management” for the simple list. Ctrl+Shift+D toggles the debug panel.",
     },
     toast: {
       remoteLifeOn: "Remote inner voice enabled",
@@ -419,14 +421,14 @@ export default {
       "When checked, the Sentry client is closed immediately; preference is stored in localStorage (key oclive.telemetry.sentryOptOut). Uncheck and restart the app to re-enable reporting.",
     sentryDisabledToast: "Crash reporting disabled.",
     sentryReenableRestartToast: "Opt-out cleared; restart the app to resume reporting.",
-    experimentalLabel: "Experimental",
+    experimentalLabel: "Plugins",
     experimentalSectionHelp:
-      "Preview entry for the new plugin manager (V2). If this build has no V2, the existing advanced mode is used.",
-    experimentalToggleTitle: "Enable new plugin manager (V2 preview)",
+      "Default: simple installed-plugins list (mod-list style). Advanced mode includes architecture graph and multi-slot tools.",
+    experimentalToggleTitle: "Enable advanced plugin management",
     experimentalToggleHtml:
-      "When on, <strong>Ctrl+Shift+F</strong> and <strong>More → Plugins</strong> open <strong>V2 lightweight cards</strong> (from <code>slot_registry_effective</code>, same as the graph). " +
-      "Multi-instance editing on disk: use the in-panel link or turn this off and open <strong>V1 → Architecture graph</strong>.",
-    openV2Preview: "Open plugin manager V2 preview",
+      "When on, <strong>Ctrl+Shift+F</strong> and <strong>More → Plugins</strong> open the <strong>professional panel</strong> (architecture graph & debug). " +
+      "CLI slot editing: <code>oclive plugin manage</code>. When off, the simple list is used.",
+    openAdvancedPluginManager: "Open advanced plugin management",
     remoteFallbackSectionTitle: "Remote plugin failure policy",
     remoteFallbackLabel: "Fall back to built-in when remote HTTP fails",
     remoteFallbackHelp:
@@ -487,9 +489,9 @@ export default {
       slotSectionAria: "Launcher slot",
       slotHeading: "Plugin slot (launcher.palette)",
       slotEmbedAria: "Launcher slot",
-      ctrlShiftFV2:
-        "Open plugin manager (V2 preview); turn off “V2 preview” in settings to use V1",
-      ctrlShiftFV1: "Open advanced mode (V1) plugins & backends (incl. dev debug)",
+      ctrlShiftFSimple: "Open simple plugin manager list",
+      ctrlShiftFAdvanced:
+        "Open advanced plugin management (incl. architecture graph); turn off “Advanced plugin management” in settings for the simple list",
     },
     rolePack: {
       exportFilterName: "OCPak role pack",

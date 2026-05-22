@@ -26,9 +26,9 @@ const { t } = useI18n();
 const uiStore = useUiStore();
 
 const rows = computed(() => {
-  const pluginF = uiStore.experimentalPluginManagerV2
-    ? t("common.shortcutHelp.ctrlShiftFV2")
-    : t("common.shortcutHelp.ctrlShiftFV1");
+  const pluginF = uiStore.advancedPluginManagement
+    ? t("common.shortcutHelp.ctrlShiftFAdvanced")
+    : t("common.shortcutHelp.ctrlShiftFSimple");
   return [
     { keys: "Ctrl + Shift + S", desc: t("common.shortcutHelp.rowOpenSettings") },
     { keys: "Ctrl + Shift + F", desc: pluginF },

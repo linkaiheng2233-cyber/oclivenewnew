@@ -23,8 +23,8 @@ const props = defineProps<{
 
 const emit = defineEmits<{
   close: [];
-  /** 在开启 V2 实验开关时，由设置页打开 V2 预览窗 */
-  openPluginV2: [];
+  /** 开启「高级插件管理」时，由设置页打开 V1 专业面板 */
+  openAdvancedPlugin: [];
 }>();
 
 const { t } = useI18n();
@@ -274,17 +274,17 @@ async function onToggleForceIframe(e: Event) {
             <label class="sv-toggle-row">
               <input
                 type="checkbox"
-                :checked="uiStore.experimentalPluginManagerV2 === true"
-                @change="uiStore.setExperimentalPluginManagerV2(($event.target as HTMLInputElement).checked)"
+                :checked="uiStore.advancedPluginManagement === true"
+                @change="uiStore.setAdvancedPluginManagement(($event.target as HTMLInputElement).checked)"
               />
               <span class="sv-toggle-text">
                 <strong>{{ t("settings.experimentalToggleTitle") }}</strong>
                 <span class="sv-muted sv-toggle-desc" v-html="t('settings.experimentalToggleHtml')" />
               </span>
             </label>
-            <div v-if="uiStore.experimentalPluginManagerV2" class="sv-v2-launch">
-              <button type="button" class="sv-v2-launch-btn" @click="emit('openPluginV2')">
-                {{ t("settings.openV2Preview") }}
+            <div v-if="uiStore.advancedPluginManagement" class="sv-v2-launch">
+              <button type="button" class="sv-v2-launch-btn" @click="emit('openAdvancedPlugin')">
+                {{ t("settings.openAdvancedPluginManager") }}
               </button>
             </div>
           </section>

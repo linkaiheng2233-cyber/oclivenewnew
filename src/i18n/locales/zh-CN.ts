@@ -3,6 +3,7 @@ import chat from "./fragments/chat.zh";
 import devTools from "./fragments/devTools.zh";
 import emotionUi from "./fragments/emotionUi.zh";
 import pluginWorkbench from "./fragments/pluginWorkbench.zh";
+import { simplePluginManagerZh as simplePluginManager } from "./fragments/simplePluginManager.zh";
 import virtualTime from "./fragments/virtualTime.zh";
 
 export default {
@@ -11,6 +12,7 @@ export default {
   devTools,
   emotionUi,
   pluginWorkbench,
+  simplePluginManager,
   virtualTime,
   app: {
     locale: {
@@ -69,15 +71,15 @@ export default {
       narrativeSceneHelp:
         "你当前叙事的场景；与角色包中的场景配置一致。切换后可能触发历史记录折叠分界。",
       characterAt: "角色在：{label}",
-      pluginBtnV1: "插件与后端（V1）",
-      pluginBtnV2: "插件管理（V2）",
+      pluginBtnSimple: "插件管理",
+      pluginBtnAdvanced: "插件与后端（高级）",
       pluginMarket: "插件市场",
-      settingsTileHelpV2:
+      settingsTileHelpSimple:
         "将快捷键说明、设置页、插件管理集中到同一处。快捷键：Ctrl+Shift+S 打开设置；" +
-        "Ctrl+Shift+F 与下方按钮打开插件管理（V2 预览）；在设置中关闭「V2 预览」可恢复专业模式（V1）。 Ctrl+Shift+D 开关调试面板。",
-      settingsTileHelpV1:
+        "Ctrl+Shift+F 打开简洁插件列表。在设置中开启「高级插件管理」可打开架构图与多槽位面板。 Ctrl+Shift+D 开关调试面板。",
+      settingsTileHelpAdvanced:
         "将快捷键说明、设置页、插件与后端管理集中到同一处。快捷键：Ctrl+Shift+S 打开设置；" +
-        "Ctrl+Shift+F 打开专业模式（V1）插件与后端管理（含开发者调试）。 Ctrl+Shift+D 开关调试面板。",
+        "Ctrl+Shift+F 打开高级插件管理（含架构图）。关闭设置中的「高级插件管理」可恢复简洁列表。 Ctrl+Shift+D 开关调试面板。",
     },
     toast: {
       remoteLifeOn: "异地心声已开启",
@@ -413,14 +415,14 @@ export default {
       "勾选后立即尝试关闭 Sentry 客户端；偏好保存在本机 localStorage（键 oclive.telemetry.sentryOptOut）。取消勾选后需重启应用才会重新初始化上报。",
     sentryDisabledToast: "已禁用崩溃上报。",
     sentryReenableRestartToast: "已取消禁用；请重启应用后才会恢复上报。",
-    experimentalLabel: "实验性功能",
+    experimentalLabel: "插件",
     experimentalSectionHelp:
-      "灰度入口：用于预览新版插件管理界面（V2）。若当前构建未集成 V2，会继续使用现有专业模式。",
-    experimentalToggleTitle: "启用新版插件管理界面（V2 预览）",
+      "默认使用简洁的已安装插件列表（类似模组列表）。高级功能含架构图、多槽位与会话覆盖。",
+    experimentalToggleTitle: "启用高级插件管理",
     experimentalToggleHtml:
-      "开启后，<strong>Ctrl+Shift+F</strong> 与顶栏「更多」将打开 <strong>V2 轻量卡片</strong>（数据来自 <code>slot_registry_effective</code>，与架构图一致）。" +
-      "多实例增删、分组与写盘请用 V2 内链接或关闭本项后打开 <strong>V1 → 架构图</strong>。",
-    openV2Preview: "打开插件管理 V2 预览",
+      "开启后，<strong>Ctrl+Shift+F</strong> 与顶栏「更多」将打开 <strong>专业面板</strong>（含架构图与调试）。" +
+      "多槽位 CLI 管理请使用 <code>oclive plugin manage</code>。关闭本项则使用简洁列表。",
+    openAdvancedPluginManager: "打开高级插件管理",
     remoteFallbackSectionTitle: "远端插件失败策略",
     remoteFallbackLabel: "远端 HTTP 失败时自动降级内置",
     remoteFallbackHelp:
@@ -480,9 +482,9 @@ export default {
       slotSectionAria: "启动器插槽",
       slotHeading: "插件槽（launcher.palette）",
       slotEmbedAria: "启动器插槽",
-      ctrlShiftFV2:
-        "打开插件管理（V2 预览）；关闭设置中的「V2 预览」后恢复为专业模式（V1）",
-      ctrlShiftFV1: "打开专业模式（V1）插件与后端管理（含界面插件 · 开发者调试）",
+      ctrlShiftFSimple: "打开简洁插件管理列表",
+      ctrlShiftFAdvanced:
+        "打开高级插件管理（含架构图）；关闭设置中的「高级插件管理」后恢复简洁列表",
     },
     rolePack: {
       exportFilterName: "OCPak 角色包",
