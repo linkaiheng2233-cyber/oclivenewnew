@@ -4,7 +4,31 @@
 
 ## [Unreleased]
 
-**Kernel / CLI / quality（当前 `main`，应用版本号仍为 package.json / `src-tauri` 的 0.2.0）：**
+（下一发版条目写在此处。）
+
+---
+
+## [0.2.0] - 2026-05-22
+
+**桌面应用 `0.2.0` 首次整理发版候选**（CLI **0.1.0**、crate **`oclive_kernel_runtime` 0.2.0** 仍独立发版，见 [creator-docs/development/RELEASE_VERSIONING.md](creator-docs/development/RELEASE_VERSIONING.md)）。
+
+### Breaking
+
+- **角色包 v2**：新包使用 `pipeline.ocblueprint` SSOT；`pack validate` **默认 v2**。迁移：[V1_TO_V2_MIGRATION.md](creator-docs/role-pack/V1_TO_V2_MIGRATION.md)。
+- **CLI**：移除顶层 `publish`、`plugin search/update`、`registry login`（见 [crates/oclive-cli/DEPRECATED_COMMANDS.md](crates/oclive-cli/DEPRECATED_COMMANDS.md)）。
+
+### Added
+
+- v2 蓝图、`oclive test --oocp`、`oclive doctor` 蓝图三项检查、`oclive explain` 全量 `AppError` 词条。
+- `PluginHostPort` 解耦；C1 `set_session_plugin_backend` 委托 `set_session_slot_override`。
+
+### Changed
+
+- 主编排仅 `process_message`；Monolith / `oclive-cli` 工具链与文档收口。
+
+**历史摘要（0.2.0 之前已在 `main` 积累）：**
+
+**Kernel / CLI / quality：**
 
 - **内核编排**：**`process_message`** 为 Tauri 与 HTTP API 的**唯一主编排入口**；**入口蓝图（`pipeline.ocblueprint`）主路径已移除**，子流程在 `chat_engine` 模块内顺序展开。
 - **Monolith**：**`oclive-cli`** 四阶段（**`init --monolith`** → **`build`** → 双二进制 **`bench`**）与 **`vendor/oclive_monolith_builtin/`** 焊接桩落地；详见 [RFC_OCLIVE_MONOLITH_MODE.md](creator-docs/rfc/RFC_OCLIVE_MONOLITH_MODE.md) 与 [OCLIVE_CLI_GUIDE.md](creator-docs/cli/OCLIVE_CLI_GUIDE.md)。

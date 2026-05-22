@@ -88,6 +88,17 @@ cargo run -p oclive-cli -- bench --matrix --release -o ./my-kernel --json > matr
 
 对 **档位 × preset** 组合各跑少量轮次（**4×3=12**），用于挑选嵌入式/低延迟预设下的最优焊接组合；须在含 **`monolith.toml`** 的内核脚手架工程上执行（主应用仓无该文件时用 `oclive init --monolith` 工程）。参考样例角色包：**`roles/mumu`**（v2 蓝图）。结论以本机 JSON 为准。
 
+**矩阵采样表（待本机 `bench --matrix --json` 填入）**：
+
+| 档位 \ preset | minimal | mixed | full |
+|---------------|---------|-------|------|
+| none | _TBD ms_ | _TBD ms_ | _TBD ms_ |
+| latency | _TBD ms_ | _TBD ms_ | _TBD ms_ |
+| memory | _TBD ms_ | _TBD ms_ | _TBD ms_ |
+| embedded | _TBD ms_ | _TBD ms_ | _TBD ms_ |
+
+冷启动（`bench --cold-start`）与 soak 数据见同目录 `bench_history.json`（本地，勿提交）。
+
 ### 5.4 冷启动（`--cold-start`）
 
 ```bash
