@@ -2,7 +2,11 @@
 
 #![cfg_attr(test, allow(clippy::unwrap_used, clippy::expect_used))]
 
-mod bench_cmd;
+mod commands;
+
+pub use commands::bench as bench_cmd;
+pub use commands::init;
+pub use commands::lint as lint_cmd;
 mod bench_cold_start;
 mod bench_equivalence;
 mod bench_metrics;
@@ -28,7 +32,6 @@ mod env_probe;
 mod doctor_sbom;
 mod explain_cmd;
 mod generator;
-mod init;
 mod init_bench;
 mod init_check;
 mod init_from_existing;
@@ -38,7 +41,6 @@ mod interactive;
 mod kernel_cmd;
 mod learn_cmd;
 mod lint_audit_ci;
-mod lint_cmd;
 mod market_cmd;
 mod market_index;
 mod monolith_codegen;
@@ -86,12 +88,12 @@ pub struct Cli {
 #[derive(Subcommand)]
 enum Commands {
     /// Create a kernel project (interactive or scripted)
-    #[command(after_long_help = init::PRESET_MATRIX_HELP)]
-    Init(init::InitArgs),
+    #[command(after_long_help = commands::init::PRESET_MATRIX_HELP)]
+    Init(commands::init::InitArgs),
     /// Regenerate Monolith artifacts and build standard + monolith binaries
     Build(build_cmd::BuildArgs),
     /// Benchmark standard vs monolith binaries (JSON report)
-    Bench(bench_cmd::BenchArgs),
+    Bench(commands::bench::BenchArgs),
     /// Watch role pack manifest/settings changes
     Dev(dev_cmd::DevArgs),
     /// Role pack validate, create, publish (.oclivepack)
@@ -115,7 +117,7 @@ enum Commands {
     /// Project regression checks
     Test(test_cmd::TestArgs),
     /// Static project health lint
-    Lint(lint_cmd::LintArgs),
+    Lint(commands::lint::LintArgs),
     /// Build size and dependency profile
     Profile(profile_cmd::ProfileArgs),
     /// Browse and install from market index
@@ -154,9 +156,9 @@ fn main() -> Result<()> {
     let cli = Cli::parse();
     init_tracing(cli.verbose);
     match cli.command {
-        Commands::Init(args) => init::run(args),
+        Commands::Init(args) => commands::init::run(args),
         Commands::Build(args) => build_cmd::run(args),
-        Commands::Bench(args) => bench_cmd::run(args),
+        Commands::Bench(args) => commands::bench::run(args),
         Commands::Dev(args) => dev_cmd::run(args),
         Commands::Pack(args) => pack_cmd::run_pack(args),
         Commands::Blueprint(cli) => blueprint_cmd::run(cli),
@@ -168,7 +170,7 @@ fn main() -> Result<()> {
         Commands::Dashboard(args) => dashboard_cmd::run(args),
         Commands::Learn(args) => learn_cmd::run(args),
         Commands::Test(args) => test_cmd::run(args),
-        Commands::Lint(args) => lint_cmd::run(args),
+        Commands::Lint(args) => commands::lint::run(args),
         Commands::Profile(args) => profile_cmd::run(args),
         Commands::Market(cli) => market_cmd::run(cli),
         Commands::Collab(cli) => collab_cmd::run(cli),
@@ -186,15 +188,15 @@ mod tests {
     #[test]
     fn init_after_long_help_mentions_monolith_rfc() {
         assert!(
-            crate::init::PRESET_MATRIX_HELP.contains("RFC_OCLIVE_MONOLITH_MODE.md"),
+            crate::commands::init::PRESET_MATRIX_HELP.contains("RFC_OCLIVE_MONOLITH_MODE.md"),
             "init --help footer should point to Monolith RFC"
         );
         assert!(
-            crate::init::PRESET_MATRIX_HELP.contains("--monolith"),
+            crate::commands::init::PRESET_MATRIX_HELP.contains("--monolith"),
             "init --help footer should mention --monolith"
         );
         assert!(
-            crate::init::PRESET_MATRIX_HELP.contains("robot-soul"),
+            crate::commands::init::PRESET_MATRIX_HELP.contains("robot-soul"),
             "init --help footer should mention --template"
         );
         assert!(
@@ -202,7 +204,7 @@ mod tests {
             "init --help footer should mention --list-templates"
         );
         assert!(
-            crate::init::PRESET_MATRIX_HELP.contains("--monolith-bench-preset"),
+            crate::commands::init::PRESET_MATRIX_HELP.contains("--monolith-bench-preset"),
             "init --help footer should mention --monolith-bench-preset"
         );
     }

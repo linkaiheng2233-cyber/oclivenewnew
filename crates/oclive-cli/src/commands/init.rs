@@ -1,7 +1,12 @@
-//! `init` 子命令：解析参数、合并预设、调用生成器。
+//! `oclive init`: scaffold kernel projects.
 //!
 //! 非交互模式下 **`--preset`** 决定基线；可选 **`--backend-*`** 逐项覆盖。
 //! 预设与 `plugin_backends` 矩阵见 **`init --help` 末尾**（与生成项目根目录 **`CONFIG_REFERENCE.md`** 一致）。
+
+use super::init_interactive::run_quick_init;
+use super::init_smart::apply_smart_hints;
+
+pub use super::init_interactive::resolve_init_config;
 
 use crate::generator;
 use crate::pipeline::PipelineArg;
@@ -211,6 +216,7 @@ pub struct TemplateDefaults {
     pub role_pack: RolePackKind,
 }
 
+#[must_use]
 pub fn template_defaults(t: InitTemplateArg) -> TemplateDefaults {
     match t {
         InitTemplateArg::RobotSoul => TemplateDefaults {
@@ -281,6 +287,7 @@ pub struct BackendSlots {
 }
 
 impl BackendSlots {
+    #[must_use]
     pub fn all(v: BackendImpl) -> Self {
         Self {
             memory: v,
@@ -410,6 +417,7 @@ impl ProjectConfig {
 }
 
 /// 与 `PRESET_MATRIX_HELP` / `CONFIG_REFERENCE.md` 完全一致。
+#[must_use]
 pub fn preset_config(name: &str, preset: &str) -> ProjectConfig {
     let project_name = if name.trim().is_empty() {
         "my_oclive_kernel".into()
@@ -492,6 +500,7 @@ pub fn preset_config(name: &str, preset: &str) -> ProjectConfig {
 }
 
 /// 解析 Monolith 焊接档位（无 `--monolith-preset` 时默认七焊接键全焊）。
+#[must_use]
 pub fn resolve_monolith_weld_modules(cfg: &ProjectConfig) -> Vec<String> {
     if !cfg.monolith_enabled {
         return vec![];
@@ -545,6 +554,7 @@ pub fn resolve_monolith(args: &InitArgs, cfg: &mut ProjectConfig) {
     }
 }
 
+#[must_use]
 pub fn resolve_role_pack_kind(args: &InitArgs) -> RolePackKind {
     if args.skip_role_pack {
         return RolePackKind::None;
@@ -628,6 +638,7 @@ pub(crate) fn apply_backend_cli_overrides(cfg: &mut ProjectConfig, args: &InitAr
 }
 
 /// `--quick` 默认配方：full 预设、无头服务、无 Monolith、无示例角色包。
+#[must_use]
 pub fn quick_project_config(project_name: &str) -> ProjectConfig {
     let mut cfg = preset_config(project_name, "full");
     cfg.monolith_enabled = false;
@@ -639,159 +650,18 @@ pub fn quick_project_config(project_name: &str) -> ProjectConfig {
     cfg
 }
 
-fn run_quick_init(args: &InitArgs) -> Result<()> {
-    let mut project_name = args.project_name.clone();
-    let mut output = args.output.clone();
-    if !args.non_interactive {
-        project_name = dialoguer::Input::with_theme(&dialoguer::theme::ColorfulTheme::default())
-            .with_prompt("Project name (quick mode)")
-            .default(project_name)
-            .interact_text()
-            .context("quick project name")?;
-        let out_default = output.display().to_string();
-        let out_str: String =
-            dialoguer::Input::with_theme(&dialoguer::theme::ColorfulTheme::default())
-                .with_prompt("Output directory")
-                .default(out_default)
-                .interact_text()
-                .context("quick output")?;
-        output = PathBuf::from(out_str);
-    }
-    let mut cfg = quick_project_config(&project_name);
-    apply_backend_cli_overrides(&mut cfg, args);
-    apply_cargo_metadata_cli(&mut cfg, args);
-    ensure_cargo_license_default(&mut cfg);
-    if !args.quiet {
-        println!("—— Quick mode (--quick) ——");
-        println!("preset=full, Monolith=off, no roles/, no --kernel-source");
-        cfg.print_summary();
-    }
-    generator::write_project(&cfg, &output)?;
-    if !args.quiet {
-        println!("Generated: {}", output.display());
-        println!("Suggested next: cargo run -p oclive-cli -- doctor");
-        println!(
-            "  then cd {} && cargo build && cargo run --release",
-            output.display()
-        );
-    }
-    Ok(())
-}
-
-/// Build resolved project configuration without writing to disk.
-pub fn resolve_init_config(
-    args: &InitArgs,
-    skip_interactive_confirm: bool,
-) -> Result<ProjectConfig> {
-    if args.quick {
-        let mut cfg = quick_project_config(&args.project_name);
-        apply_backend_cli_overrides(&mut cfg, args);
-        apply_cargo_metadata_cli(&mut cfg, args);
-        ensure_cargo_license_default(&mut cfg);
-        return Ok(cfg);
-    }
-
-    let mut cfg = if args.non_interactive || args.dry_run || args.check || skip_interactive_confirm
-    {
-        let preset = args
-            .preset
-            .as_deref()
-            .unwrap_or("minimal")
-            .to_ascii_lowercase();
-        let mut c = preset_config(&args.project_name, &preset);
-        apply_backend_cli_overrides(&mut c, args);
-        if let Some(t) = args.project_type {
-            c.project_type = match t {
-                ProjectTypeArg::KernelServer => ProjectType::KernelServer,
-                ProjectTypeArg::Library => ProjectType::Library,
-            };
-        }
-        c
-    } else {
-        let mut c = crate::interactive::run_interactive(args)?;
-        apply_backend_cli_overrides(&mut c, args);
-        if let Some(t) = args.project_type {
-            c.project_type = match t {
-                ProjectTypeArg::KernelServer => ProjectType::KernelServer,
-                ProjectTypeArg::Library => ProjectType::Library,
-            };
-        }
-        if !args.project_name.is_empty() && args.project_name != "my_oclive_kernel" {
-            c.project_name = args.project_name.clone();
-        }
-        c
-    };
-
-    apply_template_layer(args, &mut cfg);
-    resolve_monolith(args, &mut cfg);
-    if cfg.monolith_enabled {
-        cfg.monolith_preset = args.monolith_preset.or(args.monolith_bench_preset);
-    }
-    if args.monolith_bench_preset.is_some() && cfg.project_type == ProjectType::KernelServer {
-        if !cfg.monolith_enabled {
-            cfg.monolith_enabled = true;
-        }
-        cfg.monolith_preset = cfg.monolith_preset.or(args.monolith_bench_preset);
-        cfg.run_monolith_bench_after_init = cfg.monolith_enabled;
-    }
-    cfg.factory_template = args.template;
-    cfg.with_example_plugin = args.with_example_plugin;
-    cfg.role_pack_kind = resolve_role_pack_kind(args);
-    if args.skip_role_pack {
-        cfg.skip_role_pack = true;
-        cfg.role_pack_kind = RolePackKind::None;
-    }
-    if let Some(ref ks) = args.kernel_source {
-        let canonical = ks
-            .canonicalize()
-            .with_context(|| format!("kernel-source: {}", ks.display()))?;
-        generator::validate_kernel_source(&canonical)?;
-        cfg.kernel_source = Some(canonical);
-    }
-    apply_cargo_metadata_cli(&mut cfg, args);
-    ensure_cargo_license_default(&mut cfg);
-    cfg.pipeline = args.pipeline;
-    if !args.weld_modules.is_empty() {
-        cfg.custom_weld_modules = Some(args.weld_modules.clone());
-        cfg.monolith_enabled = true;
-    }
-    if args.tui
-        && !skip_interactive_confirm
-        && cfg.monolith_enabled
-        && cfg.custom_weld_modules.is_none()
-        && matches!(cfg.project_type, ProjectType::KernelServer)
-    {
-        if let Some(w) = crate::init_tui::pick_weld_modules_tui()? {
-            cfg.custom_weld_modules = Some(w);
-        }
-    }
-    Ok(cfg)
-}
-
+/// Run the init subcommand (scaffold a kernel project).
+///
+/// # Errors
+///
+/// Returns an error when validation, user cancel, or project generation fails.
 pub fn run(args: InitArgs) -> Result<()> {
     if let Some(ref existing) = args.from_existing {
         return crate::init_from_existing::run_from_existing(existing, &args);
     }
 
-    if args.smart {
-        let probe = crate::env_probe::EnvironmentProbe::collect();
-        crate::env_probe::print_init_recommendations(&probe, args.project_name.trim());
-        if args.non_interactive && args.preset.is_none() {
-            return Ok(());
-        }
-    }
-
-    let show_auto_smart = !args.non_interactive
-        && !args.quiet
-        && !args.no_smart
-        && !args.smart
-        && !args.list_templates
-        && !args.check
-        && args.template_url.is_none()
-        && !args.quick;
-    if show_auto_smart {
-        let probe = crate::env_probe::EnvironmentProbe::collect();
-        crate::env_probe::print_init_recommendations(&probe, args.project_name.trim());
+    if apply_smart_hints(&args)? {
+        return Ok(());
     }
 
     if args.check {
