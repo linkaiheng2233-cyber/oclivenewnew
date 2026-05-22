@@ -40,6 +40,14 @@ function selectWorkspacePlugin(id: string): void {
   selectedWorkspacePluginId.value = id;
 }
 
+function focusAdjacentCatalog(delta: number): void {
+  const ids = pluginStore.catalog.map((c) => c.id);
+  if (!ids.length) return;
+  const idx = ids.indexOf(selectedWorkspacePluginId.value);
+  const next = ids[(idx + delta + ids.length) % ids.length];
+  if (next) selectWorkspacePlugin(next);
+}
+
 function clearBatchSelection(): void {
   batchSelected.value = {};
 }
@@ -398,7 +406,10 @@ function onFocusPluginFromGraph(id: string) {
                         :class="{ 'pm-wb-item--active': p.id === selectedWorkspacePluginId }"
                         role="option"
                         :aria-selected="p.id === selectedWorkspacePluginId"
+                        :tabindex="p.id === selectedWorkspacePluginId ? 0 : -1"
                         @click="selectWorkspacePlugin(p.id)"
+                        @keydown.down.prevent="focusAdjacentCatalog(1)"
+                        @keydown.up.prevent="focusAdjacentCatalog(-1)"
                       >
                         <span class="pm-wb-item-id">{{ p.id }}</span>
                         <span class="pm-wb-item-row2">
