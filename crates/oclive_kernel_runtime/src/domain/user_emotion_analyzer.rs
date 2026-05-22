@@ -4,12 +4,7 @@ use crate::domain::emotion_analyzer::{EmotionAnalyzer, EmotionResult};
 use crate::error::Result;
 use std::sync::atomic::{AtomicBool, Ordering};
 
-pub trait UserEmotionAnalyzer: Send + Sync {
-    /// # Errors
-    ///
-    /// Returns an error when the analyzer cannot produce an [`EmotionResult`].
-    fn analyze(&self, text: &str) -> Result<EmotionResult>;
-}
+pub use oclive_kernel_contracts::UserEmotionAnalyzer;
 
 pub struct BuiltinUserEmotionAnalyzer;
 

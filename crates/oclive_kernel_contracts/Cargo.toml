@@ -1,0 +1,16 @@
+[package]
+name = "oclive_kernel_contracts"
+version = "0.1.0"
+edition = "2021"
+description = "Core trait ports for OCLIVE kernel (PluginHost, retrieval, policy, etc.)"
+license = "AGPL-3.0"
+repository = "https://github.com/linkaiheng2233-cyber/oclivenewnew"
+keywords = ["oclive", "kernel", "contracts"]
+categories = ["development-tools"]
+
+[lints]
+workspace = true
+
+[dependencies]
+oclive_kernel_types = { path = "../oclive_kernel_types" }
+async-trait = "0.1"

@@ -2992,11 +2992,21 @@ dependencies = [
 ]
 
 [[package]]
+name = "oclive_kernel_contracts"
+version = "0.1.0"
+dependencies = [
+ "async-trait",
+ "oclive_kernel_types",
+]
+
+[[package]]
 name = "oclive_kernel_runtime"
 version = "0.2.0"
 dependencies = [
  "async-trait",
  "chrono",
+ "oclive_kernel_contracts",
+ "oclive_kernel_types",
  "oclive_validation",
  "serde",
  "serde_json",
@@ -3014,6 +3024,17 @@ dependencies = [
  "oclive_kernel_runtime",
  "oclivenewnew-tauri",
  "tracing",
+]
+
+[[package]]
+name = "oclive_kernel_types"
+version = "0.1.0"
+dependencies = [
+ "chrono",
+ "oclive_validation",
+ "serde",
+ "serde_json",
+ "thiserror",
 ]
 
 [[package]]

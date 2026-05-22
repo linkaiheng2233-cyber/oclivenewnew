@@ -7,16 +7,21 @@
 pub mod domain;
 pub mod utils;
 
+pub use oclive_kernel_contracts::{
+    ComplexEmotionProvider, EmotionPolicy, EventPolicy, FavorabilityRepository, LocalPluginBridge,
+    MemoryPolicy, MemoryRepository, MemoryRetrieval, PromptAssembler, UserEmotionAnalyzer,
+};
 pub use oclive_kernel_types::complex_emotion;
 pub use oclive_kernel_types::emotion;
 pub use oclive_kernel_types::error;
 pub use oclive_kernel_types::local_plugin;
+pub use oclive_kernel_types::memory_retrieval;
 pub use oclive_kernel_types::models;
 pub use oclive_kernel_types::policy;
+pub use oclive_kernel_types::prompt;
 
 pub use oclive_validation as validation;
 
-pub use domain::{FavorabilityRepository, MemoryRepository};
 pub use error::{http_chat_codes, AppError, KernelErrorBody, Result};
 pub use models::*;
 

@@ -5,15 +5,7 @@ use crate::error::Result;
 use crate::models::Role;
 use std::sync::atomic::{AtomicBool, Ordering};
 
-pub trait PromptAssembler: Send + Sync {
-    /// 组装本回合 Prompt 正文。
-    ///
-    /// # Errors
-    ///
-    /// 模板或输入校验失败时返回 [`crate::error::Result`] 的 `Err` 变体。
-    fn build_prompt(&self, input: &PromptInput<'_>) -> Result<String>;
-    fn top_topic_hint(&self, role: &Role, scene_id: &str) -> Option<String>;
-}
+pub use oclive_kernel_contracts::PromptAssembler;
 
 pub struct BuiltinPromptAssembler;
 

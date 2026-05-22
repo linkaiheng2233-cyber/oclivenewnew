@@ -9,11 +9,7 @@ use std::fs;
 use std::path::{Path, PathBuf};
 use std::sync::Arc;
 
-/// Provider 发现桥接接口（后续可由 WASM / Native Process 两种实现提供）。
-pub trait LocalPluginBridge: Send + Sync {
-    fn bridge_name(&self) -> &'static str;
-    fn discover_providers(&self) -> Vec<LocalPluginProviderDescriptor>;
-}
+pub use oclive_kernel_contracts::LocalPluginBridge;
 
 /// 文件清单桥接：从目录中的 JSON 描述文件发现本地 provider。
 ///

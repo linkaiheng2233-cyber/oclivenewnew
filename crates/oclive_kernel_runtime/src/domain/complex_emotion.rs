@@ -4,12 +4,7 @@ use crate::domain::emotion_analyzer::EmotionResult;
 use crate::error::Result;
 pub use oclive_kernel_types::{ComplexEmotionInput, ComplexEmotionOutput};
 
-pub trait ComplexEmotionProvider: Send + Sync {
-    /// # Errors
-    ///
-    /// Propagates [`crate::error::AppError`] from the underlying implementation.
-    fn resolve_turn(&self, input: &ComplexEmotionInput) -> Result<ComplexEmotionOutput>;
-}
+pub use oclive_kernel_contracts::ComplexEmotionProvider;
 
 /// 由七维分数推导效价 / 掌控感近似（[-1, 1]），供宿主未显式传入 `user_valence`/`user_dominance` 时使用。
 #[must_use]
