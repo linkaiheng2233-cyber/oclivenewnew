@@ -13,7 +13,7 @@
 | 职责 | 实现锚点（主仓） |
 |------|------------------|
 | **回合编排** | `src-tauri/src/domain/chat_engine/` · `process_message` |
-| **槽位解析** | `PluginHost::resolve_for_role` · `plugin_backends` |
+| **槽位解析** | `SlotResolver` / `PluginHost::resolve_for_role` · **`slot_registry` → 六槽折叠** |
 | **契约与持久化形状** | `oclive_kernel_runtime`（DTO / 纯 domain）· `migrations/001_init.sql` · `oclive_validation` |
 | **无头入口（过渡）** | `http_api` · **`oclive-kernel-server`** · **`oclivenewnew-tauri --api`** |
 
@@ -21,7 +21,7 @@
 用户/设备边界          →  Vue / 硬件驱动 / 侧车进程（不在「内核」内）
 纯净内核               →  process_message + PluginHost + Repository 契约
 槽位实现（可替换）     →  builtin / remote / directory / local / ollama …
-灵魂数据（可定制）     →  角色包 manifest + settings + 知识/人格文件
+灵魂数据（可定制）     →  角色包 pipeline.ocblueprint（v2）+ 知识/人格文件
 ```
 
 **不是** Linux 内核，也**不是**整个 Tauri 桌面应用。
@@ -44,11 +44,11 @@
 
 | 组成部分 | 说明 |
 |----------|------|
-| **角色包** | `manifest.json` · `settings.json` · `core_personality.txt` · 场景/知识等（见 [ROLE_PACK_SPEC.md](../role-pack/ROLE_PACK_SPEC.md)） |
-| **有效后端** | `plugin_backends` 包默认 + 会话覆盖 + 环境变量合并结果（见 [SETTINGS_REFERENCE.md](../cli/SETTINGS_REFERENCE.md)） |
+| **角色包（v2 SSOT）** | **`pipeline.ocblueprint`**（`meta` + `slot_registry`）· `core_personality.txt` · 场景/知识等（见 [ROLE_PACK_SPEC.md](../role-pack/ROLE_PACK_SPEC.md)） |
+| **有效后端** | 蓝图 `slot_registry` 折叠为六槽 + **`set_session_slot_override`** 会话覆盖 + 环境变量（见 [SETTINGS_REFERENCE.md](../cli/SETTINGS_REFERENCE.md)） |
 | **关系与记忆** | `role_runtime`、长期记忆等由内核经 Repository 读写；策略由 `memory` 等槽实现 |
 
-**机器人场景**：设备上通常只换「灵魂包」与少量 `settings`，不换编排内核版本（在 `min_runtime_version` 兼容前提下）。
+**机器人场景**：设备上通常只换「灵魂包」与蓝图内槽位配置，不换编排内核版本（在 `min_runtime_version` 兼容前提下）。
 
 工作名 **RobotSoulPack**（最小灵魂包）已与 **`oclive pack validate --profile robot-soul`** 对齐；字段与示例见 [ROLE_PACK_SPEC.md](../role-pack/ROLE_PACK_SPEC.md)、[examples/robot-soul-minimal](../../examples/robot-soul-minimal/README.md)。
 

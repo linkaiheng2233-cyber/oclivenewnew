@@ -45,7 +45,7 @@
 |------|------|
 | 错误码与用户可见文案 · 提 issue 最少信息 | **[ERROR_CODES.md](ERROR_CODES.md)** |
 | **`code` 与 JSON 错误体规范** | **[KERNEL_ERROR_CODE_CONVENTION.md](KERNEL_ERROR_CODE_CONVENTION.md)** |
-| **`plugin_backends` 与第 1–6 模块契约** | **[../plugin-and-architecture/PLUGIN_V1.md](../plugin-and-architecture/PLUGIN_V1.md)** · 编号总览 **[OCLIVE_ARCHITECTURE_OVERVIEW.md](OCLIVE_ARCHITECTURE_OVERVIEW.md)** |
+| **`slot_registry` / 六槽编排契约** | **[../plugin-and-architecture/PLUGIN_V1.md](../plugin-and-architecture/PLUGIN_V1.md)** · 蓝图字段 **[ROLE_PACK_SPEC.md](../role-pack/ROLE_PACK_SPEC.md)** · 编号 **[OCLIVE_ARCHITECTURE_OVERVIEW.md](OCLIVE_ARCHITECTURE_OVERVIEW.md)** |
 | Remote HTTP JSON-RPC | **[../plugin-and-architecture/REMOTE_PLUGIN_PROTOCOL.md](../plugin-and-architecture/REMOTE_PLUGIN_PROTOCOL.md)** |
 | 角色包磁盘格式 / `schema_version` | **[../role-pack/ROLE_PACK_SPEC.md](../role-pack/ROLE_PACK_SPEC.md)** · **[../role-pack/PACK_VERSIONING.md](../role-pack/PACK_VERSIONING.md)** |
 | **v1 → v2 蓝图迁移（v1 已废弃，仅迁移用）** | **[../role-pack/V1_TO_V2_MIGRATION.md](../role-pack/V1_TO_V2_MIGRATION.md)**（[English](../../creator-docs-en/role-pack/V1_TO_V2_MIGRATION.md)） |
@@ -89,7 +89,7 @@
 | **目录插件权限规范（A4.2 · manifest / 校验 / 运行时）** | **[../plugin-and-architecture/PLUGIN_V1.md §权限规范](../plugin-and-architecture/PLUGIN_V1.md)**（[English](../../creator-docs-en/plugin-and-architecture/PLUGIN_V1.md)） |
 | **官方 CLI 脚手架 `oclive-cli`（A/B/C；质量深耕 Z11–Z19；巩固强化 AA1–AA11；英文输出）** | **[../cli/OCLIVE_CLI_GUIDE.md](../cli/OCLIVE_CLI_GUIDE.md)** · [KERNEL_FACTORY_VISION.md](KERNEL_FACTORY_VISION.md) |
 | **内核工厂愿景（U–X + T 协作分发 + Y 持续精进）** | **[KERNEL_FACTORY_VISION.md](KERNEL_FACTORY_VISION.md)**（[English](../../creator-docs-en/getting-started/KERNEL_FACTORY_VISION.md)） |
-| **`plugin_backends` 第 1–6 模块与预设、切换 remote 步骤（权威）** | **[../cli/SETTINGS_REFERENCE.md](../cli/SETTINGS_REFERENCE.md)** |
+| **v2 蓝图字段与 legacy `plugin_backends` 对照（权威）** | **[../cli/SETTINGS_REFERENCE.md](../cli/SETTINGS_REFERENCE.md)** |
 | **角色包磁盘格式、多发行版对齐、`oclive pack validate`** | **[../role-pack/ROLE_PACK_SPEC.md](../role-pack/ROLE_PACK_SPEC.md)** |
 | **蓝图 v2（`pipeline.ocblueprint` · P0–P8 收口）** | **[../../handoff/RFC_ROLE_BLUEPRINT_V2.md](../../handoff/RFC_ROLE_BLUEPRINT_V2.md)** · **[../../handoff/BLUEPRINT_V2_IMPLEMENTATION_PLAN.md](../../handoff/BLUEPRINT_V2_IMPLEMENTATION_PLAN.md)** · **[../../handoff/BLUEPRINT_V2_DECISIONS.md](../../handoff/BLUEPRINT_V2_DECISIONS.md)** |
 | **内核分层纪律（domain / infrastructure / api）** | **[../../handoff/ARCHITECTURE_LAYERING.md](../../handoff/ARCHITECTURE_LAYERING.md)** |
@@ -103,7 +103,7 @@
 | **编写器与主程序版本兼容（A5 一页表 · 中英）** | **[../COMPATIBILITY.md](../COMPATIBILITY.md)**（镜像 [creator-docs-en/COMPATIBILITY.md](../../creator-docs-en/COMPATIBILITY.md)）；结项 [`../../handoff/A5_CLOSURE_SUMMARY.md`](../../handoff/A5_CLOSURE_SUMMARY.md) |
 | **`memory = local`**、`_local_plugins` 清单与桥接契约 | **[../plugin-and-architecture/LOCAL_PLUGIN_BRIDGE_SPEC.md](../plugin-and-architecture/LOCAL_PLUGIN_BRIDGE_SPEC.md)** |
 | 在 Rust 里新增一种内置后端或注册方式 | **[../plugin-and-architecture/HOW_TO_REPLACE_MODULES.md](../plugin-and-architecture/HOW_TO_REPLACE_MODULES.md)** |
-| 只做角色包内容（manifest、场景、文案） | **[CREATOR_WORKFLOW.md](CREATOR_WORKFLOW.md)**（**`OCLIVE_ROLES_DIR`**、编写器分工、**应用内导入 zip/文件夹**）、[roles/README_MANIFEST.md](../../roles/README_MANIFEST.md)、导入验收 [roles/TESTING_ROLE_PACK_IMPORT.md](../../roles/TESTING_ROLE_PACK_IMPORT.md) |
+| 只做角色包内容（蓝图、场景、文案） | **[CREATOR_WORKFLOW.md](CREATOR_WORKFLOW.md)**（**`OCLIVE_ROLES_DIR`**、工作室分工、**应用内导入 zip/文件夹**）、[ROLE_PACK_SPEC.md](../role-pack/ROLE_PACK_SPEC.md)、导入验收 [roles/TESTING_ROLE_PACK_IMPORT.md](../../roles/TESTING_ROLE_PACK_IMPORT.md) |
 | **核心 / 可变性格档案、`personality_source`、七维视图** | **[docs/personality-archive-notes.md](../../docs/personality-archive-notes.md)**（与 `roles/README_MANIFEST.md` §5.3 互参） |
 | **设计思路为何从「七维为主」走到「档案轴心」** | **[docs/design-axis-evolution.md](../../docs/design-axis-evolution.md)**（旧文档保留，冲突以契约为准） |
 | 编写器校验路线（与 `load_role` / crate 中期） | **[../role-pack/EDITOR_VALIDATION_ROADMAP.md](../role-pack/EDITOR_VALIDATION_ROADMAP.md)** |
@@ -143,7 +143,7 @@
 ## 推荐阅读顺序（创作者 / 侧车开发者）
 
 1. [CREATOR_WORKFLOW.md](CREATOR_WORKFLOW.md) — 角色包目录与加载方式  
-2. [../plugin-and-architecture/PLUGIN_V1.md](../plugin-and-architecture/PLUGIN_V1.md) — `plugin_backends` 六类可替换后端（memory / emotion / event / prompt / llm / **agent**）  
+2. [../plugin-and-architecture/PLUGIN_V1.md](../plugin-and-architecture/PLUGIN_V1.md) — v2 **`slot_registry`** 与六槽门面（memory / emotion / event / prompt / llm / **agent**）  
 2b. [../plugin-and-architecture/DIRECTORY_PLUGINS.md](../plugin-and-architecture/DIRECTORY_PLUGINS.md) — 目录式插件（与 `directory` 枚举、`directory_plugins` 槽位）  
 3. [../plugin-and-architecture/CREATOR_PLUGIN_ARCHITECTURE.md](../plugin-and-architecture/CREATOR_PLUGIN_ARCHITECTURE.md) — 三种扩展方式、环境变量、与「热更新」边界  
 4. [SIDECAR_LLM_USER_GUIDE.md](SIDECAR_LLM_USER_GUIDE.md) — **本机侧车 + BYOK**（接闭源 API 的路径；与启动器配合）  

@@ -32,9 +32,9 @@
 
 ### 创作模式编辑流程
 
-1. **选择或新建角色包**：在左侧列表选中 `roles/<roleId>/`，或「新建角色包」生成 `manifest.json` + `settings.json` 骨架。
-2. **编辑 manifest**：填写 `name`、`description`、`plugin_backends`（七槽）、可选 `slot_registry` / `pipeline.ocblueprint`（v2 蓝图）。保存后运行 **校验**（对齐 `oclive pack validate` 规则）。
-3. **编辑 settings**：配置人格向量、提示词片段、复杂情感等；顶栏 **架构图** 可查看槽位与蓝图分组（`groups` 只读派生，边由 `slot_registry` 生成）。
+1. **选择或新建角色包**：在左侧列表选中 `roles/<roleId>/`，或「新建角色包」生成 **v2** 骨架（**`pipeline.ocblueprint`** + `core_personality.txt` 等，见 [ROLE_PACK_SPEC.md](../role-pack/ROLE_PACK_SPEC.md)）。**v1（已废弃）** 的 `manifest.json` / `settings.json` 仅用于迁移，见 [V1_TO_V2_MIGRATION.md](../role-pack/V1_TO_V2_MIGRATION.md)。
+2. **编辑蓝图**：在 **`pipeline.ocblueprint`** 中维护 `meta`（名称、描述、人格等）与 **`slot_registry`**（多实例槽位、`type` + `backend`）。保存后运行 **校验**（对齐 `oclive pack validate`，默认 v2）。
+3. **资源与场景**：编辑 `core_personality.txt`、场景目录等；顶栏 **架构图** 展示 `slot_registry` 与可选 **`groups`**（只读归组，不落盘边表）。
 4. **保存**：写入当前 roles 根；若配置了 `ocliveProjectRoot`，部分操作可触发运行时热重载（见 `oclive dev`）。
 
 > 截图占位：创作模式主界面（左栏角色列表 + 中央 manifest/settings 标签 + 右侧架构图）— 发版素材目录 `creator-docs/studio/assets/`。
@@ -44,13 +44,13 @@
 1. 在创作模式打开目标角色包，点击 **试聊** / **预览对话**。
 2. 工作室按 `studio-config.json` 拉起 **oclivenewnew `--api`**（或已配置的 exe），注入 `OCLIVE_ROLES_DIR` 与 LLM（Ollama / Remote）。
 3. 在试聊面板输入消息，检查回复、`reply` 字段与插件槽降级提示；失败时查看 **环境诊断** 与运行时日志（`RUST_LOG=info`）。
-4. 修改 manifest/settings 后再次试聊，无需重启整个工作室（若 API 进程已退出，试聊会自动重拉）。
+4. 修改蓝图或场景资源后再次试聊，无需重启整个工作室（若 API 进程已退出，试聊会自动重拉）。
 
 > 截图占位：试聊侧栏与一轮对话结果。
 
 ### 导出角色包
 
-1. 确认 **校验通过**（无阻塞级 manifest/settings 错误）。
+1. 确认 **校验通过**（无阻塞级 `pipeline.ocblueprint` / 资源错误）。
 2. 使用 **导出** / **发布到 roles 根**：将当前目录同步到 `studio-config.json` 的 `rolesDir` 下同名文件夹（覆盖前会提示）。
 3. 可选 **打包**：生成 `.oclive-plugin` 或 zip 归档（与 `oclive pack` 行为一致时显示 SHA-256 摘要）；导出后可在 **启动模式** 中选择该角色包对话。
 

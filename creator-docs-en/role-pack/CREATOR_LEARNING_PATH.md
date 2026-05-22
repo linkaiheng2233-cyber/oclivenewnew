@@ -28,10 +28,10 @@ Packs still on **`manifest.json` + `settings.json`**: **[V1_TO_V2_MIGRATION.md](
 | Topic | Read |
 |-------|------|
 | **Seven-dim personality** | [README_MANIFEST](../../roles/README_MANIFEST.md) · [docs/personality-archive-notes.md](../../docs/personality-archive-notes.md) |
-| **System prompts / openings** | ROLE_PACK_SPEC + [WORLDVIEW_KNOWLEDGE.md](WORLDVIEW_KNOWLEDGE.md); final chat prompt is driven by **`plugin_backends.prompt`** and engine policy |
-| **`plugin_backends` slots** | [PLUGIN_V1.md](../plugin-and-architecture/PLUGIN_V1.md) · [SETTINGS_REFERENCE.md](../cli/SETTINGS_REFERENCE.md) |
+| **System prompts / openings** | ROLE_PACK_SPEC + [WORLDVIEW_KNOWLEDGE.md](../../creator-docs/role-pack/WORLDVIEW_KNOWLEDGE.md); final chat prompt is driven by **`slot_registry` `type: prompt`** and engine policy |
+| **Slots & modules 1–6** | [PLUGIN_V1.md](../plugin-and-architecture/PLUGIN_V1.md) · [SETTINGS_REFERENCE.md](../cli/SETTINGS_REFERENCE.md) |
 
-**Done when:** You can set each slot to `builtin` / `remote` / `directory` and explain `directory_plugins` → manifest `id`.
+**Done when:** You can configure **`slot_registry`** instances (`type` + `backend`) and explain directory `plugin` / `plugins` → manifest `id`.
 
 ---
 
@@ -53,12 +53,12 @@ Packs still on **`manifest.json` + `settings.json`**: **[V1_TO_V2_MIGRATION.md](
 | Step | Command / doc |
 |------|----------------|
 | **`.oclivepack`** | `cargo run -p oclive-cli -- pack publish <role-root> -o <path>` |
-| **Community index JSON** | [ROLE_PACK_INDEX.md](ROLE_PACK_INDEX.md) · [../roadmap/MARKET_LAUNCHER_INTEGRATION.md](../roadmap/MARKET_LAUNCHER_INTEGRATION.md) |
+| **Community index JSON** | [ROLE_PACK_INDEX.md](ROLE_PACK_INDEX.md) · [../../creator-docs/roadmap/MARKET_LAUNCHER_INTEGRATION.md](../../creator-docs/roadmap/MARKET_LAUNCHER_INTEGRATION.md) |
 | **Host compatibility** | [COMPATIBILITY.md](../COMPATIBILITY.md) · `manifest.min_runtime_version` |
 
 ---
 
 ## Next
 
-- Versioning: [PACK_VERSIONING.md](PACK_VERSIONING.md)  
-- Editor validation roadmap: [EDITOR_VALIDATION_ROADMAP.md](EDITOR_VALIDATION_ROADMAP.md)
+- Versioning: [PACK_VERSIONING.md](../../creator-docs/role-pack/PACK_VERSIONING.md)  
+- Editor validation roadmap: [EDITOR_VALIDATION_ROADMAP.md](../../creator-docs/role-pack/EDITOR_VALIDATION_ROADMAP.md)

@@ -8,7 +8,7 @@ This page uses a **kernel-in-the-center** diagram. **v2** role packs use **`pipe
 
 ## 1. Overview diagram (Mermaid)
 
-**How to read:** center = **dialogue kernel** (orchestration + resolution); top/bottom rows = **`plugin_backends` host slots** (facade traits); top band = **user & process boundary**; bottom = **persistence & external implementations**; lowest band = **scaffolding / compile-time** (orthogonal to runtime `load_role`).
+**How to read:** center = **dialogue kernel**; top/bottom rows = **six host slot facades** (folded from v2 **`slot_registry`**); top band = **user & process boundary**; bottom = **persistence & external implementations**; lowest band = **scaffolding / compile-time**. **Legacy v1 (deprecated):** `settings.json` → `plugin_backends` — [V1_TO_V2_MIGRATION.md](../role-pack/V1_TO_V2_MIGRATION.md).
 
 Static asset (same structure as Mermaid, for slides/print):
 
@@ -24,7 +24,7 @@ flowchart TB
     OOCP["OOCP suite · HTTP black-box tests"]
   end
 
-  subgraph six_top["Swappable six slots · plugin_backends (top)"]
+  subgraph six_top["Swappable six slots · slot_registry fold (top)"]
     direction LR
     M["memory<br/>builtin · v2 · remote · directory · local"]
     EM["emotion<br/>builtin · v2 · remote · directory"]
@@ -33,7 +33,7 @@ flowchart TB
 
   K(("Dialogue kernel<br/>chat_engine · process_message<br/>PluginHost::resolve_for_role"))
 
-  subgraph six_bot["Swappable six slots · plugin_backends (bottom)"]
+  subgraph six_bot["Swappable six slots · slot_registry fold (bottom)"]
     direction LR
     PR["prompt<br/>builtin · v2 · remote · directory"]
     LL["llm<br/>ollama · remote · directory"]
@@ -46,7 +46,7 @@ flowchart TB
     RMT["Remote sidecar<br/>JSON-RPC · OCLIVE_REMOTE_*"]
     DIR["Directory plugins<br/>plugins/ child processes"]
     MCP["MCP config<br/>app_data/mcp-servers/*.json"]
-    SESS["Session backend overrides<br/>set_session_plugin_backend"]
+    SESS["Session slot overrides<br/>set_session_slot_override"]
   end
 
   subgraph toolchain["Scaffolding / compile-time (optional)"]
@@ -91,11 +91,11 @@ flowchart TB
 
 | Capability | Notes |
 |------------|------|
-| **Sixth slot `agent`** | `plugin_backends.agent`; `BuiltinReActAgent`; MCP scan path — see root `AGENTS.md`. |
+| **Sixth slot `agent`** | `slot_registry` instance with `type: agent`; `BuiltinReActAgent`; MCP — see root `AGENTS.md`. |
 | **MCP** | Tool discovery / invocation on the agent path; config under app data `mcp-servers`. |
 | **`memory = local`** | `_local_plugins` bridge — [LOCAL_PLUGIN_BRIDGE_SPEC.md](../../creator-docs/plugin-and-architecture/LOCAL_PLUGIN_BRIDGE_SPEC.md). |
-| **Session overrides** | `set_session_plugin_backend`; `get_role_info` / `load_role` expose `plugin_backends_effective*` snapshots. |
-| **`oclive-cli` + Monolith** | `init` / `build` / `bench`; `monolith.toml` is compile-time only; orthogonal to `settings.json`. |
+| **Session overrides** | `set_session_slot_override`; `get_role_info` / `load_role` expose effective backend snapshots. |
+| **`oclive-cli` + Monolith** | `init` / `build` / `bench`; `monolith.toml` is compile-time only; orthogonal to role-pack blueprint. |
 | **Headless / CI** | `kernel_server`, `--api`, OOCP suite share domain contracts with the desktop build. |
 
 If your fork differs, follow **that branch’s code and migrations**, then update this page.

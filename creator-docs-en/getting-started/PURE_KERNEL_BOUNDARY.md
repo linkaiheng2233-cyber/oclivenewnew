@@ -13,7 +13,7 @@ The **pure kernel** is the runtime layer that is **independent of UI**, **indepe
 | Responsibility | Anchor in main repo |
 |----------------|---------------------|
 | **Turn orchestration** | `src-tauri/src/domain/chat_engine/` · `process_message` |
-| **Slot resolution** | `PluginHost::resolve_for_role` · `plugin_backends` |
+| **Slot resolution** | `SlotResolver` / `PluginHost::resolve_for_role` · **`slot_registry` → six-slot fold** |
 | **Contracts & persistence shape** | `oclive_kernel_runtime` (DTOs / pure domain) · `migrations/001_init.sql` · `oclive_validation` |
 | **Headless entry (transition)** | `http_api` · **`oclive-kernel-server`** · **`oclivenewnew-tauri --api`** |
 
@@ -21,7 +21,7 @@ The **pure kernel** is the runtime layer that is **independent of UI**, **indepe
 User/device boundary   →  Vue / hardware drivers / sidecar processes (not “kernel”)
 Pure kernel            →  process_message + PluginHost + Repository contracts
 Slot implementations   →  builtin / remote / directory / local / ollama …
-Soul data (customizable)→  role pack manifest + settings + personality/knowledge files
+Soul data (customizable)→  role pack pipeline.ocblueprint (v2) + personality/knowledge files
 ```
 
 This is **not** the Linux kernel and **not** the full Tauri desktop app.
@@ -44,11 +44,11 @@ Externally: **soul = versioned data + configurable slot policy**, loaded at runt
 
 | Part | Description |
 |------|-------------|
-| **Role pack** | `manifest.json` · `settings.json` · `core_personality.txt` · scenes/knowledge ([ROLE_PACK_SPEC.md](../role-pack/ROLE_PACK_SPEC.md)) |
-| **Effective backends** | Pack default + session override + env merge ([SETTINGS_REFERENCE.md](../cli/SETTINGS_REFERENCE.md)) |
+| **Role pack (v2 SSOT)** | **`pipeline.ocblueprint`** (`meta` + `slot_registry`) · `core_personality.txt` · scenes/knowledge ([ROLE_PACK_SPEC.md](../role-pack/ROLE_PACK_SPEC.md)) |
+| **Effective backends** | Blueprint `slot_registry` fold + **`set_session_slot_override`** + env ([SETTINGS_REFERENCE.md](../cli/SETTINGS_REFERENCE.md)) |
 | **Relation & memory** | `role_runtime`, long-term memory via Repository; `memory` slot implements policy |
 
-**Robot scenario**: swap soul pack and light `settings` tweaks without changing kernel version (within `min_runtime_version`).
+**Robot scenario**: swap soul pack and blueprint slot config without changing kernel version (within `min_runtime_version`).
 
 Working name **RobotSoulPack** is aligned with **`oclive pack validate --profile robot-soul`**; fields and sample: [ROLE_PACK_SPEC.md](../role-pack/ROLE_PACK_SPEC.md), [examples/robot-soul-minimal](../../examples/robot-soul-minimal/README.md).
 

@@ -4,10 +4,11 @@ The **authoritative** walkthrough (Chinese, kept current with imports and `OCLIV
 
 **[../../creator-docs/getting-started/CREATOR_WORKFLOW.md](../../creator-docs/getting-started/CREATOR_WORKFLOW.md)**
 
-## Short English checklist
+## Short English checklist (v2)
 
-1. Put each role under `roles/<role_id>/` with `manifest.json`, `settings.json`, and pack assets.
-2. Use the pack editor to author content, then **export zip** or **write to folder**; the host can import zip/folder from the UI.
-3. Validate with `oclive pack validate` (see [ROLE_PACK_SPEC.md](../role-pack/ROLE_PACK_SPEC.md)) before sharing.
+1. Put each role under `roles/<role_id>/` with **`pipeline.ocblueprint`** (`schema_version: 2`, `meta`, `slot_registry`) plus assets (`core_personality.txt`, scenes, etc.). See [ROLE_PACK_SPEC.md](../role-pack/ROLE_PACK_SPEC.md).
+2. Use **oclive-studio** create mode or `oclive pack create` / copy `roles/mumu/`; export zip or folder; the host imports `.ocpak` / `.zip` / directory.
+3. Set **`OCLIVE_ROLES_DIR`** to the roles root; validate with `oclive pack validate` (v2 default) before sharing.
+4. **Legacy v1 (deprecated):** `manifest.json` + `settings.json` only for migration — [V1_TO_V2_MIGRATION.md](../role-pack/V1_TO_V2_MIGRATION.md).
 
-This file exists so the English **getting-started** tree can link a first-class path from [DOCUMENTATION_INDEX.md](./DOCUMENTATION_INDEX.md); expand it when a full translation is scheduled.
+This file exists so the English **getting-started** tree can link a first-class path from [DOCUMENTATION_INDEX.md](./DOCUMENTATION_INDEX.md).

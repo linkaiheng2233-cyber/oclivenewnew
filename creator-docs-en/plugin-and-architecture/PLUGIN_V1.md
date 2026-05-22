@@ -1,8 +1,8 @@
-# PLUGIN_V1 — Orchestration contract & backend enums (summary)
+# PLUGIN_V1 — Orchestration contract & backend enums (v2 blueprint · legacy six slots)
 
 **Plugin author learning path:** [PLUGIN_AUTHOR_LEARNING_PATH.md](PLUGIN_AUTHOR_LEARNING_PATH.md)
 
-This is an **English summary** of the v1 contract between the host (Tauri / `chat_engine`) and swappable subsystems: naming, DTO shape, and `settings.json` enums. **Source of truth** remains Rust: `src-tauri/src/domain/*_*.rs`, `src-tauri/src/models/plugin_backends.rs`. **Full tables and edge cases (Chinese):** [../../creator-docs/plugin-and-architecture/PLUGIN_V1.md](../../creator-docs/plugin-and-architecture/PLUGIN_V1.md).
+**Current authority:** role-pack **`pipeline.ocblueprint` → `slot_registry`** ([ROLE_PACK_SPEC.md](../role-pack/ROLE_PACK_SPEC.md)). This English summary covers host orchestration contracts, facade traits, and **v2 instance resolution**; **legacy** `settings.json` → `plugin_backends` sections are **v1 (deprecated)** for migration only. **Full tables (Chinese authority):** [../../creator-docs/plugin-and-architecture/PLUGIN_V1.md](../../creator-docs/plugin-and-architecture/PLUGIN_V1.md). Rust anchors: `slot_resolver.rs`, `plugin_host.rs`, `plugin_backends.rs`.
 
 **Index (ZH):** [DOCUMENTATION_INDEX.md](../../creator-docs/getting-started/DOCUMENTATION_INDEX.md) · **Architecture overview:** [../getting-started/OCLIVE_ARCHITECTURE_OVERVIEW.md](../getting-started/OCLIVE_ARCHITECTURE_OVERVIEW.md) · **Kernel diagram:** [../getting-started/KERNEL_AND_MODULES_ARCHITECTURE.md](../getting-started/KERNEL_AND_MODULES_ARCHITECTURE.md) · **Pack versioning:** [PACK_VERSIONING.md](../../creator-docs/role-pack/PACK_VERSIONING.md) · **Remote JSON-RPC:** [REMOTE_PLUGIN_PROTOCOL.md](../../creator-docs/plugin-and-architecture/REMOTE_PLUGIN_PROTOCOL.md) · **Directory plugins:** [DIRECTORY_PLUGINS.md](../../creator-docs/plugin-and-architecture/DIRECTORY_PLUGINS.md).
 

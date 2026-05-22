@@ -10,7 +10,7 @@
 
 ## 1. 总览图（Mermaid）
 
-**读图约定**：中间为 **对话内核**（编排 + 解析）；上下两行为 **`plugin_backends` 六宿主槽**（门面 trait）；最上为 **用户与进程边界**；最下为 **持久化与外协实现**；最底为 **脚手架 / 编译期路径**（与角色包运行时正交）。
+**读图约定**：中间为 **对话内核**（编排 + 解析）；上下两行为 **六宿主槽门面**（由 v2 **`slot_registry`** 折叠为 `PluginBackends`）；最上为 **用户与进程边界**；最下为 **持久化与外协实现**；最底为 **脚手架 / 编译期路径**（与角色包运行时正交）。**v1（已废弃）** 的 `settings.json` → `plugin_backends` 仅作迁移对照，见 [V1_TO_V2_MIGRATION.md](../role-pack/V1_TO_V2_MIGRATION.md)。
 
 与下方 Mermaid 同结构的 **静态示意图**（便于打印或放进 PPT）：
 
@@ -26,7 +26,7 @@ flowchart TB
     OOCP["OOCP 对照 · WebSocket"]
   end
 
-  subgraph six_top["可替换六槽 · plugin_backends（上）"]
+  subgraph six_top["可替换六槽 · slot_registry 折叠（上）"]
     direction LR
     M["memory<br/>builtin · v2 · remote · directory · local"]
     EM["emotion<br/>builtin · v2 · remote · directory"]
@@ -35,7 +35,7 @@ flowchart TB
 
   K(("对话内核<br/>chat_engine · process_message<br/>PluginHost::resolve_for_role<br/>DTO: oclive_kernel_runtime"))
 
-  subgraph six_bot["可替换六槽 · plugin_backends（下）"]
+  subgraph six_bot["可替换六槽 · slot_registry 折叠（下）"]
     direction LR
     PR["prompt<br/>builtin · v2 · remote · directory"]
     LL["llm<br/>ollama · remote · directory"]
@@ -48,7 +48,7 @@ flowchart TB
     RMT["Remote 侧车<br/>JSON-RPC · OCLIVE_REMOTE_*"]
     DIR["Directory 插件<br/>plugins/ 子进程"]
     MCP["MCP 配置<br/>app_data/mcp-servers/*.json"]
-    SESS["会话级后端覆盖<br/>set_session_plugin_backend"]
+    SESS["会话级槽位覆盖<br/>set_session_slot_override"]
   end
 
   subgraph toolchain["脚手架 / 编译期（可选）"]
@@ -91,11 +91,11 @@ flowchart TB
 
 | 能力 | 说明 |
 |------|------|
-| **第 6 模块 `agent`** | `plugin_backends.agent`；`BuiltinReActAgent`；MCP 扫描目录见仓库根 `AGENTS.md`。 |
+| **第 6 模块 `agent`** | `slot_registry` 中 `type: agent` 实例；`BuiltinReActAgent`；MCP 见 `AGENTS.md`。 |
 | **MCP** | Agent 路径上工具发现 / 调用；配置在应用数据目录下 `mcp-servers`。 |
 | **`memory = local`** | `_local_plugins` 与桥接契约见 [LOCAL_PLUGIN_BRIDGE_SPEC.md](../plugin-and-architecture/LOCAL_PLUGIN_BRIDGE_SPEC.md)。 |
-| **会话级后端覆盖** | `set_session_plugin_backend`；`get_role_info` / `load_role` 返回 `plugin_backends_effective*` 快照。 |
-| **`oclive-cli` + Monolith** | `init` / `build` / `bench`；`monolith.toml` 仅编译期；与 `settings.json` 正交。 |
+| **会话级槽位覆盖** | `set_session_slot_override`；`get_role_info` / `load_role` 返回有效后端快照。 |
+| **`oclive-cli` + Monolith** | `init` / `build` / `bench`；`monolith.toml` 仅编译期；与角色包蓝图正交。 |
 | **无头 / CI** | `kernel_server`、`--api`、OOCP 对照套件等与桌面共用 domain 契约。 |
 
 若某能力未出现在你维护的 fork 上，以该分支 **实际代码与迁移** 为准，再回头改本节表格与 Mermaid 标签。

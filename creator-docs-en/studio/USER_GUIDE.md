@@ -25,9 +25,9 @@ Lazy-loaded at `/create`: edit packs, validate, export to roles root, **trial ch
 
 ### Editing workflow (Create mode)
 
-1. **Pick or create a role pack** under `roles/<roleId>/` (`manifest.json` + `settings.json`).
-2. **Edit manifest** — seven slots, optional `slot_registry` / v2 `pipeline.ocblueprint`; run **Validate** before export.
-3. **Edit settings** — personality, prompts, complex emotion; use the **architecture graph** for slot/group layout (edges derived from `slot_registry`).
+1. **Pick or create a role pack** under `roles/<roleId>/` with a **v2** skeleton (**`pipeline.ocblueprint`** + assets per [ROLE_PACK_SPEC.md](../role-pack/ROLE_PACK_SPEC.md)). **Legacy v1 (deprecated):** `manifest.json` / `settings.json` — [V1_TO_V2_MIGRATION.md](../role-pack/V1_TO_V2_MIGRATION.md).
+2. **Edit blueprint** — `meta` and **`slot_registry`** (`type` + `backend` per instance); run **Validate** (`oclive pack validate`, v2 default).
+3. **Resources & scenes** — `core_personality.txt`, scene folders; **architecture graph** shows `slot_registry` and optional **`groups`** (read-only grouping).
 4. **Save** to the configured roles root; optional hot reload when `ocliveProjectRoot` is set.
 
 ### Trial chat (test a role pack)
@@ -35,11 +35,11 @@ Lazy-loaded at `/create`: edit packs, validate, export to roles root, **trial ch
 1. Open the pack in Create mode and click **Trial chat**.
 2. Studio spawns **oclivenewnew `--api`** with `OCLIVE_ROLES_DIR` and LLM settings from `studio-config.json`.
 3. Send messages in the panel; on failure, check **Environment diagnostics** and `RUST_LOG=info` on the runtime process.
-4. After manifest/settings changes, trial chat again (API process may restart automatically).
+4. After blueprint or scene changes, trial chat again (API process may restart automatically).
 
 ### Export a role pack
 
-1. Ensure **validation passes** (no blocking manifest/settings errors).
+1. Ensure **validation passes** (no blocking `pipeline.ocblueprint` / asset errors).
 2. **Export** / **Publish to roles root** — copies the folder into `rolesDir` from config (confirm before overwrite).
 3. Optional **pack** step produces `.oclive-plugin` or zip with SHA-256 summary; use **Launch mode** to chat with the exported pack.
 

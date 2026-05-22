@@ -1,4 +1,6 @@
-# `settings.json` → `plugin_backends` authoritative reference (kernel-oriented)
+# Backend configuration reference (v2 blueprint + legacy `settings.json`)
+
+**v2 role packs (current):** backend instances live in **`pipeline.ocblueprint` → `slot_registry`** (optional **`groups`** for the architecture graph only). Field semantics: **[ROLE_PACK_SPEC.md](../role-pack/ROLE_PACK_SPEC.md)**. Sections below titled **`settings.json` → `plugin_backends`** are **legacy v1 (deprecated)** and runtime six-slot fold semantics for comparison.
 
 This document describes configuration semantics shared by the **desktop host (Tauri)** and **`oclive-cli` scaffolds**. Single sources of truth remain code:
 
