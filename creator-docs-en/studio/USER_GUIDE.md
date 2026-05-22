@@ -23,6 +23,26 @@ Configure roles root and LLM, run **environment diagnostics** (doctor-style chec
 
 Lazy-loaded at `/create`: edit packs, validate, export to roles root, **trial chat** via `--api` with config from `studio-config.json`.
 
+### Editing workflow (Create mode)
+
+1. **Pick or create a role pack** under `roles/<roleId>/` (`manifest.json` + `settings.json`).
+2. **Edit manifest** — seven slots, optional `slot_registry` / v2 `pipeline.ocblueprint`; run **Validate** before export.
+3. **Edit settings** — personality, prompts, complex emotion; use the **architecture graph** for slot/group layout (edges derived from `slot_registry`).
+4. **Save** to the configured roles root; optional hot reload when `ocliveProjectRoot` is set.
+
+### Trial chat (test a role pack)
+
+1. Open the pack in Create mode and click **Trial chat**.
+2. Studio spawns **oclivenewnew `--api`** with `OCLIVE_ROLES_DIR` and LLM settings from `studio-config.json`.
+3. Send messages in the panel; on failure, check **Environment diagnostics** and `RUST_LOG=info` on the runtime process.
+4. After manifest/settings changes, trial chat again (API process may restart automatically).
+
+### Export a role pack
+
+1. Ensure **validation passes** (no blocking manifest/settings errors).
+2. **Export** / **Publish to roles root** — copies the folder into `rolesDir` from config (confirm before overwrite).
+3. Optional **pack** step produces `.oclive-plugin` or zip with SHA-256 summary; use **Launch mode** to chat with the exported pack.
+
 ## Onboarding
 
 Three-step wizard on first run; storage key `studio.onboarding.completed`. **Show onboarding again** from the top bar.
