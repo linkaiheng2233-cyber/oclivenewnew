@@ -20,7 +20,7 @@
 
 ## 2. 本仓库（oclivenewnew）已落实的能力（摘要）
 
-- **角色包导入**：`.ocpak`、`.zip`、已解压目录；预览与冲突处理；导入进度；ZIP 内 `manifest.json` 优先级（根目录优先）。
+- **角色包（v2）**：`pipeline.ocblueprint` 为 SSOT（`meta` + `slot_registry` + 可选 `groups`）；导入 `.ocpak` / `.zip` / 目录；legacy `manifest.json`+`settings.json` 仅迁移路径，见 [V1_TO_V2_MIGRATION.md](../role-pack/V1_TO_V2_MIGRATION.md)。
 - **工程**：`npm run check`（日常）、`npm run check:release`（发版前全量测试）；Rust fmt / clippy / `cargo test`。
 - **CI**：GitHub Actions 在 **Ubuntu + Windows** 上跑 Rust 与 `npm run build`（见 `.github/workflows/ci.yml`）。
 - **文档**：`creator-docs/`、`roles/README_MANIFEST.md`、导入测试清单 `roles/TESTING_ROLE_PACK_IMPORT.md`、愿景与体验 backlog 等。
@@ -37,7 +37,7 @@
 | **进度快照与目标对齐（内核 + 产品 + 按用途分类的文档地图）** | [PROJECT_STATUS_AND_ALIGNMENT.md](PROJECT_STATUS_AND_ALIGNMENT.md) |
 | **内核与六槽架构总览（图）** | [KERNEL_AND_MODULES_ARCHITECTURE.md](KERNEL_AND_MODULES_ARCHITECTURE.md) |
 | **创作者：从包到 oclive** | [CREATOR_WORKFLOW.md](CREATOR_WORKFLOW.md) |
-| **manifest / 导入** | [roles/README_MANIFEST.md](../../roles/README_MANIFEST.md) |
+| **v2 蓝图 / 导入** | [ROLE_PACK_SPEC.md](../role-pack/ROLE_PACK_SPEC.md) · [V1_TO_V2_MIGRATION.md](../role-pack/V1_TO_V2_MIGRATION.md)（v1 已废弃） |
 | **性格档案设计轴心** | [docs/personality-archive-notes.md](../../docs/personality-archive-notes.md) |
 | **思路变化（以前 vs 现在）** | [docs/design-axis-evolution.md](../../docs/design-axis-evolution.md) |
 | **导入手工测试清单** | [roles/TESTING_ROLE_PACK_IMPORT.md](../../roles/TESTING_ROLE_PACK_IMPORT.md) |

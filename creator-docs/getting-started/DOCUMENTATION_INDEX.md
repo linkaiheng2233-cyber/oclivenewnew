@@ -48,7 +48,8 @@
 | **`plugin_backends` 与第 1–6 模块契约** | **[../plugin-and-architecture/PLUGIN_V1.md](../plugin-and-architecture/PLUGIN_V1.md)** · 编号总览 **[OCLIVE_ARCHITECTURE_OVERVIEW.md](OCLIVE_ARCHITECTURE_OVERVIEW.md)** |
 | Remote HTTP JSON-RPC | **[../plugin-and-architecture/REMOTE_PLUGIN_PROTOCOL.md](../plugin-and-architecture/REMOTE_PLUGIN_PROTOCOL.md)** |
 | 角色包磁盘格式 / `schema_version` | **[../role-pack/ROLE_PACK_SPEC.md](../role-pack/ROLE_PACK_SPEC.md)** · **[../role-pack/PACK_VERSIONING.md](../role-pack/PACK_VERSIONING.md)** |
-| **v1 → v2 蓝图迁移** | **[../role-pack/V1_TO_V2_MIGRATION.md](../role-pack/V1_TO_V2_MIGRATION.md)**（[English](../../creator-docs-en/role-pack/V1_TO_V2_MIGRATION.md)） |
+| **v1 → v2 蓝图迁移（v1 已废弃，仅迁移用）** | **[../role-pack/V1_TO_V2_MIGRATION.md](../role-pack/V1_TO_V2_MIGRATION.md)**（[English](../../creator-docs-en/role-pack/V1_TO_V2_MIGRATION.md)） |
+| **蓝图 `groups` 分组（架构图）** | **[ROLE_PACK_SPEC.md](../role-pack/ROLE_PACK_SPEC.md)** §2.3 · [RFC_ROLE_BLUEPRINT_V2.md](../../handoff/RFC_ROLE_BLUEPRINT_V2.md) §4.5 |
 | OOCP HTTP 黑盒套件（CI） | **[../testing/OOCP_TEST_SUITE.md](../testing/OOCP_TEST_SUITE.md)** |
 | 目录插件整壳 `invoke` · 权限与错误码 | **[../plugin-and-architecture/BRIDGE_API_REFERENCE.md](../plugin-and-architecture/BRIDGE_API_REFERENCE.md)** |
 

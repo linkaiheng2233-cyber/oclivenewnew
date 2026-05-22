@@ -2,7 +2,7 @@
 
 | 项 | 值 |
 |----|-----|
-| 状态 | **Accepted**（2026-05；Q1–Q8 已关闭） |
+| 状态 | **已完成（含 `groups` 分组扩展，2026-05-20）** |
 | 目标版本 | **0.3.0**（`meta.oclive_version`） |
 | 前提 | 软件尚未发布；**不兼容**旧 `manifest.json` / `settings.json` / `personality.json` |
 | 实施计划 | [BLUEPRINT_V2_IMPLEMENTATION_PLAN.md](BLUEPRINT_V2_IMPLEMENTATION_PLAN.md) |
@@ -94,6 +94,14 @@ roles/{role_id}/
 ### 4.4 `module_relations`
 
 **派生视图**（非 SSOT）；由 `slot_registry` 中 directory 槽自动生成。**禁止**写入 `pipeline.ocblueprint` 文件（决议 B3=C）。
+
+### 4.5 `groups`（架构图分组，2026-05-20）
+
+可选顶层对象：键为分组 id，值为 `{ label, description?, type, members[] }`。
+
+- **`type`**：仅限六模块 `memory` | `emotion` | `event` | `prompt` | `llm` | `agent`（不含 `complex_emotion`）。
+- **`members`**：`slot_registry` 实例键；须存在且 `slot.type` 与 `groups.type` 一致；非空；每键最多归属一分组。
+- **运行时**：不参与 `SlotRunner` 合并；主应用架构图绘制边框并可折叠。
 
 ---
 

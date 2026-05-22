@@ -1,4 +1,6 @@
-# `settings.json` → `plugin_backends` 权威参考（内核向）
+# 后端配置参考（v2 蓝图 + legacy `settings.json`）
+
+**v2 角色包（当前）**：后端实例写在 **`pipeline.ocblueprint` → `slot_registry`**（可选 **`groups`** 仅架构图）；字段语义见 **[ROLE_PACK_SPEC.md](../role-pack/ROLE_PACK_SPEC.md)**。下文 **`settings.json` → `plugin_backends`** 段落面向 **legacy v1（已废弃）** 与运行时六槽折叠语义对照。
 
 本文档描述 **桌面宿主（Tauri）** 与 **`oclive-cli` 脚手架** 共用的配置语义。单一事实来源以源码为准：
 
