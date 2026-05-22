@@ -93,7 +93,7 @@ const roleSwitching = ref(false);
 
 /** Escape / backdrop 关闭对话框后恢复打开前的焦点 */
 const settingsFocusReturn = ref<HTMLElement | null>(null);
-const pluginV2FocusReturn = ref<HTMLElement | null>(null);
+const simplePluginManagerFocusReturn = ref<HTMLElement | null>(null);
 const pluginPanelFocusReturn = ref<HTMLElement | null>(null);
 const shortcutHelpFocusReturn = ref<HTMLElement | null>(null);
 
@@ -249,11 +249,11 @@ watch(settingsViewOpen, (open) => {
   }
 });
 
-watch(pluginManagerV2Open, (open) => {
+watch(simplePluginManagerOpen, (open) => {
   if (open) {
-    stashFocusTarget(pluginV2FocusReturn);
+    stashFocusTarget(simplePluginManagerFocusReturn);
   } else {
-    restoreFocusTarget(pluginV2FocusReturn);
+    restoreFocusTarget(simplePluginManagerFocusReturn);
   }
 });
 
@@ -609,9 +609,9 @@ async function onReloadPolicy() {
 
 function onHotkey(e: KeyboardEvent) {
   if (e.key === "Escape") {
-    if (pluginManagerV2Open.value) {
+    if (simplePluginManagerOpen.value) {
       e.preventDefault();
-      pluginManagerV2Open.value = false;
+      simplePluginManagerOpen.value = false;
       return;
     }
     if (shortcutHelpOpen.value) {
