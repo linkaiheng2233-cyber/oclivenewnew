@@ -76,6 +76,27 @@ npm run build
 
 See **[`handoff/BUS_FACTOR_NOTES.md`](handoff/BUS_FACTOR_NOTES.md)** for entry paths after the kernel crate split.
 
+## Code navigation (by topic)
+
+| Goal | Start here |
+|------|------------|
+| One message end-to-end | `src-tauri/src/domain/chat_engine/process_message.rs` → `co_present.rs` |
+| Multi-instance merge rules | `src-tauri/src/domain/slot_runner.rs` |
+| Plugin backend resolution | `plugin_host.rs` + `slot_resolver.rs` |
+| Blueprint load / save | `infrastructure/storage.rs` + `crates/oclive_validation` |
+| Plugin implementation | `PLUGIN_V1.md` + traits in `oclive_kernel_contracts` |
+| Architecture trade-offs | [`creator-docs/architecture/DESIGN_DECISIONS.md`](creator-docs/architecture/DESIGN_DECISIONS.md) |
+
+## Common change scenarios
+
+| Scenario | Touch | Also update |
+|----------|-------|-------------|
+| New slot type or merge policy | `slot_runner.rs`, `slot_resolver.rs`, `oclive_validation` | `ROLE_PACK_SPEC.md`, frontend graph |
+| New plugin backend | `plugin_host.rs`, model enums, `PLUGIN_V1.md` | blueprint / settings docs |
+| Co-present stage order | `co_present.rs` (careful) | `DESIGN_DECISIONS.md`, OOCP tests |
+| New DB column | `src-tauri/migrations/`, repositories | documented table names only |
+| New Tauri command | `src-tauri/src/api/`, `lib.rs` handler | `tauri-api.ts`, DTO field names |
+
 ## Pull requests
 
 1. **Fork / feature branch**; one PR per concern. Contract changes (manifest, DTO, PLUGIN_V1) need **docs** + **`crates/oclive_validation`** when applicable.

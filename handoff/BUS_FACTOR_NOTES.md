@@ -138,7 +138,24 @@
 
 ---
 
-## 9. 建议的「第一次读代码」顺序（半天内）
+## 9. 核心模块导航（按路径）
+
+| 模块路径 | 核心文件 | 关键概念 | 修改时注意 |
+|----------|----------|----------|------------|
+| 主编排 | `src-tauri/src/domain/chat_engine/process_message.rs` | 单消息入口、Agent/异地分支 | 不改业务顺序请先读 [`DESIGN_DECISIONS.md`](../creator-docs/architecture/DESIGN_DECISIONS.md) |
+| 共景 | `src-tauri/src/domain/chat_engine/co_present.rs` | 回合阶段、`narrative_hint` | 槽位调用走 `SlotRunner`，勿直连 `pl.llm` |
+| 多实例合并 | `src-tauri/src/domain/slot_runner.rs` | last-wins / memory 去重 | 新策略需补「为何」注释；Agent 合并在 `plugin_host` |
+| 插件装配 | `src-tauri/src/domain/plugin_host.rs` | `ResolvedRolePlugins`、`PluginHostPort` | Remote 需 env；目录插件权限见 `high_risk_grants` |
+| 蓝图解析 | `src-tauri/src/domain/slot_resolver.rs` | `slot_registry` → `ResolvedRoleSlots` | 不手写 `module_relations` |
+| 蓝图加载 | `src-tauri/src/infrastructure/storage.rs` | `load_blueprint_v2_for_role_dir` | 校验失败看 `oclive_validation` 报错拼接 |
+| 端口 trait | `crates/oclive_kernel_contracts/src/` | `LlmClient`、`MemoryRetrieval`… | 插件作者实现 trait，见各文件 **When to implement** |
+| 纯类型 | `crates/oclive_kernel_types/` | DTO、`AppError` | 无 I/O；契约变更同步 validation |
+| 蓝图校验 | `crates/oclive_validation/` | v2 schema、`slot_registry` | 改 JSON 形状必跑 `pack validate` + 单测 |
+| 前端架构图 | `src/composables/useArchitectureGraphModel.ts` | `buildBlueprintEdges`、`groups` | 边只读派生，勿写回 blueprint |
+
+---
+
+## 10. 建议的「第一次读代码」顺序（半天内）
 
 1. `DOCUMENTATION_INDEX.md` → `KERNEL_AND_MODULES_ARCHITECTURE.md`（总图）  
 2. `process_message.rs` 全文 skim + `co_present.rs` 前 120 行  
@@ -151,7 +168,7 @@
 
 ---
 
-## 10. 维护说明
+## 11. 维护说明
 
 - 本文 **不替代** PLUGIN_V1 / ERROR_CODES / ROLE_PACK_SPEC；契约以那些文档 + 代码为准。  
 - 大重构后若入口搬迁：请更新本节路径并提 PR 链到 **`DOCUMENTATION_INDEX`**「工程纪律」小节。
