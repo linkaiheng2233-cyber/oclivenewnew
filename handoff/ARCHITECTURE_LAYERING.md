@@ -61,6 +61,19 @@
 | `oclive-cli` 子命令模块化（`commands/bench*`、`init*`、`lint*`） | 已落实 |
 | Tauri 去除对 `oclive_kernel_contracts` 的直接依赖（经 `oclive_kernel_runtime` re-export） | 已落实 |
 | `oclive_kernel_types` / `oclive_kernel_contracts` rustdoc（模块级 + 公开类型/trait 一句注释） | 已落实 |
+| `init/mod.rs` ≤300 行、`bench/mod.rs` ≤300 行（`init_config` / `bench_core`） | 已落实 |
+
+## 最终扫尾（2026-05-20）
+
+| 项 | 状态 |
+|----|------|
+| `EventEstimator` / `AgentProvider` 编排审计：`co_present` / `process_message` 无具体类型引用；热路径经 `Arc<dyn …>`（`slot_runner` / `plugin_host` / `AppState::*_for`） | 已落实 |
+| `kernel_contracts` trait 方法审计 | 见 [KERNEL_CONTRACTS_TRAIT_METHOD_AUDIT.md](KERNEL_CONTRACTS_TRAIT_METHOD_AUDIT.md) |
+| `oclive doctor` 内核 trait 实现检查（`plugin_host_port_impl` 等 5 项） | 已落实 |
+| `useless_format` 修复（`f2e44bf`） | 已在历史中；`lint_cmd` → `commands/lint.rs` |
+| 依赖重复项 `cargo tree -d` | 见 [LIGHTWEIGHT_PROFILE.md](../creator-docs/development/LIGHTWEIGHT_PROFILE.md) §6（不可统一项已记录） |
+| 性能矩阵实测填充 `PERFORMANCE.md` | 延后（需本地 Monolith 工程 + 长时 `bench --matrix`） |
+| 全量最终验证（任务 11） | 见下表「最终扫尾验证」 |
 
 ## 最终收尾（2026-05-20）
 
@@ -84,6 +97,14 @@
 | `cargo test --workspace`（含 `tests/` 集成） | Windows 本机可能 `rlib format` 链接异常；以 CI Ubuntu 为准 |
 | `cargo doc --no-deps -p oclive_kernel_types -p oclive_kernel_contracts` | 通过 |
 | `npm run test:unit` / `npm run build`（oclivenewnew） | 通过（精修后复验） |
+
+### 最终扫尾验证（2026-05-20，任务 11）
+
+| 检查 | 结果 |
+|------|------|
+| `cargo clippy --workspace --all-targets --all-features -- -D warnings` | 见本轮回验 |
+| `cargo test --workspace` | 见本轮回验 |
+| `npm run test:unit` / `npm run build` | 见本轮回验 |
 
 ## 已知适配层（后续可拆）
 
