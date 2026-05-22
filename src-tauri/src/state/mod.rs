@@ -716,14 +716,19 @@ impl AppState {
         role: &Role,
         session_namespace: Option<&str>,
     ) -> ResolvedRolePlugins {
+        let host = self.plugin_host_port();
         let Some(ns) = session_namespace.map(str::trim).filter(|s| !s.is_empty()) else {
-            return self.plugin_host_port().resolve_for_role(role);
+            return host.resolve_for_role(role);
         };
         let effective = self.effective_plugin_backends_for_session(role, ns);
         let slot_reg = self.effective_slot_registry_for_session(role, ns);
-        let ov = self.session_backend_override(ns);
-        self.plugin_host_port()
-            .resolve_for_effective_backends(&effective, slot_reg.as_ref(), ov.as_ref())
+        crate::domain::chat_engine::plugin_resolve::resolve_plugins_for_session(
+            host,
+            role,
+            Some(ns),
+            &effective,
+            slot_reg.as_ref(),
+        )
     }
 
     pub fn memory_retrieval_for(&self, role: &Role) -> Arc<dyn MemoryRetrieval> {
@@ -816,11 +821,24 @@ impl AppState {
             }
             return;
         }
-        self.session_slot_overrides
-            .write()
+        let mut map = self.session_slot_overrides.write();
+        let entry = map
             .entry(session_namespace.to_string())
-            .or_default()
-            .insert(key.to_string(), patch);
+            .or_default();
+        let mut merged = {
+            let mut base = entry.get(key).cloned().unwrap_or_default();
+            patch.merge_into(&mut base);
+            base
+        };
+        if let Some(ref id) = merged.local_memory_provider_id {
+            let t = id.trim();
+            merged.local_memory_provider_id = if t.is_empty() {
+                None
+            } else {
+                Some(t.to_string())
+            };
+        }
+        entry.insert(key.to_string(), merged);
     }
 
     pub fn clear_session_slot_override(&self, session_namespace: &str, slot_key: &str) {
@@ -868,42 +886,34 @@ impl AppState {
         role: &Role,
         session_namespace: &str,
     ) -> PluginBackends {
-        let base =
-            if let Some(eff) = self.effective_slot_registry_for_session(role, session_namespace) {
-                oclive_validation::slot_registry_to_plugin_backends(&eff)
-            } else {
-                role.plugin_backends.clone()
-            };
-        self.session_backend_override(session_namespace)
-            .map(|ov| ov.apply_to(&base))
-            .unwrap_or(base)
+        if let Some(eff) = self.effective_slot_registry_for_session(role, session_namespace) {
+            oclive_validation::slot_registry_to_plugin_backends(&eff)
+        } else {
+            role.plugin_backends.clone()
+        }
     }
 
     #[must_use]
     pub fn effective_plugin_backend_sources_for_session(
         &self,
+        role: &Role,
         session_namespace: &str,
     ) -> PluginBackendsSourceMap {
-        let session_ov = self.session_backend_override(session_namespace);
         let mut out = PluginBackendsSourceMap::default();
-        if let Some(ov) = session_ov {
-            if ov.memory.is_some() || ov.local_memory_provider_id.is_some() {
-                out.memory = PluginBackendSource::SessionOverride;
-            }
-            if ov.emotion.is_some() {
-                out.emotion = PluginBackendSource::SessionOverride;
-            }
-            if ov.event.is_some() {
-                out.event = PluginBackendSource::SessionOverride;
-            }
-            if ov.prompt.is_some() {
-                out.prompt = PluginBackendSource::SessionOverride;
-            }
-            if ov.llm.is_some() {
-                out.llm = PluginBackendSource::SessionOverride;
-            }
-            if ov.agent.is_some() {
-                out.agent = PluginBackendSource::SessionOverride;
+        if let Some(reg) = role.slot_registry.as_ref() {
+            for (key, _) in self.session_slot_overrides(session_namespace) {
+                let Some(entry) = reg.get(&key) else {
+                    continue;
+                };
+                match entry.slot_type.as_str() {
+                    "memory" => out.memory = PluginBackendSource::SessionOverride,
+                    "emotion" => out.emotion = PluginBackendSource::SessionOverride,
+                    "event" => out.event = PluginBackendSource::SessionOverride,
+                    "prompt" => out.prompt = PluginBackendSource::SessionOverride,
+                    "llm" => out.llm = PluginBackendSource::SessionOverride,
+                    "agent" => out.agent = PluginBackendSource::SessionOverride,
+                    _ => {}
+                }
             }
         }
         if out.llm == PluginBackendSource::PackDefault

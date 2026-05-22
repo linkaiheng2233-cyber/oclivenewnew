@@ -67,7 +67,13 @@ pub(crate) async fn process_co_present(
     let t_cp0 = Instant::now();
     let user_message = req.user_message.as_str();
     let policies = state.policies_for_scene(Some(scene_id.as_str()));
-    let pl = state.resolved_plugins_for_session(role, Some(srid));
+    let pl = super::resolve_plugins_for_session(
+        state.plugin_host_port(),
+        role,
+        Some(srid),
+        &state.effective_plugin_backends_for_session(role, srid),
+        state.effective_slot_registry_for_session(role, srid).as_ref(),
+    );
     let slot_runner = SlotRunner;
 
     let event_runtime = crate::map_copresent_err!("event_impact_factor", state.db_manager.get_event_impact_factor(srid).await)?

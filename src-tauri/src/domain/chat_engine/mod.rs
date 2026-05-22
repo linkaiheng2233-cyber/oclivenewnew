@@ -6,9 +6,12 @@
 mod co_present;
 mod context;
 mod favor;
+pub mod plugin_resolve;
 mod presence;
 mod process_message;
 mod scene;
+
+pub(super) use plugin_resolve::resolve_plugins_for_session;
 
 use crate::domain::chat_llm_fallback::{fallback_reply_for_llm_failure, FallbackReplyContext};
 use crate::domain::chat_turn::{relation_favor_for_key, weight_memories_for_scene};
@@ -112,7 +115,13 @@ pub(super) async fn process_remote_stub(
 ) -> Result<SendMessageResponse> {
     let role_id = req.role_id.as_str();
     let user_message = req.user_message.as_str();
-    let pl = state.resolved_plugins_for_session(role, Some(srid));
+    let pl = resolve_plugins_for_session(
+        state.plugin_host_port(),
+        role,
+        Some(srid),
+        &state.effective_plugin_backends_for_session(role, srid),
+        state.effective_slot_registry_for_session(role, srid).as_ref(),
+    );
     let emotion_result = pl.emotion.analyze(user_message)?;
     let user_relation_key: String =
         resolve_effective_user_relation_key(state, role, srid, Some(scene_id)).await?;
@@ -193,7 +202,13 @@ pub(super) async fn process_remote_life(
 
     let mut personality = state.get_current_personality(srid, role).await?;
 
-    let pl = state.resolved_plugins_for_session(role, Some(srid));
+    let pl = resolve_plugins_for_session(
+        state.plugin_host_port(),
+        role,
+        Some(srid),
+        &state.effective_plugin_backends_for_session(role, srid),
+        state.effective_slot_registry_for_session(role, srid).as_ref(),
+    );
     let emotion_result = pl.emotion.analyze(user_message)?;
     let user_emotion = emotion_result.to_emotion();
     let user_emotion_str = user_emotion.to_string();

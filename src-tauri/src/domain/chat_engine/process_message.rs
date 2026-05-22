@@ -106,7 +106,8 @@ async fn run(
         "ensure_interaction_mode_seeded"
     )?;
     let effective_backends = state.effective_plugin_backends_for_session(role.as_ref(), srid);
-    let effective_sources = state.effective_plugin_backend_sources_for_session(srid);
+    let effective_sources =
+        state.effective_plugin_backend_sources_for_session(role.as_ref(), srid);
     tracing::debug!(
         target: "oclive_chat",
         "send_message backends role_id={} scene_id={} session_ns={} {}",
@@ -121,7 +122,15 @@ async fn run(
         "startup_health"
     )?;
 
-    let pl = state.resolved_plugins_for_session(role.as_ref(), Some(srid));
+    let pl = crate::domain::chat_engine::plugin_resolve::resolve_plugins_for_session(
+        state.plugin_host_port(),
+        role.as_ref(),
+        Some(srid),
+        &effective_backends,
+        state
+            .effective_slot_registry_for_session(role.as_ref(), srid)
+            .as_ref(),
+    );
     let agent_out = pm!(
         pl.agent
             .process(AgentInput {
