@@ -35,7 +35,8 @@
 
 - v2 包由 **`oclive_validation`** 校验 `pipeline.ocblueprint`（含 `groups`）；`oclive pack validate` / 加载角色时报错见界面提示。
 - 插件后端见 [PLUGIN_V1.md](../plugin-and-architecture/PLUGIN_V1.md) 与 [PACK_VERSIONING.md](../role-pack/PACK_VERSIONING.md)。
-- **主应用插件管理**已简化为「已安装列表」；在 manifest 中声明 **`slot_attachment`** 后，用 **`oclive plugin install <id> --role roles/<pack>`** 自动写入蓝图。架构图与多槽位：`oclive plugin manage`（`--tui` 可选）。记忆 / 情绪 / 事件 / Prompt 除 `builtin` 与 `remote` 外，宿主还提供 **`builtin_v2` 第二套内置实现**（用于可替换性验证与保守策略），详见该文档各枚举表。
+- **主应用**：**Ctrl+Shift+F** 仅为「已安装插件」列表；`ui_slots` 插件启用时弹出位置选择。**无**架构图面板。
+- **CLI**：manifest **`slot_attachment`** + **`oclive plugin install <id> --role roles/<pack>`** 自动写入蓝图；多槽位 / 架构总览：**`oclive plugin manage`**（`--tui` 可选）。记忆 / 情绪 / 事件 / Prompt 除 `builtin` 与 `remote` 外，宿主还提供 **`builtin_v2` 第二套内置实现**（用于可替换性验证与保守策略），详见该文档各枚举表。
 - 自建 HTTP 侧车、环境变量与「本地 / 线上」更新边界见 [CREATOR_PLUGIN_ARCHITECTURE.md](../plugin-and-architecture/CREATOR_PLUGIN_ARCHITECTURE.md)。
 
 ## 创作模式（工作室内置）

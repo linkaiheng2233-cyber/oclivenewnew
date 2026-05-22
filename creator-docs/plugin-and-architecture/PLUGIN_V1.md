@@ -469,9 +469,13 @@ TypeScript 侧 `SendMessageResponse`（`src/utils/tauri-api.ts`）必须与 `mod
 
 校验：`crates/oclive_validation/src/plugin_slot_attachment.rs`。未声明 `slot_attachment` 时仅复制插件目录，需手动 **`oclive plugin manage link`**。
 
-### 主应用：简洁插件管理（默认）
+### 主应用：极简插件管理（唯一入口）
 
-**Ctrl+Shift+F** 默认打开**已安装插件列表**（开关 / 卸载 / 本地 zip / 市场入口），无架构图与槽位连线。设置中开启 **「高级插件管理」** 后恢复 **V1 专业面板**（含架构图）。折叠区 **「打开高级插件管理」** 可随时进入。
+**Ctrl+Shift+F** 打开**已安装插件列表**（名称、版本、开关、卸载；**安装插件** / **浏览市场**）。**不**包含架构图、蓝图编辑或槽位连线。
+
+**UI 插槽**：`manifest.json` 的 **`ui_slots`**（宿主扫描为 catalog 的 `uiSlotNames`）在**启用插件**时弹出 **位置选择**；用户勾选后写入 `disabled_slot_contributions` / `slot_order`（见 `plugin_state`）。无 `ui_slots` 声明则启用时不弹窗。
+
+**高级管理**：`oclive plugin manage`（可选 `--tui`）；`slot_attachment` + `plugin install --role` 自动装配蓝图。V1/V2/架构图 Vue 组件**保留源码、不在主应用挂载**。
 
 ### `plugin_dependencies`（可选）
 
