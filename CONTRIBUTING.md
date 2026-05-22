@@ -65,12 +65,41 @@ npm run build
 
 **CI 对齐**：**`.github/workflows/ci.yml`** 在 **Ubuntu 22.04** / Windows 上跑 **`rust`**（fmt / clippy / test）；**`rust` job 在 clippy 前先 `npm ci && npm run build`**（Tauri 1.5 `generate_context!` 需要仓库根 `dist/`）。Linux 构建 `oclivenewnew-tauri` 需 **`libwebkit2gtk-4.0-dev`** 等（Tauri 1.x，非 4.1）。**`frontend`** 跑 **`npm run test:unit`** 与 **`npm run build`**；**Ubuntu `frontend`** 另跑 **`npm run test:e2e:preview`**。**`oocp-test-suite`** 与 **`cli` / `cli-bench`** 在 Ubuntu 22.04。详见根目录 [README.md](README.md)「测试与检查」。
 
+## 模块负责人（当前维护者）
+
+| Crate / 区域 | 路径 | 负责人 | 说明 |
+|--------------|------|--------|------|
+| 桌面宿主 | `src-tauri/` | @linkaiheng2233-cyber | Tauri IPC、HTTP `--api`、`AppState` |
+| 内核编排 | `src-tauri/src/domain/chat_engine/` | 同上 | `process_message` / `co_present` |
+| 内核 crate | `crates/oclive_kernel_types` | 同上 | DTO、`AppError` |
+| 内核 crate | `crates/oclive_kernel_contracts` | 同上 | 端口 trait |
+| 内核 crate | `crates/oclive_kernel_runtime` | 同上 | 编排与 re-export |
+| 校验 | `crates/oclive_validation` | 同上 | manifest / v2 蓝图 |
+| CLI | `crates/oclive-cli` | 同上 | `init` / `bench` / `test` / `doctor` |
+| 前端 | `src/`（Vue） | 同上 | Pinia、插件管理、i18n |
+| 文档 | `creator-docs/`、`handoff/` | 同上 | 契约与发版清单 |
+
+更细入口见 **[`handoff/BUS_FACTOR_NOTES.md`](handoff/BUS_FACTOR_NOTES.md)**（含 crate 拆分后路径）。
+
 ## PR 流程
 
 1. **Fork / 功能分支**，一条 PR 聚焦一类变更；契约（manifest、DTO、`PLUGIN_V1`）变更需 **同步文档** 与 **`crates/oclive_validation`**（若适用）。
 2. **描述**：说明动机、行为变化、风险与手动验证步骤；关联 issue（若有）。
-3. **自检**：至少 **`npm run check`**；触及持久化 / HTTP / 编排时建议 **`npm run check:release`**。
-4. **Review**：关注 CI 红绿、安全与本地化文案；大功能建议先开 issue 对照路线图。
+3. **自检**：至少 **`npm run check`**；触及持久化 / HTTP / 编排时建议 **`npm run check:release`**；内核工程可加 **`cargo run -p oclive-cli -- test -o . --json`**。
+4. **审阅**：由 **模块负责人**（上表）或受邀维护者 Review；关注 CI、安全、i18n 与契约文档是否同步。
+5. **合并条件**：CI 相关 job 绿（或已知 `continue-on-error` 项已登记）；Breaking 变更走 [`BREAKING_CHANGE_PROCESS.md`](handoff/BREAKING_CHANGE_PROCESS.md)；无未解决的 **P0** 发版阻塞项。
+
+### CI 失败时怎么处理
+
+| Job / 症状 | 建议步骤 |
+|------------|----------|
+| `cargo fmt` | 本地 `cargo fmt --all` 后重提 |
+| `cargo clippy` | `cargo clippy --workspace --all-targets --all-features -- -D warnings` |
+| `cargo test`（Windows 集成） | 以 **Ubuntu CI** 为准；本机可 `cargo test --workspace --lib` |
+| `frontend` / Vitest | `npm run test:unit` |
+| `oocp-test-suite` | 确认 `OCLIVE_HTTP_API_MOCK_LLM=1`、端口空闲；见 [OOCP_TEST_SUITE.md](creator-docs/testing/OOCP_TEST_SUITE.md) |
+| `cargo-audit` | 跟踪 [KNOWN_VULNERABILITIES.md](creator-docs/security/KNOWN_VULNERABILITIES.md)；不挡合并 |
+| 契约 / 角色包 | `cargo run -p oclive-cli -- pack validate <role>` |
 
 ## 破坏性变更（Breaking changes）
 

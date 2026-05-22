@@ -62,12 +62,39 @@ npm run build
 
 **CI:** `.github/workflows/ci.yml` runs Rust + **`npm run build`** + **`npm run test:unit`** on Ubuntu and Windows; **Ubuntu `frontend`** also runs **`npm run test:e2e:preview`**; Ubuntu also runs **OOCP** and **`oclive-cli`** jobs. See root README **Testing**.
 
+## Module ownership (current maintainer)
+
+| Area | Path | Owner | Notes |
+|------|------|-------|-------|
+| Desktop host | `src-tauri/` | @linkaiheng2233-cyber | Tauri IPC, HTTP `--api` |
+| Orchestration | `src-tauri/src/domain/chat_engine/` | same | `process_message` / `co_present` |
+| Kernel crates | `crates/oclive_kernel_{types,contracts,runtime}` | same | DTOs, traits, runtime |
+| Validation | `crates/oclive_validation` | same | manifest / v2 blueprint |
+| CLI | `crates/oclive-cli` | same | `init`, `bench`, `test`, `doctor` |
+| Frontend | `src/` (Vue) | same | Pinia, plugin manager, i18n |
+| Docs | `creator-docs/`, `handoff/` | same | contracts & release gates |
+
+See **[`handoff/BUS_FACTOR_NOTES.md`](handoff/BUS_FACTOR_NOTES.md)** for entry paths after the kernel crate split.
+
 ## Pull requests
 
 1. **Fork / feature branch**; one PR per concern. Contract changes (manifest, DTO, PLUGIN_V1) need **docs** + **`crates/oclive_validation`** when applicable.
 2. **Description:** motivation, behavior change, risks, manual verification; link issues if any.
-3. **Self-check:** at least **`npm run check`**; for persistence / HTTP / orchestration, prefer **`npm run check:release`**.
-4. **Review:** CI green, security, user-visible copy; large features should align with the roadmap (issue first).
+3. **Self-check:** at least **`npm run check`**; for persistence / HTTP / orchestration, prefer **`npm run check:release`**; kernel scaffolds may add **`cargo run -p oclive-cli -- test -o . --json`**.
+4. **Review:** module owner (table above) or delegate; CI, security, i18n, and contract docs must stay aligned.
+5. **Merge bar:** required CI jobs green (or documented `continue-on-error`); breaking changes follow [`BREAKING_CHANGE_PROCESS.md`](handoff/BREAKING_CHANGE_PROCESS.md).
+
+### When CI fails
+
+| Job | What to do |
+|-----|------------|
+| `cargo fmt` | Run `cargo fmt --all` locally |
+| `cargo clippy` | `cargo clippy --workspace --all-targets --all-features -- -D warnings` |
+| `cargo test` (Windows integration) | Trust **Ubuntu CI**; locally try `cargo test --workspace --lib` |
+| `frontend` | `npm run test:unit` |
+| `oocp-test-suite` | `OCLIVE_HTTP_API_MOCK_LLM=1`, free port; see [OOCP_TEST_SUITE.md](creator-docs/testing/OOCP_TEST_SUITE.md) |
+| `cargo-audit` | Track [KNOWN_VULNERABILITIES.md](creator-docs/security/KNOWN_VULNERABILITIES.md); non-blocking |
+| Role packs | `cargo run -p oclive-cli -- pack validate <role>` |
 
 ## Breaking changes
 

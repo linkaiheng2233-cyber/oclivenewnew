@@ -7,6 +7,20 @@
 
 ---
 
+## 0. 内核 crate 拆分（2026-05 后路径）
+
+| Crate | 路径 | 职责 |
+|-------|------|------|
+| **`oclive_kernel_types`** | `crates/oclive_kernel_types/` | DTO、`AppError`、纯数据结构 |
+| **`oclive_kernel_contracts`** | `crates/oclive_kernel_contracts/` | `LlmClient`、`PluginHostPort`、`EventEstimator`、`AgentProvider` 等 trait |
+| **`oclive_kernel_runtime`** | `crates/oclive_kernel_runtime/` | 编排实现；宿主经 `src-tauri` re-export 消费 |
+| **`oclive_validation`** | `crates/oclive_validation/` | manifest / **`pipeline.ocblueprint` v2** 校验 |
+| **`oclive-cli`** | `crates/oclive-cli/` | 脚手架、`bench` / `test` / `doctor` / `ci init` |
+
+**`src-tauri/domain/ports/`** 仅 re-export trait + 本地 `impl`；编排应依赖 **`dyn`** 端口，见 [`ARCHITECTURE_LAYERING.md`](./ARCHITECTURE_LAYERING.md)。
+
+---
+
 ## 1. 内核编排：`process_message`
 
 ### 入口与主语义
