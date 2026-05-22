@@ -83,6 +83,27 @@
 | `RoleInfo.blueprint_groups_pack` / 架构图 `ArchGroupNode` 分组边框 | 已落实 |
 | 活跃文档 v2 化（`CREATOR_WORKFLOW` / `ROLE_PACK_SPEC` 等） | 已落实 |
 
+## Cursor 优化轮（2026-05-20）
+
+| 项 | 状态 |
+|----|------|
+| `sqlx` 0.8+ + `cargo audit` 漏洞级清零 | 已落实 |
+| `cargo deny check licenses` + `deny.toml` / `DISCLAIMER` §4 | 已落实 |
+| `init` → `preset_config` / `project_config`（≤250 行/文件） | 已落实 |
+| `bench` → `bench_runner`（`bench/mod.rs` ≤250 行） | 已落实 |
+| `kernel_contracts` trait `# Errors` / `# Panics` + 核心 trait 示例 | 已落实 |
+| `oclive ci init` 模板 `cargo-deny` + `loom` job | 已落实 |
+| `oclive lint` 彩色输出 / 通过率 / 耗时 | 已落实 |
+| `creator-docs/studio/USER_GUIDE` 创作 / 试聊 / 导出工作流 | 已落实 |
+
+### 优化轮验证（任务 9）
+
+| 检查 | 结果 |
+|------|------|
+| `cargo clippy --workspace --all-targets --all-features -- -D warnings` | ✅ 通过（2026-05-20） |
+| `cargo test --workspace --lib` | ✅ 通过（280 tests） |
+| `npm run test:unit` / `npm run build` | ✅ 通过（15 tests + vite build） |
+
 ## 测试前收尾（2026-05-20）
 
 | 项 | 状态 |
