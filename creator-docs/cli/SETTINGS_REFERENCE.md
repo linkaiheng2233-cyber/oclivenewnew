@@ -4,6 +4,29 @@
 
 ## 零、蓝图专属字段（非角色包）
 
+### `runtime_config`（v3 目标 SSOT）
+
+顶层可选段 **`runtime_config`**（**仅蓝图**；角色包创作者视图不暴露）：
+
+| 子字段 | 类型 | 说明 |
+|--------|------|------|
+| `interaction_mode` | string | `immersive` \| `pure_chat` |
+| `memory_config` | object | 记忆策略（`topic_weights` 等，见 README_MANIFEST） |
+| `reply_quality_anchor` | string | 主对话质量锚点全文 |
+| `remote_fallback_to_builtin` | bool | 包级 Remote 降级建议（全局仍以 `app_settings` / 环境变量为准） |
+| `dual_core.enabled` | bool | 双核开关，默认 **`false`**（见 [RFC_OCLIVE_DUAL_CORE_DUAL_MODE.md](../rfc/RFC_OCLIVE_DUAL_CORE_DUAL_MODE.md)） |
+| `identity_binding` | string | `global` \| `per_scene` |
+| `evolution` | object | 演化引擎参数（非 `personality_source` 门面） |
+| `ollama_model` | string | 默认 Ollama 模型（亦可写在 `slot_registry` llm 实例 `model`） |
+| `remote_presence` / `autonomous_scene` | object | 异地心声 / 虚拟时间换场景 |
+
+- **`schema_version: 2`** 文件若含 `runtime_config`：`pack validate` **警告**，宿主**忽略**该段。  
+- **`schema_version: 3`**：以 `runtime_config` 为准；`meta` 仅保留角色包字段（见 [ROLE_PACK_SPEC.md](../role-pack/ROLE_PACK_SPEC.md) §0）。
+
+---
+
+### 槽位与其它蓝图段
+
 | 类别 | 字段 / 段 | 说明 |
 |------|-----------|------|
 | 槽位实例 | **`slot_registry`**（`type`、`backend`、`plugin`、`model`、`url`、`position`…） | 六槽路由与 directory 插件 id |
@@ -27,6 +50,8 @@
 **legacy `settings.json`**（已废弃，勿与 v2 蓝图并存）：下表 §一 的 `plugin_backends` 等价于今日 **`slot_registry`**。
 
 ---
+
+**校验**：`pack validate`（默认蓝图全量）· **`pack validate --profile creator`**（仅角色包，见 [ROLE_PACK_BOUNDARY.md](../../handoff/ROLE_PACK_BOUNDARY.md)）。
 
 **v2 角色包（当前）**：后端实例写在 **`pipeline.ocblueprint` → `slot_registry`**。CLI 总览 **`oclive plugin manage --tui`**。下文 §一 **`settings.json` → `plugin_backends`** 仅 **legacy** 对照。
 

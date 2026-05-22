@@ -18,14 +18,14 @@
 
 | 组件 | 你只需关心（初级创作者） | 蓝图 / 管理员 |
 |------|--------------------------|---------------|
-| **角色包** | 身份、七维人格、关系、**`prompts/`** 系统提示词与开场白、**`reply_quality_anchor`**、场景文案 | — |
+| **角色包** | 身份、七维人格、关系、**`prompts/`** 系统提示词与开场白、场景文案 | — |
 | **蓝图** | **不要改**（除非你是集成方） | **`slot_registry`**、**`groups`**、后端 **`backend`**、**`model`**、**`interaction_mode`**、**`memory_config`**、远程/自主场景策略、**`dual_core.enabled`**（RFC）等 |
 
 v2 磁盘上常为 **同一文件** `pipeline.ocblueprint`：`meta` 中仅上表「角色包」字段由编写器默认暴露；**`slot_registry` 及引擎向 `meta` 键** 归蓝图（见 [SETTINGS_REFERENCE.md](../cli/SETTINGS_REFERENCE.md) §零）。
 
-**创作者可编辑（`meta` 子集）**：`id`、`name`、`version`、`author`、`description`、`personality`、`relations`、`default_relation`、`scenes`、`reply_quality_anchor`；可选剧情向 `life_*`、`evolution.personality_source`。
+**创作者可编辑（`meta` 子集）**：`id`、`name`、`version`、`author`、`description`、`personality`、`relations`、`default_relation`、`scenes`；可选剧情向 `life_*`、`evolution.personality_source`。
 
-**创作者不应接触**：`slot_registry`、`groups`、`module_relations`（禁止落盘）、各实例的 `backend` / `plugin` / `model` / `url`、`interaction_mode`、`memory_config`（完整块）、`ollama_model`、`remote_presence`、`autonomous_scene`、`min_runtime_version`（发版由管理员填）。
+**创作者不应接触**：`slot_registry`、`groups`、`runtime_config`、`pipeline`、各实例 `backend` / `model` / `plugin` 等（见 [SETTINGS_REFERENCE.md](../cli/SETTINGS_REFERENCE.md) §零 `runtime_config`）。
 
 ---
 
@@ -71,21 +71,22 @@ roles/{role_id}/
 | `personality` | 是 | 七维 0.0～1.0 |
 | `relations`, `default_relation` | 是 | 用户关系 |
 | `scenes` | 是 | 与 `scenes/` 合并 |
-| `reply_quality_anchor` | 是 | 回复质量锚点 |
 | `life_trajectory` / `life_schedule` | 可选 | 剧情/异地文案 |
 | `evolution.personality_source` | 可选 | `vector` \| `profile` |
 
-**蓝图 / 管理员（勿在入门视图修改）** — 今日仍在 `meta`，加载器兼容；归口 [SETTINGS_REFERENCE.md](../cli/SETTINGS_REFERENCE.md)：
+**过渡期**：上述引擎字段若仍写在 `meta`，宿主 v2 加载器可读；**目标**迁至 **`runtime_config`**。
 
-`interaction_mode`、`memory_config`、`identity_binding`、`evolution`（完整）、`knowledge`（引擎块）、`ollama_model`、`remote_presence`、`autonomous_scene`、`min_runtime_version`、`dev_only`。
+### 2.2 运行时配置（`runtime_config` · 蓝图）
 
-### 2.2 系统配置（蓝图）
+**权威清单**：[SETTINGS_REFERENCE.md](../cli/SETTINGS_REFERENCE.md) §零 **`runtime_config`**。
 
-**权威清单**：[SETTINGS_REFERENCE.md](../cli/SETTINGS_REFERENCE.md)（§零 · 蓝图专属字段）。
+含 `interaction_mode`、`memory_config`、`reply_quality_anchor`、`remote_fallback_to_builtin`、`dual_core.enabled` 等。**创作者校验**（`pack validate --profile creator`）**不**检查本段。
+
+### 2.3 系统配置（蓝图 · 槽位）
 
 含 **`slot_registry`**、**`groups`**、各实例 **`backend` / `model` / `plugin`**，以及（目标）**`runtime_config`** 中的交互模式、记忆策略、**`dual_core.enabled`** 等。主应用 **`save_role_slot_registry`** / CLI **`oclive plugin manage`** 写回蓝图段。
 
-### 2.3 `slot_registry`（蓝图 · 开放多实例）
+### 2.4 `slot_registry`（蓝图 · 开放多实例）
 
 键为**用户定义的实例名**（如 `memory`、`memory_short`、`llm`）。值：
 
@@ -102,7 +103,7 @@ roles/{role_id}/
 
 **架构图编辑规则（主应用）**：可增删 `slot_registry` 键；**至少一个 `type: llm`**；删除时 **不可移除最后一个 llm** 实例。字段校验与写盘逻辑见 `oclive_validation` 与 Tauri `save_role_slot_registry`。
 
-### 2.4 `groups`（蓝图 · 可选）
+### 2.5 `groups`（蓝图 · 可选）
 
 将同 **`type`** 的多个 `slot_registry` 实例归到逻辑分组，供主应用架构图绘制边框（可折叠）。
 
@@ -127,7 +128,7 @@ roles/{role_id}/
 }
 ```
 
-### 2.5 `module_relations`（仅运行时）
+### 2.6 `module_relations`（仅运行时）
 
 **禁止**在 `pipeline.ocblueprint` 文件中出现 `module_relations`、`steps`、`entry`（校验报错）。运行时由 `slot_registry` **派生**模块间示意关系，供架构图只读连线。
 

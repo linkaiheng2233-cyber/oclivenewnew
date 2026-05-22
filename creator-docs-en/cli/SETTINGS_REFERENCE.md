@@ -4,6 +4,24 @@
 
 ## 0. Blueprint-only fields
 
+### `runtime_config` (v3 target SSOT)
+
+| Field | Notes |
+|-------|--------|
+| `interaction_mode` | `immersive` \| `pure_chat` |
+| `memory_config` | Memory policy object |
+| `reply_quality_anchor` | Quality anchor prose |
+| `remote_fallback_to_builtin` | Pack-level hint (host `app_settings` still authoritative) |
+| `dual_core.enabled` | Dual-core switch; default **false** |
+
+On **schema_version 2**, `runtime_config` triggers a **pack validate warning** and is **ignored** at load.
+
+[中文](../cli/SETTINGS_REFERENCE.md)
+
+---
+
+### Slots and other blueprint sections
+
 | Category | Fields |
 |----------|--------|
 | Slots | **`slot_registry`** (`type`, `backend`, `plugin`, `model`, `url`, `position`, …) |

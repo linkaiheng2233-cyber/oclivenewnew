@@ -12,14 +12,14 @@
 
 | Component | Entry-level creators | Blueprint / admins |
 |-----------|----------------------|-------------------|
-| **Role pack** | `meta` identity, **`personality`**, **`relations`**, **`reply_quality_anchor`**, **`prompts/`**, scene prose | — |
+| **Role pack** | `meta` identity, **`personality`**, **`relations`**, **`prompts/`**, scene prose | — |
 | **Blueprint** | **Do not edit** unless you integrate hosts | **`slot_registry`**, **`groups`**, **`backend`**, **`model`**, **`interaction_mode`**, **`memory_config`**, **`runtime_config.dual_core.enabled`** (RFC), … |
 
 On disk, v2 often uses **one file** `pipeline.ocblueprint` with both **`meta`** (creator slice) and **`slot_registry`** (blueprint). Editors should expose a **role** view vs an **advanced blueprint** view.
 
 **Creator `meta` fields:** `id`, `name`, `version`, `author`, `description`, `personality`, `relations`, `default_relation`, `scenes`, `reply_quality_anchor`.
 
-**Not for creators:** `slot_registry`, `groups`, `backend`, `plugin`, `model`, `interaction_mode`, full `memory_config`, `ollama_model`, `remote_presence`, `autonomous_scene`, `min_runtime_version`, enabling dual-core.
+**Not for creators:** `slot_registry`, `groups`, **`runtime_config`**, **`pipeline`**, backends/models, enabling dual-core. **`reply_quality_anchor`** lives in **`runtime_config`** (see SETTINGS_REFERENCE §0).
 
 ---
 
