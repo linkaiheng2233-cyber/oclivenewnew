@@ -33,8 +33,21 @@
 | 项 | 状态 |
 |----|------|
 | `map_copresent_err!` / `map_plugin_err!` / `map_frontend_err!` 批量替换 | 已落实（`co_present` / `plugin_host` 无手写 `map_err`） |
-| 遗留 manifest 专用 Tauri 写盘 API | 已移除 `RoleStorage::save_role_manifest`；保留 `set_session_plugin_backend` 等 C1 包装 |
+| 遗留 manifest 专用 Tauri 写盘 API | 已移除 `RoleStorage::save_role_manifest`；C1 `set_session_plugin_backend` 仅委托 `set_session_slot_override` |
 | `cargo udeps`（nightly，2026-05-22） | **无未使用依赖**；见 `CONTRIBUTING.md` |
+
+## 最终收尾（2026-05-20）
+
+| 项 | 状态 |
+|----|------|
+| v1→v2 创作者迁移指南 | [V1_TO_V2_MIGRATION.md](../creator-docs/role-pack/V1_TO_V2_MIGRATION.md) |
+| `chat_engine` 经 `dyn PluginHostPort`（`plugin_resolve`） | 已落实；`co_present` / `process_message` 不引用 `PluginHost` 具体类型 |
+| C1 薄包装 | 已落实；会话覆盖仅 `slot_registry` 路径 |
+| `oclive test --oocp` | 已落实 |
+| `oclive explain` 与 `ERROR_CODES.md` | 已补全 `AppError` 静态变体 |
+| CLI 废弃蓝图模板文档 | 已删除；生成 `BLUEPRINT_V2_POINTER.md` |
+| `oclive doctor` v2 蓝图三项检查 | 已落实 |
+| 性能基线文档（v2 / matrix 说明） | 已更新 PERFORMANCE / LIGHTWEIGHT_PROFILE |
 
 ### 验证（2026-05-22，第三批）
 
