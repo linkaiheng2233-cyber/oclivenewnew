@@ -1,15 +1,22 @@
-//! 实验核 `pipeline.experimental` 支持的 `(slot type, method)` 注册表（与文档 / `oclive explain` 对齐）。
+//! # 实验核 method 注册表
+//!
+//! **角色**：声明 `pipeline.experimental` 允许的 `(slot type, method)` 与对应共景阶段名；
+//! 供 [`dual_pipeline_steps`](super::dual_pipeline_steps) 校验、单元测试与 `creator-docs/dual-core/METHOD_REGISTRY.md` 对齐。
+//!
+//! CLI `oclive explain DUAL_CORE` 维护独立常量表（避免 CLI 依赖 Tauri）；变更时请同步两处。
 
 /// 单条实验核 method 说明。
 #[derive(Debug, Clone, Copy)]
-pub struct ExperimentalMethodSpec {
+pub(crate) struct ExperimentalMethodSpec {
     pub slot_type: &'static str,
     pub method: &'static str,
+    /// 与 `creator-docs/dual-core/METHOD_REGISTRY.md` 对齐；测试与文档消费。
+    #[allow(dead_code)]
     pub co_present_stage: &'static str,
 }
 
 /// 七槽常用 method（与 `DualPipelineRunner` 执行器一致）。
-pub const EXPERIMENTAL_METHOD_SPECS: &[ExperimentalMethodSpec] = &[
+pub(crate) const EXPERIMENTAL_METHOD_SPECS: &[ExperimentalMethodSpec] = &[
     ExperimentalMethodSpec {
         slot_type: "memory",
         method: "retrieve",
@@ -56,8 +63,3 @@ pub fn required_slot_type_for_method(method: &str) -> Option<&'static str> {
         .map(|s| s.slot_type)
 }
 
-/// 是否为已实现的实验核 method。
-#[must_use]
-pub fn is_known_experimental_method(method: &str) -> bool {
-    required_slot_type_for_method(method).is_some()
-}

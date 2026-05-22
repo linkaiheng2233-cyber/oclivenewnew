@@ -1,12 +1,22 @@
-//! 双核运行时：实验核 `pipeline.experimental` + 稳定核 `co_present` 降级。
-#![allow(clippy::missing_errors_doc)]
+//! # 双核运行时调度（实验核 + 稳定核）
+//!
+//! **角色**：当角色已加载且 [`Role::dual_core_gated`](crate::models::Role::dual_core_gated) 时，先按蓝图
+//! `pipeline.experimental` 执行实验步骤；失败则**静默降级**到 [`co_present`](crate::domain::chat_engine::co_present)
+//!（稳定核），用户无感知。
+//!
+//! **设计哲学**：实验优先、可回滚、可降级——实验步只改可快照的会话内存态；失败时恢复快照再走稳定路径。
+//!
+//! **上游**：[`process_message`](crate::domain::chat_engine::process_message)。
+//! **下游**：[`ExperimentalStepCtx`](super::dual_pipeline_steps::ExperimentalStepCtx)、
+//! [`dual_pipeline_registry`](super::dual_pipeline_registry)。
+//!
+//! **关键决策**：不执行 `pipeline.stable`；稳定核恒为硬编码 `co_present`。
 
 use std::collections::{HashMap, HashSet};
 
 use crate::domain::chat_engine::co_present;
 use crate::domain::chat_engine::message_error::ProcessMessageError;
 use crate::domain::dual_pipeline_steps::{ExperimentalStepCtx, StepOutcome};
-use crate::error::AppError;
 use crate::models::dto::SendMessageRequest;
 use crate::models::dto::SendMessageResponse;
 use crate::models::Role;
@@ -16,21 +26,25 @@ use oclive_validation::{parse_pipeline_action, PipelineStep};
 /// 实验核失败（触发静默降级）。
 #[derive(Debug, thiserror::Error)]
 #[error("dual-core experimental: {0}")]
-pub struct DualCoreError(pub String);
+pub(crate) struct DualCoreError(pub String);
 
-/// 回合开始前可回滚的会话内存态。
+/// 实验核开始前捕获、失败时恢复的会话内存态。
+///
+/// 仅快照实验步可能改写且稳定核会复用的字段（控制回滚成本与一致性）：
+/// - `narrative_hint`：复杂情感叙事缓存；
+/// - `emotion_state`：DB 当前情绪标签；
+/// - `active_scene_id`：用户叙事场景（`user_presence_scene`，与角色 `current_scene` 可不同）。
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct TurnRollbackSnapshot {
     pub narrative_hint: Option<String>,
-    /// `get_current_emotion` 快照；`None` 表示当时无记录。
     pub emotion_state: Option<String>,
-    /// `get_user_presence_scene` 快照（用户叙事/发消息上下文场景）。
     pub active_scene_id: Option<String>,
 }
 
 pub struct DualPipelineRunner;
 
 impl DualPipelineRunner {
+    /// 在任一实验步执行前调用，供 [`rollback`](Self::rollback) 恢复。
     pub async fn take_snapshot(state: &AppState, srid: &str) -> TurnRollbackSnapshot {
         let hint = state.stored_complex_emotion_narrative_hint(srid);
         let emotion_state = state
@@ -52,6 +66,7 @@ impl DualPipelineRunner {
         }
     }
 
+    /// 实验失败且即将降级时调用：恢复 [`take_snapshot`] 时的三项会话态。
     pub async fn rollback(state: &AppState, srid: &str, snapshot: TurnRollbackSnapshot) {
         state.set_stored_complex_emotion_narrative_hint(
             srid,
@@ -71,6 +86,9 @@ impl DualPipelineRunner {
         }
     }
 
+    /// # Errors
+    ///
+    /// 透传 [`co_present::process_co_present`] 的 [`ProcessMessageError`].
     #[allow(clippy::too_many_arguments)]
     pub async fn run_stable(
         state: &AppState,
@@ -100,6 +118,9 @@ impl DualPipelineRunner {
         .map_err(ProcessMessageError::from)
     }
 
+    /// # Errors
+    ///
+    /// 蓝图 DAG、action 解析、实验步或收尾 `co_present` 失败时返回；由 [`run_with_fallback`] 捕获并降级。
     #[allow(clippy::too_many_arguments)]
     pub async fn run_experimental(
         state: &AppState,
@@ -116,14 +137,14 @@ impl DualPipelineRunner {
         let steps = role
             .pipeline_experimental
             .as_ref()
-            .ok_or_else(|| experimental_err("missing pipeline.experimental"))?;
+            .ok_or_else(|| ProcessMessageError::dual_core_invalid("missing pipeline.experimental"))?;
         if steps.is_empty() {
-            return Err(experimental_err("empty pipeline.experimental"));
+            return Err(ProcessMessageError::dual_core_invalid(
+                "empty pipeline.experimental",
+            ));
         }
-        let ordered = topological_sort(steps).map_err(|e| ProcessMessageError::Stage {
-            stage: "dual_core_experimental",
-            source: AppError::InvalidParameter(e.0),
-        })?;
+        let ordered = topological_sort(steps)
+            .map_err(|e| ProcessMessageError::dual_core_invalid(e.0))?;
 
         tracing::info!(
             target: "oclive_dual_core",
@@ -147,10 +168,7 @@ impl DualPipelineRunner {
                     error = %e,
                     "实验核在第 {step_no} 步失败: {e}，正在降级到稳定核"
                 );
-                ProcessMessageError::Stage {
-                    stage: "dual_core_experimental",
-                    source: AppError::InvalidParameter(e),
-                }
+                ProcessMessageError::dual_core_invalid(e)
             })?;
             match ctx.run_method(&registry_key, method.as_str()).await {
                 Ok(StepOutcome::Continue) => {}
@@ -172,7 +190,7 @@ impl DualPipelineRunner {
                         error = %msg,
                         "实验核在第 {step_no} 步失败: {msg}，正在降级到稳定核"
                     );
-                    return Err(experimental_process_err(msg));
+                    return Err(ProcessMessageError::dual_core_invalid(msg));
                 }
                 Err(e) => {
                     tracing::warn!(
@@ -196,7 +214,7 @@ impl DualPipelineRunner {
                 error = %msg,
                 "实验核校验失败: {msg}，正在降级到稳定核"
             );
-            return Err(experimental_process_err(msg));
+            return Err(ProcessMessageError::dual_core_invalid(msg));
         }
 
         tracing::info!(
@@ -220,6 +238,9 @@ impl DualPipelineRunner {
         .await
     }
 
+    /// # Errors
+    ///
+    /// 实验核失败时已回滚快照；仅当稳定核 `co_present` 仍失败时向调用方返回错误。
     #[allow(clippy::too_many_arguments)]
     pub async fn run_with_fallback(
         state: &AppState,
@@ -274,20 +295,6 @@ impl DualPipelineRunner {
                 Ok(resp)
             }
         }
-    }
-}
-
-fn experimental_err(msg: impl Into<String>) -> ProcessMessageError {
-    ProcessMessageError::Stage {
-        stage: "dual_core_experimental",
-        source: AppError::InvalidParameter(msg.into()),
-    }
-}
-
-fn experimental_process_err(msg: impl Into<String>) -> ProcessMessageError {
-    ProcessMessageError::Stage {
-        stage: "dual_core_experimental",
-        source: AppError::InvalidParameter(msg.into()),
     }
 }
 

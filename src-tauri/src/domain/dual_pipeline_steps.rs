@@ -1,4 +1,12 @@
-//! 实验核单步执行（与 `co_present` 子阶段对齐）。
+//! # 实验核单步执行（与 `co_present` 子阶段对齐）
+//!
+//! **角色**：将 `pipeline.experimental` 中的 `slot.<key>.<method>` 映射到共景子阶段
+//!（情绪分析、记忆排序、Prompt 组装等）；不重复实现业务规则，只复用 [`SlotRunner`](super::slot_runner::SlotRunner) 与现有引擎。
+//!
+//! **上游**：[`DualPipelineRunner`](super::dual_pipeline::DualPipelineRunner) 拓扑排序后逐步调用 [`ExperimentalStepCtx::run_method`].
+//! **下游**：`co_present` 各阶段逻辑（通过 `CoPresentSlotRunner` 等）。
+//!
+//! method 合法集合见 [`dual_pipeline_registry`](super::dual_pipeline_registry)。
 
 use crate::domain::agent::AgentInput;
 use crate::domain::chat_engine::context::load_recent_context;
@@ -491,24 +499,15 @@ pub enum StepOutcome {
 }
 
 fn stage_err(msg: impl Into<String>) -> ProcessMessageError {
-    ProcessMessageError::Stage {
-        stage: "dual_core_experimental",
-        source: AppError::InvalidParameter(msg.into()),
-    }
+    ProcessMessageError::dual_core_invalid(msg)
 }
 
 fn map_slot_err(e: AppError) -> ProcessMessageError {
-    ProcessMessageError::Stage {
-        stage: "dual_core_experimental",
-        source: e,
-    }
+    ProcessMessageError::dual_core(e)
 }
 
 fn map_db_err(e: AppError) -> ProcessMessageError {
-    ProcessMessageError::Stage {
-        stage: "dual_core_experimental",
-        source: e,
-    }
+    ProcessMessageError::dual_core(e)
 }
 
 #[cfg(test)]
@@ -540,5 +539,13 @@ mod tests {
             Some("event")
         );
         assert_eq!(required_slot_type_for_method("nope"), None);
+    }
+
+    #[test]
+    fn registry_maps_each_method_to_co_present_stage() {
+        for spec in EXPERIMENTAL_METHOD_SPECS {
+            assert!(!spec.co_present_stage.is_empty());
+            assert!(!spec.method.is_empty());
+        }
     }
 }
