@@ -1,4 +1,6 @@
 //! HTTP / Tauri invoke request and response DTOs (field names are the API contract).
+//!
+//! Types below `SendMessageResponse` map 1:1 to host commands documented in `creator-docs`.
 
 use std::collections::BTreeMap;
 
@@ -94,6 +96,7 @@ pub struct SendMessageResponse {
 /// 身份下拉里「跟随创作者 manifest 默认身份」选项提交该常量（非 manifest 键名）。
 pub const OCLIVE_DEFAULT_RELATION_SENTINEL: &str = "__oclive_default__";
 
+/// Manifest-defined user identity option (`get_role_info` / relation pickers).
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct UserRelationDto {
     pub id: String,
@@ -104,6 +107,7 @@ pub struct UserRelationDto {
     pub initial_favorability: f64,
 }
 
+/// Full role runtime snapshot for settings and plugin panels (`get_role_info`).
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct RoleData {
     pub role_id: String,
@@ -175,6 +179,7 @@ pub struct RoleData {
     pub slot_session_overridden_keys: Vec<String>,
 }
 
+/// Lightweight role list entry (`list_roles`).
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct RoleSummary {
     pub id: String,
@@ -183,6 +188,7 @@ pub struct RoleSummary {
     pub author: String,
 }
 
+/// Scene id + display label for scene switch UI.
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct SceneLabelEntry {
     pub id: String,
@@ -209,6 +215,7 @@ impl From<&LifeState> for LifeStateDto {
     }
 }
 
+/// Role panel / scene UI snapshot (`get_role_info`).
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct RoleInfo {
     pub role_id: String,
@@ -293,6 +300,7 @@ pub struct RoleInfo {
     pub slot_session_overridden_keys: Vec<String>,
 }
 
+/// Per-session `slot_registry` backend override (`set_session_slot_override`).
 #[derive(Debug, Clone, Deserialize)]
 pub struct SetSessionSlotOverrideRequest {
     pub role_id: String,
