@@ -9,7 +9,6 @@ import PluginChatHeaderSlots from "./components/PluginChatHeaderSlots.vue";
 import PluginSidebarSlots from "./components/PluginSidebarSlots.vue";
 import RoleplayAsidePanel from "./components/RoleplayAsidePanel.vue";
 import HotkeyHost from "./components/HotkeyHost.vue";
-import PluginManagerPanel from "./views/PluginManagerPanel.vue";
 import MarketView from "./views/MarketView.vue";
 import SimplePluginManagerPanel from "./views/SimplePluginManagerPanel.vue";
 import PluginSlotEmbed from "./components/PluginSlotEmbed.vue";
@@ -94,7 +93,6 @@ const roleSwitching = ref(false);
 /** Escape / backdrop 关闭对话框后恢复打开前的焦点 */
 const settingsFocusReturn = ref<HTMLElement | null>(null);
 const simplePluginManagerFocusReturn = ref<HTMLElement | null>(null);
-const pluginPanelFocusReturn = ref<HTMLElement | null>(null);
 const shortcutHelpFocusReturn = ref<HTMLElement | null>(null);
 
 function stashFocusTarget(target: typeof settingsFocusReturn): void {
@@ -228,16 +226,12 @@ const settingsViewOpen = ref(false);
 const {
   simplePluginManagerOpen,
   openPluginManagerPanel,
-  openAdvancedPluginManager,
   openPluginMarket,
   pluginManagerMoreBtnLabel,
   settingsEntryMoreHelp,
 } = usePluginManagerWindow({
   closeMoreMenu: () => {
     topMoreOpen.value = false;
-  },
-  closeSettingsView: () => {
-    settingsViewOpen.value = false;
   },
 });
 
@@ -256,17 +250,6 @@ watch(simplePluginManagerOpen, (open) => {
     restoreFocusTarget(simplePluginManagerFocusReturn);
   }
 });
-
-watch(
-  () => pluginStore.panelVisible,
-  (open) => {
-    if (open) {
-      stashFocusTarget(pluginPanelFocusReturn);
-    } else {
-      restoreFocusTarget(pluginPanelFocusReturn);
-    }
-  },
-);
 
 watch(shortcutHelpOpen, (open) => {
   if (open) {
@@ -619,9 +602,9 @@ function onHotkey(e: KeyboardEvent) {
       shortcutHelpOpen.value = false;
       return;
     }
-    if (pluginStore.panelVisible) {
+    if (pluginStore.marketPanelVisible) {
       e.preventDefault();
-      pluginStore.closePanel();
+      pluginStore.closeMarketPanel();
       return;
     }
     if (settingsViewOpen.value) {
@@ -1137,19 +1120,16 @@ onBeforeUnmount(() => {
     <Toast :show="toast.show" :type="toast.type" :message="toast.message" />
     <ShortcutHelp v-model="shortcutHelpOpen" :bootstrap-epoch="pluginStore.bootstrapEpoch" />
 
-    <PluginManagerPanel />
     <MarketView />
     <SimplePluginManagerPanel
       :visible="simplePluginManagerOpen"
       @close="simplePluginManagerOpen = false"
-      @open-advanced="openAdvancedPluginManager"
       @open-market="openPluginMarket"
     />
 
     <SettingsView
       :visible="settingsViewOpen"
       @close="settingsViewOpen = false"
-      @open-advanced-plugin="openAdvancedPluginManager"
     />
 
     <div class="app-floating-slot" aria-hidden="true">

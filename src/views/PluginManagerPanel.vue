@@ -1,4 +1,5 @@
 <script setup lang="ts">
+/** 未在主应用挂载；高级管理见 `oclive plugin manage`。保留供参考。 */
 import { open } from "@tauri-apps/api/dialog";
 import { computed, defineAsyncComponent, ref, toRef, watch } from "vue";
 import { useI18n } from "vue-i18n";

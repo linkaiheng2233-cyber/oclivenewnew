@@ -23,8 +23,6 @@ const props = defineProps<{
 
 const emit = defineEmits<{
   close: [];
-  /** 开启「高级插件管理」时，由设置页打开 V1 专业面板 */
-  openAdvancedPlugin: [];
 }>();
 
 const { t } = useI18n();
@@ -268,25 +266,10 @@ async function onToggleForceIframe(e: Event) {
           </section>
           <section class="sv-section">
             <div class="sv-row-h">
-              <span class="sv-label">{{ t("settings.experimentalLabel") }}</span>
-              <HelpHint :text="t('settings.experimentalSectionHelp')" />
+              <span class="sv-label">{{ t("settings.pluginCliLabel") }}</span>
+              <HelpHint :text="t('settings.pluginCliHelp')" />
             </div>
-            <label class="sv-toggle-row">
-              <input
-                type="checkbox"
-                :checked="uiStore.advancedPluginManagement === true"
-                @change="uiStore.setAdvancedPluginManagement(($event.target as HTMLInputElement).checked)"
-              />
-              <span class="sv-toggle-text">
-                <strong>{{ t("settings.experimentalToggleTitle") }}</strong>
-                <span class="sv-muted sv-toggle-desc" v-html="t('settings.experimentalToggleHtml')" />
-              </span>
-            </label>
-            <div v-if="uiStore.advancedPluginManagement" class="sv-v2-launch">
-              <button type="button" class="sv-v2-launch-btn" @click="emit('openAdvancedPlugin')">
-                {{ t("settings.openAdvancedPluginManager") }}
-              </button>
-            </div>
+            <p class="sv-muted sv-plugin-cli-note">{{ t("settings.pluginCliNote") }}</p>
           </section>
           <section class="sv-section">
             <div class="sv-row-h">
