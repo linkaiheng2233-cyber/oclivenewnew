@@ -21,6 +21,22 @@
 
 ---
 
+## 0.5 角色包 vs 蓝图（配置分责）
+
+| 层 | 磁盘 | 谁改 | 关键路径 |
+|----|------|------|----------|
+| **角色包** | `meta` 创作者子集、`prompts/`、`scenes/`、`core_personality.txt` | 初级创作者 | [ROLE_PACK_SPEC.md](../creator-docs/role-pack/ROLE_PACK_SPEC.md) §0 |
+| **蓝图** | 同文件 `pipeline.ocblueprint` 内 **`slot_registry`**、**`groups`**、（目标）**`runtime_config`** | 管理员 / `oclive plugin manage` / `save_role_slot_registry` | [SETTINGS_REFERENCE.md](../creator-docs/cli/SETTINGS_REFERENCE.md) §零 |
+| **边界 SSOT** | — | — | **[ROLE_PACK_BOUNDARY.md](./ROLE_PACK_BOUNDARY.md)** |
+
+**今日实现**：引擎字段（如 `meta.interaction_mode`）仍在 `meta`，与边界文档「目标迁至 `runtime_config`」并存；改边界时同步 `oclive_validation` 与 `RoleStorage::load_role_from_dir`。
+
+**双核**：`dual_core.enabled` 仅蓝图（[DUAL_CORE_CURSOR_HANDOFF.md](./DUAL_CORE_CURSOR_HANDOFF.md)）；非创作者字段。
+
+**高危能力**：不在 `settings.json` / 蓝图 — 见目录插件 **`permissions`** + **`high_risk_grants.json`**（§2 与 PLUGIN_V1）。
+
+---
+
 ## 1. 内核编排：`process_message`
 
 ### 入口与主语义
@@ -49,7 +65,7 @@
 | 项目 | 说明 |
 |------|------|
 | **装配与解析** | **`src-tauri/src/domain/plugin_host.rs`**：`PluginHost::resolve_for_role` 按角色包 + 会话覆盖解析 **第 1–6 模块**（见 [OCLIVE_ARCHITECTURE_OVERVIEW.md](../creator-docs/getting-started/OCLIVE_ARCHITECTURE_OVERVIEW.md)），得到 `ResolvedRolePlugins`（各槽 `Arc<dyn …Provider>`）。 |
-| **配置来源** | `settings.json` → `plugin_backends` 与 DB 会话覆盖；有效值与来源快照由 `AppState` 上方法聚合（搜索 `effective_plugin_backends_for_session`）。 |
+| **配置来源** | v2：**`pipeline.ocblueprint` → `slot_registry`**（折叠六槽）+ DB 会话覆盖；legacy：`settings.json` → `plugin_backends`。有效值：`effective_plugin_backends_for_session`（`AppState`）。 |
 | **模块编号与枚举** | **[`OCLIVE_ARCHITECTURE_OVERVIEW.md`](../creator-docs/getting-started/OCLIVE_ARCHITECTURE_OVERVIEW.md)**、**[`SETTINGS_REFERENCE.md`](../creator-docs/cli/SETTINGS_REFERENCE.md)**、**[`PLUGIN_V1.md`](../creator-docs/plugin-and-architecture/PLUGIN_V1.md)**。 |
 | **降级策略** | 目录插件 / Remote 失败时主对话路径尽量 **记日志 + 回退内置或 Ollama**（具体分支见 `co_present`、remote 子模块与插件运行时；错误码见 ERROR_CODES）。 |
 | **目录插件运行时** | `src-tauri/src/infrastructure/directory_plugins/`（manifest 校验、`runtime` 等）；与 **`high_risk_grants`**、**`mcp_client`** 联动见 [`A4_CLOSURE_SUMMARY.md`](./A4_CLOSURE_SUMMARY.md)。 |

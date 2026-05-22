@@ -21,12 +21,14 @@
 
 ### 架构 RFC
 
+- **运行时双核双态（Stable / Experimental，Proposed，默认关）**：[RFC_OCLIVE_DUAL_CORE_DUAL_MODE.md](creator-docs/rfc/RFC_OCLIVE_DUAL_CORE_DUAL_MODE.md) · **Cursor 对齐进度** [handoff/DUAL_CORE_CURSOR_HANDOFF.md](handoff/DUAL_CORE_CURSOR_HANDOFF.md) · 速查 [handoff/DUAL_CORE_ALIGNMENT.md](handoff/DUAL_CORE_ALIGNMENT.md)（与 Monolith **构建态** 正交；**不阻塞**当前 v2 交付）。
 - **高耦合编译模式（Monolith）**：[RFC_OCLIVE_MONOLITH_MODE.md](creator-docs/rfc/RFC_OCLIVE_MONOLITH_MODE.md)（路线图见 RFC §9，已与 `oclive-cli` 实现对齐）。**`oclive-cli`**：`init --monolith` 或交互「开发者编译选项」生成 **`monolith.toml`**、`vendor/oclive_monolith_builtin/`（**七焊接键焊接桩唯一模板源**）、**`process_message_monolith.rs`**、双 **`[[bin]]`**（`main.rs` / `main_monolith.rs`）；**`cargo run -p oclive-cli -- build|bench`** 再生成与对比；**`bench --save` / `--compare`** 用于本地性能历史与对比（见 [OCLIVE_CLI_GUIDE.md](creator-docs/cli/OCLIVE_CLI_GUIDE.md)）。**`oclive dev`**：监听脚手架或内核项目下 **`roles/`** 中 `manifest.json` / `settings.json` 变更，便于热重载脚本对接。
 
 ### 内核架构（主应用 `src-tauri`）
 
 - **架构总述（对外）**：契约型薄核 + **单核双态**；**第 1–6 模块** / **第 N 设施子模块** / **后端模块插件模块** — [`creator-docs/getting-started/OCLIVE_ARCHITECTURE_OVERVIEW.md`](creator-docs/getting-started/OCLIVE_ARCHITECTURE_OVERVIEW.md)。
-- **主编排入口**：Tauri IPC 与 **`--api` HTTP** 均在 **`src-tauri/src/domain/chat_engine/mod.rs`** 的 **`process_message`**（及 `co_present` / `scene` 等子模块）内顺序编排。角色包 **v2** 以 **`pipeline.ocblueprint`** 为配置 SSOT（`slot_registry` 多实例 + 可选 **`groups`** 架构图分组）；**不以**蓝图 `steps[]` 作首轮调度 DSL。运行时行为以本仓库 `process_message` 为准。
+- **主编排入口**：Tauri IPC 与 **`--api` HTTP** 均在 **`src-tauri/src/domain/chat_engine/mod.rs`** 的 **`process_message`**（及 `co_present` / `scene` 等子模块）内顺序编排。角色包 **v2** 以 **`pipeline.ocblueprint`** 为磁盘 SSOT；**不以**蓝图 `steps[]` 作首轮调度 DSL。运行时行为以本仓库 `process_message` 为准。
+- **角色包与蓝图边界**：**角色包** = 身份、人格、关系、**`prompts/`**、**`reply_quality_anchor`**（初级创作者）。**蓝图** = **`slot_registry`**、**`groups`**、后端/模型/交互模式/记忆策略、**`runtime_config.dual_core`**（管理员；默认关）。逻辑分责见 **[handoff/ROLE_PACK_BOUNDARY.md](handoff/ROLE_PACK_BOUNDARY.md)** · [ROLE_PACK_SPEC.md](creator-docs/role-pack/ROLE_PACK_SPEC.md) §0 · [SETTINGS_REFERENCE.md](creator-docs/cli/SETTINGS_REFERENCE.md) §零。勿让 Agent 在「角色」任务中改 `slot_registry`。
 - **错误与日志**：统一错误类型见 **`src-tauri/src/error.rs`**（`thiserror`、可映射前端文案）；**机器 `code` 与 JSON 体**以 **`oclive_kernel_runtime::KernelErrorBody`** 与 **`creator-docs/getting-started/KERNEL_ERROR_CODE_CONVENTION.md`** 为准（与 `AppError::code()`、`http_chat_codes`、目录插件 **`ApiError` JSON** 对齐；**Sentry / 用户可见错误扫尾**见 **`handoff/A3_CLOSURE_SUMMARY.md`** / **`handoff/A3_CLOSURE_SUMMARY.en.md`**）。结构化日志为 **`tracing`**（`RUST_LOG`，`init_tracing` 默认 `info`）。
 - **启动健康检查**：首轮对话前 **`startup_health::ensure_once`**（槽位、`plugin_backends`、角色包文件、**`DbManager::health_ping`**、可选 LLM 探测）；环境变量 **`OCLIVE_SKIP_STARTUP_HEALTH`** / **`OCLIVE_SKIP_LLM_STARTUP_PROBE`** 可跳过。实现：**`src-tauri/src/domain/startup_health.rs`**。
 
