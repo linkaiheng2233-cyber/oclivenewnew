@@ -6,6 +6,8 @@
 //! **下游**：[`co_present::process_co_present`](super::co_present)、`process_remote_*`；槽位实现经 [`PluginHostPort`](crate::domain::ports::PluginHostPort) 解析，**不在此文件硬编码六槽顺序**。
 //!
 //! **关键决策**：编排顺序由 **Rust 代码**（`co_present` + [`SlotRunner`](../slot_runner.rs)）审计，**不由** `pipeline.ocblueprint` 动态解释执行；蓝图仅提供 `slot_registry` / `groups` 配置，避免「文件里写的流程」与运行时脱节。
+//!
+//! 模块依赖规则见 [`domain/README.md`](../README.md)。
 
 use crate::domain::agent::AgentInput;
 use crate::domain::dual_pipeline::DualPipelineRunner;
