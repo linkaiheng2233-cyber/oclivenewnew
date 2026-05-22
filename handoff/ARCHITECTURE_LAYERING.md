@@ -2,6 +2,21 @@
 
 **状态**：P0–P8 收口后的工程纪律说明（2026-05-20）。
 
+## 关键架构决策（摘要）
+
+完整说明见 [`creator-docs/architecture/DESIGN_DECISIONS.md`](../creator-docs/architecture/DESIGN_DECISIONS.md)。
+
+| 决策 | 为什么这样做 |
+|------|----------------|
+| 蓝图从主路径移除 | 避免磁盘流程与 `process_message` 实际顺序不一致；顺序由代码审计 |
+| 防腐层完整（`domain/ports` 零 trait） | 核心 trait 独立于 Tauri，任意宿主可实现 |
+| `module_relations` 自动派生 | 禁止手写字段；从 `slot_registry` 推导边才可靠 |
+| 分组（`groups`） | 创作者 UI 归类，不改变执行顺序 |
+| 多实例合并策略 | memory 去重合并、llm last-wins、agent 在 PluginHost 合并工具集等 |
+| C1 薄包装 | 旧 API 签名保留，内部委托 slot 覆盖，给下游过渡时间 |
+
+---
+
 ## 目标依赖方向
 
 | 层 | 允许依赖 | 禁止依赖 |
