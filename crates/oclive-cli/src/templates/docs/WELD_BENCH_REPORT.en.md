@@ -52,4 +52,4 @@ cargo run -p oclive-cli -- build -o .
 cargo run -p oclive-cli -- bench --release -o . --runs 20 --save
 ```
 
-See **`ORCHESTRATION_REFERENCE.en.md`** and **`RFC_OCLIVE_MONOLITH_MODE.md`** in the oclivenewnew repo.
+See **`BLUEPRINT_V2_POINTER.md`** and **`RFC_OCLIVE_MONOLITH_MODE.md`** in the oclivenewnew repo.

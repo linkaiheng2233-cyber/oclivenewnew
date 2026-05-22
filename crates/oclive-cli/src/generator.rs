@@ -288,29 +288,13 @@ fn write_kernel_dev_docs(out: &Path) -> Result<()> {
     let docs = out.join("docs");
     fs::create_dir_all(&docs).context("create docs")?;
     fs::write(
-        docs.join("BLUEPRINT_REFERENCE.md"),
+        docs.join("BLUEPRINT_V2_POINTER.md"),
         include_str!(concat!(
             env!("CARGO_MANIFEST_DIR"),
-            "/src/templates/docs/BLUEPRINT_REFERENCE.md"
+            "/src/templates/docs/BLUEPRINT_V2_POINTER.md"
         )),
     )
-    .context("write BLUEPRINT_REFERENCE.md")?;
-    fs::write(
-        docs.join("ORCHESTRATION_REFERENCE.md"),
-        include_str!(concat!(
-            env!("CARGO_MANIFEST_DIR"),
-            "/src/templates/docs/ORCHESTRATION_REFERENCE.md"
-        )),
-    )
-    .context("write ORCHESTRATION_REFERENCE.md")?;
-    fs::write(
-        docs.join("ORCHESTRATION_REFERENCE.en.md"),
-        include_str!(concat!(
-            env!("CARGO_MANIFEST_DIR"),
-            "/src/templates/docs/ORCHESTRATION_REFERENCE.en.md"
-        )),
-    )
-    .context("write ORCHESTRATION_REFERENCE.en.md")?;
+    .context("write BLUEPRINT_V2_POINTER.md")?;
     fs::write(
         docs.join("WELD_BENCH_REPORT.md"),
         include_str!(concat!(

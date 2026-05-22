@@ -56,4 +56,4 @@ cargo run -p oclive-cli -- build -o .
 cargo run -p oclive-cli -- bench --release -o . --runs 20 --save
 ```
 
-编排语义见 **`ORCHESTRATION_REFERENCE.md`**；RFC 见主仓 **`RFC_OCLIVE_MONOLITH_MODE.md`**。
+蓝图 v2 见 **`BLUEPRINT_V2_POINTER.md`**；RFC 见主仓 **`RFC_OCLIVE_MONOLITH_MODE.md`**。

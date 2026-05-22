@@ -109,7 +109,7 @@ pub fn generate_monolith_source(plan: &WeldPlan) -> String {
 // 此文件由 oclive-cli 根据 monolith.toml 生成。
 // 请勿手改焊接逻辑；修改 monolith.toml 后请运行 `oclive build`（或重新 `oclive init`）再生成。
 //
-// 编排说明（纯内核开发者）：见项目根 docs/ORCHESTRATION_REFERENCE.md（English: ORCHESTRATION_REFERENCE.en.md）。
+// 蓝图 v2：见项目根 docs/BLUEPRINT_V2_POINTER.md（主仓 creator-docs/role-pack/）。
 // 桌面宿主主路径仍以 oclivenewnew 内 `process_message` 为准；本文件仅演示 Monolith 七焊接键静态调用顺序。
 
 /// Monolith 入口：演示七焊接键调用顺序（已焊接 → 静态 `oclive_monolith_builtin`；未焊接 → trait 占位）。

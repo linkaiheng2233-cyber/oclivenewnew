@@ -720,7 +720,7 @@ fn e2e_template_dialogue_only_matches_manual_combo() {
     let v_tpl: Value = serde_json::from_str(&s_tpl).unwrap();
     let v_man: Value = serde_json::from_str(&s_man).unwrap();
     assert_eq!(v_tpl.get("plugin_backends"), v_man.get("plugin_backends"));
-    assert!(out_tpl.join("docs/ORCHESTRATION_REFERENCE.md").is_file());
+    assert!(out_tpl.join("docs/BLUEPRINT_V2_POINTER.md").is_file());
 }
 
 #[test]

@@ -105,7 +105,7 @@ pub fn build_tree_lines(cfg: &ProjectConfig, output: &std::path::Path) -> Vec<St
         }
     }
     lines.push("  docs/".into());
-    lines.push("    ORCHESTRATION_REFERENCE.md".into());
+    lines.push("    BLUEPRINT_V2_POINTER.md".into());
     if cfg.pipeline != crate::pipeline::PipelineArg::Default {
         lines.push("    PIPELINE_CUSTOM.md".into());
         lines.push("  src/oclive_pipeline_order.rs".into());
