@@ -36,6 +36,14 @@
 | 遗留 manifest 专用 Tauri 写盘 API | 已移除 `RoleStorage::save_role_manifest`；C1 `set_session_plugin_backend` 仅委托 `set_session_slot_override` |
 | `cargo udeps`（nightly，2026-05-22） | **无未使用依赖**；见 `CONTRIBUTING.md` |
 
+## 内核 crate 拆分（2026-05-20）
+
+| 项 | 状态 |
+|----|------|
+| `oclive_kernel_types`（DTO / `AppError` / 纯结构） | 已落实 |
+| `oclive_kernel_contracts`（`MemoryRepository`、`MemoryRetrieval` 等 trait） | 已落实 |
+| `oclive_kernel_runtime` 编排实现 + 过渡期 re-export | 已落实；详见 [KERNEL_CRATE_SPLIT_PLAN.md](KERNEL_CRATE_SPLIT_PLAN.md) |
+
 ## 最终收尾（2026-05-20）
 
 | 项 | 状态 |
