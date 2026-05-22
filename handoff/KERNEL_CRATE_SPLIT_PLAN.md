@@ -7,10 +7,10 @@
 | 新 crate | 职责 | 依赖方向 |
 |----------|------|----------|
 | **`oclive_kernel_types`** | DTO、`AppError` / `KernelErrorBody`、纯数据结构（含 `PromptInput`、`MemoryRetrievalInput`、策略配置、本地插件描述符） | `serde`、`thiserror`、`chrono`、`oclive_validation`（共享磁盘契约） |
-| **`oclive_kernel_contracts`** | `trait` 端口（`MemoryRepository`、`MemoryRetrieval`、`PromptAssembler`、`PluginHostPort`、`LlmClient`、`SlotRegistryResolver` 等） | `kernel_types` + `async-trait`（`SlotRegistryEntry` 经 types 再导出） |
+| **`oclive_kernel_contracts`** | 全部 `trait` 端口（含 `PluginHostPort`、`LlmClient`、`SlotRegistryResolver`、`EventEstimator`、`AgentProvider` 等） | `kernel_types` + `async-trait`（`SlotRegistryEntry` / `PersonalitySource` 经 types 再导出） |
 | **`oclive_kernel_runtime`** | 领域引擎实现、HTTP 边界常量；**`pub use oclive_kernel_types::*`** + trait 根 re-export | `kernel_types` + `kernel_contracts` + 运行时依赖 |
 
-**`oclivenewnew-tauri`** 继续依赖 `oclive_kernel_runtime`（未强制直引 `kernel_types`）。**`PluginHostPort` / `LlmClient`** 仍在 `src-tauri/domain/ports/`，不在本拆分范围。
+**`oclivenewnew-tauri`** 继续依赖 `oclive_kernel_runtime` + `oclive_kernel_contracts`；**`domain/ports/` 无 trait 定义**（仅 re-export 与 `impl`）。
 
 ## 已完成步骤
 
@@ -21,6 +21,8 @@
 | 3 | 收窄 `oclive_kernel_runtime` `lib.rs`，移除 crate 内 trait 定义 | `refactor: clean up oclive_kernel_runtime after type and trait extraction` |
 | 4 | 过渡期 `pub use oclive_kernel_types::*` + trait 根导出 + `kernel_types` / `kernel_contracts` 别名 | `feat: add compatibility re-exports from kernel_runtime for smooth migration` |
 | 5 | 依赖图审计、`cargo tree`、本文档 | `refactor: audit dependency graph after crate split` |
+| 6 | `EventEstimator` / `AgentProvider` trait + `EventImpactEstimate` / `AgentInput`·`Output` 类型 | `refactor(contracts): abstract EventEstimator…` / `…AgentProvider…` |
+| 7 | `domain/ports/` 零 trait、`rg '^pub trait'` 为空 | `refactor(contracts): finalize port cleanup…` |
 
 ## 非目标（本阶段）
 
