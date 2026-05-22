@@ -11,8 +11,13 @@ pub use oclive_validation as validation;
 
 // 过渡期兼容层：下游可继续 `use oclive_kernel_runtime::AppError` 等旧路径；
 // 计划在后续次要版本收紧 surface，请新代码优先依赖 `oclive_kernel_types` / `oclive_kernel_contracts`。
-pub use oclive_kernel_contracts::*;
 pub use oclive_kernel_types::*;
+pub use oclive_kernel_contracts::{
+    self as kernel_contracts, ComplexEmotionProvider, EmotionPolicy, EventPolicy,
+    FavorabilityRepository, LocalPluginBridge, MemoryPolicy, MemoryRepository, MemoryRetrieval,
+    PromptAssembler, UserEmotionAnalyzer,
+};
+pub use oclive_kernel_types::{self as kernel_types};
 
 /// Runtime API / contract revision (bump when HTTP or DTO breaking changes ship).
 pub const RUNTIME_API_VERSION: &str = "0.2.0";
