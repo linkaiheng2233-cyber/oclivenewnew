@@ -1,3 +1,20 @@
+//! # 角色包磁盘加载（含蓝图 v2）
+//!
+//! ## 蓝图 → 内核可执行状态（数据流）
+//!
+//! ```text
+//! roles/{id}/pipeline.ocblueprint
+//!   → 读文件 + JSON 解析（oclive_validation::load_blueprint_v2_for_role_dir）
+//!   → Schema / 业务校验（slot_registry、groups、interaction_mode…）
+//!   → Role { slot_registry, plugin_backends, slot_groups, … }
+//!   → PluginHost::resolve_for_role / resolve_for_effective_backends
+//!   → SlotResolver::resolve → ResolvedRoleSlots
+//!   → process_message / co_present → SlotRunner 按类型合并执行
+//! ```
+//!
+//! - **`module_relations`**：不写入蓝图文件；前端 `buildBlueprintEdges(slot_registry)` **只读派生**连线。
+//! - **legacy**：无 `pipeline.ocblueprint` 时回退 `manifest.json` + `settings.json` 六槽路径。
+
 use crate::domain::knowledge_loader::{load_knowledge_index, should_load_knowledge};
 use crate::domain::role_manifest_validate::{
     log_plugin_backends_remote_missing_env, validate_disk_manifest, validate_role_interaction_mode,
@@ -114,7 +131,9 @@ impl RoleStorage {
         self.load_role_from_legacy_manifest_dir(role_dir)
     }
 
+    /// v2 蓝图包：校验 `pipeline.ocblueprint` 后填充 `Role.slot_registry` / `plugin_backends` / `slot_groups`。
     fn load_role_from_blueprint_v2_dir(&self, role_dir: &Path) -> Result<Role> {
+        // 1) 磁盘 JSON → 校验后的 LoadedBlueprintV2（slot_registry + groups + disk manifest 字段）
         let loaded = load_blueprint_v2_for_role_dir(role_dir, env!("CARGO_PKG_VERSION")).map_err(
             |errs| {
                 AppError::InvalidParameter(format!(
@@ -124,6 +143,7 @@ impl RoleStorage {
             },
         )?;
 
+        // 2) 合成运行时 Role：六槽摘要（plugin_backends）+ 完整 registry 供多实例解析
         let mut role = disk_manifest_to_role(&loaded.disk);
         role.plugin_backends = slot_registry_to_plugin_backends(&loaded.slot_registry);
         role.slot_registry = Some(loaded.slot_registry);
