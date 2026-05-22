@@ -6,7 +6,9 @@ This page is for **external disclosure**: Release **binary size sampling**, what
 
 ## 1. Binary size (Release sampling)
 
-Figures below are copied from **[`LIGHTWEIGHT_PROFILE.md`](../LIGHTWEIGHT_PROFILE.md) §6.7** (**Windows x86_64**, **Release**, sampled **2026-05-12**; `cargo bloat --release -n 8`, `oclivenewnew-tauri.exe`; external `target-dir` per repo config).
+Figures below are copied from **[`LIGHTWEIGHT_PROFILE.md`](../LIGHTWEIGHT_PROFILE.md) §6.7** (**Windows x86_64**, **Release**, sampled **2026-05-20**; `cargo bloat --release -n 8`, `oclivenewnew-tauri.exe`; external `target-dir` per repo config).
+
+**v2 blueprint packs** (e.g. `roles/mumu/pipeline.ocblueprint`): the chat hot path remains `process_message` → `co_present`; no extra blueprint `steps[]` scheduler. Binary size is in the same ballpark as legacy twin-file packs.
 
 | Metric | Value |
 |--------|--------|

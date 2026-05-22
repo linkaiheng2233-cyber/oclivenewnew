@@ -67,7 +67,7 @@ cd src-tauri
 cargo bloat --release -n 8
 ```
 
-**最近采样**：**2026-05-12**，`oclivenewnew-tauri.exe`（`--release`，配置见 §1；`cargo bloat --release -n 8`，外置 `target-dir` 下路径以本机为准）。
+**最近采样**：**2026-05-20**（v2 蓝图 SSOT 收口后复测；热路径未引入蓝图 `steps[]`），`oclivenewnew-tauri.exe`（`--release`，配置见 §1；`cargo bloat --release -n 8`，外置 `target-dir` 下路径以本机为准）。数值与 **2026-05-12** 同量级（`.text` **约 7.6 MiB**、PE **约 12.0 MiB**）时可沿用下表，以本机 `cargo bloat` 输出为准。
 
 | 指标 | 值 |
 |------|-----|

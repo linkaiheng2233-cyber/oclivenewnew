@@ -6,7 +6,9 @@
 
 ## 1. 二进制体积（Release 采样）
 
-以下数据摘自 **`creator-docs/development/LIGHTWEIGHT_PROFILE.md` §6.7**（**Windows x86_64**，**Release**，采样日期 **2026-05-12**；`cargo bloat --release -n 8`，可执行文件为 `oclivenewnew-tauri.exe`，`target-dir` 以外置配置为准）。
+以下数据摘自 **`creator-docs/development/LIGHTWEIGHT_PROFILE.md` §6.7**（**Windows x86_64**，**Release**，采样日期 **2026-05-20**；`cargo bloat --release -n 8`，可执行文件为 `oclivenewnew-tauri.exe`，`target-dir` 以外置配置为准）。
+
+**v2 蓝图角色包**（如 `roles/mumu/pipeline.ocblueprint`）：对话热路径仍为 `process_message` → `co_present`，**不**因 `slot_registry` 多实例而增加蓝图 `steps[]` 调度；包体与 `.text` 与 v1 双文件形态同量级（差异主要来自 `meta`/`slot_registry` JSON 体积，非二次编排引擎）。
 
 | 指标 | 数值 |
 |------|------|
@@ -84,7 +86,7 @@ cargo run -p oclive-cli -- bench --release -o ./my-kernel --runs 20 --regression
 cargo run -p oclive-cli -- bench --matrix --release -o ./my-kernel --json > matrix.json
 ```
 
-对 **档位 × preset** 组合各跑少量轮次，用于挑选嵌入式/低延迟预设下的最优焊接组合；结论以本机 JSON 为准。
+对 **档位 × preset** 组合各跑少量轮次（**4×3=12**），用于挑选嵌入式/低延迟预设下的最优焊接组合；须在含 **`monolith.toml`** 的内核脚手架工程上执行（主应用仓无该文件时用 `oclive init --monolith` 工程）。参考样例角色包：**`roles/mumu`**（v2 蓝图）。结论以本机 JSON 为准。
 
 ### 5.4 冷启动（`--cold-start`）
 
@@ -127,6 +129,7 @@ cargo run -p oclive-cli -- bench --soak --soak-duration 24 -o ./my-kernel --json
 
 | 日期 | 说明 |
 |------|------|
+| 2026-05-20 | v2 蓝图说明；`bench --matrix` 与 `roles/mumu` 对齐；刷新 bloat 采样日期引用。 |
 | 2026-05-15 | 初版：对齐 `LIGHTWEIGHT_PROFILE.md` §6.7 与 `oclive bench` / Schema 路径。 |
 
 [English](../../creator-docs-en/getting-started/PERFORMANCE.md)
