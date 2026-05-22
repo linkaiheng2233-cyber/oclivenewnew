@@ -26,6 +26,8 @@ struct LintItem {
     level: String,
     check: String,
     message: String,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    fix: Option<String>,
 }
 
 pub fn run(args: LintArgs) -> Result<()> {
@@ -44,11 +46,29 @@ pub fn run(args: LintArgs) -> Result<()> {
     ] {
         let p = root.join(dir);
         if p.is_dir() {
-            items.push(pass(&format!("dir_{dir}"), &format!("found {name}")));
+            items.push(pass(
+                &format!("dir_{dir}"),
+                &format!("found {name}"),
+                None,
+            ));
         } else if dir == "roles" {
-            items.push(warn(&format!("dir_{dir}"), format!("missing {name}")));
+            items.push(warn(
+                &format!("dir_{dir}"),
+                format!("missing {name}"),
+                Some(format!(
+                    "mkdir -p {}",
+                    p.display()
+                )),
+            ));
         } else {
-            items.push(fail(&format!("dir_{dir}"), format!("missing {name}")));
+            items.push(fail(
+                &format!("dir_{dir}"),
+                format!("missing {name}"),
+                Some(format!(
+                    "re-run oclive init or mkdir -p {}",
+                    p.display()
+                )),
+            ));
         }
     }
     lint_cargo_toml(&root, &mut items);
@@ -61,13 +81,23 @@ pub fn run(args: LintArgs) -> Result<()> {
         return Ok(());
     }
     println!("oclive lint — {}", root.display());
+    let mut fail_n = 0u32;
     for it in &items {
         let icon = match it.level.as_str() {
             "pass" => "✅",
             "warn" => "⚠️",
-            _ => "❌",
+            _ => {
+                fail_n += 1;
+                "❌"
+            }
         };
         println!("  {icon} [{}] {}", it.check, it.message);
+        if let Some(ref fix) = it.fix {
+            println!("      → {fix}");
+        }
+    }
+    if fail_n > 0 {
+        anyhow::bail!("lint: {fail_n} failed check(s)");
     }
     Ok(())
 }
@@ -75,13 +105,21 @@ pub fn run(args: LintArgs) -> Result<()> {
 fn lint_cargo_toml(root: &Path, items: &mut Vec<LintItem>) {
     let p = root.join("Cargo.toml");
     let Ok(raw) = std::fs::read_to_string(&p) else {
-        items.push(fail("cargo_toml", "cannot read Cargo.toml"));
+        items.push(fail(
+            "cargo_toml",
+            "cannot read Cargo.toml",
+            Some("ensure you are in the kernel project root".into()),
+        ));
         return;
     };
     let v: toml::Value = match toml::from_str(&raw) {
         Ok(v) => v,
         Err(e) => {
-            items.push(fail("cargo_toml", format!("parse failed: {e}")));
+            items.push(fail(
+                "cargo_toml",
+                format!("parse failed: {e}"),
+                Some("fix Cargo.toml syntax (invalid TOML)".into()),
+            ));
             return;
         }
     };
@@ -91,9 +129,14 @@ fn lint_cargo_toml(root: &Path, items: &mut Vec<LintItem>) {
             items.push(pass(
                 &format!("cargo_{key}"),
                 &format!("[package].{key} set"),
+                None,
             ));
         } else {
-            items.push(fail("cargo_toml", format!("missing [package].{key}")));
+            items.push(fail(
+                "cargo_toml",
+                format!("missing [package].{key}"),
+                Some(format!("add [package].{key} = \"…\" to Cargo.toml")),
+            ));
         }
     }
     for key in ["authors", "license"] {
@@ -101,11 +144,15 @@ fn lint_cargo_toml(root: &Path, items: &mut Vec<LintItem>) {
             items.push(pass(
                 &format!("cargo_{key}"),
                 &format!("[package].{key} set"),
+                None,
             ));
         } else {
             items.push(warn(
                 "cargo_meta",
                 format!("consider setting [package].{key}"),
+                Some(format!(
+                    "cargo run -p oclive-cli -- init --author \"…\" --license MIT -o .  # or edit Cargo.toml"
+                )),
             ));
         }
     }
@@ -131,8 +178,16 @@ fn lint_settings(root: &Path, items: &mut Vec<LintItem>) {
                     Ok(()) => items.push(pass(
                         "settings_keys",
                         &format!("{} settings top-level keys valid", entry.display()),
+                        None,
                     )),
-                    Err(e) => items.push(fail("settings_keys", e)),
+                    Err(e) => items.push(fail(
+                        "settings_keys",
+                        e,
+                        Some(format!(
+                            "cargo run -p oclive-cli -- pack migrate-to-blueprint {}",
+                            entry.display()
+                        )),
+                    )),
                 }
             }
         }
@@ -142,27 +197,50 @@ fn lint_settings(root: &Path, items: &mut Vec<LintItem>) {
 fn lint_monolith(root: &Path, items: &mut Vec<LintItem>) {
     let p = root.join("monolith.toml");
     if !p.is_file() {
-        items.push(warn("monolith", "no monolith.toml (standard mode)"));
+        items.push(warn(
+            "monolith",
+            "no monolith.toml (standard mode)",
+            Some(
+                "cargo run -p oclive-cli -- init --monolith --monolith-preset latency -o ."
+                    .into(),
+            ),
+        ));
         return;
     }
     match std::fs::read_to_string(&p) {
         Ok(raw) => match crate::monolith_config::parse_monolith_toml(&raw) {
             Ok(f) => {
                 if let Err(e) = crate::monolith_config::validate_monolith_section(&f.monolith) {
-                    items.push(fail("monolith", e.to_string()));
+                    items.push(fail(
+                        "monolith",
+                        e.to_string(),
+                        Some("edit monolith.toml weld_modules / preset per RFC_OCLIVE_MONOLITH_MODE".into()),
+                    ));
                 } else {
-                    items.push(pass("monolith", "monolith.toml format OK"));
+                    items.push(pass("monolith", "monolith.toml format OK", None));
                 }
             }
-            Err(e) => items.push(fail("monolith", e.to_string())),
+            Err(e) => items.push(fail(
+                "monolith",
+                e.to_string(),
+                Some("fix monolith.toml TOML syntax".into()),
+            )),
         },
-        Err(e) => items.push(fail("monolith", e.to_string())),
+        Err(e) => items.push(fail(
+            "monolith",
+            e.to_string(),
+            None,
+        )),
     }
 }
 
 fn lint_git_dirty(root: &Path, items: &mut Vec<LintItem>) {
     if !root.join(".git").exists() {
-        items.push(warn("git", "not a Git repository"));
+        items.push(warn(
+            "git",
+            "not a Git repository",
+            Some("git init && git add .".into()),
+        ));
         return;
     }
     let out = std::process::Command::new("git")
@@ -173,12 +251,16 @@ fn lint_git_dirty(root: &Path, items: &mut Vec<LintItem>) {
         Ok(o) if o.status.success() => {
             let s = String::from_utf8_lossy(&o.stdout);
             if s.trim().is_empty() {
-                items.push(pass("git", "working tree clean"));
+                items.push(pass("git", "working tree clean", None));
             } else {
-                items.push(warn("git", "uncommitted changes"));
+                items.push(warn(
+                    "git",
+                    "uncommitted changes",
+                    Some("git add -A && git commit -m \"…\"".into()),
+                ));
             }
         }
-        _ => items.push(warn("git", "cannot run git status")),
+        _ => items.push(warn("git", "cannot run git status", None)),
     }
 }
 
@@ -195,27 +277,30 @@ fn walk_role_roots(roles: &Path) -> Vec<PathBuf> {
     out
 }
 
-fn pass(check: &str, msg: &str) -> LintItem {
+fn pass(check: &str, msg: &str, fix: Option<String>) -> LintItem {
     LintItem {
         level: "pass".into(),
         check: check.into(),
         message: msg.into(),
+        fix,
     }
 }
 
-fn warn(check: &str, msg: impl ToString) -> LintItem {
+fn warn(check: &str, msg: impl ToString, fix: Option<String>) -> LintItem {
     LintItem {
         level: "warn".into(),
         check: check.into(),
         message: msg.to_string(),
+        fix,
     }
 }
 
-fn fail(check: &str, msg: impl ToString) -> LintItem {
+fn fail(check: &str, msg: impl ToString, fix: Option<String>) -> LintItem {
     LintItem {
         level: "fail".into(),
         check: check.into(),
         message: msg.to_string(),
+        fix,
     }
 }
 
@@ -253,20 +338,29 @@ fn run_deps_audit(root: &Path, json: bool) -> Result<()> {
         Ok(o) => {
             let stdout = String::from_utf8_lossy(&o.stdout);
             if o.status.success() && stdout.trim().is_empty() {
-                items.push(pass("cargo_audit", "no vulnerabilities reported"));
+                items.push(pass(
+                    "cargo_audit",
+                    "no vulnerabilities reported",
+                    None,
+                ));
             } else {
                 let vuln_count = stdout.matches("\"id\":").count();
                 if vuln_count == 0 && o.status.success() {
-                    items.push(pass("cargo_audit", "clean"));
+                    items.push(pass("cargo_audit", "clean", None));
                 } else {
                     items.push(warn(
                         "cargo_audit",
                         "audit findings or non-zero exit (see cargo audit)".to_string(),
+                        Some("cd src-tauri && cargo audit  # or upgrade deps per KNOWN_VULNERABILITIES.md".into()),
                     ));
                 }
             }
         }
-        Err(e) => items.push(fail("cargo_audit", e.to_string())),
+        Err(e) => items.push(fail(
+            "cargo_audit",
+            e.to_string(),
+            Some("cargo install cargo-audit --version 0.22.1 --locked".into()),
+        )),
     }
 
     let meta = Command::new("cargo")
@@ -288,12 +382,24 @@ fn run_deps_audit(root: &Path, json: bool) -> Result<()> {
                 }
             }
             if yanked.is_empty() {
-                items.push(pass("yanked", "no yanked packages in lockfile metadata"));
+                items.push(pass(
+                    "yanked",
+                    "no yanked packages in lockfile metadata",
+                    None,
+                ));
             } else {
-                items.push(fail("yanked", format!("yanked: {}", yanked.join(", "))));
+                items.push(fail(
+                    "yanked",
+                    format!("yanked: {}", yanked.join(", ")),
+                    Some("cargo update -p <crate>  # pin non-yanked version in Cargo.lock".into()),
+                ));
             }
         }
-        _ => items.push(warn("yanked", "cargo metadata failed")),
+        _ => items.push(warn(
+            "yanked",
+            "cargo metadata failed",
+            Some("cargo metadata --format-version 1 --locked".into()),
+        )),
     }
 
     if json {
