@@ -39,7 +39,7 @@ cargo run -p oclive-cli -- init --help
 | 角色包 | `pack create` / `validate` / `publish` | 创建、校验、`.oclivepack` 打包 |
 | 插件 | `plugin create` / `install` / `uninstall` / `test` | 脚手架与工程内安装（发现安装见 **market**） |
 | 环境 | `doctor`（`--fix`）、`config` | 诊断与 `~/.oclive/config.toml` |
-| 质量 | `test`、`lint`、`ci init` / `ci check` | 回归（彩色摘要）、lint（含 **→ 修复命令**）、CI 模板 |
+| 质量 | `test`、`lint`、`ci init` / `ci check` | 回归（彩色摘要 / 通过率 / 耗时）；`lint` 人类输出同风格（`lint result: ok. N passed. 0 failed.`）；CI 模板含 audit / deny / loom |
 
 ### B 级 — 增强工具
 
@@ -279,7 +279,7 @@ cargo run -p oclive-cli -- registry pull my-kernel -o ./my-kernel
 | 能力 | 命令 |
 |------|------|
 | **Y3 配置** | `oclive config set/get/list/unset/init`（`~/.oclive/config.toml` / `.oclive.toml`） |
-| **Y1 CI** | `oclive ci init` / `oclive ci check`（模板含 **`cargo-audit`** job，`continue-on-error: true`） |
+| **Y1 CI** | `oclive ci init` / `oclive ci check`（模板含 **`cargo-audit`**、`cargo-deny`（licenses + bans）、**`loom`** job；audit/loom 为 `continue-on-error: true`） |
 | **Y6 修复** | `oclive doctor --fix` / `--fix --yes` |
 | **Y2 回归门禁** | `oclive bench --regression` / `--regression-threshold 3` |
 | **Y5 跨版本** | `oclive bench --compare-versions v0.2.0` |

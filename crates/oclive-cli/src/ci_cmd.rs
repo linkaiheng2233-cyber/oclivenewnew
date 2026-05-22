@@ -149,6 +149,29 @@ fn render_ci_yaml(kind: ProjectCiKind) -> String {
         run: cargo install cargo-audit --version 0.22.1 --locked
       - name: cargo audit
         run: cargo audit
+
+  cargo-deny:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dtolnay/rust-toolchain@stable
+      - uses: EmbarkStudios/cargo-deny-action@v2
+        with:
+          command: check
+          arguments: licenses bans
+
+  loom:
+    runs-on: ubuntu-latest
+    continue-on-error: true
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dtolnay/rust-toolchain@stable
+      - uses: Swatinem/rust-cache@v2
+      - name: Install cargo-loom
+        run: cargo install cargo-loom --locked
+      - name: loom model tests
+        working-directory: src-tauri
+        run: cargo loom test --test loom_concurrency -- --test-threads=1
 "#;
 
     let extra_steps = if kind == ProjectCiKind::KernelServer {
