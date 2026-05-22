@@ -8,6 +8,7 @@
 //! **关键决策**：编排顺序由 **Rust 代码**（`co_present` + [`SlotRunner`](../slot_runner.rs)）审计，**不由** `pipeline.ocblueprint` 动态解释执行；蓝图仅提供 `slot_registry` / `groups` 配置，避免「文件里写的流程」与运行时脱节。
 
 use crate::domain::agent::AgentInput;
+use crate::domain::dual_pipeline::DualPipelineRunner;
 use crate::domain::chat_engine::co_present;
 use crate::domain::chat_engine::presence::user_is_remote_from_character;
 use crate::domain::chat_engine::{
@@ -17,45 +18,20 @@ use crate::domain::chat_engine::{
 use crate::domain::chat_engine::{context::validate_scene_id, emotion_to_dto};
 use crate::domain::startup_health;
 use crate::domain::user_identity::resolve_effective_user_relation_key;
-use crate::error::{AppError, Result};
+use crate::error::Result;
 use crate::models::dto::{
     PresenceMode, SendMessageRequest, SendMessageResponse, API_VERSION, SCHEMA_VERSION,
 };
 use crate::state::AppState;
+use crate::domain::chat_engine::message_error::ProcessMessageError;
 use std::time::Instant;
-use thiserror::Error;
-
-/// `process_message` 编排失败：按阶段标注，便于日志与排障。
-#[derive(Debug, Error)]
-pub enum ProcessMessageError {
-    #[error("send_message[{stage}]: {source}")]
-    Stage {
-        stage: &'static str,
-        #[source]
-        source: AppError,
-    },
-    #[error(transparent)]
-    CoPresent(#[from] co_present::CoPresentError),
-}
-
-impl ProcessMessageError {
-    fn stage(stage: &'static str, source: AppError) -> Self {
-        Self::Stage { stage, source }
-    }
-}
-
-impl From<ProcessMessageError> for AppError {
-    fn from(e: ProcessMessageError) -> Self {
-        match e {
-            ProcessMessageError::Stage { source, .. } => source,
-            ProcessMessageError::CoPresent(c) => c.into(),
-        }
-    }
-}
 
 macro_rules! pm {
     ($e:expr, $stage:literal) => {
-        $e.map_err(|source| ProcessMessageError::stage($stage, source))
+        $e.map_err(|source| ProcessMessageError::Stage {
+            stage: $stage,
+            source,
+        })
     };
 }
 /// # Errors
@@ -274,6 +250,22 @@ async fn run(
             .await,
             "remote_life"
         )?);
+    }
+
+    if role.dual_core_gated() {
+        return DualPipelineRunner::run_with_fallback(
+            state,
+            req,
+            role.as_ref(),
+            scene_id,
+            scenes,
+            immersive,
+            t0,
+            mrid,
+            srid,
+            preflight_ms,
+        )
+        .await;
     }
 
     Ok(co_present::process_co_present(

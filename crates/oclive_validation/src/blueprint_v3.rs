@@ -2,11 +2,19 @@
 
 use std::collections::{HashMap, HashSet};
 
-use serde::Deserialize;
+use serde::{Deserialize, Serialize};
 use serde_json::Value;
 
-use crate::blueprint_v2::{SlotGroupEntry, BLUEPRINT_V2_SCHEMA_VERSION};
-use crate::manifest::UserRelationDisk;
+use std::collections::BTreeMap;
+use std::fs;
+use std::path::Path;
+
+use crate::blueprint_v2::{
+    meta_to_disk_manifest, BlueprintMeta, SlotGroupEntry, SlotRegistryEntry,
+    BLUEPRINT_V2_SCHEMA_VERSION, PIPELINE_BLUEPRINT_FILENAME,
+};
+use crate::validate::{validate_disk_manifest, validate_min_runtime_version};
+use crate::role_pack::merge_role_pack_scene_ids;
 use crate::runtime_config::{validate_runtime_config, RuntimeConfig};
 
 pub const BLUEPRINT_V3_SCHEMA_VERSION: u32 = 3;
@@ -21,7 +29,7 @@ pub const PLUGIN_HOST_SLOT_TYPES: &[&str] = &[
     "memory", "emotion", "event", "prompt", "llm", "agent", "complex_emotion",
 ];
 
-#[derive(Debug, Clone, Deserialize)]
+#[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct PipelineStep {
     pub action: String,
     #[serde(default)]
@@ -37,24 +45,9 @@ pub struct DualPipelineDef {
 }
 
 #[derive(Debug, Clone, Deserialize)]
-pub struct BlueprintV3Meta {
-    pub id: String,
-    pub name: String,
-    pub version: String,
-    pub author: String,
-    pub description: String,
-    #[serde(default)]
-    pub personality: Option<Value>,
-    #[serde(default)]
-    pub relations: HashMap<String, UserRelationDisk>,
-    #[serde(default)]
-    pub default_relation: String,
-}
-
-#[derive(Debug, Clone, Deserialize)]
 pub struct BlueprintV3File {
     pub schema_version: u32,
-    pub meta: BlueprintV3Meta,
+    pub meta: BlueprintMeta,
     pub slot_registry: HashMap<String, SlotRegistryEntryV3>,
     #[serde(default)]
     pub groups: HashMap<String, SlotGroupEntry>,
@@ -290,6 +283,15 @@ fn is_experimental_only(zones: &HashSet<String>) -> bool {
     zones.len() == 1 && zones.contains("experimental")
 }
 
+/// 解析 pipeline `action`：`slot.<registry_key>.<method>`。
+///
+/// # Errors
+///
+/// `action` 不符合 `slot.<key>.<method>` 时返回 `Err` 说明字符串。
+pub fn parse_pipeline_action(action: &str) -> Result<(String, String), String> {
+    parse_action(action)
+}
+
 fn parse_action(action: &str) -> Result<(String, String), String> {
     let parts: Vec<&str> = action.split('.').collect();
     if parts.len() < 3 || parts[0] != "slot" {
@@ -409,6 +411,170 @@ fn find_cycle(steps: &[PipelineStep]) -> Option<String> {
     None
 }
 
+/// 宿主加载 v3 蓝图后的结构化结果。
+#[derive(Debug, Clone)]
+pub struct BlueprintV3LoadResult {
+    pub disk: crate::manifest::DiskRoleManifest,
+    pub slot_registry: BTreeMap<String, SlotRegistryEntry>,
+    pub groups: BTreeMap<String, SlotGroupEntry>,
+    pub runtime_config: Option<RuntimeConfig>,
+    pub pipeline_experimental: Vec<PipelineStep>,
+    pub interaction_mode: Option<String>,
+    pub remote_presence: Option<crate::disk_role_settings::RemotePresenceConfig>,
+    pub autonomous_scene: Option<crate::disk_role_settings::AutonomousSceneConfig>,
+    pub reply_quality_anchor: Option<String>,
+}
+
+/// 从蓝图 JSON 读取 `schema_version`（解析失败时返回 `None`）。
+#[must_use]
+pub fn blueprint_schema_version_from_raw(raw: &str) -> Option<u32> {
+    serde_json::from_str::<Value>(raw)
+        .ok()
+        .and_then(|v| v.get("schema_version").and_then(|n| n.as_u64()))
+        .map(|n| n as u32)
+}
+
+fn v3_entry_to_slot_registry_entry(e: &SlotRegistryEntryV3) -> SlotRegistryEntry {
+    SlotRegistryEntry {
+        slot_type: e.slot_type.clone(),
+        label: e.label.clone(),
+        backend: e.backend.clone(),
+        position: e.position,
+        plugin: e.plugin.clone(),
+        plugins: e.plugins.clone(),
+        model: e.model.clone(),
+        url: e.url.clone(),
+        local_memory_provider_id: e.local_memory_provider_id.clone(),
+        zone: e.zone.clone(),
+    }
+}
+
+fn v3_registry_to_btree(
+    registry: &HashMap<String, SlotRegistryEntryV3>,
+) -> BTreeMap<String, SlotRegistryEntry> {
+    registry
+        .iter()
+        .map(|(k, e)| (k.clone(), v3_entry_to_slot_registry_entry(e)))
+        .collect()
+}
+
+fn apply_runtime_config_to_disk(
+    disk: &mut crate::manifest::DiskRoleManifest,
+    rc: &RuntimeConfig,
+) {
+    if let Some(ref m) = rc.memory_config {
+        disk.memory_config = m.clone();
+    }
+    if let Some(ref e) = rc.evolution {
+        disk.evolution = e.clone();
+    }
+    if let Some(ref id) = rc.identity_binding {
+        disk.identity_binding = *id;
+    }
+    if rc.ollama_model.is_some() {
+        disk.ollama_model = rc.ollama_model.clone();
+    }
+}
+
+fn blueprint_v3_file_to_load_result(bp: &BlueprintV3File) -> BlueprintV3LoadResult {
+    let mut disk = meta_to_disk_manifest(&bp.meta);
+    let interaction_mode = bp
+        .runtime_config
+        .as_ref()
+        .and_then(|r| r.interaction_mode.clone())
+        .or_else(|| bp.meta.interaction_mode.clone());
+    let remote_presence = bp
+        .runtime_config
+        .as_ref()
+        .and_then(|r| r.remote_presence.clone())
+        .or_else(|| bp.meta.remote_presence.clone());
+    let autonomous_scene = bp
+        .runtime_config
+        .as_ref()
+        .and_then(|r| r.autonomous_scene.clone())
+        .or_else(|| bp.meta.autonomous_scene.clone());
+    let reply_quality_anchor = bp
+        .runtime_config
+        .as_ref()
+        .and_then(|r| r.reply_quality_anchor.clone())
+        .or_else(|| bp.meta.reply_quality_anchor.clone());
+
+    if let Some(ref rc) = bp.runtime_config {
+        apply_runtime_config_to_disk(&mut disk, rc);
+    }
+
+    let pipeline_experimental = bp
+        .pipeline
+        .as_ref()
+        .map(|p| p.experimental.clone())
+        .unwrap_or_default();
+
+    BlueprintV3LoadResult {
+        disk,
+        slot_registry: v3_registry_to_btree(&bp.slot_registry),
+        groups: bp.groups.iter().map(|(k, v)| (k.clone(), v.clone())).collect(),
+        runtime_config: bp.runtime_config.clone(),
+        pipeline_experimental,
+        interaction_mode,
+        remote_presence,
+        autonomous_scene,
+        reply_quality_anchor,
+    }
+}
+
+/// 校验并加载 v3 角色目录下的 `pipeline.ocblueprint`。
+///
+/// # Errors
+///
+/// 契约或磁盘校验失败时返回 `Err(Vec<String>)`。
+pub fn validate_role_pack_blueprint_v3_directory(
+    role_dir: &Path,
+    host_version: &str,
+) -> Result<(), Vec<String>> {
+    let blueprint_path = role_dir.join(PIPELINE_BLUEPRINT_FILENAME);
+    if !blueprint_path.is_file() {
+        return Err(vec![format!(
+            "缺少 {}：{}",
+            PIPELINE_BLUEPRINT_FILENAME,
+            blueprint_path.display()
+        )]);
+    }
+    let raw = fs::read_to_string(&blueprint_path)
+        .map_err(|e| vec![format!("读取 {} 失败: {}", blueprint_path.display(), e)])?;
+    let folder_name = role_dir.file_name().and_then(|s| s.to_str());
+    validate_blueprint_v3_json(&raw, folder_name)?;
+
+    let bp: BlueprintV3File = serde_json::from_str(&raw)
+        .map_err(|e| vec![format!("pipeline.ocblueprint v3 结构不符合契约: {}", e)])?;
+    let mut disk = meta_to_disk_manifest(&bp.meta);
+    if let Some(ref rc) = bp.runtime_config {
+        apply_runtime_config_to_disk(&mut disk, rc);
+    }
+    let merged_scenes = merge_role_pack_scene_ids(role_dir, &disk.scenes)
+        .map_err(|e| vec![e])?;
+    validate_disk_manifest(&disk, &merged_scenes).map_err(|e| vec![e])?;
+    validate_min_runtime_version(disk.min_runtime_version.as_deref(), host_version)
+        .map_err(|e| vec![e])?;
+    Ok(())
+}
+
+/// 从角色目录加载 v3 蓝图（含 `runtime_config` 与 `pipeline.experimental`）。
+///
+/// # Errors
+///
+/// 契约或磁盘校验失败时返回 `Err(Vec<String>)`。
+pub fn load_blueprint_v3_for_role_dir(
+    role_dir: &Path,
+    host_version: &str,
+) -> Result<BlueprintV3LoadResult, Vec<String>> {
+    validate_role_pack_blueprint_v3_directory(role_dir, host_version)?;
+    let raw = fs::read_to_string(role_dir.join(PIPELINE_BLUEPRINT_FILENAME))
+        .map_err(|e| vec![format!("读取 {} 失败: {}", PIPELINE_BLUEPRINT_FILENAME, e)])?;
+    let bp: BlueprintV3File = serde_json::from_str(&raw)
+        .map_err(|e| vec![format!("pipeline.ocblueprint v3 结构不符合契约: {}", e)])?;
+    Ok(blueprint_v3_file_to_load_result(&bp))
+}
+
 fn dfs_cycle(node: &str, graph: &HashMap<String, Vec<String>>, state: &mut HashMap<String, u8>) -> bool {
     match state.get(node).copied().unwrap_or(0) {
         1 => return true,
@@ -487,6 +653,18 @@ mod tests {
         }"#;
         let errs = validate_blueprint_v3_json(raw, Some("test")).unwrap_err();
         assert!(errs.iter().any(|e| e.contains("experimental")));
+    }
+
+    #[test]
+    fn load_v3_for_role_dir_roundtrip() {
+        let dir = tempfile::tempdir().unwrap();
+        let role = dir.path().join("dual");
+        fs::create_dir_all(role.join("scenes").join("default")).unwrap();
+        let raw = minimal_v3_json().replace("\"test\"", "\"dual\"");
+        fs::write(role.join(PIPELINE_BLUEPRINT_FILENAME), raw).unwrap();
+        let loaded = load_blueprint_v3_for_role_dir(&role, "0.2.0").unwrap();
+        assert_eq!(loaded.disk.id, "dual");
+        assert!(loaded.runtime_config.is_some());
     }
 
     #[test]

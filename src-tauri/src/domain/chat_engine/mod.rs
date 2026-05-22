@@ -3,9 +3,10 @@
 //! 具体步骤中的纯逻辑见 [`super::chat_turn`]，本模块负责异步编排与 `AppState` 交互。
 //! 场景与好感子逻辑见 [`context`]、[`scene`]、[`favor`]。
 
-mod co_present;
-mod context;
-mod favor;
+pub(crate) mod co_present;
+pub mod message_error;
+pub(crate) mod context;
+pub(crate) mod favor;
 pub mod plugin_resolve;
 mod presence;
 mod process_message;

@@ -4,7 +4,7 @@ use crate::error::Result;
 use crate::models::Event;
 use crate::state::AppState;
 
-pub(super) async fn load_recent_context(
+pub(crate) async fn load_recent_context(
     state: &AppState,
     role_id: &str,
 ) -> Result<(Vec<(String, String)>, Vec<(String, String)>, Vec<Event>)> {

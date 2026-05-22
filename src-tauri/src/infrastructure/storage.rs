@@ -28,10 +28,11 @@ use crate::models::{
 };
 use chrono::Timelike;
 use oclive_validation::{
-    load_blueprint_v2_for_role_dir, slot_registry_to_plugin_backends,
-    validate_manifest_top_level_keys, validate_min_runtime_version,
-    validate_settings_schema_version, validate_settings_top_level_keys,
-    write_role_pack_blueprint_slot_registry, SlotRegistryEntry, PIPELINE_BLUEPRINT_FILENAME,
+    blueprint_schema_version_from_raw, load_blueprint_v2_for_role_dir,
+    load_blueprint_v3_for_role_dir, slot_registry_to_plugin_backends, validate_manifest_top_level_keys,
+    validate_min_runtime_version, validate_settings_schema_version,
+    validate_settings_top_level_keys, write_role_pack_blueprint_slot_registry,
+    SlotRegistryEntry, BLUEPRINT_V3_SCHEMA_VERSION, PIPELINE_BLUEPRINT_FILENAME,
 };
 use serde_json;
 use std::collections::BTreeMap;
@@ -126,9 +127,60 @@ impl RoleStorage {
     /// 从目录加载单个角色（优先 `pipeline.ocblueprint` v2，否则 legacy manifest/settings）。
     pub fn load_role_from_dir(&self, role_dir: &Path) -> Result<Role> {
         if role_dir.join(PIPELINE_BLUEPRINT_FILENAME).is_file() {
-            return self.load_role_from_blueprint_v2_dir(role_dir);
+            return self.load_role_from_blueprint_dir(role_dir);
         }
         self.load_role_from_legacy_manifest_dir(role_dir)
+    }
+
+    /// v2/v3 蓝图包：按 `schema_version` 分流加载。
+    fn load_role_from_blueprint_dir(&self, role_dir: &Path) -> Result<Role> {
+        let blueprint_path = role_dir.join(PIPELINE_BLUEPRINT_FILENAME);
+        let raw = std::fs::read_to_string(&blueprint_path).map_err(AppError::IoError)?;
+        let version = blueprint_schema_version_from_raw(&raw).unwrap_or(0);
+        if version == BLUEPRINT_V3_SCHEMA_VERSION {
+            return self.load_role_from_blueprint_v3_dir(role_dir);
+        }
+        self.load_role_from_blueprint_v2_dir(role_dir)
+    }
+
+    /// v3 蓝图包：加载 `runtime_config` 与 `pipeline.experimental`。
+    fn load_role_from_blueprint_v3_dir(&self, role_dir: &Path) -> Result<Role> {
+        let loaded = load_blueprint_v3_for_role_dir(role_dir, env!("CARGO_PKG_VERSION")).map_err(
+            |errs| {
+                AppError::InvalidParameter(format!(
+                    "pipeline.ocblueprint (v3) 校验失败:\n{}",
+                    errs.join("\n")
+                ))
+            },
+        )?;
+        let mut role = disk_manifest_to_role(&loaded.disk);
+        role.plugin_backends = slot_registry_to_plugin_backends(&loaded.slot_registry);
+        role.slot_registry = Some(loaded.slot_registry);
+        role.slot_groups = if loaded.groups.is_empty() {
+            None
+        } else {
+            Some(loaded.groups)
+        };
+        role.interaction_mode = loaded.interaction_mode;
+        role.remote_presence = loaded.remote_presence;
+        role.autonomous_scene = loaded.autonomous_scene;
+        role.reply_quality_anchor = loaded.reply_quality_anchor;
+        role.runtime_config = loaded.runtime_config;
+        role.pipeline_experimental = if loaded.pipeline_experimental.is_empty() {
+            None
+        } else {
+            Some(loaded.pipeline_experimental)
+        };
+        for entry in role.slot_registry.as_ref().into_iter().flatten() {
+            if entry.1.slot_type.trim() == "llm"
+                && entry.1.backend.trim() == "ollama"
+                && entry.1.model.as_ref().is_some_and(|m| !m.trim().is_empty())
+            {
+                role.ollama_model = entry.1.model.clone();
+                break;
+            }
+        }
+        self.finish_role_pack_load(role_dir, &loaded.disk, role, None)
     }
 
     /// v2 蓝图包：校验 `pipeline.ocblueprint` 后填充 `Role.slot_registry` / `plugin_backends` / `slot_groups`。
@@ -775,6 +827,8 @@ mod tests {
             reply_quality_anchor: None,
             slot_registry: None,
             slot_groups: None,
+            runtime_config: None,
+            pipeline_experimental: None,
         };
 
         let role_dir = temp_dir.path().join("test_role");

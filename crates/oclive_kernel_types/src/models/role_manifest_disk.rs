@@ -143,6 +143,8 @@ pub fn disk_manifest_to_role(d: &DiskRoleManifest) -> Role {
         ui_config: super::UiConfig::default(),
         author_pack: None,
         reply_quality_anchor: None,
+        runtime_config: None,
+        pipeline_experimental: None,
     }
 }
 

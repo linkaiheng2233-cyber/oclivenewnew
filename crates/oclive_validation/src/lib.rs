@@ -25,8 +25,10 @@ pub use blueprint_migrate::{
     build_blueprint_v2_from_legacy_dir, migrate_role_pack_dir_to_blueprint_v2,
 };
 pub use blueprint_v3::{
+    blueprint_schema_version_from_raw, load_blueprint_v3_for_role_dir,
     validate_blueprint_json_by_schema_version, validate_blueprint_v3_json,
-    BLUEPRINT_V3_SCHEMA_VERSION, PLUGIN_HOST_SLOT_TYPES,
+    parse_pipeline_action, validate_role_pack_blueprint_v3_directory, BlueprintV3LoadResult,
+    DualPipelineDef, PipelineStep, BLUEPRINT_V3_SCHEMA_VERSION, PLUGIN_HOST_SLOT_TYPES,
 };
 pub use creator_profile::validate_role_pack_creator_directory;
 pub use runtime_config::{DualCoreConfig, RuntimeConfig};
