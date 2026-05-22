@@ -270,6 +270,7 @@ mod tests {
             dev_only: false,
             plugin_backends: crate::models::PluginBackends::default(),
             slot_registry: None,
+            slot_groups: None,
             ui_config: crate::models::UiConfig::default(),
             knowledge_index: None,
             author_pack: None,
