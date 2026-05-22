@@ -1,6 +1,6 @@
 //! 蓝图 slot 解析端口（定义见 [`oclive_kernel_contracts::SlotRegistryResolver`]）。
 
-pub use oclive_kernel_contracts::SlotRegistryResolver;
+pub use oclive_kernel_runtime::SlotRegistryResolver;
 
 use crate::domain::plugin_host::BackendRegistry;
 use crate::domain::slot_resolver::{ResolvedRoleSlots, SlotResolver};

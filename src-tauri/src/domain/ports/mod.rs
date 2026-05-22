@@ -8,7 +8,5 @@ pub mod plugin_host;
 pub mod slot_resolver;
 
 pub use llm::LlmClient;
-pub use oclive_kernel_contracts::{
-    AgentProvider, EventEstimator, SlotRegistryResolver,
-};
+pub use oclive_kernel_runtime::{AgentProvider, EventEstimator, SlotRegistryResolver};
 pub use plugin_host::PluginHostPort;

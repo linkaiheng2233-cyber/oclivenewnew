@@ -3058,7 +3058,6 @@ dependencies = [
  "axum",
  "chrono",
  "notify",
- "oclive_kernel_contracts",
  "oclive_kernel_runtime",
  "oclive_validation",
  "once_cell",

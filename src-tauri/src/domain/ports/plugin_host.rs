@@ -1,6 +1,6 @@
 //! 插件宿主解析端口（定义见 [`oclive_kernel_contracts::PluginHostPort`]）。
 
-pub use oclive_kernel_contracts::PluginHostPort;
+pub use oclive_kernel_runtime::PluginHostPort;
 
 use crate::domain::plugin_host::{PluginHost, ResolvedRolePlugins};
 use crate::models::{PluginBackends, PluginBackendsOverride, Role};

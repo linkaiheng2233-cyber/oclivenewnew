@@ -4,7 +4,7 @@ use crate::infrastructure::function_call_parser::{
     parse_from_llm_response, to_function_calling_schema, ToolSchemaInput,
 };
 use crate::infrastructure::mcp_client::{McpClient, McpServerManifest, McpToolCallResult};
-pub use oclive_kernel_contracts::AgentProvider;
+pub use oclive_kernel_runtime::AgentProvider;
 pub use oclive_kernel_runtime::{AgentInput, AgentOutput};
 use async_trait::async_trait;
 use parking_lot::RwLock;
