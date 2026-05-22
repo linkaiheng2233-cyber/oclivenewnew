@@ -39,6 +39,7 @@ fn slot_resolver_lists_memory_instances_by_position() {
             model: None,
             url: None,
             local_memory_provider_id: None,
+            zone: None,
         },
     );
     reg.insert(
@@ -53,6 +54,7 @@ fn slot_resolver_lists_memory_instances_by_position() {
             model: None,
             url: None,
             local_memory_provider_id: None,
+            zone: None,
         },
     );
     let h = host();
@@ -102,6 +104,7 @@ async fn session_slot_override_changes_folded_memory_backend() {
             model: None,
             url: None,
             local_memory_provider_id: None,
+            zone: None,
         },
     );
     let role = Role {

@@ -497,6 +497,8 @@ mod tests {
             knowledge_index: None,
             author_pack: None,
             reply_quality_anchor: None,
+            runtime_config: None,
+            pipeline_experimental: None,
         }
     }
 
