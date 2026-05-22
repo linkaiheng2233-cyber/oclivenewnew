@@ -87,6 +87,8 @@ const {
   toggleGroupCollapse,
   expandAllDirectoryPlugins,
   hiddenPluginCount,
+  dualCoreEnabled,
+  pipelineExperimentalActions,
 } = useArchitectureGraphModel();
 
 const nodes = ref<Node[]>([]);
@@ -404,6 +406,23 @@ onMounted(syncGraphFromModel);
       · {{ t("pluginWorkbench.graph.comfyRef") }}
     </p>
 
+    <div v-if="dualCoreEnabled" class="agf-dual-core-banner" role="status">
+      <span class="agf-dual-core-badge">{{ t("pluginWorkbench.graph.dualCoreBadge") }}</span>
+      <div class="agf-dual-core-lines">
+        <p>
+          <strong>{{ t("pluginWorkbench.graph.dualCoreStable") }}</strong>
+          {{ t("pluginWorkbench.graph.dualCoreStableHint") }}
+        </p>
+        <p v-if="pipelineExperimentalActions.length">
+          <strong>{{ t("pluginWorkbench.graph.dualCoreExperimental") }}</strong>
+          {{ pipelineExperimentalActions.join(" → ") }}
+        </p>
+        <p v-else class="agf-dual-core-muted">
+          {{ t("pluginWorkbench.graph.dualCoreExperimentalEmpty") }}
+        </p>
+      </div>
+    </div>
+
     <div class="agf-toolbar">
       <button type="button" class="agf-tb-btn" @click="onResetLayout">
         {{ t("pluginWorkbench.graph.resetLayout") }}
@@ -570,6 +589,31 @@ onMounted(syncGraphFromModel);
 }
 .agf-vendor a {
   color: color-mix(in srgb, var(--text-accent, var(--accent)) 75%, var(--text-secondary));
+}
+.agf-dual-core-banner {
+  margin: 8px 0 10px;
+  padding: 10px 12px;
+  border-radius: 8px;
+  border: 1px solid color-mix(in srgb, var(--accent) 45%, transparent);
+  background: color-mix(in srgb, var(--accent) 12%, var(--surface-elevated, #1a1a1a));
+}
+.agf-dual-core-badge {
+  display: inline-block;
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: var(--accent);
+  margin-bottom: 6px;
+}
+.agf-dual-core-lines p {
+  margin: 4px 0;
+  font-size: 12px;
+  line-height: 1.4;
+  color: var(--text-secondary);
+}
+.agf-dual-core-muted {
+  opacity: 0.85;
 }
 .agf-tb-label {
   display: inline-flex;

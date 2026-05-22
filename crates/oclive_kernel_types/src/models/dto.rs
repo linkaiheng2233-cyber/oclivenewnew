@@ -304,6 +304,12 @@ pub struct RoleInfo {
     /// v2 蓝图 `groups`（架构图逻辑分组；legacy 为 `null`）。
     #[serde(default)]
     pub blueprint_groups_pack: Option<BTreeMap<String, oclive_validation::SlotGroupEntry>>,
+    /// `runtime_config.dual_core.enabled` 且 `pipeline.experimental` 非空。
+    #[serde(default)]
+    pub dual_core_enabled: bool,
+    /// `pipeline.experimental` action 列表（架构图 / 调试只读）。
+    #[serde(default)]
+    pub pipeline_experimental_actions: Vec<String>,
 }
 
 /// Per-session `slot_registry` backend override (`set_session_slot_override`).

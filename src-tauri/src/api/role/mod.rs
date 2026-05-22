@@ -437,6 +437,12 @@ pub async fn get_role_info_impl(
         slot_registry_effective,
         slot_session_overridden_keys,
         blueprint_groups_pack: blueprint_groups_pack(role.as_ref()),
+        dual_core_enabled: role.dual_core_gated(),
+        pipeline_experimental_actions: role
+            .pipeline_experimental
+            .as_ref()
+            .map(|steps| steps.iter().map(|s| s.action.clone()).collect())
+            .unwrap_or_default(),
     })
 }
 /// # Errors

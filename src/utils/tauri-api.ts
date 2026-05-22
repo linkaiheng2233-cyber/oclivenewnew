@@ -534,6 +534,8 @@ export interface RoleInfo {
   slot_registry_effective?: import("../lib/slotRegistry").SlotRegistryMap | null;
   slot_session_overridden_keys?: string[];
   blueprint_groups_pack?: import("../lib/slotRegistry").SlotGroupsMap | null;
+  dual_core_enabled?: boolean;
+  pipeline_experimental_actions?: string[];
 }
 
 /** `switch_scene` 扁平化返回：RoleInfo 字段 + 可选场景欢迎语 */

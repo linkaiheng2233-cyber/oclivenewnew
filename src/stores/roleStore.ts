@@ -82,6 +82,8 @@ type RoleInfoState = {
   slotRegistryEffective: import("../lib/slotRegistry").SlotRegistryMap | null;
   slotSessionOverriddenKeys: string[];
   blueprintGroupsPack: import("../lib/slotRegistry").SlotGroupsMap | null;
+  dualCoreEnabled: boolean;
+  pipelineExperimentalActions: string[];
 };
 
 function mapRoleInfo(info: RoleInfo): RoleInfoState {
@@ -137,6 +139,8 @@ function mapRoleInfo(info: RoleInfo): RoleInfoState {
     slotRegistryEffective: info.slot_registry_effective ?? null,
     slotSessionOverriddenKeys: info.slot_session_overridden_keys ?? [],
     blueprintGroupsPack: info.blueprint_groups_pack ?? null,
+    dualCoreEnabled: info.dual_core_enabled ?? false,
+    pipelineExperimentalActions: info.pipeline_experimental_actions ?? [],
   };
 }
 
@@ -208,6 +212,8 @@ export const useRoleStore = defineStore(
         slotRegistryEffective: null,
         slotSessionOverriddenKeys: [],
         blueprintGroupsPack: null,
+        dualCoreEnabled: false,
+        pipelineExperimentalActions: [],
       } as RoleInfoState,
     }),
     actions: {

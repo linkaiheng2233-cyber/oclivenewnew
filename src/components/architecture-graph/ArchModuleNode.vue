@@ -85,6 +85,9 @@ function onResetOverride() {
         <span class="agn-mono agn-module-id">{{ data?.slotKey ?? data?.moduleKey }}</span>
       </div>
       <p v-if="sessionOverridden" class="agn-override-tag">{{ t("pluginWorkbench.graph.sessionOverride") }}</p>
+      <p v-if="data?.zoneLabel" class="agn-override-tag agn-zone-tag">
+        {{ t("pluginWorkbench.graph.zoneTag", { zone: data.zoneLabel }) }}
+      </p>
       <p class="agn-hint agn-module-zh">
         {{ data?.slotLabel ? data.slotLabel : t(data?.labelKey as string) }}
         <span v-if="data?.slotType" class="agn-type"> · {{ data.slotType }}</span>

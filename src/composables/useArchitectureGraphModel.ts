@@ -13,6 +13,7 @@ import {
   SLOT_BACKEND_OPTIONS,
   SLOT_TYPE_ICONS,
   SLOT_TYPE_LABEL_KEYS,
+  formatSlotZoneLabel,
   sortedSlotRegistryEntries,
   type SlotRegistryEntry,
   type SlotRegistryMap,
@@ -86,6 +87,13 @@ export function useArchitectureGraphModel() {
     const eff = slotRegistryEffective.value;
     return eff != null && Object.keys(eff).length > 0;
   });
+
+  const dualCoreEnabled = computed(
+    () => roleStore.roleInfo.dualCoreEnabled === true,
+  );
+  const pipelineExperimentalActions = computed(
+    () => roleStore.roleInfo.pipelineExperimentalActions ?? [],
+  );
 
   function effectiveBackend(key: CoreModule): string {
     return String(pluginBackendsEffective.value[key] ?? "");
@@ -382,6 +390,7 @@ export function useArchitectureGraphModel() {
           primaryPlugin: primaryPluginId(entry),
           hiddenPluginCount: hiddenPluginCount(slotKey, entry),
           blueprintV2: true,
+          zoneLabel: formatSlotZoneLabel(entry.zone),
           groupId: gid,
           targetPosition: Position.Left,
           sourcePosition: Position.Right,
@@ -557,6 +566,8 @@ export function useArchitectureGraphModel() {
     toggleGroupCollapse,
     expandAllDirectoryPlugins,
     blueprintGroupsPack,
+    dualCoreEnabled,
+    pipelineExperimentalActions,
     worldSize: { w: WORLD_W, h: WORLD_H },
   };
 }

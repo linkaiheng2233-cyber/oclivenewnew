@@ -9,6 +9,25 @@ export interface SlotRegistryEntry {
   model?: string | null;
   url?: string | null;
   local_memory_provider_id?: string | null;
+  /** v3 可选：`stable` / `experimental` 或数组 */
+  zone?: string | string[] | null;
+}
+
+/** 将蓝图 `zone` 规范为展示用短标签。 */
+export function formatSlotZoneLabel(zone: SlotRegistryEntry["zone"]): string | null {
+  if (zone == null) return null;
+  if (typeof zone === "string") {
+    const z = zone.trim().toLowerCase();
+    if (!z) return null;
+    return z;
+  }
+  if (Array.isArray(zone)) {
+    const parts = zone
+      .map((z) => String(z).trim().toLowerCase())
+      .filter(Boolean);
+    return parts.length ? parts.join("+") : null;
+  }
+  return null;
 }
 
 export type SlotRegistryMap = Record<string, SlotRegistryEntry>;
