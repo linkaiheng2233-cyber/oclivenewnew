@@ -373,6 +373,7 @@ export function useArchitectureGraphModel() {
           packDefault: pack?.backend ?? entry.backend,
           sessionOverride: overridden ? entry.backend : "__pack_default__",
           sessionOverridden: overridden,
+          effectiveBackend: entry.backend,
           primaryPlugin: primaryPluginId(entry),
           hiddenPluginCount: hiddenPluginCount(slotKey, entry),
           blueprintV2: true,

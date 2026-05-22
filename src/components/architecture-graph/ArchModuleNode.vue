@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { Handle, Position } from "@vue-flow/core";
-import { computed, inject } from "vue";
+import { computed, inject, ref, watch } from "vue";
 import { useI18n } from "vue-i18n";
 import { BACKEND_COLORS, backendCssVars } from "../../lib/graphEditorTheme";
 import type { CoreModule } from "../../composables/useArchitectureGraphModel";
@@ -22,9 +22,25 @@ const kind = computed(() => props.data?.backendKind as keyof typeof BACKEND_COLO
 const themeStyle = computed(() => backendCssVars(kind.value));
 const blueprintV2 = computed(() => Boolean(props.data?.blueprintV2));
 const sessionOverridden = computed(() => Boolean(props.data?.sessionOverridden));
+const draftBackend = ref(String(props.data?.backend ?? "builtin"));
 
-function onSelect(ev: Event) {
+watch(
+  () => props.data?.backend,
+  (v) => {
+    draftBackend.value = String(v ?? "builtin");
+  },
+);
+
+function onLegacySelect(ev: Event) {
   actions?.onBackendChange(slotKey.value, (ev.target as HTMLSelectElement).value);
+}
+
+function onApplySession() {
+  actions?.onApplySessionOverride(slotKey.value, draftBackend.value);
+}
+
+function onApplyPack() {
+  actions?.onApplyPackDefault(slotKey.value, draftBackend.value);
 }
 
 function onResetOverride() {
@@ -76,11 +92,45 @@ function onResetOverride() {
       <span class="agn-tag">{{ data?.backend }}</span>
       <p v-if="data?.primaryPlugin" class="agn-hint agn-dir agn-mono">{{ data.primaryPlugin }}</p>
       <label class="agn-widget-lbl">{{ t("pluginWorkbench.graph.switchBackend") }}</label>
+      <template v-if="blueprintV2">
+        <select
+          class="agn-select nodrag nopan"
+          :disabled="actions?.busy()"
+          v-model="draftBackend"
+          tabindex="0"
+          @pointerdown.stop
+        >
+          <option v-for="v in (data?.options as string[])" :key="v" :value="v">{{ v }}</option>
+        </select>
+        <p class="agn-hint agn-pack-hint">
+          {{ t("pluginWorkbench.graph.packDefaultHint", { value: data?.packDefault }) }}
+        </p>
+        <div class="agn-apply-row nodrag nopan">
+          <button
+            type="button"
+            class="agn-btn agn-btn--primary"
+            :disabled="actions?.busy()"
+            @click="onApplySession"
+          >
+            {{ t("pluginWorkbench.graph.applySessionOnly") }}
+          </button>
+          <button
+            type="button"
+            class="agn-btn"
+            :disabled="actions?.busy()"
+            @click="onApplyPack"
+          >
+            {{ t("pluginWorkbench.graph.applyPackDefault") }}
+          </button>
+        </div>
+      </template>
       <select
+        v-else
         class="agn-select nodrag nopan"
         :disabled="actions?.busy()"
         :value="data?.sessionOverride"
-        @change="onSelect"
+        tabindex="0"
+        @change="onLegacySelect"
         @pointerdown.stop
       >
         <option value="__pack_default__">
@@ -144,5 +194,18 @@ function onResetOverride() {
 }
 .agn-type {
   opacity: 0.75;
+}
+.agn-pack-hint {
+  margin: 0 12px 6px;
+  font-size: 10px;
+}
+.agn-apply-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  padding: 0 12px 6px;
+}
+.agn-btn--primary {
+  font-weight: 600;
 }
 </style>

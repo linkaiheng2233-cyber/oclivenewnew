@@ -1,4 +1,5 @@
 import { describe, expect, it } from "vitest";
+import { patchSlotRegistryBackend } from "../lib/archGraphSlotBackend";
 import {
   addSlotToRegistry,
   canRemoveSlotKey,
@@ -40,5 +41,13 @@ describe("slotRegistry toolbar helpers", () => {
     const next = removeSlotFromRegistry(withTwo.registry, "llm");
     expect(next.llm).toBeUndefined();
     expect(next.llm_2).toBeDefined();
+  });
+});
+
+describe("session override helpers (arch graph)", () => {
+  it("patchSlotRegistryBackend preserves other keys when saving pack default", () => {
+    const next = patchSlotRegistryBackend(basePack, "llm", "remote");
+    expect(next.llm.backend).toBe("remote");
+    expect(next.memory.backend).toBe("builtin");
   });
 });

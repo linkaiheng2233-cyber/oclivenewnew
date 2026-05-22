@@ -4,7 +4,12 @@ import type { CoreModule } from "../../composables/useArchitectureGraphModel";
 export type ArchGraphActions = {
   busy: () => boolean;
   usesBlueprint: () => boolean;
+  /** legacy 六槽折叠：下拉即会话覆盖 */
   onBackendChange: (targetKey: string, value: string) => void;
+  /** v2 蓝图：仅本次会话 */
+  onApplySessionOverride: (slotKey: string, backend: string) => void;
+  /** v2 蓝图：写入 pipeline.ocblueprint */
+  onApplyPackDefault: (slotKey: string, backend: string) => void;
   onClearSlotOverride: (slotKey: string) => void;
   onFocusPlugin: (id: string) => void;
   onToggleExpand: (targetKey: string) => void;

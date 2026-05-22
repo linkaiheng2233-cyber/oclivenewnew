@@ -1,6 +1,7 @@
 <script setup lang="ts">
-import { ref, watch } from "vue";
+import { ref, toRef, watch } from "vue";
 import { useI18n } from "vue-i18n";
+import { useModalFocusRestore } from "../../composables/useModalFocusRestore";
 import { SLOT_TYPE_ORDER } from "../../lib/slotRegistry";
 
 const props = defineProps<{
@@ -16,6 +17,11 @@ const emit = defineEmits<{
 const { t } = useI18n();
 const slotType = ref("memory");
 const label = ref("");
+const typeSelectRef = ref<HTMLSelectElement | null>(null);
+const dialogRef = ref<HTMLElement | null>(null);
+useModalFocusRestore(toRef(props, "open"), dialogRef, {
+  primary: typeSelectRef,
+});
 
 watch(
   () => props.open,
@@ -47,11 +53,11 @@ function onBackdrop(e: MouseEvent) {
     :aria-label="t('pluginWorkbench.graph.addSlotWizardTitle')"
     @click="onBackdrop"
   >
-    <form class="aasd-panel" @submit.prevent="onSubmit">
+    <form ref="dialogRef" class="aasd-panel" tabindex="-1" @submit.prevent="onSubmit">
       <h3 class="aasd-title">{{ t("pluginWorkbench.graph.addSlotWizardTitle") }}</h3>
       <label class="aasd-field">
         <span>{{ t("pluginWorkbench.graph.addSlotType") }}</span>
-        <select v-model="slotType" class="aasd-input" :disabled="busy">
+        <select ref="typeSelectRef" v-model="slotType" class="aasd-input" :disabled="busy">
           <option v-for="st in SLOT_TYPE_ORDER" :key="st" :value="st">
             {{
               t(

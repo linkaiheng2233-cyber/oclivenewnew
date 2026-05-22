@@ -33,11 +33,14 @@ import {
   SLOT_REGISTRY_LAST_LLM,
   type SlotRegistryMap,
 } from "../lib/slotRegistry";
+import { patchSlotRegistryBackend } from "../lib/archGraphSlotBackend";
 import {
   clearSessionSlotOverride,
   saveRoleSlotRegistry,
   setSessionPluginBackend,
+  setSessionSlotOverride,
 } from "../utils/tauri-api";
+import ArchRemoveSlotDialog from "./architecture-graph/ArchRemoveSlotDialog.vue";
 
 const emit = defineEmits<{
   "focus-plugin": [pluginId: string];
@@ -49,6 +52,7 @@ const pluginStore = usePluginStore();
 const { showToast } = useAppToast();
 const busy = ref(false);
 const showAddSlotWizard = ref(false);
+const showRemoveSlotDialog = ref(false);
 const removeSlotKey = ref("");
 
 const packSlotKeys = computed(() => {
@@ -183,39 +187,50 @@ provide(archGraphActionsKey, {
   busy: () => busy.value,
   usesBlueprint: () => usesBlueprint.value,
   onBackendChange: async (targetKey: string, value: string) => {
+    if (usesBlueprint.value) return;
     busy.value = true;
     try {
-      if (usesBlueprint.value) {
-        if (value === "__pack_default__") {
-          const info = await clearSessionSlotOverride(
-            roleStore.currentRoleId,
-            targetKey,
-          );
-          roleStore.applyRoleInfo(info);
-          return;
-        }
-        const pack = roleStore.roleInfo.slotRegistryPack;
-        if (!pack?.[targetKey]) {
-          showToast("error", t("pluginWorkbench.graph.connectUnknownPort"));
-          return;
-        }
-        const next: SlotRegistryMap = {
-          ...pack,
-          [targetKey]: { ...pack[targetKey], backend: value },
-        };
-        let info = await saveRoleSlotRegistry(roleStore.currentRoleId, next);
-        roleStore.applyRoleInfo(info);
-        info = await clearSessionSlotOverride(roleStore.currentRoleId, targetKey);
-        roleStore.applyRoleInfo(info);
-      } else {
-        const backend = value === "__pack_default__" ? null : value;
-        const info = await setSessionPluginBackend(
-          roleStore.currentRoleId,
-          targetKey as CoreModule,
-          backend,
-        );
-        roleStore.applyRoleInfo(info);
-      }
+      const backend = value === "__pack_default__" ? null : value;
+      const info = await setSessionPluginBackend(
+        roleStore.currentRoleId,
+        targetKey as CoreModule,
+        backend,
+      );
+      roleStore.applyRoleInfo(info);
+    } catch (e) {
+      showToast("error", e instanceof Error ? e.message : String(e));
+    } finally {
+      busy.value = false;
+    }
+  },
+  onApplySessionOverride: async (slotKey: string, backend: string) => {
+    busy.value = true;
+    try {
+      const info = await setSessionSlotOverride(roleStore.currentRoleId, slotKey, {
+        backend,
+      });
+      roleStore.applyRoleInfo(info);
+      showToast("success", t("pluginWorkbench.graph.applySessionDone"));
+    } catch (e) {
+      showToast("error", e instanceof Error ? e.message : String(e));
+    } finally {
+      busy.value = false;
+    }
+  },
+  onApplyPackDefault: async (slotKey: string, backend: string) => {
+    const pack = roleStore.roleInfo.slotRegistryPack;
+    if (!pack?.[slotKey]) {
+      showToast("error", t("pluginWorkbench.graph.connectUnknownPort"));
+      return;
+    }
+    busy.value = true;
+    try {
+      const next = patchSlotRegistryBackend(pack, slotKey, backend);
+      let info = await saveRoleSlotRegistry(roleStore.currentRoleId, next);
+      roleStore.applyRoleInfo(info);
+      info = await clearSessionSlotOverride(roleStore.currentRoleId, slotKey);
+      roleStore.applyRoleInfo(info);
+      showToast("success", t("pluginWorkbench.graph.applyPackDone"));
     } catch (e) {
       showToast("error", e instanceof Error ? e.message : String(e));
     } finally {
@@ -290,7 +305,7 @@ async function onAddSlotConfirm(slotType: string, label: string) {
   }
 }
 
-async function onRemoveSlot() {
+function openRemoveSlotDialog() {
   const pack = roleStore.roleInfo.slotRegistryPack;
   const key = removeSlotKey.value.trim();
   if (!pack || !key || !pack[key]) return;
@@ -298,9 +313,14 @@ async function onRemoveSlot() {
     showToast("error", t("pluginWorkbench.graph.removeSlotLastLlm"));
     return;
   }
-  if (!window.confirm(t("pluginWorkbench.graph.removeSlotConfirm", { key }))) {
-    return;
-  }
+  showRemoveSlotDialog.value = true;
+}
+
+async function onRemoveSlotConfirm() {
+  const pack = roleStore.roleInfo.slotRegistryPack;
+  const key = removeSlotKey.value.trim();
+  if (!pack || !key || !pack[key]) return;
+  showRemoveSlotDialog.value = false;
   try {
     const next = removeSlotFromRegistry(pack, key);
     await persistPackRegistry(next);
@@ -314,6 +334,18 @@ async function onRemoveSlot() {
     }
   }
 }
+
+watch(
+  () => pluginStore.focusSlotKey,
+  (key) => {
+    if (!key || !usesBlueprint.value) return;
+    nodes.value = nodes.value.map((n) => ({
+      ...n,
+      selected: n.id === key,
+    }));
+    pluginStore.clearFocusArchSlot();
+  },
+);
 
 onMounted(syncGraphFromModel);
 </script>
@@ -358,7 +390,7 @@ onMounted(syncGraphFromModel);
           class="agf-tb-btn agf-tb-btn--danger"
           :disabled="busy || removeSlotDisabled"
           :title="removeSlotDisabled ? t('pluginWorkbench.graph.removeSlotLastLlm') : undefined"
-          @click="onRemoveSlot"
+          @click="openRemoveSlotDialog"
         >
           {{ t("pluginWorkbench.graph.removeSlot") }}
         </button>
@@ -371,6 +403,13 @@ onMounted(syncGraphFromModel);
       :busy="busy"
       @close="showAddSlotWizard = false"
       @confirm="onAddSlotConfirm"
+    />
+    <ArchRemoveSlotDialog
+      :open="showRemoveSlotDialog"
+      :slot-key="removeSlotKey"
+      :busy="busy"
+      @close="showRemoveSlotDialog = false"
+      @confirm="onRemoveSlotConfirm"
     />
 
     <div
