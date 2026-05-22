@@ -23,12 +23,13 @@
 | **P1** | 蓝图契约：`zone`、`pipeline.*`、`depends_on` DAG 校验 | **已完成（校验 crate）** | `blueprint_v3.rs` · `validate_blueprint_v3_json` |
 | **边界** | 角色包 / 蓝图 / `runtime_config` 文档 + creator profile | **已完成** | [ROLE_PACK_BOUNDARY.md](ROLE_PACK_BOUNDARY.md) |
 | **P1b** | `runtime_config` schema（v2 忽略警告） | **已完成** | `runtime_config.rs` + JSON Schema |
-| **P2** | `DualPipelineRunner` + `SessionState` 快照/回滚 | **未开始** | 复用 Remote 降级思路，无新错误框架 |
-| **P3** | `oclive init --dual-core` 模板（蓝图 `runtime_config`） | **未开始** | 默认关；非角色包 |
-| **P4** | `process_message` 接线 + OOCP 降级用例 | **未开始** | 不开双核 = 零行为差异 |
-| **P5** | `--monolith --dual-core` 双 pipeline 焊接 | **未开始** | 保留调度器 |
+| **P2** | 宿主加载 + `DualPipelineRunner` + `process_message` 门控 | **已完成** | 七槽 experimental method · 快照回滚 |
+| **P3** | `oclive init --dual-core` 模板（蓝图 `runtime_config`） | **已完成** | 默认关；非角色包 |
+| **P4** | `process_message` 接线 + OOCP 降级用例 | **已完成** | S13 可选 `--include-s13` |
+| **P5** | `--monolith --dual-core` 双 pipeline 焊接 | **已完成** | 保留调度器 |
+| **深化** | Method 注册表 · 开发者指南 · 架构图双核条 | **已完成** | [METHOD_REGISTRY.md](../creator-docs/dual-core/METHOD_REGISTRY.md) · [DEVELOPER_GUIDE.md](../creator-docs/dual-core/DEVELOPER_GUIDE.md) · `oclive explain DUAL_CORE` |
 
-**当前发布边界**：产品停留在 **v2 + Stable 等价单路径**；Cursor 实现双核前须先完成 **P1 契约 PR**。
+**当前发布边界**：默认仍 **v2 + Stable 等价单路径**；双核须蓝图显式 `enabled` + 非空 `experimental`。
 
 ---
 

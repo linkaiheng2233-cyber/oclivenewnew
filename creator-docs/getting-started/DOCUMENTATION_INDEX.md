@@ -36,7 +36,7 @@
 | 内核工厂与三层 | [KERNEL_FACTORY_VISION.md](KERNEL_FACTORY_VISION.md) |
 | 内核居中总览图 | [KERNEL_AND_MODULES_ARCHITECTURE.md](KERNEL_AND_MODULES_ARCHITECTURE.md) |
 | Monolith（宏核态） | [RFC_OCLIVE_MONOLITH_MODE.md](../rfc/RFC_OCLIVE_MONOLITH_MODE.md) |
-| **双核双态（运行时 Stable / Experimental，未来）** | [RFC_OCLIVE_DUAL_CORE_DUAL_MODE.md](../rfc/RFC_OCLIVE_DUAL_CORE_DUAL_MODE.md) · **Cursor 对齐** [DUAL_CORE_CURSOR_HANDOFF.md](../../handoff/DUAL_CORE_CURSOR_HANDOFF.md) · 速查 [DUAL_CORE_ALIGNMENT.md](../../handoff/DUAL_CORE_ALIGNMENT.md) |
+| **双核双态（运行时 Stable / Experimental）** | [RFC](../rfc/RFC_OCLIVE_DUAL_CORE_DUAL_MODE.md) · [开发者指南](../dual-core/DEVELOPER_GUIDE.md) · [Method 注册表](../dual-core/METHOD_REGISTRY.md) · [Cursor 手递](../../handoff/DUAL_CORE_CURSOR_HANDOFF.md) · [速查](../../handoff/DUAL_CORE_ALIGNMENT.md) |
 
 ---
 
