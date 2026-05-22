@@ -4,6 +4,12 @@ Time-boxed steps. **Normative layout** remains [ROLE_PACK_SPEC.md](ROLE_PACK_SPE
 
 ---
 
+## Migrate v1 → v2 (~10 min)
+
+Packs still on **`manifest.json` + `settings.json`**: **[V1_TO_V2_MIGRATION.md](V1_TO_V2_MIGRATION.md)** — `pack migrate-to-blueprint` → default `pack validate` → smoke chat in the host.
+
+---
+
 ## Beginner (~30 min)
 
 | Step | Goal | Read / do |

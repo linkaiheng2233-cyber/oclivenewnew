@@ -4,6 +4,12 @@
 
 ---
 
+## 从 v1 迁移到 v2（约 10 分钟）
+
+已有 **`manifest.json` + `settings.json`** 的包，请先阅读 **[V1_TO_V2_MIGRATION.md](V1_TO_V2_MIGRATION.md)**：`pack migrate-to-blueprint` → 默认 `pack validate`（v2）→ 主应用试聊。
+
+---
+
 ## 入门（约 30 分钟）
 
 | 步骤 | 做什么 | 读什么 / 做什么 |

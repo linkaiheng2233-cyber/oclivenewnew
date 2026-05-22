@@ -48,6 +48,7 @@ Time-boxed “start here → ship”; **authoritative detail stays in each topic
 | `plugin_backends` + modules 1–6 | **[OCLIVE_ARCHITECTURE_OVERVIEW.md](OCLIVE_ARCHITECTURE_OVERVIEW.md)** · **[../plugin-and-architecture/PLUGIN_V1.md](../plugin-and-architecture/PLUGIN_V1.md)** |
 | Remote HTTP JSON-RPC | **[../plugin-and-architecture/REMOTE_PLUGIN_PROTOCOL.md](../plugin-and-architecture/REMOTE_PLUGIN_PROTOCOL.md)** |
 | On-disk pack / `schema_version` | **[../role-pack/ROLE_PACK_SPEC.md](../role-pack/ROLE_PACK_SPEC.md)** · **[../role-pack/PACK_VERSIONING.md](../role-pack/PACK_VERSIONING.md)** |
+| **v1 → v2 blueprint migration** | **[../role-pack/V1_TO_V2_MIGRATION.md](../role-pack/V1_TO_V2_MIGRATION.md)**（[中文](../../creator-docs/role-pack/V1_TO_V2_MIGRATION.md)） |
 | OOCP HTTP black-box (CI) | **[../testing/OOCP_TEST_SUITE.md](../testing/OOCP_TEST_SUITE.md)** |
 | Directory whole-shell `invoke` · permissions & errors | **[../plugin-and-architecture/BRIDGE_API_REFERENCE.md](../plugin-and-architecture/BRIDGE_API_REFERENCE.md)** |
 
@@ -60,6 +61,7 @@ Time-boxed “start here → ship”; **authoritative detail stays in each topic
 | **Pick a role: learning paths hub** | **[Learning paths](#learning-paths)** · **[Contracts quick map](#contracts-quick-map)** |
 | **End users: install → daily use (user manual)** | **[USER_MANUAL.md](USER_MANUAL.md)** (Chinese: [../../creator-docs/getting-started/USER_MANUAL.md](../../creator-docs/getting-started/USER_MANUAL.md)) |
 | **Role pack authors: start → publish (learning path)** | **[../role-pack/CREATOR_LEARNING_PATH.md](../role-pack/CREATOR_LEARNING_PATH.md)** (Chinese: [../../creator-docs/role-pack/CREATOR_LEARNING_PATH.md](../../creator-docs/role-pack/CREATOR_LEARNING_PATH.md)) |
+| **Migrate existing v1 pack to v2 blueprint (~10 min)** | **[../role-pack/V1_TO_V2_MIGRATION.md](../role-pack/V1_TO_V2_MIGRATION.md)** (Chinese: [../../creator-docs/role-pack/V1_TO_V2_MIGRATION.md](../../creator-docs/role-pack/V1_TO_V2_MIGRATION.md)) |
 | **Plugin authors: directory / remote / marketplace (learning path)** | **[../plugin-and-architecture/PLUGIN_AUTHOR_LEARNING_PATH.md](../plugin-and-architecture/PLUGIN_AUTHOR_LEARNING_PATH.md)** (Chinese: [../../creator-docs/plugin-and-architecture/PLUGIN_AUTHOR_LEARNING_PATH.md](../../creator-docs/plugin-and-architecture/PLUGIN_AUTHOR_LEARNING_PATH.md)) |
 | **Directory LLM + llama.cpp (no Ollama, per role pack)** | **[../../examples/directory-plugin-llamacpp/README.en.md](../../examples/directory-plugin-llamacpp/README.en.md)** (Chinese: [../../examples/directory-plugin-llamacpp/README.md](../../examples/directory-plugin-llamacpp/README.md)) |
 | **Kernel / hardware integrators: scaffold → device (learning path)** | **[KERNEL_INTEGRATOR_LEARNING_PATH.md](KERNEL_INTEGRATOR_LEARNING_PATH.md)** (Chinese: [../../creator-docs/getting-started/KERNEL_INTEGRATOR_LEARNING_PATH.md](../../creator-docs/getting-started/KERNEL_INTEGRATOR_LEARNING_PATH.md)) |
