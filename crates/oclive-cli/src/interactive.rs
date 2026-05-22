@@ -289,6 +289,7 @@ pub fn run_interactive(args: &InitArgs) -> Result<ProjectConfig> {
                 cargo_description: None,
                 pipeline: crate::pipeline::PipelineArg::Default,
                 custom_weld_modules: None,
+                dual_core_enabled: false,
             };
             (c, false)
         }

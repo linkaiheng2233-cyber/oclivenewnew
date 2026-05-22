@@ -507,10 +507,14 @@ pub fn write_project(cfg: &ProjectConfig, out: &Path) -> Result<()> {
                     .context("copy vendor/oclive_monolith_builtin")?;
                 let weld = crate::init::resolve_monolith_weld_modules(cfg);
                 let weld_refs: Vec<&str> = weld.iter().map(|s| s.as_str()).collect();
-                let (toml, plan) = monolith_codegen::monolith_toml_and_plan(&weld_refs);
+                let (toml, plan) =
+                    monolith_codegen::monolith_toml_and_plan_dual(&weld_refs, cfg.dual_core_enabled);
                 fs::write(
                     out.join("src").join("process_message_monolith.rs"),
-                    monolith_codegen::generate_monolith_source(&plan),
+                    monolith_codegen::generate_monolith_source_with_dual_core(
+                        &plan,
+                        cfg.dual_core_enabled,
+                    ),
                 )
                 .context("write process_message_monolith.rs")?;
                 fs::write(out.join("monolith.toml"), toml).context("write monolith.toml")?;

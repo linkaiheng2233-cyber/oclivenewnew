@@ -125,6 +125,7 @@ pub fn resolve_init_config(
     apply_cargo_metadata_cli(&mut cfg, args);
     ensure_cargo_license_default(&mut cfg);
     cfg.pipeline = args.pipeline;
+    cfg.dual_core_enabled = args.dual_core;
     if !args.weld_modules.is_empty() {
         cfg.custom_weld_modules = Some(args.weld_modules.clone());
         cfg.monolith_enabled = true;

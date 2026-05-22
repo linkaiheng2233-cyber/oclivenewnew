@@ -25,7 +25,14 @@ pub struct ExplainEntry {
 }
 
 pub fn run(args: ExplainArgs) -> Result<()> {
-    let code = args.code.trim().to_ascii_uppercase();
+    let raw = args.code.trim();
+    if raw.eq_ignore_ascii_case("DUAL_CORE")
+        || raw.starts_with("slot.")
+        || (raw.contains('.') && crate::explain_dual_core::parse_action_query(raw).is_ok())
+    {
+        return crate::explain_dual_core::explain_dual_core_query(raw, args.json);
+    }
+    let code = raw.to_ascii_uppercase();
     let path = find_error_codes_md().ok_or_else(|| {
         anyhow::anyhow!("ERROR_CODES.md not found (set OCLIVE_ROOT or run from oclivenewnew)")
     })?;

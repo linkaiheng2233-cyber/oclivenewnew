@@ -167,6 +167,7 @@ pub fn preset_config(name: &str, preset: &str) -> ProjectConfig {
         cargo_description: None,
         pipeline: crate::pipeline::PipelineArg::Default,
         custom_weld_modules: None,
+        dual_core_enabled: false,
     }
 }
 

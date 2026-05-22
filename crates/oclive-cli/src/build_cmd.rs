@@ -1,6 +1,8 @@
 //! `oclive build`：读取 `monolith.toml`，落盘 vendor 与 `process_message_monolith.rs`，可选执行 `cargo build`（标准 + Monolith）。
 
-use crate::monolith_codegen::{copy_monolith_vendor, generate_monolith_source};
+use crate::monolith_codegen::{
+    copy_monolith_vendor, generate_monolith_source_with_dual_core,
+};
 use crate::monolith_config::{
     parse_monolith_toml, resolve_weld_plan, validate_monolith_section, MonolithFile,
 };
@@ -108,7 +110,10 @@ fn regenerate_monolith_from_disk_inner(root: &Path, log_written: bool) -> Result
     let plan = resolve_weld_plan(&file.monolith);
     copy_monolith_vendor(root)?;
     let out_rs = root.join("src/process_message_monolith.rs");
-    fs::write(&out_rs, generate_monolith_source(&plan))
+    fs::write(
+        &out_rs,
+        generate_monolith_source_with_dual_core(&plan, file.dual_core.enabled),
+    )
         .with_context(|| format!("write {}", out_rs.display()))?;
     if log_written {
         eprintln!("Generated {}", out_rs.display());

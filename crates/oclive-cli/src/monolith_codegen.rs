@@ -25,7 +25,23 @@ pub fn weld_modules_for_preset(preset: crate::init::MonolithPresetArg) -> Vec<&'
 }
 
 pub fn render_monolith_toml_with_weld(weld_modules: &[&str]) -> String {
+    render_monolith_toml_with_weld_and_dual_core(weld_modules, false)
+}
+
+pub fn render_monolith_toml_with_weld_and_dual_core(
+    weld_modules: &[&str],
+    dual_core: bool,
+) -> String {
     let items: Vec<String> = weld_modules.iter().map(|s| format!("\"{s}\"")).collect();
+    let dual_section = if dual_core {
+        r#"
+[dual_core]
+enabled = true
+# 链入 oclivenewnew 宿主时保留 DualPipelineRunner + 快照降级；脚手架 demo 入口见 process_message_monolith.rs 注释。
+"#
+    } else {
+        ""
+    };
     format!(
         r#"# 高耦合编译配置
 # 由 oclive init 生成；oclive build 读取并重新生成 process_message_monolith.rs
@@ -37,13 +53,19 @@ pub fn render_monolith_toml_with_weld(weld_modules: &[&str]) -> String {
 enabled = true
 weld_modules = [{modules}]
 exclude = []
-"#,
-        modules = items.join(", ")
+{dual_section}"#,
+        modules = items.join(", "),
+        dual_section = dual_section
     )
 }
 
 /// 根据焊接列表生成 TOML 与 [`WeldPlan`]（供 init 与测试）。
+#[allow(dead_code)] // 对外 API / 测试；init 路径使用 `monolith_toml_and_plan_dual`
 pub fn monolith_toml_and_plan(weld_modules: &[&str]) -> (String, WeldPlan) {
+    monolith_toml_and_plan_dual(weld_modules, false)
+}
+
+pub fn monolith_toml_and_plan_dual(weld_modules: &[&str], dual_core: bool) -> (String, WeldPlan) {
     let section = crate::monolith_config::MonolithSection {
         enabled: true,
         weld_modules: weld_modules.iter().map(|s| (*s).to_string()).collect(),
@@ -53,7 +75,10 @@ pub fn monolith_toml_and_plan(weld_modules: &[&str]) -> (String, WeldPlan) {
     if weld_modules.len() == SLOT_IDS.len() {
         debug_assert_eq!(plan.welded, WeldPlan::all_welded().welded);
     }
-    (render_monolith_toml_with_weld(weld_modules), plan)
+    (
+        render_monolith_toml_with_weld_and_dual_core(weld_modules, dual_core),
+        plan,
+    )
 }
 
 #[allow(dead_code)]
@@ -103,19 +128,34 @@ fn rust_mod_token(slot: &str) -> String {
 }
 
 /// 根据焊接计划生成 `src/process_message_monolith.rs` 源码。
+#[allow(dead_code)] // 对外 API / 测试；`oclive build` 使用 `generate_monolith_source_with_dual_core`
 pub fn generate_monolith_source(plan: &WeldPlan) -> String {
+    generate_monolith_source_with_dual_core(plan, false)
+}
+
+/// 当 `dual_core` 为 true 时，在生成文件头注明保留运行时双核调度器（链入主仓时由 `DualPipelineRunner` 承担）。
+pub fn generate_monolith_source_with_dual_core(plan: &WeldPlan, dual_core: bool) -> String {
+    let dual_note = if dual_core {
+        r#"// [dual_core] 运行时：实验核 pipeline.experimental + 稳定核 co_present，由 DualPipelineRunner 调度（见主仓 dual_pipeline.rs）。
+// 本文件仍演示 Monolith 七焊接键静态顺序；链入 oclivenewnew-tauri 时 process_message 门控优先。
+"#
+    } else {
+        ""
+    };
     let mut out = String::from(
-        r#"#![allow(dead_code)]
+        &format!(
+            r#"#![allow(dead_code)]
 // 此文件由 oclive-cli 根据 monolith.toml 生成。
 // 请勿手改焊接逻辑；修改 monolith.toml 后请运行 `oclive build`（或重新 `oclive init`）再生成。
 //
-// 蓝图 v2：见项目根 docs/BLUEPRINT_V2_POINTER.md（主仓 creator-docs/role-pack/）。
+// 蓝图 v2/v3：见项目根 docs/BLUEPRINT_V2_POINTER.md（主仓 creator-docs/role-pack/）。
 // 桌面宿主主路径仍以 oclivenewnew 内 `process_message` 为准；本文件仅演示 Monolith 七焊接键静态调用顺序。
-
+{dual_note}
 /// Monolith 入口：演示七焊接键调用顺序（已焊接 → 静态 `oclive_monolith_builtin`；未焊接 → trait 占位）。
-pub fn run_monolith_pipeline_demo() {
+pub fn run_monolith_pipeline_demo() {{
     oclive_monolith_builtin::ensure_linked();
-"#,
+"#
+        ),
     );
 
     for slot in SLOT_IDS {

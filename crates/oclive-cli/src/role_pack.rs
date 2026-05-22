@@ -1,8 +1,10 @@
 //! 示例角色包生成（`--with-role-pack` / 模板默认）。
 
+use crate::blueprint_v3_init::build_blueprint_v3_value;
 use crate::generator::render_settings_json;
 use crate::init::{ProjectConfig, RolePackKind};
 use anyhow::{Context, Result};
+use oclive_validation::PIPELINE_BLUEPRINT_FILENAME;
 use serde_json::json;
 use std::fs;
 use std::path::Path;
@@ -19,6 +21,9 @@ fn write_default_example(cfg: &ProjectConfig, out: &Path) -> Result<()> {
     let role_root = out.join("roles").join("default");
     fs::create_dir_all(role_root.join("scenes").join("default"))
         .context("create roles/default/scenes/default")?;
+    if cfg.dual_core_enabled {
+        return write_dual_core_v3_role(cfg, &role_root, "default", "Example role (dual-core)");
+    }
     let settings = render_settings_json(cfg).context("settings.json")?;
     fs::write(role_root.join("settings.json"), settings).context("write settings.json")?;
     fs::write(
@@ -71,6 +76,23 @@ fn write_robot_soul_minimal(cfg: &ProjectConfig, out: &Path) -> Result<()> {
     fs::create_dir_all(role_root.join("prompts")).context("create prompts")?;
     fs::create_dir_all(role_root.join("scenes").join("default"))
         .context("create scenes/default")?;
+    if cfg.dual_core_enabled {
+        write_dual_core_v3_role(
+            cfg,
+            &role_root,
+            "default",
+            "Robot Soul Minimal (dual-core)",
+        )?;
+        fs::write(
+            role_root.join("prompts").join("system.md"),
+            include_str!(concat!(
+                env!("CARGO_MANIFEST_DIR"),
+                "/src/templates/role_packs/robot_soul_system.md"
+            )),
+        )
+        .context("write prompts/system.md")?;
+        return Ok(());
+    }
 
     let settings = render_settings_json(cfg).context("settings.json")?;
     fs::write(role_root.join("settings.json"), settings).context("write settings.json")?;
@@ -124,6 +146,43 @@ fn write_robot_soul_minimal(cfg: &ProjectConfig, out: &Path) -> Result<()> {
     Ok(())
 }
 
+fn write_dual_core_v3_role(
+    cfg: &ProjectConfig,
+    role_root: &Path,
+    role_id: &str,
+    name: &str,
+) -> Result<()> {
+    let bp = build_blueprint_v3_value(cfg, role_id, name);
+    fs::write(
+        role_root.join(PIPELINE_BLUEPRINT_FILENAME),
+        serde_json::to_string_pretty(&bp).context("serialize v3 blueprint")?,
+    )
+    .context("write pipeline.ocblueprint")?;
+    fs::write(
+        role_root.join("character.md"),
+        include_str!(concat!(
+            env!("CARGO_MANIFEST_DIR"),
+            "/src/templates/character.md"
+        )),
+    )
+    .context("write character.md")?;
+    let scene = json!({
+        "name": "Default",
+        "time_windows": [],
+        "keywords": [],
+        "events": []
+    });
+    fs::write(
+        role_root
+            .join("scenes")
+            .join("default")
+            .join("scene.json"),
+        serde_json::to_string_pretty(&scene).context("scene.json")?,
+    )
+    .context("write scene.json")?;
+    Ok(())
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -141,6 +200,21 @@ mod tests {
         assert!(p.is_file());
         let m = fs::read_to_string(dir.path().join("roles/default/manifest.json")).unwrap();
         assert!(m.contains("default_personality"));
+    }
+
+    #[test]
+    fn dual_core_writes_v3_blueprint_without_manifest() {
+        let mut cfg = preset_config("t", "full");
+        cfg.dual_core_enabled = true;
+        let dir = tempdir().unwrap();
+        write_default_example(&cfg, dir.path()).unwrap();
+        let bp = dir.path().join("roles/default/pipeline.ocblueprint");
+        assert!(bp.is_file());
+        assert!(!dir.path().join("roles/default/manifest.json").exists());
+        let raw = fs::read_to_string(bp).unwrap();
+        let v: serde_json::Value = serde_json::from_str(&raw).unwrap();
+        assert_eq!(v["schema_version"], 3);
+        assert_eq!(v["runtime_config"]["dual_core"]["enabled"], true);
     }
 
     #[test]

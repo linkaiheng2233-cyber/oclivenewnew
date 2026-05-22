@@ -139,6 +139,7 @@ pub fn apply_slot_attachments_to_registry(
             model: None,
             url: None,
             local_memory_provider_id: None,
+            zone: None,
         });
         entry.slot_type = slot_type.to_string();
         entry.label = label.clone();
@@ -209,6 +210,7 @@ mod tests {
                 model: None,
                 url: None,
                 local_memory_provider_id: None,
+                zone: None,
             },
         );
         let att = vec![SlotAttachmentDecl {

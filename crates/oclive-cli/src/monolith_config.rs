@@ -15,9 +15,17 @@ pub const SLOT_IDS: [&str; 7] = [
     "complex_emotion",
 ];
 
+#[derive(Debug, Clone, Default, Deserialize)]
+pub struct MonolithDualCoreSection {
+    #[serde(default)]
+    pub enabled: bool,
+}
+
 #[derive(Debug, Clone, Deserialize)]
 pub struct MonolithFile {
     pub monolith: MonolithSection,
+    #[serde(default)]
+    pub dual_core: MonolithDualCoreSection,
 }
 
 #[derive(Debug, Clone, Deserialize)]

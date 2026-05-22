@@ -199,6 +199,7 @@ fn cmd_add_slot(
             model: None,
             url: None,
             local_memory_provider_id: None,
+            zone: None,
         },
     );
     save_registry(role_dir, &reg)?;

@@ -178,6 +178,7 @@ fn plugin_backends_to_slot_registry(pb: &PluginBackends) -> BTreeMap<String, Slo
             model: None,
             url: None,
             local_memory_provider_id: None,
+            zone: None,
         },
     );
     reg.insert(
@@ -247,6 +248,7 @@ fn entry_for(
         } else {
             None
         },
+        zone: None,
     }
 }
 

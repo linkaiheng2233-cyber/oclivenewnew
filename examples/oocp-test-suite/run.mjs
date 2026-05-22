@@ -80,6 +80,21 @@ async function scenarioHandlers(base, rolePath) {
         throw new Error(`S12 kernel code must not be JSON-RPC integer form: ${code}`)
       }
     },
+    S13_dual_core_fallback: async () => {
+      const dualRole = join(__dirname, 'fixtures', 'dual-core-fallback')
+      const { res, body } = await fetchJson(`${base}/chat`, {
+        method: 'POST',
+        headers: { 'content-type': 'application/json' },
+        body: JSON.stringify({
+          role_path: dualRole,
+          message: 'OOCP S13 dual-core silent fallback',
+        }),
+      })
+      if (!res.ok) throw new Error(`S13 status ${res.status} ${JSON.stringify(body)}`)
+      if (typeof body?.reply !== 'string' || !body.reply.length) {
+        throw new Error('S13 missing reply after experimental fallback')
+      }
+    },
     S2: async () => {
       const { res, body } = await fetchJson(`${base}/chat`, {
         method: 'POST',
@@ -203,6 +218,8 @@ async function main() {
   }
 
   const handlers = await scenarioHandlers(base, rolePath)
+  const includeS13 =
+    argFlag('--include-s13') || process.env.OCLIVE_OOCP_INCLUDE_S13 === '1'
   const order = [
     'S0',
     'S1',
@@ -217,6 +234,7 @@ async function main() {
     'S10',
     'S11',
     'S12',
+    ...(includeS13 ? ['S13_dual_core_fallback'] : []),
   ]
 
   const scenarios = []

@@ -105,6 +105,8 @@ pub struct ProjectConfig {
     pub pipeline: crate::pipeline::PipelineArg,
     /// 自定义 `monolith.toml` 的 `weld_modules`（TUI 或 `--weld-modules`）。
     pub custom_weld_modules: Option<Vec<String>>,
+    /// 示例角色包写入 v3 蓝图并开启 `runtime_config.dual_core.enabled`。
+    pub dual_core_enabled: bool,
 }
 
 impl ProjectConfig {
@@ -157,6 +159,11 @@ impl ProjectConfig {
         }
         if self.run_monolith_bench_after_init {
             println!("After generation: auto Monolith bench (5 runs) → bench_results/report.json");
+        }
+        if self.dual_core_enabled {
+            println!(
+                "Dual-core runtime: roles/*/pipeline.ocblueprint schema_version 3 with runtime_config.dual_core.enabled"
+            );
         }
         if let Some(ks) = &self.kernel_source {
             println!(

@@ -4,7 +4,9 @@
 
 ## 内核工厂模板（`--template`）
 
-与 `init --help` 末尾模板表一致；显式传入的 **`--preset`** / **`--project-type`** / **`--monolith`** / **`--with-role-pack`** 优先于模板默认值。
+与 `init --help` 末尾模板表一致；显式传入的 **`--preset`** / **`--project-type`** / **`--monolith`** / **`--dual-core`** / **`--with-role-pack`** 优先于模板默认值。
+
+**`--dual-core`**（需生成 `roles/`）：示例包写入 **`pipeline.ocblueprint` `schema_version: 3`**，含 `runtime_config.dual_core.enabled: true` 与 `pipeline.stable` / `pipeline.experimental`（Stable 段仅供文档，宿主 Stable 核仍为 `co_present`）。与 **`--monolith`** 同用时在 `monolith.toml` 增加 `[dual_core] enabled = true`。
 
 | template | preset | Monolith | project-type | 默认角色包 |
 |----------|--------|----------|--------------|------------|

@@ -83,6 +83,9 @@ pub struct SlotRegistryEntry {
     pub url: Option<String>,
     #[serde(default)]
     pub local_memory_provider_id: Option<String>,
+    /// v3 可选：`stable` / `experimental`（架构图分区）。
+    #[serde(default)]
+    pub zone: Option<serde_json::Value>,
 }
 
 /// 校验通过后的 v2 蓝图加载结果（供宿主 `RoleStorage` 映射为 `Role`）。
@@ -111,7 +114,7 @@ struct BlueprintV2File {
 }
 
 #[derive(Debug, Clone, Deserialize)]
-struct BlueprintMeta {
+pub struct BlueprintMeta {
     pub id: String,
     pub name: String,
     pub version: String,
@@ -920,7 +923,9 @@ fn allowed_backends_for_type(slot_type: &str) -> &'static [&'static str] {
     }
 }
 
-fn meta_to_disk_manifest(meta: &BlueprintMeta) -> DiskRoleManifest {
+/// 将蓝图 `meta` 转为磁盘 manifest（v2/v3 共用）。
+#[must_use]
+pub fn meta_to_disk_manifest(meta: &BlueprintMeta) -> DiskRoleManifest {
     let default_personality = meta
         .personality
         .as_ref()
@@ -1091,6 +1096,7 @@ mod tests {
                 model: Some("model-a".into()),
                 url: None,
                 local_memory_provider_id: None,
+                zone: None,
             },
         );
         reg.insert(
@@ -1105,6 +1111,7 @@ mod tests {
                 model: None,
                 url: None,
                 local_memory_provider_id: None,
+                zone: None,
             },
         );
         let pb = slot_registry_to_plugin_backends(&reg);
@@ -1230,6 +1237,7 @@ mod tests {
                 model: None,
                 url: None,
                 local_memory_provider_id: None,
+                zone: None,
             },
         );
         write_role_pack_blueprint_slot_registry(&role, &reg, "999.0.0").unwrap();

@@ -84,6 +84,10 @@ pub struct InitArgs {
     #[arg(long)]
     pub monolith: bool,
 
+    /// Generate example role pack with schema v3 blueprint and runtime_config.dual_core.enabled (kernel_server + role pack)
+    #[arg(long)]
+    pub dual_core: bool,
+
     /// Monolith weld tier (written to monolith.toml weld_modules when Monolith is enabled)
     #[arg(long, value_enum)]
     pub monolith_preset: Option<MonolithPresetArg>,

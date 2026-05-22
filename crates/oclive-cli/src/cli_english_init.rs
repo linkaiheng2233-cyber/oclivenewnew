@@ -43,4 +43,6 @@ Factory templates (--template; explicit CLI flags override defaults):
 --monolith-bench-preset: post-init release bench (5 runs) to bench_results/report.json (non-blocking).
 
 --quick / -q: full preset, no Monolith, no roles, no --kernel-source; interactive asks name + output only.
+
+--dual-core: example role pack uses pipeline.ocblueprint schema_version 3 with runtime_config.dual_core.enabled (requires roles/; pair with --monolith for monolith.toml [dual_core]).
 "#;

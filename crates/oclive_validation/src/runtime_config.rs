@@ -1,20 +1,20 @@
 //! 蓝图 `runtime_config` 段（v3 目标 SSOT；v2 出现时不报错、宿主仍读 `meta` 过渡期字段）。
 
-use serde::Deserialize;
+use serde::{Deserialize, Serialize};
 
 use crate::disk_role_settings::{AutonomousSceneConfig, RemotePresenceConfig};
 use crate::manifest::{EvolutionConfigDisk, MemoryConfigDisk};
 use crate::validate::validate_interaction_mode_pack_setting;
 
 /// 双核开关（仅蓝图；默认关）。
-#[derive(Debug, Clone, Default, Deserialize, PartialEq, Eq)]
+#[derive(Debug, Clone, Default, Serialize, Deserialize, PartialEq, Eq)]
 pub struct DualCoreConfig {
     #[serde(default)]
     pub enabled: bool,
 }
 
 /// 系统运行时配置（蓝图专属，非角色包创作者视图）。
-#[derive(Debug, Clone, Default, Deserialize)]
+#[derive(Debug, Clone, Default, Serialize, Deserialize)]
 pub struct RuntimeConfig {
     #[serde(default)]
     pub interaction_mode: Option<String>,
