@@ -10,3 +10,7 @@
 | `oclive registry login` | `oclive config set OCLIVE_REGISTRY_URL …` 与 `oclive config set OCLIVE_REGISTRY_TOKEN …` |
 
 `oclive pack publish`（角色包 `.oclivepack`）**保留**，与模板发布无关。
+
+## Shell 补全（2026-05-20 复核）
+
+`oclive completions bash` 由 **`clap_complete::generate` + `Cli::command()`** 生成，覆盖当前全部顶层子命令；上表已移除命令**不会**出现在补全脚本中。
