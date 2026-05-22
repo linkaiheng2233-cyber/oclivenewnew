@@ -1,35 +1,13 @@
 //! 本地插件桥接抽象（Phase 2 骨架）：统一 provider 注册与版本门禁。
 
+pub use crate::local_plugin::{
+    LocalPluginCapability, LocalPluginProviderDescriptor, LOCAL_PLUGIN_SCHEMA_VERSION,
+};
 use oclive_validation::validate_min_runtime_version_for_local_plugin;
-use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
 use std::fs;
 use std::path::{Path, PathBuf};
 use std::sync::Arc;
-
-/// 本地插件规范版本（`schema_version`）当前支持值。
-pub const LOCAL_PLUGIN_SCHEMA_VERSION: u32 = 1;
-
-#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, Serialize, Deserialize)]
-#[serde(rename_all = "snake_case")]
-pub enum LocalPluginCapability {
-    Memory,
-    Emotion,
-    Event,
-    Prompt,
-    Llm,
-}
-
-#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
-pub struct LocalPluginProviderDescriptor {
-    pub provider_id: String,
-    /// `schema_version` / `min_runtime_version` 与文档规范保持一致，用于宿主门禁。
-    pub schema_version: u32,
-    #[serde(default)]
-    pub min_runtime_version: Option<String>,
-    #[serde(default)]
-    pub capabilities: Vec<LocalPluginCapability>,
-}
 
 /// Provider 发现桥接接口（后续可由 WASM / Native Process 两种实现提供）。
 pub trait LocalPluginBridge: Send + Sync {

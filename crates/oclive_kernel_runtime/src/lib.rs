@@ -5,9 +5,14 @@
 //! error types, DTOs/models, and repository trait ports.
 
 pub mod domain;
-pub mod error;
-pub mod models;
 pub mod utils;
+
+pub use oclive_kernel_types::complex_emotion;
+pub use oclive_kernel_types::emotion;
+pub use oclive_kernel_types::error;
+pub use oclive_kernel_types::local_plugin;
+pub use oclive_kernel_types::models;
+pub use oclive_kernel_types::policy;
 
 pub use oclive_validation as validation;
 

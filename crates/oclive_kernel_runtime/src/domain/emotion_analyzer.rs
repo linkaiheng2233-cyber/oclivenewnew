@@ -4,26 +4,7 @@
 
 use crate::error::Result;
 use crate::models::Emotion;
-
-/// 情绪分析结果
-#[derive(Debug, Clone, serde::Serialize, serde::Deserialize)]
-pub struct EmotionResult {
-    pub joy: f64,
-    pub sadness: f64,
-    pub anger: f64,
-    pub fear: f64,
-    pub surprise: f64,
-    pub disgust: f64,
-    pub neutral: f64,
-}
-
-impl EmotionResult {
-    /// 转为 `models::Emotion`（与 `EmotionAnalyzer::get_dominant_emotion` 一致）
-    #[must_use]
-    pub fn to_emotion(&self) -> Emotion {
-        EmotionAnalyzer::get_dominant_emotion(self)
-    }
-}
+pub use oclive_kernel_types::EmotionResult;
 
 /// 情绪分析器
 pub struct EmotionAnalyzer;
@@ -267,25 +248,7 @@ impl EmotionAnalyzer {
     /// 主导情绪类型
     #[must_use]
     pub fn get_dominant_emotion(result: &EmotionResult) -> Emotion {
-        let emotions = [
-            (result.joy, Emotion::Happy),
-            (result.sadness, Emotion::Sad),
-            (result.anger, Emotion::Angry),
-            (result.fear, Emotion::Confused),
-            (result.surprise, Emotion::Excited),
-            (result.disgust, Emotion::Confused),
-        ];
-
-        let best = emotions
-            .iter()
-            .max_by(|a, b| a.0.partial_cmp(&b.0).unwrap_or(std::cmp::Ordering::Equal))
-            .map(|(s, e)| (*s, e.clone()))
-            .unwrap_or((0.0, Emotion::Neutral));
-        if result.neutral > best.0 {
-            Emotion::Neutral
-        } else {
-            best.1
-        }
+        result.dominant_emotion()
     }
 
     /// 非中性情绪维度的最大分量（归一化后，与 `neutral` 互补）
