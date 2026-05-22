@@ -100,6 +100,25 @@
 | [TESTING_GUIDE.md](../creator-docs/testing/TESTING_GUIDE.md) 结果解读章节 | **已完成** |
 | 双核调试日志（`DualPipelineRunner`） | **已完成** |
 
+## 代码质量收尾（2026-05-22）
+
+| 项 | 状态 |
+|----|------|
+| `oclive_kernel_types` 公开导出审计（`lib.rs` 约定 + `Role` 谓词文档） | **已完成** |
+| `oclive_kernel_contracts` trait 职责一览 | **已完成** |
+| 编排错误去重（`ProcessMessageError::dual_core_*`） | **已完成** |
+| `domain/README.md` 依赖方向与已知适配层 | **已完成** |
+| 双核注册表 `pub(crate)` 收紧 | **已完成** |
+| 核心 / 双核 / `AppError` 注释增强 | **已完成** |
+
+### 代码质量验证（2026-05-22）
+
+| 检查 | 结果 |
+|------|------|
+| `cargo clippy --workspace --all-targets --all-features -- -D warnings` | ✅ |
+| `cargo test -p oclivenewnew-tauri --lib` | ✅ 127 tests |
+| `npm run test:unit` | ✅ 22 tests |
+
 ### 最终精修验证（2026-05-22）
 
 | 检查 | 结果 |
