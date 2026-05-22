@@ -268,12 +268,7 @@ fn derive_confidence(
     ((rule_base + impact_hint) / 2.0).clamp(0.0, 1.0)
 }
 
-#[derive(Clone, Debug, serde::Serialize, serde::Deserialize)]
-pub struct EventImpactEstimate {
-    pub event_type: EventType,
-    pub impact_factor: f64,
-    pub confidence: f32,
-}
+pub use oclive_kernel_runtime::EventImpactEstimate;
 
 fn build_event_impact_prompt(
     user_message: &str,

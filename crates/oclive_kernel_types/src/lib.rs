@@ -2,16 +2,20 @@
 //!
 //! 稳定 API：通过本 crate 根路径或子模块 [`models`]、[`error`] 引用；避免依赖未文档化的内部 helper。
 
+pub mod agent;
 pub mod complex_emotion;
 pub mod emotion;
 pub mod error;
+pub mod event_impact;
 pub mod local_plugin;
 pub mod memory_retrieval;
 pub mod models;
 pub mod policy;
 pub mod prompt;
 
+pub use agent::{AgentInput, AgentOutput};
 pub use complex_emotion::{ComplexEmotionInput, ComplexEmotionOutput};
+pub use event_impact::EventImpactEstimate;
 pub use emotion::EmotionResult;
 pub use error::{
     http_chat_codes, AppError, KernelErrorBody, Result,
@@ -52,8 +56,8 @@ pub use models::{
     personality::PersonalityVector,
     plugin_backends::*,
     role::{
-        EvolutionBounds, EvolutionConfig, LifeState, MemoryConfig, PersonalityDefaults, Role,
-        UserRelation,
+        EvolutionBounds, EvolutionConfig, LifeState, MemoryConfig, PersonalityDefaults,
+        PersonalitySource, Role, UserRelation,
     },
     role_manifest_disk::{disk_manifest_from_role, disk_manifest_to_role, DiskRoleManifest},
     role_settings_disk::{disk_role_settings_from_role, DiskRoleSettings},

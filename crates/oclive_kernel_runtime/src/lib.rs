@@ -15,9 +15,10 @@ pub use oclive_validation as validation;
 // 计划在后续次要版本收紧 surface，请新代码优先依赖 `oclive_kernel_types` / `oclive_kernel_contracts`。
 pub use oclive_kernel_types::*;
 pub use oclive_kernel_contracts::{
-    self as kernel_contracts, ComplexEmotionProvider, EmotionPolicy, EventPolicy,
-    FavorabilityRepository, LlmClient, LocalPluginBridge, MemoryPolicy, MemoryRepository,
-    MemoryRetrieval, PluginHostPort, PromptAssembler, SlotRegistryResolver, UserEmotionAnalyzer,
+    self as kernel_contracts, AgentProvider, ComplexEmotionProvider, EmotionPolicy,
+    EventEstimator, EventPolicy, FavorabilityRepository, LlmClient, LocalPluginBridge, MemoryPolicy,
+    MemoryRepository, MemoryRetrieval, PluginHostPort, PromptAssembler, SlotRegistryResolver,
+    UserEmotionAnalyzer,
 };
 pub use oclive_kernel_types::{self as kernel_types};
 
