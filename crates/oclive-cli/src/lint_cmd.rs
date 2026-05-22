@@ -150,9 +150,10 @@ fn lint_cargo_toml(root: &Path, items: &mut Vec<LintItem>) {
             items.push(warn(
                 "cargo_meta",
                 format!("consider setting [package].{key}"),
-                Some(format!(
+                Some(
                     "cargo run -p oclive-cli -- init --author \"…\" --license MIT -o .  # or edit Cargo.toml"
-                )),
+                        .to_string(),
+                ),
             ));
         }
     }
