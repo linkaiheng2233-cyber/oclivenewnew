@@ -15,7 +15,7 @@
 
 | 组件 | 职责 | 面向 |
 |------|------|------|
-| **角色包** | 角色身份、人格、关系、提示词与场景**内容**、回复质量锚点 | **初级创作者** |
+| **角色包** | 角色身份、人格、关系、提示词与场景**内容** | **初级创作者** |
 | **蓝图** | 槽位实例、后端路由、模型名、交互/记忆/远程策略、双核开关等**系统配置** | **高级开发者 / 宿主管理员** |
 
 **物理落盘（今日）**：v2 仍常用**同一文件** `pipeline.ocblueprint`（`meta` + `slot_registry` + 可选 `groups`）。**逻辑上**分责；编写器 / CLI 应按角色分视图编辑，避免初级创作者改 `slot_registry`。
@@ -39,7 +39,6 @@
 | `relations` | 用户关系定义 |
 | `default_relation` | 默认关系 id |
 | `scenes` | 场景 id 列表（与 `scenes/` 目录一致） |
-| `reply_quality_anchor` | 回复质量锚点全文（Prompt 注入） |
 
 可选创作者向 **`meta`**（剧情/人设，非引擎路由）：
 
@@ -64,16 +63,10 @@
 
 写入 **`meta` 但属系统配置**（今日宿主仍从 `meta` 读取，**目标**迁至 `runtime_config`，见 §4）：
 
-- `interaction_mode`
-- `memory_config`
-- `identity_binding`
-- `evolution`（除 `personality_source` 外的数值策略）
-- `ollama_model` / `model`
-- `remote_presence` / `autonomous_scene`
-- `knowledge`（引擎检索配置块）
-- `min_runtime_version` / `dev_only`
+- 已迁至 **`runtime_config.*`**（见 §3.3）：`interaction_mode`、`memory_config`、`reply_quality_anchor`、`remote_fallback_to_builtin`（包级建议）、`dual_core` 等
+- 过渡期仍可能出现在 **`meta.*`**（宿主只读兼容）
 
-**禁止**创作者包内单独开启双核（见 §5）。
+**禁止**创作者包内单独开启双核（见 §5.1）。
 
 ---
 
@@ -90,7 +83,20 @@
 
 **禁止落盘**：`module_relations`、`steps`、`entry`（校验报错；运行时派生）。
 
-### 3.2 自 `settings.json` 剥离的引擎字段（legacy → v2 蓝图）
+### 3.3 `runtime_config`（蓝图 · v3 目标 SSOT）
+
+| 子字段 | 说明 |
+|--------|------|
+| `interaction_mode` | `immersive` \| `pure_chat` |
+| `memory_config` | 记忆权重与场景策略 |
+| `reply_quality_anchor` | 回复质量锚点全文 |
+| `remote_fallback_to_builtin` | 包级 Remote 降级建议（宿主全局仍以 `app_settings` 为准） |
+| `dual_core.enabled` | 双核开关，默认 **`false`** |
+| `identity_binding` / `evolution` / `ollama_model` / `remote_presence` / `autonomous_scene` | 引擎策略（可选） |
+
+v2 文件若含 `runtime_config`：`pack validate` **警告并忽略**；请升 **`schema_version: 3`**。
+
+### 3.4 自 `settings.json` 剥离的引擎字段（legacy → 蓝图）
 
 | legacy `settings.json` | v2 目标落点 |
 |------------------------|-------------|
@@ -118,24 +124,35 @@
 |----|------|------|
 | 文件 | 单文件 `pipeline.ocblueprint` | 可选拆 `role.meta.json` + `pipeline.ocblueprint`（未排期） |
 | 引擎字段 | 多在 `meta.*` | 顶层 **`runtime_config`**（v3 草案） |
-| CLI | `pack validate` 全量 v2 | 计划 **`--profile creator`** 仅校验 §2 子集 + 目录 |
+| CLI | `pack validate` 全量 v2/v3 | **`--profile creator`** 已实现（§2 子集 + `prompts/`） |
 | 编写器 | 全字段编辑 | 默认「角色」视图 / 高级「蓝图」视图 |
 
 **v2 与 v3 并存**：`schema_version: 3` 不自动升级 v2 包（见 [DUAL_CORE_CURSOR_HANDOFF.md](DUAL_CORE_CURSOR_HANDOFF.md) Q10）。
 
 ---
 
-## 5. 双核开关 `dual_core.enabled`
+## 5. 双核与角色包
+
+### 5.1 双核启用条件
 
 | 决议 | 说明 |
 |------|------|
-| **归属** | **蓝图**，非角色包创作者字段 |
-| **字段** | `pipeline.ocblueprint` → **`runtime_config.dual_core.enabled`**（v3 / RFC；默认 **`false`**） |
-| **legacy** | 旧包仅 **`settings.json`** 不出现该键；双核由 **`oclive init --dual-core`** 生成模板 |
-| **与 Q15** | 创作者**不得**在分发包中单独 `enabled: true` 开启双核；仅宿主管理员 / 集成方在蓝图或工程模板中显式开启 |
-| **与角色包** | 角色包只承载「灵魂」；开启实验核不改变人设字段语义 |
+| **归属** | **蓝图** `runtime_config.dual_core.enabled`，**非**角色包字段 |
+| **默认** | **`false`**；与 Remote 降级一样对终端用户**静默** |
+| **创作者** | **不得**在面向初级创作者的分发包中单独置 `enabled: true` |
+| **开启方** | 宿主管理员、`oclive init --dual-core` 工程模板、集成方蓝图 |
+| **legacy** | **`settings.json` 不含** `dual_core` |
 
-详见 [RFC_OCLIVE_DUAL_CORE_DUAL_MODE.md](../creator-docs/rfc/RFC_OCLIVE_DUAL_CORE_DUAL_MODE.md) · [DUAL_CORE_CURSOR_HANDOFF.md §九](DUAL_CORE_CURSOR_HANDOFF.md#九已决事项2026-05-对齐)。
+### 5.2 Experimental 核与角色包
+
+| 项 | 说明 |
+|----|------|
+| **角色包** | 只提供 Stable 灵魂（`meta` 子集、`prompts/`、`scenes/` 内容） |
+| **Experimental** | `pipeline.experimental` + 开放 `type` 由**开发者蓝图**配置，非入门创作者职责 |
+| **P4 运行时** | 仅 **`PluginHost` 七种 type** 可执行；其余 type 校验可过、运行时报未实现（Q20） |
+| **省略 `pipeline.stable`** | Stable 仍走 **`co_present` 硬编码**（Q19） |
+
+详见 [RFC_OCLIVE_DUAL_CORE_DUAL_MODE.md](../creator-docs/rfc/RFC_OCLIVE_DUAL_CORE_DUAL_MODE.md) · [DUAL_CORE_CURSOR_HANDOFF.md](DUAL_CORE_CURSOR_HANDOFF.md)。
 
 ---
 
