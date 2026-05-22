@@ -119,6 +119,14 @@ pub struct InitArgs {
     #[arg(long)]
     pub tui: bool,
 
+    /// Probe environment (Ollama / GPU / memory) and print recommended --preset / --monolith flags
+    #[arg(long)]
+    pub smart: bool,
+
+    /// Skip automatic environment recommendations in interactive init
+    #[arg(long)]
+    pub no_smart: bool,
+
     /// Custom pipeline order: default | emotion-first | memory-last
     #[arg(long, value_enum, default_value_t = PipelineArg::Default)]
     pub pipeline: PipelineArg,
@@ -765,6 +773,27 @@ pub fn run(args: InitArgs) -> Result<()> {
         return crate::init_from_existing::run_from_existing(existing, &args);
     }
 
+    if args.smart {
+        let probe = crate::env_probe::EnvironmentProbe::collect();
+        crate::env_probe::print_init_recommendations(&probe, args.project_name.trim());
+        if args.non_interactive && args.preset.is_none() {
+            return Ok(());
+        }
+    }
+
+    let show_auto_smart = !args.non_interactive
+        && !args.quiet
+        && !args.no_smart
+        && !args.smart
+        && !args.list_templates
+        && !args.check
+        && args.template_url.is_none()
+        && !args.quick;
+    if show_auto_smart {
+        let probe = crate::env_probe::EnvironmentProbe::collect();
+        crate::env_probe::print_init_recommendations(&probe, args.project_name.trim());
+    }
+
     if args.check {
         return crate::init_check::run_precheck(&args);
     }
@@ -893,6 +922,8 @@ mod template_tests {
             description: None,
             template_url: None,
             tui: false,
+            smart: false,
+            no_smart: true,
             pipeline: PipelineArg::Default,
             weld_modules: vec![],
             from_existing: None,
@@ -938,6 +969,8 @@ mod template_tests {
             description: None,
             template_url: None,
             tui: false,
+            smart: false,
+            no_smart: true,
             pipeline: PipelineArg::Default,
             weld_modules: vec![],
             from_existing: None,
@@ -983,6 +1016,8 @@ mod template_tests {
             description: None,
             template_url: None,
             tui: false,
+            smart: false,
+            no_smart: true,
             pipeline: PipelineArg::Default,
             weld_modules: vec![],
             from_existing: None,
@@ -1033,6 +1068,8 @@ mod template_tests {
             description: None,
             template_url: None,
             tui: false,
+            smart: false,
+            no_smart: true,
             pipeline: PipelineArg::Default,
             weld_modules: vec![],
             from_existing: None,
