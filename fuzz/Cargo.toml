@@ -29,3 +29,9 @@ name = "fuzz_oocp_message"
 path = "fuzz_targets/fuzz_oocp_message.rs"
 test = false
 doc = false
+
+[[bin]]
+name = "fuzz_blueprint_v2"
+path = "fuzz_targets/fuzz_blueprint_v2.rs"
+test = false
+doc = false

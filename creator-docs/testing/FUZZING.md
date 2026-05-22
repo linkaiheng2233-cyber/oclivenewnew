@@ -22,7 +22,19 @@ cargo fuzz list
 cargo fuzz run fuzz_manifest_load -- -runs=100000
 cargo fuzz run fuzz_settings_parse -- -runs=100000
 cargo fuzz run fuzz_oocp_message -- -runs=100000
+cargo fuzz run fuzz_blueprint_v2 -- -runs=100000
 ```
+
+### `fuzz_blueprint_v2`
+
+对 **`pipeline.ocblueprint`** 随机 UTF-8 / JSON 输入调用 **`validate_blueprint_v2_json`**，断言解析路径 **不 panic**（非法输入返回 `Err` 即可）。
+
+```bash
+cd fuzz
+cargo fuzz run fuzz_blueprint_v2 -- -runs=100000
+```
+
+CI **`fuzz`** job 在 proptest 之后会尝试 **256 轮** libFuzzer 冒烟（`continue-on-error`）。
 
 ## 复现崩溃
 

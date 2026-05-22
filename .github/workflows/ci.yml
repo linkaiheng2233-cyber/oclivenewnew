@@ -113,6 +113,12 @@ jobs:
       - uses: dtolnay/rust-toolchain@stable
       - name: proptest fuzz harness
         run: cargo test -p oclive_validation --test proptest_fuzz_parsing
+      - name: cargo-fuzz blueprint v2 (smoke)
+        continue-on-error: true
+        run: |
+          rustup toolchain install nightly -y
+          cargo install cargo-fuzz --locked -q
+          cd fuzz && cargo +nightly fuzz run fuzz_blueprint_v2 -- -runs=256
 
   cli-bench:
     runs-on: ubuntu-latest
