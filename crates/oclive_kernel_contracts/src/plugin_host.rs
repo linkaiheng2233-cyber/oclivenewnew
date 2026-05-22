@@ -5,6 +5,16 @@ use std::collections::BTreeMap;
 
 /// 按角色包 / 会话有效后端解析各模块实现句柄。
 ///
+/// ## When to implement
+///
+/// - **谁**：Tauri 桌面宿主（`PluginHost`）、无头 `oclive_kernel_server` 等需要把 `Role` 变成 `ResolvedRolePlugins` 的运行时。
+/// - **何时**：编排层（`process_message` / `co_present`）需要按角色或会话解析插件句柄时。
+///
+/// ## When not to implement
+///
+/// - 单元测试可对 `ResolvedRolePlugins` 手工组装，无需 mock 整个宿主。
+/// - 纯数据结构校验（`oclive_validation`）不依赖本 trait。
+///
 /// # Examples
 ///
 /// ```no_run

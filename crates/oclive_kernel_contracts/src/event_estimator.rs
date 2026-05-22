@@ -12,6 +12,16 @@ use std::sync::Arc;
 
 /// Estimates narrative/event impact from dialogue, personality, and recent context.
 ///
+/// ## When to implement
+///
+/// - **谁**：事件检测后端（内置规则 + LLM、Remote HTTP 插件）。
+/// - **何时**：角色需要**事件系统**（影响性格演化、记忆权重等）时。
+///
+/// ## When not to implement
+///
+/// - 角色包关闭 event 槽或始终使用内置估计且无需替换时。
+/// - 仅做短回复、不持久化事件影响的实验角色可省略自定义实现。
+///
 /// # Examples
 ///
 /// ```no_run

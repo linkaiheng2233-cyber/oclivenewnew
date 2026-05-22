@@ -3,6 +3,15 @@
 use oclive_kernel_types::{Memory, MemoryContext, MemoryRetrievalInput, Result};
 
 /// Ranks and formats memories for prompt injection.
+///
+/// ## When to implement
+///
+/// - **谁**：记忆检索后端（内置排序、本地目录插件、Remote HTTP）。
+/// - **何时**：角色启用记忆系统并需在 Prompt 中注入相关记忆时。
+///
+/// ## When not to implement
+///
+/// - 无长期记忆、或固定使用内置 `BuiltinMemoryRetrieval` 且行为已满足需求时。
 pub trait MemoryRetrieval: Send + Sync {
     /// 按相关性对记忆排序。
     ///

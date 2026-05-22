@@ -5,6 +5,16 @@ use oclive_kernel_types::{AgentInput, AgentOutput, Result};
 
 /// Pluggable agent backend for tool-using or multi-step replies.
 ///
+/// ## When to implement
+///
+/// - **谁**：Agent / 工具调用后端（内置 ReAct、Remote、目录插件组合）。
+/// - **何时**：需要 **MCP / 函数调用 / 多步任务** 并在 `process_message` 入口短路处理时。
+///
+/// ## When not to implement
+///
+/// - 角色将 `agent` 槽设为 `none` 或仅走普通共景 LLM 对话时。
+/// - 不需要工具能力的角色包无需实现。
+///
 /// # Examples
 ///
 /// ```no_run

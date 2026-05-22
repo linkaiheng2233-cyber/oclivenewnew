@@ -3,6 +3,15 @@
 use oclive_kernel_types::{PromptInput, Result, Role};
 
 /// Builds the final LLM prompt string from role, scene, and turn context.
+///
+/// ## When to implement
+///
+/// - **谁**：Prompt 组装后端（内置模板、Remote、目录插件）。
+/// - **何时**：需要**自定义** Prompt 结构（段落顺序、条件块、top_topic）时。
+///
+/// ## When not to implement
+///
+/// - 默认 `BuiltinPromptAssembler` / `PromptBuilder` 已满足角色需求时，无需新实现。
 pub trait PromptAssembler: Send + Sync {
     /// 组装本回合 Prompt 正文。
     ///

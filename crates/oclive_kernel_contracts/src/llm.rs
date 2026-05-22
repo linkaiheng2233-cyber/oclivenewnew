@@ -5,6 +5,16 @@ use oclive_kernel_types::Result;
 
 /// Text generation port used by orchestration and policy (Ollama, remote, mock, etc.).
 ///
+/// ## When to implement
+///
+/// - **谁**：LLM 后端集成方（Ollama 客户端、Remote HTTP LLM、测试 `MockLlmClient`）。
+/// - **何时**：编排需要调用语言模型生成回复或 `generate_tag` 分类输出时。
+///
+/// ## When not to implement
+///
+/// - 仅使用宿主内置 Ollama / 已配置的 Remote，且不改推理路径时，**不必**自定义实现。
+/// - 不做任何 LLM 调用的工具链（纯规则回复）可跳过。
+///
 /// # Examples
 ///
 /// ```no_run

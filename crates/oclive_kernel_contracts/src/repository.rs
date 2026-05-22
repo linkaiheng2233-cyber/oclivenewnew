@@ -4,6 +4,15 @@ use async_trait::async_trait;
 use oclive_kernel_types::{Memory, Result};
 
 /// Persistence port for role-scoped long-term memories.
+///
+/// ## When to implement
+///
+/// - **谁**：宿主持久化层（如 `SqliteMemoryRepository`）。
+/// - **何时**：需要替换 SQLite / 换存储后端时。
+///
+/// ## When not to implement
+///
+/// - 插件作者通常**不**实现；记忆**检索**见 [`MemoryRetrieval`](crate::MemoryRetrieval)。
 #[async_trait]
 pub trait MemoryRepository: Send + Sync {
     /// 持久化一条长期记忆并返回其 ID。
@@ -57,6 +66,15 @@ pub trait MemoryRepository: Send + Sync {
 }
 
 /// Persistence port for role favorability scores.
+///
+/// ## When to implement
+///
+/// - **谁**：宿主持久化层（SQLite 等）。
+/// - **何时**：替换好感度存储或增加新字段时。
+///
+/// ## When not to implement
+///
+/// - 插件 / Remote 后端一般不实现本 trait。
 #[async_trait]
 pub trait FavorabilityRepository: Send + Sync {
     /// 读取角色当前好感度。

@@ -5,6 +5,15 @@ use oclive_kernel_types::{
 };
 
 /// Maps analyzed user emotion into the role's displayed [`Emotion`].
+///
+/// ## When to implement
+///
+/// - **谁**：替换默认性格/情绪映射规则的引擎作者。
+/// - **何时**：需要自定义「分析情绪 → 角色展示情绪」映射时。
+///
+/// ## When not to implement
+///
+/// - 使用内置 `DefaultEmotionPolicy` 且行为已满足需求时。
 pub trait EmotionPolicy: Send + Sync {
     /// 将分析得到的用户情绪映射为角色当前展示情绪。
     ///
@@ -19,6 +28,15 @@ pub trait EmotionPolicy: Send + Sync {
 }
 
 /// Detects in-turn events and supplies impact/confidence weights per [`EventType`].
+///
+/// ## When to implement
+///
+/// - **谁**：自定义事件检测 / 影响权重策略的作者。
+/// - **何时**：与 [`EventEstimator`](crate::EventEstimator) 配合，需改事件分类或权重表时。
+///
+/// ## When not to implement
+///
+/// - 完全依赖内置 `DefaultEventPolicy` + `BuiltinEventEstimator` 时。
 pub trait EventPolicy: Send + Sync {
     /// 检测本回合对话事件类型。
     ///
@@ -55,6 +73,15 @@ pub trait EventPolicy: Send + Sync {
 }
 
 /// Decides what to persist as long-term memory and with what importance.
+///
+/// ## When to implement
+///
+/// - **谁**：自定义「哪些内容写入长期记忆、重要性打分」的策略作者。
+/// - **何时**：需要按角色/场景改变记忆持久化规则时。
+///
+/// ## When not to implement
+///
+/// - 默认 `DefaultMemoryPolicy` 已满足角色设计时。
 pub trait MemoryPolicy: Send + Sync {
     /// 根据策略上下文构建待持久化的记忆正文。
     ///
