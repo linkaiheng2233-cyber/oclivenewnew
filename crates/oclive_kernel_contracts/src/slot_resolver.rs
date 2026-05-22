@@ -12,6 +12,15 @@ pub trait SlotRegistryResolver: Send + Sync {
     /// 解析结果（宿主一般为 `ResolvedRoleSlots`）。
     type ResolvedSlots: Clone + Send + Sync + 'static;
 
+    /// 按 `slot_registry` 条目解析多实例插件句柄。
+    ///
+    /// # Errors
+    ///
+    /// 无；本方法不返回 `Result`。
+    ///
+    /// # Panics
+    ///
+    /// 不 panic。
     fn resolve(
         &self,
         registry: &Self::Registry,

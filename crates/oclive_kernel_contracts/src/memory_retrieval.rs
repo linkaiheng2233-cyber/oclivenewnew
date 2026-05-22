@@ -9,11 +9,43 @@ pub trait MemoryRetrieval: Send + Sync {
     /// # Errors
     ///
     /// 实现方在检索/排序失败时返回 [`Result`] 的 `Err` 变体。
+    ///
+    /// # Panics
+    ///
+    /// 不 panic。
     fn rank_memories(&self, input: MemoryRetrievalInput<'_>) -> Result<Vec<Memory>>;
+
+    /// 将记忆列表格式化为可注入 Prompt 的上下文。
+    ///
+    /// # Errors
+    ///
+    /// 无；本方法不返回 `Result`。
+    ///
+    /// # Panics
+    ///
+    /// 不 panic。
     fn build_context(&self, memories: &[Memory], max_tokens: usize) -> MemoryContext;
+
+    /// 按关键词在已有记忆中搜索。
+    ///
+    /// # Errors
+    ///
+    /// 无；本方法不返回 `Result`。
+    ///
+    /// # Panics
+    ///
+    /// 不 panic。
     fn search_memories(&self, keyword: &str, memories: &[Memory]) -> Vec<Memory>;
 
     /// Telemetry hook: local-plugin retrieval may expose the selected `provider_id` (default `None`).
+    ///
+    /// # Errors
+    ///
+    /// 无；本方法不返回 `Result`。
+    ///
+    /// # Panics
+    ///
+    /// 不 panic。
     #[must_use]
     fn diagnostic_local_provider_id(&self) -> Option<&str> {
         None
