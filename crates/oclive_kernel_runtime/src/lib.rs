@@ -3,9 +3,11 @@
 //! - **纯数据**：[`oclive_kernel_types`]
 //! - **trait 端口**：[`oclive_kernel_contracts`]
 //! - **本 crate**：领域引擎实现与 HTTP 边界常量（主编排仍在 `oclivenewnew-tauri`）
+//!
+//! `domain` 模块为 **oclivenewnew-tauri 兼容** 而保持 `pub`；新下游请优先依赖 `kernel_types` / `kernel_contracts`。
 
 pub mod domain;
-pub mod utils;
+pub(crate) mod utils;
 
 pub use oclive_validation as validation;
 
@@ -14,10 +16,12 @@ pub use oclive_validation as validation;
 pub use oclive_kernel_types::*;
 pub use oclive_kernel_contracts::{
     self as kernel_contracts, ComplexEmotionProvider, EmotionPolicy, EventPolicy,
-    FavorabilityRepository, LocalPluginBridge, MemoryPolicy, MemoryRepository, MemoryRetrieval,
-    PromptAssembler, UserEmotionAnalyzer,
+    FavorabilityRepository, LlmClient, LocalPluginBridge, MemoryPolicy, MemoryRepository,
+    MemoryRetrieval, PluginHostPort, PromptAssembler, SlotRegistryResolver, UserEmotionAnalyzer,
 };
 pub use oclive_kernel_types::{self as kernel_types};
+
+pub use utils::json_loose::extract_json_object;
 
 /// Runtime API / contract revision (bump when HTTP or DTO breaking changes ship).
 pub const RUNTIME_API_VERSION: &str = "0.2.0";
