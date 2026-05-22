@@ -1,6 +1,7 @@
 //! `oclive lint`: static project health checks.
 
 use super::lint_deps::run_deps_audit;
+use super::lint_deny::run_deny_check;
 use anyhow::Result;
 use clap::Parser;
 use serde::Serialize;
@@ -20,6 +21,10 @@ pub struct LintArgs {
     /// Check `.github/workflows/ci.yml` for cargo-audit job configuration
     #[arg(long = "audit-ci")]
     pub audit_ci: bool,
+
+    /// License compliance and duplicate deps (`cargo deny check licenses` / `bans`)
+    #[arg(long)]
+    pub deny: bool,
 }
 
 #[derive(Serialize, Clone)]
@@ -28,7 +33,7 @@ pub(super) struct LintItem {
     pub(super) check: String,
     pub(super) message: String,
     #[serde(skip_serializing_if = "Option::is_none")]
-    fix: Option<String>,
+    pub(super) fix: Option<String>,
 }
 
 /// Run static project health checks (or `--deps` / `--audit-ci` modes).
@@ -43,6 +48,9 @@ pub fn run(args: LintArgs) -> Result<()> {
     }
     if args.deps {
         return run_deps_audit(&root, args.json);
+    }
+    if args.deny {
+        return run_deny_check(&root, args.json);
     }
     let mut items = Vec::new();
     for (dir, name) in [

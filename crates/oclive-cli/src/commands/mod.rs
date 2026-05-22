@@ -6,3 +6,4 @@ pub mod bench_stress;
 pub mod init;
 pub mod lint;
 pub mod lint_deps;
+pub mod lint_deny;
