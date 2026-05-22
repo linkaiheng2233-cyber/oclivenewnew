@@ -37,7 +37,7 @@ cargo run -p oclive-cli -- init --help
 | 项目初始化 | `init` | 模板、`--preset`、`--monolith`、`--smart`（环境推荐）、`--with-role-pack`、`--kernel-source`、`--quick` 等 |
 | 构建与基准 | `build`、`bench` | 标准版 + 焊接版；`--save`、`--regression`、`--compare-versions` |
 | 角色包 | `pack create` / `validate` / `publish` | 创建、校验、`.oclivepack` 打包 |
-| 插件 | `plugin create` / `install` / `uninstall` / `test` | 脚手架与工程内安装（发现安装见 **market**） |
+| 插件 | `plugin create` / `install` / `uninstall` / `test` / `manage` | 脚手架与工程内安装；**manage** 为高级槽位/蓝图（发现安装见 **market**） |
 | 环境 | `doctor`（`--fix`）、`config` | 诊断与 `~/.oclive/config.toml` |
 | 质量 | `test`、`lint`、`ci init` / `ci check` | 回归（彩色摘要 / 通过率 / 耗时）；`lint` 人类输出同风格（`lint result: ok. N passed. 0 failed.`）；CI 模板含 audit / deny / loom |
 
@@ -363,6 +363,41 @@ cargo run -p oclive-cli -- plugin create my-plugin
 **`--provides`**：`llm` | `memory` | `emotion` | `event` | `prompt` | `agent` | `complex_emotion`（可重复）。输出目录默认为 `./plugins/`；最终包路径为 `<output>/<plugin_id>/`（`id` 由名称 slug 为 `com.oclive.plugin.<name>`）。
 
 生成 manifest 经 **`oclive_validation`** 权限校验（目录插件）。快速上手见 [PLUGIN_AUTHOR_LEARNING_PATH.md](../plugin-and-architecture/PLUGIN_AUTHOR_LEARNING_PATH.md)。
+
+**`slot_attachment`**：在 `manifest.json` 中声明后，安装时加 **`--role <pack-dir>`** 自动更新 `pipeline.ocblueprint`（见 [PLUGIN_V1.md](../plugin-and-architecture/PLUGIN_V1.md)）。
+
+---
+
+## `plugin manage`：高级槽位与蓝图
+
+主应用默认**不**展示架构图；开发者用本子命令组管理 **`slot_registry`**。
+
+```bash
+# 列出槽位（默认 ./roles/ 下唯一包，或 --role）
+cargo run -p oclive-cli -- plugin manage list
+cargo run -p oclive-cli -- plugin manage list --role roles/mumu --json
+
+# 增删槽、改 backend、关联目录插件
+cargo run -p oclive-cli -- plugin manage add-slot llm "My LLM" --role roles/mumu
+cargo run -p oclive-cli -- plugin manage set-backend llm directory --role roles/mumu
+cargo run -p oclive-cli -- plugin manage link llm com.example.my-llm --role roles/mumu
+cargo run -p oclive-cli -- plugin manage unlink llm --role roles/mumu
+cargo run -p oclive-cli -- plugin manage remove-slot memory_2 --role roles/mumu
+
+# TUI 总览（环序示意 + 槽位列表）
+cargo run -p oclive-cli -- plugin manage --tui --role roles/mumu
+```
+
+| 子命令 | 说明 |
+|--------|------|
+| `list` | 列出 `slot_registry` 键、type、backend、plugin |
+| `add-slot <type> <label>` | 新增实例 |
+| `remove-slot <key>` | 删除实例（须保留至少一个 `llm`） |
+| `set-backend <key> <backend>` | 修改 backend |
+| `link <key> <plugin-id>` | 设为 `directory` 并写入 `plugin` |
+| `unlink <key>` | 清除 `plugin` |
+
+安装并自动装配：`cargo run -p oclive-cli -- plugin install <id> --role roles/mumu`。
 
 ---
 

@@ -41,6 +41,9 @@
 | `process` | `object?` | **`command`** / **`args[]`** / **`cwd?`**（`cwd` 相对插件根，可省略则默认为插件根） |
 | `ready_prefix` | `string?` | 默认 **`OCLIVE_READY`**；就绪行 = 此前缀 + 空格 + **JSON-RPC 根 URL**（须 `http://` 或 `https://`） |
 | `dependencies` | `object?` | 可选：其它目录插件 **`id` → semver 范围**（如 `">=1.0.0"`、`"^2.0.0"`）；缺失或版本不符时该插件在管理面板标记为依赖不满足且不可启用 |
+| `provides` | `string[]?` | 可选：声明提供的后端能力（如 `llm`、`memory`）；供简单管理列表展示与校验 |
+| `slot_attachment` | `object \| object[]?` | 可选：安装时自动写入角色包 **`slot_registry`**（见 [PLUGIN_V1.md](PLUGIN_V1.md)）；需配合 **`oclive plugin install --role`** |
+| `description` / `author` | `string?` | 可选：简单管理列表展开详情 |
 
 **懒启动**：首次需要该插件的 RPC（`plugin_backends` 六模块中 **`directory`**、`directory_plugin_invoke`、或需解析 shell manifest）时启动子进程，并缓存 **RPC URL** 与 **子进程**（当前实现不随角色切换回收子进程；应用退出时释放）。并发多次触发同一 `id` 时，宿主对单次启动加锁，避免重复子进程。
 

@@ -22,6 +22,8 @@
 
 ### 1.2 本计划不做（或延后）
 
+- **插件 UX 简化（2026-05）**：主应用默认 **SimplePluginManager**（已安装列表）；`slot_attachment` + `oclive plugin install --role` 自动装配；架构图/多槽位默认迁至 **`oclive plugin manage`**（`--tui`）。见 [PLUGIN_V1.md](../creator-docs/plugin-and-architecture/PLUGIN_V1.md)「简洁插件管理」。
+
 - VAD / Big Five 人格改造（未来 RFC）
 - `co_present` 动态多实例（**P4**，确认前不启动）
 - pack-editor / launcher UI（文档预留）

@@ -444,6 +444,35 @@ TypeScript 侧 `SendMessageResponse`（`src/utils/tauri-api.ts`）必须与 `mod
 - **MCP**：与目录插件 manifest 无关；按 `{app_data}/mcp-servers/*.json` 的 server **`id`** 检查 **`mcp:http`** / **`mcp:stdio`**。
 - **持久化**：`{app_data}/high_risk_grants.json` 顶层键与权限标识一致（如 `"process:spawn": ["com.example.myplugin"]`）。Tauri **`grant_high_risk_capability`** 的 `kind` 接受规范标识；旧键名 `mcp_http` 等仍可读。
 
+### `slot_attachment`（可选 · 自动装配蓝图）
+
+插件作者在 **`manifest.json`** 中声明 **`slot_attachment`**（单对象或数组），安装时由 **`oclive plugin install <id> --role <pack-dir>`** 写入角色包 **`pipeline.ocblueprint` → `slot_registry`**。主应用默认**不**展示架构图；高级槽位编辑见 **`oclive plugin manage`**（含 **`--tui`**）。
+
+```json
+{
+  "provides": ["llm"],
+  "slot_attachment": {
+    "type": "llm",
+    "backend": "directory",
+    "label": "llama.cpp LLM",
+    "position": 6
+  }
+}
+```
+
+| 字段 | 说明 |
+|------|------|
+| `type` | 槽位类型：`memory` / `emotion` / `event` / `prompt` / `llm` / `agent` / `complex_emotion` |
+| `backend` | 可选，默认 `directory` |
+| `label` | 可选，蓝图实例展示名 |
+| `position` | 可选，实例排序；缺省 `0` |
+
+校验：`crates/oclive_validation/src/plugin_slot_attachment.rs`。未声明 `slot_attachment` 时仅复制插件目录，需手动 **`oclive plugin manage link`**。
+
+### 主应用：简洁插件管理（默认）
+
+**Ctrl+Shift+F** 默认打开**已安装插件列表**（开关 / 卸载 / 本地 zip / 市场入口），无架构图与槽位连线。设置中开启 **「高级插件管理」** 后恢复 **V1 专业面板**（含架构图）。折叠区 **「打开高级插件管理」** 可随时进入。
+
 ### `plugin_dependencies`（可选）
 
 目录插件 `manifest.json` 可增加 **`plugin_dependencies`**：字符串数组，列出须先安装的其它插件 **`id`**。CLI **`oclive plugin install <id>`** 会拓扑排序后按序复制安装；**循环依赖**报错；**`plugin uninstall`** 若仍有其它插件声明依赖该 id 会给出警告。
