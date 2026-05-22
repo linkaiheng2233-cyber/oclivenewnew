@@ -7,7 +7,7 @@ export type NodeLayoutEntry = {
   h?: number;
 };
 
-const STORAGE_KEY = "oclive-arch-graph-layout-v3";
+const STORAGE_KEY = "oclive-arch-graph-layout-v4";
 
 export const ARCH_NODE_DEFAULT_SIZE: Record<
   string,

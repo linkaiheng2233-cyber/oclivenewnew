@@ -3,12 +3,17 @@ import { Position, type Node } from "@vue-flow/core";
 import { layoutOnRing, pointOnRay } from "../lib/radialGraphLayout";
 import { normalizeBackendKind, type BackendKind } from "../lib/graphEditorTheme";
 import {
+  buildBlueprintArchitectureEdges,
+  orderedBusFacTypes,
+  registryHasComplexEmotionSlot,
+  sortSlotsForArchitectureRing,
+} from "../lib/archGraphTopology";
+import {
   primaryPluginId,
   SLOT_BACKEND_OPTIONS,
   SLOT_TYPE_ICONS,
   SLOT_TYPE_LABEL_KEYS,
   sortedSlotRegistryEntries,
-  uniqueSlotTypes,
   type SlotRegistryEntry,
   type SlotRegistryMap,
   type SlotGroupsMap,
@@ -228,8 +233,7 @@ export function useArchitectureGraphModel() {
 
   function buildBlueprintNodes(registry: SlotRegistryMap): Node[] {
     const list: Node[] = [];
-    const entries = sortedSlotRegistryEntries(registry);
-    const busTypes = uniqueSlotTypes(registry);
+    const entries = sortSlotsForArchitectureRing(registry);
     const groups: SlotGroupsMap = blueprintGroupsPack.value ?? {};
     const memberToGroup: Record<string, string> = {};
     for (const [gid, g] of Object.entries(groups)) {
@@ -251,8 +255,9 @@ export function useArchitectureGraphModel() {
       data: {
         labelKey: "pluginWorkbench.graph.facilityBus",
         hintKey: "pluginWorkbench.graph.facilityBusHintBlueprint",
-        moduleKeys: busTypes,
+        moduleKeys: orderedBusFacTypes(registry),
         blueprintV2: true,
+        slotCount: entries.length,
       },
       draggable: true,
     });
@@ -419,6 +424,23 @@ export function useArchitectureGraphModel() {
       }
     }
 
+    if (!registryHasComplexEmotionSlot(registry)) {
+      const angle = Math.PI / 2 + 0.18;
+      const cx0 = HUB_CX + Math.cos(angle) * (MODULE_RING * 0.78);
+      const cy0 = HUB_CY + Math.sin(angle) * (MODULE_RING * 0.78);
+      list.push({
+        id: ARCH_GRAPH_COMPLEX_ID,
+        type: "archComplex",
+        position: { x: cx0 - 100, y: cy0 - NODE_H / 2 },
+        data: {
+          labelKey: "pluginWorkbench.graph.complexEmotion",
+          hintKey: "pluginWorkbench.graph.complexHint",
+        },
+        draggable: true,
+        zIndex: 1,
+      });
+    }
+
     return list;
   }
 
@@ -427,6 +449,17 @@ export function useArchitectureGraphModel() {
       ...collapsedGroups.value,
       [groupId]: !collapsedGroups.value[groupId],
     };
+  }
+
+  /** 架构图：展开所有 directory 槽位下的目录插件链（第三层连线可见）。 */
+  function expandAllDirectoryPlugins(registry: SlotRegistryMap) {
+    const next = { ...expandedPlugins.value };
+    for (const [slotKey, entry] of Object.entries(registry)) {
+      if (slotBackendKind(entry) === "directory") {
+        next[slotKey] = true;
+      }
+    }
+    expandedPlugins.value = next;
   }
 
   const nodes = computed<Node[]>(() => {
@@ -495,58 +528,12 @@ export function useArchitectureGraphModel() {
     return out;
   }
 
-  /** v2：示意连线由 slot_registry 派生；勿写入 pipeline.ocblueprint（无 module_relations 字段）。 */
-  function buildBlueprintEdges(registry: SlotRegistryMap) {
-    const out = [];
-    const entries = sortedSlotRegistryEntries(registry);
-
-    out.push({
-      id: "kernel-bus",
-      source: ARCH_GRAPH_KERNEL_ID,
-      target: ARCH_GRAPH_BUS_ID,
-      sourceHandle: "pipeline",
-      targetHandle: "pipeline-in",
-      type: "archBackend",
-      deletable: false,
-      updatable: false,
-      data: { kind: "builtin", system: true },
-    });
-
-    for (const [slotKey, entry] of entries) {
-      const kind = slotBackendKind(entry);
-      out.push({
-        id: `bus-${slotKey}`,
-        source: ARCH_GRAPH_BUS_ID,
-        target: slotKey,
-        sourceHandle: `fac-${entry.type}`,
-        targetHandle: "backend-in",
-        type: "archBackend",
-        deletable: false,
-        updatable: false,
-        data: { kind, slotKey, slotType: entry.type, system: true },
-        animated: kind === "remote",
-      });
-      for (const pid of visiblePluginIds(slotKey, entry)) {
-        out.push({
-          id: `slot-${slotKey}-${pid}`,
-          source: slotKey,
-          target: `plugin:${pid}`,
-          sourceHandle: "plugin-out",
-          targetHandle: "plugin-in",
-          type: "archBackend",
-          deletable: false,
-          updatable: false,
-          data: { kind: "directory", slotKey, slotType: entry.type, system: true },
-        });
-      }
-    }
-
-    return out;
-  }
-
   const edges = computed(() => {
     if (usesBlueprint.value && slotRegistryEffective.value) {
-      return buildBlueprintEdges(slotRegistryEffective.value);
+      return buildBlueprintArchitectureEdges(
+        slotRegistryEffective.value,
+        (slotKey, entry) => visiblePluginIds(slotKey, entry),
+      );
     }
     return buildLegacyEdges();
   });
@@ -568,6 +555,7 @@ export function useArchitectureGraphModel() {
     hiddenPluginCount,
     togglePluginExpand,
     toggleGroupCollapse,
+    expandAllDirectoryPlugins,
     blueprintGroupsPack,
     worldSize: { w: WORLD_W, h: WORLD_H },
   };

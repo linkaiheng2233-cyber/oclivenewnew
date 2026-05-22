@@ -85,6 +85,7 @@ const {
   usesBlueprint,
   togglePluginExpand,
   toggleGroupCollapse,
+  expandAllDirectoryPlugins,
   hiddenPluginCount,
 } = useArchitectureGraphModel();
 
@@ -142,6 +143,44 @@ function onResetLayout() {
   syncGraphFromModel();
   showToast("success", t("pluginWorkbench.graph.layoutResetDone"));
 }
+
+function applyAutoWiringLayers(includePlugins: boolean) {
+  const registry = roleStore.roleInfo.slotRegistryEffective;
+  if (registry && Object.keys(registry).length > 0 && includePlugins) {
+    expandAllDirectoryPlugins(registry);
+  }
+  syncGraphFromModel();
+}
+
+function onAutoWireLayer(layer: 1 | 2 | 3) {
+  applyAutoWiringLayers(layer === 3);
+  const key =
+    layer === 1
+      ? "pluginWorkbench.graph.autoWireLayer1Done"
+      : layer === 2
+        ? "pluginWorkbench.graph.autoWireLayer2Done"
+        : "pluginWorkbench.graph.autoWireLayer3Done";
+  showToast("success", t(key));
+}
+
+let lastAutoWireRegistrySig = "";
+watch(
+  () => {
+    const reg = roleStore.roleInfo.slotRegistryEffective;
+    if (!usesBlueprint.value || !reg) return "";
+    return Object.entries(reg)
+      .map(([k, e]) => `${k}:${e.type}:${e.position}:${e.backend}`)
+      .sort()
+      .join("|");
+  },
+  (sig) => {
+    if (!sig || sig === lastAutoWireRegistrySig) return;
+    lastAutoWireRegistrySig = sig;
+    const reg = roleStore.roleInfo.slotRegistryEffective;
+    if (reg) applyAutoWiringLayers(true);
+  },
+  { immediate: true },
+);
 
 function onEdgesChangeBlueprint() {
   /* v2：边由 slot_registry 派生，忽略 Vue Flow 边变更 */
@@ -370,6 +409,33 @@ onMounted(syncGraphFromModel);
         {{ t("pluginWorkbench.graph.resetLayout") }}
       </button>
       <template v-if="usesBlueprint">
+        <button
+          type="button"
+          class="agf-tb-btn"
+          :disabled="busy"
+          :title="t('pluginWorkbench.graph.autoWireLayer1Hint')"
+          @click="onAutoWireLayer(1)"
+        >
+          {{ t("pluginWorkbench.graph.autoWireLayer1") }}
+        </button>
+        <button
+          type="button"
+          class="agf-tb-btn"
+          :disabled="busy"
+          :title="t('pluginWorkbench.graph.autoWireLayer2Hint')"
+          @click="onAutoWireLayer(2)"
+        >
+          {{ t("pluginWorkbench.graph.autoWireLayer2") }}
+        </button>
+        <button
+          type="button"
+          class="agf-tb-btn"
+          :disabled="busy"
+          :title="t('pluginWorkbench.graph.autoWireLayer3Hint')"
+          @click="onAutoWireLayer(3)"
+        >
+          {{ t("pluginWorkbench.graph.autoWireLayer3") }}
+        </button>
         <button
           type="button"
           class="agf-tb-btn"

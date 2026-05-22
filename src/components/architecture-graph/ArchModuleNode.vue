@@ -71,7 +71,7 @@ function onResetOverride() {
         class="agn-handle agn-handle--in"
       />
       <Handle
-        v-if="data?.backendKind === 'directory' && !blueprintV2"
+        v-if="data?.backendKind === 'directory'"
         id="plugin-out"
         type="source"
         :position="Position.Right"

@@ -46,7 +46,9 @@ function outTop(i: number, n: number): string {
       <div class="agn-head">
         <span class="agn-head-title">{{ t("pluginWorkbench.graph.facilityBus") }}</span>
       </div>
-      <p class="agn-mono agn-bus-type">plugin_backends</p>
+      <p class="agn-mono agn-bus-type">
+        {{ data?.blueprintV2 ? "slot_registry" : "plugin_backends" }}
+      </p>
       <p class="agn-hint agn-bus-hint">{{ t("pluginWorkbench.graph.facilityBusHint") }}</p>
       <Handle
         v-for="(key, i) in moduleKeys"

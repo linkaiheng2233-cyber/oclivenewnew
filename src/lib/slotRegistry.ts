@@ -33,11 +33,12 @@ export const SLOT_TYPE_GROUP_COLORS: Record<string, string> = {
   agent: "#8b9db8",
 };
 
+/** 校验/列表排序；架构图环上顺序见 `archGraphTopology.ARCHITECTURE_RING_TYPE_ORDER`。 */
 export const SLOT_TYPE_ORDER = [
-  "emotion",
-  "complex_emotion",
-  "event",
   "memory",
+  "emotion",
+  "event",
+  "complex_emotion",
   "prompt",
   "llm",
   "agent",
