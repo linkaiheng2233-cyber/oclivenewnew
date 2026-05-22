@@ -2,6 +2,7 @@
 
 use crate::models::EventType;
 
+/// LLM- or policy-derived estimate of how an event affects favorability/evolution.
 #[derive(Clone, Debug, serde::Serialize, serde::Deserialize)]
 pub struct EventImpactEstimate {
     pub event_type: EventType,

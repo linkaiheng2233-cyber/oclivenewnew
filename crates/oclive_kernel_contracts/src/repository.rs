@@ -3,6 +3,7 @@
 use async_trait::async_trait;
 use oclive_kernel_types::{Memory, Result};
 
+/// Persistence port for role-scoped long-term memories.
 #[async_trait]
 pub trait MemoryRepository: Send + Sync {
     async fn save_memory(&self, role_id: &str, content: &str, importance: f64) -> Result<String>;
@@ -16,6 +17,7 @@ pub trait MemoryRepository: Send + Sync {
     ) -> Result<Vec<Memory>>;
 }
 
+/// Persistence port for role favorability scores.
 #[async_trait]
 pub trait FavorabilityRepository: Send + Sync {
     async fn get(&self, role_id: &str) -> Result<Option<f64>>;

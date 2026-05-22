@@ -1,5 +1,6 @@
 use serde::{Deserialize, Serialize};
 
+/// Role favorability score clamped to [-100, 100].
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct Favorability {
     pub role_id: String,

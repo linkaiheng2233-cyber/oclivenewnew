@@ -1,6 +1,7 @@
 use serde::{Deserialize, Serialize};
 use std::fmt;
 
+/// Discrete role-facing emotion label used in prompts and UI.
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
 pub enum Emotion {
     Happy,

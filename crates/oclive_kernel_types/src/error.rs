@@ -23,6 +23,7 @@ pub mod http_chat_codes {
     pub const LOAD_ROLE_TASK_PANIC: &str = "LOAD_ROLE_TASK_PANIC";
 }
 
+/// Unified kernel error type mapped to [`KernelErrorBody`] and machine `code` strings.
 #[derive(Error, Debug)]
 pub enum AppError {
     #[error("Database error: {0}")]

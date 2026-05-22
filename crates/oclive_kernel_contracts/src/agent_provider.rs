@@ -3,6 +3,7 @@
 use async_trait::async_trait;
 use oclive_kernel_types::{AgentInput, AgentOutput, Result};
 
+/// Pluggable agent backend for tool-using or multi-step replies.
 #[async_trait]
 pub trait AgentProvider: Send + Sync {
     async fn process(&self, input: AgentInput) -> Result<AgentOutput>;

@@ -1,6 +1,9 @@
-//! 内核纯数据结构：DTO、[`AppError`]、枚举与策略/插件描述符。
+//! # oclive_kernel_types
 //!
-//! 稳定 API：通过本 crate 根路径或子模块 [`models`]、[`error`] 引用；避免依赖未文档化的内部 helper。
+//! Pure data structures for the oclive kernel.
+//! All DTOs, error types, and configuration structs.
+//!
+//! Prefer importing from this crate root or [`models`] / [`error`]; avoid undocumented internal helpers.
 
 pub mod agent;
 pub mod complex_emotion;

@@ -1,4 +1,4 @@
-//! 前后端契约（Tauri invoke）
+//! HTTP / Tauri invoke request and response DTOs (field names are the API contract).
 
 use std::collections::BTreeMap;
 
@@ -15,6 +15,7 @@ use serde::{Deserialize, Serialize};
 pub const API_VERSION: u32 = 1;
 pub const SCHEMA_VERSION: u32 = 13;
 
+/// Primary chat invoke payload (`send_message`).
 #[derive(Debug, Deserialize)]
 pub struct SendMessageRequest {
     pub role_id: String,
@@ -26,6 +27,7 @@ pub struct SendMessageRequest {
     pub session_id: Option<String>,
 }
 
+/// Seven-dimensional emotion snapshot returned to the UI.
 #[derive(Debug, Serialize)]
 pub struct EmotionDto {
     pub joy: f32,
@@ -37,6 +39,7 @@ pub struct EmotionDto {
     pub neutral: f32,
 }
 
+/// Serialized detected event for the chat response payload.
 #[derive(Debug, Serialize)]
 pub struct DetectedEventDto {
     pub event_type: String,
@@ -52,6 +55,7 @@ pub enum PresenceMode {
     RemoteLife,
 }
 
+/// Primary chat invoke result (`send_message`); field `reply` is the assistant text.
 #[derive(Debug, Serialize)]
 pub struct SendMessageResponse {
     pub api_version: u32,

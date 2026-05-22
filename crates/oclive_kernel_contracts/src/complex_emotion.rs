@@ -2,6 +2,7 @@
 
 use oclive_kernel_types::{ComplexEmotionInput, ComplexEmotionOutput, Result};
 
+/// Resolves complex emotion labels and narrative hints for co-present turns.
 pub trait ComplexEmotionProvider: Send + Sync {
     /// # Errors
     ///

@@ -2,6 +2,7 @@
 
 use oclive_kernel_types::{Memory, MemoryContext, MemoryRetrievalInput, Result};
 
+/// Ranks and formats memories for prompt injection.
 pub trait MemoryRetrieval: Send + Sync {
     /// 按相关性对记忆排序。
     ///

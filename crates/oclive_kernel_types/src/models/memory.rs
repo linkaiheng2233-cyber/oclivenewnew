@@ -1,6 +1,7 @@
 use chrono::{DateTime, Utc};
 use serde::{Deserialize, Serialize};
 
+/// Persisted long-term memory row for a role.
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct Memory {
     pub id: String,
@@ -14,6 +15,7 @@ pub struct Memory {
     pub scene_id: Option<String>,
 }
 
+/// Ranked memories plus token budget metadata for prompt assembly.
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct MemoryContext {
     pub memories: Vec<Memory>,

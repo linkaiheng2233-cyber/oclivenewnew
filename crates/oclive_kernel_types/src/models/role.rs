@@ -131,6 +131,7 @@ pub struct LifeState {
     pub optional_scene_hint: Option<String>,
 }
 
+/// Loaded role pack aggregate (manifest + settings + derived runtime fields).
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct Role {
     pub id: String,

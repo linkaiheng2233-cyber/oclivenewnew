@@ -2,6 +2,7 @@
 
 use oclive_kernel_types::{PromptInput, Result, Role};
 
+/// Builds the final LLM prompt string from role, scene, and turn context.
 pub trait PromptAssembler: Send + Sync {
     /// 组装本回合 Prompt 正文。
     ///

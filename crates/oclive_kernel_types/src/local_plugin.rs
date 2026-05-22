@@ -5,6 +5,7 @@ use serde::{Deserialize, Serialize};
 /// 本地插件规范版本（`schema_version`）当前支持值。
 pub const LOCAL_PLUGIN_SCHEMA_VERSION: u32 = 1;
 
+/// Capability slot a local plugin provider can implement.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, Serialize, Deserialize)]
 #[serde(rename_all = "snake_case")]
 pub enum LocalPluginCapability {
@@ -15,6 +16,7 @@ pub enum LocalPluginCapability {
     Llm,
 }
 
+/// Discovered local plugin metadata (id, schema version, capabilities).
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 pub struct LocalPluginProviderDescriptor {
     pub provider_id: String,

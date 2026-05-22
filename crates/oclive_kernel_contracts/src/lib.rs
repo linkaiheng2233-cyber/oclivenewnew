@@ -1,4 +1,7 @@
-//! 内核核心 trait 端口：编排层与宿主通过本 crate 依赖抽象，不耦合具体实现。
+//! # oclive_kernel_contracts
+//!
+//! Core trait definitions for the oclive kernel.
+//! All abstractions that the orchestration layer depends on.
 
 pub(crate) mod agent_provider;
 pub(crate) mod complex_emotion;

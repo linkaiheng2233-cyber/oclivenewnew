@@ -3,6 +3,7 @@
 use async_trait::async_trait;
 use oclive_kernel_types::Result;
 
+/// Text generation port used by orchestration and policy (Ollama, remote, mock, etc.).
 #[async_trait]
 pub trait LlmClient: Send + Sync {
     async fn generate(&self, model: &str, prompt: &str) -> Result<String>;

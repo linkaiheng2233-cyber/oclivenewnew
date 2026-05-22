@@ -54,6 +54,14 @@
 | `src-tauri/domain/ports/` **无 trait 定义**（仅 re-export + `impl`） | 已落实；`SlotResolver` struct 仍在 `domain/slot_resolver.rs`，经 `SlotRegistryResolver` 端口化 |
 | 防腐层（`domain` → `ports` / `kernel_contracts`） | **完整**（2026-05-20） |
 
+## 精修收尾（2026-05-20）
+
+| 项 | 状态 |
+|----|------|
+| `oclive-cli` 子命令模块化（`commands/bench*`、`init*`、`lint*`） | 已落实 |
+| Tauri 去除对 `oclive_kernel_contracts` 的直接依赖（经 `oclive_kernel_runtime` re-export） | 已落实 |
+| `oclive_kernel_types` / `oclive_kernel_contracts` rustdoc（模块级 + 公开类型/trait 一句注释） | 已落实 |
+
 ## 最终收尾（2026-05-20）
 
 | 项 | 状态 |
@@ -67,14 +75,15 @@
 | `oclive doctor` v2 蓝图三项检查 | 已落实 |
 | 性能基线文档（v2 / matrix 说明） | 已更新 PERFORMANCE / LIGHTWEIGHT_PROFILE |
 
-### 验证（2026-05-22，第三批）
+### 验证（2026-05-22，第三批 + 精修）
 
 | 检查 | 结果 |
 |------|------|
-| `cargo clippy --workspace --all-targets --all-features -- -D warnings` | 通过 |
+| `cargo clippy --workspace --all-targets --all-features -- -D warnings` | 通过（精修后复验） |
 | `cargo test --workspace --lib` / `-p oclive-cli` / `-p oclivenewnew-tauri --lib` | 通过 |
 | `cargo test --workspace`（含 `tests/` 集成） | Windows 本机可能 `rlib format` 链接异常；以 CI Ubuntu 为准 |
-| `npm run test:unit` / `npm run build`（oclivenewnew） | 通过 |
+| `cargo doc --no-deps -p oclive_kernel_types -p oclive_kernel_contracts` | 通过 |
+| `npm run test:unit` / `npm run build`（oclivenewnew） | 通过（精修后复验） |
 
 ## 已知适配层（后续可拆）
 

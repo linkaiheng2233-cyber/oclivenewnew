@@ -10,6 +10,7 @@ use oclive_kernel_types::{
 };
 use std::sync::Arc;
 
+/// Estimates narrative/event impact from dialogue, personality, and recent context.
 #[async_trait]
 pub trait EventEstimator: Send + Sync {
     async fn estimate(

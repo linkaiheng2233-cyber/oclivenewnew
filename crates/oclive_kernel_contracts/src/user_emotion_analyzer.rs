@@ -2,6 +2,7 @@
 
 use oclive_kernel_types::{EmotionResult, Result};
 
+/// Analyzes user text into a seven-dimensional [`EmotionResult`].
 pub trait UserEmotionAnalyzer: Send + Sync {
     /// # Errors
     ///

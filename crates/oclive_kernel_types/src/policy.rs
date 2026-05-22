@@ -3,6 +3,7 @@
 use crate::models::Event;
 use serde::Deserialize;
 
+/// Settings for emotion hold/neutral behavior in the emotion policy port.
 #[derive(Debug, Clone, Deserialize)]
 #[serde(default, deny_unknown_fields)]
 pub struct EmotionPolicyConfig {
@@ -19,6 +20,7 @@ impl Default for EmotionPolicyConfig {
     }
 }
 
+/// Settings for memory filtering, importance, and FIFO cap in memory policy.
 #[derive(Debug, Clone, Deserialize)]
 #[serde(default, deny_unknown_fields)]
 pub struct MemoryPolicyConfig {
@@ -37,6 +39,7 @@ impl Default for MemoryPolicyConfig {
     }
 }
 
+/// Bundled emotion and memory policy configuration from role settings.
 #[derive(Debug, Clone, Default, Deserialize)]
 #[serde(default, deny_unknown_fields)]
 pub struct PolicyConfig {
@@ -44,6 +47,7 @@ pub struct PolicyConfig {
     pub memory: MemoryPolicyConfig,
 }
 
+/// Per-turn inputs passed into memory policy decisions.
 pub struct PolicyContext<'a> {
     pub role_id: &'a str,
     pub user_message: &'a str,
