@@ -128,6 +128,7 @@ cargo run -p oclive-cli -- completions bash > oclive.bash
 | **Z11** | `bench --stress` | 对运行中的内核 HTTP `/chat` 做并发压测（`--stress-concurrency` / `--stress-duration`） |
 | **Z12** | `test --ci-parity` | 本地按 `.github/workflows/ci.yml` 顺序执行 fmt/clippy/build/test 等 |
 | **Z13** | `lint --deps` | `cargo audit` + lockfile 中 yanked 包检查 |
+| **Z13b** | `lint --deny` | `cargo deny check licenses` + `bans`（需 `cargo-deny` 与项目根 `deny.toml`） |
 | **Z15** | `doctor --watch` | 每 60s 轮询环境；磁盘 &lt;1GiB、内存 &lt;500MiB、Ollama 停止时告警 |
 | **Z16** | （全局） | **CLI 输出统一英文**（避免终端乱码） |
 | **Z19** | `kernel info` | `oclive_kernel_runtime` path/version 与兼容性摘要 |
@@ -137,6 +138,8 @@ cargo run -p oclive-cli -- init --from-existing ./my-kernel --json
 cargo run -p oclive-cli -- bench --stress --stress-concurrency 5 --stress-duration 10 -o ./my-kernel
 cargo run -p oclive-cli -- test --ci-parity -o ./my-kernel --skip-oocp
 cargo run -p oclive-cli -- lint --deps -o ./my-kernel
+cargo run -p oclive-cli -- lint --deny -o .
+cargo run -p oclive-cli -- test -o ./my-kernel --json
 cargo run -p oclive-cli -- doctor --watch
 cargo run -p oclive-cli -- kernel info -o ./my-kernel --json
 ```
@@ -276,7 +279,7 @@ cargo run -p oclive-cli -- registry pull my-kernel -o ./my-kernel
 | 能力 | 命令 |
 |------|------|
 | **Y3 配置** | `oclive config set/get/list/unset/init`（`~/.oclive/config.toml` / `.oclive.toml`） |
-| **Y1 CI** | `oclive ci init` / `oclive ci check` |
+| **Y1 CI** | `oclive ci init` / `oclive ci check`（模板含 **`cargo-audit`** job，`continue-on-error: true`） |
 | **Y6 修复** | `oclive doctor --fix` / `--fix --yes` |
 | **Y2 回归门禁** | `oclive bench --regression` / `--regression-threshold 3` |
 | **Y5 跨版本** | `oclive bench --compare-versions v0.2.0` |

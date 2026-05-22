@@ -136,6 +136,21 @@ fn render_ci_yaml(kind: ProjectCiKind) -> String {
         ""
     };
 
+    let audit_job = r#"
+  cargo-audit:
+    runs-on: ubuntu-latest
+    continue-on-error: true
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dtolnay/rust-toolchain@stable
+      - name: rustup update
+        run: rustup update stable
+      - name: Install cargo-audit
+        run: cargo install cargo-audit --version 0.22.1 --locked
+      - name: cargo audit
+        run: cargo audit
+"#;
+
     let extra_steps = if kind == ProjectCiKind::KernelServer {
         r#"
       - name: oclive test
@@ -183,6 +198,7 @@ jobs:
       - name: cargo test
         run: cargo test
 {extra_steps}
+{audit_job}
 {oocp_job}
 "#
     )
