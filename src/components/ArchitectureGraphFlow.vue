@@ -13,6 +13,7 @@ import ArchConnectionLine from "./architecture-graph/ArchConnectionLine.vue";
 import ArchGraphFitView from "./architecture-graph/ArchGraphFitView.vue";
 import ArchKernelNode from "./architecture-graph/ArchKernelNode.vue";
 import ArchModuleNode from "./architecture-graph/ArchModuleNode.vue";
+import ArchGroupNode from "./architecture-graph/ArchGroupNode.vue";
 import ArchPluginNode from "./architecture-graph/ArchPluginNode.vue";
 import { archGraphActionsKey } from "./architecture-graph/archGraphContext";
 import { useArchitectureGraphConnections } from "../composables/useArchitectureGraphConnections";
@@ -79,6 +80,7 @@ const {
   edges: builtEdges,
   usesBlueprint,
   togglePluginExpand,
+  toggleGroupCollapse,
   hiddenPluginCount,
 } = useArchitectureGraphModel();
 
@@ -158,10 +160,16 @@ watch(
   syncGraphFromModel,
   { deep: true },
 );
+watch(
+  () => roleStore.roleInfo.blueprintGroupsPack,
+  syncGraphFromModel,
+  { deep: true },
+);
 
 const nodeTypes = {
   archKernel: markRaw(ArchKernelNode),
   archBus: markRaw(ArchBusNode),
+  archGroup: markRaw(ArchGroupNode),
   archModule: markRaw(ArchModuleNode),
   archPlugin: markRaw(ArchPluginNode),
   archComplex: markRaw(ArchComplexNode),
@@ -229,6 +237,9 @@ provide(archGraphActionsKey, {
   onFocusPlugin: (id: string) => emit("focus-plugin", id),
   onToggleExpand: (targetKey: string) => {
     if (hiddenPluginCount(targetKey) > 0) togglePluginExpand(targetKey);
+  },
+  onToggleGroupCollapse: (groupId: string) => {
+    toggleGroupCollapse(groupId);
   },
   onTogglePluginDisabled: (id: string) => {
     try {

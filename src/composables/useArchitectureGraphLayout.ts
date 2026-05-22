@@ -18,6 +18,7 @@ export const ARCH_NODE_DEFAULT_SIZE: Record<
   archModule: { width: 220, height: 112, minWidth: 176, minHeight: 88, maxWidth: 400, maxHeight: 340 },
   archPlugin: { width: 180, height: 72, minWidth: 148, minHeight: 56, maxWidth: 300, maxHeight: 180 },
   archComplex: { width: 200, height: 88, minWidth: 160, minHeight: 72, maxWidth: 300, maxHeight: 160 },
+  archGroup: { width: 320, height: 200, minWidth: 200, minHeight: 120, maxWidth: 720, maxHeight: 520 },
 };
 
 export function defaultSizeForNode(id: string, type?: string) {

@@ -8,6 +8,7 @@ export type ArchGraphActions = {
   onClearSlotOverride: (slotKey: string) => void;
   onFocusPlugin: (id: string) => void;
   onToggleExpand: (targetKey: string) => void;
+  onToggleGroupCollapse: (groupId: string) => void;
   onTogglePluginDisabled: (id: string) => void;
   onUninstallPlugin: (id: string) => void;
 };

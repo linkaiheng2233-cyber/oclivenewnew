@@ -11,6 +11,7 @@ import {
   uniqueSlotTypes,
   type SlotRegistryEntry,
   type SlotRegistryMap,
+  type SlotGroupsMap,
 } from "../lib/slotRegistry";
 import { useRoleStore } from "../stores/roleStore";
 import { usePluginStore } from "../stores/pluginStore";
@@ -20,6 +21,13 @@ export type CoreModule = "memory" | "emotion" | "event" | "prompt" | "llm" | "ag
 export const ARCH_GRAPH_BUS_ID = "__facility_bus__";
 export const ARCH_GRAPH_KERNEL_ID = "__kernel__";
 export const ARCH_GRAPH_COMPLEX_ID = "__complex_emotion__";
+
+const GROUP_PAD = 24;
+const GROUP_HEADER_H = 32;
+
+export function archGroupNodeId(groupId: string): string {
+  return `group:${groupId}`;
+}
 
 const WORLD_W = 1040;
 const WORLD_H = 720;
@@ -54,6 +62,7 @@ export function useArchitectureGraphModel() {
   const roleStore = useRoleStore();
   const pluginStore = usePluginStore();
   const expandedPlugins = ref<Record<string, boolean>>({});
+  const collapsedGroups = ref<Record<string, boolean>>({});
 
   const pluginBackends = computed(() => roleStore.roleInfo.pluginBackends);
   const pluginBackendsEffective = computed(() => roleStore.roleInfo.pluginBackendsEffective);
@@ -66,6 +75,7 @@ export function useArchitectureGraphModel() {
   const slotSessionOverriddenKeys = computed(
     () => roleStore.roleInfo.slotSessionOverriddenKeys,
   );
+  const blueprintGroupsPack = computed(() => roleStore.roleInfo.blueprintGroupsPack);
 
   const usesBlueprint = computed(() => {
     const eff = slotRegistryEffective.value;
@@ -220,6 +230,11 @@ export function useArchitectureGraphModel() {
     const list: Node[] = [];
     const entries = sortedSlotRegistryEntries(registry);
     const busTypes = uniqueSlotTypes(registry);
+    const groups: SlotGroupsMap = blueprintGroupsPack.value ?? {};
+    const memberToGroup: Record<string, string> = {};
+    for (const [gid, g] of Object.entries(groups)) {
+      for (const m of g.members) memberToGroup[m] = gid;
+    }
 
     list.push({
       id: ARCH_GRAPH_KERNEL_ID,
@@ -242,8 +257,97 @@ export function useArchitectureGraphModel() {
       draggable: true,
     });
 
+    type AbsPos = { absX: number; absY: number; ring: ReturnType<typeof layoutOnRing> };
+    const absBySlot = new Map<string, AbsPos>();
+    const pendingModules: Array<{ slotKey: string; entry: SlotRegistryEntry; i: number }> = [];
+    const pendingPlugins: Node[] = [];
+
     entries.forEach(([slotKey, entry], i) => {
       const ring = layoutOnRing(HUB_CX, HUB_CY, MODULE_RING, i, entries.length, NODE_W, NODE_H);
+      absBySlot.set(slotKey, { absX: ring.x, absY: ring.y, ring });
+      pendingModules.push({ slotKey, entry, i });
+    });
+
+    type GroupBounds = { minX: number; minY: number; maxX: number; maxY: number; type: string; label: string };
+    const boundsByGroup = new Map<string, GroupBounds>();
+
+    for (const [gid, g] of Object.entries(groups)) {
+      let minX = Infinity;
+      let minY = Infinity;
+      let maxX = -Infinity;
+      let maxY = -Infinity;
+      let any = false;
+      for (const m of g.members) {
+        const pos = absBySlot.get(m);
+        const ent = registry[m];
+        if (!pos || !ent) continue;
+        any = true;
+        minX = Math.min(minX, pos.absX);
+        minY = Math.min(minY, pos.absY);
+        maxX = Math.max(maxX, pos.absX + NODE_W);
+        maxY = Math.max(maxY, pos.absY + NODE_H);
+        if (slotBackendKind(ent) === "directory") {
+          visiblePluginIds(m, ent).forEach((pid, j) => {
+            const center = pointOnRay(
+              pos.ring.cx,
+              pos.ring.cy,
+              pos.ring.angle + Math.PI,
+              PLUGIN_INSET + j * (PLUGIN_H + 12),
+            );
+            minX = Math.min(minX, center.x - PLUGIN_W / 2);
+            minY = Math.min(minY, center.y - PLUGIN_H / 2);
+            maxX = Math.max(maxX, center.x + PLUGIN_W / 2);
+            maxY = Math.max(maxY, center.y + PLUGIN_H / 2);
+          });
+        }
+      }
+      if (any) {
+        boundsByGroup.set(gid, {
+          minX: minX - GROUP_PAD,
+          minY: minY - GROUP_PAD - GROUP_HEADER_H,
+          maxX: maxX + GROUP_PAD,
+          maxY: maxY + GROUP_PAD,
+          type: g.type,
+          label: g.label,
+        });
+      }
+    }
+
+    for (const [gid, b] of boundsByGroup) {
+      const g = groups[gid];
+      list.push({
+        id: archGroupNodeId(gid),
+        type: "archGroup",
+        position: { x: b.minX, y: b.minY },
+        style: {
+          width: `${b.maxX - b.minX}px`,
+          height: `${b.maxY - b.minY}px`,
+          zIndex: 0,
+        },
+        data: {
+          groupId: gid,
+          label: b.label,
+          slotType: g?.type ?? b.type,
+          collapsed: Boolean(collapsedGroups.value[gid]),
+        },
+        draggable: false,
+        selectable: true,
+        zIndex: 0,
+      });
+    }
+
+    for (const { slotKey, entry } of pendingModules) {
+      const pos = absBySlot.get(slotKey)!;
+      const gid = memberToGroup[slotKey];
+      const collapsed = gid ? Boolean(collapsedGroups.value[gid]) : false;
+      const bounds = gid ? boundsByGroup.get(gid) : undefined;
+      const parentNode = bounds ? archGroupNodeId(gid) : undefined;
+      let x = pos.absX;
+      let y = pos.absY;
+      if (bounds) {
+        x = pos.absX - bounds.minX;
+        y = pos.absY - bounds.minY;
+      }
       const kind = slotBackendKind(entry);
       const pack = slotRegistryPack.value?.[slotKey];
       const overridden = isSlotSessionOverridden(slotKey);
@@ -252,7 +356,10 @@ export function useArchitectureGraphModel() {
       list.push({
         id: slotKey,
         type: "archModule",
-        position: { x: ring.x, y: ring.y },
+        position: { x, y },
+        parentNode,
+        hidden: collapsed,
+        extent: parentNode ? ("parent" as const) : undefined,
         data: {
           slotKey,
           slotType: entry.type,
@@ -269,19 +376,34 @@ export function useArchitectureGraphModel() {
           primaryPlugin: primaryPluginId(entry),
           hiddenPluginCount: hiddenPluginCount(slotKey, entry),
           blueprintV2: true,
+          groupId: gid,
           targetPosition: Position.Left,
           sourcePosition: Position.Right,
         },
-        draggable: true,
+        draggable: !parentNode,
+        zIndex: 1,
       });
 
-      if (kind === "directory") {
+      if (kind === "directory" && !collapsed) {
         visiblePluginIds(slotKey, entry).forEach((pid, j) => {
-          const center = pointOnRay(ring.cx, ring.cy, ring.angle + Math.PI, PLUGIN_INSET + j * (PLUGIN_H + 12));
+          const center = pointOnRay(
+            pos.ring.cx,
+            pos.ring.cy,
+            pos.ring.angle + Math.PI,
+            PLUGIN_INSET + j * (PLUGIN_H + 12),
+          );
+          let px = center.x - PLUGIN_W / 2;
+          let py = center.y - PLUGIN_H / 2;
+          if (bounds) {
+            px -= bounds.minX;
+            py -= bounds.minY;
+          }
           list.push({
             id: `plugin:${pid}`,
             type: "archPlugin",
-            position: { x: center.x - PLUGIN_W / 2, y: center.y - PLUGIN_H / 2 },
+            position: { x: px, y: py },
+            parentNode,
+            extent: parentNode ? ("parent" as const) : undefined,
             data: {
               pluginId: pid,
               moduleKey: entry.type,
@@ -289,13 +411,21 @@ export function useArchitectureGraphModel() {
               disabled: pluginStore.isPluginDisabled(pid),
               version: pluginStore.catalog.find((c) => c.id === pid)?.version ?? "?",
             },
-            draggable: true,
+            draggable: !parentNode,
+            zIndex: 1,
           });
         });
       }
-    });
+    }
 
     return list;
+  }
+
+  function toggleGroupCollapse(groupId: string) {
+    collapsedGroups.value = {
+      ...collapsedGroups.value,
+      [groupId]: !collapsedGroups.value[groupId],
+    };
   }
 
   const nodes = computed<Node[]>(() => {
@@ -436,6 +566,8 @@ export function useArchitectureGraphModel() {
     visiblePluginIds,
     hiddenPluginCount,
     togglePluginExpand,
+    toggleGroupCollapse,
+    blueprintGroupsPack,
     worldSize: { w: WORLD_W, h: WORLD_H },
   };
 }

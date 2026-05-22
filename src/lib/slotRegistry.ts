@@ -13,6 +13,26 @@ export interface SlotRegistryEntry {
 
 export type SlotRegistryMap = Record<string, SlotRegistryEntry>;
 
+/** `pipeline.ocblueprint` v2 `groups` entry. */
+export interface SlotGroupEntry {
+  label: string;
+  description?: string | null;
+  type: string;
+  members: string[];
+}
+
+export type SlotGroupsMap = Record<string, SlotGroupEntry>;
+
+/** Group border accent by slot `type` (architecture graph). */
+export const SLOT_TYPE_GROUP_COLORS: Record<string, string> = {
+  memory: "#6d9a7d",
+  emotion: "#c9a86c",
+  event: "#d4846a",
+  prompt: "#7a92b0",
+  llm: "#9a88a6",
+  agent: "#8b9db8",
+};
+
 export const SLOT_TYPE_ORDER = [
   "emotion",
   "complex_emotion",

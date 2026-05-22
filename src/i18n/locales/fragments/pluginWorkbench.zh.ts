@@ -32,7 +32,9 @@ export default {
   graph: {
     lead: "ComfyUI 节点连线：内核在最外环，单线接入居中设施总线，六模块环绕总线；左右端口分阶段连接，目录插件只连父模块。可拖拽移动，选中后可缩放节点。",
     leadBlueprint:
-      "蓝图 v2：每个 slot_registry 实例键一节点，连线由配置派生（不可手拖）。切换后端会写回 pipeline.ocblueprint；虚线框仍表示仅内存的「本次覆盖」（重置为包默认可清除）。",
+      "蓝图 v2：每个 slot_registry 实例键一节点；`groups` 字段可绘制分组边框（可折叠）。连线由配置派生（不可手拖）。切换后端会写回 pipeline.ocblueprint；虚线框仍表示仅内存的「本次覆盖」。",
+    groupCollapse: "折叠分组",
+    groupExpand: "展开分组",
     facilityBusHintBlueprint: "由 pipeline.ocblueprint 派生；同 type 多实例共享 fac-{type} 示意端口。",
     facilityBus: "设施总线",
     facilityBusHint: "引导节点：运行时仅内核↔六模块，总线用于避免六条线叠在中心。",

@@ -33,7 +33,9 @@ export default {
   graph: {
     lead: "ComfyUI-style wires: kernel on the outer ring, one link to the centered facility bus, six modules orbiting the bus; left/right ports stage connections. Drag to move; select a node and drag corners to resize.",
     leadBlueprint:
-      "Blueprint v2: one node per slot_registry key; edges are derived (no manual wiring). Backend changes are written to pipeline.ocblueprint; dashed outline still means in-memory session override only.",
+      "Blueprint v2: one node per slot_registry key; optional `groups` draw bordered regions (collapsible). Edges are derived (no manual wiring). Backend changes write to pipeline.ocblueprint; dashed outline = session override only.",
+    groupCollapse: "Collapse group",
+    groupExpand: "Expand group",
     facilityBusHintBlueprint: "Derived from pipeline.ocblueprint; multiple instances of the same type share a fac-{type} port.",
     facilityBus: "Facility bus",
     facilityBusHint: "Guide node: runtime wiring is kernel↔six modules only; the bus avoids six overlapping center lines.",
