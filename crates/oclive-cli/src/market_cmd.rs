@@ -154,6 +154,7 @@ fn install_plugin_item(item: &MarketItem, plugins_dir: &Path) -> Result<()> {
         id: item.id.clone(),
         plugins_dir: plugins_dir.to_path_buf(),
         source: None,
+        role: None,
     })
 }
 

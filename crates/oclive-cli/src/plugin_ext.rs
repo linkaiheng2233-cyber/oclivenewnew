@@ -2,7 +2,11 @@
 
 use anyhow::{bail, Context, Result};
 use clap::Parser;
-use oclive_validation::{parse_plugin_dependencies, resolve_install_order};
+use oclive_validation::{
+    apply_slot_attachments_to_registry, load_blueprint_v2_for_role_dir,
+    parse_plugin_dependencies, parse_slot_attachments_from_manifest_json,
+    resolve_install_order, write_role_pack_blueprint_slot_registry, PIPELINE_BLUEPRINT_FILENAME,
+};
 use serde_json::Value;
 use std::fs;
 use std::path::{Path, PathBuf};
@@ -17,6 +21,9 @@ pub struct PluginInstallArgs {
     /// Source directory (with manifest.json); default plugins_dir/<id>
     #[arg(long)]
     pub source: Option<PathBuf>,
+    /// Role pack dir: auto-apply manifest `slot_attachment` to pipeline.ocblueprint
+    #[arg(long)]
+    pub role: Option<PathBuf>,
 }
 
 #[derive(Parser, Debug)]
@@ -78,7 +85,60 @@ pub fn run_install(args: PluginInstallArgs) -> Result<()> {
     if !deps.is_empty() {
         println!("Dependency tree: {order_display}");
     }
+
+    if let Some(role_dir) = &args.role {
+        let role_dir = role_dir.canonicalize().unwrap_or_else(|_| role_dir.clone());
+        if !role_dir.join(PIPELINE_BLUEPRINT_FILENAME).is_file() {
+            bail!(
+                "role dir missing {}: {}",
+                PIPELINE_BLUEPRINT_FILENAME,
+                role_dir.display()
+            );
+        }
+        match auto_assemble_slot_attachment(&role_dir, &manifest_raw) {
+            Ok(msgs) => {
+                for m in msgs {
+                    println!("✓ {m}");
+                }
+            }
+            Err(e) => eprintln!("⚠ slot_attachment: {e}"),
+        }
+    } else if parse_slot_attachments_from_manifest_json(&manifest_raw)
+        .map(|a| !a.is_empty())
+        .unwrap_or(false)
+    {
+        println!(
+            "ℹ Plugin declares slot_attachment; pass --role <pack-dir> to auto-update {}",
+            PIPELINE_BLUEPRINT_FILENAME
+        );
+    }
+
     Ok(())
+}
+
+const ASSEMBLE_HOST_VERSION: &str = "999.0.0";
+
+fn auto_assemble_slot_attachment(role_dir: &Path, manifest_raw: &str) -> Result<Vec<String>> {
+    let manifest_v: serde_json::Value = serde_json::from_str(manifest_raw)?;
+    let plugin_id = manifest_v
+        .get("id")
+        .and_then(|v| v.as_str())
+        .ok_or_else(|| anyhow::anyhow!("manifest.id missing"))?;
+    let attachments = parse_slot_attachments_from_manifest_json(manifest_raw)
+        .map_err(|e| anyhow::anyhow!(e))?;
+    if attachments.is_empty() {
+        return Ok(vec![]);
+    }
+    let loaded = load_blueprint_v2_for_role_dir(role_dir, ASSEMBLE_HOST_VERSION)
+        .map_err(|e| anyhow::anyhow!(e.join("; ")))?;
+    let mut reg = loaded.slot_registry;
+    let notes = apply_slot_attachments_to_registry(&mut reg, plugin_id, &attachments);
+    write_role_pack_blueprint_slot_registry(role_dir, &reg, ASSEMBLE_HOST_VERSION)
+        .map_err(|e| anyhow::anyhow!(e.join("; ")))?;
+    Ok(notes
+        .into_iter()
+        .map(|n| format!("Auto-assembled: {n}"))
+        .collect())
 }
 
 pub fn run_uninstall(args: PluginUninstallArgs) -> Result<()> {
