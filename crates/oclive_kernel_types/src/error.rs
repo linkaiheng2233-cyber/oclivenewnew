@@ -24,47 +24,59 @@ pub mod http_chat_codes {
 }
 
 /// Unified kernel error type mapped to [`KernelErrorBody`] and machine `code` strings.
+///
+/// 前端应优先用 [`Self::code`] 映射 i18n（`apiErrors` / `UNKNOWN_WITH_CODE`），勿解析英文 `message`。
 #[derive(Error, Debug)]
 pub enum AppError {
+    /// **何时**：SQLx / 迁移 / 事务失败。**展示**：可重试或联系支持。**用户**：一般无需改配置。
     #[error("Database error: {0}")]
     DatabaseError(String),
 
+    /// **何时**：读写角色包、日志、授权文件失败。**展示**：检查路径与磁盘权限。
     #[error("IO error: {0}")]
     IoError(#[from] std::io::Error),
 
+    /// **何时**：Ollama 或目录 LLM 插件调用失败。**展示**：检查模型是否拉取、服务是否运行。
     #[error("Ollama error: {0}")]
     OllamaError(String),
 
+    /// **何时**：`role_id` 不存在或未导入。**展示**：引导选择/导入角色包。
     #[error("Role not found: {0}")]
     RoleNotFound(String),
 
-    /// 尚未 `load_role` 或 `role_runtime` 行缺失时，避免用泛型 `INVALID_PARAMETER` 误导用户。
+    /// **何时**：尚未 `load_role` 或 `role_runtime` 行缺失。**展示**：提示先加载角色或重启会话。
     #[error("Role runtime not initialized; call load_role first")]
     RoleRuntimeNotReady,
 
+    /// **何时**：宿主 `startup_health` 首轮检查失败（槽位/DB/可选 LLM）。**展示**：设置页环境自检。
     #[error("Startup health failed: {0}")]
     StartupHealthFailed(String),
 
+    /// **何时**：导入角色包目标已存在且未 `overwrite`。**展示**：确认覆盖或换目录。
     #[error("Role already exists; overwrite required: {0}")]
     RolePackExists(String),
 
+    /// **何时**：请求参数、蓝图、场景 id 等校验失败。**展示**：具体文案；创作者修包后重试。
     #[error("Invalid parameter: {0}")]
     InvalidParameter(String),
 
-    /// MCP `http`/`stdio` 或目录插件子进程等：未在宿主侧显式授权前不得执行。
+    /// **何时**：MCP / 目录 `process:spawn` / `network:*` 未授权。**展示**：插件管理授权弹窗；**用户**：需显式授予。
     #[error("High-risk capability not granted: {capability} (id={id})")]
     HighRiskCapabilityNotGranted { capability: String, id: String },
 
-    /// 已配置 `plugin_backends.* = remote` 且用户关闭「远端失败自动降级」时，远端 HTTP/RPC 不可用或返回不可解析结果。
+    /// **何时**：Remote 后端不可用且未开启自动降级。**展示**：网络/URL/插件日志；可改回 builtin。
     #[error("Remote service unavailable: {0}")]
     RemoteServiceUnavailable(String),
 
+    /// **何时**：JSON/YAML 解析失败。**展示**：检查配置或角色包格式。
     #[error("Serialization error: {0}")]
     SerializationError(#[from] serde_json::Error),
 
+    /// **何时**：未分类内部错误。**展示**：带 `code` 上报；避免暴露堆栈。
     #[error("Unknown error: {0}")]
     Unknown(String),
 
+    /// **何时**：多表原子写入失败（带稳定 `code`）。**展示**：按 `code` 映射；可重试发消息。
     #[error("Transaction failed ({code}): {message}")]
     TransactionError { code: &'static str, message: String },
 }
