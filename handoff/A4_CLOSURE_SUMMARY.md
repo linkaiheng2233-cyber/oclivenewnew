@@ -35,3 +35,12 @@
 
 - **A4.1**：MCP + 目录 process spawn + Remote network 路径可演示「拒绝 → 可见错误码 / 主路径降级」。
 - **A4.2**：manifest / 校验 crate / 运行时 **三面一致** — 本文件与 [PRODUCT_AND_KERNEL_GAP_CHECKLIST.md](./PRODUCT_AND_KERNEL_GAP_CHECKLIST.md) **A4.2** 已勾选。
+
+## 插件管理收尾（2026-05-20，与 A4 正交）
+
+| 项 | 状态 |
+|----|------|
+| 架构图 **会话覆盖** vs **写盘** | `set_session_slot_override` / `save_role_slot_registry` / `clear_session_slot_override` 已在 `ArchitectureGraphFlow` + `ArchModuleNode` 接满 |
+| **V2 轻量卡片** | 读 `slot_registry_effective`；跳转 V1 架构图（`pluginStore.requestFocusArchSlot`） |
+| **V1 生产路径** | 默认仍 `PluginManagerPanel` + 蓝图架构图；实验开关仅切换 V2 预览窗 |
+| **A8 插件管理 a11y 切片** | 目录列表键盘导航、弹窗聚焦；见 [PRODUCT_AND_KERNEL_GAP_CHECKLIST.md](./PRODUCT_AND_KERNEL_GAP_CHECKLIST.md) A8 |

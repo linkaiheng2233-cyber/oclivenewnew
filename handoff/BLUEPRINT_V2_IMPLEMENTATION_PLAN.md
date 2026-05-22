@@ -98,6 +98,8 @@ P8  CI（pack validate 默认 v2、OOCP、全量测）  [x]
 | 工具栏 | 添加槽位（`ArchAddSlotDialog`）、删除槽位；**至少保留一个 `type: llm`**，最后一个 llm 不可删 |
 | 前端 | `ArchitectureGraphFlow.vue` + `src/lib/slotRegistry.ts`；Vitest `src/__tests__/slotRegistry.test.ts` |
 | 缓存 | 写盘后 `invalidate_role_cache` + `load_role` 刷新 |
+| **会话覆盖 UI（2026-05-20 收尾）** | 蓝图节点：**「仅本次覆盖」** → `set_session_slot_override`；**「设为包默认」** → `save_role_slot_registry`；**「清除覆盖」** → `clear_session_slot_override`；虚线框 + 文案已接满 |
+| **V2 轻量卡片** | `usePluginManagerV2` 读 `slot_registry_effective`；完整写盘/增删在 V1 架构图 |
 
 ### P8 — CI 与验收
 
@@ -194,10 +196,10 @@ P8  CI（pack validate 默认 v2、OOCP、全量测）  [x]
 
 ### 4.2 前端（插件工作台 · 架构图）
 
-- 节点 `data`：`slotKey`, `type`, `backend`, `sessionOverridden: boolean`
-- 点击节点 → `ArchSlotBackendPanel.vue`（新组件）
-- 应用 → invoke 新 API → 刷新 `roleStore` effective 快照
-- 视觉：虚线边框 + 文案 **「本次覆盖」**（与产品说明一致）
+- [x] 节点 `data`：`slotKey`, `type`, `backend`, `sessionOverridden`
+- [x] 蓝图节点内按钮：**仅本次覆盖** / **设为包默认** / **清除覆盖**（`ArchModuleNode.vue` + `set_session_slot_override`）
+- [x] 视觉：虚线边框 + **「本次覆盖」**
+- 独立 `ArchSlotBackendPanel.vue`：未拆文件；逻辑在节点 + `archGraphActionsKey`
 
 ### 4.3 模块节点下拉（过渡期）
 
