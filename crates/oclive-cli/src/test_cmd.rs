@@ -5,6 +5,7 @@ use clap::Parser;
 use serde::Serialize;
 use std::path::{Path, PathBuf};
 use std::process::Command;
+use std::time::Instant;
 
 #[derive(Parser, Debug)]
 pub struct TestArgs {
@@ -50,10 +51,12 @@ pub struct TestArgs {
 }
 
 #[derive(Serialize)]
-struct CheckResult {
-    name: String,
-    ok: bool,
-    detail: String,
+pub(crate) struct CheckResult {
+    pub(crate) name: String,
+    pub(crate) ok: bool,
+    pub(crate) detail: String,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub(crate) duration_ms: Option<u64>,
 }
 
 pub fn run(args: TestArgs) -> Result<()> {
@@ -76,45 +79,41 @@ pub fn run(args: TestArgs) -> Result<()> {
     if args.oocp {
         return crate::test_oocp::run_oocp_integration(&root);
     }
+    let t0 = Instant::now();
     let mut checks = Vec::new();
 
-    checks.push(run_cargo_check(&root));
-    checks.push(run_clippy(&root));
-    checks.push(run_pack_validate_all(&root));
+    checks.push(timed(|| run_cargo_check(&root)));
+    checks.push(timed(|| run_clippy(&root)));
+    checks.push(timed(|| run_pack_validate_all(&root)));
 
     if !args.skip_oocp {
-        checks.push(run_oocp_hint(&root));
+        checks.push(timed(|| run_oocp_hint(&root)));
     } else {
         checks.push(CheckResult {
             name: "oocp".into(),
             ok: true,
             detail: "skipped (--skip-oocp)".into(),
+            duration_ms: Some(0),
         });
     }
 
+    let elapsed = t0.elapsed();
     if args.json {
         println!("{}", serde_json::to_string_pretty(&checks)?);
     } else {
-        println!("oclive test — {}", root.display());
-        let mut ok_all = true;
-        for c in &checks {
-            let mark = if c.ok { "✅" } else { "❌" };
-            println!("  {mark} {} — {}", c.name, c.detail);
-            ok_all &= c.ok;
-        }
-        println!(
-            "\n{}",
-            if ok_all {
-                "All checks passed"
-            } else {
-                "Some checks failed"
-            }
-        );
-        if !ok_all {
+        crate::test_report::print_human_report(&root, &checks, elapsed);
+        if checks.iter().any(|c| !c.ok) {
             bail!("test did not pass all checks");
         }
     }
     Ok(())
+}
+
+fn timed(f: impl FnOnce() -> CheckResult) -> CheckResult {
+    let t = Instant::now();
+    let mut c = f();
+    c.duration_ms = Some(t.elapsed().as_millis() as u64);
+    c
 }
 
 fn run_cargo_check(root: &Path) -> CheckResult {
@@ -245,6 +244,7 @@ fn ok(name: &str, detail: impl ToString) -> CheckResult {
         name: name.into(),
         ok: true,
         detail: detail.to_string(),
+        duration_ms: None,
     }
 }
 
@@ -253,5 +253,6 @@ fn fail(name: &str, detail: impl ToString) -> CheckResult {
         name: name.into(),
         ok: false,
         detail: detail.to_string(),
+        duration_ms: None,
     }
 }
