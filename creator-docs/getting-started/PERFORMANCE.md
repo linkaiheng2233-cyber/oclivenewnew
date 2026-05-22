@@ -90,6 +90,8 @@ cargo run -p oclive-cli -- bench --matrix --release -o ./my-kernel --json > matr
 
 **矩阵采样表（待本机 `bench --matrix --json` 填入）**：
 
+> **填表说明**：从 `matrix.json` 各组合的 **p50 毫秒**写入下表；行 = `monolith.toml` 档位，列 = preset。解读与冷启动/长稳阈值见 [TESTING_GUIDE.md § 结果解读](../testing/TESTING_GUIDE.md#结果解读填入-performancemd)。
+
 | 档位 \ preset | minimal | mixed | full |
 |---------------|---------|-------|------|
 | none | _TBD ms_ | _TBD ms_ | _TBD ms_ |

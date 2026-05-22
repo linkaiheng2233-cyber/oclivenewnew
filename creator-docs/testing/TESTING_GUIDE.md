@@ -32,6 +32,45 @@
 
 ---
 
+## 结果解读（填入 PERFORMANCE.md）
+
+跑完 `oclive bench` 后，将 JSON / 终端输出归档到本地（**勿提交** `bench_history.json` / `matrix.json`）。本节说明如何把数字写进 [PERFORMANCE.md](../getting-started/PERFORMANCE.md) 并判断是否达标。
+
+### 矩阵（`bench --matrix`）
+
+| 字段 | 含义 | 填表方式 |
+|------|------|----------|
+| `standard_ms` / `monolith_ms` | 该档位×preset 下子进程热循环耗时 | 取 JSON 中该组合的 **p50**（或终端摘要中位数），填入 PERFORMANCE §5.3 表格对应单元格 |
+| 12 组 | 4 档位 × 3 preset | 缺一组则矩阵不完整，需重跑或检查 `monolith.toml` |
+
+**填表说明（PERFORMANCE §5.3）**：表头为 preset（minimal / mixed / full），行名为档位（none / latency / memory / embedded）；单元格写 **毫秒数 + 可选备注**（如 `142ms @ 2026-05-22 win11`）。
+
+### 冷启动（`bench --cold-start`）
+
+| 指标 | 正常范围（参考） | 异常信号 |
+|------|------------------|----------|
+| 首条 `/chat` 延迟（冷） | 与机器相关；**5 轮中位数应稳定**（相对波动 &lt; 约 30%） | 单轮超时、端口未就绪、中位数逐轮翻倍 |
+| 热启动平均 | 通常 **明显低于** 冷启动 | 热启 ≥ 冷启 → 检查进程是否未退出、MOCK LLM 未生效 |
+| API 就绪时间 | 数秒内（本机 Release + MOCK） | &gt; 60s → 工程未 `--api` 或链接错误 |
+
+将 5 轮 **冷启动中位数** 记入本地 `bench_history` 或 PERFORMANCE 旁注，不作为硬门禁。
+
+### 长稳（`bench --soak`）
+
+| 指标 | 告警阈值 | 解读 |
+|------|----------|------|
+| RSS 终值 vs 首样本 | **终值 ≤ 首样本 × 1.2** | 超出则可能存在泄漏或缓存未释放 |
+| 聊天任务计数 | 周期内应 **线性增长**、无异常停滞 | 若计数不增但 RSS 涨 → 查子进程僵死 |
+| 任务数 | **不应无界累积**（同进程内重复调度失败） | 持续增长且 RSS 同步涨 → 优先查 HTTP 客户端 / DB 连接 |
+
+CLI 本地 `--soak-duration` 为加速采样（墙钟约 2s×小时数，上限 120s）；**72h 真长稳**须在专用机跑同名命令并保留 `--json`。
+
+### 与 `oclive test` 报告
+
+`oclive test --json` 的 `checks[]` 与性能无关；性能数据只来自 **`bench`** 子命令。CI 默认不跑 matrix/soak（耗时），与 [OVERVIEW.md](OVERVIEW.md) 一致。
+
+---
+
 ## 与 CI / 其它测试的关系
 
 | 命令 | 说明 |
