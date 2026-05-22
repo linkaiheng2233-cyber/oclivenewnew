@@ -97,13 +97,21 @@ cargo run -p oclive-cli -- bench --matrix --release -o ./my-kernel --json > matr
 | memory | _TBD ms_ | _TBD ms_ | _TBD ms_ |
 | embedded | _TBD ms_ | _TBD ms_ | _TBD ms_ |
 
-冷启动（`bench --cold-start`）与 soak 数据见同目录 `bench_history.json`（本地，勿提交）。
+**可复制命令**（将 `<monolith工程>` 换为含 `monolith.toml` 的目录，例如 `oclive init --monolith` 产出路径）：
+
+```bash
+cargo run -p oclive-cli -- bench --matrix --release -o <monolith工程> --json > matrix.json
+```
+
+**预期**：终端或 `matrix.json` 含 **12 组**（4 档位 × 3 preset）的 `standard_ms` / `monolith_ms` 采样；将 p50 毫秒数填入上表。总耗时约 **2–4 小时**（含多次 Release 编译）。
 
 ### 5.4 冷启动（`--cold-start`）
 
 ```bash
-cargo run -p oclive-cli -- bench --cold-start --cold-start-runs 3 -o ./my-kernel
+cargo run -p oclive-cli -- bench --cold-start --cold-start-runs 5 -o <工程>
 ```
+
+**预期**：每轮重启内核 `--api` 后打印 **首条 `/chat` 延迟**、**热启动平均**、**端口就绪时间**；5 轮结束后可将中位数填入本地记录或 `bench_history.json`（勿提交 Git）。
 
 每次重启 `cargo run --release -- --api`（`OCLIVE_HTTP_API_MOCK_LLM=1`），输出 **冷启动首条 `/chat` 延迟**、**热启动平均**、**API 端口就绪（预热）**。工程须能编译并暴露 HTTP API；无头桩项目请先用 `--kernel-source` 链接主仓 runtime。
 
@@ -127,10 +135,12 @@ cargo run -p oclive-cli -- profile -o ./my-kernel
 ### 5.7 长稳运行（`bench --soak`）
 
 ```bash
-cargo run -p oclive-cli -- bench --soak --soak-duration 24 -o ./my-kernel --json
+cargo run -p oclive-cli -- bench --soak --soak-duration 72 -o <工程> --json
 ```
 
-在工程根启动 `cargo run --release -- --api`（`MOCK_LLM=1`），按**名义小时**采样 RSS 与聊天次数。本地为加速实现，墙钟约 **2s × 小时数**（上限 120s）；完整 **72h** 压测请在专用机器上放宽实现或延长 `wall_duration`。
+**预期**：JSON 含周期性 **RSS** 与 **聊天次数**；验收标准为 **最终 RSS ≤ 首样本 × 1.2**（超出时终端 ⚠️）。CLI 本地为加速采样（墙钟约 **2s × 小时数**，上限 120s）；真机 **72h** 请在专用环境运行同一命令并保留 `--json` 报告。
+
+在工程根启动 `cargo run --release -- --api`（`OCLIVE_HTTP_API_MOCK_LLM=1`），按**名义小时**采样 RSS 与聊天次数。
 
 若 **最终 RSS > 首样本 × 1.2**，终端输出 ⚠️ 警告。
 
@@ -140,6 +150,7 @@ cargo run -p oclive-cli -- bench --soak --soak-duration 24 -o ./my-kernel --json
 
 | 日期 | 说明 |
 |------|------|
+| 2026-05-20 | 矩阵 / 冷启动 / 长稳可复制命令与预期说明（v2 架构，无 v1 对比）。 |
 | 2026-05-20 | v2 蓝图说明；`bench --matrix` 与 `roles/mumu` 对齐；刷新 bloat 采样日期引用。 |
 | 2026-05-15 | 初版：对齐 `LIGHTWEIGHT_PROFILE.md` §6.7 与 `oclive bench` / Schema 路径。 |
 
