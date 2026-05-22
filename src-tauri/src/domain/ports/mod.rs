@@ -1,9 +1,12 @@
-//! 领域端口（traits）：`domain` 依赖本模块，**不**依赖 `infrastructure` / `api` 实现。
+//! 领域端口（traits）：**兼容 re-export 层**。
 //!
-//! 具体适配器（Ollama、Remote HTTP、目录插件等）在 `infrastructure/` 实现这些 trait。
+//! 核心 trait 定义在 [`oclive_kernel_contracts`]；本目录仅保留宿主侧 `impl` 与过渡期路径。
+//! 新代码请优先 `use oclive_kernel_contracts::…` 或 `oclive_kernel_runtime::…`。
 
 pub mod llm;
 pub mod plugin_host;
+pub mod slot_resolver;
 
 pub use llm::LlmClient;
+pub use oclive_kernel_contracts::SlotRegistryResolver;
 pub use plugin_host::PluginHostPort;

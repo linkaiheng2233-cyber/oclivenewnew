@@ -1,1 +1,1 @@
-pub use oclive_kernel_runtime::utils::json_loose::*;
+pub use oclive_kernel_runtime::extract_json_object;
