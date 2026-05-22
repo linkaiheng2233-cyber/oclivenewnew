@@ -478,16 +478,32 @@ pub struct SlotOverridePatch {
 }
 
 impl SlotOverridePatch {
+    /// 会话内对同一 `slot_key` 的多次 C1/槽位 API 调用合并为一条覆盖（后写非空字段覆盖先写）。
+    pub fn merge_into(&self, base: &mut SlotOverridePatch) {
+        if let Some(ref b) = self.backend {
+            base.backend = Some(b.clone());
+        }
+        if self.plugin.is_some() {
+            base.plugin = self.plugin.clone();
+        }
+        if self.plugins.is_some() {
+            base.plugins = self.plugins.clone();
+        }
+        if self.model.is_some() {
+            base.model = self.model.clone();
+        }
+        if self.local_memory_provider_id.is_some() {
+            base.local_memory_provider_id = self.local_memory_provider_id.clone();
+        }
+    }
+
     #[must_use]
     pub fn is_empty(&self) -> bool {
-        self.backend.as_ref().is_none_or(|s| s.trim().is_empty())
-            && self.plugin.as_ref().is_none_or(|s| s.trim().is_empty())
-            && self.plugins.as_ref().is_none_or(|v| v.is_empty())
-            && self.model.as_ref().is_none_or(|s| s.trim().is_empty())
-            && self
-                .local_memory_provider_id
-                .as_ref()
-                .is_none_or(|s| s.trim().is_empty())
+        self.backend.is_none()
+            && self.plugin.is_none()
+            && self.plugins.is_none()
+            && self.model.is_none()
+            && self.local_memory_provider_id.is_none()
     }
 }
 
