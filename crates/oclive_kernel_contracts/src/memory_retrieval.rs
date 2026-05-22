@@ -13,7 +13,7 @@ pub trait MemoryRetrieval: Send + Sync {
     fn build_context(&self, memories: &[Memory], max_tokens: usize) -> MemoryContext;
     fn search_memories(&self, keyword: &str, memories: &[Memory]) -> Vec<Memory>;
 
-    /// 遥测 / 单测：仅 `LocalPluginMemoryRetrieval` 返回选中的本地 `provider_id`。
+    /// Telemetry hook: local-plugin retrieval may expose the selected `provider_id` (default `None`).
     #[must_use]
     fn diagnostic_local_provider_id(&self) -> Option<&str> {
         None

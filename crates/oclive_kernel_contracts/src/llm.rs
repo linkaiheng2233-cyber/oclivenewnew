@@ -9,7 +9,7 @@ pub trait LlmClient: Send + Sync {
     async fn generate(&self, model: &str, prompt: &str) -> Result<String>;
     /// 低温度短输出（立绘标签等分类任务）
     async fn generate_tag(&self, model: &str, prompt: &str) -> Result<String>;
-    /// 启动期可选探活（默认成功；实现可 ping 远端）。
+    /// Optional startup probe (default succeeds; hosts may ping remote LLM).
     async fn startup_probe(&self) -> Result<()> {
         Ok(())
     }
