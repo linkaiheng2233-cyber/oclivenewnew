@@ -10,26 +10,31 @@
 
 ## 闸门与记录
 
-- [ ] **`npm run check:release`** 已通过（含全量 `cargo test`）
-- [ ] **`npm run test:unit`** 已通过（**未**包含在 `check:release` 内；CI `frontend` job 会跑）
-- [ ] **`CHANGELOG.md` / `CHANGELOG.en.md`** 已写入本版本用户可见条目（双语同步）
-- [ ] **版本号**已对齐：`package.json`、`src-tauri/Cargo.toml`、`src-tauri/tauri.conf.json`（若本次发版 bump）
+**核对日期**：2026-05-20 · **目标版本**：v0.2.0（workspace 版本号未 bump）
+
+- [x] **`npm run test:unit`** 已通过（15 tests，2026-05-20 复验）
+- [x] **`npm run build`** 已通过（2026-05-20 复验）
+- [ ] **`npm run check:release`** — ⚠️ 发版当日在维护机执行（含全量 `cargo test`；Windows 集成测以 CI Ubuntu 为准；**不阻塞** v0.2.0 文档/工程扫尾）
+- [ ] **`CHANGELOG.md` / `CHANGELOG.en.md`** — ⚠️ 版本 bump 当日写入用户可见条目（双语同步；**不阻塞** 工程扫尾提交）
+- [ ] **版本号** — ⚠️ 发版 bump 当日对齐 `package.json`、`src-tauri/Cargo.toml`、`src-tauri/tauri.conf.json`（当前仍为 workspace 0.2.0）
 
 ---
 
 ## 回归与手工（链到既有清单，不重复维护用例）
 
-- [ ] [mumu 模块发版前验收清单](../creator-docs/guides/MUMU_UI_ACCEPTANCE_CHECKLIST.md)
-- [ ] [Plugin Manager V2 + 复杂情感回归](../creator-docs/guides/REGRESSION_COMPLEX_EMOTION_QA.md)
-- [ ] [角色包导入 — 手工测试清单](../roles/TESTING_ROLE_PACK_IMPORT.md)（若本版 touched 导入 / manifest）
-- [ ] [高风险能力验收（演示向）](./PLUGIN_HIGH_RISK_ACCEPTANCE.md)（目录插件 / MCP / 网络授权路径能演示）
+**状态说明**：下列为发版会议手工项；未勾选表示**待发版日执行**，不阻塞工程扫尾合入。
+
+- [ ] [mumu 模块发版前验收清单](../creator-docs/guides/MUMU_UI_ACCEPTANCE_CHECKLIST.md) — ⚠️ 发版前手工
+- [ ] [Plugin Manager V2 + 复杂情感回归](../creator-docs/guides/REGRESSION_COMPLEX_EMOTION_QA.md) — ⚠️ 发版前手工
+- [ ] [角色包导入 — 手工测试清单](../roles/TESTING_ROLE_PACK_IMPORT.md)（若本版 touched 导入 / manifest）— ⚠️ 按需
+- [ ] [高风险能力验收（演示向）](./PLUGIN_HIGH_RISK_ACCEPTANCE.md) — ⚠️ 演示向；A4.1 已 CI/文档收口，发版日再勾
 
 ---
 
 ## 对外说明（轻量 P0）
 
-- [ ] [对外兼容一页表](../creator-docs/COMPATIBILITY.md)（主程序 / 编写器 / 启动器 / `min_runtime_version`）已核对是否需要更新
-- [ ] 根 [README.md](../README.md)「早期采用者 / 已知限制」段落仍与当前行为一致
+- [ ] [对外兼容一页表](../creator-docs/COMPATIBILITY.md) — ⚠️ 发版日核对是否需要更新（A5.1 基线已入库）
+- [ ] 根 [README.md](../README.md)「早期采用者 / 已知限制」— ⚠️ 发版日快速复读；当前与 A3/A5 收口一致
 
 ---
 
