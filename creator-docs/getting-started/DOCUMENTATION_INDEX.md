@@ -36,6 +36,7 @@
 | 内核工厂与三层 | [KERNEL_FACTORY_VISION.md](KERNEL_FACTORY_VISION.md) |
 | 内核居中总览图 | [KERNEL_AND_MODULES_ARCHITECTURE.md](KERNEL_AND_MODULES_ARCHITECTURE.md) |
 | Monolith（宏核态） | [RFC_OCLIVE_MONOLITH_MODE.md](../rfc/RFC_OCLIVE_MONOLITH_MODE.md) |
+| **双核双态（运行时 Stable / Experimental，未来）** | [RFC_OCLIVE_DUAL_CORE_DUAL_MODE.md](../rfc/RFC_OCLIVE_DUAL_CORE_DUAL_MODE.md) · **Cursor 对齐** [DUAL_CORE_CURSOR_HANDOFF.md](../../handoff/DUAL_CORE_CURSOR_HANDOFF.md) · 速查 [DUAL_CORE_ALIGNMENT.md](../../handoff/DUAL_CORE_ALIGNMENT.md) |
 
 ---
 
@@ -48,6 +49,7 @@
 | **`slot_registry` / 六槽编排契约** | **[../plugin-and-architecture/PLUGIN_V1.md](../plugin-and-architecture/PLUGIN_V1.md)** · 蓝图字段 **[ROLE_PACK_SPEC.md](../role-pack/ROLE_PACK_SPEC.md)** · 编号 **[OCLIVE_ARCHITECTURE_OVERVIEW.md](OCLIVE_ARCHITECTURE_OVERVIEW.md)** |
 | Remote HTTP JSON-RPC | **[../plugin-and-architecture/REMOTE_PLUGIN_PROTOCOL.md](../plugin-and-architecture/REMOTE_PLUGIN_PROTOCOL.md)** |
 | 角色包磁盘格式 / `schema_version` | **[../role-pack/ROLE_PACK_SPEC.md](../role-pack/ROLE_PACK_SPEC.md)** · **[../role-pack/PACK_VERSIONING.md](../role-pack/PACK_VERSIONING.md)** |
+| **角色包 vs 蓝图职责边界** | **[../../handoff/ROLE_PACK_BOUNDARY.md](../../handoff/ROLE_PACK_BOUNDARY.md)** · ROLE_PACK_SPEC §0 · SETTINGS_REFERENCE §零 |
 | **v1 → v2 蓝图迁移（v1 已废弃，仅迁移用）** | **[../role-pack/V1_TO_V2_MIGRATION.md](../role-pack/V1_TO_V2_MIGRATION.md)**（[English](../../creator-docs-en/role-pack/V1_TO_V2_MIGRATION.md)） |
 | **蓝图 `groups` 分组（架构图）** | **[ROLE_PACK_SPEC.md](../role-pack/ROLE_PACK_SPEC.md)** §2.3 · [RFC_ROLE_BLUEPRINT_V2.md](../../handoff/RFC_ROLE_BLUEPRINT_V2.md) §4.5 |
 | OOCP HTTP 黑盒套件（CI） | **[../testing/OOCP_TEST_SUITE.md](../testing/OOCP_TEST_SUITE.md)** |
@@ -136,6 +138,7 @@
 | 文档 | 说明 |
 |------|------|
 | **[RFC_OCLIVE_MONOLITH_MODE.md](../rfc/RFC_OCLIVE_MONOLITH_MODE.md)** | **高耦合编译模式（Monolith）**：`monolith.toml`、`--monolith`、双 `[[bin]]`；**`build` / `bench`** 子命令与部分焊接（见 RFC 与 CLI 指南）。 |
+| **[RFC_OCLIVE_DUAL_CORE_DUAL_MODE.md](../rfc/RFC_OCLIVE_DUAL_CORE_DUAL_MODE.md)** | **运行时双核（Proposed）**：Stable 六槽 + Experimental 开放 type；`depends_on` DAG；`DualPipelineRunner` 快照降级；**`init --dual-core`** 默认关。Cursor 进度见 [DUAL_CORE_CURSOR_HANDOFF.md](../../handoff/DUAL_CORE_CURSOR_HANDOFF.md)。 |
 | **[RFC_STUDIO_MERGE.md](../rfc/RFC_STUDIO_MERGE.md)** | **工作室（合并启动器 + 编写器）**：新仓 `oclive-studio`、两安装物叙事、配置与验收。 |
 
 ---
