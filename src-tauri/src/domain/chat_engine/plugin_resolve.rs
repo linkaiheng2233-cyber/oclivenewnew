@@ -9,7 +9,7 @@ use std::collections::BTreeMap;
 /// 按角色包与会话有效 `slot_registry` 解析插件句柄（无会话时走包默认）。
 #[must_use]
 pub fn resolve_plugins_for_session(
-    host: &dyn PluginHostPort,
+    host: &dyn PluginHostPort<Resolved = ResolvedRolePlugins>,
     role: &Role,
     session_namespace: Option<&str>,
     effective_backends: &PluginBackends,

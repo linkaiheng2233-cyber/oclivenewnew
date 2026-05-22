@@ -701,7 +701,7 @@ impl AppState {
     }
 
     #[must_use]
-    pub fn plugin_host_port(&self) -> &dyn PluginHostPort {
+    pub fn plugin_host_port(&self) -> &dyn PluginHostPort<Resolved = ResolvedRolePlugins> {
         &self.plugins
     }
 
