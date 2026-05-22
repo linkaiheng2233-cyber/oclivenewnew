@@ -22,6 +22,7 @@ mod config_cmd;
 mod dashboard_cmd;
 mod debug_cmd;
 mod dev_cmd;
+mod doctor_blueprint;
 mod doctor_cmd;
 mod doctor_sbom;
 mod explain_cmd;
@@ -60,6 +61,7 @@ mod test_coverage;
 mod test_equivalence_check;
 mod test_loom;
 mod test_miri;
+mod test_oocp;
 
 use anyhow::Result;
 use clap::{Parser, Subcommand};

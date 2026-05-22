@@ -16,6 +16,10 @@ pub struct TestArgs {
     #[arg(long)]
     pub skip_oocp: bool,
 
+    /// Start kernel (`cargo run --release -- --api`), run OOCP S0–S11, then stop (oclivenewnew root only)
+    #[arg(long)]
+    pub oocp: bool,
+
     /// Run jobs aligned with `.github/workflows/ci.yml` locally
     #[arg(long)]
     pub ci_parity: bool,
@@ -68,6 +72,9 @@ pub fn run(args: TestArgs) -> Result<()> {
     }
     if args.ci_parity {
         return crate::test_ci_parity::run_ci_parity(&root, args.skip_oocp, args.json);
+    }
+    if args.oocp {
+        return crate::test_oocp::run_oocp_integration(&root);
     }
     let mut checks = Vec::new();
 
