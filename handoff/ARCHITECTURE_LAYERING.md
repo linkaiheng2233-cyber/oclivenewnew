@@ -75,6 +75,34 @@
 | 性能矩阵实测填充 `PERFORMANCE.md` | 延后（需本地 Monolith 工程 + 长时 `bench --matrix`） |
 | 全量最终验证（任务 11） | 见下表「最终扫尾验证」 |
 
+## 蓝图 groups（2026-05-20）
+
+| 项 | 状态 |
+|----|------|
+| `pipeline.ocblueprint` `groups` Schema + `oclive_validation` 校验 | 已落实 |
+| `RoleInfo.blueprint_groups_pack` / 架构图 `ArchGroupNode` 分组边框 | 已落实 |
+| 活跃文档 v2 化（`CREATOR_WORKFLOW` / `ROLE_PACK_SPEC` 等） | 已落实 |
+
+## 测试前收尾（2026-05-20）
+
+| 项 | 状态 |
+|----|------|
+| `PERFORMANCE.md` 矩阵 / 冷启动 / 长稳可复制命令（无 v1 对比） | 已落实 |
+| [TESTING_GUIDE.md](../creator-docs/testing/TESTING_GUIDE.md)（三种测试） | 已落实 |
+| `oclive ci init` 模板含 `cargo-audit` job | 已落实 |
+| `oclive test --json` Schema + 报告结构 | 已落实 |
+| `fuzz_blueprint_v2` + CI fuzz 冒烟 | 已落实 |
+| `oclive lint --deny` + 根 `deny.toml` | 已落实 |
+| `CONTRIBUTING` 模块负责人与 PR / CI 失败处理 | 已落实 |
+
+### 测试前验证（任务 8）
+
+| 检查 | 结果 |
+|------|------|
+| `cargo clippy --workspace --all-targets --all-features -- -D warnings` | ✅ 通过（2026-05-20） |
+| `cargo test --workspace --lib` | ✅ 通过（122 tests） |
+| `npm run test:unit` / `npm run build` | ✅ 通过（15 tests + vite build） |
+
 ## 最终收尾（2026-05-20）
 
 | 项 | 状态 |
@@ -102,9 +130,10 @@
 
 | 检查 | 结果 |
 |------|------|
-| `cargo clippy --workspace --all-targets --all-features -- -D warnings` | 见本轮回验 |
-| `cargo test --workspace` | 见本轮回验 |
-| `npm run test:unit` / `npm run build` | 见本轮回验 |
+| `cargo clippy --workspace --all-targets --all-features -- -D warnings` | ✅ 通过（2026-05-20） |
+| `cargo test --workspace --lib` | ✅ 通过（2026-05-20） |
+| `cargo test --workspace`（含 `tests/` 集成） | ⚠️ Windows 本机 `os error 1455`（页面文件不足 / rlib mmap）；以 CI Ubuntu 为准 |
+| `npm run test:unit` / `npm run build` | ✅ 通过（15 tests + `vite build`，2026-05-20） |
 
 ## 已知适配层（后续可拆）
 
