@@ -1,29 +1,18 @@
-//! Shared kernel contracts for headless, embedded, and desktop hosts.
+//! 无头 / 嵌入式 / 桌面宿主共用的内核运行时。
 //!
-//! Orchestration (`process_message`, `PluginHost`, repositories) still lives in
-//! `oclivenewnew-tauri` while K2 extraction proceeds; this crate holds shared
-//! error types, DTOs/models, and repository trait ports.
+//! - **纯数据**：[`oclive_kernel_types`]
+//! - **trait 端口**：[`oclive_kernel_contracts`]
+//! - **本 crate**：领域引擎实现与 HTTP 边界常量（主编排仍在 `oclivenewnew-tauri`）
 
 pub mod domain;
 pub mod utils;
 
-pub use oclive_kernel_contracts::{
-    ComplexEmotionProvider, EmotionPolicy, EventPolicy, FavorabilityRepository, LocalPluginBridge,
-    MemoryPolicy, MemoryRepository, MemoryRetrieval, PromptAssembler, UserEmotionAnalyzer,
-};
-pub use oclive_kernel_types::complex_emotion;
-pub use oclive_kernel_types::emotion;
-pub use oclive_kernel_types::error;
-pub use oclive_kernel_types::local_plugin;
-pub use oclive_kernel_types::memory_retrieval;
-pub use oclive_kernel_types::models;
-pub use oclive_kernel_types::policy;
-pub use oclive_kernel_types::prompt;
-
 pub use oclive_validation as validation;
 
-pub use error::{http_chat_codes, AppError, KernelErrorBody, Result};
-pub use models::*;
+// 过渡期兼容层：下游可继续 `use oclive_kernel_runtime::AppError` 等旧路径；
+// 计划在后续次要版本收紧 surface，请新代码优先依赖 `oclive_kernel_types` / `oclive_kernel_contracts`。
+pub use oclive_kernel_contracts::*;
+pub use oclive_kernel_types::*;
 
 /// Runtime API / contract revision (bump when HTTP or DTO breaking changes ship).
 pub const RUNTIME_API_VERSION: &str = "0.2.0";
