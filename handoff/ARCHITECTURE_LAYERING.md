@@ -78,6 +78,40 @@
 | `oclive_kernel_types` / `oclive_kernel_contracts` rustdoc（模块级 + 公开类型/trait 一句注释） | 已落实 |
 | `init/mod.rs` ≤300 行、`bench/mod.rs` ≤300 行（`init_config` / `bench_core`） | 已落实 |
 
+## 双核双态（2026-05）
+
+| 项 | 状态 |
+|----|------|
+| P2 宿主 v3 加载 + `DualPipelineRunner` + `process_message` 门控 | **已完成** |
+| P3 `oclive init --dual-core` | **已完成** |
+| P4 OOCP S13（可选 `--include-s13`） | **已完成** |
+| P5 Monolith `[dual_core]` 脚手架 | **已完成** |
+| 深化：七槽 experimental method + 快照回滚 + Method 注册表 + 架构图 + 开发者指南 | **已完成** |
+| 精修：`oclive_dual_core` 分级日志 + 性能结果解读文档 | **已完成** |
+
+文档：[DEVELOPER_GUIDE.md](../creator-docs/dual-core/DEVELOPER_GUIDE.md) · [METHOD_REGISTRY.md](../creator-docs/dual-core/METHOD_REGISTRY.md) · [DUAL_CORE_ALIGNMENT.md](DUAL_CORE_ALIGNMENT.md)
+
+## 最终精修（2026-05-22）
+
+| 项 | 状态 |
+|----|------|
+| CI 一致性：`clippy` / `cargo test --workspace`（`CARGO_BUILD_JOBS=1`）/ `npm run test:unit` / `npm run build` | 见下表「最终精修验证」 |
+| 集成测：`invoke_hotpath_matrix` / `narrative_hint_contract_audit` / `permission_three_way_consistency` / `oclive-cli` e2e | 见下表 |
+| [TESTING_GUIDE.md](../creator-docs/testing/TESTING_GUIDE.md) 结果解读章节 | **已完成** |
+| 双核调试日志（`DualPipelineRunner`） | **已完成** |
+
+### 最终精修验证（2026-05-22）
+
+| 检查 | 结果 |
+|------|------|
+| `cargo clippy --workspace --all-targets --all-features -- -D warnings`（`CARGO_BUILD_JOBS=1`；勿把 `-j 1` 放在 `--` 后） | ✅ 通过 |
+| `cargo test`（`src-tauri/`，与 CI `rust` job 一致） | ✅ 通过（含集成测） |
+| `cargo test --workspace --lib` | ✅ 通过 |
+| `cargo test -p oclive_kernel_contracts --doc` | ✅ 通过（修正 `EventEstimator` 示例） |
+| `npm run test:unit` / `npm run build` | ✅ 22 tests + vite build |
+| `invoke_hotpath_matrix` / `narrative_hint_contract_audit` / `permission_three_way_consistency` | ✅ 通过 |
+| `cargo test -p oclive-cli`（含 e2e_init / e2e_explain / e2e_dry_run 等） | ✅ 通过 |
+
 ## 最终扫尾（2026-05-20）
 
 | 项 | 状态 |
