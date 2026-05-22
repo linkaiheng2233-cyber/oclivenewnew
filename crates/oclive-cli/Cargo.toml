@@ -2,7 +2,7 @@
 name = "oclive-cli"
 version = "0.1.0"
 edition = "2021"
-license = "AGPL-3.0"
+license = "AGPL-3.0-or-later"
 description = "Official oclive kernel project scaffolding CLI"
 readme = "README.md"
 repository = "https://github.com/linkaiheng2233-cyber/oclivenewnew"

@@ -29,14 +29,16 @@
 
 ### §6.4 审计结果状态（当前）
 
-**已知漏洞跟踪中**；**不宣称零漏洞**。漏洞级命中与路线图以 **[KNOWN_VULNERABILITIES.md](../security/KNOWN_VULNERABILITIES.md)** 为准（最近更新日期见该文件）。
+**漏洞级已清零**（**2026-05-20**）；**警告级仍跟踪**。详情见 **[KNOWN_VULNERABILITIES.md](../security/KNOWN_VULNERABILITIES.md)**。
 
-摘要（**2026-05-12**，`cargo audit --no-fetch --stale`，`src-tauri/Cargo.lock`；与当次 CLI 输出一致）：
+摘要（**2026-05-20**，工作区根 `Cargo.lock`，`cargo audit --no-fetch --stale`）：
 
-- **漏洞级（error）**：**5** 条（`rsa`、`rustls-webpki` ×3 条 advisory、`sqlx`）。
-- **警告级（warning）**：**17** 条（含 gtk-rs *unmaintained*、`rustls-pemfile` *unmaintained*、`glib` *unsound* 等）；**不**写入 KNOWN 表，但在发版评审时应通读 `cargo audit` 全文。
+- **漏洞级（error）**：**0**（`sqlx` 0.8.6 + 仅 `sqlite` 特性；运行时 `sql_migrate`，无 `sqlx-mysql` / `rsa` 解析链）。
+- **警告级（warning）**：**17** 条（含 gtk-rs *unmaintained* 等）；发版评审时通读 `cargo audit` 全文。
 
-CI：`.github/workflows/ci.yml` 中 **`cargo-audit`** job 使用 **`continue-on-error: true`**，用于**可见性**而不阻塞合并；待依赖升级后收紧为失败即红。
+**许可证合规**（**2026-05-20**）：根目录 `deny.toml` + `cargo deny check licenses` 退出码 **0**（允许表含 `AGPL-3.0-or-later`、`CDLA-Permissive-2.0`、`NCSA` 等；工作区 crate 统一 SPDX `AGPL-3.0-or-later`）。
+
+CI：`.github/workflows/ci.yml` 含 **`cargo-audit`**（`continue-on-error: true`）与 **`cargo-deny`**；`oclive ci init` 模板同步 deny / loom job。
 
 ### §6.5 未使用 / 可选依赖（审查结论）
 

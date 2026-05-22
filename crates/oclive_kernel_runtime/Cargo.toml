@@ -2,7 +2,7 @@
 name = "oclive_kernel_runtime"
 version = "0.2.0"
 edition = "2021"
-license = "AGPL-3.0"
+license = "AGPL-3.0-or-later"
 description = "oclive dialogue kernel contracts and shared constants (headless / embedded)"
 repository = "https://github.com/linkaiheng2233-cyber/oclivenewnew"
 keywords = ["oclive", "kernel", "runtime", "companion"]
