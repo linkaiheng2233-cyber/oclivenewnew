@@ -209,6 +209,7 @@ impl AppState {
             role.scene_text_cache.write().clear();
         }
         self.role_cache.write().remove(role_id);
+        self.invalidate_personality_cache_for_role(role_id);
     }
     /// # Errors
     ///
