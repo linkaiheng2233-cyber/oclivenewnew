@@ -19,7 +19,7 @@
 
 ### A1. 测试与质量闸门（P0）
 
-- [x] **核心路径自动化（可 CI 子集）**：**HTTP `--api` 进程重启**（[`scripts/e2e-core-api-restart.mjs`](../scripts/e2e-core-api-restart.mjs) + CI `oocp-test-suite`）；**`vite build` + `vite preview` + Playwright** 首屏烟测（[`e2e/preview-shell.spec.ts`](../e2e/preview-shell.spec.ts)，CI **`frontend`** job）。**安装包 / Tauri 原生窗 / WebDriver 全屋** 另立项，不记入本条。
+- [x] **核心路径自动化（可 CI 子集）**：**HTTP `--api` 进程重启**（[`scripts/e2e-core-api-restart.mjs`](../scripts/e2e-core-api-restart.mjs) + CI `oocp-test-suite`）；**`vite build:e2e` + `vite preview` + Playwright** 首屏与关键路径（[`e2e/preview-shell.spec.ts`](../e2e/preview-shell.spec.ts)、[`e2e/send-message.spec.ts`](../e2e/send-message.spec.ts)、[`e2e/switch-role.spec.ts`](../e2e/switch-role.spec.ts)、[`e2e/install-plugin.spec.ts`](../e2e/install-plugin.spec.ts)；`e2e-mock/` invoke 桩，CI **`frontend`** job）。**安装包 / Tauri 原生窗 / WebDriver 全屋** 另立项，不记入本条。
 - [ ] **核心路径自动化（原生安装包与 Tauri 窗）**：签名分发、多 OS 安装器、真 `invoke` GUI 全链；依赖发行流水线或 Tauri driver，**不作为当前 A1 必勾项**。
 - [x] **`invoke` 宿主热路径集成烟测**：高流量命令经 [`INVOKE_HOTPATH_MATRIX.md`](./INVOKE_HOTPATH_MATRIX.md) 对齐；[`invoke_hotpath_matrix.rs`](../src-tauri/tests/invoke_hotpath_matrix.rs) 串联 **9** 条 `*_impl`。**全 handler golden / 真 IPC** 仍后续增强。
 - [x] **发版前闸门与 CI 对齐**：[`CONTRIBUTING.md`](../CONTRIBUTING.md) 已列 **`npm run check:release`**、**`npm run test:unit`**、**`npm run test:e2e:preview`**（Playwright）及 **OOCP** / **`rust`** / **`frontend`** job 差异；CI 见 [`.github/workflows/ci.yml`](../.github/workflows/ci.yml)。
@@ -48,7 +48,7 @@
 
 ### A6. 国际化与文案（P1）
 
-- [ ] **界面语言切换后无残留中文**（在承诺范围内；长尾可声明例外）。
+- [x] **界面语言切换后无残留中文**（在承诺范围内；长尾可声明例外）。Vitest 守卫 [`i18n_hardcoded_ui.spec.ts`](../src/__tests__/i18n_hardcoded_ui.spec.ts) 扫描 `src/**/*.vue|ts`（排除 `i18n/locales` 与注释）；角色扮演解析正则见 allowlist。
 - [x] **creator-docs-en（创作者文档英文镜像）**：主干（总索引、插件契约、`guides/`、`LICENSE_POLICY`、FAQ/兼容等）已与 [DOCUMENTATION_INDEX.md](../creator-docs/getting-started/DOCUMENTATION_INDEX.md) 及 [creator-docs-en/README.md](../creator-docs-en/README.md) 对拍收尾；**`creator-docs/roadmap/`** 等愿景与生态长文仍以中文为准；**更新纪律**（契约变更时同步英文或 CHANGELOG 声明）见英文 README 小节 [Documentation bilingual closure baseline](../creator-docs-en/README.md#documentation-bilingual-closure-baseline)。
 
 ### A7. 性能与资源（P1）
@@ -58,7 +58,7 @@
 ### A8. 无障碍与基础 UX（P1）
 
 - [x] **高频路径键盘与焦点（插件管理切片）**：V1 目录列表 ↑/↓ 与 `tabindex`；添加/删除槽位弹窗打开聚焦首控件/取消钮；架构图节点 `select` 可 Tab 聚焦。（聊天发送等待办）
-- [ ] **长任务进度**：导入、拉取、大索引等不可无限转圈无反馈。
+- [x] **长任务进度**：大包导入（`import_progress` + 文件名/序号）、市场索引同步（按钮 + `role=status`）、本地插件 zip 安装（按钮态）；环境自检保留 `envDiagLoading` 文案。
 
 ### A9. 支持与预期（P1）
 

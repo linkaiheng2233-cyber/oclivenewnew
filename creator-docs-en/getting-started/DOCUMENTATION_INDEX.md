@@ -107,13 +107,13 @@ Time-boxed “start here → ship”; **authoritative detail stays in each topic
 | **Editor validation roadmap** | **[../../creator-docs/role-pack/EDITOR_VALIDATION_ROADMAP.md](../../creator-docs/role-pack/EDITOR_VALIDATION_ROADMAP.md)** |
 | **Pack versioning, `schema_version`, `knowledge/`** | **[../../creator-docs/role-pack/PACK_VERSIONING.md](../../creator-docs/role-pack/PACK_VERSIONING.md)** · **[../../creator-docs/role-pack/WORLDVIEW_KNOWLEDGE.md](../../creator-docs/role-pack/WORLDVIEW_KNOWLEDGE.md)** |
 | **Extension points and source map** | **[../plugin-and-architecture/EXTENSION_POINTS.md](../plugin-and-architecture/EXTENSION_POINTS.md)** |
-| **Vision and roadmap** | **[../../creator-docs/roadmap/VISION_ROADMAP_MONTHLY.md](../../creator-docs/roadmap/VISION_ROADMAP_MONTHLY.md)** |
-| **Open lab vision** | **[../../creator-docs/roadmap/VISION_OPEN_LAB.md](../../creator-docs/roadmap/VISION_OPEN_LAB.md)** |
-| **Experience backlog** | **[../../creator-docs/roadmap/BACKLOG_EXPERIENCE_AND_ECOSYSTEM.md](../../creator-docs/roadmap/BACKLOG_EXPERIENCE_AND_ECOSYSTEM.md)** |
-| **Someday toolchain / CI** | **[../../creator-docs/roadmap/SOMEDAY_TOOLCHAIN_CI.md](../../creator-docs/roadmap/SOMEDAY_TOOLCHAIN_CI.md)** |
-| **Market + launcher integration** | **[../../creator-docs/roadmap/MARKET_LAUNCHER_INTEGRATION.md](../../creator-docs/roadmap/MARKET_LAUNCHER_INTEGRATION.md)** |
-| **Community web vision** | **[../../creator-docs/roadmap/COMMUNITY_WEB_VISION.md](../../creator-docs/roadmap/COMMUNITY_WEB_VISION.md)** |
-| **Plugin web section + `plugins.json`** | **[../../creator-docs/roadmap/PLUGIN_WEB_SECTION.md](../../creator-docs/roadmap/PLUGIN_WEB_SECTION.md)** |
+| **Vision and roadmap** | **[../roadmap/VISION_ROADMAP_MONTHLY.md](../roadmap/VISION_ROADMAP_MONTHLY.md)** (Chinese: [../../creator-docs/roadmap/VISION_ROADMAP_MONTHLY.md](../../creator-docs/roadmap/VISION_ROADMAP_MONTHLY.md)) |
+| **Open lab vision** | **[../roadmap/VISION_OPEN_LAB.md](../roadmap/VISION_OPEN_LAB.md)** (Chinese: [../../creator-docs/roadmap/VISION_OPEN_LAB.md](../../creator-docs/roadmap/VISION_OPEN_LAB.md)) |
+| **Experience backlog** | **[../roadmap/BACKLOG_EXPERIENCE_AND_ECOSYSTEM.md](../roadmap/BACKLOG_EXPERIENCE_AND_ECOSYSTEM.md)** (Chinese: [../../creator-docs/roadmap/BACKLOG_EXPERIENCE_AND_ECOSYSTEM.md](../../creator-docs/roadmap/BACKLOG_EXPERIENCE_AND_ECOSYSTEM.md)) |
+| **Someday toolchain / CI** | **[../roadmap/SOMEDAY_TOOLCHAIN_CI.md](../roadmap/SOMEDAY_TOOLCHAIN_CI.md)** (Chinese: [../../creator-docs/roadmap/SOMEDAY_TOOLCHAIN_CI.md](../../creator-docs/roadmap/SOMEDAY_TOOLCHAIN_CI.md)) |
+| **Market + launcher integration** | **[../roadmap/MARKET_LAUNCHER_INTEGRATION.md](../roadmap/MARKET_LAUNCHER_INTEGRATION.md)** (Chinese: [../../creator-docs/roadmap/MARKET_LAUNCHER_INTEGRATION.md](../../creator-docs/roadmap/MARKET_LAUNCHER_INTEGRATION.md)) |
+| **Community web vision** | **[../roadmap/COMMUNITY_WEB_VISION.md](../roadmap/COMMUNITY_WEB_VISION.md)** (Chinese: [../../creator-docs/roadmap/COMMUNITY_WEB_VISION.md](../../creator-docs/roadmap/COMMUNITY_WEB_VISION.md)) |
+| **Plugin web section + `plugins.json`** | **[../roadmap/PLUGIN_WEB_SECTION.md](../roadmap/PLUGIN_WEB_SECTION.md)** (Chinese: [../../creator-docs/roadmap/PLUGIN_WEB_SECTION.md](../../creator-docs/roadmap/PLUGIN_WEB_SECTION.md)) |
 | **OVERVIEW alias** | **[OVERVIEW.md](OVERVIEW.md)** → [PROJECT_OVERVIEW.md](PROJECT_OVERVIEW.md) |
 | **Lightweight / `cargo audit` / `cargo-bloat`** | **[../LIGHTWEIGHT_PROFILE.md](../LIGHTWEIGHT_PROFILE.md)** (English mirror of `creator-docs/development/LIGHTWEIGHT_PROFILE.md`) |
 | **Performance & known limits (A7)** | **[PERFORMANCE.md](PERFORMANCE.md)** (Chinese: [`creator-docs/getting-started/PERFORMANCE.md`](../../creator-docs/getting-started/PERFORMANCE.md)) |
