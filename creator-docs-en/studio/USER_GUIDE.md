@@ -1,6 +1,6 @@
-# oclive Studio User Guide
+# A.I.Live Studio User Guide
 
-**oclive Studio** (`oclive-studio`) combines the former launcher and pack editor: **Launch mode** and **Create mode** in one app, linked to the **oclivenewnew** runtime via a shared **roles root** on disk.
+**A.I.Live Studio** (repository **`oclive-studio`**, codename unchanged) combines the former launcher and pack editor: **Launch mode** and **Create mode** in one app, linked to the **oclivenewnew** runtime via a shared **roles root** on disk.
 
 ## Install and bundled zip
 
@@ -17,7 +17,7 @@ Key fields: `rolesDir` (`OCLIVE_ROLES_DIR`), `ocliveExe` / `ocliveProjectRoot`, 
 
 ## Launch mode
 
-Configure roles root and LLM, run **environment diagnostics** (doctor-style checks), then **Start oclive**.
+Configure roles root and LLM, run **environment diagnostics** (doctor-style checks), then **Start A.I.Live**.
 
 ## Create mode
 

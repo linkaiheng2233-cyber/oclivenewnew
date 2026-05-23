@@ -1,6 +1,6 @@
-# Pure kernel: boundary, soul, and embedded scope
+# A.I.Live · Pure kernel: boundary, soul, and embedded scope
 
-This page defines what oclive means by a **pure kernel**, and how it aligns with the desktop host, headless service, embedded library, and robot **“soul”** delivery. Module taxonomy: [OCLIVE_ARCHITECTURE_OVERVIEW.md](OCLIVE_ARCHITECTURE_OVERVIEW.md). Diagram: [KERNEL_AND_MODULES_ARCHITECTURE.md](KERNEL_AND_MODULES_ARCHITECTURE.md). Phases: [KERNEL_IMPLEMENTATION_PLAN.md](KERNEL_IMPLEMENTATION_PLAN.md).
+This page defines what **A.I.Live** means by a **pure kernel** (engineering codename **oclive**), and how it aligns with the desktop host, headless service, embedded library, and robot **“soul”** delivery. Module taxonomy: [OCLIVE_ARCHITECTURE_OVERVIEW.md](OCLIVE_ARCHITECTURE_OVERVIEW.md). Diagram: [KERNEL_AND_MODULES_ARCHITECTURE.md](KERNEL_AND_MODULES_ARCHITECTURE.md). Phases: [KERNEL_IMPLEMENTATION_PLAN.md](KERNEL_IMPLEMENTATION_PLAN.md).
 
 [中文](../../creator-docs/getting-started/PURE_KERNEL_BOUNDARY.md)
 

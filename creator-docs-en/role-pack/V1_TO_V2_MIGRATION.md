@@ -1,4 +1,6 @@
-# Migrating role packs from v1 to v2
+# Migrating role packs from v1 to v2 (A.I.Live)
+
+**A.I.Live** role packs use **`pipeline.ocblueprint`** as the v2 SSOT (engineering codename **oclive**).
 
 **Already on v2?** Next: **[V2_TO_V3_MIGRATION.md](V2_TO_V3_MIGRATION.md)** (`runtime_config`, optional dual-core; ~10 min manual upgrade).
 

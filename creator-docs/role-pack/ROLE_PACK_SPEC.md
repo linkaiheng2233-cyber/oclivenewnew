@@ -4,7 +4,7 @@
 
 **创作者学习路径（时间盒：入门 → 进阶 → 发布）**：[CREATOR_LEARNING_PATH.md](CREATOR_LEARNING_PATH.md)
 
-本文档描述 **与 oclive 主宿主加载逻辑一致** 的磁盘角色包形状，便于 **多发行版**（桌面 Tauri、无头 `kernel_server`、未来启动器）共用同一包。权威细节仍以源码与既有文档为准：
+本文档描述 **与 A.I.Live 主宿主加载逻辑一致** 的磁盘角色包形状，便于 **多发行版**（桌面 Tauri、无头 `kernel_server`、未来启动器）共用同一包。权威细节仍以源码与既有文档为准：
 
 - 创作者门面与字段语义：[README_MANIFEST.md](../../roles/README_MANIFEST.md)
 - 六宿主槽与编排：[PLUGIN_V1.md](../plugin-and-architecture/PLUGIN_V1.md)、[SETTINGS_REFERENCE.md](../cli/SETTINGS_REFERENCE.md)
@@ -190,7 +190,7 @@ JSON Schema：`crates/oclive-cli/schemas/pipeline.ocblueprint.v2.schema.json`。
 cargo run -p oclive-cli -- pack validate ./roles/mumu --host-version 0.2.0
 ```
 
-- 默认 `--host-version` 为 **本 CLI 的 `CARGO_PKG_VERSION`**；与桌面宿主版本不一致时，请显式传入 **与目标 oclive 发行版一致的 semver** 再检查 `min_runtime_version`。
+- 默认 `--host-version` 为 **本 CLI 的 `CARGO_PKG_VERSION`**；与桌面宿主版本不一致时，请显式传入 **与目标 A.I.Live 发行版一致的 semver** 再检查 `min_runtime_version`。
 - 通过时输出：`✓ 角色包验证通过`；失败时逐条列出错误。
 
 **JSON Schema**（IDE 提示 / 外部校验器）：`crates/oclive-cli/schemas/role_pack_manifest.schema.json`、`role_pack_settings.schema.json`。

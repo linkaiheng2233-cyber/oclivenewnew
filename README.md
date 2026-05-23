@@ -1,4 +1,6 @@
-# oclive（oclivenewnew）
+# A.I.Live — 可插拔的角色动脉织机
+
+> 工程仓库：**oclivenewnew**（工程代号 **oclive**）
 
 [English](README.en.md)
 
@@ -6,7 +8,7 @@
 
 本地优先的桌面角色对话应用：**Tauri + Vue 3 + Rust**。引擎支持场景、虚拟时间、异地/共景、好感与记忆、可替换子系统（记忆检索 / 情绪 / 事件估计 / Prompt 组装），角色内容以 **`roles/{角色id}/`** 角色包分发。
 
-**架构（摘要）**：Oclive 采用 **契约型薄核** + **单核双态构建架构**——**六宿主后端模块**（memory / emotion / event / prompt / llm / agent）经 `PluginHost` 接入；**第 1 设施子模块**（复杂情感专家模型设施子模块）等为编排行内设施；**后端模块插件模块** 挂第 K 模块外挂、**不占第 N 模块号**。交付：**OOCP**、角色包、**`oclive-cli` 内核工厂**；构建可选 **Monolith 宏核态**。详见 **[架构总览](creator-docs/getting-started/OCLIVE_ARCHITECTURE_OVERVIEW.md)**（[English](creator-docs-en/getting-started/OCLIVE_ARCHITECTURE_OVERVIEW.md)）。
+**架构（摘要）**：A.I.Live 采用 **契约型薄核** + **单核双态构建架构**——**六宿主后端模块**（memory / emotion / event / prompt / llm / agent）经 `PluginHost` 接入；**第 1 设施子模块**（复杂情感专家模型设施子模块）等为编排行内设施；**后端模块插件模块** 挂第 K 模块外挂、**不占第 N 模块号**。交付：**OOCP**、角色包、**`oclive-cli` 内核工厂**；构建可选 **Monolith 宏核态**。详见 **[架构总览](creator-docs/getting-started/OCLIVE_ARCHITECTURE_OVERVIEW.md)**（[English](creator-docs-en/getting-started/OCLIVE_ARCHITECTURE_OVERVIEW.md)）。
 
 ## 当前工程状态（摘要）
 
@@ -59,7 +61,7 @@
 
 ## 平台愿景（开放实验场）
 
-在 **本地优先、可替换子系统、角色包为唯一对接面** 的前提下，oclive 希望成为创作者与玩家都能 **安全实验** 的桌面底座：契约与 CI 守住兼容边界，侧车与目录式插件降低扩展成本。**愿景摘要**见 [creator-docs/roadmap/VISION_OPEN_LAB.md](creator-docs/roadmap/VISION_OPEN_LAB.md)；分阶段路线见 [creator-docs/roadmap/VISION_ROADMAP_MONTHLY.md](creator-docs/roadmap/VISION_ROADMAP_MONTHLY.md)。
+在 **本地优先、可替换子系统、角色包为唯一对接面** 的前提下，A.I.Live 希望成为创作者与玩家都能 **安全实验** 的桌面底座：契约与 CI 守住兼容边界，侧车与目录式插件降低扩展成本。**愿景摘要**见 [creator-docs/roadmap/VISION_OPEN_LAB.md](creator-docs/roadmap/VISION_OPEN_LAB.md)；分阶段路线见 [creator-docs/roadmap/VISION_ROADMAP_MONTHLY.md](creator-docs/roadmap/VISION_ROADMAP_MONTHLY.md)。
 
 ## 文档（创作者与扩展）
 
@@ -103,7 +105,7 @@
 | **运行时（本仓库）** | 玩家使用的桌面客户端 + 对话引擎 |
 | **角色包** | `roles/` 下每角色一目录；**唯一对接面**为磁盘上的包目录（或 zip 解压后同等结构） |
 | **角色包编写器** | **独立仓库**（例如与本仓库**同级**目录 `oclive-pack-editor`），只负责产出包，不引用本仓库源码；多根工作区可用根目录 `oclive-pack-editor.code-workspace` 同时打开两项目 |
-| **启动器** | **独立仓库** [oclive-launcher](https://github.com/linkaiheng2233-cyber/oclive-launcher)：统一配置编写器与运行时路径、为 oclive 注入 **`OCLIVE_ROLES_DIR`**，并支持 **从 zip 安装角色包**（选择 `settings.json` 的 Ollama `model`、可选覆盖、**`ollama pull`**） |
+| **启动器** | **独立仓库** [oclive-launcher](https://github.com/linkaiheng2233-cyber/oclive-launcher)：统一配置编写器与运行时路径、为 A.I.Live 注入 **`OCLIVE_ROLES_DIR`**，并支持 **从 zip 安装角色包**（选择 `settings.json` 的 Ollama `model`、可选覆盖、**`ollama pull`**） |
 | **扩展** | 见 [creator-docs/plugin-and-architecture/EXTENSION_POINTS.md](creator-docs/plugin-and-architecture/EXTENSION_POINTS.md)；HTTP 侧车见 [creator-docs/plugin-and-architecture/CREATOR_PLUGIN_ARCHITECTURE.md](creator-docs/plugin-and-architecture/CREATOR_PLUGIN_ARCHITECTURE.md)；**目录式插件**（整壳 / 嵌入插槽、manifest）见 [creator-docs/plugin-and-architecture/DIRECTORY_PLUGINS.md](creator-docs/plugin-and-architecture/DIRECTORY_PLUGINS.md) |
 
 **契约与版本（摘要）**：`manifest.min_runtime_version`、根对象顶层键白名单、`validate_disk_manifest` 等以 [PACK_VERSIONING.md](creator-docs/role-pack/PACK_VERSIONING.md) 与 `RoleStorage::load_role` 为准。编写器侧 **`HOST_RUNTIME_VERSION`**（`oclive-pack-editor`）应与 **`src-tauri/Cargo.toml` 的 `version`** 一致。

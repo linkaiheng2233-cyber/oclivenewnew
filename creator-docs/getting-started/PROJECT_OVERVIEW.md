@@ -1,6 +1,6 @@
-# 项目全貌与事项总览（理清条理）
+# A.I.Live · 项目全貌与事项总览（理清条理）
 
-本文把 **三件套分工、已落实内容、文档入口、命令、人机分工、待排期** 收拢在一处；细节仍以各专题文档为准。
+**A.I.Live — 可插拔的角色动脉织机**（工程代号 **oclive**；本工程仓库 **oclivenewnew**）。本文把 **三件套分工、已落实内容、文档入口、命令、人机分工、待排期** 收拢在一处；细节仍以各专题文档为准。
 
 > **架构文字总述**（契约型薄核、单核双态构建、特点）：[OCLIVE_ARCHITECTURE_OVERVIEW.md](OCLIVE_ARCHITECTURE_OVERVIEW.md)。**架构总览图**（内核居中、模块环绕；含静态图与 Mermaid）：[KERNEL_AND_MODULES_ARCHITECTURE.md](KERNEL_AND_MODULES_ARCHITECTURE.md)。由此可链到 [PLUGIN_V1.md](../plugin-and-architecture/PLUGIN_V1.md) 与各模块专题。
 
@@ -36,7 +36,7 @@
 | **项目现状（版本、交付面、CHANGELOG 中英）** | [PROJECT_CURRENT_STATUS.md](PROJECT_CURRENT_STATUS.md) |
 | **进度快照与目标对齐（内核 + 产品 + 按用途分类的文档地图）** | [PROJECT_STATUS_AND_ALIGNMENT.md](PROJECT_STATUS_AND_ALIGNMENT.md) |
 | **内核与六槽架构总览（图）** | [KERNEL_AND_MODULES_ARCHITECTURE.md](KERNEL_AND_MODULES_ARCHITECTURE.md) |
-| **创作者：从包到 oclive** | [CREATOR_WORKFLOW.md](CREATOR_WORKFLOW.md) |
+| **创作者：从包到 A.I.Live** | [CREATOR_WORKFLOW.md](CREATOR_WORKFLOW.md) |
 | **v2 蓝图 / 导入** | [ROLE_PACK_SPEC.md](../role-pack/ROLE_PACK_SPEC.md) · [V1_TO_V2_MIGRATION.md](../role-pack/V1_TO_V2_MIGRATION.md)（v1 已废弃） |
 | **性格档案设计轴心** | [docs/personality-archive-notes.md](../../docs/personality-archive-notes.md) |
 | **思路变化（以前 vs 现在）** | [docs/design-axis-evolution.md](../../docs/design-axis-evolution.md) |
@@ -66,7 +66,7 @@
 - **Git**：`clone` / `pull`、**push** 到 GitHub（或你的远端），在 **Actions** 里确认 workflow **绿灯**。
 - **LNK1104**（Windows 链接失败）：关占用进程、`cargo test -j 1` 等；属环境/占用问题，**无法靠 CI 在每台开发机上强制避免**。
 - **发版决策**：版本号、`CHANGELOG.md` / `CHANGELOG.en.md`、是否配置 `VITE_SENTRY_DSN`、安装包签名、对外说明。
-- **冒烟与联调**：装包 → 启动 → 对话 → 导入包；编写器导出 → oclive 导入（按测试清单）。
+- **冒烟与联调**：装包 → 启动 → 对话 → 导入包；编写器导出 → A.I.Live 导入（按测试清单）。
 
 ### 适合在协作里交给开发/AI 的
 

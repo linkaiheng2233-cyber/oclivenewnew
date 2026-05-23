@@ -1,8 +1,8 @@
-# Contributing to oclive
+# Contributing to A.I.Live
 
 [中文](CONTRIBUTING.md)
 
-Thank you for helping improve oclive. High-level goals are described in [creator-docs/roadmap/VISION_ROADMAP_MONTHLY.md](creator-docs/roadmap/VISION_ROADMAP_MONTHLY.md).
+Thank you for helping improve **A.I.Live** (engineering codename **oclive**). High-level goals are described in [creator-docs/roadmap/VISION_ROADMAP_MONTHLY.md](creator-docs/roadmap/VISION_ROADMAP_MONTHLY.md).
 
 ## GitHub (CI, Dependabot, branch protection)
 

@@ -1,6 +1,6 @@
-# Project overview (three repos, one mental model)
+# A.I.Live · Project overview (three repos, one mental model)
 
-This page collects **how the three repos split work**, what is **already shipped in this repo**, **where to read next**, **common commands**, **human vs automation roles**, and **what is still backlog**. Details live in topic docs.
+**A.I.Live — Pluggable Role Artery Loom** (engineering codename **oclive**; this repo **oclivenewnew**). This page collects **how the three repos split work**, what is **already shipped in this repo**, **where to read next**, **common commands**, **human vs automation roles**, and **what is still backlog**. Details live in topic docs.
 
 > **Kernel-centric architecture diagram** (kernel in the center, modules around it; static asset + Mermaid): [KERNEL_AND_MODULES_ARCHITECTURE.md](KERNEL_AND_MODULES_ARCHITECTURE.md). Links onward to [PLUGIN_V1.md](../plugin-and-architecture/PLUGIN_V1.md) and module-specific pages.
 
@@ -35,7 +35,7 @@ This page collects **how the three repos split work**, what is **already shipped
 | **Current status (version, ships, bilingual CHANGELOG)** | [PROJECT_CURRENT_STATUS.md](PROJECT_CURRENT_STATUS.md) |
 | **Status snapshot & goal alignment (kernel + product + doc map by purpose)** | [PROJECT_STATUS_AND_ALIGNMENT.md](PROJECT_STATUS_AND_ALIGNMENT.md) |
 | **Kernel & six-slot diagram** | [KERNEL_AND_MODULES_ARCHITECTURE.md](KERNEL_AND_MODULES_ARCHITECTURE.md) |
-| **Creator: from pack to oclive** | [CREATOR_WORKFLOW.md](../../creator-docs/getting-started/CREATOR_WORKFLOW.md) |
+| **Creator: from pack to A.I.Live** | [CREATOR_WORKFLOW.md](../../creator-docs/getting-started/CREATOR_WORKFLOW.md) |
 | **manifest / import** | [roles/README_MANIFEST.md](../../roles/README_MANIFEST.md) |
 | **Personality archive design** | [docs/personality-archive-notes.md](../../docs/personality-archive-notes.md) |
 | **Design axis evolution** | [docs/design-axis-evolution.md](../../docs/design-axis-evolution.md) |
@@ -65,7 +65,7 @@ This page collects **how the three repos split work**, what is **already shipped
 - **Git:** `clone` / `pull` / **push**, then confirm **Actions** is green.
 - **LNK1104** (Windows linker): close locking processes, `cargo test -j 1`, etc. — environment-specific.
 - **Release decisions:** version numbers, `CHANGELOG`, optional `VITE_SENTRY_DSN`, installer signing, release notes.
-- **Smoke:** install → launch → chat → import pack; editor export → oclive import (use the checklist).
+- **Smoke:** install → launch → chat → import pack; editor export → A.I.Live import (use the checklist).
 
 ### Good fit for dev / AI collaboration
 

@@ -2,7 +2,7 @@
 
 [English](CONTRIBUTING.en.md)
 
-感谢考虑为 oclive 做贡献。项目目标见 [creator-docs/roadmap/VISION_ROADMAP_MONTHLY.md](creator-docs/roadmap/VISION_ROADMAP_MONTHLY.md)。
+感谢考虑为 **A.I.Live** 做贡献。项目目标见 [creator-docs/roadmap/VISION_ROADMAP_MONTHLY.md](creator-docs/roadmap/VISION_ROADMAP_MONTHLY.md)。
 
 ## GitHub 仓库（CI、Dependabot、分支保护）
 

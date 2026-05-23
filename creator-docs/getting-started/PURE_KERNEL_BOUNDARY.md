@@ -1,6 +1,6 @@
-# 纯净内核：边界、灵魂与嵌入式范围
+# A.I.Live · 纯净内核：边界、灵魂与嵌入式范围
 
-本文定义 oclive **「纯净内核」** 在工程与产品叙事中的含义，并与桌面宿主、无头服务、嵌入式库、机器人「灵魂」交付对齐。模块分层见 [OCLIVE_ARCHITECTURE_OVERVIEW.md](OCLIVE_ARCHITECTURE_OVERVIEW.md)；总览图见 [KERNEL_AND_MODULES_ARCHITECTURE.md](KERNEL_AND_MODULES_ARCHITECTURE.md)；实施阶段见 [KERNEL_IMPLEMENTATION_PLAN.md](KERNEL_IMPLEMENTATION_PLAN.md)。
+本文定义 **A.I.Live** **「纯净内核」** 在工程与产品叙事中的含义（工程代号 **oclive**），并与桌面宿主、无头服务、嵌入式库、机器人「灵魂」交付对齐。模块分层见 [OCLIVE_ARCHITECTURE_OVERVIEW.md](OCLIVE_ARCHITECTURE_OVERVIEW.md)；总览图见 [KERNEL_AND_MODULES_ARCHITECTURE.md](KERNEL_AND_MODULES_ARCHITECTURE.md)；实施阶段见 [KERNEL_IMPLEMENTATION_PLAN.md](KERNEL_IMPLEMENTATION_PLAN.md)。
 
 [English](../../creator-docs-en/getting-started/PURE_KERNEL_BOUNDARY.md)
 

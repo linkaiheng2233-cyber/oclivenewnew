@@ -4,6 +4,8 @@
 
 **Author learning path:** [CREATOR_LEARNING_PATH.md](CREATOR_LEARNING_PATH.md)
 
+This specification describes on-disk role packs **aligned with the A.I.Live host loader** (desktop Tauri, headless `kernel_server`, launchers). Engineering codename **oclive**; authoritative detail remains in source and linked docs.
+
 [中文全文](../role-pack/ROLE_PACK_SPEC.md)
 
 ---

@@ -1,6 +1,6 @@
-# oclive 工作室用户指南
+# A.I.Live 工作室用户指南
 
-**oclive 工作室（oclive-studio）** 合并原启动器与角色包编写器：同一安装包内提供 **启动模式** 与 **创作模式**，通过磁盘上的 **roles 根** 与 **oclivenewnew** 运行时衔接。
+**A.I.Live 工作室**（工程仓库 **`oclive-studio`**，代号保留）合并原启动器与角色包编写器：同一安装包内提供 **启动模式** 与 **创作模式**，通过磁盘上的 **roles 根** 与 **oclivenewnew** 运行时衔接。
 
 ## 安装与整合包
 
@@ -24,7 +24,7 @@
 
 1. 配置 **roles 根** 与 **Ollama / Remote LLM**。
 2. 使用 **环境诊断**（对齐 `oclive doctor` 思路）检查 Rust、Ollama、roles 可写与磁盘空间；可对部分项 **一键修复**。
-3. 点击 **启动 oclive** 加载角色包并对话。
+3. 点击 **启动 A.I.Live** 加载角色包并对话。
 
 ## 创作模式
 

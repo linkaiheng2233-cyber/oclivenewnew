@@ -1,6 +1,6 @@
-# oclive documentation index and reading order
+# A.I.Live documentation index and reading order
 
-Creator and plugin documentation lives under repo root **`creator-docs/`** (topic subfolders). Pick a path by role.
+**A.I.Live — Pluggable Role Artery Loom** (engineering codename **oclive**). Creator and plugin documentation lives under repo root **`creator-docs/`** (topic subfolders). Pick a path by role.
 
 **If you feel lost**: start with **[PROJECT_OVERVIEW.md](PROJECT_OVERVIEW.md)** (three repos, commands, checklist). **To align status + goals + doc map by purpose**: **[PROJECT_STATUS_AND_ALIGNMENT.md](PROJECT_STATUS_AND_ALIGNMENT.md)**. **For semver, what ships, and changelog entry points only**: **[PROJECT_CURRENT_STATUS.md](PROJECT_CURRENT_STATUS.md)**.
 

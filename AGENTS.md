@@ -1,6 +1,6 @@
-# Agent / AI 协作说明（oclivenewnew）
+# Agent / AI 协作说明（A.I.Live · oclivenewnew）
 
-本仓库为 **Tauri + Vue 3 + Rust** 桌面角色对话应用。自动化助手或外部 Agent 在修改代码前，请先阅读：
+本仓库为 **A.I.Live** 桌面角色对话应用（**Tauri + Vue 3 + Rust**；工程代号 **oclive**）。自动化助手或外部 Agent 在修改代码前，请先阅读：
 
 - **跨平台**：[`docs/DEV_CROSS_PLATFORM.md`](docs/DEV_CROSS_PLATFORM.md)。
 - **Rust Release / workspace 依赖**：[`handoff/RUST_RELEASE_AND_DEPENDENCIES.md`](handoff/RUST_RELEASE_AND_DEPENDENCIES.md)。

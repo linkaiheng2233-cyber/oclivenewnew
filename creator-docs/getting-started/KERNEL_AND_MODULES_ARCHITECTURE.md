@@ -1,6 +1,6 @@
-# 以内核为中心的模块架构（总览图）
+# A.I.Live · 以内核为中心的模块架构（总览图）
 
-**内核集成方学习路径**：[KERNEL_INTEGRATOR_LEARNING_PATH.md](KERNEL_INTEGRATOR_LEARNING_PATH.md)
+**A.I.Live — 可插拔的角色动脉织机**（工程代号 **oclive**）。**内核集成方学习路径**：[KERNEL_INTEGRATOR_LEARNING_PATH.md](KERNEL_INTEGRATOR_LEARNING_PATH.md)
 
 **架构叙述与编号**（第 1–6 模块、第 N 设施子模块、后端模块插件模块）：[OCLIVE_ARCHITECTURE_OVERVIEW.md](OCLIVE_ARCHITECTURE_OVERVIEW.md)（[English](../../creator-docs-en/getting-started/OCLIVE_ARCHITECTURE_OVERVIEW.md)）。
 

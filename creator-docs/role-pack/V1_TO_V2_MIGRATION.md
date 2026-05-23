@@ -1,4 +1,6 @@
-# 从 v1 迁移到 v2 角色包
+# 从 v1 迁移到 v2 角色包（A.I.Live）
+
+**A.I.Live** 角色包自 v2 起以 **`pipeline.ocblueprint`** 为唯一配置中枢（工程代号 **oclive**）。
 
 **已升级到 v2？** 下一步见 **[V2_TO_V3_MIGRATION.md](V2_TO_V3_MIGRATION.md)**（`runtime_config`、可选双核；约 10 分钟手动升级）。
 
