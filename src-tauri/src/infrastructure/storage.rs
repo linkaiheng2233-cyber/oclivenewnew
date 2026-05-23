@@ -501,6 +501,19 @@ impl RoleStorage {
         serde_json::from_str::<DiskSceneConfig>(&raw).ok()
     }
 
+    fn scene_text_cache_get(role: &Role, key: &str) -> Option<Arc<str>> {
+        role.scene_text_cache
+            .read()
+            .ok()
+            .and_then(|c| c.get(key).cloned())
+    }
+
+    fn scene_text_cache_put(role: &Role, key: String, value: Arc<str>) {
+        if let Ok(mut cache) = role.scene_text_cache.write() {
+            cache.insert(key, value);
+        }
+    }
+
     /// 带 Role 内缓存的场景配置：每 scene id 至多读盘一次直至 `invalidate_role_cache`。
     #[must_use]
     pub fn get_scene_config(&self, role: &Role, scene_id: &str) -> Option<Arc<DiskSceneConfig>> {
@@ -588,35 +601,58 @@ impl RoleStorage {
         user_scene_id: &str,
     ) -> String {
         const MAX: usize = 8000;
-        if let Some(txt) = self.away_life_txt_file(role.id.as_str(), character_scene_id) {
-            return Self::clamp_utf8_chars(&txt, MAX);
+        let cache_key = format!("away:{character_scene_id}:{user_scene_id}");
+        if let Some(cached) = Self::scene_text_cache_get(role, &cache_key) {
+            return cached.to_string();
         }
-        let Some(cfg) = self.get_scene_config(role, character_scene_id) else {
-            return String::new();
-        };
-        if let Some(s) = cfg.away_life_by_user_scene.get(user_scene_id) {
-            let t = s.trim();
-            if !t.is_empty() {
-                return Self::clamp_utf8_chars(t, MAX);
-            }
-        }
-        let notes: Vec<String> = cfg
-            .away_life_notes
-            .iter()
-            .map(|s| s.trim().to_string())
-            .filter(|s| !s.is_empty())
-            .collect();
-        if notes.is_empty() {
-            String::new()
+        let away_key = format!("away_txt:{character_scene_id}");
+        let material = if let Some(cached_txt) = Self::scene_text_cache_get(role, &away_key) {
+            Self::clamp_utf8_chars(cached_txt.as_ref(), MAX)
+        } else if let Some(txt) = self.away_life_txt_file(role.id.as_str(), character_scene_id) {
+            let arc: Arc<str> = Arc::from(txt.as_str());
+            Self::scene_text_cache_put(role, away_key, Arc::clone(&arc));
+            Self::clamp_utf8_chars(&txt, MAX)
         } else {
-            Self::clamp_utf8_chars(&notes.join("\n"), MAX)
+            let Some(cfg) = self.get_scene_config(role, character_scene_id) else {
+                return String::new();
+            };
+            if let Some(s) = cfg.away_life_by_user_scene.get(user_scene_id) {
+                let t = s.trim();
+                if !t.is_empty() {
+                    Self::clamp_utf8_chars(t, MAX)
+                } else {
+                    String::new()
+                }
+            } else {
+                let notes: Vec<String> = cfg
+                    .away_life_notes
+                    .iter()
+                    .map(|s| s.trim().to_string())
+                    .filter(|s| !s.is_empty())
+                    .collect();
+                if notes.is_empty() {
+                    String::new()
+                } else {
+                    Self::clamp_utf8_chars(&notes.join("\n"), MAX)
+                }
+            }
+        };
+        if !material.is_empty() {
+            Self::scene_text_cache_put(role, cache_key, Arc::from(material.as_str()));
         }
+        material
     }
 
     #[must_use]
     pub fn scene_prompt_enrichment_for_role(&self, role: &Role, scene_id: &str) -> String {
         const MAX_SCENE_PROMPT_CHARS: usize = 6000;
+        let cache_key = format!("desc:{scene_id}");
+        if let Some(cached) = Self::scene_text_cache_get(role, &cache_key) {
+            return Self::clamp_utf8_chars(cached.as_ref(), MAX_SCENE_PROMPT_CHARS);
+        }
         if let Some(desc) = self.scene_description_file(role.id.as_str(), scene_id) {
+            let arc: Arc<str> = Arc::from(desc.as_str());
+            Self::scene_text_cache_put(role, cache_key, arc);
             return Self::clamp_utf8_chars(&desc, MAX_SCENE_PROMPT_CHARS);
         }
         let Some(cfg) = self.get_scene_config(role, scene_id) else {
@@ -977,6 +1013,7 @@ mod tests {
             pipeline_experimental: None,
             scene_ids: std::sync::Arc::from(Vec::<String>::new()),
             scene_config_cache: std::sync::Arc::new(std::sync::RwLock::new(std::collections::HashMap::new())),
+            scene_text_cache: std::sync::Arc::new(std::sync::RwLock::new(std::collections::HashMap::new())),
         };
 
         let role_dir = temp_dir.path().join("test_role");

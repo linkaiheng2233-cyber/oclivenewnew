@@ -212,6 +212,9 @@ pub struct Role {
     /// 按 scene id 缓存的 `scene.json` 解析结果；由 [`RoleStorage::get_scene_config`] 填充。
     #[serde(skip)]
     pub scene_config_cache: Arc<RwLock<HashMap<String, Arc<DiskSceneConfig>>>>,
+    /// 场景文本素材缓存（`desc:{scene}` / `away:{char}:{user}`）；由 [`RoleStorage`] 填充。
+    #[serde(skip)]
+    pub scene_text_cache: Arc<RwLock<HashMap<String, Arc<str>>>>,
 }
 
 impl Default for Role {
@@ -257,6 +260,7 @@ impl Default for Role {
             pipeline_experimental: None,
             scene_ids: Arc::from(Vec::<String>::new()),
             scene_config_cache: Arc::new(RwLock::new(HashMap::new())),
+            scene_text_cache: Arc::new(RwLock::new(HashMap::new())),
         }
     }
 }
