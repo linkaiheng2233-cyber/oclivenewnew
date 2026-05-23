@@ -41,7 +41,7 @@ Cross-repo optimization scan (Opus 4.7) plus **local grep/build verification**. 
 | 6 | `TurnContext` in `process_message` | **Done** | `domain/chat_engine/turn_context.rs`; co_present / remote / dual-core |
 | 7 | `AppState` builder / policy extract | **Done** | `state/mod.rs` ~447 lines; `app_state_builder.rs`, `policy_registry.rs`, `session_backends.rs` |
 | 8 | `load_role_cached` inflight map leak | **Pending** | `Arc::strong_count` cleanup |
-| 9 | `generate_handler!` grouping | **Pending** | |
+| 9 | `generate_handler!` grouping | **Done** | Domain comments in `lib.rs` `invoke_handler` |
 | 10 | Dual `prompt_builder.rs` dedup | **Done** | SSOT: `crates/oclive_kernel_runtime/src/domain/prompt_builder.rs`; tauri re-exports only |
 | 11 | Vite `manualChunks` (i18n / pinia persist) | **Done** | `vendor-i18n`, `vendor-pinia-persist` |
 | 12 | Tracing file sink / JSON | **Pending** | |
