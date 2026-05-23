@@ -22,7 +22,7 @@ use crate::infrastructure::sqlite_pool;
 use crate::infrastructure::storage::RoleStorage;
 use arc_swap::ArcSwap;
 use dashmap::DashMap;
-use parking_lot::{Mutex, RwLock};
+use parking_lot::RwLock;
 use sqlx::SqlitePool;
 use std::collections::HashMap;
 use std::fs;
@@ -164,7 +164,8 @@ impl AppStateBuilder {
             plugins,
             directory_plugins,
             high_risk_grants,
-            startup_health: Mutex::new(None),
+            startup_health: std::sync::OnceLock::new(),
+            remote_fallback_env_override: remote_fallback_env_override(),
             remote_fallback_allowed,
             policy_file_applied: AtomicBool::new(policy_file_applied),
         })

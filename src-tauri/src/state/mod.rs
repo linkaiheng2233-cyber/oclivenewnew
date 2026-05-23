@@ -14,7 +14,7 @@ use crate::infrastructure::policy_registry::{
     build_policy_sets_from_registry, load_policy_registry_from_path, PolicyRuntime, PolicySet,
 };
 use crate::infrastructure::remote_fallback_policy::{
-    remote_fallback_env_override, remote_fallback_from_db_value,
+    remote_fallback_from_db_value,
 };
 use crate::infrastructure::storage::RoleStorage;
 use crate::models::{
@@ -56,8 +56,10 @@ pub struct AppState {
     pub directory_plugins: Arc<DirectoryPluginRuntime>,
     /// MCP 传输 / 目录插件子进程等高风险能力授权（`high_risk_grants.json`）。
     pub high_risk_grants: Arc<HighRiskGrantStore>,
-    /// 首轮 `process_message` 启动自检结果（致命错误缓存，后续请求直接短路）。
-    pub(crate) startup_health: Mutex<Option<std::result::Result<(), String>>>,
+    /// 首轮 `process_message` 启动自检结果（`OnceLock` 缓存，热路径无锁）。
+    pub(crate) startup_health: std::sync::OnceLock<std::result::Result<(), String>>,
+    /// `OCLIVE_REMOTE_FALLBACK_TO_BUILTIN` 启动时读取一次；`sync_remote_fallback_from_db_value` 不再重读 env。
+    remote_fallback_env_override: Option<bool>,
     /// 远端 HTTP 插件失败时是否允许静默降级内置（与 `app_settings.remote_fallback_to_builtin` 及 `OCLIVE_REMOTE_FALLBACK_TO_BUILTIN` 对齐）。
     pub remote_fallback_allowed: Arc<AtomicBool>,
     policy_file_applied: AtomicBool,
@@ -108,7 +110,7 @@ impl AppState {
     /// 与 `app_settings.remote_fallback_to_builtin` 及 `OCLIVE_REMOTE_FALLBACK_TO_BUILTIN` 对齐进程内开关。
     pub fn sync_remote_fallback_from_db_value(&self, raw: Option<String>) {
         let mut allowed = remote_fallback_from_db_value(raw);
-        if let Some(v) = remote_fallback_env_override() {
+        if let Some(v) = self.remote_fallback_env_override {
             allowed = v;
         }
         self.remote_fallback_allowed
@@ -228,11 +230,19 @@ impl AppState {
         let cache = self.session_cache.personality_cache();
         cache.remove(manifest_role_id);
         let prefix = format!("{}__sess__", manifest_role_id);
-        cache.retain(|k, _| !k.starts_with(&prefix));
+        cache.retain(|k| !k.starts_with(&prefix));
     }
 
     /// 丢弃内存中的 `Role` 缓存（`pipeline.ocblueprint` 写盘后须调用）。
     pub fn invalidate_role_cache(&self, role_id: &str) {
+        if let Some(role) = self.role_cache.read().get(role_id) {
+            if let Ok(mut c) = role.scene_config_cache.write() {
+                c.clear();
+            }
+            if let Ok(mut c) = role.scene_text_cache.write() {
+                c.clear();
+            }
+        }
         self.role_cache.write().remove(role_id);
     }
     /// # Errors
@@ -266,7 +276,7 @@ impl AppState {
         };
         self.session_cache
             .personality_cache()
-            .insert(role_id.to_string(), effective.clone());
+            .set(role_id.to_string(), effective.clone());
         Ok(effective)
     }
 
@@ -396,23 +406,14 @@ mod tests {
         )
         .await
         .expect("state");
-        state
-            .session_cache
-            .personality_cache()
-            .insert("r1".to_string(), PersonalityVector::zero());
-        state
-            .session_cache
-            .personality_cache()
-            .insert("r1__sess__abc".to_string(), PersonalityVector::zero());
-        state
-            .session_cache
-            .personality_cache()
-            .insert("r2".to_string(), PersonalityVector::zero());
-        state.invalidate_personality_cache_for_role("r1");
         let c = state.session_cache.personality_cache();
-        assert!(!c.contains_key("r1"));
-        assert!(!c.contains_key("r1__sess__abc"));
-        assert!(c.contains_key("r2"));
+        c.set("r1".to_string(), PersonalityVector::zero());
+        c.set("r1__sess__abc".to_string(), PersonalityVector::zero());
+        c.set("r2".to_string(), PersonalityVector::zero());
+        state.invalidate_personality_cache_for_role("r1");
+        assert!(c.get("r1").is_none());
+        assert!(c.get("r1__sess__abc").is_none());
+        assert!(c.get("r2").is_some());
     }
 
     #[tokio::test]
