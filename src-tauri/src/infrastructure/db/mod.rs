@@ -10,8 +10,8 @@ use std::time::Instant;
 /// 短期对话 FIFO 上限（与长期记忆 500 条策略对齐）
 pub const SHORT_TERM_FIFO_LIMIT: i64 = 500;
 
-const TX_WARN_MS: u128 = 300;
-const TX_ERROR_MS: u128 = 800;
+const TX_WARN_MS: u128 = 100;
+const TX_ERROR_MS: u128 = 300;
 
 pub(crate) fn parse_memory_created_at(raw: &str) -> DateTime<Utc> {
     DateTime::parse_from_rfc3339(raw)
@@ -401,23 +401,33 @@ impl DbManager {
             tracing::info!("tx memory skipped role_id={} reason=low_value", role_id);
         }
 
-        // 每个角色长期记忆上限 500，超出后按 created_at FIFO 删除旧记录。
-        txn_step!(
-            "TXN_MEMORY_FIFO_TRIM_FAILED",
-            "trim_memory_fifo",
-            sqlx::query(
-                "DELETE FROM long_term_memory
-                 WHERE id IN (
-                    SELECT id FROM long_term_memory
-                    WHERE role_id = ?
-                    ORDER BY created_at DESC
-                    LIMIT -1 OFFSET ?
-                 )",
-            )
+        // 每个角色长期记忆上限 500，超出后按 created_at FIFO 删除旧记录（仅当 COUNT 超限时 trim）。
+        let memory_count: i64 = sqlx::query_scalar("SELECT COUNT(*) FROM long_term_memory WHERE role_id = ?")
             .bind(role_id)
-            .bind(memory_fifo_limit)
-            .execute(&mut *tx)
-        );
+            .fetch_one(&mut *tx)
+            .await
+            .map_err(|e| AppError::TransactionError {
+                code: "TXN_MEMORY_COUNT_FAILED",
+                message: e.to_string(),
+            })?;
+        if memory_count > i64::from(memory_fifo_limit) {
+            txn_step!(
+                "TXN_MEMORY_FIFO_TRIM_FAILED",
+                "trim_memory_fifo",
+                sqlx::query(
+                    "DELETE FROM long_term_memory
+                     WHERE id IN (
+                        SELECT id FROM long_term_memory
+                        WHERE role_id = ?
+                        ORDER BY created_at DESC
+                        LIMIT -1 OFFSET ?
+                     )",
+                )
+                .bind(role_id)
+                .bind(memory_fifo_limit)
+                .execute(&mut *tx)
+            );
+        }
 
         txn_step!(
             "TXN_EVENT_INSERT_FAILED",
@@ -450,23 +460,34 @@ impl DbManager {
             .execute(&mut *tx)
         );
 
-        txn_step!(
-            "TXN_SHORT_TERM_TRIM_FAILED",
-            "trim_short_term_fifo",
-            sqlx::query(
-                "DELETE FROM short_term_memory
-                 WHERE role_id = ? AND id NOT IN (
-                    SELECT id FROM short_term_memory
-                    WHERE role_id = ?
-                    ORDER BY id DESC
-                    LIMIT ?
-                 )",
-            )
-            .bind(role_id)
-            .bind(role_id)
-            .bind(SHORT_TERM_FIFO_LIMIT)
-            .execute(&mut *tx)
-        );
+        let short_term_count: i64 =
+            sqlx::query_scalar("SELECT COUNT(*) FROM short_term_memory WHERE role_id = ?")
+                .bind(role_id)
+                .fetch_one(&mut *tx)
+                .await
+                .map_err(|e| AppError::TransactionError {
+                    code: "TXN_SHORT_TERM_COUNT_FAILED",
+                    message: e.to_string(),
+                })?;
+        if short_term_count > SHORT_TERM_FIFO_LIMIT {
+            txn_step!(
+                "TXN_SHORT_TERM_TRIM_FAILED",
+                "trim_short_term_fifo",
+                sqlx::query(
+                    "DELETE FROM short_term_memory
+                     WHERE role_id = ? AND id NOT IN (
+                        SELECT id FROM short_term_memory
+                        WHERE role_id = ?
+                        ORDER BY id DESC
+                        LIMIT ?
+                     )",
+                )
+                .bind(role_id)
+                .bind(role_id)
+                .bind(SHORT_TERM_FIFO_LIMIT)
+                .execute(&mut *tx)
+            );
+        }
 
         tx.commit().await.map_err(|e| {
             tracing::error!(
