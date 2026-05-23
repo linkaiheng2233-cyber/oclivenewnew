@@ -110,13 +110,7 @@ pub(super) async fn process_remote_stub(
     let preflight_ms = ctx.preflight_ms;
     let role_id = req.role_id.as_str();
     let user_message = req.user_message.as_str();
-    let pl = resolve_plugins_for_session(
-        state.plugin_host_port(),
-        role,
-        Some(srid),
-        &ctx.effective_backends,
-        state.effective_slot_registry_for_session(role, srid).as_ref(),
-    );
+    let pl = &ctx.pl;
     let emotion_result = pl.emotion.analyze(user_message)?;
     let user_relation_key: String =
         resolve_effective_user_relation_key(state, role, srid, Some(scene_id)).await?;

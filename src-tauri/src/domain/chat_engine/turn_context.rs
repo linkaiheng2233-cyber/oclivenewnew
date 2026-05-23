@@ -1,5 +1,6 @@
 //! Turn-scoped context for chat orchestration (avoids repeating ids / backends across branches).
 
+use crate::domain::plugin_host::ResolvedRolePlugins;
 use crate::models::{PluginBackends, Role};
 use crate::models::dto::SendMessageRequest;
 use crate::state::AppState;
@@ -18,6 +19,8 @@ pub struct TurnContext<'a> {
     pub t0: Instant,
     pub preflight_ms: u64,
     pub effective_backends: PluginBackends,
+    /// Session-resolved plugin handles; parsed once per turn in `process_message`.
+    pub pl: ResolvedRolePlugins,
     pub immersive: bool,
     /// Character-side scene when user is remote (remote-life prompt / knowledge).
     pub character_scene_id: Option<String>,

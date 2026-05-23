@@ -26,7 +26,6 @@ use super::co_present::CoPresentResult;
 use super::context::load_recent_context;
 use super::emotion_to_dto;
 use super::favor::{compute_favor_and_relation, FavorRelationInput};
-use super::plugin_resolve::resolve_plugins_for_session;
 use super::scene::{detect_movement_intent, movement_ui_flags};
 use super::turn_context::TurnContext;
 
@@ -65,13 +64,7 @@ pub async fn execute_turn(ctx: &TurnContext<'_>, mode: TurnMode) -> CoPresentRes
         TurnMode::CoPresent => "co_present",
         TurnMode::RemoteLife => "remote_life",
     };
-    let pl = resolve_plugins_for_session(
-        state.plugin_host_port(),
-        role,
-        Some(srid),
-        &ctx.effective_backends,
-        state.effective_slot_registry_for_session(role, srid).as_ref(),
-    );
+    let pl = &ctx.pl;
     let t_path0 = Instant::now();
     let user_message = req.user_message.as_str();
     let policies = state.policies_for_scene(Some(scene_id));

@@ -197,6 +197,7 @@ async fn run(
         t0,
         preflight_ms,
         effective_backends,
+        pl: pl.clone(),
         immersive,
         character_scene_id: if is_remote {
             Some(char_scene)
