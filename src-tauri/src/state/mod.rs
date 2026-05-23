@@ -166,19 +166,6 @@ impl AppState {
             .entry(key.clone())
             .or_insert_with(|| Arc::new(Mutex::new(())))
             .clone();
-        struct InflightCleanup<'a> {
-            map: &'a DashMap<String, Arc<Mutex<()>>>,
-            key: String,
-        }
-        impl Drop for InflightCleanup<'_> {
-            fn drop(&mut self) {
-                self.map.remove(&self.key);
-            }
-        }
-        let _cleanup = InflightCleanup {
-            map: &self.role_load_inflight,
-            key: key.clone(),
-        };
         let _serial = gate.lock();
 
         let loaded = (|| -> Result<Arc<Role>> {
@@ -194,6 +181,13 @@ impl AppState {
             map.insert(role_id.to_string(), Arc::clone(&candidate));
             Ok(candidate)
         })();
+
+        drop(_serial);
+        // map(1) + this thread's gate clone(1) => 2; waiters still hold extra clones.
+        if Arc::strong_count(&gate) == 2 {
+            self.role_load_inflight
+                .remove_if(&key, |_, v| Arc::ptr_eq(v, &gate));
+        }
 
         loaded
     }
