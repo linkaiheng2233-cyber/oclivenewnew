@@ -12,7 +12,7 @@
 | 项 | 值 |
 |----|-----|
 | **cargo-audit 版本** | **0.22.1**（建议固定该主版本以便报告可比） |
-| **最近扫描日期** | **2026-05-20**（本地，`--no-fetch --stale` + 已缓存 `~/.cargo/advisory-db`） |
+| **最近扫描日期** | **2026-05-20**（本地，`--no-fetch --stale` + 已缓存 `~/.cargo/advisory-db`）；**npm / 版本号复核 2026-05-20** |
 | **扫描路径** | 工作区根目录 `Cargo.lock` |
 | **漏洞级命中数** | **0**（`cargo audit` 退出码 **0**） |
 | **警告级命中数** | **3**（`cargo audit` + [`.cargo/audit.toml`](../.cargo/audit.toml) 已记录并忽略 **11** 条 gtk-rs GTK3 / 工具链 *unmaintained*；见下表） |
@@ -65,6 +65,19 @@
 | **RUSTSEC-2026-0097** | `rand` 0.7 | **开放** | 经 `phf`/Tauri 宏；需上游 Tauri 2 |
 
 忽略列表与理由见 [`.cargo/audit.toml`](../.cargo/audit.toml) 与 [SECURITY_AUDIT_SCOPE.md](./SECURITY_AUDIT_SCOPE.md)。
+
+---
+
+## npm / 版本号复核（2026-05-20）
+
+| 项 | 原状 | 修正 |
+|----|------|------|
+| `eslint` | `^10.4.0`（npm 未发布） | **`^9.39.0`**（与 `@antfu/eslint-config@^9` 对齐） |
+| `vue-virtual-scroller` | 首屏全局 `app.use`，但 UI 已改用 `VirtualScrollContainer` | **移除依赖**；首屏不再同步加载 |
+| `sha2`（`src-tauri`） | `0.11.0`（crates.io 无稳定 0.11 线） | **`0.10`**（`sha2 0.10.9`） |
+| `@antfu/eslint-config` | `^9.0.0` | 保持不变（与 ESLint 9 兼容） |
+
+复核命令：`npm outdated`（根目录）、`cargo tree -p oclivenewnew-tauri -i sha2`。
 
 ---
 
