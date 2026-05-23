@@ -14,6 +14,27 @@ pub fn emit_step(step: &str, input: impl Serialize, output: impl Serialize) {
     if !enabled() {
         return;
     }
+    emit_step_inner(step, input, output);
+}
+
+/// Like [`emit_step`], but builds `input` / `output` only when trace is enabled.
+pub fn emit_step_lazy(
+    step: &str,
+    input: impl FnOnce() -> Value,
+    output: impl FnOnce() -> Value,
+) {
+    if !enabled() {
+        return;
+    }
+    let payload = serde_json::json!({
+        "step": step,
+        "input": input(),
+        "output": output(),
+    });
+    eprintln!("OCLIVE_DEBUG_TRACE {}", payload);
+}
+
+fn emit_step_inner(step: &str, input: impl Serialize, output: impl Serialize) {
     let payload = serde_json::json!({
         "step": step,
         "input": serde_json::to_value(input).unwrap_or(Value::Null),
