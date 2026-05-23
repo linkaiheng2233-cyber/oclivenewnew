@@ -247,20 +247,7 @@ impl DbManager {
             };
         }
 
-        txn_step!(
-            "TXN_RUNTIME_ENSURE_FAILED",
-            "ensure_runtime",
-            sqlx::query(
-            "INSERT OR IGNORE INTO role_runtime (role_id, current_favorability, current_emotion, relation_state, emotion_updated_at, relation_updated_at, updated_at) VALUES (?, 0.0, ?, ?, ?, ?, ?)",
-        )
-            .bind(role_id)
-            .bind(current_emotion)
-            .bind(relation_state)
-            .bind(&now)
-            .bind(&now)
-            .bind(&now)
-            .execute(&mut *tx)
-        );
+        let urk = input.user_relation_key;
 
         txn_step!(
             "TXN_PERSONALITY_INSERT_FAILED",
@@ -277,7 +264,6 @@ impl DbManager {
             .execute(&mut *tx)
         );
 
-        let urk = input.user_relation_key;
         txn_step!(
             "TXN_IDENTITY_ENSURE_FAILED",
             "ensure_identity_stats_row_tx",
@@ -296,52 +282,91 @@ impl DbManager {
             .execute(&mut *tx)
         );
 
-        txn_step!(
-            "TXN_IDENTITY_FAVOR_UPDATE_FAILED",
-            "update_role_identity_stats",
-            sqlx::query(
-                "UPDATE role_identity_stats
+        let (favor_after, relation_after): (f64, String) = match sqlx::query_as(
+            "UPDATE role_identity_stats
              SET favorability = favorability + ?,
                  relation_state = ?,
                  updated_at = ?
-             WHERE role_id = ? AND user_relation_key = ?",
-            )
-            .bind(favor_delta)
-            .bind(relation_state)
-            .bind(&now)
-            .bind(role_id)
-            .bind(urk)
-            .execute(&mut *tx)
-        );
+             WHERE role_id = ? AND user_relation_key = ?
+             RETURNING favorability, relation_state",
+        )
+        .bind(favor_delta)
+        .bind(relation_state)
+        .bind(&now)
+        .bind(role_id)
+        .bind(urk)
+        .fetch_one(&mut *tx)
+        .await
+        {
+            Ok(row) => row,
+            Err(e) => {
+                let msg = e.to_string();
+                tracing::error!(
+                    "tx step failed code=TXN_IDENTITY_FAVOR_UPDATE_FAILED role_id={} err={} elapsed_ms={}",
+                    role_id,
+                    msg,
+                    started.elapsed().as_millis()
+                );
+                if let Err(rb_err) = tx.rollback().await {
+                    tracing::error!(
+                        "tx rollback failed code=TXN_ROLLBACK_FAILED role_id={} err={} elapsed_ms={}",
+                        role_id,
+                        rb_err,
+                        started.elapsed().as_millis()
+                    );
+                }
+                return Err(AppError::TransactionError {
+                    code: "TXN_IDENTITY_FAVOR_UPDATE_FAILED",
+                    message: msg,
+                });
+            }
+        };
 
-        txn_step!(
-            "TXN_RUNTIME_MIRROR_FAILED",
-            "mirror_favor_from_identity",
-            sqlx::query(
-                "UPDATE role_runtime SET
-                 current_favorability = (
-                     SELECT favorability FROM role_identity_stats
-                     WHERE role_id = ? AND user_relation_key = ?),
-                 relation_state = (
-                     SELECT relation_state FROM role_identity_stats
-                     WHERE role_id = ? AND user_relation_key = ?),
-                 current_emotion = ?,
-                 emotion_updated_at = ?,
-                 relation_updated_at = ?,
-                 updated_at = ?
-                 WHERE role_id = ?",
-            )
-            .bind(role_id)
-            .bind(urk)
-            .bind(role_id)
-            .bind(urk)
-            .bind(current_emotion)
-            .bind(&now)
-            .bind(&now)
-            .bind(&now)
-            .bind(role_id)
-            .execute(&mut *tx)
-        );
+        let favor_current: f64 = match sqlx::query_scalar(
+            "INSERT INTO role_runtime (role_id, current_favorability, current_emotion, relation_state, emotion_updated_at, relation_updated_at, updated_at)
+             VALUES (?, ?, ?, ?, ?, ?, ?)
+             ON CONFLICT(role_id) DO UPDATE SET
+                 current_favorability = excluded.current_favorability,
+                 relation_state = excluded.relation_state,
+                 current_emotion = excluded.current_emotion,
+                 emotion_updated_at = excluded.emotion_updated_at,
+                 relation_updated_at = excluded.relation_updated_at,
+                 updated_at = excluded.updated_at
+             RETURNING current_favorability",
+        )
+        .bind(role_id)
+        .bind(favor_after)
+        .bind(current_emotion)
+        .bind(relation_after.as_str())
+        .bind(&now)
+        .bind(&now)
+        .bind(&now)
+        .fetch_one(&mut *tx)
+        .await
+        {
+            Ok(v) => v,
+            Err(e) => {
+                let msg = e.to_string();
+                tracing::error!(
+                    "tx step failed code=TXN_RUNTIME_UPSERT_FAILED role_id={} err={} elapsed_ms={}",
+                    role_id,
+                    msg,
+                    started.elapsed().as_millis()
+                );
+                if let Err(rb_err) = tx.rollback().await {
+                    tracing::error!(
+                        "tx rollback failed code=TXN_ROLLBACK_FAILED role_id={} err={} elapsed_ms={}",
+                        role_id,
+                        rb_err,
+                        started.elapsed().as_millis()
+                    );
+                }
+                return Err(AppError::TransactionError {
+                    code: "TXN_RUNTIME_UPSERT_FAILED",
+                    message: msg,
+                });
+            }
+        };
 
         txn_step!(
             "TXN_FAVORABILITY_HISTORY_INSERT_FAILED",
@@ -429,51 +454,19 @@ impl DbManager {
             "TXN_SHORT_TERM_TRIM_FAILED",
             "trim_short_term_fifo",
             sqlx::query(
-                "DELETE FROM short_term_memory WHERE role_id = ? AND id IN (
-                    SELECT id FROM (
-                        SELECT id FROM short_term_memory WHERE role_id = ?
-                        ORDER BY datetime(created_at) ASC
-                        LIMIT (SELECT MAX(0, (SELECT COUNT(*) FROM short_term_memory WHERE role_id = ?) - ?))
-                    )
-                )",
+                "DELETE FROM short_term_memory
+                 WHERE role_id = ? AND id NOT IN (
+                    SELECT id FROM short_term_memory
+                    WHERE role_id = ?
+                    ORDER BY id DESC
+                    LIMIT ?
+                 )",
             )
-            .bind(role_id)
             .bind(role_id)
             .bind(role_id)
             .bind(SHORT_TERM_FIFO_LIMIT)
             .execute(&mut *tx)
         );
-
-        let favor_current: f64 = match sqlx::query_scalar(
-            "SELECT current_favorability FROM role_runtime WHERE role_id = ?",
-        )
-        .bind(role_id)
-        .fetch_one(&mut *tx)
-        .await
-        {
-            Ok(v) => v,
-            Err(e) => {
-                let msg = e.to_string();
-                tracing::error!(
-                    "tx step failed code=TXN_FAVORABILITY_READ_FAILED role_id={} err={} elapsed_ms={}",
-                    role_id,
-                    msg,
-                    started.elapsed().as_millis()
-                );
-                if let Err(rb_err) = tx.rollback().await {
-                    tracing::error!(
-                        "tx rollback failed code=TXN_ROLLBACK_FAILED role_id={} err={} elapsed_ms={}",
-                        role_id,
-                        rb_err,
-                        started.elapsed().as_millis()
-                    );
-                }
-                return Err(AppError::TransactionError {
-                    code: "TXN_FAVORABILITY_READ_FAILED",
-                    message: msg,
-                });
-            }
-        };
 
         tx.commit().await.map_err(|e| {
             tracing::error!(
