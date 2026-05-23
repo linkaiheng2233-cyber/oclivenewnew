@@ -46,7 +46,7 @@ macro_rules! map_err_unknown {
     };
 }
 
-/// 共景 / 主编排阶段错误映射（统一 `pm!` 与 `map_copresent_err!`）。
+/// 共景 / 主编排阶段错误映射（`kernel_stage!` 为唯一编排阶段宏）。
 #[macro_export]
 macro_rules! kernel_stage {
     (@co_present $stage:expr, $e:expr) => {
@@ -60,16 +60,6 @@ macro_rules! kernel_stage {
                 stage: $stage.as_str(),
                 source,
             }
-        })
-    };
-}
-
-/// 共景阶段错误：`AppError` → [`CoPresentError::wrap`].
-#[macro_export]
-macro_rules! map_copresent_err {
-    ($stage:literal, $expr:expr) => {
-        $expr.map_err(|err| {
-            $crate::domain::chat_engine::co_present::CoPresentError::wrap($stage, err)
         })
     };
 }
