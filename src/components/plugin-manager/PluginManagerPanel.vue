@@ -8,6 +8,7 @@ import PluginManagerMainTabs from './PluginManagerMainTabs.vue'
 import { useAppToast } from '../../composables/useAppToast'
 import { useModalFocusRestore } from '../../composables/useModalFocusRestore'
 import { usePluginStore } from '../../stores/pluginStore'
+import { usePluginTraceStore } from '../../stores/pluginTraceStore'
 import { useRoleStore } from '../../stores/roleStore'
 import { applyAuthorSuggestedPluginBackends } from '../../api'
 
@@ -16,6 +17,7 @@ const ArchitectureGraph = defineAsyncComponent(
 )
 
 const pluginStore = usePluginStore()
+const traceStore = usePluginTraceStore()
 const roleStore = useRoleStore()
 const { showToast } = useAppToast()
 const { t } = useI18n()
@@ -25,7 +27,7 @@ const mainTabsRef = ref<InstanceType<typeof PluginManagerMainTabs> | null>(null)
 const panelFirstTabRef = computed(
   () => mainTabsRef.value?.firstTabRef ?? null,
 )
-useModalFocusRestore(toRef(pluginStore, 'panelVisible'), panelDialogRef, {
+useModalFocusRestore(toRef(traceStore, 'panelVisible'), panelDialogRef, {
   primary: panelFirstTabRef,
 })
 
@@ -64,24 +66,24 @@ async function onApplyAuthorSuggestedBackends() {
 }
 
 function openMarket() {
-  void pluginStore.openMarketPanel()
+  void traceStore.openMarketPanel()
 }
 
 function onFocusPluginFromGraph(id: string) {
-  pluginStore.requestFocusInstalledPlugin(id)
+  traceStore.requestFocusInstalledPlugin(id)
 }
 </script>
 
 <template>
   <Teleport to="body">
     <div
-      v-if="pluginStore.panelVisible"
+      v-if="traceStore.panelVisible"
       class="pm-backdrop"
       role="dialog"
       aria-modal="true"
       :aria-label="t('pluginWorkbench.aria.dialogStudio')"
-      @click.self="pluginStore.closePanel()"
-      @keydown.escape.stop="pluginStore.closePanel()"
+      @click.self="traceStore.closePanel()"
+      @keydown.escape.stop="traceStore.closePanel()"
     >
       <div ref="panelDialogRef" class="pm-dialog pm-dialog--studio" tabindex="-1" @click.stop>
         <header class="pm-head">
@@ -97,7 +99,7 @@ function onFocusPluginFromGraph(id: string) {
             <kbd class="pm-kbd">Ctrl</kbd>+<kbd class="pm-kbd">Shift</kbd>+<kbd class="pm-kbd">F</kbd>
             {{ t("pluginWorkbench.header.sub") }}
           </p>
-          <button type="button" class="pm-close" :aria-label="t('common.close')" @click="pluginStore.closePanel()">
+          <button type="button" class="pm-close" :aria-label="t('common.close')" @click="traceStore.closePanel()">
             ×
           </button>
         </header>
@@ -190,16 +192,16 @@ function onFocusPluginFromGraph(id: string) {
 
             <PluginManagerCatalogSection />
 
-            <div v-show="pluginStore.panelMainTab === 'graph'" class="pm-tab-panel" role="tabpanel">
+            <div v-show="traceStore.panelMainTab === 'graph'" class="pm-tab-panel" role="tabpanel">
               <ArchitectureGraph @focus-plugin="onFocusPluginFromGraph" />
             </div>
-            <div v-show="pluginStore.panelMainTab === 'layout'" class="pm-tab-panel" role="tabpanel">
+            <div v-show="traceStore.panelMainTab === 'layout'" class="pm-tab-panel" role="tabpanel">
               <SlotLayoutDiagram />
             </div>
           </div>
 
           <footer class="pm-foot">
-            <button type="button" class="pm-btn secondary" @click="pluginStore.closePanel()">
+            <button type="button" class="pm-btn secondary" @click="traceStore.closePanel()">
               {{ t("pluginWorkbench.footer.close") }}
             </button>
             <button type="button" class="pm-btn secondary" @click="onResetToPackDefault">

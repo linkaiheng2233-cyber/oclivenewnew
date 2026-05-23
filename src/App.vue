@@ -33,6 +33,7 @@ import {
 import { hostEventBus } from './lib/hostEventBus'
 import { useChatStore } from './stores/chatStore'
 import { useDebugStore } from './stores/debugStore'
+import { usePluginMarketStore } from './stores/pluginMarketStore'
 import { usePluginStore } from './stores/pluginStore'
 import { useRoleStore } from './stores/roleStore'
 import { useUiStore } from './stores/uiStore'
@@ -59,6 +60,7 @@ const chatStore = useChatStore()
 const debugStore = useDebugStore()
 const uiStore = useUiStore()
 const pluginStore = usePluginStore()
+const pluginMarketStore = usePluginMarketStore()
 const { t, locale } = useI18n()
 
 function syncBrowserChromeFromLocale(): void {
@@ -570,9 +572,9 @@ function onHotkey(e: KeyboardEvent) {
       shortcutHelpOpen.value = false
       return
     }
-    if (pluginStore.marketPanelVisible) {
+    if (pluginMarketStore.marketPanelVisible) {
       e.preventDefault()
-      pluginStore.closeMarketPanel()
+      pluginMarketStore.closeMarketPanel()
       return
     }
     if (settingsViewOpen.value) {

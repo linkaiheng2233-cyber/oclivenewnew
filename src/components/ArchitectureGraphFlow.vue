@@ -21,6 +21,8 @@ import {
 
 } from '../lib/slotRegistry'
 import { usePluginStore } from '../stores/pluginStore'
+import { usePluginTraceStore } from '../stores/pluginTraceStore'
+import { usePluginTraceStore } from '../stores/pluginTraceStore'
 import { useRoleStore } from '../stores/roleStore'
 import {
   clearSessionSlotOverride,
@@ -49,6 +51,7 @@ const handleOutColor = BACKEND_COLORS.directory.handle
 const { t } = useI18n()
 const roleStore = useRoleStore()
 const pluginStore = usePluginStore()
+const traceStore = usePluginTraceStore()
 const { showToast } = useAppToast()
 const busy = ref(false)
 const showAddSlotWizard = ref(false)
@@ -400,7 +403,7 @@ async function onRemoveSlotConfirm() {
 }
 
 watch(
-  () => pluginStore.focusSlotKey,
+  () => traceStore.focusSlotKey,
   (key) => {
     if (!key || !usesBlueprint.value)
       return
@@ -408,7 +411,7 @@ watch(
       ...n,
       selected: n.id === key,
     }))
-    pluginStore.clearFocusArchSlot()
+    traceStore.clearFocusArchSlot()
   },
 )
 

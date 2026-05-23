@@ -1,8 +1,10 @@
 import { computed, ref, watch } from 'vue'
 import { usePluginStore } from '../stores/pluginStore'
+import { usePluginTraceStore } from '../stores/pluginTraceStore'
 
 export function usePluginManagerWorkspace() {
   const pluginStore = usePluginStore()
+  const traceStore = usePluginTraceStore()
 
   const batchMode = ref(false)
   const batchSelected = ref<Record<string, boolean>>({})
@@ -60,11 +62,11 @@ export function usePluginManagerWorkspace() {
   )
 
   watch(
-    () => pluginStore.focusPluginId,
+    () => traceStore.focusPluginId,
     (id) => {
       if (id && pluginStore.catalog.some(c => c.id === id)) {
         selectedWorkspacePluginId.value = id
-        pluginStore.clearFocusInstalledPlugin()
+        traceStore.clearFocusInstalledPlugin()
       }
     },
   )

@@ -43,6 +43,8 @@ export default defineConfig(({ mode }) => ({
       "@vue-flow/core",
       "@vue-flow/background",
       "@vue-flow/controls",
+      "@vue-flow/minimap",
+      "@vue-flow/node-resizer",
     ],
   },
 
@@ -70,8 +72,11 @@ export default defineConfig(({ mode }) => ({
           if (id.includes("pinia")) return "vendor-pinia";
           // ArchitectureGraphFlow lazy-loads @vue-flow; keep separate from vendor-vue.
           if (id.includes("@vue-flow")) return "vendor-vue-flow";
-          // vue3-sfc-loader is dynamic import only; exclude from first-screen vendor.
+          if (id.includes("vue3-sfc-loader")) return "vendor-sfc-loader";
+          if (id.includes("acorn")) return "vendor-acorn";
+          if (id.includes("idb-keyval")) return "vendor-idb";
           if (id.includes("/vue/") || id.includes("@vue/")) return "vendor-vue";
+          return "vendor-misc";
         },
       },
     },

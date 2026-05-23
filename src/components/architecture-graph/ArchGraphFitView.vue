@@ -1,22 +1,22 @@
 <script setup lang="ts">
 import { useVueFlow } from '@vue-flow/core'
 import { onMounted, watch } from 'vue'
-import { usePluginStore } from '../../stores/pluginStore'
+import { usePluginTraceStore } from '../../stores/pluginTraceStore'
 
 const { fitView } = useVueFlow()
-const pluginStore = usePluginStore()
+const traceStore = usePluginTraceStore()
 
 function fit() {
   void fitView({ padding: 0.16, duration: 180 })
 }
 
 onMounted(() => {
-  if (pluginStore.panelVisible)
+  if (traceStore.panelVisible)
     fit()
 })
 
 watch(
-  () => [pluginStore.panelVisible, pluginStore.panelMainTab] as const,
+  () => [traceStore.panelVisible, traceStore.panelMainTab] as const,
   ([open, tab]) => {
     if (open && tab === 'graph')
       setTimeout(fit, 60)

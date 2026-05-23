@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { computed, ref, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
-import { usePluginStore } from '../../stores/pluginStore'
+import { usePluginTraceStore } from '../../stores/pluginTraceStore'
 import { useRoleStore } from '../../stores/roleStore'
 import { useUiStore } from '../../stores/uiStore'
 import { buildRelationDropdownOptions } from '../../utils/relationOptions'
@@ -15,7 +15,6 @@ import HelpHint from '../shared/HelpHint.vue'
 const { t } = useI18n()
 const roleStore = useRoleStore()
 const uiStore = useUiStore()
-const pluginStore = usePluginStore()
 const localFactor = ref(roleStore.roleInfo.eventImpactFactor)
 const busy = ref(false)
 
@@ -88,7 +87,7 @@ function onFactorEnter(ev: KeyboardEvent) {
   (ev.target as HTMLInputElement).blur()
 }
 function openBackendsPanel(): void {
-  pluginStore.requestOpenSimplePluginManager()
+  usePluginTraceStore().requestOpenSimplePluginManager()
 }
 </script>
 

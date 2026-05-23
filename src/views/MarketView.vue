@@ -4,9 +4,11 @@ import { computed, ref, toRef, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { useAppToast } from '../composables/useAppToast'
 import { useModalFocusRestore } from '../composables/useModalFocusRestore'
-import { usePluginStore } from '../stores/pluginStore'
+import { usePluginMarketStore } from '../stores/pluginMarketStore'
+import { usePluginTraceStore } from '../stores/pluginTraceStore'
 
-const pluginStore = usePluginStore()
+const marketStore = usePluginMarketStore()
+const traceStore = usePluginTraceStore()
 const { showToast } = useAppToast()
 const { t } = useI18n()
 
@@ -15,22 +17,22 @@ const categoryFilter = ref('')
 
 const dialogRef = ref<HTMLElement | null>(null)
 const firstFocusRef = ref<HTMLInputElement | null>(null)
-useModalFocusRestore(toRef(pluginStore, 'marketPanelVisible'), dialogRef, {
+useModalFocusRestore(toRef(marketStore, 'marketPanelVisible'), dialogRef, {
   primary: firstFocusRef,
 })
 
 watch(
-  () => pluginStore.marketPanelVisible,
+  () => marketStore.marketPanelVisible,
   (vis) => {
     if (vis) {
-      void pluginStore.loadCachedPluginMarket()
+      void marketStore.loadCachedPluginMarket()
     }
   },
 )
 
 const categories = computed(() => {
   const set = new Set<string>()
-  for (const row of pluginStore.pluginMarketSnapshot?.plugins ?? []) {
+  for (const row of marketStore.pluginMarketSnapshot?.plugins ?? []) {
     const c = row.category?.trim()
     if (c)
       set.add(c)
@@ -41,7 +43,7 @@ const categories = computed(() => {
 const filteredPlugins = computed(() => {
   const q = searchQuery.value.trim().toLowerCase()
   const cat = categoryFilter.value.trim()
-  return (pluginStore.pluginMarketSnapshot?.plugins ?? []).filter((row) => {
+  return (marketStore.pluginMarketSnapshot?.plugins ?? []).filter((row) => {
     if (cat && (row.category?.trim() ?? '') !== cat)
       return false
     if (!q)
@@ -61,8 +63,8 @@ const filteredPlugins = computed(() => {
 
 async function onSync() {
   try {
-    await pluginStore.syncPluginMarket()
-    if (pluginStore.pluginMarketSnapshot?.warning) {
+    await marketStore.syncPluginMarket()
+    if (marketStore.pluginMarketSnapshot?.warning) {
       showToast('info', t('pluginWorkbench.market.toastOfflineCache'))
     }
     else {
@@ -85,7 +87,7 @@ async function onInstall(row: PluginMarketEntryDto) {
     return
   }
   try {
-    await pluginStore.installFromPluginMarket(row.id, row.git)
+    await marketStore.installFromPluginMarket(row.id, row.git)
     showToast('success', t('pluginWorkbench.market.installedGoManage', { id: row.id }))
   }
   catch (e) {
@@ -95,7 +97,7 @@ async function onInstall(row: PluginMarketEntryDto) {
 
 async function onUpdate(row: PluginMarketEntryDto) {
   try {
-    await pluginStore.updateInstalledPluginFromGit(row.id)
+    await marketStore.updateInstalledPluginFromGit(row.id)
     showToast('success', t('pluginWorkbench.toast.updatedGit', { id: row.id }))
   }
   catch (e) {
@@ -104,18 +106,18 @@ async function onUpdate(row: PluginMarketEntryDto) {
 }
 
 function openPluginManager() {
-  pluginStore.requestOpenSimplePluginManager()
+  traceStore.requestOpenSimplePluginManager()
 }
 
 function close() {
-  pluginStore.closeMarketPanel()
+  marketStore.closeMarketPanel()
 }
 </script>
 
 <template>
   <Teleport to="body">
     <div
-      v-if="pluginStore.marketPanelVisible"
+      v-if="marketStore.marketPanelVisible"
       class="mk-backdrop"
       role="dialog"
       aria-modal="true"
@@ -162,11 +164,11 @@ function close() {
           <button
             type="button"
             class="mk-btn secondary"
-            :disabled="pluginStore.pluginMarketSyncing"
+            :disabled="marketStore.pluginMarketSyncing"
             @click="onSync"
           >
             {{
-              pluginStore.pluginMarketSyncing
+              marketStore.pluginMarketSyncing
                 ? t("pluginWorkbench.market.syncing")
                 : t("pluginWorkbench.market.sync")
             }}
@@ -176,14 +178,14 @@ function close() {
           </button>
         </div>
 
-        <p v-if="pluginStore.pluginMarketSyncing" class="mk-sync-status" role="status" aria-live="polite">
+        <p v-if="marketStore.pluginMarketSyncing" class="mk-sync-status" role="status" aria-live="polite">
           {{ t("pluginWorkbench.market.syncing") }}
         </p>
-        <p v-if="pluginStore.pluginMarketError" class="mk-err">
-          {{ pluginStore.pluginMarketError }}
+        <p v-if="marketStore.pluginMarketError" class="mk-err">
+          {{ marketStore.pluginMarketError }}
         </p>
         <div
-          v-else-if="pluginStore.pluginMarketSnapshot?.warning"
+          v-else-if="marketStore.pluginMarketSnapshot?.warning"
           class="mk-callout"
           role="status"
         >
@@ -191,13 +193,13 @@ function close() {
           <p class="mk-muted">
             {{
               t("pluginWorkbench.market.syncFailedDetail", {
-                detail: pluginStore.pluginMarketSnapshot.warning,
+                detail: marketStore.pluginMarketSnapshot.warning,
               })
             }}
           </p>
         </div>
         <p
-          v-else-if="pluginStore.pluginMarketSnapshot?.offlineMode"
+          v-else-if="marketStore.pluginMarketSnapshot?.offlineMode"
           class="mk-hint"
         >
           {{ t("pluginWorkbench.market.offline") }}
@@ -205,7 +207,7 @@ function close() {
 
         <div class="mk-scroll">
           <p
-            v-if="!filteredPlugins.length && !pluginStore.pluginMarketError"
+            v-if="!filteredPlugins.length && !marketStore.pluginMarketError"
             class="mk-muted mk-empty"
           >
             {{ t("pluginWorkbench.market.emptyIndex") }}

@@ -1,12 +1,12 @@
 <script setup lang="ts">
 import { ref } from 'vue'
 import { useI18n } from 'vue-i18n'
-import { usePluginStore } from '../../stores/pluginStore'
+import { usePluginTraceStore } from '../../stores/pluginTraceStore'
 
 const firstTabRef = ref<HTMLButtonElement | null>(null)
 defineExpose({ firstTabRef })
 
-const pluginStore = usePluginStore()
+const traceStore = usePluginTraceStore()
 const { t } = useI18n()
 </script>
 
@@ -21,9 +21,9 @@ const { t } = useI18n()
       type="button"
       role="tab"
       class="pm-tab"
-      :class="{ 'pm-tab--active': pluginStore.panelMainTab === 'graph' }"
-      :aria-selected="pluginStore.panelMainTab === 'graph'"
-      @click="pluginStore.panelMainTab = 'graph'"
+      :class="{ 'pm-tab--active': traceStore.panelMainTab === 'graph' }"
+      :aria-selected="traceStore.panelMainTab === 'graph'"
+      @click="traceStore.panelMainTab = 'graph'"
     >
       {{ t("pluginWorkbench.tabs.graph") }}
     </button>
@@ -31,9 +31,9 @@ const { t } = useI18n()
       type="button"
       role="tab"
       class="pm-tab"
-      :class="{ 'pm-tab--active': pluginStore.panelMainTab === 'layout' }"
-      :aria-selected="pluginStore.panelMainTab === 'layout'"
-      @click="pluginStore.panelMainTab = 'layout'"
+      :class="{ 'pm-tab--active': traceStore.panelMainTab === 'layout' }"
+      :aria-selected="traceStore.panelMainTab === 'layout'"
+      @click="traceStore.panelMainTab = 'layout'"
     >
       {{ t("pluginWorkbench.tabs.layout") }}
     </button>

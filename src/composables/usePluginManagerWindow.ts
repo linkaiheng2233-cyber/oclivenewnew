@@ -1,6 +1,7 @@
 import { computed, ref, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
-import { usePluginStore } from '../stores/pluginStore'
+import { usePluginMarketStore } from '../stores/pluginMarketStore'
+import { usePluginTraceStore } from '../stores/pluginTraceStore'
 
 export interface UsePluginManagerWindowOptions {
   /** 每次打开/切换插件管理入口后收起顶栏「更多」 */
@@ -12,7 +13,8 @@ export interface UsePluginManagerWindowOptions {
  */
 export function usePluginManagerWindow(opts: UsePluginManagerWindowOptions) {
   const { t } = useI18n()
-  const pluginStore = usePluginStore()
+  const traceStore = usePluginTraceStore()
+  const marketStore = usePluginMarketStore()
   const simplePluginManagerOpen = ref(false)
 
   const pluginManagerMoreBtnLabel = computed(() => t('app.more.pluginBtnSimple'))
@@ -20,23 +22,23 @@ export function usePluginManagerWindow(opts: UsePluginManagerWindowOptions) {
   const settingsEntryMoreHelp = computed(() => t('app.more.settingsTileHelpSimple'))
 
   function openPluginManagerPanel(): void {
-    pluginStore.closePanel()
+    traceStore.closePanel()
     simplePluginManagerOpen.value = !simplePluginManagerOpen.value
     opts.closeMoreMenu()
   }
 
   function openPluginMarket(): void {
     simplePluginManagerOpen.value = false
-    pluginStore.closePanel()
-    void pluginStore.openMarketPanel()
+    traceStore.closePanel()
+    marketStore.openMarketPanel()
     opts.closeMoreMenu()
   }
 
   watch(
-    () => pluginStore.simpleManagerOpenNonce,
+    () => traceStore.simpleManagerOpenNonce,
     () => {
-      if (pluginStore.simpleManagerOpenNonce > 0) {
-        pluginStore.closePanel()
+      if (traceStore.simpleManagerOpenNonce > 0) {
+        traceStore.closePanel()
         simplePluginManagerOpen.value = true
       }
     },

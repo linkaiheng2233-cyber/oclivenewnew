@@ -15,39 +15,7 @@ void (async () => {
   const app = createApp(App)
   app.use(i18n)
 
-  const sentryReady = (async () => {
-    try {
-      const sentryDsn = import.meta.env.VITE_SENTRY_DSN
-      if (shouldLoadSentry(sentryDsn)) {
-        Sentry.init({
-          app,
-          dsn: sentryDsn,
-          environment: import.meta.env.MODE,
-          sendDefaultPii: false,
-          tracesSampleRate: 0,
-        beforeSend(event) {
-          try {
-            const request = event.request
-            const url = request?.url
-            if (url && request) {
-              const u = new URL(url)
-              request.url = `${u.origin}${u.pathname}`
-            }
-          }
-            catch {
-              /* ignore malformed URLs */
-            }
-            return event
-          },
-        })
-      }
-    }
-    catch (e) {
-      console.warn('[sentry] init skipped', e)
-    }
-  })()
-
-  const [tookShell] = await Promise.all([shellPromise, sentryReady])
+  const tookShell = await shellPromise
   if (tookShell) {
     return
   }
@@ -61,4 +29,36 @@ void (async () => {
   useChatStore().migrateAllLegacyMessageBuckets()
 
   app.mount('#app')
+
+  void (async () => {
+    try {
+      const sentryDsn = import.meta.env.VITE_SENTRY_DSN
+      if (shouldLoadSentry(sentryDsn)) {
+        Sentry.init({
+          app,
+          dsn: sentryDsn,
+          environment: import.meta.env.MODE,
+          sendDefaultPii: false,
+          tracesSampleRate: 0,
+          beforeSend(event) {
+            try {
+              const request = event.request
+              const url = request?.url
+              if (url && request) {
+                const u = new URL(url)
+                request.url = `${u.origin}${u.pathname}`
+              }
+            }
+            catch {
+              /* ignore malformed URLs */
+            }
+            return event
+          },
+        })
+      }
+    }
+    catch (e) {
+      console.warn('[sentry] init skipped', e)
+    }
+  })()
 })()
