@@ -1,6 +1,6 @@
 # OOCP 协议测试套件（HTTP 黑盒）
 
-本目录对 **`oclivenewnew-tauri --api`** 暴露的 **HTTP 表面契约** 做黑盒校验（`GET /health`、`POST /chat`），场景编号 **S0–S11** 与 [`../../creator-docs/testing/OOCP_TEST_SUITE.md`](../../creator-docs/testing/OOCP_TEST_SUITE.md) 一致。
+本目录对 **`oclivenewnew-tauri --api`** 暴露的 **HTTP 表面契约** 做黑盒校验（`GET /health`、`POST /chat`）。**默认 13 场景（S0–S12）**；可选 **S13** 双核降级。与 [`../../creator-docs/testing/OOCP_TEST_SUITE.md`](../../creator-docs/testing/OOCP_TEST_SUITE.md) 一致。
 
 > **说明**：当前主程序 HTTP API **未实现 WebSocket**；若完整 OOCP 需 WS 方法链，应在内核增加路由后再扩展本套件。
 

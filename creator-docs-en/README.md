@@ -45,7 +45,7 @@ This tree mirrors **`creator-docs/`** with hand-maintained English pages. For to
 | Topic | English |
 |-------|---------|
 | Where tests live (main repo vs pack editor) | [testing/OVERVIEW.md](testing/OVERVIEW.md) |
-| OOCP HTTP suite (S0–S11) | [testing/OOCP_TEST_SUITE.md](testing/OOCP_TEST_SUITE.md) |
+| OOCP HTTP suite (S0–S12, 13 scenarios; optional S13) | [testing/OOCP_TEST_SUITE.md](testing/OOCP_TEST_SUITE.md) |
 | Test output and contracts | [testing/TEST_OUTPUT_SCHEMA.md](testing/TEST_OUTPUT_SCHEMA.md) |
 | Rust integration tests for swappable backends | [testing/ADAPTING_TEST_PLUGIN.md](testing/ADAPTING_TEST_PLUGIN.md) |
 

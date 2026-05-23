@@ -1,5 +1,5 @@
 /**
- * OOCP 对齐 HTTP 黑盒：S0–S11（见 ../../creator-docs/testing/OOCP_TEST_SUITE.md）
+ * OOCP 对齐 HTTP 黑盒：S0–S12（13 场景）；可选 S13（见 ../../creator-docs/testing/OOCP_TEST_SUITE.md）
  * 使用 Node 20+ 内置 fetch，无额外 npm 依赖。
  */
 

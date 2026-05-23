@@ -1,4 +1,4 @@
-# OOCP 协议测试套件（S0–S11）
+# OOCP 协议测试套件（S0–S12，共 13 场景；可选 S13）
 
 **状态（`main`）**：已入库 **`examples/oocp-test-suite/`**（`run.mjs` + JSON schema）；CI 工作流 **`.github/workflows/ci.yml`** 中的 **`oocp-test-suite`** job 会构建 `oclivenewnew-tauri`、拉起 **`--api` HTTP 服务**、轮询 **`GET /health`**、执行 **`node run.mjs`**，随后执行 **`scripts/e2e-core-api-restart.mjs`**（**进程重启后再对话** 烟测；失败则 job 失败）。**`frontend`** job 在 **Ubuntu** 上在 **`npm run build`** 后另跑 **Playwright + `vite preview` 首屏**（**A1.1b**；Windows `frontend` 不跑 Playwright）。
 
@@ -39,6 +39,9 @@
 | S9 | 长用户句（400 字）→ 200 |
 | S10 | 同 `session_id` 连续两轮 → 均 200 |
 | S11 | 成功体含 `api_version`、`schema`、`timestamp` |
+| S12 | 错误体 `error.code` 为 **字符串**（`KernelErrorBody`），非 JSON-RPC 整数码 |
+
+**默认套件**：`run.mjs` 按序执行 **S0–S12**（**13** 项）。**S13**（双核 experimental 失败静默降级 Stable 仍返回 `reply`）为可选：`--include-s13` 或 `OCLIVE_OOCP_INCLUDE_S13=1`。
 
 ## 协议符合性报告
 
@@ -48,7 +51,7 @@
 
 当前主程序 **`--api`** 为 **HTTP**（`GET /health`、`POST /chat`），**无 WebSocket 方法链**。本套件校验的是 **HTTP 试聊契约** 与编排结果；若规范中的 WS 语义落地，应在本目录扩展脚本与 CI 步骤。
 
-**文档口径**：与本仓库根 **`README.md`**、**`AGENTS.md`** 对 CI job 名 **`oocp-test-suite`**、场景数 **S0–S11**、目录 **`examples/oocp-test-suite/`** 的叙述一致。
+**文档口径**：与本仓库根 **`README.md`**、**`AGENTS.md`** 一致：**OOCP 13 场景（S0–S12）**，另有可选 **S13** 双核降级场景；CI job **`oocp-test-suite`**；目录 **`examples/oocp-test-suite/`**。
 
 ## 测试体系统览
 

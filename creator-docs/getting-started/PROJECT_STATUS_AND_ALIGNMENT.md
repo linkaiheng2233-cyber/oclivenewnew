@@ -66,7 +66,7 @@
 | 主题 | 入口 |
 |------|------|
 | 测试分层总览 | [../testing/OVERVIEW.md](../testing/OVERVIEW.md) |
-| OOCP HTTP 黑盒（S0–S11） | [../testing/OOCP_TEST_SUITE.md](../testing/OOCP_TEST_SUITE.md) |
+| OOCP HTTP 黑盒（S0–S12，13 场景；可选 S13） | [../testing/OOCP_TEST_SUITE.md](../testing/OOCP_TEST_SUITE.md) |
 | 测试输出契约 | [../testing/TEST_OUTPUT_SCHEMA.md](../testing/TEST_OUTPUT_SCHEMA.md) |
 | 供应链与轻量化基线 | [../development/LIGHTWEIGHT_PROFILE.md](../development/LIGHTWEIGHT_PROFILE.md) |
 | 已知漏洞与升级路线 | [../security/KNOWN_VULNERABILITIES.md](../security/KNOWN_VULNERABILITIES.md) |

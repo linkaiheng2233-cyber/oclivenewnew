@@ -36,7 +36,7 @@
 | 日志统一（tracing） | `src-tauri/src` 无 `log::` 引用 | ✅ |
 | 生产路径零裸 unwrap（lib） | `cd src-tauri && cargo clippy --lib -- -D warnings -W clippy::unwrap_used` | ✅ |
 
-**OOCP 说明**：默认 **13** 项（`S0`–`S12`）；**S13** 双核降级为可选（`--include-s13` 或 `OCLIVE_OOCP_INCLUDE_S13=1`）。文档 [OOCP_TEST_SUITE.md](../creator-docs/testing/OOCP_TEST_SUITE.md) 表头写 S0–S11 时按 12 项计，与 `run.mjs` 默认顺序并存 S12。
+**OOCP 说明**：默认 **13** 项（`S0`–`S12`）；**S13** 双核降级为可选（`--include-s13` 或 `OCLIVE_OOCP_INCLUDE_S13=1`）。口径见 [OOCP_TEST_SUITE.md](../creator-docs/testing/OOCP_TEST_SUITE.md)。
 
 ```powershell
 # 本地 OOCP（仓库根）
@@ -64,7 +64,7 @@ node examples/oocp-test-suite/run.mjs
 | v1 → v2 迁移 | `oclive pack migrate-to-blueprint` | ✅ |
 | v2 → v3 迁移工具 | 手写 v3 示例 + `init --dual-core`；批量迁移延后（Q18） | 🔶 |
 | 角色包 vs 蓝图职责分离 | [ROLE_PACK_BOUNDARY.md](./ROLE_PACK_BOUNDARY.md) | ✅ |
-| `pack validate --profile creator` | **纯创作者包**（含 `prompts/`、meta 无系统字段）；➖ **`roles/mumu` 会失败**（完整示例包） | ✅ / ➖ |
+| `pack validate --profile creator` | 用**纯创作者包**验证（含 `prompts/`、`meta` 仅 §2 创作者字段、不校验 `slot_registry`）；示例：`cargo run -p oclive-cli -- pack create …` 后 `pack validate --profile creator <包根>`。**勿**用 `roles/mumu` 代表 creator 目标 — mumu 为**完整示例包**（含 evolution、完整 `slot_registry` 等），对该 profile **预期失败** | ✅ |
 
 ---
 
@@ -78,6 +78,7 @@ node examples/oocp-test-suite/run.mjs
 | `complex_emotion` 支持 directory | `provides` / 权限校验 | ✅ |
 | 高风险权限（process / network / MCP） | 授权 + `permission_three_way_consistency` | ✅ |
 | 插件测试框架 | `oclive plugin test` | ✅ |
+| **`official-vue-test-runner`（T14）** | `plugins/official-vue-test-runner/` + 编写器「前端测试」面板 JSON-RPC | ✅ |
 | 官方极简插件管理 UI | `SimplePluginManager` + `uiStore` 开关 | ✅ |
 | 权限三层分离 | [ROLE_PACK_BOUNDARY.md](./ROLE_PACK_BOUNDARY.md) §7 | ✅ |
 
