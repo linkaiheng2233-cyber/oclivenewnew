@@ -51,6 +51,7 @@
 | 角色包磁盘格式 / `schema_version` | **[../role-pack/ROLE_PACK_SPEC.md](../role-pack/ROLE_PACK_SPEC.md)** · **[../role-pack/PACK_VERSIONING.md](../role-pack/PACK_VERSIONING.md)** |
 | **角色包 vs 蓝图职责边界** | **[../../handoff/ROLE_PACK_BOUNDARY.md](../../handoff/ROLE_PACK_BOUNDARY.md)** · ROLE_PACK_SPEC §0 · SETTINGS_REFERENCE §零 |
 | **v1 → v2 蓝图迁移（v1 已废弃，仅迁移用）** | **[../role-pack/V1_TO_V2_MIGRATION.md](../role-pack/V1_TO_V2_MIGRATION.md)**（[English](../../creator-docs-en/role-pack/V1_TO_V2_MIGRATION.md)） |
+| **v2 → v3 蓝图迁移（runtime_config / 可选双核）** | **[../role-pack/V2_TO_V3_MIGRATION.md](../role-pack/V2_TO_V3_MIGRATION.md)**（[English](../../creator-docs-en/role-pack/V2_TO_V3_MIGRATION.md)） |
 | **蓝图 `groups` 分组（架构图）** | **[ROLE_PACK_SPEC.md](../role-pack/ROLE_PACK_SPEC.md)** §2.3 · [RFC_ROLE_BLUEPRINT_V2.md](../../handoff/RFC_ROLE_BLUEPRINT_V2.md) §4.5 |
 | OOCP HTTP 黑盒套件（CI） | **[../testing/OOCP_TEST_SUITE.md](../testing/OOCP_TEST_SUITE.md)** |
 | 目录插件整壳 `invoke` · 权限与错误码 | **[../plugin-and-architecture/BRIDGE_API_REFERENCE.md](../plugin-and-architecture/BRIDGE_API_REFERENCE.md)** |
@@ -65,6 +66,7 @@
 | **纯终端用户：安装到日常对话（用户手册）** | **[USER_MANUAL.md](USER_MANUAL.md)**（[English](../../creator-docs-en/getting-started/USER_MANUAL.md)） |
 | **角色包创作者：从零到发布（学习路径）** | **[../role-pack/CREATOR_LEARNING_PATH.md](../role-pack/CREATOR_LEARNING_PATH.md)**（[English](../../creator-docs-en/role-pack/CREATOR_LEARNING_PATH.md)） |
 | **已有 v1 包：迁到 v2 蓝图（约 10 分钟）** | **[../role-pack/V1_TO_V2_MIGRATION.md](../role-pack/V1_TO_V2_MIGRATION.md)**（[English](../../creator-docs-en/role-pack/V1_TO_V2_MIGRATION.md)） |
+| **已有 v2 蓝图：迁到 v3（runtime_config / 双核，约 10 分钟）** | **[../role-pack/V2_TO_V3_MIGRATION.md](../role-pack/V2_TO_V3_MIGRATION.md)**（[English](../../creator-docs-en/role-pack/V2_TO_V3_MIGRATION.md)） |
 | **插件作者：目录 / Remote / 市场（学习路径）** | **[../plugin-and-architecture/PLUGIN_AUTHOR_LEARNING_PATH.md](../plugin-and-architecture/PLUGIN_AUTHOR_LEARNING_PATH.md)**（[English](../../creator-docs-en/plugin-and-architecture/PLUGIN_AUTHOR_LEARNING_PATH.md)） |
 | **LLM 目录插件 + llama.cpp（不经 Ollama，按角色切换）** | **[examples/directory-plugin-llamacpp/README.md](../../examples/directory-plugin-llamacpp/README.md)**（[English](../../examples/directory-plugin-llamacpp/README.en.md)） |
 | **内核 / 硬件集成方：脚手架到设备（学习路径）** | **[KERNEL_INTEGRATOR_LEARNING_PATH.md](KERNEL_INTEGRATOR_LEARNING_PATH.md)**（[English](../../creator-docs-en/getting-started/KERNEL_INTEGRATOR_LEARNING_PATH.md)） |

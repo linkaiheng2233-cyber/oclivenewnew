@@ -1,5 +1,7 @@
 # Migrating role packs from v1 to v2
 
+**Already on v2?** Next: **[V2_TO_V3_MIGRATION.md](V2_TO_V3_MIGRATION.md)** (`runtime_config`, optional dual-core; ~10 min manual upgrade).
+
 **Audience**: creators still on `manifest.json` + `settings.json`. Following this guide takes **about 10 minutes** including validation.
 
 **Normative spec**: [ROLE_PACK_SPEC.md](ROLE_PACK_SPEC.md) · validation: `crates/oclive_validation`.

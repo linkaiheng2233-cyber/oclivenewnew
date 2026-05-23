@@ -1,5 +1,7 @@
 # 从 v1 迁移到 v2 角色包
 
+**已升级到 v2？** 下一步见 **[V2_TO_V3_MIGRATION.md](V2_TO_V3_MIGRATION.md)**（`runtime_config`、可选双核；约 10 分钟手动升级）。
+
 **目标读者**：仍使用 `manifest.json` + `settings.json` 的创作者。按本文操作，**约 10 分钟**可完成迁移与校验。
 
 **权威格式**：[ROLE_PACK_SPEC.md](ROLE_PACK_SPEC.md) · 校验实现：`crates/oclive_validation`。

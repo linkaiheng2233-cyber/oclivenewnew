@@ -8,6 +8,10 @@
 
 已有 **`manifest.json` + `settings.json`** 的包，请先阅读 **[V1_TO_V2_MIGRATION.md](V1_TO_V2_MIGRATION.md)**：`pack migrate-to-blueprint` → 默认 `pack validate`（v2）→ 主应用试聊。
 
+## 从 v2 升级到 v3（约 10 分钟）
+
+需要 **`runtime_config`** 或可选 **双核** 时，阅读 **[V2_TO_V3_MIGRATION.md](V2_TO_V3_MIGRATION.md)**：改 `schema_version: 3` → 添加 `runtime_config` → `pack validate` → `oclive doctor`（v3 专项检查）。**双核默认关**时行为与 v2 一致。
+
 ---
 
 ## 入门（约 30 分钟）
