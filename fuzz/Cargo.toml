@@ -11,6 +11,7 @@ cargo-fuzz = true
 [dependencies]
 libfuzzer-sys = "0.4"
 oclive_validation = { path = "../crates/oclive_validation" }
+oclivenewnew-tauri = { path = "../src-tauri", default-features = false }
 serde_json = "1"
 
 [[bin]]
@@ -34,5 +35,23 @@ doc = false
 [[bin]]
 name = "fuzz_blueprint_v2"
 path = "fuzz_targets/fuzz_blueprint_v2.rs"
+test = false
+doc = false
+
+[[bin]]
+name = "fuzz_oclive_validation"
+path = "fuzz_targets/fuzz_oclive_validation.rs"
+test = false
+doc = false
+
+[[bin]]
+name = "fuzz_function_call_parser"
+path = "fuzz_targets/fuzz_function_call_parser.rs"
+test = false
+doc = false
+
+[[bin]]
+name = "fuzz_role_pack_loader"
+path = "fuzz_targets/fuzz_role_pack_loader.rs"
 test = false
 doc = false

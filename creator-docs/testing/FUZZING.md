@@ -23,11 +23,22 @@ cargo fuzz run fuzz_manifest_load -- -runs=100000
 cargo fuzz run fuzz_settings_parse -- -runs=100000
 cargo fuzz run fuzz_oocp_message -- -runs=100000
 cargo fuzz run fuzz_blueprint_v2 -- -runs=100000
+cargo fuzz run fuzz_oclive_validation -- -runs=100000
+cargo fuzz run fuzz_function_call_parser -- -runs=100000
+cargo fuzz run fuzz_role_pack_loader -- -runs=100000
 ```
 
-### `fuzz_blueprint_v2`
+### `fuzz_oclive_validation`
 
-对 **`pipeline.ocblueprint`** 随机 UTF-8 / JSON 输入调用 **`validate_blueprint_v2_json`**，断言解析路径 **不 panic**（非法输入返回 `Err` 即可）。
+对随机 UTF-8 / JSON 依次调用 **`validate_blueprint_v2_json`**、**`validate_manifest_top_level_keys`**、**`validate_settings_top_level_keys`**，断言不 panic。
+
+### `fuzz_function_call_parser`
+
+对随机字符串调用 **`parse_from_llm_response`**（OpenAI `tool_calls` / `function_call` 解析），断言不 panic。
+
+### `fuzz_role_pack_loader`
+
+将随机字节写入临时文件并调用 **`peek_role_pack_manifest`**（ZIP / 损坏输入），断言不 panic。
 
 ```bash
 cd fuzz
