@@ -1,6 +1,6 @@
 # 给 Cursor：双核双态设计总结 · 对齐进度
 
-**状态**：**Proposed（未来演进）** — **不阻塞**当前 v2 交付。  
+**状态**：**P2–P5 已实现**（2026-05）— `DualPipelineRunner`、宿主门控、`init --dual-core`、OOCP S13、Monolith 模板已落地；**默认仍关闭**，不开双核零 diff。  
 **权威 RFC**：[creator-docs/rfc/RFC_OCLIVE_DUAL_CORE_DUAL_MODE.md](../creator-docs/rfc/RFC_OCLIVE_DUAL_CORE_DUAL_MODE.md)  
 **术语对照**：[DUAL_CORE_ALIGNMENT.md](DUAL_CORE_ALIGNMENT.md)
 
@@ -263,7 +263,7 @@ flowchart TD
 | 任务 | 验收 |
 |------|------|
 | 角色包 / 宿主读取「双核已启用」 | 见 §十一 Q16 |
-| `process_message` 分支：未启用 = 零 diff | OOCP S0–S11 **全绿** |
+| `process_message` 分支：未启用 = 零 diff | OOCP **S0–S12** **全绿**（默认 13 场景） |
 | 启用：接 `DualPipelineRunner` | 实验失败 → Stable；回复契约不变 |
 | `SlotResolver` 按 `zone` 提供视图（如需） | Experimental 步骤只绑定目标 registry 键 |
 | OOCP **增量**场景 | 至少 1 条：实验失败降级 Stable 仍返回 `reply` |
@@ -302,7 +302,7 @@ flowchart TD
 
 ## 十三、开放问题（已关闭）
 
-Q1–Q20 已决；实现缺口：**宿主加载 `runtime_config`**、**DualPipelineRunner**（P2+）仍待开发。
+Q1–Q20 已决。**P2–P5 已实现**：宿主加载 `runtime_config`、`DualPipelineRunner` + `process_message` 门控、`oclive init --dual-core`、OOCP S13（可选）、Monolith `--dual-core` 模板。进度与验收见 [DUAL_CORE_ALIGNMENT.md](DUAL_CORE_ALIGNMENT.md)、[PRODUCT_SELF_CHECK.md](PRODUCT_SELF_CHECK.md) §四。
 
 ---
 

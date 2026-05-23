@@ -13,17 +13,15 @@
 |------|------|------|
 | P0 | ✅ | 文档 + Q1–Q20 |
 | P1 | ✅ | 校验 / Schema / creator profile |
-| **P2** | ❌ | 宿主加载 + 调度器 + `process_message` |
-| **P3** | ❌ | `oclive init --dual-core` |
-| **P4** | ❌ | OOCP 降级场景 |
-| **P5** | ❌ | Monolith + `--dual-core`（**仅 `oclive-cli` 生成工程**） |
+| **P2** | ✅ | 宿主加载 + `DualPipelineRunner` + `process_message` 门控 |
+| **P3** | ✅ | `oclive init --dual-core` |
+| **P4** | ✅ | OOCP S13 双核降级（`--include-s13` / 可选 CI） |
+| **P5** | ✅ | Monolith + `--dual-core`（**`oclive-cli` 生成工程**） |
 
-**今日事实**：
+**实现留痕（2026-05）**：
 
-- 角色加载在 **`src-tauri/src/infrastructure/storage.rs`**（`load_role_from_blueprint_v2_dir`），**无** `infrastructure/role_pack.rs`。
-- `load_blueprint_v2_for_role_dir` **仅接受 `schema_version: 2`**；v3 须新增 **`load_blueprint_v3_for_role_dir`**（`oclive_validation`）。
-- 仓库 **无** `SessionState` 类型；快照对象须另行定义（§八 Q21）。
-- 主编排仍是 **`process_message` → `co_present::process_co_present`**（Stable = Q19 硬编码路径）。
+- v3 蓝图加载与 **`TurnRollbackSnapshot`** 已入库；主编排 **`process_message`** 在双核关闭时仍走 **`co_present`**（零 diff）。
+- 深化：七槽 method 注册表、架构图双核 UI、`oclive explain DUAL_CORE` — 见 [DUAL_CORE_ALIGNMENT.md](DUAL_CORE_ALIGNMENT.md)。
 
 ---
 
