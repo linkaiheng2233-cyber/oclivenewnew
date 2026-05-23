@@ -47,6 +47,7 @@
     "@vue-flow/node-resizer": "^1.5.1",
     "acorn": "^8.16.0",
     "acorn-walk": "^8.3.5",
+    "idb-keyval": "^6.2.1",
     "mitt": "^3.0.1",
     "pinia": "^3.0.4",
     "pinia-plugin-persistedstate": "^4.7.1",

@@ -55,5 +55,10 @@ void (async () => {
   const pinia = createPinia()
   pinia.use(piniaPluginPersistedstate)
   app.use(pinia)
+
+  const { useChatStore } = await import('./stores/chatStore')
+  await useChatStore().hydrateFromStorage()
+  useChatStore().migrateAllLegacyMessageBuckets()
+
   app.mount('#app')
 })()

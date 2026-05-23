@@ -6,7 +6,15 @@ import { presentationFromSendResponse } from '../utils/replyPresentation'
 import {
   assistantDialogueFromSplit,
   splitRoleplayReply,
+  type RoleplaySplit,
 } from '../utils/roleplayReplySplit'
+import {
+  loadMessageMapFromIdb,
+  migrateMessageMapFromLocalStorage,
+  migrateMessageMapShape,
+  saveMessageMapToIdb,
+  type RoleSceneMessageMap,
+} from '../utils/chatMessageDb'
 import {
 
   sendMessage,
@@ -31,13 +39,46 @@ export interface ChatMessage {
   aside?: string
 }
 
-type RoleSceneMessageMap = Record<string, Record<string, ChatMessage[]>>
-
 /** 与后端短期对话 FIFO 策略对齐（每角色最多保留条数） */
 const MAX_MESSAGES_PER_CONVERSATION = 500
 
 /** 进入某场景时，该桶内已有消息条数；索引小于该值的视为「历史」折叠区（按角色×场景） */
 export type SceneHistorySplitIndex = Record<string, Record<string, number>>
+
+function isLegacyRoleBucket(
+  bucket: RoleSceneMessageMap[string] | undefined,
+): bucket is ChatMessage[] {
+  return Array.isArray(bucket)
+}
+
+function roleSceneBucket(
+  map: RoleSceneMessageMap,
+  roleId: string,
+  sceneId: string,
+): ChatMessage[] {
+  const sid = sceneId || 'default'
+  const roleBucket = map[roleId]
+  if (isLegacyRoleBucket(roleBucket)) {
+    map[roleId] = { default: roleBucket }
+  }
+  if (!map[roleId])
+    map[roleId] = {}
+  const scenes = map[roleId]!
+  if (!scenes[sid])
+    scenes[sid] = []
+  return scenes[sid]!
+}
+
+let persistMessagesTimer: ReturnType<typeof setTimeout> | null = null
+
+function schedulePersistMessages(map: RoleSceneMessageMap) {
+  if (persistMessagesTimer)
+    clearTimeout(persistMessagesTimer)
+  persistMessagesTimer = setTimeout(() => {
+    persistMessagesTimer = null
+    void saveMessageMapToIdb(map)
+  }, 300)
+}
 
 export const useChatStore = defineStore(
   'chat',
@@ -46,29 +87,18 @@ export const useChatStore = defineStore(
       messageMap: {} as RoleSceneMessageMap,
       isLoading: false,
       sceneHistorySplitIndex: {} as SceneHistorySplitIndex,
+      messagesHydrated: false,
     }),
     getters: {
-      /**
-       * 指定角色×场景的消息列表（不读其它 store；调用方传入 currentRoleId / sceneId）。
-       * 旧版 messageMap[roleId] 为数组时只读返回；写入路径（addMessage / clearMessages 等）会迁入分桶结构。
-       */
       messagesForRoleScene: (state) => {
         return (roleId: string, sceneId: string): ChatMessage[] => {
           const sid = sceneId || 'default'
-          const roleBucket = (state.messageMap as unknown as Record<
-            string,
-            unknown
-          >)[roleId]
-          if (Array.isArray(roleBucket)) {
-            return roleBucket as ChatMessage[]
-          }
-          const sceneBucket = (roleBucket as Record<string, ChatMessage[]> | undefined)?.[
-            sid
-          ]
-          return sceneBucket ?? []
+          const roleBucket = state.messageMap[roleId]
+          if (isLegacyRoleBucket(roleBucket))
+            return roleBucket
+          return roleBucket?.[sid] ?? []
         }
       },
-      /** 指定角色×场景下「本次进入场景前」已有消息条数（用于折叠历史） */
       sceneHistorySplitForRoleScene: (state) => {
         return (roleId: string, sceneId: string): number => {
           const sid = sceneId || 'default'
@@ -77,31 +107,35 @@ export const useChatStore = defineStore(
       },
     },
     actions: {
-      /** 将旧版 messageMap[roleId] 为数组的结构迁入当前 sceneId 桶（与 messages getter 一致） */
+      /** 启动时从 IndexedDB 恢复消息；兼容旧版 localStorage 全量持久化。 */
+      async hydrateFromStorage() {
+        if (this.messagesHydrated)
+          return
+        const fromLegacy = migrateMessageMapFromLocalStorage()
+        const fromIdb = fromLegacy ?? (await loadMessageMapFromIdb())
+        if (fromIdb)
+          this.messageMap = migrateMessageMapShape(fromIdb)
+        this.messagesHydrated = true
+      },
+
+      /** 将旧版 messageMap[roleId] 为数组的结构迁入分桶（全表扫描，仅在 init / 单角色路径调用）。 */
       ensureLegacyMigrated(roleId: string) {
-        const uiStore = useUiStore()
-        const roleBucket = (this.messageMap as unknown as Record<string, unknown>)[
-          roleId
-        ]
-        if (Array.isArray(roleBucket)) {
-          const legacy = roleBucket as ChatMessage[];
-          (this.messageMap as unknown as Record<string, Record<string, ChatMessage[]>>)[
-            roleId
-          ] = { [uiStore.sceneId || 'default']: legacy }
+        const roleBucket = this.messageMap[roleId]
+        if (isLegacyRoleBucket(roleBucket)) {
+          const uiStore = useUiStore()
+          const legacy = roleBucket
+          this.messageMap[roleId] = { [uiStore.sceneId || 'default']: legacy }
         }
       },
 
-      getMessageCountForRoleScene(roleId: string, sceneId: string): number {
-        this.ensureLegacyMigrated(roleId)
-        const sid = sceneId || 'default'
-        const roleMap = (this.messageMap as RoleSceneMessageMap)[roleId]
-        return roleMap?.[sid]?.length ?? 0
+      migrateAllLegacyMessageBuckets() {
+        this.messageMap = migrateMessageMapShape(this.messageMap)
       },
 
-      /**
-       * 统一改场景入口：更新 uiStore.sceneId，并在跨场景时记录历史折叠分割点。
-       * 初始化/换角/导入等同步场景请传 skipHistorySplit，避免误折叠。
-       */
+      getMessageCountForRoleScene(roleId: string, sceneId: string): number {
+        return roleSceneBucket(this.messageMap, roleId, sceneId).length
+      },
+
       applySceneChange(
         nextSceneId: string,
         options?: { skipHistorySplit?: boolean },
@@ -113,16 +147,14 @@ export const useChatStore = defineStore(
         if (prev !== next && !options?.skipHistorySplit) {
           const roleId = roleStore.currentRoleId
           this.ensureLegacyMigrated(roleId)
-          if (!this.sceneHistorySplitIndex[roleId]) {
+          if (!this.sceneHistorySplitIndex[roleId])
             this.sceneHistorySplitIndex[roleId] = {}
-          }
           const count = this.getMessageCountForRoleScene(roleId, next)
           this.sceneHistorySplitIndex[roleId][next] = count
         }
         uiStore.setScene(next)
       },
 
-      /** 系统消息（如关系升级提示、场景欢迎语等） */
       addSystemMessage(content: string, sceneId?: string) {
         const roleStore = useRoleStore()
         const uiStore = useUiStore()
@@ -137,14 +169,13 @@ export const useChatStore = defineStore(
         this.addMessage(roleStore.currentRoleId, sid, message)
       },
 
-      /** 助手消息（沐沐的回复/独白等） */
       addAssistantMessage(
         rawContent: string,
         emotion?: string,
         sceneId?: string,
         presenceVariant?: PresenceMode,
         replyIsFallback?: boolean,
-      ) {
+      ): RoleplaySplit {
         const roleStore = useRoleStore()
         const uiStore = useUiStore()
         const sid = sceneId ?? uiStore.sceneId ?? 'default'
@@ -163,9 +194,9 @@ export const useChatStore = defineStore(
           ...(aside.length > 0 ? { aside } : {}),
         }
         this.addMessage(roleStore.currentRoleId, sid, message)
+        return split
       },
 
-      /** 用户消息（用户发送的内容） */
       addUserMessage(content: string, sceneId?: string) {
         const roleStore = useRoleStore()
         const uiStore = useUiStore()
@@ -182,45 +213,23 @@ export const useChatStore = defineStore(
 
       addMessage(roleId: string, sceneId: string, msg: ChatMessage) {
         const sid = sceneId || 'default'
-        const roleBucket = (this.messageMap as unknown as Record<
-          string,
-          unknown
-        >)[roleId]
-        // 兼容旧版本：messageMap[roleId] 曾经是 ChatMessage[]
-        if (Array.isArray(roleBucket)) {
-          const legacy = roleBucket as ChatMessage[];
-          (this.messageMap as unknown as Record<string, Record<string, ChatMessage[]>>)[
-            roleId
-          ] = { [sid]: legacy }
-        }
-        const current
-          = (this.messageMap as unknown as Record<string, Record<string, ChatMessage[]>>)[
-            roleId
-          ]?.[sid] ?? []
+        const current = roleSceneBucket(this.messageMap, roleId, sid)
         const next = [...current, msg]
-        if (!this.messageMap[roleId])
-          (this.messageMap as any)[roleId] = {};
-        (this.messageMap as any)[roleId][sid]
+        const trimmed
           = next.length > MAX_MESSAGES_PER_CONVERSATION
             ? next.slice(-MAX_MESSAGES_PER_CONVERSATION)
             : next
+        this.messageMap[roleId]![sid] = trimmed
+        schedulePersistMessages(this.messageMap)
       },
+
       clearMessages(roleId: string, sceneId: string) {
         const sid = sceneId || 'default'
-        const roleBucket = (this.messageMap as unknown as Record<
-          string,
-          unknown
-        >)[roleId]
-        if (Array.isArray(roleBucket)) {
-          const legacy = roleBucket as ChatMessage[];
-          (this.messageMap as unknown as Record<string, Record<string, ChatMessage[]>>)[
-            roleId
-          ] = { [sid]: legacy }
-        }
-        if (!this.messageMap[roleId])
-          (this.messageMap as any)[roleId] = {};
-        (this.messageMap as any)[roleId][sid] = []
+        roleSceneBucket(this.messageMap, roleId, sid)
+        this.messageMap[roleId]![sid] = []
+        schedulePersistMessages(this.messageMap)
       },
+
       async sendMessage(content: string, sceneId: string): Promise<SendMessageResponse> {
         const roleStore = useRoleStore()
         const roleId = roleStore.currentRoleId
@@ -235,14 +244,13 @@ export const useChatStore = defineStore(
             scene_id: sid || null,
           })
           const pres = presentationFromSendResponse(res)
-          this.addAssistantMessage(
+          const split = this.addAssistantMessage(
             pres.replyText,
             pres.assistantEmotionLabel,
             sid,
             pres.presenceVariant,
             pres.replyIsFallback,
           )
-          const split = splitRoleplayReply(pres.replyText)
           useDebugStore().recordKnowledgeFromSend(res)
           roleStore.updateLocalAfterMessage(
             pres.assistantEmotionLabel,
@@ -253,9 +261,8 @@ export const useChatStore = defineStore(
               res.relation_state,
               relationBefore,
             )
-            if (tip) {
+            if (tip)
               this.addSystemMessage(tip, sid)
-            }
             roleStore.updateRelationState(res.relation_state)
           }
           hostEventBus.emitBuiltin('message:sent', {
@@ -270,6 +277,8 @@ export const useChatStore = defineStore(
         }
       },
     },
-    persist: true,
+    persist: {
+      pick: ['sceneHistorySplitIndex'],
+    },
   },
 )
