@@ -12,6 +12,7 @@
 |------|------|
 | **Breaking 变更流程**（定义、六步、兼容层、PR/迁移模板） | **[../../handoff/BREAKING_CHANGE_PROCESS.md](../../handoff/BREAKING_CHANGE_PROCESS.md)** |
 | **关键路径交接笔记**（Bus factor：`process_message`、`PluginHost`、错误码、DB、测试/CI 等入口） | **[../../handoff/BUS_FACTOR_NOTES.md](../../handoff/BUS_FACTOR_NOTES.md)** |
+| **五仓工程卫生优化（24 项 · gitignore / 二进制 / 测试缺口）** | **[../../docs/WORKSPACE_OPTIMIZATION_REPORT.md](../../docs/WORKSPACE_OPTIMIZATION_REPORT.md)**（与 [TECHNICAL_DEBT_INVENTORY](../../handoff/TECHNICAL_DEBT_INVENTORY.md)、[ARCHITECTURE_LAYERING §Cursor 优化轮](../../handoff/ARCHITECTURE_LAYERING.md) 互补） |
 
 ---
 
