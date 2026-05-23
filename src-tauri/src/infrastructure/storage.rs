@@ -29,8 +29,8 @@ use crate::models::{
 use chrono::Timelike;
 use oclive_validation::{
     blueprint_schema_version_from_raw, load_blueprint_v2_for_role_dir,
-    load_blueprint_v3_for_role_dir, slot_registry_to_plugin_backends, validate_manifest_top_level_keys,
-    validate_min_runtime_version, validate_settings_schema_version,
+    load_blueprint_v3_for_role_dir, slot_registry_to_plugin_backends, validate_min_runtime_version,
+    validate_settings_schema_version,
     validate_settings_top_level_keys, write_role_pack_blueprint_slot_registry,
     SlotRegistryEntry, BLUEPRINT_V3_SCHEMA_VERSION, PIPELINE_BLUEPRINT_FILENAME,
 };
@@ -236,13 +236,10 @@ impl RoleStorage {
 
         let manifest_content = fs::read_to_string(&manifest_path).map_err(AppError::IoError)?;
 
-        let manifest_value: serde_json::Value =
-            serde_json::from_str(&manifest_content).map_err(AppError::SerializationError)?;
-        if let serde_json::Value::Object(ref map) = manifest_value {
-            validate_manifest_top_level_keys(map).map_err(AppError::InvalidParameter)?;
-        }
         let mut disk: DiskRoleManifest =
-            serde_json::from_value(manifest_value).map_err(AppError::SerializationError)?;
+            serde_json::from_str(&manifest_content).map_err(|e| {
+                AppError::InvalidParameter(format!("manifest.json: {e}"))
+            })?;
 
         let mut settings_opt: Option<DiskRoleSettings> = None;
         let settings_path = role_dir.join("settings.json");

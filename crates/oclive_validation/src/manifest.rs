@@ -93,6 +93,7 @@ pub struct LifeScheduleDisk {
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
+#[serde(deny_unknown_fields)]
 pub struct DiskRoleManifest {
     pub id: String,
     pub name: String,
@@ -107,7 +108,7 @@ pub struct DiskRoleManifest {
     pub evolution: EvolutionConfigDisk,
     #[serde(default)]
     pub scenes: Vec<String>,
-    #[serde(default)]
+    #[serde(default, alias = "relations")]
     pub user_relations: HashMap<String, UserRelationDisk>,
     #[serde(default)]
     pub default_relation: String,
