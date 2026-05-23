@@ -1,0 +1,122 @@
+/** app — en. */
+export default {
+  app: {
+    locale: {
+      label: 'Language',
+      system: 'Match system',
+      zhCN: '中文',
+      enUS: 'English',
+    },
+    connectivity: {
+      pluginIndexOffline: 'The community plugin index could not be refreshed online; using local cache.',
+      dismiss: 'Dismiss',
+    },
+    theme: {
+      system: 'Match system',
+      light: 'Light',
+      dark: 'Dark',
+    },
+    defaultRoleName: 'Mumu',
+    /** Browser tab title (keep in sync with index.html inline bootstrap) */
+    documentTitle: 'OCLIVE — Desktop AI companion',
+    more: {
+      collapse: 'Collapse',
+      more: 'More',
+      ariaMoreFeatures: 'More options',
+      interactionMode: 'Interaction mode',
+      interactionImmersiveHint:
+        'Immersive: virtual time, narrative scenes, schedule hints, and travel-related features.',
+      interactionPureChatHint:
+        'Chat-only: conversation only; hides scene/time bars for casual chat.',
+      interactionImmersive: 'Immersive',
+      interactionPureChat: 'Chat-only',
+      identity: 'Identity',
+      identityHelp:
+        'How you relate to the character (friend, partner, etc.); affects dialogue and stats. Different from the pack’s core personality file (core_personality.txt).',
+      ui: 'Appearance',
+      uiHint1:
+        'A− / A+ font steps are shared with the pack editor and launcher and are saved locally.',
+      uiHint2: 'Light / dark / system theme is also remembered.',
+      appearanceToolbar: 'Appearance & text size',
+      scaleGroup: 'UI scale',
+      shrinkTitle: 'Smaller',
+      shrinkAria: 'Decrease UI scale',
+      scaleRelativeTitle: 'Relative to default: {label}',
+      enlargeTitle: 'Larger',
+      enlargeAria: 'Increase UI scale',
+      themeTitle: 'Theme: {label} (click to cycle)',
+      settingsEntry: 'Settings',
+      shortcutHelp: 'Shortcuts',
+      openSettings: '⚙ Settings',
+      debug: 'Debug',
+      debugHelp:
+        'Developer tools: favorability, memory, policy reload, etc. Ctrl+Shift+D toggles this panel; Esc closes “More” first when it is open.',
+      openDebugPanel: 'Open debug panel',
+      virtualTime: 'Virtual time',
+      virtualTimeHint1:
+        'In-story time, independent from the real clock. Click the time to open the wheel.',
+      virtualTimeHint2:
+        'Use quick buttons to advance; some packs trigger scenes or monologues after jumps.',
+      narrativeScene: 'Narrative scene',
+      narrativeSceneHelp:
+        'The scene you are narrating; matches pack scene config. Switching may fold chat history.',
+      characterAt: 'Character at: {label}',
+      pluginBtnSimple: 'Plugin manager',
+      pluginMarket: 'Plugin market',
+      settingsTileHelpSimple:
+        'Shortcuts, settings, and plugin manager in one place. Ctrl+Shift+S opens settings; '
+        + 'Ctrl+Shift+F opens the installed-plugins list. Advanced slots: <code>oclive plugin manage</code>. Ctrl+Shift+D toggles the debug panel.',
+    },
+    toast: {
+      remoteLifeOn: 'Remote inner voice enabled',
+      remoteLifeOff: 'Remote inner voice disabled',
+      interactionImmersive: 'Switched to immersive mode',
+      interactionPureChat: 'Switched to chat-only mode',
+      layoutResetOk: 'Restored the pack’s recommended layout.',
+      layoutResetFailPrefix: 'Restore failed: ',
+      noRolesScanned:
+        'No usable role packs found (roles folder empty or validation failed). Check the roles path; for dev, set OCLIVE_ROLES_DIR to the repo roles folder.',
+      fallbackReply: 'Fallback reply (no body from the model)',
+      roleSwitched: 'Switched role: {id}',
+      relationSetPerScene: 'Scene identity set: {name}',
+      relationSetGlobal: 'Identity set: {name}',
+      pluginInstalledFromWeb: 'Installed plugin from web link: {id}',
+      pluginFilesChanged: 'Plugin files changed; refreshed',
+    },
+    sceneTransition: {
+      going: 'Going to “{label}”…',
+    },
+    sidebar: {
+      favorability: 'Favorability',
+      lifeNow: 'Now: {label}',
+      scheduleInference: 'Schedule hint',
+    },
+    floatingSlot: 'Floating plugin slot',
+    narrativeAside: {
+      aria: 'Narrative & inner monologue',
+      title: 'Narrative & inner monologue',
+    },
+    scene: {
+      selectDestinationFirst: 'Pick a destination first',
+      toastTogether: 'Arrived (together)',
+      toastNarrativeOnly: 'Narrative scene updated (character did not move)',
+      systemLine:
+        'Narrative scene is now “{narrative}”; character remains at “{character}”.',
+    },
+    hotkeyHost: {
+      pluginDialogAria: 'Plugin quick window',
+      notFoundDialogAria: 'Plugin not found',
+      cannotOpenTitle: 'Cannot open plugin page',
+      notFoundBody:
+        'The current role bootstrap has no UI for {plugin} in slot {slot}. Enable the plugin, unhide that slot, and save plugin settings.',
+      launcherDialogAria: 'Launchable plugins',
+      launcherTitle: 'Plugin catalog',
+      noPlugins: 'No directory plugins scanned.',
+    },
+    helpHintAria: 'View help',
+    roleSelector: {
+      role: '🎭 Role',
+      identity: '👤 Identity',
+    },
+  }
+}
