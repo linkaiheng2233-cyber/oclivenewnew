@@ -4,6 +4,7 @@
 //! 场景与好感子逻辑见 [`context`]、[`scene`]、[`favor`]。
 
 pub(crate) mod co_present;
+pub mod chat_stage;
 pub mod message_error;
 pub(crate) mod context;
 pub(crate) mod favor;

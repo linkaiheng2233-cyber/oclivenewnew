@@ -46,6 +46,24 @@ macro_rules! map_err_unknown {
     };
 }
 
+/// 共景 / 主编排阶段错误映射（统一 `pm!` 与 `map_copresent_err!`）。
+#[macro_export]
+macro_rules! kernel_stage {
+    (@co_present $stage:expr, $e:expr) => {
+        $e.map_err(|err| {
+            $crate::domain::chat_engine::co_present::CoPresentError::wrap($stage.as_str(), err)
+        })
+    };
+    (@process_message $stage:expr, $e:expr) => {
+        $e.map_err(|source| {
+            $crate::domain::chat_engine::message_error::ProcessMessageError::Stage {
+                stage: $stage.as_str(),
+                source,
+            }
+        })
+    };
+}
+
 /// 共景阶段错误：`AppError` → [`CoPresentError::wrap`].
 #[macro_export]
 macro_rules! map_copresent_err {
