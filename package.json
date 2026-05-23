@@ -28,7 +28,7 @@
     "check:rust": "npm run check:rust:fmt && npm run check:rust:clippy && npm run check:rust:test",
     "check:license": "node scripts/check-license-readiness.mjs",
     "check": "npm run build && npm run check:rust",
-    "check:release": "npm run build && npm run check:rust:fmt && npm run check:rust:clippy && npm run check:rust:test:all",
+    "check:release": "npm run build && npm run test:unit && npm run verify:ui && npm run check:rust:fmt && npm run check:rust:clippy && npm run check:rust:test:all",
     "scaffold:ui-plugin": "node scripts/scaffold-ui-slot-plugin.mjs",
     "test:unit": "vitest run",
     "lint": "eslint src vite.config.ts e2e-mock",

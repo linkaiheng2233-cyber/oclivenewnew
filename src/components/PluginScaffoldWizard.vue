@@ -2,7 +2,7 @@
 import { computed, ref, toRef } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { useModalFocusRestore } from '../composables/useModalFocusRestore'
-import { createPluginScaffold } from '../utils/tauri-api'
+import { createPluginScaffold } from '../api'
 
 const props = defineProps<{ visible: boolean }>()
 

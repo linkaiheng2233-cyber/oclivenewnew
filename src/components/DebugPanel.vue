@@ -10,7 +10,7 @@ import {
   PERSONALITY_TRAIT_KEYS,
   vec7ToRecord,
 } from '../utils/personality-traits'
-import { generateMonologue } from '../utils/tauri-api'
+import { generateMonologue } from '../api'
 import ChatExportBar from './ChatExportBar.vue'
 import HelpHint from './HelpHint.vue'
 import PluginSlotEmbed from './PluginSlotEmbed.vue'

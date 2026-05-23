@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import type { PluginMarketEntryDto } from '../utils/tauri-api'
+import type { PluginMarketEntryDto } from '../api'
 import { computed, ref, toRef, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { useAppToast } from '../composables/useAppToast'

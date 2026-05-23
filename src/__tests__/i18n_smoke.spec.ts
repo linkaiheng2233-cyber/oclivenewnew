@@ -1,6 +1,6 @@
 // @vitest-environment jsdom
 
-import type { DirectoryPluginCatalogEntry } from '../utils/tauri-api'
+import type { DirectoryPluginCatalogEntry } from '../api'
 import { mount } from '@vue/test-utils'
 import { createPinia, setActivePinia } from 'pinia'
 import { afterEach, beforeEach, describe, expect, it } from 'vitest'

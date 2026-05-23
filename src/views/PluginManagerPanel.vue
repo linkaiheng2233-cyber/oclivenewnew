@@ -10,7 +10,7 @@ import { useAppToast } from '../composables/useAppToast'
 import { useModalFocusRestore } from '../composables/useModalFocusRestore'
 import { usePluginStore } from '../stores/pluginStore'
 import { useRoleStore } from '../stores/roleStore'
-import { applyAuthorSuggestedPluginBackends, packPlugin } from '../utils/tauri-api'
+import { applyAuthorSuggestedPluginBackends, packPlugin } from '../api'
 
 const ArchitectureGraph = defineAsyncComponent(
   () => import('../components/ArchitectureGraphFlow.vue'),

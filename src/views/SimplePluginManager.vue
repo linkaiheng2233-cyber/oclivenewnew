@@ -6,7 +6,7 @@ import PluginUiSlotSelectorDialog from '../components/PluginUiSlotSelectorDialog
 import { useAppToast } from '../composables/useAppToast'
 import { usePluginSlotEnable } from '../composables/usePluginSlotEnable'
 import { usePluginStore } from '../stores/pluginStore'
-import { installPluginFromZip } from '../utils/tauri-api'
+import { installPluginFromZip } from '../api'
 
 const props = defineProps<{
   visible: boolean

@@ -9,7 +9,7 @@ import {
   OCLIVE_DEFAULT_RELATION_SENTINEL,
   setEvolutionFactor,
   setUserRelation,
-} from '../utils/tauri-api'
+} from '../api'
 import HelpHint from './HelpHint.vue'
 
 const { t } = useI18n()

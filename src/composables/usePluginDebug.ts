@@ -1,5 +1,5 @@
 import type { MaybeRefOrGetter } from 'vue'
-import type { PluginProcessDebugInfo } from '../utils/tauri-api'
+import type { PluginProcessDebugInfo } from '../api'
 import {
 
   onUnmounted,
@@ -17,7 +17,7 @@ import {
   listPluginProcesses,
   spawnPluginForTest,
   testPluginMethod,
-} from '../utils/tauri-api'
+} from '../api'
 
 const historyKey = (id: string) => `oclive_plugin_debug_rpc_history:${id}`
 const HISTORY_CAP = 50

@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import type { EnvironmentDiagnostics } from '../utils/tauri-api'
+import type { EnvironmentDiagnostics } from '../api'
 import * as Sentry from '@sentry/vue'
 import { nextTick, ref, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
@@ -15,7 +15,7 @@ import {
   getRemoteFallbackAppSettings,
   runEnvironmentDiagnostics,
   setRemoteFallbackToBuiltin,
-} from '../utils/tauri-api'
+} from '../api'
 import { isSentryOptOut, setSentryOptOut } from '../utils/telemetrySentry'
 
 const props = defineProps<{

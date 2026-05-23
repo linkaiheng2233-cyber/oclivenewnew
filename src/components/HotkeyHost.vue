@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import type { UnlistenFn } from '@tauri-apps/api/event'
-import type { HotkeyAction } from '../utils/tauri-api'
+import type { HotkeyAction } from '../api'
 import { listen } from '@tauri-apps/api/event'
 import { computed, onBeforeUnmount, onMounted, ref } from 'vue'
 import { useI18n } from 'vue-i18n'

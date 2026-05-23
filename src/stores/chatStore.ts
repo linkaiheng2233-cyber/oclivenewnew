@@ -1,4 +1,4 @@
-import type { PresenceMode, SendMessageResponse } from '../utils/tauri-api'
+import type { PresenceMode, SendMessageResponse } from '../api'
 import { defineStore } from 'pinia'
 import { hostEventBus } from '../lib/hostEventBus'
 import { getRelationUpgradeMessage } from '../utils/relation'
@@ -11,7 +11,7 @@ import {
 
   sendMessage,
 
-} from '../utils/tauri-api'
+} from '../api'
 import { useDebugStore } from './debugStore'
 import { useRoleStore } from './roleStore'
 import { useUiStore } from './uiStore'

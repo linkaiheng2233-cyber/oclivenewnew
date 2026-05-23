@@ -1,6 +1,6 @@
-import type { UserRelationDto } from './tauri-api'
+import type { UserRelationDto } from '../api'
 import { i18n } from '../i18n/index'
-import { OCLIVE_DEFAULT_RELATION_SENTINEL } from './tauri-api'
+import { OCLIVE_DEFAULT_RELATION_SENTINEL } from '../api'
 
 export interface RelationOptionRow { id: string, name: string }
 

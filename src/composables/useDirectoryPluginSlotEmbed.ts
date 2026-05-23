@@ -1,6 +1,6 @@
 import type { MaybeRefOrGetter } from 'vue'
 import type { PluginVueCompileError } from '../utils/compilePluginVueSfc'
-import type { PluginUiSlotInfo } from '../utils/tauri-api'
+import type { PluginUiSlotInfo } from '../api'
 import { storeToRefs } from 'pinia'
 import { computed, ref, toValue, watch } from 'vue'
 import { useI18n } from 'vue-i18n'

@@ -1,10 +1,10 @@
-import type { DirectoryPluginBootstrap } from './tauri-api'
+import type { DirectoryPluginBootstrap } from '../api'
 import { invoke } from '@tauri-apps/api/tauri'
 import { createPinia } from 'pinia'
 import { createApp } from 'vue'
 import DirectoryShellApp from '../DirectoryShellApp.vue'
 import { i18n } from '../i18n/index'
-import { readPluginAssetText } from './tauri-api'
+import { readPluginAssetText } from '../api'
 
 export function isTauriRuntime(): boolean {
   return (

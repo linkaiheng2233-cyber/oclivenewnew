@@ -20,7 +20,7 @@ import {
   loadPluginVueComponent,
   PluginVueCompileError,
 } from '../utils/compilePluginVueSfc'
-import { readPluginAssetText } from '../utils/tauri-api'
+import { readPluginAssetText } from '../api'
 import { scanVueComponentSource } from '../utils/vueComponentSecurity'
 import PluginSkeleton from './PluginSkeleton.vue'
 

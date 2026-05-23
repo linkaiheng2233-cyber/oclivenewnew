@@ -1,10 +1,10 @@
 <script setup lang="ts">
-import type { JumpTimeResponse } from '../utils/tauri-api'
+import type { JumpTimeResponse } from '../api'
 import { computed, ref, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { useChatStore } from '../stores/chatStore'
 import { useUiStore } from '../stores/uiStore'
-import { jumpTime } from '../utils/tauri-api'
+import { jumpTime } from '../api'
 import PickerWheel from './PickerWheel.vue'
 
 const props = defineProps<{

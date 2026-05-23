@@ -1,4 +1,4 @@
-import type { DirectoryPluginCatalogEntry } from '../utils/tauri-api'
+import type { DirectoryPluginCatalogEntry } from '../api'
 import { ref } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { usePluginStore } from '../stores/pluginStore'

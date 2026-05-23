@@ -1,4 +1,4 @@
-import type { DirectoryPluginBootstrap, DirectoryPluginCatalogEntry, PluginMarketSnapshotDto, PluginUiSlotInfo, PluginUpdateInfo, RolePluginState, UiSlotVariantInfo } from '../utils/tauri-api'
+import type { DirectoryPluginBootstrap, DirectoryPluginCatalogEntry, PluginMarketSnapshotDto, PluginUiSlotInfo, PluginUpdateInfo, RolePluginState, UiSlotVariantInfo } from '../api'
 import { defineStore } from 'pinia'
 import { rt } from '../i18n/runtimeT'
 import { setHostEventSubscribedEvents } from '../lib/hostEventBus'
@@ -21,7 +21,7 @@ import {
 
   uninstallPluginFromMarket,
   updatePluginFromMarket,
-} from '../utils/tauri-api'
+} from '../api'
 import { useRoleStore } from './roleStore'
 import { useUiStore } from './uiStore'
 
@@ -29,8 +29,6 @@ interface SlotOrderMemo {
   signature: string
   value: string[]
 }
-
-const slotOrderMemo = new Map<string, SlotOrderMemo>()
 
 /** 并发 `refresh()` 合并为单次执行（共享 Promise）。 */
 let refreshPromise: Promise<void> | null = null
@@ -270,6 +268,7 @@ export const usePluginStore = defineStore('plugin', {
     pluginMarketSnapshot: null as PluginMarketSnapshotDto | null,
     pluginMarketSyncing: false,
     pluginMarketError: null as string | null,
+    slotOrderMemoBySlot: {} as Record<string, SlotOrderMemo>,
   }),
   actions: {
     /** 由 bootstrap DTO 更新宿主事件订阅与开发者模式（插槽与 `refresh` / `sync` 共用）。 */
@@ -444,7 +443,7 @@ export const usePluginStore = defineStore('plugin', {
         ...this.pluginState.slot_order,
         [slot]: out,
       }
-      slotOrderMemo.delete(slot)
+      delete this.slotOrderMemoBySlot[slot]
     },
     setPersistScope(scope: PluginPersistScope) {
       if (this.persistScope === scope) {
@@ -490,7 +489,7 @@ export const usePluginStore = defineStore('plugin', {
           const nextState = clonePluginState(st)
           if (!catalogEqual(this.catalog, cat)) {
             this.catalog = cat
-            slotOrderMemo.clear()
+            this.slotOrderMemoBySlot = {}
             const bySlot: Record<string, string[]> = {}
             for (const p of cat) {
               if (p.isShell)
@@ -617,7 +616,7 @@ export const usePluginStore = defineStore('plugin', {
       const candidates = this.catalogCandidatesBySlot[slot] ?? []
       const order = this.pluginState.slot_order[slot] ?? []
       const signature = buildSlotOrderSignature(candidates, order)
-      const memo = slotOrderMemo.get(slot)
+      const memo = this.slotOrderMemoBySlot[slot]
       if (memo && memo.signature === signature) {
         return [...memo.value]
       }
@@ -635,7 +634,7 @@ export const usePluginStore = defineStore('plugin', {
           out.push(id)
         }
       }
-      slotOrderMemo.set(slot, { signature, value: out })
+      this.slotOrderMemoBySlot[slot] = { signature, value: out }
       return out
     },
     isSlotContributionDisabled(slot: string, pluginId: string): boolean {

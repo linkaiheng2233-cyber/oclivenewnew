@@ -1,4 +1,4 @@
-import type { DirectoryPluginSlots, PluginBackends } from './tauri-api'
+import type { DirectoryPluginSlots, PluginBackends } from '../api'
 
 const SLOT_KEYS: (keyof DirectoryPluginSlots)[] = [
   'memory',

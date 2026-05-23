@@ -15,7 +15,7 @@ import {
   saveRoleSlotRegistry,
   setRemoteLifeEnabled,
   setSessionSlotOverride,
-} from '../utils/tauri-api'
+} from '../api'
 
 export type V2TypeKey = 'builtin' | 'remote' | 'directory'
 

@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import type { LocalePreference } from './i18n'
-import type { JumpTimeResponse } from './utils/tauri-api'
+import type { JumpTimeResponse } from './api'
 import { listen } from '@tauri-apps/api/event'
 import { computed, nextTick, onBeforeUnmount, onMounted, ref, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
@@ -49,7 +49,7 @@ import {
   setRemoteLifeEnabled,
   setRoleInteractionMode,
   setUserRelation,
-} from './utils/tauri-api'
+} from './api'
 import MarketView from './views/MarketView.vue'
 import RoleDetailView from './views/RoleDetailView.vue'
 import SettingsView from './views/SettingsView.vue'

@@ -1,4 +1,4 @@
-import type { PresenceMode, SendMessageResponse } from '../utils/tauri-api'
+import type { PresenceMode, SendMessageResponse } from '../api'
 import { defineStore } from 'pinia'
 import {
 
@@ -6,7 +6,7 @@ import {
   queryMemories,
   reloadPolicyPlugins,
 
-} from '../utils/tauri-api'
+} from '../api'
 import { useRoleStore } from './roleStore'
 
 export const useDebugStore = defineStore('debug', {

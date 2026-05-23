@@ -4,7 +4,7 @@ import { writeTextFile } from '@tauri-apps/api/fs'
 import { ref } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { downloadTextFile } from '../utils/download'
-import { exportChatLogs } from '../utils/tauri-api'
+import { exportChatLogs } from '../api'
 
 const props = defineProps<{ roleId: string }>()
 const emit = defineEmits<{

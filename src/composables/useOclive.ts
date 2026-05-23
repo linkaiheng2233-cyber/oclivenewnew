@@ -1,7 +1,7 @@
 import { getCurrentInstance, onUnmounted } from 'vue'
 import { readHostAppearance } from '../lib/hostAppearance'
 import { hostEventBus } from '../lib/hostEventBus'
-import { pluginBridgeInvoke } from '../utils/tauri-api'
+import { pluginBridgeInvoke } from '../api'
 
 /** 事件名须为 `命名空间:后缀`；命名空间为 `[a-zA-Z0-9.-]+`（与 manifest id 字符集一致）。 */
 const PLUGIN_EVENT_NS = /^([a-z0-9.-]+):(.+)$/i

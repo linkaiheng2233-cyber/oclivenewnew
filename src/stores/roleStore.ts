@@ -1,4 +1,4 @@
-import type { AuthorPackFile, LifeStateDto, PackUiConfig, PluginBackends, PluginBackendsOverride, PluginBackendsSourceMap, RoleInfo, UserRelationDto } from '../utils/tauri-api'
+import type { AuthorPackFile, LifeStateDto, PackUiConfig, PluginBackends, PluginBackendsOverride, PluginBackendsSourceMap, RoleInfo, UserRelationDto } from '../api'
 import { defineStore } from 'pinia'
 import { rt } from '../i18n/runtimeT'
 import { hostEventBus } from '../lib/hostEventBus'
@@ -20,7 +20,7 @@ import {
 
   setUserRelation,
 
-} from '../utils/tauri-api'
+} from '../api'
 
 interface RoleOption { id: string, name: string }
 

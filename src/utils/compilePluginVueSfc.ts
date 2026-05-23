@@ -1,7 +1,7 @@
 import type { Component } from 'vue'
 import * as Vue from 'vue'
 import { i18n } from '../i18n'
-import { readPluginAssetText } from './tauri-api'
+import { readPluginAssetText } from '../api'
 
 const SCHEME = 'oclive-plugin://'
 

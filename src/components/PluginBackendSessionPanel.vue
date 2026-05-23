@@ -11,7 +11,7 @@ import {
   packPlugin,
   setRemoteLifeEnabled,
   setSessionPluginBackend,
-} from '../utils/tauri-api'
+} from '../api'
 import AgentDebugPanel from './AgentDebugPanel.vue'
 
 const roleStore = useRoleStore()

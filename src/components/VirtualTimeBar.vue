@@ -1,8 +1,8 @@
 <script setup lang="ts">
-import type { JumpTimeResponse } from '../utils/tauri-api'
+import type { JumpTimeResponse } from '../api'
 import { computed, onMounted, ref, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
-import { getTimeState } from '../utils/tauri-api'
+import { getTimeState } from '../api'
 import TimeDial from './TimeDial.vue'
 
 const props = withDefaults(

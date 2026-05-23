@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import type { AgentDebugTrace, HighRiskGrantKind, HighRiskGrantsSnapshot, McpServerManifest, McpToolManifest } from '../utils/tauri-api'
+import type { AgentDebugTrace, HighRiskGrantKind, HighRiskGrantsSnapshot, McpServerManifest, McpToolManifest } from '../api'
 import { computed, onMounted, ref, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
 import {
@@ -14,7 +14,7 @@ import {
   listMcpTools,
 
   revokeHighRiskCapability,
-} from '../utils/tauri-api'
+} from '../api'
 import EnvVarManager from './EnvVarManager.vue'
 
 const { t, locale } = useI18n()

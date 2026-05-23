@@ -1,4 +1,4 @@
-import type { PackUiTheme } from '../utils/tauri-api'
+import type { PackUiTheme } from '../api'
 import { onBeforeUnmount, watch } from 'vue'
 import { hostEventBus } from '../lib/hostEventBus'
 import { useRoleStore } from '../stores/roleStore'

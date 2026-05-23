@@ -28,7 +28,7 @@ import {
   saveRoleSlotRegistry,
   setSessionPluginBackend,
   setSessionSlotOverride,
-} from '../utils/tauri-api'
+} from '../api'
 import ArchAddSlotDialog from './architecture-graph/ArchAddSlotDialog.vue'
 import ArchBackendEdge from './architecture-graph/ArchBackendEdge.vue'
 import ArchBusNode from './architecture-graph/ArchBusNode.vue'

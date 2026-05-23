@@ -3,7 +3,7 @@
  * 主文案字段名为 **`reply`**（不是 `response`）。
  * 知识包本回合命中条数见 `knowledge_chunks_in_prompt`（开发面板用 `debugStore` 记录）。
  */
-import type { PresenceMode, SendMessageResponse } from './tauri-api'
+import type { PresenceMode, SendMessageResponse } from '../api'
 
 /** 从后端快照推导的 UI 展示提示（不替代 Pinia 中的 ChatMessage，仅作派生） */
 export interface ReplyPresentation {

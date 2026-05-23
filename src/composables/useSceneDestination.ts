@@ -4,7 +4,7 @@ import { useI18n } from 'vue-i18n'
 import { useChatStore } from '../stores/chatStore'
 import { useDebugStore } from '../stores/debugStore'
 import { useRoleStore } from '../stores/roleStore'
-import { setUserPresenceScene, switchScene } from '../utils/tauri-api'
+import { setUserPresenceScene, switchScene } from '../api'
 
 const SCENE_TRANSITION_MS = 520
 

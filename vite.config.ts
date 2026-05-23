@@ -40,6 +40,13 @@ export default defineConfig(({ mode }) => ({
     include: ["vue3-sfc-loader", "mitt"],
   },
 
+  esbuild:
+    mode === "production"
+      ? {
+          drop: ["console", "debugger"],
+        }
+      : undefined,
+
   build: {
     rollupOptions: {
       output: {
@@ -49,6 +56,8 @@ export default defineConfig(({ mode }) => ({
           if (id.includes("@tauri-apps")) return "vendor-tauri";
           if (id.includes("vue-virtual-scroller")) return "vendor-scroller";
           if (id.includes("pinia")) return "vendor-pinia";
+          // ArchitectureGraphFlow 经 defineAsyncComponent 懒加载；单独 chunk 避免打入 vendor-vue
+          if (id.includes("@vue-flow")) return "vendor-vue-flow";
           // vue3-sfc-loader 仅经动态 import 加载，不打入首屏 vendor
           if (id.includes("/vue/") || id.includes("@vue/")) return "vendor-vue";
         },

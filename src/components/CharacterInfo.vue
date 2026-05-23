@@ -7,7 +7,7 @@ import {
   emotionToAssetFilename,
   emotionToEmoji,
 } from '../utils/emotion-assets'
-import { resolveRoleAssetPath } from '../utils/tauri-api'
+import { resolveRoleAssetPath } from '../api'
 
 const props = withDefaults(
   defineProps<{

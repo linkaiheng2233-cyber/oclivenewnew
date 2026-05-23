@@ -10,7 +10,7 @@ import {
   exportRolePack,
   importRolePack,
   peekRolePack,
-} from '../utils/tauri-api'
+} from '../api'
 import ImportProgressModal from './ImportProgressModal.vue'
 
 const emit = defineEmits<{
