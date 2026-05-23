@@ -18,4 +18,6 @@ pub struct TurnContext<'a> {
     pub preflight_ms: u64,
     pub effective_backends: PluginBackends,
     pub immersive: bool,
+    /// Character-side scene when user is remote (remote-life prompt / knowledge).
+    pub character_scene_id: Option<String>,
 }
