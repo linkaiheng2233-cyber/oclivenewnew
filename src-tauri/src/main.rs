@@ -3,7 +3,6 @@
 
 #[allow(clippy::collapsible_match, clippy::single_match)]
 fn main() {
-    oclivenewnew_tauri::init_tracing();
     let args: Vec<String> = std::env::args().collect();
     let mut cli_port: Option<u16> = None;
     let mut api = false;
@@ -24,8 +23,11 @@ fn main() {
 
     if api {
         let port = oclive_kernel_runtime::resolve_api_port(cli_port);
+        let app_data = std::env::temp_dir().join("oclive_api_app_data");
+        oclivenewnew_tauri::init_tracing_with_log_dir(Some(app_data.as_path()));
         oclivenewnew_tauri::run_api_server(port);
     } else {
+        oclivenewnew_tauri::init_tracing();
         oclivenewnew_tauri::run();
     }
 }
