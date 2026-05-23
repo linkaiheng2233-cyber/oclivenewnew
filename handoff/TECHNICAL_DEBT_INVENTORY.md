@@ -4,8 +4,6 @@
 
 This file tracks **mid/long-term** engineering debt, activation criteria, and batch status. Short-term slices live in [PRODUCT_LINE_TASK_BUCKETS.md](./PRODUCT_LINE_TASK_BUCKETS.md) and [PRODUCT_AND_KERNEL_GAP_CHECKLIST.md](./PRODUCT_AND_KERNEL_GAP_CHECKLIST.md).
 
-**Related (not duplicated here):** five-repo workspace hygiene (gitignore, binaries, `.env`, test gaps) — [docs/WORKSPACE_OPTIMIZATION_REPORT.md](../docs/WORKSPACE_OPTIMIZATION_REPORT.md) with cross-links to [ARCHITECTURE_LAYERING.md](./ARCHITECTURE_LAYERING.md) §Cursor 优化轮.
-
 ---
 
 ## Batch 4 summary (2026-05)

@@ -172,8 +172,6 @@
 | `cargo test --workspace --lib` | ✅ 通过（280 tests） |
 | `npm run test:unit` / `npm run build` | ✅ 通过（15 tests + vite build） |
 
-**延伸阅读（五仓工程卫生，非本优化轮范围）：** [docs/WORKSPACE_OPTIMIZATION_REPORT.md](../docs/WORKSPACE_OPTIMIZATION_REPORT.md)（24 项 + 分阶段计划；与本文已落实项互补）。
-
 ## 测试前收尾（2026-05-20）
 
 | 项 | 状态 |
