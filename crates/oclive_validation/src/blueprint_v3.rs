@@ -446,6 +446,7 @@ fn v3_entry_to_slot_registry_entry(e: &SlotRegistryEntryV3) -> SlotRegistryEntry
         url: e.url.clone(),
         local_memory_provider_id: e.local_memory_provider_id.clone(),
         zone: e.zone.clone(),
+        policy: None,
     }
 }
 

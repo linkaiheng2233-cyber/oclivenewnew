@@ -15,6 +15,27 @@ use crate::domain::complex_emotion::{
 use crate::domain::event_estimator::EventEstimator;
 use crate::domain::memory_retrieval::MemoryRetrieval;
 use crate::domain::plugin_host::BackendRegistry;
+
+/// 多 LLM 实例合并策略（`slot_registry` 条目的 `policy` 字段）。
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Default)]
+pub enum LlmMergePolicy {
+    #[default]
+    Ensemble,
+    Fastest,
+    Fallback,
+}
+
+impl LlmMergePolicy {
+    #[must_use]
+    pub fn parse(raw: Option<&str>) -> Self {
+        match raw.map(str::trim).map(str::to_ascii_lowercase).as_deref() {
+            Some("fastest") => Self::Fastest,
+            Some("fallback") => Self::Fallback,
+            Some("ensemble") => Self::Ensemble,
+            _ => Self::Ensemble,
+        }
+    }
+}
 use crate::domain::prompt_assembler::PromptAssembler;
 use crate::domain::user_emotion_analyzer::UserEmotionAnalyzer;
 use crate::domain::ports::LlmClient;
@@ -78,6 +99,8 @@ pub struct ResolvedRoleSlots {
     pub llm: Vec<(String, Arc<dyn LlmClient>)>,
     pub agent: Vec<(String, Arc<dyn AgentProvider>)>,
     pub complex_emotion: Vec<(String, Arc<dyn ComplexEmotionProvider>)>,
+    /// 多 LLM 实例合并策略（取自 `position` 最大的 llm 槽 `policy` 字段）。
+    pub llm_merge_policy: LlmMergePolicy,
 }
 
 pub struct SlotResolver;
@@ -113,6 +136,7 @@ impl SlotResolver {
                 .push((key, registry.prompt_assembler_for_backends(&pb)));
         }
         for (key, entry) in slot_registry_instances_sorted(slot_registry, "llm") {
+            out.llm_merge_policy = LlmMergePolicy::parse(entry.policy.as_deref());
             let pb = plugin_backends_for_slot_entry(&entry);
             out.llm.push((key, registry.llm_for_plugin_backends(&pb)));
         }

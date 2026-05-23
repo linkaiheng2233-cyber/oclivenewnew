@@ -200,6 +200,7 @@ fn cmd_add_slot(
             url: None,
             local_memory_provider_id: None,
             zone: None,
+            policy: None,
         },
     );
     save_registry(role_dir, &reg)?;

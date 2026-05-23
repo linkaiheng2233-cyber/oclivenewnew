@@ -86,6 +86,9 @@ pub struct SlotRegistryEntry {
     /// v3 可选：`stable` / `experimental`（架构图分区）。
     #[serde(default)]
     pub zone: Option<serde_json::Value>,
+    /// 多实例合并策略：`fastest` | `fallback` | `ensemble`（默认，LLM 等为 last-wins）。
+    #[serde(default)]
+    pub policy: Option<String>,
 }
 
 /// 校验通过后的 v2 蓝图加载结果（供宿主 `RoleStorage` 映射为 `Role`）。
@@ -1097,6 +1100,7 @@ mod tests {
                 url: None,
                 local_memory_provider_id: None,
                 zone: None,
+                policy: None,
             },
         );
         reg.insert(
@@ -1112,6 +1116,7 @@ mod tests {
                 url: None,
                 local_memory_provider_id: None,
                 zone: None,
+                policy: None,
             },
         );
         let pb = slot_registry_to_plugin_backends(&reg);
@@ -1238,6 +1243,7 @@ mod tests {
                 url: None,
                 local_memory_provider_id: None,
                 zone: None,
+                policy: None,
             },
         );
         write_role_pack_blueprint_slot_registry(&role, &reg, "999.0.0").unwrap();

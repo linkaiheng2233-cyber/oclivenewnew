@@ -62,6 +62,7 @@ fn dual_memory_slots_merge_without_panic() {
             url: None,
             local_memory_provider_id: None,
             zone: None,
+            policy: None,
         },
     );
     reg.insert(
@@ -77,6 +78,7 @@ fn dual_memory_slots_merge_without_panic() {
             url: None,
             local_memory_provider_id: None,
             zone: None,
+            policy: None,
         },
     );
     let pb = oclive_validation::slot_registry_to_plugin_backends(&reg);
@@ -131,6 +133,7 @@ async fn dual_llm_slots_call_both_serially() {
                 url: None,
                 local_memory_provider_id: None,
                 zone: None,
+                policy: None,
             },
         );
     }

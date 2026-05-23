@@ -23,7 +23,7 @@ use crate::domain::memory_retrieval::{MemoryRetrieval, MemoryRetrievalInput};
 use crate::domain::plugin_host::ResolvedRolePlugins;
 use crate::domain::prompt_assembler::PromptAssembler;
 use crate::domain::prompt_builder::PromptInput;
-use crate::domain::slot_resolver::ResolvedRoleSlots;
+use crate::domain::slot_resolver::{LlmMergePolicy, ResolvedRoleSlots};
 use crate::domain::user_emotion_analyzer::UserEmotionAnalyzer;
 use crate::error::Result;
 use crate::domain::ports::LlmClient;
@@ -176,7 +176,22 @@ impl SlotRunner {
     ) -> Result<String> {
         if let Some(instances) = registry_instances(&pl.slots, |s| &s.llm) {
             if instances.len() >= 2 {
-                return Self::llm_serial_last_wins(instances, ollama_model, prompt).await;
+                let policy = pl
+                    .slots
+                    .as_ref()
+                    .map(|s| s.llm_merge_policy)
+                    .unwrap_or(LlmMergePolicy::Ensemble);
+                return match policy {
+                    LlmMergePolicy::Fastest => {
+                        Self::llm_fastest_wins(instances, ollama_model, prompt).await
+                    }
+                    LlmMergePolicy::Fallback => {
+                        Self::llm_fallback_first(instances, ollama_model, prompt).await
+                    }
+                    LlmMergePolicy::Ensemble => {
+                        Self::llm_serial_last_wins(instances, ollama_model, prompt).await
+                    }
+                };
             }
             return instances[0].1.generate(ollama_model, prompt).await;
         }
@@ -419,6 +434,95 @@ impl SlotRunner {
         last.ok_or_else(|| {
             crate::domain::error_helpers::ollama_msg("prompt", "no slot produced a result")
         })
+    }
+
+    /// **llm fallback**：顺序调用，**首个**成功即返回。
+    async fn llm_fallback_first(
+        instances: &[(String, Arc<dyn LlmClient>)],
+        ollama_model: &str,
+        prompt: &str,
+    ) -> Result<String> {
+        let mut last_err = None;
+        for (key, llm) in instances {
+            match llm.generate(ollama_model, prompt).await {
+                Ok(reply) => {
+                    tracing::info!(
+                        target: "oclive_plugin",
+                        slot_key = %key,
+                        reply_len = reply.len(),
+                        "llm_generate slot (fallback first success)"
+                    );
+                    return Ok(reply);
+                }
+                Err(e) => {
+                    tracing::warn!(
+                        target: "oclive_plugin",
+                        slot_key = %key,
+                        err = %e,
+                        "llm_generate slot failed (fallback)"
+                    );
+                    last_err = Some(e);
+                }
+            }
+        }
+        Err(last_err.unwrap_or_else(|| {
+            crate::domain::error_helpers::ollama_msg("llm", "no slot produced a reply")
+        }))
+    }
+
+    /// **llm fastest-wins**：并发调用，**首个**成功即返回并取消其余任务。
+    async fn llm_fastest_wins(
+        instances: &[(String, Arc<dyn LlmClient>)],
+        ollama_model: &str,
+        prompt: &str,
+    ) -> Result<String> {
+        if instances.len() == 1 {
+            return instances[0].1.generate(ollama_model, prompt).await;
+        }
+        let mut set = tokio::task::JoinSet::new();
+        for (key, llm) in instances {
+            let key = key.clone();
+            let llm = Arc::clone(llm);
+            let model = ollama_model.to_string();
+            let prompt = prompt.to_string();
+            set.spawn(async move {
+                let reply = llm.generate(&model, &prompt).await?;
+                Ok::<_, crate::error::AppError>((key, reply))
+            });
+        }
+        let mut last_err: Option<crate::error::AppError> = None;
+        while let Some(joined) = set.join_next().await {
+            match joined {
+                Ok(Ok((key, reply))) => {
+                    set.abort_all();
+                    tracing::info!(
+                        target: "oclive_plugin",
+                        slot_key = %key,
+                        reply_len = reply.len(),
+                        "llm_generate slot (fastest-wins)"
+                    );
+                    return Ok(reply);
+                }
+                Ok(Err(e)) => {
+                    tracing::warn!(
+                        target: "oclive_plugin",
+                        err = %e,
+                        "llm_generate slot failed (fastest-wins)"
+                    );
+                    last_err = Some(e);
+                }
+                Err(join_err) => {
+                    tracing::warn!(
+                        target: "oclive_plugin",
+                        err = %join_err,
+                        "llm_generate join failed (fastest-wins)"
+                    );
+                }
+            }
+        }
+        Err(last_err.unwrap_or_else(|| {
+            crate::domain::error_helpers::ollama_msg("llm", "no slot produced a reply")
+        }))
     }
 
     /// **llm 串行 last-wins**：多 LLM 实例依次对**同一 prompt** 生成，仅保留最后一次成功回复。
