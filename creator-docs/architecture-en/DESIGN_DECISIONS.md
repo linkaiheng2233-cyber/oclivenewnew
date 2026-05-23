@@ -1,4 +1,4 @@
-# oclive architecture decision record (ADR summary)
+﻿# oclive architecture decision record (ADR summary)
 
 Key trade-offs distilled for contributors and host integrators. Layering rules: [`handoff/ARCHITECTURE_LAYERING.md`](../../handoff/ARCHITECTURE_LAYERING.md).
 
@@ -8,7 +8,7 @@ Key trade-offs distilled for contributors and host integrators. Layering rules: 
 
 | Decision | Rationale |
 |----------|-----------|
-| **No executable DSL from `pipeline.ocblueprint`** | Keeps on-disk flow and [`process_message`](../../src-tauri/src/domain/chat_engine/process_message.rs) / [`co_present`](../../src-tauri/src/domain/chat_engine/co_present.rs) **in sync**; blueprint supplies `slot_registry` / `groups` only. |
+| **No executable DSL from `pipeline.ocblueprint`** | Keeps on-disk flow and [`process_message`](../../src-tauri/src/domain/chat_engine/process_message.rs) / [`co_present`](../../src-tauri/src/domain/chat_engine/turn_pipeline.rs) **in sync**; blueprint supplies `slot_registry` / `groups` only. |
 
 ---
 

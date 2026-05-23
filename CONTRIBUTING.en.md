@@ -1,4 +1,4 @@
-# Contributing to A.I.Live
+﻿# Contributing to A.I.Live
 
 [中文](CONTRIBUTING.md)
 
@@ -80,7 +80,7 @@ See **[`handoff/BUS_FACTOR_NOTES.md`](handoff/BUS_FACTOR_NOTES.md)** for entry p
 
 | Goal | Start here |
 |------|------------|
-| One message end-to-end | `src-tauri/src/domain/chat_engine/process_message.rs` → `co_present.rs` |
+| One message end-to-end | `src-tauri/src/domain/chat_engine/process_message.rs` → `turn_pipeline.rs` |
 | Multi-instance merge rules | `src-tauri/src/domain/slot_runner.rs` |
 | Plugin backend resolution | `plugin_host.rs` + `slot_resolver.rs` |
 | Blueprint load / save | `infrastructure/storage.rs` + `crates/oclive_validation` |
@@ -93,7 +93,7 @@ See **[`handoff/BUS_FACTOR_NOTES.md`](handoff/BUS_FACTOR_NOTES.md)** for entry p
 |----------|-------|-------------|
 | New slot type or merge policy | `slot_runner.rs`, `slot_resolver.rs`, `oclive_validation` | `ROLE_PACK_SPEC.md`, frontend graph |
 | New plugin backend | `plugin_host.rs`, model enums, `PLUGIN_V1.md` | blueprint / settings docs |
-| Co-present stage order | `co_present.rs` (careful) | `DESIGN_DECISIONS.md`, OOCP tests |
+| Co-present stage order | `turn_pipeline.rs` (careful) | `DESIGN_DECISIONS.md`, OOCP tests |
 | New DB column | `src-tauri/migrations/`, repositories | documented table names only |
 | New Tauri command | `src-tauri/src/api/`, `lib.rs` handler | `tauri-api.ts`, DTO field names |
 

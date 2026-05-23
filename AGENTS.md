@@ -1,4 +1,4 @@
-# Agent / AI 协作说明（A.I.Live · oclivenewnew）
+﻿# Agent / AI 协作说明（A.I.Live · oclivenewnew）
 
 本仓库为 **A.I.Live** 桌面角色对话应用（**Tauri + Vue 3 + Rust**；工程代号 **oclive**）。自动化助手或外部 Agent 在修改代码前，请先阅读：
 
@@ -62,7 +62,7 @@
 编号与分层见 [`creator-docs/getting-started/OCLIVE_ARCHITECTURE_OVERVIEW.md`](creator-docs/getting-started/OCLIVE_ARCHITECTURE_OVERVIEW.md)（**不是**第 1–6 后端模块；**不是**后端模块插件模块）。
 
 - **类型与内置规则**：[`src-tauri/src/domain/complex_emotion.rs`](src-tauri/src/domain/complex_emotion.rs)（`ComplexEmotionInput` / `ComplexEmotionOutput`、`BuiltinKeywordComplexEmotionProvider::resolve_turn_inner`）；可选 Remote 见 [`src-tauri/src/infrastructure/remote_plugin/complex_emotion_http.rs`](src-tauri/src/infrastructure/remote_plugin/complex_emotion_http.rs)。
-- **主路径 wiring**：[`src-tauri/src/domain/chat_engine/co_present.rs`](src-tauri/src/domain/chat_engine/co_present.rs) 在 `load_recent_context` 之后、**`build_prompt` 之前**解析本回合复杂情感；上一轮 `narrative_hint` 缓存在 **`AppState::last_complex_emotion_narrative_hint`**（按会话命名空间 `srid`）；通过 **`PromptInput::previous_complex_emotion_narrative_hint`** 传入 [`PromptBuilder::build_prompt`](src-tauri/src/domain/prompt_builder.rs)（段落标题为「复杂情感叙事提示」）。
+- **主路径 wiring**：[`src-tauri/src/domain/chat_engine/turn_pipeline.rs`](src-tauri/src/domain/chat_engine/turn_pipeline.rs) 在 `load_recent_context` 之后、**`build_prompt` 之前**解析本回合复杂情感；上一轮 `narrative_hint` 缓存在 **`AppState::last_complex_emotion_narrative_hint`**（按会话命名空间 `srid`）；通过 **`PromptInput::previous_complex_emotion_narrative_hint`** 传入 [`PromptBuilder::build_prompt`](src-tauri/src/domain/prompt_builder.rs)（段落标题为「复杂情感叙事提示」）。
 - **集成测试**：[`src-tauri/tests/narrative_hint_prompt_roundtrip.rs`](src-tauri/tests/narrative_hint_prompt_roundtrip.rs)。
 
 **契约优先**：角色包 `manifest.json` / `settings.json` 键与行为以 `roles/README_MANIFEST.md`、`RoleStorage::load_role` 及校验 crate 为准；新增顶层键需同步 `crates/oclive_validation` 与文档。

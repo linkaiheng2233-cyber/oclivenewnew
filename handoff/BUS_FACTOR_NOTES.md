@@ -1,4 +1,4 @@
-# Bus Factor：关键路径交接笔记
+﻿# Bus Factor：关键路径交接笔记
 
 **读者**：有经验的 Rust / Vue 工程师。  
 **目标**：在 **约半天** 内能定位任意主路径模块的 **入口文件**、**核心类型/函数**，并理解 **为何这样设计**（意图级，非逐行教程）。
@@ -107,7 +107,7 @@
 |------|------|
 | **Trait / 类型** | **`src-tauri/src/domain/complex_emotion.rs`** 再导出内核 `ComplexEmotionInput` / `ComplexEmotionOutput` 等；内置 **`BuiltinKeywordComplexEmotionProvider`**。 |
 | **Remote 可选** | **`src-tauri/src/infrastructure/remote_plugin/complex_emotion_http.rs`**。 |
-| **注入 Prompt 链路** | **`co_present.rs`**：在 **`load_recent_context` 之后、`build_prompt` 之前** 调用解析；上一轮 hint 缓存在 **`AppState`**（按会话 `srid`）；经 **`PromptInput::previous_complex_emotion_narrative_hint`** 传入 **`PromptBuilder::build_prompt`**（`prompt_builder.rs`）。 |
+| **注入 Prompt 链路** | **`turn_pipeline.rs`**：在 **`load_recent_context` 之后、`build_prompt` 之前** 调用解析；上一轮 hint 缓存在 **`AppState`**（按会话 `srid`）；经 **`PromptInput::previous_complex_emotion_narrative_hint`** 传入 **`PromptBuilder::build_prompt`**（`prompt_builder.rs`）。 |
 | **测试** | **`src-tauri/tests/narrative_hint_prompt_roundtrip.rs`**。 |
 
 **设计意图**：复杂情感是「回合间状态」，不能只在 UI 层拼接；必须进入 Prompt 构造输入才能保证模型侧一致。
@@ -159,7 +159,7 @@
 | 模块路径 | 核心文件 | 关键概念 | 修改时注意 |
 |----------|----------|----------|------------|
 | 主编排 | `src-tauri/src/domain/chat_engine/process_message.rs` | 单消息入口、Agent/异地分支 | 不改业务顺序请先读 [`DESIGN_DECISIONS.md`](../creator-docs/architecture/DESIGN_DECISIONS.md) |
-| 共景 | `src-tauri/src/domain/chat_engine/co_present.rs` | 回合阶段、`narrative_hint` | 槽位调用走 `SlotRunner`，勿直连 `pl.llm` |
+| 共景 | `src-tauri/src/domain/chat_engine/turn_pipeline.rs` | 回合阶段、`narrative_hint` | 槽位调用走 `SlotRunner`，勿直连 `pl.llm` |
 | 多实例合并 | `src-tauri/src/domain/slot_runner.rs` | last-wins / memory 去重 | 新策略需补「为何」注释；Agent 合并在 `plugin_host` |
 | 插件装配 | `src-tauri/src/domain/plugin_host.rs` | `ResolvedRolePlugins`、`PluginHostPort` | Remote 需 env；目录插件权限见 `high_risk_grants` |
 | 蓝图解析 | `src-tauri/src/domain/slot_resolver.rs` | `slot_registry` → `ResolvedRoleSlots` | 不手写 `module_relations` |
@@ -174,7 +174,7 @@
 ## 10. 建议的「第一次读代码」顺序（半天内）
 
 1. `DOCUMENTATION_INDEX.md` → `KERNEL_AND_MODULES_ARCHITECTURE.md`（总图）  
-2. `process_message.rs` 全文 skim + `co_present.rs` 前 120 行  
+2. `process_message.rs` 全文 skim + `turn_pipeline.rs` 前 120 行  
 3. `plugin_host.rs` 的 `resolve_for_role` 签名与返回类型  
 4. `error.rs` + `KERNEL_ERROR_CODE_CONVENTION.md` 一页  
 5. `migrations/001_init.sql` + 最新序号迁移扫一眼  

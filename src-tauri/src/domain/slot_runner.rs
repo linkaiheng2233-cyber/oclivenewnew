@@ -587,7 +587,7 @@ fn registry_instances<'a, T: ?Sized>(
     }
 }
 
-/// 共景编排对槽位合并器的端口；[`crate::domain::chat_engine::co_present`] 仅通过本 trait 调用。
+/// 共景编排对槽位合并器的端口；[`crate::domain::chat_engine::turn_pipeline`] 仅通过本 trait 调用。
 #[async_trait::async_trait]
 pub trait CoPresentSlotRunner: Send + Sync {
     fn analyze_emotion(&self, pl: &ResolvedRolePlugins, text: &str) -> Result<EmotionResult>;

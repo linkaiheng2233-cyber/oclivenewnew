@@ -1,4 +1,4 @@
-# 给 Cursor：双核双态设计总结 · 对齐进度
+﻿# 给 Cursor：双核双态设计总结 · 对齐进度
 
 **状态**：**P2–P5 已实现**（2026-05）— `DualPipelineRunner`、宿主门控、`init --dual-core`、OOCP S13、Monolith 模板已落地；**默认仍关闭**，不开双核零 diff。  
 **权威 RFC**：[creator-docs/rfc/RFC_OCLIVE_DUAL_CORE_DUAL_MODE.md](../creator-docs/rfc/RFC_OCLIVE_DUAL_CORE_DUAL_MODE.md)  
@@ -178,7 +178,7 @@ flowchart TD
 
 | 区域 | 路径 |
 |------|------|
-| 编排 | `src-tauri/src/domain/chat_engine/mod.rs`、`co_present.rs` |
+| 编排 | `src-tauri/src/domain/chat_engine/mod.rs`、`turn_pipeline.rs` |
 | 槽位 | `src-tauri/src/domain/slot_resolver.rs` |
 | 蓝图 | `crates/oclive_validation/src/blueprint_v2.rs` |
 | 契约 | `crates/oclive_kernel_contracts/` |

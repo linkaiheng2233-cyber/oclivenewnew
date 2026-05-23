@@ -1,4 +1,4 @@
-# 日后如何替换模块（可替换框架速查）
+﻿# 日后如何替换模块（可替换框架速查）
 
 本文说明 **宿主已拆成哪些块**、**换一块时要动哪里**。契约细节仍以 [PLUGIN_V1.md](PLUGIN_V1.md) 为准。
 
@@ -79,5 +79,5 @@
 | Remote HTTP 客户端 | `src-tauri/src/infrastructure/remote_plugin/` |
 | 目录插件扫描 / 子进程 / RPC URL | `src-tauri/src/infrastructure/directory_plugins/` |
 | 运行时解析 | `AppState::resolved_plugins_for` — `src-tauri/src/state/mod.rs` |
-| 对话主链 | `src-tauri/src/domain/chat_engine/co_present.rs` 等 |
+| 对话主链 | `src-tauri/src/domain/chat_engine/turn_pipeline.rs` 等 |
 | 测试用演示 | `RoleManager::with_memory_retrieval` — `src-tauri/src/domain/role_manager.rs` |

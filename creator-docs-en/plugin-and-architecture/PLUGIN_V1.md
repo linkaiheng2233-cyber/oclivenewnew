@@ -1,4 +1,4 @@
-# PLUGIN_V1 — Orchestration contract & backend enums (v2 blueprint · legacy six slots)
+﻿# PLUGIN_V1 — Orchestration contract & backend enums (v2 blueprint · legacy six slots)
 
 **Plugin author learning path:** [PLUGIN_AUTHOR_LEARNING_PATH.md](PLUGIN_AUTHOR_LEARNING_PATH.md)
 
@@ -45,7 +45,7 @@ Runtime struct **`PluginBackends`** has **six** enum fields: **`memory` · `emot
 
 ## `send_message` order (co-present path)
 
-Entry: **`chat_engine::process_message`** → **`process_co_present`** ([`co_present.rs`](../../src-tauri/src/domain/chat_engine/co_present.rs)). Remote / stub branches differ; this list is the **PLUGIN_V1-relevant** sequence:
+Entry: **`chat_engine::process_message`** → **`process_co_present`** ([`turn_pipeline.rs`](../../src-tauri/src/domain/chat_engine/turn_pipeline.rs)). Remote / stub branches differ; this list is the **PLUGIN_V1-relevant** sequence:
 
 1. **`PluginHost`**: `resolved_plugins_for` → **`PluginHost::resolve_for_role`** binds six **backend modules** (host needs app-data root for **`mcp-servers/*.json`**).
 2. **User emotion (backend module):** `emotion.analyze` → `EmotionDto` in the response.

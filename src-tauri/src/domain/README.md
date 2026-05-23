@@ -1,4 +1,4 @@
-# `src-tauri/src/domain` 依赖规则
+﻿# `src-tauri/src/domain` 依赖规则
 
 编排与业务策略层。新代码应遵守下列方向（与 [ARCHITECTURE_LAYERING.md](../../../handoff/ARCHITECTURE_LAYERING.md) 一致）。
 
@@ -23,7 +23,7 @@
 | 文件 | 职责 |
 |------|------|
 | `chat_engine/process_message.rs` | 单条消息总调度（健康检查、双核门控、异地分支） |
-| `chat_engine/co_present.rs` | 共景同屏回合执行 |
+| `chat_engine/turn_pipeline.rs` | 共景同屏回合执行 |
 | `dual_pipeline.rs` | 双核实验核 + 稳定核降级 |
 | `slot_runner.rs` | 多实例槽位合并与调用 |
 | `plugin_host.rs` | `plugin_backends` → `Arc<dyn …>` |

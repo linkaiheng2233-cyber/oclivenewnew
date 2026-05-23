@@ -1,4 +1,4 @@
-# How to replace modules later (swappable stack cheat sheet)
+﻿# How to replace modules later (swappable stack cheat sheet)
 
 Which **pieces the host already splits**, and **what to touch** to swap one. Contract detail stays in [PLUGIN_V1.md](PLUGIN_V1.md).
 
@@ -76,5 +76,5 @@ Which **pieces the host already splits**, and **what to touch** to swap one. Con
 | Remote HTTP client | `src-tauri/src/infrastructure/remote_plugin/` |
 | Directory scan / child / RPC URL | `src-tauri/src/infrastructure/directory_plugins/` |
 | Runtime resolve | `AppState::resolved_plugins_for` — `src-tauri/src/state/mod.rs` |
-| Chat orchestration | `src-tauri/src/domain/chat_engine/co_present.rs`, … |
+| Chat orchestration | `src-tauri/src/domain/chat_engine/turn_pipeline.rs`, … |
 | Test hook | `RoleManager::with_memory_retrieval` — `src-tauri/src/domain/role_manager.rs` |

@@ -1,4 +1,4 @@
-# 内核集成方学习路径
+﻿# 内核集成方学习路径
 
 面向 **无头 HTTP、嵌入式、硬件侧二次开发**：在自有设备上拉起与 **oclive 内核** 同契约的运行时。边界必读 [PURE_KERNEL_BOUNDARY.md](PURE_KERNEL_BOUNDARY.md)；脚手架见 **`oclive-cli`**（`cargo run -p oclive-cli -- …`）。
 
@@ -20,7 +20,7 @@
 
 | 主题 | 读什么 |
 |------|--------|
-| **`process_message` 编排** | 宿主参考实现 **`src-tauri/src/domain/chat_engine/process_message.rs`** 与 **`co_present.rs`**（[handoff/BUS_FACTOR_NOTES.md](../../handoff/BUS_FACTOR_NOTES.md) 摘要） |
+| **`process_message` 编排** | 宿主参考实现 **`src-tauri/src/domain/chat_engine/process_message.rs`** 与 **`turn_pipeline.rs`**（[handoff/BUS_FACTOR_NOTES.md](../../handoff/BUS_FACTOR_NOTES.md) 摘要） |
 | **`PluginHost` 第 1–6 模块** | **`src-tauri/src/domain/plugin_host.rs`** · [PLUGIN_V1.md](../plugin-and-architecture/PLUGIN_V1.md) · [OCLIVE_ARCHITECTURE_OVERVIEW.md](OCLIVE_ARCHITECTURE_OVERVIEW.md) |
 | **`plugin_backends` 与兜底** | [SETTINGS_REFERENCE.md](../cli/SETTINGS_REFERENCE.md) · 远端失败回退相关设置见 [CONFIGURATION_FILES.md](../guides/CONFIGURATION_FILES.md) / 设置页「兜底」 |
 

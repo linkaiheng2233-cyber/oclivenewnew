@@ -1,4 +1,4 @@
-# 贡献指南
+﻿# 贡献指南
 
 [English](CONTRIBUTING.en.md)
 
@@ -85,7 +85,7 @@ npm run build
 
 | 你想… | 从这里开始 |
 |--------|------------|
-| 理解一条消息如何走完 | `src-tauri/src/domain/chat_engine/process_message.rs` → `co_present.rs` |
+| 理解一条消息如何走完 | `src-tauri/src/domain/chat_engine/process_message.rs` → `turn_pipeline.rs` |
 | 改多实例槽合并规则 | `src-tauri/src/domain/slot_runner.rs`（读函数头「为何」注释） |
 | 改插件后端解析 | `src-tauri/src/domain/plugin_host.rs` + `slot_resolver.rs` |
 | 改蓝图加载 / 写盘 | `src-tauri/src/infrastructure/storage.rs`；校验在 `crates/oclive_validation` |
@@ -99,7 +99,7 @@ npm run build
 |------|----------------|----------|
 | 新增槽位类型或合并策略 | `slot_runner.rs`、`slot_resolver.rs`、`oclive_validation`（schema + 校验） | `ROLE_PACK_SPEC.md`、前端 `slotRegistry` / 架构图 |
 | 新增插件后端种类 | `plugin_host.rs`（`BackendRegistry`）、`models` 枚举、`PLUGIN_V1.md` | `settings.json` / 蓝图 `slot_registry` 文档 |
-| 调整共景阶段顺序 | `co_present.rs`（**慎重**；属主编排） | `DESIGN_DECISIONS.md`、OOCP / 集成测 |
+| 调整共景阶段顺序 | `turn_pipeline.rs`（**慎重**；属主编排） | `DESIGN_DECISIONS.md`、OOCP / 集成测 |
 | 新持久化字段 | `src-tauri/migrations/`、`infrastructure/repositories.rs` | 禁止虚构表名；更新 handoff 清单 |
 | 新 Tauri 命令 | `src-tauri/src/api/*.rs` + `lib.rs` `generate_handler!` | 前端 `tauri-api.ts` camelCase 键、DTO `reply` 字段 |
 

@@ -1,4 +1,4 @@
-# RFC：运行时双核双态（Stable 核 · Experimental 核）
+﻿# RFC：运行时双核双态（Stable 核 · Experimental 核）
 
 | 元数据 | 值 |
 |--------|-----|
@@ -117,7 +117,7 @@
 | `depends_on` | 本步依赖的 `action` id 列表；加载时 **校验无环** 且引用存在 |
 | `action` | **`slot.<registry_key>.<method>`**（已决）；registry 键须存在于 `slot_registry`；Experimental **不**校验 `type` |
 
-**Stable 核** 的默认 `pipeline.stable` 可与现网 **共景阶段表** 等价（见 `chat_engine/co_present.rs` 与 [PLUGIN_V1.md](../plugin-and-architecture/PLUGIN_V1.md) §编排顺序）；包内可省略 `pipeline.stable` 时由宿主注入 **内置默认表**。
+**Stable 核** 的默认 `pipeline.stable` 可与现网 **共景阶段表** 等价（见 `chat_engine/turn_pipeline.rs` 与 [PLUGIN_V1.md](../plugin-and-architecture/PLUGIN_V1.md) §编排顺序）；包内可省略 `pipeline.stable` 时由宿主注入 **内置默认表**。
 
 **Experimental 核** 无 `pipeline.experimental` 或为空时：不执行实验路径，等价仅 Stable。
 

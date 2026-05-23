@@ -1,11 +1,11 @@
 //! # 消息处理主入口
 //!
-//! **角色**：Tauri / HTTP API 的**单条用户消息**编排入口；Agent 短路、异地生活等分支在此分流后进入 [`co_present`](super::co_present) 等子路径。
+//! **角色**：Tauri / HTTP API 的**单条用户消息**编排入口；Agent 短路、异地生活等分支在此分流后进入 [`turn_pipeline`](super::turn_pipeline)（[`TurnMode::CoPresent`](super::turn_pipeline::TurnMode::CoPresent) 等）子路径。
 //!
 //! **上游**：`api` / `http_api` 经 `AppState` 加载 `Role`、`plugin_backends` 与会话级 `slot_registry` 覆盖。
-//! **下游**：经 [`co_present::process_co_present`](super::co_present) / `process_remote_*` 等进入回合管线；经 [`PluginHostPort`](crate::domain::ports::PluginHostPort) 调用插件；**不**经 `pipeline.ocblueprint` DSL 首轮调度。
+//! **下游**：经 [`turn_pipeline::execute_turn`](super::turn_pipeline::execute_turn) / `process_remote_*` 等进入回合管线；经 [`PluginHostPort`](crate::domain::ports::PluginHostPort) 调用插件；**不**经 `pipeline.ocblueprint` DSL 首轮调度。
 //!
-//! **架构**：当前主路径为 **Rust 编排**（`co_present` + [`SlotRunner`](../slot_runner.rs)）；槽位解析依赖 `slot_registry` / `groups` 与 `PluginHost` 注册表。
+//! **架构**：当前主路径为 **Rust 编排**（`turn_pipeline` + [`TurnMode::CoPresent`](super::turn_pipeline::TurnMode::CoPresent) + [`SlotRunner`](../slot_runner.rs)）；槽位解析依赖 `slot_registry` / `groups` 与 `PluginHost` 注册表。
 //!
 //! 见 [`domain/README.md`](../README.md)。
 
@@ -58,17 +58,32 @@ async fn run(
         .unwrap_or_else(|| "default".to_string());
     let t0 = Instant::now();
 
-    stage_process_message(
-        ChatStage::EnsureRoleRuntime,
-        state.db_manager.ensure_role_runtime(srid).await,
+    let (_, role, _remote_fallback_prefetch) = tokio::try_join!(
+        async {
+            stage_process_message(
+                ChatStage::EnsureRoleRuntime,
+                state.db_manager.ensure_role_runtime(srid).await,
+            )
+        },
+        async {
+            ensure_role_loaded(state, mrid)
+                .await
+                .map_err(|source| ProcessMessageError::Stage {
+                    stage: ChatStage::EnsureRoleLoaded.as_str(),
+                    source,
+                })
+        },
+        async {
+            state
+                .db_manager
+                .get_app_setting("remote_fallback_to_builtin")
+                .await
+                .map_err(|source| ProcessMessageError::Stage {
+                    stage: ChatStage::StartupHealth.as_str(),
+                    source,
+                })
+        },
     )?;
-
-    let role = ensure_role_loaded(state, mrid)
-        .await
-        .map_err(|source| ProcessMessageError::Stage {
-            stage: ChatStage::EnsureRoleLoaded.as_str(),
-            source,
-        })?;
 
     let scene_id = validate_scene_id(mrid, &role.scene_ids, requested_scene_id);
     tracing::debug!(

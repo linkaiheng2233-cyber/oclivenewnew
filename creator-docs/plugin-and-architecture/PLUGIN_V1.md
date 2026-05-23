@@ -1,4 +1,4 @@
-# PLUGIN_V1 — 编排层契约与后端枚举（v2 蓝图 · legacy 六槽）
+﻿# PLUGIN_V1 — 编排层契约与后端枚举（v2 蓝图 · legacy 六槽）
 
 **插件作者学习路径**：[PLUGIN_AUTHOR_LEARNING_PATH.md](PLUGIN_AUTHOR_LEARNING_PATH.md)
 
@@ -94,7 +94,7 @@ flowchart TB
 
 ## `send_message` 编排顺序（与 `chat_engine`）
 
-共景主路径见源码 [`chat_engine/co_present.rs`](../../src-tauri/src/domain/chat_engine/co_present.rs) 的 `process_co_present`。入口为 [`chat_engine::process_message`](../../src-tauri/src/domain/chat_engine/mod.rs)（异地分支为 `process_remote_stub` / `process_remote_life`，事件链有简化）。与 **PLUGIN_V1** 子系统相关的顺序如下（与 DTO 流一致）：
+共景主路径见源码 [`chat_engine/turn_pipeline.rs`](../../src-tauri/src/domain/chat_engine/turn_pipeline.rs) 的 `process_co_present`。入口为 [`chat_engine::process_message`](../../src-tauri/src/domain/chat_engine/mod.rs)（异地分支为 `process_remote_stub` / `process_remote_life`，事件链有简化）。与 **PLUGIN_V1** 子系统相关的顺序如下（与 DTO 流一致）：
 
 1. **`PluginHost`**：[`state::resolved_plugins_for`](../../src-tauri/src/state/mod.rs) → [`PluginHost::resolve_for_role`](../../src-tauri/src/domain/plugin_host.rs)，按 `role.plugin_backends` 绑定 **`memory` / `emotion` / `event` / `prompt` / `llm` / `agent`** 六条**后端模块**线。宿主构造 [`PluginHost::new`](../../src-tauri/src/domain/plugin_host.rs) 需传入 **应用数据根目录**（`PathBuf`），用于扫描 **`{app_data}/mcp-servers/*.json`** 等；集成烟测见 [`src-tauri/tests/plugin_backends_v2_resolve.rs`](../../src-tauri/tests/plugin_backends_v2_resolve.rs)。
 2. **用户情绪（后端模块）**：`pl.emotion.analyze` → `EmotionResult`，对外为响应中的 `emotion`（`EmotionDto`）。

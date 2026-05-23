@@ -1,4 +1,4 @@
-# Kernel integrator learning path
+﻿# Kernel integrator learning path
 
 For **headless HTTP**, **embedded**, and **hardware** teams shipping an oclive-compatible runtime. Read [PURE_KERNEL_BOUNDARY.md](PURE_KERNEL_BOUNDARY.md). Scaffold with **`oclive-cli`**: `cargo run -p oclive-cli -- …`.
 
@@ -20,7 +20,7 @@ For **headless HTTP**, **embedded**, and **hardware** teams shipping an oclive-c
 
 | Topic | Read |
 |-------|------|
-| **`process_message` flow** | Reference host: **`src-tauri/src/domain/chat_engine/process_message.rs`**, **`co_present.rs`**; summary [BUS_FACTOR_NOTES](../../handoff/BUS_FACTOR_NOTES.md) |
+| **`process_message` flow** | Reference host: **`src-tauri/src/domain/chat_engine/process_message.rs`**, **`turn_pipeline.rs`**; summary [BUS_FACTOR_NOTES](../../handoff/BUS_FACTOR_NOTES.md) |
 | **`PluginHost` slots** | **`src-tauri/src/domain/plugin_host.rs`** · [PLUGIN_V1.md](../plugin-and-architecture/PLUGIN_V1.md) |
 | **Backends & fallback** | [SETTINGS_REFERENCE.md](../cli/SETTINGS_REFERENCE.md) · [CONFIGURATION_FILES.md](../guides/CONFIGURATION_FILES.md) |
 

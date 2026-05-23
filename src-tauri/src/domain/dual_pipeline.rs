@@ -1,7 +1,7 @@
 //! # 双核运行时调度（实验核 + 稳定核）
 //!
 //! **角色**：当角色已加载且 [`Role::dual_core_gated`](crate::models::Role::dual_core_gated) 时，先按蓝图
-//! `pipeline.experimental` 执行实验步骤；失败则**静默降级**到 [`co_present`](crate::domain::chat_engine::co_present)
+//! `pipeline.experimental` 执行实验步骤；失败则**静默降级**到 [`turn_pipeline::execute_turn`](crate::domain::chat_engine::turn_pipeline::execute_turn)（[`TurnMode::CoPresent`](crate::domain::chat_engine::turn_pipeline::TurnMode::CoPresent)）
 //!（稳定核），用户无感知。
 //!
 //! **设计哲学**：实验优先、可回滚、可降级——实验步只改可快照的会话内存态；失败时恢复快照再走稳定路径。
