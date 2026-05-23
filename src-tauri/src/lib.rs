@@ -11,28 +11,30 @@ pub mod state;
 pub mod utils;
 
 /// Initialize `tracing` (stdout; optional rolling file when `log_dir` or `OCLIVE_LOG_DIR` is set).
-/// When `RUST_LOG` contains `json`, stdout/file use JSON lines.
-pub fn init_tracing() {
+/// When `OCLIVE_LOG_FORMAT=json`, stdout/file use JSON lines.
+///
+/// Returns a file-appender guard when rolling logs are enabled; keep it alive for the process lifetime.
+#[must_use]
+pub fn init_tracing() -> Option<tracing_appender::non_blocking::WorkerGuard> {
     let log_dir = std::env::var("OCLIVE_LOG_DIR")
         .ok()
         .map(PathBuf::from)
         .filter(|p| !p.as_os_str().is_empty());
-    init_tracing_with_log_dir(log_dir.as_deref());
+    init_tracing_with_log_dir(log_dir.as_deref())
 }
 
 /// Like [`init_tracing`] but always writes to `log_dir/logs/` when `Some`.
-pub fn init_tracing_with_log_dir(log_dir: Option<&Path>) {
-    use std::sync::OnceLock;
-    use tracing_appender::non_blocking::WorkerGuard;
+#[must_use]
+pub fn init_tracing_with_log_dir(
+    log_dir: Option<&Path>,
+) -> Option<tracing_appender::non_blocking::WorkerGuard> {
     use tracing_subscriber::layer::SubscriberExt;
     use tracing_subscriber::util::SubscriberInitExt;
     use tracing_subscriber::{EnvFilter, Layer};
 
-    static GUARD: OnceLock<WorkerGuard> = OnceLock::new();
-
     let filter = EnvFilter::try_from_default_env().unwrap_or_else(|_| EnvFilter::new("info"));
-    let use_json = std::env::var("RUST_LOG")
-        .map(|v| v.contains("json"))
+    let use_json = std::env::var("OCLIVE_LOG_FORMAT")
+        .map(|v| v.eq_ignore_ascii_case("json"))
         .unwrap_or(false);
 
     let stdout_layer = if use_json {
@@ -45,13 +47,14 @@ pub fn init_tracing_with_log_dir(log_dir: Option<&Path>) {
     };
 
     let mut layers = vec![stdout_layer];
+    let mut file_guard = None;
 
     if let Some(dir) = log_dir {
         let logs = dir.join("logs");
         if std::fs::create_dir_all(&logs).is_ok() {
             let file_appender = tracing_appender::rolling::daily(&logs, "oclive.log");
             let (non_blocking, guard) = tracing_appender::non_blocking(file_appender);
-            let _ = GUARD.set(guard);
+            file_guard = Some(guard);
             let file_layer = if use_json {
                 tracing_subscriber::fmt::layer()
                     .json()
@@ -72,6 +75,8 @@ pub fn init_tracing_with_log_dir(log_dir: Option<&Path>) {
         .with(filter)
         .with(layers)
         .try_init();
+
+    file_guard
 }
 
 use std::fs;
