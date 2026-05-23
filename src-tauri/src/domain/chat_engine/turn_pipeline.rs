@@ -22,7 +22,7 @@ use chrono::Utc;
 use std::sync::Arc;
 use std::time::Instant;
 
-use super::co_present::CoPresentResult;
+use super::turn_error::TurnResult;
 use super::context::load_recent_context;
 use super::emotion_to_dto;
 use super::favor::{compute_favor_and_relation, FavorRelationInput};
@@ -52,7 +52,7 @@ fn skipped_complex_emotion() -> ComplexEmotionOutput {
     }
 }
 
-pub async fn execute_turn(ctx: &TurnContext<'_>, mode: TurnMode) -> CoPresentResult<SendMessageResponse> {
+pub async fn execute_turn(ctx: &TurnContext<'_>, mode: TurnMode) -> TurnResult<SendMessageResponse> {
     let state = ctx.state;
     let req = ctx.req;
     let role = ctx.role;
@@ -74,24 +74,42 @@ pub async fn execute_turn(ctx: &TurnContext<'_>, mode: TurnMode) -> CoPresentRes
     let policies = state.policies_for_scene(Some(scene_id));
     let slot_runner = SlotRunner;
 
-    let event_impact_opt = STAGES
-        .stage(
-            ChatStage::EventImpactFactor,
-            state.db_manager.get_event_impact_factor(srid),
-        )
-        .await?;
-    let mutable_for_prompt = STAGES
-        .stage(
-            ChatStage::MutablePersonality,
-            state.db_manager.get_mutable_personality(srid),
-        )
-        .await?;
-    let personality = STAGES
-        .stage(
-            ChatStage::CurrentPersonality,
-            state.get_current_personality(srid, role),
-        )
-        .await?;
+    let (
+        event_impact_opt,
+        mutable_for_prompt,
+        personality,
+        (recent_turns, recent_turns_for_event, recent_events_for_event),
+    ) = tokio::try_join!(
+        async {
+            STAGES
+                .stage(
+                    ChatStage::EventImpactFactor,
+                    state.db_manager.get_event_impact_factor(srid),
+                )
+                .await
+        },
+        async {
+            STAGES
+                .stage(
+                    ChatStage::MutablePersonality,
+                    state.db_manager.get_mutable_personality(srid),
+                )
+                .await
+        },
+        async {
+            STAGES
+                .stage(
+                    ChatStage::CurrentPersonality,
+                    state.get_current_personality(srid, role),
+                )
+                .await
+        },
+        async {
+            STAGES
+                .stage(ChatStage::LoadRecentContext, load_recent_context(state, srid))
+                .await
+        },
+    )?;
     let event_runtime = event_impact_opt.unwrap_or(role.evolution_config.event_impact_factor);
     let mut personality = personality;
 
@@ -107,12 +125,6 @@ pub async fn execute_turn(ctx: &TurnContext<'_>, mode: TurnMode) -> CoPresentRes
         crate::domain::emotion_analyzer::EmotionAnalyzer::format_for_prompt(&emotion_result);
 
     let ollama_model = role.resolve_ollama_model(state.ollama_model.as_str());
-    let (recent_turns, recent_turns_for_event, recent_events_for_event) = STAGES
-        .stage(
-            ChatStage::LoadRecentContext,
-            load_recent_context(state, srid),
-        )
-        .await?;
 
     let prev_stored_narrative_hint = state.session_cache.stored_complex_emotion_narrative_hint(srid);
     let complex_emotion_out = match mode {
@@ -601,7 +613,7 @@ pub async fn execute_turn(ctx: &TurnContext<'_>, mode: TurnMode) -> CoPresentRes
         state
             .session_cache
             .personality_cache()
-            .insert(srid.to_string(), personality_after);
+            .set(srid.to_string(), personality_after);
     } else {
         let delta_out = PersonalityVector::sub_components(&personality, &core_v);
         STAGES
@@ -615,7 +627,7 @@ pub async fn execute_turn(ctx: &TurnContext<'_>, mode: TurnMode) -> CoPresentRes
         state
             .session_cache
             .personality_cache()
-            .insert(srid.to_string(), personality.clone());
+            .set(srid.to_string(), personality.clone());
     }
 
     let movement = detect_movement_intent(
