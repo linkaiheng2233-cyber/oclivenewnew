@@ -1,0 +1,14 @@
+{
+  "schema_version": 1,
+  "id": "com.oclive.official_vue_test_runner",
+  "name": "Vue Test Runner",
+  "version": "0.1.0",
+  "description": "Official directory plugin for running Vitest-based frontend tests",
+  "provides": ["test_runner"],
+  "rpcMethods": ["health", "list_test_files", "run_test"],
+  "process": {
+    "command": "node",
+    "args": ["rpc_server.mjs"]
+  },
+  "permissions": ["process:spawn"]
+}
