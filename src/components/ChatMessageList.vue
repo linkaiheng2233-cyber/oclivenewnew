@@ -1,8 +1,8 @@
 <script setup lang="ts">
-// 长列表：当前会话区与「此前的聊天记录」折叠区内均用 DynamicScroller。
-import { computed, nextTick, ref, watch } from "vue";
+// 长列表：当前会话区使用 VirtualScrollContainer；历史折叠区按需展开。
+import { computed, ref } from "vue";
 import { useI18n } from "vue-i18n";
-import { DynamicScroller, DynamicScrollerItem } from "vue-virtual-scroller";
+import VirtualScrollContainer from "./VirtualScrollContainer.vue";
 import ChatMessage from "./ChatMessage.vue";
 import type { ChatMsg } from "../types/chatMsg";
 
@@ -60,25 +60,11 @@ function collapseHistoryPreview() {
   historyPreviewChunks.value = 0;
 }
 
-const scrollerRef = ref<InstanceType<typeof DynamicScroller> | null>(null);
+const scrollerRef = ref<InstanceType<typeof VirtualScrollContainer> | null>(null);
 
 async function scrollToBottom(): Promise<void> {
-  await nextTick();
-  const n = currentMessages.value.length;
-  if (n === 0) return;
-  const sc = scrollerRef.value as unknown as {
-    scrollToItem?: (i: number) => void;
-  } | null;
-  sc?.scrollToItem?.(n - 1);
+  await scrollerRef.value?.scrollToBottom(true);
 }
-
-watch(
-  () => currentMessages.value.length,
-  () => {
-    void scrollToBottom();
-  },
-  { flush: "post" },
-);
 
 defineExpose({ scrollToBottom });
 </script>
@@ -180,38 +166,27 @@ defineExpose({ scrollToBottom });
       <span>{{ t("chat.currentSessionLabel") }}</span>
     </div>
 
-    <DynamicScroller
+    <VirtualScrollContainer
       ref="scrollerRef"
       class="virtual-scroller"
       :items="currentMessages"
-      :min-item-size="96"
-      key-field="id"
+      item-key="id"
+      :estimated-item-height="96"
+      :buffer="3"
+      stick-to-bottom
     >
-      <template #default="{ item, index, active }">
-        <DynamicScrollerItem
-          :item="item"
-          :active="active"
-          :data-index="index"
-          :size-dependencies="[
-            item.content,
-            item.role,
-            item.presenceVariant,
-            item.replyIsFallback,
-            item.timestamp,
-          ]"
-        >
-          <div class="chat-scroller-slot">
-            <ChatMessage
-              :role="item.role"
-              :content="item.content"
-              :timestamp="item.timestamp"
-              :presence-variant="item.presenceVariant"
-              :reply-is-fallback="item.replyIsFallback"
-            />
-          </div>
-        </DynamicScrollerItem>
+      <template #default="{ item }">
+        <div class="chat-scroller-slot">
+          <ChatMessage
+            :role="item.role"
+            :content="item.content"
+            :timestamp="item.timestamp"
+            :presence-variant="item.presenceVariant"
+            :reply-is-fallback="item.replyIsFallback"
+          />
+        </div>
       </template>
-    </DynamicScroller>
+    </VirtualScrollContainer>
 
     <div
       v-if="messages.length === 0 && !loading && !roleSwitching"
