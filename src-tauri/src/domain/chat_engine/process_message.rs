@@ -1,13 +1,13 @@
-//! # ????????
+//! # 消息处理主入口
 //!
-//! **??**?Tauri / HTTP ???**???**????????Agent ?????/????????????? [`co_present`](super::co_present)?
+//! **角色**：Tauri / HTTP API 的**单条用户消息**编排入口；Agent 短路、异地生活等分支在此分流后进入 [`co_present`](super::co_present) 等子路径。
 //!
-//! **??**?`api` / `http_api` ? `AppState` ?? `Role`?`plugin_backends` ??? `slot_registry` ?????
-//! **??**?? [`co_present::process_co_present`](super::co_present) / `process_remote_*` ?????? [`PluginHostPort`](crate::domain::ports::PluginHostPort) ?????**??**? `pipeline.ocblueprint` DSL ???????
+//! **上游**：`api` / `http_api` 经 `AppState` 加载 `Role`、`plugin_backends` 与会话级 `slot_registry` 覆盖。
+//! **下游**：经 [`co_present::process_co_present`](super::co_present) / `process_remote_*` 等进入回合管线；经 [`PluginHostPort`](crate::domain::ports::PluginHostPort) 调用插件；**不**经 `pipeline.ocblueprint` DSL 首轮调度。
 //!
-//! **??**????? **Rust ??**?`co_present` + [`SlotRunner`](../slot_runner.rs)????????? `slot_registry` / `groups` ? `PluginHost` ?????
+//! **架构**：当前主路径为 **Rust 编排**（`co_present` + [`SlotRunner`](../slot_runner.rs)）；槽位解析依赖 `slot_registry` / `groups` 与 `PluginHost` 注册表。
 //!
-//! ?? [`domain/README.md`](../README.md)?
+//! 见 [`domain/README.md`](../README.md)。
 
 use crate::domain::agent::AgentInput;
 use crate::domain::chat_engine::chat_stage::ChatStage;
@@ -100,13 +100,6 @@ async fn run(
         srid,
         backend_resolution_summary(&effective_backends, &effective_sources)
     );
-
-    state
-        .ensure_policy_loaded()
-        .map_err(|source| ProcessMessageError::Stage {
-            stage: ChatStage::StartupHealth.as_str(),
-            source,
-        })?;
 
     startup_health::ensure_once(state, role.as_ref(), &effective_backends)
         .await
