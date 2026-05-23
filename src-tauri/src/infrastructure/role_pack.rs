@@ -7,9 +7,8 @@ use crate::models::Role;
 use std::fs::{self, File};
 use std::path::{Path, PathBuf};
 use walkdir::WalkDir;
-use zip::write::{FileOptions, ZipWriter};
-use zip::CompressionMethod;
-use zip::ZipArchive;
+use zip::write::{SimpleFileOptions, ZipWriter};
+use zip::{CompressionMethod, ZipArchive};
 
 use crate::models::role_manifest_disk::DiskRoleManifest;
 
@@ -51,7 +50,7 @@ pub fn export_role_pack(storage: &RoleStorage, role_id: &str, dest: &Path) -> Re
     }
     let file = File::create(dest)?;
     let mut zip = ZipWriter::new(file);
-    let options = FileOptions::default().compression_method(CompressionMethod::Deflated);
+    let options = SimpleFileOptions::default().compression_method(CompressionMethod::Deflated);
     for entry in WalkDir::new(&src).min_depth(1) {
         let entry = entry.map_err(|e| AppError::Unknown(e.to_string()))?;
         let path = entry.path();
@@ -373,7 +372,7 @@ mod tests {
         let pak = dir.path().join("peek.zip");
         let file = File::create(&pak).unwrap();
         let mut zip = ZipWriter::new(file);
-        let opts = FileOptions::default().compression_method(CompressionMethod::Stored);
+        let opts = SimpleFileOptions::default().compression_method(CompressionMethod::Stored);
         let deep = r#"{"id":"wrong","name":"W","version":"1","author":"t","description":"d","default_personality":[0.5,0.5,0.5,0.5,0.5,0.5,0.5],"evolution":{},"user_relations":{"friend":{"prompt_hint":"x"}},"default_relation":"friend","memory_config":{"scene_weight_multiplier":1.0,"topic_weights":{}}}"#;
         let root = r#"{"id":"right","name":"R","version":"2","author":"t","description":"d","default_personality":[0.5,0.5,0.5,0.5,0.5,0.5,0.5],"evolution":{},"user_relations":{"friend":{"prompt_hint":"x"}},"default_relation":"friend","memory_config":{"scene_weight_multiplier":1.0,"topic_weights":{}}}"#;
         zip.start_file("nested/extra/manifest.json", opts).unwrap();

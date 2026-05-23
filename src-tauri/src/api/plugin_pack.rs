@@ -83,7 +83,7 @@ pub fn pack_plugin(
     let f =
         fs::File::create(&archive_path).map_err(|e| AppError::IoError(e).to_frontend_error())?;
     let mut zip = zip::ZipWriter::new(f);
-    let opt = zip::write::FileOptions::default()
+    let opt = zip::write::SimpleFileOptions::default()
         .compression_method(zip::CompressionMethod::Deflated)
         .unix_permissions(0o644);
     for entry in WalkDir::new(&root).into_iter().flatten() {
