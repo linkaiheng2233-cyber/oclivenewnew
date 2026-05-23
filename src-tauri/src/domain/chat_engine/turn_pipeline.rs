@@ -27,7 +27,11 @@ use super::context::load_recent_context;
 use super::emotion_to_dto;
 use super::favor::{compute_favor_and_relation, FavorRelationInput};
 use super::scene::{detect_movement_intent, movement_ui_flags};
+use super::staged::StageRunner;
+use crate::domain::chat_engine::chat_stage::ChatStage;
 use super::turn_context::TurnContext;
+
+const STAGES: StageRunner = StageRunner;
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum TurnMode {
@@ -72,34 +76,51 @@ pub async fn execute_turn(ctx: &TurnContext<'_>, mode: TurnMode) -> CoPresentRes
 
     let (event_impact_opt, mutable_for_prompt, personality) = tokio::try_join!(
         async {
-            crate::kernel_stage!(@co_present crate::domain::chat_engine::chat_stage::ChatStage::EventImpactFactor,
-                state.db_manager.get_event_impact_factor(srid).await
-            )
+            STAGES
+                .stage(
+                    ChatStage::EventImpactFactor,
+                    state.db_manager.get_event_impact_factor(srid),
+                )
+                .await
         },
         async {
-            crate::kernel_stage!(@co_present crate::domain::chat_engine::chat_stage::ChatStage::MutablePersonality,
-                state.db_manager.get_mutable_personality(srid).await
-            )
+            STAGES
+                .stage(
+                    ChatStage::MutablePersonality,
+                    state.db_manager.get_mutable_personality(srid),
+                )
+                .await
         },
         async {
-            crate::kernel_stage!(@co_present crate::domain::chat_engine::chat_stage::ChatStage::CurrentPersonality,
-                state.get_current_personality(srid, role).await
-            )
+            STAGES
+                .stage(
+                    ChatStage::CurrentPersonality,
+                    state.get_current_personality(srid, role),
+                )
+                .await
         },
     )?;
     let event_runtime = event_impact_opt.unwrap_or(role.evolution_config.event_impact_factor);
     let mut personality = personality;
 
-    let emotion_result =
-        crate::kernel_stage!(@co_present crate::domain::chat_engine::chat_stage::ChatStage::UserEmotionAnalyze, slot_runner.analyze_emotion(&pl, user_message))?;
+    let emotion_result = STAGES
+        .stage(
+            ChatStage::UserEmotionAnalyze,
+            async { slot_runner.analyze_emotion(pl, user_message) },
+        )
+        .await?;
     let user_emotion = emotion_result.to_emotion();
     let user_emotion_str = user_emotion.to_string();
     let user_emotion_prompt =
         crate::domain::emotion_analyzer::EmotionAnalyzer::format_for_prompt(&emotion_result);
 
     let ollama_model = role.resolve_ollama_model(state.ollama_model.as_str());
-    let (recent_turns, recent_turns_for_event, recent_events_for_event) =
-        crate::kernel_stage!(@co_present crate::domain::chat_engine::chat_stage::ChatStage::LoadRecentContext, load_recent_context(state, srid).await)?;
+    let (recent_turns, recent_turns_for_event, recent_events_for_event) = STAGES
+        .stage(
+            ChatStage::LoadRecentContext,
+            load_recent_context(state, srid),
+        )
+        .await?;
 
     let prev_stored_narrative_hint = state.session_cache.stored_complex_emotion_narrative_hint(srid);
     let complex_emotion_out = match mode {
@@ -109,22 +130,27 @@ pub async fn execute_turn(ctx: &TurnContext<'_>, mode: TurnMode) -> CoPresentRes
                 .map(|(u, b)| (Some(u.clone()), b.clone()))
                 .unwrap_or((None, String::new()));
             let (uv, ud) = crate::domain::complex_emotion::affect_metrics_from_seven_dim(&emotion_result);
-            crate::kernel_stage!(@co_present crate::domain::chat_engine::chat_stage::ChatStage::ComplexEmotionResolveTurn,
-                slot_runner.resolve_complex_emotion(
-                    &pl,
-                    &ComplexEmotionInput {
-                        role_id: mrid.to_string(),
-                        scene_id: scene_id.to_string(),
-                        user_message: user_message.to_string(),
-                        bot_reply: prev_bot_for_ce,
-                        recent_dialogue_summary: None,
-                        previous_narrative_hint: prev_stored_narrative_hint.clone(),
-                        user_valence: Some(uv),
-                        user_dominance: Some(ud),
-                        previous_user_message: prev_user_for_ce,
+            STAGES
+                .stage(
+                    ChatStage::ComplexEmotionResolveTurn,
+                    async {
+                        slot_runner.resolve_complex_emotion(
+                            pl,
+                            &ComplexEmotionInput {
+                                role_id: mrid.to_string(),
+                                scene_id: scene_id.to_string(),
+                                user_message: user_message.to_string(),
+                                bot_reply: prev_bot_for_ce,
+                                recent_dialogue_summary: None,
+                                previous_narrative_hint: prev_stored_narrative_hint.clone(),
+                                user_valence: Some(uv),
+                                user_dominance: Some(ud),
+                                previous_user_message: prev_user_for_ce,
+                            },
+                        )
                     },
                 )
-            )?
+                .await?
         }
         TurnMode::RemoteLife => skipped_complex_emotion(),
     };
@@ -160,10 +186,11 @@ pub async fn execute_turn(ctx: &TurnContext<'_>, mode: TurnMode) -> CoPresentRes
                     Some(aug)
                 }
             };
-            let estimate = crate::kernel_stage!(@co_present crate::domain::chat_engine::chat_stage::ChatStage::EventEstimate,
-                slot_runner
-                    .estimate_event(
-                        &pl,
+            let estimate = STAGES
+                .stage(
+                    ChatStage::EventEstimate,
+                    slot_runner.estimate_event(
+                        pl,
                         ollama_model.as_str(),
                         user_message,
                         &user_emotion,
@@ -172,9 +199,9 @@ pub async fn execute_turn(ctx: &TurnContext<'_>, mode: TurnMode) -> CoPresentRes
                         &recent_turns_for_event,
                         &recent_events_for_event,
                         knowledge_augment_opt.as_ref(),
-                    )
-                    .await
-            )?;
+                    ),
+                )
+                .await?;
             (
                 estimate.event_type,
                 estimate.impact_factor,
@@ -192,61 +219,85 @@ pub async fn execute_turn(ctx: &TurnContext<'_>, mode: TurnMode) -> CoPresentRes
         );
     }
 
-    let mut memories =
-        crate::kernel_stage!(@co_present crate::domain::chat_engine::chat_stage::ChatStage::LoadMemories, state.memory_repo.load_memories(srid, 10).await)?;
+    let mut memories = STAGES
+        .stage(
+            ChatStage::LoadMemories,
+            state.memory_repo.load_memories(srid, 10),
+        )
+        .await?;
     let scene_m = role
         .memory_config
         .as_ref()
         .map(|m| m.scene_weight_multiplier)
         .unwrap_or(1.0);
     weight_memories_for_scene(&mut memories, scene_id, scene_m);
-    let mut relevant = crate::kernel_stage!(@co_present crate::domain::chat_engine::chat_stage::ChatStage::MemoryRank,
-        slot_runner.rank_memories(
-            &pl,
-            MemoryRetrievalInput {
-                memories: &memories,
-                user_query: user_message,
-                scene_id: Some(scene_id),
-                limit: 8,
+    let mut relevant = STAGES
+        .stage(
+            ChatStage::MemoryRank,
+            async {
+                slot_runner.rank_memories(
+                    pl,
+                    MemoryRetrievalInput {
+                        memories: &memories,
+                        user_query: user_message,
+                        scene_id: Some(scene_id),
+                        limit: 8,
+                    },
+                )
             },
         )
-    )?;
+        .await?;
 
-    let user_relation_key: String = crate::kernel_stage!(@co_present crate::domain::chat_engine::chat_stage::ChatStage::ResolveUserRelationKey,
-        resolve_effective_user_relation_key(state, role, srid, Some(scene_id)).await
-    )?;
+    let user_relation_key: String = STAGES
+        .stage(
+            ChatStage::ResolveUserRelationKey,
+            resolve_effective_user_relation_key(state, role, srid, Some(scene_id)),
+        )
+        .await?;
     let rf = relation_favor_for_key(role, user_relation_key.as_str());
     let seed_favor = role.initial_favorability_for_relation(user_relation_key.as_str());
 
     let (rel_id, rel_global, _, favorability_before) = tokio::try_join!(
         async {
-            crate::kernel_stage!(@co_present crate::domain::chat_engine::chat_stage::ChatStage::RelationStateForIdentity,
-                state
-                    .db_manager
-                    .get_relation_state_for_identity(srid, user_relation_key.as_str())
-                    .await
-            )
+            STAGES
+                .stage(
+                    ChatStage::RelationStateForIdentity,
+                    state
+                        .db_manager
+                        .get_relation_state_for_identity(srid, user_relation_key.as_str()),
+                )
+                .await
         },
         async {
-            crate::kernel_stage!(@co_present crate::domain::chat_engine::chat_stage::ChatStage::RelationStateGlobal,
-                state.db_manager.get_relation_state(srid).await
-            )
+            STAGES
+                .stage(
+                    ChatStage::RelationStateGlobal,
+                    state.db_manager.get_relation_state(srid),
+                )
+                .await
         },
         async {
-            crate::kernel_stage!(@co_present crate::domain::chat_engine::chat_stage::ChatStage::EnsureIdentityStatsRow,
-                state
-                    .db_manager
-                    .ensure_identity_stats_row(srid, user_relation_key.as_str(), seed_favor)
-                    .await
-            )
+            STAGES
+                .stage(
+                    ChatStage::EnsureIdentityStatsRow,
+                    state
+                        .db_manager
+                        .ensure_identity_stats_row(srid, user_relation_key.as_str(), seed_favor),
+                )
+                .await
         },
         async {
-            crate::kernel_stage!(@co_present crate::domain::chat_engine::chat_stage::ChatStage::FavorabilityForIdentity,
-                state
-                    .db_manager
-                    .favorability_for_identity_with_runtime_fallback(srid, user_relation_key.as_str())
-                    .await
-            )
+            STAGES
+                .stage(
+                    ChatStage::FavorabilityForIdentity,
+                    state
+                        .db_manager
+                        .favorability_for_identity_with_runtime_fallback(
+                            srid,
+                            user_relation_key.as_str(),
+                        ),
+                )
+                .await
         },
     )?;
     let relation_before = rel_id
@@ -275,7 +326,7 @@ pub async fn execute_turn(ctx: &TurnContext<'_>, mode: TurnMode) -> CoPresentRes
         TurnMode::CoPresent => {
             let scene_label = state.storage.scene_display_name_for_role(role, scene_id);
             let scene_detail_buf = state.storage.scene_prompt_enrichment_for_role(role, scene_id);
-            let top_topic = slot_runner.top_topic_hint(&pl, role, scene_id);
+            let top_topic = slot_runner.top_topic_hint(pl, role, scene_id);
             let topic_line = top_topic
                 .map(|t| format!("在「{}」下，你们可能会多聊「{}」相关的事。", scene_label, t))
                 .unwrap_or_default();
@@ -288,34 +339,41 @@ pub async fn execute_turn(ctx: &TurnContext<'_>, mode: TurnMode) -> CoPresentRes
             } else {
                 String::new()
             };
-            crate::kernel_stage!(@co_present crate::domain::chat_engine::chat_stage::ChatStage::BuildPrompt,
-                slot_runner.build_prompt(
-                    &pl,
-                    &PromptInput {
-                        role,
-                        personality: &personality,
-                        memories: &relevant,
-                        user_input: user_message,
-                        user_emotion: user_emotion_prompt.as_str(),
-                        user_relation_id: user_relation_key.as_str(),
-                        relation_hint: rf.relation_hint,
-                        relation_before: relation_before.as_str(),
-                        favorability_before,
-                        relation_preview: relation_after.as_str(),
-                        favorability_preview: (favorability_before + favor_delta).clamp(0.0, 100.0),
-                        event_type: &ai_event_type,
-                        impact_factor: ai_impact_factor_final,
-                        scene_label: &scene_label,
-                        scene_detail: scene_detail_buf.as_str(),
-                        topic_hint_line: &topic_line,
-                        life_context_line: life_context_line.as_str(),
-                        worldview_snippet: worldview_snippet.as_str(),
-                        mutable_personality: mutable_for_prompt.as_str(),
-                        reply_quality_anchor: effective_reply_quality_anchor(role),
-                        previous_complex_emotion_narrative_hint: prev_stored_narrative_hint.as_str(),
+            STAGES
+                .stage(
+                    ChatStage::BuildPrompt,
+                    async {
+                        slot_runner.build_prompt(
+                            pl,
+                            &PromptInput {
+                                role,
+                                personality: &personality,
+                                memories: &relevant,
+                                user_input: user_message,
+                                user_emotion: user_emotion_prompt.as_str(),
+                                user_relation_id: user_relation_key.as_str(),
+                                relation_hint: rf.relation_hint,
+                                relation_before: relation_before.as_str(),
+                                favorability_before,
+                                relation_preview: relation_after.as_str(),
+                                favorability_preview: (favorability_before + favor_delta)
+                                    .clamp(0.0, 100.0),
+                                event_type: &ai_event_type,
+                                impact_factor: ai_impact_factor_final,
+                                scene_label: &scene_label,
+                                scene_detail: scene_detail_buf.as_str(),
+                                topic_hint_line: &topic_line,
+                                life_context_line: life_context_line.as_str(),
+                                worldview_snippet: worldview_snippet.as_str(),
+                                mutable_personality: mutable_for_prompt.as_str(),
+                                reply_quality_anchor: effective_reply_quality_anchor(role),
+                                previous_complex_emotion_narrative_hint: prev_stored_narrative_hint
+                                    .as_str(),
+                            },
+                        )
                     },
                 )
-            )?
+                .await?
         }
         TurnMode::RemoteLife => {
             let character_scene_id = ctx
@@ -365,7 +423,7 @@ pub async fn execute_turn(ctx: &TurnContext<'_>, mode: TurnMode) -> CoPresentRes
     let pre_main_llm_ms = t_path0.elapsed().as_millis() as u64;
     let t_main_llm = Instant::now();
     let mut main_llm_fallback = false;
-    let reply_raw = match slot_runner.generate_llm(&pl, ollama_model.as_str(), &prompt).await {
+    let reply_raw = match slot_runner.generate_llm(pl, ollama_model.as_str(), &prompt).await {
         Ok(s) => s,
         Err(e) => {
             tracing::warn!("{path_label} LLM generate failed, fallback: {e}");
@@ -393,12 +451,18 @@ pub async fn execute_turn(ctx: &TurnContext<'_>, mode: TurnMode) -> CoPresentRes
         relation_after.as_str(),
     ));
     let previous_emotion_fut = state.db_manager.get_current_emotion(srid);
-    let bot_emotion_result =
-        crate::kernel_stage!(@co_present crate::domain::chat_engine::chat_stage::ChatStage::BotReplyEmotionAnalyze, slot_runner.analyze_emotion(&pl, &reply))?;
-    let previous_emotion = crate::kernel_stage!(
-        @co_present crate::domain::chat_engine::chat_stage::ChatStage::GetCurrentEmotion,
-        previous_emotion_fut.await
-    )?;
+    let bot_emotion_result = STAGES
+        .stage(
+            ChatStage::BotReplyEmotionAnalyze,
+            async { slot_runner.analyze_emotion(pl, &reply) },
+        )
+        .await?;
+    let previous_emotion = STAGES
+        .stage(
+            ChatStage::GetCurrentEmotion,
+            previous_emotion_fut,
+        )
+        .await?;
     let bot_emotion = policies
         .emotion
         .resolve_current_emotion(previous_emotion.as_deref(), &bot_emotion_result);
@@ -442,44 +506,48 @@ pub async fn execute_turn(ctx: &TurnContext<'_>, mode: TurnMode) -> CoPresentRes
     let mut recent_events = recent_events_for_event;
     recent_events.insert(0, event.clone());
     let core_v = PersonalityVector::from(&role.default_personality);
-    let portrait_emotion_str = crate::kernel_stage!(@co_present crate::domain::chat_engine::chat_stage::ChatStage::PortraitEmotionLlm,
-        resolve_portrait_emotion(
-            &slot_runner.primary_llm(&pl),
-            ollama_model.as_str(),
-            role,
-            &core_v,
-            &personality,
-            favorability_before,
-            user_message,
-            &reply,
-            user_emotion_str.as_str(),
-            &bot_emotion,
-            &recent_events,
-            &recent_turns,
-        )
-        .await
-    )?;
-
-    let favor_current = crate::kernel_stage!(@co_present crate::domain::chat_engine::chat_stage::ChatStage::ApplyChatTurnAtomic,
-        state
-            .db_manager
-            .apply_chat_turn_atomic(crate::infrastructure::db::ChatTurnTxInput {
-                role_id: srid,
-                personality: &personality,
-                current_emotion: bot_emotion_str.as_str(),
-                relation_state: relation_after.as_str(),
-                user_relation_key: user_relation_key.as_str(),
-                favor_delta,
-                memory_content: &memory_line,
-                memory_importance,
-                memory_fifo_limit: policies.memory.fifo_limit(),
-                event: &event,
+    let portrait_emotion_str = STAGES
+        .stage(
+            ChatStage::PortraitEmotionLlm,
+            resolve_portrait_emotion(
+                &slot_runner.primary_llm(pl),
+                ollama_model.as_str(),
+                role,
+                &core_v,
+                &personality,
+                favorability_before,
                 user_message,
-                bot_reply: &reply,
-                scene_id,
-            })
-            .await
-    )?;
+                &reply,
+                user_emotion_str.as_str(),
+                &bot_emotion,
+                &recent_events,
+                &recent_turns,
+            ),
+        )
+        .await?;
+
+    let favor_current = STAGES
+        .stage(
+            ChatStage::ApplyChatTurnAtomic,
+            state
+                .db_manager
+                .apply_chat_turn_atomic(crate::infrastructure::db::ChatTurnTxInput {
+                    role_id: srid,
+                    personality: &personality,
+                    current_emotion: bot_emotion_str.as_str(),
+                    relation_state: relation_after.as_str(),
+                    user_relation_key: user_relation_key.as_str(),
+                    favor_delta,
+                    memory_content: &memory_line,
+                    memory_importance,
+                    memory_fifo_limit: policies.memory.fifo_limit(),
+                    event: &event,
+                    user_message,
+                    bot_reply: &reply,
+                    scene_id,
+                }),
+        )
+        .await?;
 
     if matches!(mode, TurnMode::CoPresent) {
         state.session_cache.set_stored_complex_emotion_narrative_hint(
@@ -489,12 +557,15 @@ pub async fn execute_turn(ctx: &TurnContext<'_>, mode: TurnMode) -> CoPresentRes
     }
 
     if role.evolution_config.personality_source == PersonalitySource::Profile {
-        let prev = crate::kernel_stage!(@co_present crate::domain::chat_engine::chat_stage::ChatStage::GetMutablePersonality,
-            state.db_manager.get_mutable_personality(srid).await
-        )?;
+        let prev = STAGES
+            .stage(
+                ChatStage::GetMutablePersonality,
+                state.db_manager.get_mutable_personality(srid),
+            )
+            .await?;
         let impact_scaled = (ai_impact_factor_final * event_runtime).clamp(-1.0, 1.0);
         let next = match crate::domain::mutable_profile_llm::evolve_mutable_personality_with_llm(
-            &slot_runner.primary_llm(&pl),
+            &slot_runner.primary_llm(pl),
             ollama_model.as_str(),
             crate::domain::mutable_profile_llm::MutableEvolutionInput {
                 role_name: role.name.as_str(),
@@ -519,30 +590,37 @@ pub async fn execute_turn(ctx: &TurnContext<'_>, mode: TurnMode) -> CoPresentRes
                 prev.clone()
             }
         };
-        crate::kernel_stage!(@co_present crate::domain::chat_engine::chat_stage::ChatStage::SetMutablePersonality,
-            state.db_manager.set_mutable_personality(srid, &next).await
-        )?;
+        STAGES
+            .stage(
+                ChatStage::SetMutablePersonality,
+                state.db_manager.set_mutable_personality(srid, &next),
+            )
+            .await?;
         let personality_after =
             crate::domain::profile_personality::effective_vector_from_profile(role, &next);
         let delta_out = PersonalityVector::sub_components(&personality_after, &core_v);
-        crate::kernel_stage!(@co_present crate::domain::chat_engine::chat_stage::ChatStage::SetCoreDeltaPersonalityJsonProfile,
-            state
-                .db_manager
-                .set_core_delta_personality_json(srid, &core_v.to_json_vec(), &delta_out.to_json_vec())
-                .await
-        )?;
+        STAGES
+            .stage(
+                ChatStage::SetCoreDeltaPersonalityJsonProfile,
+                state
+                    .db_manager
+                    .set_core_delta_personality_json(srid, &core_v.to_json_vec(), &delta_out.to_json_vec()),
+            )
+            .await?;
         state
             .session_cache
             .personality_cache()
             .insert(srid.to_string(), personality_after);
     } else {
         let delta_out = PersonalityVector::sub_components(&personality, &core_v);
-        crate::kernel_stage!(@co_present crate::domain::chat_engine::chat_stage::ChatStage::SetCoreDeltaPersonalityJsonNonProfile,
-            state
-                .db_manager
-                .set_core_delta_personality_json(srid, &core_v.to_json_vec(), &delta_out.to_json_vec())
-                .await
-        )?;
+        STAGES
+            .stage(
+                ChatStage::SetCoreDeltaPersonalityJsonNonProfile,
+                state
+                    .db_manager
+                    .set_core_delta_personality_json(srid, &core_v.to_json_vec(), &delta_out.to_json_vec()),
+            )
+            .await?;
         state
             .session_cache
             .personality_cache()
@@ -551,7 +629,7 @@ pub async fn execute_turn(ctx: &TurnContext<'_>, mode: TurnMode) -> CoPresentRes
 
     let movement = detect_movement_intent(
         state,
-        &slot_runner.primary_llm(&pl),
+        &slot_runner.primary_llm(pl),
         role,
         srid,
         scene_id,
@@ -582,7 +660,7 @@ pub async fn execute_turn(ctx: &TurnContext<'_>, mode: TurnMode) -> CoPresentRes
         TurnMode::CoPresent => (
             PresenceMode::CoPresent,
             vec![DetectedEventDto {
-                event_type: format!("{:?}", event.event_type),
+                event_type: event.event_type.as_ref().to_string(),
                 confidence: event_confidence,
             }],
         ),

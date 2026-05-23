@@ -8,6 +8,18 @@ use crate::domain::chat_engine::co_present::{CoPresentError, CoPresentResult};
 use crate::domain::chat_engine::message_error::ProcessMessageError;
 use crate::error::Result;
 
+/// Co-present path stage runner (replaces `kernel_stage!(@co_present …)` at call sites).
+pub struct StageRunner;
+
+impl StageRunner {
+    pub async fn stage<T, Fut>(&self, stage: ChatStage, fut: Fut) -> CoPresentResult<T>
+    where
+        Fut: Future<Output = Result<T>>,
+    {
+        co_present_stage(stage, fut).await
+    }
+}
+
 /// Attach a [`ChatStage`] label to an async co-present step.
 pub async fn co_present_stage<T, Fut>(stage: ChatStage, fut: Fut) -> CoPresentResult<T>
 where
