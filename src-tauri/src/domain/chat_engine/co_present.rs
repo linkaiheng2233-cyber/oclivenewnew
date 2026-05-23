@@ -126,7 +126,7 @@ pub(crate) async fn process_co_present(
         serde_json::json!({ "turns": recent_turns.len() }),
     );
 
-    let prev_stored_narrative_hint = state.stored_complex_emotion_narrative_hint(srid);
+    let prev_stored_narrative_hint = state.session_cache.stored_complex_emotion_narrative_hint(srid);
     let (prev_user_for_ce, prev_bot_for_ce) = recent_turns
         .last()
         .map(|(u, b)| (Some(u.clone()), b.clone()))
@@ -479,7 +479,7 @@ pub(crate) async fn process_co_present(
                     .await
     )?;
 
-    state.set_stored_complex_emotion_narrative_hint(
+    state.session_cache.set_stored_complex_emotion_narrative_hint(
         srid,
         complex_emotion_out.narrative_hint.clone(),
     );

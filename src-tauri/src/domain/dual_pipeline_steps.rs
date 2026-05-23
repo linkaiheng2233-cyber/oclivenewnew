@@ -344,7 +344,7 @@ impl<'a> ExperimentalStepCtx<'a> {
             .get_mutable_personality(self.srid)
             .await
             .map_err(map_db_err)?;
-        let prev_hint = self.state.stored_complex_emotion_narrative_hint(self.srid);
+        let prev_hint = self.state.session_cache.stored_complex_emotion_narrative_hint(self.srid);
         let prompt = self
             .slot_runner
             .build_prompt(
@@ -380,7 +380,7 @@ impl<'a> ExperimentalStepCtx<'a> {
 
     async fn run_resolve_turn(&mut self) -> Result<(), ProcessMessageError> {
         let er = self.ensure_emotion().await?.clone();
-        let prev_hint = self.state.stored_complex_emotion_narrative_hint(self.srid);
+        let prev_hint = self.state.session_cache.stored_complex_emotion_narrative_hint(self.srid);
         let (recent_turns, _a, _b) = load_recent_context(self.state, self.srid)
             .await
             .map_err(map_db_err)?;

@@ -45,7 +45,7 @@ pub struct DualPipelineRunner;
 impl DualPipelineRunner {
     /// 在任一实验步执行前调用，供 [`rollback`](Self::rollback) 恢复。
     pub async fn take_snapshot(state: &AppState, srid: &str) -> TurnRollbackSnapshot {
-        let hint = state.stored_complex_emotion_narrative_hint(srid);
+        let hint = state.session_cache.stored_complex_emotion_narrative_hint(srid);
         let emotion_state = state
             .db_manager
             .get_current_emotion(srid)
@@ -67,7 +67,7 @@ impl DualPipelineRunner {
 
     /// 实验失败且即将降级时调用：恢复 [`take_snapshot`] 时的三项会话态。
     pub async fn rollback(state: &AppState, srid: &str, snapshot: TurnRollbackSnapshot) {
-        state.set_stored_complex_emotion_narrative_hint(
+        state.session_cache.set_stored_complex_emotion_narrative_hint(
             srid,
             snapshot.narrative_hint.unwrap_or_default(),
         );
@@ -325,7 +325,7 @@ mod tests {
             .ensure_role_runtime(srid)
             .await
             .unwrap();
-        state.set_stored_complex_emotion_narrative_hint(srid, "hint-a".into());
+        state.session_cache.set_stored_complex_emotion_narrative_hint(srid, "hint-a".into());
         state
             .db_manager
             .set_current_emotion(srid, "happy")
@@ -339,7 +339,7 @@ mod tests {
 
         let snap = DualPipelineRunner::take_snapshot(&state, srid).await;
 
-        state.set_stored_complex_emotion_narrative_hint(srid, "hint-b".into());
+        state.session_cache.set_stored_complex_emotion_narrative_hint(srid, "hint-b".into());
         state
             .db_manager
             .set_current_emotion(srid, "sad")
@@ -354,7 +354,7 @@ mod tests {
         DualPipelineRunner::rollback(&state, srid, snap).await;
 
         assert_eq!(
-            state.stored_complex_emotion_narrative_hint(srid),
+            state.session_cache.stored_complex_emotion_narrative_hint(srid),
             "hint-a"
         );
         assert_eq!(
