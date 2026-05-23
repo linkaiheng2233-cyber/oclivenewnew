@@ -15,7 +15,7 @@
 | **最近扫描日期** | **2026-05-20**（本地，`--no-fetch --stale` + 已缓存 `~/.cargo/advisory-db`） |
 | **扫描路径** | 工作区根目录 `Cargo.lock` |
 | **漏洞级命中数** | **0**（`cargo audit` 退出码 **0**） |
-| **警告级命中数** | **17**（未列入下表；含 gtk-rs *unmaintained*、*unsound* 等） |
+| **警告级命中数** | **3**（`cargo audit` + [`.cargo/audit.toml`](../.cargo/audit.toml) 已记录并忽略 **11** 条 gtk-rs GTK3 / 工具链 *unmaintained*；见下表） |
 
 > 若 CI 或本机无法拉取 advisory-db，可使用：`cargo audit --no-fetch --stale`（依赖本地已 fetch 的数据库）。
 
@@ -50,6 +50,21 @@
    若网络受限：`cargo audit --no-fetch --stale`
 2. 将 **漏洞级** 变化同步到上表；将策略变化同步到 [LIGHTWEIGHT_PROFILE.md §6.4](../development/LIGHTWEIGHT_PROFILE.md)。
 3. 不在对外文案中宣称「零漏洞」；使用 **「漏洞级已清零（警告级仍跟踪）」** 并链接本文件。
+
+---
+
+## 警告级跟踪（2026-05-20 批次三）
+
+| RUSTSEC / 类别 | Crate | 状态 | 原因 |
+|----------------|-------|------|------|
+| **RUSTSEC-2026-0002** | `lru` | **已修复** | `oclive-cli` 升级 **ratatui 0.30** → `lru` ≥ 0.16 |
+| **RUSTSEC-2025-0134** | `rustls-pemfile` | **已修复** | `reqwest` **0.12** 链不再依赖该 crate |
+| gtk-rs GTK3 簇（11 ID） | `gtk`/`gdk`/… | **已记录 + audit.toml ignore** | **Tauri 1.x / wry** Linux WebView；需 Tauri 2 方可移除 |
+| **RUSTSEC-2025-0057** | `fxhash` | **开放** | 经 Tauri HTML 解析传递；无直接 API |
+| **RUSTSEC-2024-0429** | `glib` | **开放** | `VariantStrIter` 路径；宿主未使用 |
+| **RUSTSEC-2026-0097** | `rand` 0.7 | **开放** | 经 `phf`/Tauri 宏；需上游 Tauri 2 |
+
+忽略列表与理由见 [`.cargo/audit.toml`](../.cargo/audit.toml) 与 [SECURITY_AUDIT_SCOPE.md](./SECURITY_AUDIT_SCOPE.md)。
 
 ---
 

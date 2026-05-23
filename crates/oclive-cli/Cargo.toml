@@ -37,8 +37,8 @@ serde_yaml = "0.9"
 tar = "0.4"
 flate2 = "1"
 tempfile = "3"
-ratatui = { version = "0.28", default-features = false, features = ["crossterm"] }
-crossterm = "0.28"
+ratatui = { version = "0.30", default-features = false, features = ["crossterm"] }
+crossterm = "0.29"
 ctrlc = "3.4"
 
 [dev-dependencies]
