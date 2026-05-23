@@ -273,8 +273,8 @@ pub async fn execute_turn(ctx: &TurnContext<'_>, mode: TurnMode) -> CoPresentRes
 
     let prompt = match mode {
         TurnMode::CoPresent => {
-            let scene_label = state.storage.scene_display_name(mrid, scene_id);
-            let scene_detail_buf = state.storage.scene_prompt_enrichment(mrid, scene_id);
+            let scene_label = state.storage.scene_display_name_for_role(role, scene_id);
+            let scene_detail_buf = state.storage.scene_prompt_enrichment_for_role(role, scene_id);
             let top_topic = slot_runner.top_topic_hint(&pl, role, scene_id);
             let topic_line = top_topic
                 .map(|t| format!("在「{}」下，你们可能会多聊「{}」相关的事。", scene_label, t))
@@ -322,11 +322,11 @@ pub async fn execute_turn(ctx: &TurnContext<'_>, mode: TurnMode) -> CoPresentRes
                 .character_scene_id
                 .as_deref()
                 .unwrap_or("default");
-            let char_label = state.storage.scene_display_name(mrid, character_scene_id);
-            let user_label = state.storage.scene_display_name(mrid, scene_id);
+            let char_label = state.storage.scene_display_name_for_role(role, character_scene_id);
+            let user_label = state.storage.scene_display_name_for_role(role, scene_id);
             let away_material = state
                 .storage
-                .away_life_material(mrid, character_scene_id, scene_id);
+                .away_life_material_for_role(role, character_scene_id, scene_id);
             let vt_label = if virtual_time_ms > 0 {
                 chrono::DateTime::from_timestamp_millis(virtual_time_ms)
                     .map(|d| d.format("%Y-%m-%d %H:%M").to_string())
@@ -552,7 +552,7 @@ pub async fn execute_turn(ctx: &TurnContext<'_>, mode: TurnMode) -> CoPresentRes
     let movement = detect_movement_intent(
         state,
         &slot_runner.primary_llm(&pl),
-        mrid,
+        role,
         srid,
         scene_id,
         &scenes,

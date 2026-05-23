@@ -4,6 +4,7 @@ use std::collections::{BTreeMap, HashMap};
 use super::author_pack::AuthorPackFile;
 use super::knowledge::KnowledgeIndex;
 use super::plugin_backends::PluginBackends;
+use super::scene_disk::DiskSceneConfig;
 use super::ui_config::UiConfig;
 pub use oclive_validation::{
     AutonomousSceneConfig, AutonomousSceneRule, IdentityBinding, LifeAvailability,
@@ -11,6 +12,7 @@ pub use oclive_validation::{
     PipelineStep, RemotePresenceConfig, RuntimeConfig,
 };
 use std::sync::Arc;
+use std::sync::RwLock;
 
 /// 角色包内人设默认值（旧七维，与 `PersonalityVector` 字段一致）
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -207,6 +209,9 @@ pub struct Role {
     /// 场景 id 列表（manifest `scenes` + `scenes/` 子目录）；由 [`RoleStorage::finish_role_pack_load`] 填充。
     #[serde(skip)]
     pub scene_ids: Arc<[String]>,
+    /// 按 scene id 缓存的 `scene.json` 解析结果；由 [`RoleStorage::get_scene_config`] 填充。
+    #[serde(skip)]
+    pub scene_config_cache: Arc<RwLock<HashMap<String, Arc<DiskSceneConfig>>>>,
 }
 
 impl Default for Role {
@@ -251,6 +256,7 @@ impl Default for Role {
             runtime_config: None,
             pipeline_experimental: None,
             scene_ids: Arc::from(Vec::<String>::new()),
+            scene_config_cache: Arc::new(RwLock::new(HashMap::new())),
         }
     }
 }

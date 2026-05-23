@@ -327,11 +327,11 @@ impl<'a> ExperimentalStepCtx<'a> {
         let scene_label = self
             .state
             .storage
-            .scene_display_name(self.mrid, self.scene_id.as_str());
+            .scene_display_name_for_role(self.role, self.scene_id.as_str());
         let scene_detail_buf = self
             .state
             .storage
-            .scene_prompt_enrichment(self.mrid, self.scene_id.as_str());
+            .scene_prompt_enrichment_for_role(self.role, self.scene_id.as_str());
         let top_topic = self
             .slot_runner
             .top_topic_hint(&self.pl, self.role, self.scene_id.as_str());

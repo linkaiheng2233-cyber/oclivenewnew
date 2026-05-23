@@ -146,6 +146,7 @@ pub fn disk_manifest_to_role(d: &DiskRoleManifest) -> Role {
         runtime_config: None,
         pipeline_experimental: None,
         scene_ids: std::sync::Arc::from(Vec::<String>::new()),
+        scene_config_cache: std::sync::Arc::new(std::sync::RwLock::new(std::collections::HashMap::new())),
     }
 }
 

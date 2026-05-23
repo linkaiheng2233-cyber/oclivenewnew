@@ -1,6 +1,7 @@
 //! 场景位移意图：规则命中 → 可选 LLM 判定（仅判断是否「要去/前往某地」，不解析目标 scene_id）
 
 use crate::domain::ports::LlmClient;
+use crate::models::Role;
 use crate::state::AppState;
 use crate::utils::json_loose::extract_json_object;
 use chrono::Utc;
@@ -108,7 +109,7 @@ pub(super) fn parse_movement_intent_ai_output(raw: &str) -> Option<(bool, f64)> 
 pub(super) async fn detect_movement_intent(
     state: &AppState,
     llm: &Arc<dyn LlmClient>,
-    storage_role_id: &str,
+    role: &Role,
     db_role_id: &str,
     scene_id: &str,
     scenes: &[String],
@@ -134,15 +135,15 @@ pub(super) async fn detect_movement_intent(
         }
         if !state
             .storage
-            .is_scene_time_allowed(storage_role_id, sid.as_str(), virtual_time_ms)
+            .is_scene_time_allowed_for_role(role, sid.as_str(), virtual_time_ms)
         {
             continue;
         }
         candidate_scenes.push((
             sid.clone(),
-            state.storage.scene_display_name(storage_role_id, sid),
-            state.storage.scene_keywords(storage_role_id, sid),
-            state.storage.scene_events(storage_role_id, sid),
+            state.storage.scene_display_name_for_role(role, sid),
+            state.storage.scene_keywords_for_role(role, sid),
+            state.storage.scene_events_for_role(role, sid),
         ));
     }
 
@@ -157,7 +158,7 @@ pub(super) async fn detect_movement_intent(
     let candidate_lines = candidate_scenes
         .iter()
         .map(|(sid, label, kws, _)| {
-            let hint = state.storage.scene_switch_hint_line(storage_role_id, sid);
+            let hint = state.storage.scene_switch_hint_line(role.id.as_str(), sid);
             format!(
                 "- id={} 名称={} keywords={} 摘要={}",
                 sid,
