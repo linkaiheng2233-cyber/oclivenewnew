@@ -127,15 +127,39 @@ fn serve_ocliveplugin_asset(
             .body(b"plugin disabled".to_vec());
     }
     let roots = state.directory_plugins.plugin_roots.read();
+    let canon_roots = state
+        .directory_plugins
+        .plugin_roots_canonical
+        .read();
     let Some(root) = roots.get(&plugin_id) else {
         return ResponseBuilder::new()
             .status(404)
             .mimetype("text/plain; charset=utf-8")
             .body(format!("unknown plugin_id={}", plugin_id).into_bytes());
     };
+    let Some(root_norm) = canon_roots.get(&plugin_id) else {
+        return ResponseBuilder::new()
+            .status(404)
+            .mimetype("text/plain; charset=utf-8")
+            .body(format!("unknown plugin_id={}", plugin_id).into_bytes());
+    };
     let path = root.join(&rel);
-    let root_norm = root.canonicalize().unwrap_or_else(|_| root.clone());
-    let mut data = match fs::read(&path) {
+    let path_norm = match path.canonicalize() {
+        Ok(p) if p.starts_with(root_norm) => p,
+        Ok(_) => {
+            return ResponseBuilder::new()
+                .status(403)
+                .mimetype("text/plain; charset=utf-8")
+                .body(b"forbidden".to_vec());
+        }
+        Err(_) => {
+            return ResponseBuilder::new()
+                .status(404)
+                .mimetype("text/plain; charset=utf-8")
+                .body(b"not found".to_vec());
+        }
+    };
+    let mut data = match fs::read(&path_norm) {
         Ok(b) => b,
         Err(_) => {
             return ResponseBuilder::new()
@@ -144,13 +168,6 @@ fn serve_ocliveplugin_asset(
                 .body(b"not found".to_vec());
         }
     };
-    let path_norm = path.canonicalize().unwrap_or(path.clone());
-    if !path_norm.starts_with(&root_norm) {
-        return ResponseBuilder::new()
-            .status(403)
-            .mimetype("text/plain; charset=utf-8")
-            .body(b"forbidden".to_vec());
-    }
     if mime_for_plugin_asset(&rel).starts_with("text/html") {
         if let Ok(manifest) = OclivePluginManifest::load_from_dir(root) {
             if let Ok(s) = String::from_utf8(data.clone()) {

@@ -194,9 +194,21 @@ fn parse_ready_line(line: &str, prefix: &str) -> Option<String> {
     }
 }
 
+fn canonicalize_plugin_roots(roots: &HashMap<String, PathBuf>) -> HashMap<String, PathBuf> {
+    roots
+        .iter()
+        .map(|(id, root)| {
+            let canon = root.canonicalize().unwrap_or_else(|_| root.clone());
+            (id.clone(), canon)
+        })
+        .collect()
+}
+
 /// 目录插件运行时：根路径表 + 懒启动 RPC。
 pub struct DirectoryPluginRuntime {
     pub plugin_roots: Arc<RwLock<HashMap<String, PathBuf>>>,
+    /// 与 `plugin_roots` 同步更新；供资产网关校验，避免每请求对 root 做 `canonicalize`。
+    pub(crate) plugin_roots_canonical: Arc<RwLock<HashMap<String, PathBuf>>>,
     rpc_urls: Mutex<HashMap<String, String>>,
     children: Mutex<HashMap<String, std::process::Child>>,
     /// 同一 `plugin_id` 仅允许一处执行 spawn + 握手，避免并发 `ensure_rpc_url` 拉起重复子进程。
@@ -260,8 +272,10 @@ impl DirectoryPluginRuntime {
         let app_data_dir = app_data.to_path_buf();
         let ps_path = app_data_dir.join("plugin_state.json");
         let plugin_state_store = Arc::new(RwLock::new(PluginStateStore::load(&ps_path)));
+        let roots_canonical = canonicalize_plugin_roots(&roots);
         Arc::new(Self {
             plugin_roots: Arc::new(RwLock::new(roots)),
+            plugin_roots_canonical: Arc::new(RwLock::new(roots_canonical)),
             rpc_urls: Mutex::new(HashMap::new()),
             children: Mutex::new(HashMap::new()),
             startup_locks: Mutex::new(HashMap::new()),
@@ -548,7 +562,8 @@ impl DirectoryPluginRuntime {
         self.catalog_invalidate_gen.fetch_add(1, Ordering::Relaxed);
         let scan = scan_plugins(roles_dir, &self.app_data_dir, &self.host);
         let n = scan.roots.len();
-        *self.plugin_roots.write() = scan.roots;
+        *self.plugin_roots.write() = scan.roots.clone();
+        *self.plugin_roots_canonical.write() = canonicalize_plugin_roots(&scan.roots);
         tracing::info!(
             target: "oclive_plugin",
             "plugin roots rescanned count={}",
