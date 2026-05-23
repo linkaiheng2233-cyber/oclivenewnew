@@ -87,7 +87,9 @@ async fn run(
             .await,
     )?;
 
-    let effective_backends = state.effective_plugin_backends_for_session(role.as_ref(), srid);
+    let effective_backends = state
+        .effective_plugin_backends_for_session(role.as_ref(), srid)
+        .into_owned();
     let effective_sources =
         state.effective_plugin_backend_sources_for_session(role.as_ref(), srid);
     tracing::debug!(

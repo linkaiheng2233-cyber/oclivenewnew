@@ -149,7 +149,7 @@ impl DbManager {
              VALUES (?, ?, ?, ?, ?)",
         )
         .bind(role_id)
-        .bind(format!("{:?}", event.event_type))
+            .bind(event.event_type.as_ref())
         .bind(&event.user_emotion)
         .bind(&event.bot_emotion)
         .bind(&now)
@@ -427,7 +427,7 @@ impl DbManager {
              VALUES (?, ?, ?, ?, ?)",
             )
             .bind(role_id)
-            .bind(format!("{:?}", event.event_type))
+            .bind(event.event_type.as_ref())
             .bind(&event.user_emotion)
             .bind(&event.bot_emotion)
             .bind(&now)
@@ -580,55 +580,9 @@ mod tests {
             .await
             .map_err(|e| AppError::DatabaseError(e.to_string()))?;
 
-        // 创建表
-        sqlx::query(include_str!("../../../migrations/001_init.sql"))
-            .execute(&pool)
-            .await
-            .map_err(|e| AppError::DatabaseError(e.to_string()))?;
-        sqlx::query(include_str!("../../../migrations/002_add_current_emotion.sql"))
-            .execute(&pool)
-            .await
-            .map_err(|e| AppError::DatabaseError(e.to_string()))?;
-        sqlx::query(include_str!("../../../migrations/004_add_relation_state.sql"))
-            .execute(&pool)
-            .await
-            .map_err(|e| AppError::DatabaseError(e.to_string()))?;
-        sqlx::query(include_str!("../../../migrations/005_add_virtual_time.sql"))
-            .execute(&pool)
-            .await
-            .map_err(|e| AppError::DatabaseError(e.to_string()))?;
-        sqlx::query(include_str!("../../../migrations/006_role_pack_runtime.sql"))
-            .execute(&pool)
-            .await
-            .map_err(|e| AppError::DatabaseError(e.to_string()))?;
-        sqlx::query(include_str!("../../../migrations/007_role_scene_identity.sql"))
-            .execute(&pool)
-            .await
-            .map_err(|e| AppError::DatabaseError(e.to_string()))?;
-        sqlx::query(include_str!("../../../migrations/008_role_identity_stats.sql"))
-            .execute(&pool)
-            .await
-            .map_err(|e| AppError::DatabaseError(e.to_string()))?;
-        sqlx::query(include_str!("../../../migrations/009_remote_life_enabled.sql"))
-            .execute(&pool)
-            .await
-            .map_err(|e| AppError::DatabaseError(e.to_string()))?;
-        sqlx::query(include_str!("../../../migrations/010_user_presence_scene.sql"))
-            .execute(&pool)
-            .await
-            .map_err(|e| AppError::DatabaseError(e.to_string()))?;
-        sqlx::query(include_str!("../../../migrations/011_app_settings.sql"))
-            .execute(&pool)
-            .await
-            .map_err(|e| AppError::DatabaseError(e.to_string()))?;
-        sqlx::query(include_str!(
-            "../../../migrations/012_role_runtime_interaction_mode.sql"
-        ))
-        .execute(&pool)
-        .await
-        .map_err(|e| AppError::DatabaseError(e.to_string()))?;
-        sqlx::query(include_str!("../../../migrations/013_mutable_personality.sql"))
-            .execute(&pool)
+        // 创建表（与 `migrations/` 目录同步，新增迁移无需改本函数）
+        sqlx::migrate!("./migrations")
+            .run(&pool)
             .await
             .map_err(|e| AppError::DatabaseError(e.to_string()))?;
 

@@ -249,7 +249,9 @@ pub async fn load_role_impl(
     let plugin_backends_session_override =
         plugin_backends_override_from_slot_session(state, role.as_ref(), session_ns.as_str());
     let plugin_backends_effective =
-        state.effective_plugin_backends_for_session(role.as_ref(), session_ns.as_str());
+        state
+            .effective_plugin_backends_for_session(role.as_ref(), session_ns.as_str())
+            .into_owned();
     let plugin_backends_effective_sources =
         state.effective_plugin_backend_sources_for_session(role.as_ref(), session_ns.as_str());
     let (slot_registry_pack, slot_registry_effective, slot_session_overridden_keys) =
@@ -322,7 +324,9 @@ pub async fn get_role_info_impl(
     let plugin_backends_session_override =
         plugin_backends_override_from_slot_session(state, role.as_ref(), session_ns.as_str());
     let plugin_backends_effective =
-        state.effective_plugin_backends_for_session(role.as_ref(), session_ns.as_str());
+        state
+            .effective_plugin_backends_for_session(role.as_ref(), session_ns.as_str())
+            .into_owned();
     let plugin_backends_effective_sources =
         state.effective_plugin_backend_sources_for_session(role.as_ref(), session_ns.as_str());
 

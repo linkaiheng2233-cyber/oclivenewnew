@@ -12,6 +12,20 @@ pub enum EventType {
     Ignore,
 }
 
+impl AsRef<str> for EventType {
+    fn as_ref(&self) -> &str {
+        match self {
+            Self::Quarrel => "Quarrel",
+            Self::Apology => "Apology",
+            Self::Praise => "Praise",
+            Self::Complaint => "Complaint",
+            Self::Confession => "Confession",
+            Self::Joke => "Joke",
+            Self::Ignore => "Ignore",
+        }
+    }
+}
+
 /// Detected event with user and bot emotion labels at detection time.
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct Event {

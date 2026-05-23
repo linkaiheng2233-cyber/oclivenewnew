@@ -352,7 +352,9 @@ pub(crate) async fn build_plugin_resolution_debug_info(
         .map_err(|e| e.to_frontend_error())?;
     let session_override =
         plugin_backends_override_from_slot_session(state, role.as_ref(), session_ns.as_str());
-    let effective = state.effective_plugin_backends_for_session(role.as_ref(), session_ns.as_str());
+    let effective = state
+        .effective_plugin_backends_for_session(role.as_ref(), session_ns.as_str())
+        .into_owned();
     let effective_sources =
         state.effective_plugin_backend_sources_for_session(role.as_ref(), session_ns.as_str());
     let llm_env_override = resolve_llm_backend_env_override().map(|b| match b {
