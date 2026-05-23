@@ -74,32 +74,24 @@ pub async fn execute_turn(ctx: &TurnContext<'_>, mode: TurnMode) -> CoPresentRes
     let policies = state.policies_for_scene(Some(scene_id));
     let slot_runner = SlotRunner;
 
-    let (event_impact_opt, mutable_for_prompt, personality) = tokio::try_join!(
-        async {
-            STAGES
-                .stage(
-                    ChatStage::EventImpactFactor,
-                    state.db_manager.get_event_impact_factor(srid),
-                )
-                .await
-        },
-        async {
-            STAGES
-                .stage(
-                    ChatStage::MutablePersonality,
-                    state.db_manager.get_mutable_personality(srid),
-                )
-                .await
-        },
-        async {
-            STAGES
-                .stage(
-                    ChatStage::CurrentPersonality,
-                    state.get_current_personality(srid, role),
-                )
-                .await
-        },
-    )?;
+    let event_impact_opt = STAGES
+        .stage(
+            ChatStage::EventImpactFactor,
+            state.db_manager.get_event_impact_factor(srid),
+        )
+        .await?;
+    let mutable_for_prompt = STAGES
+        .stage(
+            ChatStage::MutablePersonality,
+            state.db_manager.get_mutable_personality(srid),
+        )
+        .await?;
+    let personality = STAGES
+        .stage(
+            ChatStage::CurrentPersonality,
+            state.get_current_personality(srid, role),
+        )
+        .await?;
     let event_runtime = event_impact_opt.unwrap_or(role.evolution_config.event_impact_factor);
     let mut personality = personality;
 
@@ -257,7 +249,16 @@ pub async fn execute_turn(ctx: &TurnContext<'_>, mode: TurnMode) -> CoPresentRes
     let rf = relation_favor_for_key(role, user_relation_key.as_str());
     let seed_favor = role.initial_favorability_for_relation(user_relation_key.as_str());
 
-    let (rel_id, rel_global, _, favorability_before) = tokio::try_join!(
+    STAGES
+        .stage(
+            ChatStage::EnsureIdentityStatsRow,
+            state
+                .db_manager
+                .ensure_identity_stats_row(srid, user_relation_key.as_str(), seed_favor),
+        )
+        .await?;
+
+    let (rel_id, rel_global, favorability_before) = tokio::try_join!(
         async {
             STAGES
                 .stage(
@@ -273,16 +274,6 @@ pub async fn execute_turn(ctx: &TurnContext<'_>, mode: TurnMode) -> CoPresentRes
                 .stage(
                     ChatStage::RelationStateGlobal,
                     state.db_manager.get_relation_state(srid),
-                )
-                .await
-        },
-        async {
-            STAGES
-                .stage(
-                    ChatStage::EnsureIdentityStatsRow,
-                    state
-                        .db_manager
-                        .ensure_identity_stats_row(srid, user_relation_key.as_str(), seed_favor),
                 )
                 .await
         },
