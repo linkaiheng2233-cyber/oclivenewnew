@@ -5,8 +5,8 @@ import { useI18n } from 'vue-i18n'
 import {
   emotionToAssetFilename,
   emotionToEmoji,
-} from '../utils/emotion-assets'
-import { readRoleAssetBytes, resolveRoleAssetPath } from '../api'
+} from '../../utils/emotion-assets'
+import { readRoleAssetBytes, resolveRoleAssetPath } from '../../api'
 
 const props = withDefaults(
   defineProps<{

@@ -26,7 +26,7 @@ const checks = [
   {
     name: "PluginManagerPanel has V1 professional chrome (插件工作台)",
     ok: () =>
-      readFileSync(join(root, "src/views/PluginManagerPanel.vue"), "utf8").includes(
+      readFileSync(join(root, "src/components/plugin-manager/PluginManagerPanel.vue"), "utf8").includes(
         "插件工作台",
       ),
   },

@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import type { ChatMsg } from '../types/chatMsg'
+import type { ChatMsg } from '../../types/chatMsg'
 // 长列表：当前会话区使用 VirtualScrollContainer；历史折叠区按需展开。
 import { computed, ref } from 'vue'
 import { useI18n } from 'vue-i18n'

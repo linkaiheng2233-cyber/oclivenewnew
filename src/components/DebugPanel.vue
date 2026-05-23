@@ -12,10 +12,10 @@ import {
 } from '../utils/personality-traits'
 import { generateMonologue } from '../api'
 import ChatExportBar from './ChatExportBar.vue'
-import HelpHint from './HelpHint.vue'
+import HelpHint from './shared/HelpHint.vue'
 import PluginSlotEmbed from './PluginSlotEmbed.vue'
 import RolePackBar from './RolePackBar.vue'
-import RoleRuntimePanel from './RoleRuntimePanel.vue'
+import RoleRuntimePanel from './role/RoleRuntimePanel.vue'
 
 const props = defineProps<{
   visible: boolean

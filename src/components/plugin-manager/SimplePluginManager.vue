@@ -2,11 +2,11 @@
 import { open } from '@tauri-apps/api/dialog'
 import { computed, ref, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
-import PluginUiSlotSelectorDialog from '../components/PluginUiSlotSelectorDialog.vue'
-import { useAppToast } from '../composables/useAppToast'
-import { usePluginSlotEnable } from '../composables/usePluginSlotEnable'
-import { usePluginStore } from '../stores/pluginStore'
-import { installPluginFromZip } from '../api'
+import PluginUiSlotSelectorDialog from '../PluginUiSlotSelectorDialog.vue'
+import { useAppToast } from '../../composables/useAppToast'
+import { usePluginSlotEnable } from '../../composables/usePluginSlotEnable'
+import { usePluginStore } from '../../stores/pluginStore'
+import { installPluginFromZip } from '../../api'
 
 const props = defineProps<{
   visible: boolean

@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import CharacterInfo from '../components/CharacterInfo.vue'
+import CharacterInfo from '../components/role/CharacterInfo.vue'
 import PluginRoleDetailSlots from '../components/PluginRoleDetailSlots.vue'
 
 defineProps<{

@@ -2,7 +2,7 @@
 import { ref, toRef } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { useModalFocusRestore } from '../composables/useModalFocusRestore'
-import SimplePluginManager from './SimplePluginManager.vue'
+import SimplePluginManager from '../components/plugin-manager/SimplePluginManager.vue'
 
 const props = defineProps<{
   visible: boolean

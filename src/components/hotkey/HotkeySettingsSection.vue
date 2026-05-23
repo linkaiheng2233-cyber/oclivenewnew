@@ -1,13 +1,13 @@
 <script setup lang="ts">
-import type { HotkeyBinding, HotkeyBindingsFile } from '../api'
+import type { HotkeyBinding, HotkeyBindingsFile } from '../../api'
 import { onMounted, ref } from 'vue'
 import { useI18n } from 'vue-i18n'
-import { useAppToast } from '../composables/useAppToast'
+import { useAppToast } from '../../composables/useAppToast'
 import {
   getHotkeyBindings,
 
   saveHotkeyBindings,
-} from '../api'
+} from '../../api'
 
 const { t } = useI18n()
 const { showToast } = useAppToast()

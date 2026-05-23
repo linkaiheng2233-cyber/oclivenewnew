@@ -1,9 +1,9 @@
 <script setup lang="ts">
-import type { JumpTimeResponse } from '../api'
+import type { JumpTimeResponse } from '../../api'
 import { computed, onMounted, ref, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
-import { getTimeState } from '../api'
-import TimeDial from './TimeDial.vue'
+import { getTimeState } from '../../api'
+import TimeDial from '../TimeDial.vue'
 
 const props = withDefaults(
   defineProps<{ roleId: string, /** 顶栏单行：隐藏「虚拟时间」文案 */ compact?: boolean }>(),

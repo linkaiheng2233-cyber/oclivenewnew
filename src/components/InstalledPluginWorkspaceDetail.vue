@@ -10,7 +10,7 @@ import {
   usePluginStore,
 } from '../stores/pluginStore'
 import PluginDebugPanel from './PluginDebugPanel.vue'
-import PluginListItem from './PluginListItem.vue'
+import PluginListItem from '../plugin-manager/PluginListItem.vue'
 import PluginPrivateSettingsForm from './PluginPrivateSettingsForm.vue'
 
 defineProps<{

@@ -1,16 +1,16 @@
 <script setup lang="ts">
 import { computed, ref, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
-import { usePluginStore } from '../stores/pluginStore'
-import { useRoleStore } from '../stores/roleStore'
-import { useUiStore } from '../stores/uiStore'
-import { buildRelationDropdownOptions } from '../utils/relationOptions'
+import { usePluginStore } from '../../stores/pluginStore'
+import { useRoleStore } from '../../stores/roleStore'
+import { useUiStore } from '../../stores/uiStore'
+import { buildRelationDropdownOptions } from '../../utils/relationOptions'
 import {
   OCLIVE_DEFAULT_RELATION_SENTINEL,
   setEvolutionFactor,
   setUserRelation,
-} from '../api'
-import HelpHint from './HelpHint.vue'
+} from '../../api'
+import HelpHint from '../shared/HelpHint.vue'
 
 const { t } = useI18n()
 const roleStore = useRoleStore()
