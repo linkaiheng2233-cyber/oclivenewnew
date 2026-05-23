@@ -1,6 +1,14 @@
 use crate::error::{AppError, Result};
 use crate::infrastructure::ollama_timeouts;
 use reqwest::Client;
+use std::sync::LazyLock;
+
+static OLLAMA_HTTP_CLIENT: LazyLock<Client> = LazyLock::new(|| {
+    Client::builder()
+        .pool_max_idle_per_host(4)
+        .build()
+        .expect("ollama reqwest client")
+});
 use serde::{Deserialize, Serialize};
 use std::time::Duration;
 
@@ -41,7 +49,7 @@ impl OllamaClient {
     pub fn new(base_url: impl Into<String>) -> Self {
         Self {
             base_url: normalize_base_url(base_url.into()),
-            client: Client::new(),
+            client: OLLAMA_HTTP_CLIENT.clone(),
             timeout: ollama_timeouts::http_client_timeout(),
         }
     }
