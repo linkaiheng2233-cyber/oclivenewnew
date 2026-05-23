@@ -199,6 +199,45 @@ impl AppState {
         loaded
     }
 
+    /// 异步路径加载角色：磁盘 I/O 在 `spawn_blocking` 中执行，避免阻塞 tokio reactor。
+    pub async fn load_role_cached_async(&self, role_id: &str) -> Result<Arc<Role>> {
+        if let Some(r) = self.role_cache.read().get(role_id) {
+            return Ok(Arc::clone(r));
+        }
+        let key = role_id.to_string();
+        let gate = self
+            .role_load_inflight
+            .entry(key.clone())
+            .or_insert_with(|| Arc::new(Mutex::new(())))
+            .clone();
+
+        {
+            let _serial = gate.lock();
+            if let Some(r) = self.role_cache.read().get(role_id) {
+                return Ok(Arc::clone(r));
+            }
+        }
+
+        let storage = self.storage.clone();
+        let role_id_blocking = role_id.to_string();
+        let role = tokio::task::spawn_blocking(move || storage.load_role(&role_id_blocking))
+            .await
+            .map_err(|e| crate::error::AppError::Unknown(format!("load_role task failed: {e}")))?
+            ?;
+
+        let _serial = gate.lock();
+        if let Some(r) = self.role_cache.read().get(role_id) {
+            return Ok(Arc::clone(r));
+        }
+        let candidate = Arc::new(role);
+        let mut map = self.role_cache.write();
+        if let Some(r) = map.get(role_id) {
+            return Ok(Arc::clone(r));
+        }
+        map.insert(role_id.to_string(), Arc::clone(&candidate));
+        Ok(candidate)
+    }
+
     /// 丢弃该 manifest 角色及其试聊会话命名空间下的有效性格缓存（磁盘包重载、`default_personality` / 边界等已变时必须调用）。
     pub fn invalidate_personality_cache_for_role(&self, manifest_role_id: &str) {
         let cache = self.session_cache.personality_cache();

@@ -173,7 +173,7 @@ pub(super) async fn process_remote_life(ctx: &TurnContext<'_>) -> Result<SendMes
 }
 
 pub(super) async fn ensure_role_loaded(state: &AppState, role_id: &str) -> Result<Arc<Role>> {
-    state.load_role_cached(role_id)
+    state.load_role_cached_async(role_id).await
 }
 
 #[cfg(test)]
