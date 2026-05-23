@@ -9,6 +9,7 @@ const props = defineProps<{
   message: string;
   fileIndex?: number | null;
   fileTotal?: number | null;
+  currentFile?: string | null;
 }>();
 
 const { t } = useI18n();
@@ -21,6 +22,12 @@ const fileLine = computed(() => {
   const tot = props.fileTotal;
   if (cur == null || tot == null || tot <= 0) return "";
   return t("common.importPackFileProgress", { current: cur, total: tot });
+});
+
+const currentFileLine = computed(() => {
+  const name = props.currentFile?.trim();
+  if (!name) return "";
+  return t("common.importPackCurrentFile", { name });
 });
 </script>
 
@@ -42,6 +49,7 @@ const fileLine = computed(() => {
           />
         </div>
         <p v-if="fileLine" class="msg file-line">{{ fileLine }}</p>
+        <p v-if="currentFileLine" class="msg file-name">{{ currentFileLine }}</p>
         <p class="msg">{{ message }}</p>
       </div>
     </div>

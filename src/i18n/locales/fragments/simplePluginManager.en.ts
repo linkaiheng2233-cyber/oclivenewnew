@@ -3,6 +3,7 @@ export const simplePluginManagerEn = {
   title: "Installed plugins",
   panelAria: "Plugin manager",
   installZip: "Install plugin",
+  installingZip: "Installing…",
   browseMarket: "Browse market",
   close: "Close",
   loading: "Loading…",

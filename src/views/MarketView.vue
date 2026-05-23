@@ -161,6 +161,9 @@ function close() {
           </button>
         </div>
 
+        <p v-if="pluginStore.pluginMarketSyncing" class="mk-sync-status" role="status" aria-live="polite">
+          {{ t("pluginWorkbench.market.syncing") }}
+        </p>
         <p v-if="pluginStore.pluginMarketError" class="mk-err">{{ pluginStore.pluginMarketError }}</p>
         <div
           v-else-if="pluginStore.pluginMarketSnapshot?.warning"

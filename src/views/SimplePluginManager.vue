@@ -111,8 +111,12 @@ async function onInstallZip(): Promise<void> {
 <template>
   <div class="spm-root">
     <header class="spm-toolbar">
-      <button type="button" class="spm-btn primary" @click="onInstallZip">
-        {{ t("simplePluginManager.installZip") }}
+      <button type="button" class="spm-btn primary" :disabled="busyId === '__install__'" @click="onInstallZip">
+        {{
+          busyId === "__install__"
+            ? t("simplePluginManager.installingZip")
+            : t("simplePluginManager.installZip")
+        }}
       </button>
       <button type="button" class="spm-btn" @click="emit('openMarket')">
         {{ t("simplePluginManager.browseMarket") }}

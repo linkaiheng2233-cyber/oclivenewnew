@@ -363,6 +363,8 @@ pub struct ImportProgress {
     pub file_index: Option<u32>,
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub file_total: Option<u32>,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub current_file: Option<String>,
 }
 
 #[derive(Debug, Clone, Deserialize)]

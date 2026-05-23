@@ -135,7 +135,7 @@ pub fn peek_role_pack_manifest(src: &Path) -> Result<(String, String, String)> {
     ))
 }
 
-fn unzip_to(src: &Path, dest: &Path, mut on_entry: impl FnMut(usize, usize)) -> Result<()> {
+fn unzip_to(src: &Path, dest: &Path, mut on_entry: impl FnMut(usize, usize, Option<&str>)) -> Result<()> {
     let file = File::open(src).map_err(|e| {
         AppError::InvalidParameter(format!("Role pack format: cannot open file ({e})"))
     })?;
@@ -149,7 +149,7 @@ fn unzip_to(src: &Path, dest: &Path, mut on_entry: impl FnMut(usize, usize)) -> 
             .map_err(|e| AppError::Unknown(e.to_string()))?;
         let name = file.name().to_string();
         if !safe_zip_path(&name) {
-            on_entry(i + 1, total);
+            on_entry(i + 1, total, None);
             continue;
         }
         let outpath = dest.join(&name);
@@ -162,7 +162,7 @@ fn unzip_to(src: &Path, dest: &Path, mut on_entry: impl FnMut(usize, usize)) -> 
             let mut outfile = File::create(&outpath)?;
             std::io::copy(&mut file, &mut outfile)?;
         }
-        on_entry(i + 1, total);
+        on_entry(i + 1, total, Some(name.as_str()));
     }
     Ok(())
 }
@@ -217,13 +217,14 @@ where
         fs::remove_dir_all(&dest)?;
     }
     fs::create_dir_all(&dest)?;
-    copy_role_tree(root, &dest, |cur, tot| {
+    copy_role_tree(root, &dest, |cur, tot, current| {
         let pct = copy_percent(cur, tot).min(99);
         on_progress(ImportProgress {
             percent: pct,
             message: format!("Writing files {}/{}", cur, tot),
             file_index: Some(cur as u32),
             file_total: Some(tot as u32),
+            current_file: current.map(str::to_string),
         });
     })?;
     on_progress(ImportProgress {
@@ -231,11 +232,12 @@ where
         message: "Import complete".into(),
         file_index: None,
         file_total: None,
+        current_file: None,
     });
     Ok(id)
 }
 
-fn copy_role_tree(src: &Path, dest: &Path, mut on_file: impl FnMut(usize, usize)) -> Result<()> {
+fn copy_role_tree(src: &Path, dest: &Path, mut on_file: impl FnMut(usize, usize, Option<&str>)) -> Result<()> {
     let files: Vec<PathBuf> = WalkDir::new(src)
         .min_depth(1)
         .into_iter()
@@ -253,7 +255,8 @@ fn copy_role_tree(src: &Path, dest: &Path, mut on_file: impl FnMut(usize, usize)
             fs::create_dir_all(p)?;
         }
         fs::copy(path, &target)?;
-        on_file(i + 1, total);
+        let rel_display = rel.to_string_lossy().into_owned();
+        on_file(i + 1, total, Some(rel_display.as_str()));
     }
     Ok(())
 }
@@ -270,6 +273,7 @@ fn import_role_from_directory<F: FnMut(ImportProgress)>(
         message: "Reading folder…".into(),
         file_index: None,
         file_total: None,
+        current_file: None,
     });
     let root = resolve_extracted_role_root(src)?;
     install_role_from_resolved_root(storage, &root, overwrite, on_progress, |cur, tot| {
@@ -296,15 +300,17 @@ pub fn import_role_pack<F: FnMut(ImportProgress)>(
         message: "Preparing extraction…".into(),
         file_index: None,
         file_total: None,
+        current_file: None,
     });
     let td = tempfile::tempdir()?;
-    unzip_to(src, td.path(), |cur, tot| {
+    unzip_to(src, td.path(), |cur, tot, current| {
         let pct = ((cur as i64 * 50) / tot as i64).min(50) as i32;
         on_progress(ImportProgress {
             percent: pct,
             message: format!("Extracting {}/{}", cur, tot),
             file_index: Some(cur as u32),
             file_total: Some(tot as u32),
+            current_file: current.map(str::to_string),
         });
     })?;
     let root = resolve_extracted_role_root(td.path())?;

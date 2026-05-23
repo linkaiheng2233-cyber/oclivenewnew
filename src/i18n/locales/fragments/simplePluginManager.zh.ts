@@ -3,6 +3,7 @@ export const simplePluginManagerZh = {
   title: "已安装插件",
   panelAria: "插件管理",
   installZip: "安装插件",
+  installingZip: "正在安装…",
   browseMarket: "浏览市场",
   close: "关闭",
   loading: "加载中…",

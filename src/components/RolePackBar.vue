@@ -43,6 +43,7 @@ const importPercent = ref(0);
 const importMessage = ref("");
 const importFileIndex = ref<number | null>(null);
 const importFileTotal = ref<number | null>(null);
+const importCurrentFile = ref<string | null>(null);
 let unlistenProgress: UnlistenFn | null = null;
 
 const conflictPrimaryRef = ref<HTMLButtonElement | null>(null);
@@ -58,11 +59,13 @@ async function withImportProgress<T>(fn: () => Promise<T>): Promise<T> {
   importMessage.value = t("common.preparing");
   importFileIndex.value = null;
   importFileTotal.value = null;
+  importCurrentFile.value = null;
   unlistenProgress = await listen<{
     percent: number;
     message: string;
     fileIndex?: number;
     fileTotal?: number;
+    currentFile?: string;
   }>("import_progress", (e) => {
     importPercent.value = e.payload.percent;
     importMessage.value = e.payload.message;
@@ -70,6 +73,8 @@ async function withImportProgress<T>(fn: () => Promise<T>): Promise<T> {
       typeof e.payload.fileIndex === "number" ? e.payload.fileIndex : null;
     importFileTotal.value =
       typeof e.payload.fileTotal === "number" ? e.payload.fileTotal : null;
+    importCurrentFile.value =
+      typeof e.payload.currentFile === "string" ? e.payload.currentFile : null;
   });
   try {
     return await fn();
@@ -209,6 +214,7 @@ function onImportFolder(): void {
       :message="importMessage"
       :file-index="importFileIndex"
       :file-total="importFileTotal"
+      :current-file="importCurrentFile"
     />
 
     <Teleport to="body">

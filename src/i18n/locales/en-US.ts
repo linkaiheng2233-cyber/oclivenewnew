@@ -450,6 +450,7 @@ export default {
     preparing: "Preparing…",
     importPackTitle: "Importing role pack",
     importPackFileProgress: "File progress {current} / {total}",
+    importPackCurrentFile: "Current file: {name}",
     chatInputLabel: "Message",
     chatPlaceholder: "Say something to {name}…",
     send: "Send",
