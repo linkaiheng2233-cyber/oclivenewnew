@@ -158,7 +158,7 @@ pub(super) async fn detect_movement_intent(
     let candidate_lines = candidate_scenes
         .iter()
         .map(|(sid, label, kws, _)| {
-            let hint = state.storage.scene_switch_hint_line(role.id.as_str(), sid);
+            let hint = state.storage.scene_switch_hint_line(role, sid);
             format!(
                 "- id={} 名称={} keywords={} 摘要={}",
                 sid,

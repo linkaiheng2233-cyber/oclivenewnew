@@ -319,7 +319,8 @@ pub async fn get_role_info_impl(
     }
 
     let role = state
-        .load_role_cached(role_id)
+        .load_role_cached_async(role_id)
+        .await
         .map_err(|e| e.to_frontend_error())?;
     let plugin_backends_session_override =
         plugin_backends_override_from_slot_session(state, role.as_ref(), session_ns.as_str());
@@ -363,7 +364,7 @@ pub async fn get_role_info_impl(
         .iter()
         .map(|id| SceneLabelEntry {
             id: id.clone(),
-            label: state.storage.scene_display_name(role_id, id),
+            label: state.storage.scene_display_name_for_role(role.as_ref(), id),
         })
         .collect();
     let virtual_time_ms = state

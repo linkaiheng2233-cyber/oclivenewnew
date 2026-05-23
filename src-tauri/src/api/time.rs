@@ -59,10 +59,11 @@ async fn apply_autonomous_scene_after_jump(
         if !scenes.iter().any(|s| s == &rule.to_scene) {
             continue;
         }
-        if !state
-            .storage
-            .is_scene_time_allowed(role_id, rule.to_scene.as_str(), virtual_time_ms)
-        {
+        if !state.storage.is_scene_time_allowed_for_role(
+            role,
+            rule.to_scene.as_str(),
+            virtual_time_ms,
+        ) {
             continue;
         }
         state
@@ -162,7 +163,8 @@ pub async fn jump_time_impl(
     }
 
     let role = state
-        .load_role_cached(&req.role_id)
+        .load_role_cached_async(&req.role_id)
+        .await
         .map_err(|e| e.to_frontend_error())?;
     let current_scene = state
         .db_manager
