@@ -1,7 +1,4 @@
-//! Ollama HTTP 单次请求超时（秒），与可选「直连辅助」路径共用同一套可配置默认值。
-//!
-//! - 主路径 [`super::OllamaClient`] 使用 [`http_client_timeout`].
-//! - `utils::ollama::ollama_generate` 使用 [`legacy_utils_call_timeout`]（默认更短，避免辅助脚本拖死）。
+//! Ollama HTTP 单次请求超时（秒），与 [`super::OllamaClient`] 共用可配置默认值。
 
 use std::time::Duration;
 
@@ -16,10 +13,4 @@ fn parse_env_u64(key: &str, default: u64) -> u64 {
 #[must_use]
 pub fn http_client_timeout() -> Duration {
     Duration::from_secs(parse_env_u64("OCLIVE_OLLAMA_HTTP_TIMEOUT_SECS", 120))
-}
-
-/// `OCLIVE_OLLAMA_LEGACY_UTILS_TIMEOUT_SECS`（默认 `30`）：`utils/ollama.rs` 单次 `generate` 外包 `tokio::timeout`。
-#[must_use]
-pub fn legacy_utils_call_timeout() -> Duration {
-    Duration::from_secs(parse_env_u64("OCLIVE_OLLAMA_LEGACY_UTILS_TIMEOUT_SECS", 30))
 }

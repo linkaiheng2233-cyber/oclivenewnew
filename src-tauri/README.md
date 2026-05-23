@@ -43,7 +43,6 @@
 | 变量 | 默认 | 作用 |
 |------|------|------|
 | `OCLIVE_OLLAMA_HTTP_TIMEOUT_SECS` | `120` | `OllamaClient` 单次请求 `reqwest` 超时 |
-| `OCLIVE_OLLAMA_LEGACY_UTILS_TIMEOUT_SECS` | `30` | `utils::ollama::ollama_generate` 外包 `tokio::timeout` |
 
 ## 观测与排障
 
