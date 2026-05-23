@@ -1,20 +1,22 @@
-use chrono::{DateTime, Duration, Utc};
 use parking_lot::RwLock;
 use std::collections::HashMap;
 use std::sync::Arc;
+use std::time::{Duration, Instant};
+
+const DEFAULT_MAX_CAPACITY: usize = 1000;
 
 /// 缓存条目
 #[derive(Clone, Debug)]
 struct CacheEntry<T: Clone> {
     data: T,
-    created_at: DateTime<Utc>,
+    created_at: Instant,
     ttl: Option<Duration>,
 }
 
 impl<T: Clone> CacheEntry<T> {
     fn is_expired(&self) -> bool {
         if let Some(ttl) = self.ttl {
-            Utc::now() - self.created_at > ttl
+            self.created_at.elapsed() > ttl
         } else {
             false
         }
@@ -27,14 +29,22 @@ impl<T: Clone> CacheEntry<T> {
 #[derive(Debug)]
 pub struct Cache<T: Clone + Send + Sync> {
     data: Arc<RwLock<HashMap<String, CacheEntry<T>>>>,
+    max_capacity: usize,
 }
 
 impl<T: Clone + Send + Sync> Cache<T> {
-    /// 创建新缓存
+    /// 创建新缓存（默认最多 1000 条）
     #[must_use]
     pub fn new() -> Self {
+        Self::with_capacity(DEFAULT_MAX_CAPACITY)
+    }
+
+    /// 创建带容量上限的缓存
+    #[must_use]
+    pub fn with_capacity(max_capacity: usize) -> Self {
         Self {
             data: Arc::new(RwLock::new(HashMap::new())),
+            max_capacity: max_capacity.max(1),
         }
     }
 
@@ -43,17 +53,24 @@ impl<T: Clone + Send + Sync> Cache<T> {
     /// 如果缓存过期，会自动清理并返回 None
     #[must_use]
     pub fn get(&self, key: &str) -> Option<T> {
-        let mut cache = self.data.write();
-
-        if let Some(entry) = cache.get(key) {
-            if entry.is_expired() {
-                cache.remove(key);
-                return None;
+        {
+            let cache = self.data.read();
+            if let Some(entry) = cache.get(key) {
+                if !entry.is_expired() {
+                    return Some(entry.data.clone());
+                }
             }
-            return Some(entry.data.clone());
         }
 
-        None
+        let mut cache = self.data.write();
+        match cache.get(key) {
+            Some(entry) if entry.is_expired() => {
+                cache.remove(key);
+                None
+            }
+            Some(entry) => Some(entry.data.clone()),
+            None => None,
+        }
     }
 
     /// 设置缓存值（无过期时间）
@@ -65,10 +82,12 @@ impl<T: Clone + Send + Sync> Cache<T> {
     pub fn set_with_ttl(&self, key: String, value: T, ttl: Option<Duration>) {
         let entry = CacheEntry {
             data: value,
-            created_at: Utc::now(),
+            created_at: Instant::now(),
             ttl,
         };
-        self.data.write().insert(key, entry);
+        let mut cache = self.data.write();
+        cache.insert(key, entry);
+        Self::enforce_capacity(&mut cache, self.max_capacity);
     }
 
     /// 删除缓存
@@ -97,6 +116,16 @@ impl<T: Clone + Send + Sync> Cache<T> {
     pub fn cleanup_expired(&self) {
         let mut cache = self.data.write();
         cache.retain(|_, entry| !entry.is_expired());
+    }
+
+    fn enforce_capacity(cache: &mut HashMap<String, CacheEntry<T>>, max_capacity: usize) {
+        cache.retain(|_, entry| !entry.is_expired());
+        while cache.len() > max_capacity {
+            let Some(key) = cache.keys().next().cloned() else {
+                break;
+            };
+            cache.remove(&key);
+        }
     }
 }
 
@@ -150,12 +179,23 @@ mod tests {
     #[test]
     fn test_cache_ttl_expiration() {
         let cache: Cache<String> = Cache::new();
-        let ttl = Some(Duration::milliseconds(100));
+        let ttl = Some(Duration::from_millis(100));
         cache.set_with_ttl("key1".to_string(), "value1".to_string(), ttl);
 
         assert_eq!(cache.get("key1"), Some("value1".to_string()));
 
-        std::thread::sleep(std::time::Duration::from_millis(150));
+        std::thread::sleep(Duration::from_millis(150));
         assert_eq!(cache.get("key1"), None);
+    }
+
+    #[test]
+    fn test_cache_respects_max_capacity() {
+        let cache: Cache<u32> = Cache::with_capacity(2);
+        cache.set("a".to_string(), 1);
+        cache.set("b".to_string(), 2);
+        assert_eq!(cache.len(), 2);
+        cache.set("c".to_string(), 3);
+        assert_eq!(cache.len(), 2);
+        assert_eq!(cache.get("c"), Some(3));
     }
 }
