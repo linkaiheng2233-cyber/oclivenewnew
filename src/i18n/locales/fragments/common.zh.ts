@@ -1,16 +1,15 @@
 /** common — zh. */
+import sharedCommon from '../../shared/common.zh'
+import sharedShortcuts from '../../shared/shortcuts.zh'
+
 export default {
   common: {
-    cancel: '取消',
-    close: '关闭',
-    loading: '加载中…',
-    preparing: '准备中…',
+    ...sharedCommon,
     importPackTitle: '导入角色包',
     importPackFileProgress: '文件进度 {current} / {total}',
     importPackCurrentFile: '当前文件：{name}',
     chatInputLabel: '输入消息',
     chatPlaceholder: '对 {name} 说点什么...',
-    send: '发送',
     sceneTravel: {
       togetherAria: '邀请同行并选择目的地',
       togetherLabel: '检测到邀请同行，请选择目的地',
@@ -29,18 +28,7 @@ export default {
     },
     autonomousNotice:
       '系统：虚拟时间变化后，角色场景已从「{from}」切换为「{to}」（叙事视角未自动改变）。',
-    shortcutHelp: {
-      aria: '快捷键',
-      title: '快捷键',
-      rowOpenSettings: '打开设置（扩展区、安全、快捷键与插件配置）',
-      rowCtrlLong: '打开本快捷键说明',
-      rowCtrlLongKeys: 'Ctrl（长按约 1 秒）',
-      foot: '更多快捷键将随功能迭代补充。',
-      slotSectionAria: '启动器插槽',
-      slotHeading: '插件槽（launcher.palette）',
-      slotEmbedAria: '启动器插槽',
-      ctrlShiftFSimple: '打开已安装插件列表',
-    },
+    shortcutHelp: sharedShortcuts,
     rolePack: {
       exportFilterName: 'OCPak 角色包',
       importFilterName: 'OCPak / ZIP',
@@ -65,5 +53,5 @@ export default {
     upgradeCloseFriend: '🎉 你们已经是好朋友了！',
     upgradePartner: '💖 关系阶段：伴侣',
     upgradeUnknown: '关系阶段更新为：{state}',
-  }
+  },
 }

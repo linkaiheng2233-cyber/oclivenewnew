@@ -1,16 +1,15 @@
 /** common — en. */
+import sharedCommon from '../../shared/common.en'
+import sharedShortcuts from '../../shared/shortcuts.en'
+
 export default {
   common: {
-    cancel: 'Cancel',
-    close: 'Close',
-    loading: 'Loading…',
-    preparing: 'Preparing…',
+    ...sharedCommon,
     importPackTitle: 'Importing role pack',
     importPackFileProgress: 'File progress {current} / {total}',
     importPackCurrentFile: 'Current file: {name}',
     chatInputLabel: 'Message',
     chatPlaceholder: 'Say something to {name}…',
-    send: 'Send',
     sceneTravel: {
       togetherAria: 'Together travel — pick destination',
       togetherLabel: 'Together travel detected — pick a destination',
@@ -29,18 +28,7 @@ export default {
     },
     autonomousNotice:
       'System: after virtual time changed, the character’s scene moved from “{from}” to “{to}” (your narrative view did not auto-follow).',
-    shortcutHelp: {
-      aria: 'Shortcuts',
-      title: 'Shortcuts',
-      rowOpenSettings: 'Open settings (advanced area, security, hotkeys, plugin config)',
-      rowCtrlLong: 'Open this shortcuts dialog',
-      rowCtrlLongKeys: 'Ctrl (hold ~1s)',
-      foot: 'More shortcuts will be added over time.',
-      slotSectionAria: 'Launcher slot',
-      slotHeading: 'Plugin slot (launcher.palette)',
-      slotEmbedAria: 'Launcher slot',
-      ctrlShiftFSimple: 'Open installed plugins list',
-    },
+    shortcutHelp: sharedShortcuts,
     rolePack: {
       exportFilterName: 'OCPak role pack',
       importFilterName: 'OCPak / ZIP',
@@ -65,5 +53,5 @@ export default {
     upgradeCloseFriend: '🎉 You’re close friends now!',
     upgradePartner: '💖 Relationship stage: partner',
     upgradeUnknown: 'Relationship stage updated: {state}',
-  }
+  },
 }

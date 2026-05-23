@@ -24,8 +24,9 @@ Cross-repo optimization scan (Opus 4.7) plus **local grep/build verification**. 
 | Prod `console.*` | Not stripped | `esbuild.drop: ['console','debugger']` in prod | **Done** |
 | `AppState` 14× `RwLock<HashMap>` | Lock contention | **4** session maps + `role_cache`; extracted `SessionCache` with per-field locks | **Done** (1× `role_cache` remains) |
 | `db.rs` 1950 lines / 62 fns | Split by table | `db/{mod,long_term_memory,role_runtime,relation_state,session_state,plugin_state}.rs` + `RoleRuntimeRepo` | **Done** |
-| Sister-repo i18n drift | Shared package | Not started | **Pending** |
-| `fuzz/` sparse | Add validation targets | Not started | **Pending** |
+| Sister-repo i18n drift | Shared package | `src/i18n/shared/` + mirror sync + `verify:shared-i18n` | **Done** |
+| `fuzz/` sparse | Add validation targets | `fuzz_oclive_validation`, `fuzz_function_call_parser`, `fuzz_role_pack_loader` | **Done** |
+| `plugin_host.rs` clone audit | 63× `.clone()` | Arc 热路径保留；消除 `PluginBackends` / 全量 `provider_id` 克隆 | **Done** |
 | CI `npm audit --omit=dev` | Visibility job | Not started | **Pending** |
 
 **Scripts (repeatable):** `scripts/split-tauri-api.mjs`, `scripts/migrate-tauri-api-imports.mjs`, `scripts/split-i18n-locales.mjs`, `scripts/split-db-rs.mjs`.
