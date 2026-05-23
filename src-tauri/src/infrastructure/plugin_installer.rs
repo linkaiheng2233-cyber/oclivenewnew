@@ -91,14 +91,14 @@ pub fn sync_plugin_index_online(
         .filter(|s| !s.is_empty())
         .or_else(|| env_url.as_deref().map(str::trim).filter(|s| !s.is_empty()))
         .unwrap_or(DEFAULT_PLUGIN_INDEX_URL);
-    let cli = reqwest::blocking::Client::builder()
+    let cli = reqwest::Client::builder()
         .timeout(std::time::Duration::from_secs(15))
         .build()
         .map_err(|e| AppError::Unknown(format!("index http client failed: {}", e)))?;
-    let resp = cli
-        .get(url)
-        .send()
-        .map_err(|e| AppError::Unknown(format!("sync plugin index failed: {}", e)))?;
+    let resp = crate::utils::block_on::block_on(async {
+        cli.get(url).send().await
+    })
+    .map_err(|e| AppError::Unknown(format!("sync plugin index failed: {}", e)))?;
     if !resp.status().is_success() {
         return Err(AppError::Unknown(format!(
             "sync plugin index status={} url={}",
@@ -106,9 +106,10 @@ pub fn sync_plugin_index_online(
             url
         )));
     }
-    let text = resp
-        .text()
-        .map_err(|e| AppError::Unknown(format!("read plugin index response failed: {}", e)))?;
+    let text = crate::utils::block_on::block_on(async {
+        resp.text().await
+    })
+    .map_err(|e| AppError::Unknown(format!("read plugin index response failed: {}", e)))?;
     let mut parsed: PluginIndexFile = serde_json::from_str(&text)
         .map_err(|e| AppError::Unknown(format!("parse plugins.json failed: {}", e)))?;
     parsed.plugins.sort_by(|a, b| a.id.cmp(&b.id));

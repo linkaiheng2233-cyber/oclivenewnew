@@ -7,9 +7,9 @@ use crate::infrastructure::high_risk_grants::HighRiskGrantStore;
 use serde_json::Value;
 use std::sync::Arc;
 
-/// 插件侧车（`OCLIVE_REMOTE_PLUGIN_URL`）共用端点 — **blocking** 客户端。
+/// 插件侧车（`OCLIVE_REMOTE_PLUGIN_URL`）共用端点 — sync API over async reqwest。
 pub struct RemoteHttpClientBlocking {
-    client: reqwest::blocking::Client,
+    client: reqwest::Client,
     cfg: RemotePluginHttpConfig,
     grants: Arc<HighRiskGrantStore>,
     network_grant_id: Option<String>,
@@ -24,7 +24,7 @@ impl RemoteHttpClientBlocking {
         grants: Arc<HighRiskGrantStore>,
         network_grant_id: Option<String>,
     ) -> std::result::Result<Self, reqwest::Error> {
-        let client = reqwest::blocking::Client::builder()
+        let client = reqwest::Client::builder()
             .connect_timeout(cfg.connect_timeout())
             .timeout(cfg.timeout)
             .build()?;

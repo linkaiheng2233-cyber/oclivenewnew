@@ -81,95 +81,22 @@ fn body_preview(text: &str) -> String {
 
 pub fn call_blocking(
     channel: RemoteRpcChannel,
-    client: &reqwest::blocking::Client,
+    client: &reqwest::Client,
     url: &str,
     method: &str,
     params: Value,
     bearer_token: Option<&str>,
     network_grant: Option<(&HighRiskGrantStore, &str)>,
 ) -> Result<Value> {
-    if let Some((grants, grant_id)) = network_grant {
-        grants.require_network(grant_id)?;
-    }
-    let id = next_id();
-    let t0 = Instant::now();
-    let ch = channel.label();
-    let body = json!({
-        "jsonrpc": "2.0",
-        "id": id,
-        "method": method,
-        "params": params,
-    });
-    let mut req = client
-        .post(url)
-        .header(PROTOCOL_HEADER_NAME, PROTOCOL_HEADER_VALUE)
-        .header(CLIENT_VERSION_HEADER_NAME, env!("CARGO_PKG_VERSION"))
-        .json(&body);
-    if let Some(t) = bearer_token {
-        req = req.bearer_auth(t);
-    }
-    let resp = req.send().map_err(|e| {
-        let kind = classify_reqwest_error(&e);
-        let ms = t0.elapsed().as_millis();
-        tracing::warn!(
-            target: "oclive_plugin",
-            "{} rpc_fail kind={} phase=send method={} url={} duration_ms={} err={}",
-            ch,
-            kind,
-            method,
-            url,
-            ms,
-            e
-        );
-        AppError::OllamaError(format!(
-            "{} transport kind={} method={} url={} err={}",
-            ch, kind, method, url, e
-        ))
-    })?;
-    let status = resp.status();
-    let text = resp.text().map_err(|e| {
-        let ms = t0.elapsed().as_millis();
-        tracing::warn!(
-            target: "oclive_plugin",
-            "{} rpc_fail kind=read_body method={} url={} duration_ms={} err={}",
-            ch,
-            method,
-            url,
-            ms,
-            e
-        );
-        AppError::OllamaError(format!("{} body read: {}", ch, e))
-    })?;
-    if !status.is_success() {
-        let ms = t0.elapsed().as_millis();
-        tracing::warn!(
-            target: "oclive_plugin",
-            "{} rpc_fail kind=http_status method={} url={} status={} duration_ms={} body={}",
-            ch,
-            method,
-            url,
-            status,
-            ms,
-            body_preview(&text)
-        );
-        return Err(AppError::OllamaError(format!(
-            "{} http_status method={} url={} status={} body={}",
-            ch,
-            method,
-            url,
-            status,
-            body_preview(&text)
-        )));
-    }
-    tracing::debug!(
-        target: "oclive_plugin",
-        "{} rpc_ok method={} url={} duration_ms={}",
-        ch,
-        method,
+    crate::utils::block_on::block_on(call_async(
+        channel,
+        client,
         url,
-        t0.elapsed().as_millis()
-    );
-    parse_jsonrpc_result(&text, method, id)
+        method,
+        params,
+        bearer_token,
+        network_grant,
+    ))
 }
 
 pub async fn call_async(

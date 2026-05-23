@@ -1,5 +1,4 @@
 <script setup lang="ts">
-import { readBinaryFile } from '@tauri-apps/api/fs'
 import { convertFileSrc } from '@tauri-apps/api/tauri'
 import { computed, onBeforeUnmount, ref, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
@@ -7,7 +6,7 @@ import {
   emotionToAssetFilename,
   emotionToEmoji,
 } from '../utils/emotion-assets'
-import { resolveRoleAssetPath } from '../api'
+import { readRoleAssetBytes, resolveRoleAssetPath } from '../api'
 
 const props = withDefaults(
   defineProps<{
@@ -96,10 +95,12 @@ async function refreshPortrait(): Promise<void> {
     if (!path)
       continue
 
-    /* 优先 readBinaryFile + Blob：不依赖 asset 自定义协议，避免 net::ERR_CONNECTION_REFUSED */
+    /* 优先 Tauri command + Blob：不依赖 asset 自定义协议，避免 net::ERR_CONNECTION_REFUSED */
     if (isTauri()) {
       try {
-        const bytes = await readBinaryFile(path)
+        const bytes = await readRoleAssetBytes(props.roleId, rel)
+        if (!bytes)
+          continue
         const mime = filename.endsWith('.webp')
           ? 'image/webp'
           : filename.endsWith('.jpg') || filename.endsWith('.jpeg')
@@ -107,7 +108,7 @@ async function refreshPortrait(): Promise<void> {
             : filename.endsWith('.gif')
               ? 'image/gif'
               : 'image/png'
-        const blob = new Blob([bytes], { type: mime })
+        const blob = new Blob([new Uint8Array(bytes)], { type: mime })
         const url = URL.createObjectURL(blob)
         portraitBlobUrl.value = url
         portraitSrc.value = url
@@ -116,7 +117,7 @@ async function refreshPortrait(): Promise<void> {
       }
       catch (e) {
         console.warn(
-          '[CharacterInfo] readBinaryFile failed, fallback convertFileSrc',
+          '[CharacterInfo] readRoleAssetBytes failed, fallback convertFileSrc',
           e,
         )
       }

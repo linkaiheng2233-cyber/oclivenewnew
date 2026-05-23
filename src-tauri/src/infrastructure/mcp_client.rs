@@ -239,20 +239,18 @@ impl McpClient {
                 server.id
             )));
         };
-        let cli = reqwest::blocking::Client::builder()
+        let cli = reqwest::Client::builder()
             .timeout(self.timeout_for(server))
             .build()
             .map_err(|e| AppError::Unknown(format!("mcp http client error: {}", e)))?;
-        let resp = cli.post(url).json(&payload).send().map_err(|e| {
-            AppError::Unknown(format!("mcp http call failed ({}): {}", server.id, e))
-        })?;
+        let resp = crate::utils::block_on::block_on(async {
+            cli.post(url).json(&payload).send().await
+        })
+        .map_err(|e| AppError::Unknown(format!("mcp http call failed ({}): {}", server.id, e)))?;
         let status = resp.status();
-        let body: Value = resp.json().map_err(|e| {
-            AppError::Unknown(format!(
-                "mcp http json decode failed ({}): {}",
-                server.id, e
-            ))
-        })?;
+        let body: Value = crate::utils::block_on::block_on(async { resp.json().await }).map_err(
+            |e| AppError::Unknown(format!("mcp http json decode failed ({}): {}", server.id, e)),
+        )?;
         if !status.is_success() {
             return Err(AppError::Unknown(format!(
                 "mcp http protocol error server={} status={} body={}",

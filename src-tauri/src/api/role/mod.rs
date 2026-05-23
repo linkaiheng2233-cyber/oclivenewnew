@@ -1248,7 +1248,25 @@ fn path_string_for_frontend(p: &std::path::Path) -> String {
     }
 }
 
-/// 解析 `roles/{role_id}/{relative}` 的绝对路径；文件存在时供前端 `convertFileSrc` / `readBinaryFile` 加载。
+/// 读取角色包内资源文件字节（`roles/{role_id}/{relative}`）；不存在时返回 `None`。
+///
+/// # Errors
+///
+/// Returns a string when the file exists but cannot be read from disk.
+#[tauri::command]
+pub fn read_role_asset_bytes(
+    role_id: String,
+    relative: String,
+    state: State<'_, AppState>,
+) -> Result<Option<Vec<u8>>, String> {
+    let p = state.storage.role_asset_path(&role_id, &relative);
+    if !p.is_file() {
+        return Ok(None);
+    }
+    std::fs::read(&p).map(Some).map_err(|e| e.to_string())
+}
+
+/// 解析 `roles/{role_id}/{relative}` 的绝对路径；文件存在时供前端 `convertFileSrc` 加载。
 #[tauri::command]
 #[must_use]
 pub fn resolve_role_asset_path(

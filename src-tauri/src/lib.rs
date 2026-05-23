@@ -10,13 +10,67 @@ pub mod models;
 pub mod state;
 pub mod utils;
 
-/// ???? HTTP API ??? `tracing` ?????? `info`??? `RUST_LOG` ???
+/// Initialize `tracing` (stdout; optional rolling file when `log_dir` or `OCLIVE_LOG_DIR` is set).
+/// When `RUST_LOG` contains `json`, stdout/file use JSON lines.
 pub fn init_tracing() {
-    use tracing_subscriber::EnvFilter;
+    let log_dir = std::env::var("OCLIVE_LOG_DIR")
+        .ok()
+        .map(PathBuf::from)
+        .filter(|p| !p.as_os_str().is_empty());
+    init_tracing_with_log_dir(log_dir.as_deref());
+}
+
+/// Like [`init_tracing`] but always writes to `log_dir/logs/` when `Some`.
+pub fn init_tracing_with_log_dir(log_dir: Option<&Path>) {
+    use std::sync::OnceLock;
+    use tracing_appender::non_blocking::WorkerGuard;
+    use tracing_subscriber::layer::SubscriberExt;
+    use tracing_subscriber::util::SubscriberInitExt;
+    use tracing_subscriber::{EnvFilter, Layer};
+
+    static GUARD: OnceLock<WorkerGuard> = OnceLock::new();
+
     let filter = EnvFilter::try_from_default_env().unwrap_or_else(|_| EnvFilter::new("info"));
-    let _ = tracing_subscriber::fmt()
-        .with_env_filter(filter)
-        .with_target(true)
+    let use_json = std::env::var("RUST_LOG")
+        .map(|v| v.contains("json"))
+        .unwrap_or(false);
+
+    let stdout_layer = if use_json {
+        tracing_subscriber::fmt::layer()
+            .json()
+            .with_target(true)
+            .boxed()
+    } else {
+        tracing_subscriber::fmt::layer().with_target(true).boxed()
+    };
+
+    let mut layers = vec![stdout_layer];
+
+    if let Some(dir) = log_dir {
+        let logs = dir.join("logs");
+        if std::fs::create_dir_all(&logs).is_ok() {
+            let file_appender = tracing_appender::rolling::daily(&logs, "oclive.log");
+            let (non_blocking, guard) = tracing_appender::non_blocking(file_appender);
+            let _ = GUARD.set(guard);
+            let file_layer = if use_json {
+                tracing_subscriber::fmt::layer()
+                    .json()
+                    .with_target(true)
+                    .with_writer(non_blocking)
+                    .boxed()
+            } else {
+                tracing_subscriber::fmt::layer()
+                    .with_target(true)
+                    .with_writer(non_blocking)
+                    .boxed()
+            };
+            layers.push(file_layer);
+        }
+    }
+
+    let _ = tracing_subscriber::registry()
+        .with(filter)
+        .with(layers)
         .try_init();
 }
 
@@ -46,20 +100,10 @@ fn inject_plugin_bridge_script(
     let ev = serde_json::to_string(&b.events).unwrap_or_else(|_| "[]".to_string());
     let pid = serde_json::to_string(plugin_id).unwrap_or_else(|_| "\"\"".to_string());
     let arel = serde_json::to_string(asset_rel).unwrap_or_else(|_| "\"\"".to_string());
+    static BRIDGE_CORE: &str = include_str!("../assets/plugin-bridge.iife.js");
     let script = format!(
-        "<script>(function(){{\
-var PLUGIN_ID={pid};var ASSET_REL={arel};var INV={inv};var EVT={ev};\
-var CMD_PERM={{\"get_conversation\":\"read:conversation\",\"get_roles\":\"read:roles\",\"get_current_role\":\"read:current_role\",\"update_memory\":\"write:memory\",\"delete_memory\":\"write:memory\",\"update_emotion\":\"write:emotion\",\"update_event\":\"write:event\",\"update_prompt\":\"write:prompt\",\"export_conversation\":\"export:conversation\",\"import_role\":\"import:role\",\"delete_role\":\"delete:role\",\"update_settings\":\"write:settings\",\"get_conversation_list\":\"read:conversations\"}};\
-function bridgeAllowed(n){{if(INV.indexOf(n)>=0)return true;var p=CMD_PERM[n];return p&&INV.indexOf(p)>=0;}}\
-function invoke(n,p){{if(!bridgeAllowed(n))return Promise.reject(new Error('invoke denied:'+n));\
-var _inv=window.__TAURI__&&(window.__TAURI__.invoke||(window.__TAURI__.tauri&&window.__TAURI__.tauri.invoke));\
-if(!_inv)return Promise.reject(new Error('no invoke API'));\
-return _inv('plugin_bridge_invoke',{{req:{{pluginId:PLUGIN_ID,assetRel:ASSET_REL,command:n,params:p!=null?p:{{}}}}}});}}\
-function listen(e,c){{if(!EVT.includes(e))return Promise.reject(new Error('event denied:'+e));\
-var T=window.__TAURI__;var t=T&&(T.event||(T.tauri&&T.tauri.event));if(!t)return Promise.reject(new Error('no event API'));\
-return t.listen(e,c);}}\
-window.OclivePluginBridge={{invoke:invoke,listen:listen,allowedInvoke:INV,allowedEvents:EVT}};\
-}})();</script>",
+        "<script>{core}window.__oclivSetupPluginBridge({pid},{arel},{inv},{ev});</script>",
+        core = BRIDGE_CORE,
         pid = pid,
         arel = arel,
         inv = inv,
@@ -364,6 +408,8 @@ pub fn run() {
             api::role::apply_author_suggested_plugin_backends,
             api::role::get_plugin_resolution_debug,
             api::role::resolve_role_asset_path,
+            api::role::read_role_asset_bytes,
+            api::desktop_fs::write_user_text_file,
             api::role_pack::export_role_pack_command,
             api::role_pack::peek_role_pack_command,
             api::role_pack::import_role_pack_command,

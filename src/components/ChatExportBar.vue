@@ -1,10 +1,9 @@
 <script setup lang="ts">
 import { save } from '@tauri-apps/api/dialog'
-import { writeTextFile } from '@tauri-apps/api/fs'
 import { ref } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { downloadTextFile } from '../utils/download'
-import { exportChatLogs } from '../api'
+import { exportChatLogs, writeUserTextFile } from '../api'
 
 const props = defineProps<{ roleId: string }>()
 const emit = defineEmits<{
@@ -49,7 +48,7 @@ async function runExport(format: 'json' | 'txt') {
     }
 
     if (path) {
-      await writeTextFile(path, res.content)
+      await writeUserTextFile(path, res.content)
       emit('notify', {
         type: 'success',
         message: t('editor.chatExport.success'),
