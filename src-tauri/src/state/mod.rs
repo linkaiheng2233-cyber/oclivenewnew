@@ -20,6 +20,7 @@ use crate::infrastructure::storage::RoleStorage;
 use crate::models::{
     PersonalitySource, PersonalityVector, PluginBackends, Role,
 };
+use arc_swap::ArcSwap;
 use dashmap::DashMap;
 use parking_lot::{Mutex, RwLock};
 use std::collections::HashMap;
@@ -46,7 +47,7 @@ pub struct AppState {
     role_load_inflight: DashMap<String, Arc<Mutex<()>>>,
     pub session_cache: Arc<SessionCache>,
     pub storage: RoleStorage,
-    policy_runtime: Arc<RwLock<PolicyRuntime>>,
+    policy_runtime: Arc<ArcSwap<PolicyRuntime>>,
     /// Ollama 模型名（可用环境变量 `OLLAMA_MODEL` 覆盖）
     pub ollama_model: String,
     /// 可替换子系统实现（按 `Role.plugin_backends` 选择）
@@ -115,38 +116,16 @@ impl AppState {
     }
 
     pub fn policies_for_scene(&self, scene_id: Option<&str>) -> Arc<PolicySet> {
-        if let Err(e) = self.ensure_policy_loaded() {
-            tracing::warn!(target: "oclive_policy", "lazy policy load failed: {e}");
-        }
-        let runtime = self.policy_runtime.read();
+        let runtime = self.policy_runtime.load_full();
         scene_id
             .and_then(|s| runtime.scene_policy_sets.get(s).cloned())
             .unwrap_or_else(|| runtime.default_policy_set.clone())
     }
 
     pub fn scene_policy_count(&self) -> usize {
-        let _ = self.ensure_policy_loaded();
-        self.policy_runtime.read().scene_policy_sets.len()
+        self.policy_runtime.load_full().scene_policy_sets.len()
     }
 
-    /// 首次需要策略集时从 `config/policy.toml` 加载（启动路径使用内置默认以缩短阻塞）。
-    ///
-    /// # Errors
-    ///
-    /// Propagates policy file read/parse failures from [`Self::reload_policy_plugins`].
-    pub fn ensure_policy_loaded(&self) -> Result<()> {
-        if self
-            .policy_file_applied
-            .swap(true, std::sync::atomic::Ordering::AcqRel)
-        {
-            return Ok(());
-        }
-        let path = Path::new("./config/policy.toml");
-        if path.is_file() {
-            self.reload_policy_plugins()?;
-        }
-        Ok(())
-    }
     /// # Errors
     ///
     /// Returns [`Err`] with a human-readable message when the operation fails.
@@ -155,7 +134,9 @@ impl AppState {
         let registry = load_policy_registry_from_path(path, true)?;
         let runtime = build_policy_sets_from_registry(registry);
         let count = runtime.scene_policy_sets.len();
-        *self.policy_runtime.write() = runtime;
+        self.policy_runtime.store(Arc::new(runtime));
+        self.policy_file_applied
+            .store(true, std::sync::atomic::Ordering::Release);
         tracing::info!(
             "policy plugins reloaded path={} scene_count={}",
             path.display(),

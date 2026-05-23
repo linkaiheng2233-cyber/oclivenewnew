@@ -12,7 +12,7 @@ use crate::infrastructure::llm::ollama_llm;
 use crate::infrastructure::llm::LlmClient;
 use crate::infrastructure::ollama_client::OllamaClient;
 use crate::infrastructure::policy_registry::{
-    build_policy_sets_from_registry, PolicyRegistryFile,
+    build_policy_sets_from_registry, load_policy_registry_from_path, PolicyRegistryFile,
 };
 use crate::infrastructure::remote_fallback_policy::{
     new_remote_fallback_switch, remote_fallback_env_override, remote_fallback_from_db_value,
@@ -20,6 +20,7 @@ use crate::infrastructure::remote_fallback_policy::{
 use crate::infrastructure::repositories::{SqliteFavorabilityRepository, SqliteMemoryRepository};
 use crate::infrastructure::sqlite_pool;
 use crate::infrastructure::storage::RoleStorage;
+use arc_swap::ArcSwap;
 use dashmap::DashMap;
 use parking_lot::{Mutex, RwLock};
 use sqlx::SqlitePool;
@@ -108,9 +109,21 @@ impl AppStateBuilder {
             std::env::var("OLLAMA_MODEL").unwrap_or_else(|_| "qwen2.5:7b".to_string())
         });
 
-        let policy_runtime = Arc::new(RwLock::new(build_policy_sets_from_registry(
+        let policy_runtime = Arc::new(ArcSwap::from_pointee(build_policy_sets_from_registry(
             PolicyRegistryFile::with_defaults(),
         )));
+        let mut policy_file_applied = self.use_test_policy_default;
+        if !self.use_test_policy_default {
+            let path = self
+                .policy_file
+                .as_deref()
+                .unwrap_or_else(|| Path::new("./config/policy.toml"));
+            if path.is_file() {
+                let registry = load_policy_registry_from_path(path, true)?;
+                policy_runtime.store(Arc::new(build_policy_sets_from_registry(registry)));
+                policy_file_applied = true;
+            }
+        }
         let storage = RoleStorage::new(self.roles_dir);
         let _ = fs::create_dir_all(&self.app_data_dir);
         let high_risk_grants =
@@ -153,7 +166,7 @@ impl AppStateBuilder {
             high_risk_grants,
             startup_health: Mutex::new(None),
             remote_fallback_allowed,
-            policy_file_applied: AtomicBool::new(self.use_test_policy_default),
+            policy_file_applied: AtomicBool::new(policy_file_applied),
         })
     }
 }
