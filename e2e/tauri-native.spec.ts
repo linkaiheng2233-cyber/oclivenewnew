@@ -1,6 +1,7 @@
 /**
  * A1.1c minimal native-window smoke (Linux CI + local with tauri-driver).
  * Requires: `tauri-driver` on PATH, debug binary at TAURI_E2E_APP_PATH, optional WebKitWebDriver on Linux.
+ * Dev dependency `webdriverio` is used here for WebDriver protocol (not Playwright).
  */
 import { test, expect } from "@playwright/test";
 import { remote } from "webdriverio";
