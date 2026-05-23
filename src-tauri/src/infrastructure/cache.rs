@@ -1,5 +1,5 @@
 use lru::LruCache;
-use parking_lot::Mutex;
+use parking_lot::RwLock;
 use std::num::NonZeroUsize;
 use std::sync::Arc;
 use std::time::{Duration, Instant};
@@ -29,7 +29,7 @@ impl<T: Clone> CacheEntry<T> {
 /// 提供线程安全的内存缓存，支持 TTL 过期机制
 #[derive(Debug)]
 pub struct Cache<T: Clone + Send + Sync> {
-    data: Arc<Mutex<LruCache<String, CacheEntry<T>>>>,
+    data: Arc<RwLock<LruCache<String, CacheEntry<T>>>>,
 }
 
 impl<T: Clone + Send + Sync> Cache<T> {
@@ -44,7 +44,7 @@ impl<T: Clone + Send + Sync> Cache<T> {
     pub fn with_capacity(max_capacity: usize) -> Self {
         let cap = NonZeroUsize::new(max_capacity.max(1)).unwrap_or(NonZeroUsize::MIN);
         Self {
-            data: Arc::new(Mutex::new(LruCache::new(cap))),
+            data: Arc::new(RwLock::new(LruCache::new(cap))),
         }
     }
 
@@ -53,7 +53,7 @@ impl<T: Clone + Send + Sync> Cache<T> {
     /// 如果缓存过期，会自动清理并返回 None
     #[must_use]
     pub fn get(&self, key: &str) -> Option<T> {
-        let mut cache = self.data.lock();
+        let mut cache = self.data.write();
         match cache.get(key) {
             Some(entry) if !entry.is_expired() => Some(entry.data.clone()),
             Some(_) => {
@@ -76,34 +76,34 @@ impl<T: Clone + Send + Sync> Cache<T> {
             created_at: Instant::now(),
             ttl,
         };
-        self.data.lock().put(key, entry);
+        self.data.write().put(key, entry);
     }
 
     /// 删除缓存
     pub fn remove(&self, key: &str) {
-        self.data.lock().pop(key);
+        self.data.write().pop(key);
     }
 
     /// 清空所有缓存
     pub fn clear(&self) {
-        self.data.lock().clear();
+        self.data.write().clear();
     }
 
     /// 获取缓存大小
     #[must_use]
     pub fn len(&self) -> usize {
-        self.data.lock().len()
+        self.data.read().len()
     }
 
     /// 检查缓存是否为空
     #[must_use]
     pub fn is_empty(&self) -> bool {
-        self.data.lock().is_empty()
+        self.data.read().is_empty()
     }
 
     /// 清理过期缓存
     pub fn cleanup_expired(&self) {
-        let mut cache = self.data.lock();
+        let mut cache = self.data.write();
         let expired: Vec<String> = cache
             .iter()
             .filter(|(_, entry)| entry.is_expired())
