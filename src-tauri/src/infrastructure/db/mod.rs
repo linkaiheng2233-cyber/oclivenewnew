@@ -1,11 +1,17 @@
 #![allow(clippy::missing_errors_doc)]
 
+mod chat_turn_atomic;
+#[macro_use]
+mod helpers;
+
 use crate::error::{AppError, Result};
 use crate::models::*;
 use chrono::{DateTime, Utc};
+use dashmap::DashMap;
 #[allow(unused_imports)]
 use sqlx::{Row, SqlitePool};
-use std::time::Instant;
+use std::sync::atomic::AtomicI64;
+use std::time::{Duration, Instant};
 
 /// 短期对话 FIFO 上限（与长期记忆 500 条策略对齐）
 pub const SHORT_TERM_FIFO_LIMIT: i64 = 500;
@@ -26,9 +32,16 @@ pub(crate) fn parse_memory_created_at(raw: &str) -> DateTime<Utc> {
         })
 }
 
+struct HealthPingCache {
+    ok_until: Option<Instant>,
+}
+
 /// 数据库操作管理
 pub struct DbManager {
     pub(crate) pool: SqlitePool,
+    health_ping_cache: std::sync::Mutex<HealthPingCache>,
+    pub(crate) long_term_row_counts: DashMap<String, AtomicI64>,
+    pub(crate) short_term_row_counts: DashMap<String, AtomicI64>,
 }
 
 /// `events` 表分页行（API `query_events`）
@@ -89,15 +102,42 @@ pub(crate) fn log_txn_finish(tx_name: &str, role_id: &str, elapsed_ms: u128) {
 impl DbManager {
     #[must_use]
     pub fn new(pool: SqlitePool) -> Self {
-        Self { pool }
+        Self {
+            pool,
+            health_ping_cache: std::sync::Mutex::new(HealthPingCache { ok_until: None }),
+            long_term_row_counts: DashMap::new(),
+            short_term_row_counts: DashMap::new(),
+        }
     }
 
     pub async fn health_ping(&self) -> Result<()> {
+        const TTL: Duration = Duration::from_secs(5);
+        if let Ok(guard) = self.health_ping_cache.lock() {
+            if guard
+                .ok_until
+                .is_some_and(|until| Instant::now() < until)
+            {
+                return Ok(());
+            }
+        }
         sqlx::query_scalar::<_, i32>("SELECT 1")
             .fetch_one(&self.pool)
             .await
             .map_err(|e| AppError::DatabaseError(format!("health_ping: {e}")))?;
+        if let Ok(mut guard) = self.health_ping_cache.lock() {
+            guard.ok_until = Some(Instant::now() + TTL);
+        }
         Ok(())
+    }
+
+    pub(crate) fn set_long_term_count(&self, role_id: &str, count: i64) {
+        self.long_term_row_counts
+            .insert(role_id.to_string(), AtomicI64::new(count));
+    }
+
+    pub(crate) fn set_short_term_count(&self, role_id: &str, count: i64) {
+        self.short_term_row_counts
+            .insert(role_id.to_string(), AtomicI64::new(count));
     }
 
     pub async fn save_memory_and_event_atomic(
@@ -119,55 +159,39 @@ impl DbManager {
             })?;
 
         let now = Utc::now().to_rfc3339();
-        sqlx::query(
+        let memory_id: i64 = sqlx::query_scalar(
             "INSERT INTO long_term_memory (role_id, content, importance, weight, created_at)
-             VALUES (?, ?, ?, ?, ?)",
+             VALUES (?, ?, ?, ?, ?) RETURNING id",
         )
         .bind(role_id)
         .bind(content)
         .bind(importance)
         .bind(1.0)
         .bind(&now)
-        .execute(&mut *tx)
+        .fetch_one(&mut *tx)
         .await
         .map_err(|e| AppError::TransactionError {
             code: "TXN_MEMORY_INSERT_FAILED",
             message: e.to_string(),
         })?;
 
-        let memory_id = sqlx::query_scalar::<_, i64>("SELECT last_insert_rowid()")
-            .fetch_one(&mut *tx)
-            .await
-            .map_err(|e| AppError::TransactionError {
-                code: "TXN_MEMORY_ID_FETCH_FAILED",
-                message: e.to_string(),
-            })?
-            .to_string();
-
-        sqlx::query(
+        let event_id: i64 = sqlx::query_scalar(
             "INSERT INTO events (role_id, event_type, user_emotion, bot_emotion, created_at)
-             VALUES (?, ?, ?, ?, ?)",
+             VALUES (?, ?, ?, ?, ?) RETURNING id",
         )
         .bind(role_id)
-            .bind(event.event_type.as_ref())
+        .bind(event.event_type.as_ref())
         .bind(&event.user_emotion)
         .bind(&event.bot_emotion)
         .bind(&now)
-        .execute(&mut *tx)
+        .fetch_one(&mut *tx)
         .await
         .map_err(|e| AppError::TransactionError {
             code: "TXN_EVENT_INSERT_FAILED",
             message: e.to_string(),
         })?;
-
-        let event_id = sqlx::query_scalar::<_, i64>("SELECT last_insert_rowid()")
-            .fetch_one(&mut *tx)
-            .await
-            .map_err(|e| AppError::TransactionError {
-                code: "TXN_EVENT_ID_FETCH_FAILED",
-                message: e.to_string(),
-            })?
-            .to_string();
+        let memory_id = memory_id.to_string();
+        let event_id = event_id.to_string();
 
         tx.commit().await.map_err(|e| AppError::TransactionError {
             code: "TXN_COMMIT_FAILED",
@@ -187,332 +211,7 @@ impl DbManager {
     }
 
     pub async fn apply_chat_turn_atomic(&self, input: ChatTurnTxInput<'_>) -> Result<f64> {
-        let role_id = input.role_id;
-        let personality = input.personality;
-        let current_emotion = input.current_emotion;
-        let relation_state = input.relation_state;
-        let favor_delta = input.favor_delta;
-        let memory_content = input.memory_content;
-        let memory_importance = input.memory_importance;
-        let memory_fifo_limit = input.memory_fifo_limit;
-        let event = input.event;
-        let user_message = input.user_message;
-        let bot_reply = input.bot_reply;
-        let scene_id = input.scene_id;
-        let started = Instant::now();
-        tracing::info!("tx apply_chat_turn_atomic start role_id={}", role_id);
-        let mut tx = self
-            .pool
-            .begin()
-            .await
-            .map_err(|e| AppError::TransactionError {
-                code: "TXN_BEGIN_FAILED",
-                message: e.to_string(),
-            })?;
-        let now = Utc::now().to_rfc3339();
-
-        macro_rules! txn_step {
-            ($code:literal, $step_name:literal, $future:expr) => {
-                let _step_started = Instant::now();
-                if let Err(e) = $future.await {
-                    let msg = e.to_string();
-                    tracing::error!(
-                        "tx step failed code={} step={} role_id={} err={} elapsed_ms={}",
-                        $code,
-                        $step_name,
-                        role_id,
-                        msg,
-                        started.elapsed().as_millis()
-                    );
-                    if let Err(rb_err) = tx.rollback().await {
-                        tracing::error!(
-                            "tx rollback failed code=TXN_ROLLBACK_FAILED role_id={} err={} elapsed_ms={}",
-                            role_id,
-                            rb_err,
-                            started.elapsed().as_millis()
-                        );
-                    }
-                    return Err(AppError::TransactionError {
-                        code: $code,
-                        message: msg,
-                    });
-                }
-                tracing::debug!(
-                    "tx step ok step={} role_id={} step_elapsed_ms={} tx_elapsed_ms={}",
-                    $step_name,
-                    role_id,
-                    _step_started.elapsed().as_millis(),
-                    started.elapsed().as_millis()
-                );
-            };
-        }
-
-        let urk = input.user_relation_key;
-
-        txn_step!(
-            "TXN_PERSONALITY_INSERT_FAILED",
-            "insert_personality_vector",
-            sqlx::query(
-                "INSERT INTO personality_vector
-             (role_id, effective_personality, reason, created_at)
-             VALUES (?, ?, ?, ?)",
-            )
-            .bind(role_id)
-            .bind(personality.to_json_vec())
-            .bind("chat_turn")
-            .bind(&now)
-            .execute(&mut *tx)
-        );
-
-        txn_step!(
-            "TXN_IDENTITY_ENSURE_FAILED",
-            "ensure_identity_stats_row_tx",
-            sqlx::query(
-                "INSERT OR IGNORE INTO role_identity_stats (role_id, user_relation_key, favorability, relation_state, updated_at)
-                 VALUES (?, ?,
-                    COALESCE((SELECT current_favorability FROM role_runtime WHERE role_id = ?), 0),
-                    COALESCE((SELECT relation_state FROM role_runtime WHERE role_id = ?), 'Stranger'),
-                    ?)",
-            )
-            .bind(role_id)
-            .bind(urk)
-            .bind(role_id)
-            .bind(role_id)
-            .bind(&now)
-            .execute(&mut *tx)
-        );
-
-        let (favor_after, relation_after): (f64, String) = match sqlx::query_as(
-            "UPDATE role_identity_stats
-             SET favorability = favorability + ?,
-                 relation_state = ?,
-                 updated_at = ?
-             WHERE role_id = ? AND user_relation_key = ?
-             RETURNING favorability, relation_state",
-        )
-        .bind(favor_delta)
-        .bind(relation_state)
-        .bind(&now)
-        .bind(role_id)
-        .bind(urk)
-        .fetch_one(&mut *tx)
-        .await
-        {
-            Ok(row) => row,
-            Err(e) => {
-                let msg = e.to_string();
-                tracing::error!(
-                    "tx step failed code=TXN_IDENTITY_FAVOR_UPDATE_FAILED role_id={} err={} elapsed_ms={}",
-                    role_id,
-                    msg,
-                    started.elapsed().as_millis()
-                );
-                if let Err(rb_err) = tx.rollback().await {
-                    tracing::error!(
-                        "tx rollback failed code=TXN_ROLLBACK_FAILED role_id={} err={} elapsed_ms={}",
-                        role_id,
-                        rb_err,
-                        started.elapsed().as_millis()
-                    );
-                }
-                return Err(AppError::TransactionError {
-                    code: "TXN_IDENTITY_FAVOR_UPDATE_FAILED",
-                    message: msg,
-                });
-            }
-        };
-
-        let favor_current: f64 = match sqlx::query_scalar(
-            "INSERT INTO role_runtime (role_id, current_favorability, current_emotion, relation_state, emotion_updated_at, relation_updated_at, updated_at)
-             VALUES (?, ?, ?, ?, ?, ?, ?)
-             ON CONFLICT(role_id) DO UPDATE SET
-                 current_favorability = excluded.current_favorability,
-                 relation_state = excluded.relation_state,
-                 current_emotion = excluded.current_emotion,
-                 emotion_updated_at = excluded.emotion_updated_at,
-                 relation_updated_at = excluded.relation_updated_at,
-                 updated_at = excluded.updated_at
-             RETURNING current_favorability",
-        )
-        .bind(role_id)
-        .bind(favor_after)
-        .bind(current_emotion)
-        .bind(relation_after.as_str())
-        .bind(&now)
-        .bind(&now)
-        .bind(&now)
-        .fetch_one(&mut *tx)
-        .await
-        {
-            Ok(v) => v,
-            Err(e) => {
-                let msg = e.to_string();
-                tracing::error!(
-                    "tx step failed code=TXN_RUNTIME_UPSERT_FAILED role_id={} err={} elapsed_ms={}",
-                    role_id,
-                    msg,
-                    started.elapsed().as_millis()
-                );
-                if let Err(rb_err) = tx.rollback().await {
-                    tracing::error!(
-                        "tx rollback failed code=TXN_ROLLBACK_FAILED role_id={} err={} elapsed_ms={}",
-                        role_id,
-                        rb_err,
-                        started.elapsed().as_millis()
-                    );
-                }
-                return Err(AppError::TransactionError {
-                    code: "TXN_RUNTIME_UPSERT_FAILED",
-                    message: msg,
-                });
-            }
-        };
-
-        txn_step!(
-            "TXN_FAVORABILITY_HISTORY_INSERT_FAILED",
-            "insert_favorability_history",
-            sqlx::query(
-            "INSERT INTO favorability_history (role_id, delta, reason, created_at) VALUES (?, ?, ?, ?)",
-        )
-            .bind(role_id)
-            .bind(favor_delta)
-            .bind("chat")
-            .bind(&now)
-            .execute(&mut *tx)
-        );
-
-        if memory_importance > 0.0 && !memory_content.trim().is_empty() {
-            txn_step!(
-                "TXN_MEMORY_INSERT_FAILED",
-                "insert_long_term_memory",
-                sqlx::query(
-                    "INSERT INTO long_term_memory (role_id, content, importance, weight, created_at, scene_id)
-                 VALUES (?, ?, ?, ?, ?, ?)",
-                )
-                .bind(role_id)
-                .bind(memory_content)
-                .bind(memory_importance)
-                .bind(1.0)
-                .bind(&now)
-                .bind(scene_id)
-                .execute(&mut *tx)
-            );
-        } else {
-            tracing::info!("tx memory skipped role_id={} reason=low_value", role_id);
-        }
-
-        // 每个角色长期记忆上限 500，超出后按 created_at FIFO 删除旧记录（仅当 COUNT 超限时 trim）。
-        let memory_count: i64 = sqlx::query_scalar("SELECT COUNT(*) FROM long_term_memory WHERE role_id = ?")
-            .bind(role_id)
-            .fetch_one(&mut *tx)
-            .await
-            .map_err(|e| AppError::TransactionError {
-                code: "TXN_MEMORY_COUNT_FAILED",
-                message: e.to_string(),
-            })?;
-        if memory_count > i64::from(memory_fifo_limit) {
-            txn_step!(
-                "TXN_MEMORY_FIFO_TRIM_FAILED",
-                "trim_memory_fifo",
-                sqlx::query(
-                    "DELETE FROM long_term_memory
-                     WHERE id IN (
-                        SELECT id FROM long_term_memory
-                        WHERE role_id = ?
-                        ORDER BY created_at DESC
-                        LIMIT -1 OFFSET ?
-                     )",
-                )
-                .bind(role_id)
-                .bind(memory_fifo_limit)
-                .execute(&mut *tx)
-            );
-        }
-
-        txn_step!(
-            "TXN_EVENT_INSERT_FAILED",
-            "insert_event",
-            sqlx::query(
-                "INSERT INTO events (role_id, event_type, user_emotion, bot_emotion, created_at)
-             VALUES (?, ?, ?, ?, ?)",
-            )
-            .bind(role_id)
-            .bind(event.event_type.as_ref())
-            .bind(&event.user_emotion)
-            .bind(&event.bot_emotion)
-            .bind(&now)
-            .execute(&mut *tx)
-        );
-
-        txn_step!(
-            "TXN_SHORT_TERM_INSERT_FAILED",
-            "insert_short_term_memory",
-            sqlx::query(
-                "INSERT INTO short_term_memory (role_id, user_input, bot_reply, emotion, scene, created_at)
-                 VALUES (?, ?, ?, ?, ?, ?)",
-            )
-            .bind(role_id)
-            .bind(user_message)
-            .bind(bot_reply)
-            .bind(current_emotion)
-            .bind(scene_id)
-            .bind(&now)
-            .execute(&mut *tx)
-        );
-
-        let short_term_count: i64 =
-            sqlx::query_scalar("SELECT COUNT(*) FROM short_term_memory WHERE role_id = ?")
-                .bind(role_id)
-                .fetch_one(&mut *tx)
-                .await
-                .map_err(|e| AppError::TransactionError {
-                    code: "TXN_SHORT_TERM_COUNT_FAILED",
-                    message: e.to_string(),
-                })?;
-        if short_term_count > SHORT_TERM_FIFO_LIMIT {
-            txn_step!(
-                "TXN_SHORT_TERM_TRIM_FAILED",
-                "trim_short_term_fifo",
-                sqlx::query(
-                    "DELETE FROM short_term_memory
-                     WHERE role_id = ? AND id NOT IN (
-                        SELECT id FROM short_term_memory
-                        WHERE role_id = ?
-                        ORDER BY id DESC
-                        LIMIT ?
-                     )",
-                )
-                .bind(role_id)
-                .bind(role_id)
-                .bind(SHORT_TERM_FIFO_LIMIT)
-                .execute(&mut *tx)
-            );
-        }
-
-        tx.commit().await.map_err(|e| {
-            tracing::error!(
-                "tx commit failed code=TXN_COMMIT_FAILED role_id={} err={} elapsed_ms={}",
-                role_id,
-                e,
-                started.elapsed().as_millis()
-            );
-            AppError::TransactionError {
-                code: "TXN_COMMIT_FAILED",
-                message: e.to_string(),
-            }
-        })?;
-        tracing::info!(
-            "tx apply_chat_turn_atomic committed role_id={} favor_current={} elapsed_ms={}",
-            role_id,
-            favor_current,
-            started.elapsed().as_millis()
-        );
-        log_txn_finish(
-            "apply_chat_turn_atomic",
-            role_id,
-            started.elapsed().as_millis(),
-        );
-        Ok(favor_current)
+        chat_turn_atomic::apply_chat_turn_atomic(self, input).await
     }
 
     pub async fn role_runtime_exists(&self, role_id: &str) -> Result<bool> {
@@ -551,28 +250,34 @@ impl DbManager {
             .await
             .map_err(|e| AppError::DatabaseError(e.to_string()))?;
 
-        for id in &ids {
-            for sql in [
-                "DELETE FROM short_term_memory WHERE role_id = ?",
-                "DELETE FROM long_term_memory WHERE role_id = ?",
-                "DELETE FROM events WHERE role_id = ?",
-                "DELETE FROM favorability_history WHERE role_id = ?",
-                "DELETE FROM personality_vector WHERE role_id = ?",
-                "DELETE FROM operation_logs WHERE role_id = ?",
-                "DELETE FROM role_scene_identity WHERE role_id = ?",
-                "DELETE FROM role_identity_stats WHERE role_id = ?",
+        if !ids.is_empty() {
+            let placeholders = std::iter::repeat_n("?", ids.len())
+                .collect::<Vec<_>>()
+                .join(", ");
+            for table in [
+                "short_term_memory",
+                "long_term_memory",
+                "events",
+                "favorability_history",
+                "personality_vector",
+                "operation_logs",
+                "role_scene_identity",
+                "role_identity_stats",
+                "role_runtime",
             ] {
-                sqlx::query(sql)
-                    .bind(id)
-                    .execute(&mut *tx)
+                let sql = format!("DELETE FROM {table} WHERE role_id IN ({placeholders})");
+                let mut q = sqlx::query(&sql);
+                for id in &ids {
+                    q = q.bind(id);
+                }
+                q.execute(&mut *tx)
                     .await
                     .map_err(|e| AppError::DatabaseError(e.to_string()))?;
             }
-            sqlx::query("DELETE FROM role_runtime WHERE role_id = ?")
-                .bind(id)
-                .execute(&mut *tx)
-                .await
-                .map_err(|e| AppError::DatabaseError(e.to_string()))?;
+            for id in &ids {
+                self.long_term_row_counts.remove(id);
+                self.short_term_row_counts.remove(id);
+            }
         }
 
         tx.commit()
