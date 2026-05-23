@@ -494,7 +494,8 @@ pub(crate) async fn process_co_present(
                             .await
         )?;
         state
-            .personality_cache
+            .session_cache
+            .personality_cache()
             .write()
             .insert(srid.to_string(), personality_after);
     } else {
@@ -510,7 +511,8 @@ pub(crate) async fn process_co_present(
                             .await
         )?;
         state
-            .personality_cache
+            .session_cache
+            .personality_cache()
             .write()
             .insert(srid.to_string(), personality.clone());
     }

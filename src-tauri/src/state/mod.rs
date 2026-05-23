@@ -32,6 +32,9 @@ use std::path::{Path, PathBuf};
 use std::sync::atomic::{AtomicBool, Ordering};
 use std::sync::Arc;
 
+mod session_cache;
+pub use session_cache::SessionCache;
+
 /// 自动发现时要求至少有一个「子目录 + manifest.json」，避免误用盘符根上空的 `D:\roles` 等。
 fn roles_dir_has_any_role_pack(roles_root: &Path) -> bool {
     let Ok(rd) = fs::read_dir(roles_root) else {
@@ -306,7 +309,7 @@ pub struct AppState {
     pub role_cache: Arc<RwLock<HashMap<String, Arc<Role>>>>,
     /// 同一 `role_id` 冷加载串行化；表项在无人再持有对应 `Arc` 时移除（见 [`AppState::load_role_cached`]）。
     role_load_inflight: Mutex<HashMap<String, Arc<Mutex<()>>>>,
-    pub personality_cache: Arc<RwLock<HashMap<String, PersonalityVector>>>,
+    pub session_cache: Arc<SessionCache>,
     pub storage: RoleStorage,
     policy_runtime: Arc<RwLock<PolicyRuntime>>,
     /// Ollama 模型名（可用环境变量 `OLLAMA_MODEL` 覆盖）
@@ -317,13 +320,6 @@ pub struct AppState {
     pub directory_plugins: Arc<DirectoryPluginRuntime>,
     /// MCP 传输 / 目录插件子进程等高风险能力授权（`high_risk_grants.json`）。
     pub high_risk_grants: Arc<HighRiskGrantStore>,
-    /// 会话级后端覆盖（key 为对话命名空间，如 `role_id` 或 `role_id__sess__{session}`）。
-    session_plugin_overrides: Arc<RwLock<HashMap<String, PluginBackendsOverride>>>,
-    /// 按 `slot_registry` 实例键的会话覆盖（v2）。
-    session_slot_overrides:
-        Arc<RwLock<HashMap<String, BTreeMap<String, oclive_validation::SlotOverridePatch>>>>,
-    /// 共景路径：上一回合内置复杂情感输出的 `narrative_hint`（按 `srid` 命名空间；进程内，非 SQLite）。
-    last_complex_emotion_narrative_hint: Arc<RwLock<HashMap<String, String>>>,
     /// 首轮 `process_message` 启动自检结果（致命错误缓存，后续请求直接短路）。
     pub(crate) startup_health: Mutex<Option<std::result::Result<(), String>>>,
     /// 远端 HTTP 插件失败时是否允许静默降级内置（与 `app_settings.remote_fallback_to_builtin` 及 `OCLIVE_REMOTE_FALLBACK_TO_BUILTIN` 对齐）。
@@ -437,6 +433,8 @@ impl AppState {
         );
         Self::bootstrap_local_plugin_providers(&plugins, storage.roles_dir());
 
+        let session_cache = SessionCache::shared();
+
         Ok(Self {
             db_manager,
             memory_repo,
@@ -444,16 +442,13 @@ impl AppState {
             llm,
             role_cache: Arc::new(RwLock::new(HashMap::new())),
             role_load_inflight: Mutex::new(HashMap::new()),
-            personality_cache: Arc::new(RwLock::new(HashMap::new())),
+            session_cache,
             storage,
             policy_runtime: Arc::new(RwLock::new(runtime)),
             ollama_model,
             plugins,
             directory_plugins,
             high_risk_grants,
-            session_plugin_overrides: Arc::new(RwLock::new(HashMap::new())),
-            session_slot_overrides: Arc::new(RwLock::new(HashMap::new())),
-            last_complex_emotion_narrative_hint: Arc::new(RwLock::new(HashMap::new())),
             startup_health: Mutex::new(None),
             remote_fallback_allowed,
         })
@@ -534,6 +529,8 @@ impl AppState {
         );
         Self::bootstrap_local_plugin_providers(&plugins, storage.roles_dir());
 
+        let session_cache = SessionCache::shared();
+
         Ok(Self {
             db_manager,
             memory_repo,
@@ -541,16 +538,13 @@ impl AppState {
             llm,
             role_cache: Arc::new(RwLock::new(HashMap::new())),
             role_load_inflight: Mutex::new(HashMap::new()),
-            personality_cache: Arc::new(RwLock::new(HashMap::new())),
+            session_cache,
             storage,
             policy_runtime: Arc::new(RwLock::new(runtime)),
             ollama_model: "test-model".to_string(),
             plugins,
             directory_plugins,
             high_risk_grants,
-            session_plugin_overrides: Arc::new(RwLock::new(HashMap::new())),
-            session_slot_overrides: Arc::new(RwLock::new(HashMap::new())),
-            last_complex_emotion_narrative_hint: Arc::new(RwLock::new(HashMap::new())),
             startup_health: Mutex::new(None),
             remote_fallback_allowed,
         })
@@ -558,20 +552,13 @@ impl AppState {
 
     /// 供下一轮主对话 Prompt 注入的上一轮 `narrative_hint`（空则跳过对应段落）。
     pub fn stored_complex_emotion_narrative_hint(&self, srid: &str) -> String {
-        self.last_complex_emotion_narrative_hint
-            .read()
-            .get(srid)
-            .cloned()
-            .unwrap_or_default()
+        self.session_cache
+            .stored_complex_emotion_narrative_hint(srid)
     }
 
     pub fn set_stored_complex_emotion_narrative_hint(&self, srid: &str, hint: String) {
-        let mut w = self.last_complex_emotion_narrative_hint.write();
-        if hint.trim().is_empty() {
-            w.remove(srid);
-        } else {
-            w.insert(srid.to_string(), hint);
-        }
+        self.session_cache
+            .set_stored_complex_emotion_narrative_hint(srid, hint);
     }
 
     /// 与 `app_settings.remote_fallback_to_builtin` 及 `OCLIVE_REMOTE_FALLBACK_TO_BUILTIN` 对齐进程内开关。
@@ -658,7 +645,7 @@ impl AppState {
 
     /// 丢弃该 manifest 角色及其试聊会话命名空间下的有效性格缓存（磁盘包重载、`default_personality` / 边界等已变时必须调用）。
     pub fn invalidate_personality_cache_for_role(&self, manifest_role_id: &str) {
-        let mut cache = self.personality_cache.write();
+        let mut cache = self.session_cache.personality_cache().write();
         cache.remove(manifest_role_id);
         let prefix = format!("{}__sess__", manifest_role_id);
         cache.retain(|k, _| !k.starts_with(&prefix));
@@ -677,7 +664,7 @@ impl AppState {
         role_id: &str,
         role: &Role,
     ) -> Result<PersonalityVector> {
-        if let Some(p) = self.personality_cache.read().get(role_id) {
+        if let Some(p) = self.session_cache.personality_cache().read().get(role_id) {
             return Ok(p.clone());
         }
         let effective = if role.evolution_config.personality_source == PersonalitySource::Profile {
@@ -697,7 +684,8 @@ impl AppState {
                 &role.evolution_bounds,
             )
         };
-        self.personality_cache
+        self.session_cache
+            .personality_cache()
             .write()
             .insert(role_id.to_string(), effective.clone());
         Ok(effective)
@@ -764,7 +752,8 @@ impl AppState {
         &self,
         session_namespace: &str,
     ) -> Option<PluginBackendsOverride> {
-        self.session_plugin_overrides
+        self.session_cache
+            .session_plugin_overrides()
             .read()
             .get(session_namespace)
             .cloned()
@@ -776,18 +765,21 @@ impl AppState {
         override_backends: PluginBackendsOverride,
     ) {
         if override_backends.is_empty() {
-            self.session_plugin_overrides
+            self.session_cache
+            .session_plugin_overrides()
                 .write()
                 .remove(session_namespace);
             return;
         }
-        self.session_plugin_overrides
+        self.session_cache
+            .session_plugin_overrides()
             .write()
             .insert(session_namespace.to_string(), override_backends);
     }
 
     pub fn clear_session_backend_override(&self, session_namespace: &str) {
-        self.session_plugin_overrides
+        self.session_cache
+            .session_plugin_overrides()
             .write()
             .remove(session_namespace);
     }
@@ -797,7 +789,8 @@ impl AppState {
         &self,
         session_namespace: &str,
     ) -> BTreeMap<String, oclive_validation::SlotOverridePatch> {
-        self.session_slot_overrides
+        self.session_cache
+            .session_slot_overrides()
             .read()
             .get(session_namespace)
             .cloned()
@@ -815,7 +808,7 @@ impl AppState {
             return;
         }
         if patch.is_empty() {
-            let mut map = self.session_slot_overrides.write();
+            let mut map = self.session_cache.session_slot_overrides().write();
             if let Some(m) = map.get_mut(session_namespace) {
                 m.remove(key);
                 if m.is_empty() {
@@ -824,7 +817,7 @@ impl AppState {
             }
             return;
         }
-        let mut map = self.session_slot_overrides.write();
+        let mut map = self.session_cache.session_slot_overrides().write();
         let entry = map
             .entry(session_namespace.to_string())
             .or_default();
@@ -849,7 +842,7 @@ impl AppState {
         if key.is_empty() {
             return;
         }
-        let mut map = self.session_slot_overrides.write();
+        let mut map = self.session_cache.session_slot_overrides().write();
         if let Some(m) = map.get_mut(session_namespace) {
             m.remove(key);
             if m.is_empty() {
@@ -859,7 +852,8 @@ impl AppState {
     }
 
     pub fn clear_all_session_slot_overrides(&self, session_namespace: &str) {
-        self.session_slot_overrides
+        self.session_cache
+            .session_slot_overrides()
             .write()
             .remove(session_namespace);
     }
@@ -997,19 +991,22 @@ mod tests {
         .await
         .expect("state");
         state
-            .personality_cache
+            .session_cache
+            .personality_cache()
             .write()
             .insert("r1".to_string(), PersonalityVector::zero());
         state
-            .personality_cache
+            .session_cache
+            .personality_cache()
             .write()
             .insert("r1__sess__abc".to_string(), PersonalityVector::zero());
         state
-            .personality_cache
+            .session_cache
+            .personality_cache()
             .write()
             .insert("r2".to_string(), PersonalityVector::zero());
         state.invalidate_personality_cache_for_role("r1");
-        let c = state.personality_cache.read();
+        let c = state.session_cache.personality_cache().read();
         assert!(!c.contains_key("r1"));
         assert!(!c.contains_key("r1__sess__abc"));
         assert!(c.contains_key("r2"));

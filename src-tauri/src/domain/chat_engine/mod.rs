@@ -493,7 +493,8 @@ pub(super) async fn process_remote_life(
             .set_core_delta_personality_json(srid, &core_v.to_json_vec(), &delta_out.to_json_vec())
             .await?;
         state
-            .personality_cache
+            .session_cache
+            .personality_cache()
             .write()
             .insert(srid.to_string(), personality_after);
     } else {
@@ -503,7 +504,8 @@ pub(super) async fn process_remote_life(
             .set_core_delta_personality_json(srid, &core_v.to_json_vec(), &delta_out.to_json_vec())
             .await?;
         state
-            .personality_cache
+            .session_cache
+            .personality_cache()
             .write()
             .insert(srid.to_string(), personality.clone());
     }
