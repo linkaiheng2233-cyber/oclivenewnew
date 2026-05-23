@@ -1,0 +1,5 @@
+# cargo-audit baseline: known advisories tracked in creator-docs/security/KNOWN_VULNERABILITIES.md
+# New CVEs not listed here fail CI.
+
+[advisories]
+ignore = []
