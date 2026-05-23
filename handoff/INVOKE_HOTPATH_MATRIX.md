@@ -24,6 +24,9 @@
 | `get_hotkey_bindings` | `get_hotkey_bindings_impl` | `hotkey_bindings.json`（与 `HotkeyBindingsFile::load` 缺省行为一致） |
 | `set_session_slot_override` | `set_session_slot_override_impl` | 蓝图 v2 会话槽覆盖（`slot_registry_effective`） |
 | `save_role_slot_registry` | `save_role_slot_registry_impl` | 架构图写盘 `pipeline.ocblueprint`（集成测见 `save_role_slot_registry.rs`） |
+| `switch_scene` | `switch_scene_impl` | 切换 `user_presence_scene` |
+| `list_high_risk_grants` | `list_high_risk_grants_impl` | 高风险授权快照 |
+| `grant_high_risk_capability` / `revoke_high_risk_capability` | `*_impl` | 授权 / 撤销 |
 
 ---
 

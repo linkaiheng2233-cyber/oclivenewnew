@@ -16,18 +16,16 @@ pub struct MutateHighRiskGrantRequest {
 /// # Errors
 ///
 /// JSON 序列化失败时返回 `String`。
-#[tauri::command]
-pub fn list_high_risk_grants(state: State<'_, AppState>) -> Result<Value, String> {
+pub fn list_high_risk_grants_impl(state: &AppState) -> Result<Value, String> {
     serde_json::to_value(state.high_risk_grants.snapshot()).map_err(|e| e.to_string())
 }
 
 /// # Errors
 ///
 /// 未知 `kind` 或磁盘写入失败。
-#[tauri::command]
-pub fn grant_high_risk_capability(
-    req: MutateHighRiskGrantRequest,
-    state: State<'_, AppState>,
+pub fn grant_high_risk_capability_impl(
+    state: &AppState,
+    req: &MutateHighRiskGrantRequest,
 ) -> Result<(), String> {
     let id = req.id.as_str();
     match normalize_grant_kind(&req.kind) {
@@ -42,10 +40,9 @@ pub fn grant_high_risk_capability(
 /// # Errors
 ///
 /// 未知 `kind` 或磁盘写入失败。
-#[tauri::command]
-pub fn revoke_high_risk_capability(
-    req: MutateHighRiskGrantRequest,
-    state: State<'_, AppState>,
+pub fn revoke_high_risk_capability_impl(
+    state: &AppState,
+    req: &MutateHighRiskGrantRequest,
 ) -> Result<(), String> {
     let id = req.id.as_str();
     match normalize_grant_kind(&req.kind) {
@@ -55,4 +52,34 @@ pub fn revoke_high_risk_capability(
         Some(GrantKind::Network) => state.high_risk_grants.revoke_network(id),
         None => Err(format!("unknown high_risk grant kind: {}", req.kind.trim())),
     }
+}
+
+/// # Errors
+///
+/// JSON 序列化失败时返回 `String`。
+#[tauri::command]
+pub fn list_high_risk_grants(state: State<'_, AppState>) -> Result<Value, String> {
+    list_high_risk_grants_impl(&state)
+}
+
+/// # Errors
+///
+/// 未知 `kind` 或磁盘写入失败。
+#[tauri::command]
+pub fn grant_high_risk_capability(
+    req: MutateHighRiskGrantRequest,
+    state: State<'_, AppState>,
+) -> Result<(), String> {
+    grant_high_risk_capability_impl(&state, &req)
+}
+
+/// # Errors
+///
+/// 未知 `kind` 或磁盘写入失败。
+#[tauri::command]
+pub fn revoke_high_risk_capability(
+    req: MutateHighRiskGrantRequest,
+    state: State<'_, AppState>,
+) -> Result<(), String> {
+    revoke_high_risk_capability_impl(&state, &req)
 }
