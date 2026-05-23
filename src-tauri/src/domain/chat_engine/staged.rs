@@ -4,29 +4,29 @@
 use std::future::Future;
 
 use crate::domain::chat_engine::chat_stage::ChatStage;
-use crate::domain::chat_engine::co_present::{CoPresentError, CoPresentResult};
 use crate::domain::chat_engine::message_error::ProcessMessageError;
+use crate::domain::chat_engine::turn_error::{TurnError, TurnResult};
 use crate::error::Result;
 
-/// Co-present path stage runner (replaces `kernel_stage!(@co_present …)` at call sites).
+/// Turn orchestration stage runner (replaces `kernel_stage!(@co_present …)` at call sites).
 pub struct StageRunner;
 
 impl StageRunner {
-    pub async fn stage<T, Fut>(&self, stage: ChatStage, fut: Fut) -> CoPresentResult<T>
+    pub async fn stage<T, Fut>(&self, stage: ChatStage, fut: Fut) -> TurnResult<T>
     where
         Fut: Future<Output = Result<T>>,
     {
-        co_present_stage(stage, fut).await
+        turn_stage(stage, fut).await
     }
 }
 
-/// Attach a [`ChatStage`] label to an async co-present step.
-pub async fn co_present_stage<T, Fut>(stage: ChatStage, fut: Fut) -> CoPresentResult<T>
+/// Attach a [`ChatStage`] label to an async turn step.
+pub async fn turn_stage<T, Fut>(stage: ChatStage, fut: Fut) -> TurnResult<T>
 where
     Fut: Future<Output = Result<T>>,
 {
     fut.await
-        .map_err(|source| CoPresentError::wrap(stage.as_str(), source))
+        .map_err(|source| TurnError::wrap(stage.as_str(), source))
 }
 
 /// Attach a [`ChatStage`] label to an async `process_message` step.
@@ -54,7 +54,7 @@ pub fn stage_process_message<T>(
     })
 }
 
-/// Sync co-present stage wrapper.
-pub fn stage_co_present<T>(stage: ChatStage, result: Result<T>) -> CoPresentResult<T> {
-    result.map_err(|source| CoPresentError::wrap(stage.as_str(), source))
+/// Sync turn stage wrapper.
+pub fn stage_turn<T>(stage: ChatStage, result: Result<T>) -> TurnResult<T> {
+    result.map_err(|source| TurnError::wrap(stage.as_str(), source))
 }

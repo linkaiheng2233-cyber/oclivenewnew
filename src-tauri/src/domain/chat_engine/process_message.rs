@@ -11,7 +11,7 @@
 
 use crate::domain::agent::AgentInput;
 use crate::domain::chat_engine::chat_stage::ChatStage;
-use crate::domain::chat_engine::co_present;
+use crate::domain::chat_engine::turn_pipeline::{execute_turn, TurnMode};
 use crate::domain::chat_engine::message_error::ProcessMessageError;
 use crate::domain::chat_engine::minimal_response::build_minimal_response;
 use crate::domain::chat_engine::presence::user_is_remote_from_character;
@@ -218,5 +218,5 @@ async fn run(
         return DualPipelineRunner::run_with_fallback(&turn).await;
     }
 
-    Ok(co_present::process_co_present(&turn).await?)
+    Ok(execute_turn(&turn, TurnMode::CoPresent).await?)
 }

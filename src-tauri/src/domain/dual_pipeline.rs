@@ -14,7 +14,7 @@
 
 use std::collections::{HashMap, HashSet};
 
-use crate::domain::chat_engine::co_present;
+use crate::domain::chat_engine::turn_pipeline::{execute_turn, TurnMode};
 use crate::domain::chat_engine::message_error::ProcessMessageError;
 use crate::domain::chat_engine::turn_context::TurnContext;
 use crate::domain::dual_pipeline_steps::{ExperimentalStepCtx, StepOutcome};
@@ -87,11 +87,11 @@ impl DualPipelineRunner {
 
     /// # Errors
     ///
-    /// 透传 [`co_present::process_co_present`] 的 [`ProcessMessageError`].
+    /// 透传 [`execute_turn`] 的 [`ProcessMessageError`].
     pub async fn run_stable(
         ctx: &TurnContext<'_>,
     ) -> Result<SendMessageResponse, ProcessMessageError> {
-        co_present::process_co_present(ctx)
+        execute_turn(ctx, TurnMode::CoPresent)
             .await
             .map_err(ProcessMessageError::from)
     }

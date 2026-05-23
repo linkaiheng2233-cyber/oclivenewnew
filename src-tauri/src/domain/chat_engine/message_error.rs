@@ -2,7 +2,7 @@
 //!
 //! 统一 `send_message[{stage}]` 包装，避免各子模块重复构造 [`ProcessMessageError::Stage`]。
 
-use crate::domain::chat_engine::co_present;
+use crate::domain::chat_engine::turn_error::TurnError;
 use crate::error::AppError;
 use thiserror::Error;
 
@@ -23,7 +23,7 @@ pub enum ProcessMessageError {
         source: AppError,
     },
     #[error(transparent)]
-    CoPresent(#[from] co_present::CoPresentError),
+    Turn(#[from] TurnError),
 }
 
 impl ProcessMessageError {
@@ -52,7 +52,7 @@ impl From<ProcessMessageError> for AppError {
     fn from(e: ProcessMessageError) -> Self {
         match e {
             ProcessMessageError::Stage { source, .. } => source,
-            ProcessMessageError::CoPresent(c) => c.into(),
+            ProcessMessageError::Turn(c) => c.into(),
         }
     }
 }

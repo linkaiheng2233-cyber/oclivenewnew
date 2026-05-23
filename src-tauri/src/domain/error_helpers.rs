@@ -51,7 +51,7 @@ macro_rules! map_err_unknown {
 macro_rules! kernel_stage {
     (@co_present $stage:expr, $e:expr) => {
         $e.map_err(|err| {
-            $crate::domain::chat_engine::co_present::CoPresentError::wrap($stage.as_str(), err)
+            $crate::domain::chat_engine::turn_error::TurnError::wrap($stage.as_str(), err)
         })
     };
 }
