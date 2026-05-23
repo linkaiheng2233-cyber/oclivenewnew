@@ -3,7 +3,18 @@
 pub mod api;
 pub mod domain;
 pub mod env_flags;
-pub mod error;
+
+/// Host error bridge: core types live in `oclive_kernel_runtime`.
+pub mod error {
+    pub use oclive_kernel_runtime::error::*;
+
+    /// Map kernel [`AppError`] to Tauri invoke failure (orphan-safe helper).
+    #[must_use]
+    pub fn to_invoke_error(err: AppError) -> tauri::InvokeError {
+        tauri::InvokeError::from(err.to_kernel_json())
+    }
+}
+
 pub mod http_api;
 pub mod infrastructure;
 pub mod models;
@@ -88,7 +99,7 @@ use crate::infrastructure::deep_link::seed_pending_install_urls_from_args;
 use crate::infrastructure::directory_plugins::{start_plugin_fs_watcher, OclivePluginManifest};
 use crate::state::AppState;
 
-/// ??? HTML ?? `window.OclivePluginBridge`?manifest ? `bridge` + ?????
+/// 在 HTML 中注入 `window.OclivePluginBridge`；manifest 含 `bridge` 且资产路径匹配时启用。
 fn inject_plugin_bridge_script(
     html: &str,
     plugin_id: &str,
@@ -231,79 +242,7 @@ fn serve_ocliveplugin_asset(
         .body(data)
 }
 
-/// ?? `OCLIVE_ROLES_DIR`?
-///
-/// **????**?`debug_assertions`???? [`state::resolve_roles_dir`]???? `roles/`?`cwd/../roles` ???
-/// ?? `tauri dev` ??? `resource_dir/roles`?????????? `target/.../resources` ?**???**??
-///
-/// **????**??????????? `roles/`?`bundle.resources`?????? [`state::resolve_roles_dir`]?
-fn resolve_roles_dir_for_app(app: &tauri::App) -> PathBuf {
-    if let Ok(custom) = std::env::var("OCLIVE_ROLES_DIR") {
-        let p = PathBuf::from(custom);
-        if p.is_dir() {
-            tracing::info!(
-                target: "oclive_roles",
-                "using OCLIVE_ROLES_DIR -> {}",
-                p.display()
-            );
-            return p;
-        }
-        tracing::warn!(
-            target: "oclive_roles",
-            "OCLIVE_ROLES_DIR is set but not a directory: {}",
-            p.display()
-        );
-    }
-    #[cfg(debug_assertions)]
-    {
-        let dev = state::resolve_roles_dir();
-        if dev.is_dir() {
-            tracing::info!(
-                target: "oclive_roles",
-                "dev build: prefer repo roles -> {}",
-                dev.display()
-            );
-            return dev;
-        }
-        tracing::warn!(
-            target: "oclive_roles",
-            "dev build: resolve_roles_dir not a directory ({}); trying bundled",
-            dev.display()
-        );
-    }
-    match app.path_resolver().resource_dir() {
-        Some(res) => {
-            tracing::info!(target: "oclive_roles", "tauri resource_dir -> {}", res.display());
-            let bundled = res.join("roles");
-            if bundled.is_dir() {
-                tracing::info!(
-                    target: "oclive_roles",
-                    "using bundled roles -> {}",
-                    bundled.display()
-                );
-                return bundled;
-            }
-            tracing::warn!(
-                target: "oclive_roles",
-                "resource_dir/roles missing or not a directory: {}",
-                bundled.display()
-            );
-        }
-        None => tracing::warn!(
-            target: "oclive_roles",
-            "resource_dir() is None; falling back to dev resolve_roles_dir"
-        ),
-    }
-    let dev = state::resolve_roles_dir();
-    tracing::info!(
-        target: "oclive_roles",
-        "using dev fallback resolve_roles_dir -> {}",
-        dev.display()
-    );
-    dev
-}
-
-/// ?? HTTP API ???`--api`??????????????????
+/// 独立 HTTP API 入口（`--api` 子进程）；无 Tauri 窗口与 IPC。
 pub fn run_api_server(port: u16) {
     let rt = match tokio::runtime::Builder::new_multi_thread()
         .enable_all()
@@ -324,7 +263,7 @@ pub fn run_api_server(port: u16) {
 
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
 pub fn run() {
-    // ? `tauri.conf.json` ? `bundle.identifier` ???`tauri-plugin-deep-link` ?????? IPC?
+    // 与 `tauri.conf.json` 中 `bundle.identifier` 对齐；`tauri-plugin-deep-link` 须在 setup 前注册。
     #[cfg(desktop)]
     tauri_plugin_deep_link::prepare("com.oclivenewnew.app");
     tauri::Builder::default()
@@ -361,7 +300,7 @@ pub fn run() {
                 std::io::Error::other(format!("create app_data_dir {}: {}", app_dir.display(), e))
             })?;
             let db_path = app_dir.join("app.db");
-            let roles_dir = resolve_roles_dir_for_app(app);
+            let roles_dir = state::resolve_roles_dir(app.path_resolver().resource_dir().as_deref());
             let roles_for_watcher = roles_dir.clone();
             let app_state = tauri::async_runtime::block_on(async {
                 state::AppState::new(&db_path, Some(roles_dir), &app_dir).await
