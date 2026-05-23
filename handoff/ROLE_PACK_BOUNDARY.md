@@ -124,7 +124,9 @@ v2 文件若含 `runtime_config`：`pack validate` **警告并忽略**；请升 
 |----|------|------|
 | 文件 | 单文件 `pipeline.ocblueprint` | 可选拆 `role.meta.json` + `pipeline.ocblueprint`（未排期） |
 | 引擎字段 | 多在 `meta.*` | 顶层 **`runtime_config`**（v3 草案） |
-| CLI | `pack validate` 全量 v2/v3 | **`--profile creator`** 已实现（§2 子集 + `prompts/`） |
+| CLI | `pack validate` 全量 v2/v3 | **`--profile creator`** 已实现（§2 子集 + `prompts/`；**不**校验 `slot_registry` / `pipeline`） |
+
+**`--profile creator` 与完整示例包**：`roles/mumu` 等**完整示例包**含 evolution、`slot_registry` 与引擎向字段，应用**默认** `pack validate`（全量 v2/v3）。对 **`--profile creator`** 会失败 — **不是 bug**，说明该包超出「纯创作者子集」。验证 creator profile 请用 `pack create` 生成的最小包或仅含 §2 字段的包。
 | 编写器 | 全字段编辑 | 默认「角色」视图 / 高级「蓝图」视图 |
 
 **v2 与 v3 并存**：`schema_version: 3` 不自动升级 v2 包（见 [DUAL_CORE_CURSOR_HANDOFF.md](DUAL_CORE_CURSOR_HANDOFF.md) Q10）。
