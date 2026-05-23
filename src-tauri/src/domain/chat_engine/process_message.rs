@@ -13,11 +13,11 @@ use crate::domain::agent::AgentInput;
 use crate::domain::dual_pipeline::DualPipelineRunner;
 use crate::domain::chat_engine::co_present;
 use crate::domain::chat_engine::presence::user_is_remote_from_character;
+use crate::domain::chat_engine::turn_context::TurnContext;
 use crate::domain::chat_engine::{
-    backend_resolution_summary, conversation_state_role_id, ensure_role_loaded,
-    process_remote_life, process_remote_stub,
+    backend_resolution_summary, context::validate_scene_id, conversation_state_role_id,
+    emotion_to_dto, ensure_role_loaded, process_remote_life, process_remote_stub,
 };
-use crate::domain::chat_engine::{context::validate_scene_id, emotion_to_dto};
 use crate::domain::startup_health;
 use crate::domain::user_identity::resolve_effective_user_relation_key;
 use crate::error::Result;
@@ -220,67 +220,36 @@ async fn run(
     let is_remote =
         immersive && user_is_remote_from_character(scene_id.as_str(), current_scene.as_deref());
     let preflight_ms = t0.elapsed().as_millis() as u64;
+    let turn = TurnContext {
+        state,
+        req,
+        role: role.as_ref(),
+        scene_id: scene_id.clone(),
+        scenes,
+        mrid,
+        srid,
+        t0,
+        preflight_ms,
+        effective_backends,
+        immersive,
+    };
     if is_remote {
         if !remote_life_enabled {
             return Ok(pm!(
-                process_remote_stub(
-                    state,
-                    req,
-                    role.as_ref(),
-                    scene_id.as_str(),
-                    t0,
-                    srid,
-                    preflight_ms,
-                )
-                .await,
+                process_remote_stub(&turn).await,
                 "remote_stub"
             )?);
         }
         let char_scene = current_scene.as_deref().unwrap_or("default");
         return Ok(pm!(
-            process_remote_life(
-                state,
-                req,
-                role.as_ref(),
-                scene_id.as_str(),
-                char_scene,
-                t0,
-                mrid,
-                srid,
-                preflight_ms,
-            )
-            .await,
+            process_remote_life(&turn, char_scene).await,
             "remote_life"
         )?);
     }
 
     if role.dual_core_gated() {
-        return DualPipelineRunner::run_with_fallback(
-            state,
-            req,
-            role.as_ref(),
-            scene_id,
-            scenes,
-            immersive,
-            t0,
-            mrid,
-            srid,
-            preflight_ms,
-        )
-        .await;
+        return DualPipelineRunner::run_with_fallback(&turn).await;
     }
 
-    Ok(co_present::process_co_present(
-        state,
-        req,
-        role.as_ref(),
-        scene_id,
-        scenes,
-        immersive,
-        t0,
-        mrid,
-        srid,
-        preflight_ms,
-    )
-    .await?)
+    Ok(co_present::process_co_present(&turn).await?)
 }

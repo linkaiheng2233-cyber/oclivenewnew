@@ -16,10 +16,9 @@ use std::collections::{HashMap, HashSet};
 
 use crate::domain::chat_engine::co_present;
 use crate::domain::chat_engine::message_error::ProcessMessageError;
+use crate::domain::chat_engine::turn_context::TurnContext;
 use crate::domain::dual_pipeline_steps::{ExperimentalStepCtx, StepOutcome};
-use crate::models::dto::SendMessageRequest;
 use crate::models::dto::SendMessageResponse;
-use crate::models::Role;
 use crate::state::AppState;
 use oclive_validation::{parse_pipeline_action, PipelineStep};
 
@@ -89,51 +88,22 @@ impl DualPipelineRunner {
     /// # Errors
     ///
     /// 透传 [`co_present::process_co_present`] 的 [`ProcessMessageError`].
-    #[allow(clippy::too_many_arguments)]
     pub async fn run_stable(
-        state: &AppState,
-        req: &SendMessageRequest,
-        role: &Role,
-        scene_id: String,
-        scenes: Vec<String>,
-        immersive: bool,
-        t0: std::time::Instant,
-        mrid: &str,
-        srid: &str,
-        preflight_ms: u64,
+        ctx: &TurnContext<'_>,
     ) -> Result<SendMessageResponse, ProcessMessageError> {
-        co_present::process_co_present(
-            state,
-            req,
-            role,
-            scene_id,
-            scenes,
-            immersive,
-            t0,
-            mrid,
-            srid,
-            preflight_ms,
-        )
-        .await
-        .map_err(ProcessMessageError::from)
+        co_present::process_co_present(ctx)
+            .await
+            .map_err(ProcessMessageError::from)
     }
 
     /// # Errors
     ///
     /// 蓝图 DAG、action 解析、实验步或收尾 `co_present` 失败时返回；由 [`run_with_fallback`] 捕获并降级。
-    #[allow(clippy::too_many_arguments)]
     pub async fn run_experimental(
-        state: &AppState,
-        req: &SendMessageRequest,
-        role: &Role,
-        scene_id: &str,
-        scenes: &[String],
-        immersive: bool,
-        t0: std::time::Instant,
-        mrid: &str,
-        srid: &str,
-        preflight_ms: u64,
+        turn: &TurnContext<'_>,
     ) -> Result<SendMessageResponse, ProcessMessageError> {
+        let role = turn.role;
+        let srid = turn.srid;
         let steps = role
             .pipeline_experimental
             .as_ref()
@@ -153,8 +123,15 @@ impl DualPipelineRunner {
             "开始执行实验核"
         );
 
-        let mut ctx =
-            ExperimentalStepCtx::new(state, role, req, scene_id.to_string(), mrid, srid).await?;
+        let mut step_ctx = ExperimentalStepCtx::new(
+            turn.state,
+            role,
+            turn.req,
+            turn.scene_id.clone(),
+            turn.mrid,
+            srid,
+        )
+        .await?;
         let mut wants_stable_completion = false;
 
         for (idx, step) in ordered.iter().enumerate() {
@@ -170,7 +147,7 @@ impl DualPipelineRunner {
                 );
                 ProcessMessageError::dual_core_invalid(e)
             })?;
-            match ctx.run_method(&registry_key, method.as_str()).await {
+            match step_ctx.run_method(&registry_key, method.as_str()).await {
                 Ok(StepOutcome::Continue) => {}
                 Ok(StepOutcome::NeedsStableCompletion) => wants_stable_completion = true,
                 Ok(StepOutcome::AgentComplete(resp)) => {
@@ -223,71 +200,24 @@ impl DualPipelineRunner {
             "实验核执行成功"
         );
 
-        Self::run_stable(
-            state,
-            req,
-            role,
-            scene_id.to_string(),
-            scenes.to_vec(),
-            immersive,
-            t0,
-            mrid,
-            srid,
-            preflight_ms,
-        )
-        .await
+        Self::run_stable(turn).await
     }
 
     /// # Errors
     ///
     /// 实验核失败时已回滚快照；仅当稳定核 `co_present` 仍失败时向调用方返回错误。
-    #[allow(clippy::too_many_arguments)]
     pub async fn run_with_fallback(
-        state: &AppState,
-        req: &SendMessageRequest,
-        role: &Role,
-        scene_id: String,
-        scenes: Vec<String>,
-        immersive: bool,
-        t0: std::time::Instant,
-        mrid: &str,
-        srid: &str,
-        preflight_ms: u64,
+        turn: &TurnContext<'_>,
     ) -> Result<SendMessageResponse, ProcessMessageError> {
-        let snapshot = Self::take_snapshot(state, srid).await;
-        match Self::run_experimental(
-            state,
-            req,
-            role,
-            scene_id.as_str(),
-            &scenes,
-            immersive,
-            t0,
-            mrid,
-            srid,
-            preflight_ms,
-        )
-        .await
-        {
+        let snapshot = Self::take_snapshot(turn.state, turn.srid).await;
+        match Self::run_experimental(turn).await {
             Ok(resp) => Ok(resp),
             Err(e) => {
-                Self::rollback(state, srid, snapshot).await;
-                let resp = Self::run_stable(
-                    state,
-                    req,
-                    role,
-                    scene_id,
-                    scenes,
-                    immersive,
-                    t0,
-                    mrid,
-                    srid,
-                    preflight_ms,
-                )
-                .await?;
+                Self::rollback(turn.state, turn.srid, snapshot).await;
+                let resp = Self::run_stable(turn).await?;
                 tracing::info!(
                     target: "oclive_dual_core",
-                    session_ns = %srid,
+                    session_ns = %turn.srid,
                     degraded_from = "experimental",
                     prior_error = %e,
                     "稳定核执行完成（降级模式）"

@@ -20,15 +20,15 @@ use crate::domain::slot_runner::{CoPresentSlotRunner, SlotRunner};
 use crate::domain::user_identity::resolve_effective_user_relation_key;
 use crate::error::AppError;
 use crate::models::dto::{
-    DetectedEventDto, PresenceMode, SendMessageRequest, SendMessageResponse, API_VERSION,
-    SCHEMA_VERSION,
+    DetectedEventDto, PresenceMode, SendMessageResponse, API_VERSION, SCHEMA_VERSION,
 };
 use crate::models::knowledge::KnowledgeIndex;
-use crate::models::{Event, Memory, PersonalitySource, PersonalityVector, Role};
-use crate::state::AppState;
+use crate::models::{Event, Memory, PersonalitySource, PersonalityVector};
 use chrono::Utc;
 use std::time::Instant;
 use thiserror::Error;
+
+use super::turn_context::TurnContext;
 
 use super::context::load_recent_context;
 use super::emotion_to_dto;
@@ -58,29 +58,29 @@ impl From<CoPresentError> for AppError {
 
 pub(crate) type CoPresentResult<T> = std::result::Result<T, CoPresentError>;
 
-#[allow(clippy::too_many_arguments)] // 编排入口：场景 / 计时 / 多 id 与 `Role` 并列传入，不宜为 clippy 强塞单结构体
 pub(crate) async fn process_co_present(
-    state: &AppState,
-    req: &SendMessageRequest,
-    role: &Role,
-    scene_id: String,
-    scenes: Vec<String>,
-    immersive: bool,
-    t0: Instant,
-    mrid: &str,
-    srid: &str,
-    preflight_ms: u64,
+    ctx: &TurnContext<'_>,
 ) -> CoPresentResult<SendMessageResponse> {
-    let t_cp0 = Instant::now();
-    let user_message = req.user_message.as_str();
-    let policies = state.policies_for_scene(Some(scene_id.as_str()));
+    let state = ctx.state;
+    let req = ctx.req;
+    let role = ctx.role;
+    let scene_id = ctx.scene_id.clone();
+    let scenes = ctx.scenes.clone();
+    let mrid = ctx.mrid;
+    let srid = ctx.srid;
+    let t0 = ctx.t0;
+    let preflight_ms = ctx.preflight_ms;
+    let immersive = ctx.immersive;
     let pl = super::resolve_plugins_for_session(
         state.plugin_host_port(),
         role,
         Some(srid),
-        &state.effective_plugin_backends_for_session(role, srid),
+        &ctx.effective_backends,
         state.effective_slot_registry_for_session(role, srid).as_ref(),
     );
+    let t_cp0 = Instant::now();
+    let user_message = req.user_message.as_str();
+    let policies = state.policies_for_scene(Some(scene_id.as_str()));
     let slot_runner = SlotRunner;
 
     let event_runtime = crate::map_copresent_err!("event_impact_factor", state.db_manager.get_event_impact_factor(srid).await)?

@@ -8,11 +8,14 @@ pub mod message_error;
 pub(crate) mod context;
 pub(crate) mod favor;
 pub mod plugin_resolve;
+pub mod turn_context;
 mod presence;
 mod process_message;
 mod scene;
 
 pub(super) use plugin_resolve::resolve_plugins_for_session;
+
+use turn_context::TurnContext;
 
 use crate::domain::chat_llm_fallback::{fallback_reply_for_llm_failure, FallbackReplyContext};
 use crate::domain::chat_turn::{relation_favor_for_key, weight_memories_for_scene};
@@ -26,7 +29,7 @@ use crate::domain::remote_life_prompt::{build_remote_life_prompt, compose_remote
 use crate::domain::user_identity::resolve_effective_user_relation_key;
 use crate::error::Result;
 use crate::models::dto::{
-    EmotionDto, PresenceMode, SendMessageRequest, SendMessageResponse, API_VERSION, SCHEMA_VERSION,
+    EmotionDto, PresenceMode, SendMessageResponse, API_VERSION, SCHEMA_VERSION,
 };
 use crate::models::{
     Event, EventType, KnowledgeIndex, Memory, PersonalitySource, PersonalityVector, PluginBackends,
@@ -106,21 +109,22 @@ pub(crate) fn conversation_state_role_id(
 
 /// 异地 + 关：占位文案，**不**写入短期记忆 / 事件 / 好感事务（避免无对话却涨好感）
 pub(super) async fn process_remote_stub(
-    state: &AppState,
-    req: &SendMessageRequest,
-    role: &Role,
-    scene_id: &str,
-    t0: Instant,
-    srid: &str,
-    preflight_ms: u64,
+    ctx: &TurnContext<'_>,
 ) -> Result<SendMessageResponse> {
+    let state = ctx.state;
+    let req = ctx.req;
+    let role = ctx.role;
+    let scene_id = ctx.scene_id.as_str();
+    let t0 = ctx.t0;
+    let srid = ctx.srid;
+    let preflight_ms = ctx.preflight_ms;
     let role_id = req.role_id.as_str();
     let user_message = req.user_message.as_str();
     let pl = resolve_plugins_for_session(
         state.plugin_host_port(),
         role,
         Some(srid),
-        &state.effective_plugin_backends_for_session(role, srid),
+        &ctx.effective_backends,
         state.effective_slot_registry_for_session(role, srid).as_ref(),
     );
     let emotion_result = pl.emotion.analyze(user_message)?;
@@ -180,16 +184,17 @@ pub(super) async fn process_remote_stub(
 /// 异地 + 开：专用 LLM；跳过事件影响探测，以 `Ignore` + 零振幅参与好感事务（仍更新短期记忆等）
 #[allow(clippy::too_many_arguments)] // 与 `process_co_present` 同级编排入口
 pub(super) async fn process_remote_life(
-    state: &AppState,
-    req: &SendMessageRequest,
-    role: &Role,
-    scene_id: &str,
+    ctx: &TurnContext<'_>,
     character_scene_id: &str,
-    t0: Instant,
-    mrid: &str,
-    srid: &str,
-    preflight_ms: u64,
 ) -> Result<SendMessageResponse> {
+    let state = ctx.state;
+    let req = ctx.req;
+    let role = ctx.role;
+    let scene_id = ctx.scene_id.as_str();
+    let t0 = ctx.t0;
+    let mrid = ctx.mrid;
+    let srid = ctx.srid;
+    let preflight_ms = ctx.preflight_ms;
     let t_path = Instant::now();
     let role_id = req.role_id.as_str();
     let user_message = req.user_message.as_str();
@@ -207,7 +212,7 @@ pub(super) async fn process_remote_life(
         state.plugin_host_port(),
         role,
         Some(srid),
-        &state.effective_plugin_backends_for_session(role, srid),
+        &ctx.effective_backends,
         state.effective_slot_registry_for_session(role, srid).as_ref(),
     );
     let emotion_result = pl.emotion.analyze(user_message)?;
