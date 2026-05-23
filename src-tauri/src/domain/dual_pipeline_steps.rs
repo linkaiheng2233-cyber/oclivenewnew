@@ -150,7 +150,9 @@ impl<'a> ExperimentalStepCtx<'a> {
                 .map_err(map_slot_err)?;
             self.emotion_result = Some(er);
         }
-        Ok(self.emotion_result.as_ref().expect("emotion_result set"))
+        self.emotion_result.as_ref().ok_or_else(|| {
+            ProcessMessageError::dual_core_invalid("emotion_result unset after analyze")
+        })
     }
 
     async fn ensure_personality(&mut self) -> Result<PersonalityVector, ProcessMessageError> {
