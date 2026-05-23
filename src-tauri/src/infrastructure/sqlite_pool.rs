@@ -20,7 +20,8 @@ pub async fn connect_file(path: impl AsRef<Path>) -> Result<SqlitePool, sqlx::Er
         .journal_mode(SqliteJournalMode::Wal)
         .synchronous(SqliteSynchronous::Normal)
         .busy_timeout(Duration::from_secs(5))
-        .pragma("temp_store", "MEMORY");
+        .pragma("temp_store", "MEMORY")
+        .pragma("mmap_size", "268435456");
     SqlitePoolOptions::new()
         .min_connections(1)
         .max_connections(POOL_MAX_CONNECTIONS)

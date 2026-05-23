@@ -20,7 +20,8 @@ pub async fn set_user_relation_impl(
         return Err(AppError::RoleRuntimeNotReady.to_frontend_error());
     }
     let role = state
-        .load_role_cached(&req.role_id)
+        .load_role_cached_async(&req.role_id)
+        .await
         .map_err(|e| e.to_frontend_error())?;
 
     if matches!(role.identity_binding, IdentityBinding::Global) {
@@ -94,7 +95,8 @@ pub async fn clear_scene_user_relation_impl(
         return Err(AppError::RoleRuntimeNotReady.to_frontend_error());
     }
     let role = state
-        .load_role_cached(&req.role_id)
+        .load_role_cached_async(&req.role_id)
+        .await
         .map_err(|e| e.to_frontend_error())?;
     if matches!(role.identity_binding, IdentityBinding::Global) {
         return Err(AppError::InvalidParameter(
@@ -134,7 +136,8 @@ pub async fn set_scene_user_relation_impl(
         return Err(AppError::RoleRuntimeNotReady.to_frontend_error());
     }
     let role = state
-        .load_role_cached(&req.role_id)
+        .load_role_cached_async(&req.role_id)
+        .await
         .map_err(|e| e.to_frontend_error())?;
     if matches!(role.identity_binding, IdentityBinding::Global) {
         return Err(AppError::InvalidParameter(

@@ -15,7 +15,8 @@ pub async fn generate_monologue_lines(
         return Ok(vec![]);
     }
     let role = state
-        .load_role_cached(role_id)
+        .load_role_cached_async(role_id)
+        .await
         .map_err(|e| e.to_frontend_error())?;
     let scene = state
         .db_manager

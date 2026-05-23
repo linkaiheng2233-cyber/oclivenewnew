@@ -43,7 +43,7 @@ pub struct AppState {
     pub favorability_repo: Arc<dyn FavorabilityRepository>,
     pub llm: Arc<dyn LlmClient>,
     pub role_cache: Arc<RwLock<HashMap<String, Arc<Role>>>>,
-    /// 同一 `role_id` 冷加载串行化；表项在无人再持有对应 `Arc` 时移除（见 [`AppState::load_role_cached`]）。
+    /// 同一 `role_id` 冷加载串行化；表项在无人再持有对应 `Arc` 时移除（见 [`AppState::load_role_cached_async`]）。
     role_load_inflight: DashMap<String, Arc<Mutex<()>>>,
     pub session_cache: Arc<SessionCache>,
     pub storage: RoleStorage,
@@ -151,42 +151,11 @@ impl AppState {
     /// Returns [`Err`] with a human-readable message when the operation fails.
     /// 优先使用 [`Self::role_cache`]（与 [`crate::domain::chat_engine`] 一致）；未命中时从磁盘加载并写入缓存。
     ///
-    /// 同一 `role_id` 在 [`Self::role_load_inflight`] 下串行冷加载；写缓存前再查一次。本线程退出时若已无其它 waiter，从 inflight 表摘掉该键，避免无限增长。
-    pub fn load_role_cached(&self, role_id: &str) -> Result<Arc<Role>> {
-        if let Some(r) = self.role_cache.read().get(role_id) {
-            return Ok(Arc::clone(r));
-        }
-        let key = role_id.to_string();
-        let gate = self
-            .role_load_inflight
-            .entry(key.clone())
-            .or_insert_with(|| Arc::new(Mutex::new(())))
-            .clone();
-        let _serial = gate.lock();
-
-        let loaded = (|| -> Result<Arc<Role>> {
-            if let Some(r) = self.role_cache.read().get(role_id) {
-                return Ok(Arc::clone(r));
-            }
-            let role = self.storage.load_role(role_id)?;
-            let candidate = Arc::new(role);
-            let mut map = self.role_cache.write();
-            if let Some(r) = map.get(role_id) {
-                return Ok(Arc::clone(r));
-            }
-            map.insert(role_id.to_string(), Arc::clone(&candidate));
-            Ok(candidate)
-        })();
-
-        drop(_serial);
-        loaded
-    }
-
     /// 异步路径加载角色：磁盘 I/O 在 `spawn_blocking` 中执行，避免阻塞 tokio reactor。
     ///
     /// # Errors
     ///
-    /// 与 [`Self::load_role_cached`] 相同（角色不存在、磁盘 I/O 失败等）。
+    /// 角色不存在、磁盘 I/O 失败等时返回 [`Err`]。
     pub async fn load_role_cached_async(&self, role_id: &str) -> Result<Arc<Role>> {
         if let Some(r) = self.role_cache.read().get(role_id) {
             return Ok(Arc::clone(r));
@@ -236,12 +205,8 @@ impl AppState {
     /// 丢弃内存中的 `Role` 缓存（`pipeline.ocblueprint` 写盘后须调用）。
     pub fn invalidate_role_cache(&self, role_id: &str) {
         if let Some(role) = self.role_cache.read().get(role_id) {
-            if let Ok(mut c) = role.scene_config_cache.write() {
-                c.clear();
-            }
-            if let Ok(mut c) = role.scene_text_cache.write() {
-                c.clear();
-            }
+            role.scene_config_cache.write().clear();
+            role.scene_text_cache.write().clear();
         }
         self.role_cache.write().remove(role_id);
     }

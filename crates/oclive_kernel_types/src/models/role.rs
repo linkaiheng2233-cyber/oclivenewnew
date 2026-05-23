@@ -11,8 +11,8 @@ pub use oclive_validation::{
     LifeScheduleDisk, LifeScheduleEntryDisk, LifeTrajectoryDisk, PersonalitySource,
     PipelineStep, RemotePresenceConfig, RuntimeConfig,
 };
+use parking_lot::RwLock;
 use std::sync::Arc;
-use std::sync::RwLock;
 
 /// 角色包内人设默认值（旧七维，与 `PersonalityVector` 字段一致）
 #[derive(Debug, Clone, Serialize, Deserialize)]

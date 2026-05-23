@@ -19,7 +19,8 @@ pub async fn set_evolution_factor_impl(
         .to_frontend_error());
     }
     state
-        .load_role_cached(&req.role_id)
+        .load_role_cached_async(&req.role_id)
+        .await
         .map_err(|e| e.to_frontend_error())?;
     if !state
         .db_manager
@@ -48,7 +49,8 @@ pub async fn set_remote_life_enabled_impl(
     req: &SetRemoteLifeEnabledRequest,
 ) -> Result<RoleInfo, String> {
     state
-        .load_role_cached(&req.role_id)
+        .load_role_cached_async(&req.role_id)
+        .await
         .map_err(|e| e.to_frontend_error())?;
     if !state
         .db_manager
@@ -77,7 +79,8 @@ pub async fn set_role_interaction_mode_impl(
     req: &SetRoleInteractionModeRequest,
 ) -> Result<RoleInfo, String> {
     state
-        .load_role_cached(&req.role_id)
+        .load_role_cached_async(&req.role_id)
+        .await
         .map_err(|e| e.to_frontend_error())?;
     if !state
         .db_manager

@@ -17,8 +17,7 @@ use crate::models::dto::{
     DetectedEventDto, PresenceMode, SendMessageResponse, API_VERSION, SCHEMA_VERSION,
 };
 use crate::models::knowledge::KnowledgeIndex;
-use crate::models::{Event, EventType, Memory, PersonalitySource, PersonalityVector};
-use chrono::Utc;
+use crate::models::{Event, EventType, PersonalitySource, PersonalityVector};
 use std::sync::Arc;
 use std::time::Instant;
 
@@ -73,6 +72,7 @@ pub async fn execute_turn(ctx: &TurnContext<'_>, mode: TurnMode) -> TurnResult<S
     let user_message = req.user_message.as_str();
     let policies = state.policies_for_scene(Some(scene_id));
     let slot_runner = SlotRunner;
+    let primary_llm = slot_runner.primary_llm(pl);
 
     let (
         event_impact_opt,
@@ -235,7 +235,7 @@ pub async fn execute_turn(ctx: &TurnContext<'_>, mode: TurnMode) -> TurnResult<S
         .map(|m| m.scene_weight_multiplier)
         .unwrap_or(1.0);
     weight_memories_for_scene(&mut memories, scene_id, scene_m);
-    let mut relevant = STAGES
+    let relevant = STAGES
         .stage(
             ChatStage::MemoryRank,
             async {
@@ -477,22 +477,6 @@ pub async fn execute_turn(ctx: &TurnContext<'_>, mode: TurnMode) -> TurnResult<S
         bot_emotion: bot_emotion_str.clone(),
     };
 
-    relevant.insert(
-        0,
-        Memory {
-            id: "__relation_state__".to_string(),
-            role_id: srid.to_string(),
-            content: format!(
-                "当前关系阶段: {} -> {}",
-                relation_before,
-                relation_after.as_str()
-            ),
-            importance: 0.95,
-            weight: 1.0,
-            created_at: Utc::now(),
-            scene_id: Some(scene_id.to_string()),
-        },
-    );
     let policy_ctx = PolicyContext {
         role_id: srid,
         user_message,
@@ -506,14 +490,15 @@ pub async fn execute_turn(ctx: &TurnContext<'_>, mode: TurnMode) -> TurnResult<S
     } else {
         0.0
     };
-    let mut recent_events = recent_events_for_event;
-    recent_events.insert(0, event.clone());
+    let recent_events = std::iter::once(event.clone())
+        .chain(recent_events_for_event)
+        .collect::<Vec<_>>();
     let core_v = PersonalityVector::from(&role.default_personality);
     let portrait_emotion_str = STAGES
         .stage(
             ChatStage::PortraitEmotionLlm,
             resolve_portrait_emotion(
-                &slot_runner.primary_llm(pl),
+                &primary_llm,
                 ollama_model.as_str(),
                 role,
                 &core_v,
@@ -568,7 +553,7 @@ pub async fn execute_turn(ctx: &TurnContext<'_>, mode: TurnMode) -> TurnResult<S
             .await?;
         let impact_scaled = (ai_impact_factor_final * event_runtime).clamp(-1.0, 1.0);
         let next = match crate::domain::mutable_profile_llm::evolve_mutable_personality_with_llm(
-            &slot_runner.primary_llm(pl),
+            &primary_llm,
             ollama_model.as_str(),
             crate::domain::mutable_profile_llm::MutableEvolutionInput {
                 role_name: role.name.as_str(),
@@ -632,7 +617,7 @@ pub async fn execute_turn(ctx: &TurnContext<'_>, mode: TurnMode) -> TurnResult<S
 
     let movement = detect_movement_intent(
         state,
-        &slot_runner.primary_llm(pl),
+        &primary_llm,
         role,
         srid,
         scene_id,

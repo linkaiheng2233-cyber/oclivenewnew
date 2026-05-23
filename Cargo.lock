@@ -3002,6 +3002,7 @@ dependencies = [
  "oclive_kernel_contracts",
  "oclive_kernel_types",
  "oclive_validation",
+ "parking_lot",
  "serde",
  "serde_json",
  "serde_yaml_ng",
@@ -3026,6 +3027,7 @@ version = "0.1.0"
 dependencies = [
  "chrono",
  "oclive_validation",
+ "parking_lot",
  "serde",
  "serde_json",
  "thiserror 1.0.69",

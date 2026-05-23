@@ -16,6 +16,7 @@ doctest = false
 
 [dependencies]
 oclive_kernel_types = { path = "../oclive_kernel_types" }
+parking_lot = "0.12"
 oclive_kernel_contracts = { path = "../oclive_kernel_contracts" }
 oclive_validation = { path = "../oclive_validation" }
 serde = { version = "1.0", features = ["derive"] }

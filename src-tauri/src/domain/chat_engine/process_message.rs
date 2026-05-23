@@ -144,15 +144,13 @@ async fn run(
         });
     }
 
-    process_message_stage(
-        ChatStage::SetUserPresenceScene,
-        state
-            .db_manager
-            .set_user_presence_scene(srid, scene_id.as_str()),
-    )
-    .await?;
-
-    let (current_scene, interaction_mode, remote_life_enabled) = tokio::try_join!(
+    let (_, current_scene, interaction_mode, remote_life_enabled) = tokio::try_join!(
+        process_message_stage(
+            ChatStage::SetUserPresenceScene,
+            state
+                .db_manager
+                .set_user_presence_scene(srid, scene_id.as_str()),
+        ),
         process_message_stage(
             ChatStage::GetCurrentScene,
             state.db_manager.get_current_scene(srid),

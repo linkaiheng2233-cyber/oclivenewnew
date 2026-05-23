@@ -196,7 +196,8 @@ pub async fn export_chat_logs_impl(
             .to_frontend_error()
     })?;
     let role = state
-        .load_role_cached(rid)
+        .load_role_cached_async(rid)
+        .await
         .map_err(|e| e.to_frontend_error())?;
     let turns = load_turns(state, rid).await?;
     blocks.push((role.id.clone(), role.name.clone(), turns));

@@ -63,7 +63,16 @@ pub fn init_tracing_with_log_dir(
     if let Some(dir) = log_dir {
         let logs = dir.join("logs");
         if std::fs::create_dir_all(&logs).is_ok() {
-            let file_appender = tracing_appender::rolling::daily(&logs, "oclive.log");
+            let Ok(file_appender) = tracing_appender::rolling::RollingFileAppender::builder()
+                .rotation(tracing_appender::rolling::Rotation::DAILY)
+                .filename_prefix("oclive")
+                .filename_suffix("log")
+                .max_log_files(7)
+                .build(&logs)
+            else {
+                eprintln!("failed to build rolling log appender");
+                return file_guard;
+            };
             let (non_blocking, guard) = tracing_appender::non_blocking(file_appender);
             file_guard = Some(guard);
             let file_layer = if use_json {
@@ -82,12 +91,19 @@ pub fn init_tracing_with_log_dir(
         }
     }
 
-    let _ = tracing_subscriber::registry()
+    if let Err(e) = tracing_subscriber::registry()
         .with(filter)
         .with(layers)
-        .try_init();
+        .try_init()
+    {
+        eprintln!("tracing subscriber init failed: {e}");
+    }
 
     file_guard
+}
+
+fn sanitize_plugin_id_for_log(plugin_id: &str) -> String {
+    plugin_id.chars().take(64).collect()
 }
 
 use std::fs;
@@ -135,13 +151,25 @@ fn serve_ocliveplugin_asset(
         return ResponseBuilder::new()
             .status(404)
             .mimetype("text/plain; charset=utf-8")
-            .body(format!("unknown plugin_id={}", plugin_id).into_bytes());
+            .body(
+                format!(
+                    "unknown plugin_id={}",
+                    sanitize_plugin_id_for_log(plugin_id.as_str())
+                )
+                .into_bytes(),
+            );
     };
     let Some(root_norm) = canon_roots.get(&plugin_id) else {
         return ResponseBuilder::new()
             .status(404)
             .mimetype("text/plain; charset=utf-8")
-            .body(format!("unknown plugin_id={}", plugin_id).into_bytes());
+            .body(
+                format!(
+                    "unknown plugin_id={}",
+                    sanitize_plugin_id_for_log(plugin_id.as_str())
+                )
+                .into_bytes(),
+            );
     };
     let path = root.join(&rel);
     let path_norm = match path.canonicalize() {
@@ -170,8 +198,8 @@ fn serve_ocliveplugin_asset(
     };
     if mime_for_plugin_asset(&rel).starts_with("text/html") {
         if let Ok(manifest) = OclivePluginManifest::load_from_dir(root) {
-            if let Ok(s) = String::from_utf8(data.clone()) {
-                let injected = inject_plugin_bridge_script(&s, &plugin_id, &rel, &manifest);
+            if let Ok(html) = String::from_utf8(std::mem::take(&mut data)) {
+                let injected = inject_plugin_bridge_script(&html, &plugin_id, &rel, &manifest);
                 data = injected.into_bytes();
             }
         }

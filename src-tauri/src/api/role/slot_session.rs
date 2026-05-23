@@ -29,7 +29,8 @@ pub async fn set_session_plugin_backend_impl(
         .to_frontend_error()
     })?;
     let role = state
-        .load_role_cached(&req.role_id)
+        .load_role_cached_async(&req.role_id)
+        .await
         .map_err(|e| e.to_frontend_error())?;
     if role.slot_registry.is_none() {
         return Err(AppError::InvalidParameter(
@@ -73,7 +74,8 @@ pub async fn set_session_slot_override_impl(
         );
     }
     state
-        .load_role_cached(&req.role_id)
+        .load_role_cached_async(&req.role_id)
+        .await
         .map_err(|e| e.to_frontend_error())?;
     let ns = session_namespace(&req.role_id, req.session_id.as_deref());
     state
@@ -240,7 +242,8 @@ pub async fn apply_author_suggested_plugin_backends(
         .await
         .map_err(|e| e.to_frontend_error())?;
     let role_cached = state
-        .load_role_cached(role_id)
+        .load_role_cached_async(role_id)
+        .await
         .map_err(|e| e.to_frontend_error())?;
     let Some(reg) = role_cached.slot_registry.as_ref() else {
         return Err(AppError::InvalidParameter(
@@ -342,7 +345,8 @@ pub(crate) async fn build_plugin_resolution_debug_info(
     session_id: Option<&str>,
 ) -> Result<PluginResolutionDebugInfo, String> {
     let role = state
-        .load_role_cached(role_id)
+        .load_role_cached_async(role_id)
+        .await
         .map_err(|e| e.to_frontend_error())?;
     let session_ns = session_namespace(role_id, session_id);
     state

@@ -278,8 +278,8 @@ mod tests {
             runtime_config: None,
             pipeline_experimental: None,
             scene_ids: std::sync::Arc::from(Vec::<String>::new()),
-            scene_config_cache: std::sync::Arc::new(std::sync::RwLock::new(std::collections::HashMap::new())),
-            scene_text_cache: std::sync::Arc::new(std::sync::RwLock::new(std::collections::HashMap::new())),
+            scene_config_cache: std::sync::Arc::new(parking_lot::RwLock::new(std::collections::HashMap::new())),
+            scene_text_cache: std::sync::Arc::new(parking_lot::RwLock::new(std::collections::HashMap::new())),
         }
     }
 
