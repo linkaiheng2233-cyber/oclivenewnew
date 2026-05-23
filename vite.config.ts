@@ -54,7 +54,6 @@ export default defineConfig(({ mode }) => ({
           if (!id.includes("node_modules")) return;
           if (id.includes("@sentry")) return "vendor-sentry";
           if (id.includes("@tauri-apps")) return "vendor-tauri";
-          if (id.includes("vue-virtual-scroller")) return "vendor-scroller";
           if (id.includes("vue-i18n")) return "vendor-i18n";
           if (id.includes("pinia-plugin-persistedstate")) return "vendor-pinia-persist";
           if (id.includes("pinia")) return "vendor-pinia";
