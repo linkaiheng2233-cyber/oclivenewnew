@@ -192,7 +192,7 @@ pub fn api_router(app_state: Arc<AppState>) -> Router {
 /// CI / 协议黑盒：设置 `OCLIVE_HTTP_API_MOCK_LLM=1` 时使用内存库 + [`MockLlmClient`]，不依赖本机 Ollama。
 pub async fn serve_api(port: u16) -> Result<(), String> {
     let db_path = std::env::temp_dir().join(format!("oclive_api_{}.db", port));
-    let roles_dir = crate::state::resolve_roles_dir();
+    let roles_dir = crate::state::resolve_roles_dir(None);
     let app_data_dir = db_path
         .parent()
         .map(|p| p.join("oclive_api_app_data"))

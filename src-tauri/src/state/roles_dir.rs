@@ -16,23 +16,7 @@ fn roles_dir_has_any_role_pack(roles_root: &Path) -> bool {
     })
 }
 
-pub fn resolve_roles_dir() -> PathBuf {
-    if let Ok(custom) = std::env::var("OCLIVE_ROLES_DIR") {
-        let p = PathBuf::from(&custom);
-        if p.is_dir() {
-            tracing::info!(
-                target: "oclive_roles",
-                "resolve_roles_dir: OCLIVE_ROLES_DIR -> {}",
-                p.display()
-            );
-            return p;
-        }
-        tracing::warn!(
-            target: "oclive_roles",
-            "OCLIVE_ROLES_DIR is set but not a directory ({}); ignoring",
-            custom
-        );
-    }
+fn try_dev_roles_dir() -> Option<PathBuf> {
     #[cfg(debug_assertions)]
     {
         let from_manifest = PathBuf::from(env!("CARGO_MANIFEST_DIR"))
@@ -45,7 +29,7 @@ pub fn resolve_roles_dir() -> PathBuf {
                     "resolve_roles_dir: manifest-relative -> {}",
                     canon.display()
                 );
-                return canon;
+                return Some(canon);
             }
             _ => {
                 if from_manifest.is_dir() {
@@ -54,7 +38,7 @@ pub fn resolve_roles_dir() -> PathBuf {
                         "resolve_roles_dir: manifest-relative (non-canon) -> {}",
                         from_manifest.display()
                     );
-                    return from_manifest;
+                    return Some(from_manifest);
                 }
             }
         }
@@ -72,7 +56,7 @@ pub fn resolve_roles_dir() -> PathBuf {
                     "resolve_roles_dir: near_exe -> {}",
                     candidate.display()
                 );
-                return candidate;
+                return Some(candidate);
             }
             cur = dir.parent().map(|p| p.to_path_buf());
         }
@@ -85,7 +69,7 @@ pub fn resolve_roles_dir() -> PathBuf {
                 "resolve_roles_dir: cwd/roles -> {}",
                 a.display()
             );
-            return a;
+            return Some(a);
         }
         let b = cwd.join("..").join("roles");
         if let Ok(canon) = b.canonicalize() {
@@ -95,10 +79,66 @@ pub fn resolve_roles_dir() -> PathBuf {
                     "resolve_roles_dir: ../roles -> {}",
                     canon.display()
                 );
-                return canon;
+                return Some(canon);
             }
         }
     }
+    None
+}
+
+/// Resolve `roles/` for dev, packaged, and headless runs.
+///
+/// Priority: `OCLIVE_ROLES_DIR` → (debug) repo dev paths → `resource_dir/roles` when
+/// `resource_dir` is set → exe/cwd heuristics → relative `roles/`.
+pub fn resolve_roles_dir(resource_dir: Option<&Path>) -> PathBuf {
+    if let Ok(custom) = std::env::var("OCLIVE_ROLES_DIR") {
+        let p = PathBuf::from(&custom);
+        if p.is_dir() {
+            tracing::info!(
+                target: "oclive_roles",
+                "resolve_roles_dir: OCLIVE_ROLES_DIR -> {}",
+                p.display()
+            );
+            return p;
+        }
+        tracing::warn!(
+            target: "oclive_roles",
+            "OCLIVE_ROLES_DIR is set but not a directory ({}); ignoring",
+            custom
+        );
+    }
+
+    #[cfg(debug_assertions)]
+    if let Some(dev) = try_dev_roles_dir() {
+        return dev;
+    }
+
+    if let Some(res) = resource_dir {
+        tracing::info!(
+            target: "oclive_roles",
+            "resolve_roles_dir: tauri resource_dir -> {}",
+            res.display()
+        );
+        let bundled = res.join("roles");
+        if bundled.is_dir() {
+            tracing::info!(
+                target: "oclive_roles",
+                "resolve_roles_dir: bundled -> {}",
+                bundled.display()
+            );
+            return bundled;
+        }
+        tracing::warn!(
+            target: "oclive_roles",
+            "resource_dir/roles missing or not a directory: {}",
+            bundled.display()
+        );
+    }
+
+    if let Some(dev) = try_dev_roles_dir() {
+        return dev;
+    }
+
     let fallback = PathBuf::from("roles");
     tracing::info!(
         target: "oclive_roles",

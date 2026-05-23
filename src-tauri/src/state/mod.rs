@@ -74,7 +74,7 @@ impl AppState {
     ) -> Result<Self> {
         AppStateBuilder::production(
             db_path,
-            roles_dir_override.unwrap_or_else(resolve_roles_dir),
+            roles_dir_override.unwrap_or_else(|| resolve_roles_dir(None)),
             app_data_dir,
         )
         .build()
@@ -101,17 +101,6 @@ impl AppState {
         AppStateBuilder::in_memory_test(llm, roles_dir, policy_file)
             .build()
             .await
-    }
-
-    /// 供下一轮主对话 Prompt 注入的上一轮 `narrative_hint`（空则跳过对应段落）。
-    pub fn stored_complex_emotion_narrative_hint(&self, srid: &str) -> String {
-        self.session_cache
-            .stored_complex_emotion_narrative_hint(srid)
-    }
-
-    pub fn set_stored_complex_emotion_narrative_hint(&self, srid: &str, hint: String) {
-        self.session_cache
-            .set_stored_complex_emotion_narrative_hint(srid, hint);
     }
 
     /// 与 `app_settings.remote_fallback_to_builtin` 及 `OCLIVE_REMOTE_FALLBACK_TO_BUILTIN` 对齐进程内开关。
