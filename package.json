@@ -32,7 +32,8 @@
     "scaffold:ui-plugin": "node scripts/scaffold-ui-slot-plugin.mjs",
     "test:unit": "vitest run",
     "test:e2e:core-api-restart": "node scripts/e2e-core-api-restart.mjs",
-    "test:e2e:preview": "playwright test"
+    "test:e2e:preview": "playwright test",
+    "test:e2e:tauri-native": "playwright test e2e/tauri-native.spec.ts"
   },
   "dependencies": {
     "@sentry/vue": "^10.47.0",
@@ -60,6 +61,7 @@
     "jsdom": "^29.1.1",
     "rollup-plugin-visualizer": "^7.0.1",
     "vite": "^6.0.3",
-    "vitest": "^3.2.4"
+    "vitest": "^3.2.4",
+    "webdriverio": "^9.27.1"
   }
 }

@@ -24,6 +24,7 @@ export default defineConfig({
     trace: "on-first-retry",
   },
   projects: [{ name: "chromium", use: { ...devices["Desktop Chrome"] } }],
+  testIgnore: process.env.OCLIVE_TAURI_E2E === "1" ? undefined : [/tauri-native\.spec\.ts/],
   webServer: externalPreview
     ? undefined
     : {

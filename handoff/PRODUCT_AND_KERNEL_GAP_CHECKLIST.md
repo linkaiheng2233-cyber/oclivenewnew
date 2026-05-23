@@ -20,7 +20,8 @@
 ### A1. 测试与质量闸门（P0）
 
 - [x] **核心路径自动化（可 CI 子集）**：**HTTP `--api` 进程重启**（[`scripts/e2e-core-api-restart.mjs`](../scripts/e2e-core-api-restart.mjs) + CI `oocp-test-suite`）；**`vite build:e2e` + `vite preview` + Playwright** 首屏与关键路径（[`e2e/preview-shell.spec.ts`](../e2e/preview-shell.spec.ts)、[`e2e/send-message.spec.ts`](../e2e/send-message.spec.ts)、[`e2e/switch-role.spec.ts`](../e2e/switch-role.spec.ts)、[`e2e/install-plugin.spec.ts`](../e2e/install-plugin.spec.ts)；`e2e-mock/` invoke 桩，CI **`frontend`** job）。**安装包 / Tauri 原生窗 / WebDriver 全屋** 另立项，不记入本条。
-- [ ] **核心路径自动化（原生安装包与 Tauri 窗）**：签名分发、多 OS 安装器、真 `invoke` GUI 全链；依赖发行流水线或 Tauri driver，**不作为当前 A1 必勾项**。
+- [ ] **A1.1c（基础建设已启动）**：[`e2e/tauri-native.spec.ts`](../e2e/tauri-native.spec.ts) + [`scripts/e2e-tauri-native-ci.sh`](../scripts/e2e-tauri-native-ci.sh) + CI **`e2e-tauri`** job（`continue-on-error: true`，Ubuntu + `tauri-driver` 最小烟测：窗口标题 + `.left-pane`）。**全屋 GUI / 安装包签名** 仍延后。
+- [ ] **核心路径自动化（原生安装包与 Tauri 窗 · 全屋）**：签名分发、多 OS 安装器、真 `invoke` GUI 全链；依赖发行流水线，**不作为当前 A1 必勾项**。
 - [x] **`invoke` 宿主热路径集成烟测**：高流量命令经 [`INVOKE_HOTPATH_MATRIX.md`](./INVOKE_HOTPATH_MATRIX.md) 对齐；[`invoke_hotpath_matrix.rs`](../src-tauri/tests/invoke_hotpath_matrix.rs) 串联 **9** 条 `*_impl`。**全 handler golden / 真 IPC** 仍后续增强。
 - [x] **发版前闸门与 CI 对齐**：[`CONTRIBUTING.md`](../CONTRIBUTING.md) 已列 **`npm run check:release`**、**`npm run test:unit`**、**`npm run test:e2e:preview`**（Playwright）及 **OOCP** / **`rust`** / **`frontend`** job 差异；CI 见 [`.github/workflows/ci.yml`](../.github/workflows/ci.yml)。
 - [x] **回归清单版本化**：关键手工场景由 [PRODUCT_RELEASE_CHECKLIST.md](./PRODUCT_RELEASE_CHECKLIST.md) **「回归与手工」** 节链到既有 guides（mumu / 复杂情感 / 角色包导入 / 高风险能力）；发版按版本勾选，不在此重复维护用例树。
