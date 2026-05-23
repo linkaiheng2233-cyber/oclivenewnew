@@ -16,23 +16,23 @@
 |------|------|
 | **T05–T13**（Vue 组件测试等） | 权威来源在编写器仓库；主仓不复制 42 条用例树。 |
 
-### T05–T13 覆盖状态（2026-05-20 · 第四批分批）
+### T05–T13 覆盖状态（2026-05-20 · T09–T13 补全）
 
-规划约 **42** 条组件/交互用例；当前以 **关键路径 Vitest** 分批落地（编写器 `npm run test`）。
+规划约 **42** 条组件/交互用例；**T05–T13 关键路径 Vitest 已全部落地**（编写器 `npm run test`）。
 
 | ID | 范围 | 编写器覆盖（代表文件） | 状态 |
 |----|------|------------------------|------|
-| **T05** | 试聊 / runtime API 与 Tauri invoke 映射 | `runtimeApiHelpers.test.ts`、`runtimeApiChatParse.test.ts`、`rolePackEditorApi.test.ts` | **已覆盖（核心）** |
-| **T06** | 专家模型 / 高级创作 | `oclexpertPack.test.ts`、`AnchorPresetManager.spec.ts` | **已覆盖（核心）** |
-| **T07** | 简单 / 高级视图分级与路由 | `useEditorViewState.test.ts`、`simpleCreation.test.ts` | **已覆盖（核心）** |
-| **T08** | 角色运行时面板（试聊 / 反馈） | `ChatPanel.spec.ts`、`FeedbackWorkspace.spec.ts` | **已覆盖（核心）** |
-| **T09** | 检查与导出工作流 | `exportPrepare.test.ts`、`exportPack.test.ts`、`packChecks.test.ts` | **部分** |
-| **T10** | 知识库 / 世界观 | `knowledgeFrontMatter.test.ts`、`knowledgeHitPreview.test.ts` | **部分** |
-| **T11** | 市场 compose 导入 | `marketComposeImport.test.ts` | **部分** |
-| **T12** | 角色包编辑器面板 | `RolePackEditorPanel.spec.ts` | **部分** |
-| **T13** | 前端测试运行器 UI | Playwright `e2e/smoke.spec.ts` + 主仓 `official-vue-test-runner` 插件 | **部分** |
+| **T05** | 试聊 / runtime API 与 Tauri invoke 映射 | `runtimeApiHelpers.test.ts`、`runtimeApiChatParse.test.ts`、`rolePackEditorApi.test.ts` | **已覆盖** |
+| **T06** | 专家模型 / 高级创作 | `oclexpertPack.test.ts`、`AnchorPresetManager.spec.ts` | **已覆盖** |
+| **T07** | 简单 / 高级视图分级与路由 | `useEditorViewState.test.ts`、`simpleCreation.test.ts` | **已覆盖** |
+| **T08** | 角色运行时面板（试聊 / 反馈） | `ChatPanel.spec.ts`、`FeedbackWorkspace.spec.ts` | **已覆盖** |
+| **T09** | 模型选择器 / 检查导出 | `HostModelPickRow.spec.ts`、`exportPrepare.test.ts`、`exportPack.test.ts`、`packChecks.test.ts` | **已覆盖** |
+| **T10** | 插件后端 / 角色包编辑器 | `PluginManagerPanel.spec.ts`（`RolePackEditorPanel` 插件槽）、`RolePackEditorPanel.spec.ts` | **已覆盖** |
+| **T11** | 校验调试面板 | `DebugPanel.spec.ts`（`PackChecksSection` wasm/TS 状态） | **已覆盖** |
+| **T12** | 快捷键 / 视图分级 | `HotkeySettingsSection.spec.ts`、`useEditorViewState.test.ts` | **已覆盖** |
+| **T13** | 前端测试运行器 + 工具函数 | `FrontendTestRunnerPanel.spec.ts`、`mergeManifest.test.ts`、`uiConfig.test.ts`、`authorPack.test.ts`；Playwright `e2e/smoke.spec.ts` | **已覆盖** |
 
-**合计（编写器 Vitest `it` 数）**：**87**（2026-05-20）；组件 spec **20+** 条。余下 T09–T13 深交互随 studio UX 稳定继续补。
+**合计（编写器 Vitest `it` 数）**：**113**（2026-05-20）；组件 spec **30+** 条。
 
 | **T14–T20**（`official-vue-test-runner` 等） | 编写器内置能力，以**目录插件**范式对接工作区；**T14 Vue runner 已入库** `plugins/official-vue-test-runner/`（见插件 README）。 |
 

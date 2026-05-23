@@ -82,20 +82,20 @@
 ### B2. 机器人 / 多模态 / 低延迟（P1 / P2）
 
 - [ ] **多模态抽象**：语音流、视觉、触觉等若进产品 — 与现有文本回合编排的关系图与 MVP 边界（目录插件 vs 内核扩展）。
-- [ ] **打断与半双工**：边听边说、唤醒打断与当前 `send_message` 模型的差距评估与 PoC。
-- [ ] **多机器人 / 多用户隔离**：身份、密钥、记忆命名空间 — 若做 B 端或云边协同则升格为 P0。
+- [ ] **打断与半双工**：边听边说、唤醒打断与当前 `send_message` 模型的差距评估与 PoC。（**拓展基础已就位**：蓝图 `slot_registry` + 实验编排；预留说明见 [TECHNICAL_DEBT_INVENTORY.md §3.5](./TECHNICAL_DEBT_INVENTORY.md)）
+- [ ] **多机器人 / 多用户隔离**：身份、密钥、记忆命名空间 — 若做 B 端或云边协同则升格为 P0。（**拓展基础已就位**：同上 §3.5）
 
 ### B3. 嵌入式：`kernel_server` vs `library`（P0 / P2）
 
-- [x] **能力对称策略**：Monolith 仅 `kernel_server`；`library` 路径见 [PURE_KERNEL_BOUNDARY.md](../creator-docs/getting-started/PURE_KERNEL_BOUNDARY.md) §5、[KERNEL_IMPLEMENTATION_PLAN.md](../creator-docs/getting-started/KERNEL_IMPLEMENTATION_PLAN.md) K4。
+- [x] **能力对称策略**：Monolith 仅 `kernel_server`；`library` 路径见 [PURE_KERNEL_BOUNDARY.md](../creator-docs/getting-started/PURE_KERNEL_BOUNDARY.md) §5、[KERNEL_IMPLEMENTATION_PLAN.md](../creator-docs/getting-started/KERNEL_IMPLEMENTATION_PLAN.md) K4。（**拓展基础已就位**：`oclive_kernel_types` / `oclive_kernel_contracts` + `oclive init --project-type library`；预留说明 [TECHNICAL_DEBT_INVENTORY.md §3.1](./TECHNICAL_DEBT_INVENTORY.md)）
 - [x] **脚手架 → 真内核接榫**：K1 [headless-kernel-minimal](../examples/headless-kernel-minimal/README.md)（`--api`）；K2 `oclive_kernel_runtime` / `oclive_kernel_server` + `oclive-cli --kernel-source`（见内核计划 **验收留痕**）。
 - [x] **诚实范围表**：已写入 [PURE_KERNEL_BOUNDARY.md](../creator-docs/getting-started/PURE_KERNEL_BOUNDARY.md) §6；随实机验证更新措辞。
 
 ### B4. 平台基座：工具链与开发者路径（P1 / P2）
 
 - [x] **「平台开发者一条路径」**：[KERNEL_PLATFORM_DEVELOPER_PATH.md](../creator-docs/getting-started/KERNEL_PLATFORM_DEVELOPER_PATH.md)（中英）链到 PLUGIN_V1、SETTINGS_REFERENCE、OOCP、目录插件。
-- [ ] **参考硬件或仿真靶子**：至少一类参考板或 docker-compose 侧车，降低硬件团队试错成本。
-- [ ] **无头/边缘运维**：OTA、回滚、远程日志/健康检查 — 若承诺「平台」则需里程碑（**P2**，不阻塞 K1–K5）。
+- [ ] **参考硬件或仿真靶子**：至少一类参考板或 docker-compose 侧车，降低硬件团队试错成本。（**拓展基础已就位**：CI ARM64 交叉编译 + `headless-api` 模板；预留说明 [TECHNICAL_DEBT_INVENTORY.md §3.6](./TECHNICAL_DEBT_INVENTORY.md)）
+- [ ] **无头/边缘运维**：OTA、回滚、远程日志/健康检查 — 若承诺「平台」则需里程碑（**P2**，不阻塞 K1–K5）。（**拓展基础已就位**：`--api` HTTP + 侧车插件协议；预留说明 [TECHNICAL_DEBT_INVENTORY.md §3.7](./TECHNICAL_DEBT_INVENTORY.md)）
 
 ### B5. 姊妹仓与整机交付（P1）
 
