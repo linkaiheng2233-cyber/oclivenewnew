@@ -222,19 +222,46 @@ impl DirectoryPluginRuntime {
         app_data: &Path,
         high_risk_grants: Arc<HighRiskGrantStore>,
     ) -> Arc<Self> {
+        Self::bootstrap_inner(roles_dir, app_data, high_risk_grants, true)
+    }
+
+    /// 跳过目录扫描，供启动后后台 [`Self::rescan_plugin_roots`] 懒加载。
+    pub fn bootstrap_deferred_scan(
+        roles_dir: &Path,
+        app_data: &Path,
+        high_risk_grants: Arc<HighRiskGrantStore>,
+    ) -> Arc<Self> {
+        Self::bootstrap_inner(roles_dir, app_data, high_risk_grants, false)
+    }
+
+    fn bootstrap_inner(
+        roles_dir: &Path,
+        app_data: &Path,
+        high_risk_grants: Arc<HighRiskGrantStore>,
+        scan_now: bool,
+    ) -> Arc<Self> {
         let host = HostPluginsFile::load(app_data);
-        let scan = scan_plugins(roles_dir, app_data, &host);
-        tracing::info!(
-            target: "oclive_plugin",
-            "directory plugins scanned count={} ids={:?}",
-            scan.roots.len(),
-            scan.plugin_ids
-        );
+        let roots = if scan_now {
+            let scan = scan_plugins(roles_dir, app_data, &host);
+            tracing::info!(
+                target: "oclive_plugin",
+                "directory plugins scanned count={} ids={:?}",
+                scan.roots.len(),
+                scan.plugin_ids
+            );
+            scan.roots
+        } else {
+            tracing::info!(
+                target: "oclive_plugin",
+                "directory plugin scan deferred to background"
+            );
+            HashMap::new()
+        };
         let app_data_dir = app_data.to_path_buf();
         let ps_path = app_data_dir.join("plugin_state.json");
         let plugin_state_store = Arc::new(RwLock::new(PluginStateStore::load(&ps_path)));
         Arc::new(Self {
-            plugin_roots: Arc::new(RwLock::new(scan.roots)),
+            plugin_roots: Arc::new(RwLock::new(roots)),
             rpc_urls: Mutex::new(HashMap::new()),
             children: Mutex::new(HashMap::new()),
             startup_locks: Mutex::new(HashMap::new()),

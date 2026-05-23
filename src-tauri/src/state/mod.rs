@@ -59,6 +59,7 @@ pub struct AppState {
     pub(crate) startup_health: Mutex<Option<std::result::Result<(), String>>>,
     /// 远端 HTTP 插件失败时是否允许静默降级内置（与 `app_settings.remote_fallback_to_builtin` 及 `OCLIVE_REMOTE_FALLBACK_TO_BUILTIN` 对齐）。
     pub remote_fallback_allowed: Arc<AtomicBool>,
+    policy_file_applied: AtomicBool,
 }
 
 impl AppState {
@@ -114,6 +115,9 @@ impl AppState {
     }
 
     pub fn policies_for_scene(&self, scene_id: Option<&str>) -> Arc<PolicySet> {
+        if let Err(e) = self.ensure_policy_loaded() {
+            tracing::warn!(target: "oclive_policy", "lazy policy load failed: {e}");
+        }
         let runtime = self.policy_runtime.read();
         scene_id
             .and_then(|s| runtime.scene_policy_sets.get(s).cloned())
@@ -121,7 +125,27 @@ impl AppState {
     }
 
     pub fn scene_policy_count(&self) -> usize {
+        let _ = self.ensure_policy_loaded();
         self.policy_runtime.read().scene_policy_sets.len()
+    }
+
+    /// 首次需要策略集时从 `config/policy.toml` 加载（启动路径使用内置默认以缩短阻塞）。
+    ///
+    /// # Errors
+    ///
+    /// Propagates policy file read/parse failures from [`Self::reload_policy_plugins`].
+    pub fn ensure_policy_loaded(&self) -> Result<()> {
+        if self
+            .policy_file_applied
+            .swap(true, std::sync::atomic::Ordering::AcqRel)
+        {
+            return Ok(());
+        }
+        let path = Path::new("./config/policy.toml");
+        if path.is_file() {
+            self.reload_policy_plugins()?;
+        }
+        Ok(())
     }
     /// # Errors
     ///
@@ -172,18 +196,12 @@ impl AppState {
         })();
 
         drop(_serial);
-        // map(1) + this thread's gate clone(1) => 2; waiters still hold extra clones.
-        if Arc::strong_count(&gate) == 2 {
-            self.role_load_inflight
-                .remove_if(&key, |_, v| Arc::ptr_eq(v, &gate));
-        }
-
         loaded
     }
 
     /// 丢弃该 manifest 角色及其试聊会话命名空间下的有效性格缓存（磁盘包重载、`default_personality` / 边界等已变时必须调用）。
     pub fn invalidate_personality_cache_for_role(&self, manifest_role_id: &str) {
-        let mut cache = self.session_cache.personality_cache().write();
+        let cache = self.session_cache.personality_cache();
         cache.remove(manifest_role_id);
         let prefix = format!("{}__sess__", manifest_role_id);
         cache.retain(|k, _| !k.starts_with(&prefix));
@@ -202,7 +220,7 @@ impl AppState {
         role_id: &str,
         role: &Role,
     ) -> Result<PersonalityVector> {
-        if let Some(p) = self.session_cache.personality_cache().read().get(role_id) {
+        if let Some(p) = self.session_cache.personality_cache().get(role_id) {
             return Ok(p.clone());
         }
         let effective = if role.evolution_config.personality_source == PersonalitySource::Profile {
@@ -224,7 +242,6 @@ impl AppState {
         };
         self.session_cache
             .personality_cache()
-            .write()
             .insert(role_id.to_string(), effective.clone());
         Ok(effective)
     }
@@ -358,20 +375,17 @@ mod tests {
         state
             .session_cache
             .personality_cache()
-            .write()
             .insert("r1".to_string(), PersonalityVector::zero());
         state
             .session_cache
             .personality_cache()
-            .write()
             .insert("r1__sess__abc".to_string(), PersonalityVector::zero());
         state
             .session_cache
             .personality_cache()
-            .write()
             .insert("r2".to_string(), PersonalityVector::zero());
         state.invalidate_personality_cache_for_role("r1");
-        let c = state.session_cache.personality_cache().read();
+        let c = state.session_cache.personality_cache();
         assert!(!c.contains_key("r1"));
         assert!(!c.contains_key("r1__sess__abc"));
         assert!(c.contains_key("r2"));

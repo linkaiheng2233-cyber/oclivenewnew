@@ -12,8 +12,7 @@ use crate::infrastructure::llm::ollama_llm;
 use crate::infrastructure::llm::LlmClient;
 use crate::infrastructure::ollama_client::OllamaClient;
 use crate::infrastructure::policy_registry::{
-    build_policy_sets_from_registry, load_policy_registry, load_policy_registry_from_path,
-    PolicyRegistryFile, PolicyRuntime,
+    build_policy_sets_from_registry, PolicyRegistryFile,
 };
 use crate::infrastructure::remote_fallback_policy::{
     new_remote_fallback_switch, remote_fallback_env_override, remote_fallback_from_db_value,
@@ -35,6 +34,7 @@ pub struct AppStateBuilder {
     roles_dir: PathBuf,
     app_data_dir: PathBuf,
     llm: Option<Arc<dyn LlmClient>>,
+    #[allow(dead_code)]
     policy_file: Option<PathBuf>,
     ollama_model: Option<String>,
     high_risk_strict: bool,
@@ -108,19 +108,26 @@ impl AppStateBuilder {
             std::env::var("OLLAMA_MODEL").unwrap_or_else(|_| "qwen2.5:7b".to_string())
         });
 
-        let policy_runtime = policy_runtime_for(
-            self.policy_file.as_deref(),
-            self.use_test_policy_default,
-        )?;
+        let policy_runtime = Arc::new(RwLock::new(build_policy_sets_from_registry(
+            PolicyRegistryFile::with_defaults(),
+        )));
         let storage = RoleStorage::new(self.roles_dir);
         let _ = fs::create_dir_all(&self.app_data_dir);
         let high_risk_grants =
             HighRiskGrantStore::load(self.app_data_dir.clone(), self.high_risk_strict);
-        let directory_plugins = DirectoryPluginRuntime::bootstrap(
-            storage.roles_dir(),
-            &self.app_data_dir,
-            high_risk_grants.clone(),
-        );
+        let directory_plugins = if self.high_risk_strict {
+            DirectoryPluginRuntime::bootstrap_deferred_scan(
+                storage.roles_dir(),
+                &self.app_data_dir,
+                high_risk_grants.clone(),
+            )
+        } else {
+            DirectoryPluginRuntime::bootstrap(
+                storage.roles_dir(),
+                &self.app_data_dir,
+                high_risk_grants.clone(),
+            )
+        };
         let plugins = PluginHost::new(
             llm.clone(),
             Some(directory_plugins.clone()),
@@ -139,13 +146,14 @@ impl AppStateBuilder {
             role_load_inflight: DashMap::new(),
             session_cache: SessionCache::shared(),
             storage,
-            policy_runtime: Arc::new(RwLock::new(policy_runtime)),
+            policy_runtime,
             ollama_model,
             plugins,
             directory_plugins,
             high_risk_grants,
             startup_health: Mutex::new(None),
             remote_fallback_allowed,
+            policy_file_applied: AtomicBool::new(self.use_test_policy_default),
         })
     }
 }
@@ -187,19 +195,4 @@ async fn remote_fallback_switch(
         remote_allowed = v;
     }
     Ok(new_remote_fallback_switch(remote_allowed))
-}
-
-fn policy_runtime_for(
-    policy_file: Option<&Path>,
-    use_test_policy_default: bool,
-) -> Result<PolicyRuntime> {
-    if let Some(path) = policy_file {
-        let registry = load_policy_registry_from_path(path, false)
-            .unwrap_or_else(|_| PolicyRegistryFile::with_defaults());
-        Ok(build_policy_sets_from_registry(registry))
-    } else if use_test_policy_default {
-        Ok(build_policy_sets_from_registry(PolicyRegistryFile::with_defaults()))
-    } else {
-        Ok(build_policy_sets_from_registry(load_policy_registry()))
-    }
 }
