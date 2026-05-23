@@ -1,5 +1,6 @@
-use parking_lot::RwLock;
-use std::collections::HashMap;
+use lru::LruCache;
+use parking_lot::Mutex;
+use std::num::NonZeroUsize;
 use std::sync::Arc;
 use std::time::{Duration, Instant};
 
@@ -28,8 +29,7 @@ impl<T: Clone> CacheEntry<T> {
 /// 提供线程安全的内存缓存，支持 TTL 过期机制
 #[derive(Debug)]
 pub struct Cache<T: Clone + Send + Sync> {
-    data: Arc<RwLock<HashMap<String, CacheEntry<T>>>>,
-    max_capacity: usize,
+    data: Arc<Mutex<LruCache<String, CacheEntry<T>>>>,
 }
 
 impl<T: Clone + Send + Sync> Cache<T> {
@@ -42,9 +42,9 @@ impl<T: Clone + Send + Sync> Cache<T> {
     /// 创建带容量上限的缓存
     #[must_use]
     pub fn with_capacity(max_capacity: usize) -> Self {
+        let cap = NonZeroUsize::new(max_capacity.max(1)).unwrap_or(NonZeroUsize::MIN);
         Self {
-            data: Arc::new(RwLock::new(HashMap::new())),
-            max_capacity: max_capacity.max(1),
+            data: Arc::new(Mutex::new(LruCache::new(cap))),
         }
     }
 
@@ -53,22 +53,13 @@ impl<T: Clone + Send + Sync> Cache<T> {
     /// 如果缓存过期，会自动清理并返回 None
     #[must_use]
     pub fn get(&self, key: &str) -> Option<T> {
-        {
-            let cache = self.data.read();
-            if let Some(entry) = cache.get(key) {
-                if !entry.is_expired() {
-                    return Some(entry.data.clone());
-                }
-            }
-        }
-
-        let mut cache = self.data.write();
+        let mut cache = self.data.lock();
         match cache.get(key) {
-            Some(entry) if entry.is_expired() => {
-                cache.remove(key);
+            Some(entry) if !entry.is_expired() => Some(entry.data.clone()),
+            Some(_) => {
+                cache.pop(key);
                 None
             }
-            Some(entry) => Some(entry.data.clone()),
             None => None,
         }
     }
@@ -85,46 +76,41 @@ impl<T: Clone + Send + Sync> Cache<T> {
             created_at: Instant::now(),
             ttl,
         };
-        let mut cache = self.data.write();
-        cache.insert(key, entry);
-        Self::enforce_capacity(&mut cache, self.max_capacity);
+        self.data.lock().put(key, entry);
     }
 
     /// 删除缓存
     pub fn remove(&self, key: &str) {
-        self.data.write().remove(key);
+        self.data.lock().pop(key);
     }
 
     /// 清空所有缓存
     pub fn clear(&self) {
-        self.data.write().clear();
+        self.data.lock().clear();
     }
 
     /// 获取缓存大小
     #[must_use]
     pub fn len(&self) -> usize {
-        self.data.read().len()
+        self.data.lock().len()
     }
 
     /// 检查缓存是否为空
     #[must_use]
     pub fn is_empty(&self) -> bool {
-        self.data.read().is_empty()
+        self.data.lock().is_empty()
     }
 
     /// 清理过期缓存
     pub fn cleanup_expired(&self) {
-        let mut cache = self.data.write();
-        cache.retain(|_, entry| !entry.is_expired());
-    }
-
-    fn enforce_capacity(cache: &mut HashMap<String, CacheEntry<T>>, max_capacity: usize) {
-        cache.retain(|_, entry| !entry.is_expired());
-        while cache.len() > max_capacity {
-            let Some(key) = cache.keys().next().cloned() else {
-                break;
-            };
-            cache.remove(&key);
+        let mut cache = self.data.lock();
+        let expired: Vec<String> = cache
+            .iter()
+            .filter(|(_, entry)| entry.is_expired())
+            .map(|(k, _)| k.clone())
+            .collect();
+        for key in expired {
+            cache.pop(&key);
         }
     }
 }
@@ -196,6 +182,18 @@ mod tests {
         assert_eq!(cache.len(), 2);
         cache.set("c".to_string(), 3);
         assert_eq!(cache.len(), 2);
+        assert_eq!(cache.get("c"), Some(3));
+    }
+
+    #[test]
+    fn test_cache_lru_evicts_least_recently_used() {
+        let cache: Cache<u32> = Cache::with_capacity(2);
+        cache.set("a".to_string(), 1);
+        cache.set("b".to_string(), 2);
+        assert_eq!(cache.get("a"), Some(1));
+        cache.set("c".to_string(), 3);
+        assert_eq!(cache.get("a"), Some(1));
+        assert_eq!(cache.get("b"), None);
         assert_eq!(cache.get("c"), Some(3));
     }
 }
