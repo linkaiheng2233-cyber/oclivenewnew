@@ -1,5 +1,6 @@
 //! 进程内会话级缓存（细粒度锁，与 [`crate::state::AppState`] 解耦）。
 
+use crate::infrastructure::cache::Cache;
 use crate::models::{PersonalityVector, PluginBackendsOverride};
 use dashmap::DashMap;
 use oclive_validation::SlotOverridePatch;
@@ -7,12 +8,14 @@ use parking_lot::RwLock;
 use std::collections::{BTreeMap, HashMap};
 use std::sync::Arc;
 
-/// 按用途分锁的会话缓存；各 [`RwLock`] / [`DashMap`] 互不阻塞。
+const PERSONALITY_CACHE_CAPACITY: usize = 1000;
+
+/// 按用途分锁的会话缓存；各 [`RwLock`] / [`DashMap`] / [`Cache`] 互不阻塞。
 pub struct SessionCache {
     plugin_overrides: RwLock<HashMap<String, PluginBackendsOverride>>,
     slot_overrides: RwLock<HashMap<String, BTreeMap<String, SlotOverridePatch>>>,
     complex_emotion_narrative_hint: DashMap<String, String>,
-    personality_snapshots: DashMap<String, PersonalityVector>,
+    personality_snapshots: Cache<PersonalityVector>,
 }
 
 impl SessionCache {
@@ -22,7 +25,7 @@ impl SessionCache {
             plugin_overrides: RwLock::new(HashMap::new()),
             slot_overrides: RwLock::new(HashMap::new()),
             complex_emotion_narrative_hint: DashMap::new(),
-            personality_snapshots: DashMap::new(),
+            personality_snapshots: Cache::with_capacity(PERSONALITY_CACHE_CAPACITY),
         }
     }
 
@@ -57,7 +60,7 @@ impl SessionCache {
         &self.slot_overrides
     }
 
-    pub fn personality_cache(&self) -> &DashMap<String, PersonalityVector> {
+    pub fn personality_cache(&self) -> &Cache<PersonalityVector> {
         &self.personality_snapshots
     }
 }

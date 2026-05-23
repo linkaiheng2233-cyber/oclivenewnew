@@ -84,6 +84,18 @@ impl<T: Clone + Send + Sync> Cache<T> {
         self.data.write().pop(key);
     }
 
+    /// 仅保留 `keep(key) == true` 的条目。
+    pub fn retain(&self, keep: impl Fn(&str) -> bool) {
+        let mut cache = self.data.write();
+        let remove: Vec<String> = cache
+            .iter()
+            .filter_map(|(k, _)| if keep(k) { None } else { Some(k.clone()) })
+            .collect();
+        for k in remove {
+            cache.pop(&k);
+        }
+    }
+
     /// 清空所有缓存
     pub fn clear(&self) {
         self.data.write().clear();
