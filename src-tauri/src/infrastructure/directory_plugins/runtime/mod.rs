@@ -7,13 +7,9 @@ use crate::models::ui_config::UiConfig;
 use parking_lot::{Mutex, RwLock};
 use serde::{Deserialize, Serialize};
 use std::collections::{HashMap, VecDeque};
-use std::io::{BufRead, BufReader};
 use std::path::{Path, PathBuf};
-use std::process::{Command, Stdio};
 use std::sync::atomic::{AtomicU64, Ordering};
 use std::sync::Arc;
-use std::thread;
-use std::time::{Duration, Instant, SystemTime, UNIX_EPOCH};
 
 /// `%APPDATA%/…/oclive_host_plugins.json`
 #[derive(Debug, Clone, Deserialize, Serialize, Default)]
@@ -145,10 +141,10 @@ pub fn scan_plugins(
     PluginScanSummary { plugin_ids, roots }
 }
 
-const DEBUG_LOG_RING_CAP: usize = 1000;
+pub(crate) const DEBUG_LOG_RING_CAP: usize = 1000;
 
 #[derive(Debug, Default)]
-struct DebugLogRing {
+pub(crate) struct DebugLogRing {
     lines: VecDeque<String>,
 }
 
@@ -184,7 +180,7 @@ pub struct PluginProcessDebugInfo {
     pub memory_kb: Option<u64>,
 }
 
-fn parse_ready_line(line: &str, prefix: &str) -> Option<String> {
+pub(crate) fn parse_ready_line(line: &str, prefix: &str) -> Option<String> {
     let t = line.trim();
     let rest = t.strip_prefix(prefix)?.trim();
     if rest.starts_with("http://") || rest.starts_with("https://") {
@@ -603,302 +599,7 @@ impl DirectoryPluginRuntime {
             plugin_id, entry
         ))
     }
-    /// # Errors
-    ///
-    /// Returns [`Err`] with a human-readable message when the operation fails.
-    /// 懒启动：返回 JSON-RPC 根 URL（含 path，如 `http://127.0.0.1:9/rpc`）。
-    pub fn ensure_rpc_url(&self, plugin_id: &str) -> Result<String, String> {
-        self.ensure_rpc_url_impl(plugin_id, false, None)
-    }
-    /// # Errors
-    ///
-    /// Returns [`Err`] with a human-readable message when the operation fails.
-    /// 与 [`Self::ensure_rpc_url`] 相同，但不拒绝「停用插件」，并可选注入 `OCLIVE_DEBUG_PLUGIN_CONFIG`。
-    pub fn ensure_rpc_url_for_debug(
-        &self,
-        plugin_id: &str,
-        config_json: Option<&str>,
-    ) -> Result<String, String> {
-        self.ensure_rpc_url_impl(plugin_id, true, config_json)
-    }
-
-    fn ensure_rpc_url_impl(
-        &self,
-        plugin_id: &str,
-        ignore_disabled: bool,
-        config_json: Option<&str>,
-    ) -> Result<String, String> {
-        let id = plugin_id.trim();
-        if id.is_empty() {
-            return Err("plugin_id required".to_string());
-        }
-        if !ignore_disabled && self.effective_slots().is_plugin_disabled(id) {
-            return Err(format!("plugin disabled: {}", id));
-        }
-        if let Some(u) = self.rpc_urls.lock().get(id) {
-            return Ok(u.clone());
-        }
-        let lock = {
-            let mut map = self.startup_locks.lock();
-            map.entry(id.to_string())
-                .or_insert_with(|| Arc::new(Mutex::new(())))
-                .clone()
-        };
-        let _startup = lock.lock();
-        if let Some(u) = self.rpc_urls.lock().get(id) {
-            return Ok(u.clone());
-        }
-        let root = self
-            .plugin_roots
-            .read()
-            .get(id)
-            .cloned()
-            .ok_or_else(|| format!("unknown directory plugin_id={}", id))?;
-        let manifest = OclivePluginManifest::load_from_dir(&root)?;
-        if manifest.process.is_some() {
-            if !oclive_validation::manifest_declares_process_spawn(&manifest.permissions, true) {
-                tracing::warn!(
-                    target: "oclive_plugin",
-                    "directory plugin id={} spawn blocked: manifest missing process:spawn permission",
-                    id
-                );
-                return Err(format!(
-                    "directory plugin spawn not permitted: plugin_id={} missing process:spawn in manifest permissions",
-                    id
-                ));
-            }
-            if !self.high_risk_grants.is_process_spawn_granted(id) {
-                tracing::warn!(
-                    target: "oclive_plugin",
-                    "directory plugin id={} spawn blocked: grant process:spawn missing",
-                    id
-                );
-                return Err(format!(
-                    "directory plugin spawn not granted: plugin_id={}",
-                    id
-                ));
-            }
-        }
-        let (url, child, started_ms) =
-            self.spawn_child_handshake(id, root, manifest, config_json)?;
-        self.children.lock().insert(id.to_string(), child);
-        self.rpc_urls.lock().insert(id.to_string(), url.clone());
-        self.process_started_ms
-            .lock()
-            .insert(id.to_string(), started_ms);
-        tracing::info!(
-            target: "oclive_plugin",
-            "directory plugin id={} rpc_url={}",
-            id,
-            url
-        );
-        Ok(url)
-    }
-
-    fn spawn_child_handshake(
-        &self,
-        plugin_id: &str,
-        root: PathBuf,
-        manifest: OclivePluginManifest,
-        config_json: Option<&str>,
-    ) -> Result<(String, std::process::Child, u64), String> {
-        let proc = manifest
-            .process
-            .as_ref()
-            .ok_or_else(|| format!("plugin {} has no process section", plugin_id))?;
-        let prefix = if manifest.ready_prefix.trim().is_empty() {
-            "OCLIVE_READY"
-        } else {
-            manifest.ready_prefix.trim()
-        };
-        let log_ring = Arc::new(Mutex::new(DebugLogRing::default()));
-        self.debug_log_rings
-            .lock()
-            .insert(plugin_id.to_string(), log_ring.clone());
-
-        let mut cmd = Command::new(&proc.command);
-        for a in &proc.args {
-            cmd.arg(a);
-        }
-        let cwd = proc
-            .cwd
-            .as_ref()
-            .map(|c| root.join(c))
-            .unwrap_or_else(|| root.clone());
-        cmd.current_dir(&cwd);
-        cmd.stdin(Stdio::null());
-        cmd.stdout(Stdio::piped());
-        cmd.stderr(Stdio::piped());
-        if let Some(cfg) = config_json {
-            let t = cfg.trim();
-            if !t.is_empty() {
-                cmd.env("OCLIVE_DEBUG_PLUGIN_CONFIG", t);
-            }
-        }
-
-        let mut child = match cmd.spawn() {
-            Ok(c) => c,
-            Err(e) => {
-                self.debug_log_rings.lock().remove(plugin_id);
-                return Err(format!("spawn plugin {}: {}", plugin_id, e));
-            }
-        };
-        let stdout = match child.stdout.take() {
-            Some(s) => s,
-            None => {
-                let _ = child.kill();
-                self.debug_log_rings.lock().remove(plugin_id);
-                return Err(format!("plugin {}: no stdout", plugin_id));
-            }
-        };
-        let stderr = match child.stderr.take() {
-            Some(s) => s,
-            None => {
-                let _ = child.kill();
-                self.debug_log_rings.lock().remove(plugin_id);
-                return Err(format!("plugin {}: no stderr", plugin_id));
-            }
-        };
-
-        let handshake = Arc::new(Mutex::new(Vec::<String>::new()));
-        let handshake_out = handshake.clone();
-        let ring_out = log_ring.clone();
-        thread::spawn(move || {
-            let r = BufReader::new(stdout);
-            for result in r.lines() {
-                match result {
-                    Ok(line) => {
-                        handshake_out.lock().push(line.clone());
-                        ring_out.lock().push_line(format!("[stdout] {}", line));
-                    }
-                    Err(_) => break,
-                }
-            }
-        });
-        let ring_err = log_ring.clone();
-        thread::spawn(move || {
-            let r = BufReader::new(stderr);
-            for result in r.lines() {
-                match result {
-                    Ok(line) => ring_err.lock().push_line(format!("[stderr] {}", line)),
-                    Err(_) => break,
-                }
-            }
-        });
-
-        let deadline = Instant::now() + Duration::from_secs(30);
-        let url = 'wait: loop {
-            if Instant::now() > deadline {
-                let _ = child.kill();
-                self.debug_log_rings.lock().remove(plugin_id);
-                return Err(format!(
-                    "plugin {}: timeout waiting for {} URL",
-                    plugin_id, prefix
-                ));
-            }
-            for line in handshake.lock().iter() {
-                if let Some(u) = parse_ready_line(line, prefix) {
-                    break 'wait u;
-                }
-            }
-            thread::sleep(Duration::from_millis(50));
-        };
-        let started_ms = SystemTime::now()
-            .duration_since(UNIX_EPOCH)
-            .map(|d| d.as_millis() as u64)
-            .unwrap_or(0);
-        Ok((url, child, started_ms))
-    }
-    /// # Errors
-    ///
-    /// Returns [`Err`] with a human-readable message when the operation fails.
-    /// 开发者调试：确保子进程已握手并返回进程信息（已运行时直接返回快照）。
-    pub fn spawn_plugin_for_test(
-        &self,
-        plugin_id: &str,
-        config_json: Option<&str>,
-    ) -> Result<PluginProcessDebugInfo, String> {
-        let id = plugin_id.trim();
-        if id.is_empty() {
-            return Err("plugin_id required".to_string());
-        }
-        if self.rpc_urls.lock().contains_key(id) && self.children.lock().contains_key(id) {
-            let ch = self.children.lock();
-            let child = ch
-                .get(id)
-                .ok_or_else(|| "internal: child map inconsistent".to_string())?;
-            let pid = child.id();
-            let url = self.rpc_urls.lock().get(id).cloned().unwrap_or_default();
-            let started_ms = self.process_started_ms.lock().get(id).copied().unwrap_or(0);
-            return Ok(PluginProcessDebugInfo {
-                plugin_id: id.to_string(),
-                pid,
-                rpc_url: url,
-                started_at_ms: started_ms,
-                cpu_percent: None,
-                memory_kb: None,
-            });
-        }
-        let url = self.ensure_rpc_url_for_debug(id, config_json)?;
-        let (pid, started_ms) = {
-            let ch = self.children.lock();
-            let child = ch
-                .get(id)
-                .ok_or_else(|| "process missing after spawn".to_string())?;
-            let pid = child.id();
-            let started_ms = self.process_started_ms.lock().get(id).copied().unwrap_or(0);
-            (pid, started_ms)
-        };
-        Ok(PluginProcessDebugInfo {
-            plugin_id: id.to_string(),
-            pid,
-            rpc_url: url,
-            started_at_ms: started_ms,
-            cpu_percent: None,
-            memory_kb: None,
-        })
-    }
-
-    pub fn get_plugin_log_tail(&self, plugin_id: &str, lines: usize) -> Vec<String> {
-        let id = plugin_id.trim();
-        let ring = self.debug_log_rings.lock().get(id).cloned();
-        let Some(ring) = ring else {
-            return vec![];
-        };
-        let out = ring.lock().tail(lines.clamp(1, DEBUG_LOG_RING_CAP));
-        out
-    }
-
-    pub fn clear_plugin_log_buffer(&self, plugin_id: &str) {
-        let id = plugin_id.trim();
-        let ring = self.debug_log_rings.lock().get(id).cloned();
-        if let Some(ring) = ring {
-            ring.lock().clear();
-        }
-    }
-
-    #[must_use]
-    pub fn list_managed_plugin_processes(&self) -> Vec<PluginProcessDebugInfo> {
-        let urls = self.rpc_urls.lock();
-        let times = self.process_started_ms.lock();
-        let children = self.children.lock();
-        let mut out: Vec<PluginProcessDebugInfo> = children
-            .iter()
-            .map(|(pid_key, child)| {
-                let pid = child.id();
-                let rpc_url = urls.get(pid_key).cloned().unwrap_or_default();
-                let started_at_ms = times.get(pid_key).copied().unwrap_or(0);
-                PluginProcessDebugInfo {
-                    plugin_id: pid_key.clone(),
-                    pid,
-                    rpc_url,
-                    started_at_ms,
-                    cpu_percent: None,
-                    memory_kb: None,
-                }
-            })
-            .collect();
-        out.sort_by(|a, b| a.plugin_id.cmp(&b.plugin_id));
-        out
-    }
 }
+
+mod rpc;
+mod spawn;
