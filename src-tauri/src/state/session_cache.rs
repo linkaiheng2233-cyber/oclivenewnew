@@ -11,7 +11,7 @@ use std::sync::Arc;
 pub struct SessionCache {
     plugin_overrides: RwLock<HashMap<String, PluginBackendsOverride>>,
     slot_overrides: RwLock<HashMap<String, BTreeMap<String, SlotOverridePatch>>>,
-    complex_emotion_narrative_hint: RwLock<HashMap<String, String>>,
+    complex_emotion_narrative_hint: DashMap<String, String>,
     personality_snapshots: DashMap<String, PersonalityVector>,
 }
 
@@ -21,7 +21,7 @@ impl SessionCache {
         Self {
             plugin_overrides: RwLock::new(HashMap::new()),
             slot_overrides: RwLock::new(HashMap::new()),
-            complex_emotion_narrative_hint: RwLock::new(HashMap::new()),
+            complex_emotion_narrative_hint: DashMap::new(),
             personality_snapshots: DashMap::new(),
         }
     }
@@ -33,18 +33,17 @@ impl SessionCache {
 
     pub fn stored_complex_emotion_narrative_hint(&self, srid: &str) -> String {
         self.complex_emotion_narrative_hint
-            .read()
             .get(srid)
-            .cloned()
+            .map(|v| v.clone())
             .unwrap_or_default()
     }
 
     pub fn set_stored_complex_emotion_narrative_hint(&self, srid: &str, hint: String) {
-        let mut w = self.complex_emotion_narrative_hint.write();
         if hint.trim().is_empty() {
-            w.remove(srid);
+            self.complex_emotion_narrative_hint.remove(srid);
         } else {
-            w.insert(srid.to_string(), hint);
+            self.complex_emotion_narrative_hint
+                .insert(srid.to_string(), hint);
         }
     }
 

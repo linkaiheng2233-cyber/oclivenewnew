@@ -25,15 +25,8 @@ pub(crate) async fn load_recent_context(
         },
         state.db_manager.get_events(role_id, 8),
     )?;
-    let recent_turns_for_event: Vec<(String, String)> = recent_turns
-        .iter()
-        .rev()
-        .take(5)
-        .cloned()
-        .collect::<Vec<_>>()
-        .into_iter()
-        .rev()
-        .collect();
+    let start = recent_turns.len().saturating_sub(5);
+    let recent_turns_for_event = recent_turns[start..].to_vec();
     Ok((
         recent_turns,
         recent_turns_for_event,
