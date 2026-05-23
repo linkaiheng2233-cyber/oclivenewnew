@@ -6,6 +6,32 @@ This file tracks **mid/long-term** engineering debt, activation criteria, and ba
 
 ---
 
+## Opus 4.7 scan vs local verification (2026-05-20)
+
+Cross-repo optimization scan (Opus 4.7) plus **local grep/build verification**. Status key: **Done** · **Corrected** · **Confirmed** · **Pending**.
+
+| Finding | Opus claim | Verified | Status |
+|---------|------------|----------|--------|
+| `db.rs` ~36 `.unwrap()` on hot path | Production panic risk on `row.get` | **2×** `unwrap_or_else` in prod (RFC3339 fallback); rest in `mod tests` | **Corrected** → `parse_memory_created_at` + warn log; file split to `infrastructure/db/*` |
+| `role_pack.rs` / `dual_pipeline.rs` unwrap | User-input panic | All in `#[cfg(test)]` | **Corrected** |
+| `dual_pipeline_steps` `.expect("emotion_result set")` | Invariant panic | Replaced with `ProcessMessageError::dual_core_invalid` | **Done** |
+| `plugin_host.rs` 63× `.clone()` | Hot-path copy waste | Mix of `Arc` vs owned; needs per-field audit | **Pending** |
+| `tauri-api.ts` monolith | Hard to navigate / camelCase drift | Split → `src/api/{helpers,chat,role,settings,plugin,agent,diagnostics}.ts` + `toCamelPayload` | **Done** |
+| `zh-CN.ts` / `en-US.ts` size | Linear bundle growth | Aggregators + `fragments/{app,settings,pluginManager,common,roleRuntime,editor}.*` | **Done** |
+| `@vue-flow` first-screen | Lazy-load + chunk | `PluginManagerPanel` not in current `App.vue` entry; `manualChunks` + `defineAsyncComponent` ready | **Corrected** / chunk when V1 panel wired |
+| `pluginStore` module `Map` memo | Multi-instance stale cache | Moved to `slotOrderMemoBySlot` in store state | **Done** |
+| `check:release` gaps | No `test:unit` / `verify:ui` | Chained in `package.json` | **Done** |
+| Prod `console.*` | Not stripped | `esbuild.drop: ['console','debugger']` in prod | **Done** |
+| `AppState` 14× `RwLock<HashMap>` | Lock contention | **4** session maps + `role_cache`; extracted `SessionCache` with per-field locks | **Done** (1× `role_cache` remains) |
+| `db.rs` 1950 lines / 62 fns | Split by table | `db/{mod,long_term_memory,role_runtime,relation_state,session_state,plugin_state}.rs` + `RoleRuntimeRepo` | **Done** |
+| Sister-repo i18n drift | Shared package | Not started | **Pending** |
+| `fuzz/` sparse | Add validation targets | Not started | **Pending** |
+| CI `npm audit --omit=dev` | Visibility job | Not started | **Pending** |
+
+**Scripts (repeatable):** `scripts/split-tauri-api.mjs`, `scripts/migrate-tauri-api-imports.mjs`, `scripts/split-i18n-locales.mjs`, `scripts/split-db-rs.mjs`.
+
+---
+
 ## Batch 4 summary (2026-05)
 
 | Original ID | Item | Effort | Batch 4 decision | Status |
