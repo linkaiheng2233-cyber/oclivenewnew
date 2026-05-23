@@ -9,7 +9,6 @@ import ChatInput from './components/ChatInput.vue'
 import ChatMessageList from './components/ChatMessageList.vue'
 import ChatPluginToolbarSlots from './components/ChatPluginToolbarSlots.vue'
 import DebugPanel from './components/DebugPanel.vue'
-import HelpHint from './components/HelpHint.vue'
 import HotkeyHost from './components/HotkeyHost.vue'
 import PluginChatHeaderSlots from './components/PluginChatHeaderSlots.vue'
 import PluginSidebarSlots from './components/PluginSidebarSlots.vue'
@@ -18,19 +17,18 @@ import RoleplayAsidePanel from './components/RoleplayAsidePanel.vue'
 import RoleSelector from './components/RoleSelector.vue'
 import SceneTravelBars from './components/SceneTravelBars.vue'
 import ShortcutHelp from './components/ShortcutHelp.vue'
+import TopBarMorePanel from './components/TopBarMorePanel.vue'
 import Toast from './components/Toast.vue'
 import TopBarSceneModeDialog from './components/TopBarSceneModeDialog.vue'
-import VirtualTimeBar from './components/VirtualTimeBar.vue'
 import { useAppToast } from './composables/useAppToast'
 import { useNarrativeScene } from './composables/useNarrativeScene'
 import { useOcliveAppearance } from './composables/useOcliveAppearance'
 import { usePluginManagerWindow } from './composables/usePluginManagerWindow'
+import { useReturnFocusOnClose } from './composables/useReturnFocusOnClose'
 import { useSceneDestination } from './composables/useSceneDestination'
 import { usePackUiTheme } from './composables/useTheme'
 import {
   getLocalePreference,
-
-  setLocalePreference,
 } from './i18n'
 import { hostEventBus } from './lib/hostEventBus'
 import { useChatStore } from './stores/chatStore'
@@ -69,45 +67,19 @@ function syncBrowserChromeFromLocale(): void {
 }
 const localePreference = ref<LocalePreference>(getLocalePreference())
 
-function onLocalePreferenceChange(ev: Event): void {
-  const el = ev.target as HTMLSelectElement | null
-  if (!el)
-    return
-  const v = el.value as LocalePreference
-  setLocalePreference(v)
-  localePreference.value = v
-}
 const { toast, showToast } = useAppToast()
-const { themePreference, themeCycleLabel, cycleTheme, bumpScale, scaleLabel }
-  = useOcliveAppearance()
+const { cycleTheme } = useOcliveAppearance()
 const { applyResolvedNarrativeScene } = useNarrativeScene()
 const {
   sceneTransition,
   applySceneDestination,
   sceneLabelForId,
-  characterSceneLabel,
 } = useSceneDestination(showToast)
 
 const chatListRef = ref<InstanceType<typeof ChatMessageList> | null>(null)
 const chatInputRef = ref<{ focusInput?: () => void } | null>(null)
 const leftPaneRef = ref<HTMLElement | null>(null)
 const roleSwitching = ref(false)
-
-/** Escape / backdrop 关闭对话框后恢复打开前的焦点 */
-const settingsFocusReturn = ref<HTMLElement | null>(null)
-const simplePluginManagerFocusReturn = ref<HTMLElement | null>(null)
-const shortcutHelpFocusReturn = ref<HTMLElement | null>(null)
-
-function stashFocusTarget(target: typeof settingsFocusReturn): void {
-  const a = document.activeElement
-  target.value = a instanceof HTMLElement ? a : null
-}
-
-function restoreFocusTarget(target: typeof settingsFocusReturn): void {
-  const el = target.value
-  target.value = null
-  void nextTick(() => el?.focus({ preventScroll: true }))
-}
 
 /** 角色回复结束后，若本句含位移意图且有多场景，显示目的地条 */
 const postReplySceneBarVisible = ref(false)
@@ -241,40 +213,9 @@ const {
   },
 })
 
-watch(settingsViewOpen, (open) => {
-  if (open) {
-    stashFocusTarget(settingsFocusReturn)
-  }
-  else {
-    restoreFocusTarget(settingsFocusReturn)
-  }
-})
-
-watch(simplePluginManagerOpen, (open) => {
-  if (open) {
-    stashFocusTarget(simplePluginManagerFocusReturn)
-  }
-  else {
-    restoreFocusTarget(simplePluginManagerFocusReturn)
-  }
-})
-
-watch(shortcutHelpOpen, (open) => {
-  if (open) {
-    stashFocusTarget(shortcutHelpFocusReturn)
-  }
-  else {
-    restoreFocusTarget(shortcutHelpFocusReturn)
-  }
-})
-
-const topBarRef = ref<HTMLElement | null>(null)
-let morePanelClickListenTimer: ReturnType<typeof setTimeout> | null = null
-
-function toggleTopMore(e: Event) {
-  e.stopPropagation()
-  topMoreOpen.value = !topMoreOpen.value
-}
+useReturnFocusOnClose(settingsViewOpen)
+useReturnFocusOnClose(simplePluginManagerOpen)
+useReturnFocusOnClose(shortcutHelpOpen)
 
 function openShortcutHelp(): void {
   shortcutHelpOpen.value = true
@@ -286,13 +227,6 @@ function openSettingsView(): void {
   topMoreOpen.value = false
 }
 
-function onDocumentClickCloseMore(e: MouseEvent) {
-  if (!topMoreOpen.value)
-    return
-  const el = topBarRef.value
-  if (el && !el.contains(e.target as Node))
-    topMoreOpen.value = false
-}
 const sceneHistorySplitIndex = computed(() =>
   chatStore.sceneHistorySplitForRoleScene(roleStore.currentRoleId, uiStore.sceneId),
 )
@@ -754,26 +688,7 @@ onMounted(() => {
   void runPendingProtocolInstallsFromQueue()
 })
 
-watch(topMoreOpen, (open) => {
-  if (morePanelClickListenTimer != null) {
-    clearTimeout(morePanelClickListenTimer)
-    morePanelClickListenTimer = null
-  }
-  document.removeEventListener('click', onDocumentClickCloseMore)
-  if (open) {
-    nextTick(() => {
-      morePanelClickListenTimer = setTimeout(() => {
-        morePanelClickListenTimer = null
-        document.addEventListener('click', onDocumentClickCloseMore)
-      }, 0)
-    })
-  }
-})
-
 onBeforeUnmount(() => {
-  if (morePanelClickListenTimer != null)
-    clearTimeout(morePanelClickListenTimer)
-  document.removeEventListener('click', onDocumentClickCloseMore)
   if (splitLayoutResizeRaf !== 0) {
     cancelAnimationFrame(splitLayoutResizeRaf)
     splitLayoutResizeRaf = 0
@@ -798,248 +713,39 @@ onBeforeUnmount(() => {
   <main class="layout">
     <div class="app-frame">
       <!-- 对齐 oclive-new：顶栏角色 + 时间/场景 -->
-      <header ref="topBarRef" class="top-bar">
-        <div class="top-bar-row">
-          <RoleSelector
-            variant="topbar"
-            :sections="['role']"
-            :current-role-id="roleStore.currentRoleId"
-            :current-relation="roleStore.relationSelectValue"
-            :roles="roleStore.roles"
-            :relations="relationOptions"
-            :loading="chatStore.isLoading"
-            @change-role="onSwitchRole"
-            @change-relation="onChangeRelation"
-          />
-          <button
-            type="button"
-            class="more-toggle"
-            :aria-expanded="topMoreOpen"
-            aria-controls="top-more-panel"
-            @click="toggleTopMore"
-          >
-            {{ topMoreOpen ? t("app.more.collapse") : t("app.more.more") }}
-          </button>
-        </div>
-
-        <div
-          v-show="topMoreOpen"
-          id="top-more-panel"
-          class="top-more-panel"
-          role="region"
-          :aria-label="t('app.more.ariaMoreFeatures')"
-          @click.stop
+      <header class="top-bar">
+        <TopBarMorePanel
+          v-model="topMoreOpen"
+          v-model:locale-preference="localePreference"
+          :relation-options="relationOptions"
+          :all-scene-options="allSceneOptions"
+          :settings-entry-more-help="settingsEntryMoreHelp"
+          :plugin-manager-more-btn-label="pluginManagerMoreBtnLabel"
+          @open-settings="openSettingsView"
+          @open-shortcut-help="openShortcutHelp"
+          @open-plugin-manager="openPluginManagerPanel"
+          @open-plugin-market="openPluginMarket"
+          @scene-change="onTopBarSceneChange"
+          @interaction-mode-change="onInteractionModeChange"
+          @change-role="onSwitchRole"
+          @change-relation="onChangeRelation"
+          @notify="(p) => showToast(p.type, p.message)"
+          @virtual-time-jump-complete="onVirtualTimeJumpComplete"
         >
-          <div class="more-grid">
-            <div class="more-tile more-tile--xs">
-              <div class="more-tile-head">
-                <span class="more-label">{{ t("app.locale.label") }}</span>
-              </div>
-              <div class="more-tile-body">
-                <select
-                  class="interaction-mode-select more-select more-select--fill"
-                  :value="localePreference"
-                  @change="onLocalePreferenceChange"
-                >
-                  <option value="system">
-                    {{ t("app.locale.system") }}
-                  </option>
-                  <option value="zh-CN">
-                    {{ t("app.locale.zhCN") }}
-                  </option>
-                  <option value="en-US">
-                    {{ t("app.locale.enUS") }}
-                  </option>
-                </select>
-              </div>
-            </div>
-
-            <div class="more-tile more-tile--xs">
-              <div class="more-tile-head">
-                <span class="more-label">{{ t("app.more.interactionMode") }}</span>
-                <HelpHint
-                  :paragraphs="[
-                    t('app.more.interactionImmersiveHint'),
-                    t('app.more.interactionPureChatHint'),
-                  ]"
-                />
-              </div>
-              <div class="more-tile-body">
-                <select
-                  id="interaction-mode"
-                  class="interaction-mode-select more-select more-select--fill"
-                  :value="roleStore.roleInfo.interactionMode"
-                  @change="onInteractionModeChange"
-                >
-                  <option value="immersive">
-                    {{ t("app.more.interactionImmersive") }}
-                  </option>
-                  <option value="pure_chat">
-                    {{ t("app.more.interactionPureChat") }}
-                  </option>
-                </select>
-              </div>
-            </div>
-
-            <div class="more-tile more-tile--sm">
-              <div class="more-tile-head">
-                <span class="more-label">{{ t("app.more.identity") }}</span>
-                <HelpHint :text="t('app.more.identityHelp')" />
-              </div>
-              <div class="more-tile-body more-tile-body--selector">
-                <RoleSelector
-                  variant="topbar"
-                  :sections="['relation']"
-                  :current-role-id="roleStore.currentRoleId"
-                  :current-relation="roleStore.relationSelectValue"
-                  :roles="roleStore.roles"
-                  :relations="relationOptions"
-                  :loading="chatStore.isLoading"
-                  @change-role="onSwitchRole"
-                  @change-relation="onChangeRelation"
-                />
-              </div>
-            </div>
-
-            <div class="more-tile more-tile--lg">
-              <div class="more-tile-head">
-                <span class="more-label">{{ t("app.more.ui") }}</span>
-                <HelpHint
-                  :paragraphs="[t('app.more.uiHint1'), t('app.more.uiHint2')]"
-                />
-              </div>
-              <div class="more-tile-body">
-                <div class="top-bar-appearance" role="toolbar" :aria-label="t('app.more.appearanceToolbar')">
-                  <div class="appearance-scale" :aria-label="t('app.more.scaleGroup')">
-                    <button
-                      type="button"
-                      class="appearance-icon-btn"
-                      :title="t('app.more.shrinkTitle')"
-                      :aria-label="t('app.more.shrinkAria')"
-                      @click="bumpScale(-1)"
-                    >
-                      A−
-                    </button>
-                    <span
-                      class="appearance-scale-value"
-                      :title="t('app.more.scaleRelativeTitle', { label: scaleLabel })"
-                    >{{ scaleLabel }}</span>
-                    <button
-                      type="button"
-                      class="appearance-icon-btn"
-                      :title="t('app.more.enlargeTitle')"
-                      :aria-label="t('app.more.enlargeAria')"
-                      @click="bumpScale(1)"
-                    >
-                      A+
-                    </button>
-                  </div>
-                  <button
-                    type="button"
-                    class="appearance-theme-btn"
-                    :title="t('app.more.themeTitle', { label: themeCycleLabel })"
-                    @click="cycleTheme"
-                  >
-                    {{
-                      themePreference === "system"
-                        ? "◐"
-                        : themePreference === "dark"
-                          ? "🌙"
-                          : "☀️"
-                    }}
-                    {{ themeCycleLabel }}
-                  </button>
-                </div>
-              </div>
-            </div>
-
-            <div class="more-tile more-tile--action settings-entry-tile">
-              <div class="more-tile-head">
-                <span class="more-label">{{ t("app.more.settingsEntry") }}</span>
-                <HelpHint :text="settingsEntryMoreHelp" />
-              </div>
-              <div class="more-tile-body settings-entry-actions" role="group" :aria-label="t('app.more.settingsEntry')">
-                <button type="button" class="more-debug-btn more-debug-btn--fill settings-entry-btn" @click="openShortcutHelp">
-                  {{ t("app.more.shortcutHelp") }}
-                </button>
-                <button
-                  type="button"
-                  class="more-debug-btn more-debug-btn--fill settings-entry-btn settings-entry-btn--primary settings-gear-btn"
-                  @click="openSettingsView"
-                >
-                  {{ t("app.more.openSettings") }}
-                </button>
-                <button
-                  type="button"
-                  class="more-debug-btn more-debug-btn--fill settings-entry-btn"
-                  @click="openPluginManagerPanel"
-                >
-                  {{ pluginManagerMoreBtnLabel }}
-                </button>
-                <button
-                  type="button"
-                  class="more-debug-btn more-debug-btn--fill settings-entry-btn"
-                  @click="openPluginMarket"
-                >
-                  {{ t("app.more.pluginMarket") }}
-                </button>
-              </div>
-            </div>
-
-            <div class="more-tile more-tile--action">
-              <div class="more-tile-head">
-                <span class="more-label">{{ t("app.more.debug") }}</span>
-                <HelpHint :text="t('app.more.debugHelp')" />
-              </div>
-              <div class="more-tile-body">
-                <button type="button" class="more-debug-btn more-debug-btn--fill" @click="debugStore.toggle">
-                  {{ t("app.more.openDebugPanel") }}
-                </button>
-              </div>
-            </div>
-
-            <template v-if="roleStore.interactionImmersive">
-              <div class="more-tile more-tile--third">
-                <div class="more-tile-head more-tile-head--tight">
-                  <span class="more-label">{{ t("app.more.virtualTime") }}</span>
-                  <HelpHint
-                    :paragraphs="[t('app.more.virtualTimeHint1'), t('app.more.virtualTimeHint2')]"
-                  />
-                </div>
-                <div class="more-tile-body more-tile-body--row">
-                  <VirtualTimeBar
-                    compact
-                    class="more-vtime"
-                    :role-id="roleStore.currentRoleId"
-                    @notify="(p) => showToast(p.type, p.message)"
-                    @refreshed="roleStore.refreshRoleInfo"
-                    @jump-complete="onVirtualTimeJumpComplete"
-                  />
-                </div>
-              </div>
-
-              <div v-if="allSceneOptions.length > 0" class="more-tile more-tile--third">
-                <div class="more-tile-head more-tile-head--tight">
-                  <span class="more-label">{{ t("app.more.narrativeScene") }}</span>
-                  <HelpHint :text="t('app.more.narrativeSceneHelp')" />
-                </div>
-                <div class="more-tile-body more-tile-body--scene more-tile-body--scene-inline">
-                  <select
-                    id="top-scene-select"
-                    class="scene-select more-select more-select--fill"
-                    :value="uiStore.sceneId"
-                    @change="onTopBarSceneChange($event)"
-                  >
-                    <option v-for="s in allSceneOptions" :key="s.id" :value="s.id">
-                      {{ s.label }}
-                    </option>
-                  </select>
-                  <span class="scene-row-hint scene-row-hint--tile">{{ t('app.more.characterAt', { label: characterSceneLabel() }) }}</span>
-                </div>
-              </div>
-            </template>
-          </div>
-        </div>
+          <template #leading>
+            <RoleSelector
+              variant="topbar"
+              :sections="['role']"
+              :current-role-id="roleStore.currentRoleId"
+              :current-relation="roleStore.relationSelectValue"
+              :roles="roleStore.roles"
+              :relations="relationOptions"
+              :loading="chatStore.isLoading"
+              @change-role="onSwitchRole"
+              @change-relation="onChangeRelation"
+            />
+          </template>
+        </TopBarMorePanel>
       </header>
 
       <div
@@ -1288,344 +994,6 @@ onBeforeUnmount(() => {
   border-bottom: 1px solid var(--border-light);
   border-left: 3px solid var(--rail-accent-runtime);
   box-shadow: 0 1px 0 color-mix(in srgb, var(--accent) 12%, transparent);
-}
-.top-bar-row {
-  display: flex;
-  flex-wrap: wrap;
-  align-items: center;
-  justify-content: space-between;
-  gap: 10px;
-}
-.settings-entry-tile {
-  min-width: min(24rem, 100%);
-}
-.settings-entry-actions {
-  display: grid;
-  grid-template-columns: repeat(3, minmax(0, 1fr));
-  gap: 8px;
-}
-.settings-entry-btn {
-  min-height: 34px;
-  font-size: 12px;
-  font-weight: 600;
-}
-.settings-entry-btn--primary {
-  border-color: color-mix(in srgb, var(--accent) 48%, var(--border-light) 52%);
-  color: var(--text-accent);
-  background: color-mix(in srgb, var(--bg-elevated) 75%, var(--accent-soft) 25%);
-}
-.settings-gear-btn {
-  justify-content: center;
-}
-@media (max-width: 680px) {
-  .settings-entry-actions {
-    grid-template-columns: 1fr;
-  }
-}
-.more-toggle {
-  flex-shrink: 0;
-  padding: 6px 14px;
-  border-radius: var(--radius-btn);
-  border: 1px solid var(--border-light);
-  background: var(--bg-elevated);
-  color: var(--text-primary);
-  font-size: 12px;
-  font-weight: 600;
-  font-family: var(--font-ui);
-  cursor: pointer;
-  transition: var(--control-transition);
-}
-.more-toggle:hover {
-  border-color: color-mix(in srgb, var(--border-light) 70%, var(--text-secondary) 30%);
-  color: var(--text-accent);
-}
-.more-toggle:focus {
-  outline: none;
-}
-.more-toggle:focus-visible {
-  box-shadow: 0 0 0 2px color-mix(in srgb, var(--focus-ring-color) 35%, transparent);
-}
-.top-more-panel {
-  margin-top: 10px;
-  padding-top: 12px;
-  border-top: 1px solid var(--border-light);
-}
-.top-more-panel .interaction-mode-select,
-.top-more-panel .scene-select {
-  font-size: 13px;
-  padding: 6px 10px;
-  line-height: 1.4;
-}
-.top-more-panel .appearance-icon-btn,
-.top-more-panel .appearance-theme-btn {
-  font-size: 13px;
-  min-height: 30px;
-}
-.top-more-panel .more-debug-btn {
-  font-size: 13px;
-  padding: 8px 12px;
-}
-.more-grid {
-  display: flex;
-  flex-wrap: wrap;
-  justify-content: flex-start;
-  align-items: flex-start;
-  align-content: flex-start;
-  gap: 12px 16px;
-}
-.more-tile {
-  box-sizing: border-box;
-  min-width: 0;
-  padding: 12px 14px;
-  border-radius: var(--radius-btn);
-  border: 1px solid var(--border-light);
-  background: color-mix(in srgb, var(--bg-elevated) 72%, transparent);
-  display: flex;
-  flex-direction: column;
-  gap: 10px;
-  box-shadow: var(--shadow-sm);
-}
-/* 按功能自然占地：不强行 flex-grow 拉满整行，宽裕时右侧留白 */
-.more-tile--xs {
-  flex: 0 0 auto;
-  width: min(12rem, 100%);
-}
-.more-tile--sm {
-  flex: 0 0 auto;
-  width: min(17rem, 100%);
-}
-.more-tile--lg {
-  flex: 0 0 auto;
-  width: min(22rem, 100%);
-}
-.more-tile--action {
-  flex: 0 0 auto;
-  width: min(13rem, 100%);
-}
-/* 虚拟时间、叙事场景：约一行三分之一宽，不拉满；窄屏仍单列满宽 */
-.more-tile--third {
-  flex: 0 0 calc((100% - 32px) / 3);
-  width: calc((100% - 32px) / 3);
-  max-width: calc((100% - 32px) / 3);
-  min-width: 0;
-  padding: 12px 14px;
-  gap: 10px;
-  box-sizing: border-box;
-}
-.more-tile-head--tight {
-  justify-content: flex-start;
-  align-items: center;
-  flex-wrap: wrap;
-  gap: 6px 8px;
-}
-.more-tile-head--tight .more-label {
-  padding-top: 0;
-}
-@media (max-width: 560px) {
-  .more-tile--xs,
-  .more-tile--sm,
-  .more-tile--lg,
-  .more-tile--action {
-    width: 100%;
-  }
-  .more-tile--third {
-    flex: 1 1 100%;
-    width: 100%;
-    max-width: 100%;
-  }
-}
-.more-tile-head {
-  display: flex;
-  align-items: flex-start;
-  justify-content: space-between;
-  gap: 8px;
-}
-.more-label {
-  font-size: 13px;
-  font-weight: 600;
-  color: var(--text-secondary);
-  line-height: 1.45;
-  padding-top: 2px;
-}
-.more-tile-body {
-  min-width: 0;
-  display: flex;
-  flex-direction: column;
-  gap: 8px;
-}
-.more-tile-body--row {
-  flex-direction: row;
-  flex-wrap: wrap;
-  align-items: center;
-}
-.more-tile-body--scene {
-  display: grid;
-  grid-template-columns: minmax(0, 1.2fr) minmax(0, 1fr);
-  gap: 8px 12px;
-  align-items: center;
-}
-.more-tile-body--scene-inline {
-  display: flex;
-  flex-direction: row;
-  flex-wrap: wrap;
-  align-items: flex-start;
-  gap: 8px 12px;
-}
-.more-tile-body--scene-inline .more-select--fill,
-.more-tile-body--scene-inline .scene-select {
-  flex: 0 1 14rem;
-  min-width: min(12rem, 100%);
-  max-width: 100%;
-}
-@media (max-width: 520px) {
-  .more-tile-body--scene {
-    grid-template-columns: 1fr;
-  }
-}
-.more-tile-body--selector :deep(.selector-row--topbar) {
-  width: 100%;
-  flex-wrap: wrap;
-  align-items: center;
-  gap: 8px;
-}
-.more-tile-body--selector :deep(.select) {
-  min-width: 0;
-  flex: 1 1 8rem;
-  max-width: 100%;
-}
-.more-select--fill {
-  width: 100%;
-  max-width: none;
-  box-sizing: border-box;
-}
-.more-vtime {
-  flex: 1 1 12rem;
-  min-width: 0;
-  width: 100%;
-}
-.scene-row-hint--tile {
-  font-size: 12px;
-  color: var(--text-secondary);
-  line-height: 1.5;
-  min-width: min(12rem, 100%);
-  flex: 1 1 12rem;
-  max-width: 100%;
-}
-.more-tile--third :deep(.vtime--compact) {
-  gap: 6px;
-  flex-wrap: wrap;
-}
-.more-tile--third :deep(.vtime--compact .time-display) {
-  max-width: 100%;
-  padding: 5px 8px;
-  font-size: 12px;
-}
-.more-tile--third :deep(.vtime--compact .label-icon) {
-  font-size: 14px;
-}
-.more-debug-btn {
-  padding: 8px 12px;
-  border-radius: var(--radius-btn);
-  border: 1px solid var(--border-light);
-  background: var(--bg-elevated);
-  color: var(--text-secondary);
-  font-size: 12px;
-  font-family: var(--font-ui);
-  cursor: pointer;
-  transition: var(--control-transition);
-}
-.more-debug-btn--fill {
-  width: 100%;
-  box-sizing: border-box;
-}
-.more-debug-btn:hover {
-  color: var(--text-primary);
-  border-color: var(--border-focus);
-}
-.top-bar-appearance {
-  display: flex;
-  flex-wrap: wrap;
-  align-items: center;
-  gap: 8px;
-  width: 100%;
-}
-.top-more-panel .top-bar-appearance {
-  margin-left: 0;
-}
-.appearance-scale {
-  display: inline-flex;
-  align-items: center;
-  gap: 4px;
-  padding: 2px 6px;
-  border-radius: var(--radius-btn);
-  border: 1px solid var(--border-light);
-  background: color-mix(in srgb, var(--bg-elevated) 88%, transparent);
-  box-shadow: var(--shadow-sm), var(--frame-inset-highlight);
-}
-.appearance-scale-value {
-  min-width: 2.6rem;
-  text-align: center;
-  font-size: 11px;
-  font-weight: 600;
-  color: var(--text-secondary);
-  font-variant-numeric: tabular-nums;
-}
-.appearance-icon-btn,
-.appearance-theme-btn {
-  padding: 4px 8px;
-  min-height: 28px;
-  border-radius: var(--radius-btn);
-  border: 1px solid var(--border-light);
-  background: var(--bg-elevated);
-  color: var(--text-primary);
-  cursor: pointer;
-  font-size: 12px;
-  font-weight: 500;
-  font-family: var(--font-ui);
-  transition: var(--control-transition);
-}
-.appearance-icon-btn:hover,
-.appearance-theme-btn:hover {
-  border-color: var(--accent);
-  color: var(--text-accent);
-}
-.appearance-icon-btn:focus,
-.appearance-theme-btn:focus {
-  outline: none;
-}
-.appearance-icon-btn:focus-visible,
-.appearance-theme-btn:focus-visible {
-  box-shadow: 0 0 0 2px color-mix(in srgb, var(--focus-ring-color) 35%, transparent);
-}
-.appearance-theme-btn {
-  white-space: nowrap;
-}
-.interaction-mode-wrap {
-  display: flex;
-  align-items: center;
-  gap: 6px;
-  flex-shrink: 0;
-}
-.interaction-mode-label {
-  font-size: 12px;
-  color: var(--text-secondary);
-  white-space: nowrap;
-}
-.interaction-mode-select {
-  min-width: 88px;
-  border: 1px solid var(--border-light);
-  border-radius: var(--radius-btn);
-  padding: 4px 8px;
-  font-size: 12px;
-  color: var(--text-primary);
-  background: var(--bg-elevated);
-}
-.interaction-mode-select:focus {
-  outline: none;
-}
-.interaction-mode-select:focus-visible {
-  border-color: var(--accent);
-  box-shadow: 0 0 0 2px color-mix(in srgb, var(--focus-ring-color) 35%, transparent);
 }
 .time-section {
   display: flex;
