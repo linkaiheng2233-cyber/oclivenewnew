@@ -1,7 +1,7 @@
 <script setup lang="ts">
-import { BaseEdge, getBezierPath } from "@vue-flow/core";
-import { computed } from "vue";
-import { BACKEND_COLORS } from "../../lib/graphEditorTheme";
+import { BaseEdge, getBezierPath } from '@vue-flow/core'
+import { computed } from 'vue'
+import { BACKEND_COLORS } from '../../lib/graphEditorTheme'
 
 const props = defineProps({
   sourceX: { type: Number, required: true },
@@ -11,18 +11,19 @@ const props = defineProps({
   sourcePosition: { type: String, required: true },
   targetPosition: { type: String, required: true },
   connectionStatus: { type: String, default: null },
-});
+})
 
-const path = computed(() => getBezierPath(props));
+const path = computed(() => getBezierPath(props))
 
 const stroke = computed(() => {
-  if (props.connectionStatus === "invalid") return "#c45c5c";
-  return BACKEND_COLORS.builtin.stroke;
-});
+  if (props.connectionStatus === 'invalid')
+    return '#c45c5c'
+  return BACKEND_COLORS.builtin.stroke
+})
 </script>
 
 <script lang="ts">
-export default { inheritAttrs: false };
+export default { inheritAttrs: false }
 </script>
 
 <template>

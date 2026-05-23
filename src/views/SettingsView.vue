@@ -1,74 +1,78 @@
 <script setup lang="ts">
-import { nextTick, ref, watch } from "vue";
-import { useI18n } from "vue-i18n";
-import * as Sentry from "@sentry/vue";
-import HelpHint from "../components/HelpHint.vue";
-import HotkeySettingsSection from "../components/HotkeySettingsSection.vue";
-import PluginSettingsPanelSlots from "../components/PluginSettingsPanelSlots.vue";
-import PluginSlotEmbed from "../components/PluginSlotEmbed.vue";
-import { useAppToast } from "../composables/useAppToast";
-import { SLOT_SETTINGS_ADVANCED, usePluginStore } from "../stores/pluginStore";
-import { useUiStore } from "../stores/uiStore";
+import type { EnvironmentDiagnostics } from '../utils/tauri-api'
+import * as Sentry from '@sentry/vue'
+import { nextTick, ref, watch } from 'vue'
+import { useI18n } from 'vue-i18n'
+import HelpHint from '../components/HelpHint.vue'
+import HotkeySettingsSection from '../components/HotkeySettingsSection.vue'
+import PluginSettingsPanelSlots from '../components/PluginSettingsPanelSlots.vue'
+import PluginSlotEmbed from '../components/PluginSlotEmbed.vue'
+import { useAppToast } from '../composables/useAppToast'
+import { SLOT_SETTINGS_ADVANCED, usePluginStore } from '../stores/pluginStore'
+import { useUiStore } from '../stores/uiStore'
 import {
+
   getRemoteFallbackAppSettings,
   runEnvironmentDiagnostics,
   setRemoteFallbackToBuiltin,
-  type EnvironmentDiagnostics,
-} from "../utils/tauri-api";
-import { isSentryOptOut, setSentryOptOut } from "../utils/telemetrySentry";
+} from '../utils/tauri-api'
+import { isSentryOptOut, setSentryOptOut } from '../utils/telemetrySentry'
 
 const props = defineProps<{
-  visible: boolean;
-}>();
+  visible: boolean
+}>()
 
 const emit = defineEmits<{
-  close: [];
-}>();
+  close: []
+}>()
 
-const { t } = useI18n();
-const pluginStore = usePluginStore();
-const uiStore = useUiStore();
-const { showToast } = useAppToast();
+const { t } = useI18n()
+const pluginStore = usePluginStore()
+const uiStore = useUiStore()
+const { showToast } = useAppToast()
 
-const hasSentryDsn =
-  typeof import.meta.env.VITE_SENTRY_DSN === "string" && import.meta.env.VITE_SENTRY_DSN.length > 0;
-const sentryOptOut = ref(isSentryOptOut());
+const hasSentryDsn
+  = typeof import.meta.env.VITE_SENTRY_DSN === 'string' && import.meta.env.VITE_SENTRY_DSN.length > 0
+const sentryOptOut = ref(isSentryOptOut())
 
 function onSentryOptOutChange(e: Event) {
-  const optOut = (e.target as HTMLInputElement).checked;
-  setSentryOptOut(optOut);
-  sentryOptOut.value = optOut;
+  const optOut = (e.target as HTMLInputElement).checked
+  setSentryOptOut(optOut)
+  sentryOptOut.value = optOut
   if (optOut) {
-    void Sentry.close(2000);
-    showToast("info", t("settings.sentryDisabledToast"));
-  } else {
-    showToast("info", t("settings.sentryReenableRestartToast"));
+    void Sentry.close(2000)
+    showToast('info', t('settings.sentryDisabledToast'))
+  }
+  else {
+    showToast('info', t('settings.sentryReenableRestartToast'))
   }
 }
 
-type SettingsTab = "general" | "plugins";
+type SettingsTab = 'general' | 'plugins'
 
-const tab = ref<SettingsTab>("general");
+const tab = ref<SettingsTab>('general')
 
-const envDiagLoading = ref(false);
-const envDiag = ref<EnvironmentDiagnostics | null>(null);
+const envDiagLoading = ref(false)
+const envDiag = ref<EnvironmentDiagnostics | null>(null)
 
-const remoteFallbackLoading = ref(false);
-const remoteFallbackChecked = ref(true);
-const remoteFallbackEnvLocked = ref(false);
+const remoteFallbackLoading = ref(false)
+const remoteFallbackChecked = ref(true)
+const remoteFallbackEnvLocked = ref(false)
 
-const settingsDialogRef = ref<HTMLElement | null>(null);
+const settingsDialogRef = ref<HTMLElement | null>(null)
 
 async function loadRemoteFallbackSettings() {
-  remoteFallbackLoading.value = true;
+  remoteFallbackLoading.value = true
   try {
-    const s = await getRemoteFallbackAppSettings();
-    remoteFallbackEnvLocked.value = s.remoteFallbackEnvOverrideActive;
-    remoteFallbackChecked.value = s.remoteFallbackToBuiltin.trim() !== "0";
-  } catch (err) {
-    showToast("error", err instanceof Error ? err.message : String(err));
-  } finally {
-    remoteFallbackLoading.value = false;
+    const s = await getRemoteFallbackAppSettings()
+    remoteFallbackEnvLocked.value = s.remoteFallbackEnvOverrideActive
+    remoteFallbackChecked.value = s.remoteFallbackToBuiltin.trim() !== '0'
+  }
+  catch (err) {
+    showToast('error', err instanceof Error ? err.message : String(err))
+  }
+  finally {
+    remoteFallbackLoading.value = false
   }
 }
 
@@ -76,58 +80,62 @@ watch(
   () => props.visible,
   (v) => {
     if (v) {
-      void loadRemoteFallbackSettings();
+      void loadRemoteFallbackSettings()
       void nextTick(() => {
-        settingsDialogRef.value?.focus({ preventScroll: true });
-      });
+        settingsDialogRef.value?.focus({ preventScroll: true })
+      })
     }
   },
-);
+)
 
 async function onRemoteFallbackToggle(e: Event) {
-  const checked = (e.target as HTMLInputElement).checked;
+  const checked = (e.target as HTMLInputElement).checked
   if (remoteFallbackEnvLocked.value) {
-    return;
+    return
   }
-  const prev = remoteFallbackChecked.value;
-  remoteFallbackChecked.value = checked;
+  const prev = remoteFallbackChecked.value
+  remoteFallbackChecked.value = checked
   try {
-    await setRemoteFallbackToBuiltin(checked);
-    showToast("info", t("settings.remoteFallbackSavedToast"));
-  } catch (err) {
-    remoteFallbackChecked.value = prev;
-    showToast("error", err instanceof Error ? err.message : String(err));
+    await setRemoteFallbackToBuiltin(checked)
+    showToast('info', t('settings.remoteFallbackSavedToast'))
+  }
+  catch (err) {
+    remoteFallbackChecked.value = prev
+    showToast('error', err instanceof Error ? err.message : String(err))
   }
 }
 
 async function onRunEnvironmentDiagnostics() {
-  envDiagLoading.value = true;
-  envDiag.value = null;
+  envDiagLoading.value = true
+  envDiag.value = null
   try {
-    envDiag.value = await runEnvironmentDiagnostics();
-    showToast("info", t("settings.envCheckDoneToast"));
-  } catch (err) {
-    showToast("error", err instanceof Error ? err.message : String(err));
-  } finally {
-    envDiagLoading.value = false;
+    envDiag.value = await runEnvironmentDiagnostics()
+    showToast('info', t('settings.envCheckDoneToast'))
+  }
+  catch (err) {
+    showToast('error', err instanceof Error ? err.message : String(err))
+  }
+  finally {
+    envDiagLoading.value = false
   }
 }
 
 async function onToggleForceIframe(e: Event) {
-  const checked = (e.target as HTMLInputElement).checked;
+  const checked = (e.target as HTMLInputElement).checked
   pluginStore.pluginState = {
     ...pluginStore.pluginState,
     force_iframe_mode: checked,
-  };
+  }
   try {
-    await pluginStore.persist();
-    showToast("info", t("settings.iframeSavedInfo"));
-  } catch (err) {
-    showToast("error", err instanceof Error ? err.message : String(err));
+    await pluginStore.persist()
+    showToast('info', t('settings.iframeSavedInfo'))
+  }
+  catch (err) {
+    showToast('error', err instanceof Error ? err.message : String(err))
     pluginStore.pluginState = {
       ...pluginStore.pluginState,
       force_iframe_mode: !checked,
-    };
+    }
   }
 }
 </script>
@@ -151,8 +159,12 @@ async function onToggleForceIframe(e: Event) {
         @keydown.escape.stop="emit('close')"
       >
         <header class="sv-head">
-          <h2 class="sv-title">{{ t("settings.title") }}</h2>
-          <button type="button" class="sv-close" :aria-label="t('settings.closeAria')" @click="emit('close')">×</button>
+          <h2 class="sv-title">
+            {{ t("settings.title") }}
+          </h2>
+          <button type="button" class="sv-close" :aria-label="t('settings.closeAria')" @click="emit('close')">
+            ×
+          </button>
         </header>
 
         <nav class="sv-nav" :aria-label="t('settings.ariaNav')">
@@ -190,8 +202,12 @@ async function onToggleForceIframe(e: Event) {
               <span class="sv-label">{{ t("settings.envCheckTitle") }}</span>
               <HelpHint :text="t('settings.envCheckHelp')" />
             </div>
-            <p class="sv-muted">{{ t("settings.envCheckLead") }}</p>
-            <p class="sv-muted sv-small">{{ t("settings.envCheckOllamaPullNote") }}</p>
+            <p class="sv-muted">
+              {{ t("settings.envCheckLead") }}
+            </p>
+            <p class="sv-muted sv-small">
+              {{ t("settings.envCheckOllamaPullNote") }}
+            </p>
             <button
               type="button"
               class="sv-env-btn"
@@ -233,7 +249,9 @@ async function onToggleForceIframe(e: Event) {
                 </span>
                 <code class="sv-code">{{ envDiag.rolesDir }}</code>
               </p>
-              <p class="sv-muted sv-small">{{ t("settings.envCheckRolesHint") }}</p>
+              <p class="sv-muted sv-small">
+                {{ t("settings.envCheckRolesHint") }}
+              </p>
               <p class="sv-env-line">
                 <strong>{{ t("settings.envCheckAppData") }}</strong>
                 —
@@ -256,9 +274,11 @@ async function onToggleForceIframe(e: Event) {
               <span class="sv-label">{{ t("settings.sentrySectionTitle") }}</span>
               <HelpHint :text="t('settings.sentryOptOutHelp')" />
             </div>
-            <p class="sv-muted">{{ t("settings.sentrySectionLead") }}</p>
+            <p class="sv-muted">
+              {{ t("settings.sentrySectionLead") }}
+            </p>
             <label class="sv-toggle-row">
-              <input type="checkbox" :checked="sentryOptOut" @change="onSentryOptOutChange" />
+              <input type="checkbox" :checked="sentryOptOut" @change="onSentryOptOutChange">
               <span class="sv-toggle-text">
                 <strong>{{ t("settings.sentryOptOutLabel") }}</strong>
               </span>
@@ -269,28 +289,34 @@ async function onToggleForceIframe(e: Event) {
               <span class="sv-label">{{ t("settings.pluginCliLabel") }}</span>
               <HelpHint :text="t('settings.pluginCliHelp')" />
             </div>
-            <p class="sv-muted sv-plugin-cli-note">{{ t("settings.pluginCliNote") }}</p>
+            <p class="sv-muted sv-plugin-cli-note">
+              {{ t("settings.pluginCliNote") }}
+            </p>
           </section>
           <section class="sv-section">
             <div class="sv-row-h">
               <span class="sv-label">{{ t("settings.remoteFallbackSectionTitle") }}</span>
               <HelpHint :text="t('settings.remoteFallbackHelp')" />
             </div>
-            <p v-if="remoteFallbackEnvLocked" class="sv-muted">{{ t("settings.remoteFallbackEnvLocked") }}</p>
+            <p v-if="remoteFallbackEnvLocked" class="sv-muted">
+              {{ t("settings.remoteFallbackEnvLocked") }}
+            </p>
             <label class="sv-toggle-row">
               <input
                 type="checkbox"
                 :checked="remoteFallbackChecked"
                 :disabled="remoteFallbackLoading || remoteFallbackEnvLocked"
                 @change="onRemoteFallbackToggle"
-              />
+              >
               <span class="sv-toggle-text">
                 <strong>{{ t("settings.remoteFallbackLabel") }}</strong>
               </span>
             </label>
           </section>
           <section class="sv-section">
-            <h3 class="sv-h3">{{ t("settings.advancedTitle") }}</h3>
+            <h3 class="sv-h3">
+              {{ t("settings.advancedTitle") }}
+            </h3>
             <p class="sv-muted" v-html="t('settings.advancedDesc')" />
             <PluginSlotEmbed
               :slot-name="SLOT_SETTINGS_ADVANCED"
@@ -308,7 +334,7 @@ async function onToggleForceIframe(e: Event) {
                 type="checkbox"
                 :checked="pluginStore.pluginState.force_iframe_mode === true"
                 @change="onToggleForceIframe"
-              />
+              >
               <span class="sv-toggle-text">
                 <strong>{{ t("settings.forceIframeTitle") }}</strong>
                 <span class="sv-muted sv-toggle-desc">
@@ -322,7 +348,9 @@ async function onToggleForceIframe(e: Event) {
         <form v-show="tab === 'plugins'" class="sv-body" @submit.prevent>
           <section class="sv-section">
             <div class="sv-row-h">
-              <h3 class="sv-h3">{{ t("settings.pluginsPanelTitle") }}</h3>
+              <h3 class="sv-h3">
+                {{ t("settings.pluginsPanelTitle") }}
+              </h3>
               <HelpHint
                 :paragraphs="[t('settings.pluginsPanelHint1'), t('settings.pluginsPanelHint2')]"
               />

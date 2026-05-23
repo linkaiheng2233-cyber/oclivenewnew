@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { useI18n } from "vue-i18n";
+import { useI18n } from 'vue-i18n'
 
 defineProps({
   roleId: {
@@ -8,25 +8,25 @@ defineProps({
   },
   status: {
     type: String,
-    default: "",
+    default: '',
   },
   busy: {
     type: Boolean,
     default: false,
   },
-});
+})
 
 const emit = defineEmits([
-  "update:roleId",
-  "load-role",
-  "get-role-info",
-  "reload-policy-plugins",
-]);
+  'update:roleId',
+  'load-role',
+  'get-role-info',
+  'reload-policy-plugins',
+])
 
-const { t } = useI18n();
+const { t } = useI18n()
 
 function onRoleInput(event: Event) {
-  emit("update:roleId", (event.target as HTMLInputElement).value);
+  emit('update:roleId', (event.target as HTMLInputElement).value)
 }
 </script>
 
@@ -34,14 +34,20 @@ function onRoleInput(event: Event) {
   <section class="card">
     <h2>{{ t("devTools.rolePanelTitle") }}</h2>
     <div class="row">
-      <input :value="roleId" placeholder="role_id" @input="onRoleInput" />
-      <button :disabled="busy" @click="emit('load-role')">load_role</button>
-      <button :disabled="busy" @click="emit('get-role-info')">get_role_info</button>
+      <input :value="roleId" placeholder="role_id" @input="onRoleInput">
+      <button :disabled="busy" @click="emit('load-role')">
+        load_role
+      </button>
+      <button :disabled="busy" @click="emit('get-role-info')">
+        get_role_info
+      </button>
       <button :disabled="busy" @click="emit('reload-policy-plugins')">
         reload_policy_plugins
       </button>
     </div>
-    <p class="status">{{ status }}</p>
+    <p class="status">
+      {{ status }}
+    </p>
   </section>
 </template>
 

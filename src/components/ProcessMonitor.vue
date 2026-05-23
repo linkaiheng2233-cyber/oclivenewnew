@@ -1,25 +1,25 @@
 <script setup lang="ts">
-import { useI18n } from "vue-i18n";
-import type { PluginProcessDebugInfo } from "../utils/tauri-api";
-
-const { t } = useI18n();
+import type { PluginProcessDebugInfo } from '../utils/tauri-api'
+import { useI18n } from 'vue-i18n'
 
 defineProps<{
-  pluginId: string;
+  pluginId: string
   /** manifest 是否声明 `process`；为 false 时无法在本面板启动子进程 */
-  spawnSupported?: boolean;
-  processInfo: PluginProcessDebugInfo | null;
-  allProcesses: PluginProcessDebugInfo[];
-  busy: boolean;
-}>();
+  spawnSupported?: boolean
+  processInfo: PluginProcessDebugInfo | null
+  allProcesses: PluginProcessDebugInfo[]
+  busy: boolean
+}>()
 
 const emit = defineEmits<{
-  spawn: [];
-  kill: [];
-  restart: [];
-  refreshAll: [];
-  killManaged: [id: string];
-}>();
+  spawn: []
+  kill: []
+  restart: []
+  refreshAll: []
+  killManaged: [id: string]
+}>()
+
+const { t } = useI18n()
 </script>
 
 <template>
@@ -31,7 +31,9 @@ const emit = defineEmits<{
       </span>
       <span v-else class="pm-dbg-pill">{{ t("devTools.proc.notStarted") }}</span>
     </div>
-    <p v-if="processInfo" class="pm-dbg-mono">{{ processInfo.rpcUrl }}</p>
+    <p v-if="processInfo" class="pm-dbg-mono">
+      {{ processInfo.rpcUrl }}
+    </p>
     <p v-if="spawnSupported === false" class="pm-dbg-warn">
       {{ t("devTools.proc.noSpawnHint") }}
     </p>
@@ -55,7 +57,9 @@ const emit = defineEmits<{
       </button>
     </div>
     <div v-if="allProcesses.length" class="pm-dbg-global">
-      <div class="pm-dbg-sub">{{ t("devTools.proc.hostManaged") }}</div>
+      <div class="pm-dbg-sub">
+        {{ t("devTools.proc.hostManaged") }}
+      </div>
       <ul class="pm-dbg-plist">
         <li v-for="p in allProcesses" :key="p.pluginId" class="pm-dbg-pli">
           <span class="pm-dbg-mono">{{ p.pluginId }}</span>

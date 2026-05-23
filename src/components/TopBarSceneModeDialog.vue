@@ -1,30 +1,30 @@
 <script setup lang="ts">
-import { nextTick, ref, watch } from "vue";
-import { useI18n } from "vue-i18n";
+import { nextTick, ref, watch } from 'vue'
+import { useI18n } from 'vue-i18n'
 
 const props = defineProps<{
-  visible: boolean;
+  visible: boolean
   /** 已解析的展示名，如「客厅」 */
-  pendingSceneLabel: string;
-}>();
-
-const { t } = useI18n();
+  pendingSceneLabel: string
+}>()
 
 const emit = defineEmits<{
-  confirm: [together: boolean];
-  dismiss: [];
-}>();
+  confirm: [together: boolean]
+  dismiss: []
+}>()
 
-const primaryTogetherRef = ref<HTMLButtonElement | null>(null);
+const { t } = useI18n()
+
+const primaryTogetherRef = ref<HTMLButtonElement | null>(null)
 
 watch(
   () => props.visible,
   (visible) => {
     if (visible) {
-      void nextTick(() => primaryTogetherRef.value?.focus());
+      void nextTick(() => primaryTogetherRef.value?.focus())
     }
   },
-);
+)
 </script>
 
 <template>
@@ -39,7 +39,9 @@ watch(
       <p id="top-bar-scene-mode-title" class="scene-mode-title">
         {{ t("common.sceneMode.title", { label: pendingSceneLabel }) }}
       </p>
-      <p class="scene-mode-desc">{{ t("common.sceneMode.desc") }}</p>
+      <p class="scene-mode-desc">
+        {{ t("common.sceneMode.desc") }}
+      </p>
       <div class="scene-mode-actions">
         <button type="button" class="post-reply-btn" @click="emit('confirm', false)">
           {{ t("common.sceneMode.solo") }}
@@ -52,7 +54,9 @@ watch(
         >
           {{ t("common.sceneMode.together") }}
         </button>
-        <button type="button" class="post-reply-btn" @click="emit('dismiss')">{{ t("common.cancel") }}</button>
+        <button type="button" class="post-reply-btn" @click="emit('dismiss')">
+          {{ t("common.cancel") }}
+        </button>
       </div>
     </div>
   </div>

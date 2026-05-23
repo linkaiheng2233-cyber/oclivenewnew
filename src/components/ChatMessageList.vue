@@ -1,72 +1,74 @@
 <script setup lang="ts">
+import type { ChatMsg } from '../types/chatMsg'
 // 长列表：当前会话区使用 VirtualScrollContainer；历史折叠区按需展开。
-import { computed, ref } from "vue";
-import { useI18n } from "vue-i18n";
-import VirtualScrollContainer from "./VirtualScrollContainer.vue";
-import ChatMessage from "./ChatMessage.vue";
-import type { ChatMsg } from "../types/chatMsg";
+import { computed, ref } from 'vue'
+import { useI18n } from 'vue-i18n'
+import ChatMessage from './ChatMessage.vue'
+import VirtualScrollContainer from './VirtualScrollContainer.vue'
 
-export type { ChatMsg };
-
-/** 每次在主聊天区多展开的历史条数 */
-const PREVIEW_STEP = 20;
-
-const { t } = useI18n();
-/** 已展开的「20 条」段数，0 表示收起 */
-const historyPreviewChunks = ref(0);
+export type { ChatMsg }
 
 const props = withDefaults(
   defineProps<{
-    messages: ChatMsg[];
+    messages: ChatMsg[]
     /** 进入本场景时已有条数；slice(0, n) 为历史折叠区 */
-    historySplitIndex?: number;
-    loading: boolean;
-    roleSwitching: boolean;
+    historySplitIndex?: number
+    loading: boolean
+    roleSwitching: boolean
   }>(),
   {
     historySplitIndex: 0,
   },
-);
+)
+
+/** 每次在主聊天区多展开的历史条数 */
+const PREVIEW_STEP = 20
+
+const { t } = useI18n()
+/** 已展开的「20 条」段数，0 表示收起 */
+const historyPreviewChunks = ref(0)
 
 const split = computed(() =>
   Math.min(props.historySplitIndex, props.messages.length),
-);
+)
 const historicalMessages = computed(() =>
   props.messages.slice(0, split.value),
-);
-const currentMessages = computed(() => props.messages.slice(split.value));
+)
+const currentMessages = computed(() => props.messages.slice(split.value))
 
 const historyPreviewMaxChunks = computed(() =>
   Math.ceil(historicalMessages.value.length / PREVIEW_STEP),
-);
+)
 
 const visibleHistoryInChat = computed(() => {
-  const k = historyPreviewChunks.value;
-  if (k <= 0) return [];
-  const cap = Math.min(k * PREVIEW_STEP, historicalMessages.value.length);
-  return historicalMessages.value.slice(-cap);
-});
+  const k = historyPreviewChunks.value
+  if (k <= 0)
+    return []
+  const cap = Math.min(k * PREVIEW_STEP, historicalMessages.value.length)
+  return historicalMessages.value.slice(-cap)
+})
 
 const canExpandMoreHistory = computed(
   () => historyPreviewChunks.value < historyPreviewMaxChunks.value,
-);
+)
 
 function expandHistoryStep() {
-  if (!canExpandMoreHistory.value) return;
-  historyPreviewChunks.value += 1;
+  if (!canExpandMoreHistory.value)
+    return
+  historyPreviewChunks.value += 1
 }
 
 function collapseHistoryPreview() {
-  historyPreviewChunks.value = 0;
+  historyPreviewChunks.value = 0
 }
 
-const scrollerRef = ref<InstanceType<typeof VirtualScrollContainer> | null>(null);
+const scrollerRef = ref<InstanceType<typeof VirtualScrollContainer> | null>(null)
 
 async function scrollToBottom(): Promise<void> {
-  await scrollerRef.value?.scrollToBottom(true);
+  await scrollerRef.value?.scrollToBottom(true)
 }
 
-defineExpose({ scrollToBottom });
+defineExpose({ scrollToBottom })
 </script>
 
 <template>
@@ -76,7 +78,9 @@ defineExpose({ scrollToBottom });
       'has-messages': messages.length > 0 || roleSwitching,
     }"
   >
-    <div v-if="roleSwitching" class="switching">{{ t("chat.switching") }}</div>
+    <div v-if="roleSwitching" class="switching">
+      {{ t("chat.switching") }}
+    </div>
 
     <div
       v-if="split > 0 && historicalMessages.length > 0"

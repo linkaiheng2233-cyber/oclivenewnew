@@ -2,10 +2,10 @@
 withDefaults(
   defineProps<{
     /** toolbar: 矮条；block: 较大区域 */
-    variant?: "toolbar" | "block";
+    variant?: 'toolbar' | 'block'
   }>(),
-  { variant: "toolbar" },
-);
+  { variant: 'toolbar' },
+)
 </script>
 
 <template>

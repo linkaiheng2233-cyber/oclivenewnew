@@ -1,14 +1,14 @@
 <script setup lang="ts">
-import CharacterInfo from "../components/CharacterInfo.vue";
-import PluginRoleDetailSlots from "../components/PluginRoleDetailSlots.vue";
+import CharacterInfo from '../components/CharacterInfo.vue'
+import PluginRoleDetailSlots from '../components/PluginRoleDetailSlots.vue'
 
 defineProps<{
-  roleId: string;
-  name: string;
-  emotion: string;
-  layout: "stack" | "sidebar";
-  bootstrapEpoch: number;
-}>();
+  roleId: string
+  name: string
+  emotion: string
+  layout: 'stack' | 'sidebar'
+  bootstrapEpoch: number
+}>()
 </script>
 
 <template>

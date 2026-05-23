@@ -1,8 +1,8 @@
-import { i18n } from "../i18n/index";
-import { OCLIVE_DEFAULT_RELATION_SENTINEL } from "./tauri-api";
-import type { UserRelationDto } from "./tauri-api";
+import type { UserRelationDto } from './tauri-api'
+import { i18n } from '../i18n/index'
+import { OCLIVE_DEFAULT_RELATION_SENTINEL } from './tauri-api'
 
-export type RelationOptionRow = { id: string; name: string };
+export interface RelationOptionRow { id: string, name: string }
 
 /**
  * 身份下拉选项：首项为「默认身份」，与后端 `set_user_relation` 哨兵一致。
@@ -12,21 +12,21 @@ export function buildRelationDropdownOptions(
   userRelations: UserRelationDto[],
   defaultRelation: string,
 ): RelationOptionRow[] {
-  const rows = userRelations.map((r) => ({
+  const rows = userRelations.map(r => ({
     id: r.id,
     name: r.name,
-  }));
-  const defId = defaultRelation || "friend";
-  const defLabel = rows.find((r) => r.id === defId)?.name ?? defId;
+  }))
+  const defId = defaultRelation || 'friend'
+  const defLabel = rows.find(r => r.id === defId)?.name ?? defId
   return [
     {
       id: OCLIVE_DEFAULT_RELATION_SENTINEL,
       name: String(
-        i18n.global.t("relation.defaultOptionName", {
+        i18n.global.t('relation.defaultOptionName', {
           label: defLabel,
         }),
       ),
     },
     ...rows,
-  ];
+  ]
 }

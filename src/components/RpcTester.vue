@@ -1,41 +1,42 @@
 <script setup lang="ts">
-import { computed } from "vue";
-import { useI18n } from "vue-i18n";
-import type { RpcHistoryItem } from "../composables/usePluginDebug";
-
-const { t } = useI18n();
+import type { RpcHistoryItem } from '../composables/usePluginDebug'
+import { computed } from 'vue'
+import { useI18n } from 'vue-i18n'
 
 const props = defineProps<{
-  methods: string[];
-  busy: boolean;
-  history: RpcHistoryItem[];
-  method: string;
-  params: string;
+  methods: string[]
+  busy: boolean
+  history: RpcHistoryItem[]
+  method: string
+  params: string
   /** 避免同页多插件 datalist id 冲突 */
-  datalistId: string;
-}>();
+  datalistId: string
+}>()
 
 const emit = defineEmits<{
-  "update:method": [value: string];
-  "update:params": [value: string];
-  discover: [];
-  send: [];
-  applyHistory: [item: RpcHistoryItem];
-}>();
+  'update:method': [value: string]
+  'update:params': [value: string]
+  'discover': []
+  'send': []
+  'applyHistory': [item: RpcHistoryItem]
+}>()
+
+const { t } = useI18n()
 
 const methodOptions = computed(() => {
-  const m = new Set(props.methods);
+  const m = new Set(props.methods)
   if (props.method.trim()) {
-    m.add(props.method.trim());
+    m.add(props.method.trim())
   }
-  return [...m].filter(Boolean).sort();
-});
+  return [...m].filter(Boolean).sort()
+})
 
 function onFormat() {
   try {
-    const v = props.params.trim() ? JSON.parse(props.params) : {};
-    emit("update:params", `${JSON.stringify(v, null, 2)}\n`);
-  } catch {
+    const v = props.params.trim() ? JSON.parse(props.params) : {}
+    emit('update:params', `${JSON.stringify(v, null, 2)}\n`)
+  }
+  catch {
     /* keep */
   }
 }
@@ -52,7 +53,7 @@ function onFormat() {
         :placeholder="t('devTools.rpc.methodPh')"
         autocomplete="off"
         @input="emit('update:method', ($event.target as HTMLInputElement).value)"
-      />
+      >
       <datalist :id="datalistId">
         <option v-for="m in methodOptions" :key="m" :value="m" />
       </datalist>
@@ -69,11 +70,17 @@ function onFormat() {
       @input="emit('update:params', ($event.target as HTMLTextAreaElement).value)"
     />
     <div class="pm-dbg-actions">
-      <button type="button" class="pm-dbg-btn" :disabled="busy" @click="emit('send')">{{ t("devTools.rpc.send") }}</button>
-      <button type="button" class="pm-dbg-btn secondary" @click="onFormat">{{ t("devTools.rpc.format") }}</button>
+      <button type="button" class="pm-dbg-btn" :disabled="busy" @click="emit('send')">
+        {{ t("devTools.rpc.send") }}
+      </button>
+      <button type="button" class="pm-dbg-btn secondary" @click="onFormat">
+        {{ t("devTools.rpc.format") }}
+      </button>
     </div>
     <div v-if="history.length" class="pm-dbg-hist">
-      <div class="pm-dbg-sub">{{ t("devTools.rpc.history") }}</div>
+      <div class="pm-dbg-sub">
+        {{ t("devTools.rpc.history") }}
+      </div>
       <ul class="pm-dbg-hlist">
         <li v-for="h in history" :key="h.id">
           <button type="button" class="pm-dbg-link" @click="emit('applyHistory', h)">

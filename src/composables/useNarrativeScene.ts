@@ -1,13 +1,13 @@
-import { useChatStore } from "../stores/chatStore";
-import { useRoleStore } from "../stores/roleStore";
-import { useUiStore } from "../stores/uiStore";
-import { resolveUserNarrativeSceneId } from "./narrativeScene";
+import { useChatStore } from '../stores/chatStore'
+import { useRoleStore } from '../stores/roleStore'
+import { useUiStore } from '../stores/uiStore'
+import { resolveUserNarrativeSceneId } from './narrativeScene'
 
 /** 在 `refreshRoleInfo` 等拿到 DB 快照后，将 `uiStore.sceneId` 与 `user_presence_scene` 对齐 */
 export function useNarrativeScene() {
-  const chatStore = useChatStore();
-  const roleStore = useRoleStore();
-  const uiStore = useUiStore();
+  const chatStore = useChatStore()
+  const roleStore = useRoleStore()
+  const uiStore = useUiStore()
 
   function applyResolvedNarrativeScene(): void {
     chatStore.applySceneChange(
@@ -18,8 +18,8 @@ export function useNarrativeScene() {
         uiStore.sceneId,
       ),
       { skipHistorySplit: true },
-    );
+    )
   }
 
-  return { applyResolvedNarrativeScene, resolveUserNarrativeSceneId };
+  return { applyResolvedNarrativeScene, resolveUserNarrativeSceneId }
 }

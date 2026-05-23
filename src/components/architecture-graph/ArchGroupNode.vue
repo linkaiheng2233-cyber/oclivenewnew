@@ -1,25 +1,25 @@
 <script setup lang="ts">
-import { computed, inject } from "vue";
-import { SLOT_TYPE_GROUP_COLORS } from "../../lib/slotRegistry";
-import { archGraphActionsKey } from "./archGraphContext";
+import { computed, inject } from 'vue'
+import { SLOT_TYPE_GROUP_COLORS } from '../../lib/slotRegistry'
+import { archGraphActionsKey } from './archGraphContext'
 
 const props = defineProps({
   selected: { type: Boolean, default: false },
   data: { type: Object, default: () => ({}) },
-});
+})
 
-const actions = inject(archGraphActionsKey);
+const actions = inject(archGraphActionsKey)
 
-const groupId = computed(() => String(props.data?.groupId ?? ""));
-const label = computed(() => String(props.data?.label ?? groupId.value));
-const slotType = computed(() => String(props.data?.slotType ?? "memory"));
-const collapsed = computed(() => Boolean(props.data?.collapsed));
+const groupId = computed(() => String(props.data?.groupId ?? ''))
+const label = computed(() => String(props.data?.label ?? groupId.value))
+const slotType = computed(() => String(props.data?.slotType ?? 'memory'))
+const collapsed = computed(() => Boolean(props.data?.collapsed))
 const accent = computed(
   () => SLOT_TYPE_GROUP_COLORS[slotType.value] ?? SLOT_TYPE_GROUP_COLORS.memory,
-);
+)
 
 function onToggle() {
-  actions?.onToggleGroupCollapse(groupId.value);
+  actions?.onToggleGroupCollapse(groupId.value)
 }
 </script>
 

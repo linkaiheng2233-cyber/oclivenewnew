@@ -1,52 +1,52 @@
 <script setup lang="ts">
-import { ref, watch } from "vue";
-import { useI18n } from "vue-i18n";
+import { ref, watch } from 'vue'
+import { useI18n } from 'vue-i18n'
 
 interface OptionItem {
-  value: string;
-  label: string;
+  value: string
+  label: string
 }
 
 interface SlotSelectorSchema {
-  current: string;
-  options: OptionItem[];
-  directoryOptions: OptionItem[];
-  directoryId?: string;
+  current: string
+  options: OptionItem[]
+  directoryOptions: OptionItem[]
+  directoryId?: string
 }
 
 const props = defineProps<{
-  schema: SlotSelectorSchema;
-  busy?: boolean;
-}>();
+  schema: SlotSelectorSchema
+  busy?: boolean
+}>()
 
 const emit = defineEmits<{
-  submit: [{ backend: string | null; directoryId?: string | null }];
-}>();
+  submit: [{ backend: string | null, directoryId?: string | null }]
+}>()
 
-const { t } = useI18n();
-const draftBackend = ref(props.schema.current);
-const draftDirectoryId = ref(props.schema.directoryId ?? "");
+const { t } = useI18n()
+const draftBackend = ref(props.schema.current)
+const draftDirectoryId = ref(props.schema.directoryId ?? '')
 
 watch(
   () => props.schema.current,
   (v) => {
-    draftBackend.value = v;
+    draftBackend.value = v
   },
-);
+)
 
 watch(
   () => props.schema.directoryId,
   (v) => {
-    draftDirectoryId.value = v ?? "";
+    draftDirectoryId.value = v ?? ''
   },
-);
+)
 
 function onSubmit() {
-  const usesDirectory = draftBackend.value === "directory";
-  emit("submit", {
-    backend: draftBackend.value === "__pack_default__" ? null : draftBackend.value,
+  const usesDirectory = draftBackend.value === 'directory'
+  emit('submit', {
+    backend: draftBackend.value === '__pack_default__' ? null : draftBackend.value,
     directoryId: usesDirectory ? (draftDirectoryId.value.trim() || null) : undefined,
-  });
+  })
 }
 </script>
 
@@ -69,7 +69,7 @@ function onSubmit() {
         type="text"
         :placeholder="t('pluginManager.template.directoryIdPh')"
         :disabled="busy || draftBackend !== 'directory'"
-      />
+      >
       <select
         v-model="draftDirectoryId"
         class="tpl-select"
@@ -82,9 +82,15 @@ function onSubmit() {
       </select>
     </label>
 
-    <p v-if="schema.hint" class="tpl-hint">{{ schema.hint }}</p>
-    <p class="tpl-hint">{{ t("pluginTerms.hint.directory_id_empty") }}</p>
-    <button type="button" class="tpl-btn" :disabled="busy" @click="onSubmit">{{ t("pluginTerms.action.apply") }}</button>
+    <p v-if="schema.hint" class="tpl-hint">
+      {{ schema.hint }}
+    </p>
+    <p class="tpl-hint">
+      {{ t("pluginTerms.hint.directory_id_empty") }}
+    </p>
+    <button type="button" class="tpl-btn" :disabled="busy" @click="onSubmit">
+      {{ t("pluginTerms.action.apply") }}
+    </button>
   </div>
 </template>
 

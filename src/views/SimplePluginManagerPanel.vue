@@ -1,21 +1,21 @@
 <script setup lang="ts">
-import { ref, toRef } from "vue";
-import { useI18n } from "vue-i18n";
-import SimplePluginManager from "./SimplePluginManager.vue";
-import { useModalFocusRestore } from "../composables/useModalFocusRestore";
+import { ref, toRef } from 'vue'
+import { useI18n } from 'vue-i18n'
+import { useModalFocusRestore } from '../composables/useModalFocusRestore'
+import SimplePluginManager from './SimplePluginManager.vue'
 
 const props = defineProps<{
-  visible: boolean;
-}>();
+  visible: boolean
+}>()
 
 const emit = defineEmits<{
-  close: [];
-  openMarket: [];
-}>();
+  close: []
+  openMarket: []
+}>()
 
-const { t } = useI18n();
-const dialogRef = ref<HTMLElement | null>(null);
-useModalFocusRestore(toRef(props, "visible"), dialogRef);
+const { t } = useI18n()
+const dialogRef = ref<HTMLElement | null>(null)
+useModalFocusRestore(toRef(props, 'visible'), dialogRef)
 </script>
 
 <template>
@@ -36,7 +36,9 @@ useModalFocusRestore(toRef(props, "visible"), dialogRef);
         @click.stop
         @keydown.escape.stop="emit('close')"
       >
-        <h2 class="spm-heading">{{ t("simplePluginManager.title") }}</h2>
+        <h2 class="spm-heading">
+          {{ t("simplePluginManager.title") }}
+        </h2>
         <SimplePluginManager
           :visible="visible"
           @close="emit('close')"

@@ -1,37 +1,38 @@
 <script setup lang="ts">
-import { useI18n } from "vue-i18n";
-import PluginPrivateSettingsForm from "./PluginPrivateSettingsForm.vue";
-import PluginDebugPanel from "./PluginDebugPanel.vue";
-import PluginListItem from "./PluginListItem.vue";
-import { useAppToast } from "../composables/useAppToast";
+import type { DirectoryPluginCatalogEntry } from '../utils/tauri-api'
+import { useI18n } from 'vue-i18n'
+import { useAppToast } from '../composables/useAppToast'
 import {
   SLOT_CHAT_HEADER,
   SLOT_ROLE_DETAIL,
   SLOT_SETTINGS_PANEL,
   SLOT_SIDEBAR,
   usePluginStore,
-} from "../stores/pluginStore";
-import type { DirectoryPluginCatalogEntry } from "../utils/tauri-api";
+} from '../stores/pluginStore'
+import PluginDebugPanel from './PluginDebugPanel.vue'
+import PluginListItem from './PluginListItem.vue'
+import PluginPrivateSettingsForm from './PluginPrivateSettingsForm.vue'
 
 defineProps<{
-  entry: DirectoryPluginCatalogEntry;
-  batchMode: boolean;
-  batchSelected: boolean;
-}>();
+  entry: DirectoryPluginCatalogEntry
+  batchMode: boolean
+  batchSelected: boolean
+}>()
 
 const emit = defineEmits<{
-  "update:batchSelected": [value: boolean];
-}>();
+  'update:batchSelected': [value: boolean]
+}>()
 
-const pluginStore = usePluginStore();
-const { showToast } = useAppToast();
-const { t } = useI18n();
+const pluginStore = usePluginStore()
+const { showToast } = useAppToast()
+const { t } = useI18n()
 
 function onPluginDisabledRow(id: string, disabled: boolean): void {
   try {
-    pluginStore.setPluginDisabled(id, disabled);
-  } catch (e) {
-    showToast("error", e instanceof Error ? e.message : String(e));
+    pluginStore.setPluginDisabled(id, disabled)
+  }
+  catch (e) {
+    showToast('error', e instanceof Error ? e.message : String(e))
   }
 }
 </script>
@@ -42,7 +43,6 @@ function onPluginDisabledRow(id: string, disabled: boolean): void {
       :entry="entry"
       :batch-select-mode="batchMode"
       :batch-selected="batchSelected"
-      @update:batch-selected="emit('update:batchSelected', $event)"
       :plugin-disabled="pluginStore.isPluginDisabled(entry.id)"
       :toolbar-contribution-disabled="pluginStore.isToolbarContributionDisabled(entry.id)"
       :settings-panel-contribution-disabled="
@@ -57,6 +57,7 @@ function onPluginDisabledRow(id: string, disabled: boolean): void {
       :chat-header-contribution-disabled="
         pluginStore.isSlotContributionDisabled(SLOT_CHAT_HEADER, entry.id)
       "
+      @update:batch-selected="emit('update:batchSelected', $event)"
       @update:plugin-disabled="onPluginDisabledRow(entry.id, $event)"
       @update:toolbar-contribution-disabled="
         pluginStore.setToolbarContributionDisabled(entry.id, $event)
@@ -75,13 +76,19 @@ function onPluginDisabledRow(id: string, disabled: boolean): void {
       "
     />
     <div v-if="entry.hasUiSettings" class="ipwd-settings">
-      <div class="ipwd-settings-h">{{ t("pluginManager.installed.privateSettings") }}</div>
+      <div class="ipwd-settings-h">
+        {{ t("pluginManager.installed.privateSettings") }}
+      </div>
       <PluginPrivateSettingsForm :plugin-id="entry.id" />
     </div>
     <details class="ipwd-advanced">
-      <summary class="ipwd-advanced-sum">{{ t("pluginManager.installed.advanced") }}</summary>
+      <summary class="ipwd-advanced-sum">
+        {{ t("pluginManager.installed.advanced") }}
+      </summary>
       <div class="ipwd-debug">
-        <div class="ipwd-debug-h">{{ t("pluginManager.installed.debugWorkbench") }}</div>
+        <div class="ipwd-debug-h">
+          {{ t("pluginManager.installed.debugWorkbench") }}
+        </div>
         <PluginDebugPanel
           :key="entry.id"
           :plugin-id="entry.id"

@@ -1,34 +1,36 @@
 <script setup lang="ts">
-import { computed } from "vue";
-import { useI18n } from "vue-i18n";
-import { pluginUiTemplateMap } from "../PluginUITemplates";
-import type { PluginV2CardItem } from "../../composables/usePluginManagerV2";
-
-const { t } = useI18n();
+import type { PluginV2CardItem } from '../../composables/usePluginManagerV2'
+import { computed } from 'vue'
+import { useI18n } from 'vue-i18n'
+import { pluginUiTemplateMap } from '../PluginUITemplates'
 
 const props = defineProps<{
-  item: PluginV2CardItem | null;
-  collapsed: boolean;
-  busy?: boolean;
-}>();
+  item: PluginV2CardItem | null
+  collapsed: boolean
+  busy?: boolean
+}>()
 
 const emit = defineEmits<{
-  toggle: [];
-  apply: [payload: Record<string, unknown>];
-}>();
+  toggle: []
+  apply: [payload: Record<string, unknown>]
+}>()
+
+const { t } = useI18n()
 
 const templateComponent = computed(() => {
-  if (!props.item) return null;
-  return pluginUiTemplateMap[props.item.uiTemplate];
-});
+  if (!props.item)
+    return null
+  return pluginUiTemplateMap[props.item.uiTemplate]
+})
 
 const changeNotice = computed(() => {
-  if (!props.item) return "";
-  if (props.item.uiTemplate === "endpoint-config") {
-    return t("pluginManager.detail.readonlyNotice");
+  if (!props.item)
+    return ''
+  if (props.item.uiTemplate === 'endpoint-config') {
+    return t('pluginManager.detail.readonlyNotice')
   }
-  return t("pluginManager.detail.previewNotice");
-});
+  return t('pluginManager.detail.previewNotice')
+})
 </script>
 
 <template>
@@ -38,9 +40,15 @@ const changeNotice = computed(() => {
     </button>
     <template v-if="!collapsed">
       <div v-if="item" class="pm2-detail">
-        <h3 class="pm2-detail-title">{{ item.title }}</h3>
-        <p class="pm2-detail-desc">{{ item.description }}</p>
-        <p class="pm2-change-notice" role="note">{{ changeNotice }}</p>
+        <h3 class="pm2-detail-title">
+          {{ item.title }}
+        </h3>
+        <p class="pm2-detail-desc">
+          {{ item.description }}
+        </p>
+        <p class="pm2-change-notice" role="note">
+          {{ changeNotice }}
+        </p>
         <component
           :is="templateComponent"
           v-if="templateComponent"
@@ -49,7 +57,9 @@ const changeNotice = computed(() => {
           @submit="emit('apply', $event)"
         />
       </div>
-      <p v-else class="pm2-placeholder">{{ t("pluginManager.detail.placeholder") }}</p>
+      <p v-else class="pm2-placeholder">
+        {{ t("pluginManager.detail.placeholder") }}
+      </p>
     </template>
   </aside>
 </template>

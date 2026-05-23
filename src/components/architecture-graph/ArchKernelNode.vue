@@ -1,16 +1,16 @@
 <script setup lang="ts">
-import { Handle, Position } from "@vue-flow/core";
-import { useI18n } from "vue-i18n";
-import { GRAPH_SURFACE } from "../../lib/graphEditorTheme";
-import { ARCH_NODE_DEFAULT_SIZE } from "../../composables/useArchitectureGraphLayout";
-import ArchNodeChrome from "./ArchNodeChrome.vue";
+import { Handle, Position } from '@vue-flow/core'
+import { useI18n } from 'vue-i18n'
+import { ARCH_NODE_DEFAULT_SIZE } from '../../composables/useArchitectureGraphLayout'
+import { GRAPH_SURFACE } from '../../lib/graphEditorTheme'
+import ArchNodeChrome from './ArchNodeChrome.vue'
 
 defineProps({
   selected: { type: Boolean, default: false },
-});
+})
 
-const { t } = useI18n();
-const size = ARCH_NODE_DEFAULT_SIZE.archKernel!;
+const { t } = useI18n()
+const size = ARCH_NODE_DEFAULT_SIZE.archKernel!
 </script>
 
 <template>

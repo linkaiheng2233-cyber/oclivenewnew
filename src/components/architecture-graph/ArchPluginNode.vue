@@ -1,20 +1,20 @@
 <script setup lang="ts">
-import { Handle, Position } from "@vue-flow/core";
-import { inject } from "vue";
-import { useI18n } from "vue-i18n";
-import { backendCssVars } from "../../lib/graphEditorTheme";
-import { ARCH_NODE_DEFAULT_SIZE } from "../../composables/useArchitectureGraphLayout";
-import { archGraphActionsKey } from "./archGraphContext";
-import ArchNodeChrome from "./ArchNodeChrome.vue";
+import { Handle, Position } from '@vue-flow/core'
+import { inject } from 'vue'
+import { useI18n } from 'vue-i18n'
+import { ARCH_NODE_DEFAULT_SIZE } from '../../composables/useArchitectureGraphLayout'
+import { backendCssVars } from '../../lib/graphEditorTheme'
+import { archGraphActionsKey } from './archGraphContext'
+import ArchNodeChrome from './ArchNodeChrome.vue'
 
 defineProps({
   selected: { type: Boolean, default: false },
   data: { type: Object, default: () => ({}) },
-});
-const { t } = useI18n();
-const actions = inject(archGraphActionsKey);
-const size = ARCH_NODE_DEFAULT_SIZE.archPlugin!;
-const themeStyle = backendCssVars("directory");
+})
+const { t } = useI18n()
+const actions = inject(archGraphActionsKey)
+const size = ARCH_NODE_DEFAULT_SIZE.archPlugin!
+const themeStyle = backendCssVars('directory')
 </script>
 
 <template>
@@ -41,7 +41,9 @@ const themeStyle = backendCssVars("directory");
         class="agn-handle agn-handle--in"
       />
       <div class="agn-accent-bar" />
-      <div class="agn-head agn-plugin-head">{{ data?.pluginId }}</div>
+      <div class="agn-head agn-plugin-head">
+        {{ data?.pluginId }}
+      </div>
       <div class="agn-hint agn-plugin-meta agn-mono">
         <span>{{ data?.moduleKey }}</span>
         <span>v{{ data?.version }}</span>

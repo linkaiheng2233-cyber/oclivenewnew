@@ -1,187 +1,197 @@
 <script setup lang="ts">
-import { ref } from "vue";
-import { useI18n } from "vue-i18n";
-import { listen, type UnlistenFn } from "@tauri-apps/api/event";
-import { open, save } from "@tauri-apps/api/dialog";
-import { useRoleStore } from "../stores/roleStore";
+import type { UnlistenFn } from '@tauri-apps/api/event'
+import { open, save } from '@tauri-apps/api/dialog'
+import { listen } from '@tauri-apps/api/event'
+import { ref } from 'vue'
+import { useI18n } from 'vue-i18n'
+import { useModalFocusRestore } from '../composables/useModalFocusRestore'
+import { useRoleStore } from '../stores/roleStore'
 import {
   exportRolePack,
   importRolePack,
   peekRolePack,
-} from "../utils/tauri-api";
-import ImportProgressModal from "./ImportProgressModal.vue";
-import { useModalFocusRestore } from "../composables/useModalFocusRestore";
-
-const { t } = useI18n();
-const roleStore = useRoleStore();
+} from '../utils/tauri-api'
+import ImportProgressModal from './ImportProgressModal.vue'
 
 const emit = defineEmits<{
-  notify: [payload: { type: "success" | "error" | "info" | "warning"; message: string }];
-  imported: [roleId: string];
-}>();
+  notify: [payload: { type: 'success' | 'error' | 'info' | 'warning', message: string }]
+  imported: [roleId: string]
+}>()
+const { t } = useI18n()
+const roleStore = useRoleStore()
 
 /** Windows / 通用非法文件名字符 */
 function safeFileSegment(s: string): string {
-  const t = s.replace(/[<>:"/\\|?*\x00-\x1f]/g, "_").trim();
-  return t.length > 0 ? t.slice(0, 80) : "role";
+  const t = s.replace(/[<>:"/\\|?*\x00-\x1F]/g, '_').trim()
+  return t.length > 0 ? t.slice(0, 80) : 'role'
 }
 
 function defaultExportFilename(): string {
-  const name = safeFileSegment(roleStore.roleInfo.name || roleStore.currentRoleId);
-  const ver = safeFileSegment(roleStore.roleInfo.version || "0");
-  return `${name}_${ver}.ocpak`;
+  const name = safeFileSegment(roleStore.roleInfo.name || roleStore.currentRoleId)
+  const ver = safeFileSegment(roleStore.roleInfo.version || '0')
+  return `${name}_${ver}.ocpak`
 }
 
-const conflictOpen = ref(false);
-const pendingPath = ref<string | null>(null);
-const pendingPeek = ref<{ id: string; name: string; version: string } | null>(
+const conflictOpen = ref(false)
+const pendingPath = ref<string | null>(null)
+const pendingPeek = ref<{ id: string, name: string, version: string } | null>(
   null,
-);
+)
 
-const importProgressOpen = ref(false);
-const importPercent = ref(0);
-const importMessage = ref("");
-const importFileIndex = ref<number | null>(null);
-const importFileTotal = ref<number | null>(null);
-const importCurrentFile = ref<string | null>(null);
-let unlistenProgress: UnlistenFn | null = null;
+const importProgressOpen = ref(false)
+const importPercent = ref(0)
+const importMessage = ref('')
+const importFileIndex = ref<number | null>(null)
+const importFileTotal = ref<number | null>(null)
+const importCurrentFile = ref<string | null>(null)
+let unlistenProgress: UnlistenFn | null = null
 
-const conflictPrimaryRef = ref<HTMLButtonElement | null>(null);
-const conflictCardRef = ref<HTMLElement | null>(null);
+const conflictPrimaryRef = ref<HTMLButtonElement | null>(null)
+const conflictCardRef = ref<HTMLElement | null>(null)
 
 useModalFocusRestore(conflictOpen, conflictCardRef, {
   primary: conflictPrimaryRef,
-});
+})
 
 async function withImportProgress<T>(fn: () => Promise<T>): Promise<T> {
-  importProgressOpen.value = true;
-  importPercent.value = 0;
-  importMessage.value = t("common.preparing");
-  importFileIndex.value = null;
-  importFileTotal.value = null;
-  importCurrentFile.value = null;
+  importProgressOpen.value = true
+  importPercent.value = 0
+  importMessage.value = t('common.preparing')
+  importFileIndex.value = null
+  importFileTotal.value = null
+  importCurrentFile.value = null
   unlistenProgress = await listen<{
-    percent: number;
-    message: string;
-    fileIndex?: number;
-    fileTotal?: number;
-    currentFile?: string;
-  }>("import_progress", (e) => {
-    importPercent.value = e.payload.percent;
-    importMessage.value = e.payload.message;
-    importFileIndex.value =
-      typeof e.payload.fileIndex === "number" ? e.payload.fileIndex : null;
-    importFileTotal.value =
-      typeof e.payload.fileTotal === "number" ? e.payload.fileTotal : null;
-    importCurrentFile.value =
-      typeof e.payload.currentFile === "string" ? e.payload.currentFile : null;
-  });
+    percent: number
+    message: string
+    fileIndex?: number
+    fileTotal?: number
+    currentFile?: string
+  }>('import_progress', (e) => {
+    importPercent.value = e.payload.percent
+    importMessage.value = e.payload.message
+    importFileIndex.value
+      = typeof e.payload.fileIndex === 'number' ? e.payload.fileIndex : null
+    importFileTotal.value
+      = typeof e.payload.fileTotal === 'number' ? e.payload.fileTotal : null
+    importCurrentFile.value
+      = typeof e.payload.currentFile === 'string' ? e.payload.currentFile : null
+  })
   try {
-    return await fn();
-  } finally {
-    unlistenProgress?.();
-    unlistenProgress = null;
-    importProgressOpen.value = false;
+    return await fn()
+  }
+  finally {
+    unlistenProgress?.()
+    unlistenProgress = null
+    importProgressOpen.value = false
   }
 }
 
 async function onExport(): Promise<void> {
   try {
     const path = await save({
-      filters: [{ name: t("common.rolePack.exportFilterName"), extensions: ["ocpak"] }],
+      filters: [{ name: t('common.rolePack.exportFilterName'), extensions: ['ocpak'] }],
       defaultPath: defaultExportFilename(),
-    });
-    if (!path || typeof path !== "string") return;
-    await exportRolePack(roleStore.currentRoleId, path);
-    emit("notify", { type: "success", message: t("common.rolePack.exported") });
-  } catch (e) {
-    emit("notify", {
-      type: "error",
+    })
+    if (!path || typeof path !== 'string')
+      return
+    await exportRolePack(roleStore.currentRoleId, path)
+    emit('notify', { type: 'success', message: t('common.rolePack.exported') })
+  }
+  catch (e) {
+    emit('notify', {
+      type: 'error',
       message: e instanceof Error ? e.message : String(e),
-    });
+    })
   }
 }
 
 function closeConflict(): void {
-  conflictOpen.value = false;
-  pendingPath.value = null;
-  pendingPeek.value = null;
+  conflictOpen.value = false
+  pendingPath.value = null
+  pendingPeek.value = null
 }
 
 async function confirmOverwrite(): Promise<void> {
-  const path = pendingPath.value;
+  const path = pendingPath.value
   if (!path) {
-    closeConflict();
-    return;
+    closeConflict()
+    return
   }
-  if (importProgressOpen.value) return;
+  if (importProgressOpen.value)
+    return
   try {
-    const roleId = await withImportProgress(() => importRolePack(path, true));
-    emit("imported", roleId);
-    emit("notify", { type: "success", message: t("common.rolePack.importedOverwrite", { id: roleId }) });
-  } catch (e) {
-    emit("notify", {
-      type: "error",
+    const roleId = await withImportProgress(() => importRolePack(path, true))
+    emit('imported', roleId)
+    emit('notify', { type: 'success', message: t('common.rolePack.importedOverwrite', { id: roleId }) })
+  }
+  catch (e) {
+    emit('notify', {
+      type: 'error',
       message: e instanceof Error ? e.message : String(e),
-    });
-  } finally {
-    closeConflict();
+    })
+  }
+  finally {
+    closeConflict()
   }
 }
 
 async function runImportFlow(path: string): Promise<void> {
-  const peek = await peekRolePack(path);
-  const exists = roleStore.roles.some((r) => r.id === peek.id);
+  const peek = await peekRolePack(path)
+  const exists = roleStore.roles.some(r => r.id === peek.id)
   if (exists) {
-    pendingPath.value = path;
-    pendingPeek.value = peek;
-    conflictOpen.value = true;
-    return;
+    pendingPath.value = path
+    pendingPeek.value = peek
+    conflictOpen.value = true
+    return
   }
 
   const roleId = await withImportProgress(() =>
     importRolePack(path, false),
-  );
-  emit("imported", roleId);
-  emit("notify", { type: "success", message: t("common.rolePack.imported", { name: peek.name }) });
+  )
+  emit('imported', roleId)
+  emit('notify', { type: 'success', message: t('common.rolePack.imported', { name: peek.name }) })
 }
 
 async function pickImportSource(
-  mode: "archive" | "folder",
+  mode: 'archive' | 'folder',
 ): Promise<string | null> {
   const path = await open(
-    mode === "folder"
+    mode === 'folder'
       ? { directory: true, multiple: false }
       : {
-          filters: [{ name: t("common.rolePack.importFilterName"), extensions: ["ocpak", "zip"] }],
+          filters: [{ name: t('common.rolePack.importFilterName'), extensions: ['ocpak', 'zip'] }],
           multiple: false,
           directory: false,
         },
-  );
-  if (path === null || Array.isArray(path)) return null;
-  return path;
+  )
+  if (path === null || Array.isArray(path))
+    return null
+  return path
 }
 
-async function runImportWithPicker(mode: "archive" | "folder"): Promise<void> {
-  if (importProgressOpen.value) return;
+async function runImportWithPicker(mode: 'archive' | 'folder'): Promise<void> {
+  if (importProgressOpen.value)
+    return
   try {
-    const path = await pickImportSource(mode);
-    if (!path) return;
-    await runImportFlow(path);
-  } catch (e) {
-    emit("notify", {
-      type: "error",
+    const path = await pickImportSource(mode)
+    if (!path)
+      return
+    await runImportFlow(path)
+  }
+  catch (e) {
+    emit('notify', {
+      type: 'error',
       message: e instanceof Error ? e.message : String(e),
-    });
+    })
   }
 }
 
 function onImport(): void {
-  void runImportWithPicker("archive");
+  void runImportWithPicker('archive')
 }
 
 function onImportFolder(): void {
-  void runImportWithPicker("folder");
+  void runImportWithPicker('folder')
 }
 </script>
 
@@ -190,7 +200,9 @@ function onImportFolder(): void {
     class="pack-bar"
     :title="t('common.rolePack.barTitle')"
   >
-    <button type="button" class="btn" @click="onExport">{{ t("common.rolePack.export") }}</button>
+    <button type="button" class="btn" @click="onExport">
+      {{ t("common.rolePack.export") }}
+    </button>
     <button
       type="button"
       class="btn"
@@ -226,7 +238,9 @@ function onImportFolder(): void {
         aria-labelledby="pack-conflict-title"
       >
         <div ref="conflictCardRef" class="modal-card" tabindex="-1" @click.stop @keydown.escape.stop="closeConflict">
-          <h2 id="pack-conflict-title" class="modal-title">{{ t("common.rolePack.conflictTitle") }}</h2>
+          <h2 id="pack-conflict-title" class="modal-title">
+            {{ t("common.rolePack.conflictTitle") }}
+          </h2>
           <p class="modal-body">
             {{
               t("common.rolePack.conflictBody", {

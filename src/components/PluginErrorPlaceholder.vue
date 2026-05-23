@@ -1,38 +1,41 @@
 <script setup lang="ts">
-import { useI18n } from "vue-i18n";
+import { useI18n } from 'vue-i18n'
 
-const { t } = useI18n();
 withDefaults(
   defineProps<{
-    title?: string;
-    message: string;
+    title?: string
+    message: string
     /** 原始堆栈等，展示在「查看详情」 */
-    detail?: string;
-    showRetry?: boolean;
-    showFallback?: boolean;
-    retryLabel?: string;
-    fallbackLabel?: string;
+    detail?: string
+    showRetry?: boolean
+    showFallback?: boolean
+    retryLabel?: string
+    fallbackLabel?: string
   }>(),
   {
-    title: "",
-    detail: "",
+    title: '',
+    detail: '',
     showRetry: true,
     showFallback: false,
-    retryLabel: "",
-    fallbackLabel: "",
+    retryLabel: '',
+    fallbackLabel: '',
   },
-);
-
+)
 defineEmits<{
-  retry: [];
-  fallback: [];
-}>();
+  retry: []
+  fallback: []
+}>()
+const { t } = useI18n()
 </script>
 
 <template>
   <div class="pep" role="alert">
-    <h4 v-if="title" class="pep-title">{{ title }}</h4>
-    <p class="pep-msg">{{ message }}</p>
+    <h4 v-if="title" class="pep-title">
+      {{ title }}
+    </h4>
+    <p class="pep-msg">
+      {{ message }}
+    </p>
     <div class="pep-actions">
       <button
         v-if="showRetry"

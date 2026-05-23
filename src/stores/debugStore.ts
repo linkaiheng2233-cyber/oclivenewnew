@@ -1,14 +1,15 @@
-import { defineStore } from "pinia";
+import type { PresenceMode, SendMessageResponse } from '../utils/tauri-api'
+import { defineStore } from 'pinia'
 import {
+
   queryEvents,
   queryMemories,
   reloadPolicyPlugins,
-  type PresenceMode,
-  type SendMessageResponse,
-} from "../utils/tauri-api";
-import { useRoleStore } from "./roleStore";
 
-export const useDebugStore = defineStore("debug", {
+} from '../utils/tauri-api'
+import { useRoleStore } from './roleStore'
+
+export const useDebugStore = defineStore('debug', {
   state: () => ({
     visible: false,
     events: [] as unknown[],
@@ -20,26 +21,26 @@ export const useDebugStore = defineStore("debug", {
   }),
   actions: {
     toggle() {
-      this.visible = !this.visible;
+      this.visible = !this.visible
     },
     /** 主对话返回后写入，供开发面板展示「本回合」知识命中 */
     recordKnowledgeFromSend(res: SendMessageResponse) {
-      this.lastKnowledgeChunksInPrompt = res.knowledge_chunks_in_prompt ?? 0;
-      this.lastKnowledgePresenceMode = res.presence_mode;
+      this.lastKnowledgeChunksInPrompt = res.knowledge_chunks_in_prompt ?? 0
+      this.lastKnowledgePresenceMode = res.presence_mode
     },
     async loadDebugData() {
-      const roleStore = useRoleStore();
-      const roleId = roleStore.currentRoleId;
+      const roleStore = useRoleStore()
+      const roleId = roleStore.currentRoleId
       const [events, memories] = await Promise.all([
         queryEvents({ role_id: roleId, limit: 10, offset: 0 }),
         queryMemories({ role_id: roleId, limit: 10, offset: 0 }),
         roleStore.refreshRoleInfo(),
-      ]);
-      this.events = events;
-      this.memories = memories;
+      ])
+      this.events = events
+      this.memories = memories
     },
     async reloadPolicy() {
-      return reloadPolicyPlugins();
+      return reloadPolicyPlugins()
     },
   },
-});
+})

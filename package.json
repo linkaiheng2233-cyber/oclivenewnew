@@ -1,9 +1,9 @@
 {
   "name": "oclivenewnew",
-  "private": true,
-  "version": "0.2.0",
-  "license": "AGPL-3.0",
   "type": "module",
+  "version": "0.2.0",
+  "private": true,
+  "license": "AGPL-3.0",
   "scripts": {
     "dev": "vite",
     "dev:probe": "node scripts/dev-probe.mjs",
@@ -31,6 +31,8 @@
     "check:release": "npm run build && npm run check:rust:fmt && npm run check:rust:clippy && npm run check:rust:test:all",
     "scaffold:ui-plugin": "node scripts/scaffold-ui-slot-plugin.mjs",
     "test:unit": "vitest run",
+    "lint": "eslint src vite.config.ts e2e-mock",
+    "format": "prettier --write .",
     "test:e2e:core-api-restart": "node scripts/e2e-core-api-restart.mjs",
     "test:e2e:preview": "playwright test",
     "test:e2e:tauri-native": "playwright test e2e/tauri-native.spec.ts"
@@ -54,13 +56,16 @@
     "vue3-sfc-loader": "^0.9.5"
   },
   "devDependencies": {
+    "@antfu/eslint-config": "^9.0.0",
     "@playwright/test": "^1.52.0",
     "@tauri-apps/cli": "1.5.14",
     "@types/node": "^24.12.2",
     "@vitejs/plugin-vue": "^5.2.1",
     "@vue/test-utils": "^2.4.10",
     "@vue/tsconfig": "^0.9.1",
+    "eslint": "^10.4.0",
     "jsdom": "^29.1.1",
+    "prettier": "^3.8.3",
     "rollup-plugin-visualizer": "^7.0.1",
     "typescript": "~5.8.0",
     "vite": "^6.0.3",

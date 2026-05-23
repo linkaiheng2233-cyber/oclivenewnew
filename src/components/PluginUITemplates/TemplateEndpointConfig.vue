@@ -1,22 +1,24 @@
 <script setup lang="ts">
 interface EndpointHintField {
-  name: string;
-  description: string;
+  name: string
+  description: string
 }
 
 interface EndpointSchema {
-  summary?: string;
-  fields: EndpointHintField[];
+  summary?: string
+  fields: EndpointHintField[]
 }
 
 defineProps<{
-  schema: EndpointSchema;
-}>();
+  schema: EndpointSchema
+}>()
 </script>
 
 <template>
   <div class="tpl-root">
-    <p class="tpl-summary">{{ schema.summary }}</p>
+    <p class="tpl-summary">
+      {{ schema.summary }}
+    </p>
     <ul class="tpl-list">
       <li v-for="f in schema.fields" :key="f.name" class="tpl-item">
         <code>{{ f.name }}</code>

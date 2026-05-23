@@ -1,24 +1,23 @@
 <script setup lang="ts">
-import { useI18n } from "vue-i18n";
+import { useI18n } from 'vue-i18n'
 
-const { t } = useI18n();
 const props = withDefaults(
   defineProps<{
-    currentRoleId: string;
-    currentRelation: string;
-    roles: Array<{ id: string; name: string }>;
-    relations: Array<{ id: string; name: string }>;
-    loading: boolean;
+    currentRoleId: string
+    currentRelation: string
+    roles: Array<{ id: string, name: string }>
+    relations: Array<{ id: string, name: string }>
+    loading: boolean
     /** 与 oclive-new 顶栏一致：可只渲染角色或只渲染身份 */
-    sections?: ("role" | "relation")[];
-    variant?: "default" | "topbar";
+    sections?: ('role' | 'relation')[]
+    variant?: 'default' | 'topbar'
   }>(),
-  { sections: () => ["role", "relation"], variant: "default" },
-);
-
-const showRole = () => props.sections.includes("role");
-const showRelation = () => props.sections.includes("relation");
-const emit = defineEmits<{ changeRole: [string]; changeRelation: [string] }>();
+  { sections: () => ['role', 'relation'], variant: 'default' },
+)
+const emit = defineEmits<{ changeRole: [string], changeRelation: [string] }>()
+const { t } = useI18n()
+const showRole = () => props.sections.includes('role')
+const showRelation = () => props.sections.includes('relation')
 </script>
 
 <template>
@@ -31,7 +30,9 @@ const emit = defineEmits<{ changeRole: [string]; changeRelation: [string] }>();
         :disabled="loading"
         @change="emit('changeRole', ($event.target as HTMLSelectElement).value)"
       >
-        <option v-for="r in roles" :key="r.id" :value="r.id">{{ r.name }}</option>
+        <option v-for="r in roles" :key="r.id" :value="r.id">
+          {{ r.name }}
+        </option>
       </select>
     </template>
     <template v-if="showRelation()">
@@ -42,7 +43,9 @@ const emit = defineEmits<{ changeRole: [string]; changeRelation: [string] }>();
         :disabled="loading"
         @change="emit('changeRelation', ($event.target as HTMLSelectElement).value)"
       >
-        <option v-for="r in relations" :key="r.id" :value="r.id">{{ r.name }}</option>
+        <option v-for="r in relations" :key="r.id" :value="r.id">
+          {{ r.name }}
+        </option>
       </select>
     </template>
   </section>

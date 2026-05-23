@@ -1,64 +1,64 @@
 <script setup lang="ts">
-import { ref, watch } from "vue";
-import { useI18n } from "vue-i18n";
+import { ref, watch } from 'vue'
+import { useI18n } from 'vue-i18n'
 
 interface OptionItem {
-  value: string;
-  label: string;
+  value: string
+  label: string
 }
 
 export interface SlotRegistryTemplateSchema {
-  slotKey: string;
-  backend: string;
-  packBackend: string;
-  sessionOverridden: boolean;
-  options: OptionItem[];
-  directoryOptions?: OptionItem[];
-  directoryId?: string;
+  slotKey: string
+  backend: string
+  packBackend: string
+  sessionOverridden: boolean
+  options: OptionItem[]
+  directoryOptions?: OptionItem[]
+  directoryId?: string
 }
 
 const props = defineProps<{
-  schema: SlotRegistryTemplateSchema;
-  busy?: boolean;
-}>();
+  schema: SlotRegistryTemplateSchema
+  busy?: boolean
+}>()
 
 const emit = defineEmits<{
   submit: [
     {
-      slotKey: string;
-      backend: string;
-      applyMode: "session" | "pack";
-      directoryId?: string | null;
+      slotKey: string
+      backend: string
+      applyMode: 'session' | 'pack'
+      directoryId?: string | null
     },
-  ];
-}>();
+  ]
+}>()
 
-const { t } = useI18n();
-const draftBackend = ref(props.schema.backend);
-const draftDirectoryId = ref(props.schema.directoryId ?? "");
+const { t } = useI18n()
+const draftBackend = ref(props.schema.backend)
+const draftDirectoryId = ref(props.schema.directoryId ?? '')
 
 watch(
   () => props.schema.backend,
   (v) => {
-    draftBackend.value = v;
+    draftBackend.value = v
   },
-);
+)
 
 watch(
   () => props.schema.directoryId,
   (v) => {
-    draftDirectoryId.value = v ?? "";
+    draftDirectoryId.value = v ?? ''
   },
-);
+)
 
-function submit(applyMode: "session" | "pack") {
-  const usesDirectory = draftBackend.value === "directory";
-  emit("submit", {
+function submit(applyMode: 'session' | 'pack') {
+  const usesDirectory = draftBackend.value === 'directory'
+  emit('submit', {
     slotKey: props.schema.slotKey,
     backend: draftBackend.value,
     applyMode,
     directoryId: usesDirectory ? draftDirectoryId.value.trim() || null : undefined,
-  });
+  })
 }
 </script>
 

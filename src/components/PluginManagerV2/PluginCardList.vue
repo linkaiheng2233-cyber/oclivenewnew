@@ -1,20 +1,20 @@
 <script setup lang="ts">
-import { useI18n } from "vue-i18n";
-import PluginCard from "./PluginCard.vue";
-import type { PluginV2CardItem } from "../../composables/usePluginManagerV2";
-
-const { t } = useI18n();
+import type { PluginV2CardItem } from '../../composables/usePluginManagerV2'
+import { useI18n } from 'vue-i18n'
+import PluginCard from './PluginCard.vue'
 
 defineProps<{
-  items: PluginV2CardItem[];
-  selectedId: string;
-  keyword: string;
-}>();
+  items: PluginV2CardItem[]
+  selectedId: string
+  keyword: string
+}>()
 
 const emit = defineEmits<{
-  "update:keyword": [value: string];
-  select: [id: string];
-}>();
+  'update:keyword': [value: string]
+  'select': [id: string]
+}>()
+
+const { t } = useI18n()
 </script>
 
 <template>
@@ -25,7 +25,7 @@ const emit = defineEmits<{
       :value="keyword"
       :placeholder="t('pluginManager.search.placeholder')"
       @input="emit('update:keyword', ($event.target as HTMLInputElement).value)"
-    />
+    >
     <div class="pm2-list">
       <PluginCard
         v-for="item in items"
@@ -34,7 +34,9 @@ const emit = defineEmits<{
         :selected="item.id === selectedId"
         @select="emit('select', item.id)"
       />
-      <p v-if="!items.length" class="pm2-empty">{{ t("pluginManager.search.empty") }}</p>
+      <p v-if="!items.length" class="pm2-empty">
+        {{ t("pluginManager.search.empty") }}
+      </p>
     </div>
   </section>
 </template>

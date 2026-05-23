@@ -1,33 +1,36 @@
 <script setup lang="ts">
-import { computed } from "vue";
-import { useI18n } from "vue-i18n";
-import type { PluginV2CardItem } from "../../composables/usePluginManagerV2";
+import type { PluginV2CardItem } from '../../composables/usePluginManagerV2'
+import { computed } from 'vue'
+import { useI18n } from 'vue-i18n'
 
 const props = defineProps<{
-  item: PluginV2CardItem;
-  selected?: boolean;
-}>();
+  item: PluginV2CardItem
+  selected?: boolean
+}>()
 
 const emit = defineEmits<{
-  select: [];
-}>();
+  select: []
+}>()
 
-const { t } = useI18n();
+const { t } = useI18n()
 
-const typeLabel = computed(() => t(`pluginTerms.type.${props.item.type}`));
+const typeLabel = computed(() => t(`pluginTerms.type.${props.item.type}`))
 
 const riskLabel = computed(() => {
-  if (props.item.status === "needs_config") return t("pluginManager.risk.needsConfig");
-  return "";
-});
+  if (props.item.status === 'needs_config')
+    return t('pluginManager.risk.needsConfig')
+  return ''
+})
 
-const statusLabel = computed(() => t(`pluginTerms.status.${props.item.status}`));
+const statusLabel = computed(() => t(`pluginTerms.status.${props.item.status}`))
 </script>
 
 <template>
   <button type="button" class="pm2-card" :class="{ 'is-selected': selected }" @click="emit('select')">
     <div class="pm2-card-head">
-      <h4 class="pm2-card-title">{{ item.title }}</h4>
+      <h4 class="pm2-card-title">
+        {{ item.title }}
+      </h4>
       <span
         class="pm2-card-status"
         :class="{
@@ -39,7 +42,9 @@ const statusLabel = computed(() => t(`pluginTerms.status.${props.item.status}`))
         {{ statusLabel }}
       </span>
     </div>
-    <p class="pm2-card-desc">{{ item.description }}</p>
+    <p class="pm2-card-desc">
+      {{ item.description }}
+    </p>
     <div class="pm2-card-meta">
       <span v-if="item.sessionOverridden" class="pm2-chip pm2-chip--override">{{
         t("pluginWorkbench.graph.sessionOverride")

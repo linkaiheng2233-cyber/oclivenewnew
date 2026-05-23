@@ -1,36 +1,36 @@
 <script setup lang="ts">
-import { computed, ref, toRef } from "vue";
-import { useI18n } from "vue-i18n";
-import PluginSlotEmbed from "./PluginSlotEmbed.vue";
-import { SLOT_LAUNCHER_PALETTE } from "../stores/pluginStore";
-import { useModalFocusRestore } from "../composables/useModalFocusRestore";
+import { computed, ref, toRef } from 'vue'
+import { useI18n } from 'vue-i18n'
+import { useModalFocusRestore } from '../composables/useModalFocusRestore'
+import { SLOT_LAUNCHER_PALETTE } from '../stores/pluginStore'
+import PluginSlotEmbed from './PluginSlotEmbed.vue'
 
 const props = withDefaults(
   defineProps<{
-    modelValue: boolean;
+    modelValue: boolean
     /** 与插件 bootstrap 同步 */
-    bootstrapEpoch?: number;
+    bootstrapEpoch?: number
   }>(),
   { bootstrapEpoch: 0 },
-);
+)
 
 const emit = defineEmits<{
-  "update:modelValue": [value: boolean];
-}>();
+  'update:modelValue': [value: boolean]
+}>()
 
-const shDialogRef = ref<HTMLElement | null>(null);
-useModalFocusRestore(toRef(props, "modelValue"), shDialogRef);
+const shDialogRef = ref<HTMLElement | null>(null)
+useModalFocusRestore(toRef(props, 'modelValue'), shDialogRef)
 
-const { t } = useI18n();
+const { t } = useI18n()
 
 const rows = computed(() => {
-  const pluginF = t("common.shortcutHelp.ctrlShiftFSimple");
+  const pluginF = t('common.shortcutHelp.ctrlShiftFSimple')
   return [
-    { keys: "Ctrl + Shift + S", desc: t("common.shortcutHelp.rowOpenSettings") },
-    { keys: "Ctrl + Shift + F", desc: pluginF },
-    { keys: t("common.shortcutHelp.rowCtrlLongKeys"), desc: t("common.shortcutHelp.rowCtrlLong") },
-  ];
-});
+    { keys: 'Ctrl + Shift + S', desc: t('common.shortcutHelp.rowOpenSettings') },
+    { keys: 'Ctrl + Shift + F', desc: pluginF },
+    { keys: t('common.shortcutHelp.rowCtrlLongKeys'), desc: t('common.shortcutHelp.rowCtrlLong') },
+  ]
+})
 </script>
 
 <template>
@@ -46,7 +46,9 @@ const rows = computed(() => {
     >
       <div ref="shDialogRef" class="sh-dialog" tabindex="-1" @click.stop @keydown.escape.stop="emit('update:modelValue', false)">
         <header class="sh-head">
-          <h2 class="sh-title">{{ t("common.shortcutHelp.title") }}</h2>
+          <h2 class="sh-title">
+            {{ t("common.shortcutHelp.title") }}
+          </h2>
           <button
             type="button"
             class="sh-close"
@@ -59,14 +61,22 @@ const rows = computed(() => {
         <table class="sh-table">
           <tbody>
             <tr v-for="(r, i) in rows" :key="`${r.keys}-${i}`">
-              <td class="sh-keys">{{ r.keys }}</td>
-              <td class="sh-desc">{{ r.desc }}</td>
+              <td class="sh-keys">
+                {{ r.keys }}
+              </td>
+              <td class="sh-desc">
+                {{ r.desc }}
+              </td>
             </tr>
           </tbody>
         </table>
-        <p class="sh-foot">{{ t("common.shortcutHelp.foot") }}</p>
+        <p class="sh-foot">
+          {{ t("common.shortcutHelp.foot") }}
+        </p>
         <section class="sh-slot" :aria-label="t('common.shortcutHelp.slotSectionAria')">
-          <h3 class="sh-slot-h">{{ t("common.shortcutHelp.slotHeading") }}</h3>
+          <h3 class="sh-slot-h">
+            {{ t("common.shortcutHelp.slotHeading") }}
+          </h3>
           <PluginSlotEmbed
             :slot-name="SLOT_LAUNCHER_PALETTE"
             :aria-label="t('common.shortcutHelp.slotEmbedAria')"

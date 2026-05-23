@@ -1,58 +1,58 @@
 <script setup lang="ts">
-import { computed } from "vue";
-import { useI18n } from "vue-i18n";
-import { usePluginStore } from "../stores/pluginStore";
+import { computed } from 'vue'
+import { useI18n } from 'vue-i18n'
+import { usePluginStore } from '../stores/pluginStore'
 
 const props = withDefaults(
   defineProps<{
-    slotKey: string;
-    labelKey: string;
-    hintKey?: string;
+    slotKey: string
+    labelKey: string
+    hintKey?: string
     /** chat_toolbar 使用独立禁用开关 */
-    toolbarSlot?: boolean;
-    active?: boolean;
+    toolbarSlot?: boolean
+    active?: boolean
     /** 与真实 UI 区域形态对齐 */
-    variant?: "default" | "headerStrip" | "toolbar" | "sidebar" | "overlay";
+    variant?: 'default' | 'headerStrip' | 'toolbar' | 'sidebar' | 'overlay'
   }>(),
-  { variant: "default" },
-);
+  { variant: 'default' },
+)
 
 const emit = defineEmits<{
-  select: [];
-}>();
+  select: []
+}>()
 
-const pluginStore = usePluginStore();
-const { t } = useI18n();
+const pluginStore = usePluginStore()
+const { t } = useI18n()
 
 function isContributionOff(pluginId: string): boolean {
   if (props.toolbarSlot) {
-    return pluginStore.isToolbarContributionDisabled(pluginId);
+    return pluginStore.isToolbarContributionDisabled(pluginId)
   }
-  return pluginStore.isSlotContributionDisabled(props.slotKey, pluginId);
+  return pluginStore.isSlotContributionDisabled(props.slotKey, pluginId)
 }
 
 const candidates = computed(() =>
   (pluginStore.catalogCandidatesBySlot[props.slotKey] ?? []).filter(
-    (id) => !pluginStore.isPluginDisabled(id) && !isContributionOff(id),
+    id => !pluginStore.isPluginDisabled(id) && !isContributionOff(id),
   ),
-);
+)
 
 const boundIds = computed(() =>
-  pluginStore.pluginsOrderedForSlot(props.slotKey).filter((id) => candidates.value.includes(id)),
-);
+  pluginStore.pluginsOrderedForSlot(props.slotKey).filter(id => candidates.value.includes(id)),
+)
 
-const primaryId = computed(() => boundIds.value[0] ?? "");
+const primaryId = computed(() => boundIds.value[0] ?? '')
 
-const isEmpty = computed(() => boundIds.value.length === 0);
+const isEmpty = computed(() => boundIds.value.length === 0)
 
 function onSelect(ev: Event) {
-  const v = (ev.target as HTMLSelectElement).value;
+  const v = (ev.target as HTMLSelectElement).value
   if (!v) {
-    pluginStore.setSlotPluginIds(props.slotKey, []);
-    return;
+    pluginStore.setSlotPluginIds(props.slotKey, [])
+    return
   }
-  const rest = boundIds.value.filter((id) => id !== v);
-  pluginStore.setSlotPluginIds(props.slotKey, [v, ...rest]);
+  const rest = boundIds.value.filter(id => id !== v)
+  pluginStore.setSlotPluginIds(props.slotKey, [v, ...rest])
 }
 </script>
 
@@ -83,7 +83,9 @@ function onSelect(ev: Event) {
       <span class="usmr-plugin-name">{{ primaryId }}</span>
       <span v-if="boundIds.length > 1" class="usmr-more">+{{ boundIds.length - 1 }}</span>
     </div>
-    <div v-else-if="variant !== 'toolbar'" class="usmr-empty">{{ t("pluginWorkbench.layout.emptySlot") }}</div>
+    <div v-else-if="variant !== 'toolbar'" class="usmr-empty">
+      {{ t("pluginWorkbench.layout.emptySlot") }}
+    </div>
     <div v-if="variant === 'headerStrip' || variant === 'toolbar'" class="usmr-chrome-placeholder" aria-hidden="true" />
     <select
       class="usmr-select"
@@ -91,8 +93,12 @@ function onSelect(ev: Event) {
       @click.stop
       @change="onSelect"
     >
-      <option value="">{{ t("pluginWorkbench.layout.none") }}</option>
-      <option v-for="id in candidates" :key="id" :value="id">{{ id }}</option>
+      <option value="">
+        {{ t("pluginWorkbench.layout.none") }}
+      </option>
+      <option v-for="id in candidates" :key="id" :value="id">
+        {{ id }}
+      </option>
     </select>
   </div>
 </template>

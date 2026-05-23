@@ -1,4 +1,5 @@
-import { nextTick, watch, type Ref } from "vue";
+import type { Ref } from 'vue'
+import { nextTick, watch } from 'vue'
 
 /**
  * When a modal opens: stash `document.activeElement`, then focus dialog root or primary control.
@@ -9,27 +10,29 @@ export function useModalFocusRestore(
   dialogRoot: Ref<HTMLElement | null>,
   options?: { primary?: Ref<HTMLElement | null | undefined> },
 ): void {
-  let opener: HTMLElement | null = null;
+  let opener: HTMLElement | null = null
   watch(isOpen, (open) => {
     if (open) {
-      const el = document.activeElement;
-      opener = el instanceof HTMLElement ? el : null;
+      const el = document.activeElement
+      opener = el instanceof HTMLElement ? el : null
       void nextTick(() => {
-        const target = options?.primary?.value ?? dialogRoot.value;
-        target?.focus({ preventScroll: true });
-      });
-    } else {
-      const toRestore = opener;
-      opener = null;
+        const target = options?.primary?.value ?? dialogRoot.value
+        target?.focus({ preventScroll: true })
+      })
+    }
+    else {
+      const toRestore = opener
+      opener = null
       void nextTick(() => {
         if (toRestore?.isConnected) {
           try {
-            toRestore.focus({ preventScroll: true });
-          } catch {
+            toRestore.focus({ preventScroll: true })
+          }
+          catch {
             /* ignore */
           }
         }
-      });
+      })
     }
-  });
+  })
 }

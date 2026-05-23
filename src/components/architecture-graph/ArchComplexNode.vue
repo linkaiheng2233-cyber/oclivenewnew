@@ -1,15 +1,15 @@
 <script setup lang="ts">
-import { Handle, Position } from "@vue-flow/core";
-import { useI18n } from "vue-i18n";
-import { backendCssVars } from "../../lib/graphEditorTheme";
-import { ARCH_NODE_DEFAULT_SIZE } from "../../composables/useArchitectureGraphLayout";
-import ArchNodeChrome from "./ArchNodeChrome.vue";
+import { Handle, Position } from '@vue-flow/core'
+import { useI18n } from 'vue-i18n'
+import { ARCH_NODE_DEFAULT_SIZE } from '../../composables/useArchitectureGraphLayout'
+import { backendCssVars } from '../../lib/graphEditorTheme'
+import ArchNodeChrome from './ArchNodeChrome.vue'
 
 defineProps({
   selected: { type: Boolean, default: false },
-});
-const { t } = useI18n();
-const size = ARCH_NODE_DEFAULT_SIZE.archComplex!;
+})
+const { t } = useI18n()
+const size = ARCH_NODE_DEFAULT_SIZE.archComplex!
 </script>
 
 <template>
@@ -35,8 +35,12 @@ const size = ARCH_NODE_DEFAULT_SIZE.archComplex!;
         class="agn-handle agn-handle--in"
       />
       <div class="agn-accent-bar" />
-      <div class="agn-head">🎭 {{ t("pluginWorkbench.graph.complexEmotion") }}</div>
-      <p class="agn-hint agn-complex-hint">{{ t("pluginWorkbench.graph.complexHint") }}</p>
+      <div class="agn-head">
+        🎭 {{ t("pluginWorkbench.graph.complexEmotion") }}
+      </div>
+      <p class="agn-hint agn-complex-hint">
+        {{ t("pluginWorkbench.graph.complexHint") }}
+      </p>
     </div>
   </ArchNodeChrome>
 </template>

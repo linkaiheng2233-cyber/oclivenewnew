@@ -1,20 +1,20 @@
 <script setup lang="ts">
-import { ref, watch } from "vue";
-import { useI18n } from "vue-i18n";
-import AsyncPluginVue from "./AsyncPluginVue.vue";
-import PluginErrorPlaceholder from "./PluginErrorPlaceholder.vue";
-import { useDirectoryPluginSlotEmbed } from "../composables/useDirectoryPluginSlotEmbed";
-import { SLOT_SETTINGS_PANEL } from "../stores/pluginStore";
-
-const { t } = useI18n();
+import { ref, watch } from 'vue'
+import { useI18n } from 'vue-i18n'
+import { useDirectoryPluginSlotEmbed } from '../composables/useDirectoryPluginSlotEmbed'
+import { SLOT_SETTINGS_PANEL } from '../stores/pluginStore'
+import AsyncPluginVue from './AsyncPluginVue.vue'
+import PluginErrorPlaceholder from './PluginErrorPlaceholder.vue'
 
 const props = withDefaults(
   defineProps<{
     /** 变更后重新拉取 bootstrap（与插件管理面板保存联动） */
-    bootstrapEpoch?: number;
+    bootstrapEpoch?: number
   }>(),
   { bootstrapEpoch: 0 },
-);
+)
+
+const { t } = useI18n()
 
 const {
   pluginError,
@@ -32,15 +32,15 @@ const {
 } = useDirectoryPluginSlotEmbed({
   slot: SLOT_SETTINGS_PANEL,
   bootstrapEpoch: () => props.bootstrapEpoch,
-});
+})
 
-const activeTab = ref(0);
+const activeTab = ref(0)
 
 watch(panelSlots, (list) => {
   if (activeTab.value >= list.length) {
-    activeTab.value = 0;
+    activeTab.value = 0
   }
-});
+})
 </script>
 
 <template>

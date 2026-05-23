@@ -1,77 +1,83 @@
 <script setup lang="ts">
-import { computed, onMounted, onUnmounted, ref, watch } from "vue";
-import { useI18n } from "vue-i18n";
-
-const { t } = useI18n();
+import { computed, onMounted, onUnmounted, ref, watch } from 'vue'
+import { useI18n } from 'vue-i18n'
 
 const props = withDefaults(
   defineProps<{
     /** 点击后显示的说明；双换行分段 */
-    text?: string;
-    paragraphs?: readonly string[];
+    text?: string
+    paragraphs?: readonly string[]
     /** 气泡相对按钮：向左展开或向右展开，贴右缘时用 end 避免裁切 */
-    popAlign?: "start" | "end";
+    popAlign?: 'start' | 'end'
     /** 更小问号与更窄气泡，适合顶栏等窄区域 */
-    compact?: boolean;
+    compact?: boolean
   }>(),
-  { popAlign: "start", compact: false },
-);
+  { popAlign: 'start', compact: false },
+)
+
+const { t } = useI18n()
 
 const segments = computed(() => {
   if (props.paragraphs?.length) {
-    return props.paragraphs.map((s) => s.trim()).filter(Boolean);
+    return props.paragraphs.map(s => s.trim()).filter(Boolean)
   }
-  const raw = props.text?.trim() ?? "";
-  if (!raw) return [];
+  const raw = props.text?.trim() ?? ''
+  if (!raw)
+    return []
   return raw
-    .split(/\n\n+/)
-    .map((s) => s.trim())
-    .filter(Boolean);
-});
+    .split(/\n{2,}/)
+    .map(s => s.trim())
+    .filter(Boolean)
+})
 
-const open = ref(false);
-const root = ref<HTMLElement | null>(null);
+const open = ref(false)
+const root = ref<HTMLElement | null>(null)
 
 function toggle(e: Event) {
-  e.stopPropagation();
-  open.value = !open.value;
+  e.stopPropagation()
+  open.value = !open.value
 }
 
 /** capture：先于子树内 @click.stop，点在「更多」等面板空白处也能收到 */
 function onDocPointerDownCapture(e: PointerEvent) {
-  if (!open.value) return;
-  const el = root.value;
-  if (el && !el.contains(e.target as Node)) open.value = false;
+  if (!open.value)
+    return
+  const el = root.value
+  if (el && !el.contains(e.target as Node))
+    open.value = false
 }
 
 function onDocKeydown(e: KeyboardEvent) {
-  if (e.key === "Escape") open.value = false;
+  if (e.key === 'Escape')
+    open.value = false
 }
 
 function onWindowResize() {
-  if (open.value) open.value = false;
+  if (open.value)
+    open.value = false
 }
 
-const CAPTURE_OPTS = true;
+const CAPTURE_OPTS = true
 
 onMounted(() => {
-  document.addEventListener("pointerdown", onDocPointerDownCapture, CAPTURE_OPTS);
-  document.addEventListener("keydown", onDocKeydown);
-});
+  document.addEventListener('pointerdown', onDocPointerDownCapture, CAPTURE_OPTS)
+  document.addEventListener('keydown', onDocKeydown)
+})
 
 watch(open, (isOpen) => {
   if (isOpen) {
-    window.addEventListener("resize", onWindowResize);
-  } else {
-    window.removeEventListener("resize", onWindowResize);
+    window.addEventListener('resize', onWindowResize)
   }
-});
+  else {
+    window.removeEventListener('resize', onWindowResize)
+  }
+})
 
 onUnmounted(() => {
-  document.removeEventListener("pointerdown", onDocPointerDownCapture, CAPTURE_OPTS);
-  document.removeEventListener("keydown", onDocKeydown);
-  window.removeEventListener("resize", onWindowResize);
-});
+  document.removeEventListener('pointerdown', onDocPointerDownCapture, CAPTURE_OPTS)
+  document.removeEventListener('keydown', onDocKeydown)
+  window.removeEventListener('resize', onWindowResize)
+})
 </script>
 
 <template>

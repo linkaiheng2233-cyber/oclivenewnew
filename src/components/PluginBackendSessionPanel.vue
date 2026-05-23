@@ -1,114 +1,119 @@
 <script setup lang="ts">
-import { computed, ref, watch } from "vue";
-import { useI18n } from "vue-i18n";
-import { useRoleStore } from "../stores/roleStore";
-import {
-  packPlugin,
-  getPluginResolutionDebug,
-  setRemoteLifeEnabled,
-  setSessionPluginBackend,
-} from "../utils/tauri-api";
+import { computed, ref, watch } from 'vue'
+import { useI18n } from 'vue-i18n'
+import { useRoleStore } from '../stores/roleStore'
 import {
   formatDirectoryPluginSlots,
   usesDirectoryPlugins,
-} from "../utils/pluginBackendsDisplay";
-import AgentDebugPanel from "./AgentDebugPanel.vue";
+} from '../utils/pluginBackendsDisplay'
+import {
+  getPluginResolutionDebug,
+  packPlugin,
+  setRemoteLifeEnabled,
+  setSessionPluginBackend,
+} from '../utils/tauri-api'
+import AgentDebugPanel from './AgentDebugPanel.vue'
 
-const roleStore = useRoleStore();
-const { t } = useI18n();
-const busy = ref(false);
-const pluginBackends = computed(() => roleStore.roleInfo.pluginBackends);
-const pluginBackendsEffective = computed(() => roleStore.roleInfo.pluginBackendsEffective);
+const roleStore = useRoleStore()
+const { t } = useI18n()
+const busy = ref(false)
+const pluginBackends = computed(() => roleStore.roleInfo.pluginBackends)
+const pluginBackendsEffective = computed(() => roleStore.roleInfo.pluginBackendsEffective)
 const pluginBackendsSessionOverride = computed(
   () => roleStore.roleInfo.pluginBackendsSessionOverride,
-);
+)
 const pluginBackendsEffectiveSources = computed(
   () => roleStore.roleInfo.pluginBackendsEffectiveSources,
-);
-const pluginDebugSnapshot = ref("");
-const pluginDebugCopyStatus = ref("");
-const localMemoryProviderDraft = ref("");
-const packStatus = ref("");
+)
+const pluginDebugSnapshot = ref('')
+const pluginDebugCopyStatus = ref('')
+const localMemoryProviderDraft = ref('')
+const packStatus = ref('')
 const pluginBackendRows = [
-  { key: "memory" as const, label: "Memory", options: ["builtin", "builtin_v2", "remote", "local", "directory"] },
-  { key: "emotion" as const, label: "Emotion", options: ["builtin", "builtin_v2", "remote", "directory"] },
-  { key: "event" as const, label: "Event", options: ["builtin", "builtin_v2", "remote", "directory"] },
-  { key: "prompt" as const, label: "Prompt", options: ["builtin", "builtin_v2", "remote", "directory"] },
-  { key: "llm" as const, label: "LLM", options: ["ollama", "remote", "directory"] },
-  { key: "agent" as const, label: "Agent", options: ["builtin", "remote", "directory"] },
-];
+  { key: 'memory' as const, label: 'Memory', options: ['builtin', 'builtin_v2', 'remote', 'local', 'directory'] },
+  { key: 'emotion' as const, label: 'Emotion', options: ['builtin', 'builtin_v2', 'remote', 'directory'] },
+  { key: 'event' as const, label: 'Event', options: ['builtin', 'builtin_v2', 'remote', 'directory'] },
+  { key: 'prompt' as const, label: 'Prompt', options: ['builtin', 'builtin_v2', 'remote', 'directory'] },
+  { key: 'llm' as const, label: 'LLM', options: ['ollama', 'remote', 'directory'] },
+  { key: 'agent' as const, label: 'Agent', options: ['builtin', 'remote', 'directory'] },
+]
 const directoryPluginsPackLine = computed(() => {
-  const pb = pluginBackends.value;
-  if (!usesDirectoryPlugins(pb)) return "";
-  return t("pluginManager.v1Backend.directoryPluginsPack", {
+  const pb = pluginBackends.value
+  if (!usesDirectoryPlugins(pb))
+    return ''
+  return t('pluginManager.v1Backend.directoryPluginsPack', {
     summary: formatDirectoryPluginSlots(pb.directory_plugins),
-  });
-});
+  })
+})
 const directoryPluginsEffectiveLine = computed(() => {
-  const pb = pluginBackendsEffective.value;
-  if (!usesDirectoryPlugins(pb)) return "";
-  return t("pluginManager.v1Backend.directoryPluginsEffective", {
+  const pb = pluginBackendsEffective.value
+  if (!usesDirectoryPlugins(pb))
+    return ''
+  return t('pluginManager.v1Backend.directoryPluginsEffective', {
     summary: formatDirectoryPluginSlots(pb.directory_plugins),
-  });
-});
+  })
+})
 watch(
   () =>
     [
       roleStore.currentRoleId,
       roleStore.roleInfo.pluginBackendsEffective.memory,
-      roleStore.roleInfo.pluginBackendsEffective.local_memory_provider_id ?? "",
+      roleStore.roleInfo.pluginBackendsEffective.local_memory_provider_id ?? '',
     ] as const,
   ([, , id]) => {
-    localMemoryProviderDraft.value = id;
+    localMemoryProviderDraft.value = id
   },
   { immediate: true },
-);
+)
 async function onRemoteLifeChange(ev: Event) {
-  const checked = (ev.target as HTMLInputElement).checked;
-  busy.value = true;
+  const checked = (ev.target as HTMLInputElement).checked
+  busy.value = true
   try {
-    const info = await setRemoteLifeEnabled(roleStore.currentRoleId, checked);
-    roleStore.applyRoleInfo(info);
-  } finally {
-    busy.value = false;
+    const info = await setRemoteLifeEnabled(roleStore.currentRoleId, checked)
+    roleStore.applyRoleInfo(info)
+  }
+  finally {
+    busy.value = false
   }
 }
 async function onPluginBackendChange(
-  module: "memory" | "emotion" | "event" | "prompt" | "llm" | "agent",
+  module: 'memory' | 'emotion' | 'event' | 'prompt' | 'llm' | 'agent',
   ev: Event,
 ) {
-  const selected = (ev.target as HTMLSelectElement).value;
-  const backend = selected === "__pack_default__" ? null : selected;
-  busy.value = true;
+  const selected = (ev.target as HTMLSelectElement).value
+  const backend = selected === '__pack_default__' ? null : selected
+  busy.value = true
   try {
-    const info = await setSessionPluginBackend(roleStore.currentRoleId, module, backend);
-    roleStore.applyRoleInfo(info);
-    await refreshPluginDebugSnapshot();
-  } finally {
-    busy.value = false;
+    const info = await setSessionPluginBackend(roleStore.currentRoleId, module, backend)
+    roleStore.applyRoleInfo(info)
+    await refreshPluginDebugSnapshot()
+  }
+  finally {
+    busy.value = false
   }
 }
 async function commitLocalMemoryProviderId() {
-  busy.value = true;
+  busy.value = true
   try {
     const info = await setSessionPluginBackend(
       roleStore.currentRoleId,
-      "memory",
+      'memory',
       undefined,
       localMemoryProviderDraft.value.trim(),
-    );
-    roleStore.applyRoleInfo(info);
-    await refreshPluginDebugSnapshot();
-  } finally {
-    busy.value = false;
+    )
+    roleStore.applyRoleInfo(info)
+    await refreshPluginDebugSnapshot()
+  }
+  finally {
+    busy.value = false
   }
 }
 async function refreshPluginDebugSnapshot() {
-  const debug = await getPluginResolutionDebug(roleStore.currentRoleId);
+  const debug = await getPluginResolutionDebug(roleStore.currentRoleId)
   pluginDebugSnapshot.value = [
     `meta app=${debug.app_version} api=${debug.api_version} schema=${debug.schema_version}`,
     `session=${debug.session_namespace}`,
-    `effective mem=${debug.plugin_backends_effective.memory}(${debug.plugin_backends_effective_sources.memory}) local_mem_id=${debug.plugin_backends_effective.local_memory_provider_id ?? "none"}`,
+    `effective mem=${debug.plugin_backends_effective.memory}(${debug.plugin_backends_effective_sources.memory}) local_mem_id=${debug.plugin_backends_effective.local_memory_provider_id ?? 'none'}`,
     `effective emotion=${debug.plugin_backends_effective.emotion}(${debug.plugin_backends_effective_sources.emotion})`,
     `effective event=${debug.plugin_backends_effective.event}(${debug.plugin_backends_effective_sources.event})`,
     `effective prompt=${debug.plugin_backends_effective.prompt}(${debug.plugin_backends_effective_sources.prompt})`,
@@ -116,49 +121,55 @@ async function refreshPluginDebugSnapshot() {
     `effective agent=${debug.plugin_backends_effective.agent}(${debug.plugin_backends_effective_sources.agent})`,
     `pack directory_plugins=${formatDirectoryPluginSlots(debug.plugin_backends_pack_default.directory_plugins)}`,
     `effective directory_plugins=${formatDirectoryPluginSlots(debug.plugin_backends_effective.directory_plugins)}`,
-    `env llm_override=${debug.llm_env_override ?? "none"}`,
-    `env remote_plugin_url=${debug.remote_plugin_url_configured ? "set" : "unset"}`,
-    `env remote_llm_url=${debug.remote_llm_url_configured ? "set" : "unset"}`,
-    `local_providers count=${debug.local_provider_count} ids=${debug.local_provider_ids.join(",") || "none"}`,
-  ].join("\n");
+    `env llm_override=${debug.llm_env_override ?? 'none'}`,
+    `env remote_plugin_url=${debug.remote_plugin_url_configured ? 'set' : 'unset'}`,
+    `env remote_llm_url=${debug.remote_llm_url_configured ? 'set' : 'unset'}`,
+    `local_providers count=${debug.local_provider_count} ids=${debug.local_provider_ids.join(',') || 'none'}`,
+  ].join('\n')
 }
 async function copyPluginDebugSnapshot() {
-  if (!pluginDebugSnapshot.value) await refreshPluginDebugSnapshot();
-  const text = pluginDebugSnapshot.value.trim();
-  if (!text) return;
+  if (!pluginDebugSnapshot.value)
+    await refreshPluginDebugSnapshot()
+  const text = pluginDebugSnapshot.value.trim()
+  if (!text)
+    return
   try {
-    if (!navigator.clipboard?.writeText) throw new Error("clipboard API unavailable");
-    await navigator.clipboard.writeText(text);
-    pluginDebugCopyStatus.value = t("pluginManager.v1Backend.copyOk");
-  } catch {
-    pluginDebugCopyStatus.value = t("pluginManager.v1Backend.copyFail");
+    if (!navigator.clipboard?.writeText)
+      throw new Error('clipboard API unavailable')
+    await navigator.clipboard.writeText(text)
+    pluginDebugCopyStatus.value = t('pluginManager.v1Backend.copyOk')
+  }
+  catch {
+    pluginDebugCopyStatus.value = t('pluginManager.v1Backend.copyFail')
   }
   window.setTimeout(() => {
-    pluginDebugCopyStatus.value = "";
-  }, 1800);
+    pluginDebugCopyStatus.value = ''
+  }, 1800)
 }
 
 async function onPackCurrentPlugin(): Promise<void> {
-  const active = roleStore.roleInfo.pluginBackendsEffective.directory_plugins?.agent;
-  const target =
-    active && active.trim()
+  const active = roleStore.roleInfo.pluginBackendsEffective.directory_plugins?.agent
+  const target
+    = active && active.trim()
       ? active.trim()
-      : roleStore.roleInfo.pluginBackendsEffective.directory_plugins?.llm?.trim() || "";
+      : roleStore.roleInfo.pluginBackendsEffective.directory_plugins?.llm?.trim() || ''
   if (!target) {
-    packStatus.value = t("pluginManager.v1Backend.packNeedTarget");
-    return;
+    packStatus.value = t('pluginManager.v1Backend.packNeedTarget')
+    return
   }
-  busy.value = true;
+  busy.value = true
   try {
-    const r = await packPlugin(target);
-    packStatus.value = t("pluginManager.v1Backend.packDone", {
+    const r = await packPlugin(target)
+    packStatus.value = t('pluginManager.v1Backend.packDone', {
       path: r.archive_path,
       sha: r.sha256.slice(0, 12),
-    });
-  } catch (e) {
-    packStatus.value = e instanceof Error ? e.message : String(e);
-  } finally {
-    busy.value = false;
+    })
+  }
+  catch (e) {
+    packStatus.value = e instanceof Error ? e.message : String(e)
+  }
+  finally {
+    busy.value = false
   }
 }
 </script>
@@ -193,8 +204,12 @@ async function onPackCurrentPlugin(): Promise<void> {
           })
         }}
       </p>
-      <p v-if="directoryPluginsPackLine" class="sub plugin-backends">{{ directoryPluginsPackLine }}</p>
-      <p v-if="directoryPluginsEffectiveLine" class="sub plugin-backends">{{ directoryPluginsEffectiveLine }}</p>
+      <p v-if="directoryPluginsPackLine" class="sub plugin-backends">
+        {{ directoryPluginsPackLine }}
+      </p>
+      <p v-if="directoryPluginsEffectiveLine" class="sub plugin-backends">
+        {{ directoryPluginsEffectiveLine }}
+      </p>
       <p v-if="pluginBackendsSessionOverride" class="sub plugin-override-hint">
         {{ t("pluginManager.v1Backend.sessionOverrideHint") }}
       </p>
@@ -219,7 +234,7 @@ async function onPackCurrentPlugin(): Promise<void> {
         :checked="roleStore.roleInfo.remoteLifeEnabled"
         :disabled="busy"
         @change="onRemoteLifeChange"
-      />
+      >
       <span v-if="roleStore.roleInfo.remoteLifePackDefault === true" class="hint">{{
         t("pluginManager.v1Backend.packDefaultSuggestOn")
       }}</span>
@@ -234,10 +249,14 @@ async function onPackCurrentPlugin(): Promise<void> {
           :value="pluginBackendsSessionOverride?.[item.key] ?? '__pack_default__'"
           @change="onPluginBackendChange(item.key, $event)"
         >
-          <option value="__pack_default__">{{
-            t("pluginManager.v1Backend.followPackDefault", { value: pluginBackends[item.key] })
-          }}</option>
-          <option v-for="v in item.options" :key="v" :value="v">{{ v }}</option>
+          <option value="__pack_default__">
+            {{
+              t("pluginManager.v1Backend.followPackDefault", { value: pluginBackends[item.key] })
+            }}
+          </option>
+          <option v-for="v in item.options" :key="v" :value="v">
+            {{ v }}
+          </option>
         </select>
       </div>
       <div
@@ -254,7 +273,7 @@ async function onPackCurrentPlugin(): Promise<void> {
           :disabled="busy"
           :placeholder="t('pluginManager.v1Backend.localMemPlaceholder')"
           @keydown.enter.prevent="commitLocalMemoryProviderId"
-        />
+        >
         <button type="button" class="btn tiny" :disabled="busy" @click="commitLocalMemoryProviderId">
           {{ t("pluginManager.v1Backend.applySession") }}
         </button>

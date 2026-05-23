@@ -1,27 +1,27 @@
 <script setup lang="ts">
-import { computed } from "vue";
-import { useI18n } from "vue-i18n";
-import AsyncPluginVue from "./AsyncPluginVue.vue";
-import PluginErrorPlaceholder from "./PluginErrorPlaceholder.vue";
-import { useDirectoryPluginSlotEmbed } from "../composables/useDirectoryPluginSlotEmbed";
-
-const { t } = useI18n();
+import { computed } from 'vue'
+import { useI18n } from 'vue-i18n'
+import { useDirectoryPluginSlotEmbed } from '../composables/useDirectoryPluginSlotEmbed'
+import AsyncPluginVue from './AsyncPluginVue.vue'
+import PluginErrorPlaceholder from './PluginErrorPlaceholder.vue'
 
 const props = withDefaults(
   defineProps<{
     /** 官方语义插槽名，如 `settings.plugins` */
-    slotName: string;
+    slotName: string
     /** 变更后重新拉取 bootstrap */
-    bootstrapEpoch?: number;
+    bootstrapEpoch?: number
     /** 无障碍名称 */
-    ariaLabel?: string;
+    ariaLabel?: string
   }>(),
-  { bootstrapEpoch: 0, ariaLabel: "" },
-);
+  { bootstrapEpoch: 0, ariaLabel: '' },
+)
+
+const { t } = useI18n()
 
 const resolvedAriaLabel = computed(
-  () => props.ariaLabel?.trim() || t("pluginManager.slotEmbed.defaultAria"),
-);
+  () => props.ariaLabel?.trim() || t('pluginManager.slotEmbed.defaultAria'),
+)
 
 const {
   pluginError,
@@ -39,7 +39,7 @@ const {
 } = useDirectoryPluginSlotEmbed({
   slot: () => props.slotName,
   bootstrapEpoch: () => props.bootstrapEpoch,
-});
+})
 </script>
 
 <template>

@@ -1,19 +1,19 @@
 <script setup lang="ts">
-import { useI18n } from "vue-i18n";
-import AsyncPluginVue from "./AsyncPluginVue.vue";
-import PluginErrorPlaceholder from "./PluginErrorPlaceholder.vue";
-import { useDirectoryPluginSlotEmbed } from "../composables/useDirectoryPluginSlotEmbed";
-import { SLOT_CHAT_TOOLBAR } from "../stores/pluginStore";
-
-const { t } = useI18n();
+import { useI18n } from 'vue-i18n'
+import { useDirectoryPluginSlotEmbed } from '../composables/useDirectoryPluginSlotEmbed'
+import { SLOT_CHAT_TOOLBAR } from '../stores/pluginStore'
+import AsyncPluginVue from './AsyncPluginVue.vue'
+import PluginErrorPlaceholder from './PluginErrorPlaceholder.vue'
 
 const props = withDefaults(
   defineProps<{
     /** 变更后重新拉取 bootstrap（与插件管理面板保存联动） */
-    bootstrapEpoch?: number;
+    bootstrapEpoch?: number
   }>(),
   { bootstrapEpoch: 0 },
-);
+)
+
+const { t } = useI18n()
 
 const {
   pluginError,
@@ -31,7 +31,7 @@ const {
 } = useDirectoryPluginSlotEmbed({
   slot: SLOT_CHAT_TOOLBAR,
   bootstrapEpoch: () => props.bootstrapEpoch,
-});
+})
 </script>
 
 <template>

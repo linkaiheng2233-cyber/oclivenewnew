@@ -1,7 +1,6 @@
 <script setup lang="ts">
-import { computed, ref } from "vue";
-import { useI18n } from "vue-i18n";
-import UiSlotMockRegion from "./UiSlotMockRegion.vue";
+import { computed, ref } from 'vue'
+import { useI18n } from 'vue-i18n'
 import {
   SLOT_CHAT_HEADER,
   SLOT_CHAT_TOOLBAR,
@@ -9,54 +8,60 @@ import {
   SLOT_ROLE_DETAIL,
   SLOT_SIDEBAR,
   usePluginStore,
-} from "../stores/pluginStore";
+} from '../stores/pluginStore'
+import UiSlotMockRegion from './UiSlotMockRegion.vue'
 
-const pluginStore = usePluginStore();
-const { t } = useI18n();
+const pluginStore = usePluginStore()
+const { t } = useI18n()
 
-const activeSlot = ref<string | null>(SLOT_CHAT_HEADER);
+const activeSlot = ref<string | null>(SLOT_CHAT_HEADER)
 
 const slotRows = [
-  { key: SLOT_CHAT_HEADER, labelKey: "pluginWorkbench.layout.chatHeader", hintKey: "pluginWorkbench.layout.descHeader" },
-  { key: SLOT_SIDEBAR, labelKey: "pluginWorkbench.layout.sidebar", hintKey: "pluginWorkbench.layout.descSidebar" },
-  { key: SLOT_CHAT_TOOLBAR, labelKey: "pluginWorkbench.layout.chatToolbar", hintKey: "pluginWorkbench.layout.descToolbar", toolbar: true },
-  { key: SLOT_ROLE_DETAIL, labelKey: "pluginWorkbench.layout.roleDetail", hintKey: "pluginWorkbench.layout.descRoleDetail" },
-  { key: SLOT_OVERLAY_FLOATING, labelKey: "pluginWorkbench.layout.overlay", hintKey: "pluginWorkbench.layout.descOverlay" },
-] as const;
+  { key: SLOT_CHAT_HEADER, labelKey: 'pluginWorkbench.layout.chatHeader', hintKey: 'pluginWorkbench.layout.descHeader' },
+  { key: SLOT_SIDEBAR, labelKey: 'pluginWorkbench.layout.sidebar', hintKey: 'pluginWorkbench.layout.descSidebar' },
+  { key: SLOT_CHAT_TOOLBAR, labelKey: 'pluginWorkbench.layout.chatToolbar', hintKey: 'pluginWorkbench.layout.descToolbar', toolbar: true },
+  { key: SLOT_ROLE_DETAIL, labelKey: 'pluginWorkbench.layout.roleDetail', hintKey: 'pluginWorkbench.layout.descRoleDetail' },
+  { key: SLOT_OVERLAY_FLOATING, labelKey: 'pluginWorkbench.layout.overlay', hintKey: 'pluginWorkbench.layout.descOverlay' },
+] as const
 
 function isContributionOff(slot: string, pluginId: string): boolean {
   if (slot === SLOT_CHAT_TOOLBAR) {
-    return pluginStore.isToolbarContributionDisabled(pluginId);
+    return pluginStore.isToolbarContributionDisabled(pluginId)
   }
-  return pluginStore.isSlotContributionDisabled(slot, pluginId);
+  return pluginStore.isSlotContributionDisabled(slot, pluginId)
 }
 
 function boundLabel(slot: string): string {
   const ids = pluginStore
     .pluginsOrderedForSlot(slot)
-    .filter((id) => !pluginStore.isPluginDisabled(id) && !isContributionOff(slot, id));
-  if (!ids.length) return t("pluginWorkbench.layout.none");
-  return ids.join(", ");
+    .filter(id => !pluginStore.isPluginDisabled(id) && !isContributionOff(slot, id))
+  if (!ids.length)
+    return t('pluginWorkbench.layout.none')
+  return ids.join(', ')
 }
 
 const mapRows = computed(() =>
-  slotRows.map((r) => ({
+  slotRows.map(r => ({
     key: r.key,
     label: t(r.labelKey),
     hint: t(r.hintKey),
     bound: boundLabel(r.key),
-    empty: boundLabel(r.key) === t("pluginWorkbench.layout.none"),
+    empty: boundLabel(r.key) === t('pluginWorkbench.layout.none'),
   })),
-);
+)
 </script>
 
 <template>
   <div class="sld-root">
-    <p class="sld-lead">{{ t("pluginWorkbench.layout.lead") }}</p>
+    <p class="sld-lead">
+      {{ t("pluginWorkbench.layout.lead") }}
+    </p>
 
     <div class="sld-workspace">
       <div class="sld-mock-wrap" :aria-label="t('pluginWorkbench.layout.frameAria')">
-        <p class="sld-mock-caption">{{ t("pluginWorkbench.layout.mockCaption") }}</p>
+        <p class="sld-mock-caption">
+          {{ t("pluginWorkbench.layout.mockCaption") }}
+        </p>
 
         <!-- 对齐 App.vue：app-frame → top-bar + main-content + app-floating-slot -->
         <div class="sld-app-frame">
@@ -160,8 +165,12 @@ const mapRows = computed(() =>
       </div>
 
       <aside class="sld-map" :aria-label="t('pluginWorkbench.layout.mapAria')">
-        <h4 class="sld-map-title">{{ t("pluginWorkbench.layout.mapTitle") }}</h4>
-        <p class="sld-map-hint">{{ t("pluginWorkbench.layout.mapHint") }}</p>
+        <h4 class="sld-map-title">
+          {{ t("pluginWorkbench.layout.mapTitle") }}
+        </h4>
+        <p class="sld-map-hint">
+          {{ t("pluginWorkbench.layout.mapHint") }}
+        </p>
         <table class="sld-map-table">
           <thead>
             <tr>

@@ -1,22 +1,22 @@
 <script setup lang="ts">
-import { onMounted, ref, watch } from "vue";
-import { useI18n } from "vue-i18n";
-import LeftCategoryNav from "./LeftCategoryNav.vue";
-import PluginCardList from "./PluginCardList.vue";
-import RightDetailPanel from "./RightDetailPanel.vue";
-import { usePluginManagerV2 } from "../../composables/usePluginManagerV2";
-import { usePluginStore } from "../../stores/pluginStore";
-import { useAppToast } from "../../composables/useAppToast";
+import { onMounted, ref, watch } from 'vue'
+import { useI18n } from 'vue-i18n'
+import { useAppToast } from '../../composables/useAppToast'
+import { usePluginManagerV2 } from '../../composables/usePluginManagerV2'
+import { usePluginStore } from '../../stores/pluginStore'
+import LeftCategoryNav from './LeftCategoryNav.vue'
+import PluginCardList from './PluginCardList.vue'
+import RightDetailPanel from './RightDetailPanel.vue'
 
 const props = defineProps<{
-  visible: boolean;
-}>();
+  visible: boolean
+}>()
 
 const emit = defineEmits<{
-  close: [];
-  openV1: [];
-  focusArchSlot: [slotKey: string];
-}>();
+  close: []
+  openV1: []
+  focusArchSlot: [slotKey: string]
+}>()
 
 const {
   searchKeyword,
@@ -27,39 +27,45 @@ const {
   selectedCard,
   applyCardChange,
   hasBlueprint,
-} = usePluginManagerV2();
-const { t } = useI18n();
-const { showToast } = useAppToast();
-const pluginStore = usePluginStore();
-const busy = ref(false);
-const rightCollapsed = ref(false);
+} = usePluginManagerV2()
+const { t } = useI18n()
+const { showToast } = useAppToast()
+const pluginStore = usePluginStore()
+const busy = ref(false)
+const rightCollapsed = ref(false)
 
 onMounted(async () => {
-  if (pluginStore.catalog.length > 0) return;
+  if (pluginStore.catalog.length > 0)
+    return
   try {
-    await pluginStore.refresh();
-  } catch (err) {
-    showToast("error", err instanceof Error ? err.message : String(err));
+    await pluginStore.refresh()
   }
-});
+  catch (err) {
+    showToast('error', err instanceof Error ? err.message : String(err))
+  }
+})
 
 watch(
   () => props.visible,
   (v) => {
-    if (v) rightCollapsed.value = false;
+    if (v)
+      rightCollapsed.value = false
   },
-);
+)
 
 async function onApply(payload: Record<string, unknown>) {
-  if (!selectedCard.value) return;
-  busy.value = true;
+  if (!selectedCard.value)
+    return
+  busy.value = true
   try {
-    const msg = await applyCardChange(selectedCard.value, payload);
-    showToast("success", msg);
-  } catch (err) {
-    showToast("error", err instanceof Error ? err.message : String(err));
-  } finally {
-    busy.value = false;
+    const msg = await applyCardChange(selectedCard.value, payload)
+    showToast('success', msg)
+  }
+  catch (err) {
+    showToast('error', err instanceof Error ? err.message : String(err))
+  }
+  finally {
+    busy.value = false
   }
 }
 </script>
@@ -68,14 +74,20 @@ async function onApply(payload: Record<string, unknown>) {
   <div class="pm2-root">
     <header class="pm2-head">
       <div>
-        <h2 class="pm2-title">{{ t("pluginTerms.title.v2") }}</h2>
-        <p class="pm2-sub">{{ t("pluginTerms.subtitle.v2") }}</p>
+        <h2 class="pm2-title">
+          {{ t("pluginTerms.title.v2") }}
+        </h2>
+        <p class="pm2-sub">
+          {{ t("pluginTerms.subtitle.v2") }}
+        </p>
       </div>
       <div class="pm2-actions">
         <button type="button" class="pm2-btn secondary" @click="emit('openV1')">
           {{ t("pluginTerms.action.open_v1") }}
         </button>
-        <button type="button" class="pm2-btn" @click="emit('close')">{{ t("pluginTerms.action.close") }}</button>
+        <button type="button" class="pm2-btn" @click="emit('close')">
+          {{ t("pluginTerms.action.close") }}
+        </button>
       </div>
     </header>
     <p v-if="hasBlueprint" class="pm2-banner" role="note">

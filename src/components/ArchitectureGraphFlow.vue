@@ -1,83 +1,86 @@
 <script setup lang="ts">
-import { applyNodeChanges, VueFlow, type Edge, type Node } from "@vue-flow/core";
-import { computed, markRaw, onMounted, provide, ref, watch } from "vue";
-import { useI18n } from "vue-i18n";
-import { Background } from "@vue-flow/background";
-import { Controls } from "@vue-flow/controls";
-import { MiniMap } from "@vue-flow/minimap";
-import ArchAddSlotDialog from "./architecture-graph/ArchAddSlotDialog.vue";
-import ArchBackendEdge from "./architecture-graph/ArchBackendEdge.vue";
-import ArchBusNode from "./architecture-graph/ArchBusNode.vue";
-import ArchComplexNode from "./architecture-graph/ArchComplexNode.vue";
-import ArchConnectionLine from "./architecture-graph/ArchConnectionLine.vue";
-import ArchGraphFitView from "./architecture-graph/ArchGraphFitView.vue";
-import ArchKernelNode from "./architecture-graph/ArchKernelNode.vue";
-import ArchModuleNode from "./architecture-graph/ArchModuleNode.vue";
-import ArchGroupNode from "./architecture-graph/ArchGroupNode.vue";
-import ArchPluginNode from "./architecture-graph/ArchPluginNode.vue";
-import { archGraphActionsKey } from "./architecture-graph/archGraphContext";
-import { useArchitectureGraphConnections } from "../composables/useArchitectureGraphConnections";
-import { useArchitectureGraphLayout } from "../composables/useArchitectureGraphLayout";
-import { useArchitectureGraphModel, type CoreModule } from "../composables/useArchitectureGraphModel";
-import { BACKEND_COLORS, GRAPH_SURFACE } from "../lib/graphEditorTheme";
-
-const handleInColor = BACKEND_COLORS.builtin.handle;
-const handleOutColor = BACKEND_COLORS.directory.handle;
-import { useAppToast } from "../composables/useAppToast";
-import { useRoleStore } from "../stores/roleStore";
-import { usePluginStore } from "../stores/pluginStore";
+import type { Edge, Node } from '@vue-flow/core'
+import type { CoreModule } from '../composables/useArchitectureGraphModel'
+import type { SlotRegistryMap } from '../lib/slotRegistry'
+import { Background } from '@vue-flow/background'
+import { Controls } from '@vue-flow/controls'
+import { applyNodeChanges, VueFlow } from '@vue-flow/core'
+import { MiniMap } from '@vue-flow/minimap'
+import { computed, markRaw, onMounted, provide, ref, watch } from 'vue'
+import { useI18n } from 'vue-i18n'
+import { useAppToast } from '../composables/useAppToast'
+import { useArchitectureGraphConnections } from '../composables/useArchitectureGraphConnections'
+import { useArchitectureGraphLayout } from '../composables/useArchitectureGraphLayout'
+import { useArchitectureGraphModel } from '../composables/useArchitectureGraphModel'
+import { patchSlotRegistryBackend } from '../lib/archGraphSlotBackend'
+import { BACKEND_COLORS, GRAPH_SURFACE } from '../lib/graphEditorTheme'
 import {
   addSlotToRegistry,
   canRemoveSlotKey,
   removeSlotFromRegistry,
   SLOT_REGISTRY_LAST_LLM,
-  type SlotRegistryMap,
-} from "../lib/slotRegistry";
-import { patchSlotRegistryBackend } from "../lib/archGraphSlotBackend";
+
+} from '../lib/slotRegistry'
+import { usePluginStore } from '../stores/pluginStore'
+import { useRoleStore } from '../stores/roleStore'
 import {
   clearSessionSlotOverride,
   saveRoleSlotRegistry,
   setSessionPluginBackend,
   setSessionSlotOverride,
-} from "../utils/tauri-api";
-import ArchRemoveSlotDialog from "./architecture-graph/ArchRemoveSlotDialog.vue";
+} from '../utils/tauri-api'
+import ArchAddSlotDialog from './architecture-graph/ArchAddSlotDialog.vue'
+import ArchBackendEdge from './architecture-graph/ArchBackendEdge.vue'
+import ArchBusNode from './architecture-graph/ArchBusNode.vue'
+import ArchComplexNode from './architecture-graph/ArchComplexNode.vue'
+import ArchConnectionLine from './architecture-graph/ArchConnectionLine.vue'
+import { archGraphActionsKey } from './architecture-graph/archGraphContext'
+import ArchGraphFitView from './architecture-graph/ArchGraphFitView.vue'
+import ArchGroupNode from './architecture-graph/ArchGroupNode.vue'
+import ArchKernelNode from './architecture-graph/ArchKernelNode.vue'
+import ArchModuleNode from './architecture-graph/ArchModuleNode.vue'
+import ArchPluginNode from './architecture-graph/ArchPluginNode.vue'
+import ArchRemoveSlotDialog from './architecture-graph/ArchRemoveSlotDialog.vue'
 
 const emit = defineEmits<{
-  "focus-plugin": [pluginId: string];
-}>();
+  'focus-plugin': [pluginId: string]
+}>()
+const handleInColor = BACKEND_COLORS.builtin.handle
+const handleOutColor = BACKEND_COLORS.directory.handle
 
-const { t } = useI18n();
-const roleStore = useRoleStore();
-const pluginStore = usePluginStore();
-const { showToast } = useAppToast();
-const busy = ref(false);
-const showAddSlotWizard = ref(false);
-const showRemoveSlotDialog = ref(false);
-const removeSlotKey = ref("");
+const { t } = useI18n()
+const roleStore = useRoleStore()
+const pluginStore = usePluginStore()
+const { showToast } = useAppToast()
+const busy = ref(false)
+const showAddSlotWizard = ref(false)
+const showRemoveSlotDialog = ref(false)
+const removeSlotKey = ref('')
 
 const packSlotKeys = computed(() => {
-  const pack = roleStore.roleInfo.slotRegistryPack;
-  return pack ? Object.keys(pack).sort() : [];
-});
+  const pack = roleStore.roleInfo.slotRegistryPack
+  return pack ? Object.keys(pack).sort() : []
+})
 
 const removeSlotDisabled = computed(() => {
-  const pack = roleStore.roleInfo.slotRegistryPack;
-  const key = removeSlotKey.value.trim();
-  if (!pack || !key) return true;
-  return !canRemoveSlotKey(pack, key);
-});
+  const pack = roleStore.roleInfo.slotRegistryPack
+  const key = removeSlotKey.value.trim()
+  if (!pack || !key)
+    return true
+  return !canRemoveSlotKey(pack, key)
+})
 
 watch(
   packSlotKeys,
   (keys) => {
     if (keys.length && !keys.includes(removeSlotKey.value)) {
-      removeSlotKey.value = keys[0];
+      removeSlotKey.value = keys[0]
     }
   },
   { immediate: true },
-);
+)
 
-const graphLayout = useArchitectureGraphLayout();
+const graphLayout = useArchitectureGraphLayout()
 
 const {
   nodes: builtNodes,
@@ -89,127 +92,131 @@ const {
   hiddenPluginCount,
   dualCoreEnabled,
   pipelineExperimentalActions,
-} = useArchitectureGraphModel();
+} = useArchitectureGraphModel()
 
-const nodes = ref<Node[]>([]);
-const edges = ref<Edge[]>([]);
+const nodes = ref<Node[]>([])
+const edges = ref<Edge[]>([])
 
-const graphConnections = useArchitectureGraphConnections(nodes, edges);
+const graphConnections = useArchitectureGraphConnections(nodes, edges)
 
 function syncGraphFromModel() {
   nodes.value = builtNodes.value.map((n) => {
-    const applied = graphLayout.applyToNode(n.id, n.type, n.position.x, n.position.y);
+    const applied = graphLayout.applyToNode(n.id, n.type, n.position.x, n.position.y)
     return {
       ...n,
       position: { x: applied.x, y: applied.y },
       width: applied.width,
       height: applied.height,
       style: applied.style,
-    };
-  });
-  edges.value = [...builtEdges.value];
+    }
+  })
+  edges.value = [...builtEdges.value]
 }
 
 function onNodesChange(changes: unknown[]) {
   const list = changes as Array<{
-    type: string;
-    id?: string;
-    position?: { x: number; y: number };
-    dimensions?: { width: number; height: number };
-    dragging?: boolean;
-  }>;
-  nodes.value = applyNodeChanges(list, nodes.value);
-  let dirty = false;
+    type: string
+    id?: string
+    position?: { x: number, y: number }
+    dimensions?: { width: number, height: number }
+    dragging?: boolean
+  }>
+  nodes.value = applyNodeChanges(list, nodes.value)
+  let dirty = false
   for (const c of list) {
-    if (c.type === "position" && c.id && c.position && c.dragging === false) {
-      const base = builtNodes.value.find((b) => b.id === c.id);
+    if (c.type === 'position' && c.id && c.position && c.dragging === false) {
+      const base = builtNodes.value.find(b => b.id === c.id)
       if (base) {
         graphLayout.setPosition(
           c.id,
           c.position.x - base.position.x,
           c.position.y - base.position.y,
-        );
-        dirty = true;
+        )
+        dirty = true
       }
     }
-    if (c.type === "dimensions" && c.id && c.dimensions) {
-      graphLayout.setSize(c.id, Math.round(c.dimensions.width), Math.round(c.dimensions.height));
-      dirty = true;
+    if (c.type === 'dimensions' && c.id && c.dimensions) {
+      graphLayout.setSize(c.id, Math.round(c.dimensions.width), Math.round(c.dimensions.height))
+      dirty = true
     }
   }
-  if (dirty) graphLayout.save();
+  if (dirty)
+    graphLayout.save()
 }
 
 function onResetLayout() {
-  graphLayout.reset();
-  syncGraphFromModel();
-  showToast("success", t("pluginWorkbench.graph.layoutResetDone"));
+  graphLayout.reset()
+  syncGraphFromModel()
+  showToast('success', t('pluginWorkbench.graph.layoutResetDone'))
 }
 
 function applyAutoWiringLayers(includePlugins: boolean) {
-  const registry = roleStore.roleInfo.slotRegistryEffective;
+  const registry = roleStore.roleInfo.slotRegistryEffective
   if (registry && Object.keys(registry).length > 0 && includePlugins) {
-    expandAllDirectoryPlugins(registry);
+    expandAllDirectoryPlugins(registry)
   }
-  syncGraphFromModel();
+  syncGraphFromModel()
 }
 
 function onAutoWireLayer(layer: 1 | 2 | 3) {
-  applyAutoWiringLayers(layer === 3);
-  const key =
-    layer === 1
-      ? "pluginWorkbench.graph.autoWireLayer1Done"
+  applyAutoWiringLayers(layer === 3)
+  const key
+    = layer === 1
+      ? 'pluginWorkbench.graph.autoWireLayer1Done'
       : layer === 2
-        ? "pluginWorkbench.graph.autoWireLayer2Done"
-        : "pluginWorkbench.graph.autoWireLayer3Done";
-  showToast("success", t(key));
+        ? 'pluginWorkbench.graph.autoWireLayer2Done'
+        : 'pluginWorkbench.graph.autoWireLayer3Done'
+  showToast('success', t(key))
 }
 
-let lastAutoWireRegistrySig = "";
+let lastAutoWireRegistrySig = ''
 watch(
   () => {
-    const reg = roleStore.roleInfo.slotRegistryEffective;
-    if (!usesBlueprint.value || !reg) return "";
+    const reg = roleStore.roleInfo.slotRegistryEffective
+    if (!usesBlueprint.value || !reg)
+      return ''
     return Object.entries(reg)
       .map(([k, e]) => `${k}:${e.type}:${e.position}:${e.backend}`)
       .sort()
-      .join("|");
+      .join('|')
   },
   (sig) => {
-    if (!sig || sig === lastAutoWireRegistrySig) return;
-    lastAutoWireRegistrySig = sig;
-    const reg = roleStore.roleInfo.slotRegistryEffective;
-    if (reg) applyAutoWiringLayers(true);
+    if (!sig || sig === lastAutoWireRegistrySig)
+      return
+    lastAutoWireRegistrySig = sig
+    const reg = roleStore.roleInfo.slotRegistryEffective
+    if (reg)
+      applyAutoWiringLayers(true)
   },
   { immediate: true },
-);
+)
 
 function onEdgesChangeBlueprint() {
   /* v2：边由 slot_registry 派生，忽略 Vue Flow 边变更 */
 }
 
-watch(builtNodes, syncGraphFromModel, { deep: true });
-watch(builtEdges, syncGraphFromModel, { deep: true });
+watch(builtNodes, syncGraphFromModel, { deep: true })
+watch(builtEdges, syncGraphFromModel, { deep: true })
 watch(
   () => roleStore.roleInfo.pluginBackendsEffective,
   syncGraphFromModel,
   { deep: true },
-);
+)
 watch(
   () => roleStore.roleInfo.slotRegistryEffective,
   syncGraphFromModel,
   { deep: true },
-);
+)
 watch(
   () => roleStore.roleInfo.slotSessionOverriddenKeys,
   syncGraphFromModel,
   { deep: true },
-);
+)
 watch(
   () => roleStore.roleInfo.blueprintGroupsPack,
   syncGraphFromModel,
   { deep: true },
-);
+)
 
 const nodeTypes = {
   archKernel: markRaw(ArchKernelNode),
@@ -218,160 +225,180 @@ const nodeTypes = {
   archModule: markRaw(ArchModuleNode),
   archPlugin: markRaw(ArchPluginNode),
   archComplex: markRaw(ArchComplexNode),
-};
+}
 
 const edgeTypes = {
   archBackend: markRaw(ArchBackendEdge),
-};
+}
 
 provide(archGraphActionsKey, {
   busy: () => busy.value,
   usesBlueprint: () => usesBlueprint.value,
   onBackendChange: async (targetKey: string, value: string) => {
-    if (usesBlueprint.value) return;
-    busy.value = true;
+    if (usesBlueprint.value)
+      return
+    busy.value = true
     try {
-      const backend = value === "__pack_default__" ? null : value;
+      const backend = value === '__pack_default__' ? null : value
       const info = await setSessionPluginBackend(
         roleStore.currentRoleId,
         targetKey as CoreModule,
         backend,
-      );
-      roleStore.applyRoleInfo(info);
-    } catch (e) {
-      showToast("error", e instanceof Error ? e.message : String(e));
-    } finally {
-      busy.value = false;
+      )
+      roleStore.applyRoleInfo(info)
+    }
+    catch (e) {
+      showToast('error', e instanceof Error ? e.message : String(e))
+    }
+    finally {
+      busy.value = false
     }
   },
   onApplySessionOverride: async (slotKey: string, backend: string) => {
-    busy.value = true;
+    busy.value = true
     try {
       const info = await setSessionSlotOverride(roleStore.currentRoleId, slotKey, {
         backend,
-      });
-      roleStore.applyRoleInfo(info);
-      showToast("success", t("pluginWorkbench.graph.applySessionDone"));
-    } catch (e) {
-      showToast("error", e instanceof Error ? e.message : String(e));
-    } finally {
-      busy.value = false;
+      })
+      roleStore.applyRoleInfo(info)
+      showToast('success', t('pluginWorkbench.graph.applySessionDone'))
+    }
+    catch (e) {
+      showToast('error', e instanceof Error ? e.message : String(e))
+    }
+    finally {
+      busy.value = false
     }
   },
   onApplyPackDefault: async (slotKey: string, backend: string) => {
-    const pack = roleStore.roleInfo.slotRegistryPack;
+    const pack = roleStore.roleInfo.slotRegistryPack
     if (!pack?.[slotKey]) {
-      showToast("error", t("pluginWorkbench.graph.connectUnknownPort"));
-      return;
+      showToast('error', t('pluginWorkbench.graph.connectUnknownPort'))
+      return
     }
-    busy.value = true;
+    busy.value = true
     try {
-      const next = patchSlotRegistryBackend(pack, slotKey, backend);
-      let info = await saveRoleSlotRegistry(roleStore.currentRoleId, next);
-      roleStore.applyRoleInfo(info);
-      info = await clearSessionSlotOverride(roleStore.currentRoleId, slotKey);
-      roleStore.applyRoleInfo(info);
-      showToast("success", t("pluginWorkbench.graph.applyPackDone"));
-    } catch (e) {
-      showToast("error", e instanceof Error ? e.message : String(e));
-    } finally {
-      busy.value = false;
+      const next = patchSlotRegistryBackend(pack, slotKey, backend)
+      let info = await saveRoleSlotRegistry(roleStore.currentRoleId, next)
+      roleStore.applyRoleInfo(info)
+      info = await clearSessionSlotOverride(roleStore.currentRoleId, slotKey)
+      roleStore.applyRoleInfo(info)
+      showToast('success', t('pluginWorkbench.graph.applyPackDone'))
+    }
+    catch (e) {
+      showToast('error', e instanceof Error ? e.message : String(e))
+    }
+    finally {
+      busy.value = false
     }
   },
   onClearSlotOverride: async (slotKey: string) => {
-    busy.value = true;
+    busy.value = true
     try {
-      const info = await clearSessionSlotOverride(roleStore.currentRoleId, slotKey);
-      roleStore.applyRoleInfo(info);
-      showToast("success", t("pluginWorkbench.graph.resetSlotDefaultDone"));
-    } catch (e) {
-      showToast("error", e instanceof Error ? e.message : String(e));
-    } finally {
-      busy.value = false;
+      const info = await clearSessionSlotOverride(roleStore.currentRoleId, slotKey)
+      roleStore.applyRoleInfo(info)
+      showToast('success', t('pluginWorkbench.graph.resetSlotDefaultDone'))
+    }
+    catch (e) {
+      showToast('error', e instanceof Error ? e.message : String(e))
+    }
+    finally {
+      busy.value = false
     }
   },
-  onFocusPlugin: (id: string) => emit("focus-plugin", id),
+  onFocusPlugin: (id: string) => emit('focus-plugin', id),
   onToggleExpand: (targetKey: string) => {
-    if (hiddenPluginCount(targetKey) > 0) togglePluginExpand(targetKey);
+    if (hiddenPluginCount(targetKey) > 0)
+      togglePluginExpand(targetKey)
   },
   onToggleGroupCollapse: (groupId: string) => {
-    toggleGroupCollapse(groupId);
+    toggleGroupCollapse(groupId)
   },
   onTogglePluginDisabled: (id: string) => {
     try {
-      pluginStore.setPluginDisabled(id, !pluginStore.isPluginDisabled(id));
-      showToast("success", t("pluginWorkbench.graph.ctxToggled"));
-    } catch (err) {
-      showToast("error", err instanceof Error ? err.message : String(err));
+      pluginStore.setPluginDisabled(id, !pluginStore.isPluginDisabled(id))
+      showToast('success', t('pluginWorkbench.graph.ctxToggled'))
+    }
+    catch (err) {
+      showToast('error', err instanceof Error ? err.message : String(err))
     }
   },
   onUninstallPlugin: async (id: string) => {
     try {
-      await pluginStore.uninstallPluginFromGitIndex(id);
-      showToast("success", t("pluginWorkbench.graph.ctxUninstalled", { id }));
-    } catch (err) {
-      showToast("error", err instanceof Error ? err.message : String(err));
+      await pluginStore.uninstallPluginFromGitIndex(id)
+      showToast('success', t('pluginWorkbench.graph.ctxUninstalled', { id }))
+    }
+    catch (err) {
+      showToast('error', err instanceof Error ? err.message : String(err))
     }
   },
-});
+})
 
 async function persistPackRegistry(next: SlotRegistryMap) {
-  busy.value = true;
+  busy.value = true
   try {
-    const info = await saveRoleSlotRegistry(roleStore.currentRoleId, next);
-    roleStore.applyRoleInfo(info);
-  } catch (e) {
-    showToast("error", e instanceof Error ? e.message : String(e));
-    throw e;
-  } finally {
-    busy.value = false;
+    const info = await saveRoleSlotRegistry(roleStore.currentRoleId, next)
+    roleStore.applyRoleInfo(info)
+  }
+  catch (e) {
+    showToast('error', e instanceof Error ? e.message : String(e))
+    throw e
+  }
+  finally {
+    busy.value = false
   }
 }
 
 function openAddSlotWizard() {
-  showAddSlotWizard.value = true;
+  showAddSlotWizard.value = true
 }
 
 async function onAddSlotConfirm(slotType: string, label: string) {
-  const pack = roleStore.roleInfo.slotRegistryPack;
-  if (!pack) return;
+  const pack = roleStore.roleInfo.slotRegistryPack
+  if (!pack)
+    return
   try {
-    const { registry, key } = addSlotToRegistry(pack, slotType, label);
-    await persistPackRegistry(registry);
-    removeSlotKey.value = key;
-    showAddSlotWizard.value = false;
-    showToast("success", t("pluginWorkbench.graph.addSlotDone"));
-  } catch (e) {
-    showToast("error", e instanceof Error ? e.message : String(e));
+    const { registry, key } = addSlotToRegistry(pack, slotType, label)
+    await persistPackRegistry(registry)
+    removeSlotKey.value = key
+    showAddSlotWizard.value = false
+    showToast('success', t('pluginWorkbench.graph.addSlotDone'))
+  }
+  catch (e) {
+    showToast('error', e instanceof Error ? e.message : String(e))
   }
 }
 
 function openRemoveSlotDialog() {
-  const pack = roleStore.roleInfo.slotRegistryPack;
-  const key = removeSlotKey.value.trim();
-  if (!pack || !key || !pack[key]) return;
+  const pack = roleStore.roleInfo.slotRegistryPack
+  const key = removeSlotKey.value.trim()
+  if (!pack || !key || !pack[key])
+    return
   if (!canRemoveSlotKey(pack, key)) {
-    showToast("error", t("pluginWorkbench.graph.removeSlotLastLlm"));
-    return;
+    showToast('error', t('pluginWorkbench.graph.removeSlotLastLlm'))
+    return
   }
-  showRemoveSlotDialog.value = true;
+  showRemoveSlotDialog.value = true
 }
 
 async function onRemoveSlotConfirm() {
-  const pack = roleStore.roleInfo.slotRegistryPack;
-  const key = removeSlotKey.value.trim();
-  if (!pack || !key || !pack[key]) return;
-  showRemoveSlotDialog.value = false;
+  const pack = roleStore.roleInfo.slotRegistryPack
+  const key = removeSlotKey.value.trim()
+  if (!pack || !key || !pack[key])
+    return
+  showRemoveSlotDialog.value = false
   try {
-    const next = removeSlotFromRegistry(pack, key);
-    await persistPackRegistry(next);
-    await clearSessionSlotOverride(roleStore.currentRoleId, key).catch(() => undefined);
-    showToast("success", t("pluginWorkbench.graph.removeSlotDone"));
-  } catch (e) {
+    const next = removeSlotFromRegistry(pack, key)
+    await persistPackRegistry(next)
+    await clearSessionSlotOverride(roleStore.currentRoleId, key).catch(() => undefined)
+    showToast('success', t('pluginWorkbench.graph.removeSlotDone'))
+  }
+  catch (e) {
     if (e instanceof Error && e.message === SLOT_REGISTRY_LAST_LLM) {
-      showToast("error", t("pluginWorkbench.graph.removeSlotLastLlm"));
-    } else {
-      showToast("error", e instanceof Error ? e.message : String(e));
+      showToast('error', t('pluginWorkbench.graph.removeSlotLastLlm'))
+    }
+    else {
+      showToast('error', e instanceof Error ? e.message : String(e))
     }
   }
 }
@@ -379,16 +406,17 @@ async function onRemoveSlotConfirm() {
 watch(
   () => pluginStore.focusSlotKey,
   (key) => {
-    if (!key || !usesBlueprint.value) return;
-    nodes.value = nodes.value.map((n) => ({
+    if (!key || !usesBlueprint.value)
+      return
+    nodes.value = nodes.value.map(n => ({
       ...n,
       selected: n.id === key,
-    }));
-    pluginStore.clearFocusArchSlot();
+    }))
+    pluginStore.clearFocusArchSlot()
   },
-);
+)
 
-onMounted(syncGraphFromModel);
+onMounted(syncGraphFromModel)
 </script>
 
 <template>

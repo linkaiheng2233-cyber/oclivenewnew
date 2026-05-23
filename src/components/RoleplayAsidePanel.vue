@@ -1,17 +1,21 @@
 <script setup lang="ts">
-import { useI18n } from "vue-i18n";
+import { useI18n } from 'vue-i18n'
 
 defineProps<{
-  text: string;
-}>();
+  text: string
+}>()
 
-const { t } = useI18n();
+const { t } = useI18n()
 </script>
 
 <template>
   <section v-if="text.trim().length > 0" class="rap" :aria-label="t('app.narrativeAside.aria')">
-    <h3 class="rap-title">{{ t("app.narrativeAside.title") }}</h3>
-    <p class="rap-body">{{ text }}</p>
+    <h3 class="rap-title">
+      {{ t("app.narrativeAside.title") }}
+    </h3>
+    <p class="rap-body">
+      {{ text }}
+    </p>
   </section>
 </template>
 

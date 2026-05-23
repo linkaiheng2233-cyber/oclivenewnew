@@ -1,86 +1,98 @@
 <script setup lang="ts">
-import { computed, ref, watch } from "vue";
-import { useI18n } from "vue-i18n";
+import { computed, ref, watch } from 'vue'
+import { useI18n } from 'vue-i18n'
 
 interface EnvEntry {
-  key: string;
-  value: string;
+  key: string
+  value: string
 }
 
-const { t } = useI18n();
+const { t } = useI18n()
 
-const STORAGE_KEY = "oclive.env.overrides";
-const rows = ref<EnvEntry[]>([]);
-const draftKey = ref("OCLIVE_WEATHER_API_KEY");
-const draftValue = ref("");
-const copied = ref("");
+const STORAGE_KEY = 'oclive.env.overrides'
+const rows = ref<EnvEntry[]>([])
+const draftKey = ref('OCLIVE_WEATHER_API_KEY')
+const draftValue = ref('')
+const copied = ref('')
 
 function load() {
   try {
-    const raw = localStorage.getItem(STORAGE_KEY);
-    const arr = raw ? (JSON.parse(raw) as EnvEntry[]) : [];
-    rows.value = Array.isArray(arr) ? arr : [];
-  } catch {
-    rows.value = [];
+    const raw = localStorage.getItem(STORAGE_KEY)
+    const arr = raw ? (JSON.parse(raw) as EnvEntry[]) : []
+    rows.value = Array.isArray(arr) ? arr : []
+  }
+  catch {
+    rows.value = []
   }
 }
 
 watch(
   rows,
   () => {
-    localStorage.setItem(STORAGE_KEY, JSON.stringify(rows.value));
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(rows.value))
   },
   { deep: true },
-);
+)
 
 function upsert() {
-  const k = draftKey.value.trim();
-  if (!k) return;
-  const idx = rows.value.findIndex((x) => x.key === k);
+  const k = draftKey.value.trim()
+  if (!k)
+    return
+  const idx = rows.value.findIndex(x => x.key === k)
   if (idx >= 0) {
-    rows.value[idx].value = draftValue.value;
-  } else {
-    rows.value.push({ key: k, value: draftValue.value });
+    rows.value[idx].value = draftValue.value
   }
-  draftValue.value = "";
+  else {
+    rows.value.push({ key: k, value: draftValue.value })
+  }
+  draftValue.value = ''
 }
 
 function removeKey(k: string) {
-  rows.value = rows.value.filter((x) => x.key !== k);
+  rows.value = rows.value.filter(x => x.key !== k)
 }
 
 const cmdText = computed(() =>
   rows.value
-    .map((x) => `$env:${x.key}="${x.value.replace(/"/g, '\\"')}"`)
-    .join("; "),
-);
+    .map(x => `$env:${x.key}="${x.value.replace(/"/g, '\\"')}"`)
+    .join('; '),
+)
 
 async function copyCmd() {
-  if (!cmdText.value) return;
-  await navigator.clipboard.writeText(cmdText.value);
-  copied.value = t("devTools.envVar.copied");
-  window.setTimeout(() => (copied.value = ""), 1500);
+  if (!cmdText.value)
+    return
+  await navigator.clipboard.writeText(cmdText.value)
+  copied.value = t('devTools.envVar.copied')
+  window.setTimeout(() => (copied.value = ''), 1500)
 }
 
-load();
+load()
 </script>
 
 <template>
   <section class="evm">
-    <h4 class="evm-h">{{ t("devTools.envVar.title") }}</h4>
+    <h4 class="evm-h">
+      {{ t("devTools.envVar.title") }}
+    </h4>
     <div class="evm-row">
-      <input v-model="draftKey" class="evm-input" placeholder="OCLIVE_*" />
-      <input v-model="draftValue" class="evm-input" placeholder="value" />
-      <button type="button" class="evm-btn" @click="upsert">{{ t("devTools.envVar.upsert") }}</button>
+      <input v-model="draftKey" class="evm-input" placeholder="OCLIVE_*">
+      <input v-model="draftValue" class="evm-input" placeholder="value">
+      <button type="button" class="evm-btn" @click="upsert">
+        {{ t("devTools.envVar.upsert") }}
+      </button>
     </div>
     <ul class="evm-list">
       <li v-for="r in rows" :key="r.key">
         <code>{{ r.key }}</code>=<code>{{ r.value }}</code>
-        <button type="button" class="evm-link" @click="removeKey(r.key)">{{ t("devTools.envVar.remove") }}</button>
+        <button type="button" class="evm-link" @click="removeKey(r.key)">
+          {{ t("devTools.envVar.remove") }}
+        </button>
       </li>
     </ul>
     <div class="evm-row">
-      <button type="button" class="evm-btn" @click="copyCmd">{{ t("devTools.envVar.copyCmd") }}</button>
+      <button type="button" class="evm-btn" @click="copyCmd">
+        {{ t("devTools.envVar.copyCmd") }}
+      </button>
       <span class="evm-copied">{{ copied }}</span>
     </div>
     <pre v-if="cmdText" class="evm-pre">{{ cmdText }}</pre>

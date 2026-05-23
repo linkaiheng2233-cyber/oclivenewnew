@@ -1,46 +1,46 @@
-import { onBeforeUnmount, watch } from "vue";
-import { useRoleStore } from "../stores/roleStore";
-import type { PackUiTheme } from "../utils/tauri-api";
-import { hostEventBus } from "../lib/hostEventBus";
+import type { PackUiTheme } from '../utils/tauri-api'
+import { onBeforeUnmount, watch } from 'vue'
+import { hostEventBus } from '../lib/hostEventBus'
+import { useRoleStore } from '../stores/roleStore'
 
 /**
  * 将角色包 `ui.json` → `theme` 映射到 Fluent / oclive CSS 变量；切换角色或清空字段时移除内联覆盖以回退内置主题。
  */
 export function usePackUiTheme(): void {
-  const roleStore = useRoleStore();
-  let applied: string[] = [];
+  const roleStore = useRoleStore()
+  let applied: string[] = []
 
   function clearApplied(): void {
-    const root = document.documentElement;
+    const root = document.documentElement
     for (const k of applied) {
-      root.style.removeProperty(k);
+      root.style.removeProperty(k)
     }
-    applied = [];
+    applied = []
   }
 
   function applyTheme(t: PackUiTheme | undefined): void {
-    clearApplied();
-    const root = document.documentElement;
+    clearApplied()
+    const root = document.documentElement
     const push = (key: string, val: string): void => {
-      root.style.setProperty(key, val);
-      applied.push(key);
-    };
-    const pc = t?.primaryColor?.trim();
+      root.style.setProperty(key, val)
+      applied.push(key)
+    }
+    const pc = t?.primaryColor?.trim()
     if (pc) {
-      push("--fluent-accent", pc);
-      push("--accent", pc);
-      push("--text-accent", pc);
-      hostEventBus.emitBuiltin("theme:changed", { primaryColor: pc });
+      push('--fluent-accent', pc)
+      push('--accent', pc)
+      push('--text-accent', pc)
+      hostEventBus.emitBuiltin('theme:changed', { primaryColor: pc })
     }
-    const bg = t?.backgroundColor?.trim();
+    const bg = t?.backgroundColor?.trim()
     if (bg) {
-      push("--fluent-bg-page", bg);
-      push("--bg-page", bg);
-      push("--shell-page-bg", bg);
+      push('--fluent-bg-page', bg)
+      push('--bg-page', bg)
+      push('--shell-page-bg', bg)
     }
-    const ff = t?.fontFamily?.trim();
+    const ff = t?.fontFamily?.trim()
     if (ff) {
-      push("--font-ui", `${ff}, system-ui, sans-serif`);
+      push('--font-ui', `${ff}, system-ui, sans-serif`)
     }
   }
 
@@ -51,9 +51,9 @@ export function usePackUiTheme(): void {
     }),
     () => applyTheme(roleStore.roleInfo.packUiConfig?.theme ?? {}),
     { deep: true, immediate: true },
-  );
+  )
 
   onBeforeUnmount(() => {
-    clearApplied();
-  });
+    clearApplied()
+  })
 }

@@ -1,69 +1,73 @@
 <script setup lang="ts">
-import { computed, onMounted, ref, watch } from "vue";
-import { useI18n } from "vue-i18n";
-import TimeDial from "./TimeDial.vue";
-import { getTimeState, type JumpTimeResponse } from "../utils/tauri-api";
+import type { JumpTimeResponse } from '../utils/tauri-api'
+import { computed, onMounted, ref, watch } from 'vue'
+import { useI18n } from 'vue-i18n'
+import { getTimeState } from '../utils/tauri-api'
+import TimeDial from './TimeDial.vue'
 
 const props = withDefaults(
-  defineProps<{ roleId: string; /** 顶栏单行：隐藏「虚拟时间」文案 */ compact?: boolean }>(),
+  defineProps<{ roleId: string, /** 顶栏单行：隐藏「虚拟时间」文案 */ compact?: boolean }>(),
   { compact: false },
-);
+)
 const emit = defineEmits<{
-  notify: [{ type: "success" | "error" | "info" | "warning"; message: string }];
-  refreshed: [];
-  jumpComplete: [JumpTimeResponse];
-}>();
+  notify: [{ type: 'success' | 'error' | 'info' | 'warning', message: string }]
+  refreshed: []
+  jumpComplete: [JumpTimeResponse]
+}>()
 
-const { t } = useI18n();
-const displayLabel = ref("—");
-const loading = ref(false);
-const dialOpen = ref(false);
+const { t } = useI18n()
+const displayLabel = ref('—')
+const loading = ref(false)
+const dialOpen = ref(false)
 /** 与后端对齐的虚拟时间戳，供拨盘使用 */
-const virtualTimeMs = ref(0);
+const virtualTimeMs = ref(0)
 
 async function loadState() {
-  if (!props.roleId) return;
-  loading.value = true;
+  if (!props.roleId)
+    return
+  loading.value = true
   try {
-    const s = await getTimeState(props.roleId);
-    virtualTimeMs.value = s.virtual_time_ms;
+    const s = await getTimeState(props.roleId)
+    virtualTimeMs.value = s.virtual_time_ms
     displayLabel.value = new Date(s.virtual_time_ms).toLocaleString(undefined, {
-      year: "numeric",
-      month: "2-digit",
-      day: "2-digit",
-      hour: "2-digit",
-      minute: "2-digit",
-    });
-  } catch (e) {
-    displayLabel.value = "—";
-    emit("notify", {
-      type: "error",
+      year: 'numeric',
+      month: '2-digit',
+      day: '2-digit',
+      hour: '2-digit',
+      minute: '2-digit',
+    })
+  }
+  catch (e) {
+    displayLabel.value = '—'
+    emit('notify', {
+      type: 'error',
       message: e instanceof Error ? e.message : String(e),
-    });
-  } finally {
-    loading.value = false;
+    })
+  }
+  finally {
+    loading.value = false
   }
 }
 
 const dialMs = computed(() =>
   virtualTimeMs.value > 0 ? virtualTimeMs.value : Date.now(),
-);
+)
 
 function onDialRefreshed() {
-  loadState();
-  emit("refreshed");
+  loadState()
+  emit('refreshed')
 }
 
 onMounted(() => {
-  loadState();
-});
+  loadState()
+})
 
 watch(
   () => props.roleId,
   () => {
-    loadState();
+    loadState()
   },
-);
+)
 </script>
 
 <template>

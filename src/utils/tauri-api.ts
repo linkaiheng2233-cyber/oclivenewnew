@@ -1,157 +1,164 @@
-import { invoke } from "@tauri-apps/api/tauri";
+import { invoke } from '@tauri-apps/api/tauri'
 
-import { i18n } from "../i18n/index";
+import { i18n } from '../i18n/index'
 
 function translateApiError(code: string): string | undefined {
-  const key = `apiErrors.${code}`;
-  if (i18n.global.te(key)) return String(i18n.global.t(key));
-  return undefined;
+  const key = `apiErrors.${code}`
+  if (i18n.global.te(key))
+    return String(i18n.global.t(key))
+  return undefined
 }
 
 /** 与 `oclive_kernel_runtime::KernelErrorBody` / HTTP `error` 对象同形（内核权威 JSON）。 */
 export interface KernelErrorPayload {
-  code: string;
-  message: string;
-  hint?: string | null;
+  code: string
+  message: string
+  hint?: string | null
 }
 
 function parseBackendError(err: unknown): {
-  code?: string;
-  raw: string;
-  kernel?: KernelErrorPayload;
+  code?: string
+  raw: string
+  kernel?: KernelErrorPayload
 } {
-  const raw = String(err ?? "");
-  const trimmed = raw.trim();
-  if (trimmed.startsWith("{")) {
+  const raw = String(err ?? '')
+  const trimmed = raw.trim()
+  if (trimmed.startsWith('{')) {
     try {
-      const j = JSON.parse(trimmed) as Partial<KernelErrorPayload>;
-      if (j && typeof j.code === "string" && typeof j.message === "string") {
-        return { code: j.code, raw, kernel: j as KernelErrorPayload };
+      const j = JSON.parse(trimmed) as Partial<KernelErrorPayload>
+      if (j && typeof j.code === 'string' && typeof j.message === 'string') {
+        return { code: j.code, raw, kernel: j as KernelErrorPayload }
       }
-    } catch {
+    }
+    catch {
       /* fallthrough: legacy `[CODE]` or plain text */
     }
   }
-  const match = raw.match(/\[([A-Z0-9_]+)\]/);
-  return { code: match?.[1], raw };
+  const match = raw.match(/\[([A-Z0-9_]+)\]/)
+  return { code: match?.[1], raw }
 }
 
 export interface FriendlyError {
-  code?: string;
-  message: string;
-  raw: string;
+  code?: string
+  message: string
+  raw: string
   /** 当 `invoke` 失败载荷为内核 JSON 时填充，便于 UI/遥测与 HTTP 对齐。 */
-  kernel?: KernelErrorPayload;
+  kernel?: KernelErrorPayload
 }
 
-type ErrorReporter = (err: FriendlyError) => void;
+type ErrorReporter = (err: FriendlyError) => void
 
-let errorReporter: ErrorReporter | null = null;
+let errorReporter: ErrorReporter | null = null
 
 export function setErrorReporter(reporter: ErrorReporter | null): void {
-  errorReporter = reporter;
+  errorReporter = reporter
 }
 
 /** 从 `invoke` 抛出的字符串中解析机器码：优先内核 JSON `code`，否则 legacy `[CODE]`。 */
 export function parseApiErrorCode(err: unknown): string | undefined {
-  return parseBackendError(err).code;
+  return parseBackendError(err).code
 }
 
 /** 是否为目录插件未找到类错误（便于 UI 分支）。 */
 export function isPluginNotFoundError(err: unknown): boolean {
-  return parseApiErrorCode(err) === "API_PLUGIN_NOT_FOUND";
+  return parseApiErrorCode(err) === 'API_PLUGIN_NOT_FOUND'
 }
 
 export function isPermissionDeniedError(err: unknown): boolean {
-  return parseApiErrorCode(err) === "API_PERMISSION_DENIED";
+  return parseApiErrorCode(err) === 'API_PERMISSION_DENIED'
 }
 
 export function isInvalidParameterError(err: unknown): boolean {
-  return parseApiErrorCode(err) === "INVALID_PARAMETER";
+  return parseApiErrorCode(err) === 'INVALID_PARAMETER'
 }
 
 export function toFriendlyErrorMessage(err: unknown): string {
-  const { code, raw, kernel } = parseBackendError(err);
-  if (!code) return raw;
-  const text = kernel?.message ?? raw;
-  if (code === "STARTUP_HEALTH_FAILED") {
-    let detail = (kernel?.message ?? "").replace(/^Startup health failed:\s*/i, "").trim();
+  const { code, raw, kernel } = parseBackendError(err)
+  if (!code)
+    return raw
+  const text = kernel?.message ?? raw
+  if (code === 'STARTUP_HEALTH_FAILED') {
+    let detail = (kernel?.message ?? '').replace(/^Startup health failed:\s*/i, '').trim()
     if (!detail) {
-      const bracket = raw.indexOf("]");
-      detail =
-        bracket !== -1
+      const bracket = raw.indexOf(']')
+      detail
+        = bracket !== -1
           ? raw.slice(bracket + 1).trim()
-          : raw.trim();
-      detail = detail.replace(/^Startup health failed:\s*/i, "").trim();
+          : raw.trim()
+      detail = detail.replace(/^Startup health failed:\s*/i, '').trim()
     }
-    if (i18n.global.te("apiErrors.STARTUP_HEALTH_FAILED")) {
-      return String(i18n.global.t("apiErrors.STARTUP_HEALTH_FAILED", { detail }));
+    if (i18n.global.te('apiErrors.STARTUP_HEALTH_FAILED')) {
+      return String(i18n.global.t('apiErrors.STARTUP_HEALTH_FAILED', { detail }))
     }
   }
-  if (code === "INVALID_PARAMETER") {
-    if (text.includes("plugin_backends:")) {
-      const mapped = translateApiError("PLUGIN_BACKENDS_DIRECTORY_SLOT");
-      if (mapped) return mapped;
+  if (code === 'INVALID_PARAMETER') {
+    if (text.includes('plugin_backends:')) {
+      const mapped = translateApiError('PLUGIN_BACKENDS_DIRECTORY_SLOT')
+      if (mapped)
+        return mapped
     }
-    let detail = "";
+    let detail = ''
     if (kernel?.message) {
-      const m = kernel.message.match(/^Invalid parameter:\s*(.*)/i);
-      if (m) detail = m[1]?.trim() ?? "";
+      const m = kernel.message.match(/^Invalid parameter:\s*(.*)/i)
+      if (m)
+        detail = m[1]?.trim() ?? ''
     }
     if (!detail) {
-      const bracket = raw.indexOf("]");
+      const bracket = raw.indexOf(']')
       if (bracket !== -1) {
-        detail = raw.slice(bracket + 1).trim();
-        detail = detail.replace(/^Invalid parameter:\s*/i, "").trim();
+        detail = raw.slice(bracket + 1).trim()
+        detail = detail.replace(/^Invalid parameter:\s*/i, '').trim()
       }
     }
-    if (detail && i18n.global.te("apiErrors.INVALID_PARAMETER_DETAIL")) {
-      return String(i18n.global.t("apiErrors.INVALID_PARAMETER_DETAIL", { detail }));
+    if (detail && i18n.global.te('apiErrors.INVALID_PARAMETER_DETAIL')) {
+      return String(i18n.global.t('apiErrors.INVALID_PARAMETER_DETAIL', { detail }))
     }
   }
-  if (code === "ROLE_NOT_FOUND") {
+  if (code === 'ROLE_NOT_FOUND') {
     if (kernel?.message) {
-      const km = kernel.message.trim();
-      if (km.startsWith("Role not found:")) {
-        const suffix = km.slice("Role not found:".length).trim();
-        if (i18n.global.te("apiErrors.ROLE_NOT_FOUND_DETAIL")) {
-          return String(i18n.global.t("apiErrors.ROLE_NOT_FOUND_DETAIL", { detail: suffix }));
+      const km = kernel.message.trim()
+      if (km.startsWith('Role not found:')) {
+        const suffix = km.slice('Role not found:'.length).trim()
+        if (i18n.global.te('apiErrors.ROLE_NOT_FOUND_DETAIL')) {
+          return String(i18n.global.t('apiErrors.ROLE_NOT_FOUND_DETAIL', { detail: suffix }))
         }
       }
     }
-    const bracket = raw.indexOf("]");
+    const bracket = raw.indexOf(']')
     if (bracket !== -1) {
-      const detail = raw.slice(bracket + 1).trim();
-      if (detail.startsWith("Role not found:")) {
-        const suffix = detail.slice("Role not found:".length).trim();
-        if (i18n.global.te("apiErrors.ROLE_NOT_FOUND_DETAIL")) {
+      const detail = raw.slice(bracket + 1).trim()
+      if (detail.startsWith('Role not found:')) {
+        const suffix = detail.slice('Role not found:'.length).trim()
+        if (i18n.global.te('apiErrors.ROLE_NOT_FOUND_DETAIL')) {
           return String(
-            i18n.global.t("apiErrors.ROLE_NOT_FOUND_DETAIL", { detail: suffix }),
-          );
+            i18n.global.t('apiErrors.ROLE_NOT_FOUND_DETAIL', { detail: suffix }),
+          )
         }
       }
     }
   }
-  if (code === "IO_ERROR" && (text.includes("host json") || raw.includes("host json"))) {
-    const mapped = translateApiError("IO_ERROR_HOST_JSON");
-    if (mapped) return mapped;
+  if (code === 'IO_ERROR' && (text.includes('host json') || raw.includes('host json'))) {
+    const mapped = translateApiError('IO_ERROR_HOST_JSON')
+    if (mapped)
+      return mapped
   }
-  const mapped = translateApiError(code);
-  if (mapped) return mapped;
-  if (i18n.global.te("apiErrors.UNKNOWN_WITH_CODE")) {
-    return String(i18n.global.t("apiErrors.UNKNOWN_WITH_CODE", { code }));
+  const mapped = translateApiError(code)
+  if (mapped)
+    return mapped
+  if (i18n.global.te('apiErrors.UNKNOWN_WITH_CODE')) {
+    return String(i18n.global.t('apiErrors.UNKNOWN_WITH_CODE', { code }))
   }
-  return raw;
+  return raw
 }
 
 export function toFriendlyError(err: unknown): FriendlyError {
-  const { code, raw, kernel } = parseBackendError(err);
+  const { code, raw, kernel } = parseBackendError(err)
   return {
     code,
     raw,
     kernel,
     message: toFriendlyErrorMessage(err),
-  };
+  }
 }
 
 async function invokeWithFriendlyError<T>(
@@ -159,153 +166,155 @@ async function invokeWithFriendlyError<T>(
   payload: Record<string, unknown>,
 ): Promise<T> {
   try {
-    return await invoke<T>(command, payload);
-  } catch (err) {
-    const friendly = toFriendlyError(err);
+    return await invoke<T>(command, payload)
+  }
+  catch (err) {
+    const friendly = toFriendlyError(err)
     // 友好文案会盖住后端细节；开发排查时看控制台完整 raw
-    console.error(`[tauri:${command}]`, friendly.code ?? "?", friendly.raw);
+    console.error(`[tauri:${command}]`, friendly.code ?? '?', friendly.raw)
     if (errorReporter) {
-      errorReporter(friendly);
-    } else if (friendly.code) {
-      console.warn(`[api-error] code=${friendly.code} msg=${friendly.message}`);
+      errorReporter(friendly)
     }
-    throw new Error(friendly.message);
+    else if (friendly.code) {
+      console.warn(`[api-error] code=${friendly.code} msg=${friendly.message}`)
+    }
+    throw new Error(friendly.message)
   }
 }
 
 export interface SendMessageRequest {
-  role_id: string;
-  user_message: string;
-  scene_id?: string | null;
+  role_id: string
+  user_message: string
+  scene_id?: string | null
 }
 
 export interface EmotionDto {
-  joy: number;
-  sadness: number;
-  anger: number;
-  fear: number;
-  surprise: number;
-  disgust: number;
-  neutral: number;
+  joy: number
+  sadness: number
+  anger: number
+  fear: number
+  surprise: number
+  disgust: number
+  neutral: number
 }
 
 export interface DetectedEventDto {
-  event_type: string;
-  confidence: number;
+  event_type: string
+  confidence: number
 }
 
-export type PresenceMode = "co_present" | "remote_stub" | "remote_life";
+export type PresenceMode = 'co_present' | 'remote_stub' | 'remote_life'
 
 export interface SendMessageResponse {
-  api_version: number;
-  schema: number;
+  api_version: number
+  schema: number
   /** 共景 / 异地占位 / 异地心声 */
-  presence_mode: PresenceMode;
+  presence_mode: PresenceMode
   /** 本回合结束后的关系阶段（与 `role_runtime.relation_state` 一致） */
-  relation_state: string;
-  reply: string;
-  emotion: EmotionDto;
+  relation_state: string
+  reply: string
+  emotion: EmotionDto
   /** 本回合 bot 情绪标签（小写英文） */
-  bot_emotion: string;
+  bot_emotion: string
   /** 立绘用（与 DB current_emotion 一致）；对话语气见 bot_emotion */
-  portrait_emotion: string;
-  favorability_delta: number;
-  favorability_current: number;
-  events: DetectedEventDto[];
-  scene_id: string;
+  portrait_emotion: string
+  favorability_delta: number
+  favorability_current: number
+  events: DetectedEventDto[]
+  scene_id: string
   /** 后端判定用户有前往/位移意图时置 true；实际切换仅通过 switch_scene */
-  offer_destination_picker: boolean;
+  offer_destination_picker: boolean
   /** 检测到「一起去/跟我来」等邀请同行语义时置 true；确认后 `switch_scene`（同行）或仅叙事切换 */
-  offer_together_travel: boolean;
+  offer_together_travel: boolean
   /** 主 LLM 失败时使用备用短回复 */
-  reply_is_fallback?: boolean;
+  reply_is_fallback?: boolean
   /** 本回合注入 Prompt 的知识块条数（共景/异地心声；占位为 0） */
-  knowledge_chunks_in_prompt?: number;
-  timestamp: number;
+  knowledge_chunks_in_prompt?: number
+  timestamp: number
 }
 
 /** 身份下拉里「跟随 manifest 默认身份」选项的值（与后端 `OCLIVE_DEFAULT_RELATION_SENTINEL` 一致） */
-export const OCLIVE_DEFAULT_RELATION_SENTINEL = "__oclive_default__";
+export const OCLIVE_DEFAULT_RELATION_SENTINEL = '__oclive_default__'
 
 export interface UserRelationDto {
-  id: string;
-  name: string;
-  prompt_hint: string;
-  favor_multiplier: number;
+  id: string
+  name: string
+  prompt_hint: string
+  favor_multiplier: number
   /** 角色包配置的初始好感度（0～100）；切换顶栏身份时会同步到当前好感 */
-  initial_favorability: number;
+  initial_favorability: number
 }
 
 /** 虚拟时间 + manifest `life_schedule` 推断的当前活动 */
 export interface LifeStateDto {
-  label: string;
-  activity_key: string;
-  busy_level: number;
-  preferred_scene_id: string | null;
+  label: string
+  activity_key: string
+  busy_level: number
+  preferred_scene_id: string | null
 }
 
 /** 与 `plugin_backends.directory_plugins` 一致（snake_case JSON 字段） */
 export interface DirectoryPluginSlots {
-  memory?: string | null;
-  emotion?: string | null;
-  event?: string | null;
-  prompt?: string | null;
-  llm?: string | null;
-  agent?: string | null;
+  memory?: string | null
+  emotion?: string | null
+  event?: string | null
+  prompt?: string | null
+  llm?: string | null
+  agent?: string | null
 }
 
 /** 与 `settings.json` → `plugin_backends` 一致（snake_case，与后端 serde 对齐） */
 export interface PluginBackends {
-  memory: "builtin" | "builtin_v2" | "remote" | "local" | "directory";
+  memory: 'builtin' | 'builtin_v2' | 'remote' | 'local' | 'directory'
   /** `memory === "local"` 时可选：与 `_local_plugins` 中 descriptor 的 `provider_id` 一致 */
-  local_memory_provider_id?: string | null;
-  emotion: "builtin" | "builtin_v2" | "remote" | "directory";
-  event: "builtin" | "builtin_v2" | "remote" | "directory";
-  prompt: "builtin" | "builtin_v2" | "remote" | "directory";
-  llm: "ollama" | "remote" | "directory";
-  agent: "builtin" | "remote" | "directory";
+  local_memory_provider_id?: string | null
+  emotion: 'builtin' | 'builtin_v2' | 'remote' | 'directory'
+  event: 'builtin' | 'builtin_v2' | 'remote' | 'directory'
+  prompt: 'builtin' | 'builtin_v2' | 'remote' | 'directory'
+  llm: 'ollama' | 'remote' | 'directory'
+  agent: 'builtin' | 'remote' | 'directory'
   /** 各模块为 `directory` 时对应的 manifest `id`（见 DIRECTORY_PLUGINS.md） */
-  directory_plugins?: DirectoryPluginSlots;
+  directory_plugins?: DirectoryPluginSlots
 }
 
 export interface PluginBackendsOverride {
-  memory?: PluginBackends["memory"] | null;
-  local_memory_provider_id?: string | null;
-  emotion?: PluginBackends["emotion"] | null;
-  event?: PluginBackends["event"] | null;
-  prompt?: PluginBackends["prompt"] | null;
-  llm?: PluginBackends["llm"] | null;
-  agent?: PluginBackends["agent"] | null;
+  memory?: PluginBackends['memory'] | null
+  local_memory_provider_id?: string | null
+  emotion?: PluginBackends['emotion'] | null
+  event?: PluginBackends['event'] | null
+  prompt?: PluginBackends['prompt'] | null
+  llm?: PluginBackends['llm'] | null
+  agent?: PluginBackends['agent'] | null
   /** 会话级与包内按槽合并（当前 UI 未编辑；仅展示与调试） */
-  directory_plugins?: DirectoryPluginSlots | null;
+  directory_plugins?: DirectoryPluginSlots | null
 }
 
-export type PluginBackendSource = "pack_default" | "session_override" | "env_override";
+export type PluginBackendSource = 'pack_default' | 'session_override' | 'env_override'
 
 export interface PluginBackendsSourceMap {
-  memory: PluginBackendSource;
-  emotion: PluginBackendSource;
-  event: PluginBackendSource;
-  prompt: PluginBackendSource;
-  llm: PluginBackendSource;
-  agent: PluginBackendSource;
+  memory: PluginBackendSource
+  emotion: PluginBackendSource
+  event: PluginBackendSource
+  prompt: PluginBackendSource
+  llm: PluginBackendSource
+  agent: PluginBackendSource
 }
 
 export interface PluginResolutionDebugInfo {
-  app_version: string;
-  api_version: number;
-  schema_version: number;
-  role_id: string;
-  session_namespace: string;
-  plugin_backends_pack_default: PluginBackends;
-  plugin_backends_session_override?: PluginBackendsOverride | null;
-  plugin_backends_effective: PluginBackends;
-  plugin_backends_effective_sources: PluginBackendsSourceMap;
-  llm_env_override?: string | null;
-  remote_plugin_url_configured: boolean;
-  remote_llm_url_configured: boolean;
-  local_provider_ids: string[];
-  local_provider_count: number;
+  app_version: string
+  api_version: number
+  schema_version: number
+  role_id: string
+  session_namespace: string
+  plugin_backends_pack_default: PluginBackends
+  plugin_backends_session_override?: PluginBackendsOverride | null
+  plugin_backends_effective: PluginBackends
+  plugin_backends_effective_sources: PluginBackendsSourceMap
+  llm_env_override?: string | null
+  remote_plugin_url_configured: boolean
+  remote_llm_url_configured: boolean
+  local_provider_ids: string[]
+  local_provider_count: number
 }
 
 /**
@@ -314,309 +323,310 @@ export interface PluginResolutionDebugInfo {
  * `use_manifest_default` 仅表示用户是否选了「默认身份」选项；好感/阶段与当前有效身份一致。
  */
 /** `evolution.personality_source` */
-export type PersonalitySource = "vector" | "profile";
+export type PersonalitySource = 'vector' | 'profile'
 
 /** 角色包根目录 `ui.json`（与后端 `UiConfig` 对齐；插槽键含点号） */
 export interface PackUiSlotConfig {
-  order: string[];
-  visible: string[];
+  order: string[]
+  visible: string[]
 }
 
 export interface PackUiSlots {
-  chat_toolbar: PackUiSlotConfig;
-  "settings.panel": PackUiSlotConfig;
-  "role.detail": PackUiSlotConfig;
-  sidebar: PackUiSlotConfig;
-  "chat.header": PackUiSlotConfig;
+  'chat_toolbar': PackUiSlotConfig
+  'settings.panel': PackUiSlotConfig
+  'role.detail': PackUiSlotConfig
+  'sidebar': PackUiSlotConfig
+  'chat.header': PackUiSlotConfig
 }
 
 export interface PackUiTheme {
-  primaryColor?: string;
-  backgroundColor?: string;
-  fontFamily?: string;
+  primaryColor?: string
+  backgroundColor?: string
+  fontFamily?: string
 }
 
 export interface PackUiLayout {
-  sidebar?: string;
-  chatInput?: string;
+  sidebar?: string
+  chatInput?: string
 }
 
 export interface PackUiConfig {
-  shell: string;
-  theme: PackUiTheme;
-  layout: PackUiLayout;
-  slots: PackUiSlots;
+  shell: string
+  theme: PackUiTheme
+  layout: PackUiLayout
+  slots: PackUiSlots
 }
 
 export function emptyPackUiConfig(): PackUiConfig {
   return {
-    shell: "",
-    theme: { primaryColor: "", backgroundColor: "", fontFamily: "" },
-    layout: { sidebar: "", chatInput: "" },
+    shell: '',
+    theme: { primaryColor: '', backgroundColor: '', fontFamily: '' },
+    layout: { sidebar: '', chatInput: '' },
     slots: {
-      chat_toolbar: { order: [], visible: [] },
-      "settings.panel": { order: [], visible: [] },
-      "role.detail": { order: [], visible: [] },
-      sidebar: { order: [], visible: [] },
-      "chat.header": { order: [], visible: [] },
+      'chat_toolbar': { order: [], visible: [] },
+      'settings.panel': { order: [], visible: [] },
+      'role.detail': { order: [], visible: [] },
+      'sidebar': { order: [], visible: [] },
+      'chat.header': { order: [], visible: [] },
     },
-  };
+  }
 }
 
 /** 与后端 `models::author_pack::AuthorPackFile` 对齐（snake_case 字段）。 */
 export interface AuthorRecommendedPlugin {
-  id: string;
-  version_range?: string | null;
-  slots?: string[];
-  for_backends?: string[];
-  optional?: boolean;
-  note?: string | null;
+  id: string
+  version_range?: string | null
+  slots?: string[]
+  for_backends?: string[]
+  optional?: boolean
+  note?: string | null
 }
 
 export interface AuthorPackFile {
-  schema_version: number;
-  summary?: string;
-  detail_markdown?: string;
-  recommended_plugins?: AuthorRecommendedPlugin[];
-  suggested_ui?: PackUiConfig | null;
-  suggested_plugin_backends?: PluginBackends | null;
+  schema_version: number
+  summary?: string
+  detail_markdown?: string
+  recommended_plugins?: AuthorRecommendedPlugin[]
+  suggested_ui?: PackUiConfig | null
+  suggested_plugin_backends?: PluginBackends | null
 }
 
 export function normalizePackUiConfig(
   raw: PackUiConfig | undefined | null,
 ): PackUiConfig {
-  const e = emptyPackUiConfig();
-  if (!raw) return e;
-  const slots = raw.slots;
+  const e = emptyPackUiConfig()
+  if (!raw)
+    return e
+  const slots = raw.slots
   const slot = (k: keyof PackUiSlots): PackUiSlotConfig => {
-    const s = slots?.[k];
+    const s = slots?.[k]
     return {
       order: Array.isArray(s?.order) ? s!.order.map(String) : [],
       visible: Array.isArray(s?.visible) ? s!.visible.map(String) : [],
-    };
-  };
+    }
+  }
   return {
-    shell: typeof raw.shell === "string" ? raw.shell : e.shell,
+    shell: typeof raw.shell === 'string' ? raw.shell : e.shell,
     theme: {
-      primaryColor: raw.theme?.primaryColor?.trim() ?? "",
-      backgroundColor: raw.theme?.backgroundColor?.trim() ?? "",
-      fontFamily: raw.theme?.fontFamily?.trim() ?? "",
+      primaryColor: raw.theme?.primaryColor?.trim() ?? '',
+      backgroundColor: raw.theme?.backgroundColor?.trim() ?? '',
+      fontFamily: raw.theme?.fontFamily?.trim() ?? '',
     },
     layout: {
-      sidebar: (raw.layout?.sidebar ?? "").trim().toLowerCase(),
-      chatInput: (raw.layout?.chatInput ?? "").trim().toLowerCase(),
+      sidebar: (raw.layout?.sidebar ?? '').trim().toLowerCase(),
+      chatInput: (raw.layout?.chatInput ?? '').trim().toLowerCase(),
     },
     slots: {
-      chat_toolbar: slot("chat_toolbar"),
-      "settings.panel": slot("settings.panel"),
-      "role.detail": slot("role.detail"),
-      sidebar: slot("sidebar"),
-      "chat.header": slot("chat.header"),
+      'chat_toolbar': slot('chat_toolbar'),
+      'settings.panel': slot('settings.panel'),
+      'role.detail': slot('role.detail'),
+      'sidebar': slot('sidebar'),
+      'chat.header': slot('chat.header'),
     },
-  };
+  }
 }
 
 export interface RoleData {
-  role_id: string;
-  name: string;
-  version: string;
-  author: string;
-  description: string;
-  personality_vector: number[];
-  current_favorability: number;
-  current_emotion: string;
-  memory_count: number;
-  event_count: number;
-  user_relations: UserRelationDto[];
-  default_relation: string;
-  relation_state: string;
-  current_user_relation: string;
+  role_id: string
+  name: string
+  version: string
+  author: string
+  description: string
+  personality_vector: number[]
+  current_favorability: number
+  current_emotion: string
+  memory_count: number
+  event_count: number
+  user_relations: UserRelationDto[]
+  default_relation: string
+  relation_state: string
+  current_user_relation: string
   /** 是否选中「默认身份」（跟随 manifest `default_relation`） */
-  use_manifest_default: boolean;
+  use_manifest_default: boolean
   /** 异地心声开关（DB） */
-  remote_life_enabled: boolean;
+  remote_life_enabled: boolean
   /** 角色包建议默认是否开启异地心声（settings.json → remote_presence.default_enabled） */
-  remote_life_pack_default: boolean | null;
-  event_impact_factor: number;
+  remote_life_pack_default: boolean | null
+  event_impact_factor: number
   /** `evolution.personality_source`；缺省为 vector */
-  personality_source?: PersonalitySource;
+  personality_source?: PersonalitySource
   /** manifest → OLLAMA_MODEL → 全局默认 */
-  effective_ollama_model: string;
+  effective_ollama_model: string
   /** 全局单一身份 vs 按场景覆盖（manifest `identity_binding`） */
-  identity_binding: "global" | "per_scene";
+  identity_binding: 'global' | 'per_scene'
   /** 当前交互模式（DB）：`immersive` | `pure_chat` */
-  interaction_mode: "immersive" | "pure_chat";
+  interaction_mode: 'immersive' | 'pure_chat'
   /** 角色包 settings.json 建议默认（可选） */
-  interaction_mode_pack_default: "immersive" | "pure_chat" | null;
+  interaction_mode_pack_default: 'immersive' | 'pure_chat' | null
   /** 当前日程推断（无配置或未命中时段时为 null） */
-  current_life: LifeStateDto | null;
+  current_life: LifeStateDto | null
   /** 模块化子系统后端（与 `PluginHost` 解析一致） */
-  plugin_backends: PluginBackends;
+  plugin_backends: PluginBackends
   /** 当前会话覆盖（无覆盖时为 null） */
-  plugin_backends_session_override?: PluginBackendsOverride | null;
+  plugin_backends_session_override?: PluginBackendsOverride | null
   /** 叠加会话覆盖后的有效后端 */
-  plugin_backends_effective?: PluginBackends;
+  plugin_backends_effective?: PluginBackends
   /** 叠加后的后端来源（pack/session/env） */
-  plugin_backends_effective_sources?: PluginBackendsSourceMap;
+  plugin_backends_effective_sources?: PluginBackendsSourceMap
   /** 角色包 `ui.json`（主题、布局、插槽） */
-  pack_ui_config: PackUiConfig;
+  pack_ui_config: PackUiConfig
   /** `author.suggested_ui` 优先时的有效 UI 基线（与后端 `pack_ui_baseline` 一致） */
-  pack_ui_baseline?: PackUiConfig;
+  pack_ui_baseline?: PackUiConfig
   /** 可选 `author.json` */
-  author_pack?: AuthorPackFile | null;
+  author_pack?: AuthorPackFile | null
   /** v2 蓝图 `slot_registry`（legacy 为 null） */
-  slot_registry_pack?: import("../lib/slotRegistry").SlotRegistryMap | null;
-  slot_registry_effective?: import("../lib/slotRegistry").SlotRegistryMap | null;
-  slot_session_overridden_keys?: string[];
-  blueprint_groups_pack?: import("../lib/slotRegistry").SlotGroupsMap | null;
+  slot_registry_pack?: import('../lib/slotRegistry').SlotRegistryMap | null
+  slot_registry_effective?: import('../lib/slotRegistry').SlotRegistryMap | null
+  slot_session_overridden_keys?: string[]
+  blueprint_groups_pack?: import('../lib/slotRegistry').SlotGroupsMap | null
 }
 
 export interface SceneLabelEntry {
-  id: string;
-  label: string;
+  id: string
+  label: string
 }
 
 /** `get_role_info` / `switch_scene` 等与 UI 同步的快照；身份字段语义同 {@link RoleData}。 */
 export interface RoleInfo {
-  role_id: string;
-  role_name: string;
-  version: string;
-  author: string;
-  description: string;
-  current_favorability: number;
-  current_emotion: string;
-  personality_vector: number[];
+  role_id: string
+  role_name: string
+  version: string
+  author: string
+  description: string
+  current_favorability: number
+  current_emotion: string
+  personality_vector: number[]
   /** `evolution.personality_source`；缺省为 vector */
-  personality_source?: PersonalitySource;
-  last_interaction?: string | null;
-  scenes: string[];
+  personality_source?: PersonalitySource
+  last_interaction?: string | null
+  scenes: string[]
   /** 与 scenes 顺序一致；label 来自角色包 scene.json 或内置映射 */
-  scene_labels: SceneLabelEntry[];
-  current_scene: string | null;
+  scene_labels: SceneLabelEntry[]
+  current_scene: string | null
   /** 用户叙事场景（DB）；与 current_scene 可不同 */
-  user_presence_scene: string | null;
-  virtual_time_ms: number;
-  user_relations: UserRelationDto[];
-  default_relation: string;
-  current_user_relation: string;
+  user_presence_scene: string | null
+  virtual_time_ms: number
+  user_relations: UserRelationDto[]
+  default_relation: string
+  current_user_relation: string
   /** 是否选中「默认身份」（下拉应显示 `OCLIVE_DEFAULT_RELATION_SENTINEL`） */
-  use_manifest_default: boolean;
+  use_manifest_default: boolean
   /** 关系阶段（`role_runtime.relation_state`） */
-  relation_state: string;
-  remote_life_enabled: boolean;
-  remote_life_pack_default: boolean | null;
-  event_impact_factor: number;
+  relation_state: string
+  remote_life_enabled: boolean
+  remote_life_pack_default: boolean | null
+  event_impact_factor: number
   /** manifest → OLLAMA_MODEL → 全局默认 */
-  effective_ollama_model: string;
+  effective_ollama_model: string
   /** 全局单一身份 vs 按场景覆盖（manifest `identity_binding`） */
-  identity_binding: "global" | "per_scene";
-  interaction_mode: "immersive" | "pure_chat";
-  interaction_mode_pack_default: "immersive" | "pure_chat" | null;
+  identity_binding: 'global' | 'per_scene'
+  interaction_mode: 'immersive' | 'pure_chat'
+  interaction_mode_pack_default: 'immersive' | 'pure_chat' | null
   /** 当前日程推断（无配置或未命中时段时为 null） */
-  current_life: LifeStateDto | null;
+  current_life: LifeStateDto | null
   /** 模块化子系统后端（与 `load_role` 一致） */
-  plugin_backends: PluginBackends;
+  plugin_backends: PluginBackends
   /** 当前会话覆盖（无覆盖时为 null） */
-  plugin_backends_session_override?: PluginBackendsOverride | null;
+  plugin_backends_session_override?: PluginBackendsOverride | null
   /** 叠加会话覆盖后的有效后端 */
-  plugin_backends_effective?: PluginBackends;
+  plugin_backends_effective?: PluginBackends
   /** 叠加后的后端来源（pack/session/env） */
-  plugin_backends_effective_sources?: PluginBackendsSourceMap;
+  plugin_backends_effective_sources?: PluginBackendsSourceMap
   /** 是否已从磁盘构建世界观知识索引 */
-  knowledge_enabled?: boolean;
+  knowledge_enabled?: boolean
   /** 知识块条数；未加载索引时为 0 */
-  knowledge_chunk_count?: number;
+  knowledge_chunk_count?: number
   /** 角色包 `ui.json`（主题、布局、插槽） */
-  pack_ui_config: PackUiConfig;
-  pack_ui_baseline?: PackUiConfig;
-  author_pack?: AuthorPackFile | null;
-  slot_registry_pack?: import("../lib/slotRegistry").SlotRegistryMap | null;
-  slot_registry_effective?: import("../lib/slotRegistry").SlotRegistryMap | null;
-  slot_session_overridden_keys?: string[];
-  blueprint_groups_pack?: import("../lib/slotRegistry").SlotGroupsMap | null;
-  dual_core_enabled?: boolean;
-  pipeline_experimental_actions?: string[];
+  pack_ui_config: PackUiConfig
+  pack_ui_baseline?: PackUiConfig
+  author_pack?: AuthorPackFile | null
+  slot_registry_pack?: import('../lib/slotRegistry').SlotRegistryMap | null
+  slot_registry_effective?: import('../lib/slotRegistry').SlotRegistryMap | null
+  slot_session_overridden_keys?: string[]
+  blueprint_groups_pack?: import('../lib/slotRegistry').SlotGroupsMap | null
+  dual_core_enabled?: boolean
+  pipeline_experimental_actions?: string[]
 }
 
 /** `switch_scene` 扁平化返回：RoleInfo 字段 + 可选场景欢迎语 */
 export type SwitchSceneResponse = RoleInfo & {
-  scene_welcome?: string | null;
-};
+  scene_welcome?: string | null
+}
 
 export interface TimeStateResponse {
-  virtual_time_ms: number;
-  iso_datetime: string;
+  virtual_time_ms: number
+  iso_datetime: string
 }
 
 export interface JumpTimeResponse {
-  virtual_time_ms: number;
-  iso_datetime: string;
-  monologues: string[];
-  favorability_delta: number;
-  favorability_current: number;
+  virtual_time_ms: number
+  iso_datetime: string
+  monologues: string[]
+  favorability_delta: number
+  favorability_current: number
   /** 虚拟时间规则是否将角色 current_scene 从 from 切到 to */
-  autonomous_scene_from?: string | null;
-  autonomous_scene_to?: string | null;
+  autonomous_scene_from?: string | null
+  autonomous_scene_to?: string | null
 }
 
 export interface ExportChatLogsResponse {
-  content: string;
-  suggested_filename: string;
+  content: string
+  suggested_filename: string
 }
 
 export interface QueryMemoriesRequest {
-  role_id: string;
-  limit: number;
-  offset: number;
+  role_id: string
+  limit: number
+  offset: number
 }
 
 export interface MemoryItem {
-  id: string;
-  role_id: string;
-  content: string;
-  memory_type: string;
-  timestamp: string;
-  importance: number;
+  id: string
+  role_id: string
+  content: string
+  memory_type: string
+  timestamp: string
+  importance: number
 }
 
 export interface QueryEventsRequest {
-  role_id: string;
-  limit: number;
-  offset: number;
+  role_id: string
+  limit: number
+  offset: number
 }
 
 export interface EventItem {
-  id: number;
-  role_id: string;
-  event_type: string;
-  user_emotion?: string | null;
-  bot_emotion?: string | null;
-  timestamp: string;
-  description?: string | null;
+  id: number
+  role_id: string
+  event_type: string
+  user_emotion?: string | null
+  bot_emotion?: string | null
+  timestamp: string
+  description?: string | null
 }
 
 export interface CreateEventRequest {
-  role_id: string;
-  event_type: string;
-  description?: string | null;
+  role_id: string
+  event_type: string
+  description?: string | null
 }
 
 export interface CreateEventResponse {
-  id: number;
-  role_id: string;
-  event_type: string;
-  timestamp: string;
-  description?: string | null;
+  id: number
+  role_id: string
+  event_type: string
+  timestamp: string
+  description?: string | null
 }
 
 export async function sendMessage(
   req: SendMessageRequest,
 ): Promise<SendMessageResponse> {
-  return invokeWithFriendlyError<SendMessageResponse>("send_message", { req });
+  return invokeWithFriendlyError<SendMessageResponse>('send_message', { req })
 }
 
 export async function loadRole(roleId: string): Promise<RoleData> {
-  return invokeWithFriendlyError<RoleData>("load_role", { roleId });
+  return invokeWithFriendlyError<RoleData>('load_role', { roleId })
 }
 
 /** 若文件存在则返回绝对路径，否则 `null`（不抛错）。 */
@@ -624,10 +634,10 @@ export async function resolveRoleAssetPath(
   roleId: string,
   relative: string,
 ): Promise<string | null> {
-  return invoke<string | null>("resolve_role_asset_path", {
+  return invoke<string | null>('resolve_role_asset_path', {
     roleId,
     relative,
-  });
+  })
 }
 
 /** `sessionId` 与发消息的会话 id 一致时，返回该命名空间下的 `plugin_backends_*` 等快照。 */
@@ -635,84 +645,84 @@ export async function getRoleInfo(
   roleId: string,
   sessionId?: string | null,
 ): Promise<RoleInfo> {
-  return invokeWithFriendlyError<RoleInfo>("get_role_info", {
+  return invokeWithFriendlyError<RoleInfo>('get_role_info', {
     req: {
       role_id: roleId,
       session_id: sessionId ?? null,
     },
-  });
+  })
 }
 
 export async function queryMemories(
   req: QueryMemoriesRequest,
 ): Promise<MemoryItem[]> {
-  return invokeWithFriendlyError<MemoryItem[]>("query_memories", { req });
+  return invokeWithFriendlyError<MemoryItem[]>('query_memories', { req })
 }
 
 export async function queryEvents(req: QueryEventsRequest): Promise<EventItem[]> {
-  return invokeWithFriendlyError<EventItem[]>("query_events", { req });
+  return invokeWithFriendlyError<EventItem[]>('query_events', { req })
 }
 
 export async function createEvent(
   req: CreateEventRequest,
 ): Promise<CreateEventResponse> {
-  return invokeWithFriendlyError<CreateEventResponse>("create_event", { req });
+  return invokeWithFriendlyError<CreateEventResponse>('create_event', { req })
 }
 
 export async function reloadPolicyPlugins(): Promise<string> {
-  return invokeWithFriendlyError<string>("reload_policy_plugins", {});
+  return invokeWithFriendlyError<string>('reload_policy_plugins', {})
 }
 
-export async function listRoles(): Promise<Array<{ id: string; name: string }>> {
+export async function listRoles(): Promise<Array<{ id: string, name: string }>> {
   const rows = await invokeWithFriendlyError<
-    Array<{ id: string; name: string; version: string; author: string }>
-  >("list_roles", {});
-  return rows.map((r) => ({ id: r.id, name: r.name }));
+    Array<{ id: string, name: string, version: string, author: string }>
+  >('list_roles', {})
+  return rows.map(r => ({ id: r.id, name: r.name }))
 }
 
 export async function switchRole(roleId: string): Promise<RoleInfo> {
-  return invokeWithFriendlyError<RoleInfo>("switch_role", { roleId });
+  return invokeWithFriendlyError<RoleInfo>('switch_role', { roleId })
 }
 
 export async function setUserRelation(
   roleId: string,
   relation: string,
 ): Promise<RoleInfo> {
-  return invokeWithFriendlyError<RoleInfo>("set_user_relation", {
+  return invokeWithFriendlyError<RoleInfo>('set_user_relation', {
     req: { role_id: roleId, relation },
-  });
+  })
 }
 
 export async function setEvolutionFactor(
   roleId: string,
   eventImpactFactor: number,
 ): Promise<RoleInfo> {
-  return invokeWithFriendlyError<RoleInfo>("set_evolution_factor", {
+  return invokeWithFriendlyError<RoleInfo>('set_evolution_factor', {
     req: { role_id: roleId, event_impact_factor: eventImpactFactor },
-  });
+  })
 }
 
 export async function setRemoteLifeEnabled(
   roleId: string,
   enabled: boolean,
 ): Promise<RoleInfo> {
-  return invokeWithFriendlyError<RoleInfo>("set_remote_life_enabled", {
+  return invokeWithFriendlyError<RoleInfo>('set_remote_life_enabled', {
     req: { role_id: roleId, enabled },
-  });
+  })
 }
 
 export async function setRoleInteractionMode(
   roleId: string,
-  mode: "immersive" | "pure_chat",
+  mode: 'immersive' | 'pure_chat',
 ): Promise<RoleInfo> {
-  return invokeWithFriendlyError<RoleInfo>("set_role_interaction_mode", {
+  return invokeWithFriendlyError<RoleInfo>('set_role_interaction_mode', {
     req: { role_id: roleId, mode },
-  });
+  })
 }
 
 export async function setSessionPluginBackend(
   roleId: string,
-  module: "memory" | "emotion" | "event" | "prompt" | "llm" | "agent",
+  module: 'memory' | 'emotion' | 'event' | 'prompt' | 'llm' | 'agent',
   /** 与后端 `parse_backend_wire` 一致，如 `builtin_v2`、`directory`、`remote` */
   backend?: string | null,
   localMemoryProviderId?: string,
@@ -723,34 +733,34 @@ export async function setSessionPluginBackend(
     role_id: roleId,
     module,
     session_id: sessionId ?? null,
-  };
+  }
   if (backend !== undefined) {
-    req.backend = backend;
+    req.backend = backend
   }
   if (localMemoryProviderId !== undefined) {
-    req.local_memory_provider_id = localMemoryProviderId;
+    req.local_memory_provider_id = localMemoryProviderId
   }
   if (directoryId !== undefined) {
-    req.directory_id = directoryId;
+    req.directory_id = directoryId
   }
-  return invokeWithFriendlyError<RoleInfo>("set_session_plugin_backend", {
+  return invokeWithFriendlyError<RoleInfo>('set_session_plugin_backend', {
     req,
-  });
+  })
 }
 
 export async function setSessionSlotOverride(
   roleId: string,
   slotKey: string,
   patch: {
-    backend?: string | null;
-    plugin?: string | null;
-    plugins?: string[] | null;
-    model?: string | null;
-    localMemoryProviderId?: string | null;
+    backend?: string | null
+    plugin?: string | null
+    plugins?: string[] | null
+    model?: string | null
+    localMemoryProviderId?: string | null
   },
   sessionId?: string | null,
 ): Promise<RoleInfo> {
-  return invokeWithFriendlyError<RoleInfo>("set_session_slot_override", {
+  return invokeWithFriendlyError<RoleInfo>('set_session_slot_override', {
     req: {
       role_id: roleId,
       slot_key: slotKey,
@@ -761,7 +771,7 @@ export async function setSessionSlotOverride(
       local_memory_provider_id: patch.localMemoryProviderId ?? null,
       session_id: sessionId ?? null,
     },
-  });
+  })
 }
 
 export async function clearSessionSlotOverride(
@@ -769,38 +779,38 @@ export async function clearSessionSlotOverride(
   slotKey: string,
   sessionId?: string | null,
 ): Promise<RoleInfo> {
-  return invokeWithFriendlyError<RoleInfo>("clear_session_slot_override", {
+  return invokeWithFriendlyError<RoleInfo>('clear_session_slot_override', {
     req: {
       role_id: roleId,
       slot_key: slotKey,
       session_id: sessionId ?? null,
     },
-  });
+  })
 }
 
 export async function clearAllSessionSlotOverrides(
   roleId: string,
   sessionId?: string | null,
 ): Promise<RoleInfo> {
-  return invokeWithFriendlyError<RoleInfo>("clear_all_session_slot_overrides", {
+  return invokeWithFriendlyError<RoleInfo>('clear_all_session_slot_overrides', {
     req: {
       role_id: roleId,
       session_id: sessionId ?? null,
     },
-  });
+  })
 }
 
 /** 将完整 `slot_registry` 写回 `pipeline.ocblueprint`（蓝图 v2 架构图写盘）。 */
 export async function saveRoleSlotRegistry(
   roleId: string,
-  slotRegistry: import("../lib/slotRegistry").SlotRegistryMap,
+  slotRegistry: import('../lib/slotRegistry').SlotRegistryMap,
 ): Promise<RoleInfo> {
-  return invokeWithFriendlyError<RoleInfo>("save_role_slot_registry", {
+  return invokeWithFriendlyError<RoleInfo>('save_role_slot_registry', {
     req: {
       role_id: roleId,
       slot_registry: slotRegistry,
     },
-  });
+  })
 }
 
 /** 将 `author.json` → `suggested_plugin_backends` 写入当前会话后端覆盖。 */
@@ -808,12 +818,12 @@ export async function applyAuthorSuggestedPluginBackends(
   roleId: string,
   sessionId?: string | null,
 ): Promise<RoleInfo> {
-  return invokeWithFriendlyError<RoleInfo>("apply_author_suggested_plugin_backends", {
+  return invokeWithFriendlyError<RoleInfo>('apply_author_suggested_plugin_backends', {
     req: {
       role_id: roleId,
       session_id: sessionId ?? null,
     },
-  });
+  })
 }
 
 export async function getPluginResolutionDebug(
@@ -821,14 +831,14 @@ export async function getPluginResolutionDebug(
   sessionId?: string | null,
 ): Promise<PluginResolutionDebugInfo> {
   return invokeWithFriendlyError<PluginResolutionDebugInfo>(
-    "get_plugin_resolution_debug",
+    'get_plugin_resolution_debug',
     {
       req: {
         role_id: roleId,
         session_id: sessionId ?? null,
       },
     },
-  );
+  )
 }
 
 export async function switchScene(
@@ -837,34 +847,34 @@ export async function switchScene(
   /** `true`：角色与用户同场景；`false`：仅更新用户叙事场景 */
   together: boolean = true,
 ): Promise<SwitchSceneResponse> {
-  return invokeWithFriendlyError<SwitchSceneResponse>("switch_scene", {
+  return invokeWithFriendlyError<SwitchSceneResponse>('switch_scene', {
     req: { role_id: roleId, scene_id: sceneId, together },
-  });
+  })
 }
 
 export async function setUserPresenceScene(
   roleId: string,
   sceneId: string,
 ): Promise<RoleInfo> {
-  return invokeWithFriendlyError<RoleInfo>("set_user_presence_scene", {
+  return invokeWithFriendlyError<RoleInfo>('set_user_presence_scene', {
     req: { role_id: roleId, scene_id: sceneId },
-  });
+  })
 }
 
 export async function getTimeState(roleId: string): Promise<TimeStateResponse> {
-  return invokeWithFriendlyError<TimeStateResponse>("get_time_state", {
+  return invokeWithFriendlyError<TimeStateResponse>('get_time_state', {
     roleId,
-  });
+  })
 }
 
 export async function jumpTime(
   roleId: string,
   timestampMs?: number,
-  preset?: "+2h" | "+6h" | "next_morning" | "skip_idle_time",
+  preset?: '+2h' | '+6h' | 'next_morning' | 'skip_idle_time',
 ): Promise<JumpTimeResponse> {
-  return invokeWithFriendlyError<JumpTimeResponse>("jump_time", {
+  return invokeWithFriendlyError<JumpTimeResponse>('jump_time', {
     req: { role_id: roleId, timestamp_ms: timestampMs ?? null, preset: preset ?? null },
-  });
+  })
 }
 
 export async function setSceneUserRelation(
@@ -872,9 +882,9 @@ export async function setSceneUserRelation(
   sceneId: string,
   relation: string,
 ): Promise<RoleInfo> {
-  return invokeWithFriendlyError<RoleInfo>("set_scene_user_relation", {
+  return invokeWithFriendlyError<RoleInfo>('set_scene_user_relation', {
     req: { role_id: roleId, scene_id: sceneId, relation },
-  });
+  })
 }
 
 /** 移除当前场景的身份覆盖，再与 `set_user_relation` 配合可恢复「默认身份」全局状态 */
@@ -882,17 +892,17 @@ export async function clearSceneUserRelation(
   roleId: string,
   sceneId: string,
 ): Promise<RoleInfo> {
-  return invokeWithFriendlyError<RoleInfo>("clear_scene_user_relation", {
+  return invokeWithFriendlyError<RoleInfo>('clear_scene_user_relation', {
     req: { role_id: roleId, scene_id: sceneId },
-  });
+  })
 }
 
 export async function generateMonologue(roleId: string): Promise<string> {
   const res = await invokeWithFriendlyError<{ text: string }>(
-    "generate_monologue",
+    'generate_monologue',
     { req: { role_id: roleId } },
-  );
-  return res.text;
+  )
+  return res.text
 }
 
 /** `.ocpak`：ZIP 打包的 `roles/{id}/` 目录（与 `.zip` 相同容器；亦可导入已解压目录路径） */
@@ -900,23 +910,23 @@ export async function exportRolePack(
   roleId: string,
   destPath: string,
 ): Promise<void> {
-  return invokeWithFriendlyError<void>("export_role_pack_command", {
+  return invokeWithFriendlyError<void>('export_role_pack_command', {
     role_id: roleId,
     dest_path: destPath,
-  });
+  })
 }
 
 export interface RolePackPeek {
-  id: string;
-  name: string;
-  version: string;
+  id: string
+  name: string
+  version: string
 }
 
 /** 预览角色包：`srcPath` 可为 `.ocpak` / `.zip` 或已解压目录（与 `roles/{id}/` 一致）。 */
 export async function peekRolePack(srcPath: string): Promise<RolePackPeek> {
-  return invokeWithFriendlyError<RolePackPeek>("peek_role_pack_command", {
+  return invokeWithFriendlyError<RolePackPeek>('peek_role_pack_command', {
     src_path: srcPath,
-  });
+  })
 }
 
 /** 导入角色包：同上，支持压缩包或已解压目录。 */
@@ -924,20 +934,20 @@ export async function importRolePack(
   srcPath: string,
   overwrite: boolean,
 ): Promise<string> {
-  return invokeWithFriendlyError<string>("import_role_pack_command", {
+  return invokeWithFriendlyError<string>('import_role_pack_command', {
     src_path: srcPath,
     overwrite,
-  });
+  })
 }
 
 export async function exportChatLogs(params: {
-  roleId?: string;
-  allRoles?: boolean;
-  format: "json" | "txt";
-  includePluginResolutionDebug?: boolean;
-  sessionId?: string | null;
+  roleId?: string
+  allRoles?: boolean
+  format: 'json' | 'txt'
+  includePluginResolutionDebug?: boolean
+  sessionId?: string | null
 }): Promise<ExportChatLogsResponse> {
-  return invokeWithFriendlyError<ExportChatLogsResponse>("export_chat_logs", {
+  return invokeWithFriendlyError<ExportChatLogsResponse>('export_chat_logs', {
     req: {
       role_id: params.roleId ?? null,
       all_roles: params.allRoles ?? false,
@@ -945,22 +955,22 @@ export async function exportChatLogs(params: {
       include_plugin_resolution_debug: params.includePluginResolutionDebug ?? false,
       session_id: params.sessionId ?? null,
     },
-  });
+  })
 }
 
 /** 嵌入主界面插槽（`chat_toolbar` / `settings.panel`），由 bootstrap 返回。 */
 export interface PluginUiSlotInfo {
-  pluginId: string;
-  slot: string;
+  pluginId: string
+  slot: string
   /** manifest `ui_slots[].appearance_id`；空字符串为默认变体 */
-  appearanceId?: string;
+  appearanceId?: string
   /** manifest `ui_slots[].label` */
-  label?: string | null;
+  label?: string | null
   /** manifest `ui_slots[].entry`（相对插件根） */
-  entry: string;
+  entry: string
   /** manifest `vueComponent`；存在时优先原生 Vue，失败则回退 `url` iframe */
-  vueComponent?: string | null;
-  url: string;
+  vueComponent?: string | null
+  url: string
 }
 
 /** 读取目录插件根下文本文件（宿主编译 `.vue` 等）。 */
@@ -968,299 +978,299 @@ export async function readPluginAssetText(
   pluginId: string,
   rel: string,
 ): Promise<string> {
-  return invokeWithFriendlyError<string>("read_plugin_asset_text", {
+  return invokeWithFriendlyError<string>('read_plugin_asset_text', {
     pluginId,
     rel,
-  });
+  })
 }
 
 /** 目录插件启动引导（整壳 URL、已扫描插件 id、开发者模式、UI 插槽）。 */
 export interface DirectoryPluginBootstrap {
-  shellUrl?: string | null;
-  shellPluginId?: string | null;
+  shellUrl?: string | null
+  shellPluginId?: string | null
   /** 整壳 `manifest.shell.vueEntry`（相对插件根）；与 `forceIframeMode` 决定是否走宿主 Vue 整壳。 */
-  shellVueEntry?: string | null;
+  shellVueEntry?: string | null
   /** 与 `plugin_state.force_iframe_mode` 一致；为真时忽略 Vue 整壳与插槽 Vue。 */
-  forceIframeMode?: boolean;
-  pluginIds: string[];
-  developerMode: boolean;
+  forceIframeMode?: boolean
+  pluginIds: string[]
+  developerMode: boolean
   /** 当前角色下已启用插件在 manifest `bridge.events` 中声明的宿主事件名。 */
-  subscribedHostEvents: string[];
-  uiSlots: PluginUiSlotInfo[];
+  subscribedHostEvents: string[]
+  uiSlots: PluginUiSlotInfo[]
 }
 
 /** `check_plugin_updates` 单插件结果（在线检查预留）。 */
 export interface PluginUpdateInfo {
-  hasUpdate: boolean;
-  latestVersion?: string | null;
-  message?: string | null;
+  hasUpdate: boolean
+  latestVersion?: string | null
+  message?: string | null
 }
 
 export async function checkPluginUpdates(
   pluginIds: string[],
 ): Promise<Record<string, PluginUpdateInfo>> {
   return invokeWithFriendlyError<Record<string, PluginUpdateInfo>>(
-    "check_plugin_updates",
+    'check_plugin_updates',
     { plugin_ids: pluginIds },
-  );
+  )
 }
 
 export async function extractPluginZip(
   zipPath: string,
   pluginId: string,
 ): Promise<void> {
-  return invokeWithFriendlyError<void>("extract_plugin_zip", {
+  return invokeWithFriendlyError<void>('extract_plugin_zip', {
     zip_path: zipPath,
     plugin_id: pluginId,
-  });
+  })
 }
 
 /** 从 zip 安装目录插件；返回 manifest.id。 */
 export async function installPluginFromZip(zipPath: string): Promise<string> {
-  return invokeWithFriendlyError<string>("install_plugin_from_zip", {
+  return invokeWithFriendlyError<string>('install_plugin_from_zip', {
     zipPath,
-  });
+  })
 }
 
 /** 同一 `role_id` 上并发的 bootstrap 合并为单次 IPC，避免多插槽同时挂载时重复打后端。 */
 const directoryBootstrapInflight = new Map<
   string,
   Promise<DirectoryPluginBootstrap>
->();
+>()
 
 function directoryBootstrapCacheKey(roleId?: string | null): string {
-  const t = (roleId ?? "").trim();
-  return t.length > 0 ? t : "__default__";
+  const t = (roleId ?? '').trim()
+  return t.length > 0 ? t : '__default__'
 }
 
 export async function getDirectoryPluginBootstrap(
   roleId?: string | null,
 ): Promise<DirectoryPluginBootstrap> {
-  const key = directoryBootstrapCacheKey(roleId);
-  const existing = directoryBootstrapInflight.get(key);
+  const key = directoryBootstrapCacheKey(roleId)
+  const existing = directoryBootstrapInflight.get(key)
   if (existing) {
-    return existing;
+    return existing
   }
   const p = invokeWithFriendlyError<DirectoryPluginBootstrap>(
-    "get_directory_plugin_bootstrap",
+    'get_directory_plugin_bootstrap',
     { role_id: roleId ?? null },
   ).finally(() => {
     if (directoryBootstrapInflight.get(key) === p) {
-      directoryBootstrapInflight.delete(key);
+      directoryBootstrapInflight.delete(key)
     }
-  });
-  directoryBootstrapInflight.set(key, p);
-  return p;
+  })
+  directoryBootstrapInflight.set(key, p)
+  return p
 }
 
 /** 与 `app_data/plugin_state.json` 中单角色 slots 段一致（snake_case）。 */
 export interface PluginStateFile {
-  disabled_plugins: string[];
-  slot_order: Record<string, string[]>;
-  disabled_slot_contributions: Record<string, string[]>;
+  disabled_plugins: string[]
+  slot_order: Record<string, string[]>
+  disabled_slot_contributions: Record<string, string[]>
   /** `plugin_id` → `slot` → `appearance_id` */
-  slot_appearance?: Record<string, Record<string, string>>;
+  slot_appearance?: Record<string, Record<string, string>>
   /** 为真时忽略 `vueComponent`，嵌入插槽仅用 iframe。 */
-  force_iframe_mode?: boolean;
+  force_iframe_mode?: boolean
 }
 
 /** 单角色的目录插件 UI 状态（含整壳 id，与后端 `RolePluginStateDto` 一致）。 */
 export interface RolePluginState extends PluginStateFile {
-  shellPluginId: string;
+  shellPluginId: string
 }
 
 export interface PluginStateGetResponse {
-  role: RolePluginState;
+  role: RolePluginState
   /** 后端 `serde(rename_all = "camelCase")` → `globalDefaults` */
-  globalDefaults: RolePluginState;
+  globalDefaults: RolePluginState
 }
 
 /** 并发 `get_plugin_state(role_id)` 合并为单次 IPC（按 role_id 维度）。 */
-const pluginStateInflight = new Map<string, Promise<PluginStateGetResponse>>();
+const pluginStateInflight = new Map<string, Promise<PluginStateGetResponse>>()
 
 function pluginStateCacheKey(roleId: string): string {
-  const t = roleId.trim();
-  return t.length > 0 ? t : "__default__";
+  const t = roleId.trim()
+  return t.length > 0 ? t : '__default__'
 }
 
 /** 角色包根目录 `ui.json`（与编写器 / 后端 `UiConfig` 一致）。 */
 export interface SlotConfig {
-  order: string[];
-  visible: string[];
+  order: string[]
+  visible: string[]
   /** 插件 id → 默认 `appearance_id`（该槽内） */
-  appearance?: Record<string, string>;
+  appearance?: Record<string, string>
 }
 
 export interface UiConfig {
-  shell: string;
+  shell: string
   slots: {
-    chat_toolbar: SlotConfig;
-    "settings.panel": SlotConfig;
-    "role.detail": SlotConfig;
-    sidebar: SlotConfig;
-    "chat.header": SlotConfig;
-    "settings.plugins": SlotConfig;
-    "settings.advanced": SlotConfig;
-    "overlay.floating": SlotConfig;
-    "launcher.palette": SlotConfig;
-    "debug.dock": SlotConfig;
-  };
+    'chat_toolbar': SlotConfig
+    'settings.panel': SlotConfig
+    'role.detail': SlotConfig
+    'sidebar': SlotConfig
+    'chat.header': SlotConfig
+    'settings.plugins': SlotConfig
+    'settings.advanced': SlotConfig
+    'overlay.floating': SlotConfig
+    'launcher.palette': SlotConfig
+    'debug.dock': SlotConfig
+  }
 }
 
 export interface UiSlotVariantInfo {
-  slot: string;
-  appearanceId: string;
-  label?: string | null;
+  slot: string
+  appearanceId: string
+  label?: string | null
 }
 
 export interface DirectoryPluginCatalogEntry {
-  id: string;
-  version: string;
-  pluginType?: string | null;
+  id: string
+  version: string
+  pluginType?: string | null
   /** manifest 含 `uiTemplate` 或 `uiSchema.fields` */
-  hasUiSettings?: boolean;
+  hasUiSettings?: boolean
   /** manifest 是否含 `process`（可在此面板启动 JSON-RPC 子进程） */
-  hasRpcProcess: boolean;
+  hasRpcProcess: boolean
   /** manifest 是否声明 `rpcMethods`（调试面板可预填方法名） */
-  declaresRpcMethods?: boolean;
-  isShell: boolean;
-  uiSlotNames: string[];
+  declaresRpcMethods?: boolean
+  isShell: boolean
+  uiSlotNames: string[]
   /** 每条 manifest `ui_slots`（嵌入槽）一条 */
-  uiSlotVariants?: UiSlotVariantInfo[];
-  provides: string[];
-  description?: string | null;
-  author?: string | null;
-  permissions?: string[];
+  uiSlotVariants?: UiSlotVariantInfo[]
+  provides: string[]
+  description?: string | null
+  author?: string | null
+  permissions?: string[]
   /** `ok` / `missing` / `mismatch` */
-  dependencyStatus: string;
-  dependencyIssues: string[];
+  dependencyStatus: string
+  dependencyIssues: string[]
 }
 
 /** 并发 `get_directory_plugin_catalog` 合并为单次 IPC（无 role 参数，全局共用一个 in-flight）。 */
 const directoryCatalogInflight = new Map<
   string,
   Promise<DirectoryPluginCatalogEntry[]>
->();
-const DIRECTORY_CATALOG_COALESCE_KEY = "__global__";
+>()
+const DIRECTORY_CATALOG_COALESCE_KEY = '__global__'
 
 export async function getDirectoryPluginCatalog(): Promise<DirectoryPluginCatalogEntry[]> {
-  const existing = directoryCatalogInflight.get(DIRECTORY_CATALOG_COALESCE_KEY);
+  const existing = directoryCatalogInflight.get(DIRECTORY_CATALOG_COALESCE_KEY)
   if (existing) {
-    return existing;
+    return existing
   }
   const p = invokeWithFriendlyError<DirectoryPluginCatalogEntry[]>(
-    "get_directory_plugin_catalog",
+    'get_directory_plugin_catalog',
     {},
   ).finally(() => {
     if (directoryCatalogInflight.get(DIRECTORY_CATALOG_COALESCE_KEY) === p) {
-      directoryCatalogInflight.delete(DIRECTORY_CATALOG_COALESCE_KEY);
+      directoryCatalogInflight.delete(DIRECTORY_CATALOG_COALESCE_KEY)
     }
-  });
-  directoryCatalogInflight.set(DIRECTORY_CATALOG_COALESCE_KEY, p);
-  return p;
+  })
+  directoryCatalogInflight.set(DIRECTORY_CATALOG_COALESCE_KEY, p)
+  return p
 }
 
 export async function getPluginState(
   roleId: string,
 ): Promise<PluginStateGetResponse> {
-  const key = pluginStateCacheKey(roleId);
-  const existing = pluginStateInflight.get(key);
+  const key = pluginStateCacheKey(roleId)
+  const existing = pluginStateInflight.get(key)
   if (existing) {
-    return existing;
+    return existing
   }
-  const p = invokeWithFriendlyError<PluginStateGetResponse>("get_plugin_state", {
+  const p = invokeWithFriendlyError<PluginStateGetResponse>('get_plugin_state', {
     roleId,
   }).finally(() => {
     if (pluginStateInflight.get(key) === p) {
-      pluginStateInflight.delete(key);
+      pluginStateInflight.delete(key)
     }
-  });
-  pluginStateInflight.set(key, p);
-  return p;
+  })
+  pluginStateInflight.set(key, p)
+  return p
 }
 
 export async function savePluginState(
   roleId: string,
   state: RolePluginState,
 ): Promise<void> {
-  pluginStateInflight.delete(pluginStateCacheKey(roleId));
-  return invokeWithFriendlyError<void>("save_plugin_state", {
+  pluginStateInflight.delete(pluginStateCacheKey(roleId))
+  return invokeWithFriendlyError<void>('save_plugin_state', {
     roleId,
     state,
-  });
+  })
 }
 
 export async function saveGlobalPluginState(
   state: RolePluginState,
 ): Promise<void> {
-  pluginStateInflight.clear();
-  return invokeWithFriendlyError<void>("save_global_plugin_state", {
+  pluginStateInflight.clear()
+  return invokeWithFriendlyError<void>('save_global_plugin_state', {
     state,
-  });
+  })
 }
 
 /** 用磁盘上的 `ui.json` 覆盖该角色的本地插件 UI 状态。 */
 export async function resetPluginStateToRoleDefault(
   roleId: string,
 ): Promise<void> {
-  pluginStateInflight.delete(pluginStateCacheKey(roleId));
-  return invokeWithFriendlyError<void>("reset_plugin_state_to_role_default", {
+  pluginStateInflight.delete(pluginStateCacheKey(roleId))
+  return invokeWithFriendlyError<void>('reset_plugin_state_to_role_default', {
     roleId,
-  });
+  })
 }
 
 /** 网页索引中的单条插件（与 `plugin_installer::PluginIndexEntry` 一致，camelCase）。 */
 export interface PluginIndexEntryDto {
-  id: string;
-  name: string;
-  description: string;
-  author: string;
-  version: string;
-  git: string;
-  permissions: string[];
-  tags: string[];
-  category?: string | null;
-  source?: string | null;
-  changelog?: string | null;
-  dependencies: Record<string, string>;
+  id: string
+  name: string
+  description: string
+  author: string
+  version: string
+  git: string
+  permissions: string[]
+  tags: string[]
+  category?: string | null
+  source?: string | null
+  changelog?: string | null
+  dependencies: Record<string, string>
 }
 
 export interface PluginMarketEntryDto extends PluginIndexEntryDto {
-  installed: boolean;
-  installedVersion?: string | null;
-  hasUpdate: boolean;
-  missingDependencies: string[];
+  installed: boolean
+  installedVersion?: string | null
+  hasUpdate: boolean
+  missingDependencies: string[]
 }
 
 export interface PluginMarketSnapshotDto {
-  plugins: PluginMarketEntryDto[];
-  offlineMode: boolean;
-  source: string;
-  warning?: string | null;
+  plugins: PluginMarketEntryDto[]
+  offlineMode: boolean
+  source: string
+  warning?: string | null
 }
 
 export interface PendingProtocolInstallDto {
-  gitUrl: string;
+  gitUrl: string
 }
 
 export interface InstallPluginFromMarketResponseDto {
-  installedPluginId: string;
+  installedPluginId: string
 }
 
 export async function syncPluginIndexCommand(
   indexUrl?: string | null,
 ): Promise<PluginMarketSnapshotDto> {
   return invokeWithFriendlyError<PluginMarketSnapshotDto>(
-    "sync_plugin_index_command",
+    'sync_plugin_index_command',
     { indexUrl: indexUrl ?? null },
-  );
+  )
 }
 
 export async function getCachedPluginIndex(): Promise<PluginMarketSnapshotDto> {
   return invokeWithFriendlyError<PluginMarketSnapshotDto>(
-    "get_cached_plugin_index",
+    'get_cached_plugin_index',
     {},
-  );
+  )
 }
 
 export async function installPluginFromMarket(
@@ -1268,112 +1278,112 @@ export async function installPluginFromMarket(
   gitUrl?: string | null,
 ): Promise<InstallPluginFromMarketResponseDto> {
   return invokeWithFriendlyError<InstallPluginFromMarketResponseDto>(
-    "install_plugin_from_market",
+    'install_plugin_from_market',
     { pluginId, gitUrl: gitUrl ?? null },
-  );
+  )
 }
 
 export async function installPluginFromGit(
   gitUrl: string,
 ): Promise<InstallPluginFromMarketResponseDto> {
   return invokeWithFriendlyError<InstallPluginFromMarketResponseDto>(
-    "install_plugin_from_git",
+    'install_plugin_from_git',
     { req: { gitUrl } },
-  );
+  )
 }
 
 export async function updatePluginFromMarket(pluginId: string): Promise<void> {
-  return invokeWithFriendlyError<void>("update_plugin_from_market", {
+  return invokeWithFriendlyError<void>('update_plugin_from_market', {
     pluginId,
-  });
+  })
 }
 
 export async function uninstallPluginFromMarket(pluginId: string): Promise<void> {
-  return invokeWithFriendlyError<void>("uninstall_plugin_from_market", {
+  return invokeWithFriendlyError<void>('uninstall_plugin_from_market', {
     pluginId,
-  });
+  })
 }
 
 export async function batchUpdatePlugins(pluginIds: string[]): Promise<void> {
-  return invokeWithFriendlyError<void>("batch_update_plugins", { pluginIds });
+  return invokeWithFriendlyError<void>('batch_update_plugins', { pluginIds })
 }
 
 export async function batchUninstallPlugins(pluginIds: string[]): Promise<void> {
-  return invokeWithFriendlyError<void>("batch_uninstall_plugins", { pluginIds });
+  return invokeWithFriendlyError<void>('batch_uninstall_plugins', { pluginIds })
 }
 
 export async function consumePendingProtocolInstalls(): Promise<
   PendingProtocolInstallDto[]
 > {
   return invokeWithFriendlyError<PendingProtocolInstallDto[]>(
-    "consume_pending_protocol_installs",
+    'consume_pending_protocol_installs',
     {},
-  );
+  )
 }
 
 export interface UiSchemaFieldDto {
-  key: string;
-  label: string;
-  type: string;
-  required: boolean;
-  default?: unknown;
+  key: string
+  label: string
+  type: string
+  required: boolean
+  default?: unknown
 }
 
 export interface PluginUiSettingsDto {
-  uiTemplate?: string | null;
-  fields: UiSchemaFieldDto[];
-  config: Record<string, unknown>;
+  uiTemplate?: string | null
+  fields: UiSchemaFieldDto[]
+  config: Record<string, unknown>
 }
 
 export async function getPluginSettingsUi(
   pluginId: string,
 ): Promise<PluginUiSettingsDto> {
-  return invokeWithFriendlyError<PluginUiSettingsDto>("get_plugin_settings_ui", {
+  return invokeWithFriendlyError<PluginUiSettingsDto>('get_plugin_settings_ui', {
     pluginId,
-  });
+  })
 }
 
 export async function setPluginSettingsConfig(
   pluginId: string,
   config: Record<string, unknown>,
 ): Promise<void> {
-  return invokeWithFriendlyError<void>("set_plugin_settings_config", {
+  return invokeWithFriendlyError<void>('set_plugin_settings_config', {
     pluginId,
     config,
-  });
+  })
 }
 
-export type HotkeyAction =
-  | {
-      type: "openPluginSlot";
-      pluginId: string;
-      slot: string;
-      appearanceId?: string;
-    }
-  | { type: "openLauncherList" };
+export type HotkeyAction
+  = | {
+    type: 'openPluginSlot'
+    pluginId: string
+    slot: string
+    appearanceId?: string
+  }
+  | { type: 'openLauncherList' }
 
 export interface HotkeyBinding {
-  id: string;
-  accelerator: string;
-  enabled: boolean;
-  action: HotkeyAction;
+  id: string
+  accelerator: string
+  enabled: boolean
+  action: HotkeyAction
 }
 
 export interface HotkeyBindingsFile {
-  schemaVersion: number;
-  bindings: HotkeyBinding[];
+  schemaVersion: number
+  bindings: HotkeyBinding[]
 }
 
 export async function getHotkeyBindings(): Promise<HotkeyBindingsFile> {
-  return invokeWithFriendlyError<HotkeyBindingsFile>("get_hotkey_bindings", {});
+  return invokeWithFriendlyError<HotkeyBindingsFile>('get_hotkey_bindings', {})
 }
 
 export async function saveHotkeyBindings(
   file: HotkeyBindingsFile,
 ): Promise<void> {
-  return invokeWithFriendlyError<void>("save_hotkey_bindings", {
+  return invokeWithFriendlyError<void>('save_hotkey_bindings', {
     bindings: file,
-  });
+  })
 }
 
 /** B2：对指定目录插件懒启动后透传 JSON-RPC（方法名与 params 由插件定义）。 */
@@ -1382,23 +1392,23 @@ export async function directoryPluginInvoke(
   method: string,
   params: unknown = {},
 ): Promise<unknown> {
-  return invokeWithFriendlyError<unknown>("directory_plugin_invoke", {
+  return invokeWithFriendlyError<unknown>('directory_plugin_invoke', {
     req: {
       pluginId,
       method,
       params,
     },
-  });
+  })
 }
 
 /** 开发者调试：目录插件 RPC 子进程快照（与后端 `PluginProcessDebugInfo` 一致）。 */
 export interface PluginProcessDebugInfo {
-  pluginId: string;
-  pid: number;
-  rpcUrl: string;
-  startedAtMs: number;
-  cpuPercent?: number | null;
-  memoryKb?: number | null;
+  pluginId: string
+  pid: number
+  rpcUrl: string
+  startedAtMs: number
+  cpuPercent?: number | null
+  memoryKb?: number | null
 }
 
 /** 扁平 Tauri command 参数在 IPC 上为 camelCase（与 Rust 侧 `snake_case` 形参对应）。 */
@@ -1406,32 +1416,32 @@ export async function spawnPluginForTest(
   pluginId: string,
   configJson?: string | null,
 ): Promise<PluginProcessDebugInfo> {
-  return invokeWithFriendlyError<PluginProcessDebugInfo>("spawn_plugin_for_test", {
+  return invokeWithFriendlyError<PluginProcessDebugInfo>('spawn_plugin_for_test', {
     pluginId,
     configJson: configJson ?? null,
-  });
+  })
 }
 
 export async function killPluginProcess(pluginId: string): Promise<void> {
-  return invokeWithFriendlyError<void>("kill_plugin_process", { pluginId });
+  return invokeWithFriendlyError<void>('kill_plugin_process', { pluginId })
 }
 
 export async function listPluginProcesses(): Promise<PluginProcessDebugInfo[]> {
-  return invokeWithFriendlyError<PluginProcessDebugInfo[]>("list_plugin_processes", {});
+  return invokeWithFriendlyError<PluginProcessDebugInfo[]>('list_plugin_processes', {})
 }
 
 export async function getPluginLogs(
   pluginId: string,
   lines: number,
 ): Promise<string[]> {
-  return invokeWithFriendlyError<string[]>("get_plugin_logs", {
+  return invokeWithFriendlyError<string[]>('get_plugin_logs', {
     pluginId,
     lines,
-  });
+  })
 }
 
 export async function clearPluginLogs(pluginId: string): Promise<void> {
-  return invokeWithFriendlyError<void>("clear_plugin_logs", { pluginId });
+  return invokeWithFriendlyError<void>('clear_plugin_logs', { pluginId })
 }
 
 export async function testPluginMethod(
@@ -1439,68 +1449,68 @@ export async function testPluginMethod(
   method: string,
   params: unknown = {},
 ): Promise<unknown> {
-  return invokeWithFriendlyError<unknown>("test_plugin_method", {
+  return invokeWithFriendlyError<unknown>('test_plugin_method', {
     req: {
       pluginId,
       method,
       params,
     },
-  });
+  })
 }
 
 export async function discoverPluginMethods(pluginId: string): Promise<string[]> {
-  return invokeWithFriendlyError<string[]>("discover_plugin_methods", {
+  return invokeWithFriendlyError<string[]>('discover_plugin_methods', {
     pluginId,
-  });
+  })
 }
 
 export interface McpToolManifest {
-  name: string;
-  description?: string | null;
+  name: string
+  description?: string | null
 }
 
 export interface McpServerManifest {
-  id: string;
-  name: string;
-  transport?: string;
-  url?: string | null;
-  command?: string | null;
-  args?: string[];
-  tools?: McpToolManifest[];
+  id: string
+  name: string
+  transport?: string
+  url?: string | null
+  command?: string | null
+  args?: string[]
+  tools?: McpToolManifest[]
 }
 
 export interface McpToolCallResult {
-  server_id: string;
-  tool_name: string;
-  result: unknown;
+  server_id: string
+  tool_name: string
+  result: unknown
 }
 
 export interface AgentToolCallTrace {
-  server_id: string;
-  tool_name: string;
-  params: unknown;
-  result: unknown;
+  server_id: string
+  tool_name: string
+  params: unknown
+  result: unknown
 }
 
 export interface AgentDebugTrace {
-  timestamp_ms: number;
-  role_id: string;
-  session_namespace: string;
-  message: string;
-  plan: string;
-  tool_calls: AgentToolCallTrace[];
-  reply: string;
-  error?: string | null;
+  timestamp_ms: number
+  role_id: string
+  session_namespace: string
+  message: string
+  plan: string
+  tool_calls: AgentToolCallTrace[]
+  reply: string
+  error?: string | null
 }
 
 export async function listMcpServers(): Promise<McpServerManifest[]> {
-  return invokeWithFriendlyError<McpServerManifest[]>("list_mcp_servers", {});
+  return invokeWithFriendlyError<McpServerManifest[]>('list_mcp_servers', {})
 }
 
 export async function listMcpTools(serverId: string): Promise<McpToolManifest[]> {
-  return invokeWithFriendlyError<McpToolManifest[]>("list_mcp_tools", {
+  return invokeWithFriendlyError<McpToolManifest[]>('list_mcp_tools', {
     req: { server_id: serverId },
-  });
+  })
 }
 
 export async function callMcpTool(
@@ -1508,75 +1518,75 @@ export async function callMcpTool(
   toolName: string,
   params: unknown = {},
 ): Promise<McpToolCallResult> {
-  return invokeWithFriendlyError<McpToolCallResult>("call_mcp_tool", {
+  return invokeWithFriendlyError<McpToolCallResult>('call_mcp_tool', {
     req: {
       server_id: serverId,
       tool_name: toolName,
       params,
     },
-  });
+  })
 }
 
 export async function getAgentDebugTraces(): Promise<AgentDebugTrace[]> {
-  return invokeWithFriendlyError<AgentDebugTrace[]>("get_agent_debug_traces", {});
+  return invokeWithFriendlyError<AgentDebugTrace[]>('get_agent_debug_traces', {})
 }
 
 export async function clearAgentDebugTraces(): Promise<void> {
-  return invokeWithFriendlyError<void>("clear_agent_debug_traces", {});
+  return invokeWithFriendlyError<void>('clear_agent_debug_traces', {})
 }
 
 export interface HighRiskGrantsSnapshot {
-  "mcp:http": string[];
-  "mcp:stdio": string[];
-  "process:spawn": string[];
-  "network:*": string[];
+  'mcp:http': string[]
+  'mcp:stdio': string[]
+  'process:spawn': string[]
+  'network:*': string[]
 }
 
-export type HighRiskGrantKind =
-  | "mcp:http"
-  | "mcp:stdio"
-  | "process:spawn"
-  | "network:*";
+export type HighRiskGrantKind
+  = | 'mcp:http'
+    | 'mcp:stdio'
+    | 'process:spawn'
+    | 'network:*'
 
 export async function listHighRiskGrants(): Promise<HighRiskGrantsSnapshot> {
-  return invokeWithFriendlyError<HighRiskGrantsSnapshot>("list_high_risk_grants", {});
+  return invokeWithFriendlyError<HighRiskGrantsSnapshot>('list_high_risk_grants', {})
 }
 
 export async function grantHighRiskCapability(
   kind: HighRiskGrantKind,
   id: string,
 ): Promise<void> {
-  return invokeWithFriendlyError<void>("grant_high_risk_capability", {
+  return invokeWithFriendlyError<void>('grant_high_risk_capability', {
     req: { kind, id },
-  });
+  })
 }
 
 export async function revokeHighRiskCapability(
   kind: HighRiskGrantKind,
   id: string,
 ): Promise<void> {
-  return invokeWithFriendlyError<void>("revoke_high_risk_capability", {
+  return invokeWithFriendlyError<void>('revoke_high_risk_capability', {
     req: { kind, id },
-  });
+  })
 }
 
 export interface CreatePluginScaffoldRequest {
-  pluginId: string;
-  pluginName: string;
-  language: "node" | "python" | "rust";
-  pluginType: "skill" | "agent" | "module_ext";
-  baseDir?: string;
+  pluginId: string
+  pluginName: string
+  language: 'node' | 'python' | 'rust'
+  pluginType: 'skill' | 'agent' | 'module_ext'
+  baseDir?: string
 }
 
 export interface CreatePluginScaffoldResponse {
-  plugin_dir: string;
+  plugin_dir: string
 }
 
 export async function createPluginScaffold(
   req: CreatePluginScaffoldRequest,
 ): Promise<CreatePluginScaffoldResponse> {
   return invokeWithFriendlyError<CreatePluginScaffoldResponse>(
-    "create_plugin_scaffold",
+    'create_plugin_scaffold',
     {
       req: {
         plugin_id: req.pluginId,
@@ -1586,231 +1596,231 @@ export async function createPluginScaffold(
         base_dir: req.baseDir ?? null,
       },
     },
-  );
+  )
 }
 
 export interface PackPluginResponse {
-  archive_path: string;
-  signature_path: string;
-  sha256: string;
+  archive_path: string
+  signature_path: string
+  sha256: string
 }
 
 export async function packPlugin(
   pluginId: string,
   outputDir?: string | null,
 ): Promise<PackPluginResponse> {
-  return invokeWithFriendlyError<PackPluginResponse>("pack_plugin", {
+  return invokeWithFriendlyError<PackPluginResponse>('pack_plugin', {
     req: {
       plugin_id: pluginId,
       output_dir: outputDir ?? null,
     },
-  });
+  })
 }
 
 /**
  * manifest `shell.bridge.invoke` 可声明 **命令名** 或 **权限别名**（后者用于 `get_conversation` → `read:conversation` 等）。
  * 敏感命令（聊天/角色切换）还要求 **`type`: `"ocliveplugin"`** 且来源为 **`shell.entry`** HTML 或 **`shell.vueEntry`** Vue 整壳。
  */
-export type PluginBridgeManifestToken =
-  | "send_message"
-  | "read:conversation"
-  | "switch_role"
-  | "read:roles"
-  | "read:current_role"
-  | "get_role_info"
-  | "list_roles"
-  | "get_time_state"
-  | "get_directory_plugin_bootstrap"
-  | "get_conversation"
-  | "get_roles"
-  | "get_current_role"
-  | "update_memory"
-  | "delete_memory"
-  | "update_emotion"
-  | "update_event"
-  | "update_prompt"
-  | "write:memory"
-  | "write:emotion"
-  | "write:event"
-  | "write:prompt"
-  | "export_conversation"
-  | "import_role"
-  | "export:conversation"
-  | "import:role"
-  | "delete_role"
-  | "update_settings"
-  | "get_conversation_list"
-  | "delete:role"
-  | "write:settings"
-  | "read:conversations";
+export type PluginBridgeManifestToken
+  = | 'send_message'
+    | 'read:conversation'
+    | 'switch_role'
+    | 'read:roles'
+    | 'read:current_role'
+    | 'get_role_info'
+    | 'list_roles'
+    | 'get_time_state'
+    | 'get_directory_plugin_bootstrap'
+    | 'get_conversation'
+    | 'get_roles'
+    | 'get_current_role'
+    | 'update_memory'
+    | 'delete_memory'
+    | 'update_emotion'
+    | 'update_event'
+    | 'update_prompt'
+    | 'write:memory'
+    | 'write:emotion'
+    | 'write:event'
+    | 'write:prompt'
+    | 'export_conversation'
+    | 'import_role'
+    | 'export:conversation'
+    | 'import:role'
+    | 'delete_role'
+    | 'update_settings'
+    | 'get_conversation_list'
+    | 'delete:role'
+    | 'write:settings'
+    | 'read:conversations'
 
 /** 整壳 `OclivePluginBridge.invoke('update_memory', params)` */
 export interface PluginBridgeUpdateMemoryParams {
-  role_id: string;
-  content: string;
+  role_id: string
+  content: string
   /** 0–1，默认 0.5 */
-  importance?: number;
+  importance?: number
 }
 
 export interface PluginBridgeDeleteMemoryParams {
-  role_id: string;
-  memory_id: string;
+  role_id: string
+  memory_id: string
 }
 
 export interface PluginBridgeUpdateEmotionParams {
-  role_id: string;
-  emotion: string;
+  role_id: string
+  emotion: string
 }
 
 export interface PluginBridgeUpdateEventParams {
-  role_id: string;
-  event_type: string;
-  description?: string | null;
+  role_id: string
+  event_type: string
+  description?: string | null
 }
 
 /** 预留；宿主未实现动态提示词片段时返回 `not_implemented`。 */
 export interface PluginBridgeUpdatePromptParams {
-  role_id: string;
+  role_id: string
   /** 由后续宿主契约定义 */
-  fragment_key?: string;
-  content?: string;
+  fragment_key?: string
+  content?: string
 }
 
 /** `plugin_bridge_invoke` → `send_message`（字段与 {@link SendMessageRequest} 一致；可提供 `text` 代替 `user_message`） */
 export interface PluginBridgeSendMessageParams {
-  role_id: string;
-  user_message: string;
-  scene_id?: string | null;
-  session_id?: string | null;
+  role_id: string
+  user_message: string
+  scene_id?: string | null
+  session_id?: string | null
   /** 与 `user_message` 二选一 */
-  text?: string;
+  text?: string
 }
 
 export interface PluginBridgeGetConversationParams {
-  role_id: string;
-  session_id?: string | null;
-  limit?: number;
-  offset?: number;
+  role_id: string
+  session_id?: string | null
+  limit?: number
+  offset?: number
 }
 
 export interface PluginBridgeConversationTurn {
-  user_input: string;
-  bot_reply: string;
-  emotion: string;
-  scene: string | null;
-  created_at: string;
+  user_input: string
+  bot_reply: string
+  emotion: string
+  scene: string | null
+  created_at: string
 }
 
 export interface PluginBridgeGetConversationResult {
-  role_id: string;
-  session_namespace: string;
-  total: number;
-  limit: number;
-  offset: number;
-  items: PluginBridgeConversationTurn[];
+  role_id: string
+  session_namespace: string
+  total: number
+  limit: number
+  offset: number
+  items: PluginBridgeConversationTurn[]
 }
 
 /** `export_conversation` → 与 `export_chat_logs` 单角色导出一致（`format`: `json` | `txt`）。 */
 export interface PluginBridgeExportConversationParams {
-  role_id: string;
-  format?: string;
-  session_id?: string | null;
+  role_id: string
+  format?: string
+  session_id?: string | null
 }
 
 export interface PluginBridgeExportConversationResult {
-  content: string;
-  suggested_filename: string;
+  content: string
+  suggested_filename: string
 }
 
 /** `import_role`：从 `.zip` / `.ocpak` 或已解压目录导入角色包。 */
 export interface PluginBridgeImportRoleParams {
-  path: string;
+  path: string
   /** 与 `src_path` 二选一 */
-  src_path?: string;
-  overwrite?: boolean;
+  src_path?: string
+  overwrite?: boolean
 }
 
 export interface PluginBridgeImportRoleResult {
-  role_id: string;
-  ok: boolean;
+  role_id: string
+  ok: boolean
 }
 
 /** `delete_role`：删除本地角色包及相关数据。 */
 export interface PluginBridgeDeleteRoleParams {
-  role_id?: string;
-  roleId?: string;
+  role_id?: string
+  roleId?: string
 }
 
 export interface PluginBridgeDeleteRoleResult {
-  ok: boolean;
-  role_id: string;
+  ok: boolean
+  role_id: string
 }
 
 /** `update_settings`：更新允许的应用设置（整壳白名单字段）。 */
 export interface PluginBridgeUpdateSettingsParams {
   /** 与 `ui_theme` 二选一 */
-  theme?: "light" | "dark" | "system";
-  ui_theme?: "light" | "dark" | "system";
-  interaction_mode?: string;
+  theme?: 'light' | 'dark' | 'system'
+  ui_theme?: 'light' | 'dark' | 'system'
+  interaction_mode?: string
   /** 与主应用设置「远端失败自动降级内置」一致：`"0"` / `"1"`。 */
-  remote_fallback_to_builtin?: string;
-  [key: string]: unknown;
+  remote_fallback_to_builtin?: string
+  [key: string]: unknown
 }
 
 /** `get_conversation_list`：列出本地会话元数据。 */
 export interface PluginBridgeConversationListItem {
-  session_namespace: string;
-  turn_count: number;
-  last_at: string | null;
+  session_namespace: string
+  turn_count: number
+  last_at: string | null
 }
 
 export interface PluginBridgeGetConversationListResult {
-  items: PluginBridgeConversationListItem[];
+  items: PluginBridgeConversationListItem[]
 }
 
 /** 目录插件页 `OclivePluginBridge.invoke` 对应的后端入口（一般无需在主 UI 调用）。 */
 export async function pluginBridgeInvoke(req: {
-  pluginId: string;
-  assetRel: string;
-  command: string;
-  params?: unknown;
+  pluginId: string
+  assetRel: string
+  command: string
+  params?: unknown
 }): Promise<unknown> {
-  return invokeWithFriendlyError<unknown>("plugin_bridge_invoke", {
+  return invokeWithFriendlyError<unknown>('plugin_bridge_invoke', {
     req: {
       pluginId: req.pluginId,
       assetRel: req.assetRel,
       command: req.command,
       params: req.params ?? {},
     },
-  });
+  })
 }
 
 /** A2.2：环境自检（Ollama、角色根目录、应用数据可写）。 */
 export interface EnvironmentDiagnostics {
-  ollamaBaseUrl: string;
-  ollamaReachable: boolean;
-  ollamaDetail: string;
-  rolesDir: string;
-  rolesDirExists: boolean;
-  rolesDirReadable: boolean;
-  appDataDir: string;
-  appDataWritable: boolean;
-  appDataDetail: string;
+  ollamaBaseUrl: string
+  ollamaReachable: boolean
+  ollamaDetail: string
+  rolesDir: string
+  rolesDirExists: boolean
+  rolesDirReadable: boolean
+  appDataDir: string
+  appDataWritable: boolean
+  appDataDetail: string
 }
 
 export async function runEnvironmentDiagnostics(): Promise<EnvironmentDiagnostics> {
-  return invokeWithFriendlyError<EnvironmentDiagnostics>("run_environment_diagnostics");
+  return invokeWithFriendlyError<EnvironmentDiagnostics>('run_environment_diagnostics')
 }
 
 export interface RemoteFallbackAppSettings {
-  remoteFallbackToBuiltin: string;
-  remoteFallbackEnvOverrideActive: boolean;
+  remoteFallbackToBuiltin: string
+  remoteFallbackEnvOverrideActive: boolean
 }
 
 export async function getRemoteFallbackAppSettings(): Promise<RemoteFallbackAppSettings> {
-  return invokeWithFriendlyError<RemoteFallbackAppSettings>("get_remote_fallback_app_settings");
+  return invokeWithFriendlyError<RemoteFallbackAppSettings>('get_remote_fallback_app_settings')
 }
 
 export async function setRemoteFallbackToBuiltin(allow: boolean): Promise<void> {
-  return invokeWithFriendlyError<void>("set_remote_fallback_to_builtin", { allow });
+  return invokeWithFriendlyError<void>('set_remote_fallback_to_builtin', { allow })
 }

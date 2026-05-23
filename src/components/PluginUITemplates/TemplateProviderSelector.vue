@@ -1,41 +1,41 @@
 <script setup lang="ts">
-import { ref, watch } from "vue";
-import { useI18n } from "vue-i18n";
+import { ref, watch } from 'vue'
+import { useI18n } from 'vue-i18n'
 
 interface OptionItem {
-  value: string;
-  label: string;
+  value: string
+  label: string
 }
 
 interface ProviderSelectorSchema {
-  current: string;
-  options: OptionItem[];
-  hint?: string;
+  current: string
+  options: OptionItem[]
+  hint?: string
 }
 
 const props = defineProps<{
-  schema: ProviderSelectorSchema;
-  busy?: boolean;
-}>();
+  schema: ProviderSelectorSchema
+  busy?: boolean
+}>()
 
 const emit = defineEmits<{
-  submit: [{ backend: string | null }];
-}>();
+  submit: [{ backend: string | null }]
+}>()
 
-const { t } = useI18n();
-const draft = ref(props.schema.current);
+const { t } = useI18n()
+const draft = ref(props.schema.current)
 
 watch(
   () => props.schema.current,
   (v) => {
-    draft.value = v;
+    draft.value = v
   },
-);
+)
 
 function onSubmit() {
-  emit("submit", {
-    backend: draft.value === "__pack_default__" ? null : draft.value,
-  });
+  emit('submit', {
+    backend: draft.value === '__pack_default__' ? null : draft.value,
+  })
 }
 </script>
 
@@ -49,8 +49,12 @@ function onSubmit() {
         </option>
       </select>
     </label>
-    <p v-if="schema.hint" class="tpl-hint">{{ schema.hint }}</p>
-    <button type="button" class="tpl-btn" :disabled="busy" @click="onSubmit">{{ t("pluginTerms.action.apply") }}</button>
+    <p v-if="schema.hint" class="tpl-hint">
+      {{ schema.hint }}
+    </p>
+    <button type="button" class="tpl-btn" :disabled="busy" @click="onSubmit">
+      {{ t("pluginTerms.action.apply") }}
+    </button>
   </div>
 </template>
 

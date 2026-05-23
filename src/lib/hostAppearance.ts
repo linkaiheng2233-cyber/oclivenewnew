@@ -3,14 +3,14 @@
  * 供插件 `oclive.getAppearance()` 与内置事件载荷使用。
  */
 export function readHostAppearance(): {
-  effectiveTheme: "light" | "dark";
-  scale: number;
+  effectiveTheme: 'light' | 'dark'
+  scale: number
 } {
-  const dt = document.documentElement.getAttribute("data-theme");
-  const effectiveTheme: "light" | "dark" = dt === "dark" ? "dark" : "light";
+  const dt = document.documentElement.getAttribute('data-theme')
+  const effectiveTheme: 'light' | 'dark' = dt === 'dark' ? 'dark' : 'light'
   const raw = getComputedStyle(document.documentElement)
-    .getPropertyValue("--oclive-ui-scale")
-    .trim();
-  const scale = Number.parseFloat(raw) || 1;
-  return { effectiveTheme, scale };
+    .getPropertyValue('--oclive-ui-scale')
+    .trim()
+  const scale = Number.parseFloat(raw) || 1
+  return { effectiveTheme, scale }
 }

@@ -1,217 +1,234 @@
 <script setup lang="ts">
 /** 未在主应用挂载；高级管理见 `oclive plugin manage`。保留供参考。 */
-import { open } from "@tauri-apps/api/dialog";
-import { computed, defineAsyncComponent, ref, toRef, watch } from "vue";
-import { useI18n } from "vue-i18n";
-import InstalledPluginWorkspaceDetail from "../components/InstalledPluginWorkspaceDetail.vue";
+import { open } from '@tauri-apps/api/dialog'
+import { computed, defineAsyncComponent, ref, toRef, watch } from 'vue'
+import { useI18n } from 'vue-i18n'
+import InstalledPluginWorkspaceDetail from '../components/InstalledPluginWorkspaceDetail.vue'
+import PluginScaffoldWizard from '../components/PluginScaffoldWizard.vue'
+import SlotLayoutDiagram from '../components/SlotLayoutDiagram.vue'
+import { useAppToast } from '../composables/useAppToast'
+import { useModalFocusRestore } from '../composables/useModalFocusRestore'
+import { usePluginStore } from '../stores/pluginStore'
+import { useRoleStore } from '../stores/roleStore'
+import { applyAuthorSuggestedPluginBackends, packPlugin } from '../utils/tauri-api'
 
 const ArchitectureGraph = defineAsyncComponent(
-  () => import("../components/ArchitectureGraphFlow.vue"),
-);
-import PluginScaffoldWizard from "../components/PluginScaffoldWizard.vue";
-import SlotLayoutDiagram from "../components/SlotLayoutDiagram.vue";
-import { useAppToast } from "../composables/useAppToast";
-import { useModalFocusRestore } from "../composables/useModalFocusRestore";
-import { usePluginStore } from "../stores/pluginStore";
-import { useRoleStore } from "../stores/roleStore";
-import { applyAuthorSuggestedPluginBackends, packPlugin } from "../utils/tauri-api";
+  () => import('../components/ArchitectureGraphFlow.vue'),
+)
 
-const pluginStore = usePluginStore();
-const roleStore = useRoleStore();
-const { showToast } = useAppToast();
-const { t } = useI18n();
+const pluginStore = usePluginStore()
+const roleStore = useRoleStore()
+const { showToast } = useAppToast()
+const { t } = useI18n()
 
-const batchMode = ref(false);
-const batchSelected = ref<Record<string, boolean>>({});
-const scaffoldWizardVisible = ref(false);
-const pluginPackStatus = ref("");
-const selectedWorkspacePluginId = ref("");
+const batchMode = ref(false)
+const batchSelected = ref<Record<string, boolean>>({})
+const scaffoldWizardVisible = ref(false)
+const pluginPackStatus = ref('')
+const selectedWorkspacePluginId = ref('')
 
-const panelDialogRef = ref<HTMLElement | null>(null);
-const panelFirstTabRef = ref<HTMLButtonElement | null>(null);
-useModalFocusRestore(toRef(pluginStore, "panelVisible"), panelDialogRef, {
+const panelDialogRef = ref<HTMLElement | null>(null)
+const panelFirstTabRef = ref<HTMLButtonElement | null>(null)
+useModalFocusRestore(toRef(pluginStore, 'panelVisible'), panelDialogRef, {
   primary: panelFirstTabRef,
-});
+})
 
 const selectedWorkspacePlugin = computed(() =>
-  pluginStore.catalog.find((c) => c.id === selectedWorkspacePluginId.value) ?? null,
-);
+  pluginStore.catalog.find(c => c.id === selectedWorkspacePluginId.value) ?? null,
+)
 
 function selectWorkspacePlugin(id: string): void {
-  selectedWorkspacePluginId.value = id;
+  selectedWorkspacePluginId.value = id
 }
 
 function focusAdjacentCatalog(delta: number): void {
-  const ids = pluginStore.catalog.map((c) => c.id);
-  if (!ids.length) return;
-  const idx = ids.indexOf(selectedWorkspacePluginId.value);
-  const next = ids[(idx + delta + ids.length) % ids.length];
-  if (next) selectWorkspacePlugin(next);
+  const ids = pluginStore.catalog.map(c => c.id)
+  if (!ids.length)
+    return
+  const idx = ids.indexOf(selectedWorkspacePluginId.value)
+  const next = ids[(idx + delta + ids.length) % ids.length]
+  if (next)
+    selectWorkspacePlugin(next)
 }
 
 function clearBatchSelection(): void {
-  batchSelected.value = {};
+  batchSelected.value = {}
 }
 
 watch(batchMode, (v) => {
-  if (!v) clearBatchSelection();
-});
+  if (!v)
+    clearBatchSelection()
+})
 
 watch(
-  () => pluginStore.catalog.map((c) => c.id).join("\n"),
+  () => pluginStore.catalog.map(c => c.id).join('\n'),
   () => {
-    const next: Record<string, boolean> = {};
+    const next: Record<string, boolean> = {}
     for (const p of pluginStore.catalog) {
-      if (batchSelected.value[p.id]) next[p.id] = true;
+      if (batchSelected.value[p.id])
+        next[p.id] = true
     }
-    batchSelected.value = next;
-    const ids = pluginStore.catalog.map((c) => c.id);
+    batchSelected.value = next
+    const ids = pluginStore.catalog.map(c => c.id)
     if (ids.length === 0) {
-      selectedWorkspacePluginId.value = "";
-      return;
+      selectedWorkspacePluginId.value = ''
+      return
     }
     if (
-      !selectedWorkspacePluginId.value ||
-      !ids.includes(selectedWorkspacePluginId.value)
+      !selectedWorkspacePluginId.value
+      || !ids.includes(selectedWorkspacePluginId.value)
     ) {
-      selectedWorkspacePluginId.value = ids[0] ?? "";
+      selectedWorkspacePluginId.value = ids[0] ?? ''
     }
   },
   { immediate: true },
-);
+)
 
 watch(
   () => pluginStore.focusPluginId,
   (id) => {
-    if (id && pluginStore.catalog.some((c) => c.id === id)) {
-      selectedWorkspacePluginId.value = id;
-      pluginStore.clearFocusInstalledPlugin();
+    if (id && pluginStore.catalog.some(c => c.id === id)) {
+      selectedWorkspacePluginId.value = id
+      pluginStore.clearFocusInstalledPlugin()
     }
   },
-);
+)
 
 const batchSelectedCount = computed(
   () => Object.values(batchSelected.value).filter(Boolean).length,
-);
+)
 const batchSelectedIds = computed(() =>
   Object.entries(batchSelected.value)
     .filter(([, v]) => v)
     .map(([k]) => k),
-);
+)
 
 function setBatchSelected(id: string, v: boolean): void {
-  batchSelected.value = { ...batchSelected.value, [id]: v };
+  batchSelected.value = { ...batchSelected.value, [id]: v }
 }
 
 async function onBatchEnable() {
-  const ids = batchSelectedIds.value;
-  if (ids.length === 0) return;
+  const ids = batchSelectedIds.value
+  if (ids.length === 0)
+    return
   try {
-    pluginStore.batchEnablePluginIds(ids);
-    showToast("success", t("pluginWorkbench.toast.batchEnable", { count: ids.length }));
-    clearBatchSelection();
-  } catch (e) {
-    showToast("error", e instanceof Error ? e.message : String(e));
+    pluginStore.batchEnablePluginIds(ids)
+    showToast('success', t('pluginWorkbench.toast.batchEnable', { count: ids.length }))
+    clearBatchSelection()
+  }
+  catch (e) {
+    showToast('error', e instanceof Error ? e.message : String(e))
   }
 }
 
 async function onBatchDisable() {
-  const ids = batchSelectedIds.value;
-  if (ids.length === 0) return;
-  pluginStore.batchDisablePluginIds(ids);
-  showToast("success", t("pluginWorkbench.toast.batchDisable", { count: ids.length }));
-  clearBatchSelection();
+  const ids = batchSelectedIds.value
+  if (ids.length === 0)
+    return
+  pluginStore.batchDisablePluginIds(ids)
+  showToast('success', t('pluginWorkbench.toast.batchDisable', { count: ids.length }))
+  clearBatchSelection()
 }
 
 async function onGitPullWorkspacePlugin() {
-  const pid = selectedWorkspacePlugin.value?.id?.trim() ?? "";
-  if (!pid) return;
+  const pid = selectedWorkspacePlugin.value?.id?.trim() ?? ''
+  if (!pid)
+    return
   try {
-    await pluginStore.updateInstalledPluginFromGit(pid);
-    showToast("success", t("pluginWorkbench.toast.gitPulled"));
-  } catch (e) {
-    showToast("error", e instanceof Error ? e.message : String(e));
+    await pluginStore.updateInstalledPluginFromGit(pid)
+    showToast('success', t('pluginWorkbench.toast.gitPulled'))
+  }
+  catch (e) {
+    showToast('error', e instanceof Error ? e.message : String(e))
   }
 }
 
 async function onSave() {
   try {
-    await pluginStore.persist();
-    showToast("success", t("pluginWorkbench.toast.saved"));
-  } catch (e) {
-    showToast("error", e instanceof Error ? e.message : String(e));
+    await pluginStore.persist()
+    showToast('success', t('pluginWorkbench.toast.saved'))
+  }
+  catch (e) {
+    showToast('error', e instanceof Error ? e.message : String(e))
   }
 }
 
 async function onResetToPackDefault() {
   try {
-    if (pluginStore.persistScope === "global") {
-      pluginStore.setPersistScope("role");
+    if (pluginStore.persistScope === 'global') {
+      pluginStore.setPersistScope('role')
     }
-    await pluginStore.resetToRolePackDefault();
-    showToast("success", t("pluginWorkbench.toast.resetLayout"));
-  } catch (e) {
-    showToast("error", e instanceof Error ? e.message : String(e));
+    await pluginStore.resetToRolePackDefault()
+    showToast('success', t('pluginWorkbench.toast.resetLayout'))
+  }
+  catch (e) {
+    showToast('error', e instanceof Error ? e.message : String(e))
   }
 }
 
 async function onApplyAuthorSuggestedBackends() {
   try {
-    const info = await applyAuthorSuggestedPluginBackends(roleStore.currentRoleId);
-    roleStore.applyRoleInfo(info);
-    showToast("success", t("pluginWorkbench.toast.authorBackends"));
-  } catch (e) {
-    showToast("error", e instanceof Error ? e.message : String(e));
+    const info = await applyAuthorSuggestedPluginBackends(roleStore.currentRoleId)
+    roleStore.applyRoleInfo(info)
+    showToast('success', t('pluginWorkbench.toast.authorBackends'))
+  }
+  catch (e) {
+    showToast('error', e instanceof Error ? e.message : String(e))
   }
 }
 
 async function onCheckUpdates() {
   try {
-    await pluginStore.checkPluginUpdatesFromRegistry();
+    await pluginStore.checkPluginUpdatesFromRegistry()
     if (pluginStore.error) {
-      showToast("error", pluginStore.error);
-    } else {
-      showToast("success", t("pluginWorkbench.toast.checkDone"));
+      showToast('error', pluginStore.error)
     }
-  } catch (e) {
-    showToast("error", e instanceof Error ? e.message : String(e));
+    else {
+      showToast('success', t('pluginWorkbench.toast.checkDone'))
+    }
+  }
+  catch (e) {
+    showToast('error', e instanceof Error ? e.message : String(e))
   }
 }
 
 async function onUpdateFromZip(pluginId: string) {
   const path = await open({
     multiple: false,
-    filters: [{ name: t("pluginWorkbench.localZipFilterName"), extensions: ["zip"] }],
-  });
-  if (path === null || Array.isArray(path)) return;
+    filters: [{ name: t('pluginWorkbench.localZipFilterName'), extensions: ['zip'] }],
+  })
+  if (path === null || Array.isArray(path))
+    return
   try {
-    await pluginStore.installPluginFromLocalZip(pluginId, path);
-    showToast("success", t("pluginWorkbench.toast.zipUpdated"));
-  } catch (e) {
-    showToast("error", e instanceof Error ? e.message : String(e));
+    await pluginStore.installPluginFromLocalZip(pluginId, path)
+    showToast('success', t('pluginWorkbench.toast.zipUpdated'))
+  }
+  catch (e) {
+    showToast('error', e instanceof Error ? e.message : String(e))
   }
 }
 
 async function onPackSelectedPlugin(): Promise<void> {
-  const pid = selectedWorkspacePlugin.value?.id?.trim() ?? "";
+  const pid = selectedWorkspacePlugin.value?.id?.trim() ?? ''
   if (!pid) {
-    pluginPackStatus.value = t("pluginWorkbench.pack.pickFirst");
-    return;
+    pluginPackStatus.value = t('pluginWorkbench.pack.pickFirst')
+    return
   }
   try {
-    const r = await packPlugin(pid);
-    pluginPackStatus.value = t("pluginWorkbench.pack.done", { path: r.archive_path });
-  } catch (e) {
-    pluginPackStatus.value = e instanceof Error ? e.message : String(e);
+    const r = await packPlugin(pid)
+    pluginPackStatus.value = t('pluginWorkbench.pack.done', { path: r.archive_path })
+  }
+  catch (e) {
+    pluginPackStatus.value = e instanceof Error ? e.message : String(e)
   }
 }
 
 function openMarket() {
-  void pluginStore.openMarketPanel();
+  void pluginStore.openMarketPanel()
 }
 
 function onFocusPluginFromGraph(id: string) {
-  pluginStore.requestFocusInstalledPlugin(id);
+  pluginStore.requestFocusInstalledPlugin(id)
 }
 </script>
 
@@ -229,7 +246,9 @@ function onFocusPluginFromGraph(id: string) {
       <div ref="panelDialogRef" class="pm-dialog pm-dialog--studio" tabindex="-1" @click.stop>
         <header class="pm-head">
           <div class="pm-head-row">
-            <h2 class="pm-title">{{ t("pluginWorkbench.header.title") }}</h2>
+            <h2 class="pm-title">
+              {{ t("pluginWorkbench.header.title") }}
+            </h2>
             <span class="pm-studio-badge" :title="t('pluginWorkbench.header.badgeTitle')">{{
               t("pluginWorkbench.header.badge")
             }}</span>
@@ -243,8 +262,12 @@ function onFocusPluginFromGraph(id: string) {
           </button>
         </header>
 
-        <div v-if="pluginStore.loading" class="pm-muted pm-dialog-pad">{{ t("pluginWorkbench.loading") }}</div>
-        <p v-else-if="pluginStore.error" class="pm-err pm-dialog-pad">{{ pluginStore.error }}</p>
+        <div v-if="pluginStore.loading" class="pm-muted pm-dialog-pad">
+          {{ t("pluginWorkbench.loading") }}
+        </div>
+        <p v-else-if="pluginStore.error" class="pm-err pm-dialog-pad">
+          {{ pluginStore.error }}
+        </p>
 
         <template v-else>
           <div class="pm-top-actions">
@@ -279,8 +302,12 @@ function onFocusPluginFromGraph(id: string) {
 
           <div class="pm-scroll">
             <section class="pm-section">
-              <h3 class="pm-h3">{{ t("pluginWorkbench.persist.title") }}</h3>
-              <p class="pm-hint">{{ t("pluginWorkbench.persist.hint") }}</p>
+              <h3 class="pm-h3">
+                {{ t("pluginWorkbench.persist.title") }}
+              </h3>
+              <p class="pm-hint">
+                {{ t("pluginWorkbench.persist.hint") }}
+              </p>
               <div class="pm-scope-row" role="group" :aria-label="t('pluginWorkbench.persist.scopeAria')">
                 <label class="pm-scope-label">
                   <input
@@ -288,7 +315,7 @@ function onFocusPluginFromGraph(id: string) {
                     name="pm-persist-scope"
                     :checked="pluginStore.persistScope === 'role'"
                     @change="pluginStore.setPersistScope('role')"
-                  />
+                  >
                   {{ t("pluginWorkbench.persist.scopeRole") }}
                 </label>
                 <label class="pm-scope-label">
@@ -297,7 +324,7 @@ function onFocusPluginFromGraph(id: string) {
                     name="pm-persist-scope"
                     :checked="pluginStore.persistScope === 'global'"
                     @change="pluginStore.setPersistScope('global')"
-                  />
+                  >
                   {{ t("pluginWorkbench.persist.scopeGlobal") }}
                 </label>
               </div>
@@ -307,15 +334,21 @@ function onFocusPluginFromGraph(id: string) {
               v-if="roleStore.roleInfo.authorPack?.suggested_plugin_backends"
               class="pm-section"
             >
-              <h3 class="pm-h3">{{ t("pluginWorkbench.authorBackends.title") }}</h3>
-              <p class="pm-hint">{{ t("pluginWorkbench.authorBackends.hint") }}</p>
+              <h3 class="pm-h3">
+                {{ t("pluginWorkbench.authorBackends.title") }}
+              </h3>
+              <p class="pm-hint">
+                {{ t("pluginWorkbench.authorBackends.hint") }}
+              </p>
               <button type="button" class="pm-btn secondary pm-btn--sm" @click="onApplyAuthorSuggestedBackends">
                 {{ t("pluginWorkbench.authorBackends.apply") }}
               </button>
             </section>
 
             <section v-if="roleStore.roleInfo.authorPack" class="pm-section">
-              <h3 class="pm-h3">{{ t("pluginWorkbench.authorRec.title") }}</h3>
+              <h3 class="pm-h3">
+                {{ t("pluginWorkbench.authorRec.title") }}
+              </h3>
               <p v-if="roleStore.roleInfo.authorPack.summary" class="pm-author-summary">
                 {{ roleStore.roleInfo.authorPack.summary }}
               </p>
@@ -332,15 +365,19 @@ function onFocusPluginFromGraph(id: string) {
                   <span v-if="rp.optional" class="pm-muted">{{ t("pluginWorkbench.authorRec.optional") }}</span>
                 </li>
               </ul>
-              <p v-else class="pm-muted">{{ t("pluginWorkbench.authorRec.noList") }}</p>
+              <p v-else class="pm-muted">
+                {{ t("pluginWorkbench.authorRec.noList") }}
+              </p>
             </section>
 
             <section class="pm-section pm-section--catalog">
               <div class="pm-section-head">
-                <h3 class="pm-h3">{{ t("pluginWorkbench.catalog.title") }}</h3>
+                <h3 class="pm-h3">
+                  {{ t("pluginWorkbench.catalog.title") }}
+                </h3>
                 <div class="pm-section-actions">
                   <label class="pm-batch-toggle chk">
-                    <input v-model="batchMode" type="checkbox" />
+                    <input v-model="batchMode" type="checkbox">
                     {{ t("pluginWorkbench.catalog.batchToggle") }}
                   </label>
                   <button type="button" class="pm-btn secondary pm-btn--sm" @click="scaffoldWizardVisible = true">
@@ -364,7 +401,9 @@ function onFocusPluginFromGraph(id: string) {
                   </button>
                 </div>
               </div>
-              <p v-if="pluginPackStatus" class="pm-hint">{{ pluginPackStatus }}</p>
+              <p v-if="pluginPackStatus" class="pm-hint">
+                {{ pluginPackStatus }}
+              </p>
               <div
                 v-if="batchMode && batchSelectedCount > 0"
                 class="pm-batch-bar"
@@ -399,7 +438,7 @@ function onFocusPluginFromGraph(id: string) {
                           @change="
                             setBatchSelected(p.id, ($event.target as HTMLInputElement).checked)
                           "
-                        />
+                        >
                       </label>
                       <button
                         type="button"
@@ -430,7 +469,9 @@ function onFocusPluginFromGraph(id: string) {
                 <main v-if="selectedWorkspacePlugin" class="pm-wb-main">
                   <div class="pm-wb-main-head">
                     <div class="pm-wb-main-titles">
-                      <h4 class="pm-wb-main-h">{{ selectedWorkspacePlugin.id }}</h4>
+                      <h4 class="pm-wb-main-h">
+                        {{ selectedWorkspacePlugin.id }}
+                      </h4>
                       <span class="pm-wb-main-sub">{{ t("pluginWorkbench.catalog.detailSub") }}</span>
                     </div>
                     <div class="pm-wb-main-actions">

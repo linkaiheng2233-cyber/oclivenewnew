@@ -1,61 +1,66 @@
 <script setup lang="ts">
-import { computed } from "vue";
-import { useI18n } from "vue-i18n";
-
-const { t } = useI18n();
+import { computed } from 'vue'
+import { useI18n } from 'vue-i18n'
 
 const props = withDefaults(
   defineProps<{
-    role: "user" | "assistant" | "system";
-    content: string;
-    timestamp: number;
+    role: 'user' | 'assistant' | 'system'
+    content: string
+    timestamp: number
     /** 异地心声 / 占位 等气泡样式 */
-    presenceVariant?: "co_present" | "remote_stub" | "remote_life";
+    presenceVariant?: 'co_present' | 'remote_stub' | 'remote_life'
     /** 与后端 `reply_is_fallback` 一致 */
-    replyIsFallback?: boolean;
+    replyIsFallback?: boolean
     /** 非空时在正文内高亮子串（如历史检索） */
-    highlightQuery?: string;
+    highlightQuery?: string
   }>(),
-  { replyIsFallback: false, highlightQuery: "" },
-);
+  { replyIsFallback: false, highlightQuery: '' },
+)
+
+const { t } = useI18n()
 
 function contentSegments(
   content: string,
   q: string,
-): { text: string; hit: boolean }[] {
-  const needle = q.trim().toLowerCase();
-  if (!needle) return [{ text: content, hit: false }];
-  const lower = content.toLowerCase();
-  const segments: { text: string; hit: boolean }[] = [];
-  let i = 0;
+): { text: string, hit: boolean }[] {
+  const needle = q.trim().toLowerCase()
+  if (!needle)
+    return [{ text: content, hit: false }]
+  const lower = content.toLowerCase()
+  const segments: { text: string, hit: boolean }[] = []
+  let i = 0
   while (i < content.length) {
-    const j = lower.indexOf(needle, i);
+    const j = lower.indexOf(needle, i)
     if (j < 0) {
-      if (i < content.length) segments.push({ text: content.slice(i), hit: false });
-      break;
+      if (i < content.length)
+        segments.push({ text: content.slice(i), hit: false })
+      break
     }
-    if (j > i) segments.push({ text: content.slice(i, j), hit: false });
-    segments.push({ text: content.slice(j, j + needle.length), hit: true });
-    i = j + needle.length;
+    if (j > i)
+      segments.push({ text: content.slice(i, j), hit: false })
+    segments.push({ text: content.slice(j, j + needle.length), hit: true })
+    i = j + needle.length
   }
-  return segments.length ? segments : [{ text: content, hit: false }];
+  return segments.length ? segments : [{ text: content, hit: false }]
 }
 
 const highlightedSegments = computed(() =>
-  contentSegments(props.content, props.highlightQuery ?? ""),
-);
+  contentSegments(props.content, props.highlightQuery ?? ''),
+)
 
 const presenceBubbleClass = computed(() => {
-  if (props.presenceVariant === "remote_life") return "presence-remote-life";
-  if (props.presenceVariant === "remote_stub") return "presence-remote-stub";
-  return "";
-});
+  if (props.presenceVariant === 'remote_life')
+    return 'presence-remote-life'
+  if (props.presenceVariant === 'remote_stub')
+    return 'presence-remote-stub'
+  return ''
+})
 
 function hhmm(ts: number): string {
-  const d = new Date(ts);
-  const h = `${d.getHours()}`.padStart(2, "0");
-  const m = `${d.getMinutes()}`.padStart(2, "0");
-  return `${h}:${m}`;
+  const d = new Date(ts)
+  const h = `${d.getHours()}`.padStart(2, '0')
+  const m = `${d.getMinutes()}`.padStart(2, '0')
+  return `${h}:${m}`
 }
 </script>
 

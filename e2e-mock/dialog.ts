@@ -1,20 +1,21 @@
-let nextOpenPath = "C:\\mock\\plugin.zip";
+let nextOpenPath = 'C:\\mock\\plugin.zip'
 
 export function setNextOpenPath(path: string): void {
-  nextOpenPath = path;
+  nextOpenPath = path
 }
 
 export async function open(options?: {
-  multiple?: boolean;
+  multiple?: boolean
 }): Promise<string | string[] | null> {
-  if (options?.multiple) return [nextOpenPath];
-  return nextOpenPath;
+  if (options?.multiple)
+    return [nextOpenPath]
+  return nextOpenPath
 }
 
 export async function save(_options?: unknown): Promise<string | null> {
-  return "C:\\mock\\export.ocpak";
+  return 'C:\\mock\\export.ocpak'
 }
 
 export async function confirm(_message: string): Promise<boolean> {
-  return true;
+  return true
 }

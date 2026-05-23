@@ -1,65 +1,66 @@
 <script setup lang="ts">
-import { listen, type UnlistenFn } from "@tauri-apps/api/event";
-import { computed, onBeforeUnmount, onMounted, ref } from "vue";
-import { useI18n } from "vue-i18n";
-import { usePluginStore } from "../stores/pluginStore";
-import type { HotkeyAction } from "../utils/tauri-api";
+import type { UnlistenFn } from '@tauri-apps/api/event'
+import type { HotkeyAction } from '../utils/tauri-api'
+import { listen } from '@tauri-apps/api/event'
+import { computed, onBeforeUnmount, onMounted, ref } from 'vue'
+import { useI18n } from 'vue-i18n'
+import { usePluginStore } from '../stores/pluginStore'
 
-const { t } = useI18n();
-const pluginStore = usePluginStore();
+const { t } = useI18n()
+const pluginStore = usePluginStore()
 
-const launcherOpen = ref(false);
+const launcherOpen = ref(false)
 const hotkeyTarget = ref<{
-  pluginId: string;
-  slot: string;
-  appearanceId: string;
-} | null>(null);
+  pluginId: string
+  slot: string
+  appearanceId: string
+} | null>(null)
 
 const activeSlot = computed(() => {
-  const target = hotkeyTarget.value;
+  const target = hotkeyTarget.value
   if (!target) {
-    return null;
+    return null
   }
   return pluginStore.bootstrapUiSlots.find(
-    (s) =>
-      s.pluginId === target.pluginId &&
-      s.slot === target.slot &&
-      (s.appearanceId ?? "") === (target.appearanceId ?? ""),
-  );
-});
+    s =>
+      s.pluginId === target.pluginId
+      && s.slot === target.slot
+      && (s.appearanceId ?? '') === (target.appearanceId ?? ''),
+  )
+})
 
-let unlisten: UnlistenFn | undefined;
+let unlisten: UnlistenFn | undefined
 
 onMounted(async () => {
-  unlisten = await listen<{ bindingId: string; action: HotkeyAction }>(
-    "hotkey-action",
+  unlisten = await listen<{ bindingId: string, action: HotkeyAction }>(
+    'hotkey-action',
     (e) => {
-      const a = e.payload.action;
-      if (a.type === "openLauncherList") {
-        launcherOpen.value = true;
-        return;
+      const a = e.payload.action
+      if (a.type === 'openLauncherList') {
+        launcherOpen.value = true
+        return
       }
-      if (a.type === "openPluginSlot") {
+      if (a.type === 'openPluginSlot') {
         hotkeyTarget.value = {
           pluginId: a.pluginId,
           slot: a.slot,
-          appearanceId: (a.appearanceId ?? "").trim(),
-        };
+          appearanceId: (a.appearanceId ?? '').trim(),
+        }
       }
     },
-  );
-});
+  )
+})
 
 onBeforeUnmount(() => {
-  unlisten?.();
-});
+  unlisten?.()
+})
 
 function closeHotkeyPlugin(): void {
-  hotkeyTarget.value = null;
+  hotkeyTarget.value = null
 }
 
 function closeLauncher(): void {
-  launcherOpen.value = false;
+  launcherOpen.value = false
 }
 </script>
 
@@ -136,7 +137,9 @@ function closeLauncher(): void {
             }}</span>
           </li>
         </ul>
-        <p v-if="!pluginStore.catalog.length" class="hk-muted">{{ t("app.hotkeyHost.noPlugins") }}</p>
+        <p v-if="!pluginStore.catalog.length" class="hk-muted">
+          {{ t("app.hotkeyHost.noPlugins") }}
+        </p>
       </div>
     </div>
   </Teleport>

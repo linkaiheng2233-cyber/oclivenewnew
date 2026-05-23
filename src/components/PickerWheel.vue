@@ -1,106 +1,110 @@
 <script setup lang="ts">
-import { nextTick, onBeforeUnmount, onMounted, ref, watch } from "vue";
+import { nextTick, onBeforeUnmount, onMounted, ref, watch } from 'vue'
 
-export type PickerWheelItem = { value: number; label: string };
+export interface PickerWheelItem { value: number, label: string }
 
 const props = defineProps<{
-  modelValue: number;
-  items: readonly PickerWheelItem[];
-}>();
+  modelValue: number
+  items: readonly PickerWheelItem[]
+}>()
 
-const emit = defineEmits<{ "update:modelValue": [number] }>();
+const emit = defineEmits<{ 'update:modelValue': [number] }>()
 
-const ITEM_H = 40;
-const viewportRef = ref<HTMLDivElement | null>(null);
-const scrollRef = ref<HTMLDivElement | null>(null);
+const ITEM_H = 40
+const viewportRef = ref<HTMLDivElement | null>(null)
+const scrollRef = ref<HTMLDivElement | null>(null)
 
-const pad = ref(0);
+const pad = ref(0)
 
 function indexOfValue(v: number): number {
-  const i = props.items.findIndex((x) => x.value === v);
-  return i >= 0 ? i : 0;
+  const i = props.items.findIndex(x => x.value === v)
+  return i >= 0 ? i : 0
 }
 
 function setPadFromViewport() {
-  const h = viewportRef.value?.clientHeight ?? 200;
-  pad.value = Math.max(0, (h - ITEM_H) / 2);
+  const h = viewportRef.value?.clientHeight ?? 200
+  pad.value = Math.max(0, (h - ITEM_H) / 2)
 }
 
-function scrollToIndex(i: number, behavior: ScrollBehavior = "auto") {
-  const el = scrollRef.value;
-  if (!el || props.items.length === 0) return;
-  const clamped = Math.max(0, Math.min(props.items.length - 1, i));
-  el.scrollTo({ top: clamped * ITEM_H, behavior });
+function scrollToIndex(i: number, behavior: ScrollBehavior = 'auto') {
+  const el = scrollRef.value
+  if (!el || props.items.length === 0)
+    return
+  const clamped = Math.max(0, Math.min(props.items.length - 1, i))
+  el.scrollTo({ top: clamped * ITEM_H, behavior })
 }
 
-let debounceTimer: ReturnType<typeof setTimeout> | null = null;
+let debounceTimer: ReturnType<typeof setTimeout> | null = null
 
 function onScroll() {
-  if (debounceTimer) clearTimeout(debounceTimer);
-  debounceTimer = setTimeout(snapFromScroll, 48);
+  if (debounceTimer)
+    clearTimeout(debounceTimer)
+  debounceTimer = setTimeout(snapFromScroll, 48)
 }
 
 function snapFromScroll() {
-  debounceTimer = null;
-  const el = scrollRef.value;
-  if (!el || props.items.length === 0) return;
-  const idx = Math.round(el.scrollTop / ITEM_H);
-  const clamped = Math.max(0, Math.min(props.items.length - 1, idx));
-  const nextTop = clamped * ITEM_H;
+  debounceTimer = null
+  const el = scrollRef.value
+  if (!el || props.items.length === 0)
+    return
+  const idx = Math.round(el.scrollTop / ITEM_H)
+  const clamped = Math.max(0, Math.min(props.items.length - 1, idx))
+  const nextTop = clamped * ITEM_H
   if (Math.abs(el.scrollTop - nextTop) > 0.5) {
-    el.scrollTo({ top: nextTop, behavior: "smooth" });
+    el.scrollTo({ top: nextTop, behavior: 'smooth' })
   }
-  const val = props.items[clamped]?.value;
+  const val = props.items[clamped]?.value
   if (val !== undefined && val !== props.modelValue) {
-    emit("update:modelValue", val);
+    emit('update:modelValue', val)
   }
 }
 
 function onScrollEnd() {
   if (debounceTimer) {
-    clearTimeout(debounceTimer);
-    debounceTimer = null;
+    clearTimeout(debounceTimer)
+    debounceTimer = null
   }
-  snapFromScroll();
+  snapFromScroll()
 }
 
 watch(
   () => props.modelValue,
   (v) => {
-    const i = indexOfValue(v);
-    nextTick(() => scrollToIndex(i, "auto"));
+    const i = indexOfValue(v)
+    nextTick(() => scrollToIndex(i, 'auto'))
   },
-);
+)
 
 watch(
   () => props.items,
   () => {
     nextTick(() => {
-      setPadFromViewport();
-      const i = indexOfValue(props.modelValue);
-      scrollToIndex(i, "auto");
-    });
+      setPadFromViewport()
+      const i = indexOfValue(props.modelValue)
+      scrollToIndex(i, 'auto')
+    })
   },
   { deep: true },
-);
+)
 
 onMounted(() => {
   nextTick(() => {
-    setPadFromViewport();
-    scrollToIndex(indexOfValue(props.modelValue), "auto");
-  });
-});
+    setPadFromViewport()
+    scrollToIndex(indexOfValue(props.modelValue), 'auto')
+  })
+})
 
 function syncScrollPosition() {
-  setPadFromViewport();
-  scrollToIndex(indexOfValue(props.modelValue), "auto");
+  setPadFromViewport()
+  scrollToIndex(indexOfValue(props.modelValue), 'auto')
 }
 
-defineExpose({ syncScrollPosition });
+defineExpose({ syncScrollPosition })
 
 onBeforeUnmount(() => {
-  if (debounceTimer) clearTimeout(debounceTimer);
-});
+  if (debounceTimer)
+    clearTimeout(debounceTimer)
+})
 </script>
 
 <template>

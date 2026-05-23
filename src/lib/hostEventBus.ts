@@ -1,31 +1,31 @@
-import mitt from "mitt";
+import mitt from 'mitt'
 
-const bus = mitt<Record<string, unknown>>();
+const bus = mitt<Record<string, unknown>>()
 /** `null`：尚未同步，不拦截（仅启动极短窗口）；同步后为空集表示无任何订阅。 */
-let subscribed: Set<string> | null = null;
-let subscribedSignature = "";
+let subscribed: Set<string> | null = null
+let subscribedSignature = ''
 
 export function setHostEventSubscribedEvents(events: string[]): void {
-  const normalized = events.map((e) => e.trim()).filter(Boolean);
-  const nextSignature = normalized.join("\u001f");
+  const normalized = events.map(e => e.trim()).filter(Boolean)
+  const nextSignature = normalized.join('\u001F')
   if (subscribed !== null && nextSignature === subscribedSignature) {
-    return;
+    return
   }
-  subscribed = new Set(normalized);
-  subscribedSignature = nextSignature;
+  subscribed = new Set(normalized)
+  subscribedSignature = nextSignature
 }
 
 /** 测试或热更新用：恢复为未同步状态。 */
 export function clearHostEventSubscribedEvents(): void {
-  subscribed = null;
-  subscribedSignature = "";
+  subscribed = null
+  subscribedSignature = ''
 }
 
 function shouldEmitBuiltin(type: string): boolean {
   if (subscribed === null) {
-    return true;
+    return true
   }
-  return subscribed.has(type);
+  return subscribed.has(type)
 }
 
 /**
@@ -40,11 +40,11 @@ export const hostEventBus = {
   off: bus.off.bind(bus),
   emitBuiltin(type: string, event?: unknown) {
     if (!shouldEmitBuiltin(type)) {
-      return;
+      return
     }
-    bus.emit(type, event);
+    bus.emit(type, event)
   },
   emit(type: string, event?: unknown) {
-    bus.emit(type, event);
+    bus.emit(type, event)
   },
-};
+}

@@ -1,16 +1,16 @@
-import { invoke } from "@tauri-apps/api/tauri";
-import { createApp } from "vue";
-import { createPinia } from "pinia";
-import DirectoryShellApp from "../DirectoryShellApp.vue";
-import { i18n } from "../i18n/index";
-import type { DirectoryPluginBootstrap } from "./tauri-api";
-import { readPluginAssetText } from "./tauri-api";
+import type { DirectoryPluginBootstrap } from './tauri-api'
+import { invoke } from '@tauri-apps/api/tauri'
+import { createPinia } from 'pinia'
+import { createApp } from 'vue'
+import DirectoryShellApp from '../DirectoryShellApp.vue'
+import { i18n } from '../i18n/index'
+import { readPluginAssetText } from './tauri-api'
 
 export function isTauriRuntime(): boolean {
   return (
-    typeof window !== "undefined" &&
-    Object.prototype.hasOwnProperty.call(window, "__TAURI_INTERNALS__")
-  );
+    typeof window !== 'undefined'
+    && Object.hasOwn(window, '__TAURI_INTERNALS__')
+  )
 }
 
 /**
@@ -20,84 +20,88 @@ export function isTauriRuntime(): boolean {
  * @returns 若已处理整壳（Vue 已挂载或已发起 HTML 跳转）则为 true，调用方不应再挂载应用根组件。
  */
 export async function tryReplaceWithDirectoryShell(): Promise<boolean> {
-  if (!isTauriRuntime()) return false;
+  if (!isTauriRuntime())
+    return false
   try {
-    const boot = await invoke<DirectoryPluginBootstrap>("get_directory_plugin_bootstrap", {
+    const boot = await invoke<DirectoryPluginBootstrap>('get_directory_plugin_bootstrap', {
       role_id: null,
-    });
-    const shellUrl =
-      typeof boot?.shellUrl === "string" && boot.shellUrl.length > 0
+    })
+    const shellUrl
+      = typeof boot?.shellUrl === 'string' && boot.shellUrl.length > 0
         ? boot.shellUrl
-        : null;
-    const shellPid =
-      typeof boot?.shellPluginId === "string" && boot.shellPluginId.trim().length > 0
+        : null
+    const shellPid
+      = typeof boot?.shellPluginId === 'string' && boot.shellPluginId.trim().length > 0
         ? boot.shellPluginId.trim()
-        : null;
+        : null
     if (!shellUrl || !shellPid) {
-      return false;
+      return false
     }
 
-    const forceIframe = boot.forceIframeMode === true;
-    const vueEntry =
-      typeof boot.shellVueEntry === "string" ? boot.shellVueEntry.trim() : "";
+    const forceIframe = boot.forceIframeMode === true
+    const vueEntry
+      = typeof boot.shellVueEntry === 'string' ? boot.shellVueEntry.trim() : ''
 
     function redirectShellError(reason: string): void {
-      const u = new URL("plugin-shell-error.html", window.location.href);
-      u.searchParams.set("reason", reason);
-      window.location.replace(u.toString());
+      const u = new URL('plugin-shell-error.html', window.location.href)
+      u.searchParams.set('reason', reason)
+      window.location.replace(u.toString())
     }
 
     async function shellHtmlReachable(url: string): Promise<boolean> {
       try {
-        const r = await fetch(url, { method: "GET", cache: "no-store" });
-        return r.ok;
-      } catch {
-        return false;
+        const r = await fetch(url, { method: 'GET', cache: 'no-store' })
+        return r.ok
+      }
+      catch {
+        return false
       }
     }
 
     if (!forceIframe && vueEntry.length > 0) {
       try {
-        await readPluginAssetText(shellPid, vueEntry);
-      } catch {
+        await readPluginAssetText(shellPid, vueEntry)
+      }
+      catch {
         redirectShellError(
           encodeURIComponent(
-            String(i18n.global.t("devTools.directoryShell.shellVueReadError", { path: vueEntry })),
+            String(i18n.global.t('devTools.directoryShell.shellVueReadError', { path: vueEntry })),
           ),
-        );
-        return true;
+        )
+        return true
       }
-      const pinia = createPinia();
+      const pinia = createPinia()
       const app = createApp(DirectoryShellApp, {
         pluginId: shellPid,
         vueEntry,
-        bridgeAssetRel: vueEntry.replace(/\\/g, "/"),
+        bridgeAssetRel: vueEntry.replace(/\\/g, '/'),
         htmlFallbackUrl: shellUrl,
         developerMode: boot.developerMode === true,
-      });
-      app.use(pinia);
-      app.use(i18n);
-      app.mount("#app");
-      return true;
+      })
+      app.use(pinia)
+      app.use(i18n)
+      app.mount('#app')
+      return true
     }
 
-    const here = window.location.href.split("#")[0];
-    const target = shellUrl.split("#")[0];
+    const here = window.location.href.split('#')[0]
+    const target = shellUrl.split('#')[0]
     if (here !== target) {
-      const ok = await shellHtmlReachable(shellUrl);
+      const ok = await shellHtmlReachable(shellUrl)
       if (!ok) {
         redirectShellError(
           encodeURIComponent(
-            String(i18n.global.t("devTools.directoryShell.shellHtmlLoadError")),
+            String(i18n.global.t('devTools.directoryShell.shellHtmlLoadError')),
           ),
-        );
-        return true;
+        )
+        return true
       }
-      window.location.replace(shellUrl);
-      return true;
+      window.location.replace(shellUrl)
+      return true
     }
-  } catch (e) {
-    console.warn("[oclive] directory shell bootstrap skipped", e);
   }
-  return false;
+  catch (e) {
+    console.warn('[oclive] directory shell bootstrap skipped', e)
+  }
+  return false
 }

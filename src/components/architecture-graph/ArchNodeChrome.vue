@@ -1,14 +1,14 @@
 <script setup lang="ts">
-import { NodeResizer } from "@vue-flow/node-resizer";
+import { NodeResizer } from '@vue-flow/node-resizer'
 
 defineProps({
   selected: { type: Boolean, default: false },
-  variant: { type: String, default: "default" },
+  variant: { type: String, default: 'default' },
   minWidth: { type: Number, default: 160 },
   minHeight: { type: Number, default: 72 },
   maxWidth: { type: Number, default: 400 },
   maxHeight: { type: Number, default: 320 },
-});
+})
 </script>
 
 <template>

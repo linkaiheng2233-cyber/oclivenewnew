@@ -1,45 +1,54 @@
 <script setup lang="ts">
-import { computed, ref } from "vue";
-import { useI18n } from "vue-i18n";
+import { computed, ref } from 'vue'
+import { useI18n } from 'vue-i18n'
 
 const props = defineProps<{
-  lines: string[];
-}>();
+  lines: string[]
+}>()
 
 const emit = defineEmits<{
-  clear: [];
-  export: [];
-}>();
+  clear: []
+  export: []
+}>()
 
-const { t } = useI18n();
-const q = ref("");
+const { t } = useI18n()
+const q = ref('')
 
 const filtered = computed(() => {
-  const needle = q.value.trim().toLowerCase();
-  if (!needle) return props.lines;
-  return props.lines.filter((l) => l.toLowerCase().includes(needle));
-});
+  const needle = q.value.trim().toLowerCase()
+  if (!needle)
+    return props.lines
+  return props.lines.filter(l => l.toLowerCase().includes(needle))
+})
 
 function lineClass(line: string): string {
-  const u = line.toUpperCase();
-  if (u.includes("[STDERR]") || u.includes("ERROR")) return "is-err";
-  if (u.includes("WARN")) return "is-warn";
-  return "";
+  const u = line.toUpperCase()
+  if (u.includes('[STDERR]') || u.includes('ERROR'))
+    return 'is-err'
+  if (u.includes('WARN'))
+    return 'is-warn'
+  return ''
 }
 </script>
 
 <template>
   <div class="pm-dbg-log">
     <div class="pm-dbg-log-head">
-      <input v-model="q" class="pm-dbg-filter" type="search" :placeholder="t('devTools.logViewer.filterPh')" />
-      <button type="button" class="pm-dbg-btn secondary" @click="emit('clear')">{{ t("devTools.logViewer.clear") }}</button>
-      <button type="button" class="pm-dbg-btn secondary" @click="emit('export')">{{ t("devTools.logViewer.export") }}</button>
+      <input v-model="q" class="pm-dbg-filter" type="search" :placeholder="t('devTools.logViewer.filterPh')">
+      <button type="button" class="pm-dbg-btn secondary" @click="emit('clear')">
+        {{ t("devTools.logViewer.clear") }}
+      </button>
+      <button type="button" class="pm-dbg-btn secondary" @click="emit('export')">
+        {{ t("devTools.logViewer.export") }}
+      </button>
     </div>
     <div class="pm-dbg-log-body" role="log" aria-live="polite">
       <div v-for="(line, i) in filtered" :key="`${i}-${line.slice(0, 24)}`" class="pm-dbg-line" :class="lineClass(line)">
         {{ line }}
       </div>
-      <p v-if="!filtered.length" class="pm-dbg-empty">{{ t("devTools.logViewer.empty") }}</p>
+      <p v-if="!filtered.length" class="pm-dbg-empty">
+        {{ t("devTools.logViewer.empty") }}
+      </p>
     </div>
   </div>
 </template>

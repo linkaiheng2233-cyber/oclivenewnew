@@ -1,23 +1,23 @@
 <script setup lang="ts">
-import { ref } from "vue";
-import { useI18n } from "vue-i18n";
-import { save } from "@tauri-apps/api/dialog";
-import { writeTextFile } from "@tauri-apps/api/fs";
-import { exportChatLogs } from "../utils/tauri-api";
-import { downloadTextFile } from "../utils/download";
+import { save } from '@tauri-apps/api/dialog'
+import { writeTextFile } from '@tauri-apps/api/fs'
+import { ref } from 'vue'
+import { useI18n } from 'vue-i18n'
+import { downloadTextFile } from '../utils/download'
+import { exportChatLogs } from '../utils/tauri-api'
 
-const props = defineProps<{ roleId: string }>();
+const props = defineProps<{ roleId: string }>()
 const emit = defineEmits<{
-  notify: [{ type: "success" | "error" | "info"; message: string }];
-}>();
+  notify: [{ type: 'success' | 'error' | 'info', message: string }]
+}>()
 
-const { t } = useI18n();
-const exportAllRoles = ref(false);
-const includePluginDebug = ref(false);
-const busy = ref(false);
+const { t } = useI18n()
+const exportAllRoles = ref(false)
+const includePluginDebug = ref(false)
+const busy = ref(false)
 
-async function runExport(format: "json" | "txt") {
-  busy.value = true;
+async function runExport(format: 'json' | 'txt') {
+  busy.value = true
   try {
     const res = await exportChatLogs({
       roleId: exportAllRoles.value ? undefined : props.roleId,
@@ -25,45 +25,48 @@ async function runExport(format: "json" | "txt") {
       format,
       includePluginResolutionDebug:
         includePluginDebug.value && !exportAllRoles.value,
-    });
-    const filters =
-      format === "json"
-        ? [{ name: "JSON", extensions: ["json"] }]
-        : [{ name: "Text", extensions: ["txt"] }];
+    })
+    const filters
+      = format === 'json'
+        ? [{ name: 'JSON', extensions: ['json'] }]
+        : [{ name: 'Text', extensions: ['txt'] }]
 
-    let path: string | null = null;
+    let path: string | null = null
     try {
       path = await save({
         defaultPath: res.suggested_filename,
         filters,
-      });
-    } catch {
-      const mime = format === "json" ? "application/json" : "text/plain";
-      downloadTextFile(res.suggested_filename, res.content, mime);
-      emit("notify", {
-        type: "success",
-        message: t("editor.chatExport.downloaded", { name: res.suggested_filename }),
-      });
-      return;
+      })
+    }
+    catch {
+      const mime = format === 'json' ? 'application/json' : 'text/plain'
+      downloadTextFile(res.suggested_filename, res.content, mime)
+      emit('notify', {
+        type: 'success',
+        message: t('editor.chatExport.downloaded', { name: res.suggested_filename }),
+      })
+      return
     }
 
     if (path) {
-      await writeTextFile(path, res.content);
-      emit("notify", {
-        type: "success",
-        message: t("editor.chatExport.success"),
-      });
-      return;
+      await writeTextFile(path, res.content)
+      emit('notify', {
+        type: 'success',
+        message: t('editor.chatExport.success'),
+      })
+      return
     }
 
-    emit("notify", { type: "info", message: t("editor.chatExport.saveCancelled") });
-  } catch (e) {
-    emit("notify", {
-      type: "error",
+    emit('notify', { type: 'info', message: t('editor.chatExport.saveCancelled') })
+  }
+  catch (e) {
+    emit('notify', {
+      type: 'error',
       message: e instanceof Error ? e.message : String(e),
-    });
-  } finally {
-    busy.value = false;
+    })
+  }
+  finally {
+    busy.value = false
   }
 }
 </script>
@@ -71,7 +74,7 @@ async function runExport(format: "json" | "txt") {
 <template>
   <div class="export-bar">
     <label class="chk">
-      <input v-model="exportAllRoles" type="checkbox" :disabled="busy" />
+      <input v-model="exportAllRoles" type="checkbox" :disabled="busy">
       {{ t("editor.chatExport.allRoles") }}
     </label>
     <label class="chk">
@@ -79,7 +82,7 @@ async function runExport(format: "json" | "txt") {
         v-model="includePluginDebug"
         type="checkbox"
         :disabled="busy || exportAllRoles"
-      />
+      >
       {{ t("editor.chatExport.pluginDebug") }}
     </label>
     <button

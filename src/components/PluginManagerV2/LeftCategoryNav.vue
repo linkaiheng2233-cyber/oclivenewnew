@@ -1,51 +1,56 @@
 <script setup lang="ts">
-import { computed, ref } from "vue";
-import { useI18n } from "vue-i18n";
-import type { PluginV2CategoryItem } from "../../composables/usePluginManagerV2";
-
-const { t } = useI18n();
+import type { PluginV2CategoryItem } from '../../composables/usePluginManagerV2'
+import { computed, ref } from 'vue'
+import { useI18n } from 'vue-i18n'
 
 const props = defineProps<{
-  categories: PluginV2CategoryItem[];
-  modelValue: string;
-}>();
+  categories: PluginV2CategoryItem[]
+  modelValue: string
+}>()
 
 const emit = defineEmits<{
-  "update:modelValue": [value: string];
-}>();
+  'update:modelValue': [value: string]
+}>()
+
+const { t } = useI18n()
 
 const openFolders = ref({
   module: true,
   type: true,
   status: true,
-});
+})
 
-const allRow = computed(() => props.categories.find((c) => c.id === "all") ?? null);
+const allRow = computed(() => props.categories.find(c => c.id === 'all') ?? null)
 
 const moduleRows = computed(() =>
-  props.categories.filter((c) => c.id.startsWith("module:")),
-);
-const typeRows = computed(() => props.categories.filter((c) => c.id.startsWith("type:")));
+  props.categories.filter(c => c.id.startsWith('module:')),
+)
+const typeRows = computed(() => props.categories.filter(c => c.id.startsWith('type:')))
 const statusRows = computed(() =>
-  props.categories.filter((c) => c.id.startsWith("status:")),
-);
+  props.categories.filter(c => c.id.startsWith('status:')),
+)
 
 function filterFileName(row: PluginV2CategoryItem): string {
-  const i = row.id.indexOf(":");
-  if (i < 0) return `${row.id}.filter`;
-  return `${row.id.slice(i + 1)}.filter`;
+  const i = row.id.indexOf(':')
+  if (i < 0)
+    return `${row.id}.filter`
+  return `${row.id.slice(i + 1)}.filter`
 }
 
 function toggleFolder(key: keyof typeof openFolders.value) {
-  openFolders.value[key] = !openFolders.value[key];
+  openFolders.value[key] = !openFolders.value[key]
 }
 </script>
 
 <template>
   <aside class="ws-explorer" :aria-label="t('pluginManager.nav.explorerAria')">
     <header class="ws-head">
-      <div class="ws-head-title">{{ t("pluginManager.nav.title") }}</div>
-      <div class="ws-head-sub">{{ t("pluginManager.nav.subtitle") }}</div>
+      <div class="ws-head-title">
+        {{ t("pluginManager.nav.title") }}
+      </div>
+      <div class="ws-head-sub">
+        {{ t("pluginManager.nav.subtitle") }}
+      </div>
     </header>
 
     <div class="ws-root" :title="t('pluginManager.nav.rootTooltip')">

@@ -1,24 +1,24 @@
 <script setup lang="ts">
-import { computed, ref } from "vue";
-import { useI18n } from "vue-i18n";
-import { useModalFocusRestore } from "../composables/useModalFocusRestore";
-import type { PluginSlotSelectorState } from "../composables/usePluginSlotEnable";
+import type { PluginSlotSelectorState } from '../composables/usePluginSlotEnable'
+import { computed, ref } from 'vue'
+import { useI18n } from 'vue-i18n'
+import { useModalFocusRestore } from '../composables/useModalFocusRestore'
 
 const props = defineProps<{
-  state: PluginSlotSelectorState;
-  busy?: boolean;
-}>();
+  state: PluginSlotSelectorState
+  busy?: boolean
+}>()
 
 const emit = defineEmits<{
-  close: [];
-  confirm: [];
-  toggleSlot: [slotId: string];
-}>();
+  close: []
+  confirm: []
+  toggleSlot: [slotId: string]
+}>()
 
-const { t } = useI18n();
-const dialogRef = ref<HTMLElement | null>(null);
-const visible = computed(() => props.state.open);
-useModalFocusRestore(visible, dialogRef);
+const { t } = useI18n()
+const dialogRef = ref<HTMLElement | null>(null)
+const visible = computed(() => props.state.open)
+useModalFocusRestore(visible, dialogRef)
 </script>
 
 <template>
@@ -39,7 +39,9 @@ useModalFocusRestore(visible, dialogRef);
         @click.stop
         @keydown.escape.stop="emit('close')"
       >
-        <h3 class="pss-title">{{ t("simplePluginManager.slotSelector.title") }}</h3>
+        <h3 class="pss-title">
+          {{ t("simplePluginManager.slotSelector.title") }}
+        </h3>
         <p class="pss-lead">
           {{ t("simplePluginManager.slotSelector.lead", { id: state.pluginTitle }) }}
         </p>
@@ -51,7 +53,7 @@ useModalFocusRestore(visible, dialogRef);
                 :checked="state.selected.includes(slot.id)"
                 :disabled="busy"
                 @change="emit('toggleSlot', slot.id)"
-              />
+              >
               <span>{{ slot.label }}</span>
               <span class="pss-id">{{ slot.id }}</span>
             </label>

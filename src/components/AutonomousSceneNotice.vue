@@ -1,17 +1,17 @@
 <script setup lang="ts">
-import { useI18n } from "vue-i18n";
+import { useI18n } from 'vue-i18n'
 
 defineProps<{
-  visible: boolean;
-  fromLabel: string;
-  toLabel: string;
-}>();
-
-const { t } = useI18n();
+  visible: boolean
+  fromLabel: string
+  toLabel: string
+}>()
 
 const emit = defineEmits<{
-  dismiss: [];
-}>();
+  dismiss: []
+}>()
+
+const { t } = useI18n()
 </script>
 
 <template>

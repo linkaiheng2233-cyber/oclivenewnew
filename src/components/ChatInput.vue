@@ -1,69 +1,72 @@
 <script setup lang="ts">
-import { computed, defineExpose, nextTick, onBeforeUnmount, onMounted, ref } from "vue";
-import { useI18n } from "vue-i18n";
-import { hostEventBus } from "../lib/hostEventBus";
-import { useRoleStore } from "../stores/roleStore";
+import { computed, defineExpose, nextTick, onBeforeUnmount, onMounted, ref } from 'vue'
+import { useI18n } from 'vue-i18n'
+import { hostEventBus } from '../lib/hostEventBus'
+import { useRoleStore } from '../stores/roleStore'
 
-const props = defineProps<{ loading: boolean }>();
-
-const { t } = useI18n();
-const roleStore = useRoleStore();
+const props = defineProps<{ loading: boolean }>()
 
 const emit = defineEmits<{
-  send: [payload: { content: string }];
-}>();
+  send: [payload: { content: string }]
+}>()
+const { t } = useI18n()
+const roleStore = useRoleStore()
 
-const text = ref("");
-const textAreaEl = ref<HTMLTextAreaElement | null>(null);
+const text = ref('')
+const textAreaEl = ref<HTMLTextAreaElement | null>(null)
 
 const placeholder = computed(() =>
-  t("common.chatPlaceholder", {
-    name: roleStore.roleInfo.name?.trim() || t("app.defaultRoleName"),
+  t('common.chatPlaceholder', {
+    name: roleStore.roleInfo.name?.trim() || t('app.defaultRoleName'),
   }),
-);
+)
 
 function onSetDraftInput(payload: unknown): void {
-  const raw = (payload as { text?: string } | null)?.text;
-  const next = typeof raw === "string" ? raw.trim() : "";
-  if (!next) return;
-  text.value = next;
+  const raw = (payload as { text?: string } | null)?.text
+  const next = typeof raw === 'string' ? raw.trim() : ''
+  if (!next)
+    return
+  text.value = next
   void nextTick(() => {
-    textAreaEl.value?.focus();
-    textAreaEl.value?.setSelectionRange(next.length, next.length);
-  });
+    textAreaEl.value?.focus()
+    textAreaEl.value?.setSelectionRange(next.length, next.length)
+  })
 }
 
 function focusInput(): void {
   void nextTick(() => {
-    textAreaEl.value?.focus();
-  });
+    textAreaEl.value?.focus()
+  })
 }
 
 function submit() {
-  const value = text.value.trim();
-  if (!value || props.loading) return;
-  emit("send", { content: value });
-  text.value = "";
-  focusInput();
+  const value = text.value.trim()
+  if (!value || props.loading)
+    return
+  emit('send', { content: value })
+  text.value = ''
+  focusInput()
 }
 
-defineExpose({ focusInput });
+defineExpose({ focusInput })
 
 function onKeydown(e: KeyboardEvent) {
-  if (e.key !== "Enter") return;
+  if (e.key !== 'Enter')
+    return
   /* 与 oclive-new Enter 发送一致；Shift+Enter 保留换行 */
-  if (e.shiftKey) return;
-  e.preventDefault();
-  submit();
+  if (e.shiftKey)
+    return
+  e.preventDefault()
+  submit()
 }
 
 onMounted(() => {
-  hostEventBus.on("chat:set_input_draft", onSetDraftInput);
-});
+  hostEventBus.on('chat:set_input_draft', onSetDraftInput)
+})
 
 onBeforeUnmount(() => {
-  hostEventBus.off("chat:set_input_draft", onSetDraftInput);
-});
+  hostEventBus.off('chat:set_input_draft', onSetDraftInput)
+})
 </script>
 
 <template>
@@ -71,8 +74,8 @@ onBeforeUnmount(() => {
     <div class="input-col">
       <label class="sr-only" for="chat-user-message">{{ t("common.chatInputLabel") }}</label>
       <textarea
-        ref="textAreaEl"
         id="chat-user-message"
+        ref="textAreaEl"
         v-model="text"
         class="input"
         name="user_message"

@@ -1,34 +1,35 @@
 <script setup lang="ts">
-import { ref, toRef, watch } from "vue";
-import { useI18n } from "vue-i18n";
-import { useModalFocusRestore } from "../../composables/useModalFocusRestore";
+import { ref, toRef, watch } from 'vue'
+import { useI18n } from 'vue-i18n'
+import { useModalFocusRestore } from '../../composables/useModalFocusRestore'
 
 const props = defineProps<{
-  open: boolean;
-  slotKey: string;
-  busy?: boolean;
-}>();
+  open: boolean
+  slotKey: string
+  busy?: boolean
+}>()
 
 const emit = defineEmits<{
-  close: [];
-  confirm: [];
-}>();
+  close: []
+  confirm: []
+}>()
 
-const { t } = useI18n();
-const cancelBtnRef = ref<HTMLButtonElement | null>(null);
-const dialogRef = ref<HTMLElement | null>(null);
-useModalFocusRestore(toRef(props, "open"), dialogRef, { primary: cancelBtnRef });
+const { t } = useI18n()
+const cancelBtnRef = ref<HTMLButtonElement | null>(null)
+const dialogRef = ref<HTMLElement | null>(null)
+useModalFocusRestore(toRef(props, 'open'), dialogRef, { primary: cancelBtnRef })
 
 watch(
   () => props.open,
   (v) => {
-    if (!v) return;
+    if (!v)
+      return
   },
-);
+)
 
 function onBackdrop(e: MouseEvent) {
-  if ((e.target as HTMLElement).classList.contains("arsd-backdrop")) {
-    emit("close");
+  if ((e.target as HTMLElement).classList.contains('arsd-backdrop')) {
+    emit('close')
   }
 }
 </script>
@@ -43,7 +44,9 @@ function onBackdrop(e: MouseEvent) {
     @click="onBackdrop"
   >
     <div ref="dialogRef" class="arsd-panel" tabindex="-1" @click.stop>
-      <h3 class="arsd-title">{{ t("pluginWorkbench.graph.removeSlotDialogTitle") }}</h3>
+      <h3 class="arsd-title">
+        {{ t("pluginWorkbench.graph.removeSlotDialogTitle") }}
+      </h3>
       <p class="arsd-body">
         {{ t("pluginWorkbench.graph.removeSlotConfirm", { key: slotKey }) }}
       </p>

@@ -1,14 +1,16 @@
 <script setup lang="ts">
 defineProps<{
-  show: boolean;
-  type: "success" | "error" | "warning" | "info";
-  message: string;
-}>();
+  show: boolean
+  type: 'success' | 'error' | 'warning' | 'info'
+  message: string
+}>()
 </script>
 
 <template>
   <transition name="toast">
-    <div v-if="show" class="toast" :class="type">{{ message }}</div>
+    <div v-if="show" class="toast" :class="type">
+      {{ message }}
+    </div>
   </transition>
 </template>
 

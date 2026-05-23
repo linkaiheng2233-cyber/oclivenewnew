@@ -1,95 +1,103 @@
 <script setup lang="ts">
-import { computed, ref, watch } from "vue";
-import { useI18n } from "vue-i18n";
-import { usePluginStore } from "../stores/pluginStore";
-import { useRoleStore } from "../stores/roleStore";
-import { useUiStore } from "../stores/uiStore";
-import { buildRelationDropdownOptions } from "../utils/relationOptions";
+import { computed, ref, watch } from 'vue'
+import { useI18n } from 'vue-i18n'
+import { usePluginStore } from '../stores/pluginStore'
+import { useRoleStore } from '../stores/roleStore'
+import { useUiStore } from '../stores/uiStore'
+import { buildRelationDropdownOptions } from '../utils/relationOptions'
 import {
   OCLIVE_DEFAULT_RELATION_SENTINEL,
   setEvolutionFactor,
   setUserRelation,
-} from "../utils/tauri-api";
-import HelpHint from "./HelpHint.vue";
+} from '../utils/tauri-api'
+import HelpHint from './HelpHint.vue'
 
-const { t } = useI18n();
-const roleStore = useRoleStore();
-const uiStore = useUiStore();
-const pluginStore = usePluginStore();
-const localFactor = ref(roleStore.roleInfo.eventImpactFactor);
-const busy = ref(false);
+const { t } = useI18n()
+const roleStore = useRoleStore()
+const uiStore = useUiStore()
+const pluginStore = usePluginStore()
+const localFactor = ref(roleStore.roleInfo.eventImpactFactor)
+const busy = ref(false)
 
 const personalitySourceLabel = computed(() =>
-  roleStore.roleInfo.personalitySource === "profile"
-    ? t("roleRuntime.personalityProfile")
-    : t("roleRuntime.personalityVector"),
-);
+  roleStore.roleInfo.personalitySource === 'profile'
+    ? t('roleRuntime.personalityProfile')
+    : t('roleRuntime.personalityVector'),
+)
 const personalitySourceHintParagraphs = computed(() =>
-  roleStore.roleInfo.personalitySource === "profile"
-    ? [t("roleRuntime.profileHint1"), t("roleRuntime.profileHint2")]
-    : [t("roleRuntime.vectorHint1")],
-);
+  roleStore.roleInfo.personalitySource === 'profile'
+    ? [t('roleRuntime.profileHint1'), t('roleRuntime.profileHint2')]
+    : [t('roleRuntime.vectorHint1')],
+)
 const relationRows = computed(() =>
   buildRelationDropdownOptions(
     roleStore.roleInfo.userRelations,
     roleStore.roleInfo.defaultRelation,
   ),
-);
+)
 watch(
   () => [roleStore.currentRoleId, roleStore.roleInfo.eventImpactFactor] as const,
   () => {
-    localFactor.value = roleStore.roleInfo.eventImpactFactor;
+    localFactor.value = roleStore.roleInfo.eventImpactFactor
   },
-);
+)
 async function onRelationChange(ev: Event) {
-  const next = (ev.target as HTMLSelectElement).value;
-  if (next === roleStore.relationSelectValue) return;
-  busy.value = true;
+  const next = (ev.target as HTMLSelectElement).value
+  if (next === roleStore.relationSelectValue)
+    return
+  busy.value = true
   try {
-    const perScene = roleStore.roleInfo.identityBinding === "per_scene";
+    const perScene = roleStore.roleInfo.identityBinding === 'per_scene'
     if (next === OCLIVE_DEFAULT_RELATION_SENTINEL) {
-      if (perScene) await roleStore.setManifestDefaultIdentity(uiStore.sceneId);
-      else await roleStore.setManifestDefaultIdentity();
-    } else if (perScene) {
-      await roleStore.setSceneUserRelation(uiStore.sceneId, next);
-    } else {
-      const info = await setUserRelation(roleStore.currentRoleId, next);
-      roleStore.applyRoleInfo(info);
+      if (perScene)
+        await roleStore.setManifestDefaultIdentity(uiStore.sceneId)
+      else await roleStore.setManifestDefaultIdentity()
     }
-  } finally {
-    busy.value = false;
+    else if (perScene) {
+      await roleStore.setSceneUserRelation(uiStore.sceneId, next)
+    }
+    else {
+      const info = await setUserRelation(roleStore.currentRoleId, next)
+      roleStore.applyRoleInfo(info)
+    }
+  }
+  finally {
+    busy.value = false
   }
 }
 async function commitFactor() {
-  const v = localFactor.value;
+  const v = localFactor.value
   if (
-    !Number.isFinite(v) ||
-    v < 0.05 ||
-    v > 5 ||
-    Math.abs(v - roleStore.roleInfo.eventImpactFactor) < 1e-9
+    !Number.isFinite(v)
+    || v < 0.05
+    || v > 5
+    || Math.abs(v - roleStore.roleInfo.eventImpactFactor) < 1e-9
   ) {
-    return;
+    return
   }
-  busy.value = true;
+  busy.value = true
   try {
-    await setEvolutionFactor(roleStore.currentRoleId, v);
-    await roleStore.refreshRoleInfo();
-  } finally {
-    busy.value = false;
+    await setEvolutionFactor(roleStore.currentRoleId, v)
+    await roleStore.refreshRoleInfo()
+  }
+  finally {
+    busy.value = false
   }
 }
 function onFactorEnter(ev: KeyboardEvent) {
-  (ev.target as HTMLInputElement).blur();
+  (ev.target as HTMLInputElement).blur()
 }
 function openBackendsPanel(): void {
-  pluginStore.requestOpenSimplePluginManager();
+  pluginStore.requestOpenSimplePluginManager()
 }
 </script>
 
 <template>
   <section class="runtime">
     <div class="meta">
-      <p v-if="roleStore.roleInfo.description" class="desc">{{ roleStore.roleInfo.description }}</p>
+      <p v-if="roleStore.roleInfo.description" class="desc">
+        {{ roleStore.roleInfo.description }}
+      </p>
       <p class="sub">
         {{
           t("roleRuntime.versionAuthor", {
@@ -124,7 +132,9 @@ function openBackendsPanel(): void {
           :value="roleStore.relationSelectValue"
           @change="onRelationChange"
         >
-          <option v-for="r in relationRows" :key="r.id" :value="r.id">{{ r.name || r.id }}</option>
+          <option v-for="r in relationRows" :key="r.id" :value="r.id">
+            {{ r.name || r.id }}
+          </option>
         </select>
       </div>
       <div class="row">
@@ -140,7 +150,7 @@ function openBackendsPanel(): void {
           :disabled="busy"
           @blur="commitFactor"
           @keydown.enter.prevent="onFactorEnter"
-        />
+        >
       </div>
     </template>
   </section>

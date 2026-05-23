@@ -1,45 +1,49 @@
 <script setup lang="ts">
-import { ref, watch } from "vue";
-import { useI18n } from "vue-i18n";
+import { ref, watch } from 'vue'
+import { useI18n } from 'vue-i18n'
 
 interface SwitchToggleSchema {
-  checked: boolean;
-  label?: string;
-  hint?: string;
+  checked: boolean
+  label?: string
+  hint?: string
 }
 
 const props = defineProps<{
-  schema: SwitchToggleSchema;
-  busy?: boolean;
-}>();
+  schema: SwitchToggleSchema
+  busy?: boolean
+}>()
 
 const emit = defineEmits<{
-  submit: [{ enabled: boolean }];
-}>();
+  submit: [{ enabled: boolean }]
+}>()
 
-const { t } = useI18n();
-const checked = ref(props.schema.checked);
+const { t } = useI18n()
+const checked = ref(props.schema.checked)
 
 watch(
   () => props.schema.checked,
   (v) => {
-    checked.value = v;
+    checked.value = v
   },
-);
+)
 
 function onSubmit() {
-  emit("submit", { enabled: checked.value });
+  emit('submit', { enabled: checked.value })
 }
 </script>
 
 <template>
   <div class="tpl-root">
     <label class="tpl-toggle">
-      <input v-model="checked" type="checkbox" :disabled="busy" />
+      <input v-model="checked" type="checkbox" :disabled="busy">
       <span>{{ schema.label || t("pluginTerms.field.remote_life") }}</span>
     </label>
-    <p v-if="schema.hint" class="tpl-hint">{{ schema.hint }}</p>
-    <button type="button" class="tpl-btn" :disabled="busy" @click="onSubmit">{{ t("pluginTerms.action.apply") }}</button>
+    <p v-if="schema.hint" class="tpl-hint">
+      {{ schema.hint }}
+    </p>
+    <button type="button" class="tpl-btn" :disabled="busy" @click="onSubmit">
+      {{ t("pluginTerms.action.apply") }}
+    </button>
   </div>
 </template>
 

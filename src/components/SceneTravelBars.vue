@@ -1,26 +1,26 @@
 <script setup lang="ts">
-import { useI18n } from "vue-i18n";
+import { useI18n } from 'vue-i18n'
 
-export type SceneDestinationOption = { id: string; label: string };
+export interface SceneDestinationOption { id: string, label: string }
 
 defineProps<{
-  togetherVisible: boolean;
-  postReplyVisible: boolean;
-  destinationOptions: SceneDestinationOption[];
-  togetherSelectedId: string;
-  postReplySelectedId: string;
-}>();
-
-const { t } = useI18n();
+  togetherVisible: boolean
+  postReplyVisible: boolean
+  destinationOptions: SceneDestinationOption[]
+  togetherSelectedId: string
+  postReplySelectedId: string
+}>()
 
 const emit = defineEmits<{
-  "update:togetherSelectedId": [value: string];
-  "update:postReplySelectedId": [value: string];
-  confirmTogether: [together: boolean];
-  dismissTogether: [];
-  confirmPostReply: [together: boolean];
-  dismissPostReply: [];
-}>();
+  'update:togetherSelectedId': [value: string]
+  'update:postReplySelectedId': [value: string]
+  'confirmTogether': [together: boolean]
+  'dismissTogether': []
+  'confirmPostReply': [together: boolean]
+  'dismissPostReply': []
+}>()
+
+const { t } = useI18n()
 </script>
 
 <template>
@@ -40,14 +40,18 @@ const emit = defineEmits<{
       :value="togetherSelectedId"
       @change="emit('update:togetherSelectedId', ($event.target as HTMLSelectElement).value)"
     >
-      <option disabled value="">{{ t("common.sceneTravel.pickPlaceholder") }}</option>
+      <option disabled value="">
+        {{ t("common.sceneTravel.pickPlaceholder") }}
+      </option>
       <option v-for="s in destinationOptions" :key="s.id" :value="s.id">
         {{ s.label }}
       </option>
     </select>
-    <button type="button" class="post-reply-btn" @click="emit('confirmTogether', false)">{{
-      t("common.sceneTravel.solo")
-    }}</button>
+    <button type="button" class="post-reply-btn" @click="emit('confirmTogether', false)">
+      {{
+        t("common.sceneTravel.solo")
+      }}
+    </button>
     <button
       type="button"
       class="post-reply-btn post-reply-btn--primary"
@@ -55,9 +59,11 @@ const emit = defineEmits<{
     >
       {{ t("common.sceneTravel.together") }}
     </button>
-    <button type="button" class="post-reply-btn" @click="emit('dismissTogether')">{{
-      t("common.sceneTravel.dismiss")
-    }}</button>
+    <button type="button" class="post-reply-btn" @click="emit('dismissTogether')">
+      {{
+        t("common.sceneTravel.dismiss")
+      }}
+    </button>
   </div>
   <div
     v-if="postReplyVisible"
@@ -75,14 +81,18 @@ const emit = defineEmits<{
       :value="postReplySelectedId"
       @change="emit('update:postReplySelectedId', ($event.target as HTMLSelectElement).value)"
     >
-      <option disabled value="">{{ t("common.sceneTravel.pickPlaceholder") }}</option>
+      <option disabled value="">
+        {{ t("common.sceneTravel.pickPlaceholder") }}
+      </option>
       <option v-for="s in destinationOptions" :key="s.id" :value="s.id">
         {{ s.label }}
       </option>
     </select>
-    <button type="button" class="post-reply-btn" @click="emit('confirmPostReply', false)">{{
-      t("common.sceneTravel.solo")
-    }}</button>
+    <button type="button" class="post-reply-btn" @click="emit('confirmPostReply', false)">
+      {{
+        t("common.sceneTravel.solo")
+      }}
+    </button>
     <button
       type="button"
       class="post-reply-btn post-reply-btn--primary"
@@ -90,9 +100,11 @@ const emit = defineEmits<{
     >
       {{ t("common.sceneTravel.together") }}
     </button>
-    <button type="button" class="post-reply-btn" @click="emit('dismissPostReply')">{{
-      t("common.sceneTravel.dismiss")
-    }}</button>
+    <button type="button" class="post-reply-btn" @click="emit('dismissPostReply')">
+      {{
+        t("common.sceneTravel.dismiss")
+      }}
+    </button>
   </div>
 </template>
 

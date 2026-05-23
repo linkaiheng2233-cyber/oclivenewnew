@@ -1,44 +1,44 @@
 <script setup lang="ts">
-import { useI18n } from "vue-i18n";
-import type { DirectoryPluginCatalogEntry } from "../utils/tauri-api";
-
-const { t } = useI18n();
+import type { DirectoryPluginCatalogEntry } from '../utils/tauri-api'
+import { useI18n } from 'vue-i18n'
 
 const props = withDefaults(
   defineProps<{
-    entry: DirectoryPluginCatalogEntry;
+    entry: DirectoryPluginCatalogEntry
     /** 管理面板批量选择模式 */
-    batchSelectMode?: boolean;
+    batchSelectMode?: boolean
     /** 批量选中 */
-    batchSelected?: boolean;
+    batchSelected?: boolean
     /** 全局禁用（停用插件） */
-    pluginDisabled: boolean;
-  /** 仅隐藏 chat_toolbar 嵌入（整壳插件此项不适用） */
-  toolbarContributionDisabled: boolean;
-  /** 仅隐藏 settings.panel 嵌入 */
-  settingsPanelContributionDisabled: boolean;
-  /** 仅隐藏 role.detail 嵌入 */
-  roleDetailContributionDisabled: boolean;
-  /** 仅隐藏 sidebar 嵌入 */
-  sidebarContributionDisabled: boolean;
-  /** 仅隐藏 chat.header 嵌入 */
-  chatHeaderContributionDisabled: boolean;
+    pluginDisabled: boolean
+    /** 仅隐藏 chat_toolbar 嵌入（整壳插件此项不适用） */
+    toolbarContributionDisabled: boolean
+    /** 仅隐藏 settings.panel 嵌入 */
+    settingsPanelContributionDisabled: boolean
+    /** 仅隐藏 role.detail 嵌入 */
+    roleDetailContributionDisabled: boolean
+    /** 仅隐藏 sidebar 嵌入 */
+    sidebarContributionDisabled: boolean
+    /** 仅隐藏 chat.header 嵌入 */
+    chatHeaderContributionDisabled: boolean
   }>(),
   {
     batchSelectMode: false,
     batchSelected: false,
   },
-);
+)
 
 const emit = defineEmits<{
-  "update:batchSelected": [value: boolean];
-  "update:pluginDisabled": [value: boolean];
-  "update:toolbarContributionDisabled": [value: boolean];
-  "update:settingsPanelContributionDisabled": [value: boolean];
-  "update:roleDetailContributionDisabled": [value: boolean];
-  "update:sidebarContributionDisabled": [value: boolean];
-  "update:chatHeaderContributionDisabled": [value: boolean];
-}>();
+  'update:batchSelected': [value: boolean]
+  'update:pluginDisabled': [value: boolean]
+  'update:toolbarContributionDisabled': [value: boolean]
+  'update:settingsPanelContributionDisabled': [value: boolean]
+  'update:roleDetailContributionDisabled': [value: boolean]
+  'update:sidebarContributionDisabled': [value: boolean]
+  'update:chatHeaderContributionDisabled': [value: boolean]
+}>()
+
+const { t } = useI18n()
 </script>
 
 <template>
@@ -50,7 +50,7 @@ const emit = defineEmits<{
         @change="
           emit('update:batchSelected', ($event.target as HTMLInputElement).checked)
         "
-      />
+      >
     </label>
     <div class="pli-main">
       <div class="pli-title">
@@ -85,7 +85,7 @@ const emit = defineEmits<{
           :checked="pluginDisabled"
           :disabled="pluginDisabled && entry.dependencyStatus !== 'ok'"
           @change="emit('update:pluginDisabled', ($event.target as HTMLInputElement).checked)"
-        />
+        >
         {{ t("pluginManager.v1ListItem.disablePlugin") }}
       </label>
       <label v-if="!entry.isShell && entry.uiSlotNames.includes('chat_toolbar')" class="chk">
@@ -98,7 +98,7 @@ const emit = defineEmits<{
               ($event.target as HTMLInputElement).checked,
             )
           "
-        />
+        >
         {{ t("pluginManager.v1ListItem.hideToolbarEmbed") }}
       </label>
       <label v-if="!entry.isShell && entry.uiSlotNames.includes('settings.panel')" class="chk">
@@ -111,7 +111,7 @@ const emit = defineEmits<{
               ($event.target as HTMLInputElement).checked,
             )
           "
-        />
+        >
         {{ t("pluginManager.v1ListItem.hideSettingsEmbed") }}
       </label>
       <label v-if="!entry.isShell && entry.uiSlotNames.includes('role.detail')" class="chk">
@@ -124,7 +124,7 @@ const emit = defineEmits<{
               ($event.target as HTMLInputElement).checked,
             )
           "
-        />
+        >
         {{ t("pluginManager.v1ListItem.hideRoleDetailEmbed") }}
       </label>
       <label v-if="!entry.isShell && entry.uiSlotNames.includes('sidebar')" class="chk">
@@ -137,7 +137,7 @@ const emit = defineEmits<{
               ($event.target as HTMLInputElement).checked,
             )
           "
-        />
+        >
         {{ t("pluginManager.v1ListItem.hideSidebarEmbed") }}
       </label>
       <label v-if="!entry.isShell && entry.uiSlotNames.includes('chat.header')" class="chk">
@@ -150,7 +150,7 @@ const emit = defineEmits<{
               ($event.target as HTMLInputElement).checked,
             )
           "
-        />
+        >
         {{ t("pluginManager.v1ListItem.hideChatHeaderEmbed") }}
       </label>
     </div>

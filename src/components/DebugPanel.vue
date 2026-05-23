@@ -1,125 +1,140 @@
 <script setup lang="ts">
-import { computed, ref } from "vue";
-import { useI18n } from "vue-i18n";
-import ChatExportBar from "./ChatExportBar.vue";
-import PluginSlotEmbed from "./PluginSlotEmbed.vue";
-import HelpHint from "./HelpHint.vue";
-import RolePackBar from "./RolePackBar.vue";
-import RoleRuntimePanel from "./RoleRuntimePanel.vue";
-import { useChatStore } from "../stores/chatStore";
-import { useDebugStore } from "../stores/debugStore";
-import { useRoleStore } from "../stores/roleStore";
-import { useUiStore } from "../stores/uiStore";
-import { SLOT_DEBUG_DOCK, usePluginStore } from "../stores/pluginStore";
-import { generateMonologue } from "../utils/tauri-api";
+import { computed, ref } from 'vue'
+import { useI18n } from 'vue-i18n'
+import { useChatStore } from '../stores/chatStore'
+import { useDebugStore } from '../stores/debugStore'
+import { SLOT_DEBUG_DOCK, usePluginStore } from '../stores/pluginStore'
+import { useRoleStore } from '../stores/roleStore'
+import { useUiStore } from '../stores/uiStore'
 import {
   PERSONALITY_TRAIT_KEYS,
   vec7ToRecord,
-} from "../utils/personality-traits";
+} from '../utils/personality-traits'
+import { generateMonologue } from '../utils/tauri-api'
+import ChatExportBar from './ChatExportBar.vue'
+import HelpHint from './HelpHint.vue'
+import PluginSlotEmbed from './PluginSlotEmbed.vue'
+import RolePackBar from './RolePackBar.vue'
+import RoleRuntimePanel from './RoleRuntimePanel.vue'
 
 const props = defineProps<{
-  visible: boolean;
-  loading: boolean;
-  favorability: number;
-  personality: number[];
-  events: Array<{ event_type?: string; timestamp?: string; description?: string | null }>;
-  memories: Array<{ content?: string; timestamp?: string; importance?: number }>;
-}>();
-
-const { t } = useI18n();
-const roleStore = useRoleStore();
-const debugStore = useDebugStore();
-const chatStore = useChatStore();
-const uiStore = useUiStore();
-const pluginStore = usePluginStore();
-const monoLoading = ref(false);
+  visible: boolean
+  loading: boolean
+  favorability: number
+  personality: number[]
+  events: Array<{ event_type?: string, timestamp?: string, description?: string | null }>
+  memories: Array<{ content?: string, timestamp?: string, importance?: number }>
+}>()
 
 const emit = defineEmits<{
-  reload: [];
-  refresh: [];
-  close: [];
-  notify: [{ type: "success" | "error" | "info" | "warning"; message: string }];
-  imported: [roleId: string];
-}>();
+  reload: []
+  refresh: []
+  close: []
+  notify: [{ type: 'success' | 'error' | 'info' | 'warning', message: string }]
+  imported: [roleId: string]
+}>()
+const { t } = useI18n()
+const roleStore = useRoleStore()
+const debugStore = useDebugStore()
+const chatStore = useChatStore()
+const uiStore = useUiStore()
+const pluginStore = usePluginStore()
+const monoLoading = ref(false)
 
 async function insertMonologue(): Promise<void> {
-  const roleId = roleStore.currentRoleId;
-  if (!roleId) return;
-  monoLoading.value = true;
+  const roleId = roleStore.currentRoleId
+  if (!roleId)
+    return
+  monoLoading.value = true
   try {
-    const text = await generateMonologue(roleId);
+    const text = await generateMonologue(roleId)
     chatStore.addAssistantMessage(
-      `${t("editor.debug.monologuePrefix")}${text}`,
+      `${t('editor.debug.monologuePrefix')}${text}`,
       undefined,
       uiStore.sceneId,
-    );
-    emit("notify", { type: "info", message: t("editor.debug.monologueInserted") });
-  } catch (e) {
-    emit("notify", {
-      type: "error",
+    )
+    emit('notify', { type: 'info', message: t('editor.debug.monologueInserted') })
+  }
+  catch (e) {
+    emit('notify', {
+      type: 'error',
       message: e instanceof Error ? e.message : String(e),
-    });
-  } finally {
-    monoLoading.value = false;
+    })
+  }
+  finally {
+    monoLoading.value = false
   }
 }
 
-const traits = computed(() => vec7ToRecord(props.personality));
+const traits = computed(() => vec7ToRecord(props.personality))
 
 function favEmoji(v: number): string {
-  if (v >= 80) return "😍";
-  if (v >= 60) return "🥰";
-  if (v >= 40) return "😊";
-  if (v >= 20) return "😐";
-  return "😔";
+  if (v >= 80)
+    return '😍'
+  if (v >= 60)
+    return '🥰'
+  if (v >= 40)
+    return '😊'
+  if (v >= 20)
+    return '😐'
+  return '😔'
 }
 
 function favStatusText(v: number): string {
-  if (v >= 80) return t("editor.debug.fav80");
-  if (v >= 60) return t("editor.debug.fav60");
-  if (v >= 40) return t("editor.debug.fav40");
-  if (v >= 20) return t("editor.debug.fav20");
-  return t("editor.debug.fav0");
+  if (v >= 80)
+    return t('editor.debug.fav80')
+  if (v >= 60)
+    return t('editor.debug.fav60')
+  if (v >= 40)
+    return t('editor.debug.fav40')
+  if (v >= 20)
+    return t('editor.debug.fav20')
+  return t('editor.debug.fav0')
 }
 
 function traitEmoji(val: number, hi: string, mid: string, low: string): string {
-  if (val >= 0.7) return hi;
-  if (val >= 0.4) return mid;
-  return low;
+  if (val >= 0.7)
+    return hi
+  if (val >= 0.4)
+    return mid
+  return low
 }
 
 function traitLabel(key: (typeof PERSONALITY_TRAIT_KEYS)[number]): string {
-  return t(`editor.personalityTrait.${key}`);
+  return t(`editor.personalityTrait.${key}`)
 }
 
-const debugHintParagraphs = computed(() => [t("editor.debug.hint1"), t("editor.debug.hint2")]);
+const debugHintParagraphs = computed(() => [t('editor.debug.hint1'), t('editor.debug.hint2')])
 
 const traitEmojiMap: Record<
   (typeof PERSONALITY_TRAIT_KEYS)[number],
   [string, string, string]
 > = {
-  stubbornness: ["😤", "🤔", "😌"],
-  clinginess: ["🥺", "😊", "😐"],
-  sensitivity: ["😢", "😳", "😶"],
-  assertiveness: ["👑", "💪", "🍃"],
-  forgiveness: ["😇", "🙂", "😤"],
-  talkativeness: ["🗣️", "💬", "🤐"],
-  warmth: ["🔥", "☀️", "❄️"],
-};
+  stubbornness: ['😤', '🤔', '😌'],
+  clinginess: ['🥺', '😊', '😐'],
+  sensitivity: ['😢', '😳', '😶'],
+  assertiveness: ['👑', '💪', '🍃'],
+  forgiveness: ['😇', '🙂', '😤'],
+  talkativeness: ['🗣️', '💬', '🤐'],
+  warmth: ['🔥', '☀️', '❄️'],
+}
 
 function traitEmojiForKey(
   key: (typeof PERSONALITY_TRAIT_KEYS)[number],
   val: number,
 ): string {
-  const [hi, mid, low] = traitEmojiMap[key];
-  return traitEmoji(val, hi, mid, low);
+  const [hi, mid, low] = traitEmojiMap[key]
+  return traitEmoji(val, hi, mid, low)
 }
 
 function presenceLabel(mode: string): string {
-  if (mode === "co_present") return t("editor.debug.presenceCoPresent");
-  if (mode === "remote_stub") return t("editor.debug.presenceRemoteStub");
-  if (mode === "remote_life") return t("editor.debug.presenceRemoteLife");
-  return mode;
+  if (mode === 'co_present')
+    return t('editor.debug.presenceCoPresent')
+  if (mode === 'remote_stub')
+    return t('editor.debug.presenceRemoteStub')
+  if (mode === 'remote_life')
+    return t('editor.debug.presenceRemoteLife')
+  return mode
 }
 </script>
 
@@ -131,7 +146,9 @@ function presenceLabel(mode: string): string {
           <strong>{{ t("editor.debug.title") }}</strong>
           <HelpHint :paragraphs="debugHintParagraphs" />
         </div>
-        <button type="button" :aria-label="t('common.close')" @click="emit('close')">✕</button>
+        <button type="button" :aria-label="t('common.close')" @click="emit('close')">
+          ✕
+        </button>
       </div>
 
       <section class="debug-dock-slot" :aria-label="t('editor.debug.dockSlotAria')">
@@ -166,7 +183,9 @@ function presenceLabel(mode: string): string {
       />
 
       <div class="dev-card knowledge-card">
-        <div class="dev-title"><span>📚</span> {{ t("editor.debug.knowledgeTitle") }}</div>
+        <div class="dev-title">
+          <span>📚</span> {{ t("editor.debug.knowledgeTitle") }}
+        </div>
         <p class="knowledge-line">
           {{ t("editor.debug.knowledgeIndexed") }}
           <strong>{{
@@ -200,14 +219,18 @@ function presenceLabel(mode: string): string {
           <span>❤️</span> {{ t("editor.debug.favorability") }}
           <span class="dev-emoji">{{ favEmoji(favorability) }}</span>
         </div>
-        <div class="fav-value">{{ Math.round(favorability) }}</div>
+        <div class="fav-value">
+          {{ Math.round(favorability) }}
+        </div>
         <div class="fav-bar">
           <div
             class="fav-fill"
             :style="{ width: `${Math.max(0, Math.min(100, favorability))}%` }"
           />
         </div>
-        <div class="fav-status">{{ favStatusText(favorability) }}</div>
+        <div class="fav-status">
+          {{ favStatusText(favorability) }}
+        </div>
       </div>
 
       <div class="dev-card">
@@ -262,10 +285,14 @@ function presenceLabel(mode: string): string {
         <button type="button" :disabled="loading" @click="emit('refresh')">
           {{ t("editor.debug.refresh") }}
         </button>
-        <button type="button" :disabled="loading" @click="emit('reload')">{{ t("editor.debug.reloadPolicy") }}</button>
+        <button type="button" :disabled="loading" @click="emit('reload')">
+          {{ t("editor.debug.reloadPolicy") }}
+        </button>
       </div>
 
-      <div class="dev-footer">{{ t("editor.debug.footer") }}</div>
+      <div class="dev-footer">
+        {{ t("editor.debug.footer") }}
+      </div>
     </aside>
   </transition>
 </template>

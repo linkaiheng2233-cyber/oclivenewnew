@@ -1,280 +1,301 @@
 <script setup lang="ts">
-import { computed, onMounted, ref, watch } from "vue";
-import { useI18n } from "vue-i18n";
+import type { AgentDebugTrace, HighRiskGrantKind, HighRiskGrantsSnapshot, McpServerManifest, McpToolManifest } from '../utils/tauri-api'
+import { computed, onMounted, ref, watch } from 'vue'
+import { useI18n } from 'vue-i18n'
 import {
+
   callMcpTool,
   clearAgentDebugTraces,
   getAgentDebugTraces,
   grantHighRiskCapability,
+
   listHighRiskGrants,
-  listMcpTools,
   listMcpServers,
+  listMcpTools,
+
   revokeHighRiskCapability,
-  type AgentDebugTrace,
-  type HighRiskGrantKind,
-  type HighRiskGrantsSnapshot,
-  type McpToolManifest,
-  type McpServerManifest,
-} from "../utils/tauri-api";
-import EnvVarManager from "./EnvVarManager.vue";
+} from '../utils/tauri-api'
+import EnvVarManager from './EnvVarManager.vue'
 
-const { t, locale } = useI18n();
+const { t, locale } = useI18n()
 
-const busy = ref(false);
-const servers = ref<McpServerManifest[]>([]);
-const traces = ref<AgentDebugTrace[]>([]);
-const selectedServerId = ref("");
-const selectedToolName = ref("");
-const paramsText = ref('{"city":"Beijing"}');
-const callResultText = ref("");
-const availableTools = ref<McpToolManifest[]>([]);
-const callResultHistory = ref<Array<{ id: string; label: string; payload: string }>>([]);
-const grants = ref<HighRiskGrantsSnapshot | null>(null);
-const grantKind = ref<HighRiskGrantKind>("mcp:http");
-const grantTargetId = ref("");
+const busy = ref(false)
+const servers = ref<McpServerManifest[]>([])
+const traces = ref<AgentDebugTrace[]>([])
+const selectedServerId = ref('')
+const selectedToolName = ref('')
+const paramsText = ref('{"city":"Beijing"}')
+const callResultText = ref('')
+const availableTools = ref<McpToolManifest[]>([])
+const callResultHistory = ref<Array<{ id: string, label: string, payload: string }>>([])
+const grants = ref<HighRiskGrantsSnapshot | null>(null)
+const grantKind = ref<HighRiskGrantKind>('mcp:http')
+const grantTargetId = ref('')
 
 async function refreshGrants(): Promise<void> {
-  grants.value = await listHighRiskGrants();
+  grants.value = await listHighRiskGrants()
 }
 
 async function doGrant(): Promise<void> {
-  const id = grantTargetId.value.trim();
-  if (!id) return;
-  busy.value = true;
+  const id = grantTargetId.value.trim()
+  if (!id)
+    return
+  busy.value = true
   try {
-    await grantHighRiskCapability(grantKind.value, id);
-    await refreshGrants();
-    await refreshServers();
-  } finally {
-    busy.value = false;
+    await grantHighRiskCapability(grantKind.value, id)
+    await refreshGrants()
+    await refreshServers()
+  }
+  finally {
+    busy.value = false
   }
 }
 
 async function doRevoke(): Promise<void> {
-  const id = grantTargetId.value.trim();
-  if (!id) return;
-  busy.value = true;
+  const id = grantTargetId.value.trim()
+  if (!id)
+    return
+  busy.value = true
   try {
-    await revokeHighRiskCapability(grantKind.value, id);
-    await refreshGrants();
-    await refreshServers();
-  } finally {
-    busy.value = false;
+    await revokeHighRiskCapability(grantKind.value, id)
+    await refreshGrants()
+    await refreshServers()
+  }
+  finally {
+    busy.value = false
   }
 }
 
-const CUSTOM_TEMPLATE_KEY = "oclive.agent.templates.v1";
-type TemplateItem = {
-  id: string;
-  label: string;
-  toolName: string;
-  params: Record<string, unknown>;
-  serverHint?: string;
-};
+const CUSTOM_TEMPLATE_KEY = 'oclive.agent.templates.v1'
+interface TemplateItem {
+  id: string
+  label: string
+  toolName: string
+  params: Record<string, unknown>
+  serverHint?: string
+}
 
 const BUILTIN_TEMPLATE_DEFS: Array<
-  Pick<TemplateItem, "id" | "toolName" | "params" | "serverHint"> & { labelKey: string }
+  Pick<TemplateItem, 'id' | 'toolName' | 'params' | 'serverHint'> & { labelKey: string }
 > = [
   {
-    id: "weather",
-    labelKey: "devTools.agentTplWeather",
-    toolName: "get_weather",
-    params: { city: "Beijing" },
+    id: 'weather',
+    labelKey: 'devTools.agentTplWeather',
+    toolName: 'get_weather',
+    params: { city: 'Beijing' },
   },
   {
-    id: "file-read",
-    labelKey: "devTools.agentTplFileRead",
-    toolName: "read_file",
-    params: { path: "./README.md" },
+    id: 'file-read',
+    labelKey: 'devTools.agentTplFileRead',
+    toolName: 'read_file',
+    params: { path: './README.md' },
   },
   {
-    id: "web-fetch",
-    labelKey: "devTools.agentTplWebFetch",
-    toolName: "web_fetch",
-    params: { url: "https://example.com" },
+    id: 'web-fetch',
+    labelKey: 'devTools.agentTplWebFetch',
+    toolName: 'web_fetch',
+    params: { url: 'https://example.com' },
   },
-];
+]
 
 const builtinTemplates = computed<TemplateItem[]>(() => {
-  void locale.value;
-  return BUILTIN_TEMPLATE_DEFS.map((d) => ({
+  void locale.value
+  return BUILTIN_TEMPLATE_DEFS.map(d => ({
     id: d.id,
     label: t(d.labelKey),
     toolName: d.toolName,
     params: d.params,
     serverHint: d.serverHint,
-  }));
-});
+  }))
+})
 
-const customTemplates = ref<TemplateItem[]>([]);
+const customTemplates = ref<TemplateItem[]>([])
 
-const templates = computed(() => [...builtinTemplates.value, ...customTemplates.value]);
+const templates = computed(() => [...builtinTemplates.value, ...customTemplates.value])
 
-const selectedTemplateId = ref("");
-const customTemplateName = ref("");
+const selectedTemplateId = ref('')
+const customTemplateName = ref('')
 
 async function refreshServers(): Promise<void> {
-  servers.value = await listMcpServers();
+  servers.value = await listMcpServers()
   if (!selectedServerId.value && servers.value.length > 0) {
-    selectedServerId.value = servers.value[0].id;
+    selectedServerId.value = servers.value[0].id
   }
   if (selectedServerId.value) {
-    availableTools.value = await listMcpTools(selectedServerId.value);
+    availableTools.value = await listMcpTools(selectedServerId.value)
   }
-  await refreshGrants();
+  await refreshGrants()
 }
 
 async function refreshTraces(): Promise<void> {
-  traces.value = await getAgentDebugTraces();
+  traces.value = await getAgentDebugTraces()
 }
 
 async function runToolCall(): Promise<void> {
-  if (!selectedServerId.value || !selectedToolName.value) return;
-  busy.value = true;
+  if (!selectedServerId.value || !selectedToolName.value)
+    return
+  busy.value = true
   try {
-    const params = paramsText.value.trim() ? JSON.parse(paramsText.value) : {};
+    const params = paramsText.value.trim() ? JSON.parse(paramsText.value) : {}
     const r = await callMcpTool(
       selectedServerId.value,
       selectedToolName.value,
       params,
-    );
-    callResultText.value = JSON.stringify(r.result, null, 2);
-    const id = `${Date.now()}`;
-    const label = `${new Date().toLocaleTimeString()} ${selectedServerId.value}.${selectedToolName.value}`;
-    callResultHistory.value.unshift({ id, label, payload: callResultText.value });
-    callResultHistory.value = callResultHistory.value.slice(0, 10);
-    await refreshTraces();
-  } finally {
-    busy.value = false;
+    )
+    callResultText.value = JSON.stringify(r.result, null, 2)
+    const id = `${Date.now()}`
+    const label = `${new Date().toLocaleTimeString()} ${selectedServerId.value}.${selectedToolName.value}`
+    callResultHistory.value.unshift({ id, label, payload: callResultText.value })
+    callResultHistory.value = callResultHistory.value.slice(0, 10)
+    await refreshTraces()
+  }
+  finally {
+    busy.value = false
   }
 }
 
 async function clearTraces(): Promise<void> {
-  busy.value = true;
+  busy.value = true
   try {
-    await clearAgentDebugTraces();
-    traces.value = [];
-  } finally {
-    busy.value = false;
+    await clearAgentDebugTraces()
+    traces.value = []
+  }
+  finally {
+    busy.value = false
   }
 }
 
 function loadCustomTemplates(): void {
   try {
-    const raw = localStorage.getItem(CUSTOM_TEMPLATE_KEY);
-    if (!raw) return;
-    const arr = JSON.parse(raw) as TemplateItem[];
+    const raw = localStorage.getItem(CUSTOM_TEMPLATE_KEY)
+    if (!raw)
+      return
+    const arr = JSON.parse(raw) as TemplateItem[]
     if (Array.isArray(arr)) {
-      customTemplates.value = arr;
+      customTemplates.value = arr
     }
-  } catch {
+  }
+  catch {
     // ignore
   }
 }
 
 function applyTemplate(): void {
-  const item = templates.value.find((x) => x.id === selectedTemplateId.value);
-  if (!item) return;
+  const item = templates.value.find(x => x.id === selectedTemplateId.value)
+  if (!item)
+    return
   if (item.serverHint) {
-    const hit = servers.value.find((s) => s.id.includes(item.serverHint ?? ""));
-    if (hit) selectedServerId.value = hit.id;
+    const hit = servers.value.find(s => s.id.includes(item.serverHint ?? ''))
+    if (hit)
+      selectedServerId.value = hit.id
   }
-  selectedToolName.value = item.toolName;
-  paramsText.value = JSON.stringify(item.params, null, 2);
+  selectedToolName.value = item.toolName
+  paramsText.value = JSON.stringify(item.params, null, 2)
 }
 
 function saveCurrentTemplate(): void {
-  const label = customTemplateName.value.trim();
-  if (!label) return;
-  let paramsObj: Record<string, unknown> = {};
+  const label = customTemplateName.value.trim()
+  if (!label)
+    return
+  let paramsObj: Record<string, unknown> = {}
   try {
     paramsObj = paramsText.value.trim()
       ? (JSON.parse(paramsText.value) as Record<string, unknown>)
-      : {};
-  } catch {
-    return;
+      : {}
+  }
+  catch {
+    return
   }
   const item: TemplateItem = {
     id: `custom:${Date.now()}`,
     label,
-    toolName: selectedToolName.value.trim() || "tool_name",
+    toolName: selectedToolName.value.trim() || 'tool_name',
     params: paramsObj,
     serverHint: selectedServerId.value || undefined,
-  };
-  const next = [...customTemplates.value, item];
-  customTemplates.value = next;
-  localStorage.setItem(CUSTOM_TEMPLATE_KEY, JSON.stringify(next));
-  customTemplateName.value = "";
+  }
+  const next = [...customTemplates.value, item]
+  customTemplates.value = next
+  localStorage.setItem(CUSTOM_TEMPLATE_KEY, JSON.stringify(next))
+  customTemplateName.value = ''
 }
 
 const compareLeft = computed(() =>
-  callResultHistory.value.find((x) => x.id === compareLeftId.value) ?? null,
-);
+  callResultHistory.value.find(x => x.id === compareLeftId.value) ?? null,
+)
 const compareRight = computed(() =>
-  callResultHistory.value.find((x) => x.id === compareRightId.value) ?? null,
-);
+  callResultHistory.value.find(x => x.id === compareRightId.value) ?? null,
+)
 
 function runDiff(): void {
-  if (!compareLeft.value || !compareRight.value) return;
-  let left: unknown = compareLeft.value.payload;
-  let right: unknown = compareRight.value.payload;
+  if (!compareLeft.value || !compareRight.value)
+    return
+  let left: unknown = compareLeft.value.payload
+  let right: unknown = compareRight.value.payload
   try {
-    left = JSON.parse(compareLeft.value.payload);
-    right = JSON.parse(compareRight.value.payload);
-  } catch {
+    left = JSON.parse(compareLeft.value.payload)
+    right = JSON.parse(compareRight.value.payload)
+  }
+  catch {
     // fallback textual
   }
-  const lines: string[] = [];
+  const lines: string[] = []
   function walk(path: string, a: unknown, b: unknown): void {
-    const aObj = a && typeof a === "object" && !Array.isArray(a);
-    const bObj = b && typeof b === "object" && !Array.isArray(b);
+    const aObj = a && typeof a === 'object' && !Array.isArray(a)
+    const bObj = b && typeof b === 'object' && !Array.isArray(b)
     if (aObj && bObj) {
       const keys = new Set([
         ...Object.keys(a as Record<string, unknown>),
         ...Object.keys(b as Record<string, unknown>),
-      ]);
+      ])
       for (const k of keys) {
-        walk(path ? `${path}.${k}` : k, (a as Record<string, unknown>)[k], (b as Record<string, unknown>)[k]);
+        walk(path ? `${path}.${k}` : k, (a as Record<string, unknown>)[k], (b as Record<string, unknown>)[k])
       }
-      return;
+      return
     }
     if (JSON.stringify(a) !== JSON.stringify(b)) {
-      lines.push(`${path || "(root)"}\n  - ${JSON.stringify(a)}\n  + ${JSON.stringify(b)}`);
+      lines.push(`${path || '(root)'}\n  - ${JSON.stringify(a)}\n  + ${JSON.stringify(b)}`)
     }
   }
-  walk("", left, right);
-  diffText.value = lines.length > 0 ? lines.join("\n") : t("devTools.agent.diffEmpty");
+  walk('', left, right)
+  diffText.value = lines.length > 0 ? lines.join('\n') : t('devTools.agent.diffEmpty')
 }
 
 watch(selectedServerId, async (id) => {
   if (!id) {
-    availableTools.value = [];
-    return;
+    availableTools.value = []
+    return
   }
-  availableTools.value = await listMcpTools(id);
-});
+  availableTools.value = await listMcpTools(id)
+})
 
 onMounted(async () => {
-  loadCustomTemplates();
-  busy.value = true;
+  loadCustomTemplates()
+  busy.value = true
   try {
-    await Promise.all([refreshServers(), refreshTraces(), refreshGrants()]);
-  } finally {
-    busy.value = false;
+    await Promise.all([refreshServers(), refreshTraces(), refreshGrants()])
   }
-});
+  finally {
+    busy.value = false
+  }
+})
 </script>
 
 <template>
   <section class="adp">
-    <h3 class="adp-h">{{ t("devTools.agent.title") }}</h3>
+    <h3 class="adp-h">
+      {{ t("devTools.agent.title") }}
+    </h3>
     <p class="adp-sub">
       {{ t("devTools.agent.lead") }}
     </p>
 
     <div v-if="grants" class="adp-form adp-grants">
-      <h4 class="adp-h4">{{ t("devTools.agent.grantsTitle") }}</h4>
-      <p class="adp-grants-hint">{{ t("devTools.agent.grantsHint") }}</p>
+      <h4 class="adp-h4">
+        {{ t("devTools.agent.grantsTitle") }}
+      </h4>
+      <p class="adp-grants-hint">
+        {{ t("devTools.agent.grantsHint") }}
+      </p>
       <pre class="adp-pre adp-pre-compact">{{ JSON.stringify(grants, null, 2) }}</pre>
       <div class="adp-row">
         <label class="adp-inline">
@@ -288,7 +309,7 @@ onMounted(async () => {
         </label>
         <label class="adp-inline adp-grow">
           {{ t("devTools.agent.grantId") }}
-          <input v-model="grantTargetId" class="adp-input" :placeholder="t('devTools.agent.grantIdPh')" />
+          <input v-model="grantTargetId" class="adp-input" :placeholder="t('devTools.agent.grantIdPh')">
         </label>
       </div>
       <div class="adp-row">
@@ -322,8 +343,10 @@ onMounted(async () => {
         </select>
       </label>
       <div class="adp-row">
-        <input v-model="customTemplateName" class="adp-input" :placeholder="t('devTools.agent.saveTplNamePh')" />
-        <button type="button" class="adp-btn" @click="saveCurrentTemplate">{{ t("devTools.agent.saveTpl") }}</button>
+        <input v-model="customTemplateName" class="adp-input" :placeholder="t('devTools.agent.saveTplNamePh')">
+        <button type="button" class="adp-btn" @click="saveCurrentTemplate">
+          {{ t("devTools.agent.saveTpl") }}
+        </button>
       </div>
     </div>
 
@@ -345,7 +368,7 @@ onMounted(async () => {
             class="adp-input"
             type="text"
             :placeholder="t('devTools.agent.toolPh')"
-          />
+          >
           <select v-if="availableTools.length" v-model="selectedToolName" class="adp-input">
             <option value="">{{ t("devTools.agent.pickTool") }}</option>
             <option v-for="tool in availableTools" :key="tool.name" :value="tool.name">
@@ -366,35 +389,55 @@ onMounted(async () => {
     <pre v-if="callResultText" class="adp-pre">{{ callResultText }}</pre>
 
     <div v-if="callResultHistory.length >= 2" class="adp-diff">
-      <h4 class="adp-h4">{{ t("devTools.agent.diffTitle") }}</h4>
+      <h4 class="adp-h4">
+        {{ t("devTools.agent.diffTitle") }}
+      </h4>
       <div class="adp-row">
         <select v-model="compareLeftId" class="adp-input">
-          <option value="">{{ t("devTools.agent.diffLeft") }}</option>
-          <option v-for="h in callResultHistory" :key="`l-${h.id}`" :value="h.id">{{ h.label }}</option>
+          <option value="">
+            {{ t("devTools.agent.diffLeft") }}
+          </option>
+          <option v-for="h in callResultHistory" :key="`l-${h.id}`" :value="h.id">
+            {{ h.label }}
+          </option>
         </select>
         <select v-model="compareRightId" class="adp-input">
-          <option value="">{{ t("devTools.agent.diffRight") }}</option>
-          <option v-for="h in callResultHistory" :key="`r-${h.id}`" :value="h.id">{{ h.label }}</option>
+          <option value="">
+            {{ t("devTools.agent.diffRight") }}
+          </option>
+          <option v-for="h in callResultHistory" :key="`r-${h.id}`" :value="h.id">
+            {{ h.label }}
+          </option>
         </select>
-        <button type="button" class="adp-btn" @click="runDiff">{{ t("devTools.agent.diffRun") }}</button>
+        <button type="button" class="adp-btn" @click="runDiff">
+          {{ t("devTools.agent.diffRun") }}
+        </button>
       </div>
       <pre v-if="diffText" class="adp-pre">{{ diffText }}</pre>
     </div>
 
     <div class="adp-traces">
-      <h4 class="adp-h4">{{ t("devTools.agent.recentTitle") }}</h4>
+      <h4 class="adp-h4">
+        {{ t("devTools.agent.recentTitle") }}
+      </h4>
       <div v-for="(trace, i) in traces.slice().reverse()" :key="`${trace.timestamp_ms}-${i}`" class="adp-trace">
         <div class="adp-trace-line">
           <strong>{{ new Date(trace.timestamp_ms).toLocaleString() }}</strong> · {{ trace.message }}
         </div>
-        <div class="adp-trace-line">{{ t("devTools.agent.tracePlan") }}: {{ trace.plan }}</div>
-        <div class="adp-trace-line">{{ t("devTools.agent.traceReply") }}: {{ trace.reply }}</div>
+        <div class="adp-trace-line">
+          {{ t("devTools.agent.tracePlan") }}: {{ trace.plan }}
+        </div>
+        <div class="adp-trace-line">
+          {{ t("devTools.agent.traceReply") }}: {{ trace.reply }}
+        </div>
         <div v-if="trace.error" class="adp-trace-line err">
           {{ t("devTools.agent.traceError") }}: {{ trace.error }}
         </div>
         <pre v-if="trace.tool_calls?.length" class="adp-pre">{{ JSON.stringify(trace.tool_calls, null, 2) }}</pre>
       </div>
-      <p v-if="traces.length === 0" class="adp-empty">{{ t("devTools.agent.emptyTraces") }}</p>
+      <p v-if="traces.length === 0" class="adp-empty">
+        {{ t("devTools.agent.emptyTraces") }}
+      </p>
     </div>
 
     <EnvVarManager />

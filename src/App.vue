@@ -1,176 +1,180 @@
 <script setup lang="ts">
-import { computed, nextTick, onBeforeUnmount, onMounted, ref, watch } from "vue";
-import AutonomousSceneNotice from "./components/AutonomousSceneNotice.vue";
-import HelpHint from "./components/HelpHint.vue";
-import RoleDetailView from "./views/RoleDetailView.vue";
-import ChatInput from "./components/ChatInput.vue";
-import ChatPluginToolbarSlots from "./components/ChatPluginToolbarSlots.vue";
-import PluginChatHeaderSlots from "./components/PluginChatHeaderSlots.vue";
-import PluginSidebarSlots from "./components/PluginSidebarSlots.vue";
-import RoleplayAsidePanel from "./components/RoleplayAsidePanel.vue";
-import HotkeyHost from "./components/HotkeyHost.vue";
-import MarketView from "./views/MarketView.vue";
-import SimplePluginManagerPanel from "./views/SimplePluginManagerPanel.vue";
-import PluginSlotEmbed from "./components/PluginSlotEmbed.vue";
-import SettingsView from "./views/SettingsView.vue";
-import ChatMessageList from "./components/ChatMessageList.vue";
-import DebugPanel from "./components/DebugPanel.vue";
-import RoleSelector from "./components/RoleSelector.vue";
-import SceneTravelBars from "./components/SceneTravelBars.vue";
-import TopBarSceneModeDialog from "./components/TopBarSceneModeDialog.vue";
-import ShortcutHelp from "./components/ShortcutHelp.vue";
-import Toast from "./components/Toast.vue";
-import VirtualTimeBar from "./components/VirtualTimeBar.vue";
-import { useChatStore } from "./stores/chatStore";
-import { useDebugStore } from "./stores/debugStore";
-import { useRoleStore } from "./stores/roleStore";
-import { useUiStore } from "./stores/uiStore";
-import { usePluginStore } from "./stores/pluginStore";
-import { listen } from "@tauri-apps/api/event";
-import { buildRelationDropdownOptions } from "./utils/relationOptions";
-import { useAppToast } from "./composables/useAppToast";
-import { useOcliveAppearance } from "./composables/useOcliveAppearance";
-import { useNarrativeScene } from "./composables/useNarrativeScene";
-import { useSceneDestination } from "./composables/useSceneDestination";
-import { usePackUiTheme } from "./composables/useTheme";
-import { usePluginManagerWindow } from "./composables/usePluginManagerWindow";
-import { hostEventBus } from "./lib/hostEventBus";
+import type { LocalePreference } from './i18n'
+import type { JumpTimeResponse } from './utils/tauri-api'
+import { listen } from '@tauri-apps/api/event'
+import { computed, nextTick, onBeforeUnmount, onMounted, ref, watch } from 'vue'
+import { useI18n } from 'vue-i18n'
+import AutonomousSceneNotice from './components/AutonomousSceneNotice.vue'
+import ChatInput from './components/ChatInput.vue'
+import ChatMessageList from './components/ChatMessageList.vue'
+import ChatPluginToolbarSlots from './components/ChatPluginToolbarSlots.vue'
+import DebugPanel from './components/DebugPanel.vue'
+import HelpHint from './components/HelpHint.vue'
+import HotkeyHost from './components/HotkeyHost.vue'
+import PluginChatHeaderSlots from './components/PluginChatHeaderSlots.vue'
+import PluginSidebarSlots from './components/PluginSidebarSlots.vue'
+import PluginSlotEmbed from './components/PluginSlotEmbed.vue'
+import RoleplayAsidePanel from './components/RoleplayAsidePanel.vue'
+import RoleSelector from './components/RoleSelector.vue'
+import SceneTravelBars from './components/SceneTravelBars.vue'
+import ShortcutHelp from './components/ShortcutHelp.vue'
+import Toast from './components/Toast.vue'
+import TopBarSceneModeDialog from './components/TopBarSceneModeDialog.vue'
+import VirtualTimeBar from './components/VirtualTimeBar.vue'
+import { useAppToast } from './composables/useAppToast'
+import { useNarrativeScene } from './composables/useNarrativeScene'
+import { useOcliveAppearance } from './composables/useOcliveAppearance'
+import { usePluginManagerWindow } from './composables/usePluginManagerWindow'
+import { useSceneDestination } from './composables/useSceneDestination'
+import { usePackUiTheme } from './composables/useTheme'
+import {
+  getLocalePreference,
+
+  setLocalePreference,
+} from './i18n'
+import { hostEventBus } from './lib/hostEventBus'
+import { useChatStore } from './stores/chatStore'
+import { useDebugStore } from './stores/debugStore'
+import { usePluginStore } from './stores/pluginStore'
+import { useRoleStore } from './stores/roleStore'
+import { useUiStore } from './stores/uiStore'
+import { buildRelationDropdownOptions } from './utils/relationOptions'
 import {
   consumePendingProtocolInstalls,
   installPluginFromGit,
+
   loadRole,
   OCLIVE_DEFAULT_RELATION_SENTINEL,
   setErrorReporter,
   setRemoteLifeEnabled,
   setRoleInteractionMode,
   setUserRelation,
-  type JumpTimeResponse,
-} from "./utils/tauri-api";
-import { useI18n } from "vue-i18n";
-import {
-  getLocalePreference,
-  setLocalePreference,
-  type LocalePreference,
-} from "./i18n";
+} from './utils/tauri-api'
+import MarketView from './views/MarketView.vue'
+import RoleDetailView from './views/RoleDetailView.vue'
+import SettingsView from './views/SettingsView.vue'
+import SimplePluginManagerPanel from './views/SimplePluginManagerPanel.vue'
 
-const roleStore = useRoleStore();
-usePackUiTheme();
-const chatStore = useChatStore();
-const debugStore = useDebugStore();
-const uiStore = useUiStore();
-const pluginStore = usePluginStore();
-const { t, locale } = useI18n();
+const roleStore = useRoleStore()
+usePackUiTheme()
+const chatStore = useChatStore()
+const debugStore = useDebugStore()
+const uiStore = useUiStore()
+const pluginStore = usePluginStore()
+const { t, locale } = useI18n()
 
 function syncBrowserChromeFromLocale(): void {
-  document.title = t("app.documentTitle");
-  document.documentElement.setAttribute("lang", locale.value === "en-US" ? "en" : "zh-CN");
+  document.title = t('app.documentTitle')
+  document.documentElement.setAttribute('lang', locale.value === 'en-US' ? 'en' : 'zh-CN')
 }
-const localePreference = ref<LocalePreference>(getLocalePreference());
+const localePreference = ref<LocalePreference>(getLocalePreference())
 
 function onLocalePreferenceChange(ev: Event): void {
-  const el = ev.target as HTMLSelectElement | null;
-  if (!el) return;
-  const v = el.value as LocalePreference;
-  setLocalePreference(v);
-  localePreference.value = v;
+  const el = ev.target as HTMLSelectElement | null
+  if (!el)
+    return
+  const v = el.value as LocalePreference
+  setLocalePreference(v)
+  localePreference.value = v
 }
-const { toast, showToast } = useAppToast();
-const { themePreference, themeCycleLabel, cycleTheme, bumpScale, scaleLabel } =
-  useOcliveAppearance();
-const { applyResolvedNarrativeScene } = useNarrativeScene();
+const { toast, showToast } = useAppToast()
+const { themePreference, themeCycleLabel, cycleTheme, bumpScale, scaleLabel }
+  = useOcliveAppearance()
+const { applyResolvedNarrativeScene } = useNarrativeScene()
 const {
   sceneTransition,
   applySceneDestination,
   sceneLabelForId,
   characterSceneLabel,
-} = useSceneDestination(showToast);
+} = useSceneDestination(showToast)
 
-const chatListRef = ref<InstanceType<typeof ChatMessageList> | null>(null);
-const chatInputRef = ref<{ focusInput?: () => void } | null>(null);
-const leftPaneRef = ref<HTMLElement | null>(null);
-const roleSwitching = ref(false);
+const chatListRef = ref<InstanceType<typeof ChatMessageList> | null>(null)
+const chatInputRef = ref<{ focusInput?: () => void } | null>(null)
+const leftPaneRef = ref<HTMLElement | null>(null)
+const roleSwitching = ref(false)
 
 /** Escape / backdrop 关闭对话框后恢复打开前的焦点 */
-const settingsFocusReturn = ref<HTMLElement | null>(null);
-const simplePluginManagerFocusReturn = ref<HTMLElement | null>(null);
-const shortcutHelpFocusReturn = ref<HTMLElement | null>(null);
+const settingsFocusReturn = ref<HTMLElement | null>(null)
+const simplePluginManagerFocusReturn = ref<HTMLElement | null>(null)
+const shortcutHelpFocusReturn = ref<HTMLElement | null>(null)
 
 function stashFocusTarget(target: typeof settingsFocusReturn): void {
-  const a = document.activeElement;
-  target.value = a instanceof HTMLElement ? a : null;
+  const a = document.activeElement
+  target.value = a instanceof HTMLElement ? a : null
 }
 
 function restoreFocusTarget(target: typeof settingsFocusReturn): void {
-  const el = target.value;
-  target.value = null;
-  void nextTick(() => el?.focus({ preventScroll: true }));
+  const el = target.value
+  target.value = null
+  void nextTick(() => el?.focus({ preventScroll: true }))
 }
 
 /** 角色回复结束后，若本句含位移意图且有多场景，显示目的地条 */
-const postReplySceneBarVisible = ref(false);
-const postReplySceneSelectedId = ref("");
+const postReplySceneBarVisible = ref(false)
+const postReplySceneSelectedId = ref('')
 /** 邀请同行语义：选目的地后同行或仅叙事 */
-const togetherTravelBarVisible = ref(false);
-const togetherTravelSelectedId = ref("");
+const togetherTravelBarVisible = ref(false)
+const togetherTravelSelectedId = ref('')
 /** 顶栏改场景：叙事独行 / 同行 */
-const topBarSceneDialogVisible = ref(false);
-const pendingTopBarSceneId = ref("");
+const topBarSceneDialogVisible = ref(false)
+const pendingTopBarSceneId = ref('')
 /** 顶栏场景确认弹关闭后恢复焦点到场景下拉 */
-const topBarSceneOpenerFocus = ref<HTMLElement | null>(null);
-const quickActionTravelEvent = "com.oclive.mumu.quick-actions:travel";
-const settingsSetRemoteLifeEvent = "com.oclive.mumu.settings-panel:set_remote_life";
-const settingsSetInteractionModeEvent =
-  "com.oclive.mumu.settings-panel:set_interaction_mode";
-const settingsCycleThemeEvent = "com.oclive.mumu.settings-panel:cycle_theme";
-const settingsResetLayoutEvent = "com.oclive.mumu.settings-panel:request_reset_layout";
-const settingsResetLayoutResultEvent = "com.oclive.mumu.settings-panel:reset_layout_result";
+const topBarSceneOpenerFocus = ref<HTMLElement | null>(null)
+const quickActionTravelEvent = 'com.oclive.mumu.quick-actions:travel'
+const settingsSetRemoteLifeEvent = 'com.oclive.mumu.settings-panel:set_remote_life'
+const settingsSetInteractionModeEvent
+  = 'com.oclive.mumu.settings-panel:set_interaction_mode'
+const settingsCycleThemeEvent = 'com.oclive.mumu.settings-panel:cycle_theme'
+const settingsResetLayoutEvent = 'com.oclive.mumu.settings-panel:request_reset_layout'
+const settingsResetLayoutResultEvent = 'com.oclive.mumu.settings-panel:reset_layout_result'
 /** 虚拟时间跳转触发 autonomous_scene 规则时，左下角系统提示 */
 const autonomousSceneNotice = ref<{
-  visible: boolean;
-  fromLabel: string;
-  toLabel: string;
-}>({ visible: false, fromLabel: "", toLabel: "" });
+  visible: boolean
+  fromLabel: string
+  toLabel: string
+}>({ visible: false, fromLabel: '', toLabel: '' })
 
-const shortcutHelpOpen = ref(false);
-let ctrlLongPressTimer: ReturnType<typeof setTimeout> | null = null;
+const shortcutHelpOpen = ref(false)
+let ctrlLongPressTimer: ReturnType<typeof setTimeout> | null = null
 
 function clearCtrlLongPressTimer(): void {
   if (ctrlLongPressTimer != null) {
-    window.clearTimeout(ctrlLongPressTimer);
-    ctrlLongPressTimer = null;
+    window.clearTimeout(ctrlLongPressTimer)
+    ctrlLongPressTimer = null
   }
 }
 
 function onCtrlHoldHintKeydown(e: KeyboardEvent): void {
-  if (e.key !== "Control" || e.repeat) {
-    return;
+  if (e.key !== 'Control' || e.repeat) {
+    return
   }
-  clearCtrlLongPressTimer();
+  clearCtrlLongPressTimer()
   ctrlLongPressTimer = window.setTimeout(() => {
-    ctrlLongPressTimer = null;
-    shortcutHelpOpen.value = true;
-  }, 1000);
+    ctrlLongPressTimer = null
+    shortcutHelpOpen.value = true
+  }, 1000)
 }
 
 function onCtrlHoldHintKeyup(e: KeyboardEvent): void {
-  if (e.key === "Control") {
-    clearCtrlLongPressTimer();
+  if (e.key === 'Control') {
+    clearCtrlLongPressTimer()
   }
 }
 
 /** 宽屏左右分栏；窄屏改为上下堆叠，立绘用 stack 布局更易读 */
-const wideSplitLayout = ref(typeof window !== "undefined" && window.innerWidth > 720);
+const wideSplitLayout = ref(typeof window !== 'undefined' && window.innerWidth > 720)
 function refreshSplitLayout(): void {
-  wideSplitLayout.value = typeof window !== "undefined" && window.innerWidth > 720;
+  wideSplitLayout.value = typeof window !== 'undefined' && window.innerWidth > 720
 }
 
-let splitLayoutResizeRaf = 0;
+let splitLayoutResizeRaf = 0
 function scheduleRefreshSplitLayout(): void {
-  if (splitLayoutResizeRaf !== 0) return;
+  if (splitLayoutResizeRaf !== 0)
+    return
   splitLayoutResizeRaf = requestAnimationFrame(() => {
-    splitLayoutResizeRaf = 0;
-    refreshSplitLayout();
-  });
+    splitLayoutResizeRaf = 0
+    refreshSplitLayout()
+  })
 }
 
 const relationOptions = computed(() =>
@@ -178,50 +182,52 @@ const relationOptions = computed(() =>
     roleStore.roleInfo.userRelations ?? [],
     roleStore.roleInfo.defaultRelation,
   ),
-);
+)
 
 const connectivityPluginIndexDetail = computed(() => {
-  const b = uiStore.connectivityBanner;
-  if (!b || b.kind !== "plugin_index_offline" || !b.detail) return "";
-  const d = b.detail;
-  return d.length > 200 ? `${d.slice(0, 200)}…` : d;
-});
+  const b = uiStore.connectivityBanner
+  if (!b || b.kind !== 'plugin_index_offline' || !b.detail)
+    return ''
+  const d = b.detail
+  return d.length > 200 ? `${d.slice(0, 200)}…` : d
+})
 
 /** 顶栏：全部场景选项（展示名） */
 const allSceneOptions = computed(() => {
-  const labels = roleStore.roleInfo.sceneLabels ?? [];
-  const scenes = roleStore.roleInfo.scenes ?? [];
+  const labels = roleStore.roleInfo.sceneLabels ?? []
+  const scenes = roleStore.roleInfo.scenes ?? []
   if (labels.length > 0) {
-    return labels.map((s) => ({ id: s.id, label: s.label }));
+    return labels.map(s => ({ id: s.id, label: s.label }))
   }
-  return scenes.map((id) => ({ id, label: id }));
-});
+  return scenes.map(id => ({ id, label: id }))
+})
 
 /** 除当前叙事场景外可切换的目的地（位移条） */
 const sceneDestinationOptions = computed(() => {
-  const cur = uiStore.sceneId;
-  return allSceneOptions.value.filter((s) => s.id !== cur);
-});
+  const cur = uiStore.sceneId
+  return allSceneOptions.value.filter(s => s.id !== cur)
+})
 
 const messages = computed(() =>
   chatStore.messagesForRoleScene(roleStore.currentRoleId, uiStore.sceneId),
-);
+)
 
 /** 本场景最近一条助手消息拆出的旁白/内心（供左侧叙事区，与主气泡对白分离） */
 const latestRoleplayAside = computed(() => {
-  const list = messages.value;
+  const list = messages.value
   for (let i = list.length - 1; i >= 0; i--) {
-    const m = list[i];
-    if (m.role === "assistant") {
-      const a = m.aside?.trim();
-      if (a) return a;
+    const m = list[i]
+    if (m.role === 'assistant') {
+      const a = m.aside?.trim()
+      if (a)
+        return a
     }
   }
-  return "";
-});
+  return ''
+})
 
-const topMoreOpen = ref(false);
-const settingsViewOpen = ref(false);
+const topMoreOpen = ref(false)
+const settingsViewOpen = ref(false)
 
 const {
   simplePluginManagerOpen,
@@ -231,339 +237,366 @@ const {
   settingsEntryMoreHelp,
 } = usePluginManagerWindow({
   closeMoreMenu: () => {
-    topMoreOpen.value = false;
+    topMoreOpen.value = false
   },
-});
+})
 
 watch(settingsViewOpen, (open) => {
   if (open) {
-    stashFocusTarget(settingsFocusReturn);
-  } else {
-    restoreFocusTarget(settingsFocusReturn);
+    stashFocusTarget(settingsFocusReturn)
   }
-});
+  else {
+    restoreFocusTarget(settingsFocusReturn)
+  }
+})
 
 watch(simplePluginManagerOpen, (open) => {
   if (open) {
-    stashFocusTarget(simplePluginManagerFocusReturn);
-  } else {
-    restoreFocusTarget(simplePluginManagerFocusReturn);
+    stashFocusTarget(simplePluginManagerFocusReturn)
   }
-});
+  else {
+    restoreFocusTarget(simplePluginManagerFocusReturn)
+  }
+})
 
 watch(shortcutHelpOpen, (open) => {
   if (open) {
-    stashFocusTarget(shortcutHelpFocusReturn);
-  } else {
-    restoreFocusTarget(shortcutHelpFocusReturn);
+    stashFocusTarget(shortcutHelpFocusReturn)
   }
-});
+  else {
+    restoreFocusTarget(shortcutHelpFocusReturn)
+  }
+})
 
-const topBarRef = ref<HTMLElement | null>(null);
-let morePanelClickListenTimer: ReturnType<typeof setTimeout> | null = null;
+const topBarRef = ref<HTMLElement | null>(null)
+let morePanelClickListenTimer: ReturnType<typeof setTimeout> | null = null
 
 function toggleTopMore(e: Event) {
-  e.stopPropagation();
-  topMoreOpen.value = !topMoreOpen.value;
+  e.stopPropagation()
+  topMoreOpen.value = !topMoreOpen.value
 }
 
 function openShortcutHelp(): void {
-  shortcutHelpOpen.value = true;
-  topMoreOpen.value = false;
+  shortcutHelpOpen.value = true
+  topMoreOpen.value = false
 }
 
 function openSettingsView(): void {
-  settingsViewOpen.value = true;
-  topMoreOpen.value = false;
+  settingsViewOpen.value = true
+  topMoreOpen.value = false
 }
 
 function onDocumentClickCloseMore(e: MouseEvent) {
-  if (!topMoreOpen.value) return;
-  const el = topBarRef.value;
-  if (el && !el.contains(e.target as Node)) topMoreOpen.value = false;
+  if (!topMoreOpen.value)
+    return
+  const el = topBarRef.value
+  if (el && !el.contains(e.target as Node))
+    topMoreOpen.value = false
 }
 const sceneHistorySplitIndex = computed(() =>
   chatStore.sceneHistorySplitForRoleScene(roleStore.currentRoleId, uiStore.sceneId),
-);
+)
 
 /** 角色包 `ui.json` → layout；空字段视为 left / bottom */
 const packLayoutResolved = computed(() => {
   const l = roleStore.roleInfo.packUiConfig?.layout ?? {
-    sidebar: "",
-    chatInput: "",
-  };
-  const sidebar = l.sidebar === "right" ? "right" : "left";
-  const chatInput = l.chatInput === "top" ? "top" : "bottom";
-  return { sidebar, chatInput };
-});
-const sidebarRight = computed(() => packLayoutResolved.value.sidebar === "right");
-const chatInputTop = computed(() => packLayoutResolved.value.chatInput === "top");
-const roleName = computed(() => roleStore.roleInfo.name || t("app.defaultRoleName"));
-const emotion = computed(() => roleStore.roleInfo.currentEmotion || "neutral");
+    sidebar: '',
+    chatInput: '',
+  }
+  const sidebar = l.sidebar === 'right' ? 'right' : 'left'
+  const chatInput = l.chatInput === 'top' ? 'top' : 'bottom'
+  return { sidebar, chatInput }
+})
+const sidebarRight = computed(() => packLayoutResolved.value.sidebar === 'right')
+const chatInputTop = computed(() => packLayoutResolved.value.chatInput === 'top')
+const roleName = computed(() => roleStore.roleInfo.name || t('app.defaultRoleName'))
+const emotion = computed(() => roleStore.roleInfo.currentEmotion || 'neutral')
 
 /** 对齐 oclive-new 底部状态栏心形 */
 const statusHeart = computed(() => {
-  const f = roleStore.roleInfo.favorability;
-  if (f >= 60) return "💖";
-  if (f >= 30) return "💕";
-  return "🤍";
-});
+  const f = roleStore.roleInfo.favorability
+  if (f >= 60)
+    return '💖'
+  if (f >= 30)
+    return '💕'
+  return '🤍'
+})
 
 async function onInteractionModeChange(ev: Event) {
-  const v = (ev.target as HTMLSelectElement).value as "immersive" | "pure_chat";
+  const v = (ev.target as HTMLSelectElement).value as 'immersive' | 'pure_chat'
   try {
-    const info = await setRoleInteractionMode(roleStore.currentRoleId, v);
-    roleStore.applyRoleInfo(info);
-    if (v === "pure_chat") {
-      postReplySceneBarVisible.value = false;
-      postReplySceneSelectedId.value = "";
-      togetherTravelBarVisible.value = false;
-      togetherTravelSelectedId.value = "";
-      topBarSceneDialogVisible.value = false;
-      pendingTopBarSceneId.value = "";
+    const info = await setRoleInteractionMode(roleStore.currentRoleId, v)
+    roleStore.applyRoleInfo(info)
+    if (v === 'pure_chat') {
+      postReplySceneBarVisible.value = false
+      postReplySceneSelectedId.value = ''
+      togetherTravelBarVisible.value = false
+      togetherTravelSelectedId.value = ''
+      topBarSceneDialogVisible.value = false
+      pendingTopBarSceneId.value = ''
       autonomousSceneNotice.value = {
         visible: false,
-        fromLabel: "",
-        toLabel: "",
-      };
+        fromLabel: '',
+        toLabel: '',
+      }
     }
-  } catch (err) {
-    showToast("error", err instanceof Error ? err.message : String(err));
+  }
+  catch (err) {
+    showToast('error', err instanceof Error ? err.message : String(err))
   }
 }
 
 async function onPluginSetRemoteLife(payload: unknown): Promise<void> {
-  const enabledRaw = (payload as { enabled?: boolean } | null)?.enabled;
-  if (typeof enabledRaw !== "boolean") return;
+  const enabledRaw = (payload as { enabled?: boolean } | null)?.enabled
+  if (typeof enabledRaw !== 'boolean')
+    return
   try {
-    const info = await setRemoteLifeEnabled(roleStore.currentRoleId, enabledRaw);
-    roleStore.applyRoleInfo(info);
-    showToast("success", enabledRaw ? t("app.toast.remoteLifeOn") : t("app.toast.remoteLifeOff"));
-  } catch (err) {
-    showToast("error", err instanceof Error ? err.message : String(err));
+    const info = await setRemoteLifeEnabled(roleStore.currentRoleId, enabledRaw)
+    roleStore.applyRoleInfo(info)
+    showToast('success', enabledRaw ? t('app.toast.remoteLifeOn') : t('app.toast.remoteLifeOff'))
+  }
+  catch (err) {
+    showToast('error', err instanceof Error ? err.message : String(err))
   }
 }
 
 async function onPluginSetInteractionMode(payload: unknown): Promise<void> {
-  const mode = (payload as { mode?: string } | null)?.mode;
-  if (mode !== "immersive" && mode !== "pure_chat") return;
+  const mode = (payload as { mode?: string } | null)?.mode
+  if (mode !== 'immersive' && mode !== 'pure_chat')
+    return
   try {
-    const info = await setRoleInteractionMode(roleStore.currentRoleId, mode);
-    roleStore.applyRoleInfo(info);
-    if (mode === "pure_chat") {
-      postReplySceneBarVisible.value = false;
-      postReplySceneSelectedId.value = "";
-      togetherTravelBarVisible.value = false;
-      togetherTravelSelectedId.value = "";
-      topBarSceneDialogVisible.value = false;
-      pendingTopBarSceneId.value = "";
+    const info = await setRoleInteractionMode(roleStore.currentRoleId, mode)
+    roleStore.applyRoleInfo(info)
+    if (mode === 'pure_chat') {
+      postReplySceneBarVisible.value = false
+      postReplySceneSelectedId.value = ''
+      togetherTravelBarVisible.value = false
+      togetherTravelSelectedId.value = ''
+      topBarSceneDialogVisible.value = false
+      pendingTopBarSceneId.value = ''
       autonomousSceneNotice.value = {
         visible: false,
-        fromLabel: "",
-        toLabel: "",
-      };
+        fromLabel: '',
+        toLabel: '',
+      }
     }
     showToast(
-      "success",
-      mode === "immersive"
-        ? t("app.toast.interactionImmersive")
-        : t("app.toast.interactionPureChat"),
-    );
-  } catch (err) {
-    showToast("error", err instanceof Error ? err.message : String(err));
+      'success',
+      mode === 'immersive'
+        ? t('app.toast.interactionImmersive')
+        : t('app.toast.interactionPureChat'),
+    )
+  }
+  catch (err) {
+    showToast('error', err instanceof Error ? err.message : String(err))
   }
 }
 
 function onPluginCycleTheme(): void {
-  cycleTheme();
+  cycleTheme()
 }
 
 async function onPluginResetLayout(): Promise<void> {
   try {
-    await pluginStore.resetToRolePackDefault();
-    const message = t("app.toast.layoutResetOk");
-    hostEventBus.emit(settingsResetLayoutResultEvent, { ok: true, message });
-    showToast("success", message);
-  } catch (err) {
-    const message = err instanceof Error ? err.message : String(err);
+    await pluginStore.resetToRolePackDefault()
+    const message = t('app.toast.layoutResetOk')
+    hostEventBus.emit(settingsResetLayoutResultEvent, { ok: true, message })
+    showToast('success', message)
+  }
+  catch (err) {
+    const message = err instanceof Error ? err.message : String(err)
     hostEventBus.emit(settingsResetLayoutResultEvent, {
       ok: false,
-      message: t("app.toast.layoutResetFailPrefix") + message,
-    });
-    showToast("error", message);
+      message: t('app.toast.layoutResetFailPrefix') + message,
+    })
+    showToast('error', message)
   }
 }
 
 async function initialize() {
   try {
-    await roleStore.loadRoles();
+    await roleStore.loadRoles()
     if (!roleStore.currentRoleId.trim()) {
-      showToast("error", t("app.toast.noRolesScanned"));
-      return;
+      showToast('error', t('app.toast.noRolesScanned'))
+      return
     }
-    await loadRole(roleStore.currentRoleId);
-    await pluginStore.refresh();
-    await roleStore.refreshRoleInfo();
-    hostEventBus.emitBuiltin("role:switched", { roleId: roleStore.currentRoleId });
-    applyResolvedNarrativeScene();
-    await debugStore.loadDebugData();
-  } catch (err) {
-    showToast("error", err instanceof Error ? err.message : String(err));
+    await loadRole(roleStore.currentRoleId)
+    await pluginStore.refresh()
+    await roleStore.refreshRoleInfo()
+    hostEventBus.emitBuiltin('role:switched', { roleId: roleStore.currentRoleId })
+    applyResolvedNarrativeScene()
+    await debugStore.loadDebugData()
+  }
+  catch (err) {
+    showToast('error', err instanceof Error ? err.message : String(err))
   }
 }
 
 async function onSend(payload: { content: string }) {
-  postReplySceneBarVisible.value = false;
-  postReplySceneSelectedId.value = "";
-  togetherTravelBarVisible.value = false;
-  togetherTravelSelectedId.value = "";
-  const userText = payload.content;
+  postReplySceneBarVisible.value = false
+  postReplySceneSelectedId.value = ''
+  togetherTravelBarVisible.value = false
+  togetherTravelSelectedId.value = ''
+  const userText = payload.content
   try {
-    const res = await chatStore.sendMessage(userText, uiStore.sceneId);
-    await roleStore.refreshRoleInfo();
-    applyResolvedNarrativeScene();
-    await debugStore.loadDebugData();
+    const res = await chatStore.sendMessage(userText, uiStore.sceneId)
+    await roleStore.refreshRoleInfo()
+    applyResolvedNarrativeScene()
+    await debugStore.loadDebugData()
     if (res.reply_is_fallback) {
-      showToast("info", t("app.toast.fallbackReply"));
+      showToast('info', t('app.toast.fallbackReply'))
     }
-    const offerTogether = res.offer_together_travel ?? false;
-    const offerPicker = res.offer_destination_picker ?? false;
+    const offerTogether = res.offer_together_travel ?? false
+    const offerPicker = res.offer_destination_picker ?? false
     // 问卷：邀请同行条优先于「仅选目的地」条（与后端 movement_ui_flags 一致）
     if (offerTogether && sceneDestinationOptions.value.length > 0) {
-      togetherTravelBarVisible.value = true;
-    } else if (offerPicker && sceneDestinationOptions.value.length > 0) {
-      postReplySceneBarVisible.value = true;
+      togetherTravelBarVisible.value = true
     }
-  } catch (err) {
-    showToast("error", err instanceof Error ? err.message : String(err));
-  } finally {
-    chatInputRef.value?.focusInput?.();
+    else if (offerPicker && sceneDestinationOptions.value.length > 0) {
+      postReplySceneBarVisible.value = true
+    }
+  }
+  catch (err) {
+    showToast('error', err instanceof Error ? err.message : String(err))
+  }
+  finally {
+    chatInputRef.value?.focusInput?.()
   }
 }
 
 async function confirmPostReplyScene(together: boolean) {
-  const id = postReplySceneSelectedId.value.trim();
-  postReplySceneBarVisible.value = false;
-  postReplySceneSelectedId.value = "";
-  await applySceneDestination(id, together);
+  const id = postReplySceneSelectedId.value.trim()
+  postReplySceneBarVisible.value = false
+  postReplySceneSelectedId.value = ''
+  await applySceneDestination(id, together)
 }
 
 function dismissPostReplySceneBar() {
-  postReplySceneBarVisible.value = false;
-  postReplySceneSelectedId.value = "";
+  postReplySceneBarVisible.value = false
+  postReplySceneSelectedId.value = ''
 }
 
 async function confirmTogetherTravel(together: boolean) {
-  const id = togetherTravelSelectedId.value.trim();
-  togetherTravelBarVisible.value = false;
-  togetherTravelSelectedId.value = "";
-  await applySceneDestination(id, together);
+  const id = togetherTravelSelectedId.value.trim()
+  togetherTravelBarVisible.value = false
+  togetherTravelSelectedId.value = ''
+  await applySceneDestination(id, together)
 }
 
 function dismissTogetherTravelBar() {
-  togetherTravelBarVisible.value = false;
-  togetherTravelSelectedId.value = "";
+  togetherTravelBarVisible.value = false
+  togetherTravelSelectedId.value = ''
 }
 
 function onTopBarSceneChange(ev: Event) {
-  const sel = ev.target as HTMLSelectElement;
-  const next = sel.value;
-  if (next === uiStore.sceneId) return;
-  const a = document.activeElement;
-  topBarSceneOpenerFocus.value = a instanceof HTMLElement ? a : null;
-  pendingTopBarSceneId.value = next;
-  topBarSceneDialogVisible.value = true;
-  sel.value = uiStore.sceneId;
+  const sel = ev.target as HTMLSelectElement
+  const next = sel.value
+  if (next === uiStore.sceneId)
+    return
+  const a = document.activeElement
+  topBarSceneOpenerFocus.value = a instanceof HTMLElement ? a : null
+  pendingTopBarSceneId.value = next
+  topBarSceneDialogVisible.value = true
+  sel.value = uiStore.sceneId
 }
 
 function dismissTopBarSceneDialog() {
-  topBarSceneDialogVisible.value = false;
-  pendingTopBarSceneId.value = "";
-  const el = topBarSceneOpenerFocus.value;
-  topBarSceneOpenerFocus.value = null;
-  void nextTick(() => el?.focus({ preventScroll: true }));
+  topBarSceneDialogVisible.value = false
+  pendingTopBarSceneId.value = ''
+  const el = topBarSceneOpenerFocus.value
+  topBarSceneOpenerFocus.value = null
+  void nextTick(() => el?.focus({ preventScroll: true }))
 }
 
 async function confirmTopBarScene(together: boolean) {
-  const id = pendingTopBarSceneId.value.trim();
-  topBarSceneDialogVisible.value = false;
-  pendingTopBarSceneId.value = "";
-  const el = topBarSceneOpenerFocus.value;
-  topBarSceneOpenerFocus.value = null;
-  void nextTick(() => el?.focus({ preventScroll: true }));
-  await applySceneDestination(id, together);
+  const id = pendingTopBarSceneId.value.trim()
+  topBarSceneDialogVisible.value = false
+  pendingTopBarSceneId.value = ''
+  const el = topBarSceneOpenerFocus.value
+  topBarSceneOpenerFocus.value = null
+  void nextTick(() => el?.focus({ preventScroll: true }))
+  await applySceneDestination(id, together)
 }
 
 function onPluginQuickActionTravel(payload: unknown): void {
-  const sceneId = (payload as { sceneId?: string } | null)?.sceneId;
-  const togetherRaw = (payload as { together?: boolean } | null)?.together;
-  const id = typeof sceneId === "string" ? sceneId.trim() : "";
-  if (!id) return;
-  if (!allSceneOptions.value.some((s) => s.id === id)) return;
-  const together = togetherRaw === true;
-  void applySceneDestination(id, together);
+  const sceneId = (payload as { sceneId?: string } | null)?.sceneId
+  const togetherRaw = (payload as { together?: boolean } | null)?.together
+  const id = typeof sceneId === 'string' ? sceneId.trim() : ''
+  if (!id)
+    return
+  if (!allSceneOptions.value.some(s => s.id === id))
+    return
+  const together = togetherRaw === true
+  void applySceneDestination(id, together)
 }
 
 async function onSwitchRole(nextRoleId: string) {
-  const savedLeftScroll = leftPaneRef.value?.scrollTop ?? 0;
+  const savedLeftScroll = leftPaneRef.value?.scrollTop ?? 0
   try {
-    roleSwitching.value = true;
-    await roleStore.switchRole(nextRoleId);
-    await pluginStore.syncDirectoryPluginBootstrap();
-    hostEventBus.emitBuiltin("role:switched", { roleId: nextRoleId });
-    applyResolvedNarrativeScene();
-    await debugStore.loadDebugData();
-    showToast("success", t("app.toast.roleSwitched", { id: nextRoleId }));
-  } catch (err) {
-    showToast("error", err instanceof Error ? err.message : String(err));
-  } finally {
+    roleSwitching.value = true
+    await roleStore.switchRole(nextRoleId)
+    await pluginStore.syncDirectoryPluginBootstrap()
+    hostEventBus.emitBuiltin('role:switched', { roleId: nextRoleId })
+    applyResolvedNarrativeScene()
+    await debugStore.loadDebugData()
+    showToast('success', t('app.toast.roleSwitched', { id: nextRoleId }))
+  }
+  catch (err) {
+    showToast('error', err instanceof Error ? err.message : String(err))
+  }
+  finally {
     window.setTimeout(() => {
-      roleSwitching.value = false;
+      roleSwitching.value = false
       void nextTick(() => {
-        const pane = leftPaneRef.value;
+        const pane = leftPaneRef.value
         if (pane) {
-          pane.scrollTop = savedLeftScroll;
+          pane.scrollTop = savedLeftScroll
         }
-      });
-    }, 220);
+      })
+    }, 220)
   }
 }
 
 async function onChangeRelation(nextRelation: string) {
   try {
-    const perScene = roleStore.roleInfo.identityBinding === "per_scene";
+    const perScene = roleStore.roleInfo.identityBinding === 'per_scene'
     if (nextRelation === OCLIVE_DEFAULT_RELATION_SENTINEL) {
       if (perScene) {
-        await roleStore.setManifestDefaultIdentity(uiStore.sceneId);
-      } else {
-        await roleStore.setManifestDefaultIdentity();
+        await roleStore.setManifestDefaultIdentity(uiStore.sceneId)
       }
-    } else if (perScene) {
-      await roleStore.setSceneUserRelation(uiStore.sceneId, nextRelation);
-    } else {
-      const info = await setUserRelation(roleStore.currentRoleId, nextRelation);
-      roleStore.applyRoleInfo(info);
+      else {
+        await roleStore.setManifestDefaultIdentity()
+      }
     }
-    const relationName =
-      relationOptions.value.find((r) => r.id === nextRelation)?.name ?? nextRelation;
-    const scopeKey = perScene ? "app.toast.relationSetPerScene" : "app.toast.relationSetGlobal";
-    showToast("success", t(scopeKey, { name: relationName }));
-  } catch (err) {
-    showToast("error", err instanceof Error ? err.message : String(err));
+    else if (perScene) {
+      await roleStore.setSceneUserRelation(uiStore.sceneId, nextRelation)
+    }
+    else {
+      const info = await setUserRelation(roleStore.currentRoleId, nextRelation)
+      roleStore.applyRoleInfo(info)
+    }
+    const relationName
+      = relationOptions.value.find(r => r.id === nextRelation)?.name ?? nextRelation
+    const scopeKey = perScene ? 'app.toast.relationSetPerScene' : 'app.toast.relationSetGlobal'
+    showToast('success', t(scopeKey, { name: relationName }))
+  }
+  catch (err) {
+    showToast('error', err instanceof Error ? err.message : String(err))
   }
 }
 
 async function onPackImported(roleId: string) {
   try {
-    roleStore.currentRoleId = roleId;
-    await loadRole(roleId);
-    await pluginStore.refresh();
-    await roleStore.refreshRoleInfo();
-    await roleStore.loadRoles();
-    applyResolvedNarrativeScene();
-    await debugStore.loadDebugData();
-  } catch (err) {
-    showToast("error", err instanceof Error ? err.message : String(err));
+    roleStore.currentRoleId = roleId
+    await loadRole(roleId)
+    await pluginStore.refresh()
+    await roleStore.refreshRoleInfo()
+    await roleStore.loadRoles()
+    applyResolvedNarrativeScene()
+    await debugStore.loadDebugData()
+  }
+  catch (err) {
+    showToast('error', err instanceof Error ? err.message : String(err))
   }
 }
 
@@ -573,573 +606,591 @@ function onVirtualTimeJumpComplete(res: JumpTimeResponse): void {
       visible: true,
       fromLabel: sceneLabelForId(res.autonomous_scene_from),
       toLabel: sceneLabelForId(res.autonomous_scene_to),
-    };
+    }
   }
 }
 
 function dismissAutonomousSceneNotice(): void {
-  autonomousSceneNotice.value = { visible: false, fromLabel: "", toLabel: "" };
+  autonomousSceneNotice.value = { visible: false, fromLabel: '', toLabel: '' }
 }
 
 async function onReloadPolicy() {
   try {
-    const msg = await debugStore.reloadPolicy();
-    showToast("success", msg);
-  } catch (err) {
-    showToast("error", err instanceof Error ? err.message : String(err));
+    const msg = await debugStore.reloadPolicy()
+    showToast('success', msg)
+  }
+  catch (err) {
+    showToast('error', err instanceof Error ? err.message : String(err))
   }
 }
 
 function onHotkey(e: KeyboardEvent) {
-  if (e.key === "Escape") {
+  if (e.key === 'Escape') {
     if (simplePluginManagerOpen.value) {
-      e.preventDefault();
-      simplePluginManagerOpen.value = false;
-      return;
+      e.preventDefault()
+      simplePluginManagerOpen.value = false
+      return
     }
     if (shortcutHelpOpen.value) {
-      e.preventDefault();
-      shortcutHelpOpen.value = false;
-      return;
+      e.preventDefault()
+      shortcutHelpOpen.value = false
+      return
     }
     if (pluginStore.marketPanelVisible) {
-      e.preventDefault();
-      pluginStore.closeMarketPanel();
-      return;
+      e.preventDefault()
+      pluginStore.closeMarketPanel()
+      return
     }
     if (settingsViewOpen.value) {
-      e.preventDefault();
-      settingsViewOpen.value = false;
-      return;
+      e.preventDefault()
+      settingsViewOpen.value = false
+      return
     }
     if (topMoreOpen.value) {
-      e.preventDefault();
-      topMoreOpen.value = false;
-      return;
+      e.preventDefault()
+      topMoreOpen.value = false
+      return
     }
     if (debugStore.visible) {
-      e.preventDefault();
-      debugStore.toggle();
-      return;
+      e.preventDefault()
+      debugStore.toggle()
+      return
     }
   }
-  if (e.ctrlKey && e.shiftKey && e.key.toLowerCase() === "f") {
-    e.preventDefault();
-    openPluginManagerPanel();
-    return;
+  if (e.ctrlKey && e.shiftKey && e.key.toLowerCase() === 'f') {
+    e.preventDefault()
+    openPluginManagerPanel()
+    return
   }
-  if (e.ctrlKey && e.shiftKey && e.key.toLowerCase() === "s") {
-    e.preventDefault();
-    openSettingsView();
-    return;
+  if (e.ctrlKey && e.shiftKey && e.key.toLowerCase() === 's') {
+    e.preventDefault()
+    openSettingsView()
+    return
   }
-  if (e.ctrlKey && e.shiftKey && e.key.toLowerCase() === "d") {
-    e.preventDefault();
-    debugStore.toggle();
+  if (e.ctrlKey && e.shiftKey && e.key.toLowerCase() === 'd') {
+    e.preventDefault()
+    debugStore.toggle()
   }
 }
 
 watch(
   messages,
   async () => {
-    await nextTick();
-    chatListRef.value?.scrollToBottom?.();
+    await nextTick()
+    chatListRef.value?.scrollToBottom?.()
   },
-  { flush: "post" },
-);
+  { flush: 'post' },
+)
 
 watch(
   () => debugStore.visible,
   (v) => {
-    if (v) void debugStore.loadDebugData();
+    if (v)
+      void debugStore.loadDebugData()
   },
-);
+)
 
-let unlistenPluginFs: (() => void) | undefined;
-let unlistenProtocolInstall: (() => void) | undefined;
+let unlistenPluginFs: (() => void) | undefined
+let unlistenProtocolInstall: (() => void) | undefined
 
 async function runPendingProtocolInstallsFromQueue(): Promise<void> {
   try {
-    const pending = await consumePendingProtocolInstalls();
+    const pending = await consumePendingProtocolInstalls()
     for (const p of pending) {
-      const git = p.gitUrl?.trim();
-      if (!git) continue;
+      const git = p.gitUrl?.trim()
+      if (!git)
+        continue
       try {
-        const r = await installPluginFromGit(git);
-        showToast("success", t("app.toast.pluginInstalledFromWeb", { id: r.installedPluginId }));
-        await pluginStore.refresh();
-        openPluginManagerPanel();
-      } catch (e) {
-        showToast("error", e instanceof Error ? e.message : String(e));
+        const r = await installPluginFromGit(git)
+        showToast('success', t('app.toast.pluginInstalledFromWeb', { id: r.installedPluginId }))
+        await pluginStore.refresh()
+        openPluginManagerPanel()
+      }
+      catch (e) {
+        showToast('error', e instanceof Error ? e.message : String(e))
       }
     }
-  } catch (e) {
-    console.warn("consume_pending_protocol_installs", e);
+  }
+  catch (e) {
+    console.warn('consume_pending_protocol_installs', e)
   }
 }
 
 watch(locale, () => {
-  syncBrowserChromeFromLocale();
-});
+  syncBrowserChromeFromLocale()
+})
 
 onMounted(() => {
-  localePreference.value = getLocalePreference();
-  syncBrowserChromeFromLocale();
+  localePreference.value = getLocalePreference()
+  syncBrowserChromeFromLocale()
   setErrorReporter((err) => {
-    showToast("error", err.message);
-  });
-  hostEventBus.on(quickActionTravelEvent, onPluginQuickActionTravel);
-  hostEventBus.on(settingsSetRemoteLifeEvent, onPluginSetRemoteLife);
-  hostEventBus.on(settingsSetInteractionModeEvent, onPluginSetInteractionMode);
-  hostEventBus.on(settingsCycleThemeEvent, onPluginCycleTheme);
-  hostEventBus.on(settingsResetLayoutEvent, onPluginResetLayout);
-  window.addEventListener("keydown", onHotkey);
-  window.addEventListener("keydown", onCtrlHoldHintKeydown);
-  window.addEventListener("keyup", onCtrlHoldHintKeyup);
-  window.addEventListener("resize", scheduleRefreshSplitLayout);
-  refreshSplitLayout();
-  initialize();
-  void listen("plugin:changed", () => {
+    showToast('error', err.message)
+  })
+  hostEventBus.on(quickActionTravelEvent, onPluginQuickActionTravel)
+  hostEventBus.on(settingsSetRemoteLifeEvent, onPluginSetRemoteLife)
+  hostEventBus.on(settingsSetInteractionModeEvent, onPluginSetInteractionMode)
+  hostEventBus.on(settingsCycleThemeEvent, onPluginCycleTheme)
+  hostEventBus.on(settingsResetLayoutEvent, onPluginResetLayout)
+  window.addEventListener('keydown', onHotkey)
+  window.addEventListener('keydown', onCtrlHoldHintKeydown)
+  window.addEventListener('keyup', onCtrlHoldHintKeyup)
+  window.addEventListener('resize', scheduleRefreshSplitLayout)
+  refreshSplitLayout()
+  initialize()
+  void listen('plugin:changed', () => {
     void pluginStore.onPluginFilesChanged().then(() => {
-      showToast("success", t("app.toast.pluginFilesChanged"));
-    });
+      showToast('success', t('app.toast.pluginFilesChanged'))
+    })
   }).then((u) => {
-    unlistenPluginFs = u;
-  });
+    unlistenPluginFs = u
+  })
 
-  void listen("protocol:pending_install", () => {
-    void runPendingProtocolInstallsFromQueue();
+  void listen('protocol:pending_install', () => {
+    void runPendingProtocolInstallsFromQueue()
   }).then((u) => {
-    unlistenProtocolInstall = u;
-  });
+    unlistenProtocolInstall = u
+  })
 
-  void runPendingProtocolInstallsFromQueue();
-});
+  void runPendingProtocolInstallsFromQueue()
+})
 
 watch(topMoreOpen, (open) => {
   if (morePanelClickListenTimer != null) {
-    clearTimeout(morePanelClickListenTimer);
-    morePanelClickListenTimer = null;
+    clearTimeout(morePanelClickListenTimer)
+    morePanelClickListenTimer = null
   }
-  document.removeEventListener("click", onDocumentClickCloseMore);
+  document.removeEventListener('click', onDocumentClickCloseMore)
   if (open) {
     nextTick(() => {
       morePanelClickListenTimer = setTimeout(() => {
-        morePanelClickListenTimer = null;
-        document.addEventListener("click", onDocumentClickCloseMore);
-      }, 0);
-    });
+        morePanelClickListenTimer = null
+        document.addEventListener('click', onDocumentClickCloseMore)
+      }, 0)
+    })
   }
-});
+})
 
 onBeforeUnmount(() => {
-  if (morePanelClickListenTimer != null) clearTimeout(morePanelClickListenTimer);
-  document.removeEventListener("click", onDocumentClickCloseMore);
+  if (morePanelClickListenTimer != null)
+    clearTimeout(morePanelClickListenTimer)
+  document.removeEventListener('click', onDocumentClickCloseMore)
   if (splitLayoutResizeRaf !== 0) {
-    cancelAnimationFrame(splitLayoutResizeRaf);
-    splitLayoutResizeRaf = 0;
+    cancelAnimationFrame(splitLayoutResizeRaf)
+    splitLayoutResizeRaf = 0
   }
-  setErrorReporter(null);
-  window.removeEventListener("keydown", onHotkey);
-  hostEventBus.off(quickActionTravelEvent, onPluginQuickActionTravel);
-  hostEventBus.off(settingsSetRemoteLifeEvent, onPluginSetRemoteLife);
-  hostEventBus.off(settingsSetInteractionModeEvent, onPluginSetInteractionMode);
-  hostEventBus.off(settingsCycleThemeEvent, onPluginCycleTheme);
-  hostEventBus.off(settingsResetLayoutEvent, onPluginResetLayout);
-  window.removeEventListener("keydown", onCtrlHoldHintKeydown);
-  window.removeEventListener("keyup", onCtrlHoldHintKeyup);
-  window.removeEventListener("resize", scheduleRefreshSplitLayout);
-  clearCtrlLongPressTimer();
-  unlistenPluginFs?.();
-  unlistenProtocolInstall?.();
-});
+  setErrorReporter(null)
+  window.removeEventListener('keydown', onHotkey)
+  hostEventBus.off(quickActionTravelEvent, onPluginQuickActionTravel)
+  hostEventBus.off(settingsSetRemoteLifeEvent, onPluginSetRemoteLife)
+  hostEventBus.off(settingsSetInteractionModeEvent, onPluginSetInteractionMode)
+  hostEventBus.off(settingsCycleThemeEvent, onPluginCycleTheme)
+  hostEventBus.off(settingsResetLayoutEvent, onPluginResetLayout)
+  window.removeEventListener('keydown', onCtrlHoldHintKeydown)
+  window.removeEventListener('keyup', onCtrlHoldHintKeyup)
+  window.removeEventListener('resize', scheduleRefreshSplitLayout)
+  clearCtrlLongPressTimer()
+  unlistenPluginFs?.()
+  unlistenProtocolInstall?.()
+})
 </script>
 
 <template>
   <main class="layout">
     <div class="app-frame">
-    <!-- 对齐 oclive-new：顶栏角色 + 时间/场景 -->
-    <header ref="topBarRef" class="top-bar">
-      <div class="top-bar-row">
-        <RoleSelector
-          variant="topbar"
-          :sections="['role']"
-          :current-role-id="roleStore.currentRoleId"
-          :current-relation="roleStore.relationSelectValue"
-          :roles="roleStore.roles"
-          :relations="relationOptions"
-          :loading="chatStore.isLoading"
-          @change-role="onSwitchRole"
-          @change-relation="onChangeRelation"
-        />
-        <button
-          type="button"
-          class="more-toggle"
-          :aria-expanded="topMoreOpen"
-          aria-controls="top-more-panel"
-          @click="toggleTopMore"
+      <!-- 对齐 oclive-new：顶栏角色 + 时间/场景 -->
+      <header ref="topBarRef" class="top-bar">
+        <div class="top-bar-row">
+          <RoleSelector
+            variant="topbar"
+            :sections="['role']"
+            :current-role-id="roleStore.currentRoleId"
+            :current-relation="roleStore.relationSelectValue"
+            :roles="roleStore.roles"
+            :relations="relationOptions"
+            :loading="chatStore.isLoading"
+            @change-role="onSwitchRole"
+            @change-relation="onChangeRelation"
+          />
+          <button
+            type="button"
+            class="more-toggle"
+            :aria-expanded="topMoreOpen"
+            aria-controls="top-more-panel"
+            @click="toggleTopMore"
+          >
+            {{ topMoreOpen ? t("app.more.collapse") : t("app.more.more") }}
+          </button>
+        </div>
+
+        <div
+          v-show="topMoreOpen"
+          id="top-more-panel"
+          class="top-more-panel"
+          role="region"
+          :aria-label="t('app.more.ariaMoreFeatures')"
+          @click.stop
         >
-          {{ topMoreOpen ? t("app.more.collapse") : t("app.more.more") }}
-        </button>
-      </div>
+          <div class="more-grid">
+            <div class="more-tile more-tile--xs">
+              <div class="more-tile-head">
+                <span class="more-label">{{ t("app.locale.label") }}</span>
+              </div>
+              <div class="more-tile-body">
+                <select
+                  class="interaction-mode-select more-select more-select--fill"
+                  :value="localePreference"
+                  @change="onLocalePreferenceChange"
+                >
+                  <option value="system">
+                    {{ t("app.locale.system") }}
+                  </option>
+                  <option value="zh-CN">
+                    {{ t("app.locale.zhCN") }}
+                  </option>
+                  <option value="en-US">
+                    {{ t("app.locale.enUS") }}
+                  </option>
+                </select>
+              </div>
+            </div>
 
-      <div
-        v-show="topMoreOpen"
-        id="top-more-panel"
-        class="top-more-panel"
-        role="region"
-        :aria-label="t('app.more.ariaMoreFeatures')"
-        @click.stop
-      >
-        <div class="more-grid">
-          <div class="more-tile more-tile--xs">
-            <div class="more-tile-head">
-              <span class="more-label">{{ t("app.locale.label") }}</span>
+            <div class="more-tile more-tile--xs">
+              <div class="more-tile-head">
+                <span class="more-label">{{ t("app.more.interactionMode") }}</span>
+                <HelpHint
+                  :paragraphs="[
+                    t('app.more.interactionImmersiveHint'),
+                    t('app.more.interactionPureChatHint'),
+                  ]"
+                />
+              </div>
+              <div class="more-tile-body">
+                <select
+                  id="interaction-mode"
+                  class="interaction-mode-select more-select more-select--fill"
+                  :value="roleStore.roleInfo.interactionMode"
+                  @change="onInteractionModeChange"
+                >
+                  <option value="immersive">
+                    {{ t("app.more.interactionImmersive") }}
+                  </option>
+                  <option value="pure_chat">
+                    {{ t("app.more.interactionPureChat") }}
+                  </option>
+                </select>
+              </div>
             </div>
-            <div class="more-tile-body">
-              <select
-                class="interaction-mode-select more-select more-select--fill"
-                :value="localePreference"
-                @change="onLocalePreferenceChange"
-              >
-                <option value="system">{{ t("app.locale.system") }}</option>
-                <option value="zh-CN">{{ t("app.locale.zhCN") }}</option>
-                <option value="en-US">{{ t("app.locale.enUS") }}</option>
-              </select>
-            </div>
-          </div>
 
-          <div class="more-tile more-tile--xs">
-            <div class="more-tile-head">
-              <span class="more-label">{{ t("app.more.interactionMode") }}</span>
-              <HelpHint
-                :paragraphs="[
-                  t('app.more.interactionImmersiveHint'),
-                  t('app.more.interactionPureChatHint'),
-                ]"
-              />
+            <div class="more-tile more-tile--sm">
+              <div class="more-tile-head">
+                <span class="more-label">{{ t("app.more.identity") }}</span>
+                <HelpHint :text="t('app.more.identityHelp')" />
+              </div>
+              <div class="more-tile-body more-tile-body--selector">
+                <RoleSelector
+                  variant="topbar"
+                  :sections="['relation']"
+                  :current-role-id="roleStore.currentRoleId"
+                  :current-relation="roleStore.relationSelectValue"
+                  :roles="roleStore.roles"
+                  :relations="relationOptions"
+                  :loading="chatStore.isLoading"
+                  @change-role="onSwitchRole"
+                  @change-relation="onChangeRelation"
+                />
+              </div>
             </div>
-            <div class="more-tile-body">
-              <select
-                id="interaction-mode"
-                class="interaction-mode-select more-select more-select--fill"
-                :value="roleStore.roleInfo.interactionMode"
-                @change="onInteractionModeChange"
-              >
-                <option value="immersive">{{ t("app.more.interactionImmersive") }}</option>
-                <option value="pure_chat">{{ t("app.more.interactionPureChat") }}</option>
-              </select>
-            </div>
-          </div>
 
-          <div class="more-tile more-tile--sm">
-            <div class="more-tile-head">
-              <span class="more-label">{{ t("app.more.identity") }}</span>
-              <HelpHint :text="t('app.more.identityHelp')" />
-            </div>
-            <div class="more-tile-body more-tile-body--selector">
-              <RoleSelector
-                variant="topbar"
-                :sections="['relation']"
-                :current-role-id="roleStore.currentRoleId"
-                :current-relation="roleStore.relationSelectValue"
-                :roles="roleStore.roles"
-                :relations="relationOptions"
-                :loading="chatStore.isLoading"
-                @change-role="onSwitchRole"
-                @change-relation="onChangeRelation"
-              />
-            </div>
-          </div>
-
-          <div class="more-tile more-tile--lg">
-            <div class="more-tile-head">
-              <span class="more-label">{{ t("app.more.ui") }}</span>
-              <HelpHint
-                :paragraphs="[t('app.more.uiHint1'), t('app.more.uiHint2')]"
-              />
-            </div>
-            <div class="more-tile-body">
-              <div class="top-bar-appearance" role="toolbar" :aria-label="t('app.more.appearanceToolbar')">
-                <div class="appearance-scale" :aria-label="t('app.more.scaleGroup')">
+            <div class="more-tile more-tile--lg">
+              <div class="more-tile-head">
+                <span class="more-label">{{ t("app.more.ui") }}</span>
+                <HelpHint
+                  :paragraphs="[t('app.more.uiHint1'), t('app.more.uiHint2')]"
+                />
+              </div>
+              <div class="more-tile-body">
+                <div class="top-bar-appearance" role="toolbar" :aria-label="t('app.more.appearanceToolbar')">
+                  <div class="appearance-scale" :aria-label="t('app.more.scaleGroup')">
+                    <button
+                      type="button"
+                      class="appearance-icon-btn"
+                      :title="t('app.more.shrinkTitle')"
+                      :aria-label="t('app.more.shrinkAria')"
+                      @click="bumpScale(-1)"
+                    >
+                      A−
+                    </button>
+                    <span
+                      class="appearance-scale-value"
+                      :title="t('app.more.scaleRelativeTitle', { label: scaleLabel })"
+                    >{{ scaleLabel }}</span>
+                    <button
+                      type="button"
+                      class="appearance-icon-btn"
+                      :title="t('app.more.enlargeTitle')"
+                      :aria-label="t('app.more.enlargeAria')"
+                      @click="bumpScale(1)"
+                    >
+                      A+
+                    </button>
+                  </div>
                   <button
                     type="button"
-                    class="appearance-icon-btn"
-                    :title="t('app.more.shrinkTitle')"
-                    :aria-label="t('app.more.shrinkAria')"
-                    @click="bumpScale(-1)"
+                    class="appearance-theme-btn"
+                    :title="t('app.more.themeTitle', { label: themeCycleLabel })"
+                    @click="cycleTheme"
                   >
-                    A−
-                  </button>
-                  <span
-                    class="appearance-scale-value"
-                    :title="t('app.more.scaleRelativeTitle', { label: scaleLabel })"
-                  >{{ scaleLabel }}</span>
-                  <button
-                    type="button"
-                    class="appearance-icon-btn"
-                    :title="t('app.more.enlargeTitle')"
-                    :aria-label="t('app.more.enlargeAria')"
-                    @click="bumpScale(1)"
-                  >
-                    A+
+                    {{
+                      themePreference === "system"
+                        ? "◐"
+                        : themePreference === "dark"
+                          ? "🌙"
+                          : "☀️"
+                    }}
+                    {{ themeCycleLabel }}
                   </button>
                 </div>
+              </div>
+            </div>
+
+            <div class="more-tile more-tile--action settings-entry-tile">
+              <div class="more-tile-head">
+                <span class="more-label">{{ t("app.more.settingsEntry") }}</span>
+                <HelpHint :text="settingsEntryMoreHelp" />
+              </div>
+              <div class="more-tile-body settings-entry-actions" role="group" :aria-label="t('app.more.settingsEntry')">
+                <button type="button" class="more-debug-btn more-debug-btn--fill settings-entry-btn" @click="openShortcutHelp">
+                  {{ t("app.more.shortcutHelp") }}
+                </button>
                 <button
                   type="button"
-                  class="appearance-theme-btn"
-                  :title="t('app.more.themeTitle', { label: themeCycleLabel })"
-                  @click="cycleTheme"
+                  class="more-debug-btn more-debug-btn--fill settings-entry-btn settings-entry-btn--primary settings-gear-btn"
+                  @click="openSettingsView"
                 >
-                  {{
-                    themePreference === "system"
-                      ? "◐"
-                      : themePreference === "dark"
-                        ? "🌙"
-                        : "☀️"
-                  }}
-                  {{ themeCycleLabel }}
+                  {{ t("app.more.openSettings") }}
+                </button>
+                <button
+                  type="button"
+                  class="more-debug-btn more-debug-btn--fill settings-entry-btn"
+                  @click="openPluginManagerPanel"
+                >
+                  {{ pluginManagerMoreBtnLabel }}
+                </button>
+                <button
+                  type="button"
+                  class="more-debug-btn more-debug-btn--fill settings-entry-btn"
+                  @click="openPluginMarket"
+                >
+                  {{ t("app.more.pluginMarket") }}
                 </button>
               </div>
             </div>
+
+            <div class="more-tile more-tile--action">
+              <div class="more-tile-head">
+                <span class="more-label">{{ t("app.more.debug") }}</span>
+                <HelpHint :text="t('app.more.debugHelp')" />
+              </div>
+              <div class="more-tile-body">
+                <button type="button" class="more-debug-btn more-debug-btn--fill" @click="debugStore.toggle">
+                  {{ t("app.more.openDebugPanel") }}
+                </button>
+              </div>
+            </div>
+
+            <template v-if="roleStore.interactionImmersive">
+              <div class="more-tile more-tile--third">
+                <div class="more-tile-head more-tile-head--tight">
+                  <span class="more-label">{{ t("app.more.virtualTime") }}</span>
+                  <HelpHint
+                    :paragraphs="[t('app.more.virtualTimeHint1'), t('app.more.virtualTimeHint2')]"
+                  />
+                </div>
+                <div class="more-tile-body more-tile-body--row">
+                  <VirtualTimeBar
+                    compact
+                    class="more-vtime"
+                    :role-id="roleStore.currentRoleId"
+                    @notify="(p) => showToast(p.type, p.message)"
+                    @refreshed="roleStore.refreshRoleInfo"
+                    @jump-complete="onVirtualTimeJumpComplete"
+                  />
+                </div>
+              </div>
+
+              <div v-if="allSceneOptions.length > 0" class="more-tile more-tile--third">
+                <div class="more-tile-head more-tile-head--tight">
+                  <span class="more-label">{{ t("app.more.narrativeScene") }}</span>
+                  <HelpHint :text="t('app.more.narrativeSceneHelp')" />
+                </div>
+                <div class="more-tile-body more-tile-body--scene more-tile-body--scene-inline">
+                  <select
+                    id="top-scene-select"
+                    class="scene-select more-select more-select--fill"
+                    :value="uiStore.sceneId"
+                    @change="onTopBarSceneChange($event)"
+                  >
+                    <option v-for="s in allSceneOptions" :key="s.id" :value="s.id">
+                      {{ s.label }}
+                    </option>
+                  </select>
+                  <span class="scene-row-hint scene-row-hint--tile">{{ t('app.more.characterAt', { label: characterSceneLabel() }) }}</span>
+                </div>
+              </div>
+            </template>
           </div>
-
-          <div class="more-tile more-tile--action settings-entry-tile">
-            <div class="more-tile-head">
-              <span class="more-label">{{ t("app.more.settingsEntry") }}</span>
-              <HelpHint :text="settingsEntryMoreHelp" />
-            </div>
-            <div class="more-tile-body settings-entry-actions" role="group" :aria-label="t('app.more.settingsEntry')">
-              <button type="button" class="more-debug-btn more-debug-btn--fill settings-entry-btn" @click="openShortcutHelp">
-                {{ t("app.more.shortcutHelp") }}
-              </button>
-              <button
-                type="button"
-                class="more-debug-btn more-debug-btn--fill settings-entry-btn settings-entry-btn--primary settings-gear-btn"
-                @click="openSettingsView"
-              >
-                {{ t("app.more.openSettings") }}
-              </button>
-              <button
-                type="button"
-                class="more-debug-btn more-debug-btn--fill settings-entry-btn"
-                @click="openPluginManagerPanel"
-              >
-                {{ pluginManagerMoreBtnLabel }}
-              </button>
-              <button
-                type="button"
-                class="more-debug-btn more-debug-btn--fill settings-entry-btn"
-                @click="openPluginMarket"
-              >
-                {{ t("app.more.pluginMarket") }}
-              </button>
-            </div>
-          </div>
-
-          <div class="more-tile more-tile--action">
-            <div class="more-tile-head">
-              <span class="more-label">{{ t("app.more.debug") }}</span>
-              <HelpHint :text="t('app.more.debugHelp')" />
-            </div>
-            <div class="more-tile-body">
-              <button type="button" class="more-debug-btn more-debug-btn--fill" @click="debugStore.toggle">
-                {{ t("app.more.openDebugPanel") }}
-              </button>
-            </div>
-          </div>
-
-          <template v-if="roleStore.interactionImmersive">
-            <div class="more-tile more-tile--third">
-              <div class="more-tile-head more-tile-head--tight">
-                <span class="more-label">{{ t("app.more.virtualTime") }}</span>
-                <HelpHint
-                  :paragraphs="[t('app.more.virtualTimeHint1'), t('app.more.virtualTimeHint2')]"
-                />
-              </div>
-              <div class="more-tile-body more-tile-body--row">
-                <VirtualTimeBar
-                  compact
-                  class="more-vtime"
-                  :role-id="roleStore.currentRoleId"
-                  @notify="(p) => showToast(p.type, p.message)"
-                  @refreshed="roleStore.refreshRoleInfo"
-                  @jump-complete="onVirtualTimeJumpComplete"
-                />
-              </div>
-            </div>
-
-            <div v-if="allSceneOptions.length > 0" class="more-tile more-tile--third">
-              <div class="more-tile-head more-tile-head--tight">
-                <span class="more-label">{{ t("app.more.narrativeScene") }}</span>
-                <HelpHint :text="t('app.more.narrativeSceneHelp')" />
-              </div>
-              <div class="more-tile-body more-tile-body--scene more-tile-body--scene-inline">
-                <select
-                  id="top-scene-select"
-                  class="scene-select more-select more-select--fill"
-                  :value="uiStore.sceneId"
-                  @change="onTopBarSceneChange($event)"
-                >
-                  <option v-for="s in allSceneOptions" :key="s.id" :value="s.id">
-                    {{ s.label }}
-                  </option>
-                </select>
-                <span class="scene-row-hint scene-row-hint--tile">{{ t('app.more.characterAt', { label: characterSceneLabel() }) }}</span>
-              </div>
-            </div>
-          </template>
         </div>
-      </div>
-    </header>
+      </header>
 
-    <div
-      v-if="uiStore.connectivityBanner?.kind === 'plugin_index_offline'"
-      class="connectivity-banner"
-      role="status"
-    >
-      <div class="connectivity-banner__inner">
-        <p class="connectivity-banner__title">{{ t("app.connectivity.pluginIndexOffline") }}</p>
-        <p v-if="connectivityPluginIndexDetail" class="connectivity-banner__detail">
-          {{ connectivityPluginIndexDetail }}
-        </p>
-        <button
-          type="button"
-          class="connectivity-banner__dismiss"
-          @click="uiStore.dismissConnectivityBanner()"
-        >
-          {{ t("app.connectivity.dismiss") }}
-        </button>
-      </div>
-    </div>
-
-    <div
-      v-if="roleStore.interactionImmersive && sceneTransition.visible"
-      class="scene-transition-overlay"
-      role="status"
-      aria-live="polite"
-    >
-      {{ t("app.sceneTransition.going", { label: sceneTransition.label }) }}
-    </div>
-
-    <TopBarSceneModeDialog
-      v-if="roleStore.interactionImmersive"
-      :visible="topBarSceneDialogVisible"
-      :pending-scene-label="sceneLabelForId(pendingTopBarSceneId)"
-      @confirm="confirmTopBarScene"
-      @dismiss="dismissTopBarSceneDialog"
-    />
-
-    <div class="main-content">
       <div
-        class="split-row"
-        :class="{
-          'split-row--narrow': !wideSplitLayout,
-          'split-row--sidebar-right': sidebarRight,
-        }"
+        v-if="uiStore.connectivityBanner?.kind === 'plugin_index_offline'"
+        class="connectivity-banner"
+        role="status"
       >
-        <aside ref="leftPaneRef" class="left-pane">
-          <RoleDetailView
-            class="character-block"
-            :layout="wideSplitLayout ? 'sidebar' : 'stack'"
-            :role-id="roleStore.currentRoleId"
-            :name="roleName"
-            :emotion="emotion"
-            :bootstrap-epoch="pluginStore.bootstrapEpoch"
-          />
-          <RoleplayAsidePanel :text="latestRoleplayAside" />
-          <PluginSidebarSlots :bootstrap-epoch="pluginStore.bootstrapEpoch" />
-          <div class="left-pane-status" :aria-label="t('app.sidebar.favorability')">
-            {{ t("app.sidebar.favorability") }} {{ Math.round(roleStore.roleInfo.favorability) }} {{ statusHeart }}
-          </div>
-          <div
-            v-if="roleStore.interactionImmersive && roleStore.roleInfo.currentLife?.label"
-            class="left-pane-life"
-            :aria-label="t('app.sidebar.scheduleInference')"
+        <div class="connectivity-banner__inner">
+          <p class="connectivity-banner__title">
+            {{ t("app.connectivity.pluginIndexOffline") }}
+          </p>
+          <p v-if="connectivityPluginIndexDetail" class="connectivity-banner__detail">
+            {{ connectivityPluginIndexDetail }}
+          </p>
+          <button
+            type="button"
+            class="connectivity-banner__dismiss"
+            @click="uiStore.dismissConnectivityBanner()"
           >
-            {{ t("app.sidebar.lifeNow", { label: roleStore.roleInfo.currentLife?.label }) }}
-          </div>
-          <AutonomousSceneNotice
-            v-if="roleStore.interactionImmersive"
-            :visible="autonomousSceneNotice.visible"
-            :from-label="autonomousSceneNotice.fromLabel"
-            :to-label="autonomousSceneNotice.toLabel"
-            @dismiss="dismissAutonomousSceneNotice"
-          />
-        </aside>
-        <div class="right-pane" :class="{ 'right-pane--input-top': chatInputTop }">
-          <PluginChatHeaderSlots :bootstrap-epoch="pluginStore.bootstrapEpoch" />
-          <div class="chat-scroll-wrap chat-list">
-            <transition name="fade">
-              <ChatMessageList
-                ref="chatListRef"
-                :key="`${roleStore.currentRoleId}-${uiStore.sceneId}`"
-                :messages="messages"
-                :history-split-index="sceneHistorySplitIndex"
-                :loading="chatStore.isLoading"
-                :role-switching="roleSwitching"
-              />
-            </transition>
-          </div>
-          <section class="input-area">
-            <ChatPluginToolbarSlots :bootstrap-epoch="pluginStore.bootstrapEpoch" />
-            <SceneTravelBars
-              v-if="roleStore.interactionImmersive"
-              :together-visible="togetherTravelBarVisible"
-              :post-reply-visible="postReplySceneBarVisible"
-              :destination-options="sceneDestinationOptions"
-              :together-selected-id="togetherTravelSelectedId"
-              :post-reply-selected-id="postReplySceneSelectedId"
-              @update:together-selected-id="togetherTravelSelectedId = $event"
-              @update:post-reply-selected-id="postReplySceneSelectedId = $event"
-              @confirm-together="confirmTogetherTravel"
-              @dismiss-together="dismissTogetherTravelBar"
-              @confirm-post-reply="confirmPostReplyScene"
-              @dismiss-post-reply="dismissPostReplySceneBar"
-            />
-            <ChatInput ref="chatInputRef" :loading="chatStore.isLoading" @send="onSend" />
-          </section>
+            {{ t("app.connectivity.dismiss") }}
+          </button>
         </div>
       </div>
-    </div>
 
-    <DebugPanel
-      :visible="debugStore.visible"
-      :loading="chatStore.isLoading"
-      :favorability="roleStore.roleInfo.favorability"
-      :personality="roleStore.roleInfo.personality ?? []"
-      :events="debugStore.events"
-      :memories="debugStore.memories"
-      @reload="onReloadPolicy"
-      @refresh="debugStore.loadDebugData"
-      @close="debugStore.toggle"
-      @notify="(p) => showToast(p.type, p.message)"
-      @imported="onPackImported"
-    />
+      <div
+        v-if="roleStore.interactionImmersive && sceneTransition.visible"
+        class="scene-transition-overlay"
+        role="status"
+        aria-live="polite"
+      >
+        {{ t("app.sceneTransition.going", { label: sceneTransition.label }) }}
+      </div>
 
-    <Toast :show="toast.show" :type="toast.type" :message="toast.message" />
-    <ShortcutHelp v-model="shortcutHelpOpen" :bootstrap-epoch="pluginStore.bootstrapEpoch" />
-
-    <MarketView />
-    <SimplePluginManagerPanel
-      :visible="simplePluginManagerOpen"
-      @close="simplePluginManagerOpen = false"
-      @open-market="openPluginMarket"
-    />
-
-    <SettingsView
-      :visible="settingsViewOpen"
-      @close="settingsViewOpen = false"
-    />
-
-    <div class="app-floating-slot" aria-hidden="true">
-      <PluginSlotEmbed
-        slot-name="overlay.floating"
-        :aria-label="t('app.floatingSlot')"
-        :bootstrap-epoch="pluginStore.bootstrapEpoch"
+      <TopBarSceneModeDialog
+        v-if="roleStore.interactionImmersive"
+        :visible="topBarSceneDialogVisible"
+        :pending-scene-label="sceneLabelForId(pendingTopBarSceneId)"
+        @confirm="confirmTopBarScene"
+        @dismiss="dismissTopBarSceneDialog"
       />
-    </div>
-    <HotkeyHost />
+
+      <div class="main-content">
+        <div
+          class="split-row"
+          :class="{
+            'split-row--narrow': !wideSplitLayout,
+            'split-row--sidebar-right': sidebarRight,
+          }"
+        >
+          <aside ref="leftPaneRef" class="left-pane">
+            <RoleDetailView
+              class="character-block"
+              :layout="wideSplitLayout ? 'sidebar' : 'stack'"
+              :role-id="roleStore.currentRoleId"
+              :name="roleName"
+              :emotion="emotion"
+              :bootstrap-epoch="pluginStore.bootstrapEpoch"
+            />
+            <RoleplayAsidePanel :text="latestRoleplayAside" />
+            <PluginSidebarSlots :bootstrap-epoch="pluginStore.bootstrapEpoch" />
+            <div class="left-pane-status" :aria-label="t('app.sidebar.favorability')">
+              {{ t("app.sidebar.favorability") }} {{ Math.round(roleStore.roleInfo.favorability) }} {{ statusHeart }}
+            </div>
+            <div
+              v-if="roleStore.interactionImmersive && roleStore.roleInfo.currentLife?.label"
+              class="left-pane-life"
+              :aria-label="t('app.sidebar.scheduleInference')"
+            >
+              {{ t("app.sidebar.lifeNow", { label: roleStore.roleInfo.currentLife?.label }) }}
+            </div>
+            <AutonomousSceneNotice
+              v-if="roleStore.interactionImmersive"
+              :visible="autonomousSceneNotice.visible"
+              :from-label="autonomousSceneNotice.fromLabel"
+              :to-label="autonomousSceneNotice.toLabel"
+              @dismiss="dismissAutonomousSceneNotice"
+            />
+          </aside>
+          <div class="right-pane" :class="{ 'right-pane--input-top': chatInputTop }">
+            <PluginChatHeaderSlots :bootstrap-epoch="pluginStore.bootstrapEpoch" />
+            <div class="chat-scroll-wrap chat-list">
+              <transition name="fade">
+                <ChatMessageList
+                  ref="chatListRef"
+                  :key="`${roleStore.currentRoleId}-${uiStore.sceneId}`"
+                  :messages="messages"
+                  :history-split-index="sceneHistorySplitIndex"
+                  :loading="chatStore.isLoading"
+                  :role-switching="roleSwitching"
+                />
+              </transition>
+            </div>
+            <section class="input-area">
+              <ChatPluginToolbarSlots :bootstrap-epoch="pluginStore.bootstrapEpoch" />
+              <SceneTravelBars
+                v-if="roleStore.interactionImmersive"
+                :together-visible="togetherTravelBarVisible"
+                :post-reply-visible="postReplySceneBarVisible"
+                :destination-options="sceneDestinationOptions"
+                :together-selected-id="togetherTravelSelectedId"
+                :post-reply-selected-id="postReplySceneSelectedId"
+                @update:together-selected-id="togetherTravelSelectedId = $event"
+                @update:post-reply-selected-id="postReplySceneSelectedId = $event"
+                @confirm-together="confirmTogetherTravel"
+                @dismiss-together="dismissTogetherTravelBar"
+                @confirm-post-reply="confirmPostReplyScene"
+                @dismiss-post-reply="dismissPostReplySceneBar"
+              />
+              <ChatInput ref="chatInputRef" :loading="chatStore.isLoading" @send="onSend" />
+            </section>
+          </div>
+        </div>
+      </div>
+
+      <DebugPanel
+        :visible="debugStore.visible"
+        :loading="chatStore.isLoading"
+        :favorability="roleStore.roleInfo.favorability"
+        :personality="roleStore.roleInfo.personality ?? []"
+        :events="debugStore.events"
+        :memories="debugStore.memories"
+        @reload="onReloadPolicy"
+        @refresh="debugStore.loadDebugData"
+        @close="debugStore.toggle"
+        @notify="(p) => showToast(p.type, p.message)"
+        @imported="onPackImported"
+      />
+
+      <Toast :show="toast.show" :type="toast.type" :message="toast.message" />
+      <ShortcutHelp v-model="shortcutHelpOpen" :bootstrap-epoch="pluginStore.bootstrapEpoch" />
+
+      <MarketView />
+      <SimplePluginManagerPanel
+        :visible="simplePluginManagerOpen"
+        @close="simplePluginManagerOpen = false"
+        @open-market="openPluginMarket"
+      />
+
+      <SettingsView
+        :visible="settingsViewOpen"
+        @close="settingsViewOpen = false"
+      />
+
+      <div class="app-floating-slot" aria-hidden="true">
+        <PluginSlotEmbed
+          slot-name="overlay.floating"
+          :aria-label="t('app.floatingSlot')"
+          :bootstrap-epoch="pluginStore.bootstrapEpoch"
+        />
+      </div>
+      <HotkeyHost />
     </div>
   </main>
 </template>

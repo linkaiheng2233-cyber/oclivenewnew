@@ -1,50 +1,51 @@
 <script setup lang="ts">
-import { Handle, Position } from "@vue-flow/core";
-import { computed, inject, ref, watch } from "vue";
-import { useI18n } from "vue-i18n";
-import { BACKEND_COLORS, backendCssVars } from "../../lib/graphEditorTheme";
-import type { CoreModule } from "../../composables/useArchitectureGraphModel";
-import { ARCH_NODE_DEFAULT_SIZE } from "../../composables/useArchitectureGraphLayout";
-import { archGraphActionsKey } from "./archGraphContext";
-import ArchNodeChrome from "./ArchNodeChrome.vue";
+import type { CoreModule } from '../../composables/useArchitectureGraphModel'
+import type { BACKEND_COLORS } from '../../lib/graphEditorTheme'
+import { Handle, Position } from '@vue-flow/core'
+import { computed, inject, ref, watch } from 'vue'
+import { useI18n } from 'vue-i18n'
+import { ARCH_NODE_DEFAULT_SIZE } from '../../composables/useArchitectureGraphLayout'
+import { backendCssVars } from '../../lib/graphEditorTheme'
+import { archGraphActionsKey } from './archGraphContext'
+import ArchNodeChrome from './ArchNodeChrome.vue'
 
 const props = defineProps({
   selected: { type: Boolean, default: false },
   data: { type: Object, default: () => ({}) },
-});
-const { t } = useI18n();
-const actions = inject(archGraphActionsKey);
-const size = ARCH_NODE_DEFAULT_SIZE.archModule!;
+})
+const { t } = useI18n()
+const actions = inject(archGraphActionsKey)
+const size = ARCH_NODE_DEFAULT_SIZE.archModule!
 
-const moduleKey = computed(() => props.data?.moduleKey as CoreModule);
-const slotKey = computed(() => String(props.data?.slotKey ?? props.data?.moduleKey ?? ""));
-const kind = computed(() => props.data?.backendKind as keyof typeof BACKEND_COLORS);
-const themeStyle = computed(() => backendCssVars(kind.value));
-const blueprintV2 = computed(() => Boolean(props.data?.blueprintV2));
-const sessionOverridden = computed(() => Boolean(props.data?.sessionOverridden));
-const draftBackend = ref(String(props.data?.backend ?? "builtin"));
+const moduleKey = computed(() => props.data?.moduleKey as CoreModule)
+const slotKey = computed(() => String(props.data?.slotKey ?? props.data?.moduleKey ?? ''))
+const kind = computed(() => props.data?.backendKind as keyof typeof BACKEND_COLORS)
+const themeStyle = computed(() => backendCssVars(kind.value))
+const blueprintV2 = computed(() => Boolean(props.data?.blueprintV2))
+const sessionOverridden = computed(() => Boolean(props.data?.sessionOverridden))
+const draftBackend = ref(String(props.data?.backend ?? 'builtin'))
 
 watch(
   () => props.data?.backend,
   (v) => {
-    draftBackend.value = String(v ?? "builtin");
+    draftBackend.value = String(v ?? 'builtin')
   },
-);
+)
 
 function onLegacySelect(ev: Event) {
-  actions?.onBackendChange(slotKey.value, (ev.target as HTMLSelectElement).value);
+  actions?.onBackendChange(slotKey.value, (ev.target as HTMLSelectElement).value)
 }
 
 function onApplySession() {
-  actions?.onApplySessionOverride(slotKey.value, draftBackend.value);
+  actions?.onApplySessionOverride(slotKey.value, draftBackend.value)
 }
 
 function onApplyPack() {
-  actions?.onApplyPackDefault(slotKey.value, draftBackend.value);
+  actions?.onApplyPackDefault(slotKey.value, draftBackend.value)
 }
 
 function onResetOverride() {
-  actions?.onClearSlotOverride(slotKey.value);
+  actions?.onClearSlotOverride(slotKey.value)
 }
 </script>
 
@@ -84,7 +85,9 @@ function onResetOverride() {
         <span aria-hidden="true">{{ data?.icon }}</span>
         <span class="agn-mono agn-module-id">{{ data?.slotKey ?? data?.moduleKey }}</span>
       </div>
-      <p v-if="sessionOverridden" class="agn-override-tag">{{ t("pluginWorkbench.graph.sessionOverride") }}</p>
+      <p v-if="sessionOverridden" class="agn-override-tag">
+        {{ t("pluginWorkbench.graph.sessionOverride") }}
+      </p>
       <p v-if="data?.zoneLabel" class="agn-override-tag agn-zone-tag">
         {{ t("pluginWorkbench.graph.zoneTag", { zone: data.zoneLabel }) }}
       </p>
@@ -93,17 +96,21 @@ function onResetOverride() {
         <span v-if="data?.slotType" class="agn-type"> · {{ data.slotType }}</span>
       </p>
       <span class="agn-tag">{{ data?.backend }}</span>
-      <p v-if="data?.primaryPlugin" class="agn-hint agn-dir agn-mono">{{ data.primaryPlugin }}</p>
+      <p v-if="data?.primaryPlugin" class="agn-hint agn-dir agn-mono">
+        {{ data.primaryPlugin }}
+      </p>
       <label class="agn-widget-lbl">{{ t("pluginWorkbench.graph.switchBackend") }}</label>
       <template v-if="blueprintV2">
         <select
+          v-model="draftBackend"
           class="agn-select nodrag nopan"
           :disabled="actions?.busy()"
-          v-model="draftBackend"
           tabindex="0"
           @pointerdown.stop
         >
-          <option v-for="v in (data?.options as string[])" :key="v" :value="v">{{ v }}</option>
+          <option v-for="v in (data?.options as string[])" :key="v" :value="v">
+            {{ v }}
+          </option>
         </select>
         <p class="agn-hint agn-pack-hint">
           {{ t("pluginWorkbench.graph.packDefaultHint", { value: data?.packDefault }) }}
@@ -139,7 +146,9 @@ function onResetOverride() {
         <option value="__pack_default__">
           {{ t("pluginWorkbench.graph.followPack", { value: data?.packDefault }) }}
         </option>
-        <option v-for="v in (data?.options as string[])" :key="v" :value="v">{{ v }}</option>
+        <option v-for="v in (data?.options as string[])" :key="v" :value="v">
+          {{ v }}
+        </option>
       </select>
       <div class="agn-actions nodrag nopan">
         <button

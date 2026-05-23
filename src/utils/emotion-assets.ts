@@ -6,33 +6,33 @@
 
 /** 小写 key；未知键由 UI 回退为原文或默认图标 */
 export const emotionToEmoji: Record<string, string> = {
-  happy: "😊",
-  sad: "😢",
-  angry: "😠",
-  shy: "☺️",
-  confused: "😕",
-  disgust: "🙄",
-  neutral: "😐",
+  happy: '😊',
+  sad: '😢',
+  angry: '😠',
+  shy: '☺️',
+  confused: '😕',
+  disgust: '🙄',
+  neutral: '😐',
   /** 后端若未来扩展 `Emotion::Excited` 等，可在此与图片一并补齐 */
-  excited: "🤩",
-};
+  excited: '🤩',
+}
 
 /** 文件名（不含路径）；缺省回退为 `{emotion}.png` */
 export const emotionToImage: Record<string, string> = {
-  happy: "happy.png",
-  sad: "sad.png",
-  angry: "angry.png",
-  shy: "shy.png",
-  confused: "confused.png",
-  disgust: "disgust_light.png",
-  neutral: "normal.png",
-  excited: "excited.png",
-  disgust_light: "disgust_light.png",
-  disgust_mid: "disgust_mid.png",
-  disgust_heavy: "disgust_heavy.png",
-};
+  happy: 'happy.png',
+  sad: 'sad.png',
+  angry: 'angry.png',
+  shy: 'shy.png',
+  confused: 'confused.png',
+  disgust: 'disgust_light.png',
+  neutral: 'normal.png',
+  excited: 'excited.png',
+  disgust_light: 'disgust_light.png',
+  disgust_mid: 'disgust_mid.png',
+  disgust_heavy: 'disgust_heavy.png',
+}
 
 export function emotionToAssetFilename(emotion: string): string {
-  const e = emotion.trim().toLowerCase();
-  return emotionToImage[e] ?? `${e}.png`;
+  const e = emotion.trim().toLowerCase()
+  return emotionToImage[e] ?? `${e}.png`
 }

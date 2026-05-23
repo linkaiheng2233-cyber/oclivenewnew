@@ -1,23 +1,23 @@
 <script setup lang="ts">
-import { ref, toRef } from "vue";
-import { useI18n } from "vue-i18n";
-import { PluginManagerV2 } from "../components/PluginManagerV2";
-import { useModalFocusRestore } from "../composables/useModalFocusRestore";
+import { ref, toRef } from 'vue'
+import { useI18n } from 'vue-i18n'
+import { PluginManagerV2 } from '../components/PluginManagerV2'
+import { useModalFocusRestore } from '../composables/useModalFocusRestore'
 
 const props = defineProps<{
-  visible: boolean;
-}>();
+  visible: boolean
+}>()
 
 const emit = defineEmits<{
-  close: [];
-  openV1: [];
-  focusArchSlot: [slotKey: string];
-}>();
+  close: []
+  openV1: []
+  focusArchSlot: [slotKey: string]
+}>()
 
-const { t } = useI18n();
+const { t } = useI18n()
 
-const dialogRef = ref<HTMLElement | null>(null);
-useModalFocusRestore(toRef(props, "visible"), dialogRef);
+const dialogRef = ref<HTMLElement | null>(null)
+useModalFocusRestore(toRef(props, 'visible'), dialogRef)
 </script>
 
 <template>

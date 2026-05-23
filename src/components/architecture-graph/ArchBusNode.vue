@@ -1,22 +1,22 @@
 <script setup lang="ts">
-import { Handle, Position } from "@vue-flow/core";
-import { computed } from "vue";
-import { useI18n } from "vue-i18n";
-import { GRAPH_SURFACE } from "../../lib/graphEditorTheme";
-import { ARCH_NODE_DEFAULT_SIZE } from "../../composables/useArchitectureGraphLayout";
-import ArchNodeChrome from "./ArchNodeChrome.vue";
+import { Handle, Position } from '@vue-flow/core'
+import { computed } from 'vue'
+import { useI18n } from 'vue-i18n'
+import { ARCH_NODE_DEFAULT_SIZE } from '../../composables/useArchitectureGraphLayout'
+import { GRAPH_SURFACE } from '../../lib/graphEditorTheme'
+import ArchNodeChrome from './ArchNodeChrome.vue'
 
 const props = defineProps({
   selected: { type: Boolean, default: false },
   data: { type: Object, default: () => ({}) },
-});
-const { t } = useI18n();
-const size = ARCH_NODE_DEFAULT_SIZE.archBus!;
+})
+const { t } = useI18n()
+const size = ARCH_NODE_DEFAULT_SIZE.archBus!
 
-const moduleKeys = computed(() => (props.data?.moduleKeys as string[]) ?? []);
+const moduleKeys = computed(() => (props.data?.moduleKeys as string[]) ?? [])
 
 function outTop(i: number, n: number): string {
-  return `${((i + 1) / (n + 1)) * 100}%`;
+  return `${((i + 1) / (n + 1)) * 100}%`
 }
 </script>
 
@@ -49,7 +49,9 @@ function outTop(i: number, n: number): string {
       <p class="agn-mono agn-bus-type">
         {{ data?.blueprintV2 ? "slot_registry" : "plugin_backends" }}
       </p>
-      <p class="agn-hint agn-bus-hint">{{ t("pluginWorkbench.graph.facilityBusHint") }}</p>
+      <p class="agn-hint agn-bus-hint">
+        {{ t("pluginWorkbench.graph.facilityBusHint") }}
+      </p>
       <Handle
         v-for="(key, i) in moduleKeys"
         :id="`fac-${key}`"

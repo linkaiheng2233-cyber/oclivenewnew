@@ -1,9 +1,9 @@
 <script setup lang="ts">
-import ArchitectureGraphFlow from "./ArchitectureGraphFlow.vue";
+import ArchitectureGraphFlow from './ArchitectureGraphFlow.vue'
 
 const emit = defineEmits<{
-  "focus-plugin": [pluginId: string];
-}>();
+  'focus-plugin': [pluginId: string]
+}>()
 </script>
 
 <template>

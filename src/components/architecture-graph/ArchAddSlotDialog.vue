@@ -1,45 +1,45 @@
 <script setup lang="ts">
-import { ref, toRef, watch } from "vue";
-import { useI18n } from "vue-i18n";
-import { useModalFocusRestore } from "../../composables/useModalFocusRestore";
-import { SLOT_TYPE_ORDER } from "../../lib/slotRegistry";
+import { ref, toRef, watch } from 'vue'
+import { useI18n } from 'vue-i18n'
+import { useModalFocusRestore } from '../../composables/useModalFocusRestore'
+import { SLOT_TYPE_ORDER } from '../../lib/slotRegistry'
 
 const props = defineProps<{
-  open: boolean;
-  busy?: boolean;
-}>();
+  open: boolean
+  busy?: boolean
+}>()
 
 const emit = defineEmits<{
-  close: [];
-  confirm: [slotType: string, label: string];
-}>();
+  close: []
+  confirm: [slotType: string, label: string]
+}>()
 
-const { t } = useI18n();
-const slotType = ref("memory");
-const label = ref("");
-const typeSelectRef = ref<HTMLSelectElement | null>(null);
-const dialogRef = ref<HTMLElement | null>(null);
-useModalFocusRestore(toRef(props, "open"), dialogRef, {
+const { t } = useI18n()
+const slotType = ref('memory')
+const label = ref('')
+const typeSelectRef = ref<HTMLSelectElement | null>(null)
+const dialogRef = ref<HTMLElement | null>(null)
+useModalFocusRestore(toRef(props, 'open'), dialogRef, {
   primary: typeSelectRef,
-});
+})
 
 watch(
   () => props.open,
   (v) => {
     if (v) {
-      slotType.value = "memory";
-      label.value = "";
+      slotType.value = 'memory'
+      label.value = ''
     }
   },
-);
+)
 
 function onSubmit() {
-  emit("confirm", slotType.value, label.value);
+  emit('confirm', slotType.value, label.value)
 }
 
 function onBackdrop(e: MouseEvent) {
-  if ((e.target as HTMLElement).classList.contains("aasd-backdrop")) {
-    emit("close");
+  if ((e.target as HTMLElement).classList.contains('aasd-backdrop')) {
+    emit('close')
   }
 }
 </script>
@@ -54,7 +54,9 @@ function onBackdrop(e: MouseEvent) {
     @click="onBackdrop"
   >
     <form ref="dialogRef" class="aasd-panel" tabindex="-1" @submit.prevent="onSubmit">
-      <h3 class="aasd-title">{{ t("pluginWorkbench.graph.addSlotWizardTitle") }}</h3>
+      <h3 class="aasd-title">
+        {{ t("pluginWorkbench.graph.addSlotWizardTitle") }}
+      </h3>
       <label class="aasd-field">
         <span>{{ t("pluginWorkbench.graph.addSlotType") }}</span>
         <select ref="typeSelectRef" v-model="slotType" class="aasd-input" :disabled="busy">
@@ -75,9 +77,11 @@ function onBackdrop(e: MouseEvent) {
           type="text"
           :placeholder="t('pluginWorkbench.graph.addSlotLabelPlaceholder')"
           :disabled="busy"
-        />
+        >
       </label>
-      <p class="aasd-hint">{{ t("pluginWorkbench.graph.addSlotWizardHint") }}</p>
+      <p class="aasd-hint">
+        {{ t("pluginWorkbench.graph.addSlotWizardHint") }}
+      </p>
       <div class="aasd-actions">
         <button type="button" class="aasd-btn" :disabled="busy" @click="emit('close')">
           {{ t("pluginWorkbench.graph.addSlotCancel") }}

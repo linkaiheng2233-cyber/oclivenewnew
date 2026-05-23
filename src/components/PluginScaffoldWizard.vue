@@ -1,65 +1,71 @@
 <script setup lang="ts">
-import { computed, ref, toRef } from "vue";
-import { useI18n } from "vue-i18n";
-import { createPluginScaffold } from "../utils/tauri-api";
-import { useModalFocusRestore } from "../composables/useModalFocusRestore";
+import { computed, ref, toRef } from 'vue'
+import { useI18n } from 'vue-i18n'
+import { useModalFocusRestore } from '../composables/useModalFocusRestore'
+import { createPluginScaffold } from '../utils/tauri-api'
 
-const { t, locale } = useI18n();
+const props = defineProps<{ visible: boolean }>()
 
-const props = defineProps<{ visible: boolean }>();
 const emit = defineEmits<{
-  close: [];
-  created: [pluginDir: string];
-}>();
+  close: []
+  created: [pluginDir: string]
+}>()
 
-const visibleRef = toRef(props, "visible");
-const dialogRef = ref<HTMLElement | null>(null);
-const primaryBtnRef = ref<HTMLButtonElement | null>(null);
+const { t, locale } = useI18n()
 
-useModalFocusRestore(visibleRef, dialogRef, { primary: primaryBtnRef });
+const visibleRef = toRef(props, 'visible')
+const dialogRef = ref<HTMLElement | null>(null)
+const primaryBtnRef = ref<HTMLButtonElement | null>(null)
 
-const pluginId = ref("");
-const pluginName = ref("");
-const language = ref<"node" | "python" | "rust">("node");
-const pluginType = ref<"skill" | "agent" | "module_ext">("skill");
-const baseDir = ref("");
-const busy = ref(false);
-const status = ref("");
+useModalFocusRestore(visibleRef, dialogRef, { primary: primaryBtnRef })
+
+const pluginId = ref('')
+const pluginName = ref('')
+const language = ref<'node' | 'python' | 'rust'>('node')
+const pluginType = ref<'skill' | 'agent' | 'module_ext'>('skill')
+const baseDir = ref('')
+const busy = ref(false)
+const status = ref('')
 
 const manifestPreview = computed(() => {
   return {
     id: pluginId.value.trim(),
     name: pluginName.value.trim(),
-    version: "0.1.0",
+    version: '0.1.0',
     runtime: language.value,
     type: pluginType.value,
-    process: language.value === "rust" ? "target/debug/plugin_scaffold" : "node index.js",
-    permissions: ["process:spawn"],
-  };
-});
+    process: language.value === 'rust' ? 'target/debug/plugin_scaffold' : 'node index.js',
+    permissions: ['process:spawn'],
+  }
+})
 
-const allowedPermissions = ["process:spawn", "network:*", "mcp:http", "mcp:stdio"];
+const allowedPermissions = ['process:spawn', 'network:*', 'mcp:http', 'mcp:stdio']
 
 const manifestErrors = computed(() => {
-  void locale.value;
-  const errs: string[] = [];
-  const v = manifestPreview.value;
-  if (!v.id) errs.push(t("devTools.scaffold.errId"));
-  if (!v.name) errs.push(t("devTools.scaffold.errName"));
-  if (!v.version) errs.push(t("devTools.scaffold.errVersion"));
-  if (!v.process) errs.push(t("devTools.scaffold.errProcess"));
+  void locale.value
+  const errs: string[] = []
+  const v = manifestPreview.value
+  if (!v.id)
+    errs.push(t('devTools.scaffold.errId'))
+  if (!v.name)
+    errs.push(t('devTools.scaffold.errName'))
+  if (!v.version)
+    errs.push(t('devTools.scaffold.errVersion'))
+  if (!v.process)
+    errs.push(t('devTools.scaffold.errProcess'))
   for (const p of v.permissions) {
     if (!allowedPermissions.includes(p)) {
-      errs.push(t("devTools.scaffold.errPerm", { p }));
+      errs.push(t('devTools.scaffold.errPerm', { p }))
     }
   }
-  return errs;
-});
+  return errs
+})
 
 async function onCreate(): Promise<void> {
-  if (manifestErrors.value.length > 0) return;
-  busy.value = true;
-  status.value = "";
+  if (manifestErrors.value.length > 0)
+    return
+  busy.value = true
+  status.value = ''
   try {
     const r = await createPluginScaffold({
       pluginId: pluginId.value.trim(),
@@ -67,13 +73,15 @@ async function onCreate(): Promise<void> {
       language: language.value,
       pluginType: pluginType.value,
       baseDir: baseDir.value.trim() || undefined,
-    });
-    status.value = t("devTools.scaffold.createdAt", { dir: r.plugin_dir });
-    emit("created", r.plugin_dir);
-  } catch (e) {
-    status.value = e instanceof Error ? e.message : String(e);
-  } finally {
-    busy.value = false;
+    })
+    status.value = t('devTools.scaffold.createdAt', { dir: r.plugin_dir })
+    emit('created', r.plugin_dir)
+  }
+  catch (e) {
+    status.value = e instanceof Error ? e.message : String(e)
+  }
+  finally {
+    busy.value = false
   }
 }
 </script>
@@ -90,11 +98,13 @@ async function onCreate(): Promise<void> {
       >
         <header class="psw-head">
           <h3>{{ t("devTools.scaffold.title") }}</h3>
-          <button type="button" class="psw-close" @click="emit('close')">×</button>
+          <button type="button" class="psw-close" @click="emit('close')">
+            ×
+          </button>
         </header>
         <div class="psw-body">
-          <label>{{ t("devTools.scaffold.fieldId") }} <input v-model="pluginId" class="psw-input" placeholder="com.example.demo" /></label>
-          <label>{{ t("devTools.scaffold.fieldName") }} <input v-model="pluginName" class="psw-input" placeholder="Demo Plugin" /></label>
+          <label>{{ t("devTools.scaffold.fieldId") }} <input v-model="pluginId" class="psw-input" placeholder="com.example.demo"></label>
+          <label>{{ t("devTools.scaffold.fieldName") }} <input v-model="pluginName" class="psw-input" placeholder="Demo Plugin"></label>
           <label>{{ t("devTools.scaffold.fieldLang") }}
             <select v-model="language" class="psw-input">
               <option value="node">Node.js</option>
@@ -109,14 +119,20 @@ async function onCreate(): Promise<void> {
               <option value="module_ext">{{ t("devTools.scaffold.typeModuleExt") }}</option>
             </select>
           </label>
-          <label>{{ t("devTools.scaffold.fieldOutDir") }} <input v-model="baseDir" class="psw-input" :placeholder="t('devTools.scaffold.outDirPh')" /></label>
+          <label>{{ t("devTools.scaffold.fieldOutDir") }} <input v-model="baseDir" class="psw-input" :placeholder="t('devTools.scaffold.outDirPh')"></label>
 
-          <h4 class="psw-sub">{{ t("devTools.scaffold.manifestLive") }}</h4>
+          <h4 class="psw-sub">
+            {{ t("devTools.scaffold.manifestLive") }}
+          </h4>
           <pre class="psw-pre">{{ JSON.stringify(manifestPreview, null, 2) }}</pre>
           <ul v-if="manifestErrors.length" class="psw-errs">
-            <li v-for="e in manifestErrors" :key="e">{{ e }}</li>
+            <li v-for="e in manifestErrors" :key="e">
+              {{ e }}
+            </li>
           </ul>
-          <p v-else class="psw-ok">{{ t("devTools.scaffold.manifestOk") }}</p>
+          <p v-else class="psw-ok">
+            {{ t("devTools.scaffold.manifestOk") }}
+          </p>
         </div>
         <footer class="psw-foot">
           <span class="psw-status">{{ status }}</span>

@@ -1,89 +1,93 @@
 <script setup lang="ts">
-import { computed, ref, watch } from "vue";
-import { useI18n } from "vue-i18n";
-import type { RpcHistoryItem } from "../composables/usePluginDebug";
-import { usePluginDebug } from "../composables/usePluginDebug";
-import { getPluginLogs, killPluginProcess } from "../utils/tauri-api";
-import LogViewer from "./LogViewer.vue";
-import ProcessMonitor from "./ProcessMonitor.vue";
-import RpcTester from "./RpcTester.vue";
+import type { RpcHistoryItem } from '../composables/usePluginDebug'
+import { computed, ref, watch } from 'vue'
+import { useI18n } from 'vue-i18n'
+import { usePluginDebug } from '../composables/usePluginDebug'
+import { getPluginLogs, killPluginProcess } from '../utils/tauri-api'
+import LogViewer from './LogViewer.vue'
+import ProcessMonitor from './ProcessMonitor.vue'
+import RpcTester from './RpcTester.vue'
 
 const props = withDefaults(
   defineProps<{
-    pluginId: string;
-    expanded: boolean;
+    pluginId: string
+    expanded: boolean
     /** manifest 是否含 `process`；为 false 时「启动」会失败，仍可 RPC 测已运行的实例 */
-    spawnSupported?: boolean;
+    spawnSupported?: boolean
   }>(),
   { spawnSupported: true },
-);
+)
 
-const { t } = useI18n();
+const { t } = useI18n()
 
-const section = ref<"process" | "rpc" | "logs">("process");
-const rpcMethod = ref("");
-const rpcParams = ref("{}\n");
+const section = ref<'process' | 'rpc' | 'logs'>('process')
+const rpcMethod = ref('')
+const rpcParams = ref('{}\n')
 
-const pluginIdRef = computed(() => props.pluginId);
-const dbg = usePluginDebug(pluginIdRef);
-const { processInfo, allProcesses, methods, logs, lastResponse, busy } = dbg;
+const pluginIdRef = computed(() => props.pluginId)
+const dbg = usePluginDebug(pluginIdRef)
+const { processInfo, allProcesses, methods, logs, lastResponse, busy } = dbg
 
 const statusLabel = computed(() => {
   if (processInfo.value) {
-    return t("devTools.proc.runningPid", { pid: processInfo.value.pid });
+    return t('devTools.proc.runningPid', { pid: processInfo.value.pid })
   }
-  return t("devTools.proc.notStarted");
-});
+  return t('devTools.proc.notStarted')
+})
 
 watch(
   () => props.expanded,
   async (v) => {
     if (v) {
-      dbg.startLogPolling();
-      await dbg.refreshProcess();
+      dbg.startLogPolling()
+      await dbg.refreshProcess()
       try {
-        await dbg.refreshMethods();
-      } catch {
+        await dbg.refreshMethods()
+      }
+      catch {
         /* optional */
       }
       try {
-        logs.value = await getPluginLogs(props.pluginId, 500);
-      } catch {
+        logs.value = await getPluginLogs(props.pluginId, 500)
+      }
+      catch {
         /* ignore */
       }
-    } else {
-      dbg.stopLogPolling();
+    }
+    else {
+      dbg.stopLogPolling()
     }
   },
   { immediate: true },
-);
+)
 
 watch(
   () => props.pluginId,
   async () => {
     if (props.expanded) {
-      await dbg.refreshProcess();
+      await dbg.refreshProcess()
     }
   },
-);
+)
 
 async function onKillManaged(id: string) {
   if (id === props.pluginId) {
-    await dbg.onKill();
-    return;
+    await dbg.onKill()
+    return
   }
-  busy.value = true;
+  busy.value = true
   try {
-    await killPluginProcess(id);
-    await dbg.refreshProcess();
-  } finally {
-    busy.value = false;
+    await killPluginProcess(id)
+    await dbg.refreshProcess()
+  }
+  finally {
+    busy.value = false
   }
 }
 
 function onApplyHistory(item: RpcHistoryItem) {
-  rpcMethod.value = item.method;
-  rpcParams.value = item.paramsText.endsWith("\n") ? item.paramsText : `${item.paramsText}\n`;
+  rpcMethod.value = item.method
+  rpcParams.value = item.paramsText.endsWith('\n') ? item.paramsText : `${item.paramsText}\n`
 }
 </script>
 

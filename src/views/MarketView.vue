@@ -1,48 +1,51 @@
 <script setup lang="ts">
-import { computed, ref, watch, toRef } from "vue";
-import { useI18n } from "vue-i18n";
-import { useAppToast } from "../composables/useAppToast";
-import { useModalFocusRestore } from "../composables/useModalFocusRestore";
-import { usePluginStore } from "../stores/pluginStore";
-import type { PluginMarketEntryDto } from "../utils/tauri-api";
+import type { PluginMarketEntryDto } from '../utils/tauri-api'
+import { computed, ref, toRef, watch } from 'vue'
+import { useI18n } from 'vue-i18n'
+import { useAppToast } from '../composables/useAppToast'
+import { useModalFocusRestore } from '../composables/useModalFocusRestore'
+import { usePluginStore } from '../stores/pluginStore'
 
-const pluginStore = usePluginStore();
-const { showToast } = useAppToast();
-const { t } = useI18n();
+const pluginStore = usePluginStore()
+const { showToast } = useAppToast()
+const { t } = useI18n()
 
-const searchQuery = ref("");
-const categoryFilter = ref("");
+const searchQuery = ref('')
+const categoryFilter = ref('')
 
-const dialogRef = ref<HTMLElement | null>(null);
-const firstFocusRef = ref<HTMLInputElement | null>(null);
-useModalFocusRestore(toRef(pluginStore, "marketPanelVisible"), dialogRef, {
+const dialogRef = ref<HTMLElement | null>(null)
+const firstFocusRef = ref<HTMLInputElement | null>(null)
+useModalFocusRestore(toRef(pluginStore, 'marketPanelVisible'), dialogRef, {
   primary: firstFocusRef,
-});
+})
 
 watch(
   () => pluginStore.marketPanelVisible,
   (vis) => {
     if (vis) {
-      void pluginStore.loadCachedPluginMarket();
+      void pluginStore.loadCachedPluginMarket()
     }
   },
-);
+)
 
 const categories = computed(() => {
-  const set = new Set<string>();
+  const set = new Set<string>()
   for (const row of pluginStore.pluginMarketSnapshot?.plugins ?? []) {
-    const c = row.category?.trim();
-    if (c) set.add(c);
+    const c = row.category?.trim()
+    if (c)
+      set.add(c)
   }
-  return [...set].sort();
-});
+  return [...set].sort()
+})
 
 const filteredPlugins = computed(() => {
-  const q = searchQuery.value.trim().toLowerCase();
-  const cat = categoryFilter.value.trim();
+  const q = searchQuery.value.trim().toLowerCase()
+  const cat = categoryFilter.value.trim()
   return (pluginStore.pluginMarketSnapshot?.plugins ?? []).filter((row) => {
-    if (cat && (row.category?.trim() ?? "") !== cat) return false;
-    if (!q) return true;
+    if (cat && (row.category?.trim() ?? '') !== cat)
+      return false
+    if (!q)
+      return true
     const hay = [
       row.id,
       row.name,
@@ -50,58 +53,62 @@ const filteredPlugins = computed(() => {
       row.author,
       ...(row.tags ?? []),
     ]
-      .join(" ")
-      .toLowerCase();
-    return hay.includes(q);
-  });
-});
+      .join(' ')
+      .toLowerCase()
+    return hay.includes(q)
+  })
+})
 
 async function onSync() {
   try {
-    await pluginStore.syncPluginMarket();
+    await pluginStore.syncPluginMarket()
     if (pluginStore.pluginMarketSnapshot?.warning) {
-      showToast("info", t("pluginWorkbench.market.toastOfflineCache"));
-    } else {
-      showToast("success", t("pluginWorkbench.toast.indexSynced"));
+      showToast('info', t('pluginWorkbench.market.toastOfflineCache'))
     }
-  } catch (e) {
-    showToast("error", e instanceof Error ? e.message : String(e));
+    else {
+      showToast('success', t('pluginWorkbench.toast.indexSynced'))
+    }
+  }
+  catch (e) {
+    showToast('error', e instanceof Error ? e.message : String(e))
   }
 }
 
 async function onInstall(row: PluginMarketEntryDto) {
   if ((row.missingDependencies ?? []).length > 0) {
     showToast(
-      "error",
-      t("pluginWorkbench.toast.installDeps", {
-        list: row.missingDependencies.join(", "),
+      'error',
+      t('pluginWorkbench.toast.installDeps', {
+        list: row.missingDependencies.join(', '),
       }),
-    );
-    return;
+    )
+    return
   }
   try {
-    await pluginStore.installFromPluginMarket(row.id, row.git);
-    showToast("success", t("pluginWorkbench.market.installedGoManage", { id: row.id }));
-  } catch (e) {
-    showToast("error", e instanceof Error ? e.message : String(e));
+    await pluginStore.installFromPluginMarket(row.id, row.git)
+    showToast('success', t('pluginWorkbench.market.installedGoManage', { id: row.id }))
+  }
+  catch (e) {
+    showToast('error', e instanceof Error ? e.message : String(e))
   }
 }
 
 async function onUpdate(row: PluginMarketEntryDto) {
   try {
-    await pluginStore.updateInstalledPluginFromGit(row.id);
-    showToast("success", t("pluginWorkbench.toast.updatedGit", { id: row.id }));
-  } catch (e) {
-    showToast("error", e instanceof Error ? e.message : String(e));
+    await pluginStore.updateInstalledPluginFromGit(row.id)
+    showToast('success', t('pluginWorkbench.toast.updatedGit', { id: row.id }))
+  }
+  catch (e) {
+    showToast('error', e instanceof Error ? e.message : String(e))
   }
 }
 
 function openPluginManager() {
-  pluginStore.requestOpenSimplePluginManager();
+  pluginStore.requestOpenSimplePluginManager()
 }
 
 function close() {
-  pluginStore.closeMarketPanel();
+  pluginStore.closeMarketPanel()
 }
 </script>
 
@@ -119,8 +126,12 @@ function close() {
       <div ref="dialogRef" class="mk-dialog" tabindex="-1" @click.stop>
         <header class="mk-head">
           <div>
-            <h2 class="mk-title">{{ t("pluginWorkbench.market.pageTitle") }}</h2>
-            <p class="mk-sub">{{ t("pluginWorkbench.market.pageSub") }}</p>
+            <h2 class="mk-title">
+              {{ t("pluginWorkbench.market.pageTitle") }}
+            </h2>
+            <p class="mk-sub">
+              {{ t("pluginWorkbench.market.pageSub") }}
+            </p>
           </div>
           <button type="button" class="mk-close" :aria-label="t('common.close')" @click="close">
             ×
@@ -135,14 +146,18 @@ function close() {
             class="mk-search"
             :placeholder="t('pluginWorkbench.market.searchPlaceholder')"
             :aria-label="t('pluginWorkbench.market.searchAria')"
-          />
+          >
           <select
             v-model="categoryFilter"
             class="mk-select"
             :aria-label="t('pluginWorkbench.market.categoryAria')"
           >
-            <option value="">{{ t("pluginWorkbench.market.categoryAll") }}</option>
-            <option v-for="c in categories" :key="c" :value="c">{{ c }}</option>
+            <option value="">
+              {{ t("pluginWorkbench.market.categoryAll") }}
+            </option>
+            <option v-for="c in categories" :key="c" :value="c">
+              {{ c }}
+            </option>
           </select>
           <button
             type="button"
@@ -164,7 +179,9 @@ function close() {
         <p v-if="pluginStore.pluginMarketSyncing" class="mk-sync-status" role="status" aria-live="polite">
           {{ t("pluginWorkbench.market.syncing") }}
         </p>
-        <p v-if="pluginStore.pluginMarketError" class="mk-err">{{ pluginStore.pluginMarketError }}</p>
+        <p v-if="pluginStore.pluginMarketError" class="mk-err">
+          {{ pluginStore.pluginMarketError }}
+        </p>
         <div
           v-else-if="pluginStore.pluginMarketSnapshot?.warning"
           class="mk-callout"
@@ -199,14 +216,18 @@ function close() {
                 <strong class="mk-card-id">{{ row.id }}</strong>
                 <span class="mk-card-ver">v{{ row.version }}</span>
               </div>
-              <p class="mk-card-name">{{ row.name }}</p>
+              <p class="mk-card-name">
+                {{ row.name }}
+              </p>
               <p v-if="row.author" class="mk-card-meta">
                 {{ t("pluginWorkbench.market.author") }}: {{ row.author }}
               </p>
               <p v-if="row.category" class="mk-card-meta">
                 {{ t("pluginWorkbench.market.category") }}: {{ row.category }}
               </p>
-              <p v-if="row.description" class="mk-card-desc">{{ row.description }}</p>
+              <p v-if="row.description" class="mk-card-desc">
+                {{ row.description }}
+              </p>
               <p
                 v-if="(row.missingDependencies ?? []).length"
                 class="mk-err mk-card-deps"
