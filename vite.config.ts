@@ -55,6 +55,8 @@ export default defineConfig(({ mode }) => ({
           if (id.includes("@sentry")) return "vendor-sentry";
           if (id.includes("@tauri-apps")) return "vendor-tauri";
           if (id.includes("vue-virtual-scroller")) return "vendor-scroller";
+          if (id.includes("vue-i18n")) return "vendor-i18n";
+          if (id.includes("pinia-plugin-persistedstate")) return "vendor-pinia-persist";
           if (id.includes("pinia")) return "vendor-pinia";
           // ArchitectureGraphFlow 经 defineAsyncComponent 懒加载；单独 chunk 避免打入 vendor-vue
           if (id.includes("@vue-flow")) return "vendor-vue-flow";
