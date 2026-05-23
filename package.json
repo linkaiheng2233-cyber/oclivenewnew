@@ -15,6 +15,7 @@
     "tauri:before-dev": "node scripts/tauri-npm.cjs dev",
     "tauri:before-build": "node scripts/tauri-npm.cjs build",
     "build": "vite build",
+    "build:e2e": "vite build --mode e2e",
     "build:analyze": "vite build --mode analyze",
     "preview": "vite preview",
     "tauri": "tauri",

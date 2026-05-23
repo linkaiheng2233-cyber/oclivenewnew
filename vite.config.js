@@ -1,9 +1,12 @@
 /// <reference types="vitest/config" />
+import path from "node:path";
+import { fileURLToPath } from "node:url";
 import { defineConfig } from "vite";
 import vue from "@vitejs/plugin-vue";
 import { visualizer } from "rollup-plugin-visualizer";
 
 const host = process.env.TAURI_DEV_HOST;
+const rootDir = path.dirname(fileURLToPath(import.meta.url));
 
 // https://vite.dev/config/
 export default defineConfig(({ mode }) => ({
@@ -11,6 +14,17 @@ export default defineConfig(({ mode }) => ({
     environment: "node",
     include: ["src/**/*.test.ts", "src/__tests__/**/*.spec.ts"],
   },
+  resolve:
+    mode === "e2e"
+      ? {
+          alias: {
+            "@tauri-apps/api/tauri": path.join(rootDir, "e2e-mock/tauri.ts"),
+            "@tauri-apps/api/event": path.join(rootDir, "e2e-mock/event.ts"),
+            "@tauri-apps/api/dialog": path.join(rootDir, "e2e-mock/dialog.ts"),
+            "@tauri-apps/api/fs": path.join(rootDir, "e2e-mock/fs.ts"),
+          },
+        }
+      : undefined,
   plugins: [
     vue(),
     mode === "analyze" &&

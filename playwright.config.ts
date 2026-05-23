@@ -7,7 +7,7 @@ const externalPreview = process.env.PW_TEST_USE_EXTERNAL === "1";
 
 /**
  * A1.1b 子项：静态构建 + `vite preview` 下的浏览器壳烟测（不经 Tauri 原生窗口）。
- * 需先有 `dist/`：`npm run build && npm run test:e2e:preview`
+ * 需先有 **`npm run build:e2e`** 产物（`--mode e2e` 启用 `e2e-mock/` Tauri 桩）：`npm run build:e2e && npm run test:e2e:preview`
  * 端口默认 **4180**（可用 **`OCLIVE_PREVIEW_PORT`** 覆盖）。
  *
  * **Windows**：若内置 `webServer` 超时，可先 `npm run preview` 再设 **`PW_TEST_USE_EXTERNAL=1`** 后执行 **`npm run test:e2e:preview`**。CI 仅在 **Ubuntu** 跑本套（见 `.github/workflows/ci.yml`）。

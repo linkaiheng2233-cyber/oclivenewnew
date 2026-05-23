@@ -148,7 +148,7 @@ jobs:
           cache: npm
       - run: npm ci
       - run: npm run test:unit
-      - run: npm run build
+      - run: npm run build:e2e
       - name: Install Playwright Chromium (Linux only)
         if: runner.os == 'Linux'
         run: npx playwright install --with-deps chromium
