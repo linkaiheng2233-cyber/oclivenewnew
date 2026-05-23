@@ -10,7 +10,7 @@ use crate::state::AppState;
 /// # Errors
 ///
 /// Returns [`Err`] with a human-readable message when the operation fails.
-/// 与 [`AppState::startup_health`] 配合：仅首轮对话执行一次（锁不跨越 `.await`）。
+/// 与 [`AppState::startup_health`] 配合：仅首轮对话执行一次（`OnceLock` 热路径无锁）。
 pub async fn ensure_once(state: &AppState, role: &Role, effective: &PluginBackends) -> Result<()> {
     if std::env::var("OCLIVE_SKIP_STARTUP_HEALTH")
         .map(|v| v == "1" || v.eq_ignore_ascii_case("true"))
@@ -18,22 +18,20 @@ pub async fn ensure_once(state: &AppState, role: &Role, effective: &PluginBacken
     {
         return Ok(());
     }
-    {
-        let g = state.startup_health.lock();
-        match &*g {
-            Some(Err(msg)) => {
-                return Err(AppError::StartupHealthFailed(msg.clone()));
-            }
-            Some(Ok(())) => return Ok(()),
-            None => {}
-        }
+    if let Some(cached) = state.startup_health.get() {
+        return cached
+            .clone()
+            .map_err(|msg| AppError::StartupHealthFailed(msg.clone()));
     }
-    let outcome = run_checks(state, role, effective).await;
-    let mut g = state.startup_health.lock();
-    if g.is_none() {
-        *g = Some(outcome.as_ref().map(|_| ()).map_err(|e| e.to_string()));
-    }
-    outcome
+    let outcome = run_checks(state, role, effective)
+        .await
+        .map_err(|e| e.to_string());
+    let cached = state
+        .startup_health
+        .get_or_init(|| outcome.clone());
+    cached
+        .clone()
+        .map_err(AppError::StartupHealthFailed)
 }
 
 async fn run_checks(state: &AppState, role: &Role, effective: &PluginBackends) -> Result<()> {
