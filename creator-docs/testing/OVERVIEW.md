@@ -32,7 +32,7 @@
 | **T12** | 快捷键 / 视图分级 | `HotkeySettingsSection.spec.ts`、`useEditorViewState.test.ts` | **已覆盖** |
 | **T13** | 前端测试运行器 + 工具函数 | `FrontendTestRunnerPanel.spec.ts`、`mergeManifest.test.ts`、`uiConfig.test.ts`、`authorPack.test.ts`；Playwright `e2e/smoke.spec.ts` | **已覆盖** |
 
-**合计（编写器 Vitest `it` 数）**：**113**（2026-05-20）；组件 spec **30+** 条。
+**合计（编写器 Vitest `it` 数）**：**119**（2026-05-20）；组件 spec **32** 条。
 
 | **T14–T20**（`official-vue-test-runner` 等） | 编写器内置能力，以**目录插件**范式对接工作区；**T14 Vue runner 已入库** `plugins/official-vue-test-runner/`（见插件 README）。 |
 

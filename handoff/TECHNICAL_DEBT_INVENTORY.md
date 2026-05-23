@@ -11,7 +11,7 @@ This file tracks **mid/long-term** engineering debt, activation criteria, and ba
 | Original ID | Item | Effort | Batch 4 decision | Status |
 |-------------|------|--------|------------------|--------|
 | **1.2** | A1.1c — installer / native Tauri window / full GUI E2E | Large infra | **Start foundation** | **Foundation started** — [`e2e/tauri-native.spec.ts`](../e2e/tauri-native.spec.ts), CI `e2e-tauri` (`continue-on-error`) |
-| **1.5** | T05–T13 ~42 component cases (pack editor) | Large | **Phased supplement** | **Complete (critical path)** — **113** Vitest cases in `oclive-pack-editor`; T05–T13 mapped (see [OVERVIEW](../creator-docs/testing/OVERVIEW.md)) |
+| **1.5** | T05–T13 ~42 component cases (pack editor) | Large | **Phased supplement** | **Complete (critical path)** — **119** Vitest cases in `oclive-pack-editor`; T05–T13 mapped (see [OVERVIEW](../creator-docs/testing/OVERVIEW.md)) |
 | **3.1** | `library` vs `kernel_server` capability parity | Architecture | **Defer — RFC** | **Deferred** — see §3.1 below |
 | **3.5** | Multimodal / barge-in / multi-tenant | New product | **Defer — product** | **Deferred** — see §3.5 below |
 | **3.6** | Reference hardware / docker-compose targets | Hardware | **Defer — resources** | **Deferred** — see §3.6 below |
@@ -37,7 +37,7 @@ This file tracks **mid/long-term** engineering debt, activation criteria, and ba
 |--|--|
 | **Why not 42 cases at once** | Full tree duplicates pack-editor UI churn; ROI higher on **contract + critical editor paths** first. |
 | **Activation criteria** | Pack-editor Vitest ≥ **20** cases mapped to T05–T08; remaining T09–T13 when studio UX stabilizes. |
-| **Status (2026-05-20)** | **T05–T13 critical path complete** — **113** Vitest tests in `oclive-pack-editor` (`npm run test` green). |
+| **Status (2026-05-20)** | **T05–T13 critical path complete** — **119** Vitest tests in `oclive-pack-editor` (`npm run test` green). |
 | **Authority** | [creator-docs/testing/OVERVIEW.md](../creator-docs/testing/OVERVIEW.md) §T05–T13 table. |
 
 ---
@@ -142,6 +142,6 @@ This file tracks **mid/long-term** engineering debt, activation criteria, and ba
 | `cargo test --workspace --lib` | ✅ 127 passed |
 | `npm run test:unit` (oclivenewnew) | ✅ 23 passed |
 | `npm run build` (oclivenewnew) | ✅ success |
-| `npm run test` (oclive-pack-editor) | ✅ **113** passed (T05–T13 complete) |
+| `npm run test` (oclive-pack-editor) | ✅ **119** passed (T05–T13 complete) |
 
 Update this file when batch status changes.
