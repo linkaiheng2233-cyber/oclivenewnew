@@ -7,6 +7,7 @@ pub(crate) mod co_present;
 pub mod message_error;
 pub(crate) mod context;
 pub(crate) mod favor;
+pub(crate) mod minimal_response;
 pub mod plugin_resolve;
 pub mod turn_context;
 mod presence;

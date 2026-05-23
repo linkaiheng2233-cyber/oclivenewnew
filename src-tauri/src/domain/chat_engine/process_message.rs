@@ -12,18 +12,16 @@
 use crate::domain::agent::AgentInput;
 use crate::domain::dual_pipeline::DualPipelineRunner;
 use crate::domain::chat_engine::co_present;
+use crate::domain::chat_engine::minimal_response::build_minimal_response;
 use crate::domain::chat_engine::presence::user_is_remote_from_character;
 use crate::domain::chat_engine::turn_context::TurnContext;
 use crate::domain::chat_engine::{
     backend_resolution_summary, context::validate_scene_id, conversation_state_role_id,
-    emotion_to_dto, ensure_role_loaded, process_remote_life, process_remote_stub,
+    ensure_role_loaded, process_remote_life, process_remote_stub,
 };
 use crate::domain::startup_health;
-use crate::domain::user_identity::resolve_effective_user_relation_key;
 use crate::error::Result;
-use crate::models::dto::{
-    PresenceMode, SendMessageRequest, SendMessageResponse, API_VERSION, SCHEMA_VERSION,
-};
+use crate::models::dto::{SendMessageRequest, SendMessageResponse};
 use crate::state::AppState;
 use crate::domain::chat_engine::message_error::ProcessMessageError;
 use std::time::Instant;
@@ -128,71 +126,19 @@ async fn run(
         "agent_process"
     )?;
     if agent_out.handled {
-        pm!(
-            state
-                .db_manager
-                .set_user_presence_scene(srid, scene_id.as_str())
-                .await,
-            "set_user_presence_scene_agent"
-        )?;
-        let emotion_result = pm!(
-            pl.emotion.analyze(req.user_message.as_str()),
-            "agent_branch_emotion"
-        )?;
-        let user_relation_key = pm!(
-            resolve_effective_user_relation_key(
-                state,
-                role.as_ref(),
-                srid,
-                Some(scene_id.as_str()),
-            )
-            .await,
-            "agent_branch_resolve_user_relation"
-        )?;
-        let rel_id = pm!(
-            state
-                .db_manager
-                .get_relation_state_for_identity(srid, user_relation_key.as_str())
-                .await,
-            "agent_branch_relation_identity"
-        )?;
-        let rel_global = pm!(
-            state.db_manager.get_relation_state(srid).await,
-            "agent_branch_relation_global"
-        )?;
-        let relation_state = rel_id
-            .or(rel_global)
-            .unwrap_or_else(|| "Stranger".to_string());
-        let favor_current = pm!(
-            state
-                .db_manager
-                .favorability_for_identity_with_runtime_fallback(srid, user_relation_key.as_str())
-                .await,
-            "agent_branch_favorability"
-        )?;
-        let portrait_emotion = pm!(
-            state.db_manager.get_current_emotion(srid).await,
-            "agent_branch_portrait_emotion"
-        )?
-        .unwrap_or_else(|| "neutral".to_string());
-        return Ok(SendMessageResponse {
-            api_version: API_VERSION,
-            schema: SCHEMA_VERSION,
-            presence_mode: PresenceMode::CoPresent,
-            relation_state,
-            reply: agent_out.reply,
-            emotion: emotion_to_dto(&emotion_result),
-            bot_emotion: portrait_emotion.clone(),
-            portrait_emotion,
-            favorability_delta: 0.0,
-            favorability_current: favor_current as f32,
-            events: vec![],
+        return build_minimal_response(
+            state,
+            &pl,
+            role.as_ref(),
+            srid,
             scene_id,
-            offer_destination_picker: false,
-            offer_together_travel: false,
-            reply_is_fallback: false,
-            knowledge_chunks_in_prompt: 0,
-            timestamp: chrono::Utc::now().timestamp_millis(),
+            req.user_message.as_str(),
+            agent_out.reply,
+        )
+        .await
+        .map_err(|source| ProcessMessageError::Stage {
+            stage: "agent_minimal_response",
+            source,
         });
     }
 
