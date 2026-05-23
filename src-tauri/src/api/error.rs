@@ -82,6 +82,28 @@ impl From<ApiError> for String {
     }
 }
 
+/// Tauri command error newtype (orphan-safe bridge to [`tauri::InvokeError`]).
+#[derive(Debug)]
+pub struct CommandError(pub crate::error::AppError);
+
+impl From<crate::error::AppError> for CommandError {
+    fn from(e: crate::error::AppError) -> Self {
+        Self(e)
+    }
+}
+
+impl From<CommandError> for tauri::InvokeError {
+    fn from(e: CommandError) -> Self {
+        tauri::InvokeError::from(e.0.to_kernel_json())
+    }
+}
+
+impl From<serde_json::Error> for CommandError {
+    fn from(e: serde_json::Error) -> Self {
+        Self(crate::error::AppError::SerializationError(e))
+    }
+}
+
 /// 将 `DirectoryPluginRuntime::ensure_rpc_url` 等返回的纯文本失败映射为 **`KernelErrorBody` JSON 单行**。
 #[must_use]
 pub fn map_directory_rpc_url_error(plugin_id: &str, err: String) -> String {
