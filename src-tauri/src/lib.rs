@@ -377,19 +377,31 @@ pub fn run() {
             );
             Ok(())
         })
+        // Tauri invoke commands — grouped by domain (see `src-tauri/src/api/`).
         .invoke_handler(tauri::generate_handler![
+            // ── agent / MCP ──
             api::agent::list_mcp_servers,
             api::agent::list_mcp_tools,
             api::agent::call_mcp_tool,
             api::agent::get_agent_debug_traces,
             api::agent::clear_agent_debug_traces,
+
+            // ── high-risk capabilities ──
             api::high_risk::grant_high_risk_capability,
             api::high_risk::list_high_risk_grants,
             api::high_risk::revoke_high_risk_capability,
+
+            // ── diagnostics ──
             api::diagnostics::run_environment_diagnostics,
+
+            // ── app settings ──
             api::settings::get_remote_fallback_app_settings,
             api::settings::set_remote_fallback_to_builtin,
+
+            // ── chat ──
             api::chat::send_message,
+
+            // ── role / session / slot registry ──
             api::role::load_role,
             api::role::get_role_info,
             api::role::list_roles,
@@ -409,20 +421,38 @@ pub fn run() {
             api::role::get_plugin_resolution_debug,
             api::role::resolve_role_asset_path,
             api::role::read_role_asset_bytes,
+
+            // ── desktop filesystem (replaces `@tauri-apps/api/fs` IPC) ──
             api::desktop_fs::write_user_text_file,
+
+            // ── role pack import/export ──
             api::role_pack::export_role_pack_command,
             api::role_pack::peek_role_pack_command,
             api::role_pack::import_role_pack_command,
+
+            // ── scene / presence ──
             api::scene::switch_scene,
             api::scene::set_user_presence_scene,
+
+            // ── virtual time ──
             api::time::get_time_state,
             api::time::jump_time,
+
+            // ── monologue ──
             api::monologue::generate_monologue,
+
+            // ── chat export ──
             api::export::export_chat_logs,
+
+            // ── memory / events ──
             api::memory::query_memories,
             api::event::query_events,
             api::event::create_event,
+
+            // ── policy plugins ──
             api::policy::reload_policy_plugins,
+
+            // ── directory plugins (runtime + catalog) ──
             api::directory_plugin::get_directory_plugin_bootstrap,
             api::directory_plugin::read_plugin_asset_text,
             api::directory_plugin::is_host_event_subscribed,
@@ -431,11 +461,17 @@ pub fn run() {
             api::directory_plugin::save_plugin_state,
             api::directory_plugin::save_global_plugin_state,
             api::directory_plugin::reset_plugin_state_to_role_default,
+            api::directory_plugin::directory_plugin_invoke,
+
+            // ── global hotkeys ──
             api::hotkeys::get_hotkey_bindings,
             api::hotkeys::save_hotkey_bindings,
-            api::directory_plugin::directory_plugin_invoke,
+
+            // ── plugin scaffold / pack ──
             api::plugin_scaffold::create_plugin_scaffold,
             api::plugin_pack::pack_plugin,
+
+            // ── plugin debug / test runner ──
             api::plugin_debug::spawn_plugin_for_test,
             api::plugin_debug::kill_plugin_process,
             api::plugin_debug::list_plugin_processes,
@@ -443,10 +479,16 @@ pub fn run() {
             api::plugin_debug::clear_plugin_logs,
             api::plugin_debug::test_plugin_method,
             api::plugin_debug::discover_plugin_methods,
+
+            // ── plugin HTML bridge ──
             api::plugin_bridge::plugin_bridge_invoke,
+
+            // ── plugin install / update (local zip) ──
             api::plugin_update::check_plugin_updates,
             api::plugin_update::extract_plugin_zip,
             api::plugin_update::install_plugin_from_zip,
+
+            // ── plugin market / index ──
             api::plugin_index::sync_plugin_index_command,
             api::plugin_index::get_cached_plugin_index,
             api::plugin_index::install_plugin_from_market,
@@ -456,6 +498,8 @@ pub fn run() {
             api::plugin_index::batch_update_plugins,
             api::plugin_index::batch_uninstall_plugins,
             api::plugin_index::consume_pending_protocol_installs,
+
+            // ── plugin settings UI ──
             api::plugin_config::get_plugin_settings_ui,
             api::plugin_config::set_plugin_settings_config,
         ])
