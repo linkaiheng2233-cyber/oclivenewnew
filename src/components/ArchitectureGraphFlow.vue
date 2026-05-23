@@ -9,7 +9,6 @@ import { MiniMap } from '@vue-flow/minimap'
 import { computed, markRaw, onMounted, provide, ref, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { useAppToast } from '../composables/useAppToast'
-import { useArchitectureGraphConnections } from '../composables/useArchitectureGraphConnections'
 import { useArchitectureGraphLayout } from '../composables/useArchitectureGraphLayout'
 import { useArchitectureGraphModel } from '../composables/useArchitectureGraphModel'
 import { patchSlotRegistryBackend } from '../lib/archGraphSlotBackend'
@@ -33,7 +32,6 @@ import ArchAddSlotDialog from './architecture-graph/ArchAddSlotDialog.vue'
 import ArchBackendEdge from './architecture-graph/ArchBackendEdge.vue'
 import ArchBusNode from './architecture-graph/ArchBusNode.vue'
 import ArchComplexNode from './architecture-graph/ArchComplexNode.vue'
-import ArchConnectionLine from './architecture-graph/ArchConnectionLine.vue'
 import { archGraphActionsKey } from './architecture-graph/archGraphContext'
 import ArchGraphFitView from './architecture-graph/ArchGraphFitView.vue'
 import ArchGroupNode from './architecture-graph/ArchGroupNode.vue'
@@ -96,8 +94,6 @@ const {
 
 const nodes = ref<Node[]>([])
 const edges = ref<Edge[]>([])
-
-const graphConnections = useArchitectureGraphConnections(nodes, edges)
 
 function syncGraphFromModel() {
   nodes.value = builtNodes.value.map((n) => {
@@ -535,26 +531,21 @@ onMounted(syncGraphFromModel)
         v-model:edges="edges"
         :node-types="nodeTypes"
         :edge-types="edgeTypes"
-        :connection-mode="graphConnections.connectionMode"
         :min-zoom="0.35"
         :max-zoom="1.8"
         :nodes-draggable="true"
-        :nodes-connectable="!usesBlueprint"
-        :edges-updatable="!usesBlueprint"
+        :nodes-connectable="false"
+        :edges-updatable="false"
         :elements-selectable="true"
-        :is-valid-connection="usesBlueprint ? () => false : graphConnections.isValidConnection"
         :fit-view-on-init="false"
         :default-viewport="{ zoom: 0.85 }"
         @nodes-change="onNodesChange"
-        @edges-change="usesBlueprint ? onEdgesChangeBlueprint : graphConnections.onEdgesChange"
-        @connect="usesBlueprint ? onEdgesChangeBlueprint : graphConnections.onConnect"
-        @edge-update="usesBlueprint ? onEdgesChangeBlueprint : graphConnections.onEdgeUpdate"
-        @connect-start="usesBlueprint ? onEdgesChangeBlueprint : graphConnections.onConnectStart"
-        @connect-end="usesBlueprint ? onEdgesChangeBlueprint : graphConnections.onConnectEnd"
+        @edges-change="onEdgesChangeBlueprint"
+        @connect="onEdgesChangeBlueprint"
+        @edge-update="onEdgesChangeBlueprint"
+        @connect-start="onEdgesChangeBlueprint"
+        @connect-end="onEdgesChangeBlueprint"
       >
-        <template #connection-line="lineProps">
-          <ArchConnectionLine v-bind="lineProps" />
-        </template>
         <Background
           variant="dots"
           :gap="GRAPH_SURFACE.gridGap"
