@@ -25,14 +25,15 @@ void (async () => {
           environment: import.meta.env.MODE,
           sendDefaultPii: false,
           tracesSampleRate: 0,
-          beforeSend(event) {
-            try {
-              const url = event.request?.url
-              if (url) {
-                const u = new URL(url)
-                event.request.url = `${u.origin}${u.pathname}`
-              }
+        beforeSend(event) {
+          try {
+            const request = event.request
+            const url = request?.url
+            if (url && request) {
+              const u = new URL(url)
+              request.url = `${u.origin}${u.pathname}`
             }
+          }
             catch {
               /* ignore malformed URLs */
             }

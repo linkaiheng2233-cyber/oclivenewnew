@@ -9,7 +9,7 @@ function translateApiError(code: string): string | undefined {
   return undefined
 }
 
-/** �?`oclive_kernel_runtime::KernelErrorBody` / HTTP `error` 对象同形（内核权�?JSON）�?*/
+/** �?`oclive_kernel_runtime::KernelErrorBody` / HTTP `error` 对象同形（内核权�?JSON）�?*/
 export interface KernelErrorPayload {
   code: string
   message: string
@@ -42,7 +42,7 @@ export interface FriendlyError {
   code?: string
   message: string
   raw: string
-  /** �?`invoke` 失败载荷为内�?JSON 时填充，便于 UI/遥测�?HTTP 对齐�?*/
+  /** �?`invoke` 失败载荷为内�?JSON 时填充，便于 UI/遥测�?HTTP 对齐�?*/
   kernel?: KernelErrorPayload
 }
 
@@ -54,12 +54,12 @@ export function setErrorReporter(reporter: ErrorReporter | null): void {
   errorReporter = reporter
 }
 
-/** �?`invoke` 抛出的字符串中解析机器码：优先内�?JSON `code`，否�?legacy `[CODE]`�?*/
+/** �?`invoke` 抛出的字符串中解析机器码：优先内�?JSON `code`，否�?legacy `[CODE]`�?*/
 export function parseApiErrorCode(err: unknown): string | undefined {
   return parseBackendError(err).code
 }
 
-/** 是否为目录插件未找到类错误（便于 UI 分支）�?*/
+/** 是否为目录插件未找到类错误（便于 UI 分支）�?*/
 export function isPluginNotFoundError(err: unknown): boolean {
   return parseApiErrorCode(err) === 'API_PLUGIN_NOT_FOUND'
 }
@@ -163,7 +163,7 @@ export function toFriendlyError(err: unknown): FriendlyError {
 
 export async function invokeWithFriendlyError<T>(
   command: string,
-  payload: Record<string, unknown>,
+  payload: Record<string, unknown> = {},
 ): Promise<T> {
   try {
     return await invoke<T>(command, payload)
@@ -181,7 +181,7 @@ export async function invokeWithFriendlyError<T>(
     throw new Error(friendly.message)
   }
 }
-/** snake_case �?camelCase for a single key (Tauri IPC top-level args). */
+/** snake_case �?camelCase for a single key (Tauri IPC top-level args). */
 export function snakeToCamelKey(key: string): string {
   return key.replace(/_([a-z0-9])/g, (_, c) => c.toUpperCase())
 }

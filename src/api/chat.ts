@@ -1,5 +1,6 @@
 import { invoke } from '@tauri-apps/api/tauri'
 import { invokeWithFriendlyError } from './helpers'
+import type { RoleInfo } from './role'
 
 export interface SendMessageRequest {
   role_id: string
@@ -31,32 +32,32 @@ export type PresenceMode = 'co_present' | 'remote_stub' | 'remote_life'
 export interface SendMessageResponse {
   api_version: number
   schema: number
-  /** 共景 / 异地占位 / 异地心声 */
+  /** �?��?� / �?�?�占位 / �?�?��?声 */
   presence_mode: PresenceMode
-  /** 本回合结束后的关系阶段（�?`role_runtime.relation_state` 一致） */
+  /** �?��??�?�?�?�?�??�?�系�?�段�?�?`role_runtime.relation_state` �?�?��? */
   relation_state: string
   reply: string
   emotion: EmotionDto
-  /** 本回�?bot 情绪标签（小写英文） */
+  /** �?��??�?bot �??绪�?签�?小�??�?��??�? */
   bot_emotion: string
-  /** 立绘用（�?DB current_emotion 一致）；对话语气见 bot_emotion */
+  /** �?�?�?��?�?DB current_emotion �?�?��?�?对话语�?见 bot_emotion */
   portrait_emotion: string
   favorability_delta: number
   favorability_current: number
   events: DetectedEventDto[]
   scene_id: string
-  /** 后端判定用户有前往/位移意图时置 true；实际切换仅通过 switch_scene */
+  /** �?端�?��?�?��?��??�?��?/位移�?��?��?�置 true�?�?�??�??换�?�??�? switch_scene */
   offer_destination_picker: boolean
-  /** 检测到「一起去/跟我来」等邀请同行语义时�?true；确认后 `switch_scene`（同行）或仅叙事切换 */
+  /** �?�?�?��??�?起�?�/�?�??来�?��?�??请�?�?语�?�?��?true�?确认�? `switch_scene`�?�?�?�?�??�?�?�?�??换 */
   offer_together_travel: boolean
-  /** �?LLM 失败时使用备用短回复 */
+  /** �?LLM 失败�?�使�?��?�?��?��??复 */
   reply_is_fallback?: boolean
-  /** 本回合注�?Prompt 的知识块条数（共�?异地心声；占位为 0�?*/
+  /** �?��??�?注�??Prompt �??�?��?�?条�?��?�?��??�?�?��?声�?占位为 0�?*/
   knowledge_chunks_in_prompt?: number
   timestamp: number
 }
 
-/** 身份下拉里「跟�?manifest 默认身份」选项的值（与后�?`OCLIVE_DEFAULT_RELATION_SENTINEL` 一致） */
+/** 身份�?�??�??�??�?�??manifest �?认身份�?��??项�??�?��?�?�?�?`OCLIVE_DEFAULT_RELATION_SENTINEL` �?�?��? */
 
 export type SwitchSceneResponse = RoleInfo & {
   scene_welcome?: string | null
@@ -75,7 +76,7 @@ export interface JumpTimeResponse {
   monologues: string[]
   favorability_delta: number
   favorability_current: number
-  /** 虚拟时间规则是否将角�?current_scene �?from 切到 to */
+  /** �??�??�?��?��?�??�?�否�?�?�??current_scene �?from �??�?� to */
   autonomous_scene_from?: string | null
   autonomous_scene_to?: string | null
 }
@@ -172,7 +173,7 @@ export async function reloadPolicyPlugins(): Promise<string> {
 export async function switchScene(
   roleId: string,
   sceneId: string,
-  /** `true`：角色与用户同场景；`false`：仅更新用户叙事场景 */
+  /** `true`�?�?�?��?�?��?��?�?��?��?`false`�?�?�?��?��?��?��?�?�?��?� */
   together: boolean = true,
 ): Promise<SwitchSceneResponse> {
   return invokeWithFriendlyError<SwitchSceneResponse>('switch_scene', {
@@ -217,7 +218,7 @@ export async function generateMonologue(roleId: string): Promise<string> {
   return res.text
 }
 
-/** `.ocpak`：ZIP 打包�?`roles/{id}/` 目录（与 `.zip` 相同容器；亦可导入已解压目录路径�?*/
+/** `.ocpak`�?ZIP �??�??�??`roles/{id}/` �?��?�?�? `.zip` �?��?容�?��?亦可导�?�已解�??�?��?路�?�?*/
 
 export async function exportChatLogs(params: {
   roleId?: string
@@ -237,14 +238,14 @@ export async function exportChatLogs(params: {
   })
 }
 
-/** 嵌入主界面插槽（`chat_toolbar` / `settings.panel`），�?bootstrap 返回�?*/
+/** �?�?�主�??面�?槽�?`chat_toolbar` / `settings.panel`�?�?�??bootstrap �?�??�??*/
 
 export interface PluginBridgeSendMessageParams {
   role_id: string
   user_message: string
   scene_id?: string | null
   session_id?: string | null
-  /** �?`user_message` 二选一 */
+  /** �?`user_message` �?�??�? */
   text?: string
 }
 

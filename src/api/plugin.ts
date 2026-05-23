@@ -1,5 +1,6 @@
 import { invoke } from '@tauri-apps/api/tauri'
 import { invokeWithFriendlyError } from './helpers'
+import type { PackUiConfig, PackUiSlotConfig, PackUiSlots } from './role'
 
 export const OCLIVE_DEFAULT_RELATION_SENTINEL = '__oclive_default__'
 
@@ -19,7 +20,7 @@ export function emptyPackUiConfig(): PackUiConfig {
   }
 }
 
-/** 与后�?`models::author_pack::AuthorPackFile` 对齐（snake_case 字段）�?*/
+/** �?�?�?`models::author_pack::AuthorPackFile` 对齐�?snake_case �?段�?�??*/
 
 export function normalizePackUiConfig(
   raw: PackUiConfig | undefined | null,
@@ -60,18 +61,18 @@ export function normalizePackUiConfig(
 export interface PluginUiSlotInfo {
   pluginId: string
   slot: string
-  /** manifest `ui_slots[].appearance_id`；空字符串为默认变体 */
+  /** manifest `ui_slots[].appearance_id`�?空�?符串为�?认�?�? */
   appearanceId?: string
   /** manifest `ui_slots[].label` */
   label?: string | null
-  /** manifest `ui_slots[].entry`（相对插件根�?*/
+  /** manifest `ui_slots[].entry`�?�?�对�?件根�?*/
   entry: string
-  /** manifest `vueComponent`；存在时优先原生 Vue，失败则回退 `url` iframe */
+  /** manifest `vueComponent`�?�?�?��?��?�??�??�?? Vue�?失败�??�??�?? `url` iframe */
   vueComponent?: string | null
   url: string
 }
 
-/** 读取目录插件根下文本文件（宿主编�?`.vue` 等）�?*/
+/** 读�?�?��?�?件根�?�??�?��??件�?宿主�?�?`.vue` �?�?�??*/
 
 export async function readPluginAssetText(
   pluginId: string,
@@ -83,23 +84,23 @@ export async function readPluginAssetText(
   })
 }
 
-/** 目录插件启动引导（整�?URL、已扫描插件 id、开发者模式、UI 插槽）�?*/
+/** �?��?�?件启�?��?导�?�?��?URL�?�已�?�描�?件 id�?��?�?�??模式�?�UI �?槽�?�??*/
 
 export interface DirectoryPluginBootstrap {
   shellUrl?: string | null
   shellPluginId?: string | null
-  /** 整壳 `manifest.shell.vueEntry`（相对插件根）；�?`forceIframeMode` 决定是否走宿�?Vue 整壳�?*/
+  /** �?�壳 `manifest.shell.vueEntry`�?�?�对�?件根�?�?�?`forceIframeMode` �?��?�?�否走宿�?Vue �?�壳�??*/
   shellVueEntry?: string | null
-  /** �?`plugin_state.force_iframe_mode` 一致；为真时忽�?Vue 整壳与插�?Vue�?*/
+  /** �?`plugin_state.force_iframe_mode` �?�?��?为�??�?�忽�??Vue �?�壳�?�?�?Vue�??*/
   forceIframeMode?: boolean
   pluginIds: string[]
   developerMode: boolean
-  /** 当前角色下已启用插件�?manifest `bridge.events` 中声明的宿主事件名�?*/
+  /** �?�?��?�?��?已启�?��?件�??manifest `bridge.events` 中声�??�??宿主�?件名�??*/
   subscribedHostEvents: string[]
   uiSlots: PluginUiSlotInfo[]
 }
 
-/** `check_plugin_updates` 单插件结果（在线检查预留）�?*/
+/** `check_plugin_updates` �?�?件�?�??�?�?�线�?�?��?�??�?�??*/
 
 export interface PluginUpdateInfo {
   hasUpdate: boolean
@@ -128,7 +129,7 @@ export async function extractPluginZip(
   })
 }
 
-/** �?zip 安装目录插件；返�?manifest.id�?*/
+/** �?zip �?�?�?��?�?件�?�?�??manifest.id�??*/
 
 export async function installPluginFromZip(zipPath: string): Promise<string> {
   return invokeWithFriendlyError<string>('install_plugin_from_zip', {
@@ -136,7 +137,7 @@ export async function installPluginFromZip(zipPath: string): Promise<string> {
   })
 }
 
-/** 同一 `role_id` 上并发的 bootstrap 合并为单�?IPC，避免多插槽同时挂载时重复打后端�?*/
+/** �?�? `role_id` �?并�?�?? bootstrap �?并为�?�?IPC�?避�?��?�?槽�?�?��??载�?��?�复�??�?端�??*/
 const directoryBootstrapInflight = new Map<
   string,
   Promise<DirectoryPluginBootstrap>
@@ -168,19 +169,19 @@ export async function getDirectoryPluginBootstrap(
   return p
 }
 
-/** �?`app_data/plugin_state.json` 中单角色 slots 段一致（snake_case）�?*/
+/** �?`app_data/plugin_state.json` 中�?�?�?� slots 段�?�?��?snake_case�?�??*/
 
 export interface PluginStateFile {
   disabled_plugins: string[]
   slot_order: Record<string, string[]>
   disabled_slot_contributions: Record<string, string[]>
-  /** `plugin_id` �?`slot` �?`appearance_id` */
+  /** `plugin_id` �??`slot` �??`appearance_id` */
   slot_appearance?: Record<string, Record<string, string>>
-  /** 为真时忽�?`vueComponent`，嵌入插槽仅�?iframe�?*/
+  /** 为�??�?�忽�??`vueComponent`�?�?�?��?槽�?�??iframe�??*/
   force_iframe_mode?: boolean
 }
 
-/** 单角色的目录插件 UI 状态（含整�?id，与后端 `RolePluginStateDto` 一致）�?*/
+/** �?�?�?��??�?��?�?件 UI �?��?��?含�?��?id�?�?�?端 `RolePluginStateDto` �?�?��?�??*/
 
 export interface RolePluginState extends PluginStateFile {
   shellPluginId: string
@@ -189,11 +190,11 @@ export interface RolePluginState extends PluginStateFile {
 
 export interface PluginStateGetResponse {
   role: RolePluginState
-  /** 后端 `serde(rename_all = "camelCase")` �?`globalDefaults` */
+  /** �?端 `serde(rename_all = "camelCase")` �??`globalDefaults` */
   globalDefaults: RolePluginState
 }
 
-/** 并发 `get_plugin_state(role_id)` 合并为单�?IPC（按 role_id 维度）�?*/
+/** 并�? `get_plugin_state(role_id)` �?并为�?�?IPC�?�?? role_id 维度�?�??*/
 const pluginStateInflight = new Map<string, Promise<PluginStateGetResponse>>()
 
 function pluginStateCacheKey(roleId: string): string {
@@ -201,12 +202,12 @@ function pluginStateCacheKey(roleId: string): string {
   return t.length > 0 ? t : '__default__'
 }
 
-/** 角色包根目录 `ui.json`（与编写�?/ 后端 `UiConfig` 一致）�?*/
+/** �?�?��??根�?��? `ui.json`�?�?�?�??�??/ �?端 `UiConfig` �?�?��?�??*/
 
 export interface SlotConfig {
   order: string[]
   visible: string[]
-  /** 插件 id �?默认 `appearance_id`（该槽内�?*/
+  /** �?件 id �??�?认 `appearance_id`�?该槽�??�?*/
   appearance?: Record<string, string>
 }
 
@@ -239,15 +240,15 @@ export interface DirectoryPluginCatalogEntry {
   id: string
   version: string
   pluginType?: string | null
-  /** manifest �?`uiTemplate` �?`uiSchema.fields` */
+  /** manifest �?`uiTemplate` �??`uiSchema.fields` */
   hasUiSettings?: boolean
-  /** manifest 是否�?`process`（可在此面板启动 JSON-RPC 子进程） */
+  /** manifest �?�否�?`process`�?可�?�此面板启�?� JSON-RPC 子�?�?�? */
   hasRpcProcess: boolean
-  /** manifest 是否声明 `rpcMethods`（调试面板可预填方法名） */
+  /** manifest �?�否声�?? `rpcMethods`�?�?�?面板可�?填�?��?名�? */
   declaresRpcMethods?: boolean
   isShell: boolean
   uiSlotNames: string[]
-  /** 每条 manifest `ui_slots`（嵌入槽）一�?*/
+  /** 每条 manifest `ui_slots`�?�?�?�槽�?�?�?*/
   uiSlotVariants?: UiSlotVariantInfo[]
   provides: string[]
   description?: string | null
@@ -258,7 +259,7 @@ export interface DirectoryPluginCatalogEntry {
   dependencyIssues: string[]
 }
 
-/** 并发 `get_directory_plugin_catalog` 合并为单�?IPC（无 role 参数，全局共用一�?in-flight）�?*/
+/** 并�? `get_directory_plugin_catalog` �?并为�?�?IPC�?�?� role �?�?��?�?��?�?��?��?�?in-flight�?�??*/
 const directoryCatalogInflight = new Map<
   string,
   Promise<DirectoryPluginCatalogEntry[]>
@@ -325,7 +326,7 @@ export async function saveGlobalPluginState(
   })
 }
 
-/** 用磁盘上�?`ui.json` 覆盖该角色的本地插件 UI 状态�?*/
+/** �?�磁�??�?�??`ui.json` �?�??该�?�?��??�?��?��?件 UI �?��?��??*/
 
 export async function resetPluginStateToRoleDefault(
   roleId: string,
@@ -336,7 +337,7 @@ export async function resetPluginStateToRoleDefault(
   })
 }
 
-/** 网页索引中的单条插件（与 `plugin_installer::PluginIndexEntry` 一致，camelCase）�?*/
+/** �?页索�?中�??�?条�?件�?�? `plugin_installer::PluginIndexEntry` �?�?��?camelCase�?�??*/
 
 export interface PluginIndexEntryDto {
   id: string
@@ -503,7 +504,7 @@ export async function directoryPluginInvoke(
   })
 }
 
-/** 开发者调试：目录插件 RPC 子进程快照（与后�?`PluginProcessDebugInfo` 一致）�?*/
+/** �?�?�??�?�?�?�?��?�?件 RPC 子�?�?快�?��?�?�?�?`PluginProcessDebugInfo` �?�?��?�??*/
 
 export interface PluginProcessDebugInfo {
   pluginId: string
@@ -514,7 +515,7 @@ export interface PluginProcessDebugInfo {
   memoryKb?: number | null
 }
 
-/** 扁平 Tauri command 参数�?IPC 上为 camelCase（与 Rust �?`snake_case` 形参对应）�?*/
+/** �?�平 Tauri command �?�?��??IPC �?为 camelCase�?�? Rust �?`snake_case` 形�?对�?�?�??*/
 
 export async function spawnPluginForTest(
   pluginId: string,
@@ -627,8 +628,8 @@ export async function packPlugin(
 }
 
 /**
- * manifest `shell.bridge.invoke` 可声�?**命令�?* �?**权限别名**（后者用�?`get_conversation` �?`read:conversation` 等）�?
- * 敏感命令（聊�?角色切换）还要求 **`type`: `"ocliveplugin"`** 且来源为 **`shell.entry`** HTML �?**`shell.vueEntry`** Vue 整壳�?
+ * manifest `shell.bridge.invoke` 可声�??**�?�令�?* �??**�?�?��?�名**�?�?�??�?��?`get_conversation` �??`read:conversation` �?�?�??
+ * �?��??�?�令�?�?�?�?�?��??换�?�?要�? **`type`: `"ocliveplugin"`** �?来源为 **`shell.entry`** HTML �??**`shell.vueEntry`** Vue �?�壳�??
  */
 
 export type PluginBridgeManifestToken
@@ -664,12 +665,12 @@ export type PluginBridgeManifestToken
     | 'write:settings'
     | 'read:conversations'
 
-/** 整壳 `OclivePluginBridge.invoke('update_memory', params)` */
+/** �?�壳 `OclivePluginBridge.invoke('update_memory', params)` */
 
 export interface PluginBridgeUpdateMemoryParams {
   role_id: string
   content: string
-  /** 0�?，默�?0.5 */
+  /** 0�??�?�?�?0.5 */
   importance?: number
 }
 
@@ -692,16 +693,16 @@ export interface PluginBridgeUpdateEventParams {
   description?: string | null
 }
 
-/** 预留；宿主未实现动态提示词片段时返�?`not_implemented`�?*/
+/** �?�??�?宿主�?��?�?��?��?�提示词�??段�?��?�??`not_implemented`�??*/
 
 export interface PluginBridgeUpdatePromptParams {
   role_id: string
-  /** 由后续宿主契约定�?*/
+  /** �?��?续宿主�?约�?�?*/
   fragment_key?: string
   content?: string
 }
 
-/** `plugin_bridge_invoke` �?`send_message`（字段与 {@link SendMessageRequest} 一致；可提�?`text` 代替 `user_message`�?*/
+/** `plugin_bridge_invoke` �??`send_message`�?�?段�? {@link SendMessageRequest} �?�?��?可提�?`text` 代�?� `user_message`�?*/
 
 export interface PluginBridgeGetConversationParams {
   role_id: string
@@ -729,7 +730,7 @@ export interface PluginBridgeGetConversationResult {
   items: PluginBridgeConversationTurn[]
 }
 
-/** `export_conversation` �?�?`export_chat_logs` 单角色导出一致（`format`: `json` | `txt`）�?*/
+/** `export_conversation` �??�?`export_chat_logs` �?�?�?�导�?��?�?��?`format`: `json` | `txt`�?�??*/
 
 export interface PluginBridgeExportConversationParams {
   role_id: string
@@ -743,11 +744,11 @@ export interface PluginBridgeExportConversationResult {
   suggested_filename: string
 }
 
-/** `import_role`：从 `.zip` / `.ocpak` 或已解压目录导入角色包�?*/
+/** `import_role`�?�? `.zip` / `.ocpak` �??已解�??�?��?导�?��?�?��??�??*/
 
 export interface PluginBridgeImportRoleParams {
   path: string
-  /** �?`src_path` 二选一 */
+  /** �?`src_path` �?�??�? */
   src_path?: string
   overwrite?: boolean
 }
@@ -758,7 +759,7 @@ export interface PluginBridgeImportRoleResult {
   ok: boolean
 }
 
-/** `delete_role`：删除本地角色包及相关数据�?*/
+/** `delete_role`�?�?��?��?��?��?�?��??�?�?��?��?�据�??*/
 
 export interface PluginBridgeDeleteRoleParams {
   role_id?: string
@@ -771,19 +772,19 @@ export interface PluginBridgeDeleteRoleResult {
   role_id: string
 }
 
-/** `update_settings`：更新允许的应用设置（整壳白名单字段）�?*/
+/** `update_settings`�?�?��?��?�许�??�?�?�设置�?�?�壳�?�名�?�?段�?�??*/
 
 export interface PluginBridgeUpdateSettingsParams {
-  /** �?`ui_theme` 二选一 */
+  /** �?`ui_theme` �?�??�? */
   theme?: 'light' | 'dark' | 'system'
   ui_theme?: 'light' | 'dark' | 'system'
   interaction_mode?: string
-  /** 与主应用设置「远端失败自动降级内置」一致：`"0"` / `"1"`�?*/
+  /** �?主�?�?�设置�??�?端失败�?��?��?�级�??置�?��?�?��?`"0"` / `"1"`�??*/
   remote_fallback_to_builtin?: string
   [key: string]: unknown
 }
 
-/** `get_conversation_list`：列出本地会话元数据�?*/
+/** `get_conversation_list`�?�??�?��?��?��?话�??�?�据�??*/
 
 export interface PluginBridgeConversationListItem {
   session_namespace: string
@@ -796,7 +797,7 @@ export interface PluginBridgeGetConversationListResult {
   items: PluginBridgeConversationListItem[]
 }
 
-/** 目录插件�?`OclivePluginBridge.invoke` 对应的后端入口（一般无需在主 UI 调用）�?*/
+/** �?��?�?件�?`OclivePluginBridge.invoke` 对�?�??�?端�?�口�?�?�?��?��??�?�主 UI �?�?��?�??*/
 
 export async function pluginBridgeInvoke(req: {
   pluginId: string
@@ -814,4 +815,4 @@ export async function pluginBridgeInvoke(req: {
   })
 }
 
-/** A2.2：环境自检（Ollama、角色根目录、应用数据可写）�?*/
+/** A2.2�?�?��?�?��?�?Ollama�?��?�?�根�?��?�?��?�?��?�据可�??�?�??*/
