@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import type { PluginProcessDebugInfo } from '../api'
+import type { PluginProcessDebugInfo } from '../../api'
 import { useI18n } from 'vue-i18n'
 
 defineProps<{

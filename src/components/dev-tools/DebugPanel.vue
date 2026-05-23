@@ -1,21 +1,21 @@
 <script setup lang="ts">
 import { computed, ref } from 'vue'
 import { useI18n } from 'vue-i18n'
-import { useChatStore } from '../stores/chatStore'
-import { useDebugStore } from '../stores/debugStore'
-import { SLOT_DEBUG_DOCK, usePluginStore } from '../stores/pluginStore'
-import { useRoleStore } from '../stores/roleStore'
-import { useUiStore } from '../stores/uiStore'
+import { useChatStore } from '../../stores/chatStore'
+import { useDebugStore } from '../../stores/debugStore'
+import { SLOT_DEBUG_DOCK, usePluginStore } from '../../stores/pluginStore'
+import { useRoleStore } from '../../stores/roleStore'
+import { useUiStore } from '../../stores/uiStore'
 import {
   PERSONALITY_TRAIT_KEYS,
   vec7ToRecord,
-} from '../utils/personality-traits'
-import { generateMonologue } from '../api'
-import ChatExportBar from './ChatExportBar.vue'
-import HelpHint from './shared/HelpHint.vue'
-import PluginSlotEmbed from './PluginSlotEmbed.vue'
-import RolePackBar from './RolePackBar.vue'
-import RoleRuntimePanel from './role/RoleRuntimePanel.vue'
+} from '../../utils/personality-traits'
+import { generateMonologue } from '../../api'
+import ChatExportBar from '../ChatExportBar.vue'
+import HelpHint from '../shared/HelpHint.vue'
+import PluginSlotEmbed from '../PluginSlotEmbed.vue'
+import RolePackBar from '../RolePackBar.vue'
+import RoleRuntimePanel from '../role/RoleRuntimePanel.vue'
 
 const props = defineProps<{
   visible: boolean

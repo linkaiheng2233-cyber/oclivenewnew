@@ -37,29 +37,40 @@ export default defineConfig(({ mode }) => ({
   ].filter(Boolean),
 
   optimizeDeps: {
-    include: ["vue3-sfc-loader", "mitt"],
+    include: [
+      "vue3-sfc-loader",
+      "mitt",
+      "@vue-flow/core",
+      "@vue-flow/background",
+      "@vue-flow/controls",
+    ],
   },
 
   esbuild:
     mode === "production"
       ? {
+          target: "es2022",
           drop: ["console", "debugger"],
         }
-      : undefined,
+      : {
+          target: "es2022",
+        },
 
   build: {
+    target: "es2022",
     rollupOptions: {
       output: {
         manualChunks(id) {
           if (!id.includes("node_modules")) return;
+          // Order matters: more specific patterns before broader `@vue/` / `/vue/` matches.
           if (id.includes("@sentry")) return "vendor-sentry";
           if (id.includes("@tauri-apps")) return "vendor-tauri";
           if (id.includes("vue-i18n")) return "vendor-i18n";
           if (id.includes("pinia-plugin-persistedstate")) return "vendor-pinia-persist";
           if (id.includes("pinia")) return "vendor-pinia";
-          // ArchitectureGraphFlow 经 defineAsyncComponent 懒加载；单独 chunk 避免打入 vendor-vue
+          // ArchitectureGraphFlow lazy-loads @vue-flow; keep separate from vendor-vue.
           if (id.includes("@vue-flow")) return "vendor-vue-flow";
-          // vue3-sfc-loader 仅经动态 import 加载，不打入首屏 vendor
+          // vue3-sfc-loader is dynamic import only; exclude from first-screen vendor.
           if (id.includes("/vue/") || id.includes("@vue/")) return "vendor-vue";
         },
       },

@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import type { RpcHistoryItem } from '../composables/usePluginDebug'
+import type { RpcHistoryItem } from '../../composables/usePluginDebug'
 import { computed } from 'vue'
 import { useI18n } from 'vue-i18n'
 

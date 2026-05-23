@@ -4,9 +4,9 @@ import { computed, ref, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { usePluginDebug } from '../composables/usePluginDebug'
 import { getPluginLogs, killPluginProcess } from '../api'
-import LogViewer from './LogViewer.vue'
-import ProcessMonitor from './ProcessMonitor.vue'
-import RpcTester from './RpcTester.vue'
+import LogViewer from './dev-tools/LogViewer.vue'
+import ProcessMonitor from './dev-tools/ProcessMonitor.vue'
+import RpcTester from './dev-tools/RpcTester.vue'
 
 const props = withDefaults(
   defineProps<{

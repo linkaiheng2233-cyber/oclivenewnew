@@ -13,7 +13,7 @@
     "tauri:before-dev": "node scripts/tauri-npm.cjs dev",
     "tauri:before-build": "node scripts/tauri-npm.cjs build",
     "build": "concurrently \"npm run build:plugin-bridge\" \"vite build\"",
-    "build:plugin-bridge": "vite build --config vite.plugin-bridge.config.ts",
+    "build:plugin-bridge": "vite build --config vite.plugin-bridge.config.ts && node scripts/copy-plugin-bridge.mjs",
     "build:e2e": "vite build --mode e2e",
     "build:analyze": "vite build --mode analyze",
     "preview": "vite preview",

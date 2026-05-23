@@ -6,8 +6,8 @@ const rootDir = path.dirname(fileURLToPath(import.meta.url))
 
 export default defineConfig({
   build: {
-    emptyOutDir: false,
-    outDir: path.join(rootDir, 'src-tauri/assets'),
+    emptyOutDir: true,
+    outDir: path.join(rootDir, 'dist/plugin-bridge'),
     lib: {
       entry: path.join(rootDir, 'src/plugin-bridge.js'),
       name: 'OclivePluginBridgeBundle',

@@ -15,7 +15,7 @@ import {
 
   revokeHighRiskCapability,
 } from '../api'
-import EnvVarManager from './EnvVarManager.vue'
+import EnvVarManager from './dev-tools/EnvVarManager.vue'
 
 const { t, locale } = useI18n()
 
