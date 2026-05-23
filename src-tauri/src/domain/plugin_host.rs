@@ -120,6 +120,45 @@ fn directory_slot_id(
 }
 
 impl BackendRegistry {
+    fn resolve_directory_slot<T, Pick, Build>(
+        &self,
+        module: &'static str,
+        backends: &PluginBackends,
+        pick: Pick,
+        fallback: T,
+        build: Build,
+    ) -> T
+    where
+        Pick: FnOnce(&DirectoryPluginSlots) -> &Option<String>,
+        Build: FnOnce(&Self, &str, &str) -> T,
+        T: Clone,
+    {
+        let Some(_rt) = self.directory_runtime.as_ref() else {
+            tracing::warn!(
+                target: "oclive_plugin",
+                "plugin_backends.{module}=directory but directory plugin runtime disabled; using fallback"
+            );
+            return fallback;
+        };
+        let Some(pid) = directory_slot_id(&backends.directory_plugins, pick) else {
+            tracing::warn!(
+                target: "oclive_plugin",
+                "plugin_backends.{module}=directory but directory_plugins.{module} missing; using fallback"
+            );
+            return fallback;
+        };
+        match _rt.ensure_rpc_url(pid.as_str()) {
+            Ok(url) => build(self, pid.as_str(), url.as_str()),
+            Err(e) => {
+                tracing::error!(
+                    target: "oclive_plugin",
+                    "directory {module} plugin_id={pid} spawn failed: {e}"
+                );
+                fallback
+            }
+        }
+    }
+
     pub(crate) fn agent_for_plugin_backends(
         &self,
         backends: &PluginBackends,
@@ -228,46 +267,25 @@ impl BackendRegistry {
     }
 
     fn llm_directory_slot(&self, backends: &PluginBackends) -> Arc<dyn LlmClient> {
-        let Some(rt) = self.directory_runtime.as_ref() else {
-            tracing::warn!(
-                target: "oclive_plugin",
-                "plugin_backends.llm=directory but directory plugin runtime disabled"
-            );
-            return self.llm_ollama.clone();
-        };
-        let Some(pid) = directory_slot_id(&backends.directory_plugins, |s| &s.llm) else {
-            tracing::warn!(
-                target: "oclive_plugin",
-                "plugin_backends.llm=directory but directory_plugins.llm missing"
-            );
-            return self.llm_ollama.clone();
-        };
-        match rt.ensure_rpc_url(pid.as_str()) {
-            Ok(url) => {
-                let cfg = RemotePluginHttpConfig::for_directory_plugin_rpc(url, true);
-                match RemoteLlmHttp::new(cfg, self.high_risk_grants.clone(), None) {
+        self.resolve_directory_slot(
+            "llm",
+            backends,
+            |s| &s.llm,
+            self.llm_ollama.clone(),
+            |reg, pid, url| {
+                let cfg = RemotePluginHttpConfig::for_directory_plugin_rpc(url.to_string(), true);
+                match RemoteLlmHttp::new(cfg, reg.high_risk_grants.clone(), None) {
                     Ok(http) => Arc::new(http),
                     Err(e) => {
                         tracing::error!(
                             target: "oclive_plugin",
-                            "directory llm plugin_id={} reqwest client build failed: {}",
-                            pid,
-                            e
+                            "directory llm plugin_id={pid} reqwest client build failed: {e}"
                         );
-                        self.llm_ollama.clone()
+                        reg.llm_ollama.clone()
                     }
                 }
-            }
-            Err(e) => {
-                tracing::error!(
-                    target: "oclive_plugin",
-                    "directory llm plugin_id={} spawn failed: {}",
-                    pid,
-                    e
-                );
-                self.llm_ollama.clone()
-            }
-        }
+            },
+        )
     }
 
     pub(crate) fn memory_retrieval_for_plugin_backends(
@@ -326,51 +344,30 @@ impl BackendRegistry {
     }
 
     fn memory_directory_slot(&self, backends: &PluginBackends) -> Arc<dyn MemoryRetrieval> {
-        let Some(rt) = self.directory_runtime.as_ref() else {
-            tracing::warn!(
-                target: "oclive_plugin",
-                "plugin_backends.memory=directory but directory plugin runtime disabled; using builtin"
-            );
-            return self.memory_builtin.clone();
-        };
-        let Some(pid) = directory_slot_id(&backends.directory_plugins, |s| &s.memory) else {
-            tracing::warn!(
-                target: "oclive_plugin",
-                "plugin_backends.memory=directory but directory_plugins.memory missing; using builtin"
-            );
-            return self.memory_builtin.clone();
-        };
-        match rt.ensure_rpc_url(pid.as_str()) {
-            Ok(url) => {
-                let cfg = RemotePluginHttpConfig::for_directory_plugin_rpc(url, false);
+        self.resolve_directory_slot(
+            "memory",
+            backends,
+            |s| &s.memory,
+            self.memory_builtin.clone(),
+            |reg, _pid, url| {
+                let cfg = RemotePluginHttpConfig::for_directory_plugin_rpc(url.to_string(), false);
                 match RemoteMemoryRetrievalHttp::new(
                     cfg,
-                    self.remote_fallback_allowed.clone(),
-                    self.high_risk_grants.clone(),
+                    reg.remote_fallback_allowed.clone(),
+                    reg.high_risk_grants.clone(),
                     None,
                 ) {
                     Ok(http) => Arc::new(http),
                     Err(e) => {
                         tracing::error!(
                             target: "oclive_plugin",
-                            "directory memory plugin_id={} reqwest client build failed: {}",
-                            pid,
-                            e
+                            "directory memory plugin_id={_pid} reqwest client build failed: {e}"
                         );
-                        self.memory_builtin.clone()
+                        reg.memory_builtin.clone()
                     }
                 }
-            }
-            Err(e) => {
-                tracing::error!(
-                    target: "oclive_plugin",
-                    "directory memory plugin_id={} spawn failed: {}",
-                    pid,
-                    e
-                );
-                self.memory_builtin.clone()
-            }
-        }
+            },
+        )
     }
 
     pub(crate) fn user_emotion_analyzer_for_backends(
@@ -393,51 +390,30 @@ impl BackendRegistry {
     }
 
     fn emotion_directory_slot(&self, backends: &PluginBackends) -> Arc<dyn UserEmotionAnalyzer> {
-        let Some(rt) = self.directory_runtime.as_ref() else {
-            tracing::warn!(
-                target: "oclive_plugin",
-                "plugin_backends.emotion=directory but directory plugin runtime disabled; using builtin"
-            );
-            return self.emotion_builtin.clone();
-        };
-        let Some(pid) = directory_slot_id(&backends.directory_plugins, |s| &s.emotion) else {
-            tracing::warn!(
-                target: "oclive_plugin",
-                "plugin_backends.emotion=directory but directory_plugins.emotion missing; using builtin"
-            );
-            return self.emotion_builtin.clone();
-        };
-        match rt.ensure_rpc_url(pid.as_str()) {
-            Ok(url) => {
-                let cfg = RemotePluginHttpConfig::for_directory_plugin_rpc(url, false);
+        self.resolve_directory_slot(
+            "emotion",
+            backends,
+            |s| &s.emotion,
+            self.emotion_builtin.clone(),
+            |reg, _pid, url| {
+                let cfg = RemotePluginHttpConfig::for_directory_plugin_rpc(url.to_string(), false);
                 match RemoteUserEmotionAnalyzerHttp::new(
                     cfg,
-                    self.remote_fallback_allowed.clone(),
-                    self.high_risk_grants.clone(),
+                    reg.remote_fallback_allowed.clone(),
+                    reg.high_risk_grants.clone(),
                     None,
                 ) {
                     Ok(http) => Arc::new(http),
                     Err(e) => {
                         tracing::error!(
                             target: "oclive_plugin",
-                            "directory emotion plugin_id={} reqwest client build failed: {}",
-                            pid,
-                            e
+                            "directory emotion plugin_id={_pid} reqwest client build failed: {e}"
                         );
-                        self.emotion_builtin.clone()
+                        reg.emotion_builtin.clone()
                     }
                 }
-            }
-            Err(e) => {
-                tracing::error!(
-                    target: "oclive_plugin",
-                    "directory emotion plugin_id={} spawn failed: {}",
-                    pid,
-                    e
-                );
-                self.emotion_builtin.clone()
-            }
-        }
+            },
+        )
     }
 
     pub(crate) fn event_estimator_for_backends(
@@ -460,51 +436,30 @@ impl BackendRegistry {
     }
 
     fn event_directory_slot(&self, backends: &PluginBackends) -> Arc<dyn EventEstimator> {
-        let Some(rt) = self.directory_runtime.as_ref() else {
-            tracing::warn!(
-                target: "oclive_plugin",
-                "plugin_backends.event=directory but directory plugin runtime disabled; using builtin"
-            );
-            return self.event_builtin.clone();
-        };
-        let Some(pid) = directory_slot_id(&backends.directory_plugins, |s| &s.event) else {
-            tracing::warn!(
-                target: "oclive_plugin",
-                "plugin_backends.event=directory but directory_plugins.event missing; using builtin"
-            );
-            return self.event_builtin.clone();
-        };
-        match rt.ensure_rpc_url(pid.as_str()) {
-            Ok(url) => {
-                let cfg = RemotePluginHttpConfig::for_directory_plugin_rpc(url, false);
+        self.resolve_directory_slot(
+            "event",
+            backends,
+            |s| &s.event,
+            self.event_builtin.clone(),
+            |reg, _pid, url| {
+                let cfg = RemotePluginHttpConfig::for_directory_plugin_rpc(url.to_string(), false);
                 match RemoteEventEstimatorHttp::new(
                     cfg,
-                    self.remote_fallback_allowed.clone(),
-                    self.high_risk_grants.clone(),
+                    reg.remote_fallback_allowed.clone(),
+                    reg.high_risk_grants.clone(),
                     None,
                 ) {
                     Ok(http) => Arc::new(http),
                     Err(e) => {
                         tracing::error!(
                             target: "oclive_plugin",
-                            "directory event plugin_id={} reqwest client build failed: {}",
-                            pid,
-                            e
+                            "directory event plugin_id={_pid} reqwest client build failed: {e}"
                         );
-                        self.event_builtin.clone()
+                        reg.event_builtin.clone()
                     }
                 }
-            }
-            Err(e) => {
-                tracing::error!(
-                    target: "oclive_plugin",
-                    "directory event plugin_id={} spawn failed: {}",
-                    pid,
-                    e
-                );
-                self.event_builtin.clone()
-            }
-        }
+            },
+        )
     }
 
     pub(crate) fn prompt_assembler_for_backends(
@@ -527,51 +482,30 @@ impl BackendRegistry {
     }
 
     fn prompt_directory_slot(&self, backends: &PluginBackends) -> Arc<dyn PromptAssembler> {
-        let Some(rt) = self.directory_runtime.as_ref() else {
-            tracing::warn!(
-                target: "oclive_plugin",
-                "plugin_backends.prompt=directory but directory plugin runtime disabled; using builtin"
-            );
-            return self.prompt_builtin.clone();
-        };
-        let Some(pid) = directory_slot_id(&backends.directory_plugins, |s| &s.prompt) else {
-            tracing::warn!(
-                target: "oclive_plugin",
-                "plugin_backends.prompt=directory but directory_plugins.prompt missing; using builtin"
-            );
-            return self.prompt_builtin.clone();
-        };
-        match rt.ensure_rpc_url(pid.as_str()) {
-            Ok(url) => {
-                let cfg = RemotePluginHttpConfig::for_directory_plugin_rpc(url, false);
+        self.resolve_directory_slot(
+            "prompt",
+            backends,
+            |s| &s.prompt,
+            self.prompt_builtin.clone(),
+            |reg, _pid, url| {
+                let cfg = RemotePluginHttpConfig::for_directory_plugin_rpc(url.to_string(), false);
                 match RemotePromptAssemblerHttp::new(
                     cfg,
-                    self.remote_fallback_allowed.clone(),
-                    self.high_risk_grants.clone(),
+                    reg.remote_fallback_allowed.clone(),
+                    reg.high_risk_grants.clone(),
                     None,
                 ) {
                     Ok(http) => Arc::new(http),
                     Err(e) => {
                         tracing::error!(
                             target: "oclive_plugin",
-                            "directory prompt plugin_id={} reqwest client build failed: {}",
-                            pid,
-                            e
+                            "directory prompt plugin_id={_pid} reqwest client build failed: {e}"
                         );
-                        self.prompt_builtin.clone()
+                        reg.prompt_builtin.clone()
                     }
                 }
-            }
-            Err(e) => {
-                tracing::error!(
-                    target: "oclive_plugin",
-                    "directory prompt plugin_id={} spawn failed: {}",
-                    pid,
-                    e
-                );
-                self.prompt_builtin.clone()
-            }
-        }
+            },
+        )
     }
     /// # Errors
     ///
