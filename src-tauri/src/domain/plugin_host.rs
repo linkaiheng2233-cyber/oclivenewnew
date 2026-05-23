@@ -6,6 +6,13 @@
 //! **下游**：`chat_engine`、`SlotResolver::resolve`；实现 [`PluginHostPort`](crate::domain::ports::PluginHostPort) 以解耦具体 `PluginHost` 类型。
 //!
 //! **关键决策**：编排只依赖 **trait 对象**，桌面 / 无头 / 测试可替换宿主；Remote 未配置 env 时**降级 + 日志**，避免静默失败。契约见 `creator-docs/plugin-and-architecture/PLUGIN_V1.md`。
+//!
+//! **Clone 策略（审计 2026-05）**
+//!
+//! - **`Arc::clone` / `Option<Arc<_>>::clone`**：仅增减引用计数，resolve 热路径上的 backend 句柄均属此类。
+//! - **`PluginBackends` 结构体 clone**：仅在会话覆盖 [`PluginBackendsOverride::apply_to`] 时分配；无覆盖时借用包内默认配置（见 [`PluginResolver::resolve`]）。
+//! - **`provider_id` 字符串**：local memory 路径用 [`pick_local_memory_provider_refs`]，仅克隆最终选中的 id。
+//! - **`directory_slot_id`**：目录插件 id 需 owned `String` 供 RPC 启动，无法避免单次分配。
 
 use crate::domain::agent::{AgentDebugTrace, AgentProvider, BuiltinReActAgent};
 use crate::domain::complex_emotion::ComplexEmotionProvider;
@@ -15,7 +22,7 @@ use crate::domain::event_estimator::{
 use crate::domain::local_plugin_bridge::{
     LocalPluginCapability, LocalPluginProviderDescriptor, LocalPluginRegistry,
 };
-use crate::domain::local_plugin_memory_pick::pick_local_memory_provider;
+use crate::domain::local_plugin_memory_pick::pick_local_memory_provider_refs;
 use crate::domain::memory_retrieval::{
     BuiltinMemoryRetrieval, BuiltinMemoryRetrievalV2, LocalPluginMemoryRetrieval, MemoryRetrieval,
 };
@@ -288,8 +295,11 @@ impl BackendRegistry {
             .local_plugins
             .read()
             .providers_for_capability(LocalPluginCapability::Memory);
-        let ids: Vec<String> = providers.iter().map(|p| p.provider_id.clone()).collect();
-        let pick = pick_local_memory_provider(ids, backends.local_memory_provider_id.as_deref());
+        let ids: Vec<&str> = providers
+            .iter()
+            .map(|p| p.provider_id.as_str())
+            .collect();
+        let pick = pick_local_memory_provider_refs(ids, backends.local_memory_provider_id.as_deref());
         if pick.provider_id.is_none() {
             tracing::warn!(
                 target: "oclive_plugin",
@@ -614,11 +624,9 @@ impl PluginResolver {
         session_override: Option<&PluginBackendsOverride>,
         slot_registry: Option<&BTreeMap<String, SlotRegistryEntry>>,
     ) -> ResolvedRolePlugins {
-        let effective = match session_override {
-            Some(ov) => ov.apply_to(role_backends),
-            None => role_backends.clone(),
-        };
-        let mut agent = registry.agent_for_plugin_backends(&effective);
+        let merged_effective = session_override.map(|ov| ov.apply_to(role_backends));
+        let effective = merged_effective.as_ref().unwrap_or(role_backends);
+        let mut agent = registry.agent_for_plugin_backends(effective);
         let mut complex_emotion: Arc<dyn ComplexEmotionProvider> =
             Arc::new(BuiltinComplexEmotionArc);
         let mut slots = None;
@@ -632,11 +640,11 @@ impl PluginResolver {
                 oclive_validation::merged_agent_directory_plugin_ids(reg);
         }
         ResolvedRolePlugins {
-            memory: registry.memory_retrieval_for_plugin_backends(&effective),
-            emotion: registry.user_emotion_analyzer_for_backends(&effective),
-            event: registry.event_estimator_for_backends(&effective),
-            prompt: registry.prompt_assembler_for_backends(&effective),
-            llm: registry.llm_for_plugin_backends(&effective),
+            memory: registry.memory_retrieval_for_plugin_backends(effective),
+            emotion: registry.user_emotion_analyzer_for_backends(effective),
+            event: registry.event_estimator_for_backends(effective),
+            prompt: registry.prompt_assembler_for_backends(effective),
+            llm: registry.llm_for_plugin_backends(effective),
             agent,
             complex_emotion,
             slots,
@@ -834,10 +842,10 @@ impl PluginHost {
 }
 
 impl ResolvedRolePlugins {
-    /// 与 `role.plugin_backends` 一致，便于日志/测试断言。
+    /// 与 `role.plugin_backends` 一致，便于日志/测试断言（只读借用，避免热路径 clone）。
     #[must_use]
-    pub fn backends_snapshot(role: &Role) -> PluginBackends {
-        role.plugin_backends.clone()
+    pub fn backends_snapshot(role: &Role) -> &PluginBackends {
+        &role.plugin_backends
     }
 }
 
@@ -867,7 +875,7 @@ mod tests {
         let role = Role::default();
         assert_eq!(
             ResolvedRolePlugins::backends_snapshot(&role),
-            role.plugin_backends
+            &role.plugin_backends
         );
         host().resolve_for_role(&role);
     }

@@ -10,13 +10,7 @@ pub struct LocalMemoryPick {
     pub ambiguous_lexicographic: bool,
 }
 
-/// `ids` 可为任意顺序；内部会排序去重。`preferred` 为 trim 后非空则优先精确匹配。
-pub fn pick_local_memory_provider(
-    mut ids: Vec<String>,
-    preferred: Option<&str>,
-) -> LocalMemoryPick {
-    ids.sort();
-    ids.dedup();
+fn pick_sorted_str_ids(ids: &[&str], preferred: Option<&str>) -> LocalMemoryPick {
     let pref = preferred.map(str::trim).filter(|s| !s.is_empty());
 
     if ids.is_empty() {
@@ -28,27 +22,47 @@ pub fn pick_local_memory_provider(
     }
 
     if let Some(h) = pref {
-        if let Some(found) = ids.iter().find(|id| *id == h) {
+        if let Some(found) = ids.iter().find(|id| **id == h) {
             return LocalMemoryPick {
-                provider_id: Some((*found).clone()),
+                provider_id: Some((*found).to_string()),
                 hint_missed: false,
                 ambiguous_lexicographic: false,
             };
         }
-        let picked = ids[0].clone();
         return LocalMemoryPick {
-            provider_id: Some(picked),
+            provider_id: Some(ids[0].to_string()),
             hint_missed: true,
             ambiguous_lexicographic: ids.len() > 1,
         };
     }
 
-    let picked = ids[0].clone();
     LocalMemoryPick {
-        provider_id: Some(picked),
+        provider_id: Some(ids[0].to_string()),
         hint_missed: false,
         ambiguous_lexicographic: ids.len() > 1,
     }
+}
+
+/// 从已注册 id 的借用切片解析；内部排序去重，**仅克隆最终选中的** `provider_id`。
+#[must_use]
+pub fn pick_local_memory_provider_refs(
+    mut ids: Vec<&str>,
+    preferred: Option<&str>,
+) -> LocalMemoryPick {
+    ids.sort_unstable();
+    ids.dedup();
+    pick_sorted_str_ids(&ids, preferred)
+}
+
+/// `ids` 可为任意顺序；内部会排序去重。`preferred` 为 trim 后非空则优先精确匹配。
+pub fn pick_local_memory_provider(
+    mut ids: Vec<String>,
+    preferred: Option<&str>,
+) -> LocalMemoryPick {
+    ids.sort();
+    ids.dedup();
+    let refs: Vec<&str> = ids.iter().map(String::as_str).collect();
+    pick_sorted_str_ids(&refs, preferred)
 }
 
 #[cfg(test)]
@@ -101,5 +115,12 @@ mod tests {
         assert_eq!(p.provider_id, Some("m".into()));
         assert!(!p.hint_missed);
         assert!(p.ambiguous_lexicographic);
+    }
+
+    #[test]
+    fn refs_matches_owned_api() {
+        let owned = pick_local_memory_provider(vec!["z".into(), "m".into()], Some("m"));
+        let refs = pick_local_memory_provider_refs(vec!["z", "m"], Some("m"));
+        assert_eq!(owned, refs);
     }
 }
