@@ -25,7 +25,7 @@ use crate::models::{
 };
 use parking_lot::{Mutex, RwLock};
 use serde::Deserialize;
-use sqlx::sqlite::{SqliteConnectOptions, SqlitePoolOptions};
+use crate::infrastructure::sqlite_pool;
 use std::collections::{BTreeMap, HashMap};
 use std::fs;
 use std::path::{Path, PathBuf};
@@ -360,9 +360,7 @@ impl AppState {
     ) -> Result<Self> {
         let path = db_path.as_ref();
         let db = if path == Path::new(":memory:") {
-            SqlitePoolOptions::new()
-                .max_connections(5)
-                .connect("sqlite::memory:")
+            sqlite_pool::connect_memory()
                 .await
                 .map_err(|e| crate::error::AppError::DatabaseError(e.to_string()))?
         } else {
@@ -371,12 +369,7 @@ impl AppState {
                     fs::create_dir_all(parent)?;
                 }
             }
-            let opts = SqliteConnectOptions::new()
-                .filename(path)
-                .create_if_missing(true);
-            SqlitePoolOptions::new()
-                .max_connections(5)
-                .connect_with(opts)
+            sqlite_pool::connect_file(path)
                 .await
                 .map_err(|e| crate::error::AppError::DatabaseError(e.to_string()))?
         };
@@ -471,9 +464,7 @@ impl AppState {
         roles_dir: impl AsRef<Path>,
         policy_file: Option<&Path>,
     ) -> Result<Self> {
-        let db = sqlx::sqlite::SqlitePoolOptions::new()
-            .max_connections(5)
-            .connect("sqlite::memory:")
+        let db = sqlite_pool::connect_memory()
             .await
             .map_err(|e| crate::error::AppError::DatabaseError(e.to_string()))?;
 

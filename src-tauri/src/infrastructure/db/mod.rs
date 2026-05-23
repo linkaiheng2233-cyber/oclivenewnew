@@ -580,11 +580,10 @@ pub use role_runtime_repo::RoleRuntimeRepo;
 #[cfg(test)]
 mod tests {
     use super::*;
-    use sqlx::sqlite::SqlitePoolOptions;
+    use crate::infrastructure::sqlite_pool;
 
     async fn setup_test_db() -> Result<SqlitePool> {
-        let pool = SqlitePoolOptions::new()
-            .connect("sqlite::memory:")
+        let pool = sqlite_pool::connect_memory()
             .await
             .map_err(|e| AppError::DatabaseError(e.to_string()))?;
 

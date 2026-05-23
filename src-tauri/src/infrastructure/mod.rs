@@ -22,6 +22,7 @@ pub mod remote_plugin;
 pub mod repositories;
 pub mod role_pack;
 pub mod sql_migrate;
+pub mod sqlite_pool;
 pub mod storage;
 
 // 重新导出主要类型

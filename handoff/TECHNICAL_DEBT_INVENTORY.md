@@ -29,7 +29,31 @@ Cross-repo optimization scan (Opus 4.7) plus **local grep/build verification**. 
 | `plugin_host.rs` clone audit | 63× `.clone()` | Arc 热路径保留；消除 `PluginBackends` / 全量 `provider_id` 克隆 | **Done** |
 | CI `npm audit --omit=dev` | Visibility job | Not started | **Pending** |
 
-**Scripts (repeatable):** `scripts/split-tauri-api.mjs`, `scripts/migrate-tauri-api-imports.mjs`, `scripts/split-i18n-locales.mjs`, `scripts/split-db-rs.mjs`.
+### Opus 4.7 second pass — build / perf / architecture (2026-05-20)
+
+| # | Item | Status | Notes |
+|---|------|--------|-------|
+| 1 | `[profile.release]` `opt-level = "z"` | **Done** | `opt-level = 3`, `codegen-units = 1`, `strip = "symbols"`, `panic = "abort"`, `lto = true` |
+| 2 | Tauri / reqwest feature tightening | **Pending** | `fs-*`, `blocking` still enabled |
+| 3 | SQLite WAL + pool 16 | **Done** | `infrastructure/sqlite_pool.rs`; `AppState::new` + tests |
+| 4 | Split `App.vue` (`TopBarMorePanel`) | **Done** | `TopBarMorePanel.vue` + `useReturnFocusOnClose`; App.vue ~1100 lines |
+| 5 | Plugin bridge script → static asset | **Pending** | `lib.rs` inline JS |
+| 6 | `TurnContext` in `process_message` | **Pending** | |
+| 7 | `AppState` builder / policy extract | **Partial** | `SessionCache` done; `new` / `new_in_memory_*` still duplicated |
+| 8 | `load_role_cached` inflight map leak | **Pending** | `Arc::strong_count` cleanup |
+| 9 | `generate_handler!` grouping | **Pending** | |
+| 10 | Dual `prompt_builder.rs` dedup | **Pending** | SSOT / CI hash diff |
+| 11 | Vite `manualChunks` (i18n / pinia persist) | **Done** | `vendor-i18n`, `vendor-pinia-persist` |
+| 12 | Tracing file sink / JSON | **Pending** | |
+| 13 | `Cache` read-lock + TTL | **Done** | read-first `get`, cap 1000, `Instant` TTL |
+| 14 | `package.json` devDeps trim | **Corrected** | `webdriverio` + `acorn` in use; note in `e2e/tauri-native.spec.ts` |
+| 15 | Split `e2e_init.rs` | **Done** | `e2e_init_{minimal,monolith,templates,legacy}.rs` + `tests/common/` |
+| 16 | `tools/scan-source-sizes.ps1` | **Done** | Renamed from `_scan_sizes.ps1` |
+| 17 | `clippy::await_holding_lock` deny | **Done** | Workspace `[workspace.lints.clippy]` |
+
+**Prior batch (same day):** tauri-api split, i18n fragments, db split, `SessionCache`, plugin_host clone audit, shared i18n, fuzz targets — see rows above.
+
+**Scripts (repeatable):** `scripts/split-tauri-api.mjs`, `scripts/migrate-tauri-api-imports.mjs`, `scripts/split-i18n-locales.mjs`, `scripts/split-db-rs.mjs`, `tools/scan-source-sizes.ps1`.
 
 ---
 
