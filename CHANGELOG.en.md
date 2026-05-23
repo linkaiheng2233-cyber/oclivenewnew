@@ -4,115 +4,79 @@
 
 ## [Unreleased]
 
-**Kernel / CLI / quality (current `main`; app version remains **0.2.0** per `package.json` / `src-tauri`):**
+(Next release entries go here.)
 
-- **Kernel orchestration**: **`process_message`** is the **sole main orchestration entry** for Tauri and the HTTP API; the **entry blueprint (`pipeline.ocblueprint`) is removed from the main path**; sub-flows run in order inside the `chat_engine` module.
-- **Monolith**: **`oclive-cli`** four-phase flow (**`init --monolith`** → **`build`** → dual-binary **`bench`**) and **`vendor/oclive_monolith_builtin/`** weld stubs; see [RFC_OCLIVE_MONOLITH_MODE.md](creator-docs/rfc/RFC_OCLIVE_MONOLITH_MODE.md) and [OCLIVE_CLI_GUIDE.md](creator-docs/cli/OCLIVE_CLI_GUIDE.md).
-- **CLI**: **`oclive dev`** (hot watch under `roles/`); **`oclive bench --save` / `--compare`** (`bench_history.json`); **`oclive pack validate|create|publish`** (pack validation and `.oclivepack` publish).
-- **Startup health**: **`startup_health`** before the first chat turn (slots, pack files, **`DbManager::health_ping`**, optional LLM probe); skip with **`OCLIVE_SKIP_STARTUP_HEALTH`** and related env vars.
-- **Errors & observability**: **`thiserror`**-based **`AppError`** with frontend-mappable copy; **`tracing`** + **`RUST_LOG`** (CLI / library **`init_tracing`** defaults to **`info`**).
-- **Static analysis**: workspace **`[workspace.lints]`** and **`cargo clippy ... -D warnings`** aligned with CI and local **`check:rust:clippy`** (warnings fail the build).
-- **Frontend i18n**: added **`app.documentTitle`**; **`App.vue` / `DirectoryShellApp.vue`** sync **`document.title`** and **`document.documentElement.lang`** with locale; **`index.html`** inline script uses **`oclive.appLocale`** + browser language to reduce tab-title flash before Vue mounts; **directory-shell Vue bootstrap** now calls **`app.use(i18n)`**. New Vitest **`i18n_locale_parity`** asserts **zh-CN / en-US** message key trees match.
+---
+
+## [0.2.0] - 2026-05-22
+
+**Desktop host `0.2.0`** · **`oclive-cli` `0.1.0`** · **`oclive_kernel_runtime` `0.2.0`** (independent SemVer; see [RELEASE_VERSIONING.md](creator-docs/development/RELEASE_VERSIONING.md)).
+
+### Breaking
+
+- **Role pack v2:** new packs use **`pipeline.ocblueprint`** (`schema_version: 2`) as the sole config hub; **`oclive pack validate` defaults to v2**. Migration: [V1_TO_V2_MIGRATION.md](creator-docs/role-pack/V1_TO_V2_MIGRATION.md).
+- **CLI:** removed top-level `publish`, `plugin search/update`, `registry login` (see [DEPRECATED_COMMANDS.md](crates/oclive-cli/DEPRECATED_COMMANDS.md)).
 
 ### Added
 
-- **Blueprint v2 (role packs):** `pipeline.ocblueprint` with `schema_version: 2` as SSOT (`meta` + `slot_registry`); `oclive-cli blueprint validate` / **`pack validate` defaults to v2** (`--profile legacy` for old packs); host `SlotResolver` / `SlotRunner`, session `set_session_slot_override`, architecture graph persist **`save_role_slot_registry`** (add/remove slots; last `llm` cannot be removed); golden packs such as `roles/mumu` migrated to v2.
-- **Product line A5 (versioning & compatibility):** expanded the one-page matrix in [`creator-docs/COMPATIBILITY.md`](creator-docs/COMPATIBILITY.md) / [`creator-docs-en/COMPATIBILITY.md`](creator-docs-en/COMPATIBILITY.md) (`oclive_kernel_runtime`, `oclive-cli`, `API_VERSION` / `RUNTIME_API_VERSION`, SQLite migrations, three-step release review); closure notes [`handoff/A5_CLOSURE_SUMMARY.md`](handoff/A5_CLOSURE_SUMMARY.md); §A5 in the main gap checklist can be checked.
-- Plugin manifests can declare subscribed host events (`shell.bridge.events` or `ui_slots[].bridge.events`) to avoid unnecessary broadcasts.
-- Settings “General”: **“Force iframe mode”** — when on, all plugin UIs render in iframes for maximum sandbox isolation.
-- Dev mode: static security scan (acorn) on Vue slot source; dangerous APIs trigger a warning dialog; user chooses whether to continue.
-- **Product line A1.1 (HTTP slice):** **`scripts/e2e-core-api-restart.mjs`** (two cycles: start `--api` → `/health` → `POST /chat` → terminate); root **`npm run test:e2e:core-api-restart`**; CI **`oocp-test-suite`** runs it after OOCP **`run.mjs`**.
-- **Product line A1.2 (`invoke` host hot path):** [`handoff/INVOKE_HOTPATH_MATRIX.md`](handoff/INVOKE_HOTPATH_MATRIX.md) and integration test [`src-tauri/tests/invoke_hotpath_matrix.rs`](src-tauri/tests/invoke_hotpath_matrix.rs) (**nine** `*_impl` chains: role/chat/memory plus **catalog**, **plugin_state**, **hotkeys**); [`handoff/PRODUCT_RELEASE_CHECKLIST.md`](handoff/PRODUCT_RELEASE_CHECKLIST.md) §A1 marks **A1.2** done; **golden / full handler coverage** remains follow-up.
-- **Product line A1.1b (web preview shell):** **`@playwright/test`** + [`e2e/preview-shell.spec.ts`](e2e/preview-shell.spec.ts) (`vite preview` smoke); **`npm run test:e2e:preview`**; CI **`frontend`** job; release checklist adds **A1.1c** for native installer / Tauri-window follow-up.
+- **Blueprint v2 & architecture graph:** `slot_registry`, session `set_session_slot_override`, persist **`save_role_slot_registry`**; golden packs such as **`roles/mumu`** migrated.
+- **Dual-core:** `runtime_config.dual_core` + `pipeline.experimental` steps with silent fallback to stable `co_present` (off by default).
+- **`oclive-cli` toolchain** (22 top-level subcommands): `init` (incl. **`--monolith`**), `build`, `bench` (`--matrix` / `--cold-start` / `--soak` / `--save`), `dev`, `pack`, `doctor`, `test --oocp`, `explain`, etc.; see [OCLIVE_CLI_GUIDE.md](creator-docs/cli/OCLIVE_CLI_GUIDE.md).
+- **Monolith weld mode:** `init --monolith` → `build` → dual-binary **`bench`**; [RFC_OCLIVE_MONOLITH_MODE.md](creator-docs/rfc/RFC_OCLIVE_MONOLITH_MODE.md).
+- **HTTP `--api`:** `GET /health`, `POST /chat`; CI **OOCP black-box S0–S11** + process-restart smoke test.
+- **Agent / MCP**, directory-plugin high-risk grants, plugin HTML **`OclivePluginBridge`**, market index install.
+- **Startup health** `startup_health`; **`oclive explain`** for all `AppError` codes; **`oclive doctor`** blueprint checks.
+- **Orchestration:** `TurnContext`; `AppStateBuilder` + policy registry split; rolling file logs (`OCLIVE_LOG_DIR` / `--api`).
 
 ### Changed
 
-- **Breaking (role packs):** New packs should use v2 blueprint only. `pack validate` **defaults** to v2 (`--profile legacy` for manifest/settings packs).
-- Role switch: host event broadcast timing adjusted so plugin subscriptions are synced before `role:switched`.
-- Directory plugin bootstrap (`get_directory_plugin_bootstrap`) result includes `subscribedHostEvents`.
+- **Main orchestration:** Tauri and HTTP both use **`process_message`**; entry blueprint is **not** the first-turn DSL scheduler.
+- **Pack format:** `pack validate` defaults to v2 (`--profile legacy` for old packs); manifest/settings top-level key allowlist tightened.
+- **Tauri:** `generate_handler!` grouped by domain with comments; dropped `reqwest` `blocking` and direct `@tauri-apps/api/fs` (custom commands); plugin bridge script as frontend IIFE asset.
+- **Architecture graph v2:** removed hand-drag connection composable (edges derived from `slot_registry`).
+- **Frontend:** i18n domain split, modular `tauri-api`, Vite vendor chunks; `TopBarMorePanel` extracted from `App.vue`.
 
 ### Fixed
 
-- Concurrent slot bootstrap could leave inconsistent event subscription sets.
-- Custom plugin events were wrongly filtered by `bridge.events`: only built-in host events use subscription filtering; custom events stay broadcastable.
+- **Errors:** unified **`AppError` / `KernelErrorBody` JSON** + frontend **`apiErrors`** (invoke and HTTP same shape).
+- **SQLite:** WAL + pool (`sqlite_pool.rs`); Release profile tuning (`opt-level=3`, `codegen-units=1`).
+- **Concurrency:** in-memory **`Cache`** read-first + capacity cap; role cold-load **`DashMap` inflight** (no `Arc::strong_count`).
+- Plugin subscription races, custom events wrongly filtered by `bridge.events`, visible warnings when Remote URLs unset, etc.
 
 ### Performance
 
-- Dedupe concurrent in-flight IPC for `get_directory_plugin_catalog` (global single call).
-- Dedupe `get_directory_plugin_bootstrap` IPC per `role_id` to cut duplicate calls when many slots mount.
-- Dedupe `get_plugin_state` IPC per `role_id`; clear in-flight keys before `save`/`reset` to reduce stale reads under concurrency.
-- Dev Vue slots: reuse scanned source for `vue3-sfc-loader`, avoiding a second `read_plugin_asset_text` per `.vue`.
-- Rust: `directory_plugin_bootstrap_dto` merges `subscribed_host_events` in the same pass as `ui_slots`; one `manifest.json` parse per enabled plugin dir (whole-shell URL still parsed separately).
-- `pluginStore.refresh()` only replaces state when directory `catalog` / `pluginState` actually change.
-- `setHostEventSubscribedEvents` short-circuits when the subscription signature is unchanged.
-- `pluginsOrderedForSlot`: slot-level memo; order filter uses `Set` instead of `includes`.
-- `pluginStore` precomputes sorted `catalogCandidatesBySlot` on `catalog` change for reuse.
-- `pluginStore.refresh()` shares one in-flight Promise; `applyDirectoryBootstrap` writes `ui_slots` to `bootstrapUiSlots` so slots read from store and repeat `get_directory_plugin_bootstrap` calls drop.
-- Embedded slots (chat toolbar / settings / role detail) share `useDirectoryPluginSlotEmbed`; `slotOrderMemo.clear()` on directory `catalog` change.
+- Release binary sampling ~**12 MiB PE / 7.6 MiB .text** (see [PERFORMANCE.md](creator-docs-en/getting-started/PERFORMANCE.md)).
+- Directory-plugin IPC in-flight dedupe (catalog / bootstrap / plugin_state); `pluginStore` refresh and slot memo optimizations.
 
 ### Engineering
 
-- **Clippy / rustfmt**: full workspace `cargo clippy -- -D warnings` clean; **`cargo fmt --all`** aligned with CI `rustfmt --check`.
-- **Shared crate `crates/oclive_validation`**: single source for disk manifest validation (`validate_disk_manifest`, `parse_hhmm`, `KnowledgePackConfigDisk`, …); runtime depends on it; editor can use **wasm** (`--features wasm`, `wasm32-unknown-unknown`) via `validate_manifest_wasm`.
-- **Local HTTP API**: binary supports `--api` / `--port` (or `OCLIVE_API_PORT`), default `http://127.0.0.1:8420`, `GET /health`, `POST /chat` (`role_path` + `message`, optional `session_id`) for editor try-chat and tools. `session_id` maps to internal SQLite key `{manifest_role_id}__sess__{sanitized}`; JSON includes `reply`, echoed `session_id`, and top-level **`personality_source`** (`vector`|`profile`, aligned with pack `evolution`). Empty `message` → 400; session key length capped at **256**. **`POST /chat`** uses **`spawn_blocking`** for directory probe and `load_role_from_dir` (same idea as `import_role_pack`).
-- **Tauri**: `peek_role_pack` uses **`spawn_blocking`** for long zip/disk reads off the async command thread.
-- **Clippy**: `process_co_present` / `process_remote_life` / `detect_movement_intent` explicitly **`allow(too_many_arguments)`** with rationale for `-D warnings` CI.
-- **HTTP API tests**: `tests/http_api_chat.rs` with `tower::oneshot` for `GET /health`, `POST /chat` (empty 400; success includes `personality_source` + `reply`); shared **`api_router`** with `serve_api`.
-- **Role load**: if `plugin_backends` uses `remote` but `OCLIVE_REMOTE_PLUGIN_URL` / `OCLIVE_REMOTE_LLM_URL` unset, log `oclive_plugin` warning on successful `load_role_from_dir` (still falls back to built-ins per PLUGIN_V1).
-- **Pack contract**: optional **`min_runtime_version`** (semver) in `manifest.json`; **`load_role`** rejects when host is too old. Top-level key allowlist (`oclive_validation::json_keys`); unknown top-level keys in `manifest` / `settings` error; **`_`-prefixed note keys** still allowed. **`validate_min_runtime_version`**; wasm **`validate_manifest_wasm`** third arg = host version string.
-- **CI**: `oclivenewnew` Rust (fmt / clippy / `cargo test`) on **Ubuntu 22.04** and Windows; **`rust` job** runs **`npm run build`** before clippy (Tauri `generate_context!` needs `dist/`); Linux Tauri 1.5 uses **`libwebkit2gtk-4.0-dev`**; **oclive-pack-editor** and **oclive-launcher** workflows aligned on both OSes.
-- **npm**: `npm run check:release` (full `cargo test` gate); README Sentry / offline installer notes.
-- **UI**: identity HelpHint distinguishes relationship identity vs core personality archive; copy “人设回复” → “角色回复”.
-- **API / UI**: `RoleInfo` / `RoleData` add **`personality_source`** (`vector` | `profile`) aligned with `evolution`; `roleStore` and debug “personality vector” HelpHint under **profile**.
-- **Remote plugins**: `EventEstimator::estimate` and `event.estimate` `params` add **`personality_source`**; `prompt.build_prompt` `params` add top-level **`personality_source`** beside full `role`.
-- **Main UI**: `RoleRuntimePanel` shows **personality source** (vector / archive) + HelpHint aligned with debug panel.
+- Workspace **`cargo clippy -D warnings`** aligned with CI; shared **`oclive_validation`**; **11** `invoke` hot-path integration tests.
+- **`npm run check:release`** release gate; Playwright **`vite preview`** smoke (Ubuntu CI).
 
 ### Documentation
 
-- **Blueprint v2 doc closure**: [handoff/BLUEPRINT_V2_IMPLEMENTATION_PLAN.md](handoff/BLUEPRINT_V2_IMPLEMENTATION_PLAN.md) marks **P0–P8 complete**; [ROLE_PACK_SPEC.md](creator-docs/role-pack/ROLE_PACK_SPEC.md), [PLUGIN_V1.md](creator-docs/plugin-and-architecture/PLUGIN_V1.md), [OCLIVE_CLI_GUIDE.md](creator-docs/cli/OCLIVE_CLI_GUIDE.md) state **`pack validate` defaults to v2**; [CREATOR_LEARNING_PATH.md](creator-docs/role-pack/CREATOR_LEARNING_PATH.md) and [roles/README_MANIFEST.md](roles/README_MANIFEST.md) cross-link v2; index in [DOCUMENTATION_INDEX.md](creator-docs/getting-started/DOCUMENTATION_INDEX.md).
-- **creator-docs-en**: added **`FAQ.md`**, **`COMPATIBILITY.md`**; under **`plugin-and-architecture/`** full English pages **`REMOTE_PLUGIN_PROTOCOL`**, **`DIRECTORY_PLUGINS`**, **`BRIDGE_API_REFERENCE`**, **`EXTENSION_POINTS`**, **`CREATOR_PLUGIN_ARCHITECTURE`** aligned with Chinese `creator-docs/`. Updated **`DOCUMENTATION_INDEX` (EN)**, **`PROJECT_STATUS_AND_ALIGNMENT` (EN)**, **`creator-docs-en/README.md`**, **`creator-docs/README.md`**, and **`creator-docs/getting-started/DOCUMENTATION_INDEX.md` (ZH)** cross-links.
-- **creator-docs-en (follow-up)**: added **`LICENSE_POLICY.md`**, **`guides/CONFIGURATION_FILES.md`**, **`guides/REGRESSION_COMPLEX_EMOTION_QA.md`**, **`guides/MUMU_UI_ACCEPTANCE_CHECKLIST.md`**, **`plugin-and-architecture/LOCAL_PLUGIN_BRIDGE_SPEC.md`**, **`plugin-and-architecture/HOW_TO_REPLACE_MODULES.md`**; EN **`DOCUMENTATION_INDEX`** quick entry + suggested reading use **`creator-docs-en/plugin-and-architecture/...`** for plugin docs, **mumu** + **Extension points** → **`../guides/...`** / **`../plugin-and-architecture/...`**; EN **`PROJECT_STATUS_AND_ALIGNMENT`** user-manual table links **`../guides/CONFIGURATION_FILES.md`**, **`../LICENSE_POLICY.md`**, **mumu** EN page, and adds **`HOW_TO_REPLACE_MODULES`**; EN **`EXTENSION_POINTS`** / **`CREATOR_PLUGIN_ARCHITECTURE`** link **`HOW_TO`** / **`LOCAL`** to same-folder English pages.
-- **Creator docs bilingual closure**: **`creator-docs-en/README.md`** adds **Documentation bilingual closure baseline** (source of truth, mirrored scope, Chinese-only long tail, update discipline); **`creator-docs/README.md`**, **`creator-docs/getting-started/DOCUMENTATION_INDEX.md` (ZH)**, **`PROJECT_STATUS_AND_ALIGNMENT` (ZH/EN)**, **`PROJECT_CURRENT_STATUS` (ZH/EN)**, **`handoff/I18N_FOUR_REPO_BASELINE.md`**, **`PRODUCT_AND_KERNEL_GAP_CHECKLIST.md` §A6** cross-reference it (§A6 **creator-docs-en** hub item marked **[x]**; **no stray Chinese in UI after locale switch** remains open).
-- **Product-line execution (easy + medium batch)**: added **[handoff/PRODUCT_RELEASE_CHECKLIST.md](handoff/PRODUCT_RELEASE_CHECKLIST.md)** (P0 release gates) and **[handoff/PLUGIN_HIGH_RISK_ACCEPTANCE.md](handoff/PLUGIN_HIGH_RISK_ACCEPTANCE.md)**; root **README / README.en** (help, early-adopter, three quick questions); **SECURITY** (distribution/privacy blurb); **bug_report** template links; **CONTRIBUTING** (ZH/EN) breaking-change process + **`check:release` does not run `test:unit`**; **VISION / BACKLOG**, **DOCUMENTATION_INDEX**, **COMPATIBILITY**, **ERROR_CODES** (ZH/EN), **PRODUCT_LINE_TASK_BUCKETS**, **PRODUCT_AND_KERNEL_GAP_CHECKLIST §C1** cross-links / content updates.
-- **Product-line phase handoff (docs)**: **PRODUCT_LINE_TASK_BUCKETS**, **PRODUCT_RELEASE_CHECKLIST**, **PRODUCT_AND_KERNEL_GAP_CHECKLIST §D**, **PROJECT_STATUS_AND_ALIGNMENT** (ZH/EN), **DOCUMENTATION_INDEX** now state **batch one done**, **next default focus is §四 hard items** (one issue each).
-- **PLUGIN_V1 / Remote**: [PLUGIN_V1.md](creator-docs/plugin-and-architecture/PLUGIN_V1.md) — `RoleInfo` / `RoleData`, HTTP `/chat`, `prompt.build_prompt` **`personality_source`**; [REMOTE_PLUGIN_PROTOCOL.md](creator-docs/plugin-and-architecture/REMOTE_PLUGIN_PROTOCOL.md) — new §3.4 and `event.estimate` param row.
-- **Personality archive axis**: rewrote **[docs/personality-archive-notes.md](docs/personality-archive-notes.md)**; added **[docs/design-axis-evolution.md](docs/design-axis-evolution.md)**; cross-linked README, `creator-docs`, `roles/README_MANIFEST.md`, pack docs; **`roles/settings.template.json`** `evolution` includes **`personality_source`**.
-- **[creator-docs/getting-started/SIDECAR_LLM_USER_GUIDE.md](creator-docs/getting-started/SIDECAR_LLM_USER_GUIDE.md)**: local sidecar + BYOK for proprietary APIs.
-- **[examples/remote_plugin_openai_compat/](examples/remote_plugin_openai_compat/)**: OpenAI-compatible `chat/completions` sidecar.
-- **[examples/common/](examples/common/)**: shared JSON-RPC / non-LLM stubs for minimal sidecars.
-- Roadmap docs: **PLUGIN_WEB_SECTION**, **COMMUNITY_WEB_VISION**, **MARKET_LAUNCHER_INTEGRATION**, **SOMEDAY_TOOLCHAIN_CI**, **BACKLOG_EXPERIENCE_AND_ECOSYSTEM**; **PROJECT_OVERVIEW**; launcher env/troubleshooting cross-links; **GITHUB_REPO_CHECKLIST**; Dependabot / PR templates / `workflow_dispatch` across repos.
+- [COMPATIBILITY.md](creator-docs-en/COMPATIBILITY.md), [PRODUCT_RELEASE_CHECKLIST.md](handoff/PRODUCT_RELEASE_CHECKLIST.md), bilingual **creator-docs-en** mirror and blueprint v2 doc closure.
 
 ---
 
 ## [0.2.0] — 2026-04-02
 
+(Earlier items in the 0.2.x cycle; summarized in the **0.2.0** release above.)
+
 ### Added
 
 - Large pack import progress: backend `import_progress` events + frontend progress modal.
 - Pre-import preview (`manifest.json` peek) and conflict dialog when role ID exists.
-- Import **`.zip`** (same as `.ocpak`) and **extracted folders** (same layout as `roles/{roleId}/`); see `roles/README_MANIFEST.md`.
-- Scene welcome: after `switch_scene`, read `scene.json` `welcome_message` (or stable random monologue) into chat as persona message.
-- Relation tier upgrade: `send_message` adds `relation_state`; frontend inserts system message on upgrade.
+- Import **`.zip`** (same as `.ocpak`) and **extracted folders**; see `roles/README_MANIFEST.md`.
+- Scene welcome after `switch_scene`; relation tier upgrade via `relation_state` on `send_message`.
 
 ### Changed
 
-- Virtual scroll: `ChatMessageList` always uses virtual scroll when messages exist.
-- Export filename default `{role_name}_{version}.ocpak` (sanitized).
+- Virtual scroll always on when messages exist; export filename default `{role_name}_{version}.ocpak`.
 
 ### API
 
-- `send_message` adds `relation_state`; `emotion` remains user-input seven-dim analysis.
-
-### Frontend
-
-- Header and chat still use `bot_emotion` for sprite / mood assets / emoji.
-
-### Documentation
-
-- Creator docs under **`creator-docs/`**; legacy `docs/*.md` note in `docs/README.md`; history in **`ARCHIVE_PROJECT_HISTORY.md`**.
-- **`roles/README_MANIFEST.md`**: in-app import; **`CREATOR_WORKFLOW.md`**, **`DOCUMENTATION_INDEX.md`**, root **`README.md`** updated.
-- **`roles/TESTING_ROLE_PACK_IMPORT.md`**: manual import checklist; zip root `manifest.json` precedence documented in **`role_pack.rs`**.
-- See `handoff/20_SESSION_OPTIMIZATION_REPORT.md`.
+- `send_message` adds `relation_state`; `emotion` remains user-input analysis.
 
 ---
 
