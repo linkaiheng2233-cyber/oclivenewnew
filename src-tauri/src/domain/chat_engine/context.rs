@@ -8,11 +8,16 @@ pub(crate) async fn load_recent_context(
     state: &AppState,
     role_id: &str,
 ) -> Result<(Vec<(String, String)>, Vec<(String, String)>, Vec<Event>)> {
-    let recent_turns = state
-        .db_manager
-        .list_short_term_recent_turns(role_id, 6)
-        .await
-        .unwrap_or_default();
+    let (recent_turns, recent_events_for_event) = tokio::try_join!(
+        async {
+            state
+                .db_manager
+                .list_short_term_recent_turns(role_id, 6)
+                .await
+                .or_else(|_| Ok(vec![]))
+        },
+        state.db_manager.get_events(role_id, 8),
+    )?;
     let recent_turns_for_event: Vec<(String, String)> = recent_turns
         .iter()
         .rev()
@@ -22,7 +27,6 @@ pub(crate) async fn load_recent_context(
         .into_iter()
         .rev()
         .collect();
-    let recent_events_for_event = state.db_manager.get_events(role_id, 8).await?;
     Ok((
         recent_turns,
         recent_turns_for_event,

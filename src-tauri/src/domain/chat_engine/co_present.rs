@@ -83,12 +83,29 @@ pub(crate) async fn process_co_present(
     let policies = state.policies_for_scene(Some(scene_id.as_str()));
     let slot_runner = SlotRunner;
 
-    let event_runtime = crate::map_copresent_err!("event_impact_factor", state.db_manager.get_event_impact_factor(srid).await)?
-    .unwrap_or(role.evolution_config.event_impact_factor);
+    let (event_impact_opt, mutable_for_prompt, personality) = tokio::try_join!(
+        async {
+            crate::map_copresent_err!(
+                "event_impact_factor",
+                state.db_manager.get_event_impact_factor(srid).await
+            )
+        },
+        async {
+            crate::map_copresent_err!(
+                "mutable_personality",
+                state.db_manager.get_mutable_personality(srid).await
+            )
+        },
+        async {
+            crate::map_copresent_err!(
+                "current_personality",
+                state.get_current_personality(srid, role).await
+            )
+        },
+    )?;
+    let event_runtime = event_impact_opt.unwrap_or(role.evolution_config.event_impact_factor);
 
-    let mutable_for_prompt = crate::map_copresent_err!("mutable_personality", state.db_manager.get_mutable_personality(srid).await)?;
-
-    let mut personality = crate::map_copresent_err!("current_personality", state.get_current_personality(srid, role).await)?;
+    let mut personality = personality;
 
     let emotion_result = crate::map_copresent_err!("user_emotion_analyze", slot_runner.analyze_emotion(&pl, user_message))?;
     crate::domain::debug_trace::emit_step(
@@ -215,30 +232,49 @@ pub(crate) async fn process_co_present(
 
     let user_relation_key: String = crate::map_copresent_err!("resolve_user_relation_key", resolve_effective_user_relation_key(state, role, srid, Some(scene_id.as_str())).await)?;
     let rf = relation_favor_for_key(role, user_relation_key.as_str());
+    let seed_favor = role.initial_favorability_for_relation(user_relation_key.as_str());
 
-    let rel_id = crate::map_copresent_err!("relation_state_for_identity",
-        state
+    let (rel_id, rel_global, _, favorability_before) = tokio::try_join!(
+        async {
+            crate::map_copresent_err!(
+                "relation_state_for_identity",
+                state
                     .db_manager
                     .get_relation_state_for_identity(srid, user_relation_key.as_str())
                     .await
-    )?;
-    let rel_global = crate::map_copresent_err!("relation_state_global", state.db_manager.get_relation_state(srid).await)?;
-    let relation_before = rel_id
-        .or(rel_global)
-        .unwrap_or_else(|| "Stranger".to_string());
-    let seed_favor = role.initial_favorability_for_relation(user_relation_key.as_str());
-    crate::map_copresent_err!("ensure_identity_stats_row",
-        state
+            )
+        },
+        async {
+            crate::map_copresent_err!(
+                "relation_state_global",
+                state.db_manager.get_relation_state(srid).await
+            )
+        },
+        async {
+            crate::map_copresent_err!(
+                "ensure_identity_stats_row",
+                state
                     .db_manager
                     .ensure_identity_stats_row(srid, user_relation_key.as_str(), seed_favor)
                     .await
-    )?;
-    let favorability_before = crate::map_copresent_err!("favorability_for_identity",
-        state
+            )
+        },
+        async {
+            crate::map_copresent_err!(
+                "favorability_for_identity",
+                state
                     .db_manager
-                    .favorability_for_identity_with_runtime_fallback(srid, user_relation_key.as_str())
+                    .favorability_for_identity_with_runtime_fallback(
+                        srid,
+                        user_relation_key.as_str()
+                    )
                     .await
+            )
+        },
     )?;
+    let relation_before = rel_id
+        .or(rel_global)
+        .unwrap_or_else(|| "Stranger".to_string());
     let event_confidence = ai_event_confidence;
     let favor_relation_input = FavorRelationInput {
         relation_before: relation_before.as_str(),
