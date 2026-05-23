@@ -127,7 +127,7 @@ impl DualPipelineRunner {
             turn.state,
             role,
             turn.req,
-            turn.scene_id.clone(),
+            turn.scene_id.to_string(),
             turn.mrid,
             srid,
         )

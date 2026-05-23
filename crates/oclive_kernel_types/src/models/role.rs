@@ -204,6 +204,9 @@ pub struct Role {
     /// v3 蓝图 `pipeline.experimental`（`pipeline.stable` 不参与运行时执行）。
     #[serde(default)]
     pub pipeline_experimental: Option<Vec<PipelineStep>>,
+    /// 场景 id 列表（manifest `scenes` + `scenes/` 子目录）；由 [`RoleStorage::finish_role_pack_load`] 填充。
+    #[serde(skip)]
+    pub scene_ids: Arc<[String]>,
 }
 
 impl Default for Role {
@@ -247,6 +250,7 @@ impl Default for Role {
             reply_quality_anchor: None,
             runtime_config: None,
             pipeline_experimental: None,
+            scene_ids: Arc::from(Vec::<String>::new()),
         }
     }
 }

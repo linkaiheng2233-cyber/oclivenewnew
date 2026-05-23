@@ -19,6 +19,7 @@ use crate::models::dto::{
 use crate::models::knowledge::KnowledgeIndex;
 use crate::models::{Event, EventType, Memory, PersonalitySource, PersonalityVector};
 use chrono::Utc;
+use std::sync::Arc;
 use std::time::Instant;
 
 use super::co_present::CoPresentResult;
@@ -52,8 +53,9 @@ pub async fn execute_turn(ctx: &TurnContext<'_>, mode: TurnMode) -> CoPresentRes
     let state = ctx.state;
     let req = ctx.req;
     let role = ctx.role;
-    let scene_id = ctx.scene_id.clone();
-    let scenes = ctx.scenes.clone();
+    let scene_id = ctx.scene_id;
+    let scenes = Arc::clone(&ctx.scenes);
+    let virtual_time_ms = ctx.virtual_time_ms;
     let mrid = ctx.mrid;
     let srid = ctx.srid;
     let t0 = ctx.t0;
@@ -72,7 +74,7 @@ pub async fn execute_turn(ctx: &TurnContext<'_>, mode: TurnMode) -> CoPresentRes
     );
     let t_path0 = Instant::now();
     let user_message = req.user_message.as_str();
-    let policies = state.policies_for_scene(Some(scene_id.as_str()));
+    let policies = state.policies_for_scene(Some(scene_id));
     let slot_runner = SlotRunner;
 
     let (event_impact_opt, mutable_for_prompt, personality) = tokio::try_join!(
@@ -119,7 +121,7 @@ pub async fn execute_turn(ctx: &TurnContext<'_>, mode: TurnMode) -> CoPresentRes
                     &pl,
                     &ComplexEmotionInput {
                         role_id: mrid.to_string(),
-                        scene_id: scene_id.clone(),
+                        scene_id: scene_id.to_string(),
                         user_message: user_message.to_string(),
                         bot_reply: prev_bot_for_ce,
                         recent_dialogue_summary: None,
@@ -143,7 +145,7 @@ pub async fn execute_turn(ctx: &TurnContext<'_>, mode: TurnMode) -> CoPresentRes
     }
 
     let knowledge_scene = match mode {
-        TurnMode::CoPresent => scene_id.as_str(),
+        TurnMode::CoPresent => scene_id,
         TurnMode::RemoteLife => ctx
             .character_scene_id
             .as_deref()
@@ -204,21 +206,21 @@ pub async fn execute_turn(ctx: &TurnContext<'_>, mode: TurnMode) -> CoPresentRes
         .as_ref()
         .map(|m| m.scene_weight_multiplier)
         .unwrap_or(1.0);
-    weight_memories_for_scene(&mut memories, scene_id.as_str(), scene_m);
+    weight_memories_for_scene(&mut memories, scene_id, scene_m);
     let mut relevant = crate::kernel_stage!(@co_present crate::domain::chat_engine::chat_stage::ChatStage::MemoryRank,
         slot_runner.rank_memories(
             &pl,
             MemoryRetrievalInput {
                 memories: &memories,
                 user_query: user_message,
-                scene_id: Some(scene_id.as_str()),
+                scene_id: Some(scene_id),
                 limit: 8,
             },
         )
     )?;
 
     let user_relation_key: String = crate::kernel_stage!(@co_present crate::domain::chat_engine::chat_stage::ChatStage::ResolveUserRelationKey,
-        resolve_effective_user_relation_key(state, role, srid, Some(scene_id.as_str())).await
+        resolve_effective_user_relation_key(state, role, srid, Some(scene_id)).await
     )?;
     let rf = relation_favor_for_key(role, user_relation_key.as_str());
     let seed_favor = role.initial_favorability_for_relation(user_relation_key.as_str());
@@ -278,16 +280,12 @@ pub async fn execute_turn(ctx: &TurnContext<'_>, mode: TurnMode) -> CoPresentRes
 
     let prompt = match mode {
         TurnMode::CoPresent => {
-            let scene_label = state.storage.scene_display_name(mrid, scene_id.as_str());
-            let scene_detail_buf = state.storage.scene_prompt_enrichment(mrid, scene_id.as_str());
-            let top_topic = slot_runner.top_topic_hint(&pl, role, scene_id.as_str());
+            let scene_label = state.storage.scene_display_name(mrid, scene_id);
+            let scene_detail_buf = state.storage.scene_prompt_enrichment(mrid, scene_id);
+            let top_topic = slot_runner.top_topic_hint(&pl, role, scene_id);
             let topic_line = top_topic
                 .map(|t| format!("在「{}」下，你们可能会多聊「{}」相关的事。", scene_label, t))
                 .unwrap_or_default();
-            let virtual_time_ms = crate::kernel_stage!(@co_present crate::domain::chat_engine::chat_stage::ChatStage::VirtualTimeMs,
-                state.db_manager.get_virtual_time_ms(srid).await
-            )?
-            .unwrap_or(0);
             let life_context_line: String = if immersive {
                 role.life_schedule
                     .as_ref()
@@ -332,16 +330,12 @@ pub async fn execute_turn(ctx: &TurnContext<'_>, mode: TurnMode) -> CoPresentRes
                 .as_deref()
                 .unwrap_or("default");
             let char_label = state.storage.scene_display_name(mrid, character_scene_id);
-            let user_label = state.storage.scene_display_name(mrid, scene_id.as_str());
+            let user_label = state.storage.scene_display_name(mrid, scene_id);
             let away_material = state
                 .storage
-                .away_life_material(mrid, character_scene_id, scene_id.as_str());
-            let vt_ms = crate::kernel_stage!(@co_present crate::domain::chat_engine::chat_stage::ChatStage::VirtualTimeMs,
-                state.db_manager.get_virtual_time_ms(srid).await
-            )?
-            .unwrap_or(0);
-            let vt_label = if vt_ms > 0 {
-                chrono::DateTime::from_timestamp_millis(vt_ms)
+                .away_life_material(mrid, character_scene_id, scene_id);
+            let vt_label = if virtual_time_ms > 0 {
+                chrono::DateTime::from_timestamp_millis(virtual_time_ms)
                     .map(|d| d.format("%Y-%m-%d %H:%M").to_string())
                     .unwrap_or_else(|| "未设定".to_string())
             } else {
@@ -350,7 +344,7 @@ pub async fn execute_turn(ctx: &TurnContext<'_>, mode: TurnMode) -> CoPresentRes
             let life_schedule_line: String = role
                 .life_schedule
                 .as_ref()
-                .and_then(|s| resolve_life_state(vt_ms, s))
+                .and_then(|s| resolve_life_state(virtual_time_ms, s))
                 .map(|st| format_life_prompt_line(&st, true))
                 .unwrap_or_default();
             let remote_mutable =
@@ -405,10 +399,13 @@ pub async fn execute_turn(ctx: &TurnContext<'_>, mode: TurnMode) -> CoPresentRes
         ai_impact_factor_final,
         relation_after.as_str(),
     ));
+    let previous_emotion_fut = state.db_manager.get_current_emotion(srid);
     let bot_emotion_result =
         crate::kernel_stage!(@co_present crate::domain::chat_engine::chat_stage::ChatStage::BotReplyEmotionAnalyze, slot_runner.analyze_emotion(&pl, &reply))?;
-    let previous_emotion =
-        crate::kernel_stage!(@co_present crate::domain::chat_engine::chat_stage::ChatStage::GetCurrentEmotion, state.db_manager.get_current_emotion(srid).await)?;
+    let previous_emotion = crate::kernel_stage!(
+        @co_present crate::domain::chat_engine::chat_stage::ChatStage::GetCurrentEmotion,
+        previous_emotion_fut.await
+    )?;
     let bot_emotion = policies
         .emotion
         .resolve_current_emotion(previous_emotion.as_deref(), &bot_emotion_result);
@@ -433,7 +430,7 @@ pub async fn execute_turn(ctx: &TurnContext<'_>, mode: TurnMode) -> CoPresentRes
             importance: 0.95,
             weight: 1.0,
             created_at: Utc::now(),
-            scene_id: Some(scene_id.clone()),
+            scene_id: Some(scene_id.to_string()),
         },
     );
     let policy_ctx = PolicyContext {
@@ -486,7 +483,7 @@ pub async fn execute_turn(ctx: &TurnContext<'_>, mode: TurnMode) -> CoPresentRes
                 event: &event,
                 user_message,
                 bot_reply: &reply,
-                scene_id: scene_id.as_str(),
+                scene_id,
             })
             .await
     )?;
@@ -544,7 +541,6 @@ pub async fn execute_turn(ctx: &TurnContext<'_>, mode: TurnMode) -> CoPresentRes
         state
             .session_cache
             .personality_cache()
-            .write()
             .insert(srid.to_string(), personality_after);
     } else {
         let delta_out = PersonalityVector::sub_components(&personality, &core_v);
@@ -557,7 +553,6 @@ pub async fn execute_turn(ctx: &TurnContext<'_>, mode: TurnMode) -> CoPresentRes
         state
             .session_cache
             .personality_cache()
-            .write()
             .insert(srid.to_string(), personality.clone());
     }
 
@@ -566,7 +561,7 @@ pub async fn execute_turn(ctx: &TurnContext<'_>, mode: TurnMode) -> CoPresentRes
         &slot_runner.primary_llm(&pl),
         mrid,
         srid,
-        scene_id.as_str(),
+        scene_id,
         &scenes,
         user_message,
         ollama_model.as_str(),
@@ -613,7 +608,7 @@ pub async fn execute_turn(ctx: &TurnContext<'_>, mode: TurnMode) -> CoPresentRes
         favorability_delta: favor_delta as f32,
         favorability_current: favor_current as f32,
         events,
-        scene_id,
+        scene_id: scene_id.to_string(),
         offer_destination_picker,
         offer_together_travel,
         reply_is_fallback: main_llm_fallback,

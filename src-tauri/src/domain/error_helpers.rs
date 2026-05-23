@@ -46,20 +46,12 @@ macro_rules! map_err_unknown {
     };
 }
 
-/// 共景 / 主编排阶段错误映射（`kernel_stage!` 为唯一编排阶段宏）。
+/// 共景路径阶段错误（`process_message` 请用 [`co_present_stage`](crate::domain::chat_engine::staged::co_present_stage) / [`process_message_stage`](crate::domain::chat_engine::staged::process_message_stage)）。
 #[macro_export]
 macro_rules! kernel_stage {
     (@co_present $stage:expr, $e:expr) => {
         $e.map_err(|err| {
             $crate::domain::chat_engine::co_present::CoPresentError::wrap($stage.as_str(), err)
-        })
-    };
-    (@process_message $stage:expr, $e:expr) => {
-        $e.map_err(|source| {
-            $crate::domain::chat_engine::message_error::ProcessMessageError::Stage {
-                stage: $stage.as_str(),
-                source,
-            }
         })
     };
 }

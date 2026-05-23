@@ -11,6 +11,7 @@ pub(crate) mod favor;
 pub(crate) mod minimal_response;
 pub mod plugin_resolve;
 pub mod turn_context;
+pub(crate) mod staged;
 pub(crate) mod turn_pipeline;
 mod presence;
 mod process_message;
@@ -103,7 +104,7 @@ pub(super) async fn process_remote_stub(
     let state = ctx.state;
     let req = ctx.req;
     let role = ctx.role;
-    let scene_id = ctx.scene_id.as_str();
+    let scene_id = ctx.scene_id;
     let t0 = ctx.t0;
     let srid = ctx.srid;
     let preflight_ms = ctx.preflight_ms;

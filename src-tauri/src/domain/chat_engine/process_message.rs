@@ -1,13 +1,13 @@
-//! # ???????????????
+//! # ????????
 //!
-//! **??**?Tauri / HTTP ??????????**???**???????????????Agent ?????/????????????? [`co_present`](super::co_present)?
+//! **??**?Tauri / HTTP ???**???**????????Agent ?????/????????????? [`co_present`](super::co_present)?
 //!
-//! **??**?`api` / `http_api` ? `AppState`??? `Role`?`plugin_backends`???? `slot_registry` ???
-//! **??**?[`co_present::process_co_present`](super::co_present)?`process_remote_*`?????? [`PluginHostPort`](crate::domain::ports::PluginHostPort) ???**????????????**?
+//! **??**?`api` / `http_api` ? `AppState` ?? `Role`?`plugin_backends` ??? `slot_registry` ?????
+//! **??**?? [`co_present::process_co_present`](super::co_present) / `process_remote_*` ?????? [`PluginHostPort`](crate::domain::ports::PluginHostPort) ?????**??**? `pipeline.ocblueprint` DSL ???????
 //!
-//! **????**?????? **Rust ??**?`co_present` + [`SlotRunner`](../slot_runner.rs)????**??** `pipeline.ocblueprint` ???????????? `slot_registry` / `groups` ?????????????????????
+//! **??**????? **Rust ??**?`co_present` + [`SlotRunner`](../slot_runner.rs)????????? `slot_registry` / `groups` ? `PluginHost` ?????
 //!
-//! ??????? [`domain/README.md`](../README.md)?
+//! ?? [`domain/README.md`](../README.md)?
 
 use crate::domain::agent::AgentInput;
 use crate::domain::chat_engine::chat_stage::ChatStage;
@@ -15,6 +15,7 @@ use crate::domain::chat_engine::co_present;
 use crate::domain::chat_engine::message_error::ProcessMessageError;
 use crate::domain::chat_engine::minimal_response::build_minimal_response;
 use crate::domain::chat_engine::presence::user_is_remote_from_character;
+use crate::domain::chat_engine::staged::{process_message_stage, stage_process_message};
 use crate::domain::chat_engine::turn_context::TurnContext;
 use crate::domain::chat_engine::{
     backend_resolution_summary, context::validate_scene_id, conversation_state_role_id,
@@ -25,6 +26,7 @@ use crate::domain::startup_health;
 use crate::error::Result;
 use crate::models::dto::{SendMessageRequest, SendMessageResponse};
 use crate::state::AppState;
+use std::sync::Arc;
 use std::time::Instant;
 
 /// # Errors
@@ -54,11 +56,21 @@ async fn run(
         .scene_id
         .clone()
         .unwrap_or_else(|| "default".to_string());
-    let (scene_id, scenes) = crate::kernel_stage!(
-        @process_message ChatStage::ValidateSceneId,
-        validate_scene_id(state, mrid, requested_scene_id)
-    )?;
     let t0 = Instant::now();
+
+    stage_process_message(
+        ChatStage::EnsureRoleRuntime,
+        state.db_manager.ensure_role_runtime(srid).await,
+    )?;
+
+    let role = ensure_role_loaded(state, mrid)
+        .await
+        .map_err(|source| ProcessMessageError::Stage {
+            stage: ChatStage::EnsureRoleLoaded.as_str(),
+            source,
+        })?;
+
+    let scene_id = validate_scene_id(mrid, &role.scene_ids, requested_scene_id);
     tracing::debug!(
         target: "oclive_chat",
         "send_message start role_id={} scene_id={} session_ns={}",
@@ -67,22 +79,14 @@ async fn run(
         srid
     );
 
-    crate::kernel_stage!(
-        @process_message ChatStage::EnsureRoleRuntime,
-        state.db_manager.ensure_role_runtime(srid).await
-    )?;
-
-    let role = crate::kernel_stage!(
-        @process_message ChatStage::EnsureRoleLoaded,
-        ensure_role_loaded(state, mrid).await
-    )?;
-    crate::kernel_stage!(
-        @process_message ChatStage::EnsureInteractionModeSeeded,
+    stage_process_message(
+        ChatStage::EnsureInteractionModeSeeded,
         state
             .db_manager
             .ensure_interaction_mode_seeded(srid, role.interaction_mode.as_deref())
-            .await
+            .await,
     )?;
+
     let effective_backends = state.effective_plugin_backends_for_session(role.as_ref(), srid);
     let effective_sources =
         state.effective_plugin_backend_sources_for_session(role.as_ref(), srid);
@@ -95,10 +99,19 @@ async fn run(
         backend_resolution_summary(&effective_backends, &effective_sources)
     );
 
-    crate::kernel_stage!(
-        @process_message ChatStage::StartupHealth,
-        startup_health::ensure_once(state, role.as_ref(), &effective_backends).await
-    )?;
+    state
+        .ensure_policy_loaded()
+        .map_err(|source| ProcessMessageError::Stage {
+            stage: ChatStage::StartupHealth.as_str(),
+            source,
+        })?;
+
+    startup_health::ensure_once(state, role.as_ref(), &effective_backends)
+        .await
+        .map_err(|source| ProcessMessageError::Stage {
+            stage: ChatStage::StartupHealth.as_str(),
+            source,
+        })?;
 
     let pl = crate::domain::chat_engine::plugin_resolve::resolve_plugins_for_session(
         state.plugin_host_port(),
@@ -109,24 +122,23 @@ async fn run(
             .effective_slot_registry_for_session(role.as_ref(), srid)
             .as_ref(),
     );
-    let agent_out = crate::kernel_stage!(
-        @process_message ChatStage::AgentProcess,
-        pl.agent
-            .process(AgentInput {
-                role_id: mrid.to_string(),
-                session_namespace: srid.to_string(),
-                message: req.user_message.clone(),
-                model: role.resolve_ollama_model(state.ollama_model.as_str()),
-            })
-            .await
-    )?;
+    let agent_out = process_message_stage(
+        ChatStage::AgentProcess,
+        pl.agent.process(AgentInput {
+            role_id: mrid.to_string(),
+            session_namespace: srid.to_string(),
+            message: req.user_message.clone(),
+            model: role.resolve_ollama_model(state.ollama_model.as_str()),
+        }),
+    )
+    .await?;
     if agent_out.handled {
         return build_minimal_response(
             state,
             &pl,
             role.as_ref(),
             srid,
-            scene_id,
+            scene_id.clone(),
             req.user_message.as_str(),
             agent_out.reply,
         )
@@ -137,27 +149,29 @@ async fn run(
         });
     }
 
-    crate::kernel_stage!(
-        @process_message ChatStage::SetUserPresenceScene,
+    process_message_stage(
+        ChatStage::SetUserPresenceScene,
         state
             .db_manager
-            .set_user_presence_scene(srid, scene_id.as_str())
-            .await
-    )?;
+            .set_user_presence_scene(srid, scene_id.as_str()),
+    )
+    .await?;
 
-    let current_scene = crate::kernel_stage!(
-        @process_message ChatStage::GetCurrentScene,
-        state.db_manager.get_current_scene(srid).await
+    let (current_scene, interaction_mode, remote_life_enabled) = tokio::try_join!(
+        process_message_stage(
+            ChatStage::GetCurrentScene,
+            state.db_manager.get_current_scene(srid),
+        ),
+        process_message_stage(
+            ChatStage::GetInteractionMode,
+            state.db_manager.get_interaction_mode(srid),
+        ),
+        process_message_stage(
+            ChatStage::GetRemoteLifeEnabled,
+            state.db_manager.get_remote_life_enabled(srid),
+        ),
     )?;
-    let immersive = crate::kernel_stage!(
-        @process_message ChatStage::GetInteractionMode,
-        state.db_manager.get_interaction_mode(srid).await
-    )?
-    .is_immersive();
-    let remote_life_enabled = crate::kernel_stage!(
-        @process_message ChatStage::GetRemoteLifeEnabled,
-        state.db_manager.get_remote_life_enabled(srid).await
-    )?;
+    let immersive = interaction_mode.is_immersive();
     let is_remote =
         immersive && user_is_remote_from_character(scene_id.as_str(), current_scene.as_deref());
     let preflight_ms = t0.elapsed().as_millis() as u64;
@@ -165,11 +179,18 @@ async fn run(
         .as_deref()
         .unwrap_or("default")
         .to_string();
+    let virtual_time_ms = process_message_stage(
+        ChatStage::VirtualTimeMs,
+        state.db_manager.get_virtual_time_ms(srid),
+    )
+    .await?
+    .unwrap_or(0);
+    let scenes = Arc::clone(&role.scene_ids);
     let turn = TurnContext {
         state,
         req,
         role: role.as_ref(),
-        scene_id: scene_id.clone(),
+        scene_id: scene_id.as_str(),
         scenes,
         mrid,
         srid,
@@ -182,18 +203,19 @@ async fn run(
         } else {
             None
         },
+        virtual_time_ms,
     };
     if is_remote {
         if !remote_life_enabled {
-            return Ok(crate::kernel_stage!(
-                @process_message ChatStage::RemoteStub,
-                process_remote_stub(&turn).await
-            )?);
+            return stage_process_message(
+                ChatStage::RemoteStub,
+                process_remote_stub(&turn).await,
+            );
         }
-        return Ok(crate::kernel_stage!(
-            @process_message ChatStage::RemoteLife,
-            process_remote_life(&turn).await
-        )?);
+        return stage_process_message(
+            ChatStage::RemoteLife,
+            process_remote_life(&turn).await,
+        );
     }
 
     if role.dual_core_gated() {

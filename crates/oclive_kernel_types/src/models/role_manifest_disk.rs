@@ -145,6 +145,7 @@ pub fn disk_manifest_to_role(d: &DiskRoleManifest) -> Role {
         reply_quality_anchor: None,
         runtime_config: None,
         pipeline_experimental: None,
+        scene_ids: std::sync::Arc::from(Vec::<String>::new()),
     }
 }
 

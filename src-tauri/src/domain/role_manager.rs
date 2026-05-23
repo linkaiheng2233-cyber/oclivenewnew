@@ -277,6 +277,7 @@ mod tests {
             reply_quality_anchor: None,
             runtime_config: None,
             pipeline_experimental: None,
+            scene_ids: std::sync::Arc::from(Vec::<String>::new()),
         }
     }
 

@@ -324,6 +324,9 @@ impl RoleStorage {
         validate_role_interaction_mode(&role).map_err(AppError::InvalidParameter)?;
         log_plugin_backends_remote_missing_env(&role);
 
+        let scene_list = Self::merge_scene_ids(role_dir, &disk.scenes)?;
+        role.scene_ids = Arc::from(scene_list.into_boxed_slice());
+
         let core_personality_path = role_dir.join("core_personality.txt");
         if core_personality_path.exists() {
             role.core_personality =
@@ -829,6 +832,7 @@ mod tests {
             slot_groups: None,
             runtime_config: None,
             pipeline_experimental: None,
+            scene_ids: std::sync::Arc::from(Vec::<String>::new()),
         };
 
         let role_dir = temp_dir.path().join("test_role");
