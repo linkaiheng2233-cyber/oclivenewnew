@@ -2,304 +2,39 @@ use crate::domain::plugin_host::{PluginHost, ResolvedRolePlugins};
 use crate::domain::ports::PluginHostPort;
 use crate::domain::repository::{FavorabilityRepository, MemoryRepository};
 use crate::domain::{
-    DefaultEmotionPolicy, DefaultEventPolicy, DefaultMemoryPolicy, EmotionPolicy,
-    EmotionPolicyConfig, EventEstimator, EventPolicy, FileManifestLocalPluginBridge,
-    LocalPluginBridge, LocalPluginCapability, LocalPluginProviderDescriptor, MemoryPolicy,
-    MemoryPolicyConfig, MemoryRetrieval, PolicyConfig, PromptAssembler, UserEmotionAnalyzer,
+    EventEstimator, FileManifestLocalPluginBridge, LocalPluginBridge, LocalPluginCapability,
+    LocalPluginProviderDescriptor, MemoryRetrieval, PromptAssembler, UserEmotionAnalyzer,
 };
 use crate::error::Result;
 use crate::infrastructure::db::DbManager;
 use crate::infrastructure::directory_plugins::DirectoryPluginRuntime;
 use crate::infrastructure::high_risk_grants::HighRiskGrantStore;
-use crate::infrastructure::llm::ollama_llm;
 use crate::infrastructure::llm::LlmClient;
-use crate::infrastructure::ollama_client::OllamaClient;
+use crate::infrastructure::policy_registry::{
+    build_policy_sets_from_registry, load_policy_registry_from_path, PolicyRuntime, PolicySet,
+};
 use crate::infrastructure::remote_fallback_policy::{
-    new_remote_fallback_switch, remote_fallback_env_override, remote_fallback_from_db_value,
+    remote_fallback_env_override, remote_fallback_from_db_value,
 };
-use crate::infrastructure::repositories::{SqliteFavorabilityRepository, SqliteMemoryRepository};
-use crate::infrastructure::storage::{resolve_llm_backend_env_override, RoleStorage};
+use crate::infrastructure::storage::RoleStorage;
 use crate::models::{
-    PersonalitySource, PersonalityVector, PluginBackendSource, PluginBackends,
-    PluginBackendsOverride, PluginBackendsSourceMap, Role,
+    PersonalitySource, PersonalityVector, PluginBackends, Role,
 };
+use dashmap::DashMap;
 use parking_lot::{Mutex, RwLock};
-use serde::Deserialize;
-use crate::infrastructure::sqlite_pool;
-use std::collections::{BTreeMap, HashMap};
-use std::fs;
+use std::collections::HashMap;
 use std::path::{Path, PathBuf};
 use std::sync::atomic::{AtomicBool, Ordering};
 use std::sync::Arc;
 
+mod app_state_builder;
+mod roles_dir;
+mod session_backends;
 mod session_cache;
+pub use roles_dir::resolve_roles_dir;
 pub use session_cache::SessionCache;
 
-/// 自动发现时要求至少有一个「子目录 + manifest.json」，避免误用盘符根上空的 `D:\roles` 等。
-fn roles_dir_has_any_role_pack(roles_root: &Path) -> bool {
-    let Ok(rd) = fs::read_dir(roles_root) else {
-        return false;
-    };
-    rd.flatten().any(|e| {
-        let p = e.path();
-        p.is_dir()
-            && (p.join("manifest.json").is_file()
-                || p.join(oclive_validation::PIPELINE_BLUEPRINT_FILENAME)
-                    .is_file())
-    })
-}
-
-/// 开发时进程 cwd 可能是 `src-tauri/`，优先定位到项目根的 `roles/`。
-/// 日志 target：`oclive_roles`（与 `lib.rs` 中打包路径日志一致，便于过滤）。
-pub fn resolve_roles_dir() -> PathBuf {
-    if let Ok(custom) = std::env::var("OCLIVE_ROLES_DIR") {
-        let p = PathBuf::from(&custom);
-        if p.is_dir() {
-            tracing::info!(
-                target: "oclive_roles",
-                "resolve_roles_dir: OCLIVE_ROLES_DIR -> {}",
-                p.display()
-            );
-            return p;
-        }
-        tracing::warn!(
-            target: "oclive_roles",
-            "OCLIVE_ROLES_DIR is set but not a directory ({}); ignoring",
-            custom
-        );
-    }
-    // 开发构建：exe 在仓库外 target-dir（`.cargo/config.toml`）时，向上搜不到本仓 `roles/`。
-    // 用编译期 `src-tauri` 路径定位仓库根（勿用于 release 安装包逻辑；见下方 `debug_assertions`）。
-    #[cfg(debug_assertions)]
-    {
-        let from_manifest = PathBuf::from(env!("CARGO_MANIFEST_DIR"))
-            .join("..")
-            .join("roles");
-        match from_manifest.canonicalize() {
-            Ok(canon) if canon.is_dir() => {
-                tracing::info!(
-                    target: "oclive_roles",
-                    "resolve_roles_dir: manifest-relative -> {}",
-                    canon.display()
-                );
-                return canon;
-            }
-            _ => {
-                if from_manifest.is_dir() {
-                    tracing::info!(
-                        target: "oclive_roles",
-                        "resolve_roles_dir: manifest-relative (non-canon) -> {}",
-                        from_manifest.display()
-                    );
-                    return from_manifest;
-                }
-            }
-        }
-    }
-    // 不依赖 cwd：从当前 exe 向上查找名为 `roles` 的目录（典型：`target/debug/*.exe` → 仓库根 `roles/`）。
-    if let Ok(exe) = std::env::current_exe() {
-        let mut cur = exe.parent().map(|p| p.to_path_buf());
-        for _ in 0..12 {
-            let Some(dir) = cur else {
-                break;
-            };
-            let candidate = dir.join("roles");
-            if candidate.is_dir() && roles_dir_has_any_role_pack(&candidate) {
-                tracing::info!(
-                    target: "oclive_roles",
-                    "resolve_roles_dir: near_exe -> {}",
-                    candidate.display()
-                );
-                return candidate;
-            }
-            cur = dir.parent().map(|p| p.to_path_buf());
-        }
-    }
-    if let Ok(cwd) = std::env::current_dir() {
-        let a = cwd.join("roles");
-        if a.is_dir() && roles_dir_has_any_role_pack(&a) {
-            tracing::info!(
-                target: "oclive_roles",
-                "resolve_roles_dir: cwd/roles -> {}",
-                a.display()
-            );
-            return a;
-        }
-        let b = cwd.join("..").join("roles");
-        if let Ok(canon) = b.canonicalize() {
-            if canon.is_dir() && roles_dir_has_any_role_pack(&canon) {
-                tracing::info!(
-                    target: "oclive_roles",
-                    "resolve_roles_dir: ../roles -> {}",
-                    canon.display()
-                );
-                return canon;
-            }
-        }
-    }
-    let fallback = PathBuf::from("roles");
-    tracing::info!(
-        target: "oclive_roles",
-        "resolve_roles_dir: relative fallback -> {}",
-        fallback.display()
-    );
-    fallback
-}
-
-pub struct PolicySet {
-    pub emotion: Arc<dyn EmotionPolicy>,
-    pub event: Arc<dyn EventPolicy>,
-    pub memory: Arc<dyn MemoryPolicy>,
-}
-
-struct PolicyRuntime {
-    default_policy_set: Arc<PolicySet>,
-    scene_policy_sets: HashMap<String, Arc<PolicySet>>,
-}
-
-#[derive(Debug, Deserialize, Default)]
-#[serde(default, deny_unknown_fields)]
-struct PolicyRegistryFile {
-    default: PolicyConfig,
-    default_profile: String,
-    profiles: HashMap<String, PolicyConfig>,
-    scene_bindings: HashMap<String, String>,
-}
-
-impl PolicyRegistryFile {
-    fn with_defaults() -> Self {
-        let mut profiles = HashMap::new();
-        profiles.insert("default".to_string(), PolicyConfig::default());
-        Self {
-            default: PolicyConfig::default(),
-            default_profile: "default".to_string(),
-            profiles,
-            scene_bindings: HashMap::new(),
-        }
-    }
-}
-
-#[derive(Debug, Deserialize)]
-#[serde(untagged)]
-enum PolicyFileSchema {
-    Registry(PolicyRegistryFile),
-    Legacy(PolicyConfig),
-}
-
-fn env_bool(key: &str, default: bool) -> bool {
-    std::env::var(key)
-        .ok()
-        .and_then(|v| match v.trim().to_ascii_lowercase().as_str() {
-            "1" | "true" | "yes" | "on" => Some(true),
-            "0" | "false" | "no" | "off" => Some(false),
-            _ => None,
-        })
-        .unwrap_or(default)
-}
-
-fn env_f64(key: &str, default: f64) -> f64 {
-    std::env::var(key)
-        .ok()
-        .and_then(|v| v.trim().parse::<f64>().ok())
-        .unwrap_or(default)
-}
-
-fn env_i32(key: &str, default: i32) -> i32 {
-    std::env::var(key)
-        .ok()
-        .and_then(|v| v.trim().parse::<i32>().ok())
-        .unwrap_or(default)
-}
-
-fn apply_policy_config_env_overrides(config: &mut PolicyConfig) {
-    config.emotion = EmotionPolicyConfig {
-        neutral_hold_enabled: env_bool(
-            "POLICY_EMOTION_NEUTRAL_HOLD_ENABLED",
-            config.emotion.neutral_hold_enabled,
-        ),
-        low_confidence_hold_threshold: env_f64(
-            "POLICY_EMOTION_LOW_CONFIDENCE_HOLD_THRESHOLD",
-            config.emotion.low_confidence_hold_threshold,
-        ),
-    };
-    config.memory = MemoryPolicyConfig {
-        ignore_single_char_filter: env_bool(
-            "POLICY_MEMORY_IGNORE_SINGLE_CHAR_FILTER",
-            config.memory.ignore_single_char_filter,
-        ),
-        default_importance: env_f64(
-            "POLICY_MEMORY_DEFAULT_IMPORTANCE",
-            config.memory.default_importance,
-        ),
-        fifo_limit: env_i32("POLICY_MEMORY_FIFO_LIMIT", config.memory.fifo_limit),
-    };
-}
-
-fn load_policy_registry_from_path(path: &Path, strict: bool) -> Result<PolicyRegistryFile> {
-    let mut registry = if path.exists() {
-        let content = fs::read_to_string(path).map_err(crate::error::AppError::IoError)?;
-        match toml::from_str::<PolicyFileSchema>(&content) {
-            Ok(PolicyFileSchema::Registry(parsed)) => {
-                tracing::info!("policy config loaded source=file path={}", path.display());
-                parsed
-            }
-            Ok(PolicyFileSchema::Legacy(legacy)) => {
-                tracing::info!(
-                    "policy config loaded as legacy source=file path={}",
-                    path.display()
-                );
-                let mut r = PolicyRegistryFile::with_defaults();
-                r.profiles.insert("default".to_string(), legacy);
-                r
-            }
-            Err(err) => {
-                if strict {
-                    return Err(crate::error::AppError::InvalidParameter(format!(
-                        "invalid policy.toml: {}",
-                        err
-                    )));
-                }
-                tracing::warn!(
-                    "policy config parse failed source=file path={} err={}",
-                    path.display(),
-                    err
-                );
-                PolicyRegistryFile::with_defaults()
-            }
-        }
-    } else if strict {
-        return Err(crate::error::AppError::InvalidParameter(format!(
-            "policy file not found: {}",
-            path.display()
-        )));
-    } else {
-        PolicyRegistryFile::with_defaults()
-    };
-    if let Some(default_cfg) = registry.profiles.get_mut(&registry.default_profile) {
-        apply_policy_config_env_overrides(default_cfg);
-    } else {
-        let mut fallback = registry.default.clone();
-        apply_policy_config_env_overrides(&mut fallback);
-        registry
-            .profiles
-            .insert(registry.default_profile.clone(), fallback);
-    }
-    Ok(registry)
-}
-
-fn load_policy_registry() -> PolicyRegistryFile {
-    let path = Path::new("./config/policy.toml");
-    load_policy_registry_from_path(path, false)
-        .unwrap_or_else(|_| PolicyRegistryFile::with_defaults())
-}
-
-fn build_policy_set(config: &PolicyConfig) -> Arc<PolicySet> {
-    Arc::new(PolicySet {
-        emotion: Arc::new(DefaultEmotionPolicy::new(config.emotion.clone())),
-        event: Arc::new(DefaultEventPolicy),
-        memory: Arc::new(DefaultMemoryPolicy::new(config.memory.clone())),
-    })
-}
+use app_state_builder::AppStateBuilder;
 
 pub struct AppState {
     pub db_manager: Arc<DbManager>,
@@ -308,7 +43,7 @@ pub struct AppState {
     pub llm: Arc<dyn LlmClient>,
     pub role_cache: Arc<RwLock<HashMap<String, Arc<Role>>>>,
     /// 同一 `role_id` 冷加载串行化；表项在无人再持有对应 `Arc` 时移除（见 [`AppState::load_role_cached`]）。
-    role_load_inflight: Mutex<HashMap<String, Arc<Mutex<()>>>>,
+    role_load_inflight: DashMap<String, Arc<Mutex<()>>>,
     pub session_cache: Arc<SessionCache>,
     pub storage: RoleStorage,
     policy_runtime: Arc<RwLock<PolicyRuntime>>,
@@ -327,27 +62,6 @@ pub struct AppState {
 }
 
 impl AppState {
-    fn build_policy_sets_from_registry(registry: PolicyRegistryFile) -> PolicyRuntime {
-        let default_cfg = registry
-            .profiles
-            .get(&registry.default_profile)
-            .cloned()
-            .unwrap_or_default();
-        let default_policy_set = build_policy_set(&default_cfg);
-        let mut scene_policy_sets: HashMap<String, Arc<PolicySet>> = HashMap::new();
-        for (scene, profile) in &registry.scene_bindings {
-            let cfg = registry
-                .profiles
-                .get(profile)
-                .cloned()
-                .unwrap_or_else(|| default_cfg.clone());
-            scene_policy_sets.insert(scene.clone(), build_policy_set(&cfg));
-        }
-        PolicyRuntime {
-            default_policy_set,
-            scene_policy_sets,
-        }
-    }
     /// # Errors
     ///
     /// Returns [`Err`] with a human-readable message when the operation fails.
@@ -358,93 +72,13 @@ impl AppState {
         roles_dir_override: Option<PathBuf>,
         app_data_dir: impl AsRef<Path>,
     ) -> Result<Self> {
-        let path = db_path.as_ref();
-        let db = if path == Path::new(":memory:") {
-            sqlite_pool::connect_memory()
-                .await
-                .map_err(|e| crate::error::AppError::DatabaseError(e.to_string()))?
-        } else {
-            if let Some(parent) = path.parent() {
-                if !parent.as_os_str().is_empty() {
-                    fs::create_dir_all(parent)?;
-                }
-            }
-            sqlite_pool::connect_file(path)
-                .await
-                .map_err(|e| crate::error::AppError::DatabaseError(e.to_string()))?
-        };
-
-        crate::infrastructure::sql_migrate::run_sql_migrations(
-            &db,
-            &PathBuf::from(env!("CARGO_MANIFEST_DIR")).join("migrations"),
+        AppStateBuilder::production(
+            db_path,
+            roles_dir_override.unwrap_or_else(resolve_roles_dir),
+            app_data_dir,
         )
+        .build()
         .await
-        .map_err(crate::error::AppError::DatabaseError)?;
-
-        let db_manager = Arc::new(DbManager::new(db.clone()));
-
-        let remote_raw = db_manager
-            .get_app_setting("remote_fallback_to_builtin")
-            .await?;
-        let mut remote_allowed = remote_fallback_from_db_value(remote_raw);
-        if let Some(v) = remote_fallback_env_override() {
-            remote_allowed = v;
-        }
-        let remote_fallback_allowed = new_remote_fallback_switch(remote_allowed);
-
-        let memory_repo: Arc<dyn MemoryRepository> =
-            Arc::new(SqliteMemoryRepository::new(db_manager.clone()));
-        let favorability_repo: Arc<dyn FavorabilityRepository> =
-            Arc::new(SqliteFavorabilityRepository::new(db_manager.clone()));
-
-        let ollama = OllamaClient::new(
-            std::env::var("OLLAMA_BASE_URL")
-                .unwrap_or_else(|_| "http://localhost:11434".to_string()),
-        );
-        let llm = ollama_llm(ollama);
-
-        // 默认需与本机 `ollama list` 中已有模型一致；未安装 llama3.2 时会 404
-        let ollama_model =
-            std::env::var("OLLAMA_MODEL").unwrap_or_else(|_| "qwen2.5:7b".to_string());
-        let registry = load_policy_registry();
-        let runtime = Self::build_policy_sets_from_registry(registry);
-
-        let storage = RoleStorage::new(roles_dir_override.unwrap_or_else(resolve_roles_dir));
-        let app_data_path = app_data_dir.as_ref().to_path_buf();
-        let high_risk_grants = HighRiskGrantStore::load(app_data_path.clone(), true);
-        let directory_plugins = DirectoryPluginRuntime::bootstrap(
-            storage.roles_dir(),
-            app_data_dir.as_ref(),
-            high_risk_grants.clone(),
-        );
-        let plugins = PluginHost::new(
-            llm.clone(),
-            Some(directory_plugins.clone()),
-            app_data_path,
-            high_risk_grants.clone(),
-            remote_fallback_allowed.clone(),
-        );
-        Self::bootstrap_local_plugin_providers(&plugins, storage.roles_dir());
-
-        let session_cache = SessionCache::shared();
-
-        Ok(Self {
-            db_manager,
-            memory_repo,
-            favorability_repo,
-            llm,
-            role_cache: Arc::new(RwLock::new(HashMap::new())),
-            role_load_inflight: Mutex::new(HashMap::new()),
-            session_cache,
-            storage,
-            policy_runtime: Arc::new(RwLock::new(runtime)),
-            ollama_model,
-            plugins,
-            directory_plugins,
-            high_risk_grants,
-            startup_health: Mutex::new(None),
-            remote_fallback_allowed,
-        })
     }
     /// # Errors
     ///
@@ -464,81 +98,9 @@ impl AppState {
         roles_dir: impl AsRef<Path>,
         policy_file: Option<&Path>,
     ) -> Result<Self> {
-        let db = sqlite_pool::connect_memory()
+        AppStateBuilder::in_memory_test(llm, roles_dir, policy_file)
+            .build()
             .await
-            .map_err(|e| crate::error::AppError::DatabaseError(e.to_string()))?;
-
-        crate::infrastructure::sql_migrate::run_sql_migrations(
-            &db,
-            &PathBuf::from(env!("CARGO_MANIFEST_DIR")).join("migrations"),
-        )
-        .await
-        .map_err(crate::error::AppError::DatabaseError)?;
-
-        let db_manager = Arc::new(DbManager::new(db));
-
-        let remote_raw = db_manager
-            .get_app_setting("remote_fallback_to_builtin")
-            .await?;
-        let mut remote_allowed = remote_fallback_from_db_value(remote_raw);
-        if let Some(v) = remote_fallback_env_override() {
-            remote_allowed = v;
-        }
-        let remote_fallback_allowed = new_remote_fallback_switch(remote_allowed);
-
-        let memory_repo: Arc<dyn MemoryRepository> =
-            Arc::new(SqliteMemoryRepository::new(db_manager.clone()));
-        let favorability_repo: Arc<dyn FavorabilityRepository> =
-            Arc::new(SqliteFavorabilityRepository::new(db_manager.clone()));
-
-        let storage = RoleStorage::new(roles_dir);
-        let app_data_dir = storage.roles_dir().join(".oclive_directory_plugin_data");
-        let _ = fs::create_dir_all(&app_data_dir);
-        let high_risk_grants = HighRiskGrantStore::load(app_data_dir.clone(), false);
-        let directory_plugins = DirectoryPluginRuntime::bootstrap(
-            storage.roles_dir(),
-            &app_data_dir,
-            high_risk_grants.clone(),
-        );
-        let runtime = if let Some(path) = policy_file {
-            let registry = load_policy_registry_from_path(path, false)
-                .unwrap_or_else(|_| PolicyRegistryFile::with_defaults());
-            Self::build_policy_sets_from_registry(registry)
-        } else {
-            PolicyRuntime {
-                default_policy_set: build_policy_set(&PolicyConfig::default()),
-                scene_policy_sets: HashMap::new(),
-            }
-        };
-
-        let plugins = PluginHost::new(
-            llm.clone(),
-            Some(directory_plugins.clone()),
-            app_data_dir.clone(),
-            high_risk_grants.clone(),
-            remote_fallback_allowed.clone(),
-        );
-        Self::bootstrap_local_plugin_providers(&plugins, storage.roles_dir());
-
-        let session_cache = SessionCache::shared();
-
-        Ok(Self {
-            db_manager,
-            memory_repo,
-            favorability_repo,
-            llm,
-            role_cache: Arc::new(RwLock::new(HashMap::new())),
-            role_load_inflight: Mutex::new(HashMap::new()),
-            session_cache,
-            storage,
-            policy_runtime: Arc::new(RwLock::new(runtime)),
-            ollama_model: "test-model".to_string(),
-            plugins,
-            directory_plugins,
-            high_risk_grants,
-            startup_health: Mutex::new(None),
-            remote_fallback_allowed,
-        })
     }
 
     /// 供下一轮主对话 Prompt 注入的上一轮 `narrative_hint`（空则跳过对应段落）。
@@ -578,7 +140,7 @@ impl AppState {
     pub fn reload_policy_plugins(&self) -> Result<usize> {
         let path = Path::new("./config/policy.toml");
         let registry = load_policy_registry_from_path(path, true)?;
-        let runtime = Self::build_policy_sets_from_registry(registry);
+        let runtime = build_policy_sets_from_registry(registry);
         let count = runtime.scene_policy_sets.len();
         *self.policy_runtime.write() = runtime;
         tracing::info!(
@@ -599,12 +161,23 @@ impl AppState {
             return Ok(Arc::clone(r));
         }
         let key = role_id.to_string();
-        let gate = {
-            let mut inflight = self.role_load_inflight.lock();
-            inflight
-                .entry(key.clone())
-                .or_insert_with(|| Arc::new(Mutex::new(())))
-                .clone()
+        let gate = self
+            .role_load_inflight
+            .entry(key.clone())
+            .or_insert_with(|| Arc::new(Mutex::new(())))
+            .clone();
+        struct InflightCleanup<'a> {
+            map: &'a DashMap<String, Arc<Mutex<()>>>,
+            key: String,
+        }
+        impl Drop for InflightCleanup<'_> {
+            fn drop(&mut self) {
+                self.map.remove(&self.key);
+            }
+        }
+        let _cleanup = InflightCleanup {
+            map: &self.role_load_inflight,
+            key: key.clone(),
         };
         let _serial = gate.lock();
 
@@ -621,15 +194,6 @@ impl AppState {
             map.insert(role_id.to_string(), Arc::clone(&candidate));
             Ok(candidate)
         })();
-
-        drop(_serial);
-        drop(gate);
-        let mut inflight = self.role_load_inflight.lock();
-        if let Some(e) = inflight.get(&key) {
-            if Arc::strong_count(e) == 1 {
-                inflight.remove(&key);
-            }
-        }
 
         loaded
     }
@@ -738,179 +302,6 @@ impl AppState {
         role.plugin_backends.clone()
     }
 
-    #[must_use]
-    pub fn session_backend_override(
-        &self,
-        session_namespace: &str,
-    ) -> Option<PluginBackendsOverride> {
-        self.session_cache
-            .session_plugin_overrides()
-            .read()
-            .get(session_namespace)
-            .cloned()
-    }
-
-    pub fn set_session_backend_override(
-        &self,
-        session_namespace: &str,
-        override_backends: PluginBackendsOverride,
-    ) {
-        if override_backends.is_empty() {
-            self.session_cache
-            .session_plugin_overrides()
-                .write()
-                .remove(session_namespace);
-            return;
-        }
-        self.session_cache
-            .session_plugin_overrides()
-            .write()
-            .insert(session_namespace.to_string(), override_backends);
-    }
-
-    pub fn clear_session_backend_override(&self, session_namespace: &str) {
-        self.session_cache
-            .session_plugin_overrides()
-            .write()
-            .remove(session_namespace);
-    }
-
-    #[must_use]
-    pub fn session_slot_overrides(
-        &self,
-        session_namespace: &str,
-    ) -> BTreeMap<String, oclive_validation::SlotOverridePatch> {
-        self.session_cache
-            .session_slot_overrides()
-            .read()
-            .get(session_namespace)
-            .cloned()
-            .unwrap_or_default()
-    }
-
-    pub fn set_session_slot_override(
-        &self,
-        session_namespace: &str,
-        slot_key: &str,
-        patch: oclive_validation::SlotOverridePatch,
-    ) {
-        let key = slot_key.trim();
-        if key.is_empty() {
-            return;
-        }
-        if patch.is_empty() {
-            let mut map = self.session_cache.session_slot_overrides().write();
-            if let Some(m) = map.get_mut(session_namespace) {
-                m.remove(key);
-                if m.is_empty() {
-                    map.remove(session_namespace);
-                }
-            }
-            return;
-        }
-        let mut map = self.session_cache.session_slot_overrides().write();
-        let entry = map
-            .entry(session_namespace.to_string())
-            .or_default();
-        let mut merged = {
-            let mut base = entry.get(key).cloned().unwrap_or_default();
-            patch.merge_into(&mut base);
-            base
-        };
-        if let Some(ref id) = merged.local_memory_provider_id {
-            let t = id.trim();
-            merged.local_memory_provider_id = if t.is_empty() {
-                None
-            } else {
-                Some(t.to_string())
-            };
-        }
-        entry.insert(key.to_string(), merged);
-    }
-
-    pub fn clear_session_slot_override(&self, session_namespace: &str, slot_key: &str) {
-        let key = slot_key.trim();
-        if key.is_empty() {
-            return;
-        }
-        let mut map = self.session_cache.session_slot_overrides().write();
-        if let Some(m) = map.get_mut(session_namespace) {
-            m.remove(key);
-            if m.is_empty() {
-                map.remove(session_namespace);
-            }
-        }
-    }
-
-    pub fn clear_all_session_slot_overrides(&self, session_namespace: &str) {
-        self.session_cache
-            .session_slot_overrides()
-            .write()
-            .remove(session_namespace);
-    }
-
-    #[must_use]
-    pub fn effective_slot_registry_for_session(
-        &self,
-        role: &Role,
-        session_namespace: &str,
-    ) -> Option<BTreeMap<String, oclive_validation::SlotRegistryEntry>> {
-        let pack = role.slot_registry.as_ref()?;
-        let ov = self.session_slot_overrides(session_namespace);
-        Some(oclive_validation::effective_slot_registry(pack, &ov))
-    }
-
-    #[must_use]
-    pub fn slot_session_overridden_keys(&self, session_namespace: &str) -> Vec<String> {
-        self.session_slot_overrides(session_namespace)
-            .keys()
-            .cloned()
-            .collect()
-    }
-
-    #[must_use]
-    pub fn effective_plugin_backends_for_session(
-        &self,
-        role: &Role,
-        session_namespace: &str,
-    ) -> PluginBackends {
-        if let Some(eff) = self.effective_slot_registry_for_session(role, session_namespace) {
-            oclive_validation::slot_registry_to_plugin_backends(&eff)
-        } else {
-            role.plugin_backends.clone()
-        }
-    }
-
-    #[must_use]
-    pub fn effective_plugin_backend_sources_for_session(
-        &self,
-        role: &Role,
-        session_namespace: &str,
-    ) -> PluginBackendsSourceMap {
-        let mut out = PluginBackendsSourceMap::default();
-        if let Some(reg) = role.slot_registry.as_ref() {
-            for (key, _) in self.session_slot_overrides(session_namespace) {
-                let Some(entry) = reg.get(&key) else {
-                    continue;
-                };
-                match entry.slot_type.as_str() {
-                    "memory" => out.memory = PluginBackendSource::SessionOverride,
-                    "emotion" => out.emotion = PluginBackendSource::SessionOverride,
-                    "event" => out.event = PluginBackendSource::SessionOverride,
-                    "prompt" => out.prompt = PluginBackendSource::SessionOverride,
-                    "llm" => out.llm = PluginBackendSource::SessionOverride,
-                    "agent" => out.agent = PluginBackendSource::SessionOverride,
-                    _ => {}
-                }
-            }
-        }
-        if out.llm == PluginBackendSource::PackDefault
-            && resolve_llm_backend_env_override().is_some()
-        {
-            out.llm = PluginBackendSource::EnvOverride;
-        }
-        out
-    }
     /// # Errors
     ///
     /// Returns [`Err`] with a human-readable message when the operation fails.
@@ -934,7 +325,7 @@ impl AppState {
         self.plugins.local_all_providers()
     }
 
-    fn bootstrap_local_plugin_providers(plugins: &PluginHost, roles_dir: &Path) {
+    pub(crate) fn bootstrap_local_plugin_providers(plugins: &PluginHost, roles_dir: &Path) {
         let manifest_dir = roles_dir.join("_local_plugins");
         let bridge = FileManifestLocalPluginBridge::new(&manifest_dir);
         let discovered = bridge.discover_providers();
