@@ -19,8 +19,6 @@ mod scene;
 
 pub use process_message::process_message;
 
-pub(super) use plugin_resolve::resolve_plugins_for_session;
-
 use turn_context::TurnContext;
 use turn_pipeline::{execute_turn, TurnMode};
 

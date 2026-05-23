@@ -200,6 +200,10 @@ impl AppState {
     }
 
     /// 异步路径加载角色：磁盘 I/O 在 `spawn_blocking` 中执行，避免阻塞 tokio reactor。
+    ///
+    /// # Errors
+    ///
+    /// 与 [`Self::load_role_cached`] 相同（角色不存在、磁盘 I/O 失败等）。
     pub async fn load_role_cached_async(&self, role_id: &str) -> Result<Arc<Role>> {
         if let Some(r) = self.role_cache.read().get(role_id) {
             return Ok(Arc::clone(r));
