@@ -115,6 +115,8 @@
 
 **补充（体验向 backlog）**：编写器内试聊、启动器智能依赖、角色/插件市场与愿景对照的合并清单见 **[BACKLOG_EXPERIENCE_AND_ECOSYSTEM.md](BACKLOG_EXPERIENCE_AND_ECOSYSTEM.md)**（与本文并行维护，供排期引用）。
 
+**中长期技术债务（第四批 · 2026-05）**：`library` 对称、`多模态/打断/多租户`、硬件靶子、边缘 OTA、市场 UGC 等 **延后**；评估与启动条件见 **[handoff/TECHNICAL_DEBT_INVENTORY.md](../../handoff/TECHNICAL_DEBT_INVENTORY.md)**。**A1.1c** 原生窗 WebDriver 烟测 **基础建设已启动**（非全屋 E2E）。
+
 ---
 
 ## 每月固定习惯（建议）
