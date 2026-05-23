@@ -25,7 +25,7 @@ chrono = { version = "0.4", features = ["serde"] }
 async-trait = "0.1"
 walkdir = "2.5"
 tracing = "0.1"
-serde_yaml = "0.9"
+serde_yaml_ng = "0.10"
 
 [dev-dependencies]
 tempfile = "3"

@@ -63,7 +63,7 @@ fn parse_markdown_chunk(path: &Path, raw: &str) -> Result<KnowledgeChunk> {
             path.display()
         ))
     })?;
-    let fm: KnowledgeFrontMatter = serde_yaml::from_str(&fm_str).map_err(|e| {
+    let fm: KnowledgeFrontMatter = serde_yaml_ng::from_str(&fm_str).map_err(|e| {
         AppError::InvalidParameter(format!(
             "知识文件 front matter 解析失败 {}: {}",
             path.display(),

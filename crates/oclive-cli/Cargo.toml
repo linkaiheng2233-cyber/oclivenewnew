@@ -33,7 +33,7 @@ sysinfo = "0.33"
 fs2 = "0.4"
 ureq = { version = "2.10", default-features = false, features = ["tls"] }
 zip = { version = "0.6", default-features = false, features = ["deflate"] }
-serde_yaml = "0.9"
+serde_yaml_ng = "0.10"
 tar = "0.4"
 flate2 = "1"
 tempfile = "3"

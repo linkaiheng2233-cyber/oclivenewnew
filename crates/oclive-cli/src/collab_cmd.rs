@@ -93,7 +93,7 @@ fn load_config(root: &Path) -> Result<CollabConfig> {
         bail!("Not found: {}; run oclive collab init first", p.display());
     }
     let raw = fs::read_to_string(&p)?;
-    serde_yaml::from_str(&raw).context("parse .oclive-collab.yml")
+    serde_yaml_ng::from_str(&raw).context("parse .oclive-collab.yml")
 }
 
 fn run_init(args: CollabInitArgs) -> Result<()> {
@@ -105,7 +105,7 @@ fn run_init(args: CollabInitArgs) -> Result<()> {
     };
     fs::write(
         collab_file(&root),
-        serde_yaml::to_string(&cfg).context("serialize collab yml")?,
+        serde_yaml_ng::to_string(&cfg).context("serialize collab yml")?,
     )?;
     if !root.join(".git").is_dir() {
         git_in(&root, &["init"])?;

@@ -119,7 +119,7 @@ fn compose_path(cwd: &Path, file: Option<PathBuf>) -> PathBuf {
 fn load_compose(cwd: &Path, file: Option<PathBuf>) -> Result<(PathBuf, ComposeFile)> {
     let path = compose_path(cwd, file);
     let raw = fs::read_to_string(&path).with_context(|| format!("read {}", path.display()))?;
-    let file: ComposeFile = serde_yaml::from_str(&raw).context("parse compose yaml")?;
+    let file: ComposeFile = serde_yaml_ng::from_str(&raw).context("parse compose yaml")?;
     Ok((path, file))
 }
 
