@@ -2,6 +2,17 @@
 
 本仓库为 **A.I.Live** 桌面角色对话应用（**Tauri + Vue 3 + Rust**；工程代号 **oclive**）。自动化助手或外部 Agent 在修改代码前，请先阅读：
 
+### 发版版本（`main`，2026-05-22 候选）
+
+| 产物 | 版本 | 位置 |
+|------|------|------|
+| **桌面宿主** | **0.2.0** | 根 `package.json`、`src-tauri/Cargo.toml`、`src-tauri/tauri.conf.json` |
+| **`oclive-cli`** | **0.1.0** | `crates/oclive-cli/Cargo.toml` |
+| **`oclive_kernel_runtime`** | **0.2.0** | `crates/oclive_kernel_runtime/Cargo.toml` |
+| **`oclive_validation`** | **0.1.0** | `crates/oclive_validation/Cargo.toml` |
+
+独立 SemVer 策略见 [`creator-docs/development/RELEASE_VERSIONING.md`](creator-docs/development/RELEASE_VERSIONING.md)；用户可见变更见 [`CHANGELOG.md`](CHANGELOG.md) **`[0.2.0]`**。
+
 - **跨平台**：[`docs/DEV_CROSS_PLATFORM.md`](docs/DEV_CROSS_PLATFORM.md)。
 - **Rust Release / workspace 依赖**：[`handoff/RUST_RELEASE_AND_DEPENDENCIES.md`](handoff/RUST_RELEASE_AND_DEPENDENCIES.md)。
 - **性能与包体**：阶段总表 [`handoff/PERF_PHASES.md`](handoff/PERF_PHASES.md)（v0.2 P1–P3 已收尾）；[`handoff/PERFORMANCE_BASELINE_ACCEPTANCE.md`](handoff/PERFORMANCE_BASELINE_ACCEPTANCE.md)、[`handoff/FRONTEND_CHUNK_OPTIMIZATION.md`](handoff/FRONTEND_CHUNK_OPTIMIZATION.md)、[`handoff/BUNDLE_RESOURCES_SIZING.md`](handoff/BUNDLE_RESOURCES_SIZING.md)。

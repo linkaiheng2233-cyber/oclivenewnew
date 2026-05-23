@@ -2,7 +2,7 @@
 
 **结论**：**桌面应用、CLI、内核 crate 保持独立 SemVer**，首次对外发布不强行统一到同一数字。
 
-| 产物 | 当前版本（`main`） | 发版节奏 | 说明 |
+| 产物 | 当前版本（`main`，2026-05-22 候选） | 发版节奏 | 说明 |
 |------|-------------------|----------|------|
 | **桌面 Tauri**（`package.json` / `src-tauri`） | **0.2.0** | 用户可见功能与安装包 | 变更写入 [CHANGELOG.md](../../CHANGELOG.md) `[0.2.x]` |
 | **`oclive-cli`** | **0.1.0** | 脚手架与工具链 | CLI Breaking 见 [DEPRECATED_COMMANDS.md](../../crates/oclive-cli/DEPRECATED_COMMANDS.md) |
@@ -17,7 +17,7 @@
 
 ## 首次正式发布建议
 
-1. 将 [CHANGELOG.md](../../CHANGELOG.md) **`[Unreleased]`** 中已交付项归入 **`[0.2.0] - 2026-05-22`**（桌面）并保留 CLI/内核子节链接。
+1. [CHANGELOG.md](../../CHANGELOG.md) **`[0.2.0] - 2026-05-22`** 已整理；发版日打 tag 前做最终条目追加。
 2. 打 tag：**`oclivenewnew-v0.2.0`**（桌面）；可选 **`oclive-cli-v0.1.0`**。
 3. Breaking 角色包：必须链 [V1_TO_V2_MIGRATION.md](../role-pack/V1_TO_V2_MIGRATION.md)。
 

@@ -10,13 +10,15 @@
 
 ## 闸门与记录
 
-**核对日期**：2026-05-20 · **目标版本**：v0.2.0（workspace 版本号未 bump）
+**核对日期**：2026-05-20 · **目标版本**：**v0.2.0**（workspace 版本号已与 [RELEASE_VERSIONING.md](../creator-docs/development/RELEASE_VERSIONING.md) 对齐）
 
-- [x] **`npm run test:unit`** 已通过（15 tests，2026-05-20 复验）
+- [x] **`npm run test:unit`** 已通过（25 tests，2026-05-20 复验）
 - [x] **`npm run build`** 已通过（2026-05-20 复验）
-- [ ] **`npm run check:release`** — ⚠️ 发版当日在维护机执行（含全量 `cargo test`；Windows 集成测以 CI Ubuntu 为准；**不阻塞** v0.2.0 文档/工程扫尾）
-- [ ] **`CHANGELOG.md` / `CHANGELOG.en.md`** — ⚠️ 版本 bump 当日写入用户可见条目（双语同步；**不阻塞** 工程扫尾提交）
-- [ ] **版本号** — ⚠️ 发版 bump 当日对齐 `package.json`、`src-tauri/Cargo.toml`、`src-tauri/tauri.conf.json`（当前仍为 workspace 0.2.0）
+- [x] **`cargo clippy --workspace -D warnings`** 已通过（2026-05-20 工程扫尾复验）
+- [x] **`cargo test --workspace --lib`** 已通过（128 tests，2026-05-20 复验）
+- [ ] **`npm run check:release`** — ⚠️ 发版当日在维护机执行（含全量 `cargo test`；Windows 集成测以 CI Ubuntu 为准）
+- [x] **`CHANGELOG.md` / `CHANGELOG.en.md`** — **`[0.2.0] - 2026-05-22`** 条目已整理；发版日仅做最终条目追加与 tag
+- [x] **版本号** — 桌面 **0.2.0**、CLI **0.1.0**、**`oclive_kernel_runtime` 0.2.0** 与 `package.json` / 各 `Cargo.toml` 一致（发版日 bump 时再核对 `tauri.conf.json`）
 
 ---
 
