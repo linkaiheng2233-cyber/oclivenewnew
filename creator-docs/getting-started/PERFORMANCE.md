@@ -82,8 +82,18 @@ cargo run -p oclive-cli -- bench --release -o ./my-kernel --runs 20 --regression
 
 ### 5.3 Monolith 焊接矩阵（`--matrix`）
 
+**前置：生成含 `monolith.toml` 的工程**（矩阵 / 冷启动 / 长稳均需在可 `cargo run --release -- --api` 的内核项目上执行）：
+
 ```bash
-cargo run -p oclive-cli -- bench --matrix --release -o ./my-kernel --json > matrix.json
+cargo run -p oclive-cli -- init --monolith --non-interactive --preset minimal --project-name bench-kernel -o ./my-kernel-monolith
+# 可选：链接主仓 runtime（便于 HTTP 冷启动/长稳）
+cargo run -p oclive-cli -- init --monolith --non-interactive --preset minimal --kernel-source . -o ./my-kernel-monolith
+```
+
+**矩阵采样**：
+
+```bash
+cargo run -p oclive-cli -- bench --matrix --release -o ./my-kernel-monolith --json > matrix.json
 ```
 
 对 **档位 × preset** 组合各跑少量轮次（**4×3=12**），用于挑选嵌入式/低延迟预设下的最优焊接组合；须在含 **`monolith.toml`** 的内核脚手架工程上执行（主应用仓无该文件时用 `oclive init --monolith` 工程）。参考样例角色包：**`roles/mumu`**（v2 蓝图）。结论以本机 JSON 为准。
@@ -99,10 +109,12 @@ cargo run -p oclive-cli -- bench --matrix --release -o ./my-kernel --json > matr
 | memory | _TBD ms_ | _TBD ms_ | _TBD ms_ |
 | embedded | _TBD ms_ | _TBD ms_ | _TBD ms_ |
 
-**可复制命令**（将 `<monolith工程>` 换为含 `monolith.toml` 的目录，例如 `oclive init --monolith` 产出路径）：
+**可复制命令**（将 `./my-kernel-monolith` 换为含 `monolith.toml` 的目录）：
 
 ```bash
-cargo run -p oclive-cli -- bench --matrix --release -o <monolith工程> --json > matrix.json
+cargo run -p oclive-cli -- bench --matrix --release -o ./my-kernel-monolith --json > matrix.json
+cargo run -p oclive-cli -- bench --cold-start --cold-start-runs 5 --release -o ./my-kernel-monolith
+cargo run -p oclive-cli -- bench --soak --soak-duration 72 --release -o ./my-kernel-monolith --json > soak.json
 ```
 
 **预期**：终端或 `matrix.json` 含 **12 组**（4 档位 × 3 preset）的 `standard_ms` / `monolith_ms` 采样；将 p50 毫秒数填入上表。总耗时约 **2–4 小时**（含多次 Release 编译）。
@@ -110,7 +122,7 @@ cargo run -p oclive-cli -- bench --matrix --release -o <monolith工程> --json >
 ### 5.4 冷启动（`--cold-start`）
 
 ```bash
-cargo run -p oclive-cli -- bench --cold-start --cold-start-runs 5 -o <工程>
+cargo run -p oclive-cli -- bench --cold-start --cold-start-runs 5 --release -o ./my-kernel-monolith
 ```
 
 **预期**：每轮重启内核 `--api` 后打印 **首条 `/chat` 延迟**、**热启动平均**、**端口就绪时间**；5 轮结束后可将中位数填入本地记录或 `bench_history.json`（勿提交 Git）。
@@ -137,7 +149,7 @@ cargo run -p oclive-cli -- profile -o ./my-kernel
 ### 5.7 长稳运行（`bench --soak`）
 
 ```bash
-cargo run -p oclive-cli -- bench --soak --soak-duration 72 -o <工程> --json
+cargo run -p oclive-cli -- bench --soak --soak-duration 72 --release -o ./my-kernel-monolith --json > soak.json
 ```
 
 **预期**：JSON 含周期性 **RSS** 与 **聊天次数**；验收标准为 **最终 RSS ≤ 首样本 × 1.2**（超出时终端 ⚠️）。CLI 本地为加速采样（墙钟约 **2s × 小时数**，上限 120s）；真机 **72h** 请在专用环境运行同一命令并保留 `--json` 报告。
@@ -152,7 +164,7 @@ cargo run -p oclive-cli -- bench --soak --soak-duration 72 -o <工程> --json
 
 | 日期 | 说明 |
 |------|------|
-| 2026-05-20 | 矩阵 / 冷启动 / 长稳可复制命令与预期说明（v2 架构，无 v1 对比）。 |
+| 2026-05-20 | 确认 `bench --matrix` / `--cold-start` / `--soak` 与 `init --monolith` 命令可复制运行；补充三合一命令块。 |
 | 2026-05-20 | v2 蓝图说明；`bench --matrix` 与 `roles/mumu` 对齐；刷新 bloat 采样日期引用。 |
 | 2026-05-15 | 初版：对齐 `LIGHTWEIGHT_PROFILE.md` §6.7 与 `oclive bench` / Schema 路径。 |
 

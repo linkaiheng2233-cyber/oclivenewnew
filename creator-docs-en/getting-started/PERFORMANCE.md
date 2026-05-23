@@ -75,8 +75,25 @@ cargo run -p oclive-cli -- bench --release -o ./my-kernel --runs 20 --regression
 
 ### Monolith matrix (`--matrix`)
 
+**Prerequisite — scaffold a project with `monolith.toml`:**
+
 ```bash
-cargo run -p oclive-cli -- bench --matrix --release -o <monolith-project> --json > matrix.json
+cargo run -p oclive-cli -- init --monolith --non-interactive --preset minimal --project-name bench-kernel -o ./my-kernel-monolith
+cargo run -p oclive-cli -- init --monolith --non-interactive --preset minimal --kernel-source . -o ./my-kernel-monolith
+```
+
+**Matrix run:**
+
+```bash
+cargo run -p oclive-cli -- bench --matrix --release -o ./my-kernel-monolith --json > matrix.json
+```
+
+**Copy-paste suite** (matrix + cold-start + soak):
+
+```bash
+cargo run -p oclive-cli -- bench --matrix --release -o ./my-kernel-monolith --json > matrix.json
+cargo run -p oclive-cli -- bench --cold-start --cold-start-runs 5 --release -o ./my-kernel-monolith
+cargo run -p oclive-cli -- bench --soak --soak-duration 72 --release -o ./my-kernel-monolith --json > soak.json
 ```
 
 **Expected:** JSON with **12** tier×preset samples (`standard_ms` / `monolith_ms`); copy p50 values into the matrix table in the Chinese [PERFORMANCE.md](../../creator-docs/getting-started/PERFORMANCE.md) §5.3. Budget **2–4 hours** including Release builds.
@@ -84,7 +101,7 @@ cargo run -p oclive-cli -- bench --matrix --release -o <monolith-project> --json
 ### Cold start (`--cold-start`)
 
 ```bash
-cargo run -p oclive-cli -- bench --cold-start --cold-start-runs 5 -o <project>
+cargo run -p oclive-cli -- bench --cold-start --cold-start-runs 5 --release -o ./my-kernel-monolith
 ```
 
 **Expected:** Per-run **first `/chat` latency**, warm average, and API ready time; median over 5 runs should be stable (~**30 minutes** total).
@@ -92,7 +109,7 @@ cargo run -p oclive-cli -- bench --cold-start --cold-start-runs 5 -o <project>
 ### Soak (`--soak`)
 
 ```bash
-cargo run -p oclive-cli -- bench --soak --soak-duration 72 -o <project> --json
+cargo run -p oclive-cli -- bench --soak --soak-duration 72 --release -o ./my-kernel-monolith --json > soak.json
 ```
 
 **Expected:** Periodic **RSS** in JSON; pass when **final RSS ≤ first sample × 1.2** (CLI warns otherwise). Local runs may use accelerated wall clock; use a dedicated host for real **72h**.
@@ -109,6 +126,7 @@ cargo run -p oclive-cli -- profile -o ./my-kernel
 
 | Date | Notes |
 |------|--------|
+| 2026-05-20 | Verified `bench --matrix` / `--cold-start` / `--soak` and `init --monolith`; added copy-paste command block. |
 | 2026-05-15 | First publication; aligned with `LIGHTWEIGHT_PROFILE.md` §6.7 and `oclive bench` schema path. |
 
 [中文](../../creator-docs/getting-started/PERFORMANCE.md)
