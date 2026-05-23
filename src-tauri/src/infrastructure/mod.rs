@@ -16,6 +16,7 @@ pub mod ollama_client;
 pub mod ollama_timeouts;
 pub mod plugin_data;
 pub mod plugin_installer;
+pub mod plugin_protocol;
 pub mod plugin_state;
 pub mod remote_fallback_policy;
 pub mod remote_plugin;
