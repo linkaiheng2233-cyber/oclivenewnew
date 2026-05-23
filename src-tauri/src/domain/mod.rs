@@ -38,6 +38,7 @@ pub mod prompt_builder;
 pub mod relation_engine;
 pub mod remote_life_prompt;
 pub mod repository;
+#[cfg(test)]
 pub mod role_manager;
 pub mod slot_resolver;
 pub mod slot_runner;
@@ -72,6 +73,7 @@ pub use prompt_builder::{
 };
 pub use relation_engine::{RelationEngine, RelationState};
 pub use repository::{FavorabilityRepository, MemoryRepository};
+#[cfg(test)]
 pub use role_manager::RoleManager;
 pub use user_emotion_analyzer::{
     BuiltinUserEmotionAnalyzer, RemoteUserEmotionAnalyzerPlaceholder, UserEmotionAnalyzer,
