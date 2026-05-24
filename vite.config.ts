@@ -40,6 +40,8 @@ export default defineConfig(({ mode }) => ({
     include: [
       "vue3-sfc-loader",
       "mitt",
+      "pinia-plugin-persistedstate",
+      "pinia",
       "@vue-flow/core",
       "@vue-flow/background",
       "@vue-flow/controls",
