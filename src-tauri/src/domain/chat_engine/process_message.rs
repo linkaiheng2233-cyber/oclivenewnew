@@ -79,7 +79,7 @@ async fn run(
                 .get_app_setting("remote_fallback_to_builtin")
                 .await
                 .map_err(|source| ProcessMessageError::Stage {
-                    stage: ChatStage::StartupHealth.as_str(),
+                    stage: ChatStage::ReadRemoteFallbackSetting.as_str(),
                     source,
                 })
         },
