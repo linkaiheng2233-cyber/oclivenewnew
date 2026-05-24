@@ -626,8 +626,21 @@ watch(
   },
 )
 
-let unlistenPluginFs: (() => void) | undefined
-let unlistenProtocolInstall: (() => void) | undefined
+let unlistenPluginFs: (() => void) | Promise<(() => void)> | undefined
+let unlistenProtocolInstall: (() => void) | Promise<(() => void)> | undefined
+
+async function disposeTauriListener(
+  handle: (() => void) | Promise<(() => void)> | undefined,
+): Promise<void> {
+  if (!handle)
+    return
+  if (typeof handle === 'function') {
+    handle()
+    return
+  }
+  const unlisten = await handle
+  unlisten()
+}
 
 async function runPendingProtocolInstallsFromQueue(): Promise<void> {
   try {
@@ -706,8 +719,8 @@ onBeforeUnmount(() => {
   window.removeEventListener('keyup', onCtrlHoldHintKeyup)
   window.removeEventListener('resize', scheduleRefreshSplitLayout)
   clearCtrlLongPressTimer()
-  unlistenPluginFs?.()
-  unlistenProtocolInstall?.()
+  void disposeTauriListener(unlistenPluginFs)
+  void disposeTauriListener(unlistenProtocolInstall)
 })
 </script>
 
