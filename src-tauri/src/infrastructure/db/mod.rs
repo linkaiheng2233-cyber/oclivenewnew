@@ -8,6 +8,7 @@ use crate::error::{AppError, Result};
 use crate::models::*;
 use chrono::{DateTime, Utc};
 use dashmap::DashMap;
+use parking_lot::Mutex;
 #[allow(unused_imports)]
 use sqlx::{Row, SqlitePool};
 use std::sync::atomic::AtomicI64;
@@ -39,7 +40,7 @@ struct HealthPingCache {
 /// 数据库操作管理
 pub struct DbManager {
     pub(crate) pool: SqlitePool,
-    health_ping_cache: std::sync::Mutex<HealthPingCache>,
+    health_ping_cache: Mutex<HealthPingCache>,
     pub(crate) long_term_row_counts: DashMap<String, AtomicI64>,
     pub(crate) short_term_row_counts: DashMap<String, AtomicI64>,
 }
@@ -104,7 +105,7 @@ impl DbManager {
     pub fn new(pool: SqlitePool) -> Self {
         Self {
             pool,
-            health_ping_cache: std::sync::Mutex::new(HealthPingCache { ok_until: None }),
+            health_ping_cache: Mutex::new(HealthPingCache { ok_until: None }),
             long_term_row_counts: DashMap::new(),
             short_term_row_counts: DashMap::new(),
         }
@@ -112,7 +113,8 @@ impl DbManager {
 
     pub async fn health_ping(&self) -> Result<()> {
         const TTL: Duration = Duration::from_secs(5);
-        if let Ok(guard) = self.health_ping_cache.lock() {
+        {
+            let guard = self.health_ping_cache.lock();
             if guard
                 .ok_until
                 .is_some_and(|until| Instant::now() < until)
@@ -124,7 +126,8 @@ impl DbManager {
             .fetch_one(&self.pool)
             .await
             .map_err(|e| AppError::DatabaseError(format!("health_ping: {e}")))?;
-        if let Ok(mut guard) = self.health_ping_cache.lock() {
+        {
+            let mut guard = self.health_ping_cache.lock();
             guard.ok_until = Some(Instant::now() + TTL);
         }
         Ok(())
