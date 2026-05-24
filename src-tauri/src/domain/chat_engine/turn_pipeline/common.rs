@@ -151,12 +151,16 @@ pub(crate) async fn pre_llm(ctx: &TurnContext<'_>) -> TurnResult<PreLlmOutput> {
         );
     }
 
-    let mut memories = STAGES
-        .stage(
+    let (mut memories, user_relation_key) = tokio::try_join!(
+        STAGES.stage(
             ChatStage::LoadMemories,
             state.memory_repo.load_memories(srid, 10),
-        )
-        .await?;
+        ),
+        STAGES.stage(
+            ChatStage::ResolveUserRelationKey,
+            resolve_effective_user_relation_key(state, role, srid, Some(scene_id)),
+        ),
+    )?;
     let scene_m = role
         .memory_config
         .as_ref()
@@ -177,13 +181,6 @@ pub(crate) async fn pre_llm(ctx: &TurnContext<'_>) -> TurnResult<PreLlmOutput> {
                     },
                 )
             },
-        )
-        .await?;
-
-    let user_relation_key: String = STAGES
-        .stage(
-            ChatStage::ResolveUserRelationKey,
-            resolve_effective_user_relation_key(state, role, srid, Some(scene_id)),
         )
         .await?;
     let seed_favor = role.initial_favorability_for_relation(user_relation_key.as_str());
