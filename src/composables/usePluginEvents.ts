@@ -1,4 +1,3 @@
-import type { Ref } from 'vue'
 import { onBeforeUnmount, onMounted } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { hostEventBus } from '../lib/hostEventBus'
