@@ -1,6 +1,5 @@
-use lru::LruCache;
+use indexmap::IndexMap;
 use parking_lot::RwLock;
-use std::num::NonZeroUsize;
 use std::sync::Arc;
 use std::time::{Duration, Instant};
 
@@ -24,12 +23,62 @@ impl<T: Clone> CacheEntry<T> {
     }
 }
 
+/// 有界插入顺序 map（读路径不刷新顺序，淘汰最旧插入项）。
+#[derive(Debug)]
+struct BoundedInsertMap<T: Clone> {
+    map: IndexMap<String, CacheEntry<T>>,
+    max_capacity: usize,
+}
+
+impl<T: Clone> BoundedInsertMap<T> {
+    fn with_capacity(max_capacity: usize) -> Self {
+        Self {
+            map: IndexMap::new(),
+            max_capacity: max_capacity.max(1),
+        }
+    }
+
+    fn len(&self) -> usize {
+        self.map.len()
+    }
+
+    fn is_empty(&self) -> bool {
+        self.map.is_empty()
+    }
+
+    fn clear(&mut self) {
+        self.map.clear();
+    }
+
+    fn peek(&self, key: &str) -> Option<&CacheEntry<T>> {
+        self.map.get(key)
+    }
+
+    fn put(&mut self, key: String, entry: CacheEntry<T>) {
+        if self.map.contains_key(&key) {
+            self.map.swap_remove(&key);
+        }
+        self.map.insert(key, entry);
+        while self.map.len() > self.max_capacity {
+            self.map.shift_remove_index(0);
+        }
+    }
+
+    fn pop(&mut self, key: &str) -> Option<CacheEntry<T>> {
+        self.map.swap_remove(key)
+    }
+
+    fn iter(&self) -> impl Iterator<Item = (&String, &CacheEntry<T>)> {
+        self.map.iter()
+    }
+}
+
 /// 通用缓存管理器
 ///
 /// 提供线程安全的内存缓存，支持 TTL 过期机制
 #[derive(Debug)]
 pub struct Cache<T: Clone + Send + Sync> {
-    data: Arc<RwLock<LruCache<String, CacheEntry<T>>>>,
+    data: Arc<RwLock<BoundedInsertMap<T>>>,
 }
 
 impl<T: Clone + Send + Sync> Cache<T> {
@@ -42,16 +91,15 @@ impl<T: Clone + Send + Sync> Cache<T> {
     /// 创建带容量上限的缓存
     #[must_use]
     pub fn with_capacity(max_capacity: usize) -> Self {
-        let cap = NonZeroUsize::new(max_capacity.max(1)).unwrap_or(NonZeroUsize::MIN);
         Self {
-            data: Arc::new(RwLock::new(LruCache::new(cap))),
+            data: Arc::new(RwLock::new(BoundedInsertMap::with_capacity(max_capacity))),
         }
     }
 
     /// 获取缓存值；过期条目会在写锁下移除。
     ///
-    /// **LRU 语义（有意降级）**：读命中路径只持有读锁，且通过 [`LruCache::peek`]
-    /// 不刷新 LRU 访问顺序。淘汰依据**插入顺序**、容量上限与 TTL，而非严格 LRU。
+    /// **LRU 语义（有意降级）**：读命中路径只持有读锁，且通过 `peek`
+    /// 不刷新访问顺序。淘汰依据**插入顺序**、容量上限与 TTL，而非严格 LRU。
     /// 适用于 `personality_snapshots` 等读多写少、对 LRU 精度不敏感的场景。
     #[must_use]
     pub fn get(&self, key: &str) -> Option<T> {
@@ -64,7 +112,7 @@ impl<T: Clone + Send + Sync> Cache<T> {
             }
         }
         let mut cache = self.data.write();
-        match cache.get(key) {
+        match cache.peek(key) {
             Some(entry) if !entry.is_expired() => Some(entry.data.clone()),
             Some(_) => {
                 cache.pop(key);
