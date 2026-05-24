@@ -103,7 +103,11 @@ pub fn init_tracing_with_log_dir(
 }
 
 fn sanitize_plugin_id_for_log(plugin_id: &str) -> String {
-    plugin_id.chars().take(64).collect()
+    plugin_id
+        .chars()
+        .filter(|c| !c.is_control())
+        .take(64)
+        .collect()
 }
 
 use std::fs;
@@ -212,7 +216,11 @@ fn serve_ocliveplugin_asset(
 
 /// 独立 HTTP API 入口（`--api` 子进程）；无 Tauri 窗口与 IPC。
 pub fn run_api_server(port: u16) {
+    let worker_threads = std::thread::available_parallelism()
+        .map(|n| (n.get() / 2).max(2))
+        .unwrap_or(2);
     let rt = match tokio::runtime::Builder::new_multi_thread()
+        .worker_threads(worker_threads)
         .enable_all()
         .build()
     {
