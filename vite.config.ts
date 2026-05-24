@@ -4,6 +4,7 @@ import { fileURLToPath } from "node:url";
 import { defineConfig } from "vite";
 import vue from "@vitejs/plugin-vue";
 import { visualizer } from "rollup-plugin-visualizer";
+import { resolveManualChunk } from "./src/build/manualChunks";
 
 const host = process.env.TAURI_DEV_HOST;
 const rootDir = path.dirname(fileURLToPath(import.meta.url));
@@ -65,20 +66,7 @@ export default defineConfig(({ mode }) => ({
     rollupOptions: {
       output: {
         manualChunks(id) {
-          if (!id.includes("node_modules")) return;
-          // Order matters: more specific patterns before broader `@vue/` / `/vue/` matches.
-          if (id.includes("@sentry")) return "vendor-sentry";
-          if (id.includes("@tauri-apps")) return "vendor-tauri";
-          if (id.includes("vue-i18n")) return "vendor-i18n";
-          if (id.includes("pinia-plugin-persistedstate")) return "vendor-pinia-persist";
-          if (id.includes("pinia")) return "vendor-pinia";
-          // ArchitectureGraphFlow lazy-loads @vue-flow; keep separate from vendor-vue.
-          if (id.includes("@vue-flow")) return "vendor-vue-flow";
-          if (id.includes("vue3-sfc-loader")) return "vendor-sfc-loader";
-          if (id.includes("acorn")) return "vendor-acorn";
-          if (id.includes("idb-keyval")) return "vendor-idb";
-          if (id.includes("/vue/") || id.includes("@vue/")) return "vendor-vue";
-          return "vendor-misc";
+          return resolveManualChunk(id);
         },
       },
     },
