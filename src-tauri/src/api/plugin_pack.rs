@@ -42,13 +42,13 @@ fn ensure_manifest_valid(manifest_path: &Path) -> Result<(), AppError> {
             return Err(AppError::InvalidParameter(format!(
                 "manifest missing field {}",
                 k
-            )).into());
+            )));
         }
     }
     if v.get("process").is_none() && v.get("remote_url").is_none() {
         return Err(AppError::InvalidParameter(
             "manifest must include process or remote_url".into(),
-        ).into());
+        ));
     }
     Ok(())
 }
@@ -65,8 +65,10 @@ pub fn pack_plugin(
         return Err(AppError::InvalidParameter("plugin_id required".into()).into());
     }
     let root = plugin_root_from_state(&state, pid).ok_or_else(|| {
-        AppError::InvalidParameter(format!("plugin not found in catalog: {}", pid))
-            
+        CommandError::from(AppError::InvalidParameter(format!(
+            "plugin not found in catalog: {}",
+            pid
+        )))
     })?;
     let manifest_path = root.join("manifest.json");
     ensure_manifest_valid(&manifest_path)?;
@@ -79,10 +81,9 @@ pub fn pack_plugin(
                 .unwrap_or_else(|| Path::new("."))
                 .to_path_buf()
         });
-    fs::create_dir_all(&out_dir).map_err(|e| AppError::IoError(e))?;
+    fs::create_dir_all(&out_dir).map_err(AppError::IoError)?;
     let archive_path = out_dir.join(format!("{}.oclive-plugin", pid));
-    let f =
-        fs::File::create(&archive_path).map_err(|e| AppError::IoError(e))?;
+    let f = fs::File::create(&archive_path).map_err(AppError::IoError)?;
     let mut zip = zip::ZipWriter::new(f);
     let opt = zip::write::SimpleFileOptions::default()
         .compression_method(zip::CompressionMethod::Deflated)
@@ -100,7 +101,7 @@ pub fn pack_plugin(
         zip.start_file(name, opt).map_err(|e| {
             AppError::Unknown(format!("zip start file failed: {}", e))
         })?;
-        let bytes = fs::read(p).map_err(|e| AppError::IoError(e))?;
+        let bytes = fs::read(p).map_err(AppError::IoError)?;
         zip.write_all(&bytes).map_err(|e| {
             AppError::Unknown(format!("zip write failed: {}", e))
         })?;
@@ -108,7 +109,7 @@ pub fn pack_plugin(
     zip.finish().map_err(|e| {
         AppError::Unknown(format!("zip finalize failed: {}", e))
     })?;
-    let blob = fs::read(&archive_path).map_err(|e| AppError::IoError(e))?;
+    let blob = fs::read(&archive_path).map_err(AppError::IoError)?;
     let mut hasher = Sha256::new();
     hasher.update(&blob);
     let digest_bytes = hasher.finalize();
@@ -129,7 +130,7 @@ pub fn pack_plugin(
             .map_err(AppError::from)
             ?,
     )
-    .map_err(|e| AppError::IoError(e))?;
+    .map_err(AppError::IoError)?;
     Ok(PackPluginResponse {
         archive_path: archive_path.to_string_lossy().to_string(),
         signature_path: signature_path.to_string_lossy().to_string(),

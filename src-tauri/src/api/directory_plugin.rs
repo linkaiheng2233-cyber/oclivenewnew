@@ -1,7 +1,6 @@
 //! 目录式插件：启动引导与 JSON-RPC 透传（B2）。
 
 use crate::api::error::ApiError;
-use crate::error::AppError;
 use crate::infrastructure::directory_plugins::{
     dependency_report, normalize_plugin_rel, normalize_ui_slot_appearance_id,
     parse_manifest_version, plugin_scan_container_roots, HostPluginsFile, OclivePluginManifest,

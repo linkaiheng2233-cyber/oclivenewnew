@@ -493,8 +493,8 @@ async fn dispatch_bridge_command(
                 .to_string();
             delete_role_impl(state, role_id).await
         }
-        "update_settings" => update_settings_impl(state, &params).await.map_err(Into::into),
-        "get_conversation_list" => get_conversation_list_impl(state).await.map_err(Into::into),
+        "update_settings" => update_settings_impl(state, &params).await,
+        "get_conversation_list" => get_conversation_list_impl(state).await,
         "update_prompt" => Ok(json!({
             "ok": false,
             "error": "not_implemented",

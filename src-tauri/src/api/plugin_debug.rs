@@ -1,7 +1,6 @@
 //! V1 专业模式：目录插件「开发者调试面板」后端命令。
 
 use crate::api::error::ApiError;
-use crate::error::AppError;
 use crate::infrastructure::directory_plugins::{OclivePluginManifest, PluginProcessDebugInfo};
 use crate::infrastructure::remote_plugin::{
     invoke_directory_plugin_rpc_blocking, RemoteRpcChannel,

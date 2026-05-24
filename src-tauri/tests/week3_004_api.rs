@@ -83,7 +83,7 @@ async fn week3_004_get_role_info_before_runtime_fails() {
         .expect("state");
 
     let err = get_role_info_impl(&state, "mumu", None).await.unwrap_err();
-    assert!(err.contains("load_role"));
+    assert!(err.to_string().contains("load_role"));
 }
 
 #[tokio::test]
@@ -305,7 +305,7 @@ async fn week3_004_local_memory_provider_id_rejects_non_memory_module() {
     )
     .await
     .unwrap_err();
-    assert!(err.contains("module=memory"));
+    assert!(err.to_string().contains("module=memory"));
 }
 
 #[tokio::test]
@@ -496,8 +496,8 @@ async fn week3_004_create_event_invalid_type() {
     )
     .await
     .unwrap_err();
-    assert!(err.contains("INVALID_PARAMETER"));
-    assert!(err.contains("Invalid event_type"));
+    assert!(err.to_string().contains("INVALID_PARAMETER"));
+    assert!(err.to_string().contains("Invalid event_type"));
 }
 
 #[tokio::test]
@@ -519,7 +519,7 @@ async fn week3_004_query_limits_return_invalid_parameter_code() {
     )
     .await
     .unwrap_err();
-    assert!(err.contains("INVALID_PARAMETER"));
+    assert!(err.to_string().contains("INVALID_PARAMETER"));
 
     let err2 = query_events_impl(
         &state,
@@ -531,7 +531,7 @@ async fn week3_004_query_limits_return_invalid_parameter_code() {
     )
     .await
     .unwrap_err();
-    assert!(err2.contains("INVALID_PARAMETER"));
+    assert!(err2.to_string().contains("INVALID_PARAMETER"));
 }
 
 #[tokio::test]
@@ -594,7 +594,7 @@ async fn week3_004_set_user_relation_and_evolution_factor() {
     )
     .await
     .expect_err("factor too low");
-    assert!(err.contains("INVALID_PARAMETER") || err.contains("event_impact"));
+    assert!(err.to_string().contains("INVALID_PARAMETER") || err.to_string().contains("event_impact"));
 
     let err2 = set_user_relation_impl(
         &state,
@@ -605,7 +605,7 @@ async fn week3_004_set_user_relation_and_evolution_factor() {
     )
     .await
     .expect_err("bad relation");
-    assert!(err2.contains("unknown relation"));
+    assert!(err2.to_string().contains("unknown relation"));
 }
 
 #[tokio::test]
@@ -649,7 +649,7 @@ async fn week3_004_set_scene_user_relation_validates_and_persists() {
     )
     .await
     .expect_err("invalid scene");
-    assert!(bad_scene.contains("scene_id not in role pack"));
+    assert!(bad_scene.to_string().contains("scene_id not in role pack"));
 }
 
 #[tokio::test]

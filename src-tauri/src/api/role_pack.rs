@@ -1,4 +1,3 @@
-use crate::error::AppError;
 use crate::infrastructure::{export_role_pack, import_role_pack, peek_role_pack_manifest};
 use crate::models::dto::RolePackPeekResponse;
 use crate::state::AppState;

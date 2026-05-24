@@ -1,4 +1,3 @@
-use crate::error::AppError;
 use crate::state::AppState;
 use tauri::State;
 use crate::api::error::CommandError;

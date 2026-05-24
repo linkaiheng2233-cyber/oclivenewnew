@@ -179,7 +179,7 @@ pub async fn export_chat_logs_impl(
                 plugin_resolution_debug: None,
             };
             serde_json::to_string_pretty(&root)
-                .map_err(|e| AppError::SerializationError(e))?
+                .map_err(AppError::SerializationError)?
         } else {
             build_txt(&blocks, None)
         };
@@ -226,7 +226,7 @@ pub async fn export_chat_logs_impl(
             plugin_resolution_debug: plugin_debug,
         };
         serde_json::to_string_pretty(&root)
-            .map_err(|e| AppError::SerializationError(e))?
+            .map_err(AppError::SerializationError)?
     } else {
         build_txt(&blocks, plugin_debug.as_ref())
     };

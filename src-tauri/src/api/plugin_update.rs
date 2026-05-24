@@ -163,7 +163,7 @@ pub fn extract_plugin_zip(
     unzip_archive(&zip_path, tmp.path())?;
     let staged = find_manifest_root(tmp.path())?;
     let manifest = OclivePluginManifest::load_from_dir(&staged)
-        .map_err(|e| AppError::InvalidParameter(e))?;
+        .map_err(AppError::InvalidParameter)?;
     if manifest.id.trim() != pid {
         return Err(AppError::InvalidParameter(format!(
             "manifest id={} does not match target plugin {}",
@@ -226,7 +226,7 @@ pub fn install_plugin_from_zip(zip_path: String, state: State<'_, AppState>) -> 
     unzip_archive(&zip_path, tmp.path())?;
     let staged = find_manifest_root(tmp.path())?;
     let manifest = OclivePluginManifest::load_from_dir(&staged)
-        .map_err(|e| AppError::InvalidParameter(e))?;
+        .map_err(AppError::InvalidParameter)?;
     let pid = manifest.id.trim().to_string();
     install_staged_directory_plugin(&state, &staged, &pid)?;
     Ok(pid)
