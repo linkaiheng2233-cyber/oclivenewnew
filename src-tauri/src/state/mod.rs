@@ -22,7 +22,8 @@ use crate::models::{
 };
 use arc_swap::ArcSwap;
 use dashmap::DashMap;
-use parking_lot::{Mutex, RwLock};
+use parking_lot::RwLock;
+use tokio::sync::OnceCell;
 use std::collections::HashMap;
 use std::path::{Path, PathBuf};
 use std::sync::atomic::{AtomicBool, Ordering};
@@ -43,8 +44,8 @@ pub struct AppState {
     pub favorability_repo: Arc<dyn FavorabilityRepository>,
     pub llm: Arc<dyn LlmClient>,
     pub role_cache: Arc<RwLock<HashMap<String, Arc<Role>>>>,
-    /// 同一 `role_id` 冷加载串行化；表项在无人再持有对应 `Arc` 时移除（见 [`AppState::load_role_cached_async`]）。
-    role_load_inflight: DashMap<String, Arc<Mutex<()>>>,
+    /// 同一 `role_id` 冷加载去重（[`OnceCell`]）；加载完成后写入 [`Self::role_cache`] 并移除此表项。
+    role_load_inflight: DashMap<String, Arc<OnceCell<Arc<Role>>>>,
     /// HTTP `--api` 试聊从任意 `role_path` 加载的角色；不写入 [`Self::role_cache`]。
     pub(crate) http_api_roles: DashMap<String, Arc<Role>>,
     pub session_cache: Arc<SessionCache>,
@@ -163,43 +164,39 @@ impl AppState {
             return Ok(Arc::clone(r));
         }
         if let Some(r) = self.http_api_roles.get(role_id) {
-            return Ok(Arc::clone(r.value()));
+            let loaded = Arc::clone(r.value());
+            self.insert_role_cache(role_id, &loaded);
+            return Ok(loaded);
         }
-        let key = role_id.to_string();
-        let gate = self
+
+        let cell = self
             .role_load_inflight
-            .entry(key.clone())
-            .or_insert_with(|| Arc::new(Mutex::new(())))
+            .entry(role_id.to_string())
+            .or_insert_with(|| Arc::new(OnceCell::new()))
             .clone();
 
-        {
-            let _serial = gate.lock();
-            if let Some(r) = self.role_cache.read().get(role_id) {
-                return Ok(Arc::clone(r));
-            }
-            if let Some(r) = self.http_api_roles.get(role_id) {
-                return Ok(Arc::clone(r.value()));
-            }
-        }
-
         let storage = self.storage.clone();
-        let role_id_blocking = role_id.to_string();
-        let role = tokio::task::spawn_blocking(move || storage.load_role(&role_id_blocking))
-            .await
-            .map_err(|e| crate::error::AppError::Unknown(format!("load_role task failed: {e}")))?
-            ?;
+        let role_id_owned = role_id.to_string();
+        let loaded = cell
+            .get_or_try_init(|| async move {
+                let role = tokio::task::spawn_blocking(move || storage.load_role(&role_id_owned))
+                    .await
+                    .map_err(|e| {
+                        crate::error::AppError::Unknown(format!("load_role task failed: {e}"))
+                    })??;
+                Ok::<Arc<Role>, crate::error::AppError>(Arc::new(role))
+            })
+            .await?;
 
-        let _serial = gate.lock();
-        if let Some(r) = self.role_cache.read().get(role_id) {
-            return Ok(Arc::clone(r));
-        }
-        let candidate = Arc::new(role);
+        self.insert_role_cache(role_id, loaded);
+        self.role_load_inflight.remove(role_id);
+        Ok(Arc::clone(loaded))
+    }
+
+    fn insert_role_cache(&self, role_id: &str, role: &Arc<Role>) {
         let mut map = self.role_cache.write();
-        if let Some(r) = map.get(role_id) {
-            return Ok(Arc::clone(r));
-        }
-        map.insert(role_id.to_string(), Arc::clone(&candidate));
-        Ok(candidate)
+        map.entry(role_id.to_string())
+            .or_insert_with(|| Arc::clone(role));
     }
 
     /// 丢弃该 manifest 角色及其试聊会话命名空间下的有效性格缓存（磁盘包重载、`default_personality` / 边界等已变时必须调用）。
@@ -217,6 +214,7 @@ impl AppState {
             role.scene_text_cache.write().clear();
         }
         self.role_cache.write().remove(role_id);
+        self.role_load_inflight.remove(role_id);
         self.invalidate_personality_cache_for_role(role_id);
     }
     /// # Errors
