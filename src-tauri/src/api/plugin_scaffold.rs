@@ -5,6 +5,7 @@ use std::fs;
 use std::path::{Path, PathBuf};
 use tauri::Manager;
 use tauri::State;
+use crate::api::error::CommandError;
 
 #[derive(Debug, Clone, Deserialize)]
 #[serde(rename_all = "camelCase")]
@@ -114,14 +115,14 @@ pub fn create_plugin_scaffold(
     req: CreatePluginScaffoldRequest,
     state: State<'_, AppState>,
     app: tauri::AppHandle,
-) -> Result<CreatePluginScaffoldResponse, String> {
+) -> Result<CreatePluginScaffoldResponse, CommandError> {
     let plugin_id = safe_file_stem(req.plugin_id.trim());
     if plugin_id.is_empty() {
-        return Err(AppError::InvalidParameter("plugin_id required".into()).to_frontend_error());
+        return Err(AppError::InvalidParameter("plugin_id required".into()).into());
     }
     let plugin_name = req.plugin_name.trim();
     if plugin_name.is_empty() {
-        return Err(AppError::InvalidParameter("plugin_name required".into()).to_frontend_error());
+        return Err(AppError::InvalidParameter("plugin_name required".into()).into());
     }
     let base = req
         .base_dir
@@ -129,7 +130,7 @@ pub fn create_plugin_scaffold(
         .map(PathBuf::from)
         .unwrap_or_else(|| default_plugins_root(&state));
     if let Err(e) = fs::create_dir_all(&base) {
-        return Err(AppError::IoError(e).to_frontend_error());
+        return Err(AppError::IoError(e).into());
     }
     let plugin_dir = base.join(plugin_id.as_str());
     if plugin_dir.exists() {
@@ -137,7 +138,7 @@ pub fn create_plugin_scaffold(
             "plugin dir already exists: {}",
             plugin_dir.display()
         ))
-        .to_frontend_error());
+        .into());
     }
     if let Err(e) = write_template_files(
         &plugin_dir,
@@ -146,7 +147,7 @@ pub fn create_plugin_scaffold(
         req.language.trim(),
         req.plugin_type.trim(),
     ) {
-        return Err(e.to_frontend_error());
+        return Err(e.into());
     }
     let _ = tauri::api::shell::open(&app.shell_scope(), &*plugin_dir.to_string_lossy(), None);
     Ok(CreatePluginScaffoldResponse {

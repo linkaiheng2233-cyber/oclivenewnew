@@ -22,6 +22,7 @@ use std::collections::{HashMap, HashSet};
 use std::hash::{Hash, Hasher};
 use std::time::{Duration, Instant};
 use tauri::State;
+use crate::api::error::{map_directory_rpc_url_error, CommandError};
 
 #[derive(Debug, Clone, Serialize)]
 #[serde(rename_all = "camelCase")]
@@ -335,7 +336,7 @@ fn shell_plugin_id_resolved(
 pub fn get_directory_plugin_bootstrap(
     role_id: Option<String>,
     state: State<'_, AppState>,
-) -> Result<DirectoryPluginBootstrapDto, String> {
+) -> Result<DirectoryPluginBootstrapDto, CommandError> {
     Ok(directory_plugin_bootstrap_dto(&state, role_id))
 }
 /// # Errors
@@ -347,7 +348,7 @@ pub fn read_plugin_asset_text(
     plugin_id: String,
     rel: String,
     state: State<'_, AppState>,
-) -> Result<String, String> {
+) -> Result<String, CommandError> {
     let pid = plugin_id.trim();
     if pid.is_empty() {
         return Err(ApiError::InvalidParameter {
@@ -383,10 +384,12 @@ pub fn read_plugin_asset_text(
         .to_kernel_json()
     })?;
     let path_canon = path.canonicalize().map_err(|e| {
-        ApiError::Io {
-            message: format!("read_plugin_asset_text: {}", e),
-        }
-        .to_kernel_json()
+        CommandError::from(
+            ApiError::Io {
+                message: format!("read_plugin_asset_text: {}", e),
+            }
+            .to_string(),
+        )
     })?;
     if !path_canon.starts_with(&root_canon) {
         return Err(ApiError::PermissionDenied {
@@ -395,10 +398,12 @@ pub fn read_plugin_asset_text(
         .into());
     }
     std::fs::read_to_string(&path_canon).map_err(|e| {
-        ApiError::Io {
-            message: e.to_string(),
-        }
-        .to_kernel_json()
+        CommandError::from(
+            ApiError::Io {
+                message: e.to_string(),
+            }
+            .to_string(),
+        )
     })
 }
 /// # Errors
@@ -410,7 +415,7 @@ pub fn is_host_event_subscribed(
     event: String,
     role_id: Option<String>,
     state: State<'_, AppState>,
-) -> Result<bool, String> {
+) -> Result<bool, CommandError> {
     let ev = event.trim();
     if ev.is_empty() {
         return Ok(false);
@@ -445,7 +450,7 @@ pub struct DirectoryPluginInvokeDto {
 pub fn directory_plugin_invoke(
     req: DirectoryPluginInvokeDto,
     state: State<'_, AppState>,
-) -> Result<Value, String> {
+) -> Result<Value, CommandError> {
     let pid = req.plugin_id.trim();
     if pid.is_empty() {
         return Err(ApiError::InvalidParameter {
@@ -456,14 +461,13 @@ pub fn directory_plugin_invoke(
     let url = state
         .directory_plugins
         .ensure_rpc_url(pid)
-        .map_err(|e| crate::api::error::map_directory_rpc_url_error(pid, e))?;
-    invoke_directory_plugin_rpc_blocking(
+        .map_err(|e| CommandError::from(map_directory_rpc_url_error(pid, e)))?;
+    Ok(invoke_directory_plugin_rpc_blocking(
         &url,
         req.method.trim(),
         req.params,
         RemoteRpcChannel::Plugin,
-    )
-    .map_err(|e: AppError| e.to_frontend_error())
+    )?)
 }
 
 #[derive(Debug, Clone, Serialize)]
@@ -612,7 +616,7 @@ fn build_directory_plugin_catalog(state: &AppState) -> Vec<DirectoryPluginCatalo
 /// Returns [`Err`] with a human-readable message when the operation fails.
 pub fn get_directory_plugin_catalog_impl(
     state: &AppState,
-) -> Result<Vec<DirectoryPluginCatalogEntry>, String> {
+) -> Result<Vec<DirectoryPluginCatalogEntry>, CommandError> {
     let fp = plugin_catalog_fingerprint(state).map_err(|e| {
         ApiError::Io {
             message: e.to_string(),
@@ -642,7 +646,7 @@ pub fn get_directory_plugin_catalog_impl(
 #[tauri::command]
 pub fn get_directory_plugin_catalog(
     state: State<'_, AppState>,
-) -> Result<Vec<DirectoryPluginCatalogEntry>, String> {
+) -> Result<Vec<DirectoryPluginCatalogEntry>, CommandError> {
     get_directory_plugin_catalog_impl(&state)
 }
 
@@ -690,7 +694,7 @@ pub struct PluginStateGetResponse {
 pub fn get_plugin_state_impl(
     role_id: &str,
     state: &AppState,
-) -> Result<PluginStateGetResponse, String> {
+) -> Result<PluginStateGetResponse, CommandError> {
     let rt = &state.directory_plugins;
     let rid = role_id.trim();
     Ok(PluginStateGetResponse {
@@ -706,7 +710,7 @@ pub fn get_plugin_state_impl(
 pub fn get_plugin_state(
     role_id: String,
     state: State<'_, AppState>,
-) -> Result<PluginStateGetResponse, String> {
+) -> Result<PluginStateGetResponse, CommandError> {
     get_plugin_state_impl(&role_id, &state)
 }
 /// # Errors
@@ -717,9 +721,10 @@ pub fn save_plugin_state(
     role_id: String,
     state: RolePluginStateDto,
     app: State<'_, AppState>,
-) -> Result<(), String> {
+) -> Result<(), CommandError> {
     app.directory_plugins
         .save_role_plugin_state(role_id.trim(), state.into())
+        .map_err(Into::into)
 }
 /// # Errors
 ///
@@ -728,8 +733,10 @@ pub fn save_plugin_state(
 pub fn save_global_plugin_state(
     state: RolePluginStateDto,
     app: State<'_, AppState>,
-) -> Result<(), String> {
-    app.directory_plugins.save_global_plugin_state(state.into())
+) -> Result<(), CommandError> {
+    app.directory_plugins
+        .save_global_plugin_state(state.into())
+        .map_err(Into::into)
 }
 /// # Errors
 ///
@@ -738,14 +745,15 @@ pub fn save_global_plugin_state(
 pub fn reset_plugin_state_to_role_default(
     role_id: String,
     app: State<'_, AppState>,
-) -> Result<(), String> {
+) -> Result<(), CommandError> {
     let role = app
         .storage
         .load_role(role_id.trim())
-        .map_err(|e| e.to_frontend_error())?;
+        ?;
     let ui = role.plugin_state_ui_baseline();
     app.directory_plugins
         .reset_role_plugin_state_from_ui(role_id.trim(), ui)
+        .map_err(Into::into)
 }
 
 #[cfg(test)]

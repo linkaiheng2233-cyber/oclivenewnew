@@ -10,6 +10,7 @@ use crate::state::AppState;
 use serde::Deserialize;
 use serde_json::{json, Value};
 use tauri::State;
+use crate::api::error::CommandError;
 /// # Errors
 ///
 /// Returns [`Err`] with a human-readable message when the operation fails.
@@ -18,17 +19,18 @@ pub fn spawn_plugin_for_test(
     plugin_id: String,
     config_json: Option<String>,
     state: State<'_, AppState>,
-) -> Result<PluginProcessDebugInfo, String> {
+) -> Result<PluginProcessDebugInfo, CommandError> {
     let cfg = config_json.as_deref();
     state
         .directory_plugins
         .spawn_plugin_for_test(plugin_id.trim(), cfg)
+        .map_err(Into::into)
 }
 /// # Errors
 ///
 /// Returns [`Err`] with a human-readable message when the operation fails.
 #[tauri::command]
-pub fn kill_plugin_process(plugin_id: String, state: State<'_, AppState>) -> Result<(), String> {
+pub fn kill_plugin_process(plugin_id: String, state: State<'_, AppState>) -> Result<(), CommandError> {
     let id = plugin_id.trim();
     if id.is_empty() {
         return Err(ApiError::InvalidParameter {
@@ -57,7 +59,7 @@ pub fn get_plugin_logs(plugin_id: String, lines: usize, state: State<'_, AppStat
 ///
 /// Returns [`Err`] with a human-readable message when the operation fails.
 #[tauri::command]
-pub fn clear_plugin_logs(plugin_id: String, state: State<'_, AppState>) -> Result<(), String> {
+pub fn clear_plugin_logs(plugin_id: String, state: State<'_, AppState>) -> Result<(), CommandError> {
     let id = plugin_id.trim();
     if id.is_empty() {
         return Err(ApiError::InvalidParameter {
@@ -84,7 +86,7 @@ pub struct TestPluginMethodDto {
 pub fn test_plugin_method(
     req: TestPluginMethodDto,
     state: State<'_, AppState>,
-) -> Result<Value, String> {
+) -> Result<Value, CommandError> {
     let pid = req.plugin_id.trim();
     if pid.is_empty() {
         return Err(ApiError::InvalidParameter {
@@ -102,8 +104,7 @@ pub fn test_plugin_method(
     let url = state
         .directory_plugins
         .ensure_rpc_url_for_debug(pid, None)?;
-    invoke_directory_plugin_rpc_blocking(&url, method, req.params, RemoteRpcChannel::Plugin)
-        .map_err(|e: AppError| e.to_frontend_error())
+    Ok(invoke_directory_plugin_rpc_blocking(&url, method, req.params, RemoteRpcChannel::Plugin)?)
 }
 /// # Errors
 ///
@@ -112,7 +113,7 @@ pub fn test_plugin_method(
 pub fn discover_plugin_methods(
     plugin_id: String,
     state: State<'_, AppState>,
-) -> Result<Vec<String>, String> {
+) -> Result<Vec<String>, CommandError> {
     let pid = plugin_id.trim();
     if pid.is_empty() {
         return Err(ApiError::InvalidParameter {

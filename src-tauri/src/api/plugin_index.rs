@@ -11,6 +11,7 @@ use semver::Version;
 use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
 use tauri::State;
+use crate::api::error::CommandError;
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
@@ -110,11 +111,11 @@ fn build_snapshot(
 pub fn sync_plugin_index_command(
     index_url: Option<String>,
     state: State<'_, AppState>,
-) -> Result<PluginMarketSnapshot, String> {
+) -> Result<PluginMarketSnapshot, CommandError> {
     match sync_plugin_index_online(&state, index_url.as_deref()) {
         Ok(index) => Ok(build_snapshot(&state, index, false, "online", None)),
         Err(err) => {
-            let cache = load_cached_index(&state).map_err(|e| e.to_frontend_error())?;
+            let cache = load_cached_index(&state)?;
             Ok(build_snapshot(
                 &state,
                 cache,
@@ -132,8 +133,8 @@ pub fn sync_plugin_index_command(
 ///
 /// Returns [`Err`] with a human-readable message when the operation fails.
 #[tauri::command]
-pub fn get_cached_plugin_index(state: State<'_, AppState>) -> Result<PluginMarketSnapshot, String> {
-    let index = load_cached_index(&state).map_err(|e| e.to_frontend_error())?;
+pub fn get_cached_plugin_index(state: State<'_, AppState>) -> Result<PluginMarketSnapshot, CommandError> {
+    let index = load_cached_index(&state)?;
     Ok(build_snapshot(&state, index, true, "cache", None))
 }
 /// # Errors
@@ -144,19 +145,19 @@ pub fn install_plugin_from_market(
     plugin_id: String,
     git_url: Option<String>,
     state: State<'_, AppState>,
-) -> Result<InstallPluginFromMarketResponse, String> {
+) -> Result<InstallPluginFromMarketResponse, CommandError> {
     let pid = plugin_id.trim();
     if pid.is_empty() {
-        return Err(AppError::InvalidParameter("plugin_id required".into()).to_frontend_error());
+        return Err(AppError::InvalidParameter("plugin_id required".into()).into());
     }
-    let from_index = load_cached_index(&state).map_err(|e| e.to_frontend_error())?;
+    let from_index = load_cached_index(&state)?;
     let index_item = from_index.plugins.iter().find(|p| p.id == pid).cloned();
     let resolved = if let Some(g) = git_url.as_deref().map(str::trim).filter(|s| !s.is_empty()) {
         g.to_string()
     } else {
         index_item.as_ref().map(|p| p.git.clone()).ok_or_else(|| {
             AppError::InvalidParameter(format!("plugin not found in index: {}", pid))
-                .to_frontend_error()
+                
         })?
     };
     let installed_id = install_plugin(
@@ -164,7 +165,7 @@ pub fn install_plugin_from_market(
         &resolved,
         index_item.as_ref().map(|x| &x.dependencies),
     )
-    .map_err(|e| e.to_frontend_error())?;
+    ?;
     let root_opt = {
         let roots = state.directory_plugins.plugin_roots.read();
         roots.get(installed_id.as_str()).cloned()
@@ -185,12 +186,12 @@ pub fn install_plugin_from_market(
 pub fn install_plugin_from_git(
     req: InstallPluginFromGitRequest,
     state: State<'_, AppState>,
-) -> Result<InstallPluginFromMarketResponse, String> {
+) -> Result<InstallPluginFromMarketResponse, CommandError> {
     let git = req.git_url.trim();
     if git.is_empty() {
-        return Err(AppError::InvalidParameter("git_url required".into()).to_frontend_error());
+        return Err(AppError::InvalidParameter("git_url required".into()).into());
     }
-    let installed_id = install_plugin(&state, git, None).map_err(|e| e.to_frontend_error())?;
+    let installed_id = install_plugin(&state, git, None)?;
     let root_opt = {
         let roots = state.directory_plugins.plugin_roots.read();
         roots.get(installed_id.as_str()).cloned()
@@ -211,8 +212,8 @@ pub fn install_plugin_from_git(
 pub fn update_plugin_from_market(
     plugin_id: String,
     state: State<'_, AppState>,
-) -> Result<(), String> {
-    update_plugin(&state, &plugin_id).map_err(|e| e.to_frontend_error())
+) -> Result<(), CommandError> {
+    update_plugin(&state, &plugin_id).map_err(Into::into)
 }
 /// # Errors
 ///
@@ -221,8 +222,8 @@ pub fn update_plugin_from_market(
 pub fn uninstall_plugin_from_market(
     plugin_id: String,
     state: State<'_, AppState>,
-) -> Result<(), String> {
-    uninstall_plugin(&state, &plugin_id).map_err(|e| e.to_frontend_error())
+) -> Result<(), CommandError> {
+    uninstall_plugin(&state, &plugin_id).map_err(Into::into)
 }
 /// # Errors
 ///
@@ -231,13 +232,13 @@ pub fn uninstall_plugin_from_market(
 pub fn batch_update_plugins(
     plugin_ids: Vec<String>,
     state: State<'_, AppState>,
-) -> Result<(), String> {
+) -> Result<(), CommandError> {
     for pid in plugin_ids {
         let t = pid.trim();
         if t.is_empty() {
             continue;
         }
-        update_plugin(&state, t).map_err(|e| e.to_frontend_error())?;
+        update_plugin(&state, t)?;
     }
     Ok(())
 }
@@ -248,13 +249,13 @@ pub fn batch_update_plugins(
 pub fn batch_uninstall_plugins(
     plugin_ids: Vec<String>,
     state: State<'_, AppState>,
-) -> Result<(), String> {
+) -> Result<(), CommandError> {
     for pid in plugin_ids {
         let t = pid.trim();
         if t.is_empty() {
             continue;
         }
-        uninstall_plugin(&state, t).map_err(|e| e.to_frontend_error())?;
+        uninstall_plugin(&state, t)?;
     }
     Ok(())
 }

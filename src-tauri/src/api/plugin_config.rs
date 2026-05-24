@@ -13,6 +13,7 @@ use serde::Serialize;
 use serde_json::{json, Value};
 use std::path::PathBuf;
 use tauri::State;
+use crate::api::error::CommandError;
 
 #[derive(Debug, Clone, Serialize)]
 #[serde(rename_all = "camelCase")]
@@ -36,7 +37,7 @@ pub struct PluginUiSettingsDto {
     pub config: Value,
 }
 
-fn plugin_root(state: &AppState, plugin_id: &str) -> Result<PathBuf, String> {
+fn plugin_root(state: &AppState, plugin_id: &str) -> Result<PathBuf, CommandError> {
     let pid = plugin_id.trim();
     if pid.is_empty() {
         return Err(ApiError::InvalidParameter {
@@ -59,9 +60,9 @@ fn plugin_root(state: &AppState, plugin_id: &str) -> Result<PathBuf, String> {
 pub fn get_plugin_settings_ui(
     plugin_id: String,
     state: State<'_, AppState>,
-) -> Result<PluginUiSettingsDto, String> {
+) -> Result<PluginUiSettingsDto, CommandError> {
     let root = plugin_root(&state, &plugin_id)?;
-    let manifest = OclivePluginManifest::load_from_dir(&root).map_err(|e| e.to_string())?;
+    let manifest = OclivePluginManifest::load_from_dir(&root)?;
     ensure_default_config_for_manifest(&state, &manifest);
     let ui_template = manifest.ui_template.clone();
     let fields: Vec<UiSchemaFieldDto> = manifest
@@ -95,7 +96,7 @@ pub fn set_plugin_settings_config(
     plugin_id: String,
     config: Value,
     state: State<'_, AppState>,
-) -> Result<(), String> {
+) -> Result<(), CommandError> {
     let pid = plugin_id.trim();
     if pid.is_empty() {
         return Err(ApiError::InvalidParameter {

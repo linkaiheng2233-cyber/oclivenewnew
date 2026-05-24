@@ -24,6 +24,7 @@ use serde_json::{json, Value};
 use std::path::PathBuf;
 use std::sync::Arc;
 use tauri::State;
+use crate::api::error::CommandError;
 
 #[derive(Debug, Deserialize)]
 #[serde(rename_all = "camelCase")]
@@ -55,27 +56,33 @@ fn required_permission_token(cmd: &str) -> String {
 }
 
 #[inline]
-fn bridge_invalid(msg: impl Into<String>) -> String {
-    ApiError::InvalidParameter {
-        message: msg.into(),
-    }
-    .into()
+fn bridge_invalid(msg: impl Into<String>) -> CommandError {
+    CommandError::from(
+        ApiError::InvalidParameter {
+            message: msg.into(),
+        }
+        .to_string(),
+    )
 }
 
 #[inline]
-fn bridge_bad_json(ctx: &str, e: serde_json::Error) -> String {
-    ApiError::InvalidParameter {
-        message: format!("{}: {}", ctx, e),
-    }
-    .into()
+fn bridge_bad_json(ctx: &str, e: serde_json::Error) -> CommandError {
+    CommandError::from(
+        ApiError::InvalidParameter {
+            message: format!("{}: {}", ctx, e),
+        }
+        .to_string(),
+    )
 }
 
 #[inline]
-fn bridge_serialize_host(ctx: &str, e: serde_json::Error) -> String {
-    ApiError::Io {
-        message: format!("host json {}: {}", ctx, e),
-    }
-    .into()
+fn bridge_serialize_host(ctx: &str, e: serde_json::Error) -> CommandError {
+    CommandError::from(
+        ApiError::Io {
+            message: format!("host json {}: {}", ctx, e),
+        }
+        .to_string(),
+    )
 }
 
 fn invoke_list_allows(invoke: &[String], cmd: &str) -> bool {
@@ -111,7 +118,7 @@ fn requires_typed_shell(cmd: &str) -> bool {
 fn validate_shell_ocliveplugin(
     manifest: &OclivePluginManifest,
     asset_rel: &str,
-) -> Result<(), String> {
+) -> Result<(), CommandError> {
     if manifest.plugin_type.as_deref().map(str::trim) != Some("ocliveplugin") {
         return Err(
             ApiError::PermissionDenied {
@@ -153,7 +160,7 @@ fn validate_bridge(
     plugin_id: &str,
     asset_rel: &str,
     command: &str,
-) -> Result<(), String> {
+) -> Result<(), CommandError> {
     let roots = state.directory_plugins.plugin_roots.read();
     let root = roots.get(plugin_id).ok_or_else(|| {
         ApiError::PluginNotFound {
@@ -187,7 +194,7 @@ fn validate_bridge(
     Ok(())
 }
 
-fn parse_send_message_request(params: &Value) -> Result<SendMessageRequest, String> {
+fn parse_send_message_request(params: &Value) -> Result<SendMessageRequest, CommandError> {
     let v = if let Some(inner) = params.get("req") {
         inner.clone()
     } else {
@@ -215,13 +222,13 @@ async fn dispatch_bridge_command(
     state: &AppState,
     command: &str,
     params: Value,
-) -> Result<Value, String> {
+) -> Result<Value, CommandError> {
     match command {
         "send_message" => {
             let req = parse_send_message_request(&params)?;
             let res = process_message(state, &req)
                 .await
-                .map_err(|e: crate::error::AppError| e.to_frontend_error())?;
+                ?;
             serde_json::to_value(res).map_err(|e| bridge_serialize_host(command, e))
         }
         "get_conversation" => {
@@ -244,7 +251,7 @@ async fn dispatch_bridge_command(
                 .db_manager
                 .list_short_term_turns(ns.as_str())
                 .await
-                .map_err(|e| e.to_frontend_error())?;
+                ?;
             let total = rows.len();
             let page: Vec<_> = rows.into_iter().skip(offset).take(limit).collect();
             let items: Vec<Value> = page
@@ -343,12 +350,12 @@ async fn dispatch_bridge_command(
                 .db_manager
                 .ensure_role_runtime(role_id)
                 .await
-                .map_err(|e| e.to_frontend_error())?;
+                ?;
             let memory_id = state
                 .memory_repo
                 .save_memory(role_id, content, importance)
                 .await
-                .map_err(|e| e.to_frontend_error())?;
+                ?;
             Ok(json!({ "memory_id": memory_id }))
         }
         "delete_memory" => {
@@ -364,12 +371,12 @@ async fn dispatch_bridge_command(
                 .db_manager
                 .ensure_role_runtime(role_id)
                 .await
-                .map_err(|e| e.to_frontend_error())?;
+                ?;
             let deleted = state
                 .db_manager
                 .delete_memory_for_role(role_id, memory_id)
                 .await
-                .map_err(|e| e.to_frontend_error())?;
+                ?;
             if !deleted {
                 return Err(bridge_invalid("delete_memory: not found or wrong role"));
             }
@@ -388,12 +395,12 @@ async fn dispatch_bridge_command(
                 .db_manager
                 .ensure_role_runtime(role_id)
                 .await
-                .map_err(|e| e.to_frontend_error())?;
+                ?;
             state
                 .db_manager
                 .set_current_emotion(role_id, emotion)
                 .await
-                .map_err(|e| e.to_frontend_error())?;
+                ?;
             Ok(json!({ "ok": true }))
         }
         "update_event" => {
@@ -465,12 +472,12 @@ async fn dispatch_bridge_command(
                 }
                 .to_string()
             })?
-            .map_err(|e: crate::error::AppError| e.to_frontend_error())?;
+            ?;
             state.invalidate_personality_cache_for_role(&role_id);
             let role = state
                 .storage
                 .load_role(&role_id)
-                .map_err(|e| e.to_frontend_error())?;
+                ?;
             state
                 .role_cache
                 .write()
@@ -484,10 +491,10 @@ async fn dispatch_bridge_command(
                 .and_then(|v| v.as_str())
                 .ok_or_else(|| bridge_invalid("delete_role: role_id required"))?
                 .to_string();
-            delete_role_impl(state, role_id).await.map_err(Into::into)
+            delete_role_impl(state, role_id).await
         }
-        "update_settings" => update_settings_impl(state, &params).await,
-        "get_conversation_list" => get_conversation_list_impl(state).await,
+        "update_settings" => update_settings_impl(state, &params).await.map_err(Into::into),
+        "get_conversation_list" => get_conversation_list_impl(state).await.map_err(Into::into),
         "update_prompt" => Ok(json!({
             "ok": false,
             "error": "not_implemented",
@@ -506,7 +513,7 @@ async fn dispatch_bridge_command(
 pub async fn plugin_bridge_invoke(
     req: PluginBridgeInvokeRequest,
     state: State<'_, AppState>,
-) -> Result<Value, String> {
+) -> Result<Value, CommandError> {
     let pid = req.plugin_id.trim();
     let asset = normalize_plugin_rel(req.asset_rel.trim());
     let cmd = req.command.trim();
