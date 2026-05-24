@@ -48,7 +48,7 @@
       ]
     },
     "security": {
-      "csp": null,
+      "csp": "default-src 'self' tauri: https://ocliveplugin.localhost",
       "dangerousRemoteDomainIpcAccess": [
         {
           "domain": "https://ocliveplugin.localhost",
