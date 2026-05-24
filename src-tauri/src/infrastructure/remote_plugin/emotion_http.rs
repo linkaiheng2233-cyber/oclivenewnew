@@ -4,11 +4,10 @@ use crate::domain::emotion_analyzer::EmotionResult;
 use crate::domain::error_helpers::serde_to_ollama;
 use crate::domain::user_emotion_analyzer::UserEmotionAnalyzer;
 use crate::domain::BuiltinUserEmotionAnalyzer;
-use crate::error::{AppError, Result};
+use crate::error::Result;
 use crate::infrastructure::high_risk_grants::HighRiskGrantStore;
-use crate::infrastructure::remote_fallback_policy::remote_fallback_load;
+use crate::infrastructure::remote_plugin::adapter::RemotePluginAdapterBlocking;
 use crate::infrastructure::remote_plugin::config::RemotePluginHttpConfig;
-use crate::infrastructure::remote_plugin::RemoteHttpClientBlocking;
 use serde_json::json;
 use std::sync::atomic::AtomicBool;
 use std::sync::Arc;
@@ -16,9 +15,8 @@ use std::sync::Arc;
 const METHOD_EMOTION_ANALYZE: &str = "emotion.analyze";
 
 pub struct RemoteUserEmotionAnalyzerHttp {
-    http: RemoteHttpClientBlocking,
+    adapter: RemotePluginAdapterBlocking,
     fallback: BuiltinUserEmotionAnalyzer,
-    remote_fallback_allowed: Arc<AtomicBool>,
 }
 
 impl RemoteUserEmotionAnalyzerHttp {
@@ -30,16 +28,15 @@ impl RemoteUserEmotionAnalyzerHttp {
         high_risk_grants: Arc<HighRiskGrantStore>,
         network_grant_id: Option<String>,
     ) -> Self {
-        let http = RemoteHttpClientBlocking::new(
-            http_client,
-            cfg,
-            high_risk_grants,
-            network_grant_id,
-        );
         Self {
-            http,
+            adapter: RemotePluginAdapterBlocking::new(
+                http_client,
+                cfg,
+                remote_fallback_allowed,
+                high_risk_grants,
+                network_grant_id,
+            ),
             fallback: BuiltinUserEmotionAnalyzer,
-            remote_fallback_allowed,
         }
     }
 }
@@ -47,33 +44,15 @@ impl RemoteUserEmotionAnalyzerHttp {
 impl UserEmotionAnalyzer for RemoteUserEmotionAnalyzerHttp {
     fn analyze(&self, text: &str) -> Result<EmotionResult> {
         let params = json!({ "text": text });
-        match self.http.call_plugin(METHOD_EMOTION_ANALYZE, params) {
-            Ok(v) => {
-                let r: EmotionResult =
-                    serde_json::from_value(v).map_err(|e| serde_to_ollama("emotion.analyze decode", e))?;
-                Ok(r)
-            }
-            Err(e) => {
-                if matches!(e, AppError::HighRiskCapabilityNotGranted { .. }) {
-                    return Err(e);
-                }
-                if remote_fallback_load(&self.remote_fallback_allowed) {
-                    tracing::warn!(
-                        target: "oclive_plugin",
-                        "emotion.analyze remote failed endpoint={} err={}; fallback=builtin",
-                        self.http.endpoint(),
-                        e
-                    );
-                    self.fallback.analyze(text)
-                } else {
-                    Err(AppError::RemoteServiceUnavailable(format!(
-                        "emotion.analyze remote failed endpoint={} err={}",
-                        self.http.endpoint(),
-                        e
-                    )))
-                }
-            }
-        }
+        self.adapter.call_with_builtin_fallback(
+            METHOD_EMOTION_ANALYZE,
+            params,
+            |v| {
+                serde_json::from_value(v)
+                    .map_err(|e| serde_to_ollama("emotion.analyze decode", e))
+            },
+            || self.fallback.analyze(text),
+        )
     }
 }
 

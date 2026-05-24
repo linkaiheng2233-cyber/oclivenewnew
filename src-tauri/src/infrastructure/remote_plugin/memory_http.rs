@@ -7,8 +7,8 @@ use crate::domain::error_helpers::serde_to_unknown;
 use crate::error::{AppError, Result};
 use crate::infrastructure::high_risk_grants::HighRiskGrantStore;
 use crate::infrastructure::remote_fallback_policy::remote_fallback_load;
+use crate::infrastructure::remote_plugin::adapter::RemotePluginAdapterBlocking;
 use crate::infrastructure::remote_plugin::config::RemotePluginHttpConfig;
-use crate::infrastructure::remote_plugin::RemoteHttpClientBlocking;
 use crate::models::{Memory, MemoryContext};
 use serde_json::{json, Value};
 use std::collections::{HashMap, HashSet};
@@ -18,7 +18,7 @@ use std::sync::Arc;
 const METHOD_MEMORY_RANK: &str = "memory.rank";
 
 pub struct RemoteMemoryRetrievalHttp {
-    http: RemoteHttpClientBlocking,
+    adapter: RemotePluginAdapterBlocking,
     fallback: BuiltinMemoryRetrieval,
     remote_fallback_allowed: Arc<AtomicBool>,
 }
@@ -32,16 +32,17 @@ impl RemoteMemoryRetrievalHttp {
         high_risk_grants: Arc<HighRiskGrantStore>,
         network_grant_id: Option<String>,
     ) -> Self {
-        let http = RemoteHttpClientBlocking::new(
-            http_client,
-            cfg,
-            high_risk_grants,
-            network_grant_id,
-        );
+        let fb = remote_fallback_allowed.clone();
         Self {
-            http,
+            adapter: RemotePluginAdapterBlocking::new(
+                http_client,
+                cfg,
+                fb.clone(),
+                high_risk_grants,
+                network_grant_id,
+            ),
             fallback: BuiltinMemoryRetrieval,
-            remote_fallback_allowed,
+            remote_fallback_allowed: fb,
         }
     }
 
@@ -54,7 +55,7 @@ impl RemoteMemoryRetrievalHttp {
             "scene_id": input.scene_id,
             "limit": input.limit,
         });
-        let result = match self.http.call_plugin_soft(METHOD_MEMORY_RANK, params)? {
+        let result = match self.adapter.http.call_plugin_soft(METHOD_MEMORY_RANK, params)? {
             Some(v) => v,
             None => return Ok(None),
         };
@@ -111,13 +112,13 @@ impl MemoryRetrieval for RemoteMemoryRetrievalHttp {
                     tracing::warn!(
                         target: "oclive_plugin",
                         "memory.rank remote failed or empty endpoint={} fallback=builtin",
-                        self.http.endpoint()
+                        self.adapter.http.endpoint()
                     );
                     self.fallback.rank_memories(input)
                 } else {
                     Err(AppError::RemoteServiceUnavailable(format!(
                         "memory.rank remote failed or empty endpoint={}",
-                        self.http.endpoint()
+                        self.adapter.http.endpoint()
                     )))
                 }
             }

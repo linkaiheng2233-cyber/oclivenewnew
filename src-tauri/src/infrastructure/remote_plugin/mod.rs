@@ -5,6 +5,7 @@
 //!
 //! 详见 `docs/REMOTE_PLUGIN_PROTOCOL.md`。
 
+mod adapter;
 mod complex_emotion_directory_http;
 mod complex_emotion_http;
 mod config;
