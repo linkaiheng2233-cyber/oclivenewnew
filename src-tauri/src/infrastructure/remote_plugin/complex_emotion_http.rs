@@ -30,7 +30,7 @@ impl RemoteComplexEmotionHttp {
         remote_fallback_allowed: Arc<AtomicBool>,
         high_risk_grants: Arc<HighRiskGrantStore>,
     ) -> std::result::Result<Self, reqwest::Error> {
-        let http = RemoteHttpClientBlocking::new(
+        let http = RemoteHttpClientBlocking::new_standalone(
             cfg,
             high_risk_grants,
             Some(NETWORK_GRANT_REMOTE_PLUGIN.to_string()),

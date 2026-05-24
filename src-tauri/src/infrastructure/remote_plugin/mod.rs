@@ -31,16 +31,28 @@ use crate::domain::prompt_assembler::{PromptAssembler, RemotePromptAssemblerPlac
 use crate::domain::user_emotion_analyzer::{
     RemoteUserEmotionAnalyzerPlaceholder, UserEmotionAnalyzer,
 };
+use crate::error::{AppError, Result};
+use crate::infrastructure::high_risk_grants::HighRiskGrantStore;
 use crate::infrastructure::llm::{LlmClient, RemoteLlmPlaceholder};
 use serde_json::Value;
 use std::sync::atomic::AtomicBool;
 use std::sync::Arc;
+use std::time::Duration;
 
-use crate::error::{AppError, Result};
-use crate::infrastructure::high_risk_grants::HighRiskGrantStore;
 pub use jsonrpc::RemoteRpcChannel;
 pub use remote_client::{RemoteHttpClientAsync, RemoteHttpClientBlocking};
 use oclive_validation::{NETWORK_GRANT_REMOTE_LLM, NETWORK_GRANT_REMOTE_PLUGIN};
+
+/// 共享 Remote HTTP 连接池（无全局 request timeout；单次 RPC 在 [`jsonrpc`] 层设置）。
+pub(crate) fn build_shared_remote_http_client() -> Arc<reqwest::Client> {
+    Arc::new(
+        reqwest::Client::builder()
+            .connect_timeout(Duration::from_secs(15))
+            .pool_max_idle_per_host(8)
+            .build()
+            .expect("shared remote reqwest client"),
+    )
+}
 
 /// 四类 `plugin_backends.* = remote` 共用一套配置，只读一次环境变量并打一条日志。
 pub(crate) struct PluginRemoteGroup {
@@ -60,6 +72,7 @@ fn plugin_remote_placeholder_group() -> PluginRemoteGroup {
 }
 
 pub(crate) fn plugin_remote_group(
+    http_client: Arc<reqwest::Client>,
     remote_fallback_allowed: Arc<AtomicBool>,
     grants: Arc<HighRiskGrantStore>,
 ) -> PluginRemoteGroup {
@@ -74,43 +87,38 @@ pub(crate) fn plugin_remote_group(
     let fb = remote_fallback_allowed.clone();
     let g = grants.clone();
     let ng = Some(NETWORK_GRANT_REMOTE_PLUGIN.to_string());
-    let memory = RemoteMemoryRetrievalHttp::new(cfg.clone(), fb.clone(), g.clone(), ng.clone());
-    let emotion =
-        RemoteUserEmotionAnalyzerHttp::new(cfg.clone(), fb.clone(), g.clone(), ng.clone());
-    let event = RemoteEventEstimatorHttp::new(cfg.clone(), fb.clone(), g.clone(), ng.clone());
-    let prompt = RemotePromptAssemblerHttp::new(cfg, fb, g, ng);
-    match (memory, emotion, event, prompt) {
-        (Ok(memory), Ok(emotion), Ok(event), Ok(prompt)) => PluginRemoteGroup {
-            memory: Arc::new(memory),
-            emotion: Arc::new(emotion),
-            event: Arc::new(event),
-            prompt: Arc::new(prompt),
-        },
-        (m, e, ev, p) => {
-            let mut parts = Vec::new();
-            if let Err(err) = m {
-                parts.push(format!("memory: {}", err));
-            }
-            if let Err(err) = e {
-                parts.push(format!("emotion: {}", err));
-            }
-            if let Err(err) = ev {
-                parts.push(format!("event: {}", err));
-            }
-            if let Err(err) = p {
-                parts.push(format!("prompt: {}", err));
-            }
-            tracing::error!(
-                target: "oclive_plugin",
-                "remote plugin HTTP reqwest client build failed ({}); disabling remote plugin group",
-                parts.join("; ")
-            );
-            plugin_remote_placeholder_group()
-        }
+    let memory = RemoteMemoryRetrievalHttp::new(
+        http_client.clone(),
+        cfg.clone(),
+        fb.clone(),
+        g.clone(),
+        ng.clone(),
+    );
+    let emotion = RemoteUserEmotionAnalyzerHttp::new(
+        http_client.clone(),
+        cfg.clone(),
+        fb.clone(),
+        g.clone(),
+        ng.clone(),
+    );
+    let event = RemoteEventEstimatorHttp::new(
+        http_client.clone(),
+        cfg.clone(),
+        fb.clone(),
+        g.clone(),
+        ng.clone(),
+    );
+    let prompt = RemotePromptAssemblerHttp::new(http_client, cfg, fb, g, ng);
+    PluginRemoteGroup {
+        memory: Arc::new(memory),
+        emotion: Arc::new(emotion),
+        event: Arc::new(event),
+        prompt: Arc::new(prompt),
     }
 }
 
 pub fn llm_remote_backend(
+    http_client: Arc<reqwest::Client>,
     default_llm: Arc<dyn LlmClient>,
     remote_fallback_allowed: Arc<AtomicBool>,
     grants: Arc<HighRiskGrantStore>,
@@ -121,20 +129,12 @@ pub fn llm_remote_backend(
             "remote LLM HTTP active -> {}",
             cfg.endpoint
         );
-        match RemoteLlmHttp::new(cfg, grants, Some(NETWORK_GRANT_REMOTE_LLM.to_string())) {
-            Ok(remote) => Arc::new(remote),
-            Err(e) => {
-                tracing::error!(
-                    target: "oclive_plugin",
-                    "remote LLM HTTP reqwest client build failed: {}; using default LLM",
-                    e
-                );
-                Arc::new(RemoteLlmPlaceholder::new(
-                    default_llm,
-                    remote_fallback_allowed.clone(),
-                ))
-            }
-        }
+        Arc::new(RemoteLlmHttp::new(
+            http_client,
+            cfg,
+            grants,
+            Some(NETWORK_GRANT_REMOTE_LLM.to_string()),
+        ))
     } else {
         Arc::new(RemoteLlmPlaceholder::new(
             default_llm,
@@ -156,7 +156,7 @@ pub fn invoke_directory_plugin_rpc_blocking(
         url,
         matches!(channel, RemoteRpcChannel::Llm),
     );
-    let http = RemoteHttpClientBlocking::new(
+    let http = RemoteHttpClientBlocking::new_standalone(
         cfg,
         HighRiskGrantStore::load(std::env::temp_dir(), false),
         None,

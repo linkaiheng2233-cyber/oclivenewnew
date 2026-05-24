@@ -9,31 +9,47 @@ use std::sync::Arc;
 
 /// 插件侧车（`OCLIVE_REMOTE_PLUGIN_URL`）共用端点 — sync API over async reqwest。
 pub struct RemoteHttpClientBlocking {
-    client: reqwest::Client,
+    client: Arc<reqwest::Client>,
     cfg: RemotePluginHttpConfig,
     grants: Arc<HighRiskGrantStore>,
     network_grant_id: Option<String>,
 }
 
 impl RemoteHttpClientBlocking {
+    #[must_use]
+    pub fn new(
+        client: Arc<reqwest::Client>,
+        cfg: RemotePluginHttpConfig,
+        grants: Arc<HighRiskGrantStore>,
+        network_grant_id: Option<String>,
+    ) -> Self {
+        Self {
+            client,
+            cfg,
+            grants,
+            network_grant_id,
+        }
+    }
+
+    /// 目录插件等一次性 RPC：独立连接池，不占用 [`BackendRegistry`](crate::domain::plugin_host::BackendRegistry) 共享客户端。
+    ///
     /// # Errors
     ///
     /// Returns [`Err`] when `reqwest` client construction fails.
-    pub fn new(
+    pub fn new_standalone(
         cfg: RemotePluginHttpConfig,
         grants: Arc<HighRiskGrantStore>,
         network_grant_id: Option<String>,
     ) -> std::result::Result<Self, reqwest::Error> {
         let client = reqwest::Client::builder()
             .connect_timeout(cfg.connect_timeout())
-            .timeout(cfg.timeout)
             .build()?;
-        Ok(Self {
-            client,
+        Ok(Self::new(
+            Arc::new(client),
             cfg,
             grants,
             network_grant_id,
-        })
+        ))
     }
 
     #[must_use]
@@ -65,12 +81,13 @@ impl RemoteHttpClientBlocking {
     ) -> Result<Value> {
         jsonrpc::call_blocking(
             channel,
-            &self.client,
+            self.client.as_ref(),
             &self.cfg.endpoint,
             method,
             params,
             self.cfg.bearer_token.as_deref(),
             self.network_grant(),
+            self.cfg.timeout,
         )
     }
 
@@ -99,7 +116,7 @@ impl RemoteHttpClientBlocking {
 
 /// 主对话 LLM 侧车（`OCLIVE_REMOTE_LLM_URL`）— **async** 客户端。
 pub struct RemoteHttpClientAsync {
-    client: reqwest::Client,
+    client: Arc<reqwest::Client>,
     cfg: RemotePluginHttpConfig,
     grants: Arc<HighRiskGrantStore>,
     network_grant_id: Option<String>,
@@ -111,24 +128,19 @@ impl RemoteHttpClientAsync {
         &self.cfg
     }
 
-    /// # Errors
-    ///
-    /// Returns [`Err`] when `reqwest` client construction fails.
+    #[must_use]
     pub fn new(
+        client: Arc<reqwest::Client>,
         cfg: RemotePluginHttpConfig,
         grants: Arc<HighRiskGrantStore>,
         network_grant_id: Option<String>,
-    ) -> std::result::Result<Self, reqwest::Error> {
-        let client = reqwest::Client::builder()
-            .connect_timeout(cfg.connect_timeout())
-            .timeout(cfg.timeout)
-            .build()?;
-        Ok(Self {
+    ) -> Self {
+        Self {
             client,
             cfg,
             grants,
             network_grant_id,
-        })
+        }
     }
 
     /// Grant store + id for [`jsonrpc`] network checks.
@@ -150,12 +162,13 @@ impl RemoteHttpClientAsync {
     ) -> Result<Value> {
         jsonrpc::call_async(
             channel,
-            &self.client,
+            self.client.as_ref(),
             &self.cfg.endpoint,
             method,
             params,
             self.cfg.bearer_token.as_deref(),
             self.network_grant(),
+            self.cfg.timeout,
         )
         .await
     }

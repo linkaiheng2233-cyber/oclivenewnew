@@ -108,13 +108,14 @@ fn remote_http_requires_network_grant() {
         bearer_token: None,
         timeout: Duration::from_millis(100),
     };
+    let http_client = Arc::new(reqwest::Client::new());
     let client = RemoteMemoryRetrievalHttp::new(
+        http_client,
         cfg,
         fb,
         grants.clone(),
         Some(NETWORK_GRANT_REMOTE_PLUGIN.to_string()),
-    )
-    .unwrap();
+    );
     use oclivenewnew_tauri::domain::memory_retrieval::{MemoryRetrieval, MemoryRetrievalInput};
     use oclivenewnew_tauri::error::AppError;
 

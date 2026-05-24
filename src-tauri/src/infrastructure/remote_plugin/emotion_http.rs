@@ -22,21 +22,25 @@ pub struct RemoteUserEmotionAnalyzerHttp {
 }
 
 impl RemoteUserEmotionAnalyzerHttp {
-    /// # Errors
-    ///
-    /// Returns [`Err`] with a human-readable message when the operation fails.
+    #[must_use]
     pub fn new(
+        http_client: Arc<reqwest::Client>,
         cfg: RemotePluginHttpConfig,
         remote_fallback_allowed: Arc<AtomicBool>,
         high_risk_grants: Arc<HighRiskGrantStore>,
         network_grant_id: Option<String>,
-    ) -> std::result::Result<Self, reqwest::Error> {
-        let http = RemoteHttpClientBlocking::new(cfg, high_risk_grants, network_grant_id)?;
-        Ok(Self {
+    ) -> Self {
+        let http = RemoteHttpClientBlocking::new(
+            http_client,
+            cfg,
+            high_risk_grants,
+            network_grant_id,
+        );
+        Self {
             http,
             fallback: BuiltinUserEmotionAnalyzer,
             remote_fallback_allowed,
-        })
+        }
     }
 }
 

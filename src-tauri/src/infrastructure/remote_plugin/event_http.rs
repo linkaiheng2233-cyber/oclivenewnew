@@ -27,21 +27,25 @@ pub struct RemoteEventEstimatorHttp {
 }
 
 impl RemoteEventEstimatorHttp {
-    /// # Errors
-    ///
-    /// Returns [`Err`] with a human-readable message when the operation fails.
+    #[must_use]
     pub fn new(
+        http_client: Arc<reqwest::Client>,
         cfg: RemotePluginHttpConfig,
         remote_fallback_allowed: Arc<AtomicBool>,
         high_risk_grants: Arc<HighRiskGrantStore>,
         network_grant_id: Option<String>,
-    ) -> std::result::Result<Self, reqwest::Error> {
-        let http = RemoteHttpClientAsync::new(cfg, high_risk_grants, network_grant_id)?;
-        Ok(Self {
+    ) -> Self {
+        let http = RemoteHttpClientAsync::new(
+            http_client,
+            cfg,
+            high_risk_grants,
+            network_grant_id,
+        );
+        Self {
             http,
             fallback: BuiltinEventEstimator,
             remote_fallback_allowed,
-        })
+        }
     }
 }
 

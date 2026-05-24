@@ -59,6 +59,7 @@ pub struct BackendRegistry {
     directory_runtime: Option<Arc<DirectoryPluginRuntime>>,
     remote_fallback_allowed: Arc<AtomicBool>,
     high_risk_grants: Arc<HighRiskGrantStore>,
+    remote_http_client: Arc<reqwest::Client>,
 }
 
 fn directory_slot_id(
@@ -75,6 +76,7 @@ impl BackendRegistry {
     fn remote_plugin_group(&self) -> &PluginRemoteGroup {
         self.remote_plugin_group.get_or_init(|| {
             remote_plugin::plugin_remote_group(
+                self.remote_http_client.clone(),
                 self.remote_fallback_allowed.clone(),
                 self.high_risk_grants.clone(),
             )
@@ -133,6 +135,7 @@ impl BackendRegistry {
         self.llm_remote
             .get_or_init(|| {
                 remote_plugin::llm_remote_backend(
+                    self.remote_http_client.clone(),
                     self.llm_ollama.clone(),
                     self.remote_fallback_allowed.clone(),
                     self.high_risk_grants.clone(),
@@ -249,6 +252,7 @@ impl BackendRegistry {
         let mcp = Arc::new(McpClient::new(app_data_dir, high_risk_grants.clone()));
         let agent_builtin = Arc::new(BuiltinReActAgent::new(llm_ollama.clone(), mcp));
         let agent_directory: Arc<dyn AgentProvider> = agent_builtin.clone();
+        let remote_http_client = remote_plugin::build_shared_remote_http_client();
         Self {
             memory_builtin: Arc::new(BuiltinMemoryRetrieval),
             memory_builtin_v2: OnceLock::new(),
@@ -272,6 +276,7 @@ impl BackendRegistry {
             directory_runtime,
             remote_fallback_allowed,
             high_risk_grants,
+            remote_http_client,
         }
     }
 
@@ -296,18 +301,14 @@ impl BackendRegistry {
             backends,
             |s| &s.llm,
             self.llm_ollama.clone(),
-            |reg, pid, url| {
+            |reg, _pid, url| {
                 let cfg = RemotePluginHttpConfig::for_directory_plugin_rpc(url.to_string(), true);
-                match RemoteLlmHttp::new(cfg, reg.high_risk_grants.clone(), None) {
-                    Ok(http) => Arc::new(http),
-                    Err(e) => {
-                        tracing::error!(
-                            target: "oclive_plugin",
-                            "directory llm plugin_id={pid} reqwest client build failed: {e}"
-                        );
-                        reg.llm_ollama.clone()
-                    }
-                }
+                Arc::new(RemoteLlmHttp::new(
+                    reg.remote_http_client.clone(),
+                    cfg,
+                    reg.high_risk_grants.clone(),
+                    None,
+                ))
             },
         )
     }
@@ -375,21 +376,13 @@ impl BackendRegistry {
             self.memory_builtin.clone(),
             |reg, _pid, url| {
                 let cfg = RemotePluginHttpConfig::for_directory_plugin_rpc(url.to_string(), false);
-                match RemoteMemoryRetrievalHttp::new(
+                Arc::new(RemoteMemoryRetrievalHttp::new(
+                    reg.remote_http_client.clone(),
                     cfg,
                     reg.remote_fallback_allowed.clone(),
                     reg.high_risk_grants.clone(),
                     None,
-                ) {
-                    Ok(http) => Arc::new(http),
-                    Err(e) => {
-                        tracing::error!(
-                            target: "oclive_plugin",
-                            "directory memory plugin_id={_pid} reqwest client build failed: {e}"
-                        );
-                        reg.memory_builtin.clone()
-                    }
-                }
+                ))
             },
         )
     }
@@ -421,21 +414,13 @@ impl BackendRegistry {
             self.emotion_builtin.clone(),
             |reg, _pid, url| {
                 let cfg = RemotePluginHttpConfig::for_directory_plugin_rpc(url.to_string(), false);
-                match RemoteUserEmotionAnalyzerHttp::new(
+                Arc::new(RemoteUserEmotionAnalyzerHttp::new(
+                    reg.remote_http_client.clone(),
                     cfg,
                     reg.remote_fallback_allowed.clone(),
                     reg.high_risk_grants.clone(),
                     None,
-                ) {
-                    Ok(http) => Arc::new(http),
-                    Err(e) => {
-                        tracing::error!(
-                            target: "oclive_plugin",
-                            "directory emotion plugin_id={_pid} reqwest client build failed: {e}"
-                        );
-                        reg.emotion_builtin.clone()
-                    }
-                }
+                ))
             },
         )
     }
@@ -467,21 +452,13 @@ impl BackendRegistry {
             self.event_builtin.clone(),
             |reg, _pid, url| {
                 let cfg = RemotePluginHttpConfig::for_directory_plugin_rpc(url.to_string(), false);
-                match RemoteEventEstimatorHttp::new(
+                Arc::new(RemoteEventEstimatorHttp::new(
+                    reg.remote_http_client.clone(),
                     cfg,
                     reg.remote_fallback_allowed.clone(),
                     reg.high_risk_grants.clone(),
                     None,
-                ) {
-                    Ok(http) => Arc::new(http),
-                    Err(e) => {
-                        tracing::error!(
-                            target: "oclive_plugin",
-                            "directory event plugin_id={_pid} reqwest client build failed: {e}"
-                        );
-                        reg.event_builtin.clone()
-                    }
-                }
+                ))
             },
         )
     }
@@ -513,21 +490,13 @@ impl BackendRegistry {
             self.prompt_builtin.clone(),
             |reg, _pid, url| {
                 let cfg = RemotePluginHttpConfig::for_directory_plugin_rpc(url.to_string(), false);
-                match RemotePromptAssemblerHttp::new(
+                Arc::new(RemotePromptAssemblerHttp::new(
+                    reg.remote_http_client.clone(),
                     cfg,
                     reg.remote_fallback_allowed.clone(),
                     reg.high_risk_grants.clone(),
                     None,
-                ) {
-                    Ok(http) => Arc::new(http),
-                    Err(e) => {
-                        tracing::error!(
-                            target: "oclive_plugin",
-                            "directory prompt plugin_id={_pid} reqwest client build failed: {e}"
-                        );
-                        reg.prompt_builtin.clone()
-                    }
-                }
+                ))
             },
         )
     }

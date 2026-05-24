@@ -4,7 +4,7 @@ use crate::error::{AppError, Result};
 use crate::infrastructure::high_risk_grants::HighRiskGrantStore;
 use serde_json::{json, Value};
 use std::sync::atomic::{AtomicU64, Ordering};
-use std::time::Instant;
+use std::time::{Duration, Instant};
 
 static NEXT_ID: AtomicU64 = AtomicU64::new(1);
 const PROTOCOL_HEADER_NAME: &str = "x-oclive-remote-protocol";
@@ -87,6 +87,7 @@ pub fn call_blocking(
     params: Value,
     bearer_token: Option<&str>,
     network_grant: Option<(&HighRiskGrantStore, &str)>,
+    request_timeout: Duration,
 ) -> Result<Value> {
     crate::utils::block_on::block_on(call_async(
         channel,
@@ -96,6 +97,7 @@ pub fn call_blocking(
         params,
         bearer_token,
         network_grant,
+        request_timeout,
     ))
 }
 
@@ -107,6 +109,7 @@ pub async fn call_async(
     params: Value,
     bearer_token: Option<&str>,
     network_grant: Option<(&HighRiskGrantStore, &str)>,
+    request_timeout: Duration,
 ) -> Result<Value> {
     if let Some((grants, grant_id)) = network_grant {
         grants.require_network(grant_id)?;
@@ -122,6 +125,7 @@ pub async fn call_async(
     });
     let mut req = client
         .post(url)
+        .timeout(request_timeout)
         .header(PROTOCOL_HEADER_NAME, PROTOCOL_HEADER_VALUE)
         .header(CLIENT_VERSION_HEADER_NAME, env!("CARGO_PKG_VERSION"))
         .json(&body);

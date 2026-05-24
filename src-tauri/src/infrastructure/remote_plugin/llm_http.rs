@@ -18,16 +18,15 @@ pub struct RemoteLlmHttp {
 }
 
 impl RemoteLlmHttp {
-    /// # Errors
-    ///
-    /// Returns [`Err`] with a human-readable message when the operation fails.
+    #[must_use]
     pub fn new(
+        http_client: Arc<reqwest::Client>,
         cfg: RemotePluginHttpConfig,
         high_risk_grants: Arc<HighRiskGrantStore>,
         network_grant_id: Option<String>,
-    ) -> std::result::Result<Self, reqwest::Error> {
-        let http = RemoteHttpClientAsync::new(cfg, high_risk_grants, network_grant_id)?;
-        Ok(Self { http })
+    ) -> Self {
+        let http = RemoteHttpClientAsync::new(http_client, cfg, high_risk_grants, network_grant_id);
+        Self { http }
     }
 
     fn text_from_result(v: serde_json::Value, method: &str) -> Result<String> {

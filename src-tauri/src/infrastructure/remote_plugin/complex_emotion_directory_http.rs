@@ -29,7 +29,7 @@ impl DirectoryComplexEmotionHttp {
         cfg: RemotePluginHttpConfig,
         remote_fallback_allowed: Arc<AtomicBool>,
     ) -> std::result::Result<Self, reqwest::Error> {
-        let http = RemoteHttpClientBlocking::new(
+        let http = RemoteHttpClientBlocking::new_standalone(
             cfg,
             HighRiskGrantStore::load(std::env::temp_dir(), false),
             None,
