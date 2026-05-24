@@ -2,61 +2,72 @@ pub mod ports;
 
 pub mod error_helpers;
 
-pub mod knowledge_loader;
-pub mod life_schedule;
-pub mod local_plugin_bridge;
-pub mod local_plugin_memory_pick;
+/// Kernel domain shims (consolidated from one-line `*.rs` re-export files).
+macro_rules! kernel_domain_reexport {
+    ($name:ident) => {
+        pub mod $name {
+            pub use oclive_kernel_runtime::domain::$name::*;
+        }
+    };
+}
+
+kernel_domain_reexport!(affect_policy);
+kernel_domain_reexport!(chat_llm_fallback);
+kernel_domain_reexport!(chat_turn);
+kernel_domain_reexport!(chat_turn_rules);
+kernel_domain_reexport!(complex_emotion);
+kernel_domain_reexport!(emotion_analyzer);
+kernel_domain_reexport!(event_detector);
+kernel_domain_reexport!(knowledge_loader);
+kernel_domain_reexport!(life_schedule);
+kernel_domain_reexport!(local_plugin_bridge);
+kernel_domain_reexport!(local_plugin_memory_pick);
+kernel_domain_reexport!(memory_engine);
+kernel_domain_reexport!(memory_retrieval);
+kernel_domain_reexport!(personality_engine);
+kernel_domain_reexport!(policy);
+kernel_domain_reexport!(profile_personality);
+kernel_domain_reexport!(prompt_assembler);
+kernel_domain_reexport!(prompt_builder);
+kernel_domain_reexport!(relation_engine);
+kernel_domain_reexport!(remote_life_prompt);
+kernel_domain_reexport!(repository);
+kernel_domain_reexport!(user_emotion_analyzer);
+
 pub mod role_manifest_validate;
 pub mod startup_health;
 pub mod user_identity;
 
-pub mod affect_policy;
 pub mod agent;
 pub mod chat_engine;
-pub mod chat_llm_fallback;
-pub mod chat_turn;
-pub mod chat_turn_rules;
-pub mod complex_emotion;
+#[cfg(feature = "dual_core")]
 pub mod dual_pipeline;
+#[cfg(feature = "dual_core")]
 pub mod dual_pipeline_registry;
+#[cfg(feature = "dual_core")]
 pub mod dual_pipeline_steps;
 pub mod debug_trace;
-pub mod emotion_analyzer;
-pub mod event_detector;
 pub mod event_estimator;
 pub mod event_impact_ai;
-pub mod memory_engine;
-pub mod memory_retrieval;
 pub mod mutable_profile_llm;
-pub mod personality_engine;
 pub mod plugin_host;
-pub mod policy;
 pub mod portrait_emotion_engine;
-pub mod profile_personality;
-pub mod prompt_assembler;
-pub mod prompt_builder;
-pub mod relation_engine;
-pub mod remote_life_prompt;
-pub mod repository;
 #[cfg(test)]
 pub mod role_manager;
 pub mod slot_resolver;
 pub mod slot_runner;
-pub mod user_emotion_analyzer;
 
 pub use agent::{AgentDebugTrace, AgentInput, AgentOutput, AgentProvider, BuiltinReActAgent};
 pub use chat_engine::process_message;
-pub use emotion_analyzer::EmotionAnalyzer;
 pub use event_detector::EventDetector;
 pub use event_estimator::{BuiltinEventEstimator, EventEstimator, RemoteEventEstimatorPlaceholder};
+pub use memory_engine::MemoryEngine;
+pub use memory_retrieval::{
+    BuiltinMemoryRetrieval, MemoryRetrieval, RemoteMemoryRetrievalPlaceholder,
+};
 pub use local_plugin_bridge::{
     FileManifestLocalPluginBridge, LocalPluginBridge, LocalPluginCapability,
     LocalPluginProviderDescriptor, LocalPluginRegistry, LOCAL_PLUGIN_SCHEMA_VERSION,
-};
-pub use memory_engine::MemoryEngine;
-pub use memory_retrieval::{
-    BuiltinMemoryRetrieval, BuiltinMemoryRetrievalV2, LocalPluginMemoryRetrieval, MemoryRetrieval,
-    MemoryRetrievalInput, RemoteMemoryRetrievalPlaceholder,
 };
 pub use personality_engine::PersonalityEngine;
 pub use plugin_host::{PluginHost, ResolvedRolePlugins};
@@ -68,11 +79,7 @@ pub use policy::{
 pub use prompt_assembler::{
     BuiltinPromptAssembler, PromptAssembler, RemotePromptAssemblerPlaceholder,
 };
-pub use prompt_builder::{
-    effective_reply_quality_anchor, PromptBuilder, PromptInput, DEFAULT_REPLY_QUALITY_ANCHOR,
-};
-pub use relation_engine::{RelationEngine, RelationState};
-pub use repository::{FavorabilityRepository, MemoryRepository};
+pub use prompt_builder::{effective_reply_quality_anchor, PromptBuilder, PromptInput};
 #[cfg(test)]
 pub use role_manager::RoleManager;
 pub use user_emotion_analyzer::{
