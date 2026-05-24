@@ -3055,7 +3055,7 @@ dependencies = [
  "axum",
  "chrono",
  "dashmap",
- "lru",
+ "indexmap 2.14.0",
  "notify",
  "oclive_kernel_runtime",
  "oclive_validation",

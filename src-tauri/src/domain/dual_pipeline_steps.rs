@@ -1,4 +1,5 @@
 //! # 实验核单步执行（与 `co_present` 子阶段对齐）
+#![cfg(feature = "dual_core")]
 //!
 //! **角色**：将 `pipeline.experimental` 中的 `slot.<key>.<method>` 映射到共景子阶段
 //!（情绪分析、记忆排序、Prompt 组装等）；不重复实现业务规则，只复用 [`SlotRunner`](super::slot_runner::SlotRunner) 与现有引擎。

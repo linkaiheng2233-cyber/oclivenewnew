@@ -1,4 +1,5 @@
 //! # 实验核 method 注册表
+#![cfg(feature = "dual_core")]
 //!
 //! **角色**：声明 `pipeline.experimental` 允许的 `(slot type, method)` 与对应共景阶段名；
 //! 供 [`dual_pipeline_steps`](super::dual_pipeline_steps) 校验、单元测试与 `creator-docs/dual-core/METHOD_REGISTRY.md` 对齐。

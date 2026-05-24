@@ -21,6 +21,7 @@ use crate::domain::chat_engine::{
     backend_resolution_summary, context::validate_scene_id, conversation_state_role_id,
     ensure_role_loaded, process_remote_life, process_remote_stub,
 };
+#[cfg(feature = "dual_core")]
 use crate::domain::dual_pipeline::DualPipelineRunner;
 use crate::domain::startup_health;
 use crate::error::Result;
@@ -216,6 +217,7 @@ async fn run(
         );
     }
 
+    #[cfg(feature = "dual_core")]
     if role.dual_core_gated() {
         return DualPipelineRunner::run_with_fallback(&turn).await;
     }
