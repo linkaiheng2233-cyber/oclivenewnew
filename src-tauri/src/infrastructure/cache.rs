@@ -48,11 +48,21 @@ impl<T: Clone + Send + Sync> Cache<T> {
         }
     }
 
-    /// 获取缓存值
+    /// 获取缓存值；过期条目会在写锁下移除。
     ///
-    /// 如果缓存过期，会自动清理并返回 None
+    /// **LRU 语义（有意降级）**：读命中路径只持有读锁，且通过 [`LruCache::peek`]
+    /// 不刷新 LRU 访问顺序。淘汰依据**插入顺序**、容量上限与 TTL，而非严格 LRU。
+    /// 适用于 `personality_snapshots` 等读多写少、对 LRU 精度不敏感的场景。
     #[must_use]
     pub fn get(&self, key: &str) -> Option<T> {
+        {
+            let cache = self.data.read();
+            match cache.peek(key) {
+                Some(entry) if !entry.is_expired() => return Some(entry.data.clone()),
+                Some(_) => {}
+                None => return None,
+            }
+        }
         let mut cache = self.data.write();
         match cache.get(key) {
             Some(entry) if !entry.is_expired() => Some(entry.data.clone()),
@@ -198,14 +208,14 @@ mod tests {
     }
 
     #[test]
-    fn test_cache_lru_evicts_least_recently_used() {
+    fn test_cache_evicts_by_insertion_order_without_read_lru_bump() {
         let cache: Cache<u32> = Cache::with_capacity(2);
         cache.set("a".to_string(), 1);
         cache.set("b".to_string(), 2);
         assert_eq!(cache.get("a"), Some(1));
         cache.set("c".to_string(), 3);
-        assert_eq!(cache.get("a"), Some(1));
-        assert_eq!(cache.get("b"), None);
+        assert_eq!(cache.get("a"), None);
+        assert_eq!(cache.get("b"), Some(2));
         assert_eq!(cache.get("c"), Some(3));
     }
 }
