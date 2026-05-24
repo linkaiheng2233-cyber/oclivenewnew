@@ -122,7 +122,7 @@ pub fn discover_plugin_methods(
     }
     let root = {
         let roots = state.directory_plugins.plugin_roots.read();
-        roots.get(pid).cloned().ok_or_else(|| {
+        roots.get(pid).map(|entry| entry.root.clone()).ok_or_else(|| {
             ApiError::PluginNotFound {
                 plugin_id: pid.to_string(),
             }

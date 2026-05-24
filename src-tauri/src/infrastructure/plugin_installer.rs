@@ -147,8 +147,8 @@ fn run_git(args: &[&str], cwd: Option<&Path>) -> Result<(), AppError> {
 fn installed_version_map(state: &AppState) -> HashMap<String, semver::Version> {
     let mut out = HashMap::new();
     let roots = state.directory_plugins.plugin_roots.read();
-    for (pid, root) in roots.iter() {
-        if let Ok(manifest) = OclivePluginManifest::load_from_dir(root) {
+    for (pid, entry) in roots.iter() {
+        if let Ok(manifest) = OclivePluginManifest::load_from_dir(&entry.root) {
             if let Some(v) = parse_manifest_version(&manifest.version) {
                 out.insert(pid.clone(), v);
             }
@@ -269,7 +269,7 @@ pub fn update_plugin(state: &AppState, plugin_id: &str) -> Result<(), AppError> 
         let roots = state.directory_plugins.plugin_roots.read();
         roots
             .get(pid)
-            .cloned()
+            .map(|entry| entry.root.clone())
             .ok_or_else(|| AppError::InvalidParameter(format!("plugin not found: {}", pid)))?
     };
     run_git(&["pull", "--ff-only"], Some(&root))?;
@@ -336,7 +336,7 @@ pub fn uninstall_plugin(state: &AppState, plugin_id: &str) -> Result<(), AppErro
         let roots = state.directory_plugins.plugin_roots.read();
         roots
             .get(pid)
-            .cloned()
+            .map(|entry| entry.root.clone())
             .ok_or_else(|| AppError::InvalidParameter(format!("plugin not found: {}", pid)))?
     };
     state.directory_plugins.clear_plugin_process(pid);

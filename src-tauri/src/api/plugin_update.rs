@@ -123,8 +123,8 @@ fn copy_dir_all(src: &Path, dst: &Path) -> Result<(), CommandError> {
 
 fn resolve_install_dir(state: &AppState, plugin_id: &str) -> PathBuf {
     let roots = state.directory_plugins.plugin_roots.read();
-    if let Some(p) = roots.get(plugin_id) {
-        return p.clone();
+    if let Some(entry) = roots.get(plugin_id) {
+        return entry.root.clone();
     }
     drop(roots);
     state

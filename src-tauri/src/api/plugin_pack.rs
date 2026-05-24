@@ -26,7 +26,7 @@ pub struct PackPluginResponse {
 
 fn plugin_root_from_state(state: &AppState, plugin_id: &str) -> Option<PathBuf> {
     let roots = state.directory_plugins.plugin_roots.read();
-    roots.get(plugin_id).cloned()
+    roots.get(plugin_id).map(|entry| entry.root.clone())
 }
 
 fn ensure_manifest_valid(manifest_path: &Path) -> Result<(), AppError> {

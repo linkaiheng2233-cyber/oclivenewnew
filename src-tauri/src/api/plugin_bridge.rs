@@ -162,7 +162,7 @@ fn validate_bridge(
     command: &str,
 ) -> Result<(), CommandError> {
     let roots = state.directory_plugins.plugin_roots.read();
-    let root = roots.get(plugin_id).ok_or_else(|| {
+    let root = roots.get(plugin_id).map(|entry| &entry.root).ok_or_else(|| {
         ApiError::PluginNotFound {
             plugin_id: plugin_id.to_string(),
         }

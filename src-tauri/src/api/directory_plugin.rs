@@ -158,11 +158,11 @@ fn subscribed_events_sorted_vec(set: HashSet<String>) -> Vec<String> {
 fn collect_subscribed_host_events(state: &AppState, pst: &PluginStateFile) -> Vec<String> {
     let mut set = HashSet::new();
     let roots = state.directory_plugins.plugin_roots.read();
-    for (pid, root) in roots.iter() {
+    for (pid, entry) in roots.iter() {
         if pst.is_plugin_disabled(pid) {
             continue;
         }
-        let Ok(manifest) = OclivePluginManifest::load_from_dir(root) else {
+        let Ok(manifest) = OclivePluginManifest::load_from_dir(&entry.root) else {
             continue;
         };
         merge_manifest_bridge_events(&manifest, &mut set);
@@ -220,14 +220,14 @@ pub fn directory_plugin_bootstrap_dto(
     let shell_plugin_id = shell_plugin_id_raw.filter(|id| !pst.is_plugin_disabled(id));
     let shell_url = shell_plugin_id.as_ref().and_then(|pid| {
         let roots = rt.plugin_roots.read();
-        let root = roots.get(pid)?;
+        let root = roots.get(pid).map(|entry| &entry.root)?;
         let manifest = OclivePluginManifest::load_from_dir(root).ok()?;
         let entry = manifest.shell.as_ref()?.entry.as_str();
         rt.shell_url_for(pid, entry)
     });
     let shell_vue_entry = shell_plugin_id.as_ref().and_then(|pid| {
         let roots = rt.plugin_roots.read();
-        let root = roots.get(pid)?;
+        let root = roots.get(pid).map(|entry| &entry.root)?;
         let manifest = OclivePluginManifest::load_from_dir(root).ok()?;
         let sh = manifest.shell.as_ref()?;
         let ve = sh.vue_entry.as_ref()?.trim();
@@ -241,11 +241,11 @@ pub fn directory_plugin_bootstrap_dto(
     let mut ui_slots = Vec::new();
     let mut subscribed_set = HashSet::new();
     let roots = rt.plugin_roots.read();
-    for (pid, root) in roots.iter() {
+    for (pid, entry) in roots.iter() {
         if pst.is_plugin_disabled(pid) {
             continue;
         }
-        let Ok(manifest) = OclivePluginManifest::load_from_dir(root) else {
+        let Ok(manifest) = OclivePluginManifest::load_from_dir(&entry.root) else {
             continue;
         };
         merge_manifest_bridge_events(&manifest, &mut subscribed_set);
@@ -369,19 +369,15 @@ pub fn read_plugin_asset_text(
         .into());
     }
     let roots = state.directory_plugins.plugin_roots.read();
-    let root = roots.get(pid).ok_or_else(|| {
+    let entry = roots.get(pid).ok_or_else(|| {
         ApiError::PluginNotFound {
             plugin_id: pid.to_string(),
         }
         .to_kernel_json()
     })?;
+    let root = &entry.root;
     let path = root.join(&rel);
-    let root_canon = root.canonicalize().map_err(|e| {
-        ApiError::Io {
-            message: format!("plugin root: {}", e),
-        }
-        .to_kernel_json()
-    })?;
+    let root_canon = &entry.canonical;
     let path_canon = path.canonicalize().map_err(|e| {
         CommandError::from(
             ApiError::Io {
@@ -547,8 +543,8 @@ fn build_directory_plugin_catalog(state: &AppState) -> Vec<DirectoryPluginCatalo
     let rt = &state.directory_plugins;
     let roots = rt.plugin_roots.read();
     let mut version_by_id: HashMap<String, Version> = HashMap::new();
-    for (pid, root) in roots.iter() {
-        if let Ok(m) = OclivePluginManifest::load_from_dir(root) {
+    for (pid, entry) in roots.iter() {
+        if let Ok(m) = OclivePluginManifest::load_from_dir(&entry.root) {
             if let Some(v) = parse_manifest_version(&m.version) {
                 version_by_id.insert(pid.clone(), v);
             }
@@ -556,8 +552,8 @@ fn build_directory_plugin_catalog(state: &AppState) -> Vec<DirectoryPluginCatalo
     }
     let mut out: Vec<DirectoryPluginCatalogEntry> = roots
         .iter()
-        .filter_map(|(pid, root)| {
-            let manifest = OclivePluginManifest::load_from_dir(root).ok()?;
+        .filter_map(|(pid, entry)| {
+            let manifest = OclivePluginManifest::load_from_dir(&entry.root).ok()?;
             let is_shell = manifest.shell.is_some();
             let has_ui_settings = manifest.ui_template.is_some()
                 || manifest

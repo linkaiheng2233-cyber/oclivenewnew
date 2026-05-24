@@ -39,7 +39,7 @@ impl DirectoryPluginRuntime {
             .plugin_roots
             .read()
             .get(id)
-            .cloned()
+            .map(|entry| entry.root.clone())
             .ok_or_else(|| format!("unknown directory plugin_id={}", id))?;
         let manifest = OclivePluginManifest::load_from_dir(&root)?;
         if manifest.process.is_some() {

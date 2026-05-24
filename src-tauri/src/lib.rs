@@ -147,11 +147,7 @@ fn serve_ocliveplugin_asset(
             .body(b"plugin disabled".to_vec());
     }
     let roots = state.directory_plugins.plugin_roots.read();
-    let canon_roots = state
-        .directory_plugins
-        .plugin_roots_canonical
-        .read();
-    let Some(root) = roots.get(&plugin_id) else {
+    let Some(entry) = roots.get(&plugin_id) else {
         return ResponseBuilder::new()
             .status(404)
             .mimetype("text/plain; charset=utf-8")
@@ -163,18 +159,8 @@ fn serve_ocliveplugin_asset(
                 .into_bytes(),
             );
     };
-    let Some(root_norm) = canon_roots.get(&plugin_id) else {
-        return ResponseBuilder::new()
-            .status(404)
-            .mimetype("text/plain; charset=utf-8")
-            .body(
-                format!(
-                    "unknown plugin_id={}",
-                    sanitize_plugin_id_for_log(plugin_id.as_str())
-                )
-                .into_bytes(),
-            );
-    };
+    let root = &entry.root;
+    let root_norm = &entry.canonical;
     let path = root.join(&rel);
     let path_norm = match path.canonicalize() {
         Ok(p) if p.starts_with(root_norm) => p,

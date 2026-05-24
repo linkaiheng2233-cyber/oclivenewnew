@@ -46,7 +46,7 @@ fn plugin_root(state: &AppState, plugin_id: &str) -> Result<PathBuf, CommandErro
         .into());
     }
     let roots = state.directory_plugins.plugin_roots.read();
-    roots.get(pid).cloned().ok_or_else(|| {
+    roots.get(pid).map(|entry| entry.root.clone()).ok_or_else(|| {
         ApiError::PluginNotFound {
             plugin_id: pid.to_string(),
         }

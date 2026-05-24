@@ -11,6 +11,27 @@ use std::path::{Path, PathBuf};
 use std::sync::atomic::{AtomicU64, Ordering};
 use std::sync::Arc;
 
+/// 目录插件根路径与其 canonical 形式（同一次 rescan 写入，单次锁读取）。
+#[derive(Debug, Clone)]
+pub struct PluginRootEntry {
+    pub root: PathBuf,
+    pub canonical: PathBuf,
+}
+
+impl PluginRootEntry {
+    fn from_root(root: PathBuf) -> Self {
+        let canonical = root.canonicalize().unwrap_or_else(|_| root.clone());
+        Self { root, canonical }
+    }
+}
+
+fn plugin_roots_from_scan(roots: HashMap<String, PathBuf>) -> HashMap<String, PluginRootEntry> {
+    roots
+        .into_iter()
+        .map(|(id, root)| (id, PluginRootEntry::from_root(root)))
+        .collect()
+}
+
 /// `%APPDATA%/…/oclive_host_plugins.json`
 #[derive(Debug, Clone, Deserialize, Serialize, Default)]
 pub struct HostPluginsFile {
@@ -190,21 +211,9 @@ pub(crate) fn parse_ready_line(line: &str, prefix: &str) -> Option<String> {
     }
 }
 
-fn canonicalize_plugin_roots(roots: &HashMap<String, PathBuf>) -> HashMap<String, PathBuf> {
-    roots
-        .iter()
-        .map(|(id, root)| {
-            let canon = root.canonicalize().unwrap_or_else(|_| root.clone());
-            (id.clone(), canon)
-        })
-        .collect()
-}
-
 /// 目录插件运行时：根路径表 + 懒启动 RPC。
 pub struct DirectoryPluginRuntime {
-    pub plugin_roots: Arc<RwLock<HashMap<String, PathBuf>>>,
-    /// 与 `plugin_roots` 同步更新；供资产网关校验，避免每请求对 root 做 `canonicalize`。
-    pub(crate) plugin_roots_canonical: Arc<RwLock<HashMap<String, PathBuf>>>,
+    pub plugin_roots: Arc<RwLock<HashMap<String, PluginRootEntry>>>,
     rpc_urls: Mutex<HashMap<String, String>>,
     children: Mutex<HashMap<String, std::process::Child>>,
     /// 同一 `plugin_id` 仅允许一处执行 spawn + 握手，避免并发 `ensure_rpc_url` 拉起重复子进程。
@@ -268,10 +277,9 @@ impl DirectoryPluginRuntime {
         let app_data_dir = app_data.to_path_buf();
         let ps_path = app_data_dir.join("plugin_state.json");
         let plugin_state_store = Arc::new(RwLock::new(PluginStateStore::load(&ps_path)));
-        let roots_canonical = canonicalize_plugin_roots(&roots);
+        let root_entries = plugin_roots_from_scan(roots);
         Arc::new(Self {
-            plugin_roots: Arc::new(RwLock::new(roots)),
-            plugin_roots_canonical: Arc::new(RwLock::new(roots_canonical)),
+            plugin_roots: Arc::new(RwLock::new(root_entries)),
             rpc_urls: Mutex::new(HashMap::new()),
             children: Mutex::new(HashMap::new()),
             startup_locks: Mutex::new(HashMap::new()),
@@ -467,8 +475,8 @@ impl DirectoryPluginRuntime {
             state.shell_plugin_id.clear();
         } else {
             let roots = self.plugin_roots.read();
-            if let Some(root) = roots.get(sid) {
-                if let Ok(manifest) = OclivePluginManifest::load_from_dir(root) {
+            if let Some(entry) = roots.get(sid) {
+                if let Ok(manifest) = OclivePluginManifest::load_from_dir(&entry.root) {
                     let ok = manifest.plugin_type.as_deref() == Some("ocliveplugin")
                         && manifest.shell.is_some();
                     if !ok {
@@ -495,14 +503,14 @@ impl DirectoryPluginRuntime {
     }
 
     fn sanitize_slot_appearance_maps(
-        roots: &std::collections::HashMap<String, PathBuf>,
+        roots: &HashMap<String, PluginRootEntry>,
         slots: &mut PluginStateFile,
     ) {
         slots.slot_appearance.retain(|pid, by_slot| {
-            let Some(root) = roots.get(pid) else {
+            let Some(entry) = roots.get(pid) else {
                 return false;
             };
-            let Ok(manifest) = OclivePluginManifest::load_from_dir(root) else {
+            let Ok(manifest) = OclivePluginManifest::load_from_dir(&entry.root) else {
                 return false;
             };
             by_slot.retain(|slot, aid| {
@@ -558,8 +566,7 @@ impl DirectoryPluginRuntime {
         self.catalog_invalidate_gen.fetch_add(1, Ordering::Relaxed);
         let scan = scan_plugins(roles_dir, &self.app_data_dir, &self.host);
         let n = scan.roots.len();
-        *self.plugin_roots.write() = scan.roots.clone();
-        *self.plugin_roots_canonical.write() = canonicalize_plugin_roots(&scan.roots);
+        *self.plugin_roots.write() = plugin_roots_from_scan(scan.roots);
         tracing::info!(
             target: "oclive_plugin",
             "plugin roots rescanned count={}",
@@ -576,7 +583,7 @@ impl DirectoryPluginRuntime {
             return false;
         }
         let root = match self.plugin_roots.read().get(id) {
-            Some(p) => p.clone(),
+            Some(entry) => entry.root.clone(),
             None => return false,
         };
         OclivePluginManifest::load_from_dir(&root)

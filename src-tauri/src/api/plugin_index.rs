@@ -73,8 +73,8 @@ fn build_snapshot(
     let mut local_map: HashMap<String, String> = HashMap::new();
     {
         let roots = state.directory_plugins.plugin_roots.read();
-        for (pid, root) in roots.iter() {
-            if let Ok(manifest) = OclivePluginManifest::load_from_dir(root) {
+        for (pid, entry) in roots.iter() {
+            if let Ok(manifest) = OclivePluginManifest::load_from_dir(&entry.root) {
                 local_map.insert(pid.clone(), manifest.version);
             }
         }
@@ -168,7 +168,7 @@ pub fn install_plugin_from_market(
     ?;
     let root_opt = {
         let roots = state.directory_plugins.plugin_roots.read();
-        roots.get(installed_id.as_str()).cloned()
+        roots.get(installed_id.as_str()).map(|entry| entry.root.clone())
     };
     if let Some(root) = root_opt {
         if let Ok(m) = OclivePluginManifest::load_from_dir(&root) {
@@ -194,7 +194,7 @@ pub fn install_plugin_from_git(
     let installed_id = install_plugin(&state, git, None)?;
     let root_opt = {
         let roots = state.directory_plugins.plugin_roots.read();
-        roots.get(installed_id.as_str()).cloned()
+        roots.get(installed_id.as_str()).map(|entry| entry.root.clone())
     };
     if let Some(root) = root_opt {
         if let Ok(m) = OclivePluginManifest::load_from_dir(&root) {
