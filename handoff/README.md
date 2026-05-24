@@ -15,6 +15,7 @@
 | [BUS_FACTOR_NOTES.md](BUS_FACTOR_NOTES.md) | 关键路径 bus factor |
 | [INVOKE_HOTPATH_MATRIX.md](INVOKE_HOTPATH_MATRIX.md) | Tauri invoke 热路径矩阵 |
 | [04_4.6_PROJECT_TRUTH_CHECKLIST.md](04_4.6_PROJECT_TRUTH_CHECKLIST.md) | 项目认知清单 |
+| [PERF_PHASES.md](PERF_PHASES.md) | 性能/包体与协议验证快照 |
 
 ## 归档规则
 
@@ -22,4 +23,4 @@
 - **留在根目录**：上表所列；新增 handoff 前请确认是否应进 `creator-docs/` 或 `archive/`。
 - **勿删** `archive/` 内文件（史料与审计对照）；链接失效时从 `archive/` 恢复或改链到 `creator-docs/`。
 
-性能阶段总表见 [`creator-docs/development/`](../creator-docs/development/)（原 `PERF_PHASES` 类文档已归文档站维护）。
+性能阶段总表见本目录 [PERF_PHASES.md](PERF_PHASES.md) 与 [`creator-docs/development/`](../creator-docs/development/)。
