@@ -220,12 +220,13 @@ export const useChatStore = defineStore(
         sceneId?: string,
         presenceVariant?: PresenceMode,
         replyIsFallback?: boolean,
+        preSplit?: RoleplaySplit,
       ): RoleplaySplit {
         const roleStore = useRoleStore()
         const uiStore = useUiStore()
         const sid = sceneId ?? uiStore.sceneId ?? 'default'
         const ts = Date.now()
-        const split = splitRoleplayReply(rawContent)
+        const split = preSplit ?? splitRoleplayReply(rawContent)
         const aside = split.aside.trim()
         const dialogue = assistantDialogueFromSplit(rawContent, split)
         const message: ChatMessage = {
@@ -316,12 +317,14 @@ export const useChatStore = defineStore(
             scene_id: sid || null,
           })
           const pres = presentationFromSendResponse(res)
+          const preSplit = splitRoleplayReply(pres.replyText)
           const split = this.addAssistantMessage(
             pres.replyText,
             pres.assistantEmotionLabel,
             sid,
             pres.presenceVariant,
             pres.replyIsFallback,
+            preSplit,
           )
           useDebugStore().recordKnowledgeFromSend(res)
           roleStore.updateLocalAfterMessage(
