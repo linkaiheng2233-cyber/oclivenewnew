@@ -98,7 +98,7 @@ mod tests {
             interaction_mode: None,
             min_runtime_version: None,
             dev_only: false,
-            plugin_backends: Default::default(),
+            plugin_backends: std::sync::Arc::new(Default::default()),
             slot_registry: None,
             slot_groups: None,
             ui_config: crate::models::UiConfig::default(),

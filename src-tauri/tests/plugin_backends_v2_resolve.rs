@@ -25,14 +25,14 @@ fn resolve_role_with_all_builtin_v2() {
     let remote_fb = new_remote_fallback_switch(true);
     let host = PluginHost::new(llm, None, tmp, grants, remote_fb);
     let role = Role {
-        plugin_backends: PluginBackends {
+        plugin_backends: std::sync::Arc::new(PluginBackends {
             memory: MemoryBackend::BuiltinV2,
             emotion: EmotionBackend::BuiltinV2,
             event: EventBackend::BuiltinV2,
             prompt: PromptBackend::BuiltinV2,
             llm: LlmBackend::Ollama,
             ..Default::default()
-        },
+        }),
         ..Default::default()
     };
     let _pl = host.resolve_for_role(&role);

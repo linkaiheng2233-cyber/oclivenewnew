@@ -33,7 +33,7 @@ pub fn disk_role_settings_from_role(role: &Role) -> DiskRoleSettings {
         }),
         autonomous_scene: role.autonomous_scene.clone(),
         interaction_mode: role.interaction_mode.clone(),
-        plugin_backends: Some(role.plugin_backends.clone()),
+        plugin_backends: Some(role.plugin_backends.as_ref().clone()),
         knowledge: None,
         reply_quality_anchor: role.reply_quality_anchor.clone(),
     }

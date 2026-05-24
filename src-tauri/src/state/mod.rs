@@ -305,7 +305,7 @@ impl AppState {
 
     /// 测试或遥测：当前角色包声明的后端集合
     pub fn plugin_backends_snapshot(&self, role: &Role) -> PluginBackends {
-        role.plugin_backends.clone()
+        role.plugin_backends.as_ref().clone()
     }
 
     /// # Errors

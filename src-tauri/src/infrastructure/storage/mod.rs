@@ -55,7 +55,7 @@ pub(crate) fn resolve_llm_backend_env_override() -> Option<LlmBackend> {
 /// 与 oclive-launcher 注入的取值一致：`ollama` / `remote`（大小写不敏感），覆盖磁盘 `plugin_backends.llm`。
 pub(super) fn apply_llm_backend_env_override(role: &mut Role) {
     if let Some(v) = resolve_llm_backend_env_override() {
-        role.plugin_backends.llm = v;
+        std::sync::Arc::make_mut(&mut role.plugin_backends).llm = v;
     }
 }
 
@@ -140,7 +140,7 @@ mod tests {
             interaction_mode: None,
             min_runtime_version: None,
             dev_only: false,
-            plugin_backends: crate::models::PluginBackends::default(),
+            plugin_backends: std::sync::Arc::new(crate::models::PluginBackends::default()),
             ui_config: crate::models::UiConfig::default(),
             knowledge_index: None,
             author_pack: None,

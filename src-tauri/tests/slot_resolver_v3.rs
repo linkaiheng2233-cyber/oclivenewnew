@@ -112,7 +112,7 @@ async fn session_slot_override_changes_folded_memory_backend() {
     );
     let role = Role {
         id: "test-role".into(),
-        plugin_backends: oclive_validation::slot_registry_to_plugin_backends(&reg),
+        plugin_backends: std::sync::Arc::new(oclive_validation::slot_registry_to_plugin_backends(&reg)),
         slot_registry: Some(reg),
         ..Default::default()
     };

@@ -266,6 +266,14 @@ mod tests {
     }
 
     #[test]
+    fn plugin_backends_size_audit() {
+        let n = std::mem::size_of::<PluginBackends>();
+        println!("PluginBackends size_of = {n}");
+        // Round-12 Opus gate: Arc optimization only if >= 128 bytes.
+        assert!(n >= 128, "size {n} below Arc threshold");
+    }
+
+    #[test]
     fn override_whitespace_local_memory_provider_id_clears() {
         let base = PluginBackends {
             memory: MemoryBackend::Local,

@@ -3,8 +3,8 @@
 use super::AppState;
 use crate::infrastructure::storage::resolve_llm_backend_env_override;
 use crate::models::{PluginBackendSource, PluginBackends, PluginBackendsOverride, PluginBackendsSourceMap, Role};
-use std::borrow::Cow;
 use std::collections::BTreeMap;
+use std::sync::Arc;
 
 impl AppState {
     #[must_use]
@@ -136,15 +136,15 @@ impl AppState {
     }
 
     #[must_use]
-    pub fn effective_plugin_backends_for_session<'a>(
+    pub fn effective_plugin_backends_for_session(
         &self,
-        role: &'a Role,
+        role: &Role,
         session_namespace: &str,
-    ) -> Cow<'a, PluginBackends> {
+    ) -> Arc<PluginBackends> {
         if let Some(eff) = self.effective_slot_registry_for_session(role, session_namespace) {
-            Cow::Owned(oclive_validation::slot_registry_to_plugin_backends(&eff))
+            Arc::new(oclive_validation::slot_registry_to_plugin_backends(&eff))
         } else {
-            Cow::Borrowed(&role.plugin_backends)
+            Arc::clone(&role.plugin_backends)
         }
     }
 

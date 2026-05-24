@@ -125,7 +125,7 @@ impl RoleStorage {
             },
         )?;
         let mut role = disk_manifest_to_role(&loaded.disk);
-        role.plugin_backends = slot_registry_to_plugin_backends(&loaded.slot_registry);
+        role.plugin_backends = Arc::new(slot_registry_to_plugin_backends(&loaded.slot_registry));
         role.slot_registry = Some(loaded.slot_registry);
         role.slot_groups = if loaded.groups.is_empty() {
             None
@@ -168,7 +168,7 @@ impl RoleStorage {
 
         // 2) 合成运行时 Role：六槽摘要（plugin_backends）+ 完整 registry 供多实例解析
         let mut role = disk_manifest_to_role(&loaded.disk);
-        role.plugin_backends = slot_registry_to_plugin_backends(&loaded.slot_registry);
+        role.plugin_backends = Arc::new(slot_registry_to_plugin_backends(&loaded.slot_registry));
         role.slot_registry = Some(loaded.slot_registry);
         role.slot_groups = if loaded.groups.is_empty() {
             None
@@ -246,7 +246,7 @@ impl RoleStorage {
             role.autonomous_scene = s.autonomous_scene.clone();
             role.interaction_mode = s.interaction_mode.clone();
             if let Some(ref pb) = s.plugin_backends {
-                role.plugin_backends = pb.clone();
+                role.plugin_backends = Arc::new(pb.clone());
             }
             role.reply_quality_anchor = s.reply_quality_anchor.clone();
         }

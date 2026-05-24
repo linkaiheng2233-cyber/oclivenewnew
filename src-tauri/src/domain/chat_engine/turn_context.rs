@@ -18,7 +18,7 @@ pub struct TurnContext<'a> {
     pub srid: &'a str,
     pub t0: Instant,
     pub preflight_ms: u64,
-    pub effective_backends: PluginBackends,
+    pub effective_backends: Arc<PluginBackends>,
     /// Session-resolved plugin handles; parsed once per turn in `process_message`.
     pub pl: ResolvedRolePlugins,
     pub immersive: bool,

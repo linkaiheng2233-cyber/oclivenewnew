@@ -180,8 +180,8 @@ pub struct Role {
     #[serde(default)]
     pub dev_only: bool,
     /// `settings.json` → `plugin_backends`（可选；默认全 builtin）
-    #[serde(default)]
-    pub plugin_backends: PluginBackends,
+    #[serde(default = "default_plugin_backends")]
+    pub plugin_backends: Arc<PluginBackends>,
     /// `pipeline.ocblueprint` v2 → `slot_registry`（多实例；P2+ 编排用；序列化供调试/导出）
     #[serde(default, skip_serializing_if = "slot_registry_is_empty")]
     pub slot_registry: Option<BTreeMap<String, oclive_validation::SlotRegistryEntry>>,
@@ -217,6 +217,10 @@ pub struct Role {
     pub scene_text_cache: Arc<RwLock<HashMap<String, Arc<str>>>>,
 }
 
+fn default_plugin_backends() -> Arc<PluginBackends> {
+    Arc::new(PluginBackends::default())
+}
+
 impl Default for Role {
     fn default() -> Self {
         Self {
@@ -249,7 +253,7 @@ impl Default for Role {
             interaction_mode: None,
             min_runtime_version: None,
             dev_only: false,
-            plugin_backends: PluginBackends::default(),
+            plugin_backends: default_plugin_backends(),
             slot_registry: None,
             slot_groups: None,
             knowledge_index: None,

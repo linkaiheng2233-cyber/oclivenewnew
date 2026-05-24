@@ -269,7 +269,7 @@ impl ResolvedRolePlugins {
     /// 与 `role.plugin_backends` 一致，便于日志/测试断言（只读借用，避免热路径 clone）。
     #[must_use]
     pub fn backends_snapshot(role: &Role) -> &PluginBackends {
-        &role.plugin_backends
+        role.plugin_backends.as_ref()
     }
 }
 
@@ -299,7 +299,7 @@ mod tests {
         let role = Role::default();
         assert_eq!(
             ResolvedRolePlugins::backends_snapshot(&role),
-            &role.plugin_backends
+            role.plugin_backends.as_ref()
         );
         host().resolve_for_role(&role);
     }
@@ -307,14 +307,14 @@ mod tests {
     #[test]
     fn resolve_selects_memory_v2_when_configured() {
         let role = Role {
-            plugin_backends: PluginBackends {
+            plugin_backends: std::sync::Arc::new(PluginBackends {
                 memory: MemoryBackend::BuiltinV2,
                 emotion: EmotionBackend::Builtin,
                 event: EventBackend::Builtin,
                 prompt: PromptBackend::Builtin,
                 llm: LlmBackend::Ollama,
                 ..Default::default()
-            },
+            }),
             ..Default::default()
         };
         let h = host();
@@ -327,10 +327,10 @@ mod tests {
     #[test]
     fn resolve_selects_emotion_v2_when_configured() {
         let role = Role {
-            plugin_backends: PluginBackends {
+            plugin_backends: std::sync::Arc::new(PluginBackends {
                 emotion: EmotionBackend::BuiltinV2,
                 ..Default::default()
-            },
+            }),
             ..Default::default()
         };
         let h = host();
@@ -392,10 +392,10 @@ mod tests {
             "register mem.local.one"
         );
         let role = Role {
-            plugin_backends: PluginBackends {
+            plugin_backends: std::sync::Arc::new(PluginBackends {
                 memory: MemoryBackend::Local,
                 ..Default::default()
-            },
+            }),
             ..Default::default()
         };
         let pl = h.resolve_for_role(&role);
@@ -457,11 +457,11 @@ mod tests {
             );
         }
         let role = Role {
-            plugin_backends: PluginBackends {
+            plugin_backends: std::sync::Arc::new(PluginBackends {
                 memory: MemoryBackend::Local,
                 local_memory_provider_id: Some("mem.z".into()),
                 ..Default::default()
-            },
+            }),
             ..Default::default()
         };
         let pl = h.resolve_for_role(&role);
