@@ -9,10 +9,12 @@ import {
   type RoleplaySplit,
 } from '../utils/roleplayReplySplit'
 import {
+  bucketMapKey,
   loadMessageMapFromIdb,
   migrateMessageMapFromLocalStorage,
   migrateMessageMapShape,
-  saveMessageMapToIdb,
+  migrateMonolithBlobToBuckets,
+  saveDirtyBucketsToIdb,
   type RoleSceneMessageMap,
 } from '../utils/chatMessageDb'
 import {
@@ -109,13 +111,21 @@ function rebuildLastAssistantAsideMap(messageMap: RoleSceneMessageMap): Record<s
 }
 
 let persistMessagesTimer: ReturnType<typeof setTimeout> | null = null
+const dirtyBuckets = new Set<string>()
 
-function schedulePersistMessages(map: RoleSceneMessageMap) {
+function schedulePersistMessages(
+  map: RoleSceneMessageMap,
+  roleId: string,
+  sceneId: string,
+) {
+  dirtyBuckets.add(bucketMapKey(roleId, sceneId || 'default'))
   if (persistMessagesTimer)
     clearTimeout(persistMessagesTimer)
   persistMessagesTimer = setTimeout(() => {
     persistMessagesTimer = null
-    void saveMessageMapToIdb(map)
+    const pending = new Set(dirtyBuckets)
+    dirtyBuckets.clear()
+    void saveDirtyBucketsToIdb(map, pending)
   }, 300)
 }
 
@@ -159,6 +169,8 @@ export const useChatStore = defineStore(
         const fromIdb = fromLegacy ?? (await loadMessageMapFromIdb())
         if (fromIdb)
           this.messageMap = migrateMessageMapShape(fromIdb)
+        if (fromLegacy)
+          await migrateMonolithBlobToBuckets(this.messageMap)
         this.lastAssistantAside = rebuildLastAssistantAsideMap(this.messageMap)
         this.messagesHydrated = true
       },
@@ -267,7 +279,7 @@ export const useChatStore = defineStore(
             : next
         this.messageMap[roleId]![sid] = trimmed
         syncLastAssistantAside(this.lastAssistantAside, roleId, sid, trimmed)
-        schedulePersistMessages(this.messageMap)
+        schedulePersistMessages(this.messageMap, roleId, sid)
       },
 
       editMessage(
@@ -283,7 +295,7 @@ export const useChatStore = defineStore(
           return
         bucket[idx] = { ...bucket[idx], ...patch }
         syncLastAssistantAside(this.lastAssistantAside, roleId, sid, bucket)
-        schedulePersistMessages(this.messageMap)
+        schedulePersistMessages(this.messageMap, roleId, sid)
       },
 
       deleteMessage(roleId: string, sceneId: string, messageId: string) {
@@ -292,7 +304,7 @@ export const useChatStore = defineStore(
         const next = bucket.filter(m => m.id !== messageId)
         this.messageMap[roleId]![sid] = next
         syncLastAssistantAside(this.lastAssistantAside, roleId, sid, next)
-        schedulePersistMessages(this.messageMap)
+        schedulePersistMessages(this.messageMap, roleId, sid)
       },
 
       clearMessages(roleId: string, sceneId: string) {
@@ -300,7 +312,7 @@ export const useChatStore = defineStore(
         roleSceneBucket(this.messageMap, roleId, sid)
         this.messageMap[roleId]![sid] = []
         this.lastAssistantAside[roleSceneAsideKey(roleId, sid)] = ''
-        schedulePersistMessages(this.messageMap)
+        schedulePersistMessages(this.messageMap, roleId, sid)
       },
 
       async sendMessage(content: string, sceneId: string): Promise<SendMessageResponse> {
