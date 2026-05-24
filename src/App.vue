@@ -1,6 +1,5 @@
 <script setup lang="ts">
 import type { LocalePreference } from './i18n'
-import type { JumpTimeResponse } from './api'
 import { listen } from '@tauri-apps/api/event'
 import { computed, nextTick, onBeforeUnmount, onMounted, ref, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
@@ -22,9 +21,11 @@ import Toast from './components/Toast.vue'
 import TopBarSceneModeDialog from './components/scene/TopBarSceneModeDialog.vue'
 import { useAppToast } from './composables/useAppToast'
 import { useNarrativeScene } from './composables/useNarrativeScene'
-import { useOcliveAppearance } from './composables/useOcliveAppearance'
+import { useGlobalHotkeys } from './composables/useGlobalHotkeys'
+import { usePluginEvents } from './composables/usePluginEvents'
 import { usePluginManagerWindow } from './composables/usePluginManagerWindow'
 import { useReturnFocusOnClose } from './composables/useReturnFocusOnClose'
+import { useSceneTravelBars } from './composables/useSceneTravelBars'
 import { useSceneDestination } from './composables/useSceneDestination'
 import { usePackUiTheme } from './composables/useTheme'
 import {
@@ -45,7 +46,6 @@ import {
   loadRole,
   OCLIVE_DEFAULT_RELATION_SENTINEL,
   setErrorReporter,
-  setRemoteLifeEnabled,
   setRoleInteractionMode,
   setUserRelation,
 } from './api'
@@ -70,7 +70,6 @@ function syncBrowserChromeFromLocale(): void {
 const localePreference = ref<LocalePreference>(getLocalePreference())
 
 const { toast, showToast } = useAppToast()
-const { cycleTheme } = useOcliveAppearance()
 const { applyResolvedNarrativeScene } = useNarrativeScene()
 const {
   sceneTransition,
@@ -82,58 +81,6 @@ const chatListRef = ref<InstanceType<typeof ChatMessageList> | null>(null)
 const chatInputRef = ref<{ focusInput?: () => void } | null>(null)
 const leftPaneRef = ref<HTMLElement | null>(null)
 const roleSwitching = ref(false)
-
-/** 角色回复结束后，若本句含位移意图且有多场景，显示目的地条 */
-const postReplySceneBarVisible = ref(false)
-const postReplySceneSelectedId = ref('')
-/** 邀请同行语义：选目的地后同行或仅叙事 */
-const togetherTravelBarVisible = ref(false)
-const togetherTravelSelectedId = ref('')
-/** 顶栏改场景：叙事独行 / 同行 */
-const topBarSceneDialogVisible = ref(false)
-const pendingTopBarSceneId = ref('')
-/** 顶栏场景确认弹关闭后恢复焦点到场景下拉 */
-const topBarSceneOpenerFocus = ref<HTMLElement | null>(null)
-const quickActionTravelEvent = 'com.oclive.mumu.quick-actions:travel'
-const settingsSetRemoteLifeEvent = 'com.oclive.mumu.settings-panel:set_remote_life'
-const settingsSetInteractionModeEvent
-  = 'com.oclive.mumu.settings-panel:set_interaction_mode'
-const settingsCycleThemeEvent = 'com.oclive.mumu.settings-panel:cycle_theme'
-const settingsResetLayoutEvent = 'com.oclive.mumu.settings-panel:request_reset_layout'
-const settingsResetLayoutResultEvent = 'com.oclive.mumu.settings-panel:reset_layout_result'
-/** 虚拟时间跳转触发 autonomous_scene 规则时，左下角系统提示 */
-const autonomousSceneNotice = ref<{
-  visible: boolean
-  fromLabel: string
-  toLabel: string
-}>({ visible: false, fromLabel: '', toLabel: '' })
-
-const shortcutHelpOpen = ref(false)
-let ctrlLongPressTimer: ReturnType<typeof setTimeout> | null = null
-
-function clearCtrlLongPressTimer(): void {
-  if (ctrlLongPressTimer != null) {
-    window.clearTimeout(ctrlLongPressTimer)
-    ctrlLongPressTimer = null
-  }
-}
-
-function onCtrlHoldHintKeydown(e: KeyboardEvent): void {
-  if (e.key !== 'Control' || e.repeat) {
-    return
-  }
-  clearCtrlLongPressTimer()
-  ctrlLongPressTimer = window.setTimeout(() => {
-    ctrlLongPressTimer = null
-    shortcutHelpOpen.value = true
-  }, 1000)
-}
-
-function onCtrlHoldHintKeyup(e: KeyboardEvent): void {
-  if (e.key === 'Control') {
-    clearCtrlLongPressTimer()
-  }
-}
 
 /** 宽屏左右分栏；窄屏改为上下堆叠，立绘用 stack 布局更易读 */
 const wideSplitLayout = ref(typeof window !== 'undefined' && window.innerWidth > 720)
@@ -166,38 +113,15 @@ const connectivityPluginIndexDetail = computed(() => {
   return d.length > 200 ? `${d.slice(0, 200)}…` : d
 })
 
-/** 顶栏：全部场景选项（展示名） */
-const allSceneOptions = computed(() => {
-  const labels = roleStore.roleInfo.sceneLabels ?? []
-  const scenes = roleStore.roleInfo.scenes ?? []
-  if (labels.length > 0) {
-    return labels.map(s => ({ id: s.id, label: s.label }))
-  }
-  return scenes.map(id => ({ id, label: id }))
-})
-
-/** 除当前叙事场景外可切换的目的地（位移条） */
-const sceneDestinationOptions = computed(() => {
-  const cur = uiStore.sceneId
-  return allSceneOptions.value.filter(s => s.id !== cur)
-})
-
 const messages = computed(() =>
   chatStore.messagesForRoleScene(roleStore.currentRoleId, uiStore.sceneId),
 )
 
-/** 本场景最近一条助手消息拆出的旁白/内心（供左侧叙事区，与主气泡对白分离） */
+/** 本场景最近一条助手旁白/内心（O(1) 读取，见 chatStore.lastAssistantAside） */
 const latestRoleplayAside = computed(() => {
-  const list = messages.value
-  for (let i = list.length - 1; i >= 0; i--) {
-    const m = list[i]
-    if (m.role === 'assistant') {
-      const a = m.aside?.trim()
-      if (a)
-        return a
-    }
-  }
-  return ''
+  const roleId = roleStore.currentRoleId
+  const sceneId = uiStore.sceneId || 'default'
+  return chatStore.lastAssistantAsideFor(roleId, sceneId)
 })
 
 const topMoreOpen = ref(false)
@@ -215,19 +139,51 @@ const {
   },
 })
 
+const {
+  allSceneOptions,
+  sceneDestinationOptions,
+  postReplySceneBarVisible,
+  postReplySceneSelectedId,
+  togetherTravelBarVisible,
+  togetherTravelSelectedId,
+  topBarSceneDialogVisible,
+  pendingTopBarSceneId,
+  autonomousSceneNotice,
+  resetPureChatSceneUi,
+  dismissPostReplySceneBar,
+  dismissTogetherTravelBar,
+  confirmPostReplyScene,
+  confirmTogetherTravel,
+  onTopBarSceneChange,
+  dismissTopBarSceneDialog,
+  confirmTopBarScene,
+  onPluginQuickActionTravel,
+  onVirtualTimeJumpComplete,
+  dismissAutonomousSceneNotice,
+  offerSceneBarsAfterReply,
+  clearSceneBarsBeforeSend,
+} = useSceneTravelBars({ applySceneDestination, sceneLabelForId })
+
+const { shortcutHelpOpen, openShortcutHelp, openSettingsView } = useGlobalHotkeys({
+  simplePluginManagerOpen,
+  settingsViewOpen,
+  topMoreOpen,
+  marketPanelVisible: computed(() => pluginMarketStore.marketPanelVisible),
+  debugVisible: computed(() => debugStore.visible),
+  openPluginManagerPanel,
+  toggleDebug: () => debugStore.toggle(),
+  closeMarketPanel: () => pluginMarketStore.closeMarketPanel(),
+})
+
+usePluginEvents({
+  showToast,
+  onQuickActionTravel: onPluginQuickActionTravel,
+  onPureChatMode: resetPureChatSceneUi,
+})
+
 useReturnFocusOnClose(settingsViewOpen)
 useReturnFocusOnClose(simplePluginManagerOpen)
 useReturnFocusOnClose(shortcutHelpOpen)
-
-function openShortcutHelp(): void {
-  shortcutHelpOpen.value = true
-  topMoreOpen.value = false
-}
-
-function openSettingsView(): void {
-  settingsViewOpen.value = true
-  topMoreOpen.value = false
-}
 
 const sceneHistorySplitIndex = computed(() =>
   chatStore.sceneHistorySplitForRoleScene(roleStore.currentRoleId, uiStore.sceneId),
@@ -263,89 +219,11 @@ async function onInteractionModeChange(ev: Event) {
   try {
     const info = await setRoleInteractionMode(roleStore.currentRoleId, v)
     roleStore.applyRoleInfo(info)
-    if (v === 'pure_chat') {
-      postReplySceneBarVisible.value = false
-      postReplySceneSelectedId.value = ''
-      togetherTravelBarVisible.value = false
-      togetherTravelSelectedId.value = ''
-      topBarSceneDialogVisible.value = false
-      pendingTopBarSceneId.value = ''
-      autonomousSceneNotice.value = {
-        visible: false,
-        fromLabel: '',
-        toLabel: '',
-      }
-    }
+    if (v === 'pure_chat')
+      resetPureChatSceneUi()
   }
   catch (err) {
     showToast('error', err instanceof Error ? err.message : String(err))
-  }
-}
-
-async function onPluginSetRemoteLife(payload: unknown): Promise<void> {
-  const enabledRaw = (payload as { enabled?: boolean } | null)?.enabled
-  if (typeof enabledRaw !== 'boolean')
-    return
-  try {
-    const info = await setRemoteLifeEnabled(roleStore.currentRoleId, enabledRaw)
-    roleStore.applyRoleInfo(info)
-    showToast('success', enabledRaw ? t('app.toast.remoteLifeOn') : t('app.toast.remoteLifeOff'))
-  }
-  catch (err) {
-    showToast('error', err instanceof Error ? err.message : String(err))
-  }
-}
-
-async function onPluginSetInteractionMode(payload: unknown): Promise<void> {
-  const mode = (payload as { mode?: string } | null)?.mode
-  if (mode !== 'immersive' && mode !== 'pure_chat')
-    return
-  try {
-    const info = await setRoleInteractionMode(roleStore.currentRoleId, mode)
-    roleStore.applyRoleInfo(info)
-    if (mode === 'pure_chat') {
-      postReplySceneBarVisible.value = false
-      postReplySceneSelectedId.value = ''
-      togetherTravelBarVisible.value = false
-      togetherTravelSelectedId.value = ''
-      topBarSceneDialogVisible.value = false
-      pendingTopBarSceneId.value = ''
-      autonomousSceneNotice.value = {
-        visible: false,
-        fromLabel: '',
-        toLabel: '',
-      }
-    }
-    showToast(
-      'success',
-      mode === 'immersive'
-        ? t('app.toast.interactionImmersive')
-        : t('app.toast.interactionPureChat'),
-    )
-  }
-  catch (err) {
-    showToast('error', err instanceof Error ? err.message : String(err))
-  }
-}
-
-function onPluginCycleTheme(): void {
-  cycleTheme()
-}
-
-async function onPluginResetLayout(): Promise<void> {
-  try {
-    await pluginStore.resetToRolePackDefault()
-    const message = t('app.toast.layoutResetOk')
-    hostEventBus.emit(settingsResetLayoutResultEvent, { ok: true, message })
-    showToast('success', message)
-  }
-  catch (err) {
-    const message = err instanceof Error ? err.message : String(err)
-    hostEventBus.emit(settingsResetLayoutResultEvent, {
-      ok: false,
-      message: t('app.toast.layoutResetFailPrefix') + message,
-    })
-    showToast('error', message)
   }
 }
 
@@ -369,10 +247,7 @@ async function initialize() {
 }
 
 async function onSend(payload: { content: string }) {
-  postReplySceneBarVisible.value = false
-  postReplySceneSelectedId.value = ''
-  togetherTravelBarVisible.value = false
-  togetherTravelSelectedId.value = ''
+  clearSceneBarsBeforeSend()
   const userText = payload.content
   try {
     const res = await chatStore.sendMessage(userText, uiStore.sceneId)
@@ -382,15 +257,10 @@ async function onSend(payload: { content: string }) {
     if (res.reply_is_fallback) {
       showToast('info', t('app.toast.fallbackReply'))
     }
-    const offerTogether = res.offer_together_travel ?? false
-    const offerPicker = res.offer_destination_picker ?? false
-    // 问卷：邀请同行条优先于「仅选目的地」条（与后端 movement_ui_flags 一致）
-    if (offerTogether && sceneDestinationOptions.value.length > 0) {
-      togetherTravelBarVisible.value = true
-    }
-    else if (offerPicker && sceneDestinationOptions.value.length > 0) {
-      postReplySceneBarVisible.value = true
-    }
+    offerSceneBarsAfterReply(
+      res.offer_together_travel ?? false,
+      res.offer_destination_picker ?? false,
+    )
   }
   catch (err) {
     showToast('error', err instanceof Error ? err.message : String(err))
@@ -398,72 +268,6 @@ async function onSend(payload: { content: string }) {
   finally {
     chatInputRef.value?.focusInput?.()
   }
-}
-
-async function confirmPostReplyScene(together: boolean) {
-  const id = postReplySceneSelectedId.value.trim()
-  postReplySceneBarVisible.value = false
-  postReplySceneSelectedId.value = ''
-  await applySceneDestination(id, together)
-}
-
-function dismissPostReplySceneBar() {
-  postReplySceneBarVisible.value = false
-  postReplySceneSelectedId.value = ''
-}
-
-async function confirmTogetherTravel(together: boolean) {
-  const id = togetherTravelSelectedId.value.trim()
-  togetherTravelBarVisible.value = false
-  togetherTravelSelectedId.value = ''
-  await applySceneDestination(id, together)
-}
-
-function dismissTogetherTravelBar() {
-  togetherTravelBarVisible.value = false
-  togetherTravelSelectedId.value = ''
-}
-
-function onTopBarSceneChange(ev: Event) {
-  const sel = ev.target as HTMLSelectElement
-  const next = sel.value
-  if (next === uiStore.sceneId)
-    return
-  const a = document.activeElement
-  topBarSceneOpenerFocus.value = a instanceof HTMLElement ? a : null
-  pendingTopBarSceneId.value = next
-  topBarSceneDialogVisible.value = true
-  sel.value = uiStore.sceneId
-}
-
-function dismissTopBarSceneDialog() {
-  topBarSceneDialogVisible.value = false
-  pendingTopBarSceneId.value = ''
-  const el = topBarSceneOpenerFocus.value
-  topBarSceneOpenerFocus.value = null
-  void nextTick(() => el?.focus({ preventScroll: true }))
-}
-
-async function confirmTopBarScene(together: boolean) {
-  const id = pendingTopBarSceneId.value.trim()
-  topBarSceneDialogVisible.value = false
-  pendingTopBarSceneId.value = ''
-  const el = topBarSceneOpenerFocus.value
-  topBarSceneOpenerFocus.value = null
-  void nextTick(() => el?.focus({ preventScroll: true }))
-  await applySceneDestination(id, together)
-}
-
-function onPluginQuickActionTravel(payload: unknown): void {
-  const sceneId = (payload as { sceneId?: string } | null)?.sceneId
-  const togetherRaw = (payload as { together?: boolean } | null)?.together
-  const id = typeof sceneId === 'string' ? sceneId.trim() : ''
-  if (!id)
-    return
-  if (!allSceneOptions.value.some(s => s.id === id))
-    return
-  const together = togetherRaw === true
-  void applySceneDestination(id, together)
 }
 
 async function onSwitchRole(nextRoleId: string) {
@@ -536,20 +340,6 @@ async function onPackImported(roleId: string) {
   }
 }
 
-function onVirtualTimeJumpComplete(res: JumpTimeResponse): void {
-  if (res.autonomous_scene_from && res.autonomous_scene_to) {
-    autonomousSceneNotice.value = {
-      visible: true,
-      fromLabel: sceneLabelForId(res.autonomous_scene_from),
-      toLabel: sceneLabelForId(res.autonomous_scene_to),
-    }
-  }
-}
-
-function dismissAutonomousSceneNotice(): void {
-  autonomousSceneNotice.value = { visible: false, fromLabel: '', toLabel: '' }
-}
-
 async function onReloadPolicy() {
   try {
     const msg = await debugStore.reloadPolicy()
@@ -557,55 +347,6 @@ async function onReloadPolicy() {
   }
   catch (err) {
     showToast('error', err instanceof Error ? err.message : String(err))
-  }
-}
-
-function onHotkey(e: KeyboardEvent) {
-  if (e.key === 'Escape') {
-    if (simplePluginManagerOpen.value) {
-      e.preventDefault()
-      simplePluginManagerOpen.value = false
-      return
-    }
-    if (shortcutHelpOpen.value) {
-      e.preventDefault()
-      shortcutHelpOpen.value = false
-      return
-    }
-    if (pluginMarketStore.marketPanelVisible) {
-      e.preventDefault()
-      pluginMarketStore.closeMarketPanel()
-      return
-    }
-    if (settingsViewOpen.value) {
-      e.preventDefault()
-      settingsViewOpen.value = false
-      return
-    }
-    if (topMoreOpen.value) {
-      e.preventDefault()
-      topMoreOpen.value = false
-      return
-    }
-    if (debugStore.visible) {
-      e.preventDefault()
-      debugStore.toggle()
-      return
-    }
-  }
-  if (e.ctrlKey && e.shiftKey && e.key.toLowerCase() === 'f') {
-    e.preventDefault()
-    openPluginManagerPanel()
-    return
-  }
-  if (e.ctrlKey && e.shiftKey && e.key.toLowerCase() === 's') {
-    e.preventDefault()
-    openSettingsView()
-    return
-  }
-  if (e.ctrlKey && e.shiftKey && e.key.toLowerCase() === 'd') {
-    e.preventDefault()
-    debugStore.toggle()
   }
 }
 
@@ -675,14 +416,6 @@ onMounted(() => {
   setErrorReporter((err) => {
     showToast('error', err.message)
   })
-  hostEventBus.on(quickActionTravelEvent, onPluginQuickActionTravel)
-  hostEventBus.on(settingsSetRemoteLifeEvent, onPluginSetRemoteLife)
-  hostEventBus.on(settingsSetInteractionModeEvent, onPluginSetInteractionMode)
-  hostEventBus.on(settingsCycleThemeEvent, onPluginCycleTheme)
-  hostEventBus.on(settingsResetLayoutEvent, onPluginResetLayout)
-  window.addEventListener('keydown', onHotkey)
-  window.addEventListener('keydown', onCtrlHoldHintKeydown)
-  window.addEventListener('keyup', onCtrlHoldHintKeyup)
   window.addEventListener('resize', scheduleRefreshSplitLayout)
   refreshSplitLayout()
   initialize()
@@ -709,16 +442,7 @@ onBeforeUnmount(() => {
     splitLayoutResizeRaf = 0
   }
   setErrorReporter(null)
-  window.removeEventListener('keydown', onHotkey)
-  hostEventBus.off(quickActionTravelEvent, onPluginQuickActionTravel)
-  hostEventBus.off(settingsSetRemoteLifeEvent, onPluginSetRemoteLife)
-  hostEventBus.off(settingsSetInteractionModeEvent, onPluginSetInteractionMode)
-  hostEventBus.off(settingsCycleThemeEvent, onPluginCycleTheme)
-  hostEventBus.off(settingsResetLayoutEvent, onPluginResetLayout)
-  window.removeEventListener('keydown', onCtrlHoldHintKeydown)
-  window.removeEventListener('keyup', onCtrlHoldHintKeyup)
   window.removeEventListener('resize', scheduleRefreshSplitLayout)
-  clearCtrlLongPressTimer()
   void disposeTauriListener(unlistenPluginFs)
   void disposeTauriListener(unlistenProtocolInstall)
 })

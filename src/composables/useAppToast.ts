@@ -1,6 +1,7 @@
 import { ref } from 'vue'
 
 export type ToastType = 'success' | 'error' | 'warning' | 'info'
+export type AppToastFn = (type: ToastType, message: string) => void
 
 const TOAST_MS_DEFAULT = 3200
 const TOAST_MS_ERROR = 5600
