@@ -185,7 +185,7 @@ async fn record_memory_and_event(
             .execute(tx.as_mut())
         );
     } else {
-        tracing::info!("tx memory skipped role_id={} reason=low_value", role_id);
+        tracing::info!(role_id = role_id, reason = "low_value", "tx memory skipped");
     }
 
     let mut memory_count = db

@@ -77,24 +77,26 @@ pub struct ChatTurnTxInput<'a> {
 pub(crate) fn log_txn_finish(tx_name: &str, role_id: &str, elapsed_ms: u128) {
     if elapsed_ms >= TX_ERROR_MS {
         tracing::error!(
-            "tx slow code=TXN_SLOW_CRITICAL tx_name={} role_id={} elapsed_ms={}",
-            tx_name,
-            role_id,
-            elapsed_ms
+            tx_name = tx_name,
+            role_id = role_id,
+            elapsed_ms = elapsed_ms,
+            code = "TXN_SLOW_CRITICAL",
+            "tx slow",
         );
     } else if elapsed_ms >= TX_WARN_MS {
         tracing::warn!(
-            "tx slow code=TXN_SLOW_WARN tx_name={} role_id={} elapsed_ms={}",
-            tx_name,
-            role_id,
-            elapsed_ms
+            tx_name = tx_name,
+            role_id = role_id,
+            elapsed_ms = elapsed_ms,
+            code = "TXN_SLOW_WARN",
+            "tx slow",
         );
     } else {
         tracing::info!(
-            "tx finish tx_name={} role_id={} elapsed_ms={}",
-            tx_name,
-            role_id,
-            elapsed_ms
+            tx_name = tx_name,
+            role_id = role_id,
+            elapsed_ms = elapsed_ms,
+            "tx finish",
         );
     }
 }
@@ -151,7 +153,7 @@ impl DbManager {
         event: &Event,
     ) -> Result<(String, String)> {
         let started = Instant::now();
-        tracing::info!("tx save_memory_and_event_atomic start role_id={}", role_id);
+        tracing::info!(role_id = role_id, "tx save_memory_and_event_atomic start");
         let mut tx = self
             .pool
             .begin()
@@ -202,11 +204,11 @@ impl DbManager {
         })?;
         let elapsed_ms = started.elapsed().as_millis();
         tracing::info!(
-            "tx save_memory_and_event_atomic committed role_id={} memory_id={} event_id={} elapsed_ms={}",
-            role_id,
-            memory_id,
-            event_id,
-            elapsed_ms
+            role_id = role_id,
+            memory_id = %memory_id,
+            event_id = %event_id,
+            elapsed_ms = elapsed_ms,
+            "tx save_memory_and_event_atomic committed",
         );
         log_txn_finish("save_memory_and_event_atomic", role_id, elapsed_ms);
 

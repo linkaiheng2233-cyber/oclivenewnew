@@ -78,10 +78,10 @@ async fn run(
     let scene_id = validate_scene_id(mrid, &role.scene_ids, requested_scene_id);
     tracing::debug!(
         target: "oclive_chat",
-        "send_message start role_id={} scene_id={} session_ns={}",
-        mrid,
-        scene_id,
-        srid
+        role_id = %mrid,
+        scene_id = %scene_id,
+        session_ns = %srid,
+        "send_message start",
     );
 
     stage_process_message(
@@ -98,11 +98,11 @@ async fn run(
         state.effective_plugin_backend_sources_for_session(role.as_ref(), srid);
     tracing::debug!(
         target: "oclive_chat",
-        "send_message backends role_id={} scene_id={} session_ns={} {}",
-        mrid,
-        scene_id,
-        srid,
-        backend_resolution_summary(&effective_backends, &effective_sources)
+        role_id = %mrid,
+        scene_id = %scene_id,
+        session_ns = %srid,
+        backends = %backend_resolution_summary(&effective_backends, &effective_sources),
+        "send_message backends",
     );
 
     startup_health::ensure_once(state, role.as_ref(), &effective_backends)

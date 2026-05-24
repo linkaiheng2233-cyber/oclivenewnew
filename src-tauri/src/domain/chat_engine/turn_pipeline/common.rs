@@ -555,13 +555,24 @@ pub(crate) async fn post_llm(
     let duration_ms = t0.elapsed().as_millis() as u64;
     tracing::info!(
         target: "oclive_chat",
-        "send_message {path_label} role_id={mrid} scene_id={scene_id} duration_ms={duration_ms} main_llm_fallback={} offer_destination_picker={offer_destination_picker} offer_together_travel={offer_together_travel}",
-        llm.main_llm_fallback,
+        path_label = path_label,
+        role_id = %mrid,
+        scene_id = %scene_id,
+        duration_ms = duration_ms,
+        main_llm_fallback = llm.main_llm_fallback,
+        offer_destination_picker = offer_destination_picker,
+        offer_together_travel = offer_together_travel,
+        "send_message end",
     );
     tracing::debug!(
         target: "oclive_chat",
-        "send_message {path_label} timing preflight_ms={preflight_ms} pre_main_llm_ms={pre_main_llm_ms} main_llm_ms={} post_llm_ms={post_llm_ms} duration_ms={duration_ms}",
-        llm.main_llm_ms,
+        path_label = path_label,
+        preflight_ms = preflight_ms,
+        pre_main_llm_ms = pre_main_llm_ms,
+        main_llm_ms = llm.main_llm_ms,
+        post_llm_ms = post_llm_ms,
+        duration_ms = duration_ms,
+        "send_message stage timing",
     );
 
     let (presence_mode, events) = match mode {
