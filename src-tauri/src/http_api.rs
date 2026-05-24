@@ -63,6 +63,18 @@ pub struct ApiErrorResponse {
 
 type ApiError = (axum::http::StatusCode, Json<ApiErrorResponse>);
 
+struct ApiTempCleanup {
+    db_path: PathBuf,
+    app_data_dir: PathBuf,
+}
+
+impl Drop for ApiTempCleanup {
+    fn drop(&mut self) {
+        let _ = std::fs::remove_file(&self.db_path);
+        let _ = std::fs::remove_dir_all(&self.app_data_dir);
+    }
+}
+
 fn api_error(status: axum::http::StatusCode, error: KernelErrorBody) -> ApiError {
     (status, Json(ApiErrorResponse { error }))
 }
@@ -195,6 +207,10 @@ pub async fn serve_api(port: u16) -> Result<(), String> {
         .map(|p| p.join("oclive_api_app_data"))
         .unwrap_or_else(|| std::env::temp_dir().join("oclive_api_app_data"));
     let _ = std::fs::create_dir_all(&app_data_dir);
+    let _api_temp_cleanup = ApiTempCleanup {
+        db_path: db_path.clone(),
+        app_data_dir: app_data_dir.clone(),
+    };
     let mock_llm = std::env::var("OCLIVE_HTTP_API_MOCK_LLM")
         .map(|v| v == "1" || v.eq_ignore_ascii_case("true"))
         .unwrap_or(false);
