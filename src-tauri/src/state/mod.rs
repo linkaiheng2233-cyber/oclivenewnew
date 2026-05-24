@@ -177,7 +177,7 @@ impl AppState {
 
         let storage = self.storage.clone();
         let role_id_owned = role_id.to_string();
-        let loaded = cell
+        let loaded = match cell
             .get_or_try_init(|| async move {
                 let role = tokio::task::spawn_blocking(move || storage.load_role(&role_id_owned))
                     .await
@@ -186,7 +186,14 @@ impl AppState {
                     })??;
                 Ok::<Arc<Role>, crate::error::AppError>(Arc::new(role))
             })
-            .await?;
+            .await
+        {
+            Ok(v) => v,
+            Err(e) => {
+                self.role_load_inflight.remove(role_id);
+                return Err(e);
+            }
+        };
 
         self.insert_role_cache(role_id, loaded);
         self.role_load_inflight.remove(role_id);
