@@ -3,31 +3,32 @@ use crate::error::AppError;
 use crate::models::dto::{GenerateMonologueRequest, GenerateMonologueResponse};
 use crate::state::AppState;
 use tauri::State;
+use crate::api::error::CommandError;
 /// # Errors
 ///
 /// Returns [`Err`] with a human-readable message when the operation fails.
 pub async fn generate_monologue_impl(
     state: &AppState,
     role_id: &str,
-) -> Result<GenerateMonologueResponse, String> {
+) -> Result<GenerateMonologueResponse, CommandError> {
     if !state
         .db_manager
         .role_runtime_exists(role_id)
         .await
-        .map_err(|e| e.to_frontend_error())?
+        ?
     {
-        return Err(AppError::RoleRuntimeNotReady.to_frontend_error());
+        return Err(AppError::RoleRuntimeNotReady.into());
     }
 
     let role = state
         .load_role_cached_async(role_id)
         .await
-        .map_err(|e| e.to_frontend_error())?;
+        ?;
     let scene = state
         .db_manager
         .get_current_scene(role_id)
         .await
-        .map_err(|e| e.to_frontend_error())?
+        ?
         .unwrap_or_else(|| "default".to_string());
     let ts = get_time_state_impl(state, role_id).await?;
 
@@ -62,7 +63,7 @@ pub async fn generate_monologue_impl(
                 );
                 templates[idx].clone()
             } else {
-                return Err(AppError::OllamaError(e.to_string()).to_frontend_error());
+                return Err(AppError::OllamaError(e.to_string()).into());
             }
         }
     };
@@ -78,6 +79,6 @@ pub async fn generate_monologue_impl(
 pub async fn generate_monologue(
     req: GenerateMonologueRequest,
     state: State<'_, AppState>,
-) -> Result<GenerateMonologueResponse, String> {
+) -> Result<GenerateMonologueResponse, CommandError> {
     generate_monologue_impl(&state, &req.role_id).await
 }

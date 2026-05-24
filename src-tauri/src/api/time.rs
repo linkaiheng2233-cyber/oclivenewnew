@@ -6,6 +6,7 @@ use crate::models::Role;
 use crate::state::AppState;
 use chrono::{DateTime, Timelike, Utc};
 use tauri::State;
+use crate::api::error::CommandError;
 
 /// 虚拟时间对齐到分钟（毫秒时间戳）
 #[must_use]
@@ -21,7 +22,7 @@ async fn apply_autonomous_scene_after_jump(
     role_id: &str,
     role: &Role,
     virtual_time_ms: i64,
-) -> Result<Option<(String, String)>, String> {
+) -> Result<Option<(String, String)>, CommandError> {
     let Some(ref cfg) = role.autonomous_scene else {
         return Ok(None);
     };
@@ -32,7 +33,7 @@ async fn apply_autonomous_scene_after_jump(
         .db_manager
         .get_current_scene(role_id)
         .await
-        .map_err(|e| e.to_frontend_error())?;
+        ?;
     let Some(cs) = current else {
         return Ok(None);
     };
@@ -55,7 +56,7 @@ async fn apply_autonomous_scene_after_jump(
         let scenes = state
             .storage
             .list_scene_ids(role_id)
-            .map_err(|e| e.to_frontend_error())?;
+            ?;
         if !scenes.iter().any(|s| s == &rule.to_scene) {
             continue;
         }
@@ -70,7 +71,7 @@ async fn apply_autonomous_scene_after_jump(
             .db_manager
             .set_current_scene(role_id, &rule.to_scene)
             .await
-            .map_err(|e| e.to_frontend_error())?;
+            ?;
         return Ok(Some((cs, rule.to_scene.clone())));
     }
     Ok(None)
@@ -100,21 +101,21 @@ fn resolve_preset_target_ms(base_ms: i64, preset_raw: &str) -> Option<i64> {
 pub async fn get_time_state_impl(
     state: &AppState,
     role_id: &str,
-) -> Result<TimeStateResponse, String> {
+) -> Result<TimeStateResponse, CommandError> {
     if !state
         .db_manager
         .role_runtime_exists(role_id)
         .await
-        .map_err(|e| e.to_frontend_error())?
+        ?
     {
-        return Err(AppError::RoleRuntimeNotReady.to_frontend_error());
+        return Err(AppError::RoleRuntimeNotReady.into());
     }
 
     if !state
         .db_manager
         .get_interaction_mode(role_id)
         .await
-        .map_err(|e| e.to_frontend_error())?
+        ?
         .is_immersive()
     {
         let ms = round_to_minute_ms(Utc::now().timestamp_millis());
@@ -129,7 +130,7 @@ pub async fn get_time_state_impl(
         .db_manager
         .get_virtual_time_ms(role_id)
         .await
-        .map_err(|e| e.to_frontend_error())?
+        ?
         .unwrap_or(0);
     if ms == 0 {
         ms = round_to_minute_ms(Utc::now().timestamp_millis());
@@ -137,7 +138,7 @@ pub async fn get_time_state_impl(
             .db_manager
             .set_virtual_time_ms(role_id, ms)
             .await
-            .map_err(|e| e.to_frontend_error())?;
+            ?;
     }
 
     let dt = DateTime::from_timestamp_millis(ms).unwrap_or_else(Utc::now);
@@ -152,25 +153,25 @@ pub async fn get_time_state_impl(
 pub async fn jump_time_impl(
     state: &AppState,
     req: &JumpTimeRequest,
-) -> Result<JumpTimeResponse, String> {
+) -> Result<JumpTimeResponse, CommandError> {
     if !state
         .db_manager
         .role_runtime_exists(&req.role_id)
         .await
-        .map_err(|e| e.to_frontend_error())?
+        ?
     {
-        return Err(AppError::RoleRuntimeNotReady.to_frontend_error());
+        return Err(AppError::RoleRuntimeNotReady.into());
     }
 
     let role = state
         .load_role_cached_async(&req.role_id)
         .await
-        .map_err(|e| e.to_frontend_error())?;
+        ?;
     let current_scene = state
         .db_manager
         .get_current_scene(&req.role_id)
         .await
-        .map_err(|e| e.to_frontend_error())?;
+        ?;
     let eff_key = resolve_effective_user_relation_key(
         state,
         role.as_ref(),
@@ -178,19 +179,19 @@ pub async fn jump_time_impl(
         current_scene.as_deref(),
     )
     .await
-    .map_err(|e| e.to_frontend_error())?;
+    ?;
 
     let favor_before = state
         .db_manager
         .favorability_for_identity_with_runtime_fallback(&req.role_id, eff_key.as_str())
         .await
-        .map_err(|e| e.to_frontend_error())?;
+        ?;
 
     if !state
         .db_manager
         .get_interaction_mode(&req.role_id)
         .await
-        .map_err(|e| e.to_frontend_error())?
+        ?
         .is_immersive()
     {
         let ms = round_to_minute_ms(Utc::now().timestamp_millis());
@@ -210,19 +211,19 @@ pub async fn jump_time_impl(
         .db_manager
         .get_virtual_time_ms(&req.role_id)
         .await
-        .map_err(|e| e.to_frontend_error())?
+        ?
         .unwrap_or_else(|| round_to_minute_ms(Utc::now().timestamp_millis()));
     let target_ms = match (req.timestamp_ms, req.preset.as_deref()) {
         (Some(ts), _) => ts,
         (None, Some(preset)) => resolve_preset_target_ms(base_ms, preset).ok_or_else(|| {
             AppError::InvalidParameter(format!("unsupported jump preset: {}", preset))
-                .to_frontend_error()
+                
         })?,
         (None, None) => {
             return Err(AppError::InvalidParameter(
                 "jump_time requires timestamp_ms or preset".to_string(),
             )
-            .to_frontend_error());
+            .into());
         }
     };
     let ms = round_to_minute_ms(target_ms);
@@ -230,7 +231,7 @@ pub async fn jump_time_impl(
         .db_manager
         .set_virtual_time_ms(&req.role_id, ms)
         .await
-        .map_err(|e| e.to_frontend_error())?;
+        ?;
     let autonomous_scene =
         apply_autonomous_scene_after_jump(state, &req.role_id, role.as_ref(), ms).await?;
     let ts = get_time_state_impl(state, &req.role_id).await?;
@@ -239,7 +240,7 @@ pub async fn jump_time_impl(
         .db_manager
         .favorability_for_identity_with_runtime_fallback(&req.role_id, eff_key.as_str())
         .await
-        .map_err(|e| e.to_frontend_error())?;
+        ?;
 
     let monologues = generate_monologue_lines(state, &req.role_id, &ts, 2).await?;
 
@@ -262,7 +263,7 @@ pub async fn jump_time_impl(
 pub async fn get_time_state(
     role_id: String,
     state: State<'_, AppState>,
-) -> Result<TimeStateResponse, String> {
+) -> Result<TimeStateResponse, CommandError> {
     get_time_state_impl(&state, &role_id).await
 }
 /// # Errors
@@ -272,7 +273,7 @@ pub async fn get_time_state(
 pub async fn jump_time(
     req: JumpTimeRequest,
     state: State<'_, AppState>,
-) -> Result<JumpTimeResponse, String> {
+) -> Result<JumpTimeResponse, CommandError> {
     jump_time_impl(&state, &req).await
 }
 

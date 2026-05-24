@@ -129,6 +129,12 @@ impl From<CommandError> for String {
     }
 }
 
+impl fmt::Display for CommandError {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        write!(f, "{}", self.0.to_frontend_error())
+    }
+}
+
 /// 将 `DirectoryPluginRuntime::ensure_rpc_url` 等返回的纯文本失败映射为 **`KernelErrorBody` JSON 单行**。
 #[must_use]
 pub fn map_directory_rpc_url_error(plugin_id: &str, err: String) -> String {

@@ -5,23 +5,24 @@ use crate::models::dto::{
 };
 use crate::state::AppState;
 use tauri::State;
+use crate::api::error::CommandError;
 /// # Errors
 ///
 /// Returns [`Err`] with a human-readable message when the operation fails.
 pub async fn switch_scene_impl(
     state: &AppState,
     req: &SwitchSceneRequest,
-) -> Result<SwitchSceneResponse, String> {
+) -> Result<SwitchSceneResponse, CommandError> {
     let scenes = state
         .storage
         .list_scene_ids(&req.role_id)
-        .map_err(|e| e.to_frontend_error())?;
+        ?;
     if !scenes.iter().any(|s| s == &req.scene_id) {
         return Err(AppError::InvalidParameter(format!(
             "scene_id not in role pack: {}",
             req.scene_id
         ))
-        .to_frontend_error());
+        .into());
     }
 
     if req.together {
@@ -29,13 +30,13 @@ pub async fn switch_scene_impl(
             .db_manager
             .set_current_scene(&req.role_id, &req.scene_id)
             .await
-            .map_err(|e| e.to_frontend_error())?;
+            ?;
     }
     state
         .db_manager
         .set_user_presence_scene(&req.role_id, &req.scene_id)
         .await
-        .map_err(|e| e.to_frontend_error())?;
+        ?;
     let role = get_role_info_impl(state, &req.role_id, None).await?;
     let scene_welcome = if req.together {
         state
@@ -55,23 +56,23 @@ pub async fn switch_scene_impl(
 pub async fn set_user_presence_scene_impl(
     state: &AppState,
     req: &SetUserPresenceSceneRequest,
-) -> Result<RoleInfo, String> {
+) -> Result<RoleInfo, CommandError> {
     let scenes = state
         .storage
         .list_scene_ids(&req.role_id)
-        .map_err(|e| e.to_frontend_error())?;
+        ?;
     if !scenes.iter().any(|s| s == &req.scene_id) {
         return Err(AppError::InvalidParameter(format!(
             "scene_id not in role pack: {}",
             req.scene_id
         ))
-        .to_frontend_error());
+        .into());
     }
     state
         .db_manager
         .set_user_presence_scene(&req.role_id, &req.scene_id)
         .await
-        .map_err(|e| e.to_frontend_error())?;
+        ?;
     get_role_info_impl(state, &req.role_id, None)
         .await
         .map_err(Into::into)
@@ -83,7 +84,7 @@ pub async fn set_user_presence_scene_impl(
 pub async fn switch_scene(
     req: SwitchSceneRequest,
     state: State<'_, AppState>,
-) -> Result<SwitchSceneResponse, String> {
+) -> Result<SwitchSceneResponse, CommandError> {
     switch_scene_impl(&state, &req).await
 }
 /// # Errors
@@ -93,6 +94,6 @@ pub async fn switch_scene(
 pub async fn set_user_presence_scene(
     req: SetUserPresenceSceneRequest,
     state: State<'_, AppState>,
-) -> Result<RoleInfo, String> {
+) -> Result<RoleInfo, CommandError> {
     set_user_presence_scene_impl(&state, &req).await
 }

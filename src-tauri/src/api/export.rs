@@ -7,6 +7,7 @@ use crate::state::AppState;
 use chrono::Local;
 use serde::Serialize;
 use tauri::State;
+use crate::api::error::CommandError;
 
 #[derive(Debug, Clone, Serialize)]
 struct ExportTurn {
@@ -44,12 +45,12 @@ fn sanitize_filename(s: &str) -> String {
         .collect()
 }
 
-async fn load_turns(state: &AppState, role_id: &str) -> Result<Vec<ExportTurn>, String> {
+async fn load_turns(state: &AppState, role_id: &str) -> Result<Vec<ExportTurn>, CommandError> {
     let rows = state
         .db_manager
         .list_short_term_turns(role_id)
         .await
-        .map_err(|e| e.to_frontend_error())?;
+        ?;
     Ok(rows
         .into_iter()
         .map(|(user, bot, _emotion, scene, at)| ExportTurn {
@@ -142,13 +143,10 @@ fn build_txt(
 pub async fn export_chat_logs_impl(
     state: &AppState,
     req: &ExportChatLogsRequest,
-) -> Result<ExportChatLogsResponse, String> {
+) -> Result<ExportChatLogsResponse, CommandError> {
     let fmt = req.format.to_lowercase();
     if fmt != "json" && fmt != "txt" {
-        return Err(
-            AppError::InvalidParameter("format must be json or txt".to_string())
-                .to_frontend_error(),
-        );
+        return Err(AppError::InvalidParameter("format must be json or txt".to_string()).into());
     }
 
     let date = Local::now().format("%Y-%m-%d").to_string();
@@ -160,7 +158,7 @@ pub async fn export_chat_logs_impl(
         let roles = state
             .storage
             .load_all_roles()
-            .map_err(|e| e.to_frontend_error())?;
+            ?;
         for r in roles {
             let turns = load_turns(state, &r.id).await?;
             blocks.push((r.id.clone(), r.name.clone(), turns));
@@ -181,7 +179,7 @@ pub async fn export_chat_logs_impl(
                 plugin_resolution_debug: None,
             };
             serde_json::to_string_pretty(&root)
-                .map_err(|e| AppError::SerializationError(e).to_frontend_error())?
+                .map_err(|e| AppError::SerializationError(e))?
         } else {
             build_txt(&blocks, None)
         };
@@ -193,12 +191,12 @@ pub async fn export_chat_logs_impl(
 
     let rid = req.role_id.as_deref().ok_or_else(|| {
         AppError::InvalidParameter("role_id required when all_roles is false".to_string())
-            .to_frontend_error()
+            
     })?;
     let role = state
         .load_role_cached_async(rid)
         .await
-        .map_err(|e| e.to_frontend_error())?;
+        ?;
     let turns = load_turns(state, rid).await?;
     blocks.push((role.id.clone(), role.name.clone(), turns));
     let plugin_debug = if include_plugin_debug {
@@ -228,7 +226,7 @@ pub async fn export_chat_logs_impl(
             plugin_resolution_debug: plugin_debug,
         };
         serde_json::to_string_pretty(&root)
-            .map_err(|e| AppError::SerializationError(e).to_frontend_error())?
+            .map_err(|e| AppError::SerializationError(e))?
     } else {
         build_txt(&blocks, plugin_debug.as_ref())
     };
@@ -245,6 +243,6 @@ pub async fn export_chat_logs_impl(
 pub async fn export_chat_logs(
     req: ExportChatLogsRequest,
     state: State<'_, AppState>,
-) -> Result<ExportChatLogsResponse, String> {
+) -> Result<ExportChatLogsResponse, CommandError> {
     export_chat_logs_impl(&state, &req).await
 }

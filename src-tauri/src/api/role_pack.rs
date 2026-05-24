@@ -6,6 +6,7 @@ use std::path::PathBuf;
 use std::sync::Arc;
 use tauri::Manager;
 use tauri::State;
+use crate::api::error::CommandError;
 /// # Errors
 ///
 /// Returns [`Err`] with a human-readable message when the operation fails.
@@ -14,9 +15,9 @@ pub async fn export_role_pack_command(
     role_id: String,
     dest_path: String,
     state: State<'_, AppState>,
-) -> Result<(), String> {
+) -> Result<(), CommandError> {
     let p = PathBuf::from(dest_path);
-    export_role_pack(&state.storage, &role_id, &p).map_err(|e: AppError| e.to_frontend_error())
+    export_role_pack(&state.storage, &role_id, &p).map_err(Into::into)
 }
 /// # Errors
 ///
@@ -25,12 +26,12 @@ pub async fn export_role_pack_command(
 pub async fn peek_role_pack_command(
     src_path: String,
     _state: State<'_, AppState>,
-) -> Result<RolePackPeekResponse, String> {
+) -> Result<RolePackPeekResponse, CommandError> {
     let p = PathBuf::from(src_path);
     let (id, name, version) = tokio::task::spawn_blocking(move || peek_role_pack_manifest(&p))
         .await
         .map_err(|e| format!("预览任务异常: {}", e))?
-        .map_err(|e: AppError| e.to_frontend_error())?;
+        ?;
     Ok(RolePackPeekResponse { id, name, version })
 }
 /// # Errors
@@ -42,7 +43,7 @@ pub async fn import_role_pack_command(
     src_path: String,
     overwrite: bool,
     state: State<'_, AppState>,
-) -> Result<String, String> {
+) -> Result<String, CommandError> {
     let storage = state.storage.clone();
     let path = PathBuf::from(src_path);
     let app = app.clone();
@@ -53,12 +54,12 @@ pub async fn import_role_pack_command(
     })
     .await
     .map_err(|e| format!("导入任务异常: {}", e))?
-    .map_err(|e: AppError| e.to_frontend_error())?;
+    ?;
 
     let role = state
         .storage
         .load_role(&role_id)
-        .map_err(|e| e.to_frontend_error())?;
+        ?;
     state.invalidate_personality_cache_for_role(&role_id);
 
     state

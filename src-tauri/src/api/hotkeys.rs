@@ -4,6 +4,7 @@ use crate::infrastructure::hotkey_bindings::{HotkeyAction, HotkeyBindingsFile};
 use crate::state::AppState;
 use serde::Serialize;
 use tauri::{AppHandle, GlobalShortcutManager, Manager, State};
+use crate::api::error::CommandError;
 
 #[derive(Clone, Serialize)]
 #[serde(rename_all = "camelCase")]
@@ -12,7 +13,7 @@ struct HotkeyActionEvent {
     action: HotkeyAction,
 }
 
-fn validate_hotkey_bindings(file: &HotkeyBindingsFile) -> Result<(), String> {
+fn validate_hotkey_bindings(file: &HotkeyBindingsFile) -> Result<(), CommandError> {
     let mut seen = std::collections::HashSet::new();
     for b in &file.bindings {
         if !b.enabled {
@@ -23,7 +24,7 @@ fn validate_hotkey_bindings(file: &HotkeyBindingsFile) -> Result<(), String> {
             continue;
         }
         if !seen.insert(acc.to_string()) {
-            return Err(format!("重复的已启用快捷键：{}", acc));
+            return Err(format!("重复的已启用快捷键：{}", acc).into());
         }
     }
     Ok(())
@@ -32,10 +33,10 @@ fn validate_hotkey_bindings(file: &HotkeyBindingsFile) -> Result<(), String> {
 ///
 /// Returns [`Err`] with a human-readable message when the operation fails.
 /// 注销全部后按配置注册；仅 `enabled` 为真且 `accelerator` 非空的条目会注册。
-pub fn apply_global_hotkeys(app: &AppHandle, file: &HotkeyBindingsFile) -> Result<(), String> {
+pub fn apply_global_hotkeys(app: &AppHandle, file: &HotkeyBindingsFile) -> Result<(), CommandError> {
     validate_hotkey_bindings(file)?;
     let mut mgr = app.global_shortcut_manager();
-    mgr.unregister_all().map_err(|e| e.to_string())?;
+    mgr.unregister_all().map_err(|e| CommandError::from(e.to_string()))?;
     for b in &file.bindings {
         if !b.enabled {
             continue;
@@ -55,7 +56,7 @@ pub fn apply_global_hotkeys(app: &AppHandle, file: &HotkeyBindingsFile) -> Resul
             };
             let _ = app_clone.emit_all("hotkey-action", payload);
         })
-        .map_err(|e| format!("register {}: {}", acc_owned, e))?;
+        .map_err(|e| CommandError::from(format!("register {}: {}", acc_owned, e)))?;
     }
     Ok(())
 }
@@ -65,7 +66,7 @@ pub fn apply_global_hotkeys(app: &AppHandle, file: &HotkeyBindingsFile) -> Resul
 /// # Errors
 ///
 /// 快捷键配置文件读盘或解析失败时返回 `Err(String)`。
-pub fn get_hotkey_bindings_impl(state: &AppState) -> Result<HotkeyBindingsFile, String> {
+pub fn get_hotkey_bindings_impl(state: &AppState) -> Result<HotkeyBindingsFile, CommandError> {
     Ok(HotkeyBindingsFile::load(
         state.directory_plugins.app_data_dir(),
     ))
@@ -75,7 +76,7 @@ pub fn get_hotkey_bindings_impl(state: &AppState) -> Result<HotkeyBindingsFile, 
 ///
 /// Returns [`Err`] with a human-readable message when the operation fails.
 #[tauri::command]
-pub fn get_hotkey_bindings(state: State<'_, AppState>) -> Result<HotkeyBindingsFile, String> {
+pub fn get_hotkey_bindings(state: State<'_, AppState>) -> Result<HotkeyBindingsFile, CommandError> {
     get_hotkey_bindings_impl(&state)
 }
 /// # Errors
@@ -86,7 +87,7 @@ pub fn save_hotkey_bindings(
     bindings: HotkeyBindingsFile,
     app: AppHandle,
     state: State<'_, AppState>,
-) -> Result<(), String> {
+) -> Result<(), CommandError> {
     validate_hotkey_bindings(&bindings)?;
     bindings.save(state.directory_plugins.app_data_dir())?;
     apply_global_hotkeys(&app, &bindings)

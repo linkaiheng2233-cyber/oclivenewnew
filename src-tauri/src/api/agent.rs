@@ -2,6 +2,7 @@ use crate::state::AppState;
 use serde::Deserialize;
 use serde_json::Value;
 use tauri::State;
+use crate::api::error::CommandError;
 
 #[derive(Debug, Deserialize)]
 pub struct CallMcpToolRequest {
@@ -19,8 +20,8 @@ pub struct ListMcpToolsRequest {
 ///
 /// Returns [`Err`] with a human-readable message when the operation fails.
 #[tauri::command]
-pub fn list_mcp_servers(state: State<'_, AppState>) -> Result<Value, String> {
-    serde_json::to_value(state.plugins.list_mcp_servers()).map_err(|e| e.to_string())
+pub fn list_mcp_servers(state: State<'_, AppState>) -> Result<Value, CommandError> {
+    Ok(serde_json::to_value(state.plugins.list_mcp_servers())?)
 }
 /// # Errors
 ///
@@ -29,34 +30,36 @@ pub fn list_mcp_servers(state: State<'_, AppState>) -> Result<Value, String> {
 pub fn list_mcp_tools(
     req: ListMcpToolsRequest,
     state: State<'_, AppState>,
-) -> Result<Value, String> {
-    state
+) -> Result<Value, CommandError> {
+    let tools = state
         .plugins
         .list_mcp_tools(req.server_id.as_str())
-        .and_then(|r| serde_json::to_value(r).map_err(|e| e.to_string()))
+        .map_err(CommandError::from)?;
+    Ok(serde_json::to_value(tools)?)
 }
 /// # Errors
 ///
 /// Returns [`Err`] with a human-readable message when the operation fails.
 #[tauri::command]
-pub fn call_mcp_tool(req: CallMcpToolRequest, state: State<'_, AppState>) -> Result<Value, String> {
-    state
+pub fn call_mcp_tool(req: CallMcpToolRequest, state: State<'_, AppState>) -> Result<Value, CommandError> {
+    let result = state
         .plugins
         .call_mcp_tool(req.server_id.as_str(), req.tool_name.as_str(), req.params)
-        .and_then(|r| serde_json::to_value(r).map_err(|e| e.to_string()))
+        .map_err(CommandError::from)?;
+    Ok(serde_json::to_value(result)?)
 }
 /// # Errors
 ///
 /// Returns [`Err`] with a human-readable message when the operation fails.
 #[tauri::command]
-pub fn get_agent_debug_traces(state: State<'_, AppState>) -> Result<Value, String> {
-    serde_json::to_value(state.plugins.recent_agent_traces()).map_err(|e| e.to_string())
+pub fn get_agent_debug_traces(state: State<'_, AppState>) -> Result<Value, CommandError> {
+    Ok(serde_json::to_value(state.plugins.recent_agent_traces())?)
 }
 /// # Errors
 ///
 /// Returns [`Err`] with a human-readable message when the operation fails.
 #[tauri::command]
-pub fn clear_agent_debug_traces(state: State<'_, AppState>) -> Result<(), String> {
+pub fn clear_agent_debug_traces(state: State<'_, AppState>) -> Result<(), CommandError> {
     state.plugins.clear_agent_traces();
     Ok(())
 }

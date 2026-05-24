@@ -5,6 +5,7 @@ use serde::Serialize;
 use std::path::Path;
 use std::time::{SystemTime, UNIX_EPOCH};
 use tauri::State;
+use crate::api::error::CommandError;
 
 const PROBE_TIMEOUT_SECS: u64 = 8;
 
@@ -70,7 +71,7 @@ async fn probe_ollama(base: &str) -> (bool, String) {
 #[tauri::command]
 pub async fn run_environment_diagnostics(
     state: State<'_, AppState>,
-) -> Result<EnvironmentDiagnostics, String> {
+) -> Result<EnvironmentDiagnostics, CommandError> {
     let ollama_base_url =
         std::env::var("OLLAMA_BASE_URL").unwrap_or_else(|_| "http://localhost:11434".to_string());
     let (ollama_reachable, ollama_detail) = probe_ollama(&ollama_base_url).await;

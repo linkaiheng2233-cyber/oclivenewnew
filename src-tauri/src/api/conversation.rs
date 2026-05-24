@@ -2,15 +2,16 @@
 
 use crate::state::AppState;
 use serde_json::{json, Value};
+use crate::api::error::CommandError;
 /// # Errors
 ///
 /// Returns [`Err`] with a human-readable message when the operation fails.
-pub async fn get_conversation_list_impl(state: &AppState) -> Result<Value, String> {
+pub async fn get_conversation_list_impl(state: &AppState) -> Result<Value, CommandError> {
     let rows = state
         .db_manager
         .list_conversation_sessions()
         .await
-        .map_err(|e| e.to_frontend_error())?;
+        ?;
     let items: Vec<Value> = rows
         .into_iter()
         .map(|(session_namespace, turn_count, last_at)| {

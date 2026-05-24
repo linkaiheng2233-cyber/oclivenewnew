@@ -3,8 +3,9 @@ use crate::models::dto::{CreateEventRequest, CreateEventResponse, EventItem, Que
 use crate::models::EventType;
 use crate::state::AppState;
 use tauri::State;
+use crate::api::error::CommandError;
 
-fn parse_event_type(s: &str) -> Result<EventType, String> {
+fn parse_event_type(s: &str) -> Result<EventType, CommandError> {
     match s {
         "Quarrel" => Ok(EventType::Quarrel),
         "Apology" => Ok(EventType::Apology),
@@ -13,9 +14,7 @@ fn parse_event_type(s: &str) -> Result<EventType, String> {
         "Confession" => Ok(EventType::Confession),
         "Joke" => Ok(EventType::Joke),
         "Ignore" => Ok(EventType::Ignore),
-        _ => Err(
-            AppError::InvalidParameter(format!("Invalid event_type: {}", s)).to_frontend_error(),
-        ),
+        _ => Err(AppError::InvalidParameter(format!("Invalid event_type: {}", s)).into()),
     }
 }
 /// # Errors
@@ -24,24 +23,19 @@ fn parse_event_type(s: &str) -> Result<EventType, String> {
 pub async fn query_events_impl(
     state: &AppState,
     req: &QueryEventsRequest,
-) -> Result<Vec<EventItem>, String> {
+) -> Result<Vec<EventItem>, CommandError> {
     if req.limit <= 0 || req.limit > 100 {
-        return Err(
-            AppError::InvalidParameter("limit must be between 1 and 100".to_string())
-                .to_frontend_error(),
-        );
+        return Err(AppError::InvalidParameter("limit must be between 1 and 100".to_string()).into());
     }
     if req.offset < 0 {
-        return Err(
-            AppError::InvalidParameter("offset must be >= 0".to_string()).to_frontend_error(),
-        );
+        return Err(AppError::InvalidParameter("offset must be >= 0".to_string()).into());
     }
 
     let rows = state
         .db_manager
         .list_events_paged(&req.role_id, req.limit, req.offset)
         .await
-        .map_err(|e| e.to_frontend_error())?;
+        ?;
 
     Ok(rows
         .into_iter()
@@ -62,13 +56,13 @@ pub async fn query_events_impl(
 pub async fn create_event_impl(
     state: &AppState,
     req: &CreateEventRequest,
-) -> Result<CreateEventResponse, String> {
+) -> Result<CreateEventResponse, CommandError> {
     let event_type = parse_event_type(&req.event_type)?;
     state
         .db_manager
         .ensure_role_runtime(&req.role_id)
         .await
-        .map_err(|e| e.to_frontend_error())?;
+        ?;
 
     let (id, timestamp) = state
         .db_manager
@@ -80,7 +74,7 @@ pub async fn create_event_impl(
             req.description.as_deref(),
         )
         .await
-        .map_err(|e| e.to_frontend_error())?;
+        ?;
 
     Ok(CreateEventResponse {
         id,
@@ -97,7 +91,7 @@ pub async fn create_event_impl(
 pub async fn query_events(
     req: QueryEventsRequest,
     state: State<'_, AppState>,
-) -> Result<Vec<EventItem>, String> {
+) -> Result<Vec<EventItem>, CommandError> {
     query_events_impl(&state, &req).await
 }
 /// # Errors
@@ -107,6 +101,6 @@ pub async fn query_events(
 pub async fn create_event(
     req: CreateEventRequest,
     state: State<'_, AppState>,
-) -> Result<CreateEventResponse, String> {
+) -> Result<CreateEventResponse, CommandError> {
     create_event_impl(&state, &req).await
 }
