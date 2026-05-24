@@ -44,6 +44,57 @@ mod slot_module {
 pub struct SlotRunner;
 
 impl SlotRunner {
+    fn run_slot_sync<T: ?Sized, R, Pick, Multi, Single, Fallback>(
+        slots: &Option<ResolvedRoleSlots>,
+        pick: Pick,
+        multi: Multi,
+        single: Single,
+        fallback: Fallback,
+    ) -> R
+    where
+        Pick: FnOnce(&ResolvedRoleSlots) -> &[(String, Arc<T>)],
+        Multi: FnOnce(&[(String, Arc<T>)]) -> R,
+        Single: FnOnce(&Arc<T>) -> R,
+        Fallback: FnOnce() -> R,
+    {
+        if let Some(instances) = registry_instances(slots, pick) {
+            if instances.len() >= 2 {
+                multi(instances)
+            } else {
+                single(&instances[0].1)
+            }
+        } else {
+            fallback()
+        }
+    }
+
+    async fn run_slot_async<T: ?Sized, R, Pick, Multi, Single, Fallback, FutM, FutS, FutF>(
+        slots: &Option<ResolvedRoleSlots>,
+        pick: Pick,
+        multi: Multi,
+        single: Single,
+        fallback: Fallback,
+    ) -> R
+    where
+        Pick: FnOnce(&ResolvedRoleSlots) -> &[(String, Arc<T>)],
+        Multi: FnOnce(&[(String, Arc<T>)]) -> FutM,
+        FutM: std::future::Future<Output = R>,
+        Single: FnOnce(&Arc<T>) -> FutS,
+        FutS: std::future::Future<Output = R>,
+        Fallback: FnOnce() -> FutF,
+        FutF: std::future::Future<Output = R>,
+    {
+        if let Some(instances) = registry_instances(slots, pick) {
+            if instances.len() >= 2 {
+                multi(instances).await
+            } else {
+                single(&instances[0].1).await
+            }
+        } else {
+            fallback().await
+        }
+    }
+
     /// 折叠六槽 LLM，或 registry 中 `position` 最大的 `llm` 实例。
     #[must_use]
     pub fn primary_llm(pl: &ResolvedRolePlugins) -> Arc<dyn LlmClient> {
@@ -59,13 +110,13 @@ impl SlotRunner {
     /// **为何不用并行**：各分析器输入相同、输出互斥，并行只会浪费算力且增加合并歧义。
     /// **局限**：前序实例失败时仅打日志，仍可能无有效结果（见 `emotion_last_wins`）。
     pub fn analyze_emotion(pl: &ResolvedRolePlugins, text: &str) -> Result<EmotionResult> {
-        if let Some(instances) = registry_instances(&pl.slots, |s| &s.emotion) {
-            if instances.len() >= 2 {
-                return Self::emotion_last_wins(instances, text);
-            }
-            return instances[0].1.analyze(text);
-        }
-        pl.emotion.analyze(text)
+        Self::run_slot_sync(
+            &pl.slots,
+            |s| &s.emotion,
+            |instances| Self::emotion_last_wins(instances, text),
+            |analyzer| analyzer.analyze(text),
+            || pl.emotion.analyze(text),
+        )
     }
 
     /// `complex_emotion`：串行，**last-wins**。
@@ -73,13 +124,13 @@ impl SlotRunner {
         pl: &ResolvedRolePlugins,
         input: &ComplexEmotionInput,
     ) -> Result<ComplexEmotionOutput> {
-        if let Some(instances) = registry_instances(&pl.slots, |s| &s.complex_emotion) {
-            if instances.len() >= 2 {
-                return Self::complex_emotion_last_wins(instances, input);
-            }
-            return instances[0].1.resolve_turn(input);
-        }
-        pl.complex_emotion.resolve_turn(input)
+        Self::run_slot_sync(
+            &pl.slots,
+            |s| &s.complex_emotion,
+            |instances| Self::complex_emotion_last_wins(instances, input),
+            |provider| provider.resolve_turn(input),
+            || pl.complex_emotion.resolve_turn(input),
+        )
     }
 
     /// `event`：串行估计，**last-wins**（中间实例打 debug 日志）。
@@ -95,50 +146,96 @@ impl SlotRunner {
         knowledge_augment: Option<&KnowledgeEventAugment>,
     ) -> Result<EventImpactEstimate> {
         let llm = Self::primary_llm(pl);
-        if let Some(instances) = registry_instances(&pl.slots, |s| &s.event) {
-            if instances.len() >= 2 {
-                return Self::event_last_wins(
-                    instances,
-                    &llm,
-                    ollama_model,
-                    user_message,
-                    user_emotion,
-                    personality,
-                    personality_source,
-                    recent_turns,
-                    recent_events,
-                    knowledge_augment,
-                )
-                .await;
-            }
-            return instances[0]
-                .1
-                .estimate(
-                    &llm,
-                    ollama_model,
-                    user_message,
-                    user_emotion,
-                    personality,
-                    personality_source,
-                    recent_turns,
-                    recent_events,
-                    knowledge_augment,
-                )
-                .await;
-        }
-        pl.event
-            .estimate(
-                &llm,
-                ollama_model,
-                user_message,
-                user_emotion,
-                personality,
-                personality_source,
-                recent_turns,
-                recent_events,
-                knowledge_augment,
-            )
-            .await
+        let ollama_model = ollama_model.to_string();
+        let user_message = user_message.to_string();
+        let user_emotion = user_emotion.clone();
+        let personality = personality.clone();
+        let recent_turns = recent_turns.to_vec();
+        let recent_events = recent_events.to_vec();
+        let knowledge_augment = knowledge_augment.cloned();
+        Self::run_slot_async(
+            &pl.slots,
+            |s| &s.event,
+            |instances| {
+                let instances = clone_instances(instances);
+                let llm = Arc::clone(&llm);
+                let ollama_model = ollama_model.clone();
+                let user_message = user_message.clone();
+                let user_emotion = user_emotion.clone();
+                let personality = personality.clone();
+                let recent_turns = recent_turns.clone();
+                let recent_events = recent_events.clone();
+                let knowledge_augment = knowledge_augment.clone();
+                async move {
+                    Self::event_last_wins(
+                        &instances,
+                        &llm,
+                        &ollama_model,
+                        &user_message,
+                        &user_emotion,
+                        &personality,
+                        personality_source,
+                        &recent_turns,
+                        &recent_events,
+                        knowledge_augment.as_ref(),
+                    )
+                    .await
+                }
+            },
+            |estimator| {
+                let llm = Arc::clone(&llm);
+                let estimator = Arc::clone(estimator);
+                let ollama_model = ollama_model.clone();
+                let user_message = user_message.clone();
+                let user_emotion = user_emotion.clone();
+                let personality = personality.clone();
+                let recent_turns = recent_turns.clone();
+                let recent_events = recent_events.clone();
+                let knowledge_augment = knowledge_augment.clone();
+                async move {
+                    estimator
+                        .estimate(
+                            &llm,
+                            &ollama_model,
+                            &user_message,
+                            &user_emotion,
+                            &personality,
+                            personality_source,
+                            &recent_turns,
+                            &recent_events,
+                            knowledge_augment.as_ref(),
+                        )
+                        .await
+                }
+            },
+            || {
+                let llm = Arc::clone(&llm);
+                let event = Arc::clone(&pl.event);
+                let ollama_model = ollama_model.clone();
+                let user_message = user_message.clone();
+                let user_emotion = user_emotion.clone();
+                let personality = personality.clone();
+                let recent_turns = recent_turns.clone();
+                let recent_events = recent_events.clone();
+                let knowledge_augment = knowledge_augment.clone();
+                async move {
+                    event
+                        .estimate(
+                            &llm,
+                            &ollama_model,
+                            &user_message,
+                            &user_emotion,
+                            &personality,
+                            personality_source,
+                            &recent_turns,
+                            &recent_events,
+                            knowledge_augment.as_ref(),
+                        )
+                        .await
+                }
+            },
+        )
+        .await
     }
 
     /// `memory`：串行 rank → 按 id 去重 → 按 `importance * weight` 统一排序。
@@ -157,24 +254,24 @@ impl SlotRunner {
 
     /// `prompt`：`top_topic_hint` **last-wins**。
     pub fn top_topic_hint(pl: &ResolvedRolePlugins, role: &Role, scene_id: &str) -> Option<String> {
-        if let Some(instances) = registry_instances(&pl.slots, |s| &s.prompt) {
-            if instances.len() >= 2 {
-                return Self::prompt_top_topic_last_wins(instances, role, scene_id);
-            }
-            return instances[0].1.top_topic_hint(role, scene_id);
-        }
-        pl.prompt.top_topic_hint(role, scene_id)
+        Self::run_slot_sync(
+            &pl.slots,
+            |s| &s.prompt,
+            |instances| Self::prompt_top_topic_last_wins(instances, role, scene_id),
+            |assembler| assembler.top_topic_hint(role, scene_id),
+            || pl.prompt.top_topic_hint(role, scene_id),
+        )
     }
 
     /// `prompt`：`build_prompt` **last-wins**。
     pub fn build_prompt(pl: &ResolvedRolePlugins, input: &PromptInput<'_>) -> Result<String> {
-        if let Some(instances) = registry_instances(&pl.slots, |s| &s.prompt) {
-            if instances.len() >= 2 {
-                return Self::prompt_build_last_wins(instances, input);
-            }
-            return instances[0].1.build_prompt(input);
-        }
-        pl.prompt.build_prompt(input)
+        Self::run_slot_sync(
+            &pl.slots,
+            |s| &s.prompt,
+            |instances| Self::prompt_build_last_wins(instances, input),
+            |assembler| assembler.build_prompt(input),
+            || pl.prompt.build_prompt(input),
+        )
     }
 
     /// `llm`：串行 **全部调用**（打日志），**last-wins** 作为最终回复。
@@ -202,9 +299,32 @@ impl SlotRunner {
                     }
                 };
             }
-            return instances[0].1.generate(ollama_model, prompt).await;
         }
-        pl.llm.generate(ollama_model, prompt).await
+        Self::run_slot_async(
+            &pl.slots,
+            |s| &s.llm,
+            |instances| {
+                let instances = clone_instances(instances);
+                let ollama_model = ollama_model.to_string();
+                let prompt = prompt.to_string();
+                async move {
+                    Self::llm_serial_last_wins(&instances, &ollama_model, &prompt).await
+                }
+            },
+            |llm| {
+                let llm = Arc::clone(llm);
+                let ollama_model = ollama_model.to_string();
+                let prompt = prompt.to_string();
+                async move { llm.generate(&ollama_model, &prompt).await }
+            },
+            || {
+                let llm = Arc::clone(&pl.llm);
+                let ollama_model = ollama_model.to_string();
+                let prompt = prompt.to_string();
+                async move { llm.generate(&ollama_model, &prompt).await }
+            },
+        )
+        .await
     }
 
     /// 情绪链 **last-wins** 实现：按 `position` 顺序串行，保留最后一次成功结果。
@@ -596,6 +716,13 @@ impl SlotRunner {
             ))
         }
     }
+}
+
+fn clone_instances<T: ?Sized>(instances: &[(String, Arc<T>)]) -> Vec<(String, Arc<T>)> {
+    instances
+        .iter()
+        .map(|(key, value)| (key.clone(), Arc::clone(value)))
+        .collect()
 }
 
 fn registry_instances<'a, T: ?Sized>(
