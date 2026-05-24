@@ -58,7 +58,7 @@ async fn run(
         .unwrap_or_else(|| "default".to_string());
     let t0 = Instant::now();
 
-    let (_, role, _remote_fallback_prefetch) = tokio::try_join!(
+    let (_, role) = tokio::try_join!(
         async {
             stage_process_message(
                 ChatStage::EnsureRoleRuntime,
@@ -70,16 +70,6 @@ async fn run(
                 .await
                 .map_err(|source| ProcessMessageError::Stage {
                     stage: ChatStage::EnsureRoleLoaded.as_str(),
-                    source,
-                })
-        },
-        async {
-            state
-                .db_manager
-                .get_app_setting("remote_fallback_to_builtin")
-                .await
-                .map_err(|source| ProcessMessageError::Stage {
-                    stage: ChatStage::ReadRemoteFallbackSetting.as_str(),
                     source,
                 })
         },
