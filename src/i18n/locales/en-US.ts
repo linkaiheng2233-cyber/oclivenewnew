@@ -6,7 +6,6 @@ import devTools from './fragments/devTools.en'
 import editorBundle from './fragments/editor.en'
 import emotionUi from './fragments/emotionUi.en'
 import pluginManagerBundle from './fragments/pluginManager.en'
-import pluginWorkbench from './fragments/pluginWorkbench.en'
 import roleRuntimeBundle from './fragments/roleRuntime.en'
 import settingsBundle from './fragments/settings.en'
 import { simplePluginManagerEn as simplePluginManager } from './fragments/simplePluginManager.en'
@@ -22,7 +21,6 @@ export default {
   emotionUi,
   pluginManager: pluginManagerBundle.pluginManager,
   pluginTerms: pluginManagerBundle.pluginTerms,
-  pluginWorkbench,
   relation: commonBundle.relation,
   roleRuntime: roleRuntimeBundle.roleRuntime,
   settings: settingsBundle.settings,

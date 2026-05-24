@@ -1,5 +1,6 @@
 import { computed, ref, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
+import { ensurePluginWorkbenchI18n } from '../i18n/loadPluginWorkbench'
 import { usePluginMarketStore } from '../stores/pluginMarketStore'
 import { usePluginTraceStore } from '../stores/pluginTraceStore'
 
@@ -22,12 +23,14 @@ export function usePluginManagerWindow(opts: UsePluginManagerWindowOptions) {
   const settingsEntryMoreHelp = computed(() => t('app.more.settingsTileHelpSimple'))
 
   function openPluginManagerPanel(): void {
+    void ensurePluginWorkbenchI18n()
     traceStore.closePanel()
     simplePluginManagerOpen.value = !simplePluginManagerOpen.value
     opts.closeMoreMenu()
   }
 
   function openPluginMarket(): void {
+    void ensurePluginWorkbenchI18n()
     simplePluginManagerOpen.value = false
     traceStore.closePanel()
     marketStore.openMarketPanel()
