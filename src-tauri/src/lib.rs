@@ -116,7 +116,7 @@ use tauri::http::{Request, Response, ResponseBuilder};
 use tauri::{AppHandle, Manager};
 
 use crate::infrastructure::deep_link::seed_pending_install_urls_from_args;
-use crate::infrastructure::directory_plugins::{start_plugin_fs_watcher, OclivePluginManifest};
+use crate::infrastructure::directory_plugins::{resolve_plugin_asset_path, start_plugin_fs_watcher};
 use crate::infrastructure::plugin_protocol::{
     inject_plugin_bridge_script, mime_for_plugin_asset, plugin_asset_from_request_uri,
 };
@@ -160,11 +160,9 @@ fn serve_ocliveplugin_asset(
             );
     };
     let root = &entry.root;
-    let root_norm = &entry.canonical;
-    let path = root.join(&rel);
-    let path_norm = match path.canonicalize() {
-        Ok(p) if p.starts_with(root_norm) => p,
-        Ok(_) => {
+    let path_norm = match resolve_plugin_asset_path(entry, &rel) {
+        Ok(p) => p,
+        Err(e) if e == "path escapes plugin directory" => {
             return ResponseBuilder::new()
                 .status(403)
                 .mimetype("text/plain; charset=utf-8")
@@ -187,9 +185,9 @@ fn serve_ocliveplugin_asset(
         }
     };
     if mime_for_plugin_asset(&rel).starts_with("text/html") {
-        if let Ok(manifest) = OclivePluginManifest::load_from_dir(root) {
+        if let Ok(manifest) = state.directory_plugins.load_manifest_cached(&plugin_id, root) {
             if let Ok(html) = String::from_utf8(std::mem::take(&mut data)) {
-                let injected = inject_plugin_bridge_script(&html, &plugin_id, &rel, &manifest);
+                let injected = inject_plugin_bridge_script(&html, &plugin_id, &rel, manifest.as_ref());
                 data = injected.into_bytes();
             }
         }

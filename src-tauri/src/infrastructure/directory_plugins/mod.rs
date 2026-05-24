@@ -14,8 +14,8 @@ pub use manifest::{
     ShellSection, UiSchemaField, UiSchemaSection, UiSlotDecl,
 };
 pub use runtime::{
-    plugin_scan_container_roots, DirectoryPluginRuntime, HostPluginsFile, PluginProcessDebugInfo,
-    PluginScanSummary,
+    plugin_scan_container_roots, resolve_plugin_asset_path, DirectoryPluginRuntime, HostPluginsFile,
+    PluginProcessDebugInfo, PluginRootEntry, PluginScanSummary,
 };
 pub use version::parse_manifest_version;
 pub use watcher::start_plugin_fs_watcher;

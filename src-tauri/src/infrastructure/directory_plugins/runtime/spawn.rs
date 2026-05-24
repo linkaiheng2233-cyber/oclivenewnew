@@ -41,7 +41,7 @@ impl DirectoryPluginRuntime {
             .get(id)
             .map(|entry| entry.root.clone())
             .ok_or_else(|| format!("unknown directory plugin_id={}", id))?;
-        let manifest = OclivePluginManifest::load_from_dir(&root)?;
+        let manifest = self.load_manifest_cached(id, &root)?;
         if manifest.process.is_some() {
             if !oclive_validation::manifest_declares_process_spawn(&manifest.permissions, true) {
                 tracing::warn!(
@@ -67,7 +67,7 @@ impl DirectoryPluginRuntime {
             }
         }
         let (url, child, started_ms) =
-            self.spawn_child_handshake(id, root, manifest, config_json)?;
+            self.spawn_child_handshake(id, root, (*manifest).clone(), config_json)?;
         self.children.lock().insert(id.to_string(), child);
         self.rpc_urls.lock().insert(id.to_string(), url.clone());
         self.process_started_ms

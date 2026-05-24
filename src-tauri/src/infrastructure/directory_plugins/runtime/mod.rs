@@ -1,15 +1,19 @@
 //! 扫描根目录、解析 manifest、懒启动子进程并缓存 RPC URL。
 
-use super::manifest::{normalize_ui_slot_appearance_id, OclivePluginManifest};
-use crate::infrastructure::high_risk_grants::HighRiskGrantStore;
-use crate::infrastructure::plugin_state::{PluginStateFile, PluginStateStore, RolePluginState};
-use crate::models::ui_config::UiConfig;
 use parking_lot::{Mutex, RwLock};
 use serde::{Deserialize, Serialize};
 use std::collections::{HashMap, VecDeque};
 use std::path::{Path, PathBuf};
 use std::sync::atomic::{AtomicU64, Ordering};
 use std::sync::Arc;
+use std::time::UNIX_EPOCH;
+
+use dashmap::DashMap;
+
+use super::manifest::{normalize_plugin_rel, normalize_ui_slot_appearance_id, OclivePluginManifest};
+use crate::infrastructure::high_risk_grants::HighRiskGrantStore;
+use crate::infrastructure::plugin_state::{PluginStateFile, PluginStateStore, RolePluginState};
+use crate::models::ui_config::UiConfig;
 
 /// 目录插件根路径与其 canonical 形式（同一次 rescan 写入，单次锁读取）。
 #[derive(Debug, Clone)]
@@ -23,6 +27,38 @@ impl PluginRootEntry {
         let canonical = root.canonicalize().unwrap_or_else(|_| root.clone());
         Self { root, canonical }
     }
+}
+
+fn manifest_json_mtime(root: &Path) -> u64 {
+    let p = root.join("manifest.json");
+    std::fs::metadata(&p)
+        .ok()
+        .and_then(|m| m.modified().ok())
+        .and_then(|t| t.duration_since(UNIX_EPOCH).ok())
+        .map(|d| d.as_millis() as u64)
+        .unwrap_or(0)
+}
+
+/// Resolve a normalized relative asset path under a plugin root without `canonicalize`.
+pub fn resolve_plugin_asset_path(entry: &PluginRootEntry, rel: &str) -> Result<PathBuf, String> {
+    let rel = normalize_plugin_rel(rel);
+    if rel.is_empty() {
+        return Err("empty rel".into());
+    }
+    if rel.split('/').any(|p| p == ".." || p == ".") {
+        return Err("invalid rel path".into());
+    }
+    let mut resolved = entry.canonical.clone();
+    for segment in rel.split('/').filter(|s| !s.is_empty()) {
+        resolved = resolved.join(segment);
+    }
+    if !resolved.starts_with(&entry.canonical) {
+        return Err("path escapes plugin directory".into());
+    }
+    if !resolved.exists() {
+        return Err("not found".into());
+    }
+    Ok(resolved)
 }
 
 fn plugin_roots_from_scan(roots: HashMap<String, PathBuf>) -> HashMap<String, PluginRootEntry> {
@@ -231,6 +267,8 @@ pub struct DirectoryPluginRuntime {
     /// 与 `get_directory_plugin_catalog` 短时缓存联动；`rescan_plugin_roots` 时递增使缓存失效。
     catalog_invalidate_gen: AtomicU64,
     high_risk_grants: Arc<HighRiskGrantStore>,
+    /// `plugin_id` → (`manifest.json` mtime ms, parsed manifest).
+    manifest_cache: DashMap<String, (u64, Arc<OclivePluginManifest>)>,
 }
 
 impl DirectoryPluginRuntime {
@@ -291,7 +329,27 @@ impl DirectoryPluginRuntime {
             active_role_id: Arc::new(RwLock::new(None)),
             catalog_invalidate_gen: AtomicU64::new(0),
             high_risk_grants,
+            manifest_cache: DashMap::new(),
         })
+    }
+
+    /// Load manifest from disk at most once per `manifest.json` mtime within a scan cycle.
+    pub fn load_manifest_cached(
+        &self,
+        plugin_id: &str,
+        root: &Path,
+    ) -> Result<Arc<OclivePluginManifest>, String> {
+        let mtime = manifest_json_mtime(root);
+        if let Some(entry) = self.manifest_cache.get(plugin_id) {
+            if entry.0 == mtime {
+                return Ok(Arc::clone(&entry.1));
+            }
+        }
+        let manifest = OclivePluginManifest::load_from_dir(root)?;
+        let arc = Arc::new(manifest);
+        self.manifest_cache
+            .insert(plugin_id.to_string(), (mtime, Arc::clone(&arc)));
+        Ok(arc)
     }
 
     #[must_use]
@@ -476,7 +534,7 @@ impl DirectoryPluginRuntime {
         } else {
             let roots = self.plugin_roots.read();
             if let Some(entry) = roots.get(sid) {
-                if let Ok(manifest) = OclivePluginManifest::load_from_dir(&entry.root) {
+                if let Ok(manifest) = self.load_manifest_cached(sid, &entry.root) {
                     let ok = manifest.plugin_type.as_deref() == Some("ocliveplugin")
                         && manifest.shell.is_some();
                     if !ok {
@@ -499,10 +557,11 @@ impl DirectoryPluginRuntime {
                 state.shell_plugin_id.clear();
             }
         }
-        Self::sanitize_slot_appearance_maps(&self.plugin_roots.read(), &mut state.slots);
+        Self::sanitize_slot_appearance_maps(self, &self.plugin_roots.read(), &mut state.slots);
     }
 
     fn sanitize_slot_appearance_maps(
+        rt: &DirectoryPluginRuntime,
         roots: &HashMap<String, PluginRootEntry>,
         slots: &mut PluginStateFile,
     ) {
@@ -510,7 +569,7 @@ impl DirectoryPluginRuntime {
             let Some(entry) = roots.get(pid) else {
                 return false;
             };
-            let Ok(manifest) = OclivePluginManifest::load_from_dir(&entry.root) else {
+            let Ok(manifest) = rt.load_manifest_cached(pid, &entry.root) else {
                 return false;
             };
             by_slot.retain(|slot, aid| {
@@ -564,6 +623,7 @@ impl DirectoryPluginRuntime {
             self.clear_plugin_process(&id);
         }
         self.catalog_invalidate_gen.fetch_add(1, Ordering::Relaxed);
+        self.manifest_cache.clear();
         let scan = scan_plugins(roles_dir, &self.app_data_dir, &self.host);
         let n = scan.roots.len();
         *self.plugin_roots.write() = plugin_roots_from_scan(scan.roots);
@@ -586,7 +646,7 @@ impl DirectoryPluginRuntime {
             Some(entry) => entry.root.clone(),
             None => return false,
         };
-        OclivePluginManifest::load_from_dir(&root)
+        self.load_manifest_cached(id, &root)
             .ok()
             .is_some_and(|m| m.provides.iter().any(|p| p.trim() == cap))
     }
@@ -605,6 +665,36 @@ impl DirectoryPluginRuntime {
             "https://ocliveplugin.localhost/{}/{}",
             plugin_id, entry
         ))
+    }
+}
+
+#[cfg(test)]
+mod asset_path_tests {
+    use super::{PluginRootEntry, resolve_plugin_asset_path};
+    use std::fs;
+    use tempfile::TempDir;
+
+    #[test]
+    fn resolve_plugin_asset_path_rejects_parent_traversal() {
+        let tmp = TempDir::new().expect("temp");
+        let root = tmp.path().join("plugin");
+        fs::create_dir_all(&root).expect("mkdir");
+        fs::write(root.join("manifest.json"), r#"{"schema_version":1,"id":"p","version":"1.0.0"}"#)
+            .expect("write manifest");
+        let entry = PluginRootEntry::from_root(root.clone());
+        let err = resolve_plugin_asset_path(&entry, "../secret.txt").expect_err("traversal");
+        assert!(err.contains("invalid") || err.contains("escapes"));
+    }
+
+    #[test]
+    fn resolve_plugin_asset_path_serves_file_under_root() {
+        let tmp = TempDir::new().expect("temp");
+        let root = tmp.path().join("plugin");
+        fs::create_dir_all(&root).expect("mkdir");
+        fs::write(root.join("hello.txt"), "hi").expect("write file");
+        let entry = PluginRootEntry::from_root(root);
+        let path = resolve_plugin_asset_path(&entry, "hello.txt").expect("resolve");
+        assert!(path.is_file());
     }
 }
 

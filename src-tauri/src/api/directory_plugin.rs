@@ -3,8 +3,8 @@
 use crate::api::error::ApiError;
 use crate::infrastructure::directory_plugins::{
     dependency_report, normalize_plugin_rel, normalize_ui_slot_appearance_id,
-    parse_manifest_version, plugin_scan_container_roots, HostPluginsFile, OclivePluginManifest,
-    UiSlotDecl,
+    parse_manifest_version, plugin_scan_container_roots, resolve_plugin_asset_path,
+    HostPluginsFile, OclivePluginManifest, UiSlotDecl,
 };
 use crate::infrastructure::plugin_state::{PluginStateFile, RolePluginState};
 use crate::infrastructure::remote_plugin::{
@@ -162,7 +162,7 @@ fn collect_subscribed_host_events(state: &AppState, pst: &PluginStateFile) -> Ve
         if pst.is_plugin_disabled(pid) {
             continue;
         }
-        let Ok(manifest) = OclivePluginManifest::load_from_dir(&entry.root) else {
+        let Ok(manifest) = state.directory_plugins.load_manifest_cached(pid, &entry.root) else {
             continue;
         };
         merge_manifest_bridge_events(&manifest, &mut set);
@@ -218,17 +218,17 @@ pub fn directory_plugin_bootstrap_dto(
     plugin_ids_sorted.sort_unstable();
     let shell_plugin_id_raw = shell_plugin_id_resolved(host, Some(&role_state));
     let shell_plugin_id = shell_plugin_id_raw.filter(|id| !pst.is_plugin_disabled(id));
-    let shell_url = shell_plugin_id.as_ref().and_then(|pid| {
+    let shell_manifest = shell_plugin_id.as_ref().and_then(|pid| {
         let roots = rt.plugin_roots.read();
-        let root = roots.get(pid).map(|entry| &entry.root)?;
-        let manifest = OclivePluginManifest::load_from_dir(root).ok()?;
-        let entry = manifest.shell.as_ref()?.entry.as_str();
-        rt.shell_url_for(pid, entry)
+        let entry = roots.get(pid)?;
+        rt.load_manifest_cached(pid, &entry.root).ok()
     });
-    let shell_vue_entry = shell_plugin_id.as_ref().and_then(|pid| {
-        let roots = rt.plugin_roots.read();
-        let root = roots.get(pid).map(|entry| &entry.root)?;
-        let manifest = OclivePluginManifest::load_from_dir(root).ok()?;
+    let shell_url = shell_manifest.as_ref().and_then(|manifest| {
+        let pid = shell_plugin_id.as_ref()?;
+        let sh = manifest.shell.as_ref()?;
+        rt.shell_url_for(pid, sh.entry.as_str())
+    });
+    let shell_vue_entry = shell_manifest.as_ref().and_then(|manifest| {
         let sh = manifest.shell.as_ref()?;
         let ve = sh.vue_entry.as_ref()?.trim();
         if ve.is_empty() {
@@ -245,7 +245,7 @@ pub fn directory_plugin_bootstrap_dto(
         if pst.is_plugin_disabled(pid) {
             continue;
         }
-        let Ok(manifest) = OclivePluginManifest::load_from_dir(&entry.root) else {
+        let Ok(manifest) = rt.load_manifest_cached(pid, &entry.root) else {
             continue;
         };
         merge_manifest_bridge_events(&manifest, &mut subscribed_set);
@@ -375,23 +375,21 @@ pub fn read_plugin_asset_text(
         }
         .to_kernel_json()
     })?;
-    let root = &entry.root;
-    let path = root.join(&rel);
-    let root_canon = &entry.canonical;
-    let path_canon = path.canonicalize().map_err(|e| {
-        CommandError::from(
-            ApiError::Io {
-                message: format!("read_plugin_asset_text: {}", e),
+    let path_canon = resolve_plugin_asset_path(entry, &rel).map_err(|e| {
+        if e == "path escapes plugin directory" {
+            ApiError::PermissionDenied {
+                message: "path escapes plugin directory".into(),
             }
-            .to_string(),
-        )
-    })?;
-    if !path_canon.starts_with(root_canon.as_path()) {
-        return Err(ApiError::PermissionDenied {
-            message: "path escapes plugin directory".into(),
+            .into()
+        } else {
+            CommandError::from(
+                ApiError::Io {
+                    message: format!("read_plugin_asset_text: {}", e),
+                }
+                .to_string(),
+            )
         }
-        .into());
-    }
+    })?;
     std::fs::read_to_string(&path_canon).map_err(|e| {
         CommandError::from(
             ApiError::Io {
@@ -544,7 +542,7 @@ fn build_directory_plugin_catalog(state: &AppState) -> Vec<DirectoryPluginCatalo
     let roots = rt.plugin_roots.read();
     let mut version_by_id: HashMap<String, Version> = HashMap::new();
     for (pid, entry) in roots.iter() {
-        if let Ok(m) = OclivePluginManifest::load_from_dir(&entry.root) {
+        if let Ok(m) = rt.load_manifest_cached(pid, &entry.root) {
             if let Some(v) = parse_manifest_version(&m.version) {
                 version_by_id.insert(pid.clone(), v);
             }
@@ -553,7 +551,7 @@ fn build_directory_plugin_catalog(state: &AppState) -> Vec<DirectoryPluginCatalo
     let mut out: Vec<DirectoryPluginCatalogEntry> = roots
         .iter()
         .filter_map(|(pid, entry)| {
-            let manifest = OclivePluginManifest::load_from_dir(&entry.root).ok()?;
+            let manifest = rt.load_manifest_cached(pid, &entry.root).ok()?;
             let is_shell = manifest.shell.is_some();
             let has_ui_settings = manifest.ui_template.is_some()
                 || manifest
