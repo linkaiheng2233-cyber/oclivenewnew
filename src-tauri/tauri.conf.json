@@ -25,11 +25,6 @@
       "dialog": {
         "open": true,
         "save": true
-      },
-      "fs": {
-        "writeFile": true,
-        "readFile": true,
-        "scope": ["$APPDATA/**", "$RESOURCE/**"]
       }
     },
     "bundle": {
