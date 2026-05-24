@@ -8,7 +8,6 @@ use oclive_kernel_runtime::AppError;
 use oclive_validation::{MCP_HTTP, MCP_STDIO, NETWORK_WILDCARD, PROCESS_SPAWN};
 use parking_lot::RwLock;
 use serde::{Deserialize, Serialize};
-use serde_json::Value;
 use std::collections::HashSet;
 use std::fs;
 use std::path::{Path, PathBuf};
@@ -30,53 +29,9 @@ pub struct HighRiskGrantsFile {
 }
 
 impl HighRiskGrantsFile {
-    fn merge_legacy_key(set: &mut HashSet<String>, legacy: &HashSet<String>) {
-        for id in legacy {
-            set.insert(id.clone());
-        }
+    fn from_json_str(raw: &str) -> Self {
+        serde_json::from_str(raw).unwrap_or_default()
     }
-
-    fn from_json_value(v: Value) -> Self {
-        let legacy =
-            serde_json::from_value::<LegacyHighRiskGrantsFile>(v.clone()).unwrap_or_default();
-        let mut raw = v;
-        if let Value::Object(ref mut m) = raw {
-            migrate_legacy_bucket(m, "mcp_http", MCP_HTTP);
-            migrate_legacy_bucket(m, "mcp_stdio", MCP_STDIO);
-            migrate_legacy_bucket(m, "directory_plugin_process_spawn", PROCESS_SPAWN);
-        }
-        let mut file: Self = serde_json::from_value(raw).unwrap_or_default();
-        Self::merge_legacy_key(&mut file.mcp_http, &legacy.mcp_http);
-        Self::merge_legacy_key(&mut file.mcp_stdio, &legacy.mcp_stdio);
-        Self::merge_legacy_key(
-            &mut file.process_spawn,
-            &legacy.directory_plugin_process_spawn,
-        );
-        file
-    }
-}
-
-fn migrate_legacy_bucket(
-    map: &mut serde_json::Map<String, Value>,
-    legacy_key: &str,
-    spec_key: &str,
-) {
-    if map.contains_key(spec_key) {
-        return;
-    }
-    if let Some(v) = map.remove(legacy_key) {
-        map.insert(spec_key.to_string(), v);
-    }
-}
-
-#[derive(Debug, Clone, Default, Deserialize)]
-struct LegacyHighRiskGrantsFile {
-    #[serde(default)]
-    mcp_http: HashSet<String>,
-    #[serde(default)]
-    mcp_stdio: HashSet<String>,
-    #[serde(default)]
-    directory_plugin_process_spawn: HashSet<String>,
 }
 
 pub struct HighRiskGrantStore {
@@ -104,9 +59,7 @@ impl HighRiskGrantStore {
     fn read_disk(app_data: &Path) -> HighRiskGrantsFile {
         let p = Self::file_path(app_data);
         if let Ok(raw) = fs::read_to_string(&p) {
-            if let Ok(v) = serde_json::from_str::<Value>(&raw) {
-                return HighRiskGrantsFile::from_json_value(v);
-            }
+            return HighRiskGrantsFile::from_json_str(&raw);
         }
         HighRiskGrantsFile::default()
     }
@@ -271,14 +224,14 @@ impl HighRiskGrantStore {
     }
 }
 
-/// 解析 Tauri `grant_*` / `revoke_*` 的 `kind`（规范标识 + 旧版别名）。
+/// 解析 Tauri `grant_*` / `revoke_*` 的 `kind`（规范权限标识）。
 #[must_use]
 pub fn normalize_grant_kind(kind: &str) -> Option<GrantKind> {
     match kind.trim() {
-        MCP_HTTP | "mcp_http" => Some(GrantKind::McpHttp),
-        MCP_STDIO | "mcp_stdio" => Some(GrantKind::McpStdio),
-        PROCESS_SPAWN | "directory_plugin_process_spawn" => Some(GrantKind::ProcessSpawn),
-        NETWORK_WILDCARD | "network" | "network_wildcard" => Some(GrantKind::Network),
+        MCP_HTTP => Some(GrantKind::McpHttp),
+        MCP_STDIO => Some(GrantKind::McpStdio),
+        PROCESS_SPAWN => Some(GrantKind::ProcessSpawn),
+        NETWORK_WILDCARD => Some(GrantKind::Network),
         _ => None,
     }
 }
@@ -306,25 +259,6 @@ mod tests {
     }
 
     #[test]
-    fn reads_legacy_grant_file() {
-        let dir = tempdir().unwrap();
-        let p = dir.path().join(FILE_NAME);
-        fs::write(
-            &p,
-            r#"{
-  "mcp_http": ["s1"],
-  "mcp_stdio": ["s2"],
-  "directory_plugin_process_spawn": ["p1"]
-}"#,
-        )
-        .unwrap();
-        let store = HighRiskGrantStore::load(dir.path().to_path_buf(), true);
-        assert!(store.is_mcp_http_granted("s1"));
-        assert!(store.is_mcp_stdio_granted("s2"));
-        assert!(store.is_process_spawn_granted("p1"));
-    }
-
-    #[test]
     fn network_grant_enforced() {
         let dir = tempdir().unwrap();
         let store = HighRiskGrantStore::load(dir.path().to_path_buf(), true);
@@ -334,9 +268,9 @@ mod tests {
     }
 
     #[test]
-    fn normalize_grant_kind_accepts_spec_and_legacy() {
+    fn normalize_grant_kind_accepts_spec_keys_only() {
         assert_eq!(normalize_grant_kind("mcp:http"), Some(GrantKind::McpHttp));
-        assert_eq!(normalize_grant_kind("mcp_http"), Some(GrantKind::McpHttp));
+        assert_eq!(normalize_grant_kind("mcp_http"), None);
         assert_eq!(
             normalize_grant_kind("process:spawn"),
             Some(GrantKind::ProcessSpawn)

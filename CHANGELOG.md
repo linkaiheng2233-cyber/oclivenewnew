@@ -4,6 +4,14 @@
 
 ## [Unreleased]
 
+### Breaking
+
+- **`high_risk_grants.json`**：仅接受规范权限键（`mcp:http`、`mcp:stdio`、`process:spawn`、`network:*`）。旧版 `mcp_http` / `directory_plugin_process_spawn` 等别名不再读取；请手动迁移文件后重授。
+
+### Changed
+
+- **实验性双核运行时**：`oclivenewnew-tauri` 新增 Cargo feature **`dual_core`**（默认关闭）。启用后编译 `dual_pipeline*` 并在 `role.dual_core_gated()` 时走实验核路径；`cargo build -p oclivenewnew-tauri --features dual_core`。
+
 （下一发版条目写在此处。）
 
 ---
