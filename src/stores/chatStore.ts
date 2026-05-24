@@ -69,6 +69,45 @@ function roleSceneBucket(
   return scenes[sid]!
 }
 
+function roleSceneAsideKey(roleId: string, sceneId: string): string {
+  return `${roleId}:${sceneId || 'default'}`
+}
+
+function lastAssistantAsideFromMessages(messages: ChatMessage[]): string {
+  for (let i = messages.length - 1; i >= 0; i--) {
+    const m = messages[i]
+    if (m.role === 'assistant') {
+      const aside = m.aside?.trim()
+      if (aside)
+        return aside
+    }
+  }
+  return ''
+}
+
+function syncLastAssistantAside(
+  map: Record<string, string>,
+  roleId: string,
+  sceneId: string,
+  messages: ChatMessage[],
+): void {
+  map[roleSceneAsideKey(roleId, sceneId)] = lastAssistantAsideFromMessages(messages)
+}
+
+function rebuildLastAssistantAsideMap(messageMap: RoleSceneMessageMap): Record<string, string> {
+  const out: Record<string, string> = {}
+  for (const [roleId, roleBucket] of Object.entries(messageMap)) {
+    if (isLegacyRoleBucket(roleBucket)) {
+      syncLastAssistantAside(out, roleId, 'default', roleBucket)
+      continue
+    }
+    for (const [sceneId, messages] of Object.entries(roleBucket)) {
+      syncLastAssistantAside(out, roleId, sceneId, messages)
+    }
+  }
+  return out
+}
+
 let persistMessagesTimer: ReturnType<typeof setTimeout> | null = null
 
 function schedulePersistMessages(map: RoleSceneMessageMap) {
@@ -87,6 +126,7 @@ export const useChatStore = defineStore(
       messageMap: {} as RoleSceneMessageMap,
       isLoading: false,
       sceneHistorySplitIndex: {} as SceneHistorySplitIndex,
+      lastAssistantAside: {} as Record<string, string>,
       messagesHydrated: false,
     }),
     getters: {
@@ -105,6 +145,10 @@ export const useChatStore = defineStore(
           return state.sceneHistorySplitIndex[roleId]?.[sid] ?? 0
         }
       },
+      lastAssistantAsideFor: (state) => {
+        return (roleId: string, sceneId: string): string =>
+          state.lastAssistantAside[roleSceneAsideKey(roleId, sceneId)] ?? ''
+      },
     },
     actions: {
       /** 启动时从 IndexedDB 恢复消息；兼容旧版 localStorage 全量持久化。 */
@@ -115,6 +159,7 @@ export const useChatStore = defineStore(
         const fromIdb = fromLegacy ?? (await loadMessageMapFromIdb())
         if (fromIdb)
           this.messageMap = migrateMessageMapShape(fromIdb)
+        this.lastAssistantAside = rebuildLastAssistantAsideMap(this.messageMap)
         this.messagesHydrated = true
       },
 
@@ -220,6 +265,32 @@ export const useChatStore = defineStore(
             ? next.slice(-MAX_MESSAGES_PER_CONVERSATION)
             : next
         this.messageMap[roleId]![sid] = trimmed
+        syncLastAssistantAside(this.lastAssistantAside, roleId, sid, trimmed)
+        schedulePersistMessages(this.messageMap)
+      },
+
+      editMessage(
+        roleId: string,
+        sceneId: string,
+        messageId: string,
+        patch: Partial<Pick<ChatMessage, 'content' | 'aside'>>,
+      ) {
+        const sid = sceneId || 'default'
+        const bucket = roleSceneBucket(this.messageMap, roleId, sid)
+        const idx = bucket.findIndex(m => m.id === messageId)
+        if (idx === -1)
+          return
+        bucket[idx] = { ...bucket[idx], ...patch }
+        syncLastAssistantAside(this.lastAssistantAside, roleId, sid, bucket)
+        schedulePersistMessages(this.messageMap)
+      },
+
+      deleteMessage(roleId: string, sceneId: string, messageId: string) {
+        const sid = sceneId || 'default'
+        const bucket = roleSceneBucket(this.messageMap, roleId, sid)
+        const next = bucket.filter(m => m.id !== messageId)
+        this.messageMap[roleId]![sid] = next
+        syncLastAssistantAside(this.lastAssistantAside, roleId, sid, next)
         schedulePersistMessages(this.messageMap)
       },
 
@@ -227,6 +298,7 @@ export const useChatStore = defineStore(
         const sid = sceneId || 'default'
         roleSceneBucket(this.messageMap, roleId, sid)
         this.messageMap[roleId]![sid] = []
+        this.lastAssistantAside[roleSceneAsideKey(roleId, sid)] = ''
         schedulePersistMessages(this.messageMap)
       },
 
