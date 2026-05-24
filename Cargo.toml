@@ -21,6 +21,8 @@ missing_errors_doc = "warn"
 missing_panics_doc = "warn"
 must_use_candidate = "warn"
 await_holding_lock = "deny"
+large_enum_variant = "warn"
+result_large_err = "warn"
 
 [profile.release]
 opt-level = 3
