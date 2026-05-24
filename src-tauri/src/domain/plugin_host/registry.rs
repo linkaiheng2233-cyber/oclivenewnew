@@ -251,6 +251,11 @@ impl BackendRegistry {
         let llm_ollama = llm;
         let mcp = Arc::new(McpClient::new(app_data_dir, high_risk_grants.clone()));
         let agent_builtin = Arc::new(BuiltinReActAgent::new(llm_ollama.clone(), mcp));
+        // TODO(agent-directory): replace placeholder with directory-plugin Agent dispatch (see creator-docs/rfc/RFC_OCLIVE_DUAL_CORE_DUAL_MODE.md).
+        tracing::warn!(
+            target: "oclive_plugin",
+            "agent_directory uses BuiltinReActAgent placeholder; directory plugin agent routing not implemented yet",
+        );
         let agent_directory: Arc<dyn AgentProvider> = agent_builtin.clone();
         let remote_http_client = remote_plugin::build_shared_remote_http_client();
         Self {
