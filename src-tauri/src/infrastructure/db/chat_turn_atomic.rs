@@ -341,12 +341,6 @@ async fn commit_chat_turn(
             message: e.to_string(),
         }
     })?;
-    tracing::info!(
-        "tx apply_chat_turn_atomic committed role_id={} favor_current={} elapsed_ms={}",
-        role_id,
-        favor_current,
-        started.elapsed().as_millis()
-    );
     log_txn_finish(
         "apply_chat_turn_atomic",
         role_id,
@@ -358,7 +352,6 @@ async fn commit_chat_turn(
 pub async fn apply_chat_turn_atomic(db: &DbManager, input: ChatTurnTxInput<'_>) -> Result<f64> {
     let role_id = input.role_id;
     let started = Instant::now();
-    tracing::info!("tx apply_chat_turn_atomic start role_id={}", role_id);
     let mut tx = db
         .pool
         .begin()
