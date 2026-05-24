@@ -10,34 +10,34 @@ use crate::state::AppState;
 use oclive_validation::{default_slot_key_for_module, SlotOverridePatch};
 use serde_json::json;
 use tauri::State;
+use crate::api::error::CommandError;
 pub async fn set_session_plugin_backend_impl(
     state: &AppState,
     req: &SetSessionPluginBackendRequest,
-) -> Result<RoleInfo, String> {
+) -> Result<RoleInfo, CommandError> {
     let module = req.module.trim().to_ascii_lowercase();
     if req.local_memory_provider_id.is_some() && module.as_str() != "memory" {
         return Err(AppError::InvalidParameter(
             "local_memory_provider_id only supports module=memory".to_string(),
         )
-        .to_frontend_error());
+        .into());
     }
     let slot_key = default_slot_key_for_module(&module).ok_or_else(|| {
-        AppError::InvalidParameter(format!(
+        CommandError::from(AppError::InvalidParameter(format!(
             "session backend override: unknown module {}",
             req.module
-        ))
-        .to_frontend_error()
+        )))
     })?;
     let role = state
         .load_role_cached_async(&req.role_id)
         .await
-        .map_err(|e| e.to_frontend_error())?;
+        ?;
     if role.slot_registry.is_none() {
         return Err(AppError::InvalidParameter(
             "v2 slot_registry required; run `oclive pack migrate-to-blueprint` on the role pack"
-                .into(),
+                .to_string(),
         )
-        .to_frontend_error());
+        .into());
     }
     let ns = session_namespace(&req.role_id, req.session_id.as_deref());
     if matches!(req.backend.as_ref(), Some(None)) && req.local_memory_provider_id.is_none() {
@@ -66,23 +66,23 @@ pub async fn set_session_plugin_backend_impl(
 pub async fn set_session_slot_override_impl(
     state: &AppState,
     req: &SetSessionSlotOverrideRequest,
-) -> Result<RoleInfo, String> {
+) -> Result<RoleInfo, CommandError> {
     let slot_key = req.slot_key.trim();
     if slot_key.is_empty() {
         return Err(
-            AppError::InvalidParameter("slot_key must not be empty".into()).to_frontend_error(),
+            AppError::InvalidParameter("slot_key must not be empty".into()).into(),
         );
     }
     state
         .load_role_cached_async(&req.role_id)
         .await
-        .map_err(|e| e.to_frontend_error())?;
+        ?;
     let ns = session_namespace(&req.role_id, req.session_id.as_deref());
     state
         .db_manager
         .ensure_role_runtime(ns.as_str())
         .await
-        .map_err(|e| e.to_frontend_error())?;
+        ?;
 
     let patch = SlotOverridePatch {
         backend: req.backend.clone(),
@@ -105,7 +105,7 @@ pub async fn set_session_slot_override_impl(
 pub async fn clear_session_slot_override_impl(
     state: &AppState,
     req: &ClearSessionSlotOverrideRequest,
-) -> Result<RoleInfo, String> {
+) -> Result<RoleInfo, CommandError> {
     let ns = session_namespace(&req.role_id, req.session_id.as_deref());
     state.clear_session_slot_override(ns.as_str(), req.slot_key.trim());
     get_role_info_impl(state, &req.role_id, req.session_id.as_deref()).await
@@ -117,7 +117,7 @@ pub async fn clear_session_slot_override_impl(
 pub async fn clear_all_session_slot_overrides_impl(
     state: &AppState,
     req: &ClearAllSessionSlotOverridesRequest,
-) -> Result<RoleInfo, String> {
+) -> Result<RoleInfo, CommandError> {
     let ns = session_namespace(&req.role_id, req.session_id.as_deref());
     state.clear_all_session_slot_overrides(ns.as_str());
     get_role_info_impl(state, &req.role_id, req.session_id.as_deref()).await
@@ -129,17 +129,17 @@ pub async fn clear_all_session_slot_overrides_impl(
 pub async fn save_role_slot_registry_impl(
     state: &AppState,
     req: &SaveRoleSlotRegistryRequest,
-) -> Result<RoleInfo, String> {
+) -> Result<RoleInfo, CommandError> {
     let role_id = req.role_id.trim();
     if role_id.is_empty() {
         return Err(
-            AppError::InvalidParameter("role_id must not be empty".into()).to_frontend_error(),
+            AppError::InvalidParameter("role_id must not be empty".into()).into(),
         );
     }
     state
         .storage
         .save_blueprint_v2_slot_registry(role_id, &req.slot_registry)
-        .map_err(|e| e.to_frontend_error())?;
+        ?;
     state.invalidate_role_cache(role_id);
     state.invalidate_personality_cache_for_role(role_id);
     load_role_impl(state, role_id, false).await?;
@@ -153,7 +153,7 @@ pub async fn save_role_slot_registry_impl(
 pub async fn save_role_slot_registry(
     req: SaveRoleSlotRegistryRequest,
     state: State<'_, AppState>,
-) -> Result<RoleInfo, String> {
+) -> Result<RoleInfo, CommandError> {
     save_role_slot_registry_impl(&state, &req).await
 }
 
@@ -164,7 +164,7 @@ pub async fn save_role_slot_registry(
 pub async fn set_session_plugin_backend(
     req: SetSessionPluginBackendRequest,
     state: State<'_, AppState>,
-) -> Result<RoleInfo, String> {
+) -> Result<RoleInfo, CommandError> {
     set_session_plugin_backend_impl(&state, &req).await
 }
 
@@ -175,7 +175,7 @@ pub async fn set_session_plugin_backend(
 pub async fn set_session_slot_override(
     req: SetSessionSlotOverrideRequest,
     state: State<'_, AppState>,
-) -> Result<RoleInfo, String> {
+) -> Result<RoleInfo, CommandError> {
     set_session_slot_override_impl(&state, &req).await
 }
 
@@ -186,7 +186,7 @@ pub async fn set_session_slot_override(
 pub async fn clear_session_slot_override(
     req: ClearSessionSlotOverrideRequest,
     state: State<'_, AppState>,
-) -> Result<RoleInfo, String> {
+) -> Result<RoleInfo, CommandError> {
     clear_session_slot_override_impl(&state, &req).await
 }
 
@@ -197,7 +197,7 @@ pub async fn clear_session_slot_override(
 pub async fn clear_all_session_slot_overrides(
     req: ClearAllSessionSlotOverridesRequest,
     state: State<'_, AppState>,
-) -> Result<RoleInfo, String> {
+) -> Result<RoleInfo, CommandError> {
     clear_all_session_slot_overrides_impl(&state, &req).await
 }
 
@@ -215,15 +215,15 @@ pub struct ApplyAuthorSuggestedBackendsRequest {
 pub async fn apply_author_suggested_plugin_backends(
     req: ApplyAuthorSuggestedBackendsRequest,
     state: State<'_, AppState>,
-) -> Result<RoleInfo, String> {
+) -> Result<RoleInfo, CommandError> {
     let role_id = req.role_id.trim();
     if role_id.is_empty() {
-        return Err(AppError::InvalidParameter("role_id required".into()).to_frontend_error());
+        return Err(AppError::InvalidParameter("role_id required".into()).into());
     }
     let role = state
         .storage
         .load_role(role_id)
-        .map_err(|e| e.to_frontend_error())?;
+        ?;
     let Some(sugg) = role
         .author_pack
         .as_ref()
@@ -233,23 +233,23 @@ pub async fn apply_author_suggested_plugin_backends(
         return Err(AppError::InvalidParameter(
             "This role pack has no author.json suggested_plugin_backends.".into(),
         )
-        .to_frontend_error());
+        .into());
     };
     let ns = session_namespace(role_id, req.session_id.as_deref());
     state
         .db_manager
         .ensure_role_runtime(ns.as_str())
         .await
-        .map_err(|e| e.to_frontend_error())?;
+        ?;
     let role_cached = state
         .load_role_cached_async(role_id)
         .await
-        .map_err(|e| e.to_frontend_error())?;
+        ?;
     let Some(reg) = role_cached.slot_registry.as_ref() else {
         return Err(AppError::InvalidParameter(
             "v2 slot_registry required to apply author suggested backends".into(),
         )
-        .to_frontend_error());
+        .into());
     };
     state.clear_all_session_slot_overrides(ns.as_str());
     let wire = |v: serde_json::Value, fallback: &str| -> String {
@@ -325,7 +325,7 @@ pub async fn apply_author_suggested_plugin_backends(
 pub async fn get_plugin_resolution_debug_impl(
     state: &AppState,
     req: &GetPluginResolutionDebugRequest,
-) -> Result<PluginResolutionDebugInfo, String> {
+) -> Result<PluginResolutionDebugInfo, CommandError> {
     build_plugin_resolution_debug_info(state, &req.role_id, req.session_id.as_deref()).await
 }
 /// # Errors
@@ -335,7 +335,7 @@ pub async fn get_plugin_resolution_debug_impl(
 pub async fn get_plugin_resolution_debug(
     req: GetPluginResolutionDebugRequest,
     state: State<'_, AppState>,
-) -> Result<PluginResolutionDebugInfo, String> {
+) -> Result<PluginResolutionDebugInfo, CommandError> {
     get_plugin_resolution_debug_impl(&state, &req).await
 }
 
@@ -343,17 +343,17 @@ pub(crate) async fn build_plugin_resolution_debug_info(
     state: &AppState,
     role_id: &str,
     session_id: Option<&str>,
-) -> Result<PluginResolutionDebugInfo, String> {
+) -> Result<PluginResolutionDebugInfo, CommandError> {
     let role = state
         .load_role_cached_async(role_id)
         .await
-        .map_err(|e| e.to_frontend_error())?;
+        ?;
     let session_ns = session_namespace(role_id, session_id);
     state
         .db_manager
         .ensure_role_runtime(session_ns.as_str())
         .await
-        .map_err(|e| e.to_frontend_error())?;
+        ?;
     let session_override =
         plugin_backends_override_from_slot_session(state, role.as_ref(), session_ns.as_str());
     let effective = state

@@ -72,7 +72,9 @@ pub async fn set_user_presence_scene_impl(
         .set_user_presence_scene(&req.role_id, &req.scene_id)
         .await
         .map_err(|e| e.to_frontend_error())?;
-    get_role_info_impl(state, &req.role_id, None).await
+    get_role_info_impl(state, &req.role_id, None)
+        .await
+        .map_err(Into::into)
 }
 /// # Errors
 ///

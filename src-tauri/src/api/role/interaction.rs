@@ -5,6 +5,7 @@ use crate::models::dto::LifeStateDto;
 use crate::models::InteractionMode;
 use crate::models::Role;
 use crate::state::AppState;
+use crate::api::error::CommandError;
 
 /// 已 seed、已读 DB、含 pack 建议值与日程推断。
 pub(super) struct InteractionUiSnapshot {
@@ -19,17 +20,17 @@ pub(super) async fn resolve_interaction_ui_snapshot(
     role_id: &str,
     role: &Role,
     virtual_time_ms: i64,
-) -> Result<InteractionUiSnapshot, String> {
+) -> Result<InteractionUiSnapshot, CommandError> {
     state
         .db_manager
         .ensure_interaction_mode_seeded(role_id, role.interaction_mode.as_deref())
         .await
-        .map_err(|e| e.to_frontend_error())?;
+        ?;
     let mode = state
         .db_manager
         .get_interaction_mode(role_id)
         .await
-        .map_err(|e| e.to_frontend_error())?;
+        ?;
     let mode_str = mode.as_str().to_string();
     let pack_default = InteractionMode::pack_default_for_api(role.interaction_mode.as_deref());
     let current_life = if mode.is_immersive() {

@@ -24,6 +24,7 @@ pub use slot_session::{
 pub(crate) use slot_session::build_plugin_resolution_debug_info;
 
 use crate::error::AppError;
+use crate::api::error::CommandError;
 use crate::models::dto::{
     GetRoleInfoRequest, RoleData, RoleInfo, RoleSummary, SceneLabelEntry,
 };
@@ -136,22 +137,21 @@ fn plugin_backends_override_from_slot_session(
     }
 }
 
-fn parse_backend_wire<T: DeserializeOwned>(module: &str, value: &str) -> Result<T, String> {
+fn parse_backend_wire<T: DeserializeOwned>(module: &str, value: &str) -> Result<T, CommandError> {
     let t = value.trim();
     if t.is_empty() {
         return Err(AppError::InvalidParameter(format!(
             "session backend override: module={} backend must not be empty",
             module
         ))
-        .to_frontend_error());
+        .into());
     }
-    serde_json::from_value::<T>(Value::String(t.to_string())).map_err(|_| {
+    Ok(serde_json::from_value::<T>(Value::String(t.to_string())).map_err(|_| {
         AppError::InvalidParameter(format!(
             "session backend override: module={} backend={} is invalid",
             module, t
         ))
-        .to_frontend_error()
-    })
+    })?)
 }
 /// # Errors
 ///
@@ -161,11 +161,11 @@ pub async fn load_role_impl(
     state: &AppState,
     role_id: &str,
     reset_portrait_emotion: bool,
-) -> Result<RoleData, String> {
+) -> Result<RoleData, CommandError> {
     let role = state
         .storage
         .load_role(role_id)
-        .map_err(|e| e.to_frontend_error())?;
+        ?;
     let role = Arc::new(role);
 
     state.directory_plugins.set_active_role_id(role_id);
@@ -179,26 +179,26 @@ pub async fn load_role_impl(
         .db_manager
         .ensure_role_runtime(role_id)
         .await
-        .map_err(|e| e.to_frontend_error())?;
+        ?;
 
     if reset_portrait_emotion {
         state
             .db_manager
             .set_current_emotion(role_id, "neutral")
             .await
-            .map_err(|e| e.to_frontend_error())?;
+            ?;
     }
 
     let personality = state
         .get_current_personality(role_id, role.as_ref())
         .await
-        .map_err(|e| e.to_frontend_error())?;
+        ?;
 
     let current_scene = state
         .db_manager
         .get_current_scene(role_id)
         .await
-        .map_err(|e| e.to_frontend_error())?;
+        ?;
     let rt = role_runtime_extras(state, role_id, current_scene.as_deref(), role.as_ref()).await?;
     maybe_seed_initial_favorability_with_extras(state, role_id, role.as_ref(), &rt).await?;
     let current_favorability = current_favorability_for_effective_identity(
@@ -212,13 +212,13 @@ pub async fn load_role_impl(
         .memory_repo
         .count_memories(role_id)
         .await
-        .map_err(|e| e.to_frontend_error())?;
+        ?;
 
     let event_count = state
         .db_manager
         .count_events(role_id)
         .await
-        .map_err(|e| e.to_frontend_error())?;
+        ?;
     let effective_ollama_model = role.resolve_ollama_model(state.ollama_model.as_str());
     let relation_state =
         resolve_relation_state_for_ui(state, role_id, rt.current_user_relation.as_str()).await?;
@@ -226,7 +226,7 @@ pub async fn load_role_impl(
         .db_manager
         .get_remote_life_enabled(role_id)
         .await
-        .map_err(|e| e.to_frontend_error())?;
+        ?;
     let remote_life_pack_default = role
         .remote_presence
         .as_ref()
@@ -236,7 +236,7 @@ pub async fn load_role_impl(
         .db_manager
         .get_virtual_time_ms(role_id)
         .await
-        .map_err(|e| e.to_frontend_error())?
+        ?
         .unwrap_or(0);
     let interaction =
         resolve_interaction_ui_snapshot(state, role_id, role.as_ref(), virtual_time_ms).await?;
@@ -269,7 +269,7 @@ pub async fn load_role_impl(
             .db_manager
             .get_current_emotion(role_id)
             .await
-            .map_err(|e| e.to_frontend_error())?
+            ?
             .unwrap_or_else(|| "Neutral".to_string()),
         memory_count: memory_count as i32,
         event_count: event_count as i32,
@@ -307,21 +307,21 @@ pub async fn get_role_info_impl(
     state: &AppState,
     role_id: &str,
     session_id: Option<&str>,
-) -> Result<RoleInfo, String> {
+) -> Result<RoleInfo, CommandError> {
     let session_ns = session_namespace(role_id, session_id);
     if !state
         .db_manager
         .role_runtime_exists(session_ns.as_str())
         .await
-        .map_err(|e| e.to_frontend_error())?
+        ?
     {
-        return Err(AppError::RoleRuntimeNotReady.to_frontend_error());
+        return Err(AppError::RoleRuntimeNotReady.into());
     }
 
     let role = state
         .load_role_cached_async(role_id)
         .await
-        .map_err(|e| e.to_frontend_error())?;
+        ?;
     let plugin_backends_session_override =
         plugin_backends_override_from_slot_session(state, role.as_ref(), session_ns.as_str());
     let plugin_backends_effective =
@@ -335,31 +335,31 @@ pub async fn get_role_info_impl(
         .db_manager
         .get_current_scene(role_id)
         .await
-        .map_err(|e| e.to_frontend_error())?;
+        ?;
     let user_presence_scene = state
         .db_manager
         .get_user_presence_scene(role_id)
         .await
-        .map_err(|e| e.to_frontend_error())?;
+        ?;
     let rt = role_runtime_extras(state, role_id, current_scene.as_deref(), role.as_ref()).await?;
     maybe_seed_initial_favorability_with_extras(state, role_id, role.as_ref(), &rt).await?;
 
     let personality = state
         .get_current_personality(role_id, role.as_ref())
         .await
-        .map_err(|e| e.to_frontend_error())?;
+        ?;
 
     let last_interaction = state
         .db_manager
         .get_latest_memory_created_at(role_id)
         .await
-        .map_err(|e| e.to_frontend_error())?
+        ?
         .map(|t| t.to_rfc3339());
 
     let scenes = state
         .storage
         .list_scene_ids(role_id)
-        .map_err(|e| e.to_frontend_error())?;
+        ?;
     let scene_labels: Vec<SceneLabelEntry> = scenes
         .iter()
         .map(|id| SceneLabelEntry {
@@ -371,7 +371,7 @@ pub async fn get_role_info_impl(
         .db_manager
         .get_virtual_time_ms(role_id)
         .await
-        .map_err(|e| e.to_frontend_error())?
+        ?
         .unwrap_or(0);
     let current_favorability = current_favorability_for_effective_identity(
         state,
@@ -386,7 +386,7 @@ pub async fn get_role_info_impl(
         .db_manager
         .get_remote_life_enabled(role_id)
         .await
-        .map_err(|e| e.to_frontend_error())?;
+        ?;
     let remote_life_pack_default = role
         .remote_presence
         .as_ref()
@@ -414,7 +414,7 @@ pub async fn get_role_info_impl(
             .db_manager
             .get_current_emotion(role_id)
             .await
-            .map_err(|e| e.to_frontend_error())?
+            ?
             .unwrap_or_else(|| "Neutral".to_string()),
         personality_vector: personality.to_vec7(),
         personality_source: role.evolution_config.personality_source,
@@ -461,12 +461,12 @@ pub async fn get_role_info_impl(
 /// # Errors
 ///
 /// Returns [`Err`] with a human-readable message when the operation fails.
-pub async fn list_roles_impl(state: &AppState) -> Result<Vec<RoleSummary>, String> {
+pub async fn list_roles_impl(state: &AppState) -> Result<Vec<RoleSummary>, CommandError> {
     let list_dev = crate::env_flags::list_dev_roles_enabled();
     let roles = state
         .storage
         .load_all_roles()
-        .map_err(|e| e.to_frontend_error())?;
+        ?;
     Ok(roles
         .into_iter()
         .filter(|r| list_dev || !r.dev_only)
@@ -481,7 +481,7 @@ pub async fn list_roles_impl(state: &AppState) -> Result<Vec<RoleSummary>, Strin
 /// # Errors
 ///
 /// Returns [`Err`] with a human-readable message when the operation fails.
-pub async fn switch_role_impl(state: &AppState, role_id: &str) -> Result<RoleInfo, String> {
+pub async fn switch_role_impl(state: &AppState, role_id: &str) -> Result<RoleInfo, CommandError> {
     load_role_impl(state, role_id, false).await?;
     get_role_info_impl(state, role_id, None).await
 }
@@ -489,7 +489,7 @@ pub async fn switch_role_impl(state: &AppState, role_id: &str) -> Result<RoleInf
 ///
 /// Returns [`Err`] with a human-readable message when the operation fails.
 #[tauri::command]
-pub async fn load_role(role_id: String, state: State<'_, AppState>) -> Result<RoleData, String> {
+pub async fn load_role(role_id: String, state: State<'_, AppState>) -> Result<RoleData, CommandError> {
     load_role_impl(&state, &role_id, true).await
 }
 /// # Errors
@@ -499,21 +499,21 @@ pub async fn load_role(role_id: String, state: State<'_, AppState>) -> Result<Ro
 pub async fn get_role_info(
     req: GetRoleInfoRequest,
     state: State<'_, AppState>,
-) -> Result<RoleInfo, String> {
+) -> Result<RoleInfo, CommandError> {
     get_role_info_impl(&state, &req.role_id, req.session_id.as_deref()).await
 }
 /// # Errors
 ///
 /// Returns [`Err`] with a human-readable message when the operation fails.
 #[tauri::command]
-pub async fn list_roles(state: State<'_, AppState>) -> Result<Vec<RoleSummary>, String> {
+pub async fn list_roles(state: State<'_, AppState>) -> Result<Vec<RoleSummary>, CommandError> {
     list_roles_impl(&state).await
 }
 /// # Errors
 ///
 /// Returns [`Err`] with a human-readable message when the operation fails.
 #[tauri::command]
-pub async fn switch_role(role_id: String, state: State<'_, AppState>) -> Result<RoleInfo, String> {
+pub async fn switch_role(role_id: String, state: State<'_, AppState>) -> Result<RoleInfo, CommandError> {
     switch_role_impl(&state, &role_id).await
 }
 
@@ -521,16 +521,16 @@ pub async fn switch_role(role_id: String, state: State<'_, AppState>) -> Result<
 ///
 /// Returns [`Err`] with a human-readable message when the operation fails.
 /// 删除本地角色目录及该 manifest 角色（含 `__sess__` 会话命名空间）的 DB 状态。
-pub async fn delete_role_impl(state: &AppState, role_id: String) -> Result<Value, String> {
+pub async fn delete_role_impl(state: &AppState, role_id: String) -> Result<Value, CommandError> {
     let rid = role_id.trim();
     if rid.is_empty() {
-        return Err(AppError::InvalidParameter("role_id required".into()).to_frontend_error());
+        return Err(AppError::InvalidParameter("role_id required".into()).into());
     }
     let removed_ns = state
         .db_manager
         .delete_all_data_for_manifest_role(rid)
         .await
-        .map_err(|e| e.to_frontend_error())?;
+        ?;
     for ns in &removed_ns {
         state.clear_all_session_slot_overrides(ns);
     }
@@ -569,12 +569,12 @@ pub fn read_role_asset_bytes(
     role_id: String,
     relative: String,
     state: State<'_, AppState>,
-) -> Result<Option<Vec<u8>>, String> {
+) -> Result<Option<Vec<u8>>, CommandError> {
     let p = state.storage.role_asset_path(&role_id, &relative);
     if !p.is_file() {
         return Ok(None);
     }
-    std::fs::read(&p).map(Some).map_err(|e| e.to_string())
+    Ok(Some(std::fs::read(&p)?))
 }
 
 /// 解析 `roles/{role_id}/{relative}` 的绝对路径；文件存在时供前端 `convertFileSrc` 加载。

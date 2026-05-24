@@ -484,7 +484,7 @@ async fn dispatch_bridge_command(
                 .and_then(|v| v.as_str())
                 .ok_or_else(|| bridge_invalid("delete_role: role_id required"))?
                 .to_string();
-            delete_role_impl(state, role_id).await
+            delete_role_impl(state, role_id).await.map_err(Into::into)
         }
         "update_settings" => update_settings_impl(state, &params).await,
         "get_conversation_list" => get_conversation_list_impl(state).await,

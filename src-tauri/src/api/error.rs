@@ -104,6 +104,31 @@ impl From<serde_json::Error> for CommandError {
     }
 }
 
+impl From<String> for CommandError {
+    fn from(s: String) -> Self {
+        Self(crate::error::AppError::Unknown(s))
+    }
+}
+
+impl From<ApiError> for CommandError {
+    fn from(e: ApiError) -> Self {
+        Self(crate::error::AppError::InvalidParameter(e.to_string()))
+    }
+}
+
+impl From<std::io::Error> for CommandError {
+    fn from(e: std::io::Error) -> Self {
+        Self(crate::error::AppError::from(e))
+    }
+}
+
+/// Bridge for API helpers not yet migrated off `Result<_, String>`.
+impl From<CommandError> for String {
+    fn from(e: CommandError) -> Self {
+        e.0.to_frontend_error()
+    }
+}
+
 /// 将 `DirectoryPluginRuntime::ensure_rpc_url` 等返回的纯文本失败映射为 **`KernelErrorBody` JSON 单行**。
 #[must_use]
 pub fn map_directory_rpc_url_error(plugin_id: &str, err: String) -> String {
