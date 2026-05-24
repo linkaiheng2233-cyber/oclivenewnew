@@ -157,6 +157,7 @@ impl AppStateBuilder {
             llm,
             role_cache: Arc::new(RwLock::new(HashMap::new())),
             role_load_inflight: DashMap::new(),
+            http_api_roles: DashMap::new(),
             session_cache: SessionCache::shared(),
             storage,
             policy_runtime,

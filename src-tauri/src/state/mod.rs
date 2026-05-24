@@ -45,6 +45,8 @@ pub struct AppState {
     pub role_cache: Arc<RwLock<HashMap<String, Arc<Role>>>>,
     /// 同一 `role_id` 冷加载串行化；表项在无人再持有对应 `Arc` 时移除（见 [`AppState::load_role_cached_async`]）。
     role_load_inflight: DashMap<String, Arc<Mutex<()>>>,
+    /// HTTP `--api` 试聊从任意 `role_path` 加载的角色；不写入 [`Self::role_cache`]。
+    pub(crate) http_api_roles: DashMap<String, Arc<Role>>,
     pub session_cache: Arc<SessionCache>,
     pub storage: RoleStorage,
     policy_runtime: Arc<ArcSwap<PolicyRuntime>>,
@@ -160,6 +162,9 @@ impl AppState {
         if let Some(r) = self.role_cache.read().get(role_id) {
             return Ok(Arc::clone(r));
         }
+        if let Some(r) = self.http_api_roles.get(role_id) {
+            return Ok(Arc::clone(r.value()));
+        }
         let key = role_id.to_string();
         let gate = self
             .role_load_inflight
@@ -171,6 +176,9 @@ impl AppState {
             let _serial = gate.lock();
             if let Some(r) = self.role_cache.read().get(role_id) {
                 return Ok(Arc::clone(r));
+            }
+            if let Some(r) = self.http_api_roles.get(role_id) {
+                return Ok(Arc::clone(r.value()));
             }
         }
 

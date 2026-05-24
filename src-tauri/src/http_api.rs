@@ -146,10 +146,7 @@ async fn chat(
 
     state.invalidate_personality_cache_for_role(role.id.as_str());
 
-    state
-        .role_cache
-        .write()
-        .insert(role.id.clone(), Arc::clone(&role));
+    state.http_api_roles.insert(role.id.clone(), Arc::clone(&role));
 
     let req = SendMessageRequest {
         role_id: role.id.clone(),
