@@ -402,25 +402,68 @@ pub(crate) async fn post_llm(
         .chain(pre.recent_events_for_event.clone())
         .collect::<Vec<_>>();
     let core_v = PersonalityVector::from(&role.default_personality);
-    let portrait_emotion_str = STAGES
-        .stage(
-            ChatStage::PortraitEmotionLlm,
-            resolve_portrait_emotion(
-                &primary_llm,
-                pre.ollama_model.as_str(),
-                role,
-                &core_v,
-                &middle.personality,
-                pre.favorability_before,
-                user_message,
-                &reply,
-                pre.user_emotion_str.as_str(),
-                &bot_emotion,
-                &recent_events,
-                &pre.recent_turns,
-            ),
-        )
-        .await?;
+    let portrait_fut = STAGES.stage(
+        ChatStage::PortraitEmotionLlm,
+        resolve_portrait_emotion(
+            &primary_llm,
+            pre.ollama_model.as_str(),
+            role,
+            &core_v,
+            &middle.personality,
+            pre.favorability_before,
+            user_message,
+            &reply,
+            pre.user_emotion_str.as_str(),
+            &bot_emotion,
+            &recent_events,
+            &pre.recent_turns,
+        ),
+    );
+
+    let (portrait_emotion_str, profile_evolve) =
+        if role.evolution_config.personality_source == PersonalitySource::Profile {
+            let impact_scaled =
+                (middle.ai_impact_factor_final * pre.event_runtime).clamp(-1.0, 1.0);
+            let evolve_fut = async {
+                let prev = STAGES
+                    .stage(
+                        ChatStage::GetMutablePersonality,
+                        state.db_manager.get_mutable_personality(srid),
+                    )
+                    .await?;
+                let next = match crate::domain::mutable_profile_llm::evolve_mutable_personality_with_llm(
+                    &primary_llm,
+                    pre.ollama_model.as_str(),
+                    crate::domain::mutable_profile_llm::MutableEvolutionInput {
+                        role_name: role.name.as_str(),
+                        core_personality: role.core_personality.as_str(),
+                        prev_mutable: prev.as_str(),
+                        user_message,
+                        bot_reply: reply.as_str(),
+                        user_emotion: pre.user_emotion_str.as_str(),
+                        event_type: &middle.ai_event_type,
+                        impact_scaled,
+                        evolution: &role.evolution_config,
+                    },
+                )
+                .await
+                {
+                    Ok(s) => s,
+                    Err(e) => {
+                        tracing::warn!(
+                            target: "oclive_chat",
+                            "mutable_profile_llm {path_label} failed role_id={srid} err={e}; keeping previous archive",
+                        );
+                        prev.clone()
+                    }
+                };
+                Ok((prev, next))
+            };
+            let (portrait_res, evolve_res) = tokio::join!(portrait_fut, evolve_fut);
+            (portrait_res?, Some(evolve_res?))
+        } else {
+            (portrait_fut.await?, None)
+        };
 
     let favor_current = STAGES
         .stage(
@@ -452,40 +495,7 @@ pub(crate) async fn post_llm(
         );
     }
 
-    if role.evolution_config.personality_source == PersonalitySource::Profile {
-        let prev = STAGES
-            .stage(
-                ChatStage::GetMutablePersonality,
-                state.db_manager.get_mutable_personality(srid),
-            )
-            .await?;
-        let impact_scaled = (middle.ai_impact_factor_final * pre.event_runtime).clamp(-1.0, 1.0);
-        let next = match crate::domain::mutable_profile_llm::evolve_mutable_personality_with_llm(
-            &primary_llm,
-            pre.ollama_model.as_str(),
-            crate::domain::mutable_profile_llm::MutableEvolutionInput {
-                role_name: role.name.as_str(),
-                core_personality: role.core_personality.as_str(),
-                prev_mutable: prev.as_str(),
-                user_message,
-                bot_reply: reply.as_str(),
-                user_emotion: pre.user_emotion_str.as_str(),
-                event_type: &middle.ai_event_type,
-                impact_scaled,
-                evolution: &role.evolution_config,
-            },
-        )
-        .await
-        {
-            Ok(s) => s,
-            Err(e) => {
-                tracing::warn!(
-                    target: "oclive_chat",
-                    "mutable_profile_llm {path_label} failed role_id={srid} err={e}; keeping previous archive",
-                );
-                prev.clone()
-            }
-        };
+    if let Some((_, next)) = profile_evolve {
         STAGES
             .stage(
                 ChatStage::SetMutablePersonality,
@@ -507,7 +517,7 @@ pub(crate) async fn post_llm(
             .session_cache
             .personality_cache()
             .set(srid.to_string(), personality_after);
-    } else {
+    } else if role.evolution_config.personality_source != PersonalitySource::Profile {
         let delta_out = PersonalityVector::sub_components(&middle.personality, &core_v);
         STAGES
             .stage(
