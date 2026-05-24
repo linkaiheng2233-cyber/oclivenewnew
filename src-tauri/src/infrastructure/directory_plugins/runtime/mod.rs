@@ -42,6 +42,10 @@ fn manifest_json_mtime(root: &Path) -> u64 {
 /// Resolve a normalized relative asset path under a plugin root without `canonicalize`.
 ///
 /// Uses the cached [`PluginRootEntry::canonical`] from rescan; callers avoid per-request syscalls.
+///
+/// # Errors
+///
+/// Returns [`Err`] when `rel` is empty, contains `..`, escapes the plugin root, or the path does not exist.
 pub fn resolve_plugin_asset_path(entry: &PluginRootEntry, rel: &str) -> Result<PathBuf, String> {
     let rel = normalize_plugin_rel(rel);
     if rel.is_empty() {
@@ -336,6 +340,10 @@ impl DirectoryPluginRuntime {
     }
 
     /// Load manifest from disk at most once per `manifest.json` mtime within a scan cycle.
+    ///
+    /// # Errors
+    ///
+    /// Returns [`Err`] with a human-readable message when manifest JSON is missing or invalid.
     pub fn load_manifest_cached(
         &self,
         plugin_id: &str,
