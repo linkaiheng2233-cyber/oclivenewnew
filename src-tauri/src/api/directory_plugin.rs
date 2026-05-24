@@ -386,7 +386,7 @@ pub fn read_plugin_asset_text(
             .to_string(),
         )
     })?;
-    if !path_canon.starts_with(&root_canon) {
+    if !path_canon.starts_with(root_canon.as_path()) {
         return Err(ApiError::PermissionDenied {
             message: "path escapes plugin directory".into(),
         }

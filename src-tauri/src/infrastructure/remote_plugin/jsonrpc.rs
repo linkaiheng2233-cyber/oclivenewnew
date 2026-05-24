@@ -79,6 +79,7 @@ fn body_preview(text: &str) -> String {
     format!("{}… (truncated bytes={})", &t[..end], t.len())
 }
 
+#[allow(clippy::too_many_arguments)]
 pub fn call_blocking(
     channel: RemoteRpcChannel,
     client: &reqwest::Client,
@@ -101,6 +102,7 @@ pub fn call_blocking(
     ))
 }
 
+#[allow(clippy::too_many_arguments)]
 pub async fn call_async(
     channel: RemoteRpcChannel,
     client: &reqwest::Client,
