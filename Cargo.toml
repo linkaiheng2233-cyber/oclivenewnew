@@ -29,6 +29,9 @@ codegen-units = 1
 strip = "symbols"
 panic = "abort"
 
+[profile.release.package."*"]
+codegen-units = 16
+
 [profile.dev]
 split-debuginfo = "unpacked"
 
