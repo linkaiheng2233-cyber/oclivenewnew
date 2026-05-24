@@ -15,7 +15,7 @@
       "protocol": {
         "asset": true,
         "assetScope": [
-          "**"
+          "$RESOURCE/**"
         ]
       },
       "shell": {
@@ -29,7 +29,7 @@
       "fs": {
         "writeFile": true,
         "readFile": true,
-        "scope": ["**"]
+        "scope": ["$APPDATA/**", "$RESOURCE/**"]
       }
     },
     "bundle": {
