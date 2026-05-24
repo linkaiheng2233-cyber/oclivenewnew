@@ -32,6 +32,15 @@ use crate::models::{Emotion, Event, Memory, PersonalitySource, PersonalityVector
 use std::collections::HashSet;
 use std::sync::Arc;
 
+/// `ollama_msg` 第一参数：槽位模块名（与 registry `slot_type` 一致）。
+mod slot_module {
+    pub(super) const EMOTION: &str = "emotion";
+    pub(super) const COMPLEX_EMOTION: &str = "complex_emotion";
+    pub(super) const EVENT: &str = "event";
+    pub(super) const PROMPT: &str = "prompt";
+    pub(super) const LLM: &str = "llm";
+}
+
 pub struct SlotRunner;
 
 impl SlotRunner {
@@ -225,7 +234,10 @@ impl SlotRunner {
             }
         }
         last.ok_or_else(|| {
-            crate::domain::error_helpers::ollama_msg("emotion", "no slot produced a result")
+            crate::domain::error_helpers::ollama_msg(
+                slot_module::EMOTION,
+                "no slot produced a result",
+            )
         })
     }
 
@@ -258,7 +270,7 @@ impl SlotRunner {
         }
         last.ok_or_else(|| {
             crate::domain::error_helpers::ollama_msg(
-                "complex_emotion",
+                slot_module::COMPLEX_EMOTION,
                 "no slot produced a result",
             )
         })
@@ -318,7 +330,10 @@ impl SlotRunner {
             }
         }
         last.ok_or_else(|| {
-            crate::domain::error_helpers::ollama_msg("event", "no slot produced a result")
+            crate::domain::error_helpers::ollama_msg(
+                slot_module::EVENT,
+                "no slot produced a result",
+            )
         })
     }
 
@@ -432,7 +447,10 @@ impl SlotRunner {
             }
         }
         last.ok_or_else(|| {
-            crate::domain::error_helpers::ollama_msg("prompt", "no slot produced a result")
+            crate::domain::error_helpers::ollama_msg(
+                slot_module::PROMPT,
+                "no slot produced a result",
+            )
         })
     }
 
@@ -466,7 +484,10 @@ impl SlotRunner {
             }
         }
         Err(last_err.unwrap_or_else(|| {
-            crate::domain::error_helpers::ollama_msg("llm", "no slot produced a reply")
+            crate::domain::error_helpers::ollama_msg(
+                slot_module::LLM,
+                "no slot produced a reply",
+            )
         }))
     }
 
@@ -521,7 +542,10 @@ impl SlotRunner {
             }
         }
         Err(last_err.unwrap_or_else(|| {
-            crate::domain::error_helpers::ollama_msg("llm", "no slot produced a reply")
+            crate::domain::error_helpers::ollama_msg(
+                slot_module::LLM,
+                "no slot produced a reply",
+            )
         }))
     }
 
@@ -567,7 +591,7 @@ impl SlotRunner {
             Ok(last)
         } else {
             Err(crate::domain::error_helpers::ollama_msg(
-                "llm",
+                slot_module::LLM,
                 "no slot produced a reply",
             ))
         }
