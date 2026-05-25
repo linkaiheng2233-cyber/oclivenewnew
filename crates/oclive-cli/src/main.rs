@@ -55,6 +55,7 @@ mod plugin_cmd;
 mod plugin_ext;
 mod plugin_manage_cmd;
 mod plugin_manage_tui;
+mod plugin_search;
 mod profile_cmd;
 mod project_introspect;
 mod publish_cmd;

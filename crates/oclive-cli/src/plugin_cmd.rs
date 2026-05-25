@@ -28,6 +28,8 @@ pub enum PluginCommands {
     Test(crate::plugin_ext::PluginTestArgs),
     /// Advanced slot / blueprint management (list, link, TUI)
     Manage(crate::plugin_manage_cmd::PluginManageCli),
+    /// Search installed directory plugins (keyword and/or manifest provides)
+    Search(crate::plugin_search::PluginSearchArgs),
 }
 
 #[derive(Parser, Debug, Clone)]
@@ -104,6 +106,7 @@ pub fn run(cli: PluginCli) -> Result<()> {
         PluginCommands::Uninstall(args) => crate::plugin_ext::run_uninstall(args),
         PluginCommands::Test(args) => crate::plugin_ext::run_test(args),
         PluginCommands::Manage(args) => crate::plugin_manage_cmd::run_manage(args),
+        PluginCommands::Search(args) => crate::plugin_search::run_search(args),
     }
 }
 
