@@ -160,9 +160,15 @@ pub fn install_plugin_from_market(
                 
         })?
     };
+    let git_subdir = index_item
+        .as_ref()
+        .and_then(|x| x.git_subdir.as_deref())
+        .map(str::trim)
+        .filter(|s| !s.is_empty());
     let installed_id = install_plugin(
         &state,
         &resolved,
+        git_subdir,
         index_item.as_ref().map(|x| &x.dependencies),
     )
     ?;
@@ -191,7 +197,7 @@ pub fn install_plugin_from_git(
     if git.is_empty() {
         return Err(AppError::InvalidParameter("git_url required".into()).into());
     }
-    let installed_id = install_plugin(&state, git, None)?;
+    let installed_id = install_plugin(&state, git, None, None)?;
     let root_opt = {
         let roots = state.directory_plugins.plugin_roots.read();
         roots.get(installed_id.as_str()).map(|entry| entry.root.clone())

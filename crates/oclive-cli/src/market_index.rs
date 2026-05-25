@@ -8,8 +8,13 @@ use std::path::PathBuf;
 use crate::registry::oclive_home;
 use crate::template_catalog::CATALOG;
 
+/// 与桌面端 `DEFAULT_PLUGIN_INDEX_URL` 一致（目录插件 `plugins.json`）。
 pub const DEFAULT_MARKET_INDEX_URL: &str =
-    "https://raw.githubusercontent.com/linkaiheng2233-cyber/oclivenewnew/main/examples/market-index.json";
+    "https://raw.githubusercontent.com/linkaiheng2233-cyber/awesome-oclive-plugins/main/plugins.json";
+
+/// 主仓 SSOT 镜像（含 `gitSubdir` 的官方示例；开发可 `OCLIVE_PLUGIN_INDEX_URL` 覆盖）。
+pub const FALLBACK_MARKET_INDEX_URL: &str =
+    "https://raw.githubusercontent.com/linkaiheng2233-cyber/oclivenewnew/main/data/plugins.json";
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum MarketKind {
@@ -53,6 +58,13 @@ pub struct MarketItem {
     pub download_url: Option<String>,
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub git: Option<String>,
+    #[serde(
+        default,
+        alias = "git_subdir",
+        rename = "gitSubdir",
+        skip_serializing_if = "Option::is_none"
+    )]
+    pub git_subdir: Option<String>,
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub template_id: Option<String>,
     #[serde(default = "default_kind_plugin")]
@@ -131,7 +143,18 @@ pub fn index_url() -> String {
 pub fn fetch_market_index() -> Result<MarketIndexFile> {
     let url = index_url();
     match fetch_online(&url) {
-        Ok(file) => {
+        Ok(mut file) => {
+            if file.plugins.is_empty() && url.contains("awesome-oclive-plugins") {
+                eprintln!(
+                    "⚠ awesome-oclive-plugins index has no plugins; trying fallback {}",
+                    FALLBACK_MARKET_INDEX_URL
+                );
+                if let Ok(fb) = fetch_online(FALLBACK_MARKET_INDEX_URL) {
+                    if !fb.plugins.is_empty() {
+                        file = fb;
+                    }
+                }
+            }
             let _ = save_cache(&file);
             Ok(file)
         }
@@ -158,8 +181,10 @@ pub fn fetch_online(url: &str) -> Result<MarketIndexFile> {
 
 pub fn parse_index_json(body: &str) -> Result<MarketIndexFile> {
     let v: serde_json::Value = serde_json::from_str(body).context("parse index JSON")?;
-    if v.get("plugins").is_some() || v.get("templates").is_some() {
+    if v.get("plugins").is_some() || v.get("templates").is_some() || v.get("role_packs").is_some()
+    {
         let mut file: MarketIndexFile = serde_json::from_value(v)?;
+        normalize_plugin_git_fields(&mut file.plugins);
         tag_kind_on_sections(&mut file);
         if file.templates.is_empty() {
             file.templates = builtin_templates();
@@ -199,6 +224,7 @@ pub fn parse_index_json(body: &str) -> Result<MarketIndexFile> {
                 install_count: 0,
                 download_url: None,
                 git: None,
+                git_subdir: None,
                 template_id: None,
                 kind: MarketKindSerde::Plugin,
             })
@@ -206,6 +232,12 @@ pub fn parse_index_json(body: &str) -> Result<MarketIndexFile> {
         templates: builtin_templates(),
         role_packs: vec![],
     })
+}
+
+fn normalize_plugin_git_fields(plugins: &mut [MarketItem]) {
+    for p in plugins {
+        p.kind = MarketKindSerde::Plugin;
+    }
 }
 
 fn builtin_templates() -> Vec<MarketItem> {
@@ -221,6 +253,7 @@ fn builtin_templates() -> Vec<MarketItem> {
             install_count: 0,
             download_url: None,
             git: None,
+            git_subdir: None,
             template_id: Some(e.id.to_string()),
             kind: MarketKindSerde::Template,
         })
@@ -293,5 +326,14 @@ mod tests {
         let f = parse_index_json(raw).unwrap();
         assert!(!f.plugins.is_empty());
         assert!(!f.templates.is_empty());
+    }
+
+    #[test]
+    fn data_plugins_index_parses_with_git_subdir() {
+        let raw = include_str!("../../../data/plugins.json");
+        let f = parse_index_json(raw).unwrap();
+        assert!(f.plugins.len() >= 4);
+        assert!(f.plugins[0].git.as_deref().unwrap_or("").contains("github"));
+        assert!(f.plugins[0].git_subdir.as_deref().unwrap_or("").contains("examples/"));
     }
 }

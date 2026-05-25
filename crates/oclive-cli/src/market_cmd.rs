@@ -125,17 +125,51 @@ pub fn install_item(item: &MarketItem, plugins_dir: &Path, template_out: &Path) 
 
 fn install_plugin_item(item: &MarketItem, plugins_dir: &Path) -> Result<()> {
     if let Some(git) = item.git.as_deref().filter(|s| !s.is_empty()) {
-        let dst = plugins_dir.join(&item.id);
         std::fs::create_dir_all(plugins_dir)?;
-        if dst.exists() {
-            std::fs::remove_dir_all(&dst).ok();
+        let label = git
+            .split('/')
+            .next_back()
+            .unwrap_or("plugin")
+            .trim_end_matches(".git");
+        let clone_dir = plugins_dir.join(format!(".clone-{label}"));
+        if clone_dir.exists() {
+            std::fs::remove_dir_all(&clone_dir).ok();
         }
         let st = Command::new("git")
-            .args(["clone", "--depth", "1", git, dst.to_string_lossy().as_ref()])
+            .args([
+                "clone",
+                "--depth",
+                "1",
+                git,
+                clone_dir.to_string_lossy().as_ref(),
+            ])
             .status()
             .context("git clone")?;
         if !st.success() {
             bail!("git clone failed: {git}");
+        }
+        let sub = item.git_subdir.as_deref().map(str::trim).filter(|s| !s.is_empty());
+        let src = match sub {
+            None => clone_dir.clone(),
+            Some(rel) => {
+                let rel = rel.replace('\\', "/").trim_matches('/').to_string();
+                let p = clone_dir.join(&rel);
+                if !p.is_dir() {
+                    let _ = std::fs::remove_dir_all(&clone_dir);
+                    bail!("gitSubdir not found in clone: {rel}");
+                }
+                p
+            }
+        };
+        let dst = plugins_dir.join(&item.id);
+        if dst.exists() {
+            std::fs::remove_dir_all(&dst).ok();
+        }
+        if src == clone_dir {
+            std::fs::rename(&clone_dir, &dst).context("rename clone to plugin id")?;
+        } else {
+            std::fs::rename(&src, &dst).context("move gitSubdir into plugin id dir")?;
+            let _ = std::fs::remove_dir_all(&clone_dir);
         }
         println!(
             "✓ Installed plugin {} from Git → {}",

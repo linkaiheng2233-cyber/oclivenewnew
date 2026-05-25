@@ -234,7 +234,7 @@ cargo run -p oclive-cli -- profile -o ./my-kernel --json
 | `market install <id>` | 安装条目（插件→`plugins/`；模板→`init`；角色包→`roles/`） |
 | `market info <id>` | 查看详情 |
 
-离线缓存：`~/.oclive/plugin_index_cache.json`（在线拉取失败时自动回退）。默认索引：`examples/market-index.json`。
+离线缓存：`~/.oclive/plugin_index_cache.json`（在线拉取失败时自动回退）。默认索引与桌面一致：`awesome-oclive-plugins` 的 `plugins.json`；官方示例草稿见主仓 `data/plugins.json`（可用 `OCLIVE_PLUGIN_INDEX_URL` 指向其 raw URL）。
 
 ```bash
 cargo run -p oclive-cli -- market browse

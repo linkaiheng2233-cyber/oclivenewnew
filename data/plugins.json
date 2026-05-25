@@ -1,0 +1,54 @@
+{
+  "generatedAt": "2026-05-20T00:00:00Z",
+  "plugins": [
+    {
+      "id": "com.oclive.example.minimal",
+      "name": "Directory Plugin Minimal",
+      "description": "最小整壳目录插件示例：Node RPC + 宿主 bridge",
+      "author": "oclive",
+      "version": "0.1.0",
+      "git": "https://github.com/linkaiheng2233-cyber/oclivenewnew.git",
+      "gitSubdir": "examples/directory-plugin-minimal",
+      "tags": ["example", "shell", "directory"],
+      "category": "example",
+      "source": "official"
+    },
+    {
+      "id": "com.oclive.example.ui_slot_toolbar",
+      "name": "UI Slot Toolbar (HTML)",
+      "description": "聊天工具栏 UI 槽位示例（纯 HTML）",
+      "author": "oclive",
+      "version": "0.1.0",
+      "git": "https://github.com/linkaiheng2233-cyber/oclivenewnew.git",
+      "gitSubdir": "examples/directory-plugin-ui-slot",
+      "tags": ["example", "ui_slot", "directory"],
+      "category": "example",
+      "source": "official"
+    },
+    {
+      "id": "com.oclive.example.ui_slot_toolbar_vue",
+      "name": "UI Slot Toolbar (Vue)",
+      "description": "聊天工具栏 UI 槽位示例（Vue 组件）",
+      "author": "oclive",
+      "version": "0.1.0",
+      "git": "https://github.com/linkaiheng2233-cyber/oclivenewnew.git",
+      "gitSubdir": "examples/directory-plugin-ui-slot-vue",
+      "tags": ["example", "ui_slot", "vue", "directory"],
+      "category": "example",
+      "source": "official"
+    },
+    {
+      "id": "com.oclive.example.llamacpp_llm",
+      "name": "LlamaCpp LLM (示例)",
+      "description": "目录插件示例：本地 llama.cpp RPC LLM 槽位（需自行准备模型与 llama-server）",
+      "author": "oclive",
+      "version": "0.1.0",
+      "git": "https://github.com/linkaiheng2233-cyber/oclivenewnew.git",
+      "gitSubdir": "examples/directory-plugin-llamacpp",
+      "tags": ["example", "llm", "directory"],
+      "category": "example",
+      "source": "official",
+      "permissions": ["process:spawn", "network:*"]
+    }
+  ]
+}

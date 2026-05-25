@@ -62,6 +62,16 @@ jobs:
         working-directory: .
         run: cargo audit --config audit.toml
 
+  plugins-index:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+      - name: Validate data/plugins.json
+        run: node scripts/validate-plugins-index.mjs
+
   cli:
     runs-on: ubuntu-latest
     steps:

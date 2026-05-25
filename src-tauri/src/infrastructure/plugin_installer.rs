@@ -32,6 +32,9 @@ pub struct PluginIndexEntry {
     pub changelog: Option<String>,
     #[serde(default)]
     pub dependencies: HashMap<String, String>,
+    /// Monorepo path inside `git` clone (e.g. `examples/directory-plugin-minimal`).
+    #[serde(default, alias = "git_subdir")]
+    pub git_subdir: Option<String>,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -45,6 +48,10 @@ pub struct PluginIndexFile {
 
 pub const DEFAULT_PLUGIN_INDEX_URL: &str =
     "https://raw.githubusercontent.com/linkaiheng2233-cyber/awesome-oclive-plugins/main/plugins.json";
+
+/// 主仓 `data/plugins.json` raw（awesome 列表为空或开发覆盖时用）。
+pub const FALLBACK_PLUGIN_INDEX_URL: &str =
+    "https://raw.githubusercontent.com/linkaiheng2233-cyber/oclivenewnew/main/data/plugins.json";
 
 fn plugins_dir(state: &AppState) -> PathBuf {
     state.directory_plugins.app_data_dir().join("plugins")
@@ -78,6 +85,22 @@ pub fn load_cached_index(state: &AppState) -> Result<PluginIndexFile, AppError> 
     serde_json::from_str(&raw)
         .map_err(|e| AppError::Unknown(format!("parse plugin index cache failed: {}", e)))
 }
+fn fetch_index_url(url: &str, cli: &reqwest::Client) -> Result<PluginIndexFile, AppError> {
+    let resp = crate::utils::block_on::block_on(async { cli.get(url).send().await })
+        .map_err(|e| AppError::Unknown(format!("sync plugin index failed: {}", e)))?;
+    if !resp.status().is_success() {
+        return Err(AppError::Unknown(format!(
+            "sync plugin index status={} url={}",
+            resp.status(),
+            url
+        )));
+    }
+    let text = crate::utils::block_on::block_on(async { resp.text().await })
+        .map_err(|e| AppError::Unknown(format!("read plugin index response failed: {}", e)))?;
+    serde_json::from_str(&text)
+        .map_err(|e| AppError::Unknown(format!("parse plugins.json failed: {}", e)))
+}
+
 /// # Errors
 ///
 /// Returns [`Err`] with a human-readable message when the operation fails.
@@ -95,23 +118,14 @@ pub fn sync_plugin_index_online(
         .timeout(std::time::Duration::from_secs(15))
         .build()
         .map_err(|e| AppError::Unknown(format!("index http client failed: {}", e)))?;
-    let resp = crate::utils::block_on::block_on(async {
-        cli.get(url).send().await
-    })
-    .map_err(|e| AppError::Unknown(format!("sync plugin index failed: {}", e)))?;
-    if !resp.status().is_success() {
-        return Err(AppError::Unknown(format!(
-            "sync plugin index status={} url={}",
-            resp.status(),
-            url
-        )));
+    let mut parsed = fetch_index_url(url, &cli)?;
+    if parsed.plugins.is_empty() && url.contains("awesome-oclive-plugins") {
+        if let Ok(fb) = fetch_index_url(FALLBACK_PLUGIN_INDEX_URL, &cli) {
+            if !fb.plugins.is_empty() {
+                parsed = fb;
+            }
+        }
     }
-    let text = crate::utils::block_on::block_on(async {
-        resp.text().await
-    })
-    .map_err(|e| AppError::Unknown(format!("read plugin index response failed: {}", e)))?;
-    let mut parsed: PluginIndexFile = serde_json::from_str(&text)
-        .map_err(|e| AppError::Unknown(format!("parse plugins.json failed: {}", e)))?;
     parsed.plugins.sort_by(|a, b| a.id.cmp(&b.id));
     let cache = cache_path(state);
     if let Some(parent) = cache.parent() {
@@ -193,6 +207,7 @@ pub fn missing_dependencies(
 pub fn install_plugin(
     state: &AppState,
     git_url: &str,
+    git_subdir: Option<&str>,
     deps: Option<&HashMap<String, String>>,
 ) -> Result<String, AppError> {
     if let Some(deps_map) = deps {
@@ -208,23 +223,26 @@ pub fn install_plugin(
     if url.is_empty() {
         return Err(AppError::InvalidParameter("git_url required".into()));
     }
-    let mut target = plugins_dir(state);
-    fs::create_dir_all(&target)?;
-    let name = url
+    let base = plugins_dir(state);
+    fs::create_dir_all(&base)?;
+    let clone_label = url
         .split('/')
         .next_back()
         .unwrap_or("plugin")
         .trim_end_matches(".git")
         .trim();
-    if name.is_empty() {
+    if clone_label.is_empty() {
         return Err(AppError::InvalidParameter("invalid git_url".into()));
     }
-    target = target.join(name);
-    if target.exists() {
-        return Err(AppError::InvalidParameter(format!(
-            "plugin dir already exists: {}",
-            target.display()
-        )));
+    let clone_dir = base.join(format!(".clone-{}", clone_label));
+    if clone_dir.exists() {
+        fs::remove_dir_all(&clone_dir).map_err(|e| {
+            AppError::Unknown(format!(
+                "failed to clear previous clone dir {}: {}",
+                clone_dir.display(),
+                e
+            ))
+        })?;
     }
     run_git(
         &[
@@ -232,30 +250,78 @@ pub fn install_plugin(
             "--depth",
             "1",
             url,
-            target.to_string_lossy().as_ref(),
+            clone_dir.to_string_lossy().as_ref(),
         ],
         None,
     )?;
-    let manifest = OclivePluginManifest::load_from_dir(&target)
+    let plugin_root = resolve_plugin_root_after_clone(&clone_dir, git_subdir)?;
+    let manifest = OclivePluginManifest::load_from_dir(&plugin_root)
         .map_err(|e| AppError::Unknown(format!("manifest validation failed: {}", e)))?;
     let pid = manifest.id.trim().to_string();
     if pid.is_empty() {
+        cleanup_clone_dir(&clone_dir, &plugin_root);
         return Err(AppError::InvalidParameter("manifest.id required".into()));
     }
-    let final_dir = plugins_dir(state).join(pid.as_str());
-    if final_dir != target {
-        if final_dir.exists() {
-            return Err(AppError::InvalidParameter(format!(
-                "target plugin id already exists: {}",
-                final_dir.display()
-            )));
-        }
-        fs::rename(&target, &final_dir)?;
+    let final_dir = base.join(pid.as_str());
+    if final_dir.exists() {
+        cleanup_clone_dir(&clone_dir, &plugin_root);
+        return Err(AppError::InvalidParameter(format!(
+            "target plugin id already exists: {}",
+            final_dir.display()
+        )));
+    }
+    if plugin_root == clone_dir {
+        fs::rename(&clone_dir, &final_dir).map_err(|e| {
+            AppError::Unknown(format!(
+                "move plugin into {} failed: {}",
+                final_dir.display(),
+                e
+            ))
+        })?;
+    } else {
+        fs::rename(&plugin_root, &final_dir).map_err(|e| {
+            AppError::Unknown(format!(
+                "move plugin into {} failed: {}",
+                final_dir.display(),
+                e
+            ))
+        })?;
+        let _ = fs::remove_dir_all(&clone_dir);
     }
     state
         .directory_plugins
         .rescan_plugin_roots(state.storage.roles_dir());
     Ok(pid)
+}
+
+fn resolve_plugin_root_after_clone(
+    clone_dir: &Path,
+    git_subdir: Option<&str>,
+) -> Result<PathBuf, AppError> {
+    let sub = git_subdir.map(str::trim).filter(|s| !s.is_empty());
+    let root = match sub {
+        None => clone_dir.to_path_buf(),
+        Some(rel) => {
+            let rel = rel.replace('\\', "/").trim_matches('/').to_string();
+            let p = clone_dir.join(&rel);
+            if !p.is_dir() {
+                let _ = fs::remove_dir_all(clone_dir);
+                return Err(AppError::InvalidParameter(format!(
+                    "gitSubdir not found in clone: {}",
+                    rel
+                )));
+            }
+            p
+        }
+    };
+    Ok(root)
+}
+
+fn cleanup_clone_dir(clone_dir: &Path, plugin_root: &Path) {
+    if plugin_root != clone_dir && plugin_root.starts_with(clone_dir) {
+        let _ = fs::remove_dir_all(plugin_root);
+    }
+    let _ = fs::remove_dir_all(clone_dir);
 }
 /// # Errors
 ///
