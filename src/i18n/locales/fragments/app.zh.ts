@@ -8,7 +8,7 @@ export default {
       enUS: 'English',
     },
     connectivity: {
-      pluginIndexOffline: '社区插件索引当前无法联网更新，已使用本地缓存。',
+      pluginIndexOffline: 'GitHub 插件索引（plugins.json）当前无法联网更新，已使用本机缓存。',
       dismiss: '关闭提示',
     },
     theme: {

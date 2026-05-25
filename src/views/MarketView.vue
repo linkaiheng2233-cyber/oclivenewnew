@@ -134,6 +134,9 @@ function close() {
             <p class="mk-sub">
               {{ t("pluginWorkbench.market.pageSub") }}
             </p>
+            <p class="mk-muted mk-source-hint">
+              {{ t("pluginWorkbench.market.indexSourceHint") }}
+            </p>
           </div>
           <button type="button" class="mk-close" :aria-label="t('common.close')" @click="close">
             ×

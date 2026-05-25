@@ -8,7 +8,7 @@ export default {
       enUS: 'English',
     },
     connectivity: {
-      pluginIndexOffline: 'The community plugin index could not be refreshed online; using local cache.',
+      pluginIndexOffline: 'The GitHub plugin index (plugins.json) could not be refreshed online; using local cache.',
       dismiss: 'Dismiss',
     },
     theme: {
