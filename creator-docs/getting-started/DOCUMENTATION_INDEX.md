@@ -120,6 +120,7 @@
 | 角色包 / 插件市场 · 与启动器联动（发版同发、入口与阶段划分） | **[../roadmap/MARKET_LAUNCHER_INTEGRATION.md](../roadmap/MARKET_LAUNCHER_INTEGRATION.md)** · [English](../../creator-docs-en/roadmap/MARKET_LAUNCHER_INTEGRATION.md) |
 | 社区站愿景（网页 · 论坛 / 角色包 / 插件 三板块；Discord 取舍） | **[../roadmap/COMMUNITY_WEB_VISION.md](../roadmap/COMMUNITY_WEB_VISION.md)** · [English](../../creator-docs-en/roadmap/COMMUNITY_WEB_VISION.md) |
 | **插件区（网站）**信息架构与 `plugins.json` 清单 | **[../roadmap/PLUGIN_WEB_SECTION.md](../roadmap/PLUGIN_WEB_SECTION.md)** · [English](../../creator-docs-en/roadmap/PLUGIN_WEB_SECTION.md) |
+| **GitHub 目录插件索引**（`data/plugins.json`、安装、本地回退、PR 流程） | **[../../handoff/GITHUB_PLUGIN_INDEX_LINE.md](../../handoff/GITHUB_PLUGIN_INDEX_LINE.md)** · 创作者契约 **[../plugin-and-architecture/PLUGIN_V1.md](../plugin-and-architecture/PLUGIN_V1.md)** §发布到社区索引 |
 | **项目全貌（OVERVIEW 入口）** | **[OVERVIEW.md](OVERVIEW.md)**（同义跳转至 [PROJECT_OVERVIEW.md](PROJECT_OVERVIEW.md)） |
 | **轻量化 / `cargo audit` / `cargo-bloat` 基线** | **[../development/LIGHTWEIGHT_PROFILE.md](../development/LIGHTWEIGHT_PROFILE.md)** |
 | **性能与已知限制（A7 · 对外披露）** | **[PERFORMANCE.md](PERFORMANCE.md)**（[English](../../creator-docs-en/getting-started/PERFORMANCE.md)） |

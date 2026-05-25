@@ -492,6 +492,21 @@ TypeScript 侧 `SendMessageResponse`（`src/utils/tauri-api.ts`）必须与 `mod
 
 实现与测试：`crates/oclive_validation/src/plugin_permissions.rs`、`src-tauri/src/infrastructure/high_risk_grants.rs`、集成测 `src-tauri/tests/permission_three_way_consistency.rs`。
 
+### 发布到社区索引（GitHub · `plugins.json`）
+
+目录插件上架 **不** 走 Supabase 社区站表单；阶段 A 使用 **GitHub 静态索引**：
+
+| 步骤 | 说明 |
+|------|------|
+| 1 | 插件以独立 Git 仓库发布，或 monorepo 子目录 + 索引 **`gitSubdir`** |
+| 2 | 向主仓 [`data/plugins.json`](../../data/plugins.json) 提 PR，字段与 `PluginIndexEntry` 对齐（`id`、`name`、`version`、`git`、可选 `gitSubdir`、`tags` 等） |
+| 3 | 合并后同步 [awesome-oclive-plugins](https://github.com/linkaiheng2233-cyber/awesome-oclive-plugins) 的 `plugins.json` |
+| 4 | 用户通过桌面 **插件市场** 或 **`oclive market install <id>`** 安装 |
+
+维护与字段全文、环境变量（`OCLIVE_PLUGIN_INDEX_URL`、`OCLIVE_LOCAL_MONOREPO`）、缓存路径见 **[../../handoff/GITHUB_PLUGIN_INDEX_LINE.md](../../handoff/GITHUB_PLUGIN_INDEX_LINE.md)**。
+
+本地已安装插件 discovery：`oclive plugin search [--provides <slot>] [keyword] -o <plugins-dir>`（按 `manifest.json` 的 **`provides`** 过滤）。
+
 ---
 
 [English](../../creator-docs-en/plugin-and-architecture/PLUGIN_V1.md)

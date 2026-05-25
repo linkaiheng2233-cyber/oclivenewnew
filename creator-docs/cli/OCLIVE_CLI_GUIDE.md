@@ -201,7 +201,8 @@ cargo run -p oclive-cli -- lint -o ./my-kernel --json
 | `plugin install <id>` | 解析 `manifest.json` 的 `plugin_dependencies`，拓扑排序安装 |
 | `plugin uninstall <id>` | 卸载并提示被依赖关系 |
 | `plugin test <path>` | 子进程 + RPC 烟测（`health` / 槽位方法） |
-| `plugin search` / `update` | **deprecated** — 请用 `market search` / `market install` |
+| `plugin search` | 扫描**已安装**目录插件（`manifest.json`）；`--provides <slot>` 按槽位过滤；在线发现用 `market search` |
+| `plugin update` | **deprecated** — 请用 `market install` / 目录内 `git pull` |
 
 `plugin_dependencies` 为 manifest 可选字符串数组；环依赖报错。见 [PLUGIN_V1.md](../plugin-and-architecture/PLUGIN_V1.md)。
 

@@ -5,7 +5,7 @@
 | 旧命令 | 替代 |
 |--------|------|
 | `oclive publish` | `oclive template pack` |
-| `oclive plugin search` | `oclive market search` |
+| `oclive plugin search`（在线索引） | `oclive market search`；**已安装**扫描仍用 `oclive plugin search [--provides]` |
 | `oclive plugin update` | `oclive market install <id>` |
 | `oclive registry login` | `oclive config set OCLIVE_REGISTRY_URL …` 与 `oclive config set OCLIVE_REGISTRY_TOKEN …` |
 
