@@ -24,7 +24,8 @@ const awesome = {
   generated_at: generatedAt,
   plugins: (data.plugins ?? []).map((p) => {
     const row = { ...p }
-    if (row.gitSubdir && !row.git_subdir) row.git_subdir = row.gitSubdir
+    // SSOT 仅用 camelCase gitSubdir；勿再写 git_subdir，避免同条双字段。
+    delete row.git_subdir
     return row
   }),
 }

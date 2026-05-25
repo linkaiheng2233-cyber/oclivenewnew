@@ -45,6 +45,9 @@ for (const p of plugins) {
     fail(`git must be http(s) or git@ URL for ${p.id}`)
   }
 
+  if (p.gitSubdir && p.git_subdir) {
+    fail(`entry ${p.id} has both gitSubdir and git_subdir; keep only gitSubdir`)
+  }
   const sub = p.gitSubdir ?? p.git_subdir
   if (sub) {
     const rel = String(sub).replace(/\\/g, '/').replace(/^\/+/, '')
