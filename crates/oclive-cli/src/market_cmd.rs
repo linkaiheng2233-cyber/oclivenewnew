@@ -123,6 +123,59 @@ pub fn install_item(item: &MarketItem, plugins_dir: &Path, template_out: &Path) 
     }
 }
 
+fn local_monorepo_file_git_url(https_git: &str) -> Option<String> {
+    let root = std::env::var("OCLIVE_LOCAL_MONOREPO")
+        .ok()
+        .map(|s| s.trim().to_string())
+        .filter(|s| !s.is_empty())?;
+    if !https_git.contains("oclivenewnew") {
+        return None;
+    }
+    let examples = PathBuf::from(&root).join("examples");
+    if !examples.is_dir() {
+        return None;
+    }
+    let path = root.replace('\\', "/");
+    Some(if path.starts_with('/') {
+        format!("file://{path}")
+    } else {
+        format!("file:///{path}")
+    })
+}
+
+fn git_clone_plugin_repo(git: &str, clone_dir: &Path) -> Result<()> {
+    let mut last_err = String::new();
+    let mut urls = vec![git.to_string()];
+    if let Some(file_url) = local_monorepo_file_git_url(git) {
+        if !urls.iter().any(|u| u == &file_url) {
+            urls.push(file_url);
+        }
+    }
+    for url in &urls {
+        if clone_dir.exists() {
+            std::fs::remove_dir_all(clone_dir).ok();
+        }
+        let st = Command::new("git")
+            .args([
+                "clone",
+                "--depth",
+                "1",
+                url,
+                clone_dir.to_string_lossy().as_ref(),
+            ])
+            .status()
+            .context("git clone")?;
+        if st.success() {
+            if url.starts_with("file://") {
+                eprintln!("✓ Cloned from local monorepo (OCLIVE_LOCAL_MONOREPO)");
+            }
+            return Ok(());
+        }
+        last_err = format!("git clone failed: {url}");
+    }
+    bail!("{last_err}");
+}
+
 fn install_plugin_item(item: &MarketItem, plugins_dir: &Path) -> Result<()> {
     if let Some(git) = item.git.as_deref().filter(|s| !s.is_empty()) {
         std::fs::create_dir_all(plugins_dir)?;
@@ -132,22 +185,7 @@ fn install_plugin_item(item: &MarketItem, plugins_dir: &Path) -> Result<()> {
             .unwrap_or("plugin")
             .trim_end_matches(".git");
         let clone_dir = plugins_dir.join(format!(".clone-{label}"));
-        if clone_dir.exists() {
-            std::fs::remove_dir_all(&clone_dir).ok();
-        }
-        let st = Command::new("git")
-            .args([
-                "clone",
-                "--depth",
-                "1",
-                git,
-                clone_dir.to_string_lossy().as_ref(),
-            ])
-            .status()
-            .context("git clone")?;
-        if !st.success() {
-            bail!("git clone failed: {git}");
-        }
+        git_clone_plugin_repo(git, &clone_dir)?;
         let sub = item.git_subdir.as_deref().map(str::trim).filter(|s| !s.is_empty());
         let src = match sub {
             None => clone_dir.clone(),

@@ -219,7 +219,7 @@ pub fn install_plugin(
             )));
         }
     }
-    let url = git_url.trim();
+    let url = resolve_git_clone_url(git_url.trim());
     if url.is_empty() {
         return Err(AppError::InvalidParameter("git_url required".into()));
     }
@@ -244,16 +244,7 @@ pub fn install_plugin(
             ))
         })?;
     }
-    run_git(
-        &[
-            "clone",
-            "--depth",
-            "1",
-            url,
-            clone_dir.to_string_lossy().as_ref(),
-        ],
-        None,
-    )?;
+    git_clone_with_fallback(git_url.trim(), &url, &clone_dir)?;
     let plugin_root = resolve_plugin_root_after_clone(&clone_dir, git_subdir)?;
     let manifest = OclivePluginManifest::load_from_dir(&plugin_root)
         .map_err(|e| AppError::Unknown(format!("manifest validation failed: {}", e)))?;
@@ -292,6 +283,79 @@ pub fn install_plugin(
         .directory_plugins
         .rescan_plugin_roots(state.storage.roles_dir());
     Ok(pid)
+}
+
+fn resolve_git_clone_url(https_git: &str) -> String {
+    if let Ok(root) = std::env::var("OCLIVE_LOCAL_MONOREPO") {
+        let root = root.trim();
+        if !root.is_empty()
+            && https_git.contains("oclivenewnew")
+            && Path::new(root).join("examples").is_dir()
+        {
+            let path = root.replace('\\', "/");
+            return if path.starts_with('/') {
+                format!("file://{path}")
+            } else {
+                format!("file:///{path}")
+            };
+        }
+    }
+    https_git.to_string()
+}
+
+fn git_clone_with_fallback(
+    https_git: &str,
+    primary_url: &str,
+    clone_dir: &Path,
+) -> Result<(), AppError> {
+    let mut urls = vec![primary_url.to_string()];
+    if primary_url != https_git {
+        urls.push(https_git.to_string());
+    } else if let Some(file_url) = local_monorepo_file_git_url(https_git) {
+        if !urls.iter().any(|u| u == &file_url) {
+            urls.push(file_url);
+        }
+    }
+    let mut last = String::new();
+    for url in urls {
+        if clone_dir.exists() {
+            let _ = fs::remove_dir_all(clone_dir);
+        }
+        match run_git(
+            &[
+                "clone",
+                "--depth",
+                "1",
+                url.as_str(),
+                clone_dir.to_string_lossy().as_ref(),
+            ],
+            None,
+        ) {
+            Ok(()) => return Ok(()),
+            Err(e) => last = format!("{} ({})", url, e),
+        }
+    }
+    Err(AppError::Unknown(format!("git clone failed: {}", last)))
+}
+
+fn local_monorepo_file_git_url(https_git: &str) -> Option<String> {
+    let root = std::env::var("OCLIVE_LOCAL_MONOREPO")
+        .ok()
+        .map(|s| s.trim().to_string())
+        .filter(|s| !s.is_empty())?;
+    if !https_git.contains("oclivenewnew") {
+        return None;
+    }
+    let examples = Path::new(&root).join("examples");
+    if !examples.is_dir() {
+        return None;
+    }
+    let path = root.replace('\\', "/");
+    Some(if path.starts_with('/') {
+        format!("file://{path}")
+    } else {
+        format!("file:///{path}")
+    })
 }
 
 fn resolve_plugin_root_after_clone(
