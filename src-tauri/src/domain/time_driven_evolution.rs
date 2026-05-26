@@ -4,7 +4,6 @@ use crate::domain::personality_engine::PersonalityEngine;
 use crate::domain::profile_personality::effective_vector_from_profile;
 use crate::domain::relation_estrangement::append_mutable_profile_section;
 use crate::error::Result;
-use crate::infrastructure::db::DbManager;
 use crate::models::{PersonalitySource, PersonalityVector, Role};
 use crate::state::AppState;
 /// `pre_llm` 在事件/情绪演化之前应用时间沉淀后的结果。
