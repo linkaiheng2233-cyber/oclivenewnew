@@ -7,7 +7,9 @@ import { Controls } from '@vue-flow/controls'
 import { applyNodeChanges, VueFlow } from '@vue-flow/core'
 import { MiniMap } from '@vue-flow/minimap'
 import { computed, markRaw, onMounted, provide, ref, watch } from 'vue'
+import type { ExpertRoutingDoc } from '../api/role/expert'
 import { getExpertRouting } from '../api/role/expert'
+import ExpertFlowPanel from './architecture-graph/ExpertFlowPanel.vue'
 import { expertLlmHighlights } from '../lib/expertRoutingGraph'
 import { useI18n } from 'vue-i18n'
 import { useAppToast } from '../composables/useAppToast'
@@ -100,15 +102,20 @@ const {
 const nodes = ref<Node[]>([])
 const edges = ref<Edge[]>([])
 const expertLlmHints = ref<Map<string, string>>(new Map())
+const expertRoutingDoc = ref<ExpertRoutingDoc | null>(null)
+
+const previewUserMessage = ref('')
 
 async function refreshExpertHighlights() {
   const roleId = roleStore.currentRoleId
   if (!roleId) {
     expertLlmHints.value = new Map()
+    expertRoutingDoc.value = null
     return
   }
   try {
     const doc = await getExpertRouting(roleId)
+    expertRoutingDoc.value = doc
     expertLlmHints.value = expertLlmHighlights(
       doc ?? undefined,
       roleStore.roleInfo.slotRegistryEffective ?? roleStore.roleInfo.slotRegistryPack,
@@ -116,6 +123,7 @@ async function refreshExpertHighlights() {
   }
   catch {
     expertLlmHints.value = new Map()
+    expertRoutingDoc.value = null
   }
   syncGraphFromModel()
 }
@@ -569,6 +577,11 @@ watch(
       role="application"
       :aria-label="t('pluginWorkbench.graph.canvasAria')"
     >
+      <ExpertFlowPanel
+        :doc="expertRoutingDoc"
+        :scene-id="roleStore.roleInfo.current_scene ?? ''"
+        :user-message="previewUserMessage"
+      />
       <VueFlow
         v-model:nodes="nodes"
         v-model:edges="edges"
@@ -719,6 +732,7 @@ watch(
   color: var(--text-secondary);
 }
 .agf-vf {
+  position: relative;
   height: min(62vh, 520px);
   min-height: 280px;
   border-radius: 10px;

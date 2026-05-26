@@ -1,5 +1,6 @@
 <script setup lang="ts">
-import type { ExpertRoutingDoc, ExpertRoute } from '../../api/role/expert'
+import type { ExpertRouteStep, ExpertRoutingDoc, ExpertRoute } from '../../api/role/expert'
+import { EXPERT_FACILITY_ACTIONS } from '../../api/role/expert'
 import { computed, onMounted, ref, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
 import {
@@ -10,6 +11,16 @@ import {
 import { useAppToast } from '../../composables/useAppToast'
 import { useRoleStore } from '../../stores/roleStore'
 
+const EMOTION_OPTIONS = [
+  'happy',
+  'sad',
+  'angry',
+  'neutral',
+  'excited',
+  'confused',
+  'shy',
+] as const
+
 const { t } = useI18n()
 const roleStore = useRoleStore()
 const { showToast } = useAppToast()
@@ -19,13 +30,32 @@ const loading = ref(false)
 const wizardOpen = ref(false)
 const wizardStep = ref(1)
 
-const sceneIdsText = ref('')
+const selectedScenes = ref<string[]>([])
 const keywordsText = ref('')
+const selectedEmotions = ref<string[]>([])
 const minLen = ref<number | ''>('')
 const maxLen = ref<number | ''>('')
+const timeAfter = ref('')
+const timeBefore = ref('')
+const selectedRelations = ref<string[]>([])
+const routePriority = ref<number | ''>(10)
+
 const selectedLlmKey = ref('')
 const extraAnalyze = ref(false)
+const facilityAction = ref<string>('')
+const paramTrait = ref('warmth')
+const paramDelta = ref(0.05)
+const paramPromptText = ref('')
+const paramMemoryContent = ref('')
+const paramLoraPluginId = ref('')
 const previewJson = ref('')
+
+const sceneOptions = computed(() =>
+  (roleStore.roleInfo.scene_labels ?? []).map(s => s.id),
+)
+const relationOptions = computed(() =>
+  (roleStore.roleInfo.user_relations ?? []).map(r => r.id),
+)
 
 const llmSlotKeys = computed(() => {
   const pack = roleStore.roleInfo.slotRegistryPack
@@ -64,25 +94,23 @@ async function refresh() {
 
 function openWizard() {
   wizardStep.value = 1
-  sceneIdsText.value = ''
+  selectedScenes.value = []
   keywordsText.value = ''
+  selectedEmotions.value = []
   minLen.value = ''
   maxLen.value = ''
+  timeAfter.value = ''
+  timeBefore.value = ''
+  selectedRelations.value = []
+  routePriority.value = 10
   extraAnalyze.value = false
+  facilityAction.value = ''
   previewJson.value = ''
   wizardOpen.value = true
 }
 
-function buildDoc(): ExpertRoutingDoc {
-  const scene_ids = sceneIdsText.value
-    .split(/[,，\s]+/)
-    .map(s => s.trim())
-    .filter(Boolean)
-  const keywords = keywordsText.value
-    .split(/[,，\s]+/)
-    .map(s => s.trim())
-    .filter(Boolean)
-  const steps: ExpertRoute['steps'] = []
+function buildSteps(): ExpertRoute['steps'] {
+  const steps: ExpertRouteStep[] = []
   if (extraAnalyze.value) {
     const emotionKey = Object.keys(roleStore.roleInfo.slotRegistryPack ?? {}).find(
       k => roleStore.roleInfo.slotRegistryPack?.[k]?.type === 'emotion',
@@ -96,16 +124,59 @@ function buildDoc(): ExpertRoutingDoc {
     const dep = steps.length ? [steps[steps.length - 1]!.action] : []
     steps.push({ action: `slot.${llm}.generate`, depends_on: dep })
   }
+  if (facilityAction.value) {
+    const dep = steps.length ? [steps[steps.length - 1]!.action] : []
+    const step: ExpertRouteStep = {
+      action: facilityAction.value,
+      depends_on: dep,
+    }
+    if (facilityAction.value === 'slot.personality.adjust') {
+      step.params = { trait: paramTrait.value, delta: paramDelta.value }
+    }
+    else if (facilityAction.value === 'slot.prompt_enhance.apply') {
+      step.params = { text: paramPromptText.value }
+    }
+    else if (facilityAction.value === 'slot.memory.inject') {
+      step.params = { content: paramMemoryContent.value, importance: 0.85 }
+    }
+    else if (facilityAction.value === 'slot.lora.apply') {
+      step.params = { plugin_id: paramLoraPluginId.value }
+    }
+    steps.push(step)
+  }
+  return steps
+}
+
+function buildDoc(): ExpertRoutingDoc {
+  const keywords = keywordsText.value
+    .split(/[,，\s]+/)
+    .map(s => s.trim())
+    .filter(Boolean)
   const route: ExpertRoute = {
     id: 'wizard-route',
     enabled: true,
+    priority: routePriority.value === '' ? undefined : Number(routePriority.value),
     trigger: {
-      scene_ids: scene_ids.length ? scene_ids : undefined,
+      scenes: selectedScenes.value.length ? [...selectedScenes.value] : undefined,
       keywords: keywords.length ? keywords : undefined,
-      min_message_length: minLen.value === '' ? undefined : Number(minLen.value),
-      max_message_length: maxLen.value === '' ? undefined : Number(maxLen.value),
+      user_emotion: selectedEmotions.value.length ? [...selectedEmotions.value] : undefined,
+      message_length:
+        minLen.value !== '' || maxLen.value !== ''
+          ? {
+              min: minLen.value === '' ? undefined : Number(minLen.value),
+              max: maxLen.value === '' ? undefined : Number(maxLen.value),
+            }
+          : undefined,
+      time_of_day:
+        timeAfter.value || timeBefore.value
+          ? {
+              after: timeAfter.value || undefined,
+              before: timeBefore.value || undefined,
+            }
+          : undefined,
+      user_relation: selectedRelations.value.length ? [...selectedRelations.value] : undefined,
     },
-    steps,
+    steps: buildSteps(),
   }
   return {
     fallback: 'skip',
@@ -115,7 +186,7 @@ function buildDoc(): ExpertRoutingDoc {
 
 function advancePreview() {
   previewJson.value = JSON.stringify(buildDoc(), null, 2)
-  wizardStep.value = 4
+  wizardStep.value = 5
 }
 
 async function confirmSave() {
@@ -125,7 +196,6 @@ async function confirmSave() {
   try {
     const doc = buildDoc()
     await saveExpertRouting(roleId, doc)
-    previewJson.value = JSON.stringify(doc, null, 2)
     showToast('success', t('expertConfig.toast.saved'))
     wizardOpen.value = false
     await refresh()
@@ -133,6 +203,14 @@ async function confirmSave() {
   catch (e) {
     showToast('error', e instanceof Error ? e.message : String(e))
   }
+}
+
+function toggleInList(list: string[], id: string) {
+  const i = list.indexOf(id)
+  if (i >= 0)
+    list.splice(i, 1)
+  else
+    list.push(id)
 }
 
 onMounted(() => {
@@ -181,38 +259,103 @@ watch(
 
       <div v-if="wizardStep === 1" class="expert-step">
         <label class="expert-label">{{ t('expertConfig.trigger.scenes') }}</label>
-        <input v-model="sceneIdsText" type="text" class="expert-input" :placeholder="t('expertConfig.trigger.scenesPh')">
+        <div v-if="sceneOptions.length" class="expert-chips">
+          <label v-for="sid in sceneOptions" :key="sid" class="expert-chip">
+            <input
+              type="checkbox"
+              :checked="selectedScenes.includes(sid)"
+              @change="toggleInList(selectedScenes, sid)"
+            >
+            {{ sid }}
+          </label>
+        </div>
+        <p v-else class="expert-muted">
+          {{ t('expertConfig.trigger.noScenes') }}
+        </p>
         <label class="expert-label">{{ t('expertConfig.trigger.keywords') }}</label>
         <input v-model="keywordsText" type="text" class="expert-input" :placeholder="t('expertConfig.trigger.keywordsPh')">
-        <label class="expert-label">{{ t('expertConfig.trigger.minLen') }}</label>
-        <input v-model.number="minLen" type="number" min="0" class="expert-input">
-        <label class="expert-label">{{ t('expertConfig.trigger.maxLen') }}</label>
-        <input v-model.number="maxLen" type="number" min="0" class="expert-input">
+        <label class="expert-label">{{ t('expertConfig.trigger.emotions') }}</label>
+        <div class="expert-chips">
+          <label v-for="emo in EMOTION_OPTIONS" :key="emo" class="expert-chip">
+            <input
+              type="checkbox"
+              :checked="selectedEmotions.includes(emo)"
+              @change="toggleInList(selectedEmotions, emo)"
+            >
+            {{ emo }}
+          </label>
+        </div>
         <button type="button" class="expert-btn" @click="wizardStep = 2">
           {{ t('expertConfig.next') }}
         </button>
       </div>
 
       <div v-else-if="wizardStep === 2" class="expert-step">
-        <label class="expert-label">{{ t('expertConfig.modelPick') }}</label>
-        <select v-model="selectedLlmKey" class="expert-input">
-          <option v-for="opt in llmSlotKeys" :key="opt.key" :value="opt.key">
-            {{ opt.label }} ({{ opt.key }})
-          </option>
-        </select>
-        <p v-if="!llmSlotKeys.length" class="expert-muted">
-          {{ t('expertConfig.noLlm') }}
-        </p>
+        <label class="expert-label">{{ t('expertConfig.trigger.minLen') }}</label>
+        <input v-model.number="minLen" type="number" min="0" class="expert-input">
+        <label class="expert-label">{{ t('expertConfig.trigger.maxLen') }}</label>
+        <input v-model.number="maxLen" type="number" min="0" class="expert-input">
+        <label class="expert-label">{{ t('expertConfig.trigger.timeAfter') }}</label>
+        <input v-model="timeAfter" type="time" class="expert-input">
+        <label class="expert-label">{{ t('expertConfig.trigger.timeBefore') }}</label>
+        <input v-model="timeBefore" type="time" class="expert-input">
+        <label class="expert-label">{{ t('expertConfig.trigger.relations') }}</label>
+        <div v-if="relationOptions.length" class="expert-chips">
+          <label v-for="rid in relationOptions" :key="rid" class="expert-chip">
+            <input
+              type="checkbox"
+              :checked="selectedRelations.includes(rid)"
+              @change="toggleInList(selectedRelations, rid)"
+            >
+            {{ rid }}
+          </label>
+        </div>
+        <label class="expert-label">{{ t('expertConfig.trigger.priority') }}</label>
+        <input v-model.number="routePriority" type="number" class="expert-input">
         <button type="button" class="expert-btn" @click="wizardStep = 3">
           {{ t('expertConfig.next') }}
         </button>
       </div>
 
       <div v-else-if="wizardStep === 3" class="expert-step">
+        <label class="expert-label">{{ t('expertConfig.modelPick') }}</label>
+        <select v-model="selectedLlmKey" class="expert-input">
+          <option v-for="opt in llmSlotKeys" :key="opt.key" :value="opt.key">
+            {{ opt.label }} ({{ opt.key }})
+          </option>
+        </select>
         <label class="expert-check">
           <input v-model="extraAnalyze" type="checkbox">
           {{ t('expertConfig.extraAnalyze') }}
         </label>
+        <button type="button" class="expert-btn" @click="wizardStep = 4">
+          {{ t('expertConfig.next') }}
+        </button>
+      </div>
+
+      <div v-else-if="wizardStep === 4" class="expert-step">
+        <label class="expert-label">{{ t('expertConfig.facilityStep') }}</label>
+        <select v-model="facilityAction" class="expert-input">
+          <option value="">
+            {{ t('expertConfig.facilityNone') }}
+          </option>
+          <option v-for="a in EXPERT_FACILITY_ACTIONS" :key="a" :value="a">
+            {{ a }}
+          </option>
+        </select>
+        <template v-if="facilityAction === 'slot.personality.adjust'">
+          <input v-model="paramTrait" type="text" class="expert-input" placeholder="trait">
+          <input v-model.number="paramDelta" type="number" step="0.01" class="expert-input">
+        </template>
+        <template v-else-if="facilityAction === 'slot.prompt_enhance.apply'">
+          <textarea v-model="paramPromptText" class="expert-input" rows="2" />
+        </template>
+        <template v-else-if="facilityAction === 'slot.memory.inject'">
+          <textarea v-model="paramMemoryContent" class="expert-input" rows="2" />
+        </template>
+        <template v-else-if="facilityAction === 'slot.lora.apply'">
+          <input v-model="paramLoraPluginId" type="text" class="expert-input" placeholder="plugin_id">
+        </template>
         <button type="button" class="expert-btn" @click="advancePreview">
           {{ t('expertConfig.preview') }}
         </button>
@@ -298,6 +441,20 @@ watch(
   border-radius: 6px;
   border: 1px solid var(--border-light);
   font-size: 12px;
+}
+.expert-chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+.expert-chip {
+  font-size: 11px;
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 2px 6px;
+  border: 1px solid var(--border-light);
+  border-radius: 4px;
 }
 .expert-preview {
   max-height: 200px;
