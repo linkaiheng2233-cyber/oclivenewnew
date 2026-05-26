@@ -5,6 +5,9 @@
 
 #![cfg_attr(test, allow(clippy::unwrap_used, clippy::expect_used))]
 
+pub mod blueprint_includes;
+pub mod expert_routing;
+pub mod pipeline_action;
 pub mod blueprint_migrate;
 pub mod blueprint_v2;
 pub mod blueprint_v3;
@@ -24,11 +27,23 @@ pub mod validate;
 pub use blueprint_migrate::{
     build_blueprint_v2_from_legacy_dir, migrate_role_pack_dir_to_blueprint_v2,
 };
+pub use blueprint_includes::{
+    resolve_blueprint_includes_lenient, resolve_blueprint_includes_strict, validate_includes,
+    BlueprintIncludeEntry,
+};
+pub use expert_routing::{
+    load_expert_routing_from_role_dir, match_expert_route, ExpertFallback, ExpertRoute,
+    ExpertRouteStep, ExpertRoutingDoc, ExpertTrigger, DEFAULT_EXPERT_ROUTING_PATH,
+};
+pub use pipeline_action::{
+    parse_pipeline_action, parse_pipeline_action_kind, PipelineActionKind,
+    PIPELINE_ACTION_EXPERT_INVOKE,
+};
 pub use blueprint_v3::{
     blueprint_schema_version_from_raw, load_blueprint_v3_for_role_dir,
     validate_blueprint_json_by_schema_version, validate_blueprint_v3_json,
-    parse_pipeline_action, validate_role_pack_blueprint_v3_directory, BlueprintV3LoadResult,
-    DualPipelineDef, PipelineStep, BLUEPRINT_V3_SCHEMA_VERSION, PLUGIN_HOST_SLOT_TYPES,
+    validate_role_pack_blueprint_v3_directory, BlueprintV3LoadResult, DualPipelineDef,
+    PipelineStep, BLUEPRINT_V3_SCHEMA_VERSION, PLUGIN_HOST_SLOT_TYPES,
 };
 pub use creator_profile::validate_role_pack_creator_directory;
 pub use runtime_config::{DualCoreConfig, RuntimeConfig};

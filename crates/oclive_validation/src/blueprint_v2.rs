@@ -18,6 +18,7 @@ use crate::plugin_backends::{
     PluginBackends, PromptBackend,
 };
 use crate::role_pack::{merge_role_pack_scene_ids, validate_default_personality_vector};
+use crate::blueprint_includes::validate_includes;
 use crate::validate::{
     validate_disk_manifest, validate_interaction_mode_pack_setting,
     validate_knowledge_manifest_disk, validate_min_runtime_version,
@@ -110,6 +111,13 @@ struct BlueprintV2File {
     slot_registry: BTreeMap<String, SlotRegistryEntry>,
     #[serde(default)]
     groups: BTreeMap<String, SlotGroupEntry>,
+    /// 卫星文件拉取清单（合并后再校验 meta / slot_registry）。
+    #[serde(default)]
+    includes: Vec<crate::blueprint_includes::BlueprintIncludeEntry>,
+    /// 专家设施指针（可选；不含长文）。
+    #[serde(default)]
+    #[allow(dead_code)]
+    expert_overlay: Option<serde_json::Value>,
     /// v3 目标段；v2 校验通过但不参与 v2 加载（见 `validate_blueprint_json_by_schema_version` 警告）。
     #[serde(default)]
     #[allow(dead_code)]
@@ -219,6 +227,15 @@ fn validate_blueprint_v2_file(
     bp: &BlueprintV2File,
     ctx: BlueprintV2ValidateContext<'_>,
 ) -> Result<(), Vec<String>> {
+    if let Some(role_dir) = ctx.role_dir {
+        if !bp.includes.is_empty() {
+            validate_includes(role_dir, &bp.includes)?;
+        }
+    } else if !bp.includes.is_empty() {
+        return Err(vec![
+            "includes 校验需要 role_dir 上下文（目录校验 / load 路径）".into(),
+        ]);
+    }
     validate_blueprint_v2_parsed(bp, ctx.folder_name)?;
 
     let disk = meta_to_disk_manifest(&bp.meta);
@@ -383,7 +400,18 @@ pub fn load_blueprint_v2_for_role_dir(
     validate_role_pack_blueprint_v2_directory(role_dir, host_version)?;
     let raw = fs::read_to_string(role_dir.join(PIPELINE_BLUEPRINT_FILENAME))
         .map_err(|e| vec![format!("读取 {} 失败: {}", PIPELINE_BLUEPRINT_FILENAME, e)])?;
-    let bp = parse_blueprint_v2_root(&raw)?;
+    let resolved =
+        crate::blueprint_includes::resolve_blueprint_includes_lenient(role_dir, &raw);
+    let folder_name = role_dir.file_name().and_then(|s| s.to_str()).unwrap_or("");
+    validate_blueprint_v2_json_with_context(
+        &resolved,
+        BlueprintV2ValidateContext {
+            folder_name: Some(folder_name),
+            role_dir: Some(role_dir),
+            host_version: Some(host_version),
+        },
+    )?;
+    let bp = parse_blueprint_v2_root(&resolved)?;
     Ok(blueprint_v2_file_to_load_result(&bp))
 }
 
