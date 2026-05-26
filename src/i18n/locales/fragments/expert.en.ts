@@ -1,7 +1,7 @@
 export const expertConfigEn = {
   expertConfig: {
     title: 'Expert model facility',
-    hint: 'Saved to blueprint/includes/expert_routing.json; experimental pipeline may use slot.expert.invoke.',
+    hint: 'Normative name: expert-model facility submodule (no. 2). Saved to blueprint/includes/expert_routing.json; experimental pipeline may use slot.expert.invoke.',
     noIncludes: 'No files under blueprint/includes yet.',
     newWizard: 'New expert config',
     wizardAria: 'Expert configuration wizard',

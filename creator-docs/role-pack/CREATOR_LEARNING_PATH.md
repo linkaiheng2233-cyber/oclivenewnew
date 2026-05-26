@@ -58,7 +58,7 @@
 | **`reply_quality_anchor` 与回复风格** | [README_MANIFEST](../../roles/README_MANIFEST.md) · ROLE_PACK_SPEC 中 `settings` 合并表；用于锚定回复质量/风格相关配置（以校验 crate 与宿主加载为准） |
 | **`pipeline.ocblueprint` v2（推荐 SSOT）** | [ROLE_PACK_SPEC.md](ROLE_PACK_SPEC.md) · [handoff/BLUEPRINT_V2_IMPLEMENTATION_PLAN.md](../../handoff/BLUEPRINT_V2_IMPLEMENTATION_PLAN.md)。**桌面编排**以 **`process_message` → `co_present`** 为准，**不**再读蓝图 `steps[]`（见 [AGENTS.md](../../AGENTS.md)）。主应用架构图可 **`save_role_slot_registry`** 写回 `slot_registry` |
 | **双核双态（实验 pipeline）** | [DEVELOPER_GUIDE.md](../dual-core/DEVELOPER_GUIDE.md) · [METHOD_REGISTRY.md](../dual-core/METHOD_REGISTRY.md) · `oclive init --dual-core`；创作者包勿默认 `enabled: true` |
-| **配置专家模型（卫星目录）** | [BLUEPRINT_FOLDER_LAYOUT.md](../../handoff/BLUEPRINT_FOLDER_LAYOUT.md) · ROLE_PACK_SPEC §2.6；主应用 **Ctrl+Shift+F** → 架构图页 **专家模型设施** 向导，写 `blueprint/includes/expert_routing.json`；架构图高亮被引用的 LLM 实例 |
+| **配置专家模型设施子模块**（专家路由 · 卫星目录） | [OCLIVE_ARCHITECTURE_OVERVIEW.md](../getting-started/OCLIVE_ARCHITECTURE_OVERVIEW.md) · [BLUEPRINT_FOLDER_LAYOUT.md](../../handoff/BLUEPRINT_FOLDER_LAYOUT.md) · ROLE_PACK_SPEC §2.6；主应用 **Ctrl+Shift+F** → 架构图 **专家模型设施**（产品简称）向导，写 `blueprint/includes/expert_routing.json` |
 | **校验** | 默认 v2：`pack validate <角色根>`（**完整包**：含 `slot_registry`、引擎字段）；**创作者子集**：`pack validate --profile creator <包根>`（只校验 §2 角色包字段 + `prompts/`，**不**校验蓝图槽位）。**勿**用 `roles/mumu` 测 creator — mumu 是带完整蓝图的示例包，对该 profile 会报错属正常。旧包 `--profile legacy`；无头交付 `--profile robot-soul`（须 legacy 形状，见 ROLE_PACK_SPEC §6） |
 | **编写器侧 wasm 校验** | [oclive-pack-editor](https://github.com/linkaiheng2233-cyber/oclive-pack-editor) 的 `wasm:build` 与「运行全部检查」 |
 

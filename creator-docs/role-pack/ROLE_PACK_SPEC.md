@@ -141,7 +141,7 @@ roles/{role_id}/
 | `target` | 点分路径，如 `meta.personality`、`expert_routing`、`runtime_config.expert_hints`、`slot_registry.<key>` |
 | `mode` | `merge`（JSON 深合并）或 `replace`（整段替换） |
 
-缺失或非法卫星文件：**warn 并跳过**，不阻塞 `load_role`。专家路由默认文件：**`blueprint/includes/expert_routing.json`**；实验核 pipeline 可使用 action **`slot.expert.invoke`**（须 `dual_core` + v3 `pipeline.experimental`）。
+缺失或非法卫星文件：**warn 并跳过**，不阻塞 `load_role`。**第 2 设施子模块**（**专家模型设施子模块**）默认文件：**`blueprint/includes/expert_routing.json`**（专家路由）；实验核 pipeline 可使用 action **`slot.expert.invoke`**（须 `dual_core` + v3 `pipeline.experimental`）。命名见 [OCLIVE_ARCHITECTURE_OVERVIEW.md](../getting-started/OCLIVE_ARCHITECTURE_OVERVIEW.md#设施模块命名规范规定)。
 
 ### 2.7 `module_relations`（仅运行时）
 

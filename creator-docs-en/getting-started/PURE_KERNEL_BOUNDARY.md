@@ -58,7 +58,8 @@ Working name **RobotSoulPack** is aligned with **`oclive pack validate --profile
 
 Companion behavior is **backend modules + facility modules**, not one black-box “emotion module” (taxonomy: [OCLIVE_ARCHITECTURE_OVERVIEW.md](OCLIVE_ARCHITECTURE_OVERVIEW.md)):
 
-- **emotion backend module** + **complex-emotion expert-model facility submodule**: user affect and cross-turn `narrative_hint`.
+- **emotion backend module** + **complex-emotion facility submodule** (facility submodule 1): user affect and cross-turn `narrative_hint`.
+- **expert-model facility submodule** (facility submodule 2): conditional expert sub-pipeline (expert routing); **sibling** of complex-emotion—see [OCLIVE_ARCHITECTURE_OVERVIEW.md](OCLIVE_ARCHITECTURE_OVERVIEW.md).
 - **memory / event**: relationship and event impact on later turns.
 - **prompt / llm**: language and persona injection.
 - **agent** (optional): tools and external world (MCP, directory plugins).

@@ -103,7 +103,7 @@
 
 ## 二、复杂情感：`plugin_backends` 扩展键（非宿主第六/第七槽）
 
-**架构定位**：**第 1 设施子模块**（全名：复杂情感专家模型设施子模块）。编号约定见 **[OCLIVE_ARCHITECTURE_OVERVIEW.md](../getting-started/OCLIVE_ARCHITECTURE_OVERVIEW.md)**（[English](../../creator-docs-en/getting-started/OCLIVE_ARCHITECTURE_OVERVIEW.md)）。
+**架构定位**：**第 1 设施子模块**（规范全名：**复杂情感设施子模块**）。编号与命名见 **[OCLIVE_ARCHITECTURE_OVERVIEW.md](../getting-started/OCLIVE_ARCHITECTURE_OVERVIEW.md)**（[English](../../creator-docs-en/getting-started/OCLIVE_ARCHITECTURE_OVERVIEW.md)）。**专家模型**专名仅指 **第 2 设施子模块**（专家模型设施子模块 / 专家路由），见同文档 § 第 2 设施子模块。
 
 **当前 `PluginBackends` 不含 `complex_emotion` 字段。** `oclive-cli` 将 `complex_emotion` 写在 **`plugin_backends` 对象内** 便于工厂预设与文档对齐；宿主 Serde **忽略**该键，不影响 `load_role`。主路径在 `co_present` 内调用内置关键词实现（`BuiltinKeywordComplexEmotionProvider`），**不经** `PluginHost`。
 

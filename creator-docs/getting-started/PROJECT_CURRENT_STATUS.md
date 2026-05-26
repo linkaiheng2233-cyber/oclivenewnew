@@ -20,7 +20,7 @@
 
 ## 交付面（本仓库 `oclivenewnew`）
 
-- **运行时**：Tauri 桌面端；角色包导入（`.ocpak` / `.zip` / 目录）、对话主路径 **`process_message`**、**第 1–6 模块** `plugin_backends`、**第 1 设施子模块**（复杂情感）、后端模块插件模块（目录/Remote）、本地 HTTP `--api`、启动健康检查等（架构见 [OCLIVE_ARCHITECTURE_OVERVIEW.md](OCLIVE_ARCHITECTURE_OVERVIEW.md)；细节见 [PROJECT_OVERVIEW.md](PROJECT_OVERVIEW.md)）。
+- **运行时**：Tauri 桌面端；角色包导入（`.ocpak` / `.zip` / 目录）、对话主路径 **`process_message`**、**第 1–6 模块** `plugin_backends`、**第 1–2 设施子模块**（复杂情感、专家模型/专家路由）、后端模块插件模块（目录/Remote）、本地 HTTP `--api`、启动健康检查等（架构见 [OCLIVE_ARCHITECTURE_OVERVIEW.md](OCLIVE_ARCHITECTURE_OVERVIEW.md)；细节见 [PROJECT_OVERVIEW.md](PROJECT_OVERVIEW.md)）。
 - **内核工程**：里程碑 **K0–K5** 在计划中除 **P2（OTA / 远程日志等）** 外已收口；验收留痕与 CI 见 [KERNEL_IMPLEMENTATION_PLAN.md](KERNEL_IMPLEMENTATION_PLAN.md) 与根目录 [AGENTS.md](../../AGENTS.md)。
 - **产品级「首发」硬门槛**：仍以 [handoff/PRODUCT_AND_KERNEL_GAP_CHECKLIST.md](../../handoff/PRODUCT_AND_KERNEL_GAP_CHECKLIST.md) **§A** 为准，与内核里程碑解耦排期（见该文 **§D**）。
 

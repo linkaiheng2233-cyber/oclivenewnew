@@ -1,7 +1,7 @@
 export const expertConfigZh = {
   expertConfig: {
     title: '专家模型设施',
-    hint: '配置保存在 blueprint/includes/expert_routing.json；实验核 pipeline 可使用 slot.expert.invoke。',
+    hint: '架构名：专家模型设施子模块（第 2 号）；配置保存在 blueprint/includes/expert_routing.json；实验核 pipeline 可使用 slot.expert.invoke。',
     noIncludes: '暂无 blueprint/includes 卫星文件。',
     newWizard: '新建专家配置',
     wizardAria: '专家配置向导',

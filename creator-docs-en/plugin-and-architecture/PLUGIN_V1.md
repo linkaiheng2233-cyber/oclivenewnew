@@ -25,7 +25,7 @@
 
 ## `PluginBackends` host slots
 
-Runtime struct **`PluginBackends`** has **six** enum fields: **`memory` · `emotion` · `event` · `prompt` · `llm` · `agent`**. Optional **`directory_plugins`** maps each slot to a manifest **`id`** when that slot is **`directory`**. Resolution: **`PluginHost::resolve_for_role`** → **`Arc<dyn …>`** per facade, then **`chat_engine`** calls them in the **`send_message` order** (see below). **`complex_emotion`** scaffold keys are ignored by Serde; runtime maps to the **complex-emotion expert-model facility submodule** ([OCLIVE_ARCHITECTURE_OVERVIEW.md](../getting-started/OCLIVE_ARCHITECTURE_OVERVIEW.md), [SETTINGS_REFERENCE.md](../../creator-docs/cli/SETTINGS_REFERENCE.md) §II).
+Runtime struct **`PluginBackends`** has **six** enum fields: **`memory` · `emotion` · `event` · `prompt` · `llm` · `agent`**. Optional **`directory_plugins`** maps each slot to a manifest **`id`** when that slot is **`directory`**. Resolution: **`PluginHost::resolve_for_role`** → **`Arc<dyn …>`** per facade, then **`chat_engine`** calls them in the **`send_message` order** (see below). **`complex_emotion`** scaffold keys are ignored by Serde; runtime maps to the **complex-emotion facility submodule** (facility submodule 1) ([OCLIVE_ARCHITECTURE_OVERVIEW.md](../getting-started/OCLIVE_ARCHITECTURE_OVERVIEW.md), [SETTINGS_REFERENCE.md](../../creator-docs/cli/SETTINGS_REFERENCE.md) §II).
 
 ### Module numbering (aligned with architecture overview)
 
@@ -37,7 +37,8 @@ Runtime struct **`PluginBackends`** has **six** enum fields: **`memory` · `emot
 | Module 4 | `prompt` | Backend module |
 | Module 5 | `llm` | Backend module |
 | Module 6 | `agent` | Backend module |
-| Facility submodule 1 | *(no key; in orchestration)* | Complex-emotion expert-model facility submodule |
+| Facility submodule 1 | *(no key; in orchestration)* | Complex-emotion facility submodule |
+| Facility submodule 2 | *(no key; in orchestration)* | Expert-model facility submodule (expert routing) |
 
 **Backend-module plugin modules** (Remote / directory, etc.) attach to **module K**; they do **not** consume a “module 7” host slot. Full rules: [OCLIVE_ARCHITECTURE_OVERVIEW.md](../getting-started/OCLIVE_ARCHITECTURE_OVERVIEW.md).
 
@@ -50,7 +51,7 @@ Entry: **`chat_engine::process_message`** → **`process_co_present`** ([`turn_p
 1. **`PluginHost`**: `resolved_plugins_for` → **`PluginHost::resolve_for_role`** binds six **backend modules** (host needs app-data root for **`mcp-servers/*.json`**).
 2. **User emotion (backend module):** `emotion.analyze` → `EmotionDto` in the response.
 3. **Personality nudge (facility):** `PersonalityEngine::adjust_by_user_emotion`.
-4. **Complex-emotion expert-model facility submodule:** `BuiltinKeywordComplexEmotionProvider` in `co_present` (future Remote); `narrative_hint` → later Prompt (**not** via `PluginHost`).
+4. **Complex-emotion facility submodule** (no. 1): `BuiltinKeywordComplexEmotionProvider` in `co_present` (future Remote); `narrative_hint` → later Prompt (**not** via `PluginHost`).
 5. **Knowledge blocks** (optional · facility): pack `knowledge_index` retrieval; may merge with event augment.
 6. **Event impact (backend module):** `event.estimate` → `PersonalityEngine::evolve_by_event` (facility).
 7. **Memory (backend module):** repository candidates → scene weighting → `memory.rank_memories`.

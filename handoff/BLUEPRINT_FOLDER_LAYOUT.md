@@ -12,7 +12,7 @@
 |------|------|
 | **蓝图本体干净** | `pipeline.ocblueprint` 只保留 `schema_version`、`meta`（门面子集或指针）、`slot_registry`、`groups`、`runtime_config`、**`includes`**；禁止大段 Markdown、脚本、Comfy 式 `steps[]`。 |
 | **文本与代码外置** | 性格长文、专家表单结果、LoRA 说明、修订历史 → **`blueprint/` 子目录或包根 `prompts/`**，由蓝图 **拉取（include）** 合并，不搅在 JSON 里。 |
-| **专家设施独立** | 专家模型 UI 定义、revision、说明文档 → **`blueprint/expert/`**，**不**参与默认 `pack validate` 失败条件。 |
+| **专家模型设施子模块（蓝图侧）独立** | 专家路由 UI、revision、说明文档 → **`blueprint/expert/`**（或 `includes/expert_routing.json`），**不**参与默认 `pack validate` 失败条件。 |
 | **弃用类 ComfyUI** | 无节点图执行器；「按钮 → 表单 → 生成 revision → apply」即可。 |
 
 ---
@@ -109,9 +109,9 @@ roles/{role_id}/
 
 ---
 
-## 5. 专家模型（`blueprint/expert/` 可选别名）
+## 5. 专家模型设施子模块（`blueprint/expert/` 可选别名）
 
-与 [GITHUB_PLUGIN_INDEX_LINE.md](./GITHUB_PLUGIN_INDEX_LINE.md) 插件市场线无关；专指 **第 N 设施子模块** 配置向导。
+与 [GITHUB_PLUGIN_INDEX_LINE.md](./GITHUB_PLUGIN_INDEX_LINE.md) 插件市场线无关；专指 **第 2 设施子模块**（**专家模型**专名 · 默认实现 **专家路由**）的蓝图/UI 材料。命名见 [OCLIVE_ARCHITECTURE_OVERVIEW.md](../creator-docs/getting-started/OCLIVE_ARCHITECTURE_OVERVIEW.md#设施模块命名规范规定)。
 
 | 文件 | 用途 |
 |------|------|
@@ -158,4 +158,4 @@ roles/{role_id}/
 |------|------|
 | 角色 vs 蓝图职责 | [ROLE_PACK_BOUNDARY.md](./ROLE_PACK_BOUNDARY.md) |
 | 角色包字段 | [ROLE_PACK_SPEC.md](../creator-docs/role-pack/ROLE_PACK_SPEC.md) |
-| 第 1 设施子模块 | [OCLIVE_ARCHITECTURE_OVERVIEW.md](../creator-docs/getting-started/OCLIVE_ARCHITECTURE_OVERVIEW.md) |
+| 第 1–2 设施子模块（复杂情感 / 专家模型） | [OCLIVE_ARCHITECTURE_OVERVIEW.md](../creator-docs/getting-started/OCLIVE_ARCHITECTURE_OVERVIEW.md) |

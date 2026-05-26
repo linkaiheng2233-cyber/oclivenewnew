@@ -58,7 +58,8 @@
 
 陪伴能力由**后端模块 + 设施模块**协作完成，而非单一「情感模块」黑盒（分层见 [OCLIVE_ARCHITECTURE_OVERVIEW.md](OCLIVE_ARCHITECTURE_OVERVIEW.md)）：
 
-- **emotion 后端模块** + **复杂情感专家模型设施子模块**：用户句情绪与跨回合叙事 `narrative_hint`。
+- **emotion 后端模块** + **复杂情感设施子模块**（第 1 设施子模块）：用户句情绪与跨回合叙事 `narrative_hint`。
+- **专家模型设施子模块**（第 2 设施子模块）：条件触发的专家子流程（专家路由）；与复杂情感**并列**，见 [OCLIVE_ARCHITECTURE_OVERVIEW.md](OCLIVE_ARCHITECTURE_OVERVIEW.md)。
 - **memory / event**：关系与事件对后续回合的影响。
 - **prompt / llm**：语言表达与 persona 注入。
 - **agent**（可选）：工具与外部世界（MCP、目录插件）。

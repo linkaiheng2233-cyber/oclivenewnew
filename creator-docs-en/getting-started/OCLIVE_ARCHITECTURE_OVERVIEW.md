@@ -1,6 +1,6 @@
 # Oclive architecture overview (single-kernel, dual-mode build)
 
-This page is the **authoritative public narrative** and **module numbering & taxonomy**: single-kernel dual-mode build, **backend modules (modules 1–6)** and **facility modules (facility submodules 1, 2, …)**, plus **backend-module plugin modules** (not in the module-number series). Implementation details remain in [PLUGIN_V1.md](../../creator-docs/plugin-and-architecture/PLUGIN_V1.md), [SETTINGS_REFERENCE.md](../../creator-docs/cli/SETTINGS_REFERENCE.md), [PURE_KERNEL_BOUNDARY.md](../../creator-docs/getting-started/PURE_KERNEL_BOUNDARY.md), [RFC_OCLIVE_MONOLITH_MODE.md](../../creator-docs/rfc/RFC_OCLIVE_MONOLITH_MODE.md), and source.
+This page is the **authoritative public narrative** and **module numbering & taxonomy**: single-kernel dual-mode build, **backend modules (modules 1–6)**, **facility modules (umbrella term)**, **`{Name} facility submodule`** entries (**facility submodule 1, 2, …**), plus **backend-module plugin modules** (not in the module-number series). Implementation details remain in [PLUGIN_V1.md](../../creator-docs/plugin-and-architecture/PLUGIN_V1.md), [SETTINGS_REFERENCE.md](../../creator-docs/cli/SETTINGS_REFERENCE.md), [PURE_KERNEL_BOUNDARY.md](../../creator-docs/getting-started/PURE_KERNEL_BOUNDARY.md), [RFC_OCLIVE_MONOLITH_MODE.md](../../creator-docs/rfc/RFC_OCLIVE_MONOLITH_MODE.md), and source.
 
 [中文](../../creator-docs/getting-started/OCLIVE_ARCHITECTURE_OVERVIEW.md)
 
@@ -8,13 +8,26 @@ This page is the **authoritative public narrative** and **module numbering & tax
 
 ## Architecture in brief
 
-**Oclive** uses a **contract-first thin kernel**: turn orchestration (`process_message`), session state, and cross-host errors; memory, emotion, event, prompt, LLM, and agent attach as **six PLUGIN_V1 host backend modules** (builtin / Remote / directory). The **complex-emotion expert-model facility submodule** and similar facilities sit **inside orchestration**—they are **not** a seventh host slot.
+**Oclive** uses a **contract-first thin kernel**: turn orchestration (`process_message`), session state, and cross-host errors; memory, emotion, event, prompt, LLM, and agent attach as **six PLUGIN_V1 host backend modules** (builtin / Remote / directory). The **complex-emotion facility submodule**, **expert-model facility submodule**, and other **in-orchestration facility modules** are **not** a seventh host slot.
 
 **Delivery** follows distribution-style discipline: HTTP / **OOCP**, role packs, and **`oclive-cli` kernel factory** for headless or desktop hosts; `roles/{roleId}/` is the integration surface.
 
 **Build** uses **single-kernel, dual-mode build architecture**: one orchestration contract; **exo-mode** (`PluginHost`) vs **macro-mode** (Monolith weld); dual `[[bin]]` artifacts—**not** two kernel products.
 
 **Open lab** product axis: [VISION_OPEN_LAB.md](../../creator-docs/roadmap/VISION_OPEN_LAB.md).
+
+---
+
+## Facility-module naming (normative)
+
+| Term | Meaning |
+|------|---------|
+| **Facility module** | **Umbrella term**: in-orchestration kernel capabilities that **do not** use the six `plugin_backends` keys (both unnumbered facilities and registered submodules). There is **no** separate mid-layer such as “expert-model facility module.” |
+| **`{Name} facility submodule`** | A **registered** item under facility modules (**facility submodule N**); full name = **`{Name}` + `facility submodule`**; each **Name** is independent—do **not** use “expert-model” as a family prefix on other names. |
+| **Expert model** (proper name) | Refers only to the **expert-model facility submodule** and its blueprint / experimental pipeline config—not complex emotion. |
+| **Expert routing** | Default implementation of the **expert-model facility submodule**: `blueprint/includes/expert_routing.json`, triggers + `steps`, optional **`slot.expert.invoke`** (v3 + `dual_core`). |
+
+**Extension (facility submodules):** new registered facilities take **facility submodule 3, 4, …** with full name **`{NewName} facility submodule`** (RFC + doc registry). Do **not** reuse the **expert-model** proper name.
 
 ---
 
@@ -25,14 +38,14 @@ Capabilities inside the **pure kernel** split into **two categories**. Do not co
 | Category | Numbering | In `plugin_backends`? |
 |----------|-----------|------------------------|
 | **Backend modules** | **Modules 1–6** (fixed table below) | **Yes** (six enum fields) |
-| **Facility modules** | **Facility submodule 1, 2, …** (separate from modules 1–6) | **No** (orchestration calls) |
+| **Facility modules** | **Umbrella**; registered items are **facility submodule N** (separate from modules 1–6) | **No** (orchestration calls) |
 | **Backend-module plugin modules** | **No “module N” id** | Only an implementation of **module K** |
 
 **Extension rules**
 
 - New **backend module** (RFC + host): **module 7**, **module 8**, …
-- New **expert-model facility**: **facility submodule 2**, **facility submodule 3**, …
-- New **plugin delivery** (sidecar / directory): say **“module K’s xxx plugin implementation”**—does **not** take module 7 or a facility submodule number.
+- New **`{Name} facility submodule`** (RFC + registry): **facility submodule 3, 4**, …
+- New **plugin delivery** (sidecar / directory): **“module K’s xxx plugin implementation”**—does **not** take module 7 or a facility submodule number.
 
 ### Modules 1–6 (backend modules, fixed)
 
@@ -45,29 +58,20 @@ Capabilities inside the **pure kernel** split into **two categories**. Do not co
 | **Module 5** | `llm` | Main dialogue LLM |
 | **Module 6** | `agent` | Agent / tool orchestration |
 
-Example: **module 2** = emotion backend module. Builtin / ollama plugs are **built-in implementations** of that module, not separate numbers.
+### Facility submodules (registered · `{Name} facility submodule`)
 
-### Facility submodules (registered)
+| No. | Normative full name | Notes |
+|-----|---------------------|-------|
+| **Facility submodule 1** | **Complex-emotion facility submodule** | `narrative_hint`; consumes **module 2**; see below |
+| **Facility submodule 2** | **Expert-model facility submodule** | Conditional expert sub-pipeline; default impl **expert routing**; see below |
 
-**Expert-model facility submodules** use **facility submodule N** as shorthand (full name keeps the **expert-model** prefix).
+### Unnumbered facility modules
 
-| No. | Full name | Notes |
-|-----|-----------|-------|
-| **Facility submodule 1** | **Complex-emotion expert-model facility submodule** | `narrative_hint`; consumes **module 2** output; see below |
-
-Other facilities (`PluginHost`, `PersonalityEngine`, favor, `Repository`, …) are **facility modules** without a **facility submodule N** id unless we add a future registry.
+`PluginHost`, `PersonalityEngine`, favor, `Repository`, `knowledge_index`, etc.: **facility modules** without a **facility submodule N** id until a new proper name is registered.
 
 ### Backend-module plugin modules (not numbered)
 
 **Definition:** **out-of-process implementation** attached to **module K (1≤K≤6)**—Remote, directory, local. **Not** “module 7.”
-
-| Phrasing | Meaning |
-|----------|---------|
-| Module 5’s directory plugin | `llm = directory`, `plugins/<id>/` |
-| Module 2’s Remote sidecar | `emotion = remote` |
-| ✗ Module 7 (directory plugin) | **Wrong**—plugins do not get their own module number |
-
-Optional directory-plugin **shell / ui_slots** UI belongs to the **same plugin package**, not a new “frontend module number.”
 
 ---
 
@@ -91,14 +95,19 @@ flowchart TB
     P2["e.g. module 2 Remote sidecar"]
   end
 
-  subgraph fac["Category: facility modules"]
-    F0["Orchestration / persistence / persona<br/>(no facility submodule N)"]
-    F1["Facility submodule 1<br/>complex-emotion expert-model"]
+  subgraph fac["Category: facility modules (umbrella)"]
+    F0["Unnumbered: PluginHost · persona · favor · DB …"]
+    subgraph sub["Facility submodule N ({Name} facility submodule)"]
+      F1["① Complex-emotion facility submodule"]
+      F2["② Expert-model facility submodule<br/>(expert routing)"]
+    end
   end
 
   ORCH --> M2
   M2 --> F1
   F1 --> M4
+  ORCH -.->|experimental + trigger| F2
+  F2 -.-> M4 & M5
   ORCH --> back
   M5 -.-> P5
   M2 -.-> P2
@@ -107,26 +116,31 @@ flowchart TB
 
 ---
 
-## Facility submodule 1 (complex-emotion expert-model facility submodule)
+## Facility submodule 1 (complex-emotion facility submodule)
 
 | Item | Detail |
 |------|--------|
-| **Role** | Per-turn `narrative_hint` into Prompt (“complex emotion narrative hint” section) |
+| **Role** | Per-turn `narrative_hint` into Prompt |
 | **Orchestration** | `co_present`: after `emotion.analyze` + context load, before `build_prompt` |
-| **vs module 2** | module 2 = measure user affect; this facility = narrative hint for persona |
-| **Today** | Hard-wired `BuiltinKeywordComplexEmotionProvider`; `complex_emotion` in `settings.json` **ignored** by host |
-| **Roadmap** | Remote `complex_emotion.resolve_turn` (`OCLIVE_COMPLEX_EMOTION_URL`); optional future host-slot pluginization |
-| **Monolith** | Weld key `complex_emotion` (one of **seven weld keys**), ≠ sixth/seventh host slot |
+| **vs module 2** | module 2 = user affect; this submodule = narrative hint |
+| **vs expert-model** | **Sibling** `{Name} facility submodule`; does **not** use expert routing |
+| **Today** | `BuiltinKeywordComplexEmotionProvider`; scaffold `complex_emotion` key **ignored** by host |
+| **Monolith** | Weld key `complex_emotion` (one of **seven weld keys**), ≠ host slot |
 
 See [NARRATIVE_HINT_CONTRACT.md](../../creator-docs/testing/NARRATIVE_HINT_CONTRACT.md).
 
-### Six host slots vs seven Monolith weld keys
+---
 
-| Concept | Count | Use |
-|---------|-------|-----|
-| **Backend modules (host slots)** | **6** | Runtime `plugin_backends` + `PluginHost` |
-| **Monolith `SLOT_IDS` weld keys** | **7** | Compile-time `monolith.toml` / demo pipeline; includes `complex_emotion` |
-| **Scaffold example JSON** | 6 + extension key | `complex_emotion` is a **factory/doc extension key**; host Serde **skips** it |
+## Facility submodule 2 (expert-model facility submodule)
+
+| Item | Detail |
+|------|--------|
+| **Proper name** | **Expert model** (this submodule only) |
+| **Default implementation** | **Expert routing**: `blueprint/includes/expert_routing.json` |
+| **Execution** | v3 + **`dual_core`**: **`slot.expert.invoke`** in `pipeline.experimental` |
+| **Steps** | `slot.<registry_key>.<method>` and facility actions (`slot.personality.adjust`, `slot.prompt_enhance.apply`, …) |
+| **vs submodule 1** | **Sibling** under facility modules—not a parent/child tree |
+| **Creator UI** | Workbench “expert model facility” wizard / graph gear (product shorthand; normative name **expert-model facility submodule**) |
 
 ---
 
@@ -138,14 +152,6 @@ See [NARRATIVE_HINT_CONTRACT.md](../../creator-docs/testing/NARRATIVE_HINT_CONTR
 | **Dual-mode** | Exo-mode / macro-mode build tiers |
 | **Build** | Dual `[[bin]]`; **not** runtime hot-switch |
 
-| | **Exo-mode** | **Macro-mode** |
-|---|-------------|----------------|
-| **Names** | Low coupling, `PluginHost` | Monolith, `monolith.toml` |
-| **Six host slots** | `settings.json` backends | Welded slots; empty `weld_modules` + empty `exclude` → all six slots + `complex_emotion` weld key |
-| **Desktop default** | **Yes** | Factory scaffold; full `process_message` hot-path weld evolving (RFC §9) |
-
-Orthogonal to kernel factory recipe/implementation/code layers.
-
 ---
 
 ## Co-present main chain (numbered)
@@ -154,23 +160,24 @@ Orthogonal to kernel factory recipe/implementation/code layers.
 2. **Module 2:** `emotion.analyze`
 3. **Facility module:** `PersonalityEngine` (user emotion)
 4. **Facility module:** `knowledge_index` (optional)
-5. **Facility submodule 1:** complex-emotion expert-model facility submodule → `narrative_hint`
+5. **Facility submodule 1:** **complex-emotion facility submodule** → `narrative_hint`
 6. **Module 3:** `event.estimate` → **facility module:** `PersonalityEngine` (event)
 7. **Module 1:** `memory.rank_memories`
 8. **Facility module:** favor/relation
-9. **Module 4:** `prompt.build` → **Module 5:** `llm.generate` (directory ⇒ **module 5 plugin implementation**)
-10. **Module 6:** **agent** (MCP = tool dependency for module 6)
+9. **Module 4:** `prompt.build` → **Module 5:** `llm.generate`
+10. **Module 6:** **agent**
+
+**Experimental (optional):** when triggers match, **facility submodule 2** (**expert-model facility submodule** / expert routing) runs via `slot.expert.invoke`.
 
 ---
 
 ## Characteristics (summary)
 
-- Contract-first thin kernel; **six host slots**; **facility modules** (incl. expert-model facility submodules)
+- Contract-first thin kernel; **six host slots**; **facility modules** (unnumbered + **`{Name} facility submodule`**)
 - **Backend-module plugin modules:** attach to module K without taking module N
 - Distribution discipline: OOCP, role packs, kernel factory
 - Dual-mode artifacts + `bench`
 - Grants for high-risk directory/MCP capabilities
-- Three-layer testing: protocol (this repo), components (pack-editor), plugins (editor)
 
 ---
 
@@ -180,8 +187,5 @@ Orthogonal to kernel factory recipe/implementation/code layers.
 |-------|-----|
 | Slot enums & JSON-RPC | [PLUGIN_V1.md](../../creator-docs/plugin-and-architecture/PLUGIN_V1.md) |
 | `plugin_backends` & complex_emotion key | [SETTINGS_REFERENCE.md](../../creator-docs/cli/SETTINGS_REFERENCE.md) |
-| Plugin extension | [CREATOR_PLUGIN_ARCHITECTURE.md](../../creator-docs/plugin-and-architecture/CREATOR_PLUGIN_ARCHITECTURE.md) |
-| Kernel factory | [KERNEL_FACTORY_VISION.md](../../creator-docs/getting-started/KERNEL_FACTORY_VISION.md) |
+| Expert routing & includes | [ROLE_PACK_SPEC.md](../../creator-docs/role-pack/ROLE_PACK_SPEC.md) · [BLUEPRINT_FOLDER_LAYOUT.md](../../handoff/BLUEPRINT_FOLDER_LAYOUT.md) |
 | Diagram | [KERNEL_AND_MODULES_ARCHITECTURE.md](../../creator-docs/getting-started/KERNEL_AND_MODULES_ARCHITECTURE.md) |
-| Pure kernel | [PURE_KERNEL_BOUNDARY.md](../../creator-docs/getting-started/PURE_KERNEL_BOUNDARY.md) |
-| Monolith | [RFC_OCLIVE_MONOLITH_MODE.md](../../creator-docs/rfc/RFC_OCLIVE_MONOLITH_MODE.md) |

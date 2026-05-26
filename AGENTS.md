@@ -59,7 +59,9 @@
 - **当前状态**：**已知漏洞跟踪中**；**不宣称零漏洞**。摘要执行日期与命中条数见 [creator-docs/development/LIGHTWEIGHT_PROFILE.md](creator-docs/development/LIGHTWEIGHT_PROFILE.md) §6.4；**漏洞级清单与升级路线**见 [creator-docs/security/KNOWN_VULNERABILITIES.md](creator-docs/security/KNOWN_VULNERABILITIES.md)；**审查边界**见 [creator-docs/security/SECURITY_AUDIT_SCOPE.md](creator-docs/security/SECURITY_AUDIT_SCOPE.md)。
 - **CI**：**`cargo-audit`** job（**cargo-audit 0.22.1**）为 **`continue-on-error: true`**，用于可见性；待依赖升级后可改为失败即红。
 
-### 第 1 设施子模块 — 复杂情感专家模型设施子模块（`narrative_hint` · 共景 → 下一轮 Prompt）
+### 第 1 设施子模块 — 复杂情感设施子模块（`narrative_hint` · 共景 → 下一轮 Prompt）
+
+### 第 2 设施子模块 — 专家模型设施子模块（专家路由 · `expert_routing.json` · `slot.expert.invoke`）
 
 编号与分层见 [`creator-docs/getting-started/OCLIVE_ARCHITECTURE_OVERVIEW.md`](creator-docs/getting-started/OCLIVE_ARCHITECTURE_OVERVIEW.md)（**不是**第 1–6 后端模块；**不是**后端模块插件模块）。
 
