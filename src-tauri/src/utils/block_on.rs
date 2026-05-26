@@ -24,6 +24,10 @@ where
 /// Use from **synchronous** Tauri `invoke` handlers (WebView main thread). Calling
 /// [`block_on`] there may nest `block_in_place` on the app runtime and panic with
 /// "A Tokio 1.x context was found, but it is being shutdown".
+///
+/// # Panics
+///
+/// Panics if the isolated thread fails to start, the runtime cannot be built, or the thread join fails.
 pub fn block_on_isolated<F, T>(future: F) -> T
 where
     F: Future<Output = T> + Send + 'static,

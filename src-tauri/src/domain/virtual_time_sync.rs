@@ -52,6 +52,10 @@ pub async fn sync_and_persist_virtual_time(
 }
 
 /// 手动跳转后重设锚点；可选叠加跳转区间的遗忘。
+///
+/// # Errors
+///
+/// 锚点持久化或跳转区间性格衰减失败时返回 [`crate::error::AppError`].
 pub async fn apply_virtual_time_jump(
     state: &AppState,
     role: &Role,
@@ -78,6 +82,10 @@ pub async fn apply_virtual_time_jump(
 }
 
 /// 自上次互动（现实 `last_interaction_at`）起按流速折算虚拟日，衰减性格 delta。
+///
+/// # Errors
+///
+/// 读取互动时间或持久化性格 delta 失败时返回 [`crate::error::AppError`].
 pub async fn apply_idle_personality_decay(
     state: &AppState,
     role: &Role,

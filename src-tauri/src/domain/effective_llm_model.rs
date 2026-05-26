@@ -7,6 +7,10 @@ const KEY_LLM_PROVIDER: &str = "user_llm_provider";
 const KEY_REMOTE_MODEL: &str = "user_remote_llm_model";
 
 /// Session DB override → saved cloud model (`user_remote_llm_model`) when provider=cloud → [`Role::resolve_ollama_model`].
+///
+/// # Errors
+///
+/// Returns [`crate::error::AppError`] when session or app settings cannot be read.
 pub async fn resolve_effective_ollama_model(
     state: &AppState,
     role: &Role,

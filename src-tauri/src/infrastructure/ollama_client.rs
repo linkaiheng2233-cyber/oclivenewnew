@@ -222,6 +222,10 @@ impl OllamaClient {
     }
 
     /// Register a local GGUF (or bin) as an Ollama model via `POST /api/create`.
+    ///
+    /// # Errors
+    ///
+    /// Returns [`crate::error::AppError`] when the HTTP request fails or Ollama rejects the create payload.
     pub async fn create_model_from_path(&self, name: &str, model_path: &str) -> Result<()> {
         let url = format!("{}/api/create", self.base_url);
         let path_escaped = model_path.replace('\\', "/");

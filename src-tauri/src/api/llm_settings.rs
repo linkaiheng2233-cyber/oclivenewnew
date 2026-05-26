@@ -37,6 +37,10 @@ async fn ollama_base_from_db_or_env(state: &AppState) -> String {
 
 /// Re-apply saved user LLM env into the current process (desktop UI saves).
 /// Returns resolved provider: `cloud` | `local` | empty.
+///
+/// # Errors
+///
+/// Returns [`crate::error::AppError`] when app settings cannot be read from the database.
 pub async fn apply_user_llm_env_from_db(
     db: &crate::infrastructure::db::DbManager,
 ) -> crate::error::Result<String> {
@@ -104,6 +108,10 @@ async fn resolve_remote_token(
 }
 
 /// Apply DB LLM settings and sync [`AppState::user_llm_provider`].
+///
+/// # Errors
+///
+/// Returns [`crate::error::AppError`] when settings or token resolution fails.
 pub async fn apply_user_llm_env(state: &AppState) -> crate::error::Result<()> {
     let app_data = state.directory_plugins.app_data_dir();
     let token = resolve_remote_token(state.db_manager.as_ref(), app_data).await?;
@@ -172,7 +180,7 @@ async fn probe_cloud_llm_inner(
     state
         .high_risk_grants
         .grant_network(NETWORK_GRANT_REMOTE_LLM)
-        .map_err(|e| AppError::InvalidParameter(e))?;
+        .map_err(AppError::InvalidParameter)?;
 
     let role = state.load_role_cached_async(role_id).await?;
     let ns = session_namespace(role_id, session_id);
@@ -282,7 +290,7 @@ fn scan_local_model_files_in(dir: &Path) -> Vec<LocalModelFileDto> {
             size_bytes,
         });
     }
-    out.sort_by(|a, b| a.name.to_lowercase().cmp(&b.name.to_lowercase()));
+    out.sort_by_key(|a| a.name.to_lowercase());
     out
 }
 
@@ -418,7 +426,7 @@ pub async fn list_ollama_models(
 ) -> Result<Vec<String>, CommandError> {
     let base = ollama_base_url
         .filter(|s| !s.trim().is_empty())
-        .unwrap_or_else(|| "".to_string());
+        .unwrap_or_default();
     let base = if base.is_empty() {
         ollama_base_from_db_or_env(state.inner()).await
     } else {
@@ -486,7 +494,7 @@ pub async fn import_gguf_to_ollama(
     let base = req
         .ollama_base_url
         .filter(|s| !s.trim().is_empty())
-        .unwrap_or_else(|| "".to_string());
+        .unwrap_or_default();
     let base = if base.is_empty() {
         ollama_base_from_db_or_env(state.inner()).await
     } else {
@@ -556,10 +564,10 @@ pub async fn save_llm_user_settings(
             )
             .into());
         }
-        let _ = state
+        state
             .high_risk_grants
             .grant_network(NETWORK_GRANT_REMOTE_LLM)
-            .map_err(|e| AppError::InvalidParameter(e))?;
+            .map_err(AppError::InvalidParameter)?;
     }
 
     if let Some(ref url) = req.ollama_base_url {
