@@ -7,6 +7,8 @@ import { Controls } from '@vue-flow/controls'
 import { applyNodeChanges, VueFlow } from '@vue-flow/core'
 import { MiniMap } from '@vue-flow/minimap'
 import { computed, markRaw, onMounted, provide, ref, watch } from 'vue'
+import { getExpertRouting } from '../api/role/expert'
+import { expertLlmHighlights } from '../lib/expertRoutingGraph'
 import { useI18n } from 'vue-i18n'
 import { useAppToast } from '../composables/useAppToast'
 import { useArchitectureGraphLayout } from '../composables/useArchitectureGraphLayout'
@@ -97,12 +99,42 @@ const {
 
 const nodes = ref<Node[]>([])
 const edges = ref<Edge[]>([])
+const expertLlmHints = ref<Map<string, string>>(new Map())
+
+async function refreshExpertHighlights() {
+  const roleId = roleStore.currentRoleId
+  if (!roleId) {
+    expertLlmHints.value = new Map()
+    return
+  }
+  try {
+    const doc = await getExpertRouting(roleId)
+    expertLlmHints.value = expertLlmHighlights(
+      doc ?? undefined,
+      roleStore.roleInfo.slotRegistryEffective ?? roleStore.roleInfo.slotRegistryPack,
+    )
+  }
+  catch {
+    expertLlmHints.value = new Map()
+  }
+  syncGraphFromModel()
+}
 
 function syncGraphFromModel() {
   nodes.value = builtNodes.value.map((n) => {
     const applied = graphLayout.applyToNode(n.id, n.type, n.position.x, n.position.y)
+    const expertHint = expertLlmHints.value.get(n.id)
+    const data = n.data && typeof n.data === 'object'
+      ? {
+          ...(n.data as Record<string, unknown>),
+          ...(expertHint
+            ? { expertHighlight: true, expertTriggerHint: expertHint }
+            : {}),
+        }
+      : n.data
     return {
       ...n,
+      data,
       position: { x: applied.x, y: applied.y },
       width: applied.width,
       height: applied.height,
@@ -415,7 +447,15 @@ watch(
   },
 )
 
-onMounted(syncGraphFromModel)
+onMounted(() => {
+  syncGraphFromModel()
+  void refreshExpertHighlights()
+})
+
+watch(
+  () => roleStore.currentRoleId,
+  () => void refreshExpertHighlights(),
+)
 </script>
 
 <template>

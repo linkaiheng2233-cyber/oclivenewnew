@@ -59,8 +59,13 @@ function onResetOverride() {
   >
     <div
       class="agn-module agn-shell-inner"
-      :class="{ 'agn--selected': selected, 'agn--session-override': sessionOverridden }"
+      :class="{
+        'agn--selected': selected,
+        'agn--session-override': sessionOverridden,
+        'agn--expert': Boolean(data?.expertHighlight),
+      }"
       :style="themeStyle"
+      :title="data?.expertTriggerHint ? String(data.expertTriggerHint) : undefined"
     >
       <Handle
         id="backend-in"
@@ -198,6 +203,11 @@ function onResetOverride() {
 .agn--session-override {
   outline: 1px dashed var(--arch-stroke, #7aad8f);
   outline-offset: 2px;
+}
+.agn--expert {
+  outline: 2px solid #e8a317;
+  outline-offset: 2px;
+  box-shadow: 0 0 12px rgba(232, 163, 23, 0.35);
 }
 .agn-override-tag {
   margin: 0 12px 4px;
