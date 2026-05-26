@@ -59,7 +59,7 @@
     "@antfu/eslint-config": "^9.0.0",
     "@playwright/test": "^1.52.0",
     "@tauri-apps/cli": "1.5.14",
-    "@types/node": "^24.12.2",
+    "@types/node": "^25.9.1",
     "@vitejs/plugin-vue": "^5.2.1",
     "@vue/test-utils": "^2.4.10",
     "@vue/tsconfig": "^0.9.1",
