@@ -161,6 +161,39 @@ impl RelationEngine {
             _ => RelationState::Stranger,
         }
     }
+
+    /// 长时间未互动：亲密值指数衰减（半衰期默认 30 虚拟日）。
+    #[must_use]
+    pub fn apply_estrangement_favor(
+        favorability: f64,
+        virtual_days: f64,
+        halflife_days: f64,
+    ) -> f64 {
+        if virtual_days <= 0.0 {
+            return favorability.clamp(0.0, 100.0);
+        }
+        let hl = halflife_days.max(0.1);
+        let mu = std::f64::consts::LN_2 / hl;
+        (favorability * (-mu * virtual_days).exp()).clamp(0.0, 100.0)
+    }
+
+    /// 本回合实际互动后小幅回升，避免「一开口就被衰减抵消」。
+    #[must_use]
+    pub fn apply_interaction_recovery(favorability: f64, recovery: f64) -> f64 {
+        (favorability * (1.0 + recovery.max(0.0))).clamp(0.0, 100.0)
+    }
+
+    /// 归一化亲密值是否低于疏远阈值（默认 0.3 → 好感 30）。
+    #[must_use]
+    pub fn is_estranged(favorability: f64, estrangement_threshold: f64) -> bool {
+        (favorability / 100.0) < estrangement_threshold.clamp(0.0, 1.0)
+    }
+
+    /// 低于疏远阈值时关系阶段降一级（Partner 不会越过 Stranger 以下）。
+    #[must_use]
+    pub fn estrangement_downgrade(current: RelationState) -> RelationState {
+        Self::demote_one(current)
+    }
 }
 
 #[cfg(test)]
@@ -248,6 +281,18 @@ mod tests {
             0.2,
         );
         assert_eq!(without_damping, with_mild_damping);
+    }
+
+    #[test]
+    fn estrangement_halves_favor_after_thirty_virtual_days() {
+        let out = RelationEngine::apply_estrangement_favor(60.0, 30.0, 30.0);
+        assert!((out - 30.0).abs() < 3.0, "out={out}");
+    }
+
+    #[test]
+    fn estrangement_downgrades_friend_to_acquaintance() {
+        let next = RelationEngine::estrangement_downgrade(RelationState::Friend);
+        assert_eq!(next, RelationState::Acquaintance);
     }
 
     #[test]
