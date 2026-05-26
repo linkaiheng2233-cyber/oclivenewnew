@@ -1,6 +1,7 @@
 #![allow(clippy::too_many_arguments)]
 
 use super::{ChatTurnTxInput, DbManager, log_txn_finish};
+use crate::domain::memory_engine::MemoryEngine;
 use crate::error::{AppError, Result};
 use crate::models::PersonalityVector;
 use chrono::Utc;
@@ -161,29 +162,65 @@ async fn record_memory_and_event(
     memory_content: &str,
     memory_importance: f64,
     memory_fifo_limit: i32,
+    memory_similarity_threshold: f64,
     event: &crate::models::Event,
     scene_id: &str,
     now: &str,
     started: &Instant,
 ) -> Result<()> {
     if memory_importance > 0.0 && !memory_content.trim().is_empty() {
-        crate::txn_step!(
-            role_id,
-            started,
-            "TXN_MEMORY_INSERT_FAILED",
-            "insert_long_term_memory",
-            sqlx::query(
-                "INSERT INTO long_term_memory (role_id, content, importance, weight, created_at, scene_id)
-                 VALUES (?, ?, ?, ?, ?, ?)",
-            )
-            .bind(role_id)
-            .bind(memory_content)
-            .bind(memory_importance)
-            .bind(1.0)
-            .bind(now)
-            .bind(scene_id)
-            .execute(tx.as_mut())
-        );
+        let trimmed = memory_content.trim();
+        let candidates: Vec<(i64, String)> = sqlx::query_as(
+            "SELECT id, content FROM long_term_memory WHERE role_id = ? ORDER BY created_at DESC LIMIT 40",
+        )
+        .bind(role_id)
+        .fetch_all(tx.as_mut())
+        .await
+        .map_err(|e| AppError::TransactionError {
+            code: "TXN_MEMORY_LOAD_FOR_REINFORCE_FAILED",
+            message: e.to_string(),
+        })?;
+
+        let mut reinforced = false;
+        for (id, existing) in candidates {
+            let sim = MemoryEngine::keyword_overlap_similarity(trimmed, existing.as_str());
+            if sim >= memory_similarity_threshold {
+                crate::txn_step!(
+                    role_id,
+                    started,
+                    "TXN_MEMORY_REINFORCE_FAILED",
+                    "reinforce_long_term_memory",
+                    sqlx::query(
+                        "UPDATE long_term_memory SET mention_count = mention_count + 1 WHERE id = ? AND role_id = ?",
+                    )
+                    .bind(id)
+                    .bind(role_id)
+                    .execute(tx.as_mut())
+                );
+                reinforced = true;
+                break;
+            }
+        }
+
+        if !reinforced {
+            crate::txn_step!(
+                role_id,
+                started,
+                "TXN_MEMORY_INSERT_FAILED",
+                "insert_long_term_memory",
+                sqlx::query(
+                    "INSERT INTO long_term_memory (role_id, content, importance, weight, created_at, scene_id, mention_count)
+                     VALUES (?, ?, ?, ?, ?, ?, 1)",
+                )
+                .bind(role_id)
+                .bind(trimmed)
+                .bind(memory_importance)
+                .bind(1.0)
+                .bind(now)
+                .bind(scene_id)
+                .execute(tx.as_mut())
+            );
+        }
     } else {
         tracing::info!(role_id = role_id, reason = "low_value", "tx memory skipped");
     }
@@ -389,6 +426,7 @@ pub async fn apply_chat_turn_atomic(db: &DbManager, input: ChatTurnTxInput<'_>) 
         input.memory_content,
         input.memory_importance,
         input.memory_fifo_limit,
+        input.memory_similarity_threshold,
         input.event,
         input.scene_id,
         &now,

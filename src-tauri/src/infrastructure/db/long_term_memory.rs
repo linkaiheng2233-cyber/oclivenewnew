@@ -32,8 +32,17 @@ impl DbManager {
     }
 
     pub async fn load_memories(&self, role_id: &str, limit: i32) -> Result<Vec<Memory>> {
-        let rows = sqlx::query_as::<_, (i64, String, String, f64, f64, String, Option<String>)>(
-            "SELECT id, role_id, content, importance, weight, created_at, scene_id
+        let rows = sqlx::query_as::<_, (
+            i64,
+            String,
+            String,
+            f64,
+            f64,
+            String,
+            Option<String>,
+            i32,
+        )>(
+            "SELECT id, role_id, content, importance, weight, created_at, scene_id, mention_count
              FROM long_term_memory
              WHERE role_id = ?
              ORDER BY created_at DESC
@@ -48,19 +57,38 @@ impl DbManager {
         let memories = rows
             .into_iter()
             .map(
-                |(id, role_id, content, importance, weight, created_at, scene_id)| Memory {
-                    id: id.to_string(),
-                    role_id,
-                    content,
-                    importance,
-                    weight,
-                    created_at: parse_memory_created_at(&created_at),
-                    scene_id,
+                |(id, role_id, content, importance, weight, created_at, scene_id, mention_count)| {
+                    Memory {
+                        id: id.to_string(),
+                        role_id,
+                        content,
+                        importance,
+                        weight,
+                        created_at: parse_memory_created_at(&created_at),
+                        scene_id,
+                        mention_count: mention_count.max(1),
+                    }
                 },
             )
             .collect();
 
         Ok(memories)
+    }
+
+    pub async fn increment_memory_mention_count(
+        &self,
+        memory_id: i64,
+        role_id: &str,
+    ) -> Result<()> {
+        sqlx::query(
+            "UPDATE long_term_memory SET mention_count = mention_count + 1 WHERE id = ? AND role_id = ?",
+        )
+        .bind(memory_id)
+        .bind(role_id)
+        .execute(&self.pool)
+        .await
+        .map_err(|e| AppError::DatabaseError(e.to_string()))?;
+        Ok(())
     }
 
     pub async fn count_memories(&self, role_id: &str) -> Result<i64> {
@@ -78,8 +106,17 @@ impl DbManager {
         limit: i32,
         offset: i32,
     ) -> Result<Vec<Memory>> {
-        let rows = sqlx::query_as::<_, (i64, String, String, f64, f64, String, Option<String>)>(
-            "SELECT id, role_id, content, importance, weight, created_at, scene_id
+        let rows = sqlx::query_as::<_, (
+            i64,
+            String,
+            String,
+            f64,
+            f64,
+            String,
+            Option<String>,
+            i32,
+        )>(
+            "SELECT id, role_id, content, importance, weight, created_at, scene_id, mention_count
              FROM long_term_memory
              WHERE role_id = ?
              ORDER BY created_at DESC
@@ -95,14 +132,17 @@ impl DbManager {
         let memories = rows
             .into_iter()
             .map(
-                |(id, role_id, content, importance, weight, created_at, scene_id)| Memory {
-                    id: id.to_string(),
-                    role_id,
-                    content,
-                    importance,
-                    weight,
-                    created_at: parse_memory_created_at(&created_at),
-                    scene_id,
+                |(id, role_id, content, importance, weight, created_at, scene_id, mention_count)| {
+                    Memory {
+                        id: id.to_string(),
+                        role_id,
+                        content,
+                        importance,
+                        weight,
+                        created_at: parse_memory_created_at(&created_at),
+                        scene_id,
+                        mention_count: mention_count.max(1),
+                    }
                 },
             )
             .collect();
