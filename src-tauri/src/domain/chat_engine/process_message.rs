@@ -93,6 +93,11 @@ async fn run(
             .await,
     )?;
 
+    stage_process_message(
+        ChatStage::ApplyUserLlmEnv,
+        crate::api::llm_settings::apply_user_llm_env(state).await,
+    )?;
+
     let effective_backends =
         state.effective_plugin_backends_for_session(role.as_ref(), srid);
     let effective_sources =
@@ -170,6 +175,17 @@ async fn run(
         ),
     )?;
     let immersive = interaction_mode.is_immersive();
+    if immersive {
+        process_message_stage(
+            ChatStage::VirtualTimeMs,
+            crate::domain::virtual_time_sync::apply_idle_personality_decay(
+                state,
+                role.as_ref(),
+                srid,
+            ),
+        )
+        .await?;
+    }
     let is_remote =
         immersive && user_is_remote_from_character(scene_id.as_str(), current_scene.as_deref());
     let preflight_ms = t0.elapsed().as_millis() as u64;
@@ -179,10 +195,13 @@ async fn run(
         .to_string();
     let virtual_time_ms = process_message_stage(
         ChatStage::VirtualTimeMs,
-        state.db_manager.get_virtual_time_ms(srid),
+        crate::domain::virtual_time_sync::sync_and_persist_virtual_time(
+            state.db_manager.as_ref(),
+            role.as_ref(),
+            immersive,
+        ),
     )
-    .await?
-    .unwrap_or(0);
+    .await?;
     let scenes = Arc::clone(&role.scene_ids);
     let turn = TurnContext {
         state,

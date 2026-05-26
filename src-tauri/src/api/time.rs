@@ -1,19 +1,14 @@
 use crate::api::jump_monologue::generate_monologue_lines;
 use crate::domain::user_identity::resolve_effective_user_relation_key;
+use crate::domain::virtual_time_sync::{apply_virtual_time_jump, sync_and_persist_virtual_time};
 use crate::error::AppError;
 use crate::models::dto::{JumpTimeRequest, JumpTimeResponse, TimeStateResponse};
 use crate::models::Role;
 use crate::state::AppState;
 use chrono::{DateTime, Timelike, Utc};
+use oclive_kernel_runtime::domain::virtual_time::round_to_minute_ms;
 use tauri::State;
 use crate::api::error::CommandError;
-
-/// 虚拟时间对齐到分钟（毫秒时间戳）
-#[must_use]
-pub fn round_to_minute_ms(ts_ms: i64) -> i64 {
-    const M: i64 = 60_000;
-    (ts_ms / M) * M
-}
 
 /// 角色包 `settings.json` → `autonomous_scene`：虚拟时间变化后尝试匹配首条规则并更新 `current_scene`。
 /// 若发生切换，返回 `(from_scene_id, to_scene_id)`。
@@ -111,36 +106,15 @@ pub async fn get_time_state_impl(
         return Err(AppError::RoleRuntimeNotReady.into());
     }
 
-    if !state
+    let role = state.load_role_cached_async(role_id).await?;
+    let immersive = state
         .db_manager
         .get_interaction_mode(role_id)
         .await
         ?
-        .is_immersive()
-    {
-        let ms = round_to_minute_ms(Utc::now().timestamp_millis());
-        let dt = DateTime::from_timestamp_millis(ms).unwrap_or_else(Utc::now);
-        return Ok(TimeStateResponse {
-            virtual_time_ms: ms,
-            iso_datetime: dt.to_rfc3339(),
-        });
-    }
-
-    let mut ms = state
-        .db_manager
-        .get_virtual_time_ms(role_id)
-        .await
-        ?
-        .unwrap_or(0);
-    if ms == 0 {
-        ms = round_to_minute_ms(Utc::now().timestamp_millis());
-        state
-            .db_manager
-            .set_virtual_time_ms(role_id, ms)
-            .await
-            ?;
-    }
-
+        .is_immersive();
+    let ms = sync_and_persist_virtual_time(state.db_manager.as_ref(), role.as_ref(), immersive)
+        .await?;
     let dt = DateTime::from_timestamp_millis(ms).unwrap_or_else(Utc::now);
     Ok(TimeStateResponse {
         virtual_time_ms: ms,
@@ -187,13 +161,14 @@ pub async fn jump_time_impl(
         .await
         ?;
 
-    if !state
+    let immersive = state
         .db_manager
         .get_interaction_mode(&req.role_id)
         .await
         ?
-        .is_immersive()
-    {
+        .is_immersive();
+
+    if !immersive {
         let ms = round_to_minute_ms(Utc::now().timestamp_millis());
         let dt = DateTime::from_timestamp_millis(ms).unwrap_or_else(Utc::now);
         return Ok(JumpTimeResponse {
@@ -207,12 +182,8 @@ pub async fn jump_time_impl(
         });
     }
 
-    let base_ms = state
-        .db_manager
-        .get_virtual_time_ms(&req.role_id)
-        .await
-        ?
-        .unwrap_or_else(|| round_to_minute_ms(Utc::now().timestamp_millis()));
+    let base_ms =
+        sync_and_persist_virtual_time(state.db_manager.as_ref(), role.as_ref(), true).await?;
     let target_ms = match (req.timestamp_ms, req.preset.as_deref()) {
         (Some(ts), _) => ts,
         (None, Some(preset)) => resolve_preset_target_ms(base_ms, preset).ok_or_else(|| {
@@ -226,12 +197,8 @@ pub async fn jump_time_impl(
             .into());
         }
     };
-    let ms = round_to_minute_ms(target_ms);
-    state
-        .db_manager
-        .set_virtual_time_ms(&req.role_id, ms)
-        .await
-        ?;
+    let ms = apply_virtual_time_jump(state, role.as_ref(), &req.role_id, base_ms, target_ms)
+        .await?;
     let autonomous_scene =
         apply_autonomous_scene_after_jump(state, &req.role_id, role.as_ref(), ms).await?;
     let ts = get_time_state_impl(state, &req.role_id).await?;

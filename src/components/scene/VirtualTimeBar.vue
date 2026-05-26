@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import type { JumpTimeResponse } from '../../api'
-import { computed, onMounted, ref, watch } from 'vue'
+import { computed, onBeforeUnmount, onMounted, ref, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { getTimeState } from '../../api'
 import TimeDial from '../TimeDial.vue'
@@ -58,8 +58,18 @@ function onDialRefreshed() {
   emit('refreshed')
 }
 
+let pollTimer: ReturnType<typeof setInterval> | null = null
+
 onMounted(() => {
   loadState()
+  pollTimer = setInterval(() => {
+    void loadState()
+  }, 12_000)
+})
+
+onBeforeUnmount(() => {
+  if (pollTimer !== null)
+    clearInterval(pollTimer)
 })
 
 watch(

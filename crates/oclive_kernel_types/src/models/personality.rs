@@ -115,6 +115,18 @@ impl PersonalityVector {
         }
     }
 
+    /// 各维乘以 `factor`（用于时间遗忘：delta 向 0 收缩）。
+    pub fn scale_components(&mut self, factor: f64) {
+        let f = factor.clamp(0.0, 1.0);
+        self.stubbornness *= f;
+        self.clinginess *= f;
+        self.sensitivity *= f;
+        self.assertiveness *= f;
+        self.forgiveness *= f;
+        self.talkativeness *= f;
+        self.warmth *= f;
+    }
+
     pub fn clamp(&mut self, bounds: &super::role::EvolutionBounds) {
         self.stubbornness = self
             .stubbornness

@@ -38,6 +38,8 @@ pub mod role_manifest_validate;
 pub mod startup_health;
 pub mod user_identity;
 pub mod effective_llm_model;
+pub mod relation_estrangement;
+pub mod virtual_time_sync;
 
 pub mod agent;
 pub mod chat_engine;
