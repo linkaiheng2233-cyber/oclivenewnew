@@ -4,6 +4,7 @@
 //! `plugin_backends` 的遗留 Tauri 命令（旧包仅 [`RoleStorage::load_role_from_legacy_manifest_dir`] 只读兼容）。
 
 pub mod display;
+pub mod expert;
 pub mod evolution;
 pub mod interaction;
 pub mod relation;
@@ -16,6 +17,7 @@ pub use evolution::{
 pub use relation::{
     clear_scene_user_relation_impl, set_scene_user_relation_impl, set_user_relation_impl,
 };
+pub use expert::{get_expert_routing, list_blueprint_includes, save_expert_routing};
 pub use slot_session::{
     clear_all_session_slot_overrides_impl, clear_session_slot_override_impl,
     get_plugin_resolution_debug_impl, save_role_slot_registry_impl,

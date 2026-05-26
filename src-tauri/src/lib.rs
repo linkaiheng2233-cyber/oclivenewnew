@@ -330,6 +330,9 @@ pub fn run() {
             api::role::slot_session::get_plugin_resolution_debug,
             api::role::resolve_role_asset_path,
             api::role::read_role_asset_bytes,
+            api::role::expert::list_blueprint_includes,
+            api::role::expert::get_expert_routing,
+            api::role::expert::save_expert_routing,
 
             // ── desktop filesystem (replaces `@tauri-apps/api/fs` IPC) ──
             api::desktop_fs::write_user_text_file,
