@@ -7,6 +7,7 @@
 |------|------|
 | 角色包（入门） | [ROLE_PACK_SPEC.md](../creator-docs/role-pack/ROLE_PACK_SPEC.md) |
 | 蓝图 / 系统配置 | [SETTINGS_REFERENCE.md](../creator-docs/cli/SETTINGS_REFERENCE.md) |
+| **蓝图目录 `blueprint/`（拉取式、本体保持瘦）** | **[BLUEPRINT_FOLDER_LAYOUT.md](./BLUEPRINT_FOLDER_LAYOUT.md)** |
 | 双核对齐 | [DUAL_CORE_CURSOR_HANDOFF.md](DUAL_CORE_CURSOR_HANDOFF.md) |
 
 ---
@@ -18,7 +19,7 @@
 | **角色包** | 角色身份、人格、关系、提示词与场景**内容** | **初级创作者** |
 | **蓝图** | 槽位实例、后端路由、模型名、交互/记忆/远程策略、双核开关等**系统配置** | **高级开发者 / 宿主管理员** |
 
-**物理落盘（今日）**：v2 仍常用**同一文件** `pipeline.ocblueprint`（`meta` + `slot_registry` + 可选 `groups`）。**逻辑上**分责；编写器 / CLI 应按角色分视图编辑，避免初级创作者改 `slot_registry`。
+**物理落盘（今日）**：v2 仍以 **`roles/{id}/pipeline.ocblueprint`** 为宿主加载入口（`meta` + `slot_registry` + 可选 `groups`）。**逻辑上**分责；外置片段、专家修订与说明放入 **`roles/{id}/blueprint/`**，经本体 **`includes`** 拉取合并（见 [BLUEPRINT_FOLDER_LAYOUT.md](./BLUEPRINT_FOLDER_LAYOUT.md)），**禁止**把长文与向导结果搅进蓝图 JSON。编写器 / CLI 应按角色分视图编辑，避免初级创作者改 `slot_registry`。
 
 **legacy**：`manifest.json` + `settings.json` 已废弃，**不得**与 v2 蓝图并存；引擎字段应视为**蓝图侧**，非「角色门面」。
 
@@ -82,6 +83,8 @@
 | `slot_registry.*.zone` | 双核归属（**Proposed**） |
 
 **禁止落盘**：`module_relations`、`steps`、`entry`（校验报错；运行时派生）。
+
+**`blueprint/` 卫星目录**（可选）：`includes/`、`overlays/`、`revisions/`、`docs/` — **不**替代 `pipeline.ocblueprint` 路径；专家文档放此处**不影响**默认蓝图校验（详见 [BLUEPRINT_FOLDER_LAYOUT.md](./BLUEPRINT_FOLDER_LAYOUT.md)）。
 
 ### 3.3 `runtime_config`（蓝图 · v3 目标 SSOT）
 
