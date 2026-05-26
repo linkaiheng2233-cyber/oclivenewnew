@@ -36,7 +36,7 @@
 
 | 主题 | 读什么 |
 |------|--------|
-| **市场发布流程** | [../roadmap/PLUGIN_WEB_SECTION.md](../roadmap/PLUGIN_WEB_SECTION.md) · [MARKET_LAUNCHER_INTEGRATION.md](../roadmap/MARKET_LAUNCHER_INTEGRATION.md) |
+| **市场投稿（GitHub 链接策展）** | **[PLUGIN_MARKET_SUBMISSION.md](PLUGIN_MARKET_SUBMISSION.md)** · 索引维护 [GITHUB_PLUGIN_INDEX_LINE.md](../../handoff/GITHUB_PLUGIN_INDEX_LINE.md) · 网站愿景 [../roadmap/PLUGIN_WEB_SECTION.md](../roadmap/PLUGIN_WEB_SECTION.md) |
 | **`oclive_validation` 集成** | `crates/oclive_validation`（与宿主、编写器 wasm 同源）；三面一致测试 `src-tauri/tests/permission_three_way_consistency.rs` |
 | **调试与排障** | 主应用插件管理 **Ctrl+Shift+F**；[FAQ.md](../FAQ.md)；错误码 [ERROR_CODES.md](../getting-started/ERROR_CODES.md)；目录 RPC 日志见 DIRECTORY_PLUGINS 与宿主 `tracing` |
 

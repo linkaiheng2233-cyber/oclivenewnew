@@ -493,18 +493,19 @@ TypeScript 侧 `SendMessageResponse`（`src/utils/tauri-api.ts`）必须与 `mod
 
 实现与测试：`crates/oclive_validation/src/plugin_permissions.rs`、`src-tauri/src/infrastructure/high_risk_grants.rs`、集成测 `src-tauri/tests/permission_three_way_consistency.rs`。
 
-### 发布到社区索引（GitHub · `plugins.json`）
+### 发布到社区索引（GitHub · 链接策展）
 
-目录插件上架 **不** 走 Supabase 社区站表单；阶段 A 使用 **GitHub 静态索引**：
+目录插件上架 **不** 走 Supabase 社区站表单，也 **不向 oclive 官方上传插件包**。阶段 A：**作者在 Git 托管源码**，索引只登记 **`git` 链接**，由维护者 PR 审核后写入 `plugins.json`；用户粘贴分享链接在桌面 **插件市场** 加载目录或安装单仓。
 
 | 步骤 | 说明 |
 |------|------|
-| 1 | 插件以独立 Git 仓库发布，或 monorepo 子目录 + 索引 **`gitSubdir`** |
-| 2 | 向主仓 [`data/plugins.json`](../../data/plugins.json) 提 PR，字段与 `PluginIndexEntry` 对齐（`id`、`name`、`version`、`git`、可选 `gitSubdir`、`tags` 等） |
+| 1 | 插件以独立 Git 仓库发布，或 monorepo 子目录 + 索引 **`gitSubdir`**；仓库内 **README / manifest 须写清**（见 **[PLUGIN_MARKET_SUBMISSION.md](PLUGIN_MARKET_SUBMISSION.md)**） |
+| 2 | 向主仓 [`data/plugins.json`](../../data/plugins.json) 提 PR，字段与 `PluginIndexEntry` 对齐 |
 | 3 | 合并后同步 [awesome-oclive-plugins](https://github.com/linkaiheng2233-cyber/awesome-oclive-plugins) 的 `plugins.json` |
-| 4 | 用户通过桌面 **插件市场** 或 **`oclive market install <id>`** 安装 |
+| 4 | 将 **plugins.json 的 raw 链接** 或 **仓库链接** 发给用户；用户在 **插件市场** 粘贴加载，或用 **`oclive market install <id>`** |
 
-维护与字段全文、环境变量（`OCLIVE_PLUGIN_INDEX_URL`、`OCLIVE_LOCAL_MONOREPO`）、缓存路径见 **[../../handoff/GITHUB_PLUGIN_INDEX_LINE.md](../../handoff/GITHUB_PLUGIN_INDEX_LINE.md)**。
+投稿责任、审核清单与用户粘贴链接流程：**[PLUGIN_MARKET_SUBMISSION.md](PLUGIN_MARKET_SUBMISSION.md)**。  
+维护与字段全文、环境变量、缓存路径：**[../../handoff/GITHUB_PLUGIN_INDEX_LINE.md](../../handoff/GITHUB_PLUGIN_INDEX_LINE.md)**。
 
 本地已安装插件 discovery：`oclive plugin search [--provides <slot>] [keyword] -o <plugins-dir>`（按 `manifest.json` 的 **`provides`** 过滤）。
 

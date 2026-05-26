@@ -1,6 +1,8 @@
 # GitHub 目录插件索引线（阶段 A）
 
-**范围**：`plugins.json` → 桌面同步/安装、CLI `oclive market`。**不含**角色包 `catalog.json`、Supabase 社区站。
+**范围**：`plugins.json` → 桌面插件市场（粘贴分享链接加载）/ 安装、CLI `oclive market`。**不含**角色包 `catalog.json`、Supabase 社区站、向官方上传 zip。
+
+**分发模型**：索引仅保存 **元数据 + `git` 链接**；源码与下载由 **作者仓库** 承担；官方 PR 策展防垃圾。见 **[PLUGIN_MARKET_SUBMISSION.md](../creator-docs/plugin-and-architecture/PLUGIN_MARKET_SUBMISSION.md)**。
 
 ## SSOT 与线上 URL
 
@@ -12,15 +14,16 @@
 
 ## 创作者：如何通过 PR 加入索引
 
-1. **插件仓库**：每个目录插件须为可 `git clone` 的独立仓库，或 monorepo 子路径（见 `gitSubdir`）。
+1. **插件仓库**：每个目录插件须为可 `git clone` 的独立仓库，或 monorepo 子路径（见 `gitSubdir`）。**README 与 manifest 须写清功能、环境、权限原因**（维护者可拒收文档不全条目），见 [PLUGIN_MARKET_SUBMISSION.md](../creator-docs/plugin-and-architecture/PLUGIN_MARKET_SUBMISSION.md)。
 2. **自检**：`manifest.json` 的 `id` / `version` 与索引条一致；`node scripts/validate-plugins-index.mjs` 通过（对 monorepo 示例会核对子路径 manifest）。
 3. **改主仓草稿**：在 **oclivenewnew** 向 `data/plugins.json` 提 PR，增加一条 `plugins` 数组元素。
 4. **同步 awesome**：合并后维护者运行  
    `node scripts/sync-plugins-index-github.mjs --write ../awesome-oclive-plugins/plugins.json`  
    并在 [awesome-oclive-plugins](https://github.com/linkaiheng2233-cyber/awesome-oclive-plugins) 提交 `plugins.json`。
 5. **勿重复字段**：每条仅保留 camelCase **`gitSubdir`**，不要同时写 `git_subdir`。
+6. **分享给用户**：提供审核后目录的 **raw `plugins.json` 链接**，或单插件 **仓库 URL**；用户在桌面插件市场 **粘贴 → 加载**。
 
-PR 说明建议附上：插件 id、测试过的 oclive 版本、所需 `permissions`、是否依赖其它插件 id。
+PR 说明建议附上：插件 id、测试过的 oclive 版本、所需 `permissions`、是否依赖其它插件 id、README 是否已含安装与权限说明。
 
 ## `plugins.json` 字段说明
 
@@ -59,7 +62,7 @@ PR 说明建议附上：插件 id、测试过的 oclive 版本、所需 `permiss
 Copy-Item D:\oclivenewnew\data\plugins.json $env:USERPROFILE\.oclive\plugin_index_cache.json -Force
 ```
 
-桌面端在「插件市场 → GitHub 插件索引 → 同步在线索引」成功时也会写入上述 app_data 缓存。
+桌面端在插件市场 **粘贴目录链接并加载成功** 时也会写入上述 app_data 缓存。
 
 ## 安装语义
 
@@ -76,7 +79,7 @@ node scripts/sync-plugins-index-github.mjs --write ../awesome-oclive-plugins/plu
 ## 验收（本地）
 
 1. 可选：`$env:OCLIVE_LOCAL_MONOREPO = "D:\oclivenewnew"`（GitHub 不可达时）
-2. 桌面：插件工作台 → 插件市场 → **同步在线索引** → 安装 `com.oclive.example.minimal`
+2. 桌面：插件市场 → 粘贴主仓 `data/plugins.json` 的 raw 链接（或 awesome 默认目录）→ **加载** → 安装 `com.oclive.example.minimal`
 3. CLI：`cargo run -p oclive-cli -- market search minimal` → `market install com.oclive.example.minimal`
 4. 已安装扫描：`cargo run -p oclive-cli -- plugin search --provides llm -o <plugins-dir>`
 

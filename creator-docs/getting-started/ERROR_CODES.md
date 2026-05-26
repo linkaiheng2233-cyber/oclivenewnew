@@ -72,7 +72,7 @@
 
 | 场景 | 运行时行为 | 建议 |
 |------|------------|------|
-| **社区插件索引**（插件工作台 → 社区索引 →「同步在线索引」） | 在线 `plugins.json` 失败时自动读 `app_data` 下 **`plugin_index_cache.json`**，返回 `offlineMode=true` 与 `warning`（技术原因）；界面与 Toast 走 i18n 说明 | 检查网络、代理、防火墙；可设 **`OCLIVE_PLUGIN_INDEX_URL`** 指向可访问的索引镜像；联网后再次同步 |
+| **插件市场目录**（粘贴 `plugins.json` 分享链接 →「加载」） | 在线拉取失败时自动读 `app_data` 下 **`plugin_index_cache.json`**（若曾成功加载过），返回 `offlineMode=true` 与 `warning` | 检查网络、代理；确认链接为可访问的 raw JSON；可设 **`OCLIVE_PLUGIN_INDEX_URL`** 作开发镜像；换链接或稍后重试 |
 | **首次从未同步成功** | 缓存可能为空，列表无条目 | 至少成功同步一次，或使用「从文件夹 / zip 安装」等离线路径 |
 | **Ollama / Remote LLM** | 超时或不可达时由对话路径返回 **`KernelErrorBody` JSON**（如 `LLM_ERROR`）；极旧日志可能仍为 `[CODE]` 前缀 | 见 **§1.5** 与前端 `apiErrors` 映射 |
 | **Tauri 常见补充（JSON；旧版见 `[CODE]` 回退）** | 首轮对话前自检失败、未先加载角色 | `STARTUP_HEALTH_FAILED`：manifest / 槽位 / DB；`ROLE_RUNTIME_NOT_READY`：请先 `load_role` 或在 UI 选择角色；directory 槽等相关码见 `apiErrors` |

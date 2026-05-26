@@ -120,7 +120,8 @@
 | 角色包 / 插件市场 · 与启动器联动（发版同发、入口与阶段划分） | **[../roadmap/MARKET_LAUNCHER_INTEGRATION.md](../roadmap/MARKET_LAUNCHER_INTEGRATION.md)** · [English](../../creator-docs-en/roadmap/MARKET_LAUNCHER_INTEGRATION.md) |
 | 社区站愿景（网页 · 论坛 / 角色包 / 插件 三板块；Discord 取舍） | **[../roadmap/COMMUNITY_WEB_VISION.md](../roadmap/COMMUNITY_WEB_VISION.md)** · [English](../../creator-docs-en/roadmap/COMMUNITY_WEB_VISION.md) |
 | **插件区（网站）**信息架构与 `plugins.json` 清单 | **[../roadmap/PLUGIN_WEB_SECTION.md](../roadmap/PLUGIN_WEB_SECTION.md)** · [English](../../creator-docs-en/roadmap/PLUGIN_WEB_SECTION.md) |
-| **GitHub 目录插件索引**（`data/plugins.json`、安装、本地回退、PR 流程） | **[../../handoff/GITHUB_PLUGIN_INDEX_LINE.md](../../handoff/GITHUB_PLUGIN_INDEX_LINE.md)** · 创作者契约 **[../plugin-and-architecture/PLUGIN_V1.md](../plugin-and-architecture/PLUGIN_V1.md)** §发布到社区索引 |
+| **插件市场投稿**（链接策展、作者 README 清单、用户粘贴分享链接） | **[../plugin-and-architecture/PLUGIN_MARKET_SUBMISSION.md](../plugin-and-architecture/PLUGIN_MARKET_SUBMISSION.md)** |
+| **GitHub 目录插件索引**（`data/plugins.json`、安装、本地回退、PR 流程） | **[../../handoff/GITHUB_PLUGIN_INDEX_LINE.md](../../handoff/GITHUB_PLUGIN_INDEX_LINE.md)** · 契约 **[../plugin-and-architecture/PLUGIN_V1.md](../plugin-and-architecture/PLUGIN_V1.md)** §发布 |
 | **蓝图目录 `blueprint/`**（瘦本体 + `includes` 拉取、专家材料外置） | **[../../handoff/BLUEPRINT_FOLDER_LAYOUT.md](../../handoff/BLUEPRINT_FOLDER_LAYOUT.md)** · [ROLE_PACK_BOUNDARY.md](../../handoff/ROLE_PACK_BOUNDARY.md) · [ROLE_PACK_SPEC §2.6](../role-pack/ROLE_PACK_SPEC.md) |
 | **专家模型设施子模块**（第 2 号 · 专家路由 · 主应用向导 + `slot.expert.invoke`） | [OCLIVE_ARCHITECTURE_OVERVIEW § 命名规范](OCLIVE_ARCHITECTURE_OVERVIEW.md#设施模块命名规范规定) · [CREATOR_LEARNING_PATH §高级](../role-pack/CREATOR_LEARNING_PATH.md) · `blueprint/includes/expert_routing.json` |
 | **项目全貌（OVERVIEW 入口）** | **[OVERVIEW.md](OVERVIEW.md)**（同义跳转至 [PROJECT_OVERVIEW.md](PROJECT_OVERVIEW.md)） |
