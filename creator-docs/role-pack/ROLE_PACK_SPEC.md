@@ -37,6 +37,7 @@ v2 磁盘上常为 **同一文件** `pipeline.ocblueprint`：`meta` 中仅上表
 roles/{role_id}/
 ├── pipeline.ocblueprint    # **v2 SSOT（瘦）**：meta + slot_registry + includes；见 [BLUEPRINT_FOLDER_LAYOUT.md](../../handoff/BLUEPRINT_FOLDER_LAYOUT.md)
 ├── blueprint/              # 可选：includes/、overlays/、revisions/、docs/（卫星，不替代本体路径）
+├── config.json             # 可选；遗忘曲线、虚拟时间（沉浸模式）；见 §9
 ├── prompts/                # **角色包**：系统提示词、开场白等（推荐）
 ├── manifest.json           # **已废弃（legacy）**：勿与 v2 蓝图并存
 ├── settings.json           # **已废弃（legacy）**：勿与 v2 蓝图并存
@@ -266,6 +267,88 @@ auto_sync: false
 | `collab diff` | `git diff origin/<branch>` |
 
 冲突解决：手动合并文件 → `git add` → `git commit` → `oclive collab push`。
+
+---
+
+## 9. 配置文件（`config.json`）
+
+**可选** JSON 文件，位于角色包根目录 `roles/{role_id}/config.json`。宿主在 `RoleStorage::load_role` 时读取，**不**写入 `pipeline.ocblueprint`。主要用于 **沉浸模式** 下的虚拟时钟、**艾宾浩斯记忆衰减**、**关系疏远** 等行为；未提供时使用代码内默认值（与下表「默认」列一致）。
+
+**标准 JSON 无 `//` 注释**；示例片段仅供复制，实际文件须为合法 JSON。
+
+### 9.1 完整示例
+
+```json
+{
+  "time": {
+    "speed": 5.0,
+    "decay_on_jump": true
+  },
+  "memory": {
+    "decay_halflife_days": 7.0,
+    "reinforcement_factor": 0.3,
+    "min_strength_for_prompt": 0.1
+  },
+  "relation": {
+    "decay_halflife_days": 30.0,
+    "estrangement_threshold": 0.3
+  }
+}
+```
+
+参考包：`roles/mumu/config.json`（含进阶可选键）。
+
+### 9.2 顶层结构
+
+| 键 | 类型 | 必填 | 说明 |
+|----|------|------|------|
+| `time` | object | 否 | 虚拟时钟与跳转遗忘 |
+| `memory` | object | 否 | 长期记忆艾宾浩斯衰减与强化 |
+| `relation` | object | 否 | 亲密值疏远与关系降级 |
+
+### 9.3 `time`（虚拟时间）
+
+| 字段 | 类型 | 默认 | 说明 |
+|------|------|------|------|
+| `speed` | number | `5.0` | 现实:虚拟 **分钟** 比（`1` 现实分钟 = `speed` 虚拟分钟） |
+| `decay_on_jump` | bool | `false` | 手动跳转虚拟时间后，是否对性格 delta 叠加时间遗忘 |
+| `decay_per_day` | number | `1.0` | 每虚拟日性格 delta 向 0 收缩的强度（跳转/空闲衰减用） |
+| `memory_decay_per_day` | number | `1.0` | 旧版记忆衰减强度（艾宾浩斯路径以 `memory.*` 为准） |
+
+**行为摘要**：沉浸模式下宿主按锚点同步虚拟时钟；若角色包配置了 `life_schedule` 且尚无锚点，**首次**进入时虚拟起点对齐日程 **第一条** 片段的星期与 `time_start`（见 [CREATOR_LEARNING_PATH.md § 高级](CREATOR_LEARNING_PATH.md#配置记忆与关系演化)）。
+
+### 9.4 `memory`（记忆遗忘与强化）
+
+| 字段 | 类型 | 默认 | 说明 |
+|------|------|------|------|
+| `decay_halflife_days` | number | `7.0` | 记忆权重半衰期（**虚拟日**）；约 7 虚拟日后强度降至初始一半 |
+| `reinforcement_factor` | number | `0.3` | 重复提及强化系数；有效半衰期 = 基础半衰期 × (1 + factor × (mention_count − 1)) |
+| `min_strength_for_prompt` | number | `0.1` | 衰减后 `importance × weight` 低于此值的记忆 **不进入** 主对话 Prompt |
+| `similarity_threshold` | number | `0.6` | 写入长期记忆时，与已有记忆关键词重叠度 ≥ 此值则 **强化**（`mention_count + 1`）而非新插一条 |
+| `reinforced_mention_threshold` | integer | `3` | `mention_count` 达到此值后，可微幅推动性格演化（见 §9.6 与 CHANGELOG） |
+
+**公式（宿主实现）**：剩余强度 ≈ 初始 `weight` × e^(−λ × 虚拟日龄)，λ = ln(2) / 有效半衰期。
+
+### 9.5 `relation`（亲密值疏远）
+
+| 字段 | 类型 | 默认 | 说明 |
+|------|------|------|------|
+| `decay_halflife_days` | number | `30.0` | 亲密值（好感 0～100）半衰期（**虚拟日**，自上次实际互动起算） |
+| `estrangement_threshold` | number | `0.3` | 归一化亲密值（好感/100）低于此值时，关系阶段 **自动降一级**（如 Friend → Acquaintance） |
+| `interaction_recovery` | number | `0.12` | 本回合实际对话时，在疏远衰减后按 `(1 + recovery)` 小幅回升，避免「一开口就被衰减抵消」 |
+
+**行为摘要**：仅 **沉浸模式** 下、每回合对话开始前应用疏远衰减；`profile` 人格模式下可在可变性格档案「社交关系」小节记录已疏远状态。
+
+### 9.6 与蓝图 / 数据库的关系
+
+| 概念 | `config.json` | 蓝图 / DB |
+|------|---------------|-----------|
+| 记忆 FIFO 条数 | — | `runtime_config.memory_config` / `policy.toml` |
+| 好感初值与事件 delta | — | `meta.relations` + 回合事件引擎 |
+| 长期记忆内容与 `mention_count` | 控制衰减/强化参数 | SQLite `long_term_memory` |
+| 虚拟时间锚点 | `time.speed` 等 | `role_runtime.virtual_time_*` 列 |
+
+校验：`config.json` 解析失败时宿主 **warn 并回退默认**，不阻塞 `load_role`。类型定义见 `oclive_kernel_types::RolePackConfigFile`。
 
 ---
 
