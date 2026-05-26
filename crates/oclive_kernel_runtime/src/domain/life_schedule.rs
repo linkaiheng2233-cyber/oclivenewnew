@@ -1,7 +1,7 @@
 //! 虚拟时间 + manifest `life_schedule` → 当前活动态（不修改好感等业务数值）
 
 use crate::models::role::{LifeAvailability, LifeScheduleDisk, LifeState};
-use chrono::{DateTime, Datelike, FixedOffset, Timelike};
+use chrono::{DateTime, Datelike, Duration, FixedOffset, NaiveDate, Timelike};
 
 fn availability_busy_level(a: Option<LifeAvailability>) -> f32 {
     match a.unwrap_or(LifeAvailability::Free) {
@@ -93,6 +93,30 @@ pub fn format_life_prompt_line(state: &LifeState, user_remote_from_character: bo
     }
 }
 
+/// 沉浸模式首次锚点：取日程表**第一条**片段的星期与 `time_start`（角色包本地时区）。
+#[must_use]
+pub fn virtual_start_ms_from_schedule(
+    anchor_real_ms: i64,
+    schedule: &LifeScheduleDisk,
+) -> Option<i64> {
+    let first = schedule.entries.first()?;
+    let offset_min = schedule.timezone_offset_minutes.unwrap_or(0);
+    let offset = FixedOffset::east_opt(offset_min * 60)?;
+    let dt_utc = DateTime::from_timestamp_millis(anchor_real_ms)?;
+    let local = dt_utc.with_timezone(&offset);
+    let target_weekday = first.weekday;
+    let current_weekday = local.weekday().number_from_monday() as i32;
+    let diff = (current_weekday - i32::from(target_weekday)).rem_euclid(7);
+    let date: NaiveDate = local.date_naive() - Duration::days(diff as i64);
+    let start_min = parse_hhmm(&first.time_start)?;
+    let hour = (start_min / 60) as u32;
+    let min = (start_min % 60) as u32;
+    let ndt = date.and_hms_opt(hour, min, 0)?;
+    ndt.and_local_timezone(offset)
+        .single()
+        .map(|dt| dt.timestamp_millis())
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -147,6 +171,29 @@ mod tests {
             Some(0),
         );
         assert!(resolve_life_state(ms, &s).is_some());
+    }
+
+    #[test]
+    fn virtual_start_uses_first_entry() {
+        let anchor = DateTime::parse_from_rfc3339("2024-01-03T20:00:00Z")
+            .unwrap()
+            .timestamp_millis();
+        let s = sched_one(
+            LifeScheduleEntryDisk {
+                weekday: 1,
+                time_start: "08:00".into(),
+                time_end: "12:00".into(),
+                activity_id: "morning".into(),
+                label: "晨间".into(),
+                preferred_scene_id: None,
+                availability: None,
+            },
+            Some(0),
+        );
+        let start = virtual_start_ms_from_schedule(anchor, &s).unwrap();
+        let dt = DateTime::from_timestamp_millis(start).unwrap();
+        assert_eq!(dt.hour(), 8);
+        assert_eq!(dt.minute(), 0);
     }
 
     #[test]
