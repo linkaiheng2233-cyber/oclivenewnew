@@ -13,6 +13,8 @@ use crate::blueprint_v2::{
     meta_to_disk_manifest, BlueprintMeta, SlotGroupEntry, SlotRegistryEntry,
     BLUEPRINT_V2_SCHEMA_VERSION, PIPELINE_BLUEPRINT_FILENAME,
 };
+use crate::blueprint_includes::validate_includes;
+use crate::pipeline_action::{parse_pipeline_action_kind, PipelineActionKind};
 use crate::validate::{validate_disk_manifest, validate_min_runtime_version};
 use crate::role_pack::merge_role_pack_scene_ids;
 use crate::runtime_config::{validate_runtime_config, RuntimeConfig};
@@ -55,6 +57,11 @@ pub struct BlueprintV3File {
     pub runtime_config: Option<RuntimeConfig>,
     #[serde(default)]
     pub pipeline: Option<DualPipelineDef>,
+    #[serde(default)]
+    includes: Vec<crate::blueprint_includes::BlueprintIncludeEntry>,
+    #[serde(default)]
+    #[allow(dead_code)]
+    expert_overlay: Option<serde_json::Value>,
 }
 
 /// v3 `slot_registry` 实例（在 v2 字段上扩展 `zone`）。
@@ -283,32 +290,7 @@ fn is_experimental_only(zones: &HashSet<String>) -> bool {
     zones.len() == 1 && zones.contains("experimental")
 }
 
-/// 解析 pipeline `action`：`slot.<registry_key>.<method>`。
-///
-/// # Errors
-///
-/// `action` 不符合 `slot.<key>.<method>` 时返回 `Err` 说明字符串。
-pub fn parse_pipeline_action(action: &str) -> Result<(String, String), String> {
-    parse_action(action)
-}
-
-fn parse_action(action: &str) -> Result<(String, String), String> {
-    let parts: Vec<&str> = action.split('.').collect();
-    if parts.len() < 3 || parts[0] != "slot" {
-        return Err(format!(
-            "action「{action}」须为 slot.<registry_key>.<method> 格式"
-        ));
-    }
-    let key = parts[1].trim();
-    if key.is_empty() {
-        return Err(format!("action「{action}」缺少 registry_key"));
-    }
-    let method = parts[2..].join(".");
-    if method.is_empty() {
-        return Err(format!("action「{action}」缺少 method"));
-    }
-    Ok((key.to_string(), method))
-}
+pub use crate::pipeline_action::parse_pipeline_action;
 
 fn validate_pipeline_steps(
     label: &str,
@@ -331,12 +313,18 @@ fn validate_pipeline_steps(
         if !actions.insert(step.action.clone()) {
             errs.push(format!("{label}：重复的 action「{}」", step.action));
         }
-        let (key, _method) = match parse_action(&step.action) {
+        let kind = match parse_pipeline_action_kind(&step.action) {
             Ok(k) => k,
             Err(e) => {
                 errs.push(format!("{label}：{e}"));
                 continue;
             }
+        };
+        if matches!(kind, PipelineActionKind::ExpertInvoke) {
+            continue;
+        }
+        let PipelineActionKind::Slot { registry_key: key, method: _ } = kind else {
+            continue;
         };
         let Some(entry) = registry.get(&key) else {
             errs.push(format!(
@@ -543,6 +531,11 @@ pub fn validate_role_pack_blueprint_v3_directory(
     let raw = fs::read_to_string(&blueprint_path)
         .map_err(|e| vec![format!("读取 {} 失败: {}", blueprint_path.display(), e)])?;
     let folder_name = role_dir.file_name().and_then(|s| s.to_str());
+    if let Ok(bp) = serde_json::from_str::<BlueprintV3File>(&raw) {
+        if !bp.includes.is_empty() {
+            validate_includes(role_dir, &bp.includes)?;
+        }
+    }
     validate_blueprint_v3_json(&raw, folder_name)?;
 
     let bp: BlueprintV3File = serde_json::from_str(&raw)
@@ -571,7 +564,11 @@ pub fn load_blueprint_v3_for_role_dir(
     validate_role_pack_blueprint_v3_directory(role_dir, host_version)?;
     let raw = fs::read_to_string(role_dir.join(PIPELINE_BLUEPRINT_FILENAME))
         .map_err(|e| vec![format!("读取 {} 失败: {}", PIPELINE_BLUEPRINT_FILENAME, e)])?;
-    let bp: BlueprintV3File = serde_json::from_str(&raw)
+    let resolved =
+        crate::blueprint_includes::resolve_blueprint_includes_lenient(role_dir, &raw);
+    let folder_name = role_dir.file_name().and_then(|s| s.to_str()).unwrap_or("");
+    validate_blueprint_v3_json(&resolved, Some(folder_name))?;
+    let bp: BlueprintV3File = serde_json::from_str(&resolved)
         .map_err(|e| vec![format!("pipeline.ocblueprint v3 结构不符合契约: {}", e)])?;
     Ok(blueprint_v3_file_to_load_result(&bp))
 }

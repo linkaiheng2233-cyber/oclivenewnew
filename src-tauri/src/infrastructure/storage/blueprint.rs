@@ -1,8 +1,19 @@
 use super::RoleStorage;
 use crate::error::{AppError, Result};
-use oclive_validation::{write_role_pack_blueprint_slot_registry, SlotRegistryEntry, PIPELINE_BLUEPRINT_FILENAME};
+use oclive_validation::{
+    resolve_blueprint_includes_lenient, write_role_pack_blueprint_slot_registry, SlotRegistryEntry,
+    PIPELINE_BLUEPRINT_FILENAME,
+};
 use std::collections::BTreeMap;
 use std::fs;
+use std::path::Path;
+
+/// 加载角色包时合并 `pipeline.ocblueprint` 的 `includes[]`（缺失卫星文件不阻塞）。
+#[must_use]
+#[allow(dead_code)] // 供 RoleStorage / 工具链显式调用；宿主默认经 oclive_validation load_* 路径
+pub fn resolve_blueprint_includes_for_role_dir(role_dir: &Path, raw: &str) -> String {
+    resolve_blueprint_includes_lenient(role_dir, raw)
+}
 
 impl RoleStorage {
     /// # Errors
