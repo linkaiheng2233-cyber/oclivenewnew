@@ -46,6 +46,8 @@ pub mod dual_pipeline;
 pub mod dual_pipeline_registry;
 #[cfg(feature = "dual_core")]
 pub mod dual_pipeline_steps;
+#[cfg(feature = "dual_core")]
+pub mod expert_routing;
 pub mod debug_trace;
 pub mod event_estimator;
 pub mod event_impact_ai;

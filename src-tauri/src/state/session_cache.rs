@@ -20,6 +20,12 @@ pub struct SessionCache {
     plugin_overrides: RwLock<HashMap<String, PluginBackendsOverride>>,
     slot_overrides: RwLock<HashMap<String, BTreeMap<String, SlotOverridePatch>>>,
     complex_emotion_narrative_hint: DashMap<String, String>,
+    /// 专家 `slot.prompt_enhance.apply` 注入的 Prompt 片段（本回合 assemble 时追加）。
+    expert_prompt_enhance: DashMap<String, String>,
+    /// 专家 `slot.memory.inject` 写入的临时记忆 id（失败回滚时删除）。
+    expert_injected_memory_ids: DashMap<String, Vec<String>>,
+    /// 专家 `slot.lora.apply` 已应用的 directory 插件 id（失败时清除会话标记）。
+    expert_lora_plugin_id: DashMap<String, String>,
     personality_snapshots: Cache<PersonalityVector>,
 }
 
@@ -46,6 +52,9 @@ impl SessionCache {
             plugin_overrides: RwLock::new(HashMap::new()),
             slot_overrides: RwLock::new(HashMap::new()),
             complex_emotion_narrative_hint: DashMap::new(),
+            expert_prompt_enhance: DashMap::new(),
+            expert_injected_memory_ids: DashMap::new(),
+            expert_lora_plugin_id: DashMap::new(),
             personality_snapshots: Cache::with_capacity(PERSONALITY_CACHE_CAPACITY),
         }
     }
@@ -85,6 +94,59 @@ impl SessionCache {
 
     pub fn personality_cache(&self) -> &Cache<PersonalityVector> {
         &self.personality_snapshots
+    }
+
+    pub fn expert_prompt_enhance(&self, srid: &str) -> String {
+        self.expert_prompt_enhance
+            .get(srid)
+            .map(|v| v.clone())
+            .unwrap_or_default()
+    }
+
+    pub fn set_expert_prompt_enhance(&self, srid: &str, fragment: String) {
+        if fragment.trim().is_empty() {
+            self.expert_prompt_enhance.remove(srid);
+        } else {
+            self.expert_prompt_enhance
+                .insert(srid.to_string(), fragment);
+        }
+    }
+
+    pub fn push_expert_injected_memory(&self, srid: &str, memory_id: String) {
+        self.expert_injected_memory_ids
+            .entry(srid.to_string())
+            .or_default()
+            .push(memory_id);
+    }
+
+    pub fn expert_injected_memory_ids(&self, srid: &str) -> Vec<String> {
+        self.expert_injected_memory_ids
+            .get(srid)
+            .map(|v| v.clone())
+            .unwrap_or_default()
+    }
+
+    pub fn clear_expert_injected_memories(&self, srid: &str) {
+        self.expert_injected_memory_ids.remove(srid);
+    }
+
+    pub fn set_expert_lora_plugin(&self, srid: &str, plugin_id: Option<String>) {
+        match plugin_id {
+            None => {
+                self.expert_lora_plugin_id.remove(srid);
+            }
+            Some(id) if id.trim().is_empty() => {
+                self.expert_lora_plugin_id.remove(srid);
+            }
+            Some(id) => {
+                self.expert_lora_plugin_id
+                    .insert(srid.to_string(), id.trim().to_string());
+            }
+        }
+    }
+
+    pub fn expert_lora_plugin_id(&self, srid: &str) -> Option<String> {
+        self.expert_lora_plugin_id.get(srid).map(|v| v.clone())
     }
 }
 
