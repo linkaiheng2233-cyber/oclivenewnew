@@ -6,6 +6,7 @@
 #![cfg_attr(test, allow(clippy::unwrap_used, clippy::expect_used))]
 
 pub mod blueprint_includes;
+pub mod expert_actions;
 pub mod expert_routing;
 pub mod pipeline_action;
 pub mod blueprint_migrate;
@@ -31,9 +32,16 @@ pub use blueprint_includes::{
     resolve_blueprint_includes_lenient, resolve_blueprint_includes_strict, validate_includes,
     BlueprintIncludeEntry,
 };
+pub use expert_actions::{
+    parse_expert_step_action, validate_expert_step_action, ExpertStepActionKind,
+    EXPERT_ACTION_EXPERT_FALLBACK, EXPERT_ACTION_LORA_APPLY, EXPERT_ACTION_MEMORY_INJECT,
+    EXPERT_ACTION_PERSONALITY_ADJUST, EXPERT_ACTION_PROMPT_ENHANCE,
+};
 pub use expert_routing::{
-    load_expert_routing_from_role_dir, match_expert_route, ExpertFallback, ExpertRoute,
-    ExpertRouteStep, ExpertRoutingDoc, ExpertTrigger, DEFAULT_EXPERT_ROUTING_PATH,
+    load_expert_routing_from_role_dir, match_expert_route, select_expert_route,
+    trigger_matches, validate_expert_routing_doc, ExpertFallback, ExpertMatchContext,
+    ExpertRoute, ExpertRouteStep, ExpertRoutingDoc, ExpertTrigger, MessageLengthRange,
+    TimeOfDayWindow, TriggerCondition, DEFAULT_EXPERT_ROUTING_PATH,
 };
 pub use pipeline_action::{
     parse_pipeline_action, parse_pipeline_action_kind, PipelineActionKind,
