@@ -15,5 +15,8 @@
         "decay_halflife_days": 30.0,
         "estrangement_threshold": 0.3,
         "interaction_recovery": 0.12
+    },
+    "evolution": {
+        "personality_evolution_interval_hours": 6
     }
 }
