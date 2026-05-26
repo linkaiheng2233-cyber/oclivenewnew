@@ -155,6 +155,16 @@ function onResetOverride() {
           {{ v }}
         </option>
       </select>
+      <button
+        v-if="data?.showExpertGear"
+        type="button"
+        class="agn-expert-gear nodrag nopan"
+        :title="t('expertConfig.nodeConfig.configure')"
+        :aria-label="t('expertConfig.nodeConfig.configure')"
+        @click.stop="actions?.onExpertConfigure(slotKey, String(data?.slotType ?? 'llm'))"
+      >
+        ⚙
+      </button>
       <div class="agn-actions nodrag nopan">
         <button
           v-if="data?.primaryPlugin"
@@ -191,6 +201,35 @@ function onResetOverride() {
   padding: 0 0 4px;
   min-height: 100%;
   box-sizing: border-box;
+}
+.agn-module {
+  position: relative;
+}
+.agn-expert-gear {
+  position: absolute;
+  right: 6px;
+  bottom: 6px;
+  z-index: 2;
+  width: 26px;
+  height: 26px;
+  padding: 0;
+  border: none;
+  border-radius: 6px;
+  font-size: 14px;
+  line-height: 1;
+  cursor: pointer;
+  opacity: 0;
+  background: rgba(232, 163, 23, 0.92);
+  color: #1a1a1a;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.25);
+  transition: opacity 0.15s ease;
+}
+.agn-module:hover .agn-expert-gear,
+.agn--expert .agn-expert-gear {
+  opacity: 1;
+}
+.agn-expert-gear:hover {
+  filter: brightness(1.08);
 }
 .agn-module-id {
   font-size: 12px;

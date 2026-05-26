@@ -16,6 +16,7 @@ export interface ArchGraphActions {
   onToggleGroupCollapse: (groupId: string) => void
   onTogglePluginDisabled: (id: string) => void
   onUninstallPlugin: (id: string) => void
+  onExpertConfigure: (slotKey: string, slotType: string) => void
 }
 
 export const archGraphActionsKey: InjectionKey<ArchGraphActions> = Symbol('archGraphActions')

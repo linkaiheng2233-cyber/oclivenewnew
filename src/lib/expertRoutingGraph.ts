@@ -1,4 +1,7 @@
 import type { ExpertRoutingDoc, ExpertRoute, ExpertTrigger } from '../api/role/expert'
+import { expertReferencedSlotKeys } from './expertNodeRouting'
+
+export { expertReferencedSlotKeys }
 
 export function formatTriggerSummary(trigger: ExpertTrigger): string {
   const parts: string[] = []
