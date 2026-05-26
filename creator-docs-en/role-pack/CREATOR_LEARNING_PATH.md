@@ -50,6 +50,36 @@ Edit only **role-pack** fields; do not touch **`slot_registry`** or **`dual_core
 
 **Done when:** `pack validate` is clean and you know which keys are host-validated vs author-only.
 
+### Memory & relation evolution (`config.json`)
+
+In **immersive mode**, optional **`roles/{id}/config.json`** (not the blueprint) drives human-like forgetting and estrangement. Full field list: **[ROLE_PACK_SPEC §9](ROLE_PACK_SPEC.md#9-configuration-file-configjson)** (Chinese spec is authoritative; English summary in [creator-docs-en/ROLE_PACK_SPEC.md](../creator-docs-en/role-pack/ROLE_PACK_SPEC.md)).
+
+| Mechanism | Idea | Main keys |
+|-----------|------|-----------|
+| **Memory decay** | Long-term memory weight decays exponentially with virtual age (Ebbinghaus); weak memories drop out of the prompt | `memory.decay_halflife_days`, `memory.min_strength_for_prompt` |
+| **Reinforcement** | Similar topics bump `mention_count` and **extend** effective half-life | `memory.reinforcement_factor`, `memory.similarity_threshold` |
+| **Estrangement** | Favorability decays with virtual days since last chat; may demote relation stage | `relation.decay_halflife_days`, `relation.estrangement_threshold` |
+| **Virtual time** | `speed` real:virtual minutes; optional decay on manual time jumps | `time.speed`, `time.decay_on_jump` |
+
+Starter snippet:
+
+```json
+{
+  "time": { "speed": 5.0, "decay_on_jump": true },
+  "memory": {
+    "decay_halflife_days": 7.0,
+    "reinforcement_factor": 0.3,
+    "min_strength_for_prompt": 0.1
+  },
+  "relation": {
+    "decay_halflife_days": 30.0,
+    "estrangement_threshold": 0.3
+  }
+}
+```
+
+With `life_schedule` in `meta`, first immersive entry aligns virtual time to the **first schedule slot** start. Smoke-test: repeat the same topic (mention_count rises); leave the role idle (favor / stage may drop).
+
 ---
 
 ## Publish

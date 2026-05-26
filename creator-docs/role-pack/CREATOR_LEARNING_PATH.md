@@ -74,6 +74,42 @@
 
 参考：[OCLIVE_ARCHITECTURE_OVERVIEW.md](../getting-started/OCLIVE_ARCHITECTURE_OVERVIEW.md) · [BLUEPRINT_FOLDER_LAYOUT.md](../../handoff/BLUEPRINT_FOLDER_LAYOUT.md) · [ROLE_PACK_SPEC.md](ROLE_PACK_SPEC.md) §2.6 · 编写器 [ROLE_PACK_EDITOR.md](https://github.com/oclive-app/oclive-pack-editor/blob/main/creator-docs/ROLE_PACK_EDITOR.md)。
 
+### 配置记忆与关系演化
+
+沉浸模式下，宿主用 **`config.json`**（非蓝图）驱动「像人一样会忘、久不联系会疏远」的行为。完整字段见 **[ROLE_PACK_SPEC.md §9](ROLE_PACK_SPEC.md#9-配置文件configjson)**。
+
+| 机制 | 原理（简述） | 主要配置 |
+|------|--------------|----------|
+| **记忆衰减** | 长期记忆权重按虚拟日龄 **指数衰减**（艾宾浩斯）；太弱的记忆不进 Prompt | `memory.decay_halflife_days`、`memory.min_strength_for_prompt` |
+| **记忆强化** | 用户反复提同一话题时，相似记忆 `mention_count` 增加，**有效半衰期变长** | `memory.reinforcement_factor`、`memory.similarity_threshold` |
+| **亲密值疏远** | 距上次互动越久，好感按虚拟日衰减；过低则关系阶段降一级 | `relation.decay_halflife_days`、`relation.estrangement_threshold` |
+| **虚拟时间** | 现实 1 分钟 = 虚拟 `speed` 分钟；可选跳转后叠加遗忘 | `time.speed`、`time.decay_on_jump` |
+
+**推荐起步配置**（复制到 `roles/{id}/config.json` 后按需微调）：
+
+```json
+{
+  "time": { "speed": 5.0, "decay_on_jump": true },
+  "memory": {
+    "decay_halflife_days": 7.0,
+    "reinforcement_factor": 0.3,
+    "min_strength_for_prompt": 0.1
+  },
+  "relation": {
+    "decay_halflife_days": 30.0,
+    "estrangement_threshold": 0.3
+  }
+}
+```
+
+**调参提示**：
+
+- 想让角色「忘得慢、记得牢」→ 增大 `memory.decay_halflife_days` 或 `reinforcement_factor`。
+- 想让久不聊天明显变冷淡 → 减小 `relation.decay_halflife_days` 或提高 `estrangement_threshold`（更早触发降级）。
+- 日程驱动的角色：在 `meta.life_schedule` 配好片段后，首次沉浸时虚拟时间会从 **日程第一条** 的起点开始（无需手填时间戳）。
+
+**验收**：改完 `config.json` 后主应用沉浸模式多轮对话；重复同一话题后 DB `long_term_memory.mention_count` 上升；长时间不互动后好感与关系阶段可见下降。
+
 ---
 
 ## 发布
