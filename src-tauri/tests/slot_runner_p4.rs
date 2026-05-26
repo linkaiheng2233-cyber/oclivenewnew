@@ -94,6 +94,7 @@ fn dual_memory_slots_merge_without_panic() {
         weight: 1.0,
         created_at: chrono::Utc::now(),
         scene_id: None,
+        mention_count: 1,
     }];
     let ranked = SlotRunner::rank_memories(
         &pl,

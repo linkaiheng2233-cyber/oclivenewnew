@@ -59,7 +59,7 @@ mod tests {
 
     #[test]
     fn ratio_five_advances_virtual_five_times_faster() {
-        let anchor_real = 1_700_000_000_000_i64;
+        let anchor_real = round_to_minute_ms(1_700_000_000_000);
         let anchor_virtual = anchor_real;
         let real_after_12min = anchor_real + 12 * 60_000;
         let v = compute_virtual_now_ms(anchor_real, anchor_virtual, real_after_12min, 5.0);

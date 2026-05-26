@@ -164,7 +164,7 @@ impl DualPipelineRunner {
                         session_ns = %srid,
                         "实验核执行成功"
                     );
-                    return Ok(resp);
+                    return Ok(*resp);
                 }
                 Ok(StepOutcome::Failed(msg)) => {
                     tracing::warn!(

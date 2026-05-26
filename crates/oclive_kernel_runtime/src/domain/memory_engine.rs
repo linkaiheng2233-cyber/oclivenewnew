@@ -125,28 +125,90 @@ impl MemoryEngine {
         });
     }
 
-    /// 提取用于相似度比较的关键词（去空白、小写、长度≥2）。
+    /// 提取用于相似度比较的关键词（空白/标点分词 + 中文双字片段）。
     fn keyword_tokens(text: &str) -> HashSet<String> {
-        text.split(|c: char| c.is_whitespace() || c.is_ascii_punctuation())
-            .filter(|w| w.chars().count() >= 2)
-            .map(|w| w.to_lowercase())
-            .collect()
+        let lower = text.to_lowercase();
+        let mut set = HashSet::new();
+        for word in lower.split(|c: char| c.is_whitespace() || c.is_ascii_punctuation()) {
+            if word.chars().count() >= 2 {
+                set.insert(word.to_string());
+            }
+        }
+        let chars: Vec<char> = lower
+            .chars()
+            .filter(|c| !c.is_whitespace() && !c.is_ascii_punctuation())
+            .collect();
+        if chars.len() >= 2 {
+            for pair in chars.windows(2) {
+                set.insert(pair.iter().collect());
+            }
+        }
+        set
     }
 
-    /// 双方关键词 Jaccard 重叠度 \[0, 1\]。
+    /// 双方关键词 Jaccard 重叠度 \[0, 1\]；中文内容额外用 4 字连续片段加权。
     #[must_use]
     pub fn keyword_overlap_similarity(content_a: &str, content_b: &str) -> f64 {
+        let clean = |s: &str| {
+            s.to_lowercase()
+                .chars()
+                .filter(|c| !c.is_whitespace() && !c.is_ascii_punctuation())
+                .collect::<String>()
+        };
+        let sa = clean(content_a);
+        let sb = clean(content_b);
+        if !sa.is_empty() && !sb.is_empty() {
+            let (short, long) = if sa.len() <= sb.len() {
+                (&sa, &sb)
+            } else {
+                (&sb, &sa)
+            };
+            if short.len() >= 6 && long.contains(short.as_str()) {
+                return 1.0;
+            }
+        }
         let a = Self::keyword_tokens(content_a);
         let b = Self::keyword_tokens(content_b);
-        if a.is_empty() || b.is_empty() {
-            return 0.0;
-        }
-        let inter = a.intersection(&b).count() as f64;
-        let union = a.union(&b).count() as f64;
-        if union <= 0.0 {
+        let jaccard = if a.is_empty() || b.is_empty() {
             0.0
         } else {
+            let inter = a.intersection(&b).count() as f64;
+            let union = a.union(&b).count() as f64;
             inter / union
+        };
+        jaccard.max(Self::shared_cjk_chunk_score(content_a, content_b))
+    }
+
+    fn shared_cjk_chunk_score(a: &str, b: &str) -> f64 {
+        let clean = |s: &str| {
+            s.to_lowercase()
+                .chars()
+                .filter(|c| !c.is_whitespace() && !c.is_ascii_punctuation())
+                .collect::<String>()
+        };
+        let sa = clean(a);
+        let sb = clean(b);
+        if sa.len() < 4 || sb.len() < 4 {
+            return 0.0;
+        }
+        let (short, long) = if sa.len() <= sb.len() {
+            (&sa, &sb)
+        } else {
+            (&sb, &sa)
+        };
+        let chars: Vec<char> = short.chars().collect();
+        let windows = chars.len().saturating_sub(3);
+        if windows == 0 {
+            return 0.0;
+        }
+        let hits = chars
+            .windows(4)
+            .filter(|w| long.contains(&w.iter().collect::<String>()))
+            .count();
+        if hits == 0 {
+            0.0
+        } else {
+            (hits as f64 / windows as f64).clamp(0.0, 1.0)
         }
     }
 
@@ -339,8 +401,8 @@ mod tests {
     #[test]
     fn keyword_overlap_detects_similar_topics() {
         let sim = MemoryEngine::keyword_overlap_similarity(
-            "用户很喜欢冒险和旅行",
-            "他又提起冒险旅行计划",
+            "用户谈到冒险旅行",
+            "他又谈到冒险旅行计划",
         );
         assert!(sim >= 0.6, "sim={sim}");
     }

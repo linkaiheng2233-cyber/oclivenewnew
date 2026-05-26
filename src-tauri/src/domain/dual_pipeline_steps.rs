@@ -481,7 +481,7 @@ impl<'a> ExperimentalStepCtx<'a> {
             .map_err(map_db_err)?
             .unwrap_or_else(|| "neutral".to_string());
         let scene_id = self.scene_id.clone();
-        Ok(StepOutcome::AgentComplete(SendMessageResponse {
+        Ok(StepOutcome::AgentComplete(Box::new(SendMessageResponse {
             api_version: API_VERSION,
             schema: SCHEMA_VERSION,
             presence_mode: PresenceMode::CoPresent,
@@ -500,7 +500,7 @@ impl<'a> ExperimentalStepCtx<'a> {
             llm_fallback_reason: None,
             knowledge_chunks_in_prompt: 0,
             timestamp: chrono::Utc::now().timestamp_millis(),
-        }))
+        })))
     }
 
     /// 执行专家路由子流程（`slot.expert.invoke`）；无匹配路由时跳过。
@@ -523,7 +523,7 @@ impl<'a> ExperimentalStepCtx<'a> {
 pub enum StepOutcome {
     Continue,
     NeedsStableCompletion,
-    AgentComplete(SendMessageResponse),
+    AgentComplete(Box<SendMessageResponse>),
     Failed(String),
 }
 
