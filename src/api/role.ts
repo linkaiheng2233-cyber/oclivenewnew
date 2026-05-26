@@ -1,3 +1,4 @@
+export * from './role/expert'
 import { invoke } from '@tauri-apps/api/tauri'
 import { invokeWithFriendlyError } from './helpers'
 import type {

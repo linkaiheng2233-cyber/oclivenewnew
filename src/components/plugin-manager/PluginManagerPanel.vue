@@ -15,6 +15,9 @@ import { applyAuthorSuggestedPluginBackends } from '../../api'
 const ArchitectureGraph = defineAsyncComponent(
   () => import('../ArchitectureGraphFlow.vue'),
 )
+const ExpertConfigPanel = defineAsyncComponent(
+  () => import('../expert/ExpertConfigPanel.vue'),
+)
 
 const pluginStore = usePluginStore()
 const traceStore = usePluginTraceStore()
@@ -193,6 +196,7 @@ function onFocusPluginFromGraph(id: string) {
             <PluginManagerCatalogSection />
 
             <div v-show="traceStore.panelMainTab === 'graph'" class="pm-tab-panel" role="tabpanel">
+              <ExpertConfigPanel />
               <ArchitectureGraph @focus-plugin="onFocusPluginFromGraph" />
             </div>
             <div v-show="traceStore.panelMainTab === 'layout'" class="pm-tab-panel" role="tabpanel">

@@ -1,0 +1,30 @@
+export const expertConfigEn = {
+  expertConfig: {
+    title: 'Expert model facility',
+    hint: 'Saved to blueprint/includes/expert_routing.json; experimental pipeline may use slot.expert.invoke.',
+    noIncludes: 'No files under blueprint/includes yet.',
+    newWizard: 'New expert config',
+    wizardAria: 'Expert configuration wizard',
+    step: 'Step {n} / 4',
+    trigger: {
+      scenes: 'Scene IDs (comma-separated, optional)',
+      scenesPh: 'e.g. cafe, park',
+      keywords: 'Trigger keywords',
+      keywordsPh: 'e.g. expert, deep',
+      minLen: 'Min message length',
+      maxLen: 'Max message length',
+    },
+    modelPick: 'LLM instance for expert flow',
+    noLlm: 'No llm entry in slot_registry.',
+    extraAnalyze: 'Run emotion analyze before generate (if emotion slot exists)',
+    preview: 'Preview JSON',
+    confirmSave: 'Save to role pack',
+    next: 'Next',
+    cancel: 'Cancel',
+    loading: 'Loading…',
+    toast: {
+      saved: 'Expert routing saved',
+    },
+    graphExpertBadge: 'Expert',
+  },
+}

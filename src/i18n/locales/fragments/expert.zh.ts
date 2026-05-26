@@ -1,0 +1,30 @@
+export const expertConfigZh = {
+  expertConfig: {
+    title: '专家模型设施',
+    hint: '配置保存在 blueprint/includes/expert_routing.json；实验核 pipeline 可使用 slot.expert.invoke。',
+    noIncludes: '暂无 blueprint/includes 卫星文件。',
+    newWizard: '新建专家配置',
+    wizardAria: '专家配置向导',
+    step: '步骤 {n} / 4',
+    trigger: {
+      scenes: '触发场景 ID（逗号分隔，可留空）',
+      scenesPh: '例如 cafe, park',
+      keywords: '触发关键词',
+      keywordsPh: '例如 专家, 深入',
+      minLen: '最短消息长度',
+      maxLen: '最长消息长度',
+    },
+    modelPick: '专家流程使用的 LLM 实例',
+    noLlm: '当前角色包 slot_registry 中无 llm 实例。',
+    extraAnalyze: '生成前先执行情绪分析（若存在 emotion 槽）',
+    preview: '预览 JSON',
+    confirmSave: '保存到角色包',
+    next: '下一步',
+    cancel: '取消',
+    loading: '加载中…',
+    toast: {
+      saved: '专家路由已保存',
+    },
+    graphExpertBadge: '专家',
+  },
+}
