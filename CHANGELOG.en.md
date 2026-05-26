@@ -4,7 +4,9 @@
 
 ## [Unreleased]
 
-(Next release entries go here.)
+### Added
+
+- **Forgetting curve & relation evolution (`config.json`)**: Ebbinghaus long-term memory decay; mention reinforcement (`mention_count` + `reinforcement_factor`); immersive-mode favorability estrangement and relation-stage downgrade; virtual time ratio (`time.speed`) and first-immersion anchor aligned to `life_schedule`; reinforced memories nudge personality / mutable profile “memory shaping”. See [ROLE_PACK_SPEC §9](creator-docs/role-pack/ROLE_PACK_SPEC.md).
 
 ---
 
