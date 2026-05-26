@@ -27,6 +27,47 @@ impl PersonalityEngine {
         personality
     }
 
+    /// 被反复提及（`mention_count` 达阈值）的记忆：按情感与话题关键词微调七维，幅度约为事件驱动的 10–20%。
+    #[must_use]
+    pub fn evolve_by_reinforced_memory(
+        mut personality: PersonalityVector,
+        memory_content: &str,
+        user_emotion_str: &str,
+        event_impact_scale: f64,
+        bounds: &EvolutionBounds,
+    ) -> PersonalityVector {
+        let scale = (event_impact_scale.abs() * 0.15).clamp(0.01, 0.2);
+        match user_emotion_str {
+            "happy" | "excited" => {
+                personality.warmth += scale * 0.06;
+                personality.talkativeness += scale * 0.05;
+            }
+            "sad" => {
+                personality.sensitivity += scale * 0.07;
+                personality.warmth += scale * 0.04;
+            }
+            "angry" => {
+                personality.assertiveness += scale * 0.05;
+            }
+            "confused" | "shy" => {
+                personality.sensitivity += scale * 0.04;
+            }
+            _ => {}
+        }
+        let lower = memory_content.to_lowercase();
+        if lower.contains("冒险") || lower.contains("旅行") || lower.contains("探索") {
+            personality.talkativeness += scale * 0.05;
+            personality.assertiveness += scale * 0.04;
+            personality.stubbornness = (personality.stubbornness - scale * 0.02).max(0.0);
+        }
+        if lower.contains("安静") || lower.contains("独处") {
+            personality.talkativeness = (personality.talkativeness - scale * 0.04).max(0.0);
+            personality.clinginess = (personality.clinginess - scale * 0.03).max(0.0);
+        }
+        personality.clamp(bounds);
+        personality
+    }
+
     #[must_use]
     pub fn adjust_by_user_emotion(
         mut personality: PersonalityVector,
@@ -172,6 +213,21 @@ mod tests {
 
     fn create_test_bounds() -> EvolutionBounds {
         EvolutionBounds::full_01()
+    }
+
+    #[test]
+    fn reinforced_memory_nudges_traits() {
+        let personality = create_test_personality();
+        let bounds = create_test_bounds();
+        let evolved = PersonalityEngine::evolve_by_reinforced_memory(
+            personality,
+            "用户反复提起冒险和旅行",
+            "happy",
+            0.8,
+            &bounds,
+        );
+        assert!(evolved.warmth > 0.5);
+        assert!(evolved.talkativeness > 0.5);
     }
 
     #[test]
