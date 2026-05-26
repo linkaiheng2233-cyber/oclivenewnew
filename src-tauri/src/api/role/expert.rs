@@ -3,7 +3,9 @@
 use crate::api::error::CommandError;
 use crate::error::AppError;
 use crate::state::AppState;
-use oclive_validation::{ExpertRoutingDoc, DEFAULT_EXPERT_ROUTING_PATH};
+use oclive_validation::{
+    validate_expert_routing_doc, ExpertRoutingDoc, DEFAULT_EXPERT_ROUTING_PATH,
+};
 use std::fs;
 use std::path::PathBuf;
 use tauri::State;
@@ -68,6 +70,12 @@ pub fn save_expert_routing(
     doc: ExpertRoutingDoc,
 ) -> Result<(), CommandError> {
     let path = expert_routing_path(&state, &role_id)?;
+    validate_expert_routing_doc(&doc).map_err(|errs| {
+        AppError::InvalidParameter(format!(
+            "expert_routing.json 校验失败:\n{}",
+            errs.join("\n")
+        ))
+    })?;
     if let Some(parent) = path.parent() {
         fs::create_dir_all(parent)?;
     }
