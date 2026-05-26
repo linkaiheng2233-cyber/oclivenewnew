@@ -36,7 +36,7 @@ function stepLabel(action: string): string {
 </script>
 
 <template>
-  <div v-if="activeRoute" class="efp" :class="{ 'efp--open': expanded }">
+  <div class="efp" :class="{ 'efp--open': expanded, 'efp--empty': !activeRoute }">
     <button
       type="button"
       class="efp-toggle"
@@ -44,9 +44,13 @@ function stepLabel(action: string): string {
       @click="expanded = !expanded"
     >
       {{ t('expertConfig.flowPanel.title') }}
-      <span class="efp-badge">{{ activeRoute?.id ?? 'route' }}</span>
+      <span v-if="activeRoute" class="efp-badge">{{ activeRoute.id ?? 'route' }}</span>
+      <span v-else class="efp-badge efp-badge--muted">{{ t('expertConfig.flowPanel.inactive') }}</span>
     </button>
-    <ol v-show="expanded" class="efp-steps">
+    <p v-show="expanded && !activeRoute" class="efp-empty">
+      {{ t('expertConfig.flowPanel.noActive') }}
+    </p>
+    <ol v-show="expanded && activeRoute" class="efp-steps">
       <li
         v-for="(step, idx) in steps"
         :key="`${step.action}-${idx}`"
@@ -98,6 +102,20 @@ function stepLabel(action: string): string {
   border-radius: 4px;
   background: rgba(232, 163, 23, 0.2);
   color: #e8a317;
+}
+.efp-badge--muted {
+  background: rgba(128, 128, 128, 0.2);
+  color: var(--text-secondary);
+}
+.efp-empty {
+  margin: 0;
+  padding: 0 10px 10px;
+  font-size: 11px;
+  color: var(--text-secondary);
+  line-height: 1.4;
+}
+.efp--empty .efp-toggle {
+  opacity: 0.92;
 }
 .efp-steps {
   margin: 0;

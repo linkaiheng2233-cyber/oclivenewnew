@@ -168,6 +168,7 @@ pub fn validate_expert_routing_doc(doc: &ExpertRoutingDoc) -> Result<(), Vec<Str
 }
 
 /// 从角色包目录读取专家路由（文件缺失返回 `None`）。
+#[must_use]
 pub fn load_expert_routing_from_role_dir(role_dir: &Path) -> Option<ExpertRoutingDoc> {
     let path = role_dir.join(DEFAULT_EXPERT_ROUTING_PATH);
     if !path.is_file() {

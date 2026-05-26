@@ -19,6 +19,10 @@ fn expert_routing_path(state: &AppState, role_id: &str) -> Result<PathBuf, Comma
 }
 
 /// 列出角色包 `blueprint/includes/` 下文件名（仅一层）。
+///
+/// # Errors
+///
+/// 目录读取失败时返回 `CommandError`。
 #[tauri::command]
 pub fn list_blueprint_includes(
     state: State<'_, AppState>,
@@ -46,6 +50,10 @@ pub fn list_blueprint_includes(
 }
 
 /// 读取专家路由 JSON。
+///
+/// # Errors
+///
+/// 角色不存在、文件不可读或 JSON 非法时返回 `CommandError`。
 #[tauri::command]
 pub fn get_expert_routing(
     state: State<'_, AppState>,
@@ -63,6 +71,10 @@ pub fn get_expert_routing(
 }
 
 /// 保存专家路由 JSON（自动创建 `blueprint/includes/`）。
+///
+/// # Errors
+///
+/// 校验失败、目录创建或写入失败时返回 `CommandError`。
 #[tauri::command]
 pub fn save_expert_routing(
     state: State<'_, AppState>,

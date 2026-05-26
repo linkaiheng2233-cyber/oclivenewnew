@@ -90,6 +90,7 @@ fn is_allowed_target(target: &str) -> bool {
 }
 
 /// 合并 includes 到蓝图 JSON 文本；缺失或非法条目仅 warn，不阻塞（供宿主加载）。
+#[must_use]
 pub fn resolve_blueprint_includes_lenient(role_dir: &Path, raw: &str) -> String {
     let mut root: Value = match serde_json::from_str(raw) {
         Ok(v) => v,

@@ -124,6 +124,10 @@ fn log_exec_fallback(route_id: &str, reason: &str, fallback: ExpertFallback) {
 }
 
 /// 执行专家子流程；无匹配路由返回 `TriggerMiss`。
+///
+/// # Errors
+///
+/// 匹配上下文构建失败或专家步骤执行返回 `ProcessMessageError` 时向上传播。
 pub async fn execute_expert_route(
     step_ctx: &mut ExperimentalStepCtx<'_>,
     doc: &ExpertRoutingDoc,
@@ -211,7 +215,7 @@ async fn run_expert_step(
     snap: &mut ExpertExecSnapshot,
 ) -> Result<StepOutcome, ProcessMessageError> {
     let kind = parse_expert_step_action(step.action.as_str())
-        .map_err(|e| ProcessMessageError::dual_core_invalid(e))?;
+        .map_err(ProcessMessageError::dual_core_invalid)?;
     match kind {
         ExpertStepActionKind::PersonalityAdjust => {
             run_personality_adjust(ctx, step, snap).await?;
