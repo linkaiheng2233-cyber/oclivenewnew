@@ -41,7 +41,7 @@ export function useDirectoryPluginSlotEmbed(options: {
 
   watch(
     () =>
-      [toValue(options.bootstrapEpoch), currentRoleId.value, bootstrapUiSlots.value] as const,
+      [toValue(options.bootstrapEpoch), currentRoleId?.value ?? '', bootstrapUiSlots.value] as const,
     () => {
       vueFallback.value = {}
       clearAllKeyedErrors()

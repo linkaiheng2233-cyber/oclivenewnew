@@ -14,9 +14,13 @@ void (async () => {
 
   const app = createApp(App)
   app.use(i18n)
+  app.config.errorHandler = (err, instance, info) => {
+    console.error('[oclive] Vue render error', err, info, instance)
+  }
 
   const tookShell = await shellPromise
   if (tookShell) {
+    console.info('[oclive] directory shell plugin active (main UI skipped). Set VITE_OCLIVE_DISABLE_DIRECTORY_SHELL=1 to force main app.')
     return
   }
 
@@ -25,8 +29,13 @@ void (async () => {
   app.use(pinia)
 
   const { useChatStore } = await import('./stores/chatStore')
-  await useChatStore().hydrateFromStorage()
-  useChatStore().migrateAllLegacyMessageBuckets()
+  try {
+    await useChatStore().hydrateFromStorage()
+    useChatStore().migrateAllLegacyMessageBuckets()
+  }
+  catch (e) {
+    console.error('[oclive] chat history hydrate failed; continuing without persisted messages', e)
+  }
 
   app.mount('#app')
 
