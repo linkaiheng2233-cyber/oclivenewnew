@@ -21,7 +21,7 @@ use crate::domain::chat_engine::turn_context::TurnContext;
 use crate::domain::dual_pipeline_steps::{ExperimentalStepCtx, StepOutcome};
 use crate::models::dto::SendMessageResponse;
 use crate::state::AppState;
-use oclive_validation::{parse_pipeline_action, PipelineStep};
+use oclive_validation::{parse_pipeline_action_kind, PipelineActionKind, PipelineStep};
 
 /// 实验核失败（触发静默降级）。
 #[derive(Debug, thiserror::Error)]
@@ -137,18 +137,25 @@ impl DualPipelineRunner {
 
         for (idx, step) in ordered.iter().enumerate() {
             let step_no = idx + 1;
-            let (registry_key, method) = parse_pipeline_action(step.action.as_str()).map_err(|e| {
-                tracing::warn!(
-                    target: "oclive_dual_core",
-                    session_ns = %srid,
-                    step = step_no,
-                    action = %step.action,
-                    error = %e,
-                    "实验核在第 {step_no} 步失败: {e}，正在降级到稳定核"
-                );
-                ProcessMessageError::dual_core_invalid(e)
-            })?;
-            match step_ctx.run_method(&registry_key, method.as_str()).await {
+            let outcome = match parse_pipeline_action_kind(step.action.as_str()) {
+                Ok(PipelineActionKind::ExpertInvoke) => step_ctx.run_expert_invoke().await,
+                Ok(PipelineActionKind::Slot {
+                    registry_key,
+                    method,
+                }) => step_ctx.run_method(&registry_key, method.as_str()).await,
+                Err(e) => {
+                    tracing::warn!(
+                        target: "oclive_dual_core",
+                        session_ns = %srid,
+                        step = step_no,
+                        action = %step.action,
+                        error = %e,
+                        "实验核在第 {step_no} 步失败: {e}，正在降级到稳定核"
+                    );
+                    return Err(ProcessMessageError::dual_core_invalid(e));
+                }
+            };
+            match outcome {
                 Ok(StepOutcome::Continue) => {}
                 Ok(StepOutcome::NeedsStableCompletion) => wants_stable_completion = true,
                 Ok(StepOutcome::AgentComplete(resp)) => {
@@ -227,6 +234,13 @@ impl DualPipelineRunner {
             }
         }
     }
+}
+
+/// 按 `depends_on` 拓扑排序；环或未知依赖返回错误（专家子流程复用）。
+pub(crate) fn topological_sort_pipeline_steps(
+    steps: &[PipelineStep],
+) -> Result<Vec<&PipelineStep>, String> {
+    topological_sort(steps).map_err(|e| e.0)
 }
 
 /// 按 `depends_on` 拓扑排序；环或未知依赖返回错误。

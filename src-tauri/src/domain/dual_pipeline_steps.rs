@@ -29,7 +29,12 @@ use crate::models::dto::{
 use crate::models::{EventType, KnowledgeIndex, PersonalityVector, Role};
 use crate::state::AppState;
 
+use crate::domain::dual_pipeline::topological_sort_pipeline_steps;
 use crate::domain::dual_pipeline_registry::required_slot_type_for_method;
+use oclive_validation::{
+    load_expert_routing_from_role_dir, match_expert_route, parse_pipeline_action_kind,
+    ExpertFallback, ExpertRouteStep, PipelineActionKind, PipelineStep,
+};
 
 pub struct ExperimentalStepCtx<'a> {
     pub state: &'a AppState,
@@ -491,6 +496,126 @@ impl<'a> ExperimentalStepCtx<'a> {
             knowledge_chunks_in_prompt: 0,
             timestamp: chrono::Utc::now().timestamp_millis(),
         }))
+    }
+
+    /// 执行专家路由子流程（`slot.expert.invoke`）；无匹配路由时跳过。
+    ///
+    /// # Errors
+    ///
+    /// 子步骤失败且 `fallback` 非 `skip` 时可能返回错误；`skip` 时记录 warn 并继续主 pipeline。
+    pub async fn run_expert_invoke(&mut self) -> Result<StepOutcome, ProcessMessageError> {
+        let role_dir = self.state.storage.roles_dir().join(self.role.id.as_str());
+        let Some(doc) = load_expert_routing_from_role_dir(&role_dir) else {
+            return Ok(StepOutcome::Continue);
+        };
+        let Some(route) = match_expert_route(&doc, self.scene_id.as_str(), self.user_message) else {
+            return Ok(StepOutcome::Continue);
+        };
+        if route.steps.is_empty() {
+            return Ok(StepOutcome::Continue);
+        }
+
+        let pipeline_steps: Vec<PipelineStep> = route
+            .steps
+            .iter()
+            .map(|s: &ExpertRouteStep| PipelineStep {
+                action: s.action.clone(),
+                depends_on: s.depends_on.clone(),
+            })
+            .collect();
+
+        let ordered = match topological_sort_pipeline_steps(&pipeline_steps) {
+            Ok(o) => o,
+            Err(e) => {
+                tracing::warn!(
+                    target: "oclive_expert",
+                    session_ns = %self.srid,
+                    error = %e,
+                    "专家路由 steps 拓扑排序失败，跳过专家流程"
+                );
+                return Ok(StepOutcome::Continue);
+            }
+        };
+
+        let fallback = doc.fallback_mode();
+        let mut wants_stable_completion = false;
+
+        for step in ordered {
+            let outcome = match parse_pipeline_action_kind(step.action.as_str()) {
+                Ok(PipelineActionKind::ExpertInvoke) => Ok(StepOutcome::Continue),
+                Ok(PipelineActionKind::Slot {
+                    registry_key,
+                    method,
+                }) => self.run_method(&registry_key, method.as_str()).await,
+                Err(e) => Ok(StepOutcome::Failed(e)),
+            };
+            match outcome {
+                Ok(StepOutcome::Continue) => {}
+                Ok(StepOutcome::NeedsStableCompletion) => wants_stable_completion = true,
+                Ok(StepOutcome::AgentComplete(resp)) => return Ok(StepOutcome::AgentComplete(resp)),
+                Ok(StepOutcome::Failed(msg)) => {
+                    tracing::warn!(
+                        target: "oclive_expert",
+                        session_ns = %self.srid,
+                        action = %step.action,
+                        error = %msg,
+                        "专家子步骤失败"
+                    );
+                    return Self::apply_expert_fallback(self, fallback, &msg).await;
+                }
+                Err(e) => {
+                    tracing::warn!(
+                        target: "oclive_expert",
+                        session_ns = %self.srid,
+                        action = %step.action,
+                        error = %e,
+                        "专家子步骤失败"
+                    );
+                    return Self::apply_expert_fallback(self, fallback, &e.to_string()).await;
+                }
+            }
+        }
+
+        if wants_stable_completion {
+            Ok(StepOutcome::NeedsStableCompletion)
+        } else {
+            Ok(StepOutcome::Continue)
+        }
+    }
+
+    async fn apply_expert_fallback(
+        ctx: &mut Self,
+        fallback: ExpertFallback,
+        reason: &str,
+    ) -> Result<StepOutcome, ProcessMessageError> {
+        match fallback {
+            ExpertFallback::Skip => Ok(StepOutcome::Continue),
+            ExpertFallback::RetryWithDefault => {
+                let key = ctx
+                    .role
+                    .slot_registry
+                    .as_ref()
+                    .and_then(|r| {
+                        r.iter()
+                            .find(|(_, e)| e.slot_type.trim() == "llm")
+                            .map(|(k, _)| k.clone())
+                    })
+                    .unwrap_or_else(|| "llm".into());
+                tracing::warn!(
+                    target: "oclive_expert",
+                    session_ns = %ctx.srid,
+                    llm_key = %key,
+                    reason = %reason,
+                    "专家流程降级：使用默认 LLM 重试 generate"
+                );
+                match ctx.run_method(key.as_str(), "generate").await? {
+                    StepOutcome::NeedsStableCompletion | StepOutcome::Continue => {
+                        Ok(StepOutcome::NeedsStableCompletion)
+                    }
+                    other => Ok(other),
+                }
+            }
+        }
     }
 }
 
