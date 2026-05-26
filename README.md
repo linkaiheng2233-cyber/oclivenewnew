@@ -104,20 +104,21 @@
 |------|------|
 | **运行时（本仓库）** | 玩家使用的桌面客户端 + 对话引擎 |
 | **角色包** | `roles/` 下每角色一目录；**唯一对接面**为磁盘上的包目录（或 zip 解压后同等结构） |
-| **角色包编写器** | **独立仓库**（例如与本仓库**同级**目录 `oclive-pack-editor`），只负责产出包，不引用本仓库源码；多根工作区可用根目录 `oclive-pack-editor.code-workspace` 同时打开两项目 |
-| **启动器** | **独立仓库** [oclive-launcher](https://github.com/linkaiheng2233-cyber/oclive-launcher)：统一配置编写器与运行时路径、为 A.I.Live 注入 **`OCLIVE_ROLES_DIR`**，并支持 **从 zip 安装角色包**（选择 `settings.json` 的 Ollama `model`、可选覆盖、**`ollama pull`**） |
+| **角色包编写器** | **独立仓库** [oclive-pack-editor](https://github.com/oclive-app/oclive-pack-editor)（与本仓库**同级**目录常见）：产出 v2 角色包；人设 / 六槽 / 知识 / 导出 |
+| **启动器（已退役）** | [oclive-launcher](https://github.com/oclive-app/oclive-launcher) 仅归档；新用户用 **编写器 + 本运行时**，无需第三应用 |
 | **扩展** | 见 [creator-docs/plugin-and-architecture/EXTENSION_POINTS.md](creator-docs/plugin-and-architecture/EXTENSION_POINTS.md)；HTTP 侧车见 [creator-docs/plugin-and-architecture/CREATOR_PLUGIN_ARCHITECTURE.md](creator-docs/plugin-and-architecture/CREATOR_PLUGIN_ARCHITECTURE.md)；**目录式插件**（整壳 / 嵌入插槽、manifest）见 [creator-docs/plugin-and-architecture/DIRECTORY_PLUGINS.md](creator-docs/plugin-and-architecture/DIRECTORY_PLUGINS.md) |
 
 **契约与版本（摘要）**：`manifest.min_runtime_version`、根对象顶层键白名单、`validate_disk_manifest` 等以 [PACK_VERSIONING.md](creator-docs/role-pack/PACK_VERSIONING.md) 与 `RoleStorage::load_role` 为准。编写器侧 **`HOST_RUNTIME_VERSION`**（`oclive-pack-editor`）应与 **`src-tauri/Cargo.toml` 的 `version`** 一致。
 
-## 新用户：从下载到第一次对话
+## 快速开始：编写器 + 运行时
 
-1. **安装依赖**：Node.js、Ollama（对话默认走本地模型）。详见 [creator-docs/getting-started/CREATOR_WORKFLOW.md](creator-docs/getting-started/CREATOR_WORKFLOW.md)。
-2. **三仓库**（可选）：[oclivenewnew](https://github.com/linkaiheng2233-cyber/oclivenewnew)（本仓库）、[oclive-pack-editor](https://github.com/linkaiheng2233-cyber/oclive-pack-editor)、[oclive-launcher](https://github.com/linkaiheng2233-cyber/oclive-launcher)。同级克隆最省事。
-3. **角色包目录**：将环境变量 **`OCLIVE_ROLES_DIR`** 指向 **roles 根**（其下为各 `角色id/`）。可用启动器 **一键填入** 本仓库内 `roles/`；或使用启动器 **「从 zip 安装角色包」** 解压编写器导出包并写入模型名；亦可手动把 zip 解压到该根下。
-4. **运行本应用**：`npm run tauri:dev` 启动桌面客户端；在应用内加载 `roles/` 下的角色并开始对话。
+1. **安装依赖**：Node.js、Ollama（本地对话默认路径）。详见 [CREATOR_WORKFLOW.md](creator-docs/getting-started/CREATOR_WORKFLOW.md)。
+2. **克隆两仓**（同级目录最省事）：**本仓库**（A.I.Live 运行时）与 **[oclive-pack-editor](https://github.com/oclive-app/oclive-pack-editor)**（角色包编写器）。
+3. **制作角色包**：在编写器中编辑并 **导出 zip / 写入文件夹**，或复制 `roles/mumu/` 等示例；使 **`roles/{角色id}/pipeline.ocblueprint`** 位于 **roles 根**（本项目内 `roles/`，或设置 **`OCLIVE_ROLES_DIR`**）。
+4. **运行本应用**：`npm run tauri:dev`（或 Release 安装包）；加载角色并开始对话。
+5. **（可选）高级能力**：在本应用 **插件与后端管理 → 架构图** 配置 **专家路由**（`expert_routing.json`）、`groups` 等；之后在编写器保存人设时，编写器会保留这些蓝图扩展字段。
 
-详细步骤与「编写器 → 磁盘 → 运行时」数据流见 **启动器 README** 与 [CREATOR_WORKFLOW.md](creator-docs/getting-started/CREATOR_WORKFLOW.md)。
+旧版 **oclive-launcher** 已退役，见 [oclive-launcher README](https://github.com/oclive-app/oclive-launcher/blob/main/README.md)。数据流：**编写器 → 磁盘角色包 → 本应用 `load_role`**。
 
 ## 环境要求
 

@@ -1,18 +1,18 @@
 # A.I.Live · 项目全貌与事项总览（理清条理）
 
-**A.I.Live — 可插拔的角色动脉织机**（工程代号 **oclive**；本工程仓库 **oclivenewnew**）。本文把 **三件套分工、已落实内容、文档入口、命令、人机分工、待排期** 收拢在一处；细节仍以各专题文档为准。
+**A.I.Live — 可插拔的角色动脉织机**（工程代号 **oclive**；本工程仓库 **oclivenewnew**）。本文把 **编写器 + 运行时分工、已落实内容、文档入口、命令、人机分工、待排期** 收拢在一处；细节仍以各专题文档为准。
 
 > **架构文字总述**（契约型薄核、单核双态构建、特点）：[OCLIVE_ARCHITECTURE_OVERVIEW.md](OCLIVE_ARCHITECTURE_OVERVIEW.md)。**架构总览图**（内核居中、模块环绕；含静态图与 Mermaid）：[KERNEL_AND_MODULES_ARCHITECTURE.md](KERNEL_AND_MODULES_ARCHITECTURE.md)。由此可链到 [PLUGIN_V1.md](../plugin-and-architecture/PLUGIN_V1.md) 与各模块专题。
 
 ---
 
-## 1. 三个仓库分别是什么
+## 1. 生态仓库
 
 | 仓库 | 角色 | 技术栈（概要） |
 |------|------|----------------|
-| **oclivenewnew**（本仓库） | **运行时**：玩家对话、角色包加载、引擎、Tauri 桌面端 | Rust + Vue + Tauri |
-| **oclive-pack-editor**（另仓，同级目录常见） | **编写器**：编辑/导出 `roles/{id}/` 或 zip | Vue + Tauri（与运行时**不同** `package.json`） |
-| **oclive-launcher**（另仓） | **启动器**：配置路径、拉起运行时与编写器；**环境与排障**（依赖检测、配置重置） | Vue + Tauri |
+| **oclivenewnew**（本仓库） | **运行时**：玩家对话、角色包加载、引擎、架构图与专家路由、Tauri 桌面端 | Rust + Vue + Tauri |
+| **oclive-pack-editor**（另仓，同级目录常见） | **编写器**：编辑/导出 `roles/{id}/` 或 zip；人设 / 六槽 / 知识 | Vue + Tauri |
+| **oclive-launcher**（另仓） | **已退役**（归档只读）；新用户用编写器 + 运行时，见 [oclive-launcher README](https://github.com/oclive-app/oclive-launcher/blob/main/README.md) |
 
 **唯一纽带**：磁盘上的 **角色包**（结构与 `roles/{角色id}/` 一致）。运行时与编写器通过 **导入/导出包** 或 **OCLIVE_ROLES_DIR** 对接，不依赖进程间复杂 IPC。
 

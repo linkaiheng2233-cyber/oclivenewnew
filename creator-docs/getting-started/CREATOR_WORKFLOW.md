@@ -3,11 +3,12 @@
 **全库文档索引**：[DOCUMENTATION_INDEX.md](DOCUMENTATION_INDEX.md)  
 **插件架构、HTTP 侧车、更新策略（完整版）**：[../plugin-and-architecture/CREATOR_PLUGIN_ARCHITECTURE.md](../plugin-and-architecture/CREATOR_PLUGIN_ARCHITECTURE.md)
 
-## 双应用分工（运行时 + 工作室）
+## 双应用分工（编写器 + 运行时）
 
-- **运行时（oclivenewnew 本仓库）**：加载角色包、校验、对话与持久化。  
-- **oclive 工作室（[oclive-studio](https://github.com/oclive-app/oclive-studio)）**：统一创作者入口——**启动模式**（配置 `roles` 根、Ollama/Remote LLM、拉起运行时）与 **创作模式**（编辑并导出 **`roles/{角色id}/`** 树或 zip；`.ocpak` 与 `.zip` 均为 zip）。原独立仓库 **oclive-launcher**、**oclive-pack-editor** 已废弃，仅作归档。  
-- **唯一接口**：磁盘上的包结构；契约以本仓库 **`creator-docs/`** 与 **`roles/README_MANIFEST.md`** 为准，工作室 README 链到此处即可。
+- **运行时（oclivenewnew 本仓库 · A.I.Live）**：加载角色包、校验、对话与持久化；**专家路由**、架构图 **`groups`**、蓝图 **`includes[]`** 在此配置。  
+- **角色包编写器（[oclive-pack-editor](https://github.com/oclive-app/oclive-pack-editor)）**：编辑人设、`pipeline.ocblueprint` 的 `meta` / `slot_registry`、场景与知识、导出 zip；保存时**保留**主应用写入的蓝图扩展字段。  
+- **唯一接口**：磁盘上的 **`roles/{角色id}/`** 包结构；契约以本仓库 **`creator-docs/`** 与 **`roles/README_MANIFEST.md`** 为准。  
+- **已退役**：**oclive-launcher**（归档）；长期统一入口见 [oclive-studio](https://github.com/oclive-app/oclive-studio)，当前发版与文档以 **编写器 + 本运行时** 为准。
 
 **在 oclive 中安装包**：除把目录放进 `roles/` 或设置 **`OCLIVE_ROLES_DIR`** 外，可在应用内 **导入 `.ocpak`、`.zip`（与 `.ocpak` 同为 ZIP）或已解压的包目录**（结构须与 `roles/{角色id}/` 一致）。详见 [roles/README_MANIFEST.md](../../roles/README_MANIFEST.md) 中「在 oclive 中导入角色包」。
 

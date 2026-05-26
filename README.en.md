@@ -94,14 +94,15 @@ Legacy `docs/*.md` → see [docs/README.md](docs/README.md).
 |------|------|
 | **This repo** | Runtime desktop client + dialogue engine |
 | **Role packs** | Under `roles/`; on-disk layout is the contract |
-| **oclive-pack-editor** | Separate repo — pack authoring |
-| **oclive-launcher** | [oclive-launcher](https://github.com/linkaiheng2233-cyber/oclive-launcher) — paths, **`OCLIVE_ROLES_DIR`**, zip install |
+| **oclive-pack-editor** | [oclive-pack-editor](https://github.com/oclive-app/oclive-pack-editor) — pack authoring (persona, six slots, export) |
+| **oclive-launcher** | **Retired** (archive only); use **pack editor + this runtime** |
 
-## First run
+## Quick start: pack editor + runtime
 
 1. Install Node.js, Rust, Ollama (default local LLM). See [CREATOR_WORKFLOW.md](creator-docs/getting-started/CREATOR_WORKFLOW.md).
-2. Set **`OCLIVE_ROLES_DIR`** to the roles root.
-3. `npm install` then `npm run tauri:dev`.
+2. Clone **this repo** and **oclive-pack-editor** side by side; author a pack in the editor (export zip or write to `roles/{id}/`), or use sample packs under `roles/`.
+3. Set **`OCLIVE_ROLES_DIR`** to the roles root if needed; `npm install` then `npm run tauri:dev`.
+4. Optional: configure expert routing and architecture **groups** in this app (Plugin manager → architecture graph); the pack editor preserves those blueprint fields when you save persona edits later.
 
 ## Requirements
 
