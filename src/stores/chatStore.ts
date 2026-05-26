@@ -113,6 +113,96 @@ function rebuildLastAssistantAsideMap(messageMap: RoleSceneMessageMap): Record<s
 let persistMessagesTimer: ReturnType<typeof setTimeout> | null = null
 const dirtyBuckets = new Set<string>()
 
+/** 防止 split ≥ 条数导致主聊天区空白（新消息全进折叠历史） */
+function clampSceneHistorySplitForBucket(
+  splitIndex: SceneHistorySplitIndex,
+  roleId: string,
+  sceneId: string,
+  messageCount: number,
+  /** 本回合发送前的条数：若 split 挡住刚发的消息，回退到此 */
+  sessionFloor?: number,
+): void {
+  const sid = sceneId || 'default'
+  const roleSplits = splitIndex[roleId]
+  if (!roleSplits || roleSplits[sid] === undefined)
+    return
+  let next = Math.min(roleSplits[sid], messageCount)
+  if (
+    sessionFloor !== undefined
+    && messageCount > 0
+    && next >= messageCount
+  ) {
+    next = Math.min(sessionFloor, messageCount)
+  }
+  if (next !== roleSplits[sid])
+    roleSplits[sid] = next
+}
+
+function adjustSplitAfterTrim(
+  splitIndex: SceneHistorySplitIndex,
+  roleId: string,
+  sceneId: string,
+  removedFromHead: number,
+): void {
+  if (removedFromHead <= 0)
+    return
+  const sid = sceneId || 'default'
+  if (!splitIndex[roleId] || splitIndex[roleId][sid] === undefined)
+    return
+  splitIndex[roleId][sid] = Math.max(0, splitIndex[roleId][sid] - removedFromHead)
+}
+
+/** 重启后若 split 把全部消息划入「折叠历史」，主聊天区会空白；恢复为直接展示。 */
+function repairSplitsSoCurrentSessionVisible(
+  splitIndex: SceneHistorySplitIndex,
+  messageMap: RoleSceneMessageMap,
+): void {
+  for (const [roleId, roleBucket] of Object.entries(messageMap)) {
+    if (isLegacyRoleBucket(roleBucket)) {
+      const n = roleBucket.length
+      if (n > 0 && (splitIndex[roleId]?.default ?? 0) >= n) {
+        if (!splitIndex[roleId])
+          splitIndex[roleId] = {}
+        splitIndex[roleId].default = 0
+      }
+      continue
+    }
+    for (const [sceneId, messages] of Object.entries(roleBucket)) {
+      const n = messages.length
+      if (n > 0 && (splitIndex[roleId]?.[sceneId] ?? 0) >= n) {
+        if (!splitIndex[roleId])
+          splitIndex[roleId] = {}
+        splitIndex[roleId][sceneId] = 0
+      }
+    }
+  }
+}
+
+function sanitizeAllSceneHistorySplits(
+  splitIndex: SceneHistorySplitIndex,
+  messageMap: RoleSceneMessageMap,
+): void {
+  for (const [roleId, roleBucket] of Object.entries(messageMap)) {
+    if (isLegacyRoleBucket(roleBucket)) {
+      clampSceneHistorySplitForBucket(
+        splitIndex,
+        roleId,
+        'default',
+        roleBucket.length,
+      )
+      continue
+    }
+    for (const [sceneId, messages] of Object.entries(roleBucket)) {
+      clampSceneHistorySplitForBucket(
+        splitIndex,
+        roleId,
+        sceneId,
+        messages.length,
+      )
+    }
+  }
+}
+
 function schedulePersistMessages(
   map: RoleSceneMessageMap,
   roleId: string,
@@ -172,7 +262,25 @@ export const useChatStore = defineStore(
         if (fromLegacy)
           await migrateMonolithBlobToBuckets(this.messageMap)
         this.lastAssistantAside = rebuildLastAssistantAsideMap(this.messageMap)
+        sanitizeAllSceneHistorySplits(this.sceneHistorySplitIndex, this.messageMap)
+        repairSplitsSoCurrentSessionVisible(
+          this.sceneHistorySplitIndex,
+          this.messageMap,
+        )
         this.messagesHydrated = true
+      },
+
+      /** 退出前刷盘 IndexedDB（避免 300ms 防抖未写入）。 */
+      async flushPendingPersist() {
+        if (persistMessagesTimer) {
+          clearTimeout(persistMessagesTimer)
+          persistMessagesTimer = null
+        }
+        if (dirtyBuckets.size === 0)
+          return
+        const pending = new Set(dirtyBuckets)
+        dirtyBuckets.clear()
+        await saveDirtyBucketsToIdb(this.messageMap, pending)
       },
 
       /** 将旧版 messageMap[roleId] 为数组的结构迁入分桶（全表扫描，仅在 init / 单角色路径调用）。 */
@@ -277,7 +385,22 @@ export const useChatStore = defineStore(
           = next.length > MAX_MESSAGES_PER_CONVERSATION
             ? next.slice(-MAX_MESSAGES_PER_CONVERSATION)
             : next
+        const removedFromHead = next.length - trimmed.length
+        if (removedFromHead > 0) {
+          adjustSplitAfterTrim(
+            this.sceneHistorySplitIndex,
+            roleId,
+            sid,
+            removedFromHead,
+          )
+        }
         this.messageMap[roleId]![sid] = trimmed
+        clampSceneHistorySplitForBucket(
+          this.sceneHistorySplitIndex,
+          roleId,
+          sid,
+          trimmed.length,
+        )
         syncLastAssistantAside(this.lastAssistantAside, roleId, sid, trimmed)
         schedulePersistMessages(this.messageMap, roleId, sid)
       },
@@ -311,6 +434,9 @@ export const useChatStore = defineStore(
         const sid = sceneId || 'default'
         roleSceneBucket(this.messageMap, roleId, sid)
         this.messageMap[roleId]![sid] = []
+        if (!this.sceneHistorySplitIndex[roleId])
+          this.sceneHistorySplitIndex[roleId] = {}
+        this.sceneHistorySplitIndex[roleId][sid] = 0
         this.lastAssistantAside[roleSceneAsideKey(roleId, sid)] = ''
         schedulePersistMessages(this.messageMap, roleId, sid)
       },
@@ -319,6 +445,7 @@ export const useChatStore = defineStore(
         const roleStore = useRoleStore()
         const roleId = roleStore.currentRoleId
         const sid = sceneId || 'default'
+        const countBeforeTurn = this.getMessageCountForRoleScene(roleId, sid)
         this.addUserMessage(content, sid)
         this.isLoading = true
         const relationBefore = roleStore.roleInfo.relationState
@@ -357,6 +484,14 @@ export const useChatStore = defineStore(
             reply: assistantDialogueFromSplit(pres.replyText, split),
             reply_aside: split.aside,
           })
+          const countAfterTurn = this.getMessageCountForRoleScene(roleId, sid)
+          clampSceneHistorySplitForBucket(
+            this.sceneHistorySplitIndex,
+            roleId,
+            sid,
+            countAfterTurn,
+            countBeforeTurn,
+          )
           return res
         }
         finally {

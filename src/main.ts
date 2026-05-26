@@ -29,12 +29,25 @@ void (async () => {
   app.use(pinia)
 
   const { useChatStore } = await import('./stores/chatStore')
+  const chatStore = useChatStore()
   try {
-    await useChatStore().hydrateFromStorage()
-    useChatStore().migrateAllLegacyMessageBuckets()
+    await chatStore.hydrateFromStorage()
+    chatStore.migrateAllLegacyMessageBuckets()
   }
   catch (e) {
     console.error('[oclive] chat history hydrate failed; continuing without persisted messages', e)
+  }
+
+  if (typeof window !== 'undefined') {
+    const flushChat = () => {
+      void chatStore.flushPendingPersist()
+    }
+    window.addEventListener('beforeunload', flushChat)
+    window.addEventListener('pagehide', flushChat)
+    document.addEventListener('visibilitychange', () => {
+      if (document.visibilityState === 'hidden')
+        flushChat()
+    })
   }
 
   app.mount('#app')

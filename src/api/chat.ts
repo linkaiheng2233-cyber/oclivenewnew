@@ -52,6 +52,7 @@ export interface SendMessageResponse {
   offer_together_travel: boolean
   /** �?LLM 失败�?�使�?��?�?��?��??复 */
   reply_is_fallback?: boolean
+  llm_fallback_reason?: string | null
   /** �?��??�?注�??Prompt �??�?��?�?条�?��?�?��??�?�?��?声�?占位为 0�?*/
   knowledge_chunks_in_prompt?: number
   timestamp: number

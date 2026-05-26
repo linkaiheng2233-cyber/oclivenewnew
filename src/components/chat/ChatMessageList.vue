@@ -64,8 +64,8 @@ function collapseHistoryPreview() {
 
 const scrollerRef = ref<InstanceType<typeof VirtualScrollContainer> | null>(null)
 
-async function scrollToBottom(): Promise<void> {
-  await scrollerRef.value?.scrollToBottom(true)
+async function scrollToBottom(force = false): Promise<void> {
+  await scrollerRef.value?.scrollToBottom(force)
 }
 
 defineExpose({ scrollToBottom })
@@ -388,6 +388,9 @@ defineExpose({ scrollToBottom })
 /* 内联历史块：与主聊天一致的气泡 + 轻分区 */
 .history-inline-chat {
   flex-shrink: 0;
+  max-height: min(42vh, 360px);
+  overflow-y: auto;
+  overscroll-behavior: contain;
   margin-bottom: 6px;
   padding: 0 10px 10px;
   border-radius: var(--radius-card);

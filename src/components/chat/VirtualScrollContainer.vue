@@ -160,9 +160,22 @@ function setItemHeight(index: number, height: number) {
   if (index < 0 || index >= props.items.length)
     return
   const h = Math.max(1, Math.ceil(height))
-  if (heights.value[index] !== h) {
-    heights.value[index] = h
-  }
+  const prev = heights.value[index] ?? props.estimatedItemHeight
+  if (prev === h)
+    return
+  const topOffset = prefixOffsets.value[index] ?? 0
+  const anchorAboveViewport = topOffset < scrollTop.value
+  heights.value[index] = h
+  if (!anchorAboveViewport)
+    return
+  const el = rootRef.value
+  if (!el)
+    return
+  const delta = h - prev
+  if (delta === 0)
+    return
+  el.scrollTop += delta
+  scrollTop.value = el.scrollTop
 }
 
 function observeRow(el: HTMLElement | null, index: number) {

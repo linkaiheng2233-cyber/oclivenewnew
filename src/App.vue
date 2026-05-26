@@ -305,7 +305,8 @@ async function onSend(payload: { content: string }) {
     applyResolvedNarrativeScene()
     await debugStore.loadDebugData()
     if (res.reply_is_fallback) {
-      showToast('info', t('app.toast.fallbackReply'))
+      const detail = res.llm_fallback_reason?.trim()
+      showToast('info', detail || t('app.toast.fallbackReply'))
     }
     offerSceneBarsAfterReply(
       res.offer_together_travel ?? false,
@@ -400,9 +401,12 @@ async function onReloadPolicy() {
   }
 }
 
+/** 仅在新消息入列时贴底；避免 messages 浅更新时把用户上滑阅读打回底部。 */
 watch(
-  messages,
-  async () => {
+  () => messages.value.length,
+  async (len, prev) => {
+    if (prev !== undefined && len <= prev)
+      return
     await nextTick()
     chatListRef.value?.scrollToBottom?.()
   },
@@ -929,17 +933,20 @@ onBeforeUnmount(() => {
 .right-pane--input-top {
   flex-direction: column-reverse;
 }
-/* 聊天记录仅在右侧栏滚动；底部多留空，避免气泡+阴影被输入区视觉上压住 */
+/* 滚动交给 ChatMessageList 内 VirtualScrollContainer，避免与外层双滚动抢滚轮 */
 .chat-scroll-wrap {
   flex: 1;
   min-height: 0;
-  overflow-y: auto;
-  overflow-x: hidden;
-  padding: 12px 18px max(52px, calc(32px + env(safe-area-inset-bottom, 0px)));
-  scroll-padding-bottom: 44px;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  padding: 12px 18px 0;
   background: var(--bg-primary);
-  -webkit-overflow-scrolling: touch;
   box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.04);
+}
+.chat-scroll-wrap :deep(.chat-list-root) {
+  flex: 1;
+  min-height: 0;
 }
 .input-area {
   flex-shrink: 0;
