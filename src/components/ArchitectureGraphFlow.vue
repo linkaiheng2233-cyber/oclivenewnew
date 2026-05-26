@@ -8,9 +8,19 @@ import { applyNodeChanges, VueFlow } from '@vue-flow/core'
 import { MiniMap } from '@vue-flow/minimap'
 import { computed, markRaw, onMounted, provide, ref, watch } from 'vue'
 import type { ExpertRoutingDoc } from '../api/role/expert'
-import { getExpertRouting } from '../api/role/expert'
 import ExpertFlowPanel from './architecture-graph/ExpertFlowPanel.vue'
-import { expertLlmHighlights } from '../lib/expertRoutingGraph'
+import {
+  expertLlmHighlights,
+  expertReferencedSlotKeys,
+} from '../lib/expertRoutingGraph'
+import {
+  ensureExpertRouteForLlmSlot,
+  slotHasExpertGenerateStep,
+} from '../lib/expertNodeRouting'
+import { getExpertRouting, saveExpertRouting } from '../api/role/expert'
+import ExpertMarkConfirmDialog from './expert/ExpertMarkConfirmDialog.vue'
+import ExpertNodeConfigModal from './expert/ExpertNodeConfigModal.vue'
+import BlueprintPreviewModal from './expert/BlueprintPreviewModal.vue'
 import { useI18n } from 'vue-i18n'
 import { useAppToast } from '../composables/useAppToast'
 import { useArchitectureGraphLayout } from '../composables/useArchitectureGraphLayout'
@@ -25,7 +35,6 @@ import {
 
 } from '../lib/slotRegistry'
 import { usePluginStore } from '../stores/pluginStore'
-import { usePluginTraceStore } from '../stores/pluginTraceStore'
 import { usePluginTraceStore } from '../stores/pluginTraceStore'
 import { useRoleStore } from '../stores/roleStore'
 import {
@@ -102,7 +111,16 @@ const {
 const nodes = ref<Node[]>([])
 const edges = ref<Edge[]>([])
 const expertLlmHints = ref<Map<string, string>>(new Map())
+const expertReferencedKeys = ref<Set<string>>(new Set())
 const expertRoutingDoc = ref<ExpertRoutingDoc | null>(null)
+const expertConfigOpen = ref(false)
+const expertConfigSlotKey = ref('')
+const expertConfigSlotType = ref('llm')
+const markExpertOpen = ref(false)
+const markExpertSlotKey = ref('')
+const blueprintPreviewOpen = ref(false)
+const blueprintBeforeDoc = ref<ExpertRoutingDoc | null>(null)
+const blueprintAfterDoc = ref<ExpertRoutingDoc | null>(null)
 
 const previewUserMessage = ref('')
 
@@ -110,12 +128,14 @@ async function refreshExpertHighlights() {
   const roleId = roleStore.currentRoleId
   if (!roleId) {
     expertLlmHints.value = new Map()
+    expertReferencedKeys.value = new Set()
     expertRoutingDoc.value = null
     return
   }
   try {
     const doc = await getExpertRouting(roleId)
     expertRoutingDoc.value = doc
+    expertReferencedKeys.value = expertReferencedSlotKeys(doc ?? undefined)
     expertLlmHints.value = expertLlmHighlights(
       doc ?? undefined,
       roleStore.roleInfo.slotRegistryEffective ?? roleStore.roleInfo.slotRegistryPack,
@@ -123,18 +143,84 @@ async function refreshExpertHighlights() {
   }
   catch {
     expertLlmHints.value = new Map()
+    expertReferencedKeys.value = new Set()
     expertRoutingDoc.value = null
   }
   syncGraphFromModel()
+}
+
+function openExpertConfig(slotKey: string, slotType: string) {
+  expertConfigSlotKey.value = slotKey
+  expertConfigSlotType.value = slotType
+  expertConfigOpen.value = true
+}
+
+function onExpertGearClick(slotKey: string, slotType: string) {
+  const isLlm = slotType === 'llm'
+  const isExpert = slotHasExpertGenerateStep(expertRoutingDoc.value, slotKey)
+    || expertReferencedKeys.value.has(slotKey)
+  if (isLlm && !isExpert) {
+    markExpertSlotKey.value = slotKey
+    markExpertOpen.value = true
+    return
+  }
+  openExpertConfig(slotKey, slotType)
+}
+
+async function onMarkExpertConfirm() {
+  const key = markExpertSlotKey.value
+  if (!key) {
+    return
+  }
+  markExpertOpen.value = false
+  expertRoutingDoc.value = ensureExpertRouteForLlmSlot(expertRoutingDoc.value, key)
+  expertReferencedKeys.value = expertReferencedSlotKeys(expertRoutingDoc.value)
+  syncGraphFromModel()
+  openExpertConfig(key, 'llm')
+}
+
+function onExpertConfigPreview(
+  before: ExpertRoutingDoc | null,
+  after: ExpertRoutingDoc,
+) {
+  blueprintBeforeDoc.value = before
+  blueprintAfterDoc.value = after
+  expertConfigOpen.value = false
+  blueprintPreviewOpen.value = true
+}
+
+async function onBlueprintConfirmSave() {
+  const roleId = roleStore.currentRoleId
+  const doc = blueprintAfterDoc.value
+  if (!roleId || !doc) {
+    return
+  }
+  busy.value = true
+  try {
+    await saveExpertRouting(roleId, doc)
+    showToast('success', t('expertConfig.toast.saved'))
+    blueprintPreviewOpen.value = false
+    await refreshExpertHighlights()
+  }
+  catch (e) {
+    showToast('error', e instanceof Error ? e.message : String(e))
+  }
+  finally {
+    busy.value = false
+  }
 }
 
 function syncGraphFromModel() {
   nodes.value = builtNodes.value.map((n) => {
     const applied = graphLayout.applyToNode(n.id, n.type, n.position.x, n.position.y)
     const expertHint = expertLlmHints.value.get(n.id)
+    const slotType = String((n.data as Record<string, unknown> | undefined)?.slotType ?? '')
+    const showExpertGear
+      = slotType === 'llm' || expertReferencedKeys.value.has(n.id)
     const data = n.data && typeof n.data === 'object'
       ? {
           ...(n.data as Record<string, unknown>),
+          showExpertGear,
           ...(expertHint
             ? { expertHighlight: true, expertTriggerHint: expertHint }
             : {}),
@@ -371,6 +457,7 @@ provide(archGraphActionsKey, {
       showToast('error', err instanceof Error ? err.message : String(err))
     }
   },
+  onExpertConfigure: onExpertGearClick,
 })
 
 async function persistPackRegistry(next: SlotRegistryMap) {
@@ -570,6 +657,30 @@ watch(
       :busy="busy"
       @close="showRemoveSlotDialog = false"
       @confirm="onRemoveSlotConfirm"
+    />
+    <ExpertMarkConfirmDialog
+      :open="markExpertOpen"
+      :slot-key="markExpertSlotKey"
+      :busy="busy"
+      @close="markExpertOpen = false"
+      @confirm="onMarkExpertConfirm"
+    />
+    <ExpertNodeConfigModal
+      :open="expertConfigOpen"
+      :slot-key="expertConfigSlotKey"
+      :slot-type="expertConfigSlotType"
+      :routing-doc="expertRoutingDoc"
+      :busy="busy"
+      @close="expertConfigOpen = false"
+      @preview="onExpertConfigPreview"
+    />
+    <BlueprintPreviewModal
+      :open="blueprintPreviewOpen"
+      :before-doc="blueprintBeforeDoc"
+      :after-doc="blueprintAfterDoc"
+      :busy="busy"
+      @close="blueprintPreviewOpen = false"
+      @confirm="onBlueprintConfirmSave"
     />
 
     <div
