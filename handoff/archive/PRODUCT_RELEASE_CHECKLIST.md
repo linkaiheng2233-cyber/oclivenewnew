@@ -19,6 +19,9 @@
 - [ ] **`npm run check:release`** — ⚠️ 发版当日在维护机执行（含全量 `cargo test`；Windows 集成测以 CI Ubuntu 为准）
 - [x] **`CHANGELOG.md` / `CHANGELOG.en.md`** — **`[0.2.0] - 2026-05-22`** 条目已整理；发版日仅做最终条目追加与 tag
 - [x] **版本号** — 桌面 **0.2.0**、CLI **0.1.0**、**`oclive_kernel_runtime` 0.2.0** 与 `package.json` / 各 `Cargo.toml` 一致（发版日 bump 时再核对 `tauri.conf.json`）
+- [x] **姊妹仓编写器** — `HOST_RUNTIME_VERSION` **0.2.0** 与主仓 `src-tauri/Cargo.toml` 一致；保存时保留蓝图 `includes` / `groups` / `expert_overlay` / `runtime_config`（2026-05-20）
+- [x] **对外文档** — README / CREATOR_WORKFLOW 以 **编写器 + 运行时** 为准；启动器标注已退役（2026-05-20）
+- [x] **`npm run contract:json-keys`**（oclive-pack-editor）— 与主仓 `json_keys.rs` 一致（2026-05-20 复验）
 
 ---
 
