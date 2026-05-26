@@ -12,6 +12,8 @@ pub mod plugin_backends;
 pub mod role;
 pub mod role_manifest_disk;
 pub mod role_settings_disk;
+pub mod role_pack_config;
+pub mod role_time_config;
 pub mod scene_disk;
 pub mod ui_config;
 
@@ -29,5 +31,9 @@ pub use plugin_backends::*;
 pub use role::*;
 pub use role_manifest_disk::DiskRoleManifest;
 pub use role_settings_disk::{disk_role_settings_from_role, DiskRoleSettings};
+pub use role_pack_config::{
+    RolePackConfigFile, RolePackMemoryConfig, RolePackRelationConfig,
+};
+pub use role_time_config::{RoleTimeConfig, DEFAULT_REAL_TO_VIRTUAL_RATIO};
 pub use scene_disk::{DiskSceneConfig, DiskSceneTimeWindow};
 pub use ui_config::{LayoutConfig, SlotConfig, ThemeConfig, UiConfig, UiSlots};

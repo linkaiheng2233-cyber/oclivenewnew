@@ -6,7 +6,8 @@ use crate::error::{AppError, Result};
 use crate::models::role_manifest_disk::disk_manifest_to_role;
 use crate::models::{
     author_pack::AuthorPackFile,
-    role_settings_disk::CURRENT_SETTINGS_SCHEMA_VERSION, DiskRoleManifest, DiskRoleSettings, Role, UiConfig,
+    role_settings_disk::CURRENT_SETTINGS_SCHEMA_VERSION, DiskRoleManifest, DiskRoleSettings, Role,
+    RolePackConfigFile, UiConfig,
 };
 use oclive_validation::{
     blueprint_schema_version_from_raw, load_blueprint_v2_for_role_dir,
@@ -287,6 +288,30 @@ impl RoleStorage {
         if should_load_knowledge(disk, role_dir) {
             let idx = load_knowledge_index(role_dir, disk)?;
             role.knowledge_index = Some(Arc::new(idx));
+        }
+        let config_path = role_dir.join("config.json");
+        if config_path.is_file() {
+            match fs::read_to_string(&config_path) {
+                Ok(s) => match serde_json::from_str::<RolePackConfigFile>(&s) {
+                    Ok(cfg) => {
+                        role.time_config = cfg.time;
+                        role.pack_memory_config = cfg.memory;
+                        role.pack_relation_config = cfg.relation;
+                    }
+                    Err(e) => tracing::warn!(
+                        target: "oclive_role",
+                        "config.json parse failed: {} — {}",
+                        config_path.display(),
+                        e
+                    ),
+                },
+                Err(e) => tracing::warn!(
+                    target: "oclive_role",
+                    "config.json unreadable: {} — {}",
+                    config_path.display(),
+                    e
+                ),
+            }
         }
         apply_llm_backend_env_override(&mut role);
         validate_role_interaction_mode(&role).map_err(AppError::InvalidParameter)?;

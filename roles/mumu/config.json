@@ -2,6 +2,18 @@
     "time": {
         "decay_on_jump": true,
         "decay_per_day": 2,
-        "speed": 6.0
+        "speed": 5.0
+    },
+    "memory": {
+        "decay_halflife_days": 7.0,
+        "reinforcement_factor": 0.3,
+        "min_strength_for_prompt": 0.1,
+        "similarity_threshold": 0.6,
+        "reinforced_mention_threshold": 3
+    },
+    "relation": {
+        "decay_halflife_days": 30.0,
+        "estrangement_threshold": 0.3,
+        "interaction_recovery": 0.12
     }
 }

@@ -4,6 +4,8 @@ use std::collections::{BTreeMap, HashMap};
 use super::author_pack::AuthorPackFile;
 use super::knowledge::KnowledgeIndex;
 use super::plugin_backends::PluginBackends;
+use super::role_pack_config::{RolePackMemoryConfig, RolePackRelationConfig};
+use super::role_time_config::RoleTimeConfig;
 use super::scene_disk::DiskSceneConfig;
 use super::ui_config::UiConfig;
 pub use oclive_validation::{
@@ -200,6 +202,15 @@ pub struct Role {
     /// `settings.json` 可选：主对话「质量锚点」全文；非空则替换引擎默认（见 `prompt_builder::DEFAULT_REPLY_QUALITY_ANCHOR`）。
     #[serde(default)]
     pub reply_quality_anchor: Option<String>,
+    /// `config.json` → `time`（虚拟时钟流速）；未提供则用默认 1:5。
+    #[serde(default)]
+    pub time_config: RoleTimeConfig,
+    /// `config.json` → `memory`（艾宾浩斯衰减与强化）。
+    #[serde(default)]
+    pub pack_memory_config: RolePackMemoryConfig,
+    /// `config.json` → `relation`（疏远衰减）。
+    #[serde(default)]
+    pub pack_relation_config: RolePackRelationConfig,
     /// v3 蓝图 `runtime_config`（宿主加载；创作者包通常不含或未开双核）。
     #[serde(default)]
     pub runtime_config: Option<RuntimeConfig>,
@@ -260,6 +271,9 @@ impl Default for Role {
             ui_config: UiConfig::default(),
             author_pack: None,
             reply_quality_anchor: None,
+            time_config: RoleTimeConfig::default(),
+            pack_memory_config: RolePackMemoryConfig::default(),
+            pack_relation_config: RolePackRelationConfig::default(),
             runtime_config: None,
             pipeline_experimental: None,
             scene_ids: Arc::from(Vec::<String>::new()),

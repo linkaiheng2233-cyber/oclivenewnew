@@ -1,7 +1,8 @@
 //! 记忆引擎模块
 //! 管理短期和长期记忆，支持记忆检索和更新
 
-use crate::models::{Memory, MemoryContext};
+use crate::models::{Memory, MemoryContext, RolePackMemoryConfig};
+use std::collections::HashSet;
 use std::collections::VecDeque;
 
 /// 短期记忆缓冲区（最多保留最近N条对话）
@@ -22,9 +23,6 @@ impl MemoryEngine {
     }
 
     /// 添加短期记忆
-    ///
-    /// # Arguments
-    /// * `memory` - 记忆对象
     pub fn add_short_term(&mut self, memory: Memory) {
         if self.short_term.len() >= SHORT_TERM_CAPACITY {
             self.short_term.pop_front();
@@ -32,25 +30,15 @@ impl MemoryEngine {
         self.short_term.push_back(memory);
     }
 
-    /// 获取所有短期记忆
     #[must_use]
     pub fn get_short_term(&self) -> Vec<Memory> {
         self.short_term.iter().cloned().collect()
     }
 
-    /// 清空短期记忆
     pub fn clear_short_term(&mut self) {
         self.short_term.clear();
     }
 
-    /// 根据关键词检索记忆
-    ///
-    /// # Arguments
-    /// * `keyword` - 搜索关键词
-    /// * `memories` - 长期记忆列表
-    ///
-    /// # Returns
-    /// 匹配的记忆列表
     #[must_use]
     pub fn search_memories(keyword: &str, memories: &[Memory]) -> Vec<Memory> {
         let keyword_lower = keyword.to_lowercase();
@@ -61,20 +49,12 @@ impl MemoryEngine {
             .collect()
     }
 
-    /// 获取最相关的记忆（按重要性和权重排序）
-    ///
-    /// # Arguments
-    /// * `memories` - 记忆列表
-    /// * `limit` - 返回数量限制
-    ///
-    /// # Returns
-    /// 排序后的记忆列表
     #[must_use]
     pub fn get_relevant_memories(memories: &[Memory], limit: usize) -> Vec<Memory> {
         let mut sorted = memories.to_vec();
         sorted.sort_by(|a, b| {
-            let score_a = a.importance * a.weight;
-            let score_b = b.importance * b.weight;
+            let score_a = a.effective_strength();
+            let score_b = b.effective_strength();
             score_b
                 .partial_cmp(&score_a)
                 .unwrap_or(std::cmp::Ordering::Equal)
@@ -82,21 +62,13 @@ impl MemoryEngine {
         sorted.into_iter().take(limit).collect()
     }
 
-    /// 构建记忆上下文（用于提示词）
-    ///
-    /// # Arguments
-    /// * `memories` - 记忆列表
-    /// * `max_tokens` - 最大token数
-    ///
-    /// # Returns
-    /// 记忆上下文
     #[must_use]
     pub fn build_context(memories: &[Memory], max_tokens: usize) -> MemoryContext {
         let mut context_memories = Vec::new();
         let mut total_tokens = 0;
 
         for memory in memories {
-            let tokens = memory.content.len() / 4; // 粗略估计
+            let tokens = memory.content.len() / 4;
             if total_tokens + tokens <= max_tokens {
                 context_memories.push(memory.clone());
                 total_tokens += tokens;
@@ -111,43 +83,82 @@ impl MemoryEngine {
         }
     }
 
-    /// 更新记忆的重要性
-    ///
-    /// # Arguments
-    /// * `memory` - 记忆对象
-    /// * `delta` - 重要性变化量
-    ///
-    /// # Returns
-    /// 更新后的记忆
     #[must_use]
     pub fn update_importance(mut memory: Memory, delta: f64) -> Memory {
         memory.importance = (memory.importance + delta).clamp(0.0, 1.0);
         memory
     }
 
-    /// 衰减记忆权重（基于时间）
-    ///
-    /// # Arguments
-    /// * `memory` - 记忆对象
-    /// * `days_passed` - 经过的天数
-    ///
-    /// # Returns
-    /// 衰减后的记忆
+    /// 艾宾浩斯指数衰减：剩余强度 = 初始强度 × e^(-λ × 虚拟天数)。
+    /// 有效半衰期随 `mention_count` 延长（复习强化）。
+    #[must_use]
+    pub fn apply_time_decay(
+        mut memory: Memory,
+        virtual_days: f64,
+        cfg: &RolePackMemoryConfig,
+    ) -> Memory {
+        if virtual_days <= 0.0 {
+            return memory;
+        }
+        let base_halflife = cfg.decay_halflife_days.max(0.1);
+        let mentions = f64::from(memory.mention_count.max(1));
+        let effective_halflife =
+            base_halflife * (1.0 + cfg.reinforcement_factor * (mentions - 1.0));
+        let lambda = std::f64::consts::LN_2 / effective_halflife;
+        memory.weight *= (-lambda * virtual_days).exp();
+        memory.weight = memory.weight.max(0.0);
+        memory
+    }
+
+    /// 对一批记忆按虚拟时钟年龄衰减，并剔除低于 Prompt 阈值的条目。
+    pub fn apply_time_decay_batch(
+        memories: &mut Vec<Memory>,
+        virtual_now_ms: i64,
+        cfg: &RolePackMemoryConfig,
+    ) {
+        use super::virtual_time::virtual_days_between_ms;
+        memories.retain_mut(|m| {
+            let created_ms = m.created_at.timestamp_millis();
+            let days = virtual_days_between_ms(created_ms, virtual_now_ms);
+            *m = Self::apply_time_decay(m.clone(), days, cfg);
+            m.effective_strength() >= cfg.min_strength_for_prompt
+        });
+    }
+
+    /// 提取用于相似度比较的关键词（去空白、小写、长度≥2）。
+    fn keyword_tokens(text: &str) -> HashSet<String> {
+        text.split(|c: char| c.is_whitespace() || c.is_ascii_punctuation())
+            .filter(|w| w.chars().count() >= 2)
+            .map(|w| w.to_lowercase())
+            .collect()
+    }
+
+    /// 双方关键词 Jaccard 重叠度 \[0, 1\]。
+    #[must_use]
+    pub fn keyword_overlap_similarity(content_a: &str, content_b: &str) -> f64 {
+        let a = Self::keyword_tokens(content_a);
+        let b = Self::keyword_tokens(content_b);
+        if a.is_empty() || b.is_empty() {
+            return 0.0;
+        }
+        let inter = a.intersection(&b).count() as f64;
+        let union = a.union(&b).count() as f64;
+        if union <= 0.0 {
+            0.0
+        } else {
+            inter / union
+        }
+    }
+
+    /// 衰减记忆权重（旧 API，保留兼容测试）。
     #[must_use]
     pub fn decay_weight(mut memory: Memory, days_passed: f64) -> Memory {
         let decay_factor = 0.95_f64.powf(days_passed);
         memory.weight *= decay_factor;
-        memory.weight = memory.weight.max(0.1); // 最小权重
+        memory.weight = memory.weight.max(0.1);
         memory
     }
 
-    /// 合并相似记忆
-    ///
-    /// # Arguments
-    /// * `memories` - 记忆列表
-    ///
-    /// # Returns
-    /// 合并后的记忆列表
     #[must_use]
     pub fn merge_similar_memories(memories: &[Memory]) -> Vec<Memory> {
         if memories.is_empty() {
@@ -170,9 +181,10 @@ impl MemoryEngine {
                     continue;
                 }
 
-                if Self::is_similar(&mem_a.content, &mem_b.content) {
+                if Self::keyword_overlap_similarity(&mem_a.content, &mem_b.content) > 0.5 {
                     combined.importance = (combined.importance + mem_b.importance) / 2.0;
                     combined.weight += mem_b.weight;
+                    combined.mention_count += mem_b.mention_count.max(1);
                     processed[j] = true;
                 }
             }
@@ -181,17 +193,6 @@ impl MemoryEngine {
         }
 
         merged
-    }
-
-    /// 判断两个记忆是否相似（简单的关键词匹配）
-    fn is_similar(content_a: &str, content_b: &str) -> bool {
-        let words_a: Vec<&str> = content_a.split_whitespace().collect();
-        let words_b: Vec<&str> = content_b.split_whitespace().collect();
-
-        let common = words_a.iter().filter(|w| words_b.contains(w)).count();
-
-        let total = words_a.len().max(words_b.len());
-        total > 0 && common as f64 / total as f64 > 0.5
     }
 }
 
@@ -215,7 +216,12 @@ mod tests {
             weight: 1.0,
             created_at: Utc::now(),
             scene_id: None,
+            mention_count: 1,
         }
+    }
+
+    fn default_mem_cfg() -> RolePackMemoryConfig {
+        RolePackMemoryConfig::default()
     }
 
     #[test]
@@ -300,6 +306,43 @@ mod tests {
         let decayed = MemoryEngine::decay_weight(mem, 10.0);
         assert!(decayed.weight < 1.0);
         assert!(decayed.weight >= 0.1);
+    }
+
+    #[test]
+    fn ebbinghaus_halflife_about_half_after_seven_virtual_days() {
+        let cfg = default_mem_cfg();
+        let mem = create_test_memory("1", "content", 1.0);
+        let decayed = MemoryEngine::apply_time_decay(mem, 7.0, &cfg);
+        assert!(
+            (decayed.weight - 0.5).abs() < 0.05,
+            "weight={}",
+            decayed.weight
+        );
+    }
+
+    #[test]
+    fn reinforced_memory_decays_slower() {
+        let cfg = default_mem_cfg();
+        let mut once = create_test_memory("1", "用户喜欢冒险旅行", 1.0);
+        let mut thrice = create_test_memory("2", "用户喜欢冒险旅行", 1.0);
+        thrice.mention_count = 3;
+        once = MemoryEngine::apply_time_decay(once, 14.0, &cfg);
+        thrice = MemoryEngine::apply_time_decay(thrice, 14.0, &cfg);
+        assert!(
+            thrice.weight > once.weight,
+            "once={} thrice={}",
+            once.weight,
+            thrice.weight
+        );
+    }
+
+    #[test]
+    fn keyword_overlap_detects_similar_topics() {
+        let sim = MemoryEngine::keyword_overlap_similarity(
+            "用户很喜欢冒险和旅行",
+            "他又提起冒险旅行计划",
+        );
+        assert!(sim >= 0.6, "sim={sim}");
     }
 
     #[test]
