@@ -302,6 +302,12 @@ pub fn run() {
 
             // ── diagnostics ──
             api::diagnostics::run_environment_diagnostics,
+            api::llm_settings::get_llm_user_settings,
+            api::llm_settings::list_ollama_models,
+            api::llm_settings::save_llm_user_settings,
+            api::llm_settings::scan_local_model_files,
+            api::llm_settings::open_path_in_file_manager,
+            api::llm_settings::import_gguf_to_ollama,
 
             // ── app settings ──
             api::settings::get_remote_fallback_app_settings,

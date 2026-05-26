@@ -50,7 +50,6 @@ pub struct BackendRegistry {
     prompt_builtin_v2: OnceLock<Arc<dyn PromptAssembler>>,
     prompt_remote: OnceLock<Arc<dyn PromptAssembler>>,
     llm_ollama: Arc<dyn LlmClient>,
-    llm_remote: OnceLock<Arc<dyn LlmClient>>,
     agent_builtin: Arc<BuiltinReActAgent>,
     agent_remote: OnceLock<Arc<dyn AgentProvider>>,
     agent_directory: Arc<dyn AgentProvider>,
@@ -132,16 +131,12 @@ impl BackendRegistry {
     }
 
     fn llm_remote(&self) -> Arc<dyn LlmClient> {
-        self.llm_remote
-            .get_or_init(|| {
-                remote_plugin::llm_remote_backend(
-                    self.remote_http_client.clone(),
-                    self.llm_ollama.clone(),
-                    self.remote_fallback_allowed.clone(),
-                    self.high_risk_grants.clone(),
-                )
-            })
-            .clone()
+        remote_plugin::llm_remote_backend(
+            self.remote_http_client.clone(),
+            self.llm_ollama.clone(),
+            self.remote_fallback_allowed.clone(),
+            self.high_risk_grants.clone(),
+        )
     }
 
     fn agent_remote(&self) -> Arc<dyn AgentProvider> {
@@ -272,7 +267,6 @@ impl BackendRegistry {
             prompt_builtin_v2: OnceLock::new(),
             prompt_remote: OnceLock::new(),
             llm_ollama,
-            llm_remote: OnceLock::new(),
             agent_builtin,
             agent_remote: OnceLock::new(),
             agent_directory,

@@ -220,6 +220,37 @@ impl OllamaClient {
 
         Ok(full_response)
     }
+
+    /// Register a local GGUF (or bin) as an Ollama model via `POST /api/create`.
+    pub async fn create_model_from_path(&self, name: &str, model_path: &str) -> Result<()> {
+        let url = format!("{}/api/create", self.base_url);
+        let path_escaped = model_path.replace('\\', "/");
+        let modelfile = format!("FROM \"{path_escaped}\"\n");
+        let body = serde_json::json!({
+            "name": name.trim(),
+            "modelfile": modelfile,
+        });
+        let response = self
+            .client
+            .post(&url)
+            .json(&body)
+            .timeout(self.timeout)
+            .send()
+            .await
+            .map_err(|e| AppError::OllamaError(format!("create model request: {e}")))?;
+        let status = response.status();
+        let text = response
+            .text()
+            .await
+            .map_err(|e| AppError::OllamaError(format!("create model body: {e}")))?;
+        if !status.is_success() {
+            return Err(AppError::OllamaError(format!(
+                "create model HTTP {status}: {}",
+                text.chars().take(500).collect::<String>()
+            )));
+        }
+        Ok(())
+    }
 }
 
 #[cfg(test)]

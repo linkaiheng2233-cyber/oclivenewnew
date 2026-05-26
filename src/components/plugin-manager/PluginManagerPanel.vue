@@ -1,5 +1,5 @@
 <script setup lang="ts">
-/** 未在主应用挂载；高级管理见 `oclive plugin manage`。保留供参考。 */
+/** 高级插件管理（架构图、后端/模型、槽位布局）；由设置「高级插件管理」或极简窗入口打开。 */
 import { computed, defineAsyncComponent, ref, toRef } from 'vue'
 import { useI18n } from 'vue-i18n'
 import SlotLayoutDiagram from '../SlotLayoutDiagram.vue'

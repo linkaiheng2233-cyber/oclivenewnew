@@ -3,6 +3,7 @@ pub mod chat;
 pub mod conversation;
 pub mod desktop_fs;
 pub mod diagnostics;
+pub mod llm_settings;
 pub mod directory_plugin;
 pub mod error;
 pub mod event;

@@ -34,8 +34,10 @@ import {
 import { hostEventBus } from './lib/hostEventBus'
 import { useChatStore } from './stores/chatStore'
 import { useDebugStore } from './stores/debugStore'
+import { useModelManagerWindow } from './composables/useModelManagerWindow'
 import { usePluginMarketStore } from './stores/pluginMarketStore'
 import { usePluginStore } from './stores/pluginStore'
+import { usePluginTraceStore } from './stores/pluginTraceStore'
 import { useRoleStore } from './stores/roleStore'
 import { useUiStore } from './stores/uiStore'
 import { buildRelationDropdownOptions } from './utils/relationOptions'
@@ -52,6 +54,7 @@ import {
 import MarketView from './views/MarketView.vue'
 import RoleDetailView from './views/RoleDetailView.vue'
 import SettingsView from './views/SettingsView.vue'
+import ModelManagerPanel from './views/ModelManagerPanel.vue'
 import SimplePluginManagerPanel from './views/SimplePluginManagerPanel.vue'
 
 const roleStore = useRoleStore()
@@ -60,6 +63,7 @@ const chatStore = useChatStore()
 const debugStore = useDebugStore()
 const uiStore = useUiStore()
 const pluginStore = usePluginStore()
+const traceStore = usePluginTraceStore()
 const pluginMarketStore = usePluginMarketStore()
 const { t, locale } = useI18n()
 
@@ -130,13 +134,40 @@ const settingsViewOpen = ref(false)
 const {
   simplePluginManagerOpen,
   openPluginManagerPanel,
+  openSimplePluginManager,
   openPluginMarket,
-  pluginManagerMoreBtnLabel,
-  settingsEntryMoreHelp,
 } = usePluginManagerWindow({
   closeMoreMenu: () => {
     topMoreOpen.value = false
   },
+})
+
+const {
+  modelManagerOpen,
+  openModelManager,
+  closeModelManager,
+} = useModelManagerWindow({
+  closeMoreMenu: () => {
+    topMoreOpen.value = false
+  },
+})
+
+watch(simplePluginManagerOpen, (open) => {
+  if (open) {
+    modelManagerOpen.value = false
+  }
+})
+watch(modelManagerOpen, (open) => {
+  if (open) {
+    simplePluginManagerOpen.value = false
+    pluginMarketStore.closeMarketPanel()
+  }
+})
+watch(() => pluginMarketStore.marketPanelVisible, (open) => {
+  if (open) {
+    simplePluginManagerOpen.value = false
+    modelManagerOpen.value = false
+  }
 })
 
 const {
@@ -169,10 +200,13 @@ const { shortcutHelpOpen, openShortcutHelp, openSettingsView } = useGlobalHotkey
   settingsViewOpen,
   topMoreOpen,
   marketPanelVisible: computed(() => pluginMarketStore.marketPanelVisible),
+  modelManagerOpen,
   debugVisible: computed(() => debugStore.visible),
   openPluginManagerPanel,
+  openModelManager: () => openModelManager(),
   toggleDebug: () => debugStore.toggle(),
   closeMarketPanel: () => pluginMarketStore.closeMarketPanel(),
+  closeModelManager,
 })
 
 usePluginEvents({
@@ -183,7 +217,23 @@ usePluginEvents({
 
 useReturnFocusOnClose(settingsViewOpen)
 useReturnFocusOnClose(simplePluginManagerOpen)
+useReturnFocusOnClose(modelManagerOpen)
 useReturnFocusOnClose(shortcutHelpOpen)
+
+watch(
+  () => traceStore.simpleManagerOpenNonce,
+  () => {
+    openSimplePluginManager(true)
+  },
+)
+
+function onHostOpenModelManager(): void {
+  openModelManager(true)
+}
+
+function onHostOpenPluginManager(): void {
+  openSimplePluginManager(true)
+}
 
 const sceneHistorySplitIndex = computed(() =>
   chatStore.sceneHistorySplitForRoleScene(roleStore.currentRoleId, uiStore.sceneId),
@@ -411,6 +461,8 @@ watch(locale, () => {
 })
 
 onMounted(() => {
+  hostEventBus.on('ui:open_model_manager', onHostOpenModelManager)
+  hostEventBus.on('ui:open_plugin_manager', onHostOpenPluginManager)
   localePreference.value = getLocalePreference()
   syncBrowserChromeFromLocale()
   setErrorReporter((err) => {
@@ -437,6 +489,8 @@ onMounted(() => {
 })
 
 onBeforeUnmount(() => {
+  hostEventBus.off('ui:open_model_manager', onHostOpenModelManager)
+  hostEventBus.off('ui:open_plugin_manager', onHostOpenPluginManager)
   if (splitLayoutResizeRaf !== 0) {
     cancelAnimationFrame(splitLayoutResizeRaf)
     splitLayoutResizeRaf = 0
@@ -458,12 +512,11 @@ onBeforeUnmount(() => {
           v-model:locale-preference="localePreference"
           :relation-options="relationOptions"
           :all-scene-options="allSceneOptions"
-          :settings-entry-more-help="settingsEntryMoreHelp"
-          :plugin-manager-more-btn-label="pluginManagerMoreBtnLabel"
           @open-settings="openSettingsView"
           @open-shortcut-help="openShortcutHelp"
           @open-plugin-manager="openPluginManagerPanel"
           @open-plugin-market="openPluginMarket"
+          @open-model-manager="() => openModelManager(true)"
           @scene-change="onTopBarSceneChange"
           @interaction-mode-change="onInteractionModeChange"
           @change-role="onSwitchRole"
@@ -621,6 +674,17 @@ onBeforeUnmount(() => {
         :visible="simplePluginManagerOpen"
         @close="simplePluginManagerOpen = false"
         @open-market="openPluginMarket"
+      />
+
+      <ModelManagerPanel
+        :visible="modelManagerOpen"
+        @close="closeModelManager"
+        @open-settings="
+          () => {
+            closeModelManager()
+            openSettingsView()
+          }
+        "
       />
 
       <SettingsView

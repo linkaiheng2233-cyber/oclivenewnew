@@ -37,6 +37,7 @@ kernel_domain_reexport!(user_emotion_analyzer);
 pub mod role_manifest_validate;
 pub mod startup_health;
 pub mod user_identity;
+pub mod effective_llm_model;
 
 pub mod agent;
 pub mod chat_engine;

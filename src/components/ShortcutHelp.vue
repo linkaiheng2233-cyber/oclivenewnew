@@ -28,6 +28,8 @@ const rows = computed(() => {
   return [
     { keys: 'Ctrl + Shift + S', desc: t('common.shortcutHelp.rowOpenSettings') },
     { keys: 'Ctrl + Shift + F', desc: pluginF },
+    { keys: 'Ctrl + Shift + M', desc: t('common.shortcutHelp.ctrlShiftM') },
+    { keys: 'Ctrl + Shift + D', desc: t('common.shortcutHelp.ctrlShiftD') },
     { keys: t('common.shortcutHelp.rowCtrlLongKeys'), desc: t('common.shortcutHelp.rowCtrlLong') },
   ]
 })

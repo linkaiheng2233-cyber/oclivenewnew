@@ -10,6 +10,7 @@ export default {
   slotHeading: '插件槽（launcher.palette）',
   slotEmbedAria: '启动器插槽',
   ctrlShiftFSimple: '打开已安装插件列表',
+  ctrlShiftM: '打开模型管理',
   ctrlShiftS: '打开设置',
   ctrlShiftD: '开关调试面板',
 }

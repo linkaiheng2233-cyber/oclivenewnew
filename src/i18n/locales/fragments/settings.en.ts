@@ -8,12 +8,11 @@ export default {
     tabGeneral: 'General',
     tabPlugins: 'Plugins',
     generalLeadHtml:
-      'The top bar <strong>“More”</strong> groups entry points; <strong>Ctrl+Shift+S</strong> opens settings; '
-      + '<strong>Ctrl+Shift+F</strong> opens the plugin manager (without “V2 preview” below it is <strong>advanced mode (V1)</strong>; '
-      + 'with it, the same shortcut opens <strong>V2 preview</strong>, and V1 is reachable inside V2).',
+      'The top bar <strong>“More”</strong> groups entry points; <strong>Ctrl+Shift+S</strong> settings; '
+      + '<strong>Ctrl+Shift+F</strong> installed plugins; <strong>Ctrl+Shift+M</strong> model management.',
     shortcutsLabel: 'Shortcuts',
     shortcutsHelp:
-      'Ctrl+Shift+S opens settings; Ctrl+Shift+F opens the plugin manager (V1/V2 per the experimental toggle); Ctrl+Shift+D toggles the debug panel.',
+      'Ctrl+Shift+S settings; Ctrl+Shift+F installed plugins; Ctrl+Shift+M model management; Ctrl+Shift+D debug panel.',
     immersiveOnlyNote:
       'Virtual time and narrative scenes appear under “More” only in immersive mode.',
     envCheckTitle: 'Environment check',
@@ -47,10 +46,6 @@ export default {
       'When checked, the Sentry client is closed immediately; preference is stored in localStorage (key oclive.telemetry.sentryOptOut). Uncheck and restart the app to re-enable reporting.',
     sentryDisabledToast: 'Crash reporting disabled.',
     sentryReenableRestartToast: 'Opt-out cleared; restart the app to resume reporting.',
-    pluginCliLabel: 'Advanced plugin configuration',
-    pluginCliHelp: 'Architecture graph, multi-slot blueprint, and disk writes are not in this UI.',
-    pluginCliNote:
-      'Use <code>oclive plugin manage</code> (optional <code>--tui</code>) for slot_registry; install with manifest <code>slot_attachment</code> for auto wiring. See creator docs.',
     remoteFallbackSectionTitle: 'Remote plugin failure policy',
     remoteFallbackLabel: 'Fall back to built-in when remote HTTP fails',
     remoteFallbackHelp:

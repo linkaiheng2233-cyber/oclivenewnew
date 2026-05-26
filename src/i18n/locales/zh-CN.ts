@@ -9,6 +9,7 @@ import { expertConfigZh } from './fragments/expert.zh'
 import pluginManagerBundle from './fragments/pluginManager.zh'
 import roleRuntimeBundle from './fragments/roleRuntime.zh'
 import settingsBundle from './fragments/settings.zh'
+import { modelManagerZh as modelManager } from './fragments/modelManager.zh'
 import { simplePluginManagerZh as simplePluginManager } from './fragments/simplePluginManager.zh'
 import virtualTime from './fragments/virtualTime.zh'
 
@@ -28,5 +29,6 @@ export default {
   settings: settingsBundle.settings,
   hotkeys: settingsBundle.hotkeys,
   simplePluginManager,
+  modelManager,
   virtualTime,
 }

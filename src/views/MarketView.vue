@@ -6,10 +6,9 @@ import { useAppToast } from '../composables/useAppToast'
 import { useModalFocusRestore } from '../composables/useModalFocusRestore'
 import { ensurePluginWorkbenchI18n } from '../i18n/loadPluginWorkbench'
 import { usePluginMarketStore } from '../stores/pluginMarketStore'
-import { usePluginTraceStore } from '../stores/pluginTraceStore'
+import { hostEventBus } from '../lib/hostEventBus'
 
 const marketStore = usePluginMarketStore()
-const traceStore = usePluginTraceStore()
 const { showToast } = useAppToast()
 const { t } = useI18n()
 
@@ -157,7 +156,8 @@ async function onUpdate(row: PluginMarketEntryDto) {
 }
 
 function openPluginManager() {
-  traceStore.requestOpenSimplePluginManager()
+  close()
+  hostEventBus.emit('ui:open_plugin_manager')
 }
 
 function clearGitShare() {

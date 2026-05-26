@@ -10,6 +10,7 @@ export default {
   slotHeading: 'Plugin slot (launcher.palette)',
   slotEmbedAria: 'Launcher slot',
   ctrlShiftFSimple: 'Open installed plugins list',
+  ctrlShiftM: 'Open model management',
   ctrlShiftS: 'Open settings',
   ctrlShiftD: 'Toggle debug panel',
 }

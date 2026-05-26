@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { computed, ref, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
-import { usePluginTraceStore } from '../../stores/pluginTraceStore'
+import { hostEventBus } from '../../lib/hostEventBus'
 import { useRoleStore } from '../../stores/roleStore'
 import { useUiStore } from '../../stores/uiStore'
 import { buildRelationDropdownOptions } from '../../utils/relationOptions'
@@ -86,8 +86,8 @@ async function commitFactor() {
 function onFactorEnter(ev: KeyboardEvent) {
   (ev.target as HTMLInputElement).blur()
 }
-function openBackendsPanel(): void {
-  usePluginTraceStore().requestOpenSimplePluginManager()
+function openModelManager(): void {
+  hostEventBus.emit('ui:open_model_manager')
 }
 </script>
 
@@ -115,8 +115,8 @@ function openBackendsPanel(): void {
     <div class="runtime-backend-hint">
       <p class="sub">
         {{ t("roleRuntime.backendHintBefore") }}
-        <button type="button" class="link-open-backends" @click="openBackendsPanel">
-          {{ t("roleRuntime.backendLink") }}
+        <button type="button" class="link-open-backends" @click="openModelManager">
+          {{ t("roleRuntime.modelManagerLink") }}
         </button>
         {{ t("roleRuntime.backendHintAfter") }}
       </p>

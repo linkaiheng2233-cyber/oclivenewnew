@@ -79,9 +79,8 @@
 
 ### 前端：插件管理入口与 Tauri `invoke`
 
-- **V1 / V2 路由**：`uiStore.experimentalPluginManagerV2`（Pinia 持久化）为唯一开关；顶栏「更多」与 **Ctrl+Shift+F** 的打开逻辑集中在 [`src/composables/usePluginManagerWindow.ts`](src/composables/usePluginManagerWindow.ts)。设置页、顶栏「更多」与快捷键说明中的**用户可见文案**以 [`src/i18n/locales/zh-CN.ts`](src/i18n/locales/zh-CN.ts) / [`en-US.ts`](src/i18n/locales/en-US.ts) 为准（`settings.*`、`app.more.*`、`common.shortcutHelp.*` 等；设置里需 `v-html` 的段落仅输出静态翻译 HTML，勿拼接用户输入）。
-- **V1 已安装区 UI**：侧栏 + 右侧「单插件配置 + 调试台」抽为 [`src/components/InstalledPluginWorkspaceDetail.vue`](src/components/InstalledPluginWorkspaceDetail.vue)，由 [`src/components/plugin-manager/PluginManagerPanel.vue`](src/components/plugin-manager/PluginManagerPanel.vue) 引用。
-- **V2 插件管理**：[`src/views/PluginManagerV2Panel.vue`](src/views/PluginManagerV2Panel.vue) → [`src/components/PluginManagerV2/PluginManagerV2.vue`](src/components/PluginManagerV2/PluginManagerV2.vue)。
+- **插件与模型入口**：**Ctrl+Shift+F** 打开极简已安装列表（[`SimplePluginManagerPanel`](src/views/SimplePluginManagerPanel.vue)）；**Ctrl+Shift+M** 打开模型管理（[`ModelManagerPanel`](src/views/ModelManagerPanel.vue) → [`ModelManagerBody`](src/components/model/ModelManagerBody.vue)，本会话 LLM 后端与 Ollama 探测）；顶栏「更多」另有插件市场。逻辑见 [`usePluginManagerWindow.ts`](src/composables/usePluginManagerWindow.ts)、[`useModelManagerWindow.ts`](src/composables/useModelManagerWindow.ts)。文案见 i18n `app.more.*`、`modelManager.*`。
+- **架构图专业面板（代码保留、默认不挂载）**：[`PluginManagerPanel`](src/components/plugin-manager/PluginManagerPanel.vue) 仍可供开发/CLI 场景复用，主应用 `App.vue` 不再默认挂载。
 - **`invoke` 参数名**：Tauri 将 Rust 命令的 `snake_case` 形参映射为前端的 **camelCase** 键（如 `plugin_id` → `pluginId`）。[`src/utils/tauri-api.ts`](src/utils/tauri-api.ts) 中 `get_plugin_logs`、`spawn_plugin_for_test` 等须与之一致；若命令仍手写 `snake_case` 载荷，会出现「missing required key `pluginId`」类错误。
 
 ### Agent / Skill（最小闭环）
@@ -91,7 +90,7 @@
   - [`src-tauri/src/domain/agent.rs`](src-tauri/src/domain/agent.rs)：`AgentProvider` trait 与 `BuiltinReActAgent`。
   - [`src-tauri/src/infrastructure/mcp_client.rs`](src-tauri/src/infrastructure/mcp_client.rs)：扫描 `{app_data}/mcp-servers/*.json`、列出 server、调用工具（http/stdio）。
   - [`src-tauri/src/api/agent.rs`](src-tauri/src/api/agent.rs)：`list_mcp_servers` / `call_mcp_tool` / `get_agent_debug_traces` / `clear_agent_debug_traces`。
-- **调试 UI**：[`src/components/AgentDebugPanel.vue`](src/components/AgentDebugPanel.vue) 挂在「插件与后端管理 → 后端模块」页，用于查看 Agent 任务拆解与工具调用链路。
+- **调试 UI**：[`src/components/AgentDebugPanel.vue`](src/components/AgentDebugPanel.vue) 原挂在高级插件面板；主路径 Agent 调试可经目录插件或后续专用入口接入。
 - **示例 Skill**：[`examples/weather_skill/`](examples/weather_skill/) 提供最小 Node MCP server（`get_weather(city)`）与示例 server manifest。
 
 ### Agent / Skill 通用接入标准（v1）

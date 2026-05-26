@@ -87,6 +87,9 @@ impl AppStateBuilder {
         run_migrations(&db).await?;
 
         let db_manager = Arc::new(DbManager::new(db));
+        if let Err(e) = crate::api::llm_settings::apply_user_llm_env_from_db(db_manager.as_ref()).await {
+            tracing::warn!(target: "oclive_llm", "apply user llm settings: {e}");
+        }
         let remote_fallback_allowed = remote_fallback_switch(&db_manager).await?;
 
         let memory_repo: Arc<dyn MemoryRepository> =

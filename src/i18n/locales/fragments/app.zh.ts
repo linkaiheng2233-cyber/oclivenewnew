@@ -59,9 +59,10 @@ export default {
       characterAt: '角色在：{label}',
       pluginBtnSimple: '插件管理',
       pluginMarket: '插件市场',
-      settingsTileHelpSimple:
-        '将快捷键说明、设置页、插件管理集中到同一处。快捷键：Ctrl+Shift+S 打开设置；'
-        + 'Ctrl+Shift+F 打开已安装插件列表。高级槽位配置见 <code>oclive plugin manage</code>。 Ctrl+Shift+D 开关调试面板。',
+      modelManager: '模型管理',
+      settingsTileHelp:
+        '将快捷键说明、设置、插件与模型管理集中到同一处。Ctrl+Shift+S 设置；Ctrl+Shift+F 已安装插件；'
+        + 'Ctrl+Shift+M 模型管理；Ctrl+Shift+D 调试面板。',
     },
     toast: {
       remoteLifeOn: '异地心声已开启',

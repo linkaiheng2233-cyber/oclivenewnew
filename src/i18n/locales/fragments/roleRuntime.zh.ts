@@ -11,9 +11,9 @@ export default {
       '人格来源为 vector：事件与情绪按七维精细化调整；与 settings 中 evolution.personality_source 一致。',
     versionAuthor: '版本 {version} · 作者 {author}',
     personalitySource: '人格来源：',
-    backendHintBefore: '模块后端、异地心声、会话覆盖与调试快照已迁至',
-    backendLink: '插件与后端管理 → 后端模块',
-    backendHintAfter: '（Ctrl+Shift+F）',
+    backendHintBefore: '对话模型与 LLM 后端（本会话覆盖）请打开',
+    modelManagerLink: '模型管理',
+    backendHintAfter: '（Ctrl+Shift+M）',
     relation: '关系',
     eventImpact: '事件影响',
   }

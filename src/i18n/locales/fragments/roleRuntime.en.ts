@@ -11,9 +11,9 @@ export default {
       'Vector source: events and mood adjust per dimension; matches evolution.personality_source in settings.',
     versionAuthor: 'Version {version} · Author {author}',
     personalitySource: 'Personality source:',
-    backendHintBefore: 'Module backends, remote inner voice, session overrides, and debug snapshots moved to',
-    backendLink: 'Plugins & backends → Backends',
-    backendHintAfter: '(Ctrl+Shift+F)',
+    backendHintBefore: 'Reply model and LLM backend (session override) — open',
+    modelManagerLink: 'Model management',
+    backendHintAfter: '(Ctrl+Shift+M)',
     relation: 'Relation',
     eventImpact: 'Event impact',
   }

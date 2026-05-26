@@ -21,8 +21,6 @@ const localePreference = defineModel<LocalePreference>('localePreference', { req
 defineProps<{
   relationOptions: RelationOptionRow[]
   allSceneOptions: Array<{ id: string, label: string }>
-  settingsEntryMoreHelp: string
-  pluginManagerMoreBtnLabel: string
 }>()
 
 const emit = defineEmits<{
@@ -30,6 +28,7 @@ const emit = defineEmits<{
   openShortcutHelp: []
   openPluginManager: []
   openPluginMarket: []
+  openModelManager: []
   sceneChange: [ev: Event]
   interactionModeChange: [ev: Event]
   changeRole: [roleId: string]
@@ -242,7 +241,7 @@ onBeforeUnmount(() => {
         <div class="more-tile more-tile--action settings-entry-tile">
           <div class="more-tile-head">
             <span class="more-label">{{ t("app.more.settingsEntry") }}</span>
-            <HelpHint :text="settingsEntryMoreHelp" />
+            <HelpHint :text="t('app.more.settingsTileHelp')" />
           </div>
           <div class="more-tile-body settings-entry-actions" role="group" :aria-label="t('app.more.settingsEntry')">
             <button type="button" class="more-debug-btn more-debug-btn--fill settings-entry-btn" @click="emit('openShortcutHelp')">
@@ -260,7 +259,14 @@ onBeforeUnmount(() => {
               class="more-debug-btn more-debug-btn--fill settings-entry-btn"
               @click="emit('openPluginManager')"
             >
-              {{ pluginManagerMoreBtnLabel }}
+              {{ t("app.more.pluginBtnSimple") }}
+            </button>
+            <button
+              type="button"
+              class="more-debug-btn more-debug-btn--fill settings-entry-btn"
+              @click="emit('openModelManager')"
+            >
+              {{ t("app.more.modelManager") }}
             </button>
             <button
               type="button"

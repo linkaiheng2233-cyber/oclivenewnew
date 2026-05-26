@@ -9,7 +9,6 @@ import PluginSettingsPanelSlots from '../components/PluginSettingsPanelSlots.vue
 import PluginSlotEmbed from '../components/PluginSlotEmbed.vue'
 import { useAppToast } from '../composables/useAppToast'
 import { SLOT_SETTINGS_ADVANCED, usePluginStore } from '../stores/pluginStore'
-import { useUiStore } from '../stores/uiStore'
 import {
 
   getRemoteFallbackAppSettings,
@@ -28,7 +27,6 @@ const emit = defineEmits<{
 
 const { t } = useI18n()
 const pluginStore = usePluginStore()
-const uiStore = useUiStore()
 const { showToast } = useAppToast()
 
 const hasSentryDsn
@@ -283,15 +281,6 @@ async function onToggleForceIframe(e: Event) {
                 <strong>{{ t("settings.sentryOptOutLabel") }}</strong>
               </span>
             </label>
-          </section>
-          <section class="sv-section">
-            <div class="sv-row-h">
-              <span class="sv-label">{{ t("settings.pluginCliLabel") }}</span>
-              <HelpHint :text="t('settings.pluginCliHelp')" />
-            </div>
-            <p class="sv-muted sv-plugin-cli-note">
-              {{ t("settings.pluginCliNote") }}
-            </p>
           </section>
           <section class="sv-section">
             <div class="sv-row-h">

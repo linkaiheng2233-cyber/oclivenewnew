@@ -221,7 +221,14 @@ pub async fn load_role_impl(
         .count_events(role_id)
         .await
         ?;
-    let effective_ollama_model = role.resolve_ollama_model(state.ollama_model.as_str());
+    let session_ns = session_namespace(role_id, None);
+    let effective_ollama_model =
+        crate::domain::effective_llm_model::resolve_effective_ollama_model(
+            state,
+            role.as_ref(),
+            session_ns.as_str(),
+        )
+        .await?;
     let relation_state =
         resolve_relation_state_for_ui(state, role_id, rt.current_user_relation.as_str()).await?;
     let remote_life_enabled = state
@@ -247,7 +254,6 @@ pub async fn load_role_impl(
         .role_cache
         .write()
         .insert(role_id.to_string(), Arc::clone(&role));
-    let session_ns = session_namespace(role_id, None);
     let plugin_backends_session_override =
         plugin_backends_override_from_slot_session(state, role.as_ref(), session_ns.as_str());
     let plugin_backends_effective = state
@@ -377,7 +383,13 @@ pub async fn get_role_info_impl(
         rt.current_user_relation.as_str(),
     )
     .await?;
-    let effective_ollama_model = role.resolve_ollama_model(state.ollama_model.as_str());
+    let effective_ollama_model =
+        crate::domain::effective_llm_model::resolve_effective_ollama_model(
+            state,
+            role.as_ref(),
+            session_ns.as_str(),
+        )
+        .await?;
     let relation_state =
         resolve_relation_state_for_ui(state, role_id, rt.current_user_relation.as_str()).await?;
     let remote_life_enabled = state

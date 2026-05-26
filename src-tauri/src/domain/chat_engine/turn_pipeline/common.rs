@@ -139,7 +139,13 @@ pub(crate) async fn pre_llm(ctx: &TurnContext<'_>) -> TurnResult<PreLlmOutput> {
     let user_emotion_prompt =
         crate::domain::emotion_analyzer::EmotionAnalyzer::format_for_prompt(&emotion_result);
 
-    let ollama_model = role.resolve_ollama_model(state.ollama_model.as_str());
+    let ollama_model = crate::domain::effective_llm_model::resolve_effective_ollama_model(
+        state,
+        role,
+        srid,
+    )
+    .await
+    .map_err(|e| super::super::turn_error::TurnError::wrap("resolve_llm_model", e))?;
 
     let prev_stored_narrative_hint = state.session_cache.stored_complex_emotion_narrative_hint(srid);
 

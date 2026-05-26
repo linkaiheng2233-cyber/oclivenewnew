@@ -118,30 +118,54 @@ pub(crate) fn plugin_remote_group(
     }
 }
 
+fn cloud_api_style_is_openai() -> bool {
+    !matches!(
+        std::env::var("OCLIVE_LLM_CLOUD_API_STYLE")
+            .ok()
+            .as_deref()
+            .map(str::trim)
+            .map(str::to_ascii_lowercase)
+            .as_deref(),
+        Some("oclive_jsonrpc")
+    )
+}
+
 pub fn llm_remote_backend(
     http_client: Arc<reqwest::Client>,
     default_llm: Arc<dyn LlmClient>,
     remote_fallback_allowed: Arc<AtomicBool>,
     grants: Arc<HighRiskGrantStore>,
 ) -> Arc<dyn LlmClient> {
+    if cloud_api_style_is_openai() {
+        if let Some(openai) = crate::infrastructure::openai_compatible_llm::OpenAiCompatibleLlm::from_env(
+            (*http_client).clone(),
+            grants.clone(),
+        ) {
+            tracing::info!(
+                target: "oclive_plugin",
+                "remote LLM OpenAI-compatible active -> {}",
+                openai.endpoint()
+            );
+            return Arc::new(openai);
+        }
+    }
     if let Some(cfg) = RemotePluginHttpConfig::from_env_llm() {
         tracing::info!(
             target: "oclive_plugin",
-            "remote LLM HTTP active -> {}",
+            "remote LLM JSON-RPC active -> {}",
             cfg.endpoint
         );
-        Arc::new(RemoteLlmHttp::new(
+        return Arc::new(RemoteLlmHttp::new(
             http_client,
             cfg,
             grants,
             Some(NETWORK_GRANT_REMOTE_LLM.to_string()),
-        ))
-    } else {
-        Arc::new(RemoteLlmPlaceholder::new(
-            default_llm,
-            remote_fallback_allowed,
-        ))
+        ));
     }
+    Arc::new(RemoteLlmPlaceholder::new(
+        default_llm,
+        remote_fallback_allowed,
+    ))
 }
 /// # Errors
 ///

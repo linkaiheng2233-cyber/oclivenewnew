@@ -9,6 +9,7 @@ import { expertConfigEn } from './fragments/expert.en'
 import pluginManagerBundle from './fragments/pluginManager.en'
 import roleRuntimeBundle from './fragments/roleRuntime.en'
 import settingsBundle from './fragments/settings.en'
+import { modelManagerEn as modelManager } from './fragments/modelManager.en'
 import { simplePluginManagerEn as simplePluginManager } from './fragments/simplePluginManager.en'
 import virtualTime from './fragments/virtualTime.en'
 
@@ -28,5 +29,6 @@ export default {
   settings: settingsBundle.settings,
   hotkeys: settingsBundle.hotkeys,
   simplePluginManager,
+  modelManager,
   virtualTime,
 }

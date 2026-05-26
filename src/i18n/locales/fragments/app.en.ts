@@ -63,9 +63,10 @@ export default {
       characterAt: 'Character at: {label}',
       pluginBtnSimple: 'Plugin manager',
       pluginMarket: 'Plugin market',
-      settingsTileHelpSimple:
-        'Shortcuts, settings, and plugin manager in one place. Ctrl+Shift+S opens settings; '
-        + 'Ctrl+Shift+F opens the installed-plugins list. Advanced slots: <code>oclive plugin manage</code>. Ctrl+Shift+D toggles the debug panel.',
+      modelManager: 'Model management',
+      settingsTileHelp:
+        'Shortcuts, settings, plugins, and models in one place. Ctrl+Shift+S settings; '
+        + 'Ctrl+Shift+F installed plugins; Ctrl+Shift+M model management; Ctrl+Shift+D debug panel.',
     },
     toast: {
       remoteLifeOn: 'Remote inner voice enabled',

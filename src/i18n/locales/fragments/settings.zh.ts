@@ -8,12 +8,11 @@ export default {
     tabGeneral: '常规',
     tabPlugins: '插件扩展',
     generalLeadHtml:
-      '顶栏<strong>「更多」</strong>集中设置入口；打开设置可用 <strong>Ctrl+Shift+S</strong>；'
-      + '<strong>Ctrl+Shift+F</strong> 打开插件管理（未勾选下方「V2 预览」时为<strong>专业模式（V1）</strong>；'
-      + '勾选后同一快捷键为<strong>V2 预览</strong>，V1 可从 V2 内入口打开）。',
+      '顶栏<strong>「更多」</strong>集中设置入口；<strong>Ctrl+Shift+S</strong> 打开设置；'
+      + '<strong>Ctrl+Shift+F</strong> 已安装插件；<strong>Ctrl+Shift+M</strong> 模型管理。',
     shortcutsLabel: '快捷',
     shortcutsHelp:
-      'Ctrl+Shift+S 打开设置；Ctrl+Shift+F 打开插件管理（V1/V2 由下方实验性勾选决定）；Ctrl+Shift+D 开关调试面板。',
+      'Ctrl+Shift+S 设置；Ctrl+Shift+F 已安装插件；Ctrl+Shift+M 模型管理；Ctrl+Shift+D 调试面板。',
     immersiveOnlyNote: '虚拟时间、叙事场景等仅在沉浸模式下显示于「更多」。',
     envCheckTitle: '环境自检',
     envCheckHelp:
@@ -46,10 +45,6 @@ export default {
       '勾选后立即尝试关闭 Sentry 客户端；偏好保存在本机 localStorage（键 oclive.telemetry.sentryOptOut）。取消勾选后需重启应用才会重新初始化上报。',
     sentryDisabledToast: '已禁用崩溃上报。',
     sentryReenableRestartToast: '已取消禁用；请重启应用后才会恢复上报。',
-    pluginCliLabel: '插件高级配置',
-    pluginCliHelp: '架构图、多槽位蓝图与写盘不在本界面提供。',
-    pluginCliNote:
-      '请使用终端 <code>oclive plugin manage</code>（可选 <code>--tui</code>）管理 slot_registry；安装时可用 manifest 的 slot_attachment 自动装配。详见创作者文档。',
     remoteFallbackSectionTitle: '远端插件失败策略',
     remoteFallbackLabel: '远端 HTTP 失败时自动降级内置',
     remoteFallbackHelp:

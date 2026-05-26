@@ -6,10 +6,13 @@ export interface UseGlobalHotkeysOptions {
   settingsViewOpen: Ref<boolean>
   topMoreOpen: Ref<boolean>
   marketPanelVisible: Ref<boolean> | ComputedRef<boolean>
+  modelManagerOpen: Ref<boolean>
   debugVisible: Ref<boolean> | ComputedRef<boolean>
   openPluginManagerPanel: () => void
+  openModelManager: () => void
   toggleDebug: () => void
   closeMarketPanel: () => void
+  closeModelManager: () => void
 }
 
 export function useGlobalHotkeys(opts: UseGlobalHotkeysOptions) {
@@ -81,6 +84,11 @@ export function useGlobalHotkeys(opts: UseGlobalHotkeysOptions) {
         opts.closeMarketPanel()
         return
       }
+      if (opts.modelManagerOpen.value) {
+        e.preventDefault()
+        opts.closeModelManager()
+        return
+      }
       if (opts.settingsViewOpen.value) {
         e.preventDefault()
         opts.settingsViewOpen.value = false
@@ -100,6 +108,11 @@ export function useGlobalHotkeys(opts: UseGlobalHotkeysOptions) {
     if (e.ctrlKey && e.shiftKey && e.key.toLowerCase() === 'f') {
       e.preventDefault()
       opts.openPluginManagerPanel()
+      return
+    }
+    if (e.ctrlKey && e.shiftKey && e.key.toLowerCase() === 'm') {
+      e.preventDefault()
+      opts.openModelManager()
       return
     }
     if (e.ctrlKey && e.shiftKey && e.key.toLowerCase() === 's') {

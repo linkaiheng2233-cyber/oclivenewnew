@@ -13,6 +13,7 @@ pub mod llm;
 pub mod llm_params;
 pub mod mcp_client;
 pub mod ollama_client;
+pub mod openai_compatible_llm;
 pub mod ollama_timeouts;
 pub mod plugin_data;
 pub mod plugin_installer;
