@@ -4,6 +4,7 @@ import { computed, ref, toRef, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { useAppToast } from '../composables/useAppToast'
 import { useModalFocusRestore } from '../composables/useModalFocusRestore'
+import { ensurePluginWorkbenchI18n } from '../i18n/loadPluginWorkbench'
 import { usePluginMarketStore } from '../stores/pluginMarketStore'
 import { usePluginTraceStore } from '../stores/pluginTraceStore'
 
@@ -14,18 +15,23 @@ const { t } = useI18n()
 
 const searchQuery = ref('')
 const categoryFilter = ref('')
+const i18nReady = ref(false)
 
 const dialogRef = ref<HTMLElement | null>(null)
-const firstFocusRef = ref<HTMLInputElement | null>(null)
+const shareUrlRef = ref<HTMLInputElement | null>(null)
 useModalFocusRestore(toRef(marketStore, 'marketPanelVisible'), dialogRef, {
-  primary: firstFocusRef,
+  primary: shareUrlRef,
 })
 
 watch(
   () => marketStore.marketPanelVisible,
-  (vis) => {
+  async (vis) => {
     if (vis) {
-      void marketStore.loadCachedPluginMarket()
+      await ensurePluginWorkbenchI18n()
+      i18nReady.value = true
+    }
+    else {
+      i18nReady.value = false
     }
   },
 )
@@ -61,15 +67,60 @@ const filteredPlugins = computed(() => {
   })
 })
 
-async function onSync() {
+const marketErrorText = computed(() => {
+  const e = marketStore.pluginMarketError
+  if (!e)
+    return ''
+  if (e === 'share_url_required')
+    return String(t('pluginWorkbench.market.errShareRequired'))
+  if (e === 'share_url_invalid')
+    return String(t('pluginWorkbench.market.errShareInvalid'))
+  return e
+})
+
+const showCatalogGrid = computed(
+  () =>
+    !marketStore.pendingGitShareUrl
+    && (filteredPlugins.value.length > 0
+      || (!!marketStore.pluginMarketSnapshot && !marketStore.pluginMarketSyncing)),
+)
+
+async function onLoadShareUrl() {
+  marketStore.pluginMarketError = null
   try {
-    await marketStore.syncPluginMarket()
+    await marketStore.loadFromShareUrl(marketStore.shareCatalogUrl)
+    if (marketStore.pendingGitShareUrl) {
+      return
+    }
     if (marketStore.pluginMarketSnapshot?.warning) {
       showToast('info', t('pluginWorkbench.market.toastOfflineCache'))
     }
     else {
-      showToast('success', t('pluginWorkbench.toast.indexSynced'))
+      showToast('success', t('pluginWorkbench.market.toastCatalogLoaded'))
     }
+  }
+  catch (e) {
+    if (
+      e instanceof Error
+      && (e.message === 'share_url_required' || e.message === 'share_url_invalid')
+    ) {
+      return
+    }
+    showToast('error', e instanceof Error ? e.message : String(e))
+  }
+}
+
+async function onInstallGitShare() {
+  const url = marketStore.pendingGitShareUrl
+  if (!url)
+    return
+  try {
+    await marketStore.installFromGitShare(url)
+    showToast(
+      'success',
+      t('pluginWorkbench.market.installedGoManage', { id: url }),
+    )
+    marketStore.pendingGitShareUrl = null
   }
   catch (e) {
     showToast('error', e instanceof Error ? e.message : String(e))
@@ -109,6 +160,10 @@ function openPluginManager() {
   traceStore.requestOpenSimplePluginManager()
 }
 
+function clearGitShare() {
+  marketStore.clearPendingGitShare()
+}
+
 function close() {
   marketStore.closeMarketPanel()
 }
@@ -117,7 +172,7 @@ function close() {
 <template>
   <Teleport to="body">
     <div
-      v-if="marketStore.marketPanelVisible"
+      v-if="marketStore.marketPanelVisible && i18nReady"
       class="mk-backdrop"
       role="dialog"
       aria-modal="true"
@@ -134,28 +189,60 @@ function close() {
             <p class="mk-sub">
               {{ t("pluginWorkbench.market.pageSub") }}
             </p>
-            <p class="mk-muted mk-source-hint">
-              {{ t("pluginWorkbench.market.indexSourceHint") }}
-            </p>
           </div>
           <button type="button" class="mk-close" :aria-label="t('common.close')" @click="close">
             ×
           </button>
         </header>
 
+        <div class="mk-share-block">
+          <label class="mk-share-label" for="mk-share-url">
+            {{ t("pluginWorkbench.market.shareUrlLabel") }}
+          </label>
+          <div class="mk-share-row">
+            <input
+              id="mk-share-url"
+              ref="shareUrlRef"
+              v-model="marketStore.shareCatalogUrl"
+              type="url"
+              class="mk-share-input"
+              :placeholder="t('pluginWorkbench.market.shareUrlPlaceholder')"
+              :aria-label="t('pluginWorkbench.market.shareUrlAria')"
+              :disabled="marketStore.pluginMarketSyncing"
+              @keydown.enter.prevent="onLoadShareUrl"
+            >
+            <button
+              type="button"
+              class="mk-btn primary"
+              :disabled="marketStore.pluginMarketSyncing"
+              @click="onLoadShareUrl"
+            >
+              {{
+                marketStore.pluginMarketSyncing
+                  ? t("pluginWorkbench.market.loading")
+                  : t("pluginWorkbench.market.loadCatalog")
+              }}
+            </button>
+          </div>
+          <p class="mk-muted mk-share-hint">
+            {{ t("pluginWorkbench.market.shareUrlHint") }}
+          </p>
+        </div>
+
         <div class="mk-toolbar">
           <input
-            ref="firstFocusRef"
             v-model="searchQuery"
             type="search"
             class="mk-search"
             :placeholder="t('pluginWorkbench.market.searchPlaceholder')"
             :aria-label="t('pluginWorkbench.market.searchAria')"
+            :disabled="!marketStore.pluginMarketSnapshot?.plugins?.length"
           >
           <select
             v-model="categoryFilter"
             class="mk-select"
             :aria-label="t('pluginWorkbench.market.categoryAria')"
+            :disabled="!categories.length"
           >
             <option value="">
               {{ t("pluginWorkbench.market.categoryAll") }}
@@ -164,28 +251,16 @@ function close() {
               {{ c }}
             </option>
           </select>
-          <button
-            type="button"
-            class="mk-btn secondary"
-            :disabled="marketStore.pluginMarketSyncing"
-            @click="onSync"
-          >
-            {{
-              marketStore.pluginMarketSyncing
-                ? t("pluginWorkbench.market.syncing")
-                : t("pluginWorkbench.market.sync")
-            }}
-          </button>
           <button type="button" class="mk-btn secondary" @click="openPluginManager">
             {{ t("pluginWorkbench.market.openManager") }}
           </button>
         </div>
 
         <p v-if="marketStore.pluginMarketSyncing" class="mk-sync-status" role="status" aria-live="polite">
-          {{ t("pluginWorkbench.market.syncing") }}
+          {{ t("pluginWorkbench.market.loading") }}
         </p>
-        <p v-if="marketStore.pluginMarketError" class="mk-err">
-          {{ marketStore.pluginMarketError }}
+        <p v-if="marketErrorText" class="mk-err" role="alert">
+          {{ marketErrorText }}
         </p>
         <div
           v-else-if="marketStore.pluginMarketSnapshot?.warning"
@@ -202,20 +277,49 @@ function close() {
           </p>
         </div>
         <p
-          v-else-if="marketStore.pluginMarketSnapshot?.offlineMode"
+          v-else-if="marketStore.pluginMarketSnapshot?.offlineMode && showCatalogGrid"
           class="mk-hint"
         >
           {{ t("pluginWorkbench.market.offline") }}
         </p>
 
         <div class="mk-scroll">
+          <section
+            v-if="marketStore.pendingGitShareUrl"
+            class="mk-git-card"
+            aria-labelledby="mk-git-title"
+          >
+            <h3 id="mk-git-title" class="mk-git-title">
+              {{ t("pluginWorkbench.market.gitShareTitle") }}
+            </h3>
+            <p class="mk-muted">
+              {{ t("pluginWorkbench.market.gitShareBody") }}
+            </p>
+            <p class="mk-git-url">
+              <code>{{ marketStore.pendingGitShareUrl }}</code>
+            </p>
+            <div class="mk-git-actions">
+              <button
+                type="button"
+                class="mk-btn primary"
+                :disabled="marketStore.pluginMarketSyncing"
+                @click="onInstallGitShare"
+              >
+                {{ t("pluginWorkbench.market.gitShareInstall") }}
+              </button>
+              <button type="button" class="mk-btn secondary" @click="clearGitShare">
+                {{ t("pluginWorkbench.market.clearGitShare") }}
+              </button>
+            </div>
+          </section>
+
           <p
-            v-if="!filteredPlugins.length && !marketStore.pluginMarketError"
+            v-if="!marketStore.pendingGitShareUrl && !filteredPlugins.length && !marketErrorText"
             class="mk-muted mk-empty"
           >
             {{ t("pluginWorkbench.market.emptyIndex") }}
           </p>
-          <ul v-else class="mk-grid" role="list">
+          <ul v-else-if="filteredPlugins.length" class="mk-grid" role="list">
             <li v-for="row in filteredPlugins" :key="row.id" class="mk-card">
               <div class="mk-card-head">
                 <strong class="mk-card-id">{{ row.id }}</strong>
@@ -322,6 +426,35 @@ function close() {
   cursor: pointer;
   color: var(--text-secondary);
 }
+.mk-share-block {
+  padding: 12px 18px;
+  border-bottom: 1px solid var(--border-light);
+}
+.mk-share-label {
+  display: block;
+  font-size: 12px;
+  font-weight: 600;
+  margin-bottom: 6px;
+}
+.mk-share-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+.mk-share-input {
+  flex: 1 1 240px;
+  min-width: 0;
+  padding: 8px 10px;
+  border-radius: 6px;
+  border: 1px solid var(--border-light);
+  background: var(--bg-elevated);
+  color: var(--text-primary);
+  font-size: 13px;
+}
+.mk-share-hint {
+  margin: 8px 0 0;
+  line-height: 1.45;
+}
 .mk-toolbar {
   display: flex;
   flex-wrap: wrap;
@@ -350,6 +483,27 @@ function close() {
   min-height: 0;
   overflow: auto;
   padding: 14px 18px 18px;
+}
+.mk-git-card {
+  border: 1px solid var(--border-light);
+  border-radius: var(--radius-card);
+  padding: 14px 16px;
+  background: var(--bg-elevated);
+  margin-bottom: 12px;
+}
+.mk-git-title {
+  margin: 0 0 8px;
+  font-size: 15px;
+}
+.mk-git-url {
+  margin: 10px 0;
+  word-break: break-all;
+  font-size: 12px;
+}
+.mk-git-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
 }
 .mk-grid {
   list-style: none;
@@ -448,5 +602,10 @@ function close() {
 .mk-empty {
   text-align: center;
   padding: 24px;
+}
+.mk-sync-status {
+  margin: 0 18px;
+  font-size: 12px;
+  color: var(--text-secondary);
 }
 </style>

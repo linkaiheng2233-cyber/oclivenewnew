@@ -2,12 +2,37 @@ import type { PluginMarketSnapshotDto } from '../../api'
 import {
   batchUpdatePlugins,
   getCachedPluginIndex,
+  installPluginFromGit,
   installPluginFromMarket,
   syncPluginIndexCommand,
   uninstallPluginFromMarket,
   updatePluginFromMarket,
 } from '../../api'
+import { classifyPluginShareUrl } from '../../lib/pluginShareUrl'
 import { useUiStore } from '../uiStore'
+import { usePluginStore } from '../pluginStore'
+
+const SHARE_URL_STORAGE_KEY = 'oclive-plugin-market-share-url'
+
+function readStoredShareUrl(): string {
+  if (typeof localStorage === 'undefined') {
+    return ''
+  }
+  return localStorage.getItem(SHARE_URL_STORAGE_KEY)?.trim() ?? ''
+}
+
+function writeStoredShareUrl(url: string): void {
+  if (typeof localStorage === 'undefined') {
+    return
+  }
+  const t = url.trim()
+  if (t) {
+    localStorage.setItem(SHARE_URL_STORAGE_KEY, t)
+  }
+  else {
+    localStorage.removeItem(SHARE_URL_STORAGE_KEY)
+  }
+}
 
 export function marketState() {
   return {
@@ -15,6 +40,10 @@ export function marketState() {
     pluginMarketSnapshot: null as PluginMarketSnapshotDto | null,
     pluginMarketSyncing: false,
     pluginMarketError: null as string | null,
+    /** 分享链接输入框（打开市场时恢复上次粘贴的 URL） */
+    shareCatalogUrl: readStoredShareUrl(),
+    /** 当前按 git 仓库分享的插件（单条安装，无 plugins.json 列表） */
+    pendingGitShareUrl: null as string | null,
   }
 }
 
@@ -28,9 +57,57 @@ export const marketActions = {
       this.pluginMarketError = e instanceof Error ? e.message : String(e)
     }
   },
+  async loadFromShareUrl(this: MarketSliceStore, rawUrl: string) {
+    const url = rawUrl.trim()
+    if (!url) {
+      this.pluginMarketError = 'share_url_required'
+      throw new Error('share_url_required')
+    }
+    const kind = classifyPluginShareUrl(url)
+    if (kind === 'invalid') {
+      this.pluginMarketError = 'share_url_invalid'
+      throw new Error('share_url_invalid')
+    }
+    this.shareCatalogUrl = url
+    writeStoredShareUrl(url)
+    if (kind === 'git') {
+      this.pendingGitShareUrl = url
+      this.pluginMarketSnapshot = null
+      this.pluginMarketError = null
+      return
+    }
+    this.pendingGitShareUrl = null
+    await this.syncPluginMarket(url)
+  },
+  async installFromGitShare(this: MarketSliceStore, gitUrl: string) {
+    const url = gitUrl.trim()
+    if (!url) {
+      return
+    }
+    this.pluginMarketSyncing = true
+    this.pluginMarketError = null
+    try {
+      await installPluginFromGit(url)
+      this.pendingGitShareUrl = null
+      const pluginStore = usePluginStore()
+      await pluginStore.refresh()
+      pluginStore.bootstrapEpoch += 1
+    }
+    catch (e) {
+      this.pluginMarketError = e instanceof Error ? e.message : String(e)
+      throw e
+    }
+    finally {
+      this.pluginMarketSyncing = false
+    }
+  },
+  clearPendingGitShare(this: MarketSliceStore) {
+    this.pendingGitShareUrl = null
+  },
   async syncPluginMarket(this: MarketSliceStore, indexUrl?: string | null) {
     this.pluginMarketSyncing = true
     this.pluginMarketError = null
+    this.pendingGitShareUrl = null
     try {
       this.pluginMarketSnapshot = await syncPluginIndexCommand(
         indexUrl ?? undefined,
@@ -45,7 +122,7 @@ export const marketActions = {
       else {
         ui.clearPluginIndexConnectivityBanner()
       }
-      await this.refresh()
+      await usePluginStore().refresh()
     }
     catch (e) {
       this.pluginMarketError = e instanceof Error ? e.message : String(e)
@@ -57,23 +134,27 @@ export const marketActions = {
   },
   async installFromPluginMarket(this: MarketSliceStore, pluginId: string, gitUrl?: string | null) {
     await installPluginFromMarket(pluginId, gitUrl ?? null)
-    await this.refresh()
-    this.bootstrapEpoch += 1
+    const pluginStore = usePluginStore()
+    await pluginStore.refresh()
+    pluginStore.bootstrapEpoch += 1
   },
   async updateInstalledPluginFromGit(this: MarketSliceStore, pluginId: string) {
     await updatePluginFromMarket(pluginId)
-    await this.refresh()
-    this.bootstrapEpoch += 1
+    const pluginStore = usePluginStore()
+    await pluginStore.refresh()
+    pluginStore.bootstrapEpoch += 1
   },
   async uninstallPluginFromGitIndex(this: MarketSliceStore, pluginId: string) {
     await uninstallPluginFromMarket(pluginId)
-    await this.refresh()
-    this.bootstrapEpoch += 1
+    const pluginStore = usePluginStore()
+    await pluginStore.refresh()
+    pluginStore.bootstrapEpoch += 1
   },
   async batchUpdatePluginsFromGitIndex(this: MarketSliceStore, pluginIds: string[]) {
     await batchUpdatePlugins(pluginIds)
-    await this.refresh()
-    this.bootstrapEpoch += 1
+    const pluginStore = usePluginStore()
+    await pluginStore.refresh()
+    pluginStore.bootstrapEpoch += 1
   },
 }
 
@@ -81,6 +162,6 @@ export interface MarketSliceStore {
   pluginMarketSnapshot: PluginMarketSnapshotDto | null
   pluginMarketSyncing: boolean
   pluginMarketError: string | null
-  bootstrapEpoch: number
-  refresh(): Promise<void>
+  shareCatalogUrl: string
+  pendingGitShareUrl: string | null
 }

@@ -1,4 +1,5 @@
 import { defineStore } from 'pinia'
+import { ensurePluginWorkbenchI18n } from '../i18n/loadPluginWorkbench'
 import { marketActions, marketState } from './plugin/marketSlice'
 import type { MarketSliceStore } from './plugin/marketSlice'
 
@@ -9,9 +10,13 @@ export const usePluginMarketStore = defineStore('pluginMarket', {
   }),
   actions: {
     ...marketActions,
-    openMarketPanel(this: MarketSliceStore & { marketPanelVisible: boolean }) {
+    async openMarketPanel(this: MarketSliceStore & { marketPanelVisible: boolean }) {
+      await ensurePluginWorkbenchI18n()
       this.marketPanelVisible = true
-      void this.loadCachedPluginMarket()
+      this.pendingGitShareUrl = null
+      if (!this.shareCatalogUrl.trim() && !this.pluginMarketSnapshot) {
+        void this.loadCachedPluginMarket()
+      }
     },
     closeMarketPanel(this: { marketPanelVisible: boolean }) {
       this.marketPanelVisible = false

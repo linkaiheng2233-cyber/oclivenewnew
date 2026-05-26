@@ -18,3 +18,24 @@ where
         .expect("tokio runtime for block_on");
     rt.block_on(future)
 }
+
+/// Run a future on a dedicated thread with its own current-thread runtime.
+///
+/// Use from **synchronous** Tauri `invoke` handlers (WebView main thread). Calling
+/// [`block_on`] there may nest `block_in_place` on the app runtime and panic with
+/// "A Tokio 1.x context was found, but it is being shutdown".
+pub fn block_on_isolated<F, T>(future: F) -> T
+where
+    F: Future<Output = T> + Send + 'static,
+    T: Send + 'static,
+{
+    std::thread::spawn(move || {
+        let rt = tokio::runtime::Builder::new_current_thread()
+            .enable_all()
+            .build()
+            .expect("isolated tokio runtime");
+        rt.block_on(future)
+    })
+    .join()
+    .expect("isolated block_on thread panicked")
+}

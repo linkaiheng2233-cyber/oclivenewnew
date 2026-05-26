@@ -86,19 +86,28 @@ pub fn load_cached_index(state: &AppState) -> Result<PluginIndexFile, AppError> 
         .map_err(|e| AppError::Unknown(format!("parse plugin index cache failed: {}", e)))
 }
 fn fetch_index_url(url: &str, cli: &reqwest::Client) -> Result<PluginIndexFile, AppError> {
-    let resp = crate::utils::block_on::block_on(async { cli.get(url).send().await })
-        .map_err(|e| AppError::Unknown(format!("sync plugin index failed: {}", e)))?;
-    if !resp.status().is_success() {
-        return Err(AppError::Unknown(format!(
-            "sync plugin index status={} url={}",
-            resp.status(),
-            url
-        )));
-    }
-    let text = crate::utils::block_on::block_on(async { resp.text().await })
-        .map_err(|e| AppError::Unknown(format!("read plugin index response failed: {}", e)))?;
-    serde_json::from_str(&text)
-        .map_err(|e| AppError::Unknown(format!("parse plugins.json failed: {}", e)))
+    let url = url.to_string();
+    let cli = cli.clone();
+    crate::utils::block_on::block_on_isolated(async move {
+        let resp = cli
+            .get(&url)
+            .send()
+            .await
+            .map_err(|e| AppError::Unknown(format!("sync plugin index failed: {}", e)))?;
+        if !resp.status().is_success() {
+            return Err(AppError::Unknown(format!(
+                "sync plugin index status={} url={}",
+                resp.status(),
+                url
+            )));
+        }
+        let text = resp
+            .text()
+            .await
+            .map_err(|e| AppError::Unknown(format!("read plugin index response failed: {}", e)))?;
+        serde_json::from_str(&text)
+            .map_err(|e| AppError::Unknown(format!("parse plugins.json failed: {}", e)))
+    })
 }
 
 /// # Errors
