@@ -108,6 +108,29 @@
         "additionalProperties": false
       }
     },
+    "includes": {
+      "type": "array",
+      "description": "Satellite files merged at load time (relative to role pack root).",
+      "items": {
+        "type": "object",
+        "required": ["path", "target", "mode"],
+        "additionalProperties": false,
+        "properties": {
+          "id": { "type": "string" },
+          "path": {
+            "type": "string",
+            "pattern": "^(?!.*\\.\\.)[a-zA-Z0-9_./-]+$"
+          },
+          "target": { "type": "string", "minLength": 1 },
+          "mode": { "type": "string", "enum": ["merge", "replace"] }
+        }
+      }
+    },
+    "expert_overlay": {
+      "type": "object",
+      "description": "Optional pointer to expert facility files (routing_path, active_revision).",
+      "additionalProperties": true
+    },
     "groups": {
       "type": "object",
       "description": "Optional logical grouping of slot_registry instance keys (architecture graph).",

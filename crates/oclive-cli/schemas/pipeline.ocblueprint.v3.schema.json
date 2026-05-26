@@ -32,6 +32,8 @@
         ]
       }
     },
+    "includes": { "$ref": "pipeline.ocblueprint.v2.schema.json#/properties/includes" },
+    "expert_overlay": { "$ref": "pipeline.ocblueprint.v2.schema.json#/properties/expert_overlay" },
     "groups": { "$ref": "pipeline.ocblueprint.v2.schema.json#/properties/groups" },
     "runtime_config": { "$ref": "pipeline.ocblueprint.v2.schema.json#/properties/runtime_config" },
     "pipeline": {
@@ -52,8 +54,13 @@
         "additionalProperties": false,
         "properties": {
           "action": {
-            "type": "string",
-            "pattern": "^slot\\.[^.]+\\.[^.]+"
+            "oneOf": [
+              { "type": "string", "const": "slot.expert.invoke" },
+              {
+                "type": "string",
+                "pattern": "^slot\\.[^.]+\\.[^.]+$"
+              }
+            ]
           },
           "depends_on": {
             "type": "array",

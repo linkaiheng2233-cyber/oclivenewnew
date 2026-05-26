@@ -35,7 +35,8 @@ v2 磁盘上常为 **同一文件** `pipeline.ocblueprint`：`meta` 中仅上表
 
 ```text
 roles/{role_id}/
-├── pipeline.ocblueprint    # **v2 SSOT**：含 **角色 meta** + **蓝图** slot_registry（逻辑分责，见 §0）
+├── pipeline.ocblueprint    # **v2 SSOT（瘦）**：meta + slot_registry + includes；见 [BLUEPRINT_FOLDER_LAYOUT.md](../../handoff/BLUEPRINT_FOLDER_LAYOUT.md)
+├── blueprint/              # 可选：includes/、overlays/、revisions/、docs/（卫星，不替代本体路径）
 ├── prompts/                # **角色包**：系统提示词、开场白等（推荐）
 ├── manifest.json           # **已废弃（legacy）**：勿与 v2 蓝图并存
 ├── settings.json           # **已废弃（legacy）**：勿与 v2 蓝图并存
@@ -61,6 +62,8 @@ roles/{role_id}/
 | `meta` | **角色包** + 过渡期引擎字段 | 是 | 创作者子集见 §0；引擎键目标迁至 `runtime_config` |
 | `slot_registry` | **蓝图** | 是 | 至少一个 `type: llm` |
 | `groups` | **蓝图** | 否 | 架构图分组 |
+| `includes` | **蓝图** | 否 | 卫星 JSON 拉取清单（加载时 merge/replace）；见 §2.6 |
+| `expert_overlay` | **蓝图** | 否 | 专家设施指针（`routing_path`、`active_revision` 等，≤ 少量字段） |
 | `runtime_config` | **蓝图** | 否 | **目标 SSOT**（`interaction_mode`、`dual_core` 等；v3 草案） |
 
 ### 2.1 `meta`（角色包 · 创作者）
@@ -128,7 +131,19 @@ roles/{role_id}/
 }
 ```
 
-### 2.6 `module_relations`（仅运行时）
+### 2.6 `includes[]`（蓝图 · 卫星拉取）
+
+加载角色包时，宿主按数组顺序将卫星文件合并进蓝图内存态（`oclive_validation::resolve_blueprint_includes_*`）。
+
+| 字段 | 说明 |
+|------|------|
+| `path` | 相对 **`roles/{role_id}/`** 的正斜杠路径；禁止 `..` |
+| `target` | 点分路径，如 `meta.personality`、`expert_routing`、`runtime_config.expert_hints`、`slot_registry.<key>` |
+| `mode` | `merge`（JSON 深合并）或 `replace`（整段替换） |
+
+缺失或非法卫星文件：**warn 并跳过**，不阻塞 `load_role`。专家路由默认文件：**`blueprint/includes/expert_routing.json`**；实验核 pipeline 可使用 action **`slot.expert.invoke`**（须 `dual_core` + v3 `pipeline.experimental`）。
+
+### 2.7 `module_relations`（仅运行时）
 
 **禁止**在 `pipeline.ocblueprint` 文件中出现 `module_relations`、`steps`、`entry`（校验报错）。运行时由 `slot_registry` **派生**模块间示意关系，供架构图只读连线。
 
