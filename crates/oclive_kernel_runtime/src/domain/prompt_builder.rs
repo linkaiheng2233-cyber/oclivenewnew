@@ -500,6 +500,7 @@ mod tests {
             time_config: Default::default(),
             pack_memory_config: Default::default(),
             pack_relation_config: Default::default(),
+            pack_evolution_config: Default::default(),
             runtime_config: None,
             pipeline_experimental: None,
             scene_ids: std::sync::Arc::from(Vec::<String>::new()),

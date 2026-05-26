@@ -30,6 +30,15 @@ pub fn compute_virtual_now_ms(
     round_to_minute_ms(anchor_virtual_ms.saturating_add(virtual_elapsed))
 }
 
+/// 两时间戳之间的虚拟小时数（基于毫秒差）。
+#[must_use]
+pub fn virtual_hours_between_ms(from_ms: i64, to_ms: i64) -> f64 {
+    if to_ms <= from_ms {
+        return 0.0;
+    }
+    (to_ms - from_ms) as f64 / 3_600_000.0
+}
+
 /// 两时间戳之间的虚拟日数（基于毫秒差）。
 #[must_use]
 pub fn virtual_days_between_ms(from_ms: i64, to_ms: i64) -> f64 {
@@ -56,6 +65,12 @@ pub fn virtual_days_from_real_elapsed_ms(real_elapsed_ms: i64, real_to_virtual_r
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn virtual_hours_between_timestamps() {
+        assert!((virtual_hours_between_ms(0, 3_600_000) - 1.0).abs() < 1e-6);
+        assert_eq!(virtual_hours_between_ms(100, 50), 0.0);
+    }
 
     #[test]
     fn ratio_five_advances_virtual_five_times_faster() {

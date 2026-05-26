@@ -432,6 +432,39 @@ impl DbManager {
         Ok(())
     }
 
+    pub async fn get_last_personality_evolution_virtual_ms(&self, role_id: &str) -> Result<i64> {
+        let row: Option<(i64,)> = sqlx::query_as(
+            "SELECT last_personality_evolution_virtual_ms FROM role_runtime WHERE role_id = ?",
+        )
+        .bind(role_id)
+        .fetch_optional(&self.pool)
+        .await
+        .map_err(|e| AppError::DatabaseError(e.to_string()))?;
+        Ok(row.map(|(v,)| v).unwrap_or(0))
+    }
+
+    pub async fn set_last_personality_evolution_virtual_ms(
+        &self,
+        role_id: &str,
+        virtual_ms: i64,
+    ) -> Result<()> {
+        let now = Utc::now().to_rfc3339();
+        let n = sqlx::query(
+            "UPDATE role_runtime SET last_personality_evolution_virtual_ms = ?, updated_at = ? WHERE role_id = ?",
+        )
+        .bind(virtual_ms)
+        .bind(&now)
+        .bind(role_id)
+        .execute(&self.pool)
+        .await
+        .map_err(|e| AppError::DatabaseError(e.to_string()))?
+        .rows_affected();
+        if n == 0 {
+            return Err(AppError::RoleRuntimeNotReady);
+        }
+        Ok(())
+    }
+
     /// 旧版全局 `app_settings.interaction_mode`（迁移用）。
     async fn get_legacy_app_interaction_mode(&self) -> Result<Option<String>> {
         let row: Option<(String,)> =

@@ -148,6 +148,7 @@ mod tests {
             time_config: crate::models::RoleTimeConfig::default(),
             pack_memory_config: crate::models::RolePackMemoryConfig::default(),
             pack_relation_config: crate::models::RolePackRelationConfig::default(),
+            pack_evolution_config: crate::models::RolePackEvolutionConfig::default(),
             slot_registry: None,
             slot_groups: None,
             runtime_config: None,

@@ -4,7 +4,9 @@ use std::collections::{BTreeMap, HashMap};
 use super::author_pack::AuthorPackFile;
 use super::knowledge::KnowledgeIndex;
 use super::plugin_backends::PluginBackends;
-use super::role_pack_config::{RolePackMemoryConfig, RolePackRelationConfig};
+use super::role_pack_config::{
+    RolePackEvolutionConfig, RolePackMemoryConfig, RolePackRelationConfig,
+};
 use super::role_time_config::RoleTimeConfig;
 use super::scene_disk::DiskSceneConfig;
 use super::ui_config::UiConfig;
@@ -211,6 +213,9 @@ pub struct Role {
     /// `config.json` → `relation`（疏远衰减）。
     #[serde(default)]
     pub pack_relation_config: RolePackRelationConfig,
+    /// `config.json` → `evolution`（虚拟时间阶段性性格演化间隔）。
+    #[serde(default)]
+    pub pack_evolution_config: RolePackEvolutionConfig,
     /// v3 蓝图 `runtime_config`（宿主加载；创作者包通常不含或未开双核）。
     #[serde(default)]
     pub runtime_config: Option<RuntimeConfig>,
@@ -274,6 +279,7 @@ impl Default for Role {
             time_config: RoleTimeConfig::default(),
             pack_memory_config: RolePackMemoryConfig::default(),
             pack_relation_config: RolePackRelationConfig::default(),
+            pack_evolution_config: RolePackEvolutionConfig::default(),
             runtime_config: None,
             pipeline_experimental: None,
             scene_ids: Arc::from(Vec::<String>::new()),

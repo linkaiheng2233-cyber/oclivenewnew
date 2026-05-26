@@ -130,6 +130,24 @@ pub(crate) async fn pre_llm(ctx: &TurnContext<'_>) -> TurnResult<PreLlmOutput> {
     let event_runtime = event_impact_opt.unwrap_or(role.evolution_config.event_impact_factor);
     let mut personality = personality;
 
+    if ctx.immersive && ctx.virtual_time_ms > 0 {
+        let time_evo = crate::domain::time_driven_evolution::check_and_evolve_by_time(
+            state,
+            role,
+            srid,
+            ctx.virtual_time_ms,
+            ctx.immersive,
+        )
+        .await
+        .map_err(|e| super::super::turn_error::TurnError::wrap("time_driven_evolution", e))?;
+        if let Some(p) = time_evo.personality {
+            personality = p;
+        }
+        if let Some(m) = time_evo.mutable_for_prompt {
+            mutable_for_prompt = m;
+        }
+    }
+
     let emotion_result = STAGES
         .stage(
             ChatStage::UserEmotionAnalyze,

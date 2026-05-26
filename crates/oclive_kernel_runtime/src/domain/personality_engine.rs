@@ -27,6 +27,22 @@ impl PersonalityEngine {
         personality
     }
 
+    /// 虚拟时间阶段性沉淀：在 **delta** 上按经过的虚拟小时微调（长期、小于单轮事件）。
+    #[must_use]
+    pub fn evolve_by_time_lapse(mut delta: PersonalityVector, lapse_hours: f64) -> PersonalityVector {
+        let unit = (lapse_hours / 6.0).clamp(0.0, 8.0);
+        let s = unit * 0.025;
+        if s <= 0.0 {
+            return delta;
+        }
+        delta.talkativeness -= s;
+        delta.clinginess -= s * 0.6;
+        delta.sensitivity -= s * 0.4;
+        delta.stubbornness += s * 0.3;
+        delta.forgiveness += s * 0.2;
+        delta
+    }
+
     /// 被反复提及（`mention_count` 达阈值）的记忆：按情感与话题关键词微调七维，幅度约为事件驱动的 10–20%。
     #[must_use]
     pub fn evolve_by_reinforced_memory(
@@ -213,6 +229,13 @@ mod tests {
 
     fn create_test_bounds() -> EvolutionBounds {
         EvolutionBounds::full_01()
+    }
+
+    #[test]
+    fn time_lapse_reduces_talkativeness_on_delta() {
+        let delta = create_test_personality();
+        let evolved = PersonalityEngine::evolve_by_time_lapse(delta, 6.0);
+        assert!(evolved.talkativeness < 0.5);
     }
 
     #[test]

@@ -36,6 +36,25 @@ fn default_reinforced_mention_threshold() -> i32 {
     3
 }
 
+fn default_personality_evolution_interval_hours() -> f64 {
+    6.0
+}
+
+/// `config.json` → `evolution`（虚拟时间驱动的阶段性性格沉淀）
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
+pub struct RolePackEvolutionConfig {
+    #[serde(default = "default_personality_evolution_interval_hours")]
+    pub personality_evolution_interval_hours: f64,
+}
+
+impl Default for RolePackEvolutionConfig {
+    fn default() -> Self {
+        Self {
+            personality_evolution_interval_hours: 6.0,
+        }
+    }
+}
+
 /// `config.json` → `memory`
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
 pub struct RolePackMemoryConfig {
@@ -93,4 +112,6 @@ pub struct RolePackConfigFile {
     pub memory: RolePackMemoryConfig,
     #[serde(default)]
     pub relation: RolePackRelationConfig,
+    #[serde(default)]
+    pub evolution: RolePackEvolutionConfig,
 }
