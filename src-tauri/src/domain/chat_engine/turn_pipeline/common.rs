@@ -6,6 +6,7 @@ use crate::domain::chat_turn_rules::{soft_append_guard, strip_hallucination_toke
 use crate::domain::complex_emotion::ComplexEmotionOutput;
 use crate::domain::emotion_analyzer::EmotionResult;
 use crate::domain::memory_retrieval::MemoryRetrievalInput;
+use crate::domain::memory_engine::MemoryEngine;
 use crate::domain::personality_engine::PersonalityEngine;
 use crate::domain::policy::PolicyContext;
 use crate::domain::portrait_emotion_engine::resolve_portrait_emotion;
@@ -76,6 +77,7 @@ pub(crate) struct MiddleOutput {
 pub(crate) struct MainLlmOutput {
     pub reply: String,
     pub main_llm_fallback: bool,
+    pub llm_fallback_reason: Option<String>,
     pub main_llm_ms: u64,
 }
 
@@ -91,7 +93,7 @@ pub(crate) async fn pre_llm(ctx: &TurnContext<'_>) -> TurnResult<PreLlmOutput> {
 
     let (
         event_impact_opt,
-        mutable_for_prompt,
+        mut mutable_for_prompt,
         personality,
         (recent_turns, recent_turns_for_event, recent_events_for_event),
     ) = tokio::try_join!(
@@ -173,6 +175,41 @@ pub(crate) async fn pre_llm(ctx: &TurnContext<'_>) -> TurnResult<PreLlmOutput> {
         .map(|m| m.scene_weight_multiplier)
         .unwrap_or(1.0);
     weight_memories_for_scene(&mut memories, scene_id, scene_m);
+    if ctx.immersive && ctx.virtual_time_ms > 0 {
+        MemoryEngine::apply_time_decay_batch(
+            &mut memories,
+            ctx.virtual_time_ms,
+            &role.pack_memory_config,
+        );
+    }
+
+    let mem_cfg = &role.pack_memory_config;
+    if role.evolution_config.personality_source != PersonalitySource::Profile {
+        for m in &memories {
+            if m.mention_count >= mem_cfg.reinforced_mention_threshold {
+                personality = PersonalityEngine::evolve_by_reinforced_memory(
+                    personality,
+                    &m.content,
+                    &user_emotion_str,
+                    event_runtime,
+                    &role.evolution_bounds,
+                );
+            }
+        }
+    } else {
+        for m in &memories {
+            if m.mention_count >= mem_cfg.reinforced_mention_threshold {
+                let snippet: String = m.content.chars().take(96).collect();
+                let line = format!("因反复提及「{snippet}」，相关性格倾向略有沉淀。");
+                mutable_for_prompt = crate::domain::relation_estrangement::append_mutable_profile_section(
+                    &mutable_for_prompt,
+                    "记忆塑造",
+                    &line,
+                );
+            }
+        }
+    }
+
     let relevant = STAGES
         .stage(
             ChatStage::MemoryRank,
@@ -199,6 +236,16 @@ pub(crate) async fn pre_llm(ctx: &TurnContext<'_>) -> TurnResult<PreLlmOutput> {
                 .ensure_identity_stats_row(srid, user_relation_key.as_str(), seed_favor),
         )
         .await?;
+
+    crate::domain::relation_estrangement::apply_estrangement_at_turn_start(
+        state.db_manager.as_ref(),
+        role,
+        srid,
+        user_relation_key.as_str(),
+        ctx.immersive,
+    )
+    .await
+    .map_err(|e| super::super::turn_error::TurnError::wrap("estrangement", e))?;
 
     let (rel_id, rel_global, favorability_before) = tokio::try_join!(
         async {
@@ -299,14 +346,17 @@ pub(crate) async fn run_main_llm(
 
     let t_main_llm = Instant::now();
     let mut main_llm_fallback = false;
+    let mut llm_fallback_reason = None;
     let reply_raw = match slot_runner
         .generate_llm(pl, pre.ollama_model.as_str(), &middle.prompt)
         .await
     {
         Ok(s) => s,
         Err(e) => {
-            tracing::warn!("{path_label} LLM generate failed, fallback: {e}");
+            let reason = e.to_frontend_error();
+            tracing::warn!("{path_label} LLM generate failed, fallback: {reason}");
             main_llm_fallback = true;
+            llm_fallback_reason = Some(reason);
             fallback_reply_for_llm_failure(
                 role,
                 &middle.personality,
@@ -332,6 +382,7 @@ pub(crate) async fn run_main_llm(
     Ok(MainLlmOutput {
         reply,
         main_llm_fallback,
+        llm_fallback_reason,
         main_llm_ms,
     })
 }
@@ -486,6 +537,7 @@ pub(crate) async fn post_llm(
                     memory_content: &memory_line,
                     memory_importance,
                     memory_fifo_limit: policies.memory.fifo_limit(),
+                    memory_similarity_threshold: role.pack_memory_config.similarity_threshold,
                     event: &event,
                     user_message,
                     bot_reply: &reply,
@@ -608,6 +660,7 @@ pub(crate) async fn post_llm(
         offer_destination_picker,
         offer_together_travel,
         reply_is_fallback: llm.main_llm_fallback,
+        llm_fallback_reason: llm.llm_fallback_reason.clone(),
         knowledge_chunks_in_prompt: middle.knowledge_chunk_count,
         timestamp: chrono::Utc::now().timestamp_millis(),
     })

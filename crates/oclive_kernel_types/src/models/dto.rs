@@ -85,6 +85,9 @@ pub struct SendMessageResponse {
     /// 主对话 LLM 失败时是否使用了备用短回复（共景 / 异地心声均可能）。
     #[serde(default)]
     pub reply_is_fallback: bool,
+    /// `reply_is_fallback = true` 时可选：主 LLM 失败原因（供 UI 提示，不含完整 Prompt）。
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub llm_fallback_reason: Option<String>,
     /// 本回合写入主/异地 Prompt 的检索到的知识块条数（0 表示未注入或未命中）。
     #[serde(default)]
     pub knowledge_chunks_in_prompt: u32,

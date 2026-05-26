@@ -136,6 +136,7 @@ impl RoleManager {
             weight: 1.0,
             created_at: chrono::Utc::now(),
             scene_id: None,
+            mention_count: 1,
         };
         self.memory_engine.add_short_term(memory);
 
@@ -275,6 +276,9 @@ mod tests {
             knowledge_index: None,
             author_pack: None,
             reply_quality_anchor: None,
+            time_config: crate::models::RoleTimeConfig::default(),
+            pack_memory_config: crate::models::RolePackMemoryConfig::default(),
+            pack_relation_config: crate::models::RolePackRelationConfig::default(),
             runtime_config: None,
             pipeline_experimental: None,
             scene_ids: std::sync::Arc::from(Vec::<String>::new()),

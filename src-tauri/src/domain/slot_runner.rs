@@ -858,6 +858,7 @@ mod tests {
                 weight: 1.0,
                 created_at: Utc::now(),
                 scene_id: None,
+                mention_count: 1,
             },
             Memory {
                 id: "b".into(),
@@ -867,6 +868,7 @@ mod tests {
                 weight: 1.0,
                 created_at: Utc::now(),
                 scene_id: None,
+                mention_count: 1,
             },
         ]
     }

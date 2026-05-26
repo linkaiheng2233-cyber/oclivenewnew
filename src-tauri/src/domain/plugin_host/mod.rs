@@ -412,6 +412,7 @@ mod tests {
             weight: 1.0,
             created_at: t,
             scene_id: None,
+            mention_count: 1,
         };
         let slice = &[m];
         let mk = || MemoryRetrievalInput {

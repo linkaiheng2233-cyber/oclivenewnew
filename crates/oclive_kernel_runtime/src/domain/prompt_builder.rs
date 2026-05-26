@@ -497,6 +497,9 @@ mod tests {
             knowledge_index: None,
             author_pack: None,
             reply_quality_anchor: None,
+            time_config: Default::default(),
+            pack_memory_config: Default::default(),
+            pack_relation_config: Default::default(),
             runtime_config: None,
             pipeline_experimental: None,
             scene_ids: std::sync::Arc::from(Vec::<String>::new()),
@@ -526,6 +529,7 @@ mod tests {
             weight: 1.0,
             created_at: Utc::now(),
             scene_id: None,
+            mention_count: 1,
         }
     }
 

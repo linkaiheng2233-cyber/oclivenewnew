@@ -67,6 +67,7 @@ pub(crate) async fn build_minimal_response(
         offer_destination_picker: false,
         offer_together_travel: false,
         reply_is_fallback: false,
+        llm_fallback_reason: None,
         knowledge_chunks_in_prompt: 0,
         timestamp: chrono::Utc::now().timestamp_millis(),
     })
