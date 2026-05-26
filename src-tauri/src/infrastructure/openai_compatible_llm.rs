@@ -61,6 +61,7 @@ impl OpenAiCompatibleLlm {
         let bearer_token = std::env::var("OCLIVE_REMOTE_LLM_TOKEN")
             .ok()
             .or_else(|| std::env::var("OPENAI_API_KEY").ok())
+            .or_else(|| super::user_llm_secrets::cached_remote_llm_token())
             .map(|s| s.trim().to_string())
             .filter(|s| !s.is_empty());
         let timeout_ms = std::env::var("OCLIVE_REMOTE_LLM_TIMEOUT_MS")

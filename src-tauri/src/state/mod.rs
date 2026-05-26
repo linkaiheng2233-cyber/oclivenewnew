@@ -66,6 +66,8 @@ pub struct AppState {
     /// 远端 HTTP 插件失败时是否允许静默降级内置（与 `app_settings.remote_fallback_to_builtin` 及 `OCLIVE_REMOTE_FALLBACK_TO_BUILTIN` 对齐）。
     pub remote_fallback_allowed: Arc<AtomicBool>,
     policy_file_applied: AtomicBool,
+    /// `user_llm_provider` app_setting 进程内缓存（`cloud` / `local` / 空）。
+    pub(crate) user_llm_provider: parking_lot::RwLock<String>,
 }
 
 impl AppState {

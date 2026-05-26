@@ -237,16 +237,30 @@ async function onSave(): Promise<void> {
       roleStore.applyRoleInfo(info)
     }
     else {
-      const req = {
+      if (!remoteUrl.value.trim()) {
+        showToast('error', t('modelManager.needRemoteUrl'))
+        return
+      }
+      if (!remoteModel.value.trim()) {
+        showToast('error', t('modelManager.needRemoteModel'))
+        return
+      }
+      const tokenInput = remoteToken.value.trim()
+      const hasKey = tokenInput.length > 0 || Boolean(settings.value?.remoteTokenConfigured)
+      if (!hasKey) {
+        showToast('error', t('modelManager.needApiKey'))
+        return
+      }
+      const req: Parameters<typeof saveLlmUserSettings>[0] = {
         roleId: roleStore.currentRoleId,
-        provider: 'cloud' as const,
+        provider: 'cloud',
         cloudVendor: cloudVendorId.value,
         cloudApiStyle: cloudApiStyle.value,
         remoteUrl: remoteUrl.value.trim(),
         remoteModel: remoteModel.value.trim(),
       }
-      if (tokenTouched.value) {
-        Object.assign(req, { remoteToken: remoteToken.value })
+      if (tokenInput.length > 0) {
+        req.remoteToken = tokenInput
       }
       const info = await saveLlmUserSettings(req)
       roleStore.applyRoleInfo(info)

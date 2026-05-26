@@ -141,11 +141,29 @@ impl AppState {
         role: &Role,
         session_namespace: &str,
     ) -> Arc<PluginBackends> {
-        if let Some(eff) = self.effective_slot_registry_for_session(role, session_namespace) {
-            Arc::new(oclive_validation::slot_registry_to_plugin_backends(&eff))
+        let mut backends = if let Some(eff) = self.effective_slot_registry_for_session(role, session_namespace)
+        {
+            oclive_validation::slot_registry_to_plugin_backends(&eff)
         } else {
-            Arc::clone(&role.plugin_backends)
+            (*role.plugin_backends).clone()
+        };
+        let provider = self.user_llm_provider.read().trim().to_ascii_lowercase();
+        if provider == "cloud" {
+            backends.llm = crate::models::plugin_backends::LlmBackend::Remote;
+        } else if provider == "local" {
+            backends.llm = crate::models::plugin_backends::LlmBackend::Ollama;
+        } else if let Some(llm) = resolve_llm_backend_env_override() {
+            backends.llm = llm;
+        } else if std::env::var("OCLIVE_REMOTE_LLM_URL")
+            .ok()
+            .is_some_and(|u| !u.trim().is_empty())
+            && std::env::var("OCLIVE_REMOTE_LLM_TOKEN")
+                .ok()
+                .is_some_and(|t| !t.trim().is_empty())
+        {
+            backends.llm = crate::models::plugin_backends::LlmBackend::Remote;
         }
+        Arc::new(backends)
     }
 
     #[must_use]

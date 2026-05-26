@@ -5,19 +5,24 @@ use crate::api::role::{get_role_info_impl, session_namespace};
 use crate::domain::effective_llm_model::resolve_effective_ollama_model;
 use crate::error::AppError;
 use crate::infrastructure::ollama_client::OllamaClient;
+use crate::infrastructure::user_llm_secrets::{
+    self, read_token_file, set_cached_remote_llm_token, write_token_file,
+};
 use crate::models::dto::RoleInfo;
 use crate::models::plugin_backends::LlmBackend;
 use crate::state::AppState;
+use oclive_validation::NETWORK_GRANT_REMOTE_LLM;
 use serde::{Deserialize, Serialize};
 use std::path::{Path, PathBuf};
 use tauri::{AppHandle, Manager, State};
 
 const KEY_OLLAMA_BASE: &str = "user_ollama_base_url";
-const KEY_REMOTE_URL: &str = "user_remote_llm_url";
+pub(crate) const KEY_REMOTE_URL: &str = "user_remote_llm_url";
 const KEY_REMOTE_TOKEN: &str = "user_remote_llm_token";
-const KEY_REMOTE_MODEL: &str = "user_remote_llm_model";
+pub(crate) const KEY_REMOTE_MODEL: &str = "user_remote_llm_model";
 const KEY_CLOUD_STYLE: &str = "user_llm_cloud_api_style";
 const KEY_CLOUD_VENDOR: &str = "user_llm_cloud_vendor";
+pub(crate) const KEY_LLM_PROVIDER: &str = "user_llm_provider";
 const KEY_LOCAL_MODELS_DIR: &str = "user_local_models_dir";
 
 async fn ollama_base_from_db_or_env(state: &AppState) -> String {
@@ -31,9 +36,10 @@ async fn ollama_base_from_db_or_env(state: &AppState) -> String {
 }
 
 /// Re-apply saved user LLM env into the current process (desktop UI saves).
+/// Returns resolved provider: `cloud` | `local` | empty.
 pub async fn apply_user_llm_env_from_db(
     db: &crate::infrastructure::db::DbManager,
-) -> crate::error::Result<()> {
+) -> crate::error::Result<String> {
     let pairs = [
         (KEY_OLLAMA_BASE, "OLLAMA_BASE_URL"),
         (KEY_REMOTE_URL, "OCLIVE_REMOTE_LLM_URL"),
@@ -50,7 +56,147 @@ pub async fn apply_user_llm_env_from_db(
             }
         }
     }
+    let remote_url = db
+        .get_app_setting(KEY_REMOTE_URL)
+        .await?
+        .map(|s| s.trim().to_string())
+        .unwrap_or_default();
+    let mut provider = db
+        .get_app_setting(KEY_LLM_PROVIDER)
+        .await?
+        .map(|s| s.trim().to_ascii_lowercase())
+        .unwrap_or_default();
+    if provider.is_empty()
+        && !remote_url.is_empty()
+        && cloud_api_token_configured(db, None).await?
+    {
+        provider = "cloud".to_string();
+        let _ = db
+            .upsert_app_setting(KEY_LLM_PROVIDER, "cloud")
+            .await;
+    }
+    match provider.as_str() {
+        "cloud" if !remote_url.is_empty() => {
+            std::env::set_var("OCLIVE_LLM_BACKEND", "remote");
+        }
+        "local" => {
+            std::env::set_var("OCLIVE_LLM_BACKEND", "ollama");
+        }
+        _ => {
+            std::env::remove_var("OCLIVE_LLM_BACKEND");
+        }
+    }
+    Ok(provider)
+}
+
+async fn resolve_remote_token(
+    db: &crate::infrastructure::db::DbManager,
+    app_data: &std::path::Path,
+) -> crate::error::Result<Option<String>> {
+    let from_db = db.get_app_setting(KEY_REMOTE_TOKEN).await?;
+    if from_db
+        .as_ref()
+        .is_some_and(|s| !s.trim().is_empty())
+    {
+        return Ok(from_db);
+    }
+    Ok(read_token_file(app_data))
+}
+
+/// Apply DB LLM settings and sync [`AppState::user_llm_provider`].
+pub async fn apply_user_llm_env(state: &AppState) -> crate::error::Result<()> {
+    let app_data = state.directory_plugins.app_data_dir();
+    let token = resolve_remote_token(state.db_manager.as_ref(), app_data).await?;
+    if let Some(ref t) = token {
+        set_cached_remote_llm_token(Some(t.clone()));
+        state
+            .db_manager
+            .upsert_app_setting(KEY_REMOTE_TOKEN, t.trim())
+            .await?;
+        let _ = write_token_file(app_data, t.trim());
+    } else {
+        set_cached_remote_llm_token(None);
+    }
+    let provider = apply_user_llm_env_from_db(state.db_manager.as_ref()).await?;
+    tracing::info!(
+        target: "oclive_llm",
+        provider = %provider,
+        remote_url_configured = std::env::var("OCLIVE_REMOTE_LLM_URL")
+            .map(|s| !s.trim().is_empty())
+            .unwrap_or(false),
+        remote_token_configured = user_llm_secrets::cached_remote_llm_token().is_some(),
+        "apply_user_llm_env"
+    );
+    *state.user_llm_provider.write() = provider;
     Ok(())
+}
+
+async fn cloud_api_token_configured(
+    db: &crate::infrastructure::db::DbManager,
+    req_token: Option<&str>,
+) -> crate::error::Result<bool> {
+    if req_token.is_some_and(|s| !s.trim().is_empty()) {
+        return Ok(true);
+    }
+    Ok(db
+        .get_app_setting(KEY_REMOTE_TOKEN)
+        .await?
+        .is_some_and(|s| !s.trim().is_empty()))
+}
+
+/// Ping cloud LLM with current DB/env settings (after [`apply_user_llm_env_from_db`]).
+async fn probe_cloud_llm_inner(
+    state: &AppState,
+    role_id: &str,
+    session_id: Option<&str>,
+) -> crate::error::Result<()> {
+    apply_user_llm_env(state).await?;
+    if std::env::var("OCLIVE_REMOTE_LLM_URL")
+        .ok()
+        .filter(|s| !s.trim().is_empty())
+        .is_none()
+    {
+        return Err(AppError::InvalidParameter(
+            "云端 Base URL 未配置".into(),
+        ));
+    }
+    if std::env::var("OCLIVE_REMOTE_LLM_TOKEN")
+        .ok()
+        .filter(|s| !s.trim().is_empty())
+        .is_none()
+    {
+        return Err(AppError::InvalidParameter(
+            "云端 API Key 未配置，请在模型管理中填写并保存".into(),
+        ));
+    }
+    state
+        .high_risk_grants
+        .grant_network(NETWORK_GRANT_REMOTE_LLM)
+        .map_err(|e| AppError::InvalidParameter(e))?;
+
+    let role = state.load_role_cached_async(role_id).await?;
+    let ns = session_namespace(role_id, session_id);
+    let model = resolve_effective_ollama_model(state, role.as_ref(), ns.as_str()).await?;
+    if model.trim().is_empty() {
+        return Err(AppError::InvalidParameter("云端模型名为空".into()));
+    }
+    let backends = state.effective_plugin_backends_for_session(role.as_ref(), ns.as_str());
+    if !matches!(backends.llm, LlmBackend::Remote) {
+        return Err(AppError::InvalidParameter(format!(
+            "当前 LLM 后端未切到云端（{:?}），请重新保存模型管理中的云端配置",
+            backends.llm
+        )));
+    }
+    let llm = state.plugins.llm_for_plugin_backends(backends.as_ref());
+    llm.generate(model.trim(), "请只回复一个字：好")
+        .await
+        .map(|_| ())
+        .map_err(|e| {
+            AppError::InvalidParameter(format!(
+                "云端模型连通性测试失败：{}",
+                e.to_frontend_error()
+            ))
+        })
 }
 
 #[derive(Debug, Clone, Serialize)]
@@ -172,10 +318,19 @@ pub async fn get_llm_user_settings(
         resolve_effective_ollama_model(state.inner(), role.as_ref(), ns.as_str()).await?;
     let plugin_backends_effective =
         state.effective_plugin_backends_for_session(role.as_ref(), ns.as_str());
-    let provider = match plugin_backends_effective.llm {
-        LlmBackend::Remote => "cloud",
-        _ => "local",
-    };
+    let provider = state
+        .db_manager
+        .get_app_setting(KEY_LLM_PROVIDER)
+        .await?
+        .map(|s| s.trim().to_ascii_lowercase())
+        .filter(|p| p == "local" || p == "cloud")
+        .unwrap_or_else(|| {
+            if matches!(plugin_backends_effective.llm, LlmBackend::Remote) {
+                "cloud".to_string()
+            } else {
+                "local".to_string()
+            }
+        });
 
     let ollama_base_url = ollama_base_from_db_or_env(state.inner()).await;
     let client = OllamaClient::new(ollama_base_url.clone());
@@ -350,6 +505,19 @@ pub async fn import_gguf_to_ollama(
 
 /// # Errors
 ///
+/// Returns [`Err`] when cloud LLM is misconfigured or the probe request fails.
+#[tauri::command]
+pub async fn probe_cloud_llm(
+    state: State<'_, AppState>,
+    role_id: String,
+    session_id: Option<String>,
+) -> Result<String, CommandError> {
+    probe_cloud_llm_inner(state.inner(), role_id.as_str(), session_id.as_deref()).await?;
+    Ok("ok".to_string())
+}
+
+/// # Errors
+///
 /// Returns [`Err`] when persistence or role reload fails.
 #[tauri::command]
 pub async fn save_llm_user_settings(
@@ -362,6 +530,36 @@ pub async fn save_llm_user_settings(
             "provider must be local or cloud".into(),
         )
         .into());
+    }
+
+    state
+        .db_manager
+        .upsert_app_setting(KEY_LLM_PROVIDER, &provider)
+        .await?;
+
+    if provider == "cloud" {
+        let url_ok = req
+            .remote_url
+            .as_deref()
+            .is_some_and(|s| !s.trim().is_empty())
+            || state
+                .db_manager
+                .get_app_setting(KEY_REMOTE_URL)
+                .await?
+                .is_some_and(|s| !s.trim().is_empty());
+        if !url_ok {
+            return Err(AppError::InvalidParameter("云端 Base URL 不能为空".into()).into());
+        }
+        if !cloud_api_token_configured(&state.db_manager, req.remote_token.as_deref()).await? {
+            return Err(AppError::InvalidParameter(
+                "请填写云端 API Key 后再保存".into(),
+            )
+            .into());
+        }
+        let _ = state
+            .high_risk_grants
+            .grant_network(NETWORK_GRANT_REMOTE_LLM)
+            .map_err(|e| AppError::InvalidParameter(e))?;
     }
 
     if let Some(ref url) = req.ollama_base_url {
@@ -383,10 +581,31 @@ pub async fn save_llm_user_settings(
             .await?;
     }
     if let Some(ref token) = req.remote_token {
-        state
-            .db_manager
-            .upsert_app_setting(KEY_REMOTE_TOKEN, token.trim())
-            .await?;
+        let t = token.trim();
+        if !t.is_empty() {
+            state
+                .db_manager
+                .upsert_app_setting(KEY_REMOTE_TOKEN, t)
+                .await?;
+            write_token_file(state.directory_plugins.app_data_dir(), t)
+                .map_err(|e| AppError::InvalidParameter(format!("save API token: {e}")))?;
+            set_cached_remote_llm_token(Some(t.to_string()));
+            let read_back = state
+                .db_manager
+                .get_app_setting(KEY_REMOTE_TOKEN)
+                .await?
+                .filter(|s| !s.trim().is_empty());
+            if read_back.as_deref() != Some(t) {
+                return Err(AppError::InvalidParameter(
+                    "API Key 未能写入数据库，请重试保存".into(),
+                )
+                .into());
+            }
+        }
+    } else if provider == "cloud" {
+        let app_data = state.directory_plugins.app_data_dir();
+        let existing = resolve_remote_token(&state.db_manager, app_data).await?;
+        set_cached_remote_llm_token(existing);
     }
     if let Some(ref model) = req.remote_model {
         state
@@ -418,7 +637,7 @@ pub async fn save_llm_user_settings(
             .await?;
     }
 
-    apply_user_llm_env_from_db(&state.db_manager).await?;
+    apply_user_llm_env(state.inner()).await?;
 
     let ns = session_namespace(&req.role_id, req.session_id.as_deref());
     state.db_manager.ensure_role_runtime(ns.as_str()).await?;
@@ -450,7 +669,7 @@ pub async fn save_llm_user_settings(
     } else {
         "ollama"
     };
-    match crate::api::role::slot_session::set_session_plugin_backend_impl(
+    let info = match crate::api::role::slot_session::set_session_plugin_backend_impl(
         state.inner(),
         &crate::models::dto::SetSessionPluginBackendRequest {
             role_id: req.role_id.clone(),
@@ -462,10 +681,34 @@ pub async fn save_llm_user_settings(
     )
     .await
     {
-        Ok(info) => Ok(info),
+        Ok(info) => info,
         Err(e) if e.to_string().contains("slot_registry") => {
-            get_role_info_impl(state.inner(), &req.role_id, req.session_id.as_deref()).await
+            let ns = session_namespace(&req.role_id, req.session_id.as_deref());
+            let llm_backend = if provider == "cloud" {
+                LlmBackend::Remote
+            } else {
+                LlmBackend::Ollama
+            };
+            state.set_session_backend_override(
+                ns.as_str(),
+                crate::models::PluginBackendsOverride {
+                    llm: Some(llm_backend),
+                    ..Default::default()
+                },
+            );
+            get_role_info_impl(state.inner(), &req.role_id, req.session_id.as_deref()).await?
         }
-        Err(e) => Err(e),
+        Err(e) => return Err(e),
+    };
+
+    if provider == "cloud" {
+        probe_cloud_llm_inner(
+            state.inner(),
+            req.role_id.as_str(),
+            req.session_id.as_deref(),
+        )
+        .await?;
     }
+
+    Ok(info)
 }

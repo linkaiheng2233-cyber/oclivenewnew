@@ -45,7 +45,10 @@ export const modelManagerEn = {
   envTokenNote: 'Token set in environment; save writes app config.',
   saveApply: 'Save & apply',
   saving: 'Saving…',
-  saveOk: 'Model settings saved',
+  saveOk: 'Model settings saved; cloud connectivity OK',
+  needApiKey: 'Enter an API key before saving',
+  needRemoteUrl: 'Enter an API base URL',
+  needRemoteModel: 'Enter a model ID (e.g. deepseek-chat)',
   openSettings: 'Environment check (settings)',
   vendors: {
     deepseek: 'DeepSeek',

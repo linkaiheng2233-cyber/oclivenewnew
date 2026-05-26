@@ -73,7 +73,8 @@ export default {
       layoutResetFailPrefix: '恢复失败：',
       noRolesScanned:
         '未扫描到任何可用角色包（roles 目录为空或全部校验失败）。请检查宿主使用的 roles 路径：开发可设置环境变量 OCLIVE_ROLES_DIR 指向仓库的 roles 文件夹。',
-      fallbackReply: '本次为备用回复（模型未返回正文时自动生成）',
+      fallbackReply:
+        '本次为备用回复（云端/本地模型未连通）。请在「模型管理」确认 API Key、模型名，并在插件相关设置中授予出站网络权限后重试。',
       roleSwitched: '已切换角色: {id}',
       relationSetPerScene: '已设置当前场景身份：{name}',
       relationSetGlobal: '已设置身份：{name}',

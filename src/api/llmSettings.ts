@@ -73,10 +73,20 @@ export async function importGgufToOllama(opts: {
 }): Promise<string> {
   return invokeWithFriendlyError<string>('import_gguf_to_ollama', {
     req: {
-      file_path: opts.filePath,
-      model_name: opts.modelName ?? null,
-      ollama_base_url: opts.ollamaBaseUrl ?? null,
+      filePath: opts.filePath,
+      modelName: opts.modelName ?? null,
+      ollamaBaseUrl: opts.ollamaBaseUrl ?? null,
     },
+  })
+}
+
+export async function probeCloudLlm(
+  roleId: string,
+  sessionId?: string | null,
+): Promise<string> {
+  return invokeWithFriendlyError<string>('probe_cloud_llm', {
+    roleId,
+    sessionId: sessionId ?? null,
   })
 }
 
@@ -85,17 +95,17 @@ export async function saveLlmUserSettings(
 ): Promise<RoleInfo> {
   return invokeWithFriendlyError<RoleInfo>('save_llm_user_settings', {
     req: {
-      role_id: req.roleId,
-      session_id: req.sessionId ?? null,
+      roleId: req.roleId,
+      sessionId: req.sessionId ?? null,
       provider: req.provider,
-      cloud_vendor: req.cloudVendor,
-      cloud_api_style: req.cloudApiStyle,
-      ollama_base_url: req.ollamaBaseUrl,
-      local_models_dir: req.localModelsDir,
-      ollama_model: req.ollamaModel,
-      remote_url: req.remoteUrl,
-      remote_token: req.remoteToken,
-      remote_model: req.remoteModel,
+      cloudVendor: req.cloudVendor,
+      cloudApiStyle: req.cloudApiStyle,
+      ollamaBaseUrl: req.ollamaBaseUrl,
+      localModelsDir: req.localModelsDir,
+      ollamaModel: req.ollamaModel,
+      remoteUrl: req.remoteUrl,
+      remoteToken: req.remoteToken,
+      remoteModel: req.remoteModel,
     },
   })
 }

@@ -27,6 +27,7 @@ pub mod sql_migrate;
 pub mod policy_registry;
 pub mod sqlite_pool;
 pub mod storage;
+pub mod user_llm_secrets;
 
 // 重新导出主要类型
 pub use cache::Cache;

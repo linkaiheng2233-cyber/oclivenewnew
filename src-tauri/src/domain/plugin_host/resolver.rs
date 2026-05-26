@@ -26,7 +26,11 @@ impl PluginResolver {
         let mut slots = None;
         let mut merged_agent_directory_plugin_ids = Vec::new();
         if let Some(reg) = slot_registry {
-            slots = Some(SlotResolver::resolve(registry, reg));
+            slots = Some(SlotResolver::resolve_with_session_backends(
+                registry,
+                reg,
+                Some(effective),
+            ));
             complex_emotion = SlotResolver::resolve_complex_emotion_winner(registry, reg);
             // Agent：多 directory 实例合并工具集（并行语义在装配层，非 SlotRunner）
             agent = SlotResolver::wrap_agent_if_merged(agent, reg);

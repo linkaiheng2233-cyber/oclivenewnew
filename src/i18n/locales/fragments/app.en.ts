@@ -77,7 +77,8 @@ export default {
       layoutResetFailPrefix: 'Restore failed: ',
       noRolesScanned:
         'No usable role packs found (roles folder empty or validation failed). Check the roles path; for dev, set OCLIVE_ROLES_DIR to the repo roles folder.',
-      fallbackReply: 'Fallback reply (no body from the model)',
+      fallbackReply:
+        'Fallback reply (LLM unreachable). Check API key and model in Model Manager, grant outbound network if prompted, then try again.',
       roleSwitched: 'Switched role: {id}',
       relationSetPerScene: 'Scene identity set: {name}',
       relationSetGlobal: 'Identity set: {name}',

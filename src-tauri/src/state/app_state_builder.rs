@@ -87,9 +87,7 @@ impl AppStateBuilder {
         run_migrations(&db).await?;
 
         let db_manager = Arc::new(DbManager::new(db));
-        if let Err(e) = crate::api::llm_settings::apply_user_llm_env_from_db(db_manager.as_ref()).await {
-            tracing::warn!(target: "oclive_llm", "apply user llm settings: {e}");
-        }
+        let user_llm_provider = parking_lot::RwLock::new(String::new());
         let remote_fallback_allowed = remote_fallback_switch(&db_manager).await?;
 
         let memory_repo: Arc<dyn MemoryRepository> =
@@ -153,7 +151,7 @@ impl AppStateBuilder {
         );
         AppState::bootstrap_local_plugin_providers(&plugins, storage.roles_dir());
 
-        Ok(AppState {
+        let state = AppState {
             db_manager,
             memory_repo,
             favorability_repo,
@@ -172,7 +170,12 @@ impl AppStateBuilder {
             remote_fallback_env_override: remote_fallback_env_override(),
             remote_fallback_allowed,
             policy_file_applied: AtomicBool::new(policy_file_applied),
-        })
+            user_llm_provider,
+        };
+        if let Err(e) = crate::api::llm_settings::apply_user_llm_env(&state).await {
+            tracing::warn!(target: "oclive_llm", "apply user llm settings: {e}");
+        }
+        Ok(state)
     }
 }
 

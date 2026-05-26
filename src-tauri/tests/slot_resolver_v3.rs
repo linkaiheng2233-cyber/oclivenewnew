@@ -9,6 +9,8 @@ use oclivenewnew_tauri::infrastructure::high_risk_grants::HighRiskGrantStore;
 use oclivenewnew_tauri::infrastructure::llm::LlmClient;
 use oclivenewnew_tauri::infrastructure::remote_fallback_policy::new_remote_fallback_switch;
 use oclivenewnew_tauri::infrastructure::MockLlmClient;
+use oclivenewnew_tauri::domain::slot_runner::SlotRunner;
+use oclivenewnew_tauri::models::plugin_backends::LlmBackend;
 use oclivenewnew_tauri::models::{MemoryBackend, Role};
 use oclivenewnew_tauri::state::AppState;
 use std::collections::BTreeMap;
@@ -130,4 +132,59 @@ async fn session_slot_override_changes_folded_memory_backend() {
     let pl = state.resolved_plugins_for_session(&role, Some(ns));
     let expected = state.plugins.memory_retrieval_for_plugin_backends(&eff);
     assert!(Arc::ptr_eq(&pl.memory, &expected));
+}
+
+#[tokio::test]
+async fn user_cloud_provider_overrides_blueprint_ollama_llm_slot() {
+    let llm: Arc<dyn LlmClient> = Arc::new(MockLlmClient {
+        reply: String::new(),
+    });
+    let state = AppState::new_in_memory_with_llm(llm, std::env::temp_dir().join("roles-p3-llm-cloud"))
+        .await
+        .expect("state");
+    let mut reg = BTreeMap::new();
+    reg.insert(
+        "llm".into(),
+        SlotRegistryEntry {
+            slot_type: "llm".into(),
+            label: "main".into(),
+            backend: "ollama".into(),
+            position: 1,
+            plugin: None,
+            plugins: None,
+            model: Some("deepseek-chat".into()),
+            url: None,
+            local_memory_provider_id: None,
+            zone: None,
+            policy: None,
+        },
+    );
+    let role = Role {
+        id: "test-role".into(),
+        plugin_backends: std::sync::Arc::new(oclive_validation::slot_registry_to_plugin_backends(
+            &reg,
+        )),
+        slot_registry: Some(reg),
+        ..Default::default()
+    };
+    let ns = "srid-cloud-llm";
+    state
+        .db_manager
+        .upsert_app_setting("user_llm_provider", "cloud")
+        .await
+        .expect("provider");
+    oclivenewnew_tauri::api::llm_settings::apply_user_llm_env(&state)
+        .await
+        .expect("apply env");
+    let eff = state.effective_plugin_backends_for_session(&role, ns);
+    assert_eq!(eff.llm, LlmBackend::Remote);
+    let pl = state.resolved_plugins_for_session(&role, Some(ns));
+    let primary = SlotRunner::primary_llm(&pl);
+    let ollama = state.plugins.llm_for(LlmBackend::Ollama);
+    assert!(
+        !Arc::ptr_eq(&primary, &ollama),
+        "blueprint ollama slot must not bind default Ollama when user provider is cloud"
+    );
+    assert_eq!(eff.llm, LlmBackend::Remote);
+    assert!(pl.slots.is_some());
 }

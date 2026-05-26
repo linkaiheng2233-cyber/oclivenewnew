@@ -43,7 +43,10 @@ export const modelManagerZh = {
   envTokenNote: '环境变量中已配置 Token；保存将写入应用配置。',
   saveApply: '保存并应用',
   saving: '保存中…',
-  saveOk: '模型配置已保存',
+  saveOk: '模型配置已保存，云端连通性测试通过',
+  needApiKey: '请填写 API Key 后再保存',
+  needRemoteUrl: '请填写 API Base URL',
+  needRemoteModel: '请填写模型 ID（如 deepseek-chat）',
   openSettings: '环境自检（设置）',
   vendors: {
     deepseek: 'DeepSeek',

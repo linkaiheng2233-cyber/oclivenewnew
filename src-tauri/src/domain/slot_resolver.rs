@@ -39,6 +39,7 @@ impl LlmMergePolicy {
 use crate::domain::prompt_assembler::PromptAssembler;
 use crate::domain::user_emotion_analyzer::UserEmotionAnalyzer;
 use crate::domain::ports::LlmClient;
+use crate::models::PluginBackends;
 use crate::infrastructure::remote_plugin::{
     DirectoryComplexEmotionHttp, RemoteComplexEmotionHttp, RemotePluginHttpConfig,
 };
@@ -114,6 +115,17 @@ impl SlotResolver {
         registry: &BackendRegistry,
         slot_registry: &BTreeMap<String, SlotRegistryEntry>,
     ) -> ResolvedRoleSlots {
+        Self::resolve_with_session_backends(registry, slot_registry, None)
+    }
+
+    /// 解析 `slot_registry`；`session_effective_backends` 用于覆盖蓝图 `llm` 槽的 `backend`
+    ///（例如用户模型管理选云端后 `effective_plugin_backends.llm = Remote`，避免仍走包内 `ollama`）。
+    #[must_use]
+    pub fn resolve_with_session_backends(
+        registry: &BackendRegistry,
+        slot_registry: &BTreeMap<String, SlotRegistryEntry>,
+        session_effective_backends: Option<&PluginBackends>,
+    ) -> ResolvedRoleSlots {
         let mut out = ResolvedRoleSlots::default();
         for (key, entry) in slot_registry_instances_sorted(slot_registry, "memory") {
             let pb = plugin_backends_for_slot_entry(&entry);
@@ -137,7 +149,10 @@ impl SlotResolver {
         }
         for (key, entry) in slot_registry_instances_sorted(slot_registry, "llm") {
             out.llm_merge_policy = LlmMergePolicy::parse(entry.policy.as_deref());
-            let pb = plugin_backends_for_slot_entry(&entry);
+            let mut pb = plugin_backends_for_slot_entry(&entry);
+            if let Some(eff) = session_effective_backends {
+                pb.llm = eff.llm;
+            }
             out.llm.push((key, registry.llm_for_plugin_backends(&pb)));
         }
         for (key, entry) in slot_registry_instances_sorted(slot_registry, "agent") {
