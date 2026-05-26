@@ -31,6 +31,9 @@ export interface ExpertStepParams {
   content?: string
   importance?: number
   plugin_id?: string
+  temperature?: number
+  max_tokens?: number
+  model_slot?: string
 }
 
 export interface ExpertRouteStep {
