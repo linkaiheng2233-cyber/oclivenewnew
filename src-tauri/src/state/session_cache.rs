@@ -66,6 +66,11 @@ impl SessionCache {
         cache
     }
 
+    #[must_use]
+    pub fn has_stored_complex_emotion_narrative_hint(&self, srid: &str) -> bool {
+        self.complex_emotion_narrative_hint.contains_key(srid)
+    }
+
     pub fn stored_complex_emotion_narrative_hint(&self, srid: &str) -> String {
         self.complex_emotion_narrative_hint
             .get(srid)
@@ -80,6 +85,11 @@ impl SessionCache {
             self.complex_emotion_narrative_hint
                 .insert(srid.to_string(), hint);
         }
+    }
+
+    /// 仅清除进程内缓存（用于测试「重启后从 DB 恢复」场景）。
+    pub fn clear_complex_emotion_narrative_hint_cache(&self, srid: &str) {
+        self.complex_emotion_narrative_hint.remove(srid);
     }
 
     pub fn session_plugin_overrides(&self) -> &RwLock<HashMap<String, PluginBackendsOverride>> {

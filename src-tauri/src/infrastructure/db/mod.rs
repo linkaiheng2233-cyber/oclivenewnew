@@ -269,6 +269,7 @@ impl DbManager {
                 "operation_logs",
                 "role_scene_identity",
                 "role_identity_stats",
+                "complex_emotion_hint",
                 "role_runtime",
             ] {
                 let sql = format!("DELETE FROM {table} WHERE role_id IN ({placeholders})");
@@ -293,6 +294,7 @@ impl DbManager {
     }
 }
 
+mod complex_emotion_hint;
 mod long_term_memory;
 mod plugin_state;
 mod relation_state;

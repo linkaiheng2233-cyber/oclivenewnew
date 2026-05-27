@@ -68,10 +68,12 @@ impl DualPipelineRunner {
 
     /// 实验失败且即将降级时调用：恢复 [`take_snapshot`] 时的三项会话态。
     pub async fn rollback(state: &AppState, srid: &str, snapshot: TurnRollbackSnapshot) {
-        state.session_cache.set_stored_complex_emotion_narrative_hint(
+        crate::domain::complex_emotion_store::persist_stored_narrative_hint(
+            state,
             srid,
             snapshot.narrative_hint.unwrap_or_default(),
-        );
+        )
+        .await;
         if let Some(emotion) = snapshot.emotion_state {
             let _ = state
                 .db_manager

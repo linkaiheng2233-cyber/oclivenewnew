@@ -167,7 +167,19 @@ pub(crate) async fn pre_llm(ctx: &TurnContext<'_>) -> TurnResult<PreLlmOutput> {
     .await
     .map_err(|e| super::super::turn_error::TurnError::wrap("resolve_llm_model", e))?;
 
-    let prev_stored_narrative_hint = state.session_cache.stored_complex_emotion_narrative_hint(srid);
+    let prev_stored_narrative_hint =
+        match crate::domain::complex_emotion_store::load_stored_narrative_hint(state, srid).await {
+            Ok(h) => h,
+            Err(e) => {
+                tracing::warn!(
+                    target: "oclive_complex_emotion",
+                    role_id = %srid,
+                    error = %e,
+                    "load_stored_narrative_hint failed; using empty hint"
+                );
+                String::new()
+            }
+        };
 
     if role.evolution_config.personality_source != PersonalitySource::Profile {
         personality = PersonalityEngine::adjust_by_user_emotion(
@@ -598,10 +610,12 @@ pub(crate) async fn post_llm(
         .await?;
 
     if matches!(mode, TurnMode::CoPresent) {
-        state.session_cache.set_stored_complex_emotion_narrative_hint(
+        crate::domain::complex_emotion_store::persist_stored_narrative_hint(
+            state,
             srid,
             middle.complex_emotion_out.narrative_hint.clone(),
-        );
+        )
+        .await;
     }
 
     if let Some((_, next)) = profile_evolve {
