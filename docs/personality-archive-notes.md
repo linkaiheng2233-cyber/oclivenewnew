@@ -6,7 +6,7 @@
 
 - **人设档案**由两部分组成：
   - **核心性格档案**（包内 **`core_personality.txt`**）：由创作者锁定；运行时 **不得**由模型改写该正文。
-  - **可变性格档案**（运行时 DB：**`mutable_personality`**）：仅在 **`evolution.personality_source: profile`**（人格来源选「档案」）时，由模型在对话回合后维护；创作者 **不能**在包内手写该正文，只能通过 **`evolution`**（如 `event_impact_factor`、`max_change_per_event`）调强弱。
+  - **可变性格档案**（运行时 DB：**`mutable_personality`**）：仅在 **`evolution.personality_source: profile`**（人格来源选「档案」）时，由模型在对话回合后维护；创作者 **不能**在包内手写该正文，只能通过 **`evolution`**（如 `event_impact_factor`、`max_change_per_event`）调强弱。系统可在档案内维护结构化小节（如 **`## 重要记忆`**：长期记忆 `mention_count` 达强化阈值后持久化摘要；**`## 时间演化`** / **`## 社交关系`** 由规则追加）。
 - **七维**（manifest 的 **`default_personality`** 等）：在 **`profile`** 模式下多为从「核心 + 可变」正文**归纳的视图**，便于 UI 与人理解；**经典**（**`vector`** 或省略）时仍以数值增量等为主驱动。包内七维仍建议填写，作为默认与兜底参考。
 
 契约与字段说明以 **[roles/README_MANIFEST.md](../roles/README_MANIFEST.md)**（`default_personality`、`evolution`）为准；编写器 **oclive-pack-editor** 简单创作已暴露 **`personality_source`** 与 **`max_change_per_event`**。
