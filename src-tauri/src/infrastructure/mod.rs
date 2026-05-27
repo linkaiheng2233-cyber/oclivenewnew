@@ -3,6 +3,7 @@
 //! 提供基础服务和数据访问功能
 
 pub mod cache;
+pub mod chat_storage;
 pub mod db;
 pub mod deep_link;
 pub mod directory_plugins;

@@ -6,6 +6,7 @@ use crate::domain::{
     LocalPluginProviderDescriptor, MemoryRetrieval, PromptAssembler, UserEmotionAnalyzer,
 };
 use crate::error::Result;
+use crate::infrastructure::chat_storage::ConversationStore;
 use crate::infrastructure::db::DbManager;
 use crate::infrastructure::directory_plugins::DirectoryPluginRuntime;
 use crate::infrastructure::high_risk_grants::HighRiskGrantStore;
@@ -40,6 +41,8 @@ use app_state_builder::AppStateBuilder;
 
 pub struct AppState {
     pub db_manager: Arc<DbManager>,
+    /// SQLite + JSON mirror chat history (decoupled from memory tables).
+    pub conversation_store: Arc<dyn ConversationStore>,
     pub memory_repo: Arc<dyn MemoryRepository>,
     pub favorability_repo: Arc<dyn FavorabilityRepository>,
     pub llm: Arc<dyn LlmClient>,

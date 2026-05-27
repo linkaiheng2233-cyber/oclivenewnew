@@ -32,7 +32,7 @@ pub fn count_evolution_stages(
 
 #[must_use]
 pub fn time_evolution_profile_line(lapse_hours: f64) -> String {
-    let h = lapse_hours.max(0.25).min(48.0);
+    let h = lapse_hours.clamp(0.25, 48.0);
     if h >= 12.0 {
         format!(
             "约 {h:.0} 虚拟小时未见面对话后，气质明显沉淀：更沉稳、更少外露情绪，习惯以简短回应代替长篇倾诉。"

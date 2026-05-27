@@ -5,6 +5,7 @@ use super::AppState;
 use crate::domain::plugin_host::PluginHost;
 use crate::domain::repository::{FavorabilityRepository, MemoryRepository};
 use crate::error::Result;
+use crate::infrastructure::chat_storage::{ConversationStore, HybridConversationStore};
 use crate::infrastructure::db::DbManager;
 use crate::infrastructure::directory_plugins::DirectoryPluginRuntime;
 use crate::infrastructure::high_risk_grants::HighRiskGrantStore;
@@ -151,8 +152,14 @@ impl AppStateBuilder {
         );
         AppState::bootstrap_local_plugin_providers(&plugins, storage.roles_dir());
 
+        let conversation_store: Arc<dyn ConversationStore> = Arc::new(HybridConversationStore::new(
+            db_manager.clone(),
+            self.app_data_dir.clone(),
+        ));
+
         let state = AppState {
             db_manager,
+            conversation_store,
             memory_repo,
             favorability_repo,
             llm,

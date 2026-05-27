@@ -618,6 +618,29 @@ pub(crate) async fn post_llm(
         .await;
     }
 
+    if matches!(mode, TurnMode::CoPresent) && !reply.trim().is_empty() {
+        let persist = crate::infrastructure::chat_storage::TurnPersistInput {
+            session_id: srid.to_string(),
+            role_id: mrid.to_string(),
+            scene_id: scene_id.to_string(),
+            user_message: user_message.to_string(),
+            assistant_reply: reply.clone(),
+            reply_is_fallback: llm.main_llm_fallback,
+            model_name: Some(pre.ollama_model.clone()),
+            response_ms: llm.main_llm_ms,
+            user_emotion: Some(pre.user_emotion_str.clone()),
+            bot_emotion: Some(bot_emotion_str.clone()),
+        };
+        if let Err(e) = state.conversation_store.append_turn(persist).await {
+            tracing::warn!(
+                target: "oclive_chat_storage",
+                session_id = %srid,
+                error = %e,
+                "append_turn failed"
+            );
+        }
+    }
+
     if let Some((_, next)) = profile_evolve {
         STAGES
             .stage(

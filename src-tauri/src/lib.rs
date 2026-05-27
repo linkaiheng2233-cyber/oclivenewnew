@@ -316,6 +316,9 @@ pub fn run() {
 
             // ── chat ──
             api::chat::send_message,
+            api::chat::list_chat_sessions,
+            api::chat::fetch_chat_messages,
+            api::chat::rebuild_chat_mirror,
 
             // ── role / session / slot registry ──
             api::role::load_role,

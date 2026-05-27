@@ -541,6 +541,19 @@ pub async fn delete_role_impl(state: &AppState, role_id: String) -> Result<Value
         .delete_all_data_for_manifest_role(rid)
         .await
         ?;
+    if let Err(e) = crate::infrastructure::chat_storage::delete_mirror_tree_for_role(
+        state.directory_plugins.app_data_dir(),
+        rid,
+    )
+    .await
+    {
+        tracing::warn!(
+            target: "oclive_chat_storage",
+            role_id = %rid,
+            error = %e,
+            "delete_mirror_tree_for_role failed"
+        );
+    }
     for ns in &removed_ns {
         state.clear_all_session_slot_overrides(ns);
     }

@@ -290,6 +290,9 @@ impl DbManager {
         tx.commit()
             .await
             .map_err(|e| AppError::DatabaseError(e.to_string()))?;
+
+        self.delete_chat_data_for_manifest_role(mid).await?;
+
         Ok(ids)
     }
 }
