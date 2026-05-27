@@ -215,9 +215,23 @@ pub(crate) async fn pre_llm(ctx: &TurnContext<'_>) -> TurnResult<PreLlmOutput> {
             }
         }
     } else {
+        let mut important_memory_archive_dirty = false;
         for m in &memories {
             if m.mention_count >= mem_cfg.reinforced_mention_threshold {
-                let snippet: String = m.content.chars().take(96).collect();
+                let snippet =
+                    crate::domain::profile_personality::memory_snippet_for_profile(&m.content);
+                let first_date = m.created_at.format("%Y-%m-%d").to_string();
+                let next_archive = crate::domain::profile_personality::upsert_important_memory_section(
+                    &mutable_for_prompt,
+                    &snippet,
+                    &first_date,
+                    m.mention_count,
+                );
+                if next_archive != mutable_for_prompt {
+                    mutable_for_prompt = next_archive;
+                    important_memory_archive_dirty = true;
+                }
+
                 let line = format!("因反复提及「{snippet}」，相关性格倾向略有沉淀。");
                 mutable_for_prompt = crate::domain::relation_estrangement::append_mutable_profile_section(
                     &mutable_for_prompt,
@@ -225,6 +239,25 @@ pub(crate) async fn pre_llm(ctx: &TurnContext<'_>) -> TurnResult<PreLlmOutput> {
                     &line,
                 );
             }
+        }
+        if important_memory_archive_dirty {
+            let trimmed =
+                crate::domain::profile_personality::trim_mutable_storage(&mutable_for_prompt);
+            STAGES
+                .stage(
+                    ChatStage::SetMutablePersonality,
+                    state.db_manager.set_mutable_personality(srid, &trimmed),
+                )
+                .await?;
+            mutable_for_prompt = trimmed;
+            personality = crate::domain::profile_personality::effective_vector_from_profile(
+                role,
+                &mutable_for_prompt,
+            );
+            state
+                .session_cache
+                .personality_cache()
+                .set(srid.to_string(), personality.clone());
         }
     }
 
