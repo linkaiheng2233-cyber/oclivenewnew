@@ -1,12 +1,17 @@
 //! Hybrid store: SQLite authoritative + async JSON mirror.
 
+use super::config::{resolve_max_messages_per_session, DEFAULT_MAX_MESSAGES};
 use super::db::{MessageRow, NewTurnMessages};
 use super::mirror;
-use super::types::{SessionMeta, StoredMessage, TurnPersistInput};
+use super::types::{
+    AppendTurnResult, ImportChatBucket, ImportChatBucketsResult, SessionMeta, StoredMessage,
+    TurnPersistInput,
+};
+use crate::domain::chat_engine::conversation_state_role_id;
 use crate::error::Result;
 use crate::infrastructure::db::DbManager;
 use async_trait::async_trait;
-use chrono::Utc;
+use chrono::{DateTime, Utc};
 use std::path::PathBuf;
 use std::sync::Arc;
 use uuid::Uuid;
@@ -14,7 +19,7 @@ use uuid::Uuid;
 /// Chat history persistence (SQLite + JSON mirror).
 #[async_trait]
 pub trait ConversationStore: Send + Sync {
-    async fn append_turn(&self, input: TurnPersistInput) -> Result<()>;
+    async fn append_turn(&self, input: TurnPersistInput) -> Result<AppendTurnResult>;
     async fn list_sessions(
         &self,
         role_id: &str,
@@ -28,7 +33,11 @@ pub trait ConversationStore: Send + Sync {
         limit: u32,
         offset: u32,
     ) -> Result<Vec<StoredMessage>>;
-    async fn rebuild_mirror(&self, session_id: &str) -> Result<String>;
+    async fn rebuild_mirror(&self, session_id: &str, max_messages: i64) -> Result<String>;
+    async fn import_chat_buckets(
+        &self,
+        buckets: Vec<ImportChatBucket>,
+    ) -> Result<ImportChatBucketsResult>;
 }
 
 pub struct HybridConversationStore {
@@ -41,12 +50,92 @@ impl HybridConversationStore {
     pub fn new(db: Arc<DbManager>, app_data_dir: PathBuf) -> Self {
         Self { db, app_data_dir }
     }
+
+    /// Import IndexedDB-exported buckets (paired user/assistant turns).
+    ///
+    /// # Errors
+    ///
+    /// Database / validation errors propagate.
+    pub async fn import_chat_buckets(
+        &self,
+        buckets: Vec<ImportChatBucket>,
+    ) -> Result<ImportChatBucketsResult> {
+        let mut buckets_imported = 0u32;
+        let mut turns_imported = 0u32;
+        for bucket in buckets {
+            if bucket.messages.is_empty() {
+                continue;
+            }
+            let scene_id = normalize_scene_id(&bucket.scene_id);
+            let session_id = bucket
+                .session_id
+                .as_deref()
+                .filter(|s| !s.trim().is_empty())
+                .map(|s| s.to_string())
+                .unwrap_or_else(|| {
+                    conversation_state_role_id(bucket.role_id.as_str(), None)
+                });
+            let max = DEFAULT_MAX_MESSAGES;
+            let mut pending_user: Option<(String, i64, Option<String>)> = None;
+            for msg in &bucket.messages {
+                let role = msg.role.trim().to_lowercase();
+                if role == "system" {
+                    continue;
+                }
+                if role == "user" {
+                    pending_user = Some((msg.content.clone(), msg.timestamp, msg.id.clone()));
+                    continue;
+                }
+                if role != "assistant" {
+                    continue;
+                }
+                let Some((user_content, user_ts_ms, user_id)) = pending_user.take() else {
+                    continue;
+                };
+                let user_ts = timestamp_ms_to_rfc3339(user_ts_ms);
+                let assistant_ts = timestamp_ms_to_rfc3339(msg.timestamp);
+                let session = self
+                    .db
+                    .upsert_chat_session(&session_id, &bucket.role_id, &scene_id)
+                    .await?;
+                let turn_index = (session.message_count / 2) as i32;
+                let turn = NewTurnMessages {
+                    user_id: user_id.unwrap_or_else(|| Uuid::new_v4().to_string()),
+                    assistant_id: msg.id.clone().unwrap_or_else(|| Uuid::new_v4().to_string()),
+                    turn_index,
+                    user_content,
+                    assistant_content: msg.content.clone(),
+                    user_metadata: None,
+                    assistant_metadata: None,
+                    user_created_at: user_ts,
+                    assistant_created_at: assistant_ts,
+                };
+                self.db
+                    .insert_chat_turn_messages(&session_id, turn, max)
+                    .await?;
+                turns_imported = turns_imported.saturating_add(1);
+            }
+            buckets_imported = buckets_imported.saturating_add(1);
+            let _ = mirror::rebuild_mirror(
+                self.db.as_ref(),
+                &self.app_data_dir,
+                &session_id,
+                max,
+            )
+            .await;
+        }
+        Ok(ImportChatBucketsResult {
+            buckets_imported,
+            turns_imported,
+        })
+    }
 }
 
 #[async_trait]
 impl ConversationStore for HybridConversationStore {
-    async fn append_turn(&self, input: TurnPersistInput) -> Result<()> {
+    async fn append_turn(&self, input: TurnPersistInput) -> Result<AppendTurnResult> {
         let scene_id = normalize_scene_id(&input.scene_id);
+        let max = resolve_max_messages_per_session(input.max_messages_per_session);
         let session = self
             .db
             .upsert_chat_session(&input.session_id, &input.role_id, &scene_id)
@@ -84,29 +173,28 @@ impl ConversationStore for HybridConversationStore {
         };
 
         self.db
-            .insert_chat_turn_messages(&input.session_id, turn)
+            .insert_chat_turn_messages(&input.session_id, turn, max)
             .await?;
 
-        let new_rows = vec![
-            MessageRow {
-                id: user_id,
-                session_id: input.session_id.clone(),
-                turn_index,
-                sender: "user".into(),
-                content: input.user_message,
-                metadata: Some(user_meta_str),
-                created_at: user_ts,
-            },
-            MessageRow {
-                id: assistant_id,
-                session_id: input.session_id.clone(),
-                turn_index,
-                sender: "assistant".into(),
-                content: input.assistant_reply,
-                metadata: Some(assistant_meta_str),
-                created_at: assistant_ts,
-            },
-        ];
+        let user_row = MessageRow {
+            id: user_id.clone(),
+            session_id: input.session_id.clone(),
+            turn_index,
+            sender: "user".into(),
+            content: input.user_message,
+            metadata: Some(user_meta_str),
+            created_at: user_ts.clone(),
+        };
+        let assistant_row = MessageRow {
+            id: assistant_id.clone(),
+            session_id: input.session_id.clone(),
+            turn_index,
+            sender: "assistant".into(),
+            content: input.assistant_reply,
+            metadata: Some(assistant_meta_str),
+            created_at: assistant_ts.clone(),
+        };
+        let new_rows = [user_row, assistant_row];
 
         let session_after = self
             .db
@@ -115,8 +203,11 @@ impl ConversationStore for HybridConversationStore {
             .unwrap_or(session);
 
         let app_data = self.app_data_dir.clone();
+        let max_spawn = max;
         tokio::spawn(async move {
-            if let Err(e) = mirror::sync_mirror_append(&app_data, &session_after, &new_rows).await {
+            if let Err(e) =
+                mirror::sync_mirror_append(&app_data, &session_after, &new_rows, max_spawn).await
+            {
                 tracing::warn!(
                     target: "oclive_chat_storage",
                     session_id = %session_after.session_id,
@@ -126,7 +217,12 @@ impl ConversationStore for HybridConversationStore {
             }
         });
 
-        Ok(())
+        Ok(AppendTurnResult {
+            user_message_id: user_id,
+            assistant_message_id: assistant_id,
+            user_message_timestamp: user_ts,
+            assistant_message_timestamp: assistant_ts,
+        })
     }
 
     async fn list_sessions(
@@ -180,9 +276,18 @@ impl ConversationStore for HybridConversationStore {
             .collect())
     }
 
-    async fn rebuild_mirror(&self, session_id: &str) -> Result<String> {
-        let path = mirror::rebuild_mirror(self.db.as_ref(), &self.app_data_dir, session_id).await?;
+    async fn rebuild_mirror(&self, session_id: &str, max_messages: i64) -> Result<String> {
+        let path =
+            mirror::rebuild_mirror(self.db.as_ref(), &self.app_data_dir, session_id, max_messages)
+                .await?;
         Ok(path.to_string_lossy().into_owned())
+    }
+
+    async fn import_chat_buckets(
+        &self,
+        buckets: Vec<ImportChatBucket>,
+    ) -> Result<ImportChatBucketsResult> {
+        HybridConversationStore::import_chat_buckets(self, buckets).await
     }
 }
 
@@ -193,6 +298,13 @@ fn normalize_scene_id(scene_id: &str) -> String {
     } else {
         t.to_string()
     }
+}
+
+fn timestamp_ms_to_rfc3339(ms: i64) -> String {
+    if let Some(dt) = DateTime::from_timestamp_millis(ms) {
+        return dt.to_rfc3339();
+    }
+    Utc::now().to_rfc3339()
 }
 
 #[cfg(test)]
@@ -228,6 +340,7 @@ mod tests {
                 response_ms: 10,
                 user_emotion: None,
                 bot_emotion: None,
+                max_messages_per_session: None,
             })
             .await
             .expect("append");

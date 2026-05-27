@@ -9,14 +9,23 @@ import {
   type RoleplaySplit,
 } from '../utils/roleplayReplySplit'
 import {
+  fetchChatMessages,
+  migrateIndexeddbToBackend,
+} from '../api/chatStorage'
+import type { StoredMessage } from '../api/chatStorage'
+import {
   bucketMapKey,
+  loadBucketFromIdb,
   loadMessageMapFromIdb,
+  messageMapToImportBuckets,
   migrateMessageMapFromLocalStorage,
   migrateMessageMapShape,
   migrateMonolithBlobToBuckets,
+  saveBucketToIdb,
   saveDirtyBucketsToIdb,
   type RoleSceneMessageMap,
 } from '../utils/chatMessageDb'
+import { conversationSessionId } from '../utils/conversationSessionId'
 import {
 
   sendMessage,
@@ -41,8 +50,58 @@ export interface ChatMessage {
   aside?: string
 }
 
-/** 与后端短期对话 FIFO 策略对齐（每角色最多保留条数） */
+/** 与后端默认单会话上限对齐（角色包可覆盖） */
 const MAX_MESSAGES_PER_CONVERSATION = 500
+
+const CHAT_STORAGE_MIGRATED_KEY = 'chat_storage_migrated'
+
+function parseMessageTimestamp(iso?: string | null): number {
+  if (!iso)
+    return Date.now()
+  const ms = Date.parse(iso)
+  return Number.isFinite(ms) ? ms : Date.now()
+}
+
+function storedMessageToChatMessage(m: StoredMessage): ChatMessage {
+  let emotion: string | undefined
+  let replyIsFallback: boolean | undefined
+  if (m.metadata) {
+    try {
+      const meta = JSON.parse(m.metadata) as Record<string, unknown>
+      if (m.sender === 'assistant') {
+        if (typeof meta.bot_emotion === 'string')
+          emotion = meta.bot_emotion
+        if (typeof meta.reply_is_fallback === 'boolean')
+          replyIsFallback = meta.reply_is_fallback
+      }
+    }
+    catch {
+      /* ignore */
+    }
+  }
+  const role = m.sender === 'assistant'
+    ? 'assistant'
+    : m.sender === 'user'
+      ? 'user'
+      : 'system'
+  const base: ChatMessage = {
+    id: m.id,
+    role,
+    content: m.content,
+    timestamp: parseMessageTimestamp(m.created_at),
+    emotion,
+    replyIsFallback,
+  }
+  if (role === 'assistant') {
+    const split = splitRoleplayReply(m.content)
+    return {
+      ...base,
+      content: assistantDialogueFromSplit(m.content, split),
+      ...(split.aside.trim() ? { aside: split.aside.trim() } : {}),
+    }
+  }
+  return base
+}
 
 /** 进入某场景时，该桶内已有消息条数；索引小于该值的视为「历史」折叠区（按角色×场景） */
 export type SceneHistorySplitIndex = Record<string, Record<string, number>>
@@ -251,23 +310,73 @@ export const useChatStore = defineStore(
       },
     },
     actions: {
-      /** 启动时从 IndexedDB 恢复消息；兼容旧版 localStorage 全量持久化。 */
+      /** 启动：迁移 IndexedDB → 后端，再从 API 加载当前角色×场景（失败则 IDB 缓存兜底）。 */
       async hydrateFromStorage() {
         if (this.messagesHydrated)
           return
+        await this.runIdbMigrationIfNeeded()
+        const roleStore = useRoleStore()
+        const uiStore = useUiStore()
+        await this.loadMessagesForRoleScene(
+          roleStore.currentRoleId,
+          uiStore.sceneId || 'default',
+        )
+        this.messagesHydrated = true
+      },
+
+      async runIdbMigrationIfNeeded() {
+        if (localStorage.getItem(CHAT_STORAGE_MIGRATED_KEY) === 'true')
+          return
         const fromLegacy = migrateMessageMapFromLocalStorage()
         const fromIdb = fromLegacy ?? (await loadMessageMapFromIdb())
-        if (fromIdb)
-          this.messageMap = migrateMessageMapShape(fromIdb)
-        if (fromLegacy)
-          await migrateMonolithBlobToBuckets(this.messageMap)
+        const map = fromIdb ? migrateMessageMapShape(fromIdb) : null
+        if (fromLegacy && map)
+          await migrateMonolithBlobToBuckets(map)
+        if (map && Object.keys(map).length > 0) {
+          try {
+            const buckets = messageMapToImportBuckets(map)
+            await migrateIndexeddbToBackend(buckets)
+            localStorage.setItem(CHAT_STORAGE_MIGRATED_KEY, 'true')
+          }
+          catch (err) {
+            console.warn('[chatStore] IndexedDB migration failed; will retry', err)
+            return
+          }
+        }
+        else {
+          localStorage.setItem(CHAT_STORAGE_MIGRATED_KEY, 'true')
+        }
+      },
+
+      async loadMessagesForRoleScene(roleId: string, sceneId: string) {
+        const sid = sceneId || 'default'
+        this.ensureLegacyMigrated(roleId)
+        const sessionId = conversationSessionId(roleId, null)
+        try {
+          const stored = await fetchChatMessages(sessionId, 500, 0)
+          const messages = stored
+            .filter(m => m.sender === 'user' || m.sender === 'assistant')
+            .map(storedMessageToChatMessage)
+          if (!this.messageMap[roleId])
+            this.messageMap[roleId] = {}
+          this.messageMap[roleId]![sid] = messages
+          await saveBucketToIdb(roleId, sid, messages)
+        }
+        catch (err) {
+          console.warn('[chatStore] fetch_chat_messages failed; using IDB cache', err)
+          const cached = await loadBucketFromIdb(roleId, sid)
+          if (cached) {
+            if (!this.messageMap[roleId])
+              this.messageMap[roleId] = {}
+            this.messageMap[roleId]![sid] = cached
+          }
+        }
         this.lastAssistantAside = rebuildLastAssistantAsideMap(this.messageMap)
         sanitizeAllSceneHistorySplits(this.sceneHistorySplitIndex, this.messageMap)
         repairSplitsSoCurrentSessionVisible(
           this.sceneHistorySplitIndex,
           this.messageMap,
         )
-        this.messagesHydrated = true
       },
 
       /** 退出前刷盘 IndexedDB（避免 300ms 防抖未写入）。 */
@@ -318,6 +427,9 @@ export const useChatStore = defineStore(
           this.sceneHistorySplitIndex[roleId][next] = count
         }
         uiStore.setScene(next)
+        if (prev !== next) {
+          void this.loadMessagesForRoleScene(roleStore.currentRoleId, next)
+        }
       },
 
       addSystemMessage(content: string, sceneId?: string) {
@@ -377,7 +489,12 @@ export const useChatStore = defineStore(
         this.addMessage(roleStore.currentRoleId, sid, message)
       },
 
-      addMessage(roleId: string, sceneId: string, msg: ChatMessage) {
+      addMessage(
+        roleId: string,
+        sceneId: string,
+        msg: ChatMessage,
+        options?: { persistIdbCache?: boolean },
+      ) {
         const sid = sceneId || 'default'
         const current = roleSceneBucket(this.messageMap, roleId, sid)
         const next = [...current, msg]
@@ -402,7 +519,22 @@ export const useChatStore = defineStore(
           trimmed.length,
         )
         syncLastAssistantAside(this.lastAssistantAside, roleId, sid, trimmed)
-        schedulePersistMessages(this.messageMap, roleId, sid)
+        if (options?.persistIdbCache !== false)
+          schedulePersistMessages(this.messageMap, roleId, sid)
+      },
+
+      patchMessageById(
+        roleId: string,
+        sceneId: string,
+        localId: string,
+        patch: Partial<Pick<ChatMessage, 'id' | 'timestamp'>>,
+      ) {
+        const sid = sceneId || 'default'
+        const bucket = roleSceneBucket(this.messageMap, roleId, sid)
+        const idx = bucket.findIndex(m => m.id === localId)
+        if (idx === -1)
+          return
+        bucket[idx] = { ...bucket[idx], ...patch }
       },
 
       editMessage(
@@ -446,7 +578,13 @@ export const useChatStore = defineStore(
         const roleId = roleStore.currentRoleId
         const sid = sceneId || 'default'
         const countBeforeTurn = this.getMessageCountForRoleScene(roleId, sid)
-        this.addUserMessage(content, sid)
+        const userLocalId = `u-${Date.now()}-${Math.random().toString(36).slice(2, 9)}`
+        this.addMessage(roleId, sid, {
+          id: userLocalId,
+          role: 'user',
+          content,
+          timestamp: Date.now(),
+        }, { persistIdbCache: false })
         this.isLoading = true
         const relationBefore = roleStore.roleInfo.relationState
         try {
@@ -455,16 +593,29 @@ export const useChatStore = defineStore(
             user_message: content,
             scene_id: sid || null,
           })
+          if (res.user_message_id) {
+            this.patchMessageById(roleId, sid, userLocalId, {
+              id: res.user_message_id,
+              timestamp: parseMessageTimestamp(res.user_message_timestamp),
+            })
+          }
           const pres = presentationFromSendResponse(res)
           const preSplit = splitRoleplayReply(pres.replyText)
-          const split = this.addAssistantMessage(
-            pres.replyText,
-            pres.assistantEmotionLabel,
-            sid,
-            pres.presenceVariant,
-            pres.replyIsFallback,
-            preSplit,
-          )
+          const aside = preSplit.aside.trim()
+          const dialogue = assistantDialogueFromSplit(pres.replyText, preSplit)
+          const assistantMsg: ChatMessage = {
+            id: res.assistant_message_id
+              ?? `a-${Date.now()}-${Math.random().toString(36).slice(2, 9)}`,
+            role: 'assistant',
+            content: dialogue,
+            timestamp: parseMessageTimestamp(res.assistant_message_timestamp),
+            emotion: pres.assistantEmotionLabel,
+            presenceVariant: pres.presenceVariant,
+            replyIsFallback: pres.replyIsFallback,
+            ...(aside.length > 0 ? { aside } : {}),
+          }
+          this.addMessage(roleId, sid, assistantMsg, { persistIdbCache: false })
+          const split = preSplit
           useDebugStore().recordKnowledgeFromSend(res)
           roleStore.updateLocalAfterMessage(
             pres.assistantEmotionLabel,

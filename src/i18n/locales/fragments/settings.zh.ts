@@ -7,6 +7,7 @@ export default {
     closeAria: '关闭',
     tabGeneral: '常规',
     tabPlugins: '插件扩展',
+    tabStorage: '存储管理',
     generalLeadHtml:
       '顶栏<strong>「更多」</strong>集中设置入口；<strong>Ctrl+Shift+S</strong> 打开设置；'
       + '<strong>Ctrl+Shift+F</strong> 已安装插件；<strong>Ctrl+Shift+M</strong> 模型管理。',

@@ -326,6 +326,7 @@ async function onSwitchRole(nextRoleId: string) {
   try {
     roleSwitching.value = true
     await roleStore.switchRole(nextRoleId)
+    await chatStore.loadMessagesForRoleScene(nextRoleId, uiStore.sceneId || 'default')
     await pluginStore.syncDirectoryPluginBootstrap()
     hostEventBus.emitBuiltin('role:switched', { roleId: nextRoleId })
     applyResolvedNarrativeScene()

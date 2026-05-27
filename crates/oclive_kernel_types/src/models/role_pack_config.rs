@@ -104,6 +104,14 @@ impl Default for RolePackRelationConfig {
     }
 }
 
+/// `config.json` → `chat_storage`（聊天记录单会话条数上限等）。
+#[derive(Debug, Clone, Serialize, Deserialize, Default)]
+pub struct RolePackChatStorageConfig {
+    /// 单会话最多保留消息条数（user+assistant 合计）；未设则用宿主默认 500。
+    #[serde(default)]
+    pub max_messages_per_session: Option<u32>,
+}
+
 #[derive(Debug, Clone, Deserialize, Default)]
 pub struct RolePackConfigFile {
     #[serde(default)]
@@ -114,4 +122,6 @@ pub struct RolePackConfigFile {
     pub relation: RolePackRelationConfig,
     #[serde(default)]
     pub evolution: RolePackEvolutionConfig,
+    #[serde(default)]
+    pub chat_storage: RolePackChatStorageConfig,
 }

@@ -8,8 +8,19 @@ const DEFAULT_SUBDIR: &str = "chats";
 /// Environment variable override for chat JSON mirror root (see `handoff/CHAT_STORAGE_ARCHITECTURE.md`).
 pub const ENV_CHAT_STORAGE_ROOT: &str = "OCLIVE_CHAT_STORAGE_ROOT";
 
-/// Max messages per session (aligned with frontend IndexedDB / short_term FIFO).
-pub const MAX_MESSAGES_PER_SESSION: i64 = 500;
+/// Global default max messages per session (user + assistant rows combined).
+pub const DEFAULT_MAX_MESSAGES: i64 = 500;
+
+/// Alias kept for existing call sites.
+pub const MAX_MESSAGES_PER_SESSION: i64 = DEFAULT_MAX_MESSAGES;
+
+/// Resolve per-role cap from pack config (falls back to [`DEFAULT_MAX_MESSAGES`]).
+#[must_use]
+pub fn resolve_max_messages_per_session(configured: Option<u32>) -> i64 {
+    configured
+        .map(|n| i64::from(n.max(2)))
+        .unwrap_or(DEFAULT_MAX_MESSAGES)
+}
 
 /// Resolve storage root: `OCLIVE_CHAT_STORAGE_ROOT` or `{app_data_dir}/chats/`.
 #[must_use]

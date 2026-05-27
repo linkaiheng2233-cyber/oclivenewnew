@@ -1,6 +1,5 @@
 //! SQLite read/write for `chat_sessions` / `chat_messages` (authoritative store).
 
-use super::config::MAX_MESSAGES_PER_SESSION;
 use crate::error::{AppError, Result};
 use crate::infrastructure::db::DbManager;
 use chrono::Utc;
@@ -90,7 +89,9 @@ impl DbManager {
         &self,
         session_id: &str,
         turn: NewTurnMessages,
+        max_messages: i64,
     ) -> Result<i64> {
+        let cap = max_messages.max(2);
         let mut tx = self
             .pool
             .begin()
@@ -106,7 +107,7 @@ impl DbManager {
         .map_err(|e| AppError::DatabaseError(e.to_string()))?
         .unwrap_or(0);
 
-        let overflow = count.saturating_add(2).saturating_sub(MAX_MESSAGES_PER_SESSION);
+        let overflow = count.saturating_add(2).saturating_sub(cap);
         if overflow > 0 {
             trim_oldest_chat_messages(&mut tx, session_id, overflow).await?;
         }
@@ -139,7 +140,7 @@ impl DbManager {
         .await
         .map_err(|e| AppError::DatabaseError(e.to_string()))?;
 
-        let new_count = count.saturating_add(2).min(MAX_MESSAGES_PER_SESSION);
+        let new_count = count.saturating_add(2).min(cap);
         let updated_at = turn.assistant_created_at.clone();
         sqlx::query(
             "UPDATE chat_sessions SET message_count = ?, updated_at = ? WHERE session_id = ?",
@@ -295,6 +296,30 @@ impl DbManager {
     /// # Errors
     ///
     /// Database errors propagate as [`AppError::DatabaseError`].
+    /// Count chat sessions for a manifest role (including `__sess__` namespaces).
+    ///
+    /// # Errors
+    ///
+    /// Database errors propagate as [`AppError::DatabaseError`].
+    pub async fn count_chat_sessions_for_manifest_role(&self, manifest_role_id: &str) -> Result<u32> {
+        let mid = manifest_role_id.trim();
+        let pattern = format!("{mid}__sess__*");
+        let n: i64 = sqlx::query_scalar(
+            "SELECT COUNT(*) FROM chat_sessions
+             WHERE role_id = ? OR session_id = ? OR session_id GLOB ?",
+        )
+        .bind(mid)
+        .bind(mid)
+        .bind(&pattern)
+        .fetch_one(&self.pool)
+        .await
+        .map_err(|e| AppError::DatabaseError(e.to_string()))?;
+        Ok(n.max(0) as u32)
+    }
+
+    /// # Errors
+    ///
+    /// Database errors propagate as [`AppError::DatabaseError`].
     pub async fn delete_chat_data_for_manifest_role(
         &self,
         manifest_role_id: &str,
@@ -322,6 +347,78 @@ impl DbManager {
         .await
         .map_err(|e| AppError::DatabaseError(e.to_string()))?;
         Ok(())
+    }
+
+    /// Remove chat rows for one role + scene (manifest `role_id` column, not session namespace).
+    ///
+    /// # Errors
+    ///
+    /// Database errors propagate as [`AppError::DatabaseError`].
+    pub async fn delete_chat_data_for_role_scene(
+        &self,
+        role_id: &str,
+        scene_id: &str,
+    ) -> Result<u32> {
+        let scene_id = scene_id.trim();
+        let scene = if scene_id.is_empty() {
+            "default"
+        } else {
+            scene_id
+        };
+        let count: i64 = sqlx::query_scalar(
+            "SELECT COUNT(*) FROM chat_sessions WHERE role_id = ? AND scene_id = ?",
+        )
+        .bind(role_id)
+        .bind(scene)
+        .fetch_one(&self.pool)
+        .await
+        .map_err(|e| AppError::DatabaseError(e.to_string()))?;
+        sqlx::query(
+            "DELETE FROM chat_messages WHERE session_id IN (
+                SELECT session_id FROM chat_sessions WHERE role_id = ? AND scene_id = ?
+             )",
+        )
+        .bind(role_id)
+        .bind(scene)
+        .execute(&self.pool)
+        .await
+        .map_err(|e| AppError::DatabaseError(e.to_string()))?;
+        sqlx::query("DELETE FROM chat_sessions WHERE role_id = ? AND scene_id = ?")
+            .bind(role_id)
+            .bind(scene)
+            .execute(&self.pool)
+            .await
+            .map_err(|e| AppError::DatabaseError(e.to_string()))?;
+        Ok(count.max(0) as u32)
+    }
+
+    /// Aggregate session counts per role + scene (storage management UI).
+    ///
+    /// # Errors
+    ///
+    /// Database errors propagate as [`AppError::DatabaseError`].
+    pub async fn list_chat_session_scene_stats(
+        &self,
+    ) -> Result<Vec<(String, String, u32, Option<String>)>> {
+        let rows = sqlx::query_as::<_, (String, String, i64, String)>(
+            "SELECT role_id, scene_id, COUNT(*) AS cnt, MAX(updated_at) AS last_active
+             FROM chat_sessions
+             GROUP BY role_id, scene_id",
+        )
+        .fetch_all(&self.pool)
+        .await
+        .map_err(|e| AppError::DatabaseError(e.to_string()))?;
+        Ok(rows
+            .into_iter()
+            .map(|(role_id, scene_id, cnt, last_active)| {
+                let last = if last_active.trim().is_empty() {
+                    None
+                } else {
+                    Some(last_active)
+                };
+                (role_id, scene_id, cnt.max(0) as u32, last)
+            })
+            .collect())
     }
 
     /// Last message snippet for session list UI (future).
@@ -387,6 +484,7 @@ mod tests {
 
     #[tokio::test]
     async fn insert_and_fetch_turn() {
+        use super::config::DEFAULT_MAX_MESSAGES;
         let db = mem_db().await;
         db.upsert_chat_session("mumu", "mumu", "default")
             .await
@@ -405,6 +503,7 @@ mod tests {
                     user_created_at: Utc::now().to_rfc3339(),
                     assistant_created_at: Utc::now().to_rfc3339(),
                 },
+                DEFAULT_MAX_MESSAGES,
             )
             .await
             .expect("insert");

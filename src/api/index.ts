@@ -1,6 +1,7 @@
 /** Domain-split Tauri invoke API (replaces utils/tauri-api.ts). */
 export * from './helpers'
 export * from './chat'
+export * from './chatStorage'
 export * from './role'
 export * from './desktop'
 export * from './settings'

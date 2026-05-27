@@ -7,6 +7,7 @@ export default {
     closeAria: 'Close',
     tabGeneral: 'General',
     tabPlugins: 'Plugins',
+    tabStorage: 'Storage',
     generalLeadHtml:
       'The top bar <strong>“More”</strong> groups entry points; <strong>Ctrl+Shift+S</strong> settings; '
       + '<strong>Ctrl+Shift+F</strong> installed plugins; <strong>Ctrl+Shift+M</strong> model management.',

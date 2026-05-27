@@ -618,6 +618,10 @@ pub(crate) async fn post_llm(
         .await;
     }
 
+    let mut chat_user_message_id = None;
+    let mut chat_assistant_message_id = None;
+    let mut chat_user_message_timestamp = None;
+    let mut chat_assistant_message_timestamp = None;
     if matches!(mode, TurnMode::CoPresent) && !reply.trim().is_empty() {
         let persist = crate::infrastructure::chat_storage::TurnPersistInput {
             session_id: srid.to_string(),
@@ -630,14 +634,23 @@ pub(crate) async fn post_llm(
             response_ms: llm.main_llm_ms,
             user_emotion: Some(pre.user_emotion_str.clone()),
             bot_emotion: Some(bot_emotion_str.clone()),
+            max_messages_per_session: role.pack_chat_storage_config.max_messages_per_session,
         };
-        if let Err(e) = state.conversation_store.append_turn(persist).await {
-            tracing::warn!(
-                target: "oclive_chat_storage",
-                session_id = %srid,
-                error = %e,
-                "append_turn failed"
-            );
+        match state.conversation_store.append_turn(persist).await {
+            Ok(ids) => {
+                chat_user_message_id = Some(ids.user_message_id);
+                chat_assistant_message_id = Some(ids.assistant_message_id);
+                chat_user_message_timestamp = Some(ids.user_message_timestamp);
+                chat_assistant_message_timestamp = Some(ids.assistant_message_timestamp);
+            }
+            Err(e) => {
+                tracing::warn!(
+                    target: "oclive_chat_storage",
+                    session_id = %srid,
+                    error = %e,
+                    "append_turn failed"
+                );
+            }
         }
     }
 
@@ -751,5 +764,9 @@ pub(crate) async fn post_llm(
         llm_fallback_reason: llm.llm_fallback_reason.clone(),
         knowledge_chunks_in_prompt: middle.knowledge_chunk_count,
         timestamp: chrono::Utc::now().timestamp_millis(),
+        user_message_id: chat_user_message_id,
+        assistant_message_id: chat_assistant_message_id,
+        user_message_timestamp: chat_user_message_timestamp,
+        assistant_message_timestamp: chat_assistant_message_timestamp,
     })
 }

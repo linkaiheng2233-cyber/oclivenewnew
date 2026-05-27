@@ -69,11 +69,13 @@
 - **主路径 wiring**：[`src-tauri/src/domain/chat_engine/turn_pipeline.rs`](src-tauri/src/domain/chat_engine/turn_pipeline.rs) 在 `load_recent_context` 之后、**`build_prompt` 之前**解析本回合复杂情感；上一轮 `narrative_hint` 缓存在 **`AppState::last_complex_emotion_narrative_hint`**（按会话命名空间 `srid`）；通过 **`PromptInput::previous_complex_emotion_narrative_hint`** 传入 [`PromptBuilder::build_prompt`](src-tauri/src/domain/prompt_builder.rs)（段落标题为「复杂情感叙事提示」）。
 - **集成测试**：[`src-tauri/tests/narrative_hint_prompt_roundtrip.rs`](src-tauri/tests/narrative_hint_prompt_roundtrip.rs)。
 
-### 聊天记录混合存储（SQLite 真源 + JSON 镜像 · step 1）
+### 聊天记录混合存储（SQLite 真源 + JSON 镜像 · phase 1）
 
 - **架构**：[`handoff/CHAT_STORAGE_ARCHITECTURE.md`](handoff/CHAT_STORAGE_ARCHITECTURE.md) — `chat_sessions` / `chat_messages` 与 `short_term_memory` / `long_term_memory` **完全解耦**；删聊天记录**不**清记忆表。
-- **实现**：[`src-tauri/src/infrastructure/chat_storage/`](src-tauri/src/infrastructure/chat_storage/) · `AppState::conversation_store` · CoPresent `post_llm` 写入 · Tauri：`list_chat_sessions` / `fetch_chat_messages` / `rebuild_chat_mirror`。
-- **助手勿**：让 `MemoryEngine` / 归档 LLM 读取 `{app_data}/chats/` 镜像或 `chat_messages` 充当记忆真源；编排上下文仍走 `short_term_memory` / `long_term_memory`。
+- **实现**：[`src-tauri/src/infrastructure/chat_storage/`](src-tauri/src/infrastructure/chat_storage/) · `AppState::conversation_store` · CoPresent `post_llm` 写入并回填 `SendMessageResponse` 消息 id/时间戳 · 角色包 `config.json` → `chat_storage.max_messages_per_session`。
+- **前端**：[`src/stores/chatStore.ts`](src/stores/chatStore.ts) 从 `fetch_chat_messages` 加载；IndexedDB 仅缓存；设置 → **存储管理**（[`ChatStorageSettingsPanel.vue`](src/components/settings/ChatStorageSettingsPanel.vue)）按角色→场景查看/删除。
+- **Tauri**：`list_chat_sessions` / `fetch_chat_messages` / `migrate_indexeddb_to_backend` / `get_chat_storage_stats` / `delete_role_chats` / `delete_scene_chats` / `rebuild_chat_mirror`。
+- **助手勿**：让 `MemoryEngine` / 归档 LLM 读取 `{app_data}/chats/` 或 `chat_messages` 充当记忆真源；编排上下文仍走 `short_term_memory` / `long_term_memory`。
 
 **契约优先**：角色包 `manifest.json` / `settings.json` 键与行为以 `roles/README_MANIFEST.md`、`RoleStorage::load_role` 及校验 crate 为准；新增顶层键需同步 `crates/oclive_validation` 与文档。
 

@@ -161,6 +161,10 @@ pub(super) async fn process_remote_stub(
         llm_fallback_reason: None,
         knowledge_chunks_in_prompt: 0,
         timestamp: chrono::Utc::now().timestamp_millis(),
+        user_message_id: None,
+        assistant_message_id: None,
+        user_message_timestamp: None,
+        assistant_message_timestamp: None,
     })
 }
 

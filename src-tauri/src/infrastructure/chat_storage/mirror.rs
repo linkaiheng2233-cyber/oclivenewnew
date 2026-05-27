@@ -1,6 +1,6 @@
 //! JSON file mirror under `{root}/{role_id}/{scene_id}/` (best-effort, DB is authoritative).
 
-use super::config::{resolve_session_dir, resolve_storage_root, MAX_MESSAGES_PER_SESSION};
+use super::config::{resolve_session_dir, resolve_storage_root};
 use super::db::{MessageRow, SessionRow};
 use crate::error::{AppError, Result};
 use crate::infrastructure::db::DbManager;
@@ -101,6 +101,7 @@ pub async fn sync_mirror_append(
     app_data_dir: &Path,
     session: &SessionRow,
     new_rows: &[MessageRow],
+    max_messages: i64,
 ) -> Result<()> {
     let path = mirror_path_for_session(app_data_dir, session)?;
     if let Some(parent) = path.parent() {
@@ -128,7 +129,7 @@ pub async fn sync_mirror_append(
         });
     }
 
-    let max = MAX_MESSAGES_PER_SESSION as usize;
+    let max = max_messages.max(2) as usize;
     if doc.messages.len() > max {
         let drop_n = doc.messages.len() - max;
         doc.messages.drain(0..drop_n);
@@ -147,6 +148,7 @@ pub async fn rebuild_mirror(
     db: &DbManager,
     app_data_dir: &Path,
     session_id: &str,
+    max_messages: i64,
 ) -> Result<PathBuf> {
     let session = db
         .get_chat_session(session_id)
@@ -156,6 +158,12 @@ pub async fn rebuild_mirror(
         .fetch_chat_messages(session_id, u32::MAX, 0)
         .await?;
     let doc = MirrorDocument::from_session_and_rows(&session, &rows);
+    let max = max_messages.max(2) as usize;
+    let mut doc = doc;
+    if doc.messages.len() > max {
+        let drop_n = doc.messages.len() - max;
+        doc.messages.drain(0..drop_n);
+    }
     let path = mirror_path_for_session(app_data_dir, &session)?;
     if let Some(parent) = path.parent() {
         fs::create_dir_all(parent).await.map_err(AppError::IoError)?;
@@ -246,7 +254,12 @@ mod tests {
             metadata: None,
             created_at: Utc::now().to_rfc3339(),
         };
-        sync_mirror_append(app_data, &session, std::slice::from_ref(&row))
+        sync_mirror_append(
+            app_data,
+            &session,
+            std::slice::from_ref(&row),
+            super::config::DEFAULT_MAX_MESSAGES,
+        )
             .await
             .expect("sync");
         let path = mirror_path_for_session(app_data, &session).expect("path");

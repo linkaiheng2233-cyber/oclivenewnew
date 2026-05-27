@@ -298,6 +298,7 @@ impl RoleStorage {
                         role.pack_memory_config = cfg.memory;
                         role.pack_relation_config = cfg.relation;
                         role.pack_evolution_config = cfg.evolution;
+                        role.pack_chat_storage_config = cfg.chat_storage;
                     }
                     Err(e) => tracing::warn!(
                         target: "oclive_role",

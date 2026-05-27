@@ -92,6 +92,15 @@ pub struct SendMessageResponse {
     #[serde(default)]
     pub knowledge_chunks_in_prompt: u32,
     pub timestamp: i64,
+    /// CoPresent 写入 `chat_messages` 后的 user 行 id；未写入时为 `None`。
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub user_message_id: Option<String>,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub assistant_message_id: Option<String>,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub user_message_timestamp: Option<String>,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub assistant_message_timestamp: Option<String>,
 }
 
 // ----- WEEK3-004：角色 / 记忆 / 事件查询 -----

@@ -319,6 +319,10 @@ pub fn run() {
             api::chat::list_chat_sessions,
             api::chat::fetch_chat_messages,
             api::chat::rebuild_chat_mirror,
+            api::chat::migrate_indexeddb_to_backend,
+            api::chat::get_chat_storage_stats,
+            api::chat::delete_role_chats,
+            api::chat::delete_scene_chats,
 
             // ── role / session / slot registry ──
             api::role::load_role,

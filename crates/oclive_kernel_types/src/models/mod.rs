@@ -32,7 +32,8 @@ pub use role::*;
 pub use role_manifest_disk::DiskRoleManifest;
 pub use role_settings_disk::{disk_role_settings_from_role, DiskRoleSettings};
 pub use role_pack_config::{
-    RolePackConfigFile, RolePackEvolutionConfig, RolePackMemoryConfig, RolePackRelationConfig,
+    RolePackChatStorageConfig, RolePackConfigFile, RolePackEvolutionConfig, RolePackMemoryConfig,
+    RolePackRelationConfig,
 };
 pub use role_time_config::{RoleTimeConfig, DEFAULT_REAL_TO_VIRTUAL_RATIO};
 pub use scene_disk::{DiskSceneConfig, DiskSceneTimeWindow};

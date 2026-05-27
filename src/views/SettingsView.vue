@@ -4,6 +4,7 @@ import * as Sentry from '@sentry/vue'
 import { nextTick, ref, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
 import HelpHint from '../components/shared/HelpHint.vue'
+import ChatStorageSettingsPanel from '../components/settings/ChatStorageSettingsPanel.vue'
 import HotkeySettingsSection from '../components/hotkey/HotkeySettingsSection.vue'
 import PluginSettingsPanelSlots from '../components/PluginSettingsPanelSlots.vue'
 import PluginSlotEmbed from '../components/PluginSlotEmbed.vue'
@@ -46,7 +47,7 @@ function onSentryOptOutChange(e: Event) {
   }
 }
 
-type SettingsTab = 'general' | 'plugins'
+type SettingsTab = 'general' | 'plugins' | 'storage'
 
 const tab = ref<SettingsTab>('general')
 
@@ -181,6 +182,14 @@ async function onToggleForceIframe(e: Event) {
             @click="tab = 'plugins'"
           >
             {{ t("settings.tabPlugins") }}
+          </button>
+          <button
+            type="button"
+            class="sv-nav-btn"
+            :aria-current="tab === 'storage' ? 'page' : undefined"
+            @click="tab = 'storage'"
+          >
+            {{ t("settings.tabStorage") }}
           </button>
         </nav>
 
@@ -349,6 +358,10 @@ async function onToggleForceIframe(e: Event) {
 
           <HotkeySettingsSection />
         </form>
+
+        <div v-show="tab === 'storage'" class="sv-body">
+          <ChatStorageSettingsPanel />
+        </div>
       </div>
     </div>
   </Teleport>

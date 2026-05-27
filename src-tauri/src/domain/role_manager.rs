@@ -280,6 +280,7 @@ mod tests {
             pack_memory_config: crate::models::RolePackMemoryConfig::default(),
             pack_relation_config: crate::models::RolePackRelationConfig::default(),
             pack_evolution_config: crate::models::RolePackEvolutionConfig::default(),
+            pack_chat_storage_config: crate::models::RolePackChatStorageConfig::default(),
             runtime_config: None,
             pipeline_experimental: None,
             scene_ids: std::sync::Arc::from(Vec::<String>::new()),

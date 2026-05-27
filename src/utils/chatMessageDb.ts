@@ -137,6 +137,58 @@ export async function saveDirtyBucketsToIdb(
 /**
  * 从 pinia-plugin-persistedstate 遗留的 localStorage 迁移消息；成功后剥离 messageMap 避免重复体积。
  */
+export async function loadBucketFromIdb(
+  roleId: string,
+  sceneId: string,
+): Promise<ChatMessage[] | null> {
+  const messages = await get<ChatMessage[]>(bucketStorageKey(roleId, sceneId || 'default'))
+  return messages?.length ? messages : null
+}
+
+export async function saveBucketToIdb(
+  roleId: string,
+  sceneId: string,
+  messages: ChatMessage[],
+): Promise<void> {
+  const mapKey = bucketMapKey(roleId, sceneId || 'default')
+  const map: RoleSceneMessageMap = { [roleId]: { [sceneId || 'default']: messages } }
+  await saveDirtyBucketsToIdb(map, new Set([mapKey]))
+}
+
+/** Build migration payloads from in-memory / IDB message map. */
+export function messageMapToImportBuckets(map: RoleSceneMessageMap): import('../api/chatStorage').ImportChatBucket[] {
+  const buckets: import('../api/chatStorage').ImportChatBucket[] = []
+  for (const [roleId, roleBucket] of Object.entries(map)) {
+    if (Array.isArray(roleBucket)) {
+      buckets.push({
+        role_id: roleId,
+        scene_id: 'default',
+        messages: roleBucket.map(m => ({
+          role: m.role,
+          content: m.content,
+          timestamp: m.timestamp,
+          id: m.id,
+        })),
+      })
+    }
+    else {
+      for (const [sceneId, messages] of Object.entries(roleBucket)) {
+        buckets.push({
+          role_id: roleId,
+          scene_id: sceneId,
+          messages: messages.map(m => ({
+            role: m.role,
+            content: m.content,
+            timestamp: m.timestamp,
+            id: m.id,
+          })),
+        })
+      }
+    }
+  }
+  return buckets
+}
+
 export function migrateMessageMapFromLocalStorage(): RoleSceneMessageMap | null {
   try {
     const raw = localStorage.getItem(LEGACY_PINIA_KEY)

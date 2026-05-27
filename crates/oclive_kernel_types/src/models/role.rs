@@ -5,7 +5,7 @@ use super::author_pack::AuthorPackFile;
 use super::knowledge::KnowledgeIndex;
 use super::plugin_backends::PluginBackends;
 use super::role_pack_config::{
-    RolePackEvolutionConfig, RolePackMemoryConfig, RolePackRelationConfig,
+    RolePackChatStorageConfig, RolePackEvolutionConfig, RolePackMemoryConfig, RolePackRelationConfig,
 };
 use super::role_time_config::RoleTimeConfig;
 use super::scene_disk::DiskSceneConfig;
@@ -216,6 +216,9 @@ pub struct Role {
     /// `config.json` → `evolution`（虚拟时间阶段性性格演化间隔）。
     #[serde(default)]
     pub pack_evolution_config: RolePackEvolutionConfig,
+    /// `config.json` → `chat_storage`（聊天记录单会话上限等）。
+    #[serde(default)]
+    pub pack_chat_storage_config: RolePackChatStorageConfig,
     /// v3 蓝图 `runtime_config`（宿主加载；创作者包通常不含或未开双核）。
     #[serde(default)]
     pub runtime_config: Option<RuntimeConfig>,
@@ -280,6 +283,7 @@ impl Default for Role {
             pack_memory_config: RolePackMemoryConfig::default(),
             pack_relation_config: RolePackRelationConfig::default(),
             pack_evolution_config: RolePackEvolutionConfig::default(),
+            pack_chat_storage_config: RolePackChatStorageConfig::default(),
             runtime_config: None,
             pipeline_experimental: None,
             scene_ids: Arc::from(Vec::<String>::new()),

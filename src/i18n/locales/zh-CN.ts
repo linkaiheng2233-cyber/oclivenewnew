@@ -1,6 +1,7 @@
 import apiErrors from './fragments/apiErrors.zh'
 import appBundle from './fragments/app.zh'
 import chat from './fragments/chat.zh'
+import chatStorageBundle from './fragments/chatStorage.zh'
 import commonBundle from './fragments/common.zh'
 import devTools from './fragments/devTools.zh'
 import editorBundle from './fragments/editor.zh'
@@ -17,6 +18,7 @@ export default {
   apiErrors,
   app: appBundle.app,
   chat,
+  ...chatStorageBundle,
   common: commonBundle.common,
   devTools,
   editor: editorBundle.editor,
