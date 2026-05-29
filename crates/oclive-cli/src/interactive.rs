@@ -1,8 +1,8 @@
 //! Interactive collection of [`crate::init::ProjectConfig`] (skips prompts already set via CLI).
 
 use crate::init::{
-    BackendImpl, BackendSlots, FeatureSelection, InitArgs, InitTemplateArg, PluginSelection,
-    ProjectConfig, ProjectType, ProjectTypeArg, RolePackKind,
+    BackendImpl, BackendSlots, ChatStorageBackend, FeatureSelection, InitArgs, InitTemplateArg,
+    PluginSelection, ProjectConfig, ProjectType, ProjectTypeArg, RolePackKind,
 };
 use crate::template_catalog::{project_config_from_template, CATALOG};
 use anyhow::{anyhow, Context, Result};
@@ -224,6 +224,25 @@ fn resolve_project_name(args: &InitArgs) -> Result<String> {
         .context("project name")
 }
 
+fn pick_chat_storage_backend() -> Result<ChatStorageBackend> {
+    let labels = [
+        "Hybrid (recommended): SQLite + JSON mirror — performance and transparent files",
+        "File only: JSON files under app data — lightweight, user-manageable",
+        "SQLite only: no JSON mirror — highest performance, no mirror files",
+    ];
+    let i = Select::with_theme(&ColorfulTheme::default())
+        .with_prompt("Chat history storage backend")
+        .items(&labels)
+        .default(0)
+        .interact()
+        .context("chat storage backend")?;
+    Ok(match i {
+        1 => ChatStorageBackend::File,
+        2 => ChatStorageBackend::Sqlite,
+        _ => ChatStorageBackend::Hybrid,
+    })
+}
+
 /// At least memory / emotion / prompt / llm (minimal product chat path).
 pub fn run_interactive(args: &InitArgs) -> Result<ProjectConfig> {
     let project_name = resolve_project_name(args)?;
@@ -290,6 +309,7 @@ pub fn run_interactive(args: &InitArgs) -> Result<ProjectConfig> {
                 pipeline: crate::pipeline::PipelineArg::Default,
                 custom_weld_modules: None,
                 dual_core_enabled: false,
+                chat_storage_backend: ChatStorageBackend::default(),
             };
             (c, false)
         }
@@ -331,6 +351,9 @@ pub fn run_interactive(args: &InitArgs) -> Result<ProjectConfig> {
         } else {
             RolePackKind::None
         };
+        if cfg.role_pack_kind != RolePackKind::None {
+            cfg.chat_storage_backend = pick_chat_storage_backend()?;
+        }
     }
 
     let skip_monolith_prompt =

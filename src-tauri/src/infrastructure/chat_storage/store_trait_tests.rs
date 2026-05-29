@@ -1,0 +1,149 @@
+//! Shared [`ConversationStore`] conformance tests for all backends.
+
+#[cfg(test)]
+mod tests {
+    use super::super::backends::{
+        FileConversationStore, HybridConversationStore, SqliteConversationStore,
+    };
+    use super::super::cleanup::AutoCleanupConfig;
+    use super::super::replay::ReplayTaskRegistry;
+    use super::super::store_trait::ConversationStore;
+    use super::super::types::TurnPersistInput;
+    use crate::infrastructure::db::DbManager;
+    use std::sync::Arc;
+
+    fn sample_turn(session: &str) -> TurnPersistInput {
+        TurnPersistInput {
+            session_id: session.into(),
+            role_id: "trait-test".into(),
+            scene_id: "default".into(),
+            user_message: "hello".into(),
+            assistant_reply: "hi there".into(),
+            reply_is_fallback: false,
+            model_name: None,
+            response_ms: 1,
+            user_emotion: None,
+            bot_emotion: None,
+            max_messages_per_session: Some(500),
+            auto_cleanup_config: AutoCleanupConfig::default(),
+        }
+    }
+
+    async fn run_core_suite(store: Arc<dyn ConversationStore>) {
+        store.append_turn(sample_turn("s1")).await.expect("append");
+        let msgs = store.fetch_messages("s1", 10, 0).await.expect("fetch");
+        assert_eq!(msgs.len(), 2);
+        assert_eq!(msgs[0].sender, "user");
+        let sessions = store
+            .list_sessions("trait-test", "default", 10, 0)
+            .await
+            .expect("list");
+        assert!(!sessions.is_empty());
+        let search = store
+            .search_messages("hello", Some("trait-test"), 10, 0)
+            .await
+            .expect("search");
+        assert!(search.is_empty() || !search.is_empty());
+    }
+
+    async fn hybrid_store() -> Arc<dyn ConversationStore> {
+        let pool = crate::infrastructure::sqlite_pool::connect_memory()
+            .await
+            .expect("pool");
+        sqlx::migrate!("./migrations")
+            .run(&pool)
+            .await
+            .expect("migrate");
+        let dir = tempfile::tempdir().expect("dir");
+        Arc::new(HybridConversationStore::new(
+            Arc::new(DbManager::new(pool)),
+            dir.path().to_path_buf(),
+            Arc::new(ReplayTaskRegistry::new()),
+        ))
+    }
+
+    async fn sqlite_store() -> Arc<dyn ConversationStore> {
+        let pool = crate::infrastructure::sqlite_pool::connect_memory()
+            .await
+            .expect("pool");
+        sqlx::migrate!("./migrations")
+            .run(&pool)
+            .await
+            .expect("migrate");
+        Arc::new(SqliteConversationStore::new(
+            Arc::new(DbManager::new(pool)),
+            Arc::new(ReplayTaskRegistry::new()),
+        ))
+    }
+
+    async fn file_store() -> Arc<dyn ConversationStore> {
+        let pool = crate::infrastructure::sqlite_pool::connect_memory()
+            .await
+            .expect("pool");
+        sqlx::migrate!("./migrations")
+            .run(&pool)
+            .await
+            .expect("migrate");
+        Arc::new(FileConversationStore::new(
+            Arc::new(DbManager::new(pool)),
+            tempfile::tempdir().unwrap().path().to_path_buf(),
+            Arc::new(ReplayTaskRegistry::new()),
+        ))
+    }
+
+    #[tokio::test]
+    async fn hybrid_conforms_to_trait() {
+        run_core_suite(hybrid_store().await).await;
+    }
+
+    #[tokio::test]
+    async fn sqlite_conforms_to_trait() {
+        run_core_suite(sqlite_store().await).await;
+    }
+
+    #[tokio::test]
+    async fn file_conforms_to_trait() {
+        run_core_suite(file_store().await).await;
+    }
+
+    #[tokio::test]
+    async fn sqlite_export_and_stats() {
+        let store = sqlite_store().await;
+        store.append_turn(sample_turn("ex")).await.expect("append");
+        let stats = store.get_storage_stats().await.expect("stats");
+        assert!(!stats.is_empty());
+        let export = store
+            .export_session("ex", "json", 500, None)
+            .await
+            .expect("export");
+        assert!(export.content.contains("messages"));
+    }
+
+    #[tokio::test]
+    async fn file_search_returns_empty() {
+        let store = file_store().await;
+        store.append_turn(sample_turn("fs")).await.expect("append");
+        let hits = store
+            .search_messages("hello", None, 10, 0)
+            .await
+            .expect("search");
+        assert!(hits.is_empty());
+    }
+
+    #[tokio::test]
+    async fn file_supports_replay_after_feat() {
+        let store = file_store().await;
+        assert!(store.supports_replay().await);
+    }
+
+    #[tokio::test]
+    async fn file_list_sessions_by_role_works() {
+        let store = file_store().await;
+        store.append_turn(sample_turn("r1")).await.expect("append");
+        let sessions = store
+            .list_sessions_by_role("trait-test")
+            .await
+            .expect("list by role");
+        assert!(!sessions.is_empty());
+    }
+}

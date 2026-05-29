@@ -35,7 +35,7 @@ pub struct MirrorDocument {
 }
 
 impl MirrorDocument {
-    fn from_session_and_rows(session: &SessionRow, rows: &[MessageRow]) -> Self {
+    pub fn from_session_and_rows(session: &SessionRow, rows: &[MessageRow]) -> Self {
         let messages = rows
             .iter()
             .map(|r| {

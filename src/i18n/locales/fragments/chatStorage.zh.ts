@@ -36,5 +36,12 @@ export default {
     cancel: '取消',
     edit: '编辑',
     cleanupSaved: '设置已保存；已清理 {sessions} 个会话，释放约 {size}',
+    replayMemory: '重新提取记忆',
+    replayConfirm:
+      '将从选定的聊天记录中重新提取 AI 记忆，不影响现有记忆（合并而非覆盖）。此操作在后台运行，可能需要几分钟。',
+    replayRunning: '正在提取记忆… {percent}%',
+    replayDone:
+      '完成：处理 {turns} 轮，新增 {newMem} 条，更新 {updated} 条，跳过 {skipped} 条。',
+    replayFailed: '记忆回放失败',
   },
 }

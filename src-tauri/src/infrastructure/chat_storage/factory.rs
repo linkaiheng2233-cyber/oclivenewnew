@@ -1,0 +1,53 @@
+//! Construct [`ConversationStore`] from backend kind.
+
+use super::backends::{
+    FileConversationStore, HybridConversationStore, SqliteConversationStore,
+};
+use super::replay::ReplayTaskRegistry;
+use super::store_trait::ConversationStore;
+use crate::models::RolePackChatStorageConfig;
+use crate::models::role_pack_config::ChatStorageBackendKind;
+use std::path::PathBuf;
+use std::sync::Arc;
+
+pub const ENV_CHAT_STORAGE_BACKEND: &str = "OCLIVE_CHAT_STORAGE_BACKEND";
+
+/// Resolve backend kind: env [`ENV_CHAT_STORAGE_BACKEND`] (`hybrid`|`file`|`sqlite`) >
+/// role `config.json` → `chat_storage.backend` > default [`ChatStorageBackendKind::Hybrid`].
+#[must_use]
+pub fn resolve_backend_kind(config: Option<&RolePackChatStorageConfig>) -> ChatStorageBackendKind {
+    if let Ok(raw) = std::env::var(ENV_CHAT_STORAGE_BACKEND) {
+        let t = raw.trim().to_ascii_lowercase();
+        return match t.as_str() {
+            "file" => ChatStorageBackendKind::File,
+            "sqlite" => ChatStorageBackendKind::Sqlite,
+            _ => ChatStorageBackendKind::Hybrid,
+        };
+    }
+    config
+        .and_then(|c| c.backend)
+        .unwrap_or_default()
+}
+
+/// Build conversation store for the resolved backend.
+#[must_use]
+pub fn build_conversation_store(
+    kind: ChatStorageBackendKind,
+    db: Arc<crate::infrastructure::db::DbManager>,
+    app_data_dir: PathBuf,
+    replay_tasks: Arc<ReplayTaskRegistry>,
+) -> Arc<dyn ConversationStore> {
+    match kind {
+        ChatStorageBackendKind::Hybrid => Arc::new(HybridConversationStore::new(
+            db,
+            app_data_dir,
+            replay_tasks,
+        )),
+        ChatStorageBackendKind::File => Arc::new(FileConversationStore::new(
+            db,
+            app_data_dir,
+            replay_tasks,
+        )),
+        ChatStorageBackendKind::Sqlite => Arc::new(SqliteConversationStore::new(db, replay_tasks)),
+    }
+}

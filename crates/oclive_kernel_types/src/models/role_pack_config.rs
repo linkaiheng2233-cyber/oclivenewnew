@@ -104,9 +104,33 @@ impl Default for RolePackRelationConfig {
     }
 }
 
-/// `config.json` → `chat_storage`（聊天记录单会话条数上限等）。
+/// `config.json` → `chat_storage.backend` — pluggable chat log backend.
+///
+/// Serialized as `hybrid` | `file` | `sqlite` (lowercase). Keep aligned with
+/// `oclive-cli` `ChatStorageBackend` when generating role packs.
+///
+/// | Variant | Storage | Search | Cleanup | Memory replay |
+/// |---------|---------|--------|---------|---------------|
+/// | `Hybrid` (default) | SQLite + JSON mirror | yes | yes | yes |
+/// | `File` | JSON files only | no | no | yes |
+/// | `Sqlite` | SQLite only | yes | yes | yes |
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize, Default)]
+#[serde(rename_all = "lowercase")]
+pub enum ChatStorageBackendKind {
+    /// SQLite authoritative + JSON mirror (default).
+    #[default]
+    Hybrid,
+    /// JSON files only under `{app_data}/chats/`.
+    File,
+    /// SQLite only, no JSON mirror.
+    Sqlite,
+}
+
 #[derive(Debug, Clone, Serialize, Deserialize, Default)]
 pub struct RolePackChatStorageConfig {
+    /// Storage backend; default `hybrid`.
+    #[serde(default)]
+    pub backend: Option<ChatStorageBackendKind>,
     /// 单会话最多保留消息条数（user+assistant 合计）；未设则用宿主默认 500。
     #[serde(default)]
     pub max_messages_per_session: Option<u32>,

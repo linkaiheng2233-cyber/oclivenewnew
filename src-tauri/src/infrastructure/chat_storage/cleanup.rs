@@ -157,6 +157,42 @@ pub async fn apply_auto_cleanup(
     })
 }
 
+/// SQLite-only cleanup (no mirror files).
+/// Apply auto-cleanup for one role using SQLite only (no mirror deletes).
+///
+/// # Errors
+///
+/// Propagates database errors.
+pub async fn apply_auto_cleanup_sqlite(
+    db: &DbManager,
+    role_id: &str,
+    cfg: &AutoCleanupConfig,
+) -> Result<AutoCleanupResult> {
+    if !cfg.is_enabled() {
+        return Ok(AutoCleanupResult::default());
+    }
+    let rows = db.list_chat_sessions_for_manifest_role(role_id).await?;
+    let indexed: Vec<(String, String, String, String)> = rows
+        .iter()
+        .map(|r| {
+            (
+                r.session_id.clone(),
+                r.role_id.clone(),
+                r.scene_id.clone(),
+                r.updated_at.clone(),
+            )
+        })
+        .collect();
+    let to_delete = sessions_to_delete(&indexed, cfg);
+    for sid in &to_delete {
+        db.delete_chat_session(sid).await?;
+    }
+    Ok(AutoCleanupResult {
+        sessions_deleted: to_delete.len() as u32,
+        bytes_freed: 0,
+    })
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;

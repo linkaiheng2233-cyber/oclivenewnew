@@ -320,6 +320,7 @@ pub fn run() {
             api::chat::fetch_chat_messages,
             api::chat::rebuild_chat_mirror,
             api::chat::migrate_indexeddb_to_backend,
+            api::chat::get_chat_storage_capabilities,
             api::chat::get_chat_storage_stats,
             api::chat::delete_role_chats,
             api::chat::delete_scene_chats,
@@ -331,6 +332,8 @@ pub fn run() {
             api::chat::get_role_chat_storage_config,
             api::chat::save_role_chat_storage_config_cmd,
             api::chat::run_chat_auto_cleanup,
+            api::chat::replay_memory_extraction,
+            api::chat::get_replay_progress,
 
             // ── role / session / slot registry ──
             api::role::load_role,

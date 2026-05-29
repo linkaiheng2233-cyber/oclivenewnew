@@ -5,7 +5,9 @@ use super::AppState;
 use crate::domain::plugin_host::PluginHost;
 use crate::domain::repository::{FavorabilityRepository, MemoryRepository};
 use crate::error::Result;
-use crate::infrastructure::chat_storage::{ConversationStore, HybridConversationStore};
+use crate::infrastructure::chat_storage::{
+    build_conversation_store, resolve_backend_kind, ReplayTaskRegistry,
+};
 use crate::infrastructure::db::DbManager;
 use crate::infrastructure::directory_plugins::DirectoryPluginRuntime;
 use crate::infrastructure::high_risk_grants::HighRiskGrantStore;
@@ -152,14 +154,19 @@ impl AppStateBuilder {
         );
         AppState::bootstrap_local_plugin_providers(&plugins, storage.roles_dir());
 
-        let conversation_store: Arc<dyn ConversationStore> = Arc::new(HybridConversationStore::new(
+        let replay_tasks = Arc::new(ReplayTaskRegistry::new());
+        let backend_kind = resolve_backend_kind(None);
+        let conversation_store = build_conversation_store(
+            backend_kind,
             db_manager.clone(),
             self.app_data_dir.clone(),
-        ));
+            replay_tasks.clone(),
+        );
 
         let state = AppState {
             db_manager,
             conversation_store,
+            replay_tasks,
             memory_repo,
             favorability_repo,
             llm,

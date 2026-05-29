@@ -88,11 +88,34 @@ async fn session_json_content(
     session_id: &str,
     max_messages: i64,
 ) -> Result<String> {
+    if app_data_dir.as_os_str().is_empty() || app_data_dir == Path::new(".") {
+        return session_json_from_db(db, session_id, max_messages).await;
+    }
     let path = mirror::rebuild_mirror(db, app_data_dir, session_id, max_messages).await?;
     let raw = tokio::fs::read_to_string(&path)
         .await
         .map_err(AppError::IoError)?;
     Ok(raw)
+}
+
+async fn session_json_from_db(
+    db: &DbManager,
+    session_id: &str,
+    max_messages: i64,
+) -> Result<String> {
+    let session = db
+        .get_chat_session(session_id)
+        .await?
+        .ok_or_else(|| AppError::InvalidParameter(format!("chat session not found: {session_id}")))?;
+    let rows = db.fetch_chat_messages(session_id, u32::MAX, 0).await?;
+    let doc = mirror::MirrorDocument::from_session_and_rows(&session, &rows);
+    let max = max_messages.max(2) as usize;
+    let mut doc = doc;
+    if doc.messages.len() > max {
+        let drop_n = doc.messages.len() - max;
+        doc.messages.drain(0..drop_n);
+    }
+    serde_json::to_string_pretty(&doc).map_err(|e| AppError::InvalidParameter(e.to_string()))
 }
 
 /// Export one session as Markdown or JSON mirror document.

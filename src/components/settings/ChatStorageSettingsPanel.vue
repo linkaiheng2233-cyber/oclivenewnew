@@ -7,7 +7,7 @@ import type {
   SessionMeta,
   StoredMessage,
 } from '../../api/chatStorage'
-import { computed, onMounted, ref } from 'vue'
+import { computed, onMounted, onUnmounted, ref } from 'vue'
 import { useI18n } from 'vue-i18n'
 import {
   deleteChatMessage,
@@ -17,9 +17,12 @@ import {
   exportChatSession,
   exportRoleChats,
   fetchChatMessages,
+  getChatStorageCapabilities,
   getChatStorageStats,
+  getReplayProgress,
   getRoleChatStorageConfig,
   listChatSessions,
+  replayMemoryExtraction,
   runChatAutoCleanup,
   saveRoleChatStorageConfig,
   searchChatMessages,
@@ -55,6 +58,21 @@ const cleanupRoleId = ref('')
 
 const editingMessageId = ref<string | null>(null)
 const editingContent = ref('')
+
+const replayTaskId = ref<string | null>(null)
+const replayProgress = ref<number>(0)
+const replayPolling = ref<ReturnType<typeof setInterval> | null>(null)
+
+const capabilities = ref({
+  supports_search: true,
+  supports_replay: false,
+  supports_cleanup: false,
+})
+
+onUnmounted(() => {
+  if (replayPolling.value)
+    clearInterval(replayPolling.value)
+})
 
 const selectedRoleLabel = computed(() => {
   const id = selectedRole.value?.role_id ?? ''
@@ -223,6 +241,66 @@ async function handleExportSession(sessionId: string, format: 'markdown' | 'json
   }
 }
 
+async function startMemoryReplay(
+  source: 'session' | 'scene' | 'role',
+  roleId: string,
+  sceneId?: string,
+  sessionId?: string,
+) {
+  if (!window.confirm(t('chatStorage.replayConfirm')))
+    return
+  loading.value = true
+  try {
+    const taskId = await replayMemoryExtraction(source, {
+      role_id: roleId,
+      scene_id: sceneId ?? null,
+      session_id: sessionId ?? null,
+    })
+    replayTaskId.value = taskId
+    replayProgress.value = 0
+    if (replayPolling.value)
+      clearInterval(replayPolling.value)
+    replayPolling.value = setInterval(async () => {
+      if (!replayTaskId.value)
+        return
+      try {
+        const p = await getReplayProgress(replayTaskId.value)
+        replayProgress.value = p.percent
+        if (p.done) {
+          if (replayPolling.value)
+            clearInterval(replayPolling.value)
+          replayPolling.value = null
+          replayTaskId.value = null
+          if (p.errors.length)
+            showToast('error', p.errors.join('; '))
+          else
+            showToast('info', t('chatStorage.replayDone', {
+              turns: p.processed_turns,
+              newMem: p.new_memories,
+              updated: p.updated_memories,
+              skipped: p.skipped_memories,
+            }))
+        }
+      }
+      catch (err) {
+        if (replayPolling.value)
+          clearInterval(replayPolling.value)
+        replayPolling.value = null
+        replayTaskId.value = null
+        showToast('error', err instanceof Error ? err.message : t('chatStorage.replayFailed'))
+      }
+    }, 800)
+  }
+  catch (err) {
+    showToast('error', err instanceof Error ? err.message : t('chatStorage.replayFailed'))
+  }
+  finally {
+    loading.value = false
+  }
+}
+
+const replayActive = computed(() => replayTaskId.value !== null)
+
 async function handleExportRole(roleId: string, format: 'markdown' | 'json') {
   loading.value = true
   try {
@@ -378,6 +456,11 @@ async function confirmDeleteMessage(msg: StoredMessage) {
 onMounted(() => {
   void loadRoleNames()
   void refreshStats()
+  void getChatStorageCapabilities().then((c) => {
+    capabilities.value = c
+  }).catch(() => {
+    /* keep defaults */
+  })
 })
 
 defineExpose({ refreshStats })
@@ -410,7 +493,7 @@ defineExpose({ refreshStats })
       {{ t('chatStorage.lead') }}
     </p>
 
-    <div class="css-search">
+    <div v-if="capabilities.supports_search" class="css-search">
       <input
         v-model="searchQuery"
         type="search"
@@ -423,7 +506,7 @@ defineExpose({ refreshStats })
       </button>
     </div>
 
-    <ul v-if="searchActive && searchResults.length > 0" class="css-list css-search-results">
+    <ul v-if="capabilities.supports_search && searchActive && searchResults.length > 0" class="css-list css-search-results">
       <li class="css-breadcrumb">
         {{ t('chatStorage.searchResults', { n: searchResults.length }) }}
       </li>
@@ -441,6 +524,13 @@ defineExpose({ refreshStats })
         </button>
       </li>
     </ul>
+
+    <div v-if="replayActive" class="css-replay-bar">
+      <div class="css-replay-track">
+        <div class="css-replay-fill" :style="{ width: `${replayProgress}%` }" />
+      </div>
+      <span class="css-muted">{{ t('chatStorage.replayRunning', { percent: replayProgress }) }}</span>
+    </div>
 
     <div v-if="loading" class="css-muted">
       {{ t('chatStorage.loading') }}
@@ -469,8 +559,21 @@ defineExpose({ refreshStats })
           <button type="button" class="css-action" @click.stop="handleExportRole(row.role_id, 'json')">
             {{ t('chatStorage.exportJson') }}
           </button>
-          <button type="button" class="css-action" @click.stop="openCleanupSettings(row.role_id)">
+          <button
+            v-if="capabilities.supports_cleanup"
+            type="button"
+            class="css-action"
+            @click.stop="openCleanupSettings(row.role_id)"
+          >
             {{ t('chatStorage.autoCleanup') }}
+          </button>
+          <button
+            v-if="capabilities.supports_replay"
+            type="button"
+            class="css-action"
+            @click.stop="startMemoryReplay('role', row.role_id)"
+          >
+            {{ t('chatStorage.replayMemory') }}
           </button>
           <button type="button" class="css-danger" @click.stop="confirmDeleteRole(row.role_id)">
             {{ t('chatStorage.delete') }}
@@ -494,6 +597,14 @@ defineExpose({ refreshStats })
             {{ t('chatStorage.sessionsCount', { n: scene.session_count }) }}
             · {{ formatBytes(scene.total_size_bytes) }}
           </span>
+        </button>
+        <button
+          v-if="capabilities.supports_replay"
+          type="button"
+          class="css-action"
+          @click.stop="startMemoryReplay('scene', selectedRole.role_id, scene.scene_id)"
+        >
+          {{ t('chatStorage.replayMemory') }}
         </button>
         <button
           type="button"
@@ -568,12 +679,20 @@ defineExpose({ refreshStats })
           </div>
         </template>
       </li>
-      <li class="css-row css-export-row">
+      <li class="css-export-row css-row">
         <button type="button" class="css-action" @click="handleExportSession(selectedSession.session_id, 'markdown')">
           {{ t('chatStorage.exportMd') }}
         </button>
         <button type="button" class="css-action" @click="handleExportSession(selectedSession.session_id, 'json')">
           {{ t('chatStorage.exportJson') }}
+        </button>
+        <button
+          v-if="capabilities.supports_replay && selectedRole"
+          type="button"
+          class="css-action"
+          @click="startMemoryReplay('session', selectedRole.role_id, selectedScene?.scene_id, selectedSession.session_id)"
+        >
+          {{ t('chatStorage.replayMemory') }}
         </button>
       </li>
     </ul>
@@ -625,6 +744,22 @@ defineExpose({ refreshStats })
 </template>
 
 <style scoped>
+.css-replay-bar {
+  display: flex;
+  flex-direction: column;
+  gap: 0.35rem;
+}
+.css-replay-track {
+  height: 6px;
+  border-radius: 3px;
+  background: var(--oc-border, #333);
+  overflow: hidden;
+}
+.css-replay-fill {
+  height: 100%;
+  background: var(--oc-accent, #6cf);
+  transition: width 0.3s ease;
+}
 .css-panel {
   display: flex;
   flex-direction: column;

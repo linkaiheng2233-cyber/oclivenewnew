@@ -144,6 +144,54 @@ pub async fn delete_mirror_scene_dir(
     Ok(bytes)
 }
 
+/// Storage stats from SQLite only (for `sqlite` backend).
+///
+/// # Errors
+///
+/// Propagates database errors.
+pub async fn collect_chat_storage_stats_from_db(db: &DbManager) -> Result<Vec<RoleStorageStat>> {
+    let rows = db.list_chat_session_scene_stats().await?;
+    let mut by_role: BTreeMap<String, BTreeMap<String, SceneAgg>> = BTreeMap::new();
+    for (role_id, scene_id, cnt, last_active) in rows {
+        let scenes_map = by_role.entry(role_id).or_default();
+        let agg = scenes_map.entry(scene_id).or_default();
+        agg.session_count = cnt;
+        agg.last_active = last_active;
+    }
+    let mut out: Vec<RoleStorageStat> = Vec::new();
+    for (role_id, scenes_map) in by_role {
+        let mut scenes: Vec<SceneStorageStat> = Vec::new();
+        let mut role_last: Option<String> = None;
+        for (scene_id, agg) in scenes_map {
+            if let Some(ref la) = agg.last_active {
+                let newer = role_last
+                    .as_ref()
+                    .map(|cur| la.as_str() > cur.as_str())
+                    .unwrap_or(true);
+                if newer {
+                    role_last = Some(la.clone());
+                }
+            }
+            scenes.push(SceneStorageStat {
+                scene_id,
+                session_count: agg.session_count,
+                total_size_bytes: 0,
+                last_active: agg.last_active,
+            });
+        }
+        scenes.sort_by(|a, b| a.scene_id.cmp(&b.scene_id));
+        out.push(RoleStorageStat {
+            role_id,
+            total_size_bytes: 0,
+            scene_count: scenes.len() as u32,
+            last_active: role_last,
+            scenes,
+        });
+    }
+    out.sort_by(|a, b| a.role_id.cmp(&b.role_id));
+    Ok(out)
+}
+
 /// Bytes for one session mirror file (0 if missing).
 pub async fn mirror_file_bytes_for_session(
     app_data_dir: &Path,

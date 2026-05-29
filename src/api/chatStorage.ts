@@ -36,6 +36,8 @@ export interface ChatExportResponse {
 }
 
 export interface RoleChatStorageConfig {
+  /** Role pack `config.json` → `chat_storage.backend` (`hybrid` | `file` | `sqlite`). */
+  backend?: 'hybrid' | 'file' | 'sqlite' | null
   max_messages_per_session?: number | null
   auto_cleanup_days?: number | null
   auto_cleanup_max_sessions?: number | null
@@ -207,4 +209,51 @@ export async function saveRoleChatStorageConfig(
 
 export async function runChatAutoCleanup(roleId: string): Promise<AutoCleanupResult> {
   return invokeWithFriendlyError<AutoCleanupResult>('run_chat_auto_cleanup', { roleId })
+}
+
+export interface ReplayTarget {
+  role_id: string
+  scene_id?: string | null
+  session_id?: string | null
+}
+
+export interface ReplayProgress {
+  task_id: string
+  percent: number
+  processed_turns: number
+  total_turns: number
+  new_memories: number
+  updated_memories: number
+  skipped_memories: number
+  done: boolean
+  errors: string[]
+}
+
+export interface ReplayResult {
+  total_turns: number
+  new_memories: number
+  updated_memories: number
+  skipped_memories: number
+  errors: string[]
+}
+
+export async function replayMemoryExtraction(
+  source: 'session' | 'scene' | 'role',
+  target: ReplayTarget,
+): Promise<string> {
+  return invokeWithFriendlyError<string>('replay_memory_extraction', { source, target })
+}
+
+export async function getReplayProgress(taskId: string): Promise<ReplayProgress> {
+  return invokeWithFriendlyError<ReplayProgress>('get_replay_progress', { taskId })
+}
+
+export interface ChatStorageCapabilities {
+  supports_search: boolean
+  supports_replay: boolean
+  supports_cleanup: boolean
+}
+
+export async function getChatStorageCapabilities(): Promise<ChatStorageCapabilities> {
+  return invokeWithFriendlyError<ChatStorageCapabilities>('get_chat_storage_capabilities', {})
 }

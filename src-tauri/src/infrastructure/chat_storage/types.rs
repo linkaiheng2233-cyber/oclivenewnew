@@ -123,3 +123,43 @@ pub struct ChatExportResponse {
     #[serde(default)]
     pub content_encoding: Option<String>,
 }
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct ReplayTarget {
+    pub role_id: String,
+    #[serde(default)]
+    pub scene_id: Option<String>,
+    #[serde(default)]
+    pub session_id: Option<String>,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize, Default)]
+pub struct ReplayResult {
+    pub total_turns: u32,
+    pub new_memories: u32,
+    pub updated_memories: u32,
+    pub skipped_memories: u32,
+    #[serde(default)]
+    pub errors: Vec<String>,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize, Default)]
+pub struct ReplayProgress {
+    pub task_id: String,
+    pub percent: u8,
+    pub processed_turns: u32,
+    pub total_turns: u32,
+    pub new_memories: u32,
+    pub updated_memories: u32,
+    pub skipped_memories: u32,
+    pub done: bool,
+    #[serde(default)]
+    pub errors: Vec<String>,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct ChatStorageCapabilities {
+    pub supports_search: bool,
+    pub supports_replay: bool,
+    pub supports_cleanup: bool,
+}

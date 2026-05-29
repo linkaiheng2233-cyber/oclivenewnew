@@ -2,7 +2,7 @@
 
 use crate::blueprint_v3_init::build_blueprint_v3_value;
 use crate::generator::render_settings_json;
-use crate::init::{ProjectConfig, RolePackKind};
+use crate::init::{ProjectConfig, RolePackKind, ChatStorageBackend};
 use anyhow::{Context, Result};
 use oclive_validation::PIPELINE_BLUEPRINT_FILENAME;
 use serde_json::json;
@@ -15,6 +15,30 @@ pub fn write_role_pack(cfg: &ProjectConfig, out: &Path) -> Result<()> {
         RolePackKind::DefaultExample => write_default_example(cfg, out),
         RolePackKind::RobotSoulMinimal => write_robot_soul_minimal(cfg, out),
     }
+}
+
+fn chat_storage_backend_token(b: ChatStorageBackend) -> &'static str {
+    // Tokens must match ChatStorageBackendKind serde (`hybrid`/`file`/`sqlite`).
+    match b {
+        ChatStorageBackend::Hybrid => "hybrid",
+        ChatStorageBackend::File => "file",
+        ChatStorageBackend::Sqlite => "sqlite",
+    }
+}
+
+fn write_role_config_json(cfg: &ProjectConfig, role_root: &Path) -> Result<()> {
+    let config = json!({
+        "chat_storage": {
+            "backend": chat_storage_backend_token(cfg.chat_storage_backend),
+            "max_messages_per_session": 500
+        }
+    });
+    fs::write(
+        role_root.join("config.json"),
+        serde_json::to_string_pretty(&config).context("config.json")?,
+    )
+    .context("write config.json")?;
+    Ok(())
 }
 
 fn write_default_example(cfg: &ProjectConfig, out: &Path) -> Result<()> {
@@ -68,6 +92,7 @@ fn write_default_example(cfg: &ProjectConfig, out: &Path) -> Result<()> {
         serde_json::to_string_pretty(&scene).context("scene.json")?,
     )
     .context("write scene.json")?;
+    write_role_config_json(cfg, &role_root)?;
     Ok(())
 }
 
@@ -143,6 +168,7 @@ fn write_robot_soul_minimal(cfg: &ProjectConfig, out: &Path) -> Result<()> {
         serde_json::to_string_pretty(&scene).context("scene.json")?,
     )
     .context("write scene.json")?;
+    write_role_config_json(cfg, &role_root)?;
     Ok(())
 }
 
@@ -173,13 +199,11 @@ fn write_dual_core_v3_role(
         "events": []
     });
     fs::write(
-        role_root
-            .join("scenes")
-            .join("default")
-            .join("scene.json"),
+        role_root.join("scenes").join("default").join("scene.json"),
         serde_json::to_string_pretty(&scene).context("scene.json")?,
     )
     .context("write scene.json")?;
+    write_role_config_json(cfg, role_root)?;
     Ok(())
 }
 
@@ -189,6 +213,16 @@ mod tests {
     use crate::generator::build_settings_value;
     use crate::init::{preset_config, RolePackKind};
     use tempfile::tempdir;
+
+    #[test]
+    fn role_pack_writes_chat_storage_config() {
+        let mut cfg = preset_config("t", "minimal");
+        cfg.chat_storage_backend = ChatStorageBackend::File;
+        let dir = tempdir().unwrap();
+        write_default_example(&cfg, dir.path()).unwrap();
+        let raw = fs::read_to_string(dir.path().join("roles/default/config.json")).unwrap();
+        assert!(raw.contains("\"backend\": \"file\""));
+    }
 
     #[test]
     fn robot_soul_pack_has_system_prompt() {

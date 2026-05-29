@@ -72,6 +72,25 @@ pub enum ProjectType {
     Library,
 }
 
+/// Scaffold selection for `config.json` → `chat_storage.backend`.
+///
+/// Serialized as `hybrid` | `file` | `sqlite`. Must stay aligned with
+/// `oclive_kernel_types::models::role_pack_config::ChatStorageBackendKind`.
+///
+/// | Variant | Storage | Search | Cleanup | Memory replay |
+/// |---------|---------|--------|---------|---------------|
+/// | `Hybrid` (default) | SQLite + JSON mirror | yes | yes | yes |
+/// | `File` | JSON files only | no | no | yes |
+/// | `Sqlite` | SQLite only | yes | yes | yes |
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize, Default)]
+#[serde(rename_all = "lowercase")]
+pub enum ChatStorageBackend {
+    #[default]
+    Hybrid,
+    File,
+    Sqlite,
+}
+
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct ProjectConfig {
     pub project_name: String,
@@ -107,6 +126,9 @@ pub struct ProjectConfig {
     pub custom_weld_modules: Option<Vec<String>>,
     /// 示例角色包写入 v3 蓝图并开启 `runtime_config.dual_core.enabled`。
     pub dual_core_enabled: bool,
+    /// 聊天记录存储后端（写入角色包 `config.json` → `chat_storage.backend`）。
+    #[serde(default)]
+    pub chat_storage_backend: ChatStorageBackend,
 }
 
 impl ProjectConfig {

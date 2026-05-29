@@ -36,5 +36,12 @@ export default {
     cancel: 'Cancel',
     edit: 'Edit',
     cleanupSaved: 'Saved; cleaned {sessions} sessions, freed ~{size}',
+    replayMemory: 'Re-extract memories',
+    replayConfirm:
+      'Re-extract AI memories from the selected chat history. Existing memories are merged, not overwritten. Runs in the background and may take a few minutes.',
+    replayRunning: 'Extracting memories… {percent}%',
+    replayDone:
+      'Done: {turns} turns, {newMem} new, {updated} updated, {skipped} skipped.',
+    replayFailed: 'Memory replay failed',
   },
 }

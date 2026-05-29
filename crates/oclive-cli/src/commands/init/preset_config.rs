@@ -1,5 +1,6 @@
 //! Init presets, template defaults, and preset builders.
 
+use super::project_config::ChatStorageBackend;
 use super::project_config::{
     BackendImpl, BackendSlots, FeatureSelection, PluginSelection, ProjectConfig, ProjectType,
 };
@@ -168,6 +169,7 @@ pub fn preset_config(name: &str, preset: &str) -> ProjectConfig {
         pipeline: crate::pipeline::PipelineArg::Default,
         custom_weld_modules: None,
         dual_core_enabled: false,
+        chat_storage_backend: ChatStorageBackend::default(),
     }
 }
 
