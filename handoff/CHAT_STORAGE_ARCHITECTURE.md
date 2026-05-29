@@ -6,7 +6,7 @@
 |-------|--------|--------|
 | **1** | SQLite authoritative + JSON mirror; frontend from backend API; IndexedDB retired; storage UI role→scene | **Done** |
 | **2** | Export (Markdown/JSON); auto-cleanup; search; single-message delete/edit | **Done** |
-| **3** | Pluggable backends (`hybrid` / `file` / `sqlite`); trait API surface; memory replay from chat history; CLI scaffold backend selection | **Done — architecture complete** |
+| **3** | Pluggable backends (`hybrid` / `file` / `sqlite`); trait API surface; memory replay; CLI scaffold; file search/replay; capability UI | **Done — architecture complete** |
 
 ## Three stores (do not conflate)
 
@@ -26,27 +26,41 @@
 2. Role pack `config.json` → `chat_storage.backend` (scaffold / per-project default)
 3. Default **`hybrid`**
 
-| Backend | Chat data | Mirror files | Search | Memory replay | Typical use |
-|---------|-----------|--------------|--------|---------------|-------------|
-| **`hybrid`** (default) | SQLite `chat_sessions` / `chat_messages` | `{app_data}/chats/` best-effort | SQLite LIKE | Yes | Desktop app; transparent files + DB |
-| **`file`** | JSON only under `{app_data}/chats/` | Same (authoritative) | Directory scan (requires `role_id`) | Yes | Lightweight / embedded; user-manageable files |
-| **`sqlite`** | SQLite only | None | SQLite LIKE | Yes | Highest performance; no mirror I/O |
+| Backend | Chat data | Mirror files | Search | Auto cleanup | Memory replay | Capability UI |
+|---------|-----------|--------------|--------|--------------|---------------|---------------|
+| **`hybrid`** (default) | SQLite `chat_sessions` / `chat_messages` | `{app_data}/chats/` best-effort | ✅ SQLite LIKE | ✅ | ✅ | all enabled |
+| **`file`** | JSON only under `{app_data}/chats/` | Same (authoritative) | ✅ directory scan (`role_id` required) | ❌ | ✅ | search + replay only |
+| **`sqlite`** | SQLite only | None | ✅ SQLite LIKE | ✅ | ✅ | all enabled |
 
 Implementation: `src-tauri/src/infrastructure/chat_storage/backends/{hybrid_store,file_store,sqlite_store}.rs`, factory in `factory.rs`.
 
-Shared trait: `store_trait.rs` — `append_turn`, `list_sessions`, `fetch_messages`, plus optional methods with default `NotImplemented` (search, export, cleanup, delete/edit, stats, **replay**).
+Shared trait: `store_trait.rs` — `append_turn`, `list_sessions`, `fetch_messages`, `list_sessions_by_role`, plus optional methods with default `NotImplemented` (search, export, cleanup, delete/edit, stats, replay, `supports_*`).
 
 Conformance tests: `store_trait_tests.rs` (all three backends).
+
+## Capability detection (PATCH-1)
+
+`get_chat_storage_capabilities` returns:
+
+| Field | Purpose |
+|-------|---------|
+| `backend_kind` | `hybrid` \| `file` \| `sqlite` — shown in storage panel header (i18n) |
+| `supports_search` | Show search box |
+| `supports_replay` | Show「重新提取记忆」buttons |
+| `supports_cleanup` | Show auto-cleanup settings / manual trigger |
+
+Frontend (`ChatStorageSettingsPanel.vue`) loads capabilities on `onMounted` and uses `v-if` — no hard-coded backend checks in UI.
 
 ## Memory replay (phase 3)
 
 Re-extract AI memories from stored chat history into `long_term_memory`:
 
 - **Scope**: `session` \| `scene` \| `role` (Tauri `replay_memory_extraction`)
-- **Strategy**: **Merge** — dedupe by keyword overlap (~0.6); existing lines update `mention_count`; never overwrite content
+- **Strategy**: **Merge** — dedupe by keyword overlap; threshold from `ReplayTarget.similarity_threshold` or role `chat_storage.replay_similarity_threshold` (default **0.6**, clamped **0.1–1.0**); existing lines update `mention_count`; never overwrite content
 - **Idempotent**: Re-running the same range does not duplicate memories
-- **Execution**: `tokio::spawn` + `get_replay_progress(task_id)` polling
-- **Writes**: Always SQLite `long_term_memory` (independent of chat backend)
+- **Execution**: `tokio::spawn` + `get_replay_progress(task_id)` polling (~800ms)
+- **Reads**: Active `ConversationStore` (`fetch_messages`, `list_sessions`, `list_sessions_by_role`)
+- **Writes**: Always SQLite `long_term_memory` (independent of chat backend; file backend holds `Arc<DbManager>` for writes only)
 - **UI**: Settings → 存储管理 —「重新提取记忆」at role / scene / session levels
 
 ## Data flow
@@ -81,12 +95,13 @@ Frontend hydrate
 | `delete_scene_chats` | SQLite + `{root}/{role_id}/{scene_id}/` |
 | `export_chat_session` | Export one session (`format`: `markdown` \| `json`) |
 | `export_role_chats` | Export all sessions for role (Markdown single file; JSON → ZIP base64) |
-| `search_chat_messages` | LIKE search (hybrid/sqlite; empty on file backend) |
+| `search_chat_messages` | Search (hybrid/sqlite: LIKE; file: JSON scan under role) |
 | `delete_chat_message` | Delete one row + rebuild mirror when applicable |
 | `edit_chat_message` | Edit **user** message only + `edited_at` in metadata |
 | `get_role_chat_storage_config` | Read `config.json` → `chat_storage` |
 | `save_role_chat_storage_config_cmd` | Write `chat_storage` + invalidate role cache |
 | `run_chat_auto_cleanup` | Manual cleanup for one role |
+| **`get_chat_storage_capabilities`** | Backend kind + search/replay/cleanup flags |
 | **`replay_memory_extraction`** | Start async memory replay; returns `task_id` |
 | **`get_replay_progress`** | Poll replay progress / result counters |
 
@@ -105,14 +120,17 @@ Frontend hydrate
 | `max_messages_per_session` | `u32?` | host **500** | FIFO cap per session (user+assistant rows) |
 | `auto_cleanup_days` | `u32?` | off | Delete sessions with `updated_at` older than N days |
 | `auto_cleanup_max_sessions` | `u32?` | off | Keep at most N most-recent sessions per role |
+| **`replay_similarity_threshold`** | `f64` | **0.6** | Memory replay dedupe similarity (0.1–1.0); higher = stricter, fewer duplicate memories merged |
 
 When **both** cleanup policies are set, a session is kept only if it satisfies **both** (stricter retention).
 
-Cleanup runs **async after `append_turn`** on hybrid (failures logged only). Also via `run_chat_auto_cleanup` / trait `apply_auto_cleanup`.
+Cleanup runs **async after `append_turn`** on hybrid/sqlite (failures logged only). Also via `run_chat_auto_cleanup` / trait `apply_auto_cleanup`. **File backend does not support auto-cleanup.**
 
 ### Scaffold (`oclive-cli init`)
 
-Interactive step **「选择聊天记录存储后端」** writes `chat_storage.backend` into generated role pack `config.json`. Env `OCLIVE_CHAT_STORAGE_BACKEND` overrides at runtime.
+Interactive step **「Chat history storage backend」** writes `chat_storage.backend` and default `replay_similarity_threshold` into generated role pack `config.json`. Env `OCLIVE_CHAT_STORAGE_BACKEND` overrides backend at runtime.
+
+Creator guide: [STORAGE_BACKEND_GUIDE.md](../creator-docs/storage/STORAGE_BACKEND_GUIDE.md).
 
 ## Export formats
 
@@ -130,7 +148,7 @@ Interactive step **「选择聊天记录存储后端」** writes `chat_storage.b
 
 ## Search
 
-- Trait `search_messages` — SQLite `LIKE` on hybrid/sqlite; **file backend scans JSON under `chats/{role_id}/`** (requires `role_id`)
+- Trait `search_messages` — SQLite `LIKE` on hybrid/sqlite; **file backend scans JSON under `chats/{role_id}/`** (requires `role_id`; case-insensitive `contains`)
 - Max **100** results per request; ordered by `created_at DESC`
 - Returns `highlight_snippet` (match context) for UI
 - **FTS5** reserved for future; interface stable
@@ -143,7 +161,7 @@ Env: `OCLIVE_CHAT_STORAGE_ROOT` → default `{app_data}/chats/`.
 
 ## Frontend
 
-- Settings → **存储管理** — search, export, auto-cleanup, memory replay, role→scene→session→message drill-down
+- Settings → **存储管理** — backend label, capability-gated search/export/cleanup/replay, role→scene→session→message drill-down
 - `src/api/chatStorage.ts` — all invoke wrappers
 - `src/stores/chatStore.ts` — loads from `fetch_chat_messages`
 
@@ -160,3 +178,4 @@ Env: `OCLIVE_CHAT_STORAGE_ROOT` → default `{app_data}/chats/`.
 - Clearing `short_term_memory` when deleting chat only
 - RemoteLife chat persistence
 - FTS5 full-text index migration
+- File-backend auto-cleanup (users manage JSON files directly)

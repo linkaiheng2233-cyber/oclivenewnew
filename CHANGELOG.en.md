@@ -8,6 +8,15 @@
 
 - **Forgetting curve & relation evolution (`config.json`)**: Ebbinghaus long-term memory decay; mention reinforcement (`mention_count` + `reinforcement_factor`); immersive-mode favorability estrangement and relation-stage downgrade; virtual time ratio (`time.speed`) and first-immersion anchor aligned to `life_schedule`; reinforced memories nudge personality / mutable profile “memory shaping”. See [ROLE_PACK_SPEC §9](creator-docs/role-pack/ROLE_PACK_SPEC.md).
 
+#### Chat Storage (phase 3)
+
+- **Pluggable backends**: `hybrid` (default, SQLite + JSON mirror), `file` (JSON only), `sqlite` (DB only); select via `OCLIVE_CHAT_STORAGE_BACKEND` or role pack `config.json` → `chat_storage.backend`; `oclive-cli init` interactive step added.
+- **Memory replay**: `replay_memory_extraction` / `get_replay_progress` — merge re-extract AI memories from chat history (dedupe by keyword similarity; configurable `replay_similarity_threshold`, default 0.6); storage settings UI supports role / scene / session scopes with progress polling.
+- **File backend**: `search_messages` (JSON directory scan); `replay_memory_extraction` (chat from files, memories to SQLite); `list_sessions_by_role` for role-scoped replay.
+- **Capability detection & UI**: `get_chat_storage_capabilities` exposes `supports_search` / `supports_replay` / `supports_cleanup` / `backend_kind`; storage panel gates actions and shows backend label (i18n).
+- **Config**: optional `chat_storage.backend`, `chat_storage.replay_similarity_threshold` (backward compatible).
+- **Developers**: `ConversationStore` gains `list_sessions_by_role`, `supports_*`; `replay.rs` role scope uses trait instead of direct DB. See [handoff/CHAT_STORAGE_ARCHITECTURE.md](handoff/CHAT_STORAGE_ARCHITECTURE.md).
+
 ---
 
 ## [0.2.0] - 2026-05-22

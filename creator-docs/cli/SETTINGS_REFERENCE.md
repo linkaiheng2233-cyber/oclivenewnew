@@ -204,12 +204,29 @@
 
 ---
 
-## 六、相关文档索引
+## 六、角色包 `config.json` → `chat_storage`
+
+位于 `roles/{role_id}/config.json` 的 **`chat_storage`** 对象（可选）。宿主在 `RoleStorage::load_role` 时读取；类型见 `oclive_kernel_types::RolePackChatStorageConfig`。与蓝图 `pipeline.ocblueprint` **无关**。
+
+| 键 | 类型 | 默认值 | 说明 |
+|----|------|--------|------|
+| `backend` | `"hybrid"` \| `"file"` \| `"sqlite"` | `"hybrid"` | 聊天记录存储后端（进程级可被 `OCLIVE_CHAT_STORAGE_BACKEND` 覆盖） |
+| `max_messages_per_session` | `u32` | 宿主 **500** | 单会话 FIFO 上限（user+assistant 合计条数） |
+| `auto_cleanup_days` | `u32` | 未设=关闭 | 删除 `updated_at` 早于 N 天的会话 |
+| `auto_cleanup_max_sessions` | `u32` | 未设=关闭 | 每角色最多保留 N 个会话（删最旧） |
+| `replay_similarity_threshold` | `f64` | `0.6` | 记忆回放去重相似度（**0.1–1.0**）；越大越严格，重复记忆越少 |
+
+选型说明：[STORAGE_BACKEND_GUIDE.md](../storage/STORAGE_BACKEND_GUIDE.md) · 架构：[CHAT_STORAGE_ARCHITECTURE.md](../../handoff/CHAT_STORAGE_ARCHITECTURE.md)。
+
+---
+
+## 七、相关文档索引
 
 | 主题 | 文档 |
 |------|------|
 | CLI 使用与参数 | [OCLIVE_CLI_GUIDE.md](OCLIVE_CLI_GUIDE.md) |
 | 生成项目内预设表 | 运行 `init` 后的 **`CONFIG_REFERENCE.md`** |
+| 聊天存储后端选型 | [STORAGE_BACKEND_GUIDE.md](../storage/STORAGE_BACKEND_GUIDE.md) |
 | 插件与侧车总览 | [PLUGIN_V1.md](../plugin-and-architecture/PLUGIN_V1.md) |
 | 目录插件 | [DIRECTORY_PLUGINS.md](../plugin-and-architecture/DIRECTORY_PLUGINS.md) |
 | 编译期高耦合模式（Monolith） | [RFC_OCLIVE_MONOLITH_MODE.md](../rfc/RFC_OCLIVE_MONOLITH_MODE.md)（`monolith.toml`、`build` / `bench`、双 `[[bin]]`） |

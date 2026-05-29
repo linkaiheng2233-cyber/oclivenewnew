@@ -71,12 +71,13 @@
 
 ### 聊天记录混合存储（SQLite 真源 + JSON 镜像 · phase 1–3 架构完整）
 
-- **架构**：[`handoff/CHAT_STORAGE_ARCHITECTURE.md`](handoff/CHAT_STORAGE_ARCHITECTURE.md) — `chat_sessions` / `chat_messages` 与 `short_term_memory` / `long_term_memory` **完全解耦**；删聊天记录**不**清记忆表。
+- **架构**：[`handoff/CHAT_STORAGE_ARCHITECTURE.md`](handoff/CHAT_STORAGE_ARCHITECTURE.md) · 创作者选型 [`creator-docs/storage/STORAGE_BACKEND_GUIDE.md`](creator-docs/storage/STORAGE_BACKEND_GUIDE.md) — `chat_sessions` / `chat_messages` 与 `short_term_memory` / `long_term_memory` **完全解耦**；删聊天记录**不**清记忆表。
 - **后端插件化（phase 3）**：`ConversationStore` 可替换实现 — **`hybrid`**（默认，SQLite + JSON 镜像）、**`file`**（纯 JSON）、**`sqlite`**（纯 DB）。选择：`OCLIVE_CHAT_STORAGE_BACKEND` 或角色包 `config.json` → `chat_storage.backend`；脚手架 `oclive-cli init` 交互可选。
-- **记忆回放（phase 3）**：`replay_memory_extraction` / `get_replay_progress` — 从聊天记录**合并**重提取 AI 记忆（**不覆盖**已有 `long_term_memory`；按内容摘要去重、累加 `mention_count`）。设置 → 存储管理 UI 可触发。
-- **实现**：[`src-tauri/src/infrastructure/chat_storage/`](src-tauri/src/infrastructure/chat_storage/) · `AppState::conversation_store` · CoPresent `post_llm` 写入并回填 `SendMessageResponse` 消息 id/时间戳 · 角色包 `config.json` → `chat_storage`（`backend`、`max_messages_per_session`、`auto_cleanup_*`）。
-- **前端**：[`src/stores/chatStore.ts`](src/stores/chatStore.ts) 从 `fetch_chat_messages` 加载；IndexedDB 仅遗留迁移；设置 → **存储管理**（[`ChatStorageSettingsPanel.vue`](src/components/settings/ChatStorageSettingsPanel.vue)）支持搜索、导出、自动清理、单条删改、记忆回放。
-- **Tauri（phase 1–2）**：`list_chat_sessions` / `fetch_chat_messages` / … / `run_chat_auto_cleanup`（见架构文档命令表）。
+- **能力探测（PATCH-1）**：`get_chat_storage_capabilities` 返回 `backend_kind` 与 `supports_search` / `supports_replay` / `supports_cleanup`；前端存储管理按后端 **隐藏不可用操作**（file 无自动清理）。
+- **记忆回放（phase 3）**：`replay_memory_extraction` / `get_replay_progress` — 从聊天记录**合并**重提取 AI 记忆（**不覆盖**已有 `long_term_memory`；阈值可配 `chat_storage.replay_similarity_threshold`，默认 0.6）。设置 → 存储管理 UI 可触发。
+- **实现**：[`src-tauri/src/infrastructure/chat_storage/`](src-tauri/src/infrastructure/chat_storage/) · `AppState::conversation_store` · CoPresent `post_llm` 写入并回填 `SendMessageResponse` 消息 id/时间戳 · 角色包 `config.json` → `chat_storage`（`backend`、`max_messages_per_session`、`auto_cleanup_*`、`replay_similarity_threshold`）。
+- **前端**：[`src/stores/chatStore.ts`](src/stores/chatStore.ts) 从 `fetch_chat_messages` 加载；IndexedDB 仅遗留迁移；设置 → **存储管理**（[`ChatStorageSettingsPanel.vue`](src/components/settings/ChatStorageSettingsPanel.vue)）显示当前后端名称，支持搜索、导出、自动清理（按能力）、单条删改、记忆回放。
+- **Tauri**：`list_chat_sessions` / `fetch_chat_messages` / … / `run_chat_auto_cleanup` / **`replay_memory_extraction`** / **`get_replay_progress`** / **`get_chat_storage_capabilities`**（完整表见架构文档）。
 - **助手勿**：让 `MemoryEngine` / 归档 LLM 读取 `{app_data}/chats/` 或 `chat_messages` 充当记忆真源；编排上下文仍走 `short_term_memory` / `long_term_memory`。
 
 **契约优先**：角色包 `manifest.json` / `settings.json` 键与行为以 `roles/README_MANIFEST.md`、`RoleStorage::load_role` 及校验 crate 为准；新增顶层键需同步 `crates/oclive_validation` 与文档。

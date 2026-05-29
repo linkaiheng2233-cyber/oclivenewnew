@@ -85,6 +85,17 @@
 - **兼容层**：`high_risk_grants.rs` **读盘兼容旧 snake_case 键**；`high_risk` API **接受规范 id 与旧别名**（见 [`handoff/A4_CLOSURE_SUMMARY.md`](./A4_CLOSURE_SUMMARY.md)）。
 - **迁移**：作者更新 manifest 权限数组；用户侧重新授权时使用新键；文档见 PLUGIN_V1 §权限规范。
 
+### 近期非破坏性配置变更（记录）
+
+以下 **`config.json` 可选键** 为 **向后兼容** 新增（未设则走默认值；不阻塞 `load_role`）：
+
+| 日期 | 键 | 默认 | 说明 |
+|------|-----|------|------|
+| 2026-05 | `chat_storage.backend` | `hybrid` | 聊天存储后端：`hybrid` / `file` / `sqlite` |
+| 2026-05 | `chat_storage.replay_similarity_threshold` | `0.6` | 记忆回放去重相似度阈值 |
+
+详见 [CHAT_STORAGE_ARCHITECTURE.md](./CHAT_STORAGE_ARCHITECTURE.md) · [SETTINGS_REFERENCE.md §六](../creator-docs/cli/SETTINGS_REFERENCE.md)。
+
 ---
 
 ## 4. PR 描述模板（复制到 PR）

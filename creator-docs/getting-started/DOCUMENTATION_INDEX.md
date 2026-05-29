@@ -101,6 +101,7 @@
 | **目录式进程插件**（`plugins/`、`manifest.json`、整壳、`directory_plugin_invoke`、开发者模式；**含插件管理面板** `Ctrl+Shift+F`、启用/停用/拖拽排序/本地 zip 更新） | **[../plugin-and-architecture/DIRECTORY_PLUGINS.md](../plugin-and-architecture/DIRECTORY_PLUGINS.md)** |
 | **整壳 / 插槽 `invoke` 命令表、权限别名、错误码** | **[../plugin-and-architecture/BRIDGE_API_REFERENCE.md](../plugin-and-architecture/BRIDGE_API_REFERENCE.md)** |
 | **配置文件位置**（`plugin_state`、`ui.json`、`oclive_last_role_id`） | **[../guides/CONFIGURATION_FILES.md](../guides/CONFIGURATION_FILES.md)** |
+| **聊天记录存储架构**（v3 插件化后端 + 记忆回放 + 能力探测） | **[../../handoff/CHAT_STORAGE_ARCHITECTURE.md](../../handoff/CHAT_STORAGE_ARCHITECTURE.md)** · 选型 **[../storage/STORAGE_BACKEND_GUIDE.md](../storage/STORAGE_BACKEND_GUIDE.md)** |
 | **开源协议怎么定（主程序/官方插件/第三方）** | **[../LICENSE_POLICY.md](../LICENSE_POLICY.md)** |
 | **mumu 默认前端模块、插件 FAQ（Vue 不显示、iframe 调试、依赖等；用户向 Q&A）** | **[../FAQ.md](../FAQ.md)** |
 | **mumu 模块发版前验收清单** | **[../guides/MUMU_UI_ACCEPTANCE_CHECKLIST.md](../guides/MUMU_UI_ACCEPTANCE_CHECKLIST.md)** |

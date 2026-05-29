@@ -305,6 +305,7 @@ auto_sync: false
 | `time` | object | 否 | 虚拟时钟与跳转遗忘 |
 | `memory` | object | 否 | 长期记忆艾宾浩斯衰减与强化 |
 | `relation` | object | 否 | 亲密值疏远与关系降级 |
+| `chat_storage` | object | 否 | 聊天记录存储后端、FIFO、自动清理、记忆回放阈值 |
 
 ### 9.3 `time`（虚拟时间）
 
@@ -338,6 +339,16 @@ auto_sync: false
 | `interaction_recovery` | number | `0.12` | 本回合实际对话时，在疏远衰减后按 `(1 + recovery)` 小幅回升，避免「一开口就被衰减抵消」 |
 
 **行为摘要**：仅 **沉浸模式** 下、每回合对话开始前应用疏远衰减；`profile` 人格模式下可在可变性格档案「社交关系」小节记录已疏远状态。
+
+### 9.5a `chat_storage`（聊天记录后端与回放）
+
+| 字段 | 类型 | 默认 | 说明 |
+|------|------|------|------|
+| `backend` | string | `hybrid` | `hybrid` \| `file` \| `sqlite`；见 [STORAGE_BACKEND_GUIDE.md](../storage/STORAGE_BACKEND_GUIDE.md) |
+| `max_messages_per_session` | integer | 宿主 500 | 单会话消息 FIFO 上限 |
+| `auto_cleanup_days` | integer | — | 自动清理：保留最近 N 天 |
+| `auto_cleanup_max_sessions` | integer | — | 自动清理：每角色最多 N 会话 |
+| `replay_similarity_threshold` | number | `0.6` | 记忆回放去重阈值（0.1–1.0） |
 
 ### 9.6 与蓝图 / 数据库的关系
 
