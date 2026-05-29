@@ -1,15 +1,17 @@
 use crate::domain::chat_engine::process_message;
 use crate::infrastructure::chat_storage::{
-    delete_mirror_scene_dir, delete_mirror_tree_for_role, resolve_export_max_messages,
-    resolve_max_messages_per_session, role_mirror_tree_bytes, save_role_chat_storage_config,
-    spawn_memory_replay, AutoCleanupConfig, AutoCleanupResult, ChatExportResponse,
-    ChatSearchResult, ChatStorageCapabilities, DeleteChatsResult, ImportChatBucket,
-    ImportChatBucketsResult, ReplayProgress, ReplayTarget, RoleStorageStat, SessionMeta,
-    StoredMessage,
+    delete_mirror_scene_dir, delete_mirror_tree_for_role, migrate_mirror_tree,
+    resolve_export_max_messages, resolve_max_messages_per_session, resolve_storage_root,
+    role_mirror_tree_bytes, save_role_chat_storage_config, set_persisted_storage_root,
+    spawn_memory_replay, APP_SETTING_CHAT_STORAGE_ROOT, AutoCleanupConfig, AutoCleanupResult,
+    ChatExportResponse, ChatSearchResult, ChatStorageCapabilities, DeleteChatsResult,
+    ImportChatBucket, ImportChatBucketsResult, ReplayProgress, ReplayTarget, RoleStorageStat,
+    SessionMeta, StoredMessage,
 };
 use crate::models::dto::{SendMessageRequest, SendMessageResponse};
 use crate::models::RolePackChatStorageConfig;
 use crate::state::AppState;
+use std::path::PathBuf;
 use tauri::State;
 
 /// # Errors
@@ -216,7 +218,7 @@ pub async fn export_chat_session(
         .map_err(Into::into)
 }
 
-/// Export all sessions for a role (`format`: `markdown` | `json`; JSON is ZIP base64).
+/// Export all sessions for a role (`format`: `markdown` | `json`; JSON is one combined document).
 ///
 /// # Errors
 ///
@@ -415,4 +417,51 @@ pub async fn get_chat_storage_capabilities(
         supports_replay: state.conversation_store.supports_replay().await,
         supports_cleanup: state.conversation_store.supports_cleanup().await,
     })
+}
+
+/// Effective chat JSON mirror root (env > app setting > default).
+///
+/// # Errors
+///
+/// Returns [`Err`] with a human-readable message when the operation fails.
+#[tauri::command]
+pub async fn get_chat_storage_root(
+    state: State<'_, AppState>,
+) -> Result<String, crate::api::error::CommandError> {
+    let app_data = state.directory_plugins.app_data_dir();
+    Ok(resolve_storage_root(app_data).to_string_lossy().into_owned())
+}
+
+/// Persist custom chat mirror root; optionally copy existing mirror tree.
+///
+/// # Errors
+///
+/// Returns [`Err`] with a human-readable message when the operation fails.
+#[tauri::command]
+pub async fn set_chat_storage_root(
+    path: String,
+    migrate: Option<bool>,
+    state: State<'_, AppState>,
+) -> Result<String, crate::api::error::CommandError> {
+    let app_data = state.directory_plugins.app_data_dir();
+    let trimmed = path.trim();
+    if trimmed.is_empty() {
+        state
+            .db_manager
+            .upsert_app_setting(APP_SETTING_CHAT_STORAGE_ROOT, "")
+            .await?;
+        set_persisted_storage_root(None);
+        return Ok(resolve_storage_root(app_data).to_string_lossy().into_owned());
+    }
+    let new_root = PathBuf::from(trimmed);
+    let old_root = resolve_storage_root(app_data);
+    if migrate.unwrap_or(true) && old_root != new_root {
+        migrate_mirror_tree(&old_root, &new_root).await?;
+    }
+    state
+        .db_manager
+        .upsert_app_setting(APP_SETTING_CHAT_STORAGE_ROOT, trimmed)
+        .await?;
+    set_persisted_storage_root(Some(new_root.clone()));
+    Ok(new_root.to_string_lossy().into_owned())
 }

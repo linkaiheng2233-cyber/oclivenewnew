@@ -107,6 +107,10 @@ pub struct ChatSearchResult {
     pub scene_id: String,
     pub message: StoredMessage,
     pub highlight_snippet: String,
+    #[serde(default)]
+    pub context_before: Vec<StoredMessage>,
+    #[serde(default)]
+    pub context_after: Vec<StoredMessage>,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize, Default)]

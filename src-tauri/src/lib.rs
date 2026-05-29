@@ -284,6 +284,7 @@ pub fn run() {
                 &app.state::<AppState>(),
                 roles_for_watcher,
             );
+            crate::infrastructure::chat_storage::spawn_auto_cleanup_scheduler(app.handle());
             Ok(())
         })
         // Tauri invoke commands — grouped by domain (see `src-tauri/src/api/`).
@@ -334,6 +335,8 @@ pub fn run() {
             api::chat::run_chat_auto_cleanup,
             api::chat::replay_memory_extraction,
             api::chat::get_replay_progress,
+            api::chat::get_chat_storage_root,
+            api::chat::set_chat_storage_root,
 
             // ── role / session / slot registry ──
             api::role::load_role,

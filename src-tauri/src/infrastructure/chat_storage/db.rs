@@ -654,6 +654,89 @@ impl DbManager {
             })
             .collect())
     }
+
+    /// Messages before / after a turn (search context).
+    ///
+    /// # Errors
+    ///
+    /// Database errors propagate as [`AppError::DatabaseError`].
+    pub async fn fetch_message_context(
+        &self,
+        session_id: &str,
+        turn_index: i32,
+        before: u32,
+        after: u32,
+    ) -> Result<(Vec<MessageRow>, Vec<MessageRow>)> {
+        let before_rows = sqlx::query(
+            "SELECT id, session_id, turn_index, sender, content, metadata, created_at
+             FROM chat_messages
+             WHERE session_id = ? AND turn_index < ?
+             ORDER BY turn_index DESC
+             LIMIT ?",
+        )
+        .bind(session_id)
+        .bind(turn_index)
+        .bind(i64::from(before.max(1)))
+        .fetch_all(&self.pool)
+        .await
+        .map_err(|e| AppError::DatabaseError(e.to_string()))?;
+        let mut before_msgs: Vec<MessageRow> = before_rows
+            .into_iter()
+            .map(|row| MessageRow {
+                id: row.get("id"),
+                session_id: row.get("session_id"),
+                turn_index: row.get::<i32, _>("turn_index"),
+                sender: row.get("sender"),
+                content: row.get("content"),
+                metadata: row.get("metadata"),
+                created_at: row.get("created_at"),
+            })
+            .collect();
+        before_msgs.reverse();
+
+        let after_rows = sqlx::query(
+            "SELECT id, session_id, turn_index, sender, content, metadata, created_at
+             FROM chat_messages m
+             WHERE session_id = ? AND turn_index > ?
+             ORDER BY turn_index ASC
+             LIMIT ?",
+        )
+        .bind(session_id)
+        .bind(turn_index)
+        .bind(i64::from(after.max(1)))
+        .fetch_all(&self.pool)
+        .await
+        .map_err(|e| AppError::DatabaseError(e.to_string()))?;
+
+        let after_msgs = after_rows
+            .into_iter()
+            .map(|row| MessageRow {
+                id: row.get("id"),
+                session_id: row.get("session_id"),
+                turn_index: row.get::<i32, _>("turn_index"),
+                sender: row.get("sender"),
+                content: row.get("content"),
+                metadata: row.get("metadata"),
+                created_at: row.get("created_at"),
+            })
+            .collect();
+
+        Ok((before_msgs, after_msgs))
+    }
+
+    /// Distinct manifest `role_id` values with at least one chat session.
+    ///
+    /// # Errors
+    ///
+    /// Database errors propagate as [`AppError::DatabaseError`].
+    pub async fn list_distinct_chat_role_ids(&self) -> Result<Vec<String>> {
+        sqlx::query_scalar::<_, String>(
+            "SELECT DISTINCT role_id FROM chat_sessions ORDER BY role_id",
+        )
+        .fetch_all(&self.pool)
+        .await
+        .map_err(|e| AppError::DatabaseError(e.to_string()))
+    }
 }
 
 #[derive(Debug, Clone)]

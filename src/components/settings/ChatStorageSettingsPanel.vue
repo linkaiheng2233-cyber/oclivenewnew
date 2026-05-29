@@ -8,6 +8,7 @@ import type {
   SessionMeta,
   StoredMessage,
 } from '../../api/chatStorage'
+import { open } from '@tauri-apps/api/dialog'
 import { computed, onMounted, onUnmounted, ref } from 'vue'
 import { useI18n } from 'vue-i18n'
 import {
@@ -19,6 +20,7 @@ import {
   exportRoleChats,
   fetchChatMessages,
   getChatStorageCapabilities,
+  getChatStorageRoot,
   getChatStorageStats,
   getReplayProgress,
   getRoleChatStorageConfig,
@@ -27,6 +29,7 @@ import {
   runChatAutoCleanup,
   saveRoleChatStorageConfig,
   searchChatMessages,
+  setChatStorageRoot,
 } from '../../api/chatStorage'
 import { useAppToast } from '../../composables/useAppToast'
 import { listRoles } from '../../api/role'
@@ -47,6 +50,7 @@ const selectedSession = ref<SessionMeta | null>(null)
 const sessions = ref<SessionMeta[]>([])
 const messages = ref<StoredMessage[]>([])
 const statsLoadedAt = ref(0)
+const storageRoot = ref('')
 const CACHE_MS = 5 * 60 * 1000
 
 const searchQuery = ref('')
@@ -92,6 +96,29 @@ function formatBytes(n: number): string {
   if (n < 1024 * 1024)
     return `${(n / 1024).toFixed(1)} KB`
   return `${(n / (1024 * 1024)).toFixed(2)} MB`
+}
+
+async function loadStorageRoot() {
+  try {
+    storageRoot.value = await getChatStorageRoot()
+  }
+  catch {
+    /* optional */
+  }
+}
+
+async function changeStorageRoot() {
+  try {
+    const picked = await open({ directory: true, multiple: false })
+    if (!picked || Array.isArray(picked))
+      return
+    storageRoot.value = await setChatStorageRoot(picked, true)
+    showToast('success', t('chatStorage.rootUpdated'))
+    await refreshStats(true)
+  }
+  catch (err) {
+    showToast('error', err instanceof Error ? err.message : String(err))
+  }
 }
 
 async function loadRoleNames() {
@@ -465,6 +492,7 @@ async function confirmDeleteMessage(msg: StoredMessage) {
 
 onMounted(() => {
   void loadRoleNames()
+  void loadStorageRoot()
   void refreshStats()
   void getChatStorageCapabilities().then((c) => {
     capabilities.value = c
@@ -505,6 +533,17 @@ defineExpose({ refreshStats })
     <p v-if="capabilities.backend_kind" class="css-backend-hint">
       {{ t('chatStorage.backendLabel', { backend: backendLabel }) }}
     </p>
+
+    <div class="css-root">
+      <span class="css-root-label">{{ t('chatStorage.storageRoot') }}</span>
+      <code class="css-root-path">{{ storageRoot || '…' }}</code>
+      <button type="button" class="css-action css-root-btn" @click="changeStorageRoot">
+        {{ t('chatStorage.changeRoot') }}
+      </button>
+      <p class="css-muted css-root-hint">
+        {{ t('chatStorage.storageRootHint') }}
+      </p>
+    </div>
 
     <div v-if="capabilities.supports_search" class="css-search">
       <input
@@ -798,6 +837,23 @@ defineExpose({ refreshStats })
   font-size: 0.85rem;
   color: var(--oc-muted, #888);
   margin-bottom: 0.75rem;
+}
+.css-root {
+  display: flex;
+  flex-direction: column;
+  gap: 0.35rem;
+  margin-bottom: 0.75rem;
+  font-size: 0.85rem;
+}
+.css-root-path {
+  word-break: break-all;
+  font-size: 0.8rem;
+}
+.css-root-hint {
+  margin: 0;
+}
+.css-root-btn {
+  align-self: flex-start;
 }
 .css-search {
   display: flex;

@@ -44,6 +44,10 @@ export default {
       'Done: {turns} turns, {newMem} new, {updated} updated, {skipped} skipped.',
     replayFailed: 'Memory replay failed',
     backendLabel: 'Storage backend: {backend}',
+    storageRoot: 'Mirror directory',
+    storageRootHint: 'JSON mirror path (env OCLIVE_CHAT_STORAGE_ROOT overrides this setting)',
+    changeRoot: 'Change folder',
+    rootUpdated: 'Storage folder updated',
     backends: {
       hybrid: 'Hybrid (SQLite + JSON files)',
       file: 'File only (JSON)',

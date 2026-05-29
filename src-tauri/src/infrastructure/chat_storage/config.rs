@@ -1,12 +1,31 @@
-//! Chat storage root path resolution (`OCLIVE_CHAT_STORAGE_ROOT` > `{app_data}/chats/`).
+//! Chat storage root path resolution (`OCLIVE_CHAT_STORAGE_ROOT` > app setting > `{app_data}/chats/`).
 
 use crate::error::{AppError, Result};
+use parking_lot::RwLock;
 use std::path::{Path, PathBuf};
+use std::sync::{Arc, OnceLock};
 
 const DEFAULT_SUBDIR: &str = "chats";
 
 /// Environment variable override for chat JSON mirror root (see `handoff/CHAT_STORAGE_ARCHITECTURE.md`).
 pub const ENV_CHAT_STORAGE_ROOT: &str = "OCLIVE_CHAT_STORAGE_ROOT";
+
+/// `app_settings` key for user-chosen mirror root (below env, above default).
+pub const APP_SETTING_CHAT_STORAGE_ROOT: &str = "chat_storage_root";
+
+static PERSISTED_STORAGE_ROOT: OnceLock<Arc<RwLock<Option<PathBuf>>>> = OnceLock::new();
+
+/// Process-wide persisted root (loaded at startup; updated via `set_chat_storage_root`).
+#[must_use]
+pub fn chat_storage_root_override() -> Arc<RwLock<Option<PathBuf>>> {
+    PERSISTED_STORAGE_ROOT
+        .get_or_init(|| Arc::new(RwLock::new(None)))
+        .clone()
+}
+
+pub fn set_persisted_storage_root(path: Option<PathBuf>) {
+    *chat_storage_root_override().write() = path;
+}
 
 /// Global default max messages per session (user + assistant rows combined).
 pub const DEFAULT_MAX_MESSAGES: i64 = 500;
@@ -22,7 +41,7 @@ pub fn resolve_max_messages_per_session(configured: Option<u32>) -> i64 {
         .unwrap_or(DEFAULT_MAX_MESSAGES)
 }
 
-/// Resolve storage root: `OCLIVE_CHAT_STORAGE_ROOT` or `{app_data_dir}/chats/`.
+/// Resolve storage root: env > persisted app setting > `{app_data_dir}/chats/`.
 #[must_use]
 pub fn resolve_storage_root(app_data_dir: &Path) -> PathBuf {
     if let Ok(raw) = std::env::var(ENV_CHAT_STORAGE_ROOT) {
@@ -31,7 +50,48 @@ pub fn resolve_storage_root(app_data_dir: &Path) -> PathBuf {
             return PathBuf::from(trimmed);
         }
     }
+    if let Some(p) = chat_storage_root_override().read().clone() {
+        return p;
+    }
     app_data_dir.join(DEFAULT_SUBDIR)
+}
+
+/// Copy mirror tree when changing storage root (best-effort).
+///
+/// # Errors
+///
+/// IO errors propagate; skips when `from` is missing; errors when `to` already exists.
+pub async fn migrate_mirror_tree(from: &Path, to: &Path) -> Result<()> {
+    if from == to {
+        return Ok(());
+    }
+    if !from.is_dir() {
+        return Ok(());
+    }
+    if to.exists() {
+        return Err(AppError::InvalidParameter(format!(
+            "target chat storage root already exists: {}",
+            to.display()
+        )));
+    }
+    copy_dir_recursive(from, to).await
+}
+
+async fn copy_dir_recursive(from: &Path, to: &Path) -> Result<()> {
+    tokio::fs::create_dir_all(to).await.map_err(AppError::IoError)?;
+    let mut entries = tokio::fs::read_dir(from).await.map_err(AppError::IoError)?;
+    while let Some(entry) = entries.next_entry().await.map_err(AppError::IoError)? {
+        let ft = entry.file_type().await.map_err(AppError::IoError)?;
+        let dest = to.join(entry.file_name());
+        if ft.is_dir() {
+            Box::pin(copy_dir_recursive(&entry.path(), &dest)).await?;
+        } else {
+            tokio::fs::copy(entry.path(), dest)
+                .await
+                .map_err(AppError::IoError)?;
+        }
+    }
+    Ok(())
 }
 
 /// `{root}/{role_id}/{scene_id}/` with sanitized path segments.

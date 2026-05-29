@@ -49,7 +49,6 @@ walkdir = "2.5"
 semver = "1.0"
 notify = "6"
 zip = { version = "2", default-features = false, features = ["deflate"] }
-base64 = "0.22"
 axum = "0.7"
 tower-http = { version = "0.5", features = ["cors"] }
 sha2 = "0.10"

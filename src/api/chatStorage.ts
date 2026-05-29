@@ -26,6 +26,8 @@ export interface ChatSearchResult {
   scene_id: string
   message: StoredMessage
   highlight_snippet: string
+  context_before?: StoredMessage[]
+  context_after?: StoredMessage[]
 }
 
 export interface ChatExportResponse {
@@ -259,4 +261,15 @@ export interface ChatStorageCapabilities {
 
 export async function getChatStorageCapabilities(): Promise<ChatStorageCapabilities> {
   return invokeWithFriendlyError<ChatStorageCapabilities>('get_chat_storage_capabilities', {})
+}
+
+export async function getChatStorageRoot(): Promise<string> {
+  return invokeWithFriendlyError<string>('get_chat_storage_root', {})
+}
+
+export async function setChatStorageRoot(
+  path: string,
+  migrate = true,
+): Promise<string> {
+  return invokeWithFriendlyError<string>('set_chat_storage_root', { path, migrate })
 }

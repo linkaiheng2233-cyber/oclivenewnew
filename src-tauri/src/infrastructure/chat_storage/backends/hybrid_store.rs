@@ -317,9 +317,22 @@ impl ConversationStore for HybridConversationStore {
             .db
             .search_chat_messages(query, role_id, limit, offset)
             .await?;
-        Ok(rows
-            .into_iter()
-            .map(|r| ChatSearchResult {
+        let mut out = Vec::with_capacity(rows.len());
+        for r in rows {
+            let (before_rows, after_rows) = self
+                .db
+                .fetch_message_context(&r.session_id, r.turn_index, 2, 2)
+                .await?;
+            let to_stored = |row: MessageRow| StoredMessage {
+                id: row.id,
+                session_id: row.session_id,
+                turn_index: row.turn_index,
+                sender: row.sender,
+                content: row.content,
+                metadata: row.metadata,
+                created_at: row.created_at,
+            };
+            out.push(ChatSearchResult {
                 session_id: r.session_id.clone(),
                 role_id: r.role_id.clone(),
                 scene_id: r.scene_id.clone(),
@@ -333,8 +346,11 @@ impl ConversationStore for HybridConversationStore {
                     metadata: r.metadata,
                     created_at: r.created_at,
                 },
-            })
-            .collect())
+                context_before: before_rows.into_iter().map(to_stored).collect(),
+                context_after: after_rows.into_iter().map(to_stored).collect(),
+            });
+        }
+        Ok(out)
     }
 
     async fn delete_message(&self, message_id: &str) -> Result<()> {

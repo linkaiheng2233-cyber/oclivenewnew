@@ -6,10 +6,7 @@ use super::mirror;
 use crate::error::{AppError, Result};
 use crate::infrastructure::db::DbManager;
 use chrono::Utc;
-use std::io::{Cursor, Write};
 use std::path::Path;
-use zip::write::SimpleFileOptions;
-use zip::ZipWriter;
 
 use super::types::ChatExportResponse;
 
@@ -208,32 +205,27 @@ pub async fn export_role_chats(
             })
         }
         "json" => {
-            let mut buf = Cursor::new(Vec::new());
-            {
-                let mut zip = ZipWriter::new(&mut buf);
-                let opts = SimpleFileOptions::default().compression_method(zip::CompressionMethod::Deflated);
-                for session in &sessions {
-                    let json = session_json_content(db, app_data_dir, &session.session_id, max_messages).await?;
-                    let name = format!(
-                        "{}/{}.json",
-                        sanitize_filename(&session.scene_id),
-                        sanitize_filename(&session.session_id)
-                    );
-                    zip.start_file(name, opts)
-                        .map_err(|e| AppError::InvalidParameter(e.to_string()))?;
-                    zip.write_all(json.as_bytes())
-                        .map_err(|e| AppError::InvalidParameter(e.to_string()))?;
-                }
-                zip.finish()
+            let mut session_docs = Vec::new();
+            for session in &sessions {
+                let json =
+                    session_json_content(db, app_data_dir, &session.session_id, max_messages)
+                        .await?;
+                let doc: serde_json::Value = serde_json::from_str(&json)
                     .map_err(|e| AppError::InvalidParameter(e.to_string()))?;
+                session_docs.push(doc);
             }
-            use base64::Engine;
-            let encoded = base64::engine::general_purpose::STANDARD.encode(buf.into_inner());
+            let combined = serde_json::json!({
+                "role_id": role_id,
+                "exported_at": Utc::now().to_rfc3339(),
+                "sessions": session_docs,
+            });
+            let content = serde_json::to_string_pretty(&combined)
+                .map_err(|e| AppError::InvalidParameter(e.to_string()))?;
             Ok(ChatExportResponse {
-                content: encoded,
-                suggested_filename: format!("{rid}-all-chats.zip"),
-                mime_type: "application/zip".into(),
-                content_encoding: Some("base64".into()),
+                content,
+                suggested_filename: format!("{rid}-all-chats.json"),
+                mime_type: "application/json".into(),
+                content_encoding: None,
             })
         }
         other => Err(AppError::InvalidParameter(format!(

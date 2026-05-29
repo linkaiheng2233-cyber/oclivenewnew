@@ -94,7 +94,7 @@ Frontend hydrate
 | `delete_role_chats` | SQLite + `{root}/{role_id}/` tree |
 | `delete_scene_chats` | SQLite + `{root}/{role_id}/{scene_id}/` |
 | `export_chat_session` | Export one session (`format`: `markdown` \| `json`) |
-| `export_role_chats` | Export all sessions for role (Markdown single file; JSON → ZIP base64) |
+| `export_role_chats` | Export all sessions for role (Markdown single file; JSON combined document) |
 | `search_chat_messages` | Search (hybrid/sqlite: LIKE; file: JSON scan under role) |
 | `delete_chat_message` | Delete one row + rebuild mirror when applicable |
 | `edit_chat_message` | Edit **user** message only + `edited_at` in metadata |
@@ -102,6 +102,7 @@ Frontend hydrate
 | `save_role_chat_storage_config_cmd` | Write `chat_storage` + invalidate role cache |
 | `run_chat_auto_cleanup` | Manual cleanup for one role |
 | **`get_chat_storage_capabilities`** | Backend kind + search/replay/cleanup flags |
+| **`get_chat_storage_root`** / **`set_chat_storage_root`** | Effective / persisted mirror root (`app_settings`) |
 | **`replay_memory_extraction`** | Start async memory replay; returns `task_id` |
 | **`get_replay_progress`** | Poll replay progress / result counters |
 
@@ -150,14 +151,16 @@ Creator guide: [STORAGE_BACKEND_GUIDE.md](../creator-docs/storage/STORAGE_BACKEN
 
 - Trait `search_messages` — SQLite `LIKE` on hybrid/sqlite; **file backend scans JSON under `chats/{role_id}/`** (requires `role_id`; case-insensitive `contains`)
 - Max **100** results per request; ordered by `created_at DESC`
-- Returns `highlight_snippet` (match context) for UI
+- Returns `highlight_snippet` plus optional `context_before` / `context_after` (2 turns each on SQLite backends)
 - **FTS5** reserved for future; interface stable
 
 ## JSON mirror (`schema_version: 1`)
 
 Under `{root}/{role_id}/{scene_id}/{created_at_compact}_{session_id_prefix}.json`. FIFO capped to same limit as SQLite. **Not written** when backend is `sqlite`.
 
-Env: `OCLIVE_CHAT_STORAGE_ROOT` → default `{app_data}/chats/`.
+Env: `OCLIVE_CHAT_STORAGE_ROOT` → `app_settings.chat_storage_root` → default `{app_data}/chats/`.
+
+**Scheduled cleanup**: on app startup and every **24h**, roles with `auto_cleanup_*` policy run via `spawn_auto_cleanup_scheduler` (in addition to per-turn and manual `run_chat_auto_cleanup`).
 
 ## Frontend
 

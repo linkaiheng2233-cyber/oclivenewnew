@@ -6,7 +6,8 @@ use crate::domain::plugin_host::PluginHost;
 use crate::domain::repository::{FavorabilityRepository, MemoryRepository};
 use crate::error::Result;
 use crate::infrastructure::chat_storage::{
-    build_conversation_store, resolve_backend_kind, ReplayTaskRegistry,
+    build_conversation_store, resolve_backend_kind, set_persisted_storage_root,
+    ReplayTaskRegistry, APP_SETTING_CHAT_STORAGE_ROOT,
 };
 use crate::infrastructure::db::DbManager;
 use crate::infrastructure::directory_plugins::DirectoryPluginRuntime;
@@ -155,6 +156,12 @@ impl AppStateBuilder {
         AppState::bootstrap_local_plugin_providers(&plugins, storage.roles_dir());
 
         let replay_tasks = Arc::new(ReplayTaskRegistry::new());
+        if let Ok(Some(raw)) = db_manager.get_app_setting(APP_SETTING_CHAT_STORAGE_ROOT).await {
+            let trimmed = raw.trim();
+            if !trimmed.is_empty() {
+                set_persisted_storage_root(Some(PathBuf::from(trimmed)));
+            }
+        }
         let backend_kind = resolve_backend_kind(None);
         let conversation_store = build_conversation_store(
             backend_kind,

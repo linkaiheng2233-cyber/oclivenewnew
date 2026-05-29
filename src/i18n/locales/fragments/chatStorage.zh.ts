@@ -44,6 +44,10 @@ export default {
       '完成：处理 {turns} 轮，新增 {newMem} 条，更新 {updated} 条，跳过 {skipped} 条。',
     replayFailed: '记忆回放失败',
     backendLabel: '存储后端：{backend}',
+    storageRoot: '镜像目录',
+    storageRootHint: 'JSON 镜像文件位置（环境变量 OCLIVE_CHAT_STORAGE_ROOT 优先于此设置）',
+    changeRoot: '更改目录',
+    rootUpdated: '存储目录已更新',
     backends: {
       hybrid: '混合存储（SQLite + JSON 文件）',
       file: '纯文件存储（JSON）',

@@ -143,6 +143,8 @@ impl FileConversationStore {
                                 metadata: m.metadata.as_ref().map(|v| v.to_string()),
                                 created_at,
                             },
+                            context_before: Vec::new(),
+                            context_after: Vec::new(),
                         },
                     ));
                 }
