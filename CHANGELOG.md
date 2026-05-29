@@ -49,6 +49,13 @@
 - **启动自检** `startup_health`；**`oclive explain`** 全量 `AppError` 词条；**`oclive doctor`** 蓝图三项检查。
 - **编排**：`TurnContext` 收敛回合参数；`AppStateBuilder` + 策略注册表拆分；滚动文件日志（`OCLIVE_LOG_DIR` / `--api`）。
 
+#### 聊天记录跟随角色包
+
+- **`config.json` → `chat_storage.location`**：新增 `"role_pack"` / `"global"`（默认 `"global"`，向后兼容）。`"role_pack"` 时聊天记录存在角色包目录下的 `chats/` 子目录，角色包目录不可写时自动回退到全局路径并打印 warn 日志。
+- **init 脚手架**：`oclive-cli init` 新增「聊天记录存储位置」交互步骤（跟随角色包 / 全局位置）。
+- **存储管理面板**：选中角色后显示当前存储位置标签（📁 跟随角色包 / 🗄️ 全局位置）。
+- **导出格式变更**：`export_role_chats` 格式由 ZIP+base64 改为组合 JSON（`application/json`）；内容不变，移除 `zip` 依赖。
+
 ### Changed
 
 - **主编排**：Tauri 与 HTTP 均经 **`process_message`**；入口蓝图 **不再**作首轮 DSL 调度。
