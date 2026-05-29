@@ -135,12 +135,29 @@ See [RFC_OCLIVE_MONOLITH_MODE.md](../rfc/RFC_OCLIVE_MONOLITH_MODE.md) section 4.
 
 ---
 
-## VI. Related doc index
+## VI. Role pack `config.json` → `chat_storage`
+
+Optional **`chat_storage`** object in `roles/{role_id}/config.json`. Loaded by `RoleStorage::load_role`; type: `oclive_kernel_types::RolePackChatStorageConfig`. **Not** part of `pipeline.ocblueprint`.
+
+| Key | Type | Default | Description |
+|-----|------|---------|-------------|
+| `backend` | `"hybrid"` \| `"file"` \| `"sqlite"` | `"hybrid"` | Chat storage backend (overridden by `OCLIVE_CHAT_STORAGE_BACKEND` at process level) |
+| `max_messages_per_session` | `u32` | host **500** | Per-session FIFO cap (user + assistant rows) |
+| `auto_cleanup_days` | `u32` | unset = off | Delete sessions with `updated_at` older than N days |
+| `auto_cleanup_max_sessions` | `u32` | unset = off | Keep at most N sessions per role (drop oldest) |
+| `replay_similarity_threshold` | `f64` | `0.6` | Memory replay dedupe similarity (**0.1–1.0**); higher = stricter, fewer duplicates merged |
+
+Selection guide: [STORAGE_BACKEND_GUIDE.md](../storage/STORAGE_BACKEND_GUIDE.md) · Architecture: [CHAT_STORAGE_ARCHITECTURE.md](../../handoff/CHAT_STORAGE_ARCHITECTURE.md).
+
+---
+
+## VII. Related doc index
 
 | Topic | Doc |
 |-------|-----|
 | CLI usage and flags | [OCLIVE_CLI_GUIDE.md](OCLIVE_CLI_GUIDE.md) |
 | Preset table inside generated projects | **`CONFIG_REFERENCE.md`** after `init` |
+| Chat storage backend selection | [STORAGE_BACKEND_GUIDE.md](../storage/STORAGE_BACKEND_GUIDE.md) |
 | Plugins & sidecars overview | [PLUGIN_V1.md](../plugin-and-architecture/PLUGIN_V1.md) |
 | Directory plugins | [DIRECTORY_PLUGINS.md](../plugin-and-architecture/DIRECTORY_PLUGINS.md) |
 | Compile-time Monolith | [RFC_OCLIVE_MONOLITH_MODE.md](../rfc/RFC_OCLIVE_MONOLITH_MODE.md) (`monolith.toml`, `build` / `bench`, dual `[[bin]]`) |

@@ -94,6 +94,7 @@ Time-boxed “start here → ship”; **authoritative detail stays in each topic
 | **Directory process plugins** (`plugins/`, manifest, whole-shell, `directory_plugin_invoke`, dev mode; **plugin manager** `Ctrl+Shift+F`, enable/disable/reorder/local zip) | **[../plugin-and-architecture/DIRECTORY_PLUGINS.md](../plugin-and-architecture/DIRECTORY_PLUGINS.md)** |
 | **Bridge `invoke` table, permission aliases, error codes** | **[../plugin-and-architecture/BRIDGE_API_REFERENCE.md](../plugin-and-architecture/BRIDGE_API_REFERENCE.md)** |
 | **Config file locations** | **[../guides/CONFIGURATION_FILES.md](../guides/CONFIGURATION_FILES.md)** |
+| **Chat storage architecture** (v3 pluggable backends + memory replay + capability UI) | **[../../handoff/CHAT_STORAGE_ARCHITECTURE.md](../../handoff/CHAT_STORAGE_ARCHITECTURE.md)** · selection **[../storage/STORAGE_BACKEND_GUIDE.md](../storage/STORAGE_BACKEND_GUIDE.md)** |
 | **Open-source licensing policy** | **[../LICENSE_POLICY.md](../LICENSE_POLICY.md)** |
 | **mumu default slots + plugin FAQ (Vue not showing, iframe debug, deps; user Q&A)** | **[../FAQ.md](../FAQ.md)** |
 | **mumu UI release checklist** | **[../guides/MUMU_UI_ACCEPTANCE_CHECKLIST.md](../guides/MUMU_UI_ACCEPTANCE_CHECKLIST.md)** |

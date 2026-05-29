@@ -1,6 +1,6 @@
 # 聊天记录存储后端选择指南
 
-> 技术真源：[handoff/CHAT_STORAGE_ARCHITECTURE.md](../../handoff/CHAT_STORAGE_ARCHITECTURE.md) · 配置字段见 [SETTINGS_REFERENCE.md §七](../cli/SETTINGS_REFERENCE.md) · 角色包 `config.json` 亦见 [ROLE_PACK_SPEC.md §9](../role-pack/ROLE_PACK_SPEC.md)。
+> 技术真源：[handoff/CHAT_STORAGE_ARCHITECTURE.md](../../handoff/CHAT_STORAGE_ARCHITECTURE.md) · 配置字段见 [SETTINGS_REFERENCE.md §六](../cli/SETTINGS_REFERENCE.md) · 角色包 `config.json` 亦见 [ROLE_PACK_SPEC.md §9](../role-pack/ROLE_PACK_SPEC.md)。
 
 ## 三种后端对比
 
@@ -50,4 +50,4 @@
 
 ---
 
-[English](../creator-docs-en/storage/STORAGE_BACKEND_GUIDE.md)（待镜像）
+[English](../creator-docs-en/storage/STORAGE_BACKEND_GUIDE.md)
