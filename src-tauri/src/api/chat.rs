@@ -410,6 +410,7 @@ pub async fn get_chat_storage_capabilities(
     state: State<'_, AppState>,
 ) -> Result<ChatStorageCapabilities, crate::api::error::CommandError> {
     Ok(ChatStorageCapabilities {
+        backend_kind: state.conversation_store.backend_kind().to_string(),
         supports_search: state.conversation_store.supports_search().await,
         supports_replay: state.conversation_store.supports_replay().await,
         supports_cleanup: state.conversation_store.supports_cleanup().await,

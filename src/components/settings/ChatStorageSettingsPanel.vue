@@ -64,6 +64,7 @@ const replayProgress = ref<number>(0)
 const replayPolling = ref<ReturnType<typeof setInterval> | null>(null)
 
 const capabilities = ref({
+  backend_kind: 'hybrid',
   supports_search: true,
   supports_replay: false,
   supports_cleanup: false,
@@ -77,6 +78,11 @@ onUnmounted(() => {
 const selectedRoleLabel = computed(() => {
   const id = selectedRole.value?.role_id ?? ''
   return roleNames.value[id] ?? id
+})
+
+const backendLabel = computed(() => {
+  const kind = capabilities.value?.backend_kind ?? 'hybrid'
+  return t(`chatStorage.backends.${kind}`) ?? kind
 })
 
 function formatBytes(n: number): string {
@@ -492,6 +498,9 @@ defineExpose({ refreshStats })
     <p class="css-lead">
       {{ t('chatStorage.lead') }}
     </p>
+    <p v-if="capabilities.backend_kind" class="css-backend-hint">
+      {{ t('chatStorage.backendLabel', { backend: backendLabel }) }}
+    </p>
 
     <div v-if="capabilities.supports_search" class="css-search">
       <input
@@ -780,6 +789,11 @@ defineExpose({ refreshStats })
   margin: 0;
   font-size: 0.875rem;
   opacity: 0.85;
+}
+.css-backend-hint {
+  font-size: 0.85rem;
+  color: var(--oc-muted, #888);
+  margin-bottom: 0.75rem;
 }
 .css-search {
   display: flex;

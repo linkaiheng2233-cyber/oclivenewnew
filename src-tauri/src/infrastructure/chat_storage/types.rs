@@ -159,6 +159,7 @@ pub struct ReplayProgress {
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct ChatStorageCapabilities {
+    pub backend_kind: String,
     pub supports_search: bool,
     pub supports_replay: bool,
     pub supports_cleanup: bool,

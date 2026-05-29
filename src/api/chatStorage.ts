@@ -249,6 +249,7 @@ export async function getReplayProgress(taskId: string): Promise<ReplayProgress>
 }
 
 export interface ChatStorageCapabilities {
+  backend_kind: string
   supports_search: boolean
   supports_replay: boolean
   supports_cleanup: boolean

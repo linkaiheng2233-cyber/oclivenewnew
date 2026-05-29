@@ -43,5 +43,11 @@ export default {
     replayDone:
       '完成：处理 {turns} 轮，新增 {newMem} 条，更新 {updated} 条，跳过 {skipped} 条。',
     replayFailed: '记忆回放失败',
+    backendLabel: '存储后端：{backend}',
+    backends: {
+      hybrid: '混合存储（SQLite + JSON 文件）',
+      file: '纯文件存储（JSON）',
+      sqlite: '纯 SQLite 存储',
+    },
   },
 }

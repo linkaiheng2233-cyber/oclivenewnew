@@ -43,5 +43,11 @@ export default {
     replayDone:
       'Done: {turns} turns, {newMem} new, {updated} updated, {skipped} skipped.',
     replayFailed: 'Memory replay failed',
+    backendLabel: 'Storage backend: {backend}',
+    backends: {
+      hybrid: 'Hybrid (SQLite + JSON files)',
+      file: 'File only (JSON)',
+      sqlite: 'SQLite only',
+    },
   },
 }
