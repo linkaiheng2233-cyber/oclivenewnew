@@ -146,7 +146,11 @@ async function refreshStats(force = false) {
     statsLoadedAt.value = Date.now()
   }
   catch (err) {
-    showToast('error', err instanceof Error ? err.message : String(err))
+    const msg = err instanceof Error ? err.message : String(err)
+    if (msg.includes('get_storage_stats') || msg.includes('does not support'))
+      showToast('info', t('chatStorage.statsUnsupported'))
+    else
+      showToast('error', msg)
   }
   finally {
     loading.value = false
@@ -749,7 +753,7 @@ defineExpose({ refreshStats })
           <p class="css-msg-body">
             {{ msg.content }}
           </p>
-          <div v-if="msg.sender === 'user'" class="css-msg-actions">
+          <div v-if="msg.sender === 'user' && capabilities.backend_kind !== 'file'" class="css-msg-actions">
             <button type="button" class="css-action" @click="startEditMessage(msg)">
               {{ t('chatStorage.edit') }}
             </button>

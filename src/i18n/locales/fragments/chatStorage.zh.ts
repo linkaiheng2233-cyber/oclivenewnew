@@ -48,6 +48,7 @@ export default {
     globalLocation: '全局位置',
     backendLabel: '存储后端：{backend}',
     storageRoot: '镜像目录',
+    statsUnsupported: '当前存储后端不支持占用统计',
     storageRootHint: 'JSON 镜像文件位置（环境变量 OCLIVE_CHAT_STORAGE_ROOT 优先于此设置）',
     changeRoot: '更改目录',
     rootUpdated: '存储目录已更新',

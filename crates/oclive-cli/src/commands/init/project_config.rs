@@ -134,7 +134,6 @@ pub struct ProjectConfig {
     #[serde(default)]
     pub chat_storage_backend: ChatStorageBackend,
     /// 聊天记录存储位置（`role_pack` 跟随角色包，`global` 全局位置）。
-    /// TODO: 后续增加 CLI flag `--chat-storage-location role_pack|global` 并在 `apply_backend_cli_overrides` 写入
     #[serde(default = "default_storage_location")]
     pub chat_storage_location: String,
 }
@@ -272,4 +271,7 @@ pub(crate) fn apply_backend_cli_overrides(cfg: &mut ProjectConfig, args: &InitAr
         cfg.backends.complex_emotion = v;
     }
     cfg.features.use_complex_emotion = cfg.backends.complex_emotion != BackendImpl::None;
+    if let Some(ref loc) = args.chat_storage_location {
+        cfg.chat_storage_location = loc.clone();
+    }
 }

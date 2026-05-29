@@ -167,6 +167,20 @@ pub struct InitArgs {
     /// Pre-flight checks for template and environment (no generation)
     #[arg(long)]
     pub check: bool,
+
+    /// Non-interactive: role pack `config.json` → `chat_storage.location` (`global` | `role_pack`)
+    #[arg(long, value_parser = parse_chat_storage_location_arg)]
+    pub chat_storage_location: Option<String>,
+}
+
+fn parse_chat_storage_location_arg(raw: &str) -> Result<String, String> {
+    match raw.trim().to_ascii_lowercase().as_str() {
+        "global" => Ok("global".to_string()),
+        "role_pack" => Ok("role_pack".to_string()),
+        other => Err(format!(
+            "chat-storage-location must be global or role_pack, got {other:?}"
+        )),
+    }
 }
 
 /// Run the init subcommand (scaffold a kernel project).

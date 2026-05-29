@@ -29,7 +29,7 @@
 | Backend | Chat data | Mirror files | Search | Auto cleanup | Memory replay | Capability UI |
 |---------|-----------|--------------|--------|--------------|---------------|---------------|
 | **`hybrid`** (default) | SQLite `chat_sessions` / `chat_messages` | `{app_data}/chats/` best-effort | ✅ SQLite LIKE | ✅ | ✅ | all enabled |
-| **`file`** | JSON only under `{app_data}/chats/` | Same (authoritative) | ✅ directory scan (`role_id` required) | ❌ | ✅ | search + replay only |
+| **`file`** | JSON only under mirror roots | Same (authoritative) | ✅ directory scan (`role_id` required) | ❌ | ✅ | search + replay only |
 | **`sqlite`** | SQLite only | None | ✅ SQLite LIKE | ✅ | ✅ | all enabled |
 
 Implementation: `src-tauri/src/infrastructure/chat_storage/backends/{hybrid_store,file_store,sqlite_store}.rs`, factory in `factory.rs`.
@@ -185,3 +185,12 @@ Under `{root}/{role_id}/{scene_id}/{created_at_compact}_{session_id_prefix}.json
 - RemoteLife chat persistence
 - FTS5 full-text index migration
 - File-backend auto-cleanup (users manage JSON files directly)
+
+## Related documentation
+
+| Topic | Path |
+|-------|------|
+| CLI `chat_storage` keys | [`creator-docs/cli/SETTINGS_REFERENCE.md`](../creator-docs/cli/SETTINGS_REFERENCE.md) §六 |
+| Backend selection guide | [`creator-docs/storage/STORAGE_BACKEND_GUIDE.md`](../creator-docs/storage/STORAGE_BACKEND_GUIDE.md) |
+| Role pack `config.json` | [`roles/README_MANIFEST.md`](../roles/README_MANIFEST.md) · [`creator-docs/role-pack/ROLE_PACK_SPEC.md`](../creator-docs/role-pack/ROLE_PACK_SPEC.md) §9.5a |
+| Conformance tests | `store_trait_tests.rs` **9** trait cases + module unit tests **27** total (`cargo test -p oclivenewnew-tauri --lib infrastructure::chat_storage`) |

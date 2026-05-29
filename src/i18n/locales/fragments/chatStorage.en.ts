@@ -48,6 +48,7 @@ export default {
     globalLocation: 'Global location',
     backendLabel: 'Storage backend: {backend}',
     storageRoot: 'Mirror directory',
+    statsUnsupported: 'Storage stats are not supported for this backend',
     storageRootHint: 'JSON mirror path (env OCLIVE_CHAT_STORAGE_ROOT overrides this setting)',
     changeRoot: 'Change folder',
     rootUpdated: 'Storage folder updated',

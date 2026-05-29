@@ -10,7 +10,7 @@
 | 数据路径 | DB + `{app_data}/chats/{role}/{scene}/*.json` | `{app_data}/chats/{role}/{scene}/*.json` | DB only |
 | 搜索 | SQLite LIKE | 遍历 JSON（需 `role_id`） | SQLite LIKE |
 | 自动清理 | ✅ | ❌ | ✅ |
-| 记忆回放 | ✅ | ✅（记忆仍写 SQLite） | ✅ |
+| 记忆回放 | ✅ | ✅（读 JSON 聊天；**写** `long_term_memory` 仍走宿主 SQLite） | ✅ |
 | 适用场景 | 桌面主应用；需要透明文件 + DB 性能 | 轻量/嵌入式；用户直接管理 JSON | 性能优先；不需要镜像文件 |
 
 ## 如何切换

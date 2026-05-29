@@ -9,7 +9,7 @@ use super::super::export::{export_chat_session, export_role_chats};
 use super::super::mirror;
 use super::super::replay::{run_memory_replay, ReplayTaskRegistry};
 use super::super::shared::{cap_limit, normalize_scene_id, rows_to_stored, timestamp_ms_to_rfc3339};
-use super::super::stats::collect_chat_storage_stats;
+use super::super::stats::{collect_chat_storage_stats, collect_file_chat_storage_stats};
 use super::super::store_trait::ConversationStore;
 use super::super::types::{
     AppendTurnResult, AutoCleanupResult, ChatExportResponse, ChatSearchResult,
@@ -468,7 +468,12 @@ impl ConversationStore for HybridConversationStore {
     }
 
     async fn get_storage_stats(&self) -> Result<Vec<RoleStorageStat>> {
-        collect_chat_storage_stats(&self.app_data_dir, self.db.as_ref()).await
+        collect_chat_storage_stats(
+            &self.app_data_dir,
+            &self.roles_dir,
+            self.db.as_ref(),
+        )
+        .await
     }
 
     async fn apply_auto_cleanup(

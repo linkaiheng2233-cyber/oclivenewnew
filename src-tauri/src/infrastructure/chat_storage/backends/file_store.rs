@@ -8,10 +8,11 @@ use super::super::db::highlight_snippet;
 use super::super::mirror::{self, MirrorDocument, MirrorMessage};
 use super::super::replay::{run_memory_replay, ReplayTaskRegistry};
 use super::super::shared::{cap_limit, normalize_scene_id};
+use super::super::stats::collect_file_chat_storage_stats;
 use super::super::store_trait::ConversationStore;
 use super::super::types::{
-    AppendTurnResult, ChatSearchResult, ReplayProgress, ReplayResult, ReplayTarget, SessionMeta,
-    StoredMessage, TurnPersistInput,
+    AppendTurnResult, ChatSearchResult, ReplayProgress, ReplayResult, ReplayTarget, RoleStorageStat,
+    SessionMeta, StoredMessage, TurnPersistInput,
 };
 use crate::error::{AppError, Result};
 use crate::infrastructure::db::DbManager;
@@ -157,11 +158,12 @@ impl FileConversationStore {
                 let Ok(doc) = serde_json::from_str::<MirrorDocument>(&raw) else {
                     continue;
                 };
-                for m in &doc.messages {
+                for (hit_idx, m) in doc.messages.iter().enumerate() {
                     if !m.content.to_ascii_lowercase().contains(&query_lower) {
                         continue;
                     }
                     let created_at = m.timestamp.clone();
+                    let (context_before, context_after) = Self::search_context_messages(&doc, hit_idx);
                     hits.push((
                         created_at.clone(),
                         ChatSearchResult {
@@ -178,8 +180,8 @@ impl FileConversationStore {
                                 metadata: m.metadata.as_ref().map(|v| v.to_string()),
                                 created_at,
                             },
-                            context_before: Vec::new(),
-                            context_after: Vec::new(),
+                            context_before,
+                            context_after,
                         },
                     ));
                 }
@@ -244,16 +246,40 @@ impl FileConversationStore {
     fn doc_to_messages(doc: &MirrorDocument) -> Vec<StoredMessage> {
         doc.messages
             .iter()
-            .map(|m| StoredMessage {
-                id: m.id.clone(),
-                session_id: doc.session_id.clone(),
-                turn_index: m.turn_index.unwrap_or(0),
-                sender: m.sender.clone(),
-                content: m.content.clone(),
-                metadata: m.metadata.as_ref().map(|v| v.to_string()),
-                created_at: m.timestamp.clone(),
-            })
+            .map(|m| Self::mirror_message_to_stored(&doc.session_id, m))
             .collect()
+    }
+
+    fn mirror_message_to_stored(session_id: &str, m: &MirrorMessage) -> StoredMessage {
+        StoredMessage {
+            id: m.id.clone(),
+            session_id: session_id.to_string(),
+            turn_index: m.turn_index.unwrap_or(0),
+            sender: m.sender.clone(),
+            content: m.content.clone(),
+            metadata: m.metadata.as_ref().map(|v| v.to_string()),
+            created_at: m.timestamp.clone(),
+        }
+    }
+
+    fn search_context_messages(
+        doc: &MirrorDocument,
+        hit_idx: usize,
+    ) -> (Vec<StoredMessage>, Vec<StoredMessage>) {
+        const CONTEXT_MSGS: usize = 4;
+        let before: Vec<StoredMessage> = doc.messages[..hit_idx]
+            .iter()
+            .rev()
+            .take(CONTEXT_MSGS)
+            .rev()
+            .map(|m| Self::mirror_message_to_stored(&doc.session_id, m))
+            .collect();
+        let after: Vec<StoredMessage> = doc.messages[hit_idx + 1..]
+            .iter()
+            .take(CONTEXT_MSGS)
+            .map(|m| Self::mirror_message_to_stored(&doc.session_id, m))
+            .collect();
+        (before, after)
     }
 }
 
@@ -492,6 +518,15 @@ impl ConversationStore for FileConversationStore {
 
     fn backend_kind(&self) -> &'static str {
         "file"
+    }
+
+    async fn get_storage_stats(&self) -> Result<Vec<RoleStorageStat>> {
+        collect_file_chat_storage_stats(
+            &self.app_data_dir,
+            &self.roles_dir,
+            &self.storage_root,
+        )
+        .await
     }
 
     async fn supports_search(&self) -> bool {

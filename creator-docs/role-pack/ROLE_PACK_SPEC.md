@@ -349,6 +349,7 @@ auto_sync: false
 | `auto_cleanup_days` | integer | — | 自动清理：保留最近 N 天 |
 | `auto_cleanup_max_sessions` | integer | — | 自动清理：每角色最多 N 会话 |
 | `replay_similarity_threshold` | number | `0.6` | 记忆回放去重阈值（0.1–1.0） |
+| `location` | string | `global` | `"role_pack"` 或 `"global"`；聊天记录 JSON 镜像跟随角色包子目录 `chats/` 或全局 `{app_data}/chats/`。不可写时自动退回 `global` 并记录 warn。 |
 
 ### 9.6 与蓝图 / 数据库的关系
 
