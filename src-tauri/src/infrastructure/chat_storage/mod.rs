@@ -22,7 +22,7 @@ pub use cleanup::{apply_auto_cleanup, apply_auto_cleanup_sqlite, AutoCleanupConf
 pub use config::{
     migrate_mirror_tree, resolve_max_messages_per_session, resolve_session_dir,
     resolve_storage_root, set_persisted_storage_root, APP_SETTING_CHAT_STORAGE_ROOT,
-    DEFAULT_MAX_MESSAGES, ENV_CHAT_STORAGE_ROOT, MAX_MESSAGES_PER_SESSION,
+    DEFAULT_MAX_MESSAGES, ENV_CHAT_STORAGE_ROOT,
 };
 pub use export::{export_chat_session, export_role_chats, resolve_export_max_messages};
 pub use factory::{build_conversation_store, resolve_backend_kind, ENV_CHAT_STORAGE_BACKEND};

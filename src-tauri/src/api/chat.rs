@@ -230,17 +230,13 @@ pub async fn export_role_chats(
     state: State<'_, AppState>,
 ) -> Result<ChatExportResponse, crate::api::error::CommandError> {
     let rid = role_id.trim();
-    let max = match state.load_role_cached_async(rid).await {
-        Ok(role) => resolve_export_max_messages(
-            role.pack_chat_storage_config.max_messages_per_session,
+    let (max, role_name) = match state.load_role_cached_async(rid).await {
+        Ok(role) => (
+            resolve_export_max_messages(role.pack_chat_storage_config.max_messages_per_session),
+            Some(role.name.clone()),
         ),
-        Err(_) => resolve_export_max_messages(None),
+        Err(_) => (resolve_export_max_messages(None), None),
     };
-    let role_name = state
-        .load_role_cached_async(rid)
-        .await
-        .ok()
-        .map(|r| r.name.clone());
     state
         .conversation_store
         .export_role(rid, &format, max, role_name.as_deref())

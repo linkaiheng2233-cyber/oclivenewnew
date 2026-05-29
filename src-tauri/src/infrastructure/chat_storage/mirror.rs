@@ -92,7 +92,7 @@ pub fn mirror_path_for_session(
     Ok(dir.join(mirror_filename(session)))
 }
 
-/// Append new messages to mirror (or create file). Truncates to [`MAX_MESSAGES_PER_SESSION`].
+/// Append new messages to mirror (or create file). Truncates to [`DEFAULT_MAX_MESSAGES`].
 ///
 /// # Errors
 ///
