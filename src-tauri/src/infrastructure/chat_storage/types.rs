@@ -131,6 +131,9 @@ pub struct ReplayTarget {
     pub scene_id: Option<String>,
     #[serde(default)]
     pub session_id: Option<String>,
+    /// Optional dedupe threshold; unset uses role pack config or default 0.6.
+    #[serde(default)]
+    pub similarity_threshold: Option<f64>,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize, Default)]

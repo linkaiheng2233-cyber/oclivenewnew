@@ -181,7 +181,10 @@ pub async fn run_memory_replay(
 
     let policy_runtime = build_policy_sets_from_registry(PolicyRegistryFile::with_defaults());
     let memory_policy = policy_runtime.default_policy_set.memory.clone();
-    let similarity = 0.6_f64;
+    let similarity = target
+        .similarity_threshold
+        .unwrap_or(0.6_f64)
+        .clamp(0.1, 1.0);
     let mut result = ReplayResult::default();
     let mut processed = 0u32;
 

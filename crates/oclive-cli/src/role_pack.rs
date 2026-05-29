@@ -30,7 +30,8 @@ fn write_role_config_json(cfg: &ProjectConfig, role_root: &Path) -> Result<()> {
     let config = json!({
         "chat_storage": {
             "backend": chat_storage_backend_token(cfg.chat_storage_backend),
-            "max_messages_per_session": 500
+            "max_messages_per_session": 500,
+            "replay_similarity_threshold": 0.6
         }
     });
     fs::write(

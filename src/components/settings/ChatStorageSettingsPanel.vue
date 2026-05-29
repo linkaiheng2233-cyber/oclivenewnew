@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import type {
   ChatSearchResult,
+  ReplayTarget,
   RoleChatStorageConfig,
   RoleStorageStat,
   SceneStorageStat,
@@ -257,11 +258,14 @@ async function startMemoryReplay(
     return
   loading.value = true
   try {
-    const taskId = await replayMemoryExtraction(source, {
+    const roleCfg = await getRoleChatStorageConfig(roleId)
+    const target: ReplayTarget = {
       role_id: roleId,
       scene_id: sceneId ?? null,
       session_id: sessionId ?? null,
-    })
+      similarity_threshold: roleCfg.replay_similarity_threshold ?? 0.6,
+    }
+    const taskId = await replayMemoryExtraction(source, target)
     replayTaskId.value = taskId
     replayProgress.value = 0
     if (replayPolling.value)

@@ -41,6 +41,7 @@ export interface RoleChatStorageConfig {
   max_messages_per_session?: number | null
   auto_cleanup_days?: number | null
   auto_cleanup_max_sessions?: number | null
+  replay_similarity_threshold?: number | null
 }
 
 export interface AutoCleanupResult {
@@ -215,6 +216,7 @@ export interface ReplayTarget {
   role_id: string
   scene_id?: string | null
   session_id?: string | null
+  similarity_threshold?: number | null
 }
 
 export interface ReplayProgress {

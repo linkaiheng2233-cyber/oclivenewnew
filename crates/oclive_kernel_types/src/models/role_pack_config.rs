@@ -40,6 +40,10 @@ fn default_personality_evolution_interval_hours() -> f64 {
     6.0
 }
 
+fn default_replay_similarity_threshold() -> f64 {
+    0.6
+}
+
 /// `config.json` → `evolution`（虚拟时间驱动的阶段性性格沉淀）
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
 pub struct RolePackEvolutionConfig {
@@ -126,7 +130,7 @@ pub enum ChatStorageBackendKind {
     Sqlite,
 }
 
-#[derive(Debug, Clone, Serialize, Deserialize, Default)]
+#[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct RolePackChatStorageConfig {
     /// Storage backend; default `hybrid`.
     #[serde(default)]
@@ -140,6 +144,21 @@ pub struct RolePackChatStorageConfig {
     /// 每个角色最多保留 N 个会话；超出删除最旧。未设则不启用。
     #[serde(default)]
     pub auto_cleanup_max_sessions: Option<u32>,
+    /// 记忆回放去重相似度阈值（0.0–1.0）；未设则默认 0.6。
+    #[serde(default = "default_replay_similarity_threshold")]
+    pub replay_similarity_threshold: f64,
+}
+
+impl Default for RolePackChatStorageConfig {
+    fn default() -> Self {
+        Self {
+            backend: None,
+            max_messages_per_session: None,
+            auto_cleanup_days: None,
+            auto_cleanup_max_sessions: None,
+            replay_similarity_threshold: default_replay_similarity_threshold(),
+        }
+    }
 }
 
 #[derive(Debug, Clone, Deserialize, Default)]
