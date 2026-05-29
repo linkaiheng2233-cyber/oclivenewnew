@@ -61,6 +61,8 @@ const showCleanupModal = ref(false)
 const cleanupDraft = ref<RoleChatStorageConfig>({})
 const cleanupRoleId = ref('')
 
+const roleStorageConfig = ref<RoleChatStorageConfig | null>(null)
+
 const editingMessageId = ref<string | null>(null)
 const editingContent = ref('')
 
@@ -196,7 +198,15 @@ function openRole(row: RoleStorageStat) {
   selectedSession.value = null
   sessions.value = []
   messages.value = []
+  roleStorageConfig.value = null
   level.value = 'scenes'
+  void getRoleChatStorageConfig(row.role_id)
+    .then((cfg) => {
+      roleStorageConfig.value = cfg
+    })
+    .catch(() => {
+      roleStorageConfig.value = null
+    })
 }
 
 function openScene(scene: SceneStorageStat) {
@@ -533,6 +543,24 @@ defineExpose({ refreshStats })
     <p v-if="capabilities.backend_kind" class="css-backend-hint">
       {{ t('chatStorage.backendLabel', { backend: backendLabel }) }}
     </p>
+    <div
+      v-if="selectedRole && roleStorageConfig"
+      class="css-location"
+    >
+      <span class="text-muted-foreground">{{ t('chatStorage.location') }}:</span>
+      <span
+        v-if="roleStorageConfig.location === 'role_pack'"
+        class="css-location-badge css-location-badge--pack"
+      >
+        {{ t('chatStorage.followsRolePack') }}
+      </span>
+      <span
+        v-else
+        class="css-location-badge css-location-badge--global"
+      >
+        {{ t('chatStorage.globalLocation') }}
+      </span>
+    </div>
 
     <div class="css-root">
       <span class="css-root-label">{{ t('chatStorage.storageRoot') }}</span>
@@ -837,6 +865,27 @@ defineExpose({ refreshStats })
   font-size: 0.85rem;
   color: var(--oc-muted, #888);
   margin-bottom: 0.75rem;
+}
+.css-location {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  font-size: 0.85rem;
+  margin-bottom: 0.75rem;
+}
+.css-location-badge {
+  padding: 0.125rem 0.5rem;
+  border-radius: 0.25rem;
+  font-size: 0.75rem;
+  font-weight: 500;
+}
+.css-location-badge--pack {
+  background: color-mix(in srgb, var(--oc-primary, #6366f1) 12%, transparent);
+  color: var(--oc-primary, #6366f1);
+}
+.css-location-badge--global {
+  background: var(--oc-muted-bg, rgba(128, 128, 128, 0.15));
+  color: inherit;
 }
 .css-root {
   display: flex;

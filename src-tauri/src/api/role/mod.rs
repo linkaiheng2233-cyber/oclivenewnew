@@ -541,11 +541,19 @@ pub async fn delete_role_impl(state: &AppState, role_id: String) -> Result<Value
         .delete_all_data_for_manifest_role(rid)
         .await
         ?;
-    if let Err(e) = crate::infrastructure::chat_storage::delete_mirror_tree_for_role(
+    let chat_location = state
+        .load_role_cached_async(rid)
+        .await
+        .ok()
+        .map(|r| r.pack_chat_storage_config.location.clone());
+    let mirror_root = crate::infrastructure::chat_storage::resolve_role_chat_storage_root(
         state.directory_plugins.app_data_dir(),
+        state.storage.roles_dir(),
         rid,
-    )
-    .await
+        chat_location.as_deref(),
+    );
+    if let Err(e) =
+        crate::infrastructure::chat_storage::delete_mirror_tree_for_role(&mirror_root, rid).await
     {
         tracing::warn!(
             target: "oclive_chat_storage",

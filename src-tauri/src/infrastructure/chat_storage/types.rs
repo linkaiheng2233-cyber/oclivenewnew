@@ -29,6 +29,13 @@ pub struct TurnPersistInput {
     /// Auto-cleanup policy snapshot (from role pack); applied async after append.
     #[serde(default)]
     pub auto_cleanup_config: super::cleanup::AutoCleanupConfig,
+    /// `chat_storage.location` snapshot (`role_pack` | `global`).
+    #[serde(default = "default_chat_storage_location_turn")]
+    pub chat_storage_location: String,
+}
+
+fn default_chat_storage_location_turn() -> String {
+    "global".to_string()
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]

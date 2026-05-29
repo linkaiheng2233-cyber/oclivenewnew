@@ -27,12 +27,16 @@ fn chat_storage_backend_token(b: ChatStorageBackend) -> &'static str {
 }
 
 fn write_role_config_json(cfg: &ProjectConfig, role_root: &Path) -> Result<()> {
-    let config = json!({
-        "chat_storage": {
-            "backend": chat_storage_backend_token(cfg.chat_storage_backend),
-            "max_messages_per_session": 500,
-            "replay_similarity_threshold": 0.6
-        }
+    let mut chat_storage = serde_json::json!({
+        "backend": chat_storage_backend_token(cfg.chat_storage_backend),
+        "max_messages_per_session": 500,
+        "replay_similarity_threshold": 0.6
+    });
+    if cfg.chat_storage_location == "role_pack" {
+        chat_storage["location"] = serde_json::json!("role_pack");
+    }
+    let config = serde_json::json!({
+        "chat_storage": chat_storage
     });
     fs::write(
         role_root.join("config.json"),

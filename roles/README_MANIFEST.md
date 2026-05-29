@@ -5,6 +5,7 @@
 - **`manifest.json`** 路径：**`roles/{角色id}/manifest.json`**，与角色文件夹同名。门面与主要契约：**id、展示信息、性格七维 `default_personality`、`scenes`、`user_relations`、`default_relation`** 等（七维与 **`evolution.personality_source`** 的关系见下文 §二、§5.3）。完整示例见 **`manifest.template.json`**。
 - **`settings.json`**（**可选**）路径：**`roles/{角色id}/settings.json`**。进阶引擎向配置：**`model`、`evolution`、`identity_binding`、`memory_config`**。完整示例见 **`settings.template.json`**。  
 **推荐**创作者新包采用「manifest 门面 + settings 引擎」；应用内保存角色时也会写出这两份文件（manifest 存根 + settings 完整引擎段）。
+- **`config.json`**（**可选**）路径：**`roles/{角色id}/config.json`**。宿主扩展配置，含 **`chat_storage`**（聊天记录后端与存储位置）。`chat_storage.location`：`"role_pack"` 将 JSON 镜像写在角色包 `chats/` 下；`"global"`（默认）使用 `{app_data}/chats/`。
 
 **标准 JSON 不支持 `//` 或 `/* */` 注释**；说明性文字请用 **以下划线 `_` 开头的键**（加载时会**忽略**，不报错）。
 

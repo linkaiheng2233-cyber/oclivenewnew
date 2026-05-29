@@ -4,6 +4,10 @@ use super::preset_config::{InitTemplateArg, MonolithPresetArg, RolePackKind};
 use super::InitArgs;
 use serde::{Deserialize, Serialize};
 
+pub fn default_storage_location() -> String {
+    "global".to_string()
+}
+
 #[derive(clap::ValueEnum, Clone, Debug, Copy, PartialEq, Eq, Serialize, Deserialize)]
 pub enum ProjectTypeArg {
     KernelServer,
@@ -129,6 +133,10 @@ pub struct ProjectConfig {
     /// 聊天记录存储后端（写入角色包 `config.json` → `chat_storage.backend`）。
     #[serde(default)]
     pub chat_storage_backend: ChatStorageBackend,
+    /// 聊天记录存储位置（`role_pack` 跟随角色包，`global` 全局位置）。
+    /// TODO: 后续增加 CLI flag `--chat-storage-location role_pack|global` 并在 `apply_backend_cli_overrides` 写入
+    #[serde(default = "default_storage_location")]
+    pub chat_storage_location: String,
 }
 
 impl ProjectConfig {

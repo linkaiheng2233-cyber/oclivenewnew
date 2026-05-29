@@ -1,6 +1,6 @@
 //! JSON file mirror under `{root}/{role_id}/{scene_id}/` (best-effort, DB is authoritative).
 
-use super::config::{resolve_session_dir, resolve_storage_root};
+use super::config::resolve_session_dir;
 use super::db::{MessageRow, SessionRow};
 use crate::error::{AppError, Result};
 use crate::infrastructure::db::DbManager;
@@ -84,11 +84,10 @@ pub fn mirror_filename(session: &SessionRow) -> String {
 }
 
 pub fn mirror_path_for_session(
-    app_data_dir: &Path,
+    storage_root: &Path,
     session: &SessionRow,
 ) -> Result<PathBuf> {
-    let root = resolve_storage_root(app_data_dir);
-    let dir = resolve_session_dir(&root, &session.role_id, &session.scene_id)?;
+    let dir = resolve_session_dir(storage_root, &session.role_id, &session.scene_id)?;
     Ok(dir.join(mirror_filename(session)))
 }
 
@@ -98,12 +97,12 @@ pub fn mirror_path_for_session(
 ///
 /// IO / JSON errors return [`AppError::IoError`] or invalid parameter variants.
 pub async fn sync_mirror_append(
-    app_data_dir: &Path,
+    storage_root: &Path,
     session: &SessionRow,
     new_rows: &[MessageRow],
     max_messages: i64,
 ) -> Result<()> {
-    let path = mirror_path_for_session(app_data_dir, session)?;
+    let path = mirror_path_for_session(storage_root, session)?;
     if let Some(parent) = path.parent() {
         fs::create_dir_all(parent).await.map_err(AppError::IoError)?;
     }
@@ -146,7 +145,7 @@ pub async fn sync_mirror_append(
 /// Database / IO / JSON errors propagate.
 pub async fn rebuild_mirror(
     db: &DbManager,
-    app_data_dir: &Path,
+    storage_root: &Path,
     session_id: &str,
     max_messages: i64,
 ) -> Result<PathBuf> {
@@ -164,7 +163,7 @@ pub async fn rebuild_mirror(
         let drop_n = doc.messages.len() - max;
         doc.messages.drain(0..drop_n);
     }
-    let path = mirror_path_for_session(app_data_dir, &session)?;
+    let path = mirror_path_for_session(storage_root, &session)?;
     if let Some(parent) = path.parent() {
         fs::create_dir_all(parent).await.map_err(AppError::IoError)?;
     }
@@ -178,13 +177,12 @@ pub async fn rebuild_mirror(
 ///
 /// IO errors propagate.
 pub async fn delete_mirror(
-    app_data_dir: &Path,
+    storage_root: &Path,
     role_id: &str,
     scene_id: &str,
     session_id: &str,
 ) -> Result<()> {
-    let root = resolve_storage_root(app_data_dir);
-    let dir = resolve_session_dir(&root, role_id, scene_id)?;
+    let dir = resolve_session_dir(storage_root, role_id, scene_id)?;
     if !dir.is_dir() {
         return Ok(());
     }
@@ -204,9 +202,8 @@ pub async fn delete_mirror(
 /// # Errors
 ///
 /// IO errors propagate as [`AppError::IoError`]; invalid `role_id` segments return [`AppError::InvalidParameter`].
-pub async fn delete_mirror_tree_for_role(app_data_dir: &Path, role_id: &str) -> Result<()> {
-    let root = resolve_storage_root(app_data_dir);
-    let role_dir = root.join(super::config::sanitize_path_segment(role_id)?);
+pub async fn delete_mirror_tree_for_role(storage_root: &Path, role_id: &str) -> Result<()> {
+    let role_dir = storage_root.join(super::config::sanitize_path_segment(role_id)?);
     if role_dir.is_dir() {
         fs::remove_dir_all(&role_dir).await.map_err(AppError::IoError)?;
     }
@@ -241,6 +238,7 @@ mod tests {
     async fn mirror_atomic_write() {
         let dir = tempfile::tempdir().expect("tempdir");
         let app_data = dir.path();
+        let storage_root = app_data.join("chats");
         let db = mem_db().await;
         let session = db
             .upsert_chat_session("sess1", "mumu", "default")
@@ -256,14 +254,14 @@ mod tests {
             created_at: Utc::now().to_rfc3339(),
         };
         sync_mirror_append(
-            app_data,
+            &storage_root,
             &session,
             std::slice::from_ref(&row),
             crate::infrastructure::chat_storage::config::DEFAULT_MAX_MESSAGES,
         )
             .await
             .expect("sync");
-        let path = mirror_path_for_session(app_data, &session).expect("path");
+        let path = mirror_path_for_session(&storage_root, &session).expect("path");
         assert!(path.is_file());
         let raw = std::fs::read_to_string(path).expect("read");
         assert!(raw.contains("schema_version"));

@@ -163,11 +163,15 @@ impl AppStateBuilder {
             }
         }
         let backend_kind = resolve_backend_kind(None);
+        let default_chat_cfg = crate::models::RolePackChatStorageConfig::default();
         let conversation_store = build_conversation_store(
             backend_kind,
             db_manager.clone(),
             self.app_data_dir.clone(),
+            storage.roles_dir().to_path_buf(),
             replay_tasks.clone(),
+            &default_chat_cfg,
+            None,
         );
 
         let state = AppState {

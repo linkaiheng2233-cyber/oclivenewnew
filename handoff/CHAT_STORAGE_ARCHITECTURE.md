@@ -122,6 +122,7 @@ Frontend hydrate
 | `auto_cleanup_days` | `u32?` | off | Delete sessions with `updated_at` older than N days |
 | `auto_cleanup_max_sessions` | `u32?` | off | Keep at most N most-recent sessions per role |
 | **`replay_similarity_threshold`** | `f64` | **0.6** | Memory replay dedupe similarity (0.1–1.0); higher = stricter, fewer duplicate memories merged |
+| **`location`** | `"role_pack"` \| `"global"` | **`global`** | Chat JSON mirror root: role pack `chats/` subdir or global `{app_data}/chats/`; falls back to global with warn if role pack dir is not writable |
 
 When **both** cleanup policies are set, a session is kept only if it satisfies **both** (stricter retention).
 
@@ -158,7 +159,9 @@ Creator guide: [STORAGE_BACKEND_GUIDE.md](../creator-docs/storage/STORAGE_BACKEN
 
 Under `{root}/{role_id}/{scene_id}/{created_at_compact}_{session_id_prefix}.json`. FIFO capped to same limit as SQLite. **Not written** when backend is `sqlite`.
 
-Env: `OCLIVE_CHAT_STORAGE_ROOT` → `app_settings.chat_storage_root` → default `{app_data}/chats/`.
+`resolve_storage_root_with_role`: env `OCLIVE_CHAT_STORAGE_ROOT` → role `config.json` → `chat_storage.location` (`role_pack` uses `{role_pack_dir}/chats/`) → `app_settings.chat_storage_root` → default `{app_data}/chats/`.
+
+**`location = "role_pack"`**: chat logs live under `{role_pack_dir}/chats/{role_id}/{scene_id}/`. If the role pack directory is not writable, the host falls back to the global path and logs a warn.
 
 **Scheduled cleanup**: on app startup and every **24h**, roles with `auto_cleanup_*` policy run via `spawn_auto_cleanup_scheduler` (in addition to per-turn and manual `run_chat_auto_cleanup`).
 

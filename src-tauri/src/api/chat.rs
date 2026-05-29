@@ -1,18 +1,31 @@
 use crate::domain::chat_engine::process_message;
 use crate::infrastructure::chat_storage::{
     delete_mirror_scene_dir, delete_mirror_tree_for_role, migrate_mirror_tree,
-    resolve_export_max_messages, resolve_max_messages_per_session, resolve_storage_root,
-    role_mirror_tree_bytes, save_role_chat_storage_config, set_persisted_storage_root,
-    spawn_memory_replay, APP_SETTING_CHAT_STORAGE_ROOT, AutoCleanupConfig, AutoCleanupResult,
-    ChatExportResponse, ChatSearchResult, ChatStorageCapabilities, DeleteChatsResult,
-    ImportChatBucket, ImportChatBucketsResult, ReplayProgress, ReplayTarget, RoleStorageStat,
-    SessionMeta, StoredMessage,
+    resolve_export_max_messages, resolve_max_messages_per_session, resolve_role_chat_storage_root,
+    resolve_storage_root, role_mirror_tree_bytes, save_role_chat_storage_config,
+    set_persisted_storage_root, spawn_memory_replay, APP_SETTING_CHAT_STORAGE_ROOT,
+    AutoCleanupConfig, AutoCleanupResult, ChatExportResponse, ChatSearchResult,
+    ChatStorageCapabilities, DeleteChatsResult, ImportChatBucket, ImportChatBucketsResult,
+    ReplayProgress, ReplayTarget, RoleStorageStat, SessionMeta, StoredMessage,
 };
 use crate::models::dto::{SendMessageRequest, SendMessageResponse};
 use crate::models::RolePackChatStorageConfig;
 use crate::state::AppState;
 use std::path::PathBuf;
 use tauri::State;
+
+async fn role_mirror_root(state: &AppState, role_id: &str) -> PathBuf {
+    let location = match state.load_role_cached_async(role_id).await {
+        Ok(role) => role.pack_chat_storage_config.location.clone(),
+        Err(_) => "global".to_string(),
+    };
+    resolve_role_chat_storage_root(
+        state.directory_plugins.app_data_dir(),
+        state.storage.roles_dir(),
+        role_id,
+        Some(&location),
+    )
+}
 
 /// # Errors
 ///
@@ -144,14 +157,14 @@ pub async fn delete_role_chats(
     state: State<'_, AppState>,
 ) -> Result<DeleteChatsResult, crate::api::error::CommandError> {
     let rid = role_id.trim();
-    let app_data = state.directory_plugins.app_data_dir();
-    let bytes = role_mirror_tree_bytes(app_data, rid).await?;
+    let mirror_root = role_mirror_root(state.inner(), rid).await;
+    let bytes = role_mirror_tree_bytes(&mirror_root, rid).await?;
     let sessions_deleted = state
         .db_manager
         .count_chat_sessions_for_manifest_role(rid)
         .await?;
     state.db_manager.delete_chat_data_for_manifest_role(rid).await?;
-    delete_mirror_tree_for_role(app_data, rid).await?;
+    delete_mirror_tree_for_role(&mirror_root, rid).await?;
     Ok(DeleteChatsResult {
         sessions_deleted,
         bytes_freed: bytes,
@@ -171,8 +184,8 @@ pub async fn delete_scene_chats(
 ) -> Result<DeleteChatsResult, crate::api::error::CommandError> {
     let rid = role_id.trim();
     let sid = scene_id.trim();
-    let app_data = state.directory_plugins.app_data_dir();
-    let bytes = delete_mirror_scene_dir(app_data, rid, sid).await?;
+    let mirror_root = role_mirror_root(state.inner(), rid).await;
+    let bytes = delete_mirror_scene_dir(&mirror_root, rid, sid).await?;
     let sessions_deleted = state.db_manager.delete_chat_data_for_role_scene(rid, sid).await?;
     Ok(DeleteChatsResult {
         sessions_deleted,

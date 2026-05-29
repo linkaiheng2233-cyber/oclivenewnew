@@ -638,6 +638,7 @@ pub(crate) async fn post_llm(
             auto_cleanup_config: crate::infrastructure::chat_storage::AutoCleanupConfig::from_role_config(
                 &role.pack_chat_storage_config,
             ),
+            chat_storage_location: role.pack_chat_storage_config.location.clone(),
         };
         match state.conversation_store.append_turn(persist).await {
             Ok(ids) => {

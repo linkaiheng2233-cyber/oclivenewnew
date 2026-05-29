@@ -26,6 +26,7 @@ mod tests {
             bot_emotion: None,
             max_messages_per_session: Some(500),
             auto_cleanup_config: AutoCleanupConfig::default(),
+            chat_storage_location: "global".to_string(),
         }
     }
 
@@ -55,9 +56,15 @@ mod tests {
             .await
             .expect("migrate");
         let dir = tempfile::tempdir().expect("dir");
+        let app_data = dir.path().to_path_buf();
+        let roles_dir = app_data.join("roles");
+        let _ = std::fs::create_dir_all(&roles_dir);
+        let storage_root = app_data.join("chats");
         Arc::new(HybridConversationStore::new(
             Arc::new(DbManager::new(pool)),
-            dir.path().to_path_buf(),
+            app_data,
+            roles_dir,
+            storage_root,
             Arc::new(ReplayTaskRegistry::new()),
         ))
     }
@@ -84,9 +91,15 @@ mod tests {
             .run(&pool)
             .await
             .expect("migrate");
+        let app_data = tempfile::tempdir().unwrap().path().to_path_buf();
+        let roles_dir = app_data.join("roles");
+        let _ = std::fs::create_dir_all(&roles_dir);
+        let storage_root = app_data.join("chats");
         Arc::new(FileConversationStore::new(
             Arc::new(DbManager::new(pool)),
-            tempfile::tempdir().unwrap().path().to_path_buf(),
+            app_data,
+            roles_dir,
+            storage_root,
             Arc::new(ReplayTaskRegistry::new()),
         ))
     }

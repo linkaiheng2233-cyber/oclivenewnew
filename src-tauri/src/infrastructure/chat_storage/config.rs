@@ -51,6 +51,103 @@ pub fn resolve_storage_root(app_data_dir: &Path) -> PathBuf {
     app_data_dir.join(DEFAULT_SUBDIR)
 }
 
+/// 探测目录是否可写（存在则检查权限，不存在则检查父目录）。
+/// Windows 上除 `readonly()` 外还执行探针写入（临时文件），回退更可靠。
+#[must_use]
+pub fn is_path_writable(path: &Path) -> bool {
+    if path.exists() {
+        match std::fs::metadata(path) {
+            Ok(m) => {
+                if m.permissions().readonly() {
+                    return false;
+                }
+            }
+            Err(_) => return false,
+        }
+    }
+    let probe = path.join(".oclive_write_probe");
+    match std::fs::write(&probe, b"1") {
+        Ok(()) => {
+            let _ = std::fs::remove_file(&probe);
+            true
+        }
+        Err(_) => false,
+    }
+}
+
+/// 解析聊天记录根目录，优先级：
+/// 1. env `OCLIVE_CHAT_STORAGE_ROOT`（强制覆盖，不变）
+/// 2. 角色包 `config.json` → `chat_storage.location` = `"role_pack"` + 角色包目录可写
+///    不可写则 warn 并回落
+/// 3. 全局持久化设置 `chat_storage_root`（不变）
+/// 4. 默认 `{app_data}/chats/`（不变）
+#[must_use]
+pub fn resolve_storage_root_with_role(
+    app_data_dir: &Path,
+    role_config: &crate::models::RolePackChatStorageConfig,
+    role_pack_dir: Option<&Path>,
+) -> PathBuf {
+    if let Ok(raw) = std::env::var(ENV_CHAT_STORAGE_ROOT) {
+        let trimmed = raw.trim();
+        if !trimmed.is_empty() {
+            return PathBuf::from(trimmed);
+        }
+    }
+    if role_config.location == "role_pack" {
+        if let Some(role_dir) = role_pack_dir {
+            let role_chats = role_dir.join(DEFAULT_SUBDIR);
+            if is_path_writable(role_dir) {
+                return role_chats;
+            }
+            tracing::warn!(
+                role_dir = %role_dir.display(),
+                "role_pack chat_storage.location 但角色包目录不可写，回退到全局路径"
+            );
+        } else {
+            tracing::warn!(
+                "chat_storage.location = 'role_pack' 但未提供角色包目录，回退到全局路径"
+            );
+        }
+    }
+    if let Some(p) = chat_storage_root_override().read().as_ref() {
+        return p.clone();
+    }
+    app_data_dir.join(DEFAULT_SUBDIR)
+}
+
+/// Read `chat_storage.location` from `{roles_dir}/{role_id}/config.json`.
+#[must_use]
+pub fn read_role_chat_storage_location(roles_dir: &Path, role_id: &str) -> String {
+    let path = roles_dir.join(role_id).join("config.json");
+    std::fs::read_to_string(path).ok().and_then(|raw| {
+        serde_json::from_str::<crate::models::RolePackConfigFile>(&raw)
+            .ok()
+            .map(|c| c.chat_storage.location)
+    }).unwrap_or_else(|| "global".to_string())
+}
+
+/// Resolve mirror root for a manifest role (per-turn / per-role operations).
+#[must_use]
+pub fn resolve_role_chat_storage_root(
+    app_data_dir: &Path,
+    roles_dir: &Path,
+    role_id: &str,
+    location: Option<&str>,
+) -> PathBuf {
+    let loc = location
+        .map(str::to_string)
+        .unwrap_or_else(|| read_role_chat_storage_location(roles_dir, role_id));
+    let cfg = crate::models::RolePackChatStorageConfig {
+        location: loc,
+        ..Default::default()
+    };
+    resolve_storage_root_with_role(
+        app_data_dir,
+        &cfg,
+        Some(&roles_dir.join(role_id)),
+    )
+}
+
 /// Copy mirror tree when changing storage root (best-effort).
 ///
 /// # Errors
@@ -150,5 +247,66 @@ mod tests {
     fn sanitize_replaces_invalid_chars() {
         assert_eq!(sanitize_path_segment("mumu").unwrap(), "mumu");
         assert_eq!(sanitize_path_segment("a/b").unwrap(), "a_b");
+    }
+
+    #[test]
+    fn role_pack_location_resolves_to_role_dir_chats() {
+        let role_dir = std::env::temp_dir().join("oclive_chat_storage_role_test");
+        let _ = std::fs::create_dir_all(&role_dir);
+        let config = crate::models::RolePackChatStorageConfig {
+            location: "role_pack".to_string(),
+            ..Default::default()
+        };
+        let root = resolve_storage_root_with_role(
+            Path::new("/app_data"),
+            &config,
+            Some(&role_dir),
+        );
+        assert_eq!(root, role_dir.join("chats"));
+        let _ = std::fs::remove_dir_all(&role_dir);
+    }
+
+    #[test]
+    fn global_location_uses_default_app_data() {
+        let role_dir = std::env::temp_dir().join("oclive_chat_storage_global_test");
+        let _ = std::fs::create_dir_all(&role_dir);
+        let config = crate::models::RolePackChatStorageConfig {
+            location: "global".to_string(),
+            ..Default::default()
+        };
+        let root = resolve_storage_root_with_role(
+            Path::new("/app_data"),
+            &config,
+            Some(&role_dir),
+        );
+        assert_eq!(root, Path::new("/app_data/chats"));
+        let _ = std::fs::remove_dir_all(&role_dir);
+    }
+
+    #[test]
+    fn missing_location_defaults_to_global() {
+        let config = crate::models::RolePackChatStorageConfig::default();
+        let root = resolve_storage_root_with_role(
+            Path::new("/app_data"),
+            &config,
+            None,
+        );
+        assert_eq!(root, Path::new("/app_data/chats"));
+    }
+
+    #[test]
+    fn role_pack_unwritable_falls_back_to_global() {
+        let nonexistent =
+            std::path::PathBuf::from("/nonexistent_readonly_oclive_test/role");
+        let config = crate::models::RolePackChatStorageConfig {
+            location: "role_pack".to_string(),
+            ..Default::default()
+        };
+        let root = resolve_storage_root_with_role(
+            Path::new("/app_data"),
+            &config,
+            Some(&nonexistent),
+        );
+        assert_eq!(root, Path::new("/app_data/chats"));
     }
 }

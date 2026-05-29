@@ -7,7 +7,7 @@ use super::replay::ReplayTaskRegistry;
 use super::store_trait::ConversationStore;
 use crate::models::RolePackChatStorageConfig;
 use crate::models::role_pack_config::ChatStorageBackendKind;
-use std::path::PathBuf;
+use std::path::{Path, PathBuf};
 use std::sync::Arc;
 
 pub const ENV_CHAT_STORAGE_BACKEND: &str = "OCLIVE_CHAT_STORAGE_BACKEND";
@@ -35,17 +35,26 @@ pub fn build_conversation_store(
     kind: ChatStorageBackendKind,
     db: Arc<crate::infrastructure::db::DbManager>,
     app_data_dir: PathBuf,
+    roles_dir: PathBuf,
     replay_tasks: Arc<ReplayTaskRegistry>,
+    role_config: &RolePackChatStorageConfig,
+    role_pack_dir: Option<&Path>,
 ) -> Arc<dyn ConversationStore> {
+    let storage_root =
+        super::config::resolve_storage_root_with_role(&app_data_dir, role_config, role_pack_dir);
     match kind {
         ChatStorageBackendKind::Hybrid => Arc::new(HybridConversationStore::new(
             db,
             app_data_dir,
+            roles_dir,
+            storage_root,
             replay_tasks,
         )),
         ChatStorageBackendKind::File => Arc::new(FileConversationStore::new(
             db,
             app_data_dir,
+            roles_dir,
+            storage_root,
             replay_tasks,
         )),
         ChatStorageBackendKind::Sqlite => Arc::new(SqliteConversationStore::new(db, replay_tasks)),

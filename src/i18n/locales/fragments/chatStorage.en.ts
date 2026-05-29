@@ -43,6 +43,9 @@ export default {
     replayDone:
       'Done: {turns} turns, {newMem} new, {updated} updated, {skipped} skipped.',
     replayFailed: 'Memory replay failed',
+    location: 'Storage location',
+    followsRolePack: 'Follows role pack',
+    globalLocation: 'Global location',
     backendLabel: 'Storage backend: {backend}',
     storageRoot: 'Mirror directory',
     storageRootHint: 'JSON mirror path (env OCLIVE_CHAT_STORAGE_ROOT overrides this setting)',

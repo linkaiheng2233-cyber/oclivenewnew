@@ -81,14 +81,14 @@ async fn load_session_messages(
 
 async fn session_json_content(
     db: &DbManager,
-    app_data_dir: &Path,
+    storage_root: &Path,
     session_id: &str,
     max_messages: i64,
 ) -> Result<String> {
-    if app_data_dir.as_os_str().is_empty() || app_data_dir == Path::new(".") {
+    if storage_root.as_os_str().is_empty() || storage_root == Path::new(".") {
         return session_json_from_db(db, session_id, max_messages).await;
     }
-    let path = mirror::rebuild_mirror(db, app_data_dir, session_id, max_messages).await?;
+    let path = mirror::rebuild_mirror(db, storage_root, session_id, max_messages).await?;
     let raw = tokio::fs::read_to_string(&path)
         .await
         .map_err(AppError::IoError)?;
@@ -122,7 +122,7 @@ async fn session_json_from_db(
 /// Propagates DB / IO / validation errors.
 pub async fn export_chat_session(
     db: &DbManager,
-    app_data_dir: &Path,
+    storage_root: &Path,
     session_id: &str,
     format: &str,
     max_messages: i64,
@@ -145,7 +145,7 @@ pub async fn export_chat_session(
             })
         }
         "json" => {
-            let content = session_json_content(db, app_data_dir, session_id, max_messages).await?;
+            let content = session_json_content(db, storage_root, session_id, max_messages).await?;
             Ok(ChatExportResponse {
                 content,
                 suggested_filename: format!("{prefix}-chat.json"),
@@ -170,7 +170,7 @@ async fn list_manifest_role_sessions(db: &DbManager, role_id: &str) -> Result<Ve
 /// Propagates DB / IO / validation errors.
 pub async fn export_role_chats(
     db: &DbManager,
-    app_data_dir: &Path,
+    storage_root: &Path,
     role_id: &str,
     format: &str,
     max_messages: i64,
@@ -208,7 +208,7 @@ pub async fn export_role_chats(
             let mut session_docs = Vec::new();
             for session in &sessions {
                 let json =
-                    session_json_content(db, app_data_dir, &session.session_id, max_messages)
+                    session_json_content(db, storage_root, &session.session_id, max_messages)
                         .await?;
                 let doc: serde_json::Value = serde_json::from_str(&json)
                     .map_err(|e| AppError::InvalidParameter(e.to_string()))?;

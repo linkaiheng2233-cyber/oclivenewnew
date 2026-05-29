@@ -2,7 +2,8 @@
 
 use super::project_config::ChatStorageBackend;
 use super::project_config::{
-    BackendImpl, BackendSlots, FeatureSelection, PluginSelection, ProjectConfig, ProjectType,
+    default_storage_location, BackendImpl, BackendSlots, FeatureSelection, PluginSelection,
+    ProjectConfig, ProjectType,
 };
 use super::InitArgs;
 use serde::{Deserialize, Serialize};
@@ -170,6 +171,7 @@ pub fn preset_config(name: &str, preset: &str) -> ProjectConfig {
         custom_weld_modules: None,
         dual_core_enabled: false,
         chat_storage_backend: ChatStorageBackend::default(),
+        chat_storage_location: default_storage_location(),
     }
 }
 

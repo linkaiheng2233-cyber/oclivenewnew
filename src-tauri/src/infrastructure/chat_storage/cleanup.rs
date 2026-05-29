@@ -9,10 +9,26 @@ use std::path::Path;
 use tracing::info;
 
 /// Role `chat_storage` config slice used by cleanup.
-#[derive(Debug, Clone, Default, serde::Serialize, serde::Deserialize)]
+#[derive(Debug, Clone, serde::Serialize, serde::Deserialize)]
 pub struct AutoCleanupConfig {
     pub auto_cleanup_days: Option<u32>,
     pub auto_cleanup_max_sessions: Option<u32>,
+    #[serde(default = "default_chat_storage_location_cleanup")]
+    pub chat_storage_location: String,
+}
+
+fn default_chat_storage_location_cleanup() -> String {
+    "global".to_string()
+}
+
+impl Default for AutoCleanupConfig {
+    fn default() -> Self {
+        Self {
+            auto_cleanup_days: None,
+            auto_cleanup_max_sessions: None,
+            chat_storage_location: default_chat_storage_location_cleanup(),
+        }
+    }
 }
 
 impl AutoCleanupConfig {
@@ -21,6 +37,7 @@ impl AutoCleanupConfig {
         Self {
             auto_cleanup_days: cfg.auto_cleanup_days,
             auto_cleanup_max_sessions: cfg.auto_cleanup_max_sessions,
+            chat_storage_location: cfg.location.clone(),
         }
     }
 
@@ -100,7 +117,7 @@ fn sessions_to_delete(
 /// Database errors propagate; mirror IO failures are logged and skipped.
 pub async fn apply_auto_cleanup(
     db: &DbManager,
-    app_data_dir: &Path,
+    storage_root: &Path,
     role_id: &str,
     cfg: &AutoCleanupConfig,
 ) -> Result<AutoCleanupResult> {
@@ -129,11 +146,11 @@ pub async fn apply_auto_cleanup(
     let mut bytes_freed = 0u64;
     for sid in &to_delete {
         if let Some(row) = rows.iter().find(|r| r.session_id == *sid) {
-            if let Ok(n) = super::stats::mirror_file_bytes_for_session(app_data_dir, row).await {
+            if let Ok(n) = super::stats::mirror_file_bytes_for_session(storage_root, row).await {
                 bytes_freed = bytes_freed.saturating_add(n);
             }
             let _ = super::mirror::delete_mirror(
-                app_data_dir,
+                storage_root,
                 &row.role_id,
                 &row.scene_id,
                 sid,
@@ -207,6 +224,7 @@ mod tests {
         let cfg = AutoCleanupConfig {
             auto_cleanup_days: None,
             auto_cleanup_max_sessions: Some(2),
+            chat_storage_location: "global".into(),
         };
         let del = sessions_to_delete(&sessions, &cfg);
         assert_eq!(del, vec!["c".to_string()]);

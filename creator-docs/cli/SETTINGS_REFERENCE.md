@@ -215,6 +215,7 @@
 | `auto_cleanup_days` | `u32` | 未设=关闭 | 删除 `updated_at` 早于 N 天的会话 |
 | `auto_cleanup_max_sessions` | `u32` | 未设=关闭 | 每角色最多保留 N 个会话（删最旧） |
 | `replay_similarity_threshold` | `f64` | `0.6` | 记忆回放去重相似度（**0.1–1.0**）；越大越严格，重复记忆越少 |
+| `location` | `"role_pack"` \| `"global"` | `"global"` | 聊天记录存储位置：角色包子目录 `chats/` 或全局 `{app_data}/chats/`；`role_pack` 不可写时自动退回到全局 |
 
 选型说明：[STORAGE_BACKEND_GUIDE.md](../storage/STORAGE_BACKEND_GUIDE.md) · 架构：[CHAT_STORAGE_ARCHITECTURE.md](../../handoff/CHAT_STORAGE_ARCHITECTURE.md)。
 

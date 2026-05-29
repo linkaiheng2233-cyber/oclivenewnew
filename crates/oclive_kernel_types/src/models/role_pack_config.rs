@@ -44,6 +44,11 @@ fn default_replay_similarity_threshold() -> f64 {
     0.6
 }
 
+/// 默认聊天记录存储位置为全局路径（向后兼容）。
+fn default_chat_storage_location() -> String {
+    "global".to_string()
+}
+
 /// `config.json` → `evolution`（虚拟时间驱动的阶段性性格沉淀）
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
 pub struct RolePackEvolutionConfig {
@@ -147,6 +152,10 @@ pub struct RolePackChatStorageConfig {
     /// 记忆回放去重相似度阈值（0.0–1.0）；未设则默认 0.6。
     #[serde(default = "default_replay_similarity_threshold")]
     pub replay_similarity_threshold: f64,
+    /// `"role_pack"` 则聊天记录存储在角色包目录下的 `chats/` 子目录；
+    /// `"global"` 或不配置则使用默认 `{app_data}/chats/`。
+    #[serde(default = "default_chat_storage_location")]
+    pub location: String,
 }
 
 impl Default for RolePackChatStorageConfig {
@@ -157,6 +166,7 @@ impl Default for RolePackChatStorageConfig {
             auto_cleanup_days: None,
             auto_cleanup_max_sessions: None,
             replay_similarity_threshold: default_replay_similarity_threshold(),
+            location: default_chat_storage_location(),
         }
     }
 }

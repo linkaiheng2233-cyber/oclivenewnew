@@ -44,6 +44,8 @@ export interface RoleChatStorageConfig {
   auto_cleanup_days?: number | null
   auto_cleanup_max_sessions?: number | null
   replay_similarity_threshold?: number | null
+  /** `role_pack` | `global` — chat JSON mirror location */
+  location?: string | null
 }
 
 export interface AutoCleanupResult {

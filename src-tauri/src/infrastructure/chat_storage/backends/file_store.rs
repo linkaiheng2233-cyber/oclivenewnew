@@ -1,7 +1,7 @@
 //! Pure JSON file chat storage (no SQLite chat tables).
 
 use super::super::config::{
-    resolve_max_messages_per_session, resolve_session_dir, resolve_storage_root,
+    resolve_max_messages_per_session, resolve_role_chat_storage_root, resolve_session_dir,
     sanitize_path_segment,
 };
 use super::super::db::highlight_snippet;
@@ -24,6 +24,8 @@ use uuid::Uuid;
 pub struct FileConversationStore {
     db: Arc<DbManager>,
     app_data_dir: PathBuf,
+    roles_dir: PathBuf,
+    storage_root: PathBuf,
     replay_tasks: Arc<ReplayTaskRegistry>,
 }
 
@@ -32,19 +34,52 @@ impl FileConversationStore {
     pub fn new(
         db: Arc<DbManager>,
         app_data_dir: PathBuf,
+        roles_dir: PathBuf,
+        storage_root: PathBuf,
         replay_tasks: Arc<ReplayTaskRegistry>,
     ) -> Self {
         Self {
             db,
             app_data_dir,
+            roles_dir,
+            storage_root,
             replay_tasks,
         }
+    }
+
+    fn role_storage_root(&self, role_id: &str, location: Option<&str>) -> PathBuf {
+        resolve_role_chat_storage_root(
+            &self.app_data_dir,
+            &self.roles_dir,
+            role_id,
+            location,
+        )
+    }
+
+    fn mirror_search_roots(&self) -> Vec<PathBuf> {
+        let mut roots = vec![self.storage_root.clone()];
+        if let Ok(entries) = std::fs::read_dir(&self.roles_dir) {
+            for entry in entries.flatten() {
+                let path = entry.path();
+                if !path.is_dir() {
+                    continue;
+                }
+                let role_id = entry.file_name().to_string_lossy().to_string();
+                let root = self.role_storage_root(&role_id, None);
+                if root != self.storage_root && !roots.iter().any(|r| r == &root) {
+                    roots.push(root);
+                }
+            }
+        }
+        roots
     }
 
     fn clone_store(&self) -> Arc<dyn ConversationStore> {
         Arc::new(FileConversationStore {
             db: Arc::clone(&self.db),
             app_data_dir: self.app_data_dir.clone(),
+            roles_dir: self.roles_dir.clone(),
+            storage_root: self.storage_root.clone(),
             replay_tasks: Arc::clone(&self.replay_tasks),
         })
     }
@@ -97,7 +132,7 @@ impl FileConversationStore {
             return Ok(Vec::new());
         }
         let query_lower = query.to_ascii_lowercase();
-        let root = resolve_storage_root(&self.app_data_dir);
+        let root = self.role_storage_root(role_id, None);
         let role_seg = sanitize_path_segment(role_id)?;
         let role_dir = root.join(role_seg);
         if !role_dir.is_dir() {
@@ -168,14 +203,13 @@ impl FileConversationStore {
         serde_json::from_str(&raw).map_err(|e| AppError::InvalidParameter(e.to_string()))
     }
 
-    async fn find_session_path(&self, session_id: &str) -> Result<PathBuf> {
-        let root = resolve_storage_root(&self.app_data_dir);
+    async fn find_session_in_root(&self, root: &Path, session_id: &str) -> Result<PathBuf> {
         if !root.is_dir() {
             return Err(AppError::InvalidParameter(format!(
                 "chat session not found: {session_id}"
             )));
         }
-        let mut stack = vec![root];
+        let mut stack = vec![root.to_path_buf()];
         while let Some(dir) = stack.pop() {
             let mut read = fs::read_dir(&dir).await.map_err(AppError::IoError)?;
             while let Some(entry) = read.next_entry().await.map_err(AppError::IoError)? {
@@ -189,6 +223,17 @@ impl FileConversationStore {
                         }
                     }
                 }
+            }
+        }
+        Err(AppError::InvalidParameter(format!(
+            "chat session not found: {session_id}"
+        )))
+    }
+
+    async fn find_session_path(&self, session_id: &str) -> Result<PathBuf> {
+        for root in self.mirror_search_roots() {
+            if let Ok(path) = self.find_session_in_root(&root, session_id).await {
+                return Ok(path);
             }
         }
         Err(AppError::InvalidParameter(format!(
@@ -217,7 +262,7 @@ impl ConversationStore for FileConversationStore {
     async fn append_turn(&self, input: TurnPersistInput) -> Result<AppendTurnResult> {
         let scene_id = normalize_scene_id(&input.scene_id);
         let max = resolve_max_messages_per_session(input.max_messages_per_session);
-        let root = resolve_storage_root(&self.app_data_dir);
+        let root = self.role_storage_root(&input.role_id, Some(&input.chat_storage_location));
         let dir = resolve_session_dir(&root, &input.role_id, &scene_id)?;
         fs::create_dir_all(&dir).await.map_err(AppError::IoError)?;
 
@@ -229,7 +274,7 @@ impl ConversationStore for FileConversationStore {
             updated_at: Utc::now().to_rfc3339(),
             message_count: 0,
         };
-        let path = mirror::mirror_path_for_session(&self.app_data_dir, &session_row)?;
+        let path = mirror::mirror_path_for_session(&root, &session_row)?;
         let mut doc = if path.is_file() {
             self.load_doc(&path).await.unwrap_or_else(|_| {
                 MirrorDocument::from_session_and_rows(&session_row, &[])
@@ -295,7 +340,7 @@ impl ConversationStore for FileConversationStore {
         offset: u32,
     ) -> Result<Vec<SessionMeta>> {
         let scene_id = normalize_scene_id(scene_id);
-        let root = resolve_storage_root(&self.app_data_dir);
+        let root = self.role_storage_root(role_id, None);
         let dir = resolve_session_dir(&root, role_id, &scene_id)?;
         if !dir.is_dir() {
             return Ok(Vec::new());
@@ -346,7 +391,7 @@ impl ConversationStore for FileConversationStore {
     }
 
     async fn list_sessions_by_role(&self, role_id: &str) -> Result<Vec<SessionMeta>> {
-        let root = resolve_storage_root(&self.app_data_dir);
+        let root = self.role_storage_root(role_id, None);
         let role_seg = sanitize_path_segment(role_id)?;
         let role_dir = root.join(role_seg);
         if !role_dir.is_dir() {
@@ -476,9 +521,15 @@ mod tests {
             .run(&pool)
             .await
             .expect("migrate");
+        let app_data = tempfile::tempdir().unwrap().path().to_path_buf();
+        let roles_dir = app_data.join("roles");
+        let _ = std::fs::create_dir_all(&roles_dir);
+        let storage_root = app_data.join("chats");
         FileConversationStore::new(
             Arc::new(DbManager::new(pool)),
-            tempfile::tempdir().unwrap().path().to_path_buf(),
+            app_data,
+            roles_dir,
+            storage_root,
             Arc::new(ReplayTaskRegistry::new()),
         )
     }
@@ -500,6 +551,7 @@ mod tests {
                 bot_emotion: None,
                 max_messages_per_session: Some(10),
                 auto_cleanup_config: Default::default(),
+            chat_storage_location: "global".into(),
             })
             .await
             .expect("append");
@@ -524,6 +576,7 @@ mod tests {
                 bot_emotion: None,
                 max_messages_per_session: None,
                 auto_cleanup_config: Default::default(),
+            chat_storage_location: "global".into(),
             })
             .await
             .expect("append");
@@ -549,6 +602,7 @@ mod tests {
                     bot_emotion: None,
                     max_messages_per_session: Some(4),
                     auto_cleanup_config: Default::default(),
+            chat_storage_location: "global".into(),
                 })
                 .await
                 .expect("append");

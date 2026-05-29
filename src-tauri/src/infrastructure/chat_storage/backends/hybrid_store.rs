@@ -1,6 +1,8 @@
 //! Hybrid store: SQLite authoritative + async JSON mirror.
 
-use super::super::config::{resolve_max_messages_per_session, DEFAULT_MAX_MESSAGES};
+use super::super::config::{
+    resolve_max_messages_per_session, resolve_role_chat_storage_root, DEFAULT_MAX_MESSAGES,
+};
 use super::super::cleanup::AutoCleanupConfig;
 use super::super::db::{highlight_snippet, MessageRow, NewTurnMessages};
 use super::super::export::{export_chat_session, export_role_chats};
@@ -26,6 +28,8 @@ use uuid::Uuid;
 pub struct HybridConversationStore {
     db: Arc<DbManager>,
     app_data_dir: PathBuf,
+    roles_dir: PathBuf,
+    storage_root: PathBuf,
     replay_tasks: Arc<ReplayTaskRegistry>,
 }
 
@@ -34,13 +38,39 @@ impl HybridConversationStore {
     pub fn new(
         db: Arc<DbManager>,
         app_data_dir: PathBuf,
+        roles_dir: PathBuf,
+        storage_root: PathBuf,
         replay_tasks: Arc<ReplayTaskRegistry>,
     ) -> Self {
         Self {
             db,
             app_data_dir,
+            roles_dir,
+            storage_root,
             replay_tasks,
         }
+    }
+
+    fn role_storage_root(&self, role_id: &str, location: Option<&str>) -> PathBuf {
+        resolve_role_chat_storage_root(
+            &self.app_data_dir,
+            &self.roles_dir,
+            role_id,
+            location,
+        )
+    }
+
+    async fn session_storage_root(&self, session_id: &str) -> Result<PathBuf> {
+        let session = self
+            .db
+            .get_chat_session(session_id)
+            .await?
+            .ok_or_else(|| {
+                crate::error::AppError::InvalidParameter(format!(
+                    "chat session not found: {session_id}"
+                ))
+            })?;
+        Ok(self.role_storage_root(&session.role_id, None))
     }
     ///
     /// # Errors
@@ -106,9 +136,10 @@ impl HybridConversationStore {
                 turns_imported = turns_imported.saturating_add(1);
             }
             buckets_imported = buckets_imported.saturating_add(1);
+            let storage_root = self.role_storage_root(&bucket.role_id, None);
             let _ = mirror::rebuild_mirror(
                 self.db.as_ref(),
-                &self.app_data_dir,
+                &storage_root,
                 &session_id,
                 max,
             )
@@ -192,14 +223,17 @@ impl ConversationStore for HybridConversationStore {
             .await?
             .unwrap_or(session);
 
-        let app_data = self.app_data_dir.clone();
+        let storage_root = self.role_storage_root(
+            &input.role_id,
+            Some(&input.chat_storage_location),
+        );
         let max_spawn = max;
         let role_id_spawn = input.role_id.clone();
         let cleanup_cfg = input.auto_cleanup_config.clone();
         let db_spawn = Arc::clone(&self.db);
         tokio::spawn(async move {
             if let Err(e) =
-                mirror::sync_mirror_append(&app_data, &session_after, &new_rows, max_spawn).await
+                mirror::sync_mirror_append(&storage_root, &session_after, &new_rows, max_spawn).await
             {
                 tracing::warn!(
                     target: "oclive_chat_storage",
@@ -211,7 +245,7 @@ impl ConversationStore for HybridConversationStore {
             if cleanup_cfg.is_enabled() {
                 if let Err(e) = super::super::cleanup::apply_auto_cleanup(
                     db_spawn.as_ref(),
-                    &app_data,
+                    &storage_root,
                     &role_id_spawn,
                     &cleanup_cfg,
                 )
@@ -293,9 +327,9 @@ impl ConversationStore for HybridConversationStore {
     }
 
     async fn rebuild_mirror(&self, session_id: &str, max_messages: i64) -> Result<String> {
+        let root = self.session_storage_root(session_id).await?;
         let path =
-            mirror::rebuild_mirror(self.db.as_ref(), &self.app_data_dir, session_id, max_messages)
-                .await?;
+            mirror::rebuild_mirror(self.db.as_ref(), &root, session_id, max_messages).await?;
         Ok(path.to_string_lossy().into_owned())
     }
 
@@ -362,7 +396,8 @@ impl ConversationStore for HybridConversationStore {
                 crate::error::AppError::InvalidParameter(format!("message not found: {message_id}"))
             })?;
         let max = resolve_max_messages_per_session(None);
-        let _ = mirror::rebuild_mirror(self.db.as_ref(), &self.app_data_dir, &session_id, max).await?;
+        let root = self.session_storage_root(&session_id).await?;
+        let _ = mirror::rebuild_mirror(self.db.as_ref(), &root, &session_id, max).await?;
         Ok(())
     }
 
@@ -375,14 +410,16 @@ impl ConversationStore for HybridConversationStore {
                 crate::error::AppError::InvalidParameter(format!("message not found: {message_id}"))
             })?;
         let max = resolve_max_messages_per_session(None);
-        let _ = mirror::rebuild_mirror(self.db.as_ref(), &self.app_data_dir, &session_id, max).await?;
+        let root = self.session_storage_root(&session_id).await?;
+        let _ = mirror::rebuild_mirror(self.db.as_ref(), &root, &session_id, max).await?;
         Ok(())
     }
 
     async fn delete_session(&self, session_id: &str) -> Result<()> {
         if let Some(session) = self.db.get_chat_session(session_id).await? {
+            let root = self.role_storage_root(&session.role_id, None);
             let _ = mirror::delete_mirror(
-                &self.app_data_dir,
+                &root,
                 &session.role_id,
                 &session.scene_id,
                 session_id,
@@ -399,9 +436,10 @@ impl ConversationStore for HybridConversationStore {
         max_messages: i64,
         role_name: Option<&str>,
     ) -> Result<ChatExportResponse> {
+        let root = self.session_storage_root(session_id).await?;
         export_chat_session(
             self.db.as_ref(),
-            &self.app_data_dir,
+            &root,
             session_id,
             format,
             max_messages,
@@ -417,9 +455,10 @@ impl ConversationStore for HybridConversationStore {
         max_messages: i64,
         role_name: Option<&str>,
     ) -> Result<ChatExportResponse> {
+        let root = self.role_storage_root(role_id, None);
         export_role_chats(
             self.db.as_ref(),
-            &self.app_data_dir,
+            &root,
             role_id,
             format,
             max_messages,
@@ -439,7 +478,7 @@ impl ConversationStore for HybridConversationStore {
     ) -> Result<AutoCleanupResult> {
         super::super::cleanup::apply_auto_cleanup(
             self.db.as_ref(),
-            &self.app_data_dir,
+            &self.role_storage_root(role_id, Some(&cfg.chat_storage_location)),
             role_id,
             cfg,
         )
@@ -487,6 +526,8 @@ impl HybridConversationStore {
         Arc::new(HybridConversationStore {
             db: Arc::clone(&self.db),
             app_data_dir: self.app_data_dir.clone(),
+            roles_dir: self.roles_dir.clone(),
+            storage_root: self.storage_root.clone(),
             replay_tasks: Arc::clone(&self.replay_tasks),
         })
     }
@@ -504,9 +545,15 @@ mod tests {
             .await
             .expect("migrate");
         let dir = tempfile::tempdir().expect("dir");
+        let app_data = dir.path().to_path_buf();
+        let roles_dir = app_data.join("roles");
+        let _ = std::fs::create_dir_all(&roles_dir);
+        let storage_root = app_data.join("chats");
         Arc::new(HybridConversationStore::new(
             Arc::new(DbManager::new(pool)),
-            dir.path().to_path_buf(),
+            app_data,
+            roles_dir,
+            storage_root,
             Arc::new(ReplayTaskRegistry::new()),
         )) as Arc<dyn ConversationStore>
     }
@@ -528,6 +575,7 @@ mod tests {
                 bot_emotion: None,
                 max_messages_per_session: None,
                 auto_cleanup_config: Default::default(),
+            chat_storage_location: "global".into(),
             })
             .await
             .expect("append");

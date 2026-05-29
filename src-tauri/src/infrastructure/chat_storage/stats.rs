@@ -127,12 +127,11 @@ async fn dir_size_bytes(dir: &Path) -> Result<u64> {
 ///
 /// IO / path errors propagate.
 pub async fn delete_mirror_scene_dir(
-    app_data_dir: &Path,
+    storage_root: &Path,
     role_id: &str,
     scene_id: &str,
 ) -> Result<u64> {
-    let root = resolve_storage_root(app_data_dir);
-    let dir = resolve_session_dir(&root, role_id, scene_id)?;
+    let dir = resolve_session_dir(storage_root, role_id, scene_id)?;
     let bytes = if dir.is_dir() {
         dir_size_bytes(&dir).await?
     } else {
@@ -194,10 +193,10 @@ pub async fn collect_chat_storage_stats_from_db(db: &DbManager) -> Result<Vec<Ro
 
 /// Bytes for one session mirror file (0 if missing).
 pub async fn mirror_file_bytes_for_session(
-    app_data_dir: &Path,
+    storage_root: &Path,
     session: &super::db::SessionRow,
 ) -> Result<u64> {
-    let path = super::mirror::mirror_path_for_session(app_data_dir, session)?;
+    let path = super::mirror::mirror_path_for_session(storage_root, session)?;
     if path.is_file() {
         Ok(fs::metadata(&path).await.map_err(AppError::IoError)?.len())
     } else {
@@ -210,9 +209,8 @@ pub async fn mirror_file_bytes_for_session(
 /// # Errors
 ///
 /// IO / path errors propagate.
-pub async fn role_mirror_tree_bytes(app_data_dir: &Path, role_id: &str) -> Result<u64> {
-    let root = resolve_storage_root(app_data_dir);
-    let role_dir = root.join(sanitize_path_segment(role_id)?);
+pub async fn role_mirror_tree_bytes(storage_root: &Path, role_id: &str) -> Result<u64> {
+    let role_dir = storage_root.join(sanitize_path_segment(role_id)?);
     if role_dir.is_dir() {
         dir_size_bytes(&role_dir).await
     } else {

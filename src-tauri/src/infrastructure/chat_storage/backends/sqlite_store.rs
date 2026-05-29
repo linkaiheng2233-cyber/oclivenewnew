@@ -329,6 +329,7 @@ mod tests {
                 bot_emotion: None,
                 max_messages_per_session: Some(10),
                 auto_cleanup_config: Default::default(),
+            chat_storage_location: "global".into(),
             })
             .await
             .expect("append");
@@ -356,6 +357,7 @@ mod tests {
                     bot_emotion: None,
                     max_messages_per_session: Some(4),
                     auto_cleanup_config: Default::default(),
+            chat_storage_location: "global".into(),
                 })
                 .await
                 .expect("append");
@@ -381,6 +383,7 @@ mod tests {
                 bot_emotion: None,
                 max_messages_per_session: None,
                 auto_cleanup_config: Default::default(),
+            chat_storage_location: "global".into(),
             })
             .await
             .expect("append");

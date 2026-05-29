@@ -43,6 +43,9 @@ export default {
     replayDone:
       '完成：处理 {turns} 轮，新增 {newMem} 条，更新 {updated} 条，跳过 {skipped} 条。',
     replayFailed: '记忆回放失败',
+    location: '存储位置',
+    followsRolePack: '跟随角色包',
+    globalLocation: '全局位置',
     backendLabel: '存储后端：{backend}',
     storageRoot: '镜像目录',
     storageRootHint: 'JSON 镜像文件位置（环境变量 OCLIVE_CHAT_STORAGE_ROOT 优先于此设置）',

@@ -243,6 +243,24 @@ fn pick_chat_storage_backend() -> Result<ChatStorageBackend> {
     })
 }
 
+fn pick_chat_storage_location() -> Result<String> {
+    let labels = [
+        "跟随角色包（推荐）：聊天记录存在角色包目录下的 chats/ 子目录",
+        "全局位置：存在 app_data/chats/ 下（与角色包位置独立）",
+    ];
+    let i = Select::with_theme(&ColorfulTheme::default())
+        .with_prompt("聊天记录存储位置")
+        .items(&labels)
+        .default(0)
+        .interact()
+        .context("chat storage location")?;
+    Ok(if i == 1 {
+        "global".to_string()
+    } else {
+        "role_pack".to_string()
+    })
+}
+
 /// At least memory / emotion / prompt / llm (minimal product chat path).
 pub fn run_interactive(args: &InitArgs) -> Result<ProjectConfig> {
     let project_name = resolve_project_name(args)?;
@@ -310,6 +328,7 @@ pub fn run_interactive(args: &InitArgs) -> Result<ProjectConfig> {
                 custom_weld_modules: None,
                 dual_core_enabled: false,
                 chat_storage_backend: ChatStorageBackend::default(),
+                chat_storage_location: crate::init::default_storage_location(),
             };
             (c, false)
         }
@@ -353,6 +372,7 @@ pub fn run_interactive(args: &InitArgs) -> Result<ProjectConfig> {
         };
         if cfg.role_pack_kind != RolePackKind::None {
             cfg.chat_storage_backend = pick_chat_storage_backend()?;
+            cfg.chat_storage_location = pick_chat_storage_location()?;
         }
     }
 
