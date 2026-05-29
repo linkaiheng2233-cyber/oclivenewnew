@@ -110,6 +110,12 @@ pub struct RolePackChatStorageConfig {
     /// 单会话最多保留消息条数（user+assistant 合计）；未设则用宿主默认 500。
     #[serde(default)]
     pub max_messages_per_session: Option<u32>,
+    /// 保留最近 N 天内更新的会话；超出自动清理。未设则不启用。
+    #[serde(default)]
+    pub auto_cleanup_days: Option<u32>,
+    /// 每个角色最多保留 N 个会话；超出删除最旧。未设则不启用。
+    #[serde(default)]
+    pub auto_cleanup_max_sessions: Option<u32>,
 }
 
 #[derive(Debug, Clone, Deserialize, Default)]

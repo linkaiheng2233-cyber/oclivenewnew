@@ -144,6 +144,19 @@ pub async fn delete_mirror_scene_dir(
     Ok(bytes)
 }
 
+/// Bytes for one session mirror file (0 if missing).
+pub async fn mirror_file_bytes_for_session(
+    app_data_dir: &Path,
+    session: &super::db::SessionRow,
+) -> Result<u64> {
+    let path = super::mirror::mirror_path_for_session(app_data_dir, session)?;
+    if path.is_file() {
+        Ok(fs::metadata(&path).await.map_err(AppError::IoError)?.len())
+    } else {
+        Ok(0)
+    }
+}
+
 /// Bytes under `{root}/{role_id}/` before delete (for reporting).
 ///
 /// # Errors

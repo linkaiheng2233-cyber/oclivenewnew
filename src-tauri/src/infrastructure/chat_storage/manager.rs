@@ -204,6 +204,9 @@ impl ConversationStore for HybridConversationStore {
 
         let app_data = self.app_data_dir.clone();
         let max_spawn = max;
+        let role_id_spawn = input.role_id.clone();
+        let cleanup_cfg = input.auto_cleanup_config.clone();
+        let db_spawn = Arc::clone(&self.db);
         tokio::spawn(async move {
             if let Err(e) =
                 mirror::sync_mirror_append(&app_data, &session_after, &new_rows, max_spawn).await
@@ -214,6 +217,23 @@ impl ConversationStore for HybridConversationStore {
                     error = %e,
                     "sync_mirror_append failed"
                 );
+            }
+            if cleanup_cfg.is_enabled() {
+                if let Err(e) = super::cleanup::apply_auto_cleanup(
+                    db_spawn.as_ref(),
+                    &app_data,
+                    &role_id_spawn,
+                    &cleanup_cfg,
+                )
+                .await
+                {
+                    tracing::warn!(
+                        target: "oclive_chat_storage",
+                        role_id = %role_id_spawn,
+                        error = %e,
+                        "apply_auto_cleanup failed"
+                    );
+                }
             }
         });
 
@@ -341,6 +361,7 @@ mod tests {
                 user_emotion: None,
                 bot_emotion: None,
                 max_messages_per_session: None,
+                auto_cleanup_config: Default::default(),
             })
             .await
             .expect("append");

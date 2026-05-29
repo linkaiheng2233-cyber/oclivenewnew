@@ -28,17 +28,17 @@ async fn persist_survives_session_cache_clear() {
     let srid = "mumu";
     state
         .db_manager
-        .ensure_role_runtime(&srid)
+        .ensure_role_runtime(srid)
         .await
         .expect("runtime");
 
-    persist_stored_narrative_hint(&state, &srid, "用户可能缺乏兴致".to_string()).await;
+    persist_stored_narrative_hint(&state, srid, "用户可能缺乏兴致".to_string()).await;
 
     state
         .session_cache
         .clear_complex_emotion_narrative_hint_cache(srid);
 
-    let hint = load_stored_narrative_hint(&state, &srid)
+    let hint = load_stored_narrative_hint(&state, srid)
         .await
         .expect("load");
     assert!(
@@ -53,25 +53,25 @@ async fn expired_hint_cleared_on_load() {
     let srid = "mumu";
     state
         .db_manager
-        .ensure_role_runtime(&srid)
+        .ensure_role_runtime(srid)
         .await
         .expect("runtime");
 
     let old = (Utc::now() - Duration::hours(COMPLEX_EMOTION_HINT_TTL_HOURS + 2)).to_rfc3339();
     state
         .db_manager
-        .set_complex_emotion_hint(&srid, "stale narrative", &old)
+        .set_complex_emotion_hint(srid, "stale narrative", &old)
         .await
         .expect("set");
 
-    let hint = load_stored_narrative_hint(&state, &srid)
+    let hint = load_stored_narrative_hint(&state, srid)
         .await
         .expect("load");
     assert!(hint.is_empty(), "expired hint should not be returned");
     assert!(
         state
             .db_manager
-            .get_complex_emotion_hint(&srid)
+            .get_complex_emotion_hint(srid)
             .await
             .expect("get")
             .is_none(),

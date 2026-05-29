@@ -635,6 +635,9 @@ pub(crate) async fn post_llm(
             user_emotion: Some(pre.user_emotion_str.clone()),
             bot_emotion: Some(bot_emotion_str.clone()),
             max_messages_per_session: role.pack_chat_storage_config.max_messages_per_session,
+            auto_cleanup_config: crate::infrastructure::chat_storage::AutoCleanupConfig::from_role_config(
+                &role.pack_chat_storage_config,
+            ),
         };
         match state.conversation_store.append_turn(persist).await {
             Ok(ids) => {

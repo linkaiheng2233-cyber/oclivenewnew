@@ -3053,6 +3053,7 @@ dependencies = [
  "arc-swap",
  "async-trait",
  "axum",
+ "base64 0.22.1",
  "chrono",
  "dashmap",
  "indexmap 2.14.0",

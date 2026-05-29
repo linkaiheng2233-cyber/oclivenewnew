@@ -172,10 +172,11 @@ pub async fn rebuild_mirror(
     Ok(path)
 }
 
+/// Remove mirror JSON for one session (best-effort).
+///
 /// # Errors
 ///
 /// IO errors propagate.
-#[allow(dead_code)] // step-2 session delete API
 pub async fn delete_mirror(
     app_data_dir: &Path,
     role_id: &str,
@@ -258,7 +259,7 @@ mod tests {
             app_data,
             &session,
             std::slice::from_ref(&row),
-            super::config::DEFAULT_MAX_MESSAGES,
+            crate::infrastructure::chat_storage::config::DEFAULT_MAX_MESSAGES,
         )
             .await
             .expect("sync");

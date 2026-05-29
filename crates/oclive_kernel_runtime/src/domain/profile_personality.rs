@@ -130,8 +130,6 @@ fn split_mutable_sections(text: &str) -> (String, Vec<(String, String)>) {
                 current_lines.clear();
             }
             current_title = Some(title.trim().to_string());
-        } else if current_title.is_some() {
-            current_lines.push(line.to_string());
         } else {
             current_lines.push(line.to_string());
         }
@@ -400,6 +398,7 @@ mod tests {
             pack_memory_config: Default::default(),
             pack_relation_config: Default::default(),
             pack_evolution_config: Default::default(),
+            pack_chat_storage_config: Default::default(),
             runtime_config: None,
             pipeline_experimental: None,
             scene_ids: std::sync::Arc::from(Vec::<String>::new()),

@@ -20,6 +20,32 @@ export interface StoredMessage {
   created_at: string
 }
 
+export interface ChatSearchResult {
+  session_id: string
+  role_id: string
+  scene_id: string
+  message: StoredMessage
+  highlight_snippet: string
+}
+
+export interface ChatExportResponse {
+  content: string
+  suggested_filename: string
+  mime_type: string
+  content_encoding?: string | null
+}
+
+export interface RoleChatStorageConfig {
+  max_messages_per_session?: number | null
+  auto_cleanup_days?: number | null
+  auto_cleanup_max_sessions?: number | null
+}
+
+export interface AutoCleanupResult {
+  sessions_deleted: number
+  bytes_freed: number
+}
+
 export interface ImportChatMessage {
   role: string
   content: string
@@ -110,4 +136,75 @@ export async function deleteSceneChats(
     roleId,
     sceneId,
   })
+}
+
+export async function exportChatSession(
+  sessionId: string,
+  format: 'markdown' | 'json',
+): Promise<ChatExportResponse> {
+  return invokeWithFriendlyError<ChatExportResponse>('export_chat_session', {
+    sessionId,
+    format,
+  })
+}
+
+export async function exportRoleChats(
+  roleId: string,
+  format: 'markdown' | 'json',
+): Promise<ChatExportResponse> {
+  return invokeWithFriendlyError<ChatExportResponse>('export_role_chats', {
+    roleId,
+    format,
+  })
+}
+
+export async function searchChatMessages(
+  query: string,
+  roleId?: string | null,
+  limit = 100,
+  offset = 0,
+): Promise<ChatSearchResult[]> {
+  return invokeWithFriendlyError<ChatSearchResult[]>('search_chat_messages', {
+    query,
+    roleId: roleId ?? null,
+    limit,
+    offset,
+  })
+}
+
+export async function deleteChatMessage(messageId: string): Promise<void> {
+  return invokeWithFriendlyError<void>('delete_chat_message', { messageId })
+}
+
+export async function editChatMessage(
+  messageId: string,
+  newContent: string,
+): Promise<void> {
+  return invokeWithFriendlyError<void>('edit_chat_message', {
+    messageId,
+    newContent,
+  })
+}
+
+export async function getRoleChatStorageConfig(
+  roleId: string,
+): Promise<RoleChatStorageConfig> {
+  return invokeWithFriendlyError<RoleChatStorageConfig>(
+    'get_role_chat_storage_config',
+    { roleId },
+  )
+}
+
+export async function saveRoleChatStorageConfig(
+  roleId: string,
+  config: RoleChatStorageConfig,
+): Promise<void> {
+  return invokeWithFriendlyError<void>('save_role_chat_storage_config_cmd', {
+    roleId,
+    config,
+  })
+}
+
+export async function runChatAutoCleanup(roleId: string): Promise<AutoCleanupResult> {
+  return invokeWithFriendlyError<AutoCleanupResult>('run_chat_auto_cleanup', { roleId })
 }

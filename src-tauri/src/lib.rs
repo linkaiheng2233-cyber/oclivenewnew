@@ -323,6 +323,14 @@ pub fn run() {
             api::chat::get_chat_storage_stats,
             api::chat::delete_role_chats,
             api::chat::delete_scene_chats,
+            api::chat::export_chat_session,
+            api::chat::export_role_chats,
+            api::chat::search_chat_messages,
+            api::chat::delete_chat_message,
+            api::chat::edit_chat_message,
+            api::chat::get_role_chat_storage_config,
+            api::chat::save_role_chat_storage_config_cmd,
+            api::chat::run_chat_auto_cleanup,
 
             // ── role / session / slot registry ──
             api::role::load_role,

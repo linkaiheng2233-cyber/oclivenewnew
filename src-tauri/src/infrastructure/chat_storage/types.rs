@@ -26,6 +26,9 @@ pub struct TurnPersistInput {
     /// Per-role cap; `None` uses [`super::config::DEFAULT_MAX_MESSAGES`].
     #[serde(default)]
     pub max_messages_per_session: Option<u32>,
+    /// Auto-cleanup policy snapshot (from role pack); applied async after append.
+    #[serde(default)]
+    pub auto_cleanup_config: super::cleanup::AutoCleanupConfig,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -95,4 +98,28 @@ pub struct StoredMessage {
     pub content: String,
     pub metadata: Option<String>,
     pub created_at: String,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct ChatSearchResult {
+    pub session_id: String,
+    pub role_id: String,
+    pub scene_id: String,
+    pub message: StoredMessage,
+    pub highlight_snippet: String,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize, Default)]
+pub struct AutoCleanupResult {
+    pub sessions_deleted: u32,
+    pub bytes_freed: u64,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct ChatExportResponse {
+    pub content: String,
+    pub suggested_filename: String,
+    pub mime_type: String,
+    #[serde(default)]
+    pub content_encoding: Option<String>,
 }
