@@ -120,9 +120,27 @@ mod tests {
     }
 
     #[tokio::test]
-    async fn file_search_returns_empty() {
+    async fn file_search_finds_content() {
         let store = file_store().await;
         store.append_turn(sample_turn("fs")).await.expect("append");
+        let hits = store
+            .search_messages("hello", Some("trait-test"), 10, 0)
+            .await
+            .expect("search");
+        assert!(!hits.is_empty());
+        assert!(hits.iter().any(|r| r.message.content.contains("hello")));
+    }
+
+    #[tokio::test]
+    async fn file_supports_search_after_feat() {
+        let store = file_store().await;
+        assert!(store.supports_search().await);
+    }
+
+    #[tokio::test]
+    async fn file_search_without_role_id_returns_empty() {
+        let store = file_store().await;
+        store.append_turn(sample_turn("fs2")).await.expect("append");
         let hits = store
             .search_messages("hello", None, 10, 0)
             .await

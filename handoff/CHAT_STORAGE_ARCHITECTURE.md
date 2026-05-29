@@ -29,7 +29,7 @@
 | Backend | Chat data | Mirror files | Search | Memory replay | Typical use |
 |---------|-----------|--------------|--------|---------------|-------------|
 | **`hybrid`** (default) | SQLite `chat_sessions` / `chat_messages` | `{app_data}/chats/` best-effort | SQLite LIKE | Yes | Desktop app; transparent files + DB |
-| **`file`** | JSON only under `{app_data}/chats/` | Same (authoritative) | Returns empty (no index) | Yes | Lightweight / embedded; user-manageable files |
+| **`file`** | JSON only under `{app_data}/chats/` | Same (authoritative) | Directory scan (requires `role_id`) | Yes | Lightweight / embedded; user-manageable files |
 | **`sqlite`** | SQLite only | None | SQLite LIKE | Yes | Highest performance; no mirror I/O |
 
 Implementation: `src-tauri/src/infrastructure/chat_storage/backends/{hybrid_store,file_store,sqlite_store}.rs`, factory in `factory.rs`.
@@ -130,7 +130,7 @@ Interactive step **「选择聊天记录存储后端」** writes `chat_storage.b
 
 ## Search
 
-- Trait `search_messages` — SQLite `LIKE` on hybrid/sqlite; **file backend returns `[]`**
+- Trait `search_messages` — SQLite `LIKE` on hybrid/sqlite; **file backend scans JSON under `chats/{role_id}/`** (requires `role_id`)
 - Max **100** results per request; ordered by `created_at DESC`
 - Returns `highlight_snippet` (match context) for UI
 - **FTS5** reserved for future; interface stable

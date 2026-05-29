@@ -112,7 +112,7 @@ impl Default for RolePackRelationConfig {
 /// | Variant | Storage | Search | Cleanup | Memory replay |
 /// |---------|---------|--------|---------|---------------|
 /// | `Hybrid` (default) | SQLite + JSON mirror | yes | yes | yes |
-/// | `File` | JSON files only | no | no | yes |
+/// | `File` | JSON files only | yes | no | yes |
 /// | `Sqlite` | SQLite only | yes | yes | yes |
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize, Default)]
 #[serde(rename_all = "lowercase")]
