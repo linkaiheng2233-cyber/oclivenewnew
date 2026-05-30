@@ -1,9 +1,8 @@
 /**
  * Vue 插槽源码静态扫描（黑名单）。
  * 扩展规则时：优先在 `DANGEROUS_PATTERNS` 增加 token，再按需补充 AST 规则，保持文案可读。
+ * acorn / acorn-walk 仅在命中黑名单 token 后动态加载，避免进入主屏 bundle。
  */
-import * as acorn from 'acorn'
-import { simple } from 'acorn-walk'
 
 export interface ScanResult {
   warnings: string[]
@@ -31,6 +30,26 @@ export const DANGEROUS_PATTERNS = [
   { token: 'WebSocket(', warning: '`WebSocket` connection detected' },
   { token: 'eval(', warning: '`eval()` call detected' },
 ] as const
+
+type AcornNode = import('acorn').Node
+
+let acornLoader: Promise<{
+  parse: typeof import('acorn').parse
+  simple: typeof import('acorn-walk').simple
+}> | null = null
+
+function loadAcornParser() {
+  if (!acornLoader) {
+    acornLoader = Promise.all([
+      import('acorn'),
+      import('acorn-walk'),
+    ]).then(([acorn, walk]) => ({
+      parse: acorn.parse,
+      simple: walk.simple,
+    }))
+  }
+  return acornLoader
+}
 
 function extractScriptBodies(sfc: string): string[] {
   const out: string[] = []
@@ -63,20 +82,25 @@ function scanByStringPatterns(source: string, dedupe: Set<string>, warnings: str
   }
 }
 
-function scanScriptAst(source: string, dedupe: Set<string>, warnings: string[]): void {
-  let ast: acorn.Node
+async function scanScriptAst(
+  source: string,
+  dedupe: Set<string>,
+  warnings: string[],
+): Promise<void> {
+  const { parse, simple } = await loadAcornParser()
+  let ast: AcornNode
   try {
-    ast = acorn.parse(source, {
+    ast = parse(source, {
       ecmaVersion: 2024,
       sourceType: 'module',
-    }) as acorn.Node
+    }) as AcornNode
   }
   catch {
     return
   }
 
   simple(ast, {
-    MemberExpression(node: acorn.Node) {
+    MemberExpression(node: AcornNode) {
       const n = node as unknown as {
         object: { type: string, name?: string }
         property: { type: string, name?: string, value?: string }
@@ -110,7 +134,7 @@ function scanScriptAst(source: string, dedupe: Set<string>, warnings: string[]):
         pushDedupe(dedupe, warnings, '`localStorage` read/write detected')
       }
     },
-    CallExpression(node: acorn.Node) {
+    CallExpression(node: AcornNode) {
       const n = node as unknown as {
         callee: { type: string, name?: string }
       }
@@ -121,7 +145,7 @@ function scanScriptAst(source: string, dedupe: Set<string>, warnings: string[]):
         pushDedupe(dedupe, warnings, '`eval()` call detected')
       }
     },
-    NewExpression(node: acorn.Node) {
+    NewExpression(node: AcornNode) {
       const n = node as unknown as {
         callee: { type: string, name?: string }
       }
@@ -133,16 +157,15 @@ function scanScriptAst(source: string, dedupe: Set<string>, warnings: string[]):
 }
 
 /** 对 `.vue` 或纯脚本片段做静态扫描（黑名单）；不保证零误报/漏报。 */
-export function scanVueComponentSource(source: string): ScanResult {
+export async function scanVueComponentSource(source: string): Promise<ScanResult> {
   const warnings: string[] = []
   const dedupe = new Set<string>()
   if (!shouldRunAstScan(source)) {
     return { warnings }
   }
-  // 先跑字符串黑名单（覆盖 template/inline 表达式），再用 AST 降低漏报。
   scanByStringPatterns(source, dedupe, warnings)
   for (const block of extractScriptBodies(source)) {
-    scanScriptAst(block, dedupe, warnings)
+    await scanScriptAst(block, dedupe, warnings)
   }
   return { warnings }
 }

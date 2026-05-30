@@ -94,7 +94,7 @@ watch(
           props.pluginId,
           props.vueComponent,
         )
-        const { warnings } = scanVueComponentSource(preloadedEntrySource)
+        const { warnings } = await scanVueComponentSource(preloadedEntrySource)
         if (warnings.length > 0) {
           const list = warnings.map(w => `- ${w}`).join('\n')
           const ok = await confirm(t('devTools.pluginVueSecurity.confirmBody', { list }), {

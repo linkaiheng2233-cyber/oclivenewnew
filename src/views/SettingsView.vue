@@ -1,6 +1,5 @@
 <script setup lang="ts">
 import type { EnvironmentDiagnostics } from '../api'
-import * as Sentry from '@sentry/vue'
 import { nextTick, ref, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
 import HelpHint from '../components/shared/HelpHint.vue'
@@ -34,12 +33,18 @@ const hasSentryDsn
   = typeof import.meta.env.VITE_SENTRY_DSN === 'string' && import.meta.env.VITE_SENTRY_DSN.length > 0
 const sentryOptOut = ref(isSentryOptOut())
 
-function onSentryOptOutChange(e: Event) {
+async function onSentryOptOutChange(e: Event) {
   const optOut = (e.target as HTMLInputElement).checked
   setSentryOptOut(optOut)
   sentryOptOut.value = optOut
   if (optOut) {
-    void Sentry.close(2000)
+    try {
+      const Sentry = await import('@sentry/vue')
+      await Sentry.close(2000)
+    }
+    catch {
+      // Sentry might not be loaded (no DSN / opt-out since startup); ignore.
+    }
     showToast('info', t('settings.sentryDisabledToast'))
   }
   else {

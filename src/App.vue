@@ -1,13 +1,12 @@
 <script setup lang="ts">
 import type { LocalePreference } from './i18n'
 import { listen } from '@tauri-apps/api/event'
-import { computed, nextTick, onBeforeUnmount, onMounted, ref, watch } from 'vue'
+import { computed, defineAsyncComponent, nextTick, onBeforeUnmount, onMounted, ref, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
 import AutonomousSceneNotice from './components/AutonomousSceneNotice.vue'
 import ChatInput from './components/chat/ChatInput.vue'
 import ChatMessageList from './components/chat/ChatMessageList.vue'
 import ChatPluginToolbarSlots from './components/ChatPluginToolbarSlots.vue'
-import DebugPanel from './components/dev-tools/DebugPanel.vue'
 import HotkeyHost from './components/hotkey/HotkeyHost.vue'
 import PluginChatHeaderSlots from './components/PluginChatHeaderSlots.vue'
 import PluginSidebarSlots from './components/PluginSidebarSlots.vue'
@@ -51,11 +50,13 @@ import {
   setRoleInteractionMode,
   setUserRelation,
 } from './api'
-import MarketView from './views/MarketView.vue'
 import RoleDetailView from './views/RoleDetailView.vue'
-import SettingsView from './views/SettingsView.vue'
-import ModelManagerPanel from './views/ModelManagerPanel.vue'
-import SimplePluginManagerPanel from './views/SimplePluginManagerPanel.vue'
+
+const DebugPanel = defineAsyncComponent(() => import('./components/dev-tools/DebugPanel.vue'))
+const MarketView = defineAsyncComponent(() => import('./views/MarketView.vue'))
+const SettingsView = defineAsyncComponent(() => import('./views/SettingsView.vue'))
+const ModelManagerPanel = defineAsyncComponent(() => import('./views/ModelManagerPanel.vue'))
+const SimplePluginManagerPanel = defineAsyncComponent(() => import('./views/SimplePluginManagerPanel.vue'))
 
 const roleStore = useRoleStore()
 usePackUiTheme()

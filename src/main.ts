@@ -1,8 +1,8 @@
-import * as Sentry from '@sentry/vue'
 import { createPinia } from 'pinia'
 import piniaPluginPersistedstate from 'pinia-plugin-persistedstate'
 import { createApp } from 'vue'
 import App from './App.vue'
+import { useChatStore } from './stores/chatStore'
 import { i18n } from './i18n'
 import { tryReplaceWithDirectoryShell } from './utils/directoryShellBootstrap'
 import { shouldLoadSentry } from './utils/telemetrySentry'
@@ -28,7 +28,6 @@ void (async () => {
   pinia.use(piniaPluginPersistedstate)
   app.use(pinia)
 
-  const { useChatStore } = await import('./stores/chatStore')
   const chatStore = useChatStore()
   try {
     await chatStore.hydrateFromStorage()
@@ -56,6 +55,7 @@ void (async () => {
     try {
       const sentryDsn = import.meta.env.VITE_SENTRY_DSN
       if (shouldLoadSentry(sentryDsn)) {
+        const Sentry = await import('@sentry/vue')
         Sentry.init({
           app,
           dsn: sentryDsn,

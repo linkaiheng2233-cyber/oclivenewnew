@@ -63,6 +63,8 @@ export default defineConfig(({ mode }) => ({
 
   build: {
     target: "es2022",
+    // vue3-sfc-loader runtime is intentionally large; raise warning threshold to reduce noise.
+    chunkSizeWarningLimit: 2000,
     rollupOptions: {
       output: {
         manualChunks(id) {
