@@ -310,18 +310,10 @@ pub use role_runtime_repo::RoleRuntimeRepo;
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::infrastructure::sqlite_pool;
+    use crate::infrastructure::test_db;
 
     async fn setup_test_db() -> Result<SqlitePool> {
-        let pool = sqlite_pool::connect_memory()
-            .await
-            .map_err(|e| AppError::DatabaseError(e.to_string()))?;
-
-        // 创建表（与 `migrations/` 目录同步，新增迁移无需改本函数）
-        sqlx::migrate!("./migrations")
-            .run(&pool)
-            .await
-            .map_err(|e| AppError::DatabaseError(e.to_string()))?;
+        let pool = test_db::connect_memory_migrated().await;
 
         // 为测试创建角色运行时记录
         sqlx::query("INSERT INTO role_runtime (role_id, current_favorability) VALUES (?, ?)")

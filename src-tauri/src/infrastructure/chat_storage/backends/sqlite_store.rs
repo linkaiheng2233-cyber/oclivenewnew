@@ -298,14 +298,10 @@ impl ConversationStore for SqliteConversationStore {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::infrastructure::sqlite_pool;
+    use crate::infrastructure::test_db;
 
     async fn store() -> SqliteConversationStore {
-        let pool = sqlite_pool::connect_memory().await.expect("pool");
-        sqlx::migrate!("./migrations")
-            .run(&pool)
-            .await
-            .expect("migrate");
+        let pool = test_db::connect_memory_migrated().await;
         SqliteConversationStore::new(
             Arc::new(DbManager::new(pool)),
             Arc::new(ReplayTaskRegistry::new()),

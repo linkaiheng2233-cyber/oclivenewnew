@@ -223,15 +223,10 @@ async fn write_mirror_atomic(path: &Path, doc: &MirrorDocument) -> Result<()> {
 mod tests {
     use super::*;
     use crate::infrastructure::db::DbManager;
-    use crate::infrastructure::sqlite_pool;
+    use crate::infrastructure::test_db;
 
     async fn mem_db() -> DbManager {
-        let pool = sqlite_pool::connect_memory().await.expect("pool");
-        sqlx::migrate!("./migrations")
-            .run(&pool)
-            .await
-            .expect("migrate");
-        DbManager::new(pool)
+        test_db::mem_db_manager().await
     }
 
     #[tokio::test]

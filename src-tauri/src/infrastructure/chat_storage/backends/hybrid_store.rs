@@ -541,14 +541,10 @@ impl HybridConversationStore {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::infrastructure::sqlite_pool;
+    use crate::infrastructure::test_db;
 
     async fn store() -> Arc<dyn ConversationStore> {
-        let pool = sqlite_pool::connect_memory().await.expect("pool");
-        sqlx::migrate!("./migrations")
-            .run(&pool)
-            .await
-            .expect("migrate");
+        let pool = test_db::connect_memory_migrated().await;
         let dir = tempfile::tempdir().expect("dir");
         let app_data = dir.path().to_path_buf();
         let roles_dir = app_data.join("roles");

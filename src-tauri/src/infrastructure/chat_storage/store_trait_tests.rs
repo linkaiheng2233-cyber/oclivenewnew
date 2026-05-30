@@ -48,13 +48,7 @@ mod tests {
     }
 
     async fn hybrid_store() -> Arc<dyn ConversationStore> {
-        let pool = crate::infrastructure::sqlite_pool::connect_memory()
-            .await
-            .expect("pool");
-        sqlx::migrate!("./migrations")
-            .run(&pool)
-            .await
-            .expect("migrate");
+        let pool = crate::infrastructure::test_db::connect_memory_migrated().await;
         let dir = tempfile::tempdir().expect("dir");
         let app_data = dir.path().to_path_buf();
         let roles_dir = app_data.join("roles");
@@ -70,13 +64,7 @@ mod tests {
     }
 
     async fn sqlite_store() -> Arc<dyn ConversationStore> {
-        let pool = crate::infrastructure::sqlite_pool::connect_memory()
-            .await
-            .expect("pool");
-        sqlx::migrate!("./migrations")
-            .run(&pool)
-            .await
-            .expect("migrate");
+        let pool = crate::infrastructure::test_db::connect_memory_migrated().await;
         Arc::new(SqliteConversationStore::new(
             Arc::new(DbManager::new(pool)),
             Arc::new(ReplayTaskRegistry::new()),
@@ -84,13 +72,7 @@ mod tests {
     }
 
     async fn file_store() -> Arc<dyn ConversationStore> {
-        let pool = crate::infrastructure::sqlite_pool::connect_memory()
-            .await
-            .expect("pool");
-        sqlx::migrate!("./migrations")
-            .run(&pool)
-            .await
-            .expect("migrate");
+        let pool = crate::infrastructure::test_db::connect_memory_migrated().await;
         let app_data = tempfile::tempdir().unwrap().path().to_path_buf();
         let roles_dir = app_data.join("roles");
         let _ = std::fs::create_dir_all(&roles_dir);

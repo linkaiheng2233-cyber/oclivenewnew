@@ -112,16 +112,11 @@ pub(crate) async fn persist_stored_narrative_hint_to_parts(
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::infrastructure::sqlite_pool;
+    use crate::infrastructure::test_db;
     use crate::state::SessionCache;
 
     async fn mem_db() -> DbManager {
-        let pool = sqlite_pool::connect_memory().await.expect("pool");
-        sqlx::migrate!("./migrations")
-            .run(&pool)
-            .await
-            .expect("migrate");
-        DbManager::new(pool)
+        test_db::mem_db_manager().await
     }
 
     #[test]

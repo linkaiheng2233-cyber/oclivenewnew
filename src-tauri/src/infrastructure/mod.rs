@@ -30,6 +30,9 @@ pub mod sqlite_pool;
 pub mod storage;
 pub mod user_llm_secrets;
 
+#[cfg(test)]
+pub mod test_db;
+
 // 重新导出主要类型
 pub use cache::Cache;
 pub use db::DbManager;

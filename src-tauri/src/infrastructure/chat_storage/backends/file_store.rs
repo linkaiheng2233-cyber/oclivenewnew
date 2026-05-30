@@ -546,16 +546,12 @@ impl ConversationStore for FileConversationStore {
 mod tests {
     use super::*;
     use crate::infrastructure::db::DbManager;
-    use crate::infrastructure::sqlite_pool;
+    use crate::infrastructure::test_db;
     use crate::infrastructure::chat_storage::replay::ReplayTaskRegistry;
     use std::sync::Arc;
 
     async fn store() -> FileConversationStore {
-        let pool = sqlite_pool::connect_memory().await.expect("pool");
-        sqlx::migrate!("./migrations")
-            .run(&pool)
-            .await
-            .expect("migrate");
+        let pool = test_db::connect_memory_migrated().await;
         let app_data = tempfile::tempdir().unwrap().path().to_path_buf();
         let roles_dir = app_data.join("roles");
         let _ = std::fs::create_dir_all(&roles_dir);
