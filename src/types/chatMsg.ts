@@ -1,4 +1,4 @@
-/** 聊天列表展示用消息（与 chatStore.ChatMessage 字段对齐的子集） */
+/** Chat list display message (subset aligned with chatStore.ChatMessage fields) */
 export interface ChatMsg {
   id: string
   role: 'user' | 'assistant' | 'system'

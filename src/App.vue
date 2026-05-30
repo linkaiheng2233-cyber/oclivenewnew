@@ -87,7 +87,7 @@ const chatInputRef = ref<{ focusInput?: () => void } | null>(null)
 const leftPaneRef = ref<HTMLElement | null>(null)
 const roleSwitching = ref(false)
 
-/** 宽屏左右分栏；窄屏改为上下堆叠，立绘用 stack 布局更易读 */
+/** Wide: side-by-side panes; narrow: stacked with portrait in stack layout for readability */
 const wideSplitLayout = ref(typeof window !== 'undefined' && window.innerWidth > 720)
 function refreshSplitLayout(): void {
   wideSplitLayout.value = typeof window !== 'undefined' && window.innerWidth > 720
@@ -122,7 +122,7 @@ const messages = computed(() =>
   chatStore.messagesForRoleScene(roleStore.currentRoleId, uiStore.sceneId),
 )
 
-/** 本场景最近一条助手旁白/内心（O(1) 读取，见 chatStore.lastAssistantAside） */
+/** Latest assistant aside/inner monologue in this scene (O(1); see chatStore.lastAssistantAside) */
 const latestRoleplayAside = computed(() => {
   const roleId = roleStore.currentRoleId
   const sceneId = uiStore.sceneId || 'default'
@@ -240,7 +240,7 @@ const sceneHistorySplitIndex = computed(() =>
   chatStore.sceneHistorySplitForRoleScene(roleStore.currentRoleId, uiStore.sceneId),
 )
 
-/** 角色包 `ui.json` → layout；空字段视为 left / bottom */
+/** Role pack `ui.json` → layout; empty fields default to left / bottom */
 const packLayoutResolved = computed(() => {
   const l = roleStore.roleInfo.packUiConfig?.layout ?? {
     sidebar: '',
@@ -255,7 +255,7 @@ const chatInputTop = computed(() => packLayoutResolved.value.chatInput === 'top'
 const roleName = computed(() => roleStore.roleInfo.name || t('app.defaultRoleName'))
 const emotion = computed(() => roleStore.roleInfo.currentEmotion || 'neutral')
 
-/** 对齐 oclive-new 底部状态栏心形 */
+/** Match oclive-new bottom status-bar heart icon */
 const statusHeart = computed(() => {
   const f = roleStore.roleInfo.favorability
   if (f >= 60)
@@ -403,7 +403,7 @@ async function onReloadPolicy() {
   }
 }
 
-/** 仅在新消息入列时贴底；避免 messages 浅更新时把用户上滑阅读打回底部。 */
+/** Stick to bottom only when a new message arrives; avoid shallow message updates pulling scroll while user reads above */
 watch(
   () => messages.value.length,
   async (len, prev) => {
@@ -511,7 +511,7 @@ onBeforeUnmount(() => {
 <template>
   <main class="layout">
     <div class="app-frame">
-      <!-- 对齐 oclive-new：顶栏角色 + 时间/场景 -->
+      <!-- Match oclive-new: top bar role + time/scene -->
       <header class="top-bar">
         <TopBarMorePanel
           v-model="topMoreOpen"
@@ -711,7 +711,7 @@ onBeforeUnmount(() => {
 </template>
 
 <style scoped>
-/* 占满视口：宽度随窗口拉伸，避免两侧大块留白 */
+/* Fill viewport width; stretch with window to avoid side gutters */
 .layout {
   flex: 1;
   min-height: 0;
@@ -724,7 +724,7 @@ onBeforeUnmount(() => {
   box-sizing: border-box;
   overflow: hidden;
 }
-/* 单卡外壳：圆角与阴影保留，横向铺满可用区域 */
+/* Single card shell: keep radius/shadow; span available horizontal space */
 .app-frame {
   width: 100%;
   max-width: 100%;
@@ -856,7 +856,7 @@ onBeforeUnmount(() => {
   overflow: hidden;
   background: var(--bg-primary);
 }
-/* 左：立绘 + 好感；右：历史 + 输入（历史区域显著变宽） */
+/* Left: portrait + affinity; right: history + input (history column wider) */
 .split-row {
   flex: 1;
   min-height: 0;
@@ -868,7 +868,7 @@ onBeforeUnmount(() => {
 .split-row--narrow {
   flex-direction: column;
 }
-/* 宽屏：立绘在右；窄屏：对话在上、立绘在下 */
+/* Wide: portrait on right; narrow: chat above, portrait below */
 .split-row--sidebar-right:not(.split-row--narrow) {
   flex-direction: row-reverse;
 }
@@ -935,7 +935,7 @@ onBeforeUnmount(() => {
 .right-pane--input-top {
   flex-direction: column-reverse;
 }
-/* 滚动交给 ChatMessageList 内 VirtualScrollContainer，避免与外层双滚动抢滚轮 */
+/* Scroll lives in ChatMessageList VirtualScrollContainer; avoid nested scroll wheel fights */
 .chat-scroll-wrap {
   flex: 1;
   min-height: 0;
@@ -956,7 +956,7 @@ onBeforeUnmount(() => {
   z-index: 1;
   border-top: 1px solid var(--border-light);
   background: var(--bg-primary);
-  /* 略收阴影，减少「盖住最后一泡」的错觉 */
+  /* Softer shadow to reduce illusion of covering the last bubble */
   box-shadow: 0 -2px 14px color-mix(in srgb, var(--text-primary) 8%, transparent);
 }
 .fade-enter-active,

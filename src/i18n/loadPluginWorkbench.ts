@@ -3,7 +3,7 @@ import { i18n as appI18n } from './index'
 
 let pluginWorkbenchI18nLoaded = false
 
-/** 插件工作台 i18n 片段：仅在打开插件管理/市场时加载，避免进入首屏 bundle。 */
+/** Plugin workbench i18n fragments; loaded only when opening plugin manager/market (keeps first-screen bundle lean). */
 export async function ensurePluginWorkbenchI18n(i18n: I18n = appI18n): Promise<void> {
   if (pluginWorkbenchI18nLoaded)
     return

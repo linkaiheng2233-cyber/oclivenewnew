@@ -11,7 +11,7 @@ import { usePluginStore } from './stores/pluginStore'
 const props = defineProps<{
   pluginId: string
   vueEntry: string
-  /** 传给 `plugin_bridge_invoke` 的 `assetRel`，与 `shell.vueEntry` 路径一致 */
+  /** Passed to `plugin_bridge_invoke` as `assetRel`; same path as `shell.vueEntry` */
   bridgeAssetRel: string
   htmlFallbackUrl: string
   developerMode: boolean
