@@ -1,4 +1,4 @@
-//! 场景位移意图：规则命中 → 可选 LLM 判定（仅判断是否「要去/前往某地」，不解析目标 scene_id）
+//! Scene movement intent: rule match → optional LLM judgment (only whether user wants to go somewhere; does not resolve target `scene_id`).
 
 use crate::domain::ports::LlmClient;
 use crate::models::Role;
@@ -12,7 +12,7 @@ const MOVE_VERBS: &[&str] = &[
     "去", "来", "回", "到", "进", "出", "逛", "前往", "回到", "来到",
 ];
 
-/// 用户明确邀请角色「同行」时的常见短语（规则命中，不解析目的地）
+/// Common phrases when the user explicitly invites the character to travel together (rule match; destination not parsed).
 const TOGETHER_INVITE_PHRASES: &[&str] = &[
     "一起",
     "同行",
@@ -32,7 +32,7 @@ pub(super) fn together_travel_intent_by_rules(user_message: &str) -> bool {
     TOGETHER_INVITE_PHRASES.iter().any(|p| msg.contains(p))
 }
 
-/// `detect_movement_intent` 为 true 时，拆成「选目的地条」与「邀请同行确认」二选一（同行优先）。
+/// When `detect_movement_intent` is true, choose either a destination picker or a travel-together confirmation (together takes priority).
 pub(super) fn movement_ui_flags(movement_intent: bool, user_message: &str) -> (bool, bool) {
     if !movement_intent {
         return (false, false);
@@ -43,7 +43,7 @@ pub(super) fn movement_ui_flags(movement_intent: bool, user_message: &str) -> (b
     (true, false)
 }
 
-/// 规则：位移动词 + 任一其它场景在 keywords/events 上有命中（不使用 scene_id/展示名 宽泛匹配）
+/// Rule: movement verb + keyword/event hit on any other scene (no broad match on `scene_id` / display name).
 pub(super) fn movement_intent_by_rules(
     user_message: &str,
     current_scene_id: &str,
@@ -104,8 +104,8 @@ pub(super) fn parse_movement_intent_ai_output(raw: &str) -> Option<(bool, f64)> 
     Some((intent, confidence.clamp(0.0, 1.0)))
 }
 
-/// 是否应向前端提供「选目的地」条：不写入 DB、不解析 `scene_id`。
-#[allow(clippy::too_many_arguments)] // LLM 位移意图：需 storage/db id、场景列表与模型名等并列参数
+/// Whether the frontend should show a destination picker: no DB write, no `scene_id` resolution.
+#[allow(clippy::too_many_arguments)] // LLM movement intent: storage/db id, scene list, model name, etc. as parallel params
 pub(super) async fn detect_movement_intent(
     state: &AppState,
     llm: &Arc<dyn LlmClient>,
@@ -188,7 +188,7 @@ pub(super) async fn detect_movement_intent(
     );
     if let Ok(raw) = llm.generate_tag(ollama_model, &prompt).await {
         if let Some((intent, conf)) = parse_movement_intent_ai_output(&raw) {
-            // 问卷「平衡」：略宽于保守阈值，减少漏检；仍要求 intent=true
+            // Survey "balanced" setting: slightly below conservative threshold to reduce misses; still requires intent=true
             if intent && conf >= 0.63 {
                 return true;
             }

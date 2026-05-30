@@ -1,4 +1,4 @@
-//! 会话级插件解析：`chat_engine` 经 [`PluginHostPort`] 绑定实现，不引用 [`PluginHost`] 具体类型。
+//! Session-level plugin resolution: `chat_engine` binds via [`PluginHostPort`], not the concrete [`PluginHost`] type.
 
 use crate::domain::plugin_host::ResolvedRolePlugins;
 use crate::domain::ports::PluginHostPort;
@@ -6,7 +6,7 @@ use crate::models::{PluginBackends, Role};
 use oclive_validation::SlotRegistryEntry;
 use std::collections::BTreeMap;
 
-/// 按角色包与会话有效 `slot_registry` 解析插件句柄（无会话时走包默认）。
+/// Resolves plugin handles from role pack and session-effective `slot_registry` (falls back to pack defaults when no session).
 #[must_use]
 pub fn resolve_plugins_for_session(
     host: &dyn PluginHostPort<Resolved = ResolvedRolePlugins>,

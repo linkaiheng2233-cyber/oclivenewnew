@@ -1,4 +1,4 @@
-//! Agent 短路与共景路径共用的最小响应字段（关系 / 好感 / 肖像情绪）。
+//! Minimal response fields shared by Agent shortcut and co-present paths (relation / favorability / portrait emotion).
 
 use crate::domain::plugin_host::ResolvedRolePlugins;
 use crate::domain::slot_runner::SlotRunner;
@@ -12,7 +12,7 @@ use crate::state::AppState;
 
 use super::emotion_to_dto;
 
-/// 并行加载关系 / 好感 / 肖像情绪，组装 Agent 短路等最小 [`SendMessageResponse`]。
+/// Loads relation / favorability / portrait emotion in parallel and builds a minimal [`SendMessageResponse`] for Agent shortcut, etc.
 pub(crate) async fn build_minimal_response(
     state: &AppState,
     pl: &ResolvedRolePlugins,

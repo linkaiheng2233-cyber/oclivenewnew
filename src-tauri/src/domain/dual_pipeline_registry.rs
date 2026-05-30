@@ -1,22 +1,22 @@
-//! # 实验核 method 注册表
+//! # Experimental core method registry
 #![cfg(feature = "dual_core")]
 //!
-//! **角色**：声明 `pipeline.experimental` 允许的 `(slot type, method)` 与对应共景阶段名；
-//! 供 [`dual_pipeline_steps`](super::dual_pipeline_steps) 校验、单元测试与 `creator-docs/dual-core/METHOD_REGISTRY.md` 对齐。
+//! **Role**: declares allowed `(slot type, method)` in `pipeline.experimental` and matching co-present stage names;
+//! used by [`dual_pipeline_steps`](super::dual_pipeline_steps) validation, unit tests, and alignment with `creator-docs/dual-core/METHOD_REGISTRY.md`.
 //!
-//! CLI `oclive explain DUAL_CORE` 维护独立常量表（避免 CLI 依赖 Tauri）；变更时请同步两处。
+//! CLI `oclive explain DUAL_CORE` keeps a separate constant table (avoids CLI depending on Tauri); keep both in sync on change.
 
-/// 单条实验核 method 说明。
+/// Description of one experimental core method.
 #[derive(Debug, Clone, Copy)]
 pub(crate) struct ExperimentalMethodSpec {
     pub slot_type: &'static str,
     pub method: &'static str,
-    /// 与 `creator-docs/dual-core/METHOD_REGISTRY.md` 对齐；测试与文档消费。
+    /// Aligned with `creator-docs/dual-core/METHOD_REGISTRY.md`; consumed by tests and docs.
     #[allow(dead_code)]
     pub co_present_stage: &'static str,
 }
 
-/// 七槽常用 method（与 `DualPipelineRunner` 执行器一致）。
+/// Common methods for seven slots (consistent with `DualPipelineRunner` executor).
 pub(crate) const EXPERIMENTAL_METHOD_SPECS: &[ExperimentalMethodSpec] = &[
     ExperimentalMethodSpec {
         slot_type: "memory",
@@ -55,7 +55,7 @@ pub(crate) const EXPERIMENTAL_METHOD_SPECS: &[ExperimentalMethodSpec] = &[
     },
 ];
 
-/// 给定 method 名，返回要求的 `slot_registry` 实例 `type`。
+/// Given a method name, returns the required `slot_registry` instance `type`.
 #[must_use]
 pub fn required_slot_type_for_method(method: &str) -> Option<&'static str> {
     EXPERIMENTAL_METHOD_SPECS

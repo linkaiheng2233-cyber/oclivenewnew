@@ -1,11 +1,11 @@
-//! # 蓝图 `slot_registry` → 可执行槽位列表
+//! # Blueprint `slot_registry` → executable slot list
 //!
-//! **角色**：读取角色包内已校验的 `slot_registry`（来自 `pipeline.ocblueprint`），为每个实例绑定 `BackendRegistry` 中的具体实现，产出 [`ResolvedRoleSlots`] 供 [`SlotRunner`](super::slot_runner::SlotRunner) 合并执行。
+//! **Role**: reads validated `slot_registry` from the role pack (`pipeline.ocblueprint`), binds each instance to a concrete implementation in `BackendRegistry`, and produces [`ResolvedRoleSlots`] for [`SlotRunner`](super::slot_runner::SlotRunner) merge execution.
 //!
-//! **上游**：`oclive_validation::slot_registry_instances_sorted`；[`PluginHost::resolve_for_role`](super::plugin_host.rs) 传入 registry + `slot_registry`。
-//! **下游**：[`SlotRunner`](super::slot_runner::SlotRunner)；`groups` 仅影响前端架构图分组，**不**改变本模块解析顺序。
+//! **Upstream**: `oclive_validation::slot_registry_instances_sorted`; [`PluginHost::resolve_for_role`](super::plugin_host.rs) passes registry + `slot_registry`.
+//! **Downstream**: [`SlotRunner`](super::slot_runner::SlotRunner); `groups` only affects frontend architecture graph grouping and **does not** change resolution order here.
 //!
-//! **关键决策**：按 `slot_type` + `position` 排序实例；`module_relations` **不写入磁盘**，由前端从 `slot_registry` **只读派生**边，避免双源不一致。
+//! **Key decision**: sort instances by `slot_type` + `position`; `module_relations` are **not persisted**—the frontend **read-only derives** edges from `slot_registry` to avoid dual sources of truth.
 
 use crate::domain::agent::AgentProvider;
 use crate::domain::complex_emotion::{
@@ -16,7 +16,7 @@ use crate::domain::event_estimator::EventEstimator;
 use crate::domain::memory_retrieval::MemoryRetrieval;
 use crate::domain::plugin_host::BackendRegistry;
 
-/// 多 LLM 实例合并策略（`slot_registry` 条目的 `policy` 字段）。
+/// Multi-LLM instance merge policy (`policy` field on `slot_registry` entries).
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Default)]
 pub enum LlmMergePolicy {
     #[default]
@@ -51,7 +51,7 @@ use std::collections::BTreeMap;
 use std::sync::Arc;
 use std::time::Duration;
 
-/// 内置复杂情感（包装为 trait 对象）。
+/// Built-in complex emotion (wrapped as trait object).
 pub struct BuiltinComplexEmotionArc;
 
 impl ComplexEmotionProvider for BuiltinComplexEmotionArc {
@@ -74,7 +74,7 @@ impl ComplexEmotionProvider for RemoteComplexEmotionArc {
     }
 }
 
-/// 多 `agent` 槽 / `plugins[]` 合并元数据；`process` 仍委托 `inner`（工具合并在 P4 深化）。
+/// Multi-`agent` slot / `plugins[]` merge metadata; `process` still delegates to `inner` (tool merge deepened in P4).
 pub struct CompositeAgentProvider {
     pub inner: Arc<dyn AgentProvider>,
     pub merged_directory_plugin_ids: Vec<String>,
@@ -90,7 +90,7 @@ impl AgentProvider for CompositeAgentProvider {
     }
 }
 
-/// 按 `type` 分组的多实例解析结果（升序 `position`）。
+/// Multi-instance resolution grouped by `type` (ascending `position`).
 #[derive(Clone, Default)]
 pub struct ResolvedRoleSlots {
     pub memory: Vec<(String, Arc<dyn MemoryRetrieval>)>,
@@ -100,16 +100,16 @@ pub struct ResolvedRoleSlots {
     pub llm: Vec<(String, Arc<dyn LlmClient>)>,
     pub agent: Vec<(String, Arc<dyn AgentProvider>)>,
     pub complex_emotion: Vec<(String, Arc<dyn ComplexEmotionProvider>)>,
-    /// 多 LLM 实例合并策略（取自 `position` 最大的 llm 槽 `policy` 字段）。
+    /// Multi-LLM merge policy (from `policy` on the llm slot with largest `position`).
     pub llm_merge_policy: LlmMergePolicy,
 }
 
 pub struct SlotResolver;
 
 impl SlotResolver {
-    /// 将校验后的 `slot_registry` 映射为 `Arc<dyn …>` 实例列表（按 type 分桶，桶内按 `position` 排序）。
+    /// Maps validated `slot_registry` to `Arc<dyn …>` instance lists (bucketed by type, sorted by `position` within each bucket).
     ///
-    /// 调用方：`PluginHost::resolve_for_*` 在已有 `BackendRegistry` 上执行；结果交给 [`SlotRunner`](super::slot_runner::SlotRunner) 合并。
+    /// Caller: `PluginHost::resolve_for_*` on an existing `BackendRegistry`; result goes to [`SlotRunner`](super::slot_runner::SlotRunner) for merging.
     #[must_use]
     pub fn resolve(
         registry: &BackendRegistry,
@@ -118,8 +118,8 @@ impl SlotResolver {
         Self::resolve_with_session_backends(registry, slot_registry, None)
     }
 
-    /// 解析 `slot_registry`；`session_effective_backends` 用于覆盖蓝图 `llm` 槽的 `backend`
-    ///（例如用户模型管理选云端后 `effective_plugin_backends.llm = Remote`，避免仍走包内 `ollama`）。
+    /// Resolves `slot_registry`; `session_effective_backends` overrides blueprint `llm` slot `backend`
+    /// (e.g. after user picks cloud in model manager, `effective_plugin_backends.llm = Remote`, avoiding pack `ollama`).
     #[must_use]
     pub fn resolve_with_session_backends(
         registry: &BackendRegistry,
@@ -169,7 +169,7 @@ impl SlotResolver {
         out
     }
 
-    /// 同 type **last-wins**（`position` 最大）的复杂情感实现。
+    /// Same-type **last-wins** (`position` max) complex emotion implementation.
     #[must_use]
     pub fn resolve_complex_emotion_winner(
         registry: &BackendRegistry,
@@ -288,9 +288,9 @@ impl SlotResolver {
         }
     }
 
-    /// **agent 多实例**：合并多个 directory 插件 ID 为复合 Agent（工具集并行暴露，非 SlotRunner 内串行）。
+    /// **Multi agent instances**: merge multiple directory plugin IDs into a composite Agent (tool set exposed in parallel, not serial inside SlotRunner).
     ///
-    /// **为何在解析层合并**：多 Agent 槽之间无 LLM 上下文依赖，只需统一工具列表给 `process_message` 入口短路。
+    /// **Why merge at resolve layer**: multi Agent slots have no LLM context dependency; only a unified tool list is needed for the `process_message` entry shortcut.
     #[must_use]
     pub fn wrap_agent_if_merged(
         inner: Arc<dyn AgentProvider>,

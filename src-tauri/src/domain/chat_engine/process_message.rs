@@ -1,13 +1,13 @@
-//! # 消息处理主入口
+//! # Main message processing entry
 //!
-//! **角色**：Tauri / HTTP API 的**单条用户消息**编排入口；Agent 短路、异地生活等分支在此分流后进入 [`turn_pipeline`](super::turn_pipeline)（[`TurnMode::CoPresent`](super::turn_pipeline::TurnMode::CoPresent) 等）子路径。
+//! **Role**: orchestration entry for a **single user message** from Tauri / HTTP API; Agent shortcut, remote-life, and other branches fan out here into [`turn_pipeline`](super::turn_pipeline) ([`TurnMode::CoPresent`](super::turn_pipeline::TurnMode::CoPresent), etc.).
 //!
-//! **上游**：`api` / `http_api` 经 `AppState` 加载 `Role`、`plugin_backends` 与会话级 `slot_registry` 覆盖。
-//! **下游**：经 [`turn_pipeline::execute_turn`](super::turn_pipeline::execute_turn) / `process_remote_*` 等进入回合管线；经 [`PluginHostPort`](crate::domain::ports::PluginHostPort) 调用插件；**不**经 `pipeline.ocblueprint` DSL 首轮调度。
+//! **Upstream**: `api` / `http_api` load `Role`, `plugin_backends`, and session-level `slot_registry` overrides via `AppState`.
+//! **Downstream**: enters the turn pipeline via [`turn_pipeline::execute_turn`](super::turn_pipeline::execute_turn) / `process_remote_*`; invokes plugins via [`PluginHostPort`](crate::domain::ports::PluginHostPort); **does not** use `pipeline.ocblueprint` DSL for first-turn scheduling.
 //!
-//! **架构**：当前主路径为 **Rust 编排**（`turn_pipeline` + [`TurnMode::CoPresent`](super::turn_pipeline::TurnMode::CoPresent) + [`SlotRunner`](../slot_runner.rs)）；槽位解析依赖 `slot_registry` / `groups` 与 `PluginHost` 注册表。
+//! **Architecture**: main path is **Rust orchestration** (`turn_pipeline` + [`TurnMode::CoPresent`](super::turn_pipeline::TurnMode::CoPresent) + [`SlotRunner`](../slot_runner.rs)); slot resolution depends on `slot_registry` / `groups` and the `PluginHost` registry.
 //!
-//! 见 [`domain/README.md`](../README.md)。
+//! See [`domain/README.md`](../README.md).
 
 use crate::domain::agent::AgentInput;
 use crate::domain::chat_engine::chat_stage::ChatStage;

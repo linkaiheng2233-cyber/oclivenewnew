@@ -1,11 +1,11 @@
-//! # 蓝图 v2 多实例槽位执行器（`SlotRunner`）
+//! # Blueprint v2 multi-instance slot executor (`SlotRunner`)
 //!
-//! **角色**：当 `slot_registry` 中同一 `slot_type` 有多个实例时，按类型选择**合并策略**（串行 last-wins、记忆合并去重、LLM 串行等）并调用对应 `dyn` 实现。
+//! **Role**: when `slot_registry` has multiple instances of the same `slot_type`, pick a **merge policy** per type (serial last-wins, memory dedup-merge, serial LLM, etc.) and invoke the corresponding `dyn` implementation.
 //!
-//! **上游**：[`SlotResolver`](../slot_resolver.rs) 产出 `ResolvedRoleSlots`；[`PluginHost`](../plugin_host.rs) 提供 `BackendRegistry`。
-//! **下游**：`co_present` 各阶段（情绪、事件、记忆排序、Prompt、LLM）；**Agent 多目录插件合并**在 `PluginHost` / `SlotResolver::wrap_agent_if_merged`，不在本文件。
+//! **Upstream**: [`SlotResolver`](../slot_resolver.rs) produces `ResolvedRoleSlots`; [`PluginHost`](../plugin_host.rs) provides `BackendRegistry`.
+//! **Downstream**: co-present stages (emotion, event, memory ranking, Prompt, LLM); **multi directory-plugin Agent merge** lives in `PluginHost` / `SlotResolver::wrap_agent_if_merged`, not here.
 //!
-//! **关键决策**：合并策略按槽位语义选择（见各 `*_last_wins` / `memory_merge_rank` 函数头注释）——例如记忆需**去重合并**，LLM 只需**最终回复**，避免一刀切并行导致上下文错乱。
+//! **Key decision**: merge policy follows slot semantics (see `*_last_wins` / `memory_merge_rank` doc comments)—e.g. memory needs **dedup-merge**, LLM only needs the **final reply**; avoid one-size-fits-all parallelism that corrupts context.
 
 #![allow(
     clippy::missing_errors_doc,
@@ -32,7 +32,7 @@ use crate::models::{Emotion, Event, Memory, PersonalitySource, PersonalityVector
 use std::collections::HashSet;
 use std::sync::Arc;
 
-/// `ollama_msg` 第一参数：槽位模块名（与 registry `slot_type` 一致）。
+/// First argument to `ollama_msg`: slot module name (matches registry `slot_type`).
 mod slot_module {
     pub(super) const EMOTION: &str = "emotion";
     pub(super) const COMPLEX_EMOTION: &str = "complex_emotion";
@@ -95,7 +95,7 @@ impl SlotRunner {
         }
     }
 
-    /// 折叠六槽 LLM，或 registry 中 `position` 最大的 `llm` 实例。
+    /// Fold six-slot LLM, or the `llm` instance with largest `position` in the registry.
     #[must_use]
     pub fn primary_llm(pl: &ResolvedRolePlugins) -> Arc<dyn LlmClient> {
         pl.slots
@@ -104,11 +104,11 @@ impl SlotRunner {
             .unwrap_or_else(|| Arc::clone(&pl.llm))
     }
 
-    /// `emotion`：串行调用，**last-wins**（≥2 实例）；单实例用 registry 条目。
+    /// `emotion`: serial calls, **last-wins** (≥2 instances); single instance uses registry entry.
     ///
-    /// **为何 last-wins**：情绪分析更新的是「当前用户情绪状态」，中间态无需保留；最后一次分析覆盖前序结果即可。
-    /// **为何不用并行**：各分析器输入相同、输出互斥，并行只会浪费算力且增加合并歧义。
-    /// **局限**：前序实例失败时仅打日志，仍可能无有效结果（见 `emotion_last_wins`）。
+    /// **Why last-wins**: emotion analysis updates **current user emotion state**; intermediate states need not be kept—the last analysis overwrites prior results.
+    /// **Why not parallel**: analyzers share the same input and produce mutually exclusive outputs; parallelism wastes compute and adds merge ambiguity.
+    /// **Limitation**: when earlier instances fail, only logs are emitted; there may still be no valid result (see `emotion_last_wins`).
     pub fn analyze_emotion(pl: &ResolvedRolePlugins, text: &str) -> Result<EmotionResult> {
         Self::run_slot_sync(
             &pl.slots,
@@ -119,7 +119,7 @@ impl SlotRunner {
         )
     }
 
-    /// `complex_emotion`：串行，**last-wins**。
+    /// `complex_emotion`: serial, **last-wins**.
     pub fn resolve_complex_emotion(
         pl: &ResolvedRolePlugins,
         input: &ComplexEmotionInput,
@@ -133,7 +133,7 @@ impl SlotRunner {
         )
     }
 
-    /// `event`：串行估计，**last-wins**（中间实例打 debug 日志）。
+    /// `event`: serial estimate, **last-wins** (intermediate instances log at debug).
     pub async fn estimate_event(
         pl: &ResolvedRolePlugins,
         ollama_model: &str,
@@ -238,7 +238,7 @@ impl SlotRunner {
         .await
     }
 
-    /// `memory`：串行 rank → 按 id 去重 → 按 `importance * weight` 统一排序。
+    /// `memory`: serial rank → dedupe by id → sort by `importance * weight`.
     pub fn rank_memories(
         pl: &ResolvedRolePlugins,
         input: MemoryRetrievalInput<'_>,
@@ -274,7 +274,7 @@ impl SlotRunner {
         )
     }
 
-    /// `llm`：串行 **全部调用**（打日志），**last-wins** 作为最终回复。
+    /// `llm`: serial **call all** (logged), **last-wins** as the final reply.
     pub async fn generate_llm(
         pl: &ResolvedRolePlugins,
         ollama_model: &str,
@@ -327,7 +327,7 @@ impl SlotRunner {
         .await
     }
 
-    /// 情绪链 **last-wins** 实现：按 `position` 顺序串行，保留最后一次成功结果。
+    /// Emotion chain **last-wins**: serial by `position`, keep the last successful result.
     fn emotion_last_wins(
         instances: &[(String, Arc<dyn UserEmotionAnalyzer>)],
         text: &str,
@@ -361,7 +361,7 @@ impl SlotRunner {
         })
     }
 
-    /// **complex_emotion last-wins**：与 emotion 相同——叙事提示取最后一次成功 `resolve_turn`。
+    /// **complex_emotion last-wins**: same as emotion—narrative hint from the last successful `resolve_turn`.
     fn complex_emotion_last_wins(
         instances: &[(String, Arc<dyn ComplexEmotionProvider>)],
         input: &ComplexEmotionInput,
@@ -396,11 +396,11 @@ impl SlotRunner {
         })
     }
 
-    /// **event 串行 last-wins**：多事件检测器依次估计，保留最后一次成功结果。
+    /// **event serial last-wins**: event detectors run in order; keep the last successful estimate.
     ///
-    /// **解决的问题**：不同检测器可能对同一回合打出重复或冲突的事件标签。
-    /// **为何 last-wins**：事件影响用于后续性格/记忆策略，只需**一个**归一化估计；中间态打 debug 日志。
-    /// **局限**：前序检测器的补充信号不会合并，仅最后一路生效。
+    /// **Problem solved**: different detectors may emit duplicate or conflicting event tags for the same turn.
+    /// **Why last-wins**: event impact drives personality/memory policy; only **one** normalized estimate is needed; intermediate states log at debug.
+    /// **Limitation**: supplementary signals from earlier detectors are not merged; only the last path applies.
     async fn event_last_wins(
         instances: &[(String, Arc<dyn EventEstimator>)],
         llm: &Arc<dyn LlmClient>,
@@ -457,12 +457,12 @@ impl SlotRunner {
         })
     }
 
-    /// **memory 串行合并去重**：多路检索结果按 `memory.id` 去重后按 importance×weight 排序截断。
+    /// **memory serial dedup-merge**: dedupe multi-path retrieval by `memory.id`, then sort/truncate by importance×weight.
     ///
-    /// **解决的问题**：同一事件可能被多个记忆实例（不同 provider）重复召回。
-    /// **为何串行而非并行**：后续实例可能依赖已写入的排序启发式；且合并逻辑需全局去重集。
-    /// **为何不用 last-wins**：用户需要**并集**而非单一路径的 Top-K。
-    /// **局限**：单实例失败会跳过该路，可能漏召回；`limit` 在合并后统一 truncate。
+    /// **Problem solved**: the same event may be recalled twice from multiple memory instances (different providers).
+    /// **Why serial not parallel**: later instances may depend on ranking heuristics already written; merge needs a global dedup set.
+    /// **Why not last-wins**: users need the **union**, not a single path's Top-K.
+    /// **Limitation**: a failed instance is skipped and may cause missed recall; `limit` is applied after merge.
     fn memory_merge_rank(
         instances: &[(String, Arc<dyn MemoryRetrieval>)],
         input: MemoryRetrievalInput<'_>,
@@ -513,7 +513,7 @@ impl SlotRunner {
         Ok(merged)
     }
 
-    /// **prompt top_topic last-wins**：多组装器的 `top_topic_hint` 串行，保留最后一个 `Some`。
+    /// **prompt top_topic last-wins**: serial `top_topic_hint` across assemblers; keep the last `Some`.
     fn prompt_top_topic_last_wins(
         instances: &[(String, Arc<dyn PromptAssembler>)],
         role: &Role,
@@ -535,11 +535,11 @@ impl SlotRunner {
         last
     }
 
-    /// **prompt last-wins**：多组装器依次 `build_prompt`，最终字符串为最后一次成功输出。
+    /// **prompt last-wins**: assemblers call `build_prompt` in order; final string is the last successful output.
     ///
-    /// **解决的问题**：创作者可叠多个 Prompt 插件做实验，但发往 LLM 的只能有一份文本。
-    /// **为何 last-wins**：Prompt 是**构建最终上下文**的流水线末端，后写覆盖前写符合「最后一道加工」直觉。
-    /// **局限**：无法自动拼接多段 Prompt；需单实例内自行合并。
+    /// **Problem solved**: creators may stack Prompt plugins for experiments, but only one text may go to the LLM.
+    /// **Why last-wins**: Prompt is the pipeline end that **builds final context**; later writes overwriting earlier ones match "last processing step" intuition.
+    /// **Limitation**: cannot auto-concatenate multiple Prompt segments; merge within a single instance instead.
     fn prompt_build_last_wins(
         instances: &[(String, Arc<dyn PromptAssembler>)],
         input: &PromptInput<'_>,
@@ -574,7 +574,7 @@ impl SlotRunner {
         })
     }
 
-    /// **llm fallback**：顺序调用，**首个**成功即返回。
+    /// **llm fallback**: call in order; return on **first** success.
     async fn llm_fallback_first(
         instances: &[(String, Arc<dyn LlmClient>)],
         ollama_model: &str,
@@ -583,7 +583,7 @@ impl SlotRunner {
         llm_merge::fallback_first(instances, ollama_model, prompt).await
     }
 
-    /// **llm fastest-wins**：并发调用，**首个**成功即返回并取消其余任务。
+    /// **llm fastest-wins**: concurrent calls; return on **first** success and cancel remaining tasks.
     async fn llm_fastest_wins(
         instances: &[(String, Arc<dyn LlmClient>)],
         ollama_model: &str,
@@ -592,12 +592,12 @@ impl SlotRunner {
         llm_merge::fastest_wins(instances, ollama_model, prompt).await
     }
 
-    /// **llm 串行 last-wins**：多 LLM 实例依次对**同一 prompt** 生成，仅保留最后一次成功回复。
+    /// **llm serial last-wins**: multiple LLM instances generate on the **same prompt**; keep only the last successful reply.
     ///
-    /// **解决的问题**：蓝图允许配置多个 LLM 槽（如主模型 + 备用），运行时只需**一条**用户可见回复。
-    /// **为何串行**：各调用共享同一 prompt 上下文，无链式依赖时也避免并发打爆 GPU/配额。
-    /// **为何 last-wins**：与「最终展示回复」语义一致；前序成功结果仅作日志对比。
-    /// **局限**：不是 ensemble 投票；失败实例被跳过，若全部失败则返回错误。
+    /// **Problem solved**: blueprint may configure multiple LLM slots (e.g. primary + fallback); runtime needs only **one** user-visible reply.
+    /// **Why serial**: calls share the same prompt context; even without chain dependencies, avoids hammering GPU/quota with concurrency.
+    /// **Why last-wins**: matches "final displayed reply" semantics; earlier successes are logged for comparison only.
+    /// **Limitation**: not ensemble voting; failed instances are skipped; error if all fail.
     async fn llm_serial_last_wins(
         instances: &[(String, Arc<dyn LlmClient>)],
         ollama_model: &str,
@@ -627,7 +627,7 @@ fn registry_instances<'a, T: ?Sized>(
     }
 }
 
-/// 共景编排对槽位合并器的端口；[`crate::domain::chat_engine::turn_pipeline`] 仅通过本 trait 调用。
+/// Port for co-present orchestration to the slot merger; [`crate::domain::chat_engine::turn_pipeline`] calls only through this trait.
 #[async_trait::async_trait]
 pub trait CoPresentSlotRunner: Send + Sync {
     fn analyze_emotion(&self, pl: &ResolvedRolePlugins, text: &str) -> Result<EmotionResult>;

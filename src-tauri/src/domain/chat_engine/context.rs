@@ -1,4 +1,4 @@
-//! 场景校验与近期上下文加载
+//! Scene validation and recent context loading.
 
 use crate::error::Result;
 use crate::models::Event;

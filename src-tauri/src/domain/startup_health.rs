@@ -1,4 +1,4 @@
-//! 首次 `process_message` 前的启动期完整性自检（致命错误短路，避免首条消息才暴露配置问题）。
+//! One-time integrity self-check before the first `process_message` (fatal errors short-circuit so config issues surface before the first message).
 
 use crate::error::{AppError, Result};
 use crate::models::plugin_backends::{
@@ -10,7 +10,7 @@ use crate::state::AppState;
 /// # Errors
 ///
 /// Returns [`Err`] with a human-readable message when the operation fails.
-/// 与 [`AppState::startup_health`] 配合：仅首轮对话执行一次（`OnceLock` 热路径无锁）。
+/// Used with [`AppState::startup_health`]: runs only on the first conversation (`OnceLock`, lock-free hot path).
 pub async fn ensure_once(state: &AppState, role: &Role, effective: &PluginBackends) -> Result<()> {
     if std::env::var("OCLIVE_SKIP_STARTUP_HEALTH")
         .map(|v| v == "1" || v.eq_ignore_ascii_case("true"))
@@ -75,7 +75,7 @@ fn non_empty_slot(id: &Option<String>, slot: &str) -> Result<()> {
 /// # Errors
 ///
 /// Returns [`Err`] with a human-readable message when the operation fails.
-/// 校验 `directory` 槽位与 `directory_plugins` 的 id 非空对应。
+/// Validates that `directory` slots have non-empty matching ids in `directory_plugins`.
 pub fn validate_plugin_backends_slots(pb: &PluginBackends) -> Result<()> {
     if matches!(pb.memory, MemoryBackend::Directory) {
         non_empty_slot(&pb.directory_plugins.memory, "memory")?;
@@ -122,7 +122,7 @@ fn verify_role_pack_files(state: &AppState, role: &Role) -> Result<()> {
 /// # Errors
 ///
 /// Returns [`Err`] with a human-readable message when the operation fails.
-/// 供 HTTP `--api` 等在 [`AppState`] 构造后做一次与角色无关的 DB 探活。
+/// DB ping for HTTP `--api` etc. after [`AppState`] construction (role-independent).
 pub async fn run_global_db_ping(db: &crate::infrastructure::db::DbManager) -> Result<()> {
     db.health_ping().await
 }

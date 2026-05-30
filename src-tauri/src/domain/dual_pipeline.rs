@@ -1,17 +1,17 @@
-//! # 双核运行时调度（实验核 + 稳定核）
+//! # Dual-core runtime scheduling (experimental core + stable core)
 #![cfg(feature = "dual_core")]
 //!
-//! **角色**：当角色已加载且 [`Role::dual_core_gated`](crate::models::Role::dual_core_gated) 时，先按蓝图
-//! `pipeline.experimental` 执行实验步骤；失败则**静默降级**到 [`turn_pipeline::execute_turn`](crate::domain::chat_engine::turn_pipeline::execute_turn)（[`TurnMode::CoPresent`](crate::domain::chat_engine::turn_pipeline::TurnMode::CoPresent)）
-//!（稳定核），用户无感知。
+//! **Role**: when a role is loaded and [`Role::dual_core_gated`](crate::models::Role::dual_core_gated), run experimental steps from blueprint
+//! `pipeline.experimental` first; on failure **gracefully degrade** to [`turn_pipeline::execute_turn`](crate::domain::chat_engine::turn_pipeline::execute_turn) ([`TurnMode::CoPresent`](crate::domain::chat_engine::turn_pipeline::TurnMode::CoPresent))
+//! (stable core), without user-visible disruption.
 //!
-//! **设计哲学**：实验优先、可回滚、可降级——实验步只改可快照的会话内存态；失败时恢复快照再走稳定路径。
+//! **Design**: experiment first, rollback-capable, degradable—experimental steps only mutate snapshot-able session in-memory state; on failure restore snapshot then take the stable path.
 //!
-//! **上游**：[`process_message`](crate::domain::chat_engine::process_message)。
-//! **下游**：[`ExperimentalStepCtx`](super::dual_pipeline_steps::ExperimentalStepCtx)、
-//! [`dual_pipeline_registry`](super::dual_pipeline_registry)。
+//! **Upstream**: [`process_message`](crate::domain::chat_engine::process_message).
+//! **Downstream**: [`ExperimentalStepCtx`](super::dual_pipeline_steps::ExperimentalStepCtx),
+//! [`dual_pipeline_registry`](super::dual_pipeline_registry).
 //!
-//! **关键决策**：不执行 `pipeline.stable`；稳定核恒为硬编码 `co_present`。
+//! **Key decision**: does not execute `pipeline.stable`; stable core is always hard-coded `co_present`.
 
 use std::collections::{HashMap, HashSet};
 
@@ -23,17 +23,17 @@ use crate::models::dto::SendMessageResponse;
 use crate::state::AppState;
 use oclive_validation::{parse_pipeline_action_kind, PipelineActionKind, PipelineStep};
 
-/// 实验核失败（触发静默降级）。
+/// Experimental core failure (triggers graceful degradation).
 #[derive(Debug, thiserror::Error)]
 #[error("dual-core experimental: {0}")]
 pub(crate) struct DualCoreError(pub String);
 
-/// 实验核开始前捕获、失败时恢复的会话内存态。
+/// Session in-memory state captured before experimental core runs and restored on failure.
 ///
-/// 仅快照实验步可能改写且稳定核会复用的字段（控制回滚成本与一致性）：
-/// - `narrative_hint`：复杂情感叙事缓存；
-/// - `emotion_state`：DB 当前情绪标签；
-/// - `active_scene_id`：用户叙事场景（`user_presence_scene`，与角色 `current_scene` 可不同）。
+/// Only fields experimental steps may mutate and the stable core reuses (controls rollback cost and consistency):
+/// - `narrative_hint`: complex emotion narrative cache;
+/// - `emotion_state`: current emotion label in DB;
+/// - `active_scene_id`: user narrative scene (`user_presence_scene`, may differ from role `current_scene`).
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct TurnRollbackSnapshot {
     pub narrative_hint: Option<String>,
@@ -44,7 +44,7 @@ pub struct TurnRollbackSnapshot {
 pub struct DualPipelineRunner;
 
 impl DualPipelineRunner {
-    /// 在任一实验步执行前调用，供 [`rollback`](Self::rollback) 恢复。
+    /// Call before any experimental step; used by [`rollback`](Self::rollback) to restore state.
     pub async fn take_snapshot(state: &AppState, srid: &str) -> TurnRollbackSnapshot {
         let hint = state.session_cache.stored_complex_emotion_narrative_hint(srid);
         let emotion_state = state
@@ -66,7 +66,7 @@ impl DualPipelineRunner {
         }
     }
 
-    /// 实验失败且即将降级时调用：恢复 [`take_snapshot`] 时的三项会话态。
+    /// On experimental failure before degradation: restore the three session fields from [`take_snapshot`].
     pub async fn rollback(state: &AppState, srid: &str, snapshot: TurnRollbackSnapshot) {
         crate::domain::complex_emotion_store::persist_stored_narrative_hint(
             state,
@@ -90,7 +90,7 @@ impl DualPipelineRunner {
 
     /// # Errors
     ///
-    /// 透传 [`execute_turn`] 的 [`ProcessMessageError`].
+    /// Propagates [`ProcessMessageError`] from [`execute_turn`].
     pub async fn run_stable(
         ctx: &TurnContext<'_>,
     ) -> Result<SendMessageResponse, ProcessMessageError> {
@@ -101,7 +101,7 @@ impl DualPipelineRunner {
 
     /// # Errors
     ///
-    /// 蓝图 DAG、action 解析、实验步或收尾 `co_present` 失败时返回；由 [`run_with_fallback`] 捕获并降级。
+    /// Returns on blueprint DAG / action parse / experimental step / final `co_present` failure; caught by [`run_with_fallback`] for degradation.
     pub async fn run_experimental(
         turn: &TurnContext<'_>,
     ) -> Result<SendMessageResponse, ProcessMessageError> {
@@ -215,7 +215,7 @@ impl DualPipelineRunner {
 
     /// # Errors
     ///
-    /// 实验核失败时已回滚快照；仅当稳定核 `co_present` 仍失败时向调用方返回错误。
+    /// After experimental failure with snapshot rollback; returns error to caller only if stable core `co_present` also fails.
     pub async fn run_with_fallback(
         turn: &TurnContext<'_>,
     ) -> Result<SendMessageResponse, ProcessMessageError> {
@@ -238,14 +238,14 @@ impl DualPipelineRunner {
     }
 }
 
-/// 按 `depends_on` 拓扑排序；环或未知依赖返回错误（专家子流程复用）。
+/// Topological sort by `depends_on`; cycle or unknown dependency returns error (reused by expert sub-flow).
 pub(crate) fn topological_sort_pipeline_steps(
     steps: &[PipelineStep],
 ) -> Result<Vec<&PipelineStep>, String> {
     topological_sort(steps).map_err(|e| e.0)
 }
 
-/// 按 `depends_on` 拓扑排序；环或未知依赖返回错误。
+/// Topological sort by `depends_on`; cycle or unknown dependency returns error.
 fn topological_sort(steps: &[PipelineStep]) -> Result<Vec<&PipelineStep>, DualCoreError> {
     let actions: HashSet<&str> = steps.iter().map(|s| s.action.as_str()).collect();
     let mut indegree: HashMap<&str, usize> = HashMap::new();

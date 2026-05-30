@@ -48,41 +48,41 @@ pub struct AppState {
     pub memory_repo: Arc<dyn MemoryRepository>,
     pub favorability_repo: Arc<dyn FavorabilityRepository>,
     pub llm: Arc<dyn LlmClient>,
-    /// 热路径锁分层：
-    /// - `role_cache`/`role_load_inflight`：角色读取去重；
-    /// - `session_cache`：会话覆盖；
-    /// - `user_llm_*`：LLM 配置进程内镜像；
-    /// 三者互不嵌套，避免形成锁顺序循环。
+    /// Hot-path lock layering:
+    /// - `role_cache` / `role_load_inflight`: dedupe role reads;
+    /// - `session_cache`: session overrides;
+    /// - `user_llm_*`: in-process LLM config mirror;
+    /// none nested—avoids lock-order cycles.
     pub role_cache: Arc<RwLock<HashMap<String, Arc<Role>>>>,
-    /// 同一 `role_id` 冷加载去重（[`OnceCell`]）；加载完成后写入 [`Self::role_cache`] 并移除此表项。
+    /// Dedupe cold loads for the same `role_id` ([`OnceCell`]); after load, write [`Self::role_cache`] and remove this entry.
     role_load_inflight: DashMap<String, Arc<OnceCell<Arc<Role>>>>,
-    /// HTTP `--api` 试聊从任意 `role_path` 加载的角色；不写入 [`Self::role_cache`]。
+    /// Roles loaded from arbitrary `role_path` for HTTP `--api` trial chat; not written to [`Self::role_cache`].
     pub(crate) http_api_roles: DashMap<String, Arc<Role>>,
     pub session_cache: Arc<SessionCache>,
     pub storage: RoleStorage,
     policy_runtime: Arc<ArcSwap<PolicyRuntime>>,
-    /// Ollama 模型名（可用环境变量 `OLLAMA_MODEL` 覆盖）
+    /// Ollama model name (overridable via `OLLAMA_MODEL`).
     pub ollama_model: String,
-    /// 可替换子系统实现（按 `Role.plugin_backends` 选择）
+    /// Swappable subsystem implementations (selected by `Role.plugin_backends`).
     pub plugins: PluginHost,
-    /// 目录式插件（`plugins/*/manifest.json`）扫描与懒启动。
+    /// Directory plugins (`plugins/*/manifest.json`) scan and lazy start.
     pub directory_plugins: Arc<DirectoryPluginRuntime>,
-    /// MCP 传输 / 目录插件子进程等高风险能力授权（`high_risk_grants.json`）。
+    /// MCP transport / directory plugin subprocess etc. high-risk capability grants (`high_risk_grants.json`).
     pub high_risk_grants: Arc<HighRiskGrantStore>,
-    /// 首轮 `process_message` 启动自检结果（`OnceLock` 缓存，热路径无锁）。
+    /// First `process_message` startup self-check result (`OnceLock` cache, lock-free hot path).
     pub(crate) startup_health: std::sync::OnceLock<std::result::Result<(), String>>,
-    /// `OCLIVE_REMOTE_FALLBACK_TO_BUILTIN` 启动时读取一次；`sync_remote_fallback_from_db_value` 不再重读 env。
+    /// Read `OCLIVE_REMOTE_FALLBACK_TO_BUILTIN` once at startup; `sync_remote_fallback_from_db_value` does not re-read env.
     remote_fallback_env_override: Option<bool>,
-    /// 远端 HTTP 插件失败时是否允许静默降级内置（与 `app_settings.remote_fallback_to_builtin` 及 `OCLIVE_REMOTE_FALLBACK_TO_BUILTIN` 对齐）。
+    /// Whether remote HTTP plugin failure may silently fall back to builtin (aligned with `app_settings.remote_fallback_to_builtin` and `OCLIVE_REMOTE_FALLBACK_TO_BUILTIN`).
     pub remote_fallback_allowed: Arc<AtomicBool>,
     policy_file_applied: AtomicBool,
-    /// `user_llm_provider` app_setting 进程内缓存（`cloud` / `local` / 空）。
+    /// In-process cache of `user_llm_provider` app_setting (`cloud` / `local` / empty).
     pub(crate) user_llm_provider: parking_lot::RwLock<String>,
-    /// LLM env 变更版本；每次设置写入后递增。
+    /// LLM env change version; incremented on each settings write.
     pub(crate) user_llm_env_version: AtomicU64,
-    /// 最近一次成功应用到进程 env 的版本。
+    /// Version last successfully applied to process env.
     pub(crate) user_llm_env_applied_version: AtomicU64,
-    /// 快速脏位：无变更时跳过重复 `apply_user_llm_env`。
+    /// Fast dirty flag: skip redundant `apply_user_llm_env` when unchanged.
     pub(crate) user_llm_env_dirty: AtomicBool,
 }
 
@@ -90,8 +90,8 @@ impl AppState {
     /// # Errors
     ///
     /// Returns [`Err`] with a human-readable message when the operation fails.
-    /// `roles_dir_override`：打包应用传入 `resource_dir/roles`；`None` 时用 [`resolve_roles_dir`]。
-    /// `app_data_dir`：应用数据目录（与 SQLite 同级），用于 `oclive_host_plugins.json` 与 `plugins/` 扫描根之一。
+    /// `roles_dir_override`: bundled app passes `resource_dir/roles`; when `None`, use [`resolve_roles_dir`].
+    /// `app_data_dir`: app data root (same level as SQLite), used for `oclive_host_plugins.json` and `plugins/` scan root.
     pub async fn new(
         db_path: impl AsRef<Path>,
         roles_dir_override: Option<PathBuf>,
@@ -108,7 +108,7 @@ impl AppState {
     /// # Errors
     ///
     /// Returns [`Err`] with a human-readable message when the operation fails.
-    /// 内存库 + 注入 LLM（集成测试 / 不连 Ollama）
+    /// In-memory DB + injected LLM (integration tests / no Ollama).
     pub async fn new_in_memory_with_llm(
         llm: Arc<dyn LlmClient>,
         roles_dir: impl AsRef<Path>,
@@ -128,7 +128,7 @@ impl AppState {
             .await
     }
 
-    /// 与 `app_settings.remote_fallback_to_builtin` 及 `OCLIVE_REMOTE_FALLBACK_TO_BUILTIN` 对齐进程内开关。
+    /// Align in-process switch with `app_settings.remote_fallback_to_builtin` and `OCLIVE_REMOTE_FALLBACK_TO_BUILTIN`.
     pub fn sync_remote_fallback_from_db_value(&self, raw: Option<String>) {
         let mut allowed = remote_fallback_from_db_value(raw);
         if let Some(v) = self.remote_fallback_env_override {
@@ -175,13 +175,13 @@ impl AppState {
     /// # Errors
     ///
     /// Returns [`Err`] with a human-readable message when the operation fails.
-    /// 优先使用 [`Self::role_cache`]（与 [`crate::domain::chat_engine`] 一致）；未命中时从磁盘加载并写入缓存。
+    /// Prefer [`Self::role_cache`] (same as [`crate::domain::chat_engine`]); on miss load from disk and cache.
     ///
-    /// 异步路径加载角色：磁盘 I/O 在 `spawn_blocking` 中执行，避免阻塞 tokio reactor。
+    /// Async role load: disk I/O runs in `spawn_blocking` to avoid blocking the tokio reactor.
     ///
     /// # Errors
     ///
-    /// 角色不存在、磁盘 I/O 失败等时返回 [`Err`]。
+    /// Returns [`Err`] when role is missing, disk I/O fails, etc.
     pub async fn load_role_cached_async(&self, role_id: &str) -> Result<Arc<Role>> {
         if let Some(r) = self.role_cache.read().get(role_id) {
             return Ok(Arc::clone(r));
@@ -229,7 +229,7 @@ impl AppState {
             .or_insert_with(|| Arc::clone(role));
     }
 
-    /// 丢弃该 manifest 角色及其试聊会话命名空间下的有效性格缓存（磁盘包重载、`default_personality` / 边界等已变时必须调用）。
+    /// Drop effective personality cache for this manifest role and its trial-chat session namespaces (required after disk pack reload or `default_personality` / bounds change).
     pub fn invalidate_personality_cache_for_role(&self, manifest_role_id: &str) {
         let cache = self.session_cache.personality_cache();
         cache.remove(manifest_role_id);
@@ -237,7 +237,7 @@ impl AppState {
         cache.retain(|k| !k.starts_with(&prefix));
     }
 
-    /// 丢弃内存中的 `Role` 缓存（`pipeline.ocblueprint` 写盘后须调用）。
+    /// Drop in-memory `Role` cache (call after `pipeline.ocblueprint` is written to disk).
     pub fn invalidate_role_cache(&self, role_id: &str) {
         if let Some(role) = self.role_cache.read().get(role_id) {
             role.scene_config_cache.write().clear();
@@ -250,7 +250,7 @@ impl AppState {
     /// # Errors
     ///
     /// Returns [`Err`] with a human-readable message when the operation fails.
-    /// 当前有效性格：`vector` 模式为 `default_personality` + `delta`；`profile` 模式由核心性格档案 + DB「可变性格档案」归纳七维。
+    /// Current effective personality: `vector` mode is `default_personality` + `delta`; `profile` mode derives seven dims from core profile + DB mutable profile.
     pub async fn get_current_personality(
         &self,
         role_id: &str,
@@ -287,12 +287,12 @@ impl AppState {
         &self.plugins
     }
 
-    /// 单次对话内优先调用本方法一次，再复用返回的 `memory` / `emotion` / `event` / `prompt` / `llm`，避免重复解析后端枚举。
+    /// Call once per conversation, then reuse returned `memory` / `emotion` / `event` / `prompt` / `llm` to avoid re-parsing backend enums.
     pub fn resolved_plugins_for(&self, role: &Role) -> ResolvedRolePlugins {
         self.plugin_host_port().resolve_for_role(role)
     }
 
-    /// 会话级后端解析：effective `slot_registry` 折叠六槽 + 实例键/六槽覆盖后再绑定实现。
+    /// Session-level backend resolution: fold six slots from effective `slot_registry` + instance key / six-slot overrides, then bind implementations.
     pub fn resolved_plugins_for_session(
         &self,
         role: &Role,
@@ -333,7 +333,7 @@ impl AppState {
             .prompt_assembler_for_backends(&role.plugin_backends)
     }
 
-    /// 测试或遥测：当前角色包声明的后端集合
+    /// Tests or telemetry: backend set declared by current role pack.
     pub fn plugin_backends_snapshot(&self, role: &Role) -> PluginBackends {
         role.plugin_backends.as_ref().clone()
     }

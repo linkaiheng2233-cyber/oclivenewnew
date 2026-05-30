@@ -1,11 +1,11 @@
-//! 复杂情感 `narrative_hint` 持久化与会话缓存（滞后一轮注入主 Prompt）。
+//! Complex emotion `narrative_hint` persistence and session cache (injected into main Prompt one turn later).
 
 use crate::error::Result;
 use crate::infrastructure::db::DbManager;
 use crate::state::{AppState, SessionCache};
 use chrono::{DateTime, Duration, Utc};
 
-/// `narrative_hint` 在读取时若超过该小时数未更新则清除。后续可迁至角色包 / settings。
+/// Clear `narrative_hint` on read when it has not been updated within this many hours. May move to role pack / settings later.
 pub const COMPLEX_EMOTION_HINT_TTL_HOURS: i64 = 24;
 
 fn parse_updated_at(raw: &str) -> Option<DateTime<Utc>> {
@@ -22,11 +22,11 @@ pub fn is_complex_emotion_hint_expired(updated_at: &str, now: DateTime<Utc>) -> 
     now.signed_duration_since(ts) > Duration::hours(COMPLEX_EMOTION_HINT_TTL_HOURS)
 }
 
-/// 会话缓存命中则直接返回；否则从 DB 加载（含 TTL 删除），命中后回填缓存。
+/// Return from session cache on hit; otherwise load from DB (with TTL delete) and backfill cache.
 ///
 /// # Errors
 ///
-/// DB 读失败时返回 [`crate::error::AppError`]（调用方在 `pre_llm` 可降级为空）。
+/// Returns [`crate::error::AppError`] on DB read failure (caller may degrade to empty in `pre_llm`).
 pub async fn load_stored_narrative_hint(state: &AppState, srid: &str) -> Result<String> {
     load_stored_narrative_hint_from_parts(
         &state.session_cache,
@@ -65,7 +65,7 @@ pub(crate) async fn load_stored_narrative_hint_from_parts(
     Ok(hint)
 }
 
-/// 写入会话缓存并尽力持久化到 SQLite；DB 失败仅打日志。
+/// Write session cache and best-effort persist to SQLite; DB failure is logged only.
 pub async fn persist_stored_narrative_hint(state: &AppState, srid: &str, hint: String) {
     persist_stored_narrative_hint_to_parts(
         &state.session_cache,

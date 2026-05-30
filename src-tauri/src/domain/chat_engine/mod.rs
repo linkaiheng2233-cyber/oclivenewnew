@@ -1,7 +1,7 @@
-//! 对话编排：串联各 domain 模块与 Repository / LLM
+//! Chat orchestration: wires domain modules with Repository / LLM.
 //!
-//! 具体步骤中的纯逻辑见 [`super::chat_turn`]，本模块负责异步编排与 `AppState` 交互。
-//! 场景与好感子逻辑见 [`context`]、[`scene`]、[`favor`]。
+//! Pure turn logic lives in [`super::chat_turn`]; this module handles async orchestration and `AppState`.
+//! Scene and favorability sub-logic: [`context`], [`scene`], [`favor`].
 
 pub(crate) mod turn_error;
 pub mod chat_stage;
@@ -65,12 +65,12 @@ pub(super) fn backend_resolution_summary(
     )
 }
 
-/// 会话级 SQLite 命名空间：HTTP 试聊传入 `session_id` 时与无 `session_id` 的默认对话隔离。
+/// Session-scoped SQLite namespace: HTTP trial chat with `session_id` is isolated from the default conversation without one.
 pub(crate) fn conversation_state_role_id(
     manifest_role_id: &str,
     session_id: Option<&str>,
 ) -> String {
-    /// 控制 SQLite 键与日志长度，避免异常长 `session_id` 撑爆存储。
+    /// Caps SQLite key and log length so abnormally long `session_id` values cannot blow storage.
     const MAX_SUFFIX_CHARS: usize = 64;
     const MAX_TOTAL_CHARS: usize = 256;
 
@@ -95,7 +95,7 @@ pub(crate) fn conversation_state_role_id(
     }
 }
 
-/// 异地 + 关：占位文案，**不**写入短期记忆 / 事件 / 好感事务（避免无对话却涨好感）
+/// Remote-presence + off: stub reply; **does not** write short-term memory / events / favorability (avoids favor gain without dialogue).
 pub(super) async fn process_remote_stub(
     ctx: &TurnContext<'_>,
 ) -> Result<SendMessageResponse> {
@@ -168,7 +168,7 @@ pub(super) async fn process_remote_stub(
     })
 }
 
-/// 异地 + 开：专用 LLM；跳过事件影响探测，以 `Ignore` + 零振幅参与好感事务（仍更新短期记忆等）
+/// Remote-presence + on: dedicated LLM; skips event-impact detection, uses `Ignore` + zero amplitude in favorability (still updates short-term memory, etc.).
 pub(super) async fn process_remote_life(ctx: &TurnContext<'_>) -> Result<SendMessageResponse> {
     execute_turn(ctx, TurnMode::RemoteLife)
         .await

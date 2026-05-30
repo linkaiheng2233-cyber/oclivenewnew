@@ -1,13 +1,13 @@
-//! # 实验核单步执行（与 `co_present` 子阶段对齐）
+//! # Experimental core single-step execution (aligned with `co_present` sub-stages)
 #![cfg(feature = "dual_core")]
 //!
-//! **角色**：将 `pipeline.experimental` 中的 `slot.<key>.<method>` 映射到共景子阶段
-//!（情绪分析、记忆排序、Prompt 组装等）；不重复实现业务规则，只复用 [`SlotRunner`](super::slot_runner::SlotRunner) 与现有引擎。
+//! **Role**: maps `slot.<key>.<method>` in `pipeline.experimental` to co-present sub-stages
+//! (emotion analysis, memory ranking, prompt assembly, etc.); does not reimplement business rules—reuses [`SlotRunner`](super::slot_runner::SlotRunner) and existing engines.
 //!
-//! **上游**：[`DualPipelineRunner`](super::dual_pipeline::DualPipelineRunner) 拓扑排序后逐步调用 [`ExperimentalStepCtx::run_method`].
-//! **下游**：`co_present` 各阶段逻辑（通过 `CoPresentSlotRunner` 等）。
+//! **Upstream**: [`DualPipelineRunner`](super::dual_pipeline::DualPipelineRunner) calls [`ExperimentalStepCtx::run_method`] step by step after topological sort.
+//! **Downstream**: co-present stage logic (via `CoPresentSlotRunner`, etc.).
 //!
-//! method 合法集合见 [`dual_pipeline_registry`](super::dual_pipeline_registry)。
+//! Allowed methods: see [`dual_pipeline_registry`](super::dual_pipeline_registry).
 
 use crate::domain::agent::AgentInput;
 use crate::domain::chat_engine::context::load_recent_context;
@@ -50,11 +50,11 @@ pub struct ExperimentalStepCtx<'a> {
 }
 
 impl<'a> ExperimentalStepCtx<'a> {
-    /// 解析会话插件与槽位，构造实验步上下文。
+    /// Resolve session plugins and slots; construct experimental step context.
     ///
     /// # Errors
     ///
-    /// 插件解析或会话后端配置无效时返回 [`ProcessMessageError`]。
+    /// Returns [`ProcessMessageError`] when plugin resolution or session backend config is invalid.
     pub async fn new(
         state: &'a AppState,
         role: &'a Role,
@@ -87,12 +87,12 @@ impl<'a> ExperimentalStepCtx<'a> {
         })
     }
 
-    /// 执行单步 `slot.<registry_key>.<method>`。
+    /// Execute one step `slot.<registry_key>.<method>`.
     ///
     /// # Errors
     ///
-    /// 槽位类型不匹配、共景子阶段失败或 DB/插件错误时返回 [`ProcessMessageError`]；
-    /// 未实现 method 时返回 [`StepOutcome::Failed`]（由调用方降级）。
+    /// Returns [`ProcessMessageError`] on slot type mismatch, co-present sub-stage failure, or DB/plugin error;
+    /// unimplemented method returns [`StepOutcome::Failed`] (caller degrades).
     pub async fn run_method(
         &mut self,
         registry_key: &str,
@@ -495,11 +495,11 @@ impl<'a> ExperimentalStepCtx<'a> {
         })))
     }
 
-    /// 执行专家路由子流程（`slot.expert.invoke`）；无匹配路由时跳过。
+    /// Run expert routing sub-flow (`slot.expert.invoke`); skip when no route matches.
     ///
     /// # Errors
     ///
-    /// 子步骤失败且 `fallback` 非 `skip` 时可能返回错误；`skip` 时记录 warn 并继续主 pipeline。
+    /// May return error when a sub-step fails and `fallback` is not `skip`; on `skip`, logs warn and continues main pipeline.
     pub async fn run_expert_invoke(&mut self) -> Result<StepOutcome, ProcessMessageError> {
         let role_dir = self.state.storage.roles_dir().join(self.role.id.as_str());
         let Some(doc) = load_expert_routing_from_role_dir(&role_dir) else {

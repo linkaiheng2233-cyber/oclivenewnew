@@ -3,7 +3,7 @@
 use crate::error::AppError;
 use thiserror::Error;
 
-/// 回合编排失败，带 `stage` 便于与日志对齐。
+/// Turn orchestration failure with `stage` for log alignment.
 #[derive(Debug, Error)]
 #[error("回合({stage}): {source}")]
 pub struct TurnError {
