@@ -1,7 +1,7 @@
 //! Co-present turn path: complex emotion, event estimate, prompt build.
 
 use crate::domain::chat_turn::relation_favor_for_key;
-use crate::domain::complex_emotion::{ComplexEmotionInput, ComplexEmotionOutput};
+use crate::domain::complex_emotion::ComplexEmotionOutput;
 use crate::domain::personality_engine::PersonalityEngine;
 use crate::domain::prompt_builder::{effective_reply_quality_anchor, PromptInput};
 use crate::domain::slot_runner::{CoPresentSlotRunner, SlotRunner};
@@ -12,7 +12,8 @@ use crate::models::{PersonalitySource};
 use super::super::turn_context::TurnContext;
 use super::super::turn_error::TurnResult;
 use super::common::{
-    compute_turn_favor, worldview_snippet_from_chunks, MiddleOutput, PreLlmOutput, STAGES,
+    build_complex_emotion_turn_input, compute_turn_favor, worldview_snippet_from_chunks, MiddleOutput,
+    PreLlmOutput, STAGES,
 };
 use crate::domain::chat_engine::chat_stage::ChatStage;
 
@@ -31,30 +32,19 @@ pub(crate) async fn run_middle(
     let slot_runner = SlotRunner;
     let user_message = req.user_message.as_str();
 
-    let (prev_user_for_ce, prev_bot_for_ce) = pre
-        .recent_turns
-        .last()
-        .map(|(u, b)| (Some(u.clone()), b.clone()))
-        .unwrap_or((None, String::new()));
-    let (uv, ud) = crate::domain::complex_emotion::affect_metrics_from_seven_dim(&pre.emotion_result);
+    let complex_emotion_input = build_complex_emotion_turn_input(
+        mrid,
+        scene_id,
+        user_message,
+        &pre.emotion_result,
+        pre.prev_stored_narrative_hint.clone(),
+        &pre.recent_turns,
+    );
     let complex_emotion_out: ComplexEmotionOutput = STAGES
         .stage(
             ChatStage::ComplexEmotionResolveTurn,
             async {
-                slot_runner.resolve_complex_emotion(
-                    pl,
-                    &ComplexEmotionInput {
-                        role_id: mrid.to_string(),
-                        scene_id: scene_id.to_string(),
-                        user_message: user_message.to_string(),
-                        bot_reply: prev_bot_for_ce,
-                        recent_dialogue_summary: None,
-                        previous_narrative_hint: pre.prev_stored_narrative_hint.clone(),
-                        user_valence: Some(uv),
-                        user_dominance: Some(ud),
-                        previous_user_message: prev_user_for_ce,
-                    },
-                )
+                slot_runner.resolve_complex_emotion(pl, &complex_emotion_input)
             },
         )
         .await?;

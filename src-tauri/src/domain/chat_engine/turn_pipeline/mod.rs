@@ -1,7 +1,7 @@
 //! Shared turn orchestration for co-present and remote-life paths.
 
 mod co_present;
-mod common;
+pub(crate) mod common;
 mod remote_life;
 
 use std::time::Instant;

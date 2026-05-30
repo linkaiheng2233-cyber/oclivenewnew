@@ -3,7 +3,9 @@
 use crate::domain::chat_llm_fallback::{fallback_reply_for_llm_failure, FallbackReplyContext};
 use crate::domain::chat_turn::{relation_favor_for_key, weight_memories_for_scene};
 use crate::domain::chat_turn_rules::{soft_append_guard, strip_hallucination_tokens};
-use crate::domain::complex_emotion::ComplexEmotionOutput;
+use crate::domain::complex_emotion::{
+    affect_metrics_from_seven_dim, ComplexEmotionInput, ComplexEmotionOutput,
+};
 use crate::domain::emotion_analyzer::EmotionResult;
 use crate::domain::memory_retrieval::MemoryRetrievalInput;
 use crate::domain::memory_engine::MemoryEngine;
@@ -29,6 +31,38 @@ use super::super::turn_error::TurnResult;
 use super::TurnMode;
 
 pub(crate) const STAGES: StageRunner = StageRunner;
+
+pub(crate) fn latest_recent_turn_pair(
+    recent_turns: &[(String, String)],
+) -> (Option<String>, String) {
+    recent_turns
+        .last()
+        .map(|(u, b)| (Some(u.clone()), b.clone()))
+        .unwrap_or((None, String::new()))
+}
+
+pub(crate) fn build_complex_emotion_turn_input(
+    role_id: &str,
+    scene_id: &str,
+    user_message: &str,
+    emotion_result: &EmotionResult,
+    previous_narrative_hint: String,
+    recent_turns: &[(String, String)],
+) -> ComplexEmotionInput {
+    let (previous_user_message, bot_reply) = latest_recent_turn_pair(recent_turns);
+    let (user_valence, user_dominance) = affect_metrics_from_seven_dim(emotion_result);
+    ComplexEmotionInput {
+        role_id: role_id.to_string(),
+        scene_id: scene_id.to_string(),
+        user_message: user_message.to_string(),
+        bot_reply,
+        recent_dialogue_summary: None,
+        previous_narrative_hint,
+        user_valence: Some(user_valence),
+        user_dominance: Some(user_dominance),
+        previous_user_message,
+    }
+}
 
 pub(crate) fn skipped_complex_emotion() -> ComplexEmotionOutput {
     ComplexEmotionOutput {
