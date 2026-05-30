@@ -14,6 +14,7 @@ use crate::state::AppState;
 use oclive_validation::NETWORK_GRANT_REMOTE_LLM;
 use serde::{Deserialize, Serialize};
 use std::path::{Path, PathBuf};
+use std::sync::atomic::Ordering;
 use tauri::{AppHandle, Manager, State};
 
 const KEY_OLLAMA_BASE: &str = "user_ollama_base_url";
@@ -44,30 +45,32 @@ async fn ollama_base_from_db_or_env(state: &AppState) -> String {
 pub async fn apply_user_llm_env_from_db(
     db: &crate::infrastructure::db::DbManager,
 ) -> crate::error::Result<String> {
-    let pairs = [
+    const LLM_ENV_KEYS: &[&str] = &[
+        KEY_OLLAMA_BASE,
+        KEY_REMOTE_URL,
+        KEY_REMOTE_TOKEN,
+        KEY_CLOUD_STYLE,
+        KEY_LLM_PROVIDER,
+    ];
+    let settings = db.get_app_settings(LLM_ENV_KEYS).await?;
+    let env_pairs = [
         (KEY_OLLAMA_BASE, "OLLAMA_BASE_URL"),
         (KEY_REMOTE_URL, "OCLIVE_REMOTE_LLM_URL"),
         (KEY_REMOTE_TOKEN, "OCLIVE_REMOTE_LLM_TOKEN"),
         (KEY_CLOUD_STYLE, "OCLIVE_LLM_CLOUD_API_STYLE"),
     ];
-    for (db_key, env_key) in pairs {
-        if let Some(v) = db.get_app_setting(db_key).await? {
-            let t = v.trim();
-            if t.is_empty() {
-                std::env::remove_var(env_key);
-            } else {
-                std::env::set_var(env_key, t);
-            }
+    for (db_key, env_key) in env_pairs {
+        match settings.get(db_key).map(|s| s.trim()).filter(|s| !s.is_empty()) {
+            Some(t) => std::env::set_var(env_key, t),
+            None => std::env::remove_var(env_key),
         }
     }
-    let remote_url = db
-        .get_app_setting(KEY_REMOTE_URL)
-        .await?
+    let remote_url = settings
+        .get(KEY_REMOTE_URL)
         .map(|s| s.trim().to_string())
         .unwrap_or_default();
-    let mut provider = db
-        .get_app_setting(KEY_LLM_PROVIDER)
-        .await?
+    let mut provider = settings
+        .get(KEY_LLM_PROVIDER)
         .map(|s| s.trim().to_ascii_lowercase())
         .unwrap_or_default();
     if provider.is_empty()
@@ -113,6 +116,13 @@ async fn resolve_remote_token(
 ///
 /// Returns [`crate::error::AppError`] when settings or token resolution fails.
 pub async fn apply_user_llm_env(state: &AppState) -> crate::error::Result<()> {
+    let start_version = state.user_llm_env_version.load(Ordering::Acquire);
+    if !state.user_llm_env_dirty.load(Ordering::Acquire)
+        && state.user_llm_env_applied_version.load(Ordering::Acquire) == start_version
+    {
+        return Ok(());
+    }
+
     let app_data = state.directory_plugins.app_data_dir();
     let token = resolve_remote_token(state.db_manager.as_ref(), app_data).await?;
     if let Some(ref t) = token {
@@ -136,6 +146,13 @@ pub async fn apply_user_llm_env(state: &AppState) -> crate::error::Result<()> {
         "apply_user_llm_env"
     );
     *state.user_llm_provider.write() = provider;
+    let end_version = state.user_llm_env_version.load(Ordering::Acquire);
+    state
+        .user_llm_env_applied_version
+        .store(end_version, Ordering::Release);
+    state
+        .user_llm_env_dirty
+        .store(end_version != start_version, Ordering::Release);
     Ok(())
 }
 
@@ -645,6 +662,7 @@ pub async fn save_llm_user_settings(
             .await?;
     }
 
+    state.mark_user_llm_env_dirty();
     apply_user_llm_env(state.inner()).await?;
 
     let ns = session_namespace(&req.role_id, req.session_id.as_deref());

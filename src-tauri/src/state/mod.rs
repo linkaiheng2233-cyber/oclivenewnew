@@ -27,7 +27,7 @@ use parking_lot::RwLock;
 use tokio::sync::OnceCell;
 use std::collections::HashMap;
 use std::path::{Path, PathBuf};
-use std::sync::atomic::{AtomicBool, Ordering};
+use std::sync::atomic::{AtomicBool, AtomicU64, Ordering};
 use std::sync::Arc;
 
 mod app_state_builder;
@@ -48,6 +48,11 @@ pub struct AppState {
     pub memory_repo: Arc<dyn MemoryRepository>,
     pub favorability_repo: Arc<dyn FavorabilityRepository>,
     pub llm: Arc<dyn LlmClient>,
+    /// 热路径锁分层：
+    /// - `role_cache`/`role_load_inflight`：角色读取去重；
+    /// - `session_cache`：会话覆盖；
+    /// - `user_llm_*`：LLM 配置进程内镜像；
+    /// 三者互不嵌套，避免形成锁顺序循环。
     pub role_cache: Arc<RwLock<HashMap<String, Arc<Role>>>>,
     /// 同一 `role_id` 冷加载去重（[`OnceCell`]）；加载完成后写入 [`Self::role_cache`] 并移除此表项。
     role_load_inflight: DashMap<String, Arc<OnceCell<Arc<Role>>>>,
@@ -73,6 +78,12 @@ pub struct AppState {
     policy_file_applied: AtomicBool,
     /// `user_llm_provider` app_setting 进程内缓存（`cloud` / `local` / 空）。
     pub(crate) user_llm_provider: parking_lot::RwLock<String>,
+    /// LLM env 变更版本；每次设置写入后递增。
+    pub(crate) user_llm_env_version: AtomicU64,
+    /// 最近一次成功应用到进程 env 的版本。
+    pub(crate) user_llm_env_applied_version: AtomicU64,
+    /// 快速脏位：无变更时跳过重复 `apply_user_llm_env`。
+    pub(crate) user_llm_env_dirty: AtomicBool,
 }
 
 impl AppState {
@@ -125,6 +136,11 @@ impl AppState {
         }
         self.remote_fallback_allowed
             .store(allowed, Ordering::Relaxed);
+    }
+
+    pub fn mark_user_llm_env_dirty(&self) {
+        self.user_llm_env_version.fetch_add(1, Ordering::AcqRel);
+        self.user_llm_env_dirty.store(true, Ordering::Release);
     }
 
     pub fn policies_for_scene(&self, scene_id: Option<&str>) -> Arc<PolicySet> {

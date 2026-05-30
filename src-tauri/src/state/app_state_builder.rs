@@ -31,7 +31,7 @@ use sqlx::SqlitePool;
 use std::collections::HashMap;
 use std::fs;
 use std::path::{Path, PathBuf};
-use std::sync::atomic::AtomicBool;
+use std::sync::atomic::{AtomicBool, AtomicU64};
 use std::sync::Arc;
 
 pub struct AppStateBuilder {
@@ -196,6 +196,9 @@ impl AppStateBuilder {
             remote_fallback_allowed,
             policy_file_applied: AtomicBool::new(policy_file_applied),
             user_llm_provider,
+            user_llm_env_version: AtomicU64::new(1),
+            user_llm_env_applied_version: AtomicU64::new(0),
+            user_llm_env_dirty: AtomicBool::new(true),
         };
         if let Err(e) = crate::api::llm_settings::apply_user_llm_env(&state).await {
             tracing::warn!(target: "oclive_llm", "apply user llm settings: {e}");
