@@ -12,7 +12,7 @@ static OLLAMA_HTTP_CLIENT: LazyLock<Client> = LazyLock::new(|| {
 use serde::{Deserialize, Serialize};
 use std::time::Duration;
 
-/// Ollama 请求体
+/// Ollama request body.
 #[derive(Debug, Serialize)]
 pub struct OllamaRequest {
     pub model: String,
@@ -24,7 +24,7 @@ pub struct OllamaRequest {
     pub top_p: Option<f32>,
 }
 
-/// Ollama 响应体
+/// Ollama response body.
 #[derive(Debug, Deserialize)]
 pub struct OllamaResponse {
     pub response: String,
@@ -33,7 +33,7 @@ pub struct OllamaResponse {
     pub done: bool,
 }
 
-/// Ollama 客户端
+/// Ollama HTTP client.
 pub struct OllamaClient {
     base_url: String,
     client: Client,
@@ -45,7 +45,7 @@ fn normalize_base_url(url: String) -> String {
 }
 
 impl OllamaClient {
-    /// 创建新的 Ollama 客户端
+    /// Creates a new Ollama client.
     pub fn new(base_url: impl Into<String>) -> Self {
         Self {
             base_url: normalize_base_url(base_url.into()),
@@ -54,7 +54,7 @@ impl OllamaClient {
         }
     }
 
-    /// 设置超时时间
+    /// Sets the request timeout.
     #[must_use]
     pub fn with_timeout(mut self, timeout: Duration) -> Self {
         self.timeout = timeout;
@@ -63,7 +63,7 @@ impl OllamaClient {
     /// # Errors
     ///
     /// Returns [`Err`] with a human-readable message when the operation fails.
-    /// 检查 Ollama 服务是否可用
+    /// Checks whether the Ollama service is reachable.
     pub async fn health_check(&self) -> Result<bool> {
         let url = format!("{}/api/tags", self.base_url);
 
@@ -75,7 +75,7 @@ impl OllamaClient {
     /// # Errors
     ///
     /// Returns [`Err`] with a human-readable message when the operation fails.
-    /// 获取可用的模型列表
+    /// Lists available models.
     pub async fn list_models(&self) -> Result<Vec<String>> {
         let url = format!("{}/api/tags", self.base_url);
 
@@ -114,7 +114,7 @@ impl OllamaClient {
     /// # Errors
     ///
     /// Returns [`Err`] with a human-readable message when the operation fails.
-    /// 调用 Ollama 生成回复
+    /// Calls Ollama to generate a reply.
     pub async fn generate(
         &self,
         model: &str,
@@ -171,7 +171,7 @@ impl OllamaClient {
     /// # Errors
     ///
     /// Returns [`Err`] with a human-readable message when the operation fails.
-    /// 调用 Ollama 生成回复（带流式处理）
+    /// Calls Ollama to generate a reply with streaming.
     pub async fn generate_stream(
         &self,
         model: &str,

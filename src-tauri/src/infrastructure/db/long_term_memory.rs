@@ -1,4 +1,4 @@
-//! `long term_memory` 相关 [`DbManager`](super::DbManager) 方法。
+//! [`DbManager`](super::DbManager) methods for `long_term_memory`.
 
 #![allow(clippy::missing_errors_doc, unused_imports)]
 

@@ -1,6 +1,6 @@
-//! 立绘表情：由 LLM 结合对话、人设向量与近期事件判断，而非简单沿用回复文本情绪。
+//! Portrait expression: LLM judges from dialogue, personality vector, and recent events — not by mirroring reply text emotion.
 //!
-//! 环境变量 `OCLIVE_PORTRAIT_EMOTION_LLM=0` 时关闭第二次 LLM，仅用启发式（与规则兜底）。
+//! When env `OCLIVE_PORTRAIT_EMOTION_LLM=0`, skips the second LLM and uses heuristics only (with rule-based fallback).
 
 use crate::domain::affect_policy::{
     guarded_drive, hurt_drive, probing_drive, softness_coldness_volatility,
@@ -47,7 +47,7 @@ fn heuristic_base(bot_emotion: &Emotion) -> String {
     bot_emotion.to_string()
 }
 
-/// 规则兜底（LLM 为主）：用七维综合标量辅助，避免「类型标签」式二分。
+/// Rule-based fallback (LLM primary): uses seven-dim composite scalars to avoid binary type-label heuristics.
 fn apply_persona_event_overrides(
     mut tag: String,
     user_emotion_str: &str,
@@ -70,15 +70,15 @@ fn apply_persona_event_overrides(
         .take(3)
         .any(|e| e.event_type == EventType::Apology);
 
-    // 轻量三轴：与 `affect_policy` 共用，用于纠偏。
+    // Lightweight three-axis policy shared with `affect_policy` for correction.
     let (softness, coldness, volatility) = softness_coldness_volatility(personality);
 
     let axis_gap = (softness - coldness).clamp(-1.0, 1.0);
-    // 冲突纠错 1：争吵未道歉 + 用户在难过区间，但 LLM 给出过于积极的 happy
-    // 目标：避免“吵架后讨好式反应”，改用更符合角色的冷/困惑/克制态。
+    // Conflict correction 1: quarrel without apology + user in sad range, but LLM returned overly positive happy
+    // Goal: avoid post-quarrel appeasement; prefer cold/confused/restrained states matching the role.
     if recent_quarrel && !recent_apology && tag == "happy" {
         if user_sadish {
-            // 三轴下用户受伤场景：冷高+波动高更偏对抗，软高时保持克制过渡。
+            // Three-axis hurt scenario: high cold + high volatility skews confrontational; high softness keeps restrained transition.
             tag = if axis_gap <= -0.12 && volatility > 0.58 {
                 "angry".to_string()
             } else if axis_gap <= -0.05 {
@@ -89,7 +89,7 @@ fn apply_persona_event_overrides(
                 "confused".to_string()
             };
         } else {
-            // 三轴差异优先：在同类输入下保留人设分化感，而不是统一 neutral。
+            // Three-axis gap priority: preserve persona differentiation on similar input, not uniform neutral.
             tag = if coldness > 0.64 && volatility > 0.55 {
                 "angry".to_string()
             } else if softness > 0.66 && volatility < 0.46 {
@@ -102,10 +102,10 @@ fn apply_persona_event_overrides(
         }
     }
 
-    // 冲突纠错 2：道歉后 + LLM 输出过于平淡 neutral
-    // 目标：避免“道歉后仍过冷/过平”，但允许冷性角色保留 neutral。
+    // Conflict correction 2: after apology + LLM output overly flat neutral
+    // Goal: avoid post-apology cold/flatness, but allow cold roles to stay neutral.
     if recent_apology && tag == "neutral" && softness >= coldness {
-        // 高敏感时不强推“立刻开心”，保留更慢缓和。
+        // High sensitivity: do not force immediate happiness; keep slower reconciliation.
         if personality.sensitivity >= 0.75 {
             return if user_sadish {
                 "confused".to_string()
@@ -131,10 +131,10 @@ fn apply_persona_event_overrides(
     )
 }
 
-/// 在不新增标签的前提下，增强中间态表达：
-/// - 受伤态：偏 sad/shy
-/// - 戒备态：偏 angry/confused
-/// - 试探态：偏 shy/confused
+/// Enhances mid-state expression without adding new tags:
+/// - Wounded: leans sad/shy
+/// - Guarded: leans angry/confused
+/// - Probing: leans shy/confused
 fn apply_expressive_mapping(
     tag: String,
     user_sadish: bool,
@@ -152,7 +152,7 @@ fn apply_expressive_mapping(
     let probing_state =
         !guarded_state && !recent_quarrel && p >= 0.57 && (tag == "confused" || tag == "shy");
 
-    // 保持强情绪输出不被过度稀释；只细化中间态和偏平输出。
+    // Preserve strong emotion outputs; only refine mid-states and flat outputs.
     if tag == "excited" || tag == "happy" {
         return tag;
     }
@@ -322,7 +322,7 @@ fn fallback_base(bot_emotion: &Emotion, recent_turns: &[(String, String)]) -> St
 /// # Errors
 ///
 /// Returns [`Err`] with a human-readable message when the operation fails.
-/// 解析立绘情绪标签；失败时回退：无历史时偏 `neutral`，否则 `bot_emotion`。
+/// Parses portrait emotion tag; on failure falls back to `neutral` when no history, else `bot_emotion`.
 #[allow(clippy::too_many_arguments)]
 pub async fn resolve_portrait_emotion(
     llm: &Arc<dyn LlmClient>,

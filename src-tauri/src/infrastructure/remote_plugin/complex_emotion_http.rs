@@ -1,4 +1,4 @@
-//! JSON-RPC：`complex_emotion.resolve_turn`（Remote 专用端点，与通用 `OCLIVE_REMOTE_PLUGIN_URL` 分离）。
+//! JSON-RPC: `complex_emotion.resolve_turn` (Remote-only endpoint, separate from generic `OCLIVE_REMOTE_PLUGIN_URL`).
 
 use crate::domain::complex_emotion::{
     BuiltinKeywordComplexEmotionProvider, ComplexEmotionInput, ComplexEmotionOutput,

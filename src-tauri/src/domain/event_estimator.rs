@@ -1,4 +1,4 @@
-//! 事件影响估计可替换门面；默认委托 [`estimate_event_impact`](super::event_impact_ai::estimate_event_impact)。
+//! Pluggable facade for event impact estimation; defaults to [`estimate_event_impact`](super::event_impact_ai::estimate_event_impact).
 #![allow(clippy::too_many_arguments)]
 
 use crate::domain::event_impact_ai::EventImpactEstimate;
@@ -41,7 +41,7 @@ impl EventEstimator for BuiltinEventEstimator {
     }
 }
 
-/// 第二套内置：在 [`BuiltinEventEstimator`] 的结果上将 `impact_factor` 乘以 **0.5**（更保守，用于验证 `event` 枚举可切换）。
+/// Second builtin variant: multiplies `impact_factor` from [`BuiltinEventEstimator`] by **0.5** (more conservative; validates `event` enum switching).
 pub struct BuiltinEventEstimatorV2;
 
 #[async_trait]

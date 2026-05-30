@@ -1,5 +1,5 @@
-//! 事件影响 AI 估计：一次 LLM 输出同时给出事件类型与影响因子。
-//! 失败时回退到规则 `EventDetector`，保证稳定性。
+//! AI event impact estimation: one LLM call yields both event type and impact factor.
+//! On failure, falls back to rule-based `EventDetector` for stability.
 
 use crate::domain::affect_policy::softness_coldness_volatility;
 use crate::domain::event_detector::EventDetector;
@@ -141,7 +141,7 @@ fn apply_apology_persona_policy(
         return impact_factor;
     }
 
-    // 主轴：soft_vs_cold，与立绘三轴同源，避免事件与表情策略漂移。
+    // Primary axis: soft_vs_cold, shared with portrait three-axis policy to avoid event/emotion strategy drift.
     let (softness, coldness, _) = softness_coldness_volatility(personality);
     let soft_vs_cold = (softness - coldness).clamp(-1.0, 1.0);
     let sensitivity = personality.sensitivity.clamp(0.0, 1.0);
@@ -152,12 +152,12 @@ fn apply_apology_persona_policy(
 
     let mut adjusted = impact_factor.clamp(-1.0, 1.0);
 
-    // 软人格：更愿意给台阶；低敏感时更容易明显缓和。
+    // Soft personality: more willing to offer reconciliation; low sensitivity eases more visibly.
     if soft_vs_cold >= 0.12 {
         let floor = if sensitivity < 0.4 { 0.28 } else { 0.16 };
         let ceil = if sensitivity < 0.4 { 0.8 } else { 0.62 };
         adjusted = adjusted.max(floor).min(ceil);
-    // 冷人格：道歉后也可能先观察，不立即大幅转暖。
+    // Cold personality: may observe after apology rather than warming up immediately.
     } else if soft_vs_cold <= -0.12 {
         let mut conservative_ceil: f64 = if sensitivity >= 0.75 {
             0.14
@@ -172,7 +172,7 @@ fn apply_apology_persona_policy(
         adjusted = adjusted.min(conservative_ceil);
     }
 
-    // 调制：高敏感统一减速“道歉后立刻缓和”。
+    // Modulation: high sensitivity uniformly slows post-apology immediate warming.
     if adjusted > 0.0 && sensitivity > 0.6 {
         let slow_down = (1.0 - 0.3 * ((sensitivity - 0.6) / 0.4)).clamp(0.7, 1.0);
         adjusted *= slow_down;

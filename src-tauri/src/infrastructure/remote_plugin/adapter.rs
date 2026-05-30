@@ -1,4 +1,4 @@
-//! 共享 Remote HTTP 客户端构造与「远程失败 → builtin」降级模板。
+//! Shared Remote HTTP client construction and remote-failure → builtin graceful degradation template.
 
 use crate::error::{AppError, Result};
 use crate::infrastructure::high_risk_grants::HighRiskGrantStore;
@@ -9,7 +9,7 @@ use serde_json::Value;
 use std::sync::atomic::AtomicBool;
 use std::sync::Arc;
 
-/// 阻塞 JSON-RPC 侧车适配器（memory / emotion / prompt 等共用构造与降级逻辑）。
+/// Blocking JSON-RPC sidecar adapter (shared construction and fallback for memory / emotion / prompt, etc.).
 pub struct RemotePluginAdapterBlocking {
     pub http: RemoteHttpClientBlocking,
     remote_fallback_allowed: Arc<AtomicBool>,
@@ -47,7 +47,7 @@ impl RemotePluginAdapterBlocking {
         }
     }
 
-    /// 远程 `call_plugin` 成功则 `decode`；失败且允许降级则 `builtin`，否则 `RemoteServiceUnavailable`。
+    /// On remote `call_plugin` success, `decode`; on failure with fallback allowed, `builtin`; else `RemoteServiceUnavailable`.
     pub fn call_with_builtin_fallback<T>(
         &self,
         method: &str,

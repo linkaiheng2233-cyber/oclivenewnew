@@ -1,4 +1,4 @@
-//! `role runtime` 相关 [`DbManager`](super::DbManager) 方法。
+//! [`DbManager`](super::DbManager) methods for `role_runtime`.
 
 #![allow(clippy::missing_errors_doc, unused_imports)]
 
@@ -494,7 +494,7 @@ impl DbManager {
         Ok(())
     }
 
-    /// 旧版全局 `app_settings.interaction_mode`（迁移用）。
+    /// Legacy global `app_settings.interaction_mode` (migration only).
     async fn get_legacy_app_interaction_mode(&self) -> Result<Option<String>> {
         let row: Option<(String,)> =
             sqlx::query_as("SELECT value FROM app_settings WHERE key = 'interaction_mode' LIMIT 1")

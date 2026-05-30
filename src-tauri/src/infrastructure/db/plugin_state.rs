@@ -1,4 +1,4 @@
-//! `plugin state` / `app_settings` 相关 [`DbManager`](super::DbManager) 方法。
+//! [`DbManager`](super::DbManager) methods for `plugin state` / `app_settings`.
 
 #![allow(clippy::missing_errors_doc, unused_imports)]
 

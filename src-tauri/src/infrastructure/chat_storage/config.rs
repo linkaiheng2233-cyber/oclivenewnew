@@ -51,8 +51,8 @@ pub fn resolve_storage_root(app_data_dir: &Path) -> PathBuf {
     app_data_dir.join(DEFAULT_SUBDIR)
 }
 
-/// 探测目录是否可写（存在则检查权限，不存在则检查父目录）。
-/// Windows 上除 `readonly()` 外还执行探针写入（临时文件），回退更可靠。
+/// Probes whether a directory is writable (checks permissions if it exists, parent otherwise).
+/// On Windows, also performs a probe write (temp file) beyond `readonly()` for more reliable fallback.
 #[must_use]
 pub fn is_path_writable(path: &Path) -> bool {
     if path.exists() {
@@ -75,12 +75,12 @@ pub fn is_path_writable(path: &Path) -> bool {
     }
 }
 
-/// 解析聊天记录根目录，优先级：
-/// 1. env `OCLIVE_CHAT_STORAGE_ROOT`（强制覆盖，不变）
-/// 2. 角色包 `config.json` → `chat_storage.location` = `"role_pack"` + 角色包目录可写
-///    不可写则 warn 并回落
-/// 3. 全局持久化设置 `chat_storage_root`（不变）
-/// 4. 默认 `{app_data}/chats/`（不变）
+/// Resolves chat log root with priority:
+/// 1. env `OCLIVE_CHAT_STORAGE_ROOT` (forced override, unchanged)
+/// 2. role pack `config.json` → `chat_storage.location` = `"role_pack"` + writable role pack dir
+///    warns and falls back when not writable
+/// 3. global persisted setting `chat_storage_root` (unchanged)
+/// 4. default `{app_data}/chats/` (unchanged)
 #[must_use]
 pub fn resolve_storage_root_with_role(
     app_data_dir: &Path,

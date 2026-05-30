@@ -1,4 +1,4 @@
-//! 目录插件 JSON-RPC：`complex_emotion.resolve_turn`。
+//! Directory plugin JSON-RPC: `complex_emotion.resolve_turn`.
 
 use crate::domain::complex_emotion::{
     BuiltinKeywordComplexEmotionProvider, ComplexEmotionInput, ComplexEmotionOutput,

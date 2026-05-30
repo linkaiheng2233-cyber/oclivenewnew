@@ -1,7 +1,11 @@
-//! 角色管理模块
+//! Role management module.
 //!
-//! **非生产对话编排**：真实请求由 [`crate::domain::chat_engine::process_message`] 串联 Repository / 策略 / LLM。
-//! 本模块仅在**单元测试**与本地算法演示中提供同步、无 DB 的迷你管线，避免与主编排并行演进时产生行为漂移——若需断言线上行为，应测 `chat_engine` / `chat_turn` 或集成测试。
+//! **Non-production conversation orchestration**: real requests are wired by
+//! [`crate::domain::chat_engine::process_message`] through Repository / policy / LLM.
+//! This module provides a synchronous, DB-free mini pipeline only for **unit tests**
+//! and local algorithm demos, avoiding behavioral drift as the main orchestration
+//! evolves in parallel — to assert production behavior, test `chat_engine` /
+//! `chat_turn` or integration tests instead.
 
 use crate::domain::memory_retrieval::MemoryRetrievalInput;
 use crate::domain::plugin_host::{PluginHost, ResolvedRolePlugins};
@@ -28,21 +32,21 @@ fn resolved_plugins_dummy(role: &Role) -> ResolvedRolePlugins {
     PluginHost::new(dummy_llm, None, tmp, grants, remote_fb).resolve_for_role(role)
 }
 
-/// 角色管理器
+/// Role manager.
 pub struct RoleManager {
     role: Role,
     personality: PersonalityVector,
     memory_engine: MemoryEngine,
-    /// 与主对话管线一致的插件门面（情绪 / 记忆排序 / Prompt）
+    /// Plugin facade aligned with the main conversation pipeline (emotion / memory ranking / prompt).
     plugins: ResolvedRolePlugins,
 }
 
 impl RoleManager {
-    /// 创建新的角色管理器
+    /// Creates a new role manager.
     ///
     /// # Arguments
-    /// * `role` - 角色信息
-    /// * `personality` - 初始性格向量
+    /// * `role` - Role metadata
+    /// * `personality` - Initial personality vector
     #[must_use]
     pub fn new(role: Role, personality: PersonalityVector) -> Self {
         let plugins = resolved_plugins_dummy(&role);
@@ -54,7 +58,7 @@ impl RoleManager {
         }
     }
 
-    /// 指定记忆检索后端（用于测试或与 `Role.plugin_backends.memory` 对齐的演示路径）
+    /// Sets the memory retrieval backend (for tests or demo paths aligned with `Role.plugin_backends.memory`).
     pub fn with_memory_retrieval(
         role: Role,
         personality: PersonalityVector,
@@ -70,24 +74,24 @@ impl RoleManager {
         }
     }
 
-    /// 处理用户输入并生成回复
+    /// Processes user input and produces a reply.
     ///
     /// # Arguments
-    /// * `user_input` - 用户输入文本
-    /// * `long_term_memories` - 长期记忆列表
+    /// * `user_input` - User input text
+    /// * `long_term_memories` - Long-term memory list
     ///
     /// # Returns
-    /// (回复文本, 更新后的性格, 检测到的事件)
+    /// (reply text, updated personality, detected event if any)
     ///
     /// # Panics
     ///
-    /// 当 `memory.rank_memories` 在测试/内置路径下失败时 panic（与历史 `expect` 行为一致）。
+    /// Panics when `memory.rank_memories` fails on test/builtin paths (matches historical `expect` behavior).
     pub fn process_input(
         &mut self,
         user_input: &str,
         long_term_memories: &[Memory],
     ) -> (String, PersonalityVector, Option<Event>) {
-        // 1. 分析用户情绪（与 `UserEmotionAnalyzer` / 主对话一致）
+        // 1. Analyze user emotion (aligned with `UserEmotionAnalyzer` / main conversation)
         let emotion_result = self.plugins.emotion.analyze(user_input).unwrap_or(
             crate::domain::emotion_analyzer::EmotionResult {
                 joy: 0.0,
@@ -105,10 +109,10 @@ impl RoleManager {
         let user_emotion_prompt =
             crate::domain::emotion_analyzer::EmotionAnalyzer::format_for_prompt(&emotion_result);
 
-        // 2. 检测事件
+        // 2. Detect events
         let event = EventDetector::detect(user_input, &user_emotion, &Emotion::Neutral).ok();
 
-        // 3. 调整性格（人设优先模式由档案归纳七维，此处不直接推向量）
+        // 3. Adjust personality (profile-first mode derives seven dims from profile; no direct vector push here)
         let mut updated_personality = self.personality.clone();
         if self.role.evolution_config.personality_source != PersonalitySource::Profile {
             updated_personality = PersonalityEngine::adjust_by_user_emotion(
@@ -127,7 +131,7 @@ impl RoleManager {
             }
         }
 
-        // 4. 添加短期记忆
+        // 4. Add short-term memory
         let memory = Memory {
             id: format!("mem_{}", chrono::Utc::now().timestamp()),
             role_id: self.role.id.clone(),
@@ -140,7 +144,7 @@ impl RoleManager {
         };
         self.memory_engine.add_short_term(memory);
 
-        // 5. 获取相关记忆（走 MemoryRetrieval，与主对话管线一致）
+        // 5. Fetch relevant memories (via MemoryRetrieval, aligned with main conversation pipeline)
         let relevant_memories = self
             .plugins
             .memory
@@ -152,7 +156,7 @@ impl RoleManager {
             })
             .expect("rank_memories");
 
-        // 6. 构建提示词
+        // 6. Build prompt
         let prompt = self
             .plugins
             .prompt
@@ -187,37 +191,37 @@ impl RoleManager {
             })
             .expect("build_prompt");
 
-        // 7. 更新性格
+        // 7. Update personality
         self.personality = updated_personality.clone();
 
-        // 返回提示词作为回复（实际应由LLM生成）
+        // Return prompt as reply (production path should use LLM generation)
         (prompt, updated_personality, event)
     }
 
-    /// 获取当前性格
+    /// Returns the current personality.
     #[must_use]
     pub fn get_personality(&self) -> &PersonalityVector {
         &self.personality
     }
 
-    /// 获取角色信息
+    /// Returns role metadata.
     #[must_use]
     pub fn get_role(&self) -> &Role {
         &self.role
     }
 
-    /// 获取短期记忆
+    /// Returns short-term memories.
     #[must_use]
     pub fn get_short_term_memories(&self) -> Vec<Memory> {
         self.memory_engine.get_short_term()
     }
 
-    /// 清空短期记忆
+    /// Clears short-term memories.
     pub fn clear_short_term_memories(&mut self) {
         self.memory_engine.clear_short_term();
     }
 
-    /// 获取性格摘要
+    /// Returns a personality summary string.
     #[must_use]
     pub fn get_personality_summary(&self) -> String {
         let traits = PersonalityEngine::get_dominant_traits(&self.personality);

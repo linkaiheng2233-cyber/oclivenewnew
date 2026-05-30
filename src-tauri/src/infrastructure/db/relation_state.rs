@@ -1,4 +1,4 @@
-//! `relation state` 相关 [`DbManager`](super::DbManager) 方法。
+//! [`DbManager`](super::DbManager) methods for `relation state`.
 
 #![allow(clippy::missing_errors_doc, unused_imports)]
 

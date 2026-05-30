@@ -1,4 +1,4 @@
-//! 虚拟时间驱动的阶段性性格演化（持久化，与单轮事件波动互补）。
+//! Virtual-time-driven staged personality evolution (persisted; complements single-turn event fluctuations).
 
 use crate::domain::personality_engine::PersonalityEngine;
 use crate::domain::profile_personality::effective_vector_from_profile;
@@ -6,7 +6,7 @@ use crate::domain::relation_estrangement::append_mutable_profile_section;
 use crate::error::Result;
 use crate::models::{PersonalitySource, PersonalityVector, Role};
 use crate::state::AppState;
-/// `pre_llm` 在事件/情绪演化之前应用时间沉淀后的结果。
+/// Result of applying time-settled evolution before event/emotion evolution in `pre_llm`.
 #[derive(Debug, Default)]
 pub struct TimeEvolutionApply {
     pub personality: Option<PersonalityVector>,
@@ -14,7 +14,7 @@ pub struct TimeEvolutionApply {
     pub evolved: bool,
 }
 
-/// 计算自 `last_ms` 起可执行的完整演化阶段数（每阶段 `interval_hours` 虚拟小时）。
+/// Counts full evolution stages elapsed since `last_ms` (one stage per `interval_hours` virtual hours).
 #[must_use]
 pub fn count_evolution_stages(
     virtual_now_ms: i64,
@@ -44,11 +44,11 @@ pub fn time_evolution_profile_line(lapse_hours: f64) -> String {
     }
 }
 
-/// 沉浸模式下：虚拟时间每走过一个配置间隔，持久化更新性格一次。
+/// In immersive mode: persist personality once per configured virtual-time interval.
 ///
 /// # Errors
 ///
-/// 数据库读写失败时返回 [`crate::error::AppError`].
+/// Returns [`crate::error::AppError`] on database read/write failure.
 pub async fn check_and_evolve_by_time(
     state: &AppState,
     role: &Role,

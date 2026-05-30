@@ -14,7 +14,7 @@ use sqlx::{Row, SqlitePool};
 use std::sync::atomic::AtomicI64;
 use std::time::{Duration, Instant};
 
-/// 短期对话 FIFO 上限（与长期记忆 500 条策略对齐）
+/// Short-term conversation FIFO cap (aligned with long-term memory 500-entry policy).
 pub const SHORT_TERM_FIFO_LIMIT: i64 = 500;
 
 const TX_WARN_MS: u128 = 100;
@@ -37,7 +37,7 @@ struct HealthPingCache {
     ok_until: Option<Instant>,
 }
 
-/// 数据库操作管理
+/// Database operation manager.
 pub struct DbManager {
     pub(crate) pool: SqlitePool,
     health_ping_cache: Mutex<HealthPingCache>,
@@ -45,7 +45,7 @@ pub struct DbManager {
     pub(crate) short_term_row_counts: DashMap<String, AtomicI64>,
 }
 
-/// `events` 表分页行（API `query_events`）
+/// Paginated row from `events` table (API `query_events`).
 #[derive(Debug, Clone)]
 pub struct EventListRow {
     pub id: i64,
@@ -62,7 +62,7 @@ pub struct ChatTurnTxInput<'a> {
     pub personality: &'a PersonalityVector,
     pub current_emotion: &'a str,
     pub relation_state: &'a str,
-    /// 本回合好感/关系阶段写入所归属的 manifest 用户身份键（与 `role_identity_stats` 一致）。
+    /// Manifest user-identity key this turn's favorability/relation state write belongs to (matches `role_identity_stats`).
     pub user_relation_key: &'a str,
     pub favor_delta: f64,
     pub memory_content: &'a str,

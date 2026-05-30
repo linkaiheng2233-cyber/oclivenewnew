@@ -1,9 +1,11 @@
-//! 用 LLM 维护「可变性格档案」（`mutable_personality`）。
+//! LLM-backed maintenance of the mutable personality profile (`mutable_personality`).
 //!
-//! **设计边界**（产品共识）  
-//! - **核心性格档案**：`Role::core_personality`，仅由用户与创作者决定；**任何模型都不得改写**，以免幻觉或漂移把角色带偏。  
-//! - **可变性格档案**：本模块负责的 DB 正文；模型在有限自主权内根据对话**抓住自己的相处侧变化**，幅度受 `EvolutionConfig` 约束。  
-//! - 创作者不能手写运行中的可变档案进程，只能通过配置调节影响强弱。
+//! **Design boundary** (product consensus)
+//! - **Core personality profile**: `Role::core_personality`, decided only by the user and creator;
+//!   **no model may rewrite it**, to avoid hallucination or drift pulling the role off-character.
+//! - **Mutable personality profile**: DB body maintained by this module; the model captures
+//!   relationship-side changes within limited autonomy, bounded by `EvolutionConfig`.
+//! - Creators cannot hand-write the running mutable profile process; they tune influence strength via config only.
 
 use crate::error::Result;
 use crate::domain::ports::LlmClient;
@@ -20,7 +22,7 @@ pub struct MutableEvolutionInput<'a> {
     pub bot_reply: &'a str,
     pub user_emotion: &'a str,
     pub event_type: &'a EventType,
-    /// 与七维模式一致：`estimate.impact_factor * role_runtime.event_impact_factor`，约 -1～1
+    /// Same as seven-dim mode: `estimate.impact_factor * role_runtime.event_impact_factor`, roughly -1..1
     pub impact_scaled: f64,
     pub evolution: &'a EvolutionConfig,
 }
