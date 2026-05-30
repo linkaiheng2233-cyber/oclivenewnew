@@ -24,7 +24,7 @@ use std::sync::Arc;
 use super::{apply_llm_backend_env_override, RoleStorage};
 
 impl RoleStorage {
-    /// 创建新的角色存储实例
+    /// Creates a new role storage instance.
     pub fn new(roles_dir: impl AsRef<Path>) -> Self {
         Self {
             roles_dir: roles_dir.as_ref().to_path_buf(),
@@ -36,21 +36,21 @@ impl RoleStorage {
         &self.roles_dir
     }
 
-    /// `roles/{role_id}/{relative}`，不检查是否存在。
+    /// `roles/{role_id}/{relative}`; existence is not checked.
     #[must_use]
     pub fn role_asset_path(&self, role_id: &str, relative: &str) -> PathBuf {
         self.roles_dir.join(role_id).join(relative)
     }
 
-    /// 加载所有角色
+    /// Loads all roles.
     ///
     /// # Returns
     ///
-    /// 返回所有可用角色的列表
+    /// A list of all available roles.
     ///
     /// # Errors
     ///
-    /// 如果目录不存在或读取失败，返回 `AppError::IoError`
+    /// Returns [`AppError::IoError`] if the directory is missing or unreadable.
     ///
     /// # Examples
     ///
@@ -96,7 +96,7 @@ impl RoleStorage {
     /// # Errors
     ///
     /// Returns [`Err`] with a human-readable message when the operation fails.
-    /// 从目录加载单个角色（优先 `pipeline.ocblueprint` v2，否则 legacy manifest/settings）。
+    /// Loads a single role from a directory (prefers `pipeline.ocblueprint` v2, otherwise legacy manifest/settings).
     pub fn load_role_from_dir(&self, role_dir: &Path) -> Result<Role> {
         if role_dir.join(PIPELINE_BLUEPRINT_FILENAME).is_file() {
             return self.load_role_from_blueprint_dir(role_dir);
@@ -104,7 +104,7 @@ impl RoleStorage {
         self.load_role_from_legacy_manifest_dir(role_dir)
     }
 
-    /// v2/v3 蓝图包：按 `schema_version` 分流加载。
+    /// v2/v3 blueprint pack: load by `schema_version` dispatch.
     fn load_role_from_blueprint_dir(&self, role_dir: &Path) -> Result<Role> {
         let blueprint_path = role_dir.join(PIPELINE_BLUEPRINT_FILENAME);
         let raw = std::fs::read_to_string(&blueprint_path).map_err(AppError::IoError)?;
@@ -115,7 +115,7 @@ impl RoleStorage {
         self.load_role_from_blueprint_v2_dir(role_dir)
     }
 
-    /// v3 蓝图包：加载 `runtime_config` 与 `pipeline.experimental`。
+    /// v3 blueprint pack: loads `runtime_config` and `pipeline.experimental`.
     fn load_role_from_blueprint_v3_dir(&self, role_dir: &Path) -> Result<Role> {
         let loaded = load_blueprint_v3_for_role_dir(role_dir, env!("CARGO_PKG_VERSION")).map_err(
             |errs| {
@@ -155,9 +155,9 @@ impl RoleStorage {
         self.finish_role_pack_load(role_dir, &loaded.disk, role, None)
     }
 
-    /// v2 蓝图包：校验 `pipeline.ocblueprint` 后填充 `Role.slot_registry` / `plugin_backends` / `slot_groups`。
+    /// v2 blueprint pack: validates `pipeline.ocblueprint`, then fills `Role.slot_registry` / `plugin_backends` / `slot_groups`.
     fn load_role_from_blueprint_v2_dir(&self, role_dir: &Path) -> Result<Role> {
-        // 1) 磁盘 JSON → 校验后的 LoadedBlueprintV2（slot_registry + groups + disk manifest 字段）
+        // 1) Disk JSON → validated LoadedBlueprintV2 (slot_registry + groups + disk manifest fields)
         let loaded = load_blueprint_v2_for_role_dir(role_dir, env!("CARGO_PKG_VERSION")).map_err(
             |errs| {
                 AppError::InvalidParameter(format!(
@@ -167,7 +167,7 @@ impl RoleStorage {
             },
         )?;
 
-        // 2) 合成运行时 Role：六槽摘要（plugin_backends）+ 完整 registry 供多实例解析
+        // 2) Compose runtime Role: six-slot summary (plugin_backends) + full registry for multi-instance resolution
         let mut role = disk_manifest_to_role(&loaded.disk);
         role.plugin_backends = Arc::new(slot_registry_to_plugin_backends(&loaded.slot_registry));
         role.slot_registry = Some(loaded.slot_registry);
@@ -333,7 +333,7 @@ impl RoleStorage {
     /// # Errors
     ///
     /// Returns [`Err`] with a human-readable message when the operation fails.
-    /// 加载指定角色
+    /// Loads the specified role.
     pub fn load_role(&self, role_id: &str) -> Result<Role> {
         let rid = role_id.trim();
         if rid.is_empty() {
@@ -348,8 +348,8 @@ impl RoleStorage {
     /// # Errors
     ///
     /// Returns [`Err`] with a human-readable message when the operation fails.
-    /// 场景 id 列表：manifest 顶层 `scenes` 数组 + `roles/{role_id}/scenes/` 子目录名，去重排序。
-    /// 若均为空则返回 `["default"]`。
+    /// Scene id list: manifest top-level `scenes` array + `roles/{role_id}/scenes/` subdirectory names, deduplicated and sorted.
+    /// Returns `["default"]` when both are empty.
     pub fn list_scene_ids(&self, role_id: &str) -> Result<Vec<String>> {
         let role_dir = self.roles_dir.join(role_id);
         let manifest_path = role_dir.join("manifest.json");
@@ -366,7 +366,7 @@ impl RoleStorage {
         Self::merge_scene_ids(&role_dir, &manifest_scenes)
     }
 
-    /// `manifest.scenes` + `scenes/` 子目录，去重排序；均空时 `["default"]`（与 [`Self::list_scene_ids`] 一致）。
+    /// `manifest.scenes` + `scenes/` subdirectories, deduplicated and sorted; `["default"]` when both are empty (same as [`Self::list_scene_ids`]).
     fn merge_scene_ids(role_dir: &Path, manifest_scenes: &[String]) -> Result<Vec<String>> {
         let mut ids: BTreeSet<String> = BTreeSet::new();
         for s in manifest_scenes {

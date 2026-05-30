@@ -1,8 +1,8 @@
-//! MCP 客户端（最小闭环）：发现本地 server manifest，并支持工具调用。
+//! MCP client (minimal closed loop): discovers local server manifests and supports tool invocation.
 //!
-//! 当前支持：
-//! - transport=`http`：POST JSON 到 `url`
-//! - transport=`stdio`：启动命令，向 stdin 写入请求 JSON，读取 stdout JSON
+//! Currently supported:
+//! - transport=`http`: POST JSON to `url`
+//! - transport=`stdio`: spawn a command, write request JSON to stdin, read response JSON from stdout
 
 use crate::error::{AppError, Result};
 use crate::infrastructure::high_risk_grants::HighRiskGrantStore;

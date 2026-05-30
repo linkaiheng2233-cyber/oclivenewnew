@@ -1,6 +1,6 @@
-//! LLM 调用抽象，便于测试与替换实现。
+//! LLM invocation abstraction for testing and swappable implementations.
 //!
-//! 主对话与标签任务的温度、top_p 见 [`super::llm_params`]（环境变量 `OCLIVE_LLM_*`）。
+//! Main chat and tag-task temperature / top_p: see [`super::llm_params`] (env vars `OCLIVE_LLM_*`).
 
 use crate::error::{AppError, Result};
 use crate::infrastructure::llm_params;
@@ -46,13 +46,13 @@ impl LlmClient for OllamaClient {
     }
 }
 
-/// 将 `OllamaClient` 包成 `Arc<dyn LlmClient>`
+/// Wraps `OllamaClient` as `Arc<dyn LlmClient>`.
 #[must_use]
 pub fn ollama_llm(client: OllamaClient) -> Arc<dyn LlmClient> {
     Arc::new(client)
 }
 
-/// 测试或离线场景：固定返回，不访问网络
+/// Fixed reply for tests or offline scenarios; no network access.
 pub struct MockLlmClient {
     pub reply: String,
 }
@@ -68,8 +68,8 @@ impl LlmClient for MockLlmClient {
     }
 }
 
-/// `plugin_backends.llm = remote` 时占位：未配置 `OCLIVE_REMOTE_LLM_URL` 或侧车客户端构建失败时生效。
-/// 允许降级时委托内置客户端并记一次警告；否则返回 [`AppError::RemoteServiceUnavailable`]。
+/// Placeholder when `plugin_backends.llm = remote`: active when `OCLIVE_REMOTE_LLM_URL` is unset or sidecar client construction fails.
+/// When graceful degradation is allowed, delegates to the builtin client and logs one warning; otherwise returns [`AppError::RemoteServiceUnavailable`].
 pub struct RemoteLlmPlaceholder {
     inner: Arc<dyn LlmClient>,
     warned: AtomicBool,

@@ -1,9 +1,9 @@
-//! HTTP JSON-RPC 侧车：环境变量启用后与 `plugin_backends.* = remote` 对接。
+//! HTTP JSON-RPC sidecar: wired to `plugin_backends.* = remote` when enabled via environment variables.
 //!
-//! - `OCLIVE_REMOTE_PLUGIN_URL`：记忆 / 情绪 / 事件 / Prompt（共用一端点，方法名区分）
-//! - `OCLIVE_REMOTE_LLM_URL`：主对话 LLM（`llm.generate` / `llm.generate_tag`）
+//! - `OCLIVE_REMOTE_PLUGIN_URL`: memory / emotion / event / prompt (shared endpoint, method names differ)
+//! - `OCLIVE_REMOTE_LLM_URL`: main chat LLM (`llm.generate` / `llm.generate_tag`)
 //!
-//! 详见 `docs/REMOTE_PLUGIN_PROTOCOL.md`。
+//! See `docs/REMOTE_PLUGIN_PROTOCOL.md`.
 
 mod adapter;
 mod complex_emotion_directory_http;
@@ -44,7 +44,7 @@ pub use jsonrpc::RemoteRpcChannel;
 pub use remote_client::{RemoteHttpClientAsync, RemoteHttpClientBlocking};
 use oclive_validation::{NETWORK_GRANT_REMOTE_LLM, NETWORK_GRANT_REMOTE_PLUGIN};
 
-/// 共享 Remote HTTP 连接池（无全局 request timeout；单次 RPC 在 [`jsonrpc`] 层设置）。
+/// Shared Remote HTTP connection pool (no global request timeout; per-RPC timeout in [`jsonrpc`] layer).
 pub(crate) fn build_shared_remote_http_client() -> Arc<reqwest::Client> {
     Arc::new(
         reqwest::Client::builder()
@@ -55,7 +55,7 @@ pub(crate) fn build_shared_remote_http_client() -> Arc<reqwest::Client> {
     )
 }
 
-/// 四类 `plugin_backends.* = remote` 共用一套配置，只读一次环境变量并打一条日志。
+/// Shared config for four `plugin_backends.* = remote` slots; reads env once and logs once.
 pub(crate) struct PluginRemoteGroup {
     pub memory: Arc<dyn MemoryRetrieval>,
     pub emotion: Arc<dyn UserEmotionAnalyzer>,
@@ -170,7 +170,7 @@ pub fn llm_remote_backend(
 /// # Errors
 ///
 /// Returns [`Err`] with a human-readable message when the operation fails.
-/// 对目录插件（或任意已解析 RPC 根 URL）发起单次 JSON-RPC `call`（阻塞）；供 `directory_plugin_invoke` 等使用。
+/// Issues a single blocking JSON-RPC `call` to a directory plugin (or any resolved RPC root URL); used by `directory_plugin_invoke` and similar.
 pub fn invoke_directory_plugin_rpc_blocking(
     url: &str,
     method: &str,

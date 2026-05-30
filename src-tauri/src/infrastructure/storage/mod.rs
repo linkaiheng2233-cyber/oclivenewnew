@@ -1,28 +1,28 @@
-//! # 角色包磁盘加载（含蓝图 v2）
+//! # Role pack disk loading (including blueprint v2)
 //!
-//! ## 蓝图 → 内核可执行状态（数据流）
+//! ## Blueprint → kernel executable state (data flow)
 //!
 //! ```text
 //! roles/{id}/pipeline.ocblueprint
-//!   → 读文件 + JSON 解析（oclive_validation::load_blueprint_v2_for_role_dir）
-//!   → Schema / 业务校验（slot_registry、groups、interaction_mode…）
+//!   → read file + JSON parse (oclive_validation::load_blueprint_v2_for_role_dir)
+//!   → schema / business validation (slot_registry, groups, interaction_mode…)
 //!   → Role { slot_registry, plugin_backends, slot_groups, … }
 //!   → PluginHost::resolve_for_role / resolve_for_effective_backends
 //!   → SlotResolver::resolve → ResolvedRoleSlots
-//!   → process_message / co_present → SlotRunner 按类型合并执行
+//!   → process_message / co_present → SlotRunner merge execution by slot type
 //! ```
 //!
-//! - **`module_relations`**：不写入蓝图文件；前端 `buildBlueprintEdges(slot_registry)` **只读派生**连线。
-//! - **legacy**：无 `pipeline.ocblueprint` 时回退 `manifest.json` + `settings.json` 六槽路径。
+//! - **`module_relations`**: not written to the blueprint file; frontend `buildBlueprintEdges(slot_registry)` **derives edges read-only**.
+//! - **legacy**: when `pipeline.ocblueprint` is absent, fall back to the six-slot `manifest.json` + `settings.json` path.
 
 use crate::models::{
     LlmBackend, Role,
 };
 use std::path::PathBuf;
 
-/// 角色包存储管理
+/// Role pack storage manager.
 ///
-/// 负责从文件系统加载和保存角色配置
+/// Loads and saves role configuration from the filesystem.
 #[derive(Debug, Clone)]
 pub struct RoleStorage {
     pub(crate) roles_dir: PathBuf,
@@ -32,7 +32,7 @@ mod blueprint;
 mod role;
 mod scene;
 
-/// 与 oclive-launcher 注入的取值一致：`ollama` / `remote`（大小写不敏感）。
+/// Matches values injected by oclive-launcher: `ollama` / `remote` (case-insensitive).
 pub(crate) fn resolve_llm_backend_env_override() -> Option<LlmBackend> {
     let Ok(v) = std::env::var("OCLIVE_LLM_BACKEND") else {
         return None;
@@ -52,7 +52,7 @@ pub(crate) fn resolve_llm_backend_env_override() -> Option<LlmBackend> {
     }
 }
 
-/// 与 oclive-launcher 注入的取值一致：`ollama` / `remote`（大小写不敏感），覆盖磁盘 `plugin_backends.llm`。
+/// Matches values injected by oclive-launcher: `ollama` / `remote` (case-insensitive); overrides on-disk `plugin_backends.llm`.
 pub(super) fn apply_llm_backend_env_override(role: &mut Role) {
     if let Some(v) = resolve_llm_backend_env_override() {
         std::sync::Arc::make_mut(&mut role.plugin_backends).llm = v;

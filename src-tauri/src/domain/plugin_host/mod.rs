@@ -1,18 +1,25 @@
-//! # 插件装配中心（`PluginHost`）
+//! # Plugin assembly hub (`PluginHost`)
 //!
-//! **角色**：把角色包配置（`plugin_backends`、`slot_registry`、目录插件 manifest）解析为可执行的 **`Arc<dyn …>`** 句柄集合（`ResolvedRolePlugins`），供编排层通过 [`PluginHostPort`](crate::domain::ports::PluginHostPort) 消费。
+//! **Role**: Parses role pack configuration (`plugin_backends`, `slot_registry`, directory plugin manifests)
+//! into executable **`Arc<dyn …>`** handle sets (`ResolvedRolePlugins`) for the orchestration layer via
+//! [`PluginHostPort`](crate::domain::ports::PluginHostPort).
 //!
-//! **上游**：`RoleStorage` 加载的 `Role`；会话覆盖来自 `AppState`；`BackendRegistry` 缓存 builtin / remote / directory 构造器。
-//! **下游**：`chat_engine`、`SlotResolver::resolve`；实现 [`PluginHostPort`](crate::domain::ports::PluginHostPort) 以解耦具体 `PluginHost` 类型。
+//! **Upstream**: `Role` loaded by `RoleStorage`; session overrides from `AppState`; `BackendRegistry`
+//! caches builtin / remote / directory constructors.
+//! **Downstream**: `chat_engine`, `SlotResolver::resolve`; implements [`PluginHostPort`](crate::domain::ports::PluginHostPort)
+//! to decouple from the concrete `PluginHost` type.
 //!
-//! **关键决策**：编排只依赖 **trait 对象**，桌面 / 无头 / 测试可替换宿主；Remote 未配置 env 时**降级 + 日志**，避免静默失败。契约见 `creator-docs/plugin-and-architecture/PLUGIN_V1.md`。
+//! **Key decisions**: Orchestration depends only on **trait objects** so desktop / headless / test hosts
+//! are swappable; when Remote env is unconfigured, **graceful degradation + logging** avoids silent failure.
+//! Contract: `creator-docs/plugin-and-architecture/PLUGIN_V1.md`.
 //!
-//! **Clone 策略（审计 2026-05）**
+//! **Clone strategy (audit 2026-05)**
 //!
-//! - **`Arc::clone` / `Option<Arc<_>>::clone`**：仅增减引用计数，resolve 热路径上的 backend 句柄均属此类。
-//! - **`PluginBackends` 结构体 clone**：仅在会话覆盖 [`PluginBackendsOverride::apply_to`] 时分配；无覆盖时借用包内默认配置（见 [`PluginResolver::resolve`]）。
-//! - **`provider_id` 字符串**：local memory 路径用 [`pick_local_memory_provider_refs`]，仅克隆最终选中的 id。
-//! - **`directory_slot_id`**：目录插件 id 需 owned `String` 供 RPC 启动，无法避免单次分配。
+//! - **`Arc::clone` / `Option<Arc<_>>::clone`**: Reference-count only; backend handles on the resolve hot path are all of this kind.
+//! - **`PluginBackends` struct clone**: Allocates only when applying session override via [`PluginBackendsOverride::apply_to`];
+//!   with no override, borrows the pack default (see [`PluginResolver::resolve`]).
+//! - **`provider_id` strings**: Local memory path uses [`pick_local_memory_provider_refs`]; only the final selected id is cloned.
+//! - **`directory_slot_id`**: Directory plugin id needs an owned `String` for RPC startup; one allocation is unavoidable.
 
 use crate::domain::agent::{AgentDebugTrace, AgentProvider};
 use crate::domain::complex_emotion::ComplexEmotionProvider;
@@ -40,7 +47,7 @@ use std::sync::atomic::AtomicBool;
 use std::sync::Arc;
 use thiserror::Error;
 
-/// [`PluginHost`] / [`BackendRegistry`] 在解析与注册本地 provider 时的错误。
+/// Errors from [`PluginHost`] / [`BackendRegistry`] during resolve and local provider registration.
 #[derive(Debug, Error)]
 pub enum PluginHostError {
     #[error("local plugin provider 注册失败: {0}")]
@@ -53,7 +60,7 @@ impl From<String> for PluginHostError {
     }
 }
 
-/// 已按 `role.plugin_backends` 解析的实现句柄；单次 `send_message` 内应只解析一次并复用。
+/// Implementation handles resolved from `role.plugin_backends`; resolve once per `send_message` and reuse.
 #[derive(Clone)]
 pub struct ResolvedRolePlugins {
     pub memory: Arc<dyn MemoryRetrieval>,
@@ -62,11 +69,11 @@ pub struct ResolvedRolePlugins {
     pub prompt: Arc<dyn PromptAssembler>,
     pub llm: Arc<dyn LlmClient>,
     pub agent: Arc<dyn AgentProvider>,
-    /// 蓝图 `complex_emotion` 槽 last-wins 解析（无 registry 时为 builtin）。
+    /// Blueprint `complex_emotion` slot last-wins resolve (builtin when no registry).
     pub complex_emotion: Arc<dyn ComplexEmotionProvider>,
-    /// 按实例解析的多槽视图（P3；P4 编排串行合并用）。
+    /// Per-instance multi-slot view (P3; P4 orchestration serial merge).
     pub slots: Option<ResolvedRoleSlots>,
-    /// 多 `agent` directory 槽合并的插件 id（观测 / P4）。
+    /// Merged plugin ids from multiple `agent` directory slots (observability / P4).
     pub merged_agent_directory_plugin_ids: Vec<String>,
 }
 
@@ -77,20 +84,21 @@ mod resolver;
 pub use registry::BackendRegistry;
 pub use resolver::PluginResolver;
 
-/// 编译期插件实现集合（[`PluginHost::resolve_for_role`] 按枚举克隆 `Arc`）。
+/// Compile-time plugin implementation set ([`PluginHost::resolve_for_role`] clones `Arc` per enum variant).
 pub struct PluginHost {
     registry: BackendRegistry,
 }
 
 impl PluginHost {
-    /// 构造宿主注册表。
+    /// Constructs the host registry.
     ///
-    /// - `llm`：进程内默认 LLM 句柄（`plugin_backends.llm = ollama` 等会复用或包装该实现）。
-    /// - `directory_runtime`：目录插件懒启动运行时；无目录插件需求时可传 `None`。
-    /// - `app_data_dir`：应用数据根目录（生产环境为 Tauri app data）。当前用于初始化
-    ///   [`McpClient`](crate::infrastructure::mcp_client::McpClient)（扫描 `{app_data_dir}/mcp-servers/*.json`）。
-    ///   集成测试可传 `std::env::temp_dir()`。
-    /// - `high_risk_grants`：MCP 传输与目录插件子进程等显式授权（`{app_data}/high_risk_grants.json`）。
+    /// - `llm`: In-process default LLM handle (`plugin_backends.llm = ollama` etc. reuse or wrap this impl).
+    /// - `directory_runtime`: Lazy-start directory plugin runtime; pass `None` when no directory plugins are needed.
+    /// - `app_data_dir`: Application data root (Tauri app data in production). Currently used to initialize
+    ///   [`McpClient`](crate::infrastructure::mcp_client::McpClient) (scans `{app_data_dir}/mcp-servers/*.json`).
+    ///   Integration tests may pass `std::env::temp_dir()`.
+    /// - `high_risk_grants`: Explicit permission grants for MCP transport, directory plugin subprocesses, etc.
+    ///   (`{app_data}/high_risk_grants.json`).
     pub fn new(
         llm: Arc<dyn LlmClient>,
         directory_runtime: Option<Arc<DirectoryPluginRuntime>>,
@@ -227,7 +235,7 @@ impl PluginHost {
         self.registry.clear_agent_traces();
     }
 
-    /// 解析当前角色包声明的全部后端（一次克隆五套 `Arc`，供整段对话复用）。
+    /// Resolves all backends declared by the current role pack (one clone of five `Arc`s, reused for the whole conversation).
     pub fn resolve_for_role(&self, role: &Role) -> ResolvedRolePlugins {
         PluginResolver::resolve(
             &self.registry,
@@ -237,7 +245,7 @@ impl PluginHost {
         )
     }
 
-    /// 解析角色默认后端 + 会话级覆盖（覆盖为空时等价于 [`Self::resolve_for_role`]）。
+    /// Resolves role default backends plus session-level override (equivalent to [`Self::resolve_for_role`] when override is empty).
     pub fn resolve_for_role_with_override(
         &self,
         role: &Role,
@@ -251,7 +259,7 @@ impl PluginHost {
         )
     }
 
-    /// 有效六槽 + 蓝图 registry + 可选六槽会话覆盖（v2 热路径）。
+    /// Effective six slots + blueprint registry + optional six-slot session override (v2 hot path).
     pub fn resolve_for_effective_backends(
         &self,
         effective_backends: &PluginBackends,
@@ -268,7 +276,7 @@ impl PluginHost {
 }
 
 impl ResolvedRolePlugins {
-    /// 与 `role.plugin_backends` 一致，便于日志/测试断言（只读借用，避免热路径 clone）。
+    /// Matches `role.plugin_backends` for logging / test assertions (read-only borrow, avoids hot-path clone).
     #[must_use]
     pub fn backends_snapshot(role: &Role) -> &PluginBackends {
         role.plugin_backends.as_ref()
@@ -322,7 +330,7 @@ mod tests {
         let h = host();
         let pl = h.resolve_for_role(&role);
         let same_again = h.memory_retrieval(MemoryBackend::BuiltinV2);
-        // 同一 `PluginHost` 内：resolve 与显式取槽应为同一 `Arc` 指针
+        // Within the same `PluginHost`: resolve and explicit slot lookup must share the same `Arc` pointer
         assert!(Arc::ptr_eq(&pl.memory, &same_again));
     }
 

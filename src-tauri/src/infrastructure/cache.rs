@@ -5,7 +5,7 @@ use std::time::{Duration, Instant};
 
 const DEFAULT_MAX_CAPACITY: usize = 1000;
 
-/// 缓存条目
+/// Cache entry.
 #[derive(Clone, Debug)]
 struct CacheEntry<T: Clone> {
     data: T,
@@ -23,7 +23,7 @@ impl<T: Clone> CacheEntry<T> {
     }
 }
 
-/// 有界插入顺序 map（读路径不刷新顺序，淘汰最旧插入项）。
+/// Bounded insertion-order map (read path does not refresh order; evicts oldest insertions).
 #[derive(Debug)]
 struct BoundedInsertMap<T: Clone> {
     map: IndexMap<String, CacheEntry<T>>,
@@ -73,22 +73,22 @@ impl<T: Clone> BoundedInsertMap<T> {
     }
 }
 
-/// 通用缓存管理器
+/// General-purpose cache manager.
 ///
-/// 提供线程安全的内存缓存，支持 TTL 过期机制
+/// Thread-safe in-memory cache with TTL expiration.
 #[derive(Debug)]
 pub struct Cache<T: Clone + Send + Sync> {
     data: Arc<RwLock<BoundedInsertMap<T>>>,
 }
 
 impl<T: Clone + Send + Sync> Cache<T> {
-    /// 创建新缓存（默认最多 1000 条）
+    /// Creates a new cache (default max 1000 entries).
     #[must_use]
     pub fn new() -> Self {
         Self::with_capacity(DEFAULT_MAX_CAPACITY)
     }
 
-    /// 创建带容量上限的缓存
+    /// Creates a cache with a capacity limit.
     #[must_use]
     pub fn with_capacity(max_capacity: usize) -> Self {
         Self {
@@ -96,11 +96,11 @@ impl<T: Clone + Send + Sync> Cache<T> {
         }
     }
 
-    /// 获取缓存值；过期条目会在写锁下移除。
+    /// Gets a cached value; expired entries are removed under a write lock.
     ///
-    /// **LRU 语义（有意降级）**：读命中路径只持有读锁，且通过 `peek`
-    /// 不刷新访问顺序。淘汰依据**插入顺序**、容量上限与 TTL，而非严格 LRU。
-    /// 适用于 `personality_snapshots` 等读多写少、对 LRU 精度不敏感的场景。
+    /// **LRU semantics (intentionally degraded)**: the read-hit path holds only a read lock and uses `peek`
+    /// without refreshing access order. Eviction follows **insertion order**, capacity limit, and TTL—not strict LRU.
+    /// Suitable for read-heavy, write-light cases such as `personality_snapshots` where LRU precision is not critical.
     #[must_use]
     pub fn get(&self, key: &str) -> Option<T> {
         {
@@ -122,12 +122,12 @@ impl<T: Clone + Send + Sync> Cache<T> {
         }
     }
 
-    /// 设置缓存值（无过期时间）
+    /// Sets a cache value (no expiration).
     pub fn set(&self, key: String, value: T) {
         self.set_with_ttl(key, value, None);
     }
 
-    /// 设置缓存值（带过期时间）
+    /// Sets a cache value with an expiration time.
     pub fn set_with_ttl(&self, key: String, value: T, ttl: Option<Duration>) {
         let entry = CacheEntry {
             data: value,
@@ -137,12 +137,12 @@ impl<T: Clone + Send + Sync> Cache<T> {
         self.data.write().put(key, entry);
     }
 
-    /// 删除缓存
+    /// Removes a cache entry.
     pub fn remove(&self, key: &str) {
         self.data.write().pop(key);
     }
 
-    /// 仅保留 `keep(key) == true` 的条目。
+    /// Retains only entries where `keep(key) == true`.
     pub fn retain(&self, keep: impl Fn(&str) -> bool) {
         let mut cache = self.data.write();
         let remove: Vec<String> = cache
@@ -154,24 +154,24 @@ impl<T: Clone + Send + Sync> Cache<T> {
         }
     }
 
-    /// 清空所有缓存
+    /// Clears all cache entries.
     pub fn clear(&self) {
         self.data.write().clear();
     }
 
-    /// 获取缓存大小
+    /// Returns the number of cached entries.
     #[must_use]
     pub fn len(&self) -> usize {
         self.data.read().len()
     }
 
-    /// 检查缓存是否为空
+    /// Returns whether the cache is empty.
     #[must_use]
     pub fn is_empty(&self) -> bool {
         self.data.read().is_empty()
     }
 
-    /// 清理过期缓存
+    /// Removes expired cache entries.
     pub fn cleanup_expired(&self) {
         let mut cache = self.data.write();
         let expired: Vec<String> = cache

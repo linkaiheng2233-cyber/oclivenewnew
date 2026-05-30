@@ -35,7 +35,7 @@ use std::sync::{Arc, OnceLock};
 
 use super::PluginHostError;
 
-/// 后端注册表：管理 builtin / remote 插槽，并预留本地 provider 注册骨架。
+/// Backend registry: manages builtin / remote slots and provides a scaffold for local provider registration.
 pub struct BackendRegistry {
     memory_builtin: Arc<dyn MemoryRetrieval>,
     memory_builtin_v2: OnceLock<Arc<dyn MemoryRetrieval>>,

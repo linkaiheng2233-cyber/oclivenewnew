@@ -1,7 +1,7 @@
-//! 高风险能力授权（持久化）：权限标识与 PLUGIN_V1 / `oclive_validation::plugin_permissions` 一致。
+//! High-risk capability permission grants (persisted): permission ids align with PLUGIN_V1 / `oclive_validation::plugin_permissions`.
 //!
-//! - 生产默认强制校验；集成测 / 内存库构造见 [`HighRiskGrantStore::load`] 的 `enforce` 参数。
-//! - 自动化或 CI 可设 `OCLIVE_SKIP_HIGH_RISK_GRANTS=1` 跳过（与 `OCLIVE_SKIP_STARTUP_HEALTH` 同类排障开关）。
+//! - Production enforces grants by default; integration tests / in-memory DB fixtures use [`HighRiskGrantStore::load`] `enforce` parameter.
+//! - Automation or CI may set `OCLIVE_SKIP_HIGH_RISK_GRANTS=1` to skip (same class of troubleshooting switch as `OCLIVE_SKIP_STARTUP_HEALTH`).
 
 use crate::env_flags;
 use oclive_kernel_runtime::AppError;
@@ -15,7 +15,7 @@ use std::sync::Arc;
 
 const FILE_NAME: &str = "high_risk_grants.json";
 
-/// 磁盘 JSON 形状：`high_risk_grants.json` 顶层键为权限标识（见 PLUGIN_V1 §权限规范）。
+/// On-disk JSON shape: `high_risk_grants.json` top-level keys are permission ids (see PLUGIN_V1 § permission spec).
 #[derive(Debug, Clone, Default, Serialize, Deserialize)]
 pub struct HighRiskGrantsFile {
     #[serde(default, rename = "mcp:http")]
@@ -37,7 +37,7 @@ impl HighRiskGrantsFile {
 pub struct HighRiskGrantStore {
     app_data: PathBuf,
     inner: RwLock<HighRiskGrantsFile>,
-    /// `false` 时不强制（`AppState::new_in_memory*` 等测试夹具）。
+    /// When `false`, enforcement is disabled (`AppState::new_in_memory*` and similar test fixtures).
     enforce: bool,
 }
 
@@ -112,11 +112,11 @@ impl HighRiskGrantStore {
         !self.enforcement_active() || Self::granted(&self.inner.read().network, grant_id)
     }
 
-    /// Remote / 出站 HTTP 前调用；未授权返回 [`AppError::HighRiskCapabilityNotGranted`]。
+    /// Call before Remote / outbound HTTP; returns [`AppError::HighRiskCapabilityNotGranted`] when not granted.
     ///
     /// # Errors
     ///
-    /// 未授予 `network:*` 时返回 [`AppError::HighRiskCapabilityNotGranted`]。
+    /// Returns [`AppError::HighRiskCapabilityNotGranted`] when `network:*` is not granted.
     pub fn require_network(&self, grant_id: &str) -> Result<(), AppError> {
         if self.is_network_granted(grant_id) {
             return Ok(());
@@ -129,70 +129,70 @@ impl HighRiskGrantStore {
 
     /// # Errors
     ///
-    /// `id` 为空或 grants 文件持久化失败时返回 `Err(String)`。
+    /// Returns `Err(String)` when `id` is empty or grants file persistence fails.
     pub fn grant_mcp_http(&self, server_id: &str) -> Result<(), String> {
         self.grant_bucket(MCP_HTTP, server_id, |f| &mut f.mcp_http)
     }
 
     /// # Errors
     ///
-    /// `id` 为空或 grants 文件持久化失败时返回 `Err(String)`。
+    /// Returns `Err(String)` when `id` is empty or grants file persistence fails.
     pub fn revoke_mcp_http(&self, server_id: &str) -> Result<(), String> {
         self.revoke_bucket(server_id, |f| &mut f.mcp_http)
     }
 
     /// # Errors
     ///
-    /// `id` 为空或 grants 文件持久化失败时返回 `Err(String)`。
+    /// Returns `Err(String)` when `id` is empty or grants file persistence fails.
     pub fn grant_mcp_stdio(&self, server_id: &str) -> Result<(), String> {
         self.grant_bucket(MCP_STDIO, server_id, |f| &mut f.mcp_stdio)
     }
 
     /// # Errors
     ///
-    /// `id` 为空或 grants 文件持久化失败时返回 `Err(String)`。
+    /// Returns `Err(String)` when `id` is empty or grants file persistence fails.
     pub fn revoke_mcp_stdio(&self, server_id: &str) -> Result<(), String> {
         self.revoke_bucket(server_id, |f| &mut f.mcp_stdio)
     }
 
     /// # Errors
     ///
-    /// `id` 为空或 grants 文件持久化失败时返回 `Err(String)`。
+    /// Returns `Err(String)` when `id` is empty or grants file persistence fails.
     pub fn grant_directory_plugin_spawn(&self, plugin_id: &str) -> Result<(), String> {
         self.grant_process_spawn(plugin_id)
     }
 
     /// # Errors
     ///
-    /// `id` 为空或 grants 文件持久化失败时返回 `Err(String)`。
+    /// Returns `Err(String)` when `id` is empty or grants file persistence fails.
     pub fn revoke_directory_plugin_spawn(&self, plugin_id: &str) -> Result<(), String> {
         self.revoke_process_spawn(plugin_id)
     }
 
     /// # Errors
     ///
-    /// `id` 为空或 grants 文件持久化失败时返回 `Err(String)`。
+    /// Returns `Err(String)` when `id` is empty or grants file persistence fails.
     pub fn grant_process_spawn(&self, plugin_id: &str) -> Result<(), String> {
         self.grant_bucket(PROCESS_SPAWN, plugin_id, |f| &mut f.process_spawn)
     }
 
     /// # Errors
     ///
-    /// `id` 为空或 grants 文件持久化失败时返回 `Err(String)`。
+    /// Returns `Err(String)` when `id` is empty or grants file persistence fails.
     pub fn revoke_process_spawn(&self, plugin_id: &str) -> Result<(), String> {
         self.revoke_bucket(plugin_id, |f| &mut f.process_spawn)
     }
 
     /// # Errors
     ///
-    /// `id` 为空或 grants 文件持久化失败时返回 `Err(String)`。
+    /// Returns `Err(String)` when `id` is empty or grants file persistence fails.
     pub fn grant_network(&self, grant_id: &str) -> Result<(), String> {
         self.grant_bucket(NETWORK_WILDCARD, grant_id, |f| &mut f.network)
     }
 
     /// # Errors
     ///
-    /// `id` 为空或 grants 文件持久化失败时返回 `Err(String)`。
+    /// Returns `Err(String)` when `id` is empty or grants file persistence fails.
     pub fn revoke_network(&self, grant_id: &str) -> Result<(), String> {
         self.revoke_bucket(grant_id, |f| &mut f.network)
     }
@@ -224,7 +224,7 @@ impl HighRiskGrantStore {
     }
 }
 
-/// 解析 Tauri `grant_*` / `revoke_*` 的 `kind`（规范权限标识）。
+/// Parses Tauri `grant_*` / `revoke_*` `kind` values (canonical permission ids).
 #[must_use]
 pub fn normalize_grant_kind(kind: &str) -> Option<GrantKind> {
     match kind.trim() {

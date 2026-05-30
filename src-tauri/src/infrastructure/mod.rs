@@ -1,6 +1,6 @@
-//! Infrastructure 层
+//! Infrastructure layer.
 //!
-//! 提供基础服务和数据访问功能
+//! Provides foundational services and data access.
 
 pub mod cache;
 pub mod chat_storage;
@@ -33,7 +33,7 @@ pub mod user_llm_secrets;
 #[cfg(test)]
 pub mod test_db;
 
-// 重新导出主要类型
+// Re-export primary types.
 pub use cache::Cache;
 pub use db::DbManager;
 pub use llm::{ollama_llm, LlmClient, MockLlmClient};

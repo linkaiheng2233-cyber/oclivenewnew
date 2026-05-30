@@ -8,7 +8,7 @@ use std::sync::Arc;
 use super::registry::BackendRegistry;
 use super::ResolvedRolePlugins;
 
-/// 解析层：将角色包默认后端 + 可选会话覆盖合成为有效后端并绑定实现。
+/// Resolve layer: merges role pack default backends with optional session override into effective backends and binds implementations.
 pub struct PluginResolver;
 
 impl PluginResolver {
@@ -32,7 +32,7 @@ impl PluginResolver {
                 Some(effective),
             ));
             complex_emotion = SlotResolver::resolve_complex_emotion_winner(registry, reg);
-            // Agent：多 directory 实例合并工具集（并行语义在装配层，非 SlotRunner）
+            // Agent: merge tool sets from multiple directory instances (parallel semantics at assembly layer, not SlotRunner)
             agent = SlotResolver::wrap_agent_if_merged(agent, reg);
             merged_agent_directory_plugin_ids =
                 oclive_validation::merged_agent_directory_plugin_ids(reg);
