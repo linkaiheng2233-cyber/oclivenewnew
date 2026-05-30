@@ -9,7 +9,7 @@ use crate::api::error::CommandError;
 
 #[derive(Debug, Deserialize)]
 pub struct MutateHighRiskGrantRequest {
-    /// `mcp:http` | `mcp:stdio` | `process:spawn` | `network:*`（旧版 snake_case 别名仍接受）
+    /// `mcp:http` | `mcp:stdio` | `process:spawn` | `network:*` (legacy snake_case aliases still accepted)
     pub kind: String,
     pub id: String,
 }
