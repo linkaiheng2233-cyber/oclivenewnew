@@ -8,10 +8,10 @@ const props = withDefaults(
     slotKey: string
     labelKey: string
     hintKey?: string
-    /** chat_toolbar 使用独立禁用开关 */
+    /** chat_toolbar uses a separate disable toggle */
     toolbarSlot?: boolean
     active?: boolean
-    /** 与真实 UI 区域形态对齐 */
+    /** Match the shape of the real UI region */
     variant?: 'default' | 'headerStrip' | 'toolbar' | 'sidebar' | 'overlay'
   }>(),
   { variant: 'default' },

@@ -13,7 +13,7 @@ const props = withDefaults(
     roleId: string
     name: string
     emotion: string
-    /** stack：纵向主布局；sidebar：左侧窄栏时略压缩立绘与留白 */
+    /** stack: vertical main layout; sidebar: tighter portrait and spacing in the left narrow column */
     layout?: 'stack' | 'sidebar'
   }>(),
   { layout: 'stack' },
@@ -59,7 +59,7 @@ function emotionAssetCandidates(key: string): string[] {
   }
 
   pushExpanded(primary)
-  // 常见兼容：如果角色包使用了不同命名（例如 neutral.png）
+  // Common compatibility: role packs may use alternate filenames (e.g. neutral.png)
   if (key === 'neutral') {
     pushExpanded('neutral.png')
   }
@@ -68,7 +68,7 @@ function emotionAssetCandidates(key: string): string[] {
     pushExpanded('disgust_mid.png')
     pushExpanded('disgust_heavy.png')
   }
-  // 最终兜底
+  // Final fallbacks
   pushExpanded('normal.png')
   pushExpanded('neutral.png')
   return Array.from(out)
@@ -95,7 +95,7 @@ async function refreshPortrait(): Promise<void> {
     if (!path)
       continue
 
-    /* 优先 Tauri command + Blob：不依赖 asset 自定义协议，避免 net::ERR_CONNECTION_REFUSED */
+    /* Prefer Tauri command + Blob: avoids custom asset protocol and net::ERR_CONNECTION_REFUSED */
     if (isTauri()) {
       try {
         const bytes = await readRoleAssetBytes(props.roleId, rel)

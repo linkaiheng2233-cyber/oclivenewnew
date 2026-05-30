@@ -5,21 +5,21 @@ import { useI18n } from 'vue-i18n'
 const props = withDefaults(
   defineProps<{
     entry: DirectoryPluginCatalogEntry
-    /** 管理面板批量选择模式 */
+    /** Manager panel batch-selection mode */
     batchSelectMode?: boolean
-    /** 批量选中 */
+    /** Selected in batch mode */
     batchSelected?: boolean
-    /** 全局禁用（停用插件） */
+    /** Globally disabled (plugin turned off) */
     pluginDisabled: boolean
-    /** 仅隐藏 chat_toolbar 嵌入（整壳插件此项不适用） */
+    /** Hide only chat_toolbar embed (not applicable to full-shell plugins) */
     toolbarContributionDisabled: boolean
-    /** 仅隐藏 settings.panel 嵌入 */
+    /** Hide only settings.panel embed */
     settingsPanelContributionDisabled: boolean
-    /** 仅隐藏 role.detail 嵌入 */
+    /** Hide only role.detail embed */
     roleDetailContributionDisabled: boolean
-    /** 仅隐藏 sidebar 嵌入 */
+    /** Hide only sidebar embed */
     sidebarContributionDisabled: boolean
-    /** 仅隐藏 chat.header 嵌入 */
+    /** Hide only chat.header embed */
     chatHeaderContributionDisabled: boolean
   }>(),
   {

@@ -4,7 +4,7 @@ import { useI18n } from 'vue-i18n'
 
 defineProps<{
   pluginId: string
-  /** manifest 是否声明 `process`；为 false 时无法在本面板启动子进程 */
+  /** Whether manifest declares `process`; when false, this panel cannot spawn a child process */
   spawnSupported?: boolean
   processInfo: PluginProcessDebugInfo | null
   allProcesses: PluginProcessDebugInfo[]

@@ -1,5 +1,5 @@
 <script setup lang="ts">
-/** 高级插件管理（架构图、后端/模型、槽位布局）；由设置「高级插件管理」或极简窗入口打开。 */
+/** Advanced plugin manager (architecture graph, backends/models, slot layout); opened from Settings or the simple manager entry. */
 import { computed, defineAsyncComponent, ref, toRef } from 'vue'
 import { useI18n } from 'vue-i18n'
 import SlotLayoutDiagram from '../SlotLayoutDiagram.vue'

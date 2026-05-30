@@ -7,7 +7,7 @@ import PluginErrorPlaceholder from './PluginErrorPlaceholder.vue'
 
 const props = withDefaults(
   defineProps<{
-    /** 变更后重新拉取 bootstrap（与插件管理面板保存联动） */
+    /** Bump to refetch bootstrap after changes (synced with plugin manager save) */
     bootstrapEpoch?: number
   }>(),
   { bootstrapEpoch: 0 },

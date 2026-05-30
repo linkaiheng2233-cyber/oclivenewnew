@@ -4,7 +4,7 @@ import { useI18n } from 'vue-i18n'
 
 const props = defineProps<{
   visible: boolean
-  /** 已解析的展示名，如「客厅」 */
+  /** Resolved display label, e.g. a scene name from i18n */
   pendingSceneLabel: string
 }>()
 

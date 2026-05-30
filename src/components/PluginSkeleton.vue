@@ -1,7 +1,7 @@
 <script setup lang="ts">
 withDefaults(
   defineProps<{
-    /** toolbar: 矮条；block: 较大区域 */
+    /** toolbar: short strip; block: larger region */
     variant?: 'toolbar' | 'block'
   }>(),
   { variant: 'toolbar' },

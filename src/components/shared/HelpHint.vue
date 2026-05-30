@@ -4,12 +4,12 @@ import { useI18n } from 'vue-i18n'
 
 const props = withDefaults(
   defineProps<{
-    /** 点击后显示的说明；双换行分段 */
+    /** Help text shown on click; split into paragraphs on blank lines */
     text?: string
     paragraphs?: readonly string[]
-    /** 气泡相对按钮：向左展开或向右展开，贴右缘时用 end 避免裁切 */
+    /** Popover alignment relative to the button; use end near the right edge to avoid clipping */
     popAlign?: 'start' | 'end'
-    /** 更小问号与更窄气泡，适合顶栏等窄区域 */
+    /** Smaller hint icon and narrower popover for tight areas such as the top bar */
     compact?: boolean
   }>(),
   { popAlign: 'start', compact: false },
@@ -38,7 +38,7 @@ function toggle(e: Event) {
   open.value = !open.value
 }
 
-/** capture：先于子树内 @click.stop，点在「更多」等面板空白处也能收到 */
+/** Capture phase: runs before subtree @click.stop so clicks on panel chrome (e.g. More menu) still close the popover */
 function onDocPointerDownCapture(e: PointerEvent) {
   if (!open.value)
     return

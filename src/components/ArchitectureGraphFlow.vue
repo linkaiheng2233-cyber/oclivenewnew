@@ -317,7 +317,7 @@ watch(
 )
 
 function onEdgesChangeBlueprint() {
-  /* v2：边由 slot_registry 派生，忽略 Vue Flow 边变更 */
+  /* v2: edges derive from slot_registry; ignore Vue Flow edge mutations */
 }
 
 watch(builtNodes, syncGraphFromModel, { deep: true })

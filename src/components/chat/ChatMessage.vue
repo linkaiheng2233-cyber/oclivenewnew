@@ -7,11 +7,11 @@ const props = withDefaults(
     role: 'user' | 'assistant' | 'system'
     content: string
     timestamp: number
-    /** 异地心声 / 占位 等气泡样式 */
+    /** Bubble styling for co-present / remote stub / remote life variants */
     presenceVariant?: 'co_present' | 'remote_stub' | 'remote_life'
-    /** 与后端 `reply_is_fallback` 一致 */
+    /** Matches backend `reply_is_fallback` */
     replyIsFallback?: boolean
-    /** 非空时在正文内高亮子串（如历史检索） */
+    /** When non-empty, highlight matching substrings in body (e.g. history search) */
     highlightQuery?: string
   }>(),
   { replyIsFallback: false, highlightQuery: '' },

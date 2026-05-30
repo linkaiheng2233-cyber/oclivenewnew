@@ -29,13 +29,13 @@ const props = withDefaults(
     vueComponent: string
     bridgeAssetRel: string
     /**
-     * 传入布尔值时固定使用该设置（整壳 Vue 入口无 `pluginStore` 同步）；
-     * 省略时从 `pluginStore.developerMode` 读取（嵌入主应用插槽）。
+     * When a boolean is passed, pin that setting (full-shell Vue entry has no pluginStore sync);
+     * when omitted, read pluginStore.developerMode (embedded in host app slots).
      */
     developerMode?: boolean
-    /** 父级递增以强制重新加载（重试）。 */
+    /** Parent increments to force reload (retry). */
     reloadNonce?: number
-    /** 加载占位骨架形态 */
+    /** Loading skeleton shape */
     skeletonVariant?: 'toolbar' | 'block'
   }>(),
   { skeletonVariant: 'toolbar' },
@@ -60,7 +60,7 @@ const effectiveDeveloperMode = computed(() =>
 const loaded = shallowRef<Component | null>(null)
 const loading = ref(false)
 
-/** 在子组件 setup 内调用 createOcliveApi，保证 `on` 的卸载钩子绑定到正确实例 */
+/** Call createOcliveApi inside child setup so `on` teardown hooks bind to the correct instance */
 const VueSlotInner = defineComponent({
   name: 'OcliveVueSlotInner',
   props: {

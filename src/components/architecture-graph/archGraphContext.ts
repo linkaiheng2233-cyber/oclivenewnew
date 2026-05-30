@@ -4,11 +4,11 @@ import type { CoreModule } from '../../composables/useArchitectureGraphModel'
 export interface ArchGraphActions {
   busy: () => boolean
   usesBlueprint: () => boolean
-  /** legacy 六槽折叠：下拉即会话覆盖 */
+  /** Legacy six-slot fold: dropdown applies session override */
   onBackendChange: (targetKey: string, value: string) => void
-  /** v2 蓝图：仅本次会话 */
+  /** v2 blueprint: session-only override */
   onApplySessionOverride: (slotKey: string, backend: string) => void
-  /** v2 蓝图：写入 pipeline.ocblueprint */
+  /** v2 blueprint: persist to pipeline.ocblueprint */
   onApplyPackDefault: (slotKey: string, backend: string) => void
   onClearSlotOverride: (slotKey: string) => void
   onFocusPlugin: (id: string) => void

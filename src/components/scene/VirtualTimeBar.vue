@@ -6,7 +6,7 @@ import { getTimeState } from '../../api'
 import TimeDial from '../TimeDial.vue'
 
 const props = withDefaults(
-  defineProps<{ roleId: string, /** 顶栏单行：隐藏「虚拟时间」文案 */ compact?: boolean }>(),
+  defineProps<{ roleId: string, /** Top-bar single row: hide the virtual-time label */ compact?: boolean }>(),
   { compact: false },
 )
 const emit = defineEmits<{
@@ -19,7 +19,7 @@ const { t } = useI18n()
 const displayLabel = ref('—')
 const loading = ref(false)
 const dialOpen = ref(false)
-/** 与后端对齐的虚拟时间戳，供拨盘使用 */
+/** Virtual timestamp aligned with the backend; fed to the time dial */
 const virtualTimeMs = ref(0)
 
 async function loadState() {

@@ -9,7 +9,7 @@ const props = defineProps<{
   history: RpcHistoryItem[]
   method: string
   params: string
-  /** 避免同页多插件 datalist id 冲突 */
+  /** Avoid datalist id collisions when multiple plugins share the page */
   datalistId: string
 }>()
 

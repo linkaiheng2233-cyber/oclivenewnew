@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import type { ChatMsg } from '../../types/chatMsg'
-// 长列表：当前会话区使用 VirtualScrollContainer；历史折叠区按需展开。
+// Long list: active session uses VirtualScrollContainer; history fold is expanded on demand.
 import { computed, ref } from 'vue'
 import { useI18n } from 'vue-i18n'
 import ChatMessage from './ChatMessage.vue'
@@ -11,7 +11,7 @@ export type { ChatMsg }
 const props = withDefaults(
   defineProps<{
     messages: ChatMsg[]
-    /** 进入本场景时已有条数；slice(0, n) 为历史折叠区 */
+    /** Message count already present when entering this scene; slice(0, n) is the folded history region */
     historySplitIndex?: number
     loading: boolean
     roleSwitching: boolean
@@ -21,11 +21,11 @@ const props = withDefaults(
   },
 )
 
-/** 每次在主聊天区多展开的历史条数 */
+/** Number of history messages revealed per expand step in the main chat area */
 const PREVIEW_STEP = 20
 
 const { t } = useI18n()
-/** 已展开的「20 条」段数，0 表示收起 */
+/** Count of expanded 20-message chunks; 0 means collapsed */
 const historyPreviewChunks = ref(0)
 
 const split = computed(() =>

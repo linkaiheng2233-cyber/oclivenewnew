@@ -8,7 +8,7 @@ import PluginSlotEmbed from './PluginSlotEmbed.vue'
 const props = withDefaults(
   defineProps<{
     modelValue: boolean
-    /** 与插件 bootstrap 同步 */
+    /** Synced with plugin bootstrap */
     bootstrapEpoch?: number
   }>(),
   { bootstrapEpoch: 0 },

@@ -8,7 +8,7 @@ const props = withDefaults(
     roles: Array<{ id: string, name: string }>
     relations: Array<{ id: string, name: string }>
     loading: boolean
-    /** 与 oclive-new 顶栏一致：可只渲染角色或只渲染身份 */
+    /** Matches oclive-new top bar: render role only, relation only, or both */
     sections?: ('role' | 'relation')[]
     variant?: 'default' | 'topbar'
   }>(),

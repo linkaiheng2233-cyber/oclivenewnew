@@ -20,7 +20,7 @@ const emit = defineEmits<{
 const { t } = useI18n()
 const roleStore = useRoleStore()
 
-/** Windows / 通用非法文件名字符 */
+/** Windows / cross-platform illegal filename characters */
 function safeFileSegment(s: string): string {
   const t = s.replace(/[<>:"/\\|?*\x00-\x1F]/g, '_').trim()
   return t.length > 0 ? t.slice(0, 80) : 'role'

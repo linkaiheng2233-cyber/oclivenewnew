@@ -5,7 +5,7 @@ withDefaults(
   defineProps<{
     title?: string
     message: string
-    /** 原始堆栈等，展示在「查看详情」 */
+    /** Raw stack trace etc., shown under View details */
     detail?: string
     showRetry?: boolean
     showFallback?: boolean

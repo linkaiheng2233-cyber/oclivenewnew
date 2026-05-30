@@ -7,11 +7,11 @@ import PluginErrorPlaceholder from './PluginErrorPlaceholder.vue'
 
 const props = withDefaults(
   defineProps<{
-    /** 官方语义插槽名，如 `settings.plugins` */
+    /** Official semantic slot name, e.g. `settings.plugins` */
     slotName: string
-    /** 变更后重新拉取 bootstrap */
+    /** Bump to refetch bootstrap after changes */
     bootstrapEpoch?: number
-    /** 无障碍名称 */
+    /** Accessible name */
     ariaLabel?: string
   }>(),
   { bootstrapEpoch: 0, ariaLabel: '' },

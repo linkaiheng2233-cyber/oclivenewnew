@@ -12,7 +12,7 @@ const props = withDefaults(
   defineProps<{
     pluginId: string
     expanded: boolean
-    /** manifest 是否含 `process`；为 false 时「启动」会失败，仍可 RPC 测已运行的实例 */
+    /** Whether manifest declares `process`; when false, Spawn fails but RPC can still target a running instance */
     spawnSupported?: boolean
   }>(),
   { spawnSupported: true },
